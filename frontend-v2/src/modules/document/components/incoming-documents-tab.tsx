@@ -29,6 +29,7 @@ import { useDocumentsAppliedToMe } from '../hooks/use-document-scopes'
 import { useSecurityLevelLabel } from '../hooks/use-document-catalogs'
 import { SECURITY_LEVEL_KIND_CONFIDENTIAL } from '../types/security-level'
 import type { DocumentRecord } from '../types/document-record'
+import { usePrefetchDocument } from '../hooks/use-prefetch-document'
 
 const ALL = 'all'
 
@@ -66,6 +67,7 @@ export function IncomingDocumentsTab() {
  */
 function IncomingDocumentsContent() {
   const navigate = useNavigate()
+  const prefetchDocument = usePrefetchDocument()
   const { data, isLoading, isError } = useDocumentsAppliedToMe()
   const { appliedState } = useFilterContext()
   const secrecyLabel = useSecurityLevelLabel()
@@ -172,6 +174,8 @@ function IncomingDocumentsContent() {
         isLoading={isLoading}
         isError={isError}
         onRowClick={(row) => navigate(appRoutes.document.documentDetail(row.id))}
+        //  Rê chuột là nạp trước dữ liệu chi tiết — xem `usePrefetchDocument`.
+        onRowHover={(row) => prefetchDocument(row.id)}
         emptyMessage={
           //  Phân biệt "chưa có gì" với "lọc không ra gì": hai câu này dẫn tới
           //  hai hành động khác hẳn nhau — một bên đi hỏi người khai phạm vi,

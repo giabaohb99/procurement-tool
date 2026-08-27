@@ -22,6 +22,7 @@ import { useActiveDocumentTypes } from '../hooks/use-document-types'
 import { useDocuments } from '../hooks/use-documents'
 import { useMyDocumentTasks } from '../hooks/use-my-document-approvals'
 import { STATUS_LABELS, type DocumentRecord } from '../types/document-record'
+import { usePrefetchDocument } from '../hooks/use-prefetch-document'
 import { useOutgoingDocumentColumns } from './outgoing-document-columns'
 
 const ALL = 'all'
@@ -58,6 +59,7 @@ export function OutgoingDocumentsTab() {
  */
 function OutgoingDocumentsContent() {
   const navigate = useNavigate()
+  const prefetchDocument = usePrefetchDocument()
   const { can } = usePermission()
   const canCreate = can('document', 'create')
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
@@ -161,6 +163,8 @@ function OutgoingDocumentsContent() {
         isLoading={isLoading}
         isError={isError}
         onRowClick={(row) => navigate(appRoutes.document.documentDetail(row.id))}
+        //  Rê chuột là nạp trước dữ liệu chi tiết — xem `usePrefetchDocument`.
+        onRowHover={(row) => prefetchDocument(row.id)}
         emptyMessage="Chưa có văn bản nào khớp điều kiện đang lọc."
         pagination={{
           page,
