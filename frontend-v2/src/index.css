@@ -105,6 +105,22 @@
   --sidebar-primary: #00aeef;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-ring: #00aeef;
+
+  /* MỤC MENU ĐANG MỞ — viên nền + màu chữ.
+
+     Bộ màu DEGO cố ý dùng VỆT NHẠT chứ không phải viên tô đặc: xanh lơ #00aeef
+     tô đặc cả một dòng menu thì chói hẳn so với phần còn lại của giao diện
+     (quyết ngày 27/08/2026 theo yêu cầu). Giá trị dưới đây ghim đúng màu đang
+     chạy trước đó — chính là `bg-primary/10` đã chồng sẵn lên nền menu, nên
+     không đổi một pixel nào.
+
+     ⚠️ Bảng màu nhập từ tweakcn thì NGƯỢC LẠI: chúng để trống hai biến này và
+     `shared/theme/build-theme-css.ts` suy ra viên TÔ ĐẶC từ `--sidebar-primary`
+     (kèm ép chữ đạt 4.5:1). Lý do: `primary` của bảng màu ngoài phần lớn là màu
+     trầm, phủ 10% alpha lên thì đo được cao nhất mới 1.31:1 so với nền menu —
+     tức không bảng màu nào cho ra vệt nhìn thấy được. */
+  --sidebar-active: #e6f7fd;
+  --sidebar-active-foreground: #00aeef;
 }
 
 .dark {
@@ -173,6 +189,10 @@
   --sidebar-primary: #00aeef;
   --sidebar-primary-foreground: #06283d;
   --sidebar-ring: #00aeef;
+
+  /* Xem chú thích ở `:root`. Nền tối thì vệt nhạt là màu lơ pha vào nền menu. */
+  --sidebar-active: #1b364d;
+  --sidebar-active-foreground: #00aeef;
 }
 
 @theme inline {
@@ -223,6 +243,8 @@
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-active: var(--sidebar-active);
+  --color-sidebar-active-foreground: var(--sidebar-active-foreground);
   --color-sidebar-border: var(--sidebar-border);
 
   --radius-sm: calc(var(--radius) - 2px);

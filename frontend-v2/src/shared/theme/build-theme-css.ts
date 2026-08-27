@@ -128,6 +128,65 @@ const CHART_KEYS = ['chart-1', 'chart-2', 'chart-3', 'chart-4', 'chart-5'] as co
  */
 const CHART_MIN_CONTRAST = 2
 
+/**
+ * Tỉ số tương phản tối thiểu giữa CHỮ của mục menu đang mở và viên nền của nó.
+ *
+ * **3:1 — CỐ Ý không phải 4.5:1.** Đây là chỗ hiếm hoi hạ dưới chuẩn AA, và có
+ * lý do: mục tiêu ở đây là GIỮ ĐÚNG thiết kế của tweakcn, chỉ vá những bảng màu
+ * hỏng hẳn.
+ *
+ * Đặt 4.5 thì hàm này lật cả những cặp vốn đang đẹp: *Claude* nền sáng để chữ
+ * gần trắng `#fbfbfb` trên viên mocha `#c96442` — 3.83:1, dưới 4.5 một chút nên
+ * bị đổi thành chữ gần đen, nhìn thô và chẳng còn giống bản gốc (phản hồi
+ * 27/08/2026). Ở 3:1 nó được giữ nguyên, còn mấy cặp thật sự không đọc nổi thì
+ * vẫn bị vá: *Claude* nền tối 1.34 · *Candyland* nền sáng 1.46 · *Ocean Breeze*
+ * nền sáng 2.28 · *Starry Night* nền tối 2.30 · *Sunset Horizon* nền tối 2.50.
+ *
+ * 3:1 cũng chính là ngưỡng WCAG cho chữ lớn và cho thành phần giao diện — nhãn
+ * menu ở đây là 14px **font-semibold** nằm trên một mảng màu đặc, không phải chữ
+ * chạy trong đoạn văn.
+ *
+ * ⚠️ Ngưỡng này KHÔNG áp cho bảng màu tự khai `sidebar-active` (bảng màu DEGO) —
+ * xem `buildSidebarActiveLines`.
+ */
+const SIDEBAR_ACTIVE_MIN_CONTRAST = 3
+
+/**
+ * Hai biến của MỤC MENU ĐANG MỞ (`--sidebar-active` + `--sidebar-active-foreground`).
+ *
+ * Hai đường, cố ý khác nhau:
+ *
+ * 1. **Bảng màu tự khai** → dùng nguyên, KHÔNG ép tương phản. Khai tay nghĩa là
+ *    đã có người cân nhắc; hiện chỉ mỗi bảng màu DEGO khai, và nó cố tình chọn
+ *    một vệt nhạt thay vì viên đặc — xanh lơ `#00aeef` tô đặc thì chói hẳn so
+ *    với phần còn lại của giao diện (quyết ngày 27/08/2026 theo yêu cầu).
+ *
+ * 2. **Bảng màu nhập từ tweakcn** → viên TÔ ĐẶC lấy `--sidebar-primary`, chữ lấy
+ *    `--sidebar-primary-foreground` rồi ép đạt `SIDEBAR_ACTIVE_MIN_CONTRAST`.
+ *    Đây đúng cách shadcn/tweakcn tô mục nổi bật trên menu của họ, và cặp
+ *    `sidebar-primary*` được khai THÀNH CẶP nên chữ vốn đã nằm đúng trên nền
+ *    của nó — chỉ cần vá mấy bảng màu có cặp quá sát nhau.
+ */
+function buildSidebarActiveLines(colors: ThemeModeColors): string[] {
+  const declared = colors['sidebar-active']
+  if (declared) {
+    return [
+      `  --sidebar-active: ${declared};`,
+      `  --sidebar-active-foreground: ${colors['sidebar-active-foreground'] ?? colors.foreground};`,
+    ]
+  }
+
+  //  Không có `sidebar-primary` thì rơi về `primary` — mọi bảng màu đều có nó.
+  const background = colors['sidebar-primary'] ?? colors.primary
+  const foreground = colors['sidebar-primary-foreground'] ?? colors.background
+  if (!background || !foreground) return []
+
+  return [
+    `  --sidebar-active: ${background};`,
+    `  --sidebar-active-foreground: ${ensureVisibleAgainst(foreground, background, SIDEBAR_ACTIVE_MIN_CONTRAST)};`,
+  ]
+}
+
 /** Dựng các dòng biến cho MỘT chế độ nền. `solidDark` xem chú thích bên dưới. */
 function buildVarLines(colors: ThemeModeColors, solidDark: string): string[] {
   const lines: string[] = []
@@ -147,6 +206,8 @@ function buildVarLines(colors: ThemeModeColors, solidDark: string): string[] {
       };`,
     )
   }
+
+  lines.push(...buildSidebarActiveLines(colors))
 
   for (const [key, formula] of Object.entries(DERIVED_TOKENS)) {
     const value = colors[key as keyof ThemeModeColors]

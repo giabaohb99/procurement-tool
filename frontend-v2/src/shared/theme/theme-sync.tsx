@@ -3,7 +3,7 @@ import { useEffect } from 'react'
 
 import { useAuthStore } from '@/core/auth/auth-store'
 import { queryKeys } from '@/shared/constants/query-keys'
-import { applyTheme, THEME_STYLE_ELEMENT_ID } from './apply-theme'
+import { applyTheme } from './apply-theme'
 import { fetchMyPreferences } from './theme-api'
 import { DEFAULT_THEME_ID } from './theme-presets'
 import { readThemeId, useThemeStore } from './theme-store'
@@ -37,13 +37,20 @@ export function ThemeSync() {
     staleTime: 5 * 60 * 1000,
   })
 
-  //  Lưới an toàn cho khung hình đầu: bình thường đoạn script chặn trong
-  //  `index.html` đã sơn xong trước cả khi React chạy. Nhưng nếu localStorage bị
-  //  chặn (chế độ riêng tư) hoặc bản nhớ tạm hỏng thì thẻ style rỗng — sơn lại ở
-  //  đây để không có trạng thái nào rơi về màu mặc định một cách âm thầm.
+  //  DỰNG LẠI CSS mỗi lần tải trang, kể cả khi bản nhớ tạm còn nguyên.
+  //
+  //  Đoạn script chặn trong `index.html` sơn màu từ `localStorage.erp.theme_css`
+  //  — nhanh, nhưng đó là CSS đã dựng từ LẦN TRƯỚC. Sửa `build-theme-css.ts`
+  //  rồi phát hành thì người dùng cũ vẫn giữ nguyên CSS đời cũ cho tới khi họ
+  //  tình cờ bấm chọn lại bảng màu, tức có thể là không bao giờ (đúng lỗi gặp
+  //  27/08/2026 khi đổi cách tô mục menu đang mở). Dựng lại một lần lúc khởi
+  //  động là vài chục dòng chuỗi, rẻ hơn nhiều so với việc phải nhớ bơm số hiệu
+  //  phiên bản vào bản nhớ tạm mỗi lần đụng tới hàm dựng.
+  //
+  //  Cũng chính là lưới an toàn cho trường hợp localStorage bị chặn (chế độ
+  //  riêng tư) hay bản nhớ tạm hỏng — khi đó thẻ style rỗng.
   useEffect(() => {
-    const style = document.getElementById(THEME_STYLE_ELEMENT_ID)
-    if (!style?.textContent) applyTheme(themeId)
+    applyTheme(themeId)
   }, [themeId])
 
   useEffect(() => {

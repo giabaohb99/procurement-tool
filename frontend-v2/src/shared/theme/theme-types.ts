@@ -45,6 +45,12 @@ export type ThemeColorKey =
   //  và `build-theme-css.ts` tự suy ra; chỉ bảng màu DEGO khai tay để giữ đúng
   //  bộ màu gốc đã kiểm tương phản + mù màu.
   | 'canvas'
+  //  Viên nền + chữ của MỤC MENU ĐANG MỞ. Bảng màu nào để trống thì
+  //  `build-theme-css.ts` suy ra viên TÔ ĐẶC từ `sidebar-primary`; bảng màu DEGO
+  //  khai tay một vệt nhạt vì xanh lơ #00aeef tô đặc thì chói quá so với phần
+  //  còn lại của giao diện (quyết ngày 27/08/2026).
+  | 'sidebar-active'
+  | 'sidebar-active-foreground'
   | 'row-head'
   | 'row-head-foreground'
   | 'row-stripe'

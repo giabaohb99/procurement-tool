@@ -142,20 +142,38 @@ export function ensureVisibleAgainst(
 ): string {
   if (contrastRatio(color, background) >= minRatio) return color
 
-  const { hue } = measureColor(color)
+  const { hue, lightness: startLightness } = measureColor(color)
   const saturation = hslSaturation(color)
-  const startLightness = measureColor(color).lightness
-  //  Nền sáng thì dìm màu xuống, nền tối thì đẩy màu lên. Đi theo hướng nào cho
-  //  tương phản tăng — đi ngược là càng lúc càng chìm.
-  const step = relativeLuminance(background) > 0.5 ? -2 : 2
 
-  for (let lightness = startLightness + step; lightness >= 0 && lightness <= 100; lightness += step) {
-    const candidate = hslToHex(hue, saturation, lightness)
-    if (contrastRatio(candidate, background) >= minRatio) return candidate
-  }
+  //  THỬ CẢ HAI HƯỚNG rồi lấy hướng phải đi ít nhất.
+  //
+  //  ⚠️ Trước đây chỉ đi một hướng, chọn bằng `relativeLuminance(background) > 0.5`
+  //  — tức mặc định "nền sáng thì dìm xuống, nền tối thì đẩy lên". Luật đó sai ở
+  //  nền TRUNG TÍNH: xanh lơ DEGO `#00aeef` có độ chói 0.36 nên bị xếp là "nền
+  //  tối", trong khi muốn nổi trên nó phải đi xuống chứ không phải đi lên. Chữ
+  //  trắng trên đó chỉ đạt 2.2:1 mà hàm lại bó tay vì không có gì sáng hơn trắng.
+  //
+  //  Đi ít nhất = méo ít nhất: màu trả về vẫn còn nhận ra là màu của bảng màu.
+  const found = ([-2, 2] as const)
+    .map((step) => {
+      for (let l = startLightness + step; l >= 0 && l <= 100; l += step) {
+        const candidate = hslToHex(hue, saturation, l)
+        if (contrastRatio(candidate, background) >= minRatio) {
+          return { candidate, distance: Math.abs(l - startLightness) }
+        }
+      }
+      return undefined
+    })
+    .filter((hit) => hit !== undefined)
+    .sort((a, b) => a.distance - b.distance)[0]
 
-  //  Không có độ sáng nào đạt: rơi về đen hoặc trắng, tuỳ nền.
-  return step < 0 ? '#000000' : '#ffffff'
+  if (found) return found.candidate
+
+  //  Không độ sáng nào đạt (ngưỡng quá cao so với nền): rơi về đen hoặc trắng,
+  //  bên nào nổi hơn thì lấy bên đó.
+  return contrastRatio('#000000', background) >= contrastRatio('#ffffff', background)
+    ? '#000000'
+    : '#ffffff'
 }
 
 /**

@@ -53,8 +53,28 @@ const navItemClass = [
   //  vào mục menu vẫn lóe một nhịp vàng chóe rồi mới đổi lại (lỗi 27/08/2026).
   //  Đậm hơn hover một bậc để có cảm giác "đã ăn cú bấm".
   'active:bg-sidebar-foreground/15 active:text-sidebar-foreground',
-  'data-[active=true]:bg-primary/10 data-[active=true]:font-semibold data-[active=true]:text-primary',
-  'data-[active=true]:[&>svg]:text-primary',
+  //  Mục ĐANG MỞ: viên nền + màu chữ lấy từ MỘT cặp token riêng
+  //  `--sidebar-active` / `--sidebar-active-foreground`.
+  //
+  //  ⚠️ KHÔNG viết cứng `bg-primary/10` như trước. Phủ 10% alpha thì đo trên cả
+  //  42 bảng màu × 2 chế độ nền, vệt nền so với nền menu **cao nhất chỉ 1.31:1**
+  //  (thấp nhất 1.04) — nghĩa là với bảng màu nhập từ ngoài, mục đang mở gần như
+  //  không nhìn thấy (lỗi thấy được 27/08/2026 trên bảng màu Claude).
+  //
+  //  Cặp token nói trên để mỗi bảng màu tự quyết: bảng màu DEGO khai tay một vệt
+  //  nhạt (xanh lơ tô đặc thì chói quá), bảng màu tweakcn thì `build-theme-css.ts`
+  //  suy ra viên TÔ ĐẶC từ `sidebar-primary` như bản gốc của họ. Tầng này không
+  //  cần biết bảng màu chọn kiểu nào.
+  'data-[active=true]:bg-sidebar-active data-[active=true]:font-semibold',
+  'data-[active=true]:text-sidebar-active-foreground',
+  //  Icon KHÔNG khai màu riêng — để nó thừa hưởng màu chữ, không thì nó giữ
+  //  `text-sidebar-foreground/50` của dòng trên và mờ tịt trên viên nền.
+  'data-[active=true]:[&>svg]:text-current',
+  //  Rê chuột / nhấn vào chính mục đang mở thì GIỮ NGUYÊN viên nền của nó. Không
+  //  khai thì hai luật `hover:`/`active:` ở trên thắng và mục đang mở nhấp nháy
+  //  về vệt xám mỗi lần chạm tới.
+  'data-[active=true]:hover:bg-sidebar-active data-[active=true]:hover:text-sidebar-active-foreground',
+  'data-[active=true]:active:bg-sidebar-active data-[active=true]:active:text-sidebar-active-foreground',
 ].join(' ')
 
 /** Tiêu đề nhóm: chữ nhỏ, IN HOA, giãn chữ — làm vách ngăn thị giác, không phải mục bấm được. */
