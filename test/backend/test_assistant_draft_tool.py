@@ -113,6 +113,52 @@ def test_thieu_so_luong_thi_nhac_bo_sung(db, seed, monkeypatch):
     assert "chưa có số lượng" not in du["reminder"]
 
 
+def _them_cong_ty(db, code: str, name: str, short_name: str = ""):
+    from app.modules.company.model import Company
+
+    row = Company(code=code, name=name, short_name=short_name, is_active=True)
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return row
+
+
+def test_cong_ty_khac_khop_danh_muc_thi_de_vao_nhap(db, seed, monkeypatch):
+    """Người dùng nói mua cho pháp nhân KHÁC -> model điền `company`; khớp danh mục (không
+    phân biệt hoa thường, nhận cả tên gọi tắt/mã) thì đè company_id vào bản nháp để form
+    đổi khỏi công ty mặc định của người hỏi."""
+    from app.modules.user.model import User
+
+    cty = _them_cong_ty(db, "DGF", "Công ty TNHH DEGO Farm", short_name="DEGO Farm")
+    ctx = _ctx(db, db.get(User, seed.u_req_id), allowed=True, monkeypatch=monkeypatch)
+
+    out = _run(ctx, {"purpose": "Mua phân bón", "company": "dego farm", "lines": [
+        {"requirement_detail": "Phân NPK", "request_qty": 100},
+    ]})
+    assert out["status"] == "ready"
+    assert out["draft"]["company_id"] == cty.id
+    assert out["draft"]["company_name"] == "Công ty TNHH DEGO Farm"
+    assert "Công ty TNHH DEGO Farm" in out["reminder"]
+
+
+def test_cong_ty_khong_khop_thi_giu_mac_dinh_va_tra_danh_sach(db, seed, monkeypatch):
+    """Tên công ty lạ thì KHÔNG đè (form giữ công ty của người hỏi) + trả danh sách hợp lệ
+    để model nêu cho người dùng chọn — cùng khuôn với phân loại ngoài danh mục."""
+    from app.modules.user.model import User
+
+    _them_cong_ty(db, "DGF", "Công ty TNHH DEGO Farm")
+    ctx = _ctx(db, db.get(User, seed.u_req_id), allowed=True, monkeypatch=monkeypatch)
+
+    out = _run(ctx, {"purpose": "Mua phân bón", "company": "Công ty lạ hoắc", "lines": [
+        {"requirement_detail": "Phân NPK", "request_qty": 100},
+    ]})
+    assert out["status"] == "ready"
+    assert "company_id" not in out["draft"]
+    assert out["invalid_company"] == "Công ty lạ hoắc"
+    assert "Công ty TNHH DEGO Farm" in out["companies"]
+    assert "KHÔNG khớp danh mục" in out["reminder"]
+
+
 def test_cat_tran_so_dong_va_bao_loi_khi_thieu(db, seed, monkeypatch):
     from app.modules.user.model import User
 
@@ -217,6 +263,21 @@ def test_ycmh_khong_khop_gi_van_giu_dong_de_nguoi_dung_tu_dien(db, seed, monkeyp
     # qty=0 vẫn soạn được nhưng phải nhắc bổ sung số lượng (cùng luật với YCBG).
     assert "chưa có số lượng" in out["reminder"]
 
+
+def test_ycmh_cong_ty_khac_cung_khop_theo_ma(db, seed, monkeypatch):
+    """YCMH đi cùng đường `_apply_company` với YCBG — khớp được cả theo MÃ công ty."""
+    from app.modules.user.model import User
+
+    cty = _them_cong_ty(db, "DGF", "Công ty TNHH DEGO Farm")
+    ctx = _ctx(db, db.get(User, seed.u_req_id), allowed=True, monkeypatch=monkeypatch)
+
+    out = _run_purchase(ctx, {"purpose": "Mua giấy", "company": "dgf", "lines": [
+        {"product": "Giấy A4", "qty": 5},
+    ]})
+    assert out["status"] == "ready"
+    assert out["draft"]["company_id"] == cty.id
+    assert out["draft"]["company_name"] == "Công ty TNHH DEGO Farm"
+
 # ── draft_leave_request (Giấy nghỉ phép) ────────────────────────────────────────────────
 
 def _them_loai_gnp(db, is_active=True):
@@ -319,3 +380,31 @@ def test_nghi_phep_gia_tri_ngoai_bo_ma_ve_mac_dinh(db, seed, monkeypatch):
                                 "from_session": "morning", "to_session": "morning",
                                 "reason": "Khám bệnh"})
     assert nua_ngay["draft"]["leave"]["total_days"] == 0.5
+
+
+# ── tool_defs(db): gắn enum danh mục thật vào khai báo tool ─────────────────────────────
+
+def test_tool_defs_gan_enum_danh_muc_that(db, seed):
+    """Có db thì khai báo 2 tool soạn nháp mang enum danh mục THẬT (phân loại + công ty)
+    để model thấy trước danh sách hợp lệ thay vì bịa; không db giữ khai báo tĩnh. Enum
+    tuyệt đối không được rò vào dict `_PARAMS` dùng chung (deepcopy) — rò là mọi request
+    sau dính danh mục của request trước."""
+    from app.modules.assistant import tools as tool_layer
+    from app.modules.assistant.tools.draft_tool import _PARAMS, _PR_PARAMS
+
+    _them_cong_ty(db, "DGF", "Công ty TNHH DEGO Farm")
+
+    defs = {d.name: d for d in tool_layer.tool_defs(db)}
+    ycbg = defs["draft_survey_request"].parameters
+    assert "Công ty TNHH DEGO Farm" in ycbg["properties"]["company"]["enum"]
+    #  Seed đã có sẵn 2 phân loại "Nhãn"/"Thùng" — enum phải mang danh mục của môi trường.
+    assert "Nhãn" in ycbg["properties"]["lines"]["items"]["properties"]["item_group"]["enum"]
+    ycmh = defs["draft_purchase_request"].parameters
+    assert "Công ty TNHH DEGO Farm" in ycmh["properties"]["company"]["enum"]
+    #  Dòng YCMH không có ô item_group (phân loại lấy theo danh mục sản phẩm) — không gắn.
+    assert "item_group" not in ycmh["properties"]["lines"]["items"]["properties"]
+
+    tinh = {d.name: d for d in tool_layer.tool_defs()}
+    assert "enum" not in tinh["draft_survey_request"].parameters["properties"]["company"]
+    assert "enum" not in _PARAMS["properties"]["company"]
+    assert "enum" not in _PR_PARAMS["properties"]["company"]

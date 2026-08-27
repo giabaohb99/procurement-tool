@@ -782,6 +782,9 @@ function applyAssistantDraft(
     ...base,
     purpose: draft.purpose,
     note: draft.note,
+    // Người dùng nói mua cho pháp nhân khác thì trợ lý đã khớp danh mục -> đè công ty
+    // mặc định (công ty của người hỏi); không nói thì giữ nguyên.
+    company_id: draft.company_id > 0 ? draft.company_id : base.company_id,
     lines: draft.lines.map((line) => ({ ...EMPTY_SURVEY_REQUEST_LINE, ...line })),
   }
 }

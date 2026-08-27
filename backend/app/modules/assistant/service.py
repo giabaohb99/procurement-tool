@@ -64,15 +64,21 @@ số liệu, HÃY GỌI CÔNG CỤ thay vì đoán. Bộ công cụ trả lời 
   ý nghĩa chức năng, "phải lập phiếu gì / gửi cho ai" -> GỌI search_docs TRƯỚC rồi trả lời
   bám theo tài liệu, KHÔNG tự bịa các bước hay tên phiếu. Không có kết quả thì nói chưa có
   tài liệu, gợi ý hỏi bộ phận phụ trách.
-- Giúp lập phiếu: người dùng muốn được soạn hộ / điền hộ chứng từ -> HỎI ĐỦ TRƯỚC rồi mới
-  soạn: mặt hàng, SỐ LƯỢNG + đơn vị tính, mục đích, thông số/yêu cầu khác nếu có. Thiếu gì
-  thì gom hết câu hỏi vào MỘT lượt (đừng hỏi nhỏ giọt nhiều lượt), người dùng trả lời xong
-  mới BẮT BUỘC gọi đúng tool soạn nháp ngay trong lượt đó. KHÔNG tự bịa giá trị người dùng
-  chưa nói (số lượng, thông số, ngày cần hàng...); họ nói chưa biết số lượng thì mới để 0.
-  Phân loại VTBB/NL là Ô CHỌN theo danh mục hệ thống — chỉ điền khi chắc chắn đúng tên
-  trong danh mục, không chắc thì bỏ trống (tool sẽ tự bỏ tên sai và trả về danh sách hợp lệ
-  để bạn nêu cho người dùng chọn). search_docs chỉ tra CÁCH DÙNG, không thay được tool soạn
-  phiếu. Chọn tool theo
+- Giúp lập phiếu: người dùng muốn được soạn hộ / điền hộ chứng từ. Thông tin chia BA nhóm:
+  (1) Form TỰ ĐIỀN theo hồ sơ người hỏi (xem mục NGƯỜI HỎI): người yêu cầu, chức vụ, phòng
+  ban, công ty nhận hóa đơn — ĐỪNG hỏi lại nhóm này.
+  (2) PHẢI HỎI nếu chưa có: mặt hàng, SỐ LƯỢNG + đơn vị tính, mục đích.
+  (3) HỎI THÊM theo ngữ cảnh: thông số/chất lượng, ngày cần hàng, và với YCBG/YCMH hỏi kèm
+  "có mua cho pháp nhân/công ty KHÁC không?" — mặc định phiếu lấy công ty của người hỏi;
+  họ nói mua cho công ty khác thì điền tham số company theo danh sách trong khai báo tool
+  (họ mô tả gần đúng thì chọn tên khớp nhất và nói rõ bạn đã chọn công ty nào).
+  Thiếu gì thì gom hết câu hỏi vào MỘT lượt (đừng hỏi nhỏ giọt nhiều lượt), người dùng trả
+  lời xong mới BẮT BUỘC gọi đúng tool soạn nháp ngay trong lượt đó. KHÔNG tự bịa giá trị
+  người dùng chưa nói (số lượng, thông số, ngày cần hàng...); họ nói chưa biết số lượng thì
+  mới để 0. Phân loại VTBB/NL và company là Ô CHỌN theo danh mục hệ thống — chỉ điền giá trị
+  có trong danh sách của khai báo tool, không chắc thì bỏ trống (tool sẽ tự bỏ tên sai và
+  trả về danh sách hợp lệ để bạn nêu cho người dùng chọn). search_docs chỉ tra CÁCH DÙNG,
+  không thay được tool soạn phiếu. Chọn tool theo
   loại phiếu: xin BÁO GIÁ / khảo sát giá -> draft_survey_request; đề nghị MUA hàng ->
   draft_purchase_request; xin NGHỈ PHÉP / lập đơn nghỉ phép -> draft_leave_request (cần tối
   thiểu ngày nghỉ từ-đến và lý do; ngày tương đối tự quy ra YYYY-MM-DD theo hôm nay). Nút
@@ -98,12 +104,45 @@ kỹ thuật của tool (`waiting_on`, `entity_label`, `inbox_url`...) vào câu
 đạt bằng lời tiếng Việt tự nhiên."""
 
 
-def _extra_system(tool_on: bool, caller: str | None) -> str | None:
+def _caller_context(db, user) -> str | None:
+    """Chân dung NGƯỜI HỎI nhét vào system — model biết đang nói chuyện với ai để khỏi hỏi
+    lại những thứ form tự điền (người yêu cầu, phòng ban, công ty nhận hóa đơn mặc định).
+
+    Tra sống qua hồ sơ nhân sự vì `tab_user` không giữ công ty/phòng ban. Tài khoản chưa
+    gắn nhân sự (admin kỹ thuật...) thì thôi — model hỏi như cũ, không đoán.
+    """
+    if db is None or user is None or not getattr(user, "employee_id", None):
+        return None
+    try:
+        from app.modules.employee.model import Employee
+
+        emp = db.get(Employee, user.employee_id)
+    except Exception:  # noqa: BLE001 - thiếu chân dung chỉ mất tiện nghi, không được sập chat
+        return None
+    if emp is None:
+        return None
+
+    parts = [f"- Họ tên: {emp.full_name}" + (f" (mã NV {emp.code})" if emp.code else "")]
+    if emp.position:
+        parts.append(f"- Chức vụ: {emp.position}")
+    if emp.department_name:
+        parts.append(f"- Phòng ban: {emp.department_name}")
+    if emp.company_name:
+        parts.append(f"- Công ty: {emp.company_name}")
+    return ("NGƯỜI HỎI (đã xác thực khi đăng nhập — dùng luôn, ĐỪNG hỏi lại các thông tin "
+            "này):\n" + "\n".join(parts) + "\n"
+            "Khi soạn phiếu, form tự điền người yêu cầu, chức vụ, phòng ban và công ty nhận "
+            "hóa đơn theo hồ sơ trên; công ty nhận hóa đơn mặc định là công ty của người hỏi.")
+
+
+def _extra_system(tool_on: bool, caller: str | None, profile: str | None = None) -> str | None:
     parts = []
     if tool_on:
         # Ngày hôm nay đặt TRƯỚC guide để model quy đổi "năm nay/quý 1/..." sang date_from/date_to.
         parts.append(f"Hôm nay là {date.today().isoformat()} (định dạng YYYY-MM-DD).")
         parts.append(TOOL_GUIDE)
+    if profile:
+        parts.append(profile)
     if caller:
         parts.append(caller)
     return "\n\n".join(parts) if parts else None
@@ -137,7 +176,10 @@ def ask(
     tool_on = bool(cfg["tools"] and db is not None and user is not None and prov.supports_tools)
 
     # `system` của caller KHÔNG ghi đè định nghĩa/rào an toàn — chỉ chèn THÊM vào cuối.
-    full_system = build_system(extra=_extra_system(tool_on, system))
+    # Chân dung người hỏi chỉ chèn khi mở tool: đường không tool (test provider...) giữ
+    # system tĩnh cho cache prefix dùng chung.
+    profile = _caller_context(db, user) if tool_on else None
+    full_system = build_system(extra=_extra_system(tool_on, system, profile))
 
     msgs: list[ChatMessage] = []
     for h in history or []:
@@ -159,7 +201,7 @@ def ask(
     if tool_on:
         result = prov.run_tools(
             msgs,
-            tools=tool_layer.tool_defs(),
+            tools=tool_layer.tool_defs(db),
             execute=lambda name, args: tool_layer.run_tool(db, user, name, args),
             **common,
         )

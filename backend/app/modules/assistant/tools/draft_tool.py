@@ -24,6 +24,12 @@ _PARAMS = {
             "type": "string",
             "description": "Ghi chú chung cho phiếu (nếu có).",
         },
+        "company": {
+            "type": "string",
+            "description": "Công ty/pháp nhân NHẬN HÓA ĐƠN — CHỈ điền khi người dùng nói mua "
+                           "cho pháp nhân KHÁC công ty của họ; bỏ trống thì form tự lấy công "
+                           "ty của người hỏi. Điền đúng tên trong danh mục hệ thống.",
+        },
         "lines": {
             "type": "array",
             "description": f"Danh sách mặt hàng cần khảo sát giá (tối đa {MAX_LINES} dòng).",
@@ -61,15 +67,21 @@ _PARAMS = {
 _DESC = (
     "SOẠN SẴN dữ liệu cho phiếu Yêu cầu báo giá (YCBG) từ thông tin người dùng cung cấp. "
     "KHÔNG tạo phiếu — chỉ chuẩn bị bản đề xuất; giao diện sẽ hiện nút mở form tạo YCBG đã "
-    "điền sẵn để người dùng rà lại và tự bấm Tạo. Gọi khi người dùng muốn được giúp lập phiếu "
-    "yêu cầu báo giá / xin báo giá và đã cho biết đủ: mặt hàng cần mua, SỐ LƯỢNG dự kiến và "
-    "mục đích. KHÔNG tự bịa thông tin người dùng chưa nói (số lượng, thông số, phân loại) — "
-    "thiếu gì thì gom hỏi trong MỘT lượt (số lượng? thông số/chất lượng? yêu cầu khác?) rồi "
-    "mới gọi; người dùng nói chưa biết số lượng thì mới để 0. Đủ thông tin thì PHẢI gọi ngay "
-    "trong lượt trả lời — nút 'Tạo yêu cầu báo giá' trên giao diện chỉ xuất hiện khi tool "
-    "được gọi, trả lời suông thì người dùng không có nút nào để bấm. Sau khi gọi, báo người "
-    "dùng bấm nút 'Tạo yêu cầu báo giá' ngay dưới câu trả lời để mở form — nhấn mạnh phiếu "
-    "CHƯA được tạo."
+    "điền sẵn để người dùng rà lại và tự bấm Tạo. Vai trò của bạn: gom đủ thông tin qua hội "
+    "thoại rồi đổ vào form hộ người dùng. Ba nhóm thông tin: "
+    "(1) Form TỰ ĐIỀN theo hồ sơ người hỏi: người yêu cầu, chức vụ, phòng ban, công ty nhận "
+    "hóa đơn — ĐỪNG hỏi lại nhóm này. "
+    "(2) PHẢI CÓ trước khi gọi: mặt hàng cần khảo sát giá, SỐ LƯỢNG dự kiến (kèm đơn vị "
+    "tính) và mục đích. "
+    "(3) HỎI THÊM theo ngữ cảnh: thông số/chất lượng, yêu cầu khác (bảo hành, hãng...), và "
+    "'có mua cho pháp nhân/công ty KHÁC công ty của bạn không?' — nếu có thì điền tham số "
+    "company, không thì bỏ trống. "
+    "Thiếu gì gom hỏi trong MỘT lượt rồi mới gọi. KHÔNG tự bịa giá trị người dùng chưa nói "
+    "(số lượng, thông số, phân loại); họ nói chưa biết số lượng thì mới để 0. Đủ thông tin "
+    "thì PHẢI gọi ngay trong lượt trả lời — nút 'Tạo yêu cầu báo giá' trên giao diện chỉ "
+    "xuất hiện khi tool được gọi, trả lời suông thì người dùng không có nút nào để bấm. Sau "
+    "khi gọi, báo người dùng bấm nút 'Tạo yêu cầu báo giá' ngay dưới câu trả lời để mở form "
+    "— nhấn mạnh phiếu CHƯA được tạo."
 )
 
 
@@ -99,6 +111,36 @@ def _match_catalog(value: str, catalog: dict[str, str]) -> str:
     thì giữ nguyên (uom là chữ tự do trong DB, người dùng tự sửa trên form).
     """
     return catalog.get(value.strip().lower(), value) if value else value
+
+
+def _apply_company(ctx: ToolContext, args: dict, result: dict) -> None:
+    """Khớp tham số `company` (pháp nhân nhận hóa đơn) với danh mục công ty.
+
+    Bỏ trống là bình thường — form tự lấy công ty của người hỏi. Model chỉ điền khi người
+    dùng nói mua cho pháp nhân KHÁC, nên khớp được thì đè vào draft (company_id + tên);
+    không khớp thì KHÔNG đè (form giữ mặc định) và trả danh sách hợp lệ để model nêu lại.
+    """
+    raw = _clean_text(args.get("company"), 255)
+    if not raw:
+        return
+    from app.modules.company.model import Company
+
+    rows = ctx.db.query(Company).filter(Company.is_active.is_(True)).all()
+    q = raw.lower()
+    hit = next((c for c in rows
+                if q in {(c.name or "").strip().lower(), (c.short_name or "").strip().lower(),
+                         (c.code or "").strip().lower()}), None)
+    if hit:
+        result["draft"]["company_id"] = hit.id
+        result["draft"]["company_name"] = hit.name
+        result["reminder"] += (f" Công ty nhận hóa đơn đã đặt theo yêu cầu: {hit.name} — "
+                               "nhắc lại cho người dùng biết.")
+    else:
+        result["invalid_company"] = raw
+        result["companies"] = sorted(c.name for c in rows if c.name)
+        result["reminder"] += (" Tên công ty nhận hóa đơn KHÔNG khớp danh mục nên form vẫn "
+                               "để công ty của người hỏi — nêu danh sách công ty hợp lệ "
+                               "(companies) để người dùng chọn đúng pháp nhân.")
 
 
 def _run(ctx: ToolContext, args: dict) -> dict:
@@ -165,6 +207,7 @@ def _run(ctx: ToolContext, args: dict) -> dict:
     if thieu_so_luong:
         result["reminder"] += (" Có dòng chưa có số lượng — nhắc người dùng bổ sung số lượng "
                                "trên form trước khi bấm Tạo.")
+    _apply_company(ctx, args, result)
     return result
 
 
@@ -189,6 +232,12 @@ _PR_PARAMS = {
         "need_date": {
             "type": "string",
             "description": "Ngày cần hàng của cả phiếu, định dạng YYYY-MM-DD (nếu người dùng nêu).",
+        },
+        "company": {
+            "type": "string",
+            "description": "Công ty/pháp nhân NHẬN HÓA ĐƠN — CHỈ điền khi người dùng nói mua "
+                           "cho pháp nhân KHÁC công ty của họ; bỏ trống thì form tự lấy công "
+                           "ty của người hỏi. Điền đúng tên trong danh mục hệ thống.",
         },
         "lines": {
             "type": "array",
@@ -223,13 +272,19 @@ _PR_PARAMS = {
 _PR_DESC = (
     "SOẠN SẴN dữ liệu cho phiếu Yêu cầu mua hàng (YCMH) từ thông tin người dùng cung cấp. "
     "KHÔNG tạo phiếu — chỉ chuẩn bị bản đề xuất; giao diện sẽ hiện nút mở form tạo YCMH đã "
-    "điền sẵn để người dùng rà lại và tự bấm Tạo. Gọi khi người dùng muốn được giúp lập phiếu "
-    "yêu cầu MUA hàng (đề nghị mua, không phải xin báo giá) và đã cho biết đủ: mặt hàng, "
-    "SỐ LƯỢNG và mục đích. KHÔNG tự bịa thông tin người dùng chưa nói (số lượng, ngày cần "
-    "hàng, thông số) — thiếu gì thì gom hỏi trong MỘT lượt rồi mới gọi. Đủ thông tin thì PHẢI gọi ngay "
-    "trong lượt trả lời — nút 'Tạo yêu cầu mua hàng' trên giao diện chỉ xuất hiện khi tool "
-    "được gọi. Sau khi gọi, báo người dùng bấm nút đó để mở form — nhấn mạnh phiếu CHƯA được "
-    "tạo; dòng nào chưa khớp được mã hàng trong danh mục thì nhắc họ chọn lại mã trên form."
+    "điền sẵn để người dùng rà lại và tự bấm Tạo. Gọi khi người dùng muốn được giúp lập "
+    "phiếu yêu cầu MUA hàng (đề nghị mua, không phải xin báo giá). Ba nhóm thông tin: "
+    "(1) Form TỰ ĐIỀN theo hồ sơ người hỏi: người yêu cầu, chức vụ, phòng ban, công ty nhận "
+    "hóa đơn — ĐỪNG hỏi lại nhóm này. "
+    "(2) PHẢI CÓ trước khi gọi: mặt hàng, SỐ LƯỢNG (kèm đơn vị tính nếu chưa rõ) và mục đích. "
+    "(3) HỎI THÊM theo ngữ cảnh: ngày cần hàng, thông số/yêu cầu kỹ thuật, và 'có mua cho "
+    "pháp nhân/công ty KHÁC công ty của bạn không?' — nếu có thì điền tham số company, "
+    "không thì bỏ trống. "
+    "Thiếu gì gom hỏi trong MỘT lượt rồi mới gọi. KHÔNG tự bịa giá trị người dùng chưa nói "
+    "(số lượng, ngày cần hàng, thông số). Đủ thông tin thì PHẢI gọi ngay trong lượt trả lời "
+    "— nút 'Tạo yêu cầu mua hàng' trên giao diện chỉ xuất hiện khi tool được gọi. Sau khi "
+    "gọi, báo người dùng bấm nút đó để mở form — nhấn mạnh phiếu CHƯA được tạo; dòng nào "
+    "chưa khớp được mã hàng trong danh mục thì nhắc họ chọn lại mã trên form."
 )
 
 
@@ -316,6 +371,7 @@ def _run_purchase(ctx: ToolContext, args: dict) -> dict:
     if any(line["qty"] <= 0 for line in lines):
         result["reminder"] += (" Có dòng chưa có số lượng — nhắc người dùng bổ sung số lượng "
                                "trên form trước khi bấm Tạo.")
+    _apply_company(ctx, args, result)
     return result
 
 
@@ -366,7 +422,8 @@ _LEAVE_PARAMS = {
 _LEAVE_DESC = (
     "SOẠN SẴN dữ liệu cho ĐƠN NGHỈ PHÉP (văn bản loại Giấy nghỉ phép) của CHÍNH người hỏi. "
     "KHÔNG tạo văn bản — chỉ chuẩn bị bản đề xuất; giao diện sẽ hiện nút mở form tạo văn bản "
-    "đã điền sẵn để người dùng rà lại và tự bấm Tạo. Gọi khi người dùng muốn xin nghỉ phép / "
+    "đã điền sẵn để người dùng rà lại và tự bấm Tạo. Form TỰ điền người làm đơn và phòng ban "
+    "theo hồ sơ người hỏi — ĐỪNG hỏi lại. Gọi khi người dùng muốn xin nghỉ phép / "
     "lập đơn nghỉ phép và đã cho biết tối thiểu: NGÀY nghỉ (từ ngày - đến ngày) và LÝ DO. "
     "Thiếu thì hỏi lại cho đủ rồi mới gọi; nghỉ nửa ngày thì hỏi buổi nào. Đủ thông tin thì "
     "PHẢI gọi ngay trong lượt trả lời — nút 'Tạo đơn nghỉ phép' chỉ xuất hiện khi tool được "
@@ -476,3 +533,48 @@ DRAFT_LEAVE_REQUEST_SPEC = ToolSpec(
     parameters=_LEAVE_PARAMS,
     handler=_run_leave,
 )
+
+
+# ── Gắn danh mục thật vào khai báo tool ──────────────────────────────────────────────────
+
+_DRAFT_TOOL_NAMES = ("draft_survey_request", "draft_purchase_request")
+
+
+def inject_catalog_enums(defs, db) -> None:
+    """Gắn `enum` danh mục THẬT của môi trường đang chạy vào khai báo 2 tool soạn nháp:
+    Phân loại VTBB/NL (`item_group` — chỉ YCBG) và pháp nhân nhận hóa đơn (`company`).
+
+    Model thấy trước danh sách hợp lệ ngay trong schema nên hết bịa tên ngoài danh mục
+    ("Thiết bị văn phòng / IT" — lỗi khách bắt được 26/08/2026) thay vì phải gọi sai rồi
+    được tool sửa lưng. Phải deepcopy vì các def dùng CHUNG dict `_PARAMS` module-level —
+    ghi thẳng enum vào đó là dính sang mọi request sau.
+    """
+    from copy import deepcopy
+
+    from app.modules.catalog.model import ItemGroup
+    from app.modules.company.model import Company
+
+    try:
+        groups = sorted({n for (n,) in db.query(ItemGroup.name)
+                         .filter(ItemGroup.is_active.is_(True)).all() if n})
+        companies = sorted({n for (n,) in db.query(Company.name)
+                            .filter(Company.is_active.is_(True)).all() if n})
+    except Exception:  # noqa: BLE001 - danh mục lỗi thì giữ khai báo tĩnh, không sập lượt chat
+        return
+    if not groups and not companies:
+        return
+
+    for d in defs:
+        if d.name not in _DRAFT_TOOL_NAMES:
+            continue
+        params = deepcopy(d.parameters)
+        if groups:
+            item_group = (params.get("properties", {}).get("lines", {})
+                          .get("items", {}).get("properties", {}).get("item_group"))
+            if item_group is not None:
+                item_group["enum"] = groups
+        if companies:
+            company = params.get("properties", {}).get("company")
+            if company is not None:
+                company["enum"] = companies
+        d.parameters = params

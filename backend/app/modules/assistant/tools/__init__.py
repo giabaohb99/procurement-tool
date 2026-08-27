@@ -40,9 +40,18 @@ def _active_specs() -> list:
     return specs
 
 
-def tool_defs() -> list[ToolDef]:
-    """Khai báo mọi tool đang bật cho provider (function calling)."""
-    return [spec.to_def() for spec in _active_specs()]
+def tool_defs(db=None) -> list[ToolDef]:
+    """Khai báo mọi tool đang bật cho provider (function calling).
+
+    Có `db` thì gắn thêm enum danh mục thật (phân loại VTBB/NL, pháp nhân nhận hóa đơn)
+    vào 2 tool soạn nháp — model thấy trước danh sách hợp lệ, khỏi bịa tên ngoài danh mục.
+    """
+    defs = [spec.to_def() for spec in _active_specs()]
+    if db is not None:
+        from .draft_tool import inject_catalog_enums
+
+        inject_catalog_enums(defs, db)
+    return defs
 
 
 def run_tool(db, user, name: str, args: dict) -> dict:

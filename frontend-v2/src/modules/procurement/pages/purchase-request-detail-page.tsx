@@ -903,6 +903,10 @@ function applyPurchaseAssistantDraft(
     purpose: draft.purpose,
     note: draft.note,
     need_date: draft.need_date || base.need_date,
+    // Người dùng nói mua cho pháp nhân khác thì trợ lý đã khớp danh mục -> đè công ty
+    // mặc định (công ty của người hỏi); không nói thì giữ nguyên.
+    company_id: draft.company_id > 0 ? draft.company_id : base.company_id,
+    company_name: draft.company_id > 0 ? draft.company_name : base.company_name,
     items: draft.lines.map((line) => ({ ...EMPTY_PURCHASE_REQUEST_ITEM, ...line })),
   }
 }

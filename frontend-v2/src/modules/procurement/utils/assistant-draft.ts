@@ -19,6 +19,9 @@ export interface AssistantDraftLine {
 export interface AssistantDraft {
   purpose: string
   note: string
+  /** Pháp nhân nhận hóa đơn KHÁC công ty người hỏi (backend đã khớp danh mục); 0 = form giữ mặc định. */
+  company_id: number
+  company_name: string
   lines: AssistantDraftLine[]
 }
 
@@ -55,7 +58,13 @@ export function parseAssistantDraft(raw: unknown): AssistantDraft | null {
   }
 
   if (!purpose || lines.length === 0) return null
-  return { purpose, note: asText(data.note), lines }
+  return {
+    purpose,
+    note: asText(data.note),
+    company_id: asQty(data.company_id),
+    company_name: asText(data.company_name),
+    lines,
+  }
 }
 
 // ── Bản nháp Yêu cầu mua hàng (YCMH) ────────────────────────────────────────────────────
@@ -75,6 +84,9 @@ export interface PurchaseAssistantDraft {
   purpose: string
   note: string
   need_date: string
+  /** Pháp nhân nhận hóa đơn KHÁC công ty người hỏi (backend đã khớp danh mục); 0 = form giữ mặc định. */
+  company_id: number
+  company_name: string
   lines: PurchaseAssistantDraftLine[]
 }
 
@@ -104,5 +116,12 @@ export function parsePurchaseAssistantDraft(raw: unknown): PurchaseAssistantDraf
   }
 
   if (!purpose || lines.length === 0) return null
-  return { purpose, note: asText(data.note), need_date: asText(data.need_date), lines }
+  return {
+    purpose,
+    note: asText(data.note),
+    need_date: asText(data.need_date),
+    company_id: asQty(data.company_id),
+    company_name: asText(data.company_name),
+    lines,
+  }
 }
