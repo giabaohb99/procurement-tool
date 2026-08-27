@@ -7,7 +7,7 @@ Phân quyền: cờ AI_ENABLED + quyền `assistant.read` (chỉ ban lãnh đạ
 company_head — xem seed.py). Bot LUÔN chạy dưới danh tính người hỏi (JWT của họ), không có tài
 khoản dịch vụ đặc quyền — để mọi tool loại A về sau vẫn đi qua apply_scope của chính user.
 """
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
 from sqlalchemy.orm import Session
 
 from app.core.auth import require
@@ -54,9 +54,57 @@ def chat(body: AskIn, user=Depends(require("assistant", "read")),
         raise HTTPException(status_code=429, detail=str(e)) from e
     except PermissionError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
+    except ValueError as e:
+        # Vi phạm luật đính kèm (quá số tệp/tin...) — lỗi của REQUEST, trả 400.
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except ProviderError as e:
         raise HTTPException(status_code=502, detail=str(e)) from e
     return success(result)
+
+
+@router.post("/uploads")
+def upload_chat_attachment(file: UploadFile = File(...),
+                           user=Depends(require("assistant", "read")),
+                           db: Session = Depends(get_db)):
+    """Tải MỘT tệp đính kèm chat (CR-204): ảnh JPG/PNG/WebP <= 5MB hoặc PDF <= 10MB.
+
+    FE tải TRƯỚC khi gửi tin (khuôn tải-trước-gắn-sau) rồi truyền `attachment_ids` vào
+    `/chat`. Loại tệp nhận diện theo magic bytes, không tin content-type client; tệp
+    thuộc về người tải (created_by) — chỉ chính chủ gắn được vào tin của mình.
+    """
+    _guard()
+    from .attachments import MAX_UPLOAD_BYTES, store_upload
+
+    # Đọc dư 1 byte quá trần lớn nhất để biết "quá to" mà không nuốt nguyên file khổng lồ.
+    data = file.file.read(MAX_UPLOAD_BYTES + 1)
+    try:
+        meta = store_upload(db, user, file.filename or "tep-dinh-kem", data)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    return success(meta)
+
+
+@router.get("/uploads/{file_id}")
+def view_chat_attachment(file_id: int, user=Depends(require("assistant", "read")),
+                         db: Session = Depends(get_db)):
+    """Mở XEM LẠI một tệp đã đính kèm chat (bấm chip trong lịch sử hội thoại).
+
+    Cùng luật sở hữu với lúc gắn tệp (resolve_owned): chỉ chính chủ + key thuộc thư mục
+    `assistant-upload/`. Trả `inline` để trình duyệt hiện thẳng ảnh/PDF trong tab.
+    """
+    _guard()
+    from urllib.parse import quote
+
+    from . import attachments as attach
+
+    try:
+        f = attach.resolve_owned(db, user, [file_id])[0]
+    except PermissionError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    data = attach.download_bytes(f.file_key)
+    return Response(content=data, media_type=f.content_type or "application/octet-stream",
+                    headers={"Content-Disposition":
+                             f"inline; filename*=UTF-8''{quote(f.filename)}"})
 
 
 @router.get("/usage/mine")

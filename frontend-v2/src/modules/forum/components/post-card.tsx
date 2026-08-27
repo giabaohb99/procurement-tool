@@ -1,4 +1,4 @@
-import { EyeOff, MessageCircle, Pin, ThumbsUp } from 'lucide-react'
+import { EyeOff, MessageCircle, Pin } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -8,15 +8,20 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/ui/di
 import { cn } from '@/shared/utils/cn'
 import { formatDateTime, formatRelativeTime } from '@/shared/utils/format-date'
 
-import { useTogglePostLike } from '../hooks/use-toggle-post-like'
-import { FORUM_AUDIENCE_META, FORUM_POST_KIND, FORUM_POST_STATUS } from '../types/forum-post'
-import type { ForumPost } from '../types/forum-post'
+import {
+  FORUM_AUDIENCE_META,
+  FORUM_POST_KIND,
+  FORUM_POST_STATUS,
+  FORUM_REACTION_META,
+} from '../types/forum-post'
+import type { ForumPost, ForumReactionKind } from '../types/forum-post'
 import { authorInitials } from '../utils/author-initials'
 import { PostActionsMenu } from './post-actions-menu'
 import { PostBody } from './post-body'
 import { PostComments } from './post-comments'
 import { PostImageGrid } from './post-image-grid'
 import { PostLikesDialog } from './post-likes-dialog'
+import { PostReactionButton } from './post-reaction-button'
 
 interface PostCardProps {
   post: ForumPost
@@ -31,15 +36,28 @@ interface PostCardProps {
 }
 
 /**
+ * Ba cảm xúc ĐÔNG NHẤT của bài, nhiều → ít — cụm icon nhỏ cạnh số đếm (kiểu
+ * Facebook). Cache cũ chưa có `reactions` (dữ liệu trước CR-206) thì rơi về
+ * icon Thích cho khỏi trống chỗ.
+ */
+function topReactionKinds(post: ForumPost): ForumReactionKind[] {
+  const kinds = Object.entries(post.reactions ?? {})
+    .filter(([, n]) => n > 0)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([kind]) => Number(kind) as ForumReactionKind)
+  return kinds.length > 0 ? kinds : [1]
+}
+
+/**
  * Một bài viết trên bảng tin: đầu bài (avatar · tên · thời gian · đối tượng
- * xem), nội dung, lưới ảnh, hàng đếm + hàng nút Thích / Bình luận (F4). Like
- * KHÔNG có chuông (D-Q6); bấm số đếm mở hộp "ai đã thích".
+ * xem), nội dung, lưới ảnh, hàng đếm + hàng nút cảm xúc / Bình luận (F4).
+ * Cảm xúc KHÔNG có chuông (D-Q6); bấm số đếm mở hộp "ai đã bày tỏ cảm xúc".
  */
 export function PostCard({ post, detail = false, flat = false }: PostCardProps) {
   const audience = FORUM_AUDIENCE_META[post.audience]
   const AudienceIcon = audience.icon
   const time = formatRelativeTime(post.created_at)
-  const toggleLike = useTogglePostLike()
   const [likesOpen, setLikesOpen] = useState(false)
   // Chi tiết mở dạng popup ngay trên feed (kiểu Facebook) — đóng lại là vẫn
   // đứng nguyên vị trí cuộn. Trang riêng /forum/posts/:id chỉ còn cho link
@@ -152,7 +170,19 @@ export function PostCard({ post, detail = false, flat = false }: PostCardProps) 
                 className="flex items-center gap-1 hover:underline"
                 onClick={() => setLikesOpen(true)}
               >
-                <ThumbsUp className="size-3.5 fill-primary text-primary" aria-hidden />
+                <span className="flex items-center gap-0.5">
+                  {topReactionKinds(post).map((kind) => {
+                    const meta = FORUM_REACTION_META[kind]
+                    const Icon = meta.icon
+                    return (
+                      <Icon
+                        key={kind}
+                        className={cn('size-3.5', meta.className, meta.fill && 'fill-current')}
+                        aria-hidden
+                      />
+                    )
+                  })}
+                </span>
                 {post.like_count}
               </button>
             ) : (
@@ -173,18 +203,7 @@ export function PostCard({ post, detail = false, flat = false }: PostCardProps) 
           </div>
         )}
         <div className="mt-1.5 flex border-t border-border/70 pt-1 text-sm font-medium text-muted-foreground">
-          <button
-            type="button"
-            disabled={toggleLike.isPending}
-            onClick={() => toggleLike.mutate(post.id)}
-            className={cn(
-              'flex flex-1 items-center justify-center gap-1.5 rounded-md py-1.5 hover:bg-muted',
-              post.liked && 'text-primary',
-            )}
-          >
-            <ThumbsUp className={cn('size-4', post.liked && 'fill-current')} aria-hidden />
-            Thích
-          </button>
+          <PostReactionButton post={post} />
           {detail ? (
             <span className="flex flex-1 items-center justify-center gap-1.5 py-1.5">
               <MessageCircle className="size-4" aria-hidden />

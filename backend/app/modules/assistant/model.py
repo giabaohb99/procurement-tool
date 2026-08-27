@@ -39,6 +39,10 @@ class AssistantMessage(Base, AuditMixin):
     conversation_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
     role: Mapped[int] = mapped_column(SmallInteger, default=MessageRole.USER)  # MessageRole
     content: Mapped[str] = mapped_column(Text, default="")
+    # Tệp người dùng đính kèm lượt hỏi (CR-204): JSON [{id, filename, content_type, size}].
+    # Chỉ tin của USER có; rỗng = không đính kèm. Nội dung tệp nằm ở storage (StoredFile),
+    # đây chỉ là danh thiếp để vẽ chip + nạp lại khi hỏi tiếp.
+    attachments: Mapped[str] = mapped_column(Text, default="")
     # Thông tin lượt gọi model (chỉ có ở tin của trợ lý) — để soi chi phí, không bắt buộc.
     provider: Mapped[str] = mapped_column(String(30), default="")
     model: Mapped[str] = mapped_column(String(80), default="")

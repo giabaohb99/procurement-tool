@@ -59,6 +59,22 @@ class ForumModerationAction(IntEnum):
     RESTORE = 3   # khôi phục bài đã ẩn
 
 
+class ForumReactionKind(IntEnum):
+    """Dải cảm xúc kiểu Facebook (CR-206) — giá trị nằm xuống cột `kind`.
+
+    LIKE=1 giữ nguyên từ đợt 1 nên dữ liệu like cũ tự thành cảm xúc "Thích",
+    không cần migration. WOW dùng nhãn "Tuyệt vời" (icon ngôi sao) vì lucide
+    không có mặt ngạc nhiên — FE map nhãn/icon ở `FORUM_REACTION_META`.
+    """
+
+    LIKE = 1     # Thích
+    LOVE = 2     # Yêu thích
+    HAHA = 3     # Haha
+    WOW = 4      # Tuyệt vời
+    SAD = 5      # Buồn
+    ANGRY = 6    # Phẫn nộ
+
+
 class ForumPost(Base, AuditMixin):
     """Bài viết trên diễn đàn. Tác giả = `created_by` (user_id).
 
@@ -97,14 +113,14 @@ class ForumPost(Base, AuditMixin):
 
 
 class ForumReaction(Base, AuditMixin):
-    """Lượt thích một BÀI VIẾT — mỗi người tối đa 1 lượt (bấm lại là bỏ).
+    """Cảm xúc của một người với một BÀI VIẾT — tối đa 1 dòng/(bài, người).
 
-    Khuôn `tab_comment_reaction`. `kind` chừa sẵn cho dải cảm xúc sau này
-    (tim/haha...) — unique theo (bài, người) nên đổi cảm xúc là UPDATE `kind`,
-    không thêm dòng. Đợt 1 chỉ có LIKE, không sinh chuông (D-Q6).
+    Khuôn `tab_comment_reaction`. Unique theo (bài, người) nên đổi cảm xúc là
+    UPDATE `kind` (CR-206: dải 6 cảm xúc `ForumReactionKind`), bấm lại cùng
+    cảm xúc là xóa dòng. Không sinh chuông (D-Q6).
     """
 
-    KIND_LIKE = 1
+    KIND_LIKE = int(ForumReactionKind.LIKE)   # giữ tên cũ — test F0 và code cũ còn gọi
 
     __tablename__ = "tab_forum_reaction"
     __table_args__ = (UniqueConstraint("post_id", "user_id", name="uq_forum_reaction"),)

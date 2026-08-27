@@ -25,6 +25,7 @@ import {
   type DraftOffer,
   type FileOffer,
 } from '../utils/reply-offers'
+import type { AssistantAttachment } from '../types/assistant'
 import {
   useConversation,
   useConversations,
@@ -50,6 +51,8 @@ export function AssistantPage() {
   const deleteConversation = useDeleteConversation()
 
   const [pending, setPending] = useState<string | null>(null)
+  //  Tệp gửi kèm câu đang chờ — chỉ để vẽ chip trên bong bóng chờ (CR-204).
+  const [pendingFiles, setPendingFiles] = useState<AssistantAttachment[]>([])
   const [provider, setProvider] = useState<string>('')
   //  Mốc id chốt LÚC BẤM GỬI — tin trợ lý mới hơn mốc này được chạy hiệu ứng
   //  gõ máy. Chốt trước khi gửi (không phải sau khi nhận) để tin mới mount là
@@ -75,6 +78,7 @@ export function AssistantPage() {
 
   const setActive = (id: number) => {
     setPending(null)
+    setPendingFiles([])
     setTypingAfterId(null) //  đổi hội thoại thì thôi gõ dở câu của hội thoại trước
     setDraftOffer(null)
     setFileOffer(null)
@@ -82,8 +86,9 @@ export function AssistantPage() {
     else setSearchParams({})
   }
 
-  const handleSend = async (message: string) => {
+  const handleSend = async (message: string, attachments?: AssistantAttachment[]) => {
     setPending(message)
+    setPendingFiles(attachments ?? [])
     //  Chốt mốc gõ máy TRƯỚC khi gửi: mọi tin đang có đều cũ, tin nào server
     //  trả thêm về (id lớn hơn) là câu vừa nhận -> được gõ. Đặt sau khi nhận
     //  thì thua race với render từ cache — xem `message-thread.tsx`.
@@ -94,6 +99,7 @@ export function AssistantPage() {
         message,
         provider: selectedProvider || undefined,
         conversation_id: activeId > 0 ? activeId : undefined,
+        attachment_ids: attachments?.length ? attachments.map((a) => a.id) : undefined,
       })
       // Nạp XONG chi tiết hội thoại trước khi bỏ tin đang chờ, để câu vừa gửi
       // không biến mất một nhịp rồi mới hiện lại từ luồng tin của server.
@@ -116,6 +122,7 @@ export function AssistantPage() {
       //  bấm gửi. `chat-composer` bắt lại và trả nguyên văn vào ô.
     } finally {
       setPending(null)
+      setPendingFiles([])
     }
   }
 
@@ -187,12 +194,15 @@ export function AssistantPage() {
               {/*  Hội thoại trống thì lời chào nằm GIỮA khung, ngay trên ô nhập —
                    lúc đó việc duy nhất cần làm là gõ câu hỏi, nên hai thứ đó phải
                    ở gần nhau trong tầm mắt. */}
-              {messages.length === 0 && !pending ? (
+              {/*  So với null chứ đừng so truthy: gửi mỗi tệp không kèm chữ thì
+                   pending là chuỗi rỗng — vẫn phải hiện bong bóng chờ. */}
+              {messages.length === 0 && pending === null ? (
                 <ChatEmptyState onPick={isSending ? undefined : (question) => void handleSend(question).catch(() => {})} />
               ) : (
                 <MessageThread
                   messages={messages}
                   pending={pending}
+                  pendingAttachments={pendingFiles}
                   isSending={isSending}
                   typingAfterId={typingAfterId}
                 />

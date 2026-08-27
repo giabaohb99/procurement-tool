@@ -42,10 +42,13 @@ export function pickDraftOffer(reply: ChatReply): DraftOffer | null {
   }
 }
 
-/** Lấy file báo cáo trợ lý vừa xuất (tool `export_report_file`) từ lượt trả lời. */
+/** Bộ tool xuất file của trợ lý — tool nào cũng trả khối `file` cùng hình dạng. */
+const EXPORT_TOOLS = new Set(['export_report_file', 'export_excel_file'])
+
+/** Lấy file báo cáo trợ lý vừa xuất (Word hoặc Excel) từ lượt trả lời. */
 export function pickFileOffer(reply: ChatReply): FileOffer | null {
   const call = (reply.tool_calls ?? [])
-    .filter((c) => c.name === 'export_report_file' && c.file != null)
+    .filter((c) => EXPORT_TOOLS.has(c.name) && c.file != null)
     .at(-1)
   if (!call?.file) return null
   return {

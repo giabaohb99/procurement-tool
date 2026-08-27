@@ -66,12 +66,23 @@ export function deleteForumPost(id: number): Promise<null> {
   return apiDelete<null>(`${FORUM_URL}/posts/${id}`)
 }
 
-/** Bật/tắt thích một bài — backend trả trạng thái + số đếm SAU khi bấm (D-Q6: không chuông). */
-export function toggleForumPostLike(id: number): Promise<{ liked: boolean; count: number }> {
-  return apiPost<{ liked: boolean; count: number }>(`${FORUM_URL}/posts/${id}/like`, {})
+/** Trạng thái cảm xúc CHUNG CUỘC sau một cú bấm — backend trả để FE vá thẳng cache. */
+export interface ForumReactionResult {
+  liked: boolean
+  count: number
+  my_reaction: number
+  reactions: Record<number, number>
 }
 
-/** Ai đã thích bài — mở khi bấm vào số đếm. */
+/**
+ * Bấm cảm xúc (CR-206, D-Q6: không chuông): chưa có thì thêm, cùng kind thì
+ * bỏ, khác kind thì đổi — backend tự phân xử, FE chỉ gửi kind người dùng chọn.
+ */
+export function toggleForumPostReaction(id: number, kind: number): Promise<ForumReactionResult> {
+  return apiPost<ForumReactionResult>(`${FORUM_URL}/posts/${id}/like`, { kind })
+}
+
+/** Ai đã bày tỏ cảm xúc — mở khi bấm vào số đếm, kèm `kind` để lọc theo tab. */
 export function fetchForumPostLikes(id: number): Promise<ForumPostLiker[]> {
   return apiGet<ForumPostLiker[]>(`${FORUM_URL}/posts/${id}/likes`)
 }

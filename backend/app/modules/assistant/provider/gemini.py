@@ -59,11 +59,31 @@ class GeminiProvider(Provider):
         return resp.json()
 
     @staticmethod
+    def _parts_of(content) -> list[dict]:
+        """Content trung lập (chuỗi hoặc list block — xem ChatMessage) -> parts Gemini.
+
+        Block file (ảnh/PDF) thành `inline_data` base64 — Gemini nhận chung một khuôn
+        cho mọi mime, không tách image/document như Claude.
+        """
+        if isinstance(content, str):
+            return [{"text": content}]
+        parts: list[dict] = []
+        for b in content:
+            if b.get("type") == "file":
+                parts.append({"inline_data": {
+                    "mime_type": b.get("media_type", ""),
+                    "data": b.get("data_b64", ""),
+                }})
+            else:
+                parts.append({"text": b.get("text", "")})
+        return parts
+
+    @staticmethod
     def _contents(messages: list[ChatMessage]) -> list[dict]:
         # Gemini dùng role 'user'/'model'; map 'assistant' -> 'model'.
         return [
             {"role": "model" if m.role == "assistant" else "user",
-             "parts": [{"text": m.content}]}
+             "parts": GeminiProvider._parts_of(m.content)}
             for m in messages
         ]
 

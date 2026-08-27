@@ -1,5 +1,6 @@
 import { apiDelete, apiGet, apiPost } from '@/core/api'
 import type {
+  AssistantAttachment,
   ChatReply,
   ChatRequest,
   ConversationDetail,
@@ -23,6 +24,16 @@ export const assistantApi = {
 
   /** Gửi một câu hỏi; backend lưu vào hội thoại (mở mới nếu chưa có id). */
   chat: (body: ChatRequest) => apiPost<ChatReply>(`${BASE_URL}/chat`, body),
+
+  /**
+   * Tải MỘT tệp đính kèm chat (ảnh JPG/PNG/WebP <=5MB, PDF <=10MB) — tải TRƯỚC,
+   * giữ id, rồi gắn `attachment_ids` khi gửi tin (khuôn tải-trước-gắn-sau của diễn đàn).
+   */
+  uploadAttachment: (file: File) => {
+    const body = new FormData()
+    body.append('file', file)
+    return apiPost<AssistantAttachment>(`${BASE_URL}/uploads`, body)
+  },
 
   /** Xóa hội thoại của chính mình. */
   remove: (id: number) => apiDelete<null>(`${BASE_URL}/conversations/${id}`),

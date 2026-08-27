@@ -93,6 +93,23 @@ describe('pickFileOffer', () => {
     })
   })
 
+  it('tool xuất Excel cũng dựng được nút tải — lỗi từng gặp: bộ lọc cứng theo tên tool docx', () => {
+    const offer = pickFileOffer(
+      reply([
+        {
+          name: 'export_excel_file',
+          args: {},
+          file: { id: 2, filename: 'tien-do.xlsx', size: 10, download_url: '/api/f/2' },
+        },
+      ]),
+    )
+    expect(offer).toEqual({
+      conversationId: 7,
+      filename: 'tien-do.xlsx',
+      downloadUrl: '/api/f/2',
+    })
+  })
+
   it('không có file thì trả null', () => {
     expect(pickFileOffer(reply([{ name: 'export_report_file', args: {} }]))).toBeNull()
   })

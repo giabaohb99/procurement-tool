@@ -226,13 +226,51 @@ def test_check_forum_cua_dinh_kem_theo_luat_bai(db, bo_may):
 
 def test_like_va_dem_comment_gom_theo_trang(db, bo_may):
     p = _dang(db, bo_may.tac_gia, ForumAudience.PUBLIC)
-    assert service.toggle_like(db, p.id, bo_may.cung_phong.id) == {"liked": True, "count": 1}
-    assert service.toggle_like(db, p.id, bo_may.cung_phong.id) == {"liked": False, "count": 0}
+    assert service.toggle_like(db, p.id, bo_may.cung_phong.id) == {
+        "liked": True, "count": 1, "my_reaction": 1, "reactions": {1: 1}}
+    assert service.toggle_like(db, p.id, bo_may.cung_phong.id) == {
+        "liked": False, "count": 0, "my_reaction": 0, "reactions": {}}
 
     from app.modules.comment.service import create_comment
     c = create_comment(db, "forum_post", p.id, "hay quá", bo_may.cung_phong.id)
     create_comment(db, "forum_post", p.id, "chuẩn", bo_may.tac_gia.id, parent_id=c.id)
     assert service.comment_count_map(db, [p.id]) == {p.id: 2}   # đếm cả phản hồi
+
+
+def test_reaction_doi_cam_xuc_la_update_khong_them_dong(db, bo_may):
+    """CR-206: đổi Thích -> Yêu thích phải UPDATE dòng cũ (unique bài+người),
+    bấm lại cùng cảm xúc là bỏ; kind lạ bị 400 chứ không nằm xuống DB."""
+    from app.modules.forum.model import ForumReaction, ForumReactionKind
+
+    p = _dang(db, bo_may.tac_gia, ForumAudience.PUBLIC)
+    nguoi = bo_may.cung_phong.id
+    service.toggle_like(db, p.id, nguoi, int(ForumReactionKind.LIKE))
+    out = service.toggle_like(db, p.id, nguoi, int(ForumReactionKind.LOVE))
+    assert out["my_reaction"] == int(ForumReactionKind.LOVE)
+    assert out["reactions"] == {int(ForumReactionKind.LOVE): 1}
+    assert db.query(ForumReaction).filter(ForumReaction.post_id == p.id).count() == 1
+
+    # Người thứ hai bấm Haha — like_map phải tách số đếm theo từng cảm xúc.
+    service.toggle_like(db, p.id, bo_may.khac_phong.id, int(ForumReactionKind.HAHA))
+    lk = service.like_map(db, [p.id], nguoi)[p.id]
+    assert lk["count"] == 2
+    assert lk["my_reaction"] == int(ForumReactionKind.LOVE)
+    assert lk["reactions"] == {int(ForumReactionKind.LOVE): 1, int(ForumReactionKind.HAHA): 1}
+
+    # Danh sách người bấm mang kèm kind để FE lọc theo tab cảm xúc.
+    assert service.reaction_users(db, p.id) == [
+        (nguoi, int(ForumReactionKind.LOVE)),
+        (bo_may.khac_phong.id, int(ForumReactionKind.HAHA)),
+    ]
+
+    with pytest.raises(HTTPException) as err:
+        service.toggle_like(db, p.id, nguoi, 99)
+    assert err.value.status_code == 400
+
+    # Bấm lại đúng cảm xúc đang có là bỏ — không sót dòng mồ côi.
+    out = service.toggle_like(db, p.id, nguoi, int(ForumReactionKind.LOVE))
+    assert out["my_reaction"] == 0
+    assert out["reactions"] == {int(ForumReactionKind.HAHA): 1}
 
 
 def test_xoa_bai_cuon_theo_comment_va_like(db, bo_may):

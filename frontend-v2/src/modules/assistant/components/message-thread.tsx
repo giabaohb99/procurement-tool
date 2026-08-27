@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 
-import type { AssistantMessage } from '../types/assistant'
+import type { AssistantAttachment, AssistantMessage } from '../types/assistant'
 import { AssistantThinking } from './assistant-thinking'
 import { ChatMessage } from './chat-message'
 
@@ -8,6 +8,8 @@ interface MessageThreadProps {
   messages: AssistantMessage[]
   /** Câu vừa gửi đang chờ trả lời — hiện ngay để không thấy trễ. */
   pending: string | null
+  /** Tệp gửi kèm câu đang chờ — vẽ chip trên bong bóng chờ, khớp tin thật sau đó. */
+  pendingAttachments?: AssistantAttachment[]
   isSending: boolean
   /**
    * MỐC id chốt lúc bấm gửi: tin trợ lý nào có id LỚN HƠN mốc này là câu vừa
@@ -35,7 +37,13 @@ const NEAR_BOTTOM_PX = 120
  * mất dấu đầu dòng khi xuống hàng. Bản cũ để chữ chạy hết bề ngang màn 1920px
  * nên câu trả lời dài đọc rất mệt.
  */
-export function MessageThread({ messages, pending, isSending, typingAfterId }: MessageThreadProps) {
+export function MessageThread({
+  messages,
+  pending,
+  pendingAttachments,
+  isSending,
+  typingAfterId,
+}: MessageThreadProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   /**
@@ -105,11 +113,14 @@ export function MessageThread({ messages, pending, isSending, typingAfterId }: M
             key={m.id}
             role={m.role_name}
             content={m.content}
+            attachments={m.attachments}
             typing={m.role_name === 'assistant' && typingAfterId != null && m.id > typingAfterId}
           />
         ))}
 
-        {pending && <ChatMessage role="user" content={pending} />}
+        {pending != null && (
+          <ChatMessage role="user" content={pending} attachments={pendingAttachments} />
+        )}
         {isSending && <AssistantThinking />}
       </div>
     </div>

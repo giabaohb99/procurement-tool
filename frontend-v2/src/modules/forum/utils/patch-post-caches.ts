@@ -7,7 +7,7 @@ import type { ForumFeedPage, ForumPost } from '../types/forum-post'
 
 /**
  * Vá MỘT bản PostOut mới vào mọi cache đang giữ bài đó (bài lẻ, feed, tủ cá
- * nhân, dải ghim) — cùng khuôn với like (`use-toggle-post-like`). Chỉ
+ * nhân, dải ghim) — cùng khuôn với cảm xúc (`use-toggle-post-reaction`). Chỉ
  * invalidate `post` thì thẻ trên feed và popup (đọc từ cache feed) vẫn hiện
  * dữ liệu cũ tới khi F5.
  */

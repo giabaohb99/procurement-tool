@@ -10,7 +10,8 @@ from sqlalchemy.exc import IntegrityError
 from app.core.file_registry import FILE_POLICY, _IMG, ext_of
 from app.modules.forum.model import (ForumAudience, ForumModerationAction,
                                      ForumModerationLog, ForumPost,
-                                     ForumPostStatus, ForumReaction)
+                                     ForumPostStatus, ForumReaction,
+                                     ForumReactionKind)
 
 
 # ── 1. Enum trạng thái — chốt cứng giá trị vì chúng nằm xuống DB ────────────────
@@ -30,6 +31,15 @@ def test_enum_trang_thai_chot_cung_gia_tri():
     assert ForumModerationAction.HIDE == 1
     assert ForumModerationAction.REMOVE == 2
     assert ForumModerationAction.RESTORE == 3
+
+    # CR-206: LIKE phải giữ = 1 — dữ liệu like đợt 1 tự thành cảm xúc "Thích".
+    assert ForumReactionKind.LIKE == 1
+    assert ForumReactionKind.LOVE == 2
+    assert ForumReactionKind.HAHA == 3
+    assert ForumReactionKind.WOW == 4
+    assert ForumReactionKind.SAD == 5
+    assert ForumReactionKind.ANGRY == 6
+    assert ForumReaction.KIND_LIKE == 1
 
 
 def test_bai_moi_mac_dinh_da_dang_va_public(db):

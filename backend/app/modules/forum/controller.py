@@ -59,6 +59,11 @@ def _out(p: ForumPost, authors: dict, user_id: int, likes: dict,
         "can_moderate": moderator,               # F5: FE mở menu ẩn/xóa/khôi phục
         "like_count": lk.get("count", 0),
         "liked": lk.get("liked", False),
+        # CR-206: cảm xúc kiểu Facebook — {kind: n} chỉ chứa kind có người bấm;
+        # `my_reaction` = 0 khi người xem chưa bấm. JSON hóa key số thành chuỗi,
+        # FE đọc qua Record<number, number> vẫn khớp.
+        "my_reaction": lk.get("my_reaction", 0),
+        "reactions": lk.get("reactions", {}),
         "comment_count": comments.get(p.id, 0),
         "images": images.get(p.id, []),
         # Nhãn lý do trên thẻ bài ẩn (F5) — chỉ tác giả/admin còn thấy bài này
@@ -160,19 +165,23 @@ def delete_post(pid: int, db: Session = Depends(get_db), user=Depends(get_curren
 
 
 @router.post("/posts/{pid}/like")
-def toggle_like(pid: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
-    """Bấm thích / bỏ thích — không sinh chuông (D-Q6, cùng lý do CR-030)."""
+def toggle_like(pid: int, data: schema.ReactionIn | None = None,
+                db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Bấm cảm xúc (CR-206) — không sinh chuông (D-Q6, cùng lý do CR-030).
+    Body `{kind}` tùy chọn; thiếu hoặc `{}` = LIKE, giữ tương thích client cũ."""
     service.get_visible_post(db, user, pid)
-    return success(service.toggle_like(db, pid, user.id))
+    kind = data.kind if data else int(schema.ForumReactionKind.LIKE)
+    return success(service.toggle_like(db, pid, user.id, kind))
 
 
 @router.get("/posts/{pid}/likes")
 def list_likes(pid: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
-    """Ai đã thích bài này — hiện khi bấm vào con số."""
+    """Ai đã bày tỏ cảm xúc với bài — hiện khi bấm vào con số, kèm `kind` để FE lọc."""
     service.get_visible_post(db, user, pid)
-    uids = service.reaction_user_ids(db, pid)
-    names = _authors(db, uids)
-    return success([{"user_id": u, "name": (names.get(u) or {}).get("name", "")} for u in uids])
+    rows = service.reaction_users(db, pid)
+    names = _authors(db, [u for u, _ in rows])
+    return success([{"user_id": u, "name": (names.get(u) or {}).get("name", ""), "kind": k}
+                    for u, k in rows])
 
 
 # ── Kiểm duyệt (F5, QĐ-D1) — chỉ vai trò có grant `forum_post` đi được ─────────

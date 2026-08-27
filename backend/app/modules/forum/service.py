@@ -23,7 +23,8 @@ from sqlalchemy.orm import Session
 from app.core.auth import get_perm_profile, user_has_permission
 
 from .model import (ForumAudience, ForumModerationAction, ForumModerationLog,
-                    ForumPost, ForumPostKind, ForumPostStatus, ForumReaction)
+                    ForumPost, ForumPostKind, ForumPostStatus, ForumReaction,
+                    ForumReactionKind)
 
 MAX_BODY = 10_000   # chữ thuần, không rich text (mục 3 của `01`)
 PAGE_SIZE = 20
@@ -163,16 +164,28 @@ def set_post_pinned(db: Session, user, post: ForumPost, pinned: bool) -> ForumPo
 # ── Số đếm và dữ liệu kèm bài — mỗi loại đúng 1 query cho cả trang ─────────────
 
 def like_map(db: Session, post_ids: list[int], user_id: int) -> dict[int, dict]:
-    """{post_id: {"count": n, "liked": bool}} — khuôn `comment.like_map`."""
+    """{post_id: {"count", "liked", "my_reaction", "reactions"}} — khuôn `comment.like_map`.
+
+    CR-206: đếm thêm theo TỪNG cảm xúc (`reactions` = {kind: n}, chỉ chứa kind
+    có người bấm) và cảm xúc của chính người xem (`my_reaction`, 0 = chưa bấm).
+    Giữ `count`/`liked` tổng để chỗ nào chỉ cần "có ai thích không" khỏi tự cộng.
+    """
     ids = [i for i in post_ids if i]
     if not ids:
         return {}
-    counts = dict(db.query(ForumReaction.post_id, func.count(ForumReaction.id))
-                  .filter(ForumReaction.post_id.in_(ids))
-                  .group_by(ForumReaction.post_id).all())
-    mine = {pid for (pid,) in db.query(ForumReaction.post_id)
+    rows = (db.query(ForumReaction.post_id, ForumReaction.kind, func.count(ForumReaction.id))
+            .filter(ForumReaction.post_id.in_(ids))
+            .group_by(ForumReaction.post_id, ForumReaction.kind).all())
+    reactions: dict[int, dict[int, int]] = {}
+    for pid, kind, n in rows:
+        reactions.setdefault(pid, {})[int(kind)] = n
+    mine = {pid: int(kind) for pid, kind in
+            db.query(ForumReaction.post_id, ForumReaction.kind)
             .filter(ForumReaction.post_id.in_(ids), ForumReaction.user_id == user_id).all()}
-    return {pid: {"count": counts.get(pid, 0), "liked": pid in mine} for pid in ids}
+    return {pid: {"count": sum(reactions.get(pid, {}).values()),
+                  "liked": pid in mine,
+                  "my_reaction": mine.get(pid, 0),
+                  "reactions": reactions.get(pid, {})} for pid in ids}
 
 
 def comment_count_map(db: Session, post_ids: list[int]) -> dict[int, int]:
@@ -305,25 +318,46 @@ def delete_post(db: Session, post: ForumPost) -> None:
     db.commit()
 
 
-def toggle_like(db: Session, post_id: int, user_id: int) -> dict:
-    """Bấm thích / bỏ thích. Không sinh chuông (D-Q6). Trả {"liked", "count"}."""
+def toggle_like(db: Session, post_id: int, user_id: int,
+                kind: int = int(ForumReactionKind.LIKE)) -> dict:
+    """Bấm cảm xúc kiểu Facebook (CR-206). Không sinh chuông (D-Q6).
+
+    Ba đường: chưa có -> thêm dòng; CÙNG cảm xúc -> bỏ (như bỏ like cũ);
+    KHÁC cảm xúc -> UPDATE `kind` trên chính dòng đó (unique bài+người).
+    Trả trạng thái chung cuộc để FE vá cache: {"liked", "count", "my_reaction",
+    "reactions"} — cùng hình dạng với `like_map` của một bài.
+    """
+    try:
+        kind = int(ForumReactionKind(int(kind)))
+    except ValueError:
+        raise HTTPException(400, f"Cảm xúc không hợp lệ: {kind}")
     row = (db.query(ForumReaction)
            .filter(ForumReaction.post_id == post_id, ForumReaction.user_id == user_id)
            .first())
-    if row:
+    if row and int(row.kind) == kind:
         db.delete(row)
-        liked = False
+        my_reaction = 0
+    elif row:
+        row.kind = kind
+        row.updated_by = user_id
+        my_reaction = kind
     else:
-        db.add(ForumReaction(post_id=post_id, user_id=user_id,
+        db.add(ForumReaction(post_id=post_id, user_id=user_id, kind=kind,
                              created_by=user_id, updated_by=user_id))
-        liked = True
+        my_reaction = kind
     db.commit()
-    count = db.query(ForumReaction).filter(ForumReaction.post_id == post_id).count()
-    return {"liked": liked, "count": count}
+    rows = (db.query(ForumReaction.kind, func.count(ForumReaction.id))
+            .filter(ForumReaction.post_id == post_id)
+            .group_by(ForumReaction.kind).all())
+    reactions = {int(k): n for k, n in rows}
+    return {"liked": my_reaction != 0, "count": sum(reactions.values()),
+            "my_reaction": my_reaction, "reactions": reactions}
 
 
-def reaction_user_ids(db: Session, post_id: int) -> list[int]:
-    return [uid for (uid,) in db.query(ForumReaction.user_id)
+def reaction_users(db: Session, post_id: int) -> list[tuple[int, int]]:
+    """[(user_id, kind)] theo thứ tự bấm — hộp "ai đã bày tỏ cảm xúc" lọc theo kind ở FE."""
+    return [(uid, int(kind)) for uid, kind in
+            db.query(ForumReaction.user_id, ForumReaction.kind)
             .filter(ForumReaction.post_id == post_id)
             .order_by(ForumReaction.id.asc()).all()]
 

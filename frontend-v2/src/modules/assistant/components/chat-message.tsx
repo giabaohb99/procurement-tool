@@ -1,7 +1,9 @@
-import { Check, Copy } from 'lucide-react'
+import { Check, Copy, FileText, Image as ImageIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { cn } from '@/shared/utils/cn'
+import type { AssistantAttachment } from '../types/assistant'
+import { openChatAttachment } from '../utils/open-chat-attachment'
 import { useTypewriter } from '../hooks/use-typewriter'
 import { AssistantAvatar } from './assistant-avatar'
 import { MarkdownMessage } from './markdown-message'
@@ -9,6 +11,8 @@ import { MarkdownMessage } from './markdown-message'
 interface ChatMessageProps {
   role: 'user' | 'assistant'
   content: string
+  /** Tệp người dùng gửi kèm lượt hỏi (CR-204) — vẽ chip trong bong bóng. */
+  attachments?: AssistantAttachment[]
   /** Chạy hiệu ứng gõ máy. Chỉ bật cho câu trả lời VỪA nhận, không cho tin cũ. */
   typing?: boolean
 }
@@ -29,11 +33,36 @@ interface ChatMessageProps {
  * Nút chép chỉ hiện khi rê chuột vào câu trả lời — số liệu tra xong hay được
  * dán sang chỗ khác, mà bôi đen tay thì dễ hụt đầu/cuối đoạn.
  */
-export function ChatMessage({ role, content, typing = false }: ChatMessageProps) {
+export function ChatMessage({ role, content, attachments, typing = false }: ChatMessageProps) {
   if (role === 'user') {
     return (
       <div className="flex justify-end">
         <div className="max-w-[85%] rounded-2xl rounded-br-md bg-accent px-4 py-2.5 text-sm whitespace-pre-wrap text-accent-foreground">
+          {attachments && attachments.length > 0 && (
+            <div className={cn('flex flex-wrap gap-1.5', content && 'mb-1.5')}>
+              {attachments.map((a) => (
+                //  Chip bấm được: mở xem lại tệp trong tab mới. `id` luôn là id
+                //  thật trên server — metadata chỉ tồn tại sau khi upload xong.
+                <button
+                  key={a.id}
+                  type="button"
+                  onClick={() => void openChatAttachment(a.id)}
+                  title={`Mở tệp ${a.filename}`}
+                  className={cn(
+                    'inline-flex max-w-52 items-center gap-1.5 rounded-lg bg-background/60 px-2 py-1 text-xs',
+                    'hover:bg-background hover:underline',
+                  )}
+                >
+                  {a.content_type === 'application/pdf' ? (
+                    <FileText className="size-3.5 shrink-0" />
+                  ) : (
+                    <ImageIcon className="size-3.5 shrink-0" />
+                  )}
+                  <span className="truncate">{a.filename}</span>
+                </button>
+              ))}
+            </div>
+          )}
           {content}
         </div>
       </div>

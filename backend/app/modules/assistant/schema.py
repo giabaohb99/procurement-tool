@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, model_validator
 
 
 class HistoryItem(BaseModel):
@@ -7,7 +7,9 @@ class HistoryItem(BaseModel):
 
 
 class AskIn(BaseModel):
-    message: str = Field(min_length=1)
+    # Được rỗng KHI có tệp đính kèm ("gửi mỗi cái ảnh") — validator dưới cùng giữ luật
+    # "phải có chữ hoặc tệp".
+    message: str = ""
     # None = nhà mặc định (config). 'claude' | 'gemini'.
     provider: str | None = None
     # None = model mặc định của nhà đó.
@@ -20,3 +22,12 @@ class AskIn(BaseModel):
     # `history` bị bỏ qua — lịch sử lấy thẳng từ DB (nguồn chân lý).
     conversation_id: int | None = None
     history: list[HistoryItem] | None = None
+    # Id tệp đã tải qua POST /api/assistant/uploads (CR-204) — gắn vào lượt hỏi này.
+    # Quyền sở hữu kiểm ở conversation.chat, không tin id client gửi.
+    attachment_ids: list[int] | None = None
+
+    @model_validator(mode="after")
+    def _require_text_or_attachment(self):
+        if not self.message.strip() and not self.attachment_ids:
+            raise ValueError("Cần nhập câu hỏi hoặc đính kèm tệp")
+        return self

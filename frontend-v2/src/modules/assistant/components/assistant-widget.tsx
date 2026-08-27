@@ -25,6 +25,7 @@ import {
   type DraftOffer,
   type FileOffer,
 } from '../utils/reply-offers'
+import type { AssistantAttachment } from '../types/assistant'
 import { ReplyOffers } from './reply-offers'
 
 /**
@@ -46,6 +47,8 @@ export function AssistantWidget() {
   //  tôn trọng lựa chọn của người dùng, kể cả "Trò chuyện mới" (id = 0).
   const [autoPicked, setAutoPicked] = useState(false)
   const [pending, setPending] = useState<string | null>(null)
+  //  Tệp gửi kèm câu đang chờ — chỉ để vẽ chip trên bong bóng chờ (CR-204).
+  const [pendingFiles, setPendingFiles] = useState<AssistantAttachment[]>([])
   //  Mốc id chốt lúc bấm gửi — tin trợ lý mới hơn mốc này được chạy hiệu ứng gõ
   //  máy (xem chú thích `typingAfterId` trong `message-thread.tsx`).
   const [typingAfterId, setTypingAfterId] = useState<number | null>(null)
@@ -86,13 +89,15 @@ export function AssistantWidget() {
     setConversationId(0)
     setAutoPicked(true) //  người dùng chủ động mở trang trắng — đừng tự nạp lại cái cũ
     setPending(null)
+    setPendingFiles([])
     setTypingAfterId(null) //  hội thoại mới thì thôi gõ dở câu của hội thoại trước
     setDraftOffer(null)
     setFileOffer(null)
   }
 
-  const handleSend = async (message: string) => {
+  const handleSend = async (message: string, attachments?: AssistantAttachment[]) => {
     setPending(message)
+    setPendingFiles(attachments ?? [])
     //  Chốt mốc gõ máy TRƯỚC khi gửi — tin nào server trả thêm về (id lớn hơn)
     //  là câu vừa nhận. Đặt sau khi nhận thì thua race với render từ cache,
     //  câu trả lời hiện full rồi gõ lại từ đầu — xem `message-thread.tsx`.
@@ -103,6 +108,7 @@ export function AssistantWidget() {
         message,
         provider: selectedProvider || undefined,
         conversation_id: conversationId > 0 ? conversationId : undefined,
+        attachment_ids: attachments?.length ? attachments.map((a) => a.id) : undefined,
       })
       // Nạp xong chi tiết hội thoại trước khi bỏ tin chờ, để câu vừa gửi không
       // nháy mất một nhịp (giống trang đầy đủ).
@@ -120,6 +126,7 @@ export function AssistantWidget() {
       // Lỗi mạng/backend đã tự hiện toast ở tầng API; chỉ cần gỡ tin chờ.
     } finally {
       setPending(null)
+      setPendingFiles([])
     }
   }
 
@@ -186,7 +193,7 @@ export function AssistantWidget() {
                 <div className="flex flex-1 items-center justify-center text-muted-foreground">
                   <Loader2 className="size-5 animate-spin" />
                 </div>
-              ) : messages.length === 0 && !pending ? (
+              ) : messages.length === 0 && pending === null ? (
                 <ChatEmptyState
                   onPick={isSending ? undefined : (question) => void handleSend(question)}
                 />
@@ -194,6 +201,7 @@ export function AssistantWidget() {
                 <MessageThread
                   messages={messages}
                   pending={pending}
+                  pendingAttachments={pendingFiles}
                   isSending={isSending}
                   typingAfterId={typingAfterId}
                 />

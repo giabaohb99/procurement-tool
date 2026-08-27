@@ -23,6 +23,25 @@ API_VERSION = "2023-06-01"
 TIMEOUT = 60
 
 
+def _wire_content(content):
+    """Đổi content trung lập (chuỗi hoặc list block — xem ChatMessage) sang block Messages API.
+
+    Block file: PDF -> `document`, còn lại coi là ảnh -> `image`; cả hai đều source base64.
+    """
+    if isinstance(content, str):
+        return content
+    out = []
+    for b in content:
+        if b.get("type") == "file":
+            media = b.get("media_type", "")
+            source = {"type": "base64", "media_type": media, "data": b.get("data_b64", "")}
+            kind = "document" if media == "application/pdf" else "image"
+            out.append({"type": kind, "source": source})
+        else:
+            out.append({"type": "text", "text": b.get("text", "")})
+    return out
+
+
 class ClaudeProvider(Provider):
     name = "claude"
     default_model = settings.AI_CLAUDE_MODEL or "claude-sonnet-5"
@@ -51,7 +70,7 @@ class ClaudeProvider(Provider):
             "max_tokens": max_tokens,
             "temperature": temperature,
             # Anthropic chỉ nhận role user/assistant; system truyền riêng.
-            "messages": [{"role": m.role, "content": m.content} for m in messages],
+            "messages": [{"role": m.role, "content": _wire_content(m.content)} for m in messages],
         }
         if system:
             if cache_system:
@@ -140,7 +159,7 @@ class ClaudeProvider(Provider):
         if not self.is_configured():
             raise ProviderError("Chưa cấu hình ANTHROPIC_API_KEY")
         used_model = model or self.default_model
-        msgs: list[dict] = [{"role": m.role, "content": m.content} for m in messages]
+        msgs: list[dict] = [{"role": m.role, "content": _wire_content(m.content)} for m in messages]
         tool_decl = [
             {"name": t.name, "description": t.description, "input_schema": t.parameters}
             for t in tools

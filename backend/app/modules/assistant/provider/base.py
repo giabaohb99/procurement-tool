@@ -10,10 +10,18 @@ class ProviderError(Exception):
 
 @dataclass
 class ChatMessage:
-    """Một lượt hội thoại. role: 'user' | 'assistant'. 'system' truyền riêng qua tham số."""
+    """Một lượt hội thoại. role: 'user' | 'assistant'. 'system' truyền riêng qua tham số.
+
+    `content` là CHUỖI (chỉ chữ) hoặc DANH SÁCH BLOCK trung lập khi lượt có tệp đính kèm
+    (CR-204). Hai loại block:
+      {"type": "text", "text": str}
+      {"type": "file", "media_type": str, "data_b64": str, "filename": str}
+    Provider tự dịch sang định dạng nhà mình (Claude: image/document base64; Gemini:
+    inline_data) — tầng trên KHÔNG viết block theo định dạng riêng của nhà nào.
+    """
 
     role: str
-    content: str
+    content: str | list[dict]
 
 
 @dataclass

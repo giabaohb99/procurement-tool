@@ -1,4 +1,14 @@
-import { Building2, Globe, Users } from 'lucide-react'
+import {
+  Angry,
+  Building2,
+  Frown,
+  Globe,
+  Heart,
+  Laugh,
+  Star,
+  ThumbsUp,
+  Users,
+} from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 /** Đối tượng xem của bài viết — khớp IntEnum `ForumAudience` phía backend. */
@@ -15,6 +25,27 @@ export const FORUM_AUDIENCE_META: Record<
   1: { label: 'Phòng ban', icon: Users },
   2: { label: 'Công ty', icon: Building2 },
   3: { label: 'Toàn tập đoàn', icon: Globe },
+}
+
+/** Dải cảm xúc (CR-206) — khớp IntEnum `ForumReactionKind` phía backend. */
+export type ForumReactionKind = 1 | 2 | 3 | 4 | 5 | 6
+
+/** Thứ tự vẽ trong khay chọn cảm xúc — cùng thứ tự Facebook. */
+export const FORUM_REACTION_KINDS: ForumReactionKind[] = [1, 2, 3, 4, 5, 6]
+
+// why: icon phải là lucide (luật icons.md cấm emoji trong UI). Lucide không có
+// mặt "ngạc nhiên" nên WOW dùng ngôi sao với nhãn "Tuyệt vời" — chốt cùng
+// backend trong docstring `ForumReactionKind`.
+export const FORUM_REACTION_META: Record<
+  ForumReactionKind,
+  { label: string; icon: LucideIcon; className: string; fill: boolean }
+> = {
+  1: { label: 'Thích', icon: ThumbsUp, className: 'text-primary', fill: true },
+  2: { label: 'Yêu thích', icon: Heart, className: 'text-red-500', fill: true },
+  3: { label: 'Haha', icon: Laugh, className: 'text-amber-500', fill: false },
+  4: { label: 'Tuyệt vời', icon: Star, className: 'text-amber-500', fill: true },
+  5: { label: 'Buồn', icon: Frown, className: 'text-sky-500', fill: false },
+  6: { label: 'Phẫn nộ', icon: Angry, className: 'text-orange-600', fill: false },
 }
 
 /**
@@ -76,6 +107,11 @@ export interface ForumPost {
   hidden_reason: string
   like_count: number
   liked: boolean
+  /** Cảm xúc của CHÍNH người xem (CR-206) — 0 = chưa bấm. */
+  my_reaction: number
+  /** Số lượt theo từng cảm xúc — key là `ForumReactionKind` (JSON hóa thành chuỗi),
+   * chỉ chứa kind có người bấm. */
+  reactions: Record<number, number>
   comment_count: number
   images: ForumImage[]
 }
@@ -87,10 +123,12 @@ export interface ForumFeedPage {
   has_more: boolean
 }
 
-/** Một người đã thích bài — kết quả `GET /api/forum/posts/{id}/likes`. */
+/** Một người đã bày tỏ cảm xúc — kết quả `GET /api/forum/posts/{id}/likes`. */
 export interface ForumPostLiker {
   user_id: number
   name: string
+  /** Cảm xúc người này bấm (CR-206) — giá trị của `ForumReactionKind`. */
+  kind: number
 }
 
 /** Một ảnh vừa tải lên, chờ gắn vào bài (kết quả `/api/attachments/upload-file`). */

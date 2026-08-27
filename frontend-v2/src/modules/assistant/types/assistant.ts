@@ -38,12 +38,22 @@ export interface ConversationSummary {
   created_at: string | null
 }
 
+/** Tệp đính kèm chat (CR-204) — kết quả `POST /uploads`, cũng là chip trên tin đã lưu. */
+export interface AssistantAttachment {
+  id: number
+  filename: string
+  content_type: string
+  size: number
+}
+
 /** Một tin trong hội thoại (câu hỏi hoặc câu trả lời). */
 export interface AssistantMessage {
   id: number
   role: number
   role_name: MessageRoleName
   content: string
+  /** Tệp người dùng gửi kèm lượt hỏi — chỉ tin của user có, trợ lý luôn rỗng. */
+  attachments: AssistantAttachment[]
   provider: string | null
   model: string | null
   usage: AssistantUsage
@@ -62,6 +72,8 @@ export interface ChatRequest {
   /** lookup (loại A) | advice (loại B) | general. */
   kind?: 'lookup' | 'advice' | 'general'
   conversation_id?: number
+  /** Id tệp đã tải qua `POST /uploads` gắn vào lượt hỏi này (tối đa 3). */
+  attachment_ids?: number[]
 }
 
 /** Một lần trợ lý gọi công cụ trong lượt trả lời (backend chỉ trả tên + tham số). */

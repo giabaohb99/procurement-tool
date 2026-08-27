@@ -6,7 +6,7 @@ Chiều RA trả dict dựng ở controller — đúng khuôn module comment: ph
 """
 from pydantic import BaseModel, Field
 
-from .model import ForumAudience, ForumPostKind
+from .model import ForumAudience, ForumPostKind, ForumReactionKind
 
 
 class PostIn(BaseModel):
@@ -20,6 +20,13 @@ class PostIn(BaseModel):
     audience: int = int(ForumAudience.PUBLIC)
     file_ids: list[int] = Field(default_factory=list)
     kind: int = int(ForumPostKind.NORMAL)
+
+
+class ReactionIn(BaseModel):
+    """Bấm cảm xúc (CR-206) — `kind` theo `ForumReactionKind`; client cũ gửi
+    `{}` thì rơi về LIKE nên không gãy."""
+
+    kind: int = int(ForumReactionKind.LIKE)
 
 
 class ModerationIn(BaseModel):

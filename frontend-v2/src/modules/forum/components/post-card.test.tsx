@@ -36,6 +36,8 @@ function makePost(overrides: Partial<ForumPost> = {}): ForumPost {
     hidden_reason: '',
     like_count: 0,
     liked: false,
+    my_reaction: 0,
+    reactions: {},
     comment_count: 0,
     images: [],
     ...overrides,
@@ -165,26 +167,76 @@ describe('PostCard — popup chi tiết (kiểu Facebook)', () => {
   })
 })
 
-describe('PostCard — thích bài (F4)', () => {
-  it('bấm Thích gọi đúng API like của bài', async () => {
-    vi.mocked(apiPost).mockResolvedValue({ liked: true, count: 1 })
+describe('PostCard — cảm xúc kiểu Facebook (CR-206)', () => {
+  it('bấm nhanh nút Thích gọi API với kind=1', async () => {
+    vi.mocked(apiPost).mockResolvedValue({
+      liked: true,
+      count: 1,
+      my_reaction: 1,
+      reactions: { 1: 1 },
+    })
     renderCard(makePost())
 
     await userEvent.click(screen.getByRole('button', { name: 'Thích' }))
 
     await waitFor(() =>
-      expect(apiPost).toHaveBeenCalledWith('/api/forum/posts/1/like', {}),
+      expect(apiPost).toHaveBeenCalledWith('/api/forum/posts/1/like', { kind: 1 }),
     )
   })
 
-  it('bấm số lượt thích mở hộp "Người đã thích" và nạp danh sách', async () => {
-    vi.mocked(apiGet).mockResolvedValue([{ user_id: 2, name: 'Người Thích Một' }])
-    renderCard(makePost({ like_count: 3 }))
+  it('đang có cảm xúc thì nút mang nhãn cảm xúc đó, bấm là bỏ đúng kind đang có', async () => {
+    vi.mocked(apiPost).mockResolvedValue({
+      liked: false,
+      count: 0,
+      my_reaction: 0,
+      reactions: {},
+    })
+    renderCard(makePost({ my_reaction: 2, liked: true, like_count: 1, reactions: { 2: 1 } }))
 
-    await userEvent.click(screen.getByRole('button', { name: '3' }))
+    // Nhãn nút đổi theo cảm xúc của mình — không còn chữ "Thích" chết cứng.
+    await userEvent.click(screen.getByRole('button', { name: 'Yêu thích' }))
 
-    expect(await screen.findByText('Người đã thích')).toBeInTheDocument()
+    await waitFor(() =>
+      expect(apiPost).toHaveBeenCalledWith('/api/forum/posts/1/like', { kind: 2 }),
+    )
+  })
+
+  it('rê chuột lên nút mở khay 6 cảm xúc, chọn Haha gửi kind=3', async () => {
+    vi.mocked(apiPost).mockResolvedValue({
+      liked: true,
+      count: 1,
+      my_reaction: 3,
+      reactions: { 3: 1 },
+    })
+    renderCard(makePost())
+
+    await userEvent.hover(screen.getByRole('button', { name: 'Thích' }))
+    // Khay mở sau 350ms rê chuột — chờ thật thay vì fake timer cho khỏi lệch userEvent.
+    const picker = await screen.findByRole('menu', { name: 'Chọn cảm xúc' })
+    expect(picker).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Haha' }))
+    await waitFor(() =>
+      expect(apiPost).toHaveBeenCalledWith('/api/forum/posts/1/like', { kind: 3 }),
+    )
+  })
+
+  it('bấm số lượt mở hộp cảm xúc, có chip lọc theo từng loại khi đủ 2 loại', async () => {
+    vi.mocked(apiGet).mockResolvedValue([
+      { user_id: 2, name: 'Người Thích Một', kind: 1 },
+      { user_id: 3, name: 'Người Yêu Thích', kind: 2 },
+    ])
+    renderCard(makePost({ like_count: 2, reactions: { 1: 1, 2: 1 } }))
+
+    await userEvent.click(screen.getByRole('button', { name: '2' }))
+
+    expect(await screen.findByText('Cảm xúc về bài viết')).toBeInTheDocument()
     expect(await screen.findByText('Người Thích Một')).toBeInTheDocument()
     expect(apiGet).toHaveBeenCalledWith('/api/forum/posts/1/likes')
+
+    // Lọc theo chip "Yêu thích" thì người bấm Thích biến khỏi danh sách.
+    await userEvent.click(screen.getByRole('button', { name: 'Yêu thích' }))
+    expect(screen.getByText('Người Yêu Thích')).toBeInTheDocument()
+    expect(screen.queryByText('Người Thích Một')).not.toBeInTheDocument()
   })
 })
