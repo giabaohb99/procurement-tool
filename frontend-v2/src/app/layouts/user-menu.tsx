@@ -5,6 +5,7 @@ import {
   Headphones,
   LoaderCircle,
   LogOut,
+  Palette,
   Phone,
   User,
 } from 'lucide-react'
@@ -165,6 +166,17 @@ export function UserMenu() {
           <DropdownMenuSeparator className="m-0" />
 
           <div className="p-2">
+            {/*  Công tắc Sáng·Tối ở trên chỉ là một nửa của thiết lập giao diện;
+                 nửa còn lại (bảng màu) phải nằm ở màn riêng vì lưới thẻ màu
+                 không nhét vừa popover. Để mục này ngay dưới công tắc cho người
+                 dùng nối được hai thứ với nhau. */}
+            <DropdownMenuItem
+              className="min-h-10 gap-3 px-2.5 font-medium text-navy dark:text-foreground"
+              onSelect={() => navigate(appRoutes.appearance.root)}
+            >
+              <Palette className="size-4.5 text-navy dark:text-foreground" />
+              Tuỳ chỉnh giao diện
+            </DropdownMenuItem>
             <DropdownMenuItem
               className="min-h-10 gap-3 px-2.5 font-medium text-navy dark:text-foreground"
               onSelect={() => setTicketDialogOpen(true)}
