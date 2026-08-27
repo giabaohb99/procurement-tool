@@ -41,9 +41,25 @@ export function findColumnColor(id?: string): ColumnColor | undefined {
 /**
  * Nền của ô thuộc cột đã tô màu.
  *
- * Pha bằng `color-mix` với nền nguyên bản để ra màu ĐỤC: ô của cột ghim đè lên
- * phần bảng đang cuộn ngang phía dưới, dùng màu có alpha là lộ nội dung xuyên
- * qua. Pha với biến nền nên tự đúng cả ở giao diện tối.
+ * Tô bằng một LỚP PHỦ mờ (`background-image` một màu phẳng) chồng lên nền sẵn
+ * có của ô, KHÔNG ghi đè `background-color`.
+ *
+ * ⚠️ Trước đây hàm này trả `backgroundColor: color-mix(màu, var(--muted))` cho ô
+ * tiêu đề và `color-mix(màu, var(--card))` cho ô thân — tức tự đoán lấy nền phía
+ * dưới. Đoán sai ở cả hai chỗ:
+ * - Hàng tiêu đề nay chạy trên `--row-head`, không phải `--muted` (DEGO: #e6ebf2
+ *   so với #f6f8fb). Cột được tô nằm trên một nền trắng hơn hẳn các cột bên
+ *   cạnh, nên nhìn ra thành "hàng tiêu đề có hai màu" chứ không ra "cột này
+ *   được đánh dấu" (lỗi thấy được 27/08/2026).
+ * - Ô thân luôn pha vào `--card`, nên cột được tô phớt lờ vằn hàng chẵn lẻ, nền
+ *   hàng đang rê chuột và hàng đang chọn.
+ *
+ * Lớp phủ thì không phải đoán gì cả: nền thật của ô nằm dưới, sắc màu đánh dấu
+ * nằm trên, nên cột tô màu vẫn ăn theo vằn hàng và hover.
+ *
+ * Ô vẫn ĐỤC như cũ — điều kiện bắt buộc vì ô của cột ghim đè lên phần bảng đang
+ * cuộn ngang phía dưới. Độ đục do `background-color` của chính ô lo (`bg-row-head`
+ * ở tiêu đề, `bg-inherit` ở ô ghim); lớp phủ này chỉ nhuộm thêm màu lên trên.
  */
 export function columnColorStyle(
   colorId: string | undefined,
@@ -52,6 +68,11 @@ export function columnColorStyle(
   const color = findColumnColor(colorId)
   if (!color) return undefined
 
-  const [ratio, base] = part === 'head' ? ['20%', 'var(--muted)'] : ['10%', 'var(--card)']
-  return { backgroundColor: `color-mix(in oklab, ${color.value} ${ratio}, ${base})` }
+  //  Tiêu đề đậm hơn thân bảng: nó là chỗ người dùng dò để tìm cột, còn thân
+  //  bảng chỉ cần một sắc phớt đủ dẫn mắt xuống mà không lấn chữ.
+  const alpha = part === 'head' ? '20%' : '10%'
+  const overlay = `color-mix(in oklab, ${color.value} ${alpha}, transparent)`
+  //  `linear-gradient` một màu phẳng là cách duy nhất đặt được MỘT lớp màu qua
+  //  `background-image` — CSS không có thuộc tính "lớp phủ" riêng.
+  return { backgroundImage: `linear-gradient(${overlay}, ${overlay})` }
 }
