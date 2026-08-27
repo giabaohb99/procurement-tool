@@ -51,6 +51,19 @@ export type ThemeColorKey =
   //  còn lại của giao diện (quyết ngày 27/08/2026).
   | 'sidebar-active'
   | 'sidebar-active-foreground'
+  //  SÁU tham số ĐỔ BÓNG, lấy nguyên từ tweakcn (họ cũng khai đúng sáu khoá
+  //  này). Không phải màu, mà là nguyên liệu để `build-theme-css.ts` dựng cả
+  //  thang `--shadow-2xs … --shadow-2xl` theo đúng công thức của họ.
+  //
+  //  Bảng màu nào để trống thì rơi về thang mặc định — đúng bằng `shadow-*` gốc
+  //  của Tailwind, tức không đổi gì so với trước.
+  | 'shadow-color'
+  /** Số 0–1 dạng chuỗi. `0` nghĩa là bảng màu đó CỐ Ý không có bóng. */
+  | 'shadow-opacity'
+  | 'shadow-blur'
+  | 'shadow-spread'
+  | 'shadow-offset-x'
+  | 'shadow-offset-y'
   | 'row-head'
   | 'row-head-foreground'
   | 'row-stripe'

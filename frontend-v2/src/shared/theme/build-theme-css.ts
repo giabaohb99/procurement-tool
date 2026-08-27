@@ -167,6 +167,77 @@ const CHART_MIN_CONTRAST = 2
 const SIDEBAR_ACTIVE_MIN_CONTRAST = 3
 
 /**
+ * Thang ĐỔ BÓNG mặc định — đúng bằng `shadow-*` gốc của Tailwind (đen 10%,
+ * lệch xuống 1px, nhoè 3px). Bảng màu DEGO và 8 bảng màu tweakcn không khai
+ * tham số bóng đều rơi về đây, nên chúng không đổi một pixel nào.
+ */
+const DEFAULT_SHADOW = {
+  'shadow-color': '#000000',
+  'shadow-opacity': '0.1',
+  'shadow-blur': '3px',
+  'shadow-spread': '0px',
+  'shadow-offset-x': '0px',
+  'shadow-offset-y': '1px',
+} as const
+
+/**
+ * Dựng thang `--erp-shadow-*` từ sáu tham số đổ bóng của bảng màu.
+ *
+ * ## Vì sao phải tự dựng
+ * Trước đây ứng dụng không khai biến bóng nào: `shadow-sm` của thẻ và bảng luôn
+ * là đen 10% của Tailwind, bất kể bảng màu. tweakcn thì cho mỗi bảng màu một bộ
+ * bóng riêng và khoảng cách rất xa nhau — *Twitter* và *Mono* đặt `opacity: 0`
+ * (CỐ Ý không có bóng), *Doom 64* đặt `0.4`, *Bubblegum* đặt `1.0` kèm lệch
+ * `3px 3px` (bóng cứng, không nhoè). Đổ chung một kiểu lên tất cả thì bảng màu
+ * nào cũng thấy bóng nặng hơn bản gốc (phản hồi 27/08/2026).
+ *
+ * ## Công thức
+ * Chép đúng `getShadowMap` của tweakcn (`utils/shadows.ts`): lớp thứ nhất dùng
+ * nguyên bốn tham số hình học, lớp thứ hai dùng `offset-y` và `blur` CỐ ĐỊNH
+ * theo từng bậc, `spread` lùi 1px. Độ mờ nhân theo bậc: 0.5 cho hai bậc nhỏ
+ * nhất, 1.0 cho nhóm giữa, 2.5 cho `2xl`.
+ *
+ * ⚠️ Alpha viết bằng `color-mix(... , transparent)` chứ không phải `hsl(h s l / a)`
+ * như tweakcn: nhờ vậy `shadow-color` nhận MỌI cách viết màu (hex, hsl, rgb) mà
+ * không phải tự phân tích chuỗi trong TS. `opacity: 0` ra `color-mix(… 0%, …)`,
+ * tức trong suốt hoàn toàn — đúng ý "không có bóng".
+ */
+function buildShadowLines(colors: ThemeModeColors): string[] {
+  const get = (key: keyof typeof DEFAULT_SHADOW) => colors[key] ?? DEFAULT_SHADOW[key]
+
+  const color = get('shadow-color')
+  const opacity = Number.parseFloat(get('shadow-opacity')) || 0
+  const blur = get('shadow-blur')
+  const spread = get('shadow-spread')
+  const offsetX = get('shadow-offset-x')
+  const offsetY = get('shadow-offset-y')
+
+  /** Màu bóng ở một bậc độ mờ. */
+  const tint = (multiplier: number) =>
+    `color-mix(in srgb, ${color} ${(opacity * multiplier * 100).toFixed(2)}%, transparent)`
+
+  const layer1 = (multiplier: number) =>
+    `${offsetX} ${offsetY} ${blur} ${spread} ${tint(multiplier)}`
+
+  //  Lớp thứ hai: `spread` lùi 1px so với lớp đầu — đúng như tweakcn làm.
+  const spreadPx = Number.parseFloat(spread.replace('px', '')) || 0
+  const layer2 = (fixedOffsetY: string, fixedBlur: string) =>
+    `${offsetX} ${fixedOffsetY} ${fixedBlur} ${spreadPx - 1}px ${tint(1)}`
+
+  const scale: Record<string, string> = {
+    '2xs': layer1(0.5),
+    xs: layer1(0.5),
+    sm: `${layer1(1)}, ${layer2('1px', '2px')}`,
+    md: `${layer1(1)}, ${layer2('2px', '4px')}`,
+    lg: `${layer1(1)}, ${layer2('4px', '6px')}`,
+    xl: `${layer1(1)}, ${layer2('8px', '10px')}`,
+    '2xl': layer1(2.5),
+  }
+
+  return Object.entries(scale).map(([step, value]) => `  --erp-shadow-${step}: ${value};`)
+}
+
+/**
  * Hai biến của MỤC MENU ĐANG MỞ (`--sidebar-active` + `--sidebar-active-foreground`).
  *
  * Hai đường, cố ý khác nhau:
@@ -231,6 +302,7 @@ function buildVarLines(colors: ThemeModeColors, solidDark: string): string[] {
   }
 
   lines.push(...buildSidebarActiveLines(colors))
+  lines.push(...buildShadowLines(colors))
 
   for (const [key, formula] of Object.entries(DERIVED_TOKENS)) {
     const value = colors[key as keyof ThemeModeColors]

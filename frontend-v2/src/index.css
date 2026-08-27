@@ -126,6 +126,31 @@
      tức không bảng màu nào cho ra vệt nhìn thấy được. */
   --sidebar-active: #e6f7fd;
   --sidebar-active-foreground: #00aeef;
+
+  /* ĐỔ BÓNG — thang này ghim ĐÚNG `shadow-*` gốc của Tailwind (đen 10%, lệch
+     xuống 1px, nhoè 3px), nên bộ màu DEGO không đổi một pixel nào.
+
+     Bảng màu nhập từ tweakcn thì mỗi bảng một bộ bóng riêng, dựng ở
+     `shared/theme/build-theme-css.ts` theo đúng công thức của họ — khoảng cách
+     rất xa nhau: Twitter và Mono đặt độ mờ 0 (cố ý KHÔNG có bóng), Doom 64 đặt
+     0.4, Bubblegum đặt 1.0 kèm lệch 3px (bóng cứng). Trước 27/08/2026 ứng dụng
+     đổ chung một kiểu cho tất cả nên bảng màu nào cũng thấy bóng nặng hơn bản
+     gốc. */
+  --erp-shadow-2xs: 0px 1px 3px 0px color-mix(in srgb, #000000 5%, transparent);
+  --erp-shadow-xs: 0px 1px 3px 0px color-mix(in srgb, #000000 5%, transparent);
+  --erp-shadow-sm:
+    0px 1px 3px 0px color-mix(in srgb, #000000 10%, transparent),
+    0px 1px 2px -1px color-mix(in srgb, #000000 10%, transparent);
+  --erp-shadow-md:
+    0px 1px 3px 0px color-mix(in srgb, #000000 10%, transparent),
+    0px 2px 4px -1px color-mix(in srgb, #000000 10%, transparent);
+  --erp-shadow-lg:
+    0px 1px 3px 0px color-mix(in srgb, #000000 10%, transparent),
+    0px 4px 6px -1px color-mix(in srgb, #000000 10%, transparent);
+  --erp-shadow-xl:
+    0px 1px 3px 0px color-mix(in srgb, #000000 10%, transparent),
+    0px 8px 10px -1px color-mix(in srgb, #000000 10%, transparent);
+  --erp-shadow-2xl: 0px 1px 3px 0px color-mix(in srgb, #000000 25%, transparent);
 }
 
 .dark {
@@ -250,6 +275,24 @@
   --color-sidebar-accent: var(--sidebar-accent);
   --color-sidebar-active: var(--sidebar-active);
   --color-sidebar-active-foreground: var(--sidebar-active-foreground);
+
+  /*  Nối thang đổ bóng vào tiện ích `shadow-*` của Tailwind.
+
+      ⚠️ PHẢI nằm trong `@theme inline` và trỏ sang một biến TÊN KHÁC
+      (`--erp-shadow-*`). Tailwind v4 nướng giá trị của `--shadow-*` thẳng vào
+      lớp tiện ích lúc dựng, nên ghi đè `--shadow-sm` ở `:root` lúc chạy KHÔNG
+      có tác dụng gì — đã thử và đo, bóng không nhúc nhích. `inline` mới khiến
+      nó phát ra `var(...)` để bảng màu đổi được lúc chạy.
+
+      Đánh đổi: tiện ích `shadow-<màu>` của Tailwind (đặt `--tw-shadow-color`)
+      hết tác dụng vì màu đã nằm cứng trong chuỗi. Ứng dụng không dùng chỗ nào. */
+  --shadow-2xs: var(--erp-shadow-2xs);
+  --shadow-xs: var(--erp-shadow-xs);
+  --shadow-sm: var(--erp-shadow-sm);
+  --shadow-md: var(--erp-shadow-md);
+  --shadow-lg: var(--erp-shadow-lg);
+  --shadow-xl: var(--erp-shadow-xl);
+  --shadow-2xl: var(--erp-shadow-2xl);
   --color-sidebar-border: var(--sidebar-border);
 
   --radius-sm: calc(var(--radius) - 2px);
