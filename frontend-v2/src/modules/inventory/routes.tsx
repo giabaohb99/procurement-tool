@@ -24,6 +24,9 @@ export const inventoryModule: ErpModule = {
       path: appRoutes.inventory.root,
       icon: LayoutDashboard,
       end: true,
+      // Không có quyền đọc khóa nào của phân hệ thì ẩn luôn Tổng quan —
+      // cùng luật với Thu mua, xem procurement/routes.tsx.
+      entities: ['inventory', 'warehouse'],
     },
     {
       label: 'Tồn kho',

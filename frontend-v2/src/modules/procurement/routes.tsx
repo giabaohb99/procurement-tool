@@ -39,6 +39,10 @@ export const procurementModule: ErpModule = {
       path: appRoutes.procurement.root,
       icon: LayoutDashboard,
       end: true,
+      // Không có quyền đọc khóa nào của phân hệ thì Tổng quan cũng không có gì
+      // để vẽ (dashboard gác từng khối bằng can(entity)) — ẩn luôn, kẻo tài
+      // khoản ngoài phân hệ (vd văn thư) thấy thẻ Thu mua mở mà vào toàn số 0.
+      entities: ['survey_request', 'purchase_request', 'purchase_order', 'survey', 'report'],
     },
     {
       label: 'Yêu cầu báo giá',

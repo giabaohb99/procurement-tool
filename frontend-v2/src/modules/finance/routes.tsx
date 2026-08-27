@@ -29,6 +29,9 @@ export const financeModule: ErpModule = {
       path: appRoutes.finance.root,
       icon: LayoutDashboard,
       end: true,
+      // Không có quyền đọc khóa nào của phân hệ thì ẩn luôn Tổng quan —
+      // cùng luật với Thu mua, xem procurement/routes.tsx.
+      entities: ['payable', 'payment_request'],
     },
     {
       label: 'Công nợ phải trả',

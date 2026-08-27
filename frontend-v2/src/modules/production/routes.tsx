@@ -24,6 +24,9 @@ export const productionModule: ErpModule = {
       path: appRoutes.production.root,
       icon: LayoutDashboard,
       end: true,
+      // Không có quyền đọc khóa nào của phân hệ thì ẩn luôn Tổng quan —
+      // cùng luật với Thu mua, xem procurement/routes.tsx.
+      entities: ['supplier', 'product', 'unit', 'item_group', 'contract'],
     },
     {
       label: 'Nhà cung cấp',

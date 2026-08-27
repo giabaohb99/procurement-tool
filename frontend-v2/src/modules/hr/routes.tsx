@@ -15,7 +15,15 @@ export const hrModule: ErpModule = {
   entity: 'employee',
 
   nav: [
-    { label: 'Tổng quan', path: appRoutes.hr.root, icon: LayoutDashboard, end: true },
+    {
+      label: 'Tổng quan',
+      path: appRoutes.hr.root,
+      icon: LayoutDashboard,
+      end: true,
+      // Không có quyền đọc khóa nào của phân hệ thì ẩn luôn Tổng quan —
+      // cùng luật với Thu mua, xem procurement/routes.tsx.
+      entities: ['employee', 'department', 'company', 'role'],
+    },
     {
       label: 'Nhân sự',
       path: appRoutes.hr.employees,

@@ -204,8 +204,11 @@ Docker; code bind-mount nên HMR chạy. Gọi API bằng đường **tương đ
   lớp phong bì, trả thẳng `data`. Cần cả `message` thì dùng `httpClient`.
 - **Bảng danh sách.** Luôn dùng `DataTable` (`@/shared/data-table`), đọc `docs/ui/table.md` trước.
   Không tự ghép `<Table>` ở tầng trang.
-- **Phân hệ Văn bản chưa có backend** — đang chạy trên localStorage (`modules/document/store/local-collection.ts`).
-  Đây là bản mô phỏng giao diện; kiểu dữ liệu của nó **chưa khớp** thiết kế ở `ke-hoach/erp/van-thu/04-bang-du-lieu.md`.
+- **Phân hệ Văn bản ĐÃ CÓ backend thật** (đính chính 27/08/2026 — bản CLAUDE.md cũ ghi
+  "chạy localStorage" là hết hạn): backend nằm ở `app/modules/document/` + `app/modules/doc_catalog/`
+  (router đăng ký đủ trong `main.py`, dữ liệu trong MySQL qua Alembic); frontend-v2 gọi API thật qua
+  `modules/document/api/*` + hook TanStack Query. `store/local-collection.ts` chỉ còn là di tích:
+  duy nhất kiểu `HistoryEntry` còn được import, `hooks/use-collection.ts` không ai dùng nữa.
 - **Kiểm tra trước khi giao: `docker compose exec erp npm run check`** — gộp ba cổng:
   - `typecheck` (`tsc --noEmit`) phải **0 lỗi** (khác `frontend/`, bên đó baseline là đúng 4 lỗi cũ);
   - `lint` (**ESLint 10** flat config, `eslint.config.js`) phải **0 lỗi**. Cảnh báo hiện còn **23**

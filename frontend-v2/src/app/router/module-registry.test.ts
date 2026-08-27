@@ -80,6 +80,30 @@ describe('module-registry', () => {
       expect(moduleRoutes).not.toContain(route)
     }
   })
+  it('phân hệ nghiệp vụ không có mục menu bỏ trống khóa quyền — kẻo thẻ mở cho cả người ngoài', () => {
+    //  LỖI ĐÃ XẢY RA (27/08/2026): mục «Tổng quan» của Thu mua / Sản xuất / Kho /
+    //  Tài chính / Nhân sự không khai `entity`, mà thẻ phân hệ mở khi CÒN MỘT mục
+    //  hiện được — nên tài khoản văn thư (không có quyền nào bên đó) vẫn thấy thẻ
+    //  mở, vào trong gặp Tổng quan toàn số 0. Mục mới của phân hệ nghiệp vụ phải
+    //  khai `entity`/`entities`; muốn mở công khai thật thì thêm id phân hệ vào
+    //  danh sách chủ ý dưới đây kèm lý do.
+    const openByDesign = new Set([
+      'document', // «Chờ tôi duyệt» dành cho người duyệt NGOÀI phân hệ (xem module-visibility.ts)
+      'forum', // bảng tin toàn công ty — mọi người đều vào
+      'appearance', // tùy chọn hiển thị của chính người đăng nhập
+    ])
+    const missing: string[] = []
+    for (const module of moduleRegistry) {
+      if (openByDesign.has(module.id)) continue
+      for (const item of module.nav) {
+        if (!item.entity && !item.entities?.length) {
+          missing.push(`${module.id} - ${item.label}`)
+        }
+      }
+    }
+    expect(missing).toEqual([])
+  })
+
   it('màu icon phân hệ chạy được ở CẢ hai chế độ nền', () => {
     //  LỖI ĐÃ XẢY RA (27/08/2026): cả 20 phân hệ tô nền ô icon bằng bậc nhạt đặc
     //  (`bg-rose-50`, `bg-slate-100`). Bậc đó có độ sáng 96–98% nên nó trắng ở

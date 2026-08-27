@@ -234,9 +234,10 @@ buộc này phải trùng khớp với hệ phạm vi hai trục sẵn có (`app
   cho mỗi loại nguồn**, khai báo cách lấy *(chữ, nhãn quyền entity+scope, đường về bản gốc)*. AI
   đánh chỉ mục **từ nguồn**, không cần gom về Văn thư. Bản chất mỗi thứ AI cần chỉ là ba phần đó —
   không phải "văn bản" theo nghĩa Văn thư.
-- **Ràng buộc thứ tự:** Văn thư **chưa có backend** (localStorage). Muốn AI đọc tài liệu Văn thư
-  thì phải làm **backend + mô hình quyền tài liệu cho Văn thư trước**. Hợp đồng/chứng từ thì nguồn
-  đã sẵn, nối đầu nối là index được.
+- **Ràng buộc thứ tự:** *(cập nhật 27/08/2026)* Văn thư **đã có backend thật** trên nhánh `erp-v2`
+  (`app/modules/document/` + `app/modules/doc_catalog/`, kèm mô hình quyền tài liệu
+  `access_model`/`scope_model`) — ràng buộc "phải làm backend Văn thư trước" coi như **đã gỡ**.
+  Hợp đồng/chứng từ thì nguồn đã sẵn, nối đầu nối là index được.
 - **Kho vector:** nghiêng về **Qdrant** (một container, lọc payload theo quyền mạnh, hợp VPS nhỏ);
   phương án cực gọn lúc đầu là **Chroma**. Tránh dồn vào pgvector vì hệ đang MySQL.
 - **Embedding chạy LOCAL** (bge-m3 hoặc multilingual-e5-base) để **không gửi hợp đồng nhạy cảm ra
