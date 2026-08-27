@@ -118,7 +118,22 @@ export function ModuleSidebar({
         nguyên `p-2` thì logo chỉ còn 32px — chữ DEGO HOLDING nhỏ tới mức thành
         một vệt màu.
       */}
-      <SidebarHeader className="h-14 justify-center border-b border-sidebar-border group-data-[collapsible=icon]:px-0.5">
+      {/*
+        ⚠️ Vạch đáy dùng `border-border`, KHÔNG dùng `border-sidebar-border`.
+
+        Vạch này và vạch đáy của thanh trên cùng (`header`, dùng `border-border`)
+        nằm CÙNG một toạ độ y và nối liền nhau — mắt đọc chúng là MỘT đường kẻ
+        chạy hết bề ngang màn hình. Hai token thì hai màu: bảng màu Bubblegum
+        khai `--border: #d04f99` (hồng sẫm) còn `--sidebar-border: #f3e8ff` (tím
+        rất nhạt), nên đường kẻ đứt màu ngay chỗ giáp menu (lỗi 27/08/2026).
+        Mép phải của menu vốn đã dùng `--border` rồi, nên đây là chỗ duy nhất
+        lạc token.
+
+        `--sidebar-border` vẫn còn nguyên tác dụng ở những vạch NẰM HẲN trong
+        menu (vạch ngăn nhóm, vạch thụt của menu con) — chỗ đó không nối với gì
+        bên ngoài nên bám màu riêng của menu là đúng.
+      */}
+      <SidebarHeader className="h-14 justify-center border-b border-border group-data-[collapsible=icon]:px-0.5">
         <SidebarMenu>
           <SidebarMenuItem>
             {/*

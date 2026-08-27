@@ -89,9 +89,22 @@ export const ROW_MIX = {
  * không ai đọc, để rồi ra màu sai, là lỗ hổng chờ ngày có người dùng tới nó.
  */
 const DERIVED_TOKENS: Record<string, string> = {
-  //  Nền trang: lệch khỏi `--background` đúng một bậc để thẻ nội dung nổi lên,
+  //  Nền trang = ĐÚNG `--background` của bảng màu, không tự pha thêm.
+  //
+  //  ⚠️ Trước đây là `color-mix(var(--background) 95%, var(--foreground))` — dìm
+  //  nền trang xuống một bậc cho thẻ nội dung nổi lên. Hai chỗ hỏng, đo trên
+  //  bảng màu Claude nền sáng:
+  //  - Nó rơi TRÚNG KHÍT màu vằn hàng chẵn của bảng (`#f0eeea`), vì `--row-stripe`
+  //    cũng là phép pha 95% và bảng màu nào để `card` = `background` thì hai công
+  //    thức ra cùng một số. Dính 15/86 tổ hợp.
+  //  - Nó làm nền trang (`#f0eeea`) TỐI HƠN cả menu trái (`#f5f4ee`), tức lộn
+  //    ngược thứ tự chiều sâu: menu vốn là mặt lùi, khu nội dung phải là mặt
+  //    sáng nhất. shadcn/tweakcn để khu nội dung đúng bằng `--background`, còn
+  //    thẻ thì tách ra bằng viền + đổ bóng chứ không bằng một bậc màu.
+  //
   //  KHÔNG lấy `--secondary` (xem chú thích `--canvas` trong `index.css`).
-  canvas: 'color-mix(in oklab, var(--background) 95%, var(--foreground))',
+  //  Bảng màu DEGO khai tay nên vẫn giữ nguyên nền `#f6f8fb` như cũ.
+  canvas: 'var(--background)',
   //  Nền các HÀNG của bảng danh sách. Cả năm suy ra từ `--card` (nền hàng lẻ) nên
   //  một cái bảng luôn nằm gọn trong MỘT họ màu; trộn với `--foreground` thì tự
   //  đúng hướng ở cả hai chế độ nền (nền sáng thì tối đi, nền tối thì sáng lên),
@@ -130,24 +143,26 @@ const CHART_MIN_CONTRAST = 2
 
 /**
  * Tỉ số tương phản tối thiểu giữa CHỮ của mục menu đang mở và viên nền của nó.
+ * Thiếu thì viên nền bị làm sâu thêm, chữ giữ nguyên (xem `buildSidebarActiveLines`).
  *
  * **3:1 — CỐ Ý không phải 4.5:1.** Đây là chỗ hiếm hoi hạ dưới chuẩn AA, và có
- * lý do: mục tiêu ở đây là GIỮ ĐÚNG thiết kế của tweakcn, chỉ vá những bảng màu
- * hỏng hẳn.
+ * lý do: mục tiêu là GIỮ ĐÚNG dáng bảng màu gốc, chỉ vá chỗ thật sự hỏng. Quét
+ * cả 42 bảng màu nhập ngoài × 2 chế độ nền:
  *
- * Đặt 4.5 thì hàm này lật cả những cặp vốn đang đẹp: *Claude* nền sáng để chữ
- * gần trắng `#fbfbfb` trên viên mocha `#c96442` — 3.83:1, dưới 4.5 một chút nên
- * bị đổi thành chữ gần đen, nhìn thô và chẳng còn giống bản gốc (phản hồi
- * 27/08/2026). Ở 3:1 nó được giữ nguyên, còn mấy cặp thật sự không đọc nổi thì
- * vẫn bị vá: *Claude* nền tối 1.34 · *Candyland* nền sáng 1.46 · *Ocean Breeze*
- * nền sáng 2.28 · *Starry Night* nền tối 2.30 · *Sunset Horizon* nền tối 2.50.
+ * | Ngưỡng | Viên nền bị làm sâu | Tương phản chữ thấp nhất |
+ * |--------|---------------------|--------------------------|
+ * | 3:1    | **10/84**           | 3.01                     |
+ * | 4.5:1  | 36/84               | 4.50                     |
+ *
+ * 4.5 phải động vào 36 bảng màu — quá nửa danh sách đổi tông chỉ để đạt một con
+ * số. Ở 3:1 thì *Twitter* chỉ nhích `#1e9df1` → `#1498f0` (vẫn đúng xanh
+ * Twitter), *Claude* giữ nguyên mocha `#c96442`.
  *
  * 3:1 cũng chính là ngưỡng WCAG cho chữ lớn và cho thành phần giao diện — nhãn
  * menu ở đây là 14px **font-semibold** nằm trên một mảng màu đặc, không phải chữ
  * chạy trong đoạn văn.
  *
- * ⚠️ Ngưỡng này KHÔNG áp cho bảng màu tự khai `sidebar-active` (bảng màu DEGO) —
- * xem `buildSidebarActiveLines`.
+ * ⚠️ Ngưỡng này KHÔNG áp cho bảng màu tự khai `sidebar-active` (bảng màu DEGO).
  */
 const SIDEBAR_ACTIVE_MIN_CONTRAST = 3
 
@@ -181,9 +196,17 @@ function buildSidebarActiveLines(colors: ThemeModeColors): string[] {
   const foreground = colors['sidebar-primary-foreground'] ?? colors.background
   if (!background || !foreground) return []
 
+  //  Thiếu tương phản thì LÀM SÂU VIÊN NỀN, giữ nguyên màu chữ.
+  //
+  //  ⚠️ Ban đầu làm ngược — kéo màu CHỮ cho hợp với viên nền. Hỏng ngay: bảng màu
+  //  Twitter khai chữ trắng trên xanh `#1e9df1`, ra 2.94:1, nên chữ trắng bị lật
+  //  thành chữ tối và mục đang mở nhìn như bị lỗi (phản hồi 27/08/2026). Gần như
+  //  bảng màu nào cũng chọn chữ SÁNG trên viên màu đặc — đó là ý đồ thiết kế,
+  //  không phải chỗ để sửa. Làm sâu viên nền thì chữ sáng giữ nguyên, viên chỉ
+  //  đậm thêm một bậc, và đằng nào nó cũng nổi hơn trên nền menu.
   return [
-    `  --sidebar-active: ${background};`,
-    `  --sidebar-active-foreground: ${ensureVisibleAgainst(foreground, background, SIDEBAR_ACTIVE_MIN_CONTRAST)};`,
+    `  --sidebar-active: ${ensureVisibleAgainst(background, foreground, SIDEBAR_ACTIVE_MIN_CONTRAST)};`,
+    `  --sidebar-active-foreground: ${foreground};`,
   ]
 }
 

@@ -30,7 +30,12 @@
       này là mảng nền lớn. Bảng màu nhập từ ngoài đặt `secondary` là màu rực
       (Starry Night dùng #f7c873 vàng cam, Bubblegum dùng #8acfd1 xanh ngọc) —
       lấy nó làm nền trang thì cả ứng dụng nhuộm một màu chói, trong khi bản
-      mẫu của họ chỉ tô màu đó lên một cái nút. */
+      mẫu của họ chỉ tô màu đó lên một cái nút.
+
+      ⚠️ Chỉ bộ màu DEGO mới có bậc màu riêng cho nền trang (#f6f8fb so với thẻ
+      trắng). Bảng màu nhập từ tweakcn KHÔNG khai biến này và được suy ra bằng
+      đúng `--background` — thẻ tách ra bằng viền + đổ bóng như bản gốc của họ.
+      Xem `DERIVED_TOKENS` trong `shared/theme/build-theme-css.ts`. */
   --canvas: #f6f8fb;
 
   --muted: #f6f8fb;

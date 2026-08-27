@@ -60,36 +60,39 @@ describe('viên nền của mục menu đang mở', () => {
     expect(contrastRatio(chu, nen)).toBeGreaterThanOrEqual(3)
   })
 
-  it('giữ nguyên chữ tweakcn đã chọn khi cặp đó vốn đã đọc được', () => {
-    //  Phản hồi 27/08/2026: ngưỡng 4.5 lật chữ gần trắng #fbfbfb của bảng màu
-    //  Claude (3.83:1 trên viên mocha #c96442) thành chữ gần đen — thô, và mất
-    //  hẳn dáng bản gốc. Test này ghim lại đúng ca đó.
-    const css = cssOf('claude')
-    expect(readVar(css, 'light', 'sidebar-active')).toBe('#c96442')
-    expect(readVar(css, 'light', 'sidebar-active-foreground')).toBe('#fbfbfb')
+  it.each(suyRa)('%s.%s — KHÔNG đụng vào màu chữ bảng màu đã chọn', (id, mode) => {
+    //  Phản hồi 27/08/2026: bản đầu kéo màu CHỮ cho hợp viên nền. Bảng màu
+    //  Twitter khai chữ trắng trên xanh `#1e9df1` (2.94:1) nên chữ trắng bị lật
+    //  thành chữ tối — mục đang mở nhìn như bị lỗi. Gần như bảng màu nào cũng
+    //  chọn chữ SÁNG trên viên màu đặc; đó là ý đồ thiết kế, không phải chỗ sửa.
+    const preset = themePresets.find((item) => item.id === id)
+    if (!preset) throw new Error(`không có bảng màu ${id}`)
+    const goc = preset[mode]['sidebar-primary-foreground'] ?? preset[mode].background
+    expect(readVar(cssOf(id), mode, 'sidebar-active-foreground').toLowerCase()).toBe(
+      goc?.toLowerCase(),
+    )
   })
 
-  it('chỉ đụng vào cặp dưới ngưỡng, cặp nào đạt rồi thì giữ nguyên', () => {
+  it('chỉ làm sâu viên nền khi thiếu tương phản, đủ rồi thì giữ nguyên', () => {
     //  Khẳng định theo TÍNH CHẤT chứ không bốc một bảng màu làm ví dụ: bốc ví dụ
-    //  thì đổi dữ liệu bảng màu một cái là test nói dối. Đây đúng là hợp đồng
-    //  của `ensureVisibleAgainst` tại chỗ này.
+    //  thì đổi dữ liệu bảng màu một cái là test nói dối.
     let daVa = 0
     for (const [id, mode] of suyRa) {
       const preset = themePresets.find((item) => item.id === id)
       if (!preset) throw new Error(`không có bảng màu ${id}`)
-      const goc = preset[mode]['sidebar-primary-foreground']
-      const nen = preset[mode]['sidebar-primary']
-      if (!goc || !nen) continue
+      const nenGoc = preset[mode]['sidebar-primary'] ?? preset[mode].primary
+      const chu = preset[mode]['sidebar-primary-foreground'] ?? preset[mode].background
+      if (!nenGoc || !chu) continue
 
-      const ra = readVar(cssOf(id), mode, 'sidebar-active-foreground')
-      if (contrastRatio(goc, nen) >= 3) {
-        expect(ra.toLowerCase(), `${id}.${mode} bị đổi oan`).toBe(goc.toLowerCase())
+      const ra = readVar(cssOf(id), mode, 'sidebar-active')
+      if (contrastRatio(chu, nenGoc) >= 3) {
+        expect(ra.toLowerCase(), `${id}.${mode} bị đổi oan`).toBe(nenGoc.toLowerCase())
       } else {
-        expect(ra.toLowerCase(), `${id}.${mode} lẽ ra phải vá`).not.toBe(goc.toLowerCase())
+        expect(ra.toLowerCase(), `${id}.${mode} lẽ ra phải làm sâu`).not.toBe(nenGoc.toLowerCase())
         daVa++
       }
     }
-    //  Có vá thật, không phải nhánh chết.
+    //  Quét ngày 27/08/2026: đúng 10/84 tổ hợp phải vá. Không phải nhánh chết.
     expect(daVa).toBeGreaterThan(0)
   })
 

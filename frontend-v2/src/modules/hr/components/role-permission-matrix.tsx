@@ -109,7 +109,12 @@ export function RolePermissionMatrix({
                 // mờ sẽ để lộ các ô tick chạy bên dưới.
                 // `h-12` để mọi dòng cao bằng nhau — ô có dropdown "Phạm vi"
                 // không được kéo dòng đó cao hơn các dòng chỉ có ô tick.
-                className="group/row h-12 bg-card even:bg-canvas hover:bg-accent even:hover:bg-accent"
+                // ⚠️ Vằn hàng chẵn dùng `--row-stripe`, KHÔNG dùng `--canvas`:
+                // `--canvas` là nền TRANG (mặt phẳng sau thẻ), mượn nó làm nền
+                // hàng là trông vào chuyện hai màu đó tình cờ khác nhau. Từ
+                // 27/08/2026 nền trang suy ra bằng đúng `--background` nên ở
+                // bảng màu có `card` = `background` thì vằn hàng biến mất sạch.
+                className="group/row h-12 bg-card even:bg-row-stripe hover:bg-accent even:hover:bg-accent"
               >
                 <TableCell className="sticky left-0 z-10 border-r bg-inherit">
                   <div className="flex items-center gap-2">
