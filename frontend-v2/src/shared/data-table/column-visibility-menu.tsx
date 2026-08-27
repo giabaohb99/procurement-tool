@@ -94,7 +94,7 @@ export function ColumnVisibilityMenu<T>({
                 key={column.key}
                 data-column-key={column.key}
                 className={cn(
-                  'flex items-center gap-0.5 rounded-sm px-2 py-1 hover:bg-accent',
+                  'flex items-center gap-0.5 rounded-sm px-2 py-1 transition-colors hover:bg-accent',
                   drag?.fromKey === column.key && 'opacity-40',
                   // Vạch báo chỗ sắp thả, vẽ bằng `inset shadow` để không đẩy
                   // các dòng khác xê dịch trong lúc kéo.

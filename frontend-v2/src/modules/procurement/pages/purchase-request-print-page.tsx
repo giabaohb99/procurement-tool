@@ -10,6 +10,7 @@ import { formatMoney, formatQuantity, formatUnitPrice } from '@/shared/utils/for
 import { usePurchaseRequest } from '../hooks/use-purchase-request'
 import { usePurchaseRequestPrintWarehouses } from '../hooks/use-purchase-request-support'
 import type { PurchaseRequestDetail, PurchaseRequestItem } from '../types/purchase-request-detail'
+import { cn } from '@/shared/utils/cn'
 
 /**
  * Mẫu in 003/BM/PKT của Phiếu đề xuất mua hàng hóa/dịch vụ.
@@ -380,16 +381,17 @@ function PrintToggle({
   onChange: (value: boolean) => void
 }) {
   return (
-    <div className="inline-flex overflow-hidden rounded-lg border border-slate-300 bg-white">
+    <div className="inline-flex overflow-hidden rounded-lg border bg-card">
       {options.map((option) => (
         <button
           key={option.label}
           type="button"
-          className={
+          className={cn(
+            'px-4 py-2 text-[13px] font-medium whitespace-nowrap transition-colors',
             value === option.value
-              ? 'whitespace-nowrap bg-primary px-4 py-2 text-[13px] font-medium text-primary-foreground'
-              : 'whitespace-nowrap bg-white px-4 py-2 text-[13px] font-medium text-slate-600 hover:bg-slate-50'
-          }
+              ? 'bg-primary text-primary-foreground'
+              : 'bg-card text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+          )}
           onClick={() => onChange(option.value)}
         >
           {option.label}

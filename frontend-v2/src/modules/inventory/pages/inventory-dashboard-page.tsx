@@ -149,7 +149,7 @@ export function InventoryDashboardPage() {
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="h-7 px-2 text-xs text-sky-600 hover:text-sky-700 dark:text-sky-400"
+                              className="h-7 px-2 text-xs text-primary transition-colors hover:text-primary/80"
                               title="Tạo Yêu cầu mua hàng cho mặt hàng này"
                               onClick={() => navigate('/procurement/purchase-requests/new')}
                             >
@@ -174,7 +174,7 @@ export function InventoryDashboardPage() {
         >
           <div className="space-y-3 pt-2">
             <div
-              className="flex cursor-pointer items-center justify-between rounded-lg border p-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50"
+              className="flex cursor-pointer items-center justify-between rounded-lg border p-3 transition-colors hover:bg-accent"
               onClick={() => navigate(appRoutes.inventory.stock)}
             >
               <div className="flex items-center gap-3">
@@ -190,7 +190,7 @@ export function InventoryDashboardPage() {
             </div>
 
             <div
-              className="flex cursor-pointer items-center justify-between rounded-lg border p-3 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50"
+              className="flex cursor-pointer items-center justify-between rounded-lg border p-3 transition-colors hover:bg-accent"
               onClick={() => navigate(appRoutes.inventory.warehouses)}
             >
               <div className="flex items-center gap-3">

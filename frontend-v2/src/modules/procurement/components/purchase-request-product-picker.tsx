@@ -87,7 +87,7 @@ export function PurchaseRequestProductPicker({
           {code && (
             <button
               type="button"
-              className="block w-full rounded-sm px-3 py-2 text-left text-sm text-muted-foreground hover:bg-accent"
+              className="block w-full rounded-sm px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-accent"
               onClick={() => {
                 onPick(null)
                 setOpen(false)
@@ -102,7 +102,7 @@ export function PurchaseRequestProductPicker({
               key={product.id}
               type="button"
               className={cn(
-                'block w-full rounded-sm px-3 py-2 text-left hover:bg-accent',
+                'block w-full rounded-sm px-3 py-2 text-left transition-colors hover:bg-accent',
                 product.code === code && 'bg-accent',
               )}
               onClick={() => {

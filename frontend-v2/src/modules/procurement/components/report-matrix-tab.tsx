@@ -226,7 +226,7 @@ export function ReportMatrixTab({
                 {months.map((month) => (
                   <label
                     key={month.key}
-                    className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent"
+                    className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-accent"
                   >
                     <Checkbox
                       checked={visible.has(month.key)}

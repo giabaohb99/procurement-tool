@@ -440,7 +440,7 @@ function ReplyComposer({
                 <span className="text-muted-foreground">{formatFileSize(file.size)}</span>
                 <button
                   type="button"
-                  className="text-muted-foreground hover:text-destructive"
+                  className="text-muted-foreground transition-colors hover:text-destructive"
                   aria-label={`Bỏ tệp ${file.filename}`}
                   onClick={() => setDraft((current) => current.filter((f) => f.file_id !== file.file_id))}
                 >
@@ -560,7 +560,7 @@ function TicketFileChip({ file }: { file: TicketFile }) {
       target="_blank"
       rel="noreferrer"
       title={file.filename}
-      className="inline-flex max-w-64 items-center gap-2 rounded-lg border bg-background px-2.5 py-1.5 text-xs font-medium hover:text-primary"
+      className="inline-flex max-w-64 items-center gap-2 rounded-lg border bg-background px-2.5 py-1.5 text-xs font-medium transition-colors hover:text-primary"
     >
       <Paperclip className="size-3.5 shrink-0" />
       <span className="min-w-0 truncate">{file.filename}</span>

@@ -95,7 +95,7 @@ export function InventoryProductPicker({
               key={product.id}
               type="button"
               className={cn(
-                'block w-full rounded-sm px-3 py-2 text-left hover:bg-accent',
+                'block w-full rounded-sm px-3 py-2 text-left transition-colors hover:bg-accent',
                 product.code === code && 'bg-accent',
               )}
               onClick={() => {

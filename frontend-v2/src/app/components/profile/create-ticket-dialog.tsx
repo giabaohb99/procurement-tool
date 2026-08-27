@@ -191,7 +191,7 @@ export function CreateTicketDialog({
             <div>
               <Label className="text-xs font-semibold">Tệp đính kèm / Ảnh minh họa</Label>
               <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                <label className="flex h-8 cursor-pointer items-center gap-1.5 rounded-md border border-input bg-background px-3 text-xs font-medium hover:bg-accent hover:text-accent-foreground">
+                <label className="flex h-8 cursor-pointer items-center gap-1.5 rounded-md border border-input bg-background px-3 transition-colors text-xs font-medium hover:bg-accent hover:text-accent-foreground">
                   {uploading ? (
                     <Loader2 className="size-3.5 animate-spin" />
                   ) : (

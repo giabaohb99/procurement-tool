@@ -270,7 +270,7 @@ export function ProfileTasksTab({ onCountChange }: { onCountChange?: (count: num
             type="button"
             variant="outline"
             size="sm"
-            className="h-9 gap-1.5 text-xs text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
+            className="h-9 gap-1.5 text-xs text-success hover:bg-success/10 hover:text-success"
             title="Đánh dấu tất cả việc hiện tại đã làm xong"
             onClick={handleDismissAll}
           >

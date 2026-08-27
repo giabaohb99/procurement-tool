@@ -195,7 +195,7 @@ export function FinanceDashboardPage() {
                   (prsData?.items ?? []).map((row) => (
                     <TableRow
                       key={row.id}
-                      className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                      className="cursor-pointer hover:bg-row-hover"
                       onClick={() => navigate(`/finance/payment-requests/${row.id}`)}
                     >
                       <TableCell className="font-semibold text-sky-600 dark:text-sky-400">

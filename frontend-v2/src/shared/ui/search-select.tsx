@@ -136,7 +136,7 @@ export function SearchSelect({
               role="button"
               tabIndex={-1}
               aria-label="Xóa lựa chọn"
-              className="shrink-0 text-muted-foreground hover:text-foreground"
+              className="shrink-0 transition-colors text-muted-foreground hover:text-foreground"
               onClick={(event) => {
                 event.preventDefault()
                 event.stopPropagation()

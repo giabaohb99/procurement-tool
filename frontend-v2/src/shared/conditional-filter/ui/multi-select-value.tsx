@@ -52,7 +52,7 @@ export function MultiSelectValue({
         {options.map((option) => (
           <label
             key={option.value}
-            className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent"
+            className="flex cursor-pointer items-center gap-2 rounded-sm transition-colors px-2 py-1.5 text-sm hover:bg-accent"
           >
             <Checkbox
               checked={selected.includes(option.value)}

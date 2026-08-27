@@ -411,7 +411,7 @@ function AttachmentRow({
         {onView ? (
           <button
             type="button"
-            className="block max-w-full truncate text-left text-sm font-medium text-navy hover:text-primary hover:underline dark:text-foreground"
+            className="block max-w-full truncate text-left text-sm font-medium text-navy transition-colors hover:text-primary hover:underline dark:text-foreground"
             onClick={onView}
             title={file.filename}
           >
@@ -419,7 +419,7 @@ function AttachmentRow({
           </button>
         ) : (
           <a
-            className="block truncate text-sm font-medium text-navy hover:text-primary hover:underline dark:text-foreground"
+            className="block truncate text-sm font-medium text-navy transition-colors hover:text-primary hover:underline dark:text-foreground"
             href={file.url}
             target="_blank"
             rel="noreferrer"

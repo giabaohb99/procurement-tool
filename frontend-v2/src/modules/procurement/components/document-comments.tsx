@@ -365,7 +365,7 @@ function CommentComposer({
               <span className="truncate">{file.name}</span>
               <button
                 type="button"
-                className="text-muted-foreground hover:text-foreground"
+                className="text-muted-foreground transition-colors hover:text-foreground"
                 aria-label={`Bỏ tệp ${file.name}`}
                 onClick={() => onFilesChange(files.filter((_, fileIndex) => fileIndex !== index))}
               >
@@ -431,7 +431,7 @@ function CommentFiles({ files }: { files: PurchaseRequestComment['files'] }) {
         ) : (
           <a
             key={file.link_id}
-            className="inline-flex max-w-72 items-center gap-2 rounded-md border bg-background px-2 py-1 text-xs font-medium hover:text-primary"
+            className="inline-flex max-w-72 items-center gap-2 rounded-md border bg-background px-2 py-1 text-xs font-medium transition-colors hover:text-primary"
             href={file.url}
             target="_blank"
             rel="noreferrer"

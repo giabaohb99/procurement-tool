@@ -85,7 +85,7 @@ export function EditorOutlinePanel({
         aria-orientation="vertical"
         aria-label="Kéo để đổi bề ngang mục lục"
         onPointerDown={startDrag}
-        className="absolute inset-y-0 -right-1 w-2 cursor-col-resize hover:bg-primary/20"
+        className="absolute inset-y-0 -right-1 w-2 cursor-col-resize transition-colors hover:bg-primary/20"
       />
     </div>
   )

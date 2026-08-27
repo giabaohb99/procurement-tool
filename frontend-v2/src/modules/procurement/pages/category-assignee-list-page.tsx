@@ -173,7 +173,7 @@ export function CategoryAssigneeListPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 px-2 text-slate-600 hover:text-primary"
+                className="h-8 px-2 text-muted-foreground hover:text-primary"
                 title="Chỉnh sửa phân công"
                 onClick={() =>
                   navigate(
@@ -189,7 +189,7 @@ export function CategoryAssigneeListPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                className="h-8 px-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
                 title="Xóa phân công"
                 onClick={() => handleDelete(r)}
               >

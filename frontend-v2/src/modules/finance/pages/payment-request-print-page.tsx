@@ -10,6 +10,7 @@ import { formatDate } from '@/shared/utils/format-date'
 import { formatMoney } from '@/shared/utils/format-money'
 import { usePaymentRequestPrintData } from '../hooks/use-payment-requests'
 import { parseMoney } from '../utils/doc-tien'
+import { cn } from '@/shared/utils/cn'
 
 const DOTS = '............................'
 
@@ -161,11 +162,12 @@ export function PaymentRequestPrintPage() {
             <button
               key={tab.t}
               onClick={() => setTaxMode(tab.v)}
-              className={`px-4 py-1.5 text-sm font-medium transition-colors ${
+              className={cn(
+                'px-4 py-1.5 text-sm font-medium transition-colors',
                 taxMode === tab.v
-                  ? 'bg-sky-600 text-white'
-                  : 'bg-background text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
-              }`}
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+              )}
             >
               {tab.t}
             </button>

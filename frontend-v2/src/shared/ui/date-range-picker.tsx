@@ -147,7 +147,7 @@ export function DateRangePicker({
               role="button"
               tabIndex={-1}
               aria-label="Xóa khoảng ngày"
-              className="ml-auto shrink-0 rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+              className="transition-colors ml-auto shrink-0 rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
               //  Chặn ở CẢ HAI nhịp. `Popover` của Radix mở bằng `click`, còn
               //  `DropdownMenu` (và vài trigger khác trong hệ) mở bằng
               //  `pointerdown` — chặn thiếu nhịp nào là xóa xong lịch vẫn bung

@@ -83,7 +83,7 @@ export function ColumnHeaderCell<T>({
     >
       <div
         className={cn(
-          'flex items-center gap-1 overflow-hidden',
+          'flex items-center gap-1 overflow-hidden transition-colors',
           isSortable && 'cursor-pointer hover:text-foreground',
         )}
         onClick={(e) => {

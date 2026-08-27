@@ -144,7 +144,7 @@ export function DocumentExcerptDialog({
                 {items.map((muc) => (
                   <label
                     key={muc.id}
-                    className="flex cursor-pointer items-start gap-2 rounded px-2 py-1 text-sm hover:bg-accent"
+                    className="flex cursor-pointer items-start gap-2 rounded px-2 py-1 text-sm transition-colors hover:bg-accent"
                     style={{ paddingLeft: `${(muc.level - 1) * 16 + 8}px` }}
                   >
                     <Checkbox
