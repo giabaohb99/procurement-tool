@@ -45,8 +45,21 @@ export function useFillViewportHeight(ref: RefObject<HTMLElement | null>): numbe
     const theo = new ResizeObserver(remeasure)
     theo.observe(document.body)
 
+    //  ⚠️ Đo lại khi MỘT KHUNG CHA BẤT KỲ CUỘN (thêm 27/08/2026).
+    //
+    //  `top` là toạ độ tương đối KHUNG NHÌN, nên một khung cha cuộn đi là con số
+    //  đã đo thành sai — mà `resize` lẫn `ResizeObserver` đều không bắn ra trong
+    //  ca đó vì kích thước không ai đổi. Lỗi thật đã gặp: bấm mục lục làm vỏ
+    //  trang cuộn 143px, chiều cao giữ nguyên số cũ, thừa 155px xám ở đáy và cắt
+    //  mất dòng chữ cuối.
+    //
+    //  Nghe ở pha BẮT (`capture: true`) vì sự kiện `scroll` của phần tử không
+    //  nổi bọt lên `window`. `passive` để không cản việc cuộn.
+    document.addEventListener('scroll', remeasure, { capture: true, passive: true })
+
     return () => {
       window.removeEventListener('resize', remeasure)
+      document.removeEventListener('scroll', remeasure, { capture: true })
       theo.disconnect()
     }
   }, [ref])

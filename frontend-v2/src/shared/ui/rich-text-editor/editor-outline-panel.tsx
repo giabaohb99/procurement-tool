@@ -11,6 +11,17 @@ interface EditorOutlinePanelProps {
   editor: Editor
   width: number
   onWidthChange: (width: number) => void
+  /**
+   * Chiều cao ĐO THẬT của khung soạn thảo, để cột mục lục cao đúng bằng tờ giấy.
+   *
+   * ⚠️ Trước đây cột này khai `max-h-[calc(100vh-16rem)]` — đúng cái hằng số mà
+   * `use-fill-viewport-height.ts` sinh ra để thay thế, nhưng hồi đó chỉ đổi cho
+   * khung giấy và **bỏ quên cột mục lục**. Hậu quả đo được trên văn bản 800
+   * chương: cột bắt đầu ở 354px, `16rem` = 256px nên nó tự cho mình 525px trong
+   * khi chỗ trống chỉ có 415px — đáy cột nằm ở 879px, **thò xuống dưới đáy cửa
+   * sổ 98px**, mục cuối bị cắt và không cuộn tới được.
+   */
+  maxHeight?: number
 }
 
 /**
@@ -23,7 +34,12 @@ interface EditorOutlinePanelProps {
  * Chỉ hiện từ màn `lg` trở lên — màn hẹp mà cắt thêm một cột nữa thì trang giấy
  * không còn chỗ.
  */
-export function EditorOutlinePanel({ editor, width, onWidthChange }: EditorOutlinePanelProps) {
+export function EditorOutlinePanel({
+  editor,
+  width,
+  onWidthChange,
+  maxHeight,
+}: EditorOutlinePanelProps) {
   const startRef = useRef<{ x: number; width: number } | null>(null)
 
   function startDrag(event: React.PointerEvent) {
@@ -49,9 +65,17 @@ export function EditorOutlinePanel({ editor, width, onWidthChange }: EditorOutli
 
   return (
     <div className="relative hidden shrink-0 lg:block" style={{ width }}>
+      {/*  Cao ĐÚNG BẰNG khung giấy bên cạnh — xem `maxHeight`. Giữ lại
+           `calc(100vh-16rem)` làm nhánh lùi cho nơi chưa truyền số đo (ô rich
+           text trong hộp thoại), nhưng trang soạn thảo luôn truyền. */}
       <EditorOutline
         editor={editor}
-        className="max-h-[calc(100vh-16rem)] w-full overflow-y-auto border-r"
+        style={maxHeight ? { height: maxHeight } : undefined}
+        className={
+          maxHeight
+            ? 'w-full overflow-y-auto border-r'
+            : 'max-h-[calc(100vh-16rem)] w-full overflow-y-auto border-r'
+        }
       />
 
       {/* Thanh kéo nằm ĐÈ lên viền phải, rộng hơn viền vài px cho dễ bắt chuột —

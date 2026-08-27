@@ -22,6 +22,8 @@ const LEVEL_INDENT: Record<number, string> = {
 interface EditorOutlineProps {
   editor: Editor
   className?: string
+  /** Chiều cao đo thật do trang soạn thảo truyền xuống — xem `EditorOutlinePanel`. */
+  style?: React.CSSProperties
 }
 
 /**
@@ -30,7 +32,7 @@ interface EditorOutlineProps {
  * Đọc thẳng từ tài liệu chứ không lưu riêng: tiêu đề là thứ người dùng gõ ra
  * trong lúc soạn, giữ thêm một bản danh sách nữa thì sớm muộn cũng lệch.
  */
-export function EditorOutline({ editor, className }: EditorOutlineProps) {
+export function EditorOutline({ editor, className, style }: EditorOutlineProps) {
   // Chỉ lấy hai thứ RẺ để so sánh. ProseMirror dựng `doc` MỚI mỗi lần nội dung
   // đổi và giữ nguyên `doc` cũ khi chỉ di chuyển con trỏ, nên so bằng tham
   // chiếu là đủ — khỏi phải duyệt cả cây tài liệu (và `JSON.stringify` nó) ở
@@ -99,14 +101,39 @@ export function EditorOutline({ editor, className }: EditorOutlineProps) {
       // Chờ hết khung hình hiện tại: `focus()` ở trên có thể khiến trình duyệt
       // tự cuộn về vùng soạn thảo, cuộn của mình phải chạy sau để không bị đè.
       requestAnimationFrame(() => {
-        node.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        //  ⚠️ CHỈ cuộn khung soạn thảo, KHÔNG dùng `node.scrollIntoView()`.
+        //
+        //  `scrollIntoView` đi qua **mọi** lớp cuộn lồng nhau — nghe thì tiện,
+        //  nhưng nó cuộn luôn cả vỏ trang của ứng dụng. Đo được trên văn bản 800
+        //  chương: bấm một mục thì vỏ trang cuộn 143px, khối tiêu đề trôi khỏi
+        //  tầm nhìn, `top` của khung giấy tụt 354 → 211 — mà chiều cao thì đã
+        //  tính từ `top` cũ nên giữ nguyên 415px. Kết quả là **thừa 155px xám ở
+        //  đáy và dòng chữ cuối bị cắt ngang** (khách báo 27/08/2026).
+        //
+        //  Tự tính khoảng dời rồi gọi `scrollTo` trên đúng một khung: vỏ trang
+        //  đứng yên, không có gì để lệch.
+        const khung = node.closest<HTMLElement>('.overflow-y-auto')
+        if (!khung) {
+          node.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          return
+        }
+        const dich =
+          khung.scrollTop +
+          (node.getBoundingClientRect().top - khung.getBoundingClientRect().top) -
+          khung.clientHeight / 2 +
+          node.offsetHeight / 2
+        khung.scrollTo({ top: Math.max(0, dich), behavior: 'smooth' })
       })
     },
     [editor],
   )
 
   return (
-    <nav className={cn('min-h-full bg-muted/70 p-3', className)} aria-label="Mục lục văn bản">
+    <nav
+      className={cn('min-h-full bg-muted/70 p-3', className)}
+      style={style}
+      aria-label="Mục lục văn bản"
+    >
       <div className="mb-3 flex items-center gap-2 px-2">
         <ListTree className="size-4 text-primary" />
         <p className="text-sm font-semibold text-navy dark:text-foreground">Mục lục tài liệu</p>

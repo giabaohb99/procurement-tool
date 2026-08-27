@@ -413,6 +413,9 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
               editor={editor}
               width={outlineWidth}
               onWidthChange={setOutlineWidth}
+              //  Dùng CHUNG số đo với khung giấy: hai cột đứng cạnh nhau mà cao
+              //  khác nhau thì chừa ra một dải có mục lục nhưng không có giấy.
+              maxHeight={pageHeight}
             />
           )}
 
