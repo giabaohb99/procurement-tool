@@ -30,4 +30,7 @@ class PRequestUpdate(BaseModel):
     note: str | None = None
     payment_method: str | None = None
     prepay: int | None = None          # CR-146
+    # CR-149: {"content", "line_desc", "transfer"} — câu chữ bản in người dùng sửa.
+    # Payload CHỈ chứa print_texts thì được sửa cả khi phiếu đã gửi duyệt / đã duyệt.
+    print_texts: dict | None = None
     lines: list[LineIn] | None = None
