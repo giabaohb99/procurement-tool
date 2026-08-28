@@ -50,10 +50,14 @@ export const workTaskApi = {
   setTags: (taskId: number, tagIds: number[]) =>
     apiPut<WorkTask>(`/api/work/tasks/${taskId}/tags`, { tag_ids: tagIds }),
 
-  /** `optionId = null` là bỏ chọn giá trị của trường nhãn đó (B-08). */
-  setLabel: (taskId: number, fieldId: number, optionId: number | null) =>
+  /**
+   * Đặt giá trị cho một trường tùy biến. `value` ĐA HÌNH theo kiểu trường
+   * (id giá trị · mảng id · employee_id · số · chuỗi ngày · chữ); `null` = bỏ
+   * chọn. Máy chủ kiểm kiểu theo `field_type` — xem `label_value_service`.
+   */
+  setLabel: (taskId: number, fieldId: number, value: unknown) =>
     apiPut<WorkTask>(`/api/work/tasks/${taskId}/label`, {
       field_id: fieldId,
-      option_id: optionId,
+      value,
     }),
 }

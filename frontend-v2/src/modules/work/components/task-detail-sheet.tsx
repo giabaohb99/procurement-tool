@@ -28,6 +28,7 @@ import { WORK_PRIORITY_LABELS, WORK_TASK_STATUS } from '../types/work'
 import { addDays } from '../utils/due-date'
 import { chipClass } from '../utils/work-colors'
 import { TaskSubtaskList } from './task-subtask-list'
+import { LabelFieldInput } from './label-field-input'
 import { TaskDescriptionField, TaskTitleField } from './task-text-fields'
 
 interface TaskDetailSheetProps {
@@ -67,12 +68,12 @@ export function TaskDetailSheet({
   const setTags = useSetTaskTags(listId)
   const setLabel = useSetTaskLabel(listId)
 
-  function luu(values: Record<string, unknown>) {
+  function save(values: Record<string, unknown>) {
     if (!taskId) return
     updateTask.mutate({ id: taskId, values })
   }
 
-  const daXong = task?.status === WORK_TASK_STATUS.DONE
+  const isDone = task?.status === WORK_TASK_STATUS.DONE
 
   return (
     <Sheet open={taskId !== null} onOpenChange={(open) => !open && onClose()}>
@@ -93,8 +94,8 @@ export function TaskDetailSheet({
                 key={`title-${task.id}`}
                 title={task.title}
                 canEdit={canEdit}
-                strike={daXong}
-                onSave={(title) => luu({ title })}
+                strike={isDone}
+                onSave={(title) => save({ title })}
               />
               {canEdit && (
                 <Button
@@ -115,7 +116,7 @@ export function TaskDetailSheet({
               <Select
                 value={String(task.status)}
                 disabled={!canEdit}
-                onValueChange={(v) => luu({ status: Number(v) })}
+                onValueChange={(v) => save({ status: Number(v) })}
               >
                 <SelectTrigger size="sm" className="w-44">
                   <SelectValue />
@@ -131,7 +132,7 @@ export function TaskDetailSheet({
             <Row label="Người phụ trách">
               <div className="flex flex-wrap gap-1">
                 {members.map((m) => {
-                  const dangChon = task.assignees.some(
+                  const chosen = task.assignees.some(
                     (a) => a.employee_id === m.employee_id && a.kind === 1,
                   )
                   return (
@@ -140,17 +141,17 @@ export function TaskDetailSheet({
                       type="button"
                       disabled={!canEdit}
                       onClick={() => {
-                        const hienTai = task.assignees
+                        const current = task.assignees
                           .filter((a) => a.kind === 1)
                           .map((a) => a.employee_id)
-                        const moi = dangChon
-                          ? hienTai.filter((id) => id !== m.employee_id)
-                          : [...hienTai, m.employee_id]
-                        setAssignees.mutate({ taskId: task.id, picIds: moi })
+                        const next = chosen
+                          ? current.filter((id) => id !== m.employee_id)
+                          : [...current, m.employee_id]
+                        setAssignees.mutate({ taskId: task.id, picIds: next })
                       }}
                       className={cn(
                         'rounded-full border px-2 py-0.5 text-xs',
-                        dangChon
+                        chosen
                           ? 'border-primary bg-primary/10 font-medium text-primary'
                           : 'text-muted-foreground',
                       )}
@@ -174,14 +175,14 @@ export function TaskDetailSheet({
                   clearable
                   value={task.due_date}
                   disabled={!canEdit}
-                  onChange={(v) => luu({ due_date: v })}
+                  onChange={(v) => save({ due_date: v })}
                 />
                 {canEdit && (
                   <>
-                    <Button variant="outline" size="sm" onClick={() => luu({ due_date: addDays(0) })}>
+                    <Button variant="outline" size="sm" onClick={() => save({ due_date: addDays(0) })}>
                       Hôm nay
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => luu({ due_date: addDays(1) })}>
+                    <Button variant="outline" size="sm" onClick={() => save({ due_date: addDays(1) })}>
                       Ngày mai
                     </Button>
                   </>
@@ -195,7 +196,7 @@ export function TaskDetailSheet({
                 clearable
                 value={task.start_date}
                 disabled={!canEdit}
-                onChange={(v) => luu({ start_date: v })}
+                onChange={(v) => save({ start_date: v })}
               />
             </Row>
 
@@ -203,7 +204,7 @@ export function TaskDetailSheet({
               <Select
                 value={task.section_id ? String(task.section_id) : ''}
                 disabled={!canEdit}
-                onValueChange={(v) => luu({ section_id: Number(v) })}
+                onValueChange={(v) => save({ section_id: Number(v) })}
               >
                 <SelectTrigger size="sm" className="w-44">
                   <SelectValue placeholder="Chưa thuộc cột nào" />
@@ -222,7 +223,7 @@ export function TaskDetailSheet({
               <Select
                 value={String(task.priority)}
                 disabled={!canEdit}
-                onValueChange={(v) => luu({ priority: Number(v) })}
+                onValueChange={(v) => save({ priority: Number(v) })}
               >
                 <SelectTrigger size="sm" className="w-44">
                   <SelectValue />
@@ -240,7 +241,7 @@ export function TaskDetailSheet({
             <Row label="Tag">
               <div className="flex flex-wrap gap-1">
                 {tags.map((t) => {
-                  const dangChon = task.tag_ids.includes(t.id)
+                  const chosen = task.tag_ids.includes(t.id)
                   return (
                     <button
                       key={t.id}
@@ -249,7 +250,7 @@ export function TaskDetailSheet({
                       onClick={() =>
                         setTags.mutate({
                           taskId: task.id,
-                          tagIds: dangChon
+                          tagIds: chosen
                             ? task.tag_ids.filter((id) => id !== t.id)
                             : [...task.tag_ids, t.id],
                         })
@@ -257,7 +258,7 @@ export function TaskDetailSheet({
                       className={cn(
                         'rounded px-1.5 py-0.5 text-xs',
                         chipClass(t.color),
-                        !dangChon && 'opacity-40',
+                        !chosen && 'opacity-40',
                       )}
                     >
                       {t.name}
@@ -272,31 +273,15 @@ export function TaskDetailSheet({
 
             {labelFields.map((f) => (
               <Row key={f.id} label={f.name}>
-                <Select
-                  value={
-                    String(task.labels.find((l) => l.field_id === f.id)?.option_id ?? 'none')
-                  }
+                <LabelFieldInput
+                  field={f}
+                  values={task.labels.filter((l) => l.field_id === f.id)}
+                  members={members}
                   disabled={!canEdit}
-                  onValueChange={(v) =>
-                    setLabel.mutate({
-                      taskId: task.id,
-                      fieldId: f.id,
-                      optionId: v === 'none' ? null : Number(v),
-                    })
+                  onChange={(value) =>
+                    setLabel.mutate({ taskId: task.id, fieldId: f.id, value })
                   }
-                >
-                  <SelectTrigger size="sm" className="w-44">
-                    <SelectValue placeholder="Chưa chọn" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Chưa chọn</SelectItem>
-                    {f.options.map((o) => (
-                      <SelectItem key={o.id} value={String(o.id)}>
-                        {o.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                />
               </Row>
             ))}
 
@@ -304,7 +289,7 @@ export function TaskDetailSheet({
               key={`desc-${task.id}`}
               description={task.description}
               canEdit={canEdit}
-              onSave={(description) => luu({ description })}
+              onSave={(description) => save({ description })}
             />
 
             <TaskSubtaskList

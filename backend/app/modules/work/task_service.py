@@ -17,7 +17,9 @@ from sqlalchemy.orm import Session
 from app.core.audit import record
 from app.modules.work import serializer as ser
 from app.modules.work import task_enrich
-from app.modules.work.label_model import WorkLabelOption, WorkTag, WorkTaskLabel, WorkTaskTag
+from app.modules.work import label_value_service as label_values
+from app.modules.work.label_model import (WorkLabelField, WorkLabelOption,
+                                          WorkTag, WorkTaskLabel, WorkTaskTag)
 from app.modules.work.membership_service import (CAN_EDIT, CAN_MANAGE, Actor,
                                                  block_if_archived,
                                                  effective_role, get_list_or_403)
@@ -322,28 +324,21 @@ def set_tags(db: Session, actor: Actor, task_id: int, tag_ids: list[int]) -> dic
     return _shape([t], task_enrich.collect(db, [t]))[0]
 
 
-def set_label(db: Session, actor: Actor, task_id: int, field_id: int,
-              option_id: int | None) -> dict:
-    """Chọn giá trị cho MỘT trường nhãn tùy biến (B-08). `option_id = None` = bỏ chọn."""
+def set_label(db: Session, actor: Actor, task_id: int, field_id: int, value) -> dict:
+    """Đặt giá trị cho MỘT trường tùy biến. `value = None` = bỏ chọn.
+
+    Hình dạng `value` tùy kiểu trường — xem `label_value_service.write_value`.
+    Mọi phép kiểm kiểu nằm bên đó; ở đây chỉ lo quyền và mốc giao dịch.
+    """
     t = get_task_or_403(db, actor, task_id, CAN_EDIT)
     block_if_archived(get_list_or_403(db, actor, t.list_id, CAN_EDIT))
-    row = (db.query(WorkTaskLabel)
-           .filter(WorkTaskLabel.task_id == task_id,
-                   WorkTaskLabel.field_id == field_id).first())
-    if option_id is None:
-        if row:
-            db.delete(row)
-            db.commit()
-        return _shape([t], task_enrich.collect(db, [t]))[0]
 
-    opt = db.get(WorkLabelOption, option_id)
-    if not opt or opt.field_id != field_id:
-        raise HTTPException(400, "Giá trị nhãn không thuộc trường này")
-    if row:
-        row.option_id = option_id
-        row.updated_by = actor.user_id
-    else:
-        db.add(WorkTaskLabel(task_id=task_id, field_id=field_id, option_id=option_id,
-                             created_by=actor.user_id, updated_by=actor.user_id))
+    field = db.get(WorkLabelField, field_id)
+    #  Trường của list KHÁC thì không có nghĩa gì ở đây — nhận bừa là task mang
+    #  một nhãn không bao giờ hiện ra, vì giao diện chỉ vẽ trường của list mình.
+    if not field or field.list_id != t.list_id:
+        raise HTTPException(400, "Trường nhãn không thuộc danh sách này")
+
+    label_values.write_value(db, field, task_id, value, actor.user_id)
     db.commit()
     return _shape([t], task_enrich.collect(db, [t]))[0]

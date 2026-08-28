@@ -7,6 +7,8 @@ song song mỗi lần thêm trường.
 Quy ước: trường `None` nghĩa là **KHÔNG ĐỔI** (PATCH thật sự), khác hẳn `""`
 hay `0` là "xóa giá trị đi". Service dựa vào đúng quy ước này.
 """
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 from app.modules.work.model import WorkMemberRole
@@ -79,8 +81,12 @@ class TagIn(BaseModel):
 
 
 class LabelFieldIn(BaseModel):
+    """Khai một trường tùy biến. `field_type` theo `WorkLabelFieldType` (B-13);
+    mặc định `1 = chọn một` để lời gọi cũ không đổi hành vi."""
+
     name: str
     sort_order: int = 0
+    field_type: int = 1
 
 
 class LabelOptionIn(BaseModel):
@@ -143,7 +149,14 @@ class TagsIn(BaseModel):
 
 
 class LabelIn(BaseModel):
-    """Chọn giá trị cho một trường nhãn. `option_id = None` là bỏ chọn."""
+    """Đặt giá trị cho một trường tùy biến. `value = None` là bỏ chọn.
+
+    `value` ĐA HÌNH theo kiểu trường (id giá trị · danh sách id · employee_id ·
+    số · chuỗi ngày · chữ) nên để `Any`: khai kiểu chặt ở đây thì mỗi lần thêm
+    một kiểu trường lại phải sửa schema, mà Pydantic cũng không biết kiểu nào
+    hợp lệ nếu chưa đọc `field_type` dưới CSDL. Phép kiểm thật nằm ở
+    `label_value_service.write_value`.
+    """
 
     field_id: int
-    option_id: int | None = None
+    value: Any = None

@@ -66,7 +66,27 @@ def label_option_out(o: WorkLabelOption) -> dict:
 
 def label_field_out(f: WorkLabelField, options: list[WorkLabelOption]) -> dict:
     return {"id": f.id, "name": f.name, "sort_order": f.sort_order, "list_id": f.list_id,
+            "field_type": int(f.field_type),
             "options": [label_option_out(o) for o in options]}
+
+
+def task_label_out(tl, employee_name: str = "") -> dict:
+    """Một giá trị nhãn trên task. Trả ĐỦ mọi cột `value_*` chứ không chỉ cột
+    hợp kiểu: giao diện tự đọc theo `field_type`, và trả đủ thì đổi kiểu trường
+    xong dữ liệu cũ vẫn còn đó để xem lại.
+
+    `value_number` về CHUỖI: JSON của Python biến `Decimal` thành float, và float
+    là chỗ 1234.5678 hiện ra 1234.5677999999999.
+    """
+    return {
+        "field_id": tl.field_id,
+        "option_id": tl.option_id,
+        "value_text": tl.value_text or "",
+        "value_number": None if tl.value_number is None else str(tl.value_number),
+        "value_date": tl.value_date or "",
+        "value_employee_id": tl.value_employee_id,
+        "value_employee_name": employee_name,
+    }
 
 
 def task_out(t: WorkTask, *, assignees: list[dict], tag_ids: list[int],

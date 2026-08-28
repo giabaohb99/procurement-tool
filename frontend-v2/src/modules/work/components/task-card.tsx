@@ -13,8 +13,20 @@ import { memo, type ReactNode } from 'react'
 
 import { cn } from '@/shared/utils/cn'
 import { labelFieldId, type CardFields, type CardFieldKey } from '../types/view-options'
-import type { WorkLabelField, WorkTag, WorkTask } from '../types/work'
-import { WORK_ASSIGNEE_KIND, WORK_PRIORITY, WORK_TASK_STATUS } from '../types/work'
+import type {
+  WorkLabelField,
+  WorkLabelOption,
+  WorkTag,
+  WorkTask,
+  WorkTaskLabelValue,
+} from '../types/work'
+import {
+  fieldHasOptions,
+  WORK_ASSIGNEE_KIND,
+  WORK_FIELD_TYPE,
+  WORK_PRIORITY,
+  WORK_TASK_STATUS,
+} from '../types/work'
 import { dueTone, dueToneClass, formatDueLabel } from '../utils/due-date'
 import { taskDraggableId } from '../utils/kanban-drop'
 import { chipClass, priorityColor } from '../utils/work-colors'
@@ -169,15 +181,14 @@ function buildFieldRow(
   const fieldId = labelFieldId(key)
   if (fieldId !== null) {
     const field = labelFields.find((f) => f.id === fieldId)
-    const chosen = task.labels.find((l) => l.field_id === fieldId)
-    const option = field?.options.find((o) => o.id === chosen?.option_id)
-    if (!field || !option) return null
-    return {
-      key,
-      icon: CircleDot,
-      label: field.name,
-      value: <Chip color={option.color}>{option.name}</Chip>,
-    }
+    if (!field) return null
+    const values = task.labels.filter((l) => l.field_id === fieldId)
+    if (values.length === 0) return null
+    const value = renderLabelValue(field, values)
+    //  Trường có dòng nhưng RỖNG ruột (giá trị vừa bị xóa khỏi bộ chọn) thì bỏ
+    //  hẳn dòng, không vẽ tên trường cụt lủn.
+    if (value === null) return null
+    return { key, icon: CircleDot, label: field.name, value }
   }
 
   switch (key) {
@@ -261,6 +272,42 @@ function buildFieldRow(
     default:
       return null
   }
+}
+
+/** Phần giá trị của một trường tùy biến trên thẻ, vẽ theo kiểu của trường. */
+function renderLabelValue(field: WorkLabelField, values: WorkTaskLabelValue[]): ReactNode {
+  const first = values[0]
+
+  if (fieldHasOptions(field.field_type)) {
+    const chips = values
+      .map((v) => field.options.find((o) => o.id === v.option_id))
+      .filter((o): o is WorkLabelOption => o !== undefined)
+      .map((o) => (
+        <Chip key={o.id} color={o.color}>
+          {o.name}
+        </Chip>
+      ))
+    return chips.length > 0 ? chips : null
+  }
+
+  switch (field.field_type) {
+    case WORK_FIELD_TYPE.PERSON:
+      return first.value_employee_name || (first.value_employee_id ? `#${first.value_employee_id}` : null)
+    case WORK_FIELD_TYPE.NUMBER:
+      //  Bỏ số 0 thừa ở đuôi: cột `Numeric(18, 4)` trả "12.5000", đọc trên thẻ
+      //  thì "12,5" mới là thứ người ta gõ vào.
+      return first.value_number === null ? null : formatFieldNumber(first.value_number)
+    case WORK_FIELD_TYPE.DATE:
+      return first.value_date ? formatDueLabel(first.value_date) : null
+    default:
+      return first.value_text || null
+  }
+}
+
+/** "12.5000" → "12,5"; giữ nguyên phần lẻ thật sự có nghĩa. */
+function formatFieldNumber(raw: string): string {
+  const trimmed = raw.includes('.') ? raw.replace(/0+$/, '').replace(/\.$/, '') : raw
+  return trimmed.replace('.', ',')
 }
 
 function Chip({ color, children }: { color: string; children: React.ReactNode }) {

@@ -4,7 +4,19 @@ import { useState } from 'react'
 import { Button } from '@/shared/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
 import { Input } from '@/shared/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
+import {
+  fieldHasOptions,
+  WORK_FIELD_TYPE,
+  WORK_FIELD_TYPES,
+} from '../types/work'
 import { cn } from '@/shared/utils/cn'
 import {
   useCreateLabelField,
@@ -44,10 +56,15 @@ export function ListConfigDialog({ open, listId, onClose }: ListConfigDialogProp
   const createOption = useCreateLabelOption(listId)
   const deleteOption = useDeleteLabelOption(listId)
 
-  const [tenTag, setTenTag] = useState('')
-  const [mauTag, setMauTag] = useState('sky')
-  const [tenTruong, setTenTruong] = useState('')
-  const [tenGiaTri, setTenGiaTri] = useState<Record<number, string>>({})
+  const [tagName, setTagName] = useState('')
+  const [tagColor, setTagColor] = useState('sky')
+  const [fieldName, setFieldName] = useState('')
+  const [fieldType, setFieldType] = useState<number>(WORK_FIELD_TYPE.SINGLE)
+  const [optionName, setOptionName] = useState<Record<number, string>>({})
+  //  Màu của giá trị SẮP thêm, nhớ theo từng trường. Trước đây khóa cứng
+  //  `slate` nên mọi giá trị người dùng tự khai đều xám ngoét, trong khi giá trị
+  //  do seed nạp thì có màu — nhìn như tính năng hỏng.
+  const [optionColor, setOptionColor] = useState<Record<number, string>>({})
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
@@ -65,17 +82,17 @@ export function ListConfigDialog({ open, listId, onClose }: ListConfigDialogProp
           <TabsContent value="tags" className="space-y-3 pt-3">
             <div className="flex items-center gap-2">
               <Input
-                value={tenTag}
+                value={tagName}
                 placeholder="Tên tag"
-                onChange={(e) => setTenTag(e.target.value)}
+                onChange={(e) => setTagName(e.target.value)}
               />
-              <ColorPicker value={mauTag} onChange={setMauTag} />
+              <ColorPicker value={tagColor} onChange={setTagColor} />
               <Button
                 onClick={() => {
-                  if (!tenTag.trim()) return
+                  if (!tagName.trim()) return
                   createTag.mutate(
-                    { name: tenTag.trim(), color: mauTag },
-                    { onSuccess: () => setTenTag('') },
+                    { name: tagName.trim(), color: tagColor },
+                    { onSuccess: () => setTagName('') },
                   )
                 }}
               >
@@ -110,16 +127,35 @@ export function ListConfigDialog({ open, listId, onClose }: ListConfigDialogProp
           <TabsContent value="labels" className="space-y-4 pt-3">
             <div className="flex items-center gap-2">
               <Input
-                value={tenTruong}
+                value={fieldName}
                 placeholder='Tên trường, ví dụ "Phiên bản"'
-                onChange={(e) => setTenTruong(e.target.value)}
+                onChange={(e) => setFieldName(e.target.value)}
               />
+              {/*  Chọn KIỂU ngay lúc khai, như hộp «Add custom field» của Lark.
+                  Kiểu KHÔNG sửa được sau khi tạo: đổi kiểu thì mọi giá trị đã
+                  gán nằm sai cột, nên muốn đổi phải xóa trường rồi khai lại. */}
+              <Select
+                value={String(fieldType)}
+                onValueChange={(v) => setFieldType(Number(v))}
+              >
+                <SelectTrigger className="w-48 shrink-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {WORK_FIELD_TYPES.map((t) => (
+                    <SelectItem key={t.value} value={String(t.value)}>
+                      {t.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Button
+                className="shrink-0"
                 onClick={() => {
-                  if (!tenTruong.trim()) return
+                  if (!fieldName.trim()) return
                   createField.mutate(
-                    { name: tenTruong.trim() },
-                    { onSuccess: () => setTenTruong('') },
+                    { name: fieldName.trim(), field_type: fieldType },
+                    { onSuccess: () => setFieldName('') },
                   )
                 }}
               >
@@ -131,7 +167,12 @@ export function ListConfigDialog({ open, listId, onClose }: ListConfigDialogProp
             {fields.map((f) => (
               <div key={f.id} className="rounded-lg border p-3">
                 <div className="mb-2 flex items-center justify-between">
-                  <span className="text-sm font-medium">{f.name}</span>
+                  <span className="flex items-center gap-2 text-sm font-medium">
+                    {f.name}
+                    <span className="rounded bg-muted px-1.5 py-0.5 text-[11px] font-normal text-muted-foreground">
+                      {WORK_FIELD_TYPES.find((t) => t.value === f.field_type)?.label ?? 'Chọn một giá trị'}
+                    </span>
+                  </span>
                   <Button
                     variant="ghost"
                     size="icon"
@@ -142,6 +183,11 @@ export function ListConfigDialog({ open, listId, onClose }: ListConfigDialogProp
                   </Button>
                 </div>
 
+                {/*  Bốn kiểu còn lại (người · số · ngày · chữ) nhập tự do nên
+                    KHÔNG có bộ giá trị — hiện ô "Thêm giá trị" ở đó chỉ tổ làm
+                    người dùng gõ vào rồi tự hỏi sao không thấy đâu. */}
+                {fieldHasOptions(f.field_type) ? (
+                <>
                 <div className="mb-2 flex flex-wrap gap-2">
                   {f.options.map((o) => (
                     <span
@@ -166,24 +212,30 @@ export function ListConfigDialog({ open, listId, onClose }: ListConfigDialogProp
 
                 <div className="flex items-center gap-2">
                   <Input
-                    value={tenGiaTri[f.id] ?? ''}
+                    value={optionName[f.id] ?? ''}
                     placeholder="Giá trị mới"
-                    onChange={(e) => setTenGiaTri({ ...tenGiaTri, [f.id]: e.target.value })}
+                    onChange={(e) => setOptionName({ ...optionName, [f.id]: e.target.value })}
+                  />
+                  <ColorPicker
+                    value={optionColor[f.id] ?? 'sky'}
+                    onChange={(color) => setOptionColor({ ...optionColor, [f.id]: color })}
                   />
                   <Button
                     variant="outline"
                     onClick={() => {
-                      const name = (tenGiaTri[f.id] ?? '').trim()
+                      const name = (optionName[f.id] ?? '').trim()
                       if (!name) return
                       createOption.mutate(
-                        { fieldId: f.id, values: { name, color: 'slate' } },
-                        { onSuccess: () => setTenGiaTri({ ...tenGiaTri, [f.id]: '' }) },
+                        { fieldId: f.id, values: { name, color: optionColor[f.id] ?? 'sky' } },
+                        { onSuccess: () => setOptionName({ ...optionName, [f.id]: '' }) },
                       )
                     }}
                   >
                     Thêm giá trị
                   </Button>
                 </div>
+                </>
+                ) : null}
               </div>
             ))}
           </TabsContent>

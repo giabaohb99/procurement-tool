@@ -176,7 +176,8 @@ export function useDeleteTag(listId: number) {
 export function useCreateLabelField(listId: number) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (values: { name: string }) => workApi.createLabelField(listId, values),
+    mutationFn: (values: { name: string; field_type?: number }) =>
+      workApi.createLabelField(listId, values),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.work.labelFields(listId) })
     },

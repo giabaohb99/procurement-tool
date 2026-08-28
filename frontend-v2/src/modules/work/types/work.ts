@@ -114,12 +114,57 @@ export interface WorkLabelOption {
   sort_order: number
 }
 
+/**
+ * Sáu kiểu trường tùy biến (B-13) — bản sao của `WorkLabelFieldType` ở
+ * `backend/app/modules/work/model.py`. Đổi số bên đó thì phải sửa tay ở đây.
+ */
+export const WORK_FIELD_TYPE = {
+  SINGLE: 1,
+  MULTI: 2,
+  PERSON: 3,
+  NUMBER: 4,
+  DATE: 5,
+  TEXT: 6,
+} as const
+
+export type WorkFieldType = (typeof WORK_FIELD_TYPE)[keyof typeof WORK_FIELD_TYPE]
+
+export const WORK_FIELD_TYPES: { value: WorkFieldType; label: string }[] = [
+  { value: WORK_FIELD_TYPE.SINGLE, label: 'Chọn một giá trị' },
+  { value: WORK_FIELD_TYPE.MULTI, label: 'Chọn nhiều giá trị' },
+  { value: WORK_FIELD_TYPE.PERSON, label: 'Người' },
+  { value: WORK_FIELD_TYPE.NUMBER, label: 'Số' },
+  { value: WORK_FIELD_TYPE.DATE, label: 'Ngày' },
+  { value: WORK_FIELD_TYPE.TEXT, label: 'Chữ' },
+]
+
+/** Hai kiểu duy nhất có bộ giá trị đặt sẵn — bốn kiểu kia nhập tự do. */
+export function fieldHasOptions(type: number): boolean {
+  return type === WORK_FIELD_TYPE.SINGLE || type === WORK_FIELD_TYPE.MULTI
+}
+
 export interface WorkLabelField {
   id: number
   list_id: number
   name: string
   sort_order: number
+  field_type: number
   options: WorkLabelOption[]
+}
+
+/**
+ * Một giá trị nhãn trên task. Chỉ MỘT cột `value_*` có nghĩa, tùy `field_type`
+ * của trường; các cột kia rỗng. `value_number` là CHUỖI vì JSON hóa `Decimal`
+ * thành số thực là chỗ 1234.5678 hiện ra 1234.5677999999999.
+ */
+export interface WorkTaskLabelValue {
+  field_id: number
+  option_id: number | null
+  value_text: string
+  value_number: string | null
+  value_date: string
+  value_employee_id: number | null
+  value_employee_name: string
 }
 
 export interface WorkAssignee {
@@ -148,7 +193,7 @@ export interface WorkTask {
   updated_at: string
   assignees: WorkAssignee[]
   tag_ids: number[]
-  labels: { field_id: number; option_id: number }[]
+  labels: WorkTaskLabelValue[]
   subtask_done: number
   subtask_total: number
   comment_count: number

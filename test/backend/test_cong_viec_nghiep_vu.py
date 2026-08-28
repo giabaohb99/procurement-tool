@@ -150,7 +150,11 @@ def test_nhan_tuy_bien_chi_giu_mot_gia_tri_moi_truong(db, owner, work_list):
 
     task_service.set_label(db, owner, t["id"], f["id"], v1["id"])
     ra = task_service.set_label(db, owner, t["id"], f["id"], v2["id"])
-    assert ra["labels"] == [{"field_id": f["id"], "option_id": v2["id"]}]
+    #  Khẳng định ĐÚNG MỘT DÒNG và đúng giá trị, không so dict tuyệt đối: từ
+    #  B-13 payload nhãn còn mang thêm các cột `value_*` của năm kiểu kia.
+    assert len(ra["labels"]) == 1
+    assert ra["labels"][0]["field_id"] == f["id"]
+    assert ra["labels"][0]["option_id"] == v2["id"]
 
     ra = task_service.set_label(db, owner, t["id"], f["id"], None)   # bỏ chọn
     assert ra["labels"] == []

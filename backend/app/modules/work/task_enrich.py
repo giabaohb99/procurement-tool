@@ -8,6 +8,7 @@ mẻ rồi phát về theo `task_id`.
 from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 
+from app.modules.work import serializer as ser
 from app.modules.work.label_model import WorkTaskLabel, WorkTaskTag
 from app.modules.work.task_model import WorkTask, WorkTaskAssignee
 
@@ -47,9 +48,13 @@ def collect(db: Session, tasks: list[WorkTask]) -> dict:
         tags.setdefault(tt.task_id, []).append(tt.tag_id)
 
     labels: dict[int, list] = {}
-    for tl in db.query(WorkTaskLabel).filter(WorkTaskLabel.task_id.in_(ids)).all():
+    label_rows = db.query(WorkTaskLabel).filter(WorkTaskLabel.task_id.in_(ids)).all()
+    #  Tên nhân sự của trường kiểu NGƯỜI: gộp một query cho cả bó, không tra
+    #  trong vòng lặp.
+    people = _employee_names(db, [r.value_employee_id for r in label_rows if r.value_employee_id])
+    for tl in label_rows:
         labels.setdefault(tl.task_id, []).append(
-            {"field_id": tl.field_id, "option_id": tl.option_id})
+            ser.task_label_out(tl, (people.get(tl.value_employee_id) or {}).get("name", "")))
 
     #  Tiến độ việc con n/m (C-02): đếm theo CHA, chỉ tính việc con còn sống.
     from app.modules.work.model import WorkTaskStatus  # tránh vòng import ở đầu tệp

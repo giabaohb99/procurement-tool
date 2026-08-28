@@ -97,7 +97,7 @@ def set_tags(task_id: int, data: schema.TagsIn, db: Session = Depends(get_db),
 @router.put("/tasks/{task_id}/label")
 def set_label(task_id: int, data: schema.LabelIn, db: Session = Depends(get_db),
               user=Depends(require("work_task", "write"))):
-    """Chọn một giá trị cho một trường nhãn tùy biến (B-08)."""
+    """Đặt giá trị cho một trường tùy biến. Sáu kiểu, xem `LabelIn` (B-13)."""
     return success(
-        tasks.set_label(db, _actor(db, user), task_id, data.field_id, data.option_id),
+        tasks.set_label(db, _actor(db, user), task_id, data.field_id, data.value),
         "Đã lưu")

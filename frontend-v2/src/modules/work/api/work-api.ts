@@ -100,7 +100,8 @@ export const workApi = {
   labelFields: (listId: number) =>
     apiGet<WorkLabelField[]>(`/api/work/lists/${listId}/label-fields`),
 
-  createLabelField: (listId: number, values: { name: string }) =>
+  /** `field_type` theo `WORK_FIELD_TYPE`; bỏ trống là «chọn một giá trị». */
+  createLabelField: (listId: number, values: { name: string; field_type?: number }) =>
     apiPost<WorkLabelField>(`/api/work/lists/${listId}/label-fields`, values),
 
   deleteLabelField: (fieldId: number) => apiDelete(`/api/work/label-fields/${fieldId}`),

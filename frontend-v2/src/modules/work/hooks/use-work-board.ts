@@ -160,12 +160,13 @@ export function useSetTaskLabel(listId: number) {
     mutationFn: ({
       taskId,
       fieldId,
-      optionId,
+      value,
     }: {
       taskId: number
       fieldId: number
-      optionId: number | null
-    }) => workTaskApi.setLabel(taskId, fieldId, optionId),
+      /** Đa hình theo kiểu trường — xem `workTaskApi.setLabel`. */
+      value: unknown
+    }) => workTaskApi.setLabel(taskId, fieldId, value),
     onSuccess: (_data, variables) => invalidateTask(queryClient, listId, variables.taskId),
   })
 }

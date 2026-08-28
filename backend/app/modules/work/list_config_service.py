@@ -17,6 +17,7 @@ from app.modules.work.label_model import (WorkLabelField, WorkLabelOption,
 from app.modules.work.membership_service import (CAN_MANAGE, Actor,
                                                  block_if_archived,
                                                  get_list_or_403)
+from app.modules.work.model import WorkLabelFieldType
 from app.modules.work.task_model import WorkSection, WorkTask
 
 
@@ -182,8 +183,19 @@ def create_label_field(db: Session, actor: Actor, list_id: int, data) -> dict:
     if db.query(WorkLabelField).filter(WorkLabelField.list_id == list_id,
                                        WorkLabelField.name == data.name.strip()).first():
         raise HTTPException(400, "Danh sách đã có trường nhãn tên này")
+    #  Kiểu lạ thì chặn ngay: lọt xuống CSDL là mọi nơi đọc `WorkLabelFieldType`
+    #  đều ném `ValueError` và cả bảng kanban trắng trang.
+    try:
+        #  KHÔNG dùng `or 1`: `0 or 1` ra 1 nên kiểu 0 (không tồn tại) lọt qua
+        #  thành "chọn một" một cách im lặng.
+        raw = getattr(data, "field_type", None)
+        kind = WorkLabelFieldType(int(1 if raw is None else raw))
+    except ValueError:
+        raise HTTPException(400, "Kiểu trường không hợp lệ")
+
     f = WorkLabelField(company_id=actor.company_id, list_id=list_id,
                        name=data.name.strip(), sort_order=data.sort_order or 0,
+                       field_type=int(kind),
                        created_by=actor.user_id, updated_by=actor.user_id)
     db.add(f)
     db.commit()

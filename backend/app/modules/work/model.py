@@ -67,6 +67,30 @@ class WorkMemberRole(IntEnum):
     VIEWER = 4
 
 
+class WorkLabelFieldType(IntEnum):
+    """Kiểu của một TRƯỜNG tùy biến (B-13) — sáu kiểu cơ bản như Lark.
+
+    `SINGLE = 1` là mặc định và là kiểu DUY NHẤT tồn tại trước B-13, nên mọi
+    trường đã khai trước đó nhận đúng giá trị này khi migration chạy: không phải
+    vá dữ liệu cũ.
+
+    Chỉ hai kiểu CHỌN mới có bộ giá trị (`tab_work_label_option`); bốn kiểu còn
+    lại đọc thẳng từ cột `value_*` của `tab_work_task_label`.
+    """
+
+    SINGLE = 1      # chọn MỘT giá trị trong bộ
+    MULTI = 2       # chọn NHIỀU giá trị trong bộ
+    PERSON = 3      # một nhân sự
+    NUMBER = 4      # số
+    DATE = 5        # ngày, lưu chuỗi YYYY-MM-DD như mọi ngày khác của phân hệ
+    TEXT = 6        # chữ một dòng
+
+
+#  Hai kiểu có bộ giá trị đặt sẵn. Gom lại một chỗ vì cả service lẫn serializer
+#  đều phải hỏi "trường này có options không".
+LABEL_TYPES_WITH_OPTIONS = (WorkLabelFieldType.SINGLE, WorkLabelFieldType.MULTI)
+
+
 class WorkAssigneeKind(IntEnum):
     """Người phụ trách hay người theo dõi. Một người chỉ một dòng mỗi task."""
 
