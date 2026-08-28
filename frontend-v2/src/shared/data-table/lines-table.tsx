@@ -1,6 +1,5 @@
 import { Columns3 } from 'lucide-react'
 import { useCallback, useMemo, useRef, type ReactNode } from 'react'
-import { createPortal } from 'react-dom'
 
 import { Button } from '@/shared/ui/button'
 import {
@@ -12,6 +11,7 @@ import {
 } from '@/shared/ui/table'
 import { cn } from '@/shared/utils/cn'
 import { columnColorStyle } from './column-color-palette'
+import { ColumnDragOverlay } from './column-drag-overlay'
 import { ColumnHeaderCell } from './column-header-cell'
 import { ColumnVisibilityMenu } from './column-visibility-menu'
 import { measureColumnContentWidth } from './measure-column-width'
@@ -251,7 +251,6 @@ export function LinesTable<T>({
                   colorStyle={columnColorStyle(layout.columnColors[column.key], 'head')}
                   pinnedOffset={pinnedOffsets[column.key]}
                   dragging={drag?.fromKey === column.key}
-                  dropSide={drag?.overKey === column.key ? drag.side : null}
                   onResize={(next) => setColumnWidth(column.key, next)}
                   onDragStart={(event) => startDrag(event, column.key, columnLabel(column.header))}
                 />
@@ -291,6 +290,9 @@ export function LinesTable<T>({
                       alignClass(column.align),
                       cellClassName?.(column.key, row, index),
                       pinClass(column.key),
+                      // Cột đang bay theo con trỏ thì bản gốc mờ đi —
+                      // xem ghi chú ở `column-header-cell.tsx`.
+                      drag?.fromKey === column.key && 'opacity-40',
                     )}
                   >
                     <div
@@ -315,18 +317,9 @@ export function LinesTable<T>({
         </Table>
       </div>
 
-      {/* Nhãn bám con trỏ khi kéo cột — vẽ vào `body` để không bị khung viền
+      {/* Lớp phủ lúc kéo cột — vẽ vào `body` để không bị khung viền
           `overflow-hidden` của bảng cắt mất. */}
-      {drag &&
-        createPortal(
-          <div
-            style={{ left: drag.x + 12, top: drag.y + 12 }}
-            className="pointer-events-none fixed z-50 rounded-md border bg-popover px-2.5 py-1 text-xs font-medium text-popover-foreground shadow-lg"
-          >
-            {drag.label}
-          </div>,
-          document.body,
-        )}
+      {drag && <ColumnDragOverlay drag={drag} />}
     </div>
   )
 }

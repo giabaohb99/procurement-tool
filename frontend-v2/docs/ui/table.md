@@ -292,11 +292,28 @@ Người dùng tự chỉnh, bảng nhớ vào localStorage theo `storageKey`:
 | Tô màu cột | Bảng màu trong menu | `columnColors` |
 | Vừa nội dung tất cả | Mục cuối menu | `columnWidths` |
 
-Hai chỉ báo khi kéo thả, cùng một ngôn ngữ hình ảnh:
-- Kéo trên hàng tiêu đề → vạch dọc có chóp mũi tên ngay khe sẽ chèn
-  (`column-drop-indicator.tsx`).
-- Kéo trong menu → vạch ngang + "viên" nhãn bám con trỏ (portal ra `body`, vì
+Chỉ báo khi kéo thả:
+
+- **Kéo trên hàng tiêu đề** → lớp phủ `column-drag-overlay.tsx`, dựng theo lối
+  `DragOverlay` của dnd-kit, gồm ba lớp vẽ vào `body` bằng toạ độ màn hình:
+  1. khung gạch đứt ở chỗ cột vừa được nhấc lên — cột gốc chỉ `opacity-40`, **đừng
+     ẩn hẳn**: ẩn rồi thì chỗ cũ là một ô trắng trơn trông y như bảng đang tải dở.
+     Cũng vì vậy nền khung để `bg-muted/15`, tô đậm hơn là lấp mất chữ mờ;
+  2. dải sáng phủ nguyên cột đích;
+  3. **bản sao thật của cột** bám con trỏ — `capture-column-snapshot.ts` chép ô
+     tiêu đề + tối đa 200 dòng bằng `cloneNode`, và **ghim chiều cao từng dòng
+     theo dòng gốc**: không ghim thì bản sao (chỉ một cột, không ảnh/huy hiệu)
+     thấp hơn bảng, chép hết dòng vẫn hụt một mảng trắng ở đáy.
+
+  Vạch thả chạy suốt chiều cao bảng, chóp mũi tên hai đầu, và vẽ **trước** bản
+  sao để cầm cột đi ngang qua thì vạch khuất sau cột chứ không cắt đôi nó.
+  Bản sao **không xoay, không phóng to** — phải khớp từng dòng với bảng bên dưới
+  thì mắt mới so được cột sắp nằm vào đâu.
+- **Kéo trong menu** → vạch ngang + "viên" nhãn bám con trỏ (portal ra `body`, vì
   khung menu và `overflow-y-auto` của danh sách sẽ xén mất).
+
+Đã thử và **bỏ**: đôn cột (cột bị trỏ tới dạt sang nhường chỗ, kiểu `sortable`) —
+không hợp với bảng nhiều cột.
 
 Thứ tự luôn tính trên danh sách ĐẦY ĐỦ (kể cả cột đang ẩn) — sắp lại chỉ trên cột
 đang hiện thì cột ẩn bị dồn xuống cuối lúc bật lại.

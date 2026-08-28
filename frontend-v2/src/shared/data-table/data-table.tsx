@@ -7,6 +7,7 @@ import { Skeleton } from '@/shared/ui/skeleton'
 import { Table, TableBody, TableCell, TableHeader, TableRow } from '@/shared/ui/table'
 import { cn } from '@/shared/utils/cn'
 import { columnColorStyle } from './column-color-palette'
+import { ColumnDragOverlay } from './column-drag-overlay'
 import { ColumnHeaderCell } from './column-header-cell'
 import { ColumnVisibilityMenu } from './column-visibility-menu'
 import { DataTablePagination } from './data-table-pagination'
@@ -446,7 +447,6 @@ export function DataTable<T>({
                   minWidth={column.minWidth ?? DEFAULT_MIN_WIDTH}
                   draggable={!column.stickyRight}
                   dragging={drag?.fromKey === column.key}
-                  dropSide={drag?.overKey === column.key ? drag.side : null}
                   sortDir={sortBy === column.key ? sortDir : null}
                   onSort={
                     onSortChange
@@ -520,7 +520,14 @@ export function DataTable<T>({
                           // màu đó kể cả khi rê chuột, đúng ý "đánh dấu cột".
                           ...columnColorStyle(layout.columnColors[column.key], 'cell'),
                         }}
-                        className={cn(BODY_CELL, alignClass(column.align), pinClass(column.key))}
+                        className={cn(
+                          BODY_CELL,
+                          alignClass(column.align),
+                          pinClass(column.key),
+                          // Cột đang bay theo con trỏ thì bản gốc mờ đi —
+                          // xem ghi chú ở `column-header-cell.tsx`.
+                          drag?.fromKey === column.key && 'opacity-40',
+                        )}
                       >
                         {/*
                           Bọc `truncate` giống ô tiêu đề: kéo cột hẹp lại thì chữ
@@ -547,16 +554,10 @@ export function DataTable<T>({
 
       {pagination && <DataTablePagination {...pagination} />}
 
-      {/* Nhãn bám theo con trỏ trong lúc kéo cột — tự vẽ nên bám sát từng khung
-          hình, khác ảnh kéo mờ và trễ nhịp của HTML5 drag-and-drop. */}
-      {drag && (
-        <div
-          className="pointer-events-none fixed z-50 translate-x-3 -translate-y-1/2 rounded-md border bg-popover px-2 py-1 text-xs font-medium text-popover-foreground shadow-md"
-          style={{ left: drag.x, top: drag.y }}
-        >
-          {drag.label}
-        </div>
-      )}
+      {/* Lớp phủ lúc kéo cột (bóng cột bám con trỏ + cột đích sáng lên + vạch thả
+          suốt chiều cao bảng) — tự vẽ nên bám sát từng khung hình, khác ảnh kéo
+          mờ và trễ nhịp của HTML5 drag-and-drop. */}
+      {drag && <ColumnDragOverlay drag={drag} />}
     </div>
   )
 }

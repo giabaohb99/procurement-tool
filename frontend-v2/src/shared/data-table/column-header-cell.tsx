@@ -4,10 +4,9 @@ import { useState, type CSSProperties, type PointerEvent as ReactPointerEvent } 
 import { RequiredMark } from '@/shared/ui/required-mark'
 import { TableHead } from '@/shared/ui/table'
 import { cn } from '@/shared/utils/cn'
-import { ColumnDropIndicator } from './column-drop-indicator'
 import { ColumnResizeHandle } from './column-resize-handle'
 import { splitRequiredHeader } from './required-header'
-import type { ColumnDropSide, DataTableColumn } from './types'
+import type { DataTableColumn } from './types'
 
 interface ColumnHeaderCellProps<T> {
   column: DataTableColumn<T>
@@ -16,8 +15,6 @@ interface ColumnHeaderCellProps<T> {
   minWidth: number
   /** Ô này đang được kéo đi. */
   dragging?: boolean
-  /** Cột kéo sẽ chèn vào trước/sau ô này; `null` = không phải đích đang trỏ. */
-  dropSide?: ColumnDropSide | null
   /** `false` với cột thao tác cố định bên phải: vẫn cho đổi độ rộng, không cho dời. */
   draggable?: boolean
   /** Cột đang ghim: khoảng cách dính tính từ mép trái bảng. */
@@ -43,7 +40,6 @@ export function ColumnHeaderCell<T>({
   className,
   minWidth,
   dragging,
-  dropSide,
   draggable = true,
   pinnedOffset,
   pinnedRightOffset,
@@ -76,6 +72,9 @@ export function ColumnHeaderCell<T>({
           : draggable
             ? 'cursor-grab active:cursor-grabbing'
             : 'cursor-default',
+        // Ô nguồn MỜ chứ không tàng hình: ẩn hẳn thì chỗ cũ thành một ô trắng
+        // trơn trông như bảng đang tải dở, mà người dùng vẫn cần đọc được cột
+        // mình đang bê vốn nằm ở đâu, dữ liệu gì.
         dragging && 'opacity-40',
         className,
       )}
@@ -111,7 +110,6 @@ export function ColumnHeaderCell<T>({
         )}
       </div>
 
-      {dropSide && <ColumnDropIndicator side={dropSide} />}
       <ColumnResizeHandle minWidth={minWidth} onResize={onResize} onResizingChange={setResizing} />
     </TableHead>
   )
