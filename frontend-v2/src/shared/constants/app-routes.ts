@@ -122,8 +122,24 @@ export const appRoutes = {
     me: '/forum/me',
     userProfile: (id: number | string) => `/forum/users/${id}`,
   },
+  /**
+   * Phân hệ DỰ ÁN (CR-216) — task list kiểu Lark Tasks.
+   *
+   * **Một dự án CHÍNH LÀ một danh sách công việc**, không phải hai tầng. Trước
+   * đây có hai phân hệ mang hai tên cho cùng một thứ: «Công việc» (`/work`, làm
+   * thật) và «Dự án» (`/project`, mới là khung rỗng "Sắp có"). Nay gộp về một —
+   * giữ tên **Dự án** cho đúng cách người dùng gọi, giữ đường dẫn `/project`.
+   *
+   * ⚠️ Chỉ ĐỔI TÊN ở tầng người dùng. Mã nguồn vẫn là `modules/work/`, API vẫn
+   * `/api/work/...`, entity phân quyền vẫn `work_task`, bảng vẫn `tab_work_*` —
+   * đổi mấy thứ đó phải kèm migration và nạp lại phân quyền, không đáng.
+   */
   project: {
     root: '/project',
+    /** Bảng liệt kê MỌI dự án — chủ sở hữu, thành viên, ngày tạo (kiểu Lark). */
+    list: '/project/lists',
+    /** Một dự án — kanban/danh sách/Gantt nằm trong đây, đổi bằng tab. */
+    detail: (id: number | string) => `/project/lists/${id}`,
   },
   document: {
     root: '/document',

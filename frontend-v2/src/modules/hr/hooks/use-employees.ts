@@ -12,7 +12,7 @@ import type { EmployeeFormValues } from '../schemas/employee-schema'
  * Whitelist lọc của backend: `code`, `full_name`, `email`, `position`,
  * `department_id`, `status`, `is_active` — gửi key ngoài danh sách này là vô ích.
  */
-export function useEmployees(params: ListParams = {}) {
+export function useEmployees(params: ListParams = {}, options: { enabled?: boolean } = {}) {
   const query: ListParams = {
     page: 1,
     page_size: appConfig.defaultPageSize,
@@ -23,6 +23,10 @@ export function useEmployees(params: ListParams = {}) {
     queryKey: queryKeys.hr.employees(query),
     queryFn: () => employeeApi.list(query),
     placeholderData: keepPreviousData,
+    //  `enabled` cho phân hệ khác MƯỢN danh bạ này tắt lời gọi khi người dùng
+    //  không có `employee.read` — cứ mount là gọi thì họ ăn toast 403 ngay lúc
+    //  mở màn (bẫy đã dính ở tab «Công nợ» của Nhà cung cấp).
+    enabled: options.enabled ?? true,
   })
 }
 

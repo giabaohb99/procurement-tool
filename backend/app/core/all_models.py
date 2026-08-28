@@ -60,3 +60,8 @@ from app.modules.vehicle_booking import model as _vehicle_booking  # noqa: F401
 from app.modules.assistant import model as _assistant  # noqa: F401
 from app.modules.forum import model as _forum  # noqa: F401
 from app.modules.user_preference import model as _user_preference  # noqa: F401
+# Phân hệ Công việc (CR-216) — ba tệp model, phải nạp ĐỦ CẢ BA hoặc
+# `alembic --autogenerate` bỏ sót bảng mà không báo gì.
+from app.modules.work import model as _work  # noqa: F401
+from app.modules.work import task_model as _work_task  # noqa: F401
+from app.modules.work import label_model as _work_label  # noqa: F401

@@ -71,6 +71,9 @@ export const ENTITIES = [
   //  Ai được KHAI hộp thư gửi và cấp cho người khác dùng (26/08/2026). Khác hẳn
   //  quyền *dùng* một hộp thư — cái đó khai đích danh ở `tab_mailbox_member`.
   'mailbox',
+  //  Phân hệ Công việc (CR-216). MỘT khóa cho cả phân hệ — quyền thật nằm ở
+  //  tầng thành viên của từng list, xem `doc/erp/cong-viec/04-phan-quyen.md`.
+  'work_task',
 ] as const
 
 export type PermissionEntity = (typeof ENTITIES)[number]

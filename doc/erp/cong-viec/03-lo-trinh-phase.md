@@ -10,7 +10,7 @@ bảng dữ liệu ở [`02-bang-du-lieu.md`](./02-bang-du-lieu.md); phân quy�
 
 ---
 
-## W0 — Nền dữ liệu và phân quyền (backend, chưa có giao diện)
+## W0 — Nền dữ liệu và phân quyền (backend, chưa có giao diện) — ✅ XONG 28/08/2026 (CR-217)
 
 **Phạm vi:** 14 bảng `tab_work_*` + migration; 4 IntEnum vào `status_catalog.py` +
 `code_sets.py` + chạy `gen_status_ts.py`; entity `work_task` vào `ENTITIES` +
@@ -22,7 +22,14 @@ bảng dữ liệu ở [`02-bang-du-lieu.md`](./02-bang-du-lieu.md); phân quy�
 `test_pham_vi_khai_du_b07.py` vẫn xanh (entity mới đã khai); seed không đổi hành vi
 role cũ.
 
-## W1 — API lõi: nhóm, list, thành viên, task, việc con
+**Đã làm (CR-217):** 12 bảng (không phải 14 — xem `README.md` ghi chú 2) +
+migration `631070f1b801` chạy sạch **cả hai chiều**; 4 IntEnum ở
+`app/modules/work/model.py`; `work_task` vào `ENTITIES` + `SCOPE_FIELDS` +
+`STD_ROLES`; model đăng đủ ba tệp ở `all_models.py`; khung phân hệ FE ở `/work`.
+**Chưa làm, cố ý:** bốn tệp rỗng `schema/service/controller` — dựng cùng W1 khi
+có nội dung thật, tệp rỗng chỉ là rác cho người đọc sau.
+
+## W1 — API lõi: nhóm, list, thành viên, task, việc con — ✅ XONG 28/08/2026 (CR-218)
 
 **Phạm vi:** A-01…A-05, A-08, A-09 (nhóm 2 cấp + kế thừa quyền) · B-01…B-07 (task đủ
 trường: PIC nhiều người, ngày, ưu tiên, kéo cột) · B-08 (nhãn tùy biến) · C-01, C-02,
@@ -35,7 +42,15 @@ task), bất biến một OWNER, vai trò hiệu lực `min()` khi kế thừa, 
 cả list lẫn `GET /tasks/{id}` theo id, xóa mềm không lộ ở query thường. Chạy đúng luật
 "chỉ test phần vừa sửa" — không quét full suite.
 
-## W2 — Giao diện: sidebar, kanban, panel chi tiết
+**Đã làm (CR-218):** 25 endpoint `/api/work/...`; mọi đường đi qua
+`membership_service` (`visible_list_ids` + `effective_role`); **31 test** ở
+`test_cong_viec_phan_quyen.py` (16) và `test_cong_viec_nghiep_vu.py` (15) — đủ 6
+bài bắt buộc của `04` §5, bài 7 (tập cha CR-215) để W3.
+**Chưa làm ở W1:** thùng rác B-09 (khôi phục — bản này mới có xóa mềm), chuyển
+task sang list khác B-10, mời theo phòng ban A-06 (cột `department_id` đã có sẵn
+trong bảng nhưng service chưa nở ra nhân sự). Cả ba đều đúng lịch **W4**.
+
+## W2 — Giao diện: sidebar, kanban, panel chi tiết — ◐ PHẦN LỚN XONG 28/08/2026 (CR-218)
 
 **Phạm vi:** phân hệ `frontend-v2/src/modules/work/` + đăng `module-registry.ts` (thẻ
 "Công việc") · sidebar cây nhóm → list (A-05) · kanban kéo thả cột/thẻ (D-01, B-07) ·
@@ -48,6 +63,21 @@ n/m (D-03, C-02) · dialog quản lý thành viên/cột/tag/nhãn · màn quả
 **Điều kiện đủ:** `docker compose exec erp npm run check` xanh; một đội dùng thử trọn
 vòng trên dev: tạo nhóm → tạo list → mời người → giao việc nhiều PIC → gắn nhãn → kéo
 cột → tick việc con → hoàn thành. Đây là mốc NGHIỆM THU BẢN ĐẦU (MVP).
+
+**Đã làm (CR-218):** sidebar cây nhóm→list · kanban kéo thả (dnd-kit, cập nhật
+lạc quan) · khung nhìn danh sách trên `DataTable` · panel chi tiết đủ trường +
+việc con + `AuditTimeline` · hộp thoại thành viên (mời/gỡ/chuyển quyền) và thiết
+lập tag/nhãn · thanh công cụ D-07 phần Việc mới · «Tất cả» · Sắp xếp · Tìm ·
+Tùy chỉnh · trạng thái khung nhìn nhớ ở `localStorage`. `npm run check` xanh.
+
+**CÒN THIẾU của chính W2 — phải làm nốt trước khi gọi là nghiệm thu MVP:**
+1. **«Lọc» điều kiện** bằng `conditional-filter` (§3.3) — P0, chưa có.
+2. **Kéo ngang đổi thứ tự CỘT** (§4) — thẻ kéo được rồi, cột thì chưa.
+3. Ghim list hay dùng trên sidebar (A-05).
+4. «Gom nhóm» ngoài cột tự đặt là D-08 (P1) nên KHÔNG chặn mốc này; tab
+   Dashboard/Activities cũng vậy — §2 cấm render tab chưa làm. **Gantt thì đã
+   có** (CR-219, làm sớm khỏi W5).
+Chưa có đội nào dùng thử trọn vòng trên dev, nên **mốc MVP chưa đóng**.
 
 ## W3 — Nối vào nền thông báo
 
@@ -75,8 +105,12 @@ ngưỡng (không spam chuông mỗi lần beat chạy).
 
 ## W5 — P2 theo nhu cầu thật (chỉ làm cái có người đòi)
 
-Ứng viên: B-13 trường tùy chỉnh kiểu chữ/số/ngày/người · B-11 việc lặp · B-12 gắn
-chứng từ ERP · D-04 lịch · D-05 gantt · A-07 nhân bản/mẫu list · C-04 nâng việc con
+**D-05 Gantt đã LÀM SỚM** ngày 28/08/2026 (CR-219) theo yêu cầu trực tiếp của khách —
+tự dựng theo bố cục DHTMLX, không cài thư viện GPLv2 của họ; phần phụ thuộc việc
+trước–sau vẫn chưa có (cần bảng `tab_work_task_link`).
+
+Ứng viên còn lại: B-13 trường tùy chỉnh kiểu chữ/số/ngày/người · B-11 việc lặp · B-12 gắn
+chứng từ ERP · D-04 lịch · A-07 nhân bản/mẫu list · C-04 nâng việc con
 thành task · G-04 lưu bộ lọc · H-04 xuất Excel (chờ khung Đ-13) · F-05 web push ·
 F-06 tool Trợ lý AI · Q10 toggle hiện việc con ra kanban · tích hợp Project-M (QĐ-T1) ·
 **cụm Gantt mở rộng** B-14 cột mốc + B-15 phụ thuộc FS/SS/FF/SF (`tab_work_task_link`,

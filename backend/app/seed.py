@@ -333,6 +333,19 @@ STD_ROLES = {
 }
 
 
+#  Phân hệ Công việc (CR-216) là CÔNG CỤ TOÀN DÂN — Q1 chốt "ai cũng tạo được
+#  task list", giống Diễn đàn. Nên thay vì chép một dòng vào mười vai trò, cấp
+#  một lượt ở đây: `setdefault` nên vai trò nào đã khai riêng thì giữ nguyên.
+#
+#  Phạm vi để 'all' KHÔNG có nghĩa "thấy mọi việc": entity này khai `PUBLIC` ở
+#  `SCOPE_FIELDS`, ai thấy list nào do bảng thành viên quyết (04-phan-quyen §2).
+#  Bốn hành động, không có `approve`/`cancel`/`print`/`export` — bản đầu không dùng.
+for _role_info in STD_ROLES.values():
+    _role_info["perms"].setdefault(
+        "work_task", (["read", "create", "write", "delete"], "all")
+    )
+
+
 def seed_standard_roles(db):
     """Tạo các vai trò chuẩn + ma trận quyền. Không tạo user; gán cho nhân sự ở màn Phân quyền.
 
