@@ -12,12 +12,12 @@ import { hrModule } from '@/modules/hr/routes'
 import { inventoryModule } from '@/modules/inventory/routes'
 import { procurementModule } from '@/modules/procurement/routes'
 import { productionModule } from '@/modules/production/routes'
-import { projectModule } from '@/modules/project/routes'
 import { reportModule } from '@/modules/report/routes'
 import { salesModule } from '@/modules/sales/routes'
 import { supportModule } from '@/modules/support/routes'
 import { systemModule } from '@/modules/system/routes'
 import { vehicleBookingModule } from '@/modules/vehicle-booking/routes'
+import { workModule } from '@/modules/work/routes'
 import type { ErpModule } from './module-definition'
 
 /**
@@ -36,7 +36,7 @@ export const allModules: ErpModule[] = [
   customerModule,
   inventoryModule,
   financeModule,
-  projectModule,
+  workModule,
   documentModule,
   approvalModule,
   approvalSealModule,

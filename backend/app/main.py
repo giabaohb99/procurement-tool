@@ -66,6 +66,10 @@ from app.modules.ticket.controller import router as ticket_router
 from app.modules.comment.controller import router as comment_router
 from app.modules.forum.controller import router as forum_router
 from app.modules.assistant.controller import router as assistant_router
+#  Phân hệ Công việc (CR-216) — hai router cùng prefix `/api/work`: một cho tổ
+#  chức (nhóm · list · cấu hình), một cho chính công việc.
+from app.modules.work.controller import router as work_router
+from app.modules.work.task_controller import router as work_task_router
 from app.modules.approval.flow_controller import router as approval_flow_router
 from app.modules.approval.instance_controller import router as approval_router
 from app.modules.approval.delegation_controller import router as delegation_router
@@ -203,6 +207,8 @@ app.include_router(ticket_router)
 app.include_router(comment_router)
 app.include_router(forum_router)
 app.include_router(assistant_router)
+app.include_router(work_router)
+app.include_router(work_task_router)
 #  Bộ máy phê duyệt dùng chung — không thuộc phân hệ nào, mọi loại chứng từ
 #  đều chạy qua nó.
 app.include_router(approval_flow_router)

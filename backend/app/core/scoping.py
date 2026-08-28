@@ -139,6 +139,14 @@ SCOPE_FIELDS = {
     # viết thẳng trong WHERE của API feed. Entity này chỉ gác cổng kiểm duyệt
     # của `forum_admin` bằng require(), nên khai PUBLIC.
     "forum_post":       PUBLIC,
+    # Công việc (CR-216): phạm vi thật là "theo TƯ CÁCH THÀNH VIÊN của list",
+    # không diễn đạt được bằng cột phòng ban/pháp nhân của khuôn `apply_scope`.
+    # Khai PUBLIC ở đây là CÓ CHỦ Ý, kèm một nghĩa vụ bắt buộc:
+    #
+    #   ⚠️ MỌI query của `app/modules/work/` PHẢI tự lọc qua `visible_list_ids(...)`.
+    #   Khai PUBLIC mà quên lọc là lộ sạch việc của cả công ty — đọc
+    #   `doc/erp/cong-viec/04-phan-quyen.md` §2 trước khi viết endpoint đầu tiên.
+    "work_task":        PUBLIC,
 }
 
 

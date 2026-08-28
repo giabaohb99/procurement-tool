@@ -1,5 +1,5 @@
 import { Loader2, Upload, X } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
@@ -36,16 +36,26 @@ const DEPARTMENTS = [
   'Khác',
 ]
 
+/** Giá trị mở sẵn cho dialog — bản nháp Trợ lý AI soạn (CR-218), người dùng sửa thoải mái. */
+export interface TicketDialogInitial {
+  subject?: string
+  department?: string
+  priority?: string
+  body?: string
+}
+
 interface CreateTicketDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess?: () => void
+  initial?: TicketDialogInitial
 }
 
 export function CreateTicketDialog({
   open,
   onOpenChange,
   onSuccess,
+  initial,
 }: CreateTicketDialogProps) {
   const navigate = useNavigate()
   const createMutation = useCreateTicket()
@@ -56,6 +66,20 @@ export function CreateTicketDialog({
   const [body, setBody] = useState('')
   const [files, setFiles] = useState<UploadedFile[]>([])
   const [uploading, setUploading] = useState(false)
+
+  //  Điền sẵn đúng LÚC MỞ dialog (không phải lúc mount): giá trị lạ thì bỏ qua trường đó,
+  //  giữ mặc định — bản nháp là do model điền nên không tin tuyệt đối.
+  useEffect(() => {
+    if (!open || !initial) return
+    if (initial.subject) setSubject(initial.subject)
+    if (initial.department && DEPARTMENTS.includes(initial.department)) {
+      setDepartment(initial.department)
+    }
+    if (initial.priority && TICKET_PRIORITY_OPTIONS.some((o) => o.value === initial.priority)) {
+      setPriority(initial.priority)
+    }
+    if (initial.body) setBody(initial.body)
+  }, [open, initial])
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const selectedFiles = Array.from(e.target.files || [])

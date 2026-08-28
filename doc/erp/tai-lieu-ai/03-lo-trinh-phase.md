@@ -100,6 +100,36 @@ quyền người hỏi.
 
 ---
 
+## Phase 2b - Hỏi-trước-khi-tạo + tầng GHI có xác nhận (CR-218)  [ĐÃ CODE đợt 1 - 28/08/2026]
+
+Mục tiêu: từ trợ lý CHỈ ĐỌC + đề xuất nháp, nâng lên hỗ trợ tạo/sửa chứng từ có kiểm soát.
+Thiết kế chi tiết ở tài liệu `02` mục "Đợt CR-218". Hai khuôn:
+
+- Khuôn 1 - hỏi-trước-khi-tạo: các tool nháp (YCBG/YCMH/YCTT/nghỉ phép) nhận thêm trường
+  quan trọng (ngày cần hàng, ngày yêu cầu kết quả, kho nhận, hạn chi YCTT); TOOL_GUIDE bắt
+  hỏi gộp MỘT LƯỢT các trường còn thiếu, người dùng nói "chưa cần" thì bỏ qua tạo luôn,
+  CẤM hỏi lại thông tin đã đưa.
+- Khuôn 2 - sửa/ghi qua khung xác nhận: tool `propose_document_update` trả đề xuất (cũ -> mới),
+  frontend hiện thẻ so sánh + nút Xác nhận/Hủy, CHỈ khi người bấm Xác nhận mới gọi
+  `POST /api/assistant/confirm-update`; backend KIỂM LẠI TOÀN BỘ tại thời điểm xác nhận
+  (quyền `require(entity, write)` + `apply_scope` + trạng thái còn sửa + whitelist trường
+  theo handler), ghi qua đúng service của form nên validation + audit giữ nguyên.
+
+Đợt 1 ĐÃ CODE (28/08/2026): trường mới (YCBG ngày yêu cầu kết quả, YCMH kho nhận) +
+checklist hỏi-trước trong TOOL_GUIDE; tool bổ sung `payment_request_read` (T32),
+`ticket_create` (T33), `my_tickets` (T34); khung xác nhận T31 `propose_document_update` +
+endpoint `confirm-update` với 3 handler đầu (YCMH mục đích/ngày cần hàng/ghi chú, YCBG mục
+đích/ghi chú, YCTT print_texts tái dùng CR-149). Hạn chi YCTT KHÔNG làm — bản nháp YCTT
+dựng từ khoản công nợ, form không có trường này (giới hạn đã biết). Đợt sau: handler
+ĐMH/khảo sát/nhận hàng khi còn nháp hoặc theo quyền ghi, nghỉ phép, ticket bổ sung/đóng.
+
+Phụ thuộc: Phase 2. Bảng quyền tài liệu `04` mục 5 + đánh số T31-T34 ở `02` đã cập nhật
+cùng đợt code. Định nghĩa xong (ĐÃ ĐẠT ở mức test backend + FE): nhờ bot sửa ngày cần hàng
+một YCMH nháp của mình -> bot hiện thẻ cũ/mới -> bấm Xác nhận -> phiếu đổi thật, audit ghi
+nhận; người không có quyền / sai chủ token / token hết hạn thì bị chặn ở backend.
+
+---
+
 ## Phase 3 - Kho vector Qdrant (loại B)
 
 Mục tiêu: hỏi trên nội dung văn bản (HDSD, quy trình) có trích dẫn.

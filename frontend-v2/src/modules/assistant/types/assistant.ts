@@ -76,6 +76,40 @@ export interface ChatRequest {
   attachment_ids?: number[]
 }
 
+/** Một dòng thay đổi trong đề xuất sửa phiếu (CR-218) — nhãn + giá trị cũ/mới. */
+export interface UpdateProposalChange {
+  field: string
+  label: string
+  old: string
+  new: string
+}
+
+/**
+ * Đề xuất sửa phiếu do tool `propose_document_update` sinh (CR-218) — CHỈ là đề xuất,
+ * backend chưa ghi gì. `confirm_token` (Fernet, hạn 15 phút, buộc vào người hỏi) gửi lên
+ * `POST /api/assistant/confirm-update` khi người dùng bấm 'Xác nhận sửa'; backend kiểm
+ * lại toàn bộ quyền/phạm vi/trạng thái tại thời điểm bấm.
+ */
+export interface UpdateProposal {
+  kind: 'update_proposal'
+  entity: string
+  entity_label: string
+  code: string
+  doc_status_label: string
+  changes: UpdateProposalChange[]
+  confirm_token: string
+  url: string
+}
+
+/** Kết quả bấm 'Xác nhận sửa' — backend đã ghi xong qua service của form. */
+export interface ConfirmUpdateResult {
+  entity: string
+  entity_label: string
+  code: string
+  updated_fields: string[]
+  url: string
+}
+
 /** Một lần trợ lý gọi công cụ trong lượt trả lời (backend chỉ trả tên + tham số). */
 export interface AssistantToolCall {
   name: string
@@ -92,6 +126,8 @@ export interface AssistantToolCall {
     size: number
     download_url: string
   }
+  /** Đề xuất sửa phiếu của tool `propose_document_update` (CR-218) — dựng thẻ xác nhận. */
+  proposal?: UpdateProposal
 }
 
 /** Kết quả một lượt `/chat`. */

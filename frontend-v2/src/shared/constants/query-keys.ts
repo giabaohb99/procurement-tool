@@ -311,4 +311,31 @@ export const queryKeys = {
     conversations: () => ['assistant', 'conversations'] as const,
     conversation: (id: number) => ['assistant', 'conversations', id] as const,
   },
+  /**
+   * Phân hệ Công việc (CR-216). `board` là khóa nặng nhất — mọi thao tác trên
+   * thẻ (kéo cột, tick xong, đổi PIC, gắn tag) đều phải làm nó mới lại, nên
+   * mutation nào của task cũng invalidate `board(listId)`.
+   */
+  work: {
+    all: ['work'] as const,
+    /** Cây nhóm → list bên trái; đổi khi tạo/sửa/lưu trữ nhóm hoặc list. */
+    sidebar: (includeArchived: boolean) => ['work', 'sidebar', includeArchived] as const,
+    /** Số liệu màn Tổng quan phân hệ Dự án. */
+    overview: () => ['work', 'overview'] as const,
+    lists: (includeArchived: boolean) => ['work', 'lists', includeArchived] as const,
+    /**
+     * Bảng liệt kê dự án — cùng dữ liệu `lists` nhưng kèm chủ sở hữu + thành
+     * viên. Cố ý nằm DƯỚI nhánh `lists` để mọi chỗ đang invalidate
+     * `lists(false)` quét trúng luôn, không thì số việc trên bảng đứng im.
+     */
+    projects: (includeArchived: boolean) =>
+      ['work', 'lists', includeArchived, 'people'] as const,
+    list: (id: number) => ['work', 'lists', id] as const,
+    board: (listId: number) => ['work', 'lists', listId, 'board'] as const,
+    members: (listId: number) => ['work', 'lists', listId, 'members'] as const,
+    sections: (listId: number) => ['work', 'lists', listId, 'sections'] as const,
+    tags: (listId: number) => ['work', 'lists', listId, 'tags'] as const,
+    labelFields: (listId: number) => ['work', 'lists', listId, 'label-fields'] as const,
+    task: (id: number) => ['work', 'tasks', id] as const,
+  },
 } as const

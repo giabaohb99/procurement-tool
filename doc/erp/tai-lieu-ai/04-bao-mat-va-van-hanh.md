@@ -131,7 +131,7 @@ Ngoài ra từ B-07/CR-131, entity nào quên khai phạm vi trong `SCOPE_FIELDS
 
 ---
 
-## 5. Bảng quyền của từng tool (30 tool, đối chiếu code 28/08/2026)
+## 5. Bảng quyền của từng tool (34 tool, đối chiếu code 28/08/2026)
 
 Cột "Điều kiện" là quyền của **người đang hỏi**; thiếu thì tool trả `denied` hoặc tự cắt cột.
 
@@ -189,6 +189,20 @@ Cột "Điều kiện" là quyền của **người đang hỏi**; thiếu thì 
 | `procurement_doc_read` | Recap một chứng từ thu mua theo mã (ĐMH / YCMH / YCKS): đầu phiếu, dòng hàng, tiến độ giao nhận, công nợ phát sinh | `entity.read` + lấy phiếu qua `apply_scope` (mã đúng nhưng ngoài phạm vi = "không tìm thấy"); thiếu `supplier.read` thì ẩn NCC kèm ghi chú (kể cả NCC hiệu lực của YCMH); khối công nợ của ĐMH chỉ trả khi có thêm `payable.read`; YCKS chỉ **đếm** số phương án mỗi dòng, không trả chi tiết option (bảng đó chứa NCC thuộc cơ chế ẩn); YCMH xóa mềm coi như không tồn tại |
 | `pending_procurement_approvals` | Đếm + liệt kê phiếu thu mua `Chờ duyệt` mà chính người hỏi có quyền duyệt (YCBG / khảo sát / YCMH / ĐMH / YCTT) | Từng loại chỉ đếm khi có `entity.approve` + trong `apply_scope` của chính người hỏi; loại thiếu quyền bị bỏ qua kèm ghi chú (hỏi đích danh thì denied); **trợ lý không duyệt hộ** — kết quả chỉ kèm `url` mở màn chi tiết, kèm `reminder` nhắc model điều đó |
 | `my_procurement_requests` | Liệt kê YCBG / YCMH do CHÍNH người hỏi đứng tên (mới nhất trước) kèm recap tiến độ mua: số dòng theo bước mua, SL đã đặt / đã nhận (YCMH); số dòng khảo sát xong / đã sinh YCMH (YCKS) | `entity.read` + `apply_scope`, rồi **ép lọc thêm về chính người hỏi** (`created_by` = tài khoản hỏi HOẶC `requester_id` = mã nhân sự của họ) — quản lý scope `all` hỏi "phiếu của tôi" cũng chỉ nhận phiếu mình đứng tên; YCMH xóa mềm bị loại; không đòi quyền duyệt gì; limit mặc định 10/loại, trần 30, cắt bớt thì báo rõ trong `note` |
+
+### Nhóm sửa phiếu có xác nhận + phiếu hỗ trợ (`update_tool.py`, `ticket_tool.py`, thêm 28/08/2026 — đợt CR-218)
+
+Đây là nơi DUY NHẤT trợ lý dùng action `write` — và bản thân tool vẫn KHÔNG ghi gì: việc
+ghi nằm ở endpoint `POST /api/assistant/confirm-update`, chỉ chạy khi người dùng bấm nút
+Xác nhận trên thẻ so sánh cũ/mới.
+
+| Tool | Việc | Điều kiện |
+|------|------|-----------|
+| `propose_document_update` | Đề xuất sửa đầu phiếu YCMH (mục đích / ngày cần hàng / ghi chú), YCBG (mục đích / ghi chú), YCTT (bộ chữ bản in `print_texts` — tái dùng khe PATCH CR-149 nên submitted/approved vẫn sửa được đúng luật form). Trả BẢN ĐỀ XUẤT kèm `confirm_token`, không ghi DB | `entity.write` + `apply_scope(action="write")` (ngoài phạm vi = "không tìm thấy") + trạng thái còn sửa được + whitelist trường — trường lạ bị chặn kèm danh sách hợp lệ, giá trị trùng giá trị cũ bị loại |
+| *(endpoint)* `POST /api/assistant/confirm-update` | Ghi thật các thay đổi đã đề xuất, đi qua đúng service của form (validation + audit ăn nguyên, `updated_by` là người bấm) | Token Fernet gắn user (sai chủ = 403), hạn 15 phút (quá hạn = 400); rồi backend **KIỂM LẠI TOÀN BỘ** không tin đề xuất cũ: `require(entity, write)` + `apply_scope(action="write")` + trạng thái còn sửa + whitelist trường lần nữa — token giả nhét trường ngoài whitelist (kể cả `status`) vẫn bị chặn |
+| `payment_request_read` | Đọc chi tiết một YCTT theo mã: đầu phiếu, dòng (mã ĐMH / hóa đơn / số tiền), `print_texts` đã parse, `url` | `payment_request.read` + `apply_scope` (ngoài phạm vi = "không tìm thấy") |
+| `ticket_create` | Soạn NHÁP phiếu hỗ trợ (không ghi DB) — FE mở dialog tạo phiếu điền sẵn, người dùng tự bấm gửi; nhóm tiếp nhận / mức ưu tiên lạ do model bịa bị quy về mặc định của form | `ticket.create` |
+| `my_tickets` | Phiếu hỗ trợ CỦA CHÍNH người hỏi (mới nhất trước, kèm nhãn trạng thái + `url`) | `ticket.read`, rồi **ép lọc chính chủ** theo cả hai cột (`created_by` = tài khoản HOẶC `requester_id` = mã nhân sự — thấy cả phiếu người khác tạo hộ) kể cả khi scope là `all`; limit mặc định 10, trần 30 |
 
 ---
 
@@ -286,7 +300,20 @@ phạm vi `test/backend/`):
 - `test_assistant_draft_tool.py` — quyền tạo phiếu trước khi soạn nháp; khớp/không khớp danh mục
   công ty; enum động lấy từ DB và không rò rỉ giữa các request.
 - `test_assistant_payable_tool.py` — công nợ: từ chối khi thiếu `payable.read`; soạn nháp YCTT
-  đòi đủ cả hai quyền; chỉ chọn khoản còn phải trả (khoản đã tất toán bị loại và báo rõ).
+  đòi đủ cả hai quyền; chỉ chọn khoản còn phải trả (khoản đã tất toán bị loại và báo rõ);
+  phần T32 `payment_request_read`: denied khi thiếu quyền, ngoài phạm vi báo "không tìm
+  thấy", recap đủ đầu phiếu + dòng + `print_texts`.
+- `test_assistant_update_tool.py` — tầng GHI có xác nhận (CR-218): denied khi chỉ có quyền
+  đọc; ngoài scope ghi báo "không tìm thấy"; sai trạng thái / trường ngoài whitelist / giá
+  trị trùng bị chặn ngay lúc đề xuất; token giải mã đúng khuôn và đề xuất KHÔNG đổi phiếu;
+  xác nhận ghi thật qua service form (`updated_by` đúng người bấm); sai chủ token = 403;
+  token hết hạn / rác = 400; trạng thái đổi giữa đề xuất và xác nhận bị chặn; token giả
+  nhét `status` vào changes bị whitelist chặn; YCTT approved vẫn sửa được `print_texts`
+  và merge giữ nguyên khóa không đổi.
+- `test_assistant_ticket_tool.py` — phiếu hỗ trợ (CR-218): `ticket_create` denied khi thiếu
+  quyền, chuẩn hóa nhóm tiếp nhận / ưu tiên bịa về mặc định, KHÔNG ghi DB; `my_tickets`
+  chính chủ theo cả `created_by` lẫn `requester_id` (thấy phiếu tạo hộ, không thấy phiếu
+  người khác kể cả scope `all`), lọc trạng thái + kẹp limit.
 - `test_assistant_procurement_doc_tool.py` — recap chứng từ: từ chối khi thiếu quyền đọc; phiếu
   ngoài phạm vi báo "không tìm thấy"; ẩn NCC + không kèm công nợ khi thiếu quyền; YCKS chỉ đếm
   phương án không lộ NCC; đếm phiếu chờ duyệt đúng theo quyền `approve` từng loại, loại bỏ phiếu

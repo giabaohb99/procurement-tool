@@ -14,6 +14,8 @@ export interface AssistantDraftLine {
   uom: string
   proposed_price: number
   other_requirement: string
+  /** Ngày cần kết quả khảo sát của dòng (CR-218) — rỗng nếu người dùng không nêu. */
+  result_due_date: string
 }
 
 export interface AssistantDraft {
@@ -54,6 +56,7 @@ export function parseAssistantDraft(raw: unknown): AssistantDraft | null {
       uom: asText(line.uom),
       proposed_price: asQty(line.proposed_price),
       other_requirement: asText(line.other_requirement),
+      result_due_date: asText(line.result_due_date),
     })
   }
 
@@ -77,6 +80,8 @@ export interface PurchaseAssistantDraftLine {
   unit: string
   price: number
   required_date: string
+  /** Kho nhận hàng của dòng (CR-218) — chữ tự do, rỗng nếu người dùng không nêu. */
+  warehouse: string
   note: string
 }
 
@@ -111,6 +116,7 @@ export function parsePurchaseAssistantDraft(raw: unknown): PurchaseAssistantDraf
       unit: asText(line.unit),
       price: asQty(line.price),
       required_date: asText(line.required_date),
+      warehouse: asText(line.warehouse),
       note: asText(line.note),
     })
   }

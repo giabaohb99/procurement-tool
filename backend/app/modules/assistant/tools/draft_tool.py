@@ -56,6 +56,11 @@ _PARAMS = {
                         "type": "string",
                         "description": "Yêu cầu khác: bảo hành, hãng, thời hạn giao...",
                     },
+                    "result_due_date": {
+                        "type": "string",
+                        "description": "Ngày cần có kết quả khảo sát của dòng, YYYY-MM-DD "
+                                       "(nếu người dùng nêu).",
+                    },
                 },
                 "required": ["requirement_detail"],
             },
@@ -73,10 +78,13 @@ _DESC = (
     "hóa đơn — ĐỪNG hỏi lại nhóm này. "
     "(2) PHẢI CÓ trước khi gọi: mặt hàng cần khảo sát giá, SỐ LƯỢNG dự kiến (kèm đơn vị "
     "tính) và mục đích. "
-    "(3) HỎI THÊM theo ngữ cảnh: thông số/chất lượng, yêu cầu khác (bảo hành, hãng...), và "
-    "'có mua cho pháp nhân/công ty KHÁC công ty của bạn không?' — nếu có thì điền tham số "
-    "company, không thì bỏ trống. "
-    "Thiếu gì gom hỏi trong MỘT lượt rồi mới gọi. KHÔNG tự bịa giá trị người dùng chưa nói "
+    "(3) HỎI THÊM theo ngữ cảnh: NGÀY CẦN KẾT QUẢ khảo sát (result_due_date), thông số/"
+    "chất lượng, yêu cầu khác (bảo hành, hãng...), và 'có mua cho pháp nhân/công ty KHÁC "
+    "công ty của bạn không?' — nếu có thì điền tham số company, không thì bỏ trống. "
+    "Nhóm (3) chưa được nhắc tới thì gom hỏi CÙNG LƯỢT với nhóm (2) còn thiếu — hỏi đúng "
+    "MỘT lượt duy nhất; người dùng trả lời 'chưa cần/không có' thì bỏ trống và gọi tool "
+    "luôn, CẤM hỏi lại điều họ đã trả lời. "
+    "KHÔNG tự bịa giá trị người dùng chưa nói "
     "(số lượng, thông số, phân loại); họ nói chưa biết số lượng thì mới để 0. Đủ thông tin "
     "thì PHẢI gọi ngay trong lượt trả lời — nút 'Tạo yêu cầu báo giá' trên giao diện chỉ "
     "xuất hiện khi tool được gọi, trả lời suông thì người dùng không có nút nào để bấm. Sau "
@@ -186,6 +194,8 @@ def _run(ctx: ToolContext, args: dict) -> dict:
             "uom": _match_catalog(_clean_text(raw.get("uom"), 50), units),
             "proposed_price": _clean_number(raw.get("proposed_price")),
             "other_requirement": _clean_text(raw.get("other_requirement")),
+            # Ngày sai định dạng thì bỏ trống chứ không nổ lỗi — người dùng sửa trên form.
+            "result_due_date": _iso_date(raw.get("result_due_date")) or "",
         })
     if not lines:
         return {"error": "Không có dòng hợp lệ nào (mỗi dòng cần requirement_detail)."}
@@ -260,6 +270,11 @@ _PR_PARAMS = {
                         "type": "string",
                         "description": "Ngày cần hàng riêng của dòng, YYYY-MM-DD (nếu có).",
                     },
+                    "warehouse": {
+                        "type": "string",
+                        "description": "Kho nhận hàng của dòng (tên kho, chữ tự do — nếu "
+                                       "người dùng nêu).",
+                    },
                     "note": {"type": "string", "description": "Ghi chú của dòng (thông số, yêu cầu...)."},
                 },
                 "required": ["product"],
@@ -277,10 +292,13 @@ _PR_DESC = (
     "(1) Form TỰ ĐIỀN theo hồ sơ người hỏi: người yêu cầu, chức vụ, phòng ban, công ty nhận "
     "hóa đơn — ĐỪNG hỏi lại nhóm này. "
     "(2) PHẢI CÓ trước khi gọi: mặt hàng, SỐ LƯỢNG (kèm đơn vị tính nếu chưa rõ) và mục đích. "
-    "(3) HỎI THÊM theo ngữ cảnh: ngày cần hàng, thông số/yêu cầu kỹ thuật, và 'có mua cho "
-    "pháp nhân/công ty KHÁC công ty của bạn không?' — nếu có thì điền tham số company, "
-    "không thì bỏ trống. "
-    "Thiếu gì gom hỏi trong MỘT lượt rồi mới gọi. KHÔNG tự bịa giá trị người dùng chưa nói "
+    "(3) HỎI THÊM theo ngữ cảnh: NGÀY CẦN HÀNG (need_date), KHO NHẬN hàng (warehouse từng "
+    "dòng), thông số/yêu cầu kỹ thuật, và 'có mua cho pháp nhân/công ty KHÁC công ty của "
+    "bạn không?' — nếu có thì điền tham số company, không thì bỏ trống. "
+    "Nhóm (3) chưa được nhắc tới thì gom hỏi CÙNG LƯỢT với nhóm (2) còn thiếu — hỏi đúng "
+    "MỘT lượt duy nhất; người dùng trả lời 'chưa cần/không có' thì bỏ trống và gọi tool "
+    "luôn, CẤM hỏi lại điều họ đã trả lời. "
+    "KHÔNG tự bịa giá trị người dùng chưa nói "
     "(số lượng, ngày cần hàng, thông số). Đủ thông tin thì PHẢI gọi ngay trong lượt trả lời "
     "— nút 'Tạo yêu cầu mua hàng' trên giao diện chỉ xuất hiện khi tool được gọi. Sau khi "
     "gọi, báo người dùng bấm nút đó để mở form — nhấn mạnh phiếu CHƯA được tạo; dòng nào "
@@ -344,6 +362,7 @@ def _run_purchase(ctx: ToolContext, args: dict) -> dict:
                      else _match_catalog(_clean_text(raw.get("uom"), 50), units)),
             "price": _clean_number(raw.get("price")),
             "required_date": _clean_text(raw.get("required_date"), 10),
+            "warehouse": _clean_text(raw.get("warehouse"), 255),
             "note": _clean_text(raw.get("note"), 500),
         }
         lines.append(line)

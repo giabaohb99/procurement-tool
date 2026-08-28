@@ -8,7 +8,7 @@ bằng tài liệu thật của công ty.
 Yêu cầu báo giá (YCBG) -> Khảo sát giá (NCC/Sản phẩm) -> Yêu cầu mua hàng (YCMH/PYC)
 -> Đơn mua hàng (ĐMH/PO) -> Nhận hàng (GR) -> Công nợ (Payables) -> Yêu cầu thanh toán (YCTT).
 
-- **Yêu cầu mua hàng**: với luồng khảo sát, bộ phận Thu mua tạo YCMH từ kết quả khảo sát đã duyệt; với luồng mua trực tiếp (đã biết rõ mặt hàng và giá), người có nhu cầu tạo YCMH thẳng. Trưởng phòng duyệt theo phòng ban.
+- **Yêu cầu mua hàng**: với luồng khảo sát, chính **người tạo YCBG** (bộ phận có nhu cầu) chọn phương án khảo sát đã duyệt trên phiếu YCBG rồi bấm tạo YCMH — không phải Thu mua; với luồng mua trực tiếp (đã biết rõ mặt hàng và giá), người có nhu cầu tạo YCMH thẳng. Trưởng phòng duyệt theo phòng ban.
 - **Yêu cầu báo giá / Khảo sát**: thu mua thu thập báo giá nhiều nhà cung cấp, chọn
   phương án. Khảo sát được duyệt mới dùng để lên đơn.
 
@@ -20,8 +20,10 @@ báo giá cho nhà cung cấp**. Việc lấy báo giá, làm việc với NCC l
 Luồng đúng khi ai đó cần xin báo giá / cần mua một mặt hàng:
 1. Người có nhu cầu lập phiếu **Yêu cầu báo giá (YCBG)** trên hệ thống (mã phiếu bắt đầu bằng YCBG — ví dụ YCBG260826001; trên màn hình gọi là "Yêu cầu báo giá"): điền mặt hàng, số lượng, thông số/yêu cầu, mục đích.
 2. Gửi duyệt; trưởng bộ phận phê duyệt. Phiếu được duyệt mới chuyển sang **bộ phận Thu mua**.
-3. **Bộ phận Thu mua** là bên đi liên hệ nhà cung cấp, xin và so báo giá, chọn phương án; sau
-   đó Thu mua tạo **Yêu cầu mua hàng (YCMH)** rồi **Đơn mua hàng** từ phương án đã chọn.
+3. **Bộ phận Thu mua** là bên đi liên hệ nhà cung cấp, xin và so báo giá qua **Phiếu khảo
+   sát**; khảo sát được duyệt thì các phương án hiện trên phiếu YCBG.
+4. **Người tạo YCBG** xem các phương án trên phiếu, chọn phương án cho từng dòng rồi bấm tạo
+   **Yêu cầu mua hàng (YCMH)**; YCMH được duyệt xong, **Thu mua** mới tạo **Đơn mua hàng**.
 
 Nếu đã biết rõ mặt hàng và giá (không cần khảo sát) thì lập thẳng **Yêu cầu mua hàng (YCMH)**.
 

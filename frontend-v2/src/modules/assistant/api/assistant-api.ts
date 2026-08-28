@@ -3,6 +3,7 @@ import type {
   AssistantAttachment,
   ChatReply,
   ChatRequest,
+  ConfirmUpdateResult,
   ConversationDetail,
   ConversationSummary,
   ProvidersInfo,
@@ -34,6 +35,13 @@ export const assistantApi = {
     body.append('file', file)
     return apiPost<AssistantAttachment>(`${BASE_URL}/uploads`, body)
   },
+
+  /**
+   * Bấm 'Xác nhận sửa' trên thẻ đề xuất (CR-218) — chỉ gửi token; mọi dữ liệu sửa nằm
+   * TRONG token, backend kiểm lại quyền/phạm vi/trạng thái rồi mới ghi.
+   */
+  confirmUpdate: (token: string) =>
+    apiPost<ConfirmUpdateResult>(`${BASE_URL}/confirm-update`, { token }),
 
   /** Xóa hội thoại của chính mình. */
   remove: (id: number) => apiDelete<null>(`${BASE_URL}/conversations/${id}`),

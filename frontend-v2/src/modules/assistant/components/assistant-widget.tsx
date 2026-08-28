@@ -22,8 +22,10 @@ import { MessageThread } from './message-thread'
 import {
   pickDraftOffer,
   pickFileOffer,
+  pickUpdateOffer,
   type DraftOffer,
   type FileOffer,
+  type UpdateOffer,
 } from '../utils/reply-offers'
 import type { AssistantAttachment } from '../types/assistant'
 import { ReplyOffers } from './reply-offers'
@@ -56,6 +58,8 @@ export function AssistantWidget() {
   //  trang đầy đủ, xem `reply-offers.tsx`.
   const [draftOffer, setDraftOffer] = useState<DraftOffer | null>(null)
   const [fileOffer, setFileOffer] = useState<FileOffer | null>(null)
+  //  Đề xuất sửa phiếu (CR-218) — thẻ xác nhận dưới luồng chat, cùng vòng đời hai offer trên.
+  const [updateOffer, setUpdateOffer] = useState<UpdateOffer | null>(null)
 
   const conversationQuery = useConversation(conversationId)
 
@@ -93,6 +97,7 @@ export function AssistantWidget() {
     setTypingAfterId(null) //  hội thoại mới thì thôi gõ dở câu của hội thoại trước
     setDraftOffer(null)
     setFileOffer(null)
+    setUpdateOffer(null)
   }
 
   const handleSend = async (message: string, attachments?: AssistantAttachment[]) => {
@@ -120,6 +125,7 @@ export function AssistantWidget() {
       //  trang đầy đủ có nút, chat trong bong bóng bị mời bấm nút không tồn tại).
       setDraftOffer(pickDraftOffer(reply))
       setFileOffer(pickFileOffer(reply))
+      setUpdateOffer(pickUpdateOffer(reply))
       void queryClient.invalidateQueries({ queryKey: queryKeys.assistant.conversations() })
       if (reply.conversation_id !== conversationId) setConversationId(reply.conversation_id)
     } catch {
@@ -211,6 +217,8 @@ export function AssistantWidget() {
               <ReplyOffers
                 draft={draftOffer}
                 file={fileOffer}
+                update={updateOffer}
+                onDismissUpdate={() => setUpdateOffer(null)}
                 conversationId={conversationId}
                 busy={isSending}
                 onNavigate={() => setOpen(false)}

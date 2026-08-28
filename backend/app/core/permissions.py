@@ -32,6 +32,13 @@ ENTITIES = [
     # bài người khác, QĐ-D1). Người dùng thường KHÔNG cần grant: đăng/đọc đi
     # theo luật audience riêng trong API diễn đàn, giống comment CR-033.
     "forum_post",
+    # Phân hệ Công việc (CR-216) — MỘT khóa cho cả phân hệ, cố ý không tách
+    # `work_list` riêng: mọi quyền thật nằm ở tầng THÀNH VIÊN (bảng
+    # `tab_work_list_member`), tách hai khóa chỉ đẻ thêm ô ma trận không ai hiểu.
+    # Tên có tiền tố `work_` vì chữ "task" trần đã bị chiếm hai chỗ: task của bộ
+    # máy duyệt và `/api/dashboard/tasks` (Việc cần làm). Xem
+    # `doc/erp/cong-viec/04-phan-quyen.md` §1.
+    "work_task",
 ]
 
 ACTIONS = ["read", "create", "write", "delete", "approve", "cancel", "print", "export"]
@@ -87,6 +94,7 @@ ENTITY_LABELS = {
     "approval_flow": "Luồng phê duyệt (dùng chung)",
     "assistant": "Trợ lý AI",
     "forum_post": "Diễn đàn › Kiểm duyệt bài viết",
+    "work_task": "Công việc (task list, kanban)",
 }
 
 ACTION_LABELS = {

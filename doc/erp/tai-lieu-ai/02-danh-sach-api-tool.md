@@ -1,6 +1,6 @@
 # Danh sách API / tool cho bot (loại A - dữ liệu có cấu trúc)
 
-Phiên bản: 28/08/2026 (bản đầu 25/08/2026). Trạng thái: **ĐÃ CODE đủ 30 tool** (T1-T30),
+Phiên bản: 28/08/2026 (bản đầu 25/08/2026). Trạng thái: **ĐÃ CODE đủ 34 tool** (T1-T34),
 đang chạy dev — mã nguồn ở `backend/app/modules/assistant/tools/`.
 Liên quan: kiến trúc ở `01-kien-truc-tro-ly-ai.md`; bảo mật và vận hành thực tế ở
 `04-bao-mat-va-van-hanh.md`.
@@ -13,7 +13,9 @@ liệt kê ở đây, xem tài liệu 04 mục 7.
 Quy tắc chung cho MỌI tool (chi tiết ở tài liệu 01 mục 4.2):
 - Chạy DƯỚI danh tính người hỏi (JWT của họ). Bot không có tài khoản riêng.
 - Gác hai lớp: `require(entity, action)` + `apply_scope(...)`. Cột "Quyền" là entity + action.
-- Read-only giai đoạn đầu (action luôn là `read`).
+- Read-only giai đoạn đầu (action luôn là `read`). Ngoại lệ DUY NHẤT: T31
+  `propose_document_update` thuộc tầng GHI có xác nhận (xem "Đợt CR-218" cuối tài liệu) —
+  tool vẫn chỉ trả đề xuất, việc ghi nằm ở endpoint `confirm-update` sau khi người dùng bấm.
 - Giới hạn số dòng trả về (mặc định gợi ý: 50), có tham số `limit`.
 
 Ký hiệu cột "Tình trạng": TÁI DÙNG = đã có endpoint list/filter, chỉ bọc lại; MỚI = cần viết
@@ -334,10 +336,116 @@ chi tiết, con người tự bấm Duyệt ở đó.
 
 ---
 
-Nay bộ tool có **30 cái** (T1-T30): T1-T13 loại A tra cứu thu mua, T14-T19 văn bản + phê
+## Nhóm 11 - Đợt CR-218: sửa phiếu có xác nhận + phiếu hỗ trợ (`update_tool.py` / `ticket_tool.py`, thêm 28/08/2026)
+
+Tool GHI đầu tiên của trợ lý (T31) + ba tool đọc/nháp đi kèm. Thiết kế gốc và điều kiện
+an toàn xem mục "Đợt CR-218" cuối tài liệu.
+
+### T31. propose_document_update - Đề xuất sửa chứng từ (tầng GHI có xác nhận)
+- Mục đích: "sửa mục đích YCMH này thành...", "đổi ngày cần hàng phiếu X", "sửa nội dung
+  bản in YCTT". Tool KHÔNG ghi gì - chỉ trả BẢN ĐỀ XUẤT (cũ -> mới) để FE dựng thẻ so
+  sánh + nút Xác nhận / Hủy; người dùng bấm Xác nhận thì FE mới gọi
+  `POST /api/assistant/confirm-update`.
+- Tham số: `entity` (purchase_request | survey_request | payment_request) + `code` hoặc
+  `id` + `changes` (map trường -> giá trị mới).
+- Whitelist trường đợt 1 (CHỈ đầu phiếu, chưa đụng dòng hàng): YCMH `purpose` /
+  `need_date` / `note`; YCBG `purpose` / `note`; YCTT `print_content` / `print_line_desc`
+  / `print_transfer` (ánh xạ vào `print_texts`, tái dùng khe PATCH CR-149 nên
+  submitted/approved vẫn sửa được đúng luật form). Trường ngoài whitelist -> error kèm
+  danh sách hợp lệ; giá trị mới trùng giá trị cũ bị loại khỏi đề xuất.
+- Đề xuất kèm `confirm_token` (Fernet, khóa dẫn xuất từ `JWT_SECRET`): gắn user + entity +
+  id phiếu + đúng map thay đổi, hạn dùng 15 phút. Lúc xác nhận backend KIỂM LẠI TOÀN BỘ
+  (không tin đề xuất cũ): token đúng chủ (sai chủ = 403) -> `require(entity, write)` +
+  `apply_scope(action="write")` -> trạng thái còn sửa được -> whitelist lần nữa -> ghi qua
+  đúng service của form (update_pr / update_sr / update_request) nên validation + audit
+  ăn nguyên.
+- Quyền: `entity` + `write` - kiểm CẢ lúc đề xuất lẫn lúc xác nhận.
+
+### T32. payment_request_read - Đọc chi tiết một YCTT theo mã
+- Mục đích: "phiếu YCTT-xxx ghi gì", và hiện giá trị cũ trước khi nhờ sửa bản in qua T31
+  (trước đây chỉ có T25 tra công nợ, không đọc được phiếu).
+- Tham số: `code` (tool tự upper) hoặc `id`.
+- Đầu ra: đầu phiếu (trạng thái + nhãn, NCC, hình thức thanh toán trả NHÃN tiếng Việt,
+  tổng tiền, `print_texts` đã parse, `url`) + tối đa 30 dòng (mã ĐMH, số hóa đơn, ngày
+  hóa đơn, số tiền).
+- Quyền: `payment_request` + `read`, lấy phiếu qua `apply_scope` (ngoài phạm vi =
+  "không tìm thấy").
+
+### T33. ticket_create - Soạn nháp phiếu hỗ trợ
+- Mục đích: "báo lỗi màn X", "tạo phiếu hỗ trợ xin cấp quyền". Theo khuôn draft_tool:
+  KHÔNG ghi DB, trả bản nháp `kind="ticket"` để FE mở dialog tạo phiếu điền sẵn, người
+  dùng tự bấm gửi.
+- Tham số: `subject` + `body` (bắt buộc, thiếu là error mềm), `department` (nhóm tiếp
+  nhận - ngoài danh mục form thì về mặc định "Hệ thống / CNTT"), `priority` (ngoài bộ mã
+  thì về `normal`). Ảnh chụp màn hình đi theo đính kèm CR-204, không qua tool.
+- Quyền: `ticket` + `create`.
+
+### T34. my_tickets - Phiếu hỗ trợ của chính người hỏi
+- Mục đích: "phiếu hỗ trợ của tôi tới đâu rồi", nền cho việc bổ sung/đóng ticket đợt sau.
+- Tham số: `status` (lọc, giá trị lạ thì bỏ lọc) + `limit` (mặc định 10, trần 30).
+- Phạm vi "CỦA TÔI" theo CẢ hai cột như T29: `created_by` = tài khoản HOẶC
+  `requester_id` = ID nhân sự (phiếu người khác tạo HỘ vẫn thấy) - kể cả khi scope là
+  `all` vẫn chỉ trả phiếu mình đứng tên. Mới nhất trước, mỗi phiếu kèm nhãn trạng thái +
+  `url`.
+- Quyền: `ticket` + `read`.
+
+---
+
+Nay bộ tool có **34 cái** (T1-T34): T1-T13 loại A tra cứu thu mua, T14-T19 văn bản + phê
 duyệt, T20-T22 soạn nháp, T23-T24 + T30 tiện ích (xuất Word / tra HDSD / xuất Excel),
 T25-T26 công nợ + YCTT, T27-T29 trợ lý cho quản lý và người trình phiếu (recap chứng từ +
-phiếu chờ duyệt + phiếu của tôi).
+phiếu chờ duyệt + phiếu của tôi), T31-T34 đợt CR-218 (sửa phiếu có xác nhận + đọc YCTT +
+phiếu hỗ trợ).
+
+---
+
+## Đợt CR-218 — hỏi-trước-khi-tạo + tầng GHI có xác nhận (ĐÃ CODE đợt 1 ngày 28/08/2026)
+
+Chốt với khách qua chat: trợ lý không chỉ tra cứu mà hỗ trợ TẠO và SỬA phiếu, với hai khuôn
+dùng lại cho mọi loại chứng từ. Đợt 1 đã code xong (BE + FE + test); phần "đợt sau" bên
+dưới giữ nguyên làm danh sách chờ.
+
+**Khuôn 1 — hỏi-trước-khi-tạo (nâng cấp các tool soạn nháp T20–T22):** [ĐÃ CODE]
+- Schema tool soạn nháp thêm trường còn thiếu: YCBG thêm **ngày yêu cầu kết quả**
+  (`result_due_date` theo dòng), YCMH thêm **kho nhận** (`warehouse` theo dòng); form FE
+  đọc args điền sẵn như cũ. Riêng "hạn chi YCTT": bản nháp YCTT dựng từ khoản công nợ chứ
+  không có trường hạn chi ở form, nên KHÔNG làm — ghi nhận là giới hạn đã biết.
+- TOOL_GUIDE thêm checklist: trước khi chốt bản nháp, hỏi gộp MỘT LƯỢT các trường quan
+  trọng còn trống; người dùng nói chưa cần thì bỏ qua và tạo bình thường; cái gì họ đã nói
+  rồi thì CẤM hỏi lại. Các trường này vốn không bắt buộc lúc lưu nháp (chỉ chặn lúc gửi
+  duyệt) nên hỏi trước chỉ là đỡ một lần quay lại sửa phiếu.
+
+**Khuôn 2 — sửa/ghi qua khung xác nhận (tool GHI đầu tiên, phá lệ read-only CÓ KIỂM SOÁT):**
+[ĐÃ CODE — thành T31, chi tiết ở Nhóm 11]
+- Luồng hai bước: tool `propose_document_update` chỉ trả **BẢN ĐỀ XUẤT** (loại phiếu, mã,
+  danh sách thay đổi cũ → mới); FE hiện thẻ so sánh + nút **Xác nhận / Hủy**; người dùng
+  bấm Xác nhận thì FE mới gọi `POST /api/assistant/confirm-update` — model không bao giờ
+  tự ghi. Đề xuất gắn user + có hạn dùng ngắn (token Fernet 15 phút, sai chủ = 403); lúc
+  bấm xác nhận backend KIỂM LẠI TOÀN BỘ (không tin đề xuất cũ).
+- Điều kiện ghi thống nhất, chốt ở backend: `require(entity, write)` + `apply_scope` (nên
+  "chính chủ phiếu nháp" tự rơi ra từ scope `own`, người có quyền rộng hơn sửa được theo
+  đúng quyền form của họ) + **trạng thái còn sửa được theo luật sẵn có của từng loại phiếu**
+  + **whitelist trường theo từng handler**. Ghi đi qua đúng service của form nên validation
+  + audit ăn nguyên.
+- Mỗi loại phiếu một handler. Đợt 1 ĐÃ CODE: **YCMH** (mục đích, ngày cần hàng, ghi chú)
+  + **YCBG** (mục đích, ghi chú) — CHƯA đụng dòng hàng — + **YCTT nội dung bản in** (tái
+  dùng đúng khe PATCH `print_texts` của CR-149 — whitelist có sẵn ở service, nên
+  submitted/approved vẫn sửa được đúng luật form). Đợt sau: ĐMH / khảo sát / nhận hàng khi
+  còn nháp (theo đúng quyền write của người hỏi), nghỉ phép, bổ sung/đóng ticket của mình.
+
+**Tool mới kèm đợt này:** [ĐÃ CODE — thành T32-T34, chi tiết ở Nhóm 11]
+- `ticket_create` (T33) — soạn nháp phiếu hỗ trợ qua chat theo khuôn đề xuất + nút (hỏi
+  phân loại, mức độ, mô tả; nhận ảnh chụp màn hình qua đính kèm CR-204).
+- `my_tickets` (T34) — nền tra cứu cho việc bổ sung/đóng ticket đợt sau.
+- `payment_request_read` (T32) — đọc chi tiết một YCTT theo mã (trước chỉ có
+  `payable_lookup` tra công nợ, chưa đọc được phiếu YCTT để hiện giá trị cũ trước khi sửa).
+
+Việc kèm khi code (ĐÃ LÀM 28/08/2026): bảng quyền `04-bao-mat-va-van-hanh.md` mục 5 đã
+thêm hàng cho T31-T34 + endpoint confirm-update; danh sách trên đã đánh số T31-T34
+(Nhóm 11). Test: `test/backend/test_assistant_update_tool.py` (12 case, phủ đủ sai chủ
+token / token hết hạn / ngoài scope ghi / sai trạng thái / trường ngoài whitelist / token
+giả) + `test_assistant_ticket_tool.py` + phần T32 trong `test_assistant_payable_tool.py`;
+FE có test thẻ so sánh cũ/mới + parse bản nháp phiếu hỗ trợ.
 
 ---
 
@@ -352,8 +460,8 @@ phiếu chờ duyệt + phiếu của tôi).
 
 ## Việc cần chốt (đã chốt trong lúc code - giữ lại làm vết)
 
-- Danh sách giai đoạn đầu chốt ở 30 tool như trên; thêm tool mới thì cập nhật tài liệu này
-  và bảng quyền ở `04-bao-mat-va-van-hanh.md` mục 5.
+- Danh sách giai đoạn đầu chốt ở 30 tool (nay 34 sau đợt CR-218); thêm tool mới thì cập
+  nhật tài liệu này và bảng quyền ở `04-bao-mat-va-van-hanh.md` mục 5.
 - Quy đổi đơn vị: KHÔNG tự quy đổi - kết quả trả nguyên đơn vị lưu trong lịch sử mua, phần
   diễn giải nêu rõ giả định.
 - Giới hạn số dòng: mỗi tool có mặc định riêng (20-50) và trần cứng ép bằng `_clamp` trong

@@ -204,6 +204,10 @@ class GeminiProvider(Provider):
                 # Tool xuất file trả metadata file đã tạo — FE dựng nút "Tải báo cáo" từ đây.
                 if isinstance(result.get("file"), dict):
                     call["file"] = result["file"]
+                # Tool đề xuất sửa phiếu (CR-218) trả khối proposal — FE dựng thẻ so sánh
+                # cũ/mới + nút 'Xác nhận sửa' (token nằm trong khối này).
+                if isinstance(result.get("proposal"), dict):
+                    call["proposal"] = result["proposal"]
                 tool_calls.append(call)
                 resp_parts.append({"functionResponse": {"name": fname, "response": result}})
             contents.append({"role": "user", "parts": resp_parts})

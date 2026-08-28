@@ -39,11 +39,14 @@ conditional-filter, token màu Tailwind) — không chế khung mới khi đã c
 |---|---|---|---|---|
 | List | Bảng phẳng | `DataTable` dùng chung, gom theo cột (section) thu/mở được | P0 | D-02 |
 | Kanban | Bảng cột kéo thả | Khung nhìn chính | P0 | D-01 |
-| Gantt | Thanh thời gian | ĐỂ SAU | P2 | D-05 |
+| Gantt | Thanh thời gian | **XONG 28/08/2026 (CR-219)** — tự dựng theo bố cục DHTMLX, không cài thư viện của họ (GPLv2). Chưa có mũi tên phụ thuộc | P2 → làm sớm theo yêu cầu | D-05 |
 | Dashboard | Thống kê list | 4 khối recharts (§7) | P1 | D-06 |
 | Activities | Dòng hoạt động cấp list | Nhật ký audit của cả list (§8) | P1 | D-09 |
 
 Tab chưa làm thì **KHÔNG render** — không để tab "Sắp có" chết trên thanh công cụ.
+
+Hiện có đúng **ba** tab như Lark: **Bảng (Kanban) · Danh sách · Gantt**. Dashboard và
+Activities vẫn chưa render vì chưa làm (D-06, D-09 — P1).
 
 ## 3. Thanh công cụ — từng nút là gì và ta clone thế nào
 
@@ -120,6 +123,13 @@ cụ khung nhìn: All/Lọc/Sắp xếp/Gom nhóm/Tùy chỉnh).
 - **Kéo thả:** thẻ trong cột (đổi `sort_order`), thẻ sang cột khác (đổi `section_id`),
   luật khóa khi sort khác Tay (§3.4). Optimistic update — thả là nằm yên, gọi API sau,
   lỗi thì bật lại và toast.
+  Cách dựng (chốt ở **CR-220**): **dnd-kit** + **`DragOverlay`** — thẻ đang kéo vẽ ở lớp
+  nổi bám con trỏ, **không nghiêng**, thẻ gốc mờ tại chỗ. Kéo sang cột khác thì cột đích
+  sáng lên và mở **khe chờ** nét đứt đúng chỗ thẻ sẽ rơi vào; trong cùng một cột thì để
+  dnd-kit tự dãn khe. Hai cái bẫy đã vấp, đừng lặp lại: **cấm gắn lớp `transition` của
+  Tailwind lên nút kéo được** (nó phủ cả `transform` nên thẻ lết theo sau con trỏ), và
+  đừng suy cột đích từ `over` một cách ngây thơ — trỏ vào một THẺ thì `over` là thẻ đó
+  chứ không phải cột, phải quy về cột của nó.
 - Bấm thẻ mở **panel chi tiết** trượt từ phải (Sheet), không rời bảng.
 
 ## 5. List view
@@ -181,3 +191,9 @@ Người dùng chỉ định tham khảo **DHTMLX Gantt** (dhtmlx.com) về logi
 - Ứng viên thay thế giấy phép dễ hơn (MIT): `frappe-gantt` (nhẹ, đủ kéo thả cơ bản),
   `gantt-task-react` (React thuần). Chốt thư viện ở W5, theo đúng nguyên tắc
   "P2 chỉ làm khi có người đòi" — tài liệu này chỉ giữ địa chỉ tham khảo.
+
+**ĐÃ CHỐT (CR-219 + CR-220):** tự dựng theo bố cục DHTMLX, **không cài thư viện nào**;
+phần kéo dùng **dnd-kit** như kanban, vị trí tạm nằm ở `DragOverlay` (kéo cả thanh thì
+lớp phủ là bản sao của thanh, kéo mép thì là một vạch dẫn + chú thích ngày). Luật ngày
+nằm ở `utils/gantt-drag.ts`, có test — sửa hành vi kéo thì sửa ở đó, đừng nhét vào
+component.
