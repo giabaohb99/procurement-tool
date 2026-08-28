@@ -1,11 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
-import { CheckSquare, LifeBuoy, Palette, User } from 'lucide-react'
+import { Bell, CheckSquare, LifeBuoy, Palette, User } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
 import { ChangePasswordCard } from '@/app/components/profile/change-password-card'
 import { ProfileIdentityCard } from '@/app/components/profile/profile-identity-card'
 import { ProfileInfoCard } from '@/app/components/profile/profile-info-card'
+import { ProfileNotificationsTab } from '@/app/components/profile/profile-notifications-tab'
 import { ProfileTasksTab } from '@/app/components/profile/profile-tasks-tab'
 import { ProfileTicketsTab } from '@/app/components/profile/profile-tickets-tab'
 import { SignatureCard } from '@/app/components/profile/signature-card'
@@ -13,6 +14,7 @@ import { authService } from '@/core/auth/auth-service'
 import { useAuth } from '@/core/auth/use-auth'
 import { usePermission } from '@/core/authorization/use-permission'
 import { queryKeys } from '@/shared/constants/query-keys'
+import { useNotifications } from '@/shared/notifications/use-notifications'
 import { ThemePresetPicker } from '@/shared/theme/theme-preset-picker'
 import { Badge } from '@/shared/ui/badge'
 import { ErrorState } from '@/shared/ui/error-state'
@@ -26,7 +28,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
  *
  * Gồm dải tab chuẩn:
  * - Tab "Thông tin cá nhân": Xem hồ sơ, đổi chữ ký, đổi mật khẩu.
- * - Tab "Việc cần làm": Danh sách việc đang chờ xử lý (YCMH, YCBG, ĐMH, giao trễ, công nợ).
+ * - Tab "Việc cần làm": Việc đang chờ xử lý (chứng từ chờ duyệt, YCMH, YCBG, ĐMH,
+ *   giao trễ, công nợ) — CR-215 gom luôn "Chờ tôi duyệt" vào đây.
+ * - Tab "Thông báo": Bản đầy đủ của chuông thông báo (thay trang /notifications cũ).
  * - Tab "Yêu cầu hỗ trợ của tôi": Các phiếu hỗ trợ người dùng đã gửi hệ thống.
  */
 export function ProfilePage() {
@@ -38,15 +42,21 @@ export function ProfilePage() {
 
   const canReadTickets = can('ticket', 'read')
 
+  // Số chưa đọc dùng chung cache với cái chuông (poll 20s) — không đợi mở tab.
+  const { data: bellData } = useNotifications(false)
+  const unreadCount = bellData?.unread ?? 0
+
   const rawTab = searchParams.get('tab')
   const activeTab =
     rawTab === 'tasks'
       ? 'tasks'
-      : rawTab === 'appearance'
-        ? 'appearance'
-        : rawTab === 'tickets' && canReadTickets
-          ? 'tickets'
-          : 'info'
+      : rawTab === 'notifications'
+        ? 'notifications'
+        : rawTab === 'appearance'
+          ? 'appearance'
+          : rawTab === 'tickets' && canReadTickets
+            ? 'tickets'
+            : 'info'
 
   const handleTabChange = (val: string) => {
     setSearchParams(val === 'info' ? {} : { tab: val }, { replace: true })
@@ -102,6 +112,15 @@ export function ProfilePage() {
                   </Badge>
                 )}
               </TabsTrigger>
+              <TabsTrigger value="notifications" className="gap-2">
+                <Bell className="size-4" />
+                <span>Thông báo</span>
+                {unreadCount > 0 && (
+                  <Badge variant="destructive" className="h-4 px-1.5 text-[10px]">
+                    {unreadCount}
+                  </Badge>
+                )}
+              </TabsTrigger>
               {canReadTickets && (
                 <TabsTrigger value="tickets" className="gap-2">
                   <LifeBuoy className="size-4" />
@@ -140,6 +159,10 @@ export function ProfilePage() {
 
             <TabsContent value="tasks" className="space-y-4">
               <ProfileTasksTab onCountChange={setTaskCount} />
+            </TabsContent>
+
+            <TabsContent value="notifications" className="space-y-4">
+              <ProfileNotificationsTab />
             </TabsContent>
 
             {canReadTickets && (

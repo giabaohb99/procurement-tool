@@ -2,7 +2,6 @@ import { AlertTriangle, Bell } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
-import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
 import { Tabs, TabsList, TabsTrigger } from '@/shared/ui/tabs'
@@ -17,8 +16,9 @@ import { useNotificationActions, useNotifications, useSystemAlerts } from './use
  * CHUÔNG THÔNG BÁO trên thanh trên — bản dựng lại của `NotificationBell` ở app
  * cũ (`frontend/src/components/NotificationBell.tsx`), dùng chung API.
  *
- * Số trên chuông = thông báo chưa đọc + cảnh báo mức nguy hiểm: cả hai đều là
- * "việc phải xử lý", đếm riêng thì người dùng phải cộng nhẩm.
+ * Số trên chuông = thông báo chưa đọc + TOÀN BỘ cảnh báo (cả mức nhắc nhở).
+ * Trước chỉ cộng mức nguy hiểm, nhưng danh sách trong popover đổ đủ hai mức —
+ * số ngoài 10 mà mở ra đếm được 17 là người dùng nghĩ hệ đếm sai (CR-215).
  */
 export function NotificationBell() {
   const navigate = useNavigate()
@@ -33,7 +33,7 @@ export function NotificationBell() {
   const items = notifications?.items ?? []
   //  Chỉ vẽ vài cảnh báo đầu — `/api/alerts` trả về toàn bộ, xem `pickBellAlerts`.
   const { shown: alertItems, hidden: alertHidden } = pickBellAlerts(alerts?.items ?? [])
-  const badge = unread + (alerts?.danger ?? 0)
+  const badge = unread + (alerts?.total ?? 0)
 
   function openNotification(item: AppNotification) {
     setOpen(false)
@@ -174,10 +174,11 @@ export function NotificationBell() {
           </Button>
         </div>
 
-        {/* Chuông chỉ giữ 20 cái mới nhất — lối ra trang đầy đủ (tìm kiếm, phân
-            trang, xóa từng cái) phải nằm ngay đây, không bắt người dùng tự mò URL. */}
+        {/* Chuông chỉ giữ 20 cái mới nhất — lối ra bản đầy đủ (tìm kiếm, phân
+            trang, xóa từng cái) phải nằm ngay đây, không bắt người dùng tự mò URL.
+            CR-215: bản đầy đủ nay là tab Thông báo của Trang cá nhân. */}
         <Link
-          to={appRoutes.notifications}
+          to="/me?tab=notifications"
           onClick={() => setOpen(false)}
           className="block border-t px-3 py-2 text-center text-[13px] font-medium text-primary hover:bg-accent"
         >

@@ -284,10 +284,12 @@ def overview(db: Session = Depends(get_db), user=Depends(get_current_user)):
                      for i in sorted(invs, key=lambda x: float(x.qty or 0))[:8]]
 
     # ===== Cảnh báo (lọc theo quyền từng loại) =====
+    # Truyền user để build() lọc cả QUYỀN lẫn PHẠM VI (apply_scope) — trước đây gọi
+    # không user nên thấy cảnh báo của chứng từ ngoài phạm vi (vd HĐ pháp nhân khác).
     def alert_ok(it):
         t = it.get("type")
         return (t == "payable" and can("payable")) or (t == "contract" and can("contract")) or (t == "delivery" and can("purchase_order"))
-    al_items = [x for x in build_alerts(db)["items"] if alert_ok(x)]
+    al_items = [x for x in build_alerts(db, user)["items"] if alert_ok(x)]
 
     can_map = {e: can(e) for e in ["purchase_request", "purchase_order", "survey", "survey_request", "payable", "contract", "inventory", "report"]}
 
@@ -314,19 +316,27 @@ def overview(db: Session = Depends(get_db), user=Depends(get_current_user)):
     })
 
 
-@router.get("/tasks")
-def my_tasks(request: Request, db: Session = Depends(get_db), user=Depends(get_current_user)):
-    """Việc CẦN TÔI XỬ LÝ — danh sách chi tiết (đầy đủ, phân trang), lọc theo quyền + phạm vi.
-    Gồm: YCMH/khảo sát/ĐMH chờ duyệt, lô hàng giao trễ, công nợ quá hạn. Query: page, page_size, type."""
-    from app.core.auth import get_perm_profile
+def build_my_tasks(db: Session, user, prof) -> list[dict]:
+    """Dựng danh sách Việc CẦN TÔI XỬ LÝ, lọc theo quyền + phạm vi (CR-215 tách
+    ra khỏi endpoint để test gọi thẳng được).
+
+    Mỗi việc mang `key` ổn định DÙNG CHUNG với `/api/alerts` (`delivery:{id}:danger`,
+    `payable:{id}:warn`…) và cờ `dismissed` — đánh dấu xong ở tab Việc cần làm
+    thì chuông cũng ẩn đúng dòng đó, xem `tab_user_task_dismiss`.
+
+    Danh sách này phải là TẬP CHA của chuông cảnh báo (cùng điều kiện lọc, đủ cả
+    mức `warn` lẫn hợp đồng) — thiếu loại nào thì "Đánh dấu làm hết" quét không
+    sạch chuông, người dùng không có chỗ đánh dấu phần còn lại. Test
+    `test_viec_can_lam_dismiss.py` có bài khóa ràng buộc tập cha này."""
     from app.core.scoping import apply_scope
+    from app.modules.contract.model import Contract
     from app.modules.purchase_request.model import PurchaseRequest
     from app.modules.survey_request.model import SurveyRequest
     from app.modules.purchase_order.model import PurchaseOrder, PODelivery
     from app.modules.payable.model import Payable
     from app.modules.payable.service import ST_PAID
-
-    prof = get_perm_profile(db, user)
+    from app.modules.approval import task_service
+    from app.modules.dashboard.service import load_dismissed_keys
 
     def can(e):
         return bool(prof["perms_union"].get(e, {}).get("read"))
@@ -334,12 +344,22 @@ def my_tasks(request: Request, db: Session = Depends(get_db), user=Depends(get_c
     today = datetime.now().strftime("%Y-%m-%d")
     tasks = []
 
+    # Chờ tôi ký (bộ máy duyệt — hiện chỉ Văn bản chạy). Trước CR-215 khối này
+    # đứng riêng ở nút «Chờ tôi duyệt» trên thanh trên; nay gom về đây.
+    if getattr(user, "employee_id", 0):
+        for t in task_service.my_tasks(db, user.employee_id):
+            tasks.append({"key": f"sign:{t['id']}", "type": "sign", "label": "Chờ tôi duyệt",
+                          "code": t.get("entity_code") or "", "title": t.get("entity_title") or "Chứng từ chờ duyệt",
+                          "subtitle": (f"Trình bởi {t['started_by_name']}" if t.get("started_by_name") else ""),
+                          "date": (t["due_at"].strftime("%Y-%m-%d") if t.get("due_at") else ""),
+                          "link": "/document/pending-approval"})
+
     if can("purchase_request"):
         rows = (apply_scope(db.query(PurchaseRequest).filter(PurchaseRequest.status == "submitted"),
                             PurchaseRequest, "purchase_request", user, prof)
                 .order_by(PurchaseRequest.id.desc()).limit(300).all())
         for pr in rows:
-            tasks.append({"type": "pr", "label": "YCMH chờ duyệt", "code": pr.code,
+            tasks.append({"key": f"pr:{pr.id}", "type": "pr", "label": "YCMH chờ duyệt", "code": pr.code,
                           "title": pr.purpose or "Yêu cầu mua hàng", "subtitle": pr.requester or "",
                           "date": pr.request_date or "", "link": f"/purchase-requests/{pr.id}"})
 
@@ -348,7 +368,7 @@ def my_tasks(request: Request, db: Session = Depends(get_db), user=Depends(get_c
                             SurveyRequest, "survey_request", user, prof)
                 .order_by(SurveyRequest.id.desc()).limit(300).all())
         for sr in rows:
-            tasks.append({"type": "sr", "label": "Khảo sát chờ duyệt", "code": sr.code,
+            tasks.append({"key": f"sr:{sr.id}", "type": "sr", "label": "Khảo sát chờ duyệt", "code": sr.code,
                           "title": sr.purpose or "Yêu cầu khảo sát", "subtitle": sr.requester or "",
                           "date": sr.request_date or "", "link": f"/survey-requests/{sr.id}"})
 
@@ -357,38 +377,90 @@ def my_tasks(request: Request, db: Session = Depends(get_db), user=Depends(get_c
                             PurchaseOrder, "purchase_order", user, prof)
                 .order_by(PurchaseOrder.id.desc()).limit(300).all())
         for po in rows:
-            tasks.append({"type": "po", "label": "ĐMH chờ duyệt", "code": po.code,
+            tasks.append({"key": f"po:{po.id}", "type": "po", "label": "ĐMH chờ duyệt", "code": po.code,
                           "title": po.supplier_name or po.supplier_code or "Đơn mua hàng", "subtitle": "",
                           "date": po.order_date or "", "link": f"/purchase-orders/{po.id}"})
-        # Lô hàng giao trễ
+        # Lô hàng giao trễ / sắp tới hạn giao (điều kiện + mốc ngày khớp `/api/alerts`)
         scoped = apply_scope(db.query(PurchaseOrder), PurchaseOrder, "purchase_order", user, prof).all()
         pomap = {p.id: p for p in scoped}
         po_ids = list(pomap.keys())
         if po_ids:
+            warn_until = (datetime.now() + timedelta(days=2)).strftime("%Y-%m-%d")
             late = db.query(PODelivery).filter(PODelivery.po_id.in_(po_ids), PODelivery.received_qty <= 0).all()
             for d in late:
                 exp = d.promised_date   # `expected_date` của lần giao đã bỏ dùng (e2c5a81f7b60)
-                if exp and exp < today:
-                    po = pomap.get(d.po_id)
-                    tasks.append({"type": "late", "label": "Giao hàng trễ", "code": po.code if po else "",
-                                  "title": "Lô hàng quá hạn giao", "subtitle": f"Hạn giao {exp}",
-                                  "date": exp, "link": f"/purchase-orders/{d.po_id}"})
+                if not exp:
+                    continue
+                po = pomap.get(d.po_id)
+                base = {"type": "late", "code": po.code if po else "", "subtitle": f"Hạn giao {exp}",
+                        "date": exp, "link": f"/purchase-orders/{d.po_id}"}
+                if exp < today:
+                    tasks.append({"key": f"delivery:{d.id}:danger", "label": "Giao hàng trễ",
+                                  "title": "Lô hàng quá hạn giao", **base})
+                elif exp <= warn_until:
+                    tasks.append({"key": f"delivery:{d.id}:warn", "label": "Sắp tới hạn giao",
+                                  "title": "Lô hàng sắp tới hạn giao", **base})
 
     if can("payable"):
-        rows = (apply_scope(db.query(Payable).filter(Payable.status != ST_PAID, Payable.remaining > 0,
-                                                     Payable.due_date != "", Payable.due_date < today),
+        # KHÔNG lọc `remaining > 0`: chuông cũng không lọc — lệch điều kiện là
+        # "Đánh dấu làm hết" sót key, chuông còn kẹt lại vài dòng không ẩn được.
+        rows = (apply_scope(db.query(Payable).filter(Payable.status != ST_PAID, Payable.due_date != ""),
                             Payable, "payable", user, prof)
                 .order_by(Payable.due_date).limit(300).all())
+        warn_until = (datetime.now() + timedelta(days=3)).strftime("%Y-%m-%d")
         for p in rows:
-            tasks.append({"type": "payable", "label": "Công nợ quá hạn",
-                          "code": p.po_code or p.supplier_code, "title": p.supplier_name or p.supplier_code,
-                          "subtitle": f"Còn lại {float(p.remaining or 0):,.0f} · hạn {p.due_date}",
-                          "date": p.due_date, "link": f"/payables?supplier={p.supplier_code}"})
+            base = {"type": "payable", "code": p.po_code or p.supplier_code,
+                    "title": p.supplier_name or p.supplier_code,
+                    "subtitle": f"Còn lại {float(p.remaining or 0):,.0f} · hạn {p.due_date}",
+                    "date": p.due_date, "link": f"/payables?supplier={p.supplier_code}"}
+            if p.due_date < today:
+                tasks.append({"key": f"payable:{p.id}:danger", "label": "Công nợ quá hạn", **base})
+            elif p.due_date <= warn_until:
+                tasks.append({"key": f"payable:{p.id}:warn", "label": "Công nợ sắp đến hạn", **base})
 
-    # Đếm theo loại (tính trên TOÀN BỘ, trước khi lọc — cho FE hiển thị số trong dropdown)
-    by_type = {}
+    if can("contract"):
+        # B-02: "liquidated" là mã của bộ `CONTRACT_STATUS`, trước là "Thanh lý".
+        rows = (apply_scope(db.query(Contract).filter(Contract.status != "liquidated", Contract.end_date != ""),
+                            Contract, "contract", user, prof)
+                .order_by(Contract.end_date).limit(300).all())
+        warn_until = (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d")
+        for c in rows:
+            base = {"type": "contract", "code": c.code, "title": c.party_name or c.party_code or "Hợp đồng",
+                    "subtitle": f"Hết hạn {c.end_date}", "date": c.end_date, "link": f"/contracts/{c.id}"}
+            if c.end_date < today:
+                tasks.append({"key": f"contract:{c.id}:danger", "label": "Hợp đồng hết hạn", **base})
+            elif c.end_date <= warn_until:
+                tasks.append({"key": f"contract:{c.id}:warn", "label": "HĐ sắp hết hạn", **base})
+
+    dismissed = load_dismissed_keys(db, user)
     for t in tasks:
-        by_type[t["type"]] = by_type.get(t["type"], 0) + 1
+        t["dismissed"] = t["key"] in dismissed
+    return tasks
+
+
+@router.get("/tasks")
+def my_tasks(request: Request, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Việc CẦN TÔI XỬ LÝ — danh sách chi tiết (đầy đủ, phân trang), lọc theo quyền + phạm vi.
+    Gồm: chứng từ chờ tôi ký (bộ máy duyệt), YCMH/khảo sát/ĐMH chờ duyệt, lô hàng
+    giao trễ/sắp tới hạn, công nợ quá hạn/sắp đến hạn, hợp đồng hết hạn/sắp hết hạn
+    (tập cha của chuông cảnh báo). Query: page, page_size, type, q, include_dismissed."""
+    from app.core.auth import get_perm_profile
+
+    prof = get_perm_profile(db, user)
+    tasks = build_my_tasks(db, user, prof)
+
+    # Đếm theo loại VIỆC CHƯA ẨN (trước khi lọc q/type — cho FE hiển thị số trong dropdown)
+    by_type = {}
+    dismissed_total = 0
+    for t in tasks:
+        if t["dismissed"]:
+            dismissed_total += 1
+        else:
+            by_type[t["type"]] = by_type.get(t["type"], 0) + 1
+
+    # Mặc định ẨN việc đã đánh dấu xong; FE bật "Hiện việc đã ẩn" thì truyền include_dismissed=1
+    if (request.query_params.get("include_dismissed") or "") not in ("1", "true"):
+        tasks = [t for t in tasks if not t["dismissed"]]
 
     q = (request.query_params.get("q") or "").strip().lower()
     if q:
@@ -404,8 +476,47 @@ def my_tasks(request: Request, db: Session = Depends(get_db), user=Depends(get_c
     except (ValueError, TypeError):
         page = 1
     try:
-        size = min(100, max(1, int(request.query_params.get("page_size") or 20)))
+        # Trần 500 chứ không phải 100 như các danh sách khác: tab Việc cần làm
+        # nạp CẢ danh sách một lần rồi tự phân trang — trần thấp hơn tổng việc
+        # thì by_type đếm ra số mà trang đầu không nhìn thấy (lỗi "9 việc mà
+        # danh sách trống").
+        size = min(500, max(1, int(request.query_params.get("page_size") or 20)))
     except (ValueError, TypeError):
         size = 20
     items = tasks[(page - 1) * size: page * size]
-    return success({"total": total, "by_type": by_type, "page": page, "page_size": size, "items": items})
+    return success({"total": total, "by_type": by_type, "dismissed_total": dismissed_total,
+                    "page": page, "page_size": size, "items": items})
+
+
+@router.post("/tasks/dismiss")
+def dismiss_tasks(body: dict, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Đánh dấu XONG các việc theo `keys` (hoặc `all: true` = mọi việc chưa ẩn) —
+    ẩn khỏi tab Việc cần làm, chuông cảnh báo và dashboard của TÀI KHOẢN này
+    (CR-215). Không đụng nghiệp vụ, khôi phục được."""
+    from app.core.auth import get_perm_profile
+    from app.modules.dashboard.service import dismiss_keys
+
+    if body.get("all"):
+        # "Đánh dấu làm hết": server tự gom key thay vì tin danh sách FE gửi lên —
+        # FE chỉ nạp được một trang, quá trần là sót việc ở đuôi danh sách.
+        prof = get_perm_profile(db, user)
+        keys = [t["key"] for t in build_my_tasks(db, user, prof) if not t["dismissed"]]
+    else:
+        keys = body.get("keys") or []
+        if not isinstance(keys, list):
+            keys = []
+        keys = [str(k) for k in keys]
+    added = dismiss_keys(db, user, keys)
+    return success({"added": added}, "Đã đánh dấu xong")
+
+
+@router.post("/tasks/restore")
+def restore_tasks(body: dict, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Khôi phục việc đã đánh dấu xong. Body: `keys` (danh sách) hoặc `all: true`."""
+    from app.modules.dashboard.service import restore_keys
+
+    keys = body.get("keys") or []
+    if not isinstance(keys, list):
+        keys = []
+    removed = restore_keys(db, user, [str(k) for k in keys], restore_all=bool(body.get("all")))
+    return success({"removed": removed}, "Đã khôi phục")

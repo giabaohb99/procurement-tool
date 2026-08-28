@@ -1,10 +1,8 @@
 import { Bell, BellOff, Check, CheckCheck, Search, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { DataTablePagination } from '@/shared/data-table/data-table-pagination'
-import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
-import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import {
   buildNotificationParams,
   type NotificationTab,
@@ -19,33 +17,38 @@ import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { ConfirmIconButton } from '@/shared/ui/confirm-icon-button'
 import { IconInput } from '@/shared/ui/icon-input'
-import { PageContainer } from '@/shared/ui/page-container'
-import { PageHeader } from '@/shared/ui/page-header'
 import { Tabs, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { cn } from '@/shared/utils/cn'
 import { formatDateTime } from '@/shared/utils/format-date'
 
 /**
- * TRANG THÔNG BÁO — bản đầy đủ của cái chuông trên thanh tiêu đề.
+ * Tab THÔNG BÁO của Trang cá nhân — bản đầy đủ của cái chuông trên thanh tiêu đề.
  *
- * Đứng ở tầng chung (`/notifications`, trong `LauncherLayout`) chứ không thuộc
- * phân hệ nào: một thông báo có thể là của văn thư, của mua hàng hay của duyệt,
- * chia theo phân hệ thì người dùng phải đi tìm ở ba chỗ.
+ * CR-215: trước là trang riêng `/notifications`; hai trang "thông báo" song song
+ * làm người dùng rối nên gom về đây, route cũ chuyển hướng về `/me?tab=notifications`.
  *
- * Tab và từ khóa ghi lên URL nên F5 hay gửi link vẫn giữ đúng chỗ đang xem.
+ * Bộ lọc tất cả/chưa đọc và ô tìm giữ bằng state cục bộ (KHÔNG ghi URL): tham số
+ * `?tab=` của URL đã thuộc về dải tab của Trang cá nhân.
  */
-export function NotificationPage() {
+export function ProfileNotificationsTab() {
   const navigate = useNavigate()
-  const [tab, setTab] = useUrlParamState('tab', 'all')
-  const { value: search, setValue: setSearch, debouncedValue } = useUrlSearchParam()
+  const [tab, setTab] = useState<string>('all')
+  const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
+
+  // Gõ tới đâu hỏi server tới đó thì phí — chờ ngừng gõ 300ms mới hỏi.
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300)
+    return () => clearTimeout(timer)
+  }, [search])
 
   const params = buildNotificationParams({
     page,
     pageSize,
     tab: tab as NotificationTab,
-    search: debouncedValue,
+    search: debouncedSearch,
   })
   const { data, isLoading } = useNotificationList(params)
   const { markRead, readAll, clearRead, remove } = useNotificationActions()
@@ -55,9 +58,6 @@ export function NotificationPage() {
   const unread = data?.unread ?? 0
 
   // Đổi bộ lọc thì về trang 1 — đang ở trang 4 mà lọc còn 2 trang là màn trắng.
-  // Đặt ngay trong hàm xử lý sự kiện chứ không qua `useEffect`: hiệu ứng chạy
-  // sau một lượt vẽ, tức là có đúng một lượt gọi API bằng số trang cũ rồi mới
-  // gọi lại bằng trang 1.
   function changeTab(value: string) {
     setTab(value)
     setPage(1)
@@ -76,38 +76,8 @@ export function NotificationPage() {
   }
 
   return (
-    <PageContainer className="mx-auto w-full max-w-4xl">
-      <PageHeader
-        title="Thông báo"
-        description={
-          unread > 0 ? `${unread} thông báo chưa đọc` : 'Bạn đã đọc hết thông báo'
-        }
-        actions={
-          <>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={unread === 0 || readAll.isPending}
-              onClick={() => readAll.mutate()}
-            >
-              <CheckCheck className="size-4" />
-              Đánh dấu đã đọc tất cả
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-destructive hover:text-destructive"
-              disabled={clearRead.isPending}
-              onClick={() => clearRead.mutate()}
-            >
-              <Trash2 className="size-4" />
-              Xóa đã đọc
-            </Button>
-          </>
-        }
-      />
-
-      <div className="mb-3 flex flex-wrap items-center gap-3">
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-3">
         <Tabs value={tab} onValueChange={changeTab}>
           <TabsList>
             <TabsTrigger value="all">Tất cả</TabsTrigger>
@@ -121,6 +91,27 @@ export function NotificationPage() {
           placeholder="Tìm theo tiêu đề hoặc nội dung…"
           className="h-9 min-w-56 flex-1 rounded-md"
         />
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={unread === 0 || readAll.isPending}
+            onClick={() => readAll.mutate()}
+          >
+            <CheckCheck className="size-4" />
+            Đánh dấu đã đọc tất cả
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-destructive hover:text-destructive"
+            disabled={clearRead.isPending}
+            onClick={() => clearRead.mutate()}
+          >
+            <Trash2 className="size-4" />
+            Xóa đã đọc
+          </Button>
+        </div>
       </div>
 
       <Card className="gap-0 overflow-hidden py-0">
@@ -214,6 +205,6 @@ export function NotificationPage() {
           unitLabel="thông báo"
         />
       )}
-    </PageContainer>
+    </div>
   )
 }

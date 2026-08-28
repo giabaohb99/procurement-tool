@@ -463,7 +463,7 @@ export function PurchaseOrderDetailPage() {
           </CardHeader>
           <CardContent className="space-y-4 px-4">
             {afterApproveEditable && (
-              <p className="rounded-md border border-info/30 bg-info/8 px-3 py-2 text-sm text-muted-foreground">
+              <p className="rounded-md border border-info/30 bg-info/8 px-3 py-1.5 text-xs text-muted-foreground">
                 Đơn đã duyệt — nội dung đã ký khóa lại. Mở nút bút chì ở cột Hành động để sửa:{' '}
                 {PO_FIELDS_EDITABLE_AFTER_APPROVE}.
                 {canUnapprove && ' Muốn đổi phần khác thì bấm Hủy duyệt để đưa đơn về Nháp.'}

@@ -13,7 +13,6 @@ import { NotificationBell } from '@/shared/notifications/notification-bell'
 import { Separator } from '@/shared/ui/separator'
 import { SidebarTrigger } from '@/shared/ui/sidebar'
 import { DemoAccountSwitcher } from './demo-account-switcher'
-import { MyTasksButton } from './my-tasks-button'
 import { UserMenu } from './user-menu'
 
 /**
@@ -64,8 +63,8 @@ export function ModuleTopbar({ module }: { module: ErpModule }) {
       </Breadcrumb>
 
       <div className="ml-auto flex items-center gap-1">
-        {/*  Hộp việc đứng TRƯỚC chuông: việc phải xử lý nặng hơn tin để đọc. */}
-        <MyTasksButton />
+        {/*  CR-215: hộp "Chờ tôi duyệt" đã gỡ — nội dung gom vào tab Việc cần làm
+            của Trang cá nhân, thanh trên chỉ còn một cái chuông. */}
         <NotificationBell />
         {/*  Chỉ hiện ở bản DEV — tự trả về null khi build thật. */}
         <DemoAccountSwitcher />

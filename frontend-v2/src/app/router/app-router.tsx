@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router-dom'
+import { createBrowserRouter, Navigate } from 'react-router-dom'
 
 import { AuthLayout } from '@/app/layouts/auth-layout'
 import { LauncherLayout } from '@/app/layouts/launcher-layout'
@@ -93,15 +93,13 @@ export const router = createBrowserRouter([
                 errorElement: <RouteErrorPage />,
                 children: [
                   { index: true, element: <ModuleLauncherPage /> },
-                  // Hai màn DÙNG CHUNG cho mọi phân hệ, nên đặt ở khung launcher
-                  // chứ không nhét vào một phân hệ nào: thông báo của cả hệ gom
-                  // về một chỗ, còn trang cá nhân là của tài khoản.
+                  // Trang cá nhân DÙNG CHUNG cho mọi phân hệ nên đặt ở khung
+                  // launcher. Trang thông báo riêng đã bỏ (CR-215) — thông báo
+                  // nay là một tab trong Trang cá nhân; giữ route cũ làm chuyển
+                  // hướng cho link bookmark/đã gửi qua email.
                   {
                     path: appRoutes.notifications,
-                    lazy: async () => ({
-                      Component: (await import('@/app/pages/notification-page'))
-                        .NotificationPage,
-                    }),
+                    element: <Navigate to="/me?tab=notifications" replace />,
                   },
                   {
                     path: appRoutes.me,

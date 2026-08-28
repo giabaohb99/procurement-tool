@@ -7,7 +7,6 @@ import { apiPost } from '@/core/api'
 import type { AuthUser } from '@/core/auth/auth-types'
 import { useAuth } from '@/core/auth/use-auth'
 import { AvatarPostDialog } from '@/modules/forum/components/avatar-post-dialog'
-import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { AvatarUploader } from '@/shared/ui/avatar-uploader'
@@ -93,14 +92,11 @@ export function ProfileIdentityCard({ profile }: { profile: AuthUser | null }) {
         </div>
       </div>
 
-      {/*
-        Bản cũ có tab "Việc cần làm" ngay trong trang này. v2 đã có màn riêng
-        («Chờ tôi duyệt» của phân hệ Văn bản) nên ở đây chỉ để lối đi sang,
-        không dựng lại bảng thứ hai.
-      */}
+      {/* CR-215: thông báo nay là một tab ngay trong trang này — nút chỉ là
+          lối tắt nhảy sang tab đó thay vì rời trang. */}
       <div className="flex shrink-0 flex-wrap gap-2">
         <Button variant="outline" size="sm" asChild>
-          <Link to={appRoutes.notifications}>
+          <Link to="/me?tab=notifications">
             <Bell className="size-4" />
             Thông báo
           </Link>

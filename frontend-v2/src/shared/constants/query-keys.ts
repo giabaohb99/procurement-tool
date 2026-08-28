@@ -218,6 +218,12 @@ export const queryKeys = {
     all: ['notification'] as const,
     list: (params?: Record<string, unknown>) => ['notification', 'list', params ?? {}] as const,
     alerts: () => ['notification', 'alerts'] as const,
+    /**
+     * Việc cần làm (`/api/dashboard/tasks`) — nằm chung nhóm `notification` là
+     * CỐ Ý (CR-215): "đánh dấu làm xong" phải ẩn cả ở chuông cảnh báo, nên một
+     * lần vô hiệu nhóm này là tab việc lẫn chuông cùng nạp lại.
+     */
+    tasks: (params?: Record<string, unknown>) => ['notification', 'tasks', params ?? {}] as const,
   },
   // Phân hệ đang tắt — giữ chỗ để bật lại không phải nghĩ lại quy ước key.
   sales: {

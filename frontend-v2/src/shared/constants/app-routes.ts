@@ -10,8 +10,9 @@ export const appRoutes = {
   /** Màn chọn phân hệ — trang chủ sau khi đăng nhập. */
   launcher: '/',
   /**
-   * Hai màn dùng chung cho MỌI phân hệ nên đứng ở gốc, không nằm trong phân hệ
-   * nào: thông báo gom cả hệ về một chỗ, còn trang cá nhân là của tài khoản.
+   * Màn dùng chung cho MỌI phân hệ nên đứng ở gốc, không nằm trong phân hệ nào.
+   * `/notifications` không còn trang riêng (CR-215) — chỉ giữ làm route chuyển
+   * hướng về tab Thông báo của Trang cá nhân, cho link cũ khỏi chết.
    */
   notifications: '/notifications',
   me: '/me',

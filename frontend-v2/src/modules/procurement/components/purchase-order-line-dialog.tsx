@@ -135,7 +135,7 @@ export function PurchaseOrderLineDialog({
         </DialogHeader>
 
         {afterApproveEditable && !locked && (
-          <p className="rounded-md border border-info/30 bg-info/8 px-3 py-2 text-sm text-muted-foreground">
+          <p className="rounded-md border border-info/30 bg-info/8 px-3 py-1.5 text-xs text-muted-foreground">
             Đơn đã duyệt — chỉ còn sửa được: {PO_FIELDS_EDITABLE_AFTER_APPROVE}. Muốn đổi phần
             khác thì bấm <b>Hủy duyệt</b> ở đầu trang để đơn về Nháp, sửa xong gửi duyệt lại.
           </p>

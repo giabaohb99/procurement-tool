@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Banknote,
   Check,
@@ -8,8 +8,11 @@ import {
   ClipboardCheck,
   Eye,
   EyeOff,
+  FileSignature,
   FileText,
+  ListFilter,
   RotateCcw,
+  ScrollText,
   Search,
   ShoppingCart,
   Truck,
@@ -18,29 +21,49 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 
-import { apiGet } from '@/core/api'
+import { apiGet, apiPost } from '@/core/api'
+import { queryKeys } from '@/shared/constants/query-keys'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { Input } from '@/shared/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/ui/select'
 import { Skeleton } from '@/shared/ui/skeleton'
+import { cn } from '@/shared/utils/cn'
 import { formatDate } from '@/shared/utils/format-date'
 
-const DISMISSED_STORAGE_KEY = 'erp.profile.dismissed_tasks'
+/**
+ * Tab VIỆC CẦN LÀM của Trang cá nhân.
+ *
+ * CR-215: "Đánh dấu làm xong" lưu SERVER theo tài khoản (`/api/dashboard/tasks/dismiss`)
+ * chứ không còn localStorage — nhờ vậy chuông cảnh báo và khối cảnh báo dashboard
+ * cùng ẩn theo, và đổi máy vẫn giữ. Khóa việc (`item.key`) do backend sinh.
+ */
 
 interface DashboardTaskItem {
-  type: 'pr' | 'sr' | 'po' | 'late' | 'payable' | string
+  /** Khóa ổn định backend sinh — dùng cho đánh dấu xong/khôi phục. */
+  key: string
+  type: 'sign' | 'pr' | 'sr' | 'po' | 'late' | 'payable' | 'contract' | string
   label: string
   code: string
   title: string
   subtitle: string
   date: string
   link: string
+  /** Tài khoản này đã đánh dấu xong việc này. */
+  dismissed: boolean
 }
 
 interface DashboardTasksData {
   total: number
   by_type: Record<string, number>
+  dismissed_total: number
   page: number
   page_size: number
   items: DashboardTaskItem[]
@@ -50,6 +73,12 @@ const TASK_META: Record<
   string,
   { label: string; short: string; colorClass: string; icon: typeof FileText }
 > = {
+  sign: {
+    label: 'Chờ tôi duyệt',
+    short: 'Chờ duyệt',
+    colorClass: 'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400',
+    icon: FileSignature,
+  },
   pr: {
     label: 'YCMH chờ duyệt',
     short: 'YCMH',
@@ -70,20 +99,22 @@ const TASK_META: Record<
   },
   late: {
     label: 'Giao hàng trễ',
-    short: 'Giao trễ',
+    short: 'Giao hàng',
     colorClass: 'bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400',
     icon: Truck,
   },
   payable: {
     label: 'Công nợ quá hạn',
-    short: 'Quá hạn',
+    short: 'Công nợ',
     colorClass: 'bg-rose-500/10 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400',
     icon: Banknote,
   },
-}
-
-function taskKey(item: DashboardTaskItem): string {
-  return `${item.type}:${item.code}:${item.link}`
+  contract: {
+    label: 'Hợp đồng hết hạn',
+    short: 'Hợp đồng',
+    colorClass: 'bg-orange-500/10 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400',
+    icon: ScrollText,
+  },
 }
 
 function normalizeTaskLink(link: string): string {
@@ -100,6 +131,9 @@ function normalizeTaskLink(link: string): string {
   if (link.startsWith('/payables')) {
     return link.replace('/payables', '/finance/payables')
   }
+  if (link.startsWith('/contracts')) {
+    return link.replace('/contracts', '/production/contracts')
+  }
   return link
 }
 
@@ -110,32 +144,18 @@ export function ProfileTasksTab({ onCountChange }: { onCountChange?: (count: num
   const [showHidden, setShowHidden] = useState(false)
   const pageSize = 15
 
-  // Khôi phục các việc đã đánh dấu hoàn thành từ localStorage
-  const [dismissedKeys, setDismissedKeys] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem(DISMISSED_STORAGE_KEY)
-      return saved ? JSON.parse(saved) : []
-    } catch {
-      return []
-    }
-  })
-
-  // Lưu các việc đã ẩn vào localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem(DISMISSED_STORAGE_KEY, JSON.stringify(dismissedKeys))
-    } catch {
-      // Bỏ qua nếu localStorage bị đầy/khóa
-    }
-  }, [dismissedKeys])
+  const queryClient = useQueryClient()
 
   const { data, isPending, isError, refetch } = useQuery({
-    queryKey: ['dashboard-tasks', page, pageSize, selectedType, q],
+    queryKey: queryKeys.notification.tasks({ type: selectedType, q: q.trim() }),
     queryFn: async () => {
       return await apiGet<DashboardTasksData>('/api/dashboard/tasks', {
         params: {
           page: 1,
-          page_size: 300, // Nạp danh sách để đếm chính xác số việc chưa ẩn
+          // Nạp cả danh sách rồi phân trang tại chỗ. 500 = đúng trần backend —
+          // xin thấp hơn tổng việc thì by_type đếm ra số mà danh sách không có.
+          page_size: 500,
+          include_dismissed: 1, // Việc đã ẩn vẫn về (kèm cờ) cho nút "Hiện đã làm"
           type: selectedType || undefined,
           q: q.trim() || undefined,
         },
@@ -143,77 +163,98 @@ export function ProfileTasksTab({ onCountChange }: { onCountChange?: (count: num
     },
   })
 
-  // Lọc bỏ hoặc giữ lại các việc đã đánh dấu xong
-  const { visibleItems, activeCount, byTypeCounts } = useMemo(() => {
-    const rawItems = data?.items || []
-    const dismissedSet = new Set(dismissedKeys)
+  // Đánh dấu xong / khôi phục ghi server rồi vô hiệu cả nhóm `notification`
+  // (tab này + chuông cảnh báo) và số liệu dashboard — ba nơi cùng khớp.
+  function refreshAfterMutation() {
+    void queryClient.invalidateQueries({ queryKey: queryKeys.notification.all })
+    void queryClient.invalidateQueries({ queryKey: queryKeys.procurement.dashboard() })
+  }
 
-    const filtered = rawItems.filter((item) => {
-      const isDismissed = dismissedSet.has(taskKey(item))
-      if (!showHidden && isDismissed) return false
-      return true
-    })
+  const dismiss = useMutation({
+    mutationFn: (body: { keys?: string[]; all?: boolean }) =>
+      apiPost<{ added: number }>('/api/dashboard/tasks/dismiss', body),
+    onSuccess: refreshAfterMutation,
+  })
 
-    const counts: Record<string, number> = { pr: 0, sr: 0, po: 0, late: 0, payable: 0 }
-    let remainingTotal = 0
+  const restore = useMutation({
+    mutationFn: (body: { keys?: string[]; all?: boolean }) =>
+      apiPost<{ removed: number }>('/api/dashboard/tasks/restore', body),
+    onSuccess: refreshAfterMutation,
+  })
 
-    rawItems.forEach((item) => {
-      if (!dismissedSet.has(taskKey(item))) {
-        remainingTotal += 1
-        const t = item.type
-        counts[t] = (counts[t] || 0) + 1
-      }
-    })
+  const items = useMemo(() => data?.items ?? [], [data?.items])
+  const byTypeCounts = data?.by_type ?? {}
+  const dismissedTotal = data?.dismissed_total ?? 0
+  // Tổng việc CHƯA ẨN mọi loại — by_type do server đếm trước khi lọc q/type.
+  const activeCount = Object.values(byTypeCounts).reduce((sum, n) => sum + n, 0)
 
-    return {
-      visibleItems: filtered,
-      activeCount: remainingTotal,
-      byTypeCounts: counts,
-    }
-  }, [data?.items, dismissedKeys, showHidden])
+  const visibleItems = useMemo(
+    () => (showHidden ? items : items.filter((item) => !item.dismissed)),
+    [items, showHidden],
+  )
 
-  // Cập nhật số công việc chưa làm lên badge của tab
+  // Cập nhật số việc chưa làm lên badge của tab
   useEffect(() => {
     if (onCountChange) {
       onCountChange(activeCount)
     }
   }, [activeCount, onCountChange])
 
-  // Đánh dấu 1 việc cụ thể đã xong
+  // Đánh dấu 1 việc cụ thể đã xong / mở lại
   function toggleDismissTask(e: React.MouseEvent, item: DashboardTaskItem) {
     e.preventDefault()
     e.stopPropagation()
-    const key = taskKey(item)
-    if (dismissedKeys.includes(key)) {
-      setDismissedKeys((prev) => prev.filter((k) => k !== key))
-      toast.info(`Đã mở lại việc: ${item.code}`)
+    if (item.dismissed) {
+      restore.mutate(
+        { keys: [item.key] },
+        { onSuccess: () => toast.info(`Đã mở lại việc: ${item.code}`) },
+      )
     } else {
-      setDismissedKeys((prev) => [...prev, key])
-      toast.success(`Đã đánh dấu hoàn thành: ${item.code}`)
+      dismiss.mutate(
+        { keys: [item.key] },
+        { onSuccess: () => toast.success(`Đã đánh dấu hoàn thành: ${item.code}`) },
+      )
     }
   }
 
-  // Đánh dấu TẤT CẢ việc hiện tại đã làm hết
+  // Đánh dấu TẤT CẢ việc đang hiện đã làm hết
   function handleDismissAll() {
-    const allCurrentKeys = (data?.items || []).map(taskKey)
-    const newDismissed = Array.from(new Set([...dismissedKeys, ...allCurrentKeys]))
-    setDismissedKeys(newDismissed)
-    toast.success(`Đã đánh dấu làm hết ${data?.items?.length || 0} công việc!`)
+    // Không lọc gì thì để SERVER tự gom key (`all: true`) — gửi key theo danh
+    // sách đã nạp là sót việc nằm ngoài trang khi tổng vượt trần page_size.
+    if (!q.trim() && !selectedType) {
+      if (activeCount === 0) return
+      dismiss.mutate(
+        { all: true },
+        { onSuccess: () => toast.success(`Đã đánh dấu làm hết ${activeCount} công việc!`) },
+      )
+      return
+    }
+    const keys = items.filter((item) => !item.dismissed).map((item) => item.key)
+    if (keys.length === 0) return
+    dismiss.mutate(
+      { keys },
+      { onSuccess: () => toast.success(`Đã đánh dấu làm hết ${keys.length} công việc!`) },
+    )
   }
 
-  // Khôi phục tất cả
+  // Khôi phục tất cả việc đã ẩn của tài khoản
   function handleResetAll() {
-    setDismissedKeys([])
-    toast.info('Đã khôi phục lại danh sách việc cần làm')
+    restore.mutate(
+      { all: true },
+      { onSuccess: () => toast.info('Đã khôi phục lại danh sách việc cần làm') },
+    )
   }
 
+  // Danh sách loại SINH TỪ `TASK_META` — thêm loại việc mới chỉ khai một chỗ ở
+  // trên, ô lọc tự có. Trước đây là một hàng nút chip: mỗi loại một nút, càng
+  // thêm loại càng tràn dòng nên đổi thành dropdown (CR-215).
   const filterOptions = [
-    { key: '', label: 'Tất cả', count: activeCount },
-    { key: 'pr', label: 'YCMH', count: byTypeCounts.pr || 0 },
-    { key: 'sr', label: 'Khảo sát', count: byTypeCounts.sr || 0 },
-    { key: 'po', label: 'ĐMH', count: byTypeCounts.po || 0 },
-    { key: 'late', label: 'Giao trễ', count: byTypeCounts.late || 0 },
-    { key: 'payable', label: 'Quá hạn', count: byTypeCounts.payable || 0 },
+    { key: 'all', label: 'Tất cả', count: activeCount },
+    ...Object.entries(TASK_META).map(([key, meta]) => ({
+      key,
+      label: meta.short,
+      count: byTypeCounts[key] || 0,
+    })),
   ]
 
   const paginatedItems = useMemo(() => {
@@ -225,32 +266,28 @@ export function ProfileTasksTab({ onCountChange }: { onCountChange?: (count: num
 
   return (
     <div className="space-y-4">
-      <Card className="flex flex-wrap items-center justify-between gap-3 p-3">
-        <div className="flex flex-wrap items-center gap-1.5">
-          {filterOptions.map((opt) => (
-            <Button
-              key={opt.key}
-              type="button"
-              variant={selectedType === opt.key ? 'default' : 'ghost'}
-              size="sm"
-              className="h-8 gap-1.5 px-3 text-xs"
-              onClick={() => {
-                setSelectedType(opt.key)
-                setPage(1)
-              }}
-            >
-              <span>{opt.label}</span>
-              {opt.count > 0 && (
-                <Badge
-                  variant={selectedType === opt.key ? 'secondary' : 'outline'}
-                  className="h-4 px-1 text-[10px]"
-                >
-                  {opt.count}
-                </Badge>
-              )}
-            </Button>
-          ))}
-        </div>
+      {/* Một hàng duy nhất: ô lọc loại + ô tìm + các nút, cùng chiều cao h-9. */}
+      <Card className="flex flex-row flex-wrap items-center gap-2 p-3">
+        <Select
+          value={selectedType || 'all'}
+          onValueChange={(value) => {
+            setSelectedType(value === 'all' ? '' : value)
+            setPage(1)
+          }}
+        >
+          <SelectTrigger className="w-48 text-xs" aria-label="Lọc theo loại việc">
+            <ListFilter className="size-3.5 shrink-0 text-muted-foreground" />
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {filterOptions.map((opt) => (
+              <SelectItem key={opt.key} value={opt.key} className="text-xs">
+                {opt.label}
+                {opt.count > 0 ? ` (${opt.count})` : ''}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative w-full sm:w-56">
@@ -272,13 +309,14 @@ export function ProfileTasksTab({ onCountChange }: { onCountChange?: (count: num
             size="sm"
             className="h-9 gap-1.5 text-xs text-success hover:bg-success/10 hover:text-success"
             title="Đánh dấu tất cả việc hiện tại đã làm xong"
+            disabled={dismiss.isPending}
             onClick={handleDismissAll}
           >
             <CheckCheck className="size-4" />
             <span className="hidden sm:inline">Đánh dấu</span> làm hết
           </Button>
 
-          {dismissedKeys.length > 0 && (
+          {dismissedTotal > 0 && (
             <Button
               type="button"
               variant={showHidden ? 'secondary' : 'ghost'}
@@ -292,13 +330,14 @@ export function ProfileTasksTab({ onCountChange }: { onCountChange?: (count: num
             </Button>
           )}
 
-          {dismissedKeys.length > 0 && (
+          {dismissedTotal > 0 && (
             <Button
               type="button"
               variant="ghost"
               size="icon-sm"
               className="h-9 w-9 text-muted-foreground hover:text-foreground"
               title="Khôi phục lại toàn bộ danh sách"
+              disabled={restore.isPending}
               onClick={handleResetAll}
             >
               <RotateCcw className="size-3.5" />
@@ -337,14 +376,14 @@ export function ProfileTasksTab({ onCountChange }: { onCountChange?: (count: num
             <p className="mt-3 text-base font-semibold text-foreground">
               {q || selectedType
                 ? 'Không có việc nào khớp bộ lọc'
-                : dismissedKeys.length > 0 && !showHidden
+                : dismissedTotal > 0 && !showHidden
                   ? 'Tuyệt vời! Bạn đã đánh dấu làm hết tất cả các việc.'
                   : 'Không có việc nào cần xử lý'}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
               {q || selectedType
                 ? 'Thử thay đổi từ khóa tìm kiếm hoặc chọn bộ lọc "Tất cả".'
-                : dismissedKeys.length > 0 && !showHidden
+                : dismissedTotal > 0 && !showHidden
                   ? 'Bấm "Hiện đã làm" nếu bạn muốn xem lại các việc vừa ẩn.'
                   : 'Tất cả các công việc cần bạn duyệt hoặc xử lý sẽ hiển thị tại đây.'}
             </p>
@@ -353,7 +392,7 @@ export function ProfileTasksTab({ onCountChange }: { onCountChange?: (count: num
 
         {!isPending &&
           !isError &&
-          paginatedItems.map((item, idx) => {
+          paginatedItems.map((item) => {
             const meta = TASK_META[item.type] || {
               label: item.label,
               short: item.type,
@@ -362,21 +401,22 @@ export function ProfileTasksTab({ onCountChange }: { onCountChange?: (count: num
             }
             const Icon = meta.icon
             const targetUrl = normalizeTaskLink(item.link)
-            const isDismissed = dismissedKeys.includes(taskKey(item))
+            const isDismissed = item.dismissed
 
             return (
               <div
-                key={idx}
-                className={`group flex items-center justify-between gap-4 p-3.5 transition-colors ${
-                  isDismissed ? 'bg-muted/40 opacity-60' : 'hover:bg-accent/50'
-                }`}
+                key={item.key}
+                className={cn(
+                  'group flex items-center justify-between gap-4 p-3.5 transition-colors',
+                  isDismissed ? 'bg-muted/40 opacity-60' : 'hover:bg-accent/50',
+                )}
               >
-                <Link
-                  to={targetUrl}
-                  className="flex items-center gap-3.5 min-w-0 flex-1"
-                >
+                <Link to={targetUrl} className="flex min-w-0 flex-1 items-center gap-3.5">
                   <div
-                    className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${meta.colorClass}`}
+                    className={cn(
+                      'flex size-9 shrink-0 items-center justify-center rounded-lg',
+                      meta.colorClass,
+                    )}
                   >
                     <Icon className="size-4" />
                   </div>
@@ -384,27 +424,36 @@ export function ProfileTasksTab({ onCountChange }: { onCountChange?: (count: num
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <span
-                        className={`font-semibold text-xs ${
-                          isDismissed ? 'line-through text-muted-foreground' : 'text-navy dark:text-foreground'
-                        }`}
+                        className={cn(
+                          'text-xs font-semibold',
+                          isDismissed
+                            ? 'text-muted-foreground line-through'
+                            : 'text-navy dark:text-foreground',
+                        )}
                       >
                         {item.code}
                       </span>
+                      {/* Nhãn theo TỪNG DÒNG backend gửi — một loại giờ có hai mức
+                          (vd "Công nợ quá hạn" / "Công nợ sắp đến hạn"). */}
                       <Badge variant="outline" className="text-[10px]">
-                        {meta.label}
+                        {item.label || meta.label}
                       </Badge>
                       {isDismissed && (
-                        <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600 text-[10px]">
+                        <Badge
+                          variant="secondary"
+                          className="bg-emerald-500/10 text-[10px] text-emerald-600"
+                        >
                           Đã xong
                         </Badge>
                       )}
                     </div>
                     <p
-                      className={`truncate text-sm font-medium ${
+                      className={cn(
+                        'truncate text-sm font-medium',
                         isDismissed
-                          ? 'line-through text-muted-foreground'
-                          : 'text-foreground group-hover:text-primary'
-                      }`}
+                          ? 'text-muted-foreground line-through'
+                          : 'text-foreground group-hover:text-primary',
+                      )}
                     >
                       {item.title}
                     </p>
@@ -423,12 +472,14 @@ export function ProfileTasksTab({ onCountChange }: { onCountChange?: (count: num
                     type="button"
                     variant={isDismissed ? 'secondary' : 'ghost'}
                     size="icon-sm"
-                    className={`h-8 w-8 transition-opacity ${
+                    className={cn(
+                      'h-8 w-8 transition-opacity',
                       isDismissed
                         ? 'text-emerald-600'
-                        : 'opacity-70 group-hover:opacity-100 hover:bg-emerald-50 hover:text-emerald-600'
-                    }`}
+                        : 'opacity-70 hover:bg-emerald-50 hover:text-emerald-600 group-hover:opacity-100',
+                    )}
                     title={isDismissed ? 'Khôi phục lại việc này' : 'Đánh dấu đã hoàn thành'}
+                    disabled={dismiss.isPending || restore.isPending}
                     onClick={(e) => toggleDismissTask(e, item)}
                   >
                     <Check className="size-4" />
@@ -446,7 +497,8 @@ export function ProfileTasksTab({ onCountChange }: { onCountChange?: (count: num
       {totalPages > 1 && (
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>
-            Hiển thị {((page - 1) * pageSize) + 1} - {Math.min(page * pageSize, visibleItems.length)} / {visibleItems.length} việc
+            Hiển thị {(page - 1) * pageSize + 1} -{' '}
+            {Math.min(page * pageSize, visibleItems.length)} / {visibleItems.length} việc
           </span>
           <div className="flex items-center gap-1.5">
             <Button
