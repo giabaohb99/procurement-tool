@@ -30,11 +30,11 @@ docker compose exec erp npm run format       # prettier --write . (đọc ghi ch
 
 Ba cổng, cả ba phải xanh:
 
-| Cổng        | Ngưỡng                                                 |
-| ----------- | ------------------------------------------------------ |
-| `typecheck` | **0 lỗi**                                              |
-| `lint`      | **0 lỗi**. Cảnh báo còn vài chỗ cũ — đừng thêm mới      |
-| `test`      | **toàn bộ xanh**                                       |
+| Cổng        | Ngưỡng                                             |
+| ----------- | -------------------------------------------------- |
+| `typecheck` | **0 lỗi**                                          |
+| `lint`      | **0 lỗi**. Cảnh báo còn vài chỗ cũ — đừng thêm mới |
+| `test`      | **toàn bộ xanh**                                   |
 
 **`format:check` CHƯA nằm trong `check`** và hiện đỏ ở ~381 tệp: Prettier mới được
 thêm vào, chưa ai chạy `format --write` cho toàn bộ mã. Đừng tự ý chạy
@@ -67,10 +67,25 @@ Không viết test cho: dựng bố cục thuần túy, đầu ra của thư vi�
 ## Conventions
 
 - Không bật `globals` — `import { describe, expect, it, vi } from 'vitest'` rõ ràng.
-- Tên `it(...)` viết bằng **tiếng Việt**, mô tả HÀNH VI chứ không mô tả hàm:
+- Tên `it(...)` viết bằng **tiếng Anh**, mô tả HÀNH VI chứ không mô tả hàm:
   "làm tròn tới đồng, không để lẻ rò ra cột danh sách", không phải "test formatMoney".
 - Test nào nhắc lại một lỗi đã từng xảy ra thì ghi rõ lỗi đó trong comment —
   người sau đọc mới biết tại sao không được xóa.
 - Múi giờ khi chạy test cố định `Asia/Ho_Chi_Minh` (đặt trong `vitest.config.ts`).
   Đừng viết khẳng định phụ thuộc "hôm nay"; truyền ngày cụ thể vào.
 - Gọi API thật thì mock ở tầng `@/core/api` (`vi.mock`), không mock `axios`.
+
+## Tress test
+
+- Test những trường hợp cực đoan, ví dụ: chuỗi rỗng, số âm, số quá lớn, ngày ngoài dải
+  hợp lệ, danh sách rỗng, danh sách quá dài. Không cần test từng giá trị hợp lệ
+  riêng lẻ — đó là việc của TypeScript.
+- Test những trường hợp nhỏ nhưng có thể gây lỗi thầm lặng, ví dụ: số âm, số 0, số 1, chuỗi rỗng, danh sách rỗng, danh sách một phần tử, danh sách một phần tử trùng nhau.
+- Test như người hacker cố gắng phá vỡ hệ thống, không test như người dùng bình thường. Người dùng bình thường không bấm nút "Xoá tất cả" khi đang có 1000 dòng trong bảng, nhưng hacker có thể làm vậy.
+- Test những trường hợp phụ thuộc vào module khác, ví dụ: một hàm format tiền phụ thuộc vào hằng số `currency` trong module khác. Nếu hằng số đó thay đổi, test sẽ fail và báo cho người sửa biết rằng họ đã phá vỡ quy tắc nghiệp vụ.
+- Với trường hợp test 1 module thì test luôn cả những module mà nó phụ thuộc vào, không mock chúng. Nếu module phụ thuộc thay đổi, test sẽ fail và báo cho người sửa biết rằng họ đã phá vỡ quy tắc nghiệp vụ.
+- Với trường hợp test phụ thuộc bạn test cực đoan những trường hợp với module phục thuộc dựa vào độ flexible mà mudule phụ thuộc cung cấp. Ví dụ: nếu module phụ thuộc có thể trả về null, test luôn cả trường hợp null. Nếu module phụ thuộc có thể trả về undefined, test luôn cả trường hợp undefined. Nếu module phụ thuộc có thể trả về một danh sách rỗng, test luôn cả trường hợp danh sách rỗng.
+
+**Chân lý**
+
+- Test ko cố gắng làm nó đúng test case mà test cố gắng làm nó sai. Nếu test case fail thì báo cho người sửa biết rằng họ đã phá vỡ quy tắc nghiệp vụ. Tìm ra những trường hợp đó chứng tỏ code đang bị lủng chứ ko cố gắng sửa test case để nó đúng.
