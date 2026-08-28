@@ -71,6 +71,12 @@ class Employee(Base, AuditMixin):
         return (self.user.avatar or "") if self.user else ""
 
     @property
+    def signature(self) -> str:
+        #  Ảnh chữ ký cũng lưu ở tài khoản đăng nhập (tab_user.signature) — cùng
+        #  chỗ với chữ ký người dùng tự đặt ở Trang cá nhân, tránh 2 nguồn lệch.
+        return (self.user.signature or "") if self.user else ""
+
+    @property
     def status_label(self) -> str:
         """Nhãn tiếng Việt của `status` (B-03).
 

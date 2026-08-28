@@ -14,8 +14,12 @@ export interface AuthUser {
   phone?: string
   department_id?: number
   department_name?: string
+  /** Tên các vai trò thật (từ tab_user_role) — nối bằng dấu phẩy cũng có ở `role_name`. */
   role_name?: string
+  role_names?: string[]
   position?: string
+  /** Tên các phòng ban KIÊM NHIỆM (phòng phụ, không tính phòng chính). */
+  kiem_nhiem?: string[]
   /**
    * Vai trò ĐANG GIỮ (id), không phải quyền — quyền nằm ở `permissions`.
    *

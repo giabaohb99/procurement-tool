@@ -47,6 +47,17 @@ export const employeeApi = {
     return apiPost<{ avatar: string }>(`${BASE_URL}/${id}/avatar`, body)
   },
 
+  /** Ảnh chữ ký, cùng cơ chế avatar (lưu ở `tab_user.signature`). Nhân sự chưa
+   *  có tài khoản thì backend trả 400. */
+  uploadSignature: (id: number, file: File) => {
+    const body = new FormData()
+    body.append('file', file)
+    return apiPost<{ signature: string }>(`${BASE_URL}/${id}/signature`, body)
+  },
+
+  /** Gỡ chữ ký (chỉ xóa liên kết, file storage giữ nguyên). */
+  removeSignature: (id: number) => apiDelete<{ signature: string }>(`${BASE_URL}/${id}/signature`),
+
   /**
    * Đặt mật khẩu. Nhân sự CHƯA có tài khoản thì backend tự tạo tài khoản mới
    * (email của nhân sự + vai trò mặc định "Nhân sự") rồi đặt luôn mật khẩu này.

@@ -28,11 +28,13 @@ import { ReadOnlyValue } from '@/shared/ui/read-only-value'
 import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
 import { RecordIdentityCard, type IdentityChip } from '@/shared/ui/record-identity-card'
+import { SectionHeading } from '@/shared/ui/section-heading'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { ActiveStatusSelect } from '../components/active-status-select'
 import { EmployeeAccountCard } from '../components/employee-account-card'
 import { EmployeeDepartmentCard } from '../components/employee-department-card'
+import { EmployeeSignatureCard } from '../components/employee-signature-card'
 import { LookupSelect } from '../components/lookup-select'
 import { useDepartments } from '../hooks/use-departments'
 import {
@@ -162,74 +164,43 @@ export function EmployeeDetailPage() {
             chips={identityChips(employee)}
           />
 
-          <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
-            <Card className="gap-4 p-5">
-              <FormSection title="Định danh">
-                <FormField
-                  control={form.control}
-                  name="code"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Mã NV</FormLabel>
-                      <FormControl>
-                        {/* Mã dùng khắp hệ — đổi sau khi tạo sẽ vỡ tham chiếu. */}
-                        <Input disabled {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+          {/* Hàng 1: 2 cột cao BẰNG NHAU — cột 1 [Thông tin cá nhân]+[Liên hệ]
+              (form sửa trực tiếp), cột 2 [Chữ ký]. */}
+          <div className="grid items-stretch gap-5 lg:grid-cols-2">
+            <div className="flex flex-col gap-5">
+              <Card className="gap-4 p-5">
+                <FormSection title="Thông tin cá nhân">
+                  <FormField
+                    control={form.control}
+                    name="code"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Mã NV</FormLabel>
+                        <FormControl>
+                          {/* Mã dùng khắp hệ — đổi sau khi tạo sẽ vỡ tham chiếu. */}
+                          <Input disabled {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <FormField
-                  control={form.control}
-                  name="full_name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Họ tên</FormLabel>
-                      <FormControl>
-                        <Input disabled={!canWrite} {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </FormSection>
-
-              <FormSection title="Liên hệ">
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input type="email" disabled={!canWrite} {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        Cũng là tên đăng nhập — đổi email KHÔNG tự đổi tài khoản đã cấp.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="phone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Số điện thoại</FormLabel>
-                      <FormControl>
-                        <Input disabled={!canWrite} {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </FormSection>
-
-              <FormSection title="Công việc">
-                {/*  CÔNG TY (pháp nhân) — CHỈ XEM (26/08/2026).
+                  <FormField
+                    control={form.control}
+                    name="full_name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Họ tên</FormLabel>
+                        <FormControl>
+                          <Input disabled={!canWrite} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  {/* Công ty · Phòng ban · Vị trí · Tình trạng nằm CHUNG khối
+                    "Thông tin cá nhân"; email/phone tách xuống thẻ "Liên hệ". */}
+                  {/*  CÔNG TY (pháp nhân) — CHỈ XEM (26/08/2026).
 
                      Cột `company_id` vốn có trong bảng nhưng chưa bao giờ hiện
                      ra màn hình, nên mở hồ sơ không biết người này thuộc pháp
@@ -243,118 +214,171 @@ export function EmployeeDetailPage() {
 
                      Dùng `ReadOnlyValue`, KHÔNG dùng `<Input disabled>`: ô mờ
                      thì không bôi đen, không copy được tên pháp nhân. */}
-                <FormItem>
-                  <FormLabel>Công ty</FormLabel>
-                  <ReadOnlyValue>
-                    {employee.company_name || '— Chưa gán công ty —'}
-                  </ReadOnlyValue>
-                  <FormDescription>
-                    Pháp nhân của nhân sự. Đổi pháp nhân làm ở màn Công ty.
-                  </FormDescription>
-                </FormItem>
+                  <FormItem>
+                    <FormLabel>Công ty</FormLabel>
+                    <ReadOnlyValue>{employee.company_name || '— Chưa gán công ty —'}</ReadOnlyValue>
+                    <FormDescription>
+                      Pháp nhân của nhân sự. Đổi pháp nhân làm ở màn Công ty.
+                    </FormDescription>
+                  </FormItem>
 
-                <FormField
-                  control={form.control}
-                  name="department_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Phòng ban</FormLabel>
-                      <LookupSelect
-                        value={field.value}
-                        onChange={field.onChange}
-                        disabled={!canWrite}
-                        placeholder="Chọn phòng ban"
-                        emptyLabel="— Chưa gán phòng ban —"
-                        fallbackLabel={employee.department_name ?? ''}
-                        items={(departments?.items ?? []).map((d) => ({
-                          id: d.id,
-                          label: d.name,
-                        }))}
-                      />
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  <FormField
+                    control={form.control}
+                    name="department_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Phòng ban</FormLabel>
+                        <LookupSelect
+                          value={field.value}
+                          onChange={field.onChange}
+                          disabled={!canWrite}
+                          placeholder="Chọn phòng ban"
+                          emptyLabel="— Chưa gán phòng ban —"
+                          fallbackLabel={employee.department_name ?? ''}
+                          items={(departments?.items ?? []).map((d) => ({
+                            id: d.id,
+                            label: d.name,
+                          }))}
+                        />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <FormField
-                  control={form.control}
-                  name="position"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Vị trí / Chức vụ</FormLabel>
-                      <FormControl>
-                        <Input disabled={!canWrite} {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        Chỉ là chức danh hiển thị trên phiếu — không phải phân quyền.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="status"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tình trạng làm việc</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                        disabled={!canWrite}
-                      >
+                  <FormField
+                    control={form.control}
+                    name="position"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Vị trí / Chức vụ</FormLabel>
                         <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue />
-                          </SelectTrigger>
+                          <Input disabled={!canWrite} {...field} />
                         </FormControl>
-                        <SelectContent>
-                          {employeeStatusOptions(field.value).map((item) => (
-                            <SelectItem key={item.value} value={item.value}>
-                              {item.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        <FormDescription>
+                          Chỉ là chức danh hiển thị trên phiếu — không phải phân quyền.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <FormField
-                  control={form.control}
-                  name="is_active"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Trạng thái hồ sơ</FormLabel>
-                      <ActiveStatusSelect
-                        value={field.value}
-                        onChange={field.onChange}
-                        disabled={!canWrite}
-                      />
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </FormSection>
-            </Card>
+                  <FormField
+                    control={form.control}
+                    name="status"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tình trạng làm việc</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                          disabled={!canWrite}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="w-full">
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {employeeStatusOptions(field.value).map((item) => (
+                              <SelectItem key={item.value} value={item.value}>
+                                {item.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-            <div className="space-y-5">
-              {/*  Đứng TRƯỚC thẻ tài khoản: kiêm nhiệm và vai trò là hai nửa của
-                   cùng một câu «người này thấy được gì», mà kiêm nhiệm là nửa dễ
-                   bị quên hơn. */}
-              <EmployeeDepartmentCard
-                employeeId={employee.id}
-                companyId={employee.company_id}
-                primaryDepartmentId={employee.department_id}
-                canWrite={canWrite}
-                isSelf={currentUser?.employee_id === employee.id}
-              />
-              <EmployeeAccountCard employeeId={employee.id} email={employee.email} />
-              <AuditTimeline entity="employee" entityId={employeeId} />
+                  <FormField
+                    control={form.control}
+                    name="is_active"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Trạng thái hồ sơ</FormLabel>
+                        <ActiveStatusSelect
+                          value={field.value}
+                          onChange={field.onChange}
+                          disabled={!canWrite}
+                        />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </FormSection>
+              </Card>
+
+              <Card className="gap-4 p-5">
+                <FormSection title="Liên hệ">
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input type="email" disabled={!canWrite} {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          Cũng là tên đăng nhập — đổi email KHÔNG tự đổi tài khoản đã cấp.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Số điện thoại</FormLabel>
+                        <FormControl>
+                          <Input disabled={!canWrite} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </FormSection>
+              </Card>
             </div>
+
+            {/* Cột 2: chữ ký — kéo cao đầy cột cho bằng cột 1. */}
+            <EmployeeSignatureCard
+              employeeId={employee.id}
+              signature={employee.signature}
+              canEdit={canWrite}
+              hasAccount={employee.user_id > 0}
+              className="h-full"
+            />
           </div>
+
+          {/* Hàng 2: kiêm nhiệm + tài khoản đăng nhập (nơi hiện Vai trò). Kiêm
+              nhiệm và vai trò là hai nửa của câu «người này thấy được gì». */}
+          {/* Hàng 2: kiêm nhiệm + tài khoản đăng nhập — CAO BẰNG NHAU
+              (items-stretch + h-full trên từng thẻ). */}
+          <div className="mt-5 grid items-stretch gap-5 lg:grid-cols-2">
+            <EmployeeDepartmentCard
+              employeeId={employee.id}
+              companyId={employee.company_id}
+              primaryDepartmentId={employee.department_id}
+              canWrite={canWrite}
+              isSelf={currentUser?.employee_id === employee.id}
+              className="h-full"
+            />
+            <EmployeeAccountCard
+              employeeId={employee.id}
+              email={employee.email}
+              className="h-full"
+            />
+          </div>
+
+          <Card className="mt-5 gap-4 p-5">
+            <SectionHeading>Lịch sử thao tác</SectionHeading>
+            <AuditTimeline entity="employee" entityId={employeeId} />
+          </Card>
         </form>
       </Form>
     </PageContainer>

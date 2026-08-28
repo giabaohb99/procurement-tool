@@ -88,7 +88,8 @@ function EmployeeListContent() {
 
   // Chỉ gửi key nằm trong whitelist FILTERABLE của backend.
   const params: ListParams = { page, page_size: pageSize, ...queryParams }
-  if (debouncedValue) params.full_name = debouncedValue
+  // Ô tìm nhanh dùng `search` — backend quét OR trên mã NV / họ tên / email / SĐT.
+  if (debouncedValue) params.search = debouncedValue
   if (departmentId !== ALL) params.department_id = Number(departmentId)
   if (status !== ALL) params.status = status
 
@@ -198,7 +199,7 @@ function EmployeeListContent() {
                 <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   className="pl-9"
-                  placeholder="Tìm theo họ tên…"
+                  placeholder="Tìm theo tên, mã NV, email, SĐT…"
                   value={keyword}
                   onChange={(e) => setKeyword(e.target.value)}
                 />

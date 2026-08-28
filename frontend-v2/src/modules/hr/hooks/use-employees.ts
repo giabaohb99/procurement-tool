@@ -101,3 +101,28 @@ export function useUploadEmployeeAvatar(employeeId: number) {
     },
   })
 }
+
+/** Đặt/gỡ chữ ký của nhân sự (HR làm hộ). Cùng cơ chế avatar (lưu ở tài khoản). */
+export function useUploadEmployeeSignature(employeeId: number) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (file: File) => employeeApi.uploadSignature(employeeId, file),
+    onSuccess: () => {
+      toast.success('Đã cập nhật chữ ký')
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.all })
+    },
+  })
+}
+
+export function useRemoveEmployeeSignature(employeeId: number) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: () => employeeApi.removeSignature(employeeId),
+    onSuccess: () => {
+      toast.success('Đã gỡ chữ ký')
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.all })
+    },
+  })
+}

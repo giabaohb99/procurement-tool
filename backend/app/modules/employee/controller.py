@@ -23,6 +23,7 @@ def list_employees(
     user=Depends(require("employee", "read")),
 ):
     query = apply_filters(db.query(service.Employee), service.Employee, request, service.FILTERABLE)
+    query = service.apply_keyword_search(query, request.query_params.get("search"))
     query = apply_scope(query, service.Employee, "employee", user, get_perm_profile(db, user))
     query = apply_sort_from_request(query, service.Employee, request)
     total, items = service.list_employees(db, query, pg)
@@ -57,6 +58,51 @@ def update_employee_avatar(eid: int, file: UploadFile = File(...), db: Session =
         raise HTTPException(400, f"Lỗi tải ảnh: {str(e)}")
     audit_record(db, user.id, "employee", eid, "update", f"Đổi ảnh đại diện nhân sự {emp.code}")
     return success({"avatar": url}, "Đã cập nhật ảnh đại diện")
+
+
+@router.post("/{eid}/signature")
+def update_employee_signature(eid: int, file: UploadFile = File(...), db: Session = Depends(get_db),
+                              user=Depends(require("employee", "write"))):
+    """Đặt ảnh chữ ký cho nhân sự (HR làm hộ). Lưu vào TÀI KHOẢN đăng nhập của nhân
+    sự (tab_user.signature) — cùng chỗ với chữ ký người dùng tự đặt ở Trang cá nhân.
+    Nhân sự chưa có tài khoản thì chưa có chỗ lưu → yêu cầu tạo tài khoản trước."""
+    import uuid
+    from app.core.storage import env_prefix, safe_name, upload_fileobj
+    from app.modules.user.model import User
+
+    emp = service.get_employee(db, eid)
+    u = db.query(User).filter(User.employee_id == eid).first()
+    if not u:
+        raise HTTPException(400, "Nhân sự chưa có tài khoản đăng nhập — hãy tạo tài khoản trước khi đặt chữ ký")
+    if not (file.content_type or "").startswith("image/"):
+        raise HTTPException(400, "Chữ ký phải là file ảnh (PNG, JPG…).")
+    try:
+        key = f"{env_prefix()}/signature/{u.id}/{uuid.uuid4().hex[:12]}-{safe_name(file.filename or 'signature')}"
+        url = upload_fileobj(file.file, key, file.content_type or "")
+        u.signature = url
+        db.commit()
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(400, f"Lỗi tải ảnh chữ ký: {str(e)}")
+    audit_record(db, user.id, "employee", eid, "update", f"Cập nhật chữ ký nhân sự {emp.code}")
+    return success({"signature": url}, "Đã cập nhật chữ ký")
+
+
+@router.delete("/{eid}/signature")
+def delete_employee_signature(eid: int, db: Session = Depends(get_db),
+                              user=Depends(require("employee", "write"))):
+    """Gỡ chữ ký của nhân sự. Chỉ xóa liên kết (tab_user.signature=""), file trên
+    storage giữ nguyên để không phá phiếu đã in."""
+    from app.modules.user.model import User
+
+    emp = service.get_employee(db, eid)
+    u = db.query(User).filter(User.employee_id == eid).first()
+    if u:
+        u.signature = ""
+        db.commit()
+    audit_record(db, user.id, "employee", eid, "update", f"Gỡ chữ ký nhân sự {emp.code}")
+    return success({"signature": ""}, "Đã gỡ chữ ký")
 
 
 def _status_code(raw: str) -> str:
@@ -245,6 +291,7 @@ def export_employees_csv(
     from .model import Employee
 
     query = apply_filters(db.query(Employee), Employee, request, service.FILTERABLE)
+    query = service.apply_keyword_search(query, request.query_params.get("search"))
     # Đ-13b: xuất CSV cũng phải bó theo phạm vi dữ liệu như màn danh sách — trước đây
     # thiếu dòng này nên người phạm vi hẹp bấm Xuất là kéo được TOÀN BỘ nhân sự.
     query = apply_scope(query, Employee, "employee", user, get_perm_profile(db, user))

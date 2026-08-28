@@ -1,4 +1,5 @@
 from fastapi import HTTPException
+from sqlalchemy import or_
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.audit import record
@@ -16,6 +17,20 @@ from .schema import EmployeeCreate, EmployeeUpdate
 FILTERABLE = ["code", "full_name", "email", "is_active", "position", "role_names", "department_id",
               "status"]
 ENTITY = "employee"
+
+# Ô tìm nhanh MỘT chỗ: một từ khoá quét đồng thời (OR) trên mã NV / họ tên / email /
+# điện thoại. Khác apply_filters (mỗi tham số lọc riêng một cột rồi ghép AND) — ở đây
+# nhập "0912" hay "an@" hay "NV001" đều ra, khỏi cần biết dữ liệu nằm ở cột nào.
+SEARCH_FIELDS = ("code", "full_name", "email", "phone")
+
+
+def apply_keyword_search(query, keyword: str | None):
+    """Thêm điều kiện tìm gần đúng trên nhiều cột (OR). Từ khoá rỗng thì giữ nguyên."""
+    kw = (keyword or "").strip()
+    if not kw:
+        return query
+    like = f"%{kw}%"
+    return query.filter(or_(*[getattr(Employee, f).like(like) for f in SEARCH_FIELDS]))
 
 
 # ── CR-087: neo nhân sự trên chứng từ bằng ID ────────────────────────────────────

@@ -71,6 +71,8 @@ class EmployeeOut(EmployeeBase):
     # Ảnh đại diện lấy từ tài khoản đăng nhập (tab_user.avatar). Danh sách phải
     # selectinload(Employee.user) — xem service.list_employees — để không thành N+1.
     avatar: str = ""
+    # Ảnh chữ ký cá nhân, cũng đọc từ tài khoản đăng nhập (tab_user.signature).
+    signature: str = ""
     model_config = {"from_attributes": True}
 
 

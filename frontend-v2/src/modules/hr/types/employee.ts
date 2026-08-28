@@ -27,6 +27,8 @@ export interface Employee {
   manager_name?: string | null
   /** Lấy từ tài khoản đăng nhập (`tab_user.avatar`) — nguồn ảnh duy nhất. */
   avatar: string
+  /** Ảnh chữ ký, cũng từ tài khoản đăng nhập (`tab_user.signature`). */
+  signature: string
 }
 
 /** Bản chi tiết — kèm id tài khoản đăng nhập (0 = nhân sự chưa được cấp tài khoản). */

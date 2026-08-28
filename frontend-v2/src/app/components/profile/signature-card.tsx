@@ -30,7 +30,13 @@ const CHECKER_STYLE = {
  * Gỡ chữ ký chỉ xóa liên kết, tệp trên lưu trữ giữ nguyên — phiếu đã in trước
  * đó không bị hỏng ảnh.
  */
-export function SignatureCard({ signature }: { signature?: string }) {
+export function SignatureCard({
+  signature,
+  className,
+}: {
+  signature?: string
+  className?: string
+}) {
   const { user, setUser } = useAuth()
   const [busy, setBusy] = useState(false)
   // Mặc định bật: đa số người dùng chụp/scan chữ ký trên giấy trắng. Tắt khi ảnh
@@ -88,11 +94,13 @@ export function SignatureCard({ signature }: { signature?: string }) {
   }
 
   return (
-    <FormCard title="Chữ ký cá nhân" icon={PenLine} iconClassName="text-muted-foreground">
-      <div
-        className="grid min-h-28 place-items-center rounded-lg border p-3"
-        style={CHECKER_STYLE}
-      >
+    <FormCard
+      title="Chữ ký cá nhân"
+      icon={PenLine}
+      iconClassName="text-muted-foreground"
+      className={className}
+    >
+      <div className="grid min-h-28 place-items-center rounded-lg border p-3" style={CHECKER_STYLE}>
         {src ? (
           <img src={src} alt="Chữ ký cá nhân" className="max-h-24 w-auto object-contain" />
         ) : (
@@ -137,9 +145,9 @@ export function SignatureCard({ signature }: { signature?: string }) {
       <p className="mt-3 flex gap-2 rounded-lg bg-accent px-3 py-2 text-xs text-muted-foreground">
         <Info className="mt-0.5 size-3.5 shrink-0" />
         <span>
-          Chụp hoặc quét chữ ký viết bằng bút đậm trên giấy trắng — hệ thống tự tách nền
-          thành ảnh trong suốt. Nếu ảnh đã là PNG nền trong sẵn thì bỏ chọn "Tự động xóa
-          nền". Ảnh lớn được thu nhỏ về tối đa 800×400 điểm ảnh trước khi tải lên.
+          Chụp hoặc quét chữ ký viết bằng bút đậm trên giấy trắng — hệ thống tự tách nền thành ảnh
+          trong suốt. Nếu ảnh đã là PNG nền trong sẵn thì bỏ chọn "Tự động xóa nền". Ảnh lớn được
+          thu nhỏ về tối đa 800×400 điểm ảnh trước khi tải lên.
         </span>
       </p>
     </FormCard>

@@ -1,15 +1,16 @@
 import { useQuery } from '@tanstack/react-query'
-import { Bell, CheckSquare, LifeBuoy, Palette, User } from 'lucide-react'
+import { Bell, CheckSquare, History, LifeBuoy, Palette, User } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
-import { ChangePasswordCard } from '@/app/components/profile/change-password-card'
 import { ProfileIdentityCard } from '@/app/components/profile/profile-identity-card'
 import { ProfileInfoCard } from '@/app/components/profile/profile-info-card'
 import { ProfileNotificationsTab } from '@/app/components/profile/profile-notifications-tab'
 import { ProfileTasksTab } from '@/app/components/profile/profile-tasks-tab'
 import { ProfileTicketsTab } from '@/app/components/profile/profile-tickets-tab'
 import { SignatureCard } from '@/app/components/profile/signature-card'
+import { AuditTimeline } from '@/shared/audit'
+import { FormCard } from '@/shared/ui/form-card'
 import { authService } from '@/core/auth/auth-service'
 import { useAuth } from '@/core/auth/use-auth'
 import { usePermission } from '@/core/authorization/use-permission'
@@ -145,15 +146,29 @@ export function ProfilePage() {
                   <Skeleton className="h-64" />
                 </div>
               ) : (
-                <div className="grid items-start gap-4 lg:grid-cols-2">
-                  <div className="flex flex-col gap-4">
-                    {profile && <ProfileInfoCard profile={profile} />}
-                  </div>
-                  <div className="flex flex-col gap-4">
-                    <SignatureCard signature={profile?.signature} />
-                    <ChangePasswordCard />
-                  </div>
-                </div>
+                profile && (
+                  <>
+                    {/* Hàng 1: 2 cột cao BẰNG NHAU (items-stretch). Cột 1 xếp
+                        [Hồ sơ nhân sự] trên + [Tài khoản] dưới; cột 2 là [Chữ ký]
+                        kéo cao đầy cột. */}
+                    <div className="grid items-stretch gap-4 lg:grid-cols-2">
+                      <div className="flex flex-col gap-4">
+                        <ProfileInfoCard profile={profile} />
+                      </div>
+                      <div className="flex flex-col gap-4">
+                        <SignatureCard signature={profile.signature} className="h-full" />
+                      </div>
+                    </div>
+
+                    <FormCard
+                      title="Lịch sử thao tác"
+                      icon={History}
+                      iconClassName="text-muted-foreground"
+                    >
+                      <AuditTimeline entity="user" entityId={profile.id} />
+                    </FormCard>
+                  </>
+                )
               )}
             </TabsContent>
 

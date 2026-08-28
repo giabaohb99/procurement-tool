@@ -7,7 +7,8 @@ import { usePermission } from '@/core/authorization/use-permission'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { Card, CardContent, CardHeader } from '@/shared/ui/card'
+import { SectionHeading } from '@/shared/ui/section-heading'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { employeeApi } from '../api/employee-api'
 import { useRoles } from '../hooks/use-roles'
@@ -18,6 +19,7 @@ interface EmployeeAccountCardProps {
   employeeId: number
   /** Email trên hồ sơ — chưa có thì không tạo được tài khoản. */
   email: string
+  className?: string
 }
 
 /**
@@ -26,7 +28,7 @@ interface EmployeeAccountCardProps {
  * Trả lời sẵn ba câu hỏi mà trước đây phải bấm vào mới biết: nhân sự đã có tài
  * khoản chưa, email nào, đã gán vai trò gì — kèm lối đi tiếp sang màn Phân quyền.
  */
-export function EmployeeAccountCard({ employeeId, email }: EmployeeAccountCardProps) {
+export function EmployeeAccountCard({ employeeId, email, className }: EmployeeAccountCardProps) {
   const { can } = usePermission()
   const canReadUser = can('user', 'read')
   const canSetPassword = can('employee', 'write')
@@ -53,12 +55,9 @@ export function EmployeeAccountCard({ employeeId, email }: EmployeeAccountCardPr
 
   return (
     <>
-      <Card>
+      <Card className={className}>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <KeyRound className="size-4 text-muted-foreground" />
-            Tài khoản đăng nhập
-          </CardTitle>
+          <SectionHeading>Tài khoản đăng nhập</SectionHeading>
         </CardHeader>
 
         <CardContent className="space-y-4">
@@ -116,7 +115,12 @@ export function EmployeeAccountCard({ employeeId, email }: EmployeeAccountCardPr
               // `submit`. Bấm «Đặt lại mật khẩu» vừa mở hộp thoại vừa LƯU luôn
               // hồ sơ — khách thấy bóng «Đã cập nhật nhân sự» hiện lên trong khi
               // họ chưa sửa gì (báo 26/08/2026).
-              <Button type="button" variant="outline" size="sm" onClick={() => setPasswordOpen(true)}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setPasswordOpen(true)}
+              >
                 <KeyRound />
                 {account ? 'Đặt lại mật khẩu' : 'Tạo tài khoản đăng nhập'}
               </Button>

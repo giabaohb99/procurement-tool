@@ -3,8 +3,9 @@ import { useState } from 'react'
 
 import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import { Button } from '@/shared/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { Card, CardContent, CardHeader } from '@/shared/ui/card'
 import { DepartmentMultiSelect } from '@/shared/ui/department-multi-select'
+import { SectionHeading } from '@/shared/ui/section-heading'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { useDepartments } from '../hooks/use-departments'
 import { useEmployeeDepartments, useSaveEmployeeDepartments } from '../hooks/use-employees'
@@ -18,6 +19,7 @@ interface EmployeeDepartmentCardProps {
   canWrite: boolean
   /** Đúng tài khoản đang đăng nhập: khóa lại, không ai tự đổi phòng của mình. */
   isSelf: boolean
+  className?: string
 }
 
 /**
@@ -38,6 +40,7 @@ export function EmployeeDepartmentCard({
   primaryDepartmentId,
   canWrite,
   isSelf,
+  className,
 }: EmployeeDepartmentCardProps) {
   const { data, isLoading } = useEmployeeDepartments(employeeId)
   const { data: departments } = useDepartments({ page_size: 500, is_active: true })
@@ -62,9 +65,9 @@ export function EmployeeDepartmentCard({
   if (isLoading) return <Skeleton className="h-40 w-full" />
 
   return (
-    <Card>
+    <Card className={className}>
       <CardHeader>
-        <CardTitle className="text-base">Kiêm nhiệm</CardTitle>
+        <SectionHeading>Kiêm nhiệm</SectionHeading>
         <p className="text-sm text-muted-foreground">
           Những phòng người này phụ trách thêm, ngoài phòng ban chính.
         </p>
@@ -95,9 +98,7 @@ export function EmployeeDepartmentCard({
             // `submit` — bấm «Lưu kiêm nhiệm» kéo theo một lần lưu cả hồ sơ.
             type="button"
             size="sm"
-            onClick={() =>
-              save.mutate(selection, { onSuccess: () => setDangChonDo(false) })
-            }
+            onClick={() => save.mutate(selection, { onSuccess: () => setDangChonDo(false) })}
             disabled={save.isPending}
           >
             {save.isPending ? <Loader2 className="animate-spin" /> : <Save />}

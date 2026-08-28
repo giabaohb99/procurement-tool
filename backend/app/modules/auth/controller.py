@@ -30,6 +30,31 @@ def _client_ip(request: Request) -> str:
 
 def _me_payload(db: Session, user) -> dict:
     emp = db.get(Employee, user.employee_id) if user.employee_id else None
+
+    #  Vai trò THẬT nằm ở tab_user_role (CR-022 đã bỏ cột tab_employee.role_name),
+    #  nên phải join ra TÊN — trước đây trả cột chết luôn rỗng nên hồ sơ hiện
+    #  "Chưa cập nhật".
+    role_ids = sorted(
+        row[0] for row in db.query(UserRole.role_id).filter(UserRole.user_id == user.id).all())
+    role_names: list[str] = []
+    if role_ids:
+        from app.modules.role.model import Role
+        role_names = [r[0] for r in db.query(Role.name)
+                      .filter(Role.id.in_(role_ids)).order_by(Role.name).all()]
+
+    #  Kiêm nhiệm = các phòng PHỤ (is_primary=False) của nhân sự — tái dùng
+    #  tab_employee_department, hiển thị dưới Vị trí/Chức vụ ở Trang cá nhân.
+    kiem_nhiem: list[str] = []
+    if emp:
+        from app.modules.department.model import Department
+        from app.modules.employee.department_model import EmployeeDepartment
+        extra_ids = [row[0] for row in db.query(EmployeeDepartment.department_id).filter(
+            EmployeeDepartment.employee_id == emp.id,
+            EmployeeDepartment.is_primary.is_(False)).all()]
+        if extra_ids:
+            kiem_nhiem = [r[0] for r in db.query(Department.name)
+                          .filter(Department.id.in_(extra_ids)).order_by(Department.name).all()]
+
     return {
         "id": user.id,
         "email": user.email,
@@ -46,15 +71,16 @@ def _me_payload(db: Session, user) -> dict:
         #  mặt ở nhiều pháp nhân (xem `department/service.py`).
         "department_id": emp.department_id if emp else 0,
         "department_name": emp.department_name if emp else "",
-        "role_name": emp.role_name if emp else "",
+        #  role_name giữ cho tương thích cũ = nối tên các vai trò thật.
+        "role_name": ", ".join(role_names),
+        "role_names": role_names,
         "position": emp.position if emp else "",
+        "kiem_nhiem": kiem_nhiem,
         #  Vai trò ĐANG GIỮ, không phải quyền. Màn Phân quyền cần nó để khóa ma
         #  trận của chính vai trò mình đang giữ — backend đã chặn cửa đó
         #  (`privilege_escalation`), nhưng để người dùng tick thoải mái rồi mới
         #  ăn 403 lúc bấm Lưu thì họ tưởng hệ hỏng, không tưởng là có luật.
-        "role_ids": sorted(
-            row[0] for row in
-            db.query(UserRole.role_id).filter(UserRole.user_id == user.id).all()),
+        "role_ids": role_ids,
         "permissions": get_user_permissions(db, user),
         #  Tuỳ chọn hiển thị cá nhân (hiện có: bảng màu giao diện). Gửi kèm ở đây
         #  chứ không để client gọi thêm một vòng: nó cần NGAY ở khung hình đầu
