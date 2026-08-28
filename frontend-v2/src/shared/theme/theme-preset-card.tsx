@@ -1,8 +1,8 @@
 import { Check } from 'lucide-react'
 
 import { cn } from '@/shared/utils/cn'
-import { ROW_MIX } from './build-theme-css'
-import { mixHexColors } from './color-hue'
+import { ROW_MIX, SURFACE_LINE_MIN_CONTRAST } from './build-theme-css'
+import { ensureVisibleAgainst, mixHexColors } from './color-hue'
 import type { ThemeModeColors, ThemePresetColors } from './theme-types'
 
 /**
@@ -43,7 +43,14 @@ export function ThemePresetCard({ preset, mode, selected, onSelect }: ThemePrese
   const background = pick(colors, 'background', '#ffffff')
   const foreground = pick(colors, 'foreground', '#000000')
   const card = pick(colors, 'card', background)
-  const border = pick(colors, 'border', foreground)
+  //  Kéo cho nổi được trên mặt thẻ, đúng như `build-theme-css.ts` làm — bảng màu
+  //  Twitter khai `--border` gần trùng nền nên không vá thì bản xem trước vẽ ra
+  //  một cái bảng không có lưới, còn màn thật thì có.
+  const border = ensureVisibleAgainst(
+    pick(colors, 'border', foreground),
+    card,
+    SURFACE_LINE_MIN_CONTRAST,
+  )
   const primary = pick(colors, 'primary', foreground)
   const primaryForeground = pick(colors, 'primary-foreground', background)
   const muted = pick(colors, 'muted-foreground', foreground)

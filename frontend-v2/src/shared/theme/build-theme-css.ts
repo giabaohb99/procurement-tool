@@ -129,8 +129,16 @@ const DERIVED_TOKENS: Record<string, string> = {
   'chart-grid': 'color-mix(in oklab, var(--border) 65%, var(--background))',
 }
 
-/** Màu cột biểu đồ — nhóm duy nhất bị chuẩn hoá trước khi ghi ra. */
+/** Màu cột biểu đồ — chuẩn hoá theo `CHART_MIN_CONTRAST`. */
 const CHART_KEYS = ['chart-1', 'chart-2', 'chart-3', 'chart-4', 'chart-5'] as const
+
+/**
+ * Hai màu VẼ ĐƯỜNG KẺ trên mặt thẻ — chuẩn hoá theo `SURFACE_LINE_MIN_CONTRAST`.
+ *
+ * `--border` là lưới bảng + viền thẻ; `--input` là viền ô nhập, ô chọn, ô tick,
+ * ô chọn tròn và vùng nhập nhiều dòng (`border-input` trong `shared/ui/`).
+ */
+const SURFACE_LINE_KEYS = ['border', 'input'] as const
 
 /**
  * Tỉ số tương phản tối thiểu giữa CỘT biểu đồ và nền thẻ chứa nó.
@@ -140,6 +148,45 @@ const CHART_KEYS = ['chart-1', 'chart-2', 'chart-3', 'chart-4', 'chart-5'] as co
  * màu của gần hết bảng màu; đặt thấp hơn thì vẫn còn cột chìm.
  */
 const CHART_MIN_CONTRAST = 2
+
+/**
+ * Tỉ số tương phản tối thiểu giữa ĐƯỜNG KẺ (`--border`, `--input`) và mặt thẻ
+ * chứa nó.
+ *
+ * ## Vì sao cần
+ * tweakcn để `--input` là màu NỀN của ô nhập chứ không phải màu viền, nhưng
+ * shadcn lại dùng nó làm `border-input` — nên bảng màu nào đặt `--input` gần
+ * bằng nền thì toàn bộ ô nhập, ô chọn, ô tick MẤT HẲN VIỀN. Đo trên 43 bảng màu
+ * × 2 chế độ nền: *Twitter* nền sáng ra 1.008:1 (`#f7f9fa` trên thẻ `#f7f8f8`),
+ * *Notebook* và *Sage Garden* ra đúng 1.000:1 vì `--input` TRÙNG KHÍT nền. Báo
+ * lỗi 28/08/2026 là đúng cái này: chọn bảng màu Twitter thì thanh công cụ của
+ * màn danh sách chỉ còn chữ, không còn ô. `--border` chịu chung ngưỡng vì lưới
+ * bảng dòng chứng từ cũng mờ theo (Twitter nền sáng 1.146:1).
+ *
+ * ## Vì sao là 1.2
+ * Đây là ngưỡng NHÌN THẤY của một nét 1px, không phải ngưỡng đọc chữ — WCAG
+ * không có mức nào cho đường kẻ trang trí, nên lấy mốc từ chính bảng màu đã
+ * duyệt: DEGO là **1.233:1** ở cả `--border` lẫn `--input` nền sáng. Đặt ngay
+ * dưới mốc đó thì DEGO không nhích một pixel, mà mọi bảng màu mờ hơn bản gốc
+ * đều được kéo lên bằng nó.
+ *
+ * | Ngưỡng | Số tổ hợp bị chỉnh (trên 86) |
+ * |--------|------------------------------|
+ * | 1.2    | `--input` 18 · `--border` 10 |
+ * | 1.25   | `--input` 34 · `--border` 23 |
+ *
+ * 1.25 vượt qua chính DEGO nên sẽ đổi luôn bảng màu gốc — không được.
+ *
+ * ⚠️ Ở chế độ nền tối `--input` còn được dùng làm NỀN mờ của ô nhập
+ * (`dark:bg-input/30`), nên kéo nó cũng làm nền ô đậm/nhạt thêm một chút. Chấp
+ * nhận: mười mấy phần trăm độ sáng trên một lớp phủ 30% thì gần như không thấy,
+ * còn viền mất hẳn thì thấy ngay.
+ *
+ * Xuất ra ngoài vì thẻ chọn bảng màu vẽ lại bản thu nhỏ của chính giao diện này
+ * (`theme-preset-card.tsx`) — hai chỗ tự gõ số thì bản xem trước sớm muộn nói
+ * dối cái nó đang xem trước, đúng như `ROW_MIX` bên trên.
+ */
+export const SURFACE_LINE_MIN_CONTRAST = 1.2
 
 /**
  * Tỉ số tương phản tối thiểu giữa CHỮ của mục menu đang mở và viên nền của nó.
@@ -281,24 +328,37 @@ function buildSidebarActiveLines(colors: ThemeModeColors): string[] {
   ]
 }
 
+/**
+ * Kéo một biến màu cho đủ nổi trên mặt thẻ, nếu nó thuộc nhóm cần kiểm.
+ * Khóa ngoài hai nhóm đó đi thẳng ra CSS, không đụng vào.
+ */
+function normalizeAgainstSurface(
+  key: string,
+  value: string,
+  surface: string | undefined,
+): string {
+  if (!surface) return value
+  if ((CHART_KEYS as readonly string[]).includes(key)) {
+    return ensureVisibleAgainst(value, surface, CHART_MIN_CONTRAST)
+  }
+  if ((SURFACE_LINE_KEYS as readonly string[]).includes(key)) {
+    return ensureVisibleAgainst(value, surface, SURFACE_LINE_MIN_CONTRAST)
+  }
+  return value
+}
+
 /** Dựng các dòng biến cho MỘT chế độ nền. `solidDark` xem chú thích bên dưới. */
 function buildVarLines(colors: ThemeModeColors, solidDark: string): string[] {
   const lines: string[] = []
-  //  Cột biểu đồ nằm trong THẺ, không nằm trên nền trang — so với `card`.
-  const chartBackground = colors.card ?? colors.background
+  //  Cột biểu đồ và đường kẻ đều nằm trong THẺ, không nằm trên nền trang — so
+  //  với `card`. Bảng màu nào để `card` trùng `background` thì hai cái là một.
+  const surface = colors.card ?? colors.background
 
   for (const key of PASSTHROUGH_KEYS) {
     const value = colors[key]
     if (!value) continue
 
-    const isChart = (CHART_KEYS as readonly string[]).includes(key)
-    lines.push(
-      `  --${key}: ${
-        isChart && chartBackground
-          ? ensureVisibleAgainst(value, chartBackground, CHART_MIN_CONTRAST)
-          : value
-      };`,
-    )
+    lines.push(`  --${key}: ${normalizeAgainstSurface(key, value, surface)};`)
   }
 
   lines.push(...buildSidebarActiveLines(colors))
