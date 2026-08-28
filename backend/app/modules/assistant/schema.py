@@ -31,3 +31,10 @@ class AskIn(BaseModel):
         if not self.message.strip() and not self.attachment_ids:
             raise ValueError("Cần nhập câu hỏi hoặc đính kèm tệp")
         return self
+
+
+class ConfirmUpdateIn(BaseModel):
+    """Người dùng bấm 'Xác nhận sửa' trên thẻ đề xuất (CR-218) — chỉ cần token của đề xuất;
+    mọi dữ liệu sửa nằm TRONG token (Fernet), client không tự chọn được trường/giá trị."""
+
+    token: str

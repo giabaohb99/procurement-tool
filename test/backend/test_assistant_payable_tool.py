@@ -119,3 +119,67 @@ def test_draft_thieu_ncc_lan_ids_thi_hoi_lai(db, seed, khoan_no, cap_quyen):
     out = T.run_tool(db, user, "draft_payment_request", {})
     assert out.get("error")
     assert "draft" not in out
+
+
+# ── payment_request_read (CR-218) ───────────────────────────────────────────────────────
+
+def _tao_yctt(db, seed, created_by):
+    import json
+
+    from app.modules.payment_request.model import PaymentRequest, PaymentRequestLine
+
+    req = PaymentRequest(code="YCTT-TEST-1", supplier_code="NCCA", supplier_name="NCC Anpha",
+                         company_id=seed.company_id, source_type="goods",
+                         request_date="2026-08-20", payment_method="transfer",
+                         print_texts=json.dumps({"content": "Thanh toán đợt 1"},
+                                                ensure_ascii=False),
+                         total=1300, status="approved",
+                         created_by=created_by, updated_by=created_by)
+    db.add(req)
+    db.flush()
+    db.add_all([
+        PaymentRequestLine(request_id=req.id, po_code="PO-01", invoice_no="HD-001",
+                           invoice_date="2026-08-18", amount=1000,
+                           created_by=created_by, updated_by=created_by),
+        PaymentRequestLine(request_id=req.id, po_code="PO-02", invoice_no="",
+                           amount=300, created_by=created_by, updated_by=created_by),
+    ])
+    db.commit()
+    db.refresh(req)
+    return req
+
+
+def test_doc_yctt_thieu_quyen_thi_denied(db, seed):
+    _tao_yctt(db, seed, created_by=seed.u_req_id)
+    out = T.run_tool(db, db.get(User, seed.u_req_id), "payment_request_read",
+                     {"code": "YCTT-TEST-1"})
+    assert out.get("denied") is True
+    assert "lines" not in out
+
+
+def test_doc_yctt_ngoai_pham_vi_bao_khong_thay(db, seed, cap_quyen):
+    """Scope `own` mà phiếu của người khác -> 'Không tìm thấy', không lộ số tiền lẫn NCC."""
+    cap_quyen(seed.u_req_id, "payment_request", scope="own", read=True)
+    _tao_yctt(db, seed, created_by=seed.u_nstm_id)
+    out = T.run_tool(db, db.get(User, seed.u_req_id), "payment_request_read",
+                     {"code": "YCTT-TEST-1"})
+    assert "Không tìm thấy" in out["error"]
+
+
+def test_doc_yctt_recap_du_hinh(db, seed, cap_quyen):
+    """Happy path: header + dòng + print_texts đã parse + url — mã thường cũng khớp
+    (tool tự upper), hình thức thanh toán trả NHÃN tiếng Việt chứ không trả mã."""
+    cap_quyen(seed.u_req_id, "payment_request", scope="own", read=True)
+    req = _tao_yctt(db, seed, created_by=seed.u_req_id)
+
+    out = T.run_tool(db, db.get(User, seed.u_req_id), "payment_request_read",
+                     {"code": "yctt-test-1"})
+    assert out["code"] == "YCTT-TEST-1"
+    assert out["status"] == "approved" and out["status_label"]
+    assert out["payment_method"] == "Chuyển khoản"
+    assert out["total"] == 1300.0
+    assert out["print_texts"] == {"content": "Thanh toán đợt 1"}
+    assert out["total_lines"] == 2
+    assert out["lines"][0] == {"po_code": "PO-01", "invoice_no": "HD-001",
+                               "invoice_date": "2026-08-18", "amount": 1000.0}
+    assert out["url"] == f"/finance/payment-requests/{req.id}"

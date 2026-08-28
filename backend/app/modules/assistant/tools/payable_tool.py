@@ -270,6 +270,82 @@ def _run_draft(ctx: ToolContext, args: dict) -> dict:
     return result
 
 
+# ── payment_request_read ────────────────────────────────────────────────────────────────
+
+_PM_LABELS = {"transfer": "Chuyển khoản", "cash": "Tiền mặt"}
+
+
+def _run_read_request(ctx: ToolContext, args: dict) -> dict:
+    """Recap MỘT phiếu Yêu cầu thanh toán theo mã — cùng khuôn với procurement_doc_read."""
+    if not ctx.can("payment_request"):
+        return denied("Yêu cầu thanh toán (payment_request)")
+
+    code = _clean_text(args.get("code"), 50).upper()
+    if not code:
+        return {"error": "Thiếu code — hỏi người dùng mã phiếu YCTT cần xem."}
+
+    from app.modules.payment_request.model import PaymentRequest, PaymentRequestLine
+    from app.modules.payment_request.service import parse_print_texts
+
+    from .procurement_doc_tool import _label
+
+    req = (apply_scope(ctx.db.query(PaymentRequest), PaymentRequest, "payment_request",
+                       ctx.user, ctx.profile)
+           .filter(PaymentRequest.code == code).first())
+    if req is None:
+        return {"error": f"Không tìm thấy phiếu {code} trong phạm vi dữ liệu người hỏi "
+                         "được xem — nói thẳng, đừng bịa."}
+
+    lines = (ctx.db.query(PaymentRequestLine)
+             .filter(PaymentRequestLine.request_id == req.id)
+             .order_by(PaymentRequestLine.id.asc()).all())
+    return {
+        "code": req.code,
+        "status": req.status,
+        "status_label": _label("payment_request", req.status),
+        "supplier_code": req.supplier_code,
+        "supplier_name": req.supplier_name,
+        "source_type": _SOURCE_LABELS.get(req.source_type, req.source_type),
+        "request_date": req.request_date,
+        "payment_method": _PM_LABELS.get(req.payment_method, req.payment_method),
+        "prepay": bool(req.prepay),
+        "total": float(req.total or 0),
+        "note": req.note,
+        "reject_reason": req.reject_reason,
+        "print_texts": parse_print_texts(req.print_texts),
+        "lines": [{
+            "po_code": ln.po_code,
+            "invoice_no": ln.invoice_no,
+            "invoice_date": ln.invoice_date,
+            "amount": float(ln.amount or 0),
+        } for ln in lines],
+        "url": f"/finance/payment-requests/{req.id}",
+        "total_lines": len(lines),
+    }
+
+
+PAYMENT_REQUEST_READ_SPEC = ToolSpec(
+    name="payment_request_read",
+    description=(
+        "Xem chi tiết MỘT phiếu Yêu cầu thanh toán (YCTT) theo mã phiếu — trạng thái, NCC, "
+        "hình thức thanh toán, tổng tiền, các dòng đề nghị chi (mã ĐMH, số hóa đơn, số "
+        "tiền) và 3 câu chữ bản in (print_texts). Gọi khi người dùng hỏi về một YCTT cụ "
+        "thể ('YCTT00045 tới đâu rồi', 'phiếu thanh toán đó bao nhiêu tiền'). Khi trả "
+        "lời, kèm `url` dạng link để người dùng bấm mở phiếu. Trợ lý KHÔNG duyệt/chi hộ "
+        "được — việc đó người dùng tự làm trên màn chi tiết."
+    ),
+    parameters={
+        "type": "object",
+        "properties": {
+            "code": {"type": "string",
+                     "description": "Mã phiếu YCTT, ví dụ YCTT00045 — bắt buộc."},
+        },
+        "required": ["code"],
+    },
+    handler=_run_read_request,
+)
+
+
 DRAFT_PAYMENT_REQUEST_SPEC = ToolSpec(
     name="draft_payment_request",
     description=_DRAFT_DESC,

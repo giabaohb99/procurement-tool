@@ -1,7 +1,7 @@
-import type { ChatReply } from '../types/assistant'
+import type { ChatReply, UpdateProposal } from '../types/assistant'
 
-/** Loại phiếu trợ lý soạn nháp được — khớp bộ tool `draft_*` của backend. */
-export type DraftTarget = 'survey' | 'purchase' | 'leave' | 'payment'
+/** Loại phiếu trợ lý soạn nháp được — khớp bộ tool `draft_*` + `ticket_create` của backend. */
+export type DraftTarget = 'survey' | 'purchase' | 'leave' | 'payment' | 'ticket'
 
 /** Bản nháp trợ lý vừa soạn — chỉ sống trong lượt trả lời hiện tại, backend không lưu. */
 export interface DraftOffer {
@@ -22,6 +22,7 @@ const DRAFT_TARGETS: Record<string, DraftTarget> = {
   draft_purchase_request: 'purchase',
   draft_leave_request: 'leave',
   draft_payment_request: 'payment',
+  ticket_create: 'ticket',
 }
 
 /**
@@ -40,6 +41,25 @@ export function pickDraftOffer(reply: ChatReply): DraftOffer | null {
     args: call.draft ?? call.args,
     target: DRAFT_TARGETS[call.name],
   }
+}
+
+/** Đề xuất sửa phiếu (CR-218) — cũng chỉ sống trong lượt trả lời hiện tại. */
+export interface UpdateOffer {
+  conversationId: number
+  proposal: UpdateProposal
+}
+
+/**
+ * Lấy đề xuất sửa phiếu từ lượt trả lời — chỉ tool `propose_document_update` có khối
+ * `proposal`. Lượt không đề xuất gì trả null để gỡ thẻ xác nhận của lượt trước
+ * (token cũ vẫn tự hết hạn ở backend, nhưng thẻ hiện dai sẽ gây bấm nhầm).
+ */
+export function pickUpdateOffer(reply: ChatReply): UpdateOffer | null {
+  const call = (reply.tool_calls ?? [])
+    .filter((c) => c.name === 'propose_document_update' && c.proposal != null)
+    .at(-1)
+  if (!call?.proposal) return null
+  return { conversationId: reply.conversation_id, proposal: call.proposal }
 }
 
 /** Bộ tool xuất file của trợ lý — tool nào cũng trả khối `file` cùng hình dạng. */

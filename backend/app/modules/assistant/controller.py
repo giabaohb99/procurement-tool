@@ -18,7 +18,7 @@ from app.core.response import success
 from . import conversation as convo
 from . import usage as usage_layer
 from .provider import ProviderError, configured_providers
-from .schema import AskIn
+from .schema import AskIn, ConfirmUpdateIn
 from .usage import QuotaExceeded
 
 router = APIRouter(prefix="/api/assistant", tags=["assistant"])
@@ -60,6 +60,26 @@ def chat(body: AskIn, user=Depends(require("assistant", "read")),
     except ProviderError as e:
         raise HTTPException(status_code=502, detail=str(e)) from e
     return success(result)
+
+
+@router.post("/confirm-update")
+def confirm_document_update(body: ConfirmUpdateIn,
+                            user=Depends(require("assistant", "read")),
+                            db: Session = Depends(get_db)):
+    """Bước 2 của tầng GHI có xác nhận (CR-218): NGƯỜI DÙNG bấm 'Xác nhận sửa' trên thẻ
+    đề xuất do tool `propose_document_update` sinh ra.
+
+    Backend kiểm lại TOÀN BỘ tại thời điểm bấm (token hợp lệ + đúng chủ + quyền write +
+    phạm vi + trạng thái phiếu + whitelist trường) rồi ghi qua đúng service của form —
+    xem `tools/update_tool.confirm_update`. Gác `assistant.read` vì đây là nút của giao
+    diện chat; quyền GHI thật (`<entity>.write`) kiểm bên trong.
+    """
+    _guard()
+    from .tools.update_tool import confirm_update
+
+    result = confirm_update(db, user, body.token)
+    fields = ", ".join(result["updated_fields"])
+    return success(result, message=f"Đã sửa phiếu {result['code']}: {fields}")
 
 
 @router.post("/uploads")

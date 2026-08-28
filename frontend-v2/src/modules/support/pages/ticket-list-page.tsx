@@ -1,6 +1,6 @@
 import { HandHelping, Loader2, Plus, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 import { CreateTicketDialog } from '@/app/components/profile/create-ticket-dialog'
 import { useAuth } from '@/core/auth/use-auth'
@@ -32,6 +32,7 @@ import {
 import { TicketPriorityBadge, TicketStatusBadge } from '../config/ticket-meta'
 import { useTakeTicket, useTickets } from '../hooks/use-tickets'
 import type { Ticket } from '../types/ticket'
+import { parseAssistantTicketDraft } from '../utils/assistant-ticket-draft'
 
 const ALL = 'all'
 
@@ -52,11 +53,20 @@ const ASSIGNEE_OPTIONS: { value: string; label: string }[] = [
  */
 export function TicketListPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { user } = useAuth()
   const { can } = usePermission()
   const isHandler = can('ticket', 'delete')
 
-  const [createOpen, setCreateOpen] = useState(false)
+  //  Bản nháp Trợ lý AI soạn (CR-218): tới trang qua nút "Tạo phiếu hỗ trợ" dưới luồng
+  //  chat thì mở sẵn dialog với nội dung đã điền. State chỉ đọc lúc mount — đóng dialog
+  //  rồi bấm Tạo lại là form trắng bình thường.
+  const [assistantDraft] = useState(() =>
+    parseAssistantTicketDraft(
+      (location.state as { assistantTicketDraft?: unknown } | null)?.assistantTicketDraft,
+    ),
+  )
+  const [createOpen, setCreateOpen] = useState(assistantDraft != null)
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [status, setStatus] = useUrlParamState('status', ALL)
   const [priority, setPriority] = useUrlParamState('priority', ALL)
@@ -277,6 +287,7 @@ export function TicketListPage() {
         open={createOpen}
         onOpenChange={setCreateOpen}
         onSuccess={() => refetch()}
+        initial={assistantDraft ?? undefined}
       />
     </PageContainer>
   )

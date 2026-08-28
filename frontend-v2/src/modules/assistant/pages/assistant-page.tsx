@@ -22,8 +22,10 @@ import { ReplyOffers } from '../components/reply-offers'
 import {
   pickDraftOffer,
   pickFileOffer,
+  pickUpdateOffer,
   type DraftOffer,
   type FileOffer,
+  type UpdateOffer,
 } from '../utils/reply-offers'
 import type { AssistantAttachment } from '../types/assistant'
 import {
@@ -63,6 +65,8 @@ export function AssistantPage() {
   //  `reply-offers.tsx` (dùng chung với bong bóng chat góc).
   const [draftOffer, setDraftOffer] = useState<DraftOffer | null>(null)
   const [fileOffer, setFileOffer] = useState<FileOffer | null>(null)
+  //  Đề xuất sửa phiếu (CR-218) — thẻ xác nhận dưới luồng chat, cùng vòng đời hai offer trên.
+  const [updateOffer, setUpdateOffer] = useState<UpdateOffer | null>(null)
 
   /** Chỉ chào nhà đã cấu hình key — chọn nhà chưa có key sẽ bị backend từ chối. */
   const configuredProviders = useMemo(
@@ -82,6 +86,7 @@ export function AssistantPage() {
     setTypingAfterId(null) //  đổi hội thoại thì thôi gõ dở câu của hội thoại trước
     setDraftOffer(null)
     setFileOffer(null)
+    setUpdateOffer(null)
     if (id > 0) setSearchParams({ c: String(id) })
     else setSearchParams({})
   }
@@ -112,6 +117,7 @@ export function AssistantPage() {
       //  luồng chat. Lượt sau không soạn/xuất thì pick trả null và nút được gỡ.
       setDraftOffer(pickDraftOffer(reply))
       setFileOffer(pickFileOffer(reply))
+      setUpdateOffer(pickUpdateOffer(reply))
       void queryClient.invalidateQueries({ queryKey: queryKeys.assistant.conversations() })
       if (reply.conversation_id !== activeId) {
         setSearchParams({ c: String(reply.conversation_id) })
@@ -212,6 +218,8 @@ export function AssistantPage() {
               <ReplyOffers
                 draft={draftOffer}
                 file={fileOffer}
+                update={updateOffer}
+                onDismissUpdate={() => setUpdateOffer(null)}
                 conversationId={activeId}
                 busy={isSending}
               />

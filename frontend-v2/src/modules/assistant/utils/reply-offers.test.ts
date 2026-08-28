@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import type { ChatReply } from '../types/assistant'
-import { pickDraftOffer, pickFileOffer } from './reply-offers'
+import type { ChatReply, UpdateProposal } from '../types/assistant'
+import { pickDraftOffer, pickFileOffer, pickUpdateOffer } from './reply-offers'
 
 function reply(toolCalls: ChatReply['tool_calls']): ChatReply {
   return {
@@ -72,6 +72,53 @@ describe('pickDraftOffer', () => {
   it('lượt không gọi tool soạn nháp thì trả null để gỡ nút của lượt trước', () => {
     expect(pickDraftOffer(reply([{ name: 'my_approval_tasks', args: {}, rows: 3 }]))).toBeNull()
     expect(pickDraftOffer(reply(undefined))).toBeNull()
+  })
+
+  it('CR-218: tool ticket_create trả target ticket kèm bản nháp phiếu hỗ trợ', () => {
+    const offer = pickDraftOffer(
+      reply([
+        {
+          name: 'ticket_create',
+          args: { subject: 'Lỗi tải báo cáo' },
+          rows: 1,
+          draft: { kind: 'ticket', subject: 'Lỗi tải báo cáo', priority: 'normal' },
+        },
+      ]),
+    )
+    expect(offer?.target).toBe('ticket')
+    expect(offer?.args).toEqual({ kind: 'ticket', subject: 'Lỗi tải báo cáo', priority: 'normal' })
+  })
+})
+
+describe('pickUpdateOffer', () => {
+  const proposal: UpdateProposal = {
+    kind: 'update_proposal',
+    entity: 'purchase_request',
+    entity_label: 'Yêu cầu mua hàng',
+    code: 'YCMH010126-001',
+    doc_status_label: 'Nháp',
+    changes: [{ field: 'purpose', label: 'Mục đích mua hàng', old: 'cũ', new: 'mới' }],
+    confirm_token: 'tk',
+    url: '/procurement/purchase-requests/5',
+  }
+
+  it('tool đề xuất sửa có khối proposal thì trả offer kèm token xác nhận', () => {
+    const offer = pickUpdateOffer(
+      reply([{ name: 'propose_document_update', args: {}, rows: 1, proposal }]),
+    )
+    expect(offer).toEqual({ conversationId: 7, proposal })
+  })
+
+  it('tool bị chặn quyền / lỗi (không có proposal) thì KHÔNG dựng thẻ xác nhận', () => {
+    expect(
+      pickUpdateOffer(reply([{ name: 'propose_document_update', args: {}, rows: 0 }])),
+    ).toBeNull()
+  })
+
+  it('lượt không đề xuất gì thì trả null để gỡ thẻ của lượt trước', () => {
+    //  Thẻ cũ hiện dai sẽ gây bấm nhầm — token vẫn hết hạn ở backend nhưng đừng thử người dùng.
+    expect(pickUpdateOffer(reply([{ name: 'my_approval_tasks', args: {}, rows: 3 }]))).toBeNull()
+    expect(pickUpdateOffer(reply(undefined))).toBeNull()
   })
 })
 

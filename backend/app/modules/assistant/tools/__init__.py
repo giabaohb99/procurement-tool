@@ -20,11 +20,14 @@ from .document_tool import (APPROVAL_FLOW_LOOKUP_SPEC, DOCUMENT_READ_SPEC,
 from .draft_tool import (DRAFT_LEAVE_REQUEST_SPEC, DRAFT_PURCHASE_REQUEST_SPEC,
                          DRAFT_SURVEY_REQUEST_SPEC)
 from .export_tool import EXPORT_EXCEL_FILE_SPEC, EXPORT_REPORT_FILE_SPEC
-from .payable_tool import DRAFT_PAYMENT_REQUEST_SPEC, PAYABLE_LOOKUP_SPEC
+from .payable_tool import (DRAFT_PAYMENT_REQUEST_SPEC, PAYABLE_LOOKUP_SPEC,
+                           PAYMENT_REQUEST_READ_SPEC)
 from .procurement_doc_tool import (MY_PROCUREMENT_REQUESTS_SPEC,
                                    PENDING_PROCUREMENT_APPROVALS_SPEC,
                                    PROCUREMENT_DOC_READ_SPEC)
 from .rag_tool import SEARCH_DOCS_SPEC
+from .ticket_tool import MY_TICKETS_SPEC, TICKET_CREATE_SPEC
+from .update_tool import PROPOSE_DOCUMENT_UPDATE_SPEC
 
 
 def _active_specs() -> list:
@@ -43,7 +46,10 @@ def _active_specs() -> list:
                            PAYABLE_LOOKUP_SPEC, DRAFT_PAYMENT_REQUEST_SPEC,
                            PROCUREMENT_DOC_READ_SPEC,
                            PENDING_PROCUREMENT_APPROVALS_SPEC,
-                           MY_PROCUREMENT_REQUESTS_SPEC]
+                           MY_PROCUREMENT_REQUESTS_SPEC,
+                           PAYMENT_REQUEST_READ_SPEC,
+                           TICKET_CREATE_SPEC, MY_TICKETS_SPEC,
+                           PROPOSE_DOCUMENT_UPDATE_SPEC]
     if settings.AI_RAG_ENABLED:
         specs.append(SEARCH_DOCS_SPEC)
     return specs

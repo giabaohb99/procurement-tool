@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { parseAssistantDraft } from './assistant-draft'
+import { parseAssistantDraft, parsePurchaseAssistantDraft } from './assistant-draft'
 
 describe('parseAssistantDraft', () => {
   it('đọc bản nháp đầy đủ: giữ mục đích, ghi chú và chuẩn hóa từng dòng', () => {
@@ -43,5 +43,33 @@ describe('parseAssistantDraft', () => {
     expect(parseAssistantDraft('xin chào')).toBeNull()
     expect(parseAssistantDraft({ purpose: '', lines: [{ requirement_detail: 'a' }] })).toBeNull()
     expect(parseAssistantDraft({ purpose: 'Mua', lines: [{}] })).toBeNull()
+  })
+
+  it('CR-218: dòng có ngày cần kết quả thì giữ, không có thì về rỗng chứ không undefined', () => {
+    //  undefined lọt qua spread `{...EMPTY_LINE, ...line}` sẽ ĐÈ mất giá trị mặc định
+    //  của form — phải luôn là chuỗi.
+    const draft = parseAssistantDraft({
+      purpose: 'Khảo sát giá',
+      lines: [
+        { requirement_detail: 'A', result_due_date: '2026-09-05' },
+        { requirement_detail: 'B', result_due_date: 123 },
+      ],
+    })
+    expect(draft?.lines[0].result_due_date).toBe('2026-09-05')
+    expect(draft?.lines[1].result_due_date).toBe('')
+  })
+})
+
+describe('parsePurchaseAssistantDraft', () => {
+  it('CR-218: dòng có kho nhận thì giữ, sai kiểu thì về rỗng chứ không undefined', () => {
+    const draft = parsePurchaseAssistantDraft({
+      purpose: 'Mua vật tư',
+      lines: [
+        { product_name: 'Găng tay', warehouse: 'Kho Cần Thơ' },
+        { product_name: 'Khẩu trang', warehouse: null },
+      ],
+    })
+    expect(draft?.lines[0].warehouse).toBe('Kho Cần Thơ')
+    expect(draft?.lines[1].warehouse).toBe('')
   })
 })
