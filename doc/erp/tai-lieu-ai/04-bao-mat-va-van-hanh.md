@@ -1,6 +1,6 @@
 # Trợ lý AI — Bảo mật và vận hành (bản ghi nhận hiện trạng)
 
-- Ngày lập: 27/08/2026
+- Ngày lập: 27/08/2026 — cập nhật 28/08/2026 (bổ sung mục 7: đính kèm chat CR-204 + xuất Excel CR-205)
 - Trạng thái: **ĐÃ CODE và đang chạy trên môi trường dev** (deverp.degoholding.vn), nhánh `erp-v2`
 - Đối tượng đọc: Ban điều hành / cấp quản lý cần đánh giá rủi ro bảo mật, và người kỹ thuật tiếp quản
 - Quan hệ với các tài liệu khác: tài liệu `01-kien-truc-tro-ly-ai.md` và `02-danh-sach-api-tool.md`
@@ -19,10 +19,10 @@ Trả lời theo đúng hiện trạng mã nguồn:
 
 1. **AI không nối thẳng vào database.** Model ngôn ngữ (Claude / Gemini) không có kết nối SQL,
    không đọc được bảng nào cả. Nó chỉ được phép **xin** dữ liệu qua một danh sách tool đóng
-   (29 tool, liệt kê ở mục 5) do backend của mình viết và kiểm soát. Tool không có trong danh
+   (30 tool, liệt kê ở mục 5) do backend của mình viết và kiểm soát. Tool không có trong danh
    sách thì gọi cũng bị từ chối ngay ở backend (`run_tool` kiểm tra allowlist trước khi chạy).
 
-2. **Về tồn kho: hiện KHÔNG tồn tại tool nào đọc tồn kho.** Trong 29 tool không có tool nào
+2. **Về tồn kho: hiện KHÔNG tồn tại tool nào đọc tồn kho.** Trong 30 tool không có tool nào
    truy vấn bảng kho / tồn kho. Nghĩa là kể cả model "muốn" trả lời số tồn kho, nó không có
    đường nào lấy được số thật — cùng lắm nó nói "tôi không tra được", hoặc nếu bịa thì là số
    không có nguồn (đã có luật trong system prompt cấm bịa số liệu, và mọi con số đều phải đến
@@ -66,7 +66,8 @@ service.ask() dựng system prompt gồm:
   - Khối "NGƯỜI HỎI": họ tên, mã NV, chức vụ, phòng ban, công ty của người đang hỏi
     (backend tự tra từ hồ sơ nhân sự — model không được tự đoán các thông tin này)
   ▼
-Gửi lên nhà cung cấp model (Claude hoặc Gemini) kèm danh sách 29 tool
+Gửi lên nhà cung cấp model (Claude hoặc Gemini) kèm danh sách 30 tool
+  (tin nhắn có thể kèm tệp người dùng tự tải lên - ảnh/PDF, xem mục 7)
   ▼
 Model muốn dữ liệu thì phát yêu cầu gọi tool → backend run_tool() thực thi:
   - kiểm allowlist → kiểm quyền người hỏi → kiểm phạm vi dữ liệu → chỉ đọc → ghi audit
@@ -130,7 +131,7 @@ Ngoài ra từ B-07/CR-131, entity nào quên khai phạm vi trong `SCOPE_FIELDS
 
 ---
 
-## 5. Bảng quyền của từng tool (29 tool, đối chiếu code 27/08/2026)
+## 5. Bảng quyền của từng tool (30 tool, đối chiếu code 28/08/2026)
 
 Cột "Điều kiện" là quyền của **người đang hỏi**; thiếu thì tool trả `denied` hoặc tự cắt cột.
 
@@ -171,7 +172,8 @@ Cột "Điều kiện" là quyền của **người đang hỏi**; thiếu thì 
 | `draft_purchase_request` | Soạn nháp Yêu cầu mua hàng | `purchase_request.create` |
 | `draft_leave_request` | Soạn nháp đơn nghỉ phép | `document.create` |
 | `search_docs` | Tra cứu Hướng dẫn sử dụng (HDSD) | Chỉ cần đăng nhập — **cố ý**, vì kho HDSD vốn mở cho mọi người dùng đã đăng nhập |
-| `export_report_file` | Xuất file từ báo cáo vừa tra | Chỉ đóng gói lại dữ liệu **đã qua lọc quyền** ở tool báo cáo phía trước — không mở thêm đường dữ liệu mới |
+| `export_report_file` | Xuất báo cáo dạng văn bản (Word .docx) từ dữ liệu vừa tra | Chỉ đóng gói lại dữ liệu **đã qua lọc quyền** ở tool báo cáo phía trước — không mở thêm đường dữ liệu mới |
+| `export_excel_file` | Xuất bảng tính Excel (.xlsx) từ dữ liệu vừa tra — tối đa 5 sheet x 15 cột x 500 dòng (thêm 27/08/2026, CR-205) | Cùng luật với `export_report_file`: chỉ đóng gói dữ liệu **đã qua lọc quyền**, không mở thêm đường dữ liệu mới |
 
 ### Nhóm công nợ và Yêu cầu thanh toán (`payable_tool.py`, thêm 27/08/2026)
 
@@ -215,7 +217,42 @@ Ba cải tiến, đều thuộc nhóm "soạn phiếu", và đều **không nớ
 
 ---
 
-## 7. Giới hạn còn lại — nói thẳng để cân nhắc
+## 7. Đính kèm ảnh / PDF vào chat (CR-204) + xuất Excel (CR-205) — commit `5e90af1`, 27/08/2026
+
+Từ 27/08/2026 người dùng gửi được TỆP kèm câu hỏi (chụp chứng từ giấy, màn hình lỗi, file
+PDF quy trình cũ...) để trợ lý đọc và trả lời trực tiếp trên nội dung đó. Đây là đường dữ
+liệu ĐI VÀO model do chính người dùng chủ động cung cấp — không phải tool, không đọc gì từ
+DB — nên các hàng rào ở đây xoay quanh **loại tệp, kích thước, quyền sở hữu và chi phí token**:
+
+1. **Tải lên qua `POST /api/assistant/uploads`** (mỗi request một tệp), gác bằng đúng quyền
+   `assistant.read` + cờ bật trợ lý như mọi endpoint chat. FE theo khuôn *tải trước — gắn
+   sau*: tải xong nhận `id`, rồi truyền `attachment_ids` khi gửi tin (kèm dán ảnh Ctrl+V).
+2. **Chỉ nhận 4 loại tệp, trần kích thước cứng:** ảnh JPG / PNG / WebP tối đa **5 MB**, PDF
+   tối đa **10 MB**. Loại tệp nhận diện theo **magic bytes của nội dung thật**, KHÔNG tin
+   content-type trình duyệt gửi — đổi đuôi tệp không lách được. Backend chỉ đọc dư 1 byte
+   quá trần lớn nhất để phát hiện "quá to" mà không nuốt nguyên file khổng lồ vào RAM.
+3. **Tối đa 3 tệp mỗi tin** (`MAX_FILES_PER_MESSAGE`).
+4. **Tệp thuộc về chính chủ.** Bản ghi lưu ở bảng `assistant_message_attachments` (migration
+   `c7e2a9f4d1b3`), nội dung lưu storage dưới thư mục `assistant-upload/`. Chỉ người tải lên
+   gắn được tệp vào tin của mình và mở xem lại được (`resolve_owned` — sai chủ trả 404,
+   không lộ tồn tại). Xem lại qua `GET /api/assistant/uploads/{file_id}`, trả `inline`.
+5. **Chặn phình token khi hỏi tiếp:** chỉ `ATTACH_REPLAY_WINDOW = 4` tin cuối được nạp lại
+   tệp thật vào ngữ cảnh; tin cũ hơn thay bằng dòng chữ "[Đã gửi kèm tệp: ...]" — model biết
+   từng có tệp nhưng không tốn lại chi phí đọc.
+6. **Tầng provider trung lập:** attachments đóng thành block chung, Claude nhận dạng base64
+   image/document, Gemini nhận `inline_data` — logic kiểm quyền không phụ thuộc model nào.
+7. **Về bảo mật thông tin:** nội dung tệp là DỮ LIỆU người hỏi tự đưa vào, được đối xử đúng
+   như chữ họ gõ (mục 3 — dữ liệu không phải mệnh lệnh); chữ trong tệp có ghi "hãy bỏ qua
+   giới hạn..." thì hàng rào quyền ở backend vẫn kiểm y nguyên. Tệp đi ra nhà cung cấp model
+   cùng chuyến với câu hỏi — áp dụng đúng lưu ý số 1 ở mục 8.
+
+Cùng commit này bổ sung tool thứ 30 `export_excel_file` (CR-205) — chiều ĐI RA: xuất dữ
+liệu đã tra thành bảng tính .xlsx (openpyxl; chuỗi số được đổi thành kiểu số thật của Excel
+để tính tiếp được; tên sheet rửa ký tự cấm). Quyền như `export_report_file` — xem bảng mục 5.
+
+---
+
+## 8. Giới hạn còn lại — nói thẳng để cân nhắc
 
 Không có hệ nào an toàn tuyệt đối; đây là những điểm cần biết khi đánh giá:
 
@@ -238,7 +275,7 @@ Không có hệ nào an toàn tuyệt đối; đây là những điểm cần bi
 
 ---
 
-## 8. Kiểm chứng bằng test
+## 9. Kiểm chứng bằng test
 
 Các hàng rào trên có test tự động kèm theo (chạy `pytest` trong container api,
 phạm vi `test/backend/`):
@@ -255,6 +292,12 @@ phạm vi `test/backend/`):
   phương án không lộ NCC; đếm phiếu chờ duyệt đúng theo quyền `approve` từng loại, loại bỏ phiếu
   xóa mềm; "phiếu của tôi" chỉ trả phiếu chính mình đứng tên kể cả khi scope là `all`, kèm số
   liệu tiến độ, và denied khi hỏi đích danh loại phiếu không có quyền đọc.
+- `test_assistant_attachment.py` — đính kèm chat (mục 7): từ chối tệp sai loại / quá trần
+  kích thước, nhận diện theo magic bytes, chặn quá 3 tệp/tin, sai chủ tệp trả 404, chỉ
+  nạp lại tệp thật cho cửa sổ tin cuối (tin cũ thành dòng placeholder).
+- `test_assistant_export_tool.py` — thêm phần T30: thiếu sheets trả lời mềm, chuẩn hóa
+  sheet lệch cột + đổi chuỗi số thành kiểu số Excel, tên sheet trùng không làm openpyxl
+  nổ, file .xlsx hợp lệ và thuộc về đúng người hỏi.
 - `test_pham_vi_khai_du_b07.py` — mọi entity phải khai phạm vi dữ liệu, quên khai là test đỏ
   (hàng rào "an toàn khi cấu hình thiếu").
 

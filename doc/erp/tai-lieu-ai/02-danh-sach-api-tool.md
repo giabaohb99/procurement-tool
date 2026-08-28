@@ -1,9 +1,11 @@
 # Danh sách API / tool cho bot (loại A - dữ liệu có cấu trúc)
 
-Phiên bản: 27/08/2026 (bản đầu 25/08/2026). Trạng thái: **ĐÃ CODE đủ 29 tool** (T1-T29),
+Phiên bản: 28/08/2026 (bản đầu 25/08/2026). Trạng thái: **ĐÃ CODE đủ 30 tool** (T1-T30),
 đang chạy dev — mã nguồn ở `backend/app/modules/assistant/tools/`.
 Liên quan: kiến trúc ở `01-kien-truc-tro-ly-ai.md`; bảo mật và vận hành thực tế ở
 `04-bao-mat-va-van-hanh.md`.
+Ngoài tool, chat còn nhận **tệp đính kèm** (ảnh/PDF, CR-204) — không phải tool nên không
+liệt kê ở đây, xem tài liệu 04 mục 7.
 
 Đây là danh sách "công cụ" (tool) mà Claude được phép gọi khi câu hỏi thuộc loại A. Mỗi tool
 ánh xạ đúng một hàm service. Bot KHÔNG sinh SQL, chỉ chọn tool + điền tham số theo schema.
@@ -223,8 +225,10 @@ system prompt), hỗ trợ mua cho pháp nhân khác qua tham số `company`.
 
 ## Nhóm 8 - Tiện ích (`export_tool.py`, `rag_tool.py`)
 
-### T23. export_report_file - Xuất file từ báo cáo vừa tra
-- Mục đích: "xuất cái báo cáo này ra Excel cho tôi".
+### T23. export_report_file - Xuất báo cáo dạng VĂN BẢN (Word .docx)
+- Mục đích: "xuất cái báo cáo này ra file cho tôi" - bản trình bày có tiêu đề, hộp TL;DR,
+  mục lục nội dung, bảng số liệu. Người dùng xin đích danh Excel/.xlsx thì model phải gọi
+  T30, không dùng tool này.
 - Quyền: chỉ đóng gói lại dữ liệu ĐÃ QUA LỌC QUYỀN ở tool báo cáo phía trước - không mở
   thêm đường dữ liệu mới.
 
@@ -232,6 +236,20 @@ system prompt), hỗ trợ mua cho pháp nhân khác qua tham số `company`.
 - Mục đích: "làm sao tạo YCMH", trả lời kèm nguồn bài HDSD.
 - Quyền: chỉ cần đăng nhập - CỐ Ý, vì Trung tâm HDSD vốn mở cho mọi người dùng đã đăng nhập.
 - Ghi chú: chỉ đăng ký khi cờ `AI_RAG_ENABLED` bật.
+
+### T30. export_excel_file - Xuất BẢNG TÍNH Excel (.xlsx) (CR-205, thêm 27/08/2026)
+- Mục đích: "xuất danh sách này ra Excel" - dữ liệu dạng bảng để người dùng lọc/tính tiếp.
+  Cặp với T23: T23 là văn bản trình bày, T30 là bảng tính; TOOL_GUIDE dặn model chọn theo
+  lời xin của người dùng.
+- Tham số: `filename` (không dấu, không đuôi) + `sheets` - tối đa **5 sheet x 15 cột x
+  500 dòng/sheet**, mỗi sheet gồm `name` + `columns` + `rows`.
+- Đầu ra: file .xlsx dựng bằng openpyxl (`render_xlsx` trong `export_tool.py`), giao diện
+  hiện nút tải (FE `reply-offers.ts` nhận cả hai tên tool xuất file).
+- Chi tiết kỹ thuật: ô là CHUỖI SỐ trần ("1500000") được đổi thành kiểu số thật của Excel
+  để người nhận tính toán được; tên sheet cắt 31 ký tự + rửa ký tự Excel cấm; header in
+  đậm + đóng băng dòng đầu + auto-width.
+- Quyền: như T23 - chỉ đóng gói dữ liệu ĐÃ QUA LỌC QUYỀN ở các tool phía trước, không mở
+  thêm đường dữ liệu mới; file lưu vào storage cùng khuôn `_store_report_file` với T23.
 
 ---
 
@@ -316,9 +334,10 @@ chi tiết, con người tự bấm Duyệt ở đó.
 
 ---
 
-Nay bộ tool có **29 cái** (T1-T29): T1-T13 loại A tra cứu thu mua, T14-T19 văn bản + phê
-duyệt, T20-T22 soạn nháp, T23-T24 tiện ích, T25-T26 công nợ + YCTT, T27-T29 trợ lý cho
-quản lý và người trình phiếu (recap chứng từ + phiếu chờ duyệt + phiếu của tôi).
+Nay bộ tool có **30 cái** (T1-T30): T1-T13 loại A tra cứu thu mua, T14-T19 văn bản + phê
+duyệt, T20-T22 soạn nháp, T23-T24 + T30 tiện ích (xuất Word / tra HDSD / xuất Excel),
+T25-T26 công nợ + YCTT, T27-T29 trợ lý cho quản lý và người trình phiếu (recap chứng từ +
+phiếu chờ duyệt + phiếu của tôi).
 
 ---
 
@@ -333,7 +352,7 @@ quản lý và người trình phiếu (recap chứng từ + phiếu chờ duy�
 
 ## Việc cần chốt (đã chốt trong lúc code - giữ lại làm vết)
 
-- Danh sách giai đoạn đầu chốt ở 29 tool như trên; thêm tool mới thì cập nhật tài liệu này
+- Danh sách giai đoạn đầu chốt ở 30 tool như trên; thêm tool mới thì cập nhật tài liệu này
   và bảng quyền ở `04-bao-mat-va-van-hanh.md` mục 5.
 - Quy đổi đơn vị: KHÔNG tự quy đổi - kết quả trả nguyên đơn vị lưu trong lịch sử mua, phần
   diễn giải nêu rõ giả định.
