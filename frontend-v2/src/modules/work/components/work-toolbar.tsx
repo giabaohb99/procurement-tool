@@ -1,9 +1,7 @@
 import { Plus, Search, SlidersHorizontal } from 'lucide-react'
 
 import { Button } from '@/shared/ui/button'
-import { Checkbox } from '@/shared/ui/checkbox'
 import { Input } from '@/shared/ui/input'
-import { Label } from '@/shared/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
 import {
   Select,
@@ -12,8 +10,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
+import { CardFieldsMenu } from './card-fields-menu'
+import type { WorkLabelField } from '../types/work'
 import {
-  CARD_FIELD_LABELS,
   WORK_SCOPES,
   WORK_SORTS,
   type CardFields,
@@ -30,6 +29,10 @@ interface WorkToolbarProps {
   onKeywordChange: (value: string) => void
   fields: CardFields
   onFieldsChange: (fields: CardFields) => void
+  /** Bộ nhãn tùy biến của dự án — menu «Tùy chỉnh» lấy tên trường từ đây. */
+  labelFields: WorkLabelField[]
+  /** Mở màn Thiết lập để khai thêm nhãn; vắng = không đủ quyền. */
+  onAddField?: () => void
   canEdit: boolean
   onNewTask: () => void
 }
@@ -53,6 +56,8 @@ export function WorkToolbar({
   onKeywordChange,
   fields,
   onFieldsChange,
+  labelFields,
+  onAddField,
   canEdit,
   onNewTask,
 }: WorkToolbarProps) {
@@ -108,24 +113,13 @@ export function WorkToolbar({
             Tùy chỉnh
           </Button>
         </PopoverTrigger>
-        <PopoverContent align="end" className="w-56">
-          <p className="mb-2 text-sm font-medium">Hiện trên thẻ</p>
-          <div className="space-y-2">
-            {CARD_FIELD_LABELS.map(({ key, label }) => (
-              <div key={key} className="flex items-center gap-2">
-                <Checkbox
-                  id={`field-${key}`}
-                  checked={fields[key]}
-                  onCheckedChange={(checked) =>
-                    onFieldsChange({ ...fields, [key]: checked === true })
-                  }
-                />
-                <Label htmlFor={`field-${key}`} className="text-sm font-normal">
-                  {label}
-                </Label>
-              </div>
-            ))}
-          </div>
+        <PopoverContent align="end" className="w-72">
+          <CardFieldsMenu
+            fields={fields}
+            labelFields={labelFields}
+            onChange={onFieldsChange}
+            onAddField={onAddField}
+          />
         </PopoverContent>
       </Popover>
     </div>

@@ -1,12 +1,20 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { CalendarDays, GitBranch, MessageSquare } from 'lucide-react'
-import { memo } from 'react'
+import {
+  CalendarDays,
+  CircleDot,
+  GitBranch,
+  ListChecks,
+  MessageSquare,
+  Tag as TagIcon,
+  type LucideIcon,
+} from 'lucide-react'
+import { memo, type ReactNode } from 'react'
 
 import { cn } from '@/shared/utils/cn'
-import type { CardFields } from '../types/view-options'
+import { labelFieldId, type CardFields, type CardFieldKey } from '../types/view-options'
 import type { WorkLabelField, WorkTag, WorkTask } from '../types/work'
-import { WORK_PRIORITY, WORK_TASK_STATUS } from '../types/work'
+import { WORK_ASSIGNEE_KIND, WORK_PRIORITY, WORK_TASK_STATUS } from '../types/work'
 import { dueTone, dueToneClass, formatDueLabel } from '../utils/due-date'
 import { taskDraggableId } from '../utils/kanban-drop'
 import { chipClass, priorityColor } from '../utils/work-colors'
@@ -103,10 +111,12 @@ export const TaskCardBody = memo(function TaskCardBody({
   className,
 }: TaskCardBodyProps) {
   const done = task.status === WORK_TASK_STATUS.DONE
-  const tone = dueTone(task.due_date, done)
-  const cardTags = fields.tags ? tags.filter((t) => task.tag_ids.includes(t.id)) : []
-  const cardLabels = fields.labels ? labelValues(task, labelFields) : []
-  const people = fields.assignees ? task.assignees.filter((a) => a.kind === 1) : []
+  const rows = fields
+    .filter((f) => f.visible)
+    .map((f) => buildFieldRow(f.key, task, tags, labelFields))
+    //  Trường bật nhưng thẻ này CHƯA CÓ giá trị thì bỏ hẳn dòng, không vẽ
+    //  "Hạn chót —". Thẻ mười dòng gạch ngang thì đọc còn mệt hơn không có gì.
+    .filter((row): row is FieldRow => row !== null)
 
   return (
     <div
@@ -120,29 +130,89 @@ export const TaskCardBody = memo(function TaskCardBody({
         {task.title}
       </p>
 
-      {(fields.priority && task.priority !== WORK_PRIORITY.NONE) ||
-      cardTags.length > 0 ||
-      cardLabels.length > 0 ? (
-        <div className="mt-2 flex flex-wrap gap-1">
-          {fields.priority && task.priority !== WORK_PRIORITY.NONE && (
-            <Chip color={priorityColor(task.priority)}>{`P${task.priority}`}</Chip>
-          )}
-          {cardTags.map((t) => (
-            <Chip key={t.id} color={t.color}>
-              {t.name}
-            </Chip>
-          ))}
-          {cardLabels.map((n) => (
-            <Chip key={`${n.fieldId}-${n.name}`} color={n.color}>
-              {n.name}
-            </Chip>
+      {rows.length > 0 && (
+        <div className="mt-2 space-y-1.5">
+          {rows.map((row) => (
+            <div key={row.key} className="flex items-center gap-2 text-xs">
+              {/*  Nhãn trường có bề rộng CỐ ĐỊNH để mọi giá trị thẳng hàng dọc —
+                  co theo chữ thì mỗi dòng lệch một kiểu, nhìn như bảng gãy. */}
+              <span className="flex w-[104px] shrink-0 items-center gap-1.5 text-muted-foreground">
+                <row.icon className="size-3.5 shrink-0" />
+                <span className="truncate">{row.label}</span>
+              </span>
+              <span className="flex min-w-0 flex-wrap items-center gap-1">{row.value}</span>
+            </div>
           ))}
         </div>
-      ) : null}
+      )}
+    </div>
+  )
+})
 
-      <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
-        {people.length > 0 && (
-          <div className="flex items-center -space-x-1.5">
+interface FieldRow {
+  key: string
+  icon: LucideIcon
+  label: string
+  value: ReactNode
+}
+
+/**
+ * Một dòng trường trên thẻ: `biểu tượng · tên trường · giá trị`, theo đúng cách
+ * Lark vẽ thẻ. `null` = thẻ này không có gì để khoe ở trường đó.
+ */
+function buildFieldRow(
+  key: CardFieldKey,
+  task: WorkTask,
+  tags: WorkTag[],
+  labelFields: WorkLabelField[],
+): FieldRow | null {
+  const fieldId = labelFieldId(key)
+  if (fieldId !== null) {
+    const field = labelFields.find((f) => f.id === fieldId)
+    const chosen = task.labels.find((l) => l.field_id === fieldId)
+    const option = field?.options.find((o) => o.id === chosen?.option_id)
+    if (!field || !option) return null
+    return {
+      key,
+      icon: CircleDot,
+      label: field.name,
+      value: <Chip color={option.color}>{option.name}</Chip>,
+    }
+  }
+
+  switch (key) {
+    case 'priority': {
+      if (task.priority === WORK_PRIORITY.NONE) return null
+      return {
+        key,
+        icon: CircleDot,
+        label: 'Độ ưu tiên',
+        value: <Chip color={priorityColor(task.priority)}>{`P${task.priority}`}</Chip>,
+      }
+    }
+    case 'tags': {
+      const chosen = tags.filter((t) => task.tag_ids.includes(t.id))
+      if (chosen.length === 0) return null
+      return {
+        key,
+        icon: TagIcon,
+        label: 'Tag',
+        value: chosen.map((t) => (
+          <Chip key={t.id} color={t.color}>
+            {t.name}
+          </Chip>
+        )),
+      }
+    }
+    case 'assignees': {
+      const people = task.assignees.filter((a) => a.kind === WORK_ASSIGNEE_KIND.PIC)
+      if (people.length === 0) return null
+      return {
+        key,
+        icon: ListChecks,
+        label: 'Phụ trách',
+        value: (
+          <span className="flex items-center -space-x-1.5">
             {/* Tối đa 3 avatar rồi "+n" — đông người mà xếp hết thì thẻ dài ra
                 gấp đôi và cột kanban tụt hết xuống dưới màn hình. */}
             {people.slice(0, 3).map((a) => (
@@ -154,34 +224,44 @@ export const TaskCardBody = memo(function TaskCardBody({
                 {initials(a.employee_name)}
               </span>
             ))}
-            {people.length > 3 && <span className="pl-2">+{people.length - 3}</span>}
-          </div>
-        )}
-
-        {fields.due && task.due_date && (
-          <span className={cn('flex items-center gap-1', dueToneClass(tone))}>
-            <CalendarDays className="size-3.5" />
+            {people.length > 3 && (
+              <span className="pl-2.5 text-muted-foreground">+{people.length - 3}</span>
+            )}
+          </span>
+        ),
+      }
+    }
+    case 'due': {
+      if (!task.due_date) return null
+      const done = task.status === WORK_TASK_STATUS.DONE
+      return {
+        key,
+        icon: CalendarDays,
+        label: 'Hạn chót',
+        value: (
+          <span className={dueToneClass(dueTone(task.due_date, done))}>
             {formatDueLabel(task.due_date)}
           </span>
-        )}
-
-        {fields.subtasks && task.subtask_total > 0 && (
-          <span className="flex items-center gap-1">
-            <GitBranch className="size-3.5" />
-            {task.subtask_done}/{task.subtask_total}
-          </span>
-        )}
-
-        {fields.comments && task.comment_count > 0 && (
-          <span className="flex items-center gap-1">
-            <MessageSquare className="size-3.5" />
-            {task.comment_count}
-          </span>
-        )}
-      </div>
-    </div>
-  )
-})
+        ),
+      }
+    }
+    case 'subtasks': {
+      if (task.subtask_total === 0) return null
+      return {
+        key,
+        icon: GitBranch,
+        label: 'Việc con',
+        value: `${task.subtask_done}/${task.subtask_total}`,
+      }
+    }
+    case 'comments': {
+      if (task.comment_count === 0) return null
+      return { key, icon: MessageSquare, label: 'Bình luận', value: task.comment_count }
+    }
+    default:
+      return null
+  }
+}
 
 function Chip({ color, children }: { color: string; children: React.ReactNode }) {
   return (
@@ -189,17 +269,6 @@ function Chip({ color, children }: { color: string; children: React.ReactNode })
       {children}
     </span>
   )
-}
-
-/** Giá trị nhãn tùy biến đang gắn trên task, kèm màu của chính giá trị đó. */
-function labelValues(task: WorkTask, fields: WorkLabelField[]) {
-  return task.labels
-    .map(({ field_id, option_id }) => {
-      const field = fields.find((f) => f.id === field_id)
-      const option = field?.options.find((o) => o.id === option_id)
-      return option ? { fieldId: field_id, name: option.name, color: option.color } : null
-    })
-    .filter((x): x is { fieldId: number; name: string; color: string } => x !== null)
 }
 
 /** Chữ tắt trên avatar: hai chữ cái đầu của TỪ CUỐI — tên Việt gọi theo tên. */

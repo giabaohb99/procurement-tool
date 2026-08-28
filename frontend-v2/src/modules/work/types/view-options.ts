@@ -41,33 +41,68 @@ export const WORK_SORTS = [
 
 export type WorkSort = (typeof WORK_SORTS)[number]['value']
 
-/** Trường nào được vẽ trên thẻ kanban — bật/tắt ở nút «Tùy chỉnh» (§3.6). */
-export interface CardFields {
-  priority: boolean
-  tags: boolean
-  labels: boolean
-  assignees: boolean
-  due: boolean
-  subtasks: boolean
-  comments: boolean
-}
-
-export const DEFAULT_CARD_FIELDS: CardFields = {
-  priority: true,
-  tags: true,
-  labels: true,
-  assignees: true,
-  due: true,
-  subtasks: true,
-  comments: true,
-}
-
-export const CARD_FIELD_LABELS: { key: keyof CardFields; label: string }[] = [
+/**
+ * Trường vẽ trên thẻ kanban — bật/tắt và ĐỔI THỨ TỰ ở nút «Tùy chỉnh» (§3.6),
+ * đúng khuôn *Customize* của Lark.
+ *
+ * Trường **nhãn tùy biến** (B-08) mang khóa `label:{fieldId}`: mỗi dự án tự khai
+ * bộ nhãn riêng nên danh sách này KHÔNG cố định được, phải trộn với bộ nhãn
+ * đang có của dự án lúc chạy (`mergeCardFields`).
+ */
+export const BUILTIN_CARD_FIELDS = [
   { key: 'priority', label: 'Độ ưu tiên' },
   { key: 'tags', label: 'Tag' },
-  { key: 'labels', label: 'Nhãn tùy biến' },
-  { key: 'assignees', label: 'Người phụ trách' },
+  { key: 'assignees', label: 'Phụ trách' },
   { key: 'due', label: 'Hạn chót' },
-  { key: 'subtasks', label: 'Tiến độ việc con' },
+  { key: 'subtasks', label: 'Việc con' },
   { key: 'comments', label: 'Số bình luận' },
-]
+] as const
+
+export type BuiltinCardFieldKey = (typeof BUILTIN_CARD_FIELDS)[number]['key']
+export type CardFieldKey = BuiltinCardFieldKey | `label:${number}`
+
+/** Một dòng trong menu «Tùy chỉnh». THỨ TỰ trong mảng = thứ tự vẽ trên thẻ. */
+export interface CardFieldSetting {
+  key: CardFieldKey
+  visible: boolean
+}
+
+export type CardFields = CardFieldSetting[]
+
+export const DEFAULT_CARD_FIELDS: CardFields = BUILTIN_CARD_FIELDS.map((f) => ({
+  key: f.key,
+  visible: true,
+}))
+
+/** `label:12` → `12`; trường dựng sẵn → `null`. */
+export function labelFieldId(key: CardFieldKey): number | null {
+  const m = /^label:([1-9]\d*)$/.exec(key)
+  return m ? Number(m[1]) : null
+}
+
+/**
+ * Trộn thứ tự đã nhớ với bộ nhãn tùy biến ĐANG CÓ của dự án.
+ *
+ * Ba việc, thiếu cái nào cũng hỏng âm thầm:
+ * - Nhãn vừa được thêm ở Thiết lập phải xuất hiện (nối vào CUỐI, bật sẵn) —
+ *   không thì khai trường mới xong chẳng thấy đâu.
+ * - Nhãn đã xóa phải biến mất, không để lại một dòng trống trong menu.
+ * - Trường dựng sẵn mới thêm về sau cũng phải tự chen vào.
+ */
+export function mergeCardFields(saved: CardFields, labelIds: number[]): CardFields {
+  const wanted = new Set<CardFieldKey>([
+    ...BUILTIN_CARD_FIELDS.map((f) => f.key),
+    ...labelIds.map((id): CardFieldKey => `label:${id}`),
+  ])
+  //  Bỏ khóa TRÙNG ngay tại đây: bản lưu là JSON người dùng sửa được, mà hai
+  //  dòng cùng khóa là hai React `key` trùng — cảnh báo đỏ và dòng nhảy lung
+  //  tung mỗi lần kéo đổi thứ tự.
+  const seen = new Set<CardFieldKey>()
+  const kept = saved.filter((f) => {
+    if (!wanted.has(f.key) || seen.has(f.key)) return false
+    seen.add(f.key)
+    return true
+  })
+  const added = [...wanted].filter((k) => !seen.has(k)).map((key) => ({ key, visible: true }))
+  return [...kept, ...added]
+}

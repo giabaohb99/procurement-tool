@@ -5,6 +5,7 @@ import type { GanttZoom } from '../utils/gantt-scale'
 import {
   DEFAULT_CARD_FIELDS,
   type CardFields,
+  type CardFieldSetting,
   type WorkScope,
   type WorkSort,
   type WorkView,
@@ -32,7 +33,7 @@ export interface WorkViewState {
   ganttZoom: GanttZoom
 }
 
-const MAC_DINH: WorkViewState = {
+const DEFAULTS: WorkViewState = {
   view: 'kanban',
   scope: 'open',
   sort: 'manual',
@@ -40,26 +41,46 @@ const MAC_DINH: WorkViewState = {
   ganttZoom: 'day',
 }
 
-function khoa(listId: number): string {
+function storageKey(listId: number): string {
   return `erp.work.view.${listId}`
 }
 
-function doc(listId: number): WorkViewState {
+/**
+ * Đọc phần «trường hiện trên thẻ», CHỊU ĐƯỢC bản lưu theo khuôn cũ.
+ *
+ * Khuôn cũ là một object bảy công tắc (`{priority: true, labels: false, …}`),
+ * khuôn mới là MẢNG có thứ tự. Ai đang mở dở màn hình mà không đổi được thì mở
+ * ra thấy thẻ trắng trơn — nên bản cũ được dịch sang bản mới, giữ nguyên thứ tự
+ * mặc định và giữ đúng những trường họ đã tắt. Khóa `labels` cũ (một công tắc
+ * cho MỌI nhãn tùy biến) không còn tương ứng 1-1 nên bỏ; nhãn sẽ do
+ * `mergeCardFields` nối vào, bật sẵn.
+ */
+function readFields(saved: unknown): CardFields {
+  if (Array.isArray(saved)) {
+    return saved.filter(
+      (f): f is CardFieldSetting =>
+        !!f && typeof f === 'object' && typeof (f as CardFieldSetting).key === 'string',
+    )
+  }
+  if (saved && typeof saved === 'object') {
+    const old = saved as Record<string, unknown>
+    return DEFAULT_CARD_FIELDS.map((f) => ({
+      key: f.key,
+      visible: old[f.key] === undefined ? true : old[f.key] === true,
+    }))
+  }
+  return DEFAULT_CARD_FIELDS
+}
+
+function readState(listId: number): WorkViewState {
   try {
-    const raw = localStorage.getItem(khoa(listId))
-    if (!raw) return MAC_DINH
-    const luu = JSON.parse(raw) as Partial<WorkViewState>
-    //  Trộn với mặc định chứ không tin bản lưu: thêm một trường mới vào
-    //  `CardFields` thì bản lưu cũ thiếu khóa đó, đọc thẳng ra `undefined` và
-    //  trường mới im lặng biến mất khỏi thẻ.
-    return {
-      ...MAC_DINH,
-      ...luu,
-      fields: { ...MAC_DINH.fields, ...(luu.fields ?? {}) },
-    }
+    const raw = localStorage.getItem(storageKey(listId))
+    if (!raw) return DEFAULTS
+    const saved = JSON.parse(raw) as Partial<WorkViewState>
+    return { ...DEFAULTS, ...saved, fields: readFields(saved.fields) }
   } catch (error) {
     logger.warn('Tùy chọn khung nhìn Công việc trong localStorage hỏng, dùng mặc định', error)
-    return MAC_DINH
+    return DEFAULTS
   }
 }
 
@@ -68,20 +89,20 @@ function doc(listId: number): WorkViewState {
  * và tự ghi xuống `localStorage`.
  */
 export function useWorkViewState(listId: number) {
-  const [state, setState] = useState<WorkViewState>(() => doc(listId))
+  const [state, setState] = useState<WorkViewState>(() => readState(listId))
 
   const patch = useCallback(
-    (thayDoi: Partial<WorkViewState>) => {
-      setState((truoc) => {
-        const moi = { ...truoc, ...thayDoi }
+    (changes: Partial<WorkViewState>) => {
+      setState((prev) => {
+        const next = { ...prev, ...changes }
         try {
-          localStorage.setItem(khoa(listId), JSON.stringify(moi))
+          localStorage.setItem(storageKey(listId), JSON.stringify(next))
         } catch (error) {
           //  Chế độ riêng tư của Safari chặn ghi — mất phần nhớ thì thôi, không
           //  được để cả màn hình chết vì một tùy chọn hiển thị.
           logger.warn('Không ghi được tùy chọn khung nhìn Công việc', error)
         }
-        return moi
+        return next
       })
     },
     [listId],

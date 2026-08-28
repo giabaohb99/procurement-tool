@@ -36,7 +36,7 @@ import type { WorkSection } from '../types/work'
 import { WORK_ROLE, WORK_TASK_STATUS } from '../types/work'
 import { prepareTasks } from '../utils/filter-tasks'
 import { ZOOM_LABELS, type GanttZoom } from '../utils/gantt-scale'
-import { WORK_VIEWS, type WorkView } from '../types/view-options'
+import { mergeCardFields, WORK_VIEWS, type WorkView } from '../types/view-options'
 
 /** Icon của từng khung nhìn — để `WORK_VIEWS` giữ được nhãn thuần dữ liệu. */
 const VIEW_ICONS = {
@@ -86,6 +86,14 @@ export function WorkListPage() {
   const myRole = board?.list.my_role ?? null
   const canEdit = myRole !== null && myRole <= WORK_ROLE.MEMBER && !board?.list.is_archived
   const canManage = myRole !== null && myRole <= WORK_ROLE.ADMIN && !board?.list.is_archived
+
+  //  Bộ nhãn tùy biến là của TỪNG dự án nên danh sách trường trên thẻ không cố
+  //  định được: trộn thứ tự đã nhớ với bộ nhãn đang có (thêm nhãn mới, bỏ nhãn
+  //  đã xóa) — xem `mergeCardFields`.
+  const cardFields = useMemo(
+    () => mergeCardFields(fields, labelFields.map((f) => f.id)),
+    [fields, labelFields],
+  )
 
   const tasks = useMemo(
     () => prepareTasks(board?.tasks ?? [], { scope, sort, keyword, myEmployeeId }),
@@ -196,8 +204,10 @@ export function WorkListPage() {
         onSortChange={(value) => setViewState({ sort: value })}
         keyword={keyword}
         onKeywordChange={setKeyword}
-        fields={fields}
+        fields={cardFields}
         onFieldsChange={(value) => setViewState({ fields: value })}
+        labelFields={labelFields}
+        onAddField={canManage ? () => setSettingsOpen(true) : undefined}
         canEdit={canEdit}
         onNewTask={() => {
           const firstSection = board.sections[0]
@@ -217,7 +227,7 @@ export function WorkListPage() {
             tasks={tasks}
             tags={tags}
             labelFields={labelFields}
-            fields={fields}
+            fields={cardFields}
             canEdit={canEdit}
             canManage={canManage}
             sortLocked={sort !== 'manual'}
