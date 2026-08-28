@@ -1,6 +1,7 @@
 # PHÂN HỆ CÔNG VIỆC — LỘ TRÌNH PHASE
 
-**Bản:** 1.0 — 28/08/2026 · **CR:** CR-216 · KHÔNG đặt mốc thời gian (theo lệ chung của
+**Bản:** 1.1 — 28/08/2026 · **CR:** CR-216 (bản 1.1: CR-217 — thêm A-10 vào W4, ghi nhóm
+F lịch làm việc + cụm Gantt mở rộng vào W5) · KHÔNG đặt mốc thời gian (theo lệ chung của
 bộ tài liệu ERP). Mỗi phase nghiệm thu riêng được; dừng giữa chừng không để hệ nửa vời.
 
 Mã tính năng (A-xx, B-xx…) tra ở [`01-danh-sach-tinh-nang.md`](./01-danh-sach-tinh-nang.md);
@@ -65,7 +66,8 @@ cần làm và "Đánh dấu làm xong" ẩn được; test tập cha mở rộn
 celery-worker/beat) · G-03 màn "Việc của tôi" · B-09 thùng rác · B-10 chuyển list ·
 A-06 mời theo phòng ban (cột `department_id`) · C-03 việc con có PIC/hạn riêng ·
 E-02 nhắc tên @ · E-03 đính kèm R2 qua kiểm quyền · D-06 dashboard thống kê list ·
-D-08 gom nhóm kanban theo PIC/ưu tiên/hạn · D-09 tab Activities cấp list.
+D-08 gom nhóm kanban theo PIC/ưu tiên/hạn · D-09 tab Activities cấp list ·
+A-10 list kiểu dự án (cờ `kind` + hồ sơ ngày/vòng đời + tiến độ tự tính — QĐ-T2, 01 §4b).
 
 **Điều kiện cần:** W3 chạy ổn trên dev ít nhất một chu kỳ dùng thật.
 **Điều kiện đủ:** từng mục có test riêng phần sửa; nhắc hạn bắn đúng một lần mỗi
@@ -76,7 +78,13 @@ ngưỡng (không spam chuông mỗi lần beat chạy).
 Ứng viên: B-13 trường tùy chỉnh kiểu chữ/số/ngày/người · B-11 việc lặp · B-12 gắn
 chứng từ ERP · D-04 lịch · D-05 gantt · A-07 nhân bản/mẫu list · C-04 nâng việc con
 thành task · G-04 lưu bộ lọc · H-04 xuất Excel (chờ khung Đ-13) · F-05 web push ·
-F-06 tool Trợ lý AI · Q10 toggle hiện việc con ra kanban · tích hợp Project-M (QĐ-T1).
+F-06 tool Trợ lý AI · Q10 toggle hiện việc con ra kanban · tích hợp Project-M (QĐ-T1) ·
+**cụm Gantt mở rộng** B-14 cột mốc + B-15 phụ thuộc FS/SS/FF/SF (`tab_work_task_link`,
+service chặn vòng lặp — 01 §4b) — làm chung một đợt với D-05 ·
+**lịch làm việc — ngày nghỉ** (nhóm F tài liệu QLDA, chốt 28/08/2026 KHÔNG làm bây giờ):
+chỉ cần khi tính ngày kết thúc theo ngày công hoặc Gantt trừ ngày nghỉ; khi đến lượt thì
+ƯU TIÊN dựng ở nền HRM dùng chung rồi phân hệ này gọi sang, không làm bảng riêng trong
+module (01 §4b).
 
 **Nguyên tắc vào W5:** mỗi mục phải có người dùng thật yêu cầu + một dòng CR riêng;
 không làm gộp "tiện tay".

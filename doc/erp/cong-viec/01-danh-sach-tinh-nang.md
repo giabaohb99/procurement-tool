@@ -1,6 +1,6 @@
 # PHÂN HỆ QUẢN LÝ CÔNG VIỆC — DANH SÁCH TÍNH NĂNG
 
-**Bản:** 1.3 — 28/08/2026 · **Trạng thái:** danh sách ĐÃ DUYỆT (chốt hướng **CLONE LARK TASKS**), CHƯA viết code · **CR:** CR-216
+**Bản:** 1.4 — 28/08/2026 · **Trạng thái:** danh sách ĐÃ DUYỆT (chốt hướng **CLONE LARK TASKS**), CHƯA viết code · **CR:** CR-216 (bản 1.4: CR-217)
 
 Bộ tài liệu phân hệ (đọc theo thứ tự): **[`01`](./01-danh-sach-tinh-nang.md) danh sách
 tính năng** (tệp này) · **[`02`](./02-bang-du-lieu.md) bảng dữ liệu** ·
@@ -25,6 +25,13 @@ danh sách việc con 0/5.
 sẻ được (tối đa 2 cấp), NHÃN TÙY BIẾN theo từng list (tự đặt loại nhãn như "Phiên bản")
 lên bản đầu, và quy tắc hiển thị việc con (nằm trong list của cha nhưng không hiện thành
 thẻ riêng). Chi tiết ở §2, A-08, B-08, C-05.
+
+**Bản 1.4 (CR-217, 28/08/2026)** đối chiếu tài liệu QLDA của Công cụ Văn thư
+(`DMS-PM-FEATURES` v1.0 — chuyển từ máy khác sang, mã nguồn không nằm trong repo này) —
+xem §4b. Nhận khái niệm **Dự án đứng trên task** theo **QĐ-T2**: dự án = task list kiểu
+dự án (A-10), KHÔNG dựng cặp bảng project/task riêng — DB giữ khuôn `tab_work_*` của
+mình. Thêm A-10 (P1), B-14 + B-15 (P2, cụm Gantt); nhóm F của tài liệu kia (lịch làm
+việc — ngày nghỉ) chốt KHÔNG làm bây giờ, ghi vào W5 làm sau.
 
 ---
 
@@ -58,6 +65,7 @@ tài liệu nào của PM.
 |---|---|---|
 | Nhóm | Group | Thư mục chứa các task list (như "Công cụ Ai", "Thu mua" ở sidebar). Nhóm chứa task list hoặc nhóm con, **tối đa 2 cấp nhóm**. Gán thành viên ở nhóm là kế thừa xuống mọi list bên trong (Q9). |
 | Danh sách công việc | Task List | "Cái bảng" của một đội / một mảng việc, nằm trong một nhóm (hoặc đứng lẻ). Có thành viên riêng, cột riêng, việc riêng, bộ nhãn riêng. Đơn vị phân quyền chính. |
+| Dự án | Project (list kind) | **Bản 1.4 — QĐ-T2:** KHÔNG phải thực thể riêng đứng trên task. "Dự án" là một task list bật cờ `kind = dự án`, mở thêm hồ sơ: ngày bắt đầu — kết thúc, trạng thái vòng đời (SMALLINT), tiến độ tổng TỰ TÍNH từ task xong/tổng (không lưu cột). Mọi tính năng list (thành viên, cột, nhãn, kanban) dùng nguyên. Xem §4b + A-10. |
 | Cột / nhóm | Section | Cột trên kanban, do từng list tự đặt (Documentation, To do, Doing, Reviewing…). Kéo thả đổi thứ tự, đổi tên được. |
 | Công việc | Task | Một việc: tiêu đề, mô tả, người phụ trách, hạn, độ ưu tiên, tag, nằm trong một cột của một list. |
 | Việc con | Subtask | Đầu việc nhỏ trong một task, tick từng cái, thẻ cha hiện tiến độ n/m. **Tối đa 2 cấp** (task → việc con, việc con KHÔNG có con). Việc con thuộc list của cha nhưng **không hiện thành thẻ riêng** trên kanban/danh sách — chỉ thấy khi mở panel chi tiết của cha (C-05). |
@@ -93,6 +101,7 @@ chưa xong" / nhắc hạn vẫn có một nguồn sự thật bằng số, khô
 | A-07 | Nhân bản list / tạo list từ mẫu | P2 | |
 | A-08 | **Nhóm (group) chứa task list, tối đa 2 cấp nhóm**; tạo/sửa/lưu trữ nhóm; kéo list vào/ra nhóm | P0 | Bản 1.1. List đứng lẻ ngoài nhóm vẫn hợp lệ |
 | A-09 | Chia sẻ Ở CẤP NHÓM: gán thành viên vào nhóm → kế thừa vai trò xuống mọi list bên trong; mời thêm người vào từng list lẻ vẫn được | P0 | Bản 1.1, xem Q9. Mạnh hơn Lark — bên Lark nhóm sidebar chỉ là sắp xếp cá nhân |
+| A-10 | **List kiểu "Dự án"** (QĐ-T2): cờ `kind` + hồ sơ dự án — ngày bắt đầu — kết thúc, trạng thái vòng đời, tiến độ tổng % tự tính (= task DONE / tổng task) | P1 | Bản 1.4 — từ đối chiếu §4b. Tiến độ là số DẪN XUẤT lúc đọc, KHÔNG lưu cột; không bắt nhập % tay từng task như QLDA |
 
 ### Nhóm B — Công việc (task)
 
@@ -111,6 +120,8 @@ chưa xong" / nhắc hạn vẫn có một nguồn sự thật bằng số, khô
 | B-10 | Chuyển task sang list khác | P1 | |
 | B-11 | Việc lặp lại (hằng tuần, hằng tháng) | P2 | |
 | B-12 | Gắn task vào chứng từ ERP (YCMH, ĐMH, phiếu hỗ trợ, văn bản…) | P2 | Xem Q6 — điểm ăn tiền so với Lark nhưng chưa cần ngay |
+| B-14 | Cột mốc (milestone): đánh dấu một task là mốc dự án | P2 | Bản 1.4 — đi cùng cụm Gantt D-05, xem §4b |
+| B-15 | Phụ thuộc giữa task (FS/SS/FF/SF) — bảng `tab_work_task_link` | P2 | Bản 1.4 — đi cùng D-05. Service PHẢI chặn vòng lặp phụ thuộc ngay từ đầu (tài liệu QLDA tự ghi nhận bên đó CHƯA chặn — §4b) |
 
 ### Nhóm C — Việc con (subtask)
 
@@ -191,6 +202,39 @@ chưa xong" / nhắc hạn vẫn có một nguồn sự thật bằng số, khô
 | Số bình luận trên thẻ | Có | E-01 |
 | Gantt / Dashboard / Activities (tab trên cùng) | KHÔNG | D-05, D-06 để sau |
 | Automation, rule tự động | KHÔNG | Ngoài phạm vi, chưa bàn |
+
+---
+
+## 4b. Đối chiếu tài liệu QLDA của Công cụ Văn thư (bản 1.4)
+
+Nguồn: `danh-sach-tinh-nang-quan-ly-du-an.md` (`DMS-PM-FEATURES` v1.0) — bản kiểm kê 59
+tính năng của module Quản lý dự án ĐANG CHẠY trong Công cụ Văn thư (DMS), nền
+dhtmlx-gantt; tài liệu chuyển từ máy khác sang, mã nguồn KHÔNG nằm trong repo này. Đừng
+lẫn ba sản phẩm: **DMS-QLDA** (đang chạy, dự án → đầu việc nhiều cấp) · **Project-M**
+(Báo cáo Dự án cho Ban điều hành — v2.0 đã BỎ hướng gantt/đầu việc) · **phân hệ Công
+việc này** (clone Lark, lớp thực thi). QĐ-T1 giữ nguyên.
+
+**QĐ-T2 (chốt 28/08/2026):** khái niệm "Dự án đứng trên task" của bên đó nhận vào bằng
+**list kiểu dự án** (A-10) — thêm cờ + hồ sơ lên `tab_work_list`, KHÔNG dựng cặp bảng
+project/task riêng. DB làm theo khuôn `tab_work_*` của mình (chốt của người dùng: "về
+db mình phải làm theo kiểu, logic của mình").
+
+| Bên QLDA (nhóm) | Bên mình | Xử lý |
+|---|---|---|
+| A. Dự án (`tab_project`: ngày, trạng thái, thành viên N-N, tiến độ = trung bình % các đầu việc) | A-10 list kiểu dự án | NHẬN, P1 — tiến độ tự tính từ đếm task xong/tổng, không bắt nhập % tay |
+| B. Đầu việc cây nhiều cấp không giới hạn, % tiến độ nhập tay, effort ngày công | Task + việc con 2 cấp, tick n/m | GIỮ CỦA MÌNH — 2 cấp + đếm tick đơn giản, khỏi cãi nhau "80% là bao nhiêu" (C-05, Q10) |
+| B. Trạng thái "Quá hạn" tự động chuyển | — | NHẬN Ý, KHÁC CÁCH: quá hạn là giá trị DẪN XUẤT lúc đọc (`due_date` < hôm nay và chưa DONE), KHÔNG lưu thành trạng thái — lưu là phải có job đổi qua đổi lại |
+| C. Gantt dhtmlx: milestone, phụ thuộc 4 loại FS/SS/FF/SF, baseline, critical path | D-05 (P2) + B-14, B-15 mới | ĐỂ W5. Điểm được nhất của tài liệu này: dhtmlx-gantt ĐÃ CHẠY THẬT trong nhà → rủi ro D-05 giảm (05 §10). Khi làm B-15 phải chặn vòng lặp phụ thuộc (bên đó tự ghi nhận chưa chặn) |
+| D. Kanban theo trạng thái cố định | D-01 kanban cột tùy biến | GIỮ CỦA MÌNH — cột tự đặt kiểu Lark mạnh hơn cột = trạng thái |
+| E. OKR check-in (chỉ tiêu — kết quả — nhật ký tiến độ) | — | KHÔNG NHẬN — §9 vẫn ngoài phạm vi; ai đòi thật thì mở CR riêng ở W5 |
+| F. Lịch làm việc + ngày nghỉ (nghỉ lễ VN tự sinh, tính ngày kết thúc theo ngày công) | — | **KHÔNG LÀM BÂY GIỜ** (chốt người dùng 28/08/2026) — ghi vào W5 làm sau. Lý do: chỉ cần khi tính ngày kết thúc theo effort / Gantt trừ ngày nghỉ (đều P2); lịch làm việc là dữ liệu cấp CÔNG TY, chỗ đúng là nền HRM dùng chung — làm riêng trong phân hệ này thì HRM ra đời lại phải dời |
+| G. Cộng tác, phân quyền theo dự án | §5 hai tầng + nhóm E, H | ĐÃ PHỦ — ma trận OWNER/ADMIN/MEMBER/VIEWER + kế thừa nhóm của mình chi tiết hơn |
+
+**KHÔNG bê DB của bên đó** — các điểm phạm luật nhà nếu chép nguyên: trạng thái lưu CHỮ
+tiếng Việt ("Đang thực hiện"…) phạm R2/QĐ-11; `custom_fields` JSON tự do (mình dùng bảng
+nhãn có khuôn — B-08); tên bảng `tab_task` trần đụng vùng approval engine (§5.1); xóa dự
+án CASCADE cứng (mình lưu trữ + xóa mềm — A-01, B-09); cây đầu việc không giới hạn cấp
+(mình chốt 2 cấp).
 
 ---
 
@@ -287,6 +331,7 @@ Người dùng chốt hướng "clone từ Lark, mọi thứ theo đề xuất c
 ## 9. Ngoài phạm vi (chưa bàn ở bản này)
 
 - Automation / rule tự động (Lark có, ta chưa cần).
-- OKR, chấm công theo task, time tracking.
+- OKR, chấm công theo task, time tracking (DMS-QLDA có OKR check-in — xem §4b, vẫn không nhận).
+- Lịch làm việc + ngày nghỉ (nhóm F của tài liệu QLDA) — dời W5, ưu tiên chờ nền HRM dùng chung (§4b).
 - Đồng bộ hai chiều với Lark hoặc công cụ ngoài.
 - Tách app/domain riêng — phân hệ này nằm trong ERP, không như Diễn đàn/Help Center.
