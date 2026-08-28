@@ -22,7 +22,11 @@ interface ThemePresetPickerProps {
 }
 
 export function ThemePresetPicker({
-  columnsClassName = 'sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5',
+  //  Mốc 5 cột đặt ở  1280px — đó là bề ngang "máy để bàn" theo yêu cầu, chứ
+  //  không phải `xl` (1280px) hay `2xl` (1536px) của Tailwind, nên phải viết
+  //  biến thể tuỳ ý. Dưới mốc đó giữ 4 cột: 5 thẻ ở khổ ~1024px thì bản thu nhỏ
+  //  hẹp tới mức không còn đọc được bảng màu.
+  columnsClassName = 'sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6',
 }: ThemePresetPickerProps) {
   const themeId = useThemeStore((state) => state.themeId)
   const setTheme = useThemeStore((state) => state.setTheme)
