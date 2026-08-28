@@ -182,6 +182,15 @@ def update_section(section_id: int, data: schema.SectionIn, db: Session = Depend
     return success(cfg.update_section(db, _actor(db, user), section_id, data), "Đã lưu")
 
 
+@router.post("/sections/{section_id}/move")
+def move_section(section_id: int, data: schema.SectionMove, db: Session = Depends(get_db),
+                 user=Depends(require("work_task", "write"))):
+    """Kéo cột sang chỗ khác — trả CẢ danh sách cột đã xếp lại."""
+    return success(
+        cfg.move_section(db, _actor(db, user), section_id, data.before_section_id),
+        "Đã xếp lại cột")
+
+
 @router.delete("/sections/{section_id}")
 def delete_section(section_id: int, move_to: int | None = None,
                    db: Session = Depends(get_db),

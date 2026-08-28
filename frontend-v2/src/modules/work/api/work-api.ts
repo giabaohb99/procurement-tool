@@ -56,6 +56,12 @@ export const workApi = {
 
   archiveList: (id: number) => apiDelete(`/api/work/lists/${id}`),
 
+  /** Kéo đổi thứ tự CỘT — trả cả hàng cột đã xếp lại (xem `move_section`). */
+  moveSection: (sectionId: number, beforeSectionId: number | null) =>
+    apiPost<WorkSection[]>(`/api/work/sections/${sectionId}/move`, {
+      before_section_id: beforeSectionId,
+    }),
+
   members: (listId: number) => apiGet<WorkMember[]>(`/api/work/lists/${listId}/members`),
 
   addMember: (listId: number, values: { employee_id: number; role: number }) =>

@@ -18,7 +18,7 @@ from fastapi import HTTPException
 from app.modules.work import list_config_service as cfg
 from app.modules.work import list_service, schema, task_service
 from app.modules.work.membership_service import Actor
-from app.modules.work.task_model import WorkTask
+from app.modules.work.task_model import WorkSection, WorkTask
 
 COMPANY = 1
 STEP = task_service.SORT_STEP
@@ -265,3 +265,65 @@ def test_cot_hai_tram_the_keo_cuoi_len_dau_van_du_va_khong_trung_sort_orders(db,
     orders = _sort_orders(db, after)
     assert orders == sorted(orders) and len(set(orders)) == 200
     assert orders[-1] == 200 * STEP
+
+
+# ── Kéo đổi thứ tự CỘT ─────────────────────────────────────────────────────────
+
+def _section_order(db, owner, list_id):
+    return [c["id"] for c in cfg.get_sections(db, owner, list_id)]
+
+
+def test_keo_cot_sang_trai_va_sang_phai(db, owner, work_list, sections):
+    a, b, c = sections
+
+    cfg.move_section(db, owner, c, a)                 # cột cuối lên đầu
+    assert _section_order(db, owner, work_list["id"]) == [c, a, b]
+
+    cfg.move_section(db, owner, c, None)              # rồi đẩy xuống cuối
+    assert _section_order(db, owner, work_list["id"]) == [a, b, c]
+
+
+def test_cot_seed_mang_sort_order_0_1_2_van_chen_duoc_vao_giua(db, owner, work_list, sections):
+    """Ba cột mặc định mang 0·1·2 — không còn khe giữa 0 và 1, kiểu "lấy số ở
+    giữa" hỏng ngay lần kéo thứ hai."""
+    a, b, c = sections
+    cfg.move_section(db, owner, c, b)
+    assert _section_order(db, owner, work_list["id"]) == [a, c, b]
+    orders = [db.get(WorkSection, i).sort_order for i in [a, c, b]]
+    assert orders == sorted(orders) and len(set(orders)) == 3
+
+
+def test_keo_cot_ba_muoi_lan_khong_bao_gio_het_khe(db, owner, work_list, sections):
+    for _ in range(30):
+        current = _section_order(db, owner, work_list["id"])
+        cfg.move_section(db, owner, current[-1], current[0])
+        after = _section_order(db, owner, work_list["id"])
+        assert after[0] == current[-1]
+        assert sorted(after) == sorted(sections)
+        orders = [db.get(WorkSection, i).sort_order for i in after]
+        assert orders == sorted(orders) and len(set(orders)) == 3
+
+
+def test_moc_la_chinh_no_thi_cot_dung_yen(db, owner, work_list, sections):
+    for i in sections:
+        cfg.move_section(db, owner, i, i)
+        assert _section_order(db, owner, work_list["id"]) == sections
+
+
+def test_moc_khong_co_that_thi_cot_xuong_cuoi(db, owner, work_list, sections):
+    a, b, c = sections
+    cfg.move_section(db, owner, a, 999_999)
+    assert _section_order(db, owner, work_list["id"]) == [b, c, a]
+
+
+def test_nguoi_ngoai_khong_keo_duoc_cot(db, owner, work_list, sections):
+    outsider = Actor(user_id=2, employee_id=22, company_id=COMPANY)
+    with pytest.raises(HTTPException) as e:
+        cfg.move_section(db, outsider, sections[0], None)
+    assert e.value.status_code == 403
+
+
+def test_list_luu_tru_thi_khoa_keo_cot(db, owner, work_list, sections):
+    list_service.update_list(db, owner, work_list["id"], schema.ListUpdate(is_archived=1))
+    with pytest.raises(HTTPException):
+        cfg.move_section(db, owner, sections[0], None)

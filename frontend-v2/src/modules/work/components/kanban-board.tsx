@@ -14,7 +14,11 @@ import {
   type DragOverEvent,
   type DragStartEvent,
 } from '@dnd-kit/core'
-import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
+import {
+  SortableContext,
+  horizontalListSortingStrategy,
+  sortableKeyboardCoordinates,
+} from '@dnd-kit/sortable'
 import { Plus } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
@@ -24,7 +28,9 @@ import {
   applyMove,
   groupBySection,
   isSamePlace,
+  columnSortableId,
   parseDropTarget,
+  resolveColumnDrop,
   resolveDropPlace,
   type KanbanDropPlace,
 } from '../utils/kanban-drop'
@@ -57,6 +63,8 @@ interface KanbanBoardProps {
   onOpenTask: (taskId: number) => void
   onCreateTask: (sectionId: number, title: string) => void
   onMoveTask: (taskId: number, place: KanbanDropPlace) => void
+  /** Kéo đổi thứ tự CỘT. `beforeSectionId = null` = đẩy xuống cuối hàng. */
+  onMoveSection: (sectionId: number, beforeSectionId: number | null) => void
   onAddSection: () => void
   onRenameSection: (section: WorkSection) => void
   onDeleteSection: (section: WorkSection) => void
@@ -84,11 +92,15 @@ export function KanbanBoard({
   onOpenTask,
   onCreateTask,
   onMoveTask,
+  onMoveSection,
   onAddSection,
   onRenameSection,
   onDeleteSection,
 }: KanbanBoardProps) {
   const [dragged, setDragged] = useState<WorkTask | null>(null)
+  //  Cột đang được kéo đổi thứ tự — tách hẳn khỏi `dragged` (thẻ) vì hai loại
+  //  đi hai đường khác nhau, gộp vào một biến là mỗi nhánh phải tự đoán kiểu.
+  const [draggedColumn, setDraggedColumn] = useState<number | null>(null)
   //  Chỗ thẻ ĐANG được xem trước khi kéo sang cột khác — xem `displayed` bên dưới.
   const [preview, setPreview] = useState<KanbanDropPlace | null>(null)
   //  Bật đúng MỘT khung hình ngay sau khi thẻ được dời sang cột khác. Xem
@@ -120,6 +132,8 @@ export function KanbanBoard({
   //  Gom thẻ theo cột MỘT LẦN cho mỗi lần dữ liệu đổi. Lọc/sắp ngay trong JSX
   //  thì mỗi lần bảng vẽ lại là mỗi cột nhận một mảng mới, kéo theo `items` của
   //  `SortableContext` cũng mới — dnd-kit đo lại toàn bộ ô.
+  const columnIds = useMemo(() => sections.map((s) => columnSortableId(s.id)), [sections])
+
   const byColumn = useMemo(
     () => groupBySection(sections.map((s) => s.id), tasks),
     [sections, tasks],
@@ -185,6 +199,11 @@ export function KanbanBoard({
   )
 
   function handleDragStart(event: DragStartEvent) {
+    const target = parseDropTarget(event.active.id)
+    if (target?.type === 'column') {
+      setDraggedColumn(target.sectionId)
+      return
+    }
     const taskId = Number(event.active.data.current?.taskId)
     setDragged(tasks.find((t) => t.id === taskId) ?? null)
     setPreview(null)
@@ -204,7 +223,8 @@ export function KanbanBoard({
    * nhảy hai lần cho một cú kéo.
    */
   function handleDragOver(event: DragOverEvent) {
-    if (!dragged) return
+    //  Kéo cột thì để `SortableContext` ngang tự dồn chỗ, không cần ảnh xem trước.
+    if (draggedColumn !== null || !dragged) return
     const place = resolveDropPlace(displayed, dragged.id, parseDropTarget(event.over?.id))
     if (!place) return
 
@@ -222,13 +242,28 @@ export function KanbanBoard({
 
   function resetDragState() {
     setDragged(null)
+    setDraggedColumn(null)
     setPreview(null)
     justChangedColumn.current = false
   }
 
   function handleDragEnd(event: DragEndEvent) {
-    const card = dragged
     const target = parseDropTarget(event.over?.id)
+
+    if (draggedColumn !== null) {
+      const from = draggedColumn
+      resetDragState()
+      if (target?.type !== 'column' || target.sectionId === from) return
+      const place = resolveColumnDrop(
+        sections.map((s) => s.id),
+        from,
+        target.sectionId,
+      )
+      if (place) onMoveSection(from, place.beforeSectionId)
+      return
+    }
+
+    const card = dragged
     const place = card ? resolveDropPlace(displayed, card.id, target) : null
     resetDragState()
     if (!card || !place) return
@@ -271,7 +306,8 @@ export function KanbanBoard({
       measuring={MEASURING}
     >
       <div className="flex flex-1 gap-3 overflow-x-auto pb-4">
-        {sections.map((section) => (
+        <SortableContext items={columnIds} strategy={horizontalListSortingStrategy}>
+          {sections.map((section) => (
           <KanbanColumn
             key={section.id}
             section={section}
@@ -288,7 +324,8 @@ export function KanbanBoard({
             onRenameSection={onRenameSection}
             onDeleteSection={onDeleteSection}
           />
-        ))}
+          ))}
+        </SortableContext>
         {canManage && (
           <Button
             variant="ghost"
@@ -338,8 +375,17 @@ const kanbanCollision: CollisionDetection = (args) => {
   const byPointer = pointerWithin(args)
   const hits = byPointer.length > 0 ? byPointer : rectIntersection(args)
   if (hits.length === 0) return closestCorners(args)
+
+  //  Đang kéo CẢ CỘT thì chỉ nhìn các cột khác; thân cột và thẻ bên trong đều
+  //  nằm dưới con trỏ nhưng không phải đích hợp lệ.
+  if (String(args.active.id).startsWith('column-')) {
+    return hits.filter((c) => String(c.id).startsWith('column-'))
+  }
+
+  //  Đang kéo THẺ: bỏ vỏ cột đi, chỉ còn thẻ hoặc thân cột.
+  const forCard = hits.filter((c) => !String(c.id).startsWith('column-'))
   //  Con trỏ trên một thẻ thì cả thẻ lẫn cột chứa nó cùng trúng — ưu tiên thẻ,
   //  không thì mọi cú thả đều thành "xuống cuối cột".
-  const onCard = hits.find((c) => String(c.id).startsWith('task-'))
-  return onCard ? [onCard] : hits
+  const onCard = forCard.find((c) => String(c.id).startsWith('task-'))
+  return onCard ? [onCard] : forCard
 }

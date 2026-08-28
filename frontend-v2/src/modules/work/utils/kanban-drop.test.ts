@@ -6,9 +6,11 @@ import {
   SORT_STEP,
   applyMove,
   columnDroppableId,
+  columnSortableId,
   groupBySection,
   isSamePlace,
   parseDropTarget,
+  resolveColumnDrop,
   resolveDropPlace,
   taskDraggableId,
 } from './kanban-drop'
@@ -400,5 +402,53 @@ describe('applyMove', () => {
   it('moving into a column that has no cards yet gives the first slot', () => {
     const after = applyMove([task(10, 1, SORT_STEP)], 10, { sectionId: 5, beforeTaskId: null })
     expect(after[0]).toMatchObject({ section_id: 5, sort_order: SORT_STEP })
+  })
+})
+
+// ── Kéo đổi thứ tự CỘT ─────────────────────────────────────────────────────────
+
+describe('resolveColumnDrop', () => {
+  const IDS = [1, 2, 3, 4]
+
+  it('matches dnd-kit arrayMove for every from/to pair, both directions', () => {
+    //  Cùng cái bẫy như kéo thẻ: kéo sang PHẢI thì cột nằm SAU ô đích. Chèn
+    //  luôn-trước-ô-đích là mọi cú kéo sang phải lệch một chỗ.
+    for (let from = 0; from < IDS.length; from += 1) {
+      for (let to = 0; to < IDS.length; to += 1) {
+        const place = resolveColumnDrop(IDS, IDS[from], IDS[to])
+        expect(place).not.toBeNull()
+        const rest = IDS.filter((id) => id !== IDS[from])
+        const at = place!.beforeSectionId === null
+          ? rest.length
+          : rest.indexOf(place!.beforeSectionId)
+        expect([...rest.slice(0, at), IDS[from], ...rest.slice(at)]).toEqual(
+          arrayMove(IDS, from, to),
+        )
+      }
+    }
+  })
+
+  it('returns null when a column vanished mid-drag', () => {
+    expect(resolveColumnDrop(IDS, 99, 2)).toBeNull()
+    expect(resolveColumnDrop(IDS, 1, 99)).toBeNull()
+    expect(resolveColumnDrop([], 1, 2)).toBeNull()
+  })
+
+  it('dragging the last column onto itself keeps the row unchanged', () => {
+    expect(resolveColumnDrop(IDS, 4, 4)).toEqual({ beforeSectionId: null })
+    expect(resolveColumnDrop(IDS, 1, 1)).toEqual({ beforeSectionId: 2 })
+  })
+
+  it('reads the column wrapper id back, and never mixes it with the drop zone', () => {
+    //  Cùng một cột mang HAI id trong một DndContext: vỏ kéo được và thân hứng
+    //  thẻ. Lẫn hai cái là dnd-kit đăng ký trùng id, hỏng cả hai đường.
+    expect(parseDropTarget(columnSortableId(7))).toEqual({ type: 'column', sectionId: 7 })
+    expect(parseDropTarget(columnDroppableId(7))).toEqual({ type: 'section', sectionId: 7 })
+    expect(columnSortableId(7)).not.toBe(columnDroppableId(7))
+  })
+
+  it('refuses to drop a CARD onto a column wrapper', () => {
+    const cols = new Map([[1, column(1, [10, 20])]])
+    expect(resolveDropPlace(cols, 10, parseDropTarget(columnSortableId(1)))).toBeNull()
   })
 })

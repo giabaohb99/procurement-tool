@@ -65,6 +65,13 @@ class SectionIn(BaseModel):
     sort_order: int | None = None
 
 
+class SectionMove(BaseModel):
+    """Kéo cột kanban. Mốc TƯƠNG ĐỐI: chèn NGAY TRƯỚC `before_section_id`,
+    `None` = đẩy xuống cuối. Cùng luật với `TaskMove`."""
+
+    before_section_id: int | None = None
+
+
 class TagIn(BaseModel):
     name: str
     color: str = ""

@@ -32,9 +32,17 @@ export interface KanbanDropPlace {
 export type DropTarget =
   | { type: 'section'; sectionId: number }
   | { type: 'task'; taskId: number }
+  | { type: 'column'; sectionId: number }
 
-/** Id vùng thả của một cột trong dnd-kit. */
+/** Id vùng thả THÂN cột (nơi hứng thẻ) trong dnd-kit. */
 export const columnDroppableId = (sectionId: number) => `section-${sectionId}`
+
+/**
+ * Id của CẢ CỘT khi kéo đổi thứ tự cột. Khác `columnDroppableId` một cách cố ý:
+ * cùng một cột có hai vai trò trong một `DndContext` — vùng hứng thẻ (`section-`)
+ * và món đồ kéo được (`column-`) — mà dnd-kit thì cấm hai đăng ký trùng id.
+ */
+export const columnSortableId = (sectionId: number) => `column-${sectionId}`
 
 /** Id thẻ kéo được trong dnd-kit. Khác họ tiền tố với cột để hai loại không đụng nhau. */
 export const taskDraggableId = (taskId: number) => `task-${taskId}`
@@ -52,7 +60,28 @@ export function parseDropTarget(id: string | number | undefined | null): DropTar
   if (section) return { type: 'section', sectionId: Number(section[1]) }
   const task = /^task-([1-9]\d*)$/.exec(raw)
   if (task) return { type: 'task', taskId: Number(task[1]) }
+  const column = /^column-([1-9]\d*)$/.exec(raw)
+  if (column) return { type: 'column', sectionId: Number(column[1]) }
   return null
+}
+
+/**
+ * Cột sẽ đứng NGAY TRƯỚC cột nào sau khi kéo; `null` = đẩy xuống cuối hàng.
+ *
+ * Cùng phép `arrayMove` của dnd-kit như kéo thẻ trong một cột (kéo sang PHẢI thì
+ * nằm SAU ô đích, sang TRÁI thì nằm TRƯỚC) — xem `resolveDropPlace`. Máy chủ
+ * nhận mốc rồi đánh số lại cả hàng cột (`list_config_service.move_section`).
+ */
+export function resolveColumnDrop(
+  sectionIds: number[],
+  activeSectionId: number,
+  overSectionId: number,
+): { beforeSectionId: number | null } | null {
+  const from = sectionIds.indexOf(activeSectionId)
+  const to = sectionIds.indexOf(overSectionId)
+  if (from === -1 || to === -1) return null
+  const rest = sectionIds.filter((id) => id !== activeSectionId)
+  return { beforeSectionId: rest[to] ?? null }
 }
 
 /** Cột đang chứa một thẻ; `null` nếu thẻ không có trên bảng. */
@@ -81,7 +110,10 @@ export function resolveDropPlace(
   activeTaskId: number,
   target: DropTarget | null,
 ): KanbanDropPlace | null {
-  if (!target) return null
+  //  Vỏ cột (`column-`) là món đồ để KÉO ĐỔI THỨ TỰ CỘT, không phải chỗ thả
+  //  thẻ. Thả thẻ vào nó thì không có nghĩa gì — thân cột (`section-`) mới là
+  //  vùng hứng.
+  if (!target || target.type === 'column') return null
 
   const sourceSection = findColumnOf(columns, activeTaskId)
   if (sourceSection === null) return null

@@ -4,6 +4,12 @@ import { useParams } from 'react-router-dom'
 
 import { useAuth } from '@/core/auth/use-auth'
 import { Button } from '@/shared/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/shared/ui/dropdown-menu'
 import { ErrorState } from '@/shared/ui/error-state'
 import { Skeleton } from '@/shared/ui/skeleton'
 import {
@@ -25,7 +31,7 @@ import { TaskListView } from '../components/task-list-view'
 import { WorkToolbar } from '../components/work-toolbar'
 import { useCreateTask, useMoveTask, useUpdateTask, useWorkBoard } from '../hooks/use-work-board'
 import { useWorkViewState } from '../hooks/use-view-state'
-import { useWorkLabelFields, useWorkTags } from '../hooks/use-work-config'
+import { useMoveSection, useWorkLabelFields, useWorkTags } from '../hooks/use-work-config'
 import type { WorkSection } from '../types/work'
 import { WORK_ROLE, WORK_TASK_STATUS } from '../types/work'
 import { prepareTasks } from '../utils/filter-tasks'
@@ -62,6 +68,7 @@ export function WorkListPage() {
   const createTask = useCreateTask(listId)
   const updateTask = useUpdateTask(listId)
   const moveTask = useMoveTask(listId)
+  const moveSection = useMoveSection(listId)
 
   //  Khung nhìn / lát cắt / sắp xếp / trường trên thẻ được NHỚ theo từng danh
   //  sách (§1). Từ khóa tìm thì không nhớ — mở lại màn mà vẫn còn bộ lọc chữ cũ
@@ -120,18 +127,30 @@ export function WorkListPage() {
           )}
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setMembersOpen(true)}>
-            <Users className="size-4" />
-            Thành viên
-          </Button>
-          {canManage && (
-            <Button variant="outline" size="sm" onClick={() => setSettingsOpen(true)}>
+        {/*  MỘT nút cho cả thành viên lẫn thiết lập: hai việc này đều là "sửa
+            chính dự án", mở ra rất thưa, mà chiếm mất góc phải của mọi màn.
+            Người chỉ có quyền xem vẫn vào được — xem ai đang ở trong dự án
+            không phải quyền quản trị (A-02), nên menu luôn có ít nhất một mục. */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm">
               <Settings2 className="size-4" />
-              Thiết lập
+              Quản lý dự án
             </Button>
-          )}
-        </div>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => setMembersOpen(true)}>
+              <Users className="size-4" />
+              Thành viên
+            </DropdownMenuItem>
+            {canManage && (
+              <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
+                <Settings2 className="size-4" />
+                Thiết lập
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </header>
 
       <div className="flex flex-wrap items-center gap-3">
@@ -207,6 +226,9 @@ export function WorkListPage() {
               createTask.mutate({ list_id: listId, title, section_id: sectionId })
             }
             onMoveTask={(taskId, place) => moveTask.mutate({ taskId, place })}
+            onMoveSection={(sectionId, beforeSectionId) =>
+              moveSection.mutate({ sectionId, beforeSectionId })
+            }
             onAddSection={() => {
               setEditingSection(null)
               setSectionDialog('create')

@@ -10,6 +10,7 @@ kiểu CHỌN MỘT. Ràng buộc chọn-một nằm ở unique `(task_id, field
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
+from app.core.audit import record
 from app.modules.work import serializer as ser
 from app.modules.work.label_model import (WorkLabelField, WorkLabelOption,
                                           WorkTag, WorkTaskLabel, WorkTaskTag)
@@ -53,6 +54,48 @@ def update_section(db: Session, actor: Actor, section_id: int, data) -> dict:
     s.updated_by = actor.user_id
     db.commit()
     return ser.section_out(s)
+
+
+#  Bước giãn khi đánh lại số thứ tự cột. Cùng luật với thẻ trong cột — lý do
+#  đầy đủ ở `task_service.move_task`.
+SECTION_STEP = 1000
+
+
+def move_section(db: Session, actor: Actor, section_id: int,
+                 before_section_id: int | None) -> list[dict]:
+    """Kéo cột sang chỗ khác: đặt NGAY TRƯỚC `before_section_id`, `None` = cuối.
+
+    Nhận mốc tương đối rồi đánh số lại CẢ danh sách cột, y như kéo thẻ: cột seed
+    sẵn lúc tạo list mang `sort_order` 0·1·2, chèn kiểu "lấy số ở giữa" là hết
+    khe ngay từ lần kéo thứ hai.
+
+    Trả về CẢ danh sách cột sau khi xếp — nơi gọi cần bản mới để vẽ lại, xin
+    thêm một lượt `GET /sections` chỉ tổ nhấp nháy.
+    """
+    s = db.get(WorkSection, section_id)
+    if not s:
+        raise HTTPException(404, "Không thấy cột này")
+    lst = get_list_or_403(db, actor, s.list_id, CAN_MANAGE)
+    block_if_archived(lst)
+
+    rows = (db.query(WorkSection).filter(WorkSection.list_id == s.list_id)
+            .order_by(WorkSection.sort_order, WorkSection.id).all())
+    others = [r for r in rows if r.id != section_id]
+
+    if before_section_id == section_id:
+        pos = min(rows.index(s), len(others))      # "chèn trước chính nó" = đứng yên
+    else:
+        #  Mốc lạ (cột vừa bị người khác xóa) thì đẩy xuống cuối, đừng ném về đầu.
+        pos = next((i for i, r in enumerate(others) if r.id == before_section_id),
+                   len(others))
+
+    others.insert(pos, s)
+    for i, r in enumerate(others):
+        r.sort_order = (i + 1) * SECTION_STEP
+        r.updated_by = actor.user_id
+    db.commit()
+    record(db, actor.user_id, "work_task", lst.id, "update", f"Xếp lại cột: {s.name}")
+    return [ser.section_out(r) for r in others]
 
 
 def delete_section(db: Session, actor: Actor, section_id: int, move_to: int | None) -> None:

@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 
 import { queryKeys } from '@/shared/constants/query-keys'
 import { workApi } from '../api/work-api'
+import type { WorkBoard } from '../types/work'
 
 /**
  * Cấu hình của một list: thành viên · cột · tag · nhãn tùy biến.
@@ -77,6 +78,51 @@ export function useCreateSection(listId: number) {
       workApi.createSection(listId, values),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.work.board(listId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.work.sections(listId) })
+    },
+  })
+}
+
+/**
+ * Kéo đổi thứ tự CỘT.
+ *
+ * **Cập nhật lạc quan**: cột phải nằm yên chỗ mới ngay lúc buông tay. Không có
+ * nhánh này thì cột bật về chỗ cũ rồi mới nhảy sang chỗ mới khi máy chủ trả lời
+ * — đúng cái nháy đã phải vá cho thẻ.
+ */
+export function useMoveSection(listId: number) {
+  const queryClient = useQueryClient()
+  const boardKey = queryKeys.work.board(listId)
+
+  return useMutation({
+    mutationFn: ({ sectionId, beforeSectionId }: { sectionId: number; beforeSectionId: number | null }) =>
+      workApi.moveSection(sectionId, beforeSectionId),
+
+    onMutate: async ({ sectionId, beforeSectionId }) => {
+      await queryClient.cancelQueries({ queryKey: boardKey })
+      const snapshot = queryClient.getQueryData<WorkBoard>(boardKey)
+      if (snapshot) {
+        const rest = snapshot.sections.filter((s) => s.id !== sectionId)
+        const moved = snapshot.sections.find((s) => s.id === sectionId)
+        const at = beforeSectionId === null ? -1 : rest.findIndex((s) => s.id === beforeSectionId)
+        if (moved) {
+          const pos = at === -1 ? rest.length : at
+          queryClient.setQueryData<WorkBoard>(boardKey, {
+            ...snapshot,
+            sections: [...rest.slice(0, pos), moved, ...rest.slice(pos)],
+          })
+        }
+      }
+      return { snapshot }
+    },
+
+    onError: (_err, _vars, context) => {
+      if (context?.snapshot) queryClient.setQueryData(boardKey, context.snapshot)
+      toast.error('Không xếp lại được cột, đã trả về như cũ')
+    },
+
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: boardKey })
       void queryClient.invalidateQueries({ queryKey: queryKeys.work.sections(listId) })
     },
   })

@@ -1,5 +1,6 @@
 import { useDroppable } from '@dnd-kit/core'
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { MoreHorizontal, Plus } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
@@ -14,7 +15,7 @@ import { Input } from '@/shared/ui/input'
 import { cn } from '@/shared/utils/cn'
 import type { WorkLabelField, WorkSection, WorkTag, WorkTask } from '../types/work'
 import { dotClass } from '../utils/work-colors'
-import { columnDroppableId, taskDraggableId } from '../utils/kanban-drop'
+import { columnDroppableId, columnSortableId, taskDraggableId } from '../utils/kanban-drop'
 import type { CardFields } from '../types/view-options'
 import { TaskCard } from './task-card'
 
@@ -63,6 +64,22 @@ export function KanbanColumn({
     data: { type: 'section', sectionId: section.id },
   })
 
+  //  Cả cột là một món kéo được để đổi thứ tự cột. `listeners` chỉ gắn lên phần
+  //  TIÊU ĐỀ — gắn lên cả cột thì mỗi lần kéo một thẻ bên trong là kéo luôn cả
+  //  cột. Chỉ ADMIN trở lên mới xếp được cột (cột là cấu hình của dự án).
+  const {
+    attributes,
+    listeners,
+    setNodeRef: setColumnRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: columnSortableId(section.id),
+    disabled: !canManage,
+    data: { type: 'column', sectionId: section.id },
+  })
+
   //  Danh sách id phải GIỮ NGUYÊN tham chiếu giữa các lần vẽ, không thì mỗi nhịp
   //  kéo là `SortableContext` tưởng cột vừa đổi và đo lại toàn bộ thẻ.
   const items = useMemo(() => tasks.map((t) => taskDraggableId(t.id)), [tasks])
@@ -78,8 +95,21 @@ export function KanbanColumn({
   }
 
   return (
-    <div className="flex w-72 shrink-0 flex-col rounded-lg bg-muted/40">
-      <div className="flex items-center gap-2 px-3 py-2">
+    <div
+      ref={setColumnRef}
+      style={{ transform: CSS.Translate.toString(transform), transition }}
+      className={cn(
+        'flex w-72 shrink-0 flex-col rounded-lg bg-muted/40',
+        isDragging && 'opacity-50',
+      )}
+    >
+      {/*  Tiêu đề là TAY CẦM kéo cột. Nút menu bên phải nằm ngoài tay cầm nên
+          vẫn bấm được bình thường. */}
+      <div
+        {...attributes}
+        {...listeners}
+        className={cn('flex items-center gap-2 px-3 py-2', canManage && 'cursor-grab')}
+      >
         <span className={cn('size-2 rounded-full', dotClass(section.color))} />
         <span className="flex-1 truncate text-sm font-semibold">{section.name}</span>
         <span className="text-xs text-muted-foreground">{tasks.length}</span>
