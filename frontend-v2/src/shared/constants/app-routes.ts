@@ -260,6 +260,8 @@ export const appRoutes = {
   },
   vehicleBooking: {
     root: '/vehicle-booking',
+    new: '/vehicle-booking/new',
+    detail: (id: number | string) => `/vehicle-booking/${id}`,
   },
   degoCoffee: {
     root: '/dego-coffee',

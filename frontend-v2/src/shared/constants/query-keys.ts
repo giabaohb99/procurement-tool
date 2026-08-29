@@ -337,4 +337,10 @@ export const queryKeys = {
     labelFields: (listId: number) => ['work', 'lists', listId, 'label-fields'] as const,
     task: (id: number) => ['work', 'tasks', id] as const,
   },
+  vehicleBooking: {
+    all: ['vehicle-booking'] as const,
+    bookings: (params?: Record<string, unknown>) =>
+      ['vehicle-booking', 'bookings', params ?? {}] as const,
+    booking: (id: number) => ['vehicle-booking', 'bookings', id] as const,
+  },
 } as const

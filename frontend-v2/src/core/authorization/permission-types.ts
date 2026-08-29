@@ -74,6 +74,11 @@ export const ENTITIES = [
   //  Phân hệ Công việc (CR-216). MỘT khóa cho cả phân hệ — quyền thật nằm ở
   //  tầng thành viên của từng list, xem `doc/erp/cong-viec/04-phan-quyen.md`.
   'work_task',
+  //  Phân hệ Đặt xe nội bộ (DEGO Booking Auto). Ba khóa khớp backend
+  //  `core/permissions.py`: phiếu đặt xe + hai danh mục Xe/Tài xế.
+  'vehicle_booking',
+  'vehicle',
+  'driver',
 ] as const
 
 export type PermissionEntity = (typeof ENTITIES)[number]
