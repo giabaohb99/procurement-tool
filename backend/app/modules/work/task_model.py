@@ -10,7 +10,7 @@ from sqlalchemy import (BigInteger, DateTime, ForeignKey, Index, SmallInteger,
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base_model import AuditMixin, Base
-from app.modules.work.model import WorkAssigneeKind, WorkPriority, WorkTaskStatus
+from app.modules.work.model import WorkAssigneeKind, WorkTaskStatus
 
 
 class WorkSection(Base, AuditMixin):
@@ -72,7 +72,6 @@ class WorkTask(Base, AuditMixin):
     title: Mapped[str] = mapped_column(String(500), default="")
     description: Mapped[str] = mapped_column(Text, default="")
     status: Mapped[int] = mapped_column(SmallInteger, default=int(WorkTaskStatus.OPEN))
-    priority: Mapped[int] = mapped_column(SmallInteger, default=int(WorkPriority.NONE))
     #  Ngày dạng chuỗi "YYYY-MM-DD" — xem quy ước 2 ở đầu `model.py`.
     start_date: Mapped[str] = mapped_column(String(10), default="")
     due_date: Mapped[str] = mapped_column(String(10), default="")

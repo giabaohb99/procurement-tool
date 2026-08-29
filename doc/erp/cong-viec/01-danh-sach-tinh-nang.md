@@ -69,11 +69,11 @@ tài liệu nào của PM.
 | Cột / nhóm | Section | Cột trên kanban, do từng list tự đặt (Documentation, To do, Doing, Reviewing…). Kéo thả đổi thứ tự, đổi tên được. |
 | Công việc | Task | Một việc: tiêu đề, mô tả, người phụ trách, hạn, độ ưu tiên, tag, nằm trong một cột của một list. |
 | Việc con | Subtask | Đầu việc nhỏ trong một task, tick từng cái, thẻ cha hiện tiến độ n/m. **Tối đa 2 cấp** (task → việc con, việc con KHÔNG có con). Việc con thuộc list của cha nhưng **không hiện thành thẻ riêng** trên kanban/danh sách — chỉ thấy khi mở panel chi tiết của cha (C-05). |
-| Nhãn tùy biến | Custom Label Field | Trường kiểu "chọn một nhãn" do TỪNG LIST tự đặt: tên trường (như "Phiên bản") + bộ giá trị kèm màu (như "Thumua"). Khác Tag: Tag là một trường đa trị có sẵn, còn đây là đặt thêm TRƯỜNG mới. |
+| Nhãn tùy biến | Custom Label Field | Trường do TỪNG LIST tự đặt: tên trường (như "Phiên bản") + kiểu (chọn một · chọn nhiều · người · số · ngày · chữ) + bộ giá trị kèm màu. **Tag và Độ ưu tiên cũng là trường như thế**, chỉ khác ở chỗ được nạp sẵn lúc tạo dự án. |
 | Người phụ trách | Assignee (PIC) | Người chịu trách nhiệm chính của task. |
 | Người theo dõi | Follower | Nhận thông báo khi task đổi, không phải người làm. |
 | Thành viên list | Member | Người được mời vào task list, kèm vai trò trong list (§5.2). |
-| Tag | Tag | Nhãn tự do theo list, một task gắn nhiều tag. |
+| Tag | Tag | Một trường tùy biến kiểu CHỌN NHIỀU nạp sẵn cho mọi dự án; một task gắn nhiều giá trị. Từ migration `c8a1d4f60b72` nó không còn bảng riêng — xóa hay đổi tên đều được. |
 | Bình luận | Comment | Trao đổi ngay trong task, có nhắc tên, đính kèm. |
 
 **Hai tầng trạng thái — điểm phải chốt sớm (Q2):** cột kanban là TÙY BIẾN theo từng list
@@ -111,7 +111,7 @@ chưa xong" / nhắc hạn vẫn có một nguồn sự thật bằng số, khô
 | B-02 | Người phụ trách (PIC) — cho phép NHIỀU người như Lark; thêm người theo dõi | P0 | Q5 chốt theo hướng clone Lark: bảng gắn nhiều người, giao diện khuyến khích một người chính |
 | B-03 | Ngày bắt đầu — hạn chót | P0 | Nền cho nhắc hạn F-03 và Gantt sau này |
 | B-04 | Độ ưu tiên P1–P4 (bộ cố định hệ thống, SMALLINT) | P0 | Như Lark: P1 đỏ, P2 cam… |
-| B-05 | Tag nhiều nhãn, quản lý tag theo list | P0 | |
+| B-05 | Tag nhiều nhãn, quản lý tag theo list | P0 | Xong — nay là trường tùy biến chọn-nhiều, không còn bảng riêng (`c8a1d4f60b72`) |
 | B-06 | Đánh dấu hoàn thành / mở lại | P0 | Đổi trạng thái hệ thống, độc lập với cột kanban |
 | B-07 | Kéo thả giữa các cột, sắp thứ tự tay trong cột | P0 | Cột lưu `sort_order` |
 | B-08 | **Nhãn tùy biến theo list** (kiểu chọn-một-nhãn): tự đặt tên trường như "Phiên bản", tự đặt bộ giá trị + màu, gắn lên task | P0 | Bản 1.1 nâng từ P2 lên theo yêu cầu "custom được mấy cái nhãn, loại nhãn". Chỉ làm KIỂU CHỌN NHÃN ở bản đầu; kiểu chữ/số/ngày/người để B-13 |

@@ -6,7 +6,7 @@ rồi nạp lại từ đầu:
     docker compose exec api python -m app.seed_cong_viec_demo
 
 Vì sao cần: mở phân hệ ra với một list rỗng thì không thấy được thứ làm nên nó —
-cây nhóm hai cấp, list đứng lẻ, thẻ có đủ chip ưu tiên / tag / nhãn tùy biến,
+cây nhóm hai cấp, list đứng lẻ, thẻ có đủ chip ưu tiên / Tag / nhãn tùy biến,
 hạn quá hạn tô đỏ, tiến độ việc con n/m, người phụ trách nhiều người. Bộ này
 dựng đúng những trạng thái đó để bấm thử được ngay.
 
@@ -25,8 +25,11 @@ from sqlalchemy.orm import Session
 import app.core.all_models  # noqa: F401
 from app.core.database import SessionLocal
 from app.modules.employee.model import Employee
+from app.modules.work.list_config_service import (PRIORITY_KEY,
+                                                  TAG_FIELD_NAME,
+                                                  seed_system_label_fields)
 from app.modules.work.label_model import (WorkLabelField, WorkLabelOption,
-                                          WorkTag, WorkTaskLabel, WorkTaskTag)
+                                          WorkTaskLabel)
 from app.modules.work.model import (WorkGroup, WorkGroupMember, WorkList,
                                     WorkListMember, WorkMemberRole)
 from app.modules.work.task_model import WorkSection, WorkTask, WorkTaskAssignee
@@ -55,8 +58,8 @@ def _xoa_sach(db: Session) -> None:
 
     Xóa theo thứ tự phụ thuộc ngược, vì các bảng có khóa ngoại thật.
     """
-    for model in (WorkTaskLabel, WorkTaskTag, WorkTaskAssignee, WorkTask,
-                  WorkLabelOption, WorkLabelField, WorkTag, WorkSection,
+    for model in (WorkTaskLabel, WorkTaskAssignee, WorkTask,
+                  WorkLabelOption, WorkLabelField, WorkSection,
                   WorkListMember, WorkGroupMember, WorkList, WorkGroup):
         db.query(model).delete(synchronize_session=False)
     db.commit()
@@ -111,7 +114,7 @@ def _tao_list(db: Session, spec: dict, nhom: dict, emps: dict, company_id: int,
 
 
 def _tao_cau_hinh(db: Session, lst: WorkList, spec: dict, company_id: int):
-    """Cột kanban · tag · trường nhãn tùy biến của một list."""
+    """Cột kanban · trường nhãn tùy biến của một list (Tag là một trong số đó)."""
     sections = []
     for i, (ten, mau) in enumerate(spec["sections"]):
         s = WorkSection(company_id=company_id, list_id=lst.id, name=ten, color=mau,
@@ -119,15 +122,23 @@ def _tao_cau_hinh(db: Session, lst: WorkList, spec: dict, company_id: int):
         db.add(s)
         sections.append(s)
 
+    #  Độ ưu tiên và Tag: hai trường tùy biến nạp sẵn, y như list tạo qua API.
+    seed_system_label_fields(db, lst.id, company_id, SEED_USER_ID)
+    db.flush()
+
+    #  Tag nay là GIÁ TRỊ của trường "Tag" chứ không còn bảng riêng.
+    tag_field = (db.query(WorkLabelField)
+                 .filter(WorkLabelField.list_id == lst.id,
+                         WorkLabelField.name == TAG_FIELD_NAME).first())
     tags = {}
     for i, (ten, mau) in enumerate(spec["tags"]):
-        t = WorkTag(company_id=company_id, list_id=lst.id, name=ten, color=mau,
-                    sort_order=i, created_by=SEED_USER_ID, updated_by=SEED_USER_ID)
-        db.add(t)
-        tags[ten] = t
+        o = WorkLabelOption(field_id=tag_field.id, name=ten, color=mau, sort_order=i,
+                            created_by=SEED_USER_ID, updated_by=SEED_USER_ID)
+        db.add(o)
+        tags[ten] = o
 
     field = WorkLabelField(company_id=company_id, list_id=lst.id,
-                           name=spec["label_field"]["name"], sort_order=0,
+                           name=spec["label_field"]["name"], sort_order=2,
                            created_by=SEED_USER_ID, updated_by=SEED_USER_ID)
     db.add(field)
     db.flush()
@@ -138,12 +149,25 @@ def _tao_cau_hinh(db: Session, lst: WorkList, spec: dict, company_id: int):
                             created_by=SEED_USER_ID, updated_by=SEED_USER_ID)
         db.add(o)
         options[ten] = o
+
     db.commit()
-    return sections, tags, field, options
+    return sections, tags, field, options, _priority_options(db, lst.id)
+
+
+def _priority_options(db: Session, list_id: int) -> dict[int, WorkLabelOption]:
+    """Bậc ưu tiên 1…4 → dòng giá trị tương ứng của list này."""
+    field = (db.query(WorkLabelField)
+             .filter(WorkLabelField.list_id == list_id,
+                     WorkLabelField.system_key == PRIORITY_KEY).first())
+    if not field:
+        return {}
+    rows = (db.query(WorkLabelOption).filter(WorkLabelOption.field_id == field.id)
+            .order_by(WorkLabelOption.sort_order).all())
+    return {i + 1: o for i, o in enumerate(rows)}
 
 
 def _tao_viec(db: Session, lst: WorkList, spec: dict, sections, tags, field, options,
-              emps: dict, company_id: int) -> tuple[int, int]:
+              priority_options, emps: dict, company_id: int) -> tuple[int, int]:
     """Việc và việc con của một list. Trả `(số việc, số việc con)`."""
     so_viec = so_viec_con = 0
 
@@ -153,7 +177,7 @@ def _tao_viec(db: Session, lst: WorkList, spec: dict, sections, tags, field, opt
         task = WorkTask(
             company_id=company_id, list_id=lst.id,
             section_id=sections[t["section"]].id,
-            title=t["title"], description="", status=t["status"], priority=t["priority"],
+            title=t["title"], description="", status=t["status"],
             start_date="", due_date=_ngay(t["due"]), sort_order=(i + 1) * 1000,
             creator_employee_id=nguoi_tao.id if nguoi_tao else 0,
             created_by=SEED_USER_ID, updated_by=SEED_USER_ID,
@@ -181,8 +205,14 @@ def _tao_viec(db: Session, lst: WorkList, spec: dict, sections, tags, field, opt
         for ten_tag in t["tags"]:
             tag = tags.get(ten_tag)
             if tag:
-                db.add(WorkTaskTag(task_id=task.id, tag_id=tag.id,
-                                   created_by=SEED_USER_ID, updated_by=SEED_USER_ID))
+                db.add(WorkTaskLabel(task_id=task.id, field_id=tag.field_id,
+                                     option_id=tag.id,
+                                     created_by=SEED_USER_ID, updated_by=SEED_USER_ID))
+
+        bac = priority_options.get(t["priority"])
+        if bac is not None:
+            db.add(WorkTaskLabel(task_id=task.id, field_id=bac.field_id, option_id=bac.id,
+                                 created_by=SEED_USER_ID, updated_by=SEED_USER_ID))
 
         option = options.get(t["label"]) if t["label"] else None
         if option:
@@ -194,7 +224,7 @@ def _tao_viec(db: Session, lst: WorkList, spec: dict, sections, tags, field, opt
             #  đặt cột cho nó là nó lọt ra kanban thành thẻ riêng.
             con = WorkTask(
                 company_id=company_id, list_id=lst.id, section_id=None, parent_id=task.id,
-                title=ten_con, description="", status=2 if xong else 1, priority=0,
+                title=ten_con, description="", status=2 if xong else 1,
                 start_date="", due_date="", sort_order=(j + 1) * 1000,
                 creator_employee_id=nguoi_tao.id if nguoi_tao else 0,
                 created_by=SEED_USER_ID, updated_by=SEED_USER_ID,
@@ -225,8 +255,9 @@ def seed(db: Session) -> None:
     tong_viec = tong_con = 0
     for i, spec in enumerate(LISTS):
         lst = _tao_list(db, spec, nhom, emps, company_id, i)
-        sections, tags, field, options = _tao_cau_hinh(db, lst, spec, company_id)
-        viec, con = _tao_viec(db, lst, spec, sections, tags, field, options, emps, company_id)
+        sections, tags, field, options, bac_uu_tien = _tao_cau_hinh(db, lst, spec, company_id)
+        viec, con = _tao_viec(db, lst, spec, sections, tags, field, options, bac_uu_tien,
+                              emps, company_id)
         tong_viec += viec
         tong_con += con
         print(f"  · {spec['name']}: {len(sections)} cột · {viec} việc · {con} việc con")

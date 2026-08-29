@@ -164,15 +164,21 @@ export function isSamePlace(
  * Sắp thiếu vế `id` là hỏng âm thầm: cột nào còn thẻ trùng `sort_order` (dữ liệu
  * cũ để `0` hết) thì thứ tự lạc quan sau khi thả sẽ khác thứ tự refetch, thẻ tự
  * nhảy chỗ một nhịp sau khi người dùng buông tay.
+ *
+ * ⚠️ `keepOrder` = đang sắp theo TIÊU CHÍ (hạn chót, độ ưu tiên…), khi đó mảng
+ * vào đã được `sortTasks` xếp sẵn và hàm này phải GIỮ NGUYÊN. Thiếu tham số này
+ * là lỗi đã có thật: mọi lựa chọn ở nút «Sắp xếp» đều bị `sort_order` của kéo
+ * thả đè lại, người dùng đổi tiêu chí mà bảng đứng im.
  */
 export function groupBySection(
   sectionIds: number[],
   tasks: WorkTask[],
+  keepOrder = false,
 ): Map<number, WorkTask[]> {
   const map = new Map<number, WorkTask[]>(sectionIds.map((id) => [id, []]))
   //  Việc con không thuộc cột nào (`section_id` rỗng) nên không lên bảng.
   for (const t of tasks) if (t.section_id !== null) map.get(t.section_id)?.push(t)
-  for (const list of map.values()) list.sort(compareByOrder)
+  if (!keepOrder) for (const list of map.values()) list.sort(compareByOrder)
   return map
 }
 

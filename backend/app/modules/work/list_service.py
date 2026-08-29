@@ -9,6 +9,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
+from app.modules.work import list_config_service
 from app.modules.work import serializer as ser
 from app.modules.work.group_service import _get_group_or_403, _with_names
 from app.modules.work.membership_service import (CAN_MANAGE, CAN_OWN, Actor,
@@ -48,6 +49,9 @@ def create_list(db: Session, actor: Actor, data) -> dict:
         db.add(WorkSection(company_id=actor.company_id, list_id=lst.id, name=name,
                            sort_order=i, created_by=actor.user_id,
                            updated_by=actor.user_id))
+    #  Độ ưu tiên là một TRƯỜNG TÙY BIẾN nạp sẵn, không còn là cột cứng của task
+    #  — xem đầu `label_model.py`.
+    list_config_service.seed_system_label_fields(db, lst.id, actor.company_id, actor.user_id)
     db.commit()
     record(db, actor.user_id, "work_task", lst.id, "create", f"Tạo danh sách {lst.name}")
     return ser.list_out(lst, int(WorkMemberRole.OWNER))

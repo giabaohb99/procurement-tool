@@ -19,7 +19,7 @@ from app.modules.work import serializer as ser
 from app.modules.work import task_enrich
 from app.modules.work import label_value_service as label_values
 from app.modules.work.label_model import (WorkLabelField, WorkLabelOption,
-                                          WorkTag, WorkTaskLabel, WorkTaskTag)
+                                          WorkTaskLabel)
 from app.modules.work.membership_service import (CAN_EDIT, CAN_MANAGE, Actor,
                                                  block_if_archived,
                                                  effective_role, get_list_or_403)
@@ -39,7 +39,6 @@ def _shape(tasks: list[WorkTask], extra: dict) -> list[dict]:
         out.append(ser.task_out(
             t,
             assignees=extra["assignees"].get(t.id, []),
-            tag_ids=extra["tags"].get(t.id, []),
             labels=extra["labels"].get(t.id, []),
             subtask_done=sub.get("done", 0), subtask_total=sub.get("total", 0),
             comment_count=extra["comments"].get(t.id, 0),
@@ -118,7 +117,7 @@ def create_task(db: Session, actor: Actor, data) -> dict:
     t = WorkTask(company_id=lst.company_id, list_id=list_id, section_id=section_id,
                  parent_id=parent.id if parent else None,
                  title=data.title.strip(), description=data.description or "",
-                 status=int(WorkTaskStatus.OPEN), priority=data.priority or 0,
+                 status=int(WorkTaskStatus.OPEN),
                  start_date=data.start_date or "", due_date=data.due_date or "",
                  sort_order=data.sort_order or _next_sort_order(
                      db, list_id, section_id, parent.id if parent else None),
@@ -226,8 +225,7 @@ def update_task(db: Session, actor: Actor, task_id: int, data) -> dict:
             raise HTTPException(400, "Cột không thuộc danh sách này")
         t.section_id = data.section_id or None
 
-    for field in ("title", "description", "priority", "start_date", "due_date",
-                  "sort_order"):
+    for field in ("title", "description", "start_date", "due_date", "sort_order"):
         val = getattr(data, field, None)
         if val is not None:
             setattr(t, field, val.strip() if isinstance(val, str) else val)
@@ -302,25 +300,6 @@ def set_assignees(db: Session, actor: Actor, task_id: int,
                                 created_by=actor.user_id, updated_by=actor.user_id))
     db.commit()
     record(db, actor.user_id, "work_task", task_id, "update", "Đổi người phụ trách")
-    return _shape([t], task_enrich.collect(db, [t]))[0]
-
-
-def set_tags(db: Session, actor: Actor, task_id: int, tag_ids: list[int]) -> dict:
-    """Đặt lại bộ tag của task. Tag phải thuộc CHÍNH list của task (B-05)."""
-    t = get_task_or_403(db, actor, task_id, CAN_EDIT)
-    block_if_archived(get_list_or_403(db, actor, t.list_id, CAN_EDIT))
-    ids = [i for i in dict.fromkeys(tag_ids) if i]
-    if ids:
-        ok = {i for (i,) in db.query(WorkTag.id)
-              .filter(WorkTag.id.in_(ids), WorkTag.list_id == t.list_id).all()}
-        if set(ids) - ok:
-            raise HTTPException(400, "Tag không thuộc danh sách của công việc này")
-    db.query(WorkTaskTag).filter(WorkTaskTag.task_id == task_id).delete(
-        synchronize_session=False)
-    for tag_id in ids:
-        db.add(WorkTaskTag(task_id=task_id, tag_id=tag_id,
-                           created_by=actor.user_id, updated_by=actor.user_id))
-    db.commit()
     return _shape([t], task_enrich.collect(db, [t]))[0]
 
 

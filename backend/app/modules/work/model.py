@@ -43,14 +43,9 @@ class WorkTaskStatus(IntEnum):
     CANCELLED = 3
 
 
-class WorkPriority(IntEnum):
-    """Độ ưu tiên kiểu Lark. `NONE = 0` là mặc định khi người dùng không chọn."""
-
-    NONE = 0
-    P1 = 1   # cao nhất, tô đỏ
-    P2 = 2
-    P3 = 3
-    P4 = 4
+#  ĐỘ ƯU TIÊN không còn là enum cứng: nó là một TRƯỜNG TÙY BIẾN nạp sẵn cho mỗi
+#  list (`list_config_service.seed_system_label_fields`), nên bậc và màu do từng
+#  dự án tự đặt. Xem đầu `label_model.py`.
 
 
 class WorkMemberRole(IntEnum):
@@ -105,13 +100,6 @@ ENUM_LABELS: dict[str, dict[int, str]] = {
         WorkTaskStatus.OPEN: "Đang mở",
         WorkTaskStatus.DONE: "Hoàn thành",
         WorkTaskStatus.CANCELLED: "Đã hủy",
-    },
-    "work_priority": {
-        WorkPriority.NONE: "Không đặt",
-        WorkPriority.P1: "P1 — Khẩn",
-        WorkPriority.P2: "P2 — Cao",
-        WorkPriority.P3: "P3 — Vừa",
-        WorkPriority.P4: "P4 — Thấp",
     },
     "work_member_role": {
         WorkMemberRole.OWNER: "Chủ sở hữu",

@@ -13,7 +13,7 @@ import {
 } from '@/shared/ui/dropdown-menu'
 import { Input } from '@/shared/ui/input'
 import { cn } from '@/shared/utils/cn'
-import type { WorkLabelField, WorkSection, WorkTag, WorkTask } from '../types/work'
+import type { WorkLabelField, WorkSection, WorkTask } from '../types/work'
 import { dotClass } from '../utils/work-colors'
 import { columnDroppableId, columnSortableId, taskDraggableId } from '../utils/kanban-drop'
 import type { CardFields } from '../types/view-options'
@@ -22,7 +22,6 @@ import { TaskCard } from './task-card'
 interface KanbanColumnProps {
   section: WorkSection
   tasks: WorkTask[]
-  tags: WorkTag[]
   labelFields: WorkLabelField[]
   fields: CardFields
   canEdit: boolean
@@ -45,7 +44,6 @@ interface KanbanColumnProps {
 export function KanbanColumn({
   section,
   tasks,
-  tags,
   labelFields,
   fields,
   canEdit,
@@ -144,8 +142,7 @@ export function KanbanColumn({
             <TaskCard
               key={task.id}
               task={task}
-              tags={tags}
-              labelFields={labelFields}
+                labelFields={labelFields}
               fields={fields}
               onOpen={onOpenTask}
               dragDisabled={dragDisabled || !canEdit}

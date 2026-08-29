@@ -6,11 +6,13 @@ import { formatDueLabel } from '../utils/due-date'
 import { daysDragged, shiftedRange, type GanttDragData } from '../utils/gantt-drag'
 import { ROW_HEIGHT } from '../utils/gantt-layout'
 import type { GanttTimeline } from '../utils/gantt-scale'
-import { chipClass, priorityColor } from '../utils/work-colors'
+import { chipClass } from '../utils/work-colors'
 
 interface GanttDragPreviewProps {
   data: GanttDragData
   timeline: GanttTimeline
+  /** Cùng màu với thanh thật đang kéo — xem `GanttRow`. */
+  barColor: string
 }
 
 /**
@@ -23,7 +25,7 @@ interface GanttDragPreviewProps {
  * thanh thì vẽ bản sao của thanh, còn kéo mép thì vẽ một vạch dẫn — người dùng
  * thấy mép sẽ rơi vào ngày nào trước khi thả.
  */
-export function GanttDragPreview({ data, timeline }: GanttDragPreviewProps) {
+export function GanttDragPreview({ data, timeline, barColor }: GanttDragPreviewProps) {
   const [days, setDays] = useState(0)
 
   useDndMonitor({
@@ -48,7 +50,7 @@ export function GanttDragPreview({ data, timeline }: GanttDragPreviewProps) {
         <div
           className={cn(
             'flex h-full w-full items-center overflow-hidden rounded px-2 text-[11px] font-medium shadow-lg ring-2',
-            chipClass(priorityColor(task.priority)),
+            chipClass(barColor),
             hopLe ? 'ring-primary/60' : 'ring-destructive',
           )}
         >

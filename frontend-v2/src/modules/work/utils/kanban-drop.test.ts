@@ -33,7 +33,6 @@ function task(id: number, sectionId: number | null, sortOrder: number): WorkTask
     title: `Việc ${id}`,
     description: '',
     status: 1,
-    priority: 0,
     start_date: '',
     due_date: '',
     sort_order: sortOrder,
@@ -43,7 +42,6 @@ function task(id: number, sectionId: number | null, sortOrder: number): WorkTask
     created_at: '2026-08-01T00:00:00',
     updated_at: '2026-08-01T00:00:00',
     assignees: [],
-    tag_ids: [],
     labels: [],
     subtask_done: 0,
     subtask_total: 0,
@@ -117,6 +115,21 @@ describe('groupBySection', () => {
   it('survives an empty board and an empty section list', () => {
     expect(groupBySection([], []).size).toBe(0)
     expect(ids(groupBySection([1], []).get(1))).toEqual([])
+  })
+
+  //  Lỗi đã có thật: cột luôn được xếp lại theo `sort_order`, nên mọi lựa chọn
+  //  ở nút «Sắp xếp» (hạn chót, độ ưu tiên…) bị đè lại và bảng đứng im.
+  it('keeps the incoming order when a sort criterion is active', () => {
+    const tasks = [task(9, 1, 3000), task(3, 1, 1000), task(7, 1, 2000)]
+    expect(ids(groupBySection([1], tasks, true).get(1))).toEqual([9, 3, 7])
+    expect(ids(groupBySection([1], tasks, false).get(1))).toEqual([3, 7, 9])
+  })
+
+  it('still splits by column when keeping order, and keeps each column stable', () => {
+    const tasks = [task(9, 2, 3000), task(3, 1, 9000), task(7, 2, 10), task(1, 1, 20)]
+    const map = groupBySection([1, 2], tasks, true)
+    expect(ids(map.get(1))).toEqual([3, 1])
+    expect(ids(map.get(2))).toEqual([9, 7])
   })
 })
 

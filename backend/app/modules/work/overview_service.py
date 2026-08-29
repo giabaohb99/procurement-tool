@@ -16,6 +16,9 @@ from datetime import datetime, timedelta
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.modules.work.label_model import (WorkLabelField, WorkLabelOption,
+                                          WorkTaskLabel)
+from app.modules.work.list_config_service import PRIORITY_KEY
 from app.modules.work.membership_service import Actor, visible_list_ids
 from app.modules.work.model import WorkAssigneeKind, WorkList, WorkTaskStatus
 from app.modules.work.task_model import WorkTask, WorkTaskAssignee
@@ -70,12 +73,7 @@ def overview(db: Session, actor: Actor) -> dict:
         open_only.with_entities(WorkTask.list_id, func.count(WorkTask.id))
         .group_by(WorkTask.list_id).all())
 
-    by_priority = [
-        {"priority": int(priority), "open": int(count)}
-        for priority, count in (
-            open_only.with_entities(WorkTask.priority, func.count(WorkTask.id))
-            .group_by(WorkTask.priority).all())
-    ]
+    by_priority = _count_by_priority(db, ids)
 
     by_project = sorted(
         ({"list_id": lst.id, "name": lst.name, "open": open_by_list.get(lst.id, 0)}
@@ -91,8 +89,35 @@ def overview(db: Session, actor: Actor) -> dict:
         "task_overdue": overdue,
         "task_mine": mine,
         "by_project": by_project,
-        "by_priority": sorted(by_priority, key=lambda row: row["priority"]),
+        "by_priority": by_priority,
     }
+
+
+def _count_by_priority(db: Session, list_ids) -> list[dict]:
+    """Đếm việc CHƯA XONG theo bậc ưu tiên, gộp CHUNG mọi dự án.
+
+    Độ ưu tiên nay là một trường tùy biến của TỪNG dự án (`system_key =
+    "priority"`), nên mỗi dự án có bộ giá trị riêng và id riêng. Gộp theo **tên
+    bậc**: hai dự án cùng để "P1 — Khẩn" thì trên biểu đồ là một cột, còn dự án
+    nào đổi tên bậc của mình thì đứng thành cột riêng — đúng như nó vốn là.
+
+    Việc KHÔNG đặt ưu tiên không có dòng nào ở đây; trước kia nó là bậc `0`.
+    """
+    rows = (db.query(WorkLabelOption.name, WorkLabelOption.color,
+                     func.min(WorkLabelOption.sort_order), func.count(WorkTask.id))
+            .select_from(WorkTaskLabel)
+            .join(WorkLabelField, WorkLabelField.id == WorkTaskLabel.field_id)
+            .join(WorkLabelOption, WorkLabelOption.id == WorkTaskLabel.option_id)
+            .join(WorkTask, WorkTask.id == WorkTaskLabel.task_id)
+            .filter(WorkLabelField.system_key == PRIORITY_KEY,
+                    WorkTask.list_id.in_(list_ids),
+                    WorkTask.parent_id.is_(None),
+                    WorkTask.deleted_at.is_(None),
+                    WorkTask.status == int(WorkTaskStatus.OPEN))
+            .group_by(WorkLabelOption.name, WorkLabelOption.color)
+            .all())
+    return [{"name": name, "color": color, "open": int(count)}
+            for name, color, _, count in sorted(rows, key=lambda r: (r[2], r[0]))]
 
 
 def _empty() -> dict:

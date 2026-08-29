@@ -6,7 +6,6 @@ import type {
   WorkMember,
   WorkSection,
   WorkSidebar,
-  WorkTag,
 } from '../types/work'
 
 /**
@@ -90,13 +89,6 @@ export const workApi = {
       params: moveTo ? { move_to: moveTo } : undefined,
     }),
 
-  tags: (listId: number) => apiGet<WorkTag[]>(`/api/work/lists/${listId}/tags`),
-
-  createTag: (listId: number, values: { name: string; color?: string }) =>
-    apiPost<WorkTag>(`/api/work/lists/${listId}/tags`, values),
-
-  deleteTag: (tagId: number) => apiDelete(`/api/work/tags/${tagId}`),
-
   labelFields: (listId: number) =>
     apiGet<WorkLabelField[]>(`/api/work/lists/${listId}/label-fields`),
 
@@ -104,10 +96,23 @@ export const workApi = {
   createLabelField: (listId: number, values: { name: string; field_type?: number }) =>
     apiPost<WorkLabelField>(`/api/work/lists/${listId}/label-fields`, values),
 
+  /** Kiểu trường chỉ đổi được khi chưa có giá trị nào gán cho việc (backend chặn). */
+  updateLabelField: (fieldId: number, values: { name?: string; field_type?: number }) =>
+    apiPatch<WorkLabelField>(`/api/work/label-fields/${fieldId}`, values),
+
   deleteLabelField: (fieldId: number) => apiDelete(`/api/work/label-fields/${fieldId}`),
 
-  createLabelOption: (fieldId: number, values: { name: string; color?: string }) =>
+  createLabelOption: (
+    fieldId: number,
+    values: { name: string; color?: string; sort_order?: number },
+  ) =>
     apiPost<WorkLabelOption>(`/api/work/label-fields/${fieldId}/options`, values),
+
+  updateLabelOption: (
+    optionId: number,
+    values: { name?: string; color?: string; sort_order?: number },
+  ) =>
+    apiPatch<WorkLabelOption>(`/api/work/label-options/${optionId}`, values),
 
   deleteLabelOption: (optionId: number) => apiDelete(`/api/work/label-options/${optionId}`),
 }

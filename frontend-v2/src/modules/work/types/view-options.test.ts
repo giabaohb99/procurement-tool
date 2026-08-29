@@ -22,11 +22,11 @@ describe('mergeCardFields', () => {
   it('keeps the remembered order instead of resetting to the default one', () => {
     const saved: CardFields = [
       { key: 'due', visible: true },
-      { key: 'priority', visible: false },
+      { key: 'assignees', visible: false },
     ]
     const merged = mergeCardFields(saved, [])
-    expect(keys(merged).slice(0, 2)).toEqual(['due', 'priority'])
-    expect(merged.find((f) => f.key === 'priority')?.visible).toBe(false)
+    expect(keys(merged).slice(0, 2)).toEqual(['due', 'assignees'])
+    expect(merged.find((f) => f.key === 'assignees')?.visible).toBe(false)
   })
 
   it('appends a label field that was just declared, switched ON', () => {
@@ -70,7 +70,7 @@ describe('mergeCardFields', () => {
 describe('labelFieldId', () => {
   it('reads the id back only for genuine label keys', () => {
     expect(labelFieldId('label:12')).toBe(12)
-    expect(labelFieldId('priority')).toBeNull()
+    expect(labelFieldId('subtasks')).toBeNull()
     expect(labelFieldId('due')).toBeNull()
   })
 

@@ -1,35 +1,40 @@
-import { Trash2 } from 'lucide-react'
+import {
+  AlignLeft,
+  CircleDot,
+  Columns3,
+  ListTodo,
+  Trash2,
+  User,
+  X,
+} from 'lucide-react'
+import { useMemo } from 'react'
 
 import { AuditTimeline } from '@/shared/audit'
 import { Button } from '@/shared/ui/button'
-import { DatePicker } from '@/shared/ui/date-picker'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/ui/select'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/shared/ui/sheet'
+import { IconTooltip } from '@/shared/ui/icon-tooltip'
+import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle } from '@/shared/ui/sheet'
 import { Skeleton } from '@/shared/ui/skeleton'
-import { cn } from '@/shared/utils/cn'
 import {
   useCreateSubtask,
   useDeleteTask,
   useSetAssignees,
   useSetTaskLabel,
-  useSetTaskTags,
+  useToggleSubtask,
   useUpdateTask,
   useWorkTask,
 } from '../hooks/use-work-board'
-import { useWorkLabelFields, useWorkMembers, useWorkTags } from '../hooks/use-work-config'
+import { useWorkLabelFields, useWorkMembers } from '../hooks/use-work-config'
 import type { WorkSection } from '../types/work'
-import { WORK_PRIORITY_LABELS, WORK_TASK_STATUS } from '../types/work'
-import { addDays } from '../utils/due-date'
-import { chipClass } from '../utils/work-colors'
-import { TaskSubtaskList } from './task-subtask-list'
+import { WORK_TASK_STATUS } from '../types/work'
 import { LabelFieldInput } from './label-field-input'
-import { TaskDescriptionField, TaskTitleField } from './task-text-fields'
+import { TaskAssigneePicker } from './task-assignee-picker'
+import { TaskChipSelect } from './task-chip-select'
+import { TaskDateRow } from './task-date-row'
+import { TaskDetailRow } from './task-detail-row'
+import { TaskStatusSelect } from './task-status-select'
+import { TaskSubtaskList } from './task-subtask-list'
+import { TaskDescriptionField } from './task-description-field'
+import { TaskTitleField } from './task-title-field'
 
 interface TaskDetailSheetProps {
   taskId: number | null
@@ -40,14 +45,19 @@ interface TaskDetailSheetProps {
 }
 
 /**
- * Panel chi tiết một việc (D-03), trượt từ phải — thứ tự hàng bám §6 của
- * `05-giao-dien.md`: tiêu đề → người phụ trách → hạn → cột → nhãn → mô tả →
- * việc con → nhật ký.
+ * Panel chi tiết một việc (D-03), trượt từ phải — dựng theo panel của Lark:
+ * thanh trên cùng giữ TRẠNG THÁI cùng các nút thao tác, dưới là tiêu đề rồi
+ * đến các hàng thuộc tính `biểu tượng · [tên trường] · giá trị`, cuối cùng là
+ * khối nhật ký trên nền xám.
+ *
+ * Thứ tự hàng vẫn bám §6 của `05-giao-dien.md`: người phụ trách → thời gian →
+ * cột → trường tùy biến (Tag, Độ ưu tiên…) → mô tả → việc con → nhật ký.
  *
  * Mọi ô LƯU KHI RỜI Ô (blur), không có nút Lưu: đây là panel thao tác nhanh
  * cạnh bảng, bắt bấm Lưu cho từng ô thì thao tác nào cũng hai nhịp.
  *
- * ⚠️ CHƯA có khối bình luận (E-01) — thuộc W3, cùng đợt với thông báo.
+ * ⚠️ CHƯA có khối bình luận (E-01) — thuộc W3, cùng đợt với thông báo. Chỗ của
+ * nó là ngay trên `AuditTimeline`, trong cùng khối nền xám.
  */
 export function TaskDetailSheet({
   taskId,
@@ -58,15 +68,19 @@ export function TaskDetailSheet({
 }: TaskDetailSheetProps) {
   const { data: task, isLoading } = useWorkTask(taskId ?? undefined)
   const { data: members = [] } = useWorkMembers(listId)
-  const { data: tags = [] } = useWorkTags(listId)
   const { data: labelFields = [] } = useWorkLabelFields(listId)
 
   const updateTask = useUpdateTask(listId)
   const deleteTask = useDeleteTask(listId)
   const createSubtask = useCreateSubtask(listId)
   const setAssignees = useSetAssignees(listId)
-  const setTags = useSetTaskTags(listId)
   const setLabel = useSetTaskLabel(listId)
+  const toggleSubtask = useToggleSubtask(listId)
+
+  const sectionOptions = useMemo(
+    () => sections.map((s) => ({ value: String(s.id), label: s.name, color: s.color })),
+    [sections],
+  )
 
   function save(values: Record<string, unknown>) {
     if (!taskId) return
@@ -77,31 +91,31 @@ export function TaskDetailSheet({
 
   return (
     <Sheet open={taskId !== null} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent className="w-full gap-0 overflow-y-auto sm:max-w-xl">
-        <SheetHeader>
+      {/*  Nút đóng mặc định của `SheetContent` nằm đè lên thanh trên cùng nên
+           tắt đi, dựng lại trong thanh cho thẳng hàng với nút Xóa. */}
+      <SheetContent
+        showCloseButton={false}
+        className="flex w-full flex-col gap-0 p-0 sm:max-w-xl"
+      >
+        <SheetHeader className="flex-row items-center justify-between gap-2 border-b px-4 py-2.5">
           <SheetTitle className="sr-only">Chi tiết công việc</SheetTitle>
-        </SheetHeader>
-
-        {isLoading || !task ? (
-          <div className="space-y-3 p-6">
-            <Skeleton className="h-8 w-3/4" />
-            <Skeleton className="h-24 w-full" />
-          </div>
-        ) : (
-          <div className="space-y-5 p-6 pt-0">
-            <div className="flex items-start gap-2">
-              <TaskTitleField
-                key={`title-${task.id}`}
-                title={task.title}
-                canEdit={canEdit}
-                strike={isDone}
-                onSave={(title) => save({ title })}
-              />
-              {canEdit && (
+          {task ? (
+            <TaskStatusSelect
+              status={task.status}
+              disabled={!canEdit}
+              onChange={(status) => save({ status })}
+            />
+          ) : (
+            <span />
+          )}
+          <div className="flex items-center gap-1">
+            {canEdit && task && (
+              <IconTooltip label="Xóa công việc">
                 <Button
                   variant="ghost"
                   size="icon"
-                  title="Xóa công việc"
+                  className="size-8"
+                  aria-label="Xóa công việc"
                   onClick={() => {
                     deleteTask.mutate(task.id)
                     onClose()
@@ -109,202 +123,104 @@ export function TaskDetailSheet({
                 >
                   <Trash2 className="size-4 text-destructive" />
                 </Button>
-              )}
-            </div>
+              </IconTooltip>
+            )}
+            <IconTooltip label="Đóng">
+              <SheetClose asChild>
+                <Button variant="ghost" size="icon" className="size-8" aria-label="Đóng">
+                  <X className="size-4" />
+                </Button>
+              </SheetClose>
+            </IconTooltip>
+          </div>
+        </SheetHeader>
 
-            <Row label="Trạng thái">
-              <Select
-                value={String(task.status)}
-                disabled={!canEdit}
-                onValueChange={(v) => save({ status: Number(v) })}
-              >
-                <SelectTrigger size="sm" className="w-44">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">Đang mở</SelectItem>
-                  <SelectItem value="2">Hoàn thành</SelectItem>
-                  <SelectItem value="3">Đã hủy</SelectItem>
-                </SelectContent>
-              </Select>
-            </Row>
-
-            <Row label="Người phụ trách">
-              <div className="flex flex-wrap gap-1">
-                {members.map((m) => {
-                  const chosen = task.assignees.some(
-                    (a) => a.employee_id === m.employee_id && a.kind === 1,
-                  )
-                  return (
-                    <button
-                      key={m.id}
-                      type="button"
-                      disabled={!canEdit}
-                      onClick={() => {
-                        const current = task.assignees
-                          .filter((a) => a.kind === 1)
-                          .map((a) => a.employee_id)
-                        const next = chosen
-                          ? current.filter((id) => id !== m.employee_id)
-                          : [...current, m.employee_id]
-                        setAssignees.mutate({ taskId: task.id, picIds: next })
-                      }}
-                      className={cn(
-                        'rounded-full border px-2 py-0.5 text-xs',
-                        chosen
-                          ? 'border-primary bg-primary/10 font-medium text-primary'
-                          : 'text-muted-foreground',
-                      )}
-                    >
-                      {m.employee_name || `#${m.employee_id}`}
-                    </button>
-                  )
-                })}
-                {members.length === 0 && (
-                  <span className="text-sm text-muted-foreground">
-                    Chưa có thành viên nào trong danh sách
-                  </span>
-                )}
-              </div>
-            </Row>
-
-            <Row label="Hạn chót">
-              <div className="flex flex-wrap items-center gap-2">
-                <DatePicker
-                  size="sm"
-                  clearable
-                  value={task.due_date}
-                  disabled={!canEdit}
-                  onChange={(v) => save({ due_date: v })}
-                />
-                {canEdit && (
-                  <>
-                    <Button variant="outline" size="sm" onClick={() => save({ due_date: addDays(0) })}>
-                      Hôm nay
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => save({ due_date: addDays(1) })}>
-                      Ngày mai
-                    </Button>
-                  </>
-                )}
-              </div>
-            </Row>
-
-            <Row label="Ngày bắt đầu">
-              <DatePicker
-                size="sm"
-                clearable
-                value={task.start_date}
-                disabled={!canEdit}
-                onChange={(v) => save({ start_date: v })}
+        {isLoading || !task ? (
+          <div className="space-y-3 p-4">
+            <Skeleton className="h-8 w-3/4" />
+            <Skeleton className="h-24 w-full" />
+          </div>
+        ) : (
+          <div className="flex-1 overflow-y-auto">
+            <div className="space-y-0.5 px-4 py-3">
+              <TaskTitleField
+                key={`title-${task.id}`}
+                title={task.title}
+                canEdit={canEdit}
+                strike={isDone}
+                onSave={(title) => save({ title })}
               />
-            </Row>
 
-            <Row label="Cột">
-              <Select
-                value={task.section_id ? String(task.section_id) : ''}
-                disabled={!canEdit}
-                onValueChange={(v) => save({ section_id: Number(v) })}
-              >
-                <SelectTrigger size="sm" className="w-44">
-                  <SelectValue placeholder="Chưa thuộc cột nào" />
-                </SelectTrigger>
-                <SelectContent>
-                  {sections.map((s) => (
-                    <SelectItem key={s.id} value={String(s.id)}>
-                      {s.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Row>
-
-            <Row label="Độ ưu tiên">
-              <Select
-                value={String(task.priority)}
-                disabled={!canEdit}
-                onValueChange={(v) => save({ priority: Number(v) })}
-              >
-                <SelectTrigger size="sm" className="w-44">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(WORK_PRIORITY_LABELS).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Row>
-
-            <Row label="Tag">
-              <div className="flex flex-wrap gap-1">
-                {tags.map((t) => {
-                  const chosen = task.tag_ids.includes(t.id)
-                  return (
-                    <button
-                      key={t.id}
-                      type="button"
-                      disabled={!canEdit}
-                      onClick={() =>
-                        setTags.mutate({
-                          taskId: task.id,
-                          tagIds: chosen
-                            ? task.tag_ids.filter((id) => id !== t.id)
-                            : [...task.tag_ids, t.id],
-                        })
-                      }
-                      className={cn(
-                        'rounded px-1.5 py-0.5 text-xs',
-                        chipClass(t.color),
-                        !chosen && 'opacity-40',
-                      )}
-                    >
-                      {t.name}
-                    </button>
-                  )
-                })}
-                {tags.length === 0 && (
-                  <span className="text-sm text-muted-foreground">Danh sách chưa khai tag</span>
-                )}
-              </div>
-            </Row>
-
-            {labelFields.map((f) => (
-              <Row key={f.id} label={f.name}>
-                <LabelFieldInput
-                  field={f}
-                  values={task.labels.filter((l) => l.field_id === f.id)}
+              <TaskDetailRow icon={User} srLabel="Người phụ trách">
+                <TaskAssigneePicker
+                  assignees={task.assignees}
                   members={members}
                   disabled={!canEdit}
-                  onChange={(value) =>
-                    setLabel.mutate({ taskId: task.id, fieldId: f.id, value })
+                  onChange={(picIds) => setAssignees.mutate({ taskId: task.id, picIds })}
+                />
+              </TaskDetailRow>
+
+              <TaskDateRow
+                startDate={task.start_date}
+                dueDate={task.due_date}
+                done={isDone}
+                canEdit={canEdit}
+                onChange={save}
+              />
+
+              <TaskDetailRow icon={Columns3} label="Cột">
+                <TaskChipSelect
+                  ariaLabel="Cột"
+                  variant="dot"
+                  placeholder="Chưa thuộc cột nào"
+                  value={task.section_id ? String(task.section_id) : ''}
+                  options={sectionOptions}
+                  disabled={!canEdit}
+                  onChange={(v) => save({ section_id: Number(v) })}
+                />
+              </TaskDetailRow>
+
+
+              {labelFields.map((f) => (
+                <TaskDetailRow key={f.id} icon={CircleDot} label={f.name}>
+                  <LabelFieldInput
+                    field={f}
+                    values={task.labels.filter((l) => l.field_id === f.id)}
+                    members={members}
+                    disabled={!canEdit}
+                    onChange={(value) => setLabel.mutate({ taskId: task.id, fieldId: f.id, value })}
+                  />
+                </TaskDetailRow>
+              ))}
+
+              <TaskDetailRow icon={AlignLeft} srLabel="Mô tả">
+                <TaskDescriptionField
+                  key={`desc-${task.id}`}
+                  description={task.description}
+                  canEdit={canEdit}
+                  onSave={(description) => save({ description })}
+                />
+              </TaskDetailRow>
+
+              <TaskDetailRow icon={ListTodo} srLabel="Việc con" className="items-start">
+                <TaskSubtaskList
+                  subtasks={task.subtasks ?? []}
+                  canEdit={canEdit}
+                  onAdd={(title) => createSubtask.mutate({ taskId: task.id, title })}
+                  onToggle={(subtaskId, done) =>
+                    toggleSubtask.mutate({ parentId: task.id, subtaskId, done })
                   }
                 />
-              </Row>
-            ))}
+              </TaskDetailRow>
+            </div>
 
-            <TaskDescriptionField
-              key={`desc-${task.id}`}
-              description={task.description}
-              canEdit={canEdit}
-              onSave={(description) => save({ description })}
-            />
-
-            <TaskSubtaskList
-              subtasks={task.subtasks ?? []}
-              canEdit={canEdit}
-              onAdd={(title) => createSubtask.mutate({ taskId: task.id, title })}
-              onToggle={(subtaskId, done) =>
-                updateTask.mutate({
-                  id: subtaskId,
-                  values: { status: done ? WORK_TASK_STATUS.DONE : WORK_TASK_STATUS.OPEN },
-                })
-              }
-            />
-
-            <AuditTimeline entity="work_task" entityId={task.id} showMessage dense />
+            {/*  Nhật ký tách hẳn xuống nền xám như khối bình luận của Lark: nó
+                 là chuyện ĐÃ xảy ra, không phải thuộc tính sửa được, nên đứng
+                 lẫn trong dải hàng ở trên là đọc nhầm. Không thêm tiêu đề nào
+                 ở đây — `AuditTimeline` đã tự mang tiêu đề «Lịch sử thao tác». */}
+            <section className="border-t bg-muted/30 px-4 py-3">
+              <AuditTimeline entity="work_task" entityId={task.id} showMessage dense />
+            </section>
           </div>
         )}
       </SheetContent>
@@ -312,11 +228,3 @@ export function TaskDetailSheet({
   )
 }
 
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="grid grid-cols-[7rem_1fr] items-start gap-3">
-      <span className="pt-1 text-xs text-muted-foreground">{label}</span>
-      <div>{children}</div>
-    </div>
-  )
-}

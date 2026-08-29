@@ -74,12 +74,6 @@ class SectionMove(BaseModel):
     before_section_id: int | None = None
 
 
-class TagIn(BaseModel):
-    name: str
-    color: str = ""
-    sort_order: int = 0
-
-
 class LabelFieldIn(BaseModel):
     """Khai một trường tùy biến. `field_type` theo `WorkLabelFieldType` (B-13);
     mặc định `1 = chọn một` để lời gọi cũ không đổi hành vi."""
@@ -95,6 +89,26 @@ class LabelOptionIn(BaseModel):
     sort_order: int = 0
 
 
+class LabelFieldUpdate(BaseModel):
+    """Đổi tên / kiểu / thứ tự một trường tùy biến.
+
+    ⚠️ `field_type` chỉ đổi được khi trường CHƯA có giá trị nào gán cho việc, và
+    không phải trường hệ (`system_key`). Đổi kiểu khi đã có dữ liệu là mọi giá
+    trị cũ nằm sai cột `value_*` — nhìn như mất sạch. Service chặn, không phải
+    giao diện.
+    """
+
+    name: str | None = None
+    field_type: int | None = None
+    sort_order: int | None = None
+
+
+class LabelOptionUpdate(BaseModel):
+    name: str | None = None
+    color: str | None = None
+    sort_order: int | None = None
+
+
 class TaskCreate(BaseModel):
     """Tạo task, hoặc VIỆC CON khi có `parent_id`.
 
@@ -106,7 +120,6 @@ class TaskCreate(BaseModel):
     parent_id: int | None = None
     title: str
     description: str = ""
-    priority: int = 0
     start_date: str = ""
     due_date: str = ""
     sort_order: int = 0
@@ -119,7 +132,6 @@ class TaskUpdate(BaseModel):
     title: str | None = None
     description: str | None = None
     status: int | None = None
-    priority: int | None = None
     start_date: str | None = None
     due_date: str | None = None
     section_id: int | None = None
@@ -142,10 +154,6 @@ class AssigneesIn(BaseModel):
 
     pic_ids: list[int] = Field(default_factory=list)
     follower_ids: list[int] = Field(default_factory=list)
-
-
-class TagsIn(BaseModel):
-    tag_ids: list[int] = Field(default_factory=list)
 
 
 class LabelIn(BaseModel):

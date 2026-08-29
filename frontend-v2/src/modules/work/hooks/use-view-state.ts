@@ -4,9 +4,9 @@ import { logger } from '@/core/telemetry/logger'
 import type { GanttZoom } from '../utils/gantt-scale'
 import {
   DEFAULT_CARD_FIELDS,
+  WORK_SORTS,
   type CardFields,
   type CardFieldSetting,
-  type WorkScope,
   type WorkSort,
   type WorkView,
 } from '../types/view-options'
@@ -26,7 +26,6 @@ import {
 
 export interface WorkViewState {
   view: WorkView
-  scope: WorkScope
   sort: WorkSort
   fields: CardFields
   /** Mức phóng của khung nhìn Gantt — nhớ riêng, không dính tới hai khung kia. */
@@ -35,7 +34,6 @@ export interface WorkViewState {
 
 const DEFAULTS: WorkViewState = {
   view: 'kanban',
-  scope: 'open',
   sort: 'manual',
   fields: DEFAULT_CARD_FIELDS,
   ganttZoom: 'day',
@@ -72,12 +70,31 @@ function readFields(saved: unknown): CardFields {
   return DEFAULT_CARD_FIELDS
 }
 
+/**
+ * Tiêu chí sắp xếp đã lưu có còn tồn tại không.
+ *
+ * Bản lưu là JSON cũ trong máy người dùng: `"priority"` từng là một tiêu chí
+ * cứng, nay độ ưu tiên thành trường tùy biến nên khóa ấy không còn. Để nguyên
+ * thì nút «Sắp xếp:» hiện một nhãn RỖNG và bảng xếp theo tiêu đề một cách khó
+ * hiểu — rơi về «Tay» là hành vi đúng.
+ */
+function readSort(saved: unknown): WorkSort {
+  if (typeof saved !== 'string') return DEFAULTS.sort
+  if (/^label:[1-9]\d*$/.test(saved)) return saved as WorkSort
+  return WORK_SORTS.some((s) => s.value === saved) ? (saved as WorkSort) : DEFAULTS.sort
+}
+
 function readState(listId: number): WorkViewState {
   try {
     const raw = localStorage.getItem(storageKey(listId))
     if (!raw) return DEFAULTS
     const saved = JSON.parse(raw) as Partial<WorkViewState>
-    return { ...DEFAULTS, ...saved, fields: readFields(saved.fields) }
+    return {
+      ...DEFAULTS,
+      ...saved,
+      sort: readSort(saved.sort),
+      fields: readFields(saved.fields),
+    }
   } catch (error) {
     logger.warn('Tùy chọn khung nhìn Công việc trong localStorage hỏng, dùng mặc định', error)
     return DEFAULTS

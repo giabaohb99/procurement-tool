@@ -21,11 +21,10 @@ function task(patch: Partial<WorkTask> = {}): WorkTask {
   return {
     id: 1, list_id: 1, section_id: 1, parent_id: null,
     title: 'Việc', description: '',
-    status: WORK_TASK_STATUS.OPEN, priority: 0,
-    start_date: '', due_date: '', sort_order: 0,
+    status: WORK_TASK_STATUS.OPEN, start_date: '', due_date: '', sort_order: 0,
     creator_employee_id: 0, completed_at: null, completed_by: null,
     created_at: '2026-08-01T00:00:00', updated_at: '2026-08-01T00:00:00',
-    assignees: [], tag_ids: [], labels: [],
+    assignees: [], labels: [],
     subtask_done: 0, subtask_total: 0, comment_count: 0,
     ...patch,
   }

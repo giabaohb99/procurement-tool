@@ -12,8 +12,6 @@ export const WORK_TASK_STATUS = { OPEN: 1, DONE: 2, CANCELLED: 3 } as const
 /** Số nhỏ = quyền TO (Q9) — mọi phép so quyền ở giao diện đều là `<=`. */
 export const WORK_ROLE = { OWNER: 1, ADMIN: 2, MEMBER: 3, VIEWER: 4 } as const
 
-export const WORK_PRIORITY = { NONE: 0, P1: 1, P2: 2, P3: 3, P4: 4 } as const
-
 export const WORK_ASSIGNEE_KIND = { PIC: 1, FOLLOWER: 2 } as const
 
 export const WORK_ROLE_LABELS: Record<number, string> = {
@@ -21,14 +19,6 @@ export const WORK_ROLE_LABELS: Record<number, string> = {
   [WORK_ROLE.ADMIN]: 'Quản trị',
   [WORK_ROLE.MEMBER]: 'Thành viên',
   [WORK_ROLE.VIEWER]: 'Khách xem',
-}
-
-export const WORK_PRIORITY_LABELS: Record<number, string> = {
-  [WORK_PRIORITY.NONE]: 'Không đặt',
-  [WORK_PRIORITY.P1]: 'P1 — Khẩn',
-  [WORK_PRIORITY.P2]: 'P2 — Cao',
-  [WORK_PRIORITY.P3]: 'P3 — Vừa',
-  [WORK_PRIORITY.P4]: 'P4 — Thấp',
 }
 
 export const WORK_STATUS_LABELS: Record<number, string> = {
@@ -98,14 +88,6 @@ export interface WorkSection {
   sort_order: number
 }
 
-export interface WorkTag {
-  id: number
-  list_id: number
-  name: string
-  color: string
-  sort_order: number
-}
-
 export interface WorkLabelOption {
   id: number
   field_id: number
@@ -149,6 +131,14 @@ export interface WorkLabelField {
   name: string
   sort_order: number
   field_type: number
+  /**
+   * Trường do hệ nạp sẵn: `"priority"` = Độ ưu tiên. Rỗng = người dùng tự khai.
+   * Chỉ là cái móc để tìm lại trường ấy (tô màu thanh Gantt, biểu đồ Tổng quan)
+   * — tên, bộ giá trị và màu vẫn do từng dự án tự đặt.
+   */
+  system_key: string
+  /** Số việc đang gán giá trị của trường — giao diện khóa ô "kiểu trường" khi > 0. */
+  value_count: number
   options: WorkLabelOption[]
 }
 
@@ -182,7 +172,6 @@ export interface WorkTask {
   title: string
   description: string
   status: number
-  priority: number
   start_date: string
   due_date: string
   sort_order: number
@@ -192,7 +181,6 @@ export interface WorkTask {
   created_at: string
   updated_at: string
   assignees: WorkAssignee[]
-  tag_ids: number[]
   labels: WorkTaskLabelValue[]
   subtask_done: number
   subtask_total: number

@@ -1,21 +1,9 @@
 import { EditorContent, useEditor, useEditorState, type Editor } from '@tiptap/react'
-import {
-  AlignCenter,
-  AlignJustify,
-  AlignLeft,
-  AlignRight,
-  Bold,
-  Eraser,
-  Italic,
-  List,
-  ListOrdered,
-  Underline,
-} from 'lucide-react'
 import { useEffect, useRef } from 'react'
 
 import { cn } from '@/shared/utils/cn'
 import { contentExtensions } from './content-extensions'
-import { ToolbarButton, ToolbarDivider } from './toolbar-primitives'
+import { RichTextFieldToolbar } from './rich-text-field-toolbar'
 
 interface RichTextFieldProps {
   /**
@@ -27,6 +15,14 @@ interface RichTextFieldProps {
   onChange: (html: string) => void
   /** Chữ gợi ý khi ô còn rỗng. */
   placeholder?: string
+  /**
+   * Thanh công cụ nằm trên hay dưới vùng gõ. Đặt `bottom` cho những ô nhỏ nằm
+   * lẫn trong một danh sách thuộc tính (ô mô tả của công việc): thanh nút đứng
+   * trên đầu thì mắt đọc phải vượt qua nó mới tới nội dung.
+   */
+  toolbarPosition?: 'top' | 'bottom'
+  /** Đặt con trỏ vào CUỐI nội dung ngay khi dựng — cho ô chỉ hiện lúc bấm sửa. */
+  autoFocus?: boolean
   className?: string
 }
 
@@ -56,6 +52,8 @@ export function RichTextField({
   defaultValue,
   onChange,
   placeholder,
+  toolbarPosition = 'top',
+  autoFocus = false,
   className,
 }: RichTextFieldProps) {
   //  `onUpdate` của Tiptap đóng băng closure từ lần dựng đầu — giữ hàm mới nhất
@@ -70,6 +68,7 @@ export function RichTextField({
   const editor = useEditor({
     extensions: contentExtensions(),
     content: defaultValue,
+    autofocus: autoFocus ? 'end' : false,
     onUpdate: ({ editor: instance }) => changeRef.current(instance.getHTML()),
     editorProps: {
       //  `doc-rich-field` khai ở `index.css`, dùng CHUNG bộ luật hiển thị với
@@ -80,7 +79,14 @@ export function RichTextField({
 
   if (!editor) return null
 
-  return <ComposerBody editor={editor} placeholder={placeholder} className={className} />
+  return (
+    <ComposerBody
+      editor={editor}
+      placeholder={placeholder}
+      toolbarPosition={toolbarPosition}
+      className={className}
+    />
+  )
 }
 
 /**
@@ -91,110 +97,44 @@ export function RichTextField({
 function ComposerBody({
   editor,
   placeholder,
+  toolbarPosition,
   className,
 }: {
   editor: Editor
   placeholder?: string
+  toolbarPosition: 'top' | 'bottom'
   className?: string
 }) {
-  //  ⚠️ Bắt buộc đi qua `useEditorState`. Trình soạn thảo giữ state BÊN NGOÀI
-  //  React nên gõ phím / di con trỏ không làm component vẽ lại — đọc thẳng
-  //  `editor.isActive('bold')` lúc vẽ thì nút "In đậm" không bao giờ sáng lên,
-  //  và chữ gợi ý không bao giờ tắt. Cùng lý do với `use-toolbar-state.ts`.
-  const status = useEditorState({
-    editor,
-    selector: ({ editor: instance }) => ({
-      rong: instance.isEmpty,
-      bold: instance.isActive('bold'),
-      italic: instance.isActive('italic'),
-      underline: instance.isActive('underline'),
-      bulletList: instance.isActive('bulletList'),
-      orderedList: instance.isActive('orderedList'),
-      alignLeft: instance.isActive({ textAlign: 'left' }),
-      alignCenter: instance.isActive({ textAlign: 'center' }),
-      alignRight: instance.isActive({ textAlign: 'right' }),
-      alignJustify: instance.isActive({ textAlign: 'justify' }),
-    }),
-  })
+  //  Chỉ theo dõi ĐÚNG cờ rỗng ở đây; trạng thái của từng nút nằm trong thanh
+  //  công cụ. Trình soạn thảo giữ state ngoài React nên không đi qua
+  //  `useEditorState` thì chữ gợi ý không bao giờ tắt.
+  const rong = useEditorState({ editor, selector: ({ editor: e }) => e.isEmpty })
 
-  const align = [
-    { value: 'left', icon: AlignLeft, nhan: 'Canh trái', isOn: status.alignLeft },
-    { value: 'center', icon: AlignCenter, nhan: 'Canh giữa', isOn: status.alignCenter },
-    { value: 'right', icon: AlignRight, nhan: 'Canh phải', isOn: status.alignRight },
-    { value: 'justify', icon: AlignJustify, nhan: 'Canh đều', isOn: status.alignJustify },
-  ] as const
+  const toolbar = (
+    <RichTextFieldToolbar
+      editor={editor}
+      className={toolbarPosition === 'bottom' ? 'border-t' : 'border-b'}
+    />
+  )
 
   return (
     <div className={cn('overflow-hidden rounded-md border bg-card', className)}>
-      <div className="flex flex-wrap items-center gap-0.5 border-b bg-muted/40 px-1 py-1">
-        <ToolbarButton
-          icon={Bold}
-          label="In đậm"
-          active={status.bold}
-          onClick={() => editor.chain().focus().toggleBold().run()}
-        />
-        <ToolbarButton
-          icon={Italic}
-          label="In nghiêng"
-          active={status.italic}
-          onClick={() => editor.chain().focus().toggleItalic().run()}
-        />
-        <ToolbarButton
-          icon={Underline}
-          label="Gạch chân"
-          active={status.underline}
-          onClick={() => editor.chain().focus().toggleUnderline().run()}
-        />
-
-        <ToolbarDivider />
-
-        <ToolbarButton
-          icon={List}
-          label="Danh sách dấu chấm"
-          active={status.bulletList}
-          onClick={() => editor.chain().focus().toggleBulletList().run()}
-        />
-        <ToolbarButton
-          icon={ListOrdered}
-          label="Danh sách đánh số"
-          active={status.orderedList}
-          onClick={() => editor.chain().focus().toggleOrderedList().run()}
-        />
-
-        <ToolbarDivider />
-
-        {align.map((muc) => (
-          <ToolbarButton
-            key={muc.value}
-            icon={muc.icon}
-            label={muc.nhan}
-            active={muc.isOn}
-            onClick={() => editor.chain().focus().setTextAlign(muc.value).run()}
-          />
-        ))}
-
-        <ToolbarDivider />
-
-        {/*  Dán từ Word hay từ chính bản gốc thường kéo theo phông, cỡ chữ, màu
-             nền của nguồn. Có nút gỡ định dạng thì không phải xóa đi gõ lại. */}
-        <ToolbarButton
-          icon={Eraser}
-          label="Xóa định dạng"
-          onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()}
-        />
-      </div>
+      {toolbarPosition === 'top' && toolbar}
 
       {/*  Chữ gợi ý vẽ đè bằng React thay vì kéo thêm `@tiptap/extension-
            placeholder` cho đúng một dòng chữ. `pointer-events-none` để bấm vào
            chỗ chữ gợi ý vẫn là bấm vào vùng gõ bên dưới. */}
       <div className="relative">
-        {status.rong && placeholder && (
+        {rong && placeholder && (
           <p className="pointer-events-none absolute top-2.5 left-3 text-sm text-muted-foreground">
             {placeholder}
           </p>
         )}
         <EditorContent editor={editor} />
       </div>
+
+      {toolbarPosition === 'bottom' && toolbar}
     </div>
   )
 }
+

@@ -1,15 +1,14 @@
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { Checkbox } from '@/shared/ui/checkbox'
 import { cn } from '@/shared/utils/cn'
-import type { WorkLabelField, WorkSection, WorkTag, WorkTask } from '../types/work'
-import { WORK_PRIORITY, WORK_TASK_STATUS } from '../types/work'
+import type { WorkLabelField, WorkSection, WorkTask } from '../types/work'
+import { WORK_TASK_STATUS } from '../types/work'
 import { dueTone, dueToneClass, formatDueLabel } from '../utils/due-date'
-import { chipClass, priorityColor } from '../utils/work-colors'
+import { chipClass } from '../utils/work-colors'
 
 interface TaskListViewProps {
   tasks: WorkTask[]
   sections: WorkSection[]
-  tags: WorkTag[]
   labelFields: WorkLabelField[]
   canEdit: boolean
   isLoading?: boolean
@@ -27,7 +26,6 @@ interface TaskListViewProps {
 export function TaskListView({
   tasks,
   sections,
-  tags,
   labelFields,
   canEdit,
   isLoading,
@@ -90,36 +88,6 @@ export function TaskListView({
         const tone = dueTone(row.due_date, row.status === WORK_TASK_STATUS.DONE)
         return <span className={dueToneClass(tone)}>{formatDueLabel(row.due_date)}</span>
       },
-    },
-    {
-      key: 'priority',
-      header: 'Ưu tiên',
-      width: 90,
-      align: 'center',
-      cell: (row) =>
-        row.priority === WORK_PRIORITY.NONE ? (
-          ''
-        ) : (
-          <span className={cn('rounded px-1.5 py-0.5 text-xs font-medium', chipClass(priorityColor(row.priority)))}>
-            P{row.priority}
-          </span>
-        ),
-    },
-    {
-      key: 'tags',
-      header: 'Tag',
-      width: 180,
-      cell: (row) => (
-        <div className="flex flex-wrap gap-1">
-          {tags
-            .filter((t) => row.tag_ids.includes(t.id))
-            .map((t) => (
-              <span key={t.id} className={cn('rounded px-1.5 py-0.5 text-xs', chipClass(t.color))}>
-                {t.name}
-              </span>
-            ))}
-        </div>
-      ),
     },
     {
       key: 'labels',

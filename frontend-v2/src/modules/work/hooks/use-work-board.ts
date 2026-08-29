@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 import { queryKeys } from '@/shared/constants/query-keys'
 import { workTaskApi } from '../api/work-task-api'
 import type { WorkBoard, WorkTask } from '../types/work'
+import { WORK_TASK_STATUS } from '../types/work'
 import { applyMove, type KanbanDropPlace } from '../utils/kanban-drop'
 
 /** Bảng kanban của một list: cột + task cha, một lượt gọi (D-01). */
@@ -136,20 +137,61 @@ export function useCreateSubtask(listId: number) {
   })
 }
 
+/**
+ * Tick hoàn thành một VIỆC CON trong panel chi tiết (C-01).
+ *
+ * Tách khỏi `useUpdateTask` vì việc con KHÔNG nằm trong payload bảng (C-05), nên
+ * dùng hàm kia thì hỏng cả hai đầu: `onMutate` dò `snapshot.tasks` — toàn task
+ * cha — nên không khớp dòng nào; còn `onSettled` làm mới khóa `task(subtaskId)`
+ * trong khi panel đang mở đọc `task(parentId)`. Hệ quả người dùng thấy: bấm ô
+ * tick không có gì nhúc nhích, dù máy chủ ĐÃ ghi — mở lại panel mới thấy đổi.
+ *
+ * Ở đây ảnh lạc quan vá thẳng vào `subtasks` của TASK CHA và đếm lại `n/m` để
+ * thanh tiến độ nhích cùng nhịp với ô tick.
+ */
+export function useToggleSubtask(listId: number) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ subtaskId, done }: { parentId: number; subtaskId: number; done: boolean }) =>
+      workTaskApi.update(subtaskId, {
+        status: done ? WORK_TASK_STATUS.DONE : WORK_TASK_STATUS.OPEN,
+      }),
+
+    onMutate: async ({ parentId, subtaskId, done }) => {
+      const parentKey = queryKeys.work.task(parentId)
+      await queryClient.cancelQueries({ queryKey: parentKey })
+      const snapshot = queryClient.getQueryData<WorkTask>(parentKey)
+      if (snapshot?.subtasks) {
+        const subtasks = snapshot.subtasks.map((s) =>
+          s.id === subtaskId
+            ? { ...s, status: done ? WORK_TASK_STATUS.DONE : WORK_TASK_STATUS.OPEN }
+            : s,
+        )
+        queryClient.setQueryData<WorkTask>(parentKey, {
+          ...snapshot,
+          subtasks,
+          subtask_done: subtasks.filter((s) => s.status === WORK_TASK_STATUS.DONE).length,
+          subtask_total: subtasks.length,
+        })
+      }
+      return { parentKey, snapshot }
+    },
+
+    onError: (_err, _vars, context) => {
+      if (context?.snapshot) queryClient.setQueryData(context.parentKey, context.snapshot)
+      toast.error('Không lưu được việc con, đã trả về như cũ')
+    },
+
+    onSettled: (_data, _err, variables) => invalidateTask(queryClient, listId, variables.parentId),
+  })
+}
+
 export function useSetAssignees(listId: number) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ taskId, picIds }: { taskId: number; picIds: number[] }) =>
       workTaskApi.setAssignees(taskId, picIds),
-    onSuccess: (_data, variables) => invalidateTask(queryClient, listId, variables.taskId),
-  })
-}
-
-export function useSetTaskTags(listId: number) {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: ({ taskId, tagIds }: { taskId: number; tagIds: number[] }) =>
-      workTaskApi.setTags(taskId, tagIds),
     onSuccess: (_data, variables) => invalidateTask(queryClient, listId, variables.taskId),
   })
 }

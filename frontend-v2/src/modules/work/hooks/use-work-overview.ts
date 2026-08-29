@@ -5,7 +5,6 @@ import { apiGet } from '@/core/api'
 import { CHART_COLORS, type ChartDatum } from '@/shared/ui/chart'
 import type { DonutSlice } from '@/shared/ui/donut-chart'
 import { queryKeys } from '@/shared/constants/query-keys'
-import { WORK_PRIORITY, WORK_PRIORITY_LABELS } from '../types/work'
 
 /** Đúng khuôn `overview_service.overview` bên backend. */
 export interface WorkOverview {
@@ -17,7 +16,11 @@ export interface WorkOverview {
   task_overdue: number
   task_mine: number
   by_project: { list_id: number; name: string; open: number }[]
-  by_priority: { priority: number; open: number }[]
+  /**
+   * Đếm theo BẬC ƯU TIÊN, gộp chung mọi dự án theo TÊN bậc — độ ưu tiên nay là
+   * một trường tùy biến của từng dự án nên không còn mã số chung nào để gộp.
+   */
+  by_priority: { name: string; color: string; open: number }[]
 }
 
 /**
@@ -27,8 +30,8 @@ export interface WorkOverview {
  * API bảng lấy theo TỪNG dự án, gom ở client là hàng chục lượt gọi. Nên đếm ở
  * máy chủ, ở đây chỉ dịch số sang nhãn để vẽ.
  *
- * Nhãn mức ưu tiên dịch TẠI ĐÂY chứ không để backend trả chữ — đúng luật R2:
- * cột trạng thái/mức độ lưu số, tiếng Việt chỉ sống ở tầng hiển thị.
+ * Tên bậc ưu tiên do BACKEND trả (không dịch ở đây nữa): từ khi độ ưu tiên
+ * thành trường tùy biến, tên bậc là dữ liệu người dùng tự đặt cho từng dự án.
  */
 export function useWorkOverview() {
   const query = useQuery({
@@ -50,15 +53,12 @@ export function useWorkOverview() {
     () =>
       (query.data?.by_priority ?? [])
         .filter((row) => row.open > 0)
-        .map((row) => ({
-          label:
-            WORK_PRIORITY_LABELS[row.priority] ??
-            WORK_PRIORITY_LABELS[WORK_PRIORITY.NONE],
+        .map((row, i) => ({
+          label: row.name,
           value: row.open,
-          //  Màu gán theo CHÍNH MỨC ƯU TIÊN, không theo thứ hạng trong mảng:
-          //  lọc bớt một mức mà màu các mức còn lại đổi theo thì người đã quen
-          //  "P1 màu này" sẽ đọc nhầm (ghi chú ở `chart.tsx`).
-          color: CHART_COLORS[row.priority % CHART_COLORS.length],
+          //  Backend đã xếp theo THỨ TỰ BẬC (P1 trước P4) nên màu gán theo chỉ
+          //  số cũng là gán theo bậc — cùng ý với ghi chú ở `chart.tsx`.
+          color: CHART_COLORS[i % CHART_COLORS.length],
         })),
     [query.data],
   )

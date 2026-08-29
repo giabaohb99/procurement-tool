@@ -313,7 +313,7 @@ export const queryKeys = {
   },
   /**
    * Phân hệ Công việc (CR-216). `board` là khóa nặng nhất — mọi thao tác trên
-   * thẻ (kéo cột, tick xong, đổi PIC, gắn tag) đều phải làm nó mới lại, nên
+   * thẻ (kéo cột, tick xong, đổi PIC, gắn nhãn) đều phải làm nó mới lại, nên
    * mutation nào của task cũng invalidate `board(listId)`.
    */
   work: {
@@ -334,7 +334,6 @@ export const queryKeys = {
     board: (listId: number) => ['work', 'lists', listId, 'board'] as const,
     members: (listId: number) => ['work', 'lists', listId, 'members'] as const,
     sections: (listId: number) => ['work', 'lists', listId, 'sections'] as const,
-    tags: (listId: number) => ['work', 'lists', listId, 'tags'] as const,
     labelFields: (listId: number) => ['work', 'lists', listId, 'label-fields'] as const,
     task: (id: number) => ['work', 'tasks', id] as const,
   },

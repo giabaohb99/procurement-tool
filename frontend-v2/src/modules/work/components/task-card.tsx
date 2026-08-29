@@ -6,7 +6,6 @@ import {
   GitBranch,
   ListChecks,
   MessageSquare,
-  Tag as TagIcon,
   type LucideIcon,
 } from 'lucide-react'
 import { memo, type ReactNode } from 'react'
@@ -16,7 +15,6 @@ import { labelFieldId, type CardFields, type CardFieldKey } from '../types/view-
 import type {
   WorkLabelField,
   WorkLabelOption,
-  WorkTag,
   WorkTask,
   WorkTaskLabelValue,
 } from '../types/work'
@@ -24,16 +22,15 @@ import {
   fieldHasOptions,
   WORK_ASSIGNEE_KIND,
   WORK_FIELD_TYPE,
-  WORK_PRIORITY,
   WORK_TASK_STATUS,
 } from '../types/work'
 import { dueTone, dueToneClass, formatDueLabel } from '../utils/due-date'
 import { taskDraggableId } from '../utils/kanban-drop'
-import { chipClass, priorityColor } from '../utils/work-colors'
+import { initials } from '../utils/people'
+import { chipClass } from '../utils/work-colors'
 
 interface TaskCardBodyProps {
   task: WorkTask
-  tags: WorkTag[]
   labelFields: WorkLabelField[]
   fields: CardFields
   className?: string
@@ -59,7 +56,6 @@ interface TaskCardProps extends TaskCardBodyProps {
  */
 export function TaskCard({
   task,
-  tags,
   labelFields,
   fields,
   onOpen,
@@ -101,7 +97,7 @@ export function TaskCard({
       //  một cột. Bỏ vẽ hẳn thì cột đích không nhúc nhích, chẳng biết rơi vào đâu.
       className={cn('cursor-pointer', isDragging && (hideGhost ? 'invisible' : 'opacity-40'))}
     >
-      <TaskCardBody task={task} tags={tags} labelFields={labelFields} fields={fields} />
+      <TaskCardBody task={task} labelFields={labelFields} fields={fields} />
     </div>
   )
 }
@@ -117,7 +113,6 @@ export function TaskCard({
  */
 export const TaskCardBody = memo(function TaskCardBody({
   task,
-  tags,
   labelFields,
   fields,
   className,
@@ -125,7 +120,7 @@ export const TaskCardBody = memo(function TaskCardBody({
   const done = task.status === WORK_TASK_STATUS.DONE
   const rows = fields
     .filter((f) => f.visible)
-    .map((f) => buildFieldRow(f.key, task, tags, labelFields))
+    .map((f) => buildFieldRow(f.key, task, labelFields))
     //  Trường bật nhưng thẻ này CHƯA CÓ giá trị thì bỏ hẳn dòng, không vẽ
     //  "Hạn chót —". Thẻ mười dòng gạch ngang thì đọc còn mệt hơn không có gì.
     .filter((row): row is FieldRow => row !== null)
@@ -175,7 +170,6 @@ interface FieldRow {
 function buildFieldRow(
   key: CardFieldKey,
   task: WorkTask,
-  tags: WorkTag[],
   labelFields: WorkLabelField[],
 ): FieldRow | null {
   const fieldId = labelFieldId(key)
@@ -192,29 +186,6 @@ function buildFieldRow(
   }
 
   switch (key) {
-    case 'priority': {
-      if (task.priority === WORK_PRIORITY.NONE) return null
-      return {
-        key,
-        icon: CircleDot,
-        label: 'Độ ưu tiên',
-        value: <Chip color={priorityColor(task.priority)}>{`P${task.priority}`}</Chip>,
-      }
-    }
-    case 'tags': {
-      const chosen = tags.filter((t) => task.tag_ids.includes(t.id))
-      if (chosen.length === 0) return null
-      return {
-        key,
-        icon: TagIcon,
-        label: 'Tag',
-        value: chosen.map((t) => (
-          <Chip key={t.id} color={t.color}>
-            {t.name}
-          </Chip>
-        )),
-      }
-    }
     case 'assignees': {
       const people = task.assignees.filter((a) => a.kind === WORK_ASSIGNEE_KIND.PIC)
       if (people.length === 0) return null
@@ -316,11 +287,4 @@ function Chip({ color, children }: { color: string; children: React.ReactNode })
       {children}
     </span>
   )
-}
-
-/** Chữ tắt trên avatar: hai chữ cái đầu của TỪ CUỐI — tên Việt gọi theo tên. */
-function initials(name: string): string {
-  const words = name.trim().split(/\s+/).filter(Boolean)
-  if (words.length === 0) return '?'
-  return words[words.length - 1].slice(0, 2).toUpperCase()
 }

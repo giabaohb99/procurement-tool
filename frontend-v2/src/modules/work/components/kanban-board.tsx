@@ -23,7 +23,7 @@ import { Plus } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { Button } from '@/shared/ui/button'
-import type { WorkLabelField, WorkSection, WorkTag, WorkTask } from '../types/work'
+import type { WorkLabelField, WorkSection, WorkTask } from '../types/work'
 import {
   applyMove,
   groupBySection,
@@ -53,7 +53,6 @@ const MEASURING = { droppable: { strategy: MeasuringStrategy.Always } }
 interface KanbanBoardProps {
   sections: WorkSection[]
   tasks: WorkTask[]
-  tags: WorkTag[]
   labelFields: WorkLabelField[]
   fields: CardFields
   canEdit: boolean
@@ -83,7 +82,6 @@ interface KanbanBoardProps {
 export function KanbanBoard({
   sections,
   tasks,
-  tags,
   labelFields,
   fields,
   canEdit,
@@ -134,9 +132,11 @@ export function KanbanBoard({
   //  `SortableContext` cũng mới — dnd-kit đo lại toàn bộ ô.
   const columnIds = useMemo(() => sections.map((s) => columnSortableId(s.id)), [sections])
 
+  //  `sortLocked` = đang sắp theo tiêu chí khác «Tay», khi đó thứ tự do
+  //  `sortTasks` quyết và cột KHÔNG được xếp lại theo `sort_order`.
   const byColumn = useMemo(
-    () => groupBySection(sections.map((s) => s.id), tasks),
-    [sections, tasks],
+    () => groupBySection(sections.map((s) => s.id), tasks, sortLocked),
+    [sections, tasks, sortLocked],
   )
 
   /**
@@ -158,8 +158,9 @@ export function KanbanBoard({
     return groupBySection(
       sections.map((s) => s.id),
       applyMove(tasks, applied.taskId, applied.place),
+      sortLocked,
     )
-  }, [byColumn, sections, tasks, dragged, preview, justDropped])
+  }, [byColumn, sections, tasks, dragged, preview, justDropped, sortLocked])
 
   /**
    * Thẻ mờ nằm lại chỉ có nghĩa khi nó CÒN Ở CỘT CŨ — lúc đó nó là chỗ trống
@@ -312,7 +313,6 @@ export function KanbanBoard({
             key={section.id}
             section={section}
             tasks={displayed.get(section.id) ?? []}
-            tags={tags}
             labelFields={labelFields}
             fields={fields}
             canEdit={canEdit}
@@ -348,7 +348,6 @@ export function KanbanBoard({
         {dragged && (
           <TaskCardBody
             task={dragged}
-            tags={tags}
             labelFields={labelFields}
             fields={fields}
             className="cursor-grabbing shadow-xl ring-2 ring-primary/40"

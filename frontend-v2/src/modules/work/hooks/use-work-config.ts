@@ -6,9 +6,9 @@ import { workApi } from '../api/work-api'
 import type { WorkBoard } from '../types/work'
 
 /**
- * Cấu hình của một list: thành viên · cột · tag · nhãn tùy biến.
+ * Cấu hình của một list: thành viên · cột · nhãn tùy biến.
  *
- * Tách khỏi `use-work-board` vì bốn thứ này đổi hiếm nhưng đọc ở nhiều chỗ
+ * Tách khỏi `use-work-board` vì ba thứ này đổi hiếm nhưng đọc ở nhiều chỗ
  * (thẻ, panel chi tiết, hộp thoại) — để chung một khóa với bảng là mỗi lần kéo
  * thả lại nạp lại cả danh mục.
  */
@@ -17,14 +17,6 @@ export function useWorkMembers(listId?: number) {
   return useQuery({
     queryKey: queryKeys.work.members(listId ?? 0),
     queryFn: () => workApi.members(listId as number),
-    enabled: typeof listId === 'number' && listId > 0,
-  })
-}
-
-export function useWorkTags(listId?: number) {
-  return useQuery({
-    queryKey: queryKeys.work.tags(listId ?? 0),
-    queryFn: () => workApi.tags(listId as number),
     enabled: typeof listId === 'number' && listId > 0,
   })
 }
@@ -152,27 +144,6 @@ export function useDeleteSection(listId: number) {
   })
 }
 
-export function useCreateTag(listId: number) {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (values: { name: string; color?: string }) => workApi.createTag(listId, values),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.work.tags(listId) })
-    },
-  })
-}
-
-export function useDeleteTag(listId: number) {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (tagId: number) => workApi.deleteTag(tagId),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.work.tags(listId) })
-      void queryClient.invalidateQueries({ queryKey: queryKeys.work.board(listId) })
-    },
-  })
-}
-
 export function useCreateLabelField(listId: number) {
   const queryClient = useQueryClient()
   return useMutation({
@@ -180,6 +151,23 @@ export function useCreateLabelField(listId: number) {
       workApi.createLabelField(listId, values),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.work.labelFields(listId) })
+    },
+  })
+}
+
+export function useUpdateLabelField(listId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      fieldId,
+      values,
+    }: {
+      fieldId: number
+      values: { name?: string; field_type?: number }
+    }) => workApi.updateLabelField(fieldId, values),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.work.labelFields(listId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.work.board(listId) })
     },
   })
 }
@@ -198,10 +186,32 @@ export function useDeleteLabelField(listId: number) {
 export function useCreateLabelOption(listId: number) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ fieldId, values }: { fieldId: number; values: { name: string; color?: string } }) =>
-      workApi.createLabelOption(fieldId, values),
+    mutationFn: ({
+      fieldId,
+      values,
+    }: {
+      fieldId: number
+      values: { name: string; color?: string; sort_order?: number }
+    }) => workApi.createLabelOption(fieldId, values),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.work.labelFields(listId) })
+    },
+  })
+}
+
+export function useUpdateLabelOption(listId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      optionId,
+      values,
+    }: {
+      optionId: number
+      values: { name?: string; color?: string; sort_order?: number }
+    }) => workApi.updateLabelOption(optionId, values),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.work.labelFields(listId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.work.board(listId) })
     },
   })
 }

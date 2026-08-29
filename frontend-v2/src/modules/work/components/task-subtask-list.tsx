@@ -1,10 +1,10 @@
 import { Plus } from 'lucide-react'
 import { useState } from 'react'
 
-import { Button } from '@/shared/ui/button'
 import { Checkbox } from '@/shared/ui/checkbox'
 import { Input } from '@/shared/ui/input'
 import { cn } from '@/shared/utils/cn'
+import { dueTone, dueToneClass, formatDueLabel } from '../utils/due-date'
 import type { WorkTask } from '../types/work'
 import { WORK_TASK_STATUS } from '../types/work'
 
@@ -21,6 +21,10 @@ interface TaskSubtaskListProps {
  * Việc con chỉ sống ở đây — không thành thẻ trên kanban, không thành dòng ở
  * khung nhìn danh sách (C-05/Q10). Thanh tiến độ dùng chính `n/m` đếm được từ
  * danh sách này, không hỏi thêm máy chủ.
+ *
+ * Bố cục theo Lark: `n/m` và thanh tiến độ nằm CÙNG MỘT HÀNG ở đầu khối (bản cũ
+ * để tiêu đề «Việc con» một hàng, số một góc, thanh một hàng nữa — ba hàng cho
+ * một con số), mỗi việc con hiện kèm hạn riêng của nó.
  */
 export function TaskSubtaskList({ subtasks, canEdit, onToggle, onAdd }: TaskSubtaskListProps) {
   const [dangThem, setDangThem] = useState(false)
@@ -41,37 +45,53 @@ export function TaskSubtaskList({ subtasks, canEdit, onToggle, onAdd }: TaskSubt
   }
 
   return (
-    <section className="space-y-2">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold">Việc con</h3>
-        <span className="text-xs text-muted-foreground">
-          {xong}/{tong}
-        </span>
-      </div>
-
+    <div className="w-full space-y-1.5">
+      {/*  Chưa có việc con nào thì KHÔNG vẽ «0 / 0» với một vạch xám rỗng: nó
+           không nói thêm điều gì mà lại chiếm đúng chỗ dễ thấy nhất của khối. */}
       {tong > 0 && (
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-          <div className="h-full bg-primary transition-all" style={{ width: `${phanTram}%` }} />
+        <div className="flex h-7 items-center gap-2">
+          <span className="text-sm tabular-nums text-muted-foreground">
+            {xong} / {tong}
+          </span>
+          <span className="h-1.5 w-28 overflow-hidden rounded-full bg-muted">
+            <span
+              className={cn(
+                'block h-full transition-all',
+                phanTram === 100 ? 'bg-emerald-500' : 'bg-primary',
+              )}
+              style={{ width: `${phanTram}%` }}
+            />
+          </span>
         </div>
       )}
 
-      <ul className="space-y-1">
+      <ul className="space-y-0.5">
         {subtasks.map((s) => {
           const daXong = s.status === WORK_TASK_STATUS.DONE
           return (
-            <li key={s.id} className="flex items-center gap-2">
+            <li key={s.id} className="flex items-center gap-2 rounded-md py-1 hover:bg-accent/50">
               <Checkbox
                 id={`subtask-${s.id}`}
+                className="rounded-full"
                 checked={daXong}
                 disabled={!canEdit}
                 onCheckedChange={(checked) => onToggle(s.id, checked === true)}
               />
               <label
                 htmlFor={`subtask-${s.id}`}
-                className={cn('text-sm', daXong && 'text-muted-foreground line-through')}
+                className={cn(
+                  'flex-1 truncate text-sm',
+                  canEdit && 'cursor-pointer',
+                  daXong && 'text-muted-foreground line-through',
+                )}
               >
                 {s.title}
               </label>
+              {s.due_date && (
+                <span className={cn('shrink-0 text-xs', dueToneClass(dueTone(s.due_date, daXong)))}>
+                  {formatDueLabel(s.due_date)}
+                </span>
+              )}
             </li>
           )
         })}
@@ -91,16 +111,15 @@ export function TaskSubtaskList({ subtasks, canEdit, onToggle, onAdd }: TaskSubt
             }}
           />
         ) : (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="justify-start text-muted-foreground"
+          <button
+            type="button"
             onClick={() => setDangThem(true)}
+            className="flex items-center gap-1 rounded-md px-1 py-1 text-sm text-muted-foreground hover:text-foreground"
           >
             <Plus className="size-4" />
             Thêm việc con
-          </Button>
+          </button>
         ))}
-    </section>
+    </div>
   )
 }

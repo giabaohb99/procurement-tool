@@ -137,13 +137,12 @@ báo "còn n việc con chưa xong" và cho xác nhận.
 
 Unique `(task_id, employee_id)` — một người một vai trên một task; PIC thắng follower.
 
-## 4. Cụm nhãn: tag — nhãn tùy biến
+## 4. Cụm nhãn tùy biến
 
-### `tab_work_tag` + `tab_work_task_tag` — tag đa trị (B-05)
-
-`tab_work_tag`: id · company_id · list_id FK · name VARCHAR(100) · color · sort_order —
-unique `(list_id, name)`. `tab_work_task_tag`: id · task_id FK · tag_id FK — unique
-`(task_id, tag_id)`. Tag thuộc list; chuyển task sang list khác (B-10) là gỡ tag cũ.
+⚠️ **`tab_work_tag` và `tab_work_task_tag` KHÔNG CÒN** (migration `c8a1d4f60b72`).
+Tag nay là một trường tùy biến kiểu CHỌN NHIỀU tên "Tag", nạp sẵn cho list mới
+nhưng `system_key` rỗng — đổi tên, đổi bộ giá trị, xóa hẳn đều được như mọi
+trường khác. Xem §4.1 bên dưới.
 
 ### `tab_work_label_field` + `tab_work_label_option` + `tab_work_task_label` — nhãn tùy biến (B-08)
 
@@ -153,8 +152,20 @@ unique `(list_id, name)`. `tab_work_task_tag`: id · task_id FK · tag_id FK —
 | `tab_work_label_option` | id · field_id FK · name VARCHAR(100) · color · sort_order | Bộ giá trị của trường ("Thumua"…). Unique `(field_id, name)` |
 | `tab_work_task_label` | id · task_id FK · field_id FK · option_id FK | **Unique `(task_id, field_id)`** = chọn MỘT giá trị mỗi trường (single-select). Sau này B-13 thêm kiểu khác thì thêm cột `value_text/value_number` vào bảng này, không đập lại |
 
-Độ ưu tiên và Tag là trường CỨNG (cột riêng, bảng riêng) — không mô hình hóa thành
-label field, vì chúng cần logic riêng (sort theo ưu tiên, lọc nhanh) và có mặt ở mọi list.
+### 4.1 Ba trường từng là "cứng" nay đều là nhãn tùy biến
+
+| Trường | Trước | Nay |
+|---|---|---|
+| Độ ưu tiên | cột `tab_work_task.priority` | trường `system_key = 'priority'`, kiểu chọn một (migration `b2f7c1d94a30`) |
+| Tag | bảng `tab_work_tag` + `tab_work_task_tag` | trường tên "Tag", kiểu CHỌN NHIỀU, `system_key` rỗng (migration `c8a1d4f60b72`) |
+
+Lý do gộp: mọi thứ đụng tới một trường — vẽ trên thẻ, ô nhập ở panel chi tiết, lọc,
+sắp xếp, hộp sửa danh mục — phải viết một lần cho tag và một lần cho trường tùy biến,
+và hai bản ấy đã bắt đầu lệch nhau. Đổi lại, mỗi dự án tự quyết bộ trường của mình.
+
+`system_key` chỉ là CÁI MÓC để mã nguồn tìm lại trường ưu tiên (tô màu thanh Gantt,
+đếm biểu đồ Tổng quan) — nó khóa mỗi việc đổi KIỂU, còn tên · màu · bộ giá trị vẫn
+sửa được. Trường "Tag" cố ý KHÔNG mang móc nào.
 
 ## 5. Cụm trao đổi: bình luận — đính kèm
 
@@ -176,7 +187,7 @@ R2, có `STORAGE_PREFIX`) · file_name · file_size · content_type · uploaded_
 | Nhóm | Endpoint | Ghi chú |
 |---|---|---|
 | Nhóm | `GET/POST /api/work/groups` · `PATCH/DELETE /groups/{id}` · `GET/POST/PATCH/DELETE /groups/{id}/members` | Sidebar trả cây nhóm + list lồng sẵn một lần |
-| List | `GET/POST /api/work/lists` · `PATCH/DELETE /lists/{id}` · `/lists/{id}/members` · `/lists/{id}/sections` · `/lists/{id}/tags` · `/lists/{id}/label-fields` (+`/options`) | |
+| List | `GET/POST /api/work/lists` · `PATCH/DELETE /lists/{id}` · `/lists/{id}/members` · `/lists/{id}/sections` · `/lists/{id}/label-fields` (+`/options`) | Không còn `/lists/{id}/tags` lẫn `PUT /tasks/{id}/tags` |
 | Task | `GET /api/work/lists/{id}/board` (cột + task cha, payload kanban một phát) · `POST /api/work/tasks` · `PATCH /api/work/tasks/{id}` (sửa, kéo cột = `section_id` + `sort_order`, tick xong = `status`) · `DELETE` (xóa mềm) · `/tasks/{id}/subtasks` · `/tasks/{id}/comments` | |
 | Cá nhân | `GET /api/work/my-tasks` | Gom task mình là PIC từ mọi list, nhóm theo hạn (G-03) |
 | Quản trị | `GET /api/work/admin/lists` · `POST /api/work/admin/lists/{id}/join` | H-03/Q4 — join tự ghi audit |

@@ -30,6 +30,7 @@ export type {
   FieldType,
   FilterConfig,
   FilterFieldDefinition,
+  FilterState,
   FilterValue,
   OperatorType,
   SelectOption,

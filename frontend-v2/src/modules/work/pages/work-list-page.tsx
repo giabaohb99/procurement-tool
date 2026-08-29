@@ -2,7 +2,7 @@ import { GanttChartSquare, KanbanSquare, Settings2, Table2, Users } from 'lucide
 import { useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 
-import { useAuth } from '@/core/auth/use-auth'
+import { FilterProvider, useFilterContext } from '@/shared/conditional-filter'
 import { Button } from '@/shared/ui/button'
 import {
   DropdownMenu,
@@ -21,6 +21,7 @@ import {
 } from '@/shared/ui/select'
 import { Tabs, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { cn } from '@/shared/utils/cn'
+import { buildTaskFilterFields } from '../config/task-filter-fields'
 import { GanttView } from '../components/gantt-view'
 import { ListConfigDialog } from '../components/list-config-dialog'
 import { ListMembersDialog } from '../components/list-members-dialog'
@@ -31,12 +32,20 @@ import { TaskListView } from '../components/task-list-view'
 import { WorkToolbar } from '../components/work-toolbar'
 import { useCreateTask, useMoveTask, useUpdateTask, useWorkBoard } from '../hooks/use-work-board'
 import { useWorkViewState } from '../hooks/use-view-state'
-import { useMoveSection, useWorkLabelFields, useWorkTags } from '../hooks/use-work-config'
+import { useMoveSection, useWorkLabelFields } from '../hooks/use-work-config'
 import type { WorkSection } from '../types/work'
-import { WORK_ROLE, WORK_TASK_STATUS } from '../types/work'
+import { fieldHasOptions, WORK_ROLE, WORK_TASK_STATUS } from '../types/work'
 import { prepareTasks } from '../utils/filter-tasks'
+import { buildOptionRank, findPriorityField } from '../utils/priority-field'
+import { applyTaskConditions } from '../utils/task-conditions'
 import { ZOOM_LABELS, type GanttZoom } from '../utils/gantt-scale'
-import { mergeCardFields, WORK_VIEWS, type WorkView } from '../types/view-options'
+import {
+  mergeCardFields,
+  WORK_SORTS,
+  WORK_VIEWS,
+  type WorkSort,
+  type WorkView,
+} from '../types/view-options'
 
 /** Icon của từng khung nhìn — để `WORK_VIEWS` giữ được nhãn thuần dữ liệu. */
 const VIEW_ICONS = {
@@ -59,11 +68,28 @@ const VIEW_ICONS = {
 export function WorkListPage() {
   const params = useParams()
   const listId = Number(params.listId ?? 0)
-  const { user } = useAuth()
-  const myEmployeeId = user?.employee_id ?? 0
 
+  //  Trường tùy biến của dự án cũng là trường LỌC được (độ ưu tiên nay nằm
+  //  trong số đó), nên phải nạp trước khi dựng cấu hình bộ lọc.
+  const { data: labelFields = [] } = useWorkLabelFields(listId)
+
+  //  `key` theo list: điều kiện đang lọc của dự án này (cột nào, nhãn nào) vô
+  //  nghĩa ở dự án khác, mang sang là bảng trống mà không rõ vì sao.
+  const config = useMemo(
+    () => ({ fields: buildTaskFilterFields(listId, labelFields) }),
+    [listId, labelFields],
+  )
+
+  return (
+    <FilterProvider key={listId} config={config}>
+      <WorkListContent listId={listId} />
+    </FilterProvider>
+  )
+}
+
+function WorkListContent({ listId }: { listId: number }) {
+  const { appliedState } = useFilterContext()
   const { data: board, isLoading, isError } = useWorkBoard(listId)
-  const { data: tags = [] } = useWorkTags(listId)
   const { data: labelFields = [] } = useWorkLabelFields(listId)
   const createTask = useCreateTask(listId)
   const updateTask = useUpdateTask(listId)
@@ -74,7 +100,7 @@ export function WorkListPage() {
   //  sách (§1). Từ khóa tìm thì không nhớ — mở lại màn mà vẫn còn bộ lọc chữ cũ
   //  thì người dùng tưởng danh sách trống.
   const [viewState, setViewState] = useWorkViewState(listId)
-  const { view, scope, sort, fields, ganttZoom } = viewState
+  const { view, sort, fields, ganttZoom } = viewState
   const [keyword, setKeyword] = useState('')
 
   const [openTaskId, setOpenTaskId] = useState<number | null>(null)
@@ -95,9 +121,32 @@ export function WorkListPage() {
     [fields, labelFields],
   )
 
+  //  Sắp theo một TRƯỜNG TÙY BIẾN cần hạng của từng giá trị (xem `byLabel`).
+  const optionRank = useMemo(() => buildOptionRank(labelFields), [labelFields])
+
+  //  Bộ tiêu chí sắp xếp = tiêu chí dựng sẵn + MỖI TRƯỜNG TÙY BIẾN một dòng,
+  //  đúng khuôn Lark. Độ ưu tiên xuất hiện ở đây với tư cách một trường như thế.
+  const sortOptions = useMemo(
+    () => [
+      ...WORK_SORTS.map((s) => ({ value: s.value as WorkSort, label: s.label })),
+      ...labelFields
+        .filter((f) => fieldHasOptions(f.field_type))
+        .map((f) => ({ value: `label:${f.id}` as WorkSort, label: f.name })),
+    ],
+    [labelFields],
+  )
+
+  const priorityField = useMemo(() => findPriorityField(labelFields), [labelFields])
+
+  //  Ba lớp, đúng thứ tự: từ khóa → sắp xếp (`prepareTasks`) → BỘ LỌC ĐIỀU KIỆN
+  //  của nút «Lọc».
   const tasks = useMemo(
-    () => prepareTasks(board?.tasks ?? [], { scope, sort, keyword, myEmployeeId }),
-    [board?.tasks, scope, sort, keyword, myEmployeeId],
+    () =>
+      applyTaskConditions(
+        prepareTasks(board?.tasks ?? [], { sort, keyword, optionRank }),
+        appliedState,
+      ),
+    [board?.tasks, sort, keyword, optionRank, appliedState],
   )
 
   if (isError) {
@@ -198,9 +247,9 @@ export function WorkListPage() {
       </div>
 
       <WorkToolbar
-        scope={scope}
-        onScopeChange={(value) => setViewState({ scope: value })}
+        listId={listId}
         sort={sort}
+        sortOptions={sortOptions}
         onSortChange={(value) => setViewState({ sort: value })}
         keyword={keyword}
         onKeywordChange={setKeyword}
@@ -209,6 +258,7 @@ export function WorkListPage() {
         labelFields={labelFields}
         onAddField={canManage ? () => setSettingsOpen(true) : undefined}
         canEdit={canEdit}
+        canManage={canManage}
         onNewTask={() => {
           const firstSection = board.sections[0]
           if (!firstSection) {
@@ -218,6 +268,14 @@ export function WorkListPage() {
           }
           createTask.mutate({ list_id: listId, title: 'Việc mới', section_id: firstSection.id })
         }}
+        onAddSection={
+          canManage
+            ? () => {
+                setEditingSection(null)
+                setSectionDialog('create')
+              }
+            : undefined
+        }
       />
 
       <div className={cn('flex min-h-0 flex-1 flex-col', view === 'kanban' && 'overflow-hidden')}>
@@ -225,7 +283,6 @@ export function WorkListPage() {
           <KanbanBoard
             sections={board.sections}
             tasks={tasks}
-            tags={tags}
             labelFields={labelFields}
             fields={cardFields}
             canEdit={canEdit}
@@ -258,7 +315,6 @@ export function WorkListPage() {
           <TaskListView
             tasks={tasks}
             sections={board.sections}
-            tags={tags}
             labelFields={labelFields}
             canEdit={canEdit}
             onOpenTask={setOpenTaskId}
@@ -274,6 +330,7 @@ export function WorkListPage() {
         {view === 'gantt' && (
           <GanttView
             tasks={tasks}
+            priorityField={priorityField}
             zoom={ganttZoom}
             canEdit={canEdit}
             onOpenTask={setOpenTaskId}

@@ -47,9 +47,6 @@ export const workTaskApi = {
       follower_ids: followerIds,
     }),
 
-  setTags: (taskId: number, tagIds: number[]) =>
-    apiPut<WorkTask>(`/api/work/tasks/${taskId}/tags`, { tag_ids: tagIds }),
-
   /**
    * Đặt giá trị cho một trường tùy biến. `value` ĐA HÌNH theo kiểu trường
    * (id giá trị · mảng id · employee_id · số · chuỗi ngày · chữ); `null` = bỏ

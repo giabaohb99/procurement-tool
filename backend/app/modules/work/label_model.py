@@ -1,11 +1,21 @@
-"""Phân hệ Công việc — cụm nhãn: tag đa trị và nhãn tùy biến theo list.
+"""Phân hệ Công việc — cụm nhãn tùy biến của từng list.
 
 Quy ước chung của phân hệ nằm ở đầu `model.py`. Thiết kế:
 `doc/erp/cong-viec/02-bang-du-lieu.md` §4.
 
-Vì sao Tag và Độ ưu tiên KHÔNG mô hình hóa thành nhãn tùy biến: chúng có mặt ở
-mọi list và cần logic riêng (sắp xếp theo ưu tiên, lọc nhanh theo tag), nên để
-cột cứng / bảng riêng. Nhãn tùy biến là chỗ cho những trường CHỈ list đó cần.
+**Độ ưu tiên NAY LÀ MỘT TRƯỜNG TÙY BIẾN**, không còn là cột cứng `tab_work_task.
+priority` (bỏ ở migration `b2f7c1d94a30`). Mỗi list được nạp sẵn một trường
+`system_key = "priority"` kèm bốn giá trị P1…P4, rồi muốn đổi tên, đổi màu, thêm
+bậc P5 hay xóa hẳn đều được — bậc ưu tiên của phòng kinh doanh không nhất thiết
+giống phòng kỹ thuật. Cột cứng cũ không cho làm gì trong số đó.
+
+**TAG cũng vậy** — hai bảng `tab_work_tag` / `tab_work_task_tag` đã bị bỏ ở
+migration `c8a1d4f60b72`. Tag nay chỉ là một trường tùy biến kiểu CHỌN NHIỀU tên
+"Tag", nạp sẵn cho list mới nhưng KHÔNG mang `system_key`: đổi tên, đổi bộ giá
+trị hay xóa hẳn đều được như mọi trường khác. Giữ bảng riêng chỉ để phục vụ đúng
+một trường thì mọi thứ (lọc, sắp xếp, vẽ trên thẻ, ô nhập ở panel chi tiết) phải
+viết hai lần — một cho tag, một cho trường tùy biến — và hai bản ấy đã bắt đầu
+lệch nhau.
 """
 from decimal import Decimal
 
@@ -17,44 +27,12 @@ from app.core.base_model import AuditMixin, Base
 from app.modules.work.model import WorkLabelFieldType
 
 
-class WorkTag(Base, AuditMixin):
-    """Tag của một list (B-05). Tag THUỘC LIST, không dùng chung toàn hệ.
-
-    Chuyển task sang list khác (B-10) là gỡ tag cũ — tag của list nguồn không có
-    nghĩa ở list đích.
-    """
-
-    __tablename__ = "tab_work_tag"
-    __table_args__ = (UniqueConstraint("list_id", "name", name="uq_work_tag_name"),)
-
-    company_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
-    list_id: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("tab_work_list.id", ondelete="CASCADE"), index=True
-    )
-    name: Mapped[str] = mapped_column(String(100), default="")
-    color: Mapped[str] = mapped_column(String(20), default="")
-    sort_order: Mapped[int] = mapped_column(BigInteger, default=0)
-
-
-class WorkTaskTag(Base, AuditMixin):
-    """Nối task ↔ tag (đa trị: một task nhiều tag)."""
-
-    __tablename__ = "tab_work_task_tag"
-    __table_args__ = (UniqueConstraint("task_id", "tag_id", name="uq_work_task_tag"),)
-
-    task_id: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("tab_work_task.id", ondelete="CASCADE"), index=True
-    )
-    tag_id: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("tab_work_tag.id", ondelete="CASCADE"), index=True
-    )
-
-
 class WorkLabelField(Base, AuditMixin):
-    """Một TRƯỜNG nhãn do list tự đặt — ví dụ "Phiên bản" (B-08).
+    """Một TRƯỜNG nhãn của list — "Phiên bản", "Độ ưu tiên", "Tag"… (B-08).
 
-    Khác Tag ở chỗ: Tag là một trường đa trị có sẵn ở mọi list, còn đây là người
-    dùng đặt THÊM TRƯỜNG mới cho riêng list của mình.
+    Trường THUỘC LIST, không dùng chung toàn hệ. Chuyển task sang list khác
+    (B-10) là mất hết giá trị nhãn cũ — trường của list nguồn không có nghĩa ở
+    list đích.
     """
 
     __tablename__ = "tab_work_label_field"
@@ -71,6 +49,15 @@ class WorkLabelField(Base, AuditMixin):
     field_type: Mapped[int] = mapped_column(
         SmallInteger, default=int(WorkLabelFieldType.SINGLE)
     )
+    #  Trường do HỆ nạp sẵn lúc tạo list: `"priority"` = Độ ưu tiên. Rỗng = do
+    #  người dùng tự khai.
+    #
+    #  Chỉ là một CÁI MÓC để mã nguồn tìm lại đúng trường ấy (tô màu thanh Gantt,
+    #  đếm biểu đồ ở Tổng quan) — không khóa gì cả: tên, bộ giá trị, màu và cả
+    #  việc xóa trường đều do từng dự án tự quyết, y như mọi trường tùy biến
+    #  khác. Không có móc này thì phải dò theo TÊN, mà tên thì người dùng đổi
+    #  được ngay trong menu «Tùy chỉnh».
+    system_key: Mapped[str] = mapped_column(String(30), default="", index=True)
 
 
 class WorkLabelOption(Base, AuditMixin):

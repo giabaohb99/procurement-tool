@@ -19,27 +19,38 @@ export const WORK_VIEWS = [
 
 export type WorkView = (typeof WORK_VIEWS)[number]['value']
 
-/** Nút «Tất cả» của Lark (§3.2) — đổi nhanh lát cắt, không đụng bộ lọc điều kiện. */
-export const WORK_SCOPES = [
-  { value: 'open', label: 'Tất cả việc (chưa xong)' },
-  { value: 'mine', label: 'Việc của tôi' },
-  { value: 'created', label: 'Tôi tạo' },
-  { value: 'done', label: 'Đã hoàn thành' },
-  { value: 'cancelled', label: 'Đã hủy' },
-] as const
+/*
+ * ⚠️ ĐÃ BỎ nút «lát cắt nhanh» (Tất cả việc / Việc của tôi / Tôi tạo / Đã hoàn
+ * thành / Đã hủy). Mọi lát cắt đó nay khai bằng BỘ LỌC ĐIỀU KIỆN — trạng thái,
+ * người phụ trách, người tạo đều là trường lọc (`config/task-filter-fields.ts`).
+ *
+ * Không giữ lại "âm thầm ẩn việc đã xong": lát cắt cố định AND với bộ lọc thì
+ * lọc «trạng thái = Hoàn thành» ra bảng trống, không ai hiểu vì sao.
+ */
 
-export type WorkScope = (typeof WORK_SCOPES)[number]['value']
-
-/** Sắp xếp trong từng cột (§3.4). «Tay» = theo `sort_order` do kéo thả. */
+/**
+ * Sắp xếp trong từng cột (§3.4) — đúng bộ tiêu chí của Lark, thêm «Tiêu đề».
+ * «Tay» = theo `sort_order` do kéo thả.
+ *
+ * Mọi tiêu chí ở đây đọc được từ payload bảng đã tải, không cần gọi thêm máy chủ.
+ * Sắp theo Tag thì nay đi đường `label:{fieldId}` như mọi trường tùy biến khác.
+ */
 export const WORK_SORTS = [
   { value: 'manual', label: 'Tay (kéo thả)' },
+  { value: 'start', label: 'Ngày bắt đầu' },
   { value: 'due', label: 'Hạn chót' },
-  { value: 'priority', label: 'Độ ưu tiên' },
   { value: 'created', label: 'Ngày tạo' },
+  { value: 'updated', label: 'Sửa gần nhất' },
+  { value: 'completed', label: 'Ngày hoàn thành' },
   { value: 'title', label: 'Tiêu đề' },
 ] as const
 
-export type WorkSort = (typeof WORK_SORTS)[number]['value']
+/**
+ * Ngoài bộ trên, sắp được theo **một trường tùy biến** — khóa `label:{fieldId}`,
+ * cùng khuôn với `CardFieldKey`. Độ ưu tiên nay chính là một trường như thế, nên
+ * "sắp theo độ ưu tiên" không còn là một giá trị cố định ở đây được.
+ */
+export type WorkSort = (typeof WORK_SORTS)[number]['value'] | `label:${number}`
 
 /**
  * Trường vẽ trên thẻ kanban — bật/tắt và ĐỔI THỨ TỰ ở nút «Tùy chỉnh» (§3.6),
@@ -50,8 +61,6 @@ export type WorkSort = (typeof WORK_SORTS)[number]['value']
  * đang có của dự án lúc chạy (`mergeCardFields`).
  */
 export const BUILTIN_CARD_FIELDS = [
-  { key: 'priority', label: 'Độ ưu tiên' },
-  { key: 'tags', label: 'Tag' },
   { key: 'assignees', label: 'Phụ trách' },
   { key: 'due', label: 'Hạn chót' },
   { key: 'subtasks', label: 'Việc con' },

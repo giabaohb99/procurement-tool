@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import type { WorkTask } from '../types/work'
-import { WORK_ASSIGNEE_KIND, WORK_TASK_STATUS } from '../types/work'
-import { applyKeyword, applyScope, prepareTasks, sortTasks } from './filter-tasks'
+import { WORK_TASK_STATUS } from '../types/work'
+import { applyKeyword, prepareTasks, sortTasks } from './filter-tasks'
 
 /**
  * Lát cắt và sắp xếp của khung nhìn Công việc.
@@ -11,6 +11,18 @@ import { applyKeyword, applyScope, prepareTasks, sortTasks } from './filter-task
  * trình duyệt nên không bài test backend nào chạm tới. Sai ở đây là việc biến
  * mất khỏi bảng trong khi vẫn nằm nguyên dưới CSDL.
  */
+
+function label(fieldId: number, optionId: number) {
+  return {
+    field_id: fieldId,
+    option_id: optionId,
+    value_text: '',
+    value_number: null,
+    value_date: '',
+    value_employee_id: null,
+    value_employee_name: '',
+  }
+}
 
 function task(patch: Partial<WorkTask> = {}): WorkTask {
   return {
@@ -21,7 +33,6 @@ function task(patch: Partial<WorkTask> = {}): WorkTask {
     title: 'Việc',
     description: '',
     status: WORK_TASK_STATUS.OPEN,
-    priority: 0,
     start_date: '',
     due_date: '',
     sort_order: 0,
@@ -31,7 +42,6 @@ function task(patch: Partial<WorkTask> = {}): WorkTask {
     created_at: '2026-08-01T00:00:00',
     updated_at: '2026-08-01T00:00:00',
     assignees: [],
-    tag_ids: [],
     labels: [],
     subtask_done: 0,
     subtask_total: 0,
@@ -40,73 +50,18 @@ function task(patch: Partial<WorkTask> = {}): WorkTask {
   }
 }
 
-describe('applyScope', () => {
-  it('mặc định ẩn cả việc đã xong lẫn việc đã hủy, không chỉ việc đã xong', () => {
-    //  Việc đã hủy không còn là việc phải làm; để lẫn vào là đếm sai "còn bao nhiêu việc".
-    const rows = [
-      task({ id: 1 }),
-      task({ id: 2, status: WORK_TASK_STATUS.DONE }),
-      task({ id: 3, status: WORK_TASK_STATUS.CANCELLED }),
-    ]
-    expect(applyScope(rows, 'open', 7).map((t) => t.id)).toEqual([1])
-  })
-
-  it('«việc của tôi» chỉ tính PIC, không tính người theo dõi', () => {
-    const rows = [
-      task({
-        id: 1,
-        assignees: [
-          { employee_id: 7, kind: WORK_ASSIGNEE_KIND.PIC, employee_name: '', employee_code: '' },
-        ],
-      }),
-      task({
-        id: 2,
-        assignees: [
-          {
-            employee_id: 7,
-            kind: WORK_ASSIGNEE_KIND.FOLLOWER,
-            employee_name: '',
-            employee_code: '',
-          },
-        ],
-      }),
-    ]
-    expect(applyScope(rows, 'mine', 7).map((t) => t.id)).toEqual([1])
-  })
-
-  it('tài khoản không gắn nhân sự (id 0) không nhận nhầm việc của người khác', () => {
-    //  `employee_id = 0` là tài khoản kỹ thuật. Nếu so sánh lỏng thì mọi dòng
-    //  `creator_employee_id = 0` (dữ liệu cũ) rơi hết vào lát cắt "tôi tạo".
-    const rows = [
-      task({
-        id: 1,
-        assignees: [
-          { employee_id: 5, kind: WORK_ASSIGNEE_KIND.PIC, employee_name: '', employee_code: '' },
-        ],
-      }),
-    ]
-    expect(applyScope(rows, 'mine', 0)).toEqual([])
-  })
-
-  it('«tôi tạo» không kéo theo việc mình tạo rồi đã xong', () => {
-    const rows = [
-      task({ id: 1, creator_employee_id: 7 }),
-      task({ id: 2, creator_employee_id: 7, status: WORK_TASK_STATUS.DONE }),
-    ]
-    expect(applyScope(rows, 'created', 7).map((t) => t.id)).toEqual([1])
-  })
-
-  it('danh sách rỗng thì mọi lát cắt đều trả rỗng, không nổ', () => {
-    for (const scope of ['open', 'mine', 'created', 'done', 'cancelled'] as const) {
-      expect(applyScope([], scope, 7)).toEqual([])
-    }
-  })
-})
-
 describe('applyKeyword', () => {
   it('tìm cả trong mô tả, không phân biệt hoa thường và khoảng trắng thừa', () => {
     const rows = [task({ id: 1, title: 'In tem' }), task({ id: 2, description: 'Đặt IN nhãn' })]
     expect(applyKeyword(rows, '  in  ').map((t) => t.id)).toEqual([1, 2])
+  })
+
+  //  Mô tả lưu HTML từ khi ô mô tả thành trình soạn thảo rich text: tìm trên
+  //  chuỗi thô thì gõ "p" khớp mọi việc có mô tả vì trúng tên thẻ `<p>`.
+  it('không khớp TÊN THẺ trong mô tả HTML, nhưng vẫn khớp chữ bên trong thẻ', () => {
+    const rows = [task({ id: 1, description: '<p><strong>Đặt in</strong> nhãn</p>' })]
+    expect(applyKeyword(rows, 'strong')).toHaveLength(0)
+    expect(applyKeyword(rows, 'đặt in').map((t) => t.id)).toEqual([1])
   })
 
   it('từ khóa rỗng giữ nguyên danh sách chứ không lọc sạch', () => {
@@ -127,9 +82,76 @@ describe('sortTasks', () => {
     expect(sortTasks(rows, 'due').map((t) => t.id)).toEqual([3, 2, 1])
   })
 
-  it('sắp theo ưu tiên thì P1 lên đầu và "chưa đặt" (0) xuống cuối', () => {
-    const rows = [task({ id: 1, priority: 0 }), task({ id: 2, priority: 3 }), task({ id: 3, priority: 1 })]
-    expect(sortTasks(rows, 'priority').map((t) => t.id)).toEqual([3, 2, 1])
+  //  Độ ưu tiên nay là một TRƯỜNG TÙY BIẾN (`label:{id}`), không còn cột cứng.
+  it('sắp theo trường tùy biến: xếp theo THỨ TỰ giá trị, việc chưa chọn xuống cuối', () => {
+    //  Hạng lấy từ bộ giá trị, không phải `option_id`: id 91 là bậc đầu (P1).
+    const rank = new Map([
+      [91, 0],
+      [92, 1],
+    ])
+    const rows = [
+      task({ id: 1 }),
+      task({ id: 2, labels: [label(7, 92)] }),
+      task({ id: 3, labels: [label(7, 91)] }),
+    ]
+    expect(sortTasks(rows, 'label:7', { optionRank: rank }).map((t) => t.id)).toEqual([3, 2, 1])
+  })
+
+  it('sắp theo trường tùy biến mà thiếu bảng hạng thì rơi về option_id, không nổ', () => {
+    const rows = [task({ id: 1, labels: [label(7, 92)] }), task({ id: 2, labels: [label(7, 91)] })]
+    expect(sortTasks(rows, 'label:7').map((t) => t.id)).toEqual([2, 1])
+  })
+
+  it('giá trị của TRƯỜNG KHÁC không lọt vào phép sắp xếp', () => {
+    const rows = [task({ id: 1, labels: [label(9, 91)] }), task({ id: 2, labels: [label(7, 92)] })]
+    //  Việc 1 không có giá trị ở trường 7 nên phải xuống cuối, dù nó có nhãn.
+    expect(sortTasks(rows, 'label:7', { optionRank: new Map([[92, 0]]) }).map((t) => t.id)).toEqual([
+      2, 1,
+    ])
+  })
+
+  it('sắp theo ngày bắt đầu cũng đẩy việc CHƯA ĐẶT xuống cuối như hạn chót', () => {
+    const rows = [
+      task({ id: 1, start_date: '' }),
+      task({ id: 2, start_date: '2026-09-01' }),
+      task({ id: 3, start_date: '2026-08-30' }),
+    ]
+    expect(sortTasks(rows, 'start').map((t) => t.id)).toEqual([3, 2, 1])
+  })
+
+  //  Ba mốc "đã xảy ra" xếp NGƯỢC hai mốc "sắp tới": mới nhất lên đầu. Đảo vế
+  //  rồi mới so là chuỗi rỗng thành lớn nhất, việc chưa hoàn thành chen lên trên.
+  it('sắp theo ngày hoàn thành: mới nhất lên đầu, việc CHƯA xong xuống cuối', () => {
+    const rows = [
+      task({ id: 1, completed_at: null }),
+      task({ id: 2, completed_at: '2026-08-01T00:00:00' }),
+      task({ id: 3, completed_at: '2026-08-20T00:00:00' }),
+    ]
+    expect(sortTasks(rows, 'completed').map((t) => t.id)).toEqual([3, 2, 1])
+  })
+
+  it('sắp theo sửa gần nhất lấy updated_at, không lấy created_at', () => {
+    const rows = [
+      task({ id: 1, created_at: '2026-08-20T00:00:00', updated_at: '2026-08-20T00:00:00' }),
+      task({ id: 2, created_at: '2026-08-01T00:00:00', updated_at: '2026-08-28T00:00:00' }),
+    ]
+    expect(sortTasks(rows, 'updated').map((t) => t.id)).toEqual([2, 1])
+    expect(sortTasks(rows, 'created').map((t) => t.id)).toEqual([1, 2])
+  })
+
+  it('sắp theo trường tùy biến kiểu chọn-nhiều lấy giá trị ĐẦU TIÊN, việc trống xuống cuối', () => {
+    //  Tag nay chính là một trường như thế (`label:{fieldId}`), không còn tiêu
+    //  chí «Tag» riêng nữa.
+    const rank = new Map([
+      [91, 0],
+      [94, 1],
+    ])
+    const rows = [
+      task({ id: 1, labels: [] }),
+      task({ id: 2, labels: [label(6, 94)] }),
+      task({ id: 3, labels: [label(6, 91), label(6, 94)] }),
+    ]
+    expect(sortTasks(rows, 'label:6', { optionRank: rank }).map((t) => t.id)).toEqual([3, 2, 1])
   })
 
   it('sắp xếp không làm hỏng mảng gốc — bảng còn dùng lại nó cho khung nhìn khác', () => {
@@ -147,13 +169,15 @@ describe('sortTasks', () => {
 })
 
 describe('prepareTasks', () => {
-  it('lọc trước rồi mới sắp — việc đã xong không chen vào thứ tự của việc đang mở', () => {
+  it('lọc theo TỪ KHÓA trước rồi mới sắp, và KHÔNG còn ẩn ngầm việc đã xong', () => {
+    //  Lát cắt cố định "chỉ việc chưa xong" đã bỏ: ẩn ngầm thì lọc «trạng thái
+    //  = Hoàn thành» ở nút «Bộ lọc» sẽ ra bảng trống.
     const rows = [
-      task({ id: 1, due_date: '2026-09-10' }),
-      task({ id: 2, status: WORK_TASK_STATUS.DONE, due_date: '2026-08-01' }),
-      task({ id: 3, due_date: '2026-08-20' }),
+      task({ id: 1, title: 'In tem', due_date: '2026-09-10' }),
+      task({ id: 2, title: 'In nhãn', status: WORK_TASK_STATUS.DONE, due_date: '2026-08-01' }),
+      task({ id: 3, title: 'Đóng gói', due_date: '2026-08-20' }),
     ]
-    const ra = prepareTasks(rows, { scope: 'open', sort: 'due', keyword: '', myEmployeeId: 7 })
-    expect(ra.map((t) => t.id)).toEqual([3, 1])
+    expect(prepareTasks(rows, { sort: 'due', keyword: '' }).map((t) => t.id)).toEqual([2, 3, 1])
+    expect(prepareTasks(rows, { sort: 'due', keyword: 'in ' }).map((t) => t.id)).toEqual([2, 1])
   })
 })

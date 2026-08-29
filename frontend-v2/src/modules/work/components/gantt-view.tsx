@@ -10,9 +10,10 @@ import {
 import { useMemo, useRef, useState } from 'react'
 
 import { cn } from '@/shared/utils/cn'
-import type { WorkTask } from '../types/work'
+import type { WorkLabelField, WorkTask } from '../types/work'
 import { WORK_TASK_STATUS } from '../types/work'
 import { formatDueLabel, today } from '../utils/due-date'
+import { priorityColorOf } from '../utils/priority-field'
 import {
   datesToSave,
   daysDragged,
@@ -34,6 +35,11 @@ import { GanttRow } from './gantt-row'
 
 interface GanttViewProps {
   tasks: WorkTask[]
+  /**
+   * Trường ĐỘ ƯU TIÊN của dự án — thanh việc tô theo màu bậc ưu tiên. Vắng =
+   * dự án đã xóa trường đó, thanh về màu xám.
+   */
+  priorityField?: WorkLabelField
   zoom: GanttZoom
   canEdit: boolean
   onOpenTask: (taskId: number) => void
@@ -71,7 +77,14 @@ interface GanttViewProps {
  * Vị trí tạm lúc kéo nằm ở **`DragOverlay`** (`GanttDragPreview`) — chỉ mình nó
  * vẽ lại theo con trỏ, các hàng bên dưới đứng yên.
  */
-export function GanttView({ tasks, zoom, canEdit, onOpenTask, onMoveDates }: GanttViewProps) {
+export function GanttView({
+  tasks,
+  priorityField,
+  zoom,
+  canEdit,
+  onOpenTask,
+  onMoveDates,
+}: GanttViewProps) {
   const homNay = today()
   const timeline = useMemo(() => buildTimeline(tasks, zoom, homNay), [tasks, zoom, homNay])
   const header = useMemo(() => groupHeader(timeline, zoom), [timeline, zoom])
@@ -155,6 +168,7 @@ export function GanttView({ tasks, zoom, canEdit, onOpenTask, onMoveDates }: Gan
                 key={t.id}
                 task={t}
                 timeline={timeline}
+                barColor={priorityColorOf(t, priorityField)}
                 canEdit={canEdit}
                 zebra={i % 2 === 1}
                 onOpenTask={openTask}
@@ -167,7 +181,13 @@ export function GanttView({ tasks, zoom, canEdit, onOpenTask, onMoveDates }: Gan
       {/*  Không dùng hiệu ứng thả về chỗ cũ: ngày nhảy theo nấc rời rạc nên lớp
           phủ bay về sẽ trượt qua chỗ thanh vừa được đặt, nhìn như thả hụt. */}
       <DragOverlay modifiers={[snap]} dropAnimation={null}>
-        {keo && <GanttDragPreview data={keo} timeline={timeline} />}
+        {keo && (
+          <GanttDragPreview
+            data={keo}
+            timeline={timeline}
+            barColor={priorityColorOf(keo.task, priorityField)}
+          />
+        )}
       </DragOverlay>
     </DndContext>
   )

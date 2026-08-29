@@ -4,7 +4,7 @@ Gom một chỗ để bốn service không mỗi nơi trả một kiểu. Mọi 
 nhận đối tượng model + vài thứ tra sẵn, trả dict — không tự đi hỏi CSDL, vì gọi
 trong vòng lặp là đẻ ra N+1 query.
 """
-from app.modules.work.label_model import WorkLabelField, WorkLabelOption, WorkTag
+from app.modules.work.label_model import WorkLabelField, WorkLabelOption
 from app.modules.work.model import WorkGroup, WorkList
 from app.modules.work.task_model import WorkSection, WorkTask
 
@@ -54,19 +54,18 @@ def section_out(s: WorkSection) -> dict:
             "list_id": s.list_id}
 
 
-def tag_out(t: WorkTag) -> dict:
-    return {"id": t.id, "name": t.name, "color": t.color, "sort_order": t.sort_order,
-            "list_id": t.list_id}
-
-
 def label_option_out(o: WorkLabelOption) -> dict:
     return {"id": o.id, "name": o.name, "color": o.color, "sort_order": o.sort_order,
             "field_id": o.field_id}
 
 
-def label_field_out(f: WorkLabelField, options: list[WorkLabelOption]) -> dict:
+def label_field_out(f: WorkLabelField, options: list[WorkLabelOption],
+                    value_count: int = 0) -> dict:
+    """`value_count` = số GIÁ TRỊ đã gán cho việc. Giao diện khóa ô "kiểu trường"
+    khi con số này > 0: đổi kiểu thì mọi giá trị đã gán nằm sai cột `value_*`."""
     return {"id": f.id, "name": f.name, "sort_order": f.sort_order, "list_id": f.list_id,
-            "field_type": int(f.field_type),
+            "field_type": int(f.field_type), "system_key": f.system_key or "",
+            "value_count": int(value_count),
             "options": [label_option_out(o) for o in options]}
 
 
@@ -89,7 +88,7 @@ def task_label_out(tl, employee_name: str = "") -> dict:
     }
 
 
-def task_out(t: WorkTask, *, assignees: list[dict], tag_ids: list[int],
+def task_out(t: WorkTask, *, assignees: list[dict],
              labels: list[dict], subtask_done: int = 0, subtask_total: int = 0,
              comment_count: int = 0) -> dict:
     """Một task cho cả kanban lẫn danh sách.
@@ -101,14 +100,13 @@ def task_out(t: WorkTask, *, assignees: list[dict], tag_ids: list[int],
         "id": t.id, "list_id": t.list_id, "section_id": t.section_id,
         "parent_id": t.parent_id,
         "title": t.title, "description": t.description,
-        "status": int(t.status), "priority": int(t.priority),
+        "status": int(t.status),
         "start_date": t.start_date, "due_date": t.due_date,
         "sort_order": t.sort_order,
         "creator_employee_id": t.creator_employee_id,
         "completed_at": t.completed_at, "completed_by": t.completed_by,
         "created_at": t.created_at, "updated_at": t.updated_at,
         "assignees": assignees,
-        "tag_ids": tag_ids,
         "labels": labels,
         "subtask_done": subtask_done, "subtask_total": subtask_total,
         "comment_count": comment_count,

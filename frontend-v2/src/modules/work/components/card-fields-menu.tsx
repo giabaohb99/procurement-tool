@@ -14,9 +14,11 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { Eye, EyeOff, GripVertical, Plus } from 'lucide-react'
+import { Eye, EyeOff, GripVertical, Pencil, Plus } from 'lucide-react'
+import { useState } from 'react'
 
 import { Button } from '@/shared/ui/button'
+import { IconTooltip } from '@/shared/ui/icon-tooltip'
 import { cn } from '@/shared/utils/cn'
 import {
   BUILTIN_CARD_FIELDS,
@@ -25,13 +27,17 @@ import {
   type CardFields,
 } from '../types/view-options'
 import type { WorkLabelField } from '../types/work'
+import { FieldEditDialog } from './field-edit-dialog'
 
 interface CardFieldsMenuProps {
+  listId: number
   fields: CardFields
   labelFields: WorkLabelField[]
   onChange: (fields: CardFields) => void
   /** Mở màn Thiết lập để khai thêm nhãn tùy biến; vắng = không có quyền. */
   onAddField?: () => void
+  /** ADMIN trở lên mới được sửa trường tùy biến — 04 §3. */
+  canManage: boolean
 }
 
 /**
@@ -44,13 +50,24 @@ interface CardFieldsMenuProps {
  *
  * `DndContext` RIÊNG của menu, không dùng chung với bảng kanban: hai ngữ cảnh
  * lồng nhau thì mọi cú kéo thẻ việc cũng bắn vào đây.
+ *
+ * Nút BÚT CHÌ mở hộp thoại «Sửa trường» — MỘT khuôn cho mọi trường tùy biến,
+ * Tag và Độ ưu tiên cũng vậy: tên · kiểu · bộ giá trị kéo xếp được · xóa trường.
+ *
+ * Trước đây muốn sửa một chữ trong bộ giá trị phải đóng menu, mở *Quản lý dự án
+ * → Thiết lập*, rồi tìm lại đúng trường đó. Bốn trường dựng sẵn (Phụ trách ·
+ * Hạn chót · Việc con · Số bình luận) không có gì để sửa nên không có bút chì.
  */
 export function CardFieldsMenu({
+  listId,
   fields,
   labelFields,
   onChange,
   onAddField,
+  canManage,
 }: CardFieldsMenuProps) {
+  const [truongDangSua, setTruongDangSua] = useState<WorkLabelField | null>(null)
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -72,6 +89,14 @@ export function CardFieldsMenu({
     onChange(fields.map((f) => (f.key === key ? { ...f, visible: !f.visible } : f)))
   }
 
+  /** Trường tùy biến đứng sau dòng này, hoặc `null` nếu dòng đó không sửa được. */
+  function editableField(key: CardFieldKey): WorkLabelField | null {
+    if (!canManage) return null
+    const id = labelFieldId(key)
+    if (id === null) return null
+    return labelFields.find((f) => f.id === id) ?? null
+  }
+
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between px-1 pb-1">
@@ -89,17 +114,27 @@ export function CardFieldsMenu({
           items={fields.map((f) => f.key)}
           strategy={verticalListSortingStrategy}
         >
-          {fields.map((field) => (
-            <FieldRow
-              key={field.key}
-              fieldKey={field.key}
-              label={fieldLabel(field.key, labelFields)}
-              visible={field.visible}
-              onToggle={() => toggle(field.key)}
-            />
-          ))}
+          {fields.map((field) => {
+            const target = editableField(field.key)
+            return (
+              <FieldRow
+                key={field.key}
+                fieldKey={field.key}
+                label={fieldLabel(field.key, labelFields)}
+                visible={field.visible}
+                onEdit={target ? () => setTruongDangSua(target) : undefined}
+                onToggle={() => toggle(field.key)}
+              />
+            )
+          })}
         </SortableContext>
       </DndContext>
+
+      <FieldEditDialog
+        listId={listId}
+        field={truongDangSua}
+        onClose={() => setTruongDangSua(null)}
+      />
     </div>
   )
 }
@@ -115,11 +150,14 @@ function FieldRow({
   fieldKey,
   label,
   visible,
+  onEdit,
   onToggle,
 }: {
   fieldKey: CardFieldKey
   label: string
   visible: boolean
+  /** Vắng = trường này không sửa được (dựng sẵn, hoặc không đủ quyền). */
+  onEdit?: () => void
   onToggle: () => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -149,6 +187,20 @@ function FieldRow({
       <span className={cn('flex-1 truncate text-sm', !visible && 'text-muted-foreground')}>
         {label}
       </span>
+
+      {onEdit && (
+        <IconTooltip label={`Sửa trường ${label}`}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-7"
+            aria-label={`Sửa trường ${label}`}
+            onClick={onEdit}
+          >
+            <Pencil className="size-3.5" />
+          </Button>
+        </IconTooltip>
+      )}
 
       <Button
         variant="ghost"

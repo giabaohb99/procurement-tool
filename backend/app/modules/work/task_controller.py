@@ -88,12 +88,6 @@ def set_assignees(task_id: int, data: schema.AssigneesIn, db: Session = Depends(
         "Đã cập nhật người phụ trách")
 
 
-@router.put("/tasks/{task_id}/tags")
-def set_tags(task_id: int, data: schema.TagsIn, db: Session = Depends(get_db),
-             user=Depends(require("work_task", "write"))):
-    return success(tasks.set_tags(db, _actor(db, user), task_id, data.tag_ids), "Đã lưu")
-
-
 @router.put("/tasks/{task_id}/label")
 def set_label(task_id: int, data: schema.LabelIn, db: Session = Depends(get_db),
               user=Depends(require("work_task", "write"))):

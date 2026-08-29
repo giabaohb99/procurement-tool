@@ -8,11 +8,13 @@ import { formatDueLabel } from '../utils/due-date'
 import type { GanttDragKind } from '../utils/gantt-drag'
 import { HANDLE_WIDTH, MIN_LABEL_WIDTH, ROW_HEIGHT } from '../utils/gantt-layout'
 import { barGeometry, type GanttTimeline } from '../utils/gantt-scale'
-import { chipClass, priorityColor } from '../utils/work-colors'
+import { chipClass } from '../utils/work-colors'
 
 interface GanttRowProps {
   task: WorkTask
   timeline: GanttTimeline
+  /** Màu thanh — tên màu trong `WORK_COLORS`, lấy từ bậc ưu tiên của việc. */
+  barColor: string
   canEdit: boolean
   zebra: boolean
   onOpenTask: (taskId: number) => void
@@ -31,6 +33,7 @@ interface GanttRowProps {
 export const GanttRow = memo(function GanttRow({
   task,
   timeline,
+  barColor,
   canEdit,
   zebra,
   onOpenTask,
@@ -46,6 +49,7 @@ export const GanttRow = memo(function GanttRow({
     <div style={{ height: ROW_HEIGHT }} className={nen}>
       <GanttBar
         task={task}
+        barColor={barColor}
         left={bar.left}
         width={bar.width}
         xong={xong}
@@ -80,6 +84,7 @@ export const GanttRow = memo(function GanttRow({
 
 interface GanttBarProps {
   task: WorkTask
+  barColor: string
   left: number
   width: number
   xong: boolean
@@ -89,7 +94,7 @@ interface GanttBarProps {
 }
 
 /** Thanh việc — kéo cả thanh để DỜI lịch. */
-function GanttBar({ task, left, width, xong, canEdit, hienNhan, onOpenTask }: GanttBarProps) {
+function GanttBar({ task, barColor, left, width, xong, canEdit, hienNhan, onOpenTask }: GanttBarProps) {
   const { setNodeRef, listeners, attributes, isDragging } = useDraggable({
     id: `gantt-move-${task.id}`,
     disabled: !canEdit,
@@ -112,7 +117,7 @@ function GanttBar({ task, left, width, xong, canEdit, hienNhan, onOpenTask }: Ga
       style={{ left, width, top: 5, height: ROW_HEIGHT - 10 }}
       className={cn(
         'absolute z-10 flex items-center overflow-hidden rounded px-2 text-[11px] font-medium',
-        chipClass(priorityColor(task.priority)),
+        chipClass(barColor),
         'ring-1 ring-black/10 ring-inset',
         canEdit ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
         xong && 'opacity-60',

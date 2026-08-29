@@ -162,7 +162,7 @@ def transfer_list(list_id: int, data: schema.TransferIn, db: Session = Depends(g
                    "Đã chuyển quyền sở hữu")
 
 
-# ── Cấu hình của list: cột · tag · nhãn tùy biến ─────────────────────────────
+# ── Cấu hình của list: cột kanban · nhãn tùy biến ────────────────────────────
 
 @router.get("/lists/{list_id}/sections")
 def get_sections(list_id: int, db: Session = Depends(get_db),
@@ -200,25 +200,6 @@ def delete_section(section_id: int, move_to: int | None = None,
     return success(None, "Đã xóa cột")
 
 
-@router.get("/lists/{list_id}/tags")
-def get_tags(list_id: int, db: Session = Depends(get_db),
-             user=Depends(require("work_task", "read"))):
-    return success(cfg.get_tags(db, _actor(db, user), list_id))
-
-
-@router.post("/lists/{list_id}/tags")
-def create_tag(list_id: int, data: schema.TagIn, db: Session = Depends(get_db),
-               user=Depends(require("work_task", "write"))):
-    return success(cfg.create_tag(db, _actor(db, user), list_id, data), "Đã thêm tag")
-
-
-@router.delete("/tags/{tag_id}")
-def delete_tag(tag_id: int, db: Session = Depends(get_db),
-               user=Depends(require("work_task", "delete"))):
-    cfg.delete_tag(db, _actor(db, user), tag_id)
-    return success(None, "Đã xóa tag")
-
-
 @router.get("/lists/{list_id}/label-fields")
 def get_label_fields(list_id: int, db: Session = Depends(get_db),
                      user=Depends(require("work_task", "read"))):
@@ -230,6 +211,13 @@ def create_label_field(list_id: int, data: schema.LabelFieldIn,
                        db: Session = Depends(get_db),
                        user=Depends(require("work_task", "write"))):
     return success(cfg.create_label_field(db, _actor(db, user), list_id, data), "Đã thêm")
+
+
+@router.patch("/label-fields/{field_id}")
+def update_label_field(field_id: int, data: schema.LabelFieldUpdate,
+                       db: Session = Depends(get_db),
+                       user=Depends(require("work_task", "write"))):
+    return success(cfg.update_label_field(db, _actor(db, user), field_id, data), "Đã lưu")
 
 
 @router.delete("/label-fields/{field_id}")
@@ -244,6 +232,13 @@ def create_label_option(field_id: int, data: schema.LabelOptionIn,
                         db: Session = Depends(get_db),
                         user=Depends(require("work_task", "write"))):
     return success(cfg.create_label_option(db, _actor(db, user), field_id, data), "Đã thêm")
+
+
+@router.patch("/label-options/{option_id}")
+def update_label_option(option_id: int, data: schema.LabelOptionUpdate,
+                        db: Session = Depends(get_db),
+                        user=Depends(require("work_task", "write"))):
+    return success(cfg.update_label_option(db, _actor(db, user), option_id, data), "Đã lưu")
 
 
 @router.delete("/label-options/{option_id}")

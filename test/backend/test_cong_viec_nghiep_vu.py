@@ -1,8 +1,8 @@
-"""Phân hệ Công việc (CR-216 / W1) — luật nghiệp vụ của task, cột, tag, nhãn.
+"""Phân hệ Công việc (CR-216 / W1) — luật nghiệp vụ của task, cột, nhãn.
 
 Phần phân quyền nằm ở `test_cong_viec_phan_quyen.py`. Tệp này chỉ soi những chỗ
-dữ liệu dễ lệch âm thầm: tag/nhãn của list khác gắn nhầm sang, cột xóa để lại
-việc mồ côi, hoàn thành rồi mở lại còn sót dấu, một người vừa PIC vừa theo dõi.
+dữ liệu dễ lệch âm thầm: nhãn của list khác gắn nhầm sang, cột xóa để lại việc
+mồ côi, hoàn thành rồi mở lại còn sót dấu, một người vừa PIC vừa theo dõi.
 """
 import pytest
 from fastapi import HTTPException
@@ -10,7 +10,8 @@ from fastapi import HTTPException
 from app.modules.work import list_config_service as cfg
 from app.modules.work import list_service, schema, task_service
 from app.modules.work.membership_service import Actor
-from app.modules.work.model import WorkAssigneeKind, WorkTaskStatus
+from app.modules.work.model import (WorkAssigneeKind, WorkLabelFieldType,
+                                    WorkTaskStatus)
 from app.modules.work.task_model import WorkTask
 
 COMPANY = 1
@@ -122,23 +123,38 @@ def test_dat_lai_nguoi_phu_trach_la_thay_the_ca_bo_khong_phai_cong_don(db, owner
     assert [a["employee_id"] for a in ra["assignees"]] == [33]
 
 
-# ── Tag và nhãn tùy biến ───────────────────────────────────────────────────────
+# ── Nhãn tùy biến ──────────────────────────────────────────────────────────────
 
-def test_khong_gan_duoc_tag_cua_list_khac(db, owner, work_list):
-    """B-05: tag thuộc list. Gắn chéo thì thẻ hiện tag mà bộ lọc của list không có."""
+def test_khong_gan_duoc_truong_cua_list_khac(db, owner, work_list):
+    """Trường thuộc list. Gắn chéo thì thẻ mang một nhãn mà giao diện của list
+    không bao giờ vẽ ra, vì nó chỉ vẽ trường của chính list mình."""
     list_b = list_service.create_list(db, owner, schema.ListCreate(name="Kho"))
-    tag_b = cfg.create_tag(db, owner, list_b["id"], schema.TagIn(name="Gấp"))
+    f_b = cfg.create_label_field(db, owner, list_b["id"], schema.LabelFieldIn(name="Gấp"))
+    v_b = cfg.create_label_option(db, owner, f_b["id"], schema.LabelOptionIn(name="Có"))
     t = _create_task(db, owner, work_list["id"])
 
     with pytest.raises(HTTPException) as e:
-        task_service.set_tags(db, owner, t["id"], [tag_b["id"]])
+        task_service.set_label(db, owner, t["id"], f_b["id"], v_b["id"])
     assert e.value.status_code == 400
 
 
-def test_tag_trung_ten_trong_mot_list_bi_chan(db, owner, work_list):
-    cfg.create_tag(db, owner, work_list["id"], schema.TagIn(name="Gấp"))
+def test_truong_trung_ten_trong_mot_list_bi_chan(db, owner, work_list):
+    cfg.create_label_field(db, owner, work_list["id"], schema.LabelFieldIn(name="Gấp"))
     with pytest.raises(HTTPException):
-        cfg.create_tag(db, owner, work_list["id"], schema.TagIn(name="Gấp"))
+        cfg.create_label_field(db, owner, work_list["id"], schema.LabelFieldIn(name="Gấp"))
+
+
+def test_truong_tag_nap_san_la_truong_tuy_bien_binh_thuong(db, owner, work_list):
+    """Tag không còn bảng riêng: nó là một trường CHỌN NHIỀU tên "Tag", không
+    mang `system_key` nên đổi tên · đổi bộ giá trị · xóa hẳn đều được."""
+    tag = next(f for f in cfg.get_label_fields(db, owner, work_list["id"])
+               if f["name"] == cfg.TAG_FIELD_NAME)
+    assert tag["field_type"] == int(WorkLabelFieldType.MULTI)
+    assert tag["system_key"] == ""
+
+    cfg.delete_label_field(db, owner, tag["id"])
+    assert [f["name"] for f in cfg.get_label_fields(db, owner, work_list["id"])
+            if f["name"] == cfg.TAG_FIELD_NAME] == []
 
 
 def test_nhan_tuy_bien_chi_giu_mot_gia_tri_moi_truong(db, owner, work_list):

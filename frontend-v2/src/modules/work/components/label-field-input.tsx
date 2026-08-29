@@ -3,17 +3,13 @@ import { X } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import { DatePicker } from '@/shared/ui/date-picker'
 import { Input } from '@/shared/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/ui/select'
+import { ReadOnlyValue } from '@/shared/ui/read-only-value'
 import { cn } from '@/shared/utils/cn'
 import type { WorkLabelField, WorkMember, WorkTaskLabelValue } from '../types/work'
 import { WORK_FIELD_TYPE } from '../types/work'
+import { personName } from '../utils/people'
 import { chipClass } from '../utils/work-colors'
+import { TaskChipSelect } from './task-chip-select'
 
 interface LabelFieldInputProps {
   field: WorkLabelField
@@ -56,36 +52,33 @@ export function LabelFieldInput({
       //  Chọn trong THÀNH VIÊN của dự án, không phải toàn bộ danh bạ: gán một
       //  người ngoài dự án thì họ không mở nổi task để biết mình bị gán.
       return (
-        <Select
-          value={String(first?.value_employee_id ?? 'none')}
+        <TaskChipSelect
+          ariaLabel={field.name}
+          placeholder="Chưa chọn"
+          value={String(first?.value_employee_id ?? NONE)}
+          options={[
+            { value: NONE, label: 'Chưa chọn' },
+            ...members.map((m) => ({
+              value: String(m.employee_id),
+              label: personName(m.employee_name, m.employee_id),
+            })),
+          ]}
           disabled={disabled}
-          onValueChange={(v) => onChange(v === 'none' ? null : Number(v))}
-        >
-          <SelectTrigger size="sm" className="w-44">
-            <SelectValue placeholder="Chưa chọn" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">Chưa chọn</SelectItem>
-            {members.map((m) => (
-              <SelectItem key={m.employee_id} value={String(m.employee_id)}>
-                {m.employee_name || `#${m.employee_id}`}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          onChange={(v) => onChange(v === NONE ? null : Number(v))}
+        />
       )
 
     case WORK_FIELD_TYPE.NUMBER:
       return (
-        <Input
+        <PlainTextInput
           type="number"
           className="w-44"
           disabled={disabled}
-          defaultValue={first?.value_number ?? ''}
+          value={first?.value_number ?? ''}
           placeholder="Nhập số"
           //  Ghi lúc RỜI ô, không phải mỗi phím: gõ "12.5" mà bắn theo từng
           //  ký tự thì máy chủ nhận cả "12." và trả lỗi giữa chừng.
-          onBlur={(e) => onChange(e.target.value.trim() === '' ? null : e.target.value)}
+          onSave={(value) => onChange(value === '' ? null : value)}
         />
       )
 
@@ -94,6 +87,8 @@ export function LabelFieldInput({
         <DatePicker
           size="sm"
           clearable
+          className="w-auto"
+          placeholder="Chưa đặt"
           value={first?.value_date ?? ''}
           disabled={disabled}
           onChange={(value) => onChange(value || null)}
@@ -102,37 +97,75 @@ export function LabelFieldInput({
 
     case WORK_FIELD_TYPE.TEXT:
       return (
-        <Input
+        <PlainTextInput
           className="w-full"
           disabled={disabled}
-          defaultValue={first?.value_text ?? ''}
+          value={first?.value_text ?? ''}
           placeholder="Nhập nội dung"
           maxLength={500}
-          onBlur={(e) => onChange(e.target.value.trim() === '' ? null : e.target.value)}
+          onSave={(value) => onChange(value === '' ? null : value)}
         />
       )
 
     default:
       return (
-        <Select
-          value={String(first?.option_id ?? 'none')}
+        <TaskChipSelect
+          ariaLabel={field.name}
+          placeholder="Chưa chọn"
+          value={String(first?.option_id ?? NONE)}
+          options={[
+            { value: NONE, label: 'Chưa chọn' },
+            ...field.options.map((o) => ({
+              value: String(o.id),
+              label: o.name,
+              color: o.color,
+            })),
+          ]}
           disabled={disabled}
-          onValueChange={(v) => onChange(v === 'none' ? null : Number(v))}
-        >
-          <SelectTrigger size="sm" className="w-44">
-            <SelectValue placeholder="Chưa chọn" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">Chưa chọn</SelectItem>
-            {field.options.map((o) => (
-              <SelectItem key={o.id} value={String(o.id)}>
-                {o.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          onChange={(v) => onChange(v === NONE ? null : Number(v))}
+        />
       )
   }
+}
+
+/** Radix cấm `SelectItem value=""`, nên "chưa chọn" phải mang một mã riêng. */
+const NONE = 'none'
+
+/**
+ * Ô nhập trông như CHỮ cho tới khi rê chuột vào — cùng lối với tiêu đề và mô tả
+ * của panel, để hàng thuộc tính không bị viền hộp cắt vụn.
+ *
+ * Chỉ xem thì trả về `ReadOnlyValue` chứ KHÔNG phải `<Input disabled>`: ô mờ
+ * không cho bôi đen/copy (luật giao diện của dự án).
+ */
+function PlainTextInput({
+  value,
+  onSave,
+  disabled,
+  className,
+  ...props
+}: {
+  value: string
+  onSave: (value: string) => void
+  disabled?: boolean
+  className?: string
+} & Omit<React.ComponentProps<typeof Input>, 'value' | 'onBlur' | 'disabled'>) {
+  if (disabled) return <ReadOnlyValue>{value}</ReadOnlyValue>
+
+  return (
+    <Input
+      defaultValue={value}
+      onBlur={(e) => onSave(e.target.value.trim())}
+      className={cn(
+        //  `dark:bg-transparent`: `Input` gốc có `dark:bg-input/30`, để nguyên
+        //  thì nền tối lại hiện hộp xám đúng chỗ vừa bỏ viền.
+        'h-7 border-0 bg-transparent px-1.5 shadow-none dark:bg-transparent',
+        'hover:bg-accent/60 focus-visible:bg-background dark:focus-visible:bg-input/30',
+        className,
+      )}
+      {...props}
+    />
+  )
 }
 
 /**
