@@ -253,10 +253,23 @@ export function PurchaseRequestDetailPage() {
   /**
    * NSTM = nhân sự PHÒNG THU MUA; ô chọn hiện TÊN nhưng lưu MÃ nhân viên
    * (backend nối dòng YCMH với người phụ trách bằng mã).
+   * QA 29/08: bổ sung người đã gán ở từng dòng dù họ nằm ngoài danh mục tải về
+   * (danh sách nhân sự chưa tải xong / tải lỗi / khác phòng) — không thì ô Select
+   * hiện trống như chưa phân công dù DB đã có, cùng bẫy trang Khảo sát từng dính.
    */
-  const purchasers = (employeesData?.items ?? [])
-    .filter((employee) => (employee.department_name || '').toLowerCase().includes('thu mua'))
-    .map((employee) => ({ code: employee.code, name: employee.full_name }))
+  const purchasers = (() => {
+    const employees = employeesData?.items ?? []
+    const options = employees
+      .filter((employee) => (employee.department_name || '').toLowerCase().includes('thu mua'))
+      .map((employee) => ({ code: employee.code, name: employee.full_name }))
+    for (const item of data.items) {
+      if (item.assignee && !options.some((option) => option.code === item.assignee)) {
+        const found = employees.find((employee) => employee.code === item.assignee)
+        options.push({ code: item.assignee, name: found?.full_name || item.assignee })
+      }
+    }
+    return options
+  })()
 
   /** Sửa tiến độ dòng: quản lý/người duyệt, hoặc chính NSTM phụ trách dòng đó. */
   const canEditLine = (item: PurchaseRequestItem) =>
@@ -687,8 +700,8 @@ export function PurchaseRequestDetailPage() {
                   dòng chữ ở tiêu đề làm thẻ này cao hơn hẳn các thẻ còn lại. */}
               {!editing && (
                 <p className="text-xs text-muted-foreground">
-                  Trạng thái và tiến độ tự đồng bộ từ ĐMH. Mở Chi tiết để xem ngày cần hàng,
-                  ghi chú và ảnh đối chiếu.
+                  Trạng thái và tiến độ tự đồng bộ từ ĐMH. Mở Chi tiết để xem ghi chú
+                  và ảnh đối chiếu.
                 </p>
               )}
               <PurchaseRequestItemsTable

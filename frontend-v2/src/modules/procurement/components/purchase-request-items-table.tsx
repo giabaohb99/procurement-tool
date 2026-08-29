@@ -182,6 +182,16 @@ export function PurchaseRequestItemsTable({
       compactHidden: true,
     },
     { key: 'amount', header: 'Thành tiền', width: 130, minWidth: 80, align: 'right' },
+    {
+      // QA 29/08: ngày cần hàng trước đây chỉ nằm trong popup Chi tiết dòng,
+      // người tạo phiếu không thấy chỗ chọn — kéo hẳn ra bảng, KHÔNG ẩn ở
+      // chế độ rút gọn vì đây là trường bắt buộc khi gửi duyệt.
+      key: 'required',
+      header: 'Ngày cần hàng *',
+      width: 170,
+      minWidth: 130,
+      align: 'center',
+    },
     { key: 'status', header: 'Trạng thái', width: 190, minWidth: 120, align: 'center' },
     {
       key: 'progress',
@@ -471,6 +481,18 @@ export function PurchaseRequestItemsTable({
             {formatQuantity(item.qty_received)} /{' '}
             {formatQuantity(orderedByCode?.[item.product_code] ?? item.qty_ordered)}
           </span>
+        )
+
+      case 'required':
+        return editing ? (
+          <DatePicker
+            size="sm"
+            value={item.required_date || ''}
+            placeholder="Chọn ngày"
+            onChange={(next) => patch(index, { required_date: next })}
+          />
+        ) : (
+          <span className="tabular-nums">{formatDate(item.required_date) || '—'}</span>
         )
 
       case 'expected':
