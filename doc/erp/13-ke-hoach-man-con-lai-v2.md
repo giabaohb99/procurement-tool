@@ -20,6 +20,7 @@ toàn bộ màn hình** của bản cũ, và chia phần còn lại thành **15 
    *Cập nhật 21/08/2026 (CR-119, CR-121, CR-122):* xong cả **cụm Yêu cầu thanh toán** (danh sách + chi tiết + phiếu in + tích hợp công nợ), **Sao lưu CSDL** (`/system/backups`), **Nhật ký hệ thống** (`/system/audit-logs`), **Logo Công ty** và **Tệp đính kèm Nhà cung cấp** ⇒ **34 xong** · **2 có nhưng khuyết** · **9 chưa có**.
    *Cập nhật 24/08/2026 (Đ-11, CR-132):* **Trang chủ** đã đủ 9 khối + thao tác nhanh, **Tổng quan Tài chính** và **Tổng quan Kho** đã dựng ⇒ **35 xong** · **1 có nhưng khuyết** *(chi tiết Yêu cầu báo giá, chờ P6)* · **9 chưa có** — trong đó **5 màn thuộc ba thứ khách hoãn**.
    *Cập nhật 24/08/2026 (Tối ưu UX & Phân quyền Thu mua v2):* Fix 4 màn chi tiết chứng từ (YCBG, YCMH, ĐMH, Phiếu KS) mở lại bình thường; mở màn Tiến độ mua hàng (`/procurement/purchase-progress`) cho Nhân viên & Trưởng phòng YC; bổ sung 7 tài khoản Test có data (`TESTREQ`, `DEMONV`, `DEMOTP`, `DEMOQL`, `DEMOAD`, `DEMOTP2`, `DEMOTP3`) vào menu Switch User (Dev); tùy chỉnh màu sọc chẵn/lẻ bảng, font-bold tên cột, phẳng hóa ô trống rỗng trên toàn bộ bảng & màn chi tiết.
+   *Cập nhật 29/08/2026 (CR-222, CR-227):* **HAI MÀN TỪNG QUYẾT BỎ ĐÃ SỐNG LẠI** theo yêu cầu khách trong đợt QA 29/08 — *Màn xử lý Yêu cầu báo giá* dựng lại thành trang riêng `/procurement/survey-requests/:id/process` (CR-222), *Tiến độ báo giá* do khách trực tiếp dựng lại ở `/procurement/survey-progress` (CR-227); chi tiết YCBG có nút *Xử lý khảo sát* nên hết khuyết ⇒ **38 xong** · **0 có nhưng khuyết** · **9 chưa có** · **0 đã bỏ** · **1 chờ quyết**.
 2. **Không phải viết backend dòng nào** cho 16 màn còn thiếu. Toàn bộ endpoint đã chạy thật ở bản
    cũ — đây thuần là dựng lại giao diện. (Việc backend của ERP v2 nằm ở `12`, giai đoạn P1/P2/P5…,
    không dính tới tệp này.)
@@ -56,9 +57,9 @@ Cột **Tình trạng**: `Xong` · `Khuyết` (có màn nhưng thiếu phần) �
 | # | Màn bản cũ | Đường dẫn v2 | Tình trạng |
 |---|---|---|---|
 | 8 | Yêu cầu báo giá — danh sách | `/procurement/survey-requests` | Xong |
-| 9 | Yêu cầu báo giá — chi tiết | `…/survey-requests/:id` | **Khuyết** — thiếu nút *Xử lý khảo sát*, mà màn đó đã quyết bỏ (§1.9) nên coi như xong khi P6 gộp phiếu |
-| 10 | Tiến độ báo giá | — | **Bỏ** (`12` §2.7) |
-| 11 | Màn xử lý Yêu cầu báo giá *(798 dòng)* | — | **Bỏ** (`12` §2.7) |
+| 9 | Yêu cầu báo giá — chi tiết | `…/survey-requests/:id` | Xong *(CR-222 — có nút *Xử lý khảo sát* dẫn sang màn riêng, hết khuyết)* |
+| 10 | Tiến độ báo giá | `/procurement/survey-progress` | Xong — ~~Bỏ~~ khách dựng lại 29/08 *(CR-227, đính chính `12` §2.7)* |
+| 11 | Màn xử lý Yêu cầu báo giá *(798 dòng)* | `…/survey-requests/:id/process` | Xong — ~~Bỏ~~ dựng lại thành màn riêng 29/08 *(CR-222, đính chính `12` §2.7)* |
 | 12 | Yêu cầu mua hàng — danh sách | `/procurement/purchase-requests` | Xong |
 | 13 | Yêu cầu mua hàng — chi tiết | `…/purchase-requests/:id` | Xong |
 | 14 | Đơn mua hàng — danh sách | `/procurement/purchase-orders` | Xong |
@@ -137,13 +138,18 @@ sẵn từ lâu mà **không route nào dùng**, nhìn qua tưởng xong; và b�
 | ~~**Trang chủ / Tổng quan Thu mua**~~ | ~~Bản cũ có 9 khối, v2 có 5. **Thiếu 4 khối**: *Top nhà cung cấp*, *Chi tiêu theo bộ phận*, *Trạng thái đơn hàng*, *Tuổi nợ*. Danh sách *Yêu cầu mua gần đây* ở bản cũ **duyệt / từ chối ngay tại chỗ**, v2 chỉ xem~~ **Đã vá ở Đ-11 (CR-132)** — đủ 4 khối, thao tác nhanh *Duyệt / Trả lại* đã có lại |
 | ~~**Tổng quan Tài chính** và **Tổng quan Kho**~~ | ~~Đang là trang rỗng 11 dòng, chỉ có tiêu đề~~ **Đã dựng ở Đ-11 (CR-132)** — hai khối *Tuổi nợ* và *Công nợ quá hạn* nay nằm đúng chỗ, bên Tài chính |
 | ~~**Công nợ**~~ | ~~Thiếu cột tick chọn + nút lên phiếu thanh toán từ các dòng đã chọn~~ **Đã trả lại ở Đ-09 (CR-119)** — cột *Chọn* ghim đầu bảng + nút *Tạo đề nghị thanh toán*, giữ chọn xuyên trang, tách phiếu theo NCC |
-| **Chi tiết Yêu cầu báo giá** | Thiếu nút *Xử lý khảo sát* — nhưng màn đó đã quyết bỏ, việc chọn phương án sẽ nằm ngay trong chi tiết phiếu ở P6 |
+| ~~**Chi tiết Yêu cầu báo giá**~~ | ~~Thiếu nút *Xử lý khảo sát* — nhưng màn đó đã quyết bỏ, việc chọn phương án sẽ nằm ngay trong chi tiết phiếu ở P6~~ **Đã xong ở CR-222 (29/08)** — màn Xử lý khảo sát sống lại thành trang riêng, nút trên chi tiết dẫn sang; việc CHỌN phương án của người yêu cầu vẫn nằm ngay trong chi tiết phiếu |
 | ~~**Xem ảnh đính kèm**~~ *(chung nhiều màn — không tính là một màn riêng)* | ~~Bản cũ `AttachmentGallery` bấm ảnh mở lightbox tại chỗ; v2 bọc `<a target="_blank">` nên bấm là bung tab mới.~~ **Đã xong:** dựng component dùng chung `shared/ui/image-lightbox.tsx` + hook `useImageLightbox` (nút ‹ › + phím mũi tên + bộ đếm + dải thumbnail) và **nối cả 5 chỗ có đính kèm ảnh**: Ticket, đính kèm dòng (`line-attachments.tsx`), bình luận (`document-comments.tsx`), bộ chứng từ (`document-attachments-card.tsx`), file giao hàng ĐMH (`purchase-order-delivery-files.tsx`) — chuyển ảnh trong CÙNG cụm. *(Avatar và cột ảnh sản phẩm đã có thumbnail sẵn, không thuộc khoản này; muốn bấm-để-phóng-to ở đó thì mở việc riêng.)* |
 
-### 1.9 Hai màn đã quyết bỏ
+### 1.9 Hai màn đã quyết bỏ — ĐÃ SỐNG LẠI 29/08/2026
 
-*Tiến độ báo giá* và *Màn xử lý Yêu cầu báo giá* — lý do đầy đủ ở `12` §2.7. Cộng lại bỏ được
-**1134 dòng** khỏi việc phải port.
+*Tiến độ báo giá* và *Màn xử lý Yêu cầu báo giá* — lý do bỏ đầy đủ ở `12` §2.7. ~~Cộng lại bỏ được
+**1134 dòng** khỏi việc phải port.~~
+
+> **ĐÍNH CHÍNH 29/08/2026:** khách yêu cầu giữ thói quen bản cũ nên cả hai đã dựng lại ở v2 —
+> *Màn xử lý Yêu cầu báo giá* thành trang riêng `survey-request-process-page.tsx` (CR-222),
+> *Tiến độ báo giá* do khách trực tiếp dựng ở `survey-progress-page.tsx` (CR-227), menu Thu mua
+> cũng xếp lại đúng thứ tự bản v1. Mục này giữ nguyên làm dấu vết quyết định cũ.
 
 ---
 

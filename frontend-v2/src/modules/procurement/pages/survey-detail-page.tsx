@@ -11,7 +11,7 @@ import {
   Send,
   Trash2,
 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
@@ -158,9 +158,33 @@ export function SurveyDetailPage() {
   const saveLineApprove = useSurveyLineApprove(surveyId)
   const fillLine = useFillSurveyLine(surveyId)
 
-  const [draft, setDraft] = useState<SurveyDetail | null>(() =>
-    isNew ? createEmptySurvey(user, searchParams.get('sr'), searchParams.get('sr_code')) : null,
-  )
+  const LOCAL_STORAGE_NEW_SURVEY_KEY = 'survey_new_draft'
+
+  const [draft, setDraft] = useState<SurveyDetail | null>(() => {
+    if (!isNew) return null
+    // Đến từ nút "Tạo phiếu khảo sát" của một YCBG (?sr=...) thì phiếu PHẢI gắn
+    // đúng YCBG đó — nháp F5 cũ trong localStorage không được đè lên prefill.
+    if (!searchParams.get('sr')) {
+      const saved = localStorage.getItem(LOCAL_STORAGE_NEW_SURVEY_KEY)
+      if (saved) {
+        try {
+          return JSON.parse(saved)
+        } catch {
+          // ignore
+        }
+      }
+    }
+    return createEmptySurvey(user, searchParams.get('sr'), searchParams.get('sr_code'))
+  })
+
+  /**
+   * Draft có sửa dở chưa lưu hay không. Khi cờ bật, refetch nền (staleTime hết
+   * hạn lúc quay lại trang, hoặc invalidation từ mutation khác) KHÔNG được đè
+   * draft — trước đây nó đè thẳng, làm dòng vừa "Thêm dòng" biến mất ngay dưới
+   * tay người dùng (lỗi QA "bấm Thêm dòng không phản hồi"). Hạ cờ sau khi Lưu /
+   * chạy action thành công để bản server mới vẫn nạp vào như cũ.
+   */
+  const dirtyRef = useRef(false)
   const [openLine, setOpenLine] = useState<OpenLine | null>(null)
   const [selected, setSelected] = useState<Record<SurveyTable, Set<number>>>({
     supplier: new Set(),
@@ -178,7 +202,19 @@ export function SurveyDetailPage() {
   const isNewChanged = useHasChanged(isNew)
   const serverDataChanged = useHasChanged(serverData)
   const userChanged = useHasChanged(user)
-  if (isNewChanged || serverDataChanged || userChanged) {
+  const surveyIdChanged = useHasChanged(surveyId)
+  // Chuyển sang phiếu khác (vd bấm link thông báo khi đang mở một phiếu):
+  // sửa dở của phiếu cũ bỏ hết, phải cho dữ liệu phiếu mới nạp vào.
+  if (surveyIdChanged) dirtyRef.current = false
+  // Mount với dữ liệu ĐÃ CÓ SẴN trong cache (vừa xem phiếu này xong, quay lại
+  // trong 30s): render đầu tiên useHasChanged trả false nên nhánh sync không
+  // chạy, draft kẹt ở null và mọi thao tác sửa (patch) rơi vào khoảng không —
+  // đây chính là lỗi QA "bấm Thêm dòng không phản hồi".
+  const needInit = !isNew && draft === null && !!serverData
+  if (
+    (isNewChanged || serverDataChanged || userChanged || needInit) &&
+    (isNew || needInit || !dirtyRef.current)
+  ) {
     setDraft(
       isNew
         ? (current) =>
@@ -254,7 +290,17 @@ export function SurveyDetailPage() {
   const canFill = can('survey', 'write')
 
   function patch(changes: Partial<SurveyDetail>) {
-    setDraft((current) => (current ? { ...current, ...changes } : current))
+    dirtyRef.current = true
+    setDraft((current) => {
+      if (!current) return current
+      const next = { ...current, ...changes }
+      // Giữ nháp phiếu TẠO MỚI qua F5: ghi localStorage ngay tại chỗ duy nhất
+      // đánh dấu "có sửa dở". Không được ghi trong useEffect đọc dirtyRef —
+      // effect mà đọc ref là mọi chỗ gán `dirtyRef.current` trong file thành
+      // lỗi react-hooks/immutability.
+      if (isNew) localStorage.setItem(LOCAL_STORAGE_NEW_SURVEY_KEY, JSON.stringify(next))
+      return next
+    })
   }
 
   function linesOf(table: SurveyTable): SurveyLine[] {
@@ -405,6 +451,12 @@ export function SurveyDetailPage() {
         product_lines: toPayloadLines(loadedDraft.product_lines, 'product'),
       },
     })
+    // Đã lưu xong: draft sạch trở lại, cho phép refetch sau invalidation nạp bản
+    // server mới (có id dòng thật) vào draft.
+    dirtyRef.current = false
+    // Nháp F5 đã thành phiếu thật — xóa khỏi localStorage, kẻo lần "Thêm mới"
+    // sau nó đội mồ sống dậy thành phiếu trùng.
+    if (isNew) localStorage.removeItem(LOCAL_STORAGE_NEW_SURVEY_KEY)
     await flushPendingFiles(saved)
 
     if (submitAfterSave) {
@@ -426,6 +478,7 @@ export function SurveyDetailPage() {
       supplierLines: approveItemsOf(loadedDraft.supplier_lines),
       productLines: approveItemsOf(loadedDraft.product_lines),
     })
+    dirtyRef.current = false
     setOpenLine(null)
   }
 
@@ -443,6 +496,7 @@ export function SurveyDetailPage() {
       lineId,
       changes: contentOnly(line, openLine.table),
     })
+    dirtyRef.current = false
     setOpenLine(null)
   }
 
@@ -493,7 +547,11 @@ export function SurveyDetailPage() {
           {!isNew && status === 'submitted' && canApprove && (
             <>
               <Button
-                onClick={() => void runAction.mutateAsync({ action: 'approve' })}
+                onClick={() =>
+                  void runAction.mutateAsync({ action: 'approve' }).then(() => {
+                    dirtyRef.current = false
+                  })
+                }
                 disabled={runAction.isPending}
               >
                 <Check />
@@ -720,6 +778,7 @@ export function SurveyDetailPage() {
               onClick={async () => {
                 if (!reasonFor) return
                 await runAction.mutateAsync({ action: reasonFor, reason: reason.trim() })
+                dirtyRef.current = false
                 setReasonFor(null)
               }}
             >

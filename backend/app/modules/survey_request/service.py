@@ -196,8 +196,13 @@ def update_sr(db: Session, sid: int, data, user_id: int, user=None, profile=None
         if data.department_id is None:
             s.department_id = 0
         sync_department_ref(db, s)
-    # Đổi Bộ phận YC ở bản nháp → cập nhật lại Trưởng bộ phận (ô này người dùng không tự nhập).
-    if s.department_id or s.department:
+    # Đổi Bộ phận YC ở bản nháp → cập nhật lại Trưởng bộ phận. NHƯNG người lập nay
+    # được chọn đích danh TBP (kể cả TBP phòng khác — QA 29/08): client gửi kèm
+    # `head_of_dept_id` thì tôn trọng lựa chọn đó, không tra đè. FE cũ (v1) chỉ gửi
+    # TÊN, không bao giờ gửi id, nên nhánh tra tự động vẫn chạy như trước với v1.
+    sent_fields = data.model_dump(exclude_unset=True)
+    picked_head = bool(sent_fields.get("head_of_dept_id"))
+    if not picked_head and (s.department_id or s.department):
         s.head_of_dept_id = find_dept_head_id(db, s.department, s.department_id) or s.head_of_dept_id
     sync_employee_ref(db, s, "head_of_dept_id", "head_of_dept")   # CR-087
     s.updated_by = user_id

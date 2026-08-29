@@ -1,9 +1,13 @@
-import { Plus, Search } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { Copy, Download, Plus, Search } from 'lucide-react'
+import { useCallback, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { toast } from 'sonner'
 
 import { PermissionGate } from '@/core/authorization/permission-gate'
+import { usePermission } from '@/core/authorization/use-permission'
 import { appConfig } from '@/core/config/app-config'
+import { httpClient } from '@/core/api/http-client'
+import { downloadFile } from '@/core/api/download-file'
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
 import { useDepartments } from '@/modules/hr/hooks/use-departments'
 import {
@@ -73,6 +77,10 @@ export function PurchaseRequestListPage() {
 function PurchaseRequestListContent() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
+  const { can } = usePermission()
+  const canExport = can('purchase_request', 'export')
+  const canCreate = can('purchase_request', 'create')
+
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [companyId, setCompanyId] = useUrlParamState('company_id', ALL)
   const [departmentId, setDepartmentId] = useUrlParamState('department_id', ALL)
@@ -111,7 +119,7 @@ function PurchaseRequestListContent() {
   if (companyId !== ALL) params.company_id = Number(companyId)
   if (departmentId !== ALL) params.department_id = Number(departmentId)
   if (status !== ALL) params.status = status
-  if (isUrgent === 'true') params.is_urgent = true
+  if (isUrgent !== ALL) params.is_urgent = isUrgent === 'true'
   if (needDateFrom) params.need_date_from = needDateFrom
   if (needDateTo) params.need_date_to = needDateTo
   if (reqDateFrom) params.request_date_from = reqDateFrom
@@ -122,6 +130,25 @@ function PurchaseRequestListContent() {
   }
 
   const { data, isLoading, isError } = usePurchaseRequests(params)
+
+  const handleExportExcel = async () => {
+    await downloadFile('/api/purchase-requests/export/xlsx', 'yeu-cau-mua-hang.xlsx')
+  }
+
+  const handleClone = useCallback(
+    async (pr: PurchaseRequest, e: React.MouseEvent) => {
+      e.stopPropagation()
+      try {
+        const res = await httpClient.post<{ data: { id: number } }>(`/api/purchase-requests/${pr.id}/clone`)
+        toast.success('Đã nhân bản phiếu yêu cầu mua hàng')
+        const newId = res.data?.data?.id
+        if (newId) navigate(appRoutes.procurement.purchaseRequestDetail(newId))
+      } catch {
+        toast.error('Nhân bản phiếu thất bại')
+      }
+    },
+    [navigate],
+  )
 
   const activeCount = [
     companyId !== ALL,
@@ -215,14 +242,31 @@ function PurchaseRequestListContent() {
         sortable: true,
         cell: (pr) => <StatusBadge status={pr.status} labels={PR_STATUS_LABELS} />,
       },
+      {
+        key: 'actions',
+        header: '',
+        width: 60,
+        hideable: false,
+        cell: (pr) =>
+          canCreate ? (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              title="Nhân bản phiếu"
+              onClick={(e) => handleClone(pr, e)}
+            >
+              <Copy className="size-4 text-muted-foreground" />
+            </Button>
+          ) : null,
+      },
     ],
-    [],
+    [canCreate, handleClone],
   )
 
   const filterControls = (
     <>
       <Select value={companyId} onValueChange={setCompanyId}>
-        <SelectTrigger className="w-full md:w-44 text-xs h-9">
+        <SelectTrigger className="w-full md:w-36 text-xs h-9">
           <SelectValue placeholder="Công ty" />
         </SelectTrigger>
         <SelectContent>
@@ -236,7 +280,7 @@ function PurchaseRequestListContent() {
       </Select>
 
       <Select value={departmentId} onValueChange={setDepartmentId}>
-        <SelectTrigger className="w-full md:w-44 text-xs h-9">
+        <SelectTrigger className="w-full md:w-36 text-xs h-9">
           <SelectValue placeholder="Bộ phận yêu cầu" />
         </SelectTrigger>
         <SelectContent>
@@ -250,7 +294,7 @@ function PurchaseRequestListContent() {
       </Select>
 
       <Select value={status} onValueChange={setStatus}>
-        <SelectTrigger className="w-full md:w-40 text-xs h-9">
+        <SelectTrigger className="w-full md:w-36 text-xs h-9">
           <SelectValue placeholder="Trạng thái" />
         </SelectTrigger>
         <SelectContent>
@@ -293,12 +337,20 @@ function PurchaseRequestListContent() {
         title="Yêu cầu mua hàng"
         description="Phiếu yêu cầu mua hàng (PYC) của các bộ phận."
         actions={
-          <PermissionGate entity="purchase_request" action="create">
-            <Button onClick={() => navigate(appRoutes.procurement.purchaseRequestNew)}>
-              <Plus />
-              Thêm mới
-            </Button>
-          </PermissionGate>
+          <div className="flex items-center gap-2">
+            {canExport && (
+              <Button variant="outline" onClick={handleExportExcel}>
+                <Download className="mr-1.5 size-4" />
+                Xuất Excel
+              </Button>
+            )}
+            <PermissionGate entity="purchase_request" action="create">
+              <Button onClick={() => navigate(appRoutes.procurement.purchaseRequestNew)}>
+                <Plus className="mr-1.5 size-4" />
+                Thêm mới
+              </Button>
+            </PermissionGate>
+          </div>
         }
       />
 
@@ -348,7 +400,7 @@ function PurchaseRequestListContent() {
               </Button>
 
               {/* Desktop Filter Controls */}
-              <div className="hidden md:flex md:items-center md:gap-2">
+              <div className="hidden md:flex md:flex-wrap md:items-center md:gap-2">
                 {filterControls}
                 <ConditionalFilter />
               </div>

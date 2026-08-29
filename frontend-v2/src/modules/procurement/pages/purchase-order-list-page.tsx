@@ -1,9 +1,13 @@
-import { Plus, Search } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { Copy, Download, Plus, Search } from 'lucide-react'
+import { useCallback, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { toast } from 'sonner'
 
 import { PermissionGate } from '@/core/authorization/permission-gate'
+import { usePermission } from '@/core/authorization/use-permission'
 import { appConfig } from '@/core/config/app-config'
+import { httpClient } from '@/core/api/http-client'
+import { downloadFile } from '@/core/api/download-file'
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
 import { useEmployees } from '@/modules/hr/hooks/use-employees'
 import { useSuppliers } from '@/modules/production/hooks/use-suppliers'
@@ -74,7 +78,12 @@ export function PurchaseOrderListPage() {
 }
 
 function PurchaseOrderListContent() {
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
+  const { can } = usePermission()
+  const canExport = can('purchase_order', 'export')
+  const canCreate = can('purchase_order', 'create')
+
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [companyId, setCompanyId] = useUrlParamState('company_id', ALL)
   const [supplierCode, setSupplierCode] = useUrlParamState('supplier_code', ALL)
@@ -85,7 +94,6 @@ function PurchaseOrderListContent() {
   const [orderDateFrom, setOrderDateFrom] = useUrlParamState('order_date_from', '')
   const [orderDateTo, setOrderDateTo] = useUrlParamState('order_date_to', '')
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
-  const navigate = useNavigate()
 
   const sortBy = searchParams.get('sort_by') || ''
   const sortDir = (searchParams.get('sort_dir') as 'asc' | 'desc') || 'asc'
@@ -126,6 +134,25 @@ function PurchaseOrderListContent() {
   }
 
   const { data, isLoading, isError } = usePurchaseOrders(params)
+
+  const handleExportExcel = async () => {
+    await downloadFile('/api/purchase-orders/export/xlsx', 'don-mua-hang.xlsx')
+  }
+
+  const handleClone = useCallback(
+    async (po: PurchaseOrder, e: React.MouseEvent) => {
+      e.stopPropagation()
+      try {
+        const res = await httpClient.post<{ data: { id: number } }>(`/api/purchase-orders/${po.id}/clone`)
+        toast.success('Đã nhân bản đơn mua hàng')
+        const newId = res.data?.data?.id
+        if (newId) navigate(appRoutes.procurement.purchaseOrderDetail(newId))
+      } catch {
+        toast.error('Nhân bản đơn mua hàng thất bại')
+      }
+    },
+    [navigate],
+  )
 
   const activeCount = [
     companyId !== ALL,
@@ -225,8 +252,25 @@ function PurchaseOrderListContent() {
         sortable: true,
         cell: (po) => <StatusBadge status={po.status} labels={PO_STATUS_LABELS} />,
       },
+      {
+        key: 'actions',
+        header: '',
+        width: 60,
+        hideable: false,
+        cell: (po) =>
+          canCreate ? (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              title="Nhân bản đơn mua hàng"
+              onClick={(e) => handleClone(po, e)}
+            >
+              <Copy className="size-4 text-muted-foreground" />
+            </Button>
+          ) : null,
+      },
     ],
-    [],
+    [canCreate, handleClone],
   )
 
   const filterControls = (
@@ -320,12 +364,20 @@ function PurchaseOrderListContent() {
         title="Đơn mua hàng"
         description="Đơn mua hàng (PO) gửi nhà cung cấp."
         actions={
-          <PermissionGate entity="purchase_order" action="create">
-            <Button onClick={() => navigate(appRoutes.procurement.purchaseOrderNew)}>
-              <Plus />
-              Thêm mới
-            </Button>
-          </PermissionGate>
+          <div className="flex items-center gap-2">
+            {canExport && (
+              <Button variant="outline" onClick={handleExportExcel}>
+                <Download className="mr-1.5 size-4" />
+                Xuất Excel
+              </Button>
+            )}
+            <PermissionGate entity="purchase_order" action="create">
+              <Button onClick={() => navigate(appRoutes.procurement.purchaseOrderNew)}>
+                <Plus className="mr-1.5 size-4" />
+                Thêm mới
+              </Button>
+            </PermissionGate>
+          </div>
         }
       />
 
@@ -375,7 +427,7 @@ function PurchaseOrderListContent() {
               </Button>
 
               {/* Desktop Filter Controls */}
-              <div className="hidden md:flex md:items-center md:gap-2">
+              <div className="hidden md:flex md:flex-wrap md:items-center md:gap-2">
                 {filterControls}
                 <ConditionalFilter />
               </div>

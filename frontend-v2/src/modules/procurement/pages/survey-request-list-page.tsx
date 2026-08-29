@@ -1,25 +1,29 @@
-import { Plus, Search } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { Copy, Download, Plus, Search } from 'lucide-react'
+import { useCallback, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { toast } from 'sonner'
 
+import { usePermission } from '@/core/authorization/use-permission'
 import { PermissionGate } from '@/core/authorization/permission-gate'
 import { appConfig } from '@/core/config/app-config'
+import { downloadFile } from '@/core/api/download-file'
+import { httpClient } from '@/core/api/http-client'
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
 import { useDepartments } from '@/modules/hr/hooks/use-departments'
+import { appRoutes } from '@/shared/constants/app-routes'
+import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import {
   ConditionalFilter,
   FilterProvider,
   useFilterQuery,
 } from '@/shared/conditional-filter'
-import { appRoutes } from '@/shared/constants/app-routes'
-import { DataTable, type DataTableColumn } from '@/shared/data-table'
+import { DateRangePicker } from '@/shared/ui/date-range-picker'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import type { ListParams } from '@/shared/types/api'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
-import { DateRangePicker } from '@/shared/ui/date-range-picker'
 import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
@@ -60,6 +64,10 @@ export function SurveyRequestListPage() {
 function SurveyRequestListContent() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
+  const { can } = usePermission()
+  const canExport = can('survey_request', 'export')
+  const canCreate = can('survey_request', 'create')
+
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [companyId, setCompanyId] = useUrlParamState('company_id', ALL)
   const [departmentId, setDepartmentId] = useUrlParamState('department_id', ALL)
@@ -100,6 +108,25 @@ function SurveyRequestListContent() {
   }
 
   const { data, isLoading, isError } = useSurveyRequests(params)
+
+  const handleExportExcel = async () => {
+    await downloadFile('/api/survey-requests/export/xlsx', 'yeu-cau-bao-gia.xlsx')
+  }
+
+  const handleClone = useCallback(
+    async (sr: SurveyRequest, e: React.MouseEvent) => {
+      e.stopPropagation()
+      try {
+        const res = await httpClient.post<{ data: { id: number } }>(`/api/survey-requests/${sr.id}/clone`)
+        toast.success('Đã nhân bản phiếu yêu cầu báo giá')
+        const newId = res.data?.data?.id
+        if (newId) navigate(appRoutes.procurement.surveyRequestDetail(newId))
+      } catch {
+        toast.error('Nhân bản phiếu thất bại')
+      }
+    },
+    [navigate],
+  )
 
   const activeCount = [
     companyId !== ALL,
@@ -150,8 +177,25 @@ function SurveyRequestListContent() {
         sortable: true,
         cell: (sr) => <StatusBadge status={sr.status} labels={SR_STATUS_LABELS} />,
       },
+      {
+        key: 'actions',
+        header: '',
+        width: 60,
+        hideable: false,
+        cell: (sr) =>
+          canCreate ? (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              title="Nhân bản phiếu yêu cầu báo giá"
+              onClick={(e) => handleClone(sr, e)}
+            >
+              <Copy className="size-4 text-muted-foreground" />
+            </Button>
+          ) : null,
+      },
     ],
-    [],
+    [canCreate, handleClone],
   )
 
   const filterControls = (
@@ -162,7 +206,7 @@ function SurveyRequestListContent() {
         </SelectTrigger>
         <SelectContent>
           <SelectItem value={ALL}>Tất cả công ty</SelectItem>
-          {(companies?.items ?? []).map((company) => (
+          {(companies?.items ?? []).map((company: { id: number; name: string }) => (
             <SelectItem key={company.id} value={String(company.id)}>
               {company.name}
             </SelectItem>
@@ -176,7 +220,7 @@ function SurveyRequestListContent() {
         </SelectTrigger>
         <SelectContent>
           <SelectItem value={ALL}>Tất cả bộ phận</SelectItem>
-          {(departments?.items ?? []).map((dept) => (
+          {(departments?.items ?? []).map((dept: { id: number; name: string }) => (
             <SelectItem key={dept.id} value={String(dept.id)}>
               {dept.name}
             </SelectItem>
@@ -217,12 +261,20 @@ function SurveyRequestListContent() {
         title="Yêu cầu báo giá"
         description="Phiếu yêu cầu khảo sát giá (YCBG) trước khi lên yêu cầu mua hàng."
         actions={
-          <PermissionGate entity="survey_request" action="create">
-            <Button onClick={() => navigate(appRoutes.procurement.surveyRequestNew)}>
-              <Plus />
-              Thêm mới
-            </Button>
-          </PermissionGate>
+          <div className="flex items-center gap-2">
+            {canExport && (
+              <Button variant="outline" onClick={handleExportExcel}>
+                <Download className="mr-1.5 size-4" />
+                Xuất Excel
+              </Button>
+            )}
+            <PermissionGate entity="survey_request" action="create">
+              <Button onClick={() => navigate(appRoutes.procurement.surveyRequestNew)}>
+                <Plus className="mr-1.5 size-4" />
+                Thêm mới
+              </Button>
+            </PermissionGate>
+          </div>
         }
       />
 
@@ -260,7 +312,7 @@ function SurveyRequestListContent() {
                 />
               </div>
 
-              <div className="hidden md:flex md:items-center md:gap-2">
+              <div className="hidden md:flex md:flex-wrap md:items-center md:gap-2">
                 {filterControls}
                 <ConditionalFilter />
               </div>

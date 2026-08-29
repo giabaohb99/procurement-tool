@@ -393,10 +393,13 @@ function OptionField({
   value: string
   strong?: boolean
 }) {
+  //  Nhãn + giá trị nằm CÙNG DÒNG "Nhãn: giá trị" như bản v1 — tách hai dòng
+  //  làm thẻ phương án cao gấp đôi, cuộn mỏi tay (QA 29/08). Giá trị rỗng hiện
+  //  "—" kẻo dòng chỉ còn mỗi cái nhãn lửng lơ.
   return (
-    <div>
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className={cn('break-words', strong && 'font-semibold')}>{value || ''}</dd>
+    <div className="break-words">
+      <dt className="inline text-muted-foreground">{label}: </dt>
+      <dd className={cn('inline', strong && 'font-semibold')}>{value || '—'}</dd>
     </div>
   )
 }

@@ -44,10 +44,26 @@ export const procurementModule: ErpModule = {
       // khoản ngoài phân hệ (vd văn thư) thấy thẻ Thu mua mở mà vào toàn số 0.
       entities: ['survey_request', 'purchase_request', 'purchase_order', 'survey', 'report'],
     },
+    // Thứ tự menu bám theo bản v1 (`frontend/src/layouts/AppLayout.tsx`) — khách
+    // chốt 29/08 "sửa lại như bản cũ": Báo cáo mua hàng đứng riêng đầu menu,
+    // nhóm Mua hàng xếp YCBG → Tiến độ báo giá → YCMH → ĐMH → Tiến độ mua hàng.
+    {
+      label: 'Báo cáo mua hàng',
+      path: appRoutes.procurement.purchaseReport,
+      icon: ChartColumnBig,
+      entity: 'report',
+    },
     {
       label: 'Yêu cầu báo giá',
       path: appRoutes.procurement.surveyRequests,
       icon: ClipboardList,
+      entity: 'survey_request',
+      group: 'Mua hàng',
+    },
+    {
+      label: 'Tiến độ báo giá',
+      path: appRoutes.procurement.surveyProgress,
+      icon: Truck,
       entity: 'survey_request',
       group: 'Mua hàng',
     },
@@ -70,13 +86,6 @@ export const procurementModule: ErpModule = {
       path: appRoutes.procurement.purchaseProgress,
       icon: Truck,
       entity: 'purchase_request',
-      group: 'Mua hàng',
-    },
-    {
-      label: 'Báo cáo mua hàng',
-      path: appRoutes.procurement.purchaseReport,
-      icon: ChartColumnBig,
-      entity: 'report',
       group: 'Mua hàng',
     },
     {
@@ -127,6 +136,13 @@ export const procurementModule: ErpModule = {
       path: appRoutes.procurement.surveyRequestDetail(':id'),
       lazy: async () => ({
         Component: (await import('./pages/survey-request-detail-page')).SurveyRequestDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.procurement.surveyRequestProcess(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/survey-request-process-page'))
+          .SurveyRequestProcessPage,
       }),
     },
     {
@@ -192,6 +208,12 @@ export const procurementModule: ErpModule = {
       path: appRoutes.procurement.surveyDetail(':id'),
       lazy: async () => ({
         Component: (await import('./pages/survey-detail-page')).SurveyDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.procurement.surveyProgress,
+      lazy: async () => ({
+        Component: (await import('./pages/survey-progress-page')).SurveyProgressPage,
       }),
     },
     {

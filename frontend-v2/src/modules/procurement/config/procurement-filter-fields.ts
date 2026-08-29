@@ -125,3 +125,37 @@ export const SURVEY_FILTER_FIELDS: FilterFieldDefinition[] = [
     options: statusOptions(SURVEY_STATUS_LABELS),
   },
 ]
+
+export const SURVEY_PROGRESS_FILTER_FIELDS: FilterFieldDefinition[] = [
+  { name: 'code', label: 'Mã YCBG', type: 'text' },
+  { name: 'purpose', label: 'Mục đích', type: 'text' },
+  COMPANY_FIELD,
+  { ...EMPLOYEE_FIELD, name: 'requester_id', label: 'Người yêu cầu' },
+  { ...DEPARTMENT_FIELD, label: 'Bộ phận' },
+  { name: 'request_date', label: 'Ngày yêu cầu', type: 'date' },
+  {
+    name: 'status',
+    label: 'Trạng thái phiếu',
+    type: 'select',
+    operators: [...STATUS_OPERATORS],
+    options: statusOptions(SR_STATUS_LABELS),
+  },
+  { name: 'item_group', label: 'Phân loại', type: 'text' },
+  { ...EMPLOYEE_FIELD, name: 'assignee', label: 'NSTM phụ trách' },
+  { name: 'request_qty', label: 'SL dự kiến', type: 'number' },
+  { name: 'uom', label: 'ĐVT', type: 'text' },
+  { name: 'proposed_price', label: 'Giá đề xuất', type: 'number' },
+  { name: 'received_date', label: 'Ngày tiếp nhận', type: 'date' },
+  { name: 'result_due_date', label: 'Hạn trả kết quả', type: 'date' },
+  { name: 'result_date', label: 'Ngày trả kết quả', type: 'date' },
+  {
+    name: 'line_status',
+    label: 'Trạng thái dòng',
+    type: 'select',
+    operators: [...STATUS_OPERATORS],
+    options: [
+      { value: 'resurvey', label: 'Cần khảo sát lại' },
+      { value: 'completed', label: 'Hoàn thành' },
+    ],
+  },
+]

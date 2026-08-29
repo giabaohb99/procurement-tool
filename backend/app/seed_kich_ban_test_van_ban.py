@@ -20,6 +20,9 @@ Chỉ chạy ở LOCAL. `seed_prod.py` KHÔNG gọi tệp này: mật khẩu đo
 
 Chạy: `docker compose exec api python -m app.seed_kich_ban_test_van_ban`
 """
+#  Nạp TOÀN BỘ model trước khi chạm ORM: `User` khai quan hệ trỏ `StoredFile`
+#  bằng chuỗi, thiếu một model là SQLAlchemy không dựng nổi mapper.
+import app.core.all_models  # noqa: F401
 from app.core.auth import hash_password
 from app.modules.company.model import Company
 from app.modules.department.model import Department

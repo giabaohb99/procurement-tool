@@ -33,6 +33,15 @@ export const queryKeys = {
      */
     surveyRequestResult: (id: number) =>
       ['procurement', 'survey-requests', id, 'result'] as const,
+    /**
+     * Khung XỬ LÝ của YCBG (`/{id}/process`) — bản nội bộ cho NSTM, kèm đủ danh
+     * tính NCC. Cũng phải tách khóa riêng như `result` ở trên.
+     */
+    surveyRequestProcess: (id: number) =>
+      ['procurement', 'survey-requests', id, 'process'] as const,
+    /** Bảng "Kết quả khảo sát đã duyệt" chọn được cho MỘT dòng của khung xử lý. */
+    surveyRequestAvailableLines: (id: number, lineId: number, params?: Record<string, unknown>) =>
+      ['procurement', 'survey-requests', id, 'process', 'available', lineId, params ?? {}] as const,
     purchaseOrders: (params?: Record<string, unknown>) =>
       ['procurement', 'purchase-orders', params ?? {}] as const,
     purchaseOrder: (id: number) => ['procurement', 'purchase-orders', id] as const,

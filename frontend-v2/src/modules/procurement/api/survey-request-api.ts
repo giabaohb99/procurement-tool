@@ -4,6 +4,11 @@ import type {
   SurveyRequestLine,
   SurveyRequestResult,
 } from '../types/survey-request-detail'
+import type {
+  AvailableSurveyLinesParams,
+  AvailableSurveyLinesResult,
+  SurveyRequestProcess,
+} from '../types/survey-request-process'
 
 const BASE_URL = '/api/survey-requests'
 
@@ -102,4 +107,53 @@ export const surveyRequestApi = {
     apiGet<{ head_of_dept: string; head_of_dept_id: number }>(`${BASE_URL}/meta/dept-head`, {
       params: { department, department_id: departmentId },
     }),
+
+  // ───── Khung XỬ LÝ KHẢO SÁT — chỉ NSTM/Quản lý/Admin TM (backend gác `_purchaser`,
+  // người YC gọi là ăn 403). NSTM chỉ nhận về dòng MÌNH phụ trách. ─────
+
+  /** Khung xử lý: đầu phiếu + dòng kèm phương án ĐẦY ĐỦ danh tính NCC. */
+  getProcess: (id: number) => apiGet<SurveyRequestProcess>(`${BASE_URL}/${id}/process`),
+
+  /**
+   * Dòng khảo sát ĐÃ DUYỆT chọn được cho một dòng YCBG — phân trang phía server.
+   * Backend đòi ít nhất một tiêu chí (NCC / phân loại / từ khóa), thiếu thì trả rỗng.
+   */
+  listAvailableSurveyLines: (id: number, lineId: number, params: AvailableSurveyLinesParams) =>
+    apiGet<AvailableSurveyLinesResult>(
+      `${BASE_URL}/${id}/lines/${lineId}/available-survey-lines`,
+      { params: { ...params } },
+    ),
+
+  /** Gắn một dòng khảo sát đã duyệt làm phương án. Trả luôn khung xử lý mới. */
+  addProcessOption: (id: number, lineId: number, productSurveyLineId: number) =>
+    apiPost<SurveyRequestProcess>(`${BASE_URL}/${id}/lines/${lineId}/options`, {
+      product_survey_line_id: productSurveyLineId,
+    }),
+
+  removeProcessOption: (id: number, lineId: number, optionId: number) =>
+    apiDelete<SurveyRequestProcess>(`${BASE_URL}/${id}/lines/${lineId}/options/${optionId}`),
+
+  /** Sửa Mã SP hệ thống / ghi chú NSTM của một phương án. */
+  updateProcessOption: (
+    id: number,
+    lineId: number,
+    optionId: number,
+    payload: { system_product_code?: string; nstm_note?: string },
+  ) =>
+    apiPatch<SurveyRequestProcess>(
+      `${BASE_URL}/${id}/lines/${lineId}/options/${optionId}`,
+      payload,
+    ),
+
+  /** Lấy phương án tự động từ các Phiếu khảo sát đã duyệt liên kết với YCBG này. */
+  syncProcessOptions: (id: number) =>
+    apiPost<SurveyRequestProcess>(`${BASE_URL}/${id}/sync-options`, {}),
+
+  /**
+   * Chốt hoàn thành phần khảo sát của NSTM đang đăng nhập. `emptyLineIds` = các
+   * dòng chưa có phương án được chốt RỖNG (không có NCC phù hợp). Phiếu chỉ sang
+   * `survey_done` khi MỌI dòng (mọi NSTM) có phương án hoặc đã chốt rỗng.
+   */
+  completeProcess: (id: number, emptyLineIds: number[]) =>
+    apiPost<SurveyRequestDetail>(`${BASE_URL}/${id}/complete`, { empty_line_ids: emptyLineIds }),
 }

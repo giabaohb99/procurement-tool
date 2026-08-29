@@ -7,6 +7,7 @@ import type {
   SurveyRequest,
 } from '../types/purchase-document'
 import type { PurchaseProgressResult } from '../types/purchase-progress'
+import type { SurveyProgressResult } from '../types/survey-progress-types'
 import type { SurveyReportResult } from '../types/survey-report'
 
 /**
@@ -37,6 +38,10 @@ export const purchaseDocumentApi = {
   /** Báo cáo tiến độ theo từng lần giao hàng. */
   listPurchaseProgress: (params: ListParams) =>
     apiGet<PurchaseProgressResult>('/api/purchase-progress', { params }),
+
+  /** Tiến độ báo giá theo từng dòng yêu cầu khảo sát. */
+  listSurveyProgress: (params: ListParams) =>
+    apiGet<SurveyProgressResult>('/api/survey-progress', { params }),
 
   /** Báo cáo khảo sát, cắt theo DÒNG khảo sát; kèm tổng số theo trạng thái duyệt. */
   listSurveyReportLines: (params: ListParams) =>

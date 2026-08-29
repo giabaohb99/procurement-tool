@@ -61,10 +61,6 @@ interface ItemsTableProps {
   /** Người yêu cầu / trưởng bộ phận không cần thấy thông tin điều phối nội bộ. */
   showAssignee?: boolean
   onOpenDetail: (index: number) => void
-  /** Phiếu đang ở trạng thái còn sửa nội dung được (nháp / bị trả lại). */
-  documentEditable?: boolean
-  /** Bật chế độ sửa của cả phiếu ngay từ bảng, khỏi đi tìm nút Sửa trên đầu trang. */
-  onStartEditing?: () => void
 
   /** Nhân sự thu mua để chọn NSTM phụ trách — hiện TÊN nhưng lưu MÃ nhân viên. */
   purchasers?: { code: string; name: string }[]
@@ -120,8 +116,6 @@ export function PurchaseRequestItemsTable({
   orderedByCode,
   showAssignee = true,
   onOpenDetail,
-  documentEditable = false,
-  onStartEditing,
   purchasers = [],
   canAssign = false,
   canEditLine,
@@ -572,8 +566,10 @@ export function PurchaseRequestItemsTable({
         rowClassName={(item) =>
           item.line_status === 'cancelled' ? 'opacity-60' : undefined
         }
+        // Nút "Sửa dòng hàng" cũ đã bỏ (QA 29/08): phiếu còn sửa được thì trang
+        // mở thẳng chế độ sửa, bảng nhập trực tiếp như bản v1.
         actions={
-          editing ? (
+          editing && (
             <>
               <Button
                 type="button"
@@ -591,18 +587,6 @@ export function PurchaseRequestItemsTable({
                 <PlusCircle /> Thêm nhiều
               </Button>
             </>
-          ) : (
-            /*
-              Phiếu nháp mà bảng vẫn là chữ chết thì người dùng tưởng mình hết
-              quyền — nút Sửa duy nhất lại nằm tít trên đầu trang, lẫn giữa gần
-              chục nút khác. Đặt lối vào ngay cạnh bảng, đúng chỗ đang nhìn.
-            */
-            documentEditable &&
-            onStartEditing && (
-              <Button type="button" size="sm" variant="outline" onClick={onStartEditing}>
-                <Pencil /> Sửa dòng hàng
-              </Button>
-            )
           )
         }
       />
