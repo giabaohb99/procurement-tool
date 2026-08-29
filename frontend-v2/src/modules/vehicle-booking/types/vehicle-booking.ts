@@ -64,6 +64,18 @@ export const DRIVER_STATUS_LABELS: Record<number, string> = {
   5: 'Tài xế từ chối',
 }
 
+// --- Điểm dừng trung gian -------------------------------------------------
+export interface Stop {
+  location: string
+  contact_name: string
+  contact_phone: string
+}
+
+/** Điểm dừng rỗng để thêm dòng mới trên form. */
+export function emptyStop(): Stop {
+  return { location: '', contact_name: '', contact_phone: '' }
+}
+
 // --- Bản ghi phiếu (khớp VehicleBookingResponse) --------------------------
 export interface VehicleBooking {
   id: number
@@ -73,7 +85,7 @@ export interface VehicleBooking {
   purpose: string
   start_location: string
   end_location: string
-  stops: string[]
+  stops: Stop[]
   start_time: string
   end_time: string
   // Đặt xe công tác
@@ -118,7 +130,7 @@ export interface VehicleBookingPayload {
   purpose: string
   start_location?: string
   end_location?: string
-  stops?: string[]
+  stops?: Stop[]
   start_time?: string
   end_time?: string
   passenger_count?: number

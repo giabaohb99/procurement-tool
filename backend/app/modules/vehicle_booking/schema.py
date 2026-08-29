@@ -1,6 +1,40 @@
 import json
 from pydantic import BaseModel, Field, field_validator
 
+
+class StopItem(BaseModel):
+    """Một điểm dừng trung gian: địa điểm + người liên hệ tại điểm đó."""
+
+    location: str = Field("", max_length=255)
+    contact_name: str = Field("", max_length=255)
+    contact_phone: str = Field("", max_length=30)
+
+
+def _normalize_stops(v):
+    """Chuẩn hóa `stops` về list[dict].
+
+    - Model lưu chuỗi JSON → tách ra.
+    - Tương thích ngược: phần tử là CHUỖI (bản cũ chỉ lưu địa điểm) → bọc thành
+      `{"location": <chuỗi>}` để không vỡ phiếu đã tạo trước khi có tên/SĐT.
+    """
+    if isinstance(v, str):
+        if not v.strip():
+            return []
+        try:
+            v = json.loads(v)
+        except (ValueError, TypeError):
+            return []
+    if not isinstance(v, list):
+        return []
+    out = []
+    for item in v:
+        if isinstance(item, str):
+            out.append({"location": item})
+        elif isinstance(item, dict):
+            out.append(item)
+    return out
+
+
 class VehicleBase(BaseModel):
     license_plate: str = Field(..., max_length=50)
     model: str = Field("", max_length=100)
@@ -34,7 +68,7 @@ class VehicleBookingBase(BaseModel):
     purpose: str
     start_location: str = Field("", max_length=255)
     end_location: str = Field("", max_length=255)
-    stops: list[str] = Field(default_factory=list)  # điểm dừng trung gian, giữ thứ tự
+    stops: list[StopItem] = Field(default_factory=list)  # điểm dừng trung gian, giữ thứ tự
     start_time: str = Field("", max_length=20)
     end_time: str = Field("", max_length=20)
     # Riêng đặt xe công tác
@@ -56,6 +90,13 @@ class VehicleBookingBase(BaseModel):
     first_approver_id: int = 0
     note: str = ""
 
+    # Nhận cả list[str] (bản cũ) lẫn list[StopItem]; chuẩn hóa trước khi validate.
+    # Response kế thừa Base nên khi đọc từ model (stops là chuỗi JSON) cũng qua đây.
+    @field_validator("stops", mode="before")
+    @classmethod
+    def _norm_stops(cls, v):
+        return _normalize_stops(v)
+
 class VehicleBookingCreate(VehicleBookingBase):
     pass
 
@@ -64,7 +105,7 @@ class VehicleBookingUpdate(BaseModel):
     purpose: str | None = None
     start_location: str | None = None
     end_location: str | None = None
-    stops: list[str] | None = None
+    stops: list[StopItem] | None = None
     start_time: str | None = None
     end_time: str | None = None
     passenger_count: int | None = None
@@ -85,6 +126,11 @@ class VehicleBookingUpdate(BaseModel):
     assigned_vehicle_id: int | None = None
     assigned_driver_id: int | None = None
     driver_status: int | None = None
+
+    @field_validator("stops", mode="before")
+    @classmethod
+    def _norm_stops(cls, v):
+        return None if v is None else _normalize_stops(v)
 
 class VehicleBookingResponse(VehicleBookingBase):
     id: int
@@ -113,20 +159,6 @@ class VehicleBookingResponse(VehicleBookingBase):
         if v is None:
             return None
         return v.isoformat() if hasattr(v, "isoformat") else str(v)
-
-    @field_validator("stops", mode="before")
-    @classmethod
-    def _parse_stops(cls, v):
-        """Model lưu stops dạng chuỗi JSON; tách về list khi trả API."""
-        if isinstance(v, str):
-            if not v.strip():
-                return []
-            try:
-                data = json.loads(v)
-                return data if isinstance(data, list) else []
-            except (ValueError, TypeError):
-                return []
-        return v or []
 
     class Config:
         from_attributes = True

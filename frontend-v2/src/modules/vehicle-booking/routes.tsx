@@ -48,5 +48,11 @@ export const vehicleBookingModule: ErpModule = {
         Component: (await import('./pages/vehicle-booking-create-page')).VehicleBookingCreatePage,
       }),
     },
+    {
+      path: appRoutes.vehicleBooking.detail(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/vehicle-booking-detail-page')).VehicleBookingDetailPage,
+      }),
+    },
   ],
 }

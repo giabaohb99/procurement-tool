@@ -107,7 +107,8 @@ export function VehicleBookingListPage() {
         key: 'route',
         header: 'Lộ trình',
         cell: (r) => {
-          const parts = [r.start_location, ...(r.stops ?? []), r.end_location].filter(Boolean)
+          const stopNames = (r.stops ?? []).map((s) => s.location).filter(Boolean)
+          const parts = [r.start_location, ...stopNames, r.end_location].filter(Boolean)
           return parts.length ? parts.join(' → ') : ''
         },
         wrap: true,
@@ -160,6 +161,7 @@ export function VehicleBookingListPage() {
           columns={columns}
           rows={data?.items}
           getRowId={(r) => r.id}
+          onRowClick={(r) => navigate(appRoutes.vehicleBooking.detail(r.id))}
           isLoading={isLoading}
           isError={isError}
           emptyMessage="Chưa có yêu cầu đặt xe nào."

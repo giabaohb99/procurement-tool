@@ -61,6 +61,24 @@ def _normalize_type(value: int | None) -> int:
     return TYPE_DELIVERY if value == TYPE_DELIVERY else TYPE_CAR
 
 
+def _dump_stops(stops) -> str:
+    """StopItem[] → chuỗi JSON, bỏ điểm dừng KHÔNG có địa điểm, giữ thứ tự.
+
+    Mỗi điểm giữ cả tên + SĐT người liên hệ tại điểm đó.
+    """
+    out = []
+    for s in stops or []:
+        location = (s.location or "").strip()
+        if not location:
+            continue
+        out.append({
+            "location": location,
+            "contact_name": (s.contact_name or "").strip(),
+            "contact_phone": (s.contact_phone or "").strip(),
+        })
+    return json.dumps(out, ensure_ascii=False)
+
+
 def create_booking(db: Session, data: VehicleBookingCreate, user, submit: bool) -> VehicleBooking:
     """Tạo phiếu đặt xe. `submit=True` → gửi duyệt ngay (Chờ duyệt); ngược lại lưu Nháp.
 
@@ -78,7 +96,7 @@ def create_booking(db: Session, data: VehicleBookingCreate, user, submit: bool) 
         purpose=data.purpose.strip(),
         start_location=data.start_location or "",
         end_location=data.end_location or "",
-        stops=json.dumps([s for s in (data.stops or []) if s and s.strip()], ensure_ascii=False),
+        stops=_dump_stops(data.stops),
         start_time=data.start_time or "",
         end_time=data.end_time or "",
         # Khối riêng đặt xe công tác
@@ -126,8 +144,8 @@ def update_booking(db: Session, booking: VehicleBooking, data: VehicleBookingUpd
     if "request_type" in patch:
         booking.request_type = _normalize_type(patch.pop("request_type"))
     if "stops" in patch:
-        stops = patch.pop("stops") or []
-        booking.stops = json.dumps([s for s in stops if s and s.strip()], ensure_ascii=False)
+        patch.pop("stops")  # dump từ đối tượng StopItem đã validate, không từ dict thô
+        booking.stops = _dump_stops(data.stops or [])
     for field, value in patch.items():
         setattr(booking, field, value)
 

@@ -15,7 +15,12 @@ import { Textarea } from '@/shared/ui/textarea'
 import { cn } from '@/shared/utils/cn'
 import { CarBookingIcon, DeliveryBookingIcon } from '../components/booking-type-icons'
 import { useCreateVehicleBooking } from '../hooks/use-vehicle-bookings'
-import { REQUEST_TYPE, type VehicleBookingPayload } from '../types/vehicle-booking'
+import {
+  REQUEST_TYPE,
+  emptyStop,
+  type Stop,
+  type VehicleBookingPayload,
+} from '../types/vehicle-booking'
 
 /** Nhãn đổi theo loại yêu cầu (xe công tác vs giao hàng). */
 function labelsFor(isDelivery: boolean) {
@@ -39,7 +44,7 @@ export function VehicleBookingCreatePage() {
   const [purpose, setPurpose] = useState('')
   const [startLocation, setStartLocation] = useState('Văn phòng Degoholding')
   const [endLocation, setEndLocation] = useState('')
-  const [stops, setStops] = useState<string[]>([])
+  const [stops, setStops] = useState<Stop[]>([])
   const [startTime, setStartTime] = useState('')
   const [endTime, setEndTime] = useState('')
   const [note, setNote] = useState('')
@@ -61,8 +66,8 @@ export function VehicleBookingCreatePage() {
 
   const [error, setError] = useState('')
 
-  function setStopAt(index: number, value: string) {
-    setStops((prev) => prev.map((s, i) => (i === index ? value : s)))
+  function setStopField(index: number, field: keyof Stop, value: string) {
+    setStops((prev) => prev.map((s, i) => (i === index ? { ...s, [field]: value } : s)))
   }
   function moveStop(index: number, dir: -1 | 1) {
     setStops((prev) => {
@@ -85,7 +90,13 @@ export function VehicleBookingCreatePage() {
   }
 
   function buildPayload(): VehicleBookingPayload {
-    const cleanStops = stops.map((s) => s.trim()).filter(Boolean)
+    const cleanStops: Stop[] = stops
+      .map((s) => ({
+        location: s.location.trim(),
+        contact_name: s.contact_name.trim(),
+        contact_phone: s.contact_phone.trim(),
+      }))
+      .filter((s) => s.location)
     const base: VehicleBookingPayload = {
       request_type: requestType,
       purpose: purpose.trim(),
@@ -179,49 +190,63 @@ export function VehicleBookingCreatePage() {
             </Field>
           </div>
 
-          {/* Điểm dừng trung gian */}
+          {/* Điểm dừng trung gian — mỗi điểm có địa điểm + người liên hệ tại điểm đó */}
           <div className="flex flex-col gap-2">
             <Label>Điểm dừng trung gian</Label>
             {stops.length === 0 && (
               <p className="text-sm text-muted-foreground">Chưa có điểm dừng nào.</p>
             )}
             {stops.map((stop, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <MapPin className="size-4 shrink-0 text-muted-foreground" />
-                <Input
-                  value={stop}
-                  onChange={(e) => setStopAt(index, e.target.value)}
-                  placeholder={`Điểm dừng ${index + 1}`}
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  disabled={index === 0}
-                  onClick={() => moveStop(index, -1)}
-                  aria-label="Lên"
-                >
-                  <ArrowUp className="size-4" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  disabled={index === stops.length - 1}
-                  onClick={() => moveStop(index, 1)}
-                  aria-label="Xuống"
-                >
-                  <ArrowDown className="size-4" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setStops((prev) => prev.filter((_, i) => i !== index))}
-                  aria-label="Xóa điểm dừng"
-                >
-                  <Trash2 className="size-4 text-destructive" />
-                </Button>
+              <div key={index} className="rounded-lg border p-3">
+                <div className="flex items-center gap-2">
+                  <MapPin className="size-4 shrink-0 text-muted-foreground" />
+                  <Input
+                    value={stop.location}
+                    onChange={(e) => setStopField(index, 'location', e.target.value)}
+                    placeholder={`Điểm dừng ${index + 1}`}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    disabled={index === 0}
+                    onClick={() => moveStop(index, -1)}
+                    aria-label="Lên"
+                  >
+                    <ArrowUp className="size-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    disabled={index === stops.length - 1}
+                    onClick={() => moveStop(index, 1)}
+                    aria-label="Xuống"
+                  >
+                    <ArrowDown className="size-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setStops((prev) => prev.filter((_, i) => i !== index))}
+                    aria-label="Xóa điểm dừng"
+                  >
+                    <Trash2 className="size-4 text-destructive" />
+                  </Button>
+                </div>
+                <div className="mt-2 grid gap-2 pl-6 sm:grid-cols-2">
+                  <Input
+                    value={stop.contact_name}
+                    onChange={(e) => setStopField(index, 'contact_name', e.target.value)}
+                    placeholder="Tên người liên hệ"
+                  />
+                  <Input
+                    value={stop.contact_phone}
+                    onChange={(e) => setStopField(index, 'contact_phone', e.target.value)}
+                    placeholder="Số điện thoại"
+                  />
+                </div>
               </div>
             ))}
             <Button
@@ -229,7 +254,7 @@ export function VehicleBookingCreatePage() {
               variant="outline"
               size="sm"
               className="w-fit"
-              onClick={() => setStops((prev) => [...prev, ''])}
+              onClick={() => setStops((prev) => [...prev, emptyStop()])}
             >
               <Plus className="size-4" />
               Thêm điểm dừng
@@ -252,6 +277,17 @@ export function VehicleBookingCreatePage() {
               />
             </Field>
           </div>
+
+          {/* Khứ hồi đặt ngay dưới thời gian đi/về (chỉ áp dụng đặt xe công tác) */}
+          {!isDelivery && (
+            <label className="flex w-fit items-center gap-2 text-sm">
+              <Checkbox
+                checked={isRoundTrip}
+                onCheckedChange={(v) => setIsRoundTrip(v === true)}
+              />
+              Yêu cầu chuyến khứ hồi
+            </label>
+          )}
         </Card>
 
         {/* Khối riêng theo loại */}
@@ -317,13 +353,6 @@ export function VehicleBookingCreatePage() {
                 placeholder="Danh sách người đi cùng."
               />
             </Field>
-            <label className="flex items-center gap-2 text-sm">
-              <Checkbox
-                checked={isRoundTrip}
-                onCheckedChange={(v) => setIsRoundTrip(v === true)}
-              />
-              Yêu cầu chuyến khứ hồi
-            </label>
           </Card>
         )}
 

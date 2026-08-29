@@ -62,11 +62,29 @@ def test_submit_goes_pending(db):
 def test_stops_are_serialized_and_trimmed_in_order(db):
     actor = _actor(db)
     b = create_booking(db, _car_payload(), actor, submit=False)
-    # Ô rỗng bị loại; thứ tự giữ nguyên.
-    assert json.loads(b.stops) == ["Kho Q4", "Bãi Q1"]
-    # Response tách chuỗi JSON trở lại thành list.
+    # Ô rỗng bị loại; thứ tự giữ nguyên; mỗi điểm là dict có địa điểm + liên hệ.
+    stored = json.loads(b.stops)
+    assert [s["location"] for s in stored] == ["Kho Q4", "Bãi Q1"]
+    # Chuỗi (bản cũ) được bọc {location, contact_name rỗng, contact_phone rỗng}.
+    assert stored[0] == {"location": "Kho Q4", "contact_name": "", "contact_phone": ""}
+    # Response tách chuỗi JSON trở lại thành list StopItem.
     out = VehicleBookingResponse.model_validate(b)
-    assert out.stops == ["Kho Q4", "Bãi Q1"]
+    assert [s.location for s in out.stops] == ["Kho Q4", "Bãi Q1"]
+
+
+def test_stops_keep_contact_name_and_phone(db):
+    actor = _actor(db)
+    payload = _car_payload(stops=[
+        {"location": "Kho Q4", "contact_name": "Anh Ba", "contact_phone": "0909"},
+        {"location": "", "contact_name": "Bỏ", "contact_phone": "x"},  # thiếu địa điểm -> loại
+    ])
+    b = create_booking(db, payload, actor, submit=False)
+    stored = json.loads(b.stops)
+    assert len(stored) == 1
+    assert stored[0] == {"location": "Kho Q4", "contact_name": "Anh Ba", "contact_phone": "0909"}
+    out = VehicleBookingResponse.model_validate(b)
+    assert out.stops[0].contact_name == "Anh Ba"
+    assert out.stops[0].contact_phone == "0909"
 
 
 def test_response_carries_number_and_label(db):
@@ -102,7 +120,7 @@ def test_update_allowed_while_draft(db):
                                                     stops=["Điểm mới"]),
                         actor, submit=True)
     assert b2.purpose == "Đổi mục đích"
-    assert json.loads(b2.stops) == ["Điểm mới"]
+    assert [s["location"] for s in json.loads(b2.stops)] == ["Điểm mới"]
     assert b2.status == m.BK_PENDING  # submit=True đẩy tiếp sang chờ duyệt
 
 
