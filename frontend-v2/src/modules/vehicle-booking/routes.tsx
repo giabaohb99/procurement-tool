@@ -1,4 +1,4 @@
-import { ClipboardList, Plus } from 'lucide-react'
+import { ClipboardList } from 'lucide-react'
 
 import type { ErpModule } from '@/app/router/module-definition'
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -19,6 +19,8 @@ export const vehicleBookingModule: ErpModule = {
   accent: 'bg-orange-500/10 text-orange-600 dark:text-orange-400',
   enabled: true,
 
+  // Tạo/sửa mở dạng POPUP ngay trên danh sách (case UI C-01) nên KHÔNG có route
+  // /new riêng — nút "Tạo yêu cầu" nằm trong màn danh sách.
   nav: [
     {
       label: 'Yêu cầu đặt xe',
@@ -27,13 +29,6 @@ export const vehicleBookingModule: ErpModule = {
       entity: 'vehicle_booking',
       end: true,
     },
-    {
-      label: 'Tạo yêu cầu',
-      path: appRoutes.vehicleBooking.new,
-      icon: Plus,
-      entity: 'vehicle_booking',
-      action: 'create',
-    },
   ],
 
   routes: [
@@ -41,12 +36,6 @@ export const vehicleBookingModule: ErpModule = {
       path: appRoutes.vehicleBooking.root,
       lazy: async () => ({
         Component: (await import('./pages/vehicle-booking-list-page')).VehicleBookingListPage,
-      }),
-    },
-    {
-      path: appRoutes.vehicleBooking.new,
-      lazy: async () => ({
-        Component: (await import('./pages/vehicle-booking-create-page')).VehicleBookingCreatePage,
       }),
     },
     {

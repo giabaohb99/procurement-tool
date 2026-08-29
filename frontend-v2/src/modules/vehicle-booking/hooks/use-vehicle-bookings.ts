@@ -41,3 +41,24 @@ export function useCreateVehicleBooking() {
     },
   })
 }
+
+/** Sửa phiếu (chỉ khi còn nháp / bị trả về) — `submit` để gửi duyệt sau khi lưu. */
+export function useUpdateVehicleBooking() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+      submit,
+    }: {
+      id: number
+      payload: Partial<VehicleBookingPayload>
+      submit: boolean
+    }) => vehicleBookingApi.update(id, payload, submit),
+    onSuccess: (_data, { id, submit }) => {
+      qc.invalidateQueries({ queryKey: queryKeys.vehicleBooking.all })
+      qc.invalidateQueries({ queryKey: queryKeys.vehicleBooking.booking(id) })
+      toast.success(submit ? 'Đã gửi duyệt yêu cầu đặt xe' : 'Đã lưu thay đổi')
+    },
+  })
+}

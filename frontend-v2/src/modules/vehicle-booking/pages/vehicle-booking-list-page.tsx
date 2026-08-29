@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
+import { BookingFormDialog } from '../components/booking-form-dialog'
 import { CarBookingIcon, DeliveryBookingIcon } from '../components/booking-type-icons'
 import { useVehicleBookings } from '../hooks/use-vehicle-bookings'
 import {
@@ -60,6 +61,7 @@ export function VehicleBookingListPage() {
   const [requestType, setRequestType] = useUrlParamState('request_type', ALL)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
+  const [createOpen, setCreateOpen] = useState(false)
 
   const params = useMemo<ListParams>(() => {
     const p: ListParams = { page, page_size: pageSize }
@@ -147,7 +149,7 @@ export function VehicleBookingListPage() {
         description="Tạo và theo dõi yêu cầu đặt xe công tác / giao hàng của bạn."
         actions={
           can('vehicle_booking', 'create') ? (
-            <Button onClick={() => navigate(appRoutes.vehicleBooking.new)}>
+            <Button onClick={() => setCreateOpen(true)}>
               <Plus className="size-4" />
               Tạo yêu cầu
             </Button>
@@ -212,6 +214,10 @@ export function VehicleBookingListPage() {
           }
         />
       </Card>
+
+      {createOpen && (
+        <BookingFormDialog onClose={() => setCreateOpen(false)} onSaved={() => setCreateOpen(false)} />
+      )}
     </PageContainer>
   )
 }

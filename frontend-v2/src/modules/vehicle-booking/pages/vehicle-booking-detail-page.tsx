@@ -1,6 +1,8 @@
-import { ArrowLeft, MapPin } from 'lucide-react'
+import { ArrowLeft, MapPin, Pencil } from 'lucide-react'
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
+import { usePermission } from '@/core/authorization/use-permission'
 import { AuditTimeline } from '@/shared/audit/audit-timeline'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { Badge } from '@/shared/ui/badge'
@@ -10,15 +12,20 @@ import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { ReadOnlyValue } from '@/shared/ui/read-only-value'
 import { formatMoney } from '@/shared/utils/format-money'
+import { BookingFormDialog } from '../components/booking-form-dialog'
 import { CarBookingIcon, DeliveryBookingIcon } from '../components/booking-type-icons'
 import { useVehicleBooking } from '../hooks/use-vehicle-bookings'
 import {
+  BOOKING_STATUS,
   BOOKING_STATUS_LABELS,
   BOOKING_STATUS_TONE,
   DRIVER_STATUS_LABELS,
   REQUEST_TYPE,
   type VehicleBooking,
 } from '../types/vehicle-booking'
+
+/** Chỉ sửa được khi phiếu còn nháp hoặc bị trả về (khớp EDITABLE_STATUSES ở backend). */
+const EDITABLE = new Set<number>([BOOKING_STATUS.draft, BOOKING_STATUS.returned])
 
 const TONE_VARIANT: Record<string, 'secondary' | 'default' | 'destructive' | 'outline'> = {
   neutral: 'secondary',
@@ -56,9 +63,13 @@ function InfoRow({ label, children }: { label: string; children: React.ReactNode
 
 export function VehicleBookingDetailPage() {
   const navigate = useNavigate()
+  const { can } = usePermission()
   const { id } = useParams()
   const bookingId = Number(id)
   const { data, isLoading, isError } = useVehicleBooking(Number.isFinite(bookingId) ? bookingId : null)
+  const [editOpen, setEditOpen] = useState(false)
+
+  const canEdit = Boolean(data) && can('vehicle_booking', 'write') && EDITABLE.has(data!.status)
 
   return (
     <PageContainer>
@@ -66,10 +77,18 @@ export function VehicleBookingDetailPage() {
         title={data ? `Yêu cầu đặt xe ${data.code}` : 'Chi tiết yêu cầu đặt xe'}
         description={data?.purpose}
         actions={
-          <Button variant="ghost" onClick={() => navigate(appRoutes.vehicleBooking.root)}>
-            <ArrowLeft className="size-4" />
-            Quay lại
-          </Button>
+          <div className="flex items-center gap-2">
+            {canEdit && (
+              <Button variant="outline" onClick={() => setEditOpen(true)}>
+                <Pencil className="size-4" />
+                Sửa
+              </Button>
+            )}
+            <Button variant="ghost" onClick={() => navigate(appRoutes.vehicleBooking.root)}>
+              <ArrowLeft className="size-4" />
+              Quay lại
+            </Button>
+          </div>
         }
       />
 
@@ -88,6 +107,14 @@ export function VehicleBookingDetailPage() {
             <AuditTimeline entity="vehicle_booking" entityId={data.id} />
           </Card>
         </div>
+      )}
+
+      {editOpen && data && (
+        <BookingFormDialog
+          booking={data}
+          onClose={() => setEditOpen(false)}
+          onSaved={() => setEditOpen(false)}
+        />
       )}
     </PageContainer>
   )
