@@ -98,20 +98,23 @@ export function SurveyLineField({
   const invalidClass = invalid && 'border-destructive ring-2 ring-destructive/20'
 
   /** Ô chữ tự giãn. Trong bảng thì Enter KHÔNG xuống dòng (CR-090) — nó là phím
-   *  "xong ô" theo thói quen bảng tính, chèn xuống dòng là làm hỏng dữ liệu. */
+   *  "xong ô" theo thói quen bảng tính, chèn xuống dòng là làm hỏng dữ liệu.
+   *  Không đặt placeholder: popup đã có nhãn ngay trên ô, lặp lại trong ô là
+   *  nhìn như dữ liệu đã điền (lỗi QA 28/08). */
   function textEditor(multiline: boolean) {
     return (
       <Textarea
         rows={1}
         value={text}
-        placeholder={isCell ? undefined : field.label}
         onChange={(event) => onChange({ [field.key]: event.target.value })}
         onKeyDown={(event) => {
           if (isCell && event.key === 'Enter' && !event.shiftKey) event.preventDefault()
         }}
         className={cn(
           'w-full',
-          isCell ? 'min-h-8 resize-none px-2 py-1 text-sm' : multiline ? 'min-h-20' : 'min-h-16',
+          // Ô chữ NGẮN trong popup cao bằng một dòng nhập bình thường — cao lút
+          // như ô đoạn văn là trông như thiếu dữ liệu (lỗi QA 28/08).
+          isCell ? 'min-h-8 resize-none px-2 py-1 text-sm' : multiline ? 'min-h-20' : 'min-h-9',
           invalidClass,
         )}
       />

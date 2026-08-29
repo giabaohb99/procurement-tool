@@ -56,6 +56,7 @@ import {
 import { buildSurveyCatalog } from '../helpers/survey-catalog'
 import {
   applyLineChange,
+  applySurveyPriceHint,
   lineHasContent,
   makeEmptyLine,
   prefillLineFromHeader,
@@ -183,7 +184,8 @@ export function SurveyDetailPage() {
         ? (current) =>
             current ??
             createEmptySurvey(user, searchParams.get('sr'), searchParams.get('sr_code'))
-        : (serverData ?? null),
+        : // CR-111: phiếu còn sửa được thì điền sẵn giá lịch sử vào ô đang trống.
+          (serverData ? applySurveyPriceHint(serverData) : null),
     )
   }
 
@@ -540,14 +542,12 @@ export function SurveyDetailPage() {
         </div>
       </div>
 
+      {/* Chỉ hiện lý do khi phiếu ĐANG bị trả lại / từ chối. `approve_note` không bị
+          xóa lúc gửi lại, nên hiện nó ở trạng thái khác là lôi lý do từ chối CŨ ra
+          treo trên phiếu đã sửa xong (lỗi QA 28/08). */}
       {!isNew && !!data.approve_note && ['rejected', 'cancelled'].includes(status) && (
         <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
           <b>{status === 'cancelled' ? 'Lý do từ chối:' : 'Lý do trả lại:'}</b> {data.approve_note}
-        </div>
-      )}
-      {!isNew && !!data.approve_note && !['rejected', 'cancelled'].includes(status) && (
-        <div className="mb-4 rounded-lg border bg-muted/40 px-4 py-3 text-sm">
-          <b>Ghi chú duyệt:</b> {data.approve_note}
         </div>
       )}
 

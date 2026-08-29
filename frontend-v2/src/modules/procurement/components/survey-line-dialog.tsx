@@ -134,6 +134,9 @@ export function SurveyLineDialog({
                       catalog={catalog}
                       onChange={onChange}
                     />
+                    {field.note && (
+                      <p className="text-xs text-muted-foreground">{field.note}</p>
+                    )}
                   </div>
                 ))}
               </div>

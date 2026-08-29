@@ -12,7 +12,7 @@ import {
   Save,
   Send,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
@@ -73,6 +73,7 @@ import {
   useChooseSurveyOption,
   useCreatePurchaseRequestsFromSurvey,
   useDeleteSurveyRequest,
+  useDeptHeadLookup,
   useSaveSurveyRequest,
   useSetSurveyLineStatus,
   useSurveyRequest,
@@ -203,6 +204,36 @@ export function SurveyRequestDetailPage() {
       )
     }
   }
+
+  // Bộ phận điền tự động (nhịp trên) thì Trưởng bộ phận cũng phải TRA theo — bản
+  // cũ chỉ tra khi người dùng tự tay chọn phòng/người, phiếu mở ra là ô trống
+  // (lỗi QA 28/08). Ref chặn tra lại cùng một phòng khi phòng đó không có trưởng.
+  const deptHeadLookup = useDeptHeadLookup()
+  const lookupDeptHead = deptHeadLookup.mutateAsync
+  const attemptedDeptId = useRef(0)
+  const prefillDeptId = isNew ? (draft?.department_id ?? 0) : 0
+  const prefillDeptName = draft?.department ?? ''
+  const prefillHeadId = draft?.head_of_dept_id ?? 0
+  useEffect(() => {
+    if (!prefillDeptId || prefillHeadId || attemptedDeptId.current === prefillDeptId) return
+    attemptedDeptId.current = prefillDeptId
+    lookupDeptHead({ department: prefillDeptName, departmentId: prefillDeptId })
+      .then((found) => {
+        if (!found?.head_of_dept_id) return
+        setDraft((current) =>
+          current && current.department_id === prefillDeptId
+            ? {
+                ...current,
+                head_of_dept: found.head_of_dept ?? '',
+                head_of_dept_id: found.head_of_dept_id,
+              }
+            : current,
+        )
+      })
+      .catch(() => {
+        // Tra hụt thì thôi — ô Trưởng bộ phận để trống như trước.
+      })
+  }, [prefillDeptId, prefillDeptName, prefillHeadId, lookupDeptHead])
 
   if (!isNew && isLoading) {
     return (

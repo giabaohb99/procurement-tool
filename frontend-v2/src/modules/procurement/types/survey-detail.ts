@@ -4,7 +4,7 @@
  * Một phiếu gộp HAI bảng dòng độc lập nhau, backend lưu hai bảng khác nhau và
  * `GET /api/surveys/{id}` trả cả hai trong cùng một khung:
  * - `supplier_lines` — khảo sát NHÀ CUNG CẤP (27 cột: pháp lý, chính sách, đánh giá).
- * - `product_lines`  — khảo sát SẢN PHẨM (31 cột: báo giá, quy đổi, mẫu, LAB).
+ * - `product_lines`  — khảo sát SẢN PHẨM (38 cột: báo giá, quy đổi, mẫu, LAB).
  *
  * Vì mỗi bảng vài chục cột và cùng một ô phải hiện được ở CẢ bảng lẫn popup chi
  * tiết dòng, cấu trúc cột được khai báo thành dữ liệu (`*_COLS` cho bảng,
@@ -88,6 +88,13 @@ export interface SurveyDetail {
   /** Tổng thành tiền các dòng SP, backend cộng sẵn. */
   subtotal: number
   main: string
+
+  /**
+   * CR-111 — giá mua GẦN NHẤT / CAO NHẤT của mã VTBB ở đầu phiếu, backend tra từ
+   * Lịch sử mua hàng. Dùng điền sẵn hai ô giá của dòng SP; chỉ là gợi ý, người
+   * dùng sửa đè được. `last = 0` nghĩa là chưa từng mua mã này.
+   */
+  price_hint?: { last: number; max: number; count: number; unit: string; date: string }
 }
 
 /**
@@ -132,6 +139,8 @@ export interface SurveyField {
   type?: SurveyFieldType
   full?: boolean
   options?: readonly string[]
+  /** Dòng hướng dẫn nhỏ dưới ô ở popup — dành cho ô dễ điền sai (CR-111). */
+  note?: string
 }
 
 /** Một nhóm ô trong popup chi tiết dòng. */
@@ -345,7 +354,19 @@ export const PRODUCT_SECTIONS: SurveySection[] = [
       { key: 'supplier_name', label: 'Tên pháp lý NCC', type: 'legal' },
       { key: 'internal_code', label: 'Mã SP (theo NCC)' },
       { key: 'product_name', label: 'Tên SP (tên NCC đặt)', full: true },
+      {
+        key: 'invoice_name',
+        label: 'Tên trên hoá đơn',
+        full: true,
+        note: 'Tên NCC sẽ ghi trên hoá đơn — chốt ngay từ khảo sát để kế toán khỏi hỏi lại.',
+      },
       { key: 'spec', label: 'Thông số kỹ thuật', type: 'textarea', full: true },
+      {
+        key: 'active_ingredient',
+        label: 'Hàm lượng hoạt chất',
+        full: true,
+        note: 'Riêng nguyên liệu (NL) và bán thành phẩm (BTP). Loại khác thì ghi "Không có".',
+      },
       { key: 'origin', label: 'Xuất xứ sản phẩm' },
     ],
   },
@@ -356,6 +377,14 @@ export const PRODUCT_SECTIONS: SurveySection[] = [
       { key: 'moq', label: 'MOQ tối thiểu', type: 'num' },
       { key: 'price_by_volume', label: 'Giá theo sản lượng (VNĐ)', type: 'num' },
       { key: 'volume_range', label: 'Khung sản lượng (theo ĐVT)' },
+      // CR-111: hai mốc giá tự lấy từ Lịch sử mua hàng của mã VTBB ở đầu phiếu, sửa đè được.
+      {
+        key: 'last_purchase_price',
+        label: 'Giá mua gần nhất (VNĐ)',
+        type: 'num',
+        note: 'Tự lấy từ Lịch sử mua hàng của mã VTBB ở đầu phiếu — sửa đè được. Bằng 0 nghĩa là chưa từng mua mã này.',
+      },
+      { key: 'max_purchase_price', label: 'Giá mua max (VNĐ)', type: 'num' },
       { key: 'vat', label: 'VAT (%)', type: 'vat' },
       // v1 chỉ có cột này ở bảng, popup không có -> mở popup ra là không thấy SL yêu cầu.
       { key: 'request_qty', label: 'SL yêu cầu', type: 'num' },
@@ -363,6 +392,19 @@ export const PRODUCT_SECTIONS: SurveySection[] = [
       { key: 'internal_unit', label: 'ĐVT (quy đổi về ĐVT Cty)', type: 'unit' },
       { key: 'amount_converted', label: 'Thành tiền (đã quy đổi)', type: 'num' },
       { key: 'shipping_cost', label: 'Chi phí vận chuyển (VNĐ)', type: 'num' },
+      {
+        key: 'extra_shipping_cost',
+        label: 'Phí VC phát sinh đến kho yêu cầu (VNĐ)',
+        type: 'num',
+        note: 'Phần phí đội thêm khi giao tới đúng kho người yêu cầu. Không có thì để 0.',
+      },
+      { key: 'shipping_policy', label: 'Chính sách vận chuyển', type: 'textarea', full: true },
+      {
+        key: 'debt_policy',
+        label: 'Ngày công nợ',
+        type: 'select',
+        options: DEBT_POLICY_OPTIONS,
+      },
       { key: 'delivery_time', label: 'Thời gian giao hàng' },
       { key: 'delivery_place', label: 'Địa điểm giao/nhận hàng' },
       { key: 'quote_file', label: 'Link báo giá' },
@@ -399,18 +441,33 @@ export const PRODUCT_COLUMNS: SurveyColumn[] = [
   { key: 'supplier_name', label: 'Tên pháp lý', width: 220, type: 'legal' },
   { key: 'internal_code', label: 'Mã SP (NCC)', width: 120 },
   { key: 'product_name', label: 'Tên SP theo NCC *', width: 220 },
+  { key: 'invoice_name', label: 'Tên trên hoá đơn *', width: 200 },
   { key: 'spec', label: 'Thông số KT', width: 180 },
+  { key: 'active_ingredient', label: 'Hàm lượng hoạt chất *', width: 170 },
   { key: 'origin', label: 'Xuất xứ', width: 100 },
   { key: 'quote_unit', label: 'ĐVT báo giá', width: 120, type: 'unit' },
   { key: 'moq', label: 'MOQ', width: 90, type: 'num' },
   { key: 'price_by_volume', label: 'Giá theo khung', width: 120, type: 'num' },
   { key: 'volume_range', label: 'Khung SL', width: 110 },
+  // CR-111: khách yêu cầu 3 cột này phải thấy được ngay ngoài bảng, đặt liền sau cụm
+  // "Giá theo khung / Khung SL" để so giá NCC chào với giá đã từng mua trong cùng tầm mắt.
+  { key: 'last_purchase_price', label: 'Giá mua gần nhất', width: 130, type: 'num' },
+  { key: 'max_purchase_price', label: 'Giá mua max', width: 120, type: 'num' },
+  {
+    key: 'debt_policy',
+    label: 'Ngày công nợ *',
+    width: 150,
+    type: 'select',
+    options: DEBT_POLICY_OPTIONS,
+  },
   { key: 'vat', label: 'VAT(%)', width: 90, type: 'vat' },
   { key: 'request_qty', label: 'SL YC', width: 90, type: 'num' },
   { key: 'amount', label: 'Thành tiền', width: 120, type: 'computed' },
   { key: 'internal_unit', label: 'ĐVT quy đổi', width: 120, type: 'unit' },
   { key: 'amount_converted', label: 'TT quy đổi', width: 120, type: 'num' },
   { key: 'shipping_cost', label: 'Phí VC', width: 100, type: 'num' },
+  { key: 'extra_shipping_cost', label: 'Phí VC phát sinh đến kho YC', width: 150, type: 'num' },
+  { key: 'shipping_policy', label: 'Chính sách vận chuyển *', width: 180 },
   { key: 'delivery_time', label: 'TG giao', width: 110 },
   { key: 'delivery_place', label: 'Nơi giao nhận', width: 150 },
   { key: 'quote_file', label: 'File báo giá', width: 150 },
@@ -441,7 +498,7 @@ export const PRODUCT_COLUMNS: SurveyColumn[] = [
   { key: 'line_approve_note', label: 'Ghi chú duyệt', width: 180 },
 ]
 
-/** Cột hiện ở chế độ RÚT GỌN — 11 trong 30 cột. */
+/** Cột hiện ở chế độ RÚT GỌN — 11 trong 37 cột. */
 export const PRODUCT_CORE_KEYS = [
   'supplier_available',
   'supplier_code',

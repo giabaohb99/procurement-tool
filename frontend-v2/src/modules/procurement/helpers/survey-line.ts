@@ -12,6 +12,7 @@ import {
   LINE_APPROVE_DEFAULT,
   MANAGER_KEYS,
   OPTIONAL_KEYS,
+  isSurveyEditable,
   sectionsOf,
 } from '../types/survey-detail'
 
@@ -149,7 +150,13 @@ export function prefillLineFromHeader(
   table: SurveyTable,
   header: Pick<
     SurveyDetail,
-    'received_date' | 'result_due_date' | 'item_group' | 'item_code' | 'item_name' | 'uom'
+    | 'received_date'
+    | 'result_due_date'
+    | 'item_group'
+    | 'item_code'
+    | 'item_name'
+    | 'uom'
+    | 'price_hint'
   >,
 ): Partial<SurveyLine> {
   const common: Partial<SurveyLine> = {
@@ -163,7 +170,36 @@ export function prefillLineFromHeader(
     product_name: header.item_name || '',
     quote_unit: header.uom || '',
     internal_unit: header.uom || '',
+    // CR-111: hai mốc giá lịch sử điền sẵn ngay từ dòng mới, sửa đè được.
+    last_purchase_price: header.price_hint?.last ?? 0,
+    max_purchase_price: header.price_hint?.max ?? 0,
   }
+}
+
+/**
+ * CR-111 — điền sẵn "Giá mua gần nhất / Giá mua max" từ Lịch sử mua hàng cho các
+ * dòng SP đang để trống. Chỉ đụng phiếu còn sửa được (nháp / bị trả lại): phiếu
+ * đã gửi là số liệu chốt, không tự đổi nữa. Người dùng sửa đè được nên chỉ điền
+ * vào ô <= 0.
+ */
+export function applySurveyPriceHint(detail: SurveyDetail): SurveyDetail {
+  const hint = detail.price_hint
+  if (!hint || !isSurveyEditable(detail.status)) return detail
+  if (hint.last <= 0 && hint.max <= 0) return detail
+
+  let changed = false
+  const productLines = detail.product_lines.map((line) => {
+    const fillLast = hint.last > 0 && toNumber(line.last_purchase_price) <= 0
+    const fillMax = hint.max > 0 && toNumber(line.max_purchase_price) <= 0
+    if (!fillLast && !fillMax) return line
+    changed = true
+    return {
+      ...line,
+      ...(fillLast ? { last_purchase_price: hint.last } : {}),
+      ...(fillMax ? { max_purchase_price: hint.max } : {}),
+    }
+  })
+  return changed ? { ...detail, product_lines: productLines } : detail
 }
 
 /**
