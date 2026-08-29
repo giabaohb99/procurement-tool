@@ -1,7 +1,8 @@
-import { Car, ClipboardList, Plus } from 'lucide-react'
+import { ClipboardList, Plus } from 'lucide-react'
 
 import type { ErpModule } from '@/app/router/module-definition'
 import { appRoutes } from '@/shared/constants/app-routes'
+import { CarTileIcon } from './components/booking-type-icons'
 
 /**
  * Phân hệ ĐẶT XE NỘI BỘ (DEGO Booking Auto).
@@ -13,7 +14,7 @@ export const vehicleBookingModule: ErpModule = {
   id: 'vehicle-booking',
   title: 'Đặt xe',
   description: 'Đặt xe công tác và giao hàng nội bộ, theo dõi trạng thái phiếu.',
-  icon: Car,
+  icon: CarTileIcon,
   path: appRoutes.vehicleBooking.root,
   accent: 'bg-orange-500/10 text-orange-600 dark:text-orange-400',
   enabled: true,
