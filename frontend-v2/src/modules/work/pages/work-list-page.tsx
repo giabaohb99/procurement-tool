@@ -2,6 +2,8 @@ import { GanttChartSquare, KanbanSquare, Settings2, Table2, Users } from 'lucide
 import { useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 
+import { useAuth } from '@/core/auth/use-auth'
+import { logger } from '@/core/telemetry/logger'
 import { FilterProvider, useFilterContext } from '@/shared/conditional-filter'
 import { Button } from '@/shared/ui/button'
 import {
@@ -28,11 +30,20 @@ import { ListMembersDialog } from '../components/list-members-dialog'
 import { KanbanBoard } from '../components/kanban-board'
 import { SectionEditDialog, type SectionDialogMode } from '../components/section-edit-dialog'
 import { TaskDetailSheet } from '../components/task-detail-sheet'
+import type { NewTaskDraft } from '../components/task-draft-row'
 import { TaskListView } from '../components/task-list-view'
 import { WorkToolbar } from '../components/work-toolbar'
-import { useCreateTask, useMoveTask, useUpdateTask, useWorkBoard } from '../hooks/use-work-board'
+import {
+  useCreateTask,
+  useMoveTask,
+  useSetAssignees,
+  useSetTaskLabel,
+  useToggleSubtask,
+  useUpdateTask,
+  useWorkBoard,
+} from '../hooks/use-work-board'
 import { useWorkViewState } from '../hooks/use-view-state'
-import { useMoveSection, useWorkLabelFields } from '../hooks/use-work-config'
+import { useMoveSection, useWorkLabelFields, useWorkMembers } from '../hooks/use-work-config'
 import type { WorkSection } from '../types/work'
 import { fieldHasOptions, WORK_ROLE, WORK_TASK_STATUS } from '../types/work'
 import { prepareTasks } from '../utils/filter-tasks'
@@ -95,6 +106,52 @@ function WorkListContent({ listId }: { listId: number }) {
   const updateTask = useUpdateTask(listId)
   const moveTask = useMoveTask(listId)
   const moveSection = useMoveSection(listId)
+  //  Nguồn cho ô «Phụ trách» và trường tùy biến kiểu NGƯỜI sửa ngay trên dòng
+  //  danh sách — panel chi tiết cũng nạp đúng query này nên không tốn thêm lượt.
+  const { data: members = [] } = useWorkMembers(listId)
+  const setAssignees = useSetAssignees(listId)
+  const setLabel = useSetTaskLabel(listId)
+  const toggleSubtask = useToggleSubtask(listId)
+
+  /*  Việc tự thêm gần như luôn là việc của chính mình, nên dòng nháp gán sẵn
+      người đang đăng nhập. Chỉ gán khi họ THỰC SỰ là thành viên dự án: gán một
+      người ngoài thì họ không mở nổi việc để biết mình bị gán (`membership_service`
+      chặn), mà máy chủ nhận rồi nên nhìn như đã giao xong.  */
+  const { user } = useAuth()
+  const defaultPicId = useMemo(() => {
+    const employeeId = user?.employee_id
+    if (!employeeId) return undefined
+    return members.some((m) => m.employee_id === employeeId) ? employeeId : undefined
+  }, [user?.employee_id, members])
+
+  /**
+   * Tạo việc từ DÒNG NHÁP của khung nhìn Danh sách — gán sẵn người/hạn/nhãn.
+   *
+   * Phải đi hai nhịp vì API tạo task không nhận nhãn tùy biến: nhịp một tạo
+   * task (tên · cột · hạn · người phụ trách), nhịp hai mới gắn được nhãn vì
+   * chúng cần `task_id`. Chỉ gửi nhãn NÀO người dùng thực sự đụng tới — lặp cả
+   * bộ trường thì mỗi việc mới đẻ ra một tràng lượt gọi ghi giá trị rỗng.
+   */
+  async function addTaskFromDraft(sectionId: number | null, draft: NewTaskDraft) {
+    //  Dòng nháp gọi hàm này mà KHÔNG await (nó ở lại để gõ việc kế), nên lỗi
+    //  phải nuốt ngay tại đây — để lọt ra ngoài là một unhandled rejection đỏ
+    //  console mà người dùng chẳng thấy gì. Toast lỗi do tầng `@/core/api` lo.
+    try {
+      const created = await createTask.mutateAsync({
+        list_id: listId,
+        title: draft.title,
+        section_id: sectionId,
+        due_date: draft.dueDate || undefined,
+        assignee_ids: draft.picIds.length ? draft.picIds : undefined,
+      })
+      for (const [fieldId, value] of Object.entries(draft.labels)) {
+        if (value === null || value === undefined || value === '') continue
+        setLabel.mutate({ taskId: created.id, fieldId: Number(fieldId), value })
+      }
+    } catch (error) {
+      logger.warn('Không tạo được công việc từ dòng nháp', error)
+    }
+  }
 
   //  Khung nhìn / lát cắt / sắp xếp / trường trên thẻ được NHỚ theo từng danh
   //  sách (§1). Từ khóa tìm thì không nhớ — mở lại màn mà vẫn còn bộ lọc chữ cũ
@@ -313,9 +370,12 @@ function WorkListContent({ listId }: { listId: number }) {
 
         {view === 'list' && (
           <TaskListView
+            listId={listId}
             tasks={tasks}
             sections={board.sections}
             labelFields={labelFields}
+            members={members}
+            fields={cardFields}
             canEdit={canEdit}
             onOpenTask={setOpenTaskId}
             onToggleDone={(taskId, done) =>
@@ -324,6 +384,21 @@ function WorkListContent({ listId }: { listId: number }) {
                 values: { status: done ? WORK_TASK_STATUS.DONE : WORK_TASK_STATUS.OPEN },
               })
             }
+            onToggleSubtaskDone={(parentId, subtaskId, done) =>
+              toggleSubtask.mutate({ parentId, subtaskId, done })
+            }
+            onRename={(taskId, title) => updateTask.mutate({ id: taskId, values: { title } })}
+            onSetAssignees={(taskId, picIds) => setAssignees.mutate({ taskId, picIds })}
+            onSetDue={(taskId, dueDate) =>
+              updateTask.mutate({ id: taskId, values: { due_date: dueDate } })
+            }
+            onSetLabel={(taskId, fieldId, value) => setLabel.mutate({ taskId, fieldId, value })}
+            defaultPicId={defaultPicId}
+            //  Cùng luật với kanban (§3.4): đang sắp theo tiêu chí thì KHÓA kéo,
+            //  vì thả xong danh sách tự xếp lại chỗ cũ, nhìn như thao tác bị nuốt.
+            dragEnabled={sort === 'manual'}
+            onMoveTask={(taskId, place) => moveTask.mutate({ taskId, place })}
+            onAddTask={addTaskFromDraft}
           />
         )}
 

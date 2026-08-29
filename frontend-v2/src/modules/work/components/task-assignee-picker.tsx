@@ -1,24 +1,30 @@
-import { Check, Plus, Search, X } from 'lucide-react'
+import { Plus, UserPlus, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { IconTooltip } from '@/shared/ui/icon-tooltip'
-import { Input } from '@/shared/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
 import { cn } from '@/shared/utils/cn'
 import type { WorkAssignee, WorkMember } from '../types/work'
 import { WORK_ASSIGNEE_KIND } from '../types/work'
 import { initials, personName } from '../utils/people'
+import { AssigneePickerList } from './assignee-picker-list'
 
 interface TaskAssigneePickerProps {
   assignees: WorkAssignee[]
   members: WorkMember[]
   disabled?: boolean
+  /**
+   * `true` = dáng MỘT DÒNG cho ô bảng ở khung nhìn Danh sách: avatar chồng nhau
+   * + tên người đầu, cả cụm là nút mở danh sách. Dáng mặc định (dải chip có nút
+   * ✕ riêng từng người + nút «+») cao gấp đôi và xuống dòng trong ô hẹp.
+   */
+  compact?: boolean
   onChange: (picIds: number[]) => void
 }
 
 /**
- * Người phụ trách trong panel chi tiết: chip avatar của những người ĐANG được
- * gán, cộng một nút «+» mở danh sách có ô tìm.
+ * Người phụ trách: chip avatar của những người ĐANG được gán, cộng một nút mở
+ * danh sách có ô tìm.
  *
  * Bản cũ bày THẲNG mọi thành viên dự án thành một dải nút bật/tắt. Dự án hai
  * mươi người là hai mươi nút xám phủ kín panel, mà thứ cần đọc — "ai đang làm
@@ -29,33 +35,54 @@ export function TaskAssigneePicker({
   assignees,
   members,
   disabled,
+  compact = false,
   onChange,
 }: TaskAssigneePickerProps) {
   const [open, setOpen] = useState(false)
-  const [keyword, setKeyword] = useState('')
 
-  const picIds = useMemo(
-    () => assignees.filter((a) => a.kind === WORK_ASSIGNEE_KIND.PIC).map((a) => a.employee_id),
-    [assignees],
-  )
   const picked = useMemo(
     () => assignees.filter((a) => a.kind === WORK_ASSIGNEE_KIND.PIC),
     [assignees],
   )
-
-  const matches = useMemo(() => {
-    const needle = keyword.trim().toLowerCase()
-    if (!needle) return members
-    return members.filter((m) =>
-      [m.employee_name, m.employee_code].some((f) => (f ?? '').toLowerCase().includes(needle)),
-    )
-  }, [members, keyword])
+  const picIds = useMemo(() => picked.map((a) => a.employee_id), [picked])
 
   function toggle(employeeId: number) {
     onChange(
       picIds.includes(employeeId)
         ? picIds.filter((id) => id !== employeeId)
         : [...picIds, employeeId],
+    )
+  }
+
+  const list = <AssigneePickerList members={members} picIds={picIds} onToggle={toggle} />
+
+  if (compact) {
+    if (disabled) {
+      return picked.length ? (
+        <CompactFaces picked={picked} />
+      ) : (
+        <span className="text-xs text-muted-foreground">—</span>
+      )
+    }
+    return (
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            aria-label="Gán người phụ trách"
+            className="flex h-6 w-full items-center gap-1 rounded px-1 text-left hover:bg-accent"
+          >
+            {picked.length ? (
+              <CompactFaces picked={picked} />
+            ) : (
+              <UserPlus className="size-3.5 text-muted-foreground opacity-0 transition-opacity group-hover/row:opacity-60" />
+            )}
+          </button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-72 p-0">
+          {list}
+        </PopoverContent>
+      </Popover>
     )
   }
 
@@ -107,57 +134,52 @@ export function TaskAssigneePicker({
             </PopoverTrigger>
           </IconTooltip>
           <PopoverContent align="start" className="w-72 p-0">
-            <div className="border-b p-2">
-              <div className="relative">
-                <Search className="absolute top-2.5 left-2 size-4 text-muted-foreground" />
-                <Input
-                  autoFocus
-                  className="pl-8"
-                  placeholder="Tìm theo tên hoặc mã"
-                  value={keyword}
-                  onChange={(e) => setKeyword(e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="max-h-64 overflow-y-auto p-1">
-              {matches.length === 0 && (
-                <p className="px-2 py-4 text-center text-sm text-muted-foreground">
-                  {members.length === 0
-                    ? 'Dự án chưa có thành viên nào'
-                    : 'Không tìm thấy ai khớp'}
-                </p>
-              )}
-              {matches.map((m) => {
-                const chosen = picIds.includes(m.employee_id)
-                return (
-                  <button
-                    key={m.id}
-                    type="button"
-                    onClick={() => toggle(m.employee_id)}
-                    className={cn(
-                      'flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent',
-                      chosen && 'bg-accent/50',
-                    )}
-                  >
-                    <Check className={cn('size-4 shrink-0', !chosen && 'invisible')} />
-                    <span className="grid size-6 shrink-0 place-items-center rounded-full bg-muted text-[10px] font-medium">
-                      {initials(m.employee_name)}
-                    </span>
-                    <span className="flex-1 truncate">
-                      {personName(m.employee_name, m.employee_id)}
-                    </span>
-                    {m.employee_code && (
-                      <span className="shrink-0 text-xs text-muted-foreground">
-                        {m.employee_code}
-                      </span>
-                    )}
-                  </button>
-                )
-              })}
-            </div>
+            {list}
           </PopoverContent>
         </Popover>
       )}
     </>
+  )
+}
+
+/** Số avatar vẽ ra trước khi dồn phần còn lại vào một vòng «+N». */
+const MAX_FACES = 3
+
+/**
+ * Cụm avatar chồng nhau — CHỈ avatar, không kèm tên.
+ *
+ * Ô bảng rộng 180px mà tên tiếng Việt đầy đủ thì một cái đã chiếm gần hết, hai
+ * cái là cắt cụt cả hai thành vô nghĩa. Avatar đọc nhanh hơn hẳn khi lướt dọc
+ * cả cột, và tên đầy đủ vẫn có ở `title` khi rê chuột lẫn trong popover.
+ *
+ * Quá {@link MAX_FACES} người thì phần dư dồn vào một vòng «+N» thay vì kéo dài
+ * mãi — đúng lối avatar-group của shadcn.
+ */
+function CompactFaces({ picked }: { picked: WorkAssignee[] }) {
+  const shown = picked.slice(0, MAX_FACES)
+  const extra = picked.length - shown.length
+  return (
+    <span className="flex shrink-0 -space-x-1.5">
+      {shown.map((a) => (
+        <span
+          key={a.employee_id}
+          title={personName(a.employee_name, a.employee_id)}
+          className="grid size-5 place-items-center rounded-full bg-muted text-[9px] font-medium ring-1 ring-background"
+        >
+          {initials(a.employee_name)}
+        </span>
+      ))}
+      {extra > 0 && (
+        <span
+          title={picked
+            .slice(MAX_FACES)
+            .map((a) => personName(a.employee_name, a.employee_id))
+            .join(', ')}
+          className="grid size-5 place-items-center rounded-full bg-muted text-[9px] font-medium text-muted-foreground ring-1 ring-background"
+        >
+          +{extra}
+        </span>
+      )}
+    </span>
   )
 }

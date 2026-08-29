@@ -9,6 +9,7 @@ import type { WorkLabelField, WorkMember, WorkTaskLabelValue } from '../types/wo
 import { WORK_FIELD_TYPE } from '../types/work'
 import { personName } from '../utils/people'
 import { chipClass } from '../utils/work-colors'
+import { LabelMultiCell } from './label-multi-cell'
 import { TaskChipSelect } from './task-chip-select'
 
 interface LabelFieldInputProps {
@@ -18,6 +19,12 @@ interface LabelFieldInputProps {
   disabled?: boolean
   /** Thành viên dự án — nguồn cho trường kiểu NGƯỜI. */
   members: WorkMember[]
+  /**
+   * `true` = dáng vừa MỘT Ô BẢNG ở khung nhìn Danh sách. Hiện chỉ đổi kiểu CHỌN
+   * NHIỀU (dải chip đầy đủ → chip đang gắn + popover); năm kiểu kia vốn đã cao
+   * một dòng nên giữ nguyên.
+   */
+  compact?: boolean
   /** Giá trị mới, đa hình theo kiểu trường; `null` = bỏ chọn. */
   onChange: (value: unknown) => void
 }
@@ -33,20 +40,25 @@ export function LabelFieldInput({
   values,
   disabled,
   members,
+  compact = false,
   onChange,
 }: LabelFieldInputProps) {
   const first = values[0]
 
   switch (field.field_type) {
-    case WORK_FIELD_TYPE.MULTI:
-      return (
+    case WORK_FIELD_TYPE.MULTI: {
+      const chosen = values.map((v) => v.option_id).filter((id): id is number => id !== null)
+      return compact ? (
+        <LabelMultiCell field={field} chosen={chosen} disabled={disabled} onChange={onChange} />
+      ) : (
         <MultiOptionInput
           field={field}
-          chosen={values.map((v) => v.option_id).filter((id): id is number => id !== null)}
+          chosen={chosen}
           disabled={disabled}
           onChange={onChange}
         />
       )
+    }
 
     case WORK_FIELD_TYPE.PERSON:
       //  Chọn trong THÀNH VIÊN của dự án, không phải toàn bộ danh bạ: gán một
