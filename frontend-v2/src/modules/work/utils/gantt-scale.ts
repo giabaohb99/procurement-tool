@@ -83,16 +83,34 @@ export interface GanttTimeline {
   totalWidth: number
 }
 
-/** Số ngày tối thiểu của dải — dải quá ngắn thì thanh nào cũng chiếm cả màn hình. */
-const MIN_DAYS = 21
 /** Đệm hai bên cho thanh không dính mép. */
 const PAD_DAYS = 3
 
 /**
- * Dải thời gian đủ chứa mọi việc CÓ NGÀY, luôn bao gồm hôm nay.
+ * KHUNG TỐI THIỂU của trục: **mồng 1 tháng 1 năm nay → 31/12 năm sau**.
  *
- * Luôn kéo dải qua hôm nay kể cả khi mọi việc đều ở quá khứ: vạch "hôm nay" là
- * thứ người dùng lấy làm mốc đọc, thiếu nó thì biểu đồ trôi lơ lửng.
+ * Đây là đúng cách Lark làm (khách đối chiếu 31/08/2026: tạo một dự án trống
+ * tinh, mở Gantt lên là trục đã sẵn hai năm). Bản trước bám sát dữ liệu — mốc
+ * sớm nhất trừ 3 ngày tới mốc muộn nhất cộng 3 ngày, sàn 21 ngày — nghe thì gọn
+ * nhưng hỏng đúng việc người ta mở Gantt để làm: **đặt lịch cho quãng chưa có
+ * việc nào**. Muốn kéo một việc sang quý sau thì quý sau phải nhìn thấy đã, mà
+ * dải bám dữ liệu thì chỗ ấy không tồn tại — thành ra phải tạo việc bừa ở đó
+ * trước rồi mới kéo được, tức là làm ngược.
+ *
+ * Sàn 21 ngày cũ bỏ luôn: khung này đã ≥ 730 ngày nên nó không còn chạm tới.
+ */
+function khungToiThieu(homNay: string): [string, string] {
+  const nam = Number(homNay.slice(0, 4))
+  return [`${nam}-01-01`, `${nam + 1}-12-31`]
+}
+
+/**
+ * Dải thời gian: **hợp** của khung tối thiểu hai năm và mọi việc CÓ NGÀY.
+ *
+ * Vẫn phải nới theo dữ liệu chứ không đóng cứng hai năm: một việc có hạn 2029
+ * mà trục dừng ở 2027 thì nó biến mất khỏi biểu đồ — mất việc còn tệ hơn trục
+ * dài. Hôm nay luôn nằm trong dải (nó là mốc đọc chính), và điều đó tự đúng vì
+ * khung tối thiểu bắt đầu từ đầu năm nay.
  *
  * Hai đầu dải được BO THEO MỨC PHÓNG (`snapEdges`): mức Tuần bo về thứ Hai —
  * Chủ nhật, mức Tháng bo về mồng 1 — ngày cuối tháng. Không bo thì ô đầu và ô
@@ -104,17 +122,19 @@ export function buildTimeline(
   zoom: GanttZoom,
   homNay: string = today(),
 ): GanttTimeline {
-  const moc: string[] = [homNay]
+  const [sanTruoc, sanSau] = khungToiThieu(homNay)
+
+  //  Đệm 3 ngày CHỈ áp cho mốc của dữ liệu, không áp cho khung tối thiểu: khung
+  //  ấy cố ý rơi đúng 01/01 và 31/12, cộng trừ vào là hai đầu trục thành một
+  //  tháng cụt ở mức phóng Tháng.
+  const moc: string[] = [sanTruoc, sanSau]
   for (const t of tasks) {
-    if (t.start_date) moc.push(t.start_date)
-    if (t.due_date) moc.push(t.due_date)
+    if (t.start_date) moc.push(shiftDate(t.start_date, -PAD_DAYS))
+    if (t.due_date) moc.push(shiftDate(t.due_date, PAD_DAYS))
   }
   moc.sort()
 
-  let start = shiftDate(moc[0], -PAD_DAYS)
-  let end = shiftDate(moc[moc.length - 1], PAD_DAYS)
-  const thieu = MIN_DAYS - (daysBetween(start, end) + 1)
-  if (thieu > 0) end = shiftDate(end, thieu)
+  let [start, end] = [moc[0], moc[moc.length - 1]]
   ;[start, end] = snapEdges(start, end, zoom)
 
   const days: string[] = []
@@ -122,6 +142,15 @@ export function buildTimeline(
 
   const dayWidth = DAY_WIDTH[zoom]
   return { start, end, days, dayWidth, totalWidth: days.length * dayWidth }
+}
+
+/**
+ * Ngày THỨ HAI của tuần chứa `d`. Dùng làm khóa gom ô tuần: một chuỗi ngày là
+ * đủ để phân biệt mọi tuần, khỏi phải ghép năm với số tuần — mà ghép hai thứ ấy
+ * chính là chỗ đẻ ra lỗi tuần cụt ở giao thừa.
+ */
+function thuHaiCuaTuan(d: string): string {
+  return shiftDate(d, -((weekday(d) + 6) % 7))
 }
 
 function snapEdges(start: string, end: string, zoom: GanttZoom): [string, string] {
@@ -250,12 +279,15 @@ export function buildHeader(
   if (zoom === 'week') {
     return {
       top: groupCells(timeline, (d) => d.slice(0, 4), (key) => key),
-      bottom: groupCells(
-        timeline,
-        (d) => `${d.slice(0, 4)}-w${isoWeek(d)}`,
-        (key) => `T.${key.split('-w')[1]}`,
-        homNay,
-      ),
+      //  Khóa ô tuần là NGÀY THỨ HAI của tuần ấy, không phải `năm-tuần`.
+      //
+      //  ⚠️ Bản cũ ghép năm DƯƠNG LỊCH với số tuần ISO (`2026-w1`), mà hai thứ
+      //  đó lệch nhau đúng ở giao thừa: tuần 29/12/2025 → 04/01/2026 là ISO tuần
+      //  1 của 2026, nhưng ba ngày đầu mang năm 2025 nên ăn khóa `2025-w1`, bốn
+      //  ngày sau ăn `2026-w1` — một tuần bị xẻ thành hai ô cụt 3 và 4 ngày.
+      //  Lỗi này có sẵn từ lâu, chỉ chưa ai chạm vì dải cũ ngắn và hiếm khi vắt
+      //  qua giao thừa; đổi sang khung hai năm là lộ ngay.
+      bottom: groupCells(timeline, thuHaiCuaTuan, (key) => `T.${isoWeek(key)}`, homNay),
     }
   }
 

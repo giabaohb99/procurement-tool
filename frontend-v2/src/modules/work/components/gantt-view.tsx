@@ -14,6 +14,7 @@ import { useCollapsedGroups } from '../hooks/use-collapsed-groups'
 import { useGanttLinkDraft } from '../hooks/use-gantt-link-draft'
 import { useGanttPaneWidth } from '../hooks/use-gantt-pane-width'
 import { useListColumnWidths } from '../hooks/use-list-column-widths'
+import { useOffscreenBars } from '../hooks/use-offscreen-bars'
 import { useWheelAxisLock } from '../hooks/use-wheel-axis-lock'
 import { useWorkTask } from '../hooks/use-work-board'
 import type { CardFields } from '../types/view-options'
@@ -35,7 +36,15 @@ import {
 import { HEADER_HEIGHT, ROW_HEIGHT } from '../utils/gantt-layout'
 import { rowCenterY, taskEdges } from '../utils/gantt-links'
 import { buildGanttRows, indexTaskRows } from '../utils/gantt-rows'
-import { buildHeader, buildTimeline, todayLeft, type GanttZoom } from '../utils/gantt-scale'
+import {
+  barGeometry,
+  buildHeader,
+  buildTimeline,
+  isMilestone,
+  milestoneCenter,
+  todayLeft,
+  type GanttZoom,
+} from '../utils/gantt-scale'
 import { groupTasksBySection } from '../utils/group-tasks'
 import type { KanbanDropPlace } from '../utils/kanban-drop'
 import { buildListColumns, TITLE_COLUMN, type TaskListColumn } from '../utils/list-columns'
@@ -276,6 +285,30 @@ export function GanttView({
   useWheelAxisLock(scrollRef, applyTimelineWheel)
   useWheelAxisLock(gridPaneRef, applyGridWheel)
 
+  /*  Việc nào có thanh đã trôi khỏi tầm nhìn thì hàng của nó mọc một chip mũi
+      tên ở mép khung (`OffscreenJump`) — trục dài hai năm nên kéo vài nhịp là
+      biểu đồ chỉ còn lưới trống, không biết việc nằm bên nào.  */
+  const offscreenBars = useOffscreenBars(scrollRef, rows)
+
+  const jumpToTask = useCallback(
+    (taskId: number) => {
+      const box = scrollRef.current
+      const task = taskById.get(taskId)
+      if (!box || !task) return
+
+      //  Cột mốc là hình thoi tại MỘT ngày, không có `barGeometry`.
+      const left = isMilestone(task)
+        ? (milestoneCenter(task, timeline) ?? null)
+        : (barGeometry(task, timeline)?.left ?? null)
+      if (left === null) return
+
+      //  Đặt thanh ở khoảng một phần ba bên trái, cùng chỗ nút «Hôm nay» đưa
+      //  vạch hôm nay về: còn thấy được cả quãng trước lẫn quãng sau của nó.
+      box.scrollTo({ left: Math.max(0, left - box.clientWidth / 3), behavior: 'smooth' })
+    },
+    [taskById, timeline],
+  )
+
   /*  Mở ra là nhìn thấy HÔM NAY luôn, đặt ở khoảng một phần ba bên trái để còn
       thấy cả việc vừa qua lẫn việc sắp tới.
 
@@ -491,6 +524,8 @@ export function GanttView({
                   timeline={timeline}
                   barColor={priorityColorOf(row.task, priorityField)}
                   canEdit={canEdit}
+                  offscreen={offscreenBars.get(row.task.id) ?? null}
+                  onJumpToTask={jumpToTask}
                   onOpenTask={openTask}
                   onStartLink={startLink}
                   linkTargetId={draft?.targetTaskId ?? null}

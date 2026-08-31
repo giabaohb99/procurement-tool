@@ -1,4 +1,5 @@
 import { useDraggable } from '@dnd-kit/core'
+import { ArrowLeft, ArrowRight } from 'lucide-react'
 import { memo } from 'react'
 
 import { cn } from '@/shared/utils/cn'
@@ -14,6 +15,7 @@ import {
   MIN_LABEL_WIDTH,
   ROW_HEIGHT,
 } from '../utils/gantt-layout'
+import type { OffscreenSide } from '../hooks/use-offscreen-bars'
 import type { GanttGroupRow } from '../utils/gantt-rows'
 import type { LinkSide } from '../utils/gantt-links'
 import { barGeometry, isMilestone, milestoneCenter, rangeGeometry, type GanttTimeline } from '../utils/gantt-scale'
@@ -40,6 +42,12 @@ interface GanttTaskRowProps extends GanttLinkHandlers {
   /** Màu thanh — tên màu trong `WORK_COLORS`, lấy từ bậc ưu tiên của việc. */
   barColor: string
   canEdit: boolean
+  /**
+   * Thanh của việc này đã trôi hẳn ra ngoài khung nhìn ở phía nào — `null` là
+   * đang thấy được. Vẽ một chip mũi tên ở mép khung để cuộn về.
+   */
+  offscreen: OffscreenSide | null
+  onJumpToTask: (taskId: number) => void
   onOpenTask: (taskId: number) => void
 }
 
@@ -60,13 +68,17 @@ export const GanttTaskRow = memo(function GanttTaskRow({
   timeline,
   barColor,
   canEdit,
+  offscreen,
+  onJumpToTask,
   onOpenTask,
   onStartLink,
   linkTargetId,
   linking,
 }: GanttTaskRowProps) {
   //  `group/ganttrow` là móc để hai chấm nối chỉ hiện khi rê chuột vào HÀNG này.
-  const nen = 'group/ganttrow relative border-b border-border/60'
+  //  `flex items-center` chỉ để chip «cuộn về thanh» có chỗ đứng trong luồng —
+  //  mọi thứ còn lại của hàng đều `absolute` nên không đụng gì tới bố cục.
+  const nen = 'group/ganttrow relative flex items-center border-b border-border/60'
   //  Thanh việc con mảnh hơn và thụt vào theo chiều DỌC — nhìn là biết ngay nó
   //  thuộc về hàng ngay trên, khỏi phải dò sang lưới trái.
   const barPad = isSubtask ? BAR_PAD + 4 : BAR_PAD
@@ -79,6 +91,7 @@ export const GanttTaskRow = memo(function GanttTaskRow({
     if (center === null) return <div style={{ height: ROW_HEIGHT }} className={nen} />
     return (
       <div style={{ height: ROW_HEIGHT }} className={nen}>
+        <OffscreenJump side={offscreen} task={task} onJump={onJumpToTask} />
         <GanttMilestone
           task={task}
           center={center}
@@ -99,6 +112,7 @@ export const GanttTaskRow = memo(function GanttTaskRow({
 
   return (
     <div style={{ height: ROW_HEIGHT }} className={nen}>
+      <OffscreenJump side={offscreen} task={task} onJump={onJumpToTask} />
       <GanttBar
         task={task}
         barColor={barColor}
@@ -160,6 +174,53 @@ export const GanttTaskRow = memo(function GanttTaskRow({
     </div>
   )
 })
+
+/**
+ * Chip mũi tên ở MÉP KHUNG khi thanh của việc đã trôi ra ngoài tầm nhìn — bấm
+ * để cuộn về nó. Lark có đúng thứ này và nó cần: trục dài hai năm, kéo vài nhịp
+ * là biểu đồ chỉ còn một tấm lưới trống, không biết việc nằm bên trái hay phải.
+ *
+ * Đứng được ở mép là nhờ `sticky` — chip nằm TRONG luồng của hàng (hàng có
+ * `flex items-center`), nên nó bám khung cuộn thay vì bám dải ngày. Chip phía
+ * phải cần `ml-auto` để chỗ đứng tĩnh của nó ở cuối dải, rồi `sticky right-2`
+ * mới kéo được nó vào trong tầm nhìn.
+ *
+ * Chỉ hiện MŨI TÊN, không kèm chữ: mỗi hàng một chip, dự án trăm việc mà chip
+ * nào cũng có nhãn thì mép khung thành một cột chữ chạy dọc, che mất chính cái
+ * lưới đang cần nhìn. Tên việc để trong `title`.
+ */
+function OffscreenJump({
+  side,
+  task,
+  onJump,
+}: {
+  side: OffscreenSide | null
+  task: WorkTask
+  onJump: (taskId: number) => void
+}) {
+  if (!side) return null
+
+  const Icon = side === 'left' ? ArrowLeft : ArrowRight
+  return (
+    <button
+      type="button"
+      title={`Cuộn về thanh của: ${task.title}`}
+      aria-label={`Cuộn về thanh của việc ${task.title}`}
+      onClick={(e) => {
+        e.stopPropagation()
+        onJump(task.id)
+      }}
+      className={cn(
+        'sticky z-30 flex size-5 shrink-0 items-center justify-center rounded-full',
+        'border bg-background text-muted-foreground shadow-sm',
+        'transition-colors hover:border-primary hover:text-primary',
+        side === 'left' ? 'left-2' : 'right-2 ml-auto',
+      )}
+    >
+      <Icon className="size-3" />
+    </button>
+  )
+}
 
 /**
  * Hàng NHÓM: thanh tổng trải từ ngày sớm nhất tới hạn muộn nhất của các việc

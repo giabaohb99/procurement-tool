@@ -66,9 +66,13 @@ describe('buildTimeline', () => {
     expect(timeline.end >= '2026-08-28').toBe(true)
   })
 
-  it('danh sách rỗng vẫn ra dải hợp lệ quanh hôm nay, không nổ', () => {
+  it('dự án TRỐNG vẫn có sẵn hai năm: 01/01 năm nay tới 31/12 năm sau', () => {
+    //  Khách đối chiếu Lark 31/08/2026: mở Gantt của một dự án mới toanh là trục
+    //  đã sẵn hai năm. Bám sát dữ liệu thì dự án trống ra một dải vài chục ngày,
+    //  không đặt lịch cho quý sau được vì quý sau không tồn tại trên trục.
     const timeline = buildTimeline([], 'day', '2026-08-28')
-    expect(timeline.days.length).toBeGreaterThanOrEqual(21)
+    expect(timeline.start).toBe('2026-01-01')
+    expect(timeline.end).toBe('2027-12-31')
     expect(timeline.days).toContain('2026-08-28')
   })
 
@@ -78,9 +82,18 @@ describe('buildTimeline', () => {
     expect(themViecRong.days).toEqual(chiHomNay.days)
   })
 
-  it('dải ngắn được kéo lên tối thiểu 21 ngày', () => {
-    const timeline = buildTimeline([task({ due_date: '2026-08-28' })], 'day', '2026-08-28')
-    expect(timeline.days.length).toBe(21)
+  it('việc nằm NGOÀI khung hai năm vẫn kéo dải ra, không bị cắt mất', () => {
+    //  Mất một việc khỏi biểu đồ còn tệ hơn một cái trục dài: khung hai năm là
+    //  SÀN, không phải trần.
+    const timeline = buildTimeline([task({ due_date: '2029-06-15' })], 'day', '2026-08-28')
+    expect(timeline.start).toBe('2026-01-01')
+    expect(timeline.end >= '2029-06-15').toBe(true)
+  })
+
+  it('việc ở QUÁ KHỨ trước năm nay cũng kéo dải lùi lại', () => {
+    const timeline = buildTimeline([task({ start_date: '2024-03-10' })], 'day', '2026-08-28')
+    expect(timeline.start <= '2024-03-10').toBe(true)
+    expect(timeline.end).toBe('2027-12-31')
   })
 
   it('mức phóng xa hơn thì hẹp lại theo pixel nhưng KHÔNG cắt mất ngày nào', () => {
@@ -104,7 +117,9 @@ describe('buildTimeline', () => {
   })
 
   it('mức Tháng bắt đầu mồng 1 và kết thúc ngày cuối tháng, kể cả tháng 2', () => {
-    const thang = buildTimeline([task({ start_date: '2028-02-10', due_date: '2028-02-20' })], 'month', '2028-02-15')
+    //  Hạn phải rơi RA NGOÀI khung hai năm của `homNay` thì mép cuối mới do việc
+    //  quyết định — trong khung thì mép cuối luôn là 31/12, không kiểm được gì.
+    const thang = buildTimeline([task({ start_date: '2028-02-10', due_date: '2028-02-20' })], 'month', '2026-05-01')
     expect(thang.start.endsWith('-01')).toBe(true)
     //  2028 nhuận: tháng 2 có 29 ngày. Tra bảng 30/31 bằng tay là chỗ hay quên.
     expect(thang.end).toBe('2028-02-29')
@@ -146,8 +161,12 @@ describe('buildHeader', () => {
     const timeline = buildTimeline([task({ due_date: '2026-10-15' })], 'day', '2026-08-28')
     const header = buildHeader(timeline, 'day', '2026-08-28')
 
-    expect(header.top.map((o) => o.key)).toEqual(['2026-08', '2026-09', '2026-10'])
-    expect(header.top[0].label).toBe('Tháng 8/2026')
+    //  Dải luôn là khung hai năm (01/01 năm nay → 31/12 năm sau) nên hàng trên
+    //  đúng 24 ô tháng, ô đầu là tháng 1 năm nay.
+    expect(header.top).toHaveLength(24)
+    expect(header.top[0].key).toBe('2026-01')
+    expect(header.top[0].label).toBe('Tháng 1/2026')
+    expect(header.top.at(-1)?.key).toBe('2027-12')
     expect(header.bottom).toHaveLength(timeline.days.length)
     expect(header.bottom[0].sub).toBeTruthy()
   })
@@ -156,7 +175,9 @@ describe('buildHeader', () => {
     const timeline = buildTimeline([task({ due_date: '2026-10-15' })], 'week', '2026-08-28')
     const header = buildHeader(timeline, 'week', '2026-08-28')
 
-    expect(header.top.map((o) => o.label)).toEqual(['2026'])
+    //  Khung hai năm bo về thứ Hai — Chủ nhật nên tràn sang cuối 2025 và đầu
+    //  2028; hàng trên vì thế có bốn nhãn năm, không phải một.
+    expect(header.top.map((o) => o.label)).toEqual(['2025', '2026', '2027', '2028'])
     expect(header.bottom[0].label).toMatch(/^T\.\d+$/)
     //  Dải mức Tuần được bo về thứ Hai — Chủ nhật, nên KHÔNG ô nào cụt. Ô cụt là
     //  dấu hiệu `snapEdges` hỏng, mà nhìn thì chỉ thấy "lưới hơi lệch".
@@ -168,6 +189,8 @@ describe('buildHeader', () => {
     const timeline = buildTimeline([task({ due_date: '2027-03-15' })], 'month', '2026-08-28')
     const header = buildHeader(timeline, 'month', '2026-08-28')
 
+    //  Mức Tháng bo về mồng 1 — ngày cuối tháng, mà khung đã sẵn 01/01 và 31/12
+    //  nên không tràn năm: đúng hai nhãn năm.
     expect(header.top.map((o) => o.label)).toEqual(['2026', '2027'])
     expect(header.bottom[0].label).toMatch(/^Th \d+$/)
     //  Tháng đầu và tháng cuối phải TRỌN vẹn: 28…31 ngày, không phải vài ngày lẻ.
