@@ -14,13 +14,6 @@ import {
 } from '@/shared/ui/dropdown-menu'
 import { ErrorState } from '@/shared/ui/error-state'
 import { Skeleton } from '@/shared/ui/skeleton'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/ui/select'
 import { Tabs, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { cn } from '@/shared/utils/cn'
 import { buildTaskFilterFields } from '../config/task-filter-fields'
@@ -56,7 +49,6 @@ import { today } from '../utils/due-date'
 import { prepareTasks } from '../utils/filter-tasks'
 import { buildOptionRank, findPriorityField } from '../utils/priority-field'
 import { applyTaskConditions } from '../utils/task-conditions'
-import { ZOOM_LABELS, type GanttZoom } from '../utils/gantt-scale'
 import {
   mergeCardFields,
   WORK_SORTS,
@@ -296,25 +288,9 @@ function WorkListContent({ listId }: { listId: number }) {
           </TabsList>
         </Tabs>
 
-        {/*  Mức phóng chỉ có nghĩa với Gantt — hiện ở hai khung kia là một ô
-            chọn không làm gì, người dùng bấm rồi tự hỏi tại sao không đổi. */}
-        {view === 'gantt' && (
-          <Select
-            value={ganttZoom}
-            onValueChange={(v) => setViewState({ ganttZoom: v as GanttZoom })}
-          >
-            <SelectTrigger size="sm" className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {(Object.keys(ZOOM_LABELS) as GanttZoom[]).map((z) => (
-                <SelectItem key={z} value={z}>
-                  {ZOOM_LABELS[z]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
+        {/*  Mức phóng KHÔNG còn ở đây: nó chỉ nói về trục thời gian nên đã dời
+            vào cụm điều khiển ngay trên biểu đồ (`GanttTimelineControls`), đúng
+            chỗ Lark đặt. Ở cạnh ba tab khung nhìn thì nó nhìn như tab thứ tư. */}
       </div>
 
       <WorkToolbar
@@ -453,9 +429,33 @@ function WorkListContent({ listId }: { listId: number }) {
             fields={cardFields}
             priorityField={priorityField}
             zoom={ganttZoom}
+            onZoomChange={(z) => setViewState({ ganttZoom: z })}
             canEdit={canEdit}
+            canManage={canManage}
+            //  Cùng luật với kanban và Danh sách (§3.4): đang sắp theo tiêu chí
+            //  thì KHÓA kéo, vì thả xong danh sách tự xếp lại chỗ cũ.
+            dragEnabled={sort === 'manual'}
+            defaultPicId={defaultPicId}
             onOpenTask={setOpenTaskId}
             onMoveDates={(taskId, values) => updateTask.mutate({ id: taskId, values })}
+            onToggleDone={(taskId, done) =>
+              updateTask.mutate({
+                id: taskId,
+                values: { status: done ? WORK_TASK_STATUS.DONE : WORK_TASK_STATUS.OPEN },
+              })
+            }
+            onToggleSubtaskDone={(parentId, subtaskId, done) =>
+              toggleSubtask.mutate({ parentId, subtaskId, done })
+            }
+            onRename={(taskId, title) => updateTask.mutate({ id: taskId, values: { title } })}
+            onMoveTask={(taskId, place) => moveTask.mutate({ taskId, place })}
+            onMoveSubtask={(parentId, subtaskId, beforeTaskId) =>
+              moveSubtask.mutate({ parentId, subtaskId, beforeTaskId })
+            }
+            onMoveSection={(sectionId, beforeSectionId) =>
+              moveSection.mutate({ sectionId, beforeSectionId })
+            }
+            onAddTask={addTaskFromDraft}
             onSetAssignees={(taskId, picIds) => setAssignees.mutate({ taskId, picIds })}
             onSetDue={(taskId, dueDate) =>
               updateTask.mutate({ id: taskId, values: { due_date: dueDate } })

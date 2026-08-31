@@ -7,16 +7,21 @@
  * nhìn vẫn "có vẻ đúng" cho tới khi đối chiếu tên việc với thanh của nó.
  */
 
-/** Chiều cao MỘT hàng — lưới trái và trục phải phải dùng đúng số này. */
-export const ROW_HEIGHT = 36
+/**
+ * Chiều cao MỘT hàng — lưới trái và trục phải phải dùng đúng số này.
+ *
+ * 44px chứ không 36: lưới trái nay là chính các dòng của khung nhìn Danh sách
+ * (ô chọn người, ô ngày, chip nhãn — cao 24–28px), 36px thì chúng chạm sát nhau;
+ * và thanh thưa ra thì cái tên đặt bên phải cột mốc mới đọc được, không dính vào
+ * hàng trên hàng dưới.
+ */
+export const ROW_HEIGHT = 44
 
 /** Hai hàng tiêu đề (nhóm tháng/năm + ô ngày/tuần) — hai nửa cao bằng nhau. */
 export const HEADER_HEIGHT = ROW_HEIGHT * 2
 
 /** Khoảng hở trên/dưới của thanh trong lòng hàng. */
-export const BAR_PAD = 7
-
-export const BAR_HEIGHT = ROW_HEIGHT - BAR_PAD * 2
+export const BAR_PAD = 11
 
 /**
  * Thanh hẹp hơn ngưỡng này thì ĐẶT TÊN RA NGOÀI, bên phải thanh — đúng lối Lark.

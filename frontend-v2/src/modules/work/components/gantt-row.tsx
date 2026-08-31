@@ -7,7 +7,6 @@ import { WORK_TASK_STATUS } from '../types/work'
 import { formatDueLabel } from '../utils/due-date'
 import type { GanttDragKind } from '../utils/gantt-drag'
 import {
-  BAR_HEIGHT,
   BAR_PAD,
   HANDLE_WIDTH,
   LINK_DOT,
@@ -31,6 +30,12 @@ export interface GanttLinkHandlers {
 
 interface GanttTaskRowProps extends GanttLinkHandlers {
   task: WorkTask
+  /**
+   * Hàng này là VIỆC CON: thanh vẽ mảnh hơn và KHÔNG có chấm nối phụ thuộc —
+   * việc con không đặt phụ thuộc được (backend chặn thẳng theo luật C-05), bày
+   * chấm ra chỉ mời người dùng ăn một toast 400.
+   */
+  isSubtask?: boolean
   timeline: GanttTimeline
   /** Màu thanh — tên màu trong `WORK_COLORS`, lấy từ bậc ưu tiên của việc. */
   barColor: string
@@ -51,6 +56,7 @@ interface GanttTaskRowProps extends GanttLinkHandlers {
  */
 export const GanttTaskRow = memo(function GanttTaskRow({
   task,
+  isSubtask = false,
   timeline,
   barColor,
   canEdit,
@@ -61,6 +67,10 @@ export const GanttTaskRow = memo(function GanttTaskRow({
 }: GanttTaskRowProps) {
   //  `group/ganttrow` là móc để hai chấm nối chỉ hiện khi rê chuột vào HÀNG này.
   const nen = 'group/ganttrow relative border-b border-border/60'
+  //  Thanh việc con mảnh hơn và thụt vào theo chiều DỌC — nhìn là biết ngay nó
+  //  thuộc về hàng ngay trên, khỏi phải dò sang lưới trái.
+  const barPad = isSubtask ? BAR_PAD + 4 : BAR_PAD
+  const barHeight = ROW_HEIGHT - barPad * 2
   const xong = task.status === WORK_TASK_STATUS.DONE
   const laDich = linkTargetId === task.id
 
@@ -94,6 +104,8 @@ export const GanttTaskRow = memo(function GanttTaskRow({
         barColor={barColor}
         left={bar.left}
         width={bar.width}
+        top={barPad}
+        height={barHeight}
         xong={xong}
         canEdit={canEdit}
         laDich={laDich}
@@ -103,22 +115,32 @@ export const GanttTaskRow = memo(function GanttTaskRow({
 
       {canEdit && (
         <>
-          <GanttHandle task={task} kind="start" left={bar.left} />
-          <GanttHandle task={task} kind="end" left={bar.left + bar.width - HANDLE_WIDTH} />
-          <LinkDot
-            taskId={task.id}
-            side="start"
-            left={bar.left - LINK_DOT - 2}
-            visible={linking}
-            onStartLink={onStartLink}
+          <GanttHandle task={task} kind="start" left={bar.left} top={barPad} height={barHeight} />
+          <GanttHandle
+            task={task}
+            kind="end"
+            left={bar.left + bar.width - HANDLE_WIDTH}
+            top={barPad}
+            height={barHeight}
           />
-          <LinkDot
-            taskId={task.id}
-            side="end"
-            left={bar.left + bar.width + 2}
-            visible={linking}
-            onStartLink={onStartLink}
-          />
+          {!isSubtask && (
+            <>
+              <LinkDot
+                taskId={task.id}
+                side="start"
+                left={bar.left - LINK_DOT - 2}
+                visible={linking}
+                onStartLink={onStartLink}
+              />
+              <LinkDot
+                taskId={task.id}
+                side="end"
+                left={bar.left + bar.width + 2}
+                visible={linking}
+                onStartLink={onStartLink}
+              />
+            </>
+          )}
         </>
       )}
 
@@ -190,6 +212,8 @@ interface GanttBarProps {
   barColor: string
   left: number
   width: number
+  top: number
+  height: number
   xong: boolean
   canEdit: boolean
   laDich: boolean
@@ -203,6 +227,8 @@ function GanttBar({
   barColor,
   left,
   width,
+  top,
+  height,
   xong,
   canEdit,
   laDich,
@@ -230,7 +256,7 @@ function GanttBar({
       data-task-id={task.id}
       onClick={() => onOpenTask(task.id)}
       onKeyDown={(e) => e.key === 'Enter' && onOpenTask(task.id)}
-      style={{ left, width, top: BAR_PAD, height: BAR_HEIGHT }}
+      style={{ left, width, top, height }}
       className={cn(
         'absolute z-10 flex items-center overflow-hidden rounded px-2 text-[11px] font-medium',
         chipClass(barColor),
@@ -341,7 +367,19 @@ function GanttMilestone({
  * Không nhận tiêu điểm bàn phím: bàn phím chưa đổi được ngày ở đây (dùng panel
  * chi tiết), thêm hai chặng Tab mỗi hàng chỉ làm rối.
  */
-function GanttHandle({ task, kind, left }: { task: WorkTask; kind: GanttDragKind; left: number }) {
+function GanttHandle({
+  task,
+  kind,
+  left,
+  top,
+  height,
+}: {
+  task: WorkTask
+  kind: GanttDragKind
+  left: number
+  top: number
+  height: number
+}) {
   const { setNodeRef, listeners } = useDraggable({
     id: `gantt-${kind}-${task.id}`,
     data: { task, kind },
@@ -356,7 +394,7 @@ function GanttHandle({ task, kind, left }: { task: WorkTask; kind: GanttDragKind
       //  thuộc về ai — mép này đè lên thanh, thiếu nó thì thả vào những việc chỉ
       //  rộng một ngày luôn trượt (xem `use-gantt-link-draft.hitTest`).
       data-task-id={task.id}
-      style={{ left, width: HANDLE_WIDTH, top: BAR_PAD, height: BAR_HEIGHT }}
+      style={{ left, width: HANDLE_WIDTH, top, height }}
       className="absolute z-20 cursor-ew-resize rounded-sm hover:bg-foreground/20"
     />
   )

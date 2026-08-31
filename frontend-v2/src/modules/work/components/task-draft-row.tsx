@@ -35,6 +35,8 @@ interface TaskDraftRowProps {
    * gán một người ngoài dự án thì họ không mở nổi việc để biết mình bị gán.
    */
   defaultPicId?: number
+  /** Chiều cao CỐ ĐỊNH của dòng (px) — chỉ Gantt truyền, xem `TaskListRow`. */
+  rowHeight?: number
   onSave: (draft: NewTaskDraft) => void
   onCancel: () => void
 }
@@ -64,6 +66,7 @@ export function TaskDraftRow({
   columns,
   members,
   defaultPicId,
+  rowHeight,
   onSave,
   onCancel,
 }: TaskDraftRowProps) {
@@ -116,7 +119,7 @@ export function TaskDraftRow({
   return (
     <div
       ref={rowRef}
-      style={{ paddingLeft: ROW_PAD_LEFT }}
+      style={{ paddingLeft: ROW_PAD_LEFT, height: rowHeight }}
       className="flex items-center gap-1.5 border-b border-border/60 bg-accent/30 py-1.5 pr-2"
     >
       {/*  Ô tên rộng đúng bằng cột tên của dòng thật (`--wcol-title`) rồi tới

@@ -50,6 +50,11 @@ interface TaskListGroupProps extends TaskRowActions {
   dragBlocked: boolean
   /** Có tô sáng cột này khi con trỏ đi qua không — chỉ đúng khi đang kéo VIỆC. */
   showDropTarget: boolean
+  /** Việc đang bung việc con — điều khiển từ ngoài, xem `TaskGroupsBoard`. */
+  expandedTaskId: number | null
+  onToggleExpand: (taskId: number) => void
+  /** Chiều cao CỐ ĐỊNH mỗi dòng (px) — chỉ Gantt truyền. Xem `TaskGroupsBoard`. */
+  rowHeight?: number
   /** Thêm việc vào ĐÚNG cột này — `sectionId` null với nhóm "Chưa phân cột". */
   onAddTask: (sectionId: number | null, draft: NewTaskDraft) => void
 }
@@ -76,10 +81,12 @@ export function TaskListGroup({
   dragActive,
   dragBlocked,
   showDropTarget,
+  expandedTaskId,
+  onToggleExpand,
+  rowHeight,
   onAddTask,
   ...rowActions
 }: TaskListGroupProps) {
-  const [expandedId, setExpandedId] = useState<number | null>(null)
 
   /*  Vùng hứng của CẢ nhóm, kể cả khi nhóm rỗng: không có nó thì cột chưa có
       việc nào không nhận được cú thả, mà đó lại đúng là lúc người ta hay kéo
@@ -157,6 +164,7 @@ export function TaskListGroup({
           type="button"
           onClick={onToggleCollapse}
           aria-expanded={!collapsed}
+          style={{ height: rowHeight }}
           /*  Không còn tô sáng dải tiêu đề khi con trỏ đi qua: hàng cột nay dạt
               ra chừa chỗ, khe hở đã nói rõ chỗ đậu — tô thêm một dải nữa là hai
               tín hiệu chỉ về hai chỗ khác nhau.  */
@@ -198,8 +206,9 @@ export function TaskListGroup({
                 draggable={draggable && canEdit}
                 dragActive={dragActive}
                 dragBlocked={dragBlocked}
-                expanded={expandedId === task.id}
-                onToggleExpand={() => setExpandedId((prev) => (prev === task.id ? null : task.id))}
+                expanded={expandedTaskId === task.id}
+                onToggleExpand={() => onToggleExpand(task.id)}
+                rowHeight={rowHeight}
                 {...rowActions}
               />
             ))}
@@ -210,6 +219,7 @@ export function TaskListGroup({
               columns={columns}
               members={members}
               defaultPicId={defaultPicId}
+              rowHeight={rowHeight}
               onAdd={(draft) => onAddTask(group.sectionId, draft)}
             />
           )}
@@ -231,6 +241,7 @@ interface TaskRowWithSubtasksProps extends TaskRowActions {
   dragBlocked: boolean
   expanded: boolean
   onToggleExpand: () => void
+  rowHeight?: number
 }
 
 /**
@@ -284,11 +295,13 @@ function NewTaskRow({
   columns,
   members,
   defaultPicId,
+  rowHeight,
   onAdd,
 }: {
   columns: TaskListColumn[]
   members: WorkMember[]
   defaultPicId?: number
+  rowHeight?: number
   onAdd: (draft: NewTaskDraft) => void
 }) {
   const [typing, setTyping] = useState(false)
@@ -299,6 +312,7 @@ function NewTaskRow({
         columns={columns}
         members={members}
         defaultPicId={defaultPicId}
+        rowHeight={rowHeight}
         onCancel={() => setTyping(false)}
         onSave={onAdd}
       />
@@ -312,7 +326,7 @@ function NewTaskRow({
     <button
       type="button"
       onClick={() => setTyping(true)}
-      style={{ paddingLeft: ROW_PAD_LEFT }}
+      style={{ paddingLeft: ROW_PAD_LEFT, height: rowHeight }}
       className="flex w-full items-center gap-1.5 border-b border-border/60 bg-muted/30 py-1.5 pr-2 text-left text-sm text-muted-foreground hover:bg-accent/40 hover:text-foreground"
     >
       <span className="w-[18px] shrink-0" aria-hidden />

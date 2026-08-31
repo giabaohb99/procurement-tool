@@ -32,25 +32,36 @@ function group(key: string, tasks: WorkTask[]): TaskGroup {
 const isDone = (t: WorkTask) => t.status === WORK_TASK_STATUS.DONE
 const moKhap = () => false
 
+/** Bộ tùy chọn tối thiểu: mở hết nhóm, không bung việc con, không dòng nháp. */
+function opts(patch: Partial<Parameters<typeof buildGanttRows>[1]> = {}) {
+  return {
+    isCollapsed: moKhap,
+    isDone,
+    expandedTaskId: null,
+    subtasks: [],
+    showDraftRow: false,
+    ...patch,
+  }
+}
+
 describe('buildGanttRows', () => {
   it('mỗi nhóm một dòng tiêu đề, việc của nó nằm ngay dưới', () => {
     const rows = buildGanttRows(
       [group('a', [task({ id: 1 }), task({ id: 2 })]), group('b', [task({ id: 3 })])],
-      moKhap,
-      isDone,
+      opts(),
     )
     expect(rows.map((r) => r.kind)).toEqual(['group', 'task', 'task', 'group', 'task'])
   })
 
   it('nhóm ĐANG THU thì giấu việc nhưng GIỮ dòng tiêu đề', () => {
     //  Giấu cả dòng tiêu đề thì không còn chỗ nào bấm để mở nhóm ra lại.
-    const rows = buildGanttRows([group('a', [task({ id: 1 })])], () => true, isDone)
+    const rows = buildGanttRows([group('a', [task({ id: 1 })])], opts({ isCollapsed: () => true }))
     expect(rows).toHaveLength(1)
     expect(rows[0].kind).toBe('group')
   })
 
   it('nhóm RỖNG vẫn có dòng, tiến độ 0 chứ không chia cho 0', () => {
-    const rows = buildGanttRows([group('a', [])], moKhap, isDone)
+    const rows = buildGanttRows([group('a', [])], opts())
     expect(rows).toHaveLength(1)
     expect(rows[0].kind === 'group' && rows[0].progress).toBe(0)
     expect(rows[0].kind === 'group' && rows[0].range).toBe(null)
@@ -66,14 +77,70 @@ describe('buildGanttRows', () => {
           task({ id: 4 }),
         ]),
       ],
-      moKhap,
-      isDone,
+      opts(),
     )
     expect(rows[0].kind === 'group' && rows[0].progress).toBe(0.5)
   })
 
   it('không nhóm nào thì không hàng nào — biểu đồ trống, không nổ', () => {
-    expect(buildGanttRows([], moKhap, isDone)).toEqual([])
+    expect(buildGanttRows([], opts())).toEqual([])
+  })
+
+  it('việc ĐANG BUNG kéo theo đúng số dòng việc con, ngay dưới nó', () => {
+    //  Đây là chỗ hai bên dễ lệch nhất: lưới trái bung ba việc con mà trục thời
+    //  gian chỉ chừa một hàng thì MỌI thanh bên dưới trượt khỏi tên việc của nó.
+    const rows = buildGanttRows(
+      [group('a', [task({ id: 1 }), task({ id: 2 })])],
+      opts({
+        expandedTaskId: 1,
+        subtasks: [task({ id: 11 }), task({ id: 12 })],
+      }),
+    )
+    expect(rows.map((r) => r.key)).toEqual(['g:a', 't:1', 's:11', 's:12', 't:2'])
+    expect(rows.filter((r) => r.kind === 'task').map((r) => r.isSubtask)).toEqual([
+      false,
+      true,
+      true,
+      false,
+    ])
+  })
+
+  it('việc con chỉ nở ra dưới ĐÚNG việc đang bung, không dưới việc khác', () => {
+    const rows = buildGanttRows(
+      [group('a', [task({ id: 1 })]), group('b', [task({ id: 2 })])],
+      opts({ expandedTaskId: 2, subtasks: [task({ id: 21 })] }),
+    )
+    expect(rows.map((r) => r.key)).toEqual(['g:a', 't:1', 'g:b', 't:2', 's:21'])
+  })
+
+  it('đang bung mà việc con CHƯA về thì không chừa hàng ma', () => {
+    //  Việc con nạp lười: giữa lúc chờ, `subtasks` rỗng. Chừa sẵn hàng cho nó là
+    //  lệch hàng đúng trong khoảng thời gian chờ ấy.
+    const rows = buildGanttRows(
+      [group('a', [task({ id: 1 })])],
+      opts({ expandedTaskId: 1, subtasks: [] }),
+    )
+    expect(rows.map((r) => r.key)).toEqual(['g:a', 't:1'])
+  })
+
+  it('dòng «Việc mới» nằm CUỐI mỗi nhóm, và chỉ khi đủ quyền sửa', () => {
+    const groups = [group('a', [task({ id: 1 })]), group('b', [])]
+    expect(buildGanttRows(groups, opts({ showDraftRow: true })).map((r) => r.key)).toEqual([
+      'g:a',
+      't:1',
+      'd:a',
+      'g:b',
+      'd:b',
+    ])
+    expect(buildGanttRows(groups, opts()).map((r) => r.key)).toEqual(['g:a', 't:1', 'g:b'])
+  })
+
+  it('nhóm đang THU thì không có dòng «Việc mới» — nó nằm trong thân nhóm', () => {
+    const rows = buildGanttRows(
+      [group('a', [task({ id: 1 })])],
+      opts({ isCollapsed: () => true, showDraftRow: true }),
+    )
+    expect(rows.map((r) => r.key)).toEqual(['g:a'])
   })
 })
 
@@ -110,8 +177,7 @@ describe('indexTaskRows', () => {
   it('chỉ đánh số dòng VIỆC, dòng nhóm cũng chiếm một nấc', () => {
     const rows = buildGanttRows(
       [group('a', [task({ id: 7 }), task({ id: 8 })]), group('b', [task({ id: 9 })])],
-      moKhap,
-      isDone,
+      opts(),
     )
     expect(indexTaskRows(rows)).toEqual(
       new Map([

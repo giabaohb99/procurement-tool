@@ -39,7 +39,7 @@ conditional-filter, token màu Tailwind) — không chế khung mới khi đã c
 |---|---|---|---|---|
 | List | Bảng phẳng | `DataTable` dùng chung, gom theo cột (section) thu/mở được | P0 | D-02 |
 | Kanban | Bảng cột kéo thả | Khung nhìn chính | P0 | D-01 |
-| Gantt | Thanh thời gian | **XONG** — bản đầu 28/08/2026 (CR-219), **dựng lại theo Lark 31/08/2026 (CR-226)**: lưới trái dùng chung bộ cột «Tùy chỉnh» với Danh sách · thang Ngày/Tuần/Tháng · hàng NHÓM có thanh tổng · cột mốc hình thoi · **mũi tên phụ thuộc** (vẽ + kéo tạo + xóa). Tự dựng, không cài thư viện (GPLv2) | P2 → làm sớm theo yêu cầu | D-05 · B-14 · B-15 |
+| Gantt | Thanh thời gian | **XONG** — bản đầu 28/08/2026 (CR-219), dựng lại theo Lark 31/08/2026 (**CR-226** rồi **CR-230**): lưới trái CHÍNH LÀ khung nhìn Danh sách (ba cột cố định, ô sửa tại chỗ, kéo thả việc/việc con/cột, dòng «Việc mới») · thang Ngày/Tuần/Tháng + cụm _Hôm nay_ ‹ › · hàng NHÓM có thanh tổng · cột mốc hình thoi · **mũi tên phụ thuộc** (vẽ + kéo tạo + đổi kiểu + xóa). Tự dựng, không cài thư viện (GPLv2) | P2 → làm sớm theo yêu cầu | D-05 · B-14 · B-15 |
 | Dashboard | Thống kê list | 4 khối recharts (§7) | P1 | D-06 |
 | Activities | Dòng hoạt động cấp list | Nhật ký audit của cả list (§8) | P1 | D-09 |
 
@@ -187,24 +187,43 @@ riêng, không biết gì về token màu và chế độ nền của hệ — c
 nhận vào chỗ đó một cây React của mình mà không phải vá. Bố cục và thao tác vẫn bám DHTMLX
 + Lark.
 
-### 10.1 Bố cục
+### 10.1 Bố cục — lưới trái CHÍNH LÀ khung nhìn Danh sách
 
 Lưới trái (dính khi cuộn ngang) · **thanh chia kéo được** · trục thời gian. Cả hai bên nằm
 CHUNG một khung cuộn nên không bao giờ lệch hàng — khỏi đồng bộ hai thanh cuộn dọc bằng tay.
 
-- **Cột lưới trái lấy từ chính bộ «Tùy chỉnh»** (§3.6) dùng chung với thẻ kanban và khung
-  nhìn Danh sách: tắt một trường ở menu đó là nó biến khỏi cả ba khung nhìn. Ô dữ liệu là
-  `TaskListCell` của dòng Danh sách — **sửa được tại chỗ y hệt bên đó**, không phải chữ
-  chết. Bề rộng từng cột nhớ RIÊNG cho Gantt (`erp.work.ganttcols.{listId}`), bề rộng ô
-  lưới nhớ ở `erp.work.ganttpane.{listId}`.
+**KHÔNG bọc trong khung viền bo góc** như các màn danh sách khác (chốt với khách
+31/08/2026): Gantt là một mặt phẳng liền, thêm một cái hộp quanh nó là mắt tự tách lưới và
+trục thành hai vùng rời. Đúng lối Lark.
+
+- Lưới trái dùng **chính `TaskGroupsBoard`** của khung nhìn Danh sách — nên có đủ: ô sửa
+  tại chỗ, ô tick, bung việc con, **ba tầng kéo thả** (việc · việc con · cột), và dòng
+  **«Việc mới»** cuối mỗi nhóm. Chép sang bản thứ hai thì hai bên lệch nhau ngay ở lần sửa
+  kế tiếp, mà lệch ở đây là *kéo thả sai chỗ* chứ không phải sai màu.
+- **Đúng BA cột, gõ cứng**: _Tên công việc · Phụ trách · Ngày bắt đầu_ (chốt 31/08/2026,
+  theo Lark). Cố ý KHÔNG lấy theo bộ «Tùy chỉnh» như Danh sách: mỗi cột thêm vào là một
+  khúc trục thời gian bị nuốt, mà người ta mở Gantt lên là để nhìn cái trục ấy. Muốn xem
+  đủ trường thì sang Danh sách — cùng dữ liệu, cùng ô sửa. Bề rộng cột nhớ RIÊNG cho Gantt
+  (`erp.work.ganttcols.{listId}`), bề rộng ô lưới ở `erp.work.ganttpane.{listId}`.
 - Cột không lọt vào ô lưới thì **không vẽ**, chứ không cắt bằng `overflow-hidden`: đặt
   `overflow` khác `visible` là ô ấy thành khung cuộn của riêng nó và hàng tiêu đề
   `sticky top-0` bên trong dính vào mép ô — tức không dính gì cả. Lỗi lộ ra khi cuộn
   xuống: tiêu đề lưới trái trôi mất trong khi tiêu đề trục thời gian vẫn đứng.
+- ⚠️ **Hai bên phải sinh ra ĐÚNG cùng một dãy hàng**: `TaskGroupsBoard` vẽ bên trái,
+  `buildGanttRows` dựng lại y hệt cho bên phải (nhóm · việc · việc con đang bung · dòng
+  «Việc mới»), và MỌI dòng cao đúng `ROW_HEIGHT`. Vì vậy state đổi số dòng (thu/mở nhóm ·
+  bung việc con · **cột đang bị kéo** — lúc ấy nhóm thu lại còn mỗi tiêu đề) đều nằm ở
+  chính `GanttView`, không giấu bên trong cụm nhóm. Sửa cấu trúc dòng ở
+  `task-list-group.tsx` thì PHẢI sửa kèm `gantt-rows.ts` — có test ghim từng trường hợp.
 - **Hàng NHÓM** = một cột kanban, cùng cách gom với Danh sách (`groupTasksBySection`) nên
   thu/mở nhớ chung một chỗ. Thanh nhóm trải từ ngày sớm nhất tới hạn muộn nhất của các
   việc CÓ NGÀY trong nhóm, tô phần trăm việc đã xong, không kéo được (ngày của nó là ngày
   tính ra — kéo thì không biết phải dời việc nào).
+- **Cụm điều khiển trục** (mức phóng · _Hôm nay_ · ‹ ›) ở góc phải, NGOÀI khung cuộn — đặt
+  vào trong thì nó trôi mất ngay khi cuộn sang tháng khác. Mức phóng dời khỏi hàng tab vì
+  đứng cạnh ba tab khung nhìn thì nhìn như tab thứ tư. Nút _Hôm nay_ không thừa dù biểu đồ
+  tự cuộn tới hôm nay lúc mở: cuộn đi xem quý sau rồi muốn quay về thì ở mức Ngày phải kéo
+  ngược cả nghìn pixel.
 
 ### 10.2 Thang thời gian (`utils/gantt-scale.ts`)
 

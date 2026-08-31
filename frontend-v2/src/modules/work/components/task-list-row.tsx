@@ -78,6 +78,12 @@ interface TaskListRowProps extends TaskRowActions {
   dragBlocked?: boolean
   expanded?: boolean
   onToggleExpand?: () => void
+  /**
+   * Chiều cao CỐ ĐỊNH của dòng (px) — chỉ khung nhìn Gantt truyền, vì mỗi dòng
+   * lưới trái bên đó phải cao đúng bằng một hàng của trục thời gian. Bỏ trống
+   * thì dòng tự cao theo nội dung như khung nhìn Danh sách xưa nay.
+   */
+  rowHeight?: number
 }
 
 /**
@@ -106,6 +112,7 @@ export function TaskListRow({
   dragBlocked = false,
   expanded = false,
   onToggleExpand,
+  rowHeight,
   onOpenTask,
   onToggleDone,
   onRename,
@@ -164,6 +171,7 @@ export function TaskListRow({
           suốt, chồng lên nhau lúc dạt chỗ thì chữ đè lên chữ.  */
       style={{
         paddingLeft: ROW_PAD_LEFT,
+        height: rowHeight,
         transform: CSS.Translate.toString(transform),
         transition,
         zIndex: isDragging ? 1 : undefined,
