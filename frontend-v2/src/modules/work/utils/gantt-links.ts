@@ -15,11 +15,14 @@ import { barGeometry, isMilestone, milestoneCenter, type GanttTimeline } from '.
  * nằm chồng đúng lên vùng đó.
  */
 
-/** Đoạn cụt ra/vào mép thanh trước khi mũi tên bẻ góc (px). */
-const STUB = 12
-
-/** Bán kính bo ở mỗi chỗ bẻ góc (px). Tự co lại nếu đoạn kề ngắn hơn `2r`. */
-const CORNER_RADIUS = 6
+/**
+ * Độ vươn TỐI THIỂU của hai tay nắm cung (px).
+ *
+ * Hai đầu gần nhau thì `|Δx| / 2` bé tí, cung gần như một đoạn thẳng xiên cắt
+ * chéo qua các hàng — đúng thứ phải tránh. Giữ sàn này để cung luôn rời mép
+ * thanh theo phương NGANG rồi mới uốn.
+ */
+const MIN_CURVE = 40
 
 /** Đầu thanh mà một mũi tên rời đi / bay tới. */
 export type LinkSide = 'start' | 'end'
@@ -61,11 +64,6 @@ export interface LinkShape {
   /** Điểm giữa đường — chỗ đặt nút xóa khi rê chuột vào. */
   midX: number
   midY: number
-}
-
-interface Point {
-  x: number
-  y: number
 }
 
 /** Tâm dọc của một hàng theo số thứ tự dòng. */
@@ -138,19 +136,37 @@ export function linkAnchors(
 }
 
 /**
- * Đường gấp khúc nối hai đầu — chỉ đoạn ngang và đoạn dọc, đúng lối DHTMLX.
+ * Mũi tên nào VẼ ĐƯỢC trên biểu đồ đang hiển thị.
  *
- * Hai dáng đường:
+ * Bỏ qua mũi tên có đầu không tìm thấy hàng — chuyện thường xuyên xảy ra và
+ * KHÔNG phải lỗi: nhóm đang thu lại, bộ lọc đang giấu bớt việc, hoặc một đầu vừa
+ * bị người khác xóa mềm (khóa ngoại chỉ bắt xóa cứng nên dòng link vẫn còn).
+ */
+/**
+ * Đường nối hai đầu — **một cung bậc ba trơn**, không có đoạn thẳng nào.
  *
- * 1. **Thuận** — hai đầu cùng chiều và việc sau nằm đủ xa về phía trước: ra khỏi
- *    mép một đoạn cụt, bẻ dọc, rồi đi thẳng vào đích. Ba đoạn, sạch nhất.
- * 2. **Vòng** — mọi trường hợp còn lại (việc sau bắt đầu TRƯỚC việc trước, hoặc
- *    hai đầu ngược chiều nhau như SS/SF). Đường luồn qua HÀNH LANG giữa hai hàng
- *    thay vì cắt ngang chính hai cái thanh nó đang nối.
+ * ⚠️ Bản trước là đường gấp khúc chỉ có đoạn ngang/dọc (lối DHTMLX), sau đó bo
+ * góc cho đỡ cứng. Khách vẫn bỏ 31/08/2026 và gửi ảnh Lark: *"muốn làm curved
+ * như lark á"* — Lark vẽ một nét liền uốn từ mép thanh này sang mép thanh kia,
+ * không hề có khúc ngang khúc dọc. Bo góc một đường gấp khúc thì vẫn là đường
+ * gấp khúc, mắt vẫn đọc ra các đoạn thẳng.
+ *
+ * Hai tay nắm vươn theo **phương ngang** khỏi mỗi đầu (`dir` của đầu đó), nên
+ * cung luôn rời mép thanh nằm ngang rồi mới uốn — đúng chỗ người ta chờ nó đi
+ * ra. Độ vươn co giãn theo khoảng cách hai đầu, có SÀN `MIN_CURVE`: hai đầu gần
+ * nhau thì `|Δx| / 2` bé tí, cung tụt thành một đoạn xiên cắt chéo qua các hàng.
+ *
+ * Việc sau nằm TRƯỚC việc trước thì không cần nhánh riêng nữa (bản gấp khúc phải
+ * luồn qua một "hành lang" giữa hai hàng): hai tay nắm đẩy ngược chiều nhau tự
+ * đẻ ra một cung vòng rộng, đúng dáng chữ S dài của Lark.
  */
 export function linkPath(from: LinkAnchor, to: LinkAnchor): LinkShape {
-  const points = elbowPoints(from, to)
-  const d = roundedPath(points, CORNER_RADIUS)
+  const vuon = Math.max(MIN_CURVE, Math.abs(to.x - from.x) / 2)
+  const c1 = { x: from.x + from.dir * vuon, y: from.y }
+  const c2 = { x: to.x - to.dir * vuon, y: to.y }
+  const d =
+    `M${round(from.x)} ${round(from.y)} ` +
+    `C${round(c1.x)} ${round(c1.y)} ${round(c2.x)} ${round(c2.y)} ${round(to.x)} ${round(to.y)}`
 
   //  Đầu mũi tên nằm ÁP mép thanh đích, nhọn về phía nó đang bay tới.
   const tip = 7
@@ -160,80 +176,15 @@ export function linkPath(from: LinkAnchor, to: LinkAnchor): LinkShape {
     `${to.x - to.dir * tip},${to.y + 4.5}`,
   ].join(' ')
 
-  const mid = midOf(points)
-  return { d, arrow, midX: mid.x, midY: mid.y }
-}
-
-function elbowPoints(from: LinkAnchor, to: LinkAnchor): Point[] {
-  const outX = from.x + from.dir * STUB
-  const inX = to.x - to.dir * STUB
-
-  const thuan =
-    from.dir === to.dir && (to.dir === 1 ? inX >= outX : inX <= outX)
-  if (thuan) {
-    return dedupe([
-      { x: from.x, y: from.y },
-      { x: outX, y: from.y },
-      { x: outX, y: to.y },
-      { x: to.x, y: to.y },
-    ])
-  }
-
-  //  Hành lang nằm giữa hàng nguồn và hàng kế nó theo chiều đi — nửa chiều cao
-  //  hàng là đúng khe trống giữa hai thanh, nên đường không đè lên thanh nào.
-  const corridorY = from.y + (to.y >= from.y ? 1 : -1) * (ROW_HEIGHT / 2)
-  return dedupe([
-    { x: from.x, y: from.y },
-    { x: outX, y: from.y },
-    { x: outX, y: corridorY },
-    { x: inX, y: corridorY },
-    { x: inX, y: to.y },
-    { x: to.x, y: to.y },
-  ])
-}
-
-/**
- * Đường gấp khúc vẽ lại với GÓC BO — mỗi đỉnh bị cắt lẹm đi `radius` về hai phía
- * rồi nối bằng một cung bậc hai đi qua đúng đỉnh cũ.
- *
- * Góc vuông sắc ở cỡ nét 1.5px trông cứng và rối, nhất là khi vài mũi tên chạy
- * song song qua cùng một hành lang; bo góc thì mắt lần theo được từng đường.
- *
- * Bán kính tự co lại theo đoạn NGẮN NHẤT kề đỉnh (`len / 2`): đoạn cụt chỉ dài
- * `STUB` = 12px, bo cứng 6px ở cả hai đầu là hai cung ăn hết đoạn rồi chồm sang
- * nhau, đường vặn lại thành nút.
- */
-function roundedPath(points: Point[], radius: number): string {
-  if (points.length < 2) return ''
-
-  let d = `M${round(points[0].x)} ${round(points[0].y)}`
-  for (let i = 1; i < points.length - 1; i += 1) {
-    const truoc = points[i - 1]
-    const dinh = points[i]
-    const sau = points[i + 1]
-    const r = Math.min(radius, doDai(truoc, dinh) / 2, doDai(dinh, sau) / 2)
-
-    const vao = doc(dinh, truoc, r)
-    const ra = doc(dinh, sau, r)
-    d += ` L${round(vao.x)} ${round(vao.y)} Q${round(dinh.x)} ${round(dinh.y)} ${round(ra.x)} ${round(ra.y)}`
-  }
-
-  const cuoi = points[points.length - 1]
-  return `${d} L${round(cuoi.x)} ${round(cuoi.y)}`
-}
-
-/** Điểm cách `tu` đúng `khoang` px, đi về phía `toi`. */
-function doc(tu: Point, toi: Point, khoang: number): Point {
-  const dai = doDai(tu, toi)
-  if (dai === 0) return tu
+  //  Điểm giữa cung tại `t = 0.5`, rút gọn từ công thức Bézier bậc ba:
+  //  B(½) = (P₀ + 3P₁ + 3P₂ + P₃) / 8. Lấy trung điểm hai đầu mút thì với cung
+  //  vòng ngược nó rơi hẳn ra ngoài đường, viên mã kiểu treo giữa không trung.
   return {
-    x: tu.x + ((toi.x - tu.x) / dai) * khoang,
-    y: tu.y + ((toi.y - tu.y) / dai) * khoang,
+    d,
+    arrow,
+    midX: (from.x + 3 * c1.x + 3 * c2.x + to.x) / 8,
+    midY: (from.y + 3 * c1.y + 3 * c2.y + to.y) / 8,
   }
-}
-
-function doDai(a: Point, b: Point): number {
-  return Math.hypot(b.x - a.x, b.y - a.y)
 }
 
 /** Một chữ số thập phân là quá đủ cho toạ độ pixel — chuỗi `d` ngắn lại một nửa. */
@@ -241,38 +192,6 @@ function round(v: number): number {
   return Math.round(v * 10) / 10
 }
 
-/** Bỏ điểm trùng nhau — đoạn dài 0 làm `<path>` mọc ra một chấm ở chỗ bẻ góc. */
-function dedupe(points: Point[]): Point[] {
-  return points.filter((p, i) => i === 0 || p.x !== points[i - 1].x || p.y !== points[i - 1].y)
-}
-
-/** Điểm giữa của đường gấp khúc, đo theo ĐỘ DÀI thật chứ không lấy đỉnh giữa. */
-function midOf(points: Point[]): Point {
-  const lengths = points.slice(1).map((p, i) =>
-    Math.abs(p.x - points[i].x) + Math.abs(p.y - points[i].y),
-  )
-  const total = lengths.reduce((s, v) => s + v, 0)
-  let walked = 0
-  for (let i = 0; i < lengths.length; i += 1) {
-    if (walked + lengths[i] >= total / 2) {
-      const t = lengths[i] === 0 ? 0 : (total / 2 - walked) / lengths[i]
-      return {
-        x: points[i].x + (points[i + 1].x - points[i].x) * t,
-        y: points[i].y + (points[i + 1].y - points[i].y) * t,
-      }
-    }
-    walked += lengths[i]
-  }
-  return points[points.length - 1]
-}
-
-/**
- * Mũi tên nào VẼ ĐƯỢC trên biểu đồ đang hiển thị.
- *
- * Bỏ qua mũi tên có đầu không tìm thấy hàng — chuyện thường xuyên xảy ra và
- * KHÔNG phải lỗi: nhóm đang thu lại, bộ lọc đang giấu bớt việc, hoặc một đầu vừa
- * bị người khác xóa mềm (khóa ngoại chỉ bắt xóa cứng nên dòng link vẫn còn).
- */
 export function visibleLinks(
   links: WorkTaskLink[],
   taskRows: Map<number, number>,

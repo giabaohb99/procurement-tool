@@ -74,6 +74,9 @@ export function GanttTimelineHeader({ header, zoom, leadInset = 0 }: GanttTimeli
             className={cn(
               'flex shrink-0 flex-col items-center justify-center border-r border-b leading-none',
               zoom === 'day' ? 'text-[11px]' : 'text-[12px]',
+              //  Ô CUỐI TUẦN cùng sắc với cột nền của nó bên dưới, nên hai thứ
+              //  đọc ra là MỘT dải liền từ tiêu đề xuống hết biểu đồ.
+              cell.isWeekend && 'bg-muted-foreground/[0.07]',
               cell.isNow
                 ? 'bg-primary/10 font-semibold text-primary'
                 : 'text-muted-foreground',

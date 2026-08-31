@@ -246,6 +246,13 @@ export interface GanttHeaderCell {
   sub?: string
   /** Ô chứa HÔM NAY — hàng tiêu đề tô đậm nó. */
   isNow?: boolean
+  /**
+   * Ô rơi vào CUỐI TUẦN (T7 · CN) — chỉ có ở mức Ngày.
+   *
+   * Mức Tuần/Tháng thì một ô gộp cả ngày làm việc lẫn cuối tuần, tô nó lên là
+   * nói sai: cả tuần thành ngày nghỉ.
+   */
+  isWeekend?: boolean
 }
 
 export interface GanttHeader {
@@ -285,6 +292,7 @@ export function buildHeader(
         sub: THU[weekday(d)],
         width: timeline.dayWidth,
         isNow: d === homNay,
+        isWeekend: isWeekend(d),
       })),
     }
   }

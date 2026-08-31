@@ -89,7 +89,12 @@ export const GanttTaskRow = memo(function GanttTaskRow({
   //  `group/ganttrow` là móc để hai chấm nối chỉ hiện khi rê chuột vào HÀNG này.
   //  `flex items-center` chỉ để chip «cuộn về thanh» có chỗ đứng trong luồng —
   //  mọi thứ còn lại của hàng đều `absolute` nên không đụng gì tới bố cục.
-  const nen = 'group/ganttrow relative flex items-center border-b border-border/60'
+  //  ⚠️ KHÔNG kẻ ngang trong vùng biểu đồ — chỉ có vạch DỌC của lưới ngày, đúng
+  //  lối Lark (khách 31/08/2026: *"cho border dọc hà"*). Kẻ cả hai chiều thì
+  //  vùng thanh thành một tấm bảng ô vuông, mà mắt đang cần lần theo thanh nằm
+  //  ngang chứ không cần đếm ô. Hàng vẫn khớp với lưới trái nhờ cùng
+  //  `ROW_HEIGHT`, và dải nền của hàng NHÓM đủ để tách các cụm.
+  const nen = 'group/ganttrow relative flex items-center'
   //  Thanh việc con mảnh hơn và thụt vào theo chiều DỌC — nhìn là biết ngay nó
   //  thuộc về hàng ngay trên, khỏi phải dò sang lưới trái.
   const barPad = isSubtask ? BAR_PAD + 4 : BAR_PAD
@@ -287,7 +292,7 @@ export function GanttGroupBar({
 }) {
   const bar = row.range ? rangeGeometry(row.range.start, row.range.due, timeline) : null
   return (
-    <div style={{ height: ROW_HEIGHT }} className="relative border-b bg-muted/30">
+    <div style={{ height: ROW_HEIGHT }} className="relative bg-muted/30">
       {bar && (
         <div
           className="absolute overflow-hidden rounded-full bg-foreground/10"

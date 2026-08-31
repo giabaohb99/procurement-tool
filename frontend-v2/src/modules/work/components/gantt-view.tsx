@@ -523,6 +523,11 @@ export function GanttView({
                 style={{ width: cell.width }}
                 className={cn(
                   'h-full shrink-0 border-r border-border/60',
+                  //  Cuối tuần tô nhạt hơn hẳn ngày làm việc — nhìn phát ra ngay
+                  //  quãng nào là ngày nghỉ, khỏi dò dòng «T7 · CN» ở tiêu đề.
+                  //  Đặt TRƯỚC `isNow` để cột hôm nay vẫn thắng khi hôm nay rơi
+                  //  vào thứ Bảy hay Chủ nhật.
+                  cell.isWeekend && 'bg-muted-foreground/[0.07]',
                   cell.isNow && 'bg-primary/5',
                 )}
               />
@@ -550,7 +555,7 @@ export function GanttView({
                   <div
                     key={row.key}
                     style={{ height: ROW_HEIGHT }}
-                    className="border-b border-border/60 bg-muted/20"
+                    className="bg-muted/20"
                   />
                 )
               }

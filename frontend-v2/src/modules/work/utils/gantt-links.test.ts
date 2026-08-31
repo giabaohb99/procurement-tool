@@ -135,31 +135,53 @@ describe('linkAnchors', () => {
   })
 })
 
+/** Bóc `[fromX, c1X, toX, c2X]` khỏi chuỗi `d` của một cung bậc ba. */
+function doc(shape: { d: string }): [number, number, number, number] {
+  const m = shape.d.match(
+    /^M([\d.-]+) [\d.-]+ C([\d.-]+) [\d.-]+ ([\d.-]+) [\d.-]+ ([\d.-]+) [\d.-]+$/,
+  )
+  if (!m) throw new Error(`Chuỗi d không phải một cung bậc ba: ${shape.d}`)
+  const [fromX, c1X, c2X, toX] = m.slice(1).map(Number)
+  return [fromX, c1X, toX, c2X]
+}
+
 describe('linkPath', () => {
-  it('mỗi chỗ bẻ góc là một cung BO, và hai đoạn kề nó vẫn ngang/dọc', () => {
-    //  Đường vẫn chỉ chạy theo hai trục, chỉ khác là các đỉnh nay được bo
-    //  (khách 31/08/2026: *"arrow dạng curved arrow nha"*). Điều phải giữ: không
-    //  có đoạn XIÊN — một đoạn xiên nghĩa là đường cắt chéo qua các hàng, đè lên
-    //  đúng những cái thanh nó đang nối.
+  it('đường là MỘT cung bậc ba trơn — không còn đoạn gấp khúc nào', () => {
+    //  Khách 31/08/2026 gửi ảnh Lark: *"muốn làm curved như lark á"*. Bản gấp
+    //  khúc (kể cả đã bo góc) vẫn đọc ra các đoạn thẳng, nên bỏ hẳn.
     const shape = linkPath({ x: 100, y: 18, dir: 1 }, { x: 300, y: 90, dir: 1 })
-
-    const goc = [...shape.d.matchAll(/L([\d.-]+) ([\d.-]+) Q([\d.-]+) ([\d.-]+) ([\d.-]+) ([\d.-]+)/g)]
-    expect(goc.length).toBeGreaterThan(0)
-
-    for (const g of goc) {
-      const [vaoX, vaoY, dinhX, dinhY, raX, raY] = g.slice(1).map(Number)
-      //  Điểm vào cung và điểm ra cung phải thẳng hàng với ĐỈNH theo đúng một
-      //  trục — lệch cả hai trục là đoạn kề đã xiên.
-      expect(vaoX === dinhX || vaoY === dinhY).toBe(true)
-      expect(raX === dinhX || raY === dinhY).toBe(true)
-    }
+    expect(shape.d).toMatch(/^M[\d.-]+ [\d.-]+ C[\d.-]+ [\d.-]+ [\d.-]+ [\d.-]+ [\d.-]+ [\d.-]+$/)
+    expect(shape.d).not.toContain('L')
+    expect(shape.d).not.toContain('Q')
   })
 
-  it('việc sau nằm TRƯỚC việc trước thì đường vòng qua hành lang giữa hai hàng', () => {
-    //  Không có nhánh vòng thì đường cắt thẳng qua chính hai cái thanh nó nối.
-    const shape = linkPath({ x: 400, y: 18, dir: 1 }, { x: 100, y: 90, dir: 1 })
-    const ys = shape.d.match(/-?\d+(\.\d+)?(?= |$)/g)?.map(Number) ?? []
-    expect(ys).toContain(18 + ROW_HEIGHT / 2)
+  it('tay nắm vươn NGANG theo đúng chiều của từng đầu', () => {
+    //  Nhờ vậy cung rời mép thanh theo phương ngang rồi mới uốn — vươn sai chiều
+    //  là cung thúc ngược vào trong chính cái thanh nó vừa rời.
+    const [, c1x, , c2x] = doc(linkPath({ x: 100, y: 18, dir: 1 }, { x: 300, y: 90, dir: 1 }))
+    expect(c1x).toBeGreaterThan(100)
+    expect(c2x).toBeLessThan(300)
+
+    const [, t1x, , t2x] = doc(linkPath({ x: 300, y: 18, dir: -1 }, { x: 100, y: 90, dir: -1 }))
+    expect(t1x).toBeLessThan(300)
+    expect(t2x).toBeGreaterThan(100)
+  })
+
+  it('hai đầu gần nhau vẫn có cung, không tụt thành đoạn xiên', () => {
+    //  `|Δx| / 2` của hai đầu sát nhau là vài pixel; không có sàn `MIN_CURVE` thì
+    //  cung thành một gạch chéo cắt ngang các hàng.
+    const [fx, c1x] = doc(linkPath({ x: 100, y: 18, dir: 1 }, { x: 104, y: 90, dir: 1 }))
+    expect(c1x - fx).toBeGreaterThanOrEqual(40)
+  })
+
+  it('việc sau nằm TRƯỚC việc trước thì cung VÒNG rộng ra, không cắt thẳng', () => {
+    //  Hai tay nắm đẩy ngược chiều nhau tự đẻ ra cung vòng — bản gấp khúc phải
+    //  luồn qua một "hành lang" riêng giữa hai hàng mới tránh được hai cái thanh.
+    const [fx, c1x, tx, c2x] = doc(linkPath({ x: 400, y: 18, dir: 1 }, { x: 100, y: 90, dir: 1 }))
+    expect(c1x).toBeGreaterThan(fx)
+    expect(c2x).toBeLessThan(tx)
+    //  Hai tay nắm vắt chéo qua nhau — đó chính là chỗ cung phình thành chữ S.
+    expect(c2x).toBeLessThan(c1x)
   })
 
   it('đầu nhọn quay đúng chiều mũi tên đang bay tới', () => {

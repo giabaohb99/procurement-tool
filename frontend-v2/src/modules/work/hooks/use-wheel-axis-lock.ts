@@ -44,6 +44,24 @@ export function useWheelAxisLock(
     let axis: WheelAxis | null = null
     let lastAt = 0
 
+    /*  Dồn delta của mọi nhịp trong CÙNG một khung hình rồi ghi MỘT lần.
+     *
+     *  ⚠️ Bản đầu gán `scrollLeft` ngay trong từng nhịp `wheel`. Trackpad bắn
+     *  hàng chục nhịp mỗi giây, mà mỗi lần đọc-ghi vị trí cuộn là một lần buộc
+     *  trình duyệt dựng lại bố cục ngay giữa chừng — khách báo *"scroll ngang
+     *  hơi giật"*. Dồn theo khung hình thì một lần ghi cho mỗi lần vẽ, đúng nhịp
+     *  màn hình, và cũng là nhịp mà cuộn gốc của trình duyệt vẫn chạy.
+     */
+    let don = 0
+    let khung = 0
+
+    function xa() {
+      khung = 0
+      const delta = don
+      don = 0
+      if (delta !== 0 && axis) apply(axis, delta)
+    }
+
     function handleWheel(event: WheelEvent) {
       //  Ctrl + lăn = cử chỉ PHÓNG TO của trackpad/trình duyệt, không phải cuộn.
       //  Nuốt nó ở đây là người dùng mất luôn phím tắt phóng to trang.
@@ -60,11 +78,16 @@ export function useWheelAxisLock(
       event.preventDefault()
 
       const raw = axis === 'x' ? event.deltaX : event.deltaY
-      if (raw !== 0) apply(axis, toPixels(raw, event.deltaMode, el))
+      if (raw === 0) return
+      don += toPixels(raw, event.deltaMode, el)
+      khung ||= requestAnimationFrame(xa)
     }
 
     el.addEventListener('wheel', handleWheel, { passive: false })
-    return () => el.removeEventListener('wheel', handleWheel)
+    return () => {
+      el.removeEventListener('wheel', handleWheel)
+      if (khung) cancelAnimationFrame(khung)
+    }
   }, [ref, apply])
 }
 
