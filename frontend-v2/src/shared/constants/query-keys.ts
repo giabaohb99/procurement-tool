@@ -76,6 +76,8 @@ export const queryKeys = {
   },
   production: {
     all: ['production'] as const,
+    /** Số liệu trang Tổng quan Sản xuất (`/api/dashboard/production`). */
+    dashboard: () => ['production', 'dashboard'] as const,
     // Danh mục NCC nằm ở phân hệ Sản xuất (không phải Thu mua).
     suppliers: (params?: Record<string, unknown>) =>
       ['production', 'suppliers', params ?? {}] as const,

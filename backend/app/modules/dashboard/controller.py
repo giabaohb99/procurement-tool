@@ -271,7 +271,9 @@ def overview(db: Session = Depends(get_db), user=Depends(get_current_user)):
     # ===== Hợp đồng (dùng chung) =====
     if can("contract"):
         # B-02: mã của bộ `CONTRACT_STATUS` (`app/core/status_codes.py`), trước là "Thanh lý".
-        kpi["contract_expiring"] = db.query(Contract).filter(
+        # `apply_scope` là BẮT BUỘC: phạm vi hợp đồng lọc theo `company_id`, thiếu nó thì
+        # người xem phạm vi một pháp nhân vẫn đếm cả hợp đồng của pháp nhân khác.
+        kpi["contract_expiring"] = apply_scope(db.query(Contract), Contract, "contract", user, prof).filter(
             Contract.status != "liquidated", Contract.end_date != "", Contract.end_date <= in30).count()
 
     # ===== Tồn kho =====
@@ -313,6 +315,106 @@ def overview(db: Session = Depends(get_db), user=Depends(get_current_user)):
         "pending_srs_list": pending_srs_list,
         "pending_surveys_list": pending_surveys_list,
         "late_deliveries_list": late_deliveries_list,
+    })
+
+
+@router.get("/production")
+def production_overview(db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Tổng quan phân hệ Sản xuất — danh mục NCC · Sản phẩm · ĐVT · Phân loại · Hợp đồng.
+
+    Cùng luật với `/overview`: route chỉ đòi ĐĂNG NHẬP, rồi gác TỪNG KHỐI bằng
+    `can(entity)` và **bỏ hẳn khóa** khi thiếu quyền. Không trả `0` cho người
+    không có quyền — `0` nghĩa là "đếm được, không có dòng nào", khác hẳn
+    "không được xem"; FE đọc `can` để chọn ẩn khối hay hiện số không.
+
+    Phân hệ Sản xuất chưa có bảng nghiệp vụ nào của riêng nó (không có lệnh sản
+    xuất, không có định mức), nên toàn bộ số liệu ở đây là danh mục nền.
+    """
+    from sqlalchemy import func
+
+    from app.core.auth import get_perm_profile
+    from app.core.scoping import apply_scope
+    from app.modules.catalog.model import ItemGroup, Unit
+    from app.modules.contract.model import Contract
+    from app.modules.product.model import Product
+    from app.modules.supplier.model import Supplier
+
+    prof = get_perm_profile(db, user)
+
+    def can(e):
+        return bool(prof["perms_union"].get(e, {}).get("read"))
+
+    today = datetime.now().date()
+    tstr = today.strftime("%Y-%m-%d")
+    in30 = (today + timedelta(days=30)).strftime("%Y-%m-%d")
+
+    # Số thẻ hiện trên trang; lấy dư thì thẻ cao lêu nghêu, phần đuôi gom vào "Khác".
+    TOP_GROUPS = 6
+    EXPIRING_ROWS = 8
+
+    kpi: dict = {}
+    product_groups: list[dict] = []
+    expiring_contracts: list[dict] = []
+
+    # ===== Nhà cung cấp =====
+    if can("supplier"):
+        sup_q = apply_scope(db.query(Supplier), Supplier, "supplier", user, prof)
+        kpi["supplier_total"] = sup_q.count()
+        kpi["supplier_goods"] = sup_q.filter(Supplier.supplier_type == "goods").count()
+        kpi["supplier_transport"] = sup_q.filter(Supplier.supplier_type == "transport").count()
+        kpi["supplier_inactive"] = sup_q.filter(Supplier.is_active.is_(False)).count()
+
+    # ===== Sản phẩm & Vật tư =====
+    if can("product"):
+        prod_q = apply_scope(db.query(Product), Product, "product", user, prof)
+        kpi["product_total"] = prod_q.count()
+        kpi["product_inactive"] = prod_q.filter(Product.is_active.is_(False)).count()
+        # GROUP BY chứ không kéo cả bảng về đếm trong Python: `tab_product` là bảng
+        # SKU (mỗi quy cách một dòng), trên prod đã hàng nghìn dòng.
+        rows = (apply_scope(db.query(Product.item_group, func.count(Product.id)),
+                            Product, "product", user, prof)
+                .group_by(Product.item_group).all())
+        counted = sorted(((g or "(Chưa phân loại)", int(n)) for g, n in rows), key=lambda x: -x[1])
+        product_groups = [{"name": g, "value": n} for g, n in counted[:TOP_GROUPS]]
+        rest = sum(n for _, n in counted[TOP_GROUPS:])
+        if rest:
+            product_groups.append({"name": "Khác", "value": rest})
+
+    # ===== Đơn vị tính / Phân loại VTBB =====
+    if can("unit"):
+        kpi["unit_total"] = apply_scope(db.query(Unit), Unit, "unit", user, prof).count()
+    if can("item_group"):
+        kpi["item_group_total"] = apply_scope(db.query(ItemGroup), ItemGroup, "item_group", user, prof).count()
+
+    # ===== Hợp đồng =====
+    if can("contract"):
+        ct_q = apply_scope(db.query(Contract), Contract, "contract", user, prof)
+        # Hợp đồng đã thanh lý / đã hủy không còn là việc của ai — mọi con số cảnh
+        # báo bên dưới đều đếm trên tập CÒN SỐNG này.
+        live_q = ct_q.filter(Contract.status.notin_(["liquidated", "cancelled"]))
+        kpi["contract_total"] = ct_q.count()
+        kpi["contract_live"] = live_q.count()
+        # `end_date != ""` là BẮT BUỘC: cột là VARCHAR, hợp đồng không đặt hạn lưu
+        # chuỗi rỗng, mà "" <= "2026-09-30" là ĐÚNG — bỏ điều kiện này thì mọi hợp
+        # đồng vô thời hạn bị đếm là sắp hết hạn.
+        soon_q = live_q.filter(Contract.end_date != "", Contract.end_date >= tstr,
+                               Contract.end_date <= in30)
+        kpi["contract_expiring"] = soon_q.count()
+        kpi["contract_expired"] = live_q.filter(Contract.end_date != "", Contract.end_date < tstr).count()
+        kpi["contract_unsigned"] = live_q.filter(Contract.signed.is_(False)).count()
+        for c in soon_q.order_by(Contract.end_date.asc()).limit(EXPIRING_ROWS).all():
+            expiring_contracts.append({
+                "id": c.id, "code": c.code, "title": c.title or "",
+                "party_name": c.party_name or c.party_code or "", "end_date": c.end_date,
+            })
+
+    can_map = {e: can(e) for e in ["supplier", "product", "unit", "item_group", "contract"]}
+
+    return success({
+        "kpi": kpi,
+        "product_groups": product_groups,
+        "expiring_contracts": expiring_contracts,
+        "can": can_map,
     })
 
 
