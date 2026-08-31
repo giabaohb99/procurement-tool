@@ -57,7 +57,7 @@ interface PurchaseOrderDeliveriesTableProps {
  * đơn, cước vận chuyển và công nợ riêng.
  *
  * Dùng chung khung `LinesTable` với bảng dòng hàng YCMH/YCBG/ĐMH: ẩn/hiện, ghim,
- * kéo giãn, đổi thứ tự cột. 22 cột nhồi vào hộp thoại thì chật, nên bảng mở sẵn
+ * kéo giãn, đổi thứ tự cột. 24 cột nhồi vào hộp thoại thì chật, nên bảng mở sẵn
  * ở chế độ RÚT GỌN; cần đủ cột thì bấm "Bảng đầy đủ".
  *
  * Các cột ngày lệch (Ngày QĐ, Trễ CK/QĐ) và công nợ (Đã trả / Còn lại) do
@@ -139,11 +139,21 @@ export function PurchaseOrderDeliveriesTable({
     { key: 'promised_date', header: 'Cam kết giao', width: 150, minWidth: 100 },
     { key: 'received_date', header: 'Ngày nhận', width: 150, minWidth: 100 },
     {
+      //  Đây là SỐ NGÀY quy định và người dùng nhập được — trước gắn nhãn "Ngày
+      //  QĐ" nên bị đọc nhầm là cột ngày.
       key: 'std_days',
-      header: 'Ngày QĐ',
-      width: 90,
-      minWidth: 60,
+      header: 'Số ngày QĐ',
+      width: 100,
+      minWidth: 70,
       align: 'right',
+      compactHidden: true,
+    },
+    {
+      key: 'regulated_date',
+      header: 'Ngày QĐ',
+      width: 130,
+      minWidth: 100,
+      align: 'center',
       compactHidden: true,
     },
     {
@@ -159,6 +169,16 @@ export function PurchaseOrderDeliveriesTable({
       header: 'Trễ QĐ',
       width: 110,
       minWidth: 60,
+      align: 'center',
+      compactHidden: true,
+    },
+    {
+      //  Lệch giữa ngày quy định và NGÀY KINH DOANH YÊU CẦU CÓ HÀNG của dòng —
+      //  khác `diff_regulated` (lệch với ngày nhận thật).
+      key: 'diff_required',
+      header: 'Trễ QĐ-KD',
+      width: 110,
+      minWidth: 70,
       align: 'center',
       compactHidden: true,
     },
@@ -399,11 +419,23 @@ export function PurchaseOrderDeliveriesTable({
           />
         )
 
+      case 'regulated_date':
+        return (
+          <span className="whitespace-nowrap text-muted-foreground">
+            {formatDate(delivery.regulated_date ?? '') || '—'}
+          </span>
+        )
+
       case 'diff_promise':
         return <LateCell value={delivery.received_date ? delivery.diff_promise : undefined} />
 
       case 'diff_regulated':
         return <LateCell value={delivery.received_date ? delivery.diff_regulated : undefined} />
+
+      //  Mốc so ở đây là ngày kinh doanh YÊU CẦU có hàng của dòng, không phải
+      //  ngày nhận — chưa có ngày yêu cầu thì không có gì để so.
+      case 'diff_required':
+        return <LateCell value={item.required_date ? delivery.diff_required : undefined} />
 
       case 'status':
         return delivery.status ? (
