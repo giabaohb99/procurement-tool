@@ -309,10 +309,45 @@ def get_po(pid: int, db: Session = Depends(get_db), user=Depends(require("purcha
     return success(_out(db, service.get_po(db, pid)))
 
 
+# Đơn đã qua duyệt thì mới in chữ ký người duyệt. Hủy duyệt (CR-108) đưa đơn về `draft`
+# nên nó tự rơi khỏi tập này; đơn bị hủy / từ chối cũng không in chữ ký duyệt.
+_PO_APPROVED_STATUSES = {"approved", "partial", "received", "completed"}
+
+
+def resolve_print_signers(db: Session, po: PurchaseOrder) -> dict:
+    """Họ tên + ảnh chữ ký cho các ô ký trên bản in Đơn mua hàng.
+
+    `creator_*` = người lập đơn (`created_by`). `approver_*` = người bấm Duyệt, tra từ
+    nhật ký thao tác chứ không có cột riêng — đơn có thể bị hủy duyệt rồi duyệt lại,
+    nên lấy dòng GẦN NHẤT.
+
+    Ô "Người nhận" trên mẫu Đơn mua hàng cố ý không có ở đây: hệ thống không có thao tác
+    nào ứng với việc nhận hàng tận tay, ô đó để ký tươi lúc giao nhận.
+    """
+    from app.core.audit import resolve_actor, resolve_signature
+    from app.modules.audit.model import AuditLog
+
+    out = {"creator_name": resolve_actor(db, po.created_by),
+           "creator_signature": resolve_signature(db, po.created_by),
+           "approver_name": "", "approver_signature": ""}
+    if po.status not in _PO_APPROVED_STATUSES:
+        return out
+
+    row = (db.query(AuditLog.created_by)
+           .filter(AuditLog.entity == service.ENTITY, AuditLog.entity_id == po.id,
+                   AuditLog.action == "approved")
+           .order_by(AuditLog.id.desc()).first())
+    if row and row[0]:
+        out["approver_name"] = resolve_actor(db, row[0])
+        out["approver_signature"] = resolve_signature(db, row[0])
+    return out
+
+
 @router.get("/{pid}/print")
 def print_po(pid: int, db: Session = Depends(get_db), user=Depends(require("purchase_order", "print"))):
     po = service.get_po(db, pid)
     data = _out(db, po)
+    data["signers"] = resolve_print_signers(db, po)
     company = db.get(Company, po.company_id) if po.company_id else None
     sup = db.query(Supplier).filter(Supplier.code == po.supplier_code).first()
     data["company"] = {"name": company.name, "address": company.address, "tax_code": company.tax_code,

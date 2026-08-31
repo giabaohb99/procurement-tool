@@ -81,6 +81,18 @@ export interface PurchaseOrderPrintData extends PurchaseOrderDetail {
   warehouse: { code?: string; name?: string; address?: string }
   /** Mã kho -> tên kho, cho cột "Tên kho nhập". */
   wh_names: Record<string, string>
+  /**
+   * Họ tên + ảnh chữ ký cho các ô ký. Đơn chưa duyệt thì `approver_*` rỗng,
+   * còn ô "Người nhận" không có ở đây vì luôn ký tươi lúc giao nhận.
+   */
+  signers?: PurchaseOrderSigners
+}
+
+export interface PurchaseOrderSigners {
+  creator_name: string
+  creator_signature: string
+  approver_name: string
+  approver_signature: string
 }
 
 export const purchaseOrderApi = {
