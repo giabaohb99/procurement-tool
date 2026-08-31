@@ -2,6 +2,8 @@ import { usePermission } from '@/core/authorization/use-permission'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
+import { ReadOnlyValue } from '@/shared/ui/read-only-value'
+import { cn } from '@/shared/utils/cn'
 import type {
   PurchaseRequestDetail,
   SupplierCluster,
@@ -143,9 +145,9 @@ function SupplierField({
           onChange={(event) => onChange(event.target.value)}
         />
       ) : (
-        <p className="flex min-h-9 items-center rounded-lg border bg-muted/35 px-3 py-2 text-sm font-medium text-muted-foreground">
+        <ReadOnlyValue className={cn(!value && 'text-muted-foreground')}>
           {value || placeholder}
-        </p>
+        </ReadOnlyValue>
       )}
     </div>
   )

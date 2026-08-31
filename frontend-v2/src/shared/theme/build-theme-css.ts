@@ -105,6 +105,13 @@ const DERIVED_TOKENS: Record<string, string> = {
   //  KHÔNG lấy `--secondary` (xem chú thích `--canvas` trong `index.css`).
   //  Bảng màu DEGO khai tay nên vẫn giữ nguyên nền `#f6f8fb` như cũ.
   canvas: 'var(--background)',
+  //  Ô CHỈ XEM. Trộn với `--foreground` nên tự đúng hướng ở cả hai chế độ nền
+  //  (nền sáng thì xám đi, nền tối thì sáng lên) — điều duy nhất phải giữ là ô
+  //  khóa KHÁC HẲN ô nhập được, nên 12% là mức đủ thấy mà chưa chói.
+  locked: 'color-mix(in oklab, var(--card) 88%, var(--foreground))',
+  //  Chữ trong ô khóa là DỮ LIỆU THẬT, không phải chữ gợi ý: giữ gần
+  //  `--foreground` để đọc được, đừng rơi về `--muted-foreground`.
+  'locked-foreground': 'color-mix(in oklab, var(--foreground) 85%, var(--card))',
   //  Nền các HÀNG của bảng danh sách. Cả năm suy ra từ `--card` (nền hàng lẻ) nên
   //  một cái bảng luôn nằm gọn trong MỘT họ màu; trộn với `--foreground` thì tự
   //  đúng hướng ở cả hai chế độ nền (nền sáng thì tối đi, nền tối thì sáng lên),

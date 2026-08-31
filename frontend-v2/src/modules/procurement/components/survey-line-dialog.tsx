@@ -9,9 +9,10 @@ import {
   DialogTitle,
 } from '@/shared/ui/dialog'
 import { Label } from '@/shared/ui/label'
+import { RequiredMark } from '@/shared/ui/required-mark'
 import { cn } from '@/shared/utils/cn'
 import type { SurveyCatalog } from '../helpers/survey-catalog'
-import { isSupplierFromCatalog } from '../helpers/survey-line'
+import { isSupplierFromCatalog, isSurveyLineFieldRequired } from '../helpers/survey-line'
 import {
   SURVEY_TABLE_LABELS,
   sectionsOf,
@@ -109,7 +110,12 @@ export function SurveyLineDialog({
                     className={cn('space-y-1.5', field.full && 'sm:col-span-2')}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <Label>{field.label}</Label>
+                      <Label>
+                        {field.label}
+                        {/* Dấu sao lấy thẳng từ hàm đang chặn lúc gửi duyệt, nên
+                            ô lấy mẫu chỉ có sao khi dòng đã tick "Mẫu sẵn". */}
+                        {isSurveyLineFieldRequired(table, field.key, line) && <RequiredMark />}
+                      </Label>
                       {/* Công tắc "NCC sẵn có" đi kèm ô NCC chứ không đứng riêng:
                           nó chỉ đổi kiểu của đúng ô đó. */}
                       {field.type === 'supplier' && fieldsEditable && (

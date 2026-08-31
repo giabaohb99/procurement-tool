@@ -7,6 +7,7 @@ import { DatePicker } from '@/shared/ui/date-picker'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { ReadOnlyValue as ReadOnlyBox } from '@/shared/ui/read-only-value'
+import { RequiredMark } from '@/shared/ui/required-mark'
 import { SearchSelect } from '@/shared/ui/search-select'
 import { Textarea } from '@/shared/ui/textarea'
 import { cn } from '@/shared/utils/cn'
@@ -28,15 +29,21 @@ interface SurveyInfoCardProps {
 function InfoField({
   label,
   full,
+  required,
   children,
 }: {
   label: string
   full?: boolean
+  /** Ô bắt buộc trước khi GỬI DUYỆT — luật nằm ở `validateSurveySubmit`. */
+  required?: boolean
   children: React.ReactNode
 }) {
   return (
     <div className={cn('space-y-1.5', full && 'md:col-span-2')}>
-      <Label>{label}</Label>
+      <Label>
+        {label}
+        {required && <RequiredMark />}
+      </Label>
       {children}
     </div>
   )
@@ -150,7 +157,7 @@ export function SurveyInfoCard({
           )}
         </InfoField>
 
-        <InfoField label="Nhóm hàng">
+        <InfoField label="Nhóm hàng" required>
           {editable ? (
             <SearchSelect
               value={data.item_group}
@@ -170,7 +177,7 @@ export function SurveyInfoCard({
           <ReadOnlyValue value={data.nspt} />
         </InfoField>
 
-        <InfoField label="Chi tiết yêu cầu" full>
+        <InfoField label="Chi tiết yêu cầu" full required={!data.has_product_code}>
           {editable ? (
             <Textarea
               value={data.requirement_detail}
@@ -195,7 +202,7 @@ export function SurveyInfoCard({
 
         {data.has_product_code && (
           <>
-            <InfoField label="Mã hàng">
+            <InfoField label="Mã hàng" required>
               {editable ? (
                 <PurchaseRequestProductPicker
                   code={data.item_code}
@@ -218,7 +225,7 @@ export function SurveyInfoCard({
               <ReadOnlyValue value={data.item_name} />
             </InfoField>
 
-            <InfoField label="Số lượng yêu cầu">
+            <InfoField label="Số lượng yêu cầu" required>
               {editable ? (
                 <Input
                   type="number"
@@ -233,7 +240,7 @@ export function SurveyInfoCard({
               )}
             </InfoField>
 
-            <InfoField label="ĐVT">
+            <InfoField label="ĐVT" required>
               {editable ? (
                 <SearchSelect
                   value={data.uom}
@@ -248,7 +255,7 @@ export function SurveyInfoCard({
               )}
             </InfoField>
 
-            <InfoField label="Đơn giá đề xuất">
+            <InfoField label="Đơn giá đề xuất" required>
               {editable ? (
                 <Input
                   type="number"

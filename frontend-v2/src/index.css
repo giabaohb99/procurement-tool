@@ -41,6 +41,15 @@
   --muted: #f6f8fb;
   --muted-foreground: #64748b;
 
+  /* Nền ô CHỈ XEM — `shared/ui/read-only-value.tsx`.
+
+     Tách khỏi `--muted` vì `--muted` quá nhạt (#f6f8fb, gần như trắng): đặt cạnh
+     một ô nhập nền trắng thì mắt không phân biệt được ô nào khóa, ô nào gõ được
+     — khách báo đúng chỗ này ngày 31/08/2026. Ô khóa phải XÁM thấy rõ, còn chữ
+     bên trong vẫn là dữ liệu thật nên giữ đủ tương phản để đọc, đừng làm mờ. */
+  --locked: #e4eaf1;
+  --locked-foreground: #334155;
+
   /* Nền các HÀNG của bảng danh sách (`DataTable`, `LinesTable`).
 
      Trước đây năm màu này viết cứng bằng bảng màu Tailwind gốc — `bg-slate-200/80`
@@ -183,6 +192,11 @@
   --muted: #1e293b;
   --muted-foreground: #94a3b8;
 
+  /* Xem chú thích ở `:root`. Nền tối thì ô khóa phải SÁNG hơn mặt thẻ
+     (#1e293b) mới nổi lên, ngược chiều với nền sáng. */
+  --locked: #2b3a4f;
+  --locked-foreground: #dbe3ec;
+
   /* Xem chú thích ở `:root`. Nền tối thì hàng tiêu đề vốn đã đục sẵn
      (`dark:bg-slate-800`) nên ghim thẳng, không phải chồng alpha. */
   --row-head: #1e293b;
@@ -239,6 +253,8 @@
   --color-canvas: var(--canvas);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+  --color-locked: var(--locked);
+  --color-locked-foreground: var(--locked-foreground);
   --color-row-head: var(--row-head);
   --color-row-head-foreground: var(--row-head-foreground);
   --color-row-stripe: var(--row-stripe);
