@@ -251,8 +251,20 @@ một tuần/tháng cụt, nhìn như lưới vỡ. Toàn bộ hàm THUẦN và 
 - **Luật chặn vòng lặp nằm ở backend**, không ở giao diện — xem `02-bang-du-lieu.md`
   §3 (`tab_work_task_link`).
 
-### 10.5 Chưa làm
+### 10.5 Chốt: KHÔNG dời lịch dây chuyền
 
-Dời lịch dây chuyền theo `lag_days` (mới LƯU và hiện, chưa đẩy lịch việc sau) · đường găng
-(critical path) · baseline · đặt phụ thuộc cho **việc con** (backend chặn thẳng — muốn có
-thì phải bàn lại luật C-05 trước).
+**Quyết định 31/08/2026 (CR-226).** Kéo một việc thì **chỉ đổi ngày của chính việc ấy** —
+mũi tên phụ thuộc là thứ để ĐỌC quan hệ trước–sau, không phải bộ máy tự nắn lịch. Việc sau
+không tự chạy theo, kể cả khi cú kéo làm nó vi phạm ràng buộc.
+
+Hệ quả phải biết: **đồ thị phụ thuộc có thể mâu thuẫn với ngày thật** (việc sau bắt đầu
+trước khi việc trước xong) và hệ **không cảnh báo gì**. Đó là chủ ý — người lập kế hoạch
+tự nhìn biểu đồ mà chỉnh. Ai định "sửa" chỗ này về sau thì đọc dòng này trước: nó không
+phải lỗ hổng bỏ quên.
+
+`lag_days` vì thế mới chỉ LƯU và hiện trên mũi tên.
+
+### 10.6 Chưa làm
+
+Đường găng (critical path) — cần lịch dây chuyền nên hoãn theo §10.5 · baseline · đặt phụ
+thuộc cho **việc con** (backend chặn thẳng, muốn có thì phải bàn lại luật C-05 trước).

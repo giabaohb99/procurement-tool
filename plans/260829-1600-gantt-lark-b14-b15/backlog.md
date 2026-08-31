@@ -65,14 +65,20 @@ trọn tuần/trọn tháng; tuần ISO; `milestoneCenter`; `todayLeft`), `utils
 
 ---
 
-## 3. CÒN LẠI — cần khách/anh chốt trước khi làm
+## 3. Đã chốt — KHÔNG dời lịch dây chuyền
 
-- [ ] **Dời lịch dây chuyền theo `lag_days`.** Cột đã có, mới LƯU và hiện. Câu hỏi phải
-      chốt: kéo việc TRƯỚC thì có tự đẩy mọi việc SAU không? Nếu có thì đẩy **cứng**
-      (luôn giữ đúng khoảng cách) hay chỉ đẩy khi vi phạm ràng buộc? Có hỏi xác nhận
-      trước khi dời hàng loạt không? Làm sai hướng là ghi đè ngày của cả một dây việc.
-- [ ] **Đường găng (critical path)** — tài liệu QLDA có nhắc. Cần `lag_days` tham gia
-      tính toán nên phụ thuộc mục trên.
+**Khách chốt 31/08/2026:** *"cập nhật bth nha, ko cần phụ thuộc gì hết"* → kéo một việc
+thì **chỉ đổi ngày của chính việc ấy**. Mũi tên phụ thuộc là thứ để ĐỌC quan hệ trước–sau,
+không phải bộ máy tự nắn lịch.
+
+Hệ quả, và là chủ ý: đồ thị phụ thuộc **có thể mâu thuẫn với ngày thật** (việc sau bắt đầu
+trước khi việc trước xong) mà hệ **không cảnh báo gì**. Ghi ở `05-giao-dien.md` §10.5 —
+ai định "sửa" chỗ này về sau thì đọc dòng đó trước, nó không phải lỗ hổng bỏ quên.
+
+Kéo theo: **đường găng (critical path) hoãn** vì cần lịch dây chuyền mới tính được.
+
+## 3b. CÒN LẠI — cần chốt trước khi làm
+
 - [ ] **Baseline** (chụp mốc kế hoạch để đối chiếu về sau) — chưa ai đòi.
 - [ ] **Phụ thuộc cho VIỆC CON.** Backend chặn thẳng, có test — vì việc con không bao giờ
       lên Gantt (luật C-05). Muốn có thì phải bàn lại C-05 trước.
