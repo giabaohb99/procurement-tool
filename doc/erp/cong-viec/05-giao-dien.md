@@ -41,12 +41,12 @@ conditional-filter, token màu Tailwind) — không chế khung mới khi đã c
 | Kanban | Bảng cột kéo thả | Khung nhìn chính | P0 | D-01 |
 | Gantt | Thanh thời gian | **XONG** — bản đầu 28/08/2026 (CR-219), dựng lại theo Lark 31/08/2026 (**CR-226** rồi **CR-230**): lưới trái CHÍNH LÀ khung nhìn Danh sách (ba cột cố định, ô sửa tại chỗ, kéo thả việc/việc con/cột, dòng «Việc mới») · thang Ngày/Tuần/Tháng + cụm _Hôm nay_ ‹ › · hàng NHÓM có thanh tổng · cột mốc hình thoi · **mũi tên phụ thuộc** (vẽ + kéo tạo + đổi kiểu + xóa). Tự dựng, không cài thư viện (GPLv2) | P2 → làm sớm theo yêu cầu | D-05 · B-14 · B-15 |
 | Dashboard | Thống kê list | 4 khối recharts (§7) | P1 | D-06 |
-| Activities | Dòng hoạt động cấp list | Nhật ký audit của cả list (§8) | P1 | D-09 |
+| Activities | Dòng hoạt động cấp list | **XONG** 31/08/2026 (**CR-249**) — nhật ký gộp của cả list, cột ngày dính bên trái, lọc theo loại sự kiện + theo người, cuộn lấy thêm (§8) | P1 | D-09 |
 
 Tab chưa làm thì **KHÔNG render** — không để tab "Sắp có" chết trên thanh công cụ.
 
-Hiện có đúng **ba** tab như Lark: **Bảng (Kanban) · Danh sách · Gantt**. Dashboard và
-Activities vẫn chưa render vì chưa làm (D-06, D-09 — P1).
+Hiện có **bốn** tab: **Bảng (Kanban) · Danh sách · Gantt · Hoạt động**. Chỉ còn
+**Dashboard** chưa render vì chưa làm (D-06 — P1).
 
 ## 3. Thanh công cụ — từng nút là gì và ta clone thế nào
 
@@ -160,11 +160,41 @@ Bốn khối trên recharts (đã có sẵn wrapper chart trong `shared/ui/`):
 
 Tôn trọng bộ lọc đang áp (§3.3). Không làm burndown/tiến độ thời gian ở bản đầu.
 
-## 8. Activities (D-09 — P1)
+## 8. Activities (D-09) — ĐÃ LÀM (CR-249, 31/08/2026)
 
-Dòng thời gian gộp audit của CẢ LIST (tạo/sửa/kéo cột/đổi PIC/bình luận/thành viên
-vào-ra), mới nhất trên cùng, phân trang cuộn. Lọc nhanh theo loại sự kiện + theo người.
-Khác E-04: E-04 là nhật ký TRONG panel một task, đây là cấp list.
+Dòng thời gian gộp audit của CẢ LIST, mới nhất trên cùng, cuộn lấy thêm. Lọc nhanh theo
+loại sự kiện + theo người. Khác E-04: E-04 là nhật ký TRONG panel một task, đây là cấp list.
+
+⚠️ **Phải dọn nền dữ liệu trước mới lọc được — đọc `backend/app/modules/work/audit_entity.py`.**
+Cả phân hệ từng ghi chung `entity = "work_task"` cho ba loại đối tượng đánh số ĐỘC LẬP
+(việc · list · nhóm), nên `(work_task, 5)` vừa có thể là việc #5 vừa có thể là list #5.
+Nay tách năm tên (`work_task` · `work_list` · `work_list_member` · `work_group` ·
+`work_group_member`), `entity_id` luôn là id của đúng đối tượng nêu trong tên; migration
+`c3a91d47f2b8` đổi lại các dòng cũ theo mẫu câu. **`work_task` giữ nguyên tên** vì khối
+E-04 đang gọi `/api/audit-logs?entity=work_task`.
+
+⚠️ **Không gọi `/api/audit-logs` cho màn này.** Đường đó dùng chung cả hệ, chỉ đòi đăng
+nhập và KHÔNG kiểm quyền theo entity, lại chỉ lọc được đúng một `entity_id`. Đường riêng
+là `GET /api/work/lists/{id}/activities` (+ `/activity-actors`), đi qua `get_list_or_403`.
+
+**Ba nguồn gộp lại:** việc trong list (kể cả việc đã xóa mềm — dòng "Xóa công việc" là
+dòng người ta cần nhất) ∪ thành viên vào ra ∪ sửa chính list và cột. **Bình luận chưa có
+mặt** vì E-01 chưa làm (`work_task` chưa nằm trong `COMMENT_POLICY`); thêm vào đây khi E-01 xong.
+
+Sắp theo `id` giảm dần chứ không `created_at`: hai thao tác trong cùng một giây là chuyện
+thường, sắp theo giờ thì cuộn xuống thấy dòng lặp hoặc dòng mất.
+
+**Hình dáng một dòng** (khuôn Lark, TRẢI HẾT bề ngang — không bó cột hẹp):
+
+```
+Hôm nay   ──────────────────────────────────────────────────────
+  31      14:05  (av)  ✔ Tên việc                ← chữ nhỏ, xám
+                       Dego Admin đã sửa công việc ← câu kể, chữ đậm
+```
+
+Câu kể bỏ cái đuôi `: {tên việc}` vì tên việc đã đứng riêng dòng trên — so ĐÚNG cả đuôi
+chứ không cắt ở dấu hai chấm cuối, vì `Thêm phụ thuộc: A → B` cắt là mất sạch nội dung.
+Hàng lọc nằm NGOÀI khung cuộn; thanh công cụ của ba khung nhìn kia ẩn hẳn ở tab này.
 
 ## 9. Quy tắc chất liệu (nhắc lại, bắt buộc)
 

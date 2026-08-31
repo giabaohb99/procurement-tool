@@ -8,13 +8,18 @@
  */
 
 /**
- * Ba khung nhìn của Lark: List · Kanban · Gantt (§2 của `05-giao-dien.md`).
- * Tab nào chưa làm thì KHÔNG khai ở đây — §2 cấm để tab chết trên thanh.
+ * Khung nhìn của Lark: List · Kanban · Gantt · Activities (§2 của
+ * `05-giao-dien.md`). Tab nào chưa làm thì KHÔNG khai ở đây — §2 cấm để tab
+ * chết trên thanh; **Dashboard** (D-06) vì thế vẫn vắng mặt.
+ *
+ * «Hoạt động» đứng CUỐI, đúng thứ tự Lark: ba tab đầu là ba cách nhìn cùng một
+ * mớ việc, còn nó là nhật ký — xếp xen vào giữa là gãy mạch.
  */
 export const WORK_VIEWS = [
   { value: 'kanban', label: 'Bảng' },
   { value: 'list', label: 'Danh sách' },
   { value: 'gantt', label: 'Gantt' },
+  { value: 'activities', label: 'Hoạt động' },
 ] as const
 
 export type WorkView = (typeof WORK_VIEWS)[number]['value']

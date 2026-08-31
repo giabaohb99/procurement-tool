@@ -9,6 +9,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
+from app.modules.work.audit_entity import AUDIT_LIST, AUDIT_LIST_MEMBER
 from app.modules.work import list_config_service
 from app.modules.work import serializer as ser
 from app.modules.work.group_service import _get_group_or_403, _with_names
@@ -53,7 +54,7 @@ def create_list(db: Session, actor: Actor, data) -> dict:
     #  — xem đầu `label_model.py`.
     list_config_service.seed_system_label_fields(db, lst.id, actor.company_id, actor.user_id)
     db.commit()
-    record(db, actor.user_id, "work_task", lst.id, "create", f"Tạo danh sách {lst.name}")
+    record(db, actor.user_id, AUDIT_LIST, lst.id, "create", f"Tạo danh sách {lst.name}")
     return ser.list_out(lst, int(WorkMemberRole.OWNER))
 
 
@@ -145,7 +146,7 @@ def update_list(db: Session, actor: Actor, list_id: int, data) -> dict:
             setattr(lst, field, val)
     lst.updated_by = actor.user_id
     db.commit()
-    record(db, actor.user_id, "work_task", lst.id, "update", f"Sửa danh sách {lst.name}")
+    record(db, actor.user_id, AUDIT_LIST, lst.id, "update", f"Sửa danh sách {lst.name}")
     return ser.list_out(lst, int(WorkMemberRole.OWNER))
 
 
@@ -155,7 +156,7 @@ def archive_list(db: Session, actor: Actor, list_id: int) -> dict:
     lst.is_archived = 1
     lst.updated_by = actor.user_id
     db.commit()
-    record(db, actor.user_id, "work_task", lst.id, "delete", f"Lưu trữ danh sách {lst.name}")
+    record(db, actor.user_id, AUDIT_LIST, lst.id, "delete", f"Lưu trữ danh sách {lst.name}")
     return ser.list_out(lst, int(WorkMemberRole.OWNER))
 
 
@@ -187,7 +188,7 @@ def add_member(db: Session, actor: Actor, list_id: int, data) -> dict:
                            created_by=actor.user_id, updated_by=actor.user_id)
         db.add(m)
     db.commit()
-    record(db, actor.user_id, "work_task", list_id, "update",
+    record(db, actor.user_id, AUDIT_LIST_MEMBER, list_id, "update",
            f"Mời nhân sự #{data.employee_id} vào danh sách")
     return _with_names(db, [m])[0]
 
@@ -201,7 +202,7 @@ def remove_member(db: Session, actor: Actor, list_id: int, member_id: int) -> No
         raise HTTPException(400, "Không gỡ được chủ danh sách — chuyển quyền sở hữu trước")
     db.delete(m)
     db.commit()
-    record(db, actor.user_id, "work_task", list_id, "update",
+    record(db, actor.user_id, AUDIT_LIST_MEMBER, list_id, "update",
            f"Gỡ nhân sự #{m.employee_id} khỏi danh sách")
 
 
@@ -249,6 +250,6 @@ def transfer_ownership(db: Session, actor: Actor, list_id: int, employee_id: int
     new.role = int(WorkMemberRole.OWNER)
     new.updated_by = actor.user_id
     db.commit()
-    record(db, actor.user_id, "work_task", list_id, "update",
+    record(db, actor.user_id, AUDIT_LIST_MEMBER, list_id, "update",
            f"Chuyển quyền sở hữu danh sách cho nhân sự #{employee_id}")
     return _with_names(db, [new])[0]

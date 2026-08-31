@@ -15,6 +15,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
+from app.modules.work.audit_entity import AUDIT_LIST
 from app.modules.work import serializer as ser
 from app.modules.work.label_model import (WorkLabelField, WorkLabelOption,
                                           WorkTaskLabel)
@@ -99,7 +100,7 @@ def move_section(db: Session, actor: Actor, section_id: int,
         r.sort_order = (i + 1) * SECTION_STEP
         r.updated_by = actor.user_id
     db.commit()
-    record(db, actor.user_id, "work_task", lst.id, "update", f"Xếp lại cột: {s.name}")
+    record(db, actor.user_id, AUDIT_LIST, lst.id, "update", f"Xếp lại cột: {s.name}")
     return [ser.section_out(r) for r in others]
 
 

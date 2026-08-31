@@ -24,6 +24,18 @@ export function formatDateTime(value: string | Date | null | undefined): string 
   })}`
 }
 
+/**
+ * `09:30` — chỉ GIỜ, dùng cho dòng thời gian đã có mốc ngày ở đầu cụm.
+ *
+ * 24 giờ chứ không `2:05 PM`: cả hệ hiển thị giờ theo lối Việt Nam, và cột giờ
+ * xếp thẳng hàng chỉ khi mọi dòng cùng độ dài.
+ */
+export function formatTime(value: string | Date | null | undefined): string {
+  const date = toDate(value)
+  if (!date) return ''
+  return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })
+}
+
 /** `Thứ Tư, 12.08.2026` — dạng đầy đủ dùng ở màn chọn phân hệ. */
 export function formatWeekdayDate(value: string | Date | null | undefined): string {
   const date = toDate(value)

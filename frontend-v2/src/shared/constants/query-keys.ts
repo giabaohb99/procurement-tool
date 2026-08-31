@@ -346,6 +346,15 @@ export const queryKeys = {
     members: (listId: number) => ['work', 'lists', listId, 'members'] as const,
     sections: (listId: number) => ['work', 'lists', listId, 'sections'] as const,
     labelFields: (listId: number) => ['work', 'lists', listId, 'label-fields'] as const,
+    /**
+     * Dòng hoạt động của dự án (D-09). Bộ lọc nằm TRONG khóa nên đổi loại sự
+     * kiện / đổi người là một truy vấn khác, không phải nạp lại rồi lọc lại ở
+     * trình duyệt — dòng hoạt động cuộn vô hạn, lọc tại chỗ là sai số trang.
+     */
+    activities: (listId: number, params: Record<string, unknown>) =>
+      ['work', 'lists', listId, 'activities', params] as const,
+    activityActors: (listId: number) =>
+      ['work', 'lists', listId, 'activity-actors'] as const,
     task: (id: number) => ['work', 'tasks', id] as const,
   },
   vehicleBooking: {

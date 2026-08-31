@@ -15,6 +15,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
+from app.modules.work.audit_entity import AUDIT_TASK
 from app.modules.work import serializer as ser
 from app.modules.work import task_enrich
 from app.modules.work import label_value_service as label_values
@@ -133,7 +134,7 @@ def create_task(db: Session, actor: Actor, data) -> dict:
     db.commit()
     if data.assignee_ids:
         set_assignees(db, actor, t.id, data.assignee_ids, [])
-    record(db, actor.user_id, "work_task", t.id, "create", f"Tạo công việc: {t.title}")
+    record(db, actor.user_id, AUDIT_TASK, t.id, "create", f"Tạo công việc: {t.title}")
     return _shape([t], task_enrich.collect(db, [t]))[0]
 
 
@@ -233,7 +234,7 @@ def move_task(db: Session, actor: Actor, task_id: int, section_id: int | None,
     t.updated_by = actor.user_id
     db.commit()
     what = "việc con" if t.parent_id else "công việc"
-    record(db, actor.user_id, "work_task", t.id, "update", f"Chuyển {what}: {t.title}")
+    record(db, actor.user_id, AUDIT_TASK, t.id, "update", f"Chuyển {what}: {t.title}")
     return _shape([t], task_enrich.collect(db, [t]))[0]
 
 
@@ -274,7 +275,7 @@ def update_task(db: Session, actor: Actor, task_id: int, data) -> dict:
 
     t.updated_by = actor.user_id
     db.commit()
-    record(db, actor.user_id, "work_task", t.id, "update", f"Sửa công việc: {t.title}")
+    record(db, actor.user_id, AUDIT_TASK, t.id, "update", f"Sửa công việc: {t.title}")
     return _shape([t], task_enrich.collect(db, [t]))[0]
 
 
@@ -312,7 +313,7 @@ def delete_task(db: Session, actor: Actor, task_id: int) -> None:
      .filter(WorkTask.parent_id == task_id, WorkTask.deleted_at.is_(None))
      .update({WorkTask.deleted_at: now}, synchronize_session=False))
     db.commit()
-    record(db, actor.user_id, "work_task", task_id, "delete", f"Xóa công việc: {t.title}")
+    record(db, actor.user_id, AUDIT_TASK, task_id, "delete", f"Xóa công việc: {t.title}")
 
 
 def set_assignees(db: Session, actor: Actor, task_id: int,
@@ -338,7 +339,7 @@ def set_assignees(db: Session, actor: Actor, task_id: int,
                                 kind=int(WorkAssigneeKind.FOLLOWER),
                                 created_by=actor.user_id, updated_by=actor.user_id))
     db.commit()
-    record(db, actor.user_id, "work_task", task_id, "update", "Đổi người phụ trách")
+    record(db, actor.user_id, AUDIT_TASK, task_id, "update", "Đổi người phụ trách")
     return _shape([t], task_enrich.collect(db, [t]))[0]
 
 

@@ -7,6 +7,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
+from app.modules.work.audit_entity import AUDIT_GROUP, AUDIT_GROUP_MEMBER
 from app.modules.work import serializer as ser
 from app.modules.work.membership_service import (CAN_MANAGE, CAN_OWN, Actor,
                                                  assert_can_grant, group_role,
@@ -46,7 +47,7 @@ def create_group(db: Session, actor: Actor, data) -> dict:
                            role=int(WorkMemberRole.OWNER),
                            created_by=actor.user_id, updated_by=actor.user_id))
     db.commit()
-    record(db, actor.user_id, "work_task", grp.id, "create", f"Tạo nhóm {grp.name}")
+    record(db, actor.user_id, AUDIT_GROUP, grp.id, "create", f"Tạo nhóm {grp.name}")
     return ser.group_out(grp, int(WorkMemberRole.OWNER))
 
 
@@ -59,7 +60,7 @@ def update_group(db: Session, actor: Actor, group_id: int, data) -> dict:
             setattr(grp, field, val)
     grp.updated_by = actor.user_id
     db.commit()
-    record(db, actor.user_id, "work_task", grp.id, "update", f"Sửa nhóm {grp.name}")
+    record(db, actor.user_id, AUDIT_GROUP, grp.id, "update", f"Sửa nhóm {grp.name}")
     return ser.group_out(grp, group_role(db, actor.employee_id, group_id))
 
 
@@ -72,7 +73,7 @@ def archive_group(db: Session, actor: Actor, group_id: int) -> dict:
     grp.is_archived = 1
     grp.updated_by = actor.user_id
     db.commit()
-    record(db, actor.user_id, "work_task", grp.id, "delete", f"Lưu trữ nhóm {grp.name}")
+    record(db, actor.user_id, AUDIT_GROUP, grp.id, "delete", f"Lưu trữ nhóm {grp.name}")
     return ser.group_out(grp, int(WorkMemberRole.OWNER))
 
 
@@ -117,7 +118,7 @@ def add_member(db: Session, actor: Actor, group_id: int, data) -> dict:
                         created_by=actor.user_id, updated_by=actor.user_id)
     db.add(m)
     db.commit()
-    record(db, actor.user_id, "work_task", group_id, "update",
+    record(db, actor.user_id, AUDIT_GROUP_MEMBER, group_id, "update",
            f"Thêm nhân sự #{data.employee_id} vào nhóm")
     return _with_names(db, [m])[0]
 
@@ -132,7 +133,7 @@ def remove_member(db: Session, actor: Actor, group_id: int, member_id: int) -> N
         raise HTTPException(400, "Không gỡ được chủ nhóm — chuyển quyền sở hữu trước")
     db.delete(m)
     db.commit()
-    record(db, actor.user_id, "work_task", group_id, "update",
+    record(db, actor.user_id, AUDIT_GROUP_MEMBER, group_id, "update",
            f"Gỡ nhân sự #{m.employee_id} khỏi nhóm")
 
 

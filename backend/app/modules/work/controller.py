@@ -17,6 +17,7 @@ from app.core.auth import require
 from app.core.database import get_db
 from app.core.response import success
 
+from . import activity_service as activities
 from . import group_service as groups
 from . import list_config_service as cfg
 from . import list_service as lists
@@ -160,6 +161,30 @@ def transfer_list(list_id: int, data: schema.TransferIn, db: Session = Depends(g
     """Chuyển quyền sở hữu (A-04) — nguyên tử, giữ bất biến đúng một chủ."""
     return success(lists.transfer_ownership(db, _actor(db, user), list_id, data.employee_id),
                    "Đã chuyển quyền sở hữu")
+
+
+# ── Dòng hoạt động cấp dự án (D-09) ─────────────────────────────────────────
+
+@router.get("/lists/{list_id}/activities")
+def get_activities(list_id: int, kind: int | None = None, by: int | None = None,
+                   offset: int = 0, limit: int = 30,
+                   db: Session = Depends(get_db),
+                   user=Depends(require("work_task", "read"))):
+    """Nhật ký gộp của cả dự án — việc + thành viên + cột, mới nhất trước (§8).
+
+    `kind` = `WorkActivityKind`, `by` = `user_id` người thao tác. Phân trang bằng
+    `offset`/`limit` để giao diện cuộn lấy thêm.
+    """
+    return success(activities.list_activities(db, _actor(db, user), list_id,
+                                              kind=kind, by=by,
+                                              offset=offset, limit=limit))
+
+
+@router.get("/lists/{list_id}/activity-actors")
+def get_activity_actors(list_id: int, db: Session = Depends(get_db),
+                        user=Depends(require("work_task", "read"))):
+    """Những người từng thao tác trên dự án — nguồn cho ô lọc «theo người»."""
+    return success(activities.list_actors(db, _actor(db, user), list_id))
 
 
 # ── Cấu hình của list: cột kanban · nhãn tùy biến ────────────────────────────

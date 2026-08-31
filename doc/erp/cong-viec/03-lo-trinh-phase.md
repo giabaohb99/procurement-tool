@@ -75,8 +75,8 @@ Tùy chỉnh · trạng thái khung nhìn nhớ ở `localStorage`. `npm run che
 2. **Kéo ngang đổi thứ tự CỘT** (§4) — thẻ kéo được rồi, cột thì chưa.
 3. Ghim list hay dùng trên sidebar (A-05).
 4. «Gom nhóm» ngoài cột tự đặt là D-08 (P1) nên KHÔNG chặn mốc này; tab
-   Dashboard/Activities cũng vậy — §2 cấm render tab chưa làm. **Gantt thì đã
-   có** (CR-219, làm sớm khỏi W5).
+   **Dashboard** cũng vậy — §2 cấm render tab chưa làm. **Gantt** (CR-219) và
+   **tab Hoạt động** (D-09, CR-249) thì đã có, làm sớm khỏi W4/W5.
 Chưa có đội nào dùng thử trọn vòng trên dev, nên **mốc MVP chưa đóng**.
 
 ## W3 — Nối vào nền thông báo
@@ -96,7 +96,8 @@ cần làm và "Đánh dấu làm xong" ẩn được; test tập cha mở rộn
 celery-worker/beat) · G-03 màn "Việc của tôi" · B-09 thùng rác · B-10 chuyển list ·
 A-06 mời theo phòng ban (cột `department_id`) · C-03 việc con có PIC/hạn riêng ·
 E-02 nhắc tên @ · E-03 đính kèm R2 qua kiểm quyền · D-06 dashboard thống kê list ·
-D-08 gom nhóm kanban theo PIC/ưu tiên/hạn · D-09 tab Activities cấp list ·
+D-08 gom nhóm kanban theo PIC/ưu tiên/hạn · ~~D-09 tab Activities cấp list~~
+(**đã làm sớm 31/08/2026, CR-249**) ·
 A-10 list kiểu dự án (cờ `kind` + hồ sơ ngày/vòng đời + tiến độ tự tính — QĐ-T2, 01 §4b).
 
 **Điều kiện cần:** W3 chạy ổn trên dev ít nhất một chu kỳ dùng thật.

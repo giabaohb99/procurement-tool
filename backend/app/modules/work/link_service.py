@@ -14,6 +14,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
+from app.modules.work.audit_entity import AUDIT_TASK
 from app.modules.work import serializer as ser
 from app.modules.work.link_model import WorkTaskLink
 from app.modules.work.membership_service import (CAN_EDIT, Actor,
@@ -74,7 +75,7 @@ def create_link(db: Session, actor: Actor, data) -> dict:
                         created_by=actor.user_id, updated_by=actor.user_id)
     db.add(link)
     db.commit()
-    record(db, actor.user_id, "work_task", after.id, "update",
+    record(db, actor.user_id, AUDIT_TASK, after.id, "update",
            f"Thêm phụ thuộc: {before.title} → {after.title}")
     return ser.task_link_out(link)
 
@@ -99,7 +100,7 @@ def update_link(db: Session, actor: Actor, link_id: int, data) -> dict:
 
     link.updated_by = actor.user_id
     db.commit()
-    record(db, actor.user_id, "work_task", link.successor_id, "update",
+    record(db, actor.user_id, AUDIT_TASK, link.successor_id, "update",
            "Sửa phụ thuộc")
     return ser.task_link_out(link)
 
@@ -115,7 +116,7 @@ def delete_link(db: Session, actor: Actor, link_id: int) -> None:
 
     db.delete(link)
     db.commit()
-    record(db, actor.user_id, "work_task", link.successor_id, "update", "Xóa phụ thuộc")
+    record(db, actor.user_id, AUDIT_TASK, link.successor_id, "update", "Xóa phụ thuộc")
 
 
 def creates_cycle(links: list[WorkTaskLink], predecessor_id: int,

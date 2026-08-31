@@ -145,7 +145,7 @@ chưa xong" / nhắc hạn vẫn có một nguồn sự thật bằng số, khô
 | D-06 | Dashboard thống kê theo list (đếm theo cột, theo PIC, quá hạn) | P1 | 4 khối — `05-giao-dien.md` §7 |
 | D-07 | Thanh công cụ khung nhìn clone Lark: Việc mới · Tất cả (phạm vi nhanh) · Lọc điều kiện · Sắp xếp · Gom nhóm · Tùy chỉnh thẻ | P0 | Bản 1.3 — đặc tả từng nút ở `05-giao-dien.md` §3; Lọc dùng khung `conditional-filter` sẵn có |
 | D-08 | Gom nhóm kanban theo trường khác: PIC / độ ưu tiên / hạn (ngoài cột tự đặt) | P1 | Kéo thẻ giữa nhóm = đổi giá trị trường đó |
-| D-09 | Tab Activities: dòng hoạt động cấp LIST (gộp audit mọi task + thành viên vào-ra) | P1 | Khác E-04 (nhật ký trong panel một task) |
+| D-09 | Tab Activities: dòng hoạt động cấp LIST (gộp audit mọi task + thành viên vào-ra) | P1 | **XONG** 31/08/2026 (CR-249). Khác E-04 (nhật ký trong panel một task). Bình luận chưa gộp vào vì E-01 chưa làm |
 
 ### Nhóm E — Bình luận, đính kèm, nhật ký
 

@@ -1,4 +1,4 @@
-import { GanttChartSquare, KanbanSquare, Settings2, Table2, Users } from 'lucide-react'
+import { GanttChartSquare, History, KanbanSquare, Settings2, Table2, Users } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 
@@ -17,6 +17,7 @@ import { Skeleton } from '@/shared/ui/skeleton'
 import { Tabs, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { cn } from '@/shared/utils/cn'
 import { buildTaskFilterFields } from '../config/task-filter-fields'
+import { ActivityFeed } from '../components/activity-feed'
 import { GanttView } from '../components/gantt-view'
 import { ListConfigDialog } from '../components/list-config-dialog'
 import { ListMembersDialog } from '../components/list-members-dialog'
@@ -63,6 +64,7 @@ const VIEW_ICONS = {
   kanban: KanbanSquare,
   list: Table2,
   gantt: GanttChartSquare,
+  activities: History,
 } as const
 
 /**
@@ -299,6 +301,10 @@ function WorkListContent({ listId }: { listId: number }) {
             chỗ Lark đặt. Ở cạnh ba tab khung nhìn thì nó nhìn như tab thứ tư. */}
       </div>
 
+      {/*  Thanh công cụ là của BA khung nhìn việc: «Việc mới», lọc điều kiện,
+          sắp xếp, trường hiện trên thẻ — không cái nào có nghĩa trên một cuốn
+          nhật ký. Tab «Hoạt động» mang bộ lọc riêng của nó (`ActivityFilterBar`). */}
+      {view !== 'activities' && (
       <WorkToolbar
         listId={listId}
         sort={sort}
@@ -345,6 +351,7 @@ function WorkListContent({ listId }: { listId: number }) {
             : undefined
         }
       />
+      )}
 
       <div className={cn('flex min-h-0 flex-1 flex-col', view === 'kanban' && 'overflow-hidden')}>
         {view === 'kanban' && (
@@ -478,6 +485,11 @@ function WorkListContent({ listId }: { listId: number }) {
             onDeleteLink={(linkId) => deleteLink.mutate(linkId)}
           />
         )}
+
+        {/*  Nhật ký gộp của cả dự án (D-09). KHÔNG nhận `tasks` đã lọc: bộ lọc
+            điều kiện nói về VIỆC, còn đây là dòng sự kiện — lọc theo nó thì
+            "Gỡ nhân sự khỏi dự án" chẳng biết xếp vào đâu. */}
+        {view === 'activities' && <ActivityFeed listId={listId} onOpenTask={setOpenTaskId} />}
       </div>
 
       <TaskDetailSheet
