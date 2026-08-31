@@ -1,4 +1,10 @@
-import { CalendarCheck, ChevronLeft, ChevronRight } from 'lucide-react'
+import {
+  CalendarCheck,
+  ChevronLeft,
+  ChevronRight,
+  PanelLeftClose,
+  PanelLeftOpen,
+} from 'lucide-react'
 
 import { Button } from '@/shared/ui/button'
 import {
@@ -16,6 +22,9 @@ interface GanttTimelineControlsProps {
   /** Cuộn trục thời gian: `-1` lùi một trang, `1` tiến một trang. */
   onStep: (direction: -1 | 1) => void
   onToday: () => void
+  /** Lưới trái đang ẩn — chỉ còn trục thời gian. */
+  gridHidden: boolean
+  onToggleGrid: () => void
 }
 
 /**
@@ -36,9 +45,27 @@ export function GanttTimelineControls({
   onZoomChange,
   onStep,
   onToday,
+  gridHidden,
+  onToggleGrid,
 }: GanttTimelineControlsProps) {
   return (
     <div className="flex items-center gap-1">
+      {/*  Ẩn/hiện LƯỚI TRÁI để biểu đồ chiếm trọn bề ngang. Đặt ở đây chứ không
+           ở dải tiêu đề của lưới: ẩn rồi thì dải ấy biến mất cùng, nút mở lại
+           phải nằm ở chỗ không bao giờ mất đi — mà cụm này chính là chỗ đó. */}
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        title={gridHidden ? 'Hiện danh sách công việc' : 'Ẩn danh sách công việc'}
+        aria-label={gridHidden ? 'Hiện danh sách công việc' : 'Ẩn danh sách công việc'}
+        aria-pressed={gridHidden}
+        onClick={onToggleGrid}
+      >
+        {gridHidden ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}
+      </Button>
+
+      <span aria-hidden className="mx-1 h-5 w-px bg-border" />
+
       <Select value={zoom} onValueChange={(v) => onZoomChange(v as GanttZoom)}>
         {/*  Ô chọn KHÔNG viền, nền trong: nó nằm ngay trên dải tiêu đề nên một
              cái hộp viền quanh chữ "Ngày" là thêm một khung trong khung — mà ba

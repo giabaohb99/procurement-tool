@@ -12,6 +12,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { cn } from '@/shared/utils/cn'
 import { useCollapsedGroups } from '../hooks/use-collapsed-groups'
 import { useGanttLinkDraft } from '../hooks/use-gantt-link-draft'
+import { useGanttGridHidden } from '../hooks/use-gantt-grid-hidden'
 import { useGanttPaneWidth } from '../hooks/use-gantt-pane-width'
 import { useListColumnWidths } from '../hooks/use-list-column-widths'
 import { useOffscreenBars } from '../hooks/use-offscreen-bars'
@@ -222,6 +223,7 @@ export function GanttView({
     maxWidth: maxPaneWidth,
     resize: resizePane,
   } = useGanttPaneWidth(listId, gridContentWidth)
+  const { hidden: gridHidden, toggle: toggleGrid } = useGanttGridHidden(listId)
 
   const gridRef = useRef<HTMLDivElement>(null)
   const areaRef = useRef<HTMLDivElement>(null)
@@ -433,7 +435,13 @@ export function GanttView({
         {/*  LƯỚI TRÁI — khung cuộn RIÊNG, chỉ cuộn ngang; chiều dọc do trục thời
              gian lái (xem `syncGridScroll`). Lăn chuột khi con trỏ đang ở trên
              lưới thì chuyển thẳng sang bên kia, không thì rê vào vùng tên việc
-             là lăn không ăn gì.  */}
+             là lăn không ăn gì.
+
+             Ẩn lưới thì GỠ HẲN khỏi cây, không phải `w-0` hay `hidden`: giữ lại
+             thì `syncGridScroll` vẫn gán `scrollTop` mỗi nhịp cuộn cho một thứ
+             không ai thấy, và `IntersectionObserver` của chip «cuộn về thanh»
+             vẫn phải theo dõi từng thanh trong đó.  */}
+        {!gridHidden && (
         <div
           ref={gridPaneRef}
           /*  ⚠️ ĐỪNG thêm `scroll-snap` vào đây. Đã thử cho cuộn ngang bám mép
@@ -478,8 +486,11 @@ export function GanttView({
             onOpenTask={openTask}
           />
         </div>
+        )}
 
-        <GanttPaneSplitter width={paneWidth} maxWidth={maxPaneWidth} onResize={resizePane} />
+        {!gridHidden && (
+          <GanttPaneSplitter width={paneWidth} maxWidth={maxPaneWidth} onResize={resizePane} />
+        )}
 
         {/*  TRỤC THỜI GIAN — khung cuộn CHÍNH: cuộn cả hai chiều và lái chiều
              dọc của lưới trái. */}
@@ -604,6 +615,8 @@ export function GanttView({
             onZoomChange={onZoomChange}
             onStep={stepTimeline}
             onToday={scrollToToday}
+            gridHidden={gridHidden}
+            onToggleGrid={toggleGrid}
           />
         </div>
       </div>
