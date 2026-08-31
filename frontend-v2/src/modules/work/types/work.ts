@@ -32,6 +32,17 @@ export const WORK_ROLE_LABELS: Record<number, string> = {
   [WORK_ROLE.VIEWER]: 'Khách xem',
 }
 
+/**
+ * Mã hai chữ của kiểu phụ thuộc — đủ ngắn để in ngay trên mũi tên. Dân dự án
+ * đọc "FS" nhanh hơn đọc cả câu, còn ai chưa quen thì có nhãn dài ở menu.
+ */
+export const WORK_LINK_TYPE_CODES: Record<number, string> = {
+  [WORK_LINK_TYPE.FS]: 'FS',
+  [WORK_LINK_TYPE.SS]: 'SS',
+  [WORK_LINK_TYPE.FF]: 'FF',
+  [WORK_LINK_TYPE.SF]: 'SF',
+}
+
 /** Nhãn ngắn cho menu chọn kiểu mũi tên — chữ đọc "đầu việc trước → đầu việc sau". */
 export const WORK_LINK_TYPE_LABELS: Record<number, string> = {
   [WORK_LINK_TYPE.FS]: 'Xong → Bắt đầu',

@@ -174,6 +174,50 @@ def test_board_tra_ve_mui_ten_cung_mot_luot(db, owner, work_list):
     }]
 
 
+def test_doi_kieu_phu_thuoc(db, owner, work_list):
+    a = _task(db, owner, work_list["id"], "A")["id"]
+    b = _task(db, owner, work_list["id"], "B")["id"]
+    link = _link(db, owner, a, b)
+
+    doi = link_service.update_link(db, owner, link["id"], schema.TaskLinkUpdate(
+        link_type=int(WorkLinkType.SS), lag_days=-2))
+    assert doi["link_type"] == int(WorkLinkType.SS)
+    assert doi["lag_days"] == -2
+    #  Hai đầu KHÔNG được đổi theo: đổi đầu là một mũi tên khác hẳn.
+    assert (doi["predecessor_id"], doi["successor_id"]) == (a, b)
+
+
+def test_doi_kieu_khong_dung_thi_tu_choi(db, owner, work_list):
+    a = _task(db, owner, work_list["id"], "A")["id"]
+    b = _task(db, owner, work_list["id"], "B")["id"]
+    link = _link(db, owner, a, b)
+
+    with pytest.raises(HTTPException) as err:
+        link_service.update_link(db, owner, link["id"],
+                                 schema.TaskLinkUpdate(link_type=0))
+    assert err.value.status_code == 400
+    #  Từ chối rồi thì KHÔNG được ghi nửa vời — kiểu cũ phải còn nguyên.
+    assert db.get(WorkTaskLink, link["id"]).link_type == int(WorkLinkType.FS)
+
+
+def test_doi_kieu_cua_phu_thuoc_khong_co_thi_404(db, owner):
+    with pytest.raises(HTTPException) as err:
+        link_service.update_link(db, owner, 999, schema.TaskLinkUpdate(link_type=2))
+    assert err.value.status_code == 404
+
+
+def test_khong_gui_gi_thi_giu_nguyen(db, owner, work_list):
+    """`None` = không đổi, đúng quy ước PATCH của cả phân hệ — không được hiểu
+    thành "về mặc định" mà âm thầm nắn kiểu về FS."""
+    a = _task(db, owner, work_list["id"], "A")["id"]
+    b = _task(db, owner, work_list["id"], "B")["id"]
+    link = _link(db, owner, a, b, link_type=int(WorkLinkType.FF))
+
+    doi = link_service.update_link(db, owner, link["id"], schema.TaskLinkUpdate())
+    assert doi["link_type"] == int(WorkLinkType.FF)
+    assert doi["lag_days"] == 0
+
+
 def test_xoa_phu_thuoc(db, owner, work_list):
     a = _task(db, owner, work_list["id"], "A")["id"]
     b = _task(db, owner, work_list["id"], "B")["id"]

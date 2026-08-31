@@ -77,5 +77,12 @@ export const workTaskApi = {
     lag_days?: number
   }) => apiPost<WorkTaskLink>('/api/work/task-links', values),
 
+  /**
+   * Đổi KIỂU (FS/SS/FF/SF) hoặc độ trễ của một mũi tên đã có. Đổi hai đầu thì
+   * xóa rồi nối lại — máy chủ không nhận, xem `TaskLinkUpdate`.
+   */
+  updateLink: (linkId: number, values: { link_type?: number; lag_days?: number }) =>
+    apiPatch<WorkTaskLink>(`/api/work/task-links/${linkId}`, values),
+
   removeLink: (linkId: number) => apiDelete(`/api/work/task-links/${linkId}`),
 }

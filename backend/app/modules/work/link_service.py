@@ -79,6 +79,31 @@ def create_link(db: Session, actor: Actor, data) -> dict:
     return ser.task_link_out(link)
 
 
+def update_link(db: Session, actor: Actor, link_id: int, data) -> dict:
+    """Đổi kiểu / độ trễ của một mũi tên đã có.
+
+    KHÔNG cần dò vòng lặp lại: chiều mũi tên giữ nguyên, mà vòng lặp chỉ phụ
+    thuộc vào chiều — FS hay SS gì thì cũng là "việc này đứng trước việc kia".
+    """
+    link = db.get(WorkTaskLink, link_id)
+    if not link:
+        raise HTTPException(404, "Không thấy phụ thuộc")
+    block_if_archived(get_list_or_403(db, actor, link.list_id, CAN_EDIT))
+
+    if data.link_type is not None:
+        if int(data.link_type) not in LINK_TYPES:
+            raise HTTPException(400, "Kiểu phụ thuộc không hợp lệ")
+        link.link_type = int(data.link_type)
+    if data.lag_days is not None:
+        link.lag_days = int(data.lag_days)
+
+    link.updated_by = actor.user_id
+    db.commit()
+    record(db, actor.user_id, "work_task", link.successor_id, "update",
+           "Sửa phụ thuộc")
+    return ser.task_link_out(link)
+
+
 def delete_link(db: Session, actor: Actor, link_id: int) -> None:
     link = db.get(WorkTaskLink, link_id)
     #  403 chứ không 404 khi thiếu quyền: phân biệt hai cái là đã nói cho người

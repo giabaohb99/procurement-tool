@@ -43,11 +43,16 @@ import {
   useUpdateTask,
   useWorkBoard,
 } from '../hooks/use-work-board'
-import { useCreateTaskLink, useDeleteTaskLink } from '../hooks/use-task-links'
+import {
+  useCreateTaskLink,
+  useDeleteTaskLink,
+  useUpdateTaskLink,
+} from '../hooks/use-task-links'
 import { useWorkViewState } from '../hooks/use-view-state'
 import { useMoveSection, useWorkLabelFields, useWorkMembers } from '../hooks/use-work-config'
 import type { WorkSection } from '../types/work'
-import { fieldHasOptions, WORK_ROLE, WORK_TASK_STATUS } from '../types/work'
+import { fieldHasOptions, WORK_ROLE, WORK_TASK_KIND, WORK_TASK_STATUS } from '../types/work'
+import { today } from '../utils/due-date'
 import { prepareTasks } from '../utils/filter-tasks'
 import { buildOptionRank, findPriorityField } from '../utils/priority-field'
 import { applyTaskConditions } from '../utils/task-conditions'
@@ -118,6 +123,7 @@ function WorkListContent({ listId }: { listId: number }) {
   //  Mũi tên phụ thuộc của Gantt (B-15) — dữ liệu nằm sẵn trong payload bảng
   //  nên chỉ cần hai mutation, không có hook đọc riêng.
   const createLink = useCreateTaskLink(listId)
+  const updateLink = useUpdateTaskLink(listId)
   const deleteLink = useDeleteTaskLink(listId)
 
   /*  Việc tự thêm gần như luôn là việc của chính mình, nên dòng nháp gán sẵn
@@ -333,6 +339,21 @@ function WorkListContent({ listId }: { listId: number }) {
           }
           createTask.mutate({ list_id: listId, title: 'Việc mới', section_id: firstSection.id })
         }}
+        /*  Cột mốc tạo ra là có NGÀY ngay (hôm nay): mốc không ngày thì không
+            có hình thoi nào trên biểu đồ, người dùng bấm xong tưởng hụt. Đổi
+            ngày sau bằng cách kéo hình thoi hoặc sửa ở panel chi tiết. */
+        onNewMilestone={
+          canEdit
+            ? () =>
+                createTask.mutate({
+                  list_id: listId,
+                  title: 'Cột mốc mới',
+                  section_id: board.sections[0]?.id ?? null,
+                  kind: WORK_TASK_KIND.MILESTONE,
+                  due_date: today(),
+                })
+            : undefined
+        }
         onAddSection={
           canManage
             ? () => {
@@ -445,6 +466,9 @@ function WorkListContent({ listId }: { listId: number }) {
             onSetStatus={(taskId, status) => updateTask.mutate({ id: taskId, values: { status } })}
             onSetLabel={(taskId, fieldId, value) => setLabel.mutate({ taskId, fieldId, value })}
             onCreateLink={(values) => createLink.mutate(values)}
+            onChangeLinkType={(linkId, linkType) =>
+              updateLink.mutate({ linkId, values: { link_type: linkType } })
+            }
             onDeleteLink={(linkId) => deleteLink.mutate(linkId)}
           />
         )}

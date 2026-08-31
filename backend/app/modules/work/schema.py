@@ -167,6 +167,18 @@ class TaskLinkIn(BaseModel):
     lag_days: int = 0
 
 
+class TaskLinkUpdate(BaseModel):
+    """Đổi KIỂU hoặc độ trễ của một mũi tên ĐÃ CÓ. `None` = không đổi.
+
+    Cố ý KHÔNG cho đổi hai đầu: đổi đầu là một mũi tên khác hẳn, mà lại phải dò
+    vòng lặp lại từ đầu — xóa rồi nối lại vừa rõ nghĩa vừa đi qua đúng bộ kiểm
+    của `create_link`.
+    """
+
+    link_type: int | None = None
+    lag_days: int | None = None
+
+
 class AssigneesIn(BaseModel):
     """Đặt LẠI toàn bộ người phụ trách/theo dõi — không phải thêm từng người.
 

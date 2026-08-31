@@ -88,6 +88,13 @@ def create_task_link(data: schema.TaskLinkIn, db: Session = Depends(get_db),
     return success(links.create_link(db, _actor(db, user), data), "Đã thêm phụ thuộc")
 
 
+@router.patch("/task-links/{link_id}")
+def update_task_link(link_id: int, data: schema.TaskLinkUpdate, db: Session = Depends(get_db),
+                     user=Depends(require("work_task", "write"))):
+    """Đổi KIỂU (FS/SS/FF/SF) hoặc độ trễ. Đổi hai đầu thì xóa rồi nối lại."""
+    return success(links.update_link(db, _actor(db, user), link_id, data), "Đã lưu")
+
+
 @router.delete("/task-links/{link_id}")
 def delete_task_link(link_id: int, db: Session = Depends(get_db),
                      user=Depends(require("work_task", "write"))):

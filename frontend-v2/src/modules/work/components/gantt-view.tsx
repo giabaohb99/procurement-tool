@@ -89,6 +89,7 @@ interface GanttViewProps extends GanttRowActions {
     successor_id: number
     link_type: number
   }) => void
+  onChangeLinkType: (linkId: number, linkType: number) => void
   onDeleteLink: (linkId: number) => void
 }
 
@@ -131,6 +132,7 @@ export function GanttView({
   canEdit,
   onMoveDates,
   onCreateLink,
+  onChangeLinkType,
   onDeleteLink,
   ...rowActions
 }: GanttViewProps) {
@@ -352,6 +354,7 @@ export function GanttView({
               tasks={taskById}
               timeline={timeline}
               canEdit={canEdit}
+              onChangeType={onChangeLinkType}
               onDelete={onDeleteLink}
             />
 

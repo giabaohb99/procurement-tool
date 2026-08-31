@@ -228,7 +228,10 @@ một tuần/tháng cụt, nhìn như lưới vỡ. Toàn bộ hàm THUẦN và 
 ### 10.4 Cột mốc (B-14) và mũi tên phụ thuộc (B-15)
 
 - **Cột mốc** vẽ hình thoi tại `due_date`, kéo dời được; bật/tắt bằng nút cạnh viên trạng
-  thái trong panel chi tiết. Đổi việc → mốc thì service gộp ngày về một mốc.
+  thái trong panel chi tiết, hoặc tạo thẳng bằng mục **«Cột mốc mới»** trong mũi tên cạnh
+  nút «Việc mới». Mốc tạo từ đó **có ngày ngay** (hôm nay) — mốc không ngày thì không có
+  hình thoi nào trên biểu đồ, bấm xong tưởng hụt. Đổi việc → mốc thì service gộp ngày về
+  một mốc.
 - **Kiểu mũi tên suy ra từ hai đầu người dùng chạm vào**, đúng lối DHTMLX: rời ở cuối →
   vào đầu = `FS`; đầu→đầu = `SS`; cuối→cuối = `FF`; đầu→cuối = `SF`. Đích không cần trúng
   cái chấm nhỏ — thả vào NỬA nào của thanh đích thì tính là đầu ấy.
@@ -238,11 +241,18 @@ một tuần/tháng cụt, nhìn như lưới vỡ. Toàn bộ hàm THUẦN và 
   việc như thế (phần lớn dữ liệu thật) luôn trượt, và trượt IM LẶNG.
 - Mũi tên vẽ bằng **SVG** phủ vùng các hàng, `pointer-events-none` cho cả tấm rồi bật lại
   cho từng đường — để tấm phủ ăn chuột thì không thanh nào kéo được nữa, mà lỗi ấy nhìn
-  hệt như "kéo thanh bị hỏng". Rê vào đường mới hiện nút xóa.
+  hệt như "kéo thanh bị hỏng".
+- Rê vào đường thì giữa thân mũi tên hiện **viên mã kiểu** (`FS`/`SS`/`FF`/`SF`) — vừa là
+  nhãn vừa là nút: bấm ra menu **đổi kiểu** và **xóa**. Gộp hai việc vào một viên chứ
+  không bày hai nút tròn: chỗ trống trên một đường gấp khúc chỉ đủ cho một thứ, mà hai nút
+  18px sát nhau thì bấm nhầm «xóa» khi định «đổi kiểu» là chuyện sớm muộn. Đổi kiểu KHÔNG
+  cần dò lại vòng lặp (chiều mũi tên giữ nguyên); đổi **hai đầu** thì máy chủ từ chối —
+  xóa rồi nối lại để đi qua đúng bộ kiểm của `create_link`.
 - **Luật chặn vòng lặp nằm ở backend**, không ở giao diện — xem `02-bang-du-lieu.md`
   §3 (`tab_work_task_link`).
 
 ### 10.5 Chưa làm
 
-Dời lịch dây chuyền theo `lag_days` · đường găng (critical path) · baseline · đổi KIỂU một
-mũi tên đã tạo (phải xóa rồi nối lại) · tạo cột mốc thẳng từ thanh công cụ.
+Dời lịch dây chuyền theo `lag_days` (mới LƯU và hiện, chưa đẩy lịch việc sau) · đường găng
+(critical path) · baseline · đặt phụ thuộc cho **việc con** (backend chặn thẳng — muốn có
+thì phải bàn lại luật C-05 trước).

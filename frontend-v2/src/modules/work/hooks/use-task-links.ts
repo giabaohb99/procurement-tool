@@ -63,6 +63,37 @@ export function useCreateTaskLink(listId: number) {
   })
 }
 
+export function useUpdateTaskLink(listId: number) {
+  const queryClient = useQueryClient()
+  const boardKey = queryKeys.work.board(listId)
+
+  return useMutation({
+    mutationFn: ({ linkId, values }: { linkId: number; values: { link_type?: number } }) =>
+      workTaskApi.updateLink(linkId, values),
+
+    //  Đổi kiểu là đổi chỗ mũi tên CẮM VÀO thanh (mép trái ↔ mép phải), tức
+    //  đường vẽ lại hẳn — chờ máy chủ trả lời rồi mới đổi thì người dùng chọn
+    //  xong nhìn thấy mũi tên đứng yên một nhịp, tưởng bấm hụt.
+    onMutate: async ({ linkId, values }) => {
+      await queryClient.cancelQueries({ queryKey: boardKey })
+      const snapshot = queryClient.getQueryData<WorkBoard>(boardKey)
+      if (snapshot) {
+        queryClient.setQueryData<WorkBoard>(boardKey, {
+          ...snapshot,
+          links: snapshot.links.map((l) => (l.id === linkId ? { ...l, ...values } : l)),
+        })
+      }
+      return { snapshot }
+    },
+
+    onError: (_err, _vars, context) => {
+      if (context?.snapshot) queryClient.setQueryData(boardKey, context.snapshot)
+    },
+
+    onSettled: () => queryClient.invalidateQueries({ queryKey: boardKey }),
+  })
+}
+
 export function useDeleteTaskLink(listId: number) {
   const queryClient = useQueryClient()
   const boardKey = queryKeys.work.board(listId)
