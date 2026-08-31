@@ -25,6 +25,18 @@ describe('toAppPath', () => {
     expect(toAppPath('/import-batches/3')).toBe('/system/imports/3')
   })
 
+  it('link «Xử lý khảo sát» kiểu cũ phải rơi về chi tiết YCBG, không giữ đuôi /process', () => {
+    //  LỖI ĐÃ XẢY RA (29/08/2026): backend ghi `/survey-requests/{id}/process`
+    //  khi phiếu được duyệt / dòng được gán NSTM. Bảng tiền tố dịch máy móc
+    //  thành `/procurement/survey-requests/{id}/process` — route không tồn tại
+    //  ở v2 (màn Xử lý khảo sát đã gộp vào chi tiết) nên bấm thông báo ăn 404.
+    expect(toAppPath('/survey-requests/2927/process')).toBe(
+      '/procurement/survey-requests/2927',
+    )
+    //  Link chi tiết thường thì vẫn đi theo bảng tiền tố như cũ.
+    expect(toAppPath('/survey-requests/2927')).toBe('/procurement/survey-requests/2927')
+  })
+
   it('giữ nguyên link đã ở dạng phân hệ, không dịch lần hai', () => {
     expect(toAppPath('/procurement/purchase-orders/12')).toBe(
       '/procurement/purchase-orders/12',

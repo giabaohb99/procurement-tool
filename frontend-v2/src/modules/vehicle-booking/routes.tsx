@@ -1,32 +1,51 @@
-import { Car, LayoutDashboard } from 'lucide-react'
+import { Car, ClipboardList, Plus } from 'lucide-react'
 
 import type { ErpModule } from '@/app/router/module-definition'
 import { appRoutes } from '@/shared/constants/app-routes'
 
 /**
- * Phân hệ ĐẶT XE — chưa làm xong, hiện ở dạng "Sắp có".
+ * Phân hệ ĐẶT XE NỘI BỘ (DEGO Booking Auto).
  *
- * Backend mới có `model.py` + `schema.py`, chưa có endpoint; trang dưới đây mới
- * là chỗ để tên. Bật lên khi có màn thật, không thì người dùng bấm vào ô rỗng.
+ * Lát dọc MVP: tạo & theo dõi yêu cầu của người dùng (2 loại — công tác / giao
+ * hàng). Điều phối, tài xế, danh mục Xe/Tài xế và luồng duyệt sẽ mở ở đợt sau.
  */
 export const vehicleBookingModule: ErpModule = {
   id: 'vehicle-booking',
   title: 'Đặt xe',
-  description: 'Duyệt yêu cầu sử dụng xe nội bộ, điều phối xe và tài xế.',
+  description: 'Đặt xe công tác và giao hàng nội bộ, theo dõi trạng thái phiếu.',
   icon: Car,
   path: appRoutes.vehicleBooking.root,
   accent: 'bg-orange-500/10 text-orange-600 dark:text-orange-400',
-  enabled: false,
+  enabled: true,
 
   nav: [
-    { label: 'Tổng quan', path: appRoutes.vehicleBooking.root, icon: LayoutDashboard, end: true },
+    {
+      label: 'Yêu cầu đặt xe',
+      path: appRoutes.vehicleBooking.root,
+      icon: ClipboardList,
+      entity: 'vehicle_booking',
+      end: true,
+    },
+    {
+      label: 'Tạo yêu cầu',
+      path: appRoutes.vehicleBooking.new,
+      icon: Plus,
+      entity: 'vehicle_booking',
+      action: 'create',
+    },
   ],
 
   routes: [
     {
       path: appRoutes.vehicleBooking.root,
       lazy: async () => ({
-        Component: (await import('./pages/vehicle-booking-page')).VehicleBookingPage,
+        Component: (await import('./pages/vehicle-booking-list-page')).VehicleBookingListPage,
+      }),
+    },
+    {
+      path: appRoutes.vehicleBooking.new,
+      lazy: async () => ({
+        Component: (await import('./pages/vehicle-booking-create-page')).VehicleBookingCreatePage,
       }),
     },
   ],

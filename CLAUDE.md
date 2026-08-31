@@ -128,13 +128,14 @@ route in đăng ở `app/router/app-router.tsx`. Bản in cũng đã có **gom d
 tab _Mẫu thuế_ giống hệt bản v1 (CR-127). Nghĩa là **không còn màn nào chặn nghiệp vụ** — dòng
 "chặn nghiệp vụ chỉ còn Yêu cầu thanh toán" ở các bản CLAUDE.md trước nay đã sai, bỏ đi.
 Trong 9 màn còn thiếu, nặng nhất là _Quản lý Import_ (MC-6) và khách đã cho **hoãn**; danh sách
-đầy đủ ở §1 của `13-...md`. _Tiến độ báo giá_ và _Xử lý khảo sát_ (`SurveyRequestProcess.tsx`)
-**đã quyết BỎ** — xem `doc/erp/12-...` mục 2.7.
+đầy đủ ở §1 của `13-...md`. _Tiến độ báo giá_ và _Xử lý khảo sát_ từng quyết bỏ nhưng
+**đã SỐNG LẠI 29/08/2026** (CR-227 + CR-222) — xem đính chính ở `doc/erp/12-...` mục 2.7:
+Xử lý khảo sát là trang riêng `/procurement/survey-requests/:id/process`, Tiến độ báo giá ở
+`/procurement/survey-progress`, menu Thu mua v2 xếp đúng thứ tự bản v1.
 **Đã xong Đ-11** (CR-132 — số cũ CR-129 bị trùng nên đánh lại): Trang chủ có lại đủ 4 khối
 (_Top nhà cung cấp_, _Chi tiêu theo bộ phận_, _Trạng thái đơn hàng_, _Tuổi nợ_) và thao tác nhanh
 _Duyệt / Trả lại_ YCMH; **Tổng quan Tài chính** và **Tổng quan Kho** đã dựng xong. §1.8 của `13`
-nay chỉ còn một dòng: chi tiết Yêu cầu báo giá thiếu nút _Xử lý khảo sát_ (màn đó đã bỏ nên việc
-chọn phương án sẽ dời vào chính màn chi tiết ở P6).
+nay đã ĐÓNG HẾT: dòng cuối (chi tiết YCBG thiếu nút _Xử lý khảo sát_) xong ở CR-222 ngày 29/08.
 ⚠️ **`/api/dashboard/overview` chỉ đòi đăng nhập, rồi gác TỪNG KHỐI bên trong bằng `can(entity)`
 và BỎ HẲN khóa** khi thiếu quyền — nên đọc nhầm khóa của phân hệ khác thì không ai ăn 403, chỉ
 thấy **0** vĩnh viễn. Mọi khóa trong `DashboardOverview.kpi` là **tùy chọn**, luôn đọc kèm `?? 0`.
@@ -184,7 +185,7 @@ _Tiến độ mua hàng_ và _Phân quyền_ thì **đã có ở v2** rồi
 `user-permission-detail-page.tsx`) — danh sách cũ ghi sai.
 Vừa dời xong: **chi tiết Phiếu khảo sát** (`procurement/pages/survey-detail-page.tsx`, xem
 CR-091), **chi tiết Yêu cầu báo giá** (`procurement/pages/survey-request-detail-page.tsx` —
-còn khuyết nút _Xử lý khảo sát_, chờ màn đó), **Công nợ**
+nút _Xử lý khảo sát_ đã có từ CR-222, dẫn sang trang riêng), **Công nợ**
 (`finance/pages/payable-list-page.tsx` — cột tick chọn đã có lại ở Đ-09/CR-119),
 **Tồn kho** (`inventory/pages/inventory-list-page.tsx`) và **Báo cáo mua hàng**
 (`procurement/pages/purchase-report-page.tsx` — tám tab, dữ liệu vẫn gom theo TÊN phòng

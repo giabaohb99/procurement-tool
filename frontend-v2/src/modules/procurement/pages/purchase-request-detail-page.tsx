@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 import { useAuth } from '@/core/auth/use-auth'
@@ -26,6 +27,7 @@ import { useCompanies } from '@/modules/hr/hooks/use-companies'
 import { useEmployees } from '@/modules/hr/hooks/use-employees'
 import { AuditTimeline } from '@/shared/audit'
 import { appRoutes } from '@/shared/constants/app-routes'
+import { queryKeys } from '@/shared/constants/query-keys'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -129,6 +131,7 @@ const CONFIRM_ACTIONS: Record<ConfirmAction, { title: string; description: strin
 export function PurchaseRequestDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const location = useLocation()
   // Route tạo mới là route tĩnh `/new`, không khai `:id`, nên `useParams()`
   // trả `undefined`. Vẫn chấp nhận giá trị `new` để component an toàn nếu sau
@@ -175,7 +178,9 @@ export function PurchaseRequestDetailPage() {
   } | null>(null)
 
   // Tạo mới -> dựng phiếu rỗng và vào thẳng chế độ sửa.
-  // Xem phiếu có sẵn -> nạp dữ liệu server, về chế độ chỉ đọc.
+  // Xem phiếu có sẵn -> nạp dữ liệu server; phiếu CÒN SỬA ĐƯỢC (nháp / bị trả)
+  // mở thẳng chế độ sửa như bản v1 — bắt bấm thêm nút "Sửa" là thừa một bước
+  // và làm người dùng tưởng mình hết quyền (QA 29/08).
   // Gọi hook ra biến riêng: `||` sẽ short-circuit, làm hook sau không chạy.
   const isNewChanged = useHasChanged(isNew)
   const serverDataChanged = useHasChanged(serverData)
@@ -189,7 +194,7 @@ export function PurchaseRequestDetailPage() {
       setEditing(true)
     } else {
       setDraft(serverData ?? null)
-      setEditing(false)
+      setEditing(serverData ? isEditable(serverData.status) : false)
     }
   }
 
@@ -248,10 +253,23 @@ export function PurchaseRequestDetailPage() {
   /**
    * NSTM = nhân sự PHÒNG THU MUA; ô chọn hiện TÊN nhưng lưu MÃ nhân viên
    * (backend nối dòng YCMH với người phụ trách bằng mã).
+   * QA 29/08: bổ sung người đã gán ở từng dòng dù họ nằm ngoài danh mục tải về
+   * (danh sách nhân sự chưa tải xong / tải lỗi / khác phòng) — không thì ô Select
+   * hiện trống như chưa phân công dù DB đã có, cùng bẫy trang Khảo sát từng dính.
    */
-  const purchasers = (employeesData?.items ?? [])
-    .filter((employee) => (employee.department_name || '').toLowerCase().includes('thu mua'))
-    .map((employee) => ({ code: employee.code, name: employee.full_name }))
+  const purchasers = (() => {
+    const employees = employeesData?.items ?? []
+    const options = employees
+      .filter((employee) => (employee.department_name || '').toLowerCase().includes('thu mua'))
+      .map((employee) => ({ code: employee.code, name: employee.full_name }))
+    for (const item of data.items) {
+      if (item.assignee && !options.some((option) => option.code === item.assignee)) {
+        const found = employees.find((employee) => employee.code === item.assignee)
+        options.push({ code: item.assignee, name: found?.full_name || item.assignee })
+      }
+    }
+    return options
+  })()
 
   /** Sửa tiến độ dòng: quản lý/người duyệt, hoặc chính NSTM phụ trách dòng đó. */
   const canEditLine = (item: PurchaseRequestItem) =>
@@ -320,6 +338,9 @@ export function PurchaseRequestDetailPage() {
         try {
           await purchaseRequestApi.submit(saved.id)
           toast.success('Đã tạo và gửi duyệt')
+          //  Gọi API trần (không qua mutation) thì phải TỰ nạp lại cache, kẻo
+          //  danh sách/chi tiết còn giữ trạng thái Nháp cũ (lỗi QA 29/08).
+          void queryClient.invalidateQueries({ queryKey: queryKeys.procurement.all })
         } finally {
           // Phiếu đã được tạo thành công: luôn sang bản ghi thật để tránh người
           // dùng bấm lại và vô tình tạo trùng nếu bước gửi duyệt bị lỗi.
@@ -328,6 +349,12 @@ export function PurchaseRequestDetailPage() {
         return
       }
       navigate(appRoutes.procurement.purchaseRequestDetail(saved.id), { replace: true })
+      return
+    }
+    // Phiếu có sẵn (nháp / bị trả) cũng đi được đường "Lưu & gửi duyệt" một
+    // phát — trước đây nhánh này chỉ có cho phiếu mới, phiếu cũ bấm là chỉ lưu.
+    if (submitAfterSave) {
+      await runAction.mutateAsync({ action: 'submit' })
     }
   }
 
@@ -481,20 +508,21 @@ export function PurchaseRequestDetailPage() {
                   {savePurchaseRequest.isPending ? <Loader2 className="animate-spin" /> : <Save />}
                   Lưu
                 </Button>
-                {isNew && (
-                  <Button
-                    // KHÔNG dùng `secondary`: token `--secondary` gần như trắng
-                    // và biến thể đó không có viền, nên nút chìm hẳn vào nền
-                    // thanh công cụ. `outline` cho viền rõ mà vẫn nhường bậc
-                    // nhấn mạnh cho nút Lưu.
-                    variant="outline"
-                    onClick={() => void handleSave(true)}
-                    disabled={savePurchaseRequest.isPending}
-                  >
-                    <Send />
-                    Lưu &amp; gửi duyệt
-                  </Button>
-                )}
+                {/* Phiếu sửa được nay mở thẳng chế độ sửa, nên đường gửi duyệt
+                    phải có mặt ngay tại đây như v1 — bắt Lưu xong mới thấy nút
+                    Gửi duyệt là giấu mất một bước (QA 29/08). */}
+                <Button
+                  // KHÔNG dùng `secondary`: token `--secondary` gần như trắng
+                  // và biến thể đó không có viền, nên nút chìm hẳn vào nền
+                  // thanh công cụ. `outline` cho viền rõ mà vẫn nhường bậc
+                  // nhấn mạnh cho nút Lưu.
+                  variant="outline"
+                  onClick={() => void handleSave(true)}
+                  disabled={savePurchaseRequest.isPending}
+                >
+                  <Send />
+                  Lưu &amp; gửi duyệt
+                </Button>
                 <Button
                   variant="outline"
                   onClick={() => {
@@ -672,15 +700,13 @@ export function PurchaseRequestDetailPage() {
                   dòng chữ ở tiêu đề làm thẻ này cao hơn hẳn các thẻ còn lại. */}
               {!editing && (
                 <p className="text-xs text-muted-foreground">
-                  Trạng thái và tiến độ tự đồng bộ từ ĐMH. Mở Chi tiết để xem ngày cần hàng,
-                  ghi chú và ảnh đối chiếu.
+                  Trạng thái và tiến độ tự đồng bộ từ ĐMH. Mở Chi tiết để xem ghi chú
+                  và ảnh đối chiếu.
                 </p>
               )}
               <PurchaseRequestItemsTable
                 items={loadedDraft.items}
                 editing={editing}
-                documentEditable={editable}
-                onStartEditing={() => setEditing(true)}
                 showAssignee={showAssignee}
                 onChange={(items) => patch({ items })}
                 onOpenDetail={setLineIndex}

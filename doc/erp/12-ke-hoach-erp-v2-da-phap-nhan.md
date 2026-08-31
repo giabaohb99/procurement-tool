@@ -61,8 +61,8 @@ nhưng phải sửa cho đa pháp nhân · **Gộp** = nhập vào màn khác ·
 | ~~Yêu cầu mua hàng bản cũ (`tab_purchase_request`)~~ | **Đóng băng chỉ đọc** | P6 | Giữ để tra cứu, không tạo mới, không sửa — nhờ vậy **không phải chuyển đổi dữ liệu** |
 | Đơn mua hàng (gồm nhận hàng) | Nâng cấp | P2 | Kiểm tra chéo pháp nhân khi lấy dòng từ yêu cầu |
 | Tiến độ mua hàng | Nâng cấp | P6 | Nuốt luôn phần tiến độ báo giá thành một bộ lọc |
-| ~~Tiến độ báo giá~~ | **Bỏ** | P6 | Xem mục 2.7 |
-| ~~Màn xử lý Yêu cầu báo giá~~ | **Bỏ** | P6 | Xem mục 2.7 |
+| Tiến độ báo giá | ~~Bỏ~~ **Đã dựng lại** *(29/08, CR-227)* | P6 | Xem đính chính ở mục 2.7 |
+| Màn xử lý Yêu cầu báo giá | ~~Bỏ~~ **Đã dựng lại thành màn riêng** *(29/08, CR-222)* | P6 | Xem đính chính ở mục 2.7 |
 | Phiếu khảo sát (danh sách) | Đã xong | — | |
 | Phiếu khảo sát (chi tiết NCC / sản phẩm) | Port | P6 | Giữ lại: đây là **sổ giá** dùng chung nhiều phiếu, không phải phần bị gộp |
 | Báo cáo khảo sát | Đã xong | — | |
@@ -130,11 +130,21 @@ chỉ là thiếu màn.
   trở thành hai lát cắt của cùng một tập dữ liệu. Giữ hai màn thì cùng một phiếu hiện ở hai chỗ với
   hai cách đếm, người dùng hỏi "số nào đúng". Gộp thành **Tiến độ mua hàng** có bộ lọc theo bước
   (đang so giá / đang mua / đang nhận hàng).
+  > **ĐÍNH CHÍNH 29/08/2026 (CR-227):** khách trực tiếp dựng lại màn **Tiến độ báo giá** ở v2
+  > (`survey-progress-page.tsx`, route `/procurement/survey-progress`) và xếp lại menu Thu mua
+  > theo đúng bản v1 — quyết định gộp vào Tiến độ mua hàng coi như **ĐẢO**. Khi P6 hợp nhất
+  > chứng từ thì xem lại: hoặc giữ hai màn với chú thích cách đếm, hoặc quay về phương án gộp.
 - **Màn xử lý Yêu cầu báo giá** (798 dòng ở bản cũ). Nhiệm vụ của nó — nhặt phương án nhà cung cấp
   rồi đẩy sang Yêu cầu mua hàng — biến mất theo Q4: chọn phương án xảy ra **ngay trong chi tiết
   phiếu** và đi **thẳng ra đơn mua hàng**, không còn bước chuyển phiếu nào ở giữa.
+  > **ĐÍNH CHÍNH 29/08/2026 (CR-222):** khách yêu cầu giữ thói quen bản cũ, nên phần việc của
+  > NSTM (gắn phương án / chốt rỗng / chốt hoàn thành) **quay về MÀN RIÊNG**
+  > `survey-request-process-page.tsx` (route `/procurement/survey-requests/:id/process`).
+  > Nửa còn lại của quyết định vẫn đứng: người yêu cầu **chọn phương án ngay trong chi tiết
+  > phiếu**, không có bước chuyển phiếu trung gian.
 
-Cộng lại, bỏ được **1134 dòng** khỏi việc phải port. Kèm thêm một khoản được nữa: màn **Yêu cầu mua
+~~Cộng lại, bỏ được **1134 dòng** khỏi việc phải port.~~ *(Hết đúng từ 29/08 — cả hai màn đã sống
+lại theo hai đính chính ở trên.)* Kèm thêm một khoản được nữa: màn **Yêu cầu mua
 hàng bản cũ** không bị bỏ mà chuyển sang **chỉ đọc**, nên `tab_purchase_request` không phải chuyển
 đổi dữ liệu — v2 đã có sẵn màn danh sách và chi tiết cho nó, chỉ khóa các nút sửa.
 

@@ -1,5 +1,4 @@
 import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { PurchaseRequestItem } from '../types/purchase-request-detail'
@@ -65,23 +64,16 @@ describe('PurchaseRequestItemsTable', () => {
   afterEach(() => localStorage.clear())
 
   /**
-   * Lỗi đã gặp: phiếu nháp mở ra ở chế độ XEM, nút "Sửa" duy nhất lại nằm tít
-   * trên đầu trang lẫn giữa gần chục nút khác, nên người dùng (kể cả admin)
-   * tưởng mình không có quyền thêm dòng / sửa dòng.
+   * QA 29/08: nút "Sửa dòng hàng" đã BỎ — phiếu còn sửa được thì trang mở thẳng
+   * chế độ sửa như v1, bảng chỉ còn hai trạng thái xem / nhập trực tiếp.
    */
-  it('phiếu còn sửa được mà đang xem thì có lối vào chế độ sửa ngay cạnh bảng', async () => {
-    const onStartEditing = vi.fn()
-    renderTable({ documentEditable: true, onStartEditing })
-
-    await userEvent.click(screen.getByRole('button', { name: /Sửa dòng hàng/ }))
-
-    expect(onStartEditing).toHaveBeenCalledTimes(1)
-  })
-
-  it('phiếu đã chốt thì không mời gọi sửa dòng nữa', () => {
-    renderTable({ documentEditable: false, onStartEditing: vi.fn() })
-
+  it('không còn nút Sửa dòng hàng — bảng xem là xem, nhập là nhập', () => {
+    const { unmount } = renderTable({ editing: false })
     expect(screen.queryByRole('button', { name: /Sửa dòng hàng/ })).toBeNull()
+    unmount()
+
+    renderTable({ editing: true })
+    expect(screen.getByRole('button', { name: /Thêm dòng/ })).toBeInTheDocument()
   })
 
   /**

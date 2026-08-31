@@ -2,10 +2,12 @@ import { useMemo } from 'react'
 import { Copy, Pencil, Trash2 } from 'lucide-react'
 
 import { LinesTable } from '@/shared/data-table/lines-table'
+import { cn } from '@/shared/utils/cn'
 import type { LinesTableColumn } from '@/shared/data-table/types'
 import { Button } from '@/shared/ui/button'
 import { DatePicker } from '@/shared/ui/date-picker'
 import { Input } from '@/shared/ui/input'
+import { Textarea } from '@/shared/ui/textarea'
 import {
   Select,
   SelectContent,
@@ -60,6 +62,12 @@ interface SurveyRequestLinesTableProps {
   /** Cột tiến độ dòng: phiếu chưa lưu thì chưa có gì để hiện. */
   showStatus: boolean
   canAssignNstm: boolean
+  /**
+   * Ô đang thiếu nội dung sau lần bấm Gửi duyệt gần nhất — khóa dạng
+   * `line-${index}-item_group` (xem `invalidSurveyRequestKeys`). Tô đỏ để
+   * người lập thấy ngay dòng nào hụt thay vì dò theo câu toast.
+   */
+  invalid?: Set<string>
   /** NSTM chọn được — hiện TÊN nhưng lưu MÃ nhân sự. */
   purchasers: { code: string; name: string }[]
   onChange: (lines: SurveyRequestLine[]) => void
@@ -87,6 +95,7 @@ export function SurveyRequestLinesTable({
   showNstmColumns,
   showStatus,
   canAssignNstm,
+  invalid,
   purchasers,
   onChange,
   onOpenDetail,
@@ -224,6 +233,7 @@ export function SurveyRequestLinesTable({
           <CatalogSelect
             value={line.item_group}
             placeholder="-- Phân loại --"
+            invalid={invalid?.has(`line-${index}-item_group`)}
             options={(itemGroups.data?.items ?? []).map((group) => ({
               value: group.name,
               label: group.name,
@@ -237,8 +247,13 @@ export function SurveyRequestLinesTable({
         )
 
       case 'requirement_detail':
+        //  Ô nhập phải là textarea TỰ GIÃN chứ không phải input một dòng: thông
+        //  số dài hơn bề rộng cột là bị cắt mất phần đuôi ngay lúc đang gõ
+        //  (lỗi QA 29/08 — "bảng thông tin bị ẩn nếu dài quá").
         return editing ? (
-          <Input
+          <Textarea
+            rows={1}
+            className="min-h-9 resize-none py-1.5"
             value={line.requirement_detail}
             placeholder="Thông số / chất lượng cần khảo sát"
             onChange={(event) => patch(index, { requirement_detail: event.target.value })}
@@ -406,11 +421,14 @@ export function SurveyRequestLinesTable({
 function CatalogSelect({
   value,
   placeholder,
+  invalid = false,
   options,
   onChange,
 }: {
   value: string
   placeholder: string
+  /** Tô đỏ khi ô bị chặn lúc Gửi duyệt vì còn trống. */
+  invalid?: boolean
   options: { value: string; label: string }[]
   onChange: (value: string) => void
 }) {
@@ -419,7 +437,10 @@ function CatalogSelect({
       value={value || EMPTY_CATALOG_VALUE}
       onValueChange={(next) => onChange(next === EMPTY_CATALOG_VALUE ? '' : next)}
     >
-      <SelectTrigger size="sm" className="w-full">
+      <SelectTrigger
+        size="sm"
+        className={cn('w-full', invalid && 'border-destructive ring-2 ring-destructive/20')}
+      >
         <SelectValue />
       </SelectTrigger>
       <SelectContent position="popper" align="start">

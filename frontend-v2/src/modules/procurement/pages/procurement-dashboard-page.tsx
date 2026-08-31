@@ -1,13 +1,18 @@
-import { ClipboardList, FileText, ShoppingCart, TruckIcon, Wallet } from 'lucide-react'
+import { ClipboardList, FileText, Plus, ShoppingCart, SquarePen, TruckIcon, Wallet } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 import { usePermission } from '@/core/authorization/use-permission'
+import { appRoutes } from '@/shared/constants/app-routes'
 import { BarList } from '@/shared/ui/bar-list'
+import { Button } from '@/shared/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { ChartCard, CHART_COLORS, CHART_NEUTRAL, CHART_SEVERITY } from '@/shared/ui/chart'
 import { ColumnChart } from '@/shared/ui/column-chart'
 import { DonutChart } from '@/shared/ui/donut-chart'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { StatCard } from '@/shared/ui/stat-card'
+import { cn } from '@/shared/utils/cn'
 import { formatMoney } from '@/shared/utils/format-money'
 import { ProcurementAlertList } from '../components/procurement-alert-list'
 import { RecentPurchaseRequests } from '../components/recent-purchase-requests'
@@ -35,6 +40,19 @@ const PO_STATUS_COLORS: Record<string, string> = {
  *
  * Kiểm tra phân quyền chặt chẽ (can): chỉ hiển thị khối dữ liệu mà người dùng có quyền Xem.
  */
+/**
+ * Số cột xl khớp ĐÚNG số thẻ KPI hiện ra: vai trò ít quyền (người yêu cầu) chỉ
+ * có 2-3 thẻ, giữ cứng 5 cột thì hơn nửa hàng trống toang hoác. Tailwind cần
+ * class tĩnh nên liệt kê đủ, không ghép chuỗi.
+ */
+const KPI_GRID_COLS: Record<number, string> = {
+  1: 'xl:grid-cols-1',
+  2: 'xl:grid-cols-2',
+  3: 'xl:grid-cols-3',
+  4: 'xl:grid-cols-4',
+  5: 'xl:grid-cols-5',
+}
+
 export function ProcurementDashboardPage() {
   const { can } = usePermission()
   const { data, isLoading } = useProcurementDashboard()
@@ -43,6 +61,14 @@ export function ProcurementDashboardPage() {
   const canPR = can('purchase_request', 'read')
   const canSR = can('survey_request', 'read')
   const canPayable = can('payable', 'read')
+  const canApprovePR = can('purchase_request', 'approve')
+  const canApproveSR = can('survey_request', 'approve')
+
+  // Người KHÔNG thuộc phòng thu mua (không quyền ĐMH) vào tổng quan chủ yếu để
+  // tạo phiếu mới — thêm thẻ lối tắt cho họ; dân thu mua đã đủ 5 thẻ, không chen.
+  const showQuickCreate = !canPO && (can('purchase_request', 'create') || can('survey_request', 'create'))
+  const kpiCount =
+    (canPO ? 3 : 0) + (canPR ? 1 : 0) + (canSR ? 1 : 0) + (showQuickCreate ? 1 : 0)
 
   const kpi = data?.kpi
   const spentThisYear = (data?.cost_12m ?? []).reduce((sum, item) => sum + item.value, 0)
@@ -55,7 +81,7 @@ export function ProcurementDashboardPage() {
       />
 
       {/* KPI Cards */}
-      <div className="mb-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <div className={cn('mb-4 grid gap-4 sm:grid-cols-2', KPI_GRID_COLS[kpiCount] ?? 'xl:grid-cols-5')}>
         {canPO && (
           <StatCard
             icon={Wallet}
@@ -70,7 +96,15 @@ export function ProcurementDashboardPage() {
             icon={FileText}
             label="YCMH chờ duyệt"
             value={kpi?.pr_pending ?? 0}
-            hint={kpi?.pr_pending ? 'Cần phê duyệt' : 'Không tồn đọng'}
+            // "Cần phê duyệt" chỉ đúng với người CÓ quyền duyệt; người yêu cầu /
+            // vai chỉ-đọc thấy câu đó là tưởng mình phải làm gì — đổi câu theo vai.
+            hint={
+              kpi?.pr_pending
+                ? canApprovePR
+                  ? 'Cần phê duyệt'
+                  : 'Đang chờ duyệt'
+                : 'Không tồn đọng'
+            }
             tone={kpi?.pr_pending ? 'warning' : undefined}
             loading={isLoading}
           />
@@ -80,10 +114,46 @@ export function ProcurementDashboardPage() {
             icon={ClipboardList}
             label="YC báo giá chờ duyệt"
             value={kpi?.sr_pending ?? 0}
-            hint={kpi?.sr_pending ? 'Cần phê duyệt' : 'Không tồn đọng'}
+            hint={
+              kpi?.sr_pending
+                ? canApproveSR
+                  ? 'Cần phê duyệt'
+                  : 'Đang chờ duyệt'
+                : 'Không tồn đọng'
+            }
             tone={kpi?.sr_pending ? 'warning' : undefined}
             loading={isLoading}
           />
+        )}
+        {showQuickCreate && (
+          <Card className="gap-2">
+            <CardHeader className="flex flex-row items-center gap-2 pb-0">
+              <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-accent text-accent-foreground">
+                <SquarePen className="size-4" />
+              </span>
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Tạo phiếu mới
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-wrap items-center gap-2">
+              {can('purchase_request', 'create') && (
+                <Button asChild size="sm" variant="outline">
+                  <Link to={appRoutes.procurement.purchaseRequestNew}>
+                    <Plus />
+                    Yêu cầu mua hàng
+                  </Link>
+                </Button>
+              )}
+              {can('survey_request', 'create') && (
+                <Button asChild size="sm" variant="outline">
+                  <Link to={appRoutes.procurement.surveyRequestNew}>
+                    <Plus />
+                    Yêu cầu báo giá
+                  </Link>
+                </Button>
+              )}
+            </CardContent>
+          </Card>
         )}
         {canPO && (
           <StatCard
@@ -127,8 +197,10 @@ export function ProcurementDashboardPage() {
           </ChartCard>
         )}
 
+        {/* Không có khối biểu đồ (vai trò ngoài thu mua) thì thẻ này đứng CẠNH
+            "Yêu cầu mua gần đây" cho tròn hàng — trước đây nó một mình chiếm
+            nguyên hàng ngang với cái ruột rỗng. */}
         <ChartCard
-          className={canPO ? '' : 'lg:col-span-3'}
           title="Việc cần xử lý"
           description={`${data?.alert_total ?? 0} việc đang chờ`}
           loading={isLoading}
@@ -140,9 +212,15 @@ export function ProcurementDashboardPage() {
 
         {canPR && (
           <ChartCard
-            className="lg:col-span-2"
+            // Vai trò ngoài thu mua: bảng phiếu là nội dung chính -> dồn sang
+            // TRÁI, nhường cột phải cho "Việc cần xử lý" (thường rỗng).
+            className={cn('lg:col-span-2', !canPO && 'lg:-order-1')}
             title="Yêu cầu mua gần đây"
-            description="8 phiếu mới nhất trong phạm vi bạn xem được. Có thể duyệt nhanh tại chỗ."
+            description={
+              canApprovePR
+                ? '8 phiếu mới nhất trong phạm vi bạn xem được. Có thể duyệt nhanh tại chỗ.'
+                : '8 phiếu mới nhất trong phạm vi bạn xem được.'
+            }
             loading={isLoading}
           >
             <RecentPurchaseRequests rows={data?.recent_prs ?? []} />

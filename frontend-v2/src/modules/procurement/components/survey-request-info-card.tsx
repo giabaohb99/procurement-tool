@@ -31,6 +31,12 @@ interface SurveyRequestInfoCardProps {
    * ai được — ô Người yêu cầu khóa lại, giữ đúng người đang đăng nhập.
    */
   lockRequester?: boolean
+  /**
+   * Ô đầu phiếu đang thiếu sau lần bấm Gửi duyệt gần nhất — khóa là tên trường
+   * (`company_id` · `requester` · `purpose`, xem `invalidSurveyRequestKeys`).
+   * Tô đỏ để khoanh vùng đúng chỗ thay vì chỉ toast (QA 29/08).
+   */
+  invalid?: Set<string>
   onChange: (changes: Partial<SurveyRequestDetail>) => void
 }
 
@@ -50,9 +56,30 @@ export function SurveyRequestInfoCard({
   employees = [],
   departments = [],
   lockRequester = false,
+  invalid,
   onChange,
 }: SurveyRequestInfoCardProps) {
   const deptHeadLookup = useDeptHeadLookup()
+
+  /**
+   * Danh sách TBP chọn được = trưởng đã gán ở màn Phòng ban. Một người trưởng
+   * NHIỀU phòng chỉ hiện một dòng (Radix Select không nhận value trùng), gom
+   * tên các phòng vào cùng nhãn cho dễ nhận.
+   */
+  const deptHeads = (() => {
+    const byId = new Map<number, { id: number; name: string; departments: string[] }>()
+    for (const department of departments) {
+      if (!department.manager_id || !department.manager_name) continue
+      const entry = byId.get(department.manager_id) ?? {
+        id: department.manager_id,
+        name: department.manager_name,
+        departments: [],
+      }
+      entry.departments.push(department.name)
+      byId.set(department.manager_id, entry)
+    }
+    return Array.from(byId.values())
+  })()
 
   /** Điền lại ô Trưởng bộ phận theo phòng vừa chọn. Tra hụt thì để trống. */
   async function fillDeptHead(departmentId: number, department: string) {
@@ -123,7 +150,7 @@ export function SurveyRequestInfoCard({
               value={data.company_id ? String(data.company_id) : undefined}
               onValueChange={(value) => onChange({ company_id: Number(value) })}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full" aria-invalid={invalid?.has('company_id') || undefined}>
                 <SelectValue placeholder="Chọn công ty" />
               </SelectTrigger>
               <SelectContent>
@@ -152,7 +179,7 @@ export function SurveyRequestInfoCard({
               value={data.requester_id ? String(data.requester_id) : undefined}
               onValueChange={(value) => pickEmployee(Number(value))}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full" aria-invalid={invalid?.has('requester') || undefined}>
                 <SelectValue placeholder="Chọn người yêu cầu" />
               </SelectTrigger>
               <SelectContent>
@@ -209,13 +236,43 @@ export function SurveyRequestInfoCard({
           )}
         </div>
 
-        {/* Trưởng bộ phận luôn khóa: lấy theo người đã gán ở màn Phòng ban, sửa
-            tay ở đây là in ra một tên không ai duyệt được. */}
+        {/* Trưởng bộ phận: mặc định điền theo phòng của người YC, nhưng người lập
+            ĐƯỢC chọn TBP phòng ban khác duyệt hộ (QA 29/08) — danh sách lấy từ
+            người đã gán ở màn Phòng ban, không nhập tay tên lạ được. */}
         <div className="space-y-1.5">
-          <Label className="text-muted-foreground">Trưởng bộ phận</Label>
-          <ReadOnlyValue>
-            {deptHeadLookup.isPending ? 'Đang tra…' : data.head_of_dept || '—'}
-          </ReadOnlyValue>
+          <Label className={editing ? undefined : 'text-muted-foreground'}>Trưởng bộ phận</Label>
+          {editing && deptHeads.length ? (
+            <Select
+              value={
+                deptHeads.some((head) => head.id === data.head_of_dept_id)
+                  ? String(data.head_of_dept_id)
+                  : undefined
+              }
+              onValueChange={(value) => {
+                const head = deptHeads.find((option) => option.id === Number(value))
+                if (head) onChange({ head_of_dept_id: head.id, head_of_dept: head.name })
+              }}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue
+                  placeholder={
+                    deptHeadLookup.isPending ? 'Đang tra…' : data.head_of_dept || 'Chọn Trưởng bộ phận'
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {deptHeads.map((head) => (
+                  <SelectItem key={head.id} value={String(head.id)}>
+                    {head.name} — {head.departments.join(', ')}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <ReadOnlyValue>
+              {deptHeadLookup.isPending ? 'Đang tra…' : data.head_of_dept || '—'}
+            </ReadOnlyValue>
+          )}
         </div>
 
         <div className="space-y-1.5 md:col-span-2">
@@ -228,6 +285,7 @@ export function SurveyRequestInfoCard({
               rows={3}
               placeholder="Nhập mục đích cần khảo sát giá..."
               value={data.purpose}
+              aria-invalid={invalid?.has('purpose') || undefined}
               onChange={(event) => onChange({ purpose: event.target.value })}
             />
           ) : (

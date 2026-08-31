@@ -69,3 +69,12 @@ export function useSurveyReport(params: ListParams = {}) {
     placeholderData: keepPreviousData,
   })
 }
+
+export function useSurveyProgress(params: ListParams = {}) {
+  const query = withDefaults(params)
+  return useQuery({
+    queryKey: ['survey-progress', query],
+    queryFn: () => purchaseDocumentApi.listSurveyProgress(query),
+    placeholderData: keepPreviousData,
+  })
+}

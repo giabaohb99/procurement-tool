@@ -34,6 +34,8 @@ export const appRoutes = {
     surveyRequests: '/procurement/survey-requests',
     surveyRequestNew: '/procurement/survey-requests/new',
     surveyRequestDetail: (id: number | string) => `/procurement/survey-requests/${id}`,
+    /** Màn XỬ LÝ KHẢO SÁT riêng cho NSTM — tách khỏi trang chi tiết như bản v1 (QA 29/08). */
+    surveyRequestProcess: (id: number | string) => `/procurement/survey-requests/${id}/process`,
     /** Yêu cầu mua hàng (PYC). */
     purchaseRequests: '/procurement/purchase-requests',
     purchaseRequestNew: '/procurement/purchase-requests/new',
@@ -50,6 +52,8 @@ export const appRoutes = {
     surveys: '/procurement/surveys',
     surveyNew: '/procurement/surveys/new',
     surveyDetail: (id: number | string) => `/procurement/surveys/${id}`,
+    /** Báo cáo tiến độ báo giá. */
+    surveyProgress: '/procurement/survey-progress',
     /** Báo cáo khảo sát, cắt theo dòng khảo sát. */
     surveyReport: '/procurement/survey-report',
     /** Báo cáo mua hàng — tám tab trên cùng một bộ lọc công ty / năm. */
@@ -260,6 +264,8 @@ export const appRoutes = {
   },
   vehicleBooking: {
     root: '/vehicle-booking',
+    new: '/vehicle-booking/new',
+    detail: (id: number | string) => `/vehicle-booking/${id}`,
   },
   degoCoffee: {
     root: '/dego-coffee',

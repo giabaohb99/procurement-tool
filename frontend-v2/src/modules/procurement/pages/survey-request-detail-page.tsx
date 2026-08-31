@@ -4,6 +4,8 @@ import {
   Check,
   CheckCheck,
   ClipboardCheck,
+  ClipboardList,
+  Copy,
   CornerUpLeft,
   FileCheck,
   FilePlus,
@@ -14,6 +16,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 import type { AuthUser } from '@/core/auth/auth-types'
@@ -25,6 +28,7 @@ import { useDepartments } from '@/modules/hr/hooks/use-departments'
 import { useEmployees } from '@/modules/hr/hooks/use-employees'
 import { AuditTimeline } from '@/shared/audit'
 import { appRoutes } from '@/shared/constants/app-routes'
+import { queryKeys } from '@/shared/constants/query-keys'
 import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import {
   AlertDialog,
@@ -89,8 +93,9 @@ import {
   type SurveyRequestDetail,
   type SurveyRequestLine,
 } from '../types/survey-request-detail'
+import { isSurveyRequestProcessable } from '../types/survey-request-process'
 import { parseAssistantDraft, type AssistantDraft } from '../utils/assistant-draft'
-import { validateSurveyRequest } from '../utils/required-fields'
+import { invalidSurveyRequestKeys, validateSurveyRequest } from '../utils/required-fields'
 
 /** Tệp đính kèm của DÒNG khảo sát — đầu phiếu YCBG không có khu đính kèm riêng. */
 const LINE_ATTACHMENT_ENTITY = 'survey_request_line'
@@ -145,6 +150,7 @@ export function SurveyRequestDetailPage() {
   const location = useLocation()
   const { user } = useAuth()
   const { can } = usePermission()
+  const queryClient = useQueryClient()
 
   // Bản nháp do Trợ lý AI soạn, truyền qua `location.state` khi bấm nút trong chat.
   // Chỉ ĐIỀN SẴN form — người dùng rà lại rồi tự bấm Tạo, phiếu không tự sinh ra.
@@ -177,13 +183,36 @@ export function SurveyRequestDetailPage() {
   const [showCreatedPrs, setShowCreatedPrs] = useState(false)
   /** Hình chọn cho dòng CHƯA lưu — xem `helpers/pending-line-files.ts`. */
   const [pendingFiles, setPendingFiles] = useState<PendingLineFiles>({})
+  /** Ô còn thiếu sau lần Gửi duyệt bị chặn gần nhất — khoanh đỏ đúng chỗ (QA 29/08). */
+  const [invalid, setInvalid] = useState<Set<string>>(new Set())
+
+  /**
+   * Draft có sửa dở chưa lưu hay không. Khi cờ bật, refetch nền (staleTime hết
+   * hạn lúc quay lại trang, hoặc invalidation từ mutation khác) KHÔNG được đè
+   * draft — trước đây nó đè thẳng, xóa mất dòng người dùng vừa thêm/sửa (cùng
+   * gốc lỗi QA "bấm Thêm dòng không phản hồi" bên Phiếu khảo sát). Hạ cờ sau
+   * khi Lưu / chạy action thành công để bản server mới vẫn nạp vào như cũ.
+   */
+  const dirtyRef = useRef(false)
 
   // Tạo mới -> dựng phiếu rỗng; xem phiếu có sẵn -> nạp dữ liệu server.
   // Gọi hook ra biến riêng: `||` sẽ short-circuit, làm hook sau không chạy.
   const isNewChanged = useHasChanged(isNew)
   const serverDataChanged = useHasChanged(serverData)
   const userChanged = useHasChanged(user)
-  if (isNewChanged || serverDataChanged || userChanged) {
+  const surveyRequestIdChanged = useHasChanged(surveyRequestId)
+  // Chuyển sang phiếu khác (vd bấm link thông báo khi đang mở một phiếu):
+  // sửa dở của phiếu cũ bỏ hết, phải cho dữ liệu phiếu mới nạp vào.
+  if (surveyRequestIdChanged) dirtyRef.current = false
+  // Mount với dữ liệu ĐÃ CÓ SẴN trong cache (vừa xem phiếu này xong, quay lại
+  // trong 30s): render đầu tiên useHasChanged trả false nên nhánh sync không
+  // chạy, draft kẹt ở null và mọi thao tác sửa (patch) rơi vào khoảng không —
+  // cùng gốc lỗi QA "bấm Thêm dòng không phản hồi" bên Phiếu khảo sát.
+  const needInit = !isNew && draft === null && !!serverData
+  if (
+    (isNewChanged || serverDataChanged || userChanged || needInit) &&
+    (isNew || needInit || !dirtyRef.current)
+  ) {
     setDraft(
       isNew
         ? (current) => current ?? applyAssistantDraft(createEmptySurveyRequest(user), assistantDraft)
@@ -341,6 +370,7 @@ export function SurveyRequestDetailPage() {
   const selectedLine = lineIndex === null ? null : (loadedDraft.lines[lineIndex] ?? null)
 
   function patch(changes: Partial<SurveyRequestDetail>) {
+    dirtyRef.current = true
     setDraft((current) => (current ? { ...current, ...changes } : current))
   }
 
@@ -359,9 +389,11 @@ export function SurveyRequestDetailPage() {
   async function handleSave(submitAfterSave = false) {
     const message = validateSurveyRequest(loadedDraft, submitAfterSave)
     if (message) {
+      setInvalid(invalidSurveyRequestKeys(loadedDraft, submitAfterSave))
       toast.error(message)
       return
     }
+    setInvalid(new Set())
     const saved = await saveSurveyRequest.mutateAsync({
       id: isNew ? undefined : surveyRequestId,
       payload: {
@@ -379,11 +411,18 @@ export function SurveyRequestDetailPage() {
         lines: loadedDraft.lines,
       },
     })
+    // Đã lưu xong: draft sạch trở lại, cho phép refetch sau invalidation nạp bản
+    // server mới (có id dòng thật) vào draft.
+    dirtyRef.current = false
     await flushPendingFiles(saved.lines ?? [])
     if (submitAfterSave) {
       try {
         await surveyRequestApi.submit(saved.id)
         toast.success('Đã gửi duyệt')
+        //  Gọi API trần (không qua mutation) thì phải TỰ nạp lại cache: thiếu
+        //  dòng này là toast báo thành công mà phiếu trên màn vẫn "Nháp"
+        //  (lỗi QA 29/08).
+        void queryClient.invalidateQueries({ queryKey: queryKeys.procurement.all })
       } finally {
         // Phiếu đã tạo xong: luôn sang bản ghi thật để người dùng không bấm lại
         // và vô tình tạo trùng nếu bước gửi duyệt lỗi.
@@ -435,7 +474,11 @@ export function SurveyRequestDetailPage() {
           {!isNew && status === 'submitted' && can('survey_request', 'approve') && (
             <>
               <Button
-                onClick={() => void runAction.mutateAsync({ action: 'approve' })}
+                onClick={() =>
+                  void runAction.mutateAsync({ action: 'approve' }).then(() => {
+                    dirtyRef.current = false
+                  })
+                }
                 disabled={runAction.isPending}
               >
                 <Check />
@@ -468,10 +511,16 @@ export function SurveyRequestDetailPage() {
             </>
           )}
 
-          {/*
-            Còn thiếu so với bản cũ: "Xử lý khảo sát" — màn đó chưa dựng ở v2 nên
-            nút sẽ dẫn vào trang trống. Gắn lại ngay khi `survey-request-process-page` lên.
-          */}
+          {/* Dẫn sang MÀN RIÊNG Xử lý khảo sát như bản v1 — bản gộp thẻ vào
+              trang này (QĐ doc/erp/12 mục 2.7) đã bỏ theo yêu cầu khách 29/08. */}
+          {!isNew && canViewNstm && isSurveyRequestProcessable(status) && (
+            <Button variant="outline" asChild>
+              <Link to={appRoutes.procurement.surveyRequestProcess(data.id)}>
+                <ClipboardList />
+                Xử lý khảo sát
+              </Link>
+            </Button>
+          )}
 
           {/* Chỉ nhân sự thu mua, và chỉ khi phiếu ĐANG XỬ LÝ — đúng lúc đó mới
               biết cần khảo sát cái gì. Mã YCBG đưa sang theo URL để phiếu khảo sát
@@ -508,6 +557,25 @@ export function SurveyRequestDetailPage() {
               <CheckCheck />
               Chuyển Hoàn thành
             </Button>
+          )}
+
+          {/* Nhân bản: chép đầu phiếu + dòng thành phiếu NHÁP mới (không chép kết quả
+              khảo sát) — dùng khi mua lặp lại. Hiện ở mọi trạng thái, giống bản v1. */}
+          {!isNew && (
+            <PermissionGate entity="survey_request" action="create">
+              <Button
+                variant="outline"
+                disabled={runAction.isPending}
+                onClick={() =>
+                  void runAction.mutateAsync({ action: 'clone' }).then((cloned) => {
+                    if (cloned?.id) navigate(appRoutes.procurement.surveyRequestDetail(cloned.id))
+                  })
+                }
+              >
+                <Copy />
+                Nhân bản
+              </Button>
+            </PermissionGate>
           )}
 
           {createdPrs.length > 0 && (
@@ -552,6 +620,7 @@ export function SurveyRequestDetailPage() {
           employees={employeesData?.items}
           departments={departmentsData?.items}
           lockRequester={isStaff}
+          invalid={invalid}
           onChange={patch}
         />
 
@@ -586,6 +655,7 @@ export function SurveyRequestDetailPage() {
               showNstmColumns={showNstmColumns}
               showStatus={showStatus}
               canAssignNstm={canAssignNstm}
+              invalid={invalid}
               purchasers={purchasers}
               onChange={(lines) => patch({ lines })}
               onOpenDetail={setLineIndex}
@@ -672,6 +742,7 @@ export function SurveyRequestDetailPage() {
               onClick={async () => {
                 if (!reasonFor) return
                 await runAction.mutateAsync({ action: reasonFor, reason: reason.trim() })
+                dirtyRef.current = false
                 setReasonFor(null)
               }}
             >
@@ -700,7 +771,10 @@ export function SurveyRequestDetailPage() {
             <AlertDialogAction
               onClick={() => {
                 if (confirmAction === 'createPrs') void createPurchaseRequests.mutateAsync()
-                if (confirmAction === 'finalize') void runAction.mutateAsync({ action: 'finalize' })
+                if (confirmAction === 'finalize')
+                  void runAction.mutateAsync({ action: 'finalize' }).then(() => {
+                    dirtyRef.current = false
+                  })
                 setConfirmAction(null)
               }}
             >

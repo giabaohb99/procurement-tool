@@ -61,10 +61,6 @@ interface ItemsTableProps {
   /** Người yêu cầu / trưởng bộ phận không cần thấy thông tin điều phối nội bộ. */
   showAssignee?: boolean
   onOpenDetail: (index: number) => void
-  /** Phiếu đang ở trạng thái còn sửa nội dung được (nháp / bị trả lại). */
-  documentEditable?: boolean
-  /** Bật chế độ sửa của cả phiếu ngay từ bảng, khỏi đi tìm nút Sửa trên đầu trang. */
-  onStartEditing?: () => void
 
   /** Nhân sự thu mua để chọn NSTM phụ trách — hiện TÊN nhưng lưu MÃ nhân viên. */
   purchasers?: { code: string; name: string }[]
@@ -120,8 +116,6 @@ export function PurchaseRequestItemsTable({
   orderedByCode,
   showAssignee = true,
   onOpenDetail,
-  documentEditable = false,
-  onStartEditing,
   purchasers = [],
   canAssign = false,
   canEditLine,
@@ -188,6 +182,16 @@ export function PurchaseRequestItemsTable({
       compactHidden: true,
     },
     { key: 'amount', header: 'Thành tiền', width: 130, minWidth: 80, align: 'right' },
+    {
+      // QA 29/08: ngày cần hàng trước đây chỉ nằm trong popup Chi tiết dòng,
+      // người tạo phiếu không thấy chỗ chọn — kéo hẳn ra bảng, KHÔNG ẩn ở
+      // chế độ rút gọn vì đây là trường bắt buộc khi gửi duyệt.
+      key: 'required',
+      header: 'Ngày cần hàng *',
+      width: 170,
+      minWidth: 130,
+      align: 'center',
+    },
     { key: 'status', header: 'Trạng thái', width: 190, minWidth: 120, align: 'center' },
     {
       key: 'progress',
@@ -479,6 +483,18 @@ export function PurchaseRequestItemsTable({
           </span>
         )
 
+      case 'required':
+        return editing ? (
+          <DatePicker
+            size="sm"
+            value={item.required_date || ''}
+            placeholder="Chọn ngày"
+            onChange={(next) => patch(index, { required_date: next })}
+          />
+        ) : (
+          <span className="tabular-nums">{formatDate(item.required_date) || '—'}</span>
+        )
+
       case 'expected':
         return canEditLine?.(item) ? (
           <DatePicker
@@ -572,8 +588,10 @@ export function PurchaseRequestItemsTable({
         rowClassName={(item) =>
           item.line_status === 'cancelled' ? 'opacity-60' : undefined
         }
+        // Nút "Sửa dòng hàng" cũ đã bỏ (QA 29/08): phiếu còn sửa được thì trang
+        // mở thẳng chế độ sửa, bảng nhập trực tiếp như bản v1.
         actions={
-          editing ? (
+          editing && (
             <>
               <Button
                 type="button"
@@ -591,18 +609,6 @@ export function PurchaseRequestItemsTable({
                 <PlusCircle /> Thêm nhiều
               </Button>
             </>
-          ) : (
-            /*
-              Phiếu nháp mà bảng vẫn là chữ chết thì người dùng tưởng mình hết
-              quyền — nút Sửa duy nhất lại nằm tít trên đầu trang, lẫn giữa gần
-              chục nút khác. Đặt lối vào ngay cạnh bảng, đúng chỗ đang nhìn.
-            */
-            documentEditable &&
-            onStartEditing && (
-              <Button type="button" size="sm" variant="outline" onClick={onStartEditing}>
-                <Pencil /> Sửa dòng hàng
-              </Button>
-            )
           )
         }
       />

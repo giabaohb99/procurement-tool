@@ -135,6 +135,28 @@ export function validateSurveyRequest(
   return ''
 }
 
+/**
+ * Tập khóa các ô đang thiếu — để trang KHOANH ĐỎ đúng chỗ thay vì chỉ toast
+ * (QA 29/08). Cùng luật với `validateSurveyRequest`, sửa một bên phải sửa bên
+ * kia. Khóa đầu phiếu là tên trường; khóa dòng là `line-${index}-${field}`.
+ */
+export function invalidSurveyRequestKeys(
+  data: SurveyRequestDetail,
+  forSubmit = false,
+): Set<string> {
+  const invalid = new Set<string>()
+  if (!data.company_id) invalid.add('company_id')
+  if (!data.requester) invalid.add('requester')
+  if (!hasText(data.purpose)) invalid.add('purpose')
+
+  if (!forSubmit) return invalid
+
+  for (const [index, line] of data.lines.entries()) {
+    if (missingSurveyRequestLineFields(line).length) invalid.add(`line-${index}-item_group`)
+  }
+  return invalid
+}
+
 /* ------------------------------------------------------------------- ĐMH -- */
 
 /**

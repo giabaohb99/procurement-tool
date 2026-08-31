@@ -10,7 +10,7 @@ from app.core.base_controller import apply_filters, apply_range_filters, apply_e
 from app.core.ref_filter import apply_ref_filters
 from app.core.database import get_db
 from app.core.response import success
-from app.core.scoping import apply_scope
+from app.core.scoping import apply_scope, scope_condition
 
 from . import service
 from . import line_state
@@ -27,6 +27,27 @@ def _dict(obj) -> dict:
         v = getattr(obj, c.key)
         d[c.key] = float(v) if isinstance(v, Decimal) else v
     return d
+
+
+def _scope_with_named_head(user, profile):
+    """Điều kiện phạm vi + MỞ THÊM cho người được chọn đích danh làm TBP duyệt.
+
+    Người lập được chọn TBP phòng ban KHÁC duyệt phiếu (QA 29/08) — phiếu đó nằm
+    ngoài phạm vi vai trò của TBP kia (scope 'dept' lọc theo phòng của phiếu),
+    không mở thêm thì họ nhận thông báo mà bấm vào là 403. Chỉ mở từ lúc gửi duyệt
+    (bỏ nháp); route vẫn gác `require(...)` nên người không có quyền đọc không lọt.
+    Trả None = thấy tất cả, giữ nguyên ngữ nghĩa của `scope_condition`.
+    """
+    from sqlalchemy import and_, or_
+    cond = scope_condition(SurveyRequest, "survey_request", user, profile)
+    if cond is None:
+        return None
+    emp_id = (profile or {}).get("employee_id") or 0
+    if not emp_id:
+        return cond
+    named_head = and_(SurveyRequest.head_of_dept_id == emp_id,
+                      SurveyRequest.status != "draft")
+    return or_(cond, named_head)
 
 
 def _out(db: Session, s: SurveyRequest, user=None, profile=None) -> dict:
@@ -228,7 +249,8 @@ def _list_query(request: Request, db: Session, user):
         if matching_sr_ids:
             conds.append(SurveyRequest.id.in_(matching_sr_ids))
         q = q.filter(or_(*conds))
-    return apply_scope(q, SurveyRequest, "survey_request", user, get_perm_profile(db, user))
+    cond = _scope_with_named_head(user, get_perm_profile(db, user))
+    return q if cond is None else q.filter(cond)
 
 
 @router.get("")
@@ -269,8 +291,9 @@ def export_xlsx(request: Request, ids: str = "", cols: str = "",
 @router.get("/{sid}")
 def get_(sid: int, db: Session = Depends(get_db), user=Depends(require("survey_request", "read"))):
     prof = get_perm_profile(db, user)
-    s = apply_scope(db.query(SurveyRequest).filter(SurveyRequest.id == sid),
-                    SurveyRequest, "survey_request", user, prof).first()
+    cond = _scope_with_named_head(user, prof)
+    q = db.query(SurveyRequest).filter(SurveyRequest.id == sid)
+    s = (q if cond is None else q.filter(cond)).first()
     if not s:
         raise HTTPException(403, "Ngoài phạm vi được phép xem")
     return success(_out(db, s, user, prof))
@@ -331,9 +354,17 @@ def submit_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(g
     if s.status not in ("draft", "rejected"):
         raise HTTPException(400, "Chỉ gửi duyệt phiếu ở trạng thái Nháp hoặc Bị trả lại")
     s = service.set_status(db, sid, "submitted", user.id)
-    # CHỈ Trưởng bộ phận của phòng YC (1 người duyệt)
+    # CHỈ Trưởng bộ phận duyệt (1 người). Phiếu đã chọn đích danh TBP (kể cả TBP
+    # phòng khác — QA 29/08) thì báo đúng người đó; chưa chọn thì lùi về TBP của
+    # phòng YC như cũ.
     from app.modules.notification.service import get_department_head_users
-    recips = get_department_head_users(db, s.department or "", s.department_id or 0)
+    recips = []
+    if s.head_of_dept_id:
+        from app.modules.user.model import User
+        recips = db.query(User).filter(User.employee_id == s.head_of_dept_id,
+                                       User.is_active == True).all()
+    if not recips:
+        recips = get_department_head_users(db, s.department or "", s.department_id or 0)
     _notify(db, recips,
             f"{s.code} — Yêu cầu phê duyệt YCBG",
             f"Có yêu cầu báo giá mới ({s.code}) cần bạn duyệt.",

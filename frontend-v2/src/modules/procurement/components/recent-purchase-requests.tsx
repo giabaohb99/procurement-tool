@@ -47,14 +47,17 @@ export function RecentPurchaseRequests({ rows }: RecentPurchaseRequestsProps) {
 
   return (
     <div className="overflow-x-auto">
-      <Table className="min-w-[850px]">
+      {/* QA 29/08: trước ép min-w-[850px] nên nằm trong thẻ 2/3 bề ngang là đẻ
+          thanh cuộn ngang cắt cụt cột. Nay bộ phận gộp vào dòng người yêu cầu
+          (đỡ hẳn một cột), chỉ giữ sàn cho màn hẹp, cột nội dung nhận phần co
+          giãn (w-full + max-w-0 để truncate ăn trong table-cell). */}
+      <Table className="min-w-[480px]">
         <TableHeader>
           <TableRow>
-            <TableHead className="w-36">Mã phiếu</TableHead>
-            <TableHead className="min-w-56">Người yêu cầu / Nội dung</TableHead>
-            <TableHead className="w-40">Bộ phận</TableHead>
-            <TableHead className="w-28">Ngày</TableHead>
-            <TableHead className="w-36 text-right">Giá trị</TableHead>
+            <TableHead className="w-28">Mã phiếu</TableHead>
+            <TableHead className="min-w-40">Người yêu cầu / Nội dung</TableHead>
+            <TableHead className="w-24">Ngày</TableHead>
+            <TableHead className="w-32 text-right">Giá trị</TableHead>
             <TableHead className="w-32">Trạng thái</TableHead>
             {canApprove && <TableHead className="w-28 text-center">Thao tác</TableHead>}
           </TableRow>
@@ -63,11 +66,16 @@ export function RecentPurchaseRequests({ rows }: RecentPurchaseRequestsProps) {
         <TableBody>
           {rows.map((row) => (
             <TableRow key={row.id}>
-              <TableCell className="font-semibold text-sky-600 dark:text-sky-400">
+              <TableCell className="font-semibold whitespace-nowrap text-sky-600 dark:text-sky-400">
                 {row.code}
               </TableCell>
-              <TableCell>
-                <span className="block font-medium truncate">{row.requester}</span>
+              <TableCell className="w-full max-w-0">
+                <span className="block truncate font-medium" title={row.department || undefined}>
+                  {row.requester}
+                  {row.department && (
+                    <span className="font-normal text-muted-foreground"> · {row.department}</span>
+                  )}
+                </span>
                 <span
                   className="block truncate text-xs text-muted-foreground"
                   title={row.description}
@@ -75,9 +83,8 @@ export function RecentPurchaseRequests({ rows }: RecentPurchaseRequestsProps) {
                   {row.description || '—'}
                 </span>
               </TableCell>
-              <TableCell>{row.department || '—'}</TableCell>
-              <TableCell>{formatDate(row.date) || '—'}</TableCell>
-              <TableCell className="text-right font-medium tabular-nums">
+              <TableCell className="whitespace-nowrap">{formatDate(row.date) || '—'}</TableCell>
+              <TableCell className="text-right font-medium whitespace-nowrap tabular-nums">
                 {formatMoney(row.total)} đ
               </TableCell>
               <TableCell>

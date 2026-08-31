@@ -62,6 +62,18 @@ const V2_PREFIXES = [
   '/vehicle-booking',
 ]
 
+/**
+ * Đường dẫn v1 mà v2 KHÔNG có màn tương ứng — dịch thẳng về màn thay thế,
+ * xét TRƯỚC bảng tiền tố (bảng đó dịch `/survey-requests/9/process` thành
+ * `/procurement/survey-requests/9/process` — một route không tồn tại, bấm
+ * thông báo là ăn 404; lỗi QA 29/08).
+ *
+ * `/process`: màn "Xử lý khảo sát" của bản cũ đã gộp vào chi tiết YCBG.
+ */
+const LEGACY_REWRITES: [pattern: RegExp, to: string][] = [
+  [/^\/survey-requests\/(\d+)\/process$/, '/procurement/survey-requests/$1'],
+]
+
 /** Link có nằm trong nhánh của tiền tố này không (`/document` khớp `/document/x`). */
 function quickProps(link: string, prefix: string): boolean {
   return link === prefix || link.startsWith(`${prefix}/`) || link.startsWith(`${prefix}?`)
@@ -69,6 +81,10 @@ function quickProps(link: string, prefix: string): boolean {
 
 export function toAppPath(link: string): string | null {
   if (!link) return null
+
+  for (const [pattern, to] of LEGACY_REWRITES) {
+    if (pattern.test(link)) return link.replace(pattern, to)
+  }
 
   //  Đã là đường dẫn v2 thì giữ nguyên. Xét TRƯỚC bảng dịch: `/procurement/...`
   //  vừa là đích của bảng dịch vừa là tiền tố phân hệ, xét sau thì thừa một vòng.

@@ -1,9 +1,12 @@
-import { Plus, Search } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { Copy, Plus, Search } from 'lucide-react'
+import { useCallback, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { toast } from 'sonner'
 
+import { usePermission } from '@/core/authorization/use-permission'
 import { PermissionGate } from '@/core/authorization/permission-gate'
 import { appConfig } from '@/core/config/app-config'
+import { httpClient } from '@/core/api/http-client'
 import {
   ConditionalFilter,
   FilterProvider,
@@ -59,6 +62,9 @@ export function SurveyListPage() {
 function SurveyListContent() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
+  const { can } = usePermission()
+  const canCreate = can('survey', 'create')
+
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [status, setStatus] = useUrlParamState('status', ALL)
   const [surveyType, setSurveyType] = useUrlParamState('survey_type', ALL)
@@ -81,6 +87,24 @@ function SurveyListContent() {
   }
 
   const { data, isLoading, isError } = useSurveys(params)
+
+  // KHÔNG có nút Xuất Excel ở màn này: backend chưa có route `/api/surveys/export/xlsx`
+  // (bấm là 404), và bản v1 cũng không xuất được danh sách phiếu khảo sát.
+
+  const handleClone = useCallback(
+    async (survey: Survey, e: React.MouseEvent) => {
+      e.stopPropagation()
+      try {
+        const res = await httpClient.post<{ data: { id: number } }>(`/api/surveys/${survey.id}/clone`)
+        toast.success('Đã nhân bản phiếu khảo sát')
+        const newId = res.data?.data?.id
+        if (newId) navigate(appRoutes.procurement.surveyDetail(newId))
+      } catch {
+        toast.error('Nhân bản phiếu khảo sát thất bại')
+      }
+    },
+    [navigate],
+  )
 
   const activeCount = [status !== ALL, surveyType !== ALL].filter(Boolean).length
 
@@ -151,8 +175,25 @@ function SurveyListContent() {
         sortable: true,
         cell: (survey) => <StatusBadge status={survey.status} labels={SURVEY_STATUS_LABELS} />,
       },
+      {
+        key: 'actions',
+        header: '',
+        width: 60,
+        hideable: false,
+        cell: (survey) =>
+          canCreate ? (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              title="Nhân bản phiếu khảo sát"
+              onClick={(e) => handleClone(survey, e)}
+            >
+              <Copy className="size-4 text-muted-foreground" />
+            </Button>
+          ) : null,
+      },
     ],
-    [],
+    [canCreate, handleClone],
   )
 
   const filterControls = (
@@ -193,12 +234,14 @@ function SurveyListContent() {
         title="Phiếu khảo sát"
         description="Khảo sát nhà cung cấp và sản phẩm phục vụ so sánh giá."
         actions={
-          <PermissionGate entity="survey" action="create">
-            <Button onClick={() => navigate(appRoutes.procurement.surveyNew)}>
-              <Plus />
-              Thêm mới
-            </Button>
-          </PermissionGate>
+          <div className="flex items-center gap-2">
+            <PermissionGate entity="survey" action="create">
+              <Button onClick={() => navigate(appRoutes.procurement.surveyNew)}>
+                <Plus className="mr-1.5 size-4" />
+                Thêm mới
+              </Button>
+            </PermissionGate>
+          </div>
         }
       />
 
@@ -237,7 +280,7 @@ function SurveyListContent() {
                 />
               </div>
 
-              <div className="hidden md:flex md:items-center md:gap-2">
+              <div className="hidden md:flex md:flex-wrap md:items-center md:gap-2">
                 {filterControls}
                 <ConditionalFilter />
               </div>

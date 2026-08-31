@@ -1,5 +1,6 @@
-import { Search } from 'lucide-react'
+import { Download, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 
 import { appConfig } from '@/core/config/app-config'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
@@ -8,6 +9,7 @@ import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import type { ListParams } from '@/shared/types/api'
 import { Badge } from '@/shared/ui/badge'
+import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
@@ -43,9 +45,25 @@ export function SurveyReportPage() {
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [kind, setKind] = useUrlParamState('kind', ALL)
   const [lineApprove, setLineApprove] = useUrlParamState('line_approve', ALL)
+  const [fromDate] = useUrlParamState('from_date', '')
+  const [toDate] = useUrlParamState('to_date', '')
+  const [itemGroup] = useUrlParamState('item_group', '')
+  const [supplierCode] = useUrlParamState('supplier', '')
+  const [nspt] = useUrlParamState('nspt', '')
+  const [itemCode] = useUrlParamState('item_code', '')
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
 
-  const [page, setPage] = usePageResetOnFilterChange([debouncedValue, kind, lineApprove])
+  const [page, setPage] = usePageResetOnFilterChange([
+    debouncedValue,
+    kind,
+    lineApprove,
+    fromDate,
+    toDate,
+    itemGroup,
+    supplierCode,
+    nspt,
+    itemCode,
+  ])
 
   const params: ListParams = { page, page_size: pageSize }
   if (debouncedValue) {
@@ -54,9 +72,63 @@ export function SurveyReportPage() {
   }
   if (kind !== ALL) params.kind = kind
   if (lineApprove !== ALL) params.line_approve = lineApprove
+  if (fromDate) params.from_date = fromDate
+  if (toDate) params.to_date = toDate
+  if (itemGroup) params.item_group = itemGroup
+  if (supplierCode) params.supplier = supplierCode
+  if (nspt) params.nspt = nspt
+  if (itemCode) params.item_code = itemCode
 
   const { data, isLoading, isError } = useSurveyReport(params)
   const summary = data?.summary
+
+  const handleExportCsv = () => {
+    const rows = data?.items ?? []
+    if (!rows.length) return
+
+    const headers = [
+      'Mã phiếu',
+      'Loại',
+      'Nội dung dòng',
+      'Mã NCC',
+      'Nhóm hàng',
+      'Mã hàng',
+      'Nội dung chính',
+      'NSPT',
+      'Ngày',
+      'Kết quả duyệt',
+      'Ghi chú duyệt',
+    ]
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map((row) =>
+        [
+          `"${row.survey_code || ''}"`,
+          `"${KIND_LABELS[row.kind] || row.kind || ''}"`,
+          `"${(row.content || '').replace(/"/g, '""')}"`,
+          `"${row.supplier_code || ''}"`,
+          `"${row.item_group || ''}"`,
+          `"${row.item_code || ''}"`,
+          `"${(row.main_content || '').replace(/"/g, '""')}"`,
+          `"${row.nspt || ''}"`,
+          `"${formatDate(row.date) || ''}"`,
+          `"${row.line_approve || ''}"`,
+          `"${(row.line_approve_note || '').replace(/"/g, '""')}"`,
+        ].join(','),
+      ),
+    ].join('\n')
+
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `Bao_cao_khao_sat_${new Date().toISOString().slice(0, 10)}.csv`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
 
   const columns = useMemo<DataTableColumn<SurveyReportLine>[]>(
     () => [
@@ -64,15 +136,23 @@ export function SurveyReportPage() {
         key: 'survey_code',
         header: 'Mã phiếu',
         width: 150,
+        sortable: true,
         hideable: false,
-        // 11 cột -> ghim mã phiếu khảo sát.
         defaultPinned: true,
-        cell: (line) => <span className="truncate font-medium">{line.survey_code}</span>,
+        cell: (line) => (
+          <Link
+            to={`/procurement/surveys/${line.survey_id}`}
+            className="truncate font-medium text-primary hover:underline"
+          >
+            {line.survey_code}
+          </Link>
+        ),
       },
       {
         key: 'kind',
         header: 'Loại',
         width: 90,
+        sortable: true,
         cell: (line) => <Badge variant="outline">{KIND_LABELS[line.kind] ?? line.kind}</Badge>,
       },
       {
@@ -81,7 +161,7 @@ export function SurveyReportPage() {
         width: 260,
         cell: (line) => (
           <span className="truncate" title={line.content}>
-            {line.content || '—'}
+            {line.content || ''}
           </span>
         ),
       },
@@ -89,10 +169,11 @@ export function SurveyReportPage() {
         key: 'supplier_code',
         header: 'Mã NCC',
         width: 150,
-        cell: (line) => line.supplier_code || '—',
+        sortable: true,
+        cell: (line) => line.supplier_code || '',
       },
-      { key: 'item_group', header: 'Nhóm hàng', width: 160, cell: (line) => line.item_group || '—' },
-      { key: 'item_code', header: 'Mã hàng', width: 140, cell: (line) => line.item_code || '—' },
+      { key: 'item_group', header: 'Nhóm hàng', width: 160, sortable: true, cell: (line) => line.item_group || '' },
+      { key: 'item_code', header: 'Mã hàng', width: 140, sortable: true, cell: (line) => line.item_code || '' },
       {
         key: 'main_content',
         header: 'Nội dung chính',
@@ -100,16 +181,17 @@ export function SurveyReportPage() {
         defaultHidden: true,
         cell: (line) => (
           <span className="truncate" title={line.main_content}>
-            {line.main_content || '—'}
+            {line.main_content || ''}
           </span>
         ),
       },
-      { key: 'nspt', header: 'NSPT', width: 150, cell: (line) => line.nspt || '—' },
-      { key: 'date', header: 'Ngày', width: 110, cell: (line) => formatDate(line.date) || '—' },
+      { key: 'nspt', header: 'NSPT', width: 150, sortable: true, cell: (line) => line.nspt || '' },
+      { key: 'date', header: 'Ngày', width: 110, sortable: true, cell: (line) => formatDate(line.date) || '' },
       {
         key: 'line_approve',
         header: 'Kết quả duyệt',
         width: 140,
+        sortable: true,
         cell: (line) => <LineApproveBadge status={line.line_approve} />,
       },
       {
@@ -119,7 +201,7 @@ export function SurveyReportPage() {
         defaultHidden: true,
         cell: (line) => (
           <span className="truncate text-muted-foreground" title={line.line_approve_note}>
-            {line.line_approve_note || '—'}
+            {line.line_approve_note || ''}
           </span>
         ),
       },
@@ -132,6 +214,12 @@ export function SurveyReportPage() {
       <PageHeader
         title="Báo cáo khảo sát"
         description="Tổng hợp tiến độ và kết quả duyệt từng dòng khảo sát nhà cung cấp & sản phẩm."
+        actions={
+          <Button variant="outline" size="sm" onClick={handleExportCsv}>
+            <Download className="mr-1.5 size-4" />
+            Xuất CSV
+          </Button>
+        }
       />
 
       <Card className="flex min-h-0 flex-1 flex-col p-4">
