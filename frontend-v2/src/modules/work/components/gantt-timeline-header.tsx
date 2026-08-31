@@ -5,6 +5,13 @@ import type { GanttHeader, GanttZoom } from '../utils/gantt-scale'
 interface GanttTimelineHeaderProps {
   header: GanttHeader
   zoom: GanttZoom
+  /**
+   * Chỗ phải chừa ở đầu nhãn THÁNG, tính bằng px.
+   *
+   * Chỉ khác 0 khi lưới trái đang ẩn: lúc ấy nút mở lại lùi về góc trái dải tiêu
+   * đề trục (xem `gantt-view.tsx`), không chừa thì nó nằm đè lên chữ "Tháng 8".
+   */
+  leadInset?: number
 }
 
 /**
@@ -30,7 +37,7 @@ interface GanttTimelineHeaderProps {
  * giữa dãy ngày tháng khi cuộn xuống. Thêm lớp mới trong vùng thanh thì giữ nó
  * dưới 40.
  */
-export function GanttTimelineHeader({ header, zoom }: GanttTimelineHeaderProps) {
+export function GanttTimelineHeader({ header, zoom, leadInset = 0 }: GanttTimelineHeaderProps) {
   return (
     <div className="sticky top-0 z-40 bg-muted" style={{ height: HEADER_HEIGHT }}>
       <div className="flex" style={{ height: ROW_HEIGHT }}>
@@ -43,9 +50,14 @@ export function GanttTimelineHeader({ header, zoom }: GanttTimelineHeaderProps) 
             {/*  Ô hẹp hơn chữ thì thà bỏ trống: chữ tràn ra sẽ đè lên ô bên
                  cạnh và cả hàng thành một dải chữ chồng nhau không đọc nổi. */}
             {cell.width >= 56 && (
+              //  Chỗ chừa áp cho MỌI nhãn, không riêng tháng đầu dải: nhãn nào
+              //  cũng có thể là nhãn đang DÍNH ở mép trái (`sticky left-0`), mà
+              //  đúng nó mới là cái nằm dưới nút. Chừa cho mỗi tháng đầu thì
+              //  tháng ấy trôi khuất từ lâu, còn nút thì vẫn đè lên tháng hiện
+              //  tại — đo ra tháng đầu ở x=-7007 trong khi nút ở x=286.
               <span
-                className="sticky left-0 inline-block truncate px-3 py-3 text-sm font-medium"
-                style={{ maxWidth: cell.width }}
+                className="sticky left-0 inline-block truncate py-3 pr-3 text-sm font-medium"
+                style={{ maxWidth: cell.width, paddingLeft: 12 + leadInset }}
               >
                 {cell.label}
               </span>

@@ -7,8 +7,10 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core'
+import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
+import { Button } from '@/shared/ui/button'
 import { cn } from '@/shared/utils/cn'
 import { useCollapsedGroups } from '../hooks/use-collapsed-groups'
 import { useGanttLinkDraft } from '../hooks/use-gantt-link-draft'
@@ -496,7 +498,7 @@ export function GanttView({
              dọc của lưới trái. */}
         <div ref={scrollRef} onScroll={syncGridScroll} className="min-w-0 flex-1 overflow-auto">
         <div className="relative" style={{ width: timeline.totalWidth }}>
-          <GanttTimelineHeader header={header} zoom={zoom} />
+          <GanttTimelineHeader header={header} zoom={zoom} leadInset={gridHidden ? 28 : 0} />
 
           {/* Lưới nền — vẽ theo Ô của hàng tiêu đề dưới, không phải theo từng
               ngày: ở mức Tháng một dải hai năm là hơn 700 ngày, tức 700 nút DOM
@@ -580,6 +582,27 @@ export function GanttView({
         </div>
         </div>
 
+        {/*  Nút ẨN / HIỆN lưới trái — luôn đứng ngay CẠNH NHÃN THÁNG, đúng chỗ
+             Lark đặt: lưới đang hiện thì nó ở góc trên bên phải dải tiêu đề lưới
+             (sát thanh chia, tức sát nhãn tháng bên kia); lưới ẩn rồi thì nó lùi
+             về góc trái của chính dải tiêu đề trục.
+
+             Đặt ở TẦNG NÀY chứ không nhét vào `GanttGrid`: bên trong lưới, một
+             `absolute right-2` sẽ bám mép NỘI DUNG (rộng `gridContentWidth`) chứ
+             không bám mép nhìn thấy, nên cuộn ngang một cái là nút trôi mất. Ở
+             đây thì `paneWidth` là con số thật của ô chứa, tính thẳng ra được.  */}
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          title={gridHidden ? 'Hiện danh sách công việc' : 'Ẩn danh sách công việc'}
+          aria-label={gridHidden ? 'Hiện danh sách công việc' : 'Ẩn danh sách công việc'}
+          className="absolute top-1.5 z-40 text-muted-foreground hover:text-foreground"
+          style={{ left: gridHidden ? 6 : paneWidth - 34 }}
+          onClick={toggleGrid}
+        >
+          {gridHidden ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}
+        </Button>
+
         {/*  Cụm điều khiển NẰM ĐÈ lên góc phải dải tiêu đề, đúng chỗ Lark đặt.
 
              Đặt đè bằng `absolute` chứ không nhét vào trong hàng tiêu đề: nhét
@@ -615,8 +638,6 @@ export function GanttView({
             onZoomChange={onZoomChange}
             onStep={stepTimeline}
             onToday={scrollToToday}
-            gridHidden={gridHidden}
-            onToggleGrid={toggleGrid}
           />
         </div>
       </div>

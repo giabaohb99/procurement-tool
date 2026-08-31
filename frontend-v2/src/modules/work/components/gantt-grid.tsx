@@ -51,6 +51,7 @@ export function GanttGrid({
         //  bên gõ một lớp khác nhau (xem `COLUMN_GAP`).
         style={{ height: HEADER_HEIGHT, paddingLeft: ROW_PAD_LEFT, gap: COLUMN_GAP }}
       >
+
         {/*  Ô tiêu đề cột TÊN cũng ghim trái như ô tên của từng dòng, và thụt
              thêm đúng phần dẫn đầu của dòng (mũi tên bung + ô tick) để chữ
              «Tên công việc» thẳng hàng với tên việc bên dưới. */}
