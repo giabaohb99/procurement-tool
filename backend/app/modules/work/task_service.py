@@ -121,9 +121,16 @@ def create_task(db: Session, actor: Actor, data) -> dict:
         if section_id and not _section_belongs(db, section_id, list_id):
             raise HTTPException(400, "Cột không thuộc danh sách này")
 
+    #  Tên rỗng phải chặn ở ĐÂY chứ không ở schema: `title: str` nhận cả chuỗi
+    #  toàn dấu cách, `.strip()` xong thành rỗng và đẻ ra một việc không tên —
+    #  trên kanban là một thẻ trắng trơn, nhìn như giao diện hỏng.
+    title = data.title.strip()
+    if not title:
+        raise HTTPException(400, "Công việc phải có tên")
+
     t = WorkTask(company_id=lst.company_id, list_id=list_id, section_id=section_id,
                  parent_id=parent.id if parent else None,
-                 title=data.title.strip(), description=data.description or "",
+                 title=title, description=data.description or "",
                  status=int(WorkTaskStatus.OPEN), kind=_valid_kind(data.kind),
                  start_date=data.start_date or "", due_date=data.due_date or "",
                  sort_order=data.sort_order or _next_sort_order(
@@ -254,6 +261,10 @@ def update_task(db: Session, actor: Actor, task_id: int, data) -> dict:
         if data.section_id and not _section_belongs(db, data.section_id, t.list_id):
             raise HTTPException(400, "Cột không thuộc danh sách này")
         t.section_id = data.section_id or None
+
+    #  Cùng luật với lúc tạo: đổi tên thành rỗng cũng là một việc không tên.
+    if data.title is not None and not data.title.strip():
+        raise HTTPException(400, "Công việc phải có tên")
 
     for field in ("title", "description", "start_date", "due_date", "sort_order"):
         val = getattr(data, field, None)

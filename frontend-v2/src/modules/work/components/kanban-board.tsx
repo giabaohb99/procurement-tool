@@ -60,6 +60,8 @@ interface KanbanBoardProps {
   /** Đang sắp xếp khác «Tay» thì khóa việc đổi thứ tự trong cột (§3.4). */
   sortLocked: boolean
   onOpenTask: (taskId: number) => void
+  /** Tick xong việc ngay trên thẻ — cùng đường với ô tick của khung Danh sách. */
+  onToggleDone: (taskId: number, done: boolean) => void
   onCreateTask: (sectionId: number, title: string) => void
   onMoveTask: (taskId: number, place: KanbanDropPlace) => void
   /** Kéo đổi thứ tự CỘT. `beforeSectionId = null` = đẩy xuống cuối hàng. */
@@ -88,6 +90,7 @@ export function KanbanBoard({
   canManage,
   sortLocked,
   onOpenTask,
+  onToggleDone,
   onCreateTask,
   onMoveTask,
   onMoveSection,
@@ -320,6 +323,7 @@ export function KanbanBoard({
             dragDisabled={!canEdit}
             hideGhostTaskId={hiddenGhostTaskId}
             onOpenTask={onOpenTask}
+            onToggleDone={onToggleDone}
             onCreateTask={onCreateTask}
             onRenameSection={onRenameSection}
             onDeleteSection={onDeleteSection}

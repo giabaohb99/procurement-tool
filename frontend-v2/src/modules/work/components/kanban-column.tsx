@@ -30,6 +30,8 @@ interface KanbanColumnProps {
   /** Thẻ phải tàng hình vì đã được kéo sang cột khác; `null` = không có. */
   hideGhostTaskId?: number | null
   onOpenTask: (taskId: number) => void
+  /** Tick xong việc ngay trên thẻ, khỏi phải mở panel chi tiết. */
+  onToggleDone: (taskId: number, done: boolean) => void
   onCreateTask: (sectionId: number, title: string) => void
   onRenameSection: (section: WorkSection) => void
   onDeleteSection: (section: WorkSection) => void
@@ -51,6 +53,7 @@ export function KanbanColumn({
   dragDisabled,
   hideGhostTaskId = null,
   onOpenTask,
+  onToggleDone,
   onCreateTask,
   onRenameSection,
   onDeleteSection,
@@ -142,8 +145,10 @@ export function KanbanColumn({
             <TaskCard
               key={task.id}
               task={task}
-                labelFields={labelFields}
+              labelFields={labelFields}
               fields={fields}
+              canEdit={canEdit}
+              onToggleDone={onToggleDone}
               onOpen={onOpenTask}
               dragDisabled={dragDisabled || !canEdit}
               hideGhost={task.id === hideGhostTaskId}

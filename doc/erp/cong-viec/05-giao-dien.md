@@ -115,7 +115,8 @@ cụ khung nhìn: All/Lọc/Sắp xếp/Gom nhóm/Tùy chỉnh).
 - **Cột:** tiêu đề + chấm màu + SỐ ĐẾM task (như "Documentation 2") + menu cột (đổi tên,
   đổi màu, xóa — xóa bắt dồn task sang cột khác) + nút `+` cuối cột. Kéo ngang đổi thứ
   tự cột. Lark gắn emoji cho cột — ta **thay bằng chấm màu** (luật cấm emoji, `icons.md`).
-- **Thẻ:** tiêu đề (tối đa 2 dòng, cắt `…`) · hàng chip: độ ưu tiên (P1 đỏ/P2 vàng… như
+- **Thẻ:** **ô tick tròn hoàn thành** đứng ngang tiêu đề (CR-250 — cùng chỗ và cùng hình
+  với ô tick của khung List, §5) · tiêu đề (tối đa 2 dòng, cắt `…`) · hàng chip: độ ưu tiên (P1 đỏ/P2 vàng… như
   Lark) + tag + giá trị nhãn tùy biến (mỗi chip mang màu của option) · hàng chân: avatar
   PIC (nhiều người chồng nhau, tối đa 3 + "+n") · hạn (chữ đỏ khi quá hạn, cam khi hôm
   nay) · `n/m` việc con kèm icon nhánh · icon bình luận + số. Trường nào tắt ở Tùy chỉnh
@@ -131,6 +132,18 @@ cụ khung nhìn: All/Lọc/Sắp xếp/Gom nhóm/Tùy chỉnh).
   đừng suy cột đích từ `over` một cách ngây thơ — trỏ vào một THẺ thì `over` là thẻ đó
   chứ không phải cột, phải quy về cột của nó.
 - Bấm thẻ mở **panel chi tiết** trượt từ phải (Sheet), không rời bảng.
+- ⚠️ **Ô điều khiển đặt TRÊN thẻ phải chặn nổi bọt CẢ HAI đường** (`pointerdown` và
+  `click`), không phải một. Vỏ thẻ vừa là nút mở panel vừa là tay nắm kéo của dnd-kit:
+  thiếu `pointerdown` thì tick xong thẻ lết theo chuột, thiếu `click` thì mỗi lần tick
+  panel chi tiết lại bung ra chắn hết bảng. Và nhớ đặt `aria-label` cho vỏ thẻ —
+  `role="button"` gộp toàn bộ chữ bên trong làm tên, nên trình đọc màn hình sẽ đọc cả
+  thẻ thành «Đánh dấu hoàn thành: …».
+- ⚠️ **Tiêu đề thẻ phải có `break-words`.** Tiêu đề là chữ người dùng dán vào, rất hay là
+  một đường link hay một mã lỗi DÀI KHÔNG CÓ DẤU CÁCH; không cho bẻ giữa từ thì
+  `line-clamp-2` chẳng có chỗ nào xuống dòng, chuỗi nằm lì một dòng rồi bị cắt cụt ở mép
+  thẻ — mất luôn dòng thứ hai đáng ra được dùng, mà cũng không có dấu «…» nào báo còn nữa
+  (CR-250). Việc **không tên** hiện «(Chưa đặt tên)»; gốc của nó — API nhận tên toàn dấu
+  cách — đã chặn ở `task_service`.
 
 ## 5. List view
 

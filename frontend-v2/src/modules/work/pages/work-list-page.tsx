@@ -364,6 +364,15 @@ function WorkListContent({ listId }: { listId: number }) {
             canManage={canManage}
             sortLocked={sort !== 'manual'}
             onOpenTask={setOpenTaskId}
+            //  ĐÚNG một đường lật trạng thái cho cả ba khung nhìn: kanban,
+            //  Danh sách và Gantt cùng gọi `updateTask` với `status`, nên tick
+            //  ở đâu cũng làm mới cùng một khóa và ba khung không lệch nhau.
+            onToggleDone={(taskId, done) =>
+              updateTask.mutate({
+                id: taskId,
+                values: { status: done ? WORK_TASK_STATUS.DONE : WORK_TASK_STATUS.OPEN },
+              })
+            }
             onCreateTask={(sectionId, title) =>
               createTask.mutate({ list_id: listId, title, section_id: sectionId })
             }

@@ -10,14 +10,10 @@ import {
 } from 'lucide-react'
 import { memo, type ReactNode } from 'react'
 
+import { Checkbox } from '@/shared/ui/checkbox'
 import { cn } from '@/shared/utils/cn'
 import { labelFieldId, type CardFields, type CardFieldKey } from '../types/view-options'
-import type {
-  WorkLabelField,
-  WorkLabelOption,
-  WorkTask,
-  WorkTaskLabelValue,
-} from '../types/work'
+import type { WorkLabelField, WorkLabelOption, WorkTask, WorkTaskLabelValue } from '../types/work'
 import {
   fieldHasOptions,
   WORK_ASSIGNEE_KIND,
@@ -34,6 +30,13 @@ interface TaskCardBodyProps {
   task: WorkTask
   labelFields: WorkLabelField[]
   fields: CardFields
+  /** Thiếu quyền sửa thì ô tick chỉ để ĐỌC — vẫn thấy việc đã xong hay chưa. */
+  canEdit?: boolean
+  /**
+   * Tick xong việc ngay trên thẻ. Vắng = ô tick không bấm được (lớp phủ lúc kéo
+   * dùng lại đúng thân thẻ này nhưng không nhận thao tác nào).
+   */
+  onToggleDone?: (taskId: number, done: boolean) => void
   className?: string
 }
 
@@ -59,6 +62,8 @@ export function TaskCard({
   task,
   labelFields,
   fields,
+  canEdit,
+  onToggleDone,
   onOpen,
   dragDisabled,
   hideGhost,
@@ -82,13 +87,15 @@ export function TaskCard({
       //  nguyên hai giá trị của dnd-kit thì lúc thẻ được dời sang cột khác,
       //  `transform` vẫn còn là độ lệch tính từ cột CŨ và `transition` nội suy
       //  200ms — thẻ nhảy ngược về cột cũ một nhịp rồi mới trườn sang cột mới.
-      style={
-        isDragging ? undefined : { transform: CSS.Translate.toString(transform), transition }
-      }
+      style={isDragging ? undefined : { transform: CSS.Translate.toString(transform), transition }}
       {...attributes}
       {...listeners}
       onClick={() => onOpen(task.id)}
       role="button"
+      //  Đặt tên RÕ cho thẻ: `role="button"` gộp toàn bộ chữ bên trong làm tên,
+      //  nên từ khi có ô tick, trình đọc màn hình đọc thẻ thành "Đánh dấu hoàn
+      //  thành: …" rồi mới tới nội dung — nghe như cả thẻ là cái ô tick.
+      aria-label={`Mở công việc: ${task.title}`}
       tabIndex={0}
       onKeyDown={(e) => {
         if (e.key === 'Enter') onOpen(task.id)
@@ -98,7 +105,13 @@ export function TaskCard({
       //  một cột. Bỏ vẽ hẳn thì cột đích không nhúc nhích, chẳng biết rơi vào đâu.
       className={cn('cursor-pointer', isDragging && (hideGhost ? 'invisible' : 'opacity-40'))}
     >
-      <TaskCardBody task={task} labelFields={labelFields} fields={fields} />
+      <TaskCardBody
+        task={task}
+        labelFields={labelFields}
+        fields={fields}
+        canEdit={canEdit}
+        onToggleDone={onToggleDone}
+      />
     </div>
   )
 }
@@ -116,6 +129,8 @@ export const TaskCardBody = memo(function TaskCardBody({
   task,
   labelFields,
   fields,
+  canEdit = false,
+  onToggleDone,
   className,
 }: TaskCardBodyProps) {
   const done = task.status === WORK_TASK_STATUS.DONE
@@ -134,9 +149,41 @@ export const TaskCardBody = memo(function TaskCardBody({
         className,
       )}
     >
-      <p className={cn('line-clamp-2 text-sm font-medium', done && 'line-through')}>
-        {task.title}
-      </p>
+      {/*  Ô tick đứng NGANG tiêu đề, đúng chỗ khung nhìn Danh sách đặt nó —
+          `items-start` để với thẻ tiêu đề hai dòng nó vẫn ngang dòng đầu. */}
+      <div className="flex items-start gap-2">
+        <Checkbox
+          //  `mt-0.5`: ô tick 16px còn dòng chữ 20px, không đẩy xuống thì nó
+          //  treo cao hơn chữ nửa thân.
+          className="mt-0.5 shrink-0 rounded-full"
+          checked={done}
+          disabled={!canEdit || !onToggleDone}
+          aria-label={`Đánh dấu hoàn thành: ${task.title}`}
+          //  Chặn CẢ HAI đường, thiếu một là hỏng một kiểu: `pointerdown` là
+          //  chỗ dnd-kit bắt đầu tính cú kéo (tick xong thẻ lết theo chuột),
+          //  còn `click` nổi lên thẻ thì mỗi lần tick lại bung panel chi tiết.
+          onPointerDown={(su) => su.stopPropagation()}
+          onClick={(su) => su.stopPropagation()}
+          onCheckedChange={(checked) => onToggleDone?.(task.id, checked === true)}
+        />
+        {/*  `break-words`: tiêu đề là chữ người dùng dán vào, rất hay là một
+            đường link hay một mã lỗi DÀI KHÔNG CÓ DẤU CÁCH. Không cho bẻ giữa
+            từ thì `line-clamp-2` chẳng có chỗ nào xuống dòng, chuỗi nằm lì một
+            dòng rồi bị cắt cụt ở mép thẻ — mất luôn dòng thứ hai đáng ra được
+            dùng, mà cũng không có dấu «…» nào báo là còn nữa. */}
+        <p
+          className={cn(
+            'line-clamp-2 text-sm font-medium break-words',
+            done && 'line-through',
+            !task.title.trim() && 'text-muted-foreground italic',
+          )}
+        >
+          {/*  Tên rỗng lọt được vào DB qua API (`title: str` không chặn chuỗi
+              trắng), mà thẻ trắng trơn thì nhìn như hỏng chứ không ai đoán ra
+              là việc chưa đặt tên. */}
+          {task.title.trim() || '(Chưa đặt tên)'}
+        </p>
+      </div>
 
       {rows.length > 0 && (
         <div className="mt-2 space-y-1.5">
@@ -284,7 +331,10 @@ function renderLabelValue(field: WorkLabelField, values: WorkTaskLabelValue[]): 
 
   switch (field.field_type) {
     case WORK_FIELD_TYPE.PERSON:
-      return first.value_employee_name || (first.value_employee_id ? `#${first.value_employee_id}` : null)
+      return (
+        first.value_employee_name ||
+        (first.value_employee_id ? `#${first.value_employee_id}` : null)
+      )
     case WORK_FIELD_TYPE.NUMBER:
       //  Bỏ số 0 thừa ở đuôi: cột `Numeric(18, 4)` trả "12.5000", đọc trên thẻ
       //  thì "12,5" mới là thứ người ta gõ vào.

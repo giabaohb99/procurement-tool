@@ -181,3 +181,39 @@ def test_danh_sach_nguoi_thao_tac_khong_trung_va_co_ten(db, chu):
     #  Không có bảng `User` trong test này → rơi về "User #1", KHÔNG được rỗng:
     #  ô lọc mà hiện dòng trắng thì không ai bấm trúng.
     assert nguoi[0]["name"]
+
+
+# ── Tên việc rỗng (lỗ lộ ra lúc stress test thẻ kanban) ─────────────────────────
+
+def test_khong_tao_duoc_viec_khong_ten(db, chu):
+    """`title: str` ở schema nhận cả chuỗi TOÀN DẤU CÁCH.
+
+    `.strip()` xong thành rỗng và đẻ ra một việc không tên — trên kanban là một
+    thẻ trắng trơn, nhìn như giao diện hỏng. Giao diện đã chặn, nhưng ai gọi
+    thẳng API thì không.
+    """
+    lst = _tao_list(db, chu)
+    for ten in ("", "   ", "\t\n"):
+        with pytest.raises(HTTPException) as e:
+            _tao_task(db, chu, lst["id"], ten)
+        assert e.value.status_code == 400
+
+
+def test_khong_doi_ten_viec_thanh_rong_duoc(db, chu):
+    lst = _tao_list(db, chu)
+    task = _tao_task(db, chu, lst["id"], "Việc có tên")
+
+    with pytest.raises(HTTPException) as e:
+        task_service.update_task(db, chu, task["id"], schema.TaskUpdate(title="   "))
+    assert e.value.status_code == 400
+
+    #  Tên cũ phải còn nguyên, không bị ghi đè dở dang rồi mới ném lỗi.
+    sau = task_service.get_task(db, chu, task["id"])
+    assert sau["title"] == "Việc có tên"
+
+
+def test_van_cat_duoc_dau_cach_thua_hai_dau_ten(db, chu):
+    """Chặn rỗng không được làm hỏng việc cắt dấu cách thừa vẫn chạy xưa nay."""
+    lst = _tao_list(db, chu)
+    task = _tao_task(db, chu, lst["id"], "  Việc có tên  ")
+    assert task["title"] == "Việc có tên"
