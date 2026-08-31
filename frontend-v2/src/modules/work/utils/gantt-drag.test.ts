@@ -94,15 +94,37 @@ describe('datesToSave', () => {
     ).toEqual({ start_date: '2026-08-21', due_date: '2026-08-29' })
   })
 
-  it('adds a start date only when the left edge itself is dragged', () => {
+  it('adds a start date when the left edge itself is dragged', () => {
+    //  Đầu kia (`due_date`) đã có sẵn nên không phải ghi lại.
     expect(datesToSave(task({ due_date: '2026-08-28' }), 'start', -4)).toEqual({
       start_date: '2026-08-24',
     })
   })
 
-  it('adds a due date only when the right edge itself is dragged', () => {
+  it('adds a due date when the right edge itself is dragged', () => {
     expect(datesToSave(task({ start_date: '2026-08-28' }), 'end', 4)).toEqual({
       due_date: '2026-09-01',
+    })
+  })
+
+  it('kéo mép PHẢI của việc chỉ có hạn thì ghi luôn ngày bắt đầu — không thì quãng không lưu được', () => {
+    //  Lỗi khách báo 31/08/2026: *"kéo dài ra thì nó chạy theo 1 ngày, ko ra
+    //  duration"*. Chỉ ghi `due_date` thì `start_date` vẫn rỗng, mà
+    //  `barGeometry` lấy `start_date || due_date` — thanh vẫn dài đúng một ngày
+    //  và chỉ dịch đi, dù lớp phủ lúc kéo đã vẽ nó dài ra.
+    //
+    //  `start_date` lấy đúng ngày CŨ (28/08) nên không bịa gì: nó là ngày người
+    //  dùng đã nhập, chỉ được ghi sang trường còn trống.
+    expect(datesToSave(task({ due_date: '2026-08-28' }), 'end', 3)).toEqual({
+      start_date: '2026-08-28',
+      due_date: '2026-08-31',
+    })
+  })
+
+  it('kéo mép TRÁI của việc chỉ có ngày bắt đầu thì ghi luôn hạn — cùng lý do', () => {
+    expect(datesToSave(task({ start_date: '2026-08-28' }), 'start', -3)).toEqual({
+      start_date: '2026-08-25',
+      due_date: '2026-08-28',
     })
   })
 

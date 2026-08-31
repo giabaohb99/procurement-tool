@@ -21,7 +21,18 @@ export type GanttZoom = 'day' | 'week' | 'month'
  * mức Tuần cần ~91px cho một cột tuần (đủ chỗ cho "T.37"), mức Tháng cần ~120px
  * cho một cột tháng. Số lẻ thì mép ô lệch dần và cuối biểu đồ trượt khỏi lưới.
  */
-export const DAY_WIDTH: Record<GanttZoom, number> = { day: 38, week: 13, month: 4 }
+/**
+ * Bề rộng MỘT NGÀY theo từng mức phóng, tính bằng px.
+ *
+ * Mức Ngày nới 38 → 44 → **56** (khách 31/08/2026, hai lượt): 38px hẹp hơn cả
+ * chiều cao hàng nên lưới nhìn dẹt và bị nén; 44 mới vừa vuông, vẫn chưa đủ chỗ
+ * cho hai dòng «21 / T3» thở. 56 thì ô ngày ra ô ngày.
+ *
+ * ⚠️ Con số này nhân thẳng với 730 ngày của khung hai năm (`khungToiThieu`):
+ * 56 × 730 ≈ **40.900px** bề rộng nội dung. Vẫn ổn vì lưới nền vẽ theo Ô của
+ * hàng tiêu đề chứ không theo từng ngày, nhưng nới tiếp thì phải đo lại.
+ */
+export const DAY_WIDTH: Record<GanttZoom, number> = { day: 56, week: 13, month: 4 }
 
 export const ZOOM_LABELS: Record<GanttZoom, string> = {
   day: 'Ngày',

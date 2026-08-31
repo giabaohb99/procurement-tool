@@ -90,11 +90,20 @@ export function shiftedRange(
 /**
  * Những trường THỰC SỰ đổi sau cú kéo. `null` = không lưu gì cả.
  *
- * Hai luật giữ dữ liệu sạch:
- * 1. **Không bịa ngày người dùng chưa từng nhập.** Dời cả thanh của việc chỉ có
- *    hạn thì chỉ đổi hạn; muốn đặt ngày bắt đầu thì phải kéo đúng mép trái. Bản
- *    đầu tự điền cả hai đầu, mở panel ra thấy một ngày lạ không biết ở đâu ra.
- * 2. **Không lưu ngày ngược.** Kéo mép quá đà làm ngày bắt đầu vượt hạn thì bỏ
+ * Ba luật giữ dữ liệu sạch:
+ * 1. **Không bịa ngày người dùng chưa từng nhập — khi DỜI.** Dời cả thanh của
+ *    việc chỉ có hạn thì chỉ đổi hạn; muốn đặt ngày bắt đầu thì phải kéo đúng
+ *    mép trái. Bản đầu tự điền cả hai đầu, mở panel ra thấy một ngày lạ không
+ *    biết ở đâu ra.
+ * 2. **Nhưng KÉO MÉP thì phải ghi cả đầu kia.** Kéo mép là người dùng đang khai
+ *    ra một QUÃNG, mà một quãng cần hai đầu. Việc chỉ có `due_date`: kéo mép
+ *    phải ra ba ngày mà chỉ ghi `due_date` thì `start_date` vẫn rỗng,
+ *    `barGeometry` lấy `start_date || due_date` nên thanh vẫn dài đúng MỘT ngày
+ *    và chỉ dịch đi — lớp phủ lúc kéo thì đã vẽ thanh dài ra rồi, thả tay nó co
+ *    về. Khách báo đúng cảnh này: *"kéo dài ra thì nó chạy theo 1 ngày, ko ra
+ *    duration"*. Đầu kia lấy chính ngày CŨ nên không có gì bị bịa: nó là ngày
+ *    người dùng đã nhập, chỉ được ghi sang trường còn trống.
+ * 3. **Không lưu ngày ngược.** Kéo mép quá đà làm ngày bắt đầu vượt hạn thì bỏ
  *    qua cả cú kéo, chứ không lưu rồi để đó cho báo cáo tính ra số âm.
  */
 export function datesToSave(
@@ -110,6 +119,12 @@ export function datesToSave(
   const values: { start_date?: string; due_date?: string } = {}
   if (kind === 'start' || (kind === 'move' && task.start_date)) values.start_date = range.start
   if (kind === 'end' || (kind === 'move' && task.due_date)) values.due_date = range.due
+
+  //  Luật 2: kéo mép thì đầu kia phải tồn tại, không thì quãng vừa kéo ra không
+  //  lưu lại được. `range` giữ nguyên đầu không bị kéo (xem `edgeShift`) nên đây
+  //  chính là ngày cũ của việc.
+  if (kind === 'end' && !task.start_date) values.start_date = range.start
+  if (kind === 'start' && !task.due_date) values.due_date = range.due
 
   return Object.keys(values).length > 0 ? values : null
 }

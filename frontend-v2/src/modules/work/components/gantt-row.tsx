@@ -18,7 +18,14 @@ import {
 import type { OffscreenSide } from '../hooks/use-offscreen-bars'
 import type { GanttGroupRow } from '../utils/gantt-rows'
 import type { LinkSide } from '../utils/gantt-links'
-import { barGeometry, isMilestone, milestoneCenter, rangeGeometry, type GanttTimeline } from '../utils/gantt-scale'
+import {
+  barGeometry,
+  daysBetween,
+  isMilestone,
+  milestoneCenter,
+  rangeGeometry,
+  type GanttTimeline,
+} from '../utils/gantt-scale'
 import { chipClass } from '../utils/work-colors'
 import { GanttScheduleLayer } from './gantt-schedule-layer'
 
@@ -192,12 +199,13 @@ export const GanttTaskRow = memo(function GanttTaskRow({
       {nhanNgoai && (
         <span
           className={cn(
-            'pointer-events-none absolute z-10 truncate text-[11px] whitespace-nowrap',
+            'pointer-events-none absolute z-10 flex items-center gap-1.5 text-[11px] whitespace-nowrap',
             xong ? 'text-muted-foreground line-through' : 'text-foreground/80',
           )}
-          style={{ left: bar.left + bar.width + LINK_DOT + 8, top: 10, maxWidth: 220 }}
+          style={{ left: bar.left + bar.width + LINK_DOT + 8, top: 10, maxWidth: 260 }}
         >
-          {task.title}
+          <span className="truncate">{task.title}</span>
+          <SoNgay task={task} />
         </span>
       )}
     </div>
@@ -252,13 +260,24 @@ function OffscreenJump({
 }
 
 /**
- * Hàng NHÓM: thanh tổng trải từ ngày sớm nhất tới hạn muộn nhất của các việc
- * trong nhóm, dáng dẹt và có hai chân quặp xuống đúng kiểu thanh tóm tắt của
- * Gantt cổ điển — nhìn là phân biệt ngay với thanh việc.
+ * Hàng NHÓM: quãng của nhóm vẽ thành một **mảng nền mờ bo góc** trải từ ngày sớm
+ * nhất tới hạn muộn nhất của các việc trong nhóm.
+ *
+ * ⚠️ Bản trước là một thanh dẹt xám đậm kèm hai chân tam giác quặp xuống (lối
+ * thanh tóm tắt của Gantt cổ điển). Khách bỏ 31/08/2026 — *"UI đang bị xấu"*:
+ * hai cái chân 6px lệch khỏi trục 1px, ở cỡ đó mắt không đọc ra "thanh tóm tắt"
+ * mà đọc ra hai vệt thừa; còn thân thanh thì đậm ngang thanh việc nên hàng nhóm
+ * tranh mất chú ý của chính những việc nó tóm tắt.
+ *
+ * Mảng nền thì lùi hẳn về sau: nó nói "quãng của nhóm nằm ở đây" mà không đòi
+ * nhìn. Không viền — thêm viền là nó lại thành một cái hộp, tức lại tranh chú ý.
  *
  * Không kéo được: ngày của nó là ngày TÍNH RA từ các việc con, kéo thì không
  * biết phải dời việc nào.
  */
+/** Bề dày dải nền của hàng NHÓM (px) — mảnh hơn hẳn thanh việc, cố ý. */
+const GROUP_BAND_HEIGHT = 10
+
 export function GanttGroupBar({
   row,
   timeline,
@@ -271,26 +290,28 @@ export function GanttGroupBar({
     <div style={{ height: ROW_HEIGHT }} className="relative border-b bg-muted/30">
       {bar && (
         <div
-          className="absolute rounded-[3px] bg-foreground/70"
-          style={{ left: bar.left, width: bar.width, top: ROW_HEIGHT / 2 - 5, height: 10 }}
+          className="absolute overflow-hidden rounded-full bg-foreground/10"
+          //  MỎNG và canh giữa hàng. Bản đầu cao `ROW_HEIGHT - 2·BAR_PAD` (22px)
+          //  — khách chê dày: mảng ấy to gần bằng thanh việc nên hàng nhóm lại
+          //  tranh chú ý, đúng cái bệnh của thanh xám cũ mà nó thay thế. Hàng
+          //  nhóm chỉ cần nói "quãng nằm ở đây", một dải mảnh là đủ.
+          style={{
+            left: bar.left,
+            width: bar.width,
+            top: (ROW_HEIGHT - GROUP_BAND_HEIGHT) / 2,
+            height: GROUP_BAND_HEIGHT,
+          }}
           title={`${row.group.name} · ${formatDueLabel(row.range?.start ?? '')} → ${formatDueLabel(row.range?.due ?? '')}`}
         >
-          {/* Phần tô đậm = tỉ lệ việc đã hoàn thành trong nhóm. */}
+          {/*  Phần tô đậm = tỉ lệ việc đã hoàn thành trong nhóm. Vẫn giữ vì đây
+               là thông tin duy nhất hàng nhóm mang ngoài cái quãng ngày. */}
           {row.progress > 0 && (
             <span
               aria-hidden
-              className="absolute inset-y-0 left-0 rounded-l-[3px] bg-emerald-400/80"
+              className="absolute inset-y-0 left-0 bg-emerald-500/25"
               style={{ width: `${Math.min(100, row.progress * 100)}%` }}
             />
           )}
-          <span
-            aria-hidden
-            className="absolute top-full -left-px border-t-[6px] border-l-[6px] border-t-foreground/70 border-l-transparent"
-          />
-          <span
-            aria-hidden
-            className="absolute top-full -right-px border-t-[6px] border-r-[6px] border-t-foreground/70 border-r-transparent"
-          />
         </div>
       )}
     </div>
@@ -356,7 +377,7 @@ function GanttBar({
         isDragging && 'opacity-30',
         laDich && 'ring-2 ring-primary',
       )}
-      title={`${task.title} · ${formatDueLabel(dau)} → ${formatDueLabel(cuoi)}`}
+      title={`${task.title} · ${formatDueLabel(dau)} → ${formatDueLabel(cuoi)} · ${daysBetween(dau, cuoi) + 1} ngày`}
     >
       {/* Dải tiến độ nằm DƯỚI chữ, không che tiêu đề. */}
       {tienDo > 0 && (
@@ -366,8 +387,34 @@ function GanttBar({
           style={{ width: `${Math.min(100, tienDo * 100)}%` }}
         />
       )}
-      {hienNhan && <span className="relative truncate">{task.title}</span>}
+      {hienNhan && (
+        <span className="relative flex min-w-0 items-center gap-1.5">
+          <span className="truncate">{task.title}</span>
+          <SoNgay task={task} />
+        </span>
+      )}
     </div>
+  )
+}
+
+/**
+ * SỐ NGÀY của một việc, dán ngay sau tên trên thanh (hoặc sau cái nhãn ngoài
+ * thanh, khi thanh quá ngắn để chứa chữ).
+ *
+ * Có nó thì đọc được độ dài mà không phải đếm ô lưới hay dò sang cột ngày — mà
+ * đếm ô thì ở mức phóng Tuần / Tháng gần như không đếm nổi.
+ *
+ * `shrink-0` để nó KHÔNG bị cắt: thanh hẹp thì cắt cái tên (tên còn đọc được
+ * phần đầu), chứ cắt con số thành «1 ng…» thì nó thành vô nghĩa. Không hiện với
+ * việc chưa có ngày nào — chẳng có quãng nào để đếm.
+ */
+function SoNgay({ task }: { task: WorkTask }) {
+  const dau = task.start_date || task.due_date
+  const cuoi = task.due_date || task.start_date
+  if (!dau || !cuoi) return null
+
+  return (
+    <span className="shrink-0 tabular-nums opacity-70">{daysBetween(dau, cuoi) + 1} ngày</span>
   )
 }
 

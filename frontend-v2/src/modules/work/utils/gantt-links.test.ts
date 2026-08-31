@@ -136,17 +136,22 @@ describe('linkAnchors', () => {
 })
 
 describe('linkPath', () => {
-  it('đường chỉ có đoạn NGANG và đoạn DỌC — không có đoạn xiên', () => {
+  it('mỗi chỗ bẻ góc là một cung BO, và hai đoạn kề nó vẫn ngang/dọc', () => {
+    //  Đường vẫn chỉ chạy theo hai trục, chỉ khác là các đỉnh nay được bo
+    //  (khách 31/08/2026: *"arrow dạng curved arrow nha"*). Điều phải giữ: không
+    //  có đoạn XIÊN — một đoạn xiên nghĩa là đường cắt chéo qua các hàng, đè lên
+    //  đúng những cái thanh nó đang nối.
     const shape = linkPath({ x: 100, y: 18, dir: 1 }, { x: 300, y: 90, dir: 1 })
-    const points = shape.d
-      .split(/[ML]/)
-      .filter(Boolean)
-      .map((p) => p.trim().split(' ').map(Number))
 
-    for (let i = 1; i < points.length; i += 1) {
-      const doiX = points[i][0] !== points[i - 1][0]
-      const doiY = points[i][1] !== points[i - 1][1]
-      expect(doiX && doiY).toBe(false)
+    const goc = [...shape.d.matchAll(/L([\d.-]+) ([\d.-]+) Q([\d.-]+) ([\d.-]+) ([\d.-]+) ([\d.-]+)/g)]
+    expect(goc.length).toBeGreaterThan(0)
+
+    for (const g of goc) {
+      const [vaoX, vaoY, dinhX, dinhY, raX, raY] = g.slice(1).map(Number)
+      //  Điểm vào cung và điểm ra cung phải thẳng hàng với ĐỈNH theo đúng một
+      //  trục — lệch cả hai trục là đoạn kề đã xiên.
+      expect(vaoX === dinhX || vaoY === dinhY).toBe(true)
+      expect(raX === dinhX || raY === dinhY).toBe(true)
     }
   })
 

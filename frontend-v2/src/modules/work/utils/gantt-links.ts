@@ -18,6 +18,9 @@ import { barGeometry, isMilestone, milestoneCenter, type GanttTimeline } from '.
 /** Đoạn cụt ra/vào mép thanh trước khi mũi tên bẻ góc (px). */
 const STUB = 12
 
+/** Bán kính bo ở mỗi chỗ bẻ góc (px). Tự co lại nếu đoạn kề ngắn hơn `2r`. */
+const CORNER_RADIUS = 6
+
 /** Đầu thanh mà một mũi tên rời đi / bay tới. */
 export type LinkSide = 'start' | 'end'
 
@@ -48,7 +51,10 @@ export interface LinkAnchor {
 }
 
 export interface LinkShape {
-  /** Thuộc tính `d` của `<path>` — đường gấp khúc chỉ có đoạn ngang và dọc. */
+  /**
+   * Thuộc tính `d` của `<path>`: các đoạn NGANG và DỌC, nối nhau bằng **góc bo**
+   * (`Q`) thay vì góc vuông sắc.
+   */
   d: string
   /** Tam giác đầu mũi tên, dạng `points` của `<polygon>`. */
   arrow: string
@@ -144,7 +150,7 @@ export function linkAnchors(
  */
 export function linkPath(from: LinkAnchor, to: LinkAnchor): LinkShape {
   const points = elbowPoints(from, to)
-  const d = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x} ${p.y}`).join(' ')
+  const d = roundedPath(points, CORNER_RADIUS)
 
   //  Đầu mũi tên nằm ÁP mép thanh đích, nhọn về phía nó đang bay tới.
   const tip = 7
@@ -184,6 +190,55 @@ function elbowPoints(from: LinkAnchor, to: LinkAnchor): Point[] {
     { x: inX, y: to.y },
     { x: to.x, y: to.y },
   ])
+}
+
+/**
+ * Đường gấp khúc vẽ lại với GÓC BO — mỗi đỉnh bị cắt lẹm đi `radius` về hai phía
+ * rồi nối bằng một cung bậc hai đi qua đúng đỉnh cũ.
+ *
+ * Góc vuông sắc ở cỡ nét 1.5px trông cứng và rối, nhất là khi vài mũi tên chạy
+ * song song qua cùng một hành lang; bo góc thì mắt lần theo được từng đường.
+ *
+ * Bán kính tự co lại theo đoạn NGẮN NHẤT kề đỉnh (`len / 2`): đoạn cụt chỉ dài
+ * `STUB` = 12px, bo cứng 6px ở cả hai đầu là hai cung ăn hết đoạn rồi chồm sang
+ * nhau, đường vặn lại thành nút.
+ */
+function roundedPath(points: Point[], radius: number): string {
+  if (points.length < 2) return ''
+
+  let d = `M${round(points[0].x)} ${round(points[0].y)}`
+  for (let i = 1; i < points.length - 1; i += 1) {
+    const truoc = points[i - 1]
+    const dinh = points[i]
+    const sau = points[i + 1]
+    const r = Math.min(radius, doDai(truoc, dinh) / 2, doDai(dinh, sau) / 2)
+
+    const vao = doc(dinh, truoc, r)
+    const ra = doc(dinh, sau, r)
+    d += ` L${round(vao.x)} ${round(vao.y)} Q${round(dinh.x)} ${round(dinh.y)} ${round(ra.x)} ${round(ra.y)}`
+  }
+
+  const cuoi = points[points.length - 1]
+  return `${d} L${round(cuoi.x)} ${round(cuoi.y)}`
+}
+
+/** Điểm cách `tu` đúng `khoang` px, đi về phía `toi`. */
+function doc(tu: Point, toi: Point, khoang: number): Point {
+  const dai = doDai(tu, toi)
+  if (dai === 0) return tu
+  return {
+    x: tu.x + ((toi.x - tu.x) / dai) * khoang,
+    y: tu.y + ((toi.y - tu.y) / dai) * khoang,
+  }
+}
+
+function doDai(a: Point, b: Point): number {
+  return Math.hypot(b.x - a.x, b.y - a.y)
+}
+
+/** Một chữ số thập phân là quá đủ cho toạ độ pixel — chuỗi `d` ngắn lại một nửa. */
+function round(v: number): number {
+  return Math.round(v * 10) / 10
 }
 
 /** Bỏ điểm trùng nhau — đoạn dài 0 làm `<path>` mọc ra một chấm ở chỗ bẻ góc. */
