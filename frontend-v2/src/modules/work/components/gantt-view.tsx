@@ -31,18 +31,13 @@ import {
   snapToDayGrid,
   type GanttDragData,
 } from '../utils/gantt-drag'
-import {
-  COLUMN_GAP,
-  HEADER_HEIGHT,
-  ROW_HEIGHT,
-  SPLITTER_WIDTH,
-} from '../utils/gantt-layout'
+import { COLUMN_GAP, HEADER_HEIGHT, ROW_HEIGHT } from '../utils/gantt-layout'
 import { rowCenterY, taskEdges } from '../utils/gantt-links'
 import { buildGanttRows, indexTaskRows } from '../utils/gantt-rows'
 import { buildHeader, buildTimeline, todayLeft, type GanttZoom } from '../utils/gantt-scale'
 import { groupTasksBySection } from '../utils/group-tasks'
 import type { KanbanDropPlace } from '../utils/kanban-drop'
-import { TITLE_COLUMN, type TaskListColumn } from '../utils/list-columns'
+import { buildListColumns, TITLE_COLUMN, type TaskListColumn } from '../utils/list-columns'
 import { ROW_PAD_LEFT } from '../utils/list-metrics'
 import { today } from '../utils/due-date'
 import { priorityColorOf } from '../utils/priority-field'
@@ -62,22 +57,7 @@ import type { TaskRowActions } from './task-list-row'
  */
 const GANTT_TITLE_COLUMN: TaskListColumn = { ...TITLE_COLUMN, width: 240, minWidth: 160 }
 
-/**
- * Lưới trái Gantt chỉ có **ba cột**, gõ cứng: _Tên công việc · Phụ trách · Ngày
- * bắt đầu_ — đúng bộ của Lark (chốt với khách 31/08/2026).
- *
- * Cố ý KHÔNG lấy theo bộ «Tùy chỉnh» như khung nhìn Danh sách: ở đây mỗi cột
- * thêm vào là một khúc trục thời gian bị nuốt mất, mà người ta mở Gantt lên là
- * để nhìn cái trục ấy. Muốn xem đủ trường thì sang khung nhìn Danh sách — cùng
- * dữ liệu, cùng ô sửa tại chỗ.
- *
- * Bề rộng vẫn kéo giãn được và nhớ riêng cho Gantt (`useListColumnWidths` với
- * phạm vi `'gantt'`).
- */
-const GANTT_COLUMNS: TaskListColumn[] = [
-  { key: 'assignees', label: 'Phụ trách', width: 150 },
-  { key: 'start', label: 'Ngày bắt đầu', width: 130 },
-]
+
 
 interface GanttViewProps extends TaskRowActions {
   listId: number
@@ -213,8 +193,13 @@ export function GanttView({
   const taskRows = useMemo(() => indexTaskRows(rows), [rows])
   const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks])
 
-  const widthColumns = useMemo(() => [GANTT_TITLE_COLUMN, ...GANTT_COLUMNS], [])
-  const { widths, resize, styleVars, totalWidth } = useListColumnWidths(
+  /*  Cột lấy ĐỦ từ bộ «Tùy chỉnh» y như khung nhìn Danh sách — nhưng ô chứa
+      lưới thì hẹp (mặc định vừa khoảng ba cột), nên lưới TỰ CUỘN NGANG và ô tên
+      ghim lại ở mép trái. Trước đây bản này gõ cứng ba cột và cắt phần thừa;
+      khách chốt 31/08/2026 là phải hiện đủ, chỉ mặc định thấy ba.  */
+  const columns = useMemo(() => buildListColumns(fields, labelFields), [fields, labelFields])
+  const widthColumns = useMemo(() => [GANTT_TITLE_COLUMN, ...columns], [columns])
+  const { resize, styleVars, totalWidth } = useListColumnWidths(
     listId,
     widthColumns,
     'gantt',
@@ -228,28 +213,29 @@ export function GanttView({
     resize: resizePane,
   } = useGanttPaneWidth(listId, gridContentWidth)
 
-  /*  Chỉ vẽ những cột LỌT VÀO ô chứa. Cắt bằng `overflow-hidden` thì hàng tiêu
-      đề `sticky` của lưới trái hỏng (xem ghi chú ở `gantt-grid.tsx`), mà bóp cột
-      cho vừa thì mọi chữ trong đó cụt hết. Cột rơi ra ngoài không mất đi đâu:
-      kéo rộng thanh chia là nó hiện lại.
-
-      Cột TÊN luôn được vẽ dù ô có hẹp tới đâu — một lưới không có tên việc thì
-      không còn là lưới. */
-  const fitColumns = useMemo(() => {
-    let x = ROW_PAD_LEFT + widths[GANTT_TITLE_COLUMN.key] + COLUMN_GAP
-    const out: TaskListColumn[] = []
-    for (const col of GANTT_COLUMNS) {
-      const next = x + widths[col.key] + COLUMN_GAP
-      if (next > paneWidth) break
-      x = next
-      out.push(col)
-    }
-    return out
-  }, [widths, paneWidth])
-
   const gridRef = useRef<HTMLDivElement>(null)
   const areaRef = useRef<HTMLDivElement>(null)
+  /** Khung cuộn của TRỤC THỜI GIAN — cuộn cả hai chiều, và là bên chủ động. */
   const scrollRef = useRef<HTMLDivElement>(null)
+  /** Khung cuộn của LƯỚI TRÁI — chỉ cuộn ngang; chiều dọc do bên kia lái. */
+  const gridPaneRef = useRef<HTMLDivElement>(null)
+
+  /*  Hai bên là HAI khung cuộn riêng (Lark cũng vậy) chứ không còn một khung
+      chung. Đổi vì lưới trái phải tự cuộn ngang để xem hết cột, mà một khung
+      chung thì cuộn ngang là kéo luôn cả trục thời gian đi.
+
+      Cái giá phải trả: chiều DỌC phải tự đồng bộ. Trục thời gian là bên chủ
+      động (nó có thanh cuộn dọc thật); lưới trái để `overflow-y-hidden` và được
+      lái bằng `scrollTop` — `scrollTop` vẫn gán được trên phần tử ẩn tràn, nên
+      không cần thanh cuộn thứ hai chạy song song trông rất rối.
+
+      Lăn chuột khi con trỏ đang ở TRÊN lưới trái thì chuyển thẳng sang bên kia,
+      nếu không thì rê chuột vào vùng tên việc là lăn không ăn gì.  */
+  function syncGridScroll() {
+    const grid = gridPaneRef.current
+    const box = scrollRef.current
+    if (grid && box) grid.scrollTop = box.scrollTop
+  }
 
   /*  Mở ra là nhìn thấy HÔM NAY luôn, đặt ở khoảng một phần ba bên trái để còn
       thấy cả việc vừa qua lẫn việc sắp tới.
@@ -345,16 +331,14 @@ export function GanttView({
       onDragEnd={handleDragEnd}
       onDragCancel={() => setKeo(null)}
     >
-      <div className="relative flex min-h-0 flex-1 flex-col">
       <div
-        ref={scrollRef}
         style={styleVars}
-        /*  KHÔNG viền, không bo góc, cũng KHÔNG cả vạch trên: Gantt là một mặt
-            phẳng liền — lưới trái và trục thời gian phải đọc như MỘT bảng, thêm
-            bất kỳ nét kẻ nào quanh chúng là mắt tự tách thành hai vùng rời.
-            Đúng lối Lark; phần đầu bảng đã có vạch dưới của hàng tiêu đề rồi.  */
+        /*  KHÔNG viền, không bo góc, không vạch trên, và nền TRÙNG nền trang
+            (`bg-canvas`) chứ không phải một tấm thẻ trắng: Gantt là một mặt
+            phẳng liền — thêm bất kỳ nét kẻ hay mảng trắng nào quanh nó là mắt tự
+            tách thành hai vùng rời. Đúng lối Lark.  */
         className={cn(
-          'flex min-h-0 flex-1 overflow-auto bg-card',
+          'relative flex min-h-0 flex-1 bg-canvas',
           //  Đang kéo một mũi tên: con trỏ hình chữ thập ở KHẮP NƠI, và không
           //  cho bôi đen chữ — rê qua tên việc mà quét xanh cả dòng thì nhìn
           //  như thao tác đã hỏng.
@@ -364,18 +348,29 @@ export function GanttView({
           vuaKeo.current = false
         }}
       >
-        {/*  Lưới trái và thanh chia đi CHUNG một khối dính: dính riêng từng cái
-             thì cả hai cùng bám `left: 0` và chồng lên nhau, mà kéo thanh chia
-             thì ô lưới phình ra bên dưới nó. */}
-        <div className="sticky left-0 z-30 flex border-r border-border/60 bg-card">
+        {/*  LƯỚI TRÁI — khung cuộn RIÊNG, chỉ cuộn ngang; chiều dọc do trục thời
+             gian lái (xem `syncGridScroll`). Lăn chuột khi con trỏ đang ở trên
+             lưới thì chuyển thẳng sang bên kia, không thì rê vào vùng tên việc
+             là lăn không ăn gì.  */}
+        <div
+          ref={gridPaneRef}
+          className="shrink-0 overflow-x-auto overflow-y-hidden border-r border-border/60"
+          style={{ width: paneWidth }}
+          onWheel={(e) => {
+            const box = scrollRef.current
+            if (!box || e.deltaY === 0) return
+            box.scrollTop += e.deltaY
+          }}
+        >
           <GanttGrid
             titleColumn={GANTT_TITLE_COLUMN}
             gridRef={gridRef}
-            paneWidth={paneWidth}
+            contentWidth={gridContentWidth}
             onResize={resize}
             groups={groups}
             sections={sections}
-            columns={fitColumns}
+            columns={columns}
+            stickyTitle
             fields={fields}
             labelFields={labelFields}
             members={members}
@@ -398,15 +393,15 @@ export function GanttView({
             {...rowActions}
             onOpenTask={openTask}
           />
-          <GanttPaneSplitter width={paneWidth} maxWidth={maxPaneWidth} onResize={resizePane} />
         </div>
 
-        <div className="relative shrink-0" style={{ width: timeline.totalWidth }}>
-          <GanttTimelineHeader
-            header={header}
-            zoom={zoom}
-            stickyLeft={paneWidth + SPLITTER_WIDTH}
-          />
+        <GanttPaneSplitter width={paneWidth} maxWidth={maxPaneWidth} onResize={resizePane} />
+
+        {/*  TRỤC THỜI GIAN — khung cuộn CHÍNH: cuộn cả hai chiều và lái chiều
+             dọc của lưới trái. */}
+        <div ref={scrollRef} onScroll={syncGridScroll} className="min-w-0 flex-1 overflow-auto">
+        <div className="relative" style={{ width: timeline.totalWidth }}>
+          <GanttTimelineHeader header={header} zoom={zoom} />
 
           {/* Lưới nền — vẽ theo Ô của hàng tiêu đề dưới, không phải theo từng
               ngày: ở mức Tháng một dải hai năm là hơn 700 ngày, tức 700 nút DOM
@@ -486,7 +481,7 @@ export function GanttView({
             )}
           </div>
         </div>
-      </div>
+        </div>
 
         {/*  Cụm điều khiển NẰM ĐÈ lên góc phải dải tiêu đề, đúng chỗ Lark đặt.
 

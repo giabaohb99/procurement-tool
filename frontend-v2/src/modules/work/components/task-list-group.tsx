@@ -55,6 +55,8 @@ interface TaskListGroupProps extends TaskRowActions {
   onToggleExpand: (taskId: number) => void
   /** Chiều cao CỐ ĐỊNH mỗi dòng (px) — chỉ Gantt truyền. Xem `TaskGroupsBoard`. */
   rowHeight?: number
+  /** Ghim ô tên khi cuộn ngang — chỉ Gantt. Xem `TaskListRow.stickyTitle`. */
+  stickyTitle?: boolean
   /** Thêm việc vào ĐÚNG cột này — `sectionId` null với nhóm "Chưa phân cột". */
   onAddTask: (sectionId: number | null, draft: NewTaskDraft) => void
 }
@@ -84,6 +86,7 @@ export function TaskListGroup({
   expandedTaskId,
   onToggleExpand,
   rowHeight,
+  stickyTitle,
   onAddTask,
   ...rowActions
 }: TaskListGroupProps) {
@@ -164,13 +167,16 @@ export function TaskListGroup({
           type="button"
           onClick={onToggleCollapse}
           aria-expanded={!collapsed}
-          style={{ height: rowHeight }}
+          style={{ height: rowHeight, width: stickyTitle ? 'max-content' : undefined }}
           /*  Không còn tô sáng dải tiêu đề khi con trỏ đi qua: hàng cột nay dạt
               ra chừa chỗ, khe hở đã nói rõ chỗ đậu — tô thêm một dải nữa là hai
               tín hiệu chỉ về hai chỗ khác nhau.  */
           className={cn(
             'flex w-full items-center gap-1.5 py-2 pr-2 pl-6 text-left',
             !dragActive && 'hover:bg-accent/30',
+            //  Tiêu đề nhóm cũng ghim lại khi cuộn ngang, cùng lý do với ô tên:
+            //  kéo sang phải mà mất tên nhóm thì không biết đang xem cột nào.
+            stickyTitle && 'sticky left-0 z-10 bg-canvas',
           )}
         >
           <ChevronRight
@@ -209,6 +215,7 @@ export function TaskListGroup({
                 expanded={expandedTaskId === task.id}
                 onToggleExpand={() => onToggleExpand(task.id)}
                 rowHeight={rowHeight}
+                stickyTitle={stickyTitle}
                 {...rowActions}
               />
             ))}
@@ -220,6 +227,7 @@ export function TaskListGroup({
               members={members}
               defaultPicId={defaultPicId}
               rowHeight={rowHeight}
+              stickyTitle={stickyTitle}
               onAdd={(draft) => onAddTask(group.sectionId, draft)}
             />
           )}
@@ -242,6 +250,7 @@ interface TaskRowWithSubtasksProps extends TaskRowActions {
   expanded: boolean
   onToggleExpand: () => void
   rowHeight?: number
+  stickyTitle?: boolean
 }
 
 /**
@@ -296,12 +305,14 @@ function NewTaskRow({
   members,
   defaultPicId,
   rowHeight,
+  stickyTitle,
   onAdd,
 }: {
   columns: TaskListColumn[]
   members: WorkMember[]
   defaultPicId?: number
   rowHeight?: number
+  stickyTitle?: boolean
   onAdd: (draft: NewTaskDraft) => void
 }) {
   const [typing, setTyping] = useState(false)
@@ -313,6 +324,7 @@ function NewTaskRow({
         members={members}
         defaultPicId={defaultPicId}
         rowHeight={rowHeight}
+        stickyTitle={stickyTitle}
         onCancel={() => setTyping(false)}
         onSave={onAdd}
       />
@@ -326,12 +338,20 @@ function NewTaskRow({
     <button
       type="button"
       onClick={() => setTyping(true)}
-      style={{ paddingLeft: ROW_PAD_LEFT, height: rowHeight }}
-      className="flex w-full items-center gap-1.5 border-b border-border/60 bg-muted/30 py-1.5 pr-2 text-left text-sm text-muted-foreground hover:bg-accent/40 hover:text-foreground"
+      style={{ paddingLeft: stickyTitle ? 0 : ROW_PAD_LEFT, height: rowHeight }}
+      className="flex w-full items-center border-b border-border/60 bg-muted/30 py-1.5 pr-2 text-left text-sm text-muted-foreground hover:bg-accent/40 hover:text-foreground"
     >
-      <span className="w-[18px] shrink-0" aria-hidden />
-      <Plus className="size-4 shrink-0" />
-      <span className="px-1">Việc mới</span>
+      {/*  Ghim phần CHỮ chứ không ghim cả cái nút: nút rộng bằng cả bảng nên
+           `sticky` trên nó không dịch được đi đâu, cuộn ngang một quãng là chữ
+           «Việc mới» trôi khỏi màn hình và dòng nhìn như trống trơn. */}
+      <span
+        className={cn('flex items-center gap-1.5', stickyTitle && 'sticky left-0')}
+        style={{ paddingLeft: stickyTitle ? ROW_PAD_LEFT : 0 }}
+      >
+        <span className="w-[18px] shrink-0" aria-hidden />
+        <Plus className="size-4 shrink-0" />
+        <span className="px-1">Việc mới</span>
+      </span>
     </button>
   )
 }

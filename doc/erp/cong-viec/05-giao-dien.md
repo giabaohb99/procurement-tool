@@ -192,23 +192,30 @@ nhận vào chỗ đó một cây React của mình mà không phải vá. Bố 
 Lưới trái (dính khi cuộn ngang) · **thanh chia kéo được** · trục thời gian. Cả hai bên nằm
 CHUNG một khung cuộn nên không bao giờ lệch hàng — khỏi đồng bộ hai thanh cuộn dọc bằng tay.
 
-**KHÔNG bọc trong khung viền bo góc** như các màn danh sách khác (chốt với khách
-31/08/2026): Gantt là một mặt phẳng liền, thêm một cái hộp quanh nó là mắt tự tách lưới và
-trục thành hai vùng rời. Đúng lối Lark.
+**KHÔNG viền, không bo góc, không vạch trên, và nền TRÙNG nền trang** (`bg-canvas`, không
+phải thẻ trắng `bg-card`) — chốt với khách 31/08/2026: Gantt là một mặt phẳng liền, thêm
+một cái hộp hay một mảng trắng quanh nó là mắt tự tách lưới và trục thành hai vùng rời.
+Đúng lối Lark. Ô nào phải ĐỤC vì có nội dung trượt bên dưới (ô tên ghim, tiêu đề nhóm ghim)
+thì cũng lấy `bg-canvas` chứ không lấy trắng.
 
 - Lưới trái dùng **chính `TaskGroupsBoard`** của khung nhìn Danh sách — nên có đủ: ô sửa
   tại chỗ, ô tick, bung việc con, **ba tầng kéo thả** (việc · việc con · cột), và dòng
   **«Việc mới»** cuối mỗi nhóm. Chép sang bản thứ hai thì hai bên lệch nhau ngay ở lần sửa
   kế tiếp, mà lệch ở đây là *kéo thả sai chỗ* chứ không phải sai màu.
-- **Đúng BA cột, gõ cứng**: _Tên công việc · Phụ trách · Ngày bắt đầu_ (chốt 31/08/2026,
-  theo Lark). Cố ý KHÔNG lấy theo bộ «Tùy chỉnh» như Danh sách: mỗi cột thêm vào là một
-  khúc trục thời gian bị nuốt, mà người ta mở Gantt lên là để nhìn cái trục ấy. Muốn xem
-  đủ trường thì sang Danh sách — cùng dữ liệu, cùng ô sửa. Bề rộng cột nhớ RIÊNG cho Gantt
-  (`erp.work.ganttcols.{listId}`), bề rộng ô lưới ở `erp.work.ganttpane.{listId}`.
-- Cột không lọt vào ô lưới thì **không vẽ**, chứ không cắt bằng `overflow-hidden`: đặt
-  `overflow` khác `visible` là ô ấy thành khung cuộn của riêng nó và hàng tiêu đề
-  `sticky top-0` bên trong dính vào mép ô — tức không dính gì cả. Lỗi lộ ra khi cuộn
-  xuống: tiêu đề lưới trái trôi mất trong khi tiêu đề trục thời gian vẫn đứng.
+- Lưới vẽ **ĐỦ cột** của bộ «Tùy chỉnh» y như Danh sách, nhưng ô chứa nó hẹp (mặc định vừa
+  khoảng **ba cột**) nên nó **tự cuộn ngang**, và **ô TÊN ghim lại** ở mép trái
+  (`stickyTitle` — cũng ghim cả tiêu đề nhóm và chữ «Việc mới»). Bề rộng cột nhớ RIÊNG cho
+  Gantt (`erp.work.ganttcols.{listId}`), bề rộng ô lưới ở `erp.work.ganttpane.{listId}`.
+- ⚠️ **Hai bên là HAI khung cuộn riêng** (Lark cũng vậy), không phải một khung chung: lưới
+  phải tự cuộn ngang để xem hết cột, mà khung chung thì cuộn ngang là kéo luôn cả trục
+  thời gian đi. Cái giá là chiều DỌC phải tự đồng bộ — trục thời gian là bên **chủ động**
+  (có thanh cuộn dọc thật), lưới trái để `overflow-y-hidden` và được lái bằng `scrollTop`
+  (gán được cả khi tràn bị ẩn), nên không có hai thanh cuộn dọc chạy song song trông rất
+  rối. Lăn chuột khi con trỏ ở trên lưới thì chuyển thẳng deltaY sang bên kia, không thì
+  rê vào vùng tên việc là lăn không ăn gì.
+- Nhờ mỗi bên là một khung cuộn: hàng tiêu đề `sticky top-0` của CẢ HAI bên đều dính đúng
+  (sticky bám khung cuộn gần nhất), nhãn tháng dính `left-0` của chính trục, và ô tên dính
+  `left-0` của chính lưới — không cần tính bù trừ bề rộng nào.
 - ⚠️ **Hai bên phải sinh ra ĐÚNG cùng một dãy hàng**: `TaskGroupsBoard` vẽ bên trái,
   `buildGanttRows` dựng lại y hệt cho bên phải (nhóm · việc · việc con đang bung · dòng
   «Việc mới»), và MỌI dòng cao đúng `ROW_HEIGHT`. Vì vậy state đổi số dòng (thu/mở nhóm ·

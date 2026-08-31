@@ -228,6 +228,8 @@ export interface TaskGroupsBoardProps extends TaskRowActions {
    * dòng tự cao theo nội dung.
    */
   rowHeight?: number
+  /** Ghim ô tên khi cuộn ngang — chỉ Gantt. Xem `TaskListRow.stickyTitle`. */
+  stickyTitle?: boolean
   /**
    * Báo ra ngoài CỘT nào đang bị kéo (`null` = không kéo cột nào).
    *
@@ -273,6 +275,7 @@ export function TaskGroupsBoard({
   expandedTaskId,
   onToggleExpand,
   rowHeight,
+  stickyTitle,
   onDraggingSectionChange,
   onMoveTask,
   onMoveSubtask,
@@ -417,6 +420,7 @@ export function TaskGroupsBoard({
               expandedTaskId={expandedTaskId}
               onToggleExpand={onToggleExpand}
               rowHeight={rowHeight}
+              stickyTitle={stickyTitle}
               onAddTask={onAddTask}
               {...rowActions}
             />

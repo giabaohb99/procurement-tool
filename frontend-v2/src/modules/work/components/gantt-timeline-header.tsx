@@ -5,11 +5,6 @@ import type { GanttHeader, GanttZoom } from '../utils/gantt-scale'
 interface GanttTimelineHeaderProps {
   header: GanttHeader
   zoom: GanttZoom
-  /**
-   * Mép trái của vùng NHÌN THẤY (px) = bề rộng lưới trái + thanh chia. Nhãn
-   * tháng dính vào đúng chỗ này; để `0` thì nó trượt xuống dưới lưới và mất tăm.
-   */
-  stickyLeft: number
 }
 
 /**
@@ -17,7 +12,9 @@ interface GanttTimelineHeaderProps {
  * năm), hàng dưới là NGÀY** (hoặc tuần `T.37` / tháng `Th 9`, tùy mức phóng).
  * Nội dung do `buildHeader` quyết định, ở đây chỉ còn việc vẽ.
  *
- * **Nhãn hàng trên DÍNH khi cuộn ngang** (`sticky`): kéo sang giữa tháng 9 mà
+ * **Nhãn hàng trên DÍNH khi cuộn ngang** (`sticky left-0`, mốc là mép trái của
+ * chính khung cuộn trục thời gian — trục nay là khung cuộn riêng, xem
+ * `gantt-view.tsx`): kéo sang giữa tháng 9 mà
  * chữ "Tháng 9/2026" đã trôi khỏi màn hình thì người dùng chỉ còn nhìn thấy một
  * dãy số 1…30 không biết của tháng nào. Sticky đặt trên chính ô của tháng ấy nên
  * nhãn chỉ trượt trong lòng tháng mình rồi nhường chỗ cho tháng kế — không bao
@@ -26,7 +23,7 @@ interface GanttTimelineHeaderProps {
  * `sticky top-0` thì lo chiều dọc: cuộn xuống một dự án dài mà mất hàng tiêu đề
  * thì mọi thanh đều thành "một thanh nằm đâu đó", không đọc ra ngày nào nữa.
  */
-export function GanttTimelineHeader({ header, zoom, stickyLeft }: GanttTimelineHeaderProps) {
+export function GanttTimelineHeader({ header, zoom }: GanttTimelineHeaderProps) {
   return (
     <div className="sticky top-0 z-20 bg-muted" style={{ height: HEADER_HEIGHT }}>
       <div className="flex" style={{ height: ROW_HEIGHT }}>
@@ -40,8 +37,8 @@ export function GanttTimelineHeader({ header, zoom, stickyLeft }: GanttTimelineH
                  cạnh và cả hàng thành một dải chữ chồng nhau không đọc nổi. */}
             {cell.width >= 56 && (
               <span
-                className="sticky inline-block truncate px-3 py-3 text-sm font-medium"
-                style={{ left: stickyLeft, maxWidth: cell.width }}
+                className="sticky left-0 inline-block truncate px-3 py-3 text-sm font-medium"
+                style={{ maxWidth: cell.width }}
               >
                 {cell.label}
               </span>

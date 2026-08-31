@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 
 import { Checkbox } from '@/shared/ui/checkbox'
 import { Input } from '@/shared/ui/input'
+import { cn } from '@/shared/utils/cn'
 import { columnWidthVar } from '../hooks/use-list-column-widths'
 import { ROW_PAD_LEFT } from '../utils/list-metrics'
 import type { WorkLabelField, WorkMember } from '../types/work'
@@ -37,6 +38,8 @@ interface TaskDraftRowProps {
   defaultPicId?: number
   /** Chiều cao CỐ ĐỊNH của dòng (px) — chỉ Gantt truyền, xem `TaskListRow`. */
   rowHeight?: number
+  /** Ghim ô tên khi cuộn ngang — chỉ Gantt, xem `TaskListRow.stickyTitle`. */
+  stickyTitle?: boolean
   onSave: (draft: NewTaskDraft) => void
   onCancel: () => void
 }
@@ -67,6 +70,7 @@ export function TaskDraftRow({
   members,
   defaultPicId,
   rowHeight,
+  stickyTitle = false,
   onSave,
   onCancel,
 }: TaskDraftRowProps) {
@@ -126,7 +130,10 @@ export function TaskDraftRow({
            khoảng đệm co giãn — có thế các ô còn lại mới thẳng hàng với dòng
            trên khi người dùng kéo giãn cột tên. */}
       <div
-        className="flex min-w-0 shrink-0 items-center gap-1.5"
+        className={cn(
+          'flex min-w-0 shrink-0 items-center gap-1.5',
+          stickyTitle && 'sticky left-0 z-10 bg-accent/30',
+        )}
         style={{ width: `var(${columnWidthVar(TITLE_COLUMN.key)})` }}
       >
         <span className="w-[18px] shrink-0" aria-hidden />

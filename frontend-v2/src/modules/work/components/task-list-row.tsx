@@ -84,6 +84,14 @@ interface TaskListRowProps extends TaskRowActions {
    * thì dòng tự cao theo nội dung như khung nhìn Danh sách xưa nay.
    */
   rowHeight?: number
+  /**
+   * GHIM ô TÊN vào mép trái khi cuộn ngang — chỉ khung nhìn Gantt bật.
+   *
+   * Lưới trái bên đó hẹp (mặc định thấy ~3 cột) và tự cuộn ngang để xem nốt các
+   * cột còn lại; không ghim thì kéo sang phải là mất luôn tên việc, còn lại một
+   * bảng số liệu không biết của ai.
+   */
+  stickyTitle?: boolean
 }
 
 /**
@@ -113,6 +121,7 @@ export function TaskListRow({
   expanded = false,
   onToggleExpand,
   rowHeight,
+  stickyTitle = false,
   onOpenTask,
   onToggleDone,
   onRename,
@@ -221,7 +230,12 @@ export function TaskListRow({
            không còn `flex-1`. `min-w-0` để chữ dài cắt cụt trong lòng nó thay vì
            đẩy các cột số liệu văng khỏi khung. */}
       <div
-        className="flex min-w-0 shrink-0 items-center gap-1.5"
+        className={cn(
+          'flex min-w-0 shrink-0 items-center gap-1.5',
+          //  Nền ĐỤC là bắt buộc khi ghim: các cột khác trượt ngang ngay dưới ô
+          //  này, nền trong là chữ chồng lên chữ.
+          stickyTitle && 'sticky left-0 z-10 bg-canvas',
+        )}
         style={{ width: `var(${columnWidthVar(TITLE_COLUMN.key)})` }}
       >
         {isSubtask && <span className="shrink-0" style={{ width: LEAD_WIDTH }} aria-hidden />}
