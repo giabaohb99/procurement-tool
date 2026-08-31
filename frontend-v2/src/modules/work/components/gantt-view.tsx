@@ -304,6 +304,19 @@ export function GanttView({
     if (box) setScrollbarWidth(box.offsetWidth - box.clientWidth)
   }, [rows.length, paneWidth])
 
+  /*  Đặt lịch cho một việc CHƯA có ngày, bằng cách kéo ngay trên hàng trống của
+      nó (xem `GanttScheduleLayer`). CỘT MỐC chỉ nhận MỘT đầu ngày — nó là một
+      thời điểm chứ không phải một quãng, ghi cả `start_date` cho nó là bịa ra
+      một dữ liệu mà panel chi tiết còn chẳng có ô để hiện.  */
+  const scheduleTask = useCallback(
+    (taskId: number, from: string, to: string) => {
+      const task = taskById.get(taskId)
+      if (!task) return
+      onMoveDates(taskId, isMilestone(task) ? { due_date: to } : { start_date: from, due_date: to })
+    },
+    [taskById, onMoveDates],
+  )
+
   const jumpToTask = useCallback(
     (taskId: number) => {
       const box = scrollRef.current
@@ -551,6 +564,7 @@ export function GanttView({
                   canEdit={canEdit}
                   offscreen={offscreenBars.get(row.task.id) ?? null}
                   onJumpToTask={jumpToTask}
+                  onSchedule={scheduleTask}
                   onOpenTask={openTask}
                   onStartLink={startLink}
                   linkTargetId={draft?.targetTaskId ?? null}

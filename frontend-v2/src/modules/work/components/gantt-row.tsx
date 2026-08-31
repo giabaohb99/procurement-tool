@@ -20,6 +20,7 @@ import type { GanttGroupRow } from '../utils/gantt-rows'
 import type { LinkSide } from '../utils/gantt-links'
 import { barGeometry, isMilestone, milestoneCenter, rangeGeometry, type GanttTimeline } from '../utils/gantt-scale'
 import { chipClass } from '../utils/work-colors'
+import { GanttScheduleLayer } from './gantt-schedule-layer'
 
 export interface GanttLinkHandlers {
   /** Bắt đầu kéo một mũi tên từ đầu `side` của việc này. */
@@ -48,6 +49,8 @@ interface GanttTaskRowProps extends GanttLinkHandlers {
    */
   offscreen: OffscreenSide | null
   onJumpToTask: (taskId: number) => void
+  /** Đặt lịch cho một việc CHƯA có ngày, bằng cách kéo trên hàng trống của nó. */
+  onSchedule: (taskId: number, from: string, to: string) => void
   onOpenTask: (taskId: number) => void
 }
 
@@ -70,6 +73,7 @@ export const GanttTaskRow = memo(function GanttTaskRow({
   canEdit,
   offscreen,
   onJumpToTask,
+  onSchedule,
   onOpenTask,
   onStartLink,
   linkTargetId,
@@ -88,7 +92,19 @@ export const GanttTaskRow = memo(function GanttTaskRow({
 
   if (isMilestone(task)) {
     const center = milestoneCenter(task, timeline)
-    if (center === null) return <div style={{ height: ROW_HEIGHT }} className={nen} />
+    //  Cột mốc chưa có ngày cũng xếp lịch được y như việc thường — nó chỉ nhận
+    //  một đầu ngày, `GanttView` lo việc ghi xuống trường nào.
+    if (center === null)
+      return (
+        <div style={{ height: ROW_HEIGHT }} className={nen}>
+          {canEdit && (
+            <GanttScheduleLayer
+              timeline={timeline}
+              onSchedule={(from, to) => onSchedule(task.id, from, to)}
+            />
+          )}
+        </div>
+      )
     return (
       <div style={{ height: ROW_HEIGHT }} className={nen}>
         <OffscreenJump side={offscreen} task={task} onJump={onJumpToTask} />
@@ -107,7 +123,20 @@ export const GanttTaskRow = memo(function GanttTaskRow({
   }
 
   const bar = barGeometry(task, timeline)
-  if (!bar) return <div style={{ height: ROW_HEIGHT }} className={nen} />
+  //  Việc CHƯA CÓ NGÀY: hàng trống, nhưng cả hàng là chỗ XẾP LỊCH — rê vào hiện
+  //  ô nét đứt kèm `+`, kéo ngang là chọn quãng. Không có chip «cuộn về thanh»
+  //  vì chẳng có thanh nào để về.
+  if (!bar)
+    return (
+      <div style={{ height: ROW_HEIGHT }} className={nen}>
+        {canEdit && (
+          <GanttScheduleLayer
+            timeline={timeline}
+            onSchedule={(from, to) => onSchedule(task.id, from, to)}
+          />
+        )}
+      </div>
+    )
   const nhanNgoai = bar.width < MIN_LABEL_WIDTH
 
   return (
