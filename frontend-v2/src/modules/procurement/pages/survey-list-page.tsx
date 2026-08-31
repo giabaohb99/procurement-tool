@@ -134,7 +134,8 @@ function SurveyListContent() {
       {
         key: 'survey_type',
         header: 'Loại',
-        width: 130,
+        //  Đủ chỗ cho nhãn dài nhất "Khảo sát NCC & SP" mà không cắt chữ.
+        width: 170,
         sortable: true,
         cell: (survey) => (
           <Badge variant="outline">

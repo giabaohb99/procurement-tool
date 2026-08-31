@@ -132,7 +132,19 @@ export const SURVEY_STATUS_LABELS: Record<string, string> = {
   cancelled: 'Đã từ chối',
 }
 
+/**
+ * Nhãn LOẠI phiếu khảo sát.
+ *
+ * `combined` là loại DUY NHẤT còn sinh ra: backend đặt cứng `survey_type="combined"`
+ * cho mọi phiếu tạo mới (`app/modules/survey/service.py`) vì một phiếu nay ôm cả hai
+ * bảng NCC và SP. Hai mã còn lại là dữ liệu CŨ (8 phiếu `supplier`, 9 phiếu `product`
+ * trên bản dev) — vẫn phải khai ở đây, bỏ đi là 17 phiếu đó hiện mã tiếng Anh trần.
+ *
+ * Thiếu `combined` chính là lỗi đã lủng: cột "Loại" in thẳng chữ `combined` ra màn
+ * hình, và ô lọc không có mục nào chọn được đúng 2.693 phiếu đang có.
+ */
 export const SURVEY_TYPE_LABELS: Record<string, string> = {
+  combined: 'Khảo sát NCC & SP',
   supplier: 'Khảo sát NCC',
   product: 'Khảo sát SP',
 }

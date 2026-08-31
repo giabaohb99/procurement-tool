@@ -32,6 +32,24 @@ interface ColumnHeaderCellProps<T> {
 }
 
 /**
+ * Người dùng có đang bôi đen chữ NẰM TRONG ô tiêu đề này không.
+ *
+ * Phải xét cả chỗ chứa vệt bôi đen chứ không chỉ hỏi "có bôi đen không": vệt đó
+ * có thể nằm ở một ô khác từ lúc nãy và chưa bị xoá, chặn theo kiểu đó thì bấm
+ * mũi tên sắp xếp không ăn mà chẳng hiểu vì sao.
+ */
+function hasSelectionInside(element: Element): boolean {
+  const selection = window.getSelection()
+  if (!selection || selection.isCollapsed || selection.rangeCount === 0) return false
+
+  const { anchorNode, focusNode } = selection
+  return (
+    (anchorNode !== null && element.contains(anchorNode)) ||
+    (focusNode !== null && element.contains(focusNode))
+  )
+}
+
+/**
  * Ô tiêu đề: nhãn cột + bắt đầu kéo đổi vị trí + nút sắp xếp + vạch kéo giãn ở mép phải.
  */
 export function ColumnHeaderCell<T>({
@@ -86,13 +104,21 @@ export function ColumnHeaderCell<T>({
           isSortable && 'cursor-pointer hover:text-foreground',
         )}
         onClick={(e) => {
-          if (isSortable) {
-            e.stopPropagation()
-            onSort?.()
-          }
+          if (!isSortable) return
+          // Vừa bôi đen tên cột để chép thì cú nhả chuột đó KHÔNG phải lệnh sắp
+          // xếp — không chặn thì mỗi lần chép tên cột là bảng nhảy thứ tự, mà
+          // nháy đúp (chọn cả từ) còn sắp xếp hai lần liền.
+          if (hasSelectionInside(e.currentTarget)) return
+          e.stopPropagation()
+          onSort?.()
         }}
       >
-        <span className="truncate">
+        {/* `select-text` chọc thủng `select-none` của ô: TÊN CỘT phải bôi đen và
+            chép được. Người dùng thường xuyên chép tên cột ra Excel / đi hỏi lại,
+            mà cả bảng khóa chọn thì chép kiểu gì cũng không ra (khách báo
+            31/08/2026). Chỉ mở đúng cái nhãn, phần đệm còn lại của ô vẫn khóa để
+            kéo đổi vị trí cột không quét xanh cả hàng tiêu đề. */}
+        <span className="truncate select-text">
           {label}
           {required && <RequiredMark />}
         </span>
