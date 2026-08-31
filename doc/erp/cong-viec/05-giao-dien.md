@@ -152,6 +152,22 @@ cụ khung nhìn: All/Lọc/Sắp xếp/Gom nhóm/Tùy chỉnh).
 tag · nhãn tùy biến · cập nhật cuối. Tick tròn đổi `status` ngay tại chỗ. Việc con KHÔNG
 hiện thành dòng riêng (C-05).
 
+**Ô sửa tại chỗ trên dòng** đều là ô CHỌN có mũi tên — kể cả trường tùy biến kiểu CHỌN
+NHIỀU (cột Tag, `label-multi-cell.tsx`, CR-251). Một ô không mũi tên nằm giữa hàng ô chọn
+thì trông như chữ chỉ để đọc, phải bấm thử mới biết là sửa được. Kiểu chọn nhiều dựng bằng
+`DropdownMenu` chứ không `Select` (Radix `Select` chỉ giữ được MỘT giá trị).
+
+⚠️ **Ô chọn nhiều phải giữ BẢN NHÁP riêng, không đọc thẳng giá trị từ props mỗi lần tick.**
+Menu cố ý đứng yên để tick liên tiếp, mà bảng chỉ mới lại sau khi máy chủ trả lời: hai lượt
+tick nhanh hơn một vòng gọi đều đọc bộ giá trị CŨ, lượt sau ghi đè lượt trước — tick ba
+nhãn chỉ dính nhãn cuối và không có lỗi nào báo. Bản nháp bám theo máy chủ khi dữ liệu đổi,
+so theo **nội dung** chứ không theo tham chiếu (mảng props dựng mới mỗi lần render).
+
+⚠️ **Ghi nhãn có thể gặp deadlock MySQL (1213).** `write_value` xóa sạch dòng cũ của trường
+rồi chèn lại, nên hai lượt ghi cùng `(task_id, field_id)` chồng nhau là hai giao dịch khóa
+cùng một khoảng chỉ mục theo hai thứ tự — hai người cùng sửa một việc cũng ra vậy.
+`task_service` thử lại tối đa 3 lượt khi gặp đúng mã 1213; đừng gỡ.
+
 ## 6. Panel chi tiết task (clone ảnh 2)
 
 Thứ tự hàng đúng như Lark: tiêu đề (sửa tại chỗ) → PIC + nút thêm người / người theo

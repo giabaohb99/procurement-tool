@@ -12,6 +12,7 @@ from datetime import datetime
 
 from fastapi import HTTPException
 from sqlalchemy import func
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
@@ -369,6 +370,37 @@ def set_label(db: Session, actor: Actor, task_id: int, field_id: int, value) -> 
     if not field or field.list_id != t.list_id:
         raise HTTPException(400, "Trường nhãn không thuộc danh sách này")
 
-    label_values.write_value(db, field, task_id, value, actor.user_id)
-    db.commit()
+    _write_label_retrying_deadlock(db, field, task_id, value, actor.user_id)
     return _shape([t], task_enrich.collect(db, [t]))[0]
+
+
+#  MySQL: "Deadlock found when trying to get lock; try restarting transaction".
+_MYSQL_DEADLOCK = 1213
+_LABEL_WRITE_ATTEMPTS = 3
+
+
+def _write_label_retrying_deadlock(db: Session, field, task_id: int, value,
+                                   user_id: int) -> None:
+    """Ghi nhãn, thử lại khi CSDL báo deadlock.
+
+    `write_value` xóa sạch dòng cũ của trường rồi chèn lại, nên hai lượt ghi
+    CÙNG một `(task_id, field_id)` chồng nhau là hai giao dịch cùng khóa đúng
+    một khoảng chỉ mục theo hai thứ tự khác nhau — MySQL bắn 1213 và giết một
+    bên. Đây không phải chuyện hiếm: ô chọn NHIỀU giữ menu mở để tick liên tiếp,
+    mỗi lần tick là một lượt gọi, và hai người cùng sửa một việc cũng ra y vậy.
+    Người dùng thì thấy toast «Hệ thống gặp lỗi không lường trước».
+
+    Nạn nhân của deadlock đã bị cuộn lại sạch sẽ nên thử lại là an toàn — đúng
+    khuyến nghị của MySQL. Không thử lại vô hạn: lỗi 1213 lặp ba lần liền là dấu
+    hiệu của chuyện khác, để nó nổi lên còn hơn treo tiến trình.
+    """
+    for lan in range(_LABEL_WRITE_ATTEMPTS):
+        try:
+            label_values.write_value(db, field, task_id, value, user_id)
+            db.commit()
+            return
+        except OperationalError as loi:
+            db.rollback()
+            ma = loi.orig.args[0] if getattr(loi, "orig", None) and loi.orig.args else None
+            if ma != _MYSQL_DEADLOCK or lan == _LABEL_WRITE_ATTEMPTS - 1:
+                raise
