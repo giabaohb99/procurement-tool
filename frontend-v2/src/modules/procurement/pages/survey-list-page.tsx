@@ -115,8 +115,16 @@ function SurveyListContent() {
 
   const handleSortChange = (newSortBy: string, newSortDir: 'asc' | 'desc') => {
     const next = new URLSearchParams(searchParams)
-    next.set('sort_by', newSortBy)
-    next.set('sort_dir', newSortDir)
+    //  Khóa cột rỗng = nhịp thứ ba của tiêu đề cột: thôi sắp xếp. Phải XÓA tham
+    //  số chứ đừng ghi chuỗi rỗng, kẻo đường dẫn gửi cho nhau còn dính
+    //  `?sort_by=&sort_dir=asc`, đọc như đang sắp xếp theo một cột không tên.
+    if (newSortBy) {
+      next.set('sort_by', newSortBy)
+      next.set('sort_dir', newSortDir)
+    } else {
+      next.delete('sort_by')
+      next.delete('sort_dir')
+    }
     setSearchParams(next)
   }
 

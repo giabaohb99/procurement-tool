@@ -290,8 +290,12 @@ def report_lines_(kind: str | None = Query(None), line_approve: str | None = Que
                 or search_kw in (r.get("item_group") or "").lower()
                 or search_kw in (r.get("main_content") or "").lower()
                 or search_kw in (r.get("nspt") or "").lower()
+                #  Hai khóa này trước đây KHÔNG hề có trong dòng báo cáo, nên gõ mã
+                #  YCBG / PYC vào ô tìm là không bao giờ ra kết quả mà cũng chẳng
+                #  báo lỗi. `report_rows` nay trả đủ nên nhánh này mới sống.
                 or search_kw in (r.get("sr_code") or "").lower()
                 or search_kw in (r.get("pr_code") or "").lower()
+                or search_kw in (r.get("tax_code") or "").lower()
             )
             if not match:
                 return False
@@ -314,10 +318,7 @@ def report_lines_(kind: str | None = Query(None), line_approve: str | None = Que
         rows = [r for r in rows if r["line_approve"] == line_approve]
     rows.sort(key=lambda r: (-r["survey_id"], r["kind"], r["line_id"]))   # thứ tự mặc định
     # Sort theo cột người dùng chọn (sort ổn định -> thứ tự mặc định làm tiebreak)
-    _allow = {"survey_code", "kind", "content", "supplier_code", "item_group",
-              "nspt", "item_code", "main_content", "date", "line_approve", "line_approve_note"}
-    if sort_by in _allow:
-        rows.sort(key=lambda r: (r.get(sort_by) or ""), reverse=str(sort_dir).lower() == "desc")
+    rows = service.sort_report_rows(rows, sort_by, sort_dir)
     total = len(rows)
     items = rows[pg["offset"]: pg["offset"] + pg["limit"]]
     return success({"total": total, "items": items, "summary": summary})

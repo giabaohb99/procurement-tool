@@ -238,6 +238,79 @@ def fill_missing_line(db: Session, sid: int, table: str, line_id: int, data: dic
     return get_survey(db, sid)
 
 
+# ===== Báo cáo khảo sát theo DÒNG =====
+#  Dòng NCC và dòng SP có tập cột lệch nhau gần như hoàn toàn, nhưng báo cáo đổ
+#  chung MỘT bảng. Nên mọi dòng đều mang ĐỦ bộ khóa dưới đây, loại nào không có
+#  thì để rỗng/None — thiếu khóa là cột bên giao diện nhận `undefined`, còn hàm
+#  sắp xếp ở controller đem chuỗi so với số rồi ném TypeError.
+REPORT_TEXT_FIELDS = (
+    # Header phiếu
+    "survey_type", "sr_code", "pr_code", "item_group", "nspt", "item_code", "item_name",
+    "uom", "main_content", "requirement_detail", "received_date", "result_due_date",
+    # Ngày của dòng (cả hai loại đều có)
+    "contact_date", "reply_date", "result_date",
+    # Dòng NCC
+    "supplier_name", "tax_code", "contact_person", "contact_phone", "supply_group",
+    "source_of_information", "production_time", "nvkd_eval", "invoice_policy",
+    "reliability", "delivery_policy", "defect_return",
+    # Dòng SP
+    "internal_code", "invoice_name", "spec", "active_ingredient", "origin", "quote_unit",
+    "volume_range", "shipping_policy", "delivery_time", "delivery_place",
+    "sample_ready", "sample_date", "lab_result",
+    # Chung hai loại
+    "debt_policy", "nspt_note", "note",
+)
+
+REPORT_NUMBER_FIELDS = (
+    "request_qty", "proposed_rate", "moq", "price_by_volume", "last_purchase_price",
+    "max_purchase_price", "vat", "amount", "shipping_cost", "extra_shipping_cost",
+    "sample_qty",
+)
+
+#  Cột được phép sắp xếp = đúng những cột báo cáo bày ra. Khai ở đây để controller
+#  khỏi giữ một danh sách riêng rồi quên nới mỗi lần thêm cột (bản trước có 11 cột
+#  trong danh sách, thêm cột nào là cột đó bấm tiêu đề không nhúc nhích).
+REPORT_SORTABLE_FIELDS = frozenset(
+    {"survey_code", "kind", "content", "supplier_code", "date", "line_approve",
+     "line_approve_note", "survey_status"}
+    | set(REPORT_TEXT_FIELDS)
+    | set(REPORT_NUMBER_FIELDS)
+)
+
+_EMPTY_REPORT_ROW = {
+    **{k: "" for k in REPORT_TEXT_FIELDS},
+    **{k: None for k in REPORT_NUMBER_FIELDS},
+}
+
+
+def to_report_number(value):
+    """Số cho báo cáo: trống hoặc 0 -> None để ô bỏ TRẮNG.
+
+    Cột tiền/số lượng chỉ có nghĩa với dòng SP; in `0` cho hàng trăm dòng NCC
+    không có khái niệm đó là dựng một bức tường số không đọc được. Đổi lại, VAT
+    0% cũng hiện trắng — chấp nhận được vì bản thân `0` ở cột VAT vốn đã lẫn giữa
+    "chưa nhập" và "không chịu thuế".
+    """
+    if value is None:
+        return None
+    num = float(value)
+    return num or None
+
+
+def build_report_header(s: Survey) -> dict:
+    """Phần thông tin lấy từ HEADER phiếu — lặp lại y hệt trên mọi dòng của phiếu."""
+    return {
+        "survey_id": s.id, "survey_code": s.code, "survey_status": s.status,
+        "survey_type": s.survey_type or "", "sr_code": s.sr_code or "", "pr_code": s.pr_code or "",
+        "item_group": s.item_group or "", "nspt": s.nspt or "",
+        "item_code": s.item_code or "", "item_name": s.item_name or "", "uom": s.uom or "",
+        "main_content": s.main_content or "", "requirement_detail": s.requirement_detail or "",
+        "received_date": s.received_date or "", "result_due_date": s.result_due_date or "",
+        "request_qty": to_report_number(s.request_qty),
+        "proposed_rate": to_report_number(s.proposed_rate),
+    }
+
+
 def report_rows(db: Session, base_survey_query):
     """Chuẩn hóa TẤT CẢ dòng khảo sát (NCC + SP) trong phạm vi cho phép → list dict (theo dòng)."""
     surveys = {s.id: s for s in base_survey_query.all()}
@@ -249,25 +322,81 @@ def report_rows(db: Session, base_survey_query):
         s = surveys.get(x.survey_id)
         if not s:
             continue
-        rows.append({"survey_id": s.id, "survey_code": s.code, "kind": "supplier", "line_id": x.id,
-                     "content": x.supplier_name or x.supplier_code or "", "supplier_code": x.supplier_code or "",
-                     "item_group": s.item_group or "", "nspt": s.nspt or "",
-                     "item_code": s.item_code or "", "main_content": s.main_content or "",
-                     "date": x.contact_date or s.received_date or "",
-                     "line_approve": x.line_approve or "Chờ duyệt", "line_approve_note": x.line_approve_note or "",
-                     "survey_status": s.status})
+        rows.append({
+            **_EMPTY_REPORT_ROW, **build_report_header(s),
+            "kind": "supplier", "line_id": x.id,
+            "content": x.supplier_name or x.supplier_code or "",
+            "supplier_code": x.supplier_code or "", "supplier_name": x.supplier_name or "",
+            "tax_code": x.tax_code or "", "contact_person": x.contact_person or "",
+            "contact_phone": x.contact_phone or "", "supply_group": x.supply_group or "",
+            "source_of_information": x.source_of_information or "",
+            "production_time": x.production_time or "", "nvkd_eval": x.nvkd_eval or "",
+            "invoice_policy": x.invoice_policy or "", "reliability": x.reliability or "",
+            "delivery_policy": x.delivery_policy or "", "defect_return": x.defect_return or "",
+            "debt_policy": x.debt_policy or "", "nspt_note": x.nspt_note or "", "note": x.note or "",
+            "contact_date": x.contact_date or "", "reply_date": x.reply_date or "",
+            "result_date": x.result_date or "",
+            "date": x.contact_date or s.received_date or "",
+            "line_approve": x.line_approve or "Chờ duyệt", "line_approve_note": x.line_approve_note or "",
+        })
     for x in db.query(SurveyProductLine).filter(SurveyProductLine.survey_id.in_(subq)).all():
         s = surveys.get(x.survey_id)
         if not s:
             continue
-        rows.append({"survey_id": s.id, "survey_code": s.code, "kind": "product", "line_id": x.id,
-                     "content": x.product_name or "", "supplier_code": x.supplier_code or "",
-                     "item_group": s.item_group or "", "nspt": s.nspt or "",
-                     "item_code": s.item_code or "", "main_content": s.main_content or "",
-                     "date": x.contact_date or s.received_date or "",
-                     "line_approve": x.line_approve or "Chờ duyệt", "line_approve_note": x.line_approve_note or "",
-                     "survey_status": s.status})
+        rows.append({
+            **_EMPTY_REPORT_ROW, **build_report_header(s),
+            "kind": "product", "line_id": x.id,
+            "content": x.product_name or "", "supplier_code": x.supplier_code or "",
+            "internal_code": x.internal_code or "", "invoice_name": x.invoice_name or "",
+            "spec": x.spec or "", "active_ingredient": x.active_ingredient or "",
+            "origin": x.origin or "", "quote_unit": x.quote_unit or "",
+            "volume_range": x.volume_range or "", "shipping_policy": x.shipping_policy or "",
+            "delivery_time": x.delivery_time or "", "delivery_place": x.delivery_place or "",
+            #  Cờ có/không: trả thẳng chữ "Có" cho ô trắng thay vì true/false, để
+            #  cột này xuất CSV và sắp xếp giống mọi cột chữ khác.
+            "sample_ready": "Có" if x.sample_ready else "",
+            "sample_date": x.sample_date or "", "lab_result": x.lab_result or "",
+            "debt_policy": x.debt_policy or "", "nspt_note": x.nspt_note or "", "note": x.note or "",
+            #  SL của DÒNG mới là số dùng để tính thành tiền; header chỉ là dự kiến
+            #  ban đầu nên chỉ lấy làm phương án dự phòng.
+            "request_qty": to_report_number(x.request_qty) or to_report_number(s.request_qty),
+            "moq": to_report_number(x.moq), "price_by_volume": to_report_number(x.price_by_volume),
+            "last_purchase_price": to_report_number(x.last_purchase_price),
+            "max_purchase_price": to_report_number(x.max_purchase_price),
+            "vat": to_report_number(x.vat), "amount": to_report_number(x.amount),
+            "shipping_cost": to_report_number(x.shipping_cost),
+            "extra_shipping_cost": to_report_number(x.extra_shipping_cost),
+            "sample_qty": to_report_number(x.sample_qty),
+            "contact_date": x.contact_date or "", "reply_date": x.reply_date or "",
+            "result_date": x.result_date or "",
+            "date": x.contact_date or s.received_date or "",
+            "line_approve": x.line_approve or "Chờ duyệt", "line_approve_note": x.line_approve_note or "",
+        })
     return rows
+
+
+def sort_report_rows(rows: list[dict], sort_by: str, sort_dir: str) -> list[dict]:
+    """Sắp xếp dòng báo cáo theo cột người dùng chọn. Cột ngoài danh sách -> giữ nguyên.
+
+    `sorted` ỔN ĐỊNH nên thứ tự mặc định (phiếu mới trước) vẫn làm tiêu chí phụ.
+    """
+    if sort_by not in REPORT_SORTABLE_FIELDS:
+        return rows
+
+    def key_of(row: dict):
+        """Khóa sắp xếp chịu được cột LẪN chữ với số.
+
+        Cột tiền/số lượng chỉ có giá trị ở dòng SP, dòng NCC để None; đem `float`
+        so với `""` là Python ném TypeError — cả trang báo cáo chết 500 chỉ vì
+        bấm một tiêu đề cột. Tách hai rổ: số xếp trước, chữ xếp sau, ô trống của
+        cột số coi như 0.
+        """
+        value = row.get(sort_by)
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            return (0, float(value), "")
+        return (1, 0.0, str(value or "").lower())
+
+    return sorted(rows, key=key_of, reverse=str(sort_dir).lower() == "desc")
 
 
 def lines_by_supplier(db: Session, tax_code: str, supplier_code: str):

@@ -63,6 +63,7 @@ const columns = useMemo<DataTableColumn<Employee>[]>(() => [
 | `isLoading` / `isError` | Hiện khung xương / dòng báo lỗi (`errorMessage`) |
 | `onRowClick` | Bấm dòng; ô hành động phải `stopPropagation` |
 | `onRefresh` | Việc chạy khi bấm **Tải lại**. Bỏ trống = tự `invalidateQueries({ type: 'active' })` |
+| `sortBy` / `sortDir` / `onSortChange` | Sắp xếp phía server. ⚠️ Tiêu đề cột chạy **BA NHỊP**: tăng → giảm → **thôi sắp xếp**, và nhịp thứ ba gọi `onSortChange('', 'asc')` — khóa cột **RỖNG**. Chỗ nhận phải **xóa** `sort_by`/`sort_dir` khỏi URL (đừng ghi chuỗi rỗng, đường dẫn gửi cho nhau sẽ dính `?sort_by=&sort_dir=asc` đọc như đang xếp theo một cột không tên) và **không** gắn hai tham số này vào lời gọi API, để backend xếp theo mặc định của nó. Bỏ nhịp thứ ba là người dùng bấm nhầm một phát thì kẹt luôn, muốn về thứ tự gốc chỉ còn cách tải lại trang |
 | `toolbar` | Nội dung chèn bên TRÁI cụm nút phải (xem mục 3) |
 | `storageKey` | Có thì nhớ bố cục vào localStorage |
 | `pagination` | Phân trang server-side |

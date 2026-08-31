@@ -600,9 +600,11 @@ Dữ liệu tính realtime từ `/api/reports/request-matrix?kind=ycks`. Ma tr�
 
 Tổng hợp và theo dõi trạng thái phê duyệt các dòng khảo sát (cả dòng NCC và dòng Sản phẩm) trên tất cả phiếu khảo sát mà người dùng có quyền xem. Hỗ trợ lọc đa chiều, xuất CSV.
 
-Đường dẫn: `/survey-report`. Quyền: `survey:read` (kết hợp với phạm vi dữ liệu của entity `survey`).
+Đường dẫn: `/survey-report` (bản v1, `frontend/`) — bản đang phát triển là **`/procurement/survey-report`** ở `frontend-v2/src/modules/procurement/pages/survey-report-page.tsx`. Quyền: `survey:read` (kết hợp với phạm vi dữ liệu của entity `survey`).
 
 API: `GET /api/survey-report/lines` — trả về danh sách dòng đã gộp NCC + SP, kèm bản tóm tắt đếm theo trạng thái duyệt.
+
+> **Từ CR-248 (31/08/2026), mỗi dòng trả về mang ĐỦ ~60 trường**, không còn 14 trường như bản đầu. Dòng NCC và dòng SP lệch trường gần hết nhưng đổ chung một bảng, nên `survey/service.py::report_rows` **luôn trả cùng một bộ khoá cho cả hai loại**: loại nào không có thì chuỗi rỗng, cột số thì `None`. Đừng khai khoá nào là tuỳ chọn ở tầng TypeScript — thiếu khoá là ô bảng nhận `undefined` và tệp CSV lệch cột từ đó trở đi. Danh sách trường nằm ở `REPORT_TEXT_FIELDS` + `REPORT_NUMBER_FIELDS` (service), bản TypeScript đối chiếu ở `procurement/types/survey-report.ts`.
 
 ### Thẻ tóm tắt (Summary cards)
 
@@ -637,26 +639,38 @@ Tất cả bộ lọc có debounce 300ms và tự động tải lại khi thay �
 
 > Báo cáo mua hàng (`/reports`) **chưa áp** cơ chế này — bộ lọc Công ty / Năm ở đó vẫn mất khi F5.
 
+**Bản v2 (CR-247).** Năm ô lọc phụ (`item_group` · `supplier` · `nspt` · `item_code` · `main_content`) gom vào hộp **Bộ lọc** có badge đếm ô đang bật, giữ **bản nháp** trong state và chỉ ghi URL **một lượt** lúc bấm *Áp dụng* — gõ tới đâu ghi tới đó thì mỗi ký tự là một lượt quét cả nghìn dòng. Năm tham số ghi bằng **một** lệnh `setSearchParams`, không gọi năm lần (mỗi lệnh dựng lại từ `searchParams` của lần vẽ hiện tại nên lệnh sau nuốt lệnh trước). Tên tham số ngày là **`date_from` / `date_to`** — bản v2 lúc mới dời gửi nhầm `from_date` / `to_date`, FastAPI lặng lẽ bỏ qua tham số lạ nên bộ lọc ngày **chưa từng chạy** mà không ai thấy lỗi. Lưu ý `item_group` khớp **chính xác** ở backend, bốn ô kia khớp chứa-chuỗi không phân biệt hoa thường.
+
+**Ô tìm nhanh** dò trong `survey_code` · `content` · `supplier_code` · `item_code` · `item_name` · `sr_code` · `pr_code` · `tax_code`. Hai khoá `sr_code` / `pr_code` đã nằm trong mã từ lâu nhưng `report_rows` không hề trả về, nên gõ mã YCBG/PYC vào ô tìm là **không bao giờ ra kết quả mà cũng chẳng báo lỗi** — CR-248 trả đủ trường thì nhánh đó mới sống, và thêm luôn mã số thuế.
+
 ### Cột bảng kết quả
 
-| Cột | Nội dung |
-|-----|---------|
-| Mã phiếu (`survey_code`) | Link dẫn tới `/surveys/:id` |
-| Loại (`kind`) | Badge: NCC (xanh dương nhạt) / SP (xanh lá nhạt) |
-| Nội dung (`content`) | Tóm tắt nội dung dòng (tên NCC hoặc tên SP) |
-| Phân loại (`item_group`) | Phân loại VTBB/NL của phiếu |
-| NSPT (`nspt`) | Nhân sự phụ trách phiếu |
-| Ngày (`date`) | Ngày liên hệ của dòng (`contact_date`) |
-| Trạng thái duyệt (`line_approve`) | Badge màu theo trạng thái |
-| Ghi chú duyệt (`line_approve_note`) | Nội dung yêu cầu/ý kiến của TP/QL |
+Bản v2 khai **~55 cột trong một mảng duy nhất** `REPORT_FIELDS` ở đầu `survey-report-page.tsx`. Mảng đó vừa sinh cột bảng vừa sinh ô CSV, nên **thêm cột là thêm một phần tử, không phải sửa hai chỗ** (trước CR-248 tệp CSV có một danh sách 11 tiêu đề chép tay song song, sửa bảng mà quên sửa CSV là lệch). Mỗi phần tử bắt buộc có `text(line)` (chuỗi thô, dùng cho cả ô bảng mặc định lẫn ô CSV) và tuỳ chọn `cell` khi cần trang trí (badge, link, canh phải).
+
+Bốn nhóm trường:
+
+| Nhóm | Ví dụ trường | Ghi chú |
+|---|---|---|
+| Đầu phiếu (lặp trên mọi dòng của cùng phiếu) | `survey_type` · `sr_code` · `pr_code` · `item_group` · `item_code` · `item_name` · `uom` · `nspt` · `main_content` · `requirement_detail` · `received_date` · `result_due_date` · `request_qty` · `proposed_rate` | Cố ý lặp lại: lọc/xuất xong thì mỗi dòng phải đứng độc lập được |
+| Dòng NCC | `supplier_code` · `supplier_name` · `tax_code` · `contact_person` · `contact_phone` · `supply_group` · `source_of_information` · `production_time` · `nvkd_eval` · `invoice_policy` · `reliability` · `delivery_policy` · `defect_return` | Dòng SP đọc các khoá này ra chuỗi rỗng |
+| Dòng SP | `internal_code` · `invoice_name` · `spec` · `active_ingredient` · `origin` · `quote_unit` · `volume_range` · `moq` · `price_by_volume` · `last_purchase_price` · `max_purchase_price` · `vat` · `amount` · `shipping_cost` · `extra_shipping_cost` · `shipping_policy` · `delivery_time` · `delivery_place` · `sample_ready` · `sample_qty` · `sample_date` · `lab_result` | Dòng NCC đọc các cột số này ra `None` |
+| Chung hai loại | `contact_date` · `reply_date` · `result_date` · `debt_policy` · `nspt_note` · `note` · `line_approve` · `line_approve_note` · `survey_status` | |
+
+**Hiện sẵn ~17 cột** (Mã phiếu — ghim, không tắt được · Loại · Nội dung dòng · Mã NCC · Nhóm hàng · Mã hàng · Tên VTBB · ĐVT · SL dự kiến · Đơn giá · VAT · Thành tiền · Thời gian giao · Ngày công nợ · NSPT · Ngày · Kết quả duyệt); phần còn lại khai `defaultHidden` và `DataTable` nhớ lựa chọn của từng người qua `storageKey="procurement.survey-report"`.
+
+**Ô số trống trả `None` chứ không trả `0`** — vài trăm dòng NCC mà in một bức tường số 0 thì còn khó đọc hơn để trắng. Đánh đổi: **VAT 0% thật cũng ra ô trắng**, chấp nhận vì `0` ở cột đó vốn đã nhập nhằng giữa *chưa nhập* và *không chịu thuế* (cùng lý do VAT cố ý không bắt buộc, xem CR-107). Tiền / đơn giá / tỷ lệ / số lượng đi qua `formatMoney` · `formatUnitPrice` · `formatPercent` · `formatQuantity`, không gọi thẳng `toLocaleString`.
 
 ### Sắp xếp và phân trang
 
 Mặc định sắp xếp theo `survey_id` giảm dần, sau đó theo `kind` (supplier trước product), sau đó `line_id`. Phân trang 20 dòng / trang với điều hướng trang đầu/cuối/lân cận.
 
+Bấm tiêu đề cột thì backend sắp xếp bằng `survey/service.py::sort_report_rows`, cột được phép sắp xếp lấy từ `REPORT_SORTABLE_FIELDS` **suy ra từ chính hai bộ trường ở trên** (trước CR-248 là một tập `_allow` 11 phần tử gõ tay trong controller, nên thêm cột nào là cột đó thành đồ trang trí — bấm tiêu đề mà bảng đứng yên).
+
+> **Cẩn thận khi đụng vào hàm sắp xếp.** Vì ô trống là `None`, một cột tiền chứa LẪN `float` (dòng SP) với `None` (dòng NCC). Đem so trực tiếp là Python ném `TypeError` và **cả trang báo cáo chết 500** chỉ vì người dùng bấm một tiêu đề cột. `sort_report_rows` vì vậy trả khoá phân loại: số → `(0, float, "")`, còn lại → `(1, 0.0, str(...).lower())`; `sorted` ổn định nên thứ tự mặc định làm tiêu chí phụ. Cột chữ sắp xếp **không phân biệt hoa thường**.
+
 ### Xuất CSV
 
-Nút "Xuất CSV" xuất toàn bộ trang hiện tại (theo bộ lọc đang áp) ra file `bao-cao-khao-sat-YYYY-MM-DD.csv`. Các cột: Mã phiếu, Loại, Nội dung, Phân loại, NSPT, Ngày, Trạng thái duyệt, Ghi chú duyệt. File UTF-8 có BOM để Excel đọc đúng tiếng Việt.
+Nút "Xuất CSV" xuất toàn bộ trang hiện tại (theo bộ lọc đang áp) ra file `bao-cao-khao-sat-YYYY-MM-DD.csv`, **đủ mọi cột kể cả cột đang ẩn trên bảng** — cùng sinh từ `REPORT_FIELDS` nên số ô của mỗi dòng luôn khớp số tiêu đề. File UTF-8 có BOM để Excel đọc đúng tiếng Việt.
 
 ---
 

@@ -468,8 +468,18 @@ export function DataTable<T>({
                   onSort={
                     onSortChange
                       ? () => {
-                          const nextDir = sortBy === column.key && sortDir === 'asc' ? 'desc' : 'asc'
-                          onSortChange(column.key, nextDir)
+                          //  Ba nhịp: tăng → giảm → THÔI SẮP XẾP. Bản cũ chỉ đảo
+                          //  qua lại tăng/giảm nên bấm nhầm một phát là kẹt luôn,
+                          //  muốn về thứ tự gốc chỉ còn cách tải lại trang hoặc
+                          //  tự xóa tham số trên thanh địa chỉ.
+                          //
+                          //  Nhịp thứ ba trả về khóa cột RỖNG — mọi màn đều bọc
+                          //  `if (sortBy)` trước khi gắn `sort_by` vào tham số,
+                          //  nên rỗng nghĩa là không gửi gì và backend xếp theo
+                          //  mặc định của nó.
+                          if (sortBy !== column.key) return onSortChange(column.key, 'asc')
+                          if (sortDir === 'asc') return onSortChange(column.key, 'desc')
+                          onSortChange('', 'asc')
                         }
                       : undefined
                   }

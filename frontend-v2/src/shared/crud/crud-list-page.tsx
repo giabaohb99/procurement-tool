@@ -98,8 +98,16 @@ function CrudListContent<T extends CrudRecord>({ config }: CrudListPageProps<T>)
 
   const handleSortChange = (newSortBy: string, newSortDir: 'asc' | 'desc') => {
     const nextParams = new URLSearchParams(searchParams)
-    nextParams.set('sort_by', newSortBy)
-    nextParams.set('sort_dir', newSortDir)
+    //  Khóa cột rỗng = nhịp thứ ba của tiêu đề cột: thôi sắp xếp. Phải XÓA tham
+    //  số chứ đừng ghi chuỗi rỗng, kẻo đường dẫn gửi cho nhau còn dính
+    //  `?sort_by=&sort_dir=asc`, đọc như đang sắp xếp theo một cột không tên.
+    if (newSortBy) {
+      nextParams.set('sort_by', newSortBy)
+      nextParams.set('sort_dir', newSortDir)
+    } else {
+      nextParams.delete('sort_by')
+      nextParams.delete('sort_dir')
+    }
     setSearchParams(nextParams)
   }
 
