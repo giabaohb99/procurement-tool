@@ -48,7 +48,11 @@ export function canOpenModule(module: ErpModule, can: CanFn) {
   //  là ý định vốn phải mở (25/08/2026).
   if (module.externalUrl) return true
 
-  return visibleNavItems(module, can).length > 0
+  //  Đường dẫn phụ (`crossModule`) KHÔNG tính: nó chỉ là lối tắt sang phân hệ
+  //  khác, mở được nó không có nghĩa là có việc để làm ở phân hệ này. Đếm cả nó
+  //  thì người chỉ có `payable.read` thấy thẻ Thu mua mở rồi vào trong trống
+  //  trơn — đúng lỗi đã vá ngày 27/08/2026.
+  return visibleNavItems(module, can).filter((item) => !item.crossModule).length > 0
 }
 
 /** Quyền cho MỘT khóa theo `action` | `manage` | `read` của mục. */

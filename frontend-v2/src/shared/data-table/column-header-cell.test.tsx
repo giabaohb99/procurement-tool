@@ -101,6 +101,32 @@ describe('ColumnHeaderCell', () => {
     expect(onSort).not.toHaveBeenCalled()
   })
 
+  it('renders a custom header slot in place of the label text', () => {
+    renderHeader({
+      ...COLUMN,
+      headerContent: <input type="checkbox" aria-label="Chọn mọi khoản trong trang" />,
+    })
+
+    expect(screen.getByRole('checkbox', { name: 'Chọn mọi khoản trong trang' })).toBeInTheDocument()
+    // Nhãn chữ nhường chỗ, nhưng `header` vẫn phải khai vì menu "Cột" còn dùng.
+    expect(screen.queryByText('Mã phiếu')).not.toBeInTheDocument()
+  })
+
+  // Ô tick "chọn hết" nằm ngay trong ô tiêu đề CÓ sắp xếp. Không chặn nổi bọt thì
+  // mỗi lần tick là bảng đảo thứ tự — dòng vừa tick trôi đi chỗ khác.
+  it('does NOT sort when the click lands inside the custom header slot', async () => {
+    const user = userEvent.setup()
+    const { onSort } = renderHeader({
+      ...COLUMN,
+      headerContent: <input type="checkbox" aria-label="Chọn mọi khoản trong trang" />,
+    })
+    stubSelection({ collapsed: true })
+
+    await user.click(screen.getByRole('checkbox', { name: 'Chọn mọi khoản trong trang' }))
+
+    expect(onSort).not.toHaveBeenCalled()
+  })
+
   it('splits the trailing " *" into a red mark instead of printing it as text', () => {
     renderHeader({ ...COLUMN, header: 'Mã phiếu *' })
 

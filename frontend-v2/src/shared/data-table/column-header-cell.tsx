@@ -101,6 +101,12 @@ export function ColumnHeaderCell<T>({
       <div
         className={cn(
           'flex items-center gap-1 overflow-hidden transition-colors',
+          //  Chỉ canh giữa/phải cho ô tiêu đề TỰ VẼ (`headerContent`). Nhãn chữ
+          //  thường thì để nguyên canh trái như xưa: `text-*` trên `<th>` không
+          //  ăn vào con của flex, nên thêm `justify-*` ở đây là đổi diện mạo tiêu
+          //  đề của mọi cột tiền/ngày trên toàn hệ — việc khác, đừng gộp vào đây.
+          column.headerContent && column.align === 'center' && 'justify-center',
+          column.headerContent && column.align === 'right' && 'justify-end',
           isSortable && 'cursor-pointer hover:text-foreground',
         )}
         onClick={(e) => {
@@ -118,10 +124,24 @@ export function ColumnHeaderCell<T>({
             mà cả bảng khóa chọn thì chép kiểu gì cũng không ra (khách báo
             31/08/2026). Chỉ mở đúng cái nhãn, phần đệm còn lại của ô vẫn khóa để
             kéo đổi vị trí cột không quét xanh cả hàng tiêu đề. */}
-        <span className="truncate select-text">
-          {label}
-          {required && <RequiredMark />}
-        </span>
+        {column.headerContent ? (
+          //  Ô tiêu đề tự vẽ (ô tick "chọn hết"…). Phải chặn CẢ HAI sự kiện:
+          //  `pointerdown` là lệnh bắt đầu kéo đổi vị trí cột (bấm vào ô tick mà
+          //  không chặn thì cả cột bay theo con trỏ), còn `click` là lệnh sắp xếp
+          //  của lớp bọc ngay bên ngoài.
+          <span
+            className="flex items-center"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {column.headerContent}
+          </span>
+        ) : (
+          <span className="truncate select-text">
+            {label}
+            {required && <RequiredMark />}
+          </span>
+        )}
 
         {isSortable && (
           <span className="shrink-0 text-muted-foreground">

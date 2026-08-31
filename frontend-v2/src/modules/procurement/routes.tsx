@@ -5,6 +5,7 @@ import {
   ClipboardList,
   FileText,
   LayoutDashboard,
+  ReceiptText,
   ShoppingCart,
   Truck,
   UserCheck,
@@ -101,6 +102,27 @@ export const procurementModule: ErpModule = {
       icon: BarChart3,
       entity: 'survey',
       group: 'Khảo sát',
+    },
+    // Hai lối tắt sang phân hệ TÀI CHÍNH (`crossModule`) — màn hình vẫn là của
+    // Tài chính, đây chỉ là đường dẫn phụ. Người mua hàng tra công nợ rồi lên đề
+    // nghị thanh toán hằng ngày, bắt vòng qua màn chọn phân hệ là thừa hai cú
+    // bấm (khách yêu cầu 31/08/2026). Nhãn và icon giữ y hệt bên Tài chính để
+    // vào rồi không thấy lạc.
+    {
+      label: 'Công nợ phải trả',
+      path: appRoutes.finance.payables,
+      icon: ReceiptText,
+      entity: 'payable',
+      crossModule: true,
+      group: 'Tài chính',
+    },
+    {
+      label: 'Yêu cầu thanh toán',
+      path: appRoutes.finance.paymentRequests,
+      icon: FileText,
+      entity: 'payment_request',
+      crossModule: true,
+      group: 'Tài chính',
     },
     {
       label: 'Phân công phụ trách',

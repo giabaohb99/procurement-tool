@@ -44,7 +44,9 @@ const columns = useMemo<DataTableColumn<Employee>[]>(() => [
 | --- | --- | --- |
 | `key` | ✓ | Duy nhất trong bảng; là id khi ẩn cột, nhớ độ rộng, thứ tự, màu |
 | `header` | ✓ | **Luôn có chữ**, kể cả cột ảnh/hành động — mục không tên trong menu "Cột" là một dòng trống. Cột bắt buộc nhập thì thêm đuôi `" *"` (xem *Cột bắt buộc* bên dưới) |
+| `headerContent` | | Thay **nhãn** tiêu đề bằng một thành phần (ô tick "chọn hết", huy hiệu đếm). `header` vẫn phải khai — nó còn là tên trong menu "Cột" và nhãn lúc kéo cột. Bảng đã tự chặn nổi bọt cả `pointerdown` (kéo đổi vị trí cột) lẫn `click` (sắp xếp) quanh chỗ này |
 | `cell` | ✓ | `(row) => ReactNode` |
+| `wrap` | | Cho ô XUỐNG DÒNG thay vì cắt bằng `…`. Đặt cho cột chữ dài cần đọc đủ (tên NCC, tên công ty); cột số/ngày để nguyên một dòng cho hàng khỏi cao lệch nhau |
 | `width` | | px, độ rộng ban đầu |
 | `minWidth` | | Chặn dưới khi kéo, mặc định 64 |
 | `align` | | `left` (mặc định) / `center` / `right` |
@@ -71,7 +73,7 @@ const columns = useMemo<DataTableColumn<Employee>[]>(() => [
 - `columns` **phải** bọc `useMemo` — mảng dựng lại mỗi render sẽ làm bảng tính lại bố cục liên tục.
 - `storageKey` theo dạng `<module>.<entity>` (`hr.employees`, `document.records`).
 - Ô hành động: bọc `onClick={(e) => e.stopPropagation()}`, nếu không mỗi lần bấm nút sẽ mở luôn trang chi tiết vì `onRowClick` bắt được.
-- Nội dung dài: thêm `truncate` trong `cell`. Bảng chạy `table-fixed` nên ô không tự nong ra.
+- Nội dung dài: bảng chạy `table-fixed` nên ô không tự nong ra, **mặc định đã cắt bằng `…`**. Cần đọc đủ chữ thì bật `wrap: true` ở cột — và **đừng gắn `truncate` trong `cell`**, class của ô con thắng lớp bọc của bảng nên gắn vào là `wrap` thành vô hiệu.
 
 ### Cột bắt buộc — khai bằng đuôi `" *"`
 

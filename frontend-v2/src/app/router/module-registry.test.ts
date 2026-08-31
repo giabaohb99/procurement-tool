@@ -59,10 +59,30 @@ describe('module-registry', () => {
   it('mục menu trái nào cũng nằm trong đường dẫn của chính phân hệ đó', () => {
     for (const module of moduleRegistry) {
       for (const item of module.nav) {
+        if (item.crossModule) continue // lối tắt sang phân hệ khác — xét riêng bên dưới
         expect(item.path, `${module.id} - ${item.label}`).toMatch(
           new RegExp(`^${module.path}(/|$)`),
         )
       }
+    }
+  })
+
+  it('đường dẫn phụ sang phân hệ khác phải trỏ vào một phân hệ CÓ THẬT và đang bật', () => {
+    //  `crossModule` là khe duy nhất được phép ra khỏi đường dẫn của phân hệ mình
+    //  (Thu mua mượn Công nợ / YCTT của Tài chính). Không canh thì gõ nhầm một
+    //  chữ trong path là mục menu dẫn thẳng vào trang 404 mà chẳng ai hay.
+    const shortcuts = moduleRegistry.flatMap((m) =>
+      m.nav.filter((i) => i.crossModule).map((i) => ({ module: m, item: i })),
+    )
+    expect(shortcuts.length).toBeGreaterThan(0) // Thu mua -> Tài chính
+    for (const { module, item } of shortcuts) {
+      const target = moduleRegistry.find(
+        (m) => m.path && (item.path === m.path || item.path.startsWith(`${m.path}/`)),
+      )
+      expect(target, `${module.id} - ${item.label}`).toBeDefined()
+      // Trỏ về chính mình thì đừng khai `crossModule` — cờ đó tắt luôn phần kiểm
+      // đường dẫn ở khẳng định trên, dùng bừa là mất chốt canh.
+      expect(target?.id, `${module.id} - ${item.label}`).not.toBe(module.id)
     }
   })
 

@@ -54,6 +54,45 @@ describe('canOpenModule', () => {
   it('phân hệ không có mục nào thì khóa, không sập', () => {
     expect(canOpenModule(module([]), allow())).toBe(false)
   })
+
+  //  Thu mua mượn hai màn của Tài chính làm lối tắt (`crossModule`, 31/08/2026).
+  //  Đếm cả lối tắt thì kế toán chỉ có `payable.read` thấy thẻ Thu mua mở, bấm
+  //  vào rỗng tuếch — đúng lỗi «thẻ mở cho người ngoài phân hệ» đã vá 27/08.
+  it('lối tắt sang phân hệ khác KHÔNG tự mở khóa thẻ phân hệ này', () => {
+    const procurement = module([
+      { label: 'YCMH', path: '/x/pr', entity: 'purchase_request', icon: FileText },
+      {
+        label: 'Công nợ phải trả',
+        path: '/finance/payables',
+        entity: 'payable',
+        crossModule: true,
+        icon: FileText,
+      },
+    ])
+
+    expect(canOpenModule(procurement, allow('payable'))).toBe(false)
+    expect(canOpenModule(procurement, allow('purchase_request'))).toBe(true)
+  })
+
+  it('nhưng vào được rồi thì lối tắt vẫn hiện trên menu theo quyền của nó', () => {
+    const procurement = module([
+      { label: 'YCMH', path: '/x/pr', entity: 'purchase_request', icon: FileText },
+      {
+        label: 'Công nợ phải trả',
+        path: '/finance/payables',
+        entity: 'payable',
+        crossModule: true,
+        icon: FileText,
+      },
+    ])
+
+    expect(visibleNavItems(procurement, allow('purchase_request')).map((i) => i.label)).toEqual([
+      'YCMH',
+    ])
+    expect(
+      visibleNavItems(procurement, allow('purchase_request', 'payable')).map((i) => i.label),
+    ).toEqual(['YCMH', 'Công nợ phải trả'])
+  })
 })
 
 describe('visibleNavItems', () => {

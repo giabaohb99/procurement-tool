@@ -62,6 +62,16 @@ def _filtered(db: Session, request: Request, user):
     incur_to = request.query_params.get("incur_to")
     if incur_to:
         q = q.filter(Payable.incur_date != "", Payable.incur_date <= incur_to)
+    # Khoảng HẠN TRẢ (từ - đến) — câu hỏi thường gặp nhất của kế toán: "kỳ này
+    # phải trả NCC nào, bao nhiêu". `due_date` rỗng (chưa có hạn) bị loại khỏi
+    # khoảng, giống cách `incur_date` xử ở trên: so chuỗi rỗng với ngày thì "" bé
+    # hơn mọi ngày, không chặn thì mọi khoản chưa có hạn đều lọt vào "từ ngày".
+    due_from = request.query_params.get("due_from")
+    if due_from:
+        q = q.filter(Payable.due_date != "", Payable.due_date >= due_from)
+    due_to = request.query_params.get("due_to")
+    if due_to:
+        q = q.filter(Payable.due_date != "", Payable.due_date <= due_to)
     # Khoảng số tiền theo TỔNG NỢ (từ A - đến B)
     for key, op in (("amount_from", "ge"), ("amount_to", "le")):
         val = request.query_params.get(key)
