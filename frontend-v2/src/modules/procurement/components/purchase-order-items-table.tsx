@@ -8,6 +8,7 @@ import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { CopyButton } from '@/shared/ui/copy-button'
 import { Input } from '@/shared/ui/input'
+import { NumberInput, PRICE_MAX_DECIMALS } from '@/shared/ui/number-input'
 import {
   Select,
   SelectContent,
@@ -15,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
-import { formatMoney, formatQuantity } from '@/shared/utils/format-money'
+import { formatMoney, formatQuantity, formatUnitPrice } from '@/shared/utils/format-money'
 import type {
   ProductOption,
   PurchaseHistoryRow,
@@ -283,13 +284,16 @@ export function PurchaseOrderItemsTable({
           />
         )
 
+      //  ĐƠN GIÁ giữ tới 4 chữ số lẻ (CR-058) — dùng `formatMoney` là làm tròn tới
+      //  đồng ngay trên màn, người dùng tưởng mất số lẻ đã nhập.
       case 'price':
         return (
           <NumberCell
             value={item.price}
             editable={cellEditable}
             onChange={(value) => patch(index, { price: value })}
-            format={formatMoney}
+            format={formatUnitPrice}
+            maxDecimals={PRICE_MAX_DECIMALS}
           />
         )
 
@@ -460,26 +464,32 @@ export function PurchaseOrderItemsTable({
   )
 }
 
-/** Ô số: gõ tự do khi sửa, còn lại hiện đã định dạng theo chuẩn tiền/số lượng. */
+/**
+ * Ô số: định dạng theo chuẩn Việt (ngăn nghìn bằng dấu chấm) cả lúc nhập lẫn lúc
+ * chỉ xem — `<Input type="number">` để số trần nên `1500000` với `150000` nhìn
+ * gần như nhau, mà đây là cột đơn giá.
+ */
 function NumberCell({
   value,
   editable,
   onChange,
   format,
+  maxDecimals,
 }: {
   value: number
   editable: boolean
   onChange: (value: number) => void
   format: (value: number) => string
+  maxDecimals?: number
 }) {
   if (!editable) return <span className="tabular-nums">{format(value || 0)}</span>
 
   return (
-    <Input
-      type="number"
-      className="w-full px-2 text-right tabular-nums"
+    <NumberInput
+      className="px-2 text-right"
       value={value ?? 0}
-      onChange={(event) => onChange(Number(event.target.value) || 0)}
+      maxDecimals={maxDecimals}
+      onChange={onChange}
     />
   )
 }

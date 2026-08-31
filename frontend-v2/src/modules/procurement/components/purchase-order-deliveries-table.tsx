@@ -8,6 +8,7 @@ import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { DatePicker } from '@/shared/ui/date-picker'
 import { Input } from '@/shared/ui/input'
+import { NumberInput, PRICE_MAX_DECIMALS } from '@/shared/ui/number-input'
 import {
   Select,
   SelectContent,
@@ -15,9 +16,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
+import { labelOf, PO_DELIVERY_STATUS } from '@/shared/constants/statuses'
 import { cn } from '@/shared/utils/cn'
 import { formatDate } from '@/shared/utils/format-date'
-import { formatMoney, formatQuantity } from '@/shared/utils/format-money'
+import { formatMoney, formatQuantity, formatUnitPrice } from '@/shared/utils/format-money'
 import { usePurchaseRequestWarehouses } from '../hooks/use-purchase-request-support'
 import { PurchaseOrderDeliveryFiles } from './purchase-order-delivery-files'
 import type {
@@ -31,7 +33,16 @@ const SHIP_UNITS = ['Kiện', 'Chuyến', 'm2', 'tấn'] as const
 /** Giá trị giả cho lựa chọn "NCC tự vận chuyển" (không có mã trong danh mục). */
 const SELF_CARRIER = '__self__'
 
-const TABLE_STORAGE_KEY = 'purchase-order-deliveries'
+/**
+ * Đổi khóa khi thêm/sắp lại cột hoặc khi đổi bộ cột hiện mặc định: bố cục cũ trong
+ * localStorage giữ nguyên thứ tự đã lưu và ĐẨY cột mới xuống cuối bảng, còn danh
+ * sách cột ẩn thì bám luôn theo lần mở đầu tiên — người dùng cũ sẽ vẫn thấy bảng
+ * rút gọn dù mã nguồn đã bỏ chế độ đó.
+ */
+const TABLE_STORAGE_KEY = 'purchase-order-deliveries-v3'
+
+/** NCC tự vận chuyển đã có sẵn lựa chọn riêng — lọc bản ghi trùng tên trong danh mục. */
+const SELF_CARRIER_NAME = 'ncc tự vận chuyển'
 
 interface PurchaseOrderDeliveriesTableProps {
   item: PurchaseOrderItem
@@ -57,8 +68,9 @@ interface PurchaseOrderDeliveriesTableProps {
  * đơn, cước vận chuyển và công nợ riêng.
  *
  * Dùng chung khung `LinesTable` với bảng dòng hàng YCMH/YCBG/ĐMH: ẩn/hiện, ghim,
- * kéo giãn, đổi thứ tự cột. 24 cột nhồi vào hộp thoại thì chật, nên bảng mở sẵn
- * ở chế độ RÚT GỌN; cần đủ cột thì bấm "Bảng đầy đủ".
+ * kéo giãn, đổi thứ tự cột. Bảng mở sẵn ĐỦ 27 CỘT: mở chế độ rút gọn thì mất
+ * đúng những cột người nhập hàng cần (số hóa đơn, công nợ, cước vận chuyển, các
+ * mốc trễ hạn), mà không ai biết là đang bị giấu bớt.
  *
  * Các cột ngày lệch (Ngày QĐ, Trễ CK/QĐ) và công nợ (Đã trả / Còn lại) do
  * BACKEND tính — hiện chỉ đọc, sửa tay ở đây sẽ lệch với sổ công nợ.
@@ -77,6 +89,14 @@ export function PurchaseOrderDeliveriesTable({
 }: PurchaseOrderDeliveriesTableProps) {
   const { data: warehouses } = usePurchaseRequestWarehouses()
   const deliveries = item.deliveries ?? []
+
+  //  Danh mục NCC có sẵn một nhà "NCC tự vận chuyển"; giữ lại thì ô chọn hiện hai
+  //  dòng chữ y hệt nhau mà chỉ một dòng lưu đúng ý nghĩa "NCC tự giao".
+  const selectableCarriers = useMemo(
+    () =>
+      carriers.filter((carrier) => (carrier.name || '').trim().toLowerCase() !== SELF_CARRIER_NAME),
+    [carriers],
+  )
 
   const columns = useMemo<LinesTableColumn[]>(() => [
     {
@@ -98,7 +118,26 @@ export function PurchaseOrderDeliveriesTable({
       minWidth: 70,
       compactHidden: true,
     },
+    //  Ba cột dội lại từ DÒNG HÀNG (không phải của lần giao) để đối chiếu ngay tại
+    //  chỗ nhập: đặt bao nhiêu, giá nào, thuế mấy phần trăm.
+    { key: 'qty_order', header: 'SL đặt', width: 100, minWidth: 60, align: 'right' },
     { key: 'received_qty', header: 'SL nhận', width: 110, minWidth: 60, align: 'right' },
+    {
+      key: 'price',
+      header: 'Đơn giá',
+      width: 130,
+      minWidth: 80,
+      align: 'right',
+      compactHidden: true,
+    },
+    {
+      key: 'vat',
+      header: 'VAT%',
+      width: 80,
+      minWidth: 60,
+      align: 'right',
+      compactHidden: true,
+    },
     {
       key: 'received_amount',
       header: 'Thành tiền (nhận)',
@@ -256,7 +295,7 @@ export function PurchaseOrderDeliveriesTable({
             onValueChange={(value) => patch(index, { warehouse_code: value })}
           >
             <SelectTrigger className="w-full">
-              <SelectValue placeholder="—" />
+              <SelectValue placeholder="Chọn kho" />
             </SelectTrigger>
             <SelectContent>
               {(warehouses?.items ?? []).map((warehouse) => (
@@ -267,7 +306,7 @@ export function PurchaseOrderDeliveriesTable({
             </SelectContent>
           </Select>
         ) : (
-          delivery.warehouse_code || '—'
+          delivery.warehouse_code || ''
         )
 
       case 'carrier':
@@ -283,7 +322,7 @@ export function PurchaseOrderDeliveriesTable({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value={SELF_CARRIER}>NCC tự vận chuyển</SelectItem>
-              {carriers.map((carrier) => (
+              {selectableCarriers.map((carrier) => (
                 <SelectItem key={carrier.id} value={carrier.code}>
                   {carrier.name}
                 </SelectItem>
@@ -291,7 +330,7 @@ export function PurchaseOrderDeliveriesTable({
             </SelectContent>
           </Select>
         ) : (
-          delivery.carrier_name || '—'
+          delivery.carrier_name || ''
         )
 
       case 'ship_qty':
@@ -310,7 +349,7 @@ export function PurchaseOrderDeliveriesTable({
             onValueChange={(value) => patch(index, { ship_unit: value })}
           >
             <SelectTrigger className="w-full">
-              <SelectValue placeholder="—" />
+              <SelectValue placeholder="Chọn ĐVT" />
             </SelectTrigger>
             <SelectContent>
               {SHIP_UNITS.map((unit) => (
@@ -321,8 +360,18 @@ export function PurchaseOrderDeliveriesTable({
             </SelectContent>
           </Select>
         ) : (
-          delivery.ship_unit || '—'
+          delivery.ship_unit || ''
         )
+
+      //  Ba ô sau lấy thẳng từ dòng hàng, chỉ để đọc — sửa phải sửa ở dòng hàng.
+      case 'qty_order':
+        return <span className="tabular-nums">{formatQuantity(item.qty_order || 0)}</span>
+
+      case 'price':
+        return <span className="tabular-nums">{formatUnitPrice(item.price || 0)}</span>
+
+      case 'vat':
+        return <span className="tabular-nums">{Number(item.vat) || 0}%</span>
 
       case 'received_qty':
         return (
@@ -361,7 +410,7 @@ export function PurchaseOrderDeliveriesTable({
             }}
           />
         ) : (
-          delivery.invoice_no || '—'
+          delivery.invoice_no || ''
         )
 
       case 'invoice_date':
@@ -376,7 +425,7 @@ export function PurchaseOrderDeliveriesTable({
       case 'paid':
         return (
           <span className="font-medium tabular-nums text-success">
-            {delivery.id ? `${formatMoney(delivery.paid ?? 0)} đ` : '—'}
+            {delivery.id ? `${formatMoney(delivery.paid ?? 0)} đ` : ''}
           </span>
         )
 
@@ -388,7 +437,7 @@ export function PurchaseOrderDeliveriesTable({
               (delivery.remaining ?? 0) > 0 ? 'text-destructive' : 'text-muted-foreground',
             )}
           >
-            {delivery.id ? `${formatMoney(delivery.remaining ?? 0)} đ` : '—'}
+            {delivery.id ? `${formatMoney(delivery.remaining ?? 0)} đ` : ''}
           </span>
         )
 
@@ -422,7 +471,7 @@ export function PurchaseOrderDeliveriesTable({
       case 'regulated_date':
         return (
           <span className="whitespace-nowrap text-muted-foreground">
-            {formatDate(delivery.regulated_date ?? '') || '—'}
+            {formatDate(delivery.regulated_date ?? '') || ''}
           </span>
         )
 
@@ -437,23 +486,25 @@ export function PurchaseOrderDeliveriesTable({
       case 'diff_required':
         return <LateCell value={item.required_date ? delivery.diff_required : undefined} />
 
+      //  `status` là MÃ (B-06) chứ không phải nhãn tiếng Việt — so với chuỗi
+      //  "Đã nhận" thì luôn trượt, badge hiện chữ 'received' và tô sai màu.
       case 'status':
         return delivery.status ? (
           <Badge
             variant="secondary"
             className={cn(
               'border-0',
-              delivery.status === 'Đã nhận'
+              delivery.status === 'received'
                 ? 'bg-success/10 text-success'
-                : delivery.status === 'Lỗi'
+                : delivery.status === 'defect'
                   ? 'bg-destructive/10 text-destructive'
                   : 'bg-warning/10 text-warning',
             )}
           >
-            {delivery.status}
+            {labelOf(PO_DELIVERY_STATUS, delivery.status) || delivery.status}
           </Badge>
         ) : (
-          '—'
+          ''
         )
 
       case 'shipping_unit_price':
@@ -461,6 +512,8 @@ export function PurchaseOrderDeliveriesTable({
           <NumberCell
             value={delivery.shipping_unit_price}
             editable={editable}
+            maxDecimals={PRICE_MAX_DECIMALS}
+            format={formatUnitPrice}
             // Cước = đơn giá × SL gửi; vẫn cho sửa tay ô thành tiền bên cạnh.
             onChange={(value) =>
               patch(index, {
@@ -476,6 +529,7 @@ export function PurchaseOrderDeliveriesTable({
           <NumberCell
             value={delivery.shipping_amount}
             editable={editable}
+            format={formatMoney}
             onChange={(value) => patch(index, { shipping_amount: value })}
           />
         )
@@ -487,7 +541,7 @@ export function PurchaseOrderDeliveriesTable({
             onChange={(event) => patch(index, { extra_request: event.target.value })}
           />
         ) : (
-          delivery.extra_request || '—'
+          delivery.extra_request || ''
         )
 
       case 'files':
@@ -528,7 +582,6 @@ export function PurchaseOrderDeliveriesTable({
       storageKey={TABLE_STORAGE_KEY}
       rowKey={(delivery, index) => delivery.id ?? `new-${index}`}
       renderCell={renderCell}
-      defaultCompact
       title={`Giao hàng nhiều lần (${deliveries.length} lần)`}
       emptyMessage="Chưa có lần giao nào."
       cellClassName={(key) => (key === 'files' ? 'whitespace-normal' : undefined)}
@@ -544,23 +597,32 @@ export function PurchaseOrderDeliveriesTable({
   )
 }
 
+/**
+ * Ô số của một lần giao. Dùng `NumberInput` (ngăn nghìn kiểu Việt) chứ không dùng
+ * `<Input type="number">`: cột này toàn tiền và số lượng, để số trần `3500000` thì
+ * đọc lướt qua nhầm bậc ngay.
+ */
 function NumberCell({
   value,
   editable,
   onChange,
+  maxDecimals,
+  format = formatQuantity,
 }: {
   value: number
   editable: boolean
   onChange: (value: number) => void
+  maxDecimals?: number
+  format?: (value: number) => string
 }) {
-  if (!editable) return <span className="tabular-nums">{formatQuantity(value || 0)}</span>
+  if (!editable) return <span className="tabular-nums">{format(value || 0)}</span>
 
   return (
-    <Input
-      type="number"
-      className="w-full px-2 text-right tabular-nums"
+    <NumberInput
+      className="px-2 text-right"
       value={value ?? 0}
-      onChange={(event) => onChange(Number(event.target.value) || 0)}
+      maxDecimals={maxDecimals}
+      onChange={onChange}
     />
   )
 }
@@ -574,15 +636,15 @@ function DateCell({
   editable: boolean
   onChange: (value: string) => void
 }) {
-  if (!editable) return <span>{formatDate(value) || '—'}</span>
+  if (!editable) return <span>{formatDate(value) || ''}</span>
 
-  return <DatePicker size="sm" value={value || ''} placeholder="—" onChange={onChange} />
+  return <DatePicker size="sm" value={value || ''} placeholder="" onChange={onChange} />
 }
 
 /** Số ngày trễ: âm = trễ hạn nên tô đỏ, còn lại để trung tính. */
 function LateCell({ value }: { value?: number }) {
   if (value === undefined || value === null)
-    return <span className="text-muted-foreground">—</span>
+    return null
   return (
     <span className={cn('tabular-nums', value < 0 && 'font-semibold text-destructive')}>
       {value}

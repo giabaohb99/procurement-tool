@@ -1,3 +1,5 @@
+import { useMemo } from 'react'
+
 import type { Supplier } from '@/modules/production/types/supplier'
 import { Button } from '@/shared/ui/button'
 import { Checkbox } from '@/shared/ui/checkbox'
@@ -12,6 +14,7 @@ import {
 } from '@/shared/ui/dialog'
 import { DatePicker } from '@/shared/ui/date-picker'
 import { Input } from '@/shared/ui/input'
+import { NumberInput } from '@/shared/ui/number-input'
 import { Label } from '@/shared/ui/label'
 import { ReadOnlyValue } from '@/shared/ui/read-only-value'
 import { RequiredMark } from '@/shared/ui/required-mark'
@@ -26,9 +29,11 @@ import { Textarea } from '@/shared/ui/textarea'
 import { formatDate } from '@/shared/utils/format-date'
 import { formatMoney, formatQuantity } from '@/shared/utils/format-money'
 import {
+  usePurchaseRequestItemGroups,
   usePurchaseRequestUnits,
   usePurchaseRequestWarehouses,
 } from '../hooks/use-purchase-request-support'
+import { buildStdDaysMap, calcRegulatedDate, findStdDays } from '../utils/lead-time'
 import { ProgressStatusBadge } from './document-status-badge'
 import { PurchaseOrderDeliveriesTable } from './purchase-order-deliveries-table'
 import {
@@ -56,6 +61,8 @@ interface PurchaseOrderLineDialogProps {
   attachEditable: boolean
   purchaseOrderId: number
   carriers: Supplier[]
+  /** Ngày đặt hàng của đơn — mốc gốc để tính Ngày quy định của lần giao mới. */
+  orderDate: string
   /** Phiếu giao chọn trước khi lưu, khóa theo chỉ số lần giao của dòng này. */
   pendingFiles: Record<number, File[]>
   onChange: (item: PurchaseOrderItem) => void
@@ -83,6 +90,7 @@ export function PurchaseOrderLineDialog({
   attachEditable,
   purchaseOrderId,
   carriers,
+  orderDate,
   pendingFiles,
   onChange,
   onPendingFilesChange,
@@ -92,6 +100,9 @@ export function PurchaseOrderLineDialog({
 }: PurchaseOrderLineDialogProps) {
   const { data: units } = usePurchaseRequestUnits(open)
   const { data: warehouses } = usePurchaseRequestWarehouses(open)
+  //  Danh mục Phân loại VTBB/NL giữ số ngày quy định — nguồn tính mốc giao hàng.
+  const { data: itemGroups } = usePurchaseRequestItemGroups(open)
+  const stdDaysMap = useMemo(() => buildStdDaysMap(itemGroups?.items), [itemGroups])
 
   if (!item) return null
 
@@ -302,16 +313,11 @@ export function PurchaseOrderLineDialog({
               <RequiredMark />
             </Label>
             {fieldEditable ? (
-              <Input
-                type="number"
-                min={0}
-                step="0.001"
-                value={item.qty_request || ''}
-                onChange={(event) => patch({ qty_request: Number(event.target.value) })}
+              <NumberInput
+                value={item.qty_request || 0}
+                onChange={(value) => patch({ qty_request: value })}
               />
             ) : (
-              // Chỉ xem thì hiện số đã ngăn cách hàng nghìn — ô nhập bắt buộc để
-              // số trần (2000), đọc lướt qua rất dễ nhầm bậc.
               <ReadOnlyValue className="tabular-nums">
                 {formatQuantity(item.qty_request)}
               </ReadOnlyValue>
@@ -447,7 +453,12 @@ export function PurchaseOrderLineDialog({
                     patch({
                       deliveries: [
                         ...(item.deliveries ?? []),
-                        createEmptyDelivery(item, (item.deliveries?.length ?? 0) + 1),
+                        createEmptyDelivery(
+                          item,
+                          (item.deliveries?.length ?? 0) + 1,
+                          stdDaysMap,
+                          orderDate,
+                        ),
                       ],
                     })
                 : undefined
@@ -475,8 +486,27 @@ export function PurchaseOrderLineDialog({
   )
 }
 
-/** Lần giao mới: kế thừa kho nhận và ĐVT của dòng để đỡ phải chọn lại. */
-function createEmptyDelivery(item: PurchaseOrderItem, deliveryNo: number) {
+/**
+ * Lần giao mới: kế thừa kho nhận và ĐVT của dòng để đỡ phải chọn lại, đồng thời
+ * TỰ TÍNH mốc thời gian theo Phân loại VTBB/NL của dòng hàng (`utils/lead-time.ts`,
+ * bản sao luật của `app/modules/catalog/lead_time.py`):
+ *
+ * - `std_days` = số ngày quy định của phân loại (lấy mốc dài nhất);
+ * - `regulated_date` = Ngày đặt hàng + `std_days`;
+ * - `promised_date` mặc định bằng ngày quy định — người dùng sửa lại theo cam kết
+ *   thật của NCC.
+ *
+ * Thiếu ngày đặt hàng (đơn nháp chưa nhập) thì hai cột ngày để trống, chỉ điền số
+ * ngày; backend `purchase_order/service.py` sẽ tính bù khi lưu.
+ */
+function createEmptyDelivery(
+  item: PurchaseOrderItem,
+  deliveryNo: number,
+  stdDaysMap: Record<string, number>,
+  orderDate: string,
+) {
+  const stdDays = findStdDays(stdDaysMap, item.item_group || '')
+  const regulatedDate = calcRegulatedDate(stdDaysMap, item.item_group || '', orderDate)
   return {
     delivery_no: deliveryNo,
     warehouse_code: item.warehouse_code || '',
@@ -485,10 +515,11 @@ function createEmptyDelivery(item: PurchaseOrderItem, deliveryNo: number) {
     ship_qty: 0,
     ship_unit: item.unit || '',
     received_qty: 0,
-    promised_date: '',
+    promised_date: regulatedDate,
     expected_date: '',
     received_date: '',
-    std_days: 0,
+    std_days: stdDays,
+    regulated_date: regulatedDate,
     invoice_no: '',
     invoice_date: '',
     shipping_unit_price: 0,

@@ -78,6 +78,7 @@ import {
   isPurchaseOrderApproved,
   isPurchaseOrderLocked,
   PO_FIELDS_EDITABLE_AFTER_APPROVE,
+  PO_MISA_AFTER_APPROVE_HINT,
   type PurchaseOrderDetail,
   type PurchaseOrderItem,
 } from '../types/purchase-order-detail'
@@ -434,6 +435,7 @@ export function PurchaseOrderDetailPage() {
         <PurchaseOrderInfoCard
           data={data}
           editable={headerEditable}
+          misaEditable={afterApproveEditable}
           companies={companiesData?.items}
           suppliers={(suppliersData?.items ?? []).filter(
             (supplier) => supplier.supplier_type !== 'transport',
@@ -468,7 +470,7 @@ export function PurchaseOrderDetailPage() {
             {afterApproveEditable && (
               <p className="rounded-md border border-info/30 bg-info/8 px-3 py-1.5 text-xs text-muted-foreground">
                 Đơn đã duyệt — nội dung đã ký khóa lại. Mở nút bút chì ở cột Hành động để sửa:{' '}
-                {PO_FIELDS_EDITABLE_AFTER_APPROVE}.
+                {PO_FIELDS_EDITABLE_AFTER_APPROVE}.{PO_MISA_AFTER_APPROVE_HINT}
                 {canUnapprove && ' Muốn đổi phần khác thì bấm Hủy duyệt để đưa đơn về Nháp.'}
               </p>
             )}
@@ -565,6 +567,7 @@ export function PurchaseOrderDetailPage() {
         carriers={(suppliersData?.items ?? []).filter(
           (supplier) => supplier.supplier_type === 'transport',
         )}
+        orderDate={data.order_date || ''}
         pendingFiles={linePendingFiles}
         onChange={(item) => {
           if (lineIndex === null) return

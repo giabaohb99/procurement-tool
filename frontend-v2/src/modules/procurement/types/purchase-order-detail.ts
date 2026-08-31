@@ -172,9 +172,22 @@ export function isPurchaseOrderApproved(status: string): boolean {
   return ['approved', 'partial', 'received'].includes(status)
 }
 
-/** Nhãn các ô còn sửa được sau khi duyệt — dùng cho câu nhắc trên màn. */
+/**
+ * Nhãn các ô còn sửa được sau khi duyệt — dùng cho câu nhắc trên màn.
+ *
+ * Chỉ liệt kê ô nằm TRONG popup chi tiết dòng (nút bút chì ở cột Hành động), vì cả
+ * hai câu nhắc đều chỉ người dùng bấm vào đó. Ô ở khối Thông tin chung phải nhắc
+ * riêng — xem `PO_MISA_AFTER_APPROVE_HINT`.
+ */
 export const PO_FIELDS_EDITABLE_AFTER_APPROVE =
   'Tên trên hóa đơn · Ngày dự kiến có hàng · Kho nhận mặc định · Ghi chú · Ngày giao chứng từ cho KT · Giao hàng nhiều lần'
+
+/**
+ * Mã đơn MISA không nằm trong popup dòng mà ở khối Thông tin chung, nên nhắc gộp
+ * vào danh sách trên là chỉ sai chỗ — người dùng mở bút chì rồi tìm không ra.
+ */
+export const PO_MISA_AFTER_APPROVE_HINT =
+  ' Riêng Mã đơn MISA sửa thẳng ở khối Thông tin chung phía trên.'
 
 /** Đơn đã duyệt trở đi mới nhập được tiến độ giao hàng. */
 export function isDeliveryStage(status: string): boolean {

@@ -32,6 +32,12 @@ interface PurchaseOrderInfoCardProps {
   data: PurchaseOrderDetail
   /** Đơn chưa chốt + có quyền ghi thì cho sửa phần đầu. */
   editable: boolean
+  /**
+   * Mã đơn MISA sửa được cả khi đơn ĐÃ DUYỆT: kế toán đẩy đơn sang phần mềm MISA
+   * sau khi duyệt xong rồi mới có mã đó, khóa lại thì không ai điền vào được nữa.
+   * Backend cũng cho qua (`ORDER_FIELDS_EDITABLE_AFTER_APPROVAL`).
+   */
+  misaEditable?: boolean
   companies?: Company[]
   /** Chỉ NCC bán hàng — đơn vị vận chuyển chọn ở từng lần giao. */
   suppliers?: Supplier[]
@@ -56,6 +62,7 @@ interface PurchaseOrderInfoCardProps {
 export function PurchaseOrderInfoCard({
   data,
   editable,
+  misaEditable,
   companies = [],
   suppliers = [],
   employees = [],
@@ -115,7 +122,7 @@ export function PurchaseOrderInfoCard({
 
         <div className="space-y-1.5">
           <Label>Mã đơn MISA</Label>
-          {editable ? (
+          {editable || misaEditable ? (
             <Input
               value={data.misa_code || ''}
               placeholder="(nếu có)"
