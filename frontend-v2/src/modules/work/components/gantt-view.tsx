@@ -7,7 +7,7 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
 import { cn } from '@/shared/utils/cn'
 import { useCollapsedGroups } from '../hooks/use-collapsed-groups'
@@ -290,6 +290,16 @@ export function GanttView({
       biểu đồ chỉ còn lưới trống, không biết việc nằm bên nào.  */
   const offscreenBars = useOffscreenBars(scrollRef, rows)
 
+  /*  Bề rộng thanh cuộn dọc của trục — cụm điều khiển nằm NGOÀI khung cuộn nên
+      phải tự chừa chỗ, không thì nó đè lên thanh cuộn. macOS đo ra 0 (thanh cuộn
+      phủ lên nội dung), Windows/Linux ra ~15. Đo lại khi số dòng đổi vì đó là
+      lúc trục chuyển giữa có và không có thanh cuộn dọc.  */
+  const [scrollbarWidth, setScrollbarWidth] = useState(0)
+  useLayoutEffect(() => {
+    const box = scrollRef.current
+    if (box) setScrollbarWidth(box.offsetWidth - box.clientWidth)
+  }, [rows.length, paneWidth])
+
   const jumpToTask = useCallback(
     (taskId: number) => {
       const box = scrollRef.current
@@ -430,7 +440,9 @@ export function GanttView({
               cột để không bao giờ thấy nửa viên chip ở sát ô tên ghim; khách bác
               ngay 31/08/2026 — *"dừng làm snap ngang làm dị khó chịu á"*. Cuộn
               phải trôi tự do.  */
-          className="shrink-0 overflow-x-auto overflow-y-hidden border-r border-border/60"
+          //  KHÔNG `border-r` ở đây: thanh chia ngay bên phải đã là nét 1px rồi,
+          //  để cả hai là hai vạch dọc sát nhau.
+          className="shrink-0 overflow-x-auto overflow-y-hidden"
           style={{ width: paneWidth }}
           onScroll={markGridScrolledX}
         >
@@ -572,7 +584,21 @@ export function GanttView({
              không có nền): để trong suốt thì nhãn tháng cuộn ngang chui xuống
              dưới và chồng chữ lên nhau — đo được «Tháng 9/2026» đè lên «Hôm nay»
              thành một mớ không đọc nổi.  */}
-        <div className="absolute top-1.5 right-3 z-40 rounded-md bg-muted pl-2">
+        {/*  ⚠️ Nền phải phủ KÍN cả ô tiêu đề tháng, không chừa khe nào. Bản trước
+             đặt `top-1.5 right-3` cho thoáng, thành ra hở 6px trên và 12px phải —
+             đúng hai khe ấy nhãn tháng cuộn ngang lòi ra một mẩu («/2» của "Tháng
+             9/2027") nhìn như rác. Nay hộp bám `top-0`, cao đúng một hàng tiêu
+             đề, còn khoảng thở chuyển vào `pr-3` (đệm TRONG hộp) nên nút vẫn
+             không dính mép mà nền thì liền một mảnh.
+
+             `right` chừa đúng bề rộng thanh cuộn dọc: cụm này nằm NGOÀI khung
+             cuộn nên `right-0` sẽ đè lên thanh cuộn ở những nền tảng có thanh
+             cuộn chiếm chỗ thật (Windows/Linux). macOS đo ra 0 nên không thấy
+             gì, đúng kiểu lỗi chỉ nổ ở máy người dùng.  */}
+        <div
+          className="absolute top-0 z-40 flex items-center bg-muted pr-3 pl-2"
+          style={{ right: scrollbarWidth, height: ROW_HEIGHT }}
+        >
           <GanttTimelineControls
             zoom={zoom}
             onZoomChange={onZoomChange}

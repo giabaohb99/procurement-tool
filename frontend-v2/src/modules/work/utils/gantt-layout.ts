@@ -54,14 +54,9 @@ export const GRID_MIN_WIDTH = 260
 /** Lề trái của một dòng ở lưới trái — chừa chỗ cho mũi tên thu/mở nhóm. */
 export const GRID_PAD_LEFT = 10
 
-/**
- * Bề rộng thanh chia lưới/trục (`w-1.5` ở `GanttPaneSplitter`).
- *
- * Cần thành hằng vì tiêu đề trục phải biết mép trái của vùng NHÌN THẤY nằm ở
- * đâu: nhãn tháng dính (`sticky`) phải dừng ở sau lưới trái + thanh chia, không
- * thì nó trượt xuống dưới lưới và mất tăm.
- */
-export const SPLITTER_WIDTH = 6
+//  Từng có `SPLITTER_WIDTH` ở đây cho tiêu đề trục tính mép trái vùng nhìn thấy.
+//  Bỏ từ CR-230: hai bên nay là hai khung cuộn RIÊNG nên nhãn tháng dính vào
+//  `left-0` của chính khung nó, không phải bù trừ bề rộng lưới + thanh chia nữa.
 
 /** Thụt lề của dòng VIỆC so với dòng NHÓM chứa nó. */
 export const GRID_INDENT = 18

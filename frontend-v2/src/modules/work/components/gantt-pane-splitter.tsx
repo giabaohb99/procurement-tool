@@ -56,7 +56,26 @@ export function GanttPaneSplitter({ width, maxWidth, onResize }: GanttPaneSplitt
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
-      className="w-1.5 shrink-0 cursor-col-resize touch-none bg-border/60 transition-colors hover:bg-primary"
-    />
+      /*  ⚠️ `z-50` — phải CAO HƠN cả hai hàng tiêu đề (tiêu đề trục `z-40`, tiêu
+           đề lưới trái `z-20`). Nét đậm khi rê chuột vẽ đè ra hai bên, mà hai
+           hàng ấy đứng sau trong cây và có z-index nên chúng che mất hai pixel
+           tràn: ở dải tiêu đề nét chỉ còn 1px trong khi phần thân dày 3px, nhìn
+           như thanh chia bị hụt mất một khúc trên đầu.  */
+      className="group/splitter relative z-50 w-px shrink-0 cursor-col-resize touch-none bg-border"
+    >
+      {/*  VÙNG BẮT CHUỘT rộng 9px, trong suốt và đè ra hai bên. Nét vẽ chỉ 1px
+           thì gần như không rê trúng; mà nới nét cho dễ bắt thì nó thành một
+           thanh xám 6px chạy dọc giữa màn hình — khách chê đúng chỗ này.
+           Sự kiện nổi bọt lên thẻ cha nên bộ xử lý kéo vẫn nguyên. */}
+      <span aria-hidden className="absolute inset-y-0 -right-1 -left-1" />
+
+      {/*  Nét ĐẬM khi rê chuột — báo "kéo được". Vẽ ĐÈ ra hai bên
+           (`-inset-x-px`) chứ không nới bề rộng thẻ: nới thì cả lưới trái lẫn
+           trục dịch đi 2px mỗi lần con trỏ quét ngang qua. */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-y-0 -right-px -left-px bg-primary opacity-0 transition-opacity group-hover/splitter:opacity-100"
+      />
+    </div>
   )
 }
