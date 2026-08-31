@@ -24,15 +24,17 @@ export type GanttZoom = 'day' | 'week' | 'month'
 /**
  * Bề rộng MỘT NGÀY theo từng mức phóng, tính bằng px.
  *
- * Mức Ngày nới 38 → 44 → **56** (khách 31/08/2026, hai lượt): 38px hẹp hơn cả
- * chiều cao hàng nên lưới nhìn dẹt và bị nén; 44 mới vừa vuông, vẫn chưa đủ chỗ
- * cho hai dòng «21 / T3» thở. 56 thì ô ngày ra ô ngày.
+ * Mức Ngày nới 38 → 44 → 56 → **64** (khách 31/08/2026, ba lượt): 38px hẹp hơn
+ * cả chiều cao hàng nên lưới nhìn dẹt và bị nén; 44 mới vừa vuông; 56 vẫn chưa
+ * đủ chỗ cho hai dòng «21 / T3» thở.
  *
  * ⚠️ Con số này nhân thẳng với 730 ngày của khung hai năm (`khungToiThieu`):
- * 56 × 730 ≈ **40.900px** bề rộng nội dung. Vẫn ổn vì lưới nền vẽ theo Ô của
- * hàng tiêu đề chứ không theo từng ngày, nhưng nới tiếp thì phải đo lại.
+ * 64 × 730 ≈ **46.700px** bề rộng nội dung. Vẫn chịu được vì lưới nền vẽ theo Ô
+ * của hàng tiêu đề chứ không theo từng ngày (một ô = một tháng ở hàng trên, một
+ * ngày ở hàng dưới), nhưng số ô của hàng dưới thì đúng bằng số ngày — nới thêm
+ * nữa là phải đo lại thời gian vẽ, đừng nâng mù.
  */
-export const DAY_WIDTH: Record<GanttZoom, number> = { day: 56, week: 13, month: 4 }
+export const DAY_WIDTH: Record<GanttZoom, number> = { day: 64, week: 13, month: 4 }
 
 export const ZOOM_LABELS: Record<GanttZoom, string> = {
   day: 'Ngày',
