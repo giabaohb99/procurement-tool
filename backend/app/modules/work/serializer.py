@@ -5,6 +5,7 @@ nhận đối tượng model + vài thứ tra sẵn, trả dict — không tự 
 trong vòng lặp là đẻ ra N+1 query.
 """
 from app.modules.work.label_model import WorkLabelField, WorkLabelOption
+from app.modules.work.link_model import WorkTaskLink
 from app.modules.work.model import WorkGroup, WorkList
 from app.modules.work.task_model import WorkSection, WorkTask
 
@@ -88,6 +89,15 @@ def task_label_out(tl, employee_name: str = "") -> dict:
     }
 
 
+def task_link_out(link: WorkTaskLink) -> dict:
+    """Một mũi tên phụ thuộc trên Gantt (B-15)."""
+    return {
+        "id": link.id, "list_id": link.list_id,
+        "predecessor_id": link.predecessor_id, "successor_id": link.successor_id,
+        "link_type": int(link.link_type), "lag_days": int(link.lag_days or 0),
+    }
+
+
 def task_out(t: WorkTask, *, assignees: list[dict],
              labels: list[dict], subtask_done: int = 0, subtask_total: int = 0,
              comment_count: int = 0) -> dict:
@@ -101,6 +111,8 @@ def task_out(t: WorkTask, *, assignees: list[dict],
         "parent_id": t.parent_id,
         "title": t.title, "description": t.description,
         "status": int(t.status),
+        #  Việc thường hay CỘT MỐC (B-14) — Gantt vẽ mốc thành hình thoi.
+        "kind": int(t.kind or 1),
         "start_date": t.start_date, "due_date": t.due_date,
         "sort_order": t.sort_order,
         "creator_employee_id": t.creator_employee_id,

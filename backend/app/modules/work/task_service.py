@@ -18,12 +18,14 @@ from app.core.audit import record
 from app.modules.work import serializer as ser
 from app.modules.work import task_enrich
 from app.modules.work import label_value_service as label_values
+from app.modules.work import link_service as links
 from app.modules.work.label_model import (WorkLabelField, WorkLabelOption,
                                           WorkTaskLabel)
 from app.modules.work.membership_service import (CAN_EDIT, CAN_MANAGE, Actor,
                                                  block_if_archived,
                                                  effective_role, get_list_or_403)
-from app.modules.work.model import WorkAssigneeKind, WorkTaskStatus
+from app.modules.work.model import (WorkAssigneeKind, WorkTaskKind,
+                                    WorkTaskStatus)
 from app.modules.work.task_model import WorkSection, WorkTask, WorkTaskAssignee
 
 
@@ -74,6 +76,10 @@ def board(db: Session, actor: Actor, list_id: int) -> dict:
         "list": ser.list_out(lst, effective_role(db, actor.employee_id, list_id)),
         "sections": [ser.section_out(s) for s in sections],
         "tasks": _shape(tasks, task_enrich.collect(db, tasks)),
+        #  Mũi tên phụ thuộc đi CHUNG payload này (B-15): Gantt cần chúng cùng
+        #  lúc với các thanh, tách thành lượt gọi thứ hai là biểu đồ vẽ xong rồi
+        #  mũi tên mới nhảy vào sau, giật một nhịp.
+        "links": [ser.task_link_out(link) for link in links.list_links(db, list_id)],
     }
 
 
@@ -117,7 +123,7 @@ def create_task(db: Session, actor: Actor, data) -> dict:
     t = WorkTask(company_id=lst.company_id, list_id=list_id, section_id=section_id,
                  parent_id=parent.id if parent else None,
                  title=data.title.strip(), description=data.description or "",
-                 status=int(WorkTaskStatus.OPEN),
+                 status=int(WorkTaskStatus.OPEN), kind=_valid_kind(data.kind),
                  start_date=data.start_date or "", due_date=data.due_date or "",
                  sort_order=data.sort_order or _next_sort_order(
                      db, list_id, section_id, parent.id if parent else None),
@@ -129,6 +135,12 @@ def create_task(db: Session, actor: Actor, data) -> dict:
         set_assignees(db, actor, t.id, data.assignee_ids, [])
     record(db, actor.user_id, "work_task", t.id, "create", f"Tạo công việc: {t.title}")
     return _shape([t], task_enrich.collect(db, [t]))[0]
+
+
+def _valid_kind(kind) -> int:
+    """Việc thường hay cột mốc (B-14). Số lạ về `1` chứ không 400: đây là trường
+    HIỂN THỊ, chặn cả lượt tạo vì nó thì mất việc mà chẳng cứu được gì."""
+    return int(kind) if int(kind or 0) in {int(k) for k in WorkTaskKind} else 1
 
 
 def _first_section_id(db: Session, list_id: int) -> int | None:
@@ -159,42 +171,58 @@ def _next_sort_order(db: Session, list_id: int, section_id: int | None,
     return int(q.scalar() or 0) + SORT_STEP
 
 
-def move_task(db: Session, actor: Actor, task_id: int, section_id: int,
+def move_task(db: Session, actor: Actor, task_id: int, section_id: int | None,
               before_task_id: int | None) -> dict:
-    """Kéo thả kanban: đưa task vào cột `section_id`, NGAY TRƯỚC `before_task_id`.
+    """Kéo thả: đưa task vào cột `section_id`, NGAY TRƯỚC `before_task_id`.
 
     Nhận MỐC TƯƠNG ĐỐI chứ không nhận `sort_order` tính sẵn ở trình duyệt, vì
     bảng trên màn hình có thể đang lọc (lát cắt / từ khóa) — client chỉ thấy một
     phần của cột, tự tính số thì mọi thẻ đang bị ẩn văng lên đầu.
 
-    Cả cột đích được ĐÁNH SỐ LẠI theo bước `SORT_STEP` trong cùng một giao dịch,
+    Cả hàng đích được ĐÁNH SỐ LẠI theo bước `SORT_STEP` trong cùng một giao dịch,
     nên sau mỗi cú thả thứ tự là duy nhất và không bao giờ hết khe.
+
+    Hai kiểu kéo đi chung một đường vì luật xếp chỗ y hệt nhau, chỉ khác cái
+    HÀNG được đánh số lại:
+
+    - **Task cha** → đổi cột và xếp lại trong cột đó. Bắt buộc có `section_id`.
+    - **Việc con** → xếp lại trong cụm của CHA nó, `section_id` phải rỗng: việc
+      con không thuộc cột nào (C-05), gửi kèm cột là dấu hiệu client nhầm nó với
+      một thẻ kanban.
     """
     t = get_task_or_403(db, actor, task_id, CAN_EDIT)
     lst = get_list_or_403(db, actor, t.list_id, CAN_EDIT)
     block_if_archived(lst)
 
     if t.parent_id:
-        raise HTTPException(400, "Việc con không nằm trong cột nào")
-    if not _section_belongs(db, section_id, t.list_id):
-        raise HTTPException(400, "Cột không thuộc danh sách này")
+        if section_id is not None:
+            raise HTTPException(400, "Việc con không nằm trong cột nào")
+        rows = (db.query(WorkTask)
+                .filter(WorkTask.parent_id == t.parent_id,
+                        WorkTask.deleted_at.is_(None))
+                .order_by(WorkTask.sort_order, WorkTask.id).all())
+    else:
+        if section_id is None:
+            raise HTTPException(400, "Thiếu cột đích")
+        if not _section_belongs(db, section_id, t.list_id):
+            raise HTTPException(400, "Cột không thuộc danh sách này")
 
-    t.section_id = section_id
-    db.flush()
+        t.section_id = section_id
+        db.flush()
+        rows = (db.query(WorkTask)
+                .filter(WorkTask.list_id == t.list_id,
+                        WorkTask.section_id == section_id,
+                        WorkTask.parent_id.is_(None),
+                        WorkTask.deleted_at.is_(None))
+                .order_by(WorkTask.sort_order, WorkTask.id).all())
 
-    rows = (db.query(WorkTask)
-            .filter(WorkTask.list_id == t.list_id,
-                    WorkTask.section_id == section_id,
-                    WorkTask.parent_id.is_(None),
-                    WorkTask.deleted_at.is_(None))
-            .order_by(WorkTask.sort_order, WorkTask.id).all())
     others = [r for r in rows if r.id != task_id]
 
     if before_task_id == task_id:
         pos = min(rows.index(t), len(others))       # "chèn trước chính nó" = đứng yên
     else:
-        #  Mốc lạ (thẻ vừa bị người khác kéo đi nơi khác) thì thả xuống CUỐI cột:
-        #  lệch một chỗ còn hơn ném thẻ về đầu cột.
+        #  Mốc lạ (thẻ vừa bị người khác kéo đi nơi khác) thì thả xuống CUỐI hàng:
+        #  lệch một chỗ còn hơn ném thẻ về đầu.
         pos = next((i for i, r in enumerate(others) if r.id == before_task_id),
                    len(others))
 
@@ -204,7 +232,8 @@ def move_task(db: Session, actor: Actor, task_id: int, section_id: int,
 
     t.updated_by = actor.user_id
     db.commit()
-    record(db, actor.user_id, "work_task", t.id, "update", f"Chuyển công việc: {t.title}")
+    what = "việc con" if t.parent_id else "công việc"
+    record(db, actor.user_id, "work_task", t.id, "update", f"Chuyển {what}: {t.title}")
     return _shape([t], task_enrich.collect(db, [t]))[0]
 
 
@@ -229,6 +258,16 @@ def update_task(db: Session, actor: Actor, task_id: int, data) -> dict:
         val = getattr(data, field, None)
         if val is not None:
             setattr(t, field, val.strip() if isinstance(val, str) else val)
+
+    if data.kind is not None:
+        t.kind = _valid_kind(data.kind)
+        #  Cột mốc là một điểm, không phải một quãng: giữ lại ngày bắt đầu cũ thì
+        #  Gantt có hai ngày để vẽ một hình thoi và không biết chọn cái nào —
+        #  `due_date` là ngày ai cũng đọc là "mốc rơi vào hôm nào".
+        if t.kind == int(WorkTaskKind.MILESTONE):
+            if not t.due_date:
+                t.due_date = t.start_date
+            t.start_date = ""
 
     if data.status is not None and int(data.status) != int(t.status):
         _apply_status(db, actor, t, int(data.status))

@@ -65,3 +65,4 @@ from app.modules.user_preference import model as _user_preference  # noqa: F401
 from app.modules.work import model as _work  # noqa: F401
 from app.modules.work import task_model as _work_task  # noqa: F401
 from app.modules.work import label_model as _work_label  # noqa: F401
+from app.modules.work import link_model as _work_link  # noqa: F401

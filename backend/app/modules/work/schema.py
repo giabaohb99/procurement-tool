@@ -123,6 +123,8 @@ class TaskCreate(BaseModel):
     start_date: str = ""
     due_date: str = ""
     sort_order: int = 0
+    #  `2` = CỘT MỐC (B-14). Mặc định việc thường để lời gọi cũ không đổi nghĩa.
+    kind: int = 1
     assignee_ids: list[int] = Field(default_factory=list)
 
 
@@ -136,14 +138,33 @@ class TaskUpdate(BaseModel):
     due_date: str | None = None
     section_id: int | None = None
     sort_order: int | None = None
+    #  Đổi việc thường ↔ cột mốc (B-14). Xem `WorkTaskKind`.
+    kind: int | None = None
 
 
 class TaskMove(BaseModel):
-    """Kéo thả kanban. Mốc TƯƠNG ĐỐI: chèn NGAY TRƯỚC `before_task_id`, `None` =
-    xuống cuối cột. Vì sao không nhận `sort_order`: xem `task_service.move_task`."""
+    """Kéo thả. Mốc TƯƠNG ĐỐI: chèn NGAY TRƯỚC `before_task_id`, `None` = xuống
+    cuối hàng. Vì sao không nhận `sort_order`: xem `task_service.move_task`.
 
-    section_id: int
+    `section_id` rỗng = xếp lại VIỆC CON trong cụm của cha nó — việc con không
+    thuộc cột nào (C-05). Task cha thì bắt buộc phải có.
+    """
+
+    section_id: int | None = None
     before_task_id: int | None = None
+
+
+class TaskLinkIn(BaseModel):
+    """Nối việc TRƯỚC → việc SAU trên Gantt (B-15).
+
+    `link_type` theo `WorkLinkType`; mặc định `1 = FS` (xong việc trước mới bắt
+    đầu việc sau) vì đó là kiểu chiếm đại đa số. `lag_days` âm = chồng lấn.
+    """
+
+    predecessor_id: int
+    successor_id: int
+    link_type: int = 1
+    lag_days: int = 0
 
 
 class AssigneesIn(BaseModel):

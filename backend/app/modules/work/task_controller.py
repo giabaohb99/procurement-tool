@@ -13,6 +13,7 @@ from app.core.auth import require
 from app.core.database import get_db
 from app.core.response import success
 
+from . import link_service as links
 from . import schema
 from . import task_service as tasks
 from .membership_service import require_employee, resolve_actor
@@ -77,6 +78,22 @@ def create_subtask(task_id: int, data: schema.TaskCreate, db: Session = Depends(
     """Thêm việc con. `parent_id` lấy từ đường dẫn nên client không đặt nhầm cha."""
     data.parent_id = task_id
     return success(tasks.create_task(db, _actor(db, user), data), "Đã thêm việc con")
+
+
+@router.post("/task-links")
+def create_task_link(data: schema.TaskLinkIn, db: Session = Depends(get_db),
+                     user=Depends(require("work_task", "write"))):
+    """Nối việc trước → việc sau trên Gantt (B-15). Service chặn vòng lặp, chặn
+    nối chính mình và chặn hai đầu khác dự án."""
+    return success(links.create_link(db, _actor(db, user), data), "Đã thêm phụ thuộc")
+
+
+@router.delete("/task-links/{link_id}")
+def delete_task_link(link_id: int, db: Session = Depends(get_db),
+                     user=Depends(require("work_task", "write"))):
+    """Xóa CỨNG: mũi tên là quan hệ hiển thị, không có gì để tra lại về sau."""
+    links.delete_link(db, _actor(db, user), link_id)
+    return success(None, "Đã xóa phụ thuộc")
 
 
 @router.put("/tasks/{task_id}/assignees")
