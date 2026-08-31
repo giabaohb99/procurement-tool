@@ -349,12 +349,12 @@ export function GanttView({
       <div
         ref={scrollRef}
         style={styleVars}
-        /*  KHÔNG bọc trong khung viền bo góc như các màn danh sách khác: Gantt
-            là một mặt phẳng liền — lưới trái và trục thời gian phải đọc như MỘT
-            bảng, thêm một cái hộp quanh chúng là mắt tự tách thành hai vùng rời.
-            Đúng lối Lark. Chỉ còn một vạch trên để tách khỏi thanh công cụ.  */
+        /*  KHÔNG viền, không bo góc, cũng KHÔNG cả vạch trên: Gantt là một mặt
+            phẳng liền — lưới trái và trục thời gian phải đọc như MỘT bảng, thêm
+            bất kỳ nét kẻ nào quanh chúng là mắt tự tách thành hai vùng rời.
+            Đúng lối Lark; phần đầu bảng đã có vạch dưới của hàng tiêu đề rồi.  */
         className={cn(
-          'flex min-h-0 flex-1 overflow-auto border-t bg-card',
+          'flex min-h-0 flex-1 overflow-auto bg-card',
           //  Đang kéo một mũi tên: con trỏ hình chữ thập ở KHẮP NƠI, và không
           //  cho bôi đen chữ — rê qua tên việc mà quét xanh cả dòng thì nhìn
           //  như thao tác đã hỏng.
@@ -495,7 +495,15 @@ export function GanttView({
              được quá cuối dải; mà để nguyên trong luồng cuộn thì nó trôi mất
              ngay khi người dùng kéo sang tháng khác. Đè ở ngoài khung cuộn thì
              luôn ở đúng một chỗ.  */}
-        <div className="absolute top-1.5 right-3 z-40 rounded-md border bg-card/95 px-1 py-0.5 shadow-sm backdrop-blur-sm">
+        {/*  Không hộp trắng, không viền, không đổ bóng — cụm này thuộc về chính
+             dải tiêu đề chứ không phải một tấm thẻ nổi lên trên nó (Lark cũng
+             vậy).
+
+             ⚠️ Nhưng PHẢI có nền `bg-muted` (đúng màu dải tiêu đề, nên nhìn như
+             không có nền): để trong suốt thì nhãn tháng cuộn ngang chui xuống
+             dưới và chồng chữ lên nhau — đo được «Tháng 9/2026» đè lên «Hôm nay»
+             thành một mớ không đọc nổi.  */}
+        <div className="absolute top-1.5 right-3 z-40 rounded-md bg-muted pl-2">
           <GanttTimelineControls
             zoom={zoom}
             onZoomChange={onZoomChange}

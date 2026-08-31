@@ -40,7 +40,14 @@ export function GanttTimelineControls({
   return (
     <div className="flex items-center gap-1">
       <Select value={zoom} onValueChange={(v) => onZoomChange(v as GanttZoom)}>
-        <SelectTrigger size="sm" className="w-28">
+        {/*  Ô chọn KHÔNG viền, nền trong: nó nằm ngay trên dải tiêu đề nên một
+             cái hộp viền quanh chữ "Ngày" là thêm một khung trong khung — mà ba
+             nút cạnh nó đều không có viền. */}
+        <SelectTrigger
+          size="sm"
+          aria-label="Mức phóng trục thời gian"
+          className="w-24 border-0 bg-transparent shadow-none hover:bg-accent dark:bg-transparent"
+        >
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
