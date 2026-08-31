@@ -18,6 +18,28 @@ import { barGeometry, isMilestone, milestoneCenter, type GanttTimeline } from '.
 /** Đoạn cụt ra/vào mép thanh trước khi mũi tên bẻ góc (px). */
 const STUB = 12
 
+/** Đầu thanh mà một mũi tên rời đi / bay tới. */
+export type LinkSide = 'start' | 'end'
+
+/**
+ * KIỂU phụ thuộc suy ra từ hai đầu người dùng chạm vào lúc kéo, đúng lối DHTMLX:
+ *
+ * | Rời ở | Tới ở | Kiểu |
+ * | ----- | ----- | ---- |
+ * | cuối  | đầu   | FS   |
+ * | đầu   | đầu   | SS   |
+ * | cuối  | cuối  | FF   |
+ * | đầu   | cuối  | SF   |
+ *
+ * Để ở đây chứ không nằm trong hook kéo: đây là một BẢNG TRA thuần, mà lật nhầm
+ * một ô thì người dùng kéo "xong → bắt đầu" lại ra "bắt đầu → xong" — mũi tên vẫn
+ * vẽ ra, vẫn lưu được, chỉ là nói sai nghiệp vụ. Có test ghim từng ô.
+ */
+export function linkTypeFromSides(from: LinkSide, to: LinkSide): number {
+  if (from === 'end') return to === 'start' ? WORK_LINK_TYPE.FS : WORK_LINK_TYPE.FF
+  return to === 'start' ? WORK_LINK_TYPE.SS : WORK_LINK_TYPE.SF
+}
+
 /** Một đầu mũi tên. `dir` = 1: đi sang PHẢI · -1: đi sang TRÁI. */
 export interface LinkAnchor {
   x: number

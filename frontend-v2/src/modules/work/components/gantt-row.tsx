@@ -16,11 +16,9 @@ import {
   ROW_HEIGHT,
 } from '../utils/gantt-layout'
 import type { GanttGroupRow } from '../utils/gantt-rows'
+import type { LinkSide } from '../utils/gantt-links'
 import { barGeometry, isMilestone, milestoneCenter, rangeGeometry, type GanttTimeline } from '../utils/gantt-scale'
 import { chipClass } from '../utils/work-colors'
-
-/** Đầu thanh mà một mũi tên phụ thuộc rời đi / bay tới. */
-export type LinkSide = 'start' | 'end'
 
 export interface GanttLinkHandlers {
   /** Bắt đầu kéo một mũi tên từ đầu `side` của việc này. */

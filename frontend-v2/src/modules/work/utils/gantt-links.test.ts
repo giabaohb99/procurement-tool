@@ -3,7 +3,14 @@ import { describe, expect, it } from 'vitest'
 import type { WorkTask, WorkTaskLink } from '../types/work'
 import { WORK_LINK_TYPE, WORK_TASK_KIND, WORK_TASK_STATUS } from '../types/work'
 import { MILESTONE_SIZE, ROW_HEIGHT } from './gantt-layout'
-import { linkAnchors, linkPath, rowCenterY, taskEdges, visibleLinks } from './gantt-links'
+import {
+  linkAnchors,
+  linkPath,
+  linkTypeFromSides,
+  rowCenterY,
+  taskEdges,
+  visibleLinks,
+} from './gantt-links'
 import { barGeometry, buildTimeline } from './gantt-scale'
 
 /**
@@ -60,6 +67,26 @@ describe('taskEdges', () => {
 
   it('việc chưa có ngày thì không có mép nào để nối', () => {
     expect(taskEdges(task({ id: 4 }), timeline)).toBeNull()
+  })
+})
+
+describe('linkTypeFromSides', () => {
+  //  Bảng tra thuần: lật nhầm một ô thì người dùng kéo "xong → bắt đầu" lại ra
+  //  "bắt đầu → xong". Mũi tên vẫn vẽ, vẫn lưu được, chỉ là nói SAI nghiệp vụ —
+  //  không có gì trên màn hình tố cáo, nên ghim từng ô.
+  it.each([
+    ['end', 'start', WORK_LINK_TYPE.FS],
+    ['start', 'start', WORK_LINK_TYPE.SS],
+    ['end', 'end', WORK_LINK_TYPE.FF],
+    ['start', 'end', WORK_LINK_TYPE.SF],
+  ] as const)('rời ở %s, tới ở %s thì ra kiểu %i', (from, to, expected) => {
+    expect(linkTypeFromSides(from, to)).toBe(expected)
+  })
+
+  it('bốn tổ hợp cho ra bốn kiểu KHÁC nhau, không cái nào trùng', () => {
+    const sides = ['start', 'end'] as const
+    const all = sides.flatMap((f) => sides.map((t) => linkTypeFromSides(f, t)))
+    expect(new Set(all).size).toBe(4)
   })
 })
 

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-import type { LinkSide } from '../components/gantt-row'
-import { WORK_LINK_TYPE } from '../types/work'
+import { linkTypeFromSides, type LinkSide } from '../utils/gantt-links'
 
 /**
  * Kéo tạo MŨI TÊN PHỤ THUỘC trên Gantt (B-15).
@@ -43,11 +42,6 @@ interface Options {
     successor_id: number
     link_type: number
   }) => void
-}
-
-const TYPE_BY_SIDES: Record<LinkSide, Record<LinkSide, number>> = {
-  end: { start: WORK_LINK_TYPE.FS, end: WORK_LINK_TYPE.FF },
-  start: { start: WORK_LINK_TYPE.SS, end: WORK_LINK_TYPE.SF },
 }
 
 export function useGanttLinkDraft({ areaRef, onCreate }: Options) {
@@ -108,7 +102,7 @@ export function useGanttLinkDraft({ areaRef, onCreate }: Options) {
       onCreate({
         predecessor_id: from.fromTaskId,
         successor_id: hit.taskId,
-        link_type: TYPE_BY_SIDES[from.fromSide][hit.side],
+        link_type: linkTypeFromSides(from.fromSide, hit.side),
       })
     }
 
