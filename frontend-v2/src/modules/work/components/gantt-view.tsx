@@ -31,7 +31,12 @@ import {
   snapToDayGrid,
   type GanttDragData,
 } from '../utils/gantt-drag'
-import { COLUMN_GAP, HEADER_HEIGHT, ROW_HEIGHT } from '../utils/gantt-layout'
+import {
+  COLUMN_GAP,
+  HEADER_HEIGHT,
+  ROW_HEIGHT,
+  SPLITTER_WIDTH,
+} from '../utils/gantt-layout'
 import { rowCenterY, taskEdges } from '../utils/gantt-links'
 import { buildGanttRows, indexTaskRows } from '../utils/gantt-rows'
 import { buildHeader, buildTimeline, todayLeft, type GanttZoom } from '../utils/gantt-scale'
@@ -340,17 +345,7 @@ export function GanttView({
       onDragEnd={handleDragEnd}
       onDragCancel={() => setKeo(null)}
     >
-      {/*  Cụm điều khiển trục nằm NGOÀI khung cuộn, dính bên phải như Lark: đặt
-           vào trong thì nó trôi mất ngay khi người dùng cuộn sang tháng khác. */}
-      <div className="flex justify-end pb-1.5">
-        <GanttTimelineControls
-          zoom={zoom}
-          onZoomChange={onZoomChange}
-          onStep={stepTimeline}
-          onToday={scrollToToday}
-        />
-      </div>
-
+      <div className="relative flex min-h-0 flex-1 flex-col">
       <div
         ref={scrollRef}
         style={styleVars}
@@ -407,7 +402,11 @@ export function GanttView({
         </div>
 
         <div className="relative shrink-0" style={{ width: timeline.totalWidth }}>
-          <GanttTimelineHeader header={header} zoom={zoom} />
+          <GanttTimelineHeader
+            header={header}
+            zoom={zoom}
+            stickyLeft={paneWidth + SPLITTER_WIDTH}
+          />
 
           {/* Lưới nền — vẽ theo Ô của hàng tiêu đề dưới, không phải theo từng
               ngày: ở mức Tháng một dải hai năm là hơn 700 ngày, tức 700 nút DOM
@@ -486,6 +485,23 @@ export function GanttView({
               />
             )}
           </div>
+        </div>
+      </div>
+
+        {/*  Cụm điều khiển NẰM ĐÈ lên góc phải dải tiêu đề, đúng chỗ Lark đặt.
+
+             Đặt đè bằng `absolute` chứ không nhét vào trong hàng tiêu đề: nhét
+             vào thì nó là một ô của hàng, tức cộng thêm bề rộng vào trục và cuộn
+             được quá cuối dải; mà để nguyên trong luồng cuộn thì nó trôi mất
+             ngay khi người dùng kéo sang tháng khác. Đè ở ngoài khung cuộn thì
+             luôn ở đúng một chỗ.  */}
+        <div className="absolute top-1.5 right-3 z-40 rounded-md border bg-card/95 px-1 py-0.5 shadow-sm backdrop-blur-sm">
+          <GanttTimelineControls
+            zoom={zoom}
+            onZoomChange={onZoomChange}
+            onStep={stepTimeline}
+            onToday={scrollToToday}
+          />
         </div>
       </div>
 

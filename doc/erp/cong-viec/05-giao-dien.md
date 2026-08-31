@@ -219,16 +219,24 @@ trục thành hai vùng rời. Đúng lối Lark.
   thu/mở nhớ chung một chỗ. Thanh nhóm trải từ ngày sớm nhất tới hạn muộn nhất của các
   việc CÓ NGÀY trong nhóm, tô phần trăm việc đã xong, không kéo được (ngày của nó là ngày
   tính ra — kéo thì không biết phải dời việc nào).
-- **Cụm điều khiển trục** (mức phóng · _Hôm nay_ · ‹ ›) ở góc phải, NGOÀI khung cuộn — đặt
-  vào trong thì nó trôi mất ngay khi cuộn sang tháng khác. Mức phóng dời khỏi hàng tab vì
-  đứng cạnh ba tab khung nhìn thì nhìn như tab thứ tư. Nút _Hôm nay_ không thừa dù biểu đồ
-  tự cuộn tới hôm nay lúc mở: cuộn đi xem quý sau rồi muốn quay về thì ở mức Ngày phải kéo
-  ngược cả nghìn pixel.
+- **Cụm điều khiển trục** (mức phóng · _Hôm nay_ · ‹ ›) nằm ĐÈ lên góc phải dải tiêu đề,
+  đúng chỗ Lark đặt. Đè bằng `absolute` ở NGOÀI khung cuộn chứ không nhét vào hàng tiêu
+  đề: nhét vào thì nó là một ô của hàng, tức cộng thêm bề rộng vào trục và cuộn được quá
+  cuối dải; còn để trong luồng cuộn thì nó trôi mất khi kéo sang tháng khác. Mức phóng dời
+  khỏi hàng tab vì đứng cạnh ba tab khung nhìn thì nhìn như tab thứ tư. Nút _Hôm nay_
+  không thừa dù biểu đồ tự cuộn tới hôm nay lúc mở: cuộn đi xem quý sau rồi muốn quay về
+  thì ở mức Ngày phải kéo ngược cả nghìn pixel; ‹ › nhảy 80% bề rộng đang nhìn.
 
 ### 10.2 Thang thời gian (`utils/gantt-scale.ts`)
 
 Ba mức: **Ngày** (ô ngày + thứ, gom tháng ở hàng trên) · **Tuần** (`T.37` theo tuần ISO,
-gom NĂM ở hàng trên) · **Tháng** (`Th 9`, gom năm). Mức Tuần cố ý gom hàng trên theo NĂM
+gom NĂM ở hàng trên) · **Tháng** (`Th 9`, gom năm).
+
+⚠️ **Nhãn hàng TRÊN dính khi cuộn ngang** (`sticky`, mốc là mép phải của lưới trái + thanh
+chia): kéo sang giữa tháng 9 mà chữ "Tháng 9/2026" đã trôi khỏi màn hình thì người dùng
+chỉ còn nhìn một dãy số 1…30 không biết của tháng nào. Sticky đặt trên CHÍNH ô của tháng
+ấy nên nhãn chỉ trượt trong lòng tháng mình rồi nhường chỗ cho tháng kế — không bao giờ
+có hai nhãn chồng nhau. Mức Tuần cố ý gom hàng trên theo NĂM
 chứ không theo tháng: một tuần vắt qua hai tháng thì ô tuần bị cắt đôi và hai hàng tiêu đề
 không còn thẳng mép nhau.
 
