@@ -15,9 +15,23 @@ Cổng kiểm tra: FE `npm run check` xanh (typecheck 0 · lint 0 lỗi, 24 cả
 test**) · BE **2090 test** — 3 đỏ (`test_assistant_export_tool.py` ×2,
 `test_export_xlsx_cr068.py` ×1) là lỗi **có sẵn từ trước**, đã đối chứng bằng `git stash`.
 
-Commit: `06ee95c` (backend) · `63788e0` (frontend + tài liệu) · một commit nữa cho hai
-việc thêm ngày 31/08. **Chưa push** — `git fetch` trước khi push, nhiều người cùng đẩy lên
-`erp-v2`.
+**ĐÃ PUSH lên `erp-v2`** (31/08/2026, tới `ff48587`): `06ee95c` backend · `63788e0`
+frontend + tài liệu · `44129e9` cột mốc từ thanh công cụ + đổi kiểu mũi tên · `f1bc056`
+test bảng tra kiểu · `c6ae169` chốt không dời lịch dây chuyền · `ff48587` merge remote.
+
+⚠️ **Merge kéo theo hai thứ phải biết:**
+
+1. **Hai đầu Alembic** (nhánh Đặt xe của người khác + nhánh Gantt) — đã hợp nhất bằng
+   revision rỗng `7e93b1977593`, DB local đã `upgrade head`. Ai kéo về sau nhớ chạy lại.
+2. ⚠️ **6 test ĐỎ không phải của cụm này**: `test_search_product_cr069.py` (tìm kiếm YCBG)
+   gãy từ commit `f6e5e61` của người khác — họ đổi `apply_scope(...)` thành
+   `scope_condition(...)` + tự `filter` trong `survey_request/controller.py`, và giờ
+   `_list_query` trả **rỗng** cho mọi tìm kiếm trong test. Đã đối chứng: thư mục
+   `survey_request/` trong cây này giống HỆT `origin/erp-v2`. Đáng ngờ là lỗi thật chứ
+   không phải test lệch — theo luật ở `core/scoping.py`, scope không dịch được thành điều
+   kiện thì nay **chặn sạch** (`false()`), tức người dùng có thể mở màn YCBG ra thấy trống
+   trơn. **Người đẩy `f6e5e61` cần xem.** Ngoài ra 3 test đỏ cũ từ trước
+   (`test_assistant_export_tool.py` ×2, `test_export_xlsx_cr068.py` ×1).
 
 ---
 
