@@ -7,9 +7,11 @@ import { useDepartments } from '@/modules/hr/hooks/use-departments'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
+import { useUrlRangeParam } from '@/shared/hooks/use-url-range-param'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import type { ListParams } from '@/shared/types/api'
 import { Card } from '@/shared/ui/card'
+import { DateRangePicker } from '@/shared/ui/date-range-picker'
 import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
@@ -31,6 +33,21 @@ import type { PurchaseProgressRow } from '../types/purchase-progress'
 const ALL = 'all'
 
 /**
+ * Khoảng ngày lọc theo MỐC nào. Một dòng ở đây là MỘT LẦN GIAO, nên hai mốc lệch
+ * nhau thật: đơn đặt tháng 7 mà giao làm ba đợt thì cùng một dòng đặt hàng nằm
+ * rải khắp tháng 8-9. Hỏi "đặt trong kỳ" và "nhận trong kỳ" ra hai tập khác hẳn.
+ *
+ * Mặc định là NGÀY ĐẶT HÀNG — đó là mốc của chứng từ, cũng là cột bảng đang xếp
+ * theo. Backend đọc sẵn cả hai cặp (`purchase_progress/controller.py`).
+ */
+const DATE_FIELDS = [
+  { value: 'order', label: 'Theo ngày ĐH', from: 'order_date_from', to: 'order_date_to' },
+  { value: 'received', label: 'Theo ngày nhận', from: 'received_date_from', to: 'received_date_to' },
+] as const
+
+const DEFAULT_DATE_FIELD = DATE_FIELDS[0].value
+
+/**
  * Tiến độ mua hàng — báo cáo phẳng theo TỪNG LẦN GIAO của từng dòng đơn hàng,
  * không phải danh sách chứng từ.
  *
@@ -46,6 +63,8 @@ export function PurchaseProgressPage() {
   // đường dẫn cũ đã lưu, chỉ có màn này thôi không gửi nữa.
   const [departmentId, setDepartmentId] = useUrlParamState('department_id', ALL)
   const [status, setStatus] = useUrlParamState('status', ALL)
+  const [dateField, setDateField] = useUrlParamState('date_field', DEFAULT_DATE_FIELD)
+  const [dateFrom, dateTo, setDateRange] = useUrlRangeParam('date_from', 'date_to')
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
 
   const { data: companies } = useCompanies({ page_size: 500, is_active: true })
@@ -56,6 +75,9 @@ export function PurchaseProgressPage() {
     companyId,
     departmentId,
     status,
+    dateField,
+    dateFrom,
+    dateTo,
   ])
 
   const params: ListParams = { page, page_size: pageSize }
@@ -63,6 +85,11 @@ export function PurchaseProgressPage() {
   if (companyId !== ALL) params.company_id = Number(companyId)
   if (departmentId !== ALL) params.department_id = Number(departmentId)
   if (status !== ALL) params.status = status
+  if (dateFrom || dateTo) {
+    const field = DATE_FIELDS.find((item) => item.value === dateField) ?? DATE_FIELDS[0]
+    if (dateFrom) params[field.from] = dateFrom
+    if (dateTo) params[field.to] = dateTo
+  }
 
   const { data, isLoading, isError } = usePurchaseProgress(params)
 
@@ -86,37 +113,36 @@ export function PurchaseProgressPage() {
         // Bảng này rộng ~24 cột: ghim sẵn mã đơn để cuộn tới cột cuối vẫn biết
         // đang xem đơn nào. Người dùng ghim/bỏ ghim tiếp ở menu "Cột".
         defaultPinned: true,
-        cell: (row) => <span className="truncate font-medium">{row.po_code}</span>,
+        //  `wrap` cho cột chữ: khách cần ĐỌC ĐỦ, không phải đoán qua dấu "…"
+        //  (khách nêu 31/08/2026). Cột số và cột ngày để nguyên một dòng, kẻo
+        //  hàng cao lệch nhau nhìn rối. Lưu ý: gắn `truncate` trong `cell` là
+        //  vô hiệu hóa `wrap` — class ô con thắng lớp bọc của bảng.
+        wrap: true,
+        cell: (row) => <span className="font-medium">{row.po_code}</span>,
       },
-      { key: 'misa_code', header: 'Mã MISA', width: 120, defaultHidden: true, cell: (r) => r.misa_code || '' },
-      { key: 'pr_code', header: 'Mã PYC', width: 130, cell: (r) => r.pr_code || '' },
-      { key: 'company', header: 'Công ty', width: 190, cell: (r) => companyName(r.company_id) },
-      { key: 'department', header: 'Bộ phận', width: 150, cell: (r) => r.department || '' },
+      { key: 'misa_code', header: 'Mã MISA', width: 120, defaultHidden: true, wrap: true, cell: (r) => r.misa_code || '' },
+      { key: 'pr_code', header: 'Mã PYC', width: 130, wrap: true, cell: (r) => r.pr_code || '' },
+      { key: 'company', header: 'Công ty', width: 190, wrap: true, cell: (r) => companyName(r.company_id) },
+      { key: 'department', header: 'Bộ phận', width: 150, wrap: true, cell: (r) => r.department || '' },
       {
         key: 'supplier_name',
         header: 'Nhà cung cấp',
         width: 230,
         supplierOnly: true,
-        cell: (r) => (
-          <span className="truncate" title={r.supplier_name}>
-            {r.supplier_name || r.supplier_code || ''}
-          </span>
-        ),
+        wrap: true,
+        cell: (r) => r.supplier_name || r.supplier_code || '',
       },
-      { key: 'nspt', header: 'NSPT', width: 160, cell: (r) => r.nspt || '' },
+      { key: 'nspt', header: 'NSPT', width: 160, wrap: true, cell: (r) => r.nspt || '' },
       { key: 'order_date', header: 'Ngày ĐH', width: 110, cell: (r) => formatDate(r.order_date) || '' },
-      { key: 'product_code', header: 'Mã SP', width: 150, cell: (r) => r.product_code || '' },
+      { key: 'product_code', header: 'Mã SP', width: 150, wrap: true, cell: (r) => r.product_code || '' },
       {
         key: 'product_name',
         header: 'Tên SP',
         width: 240,
-        cell: (r) => (
-          <span className="truncate" title={r.product_name}>
-            {r.product_name || ''}
-          </span>
-        ),
+        wrap: true,
+        cell: (r) => r.product_name || '',
       },
-      { key: 'item_group', header: 'Nhóm hàng', width: 150, defaultHidden: true, cell: (r) => r.item_group || '' },
+      { key: 'item_group', header: 'Nhóm hàng', width: 150, defaultHidden: true, wrap: true, cell: (r) => r.item_group || '' },
       { key: 'unit', header: 'ĐVT', width: 80, cell: (r) => r.unit || '' },
       {
         key: 'qty_order',
@@ -148,13 +174,14 @@ export function PurchaseProgressPage() {
         cell: (r) => <ProgressStatusBadge status={r.progress_status} />,
       },
       { key: 'delivery_no', header: 'Lần giao', width: 100, align: 'right', defaultHidden: true, cell: (r) => r.delivery_no ?? '' },
-      { key: 'warehouse_code', header: 'Kho', width: 120, defaultHidden: true, cell: (r) => r.warehouse_code || '' },
+      { key: 'warehouse_code', header: 'Kho', width: 120, defaultHidden: true, wrap: true, cell: (r) => r.warehouse_code || '' },
       {
         key: 'carrier_name',
         header: 'Đơn vị VC',
         width: 180,
         defaultHidden: true,
         supplierOnly: true,
+        wrap: true,
         cell: (r) => r.carrier_name || '',
       },
       {
@@ -272,6 +299,29 @@ export function PurchaseProgressPage() {
                   ))}
                 </SelectContent>
               </Select>
+
+              {/*  Chọn MỐC trước, rồi tới khoảng ngày — đọc xuôi thành một câu
+                   "theo ngày nhận, từ … tới …". Hai ô đứng liền nhau để không ai
+                   lọc nhầm mốc mà không để ý. */}
+              <Select value={dateField} onValueChange={setDateField}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Mốc ngày" />
+                </SelectTrigger>
+                <SelectContent>
+                  {DATE_FIELDS.map((field) => (
+                    <SelectItem key={field.value} value={field.value}>
+                      {field.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <DateRangePicker
+                from={dateFrom}
+                to={dateTo}
+                onChange={setDateRange}
+                placeholder="Từ ngày – tới ngày"
+              />
             </>
           }
         />
