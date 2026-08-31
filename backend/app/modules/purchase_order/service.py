@@ -564,6 +564,39 @@ def block_edit_approved_order(db: Session, po: PurchaseOrder, data: POUpdate) ->
                 raise HTTPException(400, f"Đơn đã duyệt — dòng '{line_name}' không sửa được '{label}'. {_EDIT_HINT}")
 
 
+def block_clear_misa_in_use(db: Session, po: PurchaseOrder, data: POUpdate) -> None:
+    """Chặn XÓA TRẮNG Mã đơn MISA khi đã có dòng tiến qua bước cần mã đó.
+
+    Bước 1 của máy trạng thái tiến độ dòng đòi đơn phải có mã MISA (xem `_step_ok`), mà
+    `auto_advance_line` chỉ TIẾN chứ không bao giờ lùi. Nên xóa trắng ô này xong là dòng
+    kẹt lại ở bậc cao trong khi điều kiện của bậc đó đã hết đúng — trên màn hiện ra cảnh
+    "chưa có mã MISA mà đã Chưa gửi ĐMH cho KT".
+
+    Sửa mã thành mã KHÁC thì vẫn cho: điều kiện "có mã" vẫn thỏa, gõ nhầm phải sửa được.
+    """
+    payload = data.model_dump(exclude_unset=True)
+    if "misa_code" not in payload:
+        return
+    if (payload.get("misa_code") or "").strip():
+        return
+    if not (po.misa_code or "").strip():
+        return
+
+    def advanced(item: POItem) -> bool:
+        #  Dòng Tạm ngưng giữ bậc cũ ở `status_before_pause` và sẽ quay lại đó khi tiếp tục.
+        for value in (item.progress_status or "", item.status_before_pause or ""):
+            if value in PROGRESS_ORDER and PROGRESS_ORDER.index(value) >= 1:
+                return True
+        return False
+
+    stuck = [it for it in items_of(db, po.id) if advanced(it)]
+    if stuck:
+        names = ", ".join((it.product_code or it.product_name or f"#{it.id}") for it in stuck[:3])
+        more = f" và {len(stuck) - 3} dòng nữa" if len(stuck) > 3 else ""
+        raise HTTPException(400, f"Không xóa trắng được Mã đơn MISA: {len(stuck)} dòng đã tiến qua bước "
+                                 f"cần mã này ({names}{more}). Nhập mã khác thì được.")
+
+
 def unapprove_po(db: Session, pid: int, user_id: int, reason: str = "") -> PurchaseOrder:
     """Hủy duyệt: đưa đơn ĐÃ DUYỆT về Nháp để sửa rồi gửi duyệt lại (CR-108).
 
@@ -597,6 +630,7 @@ def update_po(db: Session, pid: int, data: POUpdate, user_id: int) -> PurchaseOr
     if po.status in ("completed", "cancelled"):
         raise HTTPException(400, "Đơn đã hoàn thành/đã hủy — không sửa được. Dùng 'Nhân bản' để tạo đơn mới.")
     block_edit_approved_order(db, po, data)
+    block_clear_misa_in_use(db, po, data)
     _new_pr_code = (data.model_dump(exclude_unset=True).get("pr_code") or "").strip()
     if _new_pr_code and _new_pr_code != (po.pr_code or ""):
         _ensure_pr_dispatched(db, _new_pr_code)   # CR-034: đổi sang YCMH khác cũng phải đã điều phối

@@ -11,20 +11,24 @@ from fastapi import HTTPException
 from app.modules.payment_request.model import PaymentRequest, PaymentRequestLine
 from app.modules.purchase_order.model import POItem, PurchaseOrder
 from app.modules.purchase_order.schema import POItemIn, POUpdate
-from app.modules.purchase_order.service import (PROG_COMPLETED, PROG_ORDERED,
+from app.modules.purchase_order.service import (PROG_COMPLETED, PROG_DOC_PENDING,
+                                                PROG_NOT_ORDERED, PROG_ORDERED, PROG_PAUSED,
+                                                block_clear_misa_in_use,
                                                 block_edit_approved_order, unapprove_po)
 
 
-def _don(db, status="approved", qty_received=0.0, progress_status=PROG_ORDERED):
+def _don(db, status="approved", qty_received=0.0, progress_status=PROG_ORDERED,
+         misa_code="", status_before_pause=""):
     po = PurchaseOrder(code="PO-CR108", status=status, supplier_code="NCC01",
-                       supplier_name="NCC Một", department="Thu mua", vat_rate=0.08)
+                       supplier_name="NCC Một", department="Thu mua", vat_rate=0.08,
+                       misa_code=misa_code)
     db.add(po)
     db.commit()
     db.refresh(po)
     it = POItem(po_id=po.id, product_code="SP001", product_name="Hàng A", unit="Cái",
                 item_group="Nhóm A", qty_order=10, price=1000, vat=8,
                 qty_received=qty_received, warehouse_code="KHO1",
-                progress_status=progress_status)
+                progress_status=progress_status, status_before_pause=status_before_pause)
     db.add(it)
     db.commit()
     db.refresh(it)
@@ -68,6 +72,64 @@ def test_da_duyet_van_sua_duoc_ma_don_misa(db):
     """Kế toán đối chiếu số MISA sau khi đơn đã duyệt — mã đơn MISA phải sửa được sau duyệt."""
     po, it = _don(db)
     block_edit_approved_order(db, po, POUpdate(misa_code="MISA-2026-001", items=[_dong(it)]))
+
+
+# ───────────────────────── Xóa trắng Mã đơn MISA ─────────────────────────
+# Bước 1 của tiến độ dòng đòi đơn có mã MISA, mà auto_advance_line chỉ TIẾN không lùi.
+# Xóa trắng ô đó xong dòng kẹt lại ở bậc cao trong khi điều kiện đã hết đúng — trên màn
+# hiện ra cảnh "chưa có mã MISA mà dòng đã Chưa gửi ĐMH cho KT" (gặp thật trên PO00358).
+@pytest.mark.parametrize("progress_status", [PROG_ORDERED, PROG_DOC_PENDING, PROG_COMPLETED])
+def test_khong_xoa_trang_ma_misa_khi_dong_da_tien(db, progress_status):
+    po, it = _don(db, misa_code="MISA-001", progress_status=progress_status)
+    with pytest.raises(HTTPException) as e:
+        block_clear_misa_in_use(db, po, POUpdate(misa_code=""))
+    assert e.value.status_code == 400
+    assert "Mã đơn MISA" in e.value.detail
+    assert "SP001" in e.value.detail            # gọi tên dòng đang kẹt
+
+
+def test_khong_xoa_trang_ma_misa_khi_dong_tam_ngung_giu_bac_cu(db):
+    """Tạm ngưng giữ bậc cũ ở status_before_pause và sẽ quay lại đó khi bấm Tiếp tục."""
+    po, it = _don(db, misa_code="MISA-001", progress_status=PROG_PAUSED,
+                  status_before_pause=PROG_DOC_PENDING)
+    with pytest.raises(HTTPException) as e:
+        block_clear_misa_in_use(db, po, POUpdate(misa_code=""))
+    assert "Mã đơn MISA" in e.value.detail
+
+
+def test_van_doi_duoc_ma_misa_sang_ma_khac(db):
+    """Gõ nhầm phải sửa được — điều kiện 'có mã' vẫn thỏa nên không có dòng nào kẹt."""
+    po, it = _don(db, misa_code="MISA-001", progress_status=PROG_DOC_PENDING)
+    block_clear_misa_in_use(db, po, POUpdate(misa_code="MISA-002"))
+
+
+def test_xoa_trang_ma_misa_khi_chua_dong_nao_tien(db):
+    po, it = _don(db, misa_code="MISA-001", progress_status=PROG_NOT_ORDERED)
+    block_clear_misa_in_use(db, po, POUpdate(misa_code=""))
+
+
+def test_dong_da_huy_khong_chan_xoa_ma_misa(db):
+    """Hủy đơn nằm ngoài luồng tuần tự, không có bậc để mà kẹt."""
+    po, it = _don(db, misa_code="MISA-001", progress_status="cancelled")
+    block_clear_misa_in_use(db, po, POUpdate(misa_code=""))
+
+
+def test_khong_gui_o_misa_thi_khong_dung_toi(db):
+    """Màn khác chỉ sửa ghi chú thì payload không có misa_code — đừng chặn oan."""
+    po, it = _don(db, misa_code="MISA-001", progress_status=PROG_DOC_PENDING)
+    block_clear_misa_in_use(db, po, POUpdate(note="x"))
+
+
+def test_don_von_chua_co_ma_misa_thi_khong_chan(db):
+    """Lưu lại y nguyên: màn gửi misa_code='' trong khi DB cũng rỗng — không phải xóa."""
+    po, it = _don(db, misa_code="", progress_status=PROG_DOC_PENDING)
+    block_clear_misa_in_use(db, po, POUpdate(misa_code=""))
+
+
+def test_ma_misa_chi_toan_khoang_trang_coi_nhu_xoa(db):
+    po, it = _don(db, misa_code="MISA-001", progress_status=PROG_DOC_PENDING)
+    with pytest.raises(HTTPException):
+        block_clear_misa_in_use(db, po, POUpdate(misa_code="   "))
 
 
 # ───────────────────────── Ô của DÒNG HÀNG ─────────────────────────
