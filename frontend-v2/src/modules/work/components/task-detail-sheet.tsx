@@ -2,6 +2,7 @@ import {
   AlignLeft,
   CircleDot,
   Columns3,
+  Diamond,
   ListTodo,
   Trash2,
   User,
@@ -11,6 +12,7 @@ import { useMemo } from 'react'
 
 import { AuditTimeline } from '@/shared/audit'
 import { Button } from '@/shared/ui/button'
+import { cn } from '@/shared/utils/cn'
 import { IconTooltip } from '@/shared/ui/icon-tooltip'
 import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle } from '@/shared/ui/sheet'
 import { Skeleton } from '@/shared/ui/skeleton'
@@ -25,7 +27,7 @@ import {
 } from '../hooks/use-work-board'
 import { useWorkLabelFields, useWorkMembers } from '../hooks/use-work-config'
 import type { WorkSection } from '../types/work'
-import { WORK_TASK_STATUS } from '../types/work'
+import { WORK_TASK_KIND, WORK_TASK_STATUS } from '../types/work'
 import { LabelFieldInput } from './label-field-input'
 import { TaskAssigneePicker } from './task-assignee-picker'
 import { TaskChipSelect } from './task-chip-select'
@@ -100,11 +102,43 @@ export function TaskDetailSheet({
         <SheetHeader className="flex-row items-center justify-between gap-2 border-b px-4 py-2.5">
           <SheetTitle className="sr-only">Chi tiết công việc</SheetTitle>
           {task ? (
-            <TaskStatusSelect
-              status={task.status}
-              disabled={!canEdit}
-              onChange={(status) => save({ status })}
-            />
+            <div className="flex items-center gap-1.5">
+              <TaskStatusSelect
+                status={task.status}
+                disabled={!canEdit}
+                onChange={(status) => save({ status })}
+              />
+              {/*  Bật/tắt CỘT MỐC (B-14). Đặt cạnh trạng thái vì cùng loại: cả
+                   hai đều nói "việc này là loại gì", và cùng là thứ đọc trước
+                   khi đọc nội dung. Chỉ xem thì chỉ hiện khi ĐANG là cột mốc —
+                   một nút chết cạnh mọi việc thường thì chỉ tổ gây hỏi. */}
+              {(canEdit || task.kind === WORK_TASK_KIND.MILESTONE) && (
+                <Button
+                  variant={task.kind === WORK_TASK_KIND.MILESTONE ? 'secondary' : 'ghost'}
+                  size="sm"
+                  className="h-7 gap-1.5 rounded-full px-2.5 text-xs"
+                  disabled={!canEdit}
+                  aria-pressed={task.kind === WORK_TASK_KIND.MILESTONE}
+                  title="Cột mốc chỉ có MỘT ngày (hạn) và hiện thành hình thoi trên Gantt"
+                  onClick={() =>
+                    save({
+                      kind:
+                        task.kind === WORK_TASK_KIND.MILESTONE
+                          ? WORK_TASK_KIND.TASK
+                          : WORK_TASK_KIND.MILESTONE,
+                    })
+                  }
+                >
+                  <Diamond
+                    className={cn(
+                      'size-3.5',
+                      task.kind === WORK_TASK_KIND.MILESTONE && 'fill-current',
+                    )}
+                  />
+                  Cột mốc
+                </Button>
+              )}
+            </div>
           ) : (
             <span />
           )}

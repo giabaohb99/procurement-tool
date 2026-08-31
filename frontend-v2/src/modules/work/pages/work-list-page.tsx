@@ -35,6 +35,7 @@ import { TaskListView } from '../components/task-list-view'
 import { WorkToolbar } from '../components/work-toolbar'
 import {
   useCreateTask,
+  useMoveSubtask,
   useMoveTask,
   useSetAssignees,
   useSetTaskLabel,
@@ -42,6 +43,7 @@ import {
   useUpdateTask,
   useWorkBoard,
 } from '../hooks/use-work-board'
+import { useCreateTaskLink, useDeleteTaskLink } from '../hooks/use-task-links'
 import { useWorkViewState } from '../hooks/use-view-state'
 import { useMoveSection, useWorkLabelFields, useWorkMembers } from '../hooks/use-work-config'
 import type { WorkSection } from '../types/work'
@@ -112,6 +114,11 @@ function WorkListContent({ listId }: { listId: number }) {
   const setAssignees = useSetAssignees(listId)
   const setLabel = useSetTaskLabel(listId)
   const toggleSubtask = useToggleSubtask(listId)
+  const moveSubtask = useMoveSubtask(listId)
+  //  Mũi tên phụ thuộc của Gantt (B-15) — dữ liệu nằm sẵn trong payload bảng
+  //  nên chỉ cần hai mutation, không có hook đọc riêng.
+  const createLink = useCreateTaskLink(listId)
+  const deleteLink = useDeleteTaskLink(listId)
 
   /*  Việc tự thêm gần như luôn là việc của chính mình, nên dòng nháp gán sẵn
       người đang đăng nhập. Chỉ gán khi họ THỰC SỰ là thành viên dự án: gán một
@@ -141,6 +148,7 @@ function WorkListContent({ listId }: { listId: number }) {
         list_id: listId,
         title: draft.title,
         section_id: sectionId,
+        start_date: draft.startDate || undefined,
         due_date: draft.dueDate || undefined,
         assignee_ids: draft.picIds.length ? draft.picIds : undefined,
       })
@@ -377,6 +385,7 @@ function WorkListContent({ listId }: { listId: number }) {
             members={members}
             fields={cardFields}
             canEdit={canEdit}
+            canManage={canManage}
             onOpenTask={setOpenTaskId}
             onToggleDone={(taskId, done) =>
               updateTask.mutate({
@@ -392,24 +401,51 @@ function WorkListContent({ listId }: { listId: number }) {
             onSetDue={(taskId, dueDate) =>
               updateTask.mutate({ id: taskId, values: { due_date: dueDate } })
             }
+            onSetStart={(taskId, startDate) =>
+              updateTask.mutate({ id: taskId, values: { start_date: startDate } })
+            }
+            onSetStatus={(taskId, status) => updateTask.mutate({ id: taskId, values: { status } })}
             onSetLabel={(taskId, fieldId, value) => setLabel.mutate({ taskId, fieldId, value })}
             defaultPicId={defaultPicId}
             //  Cùng luật với kanban (§3.4): đang sắp theo tiêu chí thì KHÓA kéo,
             //  vì thả xong danh sách tự xếp lại chỗ cũ, nhìn như thao tác bị nuốt.
             dragEnabled={sort === 'manual'}
             onMoveTask={(taskId, place) => moveTask.mutate({ taskId, place })}
+            onMoveSubtask={(parentId, subtaskId, beforeTaskId) =>
+              moveSubtask.mutate({ parentId, subtaskId, beforeTaskId })
+            }
+            onMoveSection={(sectionId, beforeSectionId) =>
+              moveSection.mutate({ sectionId, beforeSectionId })
+            }
             onAddTask={addTaskFromDraft}
           />
         )}
 
         {view === 'gantt' && (
           <GanttView
+            listId={listId}
             tasks={tasks}
+            sections={board.sections}
+            links={board.links ?? []}
+            labelFields={labelFields}
+            members={members}
+            fields={cardFields}
             priorityField={priorityField}
             zoom={ganttZoom}
             canEdit={canEdit}
             onOpenTask={setOpenTaskId}
             onMoveDates={(taskId, values) => updateTask.mutate({ id: taskId, values })}
+            onSetAssignees={(taskId, picIds) => setAssignees.mutate({ taskId, picIds })}
+            onSetDue={(taskId, dueDate) =>
+              updateTask.mutate({ id: taskId, values: { due_date: dueDate } })
+            }
+            onSetStart={(taskId, startDate) =>
+              updateTask.mutate({ id: taskId, values: { start_date: startDate } })
+            }
+            onSetStatus={(taskId, status) => updateTask.mutate({ id: taskId, values: { status } })}
+            onSetLabel={(taskId, fieldId, value) => setLabel.mutate({ taskId, fieldId, value })}
+            onCreateLink={(values) => createLink.mutate(values)}
+            onDeleteLink={(linkId) => deleteLink.mutate(linkId)}
           />
         )}
       </div>

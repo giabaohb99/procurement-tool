@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { WorkTask } from '../types/work'
-import { WORK_TASK_STATUS } from '../types/work'
+import { WORK_TASK_KIND, WORK_TASK_STATUS } from '../types/work'
 import { datesToSave, edgeShift, readDragData, shiftedRange } from './gantt-drag'
 
 /**
@@ -14,7 +14,8 @@ function task(patch: Partial<WorkTask> = {}): WorkTask {
   return {
     id: 7, list_id: 1, section_id: 1, parent_id: null,
     title: 'Việc', description: '',
-    status: WORK_TASK_STATUS.OPEN, start_date: '', due_date: '', sort_order: 0,
+    status: WORK_TASK_STATUS.OPEN, kind: WORK_TASK_KIND.TASK,
+    start_date: '', due_date: '', sort_order: 0,
     creator_employee_id: 0, completed_at: null, completed_by: null,
     created_at: '2026-08-01T00:00:00', updated_at: '2026-08-01T00:00:00',
     assignees: [], labels: [],

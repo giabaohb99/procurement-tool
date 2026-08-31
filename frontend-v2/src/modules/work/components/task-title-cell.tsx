@@ -38,7 +38,12 @@ export function TaskTitleCell({ title, done, canEdit, onRename }: TaskTitleCellP
         autoFocus
         value={draft}
         aria-label="Tên công việc"
-        className="h-6 min-w-0 flex-1 px-1 py-0 text-sm"
+        /*  Không viền, không vòng sáng — y như dòng soạn việc mới. Ô nhập ở đây
+            NẰM ĐÈ lên chỗ chữ vừa bấm, nên một cái hộp viền hiện ra làm cả dòng
+            giật một nhịp và trông như vừa mở ra một biểu mẫu khác. Con trỏ nháy
+            đã đủ nói "đang sửa". `dark:bg-transparent` vì `Input` gốc có
+            `dark:bg-input/30`, để nguyên là nền tối lại hiện đúng cái hộp ấy. */
+        className="h-6 min-w-0 flex-1 border-0 bg-transparent px-1 py-0 text-sm shadow-none focus-visible:ring-0 dark:bg-transparent"
         onClick={(e) => e.stopPropagation()}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={save}

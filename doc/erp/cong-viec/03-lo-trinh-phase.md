@@ -106,15 +106,16 @@ ngưỡng (không spam chuông mỗi lần beat chạy).
 ## W5 — P2 theo nhu cầu thật (chỉ làm cái có người đòi)
 
 **D-05 Gantt đã LÀM SỚM** ngày 28/08/2026 (CR-219) theo yêu cầu trực tiếp của khách —
-tự dựng theo bố cục DHTMLX, không cài thư viện GPLv2 của họ; phần phụ thuộc việc
-trước–sau vẫn chưa có (cần bảng `tab_work_task_link`).
+tự dựng theo bố cục DHTMLX, không cài thư viện GPLv2 của họ. **Cụm Gantt mở rộng cũng đã
+XONG** ngày 31/08/2026 (CR-226): B-14 cột mốc + B-15 phụ thuộc FS/SS/FF/SF (bảng
+`tab_work_task_link`, service chặn vòng lặp), kèm dựng lại cả khung nhìn theo Lark.
+**B-13** trường tùy chỉnh sáu kiểu cũng đã xong trước đó.
 
-Ứng viên còn lại: B-13 trường tùy chỉnh kiểu chữ/số/ngày/người · B-11 việc lặp · B-12 gắn
-chứng từ ERP · D-04 lịch · A-07 nhân bản/mẫu list · C-04 nâng việc con
-thành task · G-04 lưu bộ lọc · H-04 xuất Excel (chờ khung Đ-13) · F-05 web push ·
-F-06 tool Trợ lý AI · Q10 toggle hiện việc con ra kanban · tích hợp Project-M (QĐ-T1) ·
-**cụm Gantt mở rộng** B-14 cột mốc + B-15 phụ thuộc FS/SS/FF/SF (`tab_work_task_link`,
-service chặn vòng lặp — 01 §4b) — làm chung một đợt với D-05 ·
+Ứng viên còn lại: B-11 việc lặp · B-12 gắn chứng từ ERP · D-04 lịch · A-07 nhân bản/mẫu
+list · C-04 nâng việc con thành task · G-04 lưu bộ lọc · H-04 xuất Excel (chờ khung Đ-13) ·
+F-05 web push · F-06 tool Trợ lý AI · Q10 toggle hiện việc con ra kanban ·
+tích hợp Project-M (QĐ-T1) · **phần đuôi của cụm Gantt**: dời lịch dây chuyền theo
+`lag_days`, đường găng (critical path), baseline ·
 **lịch làm việc — ngày nghỉ** (nhóm F tài liệu QLDA, chốt 28/08/2026 KHÔNG làm bây giờ):
 chỉ cần khi tính ngày kết thúc theo ngày công hoặc Gantt trừ ngày nghỉ; khi đến lượt thì
 ƯU TIÊN dựng ở nền HRM dùng chung rồi phân hệ này gọi sang, không làm bảng riêng trong

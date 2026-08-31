@@ -31,6 +31,7 @@ function makeTask(id: number, status: number, extra: Partial<WorkTask> = {}): Wo
     title: `Việc ${id}`,
     description: '',
     status,
+    kind: 1,
     start_date: '',
     due_date: '',
     sort_order: 0,

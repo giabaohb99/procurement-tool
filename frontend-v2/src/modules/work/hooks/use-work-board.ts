@@ -6,6 +6,7 @@ import { workTaskApi } from '../api/work-task-api'
 import type { WorkBoard, WorkTask } from '../types/work'
 import { WORK_TASK_STATUS } from '../types/work'
 import { applyMove, type KanbanDropPlace } from '../utils/kanban-drop'
+import { applyReorder } from '../utils/subtask-drop'
 
 /** Bảng kanban của một list: cột + task cha, một lượt gọi (D-01). */
 export function useWorkBoard(listId?: number) {
@@ -181,6 +182,51 @@ export function useToggleSubtask(listId: number) {
     onError: (_err, _vars, context) => {
       if (context?.snapshot) queryClient.setQueryData(context.parentKey, context.snapshot)
       toast.error('Không lưu được việc con, đã trả về như cũ')
+    },
+
+    onSettled: (_data, _err, variables) => invalidateTask(queryClient, listId, variables.parentId),
+  })
+}
+
+/**
+ * Kéo xếp lại VIỆC CON trong cụm của một việc cha (khung nhìn Danh sách).
+ *
+ * Cùng endpoint `move` với kéo thẻ kanban nhưng `section_id` để rỗng — việc con
+ * không thuộc cột nào (C-05), máy chủ nhận thế là xếp lại trong cụm của cha.
+ *
+ * Ảnh lạc quan vá vào `subtasks` của khóa `task(parentId)` chứ không vào bảng,
+ * vì đó chính là khóa mà các dòng việc con đang đọc — cùng lý do với
+ * {@link useToggleSubtask}.
+ */
+export function useMoveSubtask(listId: number) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      subtaskId,
+      beforeTaskId,
+    }: {
+      parentId: number
+      subtaskId: number
+      beforeTaskId: number | null
+    }) => workTaskApi.move(subtaskId, null, beforeTaskId),
+
+    onMutate: async ({ parentId, subtaskId, beforeTaskId }) => {
+      const parentKey = queryKeys.work.task(parentId)
+      await queryClient.cancelQueries({ queryKey: parentKey })
+      const snapshot = queryClient.getQueryData<WorkTask>(parentKey)
+      if (snapshot?.subtasks) {
+        queryClient.setQueryData<WorkTask>(parentKey, {
+          ...snapshot,
+          subtasks: applyReorder(snapshot.subtasks, subtaskId, beforeTaskId),
+        })
+      }
+      return { parentKey, snapshot }
+    },
+
+    onError: (_err, _vars, context) => {
+      if (context?.snapshot) queryClient.setQueryData(context.parentKey, context.snapshot)
+      toast.error('Không xếp lại được việc con, đã trả về như cũ')
     },
 
     onSettled: (_data, _err, variables) => invalidateTask(queryClient, listId, variables.parentId),

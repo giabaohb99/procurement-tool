@@ -39,7 +39,7 @@ conditional-filter, token màu Tailwind) — không chế khung mới khi đã c
 |---|---|---|---|---|
 | List | Bảng phẳng | `DataTable` dùng chung, gom theo cột (section) thu/mở được | P0 | D-02 |
 | Kanban | Bảng cột kéo thả | Khung nhìn chính | P0 | D-01 |
-| Gantt | Thanh thời gian | **XONG 28/08/2026 (CR-219)** — tự dựng theo bố cục DHTMLX, không cài thư viện của họ (GPLv2). Chưa có mũi tên phụ thuộc | P2 → làm sớm theo yêu cầu | D-05 |
+| Gantt | Thanh thời gian | **XONG** — bản đầu 28/08/2026 (CR-219), **dựng lại theo Lark 31/08/2026 (CR-226)**: lưới trái dùng chung bộ cột «Tùy chỉnh» với Danh sách · thang Ngày/Tuần/Tháng · hàng NHÓM có thanh tổng · cột mốc hình thoi · **mũi tên phụ thuộc** (vẽ + kéo tạo + xóa). Tự dựng, không cài thư viện (GPLv2) | P2 → làm sớm theo yêu cầu | D-05 · B-14 · B-15 |
 | Dashboard | Thống kê list | 4 khối recharts (§7) | P1 | D-06 |
 | Activities | Dòng hoạt động cấp list | Nhật ký audit của cả list (§8) | P1 | D-09 |
 
@@ -176,24 +176,73 @@ Khác E-04: E-04 là nhật ký TRONG panel một task, đây là cấp list.
   chưa có thì `@dnd-kit` (chuẩn hiện nay, hỗ trợ phím + cảm ứng) — chốt lúc làm W2.
 - Ô chỉ xem theo luật `read-only-value`; mọi màn theo khuôn phân hệ `src/modules/work/`.
 
-## 10. Tham khảo cho Gantt (D-05 — P2, ghi sẵn để khỏi tìm lại)
+## 10. Khung nhìn Gantt (D-05 + B-14 + B-15) — ĐÃ LÀM
 
-Người dùng chỉ định tham khảo **DHTMLX Gantt** (dhtmlx.com) về logic và giao diện:
+**Giấy phép — chốt một lần cho xong:** bản Standard (npm `dhtmlx-gantt`) là **GPLv2**, bản
+Pro trả phí; ứng viên MIT là `frappe-gantt` / `gantt-task-react`. **Ta không cài cái nào**
+(CR-219, giữ nguyên ở CR-226). Ba lý do theo thứ tự cân nhắc: ① rước một giấy phép lây lan
+vào repo để đổi lấy một biểu đồ thanh ngang là không đáng; ② thư viện nào cũng mang CSS
+riêng, không biết gì về token màu và chế độ nền của hệ — chỉnh cho khớp còn tốn hơn tự vẽ;
+③ **lưới trái phải là CHÍNH các ô sửa được của khung nhìn Danh sách**, không thư viện nào
+nhận vào chỗ đó một cây React của mình mà không phải vá. Bố cục và thao tác vẫn bám DHTMLX
++ Lark.
 
-- Bố cục chuẩn của nó: lưới cột bên trái (tên việc, người, ngày) + trục thời gian bên
-  phải; kéo hai mép thanh đổi ngày bắt đầu/kết thúc, kéo cả thanh dời lịch, vẽ mũi tên
-  nối phụ thuộc việc trước-sau, zoom ngày/tuần/tháng, đường "hôm nay". Dữ liệu ta đã đủ
-  nuôi nó: `start_date`/`due_date` + cha-con 2 cấp; PHỤ THUỘC việc (link) thì CHƯA có
-  bảng — làm Gantt thật mới thêm `tab_work_task_link`, đừng thêm trước.
-- **Giấy phép phải soát lúc quyết:** bản Standard (npm `dhtmlx-gantt`) là **GPLv2**,
-  bản Pro trả phí. Dùng nội bộ không phân phối thì GPL không kích hoạt nghĩa vụ mở mã,
-  nhưng vẫn phải ghi nhận quyết định này một dòng CR khi làm.
-- Ứng viên thay thế giấy phép dễ hơn (MIT): `frappe-gantt` (nhẹ, đủ kéo thả cơ bản),
-  `gantt-task-react` (React thuần). Chốt thư viện ở W5, theo đúng nguyên tắc
-  "P2 chỉ làm khi có người đòi" — tài liệu này chỉ giữ địa chỉ tham khảo.
+### 10.1 Bố cục
 
-**ĐÃ CHỐT (CR-219 + CR-220):** tự dựng theo bố cục DHTMLX, **không cài thư viện nào**;
-phần kéo dùng **dnd-kit** như kanban, vị trí tạm nằm ở `DragOverlay` (kéo cả thanh thì
-lớp phủ là bản sao của thanh, kéo mép thì là một vạch dẫn + chú thích ngày). Luật ngày
-nằm ở `utils/gantt-drag.ts`, có test — sửa hành vi kéo thì sửa ở đó, đừng nhét vào
-component.
+Lưới trái (dính khi cuộn ngang) · **thanh chia kéo được** · trục thời gian. Cả hai bên nằm
+CHUNG một khung cuộn nên không bao giờ lệch hàng — khỏi đồng bộ hai thanh cuộn dọc bằng tay.
+
+- **Cột lưới trái lấy từ chính bộ «Tùy chỉnh»** (§3.6) dùng chung với thẻ kanban và khung
+  nhìn Danh sách: tắt một trường ở menu đó là nó biến khỏi cả ba khung nhìn. Ô dữ liệu là
+  `TaskListCell` của dòng Danh sách — **sửa được tại chỗ y hệt bên đó**, không phải chữ
+  chết. Bề rộng từng cột nhớ RIÊNG cho Gantt (`erp.work.ganttcols.{listId}`), bề rộng ô
+  lưới nhớ ở `erp.work.ganttpane.{listId}`.
+- Cột không lọt vào ô lưới thì **không vẽ**, chứ không cắt bằng `overflow-hidden`: đặt
+  `overflow` khác `visible` là ô ấy thành khung cuộn của riêng nó và hàng tiêu đề
+  `sticky top-0` bên trong dính vào mép ô — tức không dính gì cả. Lỗi lộ ra khi cuộn
+  xuống: tiêu đề lưới trái trôi mất trong khi tiêu đề trục thời gian vẫn đứng.
+- **Hàng NHÓM** = một cột kanban, cùng cách gom với Danh sách (`groupTasksBySection`) nên
+  thu/mở nhớ chung một chỗ. Thanh nhóm trải từ ngày sớm nhất tới hạn muộn nhất của các
+  việc CÓ NGÀY trong nhóm, tô phần trăm việc đã xong, không kéo được (ngày của nó là ngày
+  tính ra — kéo thì không biết phải dời việc nào).
+
+### 10.2 Thang thời gian (`utils/gantt-scale.ts`)
+
+Ba mức: **Ngày** (ô ngày + thứ, gom tháng ở hàng trên) · **Tuần** (`T.37` theo tuần ISO,
+gom NĂM ở hàng trên) · **Tháng** (`Th 9`, gom năm). Mức Tuần cố ý gom hàng trên theo NĂM
+chứ không theo tháng: một tuần vắt qua hai tháng thì ô tuần bị cắt đôi và hai hàng tiêu đề
+không còn thẳng mép nhau.
+
+Dải được **bo về trọn tuần / trọn tháng** ở hai mức xa, nếu không thì ô đầu và ô cuối là
+một tuần/tháng cụt, nhìn như lưới vỡ. Toàn bộ hàm THUẦN và làm việc trên chuỗi
+`"YYYY-MM-DD"` — đổi qua `Date` để so sánh là dính lệch một ngày ở múi giờ +07.
+
+### 10.3 Ba loại kéo, ba cơ chế khác nhau — cố ý
+
+| Kéo gì | Bằng gì | Vì sao |
+|---|---|---|
+| **Ngày** (cả thanh / hai mép) | `dnd-kit`, vị trí tạm ở `DragOverlay` | Cùng bộ với kanban. Luật "đổi trường nào" nằm ở `utils/gantt-drag.ts`, có test — sửa hành vi kéo thì sửa ở đó, đừng nhét vào component |
+| **Nối phụ thuộc** | `pointerdown` thô (`use-gantt-link-draft.ts`) | Cho nó đi chung `DndContext` thì `onDragEnd` phải đoán cú thả vừa rồi mang nghĩa gì — đoán nhầm là **ghi đè ngày của một việc thật** |
+| **Giãn cột / thanh chia** | Ghi thẳng vào biến CSS | `setState` mỗi nhịp chuột là cả biểu đồ vẽ lại, kéo thành giật |
+
+### 10.4 Cột mốc (B-14) và mũi tên phụ thuộc (B-15)
+
+- **Cột mốc** vẽ hình thoi tại `due_date`, kéo dời được; bật/tắt bằng nút cạnh viên trạng
+  thái trong panel chi tiết. Đổi việc → mốc thì service gộp ngày về một mốc.
+- **Kiểu mũi tên suy ra từ hai đầu người dùng chạm vào**, đúng lối DHTMLX: rời ở cuối →
+  vào đầu = `FS`; đầu→đầu = `SS`; cuối→cuối = `FF`; đầu→cuối = `SF`. Đích không cần trúng
+  cái chấm nhỏ — thả vào NỬA nào của thanh đích thì tính là đầu ấy.
+- ⚠️ Phép dò đích đi theo `data-task-id`, **không** theo phần tử thanh: hai mép kéo đổi
+  ngày là anh em của thanh và nằm đè lên nó, mà thanh của một việc chỉ có hạn rộng đúng
+  một ngày (16px ở mức Tuần) — hai mép 7px phủ gần kín. Dò theo thanh thì thả vào những
+  việc như thế (phần lớn dữ liệu thật) luôn trượt, và trượt IM LẶNG.
+- Mũi tên vẽ bằng **SVG** phủ vùng các hàng, `pointer-events-none` cho cả tấm rồi bật lại
+  cho từng đường — để tấm phủ ăn chuột thì không thanh nào kéo được nữa, mà lỗi ấy nhìn
+  hệt như "kéo thanh bị hỏng". Rê vào đường mới hiện nút xóa.
+- **Luật chặn vòng lặp nằm ở backend**, không ở giao diện — xem `02-bang-du-lieu.md`
+  §3 (`tab_work_task_link`).
+
+### 10.5 Chưa làm
+
+Dời lịch dây chuyền theo `lag_days` · đường găng (critical path) · baseline · đổi KIỂU một
+mũi tên đã tạo (phải xóa rồi nối lại) · tạo cột mốc thẳng từ thanh công cụ.

@@ -120,8 +120,8 @@ chưa xong" / nhắc hạn vẫn có một nguồn sự thật bằng số, khô
 | B-10 | Chuyển task sang list khác | P1 | |
 | B-11 | Việc lặp lại (hằng tuần, hằng tháng) | P2 | |
 | B-12 | Gắn task vào chứng từ ERP (YCMH, ĐMH, phiếu hỗ trợ, văn bản…) | P2 | Xem Q6 — điểm ăn tiền so với Lark nhưng chưa cần ngay |
-| B-14 | Cột mốc (milestone): đánh dấu một task là mốc dự án | P2 | Bản 1.4 — đi cùng cụm Gantt D-05, xem §4b |
-| B-15 | Phụ thuộc giữa task (FS/SS/FF/SF) — bảng `tab_work_task_link` | P2 | Bản 1.4 — đi cùng D-05. Service PHẢI chặn vòng lặp phụ thuộc ngay từ đầu (tài liệu QLDA tự ghi nhận bên đó CHƯA chặn — §4b) |
+| B-14 | Cột mốc (milestone): đánh dấu một task là mốc dự án | P2 | **XONG 31/08/2026 (CR-226)** — cột `tab_work_task.kind`; bật/tắt ở panel chi tiết, Gantt vẽ hình thoi. Đổi thành mốc thì gộp ngày về `due_date` |
+| B-15 | Phụ thuộc giữa task (FS/SS/FF/SF) — bảng `tab_work_task_link` | P2 | **XONG 31/08/2026 (CR-226)** — kéo từ chấm ở đầu thanh sang việc khác là tạo, kiểu suy ra từ hai đầu chạm vào. `link_service.creates_cycle()` chặn vòng lặp ngay từ đầu, có test (tài liệu QLDA tự ghi nhận bên đó CHƯA chặn — §4b). `lag_days` mới LƯU, chưa dời lịch dây chuyền |
 
 ### Nhóm C — Việc con (subtask)
 
@@ -141,7 +141,7 @@ chưa xong" / nhắc hạn vẫn có một nguồn sự thật bằng số, khô
 | D-02 | Danh sách (bảng phẳng, sort theo hạn / ưu tiên / PIC) | P0 | Dựng trên `DataTable` dùng chung |
 | D-03 | Chi tiết task dạng panel trượt / dialog, mở từ mọi khung nhìn | P0 | |
 | D-04 | Lịch (task đổ theo hạn chót trên lịch tháng) | P2 | |
-| D-05 | Gantt / timeline | P2 | Tham khảo DHTMLX Gantt — xem `05-giao-dien.md` §10 (giấy phép GPLv2, có ứng viên MIT thay thế) |
+| D-05 | Gantt / timeline | P2 | **XONG** — bản đầu 28/08/2026 (CR-219), dựng lại theo Lark 31/08/2026 (CR-226): lưới trái dùng chung bộ cột với Danh sách · thang Ngày/Tuần/Tháng · thanh NHÓM gom con · cột mốc · mũi tên phụ thuộc. Tự dựng, KHÔNG cài thư viện — xem `05-giao-dien.md` §10 |
 | D-06 | Dashboard thống kê theo list (đếm theo cột, theo PIC, quá hạn) | P1 | 4 khối — `05-giao-dien.md` §7 |
 | D-07 | Thanh công cụ khung nhìn clone Lark: Việc mới · Tất cả (phạm vi nhanh) · Lọc điều kiện · Sắp xếp · Gom nhóm · Tùy chỉnh thẻ | P0 | Bản 1.3 — đặc tả từng nút ở `05-giao-dien.md` §3; Lọc dùng khung `conditional-filter` sẵn có |
 | D-08 | Gom nhóm kanban theo trường khác: PIC / độ ưu tiên / hạn (ngoài cột tự đặt) | P1 | Kéo thẻ giữa nhóm = đổi giá trị trường đó |
@@ -224,7 +224,7 @@ db mình phải làm theo kiểu, logic của mình").
 | A. Dự án (`tab_project`: ngày, trạng thái, thành viên N-N, tiến độ = trung bình % các đầu việc) | A-10 list kiểu dự án | NHẬN, P1 — tiến độ tự tính từ đếm task xong/tổng, không bắt nhập % tay |
 | B. Đầu việc cây nhiều cấp không giới hạn, % tiến độ nhập tay, effort ngày công | Task + việc con 2 cấp, tick n/m | GIỮ CỦA MÌNH — 2 cấp + đếm tick đơn giản, khỏi cãi nhau "80% là bao nhiêu" (C-05, Q10) |
 | B. Trạng thái "Quá hạn" tự động chuyển | — | NHẬN Ý, KHÁC CÁCH: quá hạn là giá trị DẪN XUẤT lúc đọc (`due_date` < hôm nay và chưa DONE), KHÔNG lưu thành trạng thái — lưu là phải có job đổi qua đổi lại |
-| C. Gantt dhtmlx: milestone, phụ thuộc 4 loại FS/SS/FF/SF, baseline, critical path | D-05 (P2) + B-14, B-15 mới | ĐỂ W5. Điểm được nhất của tài liệu này: dhtmlx-gantt ĐÃ CHẠY THẬT trong nhà → rủi ro D-05 giảm (05 §10). Khi làm B-15 phải chặn vòng lặp phụ thuộc (bên đó tự ghi nhận chưa chặn) |
+| C. Gantt dhtmlx: milestone, phụ thuộc 4 loại FS/SS/FF/SF, baseline, critical path | D-05 (P2) + B-14, B-15 mới | **ĐÃ LÀM 31/08/2026 (CR-226)** — milestone và phụ thuộc đủ 4 loại, có chặn vòng lặp (bên kia tự ghi nhận chưa chặn). **Baseline và critical path vẫn CHƯA** — chưa ai đòi; critical path còn cần `lag_days` tham gia tính toán, mà bộ dời lịch dây chuyền cũng chưa làm. Tự dựng chứ không cài `dhtmlx-gantt` (GPLv2 — 05 §10) |
 | D. Kanban theo trạng thái cố định | D-01 kanban cột tùy biến | GIỮ CỦA MÌNH — cột tự đặt kiểu Lark mạnh hơn cột = trạng thái |
 | E. OKR check-in (chỉ tiêu — kết quả — nhật ký tiến độ) | — | KHÔNG NHẬN — §9 vẫn ngoài phạm vi; ai đòi thật thì mở CR riêng ở W5 |
 | F. Lịch làm việc + ngày nghỉ (nghỉ lễ VN tự sinh, tính ngày kết thúc theo ngày công) | — | **KHÔNG LÀM BÂY GIỜ** (chốt người dùng 28/08/2026) — ghi vào W5 làm sau. Lý do: chỉ cần khi tính ngày kết thúc theo effort / Gantt trừ ngày nghỉ (đều P2); lịch làm việc là dữ liệu cấp CÔNG TY, chỗ đúng là nền HRM dùng chung — làm riêng trong phân hệ này thì HRM ra đời lại phải dời |

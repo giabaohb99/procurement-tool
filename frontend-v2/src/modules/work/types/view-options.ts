@@ -59,9 +59,16 @@ export type WorkSort = (typeof WORK_SORTS)[number]['value'] | `label:${number}`
  * Trường **nhãn tùy biến** (B-08) mang khóa `label:{fieldId}`: mỗi dự án tự khai
  * bộ nhãn riêng nên danh sách này KHÔNG cố định được, phải trộn với bộ nhãn
  * đang có của dự án lúc chạy (`mergeCardFields`).
+ *
+ * `status` và `start` thêm vào cùng cụm Gantt mở rộng (B-14/B-15): lưới trái của
+ * Gantt lấy cột từ CHÍNH bộ này, mà hai thứ người ta đọc nhiều nhất trên một
+ * biểu đồ tiến độ là trạng thái và ngày bắt đầu. Thêm ở đây nên chúng cũng thành
+ * cột của khung nhìn Danh sách — đúng ý "một nguồn cột cho cả ba khung nhìn".
  */
 export const BUILTIN_CARD_FIELDS = [
   { key: 'assignees', label: 'Phụ trách' },
+  { key: 'status', label: 'Trạng thái' },
+  { key: 'start', label: 'Ngày bắt đầu' },
   { key: 'due', label: 'Hạn chót' },
   { key: 'subtasks', label: 'Việc con' },
   { key: 'comments', label: 'Số bình luận' },
@@ -107,11 +114,35 @@ export function mergeCardFields(saved: CardFields, labelIds: number[]): CardFiel
   //  dòng cùng khóa là hai React `key` trùng — cảnh báo đỏ và dòng nhảy lung
   //  tung mỗi lần kéo đổi thứ tự.
   const seen = new Set<CardFieldKey>()
-  const kept = saved.filter((f) => {
+  const result = saved.filter((f) => {
     if (!wanted.has(f.key) || seen.has(f.key)) return false
     seen.add(f.key)
     return true
   })
-  const added = [...wanted].filter((k) => !seen.has(k)).map((key) => ({ key, visible: true }))
-  return [...kept, ...added]
+
+  /*  Trường DỰNG SẴN mới thêm về sau chen vào NGAY TRƯỚC nhãn tùy biến đầu
+      tiên, chứ không nối vào cuối như nhãn.
+
+      Nối vào cuối thì với mọi người dùng cũ (ai cũng có sẵn một bản lưu trong
+      `localStorage`), «Trạng thái» và «Ngày bắt đầu» rơi xuống sau tất cả nhãn
+      tùy biến của dự án: ở khung nhìn Gantt, nơi lưới trái chỉ hiện được vài cột
+      đầu, chúng bị cắt mất và người dùng kết luận là chưa làm.
+
+      Chen theo MỐC "nhãn đầu tiên" chứ không theo vị trí trong
+      `BUILTIN_CARD_FIELDS`: thứ tự đã nhớ là thứ tự người dùng tự kéo, bám theo
+      bảng khai của ta là xáo lại đúng cái họ vừa xếp.  */
+  const moc = result.findIndex((f) => labelFieldId(f.key) !== null)
+  let chen = moc === -1 ? result.length : moc
+  for (const f of BUILTIN_CARD_FIELDS) {
+    const key = f.key as CardFieldKey
+    if (seen.has(key)) continue
+    seen.add(key)
+    result.splice(chen, 0, { key, visible: true })
+    chen += 1
+  }
+
+  for (const key of wanted) {
+    if (!seen.has(key)) result.push({ key, visible: true })
+  }
+  return result
 }

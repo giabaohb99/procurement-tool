@@ -9,6 +9,17 @@
 
 export const WORK_TASK_STATUS = { OPEN: 1, DONE: 2, CANCELLED: 3 } as const
 
+/**
+ * Việc thường hay CỘT MỐC (B-14). Cột mốc là một task như mọi task khác, chỉ
+ * khác cách đọc ngày: chỉ `due_date` có nghĩa, và Gantt vẽ nó thành hình thoi.
+ */
+export const WORK_TASK_KIND = { TASK: 1, MILESTONE: 2 } as const
+
+/** Bốn kiểu phụ thuộc việc trước–sau (B-15) — bộ của DHTMLX/MS Project. */
+export const WORK_LINK_TYPE = { FS: 1, SS: 2, FF: 3, SF: 4 } as const
+
+export type WorkLinkTypeValue = (typeof WORK_LINK_TYPE)[keyof typeof WORK_LINK_TYPE]
+
 /** Số nhỏ = quyền TO (Q9) — mọi phép so quyền ở giao diện đều là `<=`. */
 export const WORK_ROLE = { OWNER: 1, ADMIN: 2, MEMBER: 3, VIEWER: 4 } as const
 
@@ -19,6 +30,14 @@ export const WORK_ROLE_LABELS: Record<number, string> = {
   [WORK_ROLE.ADMIN]: 'Quản trị',
   [WORK_ROLE.MEMBER]: 'Thành viên',
   [WORK_ROLE.VIEWER]: 'Khách xem',
+}
+
+/** Nhãn ngắn cho menu chọn kiểu mũi tên — chữ đọc "đầu việc trước → đầu việc sau". */
+export const WORK_LINK_TYPE_LABELS: Record<number, string> = {
+  [WORK_LINK_TYPE.FS]: 'Xong → Bắt đầu',
+  [WORK_LINK_TYPE.SS]: 'Bắt đầu → Bắt đầu',
+  [WORK_LINK_TYPE.FF]: 'Xong → Xong',
+  [WORK_LINK_TYPE.SF]: 'Bắt đầu → Xong',
 }
 
 export const WORK_STATUS_LABELS: Record<number, string> = {
@@ -172,6 +191,8 @@ export interface WorkTask {
   title: string
   description: string
   status: number
+  /** `WORK_TASK_KIND` — cột mốc chỉ dùng `due_date`, Gantt vẽ hình thoi (B-14). */
+  kind: number
   start_date: string
   due_date: string
   sort_order: number
@@ -189,9 +210,28 @@ export interface WorkTask {
   subtasks?: WorkTask[]
 }
 
+/**
+ * Một mũi tên phụ thuộc trên Gantt (B-15). Cặp `(predecessor, successor)` là
+ * duy nhất — máy chủ chặn trùng cặp và chặn vòng lặp (`link_service`).
+ */
+export interface WorkTaskLink {
+  id: number
+  list_id: number
+  predecessor_id: number
+  successor_id: number
+  link_type: number
+  /** Độ trễ (ngày) cộng vào mốc của việc sau; âm = chồng lấn. Hiện chỉ hiển thị. */
+  lag_days: number
+}
+
 export interface WorkBoard {
   list: WorkList
   sections: WorkSection[]
   /** CHỈ task cha: việc con không bao giờ thành thẻ trên bảng (C-05). */
   tasks: WorkTask[]
+  /**
+   * Mũi tên phụ thuộc của cả dự án, đi CHUNG payload bảng để Gantt vẽ thanh và
+   * mũi tên trong cùng một nhịp. Bảng và Danh sách không đọc tới.
+   */
+  links: WorkTaskLink[]
 }

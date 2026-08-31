@@ -13,18 +13,35 @@ interface TaskDueCellProps {
   done: boolean
   canEdit: boolean
   onChange: (dueDate: string) => void
+  /** Tên mốc, đọc lên cho trình đọc màn hình. Mặc định «Hạn chót». */
+  label?: string
+  /**
+   * Tô màu theo mức KHẨN (quá hạn đỏ, sắp tới cam). Tắt cho NGÀY BẮT ĐẦU: ngày
+   * bắt đầu đã trôi qua là chuyện hoàn toàn bình thường, tô đỏ nó thì cả cột
+   * đỏ rực và người dùng học cách phớt lờ luôn cả màu đỏ thật ở cột hạn.
+   */
+  tone?: boolean
 }
 
 /**
- * Ô HẠN CHÓT sửa ngay trên dòng danh sách.
+ * Ô MỘT MỐC NGÀY sửa ngay trên dòng danh sách — dùng cho cả hạn chót lẫn ngày
+ * bắt đầu.
  *
- * Khác `TaskDateRow` của panel chi tiết ở chỗ chỉ lo MỘT mốc (hạn) và phải vừa
- * một ô bảng, nên không bày ba nút «Hôm nay · Ngày mai · Khác» ra hàng — chúng
- * nằm trong popover. Ô rỗng vẫn chiếm đủ chiều cao và hiện icon lịch mờ khi rê
+ * Khác `TaskDateRow` của panel chi tiết ở chỗ chỉ lo MỘT mốc và phải vừa một ô
+ * bảng, nên không bày ba nút «Hôm nay · Ngày mai · Khác» ra hàng — chúng nằm
+ * trong popover. Ô rỗng vẫn chiếm đủ chiều cao và hiện icon lịch mờ khi rê
  * chuột: không có gì để bấm thì người dùng không đoán được là sửa được tại chỗ.
  */
-export function TaskDueCell({ dueDate, done, canEdit, onChange }: TaskDueCellProps) {
+export function TaskDueCell({
+  dueDate,
+  done,
+  canEdit,
+  onChange,
+  label = 'Hạn chót',
+  tone = true,
+}: TaskDueCellProps) {
   const [open, setOpen] = useState(false)
+  const toneClass = tone ? dueToneClass(dueTone(dueDate, done)) : 'text-foreground'
 
   function pick(value: string) {
     onChange(value)
@@ -33,9 +50,7 @@ export function TaskDueCell({ dueDate, done, canEdit, onChange }: TaskDueCellPro
 
   if (!canEdit) {
     return dueDate ? (
-      <span className={cn('text-xs', dueToneClass(dueTone(dueDate, done)))}>
-        {formatDueLabel(dueDate)}
-      </span>
+      <span className={cn('text-xs', toneClass)}>{formatDueLabel(dueDate)}</span>
     ) : (
       <span className="text-xs text-muted-foreground">—</span>
     )
@@ -46,11 +61,11 @@ export function TaskDueCell({ dueDate, done, canEdit, onChange }: TaskDueCellPro
       <PopoverTrigger asChild>
         <button
           type="button"
-          aria-label={dueDate ? `Hạn chót ${formatDueLabel(dueDate)}` : 'Đặt hạn chót'}
+          aria-label={dueDate ? `${label} ${formatDueLabel(dueDate)}` : `Đặt ${label.toLowerCase()}`}
           onClick={(e) => e.stopPropagation()}
           className={cn(
             'flex h-6 w-full items-center gap-1 rounded px-1 text-left text-xs hover:bg-accent',
-            dueDate ? dueToneClass(dueTone(dueDate, done)) : 'text-muted-foreground',
+            dueDate ? toneClass : 'text-muted-foreground',
           )}
         >
           {dueDate ? (

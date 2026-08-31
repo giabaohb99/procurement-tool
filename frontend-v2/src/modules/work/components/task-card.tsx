@@ -22,6 +22,7 @@ import {
   fieldHasOptions,
   WORK_ASSIGNEE_KIND,
   WORK_FIELD_TYPE,
+  WORK_STATUS_LABELS,
   WORK_TASK_STATUS,
 } from '../types/work'
 import { dueTone, dueToneClass, formatDueLabel } from '../utils/due-date'
@@ -211,6 +212,26 @@ function buildFieldRow(
             )}
           </span>
         ),
+      }
+    }
+    case 'status': {
+      //  Chỉ khoe trạng thái KHÁC «Đang mở»: mọi thẻ đều đang mở, in ra hết thì
+      //  một dòng vô nghĩa lặp trên toàn bộ bảng.
+      if (task.status === WORK_TASK_STATUS.OPEN) return null
+      return {
+        key,
+        icon: CircleDot,
+        label: 'Trạng thái',
+        value: WORK_STATUS_LABELS[task.status] ?? 'Không rõ',
+      }
+    }
+    case 'start': {
+      if (!task.start_date) return null
+      return {
+        key,
+        icon: CalendarDays,
+        label: 'Ngày bắt đầu',
+        value: formatDueLabel(task.start_date),
       }
     }
     case 'due': {

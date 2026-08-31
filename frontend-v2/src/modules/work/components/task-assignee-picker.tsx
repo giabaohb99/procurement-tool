@@ -164,7 +164,7 @@ function CompactFaces({ picked }: { picked: WorkAssignee[] }) {
         <span
           key={a.employee_id}
           title={personName(a.employee_name, a.employee_id)}
-          className="grid size-5 place-items-center rounded-full bg-muted text-[9px] font-medium ring-1 ring-background"
+          className={FACE_CLASS}
         >
           {initials(a.employee_name)}
         </span>
@@ -175,7 +175,7 @@ function CompactFaces({ picked }: { picked: WorkAssignee[] }) {
             .slice(MAX_FACES)
             .map((a) => personName(a.employee_name, a.employee_id))
             .join(', ')}
-          className="grid size-5 place-items-center rounded-full bg-muted text-[9px] font-medium text-muted-foreground ring-1 ring-background"
+          className={cn(FACE_CLASS, 'text-muted-foreground')}
         >
           +{extra}
         </span>
@@ -183,3 +183,13 @@ function CompactFaces({ picked }: { picked: WorkAssignee[] }) {
     </span>
   )
 }
+
+/*  `size-6` chứ không phải `size-5` như bản đầu: hai chữ cái viết tắt trong một
+    vòng 20px buộc phải hạ cỡ chữ xuống 9px, mà ở cỡ ấy chữ có dấu nhòe thành
+    một vệt xám — nhìn không ra ai đang phụ trách thì cột này mất công dụng.
+
+    Trần trên là 24px, không nới thêm được: cụm avatar nằm trong một nút `h-6`,
+    to hơn là nút phình ra và cả dòng cao theo, kéo lệch hết những chỗ vừa canh
+    thẳng hàng. `ring` vẽ ĐÈ ra ngoài nên 2px viền không tính vào chiều cao.  */
+const FACE_CLASS =
+  'grid size-6 place-items-center rounded-full bg-muted text-[10px] font-medium ring-2 ring-background'

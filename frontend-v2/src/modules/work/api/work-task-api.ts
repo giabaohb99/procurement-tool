@@ -1,5 +1,5 @@
 import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from '@/core/api'
-import type { WorkBoard, WorkTask } from '../types/work'
+import type { WorkBoard, WorkTask, WorkTaskLink } from '../types/work'
 
 /** Công việc và việc con. Xem `work-api.ts` về lý do prefix `/api/work`. */
 export const workTaskApi = {
@@ -17,6 +17,8 @@ export const workTaskApi = {
     start_date?: string
     due_date?: string
     sort_order?: number
+    /** `WORK_TASK_KIND.MILESTONE` để tạo thẳng một cột mốc (B-14). */
+    kind?: number
     assignee_ids?: number[]
   }) => apiPost<WorkTask>('/api/work/tasks', values),
 
@@ -24,11 +26,14 @@ export const workTaskApi = {
     apiPatch<WorkTask>(`/api/work/tasks/${taskId}`, values),
 
   /**
-   * Kéo thả kanban. Gửi MỐC TƯƠNG ĐỐI (`before_task_id`) chứ không gửi
-   * `sort_order` tính sẵn — lý do đầy đủ ở `utils/kanban-drop.ts`. Máy chủ đánh
-   * số lại cả cột đích nên thứ tự luôn duy nhất và không bao giờ hết khe.
+   * Kéo thả. Gửi MỐC TƯƠNG ĐỐI (`before_task_id`) chứ không gửi `sort_order`
+   * tính sẵn — lý do đầy đủ ở `utils/kanban-drop.ts`. Máy chủ đánh số lại cả
+   * hàng đích nên thứ tự luôn duy nhất và không bao giờ hết khe.
+   *
+   * `sectionId` null = xếp lại một VIỆC CON trong cụm của cha nó; việc con
+   * không thuộc cột nào (C-05) nên gửi kèm cột là máy chủ trả 400.
    */
-  move: (taskId: number, sectionId: number, beforeTaskId: number | null) =>
+  move: (taskId: number, sectionId: number | null, beforeTaskId: number | null) =>
     apiPost<WorkTask>(`/api/work/tasks/${taskId}/move`, {
       section_id: sectionId,
       before_task_id: beforeTaskId,
@@ -57,4 +62,20 @@ export const workTaskApi = {
       field_id: fieldId,
       value,
     }),
+
+  /**
+   * Nối việc trước → việc sau trên Gantt (B-15). Không có endpoint ĐỌC riêng:
+   * mũi tên đi kèm `board` để biểu đồ có thanh và mũi tên trong một nhịp.
+   *
+   * Máy chủ trả 400 khi nối tạo vòng lặp, nối chính mình, trùng cặp, dính việc
+   * con, hoặc hai đầu khác dự án — thông báo hiện thẳng bằng toast của `@/core/api`.
+   */
+  createLink: (values: {
+    predecessor_id: number
+    successor_id: number
+    link_type?: number
+    lag_days?: number
+  }) => apiPost<WorkTaskLink>('/api/work/task-links', values),
+
+  removeLink: (linkId: number) => apiDelete(`/api/work/task-links/${linkId}`),
 }

@@ -7,7 +7,7 @@ import { ROW_PAD_LEFT } from '../utils/list-metrics'
 import type { WorkLabelField, WorkMember } from '../types/work'
 import { WORK_ASSIGNEE_KIND } from '../types/work'
 import { toDraftLabelValues } from '../utils/draft-label-value'
-import type { TaskListColumn } from '../utils/list-columns'
+import { TITLE_COLUMN, type TaskListColumn } from '../utils/list-columns'
 import { LabelFieldInput } from './label-field-input'
 import { TaskAssigneePicker } from './task-assignee-picker'
 import { TaskDueCell } from './task-due-cell'
@@ -16,6 +16,8 @@ import { TaskDueCell } from './task-due-cell'
 export interface NewTaskDraft {
   title: string
   dueDate: string
+  /** Ngày bắt đầu — cột `start`, chỉ gửi đi khi người dùng thực sự chọn. */
+  startDate: string
   picIds: number[]
   /** Khóa là `field_id`; giá trị thô đa hình đúng như `LabelFieldInput` trả ra. */
   labels: Record<number, unknown>
@@ -41,6 +43,7 @@ function emptyDraft(defaultPicId?: number): NewTaskDraft {
   return {
     title: '',
     dueDate: '',
+    startDate: '',
     picIds: defaultPicId ? [defaultPicId] : [],
     labels: {},
   }
@@ -116,27 +119,37 @@ export function TaskDraftRow({
       style={{ paddingLeft: ROW_PAD_LEFT }}
       className="flex items-center gap-1.5 border-b border-border/60 bg-accent/30 py-1.5 pr-2"
     >
-      <span className="w-[18px] shrink-0" aria-hidden />
-      <Checkbox disabled className="shrink-0 rounded-full" aria-hidden tabIndex={-1} />
+      {/*  Ô tên rộng đúng bằng cột tên của dòng thật (`--wcol-title`) rồi tới
+           khoảng đệm co giãn — có thế các ô còn lại mới thẳng hàng với dòng
+           trên khi người dùng kéo giãn cột tên. */}
+      <div
+        className="flex min-w-0 shrink-0 items-center gap-1.5"
+        style={{ width: `var(${columnWidthVar(TITLE_COLUMN.key)})` }}
+      >
+        <span className="w-[18px] shrink-0" aria-hidden />
+        <Checkbox disabled className="shrink-0 rounded-full" aria-hidden tabIndex={-1} />
 
-      <Input
-        autoFocus
-        ref={inputRef}
-        value={draft.title}
-        aria-label="Tên công việc mới"
-        placeholder="Tên công việc rồi Enter"
-        /*  Không viền, không vòng sáng: cả DÒNG đã đổi nền để nói "đang soạn",
-            thêm một cái hộp viền vàng quanh ô tên nữa thì nó là khung trong
-            khung, mà các ô còn lại của dòng đều không có viền — nhìn lệch hẳn.
-            `dark:bg-transparent` vì `Input` gốc có `dark:bg-input/30`, để nguyên
-            là nền tối lại hiện đúng cái hộp vừa bỏ. */
-        className="h-6 min-w-0 flex-1 border-0 bg-transparent px-1 py-0 text-sm shadow-none focus-visible:ring-0 dark:bg-transparent"
-        onChange={(e) => patch({ title: e.target.value })}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') save()
-          if (e.key === 'Escape') onCancel()
-        }}
-      />
+        <Input
+          autoFocus
+          ref={inputRef}
+          value={draft.title}
+          aria-label="Tên công việc mới"
+          placeholder="Tên công việc rồi Enter"
+          /*  Không viền, không vòng sáng: cả DÒNG đã đổi nền để nói "đang soạn",
+              thêm một cái hộp viền vàng quanh ô tên nữa thì nó là khung trong
+              khung, mà các ô còn lại của dòng đều không có viền — nhìn lệch hẳn.
+              `dark:bg-transparent` vì `Input` gốc có `dark:bg-input/30`, để
+              nguyên là nền tối lại hiện đúng cái hộp vừa bỏ. */
+          className="h-6 min-w-0 flex-1 border-0 bg-transparent px-1 py-0 text-sm shadow-none focus-visible:ring-0 dark:bg-transparent"
+          onChange={(e) => patch({ title: e.target.value })}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') save()
+            if (e.key === 'Escape') onCancel()
+          }}
+        />
+      </div>
+
+      <span className="min-w-0 flex-1" aria-hidden />
 
       {columns.map((col) => (
         <div key={col.key} className="shrink-0" style={{ width: `var(${columnWidthVar(col.key)})` }}>
@@ -196,6 +209,24 @@ function DraftCell({ column, draft, members, onPatch, onPatchLabel }: DraftCellP
       />
     )
   }
+
+  if (column.key === 'start') {
+    return (
+      <TaskDueCell
+        label="Ngày bắt đầu"
+        tone={false}
+        dueDate={draft.startDate}
+        done={false}
+        canEdit
+        onChange={(startDate) => onPatch({ startDate })}
+      />
+    )
+  }
+
+  //  Cột TRẠNG THÁI cố ý để trống ở dòng nháp: việc chưa tồn tại thì trạng thái
+  //  duy nhất có nghĩa là «Đang mở», bày một ô chọn ra chỉ mời người ta tạo sẵn
+  //  một việc «Hoàn thành».
+  if (column.key === 'status') return null
 
   const field: WorkLabelField | undefined = column.field
   if (!field) return null

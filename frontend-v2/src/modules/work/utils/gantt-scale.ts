@@ -1,4 +1,5 @@
 import type { WorkTask } from '../types/work'
+import { WORK_TASK_KIND } from '../types/work'
 import { today } from './due-date'
 
 /**
@@ -7,14 +8,20 @@ import { today } from './due-date'
  * Toàn hàm THUẦN, làm việc trên chuỗi `"YYYY-MM-DD"` — cùng dạng dữ liệu backend
  * lưu (`02-bang-du-lieu.md` §0.2). Cố ý KHÔNG đổi qua `Date` để so sánh: dựng
  * `new Date("2026-08-28")` ra mốc UTC, ở múi giờ +07 nó lùi về hôm trước và cả
- * dải thanh Gantt lệch đúng một ngày. `Date` chỉ dùng ở chỗ CỘNG NGÀY, nơi phải
- * biết tháng nào 30 hay 31 ngày.
+ * dải thanh Gantt lệch đúng một ngày. `Date` chỉ dùng ở chỗ CỘNG NGÀY và hỏi
+ * THỨ, nơi phải biết tháng nào 30 hay 31 ngày.
  */
 
 export type GanttZoom = 'day' | 'week' | 'month'
 
-/** Bề rộng MỘT ngày (px) theo mức phóng. Cả lưới nền lẫn thanh đều theo số này. */
-export const DAY_WIDTH: Record<GanttZoom, number> = { day: 40, week: 14, month: 5 }
+/**
+ * Bề rộng MỘT ngày (px) theo mức phóng. Cả lưới nền lẫn thanh đều theo số này.
+ *
+ * Chọn theo bề rộng của một Ô ĐỌC ĐƯỢC ở mỗi mức, không phải theo cảm giác:
+ * mức Tuần cần ~91px cho một cột tuần (đủ chỗ cho "T.37"), mức Tháng cần ~120px
+ * cho một cột tháng. Số lẻ thì mép ô lệch dần và cuối biểu đồ trượt khỏi lưới.
+ */
+export const DAY_WIDTH: Record<GanttZoom, number> = { day: 38, week: 13, month: 4 }
 
 export const ZOOM_LABELS: Record<GanttZoom, string> = {
   day: 'Ngày',
@@ -27,14 +34,19 @@ const THU = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']
 /** `"2026-08-28"` + n ngày → `"YYYY-MM-DD"`. Dùng `Date` local, không UTC. */
 export function shiftDate(iso: string, days: number): string {
   const [y, m, d] = iso.split('-').map(Number)
-  const date = new Date(y, m - 1, d + days)
-  return toIso(date)
+  return toIso(new Date(y, m - 1, d + days))
 }
 
 function toIso(date: Date): string {
   const thang = `${date.getMonth() + 1}`.padStart(2, '0')
   const ngay = `${date.getDate()}`.padStart(2, '0')
   return `${date.getFullYear()}-${thang}-${ngay}`
+}
+
+/** Thứ trong tuần theo chuẩn JS: 0 = Chủ nhật … 6 = thứ Bảy. */
+function weekday(iso: string): number {
+  const [y, m, d] = iso.split('-').map(Number)
+  return new Date(y, m - 1, d).getDay()
 }
 
 /** Số ngày từ `a` tới `b` (b sau a thì dương). Bỏ qua giờ nên không lệch do DST. */
@@ -45,8 +57,24 @@ export function daysBetween(a: string, b: string): number {
   return Math.round((Date.UTC(yb, mb - 1, db) - Date.UTC(ya, ma - 1, da)) / msMotNgay)
 }
 
+/**
+ * Số TUẦN ISO của một ngày — nhãn "T.37" ở hàng tiêu đề mức Tuần.
+ *
+ * Theo ISO-8601 chứ không đếm từ 01/01: tuần bắt đầu thứ Hai, và tuần số 1 là
+ * tuần chứa thứ Năm đầu tiên của năm. Đếm ngây thơ thì ngày 01/01 rơi vào Chủ
+ * nhật sẽ ra "tuần 1" trong khi lịch của cả công ty gọi nó là tuần 52 năm trước.
+ */
+export function isoWeek(iso: string): number {
+  const [y, m, d] = iso.split('-').map(Number)
+  const date = new Date(Date.UTC(y, m - 1, d))
+  //  Dời tới thứ Năm của cùng tuần: mọi ngày trong tuần khi đó cho cùng một số.
+  date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay() || 7))
+  const dauNam = Date.UTC(date.getUTCFullYear(), 0, 1)
+  return Math.ceil(((date.getTime() - dauNam) / 86_400_000 + 1) / 7)
+}
+
 export interface GanttTimeline {
-  /** Ngày đầu và ngày cuối của dải (đã đệm hai bên). */
+  /** Ngày đầu và ngày cuối của dải (đã đệm hai bên và bo theo mức phóng). */
   start: string
   end: string
   /** Mỗi phần tử là MỘT ngày trong dải, theo thứ tự. */
@@ -65,6 +93,11 @@ const PAD_DAYS = 3
  *
  * Luôn kéo dải qua hôm nay kể cả khi mọi việc đều ở quá khứ: vạch "hôm nay" là
  * thứ người dùng lấy làm mốc đọc, thiếu nó thì biểu đồ trôi lơ lửng.
+ *
+ * Hai đầu dải được BO THEO MỨC PHÓNG (`snapEdges`): mức Tuần bo về thứ Hai —
+ * Chủ nhật, mức Tháng bo về mồng 1 — ngày cuối tháng. Không bo thì ô đầu và ô
+ * cuối của hàng tiêu đề là một tuần/tháng CỤT, hẹp hơn hẳn các ô khác, nhìn như
+ * lưới bị vỡ.
  */
 export function buildTimeline(
   tasks: WorkTask[],
@@ -78,16 +111,34 @@ export function buildTimeline(
   }
   moc.sort()
 
-  const start = shiftDate(moc[0], -PAD_DAYS)
+  let start = shiftDate(moc[0], -PAD_DAYS)
   let end = shiftDate(moc[moc.length - 1], PAD_DAYS)
   const thieu = MIN_DAYS - (daysBetween(start, end) + 1)
   if (thieu > 0) end = shiftDate(end, thieu)
+  ;[start, end] = snapEdges(start, end, zoom)
 
   const days: string[] = []
   for (let i = 0; i <= daysBetween(start, end); i += 1) days.push(shiftDate(start, i))
 
   const dayWidth = DAY_WIDTH[zoom]
   return { start, end, days, dayWidth, totalWidth: days.length * dayWidth }
+}
+
+function snapEdges(start: string, end: string, zoom: GanttZoom): [string, string] {
+  if (zoom === 'week') {
+    //  Lùi về thứ Hai: `(thu + 6) % 7` biến Chủ nhật (0) thành 6 ngày phải lùi.
+    const lui = (weekday(start) + 6) % 7
+    const tien = (7 - ((weekday(end) + 6) % 7) - 1) % 7
+    return [shiftDate(start, -lui), shiftDate(end, tien)]
+  }
+  if (zoom === 'month') {
+    const [ye, me] = end.split('-').map(Number)
+    //  `new Date(y, m, 0)` = ngày 0 của tháng SAU = ngày CUỐI của tháng này (chỉ
+    //  số tháng của `Date` đếm từ 0 nên `me` đã là "tháng sau"). Khỏi tra bảng
+    //  30/31 và tự đúng cả tháng 2 năm nhuận.
+    return [`${start.slice(0, 7)}-01`, toIso(new Date(ye, me, 0))]
+  }
+  return [start, end]
 }
 
 export interface GanttBar {
@@ -102,54 +153,162 @@ export interface GanttBar {
  * NGÀY tại đúng hạn — coi như mốc, không tự bịa ra độ dài.
  */
 export function barGeometry(task: WorkTask, timeline: GanttTimeline): GanttBar | null {
-  const dau = task.start_date || task.due_date
-  const cuoi = task.due_date || task.start_date
-  if (!dau || !cuoi) return null
+  return rangeGeometry(task.start_date || task.due_date, task.due_date || task.start_date, timeline)
+}
+
+/** Hình học của một quãng ngày bất kỳ — dùng cho cả thanh việc lẫn thanh NHÓM. */
+export function rangeGeometry(
+  from: string,
+  to: string,
+  timeline: GanttTimeline,
+): GanttBar | null {
+  if (!from || !to) return null
 
   //  Ngày bắt đầu sau hạn (dữ liệu nhập ngược) thì đảo lại cho thanh vẫn vẽ được
   //  thay vì ra bề rộng âm và biến mất.
-  const tu = dau <= cuoi ? dau : cuoi
-  const den = dau <= cuoi ? cuoi : dau
+  const tu = from <= to ? from : to
+  const den = from <= to ? to : from
 
   const left = daysBetween(timeline.start, tu) * timeline.dayWidth
   const width = (daysBetween(tu, den) + 1) * timeline.dayWidth
   return { left, width }
 }
 
-export interface GanttHeaderCell {
-  key: string
-  label: string
-  /** Bề rộng (px) — cột đầu/cuối có thể ngắn hơn vì dải cắt giữa tháng/tuần. */
-  width: number
+/** Việc này là CỘT MỐC (B-14) — vẽ hình thoi thay vì thanh. */
+export function isMilestone(task: WorkTask): boolean {
+  return task.kind === WORK_TASK_KIND.MILESTONE
 }
 
 /**
- * Hàng tiêu đề TRÊN: gom ngày thành tháng (mức Ngày/Tuần) hoặc năm (mức Tháng).
- * Hàng DƯỚI (`dayCells`) chỉ có ở mức Ngày — mức xa hơn thì ô một ngày quá hẹp
- * để in chữ.
+ * Tâm hình thoi của một cột mốc, tính bằng px từ mép trái dải. `null` = mốc
+ * chưa có ngày nào.
  */
-export function groupHeader(timeline: GanttTimeline, zoom: GanttZoom): GanttHeaderCell[] {
-  const nhom = new Map<string, number>()
-  for (const ngay of timeline.days) {
-    const key = zoom === 'month' ? ngay.slice(0, 4) : ngay.slice(0, 7)
-    nhom.set(key, (nhom.get(key) ?? 0) + 1)
+export function milestoneCenter(task: WorkTask, timeline: GanttTimeline): number | null {
+  const ngay = task.due_date || task.start_date
+  if (!ngay) return null
+  return (daysBetween(timeline.start, ngay) + 0.5) * timeline.dayWidth
+}
+
+/** Vị trí VẠCH HÔM NAY (px). `null` = hôm nay nằm ngoài dải, không vẽ vạch. */
+export function todayLeft(timeline: GanttTimeline, homNay: string = today()): number | null {
+  if (homNay < timeline.start || homNay > timeline.end) return null
+  return (daysBetween(timeline.start, homNay) + 0.5) * timeline.dayWidth
+}
+
+export interface GanttHeaderCell {
+  key: string
+  label: string
+  /** Bề rộng (px) — ô đầu/cuối có thể ngắn hơn ở mức Ngày, nơi dải không bo. */
+  width: number
+  /** Dòng phụ trong ô (thứ trong tuần) — chỉ có ở mức Ngày. */
+  sub?: string
+  /** Ô chứa HÔM NAY — hàng tiêu đề tô đậm nó. */
+  isNow?: boolean
+}
+
+export interface GanttHeader {
+  /** Hàng TRÊN: tháng (mức Ngày) hoặc năm (mức Tuần/Tháng). */
+  top: GanttHeaderCell[]
+  /** Hàng DƯỚI: ngày · tuần · tháng. Cũng là bộ ô vẽ LƯỚI NỀN. */
+  bottom: GanttHeaderCell[]
+}
+
+/**
+ * Hai hàng tiêu đề của trục thời gian, theo mức phóng — đúng lối Lark:
+ *
+ * | Mức   | Hàng trên | Hàng dưới          |
+ * | ----- | --------- | ------------------ |
+ * | Ngày  | Tháng 9/2026 | `28` + `T6`     |
+ * | Tuần  | 2026      | `T.37` (tuần ISO)  |
+ * | Tháng | 2026      | `Th 9`             |
+ *
+ * Mức Tuần gom hàng trên theo NĂM chứ không theo tháng: một tuần vắt qua hai
+ * tháng, gom theo tháng thì ô tuần bị cắt đôi và hai hàng tiêu đề không còn
+ * thẳng mép nhau.
+ *
+ * `bottom` cũng là bộ ô để vẽ lưới nền — mức Tháng có cả nghìn ngày, vẽ mỗi ngày
+ * một `<div>` là hàng nghìn nút DOM cho một tấm lưới không ai nhìn thấy vạch.
+ */
+export function buildHeader(
+  timeline: GanttTimeline,
+  zoom: GanttZoom,
+  homNay: string = today(),
+): GanttHeader {
+  if (zoom === 'day') {
+    return {
+      top: groupCells(timeline, (d) => d.slice(0, 7), monthLabel),
+      bottom: timeline.days.map((d) => ({
+        key: d,
+        label: `${Number(d.slice(8))}`,
+        sub: THU[weekday(d)],
+        width: timeline.dayWidth,
+        isNow: d === homNay,
+      })),
+    }
   }
-  return [...nhom.entries()].map(([key, soNgay]) => ({
-    key,
-    label: zoom === 'month' ? `Năm ${key}` : `Tháng ${Number(key.slice(5))}/${key.slice(0, 4)}`,
-    width: soNgay * timeline.dayWidth,
-  }))
+
+  if (zoom === 'week') {
+    return {
+      top: groupCells(timeline, (d) => d.slice(0, 4), (key) => key),
+      bottom: groupCells(
+        timeline,
+        (d) => `${d.slice(0, 4)}-w${isoWeek(d)}`,
+        (key) => `T.${key.split('-w')[1]}`,
+        homNay,
+      ),
+    }
+  }
+
+  return {
+    top: groupCells(timeline, (d) => d.slice(0, 4), (key) => key),
+    bottom: groupCells(
+      timeline,
+      (d) => d.slice(0, 7),
+      (key) => `Th ${Number(key.slice(5))}`,
+      homNay,
+    ),
+  }
 }
 
-/** Nhãn ô ngày ở hàng dưới: `"28 T6"` — số ngày + thứ. Chỉ dùng ở mức Ngày. */
-export function dayLabel(iso: string): { so: string; thu: string } {
-  const [y, m, d] = iso.split('-').map(Number)
-  return { so: `${d}`, thu: THU[new Date(y, m - 1, d).getDay()] }
+/**
+ * Gom các ngày liên tiếp cùng khóa thành một ô.
+ *
+ * Đi TUẦN TỰ chứ không dùng `Map`: khóa tuần ISO lặp lại ở đầu và cuối một dải
+ * dài (tuần 1 của hai năm khác nhau vẫn khác khóa, nhưng dải nhiều năm thì tháng
+ * `-01` lặp) — gom bằng `Map` là hai quãng cách nhau cả năm dính vào một ô rộng
+ * bằng cả biểu đồ.
+ */
+function groupCells(
+  timeline: GanttTimeline,
+  keyOf: (iso: string) => string,
+  labelOf: (key: string) => string,
+  homNay?: string,
+): GanttHeaderCell[] {
+  const cells: GanttHeaderCell[] = []
+  for (const ngay of timeline.days) {
+    const key = keyOf(ngay)
+    const last = cells[cells.length - 1]
+    if (last && last.key === key) {
+      last.width += timeline.dayWidth
+      if (homNay && ngay === homNay) last.isNow = true
+      continue
+    }
+    cells.push({
+      key,
+      label: labelOf(key),
+      width: timeline.dayWidth,
+      isNow: homNay ? ngay === homNay : undefined,
+    })
+  }
+  return cells
 }
 
-/** Cuối tuần tô nhạt cho dễ đọc dải ngày. */
+function monthLabel(key: string): string {
+  return `Tháng ${Number(key.slice(5))}/${key.slice(0, 4)}`
+}
+
+/** Cuối tuần tô nhạt cho dễ đọc dải ngày — chỉ có nghĩa ở mức Ngày. */
 export function isWeekend(iso: string): boolean {
-  const [y, m, d] = iso.split('-').map(Number)
-  const thu = new Date(y, m - 1, d).getDay()
+  const thu = weekday(iso)
   return thu === 0 || thu === 6
 }

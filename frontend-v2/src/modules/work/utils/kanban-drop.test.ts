@@ -33,6 +33,7 @@ function task(id: number, sectionId: number | null, sortOrder: number): WorkTask
     title: `Việc ${id}`,
     description: '',
     status: 1,
+    kind: 1,
     start_date: '',
     due_date: '',
     sort_order: sortOrder,
