@@ -8,14 +8,11 @@ import type { WorkLabelField, WorkMember, WorkSection, WorkTask } from '../types
 import { groupTasksBySection } from '../utils/group-tasks'
 import { TITLE_COLUMN, buildListColumns } from '../utils/list-columns'
 import type { KanbanDropPlace } from '../utils/kanban-drop'
-import { LEAD_WIDTH, ROW_PAD_LEFT } from '../utils/list-metrics'
+import { COLUMN_GAP, LEAD_WIDTH, ROW_PAD_LEFT } from '../utils/list-metrics'
 import { ListColumnResizer } from './list-column-resizer'
 import type { NewTaskDraft } from './task-draft-row'
 import { TaskGroupsBoard } from './task-groups-board'
 import type { TaskRowActions } from './task-list-row'
-
-/** `gap-1.5` giữa các ô, tính bằng px — phải khớp với lớp Tailwind của dòng. */
-const COLUMN_GAP = 6
 
 interface TaskListViewProps extends TaskRowActions {
   listId: number
@@ -124,8 +121,8 @@ export function TaskListView({
               có thế mép TRÁI của ô tiêu đề mới trùng mép trái ô tên bên dưới,
               mà hai ô nay rộng bằng nhau nên mép PHẢI — chỗ đặt tay cầm kéo —
               cũng trùng nốt. `py-2.5` cho hàng tiêu đề thở hơn phần thân.  */
-          style={{ paddingLeft: ROW_PAD_LEFT }}
-          className="group/head flex items-center gap-1.5 border-b bg-muted/30 py-2.5 pr-2 text-xs font-medium text-muted-foreground"
+          style={{ paddingLeft: ROW_PAD_LEFT, gap: COLUMN_GAP }}
+          className="group/head flex items-center border-b bg-muted/30 py-2.5 pr-2 text-xs font-medium text-muted-foreground"
         >
           <span
             className="relative shrink-0"

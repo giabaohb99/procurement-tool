@@ -14,6 +14,7 @@ import { useCollapsedGroups } from '../hooks/use-collapsed-groups'
 import { useGanttLinkDraft } from '../hooks/use-gantt-link-draft'
 import { useGanttPaneWidth } from '../hooks/use-gantt-pane-width'
 import { useListColumnWidths } from '../hooks/use-list-column-widths'
+import { useWheelAxisLock } from '../hooks/use-wheel-axis-lock'
 import { useWorkTask } from '../hooks/use-work-board'
 import type { CardFields } from '../types/view-options'
 import type {
@@ -31,14 +32,14 @@ import {
   snapToDayGrid,
   type GanttDragData,
 } from '../utils/gantt-drag'
-import { COLUMN_GAP, HEADER_HEIGHT, ROW_HEIGHT } from '../utils/gantt-layout'
+import { HEADER_HEIGHT, ROW_HEIGHT } from '../utils/gantt-layout'
 import { rowCenterY, taskEdges } from '../utils/gantt-links'
 import { buildGanttRows, indexTaskRows } from '../utils/gantt-rows'
 import { buildHeader, buildTimeline, todayLeft, type GanttZoom } from '../utils/gantt-scale'
 import { groupTasksBySection } from '../utils/group-tasks'
 import type { KanbanDropPlace } from '../utils/kanban-drop'
 import { buildListColumns, TITLE_COLUMN, type TaskListColumn } from '../utils/list-columns'
-import { ROW_PAD_LEFT } from '../utils/list-metrics'
+import { COLUMN_GAP, ROW_PAD_LEFT } from '../utils/list-metrics'
 import { today } from '../utils/due-date'
 import { priorityColorOf } from '../utils/priority-field'
 import { GanttDragPreview } from './gantt-drag-preview'
@@ -237,6 +238,44 @@ export function GanttView({
     if (grid && box) grid.scrollTop = box.scrollTop
   }
 
+  /*  Đánh dấu "lưới trái đã cuộn ngang" để cột TÊN ghim hiện bóng đổ ở mép phải
+      (xem `utils/pinned-title-class.ts`). Chưa cuộn thì không đổ bóng — sau ô
+      tên chẳng có gì, đổ bóng lên nền trơn là bịa ra một tầng lớp không có thật.
+
+      Gán thẳng thuộc tính DOM chứ KHÔNG nuôi một `useState`: cờ này chỉ để vẽ,
+      mà `onScroll` bắn hàng chục nhịp mỗi cú lăn — cho nó chạy qua state là mỗi
+      nhịp vẽ lại toàn bộ Gantt (hàng trăm ô lưới ngày) chỉ để bật một cái bóng.  */
+  function markGridScrolledX(e: React.UIEvent<HTMLDivElement>) {
+    e.currentTarget.toggleAttribute('data-scrolled-x', e.currentTarget.scrollLeft > 0)
+  }
+
+  /*  KHÓA TRỤC khi lăn (xem `useWheelAxisLock`). Trục thời gian cuộn được cả hai
+      chiều, mà trackpad thì không có cử chỉ "thuần ngang" — vuốt sang tháng sau
+      là biểu đồ trôi dọc theo, mất luôn hàng đang nhìn.  */
+  const applyTimelineWheel = useCallback((axis: 'x' | 'y', delta: number) => {
+    const box = scrollRef.current
+    if (!box) return
+    if (axis === 'x') box.scrollLeft += delta
+    else box.scrollTop += delta
+  }, [])
+
+  /*  Lăn khi con trỏ ở trên LƯỚI TRÁI: chiều ngang là của chính lưới, còn chiều
+      dọc chuyển thẳng sang trục thời gian — lưới `overflow-y-hidden` nên tự nó
+      không cuộn dọc được, không chuyển thì rê vào vùng tên việc là lăn không ăn
+      gì. `syncGridScroll` sẽ kéo `scrollTop` của lưới theo sau.  */
+  const applyGridWheel = useCallback((axis: 'x' | 'y', delta: number) => {
+    const grid = gridPaneRef.current
+    const box = scrollRef.current
+    if (axis === 'x') {
+      if (grid) grid.scrollLeft += delta
+      return
+    }
+    if (box) box.scrollTop += delta
+  }, [])
+
+  useWheelAxisLock(scrollRef, applyTimelineWheel)
+  useWheelAxisLock(gridPaneRef, applyGridWheel)
+
   /*  Mở ra là nhìn thấy HÔM NAY luôn, đặt ở khoảng một phần ba bên trái để còn
       thấy cả việc vừa qua lẫn việc sắp tới.
 
@@ -354,13 +393,13 @@ export function GanttView({
              là lăn không ăn gì.  */}
         <div
           ref={gridPaneRef}
+          /*  ⚠️ ĐỪNG thêm `scroll-snap` vào đây. Đã thử cho cuộn ngang bám mép
+              cột để không bao giờ thấy nửa viên chip ở sát ô tên ghim; khách bác
+              ngay 31/08/2026 — *"dừng làm snap ngang làm dị khó chịu á"*. Cuộn
+              phải trôi tự do.  */
           className="shrink-0 overflow-x-auto overflow-y-hidden border-r border-border/60"
           style={{ width: paneWidth }}
-          onWheel={(e) => {
-            const box = scrollRef.current
-            if (!box || e.deltaY === 0) return
-            box.scrollTop += e.deltaY
-          }}
+          onScroll={markGridScrolledX}
         >
           <GanttGrid
             titleColumn={GANTT_TITLE_COLUMN}

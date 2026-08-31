@@ -9,6 +9,7 @@ import { appRoutes } from '@/shared/constants/app-routes'
 import { cn } from '@/shared/utils/cn'
 import { formatDate } from '@/shared/utils/format-date'
 import { WorkCreateDialog } from '../components/work-create-dialog'
+import { WorkSidebarPeekButton } from '../components/work-sidebar-peek-button'
 import { useWorkProjects } from '../hooks/use-work-lists'
 import type { WorkList, WorkMember } from '../types/work'
 import { dotClass } from '../utils/work-colors'
@@ -97,11 +98,17 @@ export function ProjectListPage() {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3 p-4 lg:p-6">
       <header className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight text-navy">Dự án</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Mọi dự án bạn tham gia. Bấm một dòng để mở bảng công việc của dự án đó.
-          </p>
+        {/*  Nút mở lại cây dự án đứng NGANG tiêu đề, chỉ hiện khi cây đang ẩn —
+             phải có ở ĐÂY nữa, không chỉ ở trang chi tiết dự án: ẩn cây rồi bấm
+             về danh sách dự án mà trang này không có nút thì người dùng kẹt. */}
+        <div className="flex min-w-0 items-start gap-2">
+          <WorkSidebarPeekButton />
+          <div className="min-w-0">
+            <h1 className="text-xl font-semibold tracking-tight text-navy">Dự án</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Mọi dự án bạn tham gia. Bấm một dòng để mở bảng công việc của dự án đó.
+            </p>
+          </div>
         </div>
         <Button size="sm" onClick={() => setCreating(true)}>
           <Plus className="size-4" />

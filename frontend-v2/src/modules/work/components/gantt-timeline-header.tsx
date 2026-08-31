@@ -22,10 +22,17 @@ interface GanttTimelineHeaderProps {
  *
  * `sticky top-0` thì lo chiều dọc: cuộn xuống một dự án dài mà mất hàng tiêu đề
  * thì mọi thanh đều thành "một thanh nằm đâu đó", không đọc ra ngày nào nữa.
+ *
+ * ⚠️ **`z-40` — CAO HƠN MỌI THỨ trong vùng thanh**, và đó là con số phải giữ.
+ * Hàng này dính lại nên cả biểu đồ trườn qua BÊN DƯỚI nó; thứ nào cùng tầng hoặc
+ * cao hơn sẽ vẽ đè lên chính hàng tiêu đề — mũi tên phụ thuộc và vạch HÔM NAY
+ * (`z-20`), mép kéo đổi ngày (`z-20`), chấm nối (`z-30`) đều từng chường mặt lên
+ * giữa dãy ngày tháng khi cuộn xuống. Thêm lớp mới trong vùng thanh thì giữ nó
+ * dưới 40.
  */
 export function GanttTimelineHeader({ header, zoom }: GanttTimelineHeaderProps) {
   return (
-    <div className="sticky top-0 z-20 bg-muted" style={{ height: HEADER_HEIGHT }}>
+    <div className="sticky top-0 z-40 bg-muted" style={{ height: HEADER_HEIGHT }}>
       <div className="flex" style={{ height: ROW_HEIGHT }}>
         {header.top.map((cell) => (
           <div

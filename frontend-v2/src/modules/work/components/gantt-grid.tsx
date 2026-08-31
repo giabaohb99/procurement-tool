@@ -1,9 +1,11 @@
 import type { RefObject } from 'react'
 
+import { cn } from '@/shared/utils/cn'
 import { columnWidthVar } from '../hooks/use-list-column-widths'
 import { HEADER_HEIGHT } from '../utils/gantt-layout'
-import { LEAD_WIDTH, ROW_PAD_LEFT } from '../utils/list-metrics'
+import { COLUMN_GAP, LEAD_WIDTH, ROW_PAD_LEFT } from '../utils/list-metrics'
 import type { TaskListColumn } from '../utils/list-columns'
+import { PINNED_TITLE_CELL } from '../utils/pinned-title-class'
 import { ListColumnResizer } from './list-column-resizer'
 import { TaskGroupsBoard, type TaskGroupsBoardProps } from './task-groups-board'
 
@@ -43,8 +45,11 @@ export function GanttGrid({
       <div
         //  Nền ĐỤC: hàng này dính lại khi cuộn nên các dòng việc chui ngay dưới
         //  nó — nền trong là chữ chồng lên chữ.
-        className="group/head sticky top-0 z-20 flex items-end gap-1.5 border-b bg-muted pr-2 pb-2 text-xs font-medium text-muted-foreground"
-        style={{ height: HEADER_HEIGHT, paddingLeft: ROW_PAD_LEFT }}
+        className="group/head sticky top-0 z-20 flex items-end border-b bg-muted pr-2 pb-2 text-xs font-medium text-muted-foreground"
+        //  Khe LẤY TỪ HẰNG chứ không gõ lớp `gap-*`: hàng này phải khớp từng
+        //  pixel với dòng việc bên dưới, mà hai bên từng lệch nhau đúng vì mỗi
+        //  bên gõ một lớp khác nhau (xem `COLUMN_GAP`).
+        style={{ height: HEADER_HEIGHT, paddingLeft: ROW_PAD_LEFT, gap: COLUMN_GAP }}
       >
         {/*  Ô tiêu đề cột TÊN cũng ghim trái như ô tên của từng dòng, và thụt
              thêm đúng phần dẫn đầu của dòng (mũi tên bung + ô tick) để chữ
@@ -56,6 +61,11 @@ export function GanttGrid({
           padLeft={LEAD_WIDTH}
           sticky
         />
+
+        {/*  Khoảng đệm nuốt phần dư — dòng việc có nó (`TaskListRow`), hàng này
+             THIẾU nó nên mọi nhãn cột lệch sang trái đúng một khe. */}
+        <span className="min-w-0 flex-1" aria-hidden />
+
         {boardProps.columns.map((col) => (
           <HeaderCell key={col.key} column={col} gridRef={gridRef} onResize={onResize} />
         ))}
@@ -83,7 +93,7 @@ function HeaderCell({
     //  KHÔNG đặt `truncate` ở đây: nó kèm `overflow-hidden`, mà tay cầm kéo giãn
     //  nằm NGOÀI hộp nên bị cắt mất — nhìn như bảng không kéo giãn được.
     <span
-      className={sticky ? 'sticky left-0 z-10 shrink-0 bg-muted' : 'relative shrink-0'}
+      className={cn('shrink-0', sticky ? cn(PINNED_TITLE_CELL, 'bg-muted') : 'relative')}
       style={{ width: `var(${columnWidthVar(column.key)})`, paddingLeft: padLeft }}
     >
       <span className="block truncate">{column.label}</span>

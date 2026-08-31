@@ -25,6 +25,7 @@ import { SectionEditDialog, type SectionDialogMode } from '../components/section
 import { TaskDetailSheet } from '../components/task-detail-sheet'
 import type { NewTaskDraft } from '../components/task-draft-row'
 import { TaskListView } from '../components/task-list-view'
+import { WorkSidebarPeekButton } from '../components/work-sidebar-peek-button'
 import { WorkToolbar } from '../components/work-toolbar'
 import {
   useCreateTask,
@@ -233,7 +234,11 @@ function WorkListContent({ listId }: { listId: number }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3 p-4 lg:p-6">
       <header className="flex flex-wrap items-start justify-between gap-3">
-        <div>
+        {/*  Nút mở lại cây dự án đứng NGANG tiêu đề (chỉ hiện khi cây đang ẩn),
+             chứ không phải một cột nút riêng bên trái — xem `WorkSidebarPeekButton`. */}
+        <div className="flex min-w-0 items-start gap-2">
+          <WorkSidebarPeekButton />
+          <div className="min-w-0">
           <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight text-navy">
             {board.list.name}
             {board.list.is_archived === 1 && (
@@ -245,6 +250,7 @@ function WorkListContent({ listId }: { listId: number }) {
           {board.list.description && (
             <p className="mt-1 text-sm text-muted-foreground">{board.list.description}</p>
           )}
+          </div>
         </div>
 
         {/*  MỘT nút cho cả thành viên lẫn thiết lập: hai việc này đều là "sửa

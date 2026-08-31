@@ -1,4 +1,11 @@
-import { ChevronDown, ChevronRight, FolderPlus, ListPlus } from 'lucide-react'
+import {
+  ChevronDown,
+  ChevronRight,
+  FolderPlus,
+  ListPlus,
+  PanelLeftClose,
+  PanelLeftOpen,
+} from 'lucide-react'
 import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 
@@ -14,6 +21,14 @@ interface WorkSidebarTreeProps {
   /** Mở hộp thoại tạo — trang cha giữ hộp thoại để cây chỉ lo việc vẽ. */
   onCreateList: (groupId: number | null) => void
   onCreateGroup: () => void
+  /**
+   * Bản HÉ RA khi rê chuột vào mép trái (cây đang ẩn, chưa ghim lại). Lúc ấy nút
+   * ở dải tiêu đề đổi nghĩa: không phải «Ẩn» nữa mà là «Ghim» — bấm để cây ở lại
+   * hẳn thay vì biến mất ngay khi con trỏ đi chỗ khác.
+   */
+  peeking?: boolean
+  /** Ẩn cây, hoặc ghim lại nếu đang hé ra. Trạng thái ở `WorkLayoutPage`. */
+  onToggleCollapse: () => void
 }
 
 /**
@@ -23,7 +38,12 @@ interface WorkSidebarTreeProps {
  * dữ liệu người dùng nên không khai được vào `nav` tĩnh trong `routes.tsx`, và
  * cũng KHÔNG nhét vào menu chung — xem ghi chú ở `work-layout-page.tsx`.
  */
-export function WorkSidebarTree({ onCreateList, onCreateGroup }: WorkSidebarTreeProps) {
+export function WorkSidebarTree({
+  onCreateList,
+  onCreateGroup,
+  peeking = false,
+  onToggleCollapse,
+}: WorkSidebarTreeProps) {
   const { data, isLoading } = useWorkSidebar()
 
   if (isLoading) {
@@ -41,7 +61,9 @@ export function WorkSidebarTree({ onCreateList, onCreateGroup }: WorkSidebarTree
   const trong = groups.length === 0 && loose.length === 0
 
   return (
-    <nav className="flex h-full w-64 shrink-0 flex-col border-r">
+    //  Bản HÉ RA bỏ `border-r`: nó nằm trong một thẻ nổi đã có viền riêng, để
+    //  nguyên là hai đường kẻ dọc sát nhau ở mép phải.
+    <nav className={cn('flex h-full w-64 shrink-0 flex-col', !peeking && 'border-r')}>
       <div className="flex items-center justify-between gap-1 border-b px-3 py-2">
         <span className="text-sm font-semibold text-navy">Danh sách dự án</span>
         <div className="flex items-center gap-0.5">
@@ -55,6 +77,15 @@ export function WorkSidebarTree({ onCreateList, onCreateGroup }: WorkSidebarTree
             onClick={() => onCreateList(null)}
           >
             <ListPlus className="size-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            title={peeking ? 'Ghim danh sách dự án' : 'Ẩn danh sách dự án'}
+            aria-label={peeking ? 'Ghim danh sách dự án' : 'Ẩn danh sách dự án'}
+            onClick={onToggleCollapse}
+          >
+            {peeking ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}
           </Button>
         </div>
       </div>

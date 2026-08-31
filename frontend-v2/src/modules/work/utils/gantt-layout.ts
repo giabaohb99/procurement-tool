@@ -54,9 +54,6 @@ export const GRID_MIN_WIDTH = 260
 /** Lề trái của một dòng ở lưới trái — chừa chỗ cho mũi tên thu/mở nhóm. */
 export const GRID_PAD_LEFT = 10
 
-/** `gap-1.5` giữa các ô của lưới trái, tính bằng px — phải khớp lớp Tailwind. */
-export const COLUMN_GAP = 6
-
 /**
  * Bề rộng thanh chia lưới/trục (`w-1.5` ở `GanttPaneSplitter`).
  *

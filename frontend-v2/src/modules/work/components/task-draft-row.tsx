@@ -4,11 +4,13 @@ import { Checkbox } from '@/shared/ui/checkbox'
 import { Input } from '@/shared/ui/input'
 import { cn } from '@/shared/utils/cn'
 import { columnWidthVar } from '../hooks/use-list-column-widths'
-import { ROW_PAD_LEFT } from '../utils/list-metrics'
+import { COLUMN_GAP, ROW_PAD_LEFT } from '../utils/list-metrics'
 import type { WorkLabelField, WorkMember } from '../types/work'
 import { WORK_ASSIGNEE_KIND } from '../types/work'
 import { toDraftLabelValues } from '../utils/draft-label-value'
 import { TITLE_COLUMN, type TaskListColumn } from '../utils/list-columns'
+import { PINNED_TITLE_CELL, PINNED_TITLE_FULL_HEIGHT } from '../utils/pinned-title-class'
+import { PinnedColumnFade } from './pinned-column-fade'
 import { LabelFieldInput } from './label-field-input'
 import { TaskAssigneePicker } from './task-assignee-picker'
 import { TaskDueCell } from './task-due-cell'
@@ -123,8 +125,8 @@ export function TaskDraftRow({
   return (
     <div
       ref={rowRef}
-      style={{ paddingLeft: ROW_PAD_LEFT, height: rowHeight }}
-      className="flex items-center gap-1.5 border-b border-border/60 bg-accent/30 py-1.5 pr-2"
+      style={{ paddingLeft: ROW_PAD_LEFT, gap: COLUMN_GAP, height: rowHeight }}
+      className="flex items-center border-b border-border/60 bg-accent/30 py-1.5 pr-2"
     >
       {/*  Ô tên rộng đúng bằng cột tên của dòng thật (`--wcol-title`) rồi tới
            khoảng đệm co giãn — có thế các ô còn lại mới thẳng hàng với dòng
@@ -132,7 +134,7 @@ export function TaskDraftRow({
       <div
         className={cn(
           'flex min-w-0 shrink-0 items-center gap-1.5',
-          stickyTitle && 'sticky left-0 z-10 bg-accent/30',
+          stickyTitle && cn(PINNED_TITLE_CELL, PINNED_TITLE_FULL_HEIGHT, 'bg-accent/30'),
         )}
         style={{ width: `var(${columnWidthVar(TITLE_COLUMN.key)})` }}
       >
@@ -157,6 +159,8 @@ export function TaskDraftRow({
             if (e.key === 'Escape') onCancel()
           }}
         />
+
+        {stickyTitle && <PinnedColumnFade />}
       </div>
 
       <span className="min-w-0 flex-1" aria-hidden />

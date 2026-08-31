@@ -6,11 +6,13 @@ import { Checkbox } from '@/shared/ui/checkbox'
 import { cn } from '@/shared/utils/cn'
 import { columnWidthVar } from '../hooks/use-list-column-widths'
 import { taskDraggableId } from '../utils/kanban-drop'
-import { GUIDE_LEFT, LEAD_WIDTH, ROW_PAD_LEFT } from '../utils/list-metrics'
+import { COLUMN_GAP, GUIDE_LEFT, LEAD_WIDTH, ROW_PAD_LEFT } from '../utils/list-metrics'
 import type { CardFields } from '../types/view-options'
 import type { WorkLabelField, WorkMember, WorkTask } from '../types/work'
 import { WORK_TASK_STATUS } from '../types/work'
 import { TITLE_COLUMN, isFieldVisible, type TaskListColumn } from '../utils/list-columns'
+import { PINNED_TITLE_CELL, PINNED_TITLE_FULL_HEIGHT } from '../utils/pinned-title-class'
+import { PinnedColumnFade } from './pinned-column-fade'
 import { LabelFieldInput } from './label-field-input'
 import { TaskAssigneePicker } from './task-assignee-picker'
 import { TaskDueCell } from './task-due-cell'
@@ -180,13 +182,14 @@ export function TaskListRow({
           suốt, chồng lên nhau lúc dạt chỗ thì chữ đè lên chữ.  */
       style={{
         paddingLeft: ROW_PAD_LEFT,
+        gap: COLUMN_GAP,
         height: rowHeight,
         transform: CSS.Translate.toString(transform),
         transition,
         zIndex: isDragging ? 1 : undefined,
       }}
       className={cn(
-        'group/row relative flex cursor-pointer items-center gap-2 border-b border-border/60 pr-2 py-1.5',
+        'group/row relative flex cursor-pointer items-center border-b border-border/60 pr-2 py-1.5',
         'focus-visible:bg-accent/40 focus-visible:outline-none',
         !dragActive && 'hover:bg-accent/40',
         //  Dòng gốc mờ đi — bản đang đi theo con trỏ nằm ở `DragOverlay`.
@@ -232,9 +235,11 @@ export function TaskListRow({
       <div
         className={cn(
           'flex min-w-0 shrink-0 items-center gap-1.5',
-          //  Nền ĐỤC là bắt buộc khi ghim: các cột khác trượt ngang ngay dưới ô
-          //  này, nền trong là chữ chồng lên chữ.
-          stickyTitle && 'sticky left-0 z-10 bg-canvas',
+          //  Nền ĐỤC và CAO BẰNG CẢ DÒNG là bắt buộc khi ghim: các cột khác
+          //  trượt ngang ngay dưới ô này. Nền trong là chữ chồng lên chữ; nền
+          //  đục mà thấp hơn dòng thì viên chip cao hơn nó vẫn ló đầu ló đuôi
+          //  ra hai bên (xem `PINNED_TITLE_FULL_HEIGHT`).
+          stickyTitle && cn(PINNED_TITLE_CELL, PINNED_TITLE_FULL_HEIGHT, 'bg-canvas'),
         )}
         style={{ width: `var(${columnWidthVar(TITLE_COLUMN.key)})` }}
       >
@@ -288,6 +293,8 @@ export function TaskListRow({
 
         {/*  Đẩy hai huy hiệu về sát mép phải của ô tên. */}
         <span className="flex-1" aria-hidden />
+
+        {stickyTitle && <PinnedColumnFade />}
       </div>
 
       {/*  Khoảng đệm ăn hết phần dư của dòng — khớp với khoảng đệm cùng chỗ ở
@@ -396,6 +403,7 @@ export function TaskListCell({
     return (
       <div onClick={(e) => e.stopPropagation()} role="presentation">
         <TaskStatusSelect
+          compact
           status={task.status}
           disabled={!canEdit}
           onChange={(status) => onSetStatus(task.id, status)}

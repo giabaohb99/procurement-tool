@@ -13,6 +13,16 @@ import { WORK_STATUS_LABELS, WORK_TASK_STATUS } from '../types/work'
 interface TaskStatusSelectProps {
   status: number
   disabled?: boolean
+  /**
+   * Bản GỌN cho ô của bảng — cùng khuôn `compact` mà `TaskAssigneePicker` và
+   * `LabelFieldInput` đã dùng.
+   *
+   * Trong một dòng bảng, viên thuốc cỡ đầy đủ cao 28px đứng cạnh chữ 13px và ô
+   * ngày trơn thì nó to lấn át cả dòng — khách chê *"nhìn to mất cân đối"*.
+   * Ở panel chi tiết thì cỡ đầy đủ mới đúng: chỗ ấy nó là thứ người ta nhìn đầu
+   * tiên ("xong chưa?"), thu nhỏ lại là mất luôn vai trò ấy.
+   */
+  compact?: boolean
   onChange: (status: number) => void
 }
 
@@ -24,7 +34,12 @@ interface TaskStatusSelectProps {
  * đứng ngang tiêu đề chứ không nằm lẫn giữa Cột / Độ ưu tiên / Tag. Màu mang
  * nghĩa: xanh = hoàn thành, xám gạch = đã hủy, còn lại là đang mở.
  */
-export function TaskStatusSelect({ status, disabled, onChange }: TaskStatusSelectProps) {
+export function TaskStatusSelect({
+  status,
+  disabled,
+  compact = false,
+  onChange,
+}: TaskStatusSelectProps) {
   const tone = STATUS_TONE[status] ?? STATUS_TONE[WORK_TASK_STATUS.OPEN]
   const Icon = tone.icon
 
@@ -34,7 +49,12 @@ export function TaskStatusSelect({ status, disabled, onChange }: TaskStatusSelec
         size="sm"
         aria-label="Trạng thái công việc"
         className={cn(
-          'h-7 w-auto gap-1.5 rounded-full border-0 px-2.5 text-xs font-medium shadow-none',
+          'w-auto rounded-full border-0 py-0 font-medium shadow-none',
+          //  ⚠️ Chiều cao phải ép bằng `!`. `SelectTrigger` gốc đặt cỡ bằng
+          //  `data-[size=sm]:h-8` — chọn lọc của bộ chọn thuộc tính cao hơn một
+          //  lớp `h-*` trần, nên `h-7` viết ở đây trước nay KHÔNG hề ăn: viên
+          //  thuốc vẫn cao 32px ở mọi chỗ, đo ra mới biết.
+          compact ? 'h-5! gap-1 px-2 text-[11px]' : 'h-7! gap-1.5 px-2.5 text-xs',
           //  Chỉ xem thì giấu mũi tên và bỏ vẻ "bấm được", nhưng KHÔNG làm mờ
           //  (`disabled:opacity-50` của bản gốc): viên thuốc này là thông tin,
           //  mờ đi thì đọc nhầm thành chữ gợi ý.
@@ -45,7 +65,7 @@ export function TaskStatusSelect({ status, disabled, onChange }: TaskStatusSelec
         {/*  Bọc `SelectValue` để Radix có mốc canh khung thả xuống — xem ghi
              chú dài ở `task-chip-select.tsx`. */}
         <SelectValue>
-          <Icon className={cn('size-3.5', tone.text)} />
+          <Icon className={cn(compact ? 'size-3' : 'size-3.5', tone.text)} />
           {WORK_STATUS_LABELS[status] ?? 'Không rõ'}
         </SelectValue>
       </SelectTrigger>

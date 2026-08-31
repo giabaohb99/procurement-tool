@@ -5,6 +5,7 @@ import { appRoutes } from '@/shared/constants/app-routes'
 import { cn } from '@/shared/utils/cn'
 import { WorkCreateDialog } from '../components/work-create-dialog'
 import { WorkSidebarTree } from '../components/work-sidebar-tree'
+import { useWorkSidebarStore } from '../store/sidebar-store'
 
 /**
  * Khung của phân hệ Công việc: cây danh sách bên trái + nội dung bên phải.
@@ -20,6 +21,8 @@ import { WorkSidebarTree } from '../components/work-sidebar-tree'
 export function WorkLayoutPage() {
   const [dialog, setDialog] = useState<'list' | 'group' | null>(null)
   const [parentGroup, setParentGroup] = useState<number | null>(null)
+  const collapsed = useWorkSidebarStore((s) => s.collapsed)
+  const toggleSidebar = useWorkSidebarStore((s) => s.toggle)
 
   //  Màn Tổng quan là trang BÁO CÁO toàn chiều ngang, giống các phân hệ khác:
   //  không dựng cây dự án bên cạnh. Cây chỉ có nghĩa khi đang thao tác trên một
@@ -28,8 +31,12 @@ export function WorkLayoutPage() {
 
   return (
     <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
-      {!isOverview && (
+      {/*  Ẩn cây thì ẩn HẲN, không chừa dải rìa nào — nút mở lại nằm ngang tiêu
+           đề của từng trang con (`WorkSidebarPeekButton`), rê vào ra một thẻ
+           nổi. Đã thử hai bản khác rồi bỏ, lý do ghi ở component ấy.  */}
+      {!isOverview && !collapsed && (
         <WorkSidebarTree
+          onToggleCollapse={toggleSidebar}
           onCreateGroup={() => {
             setParentGroup(null)
             setDialog('group')
