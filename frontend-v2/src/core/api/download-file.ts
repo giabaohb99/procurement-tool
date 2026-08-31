@@ -11,9 +11,17 @@ import { httpClient } from './http-client'
  *
  * Nên phải tải bằng chính `httpClient` (đã có interceptor gắn token và tự làm
  * mới token khi hết hạn), rồi tự dựng liên kết tạm trong bộ nhớ để lưu file.
+ *
+ * `params` để màn danh sách gửi kèm bộ lọc / sắp xếp / cột đang hiện khi xuất
+ * Excel — thiếu nó thì bấm "Xuất Excel" sau khi lọc vẫn ra file toàn bộ dữ liệu,
+ * khác hẳn thứ người dùng đang nhìn trên bảng.
  */
-export async function downloadFile(url: string, filename: string): Promise<void> {
-  const response = await httpClient.get<Blob>(url, { responseType: 'blob' })
+export async function downloadFile(
+  url: string,
+  filename: string,
+  params?: Record<string, unknown>,
+): Promise<void> {
+  const response = await httpClient.get<Blob>(url, { responseType: 'blob', params })
 
   const objectUrl = URL.createObjectURL(response.data)
   try {

@@ -372,7 +372,10 @@ export function PurchaseOrderDetailPage() {
             </Button>
           )}
 
-          {!isNew && ['partial', 'received', 'approved'].includes(data.status) && canWrite && (
+          {/* Chỉ hiện từ khi có hàng về. Đơn mới duyệt mà chưa nhận dòng nào thì
+              backend chặn `/complete` (400 "Còn N dòng chưa Hoàn thành/Hủy") —
+              để nút ở đó chỉ tổ mời người dùng bấm vào một lỗi. */}
+          {!isNew && ['partial', 'received'].includes(data.status) && canWrite && (
             <Button variant="outline" onClick={() => void handleAction('complete')}>
               <CircleCheck />
               Hoàn thành

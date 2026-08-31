@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { RotateCw } from 'lucide-react'
-import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
 import { Button } from '@/shared/ui/button'
 import { Skeleton } from '@/shared/ui/skeleton'
@@ -166,6 +166,12 @@ export interface DataTableProps<T> {
   keepFilterParams?: string[]
   /** Có thì bảng nhớ cột ẩn + độ rộng + thứ tự cột vào localStorage theo khóa này. */
   storageKey?: string
+  /**
+   * Báo ra khóa các cột ĐANG HIỆN, theo đúng thứ tự người dùng thấy, mỗi khi bố
+   * cục cột đổi. Trang dùng nó để xuất Excel đúng bộ cột trên màn hình — không
+   * có thì file xuất ra luôn là trọn bộ cột, lệch với thứ người dùng đang nhìn.
+   */
+  onVisibleColumnsChange?: (keys: string[]) => void
   pagination?: PaginationConfig
   sortBy?: string
   sortDir?: 'asc' | 'desc'
@@ -202,6 +208,7 @@ export function DataTable<T>({
   filtersActive,
   keepFilterParams,
   storageKey,
+  onVisibleColumnsChange,
   pagination,
   sortBy,
   sortDir,
@@ -242,6 +249,16 @@ export function DataTable<T>({
 
   const columnCount = visibleColumns.length
   const widthOf = (column: DataTableColumn<T>) => layout.columnWidths[column.key] ?? column.width
+
+  /**
+   * Báo bộ cột đang hiện ra ngoài. Gộp thành chuỗi rồi mới so ở mảng phụ thuộc:
+   * `visibleColumns` là mảng dựng lại sau mỗi lần render nên so theo tham chiếu
+   * sẽ bắn liên tục, kéo theo vòng render vô tận ở trang cha.
+   */
+  const visibleColumnKeys = visibleColumns.map((column) => column.key).join(',')
+  useEffect(() => {
+    onVisibleColumnsChange?.(visibleColumnKeys ? visibleColumnKeys.split(',') : [])
+  }, [visibleColumnKeys, onVisibleColumnsChange])
 
   /**
    * Cột ghim theo đúng thứ tự đang hiện (chúng luôn đứng đầu — xem

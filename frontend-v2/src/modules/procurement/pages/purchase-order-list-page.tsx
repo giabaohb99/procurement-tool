@@ -51,6 +51,26 @@ import {
 
 const ALL = 'all'
 
+/**
+ * Khóa cột trên bảng -> khóa cột của file Excel (`HEADER_COLS` trong
+ * `backend/app/modules/purchase_order/export.py`). Hai bên đặt tên lệch nhau ở
+ * vài cột (`order_date` vẽ `created_at`, `supplier` vẽ mã NCC) nên phải dịch,
+ * không thì backend coi là khóa lạ và bỏ qua. Cột không có trong bảng dịch
+ * (`nspt`, `actions`) vốn không nằm trong file xuất.
+ */
+const EXPORT_COLUMN_KEYS: Record<string, string> = {
+  code: 'code',
+  misa_code: 'misa_code',
+  order_date: 'created_at',
+  note: 'note',
+  supplier: 'supplier_code',
+  pr_code: 'pr_code',
+  amount: 'amount',
+  is_urgent: 'is_urgent',
+  document_status: 'document_status',
+  status: 'status',
+}
+
 const FILTER_CONFIG = {
   fields: PURCHASE_ORDER_FILTER_FIELDS,
   allowConjunctionToggle: true,
@@ -94,6 +114,8 @@ function PurchaseOrderListContent() {
   const [orderDateFrom, setOrderDateFrom] = useUrlParamState('order_date_from', '')
   const [orderDateTo, setOrderDateTo] = useUrlParamState('order_date_to', '')
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
+  /** Cột đang hiện trên bảng — nút "Xuất Excel" bám theo để file khớp màn hình. */
+  const [visibleColumnKeys, setVisibleColumnKeys] = useState<string[]>([])
 
   const sortBy = searchParams.get('sort_by') || ''
   const sortDir = (searchParams.get('sort_dir') as 'asc' | 'desc') || 'asc'
@@ -118,25 +140,40 @@ function PurchaseOrderListContent() {
     sortDir,
   ])
 
-  const params: ListParams = { page, page_size: pageSize, ...queryParams }
-  if (debouncedValue) params.code = debouncedValue
-  if (companyId !== ALL) params.company_id = Number(companyId)
-  if (supplierCode !== ALL) params.supplier_code = supplierCode
-  if (nsptId !== ALL) params.nspt_id = Number(nsptId)
-  if (docStatus !== ALL) params.document_status = docStatus
-  if (status !== ALL) params.status = status
-  if (isUrgent === 'true') params.is_urgent = true
-  if (orderDateFrom) params.order_date_from = orderDateFrom
-  if (orderDateTo) params.order_date_to = orderDateTo
+  /**
+   * Bộ lọc + sắp xếp đang đặt, KHÔNG kèm phân trang. Tách riêng để nút "Xuất
+   * Excel" gửi lại đúng bộ này — backend dùng chung `_list_query` cho cả danh
+   * sách lẫn đường xuất file nên tham số y hệt là ra đúng tập dữ liệu người
+   * dùng đang nhìn.
+   */
+  const filterParams: ListParams = { ...queryParams }
+  if (debouncedValue) filterParams.code = debouncedValue
+  if (companyId !== ALL) filterParams.company_id = Number(companyId)
+  if (supplierCode !== ALL) filterParams.supplier_code = supplierCode
+  if (nsptId !== ALL) filterParams.nspt_id = Number(nsptId)
+  if (docStatus !== ALL) filterParams.document_status = docStatus
+  if (status !== ALL) filterParams.status = status
+  if (isUrgent === 'true') filterParams.is_urgent = true
+  if (orderDateFrom) filterParams.order_date_from = orderDateFrom
+  if (orderDateTo) filterParams.order_date_to = orderDateTo
   if (sortBy) {
-    params.sort_by = sortBy
-    params.sort_dir = sortDir
+    filterParams.sort_by = sortBy
+    filterParams.sort_dir = sortDir
   }
+
+  const params: ListParams = { page, page_size: pageSize, ...filterParams }
 
   const { data, isLoading, isError } = usePurchaseOrders(params)
 
   const handleExportExcel = async () => {
-    await downloadFile('/api/purchase-orders/export/xlsx', 'don-mua-hang.xlsx')
+    const cols = visibleColumnKeys
+      .map((key) => EXPORT_COLUMN_KEYS[key])
+      .filter(Boolean)
+      .join(',')
+    await downloadFile('/api/purchase-orders/export/xlsx', 'don-mua-hang.xlsx', {
+      ...filterParams,
+      ...(cols ? { cols } : {}),
+    })
   }
 
   const handleClone = useCallback(
@@ -219,6 +256,19 @@ function PurchaseOrderListContent() {
         ),
       },
       { key: 'pr_code', header: 'Mã PYC', width: 140, cell: (po) => po.pr_code || '' },
+      {
+        //  Ẩn mặc định vì ghi chú thường dài, nhưng phải CÓ cột thì người dùng
+        //  mới bật lên để kéo nó vào file Excel được (bản v1 vẫn có cột này).
+        key: 'note',
+        header: 'Ghi chú',
+        width: 220,
+        defaultHidden: true,
+        cell: (po) => (
+          <span className="truncate" title={po.note || undefined}>
+            {po.note || ''}
+          </span>
+        ),
+      },
       { key: 'nspt', header: 'NSPT', width: 170, defaultHidden: true, cell: (po) => po.nspt || '' },
       {
         key: 'amount',
@@ -391,6 +441,7 @@ function PurchaseOrderListContent() {
           isError={isError}
           emptyMessage="Không tìm thấy đơn mua hàng nào."
           storageKey="procurement.purchase-orders"
+          onVisibleColumnsChange={setVisibleColumnKeys}
           onRowClick={(po) => navigate(appRoutes.procurement.purchaseOrderDetail(po.id))}
           sortBy={sortBy}
           sortDir={sortDir}
