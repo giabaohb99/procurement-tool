@@ -200,6 +200,12 @@ export const hrModule: ErpModule = {
       }),
     },
     {
+      path: appRoutes.hr.leaveBalanceDetail(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/leave-balance-detail-page')).LeaveBalanceDetailPage,
+      }),
+    },
+    {
       path: appRoutes.hr.leaveTypes,
       lazy: async () => ({
         Component: (await import('./pages/leave-type-list-page')).LeaveTypeListPage,

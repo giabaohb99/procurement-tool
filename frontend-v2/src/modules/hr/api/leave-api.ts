@@ -87,6 +87,8 @@ export const leaveApi = {
   listBalances: (params: ListParams) =>
     apiGet<PaginatedResult<LeaveBalance>>(BALANCES, { params }),
 
+  getBalance: (id: number) => apiGet<LeaveBalance>(`${BALANCES}/${id}`),
+
   balanceSummary: (params: { employee_id?: number; year?: number }) =>
     apiGet<{
       employee_id: number

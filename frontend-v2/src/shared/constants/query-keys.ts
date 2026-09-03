@@ -139,6 +139,7 @@ export const queryKeys = {
       ['hr', 'leave-balance-hint', employeeId, leaveTypeId, year] as const,
     leaveBalances: (params?: Record<string, unknown>) =>
       ['hr', 'leave-balances', params ?? {}] as const,
+    leaveBalance: (id: number) => ['hr', 'leave-balances', 'detail', id] as const,
     leaveBalanceSummary: (employeeId: number, year: number) =>
       ['hr', 'leave-balances', 'summary', employeeId, year] as const,
     leaveTypes: (params?: Record<string, unknown>) =>

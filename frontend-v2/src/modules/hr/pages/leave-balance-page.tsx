@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react'
-import { CalendarPlus, Pencil, Search } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { CalendarPlus, Search } from 'lucide-react'
 
 import { usePermission } from '@/core/authorization/use-permission'
 import { appConfig } from '@/core/config/app-config'
+import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
@@ -20,7 +22,6 @@ import {
   SelectValue,
 } from '@/shared/ui/select'
 import { cn } from '@/shared/utils/cn'
-import { AdjustBalanceDialog } from '../components/adjust-balance-dialog'
 import { useAllocateLeaveBalance, useLeaveBalances, useLeaveTypes } from '../hooks/use-leave'
 import type { LeaveBalance } from '../types/leave'
 
@@ -38,15 +39,17 @@ const YEAR_SPAN = 3
  * đơn nghỉ:
  *  · **Cấp quỹ năm** — chạy lại được, chỉ tạo dòng còn thiếu. Bấm hai lần không
  *    nhân đôi quỹ, và thêm người giữa năm thì bấm lại là họ có quỹ.
- *  · **Điều chỉnh tay** — ghi ĐÈ, bắt buộc có lý do, ghi vào dấu vết.
+ *  · **Điều chỉnh tay** — ghi ĐÈ, bắt buộc có lý do, ghi vào dấu vết. Nằm ở
+ *    TRANG CHI TIẾT (`/hr/leave-balances/:id`), không phải popup từ dòng: xem
+ *    docstring của `leave-balance-detail-page.tsx`.
  *
  * ⚠️ Thanh công cụ đi ĐÚNG KHUÔN màn Đơn nghỉ phép: ô tìm bên trái rồi tới các
  * ô chọn. Trước 03/09/2026 màn này chỉ có mỗi ô «Năm», nên một công ty vài trăm
  * người là vài chục trang cuộn tay để tìm một cái tên.
  */
 export function LeaveBalancePage() {
+  const navigate = useNavigate()
   const { can } = usePermission()
-  const canManage = can('leave_balance', 'write')
   const canAllocate = can('leave_balance', 'create')
 
   const currentYear = new Date().getFullYear()
@@ -55,7 +58,6 @@ export function LeaveBalancePage() {
   const [leaveTypeId, setLeaveTypeId] = useUrlParamState('leave_type_id', ALL)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
-  const [editing, setEditing] = useState<LeaveBalance | null>(null)
 
   const allocate = useAllocateLeaveBalance()
   const { data: typeData } = useLeaveTypes()
@@ -164,28 +166,8 @@ export function LeaveBalancePage() {
         align: 'right',
         hideable: false,
       },
-      ...(canManage
-        ? [
-            {
-              key: 'actions',
-              header: '',
-              width: 60,
-              hideable: false,
-              cell: (b: LeaveBalance) => (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label={`Điều chỉnh quỹ của ${b.employee_name || b.employee_id}`}
-                  onClick={() => setEditing(b)}
-                >
-                  <Pencil className="size-4" />
-                </Button>
-              ),
-            } satisfies DataTableColumn<LeaveBalance>,
-          ]
-        : []),
     ],
-    [canManage],
+    [],
   )
 
   return (
@@ -220,6 +202,7 @@ export function LeaveBalancePage() {
               : `Chưa cấp quỹ phép năm ${year}. Bấm «Cấp quỹ năm ${year}» để tạo.`
           }
           storageKey="hr.leave-balances"
+          onRowClick={(b) => navigate(appRoutes.hr.leaveBalanceDetail(b.id))}
           pagination={{
             page,
             pageSize,
@@ -274,7 +257,6 @@ export function LeaveBalancePage() {
         />
       </Card>
 
-      <AdjustBalanceDialog balance={editing} onClose={() => setEditing(null)} />
     </PageContainer>
   )
 }

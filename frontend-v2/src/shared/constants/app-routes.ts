@@ -292,6 +292,7 @@ export const appRoutes = {
     leaveCalendar: '/hr/leave-calendar',
     /** Quỹ phép năm: cấp phát, chỉnh tay. */
     leaveBalances: '/hr/leave-balances',
+    leaveBalanceDetail: (id: number | string) => `/hr/leave-balances/${id}`,
     /** Thiết lập: loại nghỉ (kèm bậc thâm niên) và lịch ngày lễ. */
     leaveTypes: '/hr/leave-types',
     leaveTypeDetail: (id: number | string) => `/hr/leave-types/${id}`,

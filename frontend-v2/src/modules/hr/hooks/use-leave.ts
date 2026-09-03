@@ -136,6 +136,15 @@ export function useLeaveBalances(params: ListParams = {}, options: { enabled?: b
   })
 }
 
+/** Một dòng quỹ — trang chi tiết `/hr/leave-balances/:id`. */
+export function useLeaveBalance(id: number) {
+  return useQuery({
+    queryKey: queryKeys.hr.leaveBalance(id),
+    queryFn: () => leaveApi.getBalance(id),
+    enabled: id > 0,
+  })
+}
+
 /** Toàn bộ quỹ của MỘT người trong một năm — thẻ «Quỹ phép của tôi». */
 export function useLeaveBalanceSummary(employeeId: number, year: number, enabled = true) {
   return useQuery({
