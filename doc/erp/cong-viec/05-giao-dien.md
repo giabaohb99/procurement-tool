@@ -174,9 +174,45 @@ Thứ tự hàng đúng như Lark: tiêu đề (sửa tại chỗ) → PIC + nú
 dõi → hạn: nút nhanh **Hôm nay / Ngày mai / Khác** (mở date-picker, kèm ngày bắt đầu)
 → dòng "thuộc: [list] · [cột v]" đổi được ngay tại đó (B-10 chuyển list là P1) → các
 hàng nhãn: Tag · Độ ưu tiên · từng nhãn tùy biến (chip màu, bấm mở chọn) → mô tả →
-khối việc con: thanh tiến độ `n/m` + danh sách tick + ô "Thêm việc con" → bình luận
-(khuôn CR-033) → cuối panel: `AuditTimeline` (E-04). Góc panel: menu xóa (thùng rác),
-sao chép link task.
+khối việc con: thanh tiến độ `n/m` + danh sách tick + ô "Thêm việc con" → **đính kèm**
+(E-03) → cuối panel: khối **bình luận** (E-01, khuôn CR-033) trên nền xám, ô soạn GHIM
+ĐÁY ngoài vùng cuộn. Góc panel: menu xóa (thùng rác), sao chép link task.
+
+⚠️ **KHÔNG có `AuditTimeline` trong panel** (bỏ 03/09/2026, **CR-254** — trước đó E-04
+đặt ở cuối panel). Nhật ký của việc nay đọc ở tab **Hoạt động** cấp dự án (§8): nó gộp
+đủ mọi việc trong dự án và mỗi dòng bấm được sang đúng việc, nên giữ thêm một bản rút
+gọn trong panel là hai chỗ nói cùng một chuyện — mà panel thì đã dài. Đừng gắn lại.
+
+**Hàng «Người phụ trách»** là CỤM AVATAR chồng nhau + chữ `N người phụ trách` (một người
+thì hiện thẳng tên), cả cụm là MỘT nút mở danh sách — không có nút «+» riêng, không có ✕
+trên từng người (gỡ ai thì bỏ tick trong danh sách). Dải chip mang họ tên đầy đủ của bản
+cũ tràn sang hàng thứ hai ngay từ người thứ ba (CR-256).
+
+**Trường CHỌN NHIỀU dùng CHUNG một dáng** ở cả panel lẫn bảng: ô chọn có mũi tên
+(`LabelMultiCell`). Đừng bày thẳng mọi giá trị thành dải chip bật/tắt — trường khai bốn
+năm giá trị là một mảng màu chiếm cả hàng và phải dò từng cái xem cái nào đang mờ
+(= chưa chọn), mà nó cũng chẳng giống ô chọn nào khác trong panel.
+
+**Ô soạn bình luận** (CR-255) theo khuôn Lark: MỘT khung bao cả ô nhập lẫn hàng nút,
+viền vẽ ở khung ngoài (ô nhập bỏ viền, không thì hai nét lồng nhau) và sáng theo
+`focus-within`; hàng nút dồn phải — `@` · ảnh · kẹp giấy · vạch ngăn · gửi. **Dán ảnh**
+và **kéo thả tệp** thẳng vào ô đều nhận (`MentionInput` nhận thêm `onFiles`).
+
+⚠️ **Bảng gợi ý `@` phải TỰ LẬT LÊN khi dưới không đủ chỗ.** Ô soạn ghim sát đáy màn
+hình nên "bung xuống dưới" là rơi ra ngoài khung nhìn — gõ `@` xong không thấy ai để
+chọn. Đo theo Ô NEO (`offsetParent`) chứ đừng đo vị trí hiện tại của chính bảng: đo
+chính nó thì lật xong vị trí đổi, lần đo sau ra kết luận ngược và bảng nhấp nháy không
+dừng.
+
+⚠️ **Chưa có rich text** (nút `Aa` của Lark). `tab_comment.body` là cột DÙNG CHUNG của 5
+loại chứng từ, đang lưu chữ thuần + thẻ `@[id]`; đổi sang HTML là đụng cả cách Diễn đàn
+và Thu mua vẽ bình luận, cách `strip_mentions` dựng chữ cho chuông, và cần thêm một lớp
+lọc HTML. Muốn làm thì mở CR riêng.
+
+⚠️ **«Thêm việc con» và «Thêm đính kèm» mỗi dòng đúng MỘT biểu tượng**, đặt ở máng trái
+của hàng (`TaskDetailRow`), chữ hai dòng bắt đầu cùng một mốc — đúng khuôn *Add Sub-task
+/ Add Attachment* của Lark. Đừng thêm `+` hay kẹp giấy ngay trước chữ: thành hai biểu
+tượng cạnh nhau và hai dòng so le (khách đối chiếu 03/09/2026).
 
 ## 7. Dashboard (D-06 — P1)
 
@@ -285,6 +321,22 @@ thì cũng lấy `bg-canvas` chứ không lấy trắng.
   thu/mở nhớ chung một chỗ. Thanh nhóm trải từ ngày sớm nhất tới hạn muộn nhất của các
   việc CÓ NGÀY trong nhóm, tô phần trăm việc đã xong, không kéo được (ngày của nó là ngày
   tính ra — kéo thì không biết phải dời việc nào).
+- **Bề rộng lưới trái = 45% khung**, đo bằng `ResizeObserver` (`use-element-width.ts`),
+  kẹp trên theo bề rộng bộ cột. Con số CỨNG 600px là sai ở màn rộng và chỉ đầu to mới lộ:
+  trên 2400px biểu đồ ôm 1500px gần như trống, còn bộ cột ~1350px bị nhét vào 600 và mọc
+  thanh cuộn ngang — phần chứa thông tin thì chật, phần trống thì rộng (khách 03/09/2026,
+  **CR-252**). Bề rộng người dùng TỰ KÉO vẫn thắng tỷ lệ: phóng to cửa sổ không được nong
+  lưới ra sau lưng họ.
+- ⚠️ **Không chừa đệm nào ở ĐÁY**, và lưới ngày phải kẻ suốt tới đáy khung (Lark cũng vậy).
+  Hai chỗ từng hở, cả hai đều làm biểu đồ đọc ra như một cái khối nổi giữa trang: khối trục
+  phải `min-h-full` + cột dọc với vùng thanh `flex-1` (không thì lưới dừng ngay dưới hàng
+  cuối, để lại mảng trắng khi dự án ít việc), và trang phải bỏ đệm dưới cho riêng khung
+  nhìn này — khai **cả `pb-0 lg:pb-0`**, vì `tailwind-merge` không gộp được hai lớp khác
+  biến thể nên `pb-0` trần thua `lg:p-6`.
+- ⚠️ **Mọi thứ đặt ĐÈ lên dải tiêu đề phải có nền `bg-muted`** (đúng màu dải nên nhìn như
+  không nền) và cao đúng một hàng tiêu đề. Nhãn tháng `sticky left-0` sẽ trượt vào ĐÚNG chỗ
+  chúng khi cuộn ngang; để trong suốt là chữ chồng lên nhau («áng[icon]1/2026»). Đã vấp hai
+  lần ở hai chỗ khác nhau — cụm điều khiển mép phải, rồi nút ẩn/hiện lưới (CR-252).
 - **Cụm điều khiển trục** (mức phóng · _Hôm nay_ · ‹ ›) nằm ĐÈ lên góc phải dải tiêu đề,
   đúng chỗ Lark đặt. Đè bằng `absolute` ở NGOÀI khung cuộn chứ không nhét vào hàng tiêu
   đề: nhét vào thì nó là một ô của hàng, tức cộng thêm bề rộng vào trục và cuộn được quá

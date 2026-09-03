@@ -145,17 +145,17 @@ chưa xong" / nhắc hạn vẫn có một nguồn sự thật bằng số, khô
 | D-06 | Dashboard thống kê theo list (đếm theo cột, theo PIC, quá hạn) | P1 | 4 khối — `05-giao-dien.md` §7 |
 | D-07 | Thanh công cụ khung nhìn clone Lark: Việc mới · Tất cả (phạm vi nhanh) · Lọc điều kiện · Sắp xếp · Gom nhóm · Tùy chỉnh thẻ | P0 | Bản 1.3 — đặc tả từng nút ở `05-giao-dien.md` §3; Lọc dùng khung `conditional-filter` sẵn có |
 | D-08 | Gom nhóm kanban theo trường khác: PIC / độ ưu tiên / hạn (ngoài cột tự đặt) | P1 | Kéo thẻ giữa nhóm = đổi giá trị trường đó |
-| D-09 | Tab Activities: dòng hoạt động cấp LIST (gộp audit mọi task + thành viên vào-ra) | P1 | **XONG** 31/08/2026 (CR-249). Khác E-04 (nhật ký trong panel một task). Bình luận chưa gộp vào vì E-01 chưa làm |
+| D-09 | Tab Activities: dòng hoạt động cấp LIST (gộp audit mọi task + thành viên vào-ra) | P1 | **XONG** 31/08/2026 (CR-249). Từ 03/09/2026 (CR-254) nó là chỗ DUY NHẤT đọc nhật ký — panel chi tiết đã bỏ khối E-04. ⚠️ Chưa lọc được theo MỘT việc, và bình luận không vào dòng này (không ghi `tab_audit_log`) |
 
 ### Nhóm E — Bình luận, đính kèm, nhật ký
 
 | Mã | Tính năng | Ưu tiên | Ghi chú |
 |---|---|---|---|
-| E-01 | Bình luận trong task | P0 | Tái dùng khuôn comment sẵn có (CR-033 đã bê sang Diễn đàn) |
-| E-02 | Nhắc tên @ trong bình luận — người được nhắc nhận thông báo | P1 | |
-| E-03 | Đính kèm tệp / ảnh vào task và bình luận (lưu R2) | P1 | Đi qua kiểm quyền tệp (bài học PQ13) |
-| E-04 | Nhật ký hoạt động của task: ai tạo, ai đổi cột, ai đổi PIC, lúc nào | P0 | Dùng `core/audit.py` sẵn có; hiện timeline trong panel chi tiết |
-| E-05 | Sửa / xóa bình luận của mình | P1 | |
+| E-01 | Bình luận trong task | P0 | **XONG** 03/09/2026 (CR-253) — dùng THẲNG `tab_comment` chung, không đẻ bảng riêng |
+| E-02 | Nhắc tên @ trong bình luận — người được nhắc nhận thông báo | P1 | **XONG** cùng CR-253 — đi kèm hạ tầng chung, không phải làm thêm |
+| E-03 | Đính kèm tệp / ảnh vào task và bình luận (lưu R2) | P1 | **XONG** 03/09/2026 (CR-253) — `tab_file_link` chung; đo được 401 khi tải thiếu token (PQ13) |
+| E-04 | Nhật ký hoạt động của task: ai tạo, ai đổi cột, ai đổi PIC, lúc nào | P0 | **XONG**, nhưng KHÔNG còn ở panel chi tiết: bỏ khỏi panel 03/09/2026 (CR-254) vì trùng với tab **Hoạt động** cấp dự án (D-09). Dữ liệu vẫn ghi đủ qua `core/audit.py` |
+| E-05 | Sửa / xóa bình luận của mình | P1 | **XÓA đã có** (CR-253, backend chung lo); SỬA thì chưa |
 
 ### Nhóm F — Thông báo và tích hợp nền ERP
 

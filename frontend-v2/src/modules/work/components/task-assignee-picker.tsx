@@ -1,7 +1,6 @@
-import { Plus, UserPlus, X } from 'lucide-react'
+import { Plus, UserPlus } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
-import { IconTooltip } from '@/shared/ui/icon-tooltip'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
 import { cn } from '@/shared/utils/cn'
 import type { WorkAssignee, WorkMember } from '../types/work'
@@ -86,59 +85,72 @@ export function TaskAssigneePicker({
     )
   }
 
+  /*  Dáng ĐẦY ĐỦ (panel chi tiết) — cũng là cụm avatar chồng nhau, chỉ khác bản
+      `compact` ở chỗ có kèm chữ. Bản trước là một dải CHIP, mỗi người một viên
+      bo tròn mang avatar + họ tên đầy đủ + nút ✕: ba người là tràn sang hàng thứ
+      hai và hàng «Người phụ trách» cao gấp đôi mọi hàng thuộc tính khác, trong
+      khi thứ cần đọc chỉ là "ai đang làm việc này". Lark gom thành một cụm
+      `[avatar chồng nhau] 2 owners` — khách đối chiếu 03/09/2026.
+
+      Bỏ nút ✕ trên từng người: gỡ ai thì mở danh sách rồi bỏ tick, đúng như bản
+      `compact` vẫn làm. Một nút ✕ nhỏ 14px nằm sát mép chip cũng là chỗ rất dễ
+      bấm nhầm khi định bấm mở danh sách.  */
+  const nhan =
+    picked.length === 1
+      ? personName(picked[0].employee_name, picked[0].employee_id)
+      : `${picked.length} người phụ trách`
+
+  if (picked.length === 0) {
+    if (disabled) return <span className="text-sm text-muted-foreground">Chưa gán ai</span>
+    return (
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            aria-label="Gán người phụ trách"
+            className={cn(
+              'flex items-center gap-1 rounded-full border border-dashed px-2 py-1 text-sm text-muted-foreground',
+              'hover:border-solid hover:bg-accent hover:text-foreground',
+            )}
+          >
+            <Plus className="size-3.5" />
+            Gán người
+          </button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-72 p-0">
+          {list}
+        </PopoverContent>
+      </Popover>
+    )
+  }
+
+  if (disabled) {
+    return (
+      <span className="flex items-center gap-2">
+        <CompactFaces picked={picked} />
+        <span className="truncate text-sm">{nhan}</span>
+      </span>
+    )
+  }
+
   return (
-    <>
-      {picked.map((a) => (
-        <span
-          key={a.employee_id}
-          className="flex items-center gap-1.5 rounded-full bg-accent py-0.5 pr-1 pl-0.5 text-sm"
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        {/*  CẢ CỤM là một nút mở danh sách — không còn nút «+» riêng bên cạnh:
+             hai chỗ bấm cho cùng một việc chỉ tổ bắt người dùng chọn. */}
+        <button
+          type="button"
+          aria-label={`Người phụ trách: ${nhan}. Bấm để đổi`}
+          className="flex max-w-full items-center gap-2 rounded-full py-0.5 pr-2 pl-0.5 text-left hover:bg-accent"
         >
-          <span className="grid size-6 place-items-center rounded-full bg-background text-[10px] font-medium">
-            {initials(a.employee_name)}
-          </span>
-          <span className="max-w-40 truncate">{personName(a.employee_name, a.employee_id)}</span>
-          {!disabled && (
-            <IconTooltip label={`Bỏ ${personName(a.employee_name, a.employee_id)}`}>
-              <button
-                type="button"
-                aria-label={`Bỏ ${personName(a.employee_name, a.employee_id)}`}
-                onClick={() => toggle(a.employee_id)}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                <X className="size-3.5" />
-              </button>
-            </IconTooltip>
-          )}
-        </span>
-      ))}
-
-      {picked.length === 0 && disabled && (
-        <span className="text-sm text-muted-foreground">Chưa gán ai</span>
-      )}
-
-      {!disabled && (
-        <Popover open={open} onOpenChange={setOpen}>
-          <IconTooltip label="Gán người phụ trách">
-            <PopoverTrigger asChild>
-              <button
-                type="button"
-                aria-label="Gán người phụ trách"
-                className={cn(
-                  'flex items-center gap-1 rounded-full border border-dashed px-2 py-1 text-sm text-muted-foreground',
-                  'hover:border-solid hover:bg-accent hover:text-foreground',
-                )}
-              >
-                <Plus className="size-3.5" />
-                {picked.length === 0 && 'Gán người'}
-              </button>
-            </PopoverTrigger>
-          </IconTooltip>
-          <PopoverContent align="start" className="w-72 p-0">
-            {list}
-          </PopoverContent>
-        </Popover>
-      )}
-    </>
+          <CompactFaces picked={picked} />
+          <span className="truncate text-sm">{nhan}</span>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-72 p-0">
+        {list}
+      </PopoverContent>
+    </Popover>
   )
 }
 

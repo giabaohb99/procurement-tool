@@ -189,7 +189,7 @@ export function TaskListRow({
         zIndex: isDragging ? 1 : undefined,
       }}
       className={cn(
-        'group/row relative flex cursor-pointer items-center border-b border-border/60 pr-2 py-1.5',
+        'group/row relative flex cursor-pointer items-center border-b border-border/60 py-1.5 pr-2',
         'focus-visible:bg-accent/40 focus-visible:outline-none',
         !dragActive && 'hover:bg-accent/40',
         //  Dòng gốc mờ đi — bản đang đi theo con trỏ nằm ở `DragOverlay`.
@@ -256,7 +256,9 @@ export function TaskListRow({
             }}
             className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
           >
-            <ChevronRight className={cn('size-3.5 transition-transform', expanded && 'rotate-90')} />
+            <ChevronRight
+              className={cn('size-3.5 transition-transform', expanded && 'rotate-90')}
+            />
           </button>
         ) : (
           !isSubtask && <span className="w-[18px] shrink-0" aria-hidden />
@@ -305,7 +307,11 @@ export function TaskListRow({
       {columns.map((col) => (
         //  Bề rộng đọc từ biến CSS đặt trên khung bao, không phải từ prop: kéo
         //  giãn cột chỉ sửa biến đó nên không dòng nào phải vẽ lại.
-        <div key={col.key} className="shrink-0" style={{ width: `var(${columnWidthVar(col.key)})` }}>
+        <div
+          key={col.key}
+          className="shrink-0"
+          style={{ width: `var(${columnWidthVar(col.key)})` }}
+        >
           <TaskListCell
             column={col}
             task={task}
@@ -363,17 +369,18 @@ function SubtaskGuide({ isLast }: { isLast: boolean }) {
            nếu chỉ trông vào viền của khuỷu thì mỗi mối nối hụt 6px — cụm việc
            con lại nhìn đứt quãng. Nét này chạy thẳng suốt trục và lấp đúng
            quãng ấy; khuỷu bên dưới chỉ còn lo phần cong và nhánh ngang. */}
-      <span className={cn('absolute top-0 left-0 w-px bg-border/60', isLast ? 'h-1/2' : 'h-full')} />
+      <span
+        className={cn('absolute top-0 left-0 w-px bg-border/60', isLast ? 'h-1/2' : 'h-full')}
+      />
       <span className="absolute top-0 left-0 h-1/2 w-full rounded-bl-[6px] border-b border-l border-border/60" />
     </span>
   )
 }
 
-export interface TaskListCellProps
-  extends Pick<
-    TaskRowActions,
-    'onSetAssignees' | 'onSetDue' | 'onSetStart' | 'onSetStatus' | 'onSetLabel'
-  > {
+export interface TaskListCellProps extends Pick<
+  TaskRowActions,
+  'onSetAssignees' | 'onSetDue' | 'onSetStart' | 'onSetStatus' | 'onSetLabel'
+> {
   column: TaskListColumn
   task: WorkTask
   members: WorkMember[]
@@ -455,7 +462,6 @@ export function TaskListCell({
   return (
     <div onClick={(e) => e.stopPropagation()} role="presentation">
       <LabelFieldInput
-        compact
         field={field}
         values={task.labels.filter((l) => l.field_id === field.id)}
         members={members}

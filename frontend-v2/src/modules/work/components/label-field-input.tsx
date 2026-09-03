@@ -1,6 +1,3 @@
-import { X } from 'lucide-react'
-
-import { Button } from '@/shared/ui/button'
 import { DatePicker } from '@/shared/ui/date-picker'
 import { Input } from '@/shared/ui/input'
 import { ReadOnlyValue } from '@/shared/ui/read-only-value'
@@ -8,7 +5,6 @@ import { cn } from '@/shared/utils/cn'
 import type { WorkLabelField, WorkMember, WorkTaskLabelValue } from '../types/work'
 import { WORK_FIELD_TYPE } from '../types/work'
 import { personName } from '../utils/people'
-import { chipClass } from '../utils/work-colors'
 import { LabelMultiCell } from './label-multi-cell'
 import { TaskChipSelect } from './task-chip-select'
 
@@ -19,12 +15,6 @@ interface LabelFieldInputProps {
   disabled?: boolean
   /** Thành viên dự án — nguồn cho trường kiểu NGƯỜI. */
   members: WorkMember[]
-  /**
-   * `true` = dáng vừa MỘT Ô BẢNG ở khung nhìn Danh sách. Hiện chỉ đổi kiểu CHỌN
-   * NHIỀU (dải chip đầy đủ → chip đang gắn + popover); năm kiểu kia vốn đã cao
-   * một dòng nên giữ nguyên.
-   */
-  compact?: boolean
   /** Giá trị mới, đa hình theo kiểu trường; `null` = bỏ chọn. */
   onChange: (value: unknown) => void
 }
@@ -40,7 +30,6 @@ export function LabelFieldInput({
   values,
   disabled,
   members,
-  compact = false,
   onChange,
 }: LabelFieldInputProps) {
   const first = values[0]
@@ -48,15 +37,13 @@ export function LabelFieldInput({
   switch (field.field_type) {
     case WORK_FIELD_TYPE.MULTI: {
       const chosen = values.map((v) => v.option_id).filter((id): id is number => id !== null)
-      return compact ? (
+      //  MỘT dáng duy nhất cho cả bảng lẫn panel: ô CHỌN NHIỀU có mũi tên.
+      //  Panel từng bày thẳng MỌI giá trị của trường thành một dải chip bật/tắt
+      //  — trường khai bốn năm giá trị là một mảng màu chiếm cả hàng, phải dò
+      //  từng cái xem cái nào đang mờ (= chưa chọn), mà nó lại chẳng giống ô
+      //  chọn nào khác trong panel. Khách chốt 03/09/2026: mở ô chọn.
+      return (
         <LabelMultiCell field={field} chosen={chosen} disabled={disabled} onChange={onChange} />
-      ) : (
-        <MultiOptionInput
-          field={field}
-          chosen={chosen}
-          disabled={disabled}
-          onChange={onChange}
-        />
       )
     }
 
@@ -177,74 +164,5 @@ function PlainTextInput({
       )}
       {...props}
     />
-  )
-}
-
-/**
- * Chọn NHIỀU giá trị: bấm chip để bật/tắt.
- *
- * Không dùng `Select` nhiều lựa chọn vì shadcn/Radix không có sẵn kiểu đó, mà
- * dựng thêm một popover chỉ để tick vài giá trị thì nặng hơn hàng chip — chip
- * lại hiện đúng màu như trên thẻ nên nhìn là biết đang chọn gì.
- */
-function MultiOptionInput({
-  field,
-  chosen,
-  disabled,
-  onChange,
-}: {
-  field: WorkLabelField
-  chosen: number[]
-  disabled?: boolean
-  onChange: (value: number[] | null) => void
-}) {
-  function toggle(optionId: number) {
-    const next = chosen.includes(optionId)
-      ? chosen.filter((id) => id !== optionId)
-      : [...chosen, optionId]
-    //  Bỏ hết thì gửi `null` chứ không phải mảng rỗng — cùng một nghĩa "bỏ
-    //  chọn" với năm kiểu kia, khỏi để máy chủ đoán.
-    onChange(next.length === 0 ? null : next)
-  }
-
-  if (field.options.length === 0) {
-    return <span className="text-sm text-muted-foreground">Trường chưa khai giá trị</span>
-  }
-
-  return (
-    <div className="flex flex-wrap items-center gap-1">
-      {field.options.map((o) => {
-        const on = chosen.includes(o.id)
-        return (
-          <button
-            key={o.id}
-            type="button"
-            disabled={disabled}
-            onClick={() => toggle(o.id)}
-            className={cn(
-              'rounded px-1.5 py-0.5 text-[11px] font-medium transition-opacity',
-              chipClass(o.color),
-              //  Giá trị KHÔNG chọn vẫn hiện, chỉ mờ đi: giấu hẳn thì người
-              //  dùng không biết trường này còn chọn được gì nữa.
-              !on && 'opacity-35',
-              disabled ? 'cursor-default' : 'cursor-pointer hover:opacity-100',
-            )}
-          >
-            {o.name}
-          </button>
-        )
-      })}
-      {chosen.length > 0 && !disabled && (
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-6"
-          title="Bỏ chọn hết"
-          onClick={() => onChange(null)}
-        >
-          <X className="size-3.5" />
-        </Button>
-      )}
-    </div>
   )
 }

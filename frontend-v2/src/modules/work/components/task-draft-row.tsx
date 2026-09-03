@@ -166,7 +166,11 @@ export function TaskDraftRow({
       <span className="min-w-0 flex-1" aria-hidden />
 
       {columns.map((col) => (
-        <div key={col.key} className="shrink-0" style={{ width: `var(${columnWidthVar(col.key)})` }}>
+        <div
+          key={col.key}
+          className="shrink-0"
+          style={{ width: `var(${columnWidthVar(col.key)})` }}
+        >
           <DraftCell
             column={col}
             draft={draft}
@@ -205,7 +209,6 @@ function DraftCell({ column, draft, members, onPatch, onPatchLabel }: DraftCellP
     })
     return (
       <TaskAssigneePicker
-        compact
         assignees={assignees}
         members={members}
         onChange={(picIds) => onPatch({ picIds })}
@@ -246,7 +249,6 @@ function DraftCell({ column, draft, members, onPatch, onPatchLabel }: DraftCellP
   if (!field) return null
   return (
     <LabelFieldInput
-      compact
       field={field}
       values={toDraftLabelValues(field, draft.labels[field.id], members)}
       members={members}
