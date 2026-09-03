@@ -207,18 +207,45 @@ sửa được. Trường "Tag" cố ý KHÔNG mang móc nào.
 
 ## 5. Cụm trao đổi: bình luận — đính kèm
 
-### `tab_work_comment` (E-01)
+⚠️ **ĐÍNH CHÍNH 03/09/2026 (CR-253) — KHÔNG có `tab_work_comment` và
+`tab_work_attachment`.** Mục này từng vẽ hai bảng riêng cho phân hệ; khi bắt tay làm
+thì repo đã có sẵn hạ tầng DÙNG CHUNG mà Diễn đàn đang xài, nên đẻ bảng riêng là chép
+lại cả một hệ con (đếm, nhắc tên, bắn chuông, thu hồi tệp mồ côi, tải có kiểm quyền)
+chỉ để đổi cái tiền tố. Bản mô tả cột bên dưới giữ lại làm bản ghi ý định gốc, **đừng
+dựng theo nó**.
 
-id · company_id · task_id FK index · employee_id · content TEXT · is_edited SMALLINT ·
-deleted_at DATETIME NULL · created_at / updated_at. Theo khuôn comment CR-033 (đã tái
-dùng ở Diễn đàn); nhắc tên @ (E-02, P1) parse từ content, không bảng riêng.
+### Cách làm THẬT
 
-### `tab_work_attachment` (E-03, P1)
+| Việc | Bảng | Cửa vào | Khai ở |
+|---|---|---|---|
+| Bình luận (E-01) | `tab_comment` (+ `tab_comment_mention`) | `/api/comments` với `entity="work_task"` | `core/comment_registry.py` |
+| Đính kèm (E-03) | `tab_file` + `tab_file_link` | `/api/attachments` với `entity="work_task"` | `core/file_registry.py` |
 
-id · company_id · task_id NULL · comment_id NULL (đúng một trong hai) · file_key (đường
-R2, có `STORAGE_PREFIX`) · file_name · file_size · content_type · uploaded_by
-(employee_id) · created_at. **Tải xuống bắt buộc qua endpoint kiểm quyền thành viên**
-(bài học PQ13/H17 — không có URL công khai).
+Nhắc tên @ (E-02) và bắn chuông đi kèm luôn, không phải làm thêm. `comment_count` trên
+thẻ do `work/task_enrich.comment_counts` đếm thẳng `tab_comment` — có sẵn từ W1.
+
+⚠️ **Quyền KHÔNG đi đường `apply_scope`.** Hai cửa dùng chung đều thiết kế cho khuôn
+phạm vi dữ liệu thường, mà `work_task` khai `PUBLIC` ở `core/scoping.SCOPE_FIELDS`:
+phạm vi thật là **tư cách THÀNH VIÊN** của danh sách chứa việc. Để chúng đi đường chung
+thì `apply_scope` không thêm mệnh đề nào và `ensure_in_scope` im lặng cho qua — ai đăng
+nhập cũng bình luận được vào việc của dự án mình không tham gia, và đoán đúng `link_id`
+là tải được tệp. Vì thế có hai nhánh riêng, **đừng gỡ**:
+`comment/service.resolve_doc` và `core/attachment_scope._ensure_task_member`.
+Bài khóa: `test/backend/test_cong_viec_binh_luan_dinh_kem.py`.
+
+Khách xem (`VIEWER`) **đọc được nhưng không gửi/gắn** — `resolve_doc` nhận tham số
+`mode`, `CAN_EDIT` khai rõ bình luận nằm trong nhóm quyền sửa.
+
+Tải xuống bắt buộc qua endpoint kiểm quyền, không có URL công khai (PQ13/H17) —
+`GET /api/attachments/{link_id}/download`, đo được 401 khi thiếu token.
+
+### Bản mô tả GỐC (đã bỏ, giữ để tra lại ý định)
+
+~~`tab_work_comment`~~: id · company_id · task_id FK index · employee_id · content TEXT ·
+is_edited SMALLINT · deleted_at DATETIME NULL · created_at / updated_at.
+
+~~`tab_work_attachment`~~: id · company_id · task_id NULL · comment_id NULL · file_key ·
+file_name · file_size · content_type · uploaded_by · created_at.
 
 ## 6. Phác API (prefix `/api/work` — tránh `/api/tasks` đã bị Việc cần làm chiếm)
 

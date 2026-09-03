@@ -48,6 +48,15 @@ FILE_POLICY: dict[str, tuple[str, set[str], int]] = {
     # vào văn bản: bản đã duyệt phải tra ra đúng bộ tệp lúc duyệt, kể cả sau khi
     # bản mới đã gỡ bớt. Quyền kiểm trên entity cha `document`.
     "document_version":       ("document", _DOC, 50),
+    # Đính kèm của một CÔNG VIỆC trong phân hệ Dự án (E-03). Entity cha là
+    # `work_task` thật (lớp RBAC hỏi được), nhưng lớp PHẠM VI thì `apply_scope`
+    # vô dụng — `work_task` khai `PUBLIC` ở `SCOPE_FIELDS` vì phạm vi thật là tư
+    # cách THÀNH VIÊN của danh sách chứa việc. Vì vậy `attachment_scope.ensure_in_scope`
+    # rẽ riêng sang `_ensure_task_member`, đúng khuôn nhánh `document` ngay trên;
+    # bỏ nhánh ấy đi là ai đăng nhập cũng tải được tệp của dự án mình không tham gia.
+    # 50MB chứ không ít hơn: mọi ô nhận PDF đều tối thiểu 50 (CR-148 — PDF in ấn
+    # và .cdr thường 30-50MB), có bài quét cả bảng ghim con số đó.
+    "work_task":              ("work_task", _DOC | _IMG, 50),
 }
 
 #  ENTITY RIÊNG TƯ — API **không trả `url` công khai** cho những entity này, chỉ

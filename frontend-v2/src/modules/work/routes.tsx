@@ -77,6 +77,14 @@ export const workModule: ErpModule = {
             Component: (await import('./pages/work-list-page')).WorkListPage,
           }),
         },
+        {
+          //  Đích của link chuông khi ai đó nhắc tên trong bình luận việc.
+          //  Chỉ tra dự án chứa việc rồi dẫn tiếp — xem `TaskRedirectPage`.
+          path: 'tasks/:taskId',
+          lazy: async () => ({
+            Component: (await import('./pages/task-redirect-page')).TaskRedirectPage,
+          }),
+        },
       ],
     },
   ],

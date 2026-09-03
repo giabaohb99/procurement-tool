@@ -181,7 +181,7 @@ def list_replies(cid: int, db: Session = Depends(get_db), user=Depends(get_curre
 @router.post("")
 def create_comment(data: schema.CommentIn, background_tasks: BackgroundTasks,
                    db: Session = Depends(get_db), user=Depends(get_current_user)):
-    doc, label, route = service.resolve_doc(db, user, data.entity, data.entity_id)
+    doc, label, route = service.resolve_doc(db, user, data.entity, data.entity_id, "write")
     c = service.create_comment(db, data.entity, data.entity_id, data.body, user.id,
                                data.parent_id, data.reply_to_user_id, data.file_ids)
     _notify_new(db, doc, label, route, c, user, background_tasks)

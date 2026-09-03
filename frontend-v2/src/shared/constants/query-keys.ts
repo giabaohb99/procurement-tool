@@ -356,6 +356,17 @@ export const queryKeys = {
     activityActors: (listId: number) =>
       ['work', 'lists', listId, 'activity-actors'] as const,
     task: (id: number) => ['work', 'tasks', id] as const,
+    /**
+     * Bình luận (E-01) và đính kèm (E-03) của một việc.
+     *
+     * Đặt DƯỚI nhánh `['work','tasks',id]` để mọi chỗ đang invalidate theo id
+     * việc quét trúng luôn. Gửi bình luận còn phải làm mới `board(listId)` nữa:
+     * huy hiệu số bình luận nằm trên thẻ kanban, không nằm trong khối này.
+     */
+    taskComments: (taskId: number) => ['work', 'tasks', taskId, 'comments'] as const,
+    taskAttachments: (taskId: number) => ['work', 'tasks', taskId, 'attachments'] as const,
+    taskMentionable: (taskId: number, q: string) =>
+      ['work', 'tasks', taskId, 'mentionable', q] as const,
   },
   vehicleBooking: {
     all: ['vehicle-booking'] as const,

@@ -43,8 +43,12 @@ def strip_mentions(db: Session, body: str) -> str:
     return MENTION_TAG.sub(lambda m: "@" + names.get(int(m.group(1)), "?"), body)
 
 
-def resolve_doc(db: Session, user, entity: str, entity_id: int):
+def resolve_doc(db: Session, user, entity: str, entity_id: int, mode: str = "read"):
     """Kiểm quyền bình luận rồi trả (chứng từ, nhãn loại, route FE).
+
+    `mode="write"` = sắp GHI (gửi bình luận mới). Với hầu hết chứng từ nó không
+    đổi gì — luật chung là "ai mở được phiếu thì góp ý được" (xem dưới). Chỉ
+    phân hệ Dự án tách hai mức, vì ở đó KHÁCH XEM là một vai trò thật.
 
     Quyền bình luận ĂN THEO CHỨNG TỪ CHA — ai mở được phiếu thì đọc và góp ý được:
     bình luận là trao đổi, không phải sửa nghiệp vụ, nên không đẻ thêm luật RBAC riêng.
@@ -64,6 +68,29 @@ def resolve_doc(db: Session, user, entity: str, entity_id: int):
         from app.modules.forum.service import get_visible_post
         post = get_visible_post(db, user, entity_id)
         return post, label, route
+    #  Công việc (E-01) cũng rẽ nhánh riêng, nhưng vì lý do NGƯỢC với diễn đàn:
+    #  ở đây RBAC vẫn phải hỏi, chỉ có lớp PHẠM VI là không dùng `apply_scope`
+    #  được — `work_task` khai `PUBLIC` ở `SCOPE_FIELDS` vì phạm vi thật của nó
+    #  là "thành viên của danh sách chứa việc", thứ không diễn đạt được bằng cột
+    #  phòng ban/pháp nhân. Để nó đi đường chung là `apply_scope` không lọc gì và
+    #  ai đăng nhập cũng bình luận được vào việc của dự án mình không tham gia.
+    #  Bình luận cần mức MEMBER (`CAN_EDIT`) — khách xem chỉ đọc, xem `membership_service`.
+    if entity == "work_task":
+        from app.modules.work.membership_service import (CAN_EDIT, CAN_VIEW,
+                                                          require_employee, resolve_actor)
+        from app.modules.work.task_service import get_task_or_403
+
+        if not user_has_permission(db, user, parent, "read"):
+            raise HTTPException(403, "Không có quyền xem công việc")
+        actor = resolve_actor(db, user)
+        require_employee(actor)
+        #  ĐỌC thì thành viên nào cũng được, GỬI thì phải từ MEMBER trở lên:
+        #  «khách xem» là một vai trò thật của phân hệ này (`WorkMemberRole.VIEWER`),
+        #  và `CAN_EDIT` khai rõ bình luận nằm trong nhóm quyền sửa. Dùng chung
+        #  một mức cho cả hai chiều thì hoặc khách xem đọc không được bình luận
+        #  của người khác, hoặc họ ghi được vào dự án chỉ được mời vào để xem.
+        need = CAN_EDIT if mode == "write" else CAN_VIEW
+        return get_task_or_403(db, actor, entity_id, need), label, route
     if not user_has_permission(db, user, parent, "read"):
         raise HTTPException(403, "Không có quyền xem chứng từ này")
     model = doc_model(entity)

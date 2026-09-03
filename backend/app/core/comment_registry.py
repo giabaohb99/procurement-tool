@@ -18,6 +18,14 @@ COMMENT_POLICY: dict[str, tuple[str, str, str]] = {
     # Route ghi THẲNG dạng v2 (khuôn Văn thư): diễn đàn chỉ có trên `frontend-v2`,
     # ghi "/posts" thì `notification-link.toAppPath` bên FE trả null — chuông câm.
     "forum_post":       ("forum_post",       "Bài viết diễn đàn", "/forum/posts"),
+    # Công việc trong phân hệ Dự án (E-01). Entity cha chỉ để đặt tên và cho lớp
+    # RBAC — phạm vi THẬT là tư cách THÀNH VIÊN của danh sách chứa việc, nên
+    # `resolve_doc` rẽ nhánh riêng qua `get_task_or_403` chứ KHÔNG dùng
+    # `apply_scope` (`work_task` khai `PUBLIC` ở `SCOPE_FIELDS`, apply_scope
+    # không lọc gì cho nó).
+    # Route ghi dạng v2 và trỏ tới TRANG MỞ MỘT VIỆC (`/project/tasks/{id}`) —
+    # panel chi tiết không có route riêng, trang đó lo việc dẫn về đúng dự án.
+    "work_task":        ("work_task",        "Công việc",        "/project/tasks"),
 }
 
 
@@ -46,4 +54,7 @@ def doc_model(entity: str):
     if entity == "forum_post":
         from app.modules.forum.model import ForumPost
         return ForumPost
+    if entity == "work_task":
+        from app.modules.work.task_model import WorkTask
+        return WorkTask
     return None

@@ -144,6 +144,14 @@ export const appRoutes = {
     list: '/project/lists',
     /** Một dự án — kanban/danh sách/Gantt nằm trong đây, đổi bằng tab. */
     detail: (id: number | string) => `/project/lists/${id}`,
+    /**
+     * Mở MỘT công việc theo id — địa chỉ cho link của chuông thông báo.
+     *
+     * Panel chi tiết không có route riêng (nó là `Sheet` mở bằng state), nên
+     * đây là trang trung chuyển: tra dự án chứa việc rồi dẫn tiếp kèm `?task=`.
+     * Phải KHỚP với `route` khai ở `backend/app/core/comment_registry.py`.
+     */
+    task: (id: number | string) => `/project/tasks/${id}`,
   },
   document: {
     root: '/document',

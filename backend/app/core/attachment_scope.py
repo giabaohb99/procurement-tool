@@ -137,6 +137,27 @@ def _ensure_document(db: Session, user, version_id: int, action: str):
                               "read" if action == "read" else "write")
 
 
+def _ensure_task_member(db: Session, user, task_id: int, action: str):
+    """Đính kèm công việc: hỏi TƯ CÁCH THÀNH VIÊN, không hỏi `apply_scope`.
+
+    `work_task` khai `PUBLIC` ở `core/scoping.SCOPE_FIELDS` vì phạm vi thật của
+    nó là "thành viên của danh sách chứa việc" — thứ không diễn đạt được bằng
+    cột phòng ban hay pháp nhân. Để nó đi đường `apply_scope` thì không mệnh đề
+    nào được thêm vào, tức là chỉ còn lớp vai trò, mà `work_task.read` thì gần
+    như ai cũng có: đoán đúng `link_id` là tải được tệp của dự án người khác.
+
+    Cùng lý do và cùng khuôn với `_ensure_document` ngay trên.
+    Gỡ/thêm tệp đòi mức MEMBER; xem thì thành viên nào cũng được.
+    """
+    from app.modules.work.membership_service import (CAN_EDIT, CAN_VIEW,
+                                                     require_employee, resolve_actor)
+    from app.modules.work.task_service import get_task_or_403
+
+    actor = resolve_actor(db, user)
+    require_employee(actor)
+    get_task_or_403(db, actor, task_id, CAN_VIEW if action == "read" else CAN_EDIT)
+
+
 def ensure_in_scope(db: Session, user, entity: str, entity_id: int, mode: str = "read"):
     """Ném 403/404 nếu chứng từ cha của tệp nằm ngoài phạm vi dữ liệu của người này.
 
@@ -150,6 +171,9 @@ def ensure_in_scope(db: Session, user, entity: str, entity_id: int, mode: str = 
         return
     if parent == "document":
         _ensure_document(db, user, entity_id, mode)
+        return
+    if parent == "work_task":
+        _ensure_task_member(db, user, entity_id, mode)
         return
 
     model, ids = parent_records(db, entity, entity_id)
