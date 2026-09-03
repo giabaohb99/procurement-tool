@@ -1,4 +1,4 @@
-import { FilePlus2, Search } from 'lucide-react'
+import { FilePlus2, Scale, Search } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -33,6 +33,7 @@ import { formatDate, formatDateTime } from '@/shared/utils/format-date'
 import { formatMoney } from '@/shared/utils/format-money'
 import { cn } from '@/shared/utils/cn'
 import { PayableAgingBadge, PayableStatusBadge } from '../components/payable-badges'
+import { PayableOffsetPrepayDialog } from '../components/payable-offset-prepay-dialog'
 import { PAYABLE_FILTER_FIELDS } from '../config/payable-filter-fields'
 import { usePayableSummary, usePayables } from '../hooks/use-payables'
 import {
@@ -113,6 +114,9 @@ function PayableListContent() {
   // đếm được số NCC và truyền thẳng sang màn tạo phiếu, khỏi phải tải lại theo id.
   const [selected, setSelected] = useState<Record<number, Payable>>({})
 
+  // CR-268: khoản nợ đang mở hộp cấn trừ tiền treo trả trước (null = đóng).
+  const [offsetTarget, setOffsetTarget] = useState<Payable | null>(null)
+
   const { data: companies } = useCompanies({ page_size: 500, is_active: true })
   const { queryParams, queryKey } = useFilterQuery()
 
@@ -164,6 +168,10 @@ function PayableListContent() {
   )
 
   const canCreatePayment = can('payment_request', 'create')
+
+  // CR-268: nút cấn trừ tiền treo cần `payable.write` (endpoint) và
+  // `payment_request.read` (hộp thoại phải đọc được danh sách phiếu treo).
+  const canOffsetPrepay = can('payable', 'write') && can('payment_request', 'read')
 
   // Chỉ tick được khoản CHƯA tất toán, CÒN nợ và ĐÃ có số hóa đơn — đúng ba điều
   // kiện backend cần để lên đề nghị thanh toán.
@@ -326,6 +334,33 @@ function PayableListContent() {
       },
     ]
 
+    // CR-268: cột cấn trừ tiền treo — kế toán trừ tiền TRẢ TRƯỚC CẤP NCC (phiếu
+    // không gắn đơn) vào khoản nợ. Chỉ hiện với người đủ quyền, chỉ bấm được khi
+    // khoản còn nợ. Có treo hay không thì hộp thoại tự tra và tự nói.
+    if (canOffsetPrepay) {
+      base.push({
+        key: 'offset_prepay',
+        header: 'Cấn trừ',
+        width: 90,
+        align: 'center',
+        cell: (p) =>
+          p.status !== 'paid' && p.remaining > 0.01 ? (
+            <span className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-7"
+                title="Cấn trừ tiền treo trả trước của NCC vào khoản nợ này"
+                aria-label="Cấn trừ tiền treo trả trước"
+                onClick={() => setOffsetTarget(p)}
+              >
+                <Scale className="size-4" />
+              </Button>
+            </span>
+          ) : null,
+      })
+    }
+
     // Không có quyền lập đề nghị thanh toán thì bỏ hẳn cột tick — người chỉ được
     // xem công nợ không cần chỗ chọn.
     if (!canCreatePayment) return base
@@ -372,6 +407,7 @@ function PayableListContent() {
   }, [
     companyName,
     canCreatePayment,
+    canOffsetPrepay,
     selected,
     isPayable,
     toggleRow,
@@ -586,6 +622,10 @@ function PayableListContent() {
           Đang chọn {selectedSupplierCount} nhà cung cấp — hệ thống sẽ tách thành{' '}
           {selectedSupplierCount} phiếu đề nghị thanh toán riêng.
         </p>
+      )}
+
+      {canOffsetPrepay && (
+        <PayableOffsetPrepayDialog payable={offsetTarget} onClose={() => setOffsetTarget(null)} />
       )}
     </PageContainer>
   )

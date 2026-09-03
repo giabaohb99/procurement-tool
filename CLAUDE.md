@@ -122,10 +122,15 @@ shadcn/Radix + TanStack Query + zustand). Backend không đổi: v2 gọi đúng
 Phân xử khi có yêu cầu mới: **sửa lỗi** màn đang chạy thật → `frontend/`; **tính năng mới**
 → `frontend-v2/`, màn đó chưa có ở v2 thì dựng màn đó trước. `frontend/` chưa được tắt vì v2
 còn thiếu màn. **Số đo đầy đủ và kế hoạch dời nằm ở `doc/erp/13-ke-hoach-man-con-lai-v2.md`**
-(bản 2.0, xem **CR-097**): bản cũ có **48 màn** — _(đếm 24/08/2026, CR-132)_ **35 xong** ·
-**1 có nhưng KHUYẾT** · **9 chưa có** · 2 đã bỏ · 1 chờ quyết. Chia **15 đợt Đ-01 … Đ-15**: đã
-xong **Đ-01…Đ-12, Đ-14**; còn mỗi **Đ-15** (tắt `frontend/`), mà nó chờ **Đ-13** _Quản lý Import_
-đang **hoãn**. Nghĩa là **không còn việc dựng màn hình nào trước mắt**.
+(bản 2.0, xem **CR-097**): bản cũ có **48 màn** — _(rà lại từng dòng 03/09/2026)_ bảng §1 nay
+**50 dòng** *(48 màn cũ + `/system/exports` + 44b)*: **50 xong** · **0 khuyết** · **0 thiếu** ·
+**0 chờ quyết**. Chia **15 đợt Đ-01 … Đ-15**: đã xong **Đ-01…Đ-14**; còn mỗi **Đ-15**
+(tắt `frontend/`), và **không còn gì chặn nó**. Màn cuối cùng — **_Chứng từ_** — đã dời
+03/09/2026 (CR-266): `/procurement/purchase-orders/:id/documents`, **không đứng trong menu**,
+vào từ nút _Xem cả chuỗi chứng từ_ trong thẻ chứng từ của chi tiết ĐMH. ⚠️ Đụng vào nó thì nhớ
+`/api/attachments/chain` khai entity `survey_line` **hai lần** (id dòng NCC + id dòng sản phẩm)
+nên **phải khử trùng theo `link_id`** — bản v1 không khử nên đếm dôi; và `url` trong kết quả
+**rỗng với entity riêng tư**, xem trước phải đi qua `/api/attachments/{id}/view`.
 ⚠️ Mấy con số này cũ rất nhanh — **luôn mở §0 và bảng §3 của `13-...md` để lấy số mới nhất**,
 đừng trích lại dòng này.
 ⚠️ **NHẬN ĐỢT TRƯỚC KHI LÀM.** Nhiều người cùng đẩy lên `erp-v2`, nên cột **_Ai làm_** trong bảng
@@ -137,8 +142,9 @@ giữa chừng thì trả về _(chưa nhận)_. `git fetch` trước mỗi lầ
 route in đăng ở `app/router/app-router.tsx`. Bản in cũng đã có **gom dòng trùng số chứng từ** và
 tab _Mẫu thuế_ giống hệt bản v1 (CR-127). Nghĩa là **không còn màn nào chặn nghiệp vụ** — dòng
 "chặn nghiệp vụ chỉ còn Yêu cầu thanh toán" ở các bản CLAUDE.md trước nay đã sai, bỏ đi.
-Trong 9 màn còn thiếu, nặng nhất là _Quản lý Import_ (MC-6) và khách đã cho **hoãn**; danh sách
-đầy đủ ở §1 của `13-...md`. _Tiến độ báo giá_ và _Xử lý khảo sát_ từng quyết bỏ nhưng
+_Quản lý Import_ (MC-6) từng bị hoãn nhưng khách **mở lại 25/08/2026**: hai màn `/system/imports`
+(+ `/:id`) và cụm `/system/exports` **đã chạy** (CR-186, Đ-13a/13b); phần còn dở của Đ-13 là **mở
+rộng tính năng**, không phải màn thiếu — xem `doc/erp/16-quan-ly-import-export-v2.md` §9. _Tiến độ báo giá_ và _Xử lý khảo sát_ từng quyết bỏ nhưng
 **đã SỐNG LẠI 29/08/2026** (CR-227 + CR-222) — xem đính chính ở `doc/erp/12-...` mục 2.7:
 Xử lý khảo sát là trang riêng `/procurement/survey-requests/:id/process`, Tiến độ báo giá ở
 `/procurement/survey-progress`, menu Thu mua v2 xếp đúng thứ tự bản v1.

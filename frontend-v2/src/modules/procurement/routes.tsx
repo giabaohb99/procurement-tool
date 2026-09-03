@@ -209,6 +209,13 @@ export const procurementModule: ErpModule = {
       }),
     },
     {
+      path: appRoutes.procurement.purchaseOrderDocuments(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/purchase-order-document-chain-page'))
+          .PurchaseOrderDocumentChainPage,
+      }),
+    },
+    {
       path: appRoutes.procurement.purchaseProgress,
       lazy: async () => ({
         Component: (await import('./pages/purchase-progress-page')).PurchaseProgressPage,

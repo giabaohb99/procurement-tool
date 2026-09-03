@@ -131,6 +131,15 @@ Thông báo gửi qua chuông trong app (và Web Push nếu thiết bị đã đ
 - Nguồn dữ liệu / liên kết: —
 - Người sửa: Người tạo (quyền `payment_request:write`) khi phiếu Nháp
 
+### 11. Thanh toán trước / tạm ứng (`prepay`) — CR-268
+
+- Kiểu nhập: Ô tick, **chỉ hiện ở form trắng** (tạo từ màn Công nợ là trả cho khoản nợ có thật, tick trả trước ở đó vô nghĩa nên ẩn)
+- Mặc định: `0`; tự tick sẵn khi đi từ hộp thoại **"Lập thanh toán trước"** của Đơn mua hàng (CR-267 truyền `state.prepay`)
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: `tab_payment_request.prepay` (`1` = phiếu trả trước)
+- Người sửa: Người lập, chỉ lúc TẠO phiếu (màn chi tiết không đổi được cờ)
+- Logic đặc biệt: phiếu `prepay = 1` được **miễn cổng khớp công nợ khi Gửi duyệt** (quy tắc C.2) và sau khi chi, tiền trở thành **tiền treo** — toàn bộ nghiệp vụ ở mục **F. Tiền treo** bên dưới. Trên màn chi tiết, phiếu trả trước mang badge "Trả trước" cạnh badge trạng thái.
+
 ---
 
 ## B. Dòng công nợ thanh toán (PaymentRequestLine)
@@ -235,6 +244,8 @@ Server tìm khoản nợ của một dòng bằng hàm `matching_payables(suppli
 
    Lý do đặt cổng chặn ở đây: tiền chi phải trừ được vào một khoản nợ có thật, nếu không thì dòng Đơn mua hàng sẽ kẹt không lên "Hoàn thành". Trên màn hình, dòng chưa khớp được cảnh báo bằng thẻ vàng (`matched = false`) chứ không chặn thao tác lưu.
 
+   **CR-268 — phiếu trả trước (`prepay = 1`) được MIỄN cổng này.** Trả trước nghĩa là chi tiền khi CHƯA có công nợ (hàng chưa về), nên `check_submit` chỉ kiểm: phiếu có ít nhất một dòng và mọi dòng có `amount > 0`. Tiền chi ra không mất dấu — nó thành **tiền treo** và được đối trừ về sau theo mục F.
+
 3. Mã phiếu tự sinh: sau `db.flush()`, server gán `code = f"YCTT{req.id:05d}"` rồi `db.commit()`.
 
 4. Sửa phiếu (PATCH): **chỉ cho phép khi `status = "draft"`** (CR-066 — khóa cứng ở backend, không chỉ ẩn nút trên giao diện). Trạng thái khác bị từ chối 400 với thông báo riêng: Chờ duyệt "…thu hồi (từ chối) rồi mới sửa", Đã duyệt "…không sửa được số tiền và số hóa đơn nữa", Đã chi / Từ chối "…không sửa được". Khi cập nhật dòng, server xóa toàn bộ dòng cũ (`PaymentRequestLine`) và tạo lại từ danh sách mới; các khoản nợ có `supplier_code` khác với phiếu bị bỏ qua; ô để trống **không** bị điền đè từ khoản nợ. `total` được tính lại.
@@ -286,9 +297,99 @@ Entity: `payment_request`
 | Xóa nhiều (bulk) | `payment_request:delete` | không phải `paid` |
 | In phiếu | `payment_request:print` | mọi trạng thái |
 | Đính kèm / xóa file | `payment_request:write` | không giới hạn trạng thái |
+| Xem tiền treo (`GET /hanging`) — CR-268 | `payment_request:read` | — |
+| Ghi nhận NCC hoàn tiền (`POST /{id}/refund`) — CR-268 | `payment_request:write` | phiếu `paid`, `prepay = 1`, còn treo |
+| Cấn trừ treo vào công nợ (`POST /api/payables/{id}/offset-prepay`) — CR-268 | `payable:write` (UI đòi thêm `payment_request:read` để xem treo) | khoản nợ còn `remaining > 0` |
 
 ---
 
 ## E. Phiếu in (`/print/payment-request/:id`)
 
 **Tên file khi lưu PDF (CR-057).** Trang in đặt `document.title` = **`<Mã YCTT>-DDMMYYYY`** (ví dụ `YCTT00190-07082026`) qua hook `usePrintTitle` — trình duyệt và máy in ảo (Foxit, Microsoft Print to PDF) lấy đúng chuỗi đó làm tên file gợi ý, thay cho `Thu Mua Tool` mặc định. Ngày lấy `request_date` (ngày yêu cầu), **không** lấy ngày bấm in, nên in lại lúc nào cũng ra cùng một tên. Đây cũng chính là cột đang dùng để tính `period` in trên phiếu. Chi tiết cách làm: xem mục E của [04-don-mua-hang.md](04-don-mua-hang.md).
+
+---
+
+## F. Tiền treo — thanh toán trước (CR-268)
+
+> Mục này viết đủ chi tiết để trợ lý AI / bot đọc là tự suy luận, gợi ý và thao tác được — người dùng chỉ cần duyệt.
+
+### F.1. Tiền treo là gì
+
+Phiếu YCTT có `prepay = 1` là **phiếu trả trước / tạm ứng NCC**: công ty chi tiền khi CHƯA có khoản công nợ tương ứng (hàng chưa về, hoặc đặt cọc theo thỏa thuận). Sau khi phiếu **Ghi nhận đã chi** (`status = paid`), phần tiền chưa gắn được vào khoản nợ nào gọi là **tiền treo** — coi như NCC đang "nợ ngược" công ty số tiền đó.
+
+Mỗi dòng phiếu trả trước theo dõi bằng 2 cột riêng trên `tab_payment_request_line` (migration `d5e8f2a71c04`):
+
+| Cột | Ý nghĩa |
+|---|---|
+| `allocated_amount` | Đã **đối trừ** vào công nợ (tiền ở lại NCC, thành tiền trả hàng) |
+| `refunded_amount` | NCC đã **hoàn lại** (tiền quay về công ty) |
+
+**Công thức treo của một dòng:**
+
+```
+treo = amount - allocated_amount - refunded_amount
+```
+
+Chỉ tính dòng thuộc phiếu `prepay = 1` **và** `status = "paid"` (chưa chi thì chưa có tiền thật để treo). Hàm nguồn: `line_hanging` / `get_hanging_lines` / `summarize_hanging` trong `backend/app/modules/payment_request/service.py`.
+
+### F.2. Hai loại treo — phân biệt bằng `po_code` trên dòng
+
+| Loại | Nhận biết | Cách xử lý |
+|---|---|---|
+| **Treo GẮN ĐƠN** | dòng có `po_code` (vd `PO00123`) | **Hệ thống TỰ đối trừ** — không ai phải thao tác |
+| **Treo CẤP NCC** | dòng `po_code` rỗng | **Kế toán xử lý TAY**: cấn trừ vào một khoản nợ, hoặc ghi nhận NCC hoàn tiền |
+
+**Treo gắn đơn — tự động.** Mỗi lần đơn mua hàng ghi nhận nhận hàng và sinh/cập nhật công nợ, `recompute_effects` (`purchase_order/service.py`) gọi `apply_prepay_offsets(db, po_code, supplier_code)`: quét các dòng treo có đúng `po_code` đó, trừ vào các khoản nợ `goods` còn nợ của chính đơn đó. Đặc tính bắt buộc phải giữ khi sửa mã:
+
+- **FIFO** — phiếu treo cũ trừ trước.
+- **Kẹp cứng** `min(treo còn lại, nợ còn lại)` cho từng lần trừ — công nợ **không bao giờ âm** (bài học CR-044 / commit 82ce6ad).
+- **Idempotent** — chạy lại không trừ trùng (treo về 0 thì thôi).
+- Chỉ `db.flush()`, **không commit, không gọi `record()`** — vì chạy bên trong `recompute_effects` (hàm gọi nó sẽ commit); gọi `record()` ở đây là commit lửng, hỏng transaction.
+
+**Treo cấp NCC — tay.** Tiền đưa trước "vì một lý do nào đó", không thuộc đơn nào, nên hệ thống KHÔNG tự đoán. Ngoài đời có đúng 2 đường ra, hệ thống hỗ trợ cả hai:
+
+1. **Cấn trừ vào đơn sau** — HAI đường, cả hai đều trừ FIFO phiếu cũ trước và kẹp `min(treo, nợ)`:
+   - **Đường CHÍNH (người thường, CR-260 — thay cách làm CR-270)**: phần cấn trừ **GHI TRÊN DÒNG PHIẾU YCTT** (`offset_amount`) và chỉ là **Ý ĐỊNH** chừng nào phiếu chưa được duyệt — nháp sửa/xóa vô hại, công nợ + treo không bị đụng. Bấm **Duyệt** thì backend mới thực thi (`apply_line_offsets` trong `set_status approved`): soát lại toàn bộ (treo còn đủ? nợ từng dòng còn đủ? dòng có khớp khoản nợ?) TRƯỚC khi đụng số — thiếu là **CHẶN DUYỆT** với câu báo rõ, phiếu đứng nguyên Chờ duyệt, không bao giờ tự đổi số. Lúc **gửi duyệt** có soát sơ bộ cho người lập biết sớm. Phiếu **trả trước (prepay=1) CẤM mang offset** — nó sinh treo, không được đồng thời tiêu treo. Điền `offset_amount` từ đâu: hộp thoại "Tạo yêu cầu thanh toán" trên chi tiết ĐMH tự phát hiện treo và chia sẵn theo FIFO, hoặc gõ tay vào cột "Cấn trừ trả trước" ở màn tạo/sửa phiếu.
+   - **Đường PHỤ (kế toán, trừ NGAY)**: màn Công nợ, cột "Cấn trừ" (icon cân), mở `PayableOffsetPrepayDialog` — backend `offset_supplier_hanging`, chọn số tiền (trống = trừ tối đa), trừ thật ngay lúc bấm. Dùng khi kế toán chủ động xử lý sổ, không đi qua phiếu nào.
+2. **NCC hoàn tiền** — công ty trả full đơn hàng, NCC trả lại tiền cọc: màn chi tiết phiếu YCTT, nút "Ghi nhận NCC hoàn tiền" trong thẻ "Tiền treo trả trước", ghi vào `refunded_amount` (trống = hoàn toàn bộ phần còn treo).
+
+**KHÔNG có "duyệt một phần" (chốt với khách 03/09/2026, đi kèm CR-260).** Bấm **Duyệt** là duyệt TOÀN BỘ con số trên phiếu — cả phần đề nghị chi lẫn phần đề nghị cấn trừ; hệ thống không cho duyệt riêng phần chi mà bỏ phần cấn trừ. Người duyệt không đồng ý một phần nào đó (ví dụ muốn để dành khoản treo cho đơn khác) thì **Từ chối kèm lý do**; người lập mở lại hộp thoại tạo YCTT ở ĐMH (số liệu tự tính lại theo hiện trạng), bỏ tick hoặc chỉnh cột "Cấn trừ trả trước" rồi tạo phiếu mới. Cố ý không cho người duyệt sửa số trên phiếu đã gửi — giữ dấu vết "ai đề nghị con số nào, ai chốt con số nào".
+
+### F.3. API
+
+| Endpoint | Quyền | Mô tả |
+|---|---|---|
+| `GET /api/payment-requests/hanging` | `payment_request:read` | Liệt kê dòng còn treo + tổng. Tham số: `supplier_code` (bắt buộc), `po_code` (lọc treo của một đơn), `unlinked=1` (chỉ treo cấp NCC, `po_code` rỗng), `source_type`. Trả `{items: [{line_id, request_id, request_code, request_date, po_code, amount, allocated_amount, refunded_amount, hanging}], total}` |
+| `POST /api/payables/{id}/offset-prepay` | `payable:write` | Body `{amount, note?}`; `amount` trống/0 = trừ tối đa. Cấn trừ treo CẤP NCC (FIFO) vào khoản nợ `{id}`, kẹp `min(treo, nợ còn)`. Ghi audit trên cả hai phía |
+| `POST /api/payment-requests/{id}/refund` | `payment_request:write` | Body `{amount, note?}`; trống = hoàn toàn bộ treo của phiếu. Ghi `refunded_amount` FIFO theo dòng, chặn hoàn quá số còn treo |
+
+⚠️ Route `GET /hanging` phải khai **TRƯỚC** `GET /{rid}` trong `controller.py` — FastAPI khớp theo thứ tự, đặt sau là chuỗi "hanging" bị nuốt vào `{rid}` và nổ 422.
+
+⚠️ Sổ sách khi **chi phiếu trả trước SAU khi hàng đã về**: vòng rải tiền trong `set_status("paid")` vẫn khớp được công nợ như phiếu thường; phần khớp được ghi ngay vào `allocated_amount` (`ln.allocated_amount = amount - phần chưa rải được`) — nếu quên bước này, tiền đã trừ nợ rồi vẫn hiện là treo (treo ma, đối trừ đúp).
+
+### F.4. Điểm chạm giao diện (frontend-v2)
+
+| Màn | Hiển thị |
+|---|---|
+| Tạo YCTT (form trắng) | Ô tick "Thanh toán trước / tạm ứng nhà cung cấp" (mục A.11); đi từ hộp thoại CR-267 của ĐMH thì tick sẵn |
+| Chi tiết YCTT (`paid` + `prepay`) | Badge "Trả trước"; thẻ **"Tiền treo trả trước"**: Đã đối trừ / NCC đã hoàn / Còn treo + nút "Ghi nhận NCC hoàn tiền" |
+| Chi tiết ĐMH | Dòng cảnh báo vàng dưới bảng dòng hàng khi đơn còn treo chưa đối trừ: "Đã trả trước X đ — chưa đối trừ vào công nợ" |
+| Chi tiết ĐMH — khối "Yêu cầu thanh toán của đơn này" (CR-270) | Bảng các phiếu YCTT liên quan (mã phiếu link sang chi tiết + badge Trả trước + ngày + số tiền + badge trạng thái) + câu chỉ đường quy trình duyệt/chi. Lọc bằng tham số `po_code_exact` (khớp ĐÚNG mã — lọc `po_code` cũ là LIKE, PO-1 vơ cả PO-10). Tự ẩn khi không có phiếu / thiếu quyền `payment_request:read` |
+| Hộp thoại "Tạo yêu cầu thanh toán" của ĐMH (CR-260, thay CR-270) | NCC còn treo CẤP NCC → khối cảnh báo vàng: ô tick "ghi phần cấn trừ vào phiếu" tick sẵn + 3 dòng tính (Nợ đã chọn / Đề nghị cấn trừ (thực hiện khi duyệt) / Chỉ cần chi thêm). Submit = chia offset FIFO theo `incur_date` vào `offset_amount` từng dòng rồi **LUÔN tạo phiếu** — kể cả treo phủ hết nợ (dòng `amount=0 + offset>0` là chủ đích, phiếu vẫn phải qua Duyệt). KHÔNG trừ gì lúc tạo. Chỉ cần `payment_request:read` (hỏi treo) — không đòi `payable:write` nữa. Tạo xong: 1 phiếu → nhảy chi tiết phiếu; nhiều phiếu → nhảy danh sách YCTT |
+| Chi tiết / tạo YCTT — cột "Cấn trừ trả trước" (CR-260) | Cột trên bảng dòng, chỉ hiện khi phiếu có dòng mang offset hoặc đang sửa nháp mà NCC còn treo. Kèm **banner 3 trạng thái** trên chi tiết phiếu: đã duyệt/đã chi → "Đã cấn trừ X đ ... lúc phiếu được duyệt"; chờ duyệt có offset → "bấm Duyệt mới cấn trừ thật ... không đủ treo hoặc nợ đã đổi thì hệ thống chặn duyệt, không tự ý đổi số" (kèm treo còn lại); nháp có treo → mách điền cột rồi Lưu |
+| Hộp thoại "Lập thanh toán trước" của ĐMH | Cảnh báo khi đơn ĐÃ có treo chưa đối trừ — tránh lập phiếu chi trùng |
+| Danh sách Công nợ | Cột "Cấn trừ" (icon cân) trên khoản còn nợ → `PayableOffsetPrepayDialog` (chỉ hiện treo cấp NCC; có danh sách phiếu treo FIFO) — đường phụ cho kế toán, giữ nguyên sau CR-270 |
+
+Cả ba chỗ mượn dữ liệu treo qua `usePrepayHanging` đều gác `enabled` bằng `can('payment_request', 'read')` — luật "tab mượn dữ liệu phân hệ khác phải tự tắt khi thiếu quyền" (tránh toast 403).
+
+### F.5. Ví dụ chuẩn (dùng để đối chiếu khi test / khi AI gợi ý)
+
+1. Kế toán đưa trước NCC A **30tr** (phiếu trả trước, không gắn đơn) → duyệt → chi. Treo cấp NCC của A = **30tr**.
+2. Sau đó có đơn `PO00200` của A trị giá **50tr**, hàng về đủ → công nợ 50tr.
+3. **Đường chính (CR-260)**: thu mua mở chi tiết ĐMH → "Tạo yêu cầu thanh toán" — hộp thoại tự thấy 30tr treo, tick sẵn ô cấn trừ → tạo phiếu có dòng `amount = 20tr` + `offset_amount = 30tr`. Lúc này công nợ **chưa đổi đồng nào**.
+4. Kế toán mở phiếu, thấy banner + cột "Cấn trừ trả trước", bấm **Duyệt** → hệ thống trừ 30tr treo vào nợ (nợ còn 20tr, treo về 0). Bấm **Ghi nhận đã chi** → 20tr còn lại được trả → đơn tất toán, dòng ĐMH tự "Hoàn thành".
+5. *Đường phụ:* nếu phiếu lỡ lập trơn 20tr (không ghi offset), kế toán vào màn Công nợ bấm Cấn trừ trên khoản nợ đó → trừ tối đa `min(30tr, 50tr)` = 30tr ngay; phiếu 20tr chi xong thì đơn cũng tất toán.
+
+Biến thể: nếu ở bước 1 phiếu GẮN đơn `PO00200` (`po_code` có giá trị) thì bước 3 tự xảy ra ngay lúc nhận hàng, kế toán không phải làm gì. Biến thể 2: công ty trả full 50tr cho đơn, NCC hoàn cọc 30tr → dùng nút "Ghi nhận NCC hoàn tiền" thay cho cấn trừ.
+
+**Gợi ý cho trợ lý AI:** khi thấy NCC có treo cấp NCC > 0 và đồng thời có khoản công nợ còn nợ cùng `source_type`, nên chủ động gợi ý người dùng cấn trừ (nêu số `min(treo, nợ)`); khi thấy đơn có treo gắn đơn chưa đối trừ mà người dùng định lập thêm phiếu chi cho đơn đó, cảnh báo nguy cơ chi trùng.

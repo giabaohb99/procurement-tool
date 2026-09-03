@@ -1,6 +1,7 @@
 import { apiDelete, apiGet, apiPatch, apiPost } from '@/core/api'
 import type { ListParams, PaginatedResult } from '@/shared/types/api'
 import type {
+  HangingSummary,
   PaymentRequest,
   PaymentRequestCreateInput,
   PaymentRequestPrint,
@@ -44,4 +45,15 @@ export const paymentRequestApi = {
     apiPost<PaymentRequest>(`${BASE_URL}/${id}/reject`, { reason }),
 
   pay: (id: number) => apiPost<PaymentRequest>(`${BASE_URL}/${id}/pay`),
+
+  /**
+   * CR-268 — tiền treo (phiếu trả trước đã chi, chưa đối trừ hết) của một NCC.
+   * `po_code` -> chỉ treo gắn đúng đơn đó · `unlinked: 1` -> chỉ treo cấp NCC.
+   */
+  hanging: (params: { supplier_code: string; po_code?: string; unlinked?: number; source_type?: string }) =>
+    apiGet<HangingSummary>(`${BASE_URL}/hanging`, { params }),
+
+  /** CR-268 — ghi nhận NCC hoàn tiền phần treo. `amount` 0/bỏ trống = hoàn toàn bộ. */
+  refund: (id: number, payload: { amount: number; note: string }) =>
+    apiPost<PaymentRequest>(`${BASE_URL}/${id}/refund`, payload),
 }

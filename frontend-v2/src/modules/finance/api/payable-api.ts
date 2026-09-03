@@ -1,4 +1,4 @@
-import { apiGet } from '@/core/api'
+import { apiGet, apiPost } from '@/core/api'
 import type { ListParams, PaginatedResult } from '@/shared/types/api'
 import type { Payable, PayableSummary } from '../types/payable'
 
@@ -20,4 +20,12 @@ export const payableApi = {
   list: (params: ListParams) => apiGet<PaginatedResult<Payable>>(BASE_URL, { params }),
 
   summary: (params: ListParams) => apiGet<PayableSummary>(`${BASE_URL}/summary`, { params }),
+
+  /**
+   * CR-268 — kế toán cấn trừ TIỀN TREO CẤP NCC (phiếu trả trước không gắn đơn) vào
+   * khoản công nợ này. `amount` 0/bỏ trống = trừ tối đa min(treo còn lại, nợ còn lại).
+   * Cần quyền `payable.write` — ngoại lệ duy nhất của phân hệ "chỉ đọc" này.
+   */
+  offsetPrepay: (id: number, amount: number) =>
+    apiPost<Payable>(`${BASE_URL}/${id}/offset-prepay`, { amount }),
 }

@@ -183,3 +183,64 @@ def test_doc_yctt_recap_du_hinh(db, seed, cap_quyen):
     assert out["lines"][0] == {"po_code": "PO-01", "invoice_no": "HD-001",
                                "invoice_date": "2026-08-18", "amount": 1000.0}
     assert out["url"] == f"/finance/payment-requests/{req.id}"
+    # Phiếu THƯỜNG (prepay=0) thì KHÔNG có sổ treo — đừng làm model tưởng phiếu nào cũng treo.
+    assert "prepay_hanging_total" not in out
+    assert "hanging" not in out["lines"][0]
+
+
+# ── Tiền treo trả trước (CR-268) ────────────────────────────────────────────────────────
+
+def _tao_phieu_treo(db, seed, created_by, po_code="", allocated=0, refunded=0):
+    """Phiếu trả trước ĐÃ CHI 1 dòng 800: treo còn = 800 - allocated - refunded."""
+    from app.modules.payment_request.model import PaymentRequest, PaymentRequestLine
+
+    req = PaymentRequest(code=f"YCTT-TREO-{po_code or 'NCC'}", supplier_code="NCCA",
+                         supplier_name="NCC Anpha", company_id=seed.company_id,
+                         source_type="goods", request_date="2026-08-25",
+                         payment_method="transfer", prepay=1, total=800, status="paid",
+                         created_by=created_by, updated_by=created_by)
+    db.add(req)
+    db.flush()
+    db.add(PaymentRequestLine(request_id=req.id, po_code=po_code, invoice_no="",
+                              amount=800, allocated_amount=allocated,
+                              refunded_amount=refunded,
+                              created_by=created_by, updated_by=created_by))
+    db.commit()
+    db.refresh(req)
+    return req
+
+
+def test_lookup_dinh_kem_tien_treo_khi_du_quyen(db, seed, khoan_no, cap_quyen):
+    """Lọc về đúng 1 NCC còn treo -> kèm `prepay_hanging` (tách phần unlinked); nhưng
+    thiếu quyền payment_request thì KHÔNG đính kèm — treo là dữ liệu phân hệ YCTT."""
+    cap_quyen(seed.u_req_id, "payable", scope="all", read=True)
+    user = db.get(User, seed.u_req_id)
+    _tao_phieu_treo(db, seed, created_by=seed.u_req_id, po_code="", refunded=300)
+
+    # Chưa có payment_request.read -> im lặng, không lộ treo qua tool công nợ.
+    out = T.run_tool(db, user, "payable_lookup", {"supplier": "NCCA"})
+    assert "prepay_hanging" not in out
+
+    cap_quyen(seed.u_req_id, "payment_request", scope="all", read=True)
+    out2 = T.run_tool(db, user, "payable_lookup", {"supplier": "NCCA"})
+    assert out2["prepay_hanging"]["total"] == 500.0      # 800 - 300 hoàn
+    assert out2["prepay_hanging"]["unlinked"] == 500.0   # dòng không gắn đơn
+    assert out2["prepay_hanging"]["hint"]
+
+    # Kết quả trộn NHIỀU NCC thì không đính kèm — không biết treo của ai để gợi ý.
+    out3 = T.run_tool(db, user, "payable_lookup", {})
+    assert "prepay_hanging" not in out3
+
+
+def test_doc_yctt_tra_truoc_kem_so_treo(db, seed, cap_quyen):
+    """Phiếu trả trước đã chi: từng dòng kèm allocated/refunded/hanging + tổng treo + hint."""
+    cap_quyen(seed.u_req_id, "payment_request", scope="own", read=True)
+    _tao_phieu_treo(db, seed, created_by=seed.u_req_id, po_code="PO-01", allocated=600)
+
+    out = T.run_tool(db, db.get(User, seed.u_req_id), "payment_request_read",
+                     {"code": "YCTT-TREO-PO-01"})
+    assert out["prepay"] is True
+    assert out["lines"][0]["allocated_amount"] == 600.0
+    assert out["lines"][0]["hanging"] == 200.0
+    assert out["prepay_hanging_total"] == 200.0
+    assert out["prepay_hint"]

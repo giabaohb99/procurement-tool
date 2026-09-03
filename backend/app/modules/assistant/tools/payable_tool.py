@@ -138,6 +138,28 @@ def _run_lookup(ctx: ToolContext, args: dict) -> dict:
     if not total[0]:
         out["note"] = ("Không có khoản nợ nào khớp điều kiện trong phạm vi người hỏi được "
                        "xem — nói thẳng, đừng bịa số.")
+
+    # CR-268 — kết quả gom về ĐÚNG MỘT NCC mà NCC đó còn TIỀN TREO trả trước thì đính kèm
+    # để trợ lý chủ động gợi ý cấn trừ. Treo là dữ liệu phân hệ YCTT nên phải có quyền
+    # payment_request mới được xem — không vòng qua hàng rào bằng tool công nợ.
+    supplier_codes = {p.supplier_code for p in rows if p.supplier_code}
+    if len(supplier_codes) == 1 and ctx.can("payment_request"):
+        from app.modules.payment_request.service import summarize_hanging
+
+        hang = summarize_hanging(ctx.db, next(iter(supplier_codes)))
+        if hang["total"] > 0.01:
+            unlinked = round(sum(it["hanging"] for it in hang["items"] if not it["po_code"]), 2)
+            out["prepay_hanging"] = {
+                "total": hang["total"],
+                "unlinked": unlinked,
+                "items": hang["items"],
+                "hint": ("NCC này còn TIỀN TREO trả trước (CR-268) — nhắc người dùng. Phần "
+                         "KHÔNG gắn đơn (unlinked) cấn trừ tay được vào khoản nợ còn lại: "
+                         "nút Cấn trừ (icon cái cân) trên màn Công nợ, trừ tối đa = "
+                         "min(treo, nợ còn lại). Phần gắn đơn sẽ TỰ đối trừ khi đơn đó "
+                         "nhận hàng, không cần thao tác. Nghiệp vụ đầy đủ: "
+                         "doc/tai-lieu-chuc-nang/05-yeu-cau-thanh-toan.md mục F."),
+            }
     return out
 
 
@@ -149,7 +171,9 @@ PAYABLE_LOOKUP_SPEC = ToolSpec(
         "nào quá hạn chưa trả'. Kết quả có summary (tổng nợ / đã trả / CÒN LẠI / quá hạn) "
         "tính trên toàn bộ kết quả lọc, kèm từng khoản nợ với payable_id — muốn lập Yêu cầu "
         "thanh toán từ các khoản này thì gọi tiếp draft_payment_request và truyền đúng các "
-        "payable_id đó. Mặc định chỉ lấy khoản CÒN PHẢI TRẢ."
+        "payable_id đó. Mặc định chỉ lấy khoản CÒN PHẢI TRẢ. Lọc về đúng một NCC mà NCC đó "
+        "còn TIỀN TREO trả trước (CR-268) thì kết quả kèm `prepay_hanging` — đọc `hint` "
+        "trong đó để gợi ý người dùng cấn trừ trước khi lập phiếu chi mới."
     ),
     parameters={
         "type": "object",
@@ -285,7 +309,7 @@ def _run_read_request(ctx: ToolContext, args: dict) -> dict:
         return {"error": "Thiếu code — hỏi người dùng mã phiếu YCTT cần xem."}
 
     from app.modules.payment_request.model import PaymentRequest, PaymentRequestLine
-    from app.modules.payment_request.service import parse_print_texts
+    from app.modules.payment_request.service import line_hanging, parse_print_texts
 
     from .procurement_doc_tool import _label
 
@@ -299,7 +323,25 @@ def _run_read_request(ctx: ToolContext, args: dict) -> dict:
     lines = (ctx.db.query(PaymentRequestLine)
              .filter(PaymentRequestLine.request_id == req.id)
              .order_by(PaymentRequestLine.id.asc()).all())
-    return {
+
+    def _line_out(ln: PaymentRequestLine) -> dict:
+        d = {
+            "po_code": ln.po_code,
+            "invoice_no": ln.invoice_no,
+            "invoice_date": ln.invoice_date,
+            "amount": float(ln.amount or 0),
+        }
+        # CR-268 — phiếu trả trước ĐÃ CHI thì kèm sổ treo từng dòng để trợ lý giải thích
+        # được "tiền đi đâu": đã đối trừ / NCC đã hoàn / còn treo.
+        if req.prepay and req.status == "paid":
+            d.update({
+                "allocated_amount": float(ln.allocated_amount or 0),
+                "refunded_amount": float(ln.refunded_amount or 0),
+                "hanging": line_hanging(ln),
+            })
+        return d
+
+    out = {
         "code": req.code,
         "status": req.status,
         "status_label": _label("payment_request", req.status),
@@ -313,15 +355,20 @@ def _run_read_request(ctx: ToolContext, args: dict) -> dict:
         "note": req.note,
         "reject_reason": req.reject_reason,
         "print_texts": parse_print_texts(req.print_texts),
-        "lines": [{
-            "po_code": ln.po_code,
-            "invoice_no": ln.invoice_no,
-            "invoice_date": ln.invoice_date,
-            "amount": float(ln.amount or 0),
-        } for ln in lines],
+        "lines": [_line_out(ln) for ln in lines],
         "url": f"/finance/payment-requests/{req.id}",
         "total_lines": len(lines),
     }
+    if req.prepay and req.status == "paid":
+        hanging_total = round(sum(line_hanging(ln) for ln in lines), 2)
+        out["prepay_hanging_total"] = hanging_total
+        if hanging_total > 0.01:
+            out["prepay_hint"] = (
+                "Phiếu TRẢ TRƯỚC còn tiền treo. Dòng CÓ mã ĐMH sẽ tự đối trừ khi đơn đó "
+                "nhận hàng; dòng KHÔNG gắn đơn thì kế toán cấn trừ tay ở màn Công nợ (nút "
+                "icon cái cân) hoặc ghi nhận NCC hoàn tiền ngay trên phiếu này. Xem "
+                "doc/tai-lieu-chuc-nang/05-yeu-cau-thanh-toan.md mục F.")
+    return out
 
 
 PAYMENT_REQUEST_READ_SPEC = ToolSpec(
@@ -330,7 +377,9 @@ PAYMENT_REQUEST_READ_SPEC = ToolSpec(
         "Xem chi tiết MỘT phiếu Yêu cầu thanh toán (YCTT) theo mã phiếu — trạng thái, NCC, "
         "hình thức thanh toán, tổng tiền, các dòng đề nghị chi (mã ĐMH, số hóa đơn, số "
         "tiền) và 3 câu chữ bản in (print_texts). Gọi khi người dùng hỏi về một YCTT cụ "
-        "thể ('YCTT00045 tới đâu rồi', 'phiếu thanh toán đó bao nhiêu tiền'). Khi trả "
+        "thể ('YCTT00045 tới đâu rồi', 'phiếu thanh toán đó bao nhiêu tiền'). Phiếu TRẢ "
+        "TRƯỚC (prepay) đã chi còn trả thêm sổ tiền treo (đã đối trừ / NCC đã hoàn / còn "
+        "treo, CR-268) — còn treo thì đọc `prepay_hint` để tư vấn bước xử lý. Khi trả "
         "lời, kèm `url` dạng link để người dùng bấm mở phiếu. Trợ lý KHÔNG duyệt/chi hộ "
         "được — việc đó người dùng tự làm trên màn chi tiết."
     ),

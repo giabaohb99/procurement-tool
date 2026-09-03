@@ -126,3 +126,20 @@ def summary(request: Request, db: Session = Depends(get_db), user=Depends(requir
     ).one()
     return success({"total": float(row[0]), "paid": float(row[1]),
                     "remaining": float(row[2]), "overdue": float(row[3])})
+
+
+@router.post("/{pid}/offset-prepay")
+def offset_prepay_(pid: int, data: dict, db: Session = Depends(get_db),
+                   user=Depends(require("payable", "write"))):
+    """CR-268 — kế toán cấn trừ TIỀN TREO CẤP NCC (phiếu trả trước không gắn đơn)
+    vào khoản công nợ này. Body: {amount} — bỏ trống/0 nghĩa là trừ tối đa
+    min(treo còn lại, nợ còn lại). Treo GẮN ĐƠN thì hệ thống đã tự trừ lúc nhận
+    hàng, không đi qua nút này."""
+    from fastapi import HTTPException
+    p = apply_scope(db.query(Payable).filter(Payable.id == pid),
+                    Payable, "payable", user, get_perm_profile(db, user)).first()
+    if not p:
+        raise HTTPException(403, "Ngoài phạm vi được phép thao tác")
+    from app.modules.payment_request import service as prq_service
+    taken = prq_service.offset_supplier_hanging(db, p, float(data.get("amount") or 0), user.id)
+    return success(_out(db, p), f"Đã cấn trừ {taken:,.0f} đ tiền treo vào khoản nợ")

@@ -1,4 +1,5 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 
 import { appConfig } from '@/core/config/app-config'
 import { queryKeys } from '@/shared/constants/query-keys'
@@ -30,5 +31,21 @@ export function usePayableSummary(params: ListParams = {}, options: { enabled?: 
     // Trang Tổng quan mượn số này nên phải tắt được: không có `payable.read`
     // thì gọi chỉ để nhận 403.
     enabled: options.enabled ?? true,
+  })
+}
+
+/**
+ * CR-268 — cấn trừ tiền treo cấp NCC vào một khoản công nợ (kế toán bấm tay).
+ * Đổi số cả Công nợ lẫn tiền treo -> làm mất hiệu lực toàn nhánh `finance`.
+ */
+export function useOffsetPrepay() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ payableId, amount }: { payableId: number; amount: number }) =>
+      payableApi.offsetPrepay(payableId, amount),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.finance.all })
+      toast.success('Đã cấn trừ tiền treo vào khoản công nợ')
+    },
   })
 }

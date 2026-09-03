@@ -267,6 +267,9 @@ export const queryKeys = {
       ['finance', 'payment-requests', params ?? {}] as const,
     /** Một phiếu YCTT theo id — hành động (duyệt/chi…) làm mất hiệu lực khóa này. */
     paymentRequest: (id: number) => ['finance', 'payment-requests', id] as const,
+    /** CR-268 — tiền treo (phiếu trả trước đã chi, chưa đối trừ) theo NCC/đơn. */
+    prepayHanging: (params?: Record<string, unknown>) =>
+      ['finance', 'payment-requests', 'hanging', params ?? {}] as const,
   },
   system: {
     all: ['system'] as const,

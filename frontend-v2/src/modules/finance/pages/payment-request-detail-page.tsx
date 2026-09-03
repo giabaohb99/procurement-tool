@@ -1,4 +1,4 @@
-import { ArrowLeft, Ban, Banknote, Check, Info, Loader2, Plus, Printer, Save, Send } from 'lucide-react'
+import { ArrowLeft, Ban, Banknote, Check, Info, Loader2, Plus, Printer, Save, Send, Undo2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -26,9 +26,19 @@ import {
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { Checkbox } from '@/shared/ui/checkbox'
 import { DatePicker } from '@/shared/ui/date-picker'
 import { DeleteConfirmButton } from '@/shared/ui/delete-confirm-button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/shared/ui/dialog'
 import { ErrorState } from '@/shared/ui/error-state'
+import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { PageContainer } from '@/shared/ui/page-container'
 import { ReadOnlyValue } from '@/shared/ui/read-only-value'
@@ -43,6 +53,7 @@ import {
 } from '@/shared/ui/select'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { Textarea } from '@/shared/ui/textarea'
+import { cn } from '@/shared/utils/cn'
 import { formatDate } from '@/shared/utils/format-date'
 import { formatMoney } from '@/shared/utils/format-money'
 import { payableApi } from '../api/payable-api'
@@ -56,6 +67,8 @@ import {
   useDeletePaymentRequest,
   usePaymentRequest,
   usePaymentRequestAction,
+  usePrepayHanging,
+  useRefundPrepay,
   useUpdatePaymentRequest,
 } from '../hooks/use-payment-requests'
 import type { Payable } from '../types/payable'
@@ -105,6 +118,7 @@ function blankLine(): EditablePaymentLine {
     payable_total: 0,
     payable_paid: 0,
     amount: 0,
+    offset_amount: 0,
   }
 }
 
@@ -128,6 +142,7 @@ function fromPayable(row: Payable): EditablePaymentLine {
     payable_total: Number(row.total) || 0,
     payable_paid: Number(row.paid_amount) || 0,
     amount: Number(row.remaining) || 0,
+    offset_amount: 0,
   }
 }
 
@@ -146,6 +161,7 @@ function fromRequestLine(line: PaymentRequestLine, index: number): EditablePayme
     payable_total: line.payable_total,
     payable_paid: line.payable_paid,
     amount: line.amount,
+    offset_amount: line.offset_amount ?? 0,
   }
 }
 
@@ -171,7 +187,8 @@ function PaymentRequestCreate() {
   const ids = useMemo(() => idsParam.split(',').map(Number).filter(Boolean), [idsParam])
   const blankMode = ids.length === 0
 
-  const stateRows = (location.state as { rows?: Payable[] } | null)?.rows
+  const navState = location.state as { rows?: Payable[]; prepay?: boolean } | null
+  const stateRows = navState?.rows
 
   // F5 / mở bằng link: mất state điều hướng -> nạp lại đúng các khoản đã tick.
   const needRefetch = ids.length > 0 && !stateRows?.length
@@ -198,6 +215,9 @@ function PaymentRequestCreate() {
   const [supplierCode, setSupplierCode] = useState<string>(() => stateRows?.[0]?.supplier_code ?? '')
   const [companyId, setCompanyId] = useState<number>(() => stateRows?.[0]?.company_id ?? 0)
   const [sourceType, setSourceType] = useState<string>(() => stateRows?.[0]?.source_type ?? 'goods')
+  // CR-268 — phiếu THANH TOÁN TRƯỚC: đi từ hộp thoại "Lập thanh toán trước" của ĐMH
+  // (CR-267) thì tick sẵn; form trắng thì kế toán tự tick khi tạm ứng NCC.
+  const [prepay, setPrepay] = useState<boolean>(() => Boolean(navState?.prepay))
 
   // Khoản nợ nạp về sau (F5) -> đổ vào bảng đúng một lần.
   const refetchedChanged = useHasChanged(refetched)
@@ -220,6 +240,20 @@ function PaymentRequestCreate() {
 
   const noInvoiceCount = lines.filter((line) => !line.invoice_no.trim()).length
   const total = useMemo(() => lines.reduce((sum, line) => sum + (Number(line.amount) || 0), 0), [lines])
+
+  // CR-260 — NCC còn tiền treo cấp NCC (không gắn đơn) thì mở thêm cột "Cấn trừ trả
+  // trước": người lập GHI Ý ĐỊNH cấn trừ lên dòng, backend thực thi khi phiếu được
+  // Duyệt. Phiếu trả trước (prepay) là phiếu SINH treo nên không có cột này.
+  const { data: hangingData } = usePrepayHanging(
+    { supplier_code: headSupplier, unlinked: 1, source_type: headSource },
+    { enabled: !prepay && Boolean(headSupplier) && can('payment_request', 'read') },
+  )
+  const hangingAvailable = hangingData?.total ?? 0
+  const offsetTotal = useMemo(
+    () => lines.reduce((sum, line) => sum + (Number(line.offset_amount) || 0), 0),
+    [lines],
+  )
+  const showOffsetColumn = !prepay && (hangingAvailable > 0.01 || offsetTotal > 0.01)
 
   const supplierName = (code: string) =>
     (suppliersData?.items ?? []).find((supplier) => supplier.code === code)?.name
@@ -258,12 +292,17 @@ function PaymentRequestCreate() {
       supplier_code: headSupplier,
       company_id: companyId,
       source_type: headSource,
+      // CR-268 — phiếu trả trước: backend miễn khớp công nợ lúc gửi duyệt, tiền
+      // đã chi trở thành TIỀN TREO chờ đối trừ.
+      prepay: prepay ? 1 : 0,
       lines: lines.map((line) => ({
         payable_id: line.payable_id,
         po_code: line.po_code,
         invoice_no: line.invoice_no,
         invoice_date: line.invoice_date,
         amount: Number(line.amount) || 0,
+        // CR-260 — chỉ là Ý ĐỊNH cấn trừ, backend thực thi khi phiếu được Duyệt.
+        offset_amount: prepay ? 0 : Number(line.offset_amount) || 0,
       })),
     }
     try {
@@ -340,6 +379,18 @@ function PaymentRequestCreate() {
         </span>
       </p>
 
+      {showOffsetColumn && (
+        <p className="mb-4 flex items-start gap-2 rounded-md border border-info/30 bg-info/8 px-3 py-2 text-sm">
+          <Info className="mt-0.5 size-4 shrink-0 text-info" />
+          <span>
+            Nhà cung cấp này còn <b className="tabular-nums">{formatMoney(hangingAvailable)}</b> tiền
+            treo trả trước (không gắn đơn). Muốn dùng thì ghi số vào cột{' '}
+            <b>Cấn trừ trả trước</b> — phần này chỉ là đề nghị trên phiếu, kế toán bấm{' '}
+            <b>Duyệt</b> mới cấn trừ thật vào công nợ.
+          </span>
+        </p>
+      )}
+
       <div className="min-w-0 space-y-4">
         <Card className="gap-4 py-4">
           <CardHeader className="min-h-9 border-b px-4 pb-3!">
@@ -411,9 +462,31 @@ function PaymentRequestCreate() {
               </Select>
               <p className="text-xs text-muted-foreground">{paymentMethodHint(paymentMethod)}</p>
             </div>
-            {/* CR-149 (thay CR-146): BỎ ô chọn "Nội dung thanh toán" (prepay) — bản in mặc
-                định luôn ghi "Thanh toán công nợ ...", ai cần câu khác sửa thẳng ở khối
-                "Nội dung bản in" trong màn chi tiết sau khi tạo phiếu. */}
+            {/* CR-149 (thay CR-146) từng BỎ ô chọn prepay vì lúc đó cờ chỉ đổi câu chữ
+                bản in. CR-268 đưa lại dưới dạng ô tick với NGHĨA THẬT: phiếu trả trước
+                được miễn cổng khớp công nợ (CR-066) và tiền đã chi thành TIỀN TREO. */}
+            {/* Chỉ hiện ở FORM TRẮNG: tạo từ Công nợ nghĩa là trả cho khoản nợ có thật,
+                tick trả trước ở đó là vô nghĩa. */}
+            {blankMode && (
+              <div className="flex items-start gap-2 sm:col-span-2 lg:col-span-3">
+                <Checkbox
+                  id="prepay-checkbox"
+                  checked={prepay}
+                  onCheckedChange={(checked) => setPrepay(checked === true)}
+                  className="mt-0.5"
+                />
+                <div className="space-y-0.5">
+                  <Label htmlFor="prepay-checkbox" className="cursor-pointer">
+                    Thanh toán trước / tạm ứng nhà cung cấp
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Phiếu KHÔNG cần khớp công nợ khi gửi duyệt. Sau khi chi, số tiền trở thành
+                    &ldquo;tiền treo&rdquo;: dòng có mã ĐMH sẽ tự đối trừ khi đơn đó nhận hàng, dòng
+                    không gắn đơn thì kế toán cấn trừ tay ở màn Công nợ hoặc ghi nhận NCC hoàn tiền.
+                  </p>
+                </div>
+              </div>
+            )}
             <div className="space-y-1.5 sm:col-span-2 lg:col-span-3">
               <Label>Ghi chú</Label>
               <Textarea
@@ -431,6 +504,7 @@ function PaymentRequestCreate() {
           storageKey="finance.payment-request-create-lines"
           showSupplierColumns
           lockLinkedPo
+          showOffsetColumn={showOffsetColumn}
           supplierDisplay={supplierDisplay}
           sourceDisplay={sourceDisplay}
           onPatch={patchLine}
@@ -444,6 +518,12 @@ function PaymentRequestCreate() {
           </Button>
           <div className="min-w-4 flex-1" />
           <span className="text-base text-navy dark:text-foreground">
+            {offsetTotal > 0.01 && (
+              <>
+                Cấn trừ trả trước: <b className="tabular-nums">{formatMoney(offsetTotal)}</b>
+                <span className="mx-2 text-muted-foreground">·</span>
+              </>
+            )}
             Tổng đề nghị thanh toán: <b className="tabular-nums">{formatMoney(total)}</b>
           </span>
         </div>
@@ -463,6 +543,22 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
   const update = useUpdatePaymentRequest(paymentRequestId)
   const remove = useDeletePaymentRequest()
   const runAction = usePaymentRequestAction(paymentRequestId)
+  const refundPrepay = useRefundPrepay(paymentRequestId)
+
+  // CR-260 — treo cấp NCC còn lại: mở cột "Cấn trừ trả trước" khi sửa nháp và cho
+  // người duyệt thấy treo có còn đủ trước khi gật. Duyệt xong thì thôi, khỏi gọi.
+  const { data: hangingData } = usePrepayHanging(
+    {
+      supplier_code: req?.supplier_code ?? '',
+      unlinked: 1,
+      source_type: req?.source_type,
+    },
+    {
+      enabled:
+        Boolean(req && !req.prepay && ['draft', 'submitted'].includes(req.status)) &&
+        can('payment_request', 'read'),
+    },
+  )
 
   const [lines, setLines] = useState<EditablePaymentLine[]>([])
   const [note, setNote] = useState('')
@@ -470,6 +566,10 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
   const [printTexts, setPrintTexts] = useState<PrintTexts>({})
   const [rejectOpen, setRejectOpen] = useState(false)
   const [payOpen, setPayOpen] = useState(false)
+  // CR-268 — hộp "Ghi nhận NCC hoàn tiền" của phiếu trả trước còn treo.
+  const [refundOpen, setRefundOpen] = useState(false)
+  const [refundAmountText, setRefundAmountText] = useState('')
+  const [refundNote, setRefundNote] = useState('')
 
   // Dữ liệu server về (hoặc lưu xong nạp lại) -> đổ lại bản nháp đang sửa.
   const reqChanged = useHasChanged(req)
@@ -520,6 +620,23 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
   const total = lines.reduce((sum, line) => sum + (Number(line.amount) || 0), 0)
   const unmatchedCount = (req.lines ?? []).filter((line) => !line.matched).length
 
+  // CR-268 — phiếu TRẢ TRƯỚC đã chi: cộng ba con số từ chính dòng phiếu (backend
+  // trả kèm `allocated_amount` / `refunded_amount` / `hanging` trên mỗi dòng).
+  const isPrepay = Boolean(req.prepay)
+  const prepayLines = req.lines ?? []
+  const allocatedTotal = prepayLines.reduce((sum, line) => sum + (line.allocated_amount ?? 0), 0)
+  const refundedTotal = prepayLines.reduce((sum, line) => sum + (line.refunded_amount ?? 0), 0)
+  const hangingTotal = prepayLines.reduce((sum, line) => sum + (line.hanging ?? 0), 0)
+  const showPrepayCard = isPrepay && req.status === 'paid'
+  const canRefund = showPrepayCard && hangingTotal > 0.01 && can('payment_request', 'write')
+
+  // CR-260 — phần CẤN TRỪ tiền treo ghi trên dòng phiếu: nháp/chờ duyệt là Ý ĐỊNH,
+  // bấm Duyệt backend mới thực thi. Cột chỉ hiện khi có gì để nhìn: phiếu đã mang
+  // phần cấn trừ, hoặc đang sửa nháp mà NCC còn treo để dùng.
+  const hangingAvailable = hangingData?.total ?? 0
+  const offsetTotal = lines.reduce((sum, line) => sum + (Number(line.offset_amount) || 0), 0)
+  const showOffsetColumn = !isPrepay && (offsetTotal > 0.01 || (editable && hangingAvailable > 0.01))
+
   function patchLine(index: number, patch: Partial<EditablePaymentLine>) {
     setLines((current) => current.map((line, i) => (i === index ? { ...line, ...patch } : line)))
   }
@@ -540,6 +657,8 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
         invoice_no: line.invoice_no,
         invoice_date: line.invoice_date,
         amount: Number(line.amount) || 0,
+        // CR-260 — ý định cấn trừ, thực thi khi Duyệt.
+        offset_amount: Number(line.offset_amount) || 0,
       })),
     })
   }
@@ -558,6 +677,11 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
           Yêu cầu thanh toán {req.code || ''}
         </h1>
         <PaymentRequestStatusBadge status={req.status} />
+        {isPrepay && (
+          <Badge variant="secondary" className="border-0 bg-info/10 text-info">
+            Trả trước
+          </Badge>
+        )}
 
         <div className="min-w-4 flex-1" />
         <div className="flex flex-wrap items-center justify-end gap-2">
@@ -710,12 +834,42 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
           </p>
         )}
 
+        {/* CR-260 — chỗ GHI NHẬN phần cấn trừ để cả người lập lẫn người duyệt cùng
+            nhìn thấy: chưa duyệt là đề nghị, duyệt xong là số đã trừ thật. */}
+        {showOffsetColumn && (
+          <p className="flex items-start gap-2 rounded-md border border-info/30 bg-info/8 px-3 py-2 text-sm">
+            <Info className="mt-0.5 size-4 shrink-0 text-info" />
+            <span>
+              {['approved', 'paid'].includes(req.status) ? (
+                <>
+                  Đã cấn trừ <b className="tabular-nums">{formatMoney(offsetTotal)}</b> tiền treo trả
+                  trước vào công nợ lúc phiếu được duyệt.
+                </>
+              ) : offsetTotal > 0.01 ? (
+                <>
+                  Phiếu đề nghị cấn trừ <b className="tabular-nums">{formatMoney(offsetTotal)}</b>{' '}
+                  tiền treo trả trước — bấm <b>Duyệt</b> mới cấn trừ thật vào công nợ (treo cấp NCC
+                  còn lại: <b className="tabular-nums">{formatMoney(hangingAvailable)}</b>). Không đủ
+                  treo hoặc nợ đã đổi thì hệ thống chặn duyệt, không tự đổi số.
+                </>
+              ) : (
+                <>
+                  Nhà cung cấp còn <b className="tabular-nums">{formatMoney(hangingAvailable)}</b>{' '}
+                  tiền treo trả trước (không gắn đơn). Muốn dùng thì ghi số vào cột{' '}
+                  <b>Cấn trừ trả trước</b> rồi Lưu — kế toán bấm Duyệt mới cấn trừ thật.
+                </>
+              )}
+            </span>
+          </p>
+        )}
+
         <PaymentRequestLinesTable
           rows={lines}
           editable={editable}
           storageKey="finance.payment-request-view-lines"
           showSupplierColumns={false}
           lockLinkedPo={false}
+          showOffsetColumn={showOffsetColumn}
           supplierDisplay={noop}
           sourceDisplay={noop}
           onPatch={patchLine}
@@ -731,9 +885,68 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
           )}
           <div className="min-w-4 flex-1" />
           <span className="text-base text-navy dark:text-foreground">
+            {offsetTotal > 0.01 && (
+              <>
+                Cấn trừ trả trước: <b className="tabular-nums">{formatMoney(offsetTotal)}</b>
+                <span className="mx-2 text-muted-foreground">·</span>
+              </>
+            )}
             Tổng đề nghị thanh toán: <b className="tabular-nums">{formatMoney(total)}</b>
           </span>
         </div>
+
+        {/* CR-268 — sổ theo dõi tiền treo của phiếu trả trước đã chi: đã đối trừ
+            bao nhiêu, NCC hoàn bao nhiêu, còn treo bao nhiêu. */}
+        {showPrepayCard && (
+          <Card className="gap-4 py-4">
+            <CardHeader className="min-h-9 flex flex-row items-center justify-between gap-3 border-b px-4 pb-3!">
+              <CardTitle className="text-base text-navy dark:text-foreground">
+                Tiền treo trả trước
+              </CardTitle>
+              {canRefund && (
+                <Button variant="outline" size="sm" onClick={() => setRefundOpen(true)}>
+                  <Undo2 />
+                  Ghi nhận NCC hoàn tiền
+                </Button>
+              )}
+            </CardHeader>
+            <CardContent className="space-y-3 px-4">
+              <dl className="grid gap-3 sm:grid-cols-3">
+                <div>
+                  <dt className="text-xs text-muted-foreground">Đã đối trừ vào công nợ</dt>
+                  <dd className="font-semibold text-success tabular-nums">
+                    {formatMoney(allocatedTotal)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-muted-foreground">NCC đã hoàn lại</dt>
+                  <dd className="font-semibold text-info tabular-nums">
+                    {formatMoney(refundedTotal)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-muted-foreground">Còn treo</dt>
+                  <dd
+                    className={cn(
+                      'font-semibold tabular-nums',
+                      hangingTotal > 0.01 ? 'text-warning' : 'text-muted-foreground',
+                    )}
+                  >
+                    {formatMoney(hangingTotal)}
+                  </dd>
+                </div>
+              </dl>
+              <p className="flex items-start gap-2 text-xs text-muted-foreground">
+                <Info className="mt-0.5 size-3.5 shrink-0" />
+                <span>
+                  Dòng gắn mã ĐMH tự đối trừ khi đơn đó nhận hàng sinh công nợ. Dòng không gắn đơn
+                  thì kế toán cấn trừ tay ở màn Công nợ, hoặc bấm <b>Ghi nhận NCC hoàn tiền</b> khi
+                  nhà cung cấp trả lại tiền cọc.
+                </span>
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         <DocumentAttachmentsCard
           entity="payment_request"
@@ -813,6 +1026,68 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
           setRejectOpen(false)
         }}
       />
+
+      {/* CR-268 — NCC hoàn lại tiền treo (tiền VỀ công ty, khác cấn trừ là tiền ở
+          lại thành tiền hàng). Để trống số tiền = hoàn toàn bộ phần còn treo. */}
+      <Dialog open={refundOpen} onOpenChange={setRefundOpen}>
+        <DialogContent className="sm:max-w-[480px]">
+          <DialogHeader>
+            <DialogTitle>Ghi nhận nhà cung cấp hoàn tiền</DialogTitle>
+            <DialogDescription>
+              Phiếu còn treo <b className="tabular-nums">{formatMoney(hangingTotal)}</b>. Ghi nhận
+              phần NCC đã chuyển trả lại — không đụng tới công nợ.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="refund-amount">Số tiền hoàn</Label>
+              <Input
+                id="refund-amount"
+                type="number"
+                min={0}
+                value={refundAmountText}
+                placeholder={`Để trống = hoàn toàn bộ ${formatMoney(hangingTotal)}`}
+                onChange={(event) => setRefundAmountText(event.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="refund-note">Ghi chú</Label>
+              <Input
+                id="refund-note"
+                value={refundNote}
+                placeholder="VD: NCC chuyển trả tiền cọc ngày…"
+                onChange={(event) => setRefundNote(event.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRefundOpen(false)}>
+              Đóng
+            </Button>
+            <Button
+              disabled={refundPrepay.isPending}
+              onClick={() => {
+                const amount = Number(refundAmountText) || 0
+                if (amount > hangingTotal + 0.01) {
+                  toast.error(`Số hoàn vượt tiền treo còn lại (${formatMoney(hangingTotal)})`)
+                  return
+                }
+                void refundPrepay
+                  .mutateAsync({ amount, note: refundNote })
+                  .then(() => {
+                    setRefundOpen(false)
+                    setRefundAmountText('')
+                    setRefundNote('')
+                  })
+                  .catch(() => undefined) // httpClient đã tự toast lỗi non-GET.
+              }}
+            >
+              {refundPrepay.isPending ? <Loader2 className="animate-spin" /> : <Undo2 />}
+              Ghi nhận hoàn tiền
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={payOpen} onOpenChange={setPayOpen}>
         <AlertDialogContent>

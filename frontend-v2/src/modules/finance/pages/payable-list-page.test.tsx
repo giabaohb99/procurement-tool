@@ -22,6 +22,9 @@ vi.mock('../hooks/use-payables', () => ({
     data: { total: 0, paid: 0, remaining: 0, overdue: 0 },
     isLoading: false,
   }),
+  // CR-268: dialog cấn trừ tiền trả trước mount sẵn (đóng) trên trang — thiếu
+  // export này là cả trang nổ ngay lúc render, 10 test không liên quan đỏ theo.
+  useOffsetPrepay: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }))
 
 vi.mock('@/modules/hr/hooks/use-companies', () => ({

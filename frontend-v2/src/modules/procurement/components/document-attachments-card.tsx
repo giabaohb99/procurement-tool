@@ -14,9 +14,11 @@ import {
   Upload,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { downloadFile } from '@/core/api'
+import { appRoutes } from '@/shared/constants/app-routes'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
@@ -173,18 +175,34 @@ export function DocumentAttachmentsCard({
             </Button>
           )}
 
+          {/* Hai lối vào hồ sơ CẢ CHUỖI, chỉ có ở ĐMH vì `/api/attachments/chain`
+              chỉ nhận `entity = purchase_order` (nấc khác trả 400). */}
           {entity === 'purchase_order' && !isNew && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={zipping}
-              title="Tải toàn bộ chứng từ của cả chuỗi (YCMH, phiếu khảo sát, đơn hàng) trong một tệp nén"
-              onClick={() => void handleChainZip()}
-            >
-              <FolderArchive />
-              {zipping ? 'Đang nén' : 'Tải chuỗi chứng từ (.zip)'}
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                asChild
+                title="Mở trang xem toàn bộ chứng từ của chuỗi (YCMH, phiếu khảo sát, YCBG)"
+              >
+                <Link to={appRoutes.procurement.purchaseOrderDocuments(entityId)}>
+                  <FolderOpen />
+                  Xem cả chuỗi chứng từ
+                </Link>
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={zipping}
+                title="Tải toàn bộ chứng từ của cả chuỗi (YCMH, phiếu khảo sát, đơn hàng) trong một tệp nén"
+                onClick={() => void handleChainZip()}
+              >
+                <FolderArchive />
+                {zipping ? 'Đang nén' : 'Tải chuỗi chứng từ (.zip)'}
+              </Button>
+            </>
           )}
         </div>
       </CardHeader>

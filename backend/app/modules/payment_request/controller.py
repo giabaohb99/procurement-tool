@@ -44,7 +44,13 @@ def _line(db, ln) -> dict:
             "invoice_no": ln.invoice_no, "amount": float(ln.amount or 0),
             "invoice_date": invoice_date, "due_date": due_date, "incur_date": incur_date,
             "payable_total": tot, "payable_paid": paid,
-            "matched": bool(payables)}
+            "matched": bool(payables),
+            # CR-268 — tiền treo của phiếu trả trước: chỉ có nghĩa khi phiếu prepay=1 đã chi
+            "allocated_amount": float(ln.allocated_amount or 0),
+            "refunded_amount": float(ln.refunded_amount or 0),
+            # CR-260 — phần đề nghị cấn trừ tiền treo, thực thi khi phiếu được DUYỆT
+            "offset_amount": float(ln.offset_amount or 0),
+            "hanging": service.line_hanging(ln)}
 
 
 def _out(db: Session, req: PaymentRequest) -> dict:
@@ -70,6 +76,14 @@ def list_(request: Request, pg: dict = Depends(pagination), db: Session = Depend
         from .model import PaymentRequestLine
         sub = select(PaymentRequestLine.request_id).where(PaymentRequestLine.po_code.like(f"%{po_code}%"))
         q = q.filter(PaymentRequest.id.in_(sub))
+    # Khối "YCTT của đơn này" trên chi tiết ĐMH cần khớp ĐÚNG mã đơn — lọc LIKE ở
+    # trên sẽ vơ nhầm PO-1 vào PO-10, nên tách tham số riêng thay vì đổi hành vi cũ.
+    po_exact = (request.query_params.get("po_code_exact") or "").strip()
+    if po_exact:
+        from sqlalchemy import select
+        from .model import PaymentRequestLine
+        sub = select(PaymentRequestLine.request_id).where(PaymentRequestLine.po_code == po_exact)
+        q = q.filter(PaymentRequest.id.in_(sub))
     q = apply_scope(q, PaymentRequest, "payment_request", user, get_perm_profile(db, user))
     total = q.count()
     q = apply_sort_from_request(q, PaymentRequest, request, default=PaymentRequest.id.desc())
@@ -78,6 +92,21 @@ def list_(request: Request, pg: dict = Depends(pagination), db: Session = Depend
            | {"total": float(p.total or 0), "created_by_name": resolve_actor(db, p.created_by)}
            for p in items]
     return success({"total": total, "items": out})
+
+
+# CR-268 — LƯU Ý thứ tự route: /hanging PHẢI đứng TRƯỚC /{rid}, nếu không FastAPI
+# đem "hanging" đi parse int cho tham số rid và trả 422.
+@router.get("/hanging")
+def get_hanging_(supplier_code: str, po_code: str = "", unlinked: int = 0,
+                 source_type: str = "goods", db: Session = Depends(get_db),
+                 user=Depends(require("payment_request", "read"))):
+    """CR-268 — tiền treo (phiếu trả trước đã chi, chưa đối trừ/hoàn hết) của 1 NCC.
+
+    - `po_code=POxxxxx` -> chỉ treo gắn đúng đơn đó (màn chi tiết ĐMH).
+    - `unlinked=1`      -> chỉ treo CẤP NCC không gắn đơn (nút cấn trừ ở màn Công nợ).
+    - Không truyền gì   -> toàn bộ treo của NCC."""
+    pc = (po_code or "").strip() or ("" if unlinked else None)
+    return success(service.summarize_hanging(db, supplier_code.strip(), source_type, pc))
 
 
 @router.get("/{rid}")
@@ -185,3 +214,16 @@ def pay_(rid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_
     r = service.set_status(db, rid, "paid", user.id)
     _notify_pay(db, background_tasks, r, "pay_paid")
     return success(_out(db, r), "Đã ghi nhận chi")
+
+
+@router.post("/{rid}/refund")
+def refund_(rid: int, data: dict, db: Session = Depends(get_db),
+            user=Depends(require("payment_request", "write"))):
+    """CR-268 — ghi nhận NCC HOÀN TIỀN phần treo của phiếu trả trước đã chi.
+
+    Body: {amount, note} — amount bỏ trống/0 nghĩa là hoàn toàn bộ phần còn treo."""
+    amount = float(data.get("amount") or 0)
+    note = (data.get("note") or "").strip()
+    taken = service.record_refund(db, rid, amount, note, user.id)
+    return success(_out(db, service.get_request(db, rid)),
+                   f"Đã ghi nhận NCC hoàn {taken:,.0f} đ")

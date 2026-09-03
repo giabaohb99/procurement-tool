@@ -45,6 +45,9 @@ export const appRoutes = {
     purchaseOrders: '/procurement/purchase-orders',
     purchaseOrderNew: '/procurement/purchase-orders/new',
     purchaseOrderDetail: (id: number | string) => `/procurement/purchase-orders/${id}`,
+    /** Hồ sơ chứng từ cả chuỗi ĐMH → YCMH → phiếu khảo sát → YCBG. */
+    purchaseOrderDocuments: (id: number | string) =>
+      `/procurement/purchase-orders/${id}/documents`,
     purchaseOrderPrint: (id: number | string) => `/print/purchase-order/${id}`,
     /** Báo cáo tiến độ theo từng lần giao hàng. */
     purchaseProgress: '/procurement/purchase-progress',

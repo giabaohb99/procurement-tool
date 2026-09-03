@@ -337,6 +337,14 @@ def recompute_effects(db: Session, po: PurchaseOrder, user_id: int):
         total_order += qty_order
         total_received += recv_sum
 
+    # CR-268 — nhận hàng sinh/cập nhật công nợ xong thì TỰ ĐỘNG đối trừ tiền treo
+    # (phiếu THANH TOÁN TRƯỚC gắn đúng đơn này, đã chi). Phải chạy TRƯỚC
+    # apply_auto_progress (gọi ngay sau recompute_effects) vì is_line_paid đọc
+    # paid_amount của công nợ. Treo CẤP NCC (không gắn đơn) KHÔNG tự trừ — kế toán
+    # bấm tay, xem payment_request.service.
+    from app.modules.payment_request import service as prq_service   # LAZY: tránh circular
+    prq_service.apply_prepay_offsets(db, po.code, po.supplier_code, user_id)
+
     # Trạng thái PO theo tiến độ nhận (không hạ cấp khi chưa duyệt)
     if po.status in ("approved", "partial", "received") and total_order > 0:
         if total_received <= 0:
