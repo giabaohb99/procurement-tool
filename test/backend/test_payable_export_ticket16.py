@@ -53,7 +53,7 @@ def _payable(db, company_id, **kw):
     vals = dict(company_id=company_id, supplier_code="NX", supplier_name="NCC Xanh",
                 source_type="goods", po_code="PO-1", invoice_no="HD-1",
                 incur_date=_d(-5), due_date=_d(10), amount=1000, vat=0,
-                total=1000, paid_amount=0, remaining=1000, status="Chờ TT")
+                total=1000, paid_amount=0, remaining=1000, status="unpaid")
     vals.update(kw)
     p = Payable(**vals)
     db.add(p)
@@ -78,7 +78,7 @@ def _sheet(resp):
 # ── build_rows ──────────────────────────────────────────────────────────────────
 def test_build_rows_nhan_day_du_nhu_man_hinh(db, seed):
     chua_han = _payable(db, seed.company_id)
-    qua_han = _payable(db, seed.company_id, source_type="shipping", status="Đã TT",
+    qua_han = _payable(db, seed.company_id, source_type="shipping", status="paid",
                        due_date=_d(-40), paid_amount=1000, remaining=0)
     rows = build_rows(db, [chua_han, qua_han])
 

@@ -1,7 +1,8 @@
-import { FilePlus2, Scale, Search } from 'lucide-react'
+import { Download, FilePlus2, Scale, Search } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import { downloadFile } from '@/core/api/download-file'
 import { usePermission } from '@/core/authorization/use-permission'
 import { appConfig } from '@/core/config/app-config'
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
@@ -63,6 +64,29 @@ const DATE_FIELDS = [
 
 const DEFAULT_DATE_FIELD = DATE_FIELDS[0].value
 
+/**
+ * Khóa cột trên bảng -> khóa cột file Excel (`COLS` trong
+ * `backend/app/modules/payable/export.py`, bao-CR-275). `incur_date` dịch sang
+ * `created_at` vì file chỉ có MỘT cột "Ngày phát sinh" (backend tự rơi về
+ * incur_date khi thiếu created_at). Cột không có trong bảng dịch (tick chọn,
+ * cấn trừ, tiền trước VAT / VAT, "Ngày ghi sổ") vốn không nằm trong file xuất.
+ */
+const EXPORT_COLUMN_KEYS: Record<string, string> = {
+  supplier_name: 'supplier_name',
+  supplier_code: 'supplier_code',
+  source_type: 'source_type',
+  company: 'company',
+  po_code: 'po_code',
+  invoice_no: 'invoice_no',
+  incur_date: 'created_at',
+  due_date: 'due_date',
+  aging: 'aging',
+  total: 'total',
+  paid_amount: 'paid_amount',
+  remaining: 'remaining',
+  status: 'status',
+}
+
 const FILTER_CONFIG = {
   fields: PAYABLE_FILTER_FIELDS,
   allowConjunctionToggle: true,
@@ -109,6 +133,8 @@ function PayableListContent() {
   const [dateField, setDateField] = useUrlParamState('date_field', DEFAULT_DATE_FIELD)
   const [dateFrom, dateTo, setDateRange] = useUrlRangeParam('date_from', 'date_to')
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
+  /** Cột đang hiện trên bảng — nút "Xuất Excel" bám theo để file khớp màn hình. */
+  const [visibleColumnKeys, setVisibleColumnKeys] = useState<string[]>([])
 
   // Khoản đang tick để lên đề nghị thanh toán. Giữ CẢ BẢN GHI (không chỉ id) để
   // đếm được số NCC và truyền thẳng sang màn tạo phiếu, khỏi phải tải lại theo id.
@@ -435,6 +461,24 @@ function PayableListContent() {
     })
   }
 
+  // Ticket #16 (bao-CR-275): xuất Excel đúng những gì đang thấy — bộ lọc + phạm
+  // vi + cột đang hiện; có tick chọn thì CHỈ xuất các khoản đã tick (backend nhận
+  // `ids` và tự bỏ giới hạn năm cho các khoản đó).
+  const canExport = can('payable', 'export')
+
+  const handleExportExcel = async () => {
+    const cols = visibleColumnKeys
+      .map((key) => EXPORT_COLUMN_KEYS[key])
+      .filter(Boolean)
+      .join(',')
+    const ids = selectedRows.map((r) => r.id).join(',')
+    await downloadFile('/api/payables/export/xlsx', 'cong-no-phai-tra.xlsx', {
+      ...filterParams,
+      ...(ids ? { ids } : {}),
+      ...(cols ? { cols } : {}),
+    })
+  }
+
   // Bấm dòng thì mở ĐƠN MUA HÀNG sinh ra khoản nợ đó — đường tra ngược duy nhất
   // từ sổ nợ về chứng từ gốc. Không có quyền đọc ĐMH thì bỏ hẳn, kẻo bấm xong
   // rơi vào màn báo thiếu quyền.
@@ -446,13 +490,32 @@ function PayableListContent() {
         title="Công nợ phải trả"
         description="Khoản phải trả nhà cung cấp và đơn vị vận chuyển, sinh tự động khi nhận hàng."
         actions={
-          canCreatePayment ? (
-            <Button disabled={selectedRows.length === 0} onClick={createRequest}>
-              <FilePlus2 className="size-4" />
-              Tạo đề nghị thanh toán
-              {selectedRows.length > 0 &&
-                ` (${selectedRows.length} khoản · ${selectedSupplierCount} NCC)`}
-            </Button>
+          canExport || canCreatePayment ? (
+            <div className="flex items-center gap-2">
+              {canExport && (
+                <Button
+                  variant="outline"
+                  onClick={handleExportExcel}
+                  title={
+                    selectedRows.length > 0
+                      ? `Chỉ xuất ${selectedRows.length} khoản đang tick chọn`
+                      : 'Xuất mọi khoản khớp bộ lọc đang đặt'
+                  }
+                >
+                  <Download className="size-4" />
+                  Xuất Excel
+                  {selectedRows.length > 0 && ` (${selectedRows.length} khoản đã tick)`}
+                </Button>
+              )}
+              {canCreatePayment && (
+                <Button disabled={selectedRows.length === 0} onClick={createRequest}>
+                  <FilePlus2 className="size-4" />
+                  Tạo đề nghị thanh toán
+                  {selectedRows.length > 0 &&
+                    ` (${selectedRows.length} khoản · ${selectedSupplierCount} NCC)`}
+                </Button>
+              )}
+            </div>
           ) : undefined
         }
       />
@@ -496,6 +559,7 @@ function PayableListContent() {
           isError={isError}
           emptyMessage="Không có khoản công nợ nào khớp bộ lọc."
           storageKey="finance.payables"
+          onVisibleColumnsChange={setVisibleColumnKeys}
           pagination={{
             page,
             pageSize,

@@ -13,6 +13,12 @@ import type { Payable } from '../types/payable'
 //  hiện nguyên vẹn ở đầu vào của hook.
 const listCalls: ListParams[] = []
 
+// bao-CR-275: bắt tham số nút "Xuất Excel" gửi xuống — ids tick chọn + cols theo
+// cột đang hiện. `vi.hoisted` vì vi.mock được kéo lên trên mọi khai báo const.
+const { downloadFileMock } = vi.hoisted(() => ({ downloadFileMock: vi.fn() }))
+
+vi.mock('@/core/api/download-file', () => ({ downloadFile: downloadFileMock }))
+
 vi.mock('../hooks/use-payables', () => ({
   usePayables: (params: ListParams) => {
     listCalls.push(params)
@@ -32,9 +38,14 @@ vi.mock('@/modules/hr/hooks/use-companies', () => ({
 }))
 
 let canCreatePayment = true
+let canExportPayable = true
 vi.mock('@/core/authorization/use-permission', () => ({
   usePermission: () => ({
-    can: (entity: string) => (entity === 'payment_request' ? canCreatePayment : true),
+    can: (entity: string, action: string) => {
+      if (entity === 'payment_request') return canCreatePayment
+      if (entity === 'payable' && action === 'export') return canExportPayable
+      return true
+    },
     canAccess: () => true,
   }),
 }))
@@ -105,6 +116,8 @@ function submitButton() {
 beforeEach(() => {
   listCalls.length = 0
   canCreatePayment = true
+  canExportPayable = true
+  downloadFileMock.mockClear()
   localStorage.clear()
 })
 
@@ -161,6 +174,67 @@ describe('PayableListPage — chọn hết trong trang', () => {
 
     expect(screen.queryByRole('checkbox', { name: /khoản trong trang/ })).not.toBeInTheDocument()
     expect(screen.queryAllByRole('checkbox')).toHaveLength(0)
+  })
+})
+
+describe('PayableListPage — xuất Excel (bao-CR-275)', () => {
+  function exportButton() {
+    return screen.getByRole('button', { name: /Xuất Excel/ })
+  }
+
+  it('translates the visible screen columns into file column keys, dropping the screen-only ones', async () => {
+    const user = userEvent.setup()
+    build()
+
+    await user.click(exportButton())
+
+    //  Cột tick chọn + cột cấn trừ không có mặt trong file; `incur_date` phải
+    //  dịch thành `created_at` (file chỉ có MỘT cột "Ngày phát sinh"); ba cột ẩn
+    //  mặc định (Ngày ghi sổ / tiền trước VAT / VAT) không được lọt vào.
+    expect(downloadFileMock).toHaveBeenCalledWith(
+      '/api/payables/export/xlsx',
+      'cong-no-phai-tra.xlsx',
+      expect.objectContaining({
+        cols: [
+          'supplier_name',
+          'supplier_code',
+          'source_type',
+          'company',
+          'po_code',
+          'invoice_no',
+          'created_at',
+          'due_date',
+          'aging',
+          'total',
+          'paid_amount',
+          'remaining',
+          'status',
+        ].join(','),
+      }),
+    )
+    //  Không tick gì thì KHÔNG gửi `ids` — gửi chuỗi rỗng là backend hiểu nhầm
+    //  thành "tick rỗng" và trả về file trắng.
+    expect(downloadFileMock.mock.calls[0][2].ids).toBeUndefined()
+  })
+
+  it('sends only the ticked rows as ids and keeps the active filter params', async () => {
+    const user = userEvent.setup()
+    build('/finance/payables?year=2025')
+
+    await user.click(rowCheckboxes()[0])
+    await user.click(rowCheckboxes()[1])
+    await user.click(exportButton())
+
+    expect(downloadFileMock.mock.calls[0][2]).toMatchObject({ ids: '1,2', year: '2025' })
+  })
+
+  it('hides the export button without the payable.export permission', () => {
+    canExportPayable = false
+    build()
+
+    expect(screen.queryByRole('button', { name: /Xuất Excel/ })).not.toBeInTheDocument()
+    // Nút tạo đề nghị thanh toán vẫn còn — hai quyền độc lập nhau.
+    expect(submitButton()).toBeInTheDocument()
   })
 })
 
