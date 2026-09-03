@@ -11,8 +11,10 @@ import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
 import { Button } from '@/shared/ui/button'
+import { IconTooltip } from '@/shared/ui/icon-tooltip'
 import { cn } from '@/shared/utils/cn'
 import { useCollapsedGroups } from '../hooks/use-collapsed-groups'
+import { useElementWidth } from '../hooks/use-element-width'
 import { useGanttLinkDraft } from '../hooks/use-gantt-link-draft'
 import { useGanttGridHidden } from '../hooks/use-gantt-grid-hidden'
 import { useGanttPaneWidth } from '../hooks/use-gantt-pane-width'
@@ -21,13 +23,7 @@ import { useOffscreenBars } from '../hooks/use-offscreen-bars'
 import { useWheelAxisLock } from '../hooks/use-wheel-axis-lock'
 import { useWorkTask } from '../hooks/use-work-board'
 import type { CardFields } from '../types/view-options'
-import type {
-  WorkLabelField,
-  WorkMember,
-  WorkSection,
-  WorkTask,
-  WorkTaskLink,
-} from '../types/work'
+import type { WorkLabelField, WorkMember, WorkSection, WorkTask, WorkTaskLink } from '../types/work'
 import { WORK_TASK_STATUS } from '../types/work'
 import {
   datesToSave,
@@ -69,8 +65,6 @@ import type { TaskRowActions } from './task-list-row'
  * trục thời gian, mà trục ấy mới là thứ người ta mở Gantt để xem.
  */
 const GANTT_TITLE_COLUMN: TaskListColumn = { ...TITLE_COLUMN, width: 240, minWidth: 160 }
-
-
 
 interface GanttViewProps extends TaskRowActions {
   listId: number
@@ -212,19 +206,20 @@ export function GanttView({
       khách chốt 31/08/2026 là phải hiện đủ, chỉ mặc định thấy ba.  */
   const columns = useMemo(() => buildListColumns(fields, labelFields), [fields, labelFields])
   const widthColumns = useMemo(() => [GANTT_TITLE_COLUMN, ...columns], [columns])
-  const { resize, styleVars, totalWidth } = useListColumnWidths(
-    listId,
-    widthColumns,
-    'gantt',
-  )
+  const { resize, styleVars, totalWidth } = useListColumnWidths(listId, widthColumns, 'gantt')
   //  Bề rộng NỘI DUNG của lưới (mọi cột + lề + khe giữa các ô) — chặn trên của
   //  thanh chia: kéo rộng hơn thế chỉ chừa thêm khoảng trắng.
   const gridContentWidth = ROW_PAD_LEFT + totalWidth + widthColumns.length * COLUMN_GAP + 8
+
+  const rootRef = useRef<HTMLDivElement>(null)
+  //  Bề rộng khung Gantt — lưới trái mặc định lấy một TỶ LỆ của nó chứ không
+  //  đứng im ở một con số cứng, xem `useGanttPaneWidth`.
+  const frameWidth = useElementWidth(rootRef)
   const {
     width: paneWidth,
     maxWidth: maxPaneWidth,
     resize: resizePane,
-  } = useGanttPaneWidth(listId, gridContentWidth)
+  } = useGanttPaneWidth(listId, gridContentWidth, frameWidth)
   const { hidden: gridHidden, toggle: toggleGrid } = useGanttGridHidden(listId)
 
   const gridRef = useRef<HTMLDivElement>(null)
@@ -352,8 +347,16 @@ export function GanttView({
     if (!box || daCuonCho.current === zoom) return
     const x = todayLeft(timeline, homNay)
     if (x === null) return
-    daCuonCho.current = zoom
-    box.scrollLeft = Math.max(0, x - box.clientWidth / 3)
+
+    const muon = Math.max(0, x - box.clientWidth / 3)
+    box.scrollLeft = muon
+    /*  Chỉ ghi nhận "đã canh" khi trình duyệt THỰC SỰ nhận con số ấy.
+        Gán `scrollLeft` vượt quá `scrollWidth - clientWidth` thì nó bị kẹp im
+        lặng về 0; đánh dấu trước khi kiểm là khóa luôn, biểu đồ nằm mãi ở đầu
+        dải — tức tháng 1 trong khi hôm nay là tháng 9, và mọi thanh việc thì ở
+        ngoài tầm nhìn. Hiệu ứng này chạy sau MỌI nhịp vẽ (cố ý không có mảng
+        phụ thuộc) nên nhịp sau, lúc trục đã có bề rộng thật, nó tự thử lại.  */
+    if (box.scrollLeft > 0 || muon === 0) daCuonCho.current = zoom
   })
 
   /** Đưa vạch hôm nay về khoảng một phần ba bên trái — cùng chỗ với lúc mở màn. */
@@ -431,6 +434,7 @@ export function GanttView({
       onDragCancel={() => setKeo(null)}
     >
       <div
+        ref={rootRef}
         style={styleVars}
         /*  KHÔNG viền, không bo góc, không vạch trên, và nền TRÙNG nền trang
             (`bg-canvas`) chứ không phải một tấm thẻ trắng: Gantt là một mặt
@@ -457,50 +461,50 @@ export function GanttView({
              không ai thấy, và `IntersectionObserver` của chip «cuộn về thanh»
              vẫn phải theo dõi từng thanh trong đó.  */}
         {!gridHidden && (
-        <div
-          ref={gridPaneRef}
-          /*  ⚠️ ĐỪNG thêm `scroll-snap` vào đây. Đã thử cho cuộn ngang bám mép
+          <div
+            ref={gridPaneRef}
+            /*  ⚠️ ĐỪNG thêm `scroll-snap` vào đây. Đã thử cho cuộn ngang bám mép
               cột để không bao giờ thấy nửa viên chip ở sát ô tên ghim; khách bác
               ngay 31/08/2026 — *"dừng làm snap ngang làm dị khó chịu á"*. Cuộn
               phải trôi tự do.  */
-          //  KHÔNG `border-r` ở đây: thanh chia ngay bên phải đã là nét 1px rồi,
-          //  để cả hai là hai vạch dọc sát nhau.
-          className="shrink-0 overflow-x-auto overflow-y-hidden"
-          style={{ width: paneWidth }}
-          onScroll={markGridScrolledX}
-        >
-          <GanttGrid
-            titleColumn={GANTT_TITLE_COLUMN}
-            gridRef={gridRef}
-            contentWidth={gridContentWidth}
-            onResize={resize}
-            groups={groups}
-            sections={sections}
-            columns={columns}
-            stickyTitle
-            fields={fields}
-            labelFields={labelFields}
-            members={members}
-            canEdit={canEdit}
-            canManage={canManage}
-            defaultPicId={defaultPicId}
-            dragEnabled={dragEnabled}
-            isCollapsed={isCollapsed}
-            onToggleCollapse={toggle}
-            expandedTaskId={expandedTaskId}
-            onToggleExpand={(taskId) =>
-              setExpandedTaskId((prev) => (prev === taskId ? null : taskId))
-            }
-            rowHeight={ROW_HEIGHT}
-            onDraggingSectionChange={setDraggingSectionId}
-            onMoveTask={onMoveTask}
-            onMoveSubtask={onMoveSubtask}
-            onMoveSection={onMoveSection}
-            onAddTask={onAddTask}
-            {...rowActions}
-            onOpenTask={openTask}
-          />
-        </div>
+            //  KHÔNG `border-r` ở đây: thanh chia ngay bên phải đã là nét 1px rồi,
+            //  để cả hai là hai vạch dọc sát nhau.
+            className="shrink-0 overflow-x-auto overflow-y-hidden"
+            style={{ width: paneWidth }}
+            onScroll={markGridScrolledX}
+          >
+            <GanttGrid
+              titleColumn={GANTT_TITLE_COLUMN}
+              gridRef={gridRef}
+              contentWidth={gridContentWidth}
+              onResize={resize}
+              groups={groups}
+              sections={sections}
+              columns={columns}
+              stickyTitle
+              fields={fields}
+              labelFields={labelFields}
+              members={members}
+              canEdit={canEdit}
+              canManage={canManage}
+              defaultPicId={defaultPicId}
+              dragEnabled={dragEnabled}
+              isCollapsed={isCollapsed}
+              onToggleCollapse={toggle}
+              expandedTaskId={expandedTaskId}
+              onToggleExpand={(taskId) =>
+                setExpandedTaskId((prev) => (prev === taskId ? null : taskId))
+              }
+              rowHeight={ROW_HEIGHT}
+              onDraggingSectionChange={setDraggingSectionId}
+              onMoveTask={onMoveTask}
+              onMoveSubtask={onMoveSubtask}
+              onMoveSection={onMoveSection}
+              onAddTask={onAddTask}
+              {...rowActions}
+              onOpenTask={openTask}
+            />
+          </div>
         )}
 
         {!gridHidden && (
@@ -510,95 +514,103 @@ export function GanttView({
         {/*  TRỤC THỜI GIAN — khung cuộn CHÍNH: cuộn cả hai chiều và lái chiều
              dọc của lưới trái. */}
         <div ref={scrollRef} onScroll={syncGridScroll} className="min-w-0 flex-1 overflow-auto">
-        <div className="relative" style={{ width: timeline.totalWidth }}>
-          <GanttTimelineHeader header={header} zoom={zoom} leadInset={gridHidden ? 28 : 0} />
+          {/*  `min-h-full` + cột dọc: dự án ít việc thì các hàng chỉ chiếm phần
+             trên, mà lưới ngày lại dừng ngay dưới hàng cuối — bên dưới là một
+             mảng trắng to đùng, nhìn như biểu đồ bị cắt ngang. Lark kẻ cột chạy
+             suốt tới đáy khung. Cho khối này cao TỐI THIỂU bằng khung cuộn rồi
+             để vùng thanh (`areaRef`) nuốt phần dư là lưới tự chạy tới đáy. */}
+          <div className="relative flex min-h-full flex-col" style={{ width: timeline.totalWidth }}>
+            {/*  Lưới trái ẩn thì nút mở lại nằm ở góc TRÁI dải tiêu đề trục; chừa
+               đúng bề rộng hộp bọc nó (6 + 32 + 6) để nhãn tháng không bắt đầu
+               ngay dưới biểu tượng. */}
+            <GanttTimelineHeader header={header} zoom={zoom} leadInset={gridHidden ? 34 : 0} />
 
-          {/* Lưới nền — vẽ theo Ô của hàng tiêu đề dưới, không phải theo từng
+            {/* Lưới nền — vẽ theo Ô của hàng tiêu đề dưới, không phải theo từng
               ngày: ở mức Tháng một dải hai năm là hơn 700 ngày, tức 700 nút DOM
               cho một tấm lưới mà mắt chỉ thấy mỗi vạch tháng. */}
-          <div className="absolute inset-x-0 bottom-0 flex" style={{ top: HEADER_HEIGHT }}>
-            {header.bottom.map((cell) => (
-              <div
-                key={cell.key}
-                style={{ width: cell.width }}
-                className={cn(
-                  'h-full shrink-0 border-r border-border/60',
-                  //  Cuối tuần tô nhạt hơn hẳn ngày làm việc — nhìn phát ra ngay
-                  //  quãng nào là ngày nghỉ, khỏi dò dòng «T7 · CN» ở tiêu đề.
-                  //  Đặt TRƯỚC `isNow` để cột hôm nay vẫn thắng khi hôm nay rơi
-                  //  vào thứ Bảy hay Chủ nhật.
-                  cell.isWeekend && 'bg-muted-foreground/[0.07]',
-                  cell.isNow && 'bg-primary/5',
-                )}
-              />
-            ))}
-          </div>
+            <div className="absolute inset-x-0 bottom-0 flex" style={{ top: HEADER_HEIGHT }}>
+              {header.bottom.map((cell) => (
+                <div
+                  key={cell.key}
+                  style={{ width: cell.width }}
+                  className={cn(
+                    'h-full shrink-0 border-r border-border/60',
+                    //  Cuối tuần tô nhạt hơn hẳn ngày làm việc — nhìn phát ra ngay
+                    //  quãng nào là ngày nghỉ, khỏi dò dòng «T7 · CN» ở tiêu đề.
+                    //  Đặt TRƯỚC `isNow` để cột hôm nay vẫn thắng khi hôm nay rơi
+                    //  vào thứ Bảy hay Chủ nhật.
+                    cell.isWeekend && 'bg-muted-foreground/[0.07]',
+                    cell.isNow && 'bg-primary/5',
+                  )}
+                />
+              ))}
+            </div>
 
-          <div ref={areaRef} className="relative" style={{ minHeight: bodyHeight }}>
-            {/* Vạch HÔM NAY chạy suốt mọi hàng — mốc đọc chính của cả biểu đồ. */}
-            {vachHomNay !== null && (
-              <span
-                aria-hidden
-                className="pointer-events-none absolute top-0 z-20 w-px bg-primary/70"
-                style={{ left: vachHomNay, height: bodyHeight }}
-              />
-            )}
+            {/*  `flex-1` nuốt phần khung còn thừa dưới hàng cuối, nên vùng thanh
+               (và vạch hôm nay trong nó) kéo dài tới đáy thay vì dừng ở hàng
+               cuối. `minHeight` vẫn giữ: dự án dài hơn khung thì nó mới là số
+               quyết định. */}
+            <div ref={areaRef} className="relative flex-1" style={{ minHeight: bodyHeight }}>
+              {/* Vạch HÔM NAY chạy suốt mọi hàng — mốc đọc chính của cả biểu đồ. */}
+              {vachHomNay !== null && (
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute inset-y-0 z-20 w-px bg-primary/70"
+                  style={{ left: vachHomNay }}
+                />
+              )}
 
-            {rows.map((row) => {
-              if (row.kind === 'group') {
-                return <GanttGroupBar key={row.key} row={row} timeline={timeline} />
-              }
-              if (row.kind === 'draft') {
-                //  Hàng đối diện dòng «Việc mới» — trống, chỉ giữ chỗ cho hai
-                //  bên khỏi lệch nhau.
+              {rows.map((row) => {
+                if (row.kind === 'group') {
+                  return <GanttGroupBar key={row.key} row={row} timeline={timeline} />
+                }
+                if (row.kind === 'draft') {
+                  //  Hàng đối diện dòng «Việc mới» — trống, chỉ giữ chỗ cho hai
+                  //  bên khỏi lệch nhau.
+                  return (
+                    <div key={row.key} style={{ height: ROW_HEIGHT }} className="bg-muted/20" />
+                  )
+                }
                 return (
-                  <div
+                  <GanttTaskRow
                     key={row.key}
-                    style={{ height: ROW_HEIGHT }}
-                    className="bg-muted/20"
+                    task={row.task}
+                    isSubtask={row.isSubtask}
+                    timeline={timeline}
+                    barColor={priorityColorOf(row.task, priorityField)}
+                    canEdit={canEdit}
+                    offscreen={offscreenBars.get(row.task.id) ?? null}
+                    onJumpToTask={jumpToTask}
+                    onSchedule={scheduleTask}
+                    onOpenTask={openTask}
+                    onStartLink={startLink}
+                    linkTargetId={draft?.targetTaskId ?? null}
+                    linking={draft !== null}
                   />
                 )
-              }
-              return (
-                <GanttTaskRow
-                  key={row.key}
-                  task={row.task}
-                  isSubtask={row.isSubtask}
-                  timeline={timeline}
-                  barColor={priorityColorOf(row.task, priorityField)}
-                  canEdit={canEdit}
-                  offscreen={offscreenBars.get(row.task.id) ?? null}
-                  onJumpToTask={jumpToTask}
-                  onSchedule={scheduleTask}
-                  onOpenTask={openTask}
-                  onStartLink={startLink}
-                  linkTargetId={draft?.targetTaskId ?? null}
-                  linking={draft !== null}
-                />
-              )
-            })}
+              })}
 
-            <GanttLinkLayer
-              links={links}
-              rows={rows}
-              taskRows={taskRows}
-              tasks={taskById}
-              timeline={timeline}
-              canEdit={canEdit}
-              onChangeType={onChangeLinkType}
-              onDelete={onDeleteLink}
-            />
-
-            {draft && (
-              <LinkDraftLine
-                draft={draft}
-                timeline={timeline}
+              <GanttLinkLayer
+                links={links}
+                rows={rows}
                 taskRows={taskRows}
                 tasks={taskById}
+                timeline={timeline}
+                canEdit={canEdit}
+                onChangeType={onChangeLinkType}
+                onDelete={onDeleteLink}
               />
-            )}
+
+              {draft && (
+                <LinkDraftLine
+                  draft={draft}
+                  timeline={timeline}
+                  taskRows={taskRows}
+                  tasks={taskById}
+                />
+              )}
+            </div>
           </div>
-        </div>
         </div>
 
         {/*  Nút ẨN / HIỆN lưới trái — luôn đứng ngay CẠNH NHÃN THÁNG, đúng chỗ
@@ -610,17 +622,40 @@ export function GanttView({
              `absolute right-2` sẽ bám mép NỘI DUNG (rộng `gridContentWidth`) chứ
              không bám mép nhìn thấy, nên cuộn ngang một cái là nút trôi mất. Ở
              đây thì `paneWidth` là con số thật của ô chứa, tính thẳng ra được.  */}
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          title={gridHidden ? 'Hiện danh sách công việc' : 'Ẩn danh sách công việc'}
-          aria-label={gridHidden ? 'Hiện danh sách công việc' : 'Ẩn danh sách công việc'}
-          className="absolute top-1.5 z-40 text-muted-foreground hover:text-foreground"
-          style={{ left: gridHidden ? 6 : paneWidth - 34 }}
-          onClick={toggleGrid}
+        {/*  ⚠️ Hộp bọc PHẢI có nền `bg-muted` (đúng màu dải tiêu đề nên nhìn như
+             không có nền) và cao đúng một hàng tiêu đề. Để nút trong suốt thì
+             nhãn tháng — nó `sticky left-0`, xem `GanttTimelineHeader` — trượt
+             vào ĐÚNG chỗ này khi cuộn ngang và chữ chồng lên biểu tượng thành
+             một mớ («áng[icon]1/2026»). Cụm điều khiển ở mép phải đã phải vá y
+             hệt vì cùng một lý do; hai chỗ này là một cặp, sửa thì sửa cả hai.  */}
+        <div
+          className="absolute top-0 z-40 flex items-center bg-muted"
+          style={{
+            left: gridHidden ? 0 : paneWidth - 40,
+            height: ROW_HEIGHT,
+            paddingLeft: 6,
+            paddingRight: 6,
+          }}
         >
-          {gridHidden ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}
-        </Button>
+          <IconTooltip
+            label={gridHidden ? 'Hiện danh sách công việc' : 'Ẩn danh sách công việc'}
+            side="bottom"
+          >
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label={gridHidden ? 'Hiện danh sách công việc' : 'Ẩn danh sách công việc'}
+              className="text-muted-foreground hover:text-foreground"
+              onClick={toggleGrid}
+            >
+              {gridHidden ? (
+                <PanelLeftOpen className="size-4" />
+              ) : (
+                <PanelLeftClose className="size-4" />
+              )}
+            </Button>
+          </IconTooltip>
+        </div>
 
         {/*  Cụm điều khiển NẰM ĐÈ lên góc phải dải tiêu đề, đúng chỗ Lark đặt.
 

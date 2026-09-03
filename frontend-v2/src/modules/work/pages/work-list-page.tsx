@@ -1,6 +1,6 @@
 import { GanttChartSquare, History, KanbanSquare, Settings2, Table2, Users } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 
 import { useAuth } from '@/core/auth/use-auth'
 import { logger } from '@/core/telemetry/logger'
@@ -38,11 +38,7 @@ import {
   useUpdateTask,
   useWorkBoard,
 } from '../hooks/use-work-board'
-import {
-  useCreateTaskLink,
-  useDeleteTaskLink,
-  useUpdateTaskLink,
-} from '../hooks/use-task-links'
+import { useCreateTaskLink, useDeleteTaskLink, useUpdateTaskLink } from '../hooks/use-task-links'
 import { useWorkViewState } from '../hooks/use-view-state'
 import { useMoveSection, useWorkLabelFields, useWorkMembers } from '../hooks/use-work-config'
 import type { WorkSection } from '../types/work'
@@ -169,7 +165,24 @@ function WorkListContent({ listId }: { listId: number }) {
   const { view, sort, fields, ganttZoom } = viewState
   const [keyword, setKeyword] = useState('')
 
-  const [openTaskId, setOpenTaskId] = useState<number | null>(null)
+  /*  Việc đang mở panel. Nhận mồi từ `?task=` để link CHUÔNG mở thẳng được một
+      việc: chuông trỏ tới `/project/tasks/{id}`, trang đó tra dự án rồi dẫn về
+      đây kèm tham số này (xem `TaskRedirectPage`).
+
+      Đóng panel thì XÓA tham số khỏi URL, không thì bấm Đóng xong nó mở lại
+      ngay ở nhịp render kế — và người dùng tưởng nút Đóng hỏng.  */
+  const [searchParams, setSearchParams] = useSearchParams()
+  const taskFromUrl = Number(searchParams.get('task') ?? 0) || null
+  const [openTaskId, setOpenTaskId] = useState<number | null>(taskFromUrl)
+
+  function closeTaskPanel() {
+    setOpenTaskId(null)
+    if (searchParams.has('task')) {
+      const next = new URLSearchParams(searchParams)
+      next.delete('task')
+      setSearchParams(next, { replace: true })
+    }
+  }
   const [membersOpen, setMembersOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [sectionDialog, setSectionDialog] = useState<SectionDialogMode | null>(null)
@@ -183,7 +196,11 @@ function WorkListContent({ listId }: { listId: number }) {
   //  định được: trộn thứ tự đã nhớ với bộ nhãn đang có (thêm nhãn mới, bỏ nhãn
   //  đã xóa) — xem `mergeCardFields`.
   const cardFields = useMemo(
-    () => mergeCardFields(fields, labelFields.map((f) => f.id)),
+    () =>
+      mergeCardFields(
+        fields,
+        labelFields.map((f) => f.id),
+      ),
     [fields, labelFields],
   )
 
@@ -234,24 +251,37 @@ function WorkListContent({ listId }: { listId: number }) {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3 p-4 lg:p-6">
+    <div
+      className={cn(
+        'flex min-h-0 flex-1 flex-col gap-3 p-4 lg:p-6',
+        //  Gantt chạy SÁT ĐÁY cửa sổ, không chừa đệm dưới — đúng lối Lark (khách
+        //  đối chiếu 03/09/2026). Lưới ngày của nó kẻ suốt tới đáy, mà dưới cùng
+        //  lại hở một dải trắng 24px thì cả biểu đồ đọc ra như một cái khối nổi
+        //  giữa trang thay vì một mặt phẳng liền. Ba khung nhìn kia là thẻ/bảng
+        //  có mép thật nên vẫn cần đệm.
+        //  Phải khai CẢ HAI nấc: `tailwind-merge` không gộp được hai lớp khác
+        //  biến thể, nên `pb-0` trần đứng cạnh `lg:p-6` là thua — biến thể
+        //  responsive xếp sau trong tệp CSS nên nó thắng, và đệm 24px vẫn còn.
+        view === 'gantt' && 'pb-0 lg:pb-0',
+      )}
+    >
       <header className="flex flex-wrap items-start justify-between gap-3">
         {/*  Nút mở lại cây dự án đứng NGANG tiêu đề (chỉ hiện khi cây đang ẩn),
              chứ không phải một cột nút riêng bên trái — xem `WorkSidebarPeekButton`. */}
         <div className="flex min-w-0 items-start gap-2">
           <WorkSidebarPeekButton />
           <div className="min-w-0">
-          <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight text-navy">
-            {board.list.name}
-            {board.list.is_archived === 1 && (
-              <span className="rounded bg-muted px-2 py-0.5 text-xs font-normal text-muted-foreground">
-                Đã lưu trữ
-              </span>
+            <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight text-navy">
+              {board.list.name}
+              {board.list.is_archived === 1 && (
+                <span className="rounded bg-muted px-2 py-0.5 text-xs font-normal text-muted-foreground">
+                  Đã lưu trữ
+                </span>
+              )}
+            </h1>
+            {board.list.description && (
+              <p className="mt-1 text-sm text-muted-foreground">{board.list.description}</p>
             )}
-          </h1>
-          {board.list.description && (
-            <p className="mt-1 text-sm text-muted-foreground">{board.list.description}</p>
-          )}
           </div>
         </div>
 
@@ -305,52 +335,52 @@ function WorkListContent({ listId }: { listId: number }) {
           sắp xếp, trường hiện trên thẻ — không cái nào có nghĩa trên một cuốn
           nhật ký. Tab «Hoạt động» mang bộ lọc riêng của nó (`ActivityFilterBar`). */}
       {view !== 'activities' && (
-      <WorkToolbar
-        listId={listId}
-        sort={sort}
-        sortOptions={sortOptions}
-        onSortChange={(value) => setViewState({ sort: value })}
-        keyword={keyword}
-        onKeywordChange={setKeyword}
-        fields={cardFields}
-        onFieldsChange={(value) => setViewState({ fields: value })}
-        labelFields={labelFields}
-        onAddField={canManage ? () => setSettingsOpen(true) : undefined}
-        canEdit={canEdit}
-        canManage={canManage}
-        onNewTask={() => {
-          const firstSection = board.sections[0]
-          if (!firstSection) {
-            setEditingSection(null)
-            setSectionDialog('create')
-            return
-          }
-          createTask.mutate({ list_id: listId, title: 'Việc mới', section_id: firstSection.id })
-        }}
-        /*  Cột mốc tạo ra là có NGÀY ngay (hôm nay): mốc không ngày thì không
+        <WorkToolbar
+          listId={listId}
+          sort={sort}
+          sortOptions={sortOptions}
+          onSortChange={(value) => setViewState({ sort: value })}
+          keyword={keyword}
+          onKeywordChange={setKeyword}
+          fields={cardFields}
+          onFieldsChange={(value) => setViewState({ fields: value })}
+          labelFields={labelFields}
+          onAddField={canManage ? () => setSettingsOpen(true) : undefined}
+          canEdit={canEdit}
+          canManage={canManage}
+          onNewTask={() => {
+            const firstSection = board.sections[0]
+            if (!firstSection) {
+              setEditingSection(null)
+              setSectionDialog('create')
+              return
+            }
+            createTask.mutate({ list_id: listId, title: 'Việc mới', section_id: firstSection.id })
+          }}
+          /*  Cột mốc tạo ra là có NGÀY ngay (hôm nay): mốc không ngày thì không
             có hình thoi nào trên biểu đồ, người dùng bấm xong tưởng hụt. Đổi
             ngày sau bằng cách kéo hình thoi hoặc sửa ở panel chi tiết. */
-        onNewMilestone={
-          canEdit
-            ? () =>
-                createTask.mutate({
-                  list_id: listId,
-                  title: 'Cột mốc mới',
-                  section_id: board.sections[0]?.id ?? null,
-                  kind: WORK_TASK_KIND.MILESTONE,
-                  due_date: today(),
-                })
-            : undefined
-        }
-        onAddSection={
-          canManage
-            ? () => {
-                setEditingSection(null)
-                setSectionDialog('create')
-              }
-            : undefined
-        }
-      />
+          onNewMilestone={
+            canEdit
+              ? () =>
+                  createTask.mutate({
+                    list_id: listId,
+                    title: 'Cột mốc mới',
+                    section_id: board.sections[0]?.id ?? null,
+                    kind: WORK_TASK_KIND.MILESTONE,
+                    due_date: today(),
+                  })
+              : undefined
+          }
+          onAddSection={
+            canManage
+              ? () => {
+                  setEditingSection(null)
+                  setSectionDialog('create')
+                }
+              : undefined
+          }
+        />
       )}
 
       <div className={cn('flex min-h-0 flex-1 flex-col', view === 'kanban' && 'overflow-hidden')}>
@@ -506,7 +536,7 @@ function WorkListContent({ listId }: { listId: number }) {
         listId={listId}
         sections={board.sections}
         canEdit={canEdit}
-        onClose={() => setOpenTaskId(null)}
+        onClose={closeTaskPanel}
       />
 
       <ListMembersDialog
