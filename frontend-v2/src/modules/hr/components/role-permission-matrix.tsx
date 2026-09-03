@@ -154,10 +154,9 @@ export function RolePermissionMatrix({
             return (
               <Fragment key={group.id}>
                 {/* ---------- CẤP 1: phân hệ ---------- */}
-                {/* Nền `row-head` (đậm hơn hẳn — như hàng tiêu đề bảng) để KHÔNG
-                    trùng vằn hàng chẵn `row-stripe` của cấp 2; hai token này sát
-                    nhau ở bảng màu DEGO nên cấp 1 phải bậc đậm hơn. */}
-                <TableRow className="bg-row-head text-row-head-foreground hover:bg-row-head">
+                {/* Cấp 1 dùng CÙNG nền với cấp 2 (theo yêu cầu). Phân cấp thể hiện
+                    bằng mũi tên xổ + chữ đậm + thụt lề của cấp 2, KHÔNG bằng màu nền. */}
+                <TableRow className="bg-card hover:bg-accent">
                   <TableCell className="sticky left-0 z-10 border-r bg-inherit">
                     <button
                       type="button"
