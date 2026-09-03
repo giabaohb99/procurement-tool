@@ -154,7 +154,10 @@ export function RolePermissionMatrix({
             return (
               <Fragment key={group.id}>
                 {/* ---------- CẤP 1: phân hệ ---------- */}
-                <TableRow className="bg-muted hover:bg-muted">
+                {/* Nền `row-head` (đậm hơn hẳn — như hàng tiêu đề bảng) để KHÔNG
+                    trùng vằn hàng chẵn `row-stripe` của cấp 2; hai token này sát
+                    nhau ở bảng màu DEGO nên cấp 1 phải bậc đậm hơn. */}
+                <TableRow className="bg-row-head text-row-head-foreground hover:bg-row-head">
                   <TableCell className="sticky left-0 z-10 border-r bg-inherit">
                     <button
                       type="button"

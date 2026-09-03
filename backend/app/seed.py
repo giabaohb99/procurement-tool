@@ -330,6 +330,31 @@ STD_ROLES = {
         "department": (["read"], "all"),
         "employee": (["read"], "all"),
     }},
+    # ── Ba vai trò cho phân hệ ĐẶT XE (03/09/2026) ───────────────────────────
+    #
+    # Gán ở màn Nhân sự ▸ Phân quyền tài khoản ▸ tab Người dùng. Điều phối viên &
+    # Quản lý điều phối cùng bộ quyền trên phiếu đặt xe (xem · duyệt=approve ·
+    # trả về=write · hủy=cancel), phạm vi 'all' vì điều phối chung mọi công ty.
+    # Tách tên hai vai trò để luồng duyệt (/approval/flows) cắm node theo vai trò.
+    "booking_dispatcher": {"name": "Điều phối viên (Đặt xe)", "perms": {
+        "vehicle_booking": (["read", "approve", "cancel", "write"], "all"),
+        "vehicle": (["read"], "all"),
+        "driver": (["read"], "all"),
+    }},
+    "booking_manager": {"name": "Quản lý điều phối (Đặt xe)", "perms": {
+        "vehicle_booking": (["read", "approve", "cancel", "write"], "all"),
+        # Quản lý còn quản được danh mục Xe/Tài xế.
+        "vehicle": (["read", "create", "write", "delete"], "all"),
+        "driver": (["read", "create", "write", "delete"], "all"),
+    }},
+    # Tài xế: xem + cập nhật CHUYẾN CỦA MÌNH (nhận / bắt đầu / hoàn thành / xin
+    # điều phối lại — đều tính là `write`). Phạm vi 'own' tạm thời; màn "Chuyến
+    # của tôi" lọc theo tài xế ĐƯỢC PHÂN sẽ mở khi có scope assigned_driver riêng.
+    "booking_driver": {"name": "Tài xế (Đặt xe)", "perms": {
+        "vehicle_booking": (["read", "write"], "own"),
+        "vehicle": (["read"], "all"),
+        "driver": (["read"], "all"),
+    }},
 }
 
 
