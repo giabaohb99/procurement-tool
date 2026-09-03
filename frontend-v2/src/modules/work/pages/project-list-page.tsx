@@ -12,6 +12,7 @@ import { WorkCreateDialog } from '../components/work-create-dialog'
 import { WorkSidebarPeekButton } from '../components/work-sidebar-peek-button'
 import { useWorkProjects } from '../hooks/use-work-lists'
 import type { WorkList, WorkMember } from '../types/work'
+import { nameInitials } from '../utils/name-initials'
 import { dotClass } from '../utils/work-colors'
 
 /**
@@ -165,10 +166,11 @@ function ProgressCell({ done, total }: { done: number; total: number }) {
   )
 }
 
-/** Chữ tắt trên avatar: hai chữ cái đầu của TỪ CUỐI — tên Việt gọi theo tên. */
+/** Vòng tròn chữ tắt. Luật đặt chữ tắt ở `utils/name-initials.ts`, dùng chung
+ *  với hộp Quản lý dự án — chép ra hai bản là hai màn hiện khác nhau cho cùng
+ *  một người. */
 function Avatar({ member }: { member: WorkMember }) {
-  const words = member.employee_name.trim().split(/\s+/).filter(Boolean)
-  const initials = words.length ? words[words.length - 1].slice(0, 2).toUpperCase() : '?'
+  const initials = nameInitials(member.employee_name)
   return (
     <span
       title={member.employee_name || `Nhân sự #${member.employee_id}`}

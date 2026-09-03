@@ -226,29 +226,49 @@ def transfer_ownership(db: Session, actor: Actor, list_id: int, employee_id: int
 
     Người tạo nghỉ việc mà list mồ côi là kịch bản tài liệu nêu đích danh, nên
     đây là thao tác bắt buộc có chứ không phải tiện ích.
-    """
-    get_list_or_403(db, actor, list_id, CAN_OWN)
-    if employee_id == actor.employee_id:
-        raise HTTPException(400, "Bạn đang là chủ danh sách này")
 
-    old = (db.query(WorkListMember)
-           .filter(WorkListMember.list_id == list_id,
-                   WorkListMember.employee_id == actor.employee_id).first())
+    ⚠️ **Không còn lối vào từ giao diện** (chủ đầu tư chốt 03/09/2026): hộp Quản
+    lý dự án chỉ hiện huy hiệu *Chủ sở hữu*, không có nút chuyển. Endpoint giữ
+    lại vì nó vẫn là đường DUY NHẤT gỡ một dự án mồ côi khi chủ nghỉ việc — gọi
+    tay qua API. Bỏ luôn thì tình huống đó phải sửa dưới cơ sở dữ liệu.
+    """
+    lst = get_list_or_403(db, actor, list_id, CAN_OWN)
+    block_if_archived(lst)
+
     new = (db.query(WorkListMember)
            .filter(WorkListMember.list_id == list_id,
                    WorkListMember.employee_id == employee_id).first())
+    if new and int(new.role) == int(WorkMemberRole.OWNER):
+        raise HTTPException(400, "Người này đã là chủ danh sách")
     if not new:
         new = WorkListMember(company_id=actor.company_id, list_id=list_id,
                              employee_id=employee_id, role=int(WorkMemberRole.ADMIN),
                              created_by=actor.user_id, updated_by=actor.user_id)
         db.add(new)
+
+    #  ⚠️ Hạ MỌI dòng đang là OWNER, không phải hạ dòng của người đang bấm.
+    #
+    #  Bản cũ hạ `WorkListMember` của chính `actor` — chỉ đúng khi người bấm cũng
+    #  là chủ list. Nhưng chốt `CAN_OWN` ở trên chạy trên `effective_role`, mà hàm
+    #  đó lấy `min()` gộp cả vai trò thừa kế từ NHÓM CHA. Nên chủ của nhóm qua
+    #  được cửa dù không có dòng OWNER nào trên list: chủ cũ không bị hạ, list có
+    #  HAI chủ; bấm lần nữa thành ba. Dựng lại được trên dữ liệu thật (list #22 có
+    #  3 chủ), và một khi đã lệch thì KHÔNG gỡ được từ giao diện — `add_member`
+    #  từ chối đổi vai trò dòng OWNER còn `remove_member` từ chối xoá nó.
+    #
     #  Hạ trước, nâng sau, một commit: chen commit vào giữa là có khoảnh khắc
     #  list có hai chủ (hoặc không chủ nào).
-    if old:
-        old.role = int(WorkMemberRole.ADMIN)
-        old.updated_by = actor.user_id
+    for owner in (db.query(WorkListMember)
+                  .filter(WorkListMember.list_id == list_id,
+                          WorkListMember.role == int(WorkMemberRole.OWNER)).all()):
+        if owner.employee_id == employee_id:
+            continue
+        owner.role = int(WorkMemberRole.ADMIN)
+        owner.updated_by = actor.user_id
+
     new.role = int(WorkMemberRole.OWNER)
     new.updated_by = actor.user_id
+    lst.updated_by = actor.user_id
     db.commit()
     record(db, actor.user_id, AUDIT_LIST_MEMBER, list_id, "update",
            f"Chuyển quyền sở hữu danh sách cho nhân sự #{employee_id}")

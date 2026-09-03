@@ -20,8 +20,9 @@ import { buildTaskFilterFields } from '../config/task-filter-fields'
 import { ActivityFeed } from '../components/activity-feed'
 import { GanttView } from '../components/gantt-view'
 import { ListConfigDialog } from '../components/list-config-dialog'
-import { ListMembersDialog } from '../components/list-members-dialog'
+import { ListManageDialog } from '../components/list-manage-dialog'
 import { KanbanBoard } from '../components/kanban-board'
+import { ProjectHeaderInlineEdit } from '../components/project-header-inline-edit'
 import { SectionEditDialog, type SectionDialogMode } from '../components/section-edit-dialog'
 import { TaskDetailSheet } from '../components/task-detail-sheet'
 import type { NewTaskDraft } from '../components/task-draft-row'
@@ -41,6 +42,7 @@ import {
 import { useCreateTaskLink, useDeleteTaskLink, useUpdateTaskLink } from '../hooks/use-task-links'
 import { useWorkViewState } from '../hooks/use-view-state'
 import { useMoveSection, useWorkLabelFields, useWorkMembers } from '../hooks/use-work-config'
+import { useUpdateWorkList } from '../hooks/use-work-lists'
 import type { WorkSection } from '../types/work'
 import { fieldHasOptions, WORK_ROLE, WORK_TASK_KIND, WORK_TASK_STATUS } from '../types/work'
 import { today } from '../utils/due-date'
@@ -102,6 +104,9 @@ function WorkListContent({ listId }: { listId: number }) {
   const { data: labelFields = [] } = useWorkLabelFields(listId)
   const createTask = useCreateTask(listId)
   const updateTask = useUpdateTask(listId)
+  //  Sửa TÊN / MÔ TẢ ngay trên tiêu đề. Cùng hook với thẻ Thông tin trong hộp
+  //  Quản lý dự án — hai lối vào, một đường ghi.
+  const updateList = useUpdateWorkList()
   const moveTask = useMoveTask(listId)
   const moveSection = useMoveSection(listId)
   //  Nguồn cho ô «Phụ trách» và trường tùy biến kiểu NGƯỜI sửa ngay trên dòng
@@ -183,7 +188,7 @@ function WorkListContent({ listId }: { listId: number }) {
       setSearchParams(next, { replace: true })
     }
   }
-  const [membersOpen, setMembersOpen] = useState(false)
+  const [manageOpen, setManageOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [sectionDialog, setSectionDialog] = useState<SectionDialogMode | null>(null)
   const [editingSection, setEditingSection] = useState<WorkSection | null>(null)
@@ -191,6 +196,10 @@ function WorkListContent({ listId }: { listId: number }) {
   const myRole = board?.list.my_role ?? null
   const canEdit = myRole !== null && myRole <= WORK_ROLE.MEMBER && !board?.list.is_archived
   const canManage = myRole !== null && myRole <= WORK_ROLE.ADMIN && !board?.list.is_archived
+  //  Đổi tên / mô tả / màu / lưu trữ dự án: backend gác `update_list` bằng
+  //  `CAN_OWN`, KHÔNG phải `CAN_MANAGE`. Mở ô nhập cho Quản trị là họ gõ xong
+  //  bấm Lưu rồi ăn 403.
+  const canOwn = myRole === WORK_ROLE.OWNER && !board?.list.is_archived
 
   //  Bộ nhãn tùy biến là của TỪNG dự án nên danh sách trường trên thẻ không cố
   //  định được: trộn thứ tự đã nhớ với bộ nhãn đang có (thêm nhãn mới, bỏ nhãn
@@ -270,19 +279,15 @@ function WorkListContent({ listId }: { listId: number }) {
              chứ không phải một cột nút riêng bên trái — xem `WorkSidebarPeekButton`. */}
         <div className="flex min-w-0 items-start gap-2">
           <WorkSidebarPeekButton />
-          <div className="min-w-0">
-            <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight text-navy">
-              {board.list.name}
-              {board.list.is_archived === 1 && (
-                <span className="rounded bg-muted px-2 py-0.5 text-xs font-normal text-muted-foreground">
-                  Đã lưu trữ
-                </span>
-              )}
-            </h1>
-            {board.list.description && (
-              <p className="mt-1 text-sm text-muted-foreground">{board.list.description}</p>
-            )}
-          </div>
+          {/*  Tên và mô tả sửa NGAY TẠI ĐÂY — bấm vào chữ là thành ô nhập. Hộp
+               thoại «Sửa dự án» trong menu bên phải vẫn còn vì nó giữ thêm ô MÀU;
+               cả hai đường đều đi qua `useUpdateWorkList` nên không có hai luật. */}
+          <ProjectHeaderInlineEdit
+            list={board.list}
+            canEdit={canOwn}
+            pending={updateList.isPending}
+            onSave={(values) => updateList.mutate({ id: listId, values })}
+          />
         </div>
 
         {/*  MỘT nút cho cả thành viên lẫn thiết lập: hai việc này đều là "sửa
@@ -297,14 +302,17 @@ function WorkListContent({ listId }: { listId: number }) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setMembersOpen(true)}>
+            {/*  Thành viên + thông tin dự án gom vào MỘT hộp hai thẻ: cả hai
+                 đều là "sửa chính cái dự án này", tách ra thì người dùng phải
+                 đoán tên nào chứa cái mình cần. */}
+            <DropdownMenuItem onClick={() => setManageOpen(true)}>
               <Users className="size-4" />
-              Thành viên
+              Thành viên & thông tin
             </DropdownMenuItem>
             {canManage && (
               <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
                 <Settings2 className="size-4" />
-                Thiết lập
+                Trường của dự án
               </DropdownMenuItem>
             )}
           </DropdownMenuContent>
@@ -539,11 +547,11 @@ function WorkListContent({ listId }: { listId: number }) {
         onClose={closeTaskPanel}
       />
 
-      <ListMembersDialog
-        open={membersOpen}
-        listId={listId}
+      <ListManageDialog
+        open={manageOpen}
+        list={board.list}
         myRole={myRole}
-        onClose={() => setMembersOpen(false)}
+        onClose={() => setManageOpen(false)}
       />
 
       <ListConfigDialog

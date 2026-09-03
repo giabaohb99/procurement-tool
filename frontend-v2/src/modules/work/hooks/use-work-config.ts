@@ -41,6 +41,29 @@ export function useAddWorkMember(listId: number) {
   })
 }
 
+/**
+ * Đổi vai trò của người ĐÃ ở trong dự án.
+ *
+ * Dùng chung endpoint với lời mời — `list_service.add_member` là upsert: gặp
+ * người đã có thì ghi đè `role` chứ không báo trùng. Tách thành hook riêng chỉ
+ * vì hai câu thông báo khác nhau; hiện «Đã mời vào danh sách» khi vừa hạ một
+ * người từ Quản trị xuống Khách xem thì đọc như bấm nhầm nút.
+ *
+ * Dọn cả cụm `work.all` chứ không riêng danh sách thành viên: đổi vai trò của
+ * CHÍNH MÌNH làm đổi `my_role` của bảng, tức đổi luôn những nút được phép bấm.
+ */
+export function useSetWorkMemberRole(listId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (values: { employee_id: number; role: number }) =>
+      workApi.addMember(listId, values),
+    onSuccess: () => {
+      toast.success('Đã đổi vai trò')
+      void queryClient.invalidateQueries({ queryKey: queryKeys.work.all })
+    },
+  })
+}
+
 export function useRemoveWorkMember(listId: number) {
   const queryClient = useQueryClient()
   return useMutation({
@@ -48,17 +71,6 @@ export function useRemoveWorkMember(listId: number) {
     onSuccess: () => {
       toast.success('Đã gỡ thành viên')
       void queryClient.invalidateQueries({ queryKey: queryKeys.work.members(listId) })
-    },
-  })
-}
-
-export function useTransferWorkList(listId: number) {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (employeeId: number) => workApi.transferList(listId, employeeId),
-    onSuccess: () => {
-      toast.success('Đã chuyển quyền sở hữu')
-      void queryClient.invalidateQueries({ queryKey: queryKeys.work.all })
     },
   })
 }
