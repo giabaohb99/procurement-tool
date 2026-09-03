@@ -6,6 +6,7 @@ controller), xem chi tiết, sửa khi còn nháp / bị trả về. Điều ph�
 """
 
 import json
+from datetime import datetime
 
 from fastapi import HTTPException
 from sqlalchemy import or_
@@ -15,14 +16,21 @@ from app.core.utils import generate_code
 from app.modules.employee.model import Employee
 
 from .model import (
+    BK_CANCELLED,
+    BK_COMPLETED,
+    BK_DISPATCHED,
     BK_DRAFT,
     BK_PENDING,
+    BK_REJECTED,
+    DRV_WAITING,
     EDITABLE_STATUSES,
     TYPE_CAR,
     TYPE_DELIVERY,
+    Driver,
+    Vehicle,
     VehicleBooking,
 )
-from .schema import VehicleBookingCreate, VehicleBookingUpdate
+from .schema import DispatchIn, VehicleBookingCreate, VehicleBookingResponse, VehicleBookingUpdate
 
 # Bộ lọc cho danh sách (whitelist của apply_filters). Cột số (status/request_type/…) tự
 # so khớp chính xác; `code` để ô tìm nhanh lo nên KHÔNG đưa vào đây (xem apply_filters).
@@ -155,3 +163,74 @@ def update_booking(db: Session, booking: VehicleBooking, data: VehicleBookingUpd
     db.commit()
     db.refresh(booking)
     return booking
+
+
+# --- Điều phối -------------------------------------------------------------
+
+# Phiếu đã kết thúc thì không điều phối được nữa.
+_CLOSED_STATUSES = (BK_CANCELLED, BK_REJECTED, BK_COMPLETED)
+
+
+def dispatch_booking(db: Session, booking: VehicleBooking, data: DispatchIn, user) -> VehicleBooking:
+    """Gán 1 xe + 1 tài xế cho phiếu → chuyển sang Điều phối, tài xế Chờ nhận."""
+    if booking.status in _CLOSED_STATUSES:
+        raise HTTPException(400, "Phiếu đã kết thúc — không điều phối được")
+
+    vehicle = db.get(Vehicle, data.assigned_vehicle_id)
+    driver = db.get(Driver, data.assigned_driver_id)
+    if vehicle is None:
+        raise HTTPException(400, "Xe được chọn không tồn tại")
+    if driver is None:
+        raise HTTPException(400, "Tài xế được chọn không tồn tại")
+
+    booking.assigned_vehicle_id = vehicle.id
+    booking.assigned_driver_id = driver.id
+    booking.dispatched_by = getattr(user, "id", 0)
+    booking.dispatched_at = datetime.now().isoformat(timespec="seconds")
+    booking.status = BK_DISPATCHED
+    booking.driver_status = DRV_WAITING
+    booking.updated_by = getattr(user, "id", 0)
+    db.commit()
+    db.refresh(booking)
+    return booking
+
+
+# --- Nối nhãn xe / tài xế khi trả API --------------------------------------
+
+def _vehicle_label(vehicle) -> str:
+    if not vehicle:
+        return ""
+    return vehicle.license_plate + (f" — {vehicle.model}" if vehicle.model else "")
+
+
+def serialize_booking(db: Session, obj: VehicleBooking) -> dict:
+    """Một phiếu → dict, đã nối nhãn xe/tài xế được phân (nếu có)."""
+    out = VehicleBookingResponse.model_validate(obj)
+    if obj.assigned_vehicle_id:
+        out.assigned_vehicle_label = _vehicle_label(db.get(Vehicle, obj.assigned_vehicle_id))
+    if obj.assigned_driver_id:
+        driver = db.get(Driver, obj.assigned_driver_id)
+        out.assigned_driver_label = driver.name if driver else ""
+    return out.model_dump()
+
+
+def serialize_bookings(db: Session, objs: list[VehicleBooking]) -> list[dict]:
+    """Danh sách phiếu → list dict, nối nhãn xe/tài xế theo LÔ (tránh N+1)."""
+    veh_ids = {o.assigned_vehicle_id for o in objs if o.assigned_vehicle_id}
+    drv_ids = {o.assigned_driver_id for o in objs if o.assigned_driver_id}
+    veh_map = (
+        {v.id: v for v in db.query(Vehicle).filter(Vehicle.id.in_(veh_ids)).all()}
+        if veh_ids else {}
+    )
+    drv_map = (
+        {d.id: d for d in db.query(Driver).filter(Driver.id.in_(drv_ids)).all()}
+        if drv_ids else {}
+    )
+    result = []
+    for o in objs:
+        out = VehicleBookingResponse.model_validate(o)
+        out.assigned_vehicle_label = _vehicle_label(veh_map.get(o.assigned_vehicle_id))
+        driver = drv_map.get(o.assigned_driver_id)
+        out.assigned_driver_label = driver.name if driver else ""
+        result.append(out.model_dump())
+    return result

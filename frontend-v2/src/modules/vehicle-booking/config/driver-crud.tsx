@@ -40,6 +40,13 @@ export const DRIVER_CRUD_CONFIG: CrudConfig<Driver> = {
     },
     { key: 'phone', header: 'Điện thoại', width: 150, cell: (d) => d.phone || '—' },
     {
+      key: 'email',
+      header: 'Email',
+      width: 220,
+      defaultHidden: true,
+      cell: (d) => d.email || '—',
+    },
+    {
       key: 'license_number',
       header: 'Số GPLX',
       width: 130,
@@ -93,12 +100,21 @@ export const DRIVER_CRUD_CONFIG: CrudConfig<Driver> = {
     },
     { name: 'name', label: 'Tên tài xế', type: 'text', required: true, placeholder: 'VD: Lê Minh Thông' },
     { name: 'phone', label: 'Số điện thoại', type: 'text', required: true, placeholder: 'VD: 0907507103' },
+    { name: 'email', label: 'Email', type: 'text', placeholder: 'VD: taixe@degoholding.com' },
     {
       name: 'license_number',
       label: 'Số giấy phép lái xe (hạng)',
       type: 'text',
       required: true,
       placeholder: 'VD: B2, C, D',
+    },
+    {
+      name: 'user_id',
+      label: 'Tài khoản đăng nhập (nội bộ)',
+      type: 'select',
+      source: { url: '/api/users', valueKey: 'id', labelKey: 'email' },
+      fullWidth: true,
+      hint: 'Liên kết tài xế nội bộ với một tài khoản để sau này tự xem chuyến của mình.',
     },
     { name: 'status', label: 'Trạng thái', type: 'select', options: STATUS_OPTIONS, defaultValue: 'available' },
     {

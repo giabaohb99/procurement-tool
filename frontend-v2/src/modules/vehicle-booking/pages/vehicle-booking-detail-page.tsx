@@ -1,4 +1,4 @@
-import { ArrowLeft, MapPin, Pencil } from 'lucide-react'
+import { ArrowLeft, MapPin, Pencil, Route } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
@@ -12,6 +12,7 @@ import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { ReadOnlyValue } from '@/shared/ui/read-only-value'
 import { formatMoney } from '@/shared/utils/format-money'
+import { BookingDispatchDialog } from '../components/booking-dispatch-dialog'
 import { BookingFormDialog } from '../components/booking-form-dialog'
 import { CarBookingIcon, DeliveryBookingIcon } from '../components/booking-type-icons'
 import { useVehicleBooking } from '../hooks/use-vehicle-bookings'
@@ -26,6 +27,13 @@ import {
 
 /** Chỉ sửa được khi phiếu còn nháp hoặc bị trả về (khớp EDITABLE_STATUSES ở backend). */
 const EDITABLE = new Set<number>([BOOKING_STATUS.draft, BOOKING_STATUS.returned])
+
+/** Điều phối được khi phiếu chưa kết thúc (khớp _CLOSED_STATUSES ở backend). */
+const CLOSED = new Set<number>([
+  BOOKING_STATUS.cancelled,
+  BOOKING_STATUS.rejected,
+  BOOKING_STATUS.completed,
+])
 
 const TONE_VARIANT: Record<string, 'secondary' | 'default' | 'destructive' | 'outline'> = {
   neutral: 'secondary',
@@ -68,8 +76,11 @@ export function VehicleBookingDetailPage() {
   const bookingId = Number(id)
   const { data, isLoading, isError } = useVehicleBooking(Number.isFinite(bookingId) ? bookingId : null)
   const [editOpen, setEditOpen] = useState(false)
+  const [dispatchOpen, setDispatchOpen] = useState(false)
 
   const canEdit = Boolean(data) && can('vehicle_booking', 'write') && EDITABLE.has(data!.status)
+  const canDispatch = Boolean(data) && can('vehicle_booking', 'write') && !CLOSED.has(data!.status)
+  const isDispatched = Boolean(data?.assigned_vehicle_id || data?.assigned_driver_id)
 
   return (
     <PageContainer>
@@ -78,6 +89,12 @@ export function VehicleBookingDetailPage() {
         description={data?.purpose}
         actions={
           <div className="flex items-center gap-2">
+            {canDispatch && (
+              <Button onClick={() => setDispatchOpen(true)}>
+                <Route className="size-4" />
+                {isDispatched ? 'Điều phối lại' : 'Điều phối'}
+              </Button>
+            )}
             {canEdit && (
               <Button variant="outline" onClick={() => setEditOpen(true)}>
                 <Pencil className="size-4" />
@@ -114,6 +131,14 @@ export function VehicleBookingDetailPage() {
           booking={data}
           onClose={() => setEditOpen(false)}
           onSaved={() => setEditOpen(false)}
+        />
+      )}
+
+      {dispatchOpen && data && (
+        <BookingDispatchDialog
+          booking={data}
+          onClose={() => setDispatchOpen(false)}
+          onDispatched={() => setDispatchOpen(false)}
         />
       )}
     </PageContainer>
@@ -225,6 +250,8 @@ function BookingBody({ booking }: { booking: VehicleBooking }) {
         <Card className="flex flex-col gap-4 p-5">
           <SectionHeading>Điều phối &amp; chuyến đi</SectionHeading>
           <div className="grid gap-4 sm:grid-cols-2">
+            <InfoRow label="Xe được phân">{booking.assigned_vehicle_label}</InfoRow>
+            <InfoRow label="Tài xế được phân">{booking.assigned_driver_label}</InfoRow>
             <InfoRow label="Trạng thái tài xế">
               {DRIVER_STATUS_LABELS[booking.driver_status] || '—'}
             </InfoRow>

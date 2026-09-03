@@ -129,6 +129,16 @@ export function VehicleBookingListPage() {
         width: 150,
       },
       {
+        key: 'assigned',
+        header: 'Xe / Tài xế',
+        cell: (r) => {
+          const parts = [r.assigned_vehicle_label, r.assigned_driver_label].filter(Boolean)
+          return parts.length ? parts.join(' · ') : '—'
+        },
+        wrap: true,
+        minWidth: 160,
+      },
+      {
         key: 'status',
         header: 'Trạng thái',
         cell: (r) => (

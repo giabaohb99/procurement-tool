@@ -18,4 +18,31 @@ export const vehicleBookingApi = {
     apiPatch<VehicleBooking>(`${BASE_URL}/${id}`, payload, { params: { submit } }),
 
   remove: (id: number) => apiDelete<null>(`${BASE_URL}/${id}`),
+
+  /** Điều phối: gán 1 xe + 1 tài xế cho phiếu. */
+  dispatch: (id: number, payload: { assigned_vehicle_id: number; assigned_driver_id: number }) =>
+    apiPost<VehicleBooking>(`${BASE_URL}/${id}/dispatch`, payload),
+}
+
+/** Xe/Tài xế đủ dùng để đổ vào ô chọn khi điều phối. */
+export interface VehicleOption {
+  id: number
+  license_plate: string
+  model: string
+  status: string
+  is_external: boolean
+}
+export interface DriverOption {
+  id: number
+  name: string
+  phone: string
+  status: string
+  is_external: boolean
+}
+
+export const dispatchOptionsApi = {
+  vehicles: () =>
+    apiGet<PaginatedResult<VehicleOption>>('/api/vehicles', { params: { page_size: 500 } }),
+  drivers: () =>
+    apiGet<PaginatedResult<DriverOption>>('/api/drivers', { params: { page_size: 500 } }),
 }

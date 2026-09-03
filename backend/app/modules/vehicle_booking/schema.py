@@ -63,22 +63,38 @@ class VehicleResponse(VehicleBase):
 
 class DriverBase(BaseModel):
     name: str = Field(..., max_length=255)
+    email: str = Field("", max_length=255)
     phone: str = Field("", max_length=20)
     license_number: str = Field("", max_length=50)
     status: str = "available"
     is_external: bool = False
     external_company: str = ""
+    # Liên kết tài khoản đăng nhập (tài xế nội bộ). Bỏ trống = chưa liên kết.
+    user_id: int | None = None
+
+    @field_validator("user_id", mode="before")
+    @classmethod
+    def _blank_user_id(cls, v):
+        # Ô chọn để trống gửi lên "" / 0 — coi như chưa liên kết.
+        return None if v in (None, "", 0, "0") else v
 
 class DriverCreate(DriverBase):
     pass
 
 class DriverUpdate(BaseModel):
     name: str | None = None
+    email: str | None = None
     phone: str | None = None
     license_number: str | None = None
     status: str | None = None
     is_external: bool | None = None
     external_company: str | None = None
+    user_id: int | None = None
+
+    @field_validator("user_id", mode="before")
+    @classmethod
+    def _blank_user_id(cls, v):
+        return None if v in (None, "", 0, "0") else v
 
 class DriverResponse(DriverBase):
     id: int
@@ -123,6 +139,11 @@ class VehicleBookingBase(BaseModel):
 class VehicleBookingCreate(VehicleBookingBase):
     pass
 
+class DispatchIn(BaseModel):
+    """Điều phối: gán 1 xe + 1 tài xế cho phiếu."""
+    assigned_vehicle_id: int
+    assigned_driver_id: int
+
 class VehicleBookingUpdate(BaseModel):
     request_type: int | None = None
     purpose: str | None = None
@@ -165,6 +186,8 @@ class VehicleBookingResponse(VehicleBookingBase):
     status_label: str = ""
     assigned_vehicle_id: int | None = None
     assigned_driver_id: int | None = None
+    assigned_vehicle_label: str = ""  # biển số + mẫu xe, backend nối
+    assigned_driver_label: str = ""   # tên tài xế, backend nối
     dispatched_by: int | None = None
     dispatched_at: str | None = None
     driver_status: int = 0

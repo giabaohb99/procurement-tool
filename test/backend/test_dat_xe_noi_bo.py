@@ -14,6 +14,7 @@ from fastapi import HTTPException
 from app.modules.employee.model import Employee
 from app.modules.vehicle_booking import model as m
 from app.modules.vehicle_booking.schema import (
+    DispatchIn,
     VehicleBookingCreate,
     VehicleBookingResponse,
     VehicleBookingUpdate,
@@ -21,6 +22,8 @@ from app.modules.vehicle_booking.schema import (
 from app.modules.vehicle_booking.service import (
     apply_keyword_search,
     create_booking,
+    dispatch_booking,
+    serialize_booking,
     update_booking,
 )
 
@@ -129,6 +132,48 @@ def test_update_blocked_after_entering_flow(db):
     b = create_booking(db, _car_payload(), actor, submit=True)  # đã Chờ duyệt
     with pytest.raises(HTTPException):
         update_booking(db, b, VehicleBookingUpdate(purpose="X"), actor, submit=False)
+
+
+def _fleet(db):
+    """Một xe + một tài xế để điều phối."""
+    veh = m.Vehicle(license_plate="65C-172.76", model="Toyota Hilux", type="Bán tải")
+    drv = m.Driver(name="Lê Minh Thông", phone="0900")
+    db.add_all([veh, drv])
+    db.flush()
+    return veh, drv
+
+
+def test_dispatch_sets_status_and_labels(db):
+    actor = _actor(db)
+    veh, drv = _fleet(db)
+    b = create_booking(db, _car_payload(), actor, submit=True)  # đang Chờ duyệt
+    b2 = dispatch_booking(db, b, DispatchIn(assigned_vehicle_id=veh.id, assigned_driver_id=drv.id), actor)
+    assert b2.status == m.BK_DISPATCHED
+    assert b2.driver_status == m.DRV_WAITING
+    assert (b2.assigned_vehicle_id, b2.assigned_driver_id) == (veh.id, drv.id)
+    assert b2.dispatched_at  # có mốc thời gian
+    # Nhãn xe/tài xế được nối khi serialize.
+    out = serialize_booking(db, b2)
+    assert out["assigned_vehicle_label"] == "65C-172.76 — Toyota Hilux"
+    assert out["assigned_driver_label"] == "Lê Minh Thông"
+
+
+def test_dispatch_rejects_unknown_vehicle_or_driver(db):
+    actor = _actor(db)
+    veh, _ = _fleet(db)
+    b = create_booking(db, _car_payload(), actor, submit=True)
+    with pytest.raises(HTTPException):
+        dispatch_booking(db, b, DispatchIn(assigned_vehicle_id=veh.id, assigned_driver_id=99999), actor)
+
+
+def test_dispatch_blocked_when_closed(db):
+    actor = _actor(db)
+    veh, drv = _fleet(db)
+    b = create_booking(db, _car_payload(), actor, submit=True)
+    b.status = m.BK_CANCELLED  # phiếu đã hủy
+    db.flush()
+    with pytest.raises(HTTPException):
+        dispatch_booking(db, b, DispatchIn(assigned_vehicle_id=veh.id, assigned_driver_id=drv.id), actor)
 
 
 def test_keyword_search_matches_code_and_purpose(db):

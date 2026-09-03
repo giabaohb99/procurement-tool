@@ -73,8 +73,11 @@ class Driver(Base, AuditMixin):
     """Quản lý tài xế."""
     __tablename__ = "tab_driver"
 
-    user_id: Mapped[int] = mapped_column(BigInteger, nullable=True)  # Liêk kết với tab_user
+    # Tài xế NỘI BỘ có thể liên kết một tài khoản đăng nhập (để sau này tài xế
+    # tự xem "Chuyến của tôi"). Tài xế thuê ngoài thì bỏ trống.
+    user_id: Mapped[int] = mapped_column(BigInteger, nullable=True, index=True)
     name: Mapped[str] = mapped_column(String(255))
+    email: Mapped[str] = mapped_column(String(255), default="")  # liên hệ / trùng email tài khoản
     phone: Mapped[str] = mapped_column(String(20), default="")
     license_number: Mapped[str] = mapped_column(String(50), default="")
     status: Mapped[str] = mapped_column(String(30), default="available")

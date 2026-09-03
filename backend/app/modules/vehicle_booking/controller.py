@@ -17,13 +17,9 @@ from app.core.scoping import apply_scope, get_scoped
 
 from . import service
 from .model import VehicleBooking
-from .schema import VehicleBookingCreate, VehicleBookingResponse, VehicleBookingUpdate
+from .schema import DispatchIn, VehicleBookingCreate, VehicleBookingUpdate
 
 router = APIRouter(prefix="/api/vehicle-bookings", tags=["vehicle-booking"])
-
-
-def _dump(obj: VehicleBooking) -> dict:
-    return VehicleBookingResponse.model_validate(obj).model_dump()
 
 
 @router.get("")
@@ -44,7 +40,7 @@ def list_bookings(
     items = query.offset(pg["offset"]).limit(pg["limit"]).all()
     return success({
         "total": total,
-        "items": [_dump(i) for i in items],
+        "items": service.serialize_bookings(db, items),
     })
 
 
@@ -55,7 +51,7 @@ def get_booking(bid: int, db: Session = Depends(get_db),
                      user, get_perm_profile(db, user))
     if obj is None or obj.is_deleted:
         raise HTTPException(404, "Không tìm thấy yêu cầu đặt xe")
-    return success(_dump(obj))
+    return success(service.serialize_booking(db, obj))
 
 
 @router.post("")
@@ -69,7 +65,7 @@ def create_booking(
     audit_record(db, user.id, "vehicle_booking", obj.id, "create",
                  f"Tạo yêu cầu đặt xe {obj.code}")
     msg = "Đã gửi duyệt yêu cầu đặt xe" if submit else "Đã lưu nháp yêu cầu đặt xe"
-    return success(_dump(obj), msg, 201)
+    return success(service.serialize_booking(db, obj), msg, 201)
 
 
 @router.patch("/{bid}")
@@ -87,7 +83,25 @@ def update_booking(
     obj = service.update_booking(db, obj, data, user, submit)
     audit_record(db, user.id, "vehicle_booking", obj.id, "update",
                  f"Cập nhật yêu cầu đặt xe {obj.code}")
-    return success(_dump(obj), "Đã cập nhật")
+    return success(service.serialize_booking(db, obj), "Đã cập nhật")
+
+
+@router.post("/{bid}/dispatch")
+def dispatch_booking(
+    bid: int,
+    data: DispatchIn,
+    db: Session = Depends(get_db),
+    user=Depends(require("vehicle_booking", "write")),
+):
+    """Điều phối: gán xe + tài xế cho phiếu (điều phối viên = quyền write)."""
+    obj = get_scoped(db, VehicleBooking, "vehicle_booking", bid,
+                     user, get_perm_profile(db, user), "write")
+    if obj is None or obj.is_deleted:
+        raise HTTPException(404, "Không tìm thấy yêu cầu đặt xe")
+    obj = service.dispatch_booking(db, obj, data, user)
+    audit_record(db, user.id, "vehicle_booking", obj.id, "update",
+                 f"Điều phối xe/tài xế cho {obj.code}")
+    return success(service.serialize_booking(db, obj), "Đã điều phối")
 
 
 @router.delete("/{bid}")

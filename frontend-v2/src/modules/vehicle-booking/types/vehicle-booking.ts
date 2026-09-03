@@ -113,6 +113,8 @@ export interface VehicleBooking {
   // Điều phối / chạy chuyến
   assigned_vehicle_id: number | null
   assigned_driver_id: number | null
+  assigned_vehicle_label: string
+  assigned_driver_label: string
   dispatched_by: number | null
   dispatched_at: string | null
   driver_status: number
