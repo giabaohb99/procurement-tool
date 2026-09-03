@@ -219,6 +219,79 @@ class TestFormTrang:
         assert len(lines) == 1 and float(lines[0].amount) == 500000
 
 
+class TestTachTheoCongTy:
+    """bao-CR-274: khoản nợ của nhiều pháp nhân không được gom chung một phiếu — phiếu
+    phải đứng tên đúng công ty nhận hóa đơn (trước đây company_id lấy theo khoản nợ đầu
+    tiên nên phiếu đóng dấu nhầm công ty)."""
+
+    def test_no_hai_cong_ty_thi_tach_hai_phieu(self, db, seed):
+        from app.modules.company.model import Company
+
+        cty2 = Company(name="Cty Hai", code="CT02", is_active=True)
+        db.add(cty2)
+        db.flush()
+        p1 = _payable(db, seed, po_code="PO-C1", invoice_no="HD-C1")
+        p2 = Payable(company_id=cty2.id, supplier_code="NX", supplier_name=seed.sup_name,
+                     source_type="goods", po_code="PO-C2", invoice_no="HD-C2",
+                     incur_date="2026-08-04", due_date="2026-09-04",
+                     total=200000, paid_amount=0, remaining=200000,
+                     created_by=seed.u_req_id, updated_by=seed.u_req_id)
+        db.add(p2)
+        db.commit()
+
+        data = PRequestCreate(request_date="2026-08-04",
+                              lines=[LineIn(payable_id=p1.id), LineIn(payable_id=p2.id)])
+        reqs = S.create_requests(db, data, seed.u_req_id)
+        assert len(reqs) == 2
+        by_company = {r.company_id: r for r in reqs}
+        assert set(by_company) == {seed.company_id, cty2.id}
+        # Mỗi phiếu chỉ mang dòng của đúng công ty đó — tổng tiền không lẫn nhau.
+        assert float(by_company[seed.company_id].total) == 1000000
+        assert float(by_company[cty2.id].total) == 200000
+        assert all(r.supplier_code == "NX" for r in reqs)
+
+    def test_dong_go_tay_di_chung_phieu_khi_mot_cong_ty(self, db, seed, payable):
+        """Form vừa có khoản nợ vừa có dòng gõ tay, tất cả một công ty -> vẫn 1 phiếu
+        như hành vi cũ, không tách vô cớ."""
+        data = PRequestCreate(request_date="2026-08-04", supplier_code="NX",
+                              lines=[LineIn(payable_id=payable.id),
+                                     LineIn(po_code="PO-TAY", amount=50000)])
+        reqs = S.create_requests(db, data, seed.u_req_id)
+        assert len(reqs) == 1
+        assert reqs[0].company_id == seed.company_id
+        assert len(S.lines_of(db, reqs[0].id)) == 2
+
+
+class TestPhamViKhoanNoKhiTao:
+    """bao-CR-274: endpoint tạo phiếu chặn payable_id NGOÀI phạm vi `payable` được xem —
+    service lấy theo id nên gõ thẳng id qua API từng kéo được nợ pháp nhân khác vào phiếu."""
+
+    def test_go_id_ngoai_pham_vi_thi_403(self, db, seed, cap_quyen):
+        from app.modules.payment_request import controller as C
+        from app.modules.user.model import User
+
+        p = _payable(db, seed)   # created_by = u_req
+        cap_quyen(seed.u_nstm_id, "payment_request", scope="all", create=True)
+        cap_quyen(seed.u_nstm_id, "payable", scope="own", read=True)  # chỉ thấy nợ mình tạo
+        data = PRequestCreate(request_date="2026-08-04", lines=[LineIn(payable_id=p.id)])
+        with pytest.raises(HTTPException) as e:
+            C.create_(data, db=db, user=db.get(User, seed.u_nstm_id))
+        assert e.value.status_code == 403
+        assert "ngoài phạm vi" in e.value.detail
+
+    def test_dung_pham_vi_thi_tao_binh_thuong(self, db, seed, cap_quyen):
+        from app.modules.payment_request import controller as C
+        from app.modules.payment_request.model import PaymentRequest
+        from app.modules.user.model import User
+
+        p = _payable(db, seed)
+        cap_quyen(seed.u_req_id, "payment_request", scope="all", create=True)
+        cap_quyen(seed.u_req_id, "payable", scope="own", read=True)
+        data = PRequestCreate(request_date="2026-08-04", lines=[LineIn(payable_id=p.id)])
+        C.create_(data, db=db, user=db.get(User, seed.u_req_id))
+        assert db.query(PaymentRequest).count() == 1
+
+
 class TestChiTien:
     def test_dong_go_tay_van_tru_dung_khoan_no(self, db, seed, payable):
         """Phân bổ khớp theo (NCC + loại + PO + số HĐ) trước, nên dòng gõ tay vẫn trừ đúng."""

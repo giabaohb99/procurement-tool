@@ -70,6 +70,15 @@ def _scoped_payables(ctx: ToolContext, args: dict):
     date_to = _clean_text(args.get("date_to"), 10)
     if date_to:
         q = q.filter(Payable.incur_date != "", Payable.incur_date <= date_to)
+
+    # bao-CR-273 — lọc theo HẠN TRẢ: "cần thanh toán tháng này" là due_date chứ không phải
+    # ngày phát sinh. Khoản không có hạn trả bị loại khi bộ lọc này được dùng.
+    due_from = _clean_text(args.get("due_from"), 10)
+    if due_from:
+        q = q.filter(Payable.due_date != "", Payable.due_date >= due_from)
+    due_to = _clean_text(args.get("due_to"), 10)
+    if due_to:
+        q = q.filter(Payable.due_date != "", Payable.due_date <= due_to)
     return q, company_hit, None
 
 
@@ -91,6 +100,61 @@ def _payable_out(p: Payable) -> dict:
 
 
 # ── payable_lookup ──────────────────────────────────────────────────────────────────────
+
+def _grouped_out(ctx: ToolContext, q, overdue, total, group_by: str) -> dict:
+    """bao-CR-273 — tổng hợp NHÓM theo NCC/công ty trên TOÀN BỘ kết quả lọc.
+
+    Trả lời "bao nhiêu NCC cần trả / công ty nào nợ nhiều nhất" bằng số thật thay vì để
+    model tự đếm trên danh sách liệt kê trần 30 dòng (đếm thiếu khi nhiều hơn).
+    """
+    keys = ((Payable.supplier_code, Payable.supplier_name) if group_by == "supplier"
+            else (Payable.company_id,))
+    agg = (q.with_entities(
+               *keys,
+               func.count(Payable.id),
+               func.coalesce(func.sum(Payable.total), 0),
+               func.coalesce(func.sum(Payable.paid_amount), 0),
+               func.coalesce(func.sum(Payable.remaining), 0),
+               func.coalesce(func.sum(overdue), 0))
+           .group_by(*keys)
+           .order_by(func.coalesce(func.sum(Payable.remaining), 0).desc())
+           .all())
+
+    names: dict[int, str] = {}
+    if group_by == "company":
+        from app.modules.company.model import Company
+
+        ids = [r[0] for r in agg if r[0]]
+        if ids:
+            names = {c.id: c.name for c in
+                     ctx.db.query(Company).filter(Company.id.in_(ids)).all()}
+
+    groups = []
+    for r in agg[:MAX_ROWS]:
+        if group_by == "supplier":
+            head, n = {"supplier_code": r[0], "supplier_name": r[1]}, 2
+        else:
+            head, n = {"company_id": r[0], "company_name": names.get(r[0], "(không rõ)")}, 1
+        groups.append({**head, "count": int(r[n]), "total": float(r[n + 1]),
+                       "paid": float(r[n + 2]), "remaining": float(r[n + 3]),
+                       "overdue": float(r[n + 4])})
+
+    out = {
+        "total": int(total[0]),
+        "summary": {"total": float(total[1]), "paid": float(total[2]),
+                    "remaining": float(total[3]), "overdue": float(total[4])},
+        "group_by": group_by,
+        "group_count": len(agg),
+        "groups": groups,
+    }
+    if len(agg) > MAX_ROWS:
+        out["note"] = (f"Chỉ liệt kê {MAX_ROWS}/{len(agg)} nhóm nợ nhiều nhất — "
+                       "group_count và summary vẫn tính trên toàn bộ.")
+    if not agg:
+        out["note"] = ("Không có khoản nợ nào khớp điều kiện trong phạm vi người hỏi được "
+                       "xem — nói thẳng, đừng bịa số.")
+    return out
+
 
 def _run_lookup(ctx: ToolContext, args: dict) -> dict:
     if not ctx.can("payable"):
@@ -121,6 +185,12 @@ def _run_lookup(ctx: ToolContext, args: dict) -> dict:
         func.coalesce(func.sum(Payable.remaining), 0),
         func.coalesce(func.sum(overdue), 0),
     ).one()
+
+    group_by = _clean_text(args.get("group_by"), 20)
+    if group_by:
+        if group_by not in ("supplier", "company"):
+            return {"error": "group_by chỉ nhận supplier | company."}
+        return _grouped_out(ctx, q, overdue, total, group_by)
 
     limit = args.get("limit")
     limit = max(1, min(int(limit), MAX_ROWS)) if isinstance(limit, (int, float)) else 20
@@ -174,7 +244,12 @@ PAYABLE_LOOKUP_SPEC = ToolSpec(
         "nào quá hạn chưa trả'. Kết quả có summary (tổng nợ / đã trả / CÒN LẠI / quá hạn) "
         "tính trên toàn bộ kết quả lọc, kèm từng khoản nợ với payable_id — muốn lập Yêu cầu "
         "thanh toán từ các khoản này thì gọi tiếp draft_payment_request và truyền đúng các "
-        "payable_id đó. Mặc định chỉ lấy khoản CÒN PHẢI TRẢ. Lọc về đúng một NCC mà NCC đó "
+        "payable_id đó. Mặc định chỉ lấy khoản CÒN PHẢI TRẢ. Câu 'cần thanh toán tháng "
+        "này/tuần này' lọc theo HẠN TRẢ bằng due_from/due_to (date_from/date_to là ngày "
+        "PHÁT SINH nợ — đừng nhầm). Câu 'bao nhiêu NCC cần trả / công ty nào nợ nhiều nhất' "
+        "thì truyền group_by=supplier|company — trả tổng hợp từng nhóm (số khoản / còn nợ / "
+        "quá hạn) tính trên TOÀN BỘ kết quả lọc, ĐỪNG tự đếm trên danh sách liệt kê vì danh "
+        "sách có trần dòng. Lọc về đúng một NCC mà NCC đó "
         "còn TIỀN TREO trả trước (CR-268) thì kết quả kèm `prepay_hanging` — đọc `hint` "
         "trong đó để gợi ý người dùng cấn trừ trước khi lập phiếu chi mới."
     ),
@@ -200,6 +275,18 @@ PAYABLE_LOOKUP_SPEC = ToolSpec(
                           "description": "Ngày phát sinh nợ từ, YYYY-MM-DD (tùy chọn)."},
             "date_to": {"type": "string",
                         "description": "Ngày phát sinh nợ đến, YYYY-MM-DD (tùy chọn)."},
+            "due_from": {"type": "string",
+                         "description": "HẠN TRẢ từ ngày, YYYY-MM-DD — dùng cho 'cần thanh "
+                                        "toán trong tháng/tuần' (tùy chọn)."},
+            "due_to": {"type": "string",
+                       "description": "HẠN TRẢ đến ngày, YYYY-MM-DD (tùy chọn)."},
+            "group_by": {
+                "type": "string",
+                "enum": ["supplier", "company"],
+                "description": "Trả TỔNG HỢP NHÓM thay vì liệt kê từng khoản: supplier = "
+                               "gom theo NCC, company = gom theo công ty nợ tiền. Dùng cho "
+                               "'bao nhiêu NCC cần trả', 'công ty nào nợ nhiều nhất'.",
+            },
             "limit": {"type": "integer",
                       "description": f"Số khoản liệt kê tối đa, mặc định 20, trần {MAX_ROWS}."},
         },
@@ -217,8 +304,9 @@ _DRAFT_DESC = (
     "dùng muốn lập yêu cầu/đề nghị thanh toán công nợ cho NCC. Cách chọn khoản nợ, ưu tiên "
     "theo thứ tự: (1) đã gọi payable_lookup trong hội thoại thì truyền đúng danh sách "
     "payable_ids người dùng muốn trả; (2) chưa tra thì truyền supplier (bắt buộc nếu không "
-    "có payable_ids) + company/date_from/date_to nếu người dùng nêu — tool tự lấy các khoản "
-    "còn phải trả khớp điều kiện. Khoản đã tất toán bị loại tự động. NCC còn TIỀN TREO trả "
+    "có payable_ids) + company/date_from/date_to/due_from/due_to nếu người dùng nêu — tool "
+    "tự lấy các khoản còn phải trả khớp điều kiện ('trả các khoản tới hạn tháng này' = lọc "
+    "due_from/due_to theo HẠN TRẢ). Khoản đã tất toán bị loại tự động. NCC còn TIỀN TREO trả "
     "trước thì bản nháp chia sẵn phần 'Cấn trừ trả trước' theo FIFO (draft.offsets + "
     "offset_total + cash_total — chi thật = còn lại trừ cấn trừ, thực thi khi phiếu được "
     "DUYỆT theo CR-260) và form mở ra điền sẵn cột cấn trừ. Sau khi gọi, báo người dùng bấm "
@@ -333,6 +421,22 @@ def _run_draft(ctx: ToolContext, args: dict) -> dict:
     if len(by_supplier) > 1:
         result["reminder"] += (" Các khoản thuộc NHIỀU nhà cung cấp — khi lưu hệ thống tự "
                                "tách mỗi NCC một phiếu, báo trước cho người dùng.")
+    # bao-CR-274 — khoản nợ trải trên NHIỀU công ty: khi lưu hệ thống tách phiếu theo cả
+    # công ty nhận hóa đơn (mỗi cặp NCC + công ty một phiếu) — báo trước để người dùng
+    # không tưởng tất cả gom chung một phiếu.
+    company_ids = {p.company_id for p in rows if p.company_id}
+    if len(company_ids) > 1:
+        from app.modules.company.model import Company
+
+        company_names = sorted(
+            c.name for c in ctx.db.query(Company).filter(Company.id.in_(company_ids)).all()
+            if c.name)
+        result["draft"]["companies"] = company_names
+        result["reminder"] += (
+            f" Các khoản thuộc {len(company_ids)} CÔNG TY khác nhau "
+            f"({', '.join(company_names)}) — khi lưu hệ thống tự tách mỗi cặp NCC + công "
+            "ty một phiếu, phiếu đứng tên đúng công ty nhận hóa đơn; báo trước cho người "
+            "dùng. Muốn lập cho riêng một công ty thì gọi lại kèm company=<tên công ty>.")
     return result
 
 
@@ -505,6 +609,11 @@ DRAFT_PAYMENT_REQUEST_SPEC = ToolSpec(
                           "description": "Chỉ lấy khoản phát sinh từ ngày, YYYY-MM-DD (tùy chọn)."},
             "date_to": {"type": "string",
                         "description": "Chỉ lấy khoản phát sinh đến ngày, YYYY-MM-DD (tùy chọn)."},
+            "due_from": {"type": "string",
+                         "description": "Chỉ lấy khoản có HẠN TRẢ từ ngày, YYYY-MM-DD — dùng "
+                                        "cho 'trả các khoản tới hạn tháng/tuần này' (tùy chọn)."},
+            "due_to": {"type": "string",
+                       "description": "Chỉ lấy khoản có HẠN TRẢ đến ngày, YYYY-MM-DD (tùy chọn)."},
         },
     },
     handler=_run_draft,

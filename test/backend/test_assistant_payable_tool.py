@@ -121,6 +121,84 @@ def test_draft_thieu_ncc_lan_ids_thi_hoi_lai(db, seed, khoan_no, cap_quyen):
     assert "draft" not in out
 
 
+# ── Lọc hạn trả + tổng hợp nhóm + nhắc tách công ty (bao-CR-273) ────────────────────────
+
+def test_lookup_loc_theo_han_tra(db, seed, khoan_no, cap_quyen):
+    """due_from/due_to lọc theo HẠN TRẢ chứ không phải ngày phát sinh — 'cần thanh toán
+    trong tháng 8' chỉ ra PO-02 (hạn 20/08) dù PO-01 cũng phát sinh trong tháng 8."""
+    cap_quyen(seed.u_req_id, "payable", scope="all", read=True)
+    user = db.get(User, seed.u_req_id)
+
+    out = T.run_tool(db, user, "payable_lookup",
+                     {"due_from": "2026-08-01", "due_to": "2026-08-31"})
+    assert out["total"] == 1
+    assert out["items"][0]["payable_id"] == khoan_no[1].id
+    assert out["summary"]["remaining"] == 300.0
+
+
+def test_lookup_gom_nhom_theo_ncc(db, seed, khoan_no, cap_quyen):
+    """group_by=supplier: mỗi NCC một dòng tổng hợp, xếp còn-nợ giảm dần, quá hạn tính
+    đúng từng nhóm (hôm nay sau 20/08 nên PO-02 của NCCA quá hạn 300); không liệt kê
+    từng khoản nữa."""
+    cap_quyen(seed.u_req_id, "payable", scope="all", read=True)
+    user = db.get(User, seed.u_req_id)
+
+    out = T.run_tool(db, user, "payable_lookup", {"group_by": "supplier"})
+    assert out["group_count"] == 2
+    assert "items" not in out
+    assert [g["supplier_code"] for g in out["groups"]] == ["NCCA", "NCCB"]
+    ncca = out["groups"][0]
+    assert ncca["count"] == 2 and ncca["remaining"] == 1300.0 and ncca["overdue"] == 300.0
+    assert out["groups"][1]["remaining"] == 400.0
+    # summary vẫn tính trên toàn bộ để model nói được tổng cục.
+    assert out["summary"]["remaining"] == 1700.0
+
+    sai = T.run_tool(db, user, "payable_lookup", {"group_by": "ncc"})
+    assert sai.get("error")
+
+
+def test_lookup_gom_nhom_theo_cong_ty(db, seed, khoan_no, cap_quyen):
+    """group_by=company: gom theo pháp nhân nợ tiền, kèm TÊN công ty tra từ danh mục."""
+    cap_quyen(seed.u_req_id, "payable", scope="all", read=True)
+    user = db.get(User, seed.u_req_id)
+
+    out = T.run_tool(db, user, "payable_lookup", {"group_by": "company"})
+    assert out["group_count"] == 1
+    g = out["groups"][0]
+    assert g["company_id"] == seed.company_id
+    assert g["company_name"] == "Cty Test"
+    assert g["count"] == 3 and g["remaining"] == 1700.0
+
+
+def test_draft_nhieu_cong_ty_thi_bao_tach_theo_cong_ty(db, seed, khoan_no, cap_quyen):
+    """Khoản nợ trải trên 2 công ty: từ bao-CR-274 hệ thống tách phiếu theo cả công ty
+    nhận hóa đơn, reminder phải BÁO TRƯỚC việc tách đó; một công ty thì không nhắc."""
+    from app.modules.company.model import Company
+
+    cap_quyen(seed.u_req_id, "payable", scope="all", read=True)
+    cap_quyen(seed.u_req_id, "payment_request", scope="all", create=True)
+    user = db.get(User, seed.u_req_id)
+
+    # Một công ty -> không được nhắc vô cớ.
+    mot = T.run_tool(db, user, "draft_payment_request", {"supplier": "NCC"})
+    assert "companies" not in mot["draft"]
+    assert "CÔNG TY khác nhau" not in mot["reminder"]
+
+    cty2 = Company(name="Cty Hai", code="CT02", is_active=True)
+    db.add(cty2)
+    db.flush()
+    db.add(Payable(company_id=cty2.id, supplier_code="NCCA", supplier_name="NCC Anpha",
+                   source_type="goods", po_code="PO-05", incur_date="2026-08-20",
+                   period="2026", due_date="2026-09-20", total=600, paid_amount=0,
+                   remaining=600, status="unpaid"))
+    db.commit()
+
+    hai = T.run_tool(db, user, "draft_payment_request", {"supplier": "NCC"})
+    assert hai["draft"]["companies"] == ["Cty Hai", "Cty Test"]
+    assert "2 CÔNG TY khác nhau" in hai["reminder"]
+    assert "tách" in hai["reminder"]
+
+
 # ── payment_request_read (CR-218) ───────────────────────────────────────────────────────
 
 def _tao_yctt(db, seed, created_by):

@@ -145,43 +145,51 @@ def _line_rows(db: Session, data_lines, supplier_code: str, fill_from_payable: b
 
 
 def create_requests(db: Session, data: PRequestCreate, user_id: int) -> list[PaymentRequest]:
-    """Tạo phiếu; nếu các khoản nợ thuộc nhiều NCC -> tách mỗi NCC 1 phiếu;
-    Gom các khoản nợ cùng (mã PO + Số HĐ) thành 1 dòng duy nhất trên phiếu thanh toán.
+    """Tạo phiếu; các khoản nợ thuộc nhiều NCC hoặc nhiều CÔNG TY nhận hóa đơn -> tách
+    mỗi cặp (NCC, công ty) 1 phiếu (bao-CR-274 — trước đây chỉ tách theo NCC, company_id
+    lấy theo khoản nợ đầu tiên nên nợ 2 pháp nhân bị gom chung và phiếu đóng dấu nhầm
+    công ty). Gom các khoản nợ cùng (mã PO + Số HĐ) thành 1 dòng duy nhất trên phiếu.
 
     CR-066: KHÔNG còn chặn thiếu số hóa đơn ở đây — bản nháp được để trống để in trình ký,
     điều kiện đủ chỉ bị bắt lúc GỬI DUYỆT (xem `check_submit`)."""
     if not data.lines:
         raise HTTPException(400, "Chưa có dòng đề nghị thanh toán nào")
 
-    # gom theo (supplier_code, source_type); dòng gõ tay (không gắn khoản nợ) lấy theo phần đầu phiếu
+    # gom theo (supplier_code, source_type, company_id); dòng gõ tay (không gắn khoản nợ)
+    # lấy theo phần đầu phiếu
     groups: dict[tuple, list] = {}
-    heads: dict[tuple, tuple] = {}     # (supplier_code, source_type) -> (supplier_name, company_id)
+    heads: dict[tuple, str] = {}     # key -> supplier_name
     manual: list = []
     for ln in data.lines:
         p = db.get(Payable, ln.payable_id) if ln.payable_id else None
         if not p:
             manual.append(ln)
             continue
-        groups.setdefault((p.supplier_code, p.source_type), []).append(ln)
-        heads.setdefault((p.supplier_code, p.source_type), (p.supplier_name, p.company_id))
+        key = (p.supplier_code, p.source_type, p.company_id or 0)
+        groups.setdefault(key, []).append(ln)
+        heads.setdefault(key, p.supplier_name)
 
     if manual:
         supplier_code = (data.supplier_code or "").strip()
         if not supplier_code:
             raise HTTPException(400, "Chưa chọn nhà cung cấp cho phiếu")
         source_type = data.source_type if data.source_type in ("goods", "shipping") else "goods"
-        key = (supplier_code, source_type)
+        # Form không chọn công ty mà các khoản nợ kèm theo đều thuộc MỘT công ty thì dòng
+        # gõ tay đi chung phiếu đó (đúng hành vi cũ); nhiều công ty thì đứng phiếu riêng.
+        pay_companies = {k[2] for k in groups}
+        company_id = data.company_id or (pay_companies.pop() if len(pay_companies) == 1 else 0)
+        key = (supplier_code, source_type, company_id)
         groups.setdefault(key, []).extend(manual)
         if key not in heads:
             sup = db.query(Supplier).filter(Supplier.code == supplier_code).first()
-            heads[key] = (sup.name if sup else supplier_code, data.company_id or 0)
+            heads[key] = sup.name if sup else supplier_code
 
     created = []
-    for (supplier_code, source_type), items in groups.items():
+    for (supplier_code, source_type, company_id), items in groups.items():
         rows = _line_rows(db, items, supplier_code, fill_from_payable=True)
         if not rows:
             continue
-        supplier_name, company_id = heads[(supplier_code, source_type)]
+        supplier_name = heads[(supplier_code, source_type, company_id)]
         req = PaymentRequest(
             supplier_code=supplier_code, supplier_name=supplier_name,
             company_id=company_id, source_type=source_type,

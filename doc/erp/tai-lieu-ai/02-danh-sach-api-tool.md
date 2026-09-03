@@ -261,26 +261,39 @@ system prompt), hỗ trợ mua cho pháp nhân khác qua tham số `company`.
 - Mục đích: "công nợ NCC X tháng này bao nhiêu, còn lại bao nhiêu", "khoản nào quá hạn".
 - Tham số: `supplier` (mã/tên một phần), `company` (khớp danh mục, sai tên thì trả danh sách
   hợp lệ chứ KHÔNG lặng lẽ bỏ lọc), `status` (outstanding mặc định | paid | all),
-  `date_from`/`date_to` (ngày phát sinh), `limit` (trần 30).
+  `date_from`/`date_to` (ngày phát sinh), `due_from`/`due_to` (HẠN TRẢ — "cần thanh toán
+  tháng này", bao-CR-273), `group_by` (supplier | company — trả tổng hợp nhóm thay vì liệt
+  kê, bao-CR-273), `limit` (trần 30).
 - Đầu ra: `summary` (tổng nợ / đã trả / còn lại / quá hạn) tính trên TOÀN BỘ kết quả lọc +
-  danh sách từng khoản kèm `payable_id` để nối sang T26.
+  danh sách từng khoản kèm `payable_id` để nối sang T26. Có `group_by` thì thay danh sách
+  bằng `groups` (mỗi NCC/công ty một dòng: số khoản + còn nợ + quá hạn, xếp còn-nợ giảm
+  dần, trần 30 nhóm nhưng `group_count`/`summary` vẫn tính trên toàn bộ).
 - Nguồn: cùng `apply_scope("payable")` + công thức quá hạn với màn Công nợ (`/api/payables`).
 - Quyền: `payable` + `read`.
 
 ### T26. draft_payment_request - Soạn nháp Yêu cầu thanh toán (YCTT)
 - Mục đích: "làm yêu cầu thanh toán cho NCC X" sau khi tra công nợ.
 - Tham số: `payable_ids` (từ T25, chính xác nhất) HOẶC `supplier` bắt buộc +
-  `company`/`date_from`/`date_to` tùy chọn; không có cả hai thì tool bắt hỏi lại,
+  `company`/`date_from`/`date_to`/`due_from`/`due_to` tùy chọn ("trả các khoản tới hạn
+  tháng này" = lọc theo HẠN TRẢ, bao-CR-273); không có cả hai thì tool bắt hỏi lại,
   không gom nợ cả hệ.
 - Đầu ra: bản nháp `kind=payment_request` gồm danh sách `payable_ids` hợp lệ + tổng còn lại
   theo NCC. Giao diện hiện nút "Tạo đề nghị thanh toán" mở form tạo YCTT qua đường
   `?payables=<ids>` của màn Công nợ - form TỰ NẠP LẠI các khoản dưới quyền người đăng nhập
-  (backend kiểm lại phạm vi lần nữa), người dùng rà rồi tự bấm Lưu; nhiều NCC thì hệ thống
-  tự tách mỗi NCC một phiếu như lập tay.
+  (backend kiểm lại phạm vi lần nữa — từ bao-CR-274 endpoint tạo phiếu cũng chặn 403
+  payable_id ngoài phạm vi), người dùng rà rồi tự bấm Lưu; khi lưu hệ thống tự tách mỗi
+  cặp NCC + CÔNG TY nhận hóa đơn một phiếu (bao-CR-274) — nhiều công ty thì bản nháp kèm
+  `draft.companies` và reminder báo trước việc tách.
 - Luật cứng: CHỈ chọn khoản `remaining > 0` - khoản đã tất toán bị loại và báo trong
   `skipped_ids` (bài học lỗi phân bổ thanh toán, fix `82ce6ad`); trần 50 khoản/bản nháp.
 - Quyền: `payment_request` + `create` VÀ `payable` + `read` - thiếu một trong hai là denied
   (bản nháp lộ số nợ + tên NCC nên không được vòng qua hàng rào của T25).
+
+**Nâng cấp bao-CR-273 (03/09/2026) — ĐÃ LÀM**, chi tiết đã gộp vào mô tả T25/T26 ở trên:
+① lọc hạn trả `due_from`/`due_to`; ② tổng hợp nhóm `group_by=supplier|company`;
+③ nhắc khi nợ trải nhiều công ty — phần ③ được **bao-CR-274** (cùng ngày, theo yêu cầu
+khách) nâng tiếp: backend tách phiếu theo cả công ty nhận hóa đơn + gác phạm vi khoản nợ
+ngay ở endpoint tạo phiếu, reminder đổi từ "hỏi có tách không" thành "báo trước sẽ tách".
 
 ---
 

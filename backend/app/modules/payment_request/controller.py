@@ -146,6 +146,21 @@ def print_(rid: int, db: Session = Depends(get_db), user=Depends(require("paymen
 @router.post("")
 def create_(data: PRequestCreate, db: Session = Depends(get_db),
             user=Depends(require("payment_request", "create"))):
+    # bao-CR-274 — khoản nợ gắn vào phiếu phải nằm trong phạm vi `payable` người tạo được
+    # xem: service lấy theo id (`db.get`) nên bỏ qua lọc phạm vi, gõ thẳng id qua API là
+    # kéo được nợ của pháp nhân khác vào phiếu dù màn Công nợ không hiển thị khoản đó.
+    from fastapi import HTTPException
+
+    from app.modules.payable.model import Payable
+
+    ids = {ln.payable_id for ln in data.lines if ln.payable_id}
+    if ids:
+        visible = {pid for (pid,) in apply_scope(
+            db.query(Payable.id).filter(Payable.id.in_(ids)), Payable, "payable",
+            user, get_perm_profile(db, user)).all()}
+        if ids - visible:
+            raise HTTPException(403, "Có khoản công nợ ngoài phạm vi bạn được xem — "
+                                     "không đưa vào phiếu được")
     reqs = service.create_requests(db, data, user.id)
     return success([_out(db, r) for r in reqs],
                    f"Đã tạo {len(reqs)} phiếu yêu cầu thanh toán", 201)
