@@ -154,9 +154,12 @@ export function RolePermissionMatrix({
             return (
               <Fragment key={group.id}>
                 {/* ---------- CẤP 1: phân hệ ---------- */}
-                {/* Cấp 1 dùng CÙNG nền với cấp 2 (theo yêu cầu). Phân cấp thể hiện
-                    bằng mũi tên xổ + chữ đậm + thụt lề của cấp 2, KHÔNG bằng màu nền. */}
-                <TableRow className="bg-card hover:bg-accent">
+                {/* Cấp 1 dùng CÙNG độ cao + vằn chẵn/lẻ như cấp 2 (theo yêu cầu):
+                    tham gia chung một dải zebra của bảng. Phân cấp thể hiện bằng
+                    mũi tên xổ + chữ đậm + thụt lề, KHÔNG bằng màu nền riêng. */}
+                {/* Cao 53px cho BẰNG dòng cấp 2 — cấp 2 bị ô Select phạm vi kéo cao
+                    hơn h-12 (48px), nên cấp 1 ghim đúng chiều cao đó. */}
+                <TableRow className="h-[53px] bg-card even:bg-row-stripe hover:bg-accent even:hover:bg-accent">
                   <TableCell className="sticky left-0 z-10 border-r bg-inherit">
                     <button
                       type="button"
