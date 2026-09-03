@@ -9,7 +9,8 @@
 | Xây bằng cách nào (kiến trúc, DB, API, phân quyền) | [tai-lieu-ky-thuat/technical-design.md](tai-lieu-ky-thuat/technical-design.md) |
 
 ## tai-lieu-chuc-nang/ — Tài liệu chức năng (nghiệp vụ, cho người dùng & BA)
-- `00-muc-luc.md` — mục lục; `01`…`11` theo từng phân hệ (Phiếu khảo sát, YCBG, YCMH, ĐMH, YCTT, Tồn kho & Công nợ, Danh mục, Báo cáo, Thông báo & Trang cá nhân, Phiếu hỗ trợ, Bình luận)
+- `00-muc-luc.md` — mục lục; `01`…`16` theo từng phân hệ (Phiếu khảo sát, YCBG, YCMH, ĐMH, YCTT, Tồn kho & Công nợ, Danh mục, Báo cáo, Thông báo & Trang cá nhân, Phiếu hỗ trợ, Bình luận, Lịch sử mua hàng, Trung tâm HDSD, Văn thư, **Dự án — quản lý công việc**)
+- ⚠️ Sửa tài liệu chức năng của một phân hệ thì xem luôn có cần cập nhật **gói tri thức Trợ lý AI** không: `backend/app/modules/assistant/packs/` — gói đó nạp thẳng vào system prompt mỗi lượt hỏi, lệch với tài liệu là trợ lý trả lời sai mà không ai biết.
 
 ## tai-lieu-ky-thuat/ — Tài liệu kỹ thuật
 - `change-log.md` — **sổ CR** (mỗi thay đổi 1 dòng) + việc còn nợ + quyết định đã chốt (D-xxx) + **nhật ký deploy**

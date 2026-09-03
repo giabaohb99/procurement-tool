@@ -30,9 +30,10 @@ Help Center và trợ lý tra bằng `search_docs` (RAG index `help_article` + F
 |---|---|---|
 | `10-quy-trinh-thu-mua.md` | Thu mua | ~830 |
 | `20-van-thu-van-ban.md` | Văn thư | ~3 100 |
+| `30-du-an-cong-viec.md` | Dự án (quản lý công việc) | ~2 300 |
 | `nhamay-tri-thuc-co-dong.md` | Nhà máy DEGO Organic | ~11 000 |
 
-Tổng system prompt hiện ~**15,3k token/lượt** (đo 27/08/2026 bằng
+Tổng system prompt hiện ~**17,7k token/lượt** (đo 03/09/2026 bằng
 `knowledge.build_system()`, ước 3,2 ký tự/token cho tiếng Việt).
 
 Viết gói phân hệ thì bám ba nguyên tắc:

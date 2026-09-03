@@ -10,6 +10,10 @@ Mục lục toàn bộ tính năng: [00-muc-luc.md](00-muc-luc.md)
 | File | Chức năng |
 |------|-----------|
 | [01-phieu-khao-sat.md](01-phieu-khao-sat.md) | Phiếu khảo sát (NCC + Sản phẩm) |
+| [16-du-an-cong-viec.md](16-du-an-cong-viec.md) | Dự án — quản lý công việc (ERP v2) |
+
+Danh sách đầy đủ ở [00-muc-luc.md](00-muc-luc.md); bảng trên chỉ liệt kê vài mục
+tiêu biểu, đừng coi là danh sách đủ.
 
 ## Quy ước cột trong bảng trường
 
