@@ -1,4 +1,3 @@
-import { Plus } from 'lucide-react'
 import { useState } from 'react'
 
 import { Checkbox } from '@/shared/ui/checkbox'
@@ -50,7 +49,7 @@ export function TaskSubtaskList({ subtasks, canEdit, onToggle, onAdd }: TaskSubt
            không nói thêm điều gì mà lại chiếm đúng chỗ dễ thấy nhất của khối. */}
       {tong > 0 && (
         <div className="flex h-7 items-center gap-2">
-          <span className="text-sm tabular-nums text-muted-foreground">
+          <span className="text-sm text-muted-foreground tabular-nums">
             {xong} / {tong}
           </span>
           <span className="h-1.5 w-28 overflow-hidden rounded-full bg-muted">
@@ -111,12 +110,15 @@ export function TaskSubtaskList({ subtasks, canEdit, onToggle, onAdd }: TaskSubt
             }}
           />
         ) : (
+          //  Không có dấu `+` ở đây: máng trái của hàng đã mang biểu tượng
+          //  «việc con» rồi, và dòng này phải bắt đầu ĐÚNG cùng mốc với «Thêm
+          //  đính kèm» ngay dưới — thêm một ký tự là hai dòng so le (khách đối
+          //  chiếu Lark 03/09/2026).
           <button
             type="button"
             onClick={() => setDangThem(true)}
-            className="flex items-center gap-1 rounded-md px-1 py-1 text-sm text-muted-foreground hover:text-foreground"
+            className="flex items-center rounded-md px-1 py-1 text-sm text-muted-foreground hover:text-foreground"
           >
-            <Plus className="size-4" />
             Thêm việc con
           </button>
         ))}
