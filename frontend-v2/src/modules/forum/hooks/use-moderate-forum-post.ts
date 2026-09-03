@@ -33,6 +33,9 @@ export function useModerateForumPost() {
       await queryClient.invalidateQueries({ queryKey: queryKeys.forum.post(postId) })
       // Ẩn/gỡ bài đang ghim làm bài rời (hoặc quay lại) dải Thông báo (F9a).
       await queryClient.invalidateQueries({ queryKey: queryKeys.forum.pinned() })
+      // Thread trong box ẩn/khôi phục cũng phải biến mất / hiện lại ở trang
+      // thread (bao-CR-276). API trả null, không biết box nào — quét gốc `boards`.
+      await queryClient.invalidateQueries({ queryKey: queryKeys.forum.boards() })
       // Kiểm duyệt ngay trên kết quả tìm kiếm (CR-263): trạng thái đổi thì mọi
       // trang kết quả đang cache đều cũ — invalidate cả cụm theo tiền tố, và
       // nhật ký kiểm duyệt vừa có thêm dòng mới.
