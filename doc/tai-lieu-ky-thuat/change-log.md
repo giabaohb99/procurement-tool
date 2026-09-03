@@ -6,6 +6,13 @@ Ghi lại **AI đổi gì, khi nào, ảnh hưởng ra sao** (theo [quy-trinh-ta
 
 **Trạng thái:** `Đề xuất` → `Đã duyệt` → `Đang làm` → `Hoàn tất` (hoặc `Từ chối` / `Hoãn`).
 
+**LUẬT ĐÁNH SỐ từ 03/09/2026 — số CR mang TIỀN TỐ TÊN NGƯỜI LÀM: `<tên>-CR-<số>`**
+(ví dụ `bao-CR-272`; tiền tố của Gia Bảo là `bao`, người khác dùng tên mình). Lý do:
+nhiều người làm song song trên `erp-v2`, chỉ trong tuần 27/08–03/09 đã BỐN lần hai phiên
+cấp trùng số (249-252, 259, 260, 262 và cả dải 252-258) khiến phải đánh lại số hàng loạt
+khi merge. Mỗi người một dải riêng theo tiền tố thì cấp số không cần nhìn nhau nữa.
+Các số KHÔNG tiền tố (CR-001…CR-271) là số cũ trước luật, giữ nguyên không sửa lại.
+
 ---
 
 | CR | Ngày | Người đề xuất | Nội dung | Ảnh hưởng scope | Trạng thái | Tài liệu liên quan |
