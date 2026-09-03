@@ -143,3 +143,23 @@ def offset_prepay_(pid: int, data: dict, db: Session = Depends(get_db),
     from app.modules.payment_request import service as prq_service
     taken = prq_service.offset_supplier_hanging(db, p, float(data.get("amount") or 0), user.id)
     return success(_out(db, p), f"Đã cấn trừ {taken:,.0f} đ tiền treo vào khoản nợ")
+
+
+@router.get("/export/xlsx")
+def export_xlsx(request: Request, cols: str = "", db: Session = Depends(get_db),
+                user=Depends(require("payable", "export"))):
+    """Ticket #16 — xuất Excel danh sách Công nợ đúng bộ lọc + phạm vi màn hình.
+
+    Tham số `ids` (khoản người dùng tick chọn) đã được `_filtered` xử lý sẵn — có `ids`
+    thì chỉ xuất các khoản đó và bỏ giới hạn theo năm, rỗng thì theo bộ lọc đang đặt.
+    `cols` = các cột đang hiện trên bảng, xuất đúng thứ tự người dùng thấy.
+    """
+    from app.core.export_xlsx import check_row_limit, pick_columns, xlsx_response
+
+    from . import export as ex
+
+    q = _filtered(db, request, user)
+    items = q.order_by(Payable.due_date.asc(), Payable.id.desc()).all()
+    check_row_limit(len(items))
+    columns = pick_columns(ex.COLS, cols)
+    return xlsx_response(ex.FILE_NAME, columns, ex.build_rows(db, items), ex.SHEET_TITLE)

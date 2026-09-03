@@ -162,6 +162,36 @@ export default function Payables() {
     navigate(`/payment-requests/new?payables=${picked.map((r) => r.id).join(',')}`, { state: { rows: picked } })
   }
 
+  /** Ticket #16 — xuất Excel đúng bộ lọc + đúng cột đang hiện; có tick chọn thì chỉ xuất
+   *  các khoản đã tick (backend chặn ở 5.000 dòng). */
+  async function exportXlsx() {
+    try {
+      const p: any = params()
+      if (sel.length) p.ids = sel.join(',')
+      p.cols = table.columns.map((c) => c.key).join(',')
+      const r = await api.get('/api/payables/export/xlsx', { params: p, responseType: 'blob' })
+      const cd = String(r.headers['content-disposition'] || '')
+      const name = /filename="?([^"]+)"?/.exec(cd)?.[1] || 'cong-no-phai-tra.xlsx'
+      const url = window.URL.createObjectURL(new Blob([r.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', name)
+      document.body.appendChild(link)
+      link.click()
+      link.parentNode?.removeChild(link)
+      window.URL.revokeObjectURL(url)
+    } catch (e: any) {
+      // Lỗi trả về cũng ở dạng blob (do responseType) -> đọc text rồi lấy message
+      let msg = 'Lỗi khi xuất file Excel'
+      try {
+        const body = e?.response?.data
+        const text = body instanceof Blob ? await body.text() : ''
+        msg = JSON.parse(text)?.error?.message || msg
+      } catch { /* giữ thông báo mặc định */ }
+      setErr(msg)
+    }
+  }
+
   const Card = ({ label, val, color }: any) => (
     <div className="card" style={{ padding: 14, flex: 1, minWidth: 150 }}>
       <div style={{ fontSize: 12, color: 'var(--muted)' }}>{label}</div>
@@ -173,11 +203,19 @@ export default function Payables() {
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 10 }}>
         <h2 className="page-title" style={{ margin: 0 }}>Công nợ phải trả</h2>
-        {can('payment_request', 'create') && (
-          <button className="btn" disabled={!sel.length} onClick={createRequest}>
-            <i className="ti ti-receipt" />Tạo yêu cầu thanh toán {sel.length ? `(${sel.length} khoản · ${selSuppliers.size} NCC)` : ''}
-          </button>
-        )}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {can('payable', 'export') && (
+            <button className="btn outline" onClick={exportXlsx}
+              title={sel.length ? 'Xuất các khoản đang tick chọn ra Excel' : 'Xuất toàn bộ kết quả đang lọc ra Excel'}>
+              <i className="ti ti-file-spreadsheet" />Xuất Excel {sel.length ? `(${sel.length} khoản)` : ''}
+            </button>
+          )}
+          {can('payment_request', 'create') && (
+            <button className="btn" disabled={!sel.length} onClick={createRequest}>
+              <i className="ti ti-receipt" />Tạo yêu cầu thanh toán {sel.length ? `(${sel.length} khoản · ${selSuppliers.size} NCC)` : ''}
+            </button>
+          )}
+        </div>
       </div>
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
