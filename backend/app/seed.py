@@ -300,7 +300,7 @@ STD_ROLES = {
         "import": (["read", "create", "delete"], "all"),   # nạp data cũ + hoàn tác
         "goods_receipt": (["read"], "all"),
         "inventory": (["read"], "all"),
-        "payable": (["read"], "all"),
+        "payable": (["read", "export"], "all"),   # ticket #16: xuất Excel màn Công nợ
         "payment_request": (["read"], "all"),
         "report": (["read", "export"], "all"),
     }},
