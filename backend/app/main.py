@@ -44,6 +44,8 @@ from app.modules.company.controller import router as company_router
 from app.modules.department.controller import router as department_router
 from app.modules.employee.controller import router as employee_router
 from app.modules.vehicle_booking.controller import router as vehicle_booking_router
+from app.modules.vehicle_booking.catalog_controller import (
+    driver_router, vehicle_router)
 from app.modules.product.controller import router as product_router
 from app.modules.purchase_history.controller import router as purchase_history_router
 from app.modules.role.controller import router as role_router
@@ -212,6 +214,8 @@ app.include_router(work_router)
 app.include_router(work_task_router)
 #  Đặt xe nội bộ (DEGO Booking Auto) — phân hệ mới
 app.include_router(vehicle_booking_router)
+app.include_router(vehicle_router)
+app.include_router(driver_router)
 #  Bộ máy phê duyệt dùng chung — không thuộc phân hệ nào, mọi loại chứng từ
 #  đều chạy qua nó.
 app.include_router(approval_flow_router)

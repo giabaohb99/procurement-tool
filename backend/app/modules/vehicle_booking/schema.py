@@ -44,6 +44,18 @@ class VehicleBase(BaseModel):
     is_external: bool = False
     external_company: str = ""
 
+class VehicleCreate(VehicleBase):
+    pass
+
+class VehicleUpdate(BaseModel):
+    license_plate: str | None = None
+    model: str | None = None
+    type: str | None = None
+    capacity: int | None = None
+    status: str | None = None
+    is_external: bool | None = None
+    external_company: str | None = None
+
 class VehicleResponse(VehicleBase):
     id: int
     class Config:
@@ -56,6 +68,17 @@ class DriverBase(BaseModel):
     status: str = "available"
     is_external: bool = False
     external_company: str = ""
+
+class DriverCreate(DriverBase):
+    pass
+
+class DriverUpdate(BaseModel):
+    name: str | None = None
+    phone: str | None = None
+    license_number: str | None = None
+    status: str | None = None
+    is_external: bool | None = None
+    external_company: str | None = None
 
 class DriverResponse(DriverBase):
     id: int

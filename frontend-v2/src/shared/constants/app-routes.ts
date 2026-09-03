@@ -266,6 +266,12 @@ export const appRoutes = {
     root: '/vehicle-booking',
     // Tạo/sửa là POPUP (case UI C-01), không có route trang riêng.
     detail: (id: number | string) => `/vehicle-booking/${id}`,
+    /** Danh mục Xe. */
+    vehicles: '/vehicle-booking/vehicles',
+    vehicleDetail: (id: number | string) => `/vehicle-booking/vehicles/${id}`,
+    /** Danh mục Tài xế. */
+    drivers: '/vehicle-booking/drivers',
+    driverDetail: (id: number | string) => `/vehicle-booking/drivers/${id}`,
   },
   degoCoffee: {
     root: '/dego-coffee',

@@ -36,10 +36,19 @@ export function CrudFormDialog<T extends CrudRecord>({
     handleSubmit,
     control,
     reset,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
   } = useForm<Record<string, unknown>>({
     defaultValues: buildFormDefaults(config.formFields, item),
   })
+
+  const pending = isSubmitting || saveMutation.isPending
+
+  /** Đóng theo case C-01: chỉ Hủy/X; form đã sửa thì hỏi xác nhận, tránh mất dữ liệu. */
+  const attemptClose = () => {
+    if (pending) return
+    if (isDirty && !window.confirm('Bạn có thay đổi chưa lưu. Đóng và bỏ các thay đổi này?')) return
+    onOpenChange(false)
+  }
 
   // Nạp lại giá trị mỗi lần MỞ hộp thoại: cùng một component được dùng lại cho
   // cả "Thêm" lẫn "Sửa", không reset thì lần mở sau còn nguyên số của lần trước.
@@ -58,8 +67,21 @@ export function CrudFormDialog<T extends CrudRecord>({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={config.dialogMaxWidth || 'sm:max-w-lg'}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        // Đóng (next=false) phải qua chốt chống mất dữ liệu; mở thì để nguyên.
+        if (next) onOpenChange(true)
+        else attemptClose()
+      }}
+    >
+      <DialogContent
+        className={config.dialogMaxWidth || 'sm:max-w-lg'}
+        // C-01: KHÔNG đóng bằng Esc hay click ra ngoài — chỉ Hủy/X (qua onOpenChange).
+        onEscapeKeyDown={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+        onPointerDownOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>
             {isEditing ? `Sửa ${config.unitLabel}` : `Thêm ${config.unitLabel}`}
@@ -92,15 +114,13 @@ export function CrudFormDialog<T extends CrudRecord>({
             <Button
               type="button"
               variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={isSubmitting || saveMutation.isPending}
+              onClick={attemptClose}
+              disabled={pending}
             >
               Hủy
             </Button>
-            <Button type="submit" disabled={isSubmitting || saveMutation.isPending}>
-              {(isSubmitting || saveMutation.isPending) && (
-                <Loader2 className="mr-2 size-4 animate-spin" />
-              )}
+            <Button type="submit" disabled={pending}>
+              {pending && <Loader2 className="mr-2 size-4 animate-spin" />}
               {isEditing ? 'Lưu thay đổi' : 'Tạo mới'}
             </Button>
           </DialogFooter>
