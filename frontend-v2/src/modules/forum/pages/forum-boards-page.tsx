@@ -76,13 +76,13 @@ export function ForumBoardsPage() {
   return (
     //  F13c: desktop rộng chia 2 cột (danh sách box + sidebar 300px); mobile
     //  giấu sidebar, riêng khối «Nổi bật» dồn lên đầu trang (PinnedSpotlight).
-    <div className="pt-3 lg:grid lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start lg:gap-4">
+    <div className="pt-3 lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-5">
       <div className="space-y-4">
         <PinnedSpotlight className="lg:hidden" />
         {groups.map((group) => (
           <section key={group.id} aria-label={group.name}>
             <div className="flex items-center gap-2 px-4 pb-1.5 sm:px-1">
-              <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+              <h2 className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
                 {group.name}
               </h2>
               {group.status === FORUM_BOARD_STATUS.hidden && <HiddenBadge />}
@@ -109,19 +109,21 @@ export function ForumBoardsPage() {
 function BoardRow({ box }: { box: ForumBoardNode }) {
   const last = box.last_post
   return (
-    <div className="flex items-center gap-3 px-4 py-3">
+    // bao-CR-272: khung đã nới 1280px thì chữ cũng lên một nấc (tên box 16px,
+    // mô tả 14px, khối bài-mới-nhất 288px) — cỡ cũ trên khung rộng nhìn lép kẹp.
+    <div className="flex items-center gap-3 px-4 py-3.5">
       <Link
         to={appRoutes.forum.boardDetail(box.id)}
         className="group flex min-w-0 flex-1 items-center gap-3"
       >
         <BoardIcon icon={box.icon} />
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold group-hover:underline">
+          <p className="truncate text-base font-semibold group-hover:underline">
             {box.name}
             {box.status === FORUM_BOARD_STATUS.hidden && <HiddenBadge className="ml-1.5" />}
           </p>
           {box.description && (
-            <p className="truncate text-xs text-muted-foreground">{box.description}</p>
+            <p className="truncate text-sm text-muted-foreground">{box.description}</p>
           )}
           <p className="mt-0.5 text-xs text-muted-foreground">
             {box.thread_count} chủ đề · {box.comment_count} bình luận
@@ -132,10 +134,10 @@ function BoardRow({ box }: { box: ForumBoardNode }) {
       {last && (
         <Link
           to={appRoutes.forum.postDetail(last.post_id)}
-          className="group hidden w-52 shrink-0 items-center gap-2 sm:flex"
+          className="group hidden w-72 shrink-0 items-center gap-2 sm:flex"
           title={formatDateTime(last.last_at)}
         >
-          <Avatar className="size-8">
+          <Avatar className="size-9">
             <AvatarImage
               className="object-cover"
               src={last.last_author_avatar}
@@ -146,11 +148,11 @@ function BoardRow({ box }: { box: ForumBoardNode }) {
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0">
-            <p className="flex items-center gap-1 text-xs font-medium">
+            <p className="flex items-center gap-1 text-sm font-medium">
               <ThreadPrefixChip prefix={last.prefix} />
               <span className="truncate group-hover:underline">{last.title}</span>
             </p>
-            <p className="truncate text-[11px] text-muted-foreground">
+            <p className="truncate text-xs text-muted-foreground">
               {last.last_author_name} · {formatRelativeTime(last.last_at)}
             </p>
           </div>

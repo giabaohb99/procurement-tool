@@ -9,6 +9,8 @@ import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
 import { cn } from '@/shared/utils/cn'
 
+import { ForumHeaderSearch } from './forum-header-search'
+
 /**
  * Khung riêng của Diễn đàn (QĐ-D6): một cột giữa kiểu bảng tin, KHÔNG có
  * sidebar nghiệp vụ — vào đây là rời không khí chứng từ. Thanh trên giữ lại
@@ -16,8 +18,9 @@ import { cn } from '@/shared/utils/cn'
  * chỗ cho «Hướng dẫn» (QĐ-D4, vào ở F7).
  */
 export function ForumLayout() {
-  //  F13c: RIÊNG màn «Diễn đàn» nới khung cho cột nội dung + sidebar 300px;
-  //  các màn còn lại giữ một cột 672px kiểu bảng tin.
+  //  bao-CR-272: màn 1920px mà bó 672px thì hai bên trống hoác (người dùng kêu
+  //  đúng câu đó) — «Diễn đàn»/«Quản trị» nới hẳn 1280px, trang ĐỌC BÀI 896px
+  //  cho bài hướng dẫn dài dễ đọc, các feed còn lại 768px.
   const { pathname } = useLocation()
   const { can } = usePermission()
   //  Tab «Quản trị» (CR-263) chỉ cho người có grant diễn đàn — `can()` là tiện
@@ -25,6 +28,9 @@ export function ForumLayout() {
   const isForumAdmin = can('forum_post', 'write') || can('forum_board', 'write')
   const wide =
     pathname === appRoutes.forum.boards || pathname === appRoutes.forum.admin
+  // Trang đọc một bài (`/forum/posts/:id`) — đích của bài hướng dẫn dài.
+  const reading = pathname.startsWith(`${appRoutes.forum.root}/posts/`)
+
   return (
     <div className="flex min-h-svh flex-col bg-muted/40">
       {/*  Header trải HẾT bề ngang (không bó max-w-2xl như cột feed) — bó chung
@@ -63,12 +69,15 @@ export function ForumLayout() {
           </nav>
 
           <div className="ml-auto flex min-w-0 shrink items-center gap-1">
-            {/*  Tìm kiếm (CR-263) — nút icon thay vì tab thứ 5 cho đỡ chật màn hẹp. */}
+            {/*  Ô tìm NHÌN THẤY ĐƯỢC (bao-CR-272) — bản trước chỉ có icon kính
+                lúp, người dùng tưởng diễn đàn không có tìm kiếm. Gõ là sổ top 5
+                gợi ý (bao-CR-273.1). Màn hẹp mới rút về icon. */}
+            <ForumHeaderSearch className="hidden md:block" />
             <Button
               asChild
               variant="ghost"
               size="icon"
-              className="shrink-0 text-muted-foreground hover:text-foreground"
+              className="shrink-0 text-muted-foreground hover:text-foreground md:hidden"
             >
               <NavLink to={appRoutes.forum.search} title="Tìm bài viết">
                 <Search className="size-5" />
@@ -86,7 +95,7 @@ export function ForumLayout() {
       <main
         className={cn(
           'mx-auto w-full flex-1 pb-10 sm:px-4',
-          wide ? 'max-w-5xl' : 'max-w-2xl',
+          wide ? 'max-w-7xl' : reading ? 'max-w-4xl' : 'max-w-3xl',
         )}
       >
         <Outlet />

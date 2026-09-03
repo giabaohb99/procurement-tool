@@ -162,6 +162,7 @@ export function searchForumPosts(params: ForumSearchParams): Promise<ForumSearch
   if (params.company_id) query.company_id = params.company_id
   if (params.dept_id) query.dept_id = params.dept_id
   if (params.status) query.status = params.status
+  if (params.per_page) query.per_page = params.per_page
   query.page = params.page || 1
   return apiGet<ForumSearchPage>(`${FORUM_URL}/posts/search`, { params: query })
 }
@@ -174,9 +175,14 @@ export function fetchForumSearchFilters(): Promise<ForumSearchFilters> {
 // ── Quản trị (CR-263) — cả cụm dưới đây đòi grant `forum_post`/`forum_board`.
 
 /** Nhật ký kiểm duyệt, mới → cũ — người thường ăn 403. */
-export function fetchForumModerationLogs(page: number): Promise<ForumModerationLogPage> {
+export function fetchForumModerationLogs(
+  page: number,
+  action = 0,
+  q = '',
+): Promise<ForumModerationLogPage> {
+  //  bao-CR-272: lọc theo loại thao tác + từ khóa; 0/rỗng thì khỏi gửi param.
   return apiGet<ForumModerationLogPage>(`${FORUM_URL}/moderation-logs`, {
-    params: { page },
+    params: { page, ...(action ? { action } : {}), ...(q ? { q } : {}) },
   })
 }
 

@@ -867,11 +867,26 @@ def moderate(db: Session, user, post: ForumPost,
     return log
 
 
-def list_moderation_logs(db: Session, page: int = 1, per_page: int = PAGE_SIZE):
+def list_moderation_logs(db: Session, page: int = 1, per_page: int = PAGE_SIZE,
+                         action: int = 0, q: str = ""):
     """Một trang nhật ký kiểm duyệt, mới → cũ (CR-263) — bảng này ghi từ F5
     nhưng tới giờ mới có mắt đọc. Chỉ quản trị (controller gác `forum_post.read`).
-    Trả (rows, total); tên quản trị viên + nhãn bài do controller tự tra."""
+    Trả (rows, total); tên quản trị viên + nhãn bài do controller tự tra.
+
+    bao-CR-272: `action` (0 = mọi loại) + `q` khớp lý do hoặc tiêu đề/nội dung
+    bài — trang quản trị trước đó không có nổi một ô lọc."""
     qy = db.query(ForumModerationLog)
+    if action:
+        qy = qy.filter(ForumModerationLog.action == int(action))
+    kw = (q or "").strip()
+    if kw:
+        like = f"%{escape_like(kw)}%"
+        matched_posts = (db.query(ForumPost.id)
+                         .filter(or_(ForumPost.title.like(like, escape="\\"),
+                                     ForumPost.body.like(like, escape="\\")))
+                         .scalar_subquery())
+        qy = qy.filter(or_(ForumModerationLog.reason.like(like, escape="\\"),
+                           ForumModerationLog.post_id.in_(matched_posts)))
     total = qy.count()
     page = max(1, page)
     rows = (qy.order_by(ForumModerationLog.id.desc())

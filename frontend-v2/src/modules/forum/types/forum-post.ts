@@ -162,6 +162,8 @@ export interface ForumSearchParams {
   /** Chỉ quản trị dùng được (1 = đang hiện, 2 = đang ẩn) — người thường bị bỏ qua. */
   status?: number
   page?: number
+  /** Ô gợi ý trên header (bao-CR-273.1) chỉ lấy top 5 — bỏ trống là cỡ trang mặc định. */
+  per_page?: number
 }
 
 /** Một trang kết quả tìm kiếm — phân trang số trang như thread list. */

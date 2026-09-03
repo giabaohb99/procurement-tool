@@ -175,11 +175,12 @@ export function PostCard({ post, detail = false, flat = false }: PostCardProps) 
             <ThreadPrefixChip prefix={post.prefix} />
           </div>
           {detail ? (
-            <h2 className="mt-1 text-[15px] font-semibold">{post.title}</h2>
+            // Khung đọc bài: tiêu đề phải ra dáng tiêu đề, 15px lẫn vào nội dung.
+            <h2 className="mt-1 text-xl font-semibold">{post.title}</h2>
           ) : (
             <Link
               to={appRoutes.forum.postDetail(post.id)}
-              className="mt-1 block text-[15px] font-semibold hover:underline"
+              className="mt-1 block text-base font-semibold hover:underline"
             >
               {post.title}
             </Link>
@@ -187,7 +188,7 @@ export function PostCard({ post, detail = false, flat = false }: PostCardProps) 
         </div>
       )}
 
-      <PostBody body={post.body} format={post.body_format} />
+      <PostBody body={post.body} format={post.body_format} detail={detail} />
       <PostImageGrid images={post.images} />
 
       <footer className="px-4 pb-1.5">
@@ -269,7 +270,7 @@ function PostDetailDialog({ post, onClose }: { post: ForumPost; onClose: () => v
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent
         aria-describedby={undefined}
-        className="flex max-h-[90svh] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl"
+        className="flex max-h-[92svh] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl"
       >
         <DialogHeader className="border-b border-border px-4 py-3 text-center sm:text-center">
           <DialogTitle className="text-base">

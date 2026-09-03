@@ -327,12 +327,16 @@ def remove_post(pid: int, data: schema.ModerationIn, background_tasks: Backgroun
 @router.get("/moderation-logs")
 def list_moderation_logs(page: int = Query(1, ge=1),
                          per_page: int = Query(service.PAGE_SIZE, ge=1, le=50),
+                         action: int = Query(0, ge=0, le=3),
+                         q: str = Query("", max_length=255),
                          db: Session = Depends(get_db),
                          user=Depends(require("forum_post", "read"))):
     """Nhật ký kiểm duyệt (CR-263) — bảng ghi từ F5, giờ mới có màn đọc.
     Mỗi dòng kèm nhãn bài (tiêu đề hoặc trích nội dung) + tên quản trị viên;
-    bài REMOVED không mở được nữa nên FE dựa `post_status` mà tắt link."""
-    rows, total = service.list_moderation_logs(db, page=page, per_page=per_page)
+    bài REMOVED không mở được nữa nên FE dựa `post_status` mà tắt link.
+    bao-CR-272: lọc theo loại thao tác (`action`) + từ khóa (`q`)."""
+    rows, total = service.list_moderation_logs(db, page=page, per_page=per_page,
+                                               action=action, q=q)
     posts = {}
     pids = [r.post_id for r in rows if r.post_id]
     if pids:

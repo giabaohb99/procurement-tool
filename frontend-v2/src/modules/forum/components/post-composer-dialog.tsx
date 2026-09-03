@@ -125,7 +125,10 @@ export function PostComposerDialog({ open, onOpenChange, board }: PostComposerDi
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="sm:max-w-lg"
+        //  bao-CR-272: bài hướng dẫn dài không review nổi trong hộp 512px —
+        //  phóng gần hết màn hình (ngang 1024px, cao 92svh), phần giữa tự cuộn
+        //  để hàng nút Đăng không bao giờ trôi khỏi tầm mắt.
+        className="flex max-h-[92svh] flex-col sm:max-w-3xl lg:max-w-5xl"
         onDragOver={(event) => event.preventDefault()}
         onDrop={(event) => {
           event.preventDefault()
@@ -139,7 +142,7 @@ export function PostComposerDialog({ open, onOpenChange, board }: PostComposerDi
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3">
+        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto">
           {board ? (
             // Ngữ cảnh box: prefix + tiêu đề thay cho ô đối tượng xem — audience
             // do backend ép theo box, hiện ô chọn ở đây chỉ gây hiểu lầm.
@@ -219,6 +222,11 @@ export function PostComposerDialog({ open, onOpenChange, board }: PostComposerDi
               placeholder={board ? 'Nội dung chủ đề' : 'Bạn đang nghĩ gì?'}
               toolbarPosition="bottom"
               autoFocus={!board}
+              //  Nới vùng gõ theo hộp to (mặc định `.doc-rich-field` chỉ
+              //  9-22rem cho các ô nhỏ lẫn trong form); chữ 15px thay 14px.
+              //  PHẢI có `!`: luật gốc ở index.css nằm NGOÀI @layer nên đè
+              //  mọi utility trong @layer utilities, kể cả selector sâu hơn.
+              className="[&_.doc-rich-field]:min-h-[45svh]! [&_.doc-rich-field]:max-h-[58svh]! [&_.doc-rich-field]:text-[15px]!"
             />
           </div>
 
@@ -230,7 +238,7 @@ export function PostComposerDialog({ open, onOpenChange, board }: PostComposerDi
           )}
 
           {images.length > 0 && (
-            <div className="grid grid-cols-4 gap-1.5">
+            <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-6 lg:grid-cols-8">
               {images.map((image) => (
                 <div key={image.file_id} className="group relative aspect-square">
                   {isVideoMedia(image.filename, image.content_type) ? (

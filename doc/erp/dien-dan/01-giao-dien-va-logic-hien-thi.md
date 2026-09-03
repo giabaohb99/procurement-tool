@@ -118,7 +118,7 @@ Bảng `tab_forum_reaction` (`post_id` + `user_id`, unique) — chép nguyên kh
 
 | Quyết định | Lý do |
 |---|---|
-| Feed một cột giữa ~640px, ưu tiên điện thoại | Feed là dạng đọc dọc; người dùng chính lướt trên điện thoại |
+| ~~Feed một cột giữa ~640px~~ **NỚI 03/09/2026 (bao-CR-272): feed 768px, trang đọc bài 896px, boards/Quản trị 1280px** | Khách xem trên màn 1920px chê hai bên trống + chữ nhỏ; dạng đọc dọc vẫn giữ, chỉ nới trần theo route (`forum-layout.tsx`) |
 | Thứ tự thời gian thuần, không thuật toán xếp hạng | 300 người không cần thuật toán; minh bạch hơn, bài cần nổi thì ghim |
 | Phân trang con trỏ `before_id`, cấm OFFSET | Bài mới chen giữa chừng không làm lệch trang — bài học đã trả tiền ở CR-030 |
 | Bài mới không tự chèn vào feed đang đọc | Trang tự nhảy khi đang đọc là trải nghiệm tệ nhất; nút "Có bài viết mới" là đủ |
@@ -140,4 +140,5 @@ Bảng `tab_forum_reaction` (`post_id` + `user_id`, unique) — chép nguyên kh
 | 26/08/2026 | Lập tài liệu theo yêu cầu: giao diện, trang cá nhân, luồng đăng bài, logic feed và comment khi dữ liệu lớn |
 | 27/08/2026 | Sửa mục 1 theo **QĐ-D6**: phân hệ trong ERP v2 thay vì app riêng — route dời xuống gốc `/forum`, chuông dùng chuông ERP, thêm yêu cầu responsive cho các màn `/forum/*`. Bố cục một cột + tab giữ nguyên |
 | 03/09/2026 | **CR-261**: đảo quyết định chữ thuần — nội dung bài viết (cả Bảng tin lẫn chủ đề trong box) thành **rich text** dùng `RichTextField` chung với văn thư; sửa mục 3 item 1 + bảng quyết định mục 7. Bình luận vẫn chữ thuần + emoji. Chi tiết kỹ thuật ở nhật ký `02` |
+| 03/09/2026 | **bao-CR-272**: nới giao diện theo phàn nàn của khách — ô tìm kiếm thành Input nhìn thấy được trên header (icon kính lúp chỉ còn ở màn hẹp), 3 tab Quản trị có bộ lọc (Nhật ký kiểm duyệt lọc backend `action`+`q`), popup đăng bài phóng gần toàn màn, khung + chữ to ra (xem dòng NỚI ở bảng mục 7). Chi tiết ở nhật ký `02` |
 | 03/09/2026 | **CR-263**: thêm hai màn ngoài khung mục 1 — tab **«Quản trị»** `/forum/admin` (chỉ hiện với người có grant `forum_post`/`forum_board`: dựng cây nhóm-box, bỏ ghim tại chỗ, nhật ký kiểm duyệt) và **«Tìm bài viết»** `/forum/search` (nút kính lúp cạnh chuông, MỞ CHO MỌI NGƯỜI — kết quả ép qua luật audience mục 4.2 ngay trong SQL, riêng admin lọc thêm được trạng thái ẩn/hiện). KHÔNG làm quản lý comment (khách chốt: có quyền thì vào bài xóa). Chi tiết kỹ thuật + hợp đồng API ở nhật ký `02` |

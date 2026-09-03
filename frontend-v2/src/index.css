@@ -624,6 +624,26 @@
   padding: 4px 6px;
 }
 
+/* Ảnh có chú thích trong bài rich (bao-CR-275). Bài dán từ web mang theo
+   <figure><figcaption> nhưng cụm luật này chưa có dòng nào cho nó — chú thích
+   hiện to bằng chữ thân bài, mất hẳn kiểu "chữ nghiêng nhỏ" của bài gốc.
+   KHÔNG bám [data-editor-image] như .doc-page: sanitize phía server lột các
+   thuộc tính data-*, HTML lưu về chỉ còn <figure> trần. */
+.doc-excerpt-preview figure {
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
+  margin-block: 0.5rem;
+  text-align: center;
+}
+.doc-excerpt-preview figcaption {
+  margin-top: 0.35rem;
+  color: var(--muted-foreground);
+  font-size: 0.85em;
+  font-style: italic;
+  line-height: 1.4;
+}
+
 /* Vùng gõ của ô rich text gọn. Cuộn trong ô chứ không đẩy hộp thoại dài ra —
    hộp thoại cao quá màn hình là nút Lưu trôi khỏi tầm mắt. */
 .doc-rich-field {

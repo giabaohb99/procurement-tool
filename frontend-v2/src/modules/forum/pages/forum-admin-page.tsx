@@ -16,6 +16,14 @@ import { appRoutes } from '@/shared/constants/app-routes'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { ConfirmIconButton } from '@/shared/ui/confirm-icon-button'
+import { Input } from '@/shared/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/ui/select'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { formatDateTime } from '@/shared/utils/format-date'
@@ -87,6 +95,9 @@ export function ForumAdminPage() {
 function BoardsTab() {
   const boards = useForumBoards()
   const deleteBoard = useDeleteForumBoard()
+  //  bao-CR-272: ô lọc tại chỗ — danh mục vài chục nhóm/box, lọc client là đủ,
+  //  khỏi tốn một API. Nhóm khớp từ khóa thì giữ nguyên cả cây con của nó.
+  const [filter, setFilter] = useState('')
   const [dialog, setDialog] = useState<{
     open: boolean
     board: ForumBoardNode | null
@@ -94,6 +105,20 @@ function BoardsTab() {
   }>({ open: false, board: null, defaultParentId: 0 })
 
   const groups = (boards.data ?? []).map((g) => ({ id: g.id, name: g.name }))
+  const kw = filter.trim().toLowerCase()
+  const matchBox = (box: ForumBoardNode) =>
+    box.name.toLowerCase().includes(kw) ||
+    (box.description ?? '').toLowerCase().includes(kw)
+  const visibleGroups = (boards.data ?? [])
+    .map((group) =>
+      !kw || group.name.toLowerCase().includes(kw)
+        ? group
+        : { ...group, children: group.children.filter(matchBox) },
+    )
+    .filter(
+      (group) =>
+        !kw || group.name.toLowerCase().includes(kw) || group.children.length > 0,
+    )
 
   async function confirmDelete(node: ForumBoardNode) {
     try {
@@ -117,8 +142,15 @@ function BoardsTab() {
 
   return (
     <div className="space-y-3 pt-3">
-      <div className="flex justify-end">
+      <div className="flex items-center gap-2">
+        <Input
+          value={filter}
+          onChange={(event) => setFilter(event.target.value)}
+          placeholder="Lọc theo tên nhóm / box..."
+          className="w-full sm:max-w-xs"
+        />
         <Button
+          className="ml-auto shrink-0"
           onClick={() => setDialog({ open: true, board: null, defaultParentId: 0 })}
         >
           <Plus className="size-4" />
@@ -130,9 +162,13 @@ function BoardsTab() {
         <p className="py-10 text-center text-sm text-muted-foreground">
           Chưa có nhóm nào — bấm «Thêm nhóm» để dựng chuyên mục đầu tiên.
         </p>
+      ) : visibleGroups.length === 0 ? (
+        <p className="py-10 text-center text-sm text-muted-foreground">
+          Không có nhóm / box nào khớp từ khóa.
+        </p>
       ) : null}
 
-      {(boards.data ?? []).map((group) => (
+      {visibleGroups.map((group) => (
         <div key={group.id} className="rounded-lg border border-border bg-background">
           <div className="flex items-center gap-2 border-b border-border px-4 py-2.5">
             <span className="font-semibold">{group.name}</span>
@@ -251,6 +287,8 @@ function labelPost(post: ForumPost): string {
 function PinnedTab() {
   const pinned = usePinnedPosts()
   const pin = usePinForumPost()
+  //  bao-CR-272: lọc tại chỗ theo nhãn bài / người đăng — bài ghim ít, khỏi API.
+  const [filter, setFilter] = useState('')
 
   async function unpin(postId: number) {
     try {
@@ -271,9 +309,9 @@ function PinnedTab() {
     )
   }
 
-  const posts = pinned.data ?? []
+  const all = pinned.data ?? []
 
-  if (posts.length === 0) {
+  if (all.length === 0) {
     return (
       <p className="py-10 text-center text-sm text-muted-foreground">
         Không có bài nào đang ghim. Ghim bài từ menu ba chấm trên chính bài viết.
@@ -281,9 +319,29 @@ function PinnedTab() {
     )
   }
 
+  const kw = filter.trim().toLowerCase()
+  const posts = all.filter(
+    (post) =>
+      !kw ||
+      labelPost(post).toLowerCase().includes(kw) ||
+      (post.author_name ?? '').toLowerCase().includes(kw),
+  )
+
   return (
-    <ul className="divide-y divide-border rounded-lg border border-border bg-background">
-      {posts.map((post) => (
+    <div className="space-y-3 pt-3">
+      <Input
+        value={filter}
+        onChange={(event) => setFilter(event.target.value)}
+        placeholder="Lọc theo tiêu đề / người đăng..."
+        className="w-full sm:max-w-xs"
+      />
+      {posts.length === 0 ? (
+        <p className="py-10 text-center text-sm text-muted-foreground">
+          Không có bài ghim nào khớp từ khóa.
+        </p>
+      ) : (
+        <ul className="divide-y divide-border rounded-lg border border-border bg-background">
+          {posts.map((post) => (
         <li key={post.id} className="flex items-center gap-3 px-4 py-2.5">
           <div className="min-w-0 flex-1">
             <Link
@@ -306,9 +364,11 @@ function PinnedTab() {
             disabled={pin.isPending}
             onConfirm={() => void unpin(post.id)}
           />
-        </li>
-      ))}
-    </ul>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   )
 }
 
@@ -331,31 +391,72 @@ const ACTION_META: Record<number, { label: string; className: string }> = {
 
 function ModerationLogsTab() {
   const [page, setPage] = useState(1)
-  const logs = useModerationLogs(page)
-
-  if (logs.isPending) {
-    return (
-      <div className="space-y-2 pt-3">
-        {[0, 1, 2].map((i) => (
-          <Skeleton key={i} className="h-12 w-full rounded-lg" />
-        ))}
-      </div>
-    )
-  }
+  //  bao-CR-272: bộ lọc đầu tiên của tab này — loại thao tác áp NGAY khi chọn,
+  //  từ khóa (lý do / tiêu đề / nội dung bài) chỉ bắn API lúc bấm Lọc.
+  const [action, setAction] = useState(0)
+  const [qDraft, setQDraft] = useState('')
+  const [q, setQ] = useState('')
+  const logs = useModerationLogs(page, action, q)
 
   const data = logs.data
-  if (!data || data.items.length === 0) {
-    return (
-      <p className="py-10 text-center text-sm text-muted-foreground">
-        Chưa có thao tác kiểm duyệt nào.
-      </p>
-    )
-  }
-
-  const totalPages = Math.max(1, Math.ceil(data.total / data.per_page))
+  const filtered = action !== 0 || q !== ''
+  const totalPages = data ? Math.max(1, Math.ceil(data.total / data.per_page)) : 1
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 pt-3">
+      <form
+        onSubmit={(event) => {
+          event.preventDefault()
+          setPage(1)
+          setQ(qDraft.trim())
+        }}
+        className="flex flex-wrap items-center gap-2"
+      >
+        <Input
+          value={qDraft}
+          onChange={(event) => setQDraft(event.target.value)}
+          placeholder="Từ khóa trong lý do / bài viết..."
+          maxLength={255}
+          className="w-full sm:max-w-xs"
+        />
+        <Select
+          value={String(action)}
+          onValueChange={(value) => {
+            setAction(Number(value))
+            setPage(1)
+          }}
+        >
+          <SelectTrigger className="w-40" aria-label="Loại thao tác">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="0">Mọi thao tác</SelectItem>
+            <SelectItem value={String(FORUM_MODERATION_ACTION.hide)}>Ẩn</SelectItem>
+            <SelectItem value={String(FORUM_MODERATION_ACTION.remove)}>Gỡ</SelectItem>
+            <SelectItem value={String(FORUM_MODERATION_ACTION.restore)}>
+              Khôi phục
+            </SelectItem>
+          </SelectContent>
+        </Select>
+        <Button type="submit" variant="outline" disabled={logs.isFetching}>
+          Lọc
+        </Button>
+      </form>
+
+      {logs.isPending ? (
+        <div className="space-y-2">
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} className="h-12 w-full rounded-lg" />
+          ))}
+        </div>
+      ) : !data || data.items.length === 0 ? (
+        <p className="py-10 text-center text-sm text-muted-foreground">
+          {filtered
+            ? 'Không có dòng nào khớp bộ lọc.'
+            : 'Chưa có thao tác kiểm duyệt nào.'}
+        </p>
+      ) : (
+        <>
       <ul className="divide-y divide-border rounded-lg border border-border bg-background">
         {data.items.map((entry) => {
           const meta = ACTION_META[entry.action]
@@ -421,6 +522,8 @@ function ModerationLogsTab() {
           </Button>
         </div>
       ) : null}
+        </>
+      )}
     </div>
   )
 }

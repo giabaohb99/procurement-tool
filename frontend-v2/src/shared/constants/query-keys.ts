@@ -335,7 +335,8 @@ export const queryKeys = {
     /** Tùy chọn ô lọc màn tìm kiếm: công ty + phòng ban đã xuất hiện trên bài. */
     searchFilters: () => ['forum', 'search-filters'] as const,
     /** Nhật ký kiểm duyệt (CR-263) — chỉ quản trị viên nạp được. */
-    moderationLogs: (page: number) => ['forum', 'moderation-logs', page] as const,
+    moderationLogs: (page: number, action: number, q: string) =>
+      ['forum', 'moderation-logs', page, action, q] as const,
     /** Tiền tố mọi trang nhật ký kiểm duyệt — ẩn/khôi phục xong ghi thêm dòng mới. */
     moderationLogsAll: () => ['forum', 'moderation-logs'] as const,
   },

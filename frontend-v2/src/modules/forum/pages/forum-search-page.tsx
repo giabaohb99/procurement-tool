@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { ChevronLeft, ChevronRight, RefreshCw, Search, SearchX } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
 
 import { usePermission } from '@/core/authorization/use-permission'
 import { Button } from '@/shared/ui/button'
@@ -42,6 +43,26 @@ export function ForumSearchPage() {
   })
   const [applied, setApplied] = useState<ForumSearchParams | null>(null)
   const [page, setPage] = useState(1)
+
+  //  Ô tìm trên header (bao-CR-272) đưa người ta tới đây kèm `?q=` — nhận từ
+  //  khóa đó rồi CHẠY LUÔN, không bắt gõ lại lần hai. Chỉnh state NGAY TRONG
+  //  render (khuôn "adjusting state when a prop changes" của docs React) thay
+  //  vì useEffect: đỡ một lượt vẽ thừa và không dính luật `set-state-in-effect`.
+  const [searchParams] = useSearchParams()
+  const urlQ = (searchParams.get('q') ?? '').trim()
+  const [seenUrlQ, setSeenUrlQ] = useState('')
+  if (urlQ && urlQ !== seenUrlQ) {
+    setSeenUrlQ(urlQ)
+    setDraft((d) => ({ ...d, q: urlQ }))
+    setPage(1)
+    setApplied((prev) => ({
+      q: urlQ,
+      author_q: prev?.author_q ?? '',
+      company_id: prev?.company_id ?? 0,
+      dept_id: prev?.dept_id ?? 0,
+      status: prev?.status ?? 0,
+    }))
+  }
 
   const search = useForumSearch({ ...(applied ?? {}), page }, applied !== null)
 
