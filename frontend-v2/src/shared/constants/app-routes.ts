@@ -280,6 +280,23 @@ export const appRoutes = {
     permissions: '/hr/permissions',
     /** Gán vai trò và phạm vi dữ liệu cho MỘT tài khoản. */
     userPermissionDetail: (userId: number | string) => `/hr/permissions/users/${userId}`,
+
+    //  ── Nghỉ phép (CR-259) ────────────────────────────────────────────────
+    //  Nằm trong phân hệ Nhân sự chứ không tách phân hệ riêng: người dùng đi
+    //  tìm "xin nghỉ phép" ở chỗ họ tìm hồ sơ nhân sự, không ở một ô thứ hai
+    //  trên màn chọn phân hệ.
+    leaveRequests: '/hr/leave-requests',
+    leaveRequestNew: '/hr/leave-requests/new',
+    leaveRequestDetail: (id: number | string) => `/hr/leave-requests/${id}`,
+    /** Lịch nghỉ — «tuần tới ai nghỉ». */
+    leaveCalendar: '/hr/leave-calendar',
+    /** Quỹ phép năm: cấp phát, chỉnh tay. */
+    leaveBalances: '/hr/leave-balances',
+    /** Thiết lập: loại nghỉ (kèm bậc thâm niên) và lịch ngày lễ. */
+    leaveTypes: '/hr/leave-types',
+    leaveTypeDetail: (id: number | string) => `/hr/leave-types/${id}`,
+    holidays: '/hr/holidays',
+    holidayDetail: (id: number | string) => `/hr/holidays/${id}`,
   },
   approvalSeal: {
     root: '/approval-seal',

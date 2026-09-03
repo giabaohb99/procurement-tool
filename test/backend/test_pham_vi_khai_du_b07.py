@@ -67,7 +67,7 @@ def test_khong_khai_thua_entity_khong_ton_tai():
     assert excess == [], f"khai thừa, không có trong ENTITIES: {excess}"
 
 
-def test_du_47_entity():
+def test_du_51_entity():
     """Chốt cứng con số để lần sau đọc test là biết ngay quy mô.
 
     39 → 42 ngày 25/08/2026 (CR-157): tách `doc_template`, `doc_numbering_rule`,
@@ -87,9 +87,14 @@ def test_du_47_entity():
     46 → 47 ngày 03/09/2026: thêm `forum_board` (chuyên mục kiểu VOZ, F13a) —
     PUBLIC cùng lý do với `forum_post`: entity chỉ gác CRUD cấu trúc nhóm/box
     của `forum_admin`, ai thấy gì do luật audience của API diễn đàn.
+    47 → 51 ngày 03/09/2026: phân hệ Nghỉ phép (CR-259) thêm bốn khóa —
+    `leave_request` · `leave_balance` · `leave_type` · `holiday`. Bốn chứ không
+    một: nộp đơn, cấp quỹ và sửa luật nghỉ là ba việc của ba nhóm người, gộp lại
+    thì cho ai xem đơn của mình là cho họ tự tặng thêm ngày phép. Hai khóa đầu
+    lọc thật; hai khóa danh mục khai PUBLIC kèm lý do ở `scoping.py`.
     """
-    assert len(ENTITIES) == 47
-    assert len(SCOPE_FIELDS) == 47
+    assert len(ENTITIES) == 51
+    assert len(SCOPE_FIELDS) == 51
 
 
 # ── 2. Không dựng nổi điều kiện thì chặn ────────────────────────────────────────

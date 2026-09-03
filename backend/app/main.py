@@ -71,6 +71,14 @@ from app.modules.assistant.controller import router as assistant_router
 #  chức (nhóm · list · cấu hình), một cho chính công việc.
 from app.modules.work.controller import router as work_router
 from app.modules.work.task_controller import router as work_task_router
+#  Phân hệ Nghỉ phép (CR-259) — bốn router: đơn · quỹ · loại nghỉ · lịch lễ,
+#  cộng bậc thâm niên đi kèm loại nghỉ.
+from app.modules.leave.request_controller import router as leave_request_router
+from app.modules.leave.inbox_controller import router as leave_inbox_router
+from app.modules.leave.balance_controller import router as leave_balance_router
+from app.modules.leave.catalog_controller import (holiday_router,
+                                                  leave_type_router,
+                                                  seniority_router)
 from app.modules.approval.flow_controller import router as approval_flow_router
 from app.modules.approval.instance_controller import router as approval_router
 from app.modules.approval.delegation_controller import router as delegation_router
@@ -78,6 +86,9 @@ from app.modules.approval.delegation_controller import router as delegation_rout
 #  Nạp lười (chỉ khi có người bấm gửi duyệt) thì phiên duyệt đầu tiên chạy
 #  xong mà văn bản không đổi trạng thái, vì lúc đó chưa ai khai hàm.
 from app.modules.document import approval_bridge  # noqa: F401
+#  Cùng lý do, cho Nghỉ phép: nạp lười thì phiên duyệt đầu tiên chạy xong mà đơn
+#  không đổi trạng thái và quỹ phép không trừ, vì lúc đó chưa ai khai hàm.
+from app.modules.leave import approval_bridge as leave_approval_bridge  # noqa: F401
 
 app = FastAPI(title="Procurement Tool API", version="0.1.0")
 
@@ -210,6 +221,14 @@ app.include_router(forum_router)
 app.include_router(assistant_router)
 app.include_router(work_router)
 app.include_router(work_task_router)
+#  ⚠️ Hộp việc duyệt đăng ký TRƯỚC đường đơn nghỉ phép: nó dùng chung tiền tố
+#  `/api/leave-requests`, mà bên kia có `/{rid}` nuốt mọi đường một đoạn.
+app.include_router(leave_inbox_router)
+app.include_router(leave_request_router)
+app.include_router(leave_balance_router)
+app.include_router(leave_type_router)
+app.include_router(seniority_router)
+app.include_router(holiday_router)
 #  Đặt xe nội bộ (DEGO Booking Auto) — phân hệ mới
 app.include_router(vehicle_booking_router)
 #  Bộ máy phê duyệt dùng chung — không thuộc phân hệ nào, mọi loại chứng từ

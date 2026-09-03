@@ -226,7 +226,13 @@ describe('ListManageDialog — dữ liệu bẩn từ máy chủ', () => {
 })
 
 describe('ListManageDialog — số lượng lớn', () => {
-  it('200 thành viên: hiện đủ, đếm đúng, và bật ô lọc', () => {
+  //  Bài này dựng 200 dòng THẬT trong jsdom nên nó là bài chậm nhất cả bộ.
+  //  Chạy riêng thì hết ~1s, nhưng chạy chung 187 tệp trên máy đang tải thì
+  //  vượt ngưỡng mặc định 5s và đỏ **ngẫu nhiên** — đỏ vì máy bận, không vì mã
+  //  hỏng. Đúng loại đỏ khiến người ta tập quen với việc bỏ qua kết quả test.
+  //  Nới riêng bài này, KHÔNG nới toàn cục: ngưỡng 5s cho mọi bài còn lại vẫn
+  //  là thứ bắt được vòng lặp vô hạn.
+  it('200 thành viên: hiện đủ, đếm đúng, và bật ô lọc', { timeout: 20_000 }, () => {
     members.mockReturnValue([
       member(1, 'Lý Phó Phòng', WORK_ROLE.OWNER),
       ...Array.from({ length: 199 }, (_, i) => member(i + 2, `Nhân Viên Số ${i + 2}`)),

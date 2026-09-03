@@ -337,11 +337,18 @@
 }
 
 @layer components {
-  /* Trục timeline phải có kích thước thật, không phụ thuộc utility được sinh lại bởi Vite HMR. */
+  /* Trục timeline phải có kích thước thật, không phụ thuộc utility được sinh lại bởi Vite HMR.
+
+     ⚠️ Vạch chỉ chạy trong KHOẢNG TRỐNG giữa hai mốc, không xuyên qua mốc.
+     Mốc là vòng tròn `size-8` (2rem) nằm ở đỉnh dòng, và nhiều mốc có nền gần
+     như trong suốt (`bg-destructive/5`) — kéo vạch từ 1rem (tâm mốc trên) tới
+     -1rem (tâm mốc dưới) thì nó hiện xuyên qua ruột vòng tròn, đâm thẳng vào
+     biểu tượng. Nên: bắt đầu ngay DƯỚI đáy vòng tròn (2rem) và dừng trước
+     đỉnh vòng tròn kế tiếp, chừa 0.25rem hai đầu cho thoáng. */
   .approval-timeline-rail {
     position: absolute;
-    top: 1rem;
-    bottom: -1rem;
+    top: 2.25rem;
+    bottom: 0.25rem;
     left: 15px;
     width: 2px;
     background: var(--primary);
@@ -355,11 +362,12 @@
     background: var(--primary);
   }
 
-  /* Trục các chặng dùng màu trung tính vì nó biểu diễn thứ tự, không phải đã hoàn tất. */
+  /* Trục các chặng dùng màu trung tính vì nó biểu diễn thứ tự, không phải đã hoàn tất.
+     Cùng lý do với `.approval-timeline-rail`: vạch nằm giữa hai mốc, không xuyên mốc. */
   .approval-flow-step-rail {
     position: absolute;
-    top: 1rem;
-    bottom: -1rem;
+    top: 2.25rem;
+    bottom: 0.25rem;
     left: 15px;
     width: 2px;
     background: var(--chart-neutral);

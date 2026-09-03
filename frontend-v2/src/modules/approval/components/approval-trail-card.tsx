@@ -32,8 +32,30 @@ import {
   type ApprovalTask,
 } from '../types/approval'
 
+/**
+ * Mốc do CHỨNG TỪ tự thêm vào dòng thời gian, không phải mốc của bộ máy duyệt.
+ *
+ * Bộ máy chỉ ghi những gì nó làm ("đã rút trình duyệt"), nó không biết chứng từ
+ * bên dưới ghi thêm gì vào sổ của mình — ví dụ lý do hủy mà người nộp gõ vào
+ * `decision_note` của đơn nghỉ phép. Không có đường này thì mỗi phân hệ lại phải
+ * dựng một dải cảnh báo riêng nằm ngoài dòng thời gian, đọc thành hai câu chuyện
+ * rời nhau.
+ */
+export interface TrailExtraEvent {
+  icon: LucideIcon
+  /** Lớp màu cho vòng tròn mốc, cùng khuôn với `ACTION_APPEARANCE`. */
+  iconClassName?: string
+  title: string
+  detail?: string
+  time?: string | null
+  /** Tô đỏ phần chữ — dành cho kết cục xấu. */
+  emphasizeBad?: boolean
+}
+
 interface ApprovalTrailCardProps {
   instanceId: number
+  /** Mốc của chứng từ, chèn lên ĐẦU danh sách (danh sách đọc mới nhất trước). */
+  extraEvents?: TrailExtraEvent[]
   className?: string
 }
 
@@ -97,7 +119,11 @@ const ACTION_APPEARANCE: Partial<Record<number, ActionAppearance>> = {
  * thành phần của cùng một câu được tách ra để người đọc quét nhanh người làm,
  * hành động, chặng, ủy quyền, ý kiến và thời điểm mà không phải đọc một đoạn dài.
  */
-export function ApprovalTrailCard({ instanceId, className }: ApprovalTrailCardProps) {
+export function ApprovalTrailCard({
+  instanceId,
+  extraEvents = [],
+  className,
+}: ApprovalTrailCardProps) {
   const { data, isLoading } = useApprovalTrail(instanceId)
 
   const instance = data?.instance
@@ -107,13 +133,6 @@ export function ApprovalTrailCard({ instanceId, className }: ApprovalTrailCardPr
   //  Activity kiểu GitHub đọc từ HIỆN TẠI về quá khứ: việc cần xử lý nằm đầu,
   //  rồi mới tới thao tác mới nhất. API trả dấu vết cũ → mới cho bản in.
   const recentLines = lines.slice().reverse()
-  const currentStepName =
-    pending[0]?.node_name ||
-    lines
-      .slice()
-      .reverse()
-      .find((line) => line.node_seq === instance?.current_seq)?.node_name ||
-    ''
 
   return (
     <Card className={cn('gap-0 py-0 print:border-0 print:shadow-none', className)}>
@@ -146,46 +165,15 @@ export function ApprovalTrailCard({ instanceId, className }: ApprovalTrailCardPr
         </CardContent>
       )}
 
+      {/*  KHÔNG dựng dải tóm tắt «Luồng xử lý · Người trình · Bắt đầu · Vị trí
+           hiện tại» ở đây nữa (bỏ 03/09/2026). Bốn ô đó nói lại đúng những gì
+           dòng thời gian ngay dưới đã nói, mà nói bằng từ của bộ máy nên người
+           đọc phải dịch: mốc «đã bắt đầu trình duyệt» ở cuối danh sách vốn đã
+           mang đủ người trình + thời điểm + tên luồng và số bản (backend ghi
+           sẵn vào `comment`), «Vị trí hiện tại» thì trùng với mốc «Đang chờ
+           phản hồi» nằm đầu danh sách, còn kết cục đã có huy hiệu ở tiêu đề. */}
       {!isLoading && instance && (
         <>
-          <dl className="grid border-b bg-muted/15 sm:grid-cols-2 xl:grid-cols-4 xl:[&>div]:border-l xl:[&>div:first-child]:border-l-0 sm:[&>div:nth-child(even)]:border-l sm:[&>div:nth-child(n+3)]:border-b-0">
-            <SummaryItem label="Luồng xử lý">
-              <span className="block truncate" title={instance.flow_name}>
-                {instance.flow_name || 'Luồng không tên'}
-              </span>
-              <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
-                Phiên bản {instance.flow_version}
-              </span>
-            </SummaryItem>
-            <SummaryItem label="Người trình">{instance.started_by_name || 'Hệ thống'}</SummaryItem>
-            <SummaryItem label="Bắt đầu">
-              <time dateTime={instance.started_at ?? undefined} className="tabular-nums">
-                {formatDateTime(instance.started_at) || 'Chưa ghi nhận'}
-              </time>
-            </SummaryItem>
-            <SummaryItem label="Vị trí hiện tại" isLast>
-              {instance.finished_at ? (
-                <>
-                  Đã kết thúc
-                  <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
-                    {formatDateTime(instance.finished_at)}
-                  </span>
-                </>
-              ) : instance.current_seq > 0 ? (
-                <>
-                  Chặng {instance.current_seq}
-                  {currentStepName && (
-                    <span className="mt-0.5 block truncate text-xs font-normal text-muted-foreground">
-                      {currentStepName}
-                    </span>
-                  )}
-                </>
-              ) : (
-                'Chưa xác định'
-              )}
-            </SummaryItem>
-          </dl>
-
           <CardContent className="px-5 py-5">
             <div className="max-w-6xl">
               {instance.status === INSTANCE_STATUS.blocked && (
@@ -196,7 +184,7 @@ export function ApprovalTrailCard({ instanceId, className }: ApprovalTrailCardPr
                   <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" />
                   <div>
                     <p className="font-semibold text-destructive">Luồng đang bị kẹt</p>
-                    <p className="mt-0.5 text-muted-foreground">
+                    <p className="mt-0.5 break-words text-muted-foreground">
                       {instance.finish_reason ||
                         'Hệ thống chưa xác định được người xử lý tiếp theo.'}
                     </p>
@@ -204,28 +192,36 @@ export function ApprovalTrailCard({ instanceId, className }: ApprovalTrailCardPr
                 </div>
               )}
 
-              <div className="mb-5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-semibold">Hoạt động</h3>
-                  {/*  CHIỀU ĐỌC phải nói ra. Danh sách này đảo ngược (mới nhất
-                       trên cùng) trong khi ô «Bắt đầu» ở dải tóm tắt lại là mốc
-                       CŨ NHẤT — người đọc mặc định trên-xuống là xuôi thời gian
-                       nên hiểu ngược toàn bộ trình tự ký. */}
-                  <Badge variant="outline" className="font-normal">
-                    mới nhất trước
-                  </Badge>
-                </div>
-                <span className="text-xs text-muted-foreground tabular-nums">
-                  {lines.length} mốc đã ghi nhận
-                </span>
+              {/*  Không đếm số mốc ở đây: con số trôi ra tận mép phải, không nói
+                   thêm được gì mà chính danh sách ngay dưới không nói rõ hơn. */}
+              <div className="mb-5 flex items-center gap-2">
+                <h3 className="text-sm font-semibold">Hoạt động</h3>
+                {/*  CHIỀU ĐỌC phải nói ra. Danh sách này đảo ngược (mới nhất
+                     trên cùng) trong khi ô «Bắt đầu» ở dải tóm tắt lại là mốc
+                     CŨ NHẤT — người đọc mặc định trên-xuống là xuôi thời gian
+                     nên hiểu ngược toàn bộ trình tự ký. */}
+                <Badge variant="outline" className="font-normal">
+                  mới nhất trước
+                </Badge>
               </div>
 
-              {lines.length === 0 && pending.length === 0 ? (
+              {lines.length === 0 && pending.length === 0 && extraEvents.length === 0 ? (
                 <p className="rounded-md border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">
                   Chưa có thao tác nào.
                 </p>
               ) : (
                 <ol aria-label="Các mốc phê duyệt">
+                  {extraEvents.map((event, index) => (
+                    <ExtraEvent
+                      key={event.title}
+                      event={event}
+                      showRail={
+                        index < extraEvents.length - 1 ||
+                        pending.length > 0 ||
+                        recentLines.length > 0
+                      }
+                    />
+                  ))}
                   {pending.length > 0 && (
                     <PendingEvent tasks={pending} showRail={recentLines.length > 0} />
                   )}
@@ -246,37 +242,43 @@ export function ApprovalTrailCard({ instanceId, className }: ApprovalTrailCardPr
   )
 }
 
+/**
+ * Sắc thái của phiên duyệt.
+ *
+ * ⚠️ **KHÔNG dùng `variant="default"` (nền `primary`) cho «Đã duyệt».** Nền
+ * primary là navy — đúng màu nút hành động chính của cả bộ giao diện — nên huy
+ * hiệu đọc ra như một cái nút bấm được nằm cạnh tiêu đề. Tô nền theo NGHĨA
+ * (xanh lá = xong tốt) chứ không theo thang nhấn mạnh của bộ giao diện.
+ *
+ * ⚠️ Và không để bốn trạng thái còn lại chung một `outline` xám: «Đang chạy»,
+ * «Trả về» và «Đã rút» là ba tình huống phải làm ba việc khác nhau.
+ */
+const INSTANCE_TONES: Partial<Record<number, string>> = {
+  [INSTANCE_STATUS.running]:
+    'border-sky-300 bg-sky-100 text-sky-800 dark:border-sky-700 dark:bg-sky-950 dark:text-sky-200',
+  [INSTANCE_STATUS.approved]:
+    'border-emerald-300 bg-emerald-100 text-emerald-800 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-200',
+  [INSTANCE_STATUS.rejected]:
+    'border-destructive/40 bg-destructive/15 text-destructive dark:bg-destructive/25',
+  [INSTANCE_STATUS.returned]:
+    'border-orange-300 bg-orange-100 text-orange-800 dark:border-orange-700 dark:bg-orange-950 dark:text-orange-200',
+  [INSTANCE_STATUS.withdrawn]:
+    'border-zinc-400 bg-zinc-200 text-zinc-700 dark:border-zinc-500 dark:bg-zinc-700 dark:text-zinc-200',
+  [INSTANCE_STATUS.blocked]:
+    'border-amber-400 bg-amber-100 text-amber-900 dark:border-amber-600 dark:bg-amber-950 dark:text-amber-200',
+}
+
+const INSTANCE_TONE_FALLBACK =
+  'border-zinc-300 bg-zinc-100 text-zinc-600 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300'
+
 function InstanceStatus({ status, label }: { status: number; label: string }) {
   return (
     <Badge
-      variant={
-        status === INSTANCE_STATUS.approved
-          ? 'default'
-          : status === INSTANCE_STATUS.blocked || status === INSTANCE_STATUS.rejected
-            ? 'destructive'
-            : 'outline'
-      }
-      className="font-medium"
+      variant="outline"
+      className={cn('font-medium', INSTANCE_TONES[status] ?? INSTANCE_TONE_FALLBACK)}
     >
       {label}
     </Badge>
-  )
-}
-
-function SummaryItem({
-  label,
-  children,
-  isLast = false,
-}: {
-  label: string
-  children: React.ReactNode
-  isLast?: boolean
-}) {
-  return (
-    <div className={cn('min-w-0 border-b px-5 py-5 xl:border-b-0', isLast && 'border-b-0')}>
-      <dt className="text-xs leading-5 font-medium text-muted-foreground">{label}</dt>
-      <dd className="mt-1.5 min-w-0 text-sm leading-5 font-semibold">{children}</dd>
-    </div>
   )
 }
 
@@ -312,21 +314,30 @@ function ApprovalEvent({ line, showRail }: { line: ApprovalAction; showRail: boo
       )}
 
       <article className="min-w-0 flex-1 pt-1" aria-label={`${actorName} ${actionPhrase(line)}`}>
-        <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-          <p className="min-w-0 text-sm leading-5">
-            <span className="font-semibold text-foreground">{actorName}</span>{' '}
-            <span className="font-semibold text-foreground">{actionPhrase(line)}</span>
-          </p>
+        {/*  Giờ đi LIỀN sau câu, không đẩy sang mép phải bằng `justify-between`:
+             thẻ chạy hết bề ngang màn 24" nên mốc thời gian trôi ra tận đầu kia,
+             rời hẳn khỏi dòng nó nói về, mắt phải bắc cầu qua một khoảng trống
+             dài cả gang tay. */}
+        <p className="min-w-0 text-sm leading-5">
+          <span className="font-semibold text-foreground">{actorName}</span>{' '}
+          <span className="font-semibold text-foreground">{actionPhrase(line)}</span>
           <time
             dateTime={line.created_at}
-            className="shrink-0 text-xs text-muted-foreground tabular-nums"
+            className="ml-2 text-xs font-normal text-muted-foreground tabular-nums"
           >
             {formatDateTime(line.created_at)}
           </time>
-        </div>
+        </p>
 
+        {/*  `break-words` KHÔNG được bỏ. Ý kiến là chữ người dùng gõ tự do và
+             có thật những chuỗi vài trăm ký tự không một dấu cách (lý do dán
+             từ chỗ khác, mã phiếu nối nhau). `whitespace-pre-wrap` một mình chỉ
+             xuống dòng ở chỗ CÓ khoảng trắng, nên chuỗi liền chạy thẳng ra
+             ngoài thẻ: đo được 3139px nội dung trong khung 768px, đè lên cột
+             bên cạnh và sinh thanh cuộn ngang cho cả trang (dựng lại được trên
+             giao diện thật 03/09/2026 với lý do hủy 420 ký tự). */}
         {line.comment && (
-          <p className="mt-1 max-w-3xl text-sm leading-5 whitespace-pre-wrap text-muted-foreground">
+          <p className="mt-1 max-w-3xl text-sm leading-5 break-words whitespace-pre-wrap text-muted-foreground">
             {line.comment}
           </p>
         )}
@@ -349,6 +360,59 @@ function ApprovalEvent({ line, showRail }: { line: ApprovalAction; showRail: boo
             Thực hiện thay{' '}
             <span className="font-medium text-foreground">{line.on_behalf_of_name}</span>
             {line.delegation_id && ` · Theo ủy quyền #${line.delegation_id}`}
+          </p>
+        )}
+      </article>
+    </li>
+  )
+}
+
+/** Mốc của CHỨNG TỪ — cùng khuôn với mốc của bộ máy để đọc thành một mạch. */
+function ExtraEvent({ event, showRail }: { event: TrailExtraEvent; showRail: boolean }) {
+  const Icon = event.icon
+
+  return (
+    <li className="relative flex gap-4 pb-7 last:pb-0">
+      {showRail && (
+        <span
+          data-testid="approval-timeline-rail"
+          aria-hidden="true"
+          className="approval-timeline-rail print:bg-slate-400"
+        />
+      )}
+      <span
+        className={cn(
+          'relative z-10 grid size-8 shrink-0 place-items-center rounded-full border print:bg-background',
+          event.iconClassName ?? DEFAULT_ACTION_APPEARANCE.iconClassName,
+        )}
+        aria-hidden="true"
+      >
+        <Icon className="size-4" strokeWidth={2.25} />
+      </span>
+
+      <article className="min-w-0 flex-1 pt-1" aria-label={event.title}>
+        <p className="min-w-0 text-sm leading-5">
+          <span
+            className={cn(
+              'font-semibold',
+              event.emphasizeBad ? 'text-destructive' : 'text-foreground',
+            )}
+          >
+            {event.title}
+          </span>
+          {event.time && (
+            <time
+              dateTime={event.time}
+              className="ml-2 text-xs font-normal text-muted-foreground tabular-nums"
+            >
+              {formatDateTime(event.time)}
+            </time>
+          )}
+        </p>
+
+        {event.detail && (
+          <p className="mt-1 max-w-3xl text-sm leading-5 whitespace-pre-wrap break-words text-muted-foreground">
+            {event.detail}
           </p>
         )}
       </article>

@@ -66,3 +66,8 @@ from app.modules.work import model as _work  # noqa: F401
 from app.modules.work import task_model as _work_task  # noqa: F401
 from app.modules.work import label_model as _work_label  # noqa: F401
 from app.modules.work import link_model as _work_link  # noqa: F401
+# Phân hệ Nghỉ phép (CR-259) — ba tệp model, nạp ĐỦ CẢ BA hoặc `alembic
+# --autogenerate` bỏ sót bảng mà không báo gì (đúng bẫy đã dính ở Công việc).
+from app.modules.leave import catalog_model as _leave_catalog  # noqa: F401
+from app.modules.leave import balance_model as _leave_balance  # noqa: F401
+from app.modules.leave import request_model as _leave_request  # noqa: F401

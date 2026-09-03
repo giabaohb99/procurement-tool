@@ -117,6 +117,36 @@ export const queryKeys = {
     userAccount: (id: number) => ['hr', 'users', id] as const,
     userScope: (userId: number, roleId: number) =>
       ['hr', 'users', userId, 'scope', roleId] as const,
+
+    //  ── Nghỉ phép (CR-259) ────────────────────────────────────────────────
+    //  Nằm dưới `hr` vì phân hệ Nghỉ phép ở trong phân hệ Nhân sự. Đổi quỹ hay
+    //  duyệt đơn thì dọn cả nhánh `hr.all` — số phép còn lại xuất hiện ở ba màn
+    //  khác nhau, dọn lẻ là chắc chắn có màn hiện số cũ.
+    leaveRequests: (params?: Record<string, unknown>) =>
+      ['hr', 'leave-requests', params ?? {}] as const,
+    leaveRequest: (id: number) => ['hr', 'leave-requests', 'detail', id] as const,
+    //  ── Hộp việc duyệt (CR-260) ───────────────────────────────────────────
+    //  Nằm TRONG nhánh `hr` để một lượt duyệt dọn luôn cả ba tab: ký xong thì
+    //  đơn rời tab «Cần tôi duyệt» và rơi sang tab «Tôi đã duyệt» cùng lúc.
+    leaveToApprove: () => ['hr', 'leave-requests', 'inbox', 'to-approve'] as const,
+    leaveHandled: (params?: Record<string, unknown>) =>
+      ['hr', 'leave-requests', 'inbox', 'handled', params ?? {}] as const,
+    /** Luồng duyệt của một trang đơn. Khóa mang danh sách id đã sắp xếp. */
+    leaveFlowStrips: (ids: number[]) =>
+      ['hr', 'leave-requests', 'flow-strips', [...ids].sort((a, b) => a - b)] as const,
+    /** Số phép còn lại cho MỘT (người × loại × năm) — ô hiện trên form nộp đơn. */
+    leaveBalanceHint: (employeeId: number, leaveTypeId: number, year: number) =>
+      ['hr', 'leave-balance-hint', employeeId, leaveTypeId, year] as const,
+    leaveBalances: (params?: Record<string, unknown>) =>
+      ['hr', 'leave-balances', params ?? {}] as const,
+    leaveBalanceSummary: (employeeId: number, year: number) =>
+      ['hr', 'leave-balances', 'summary', employeeId, year] as const,
+    leaveTypes: (params?: Record<string, unknown>) =>
+      ['hr', 'leave-types', params ?? {}] as const,
+    /** Bậc thâm niên của MỘT loại nghỉ. `0` = mọi loại. */
+    seniorityTiers: (leaveTypeId: number) =>
+      ['hr', 'leave-seniority-tiers', leaveTypeId] as const,
+    holidays: (params?: Record<string, unknown>) => ['hr', 'holidays', params ?? {}] as const,
   },
   /** Phân hệ Văn thư. Danh mục nền nạp cả danh sách nên key không mang tham số lọc. */
   document: {

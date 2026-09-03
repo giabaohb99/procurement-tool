@@ -42,6 +42,15 @@ ENTITIES = [
     # máy duyệt và `/api/dashboard/tasks` (Việc cần làm). Xem
     # `doc/erp/cong-viec/04-phan-quyen.md` §1.
     "work_task",
+    # Phân hệ Nghỉ phép (CR-259). Bốn khóa vì bốn màn hình do BA nhóm người
+    # khác nhau dùng, và gộp lại thì không tách được:
+    #  · `leave_request` — nhân viên nộp đơn, trưởng phòng duyệt;
+    #  · `leave_balance` — Nhân sự cấp phát và chỉnh quỹ (cho quyền này là cho
+    #    quyền tặng thêm ngày phép, không thể chung khóa với việc nộp đơn);
+    #  · `leave_type`    — cấu hình luật nghỉ (V1-6), việc của quản trị;
+    #  · `holiday`       — lịch ngày lễ, cũng của quản trị nhưng đổi theo năm
+    #    nên thường giao cho hành chính, tách khỏi `leave_type`.
+    "leave_request", "leave_balance", "leave_type", "holiday",
 ]
 
 ACTIONS = ["read", "create", "write", "delete", "approve", "cancel", "print", "export"]
@@ -99,6 +108,10 @@ ENTITY_LABELS = {
     "forum_post": "Diễn đàn › Kiểm duyệt bài viết",
     "forum_board": "Diễn đàn › Quản trị chuyên mục (box)",
     "work_task": "Công việc (task list, kanban)",
+    "leave_request": "Nghỉ phép › Đơn nghỉ phép",
+    "leave_balance": "Nghỉ phép › Quỹ phép năm",
+    "leave_type": "Nghỉ phép › Thiết lập › Loại nghỉ",
+    "holiday": "Nghỉ phép › Thiết lập › Lịch ngày lễ",
 }
 
 ACTION_LABELS = {

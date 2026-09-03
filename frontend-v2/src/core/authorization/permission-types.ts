@@ -84,6 +84,13 @@ export const ENTITIES = [
   'vehicle_booking',
   'vehicle',
   'driver',
+  //  Phân hệ Nghỉ phép (CR-259). Bốn khóa vì bốn màn của ba nhóm người khác
+  //  nhau — gộp lại thì cho ai xem đơn của mình là cho họ tự tặng thêm ngày
+  //  phép (`leave_balance.write` mở cột điều chỉnh tay).
+  'leave_request',
+  'leave_balance',
+  'leave_type',
+  'holiday',
 ] as const
 
 export type PermissionEntity = (typeof ENTITIES)[number]

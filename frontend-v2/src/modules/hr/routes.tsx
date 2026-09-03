@@ -1,4 +1,15 @@
-import { Building, Building2, IdCard, LayoutDashboard, ShieldCheck, Users } from 'lucide-react'
+import {
+  Building,
+  Building2,
+  CalendarDays,
+  CalendarOff,
+  CalendarRange,
+  IdCard,
+  LayoutDashboard,
+  ShieldCheck,
+  Users,
+  Wallet,
+} from 'lucide-react'
 
 import type { ErpModule } from '@/app/router/module-definition'
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -44,6 +55,48 @@ export const hrModule: ErpModule = {
       icon: Building2,
       entity: 'company',
       group: 'Danh mục',
+    },
+    //  ── Nghỉ phép (CR-259) ────────────────────────────────────────────────
+    //  Nhóm riêng, đặt TRƯỚC «Quản trị»: đơn nghỉ phép là việc của mọi người
+    //  trong công ty, còn phân quyền là việc của một hai người.
+    {
+      label: 'Đơn nghỉ phép',
+      path: appRoutes.hr.leaveRequests,
+      icon: CalendarOff,
+      entity: 'leave_request',
+      group: 'Nghỉ phép',
+    },
+    {
+      label: 'Lịch nghỉ',
+      path: appRoutes.hr.leaveCalendar,
+      icon: CalendarRange,
+      entity: 'leave_request',
+      group: 'Nghỉ phép',
+    },
+    {
+      label: 'Quỹ phép năm',
+      path: appRoutes.hr.leaveBalances,
+      icon: Wallet,
+      entity: 'leave_balance',
+      group: 'Nghỉ phép',
+    },
+    {
+      label: 'Loại nghỉ',
+      path: appRoutes.hr.leaveTypes,
+      icon: CalendarDays,
+      entity: 'leave_type',
+      //  Sửa luật nghỉ là việc quản trị — chỉ hiện với người có quyền ghi, chứ
+      //  không hiện cho mọi người rồi khóa từng nút bên trong.
+      manage: true,
+      group: 'Nghỉ phép',
+    },
+    {
+      label: 'Lịch ngày lễ',
+      path: appRoutes.hr.holidays,
+      icon: CalendarDays,
+      entity: 'holiday',
+      manage: true,
+      group: 'Nghỉ phép',
     },
     {
       label: 'Phân quyền tài khoản',
@@ -109,6 +162,65 @@ export const hrModule: ErpModule = {
       lazy: async () => ({
         Component: (await import('./pages/user-permission-detail-page'))
           .UserPermissionDetailPage,
+      }),
+    },
+
+    //  ── Nghỉ phép (CR-259) ────────────────────────────────────────────────
+    //  ⚠️ `/new` phải đứng TRƯỚC `/:id`: react-router khớp theo độ cụ thể nên
+    //  thứ tự khai không quyết định, nhưng để cạnh nhau đúng thứ tự đọc thì
+    //  người sau không phải tự kiểm chứng lại điều đó.
+    {
+      path: appRoutes.hr.leaveRequests,
+      lazy: async () => ({
+        Component: (await import('./pages/leave-request-list-page')).LeaveRequestListPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.leaveRequestNew,
+      lazy: async () => ({
+        Component: (await import('./pages/leave-request-detail-page')).LeaveRequestDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.leaveRequestDetail(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/leave-request-detail-page')).LeaveRequestDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.leaveCalendar,
+      lazy: async () => ({
+        Component: (await import('./pages/leave-calendar-page')).LeaveCalendarPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.leaveBalances,
+      lazy: async () => ({
+        Component: (await import('./pages/leave-balance-page')).LeaveBalancePage,
+      }),
+    },
+    {
+      path: appRoutes.hr.leaveTypes,
+      lazy: async () => ({
+        Component: (await import('./pages/leave-type-list-page')).LeaveTypeListPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.leaveTypeDetail(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/leave-type-detail-page')).LeaveTypeDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.holidays,
+      lazy: async () => ({
+        Component: (await import('./pages/holiday-list-page')).HolidayListPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.holidayDetail(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/holiday-detail-page')).HolidayDetailPage,
       }),
     },
   ],

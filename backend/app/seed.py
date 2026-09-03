@@ -201,8 +201,14 @@ _ALL_ACTIONS = ["read", "create", "write", "delete", "approve", "cancel", "print
 # trong tập này.
 # `forum_post` cũng ở đây (27/08/2026): kiểm duyệt bài diễn đàn là việc của vai
 # trò `forum_admin`, không phải của nghiệp vụ thu mua — cùng lý do với help_article.
+# Bốn khóa Nghỉ phép cũng ở đây (03/09/2026, CR-259): nghỉ phép là việc của
+# phòng NHÂN SỰ, không phải của nghiệp vụ thu mua. Để chúng lọt vào tập này thì
+# Quản lý thu mua tự cấp cho mình thêm ngày phép được (`leave_balance` mở cột
+# điều chỉnh tay) và đọc được lý do nghỉ của cả công ty. Vòng `setdefault` phía
+# dưới vẫn cấp cho vai trò này quyền nộp đơn của chính mình — đúng phần cần.
 _SYS_ENTITIES = {"user", "role", "setting", "backup", "help_article", "mailbox",
-                 "forum_post", "forum_board"}
+                 "forum_post", "forum_board",
+                 "leave_request", "leave_balance", "leave_type", "holiday"}
 _PUR_MANAGER_PERMS = {e: (_ALL_ACTIONS, "all") for e in ENTITIES if e not in _SYS_ENTITIES}
 
 STD_ROLES = {
@@ -347,6 +353,53 @@ for _role_info in STD_ROLES.values():
     _role_info["perms"].setdefault(
         "work_task", (["read", "create", "write", "delete"], "all")
     )
+
+
+#  ── Nghỉ phép (CR-259) ──────────────────────────────────────────────────────
+#  Cùng lý lẽ với Công việc ở trên: **ai cũng phải nộp được đơn nghỉ**, nên cấp
+#  một lượt cho mọi vai trò thay vì chép mười dòng. Nhưng KHÁC ở phạm vi —
+#  `own`, không phải `all`: `leave_request` có chiều lọc thật (`SCOPE_FIELDS`),
+#  để `all` là mỗi nhân viên đọc được đơn nghỉ của cả công ty, kèm lý do nghỉ.
+#
+#  Ba khóa còn lại (`leave_balance` · `leave_type` · `holiday`) CỐ Ý không cấp
+#  đại trà — trừ quyền xem quỹ CỦA CHÍNH MÌNH, vì thiếu nó thì ràng buộc §6.1
+#  (số phép còn lại hiện ngay trên form) không chạy được cho người thường.
+for _role_info in STD_ROLES.values():
+    _role_info["perms"].setdefault(
+        "leave_request", (["read", "create", "write", "delete"], "own"))
+    _role_info["perms"].setdefault("leave_balance", (["read"], "own"))
+    #  Đọc danh mục loại nghỉ + lịch lễ: cần để form dựng được ô chọn và tính
+    #  được số ngày. Chỉ `read` — sửa luật là việc của vai trò `hr_leave` dưới.
+    _role_info["perms"].setdefault("leave_type", (["read"], "all"))
+    _role_info["perms"].setdefault("holiday", (["read"], "all"))
+
+#  Trưởng phòng duyệt đơn của phòng mình. Đặt SAU vòng `setdefault` ở trên nên
+#  phải gán ĐÈ, không `setdefault` — dòng `own` đã nằm sẵn ở đó rồi.
+STD_ROLES["dept_head"]["perms"]["leave_request"] = (
+    ["read", "create", "write", "delete", "approve", "export"], "dept")
+STD_ROLES["dept_head"]["perms"]["leave_balance"] = (["read"], "dept")
+STD_ROLES["company_head"]["perms"]["leave_request"] = (
+    ["read", "approve", "export"], "company")
+STD_ROLES["company_head"]["perms"]["leave_balance"] = (["read"], "company")
+
+#  Vai trò MẪU cho phòng Nhân sự — người cấp quỹ và giữ luật nghỉ. Không gán tự
+#  động cho ai; gán ở màn *Nhân sự ▸ Phân quyền tài khoản*.
+#
+#  ⚠️ Cho vai trò này là cho quyền **tặng thêm ngày phép cho bất kỳ ai**
+#  (`leave_balance.write` mở cột «điều chỉnh tay»). Đó chính là lý do
+#  `leave_balance` là khóa riêng chứ không đi kèm `leave_request`.
+STD_ROLES["hr_leave"] = {"name": "Nhân sự — Quản lý nghỉ phép", "perms": {
+    "leave_request": (["read", "create", "write", "delete", "export"], "all"),
+    "leave_balance": (["read", "create", "write", "delete", "export"], "all"),
+    "leave_type": (["read", "create", "write", "delete"], "all"),
+    "holiday": (["read", "create", "write", "delete"], "all"),
+    #  Đọc kèm — thiếu là form Cấp quỹ / Lịch nghỉ rỗng sạch ô chọn người và
+    #  phòng ban, đúng lỗi đã dính với `vanthu_cty` (xem ghi chú ở `vanban_xem`).
+    "employee": (["read"], "all"),
+    "department": (["read"], "all"),
+    "company": (["read"], "all"),
+    "work_task": (["read", "create", "write", "delete"], "all"),
+}}
 
 
 def seed_standard_roles(db):

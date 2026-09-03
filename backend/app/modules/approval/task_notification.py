@@ -36,6 +36,7 @@ ENTITY_LABELS = {
     "survey": "Phiếu khảo sát",
     "survey_request": "Yêu cầu báo giá",
     "payment_request": "Yêu cầu thanh toán",
+    "leave_request": "Đơn nghỉ phép",
 }
 
 #  Đường dẫn trong thư. Văn bản ghi thẳng đường của app v2; mấy loại còn lại ghi
@@ -48,6 +49,12 @@ ENTITY_LINKS = {
     "survey": "/surveys/{id}",
     "survey_request": "/survey-requests/{id}",
     "payment_request": "/payment-requests/{id}",
+    #  Nghỉ phép chỉ tồn tại ở app v2 nên ghi thẳng đường v2, như văn bản.
+    #  ⚠️ Thiếu dòng này thì `ENTITY_LINKS.get(...)` trả chuỗi RỖNG, thư vẫn gửi
+    #  nhưng bấm vào **không đi đâu cả** — người duyệt đọc "đang chờ bạn" rồi
+    #  phải tự mò vào menu tìm tờ đơn. Đúng lỗi mà `notification-link.ts` đã
+    #  phải vá cho phân hệ Văn thư ngày 20/08/2026, chỉ khác chỗ hỏng.
+    "leave_request": "/hr/leave-requests/{id}",
 }
 
 

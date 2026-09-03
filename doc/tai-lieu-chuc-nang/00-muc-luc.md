@@ -79,6 +79,7 @@ Mỗi dòng ghi trạng thái tài liệu và link tới file `.md` tương ứn
 | 28 | **Văn thư — Quản lý văn bản** (soạn thảo · phiên bản · phê duyệt · ban hành · đánh số · phạm vi · quan hệ · bản trích · clone · chữ ký) | `/document` | [14-van-thu-van-ban.md](14-van-thu-van-ban.md) — đã có tài liệu |
 | 28b | ↳ **Các ca đã kiểm** (phê duyệt · phân quyền · bảo mật · ban hành · stress test) | — | [15-van-thu-cac-ca-da-kiem.md](15-van-thu-cac-ca-da-kiem.md) — đã có tài liệu |
 | 29 | **Dự án — quản lý công việc** (kanban · danh sách · Gantt · hoạt động · việc con · cột mốc · bình luận · đính kèm) | `/project` | [16-du-an-cong-viec.md](16-du-an-cong-viec.md) — đã có tài liệu |
+| 30 | **Nghỉ phép** (đơn nghỉ · lịch nghỉ · quỹ phép năm · loại nghỉ · lịch ngày lễ) | `/hr/leave-requests` | [17-nghi-phep.md](17-nghi-phep.md) — đã có tài liệu |
 
 ## Nhóm: Ứng dụng tách riêng (tên miền riêng)
 
@@ -99,4 +100,7 @@ Mỗi dòng ghi trạng thái tài liệu và link tới file `.md` tương ứn
 - Mục 28 (**Văn thư**) chỉ có trên `frontend-v2/` — `frontend/` đóng băng nên không có bản tương ứng; menu lấy từ `frontend-v2/src/modules/document/routes.tsx`.
 - Mục 29 (**Dự án**) cũng chỉ có trên `frontend-v2/`; menu lấy từ `frontend-v2/src/modules/work/routes.tsx`. ⚠️ Thư mục mã nguồn vẫn là `work/`, API vẫn `/api/work/...`, entity phân quyền vẫn `work_task` — chỉ tên hiển thị cho người dùng là «Dự án». Thiết kế chi tiết ở `doc/erp/cong-viec/`.
 - Phân quyền của **Dự án** KHÔNG dùng phạm vi dữ liệu như các phân hệ chứng từ: quyết định thật nằm ở **tư cách thành viên dự án**. Xem §7 của `16-du-an-cong-viec.md`.
+- Mục 30 (**Nghỉ phép**) cũng chỉ có trên `frontend-v2/`, nằm TRONG phân hệ Nhân sự chứ không tách phân hệ riêng; menu lấy từ `frontend-v2/src/modules/hr/routes.tsx`.
+- Nghỉ phép dùng **bốn khóa phân quyền** (`leave_request` · `leave_balance` · `leave_type` · `holiday`). Tách bốn vì `leave_balance` ghi được nghĩa là **tặng thêm ngày phép cho bất kỳ ai**. Xem §9 của `17-nghi-phep.md`.
+- ⚠️ Bốn khóa đó **mới thêm 03/09/2026**; vai trò cũ trên hệ đang chạy KHÔNG tự có, phải tick thêm ở màn Phân quyền tài khoản.
 - Nguồn danh sách: `frontend/src/layouts/AppLayout.tsx` — mảng `NAV_GROUPS`.

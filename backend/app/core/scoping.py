@@ -150,6 +150,30 @@ SCOPE_FIELDS = {
     #   Khai PUBLIC mà quên lọc là lộ sạch việc của cả công ty — đọc
     #   `doc/erp/cong-viec/04-phan-quyen.md` §2 trước khi viết endpoint đầu tiên.
     "work_task":        PUBLIC,
+
+    # --- Nghỉ phép (CR-259) ---
+    #  Đơn nghỉ khai CẢ `owner` LẪN `self`, và đó là điểm khác mọi entity phía
+    #  trên. Lý do: một tờ đơn có HAI người dính tới nó — người NGHỈ
+    #  (`employee_id`) và người LẬP (`created_by`, hành chính lập hộ là việc có
+    #  thật). Chỉ khai `owner` thì người nghỉ ở phạm vi `own` không thấy đơn của
+    #  chính mình; chỉ khai `self` thì người lập hộ nộp xong mất dấu tờ đơn.
+    #  Nhánh `own` ở `_role_scope_cond` HỢP cả hai — xem ghi chú tại đó.
+    "leave_request":    {"company": "company_id", "dept_id": "department_id",
+                         "owner": "created_by", "self": "employee_id"},
+    #  Quỹ phép KHÔNG có `owner`: `created_by` là người Nhân sự bấm nút cấp phát,
+    #  lấy đó làm "của mình" thì nhân viên xem quỹ của chính họ lại không ra dòng
+    #  nào. Chỉ `self` — `own` nghĩa là "quỹ của tôi".
+    "leave_balance":    {"company": "company_id", "self": "employee_id"},
+    #  Loại nghỉ: danh mục luật dùng chung MỌI pháp nhân, bảng không có cột nào
+    #  để lọc. Ai được SỬA thì gác bằng quyền `leave_type.write`, không phải
+    #  bằng phạm vi.
+    "leave_type":       PUBLIC,
+    #  Lịch lễ: bảng CÓ `company_id` nhưng cố ý không lọc theo nó — `0` ở đây
+    #  nghĩa là "áp cho mọi pháp nhân", mà `company_id == <của tôi>` thì cắt mất
+    #  đúng những dòng dùng chung ấy. Lọc đúng nằm ở `workday_service` (gộp dòng
+    #  của pháp nhân mình VỚI dòng dùng chung), không diễn đạt được bằng khuôn
+    #  một-cột của `apply_scope`.
+    "holiday":          PUBLIC,
 }
 
 
@@ -301,6 +325,15 @@ def _role_scope_cond(model, entity, scope, user, profile):
             rid = profile.get("employee_id") or 0
             if rid and hasattr(model, "requester_id"):
                 cond = or_(cond, model.requester_id == rid)
+            #  CR-259 — entity khai CẢ `owner` LẪN `self`: chứng từ có hai người
+            #  dính tới nó, người LẬP và người CHỊU (đơn nghỉ phép: `created_by`
+            #  và `employee_id`). Cả hai đều phải thấy nó ở phạm vi «của mình».
+            #  Cùng ý với nhánh `requester_id` ngay trên, chỉ khác là tên cột do
+            #  `SCOPE_FIELDS` khai chứ không đoán bằng `hasattr`.
+            #  ⚠️ Chặn `rid = 0`: `employee_id == 0` sẽ trúng mọi dòng chưa gắn
+            #  nhân sự, tức là mở rộng phạm vi thay vì thu hẹp.
+            if rid and f.get("self"):
+                cond = or_(cond, getattr(model, f["self"]) == rid)
             return cond
         if f.get("self"):   # entity không có owner (vd. employee) → chỉ chính mình
             return getattr(model, f["self"]) == (profile.get("employee_id") or 0)
