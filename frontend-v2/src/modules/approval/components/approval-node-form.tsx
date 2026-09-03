@@ -3,10 +3,12 @@ import { useState } from 'react'
 
 import { useDepartments } from '@/modules/hr/hooks/use-departments'
 import { useEmployees } from '@/modules/hr/hooks/use-employees'
+import { useRoles } from '@/modules/hr/hooks/use-roles'
 import { Button } from '@/shared/ui/button'
 import { DepartmentMultiSelect } from '@/shared/ui/department-multi-select'
 import { EmployeeMultiSelect } from '@/shared/ui/employee-multi-select'
 import { Input } from '@/shared/ui/input'
+import { MultiPicker } from '@/shared/ui/multi-picker'
 import { Label } from '@/shared/ui/label'
 import {
   Select,
@@ -63,6 +65,9 @@ export function ApprovalNodeForm({
   //  Cả danh sách phòng ban của mọi pháp nhân: luồng có thể trỏ sang phòng của
   //  pháp nhân khác (Nhân sự tập đoàn duyệt phép cho công ty con chẳng hạn).
   const { data: departmentPage } = useDepartments({ page_size: 1000 })
+  //  Vai trò để chọn khi giao duyệt "theo vai trò" — chính danh sách vai trò
+  //  tạo ở màn Phân quyền tài khoản (/hr/permissions).
+  const { data: roles } = useRoles()
   const [moNangCao, setMoNangCao] = useState(false)
 
   const [form, setForm] = useState<Partial<ApprovalNode>>(() => ({
@@ -90,10 +95,13 @@ export function ApprovalNodeForm({
   const pickExplicit = form.approver_kind === APPROVER_KIND.employee
   //  Chọn GHẾ chứ không chọn người: `approver_ref` là danh sách id phòng ban.
   const pickDepartment = form.approver_kind === APPROVER_KIND.deptHeadOf
-  //  Chỉ ba cách cần ô nhập; ba cách còn lại (trưởng bộ phận, đại diện pháp
-  //  nhân, đích danh) tự suy ra người nên bày ô trống chỉ tổ làm người dùng
-  //  tưởng mình quên điền.
-  const needsExtraField = SUGGESTION_REF[form.approver_kind ?? 0] !== undefined
+  //  Giao "theo vai trò": `approver_ref` là danh sách MÃ vai trò ngăn bằng dấu
+  //  phẩy — nay chọn từ danh sách vai trò thật thay vì gõ tay.
+  const pickRole = form.approver_kind === APPROVER_KIND.role
+  const roleCodes = (form.approver_ref ?? '').split(',').map((s) => s.trim()).filter(Boolean)
+  //  Chỉ hai cách còn cần ô GÕ TAY (số cấp, tên ô trên phiếu); vai trò đã có ô
+  //  chọn riêng, ba cách còn lại tự suy ra người nên không bày ô.
+  const needsExtraField = SUGGESTION_REF[form.approver_kind ?? 0] !== undefined && !pickRole
   const multiUser = danhSachId(form.approver_ref).length > 1 || !pickExplicit
 
   return (
@@ -150,6 +158,21 @@ export function ApprovalNodeForm({
             <p className="text-xs text-muted-foreground">
               Bước giao cho TRƯỞNG BỘ PHẬN của những phòng này, không phải phòng của
               người nộp. Đổi người làm trưởng phòng thì luồng tự đi theo.
+            </p>
+          </>
+        )}
+
+        {pickRole && (
+          <>
+            <MultiPicker<string>
+              value={roleCodes}
+              onChange={(codes) => dat('approver_ref', codes.join(','))}
+              options={(roles ?? []).map((r) => ({ id: r.code, label: r.name, hint: r.code }))}
+              placeholder="Chọn vai trò…"
+            />
+            <p className="text-xs text-muted-foreground">
+              Người đang giữ vai trò đã chọn sẽ được giao duyệt bước này. Danh sách
+              lấy từ màn Phân quyền tài khoản.
             </p>
           </>
         )}
