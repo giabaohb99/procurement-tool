@@ -80,6 +80,7 @@ import {
   type PaymentRequestLine,
   type PrintTexts,
 } from '../types/payment-request'
+import { parseOffsetsParam, splitLineOffset } from '../utils/assistant-offsets'
 import { autoPrintText } from '../utils/print-texts'
 
 /**
@@ -127,8 +128,13 @@ function blankLine(): EditablePaymentLine {
  *
  * Công nợ KHÔNG trả `invoice_date` (bảng sinh ngầm lúc nhận hàng, chưa gắn ngày
  * hóa đơn), nên để trống cho người lập điền — khớp `_out()` của controller.
+ *
+ * CR-264 — `offsets` là phần cấn trừ tiền treo do trợ lý AI đề xuất (`?offsets=`):
+ * điền sẵn cột "Cấn trừ trả trước", phần chi thật giảm tương ứng; kẹp không vượt nợ
+ * còn lại vì nợ có thể đã đổi giữa lúc chat và lúc mở form.
  */
-function fromPayable(row: Payable): EditablePaymentLine {
+function fromPayable(row: Payable, offsets?: Map<number, number>): EditablePaymentLine {
+  const { amount, offset } = splitLineOffset(Number(row.remaining) || 0, offsets?.get(row.id) ?? 0)
   return {
     key: nextKey(),
     payable_id: row.id,
@@ -141,8 +147,8 @@ function fromPayable(row: Payable): EditablePaymentLine {
     due_date: row.due_date,
     payable_total: Number(row.total) || 0,
     payable_paid: Number(row.paid_amount) || 0,
-    amount: Number(row.remaining) || 0,
-    offset_amount: 0,
+    amount,
+    offset_amount: offset,
   }
 }
 
@@ -187,6 +193,10 @@ function PaymentRequestCreate() {
   const ids = useMemo(() => idsParam.split(',').map(Number).filter(Boolean), [idsParam])
   const blankMode = ids.length === 0
 
+  // CR-264 — phần cấn trừ tiền treo trợ lý AI đề xuất sẵn (đi cùng `?payables=` từ chat).
+  const offsetsParam = searchParams.get('offsets')
+  const assistantOffsets = useMemo(() => parseOffsetsParam(offsetsParam), [offsetsParam])
+
   const navState = location.state as { rows?: Payable[]; prepay?: boolean } | null
   const stateRows = navState?.rows
 
@@ -205,7 +215,7 @@ function PaymentRequestCreate() {
   const { data: companiesData } = useCompanies({ page_size: 500, is_active: true }, { enabled: blankMode })
 
   const [lines, setLines] = useState<EditablePaymentLine[]>(() => {
-    if (stateRows?.length) return stateRows.map(fromPayable)
+    if (stateRows?.length) return stateRows.map((row) => fromPayable(row, assistantOffsets))
     if (blankMode) return [blankLine()]
     return []
   })
@@ -219,9 +229,10 @@ function PaymentRequestCreate() {
   // (CR-267) thì tick sẵn; form trắng thì kế toán tự tick khi tạm ứng NCC.
   const [prepay, setPrepay] = useState<boolean>(() => Boolean(navState?.prepay))
 
-  // Khoản nợ nạp về sau (F5) -> đổ vào bảng đúng một lần.
+  // Khoản nợ nạp về sau (F5 / từ nút chat trợ lý) -> đổ vào bảng đúng một lần.
   const refetchedChanged = useHasChanged(refetched)
-  if (refetchedChanged && refetched) setLines(refetched.items.map(fromPayable))
+  if (refetchedChanged && refetched)
+    setLines(refetched.items.map((row) => fromPayable(row, assistantOffsets)))
 
   const createMutation = useCreatePaymentRequests()
 

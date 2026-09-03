@@ -186,6 +186,8 @@ def test_doc_yctt_recap_du_hinh(db, seed, cap_quyen):
     # Phiếu THƯỜNG (prepay=0) thì KHÔNG có sổ treo — đừng làm model tưởng phiếu nào cũng treo.
     assert "prepay_hanging_total" not in out
     assert "hanging" not in out["lines"][0]
+    # Phiếu không có phần cấn trừ thì cũng KHÔNG có cụm offset (CR-260) — tránh nhiễu.
+    assert "offset_total" not in out and "offset_check" not in out
 
 
 # ── Tiền treo trả trước (CR-268) ────────────────────────────────────────────────────────
@@ -244,3 +246,159 @@ def test_doc_yctt_tra_truoc_kem_so_treo(db, seed, cap_quyen):
     assert out["lines"][0]["hanging"] == 200.0
     assert out["prepay_hanging_total"] == 200.0
     assert out["prepay_hint"]
+
+
+# ── Cấn trừ tiền treo ghi trên phiếu (CR-260) ───────────────────────────────────────────
+
+def _tao_yctt_can_tru(db, seed, created_by, status, offset=300.0, amount=200.0):
+    """Phiếu THƯỜNG 1 dòng: chi `amount` + cấn trừ `offset`, trỏ khoản nợ (PO-CT, HD-CT-1)."""
+    from app.modules.payment_request.model import PaymentRequest, PaymentRequestLine
+
+    req = PaymentRequest(code="YCTT-CT-1", supplier_code="NCCA", supplier_name="NCC Anpha",
+                         company_id=seed.company_id, source_type="goods",
+                         request_date="2026-09-01", payment_method="transfer",
+                         total=amount, status=status,
+                         created_by=created_by, updated_by=created_by)
+    db.add(req)
+    db.flush()
+    db.add(PaymentRequestLine(request_id=req.id, po_code="PO-CT", invoice_no="HD-CT-1",
+                              amount=amount, offset_amount=offset,
+                              created_by=created_by, updated_by=created_by))
+    db.commit()
+    return req
+
+
+def _tao_no_khop_hd(db, seed, total=500.0, paid=0.0):
+    """Khoản nợ khớp đúng (NCCA, goods, PO-CT, HD-CT-1) mà dòng cấn trừ trỏ tới."""
+    p = Payable(company_id=seed.company_id, supplier_code="NCCA", supplier_name="NCC Anpha",
+                source_type="goods", po_code="PO-CT", invoice_no="HD-CT-1",
+                incur_date="2026-08-28", period="2026", due_date="2026-09-28",
+                total=total, paid_amount=paid, remaining=total - paid,
+                status="unpaid" if paid <= 0 else "partial")
+    db.add(p)
+    db.commit()
+    return p
+
+
+def test_doc_yctt_nhap_can_tru_chi_la_y_dinh(db, seed, cap_quyen):
+    """Bản nháp có cấn trừ: dòng kèm offset_amount, có offset_total + hint nói rõ đây mới
+    là Ý ĐỊNH; KHÔNG chạy soát khô (offset_check) cho nháp — nháp sửa thoải mái."""
+    cap_quyen(seed.u_req_id, "payment_request", scope="own", read=True)
+    _tao_yctt_can_tru(db, seed, created_by=seed.u_req_id, status="draft")
+
+    out = T.run_tool(db, db.get(User, seed.u_req_id), "payment_request_read",
+                     {"code": "YCTT-CT-1"})
+    assert out["lines"][0]["offset_amount"] == 300.0
+    assert out["lines"][0]["amount"] == 200.0          # amount = phần CHI THẬT, tách bạch
+    assert out["offset_total"] == 300.0
+    assert "Ý ĐỊNH" in out["offset_hint"]
+    assert "offset_check" not in out
+
+
+def test_doc_yctt_cho_duyet_soat_kho_ok(db, seed, cap_quyen):
+    """Chờ duyệt + treo đủ + nợ đủ -> offset_check.ok=True, không có problems."""
+    cap_quyen(seed.u_req_id, "payment_request", scope="own", read=True)
+    _tao_phieu_treo(db, seed, created_by=seed.u_req_id)     # treo cấp NCC còn 800
+    _tao_no_khop_hd(db, seed)                               # nợ còn 500 >= cấn trừ 300
+    _tao_yctt_can_tru(db, seed, created_by=seed.u_req_id, status="submitted")
+
+    out = T.run_tool(db, db.get(User, seed.u_req_id), "payment_request_read",
+                     {"code": "YCTT-CT-1"})
+    assert out["offset_check"] == {"ok": True, "problems": []}
+    assert "hợp lệ" in out["offset_hint"]
+
+
+def test_doc_yctt_cho_duyet_bao_thieu_treo(db, seed, cap_quyen):
+    """Chờ duyệt mà NCC KHÔNG còn treo -> ok=False, problems nói vượt tiền treo, hint
+    chỉ đúng luật: không duyệt một phần, Từ chối để người lập tạo phiếu mới."""
+    cap_quyen(seed.u_req_id, "payment_request", scope="own", read=True)
+    _tao_no_khop_hd(db, seed)
+    _tao_yctt_can_tru(db, seed, created_by=seed.u_req_id, status="submitted")
+
+    out = T.run_tool(db, db.get(User, seed.u_req_id), "payment_request_read",
+                     {"code": "YCTT-CT-1"})
+    assert out["offset_check"]["ok"] is False
+    assert any("vượt tiền treo" in p for p in out["offset_check"]["problems"])
+    assert "TỪ CHỐI" in out["offset_hint"]
+
+
+def test_doc_yctt_cho_duyet_bao_no_khong_du(db, seed, cap_quyen):
+    """Nợ đích đã bị trả bớt nơi khác (còn 100 < cấn trừ 300) -> problems nêu đúng dòng.
+    Đây là đúng tình huống chặn duyệt của apply_line_offsets — soát khô phải bắt được."""
+    cap_quyen(seed.u_req_id, "payment_request", scope="own", read=True)
+    _tao_phieu_treo(db, seed, created_by=seed.u_req_id)     # treo đủ 800
+    _tao_no_khop_hd(db, seed, total=500, paid=400)          # nợ chỉ còn 100
+    _tao_yctt_can_tru(db, seed, created_by=seed.u_req_id, status="submitted")
+
+    out = T.run_tool(db, db.get(User, seed.u_req_id), "payment_request_read",
+                     {"code": "YCTT-CT-1"})
+    assert out["offset_check"]["ok"] is False
+    assert any("PO-CT" in p for p in out["offset_check"]["problems"])
+
+
+def test_doc_yctt_da_duyet_bao_da_thuc_thi(db, seed, cap_quyen):
+    """Phiếu đã duyệt: không soát khô nữa, hint nói phần cấn trừ ĐÃ trừ lúc duyệt."""
+    cap_quyen(seed.u_req_id, "payment_request", scope="own", read=True)
+    _tao_yctt_can_tru(db, seed, created_by=seed.u_req_id, status="approved")
+
+    out = T.run_tool(db, db.get(User, seed.u_req_id), "payment_request_read",
+                     {"code": "YCTT-CT-1"})
+    assert out["offset_total"] == 300.0
+    assert "offset_check" not in out
+    assert "ĐÃ" in out["offset_hint"] and "DUYỆT" in out["offset_hint"]
+
+
+# ── Nháp YCTT tự chia cấn trừ FIFO (CR-264) ─────────────────────────────────────────────
+
+def test_draft_chia_can_tru_fifo_theo_han(db, seed, khoan_no, cap_quyen):
+    """NCC còn treo 800: nháp chia cấn trừ theo FIFO hạn nợ — PO-02 (hạn 20/08, nợ 300)
+    ăn trước, PO-01 (hạn 05/09) nhận phần còn lại 500; cash_total = tổng nợ - cấn trừ."""
+    cap_quyen(seed.u_req_id, "payable", scope="all", read=True)
+    cap_quyen(seed.u_req_id, "payment_request", scope="all", create=True, read=True)
+    _tao_phieu_treo(db, seed, created_by=seed.u_req_id)      # treo cấp NCC = 800
+    user = db.get(User, seed.u_req_id)
+
+    out = T.run_tool(db, user, "draft_payment_request", {"supplier": "NCCA"})
+    assert out["draft"]["offsets"] == {khoan_no[1].id: 300.0, khoan_no[0].id: 500.0}
+    assert out["draft"]["offset_total"] == 800.0
+    assert out["draft"]["cash_total"] == 500.0               # 1300 nợ - 800 cấn trừ
+    assert out["draft"]["suppliers"][0]["offset"] == 800.0
+    assert "cấn trừ" in out["reminder"]
+
+
+def test_draft_khong_treo_thi_khong_de_xuat_can_tru(db, seed, khoan_no, cap_quyen):
+    """NCC không còn treo -> nháp KHÔNG có cụm offsets, reminder không nhắc cấn trừ vô cớ."""
+    cap_quyen(seed.u_req_id, "payable", scope="all", read=True)
+    cap_quyen(seed.u_req_id, "payment_request", scope="all", create=True, read=True)
+    user = db.get(User, seed.u_req_id)
+
+    out = T.run_tool(db, user, "draft_payment_request", {"supplier": "NCCA"})
+    assert "offsets" not in out["draft"]
+    assert "offset_total" not in out["draft"]
+
+
+def test_draft_thieu_quyen_doc_yctt_thi_khong_chia_treo(db, seed, khoan_no, cap_quyen):
+    """Chỉ có payment_request.create (không read): vẫn nháp được nhưng KHÔNG đề xuất
+    cấn trừ — số treo là dữ liệu phân hệ YCTT, quyền tạo không kéo theo quyền đọc."""
+    cap_quyen(seed.u_req_id, "payable", scope="all", read=True)
+    cap_quyen(seed.u_req_id, "payment_request", scope="all", create=True)
+    _tao_phieu_treo(db, seed, created_by=seed.u_req_id)      # treo có thật nhưng không được lộ
+    user = db.get(User, seed.u_req_id)
+
+    out = T.run_tool(db, user, "draft_payment_request", {"supplier": "NCCA"})
+    assert out["status"] == "ready"
+    assert "offsets" not in out["draft"]
+
+
+def test_draft_treo_it_hon_no_chi_chia_du_treo(db, seed, khoan_no, cap_quyen):
+    """Treo chỉ còn 250 (< nợ 1300): FIFO cấp hết 250 cho khoản tới hạn sớm nhất (PO-02),
+    khoản sau không được chia — tổng cấn trừ không bao giờ vượt treo còn lại."""
+    cap_quyen(seed.u_req_id, "payable", scope="all", read=True)
+    cap_quyen(seed.u_req_id, "payment_request", scope="all", create=True, read=True)
+    _tao_phieu_treo(db, seed, created_by=seed.u_req_id, refunded=550)   # treo còn 250
+    user = db.get(User, seed.u_req_id)
+
+    out = T.run_tool(db, user, "draft_payment_request", {"supplier": "NCCA"})
+    assert out["draft"]["offsets"] == {khoan_no[1].id: 250.0}
+    assert out["draft"]["offset_total"] == 250.0
+    assert out["draft"]["cash_total"] == 1050.0

@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import type { ChatReply, UpdateProposal } from '../types/assistant'
-import { pickDraftOffer, pickFileOffer, pickUpdateOffer } from './reply-offers'
+import type { DraftOffer } from './reply-offers'
+import { draftNavigation, pickDraftOffer, pickFileOffer, pickUpdateOffer } from './reply-offers'
 
 function reply(toolCalls: ChatReply['tool_calls']): ChatReply {
   return {
@@ -159,5 +160,39 @@ describe('pickFileOffer', () => {
 
   it('không có file thì trả null', () => {
     expect(pickFileOffer(reply([{ name: 'export_report_file', args: {} }]))).toBeNull()
+  })
+})
+
+describe('draftNavigation — payment', () => {
+  function paymentDraft(args: Record<string, unknown>): DraftOffer {
+    return { conversationId: 1, target: 'payment', args }
+  }
+
+  it('builds ?payables= from payable_ids without passing router state', () => {
+    //  YCTT cố ý KHÔNG truyền state: form tự nạp lại khoản nợ dưới quyền người đăng
+    //  nhập (CR-025) — truyền state là tin dữ liệu chat, vòng qua hàng rào phạm vi.
+    const nav = draftNavigation(paymentDraft({ payable_ids: [3, 7] }))
+    expect(nav.to).toBe('/finance/payment-requests/new?payables=3,7')
+    expect(nav.state).toBeUndefined()
+  })
+
+  it('appends &offsets= when the tool proposed FIFO offsets (CR-264)', () => {
+    const nav = draftNavigation(
+      paymentDraft({ payable_ids: [3, 7], offsets: { 3: 300, 7: 500 } }),
+    )
+    expect(nav.to).toBe('/finance/payment-requests/new?payables=3,7&offsets=3:300,7:500')
+  })
+
+  it('drops invalid offset entries and omits the param when nothing valid remains', () => {
+    const nav = draftNavigation(
+      paymentDraft({ payable_ids: [3], offsets: { 0: 100, '-1': 50, 3: 'abc', 4: 0 } }),
+    )
+    expect(nav.to).toBe('/finance/payment-requests/new?payables=3')
+  })
+
+  it('ignores a non-object offsets value from a raw model draft', () => {
+    //  args thô do model gõ có thể sai kiểu bất kỳ — không được nổ, chỉ bỏ qua.
+    const nav = draftNavigation(paymentDraft({ payable_ids: [3], offsets: '3:300' }))
+    expect(nav.to).toBe('/finance/payment-requests/new?payables=3')
   })
 })

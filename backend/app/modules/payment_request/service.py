@@ -606,6 +606,58 @@ def apply_line_offsets(db: Session, req: PaymentRequest, user_id: int,
     return total_applied
 
 
+def check_line_offsets(db: Session, req: PaymentRequest) -> list[str]:
+    """CR-260 — soát KHÔ phần cấn trừ trên phiếu: cùng bộ luật với apply_line_offsets
+    lúc DUYỆT nhưng không trừ đồng nào, không đụng DB. Trả danh sách vướng mắc, rỗng =
+    hiện tại bấm Duyệt sẽ qua vòng soát cấn trừ.
+
+    Dùng cho trợ lý AI trả lời "phiếu này duyệt được chưa / vì sao bị chặn". Kết quả
+    chỉ đúng TẠI THỜI ĐIỂM soát — treo/nợ vẫn có thể bị phiếu/đơn khác dùng trước khi
+    duyệt thật, nên đây là chẩn đoán chứ không phải cam kết."""
+    lines = [ln for ln in lines_of(db, req.id) if float(ln.offset_amount or 0) > 0.01]
+    if not lines:
+        return []
+    if req.prepay:
+        return ["Phiếu trả trước không được có phần cấn trừ tiền treo — bỏ phần cấn trừ "
+                "hoặc bỏ tick 'Thanh toán trước'"]
+    problems: list[str] = []
+    treo = get_hanging_lines(db, req.supplier_code, req.source_type, "")
+    need = round(sum(float(ln.offset_amount or 0) for ln in lines), 2)
+    available = round(sum(line_hanging(t) for _r, t in treo), 2)
+    if available + 0.01 < need:
+        problems.append(f"Tổng cấn trừ trên phiếu ({need:,.0f} đ) vượt tiền treo còn lại "
+                        f"của NCC ({available:,.0f} đ)")
+    # Trừ MÔ PHỎNG trên bản sao nợ còn lại — bắt được cả trường hợp hai dòng cùng trỏ
+    # một khoản nợ mà cộng lại vượt nợ (vòng chốt cuối của apply_line_offsets).
+    sim_remaining: dict[int, float] = {}
+    for i, ln in enumerate(lines, start=1):
+        want = round(float(ln.offset_amount or 0), 2)
+        pays = matching_payables(db, req.supplier_code, req.source_type, ln.po_code, ln.invoice_no)
+        if not pays and ln.payable_id:
+            p_single = db.get(Payable, ln.payable_id)
+            pays = [p_single] if p_single else []
+        label = ln.po_code or ln.invoice_no or f"dòng {i}"
+        if not pays:
+            problems.append(f"{label}: chưa khớp khoản công nợ nào để cấn trừ")
+            continue
+        for p in pays:
+            sim_remaining.setdefault(p.id, _remaining(p))
+        rem = want
+        for p in pays:
+            if rem <= 0.01:
+                break
+            part = round(min(rem, sim_remaining[p.id]), 2)
+            if part <= 0:
+                continue
+            sim_remaining[p.id] = round(sim_remaining[p.id] - part, 2)
+            rem = round(rem - part, 2)
+        if rem > 0.01:
+            problems.append(f"{label}: nợ còn lại nhỏ hơn phần cấn trừ {want:,.0f} đ "
+                            "(khoản nợ đã được trả/cấn bớt nơi khác, hoặc trùng khoản nợ "
+                            "với dòng khác trên phiếu)")
+    return problems
+
+
 def record_refund(db: Session, rid: int, amount: float, note: str, user_id: int) -> float:
     """Ghi nhận NCC HOÀN TIỀN cho phiếu trả trước (đường B: trả full đơn sau, NCC trả cọc).
 

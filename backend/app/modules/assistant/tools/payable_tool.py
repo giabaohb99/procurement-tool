@@ -153,9 +153,12 @@ def _run_lookup(ctx: ToolContext, args: dict) -> dict:
                 "total": hang["total"],
                 "unlinked": unlinked,
                 "items": hang["items"],
-                "hint": ("NCC này còn TIỀN TREO trả trước (CR-268) — nhắc người dùng. Phần "
-                         "KHÔNG gắn đơn (unlinked) cấn trừ tay được vào khoản nợ còn lại: "
-                         "nút Cấn trừ (icon cái cân) trên màn Công nợ, trừ tối đa = "
+                "hint": ("NCC này còn TIỀN TREO trả trước (CR-268) — nhắc người dùng cấn "
+                         "trừ trước khi chi thêm. Phần KHÔNG gắn đơn (unlinked): đường "
+                         "CHÍNH là ghi phần 'Cấn trừ trả trước' ngay trên phiếu YCTT "
+                         "tiếp theo (hộp thoại tạo YCTT ở đơn mua hàng gợi ý sẵn, trừ "
+                         "thật khi phiếu được DUYỆT — CR-260); đường phụ là nút Cấn trừ "
+                         "(icon cái cân) trên màn Công nợ. Cả hai đều trừ tối đa = "
                          "min(treo, nợ còn lại). Phần gắn đơn sẽ TỰ đối trừ khi đơn đó "
                          "nhận hàng, không cần thao tác. Nghiệp vụ đầy đủ: "
                          "doc/tai-lieu-chuc-nang/05-yeu-cau-thanh-toan.md mục F."),
@@ -215,9 +218,12 @@ _DRAFT_DESC = (
     "theo thứ tự: (1) đã gọi payable_lookup trong hội thoại thì truyền đúng danh sách "
     "payable_ids người dùng muốn trả; (2) chưa tra thì truyền supplier (bắt buộc nếu không "
     "có payable_ids) + company/date_from/date_to nếu người dùng nêu — tool tự lấy các khoản "
-    "còn phải trả khớp điều kiện. Khoản đã tất toán bị loại tự động. Sau khi gọi, báo người "
-    "dùng bấm nút 'Tạo đề nghị thanh toán' dưới câu trả lời — nhấn mạnh phiếu CHƯA được tạo, "
-    "số tiền đề nghị mặc định bằng số còn lại từng khoản và sửa được trên form."
+    "còn phải trả khớp điều kiện. Khoản đã tất toán bị loại tự động. NCC còn TIỀN TREO trả "
+    "trước thì bản nháp chia sẵn phần 'Cấn trừ trả trước' theo FIFO (draft.offsets + "
+    "offset_total + cash_total — chi thật = còn lại trừ cấn trừ, thực thi khi phiếu được "
+    "DUYỆT theo CR-260) và form mở ra điền sẵn cột cấn trừ. Sau khi gọi, báo người dùng bấm "
+    "nút 'Tạo đề nghị thanh toán' dưới câu trả lời — nhấn mạnh phiếu CHƯA được tạo, số tiền "
+    "đề nghị mặc định bằng số còn lại từng khoản và sửa được trên form."
 )
 
 
@@ -264,6 +270,31 @@ def _run_draft(ctx: ToolContext, args: dict) -> dict:
         g["lines"] += 1
         g["remaining"] += float(p.remaining or 0)
 
+    # CR-264 — NCC còn TIỀN TREO cấp NCC (không gắn đơn) thì chia sẵn phần cấn trừ theo
+    # FIFO trên chính các khoản đã chọn (khoản tới hạn sớm trước, cùng thứ tự liệt kê) —
+    # giống hộp thoại tạo YCTT ở ĐMH. Chỉ là ĐỀ XUẤT: form điền sẵn cột 'Cấn trừ trả
+    # trước', người dùng sửa/bỏ được; thực thi vẫn ở lúc DUYỆT (CR-260). Treo là dữ liệu
+    # phân hệ YCTT nên phải có quyền payment_request.read mới gợi ý — cùng hàng rào với
+    # payable_lookup (create không kéo theo read).
+    offsets: dict[int, float] = {}
+    if ctx.can("payment_request"):
+        from app.modules.payment_request.service import get_hanging_lines, line_hanging
+
+        treo_left: dict[tuple, float] = {}
+        for p in rows:
+            key = (p.supplier_code, p.source_type)
+            if key not in treo_left:
+                treo = get_hanging_lines(ctx.db, p.supplier_code or "",
+                                         p.source_type or "goods", "")
+                treo_left[key] = round(sum(line_hanging(t) for _r, t in treo), 2)
+            take = round(min(float(p.remaining or 0), treo_left[key]), 2)
+            if take > 0.01:
+                offsets[p.id] = take
+                treo_left[key] = round(treo_left[key] - take, 2)
+                g = by_supplier.get(p.supplier_code or "?")
+                if g is not None:
+                    g["offset"] = round(g.get("offset", 0.0) + take, 2)
+
     result = {
         "status": "ready",
         "draft": {
@@ -279,6 +310,17 @@ def _run_draft(ctx: ToolContext, args: dict) -> dict:
                     "câu trả lời — form mở ra đã tick sẵn các khoản này, số tiền đề nghị "
                     "mặc định bằng số CÒN LẠI từng khoản, sửa được trước khi Lưu.",
     }
+    if offsets:
+        offset_total = round(sum(offsets.values()), 2)
+        result["draft"]["offsets"] = offsets
+        result["draft"]["offset_total"] = offset_total
+        result["draft"]["cash_total"] = round(result["draft"]["total_remaining"] - offset_total, 2)
+        result["reminder"] += (
+            f" NCC còn TIỀN TREO trả trước: đã chia sẵn phần cấn trừ {offset_total:,.0f} đ "
+            "vào các khoản (FIFO, khoản tới hạn sớm trước) — form mở ra điền sẵn cột 'Cấn "
+            "trừ trả trước', phần CHI THẬT giảm tương ứng (cash_total); người dùng sửa/bỏ "
+            "được từng dòng. Cấn trừ chỉ THỰC THI khi phiếu được DUYỆT (CR-260) — nói rõ "
+            "hai con số: chi thật và cấn trừ.")
     if ids:
         missing = sorted(set(ids) - {p.id for p in rows})
         if missing:
@@ -309,7 +351,8 @@ def _run_read_request(ctx: ToolContext, args: dict) -> dict:
         return {"error": "Thiếu code — hỏi người dùng mã phiếu YCTT cần xem."}
 
     from app.modules.payment_request.model import PaymentRequest, PaymentRequestLine
-    from app.modules.payment_request.service import line_hanging, parse_print_texts
+    from app.modules.payment_request.service import (check_line_offsets, line_hanging,
+                                                     parse_print_texts)
 
     from .procurement_doc_tool import _label
 
@@ -331,6 +374,10 @@ def _run_read_request(ctx: ToolContext, args: dict) -> dict:
             "invoice_date": ln.invoice_date,
             "amount": float(ln.amount or 0),
         }
+        # CR-260 — dòng có phần cấn trừ tiền treo thì nói rõ: `amount` là phần CHI THẬT,
+        # `offset_amount` là phần trừ vào tiền treo; nghĩa vụ của dòng = amount + offset.
+        if float(ln.offset_amount or 0) > 0.01:
+            d["offset_amount"] = float(ln.offset_amount or 0)
         # CR-268 — phiếu trả trước ĐÃ CHI thì kèm sổ treo từng dòng để trợ lý giải thích
         # được "tiền đi đâu": đã đối trừ / NCC đã hoàn / còn treo.
         if req.prepay and req.status == "paid":
@@ -359,14 +406,47 @@ def _run_read_request(ctx: ToolContext, args: dict) -> dict:
         "url": f"/finance/payment-requests/{req.id}",
         "total_lines": len(lines),
     }
+    # CR-260 — phiếu có phần cấn trừ tiền treo: `total` chỉ là phần CHI THẬT, kèm tổng
+    # cấn trừ + trạng thái thực thi để trợ lý nói đúng bản chất từng giai đoạn.
+    offset_total = round(sum(float(ln.offset_amount or 0) for ln in lines), 2)
+    if offset_total > 0.01:
+        out["offset_total"] = offset_total
+        if req.status in ("approved", "paid"):
+            out["offset_hint"] = (
+                f"Phần cấn trừ {offset_total:,.0f} đ ĐÃ được trừ vào công nợ ngay lúc "
+                "phiếu được DUYỆT (CR-260) — chỉ còn phần chi thật (`total`) đi tiếp "
+                "các bước chi tiền.")
+        elif req.status == "submitted":
+            problems = check_line_offsets(ctx.db, req)
+            out["offset_check"] = {"ok": not problems, "problems": problems}
+            if problems:
+                out["offset_hint"] = (
+                    "Phiếu đang Chờ duyệt nhưng phần cấn trừ HIỆN KHÔNG còn khớp (xem "
+                    "`offset_check.problems`) — bấm Duyệt sẽ bị chặn với đúng lý do đó. "
+                    "KHÔNG có duyệt một phần: hướng xử lý là người duyệt TỪ CHỐI kèm lý "
+                    "do, người lập mở lại hộp thoại tạo YCTT ở đơn mua hàng (số liệu tự "
+                    "tính lại theo hiện trạng) rồi tạo phiếu mới.")
+            else:
+                out["offset_hint"] = (
+                    f"Phiếu đang Chờ duyệt, phần cấn trừ {offset_total:,.0f} đ hợp lệ "
+                    "tại thời điểm soát — bấm Duyệt sẽ trừ thật vào công nợ (CR-260). "
+                    "Lưu ý tiền treo/nợ vẫn có thể bị phiếu khác dùng trong lúc chờ.")
+        else:
+            out["offset_hint"] = (
+                f"Phần cấn trừ {offset_total:,.0f} đ trên phiếu mới là Ý ĐỊNH — chưa "
+                "đụng công nợ, chỉ thực thi khi phiếu được DUYỆT (CR-260). Sửa/xóa nháp "
+                "vô hại.")
     if req.prepay and req.status == "paid":
         hanging_total = round(sum(line_hanging(ln) for ln in lines), 2)
         out["prepay_hanging_total"] = hanging_total
         if hanging_total > 0.01:
             out["prepay_hint"] = (
                 "Phiếu TRẢ TRƯỚC còn tiền treo. Dòng CÓ mã ĐMH sẽ tự đối trừ khi đơn đó "
-                "nhận hàng; dòng KHÔNG gắn đơn thì kế toán cấn trừ tay ở màn Công nợ (nút "
-                "icon cái cân) hoặc ghi nhận NCC hoàn tiền ngay trên phiếu này. Xem "
+                "nhận hàng, không cần thao tác. Dòng KHÔNG gắn đơn: đường CHÍNH là ghi "
+                "phần 'Cấn trừ trả trước' trên phiếu YCTT tiếp theo của NCC này (hộp "
+                "thoại tạo YCTT ở đơn mua hàng gợi ý sẵn, trừ thật khi phiếu được duyệt "
+                "— CR-260); đường phụ là kế toán cấn trừ tay ở màn Công nợ (nút icon "
+                "cái cân) hoặc ghi nhận NCC hoàn tiền ngay trên phiếu này. Xem "
                 "doc/tai-lieu-chuc-nang/05-yeu-cau-thanh-toan.md mục F.")
     return out
 
@@ -377,11 +457,15 @@ PAYMENT_REQUEST_READ_SPEC = ToolSpec(
         "Xem chi tiết MỘT phiếu Yêu cầu thanh toán (YCTT) theo mã phiếu — trạng thái, NCC, "
         "hình thức thanh toán, tổng tiền, các dòng đề nghị chi (mã ĐMH, số hóa đơn, số "
         "tiền) và 3 câu chữ bản in (print_texts). Gọi khi người dùng hỏi về một YCTT cụ "
-        "thể ('YCTT00045 tới đâu rồi', 'phiếu thanh toán đó bao nhiêu tiền'). Phiếu TRẢ "
-        "TRƯỚC (prepay) đã chi còn trả thêm sổ tiền treo (đã đối trừ / NCC đã hoàn / còn "
-        "treo, CR-268) — còn treo thì đọc `prepay_hint` để tư vấn bước xử lý. Khi trả "
-        "lời, kèm `url` dạng link để người dùng bấm mở phiếu. Trợ lý KHÔNG duyệt/chi hộ "
-        "được — việc đó người dùng tự làm trên màn chi tiết."
+        "thể ('YCTT00045 tới đâu rồi', 'phiếu thanh toán đó bao nhiêu tiền', 'phiếu này "
+        "duyệt được chưa / sao bị chặn duyệt'). Phiếu có phần CẤN TRỪ tiền treo (CR-260) "
+        "trả thêm `offset_amount` từng dòng + `offset_total` (`total` chỉ là phần chi "
+        "thật) và `offset_hint`; phiếu Chờ duyệt còn kèm `offset_check` — soát khô xem "
+        "bấm Duyệt có bị chặn không, có vấn đề thì đọc `problems` để giải thích. Phiếu "
+        "TRẢ TRƯỚC (prepay) đã chi còn trả thêm sổ tiền treo (đã đối trừ / NCC đã hoàn / "
+        "còn treo, CR-268) — còn treo thì đọc `prepay_hint` để tư vấn bước xử lý. Khi "
+        "trả lời, kèm `url` dạng link để người dùng bấm mở phiếu. Trợ lý KHÔNG duyệt/chi "
+        "hộ được — việc đó người dùng tự làm trên màn chi tiết."
     ),
     parameters={
         "type": "object",

@@ -1,3 +1,4 @@
+import { appRoutes } from '@/shared/constants/app-routes'
 import type { ChatReply, UpdateProposal } from '../types/assistant'
 
 /** Loại phiếu trợ lý soạn nháp được — khớp bộ tool `draft_*` + `ticket_create` của backend. */
@@ -15,6 +16,48 @@ export interface FileOffer {
   conversationId: number
   filename: string
   downloadUrl: string
+}
+
+/** Route đích cho từng loại bản nháp — nút "Tạo ..." dưới câu trả lời dẫn vào đây. */
+export const DRAFT_ROUTES: Record<DraftTarget, string> = {
+  survey: appRoutes.procurement.surveyRequestNew,
+  purchase: appRoutes.procurement.purchaseRequestNew,
+  leave: appRoutes.document.documentNew,
+  payment: appRoutes.finance.paymentRequestNew,
+  ticket: appRoutes.support.root,
+}
+
+/**
+ * YCTT không truyền state: form tạo YCTT đọc `?payables=<ids>` rồi tự nạp lại các khoản
+ * dưới quyền người đang đăng nhập (CR-025) — backend kiểm lại phạm vi, an toàn hơn tin
+ * dữ liệu chat. Phiếu hỗ trợ truyền qua `state.assistantTicketDraft` (trang `/support`
+ * mở sẵn dialog tạo phiếu). Các loại còn lại truyền nguyên bản nháp qua
+ * `state.assistantDraft`.
+ */
+export function draftNavigation(draft: DraftOffer): {
+  to: string
+  state?: Record<string, unknown>
+} {
+  if (draft.target === 'payment') {
+    const ids = Array.isArray(draft.args.payable_ids)
+      ? draft.args.payable_ids.filter((v): v is number => typeof v === 'number')
+      : []
+    // CR-264 — tool chia sẵn phần cấn trừ tiền treo (FIFO): truyền tiếp qua
+    // `&offsets=id:tiền,...` cho form điền sẵn cột "Cấn trừ trả trước". Form tự kẹp
+    // lại theo nợ còn lại lúc mở nên số này chỉ là đề xuất, không phải nguồn sự thật.
+    const offsets =
+      draft.args.offsets != null && typeof draft.args.offsets === 'object'
+        ? Object.entries(draft.args.offsets as Record<string, unknown>)
+            .filter(([id, amount]) => Number(id) > 0 && typeof amount === 'number' && amount > 0)
+            .map(([id, amount]) => `${Number(id)}:${amount as number}`)
+        : []
+    const offsetsParam = offsets.length ? `&offsets=${offsets.join(',')}` : ''
+    return { to: `${DRAFT_ROUTES.payment}?payables=${ids.join(',')}${offsetsParam}` }
+  }
+  if (draft.target === 'ticket') {
+    return { to: DRAFT_ROUTES.ticket, state: { assistantTicketDraft: draft.args } }
+  }
+  return { to: DRAFT_ROUTES[draft.target], state: { assistantDraft: draft.args } }
 }
 
 const DRAFT_TARGETS: Record<string, DraftTarget> = {
