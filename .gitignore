@@ -27,6 +27,13 @@ doc/tai-lieu-ky-thuat/export/*.html
 backend/celerybeat-schedule*
 celerybeat-schedule*
 
+# Tinh chỉnh Docker RIÊNG của từng máy. `docker compose up` tự gộp tệp này đè lên
+# docker-compose.yml mà không cần cờ -f, nên nó là chỗ để hạ/nâng trần tài nguyên cho
+# hợp với máy mình mà không đụng vào cấu hình dùng chung của cả đội.
+# Trần dùng chung nằm ngay trong docker-compose.yml; cách dùng ở
+# doc/tai-lieu-ky-thuat/gioi-han-tai-nguyen-docker.md
+docker-compose.override.yml
+
 # Bản xuất dữ liệu để đồng bộ môi trường — sinh bằng
 # `scripts/export-van-thu-phe-duyet.sh`. KHÔNG đẩy lên git: tệp chứa dữ liệu
 # thật của một môi trường cụ thể, và nó cũ đi ngay khi ai đó sửa dữ liệu.

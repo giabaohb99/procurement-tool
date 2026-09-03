@@ -1,0 +1,41 @@
+# MẪU %USERPROFILE%\.wslconfig — CHẶN TÀI NGUYÊN DOCKER TRÊN WINDOWS
+#
+# Vì sao cần: Docker Desktop trên Windows chạy trong một máy ảo WSL2. Không có tệp này thì
+# WSL2 mặc định lấy 50% RAM và TOÀN BỘ số lõi CPU của máy. Chạy pytest hay build image là
+# Docker chiếm sạch lõi, Windows không còn lõi nào để vẽ giao diện — máy không "chậm" mà
+# ĐỨNG HÌNH, rồi trình quản lý cửa sổ tự tắt ứng dụng đang mở.
+#
+# Trần trong `docker-compose.yml` chỉ chặn được từng container. Tệp này chặn cả máy ảo,
+# và đây mới là thứ chống đơ máy.
+#
+# CÁCH DÙNG (mỗi máy làm một lần, KHÔNG commit — số liệu tùy cấu hình từng máy):
+#   1. Chép tệp này thành  %USERPROFILE%\.wslconfig
+#      (ví dụ: C:\Users\<tên>\.wslconfig — đúng thư mục người dùng, không phải thư mục repo)
+#   2. Sửa hai con số bên dưới cho khớp máy mình (xem bảng gợi ý)
+#   3. Chạy:  wsl --shutdown        <- TẮT HẾT container đang chạy, nhớ lưu việc trước
+#   4. Mở lại Docker Desktop, rồi:  docker compose up -d
+#   5. Kiểm:  docker info --format "{{.NCPU}} cpus / {{.MemTotal}} bytes"
+#
+# GỢI Ý THEO CẤU HÌNH MÁY — nguyên tắc: cho Docker khoảng 1/3 RAM và 1/3 số lõi.
+#   Máy 16 GB / 8 lõi   -> memory=6GB   processors=4   swap=2GB
+#   Máy 32 GB / 16 lõi  -> memory=10GB  processors=6   swap=4GB
+#   Máy 32 GB / 22 lõi  -> memory=10GB  processors=8   swap=4GB
+#   Máy 64 GB / 24 lõi  -> memory=16GB  processors=10  swap=4GB
+#
+# Xem đủ cả câu chuyện: doc/tai-lieu-ky-thuat/gioi-han-tai-nguyen-docker.md
+
+[wsl2]
+# Trần RAM cứng. Docker có ngốn kiểu gì cũng không vượt được số này.
+memory=10GB
+
+# Trần số lõi. Đây là dòng quan trọng nhất — hết RAM thì máy chậm, hết LÕI thì máy đứng.
+processors=8
+
+# Bộ nhớ ảo, để build nặng không bị giết ngang khi chạm trần RAM.
+swap=4GB
+
+# Trả RAM lại cho Windows sau khi container nhàn rỗi, thay vì giữ khư khư.
+autoMemoryReclaim=gradual
+
+# CỐ Ý KHÔNG đặt networkingMode=mirrored: nó hay làm hỏng ánh xạ cổng của Docker Desktop
+# (localhost:8000 / :8080 / :8083 không vào được nữa) và không giúp gì cho việc chặn tài nguyên.

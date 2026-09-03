@@ -7,6 +7,7 @@ Thư mục gom toàn bộ tài liệu mô tả kỹ thuật của hệ thống.
 | File | Loại | Mô tả |
 |---|---|---|
 | [quy-trinh-nhanh-va-deploy.md](quy-trinh-nhanh-va-deploy.md) | **Quy trình (BẮT BUỘC)** | **Luật nhánh `main` / `erp-v2` + cách build & deploy prod/dev. Đọc trước mỗi lần đụng `main` hoặc vào VPS.** |
+| [gioi-han-tai-nguyen-docker.md](gioi-han-tai-nguyen-docker.md) | **Môi trường (máy local)** | **Chặn Docker ăn hết CPU/RAM làm đơ máy: `.wslconfig` + trần từng container + luật chạy test cho trợ lý AI. Đọc khi máy đơ lúc chạy test, hoặc trước khi định gỡ `mem_limit`.** |
 | [technical-design.md](technical-design.md) | TDD (tổng quan) | Mục tiêu, phạm vi, kiến trúc, luồng nghiệp vụ, module, phân quyền — mức cao |
 | [thiet-ke-ky-thuat-chi-tiet.md](thiet-ke-ky-thuat-chi-tiet.md) | LLD (chi tiết) | Từ điển dữ liệu 39 bảng (cột + kiểu + liên kết) + RBAC chi tiết |
 | [so-do-ky-thuat.md](so-do-ky-thuat.md) | Sơ đồ | 9 sơ đồ chuẩn Mermaid: kiến trúc, use-case, luồng, state machine, ERD, sequence |

@@ -33,8 +33,18 @@ Repo có **hai nhánh chạy song song**: `main` = prod (backend + `frontend/` +
 
 Everything runs in Docker; there is no local venv/npm workflow.
 
+⚠️ **Máy đơ / tự thoát app khi chạy test hay build? Đọc `doc/tai-lieu-ky-thuat/gioi-han-tai-nguyen-docker.md`.**
+Stack local có **11 container**; `docker-compose.yml` đã đặt `mem_limit` + `cpus` cho từng cái —
+**không tự ý gỡ**. Trần đó chỉ chặn từng container; chặn cả máy ảo Docker phải đặt thêm
+`%USERPROFILE%\.wslconfig` (mẫu ở `docker/wslconfig.example`, mỗi máy tự chép, không commit).
+Bốn luật cho trợ lý AI: **chỉ chạy test của phần vừa sửa** (đừng quét cả `test/backend`) ·
+`restart` thay vì `up --build` khi không đổi `requirements.txt`/`package.json`/`Dockerfile.*` ·
+**không tự chạy `wsl --shutdown`** (giết mọi container) · máy yếu thì tạo
+`docker-compose.override.yml` riêng (đã gitignore) chứ đừng sửa tệp dùng chung.
+
 ```bash
 docker compose up --build           # start db + api + web + erp + help + adminer
+# Nhẹ máy: docker compose stop adminer redisinsight qdrant   (+ web help nếu chỉ làm erp)
 # Web (frontend/, đóng băng) http://localhost:8080
 # ERP v2 (frontend-v2/, đang phát triển) http://localhost:8083
 # Help Center http://localhost:8082

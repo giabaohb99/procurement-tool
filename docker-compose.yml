@@ -1,7 +1,32 @@
+# Stack LOCAL (máy lập trình viên). Dev/prod trên VPS dùng tệp riêng và luôn có cờ -f:
+#   dev  : docker compose --env-file .env.dev -f docker-compose.dev.yml up -d --build
+#   prod : docker compose --env-file .env -f docker-compose.production.yml up -d --build
+# Đã truyền -f thì compose KHÔNG nạp tệp này, nên sửa ở đây không ảnh hưởng VPS.
+#
+# ⚠ TRẦN TÀI NGUYÊN — đọc trước khi gỡ.
+# Mỗi service dưới đây có `mem_limit` + `cpus`. Đây KHÔNG phải trang trí: không đặt trần
+# thì stack 11 container ăn hết lõi CPU của máy, Windows không còn lõi để vẽ giao diện nên
+# đơ cứng và tự thoát ứng dụng — hay gặp nhất là lúc chạy pytest hoặc build lại image.
+# Trần là TRẦN chứ không phải phần đặt trước: container không dùng thì không chiếm.
+#
+# Trần trong tệp này chỉ chặn được TỪNG container. Muốn chặn cả máy ảo Docker thì phải đặt
+# thêm `%USERPROFILE%\.wslconfig` (Windows) — mẫu ở `docker/wslconfig.example`.
+# Giải thích đầy đủ: doc/tai-lieu-ky-thuat/gioi-han-tai-nguyen-docker.md
+#
+# Máy yếu hơn thì ĐỪNG sửa tệp này (nó dùng chung cả đội) — tạo `docker-compose.override.yml`
+# riêng, compose tự gộp, và tệp đó đã được .gitignore bỏ qua.
+
 services:
   db:
     image: mysql:8.0
-    command: --default-authentication-plugin=mysql_native_password
+    # innodb-buffer-pool-size: MySQL mặc định tự phình bộ đệm theo RAM nhìn thấy được.
+    # Bản local chỉ có dữ liệu mẫu nên 256M là thừa dùng.
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --innodb-buffer-pool-size=256M
+      --performance-schema=OFF
+    mem_limit: 1g
+    cpus: 2
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
       MYSQL_DATABASE: ${DB_NAME}
@@ -27,6 +52,8 @@ services:
 
   adminer:
     image: adminer:4
+    mem_limit: 256m
+    cpus: 0.5
     ports:
       - "8081:8080"
     environment:
@@ -39,17 +66,27 @@ services:
       context: .
       dockerfile: docker/Dockerfile.api
     env_file: .env
+    # Trần rộng hơn các service khác vì pytest chạy trong chính container này.
+    mem_limit: 2g
+    cpus: 3
     volumes:
       - ./backend:/app # mount code -> hot reload, không cần build lại
       - ./test:/app/test # mount test dir để pytest chạy trong container
     ports:
       - "8000:8000"
 
+  # Ba service Vite bên dưới (web / help / erp) là chỗ ngốn CPU nhất của stack, vì
+  # bind-mount trên Windows không phát sự kiện hệ tệp nên Vite phải dò lại theo chu kỳ
+  # (`usePolling` trong vite.config.ts). Tốn CPU cả khi không ai đụng vào máy.
+  # NODE_OPTIONS ghim đống nhớ của Node để nó không phình dần theo thời gian chạy.
   web:
     build:
       context: .
       dockerfile: docker/Dockerfile.web
+    mem_limit: 1500m
+    cpus: 1.5
     environment:
+      NODE_OPTIONS: "--max-old-space-size=1024"
       VITE_API_URL: ${VITE_API_URL}
       VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
       VITE_DEVELOPER_MODE: ${VITE_DEVELOPER_MODE}
@@ -67,7 +104,10 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.help
+    mem_limit: 1g
+    cpus: 1
     environment:
+      NODE_OPTIONS: "--max-old-space-size=768"
       VITE_API_URL: ${VITE_API_URL}
     volumes:
       - ./help-center:/app # mount code -> HMR
@@ -80,11 +120,15 @@ services:
   # Giao diện ERP v2 (thư mục frontend-v2/) — dùng chung backend api, chạy song song
   # với `web` để so sánh. Gọi API bằng đường tương đối rồi qua proxy của Vite, nên
   # VITE_API_PROXY_TARGET phải trỏ sang tên service `api` chứ không phải localhost.
+  # Trần cao nhất trong ba bản Vite vì cây mã v2 lớn nhất — đo thực tế ~1,8 GB lúc rảnh.
   erp:
     build:
       context: .
       dockerfile: docker/Dockerfile.erp
+    mem_limit: 3g
+    cpus: 2
     environment:
+      NODE_OPTIONS: "--max-old-space-size=2048"
       VITE_API_PROXY_TARGET: http://api:8000
       VITE_HELP_URL: ${VITE_HELP_URL:-http://localhost:8082}
     volumes:
@@ -100,12 +144,16 @@ services:
     image: redis:7.2-alpine
     restart: unless-stopped
     command: redis-server --save 60 1
+    mem_limit: 384m
+    cpus: 0.5
 
   # Kho vector cho tìm kiếm loại B (HDSD + FAQ) của Trợ lý AI.
   # Cổng 6333 mở ra localhost để soi bằng dashboard http://localhost:6333/dashboard (chỉ dev).
   qdrant:
     image: qdrant/qdrant:latest
     restart: unless-stopped
+    mem_limit: 1g
+    cpus: 1
     ports:
       - "6333:6333"
     volumes:
@@ -115,6 +163,8 @@ services:
   redisinsight:
     image: redis/redisinsight:latest
     restart: unless-stopped
+    mem_limit: 384m
+    cpus: 0.5
     ports:
       - "5540:5540"
     depends_on:
@@ -127,9 +177,12 @@ services:
       context: .
       dockerfile: docker/Dockerfile.api
     env_file: .env
+    mem_limit: 1g
+    cpus: 1
     volumes:
       - ./backend:/app # mount code -> hot reload tasks (restart worker khi sửa)
-    command: celery -A app.core.celery_app worker -l info -c 2
+    # -c 1: local chỉ cần một tiến trình con. VPS để -c 2 trong docker-compose.dev.yml.
+    command: celery -A app.core.celery_app worker -l info -c 1
     depends_on:
       - redis
       - api # api start.sh chạy migrate/seed trước
@@ -139,6 +192,8 @@ services:
       context: .
       dockerfile: docker/Dockerfile.api
     env_file: .env
+    mem_limit: 384m
+    cpus: 0.5
     volumes:
       - ./backend:/app
     command: celery -A app.core.celery_app beat -l info --scheduler celery.beat:PersistentScheduler
