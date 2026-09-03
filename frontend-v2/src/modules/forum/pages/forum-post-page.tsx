@@ -18,16 +18,19 @@ export function ForumPostPage() {
   const { id } = useParams()
   const postId = Number(id)
   const post = useForumPost(postId)
+  // Thread trong box (F13b): breadcrumb dẫn VỀ BOX thay vì Bảng tin — tiêu đề
+  // + chip prefix của thread do chính PostCard vẽ nên trang này chỉ lo đường về.
+  const boardId = post.data?.board_id ?? 0
 
   return (
     <div className="pt-3">
       <div className="mb-2 px-4 sm:px-0">
         <Link
-          to={appRoutes.forum.root}
+          to={boardId > 0 ? appRoutes.forum.boardDetail(boardId) : appRoutes.forum.feed}
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="size-4" />
-          Bảng tin
+          {boardId > 0 ? post.data?.board_name || 'Diễn đàn' : 'Bảng tin'}
         </Link>
       </div>
 
@@ -54,7 +57,7 @@ export function ForumPostPage() {
             Bài viết không tồn tại hoặc bạn không thuộc đối tượng xem của bài.
           </p>
           <Button asChild variant="outline">
-            <Link to={appRoutes.forum.root}>Về bảng tin</Link>
+            <Link to={appRoutes.forum.feed}>Về bảng tin</Link>
           </Button>
         </div>
       )}

@@ -139,6 +139,9 @@ SCOPE_FIELDS = {
     # viết thẳng trong WHERE của API feed. Entity này chỉ gác cổng kiểm duyệt
     # của `forum_admin` bằng require(), nên khai PUBLIC.
     "forum_post":       PUBLIC,
+    # F13a: cùng lý do — box đợt đầu toàn PUBLIC (QĐ-D7a), ai thấy gì do luật
+    # audience của API diễn đàn, entity chỉ gác CRUD cấu trúc của `forum_admin`.
+    "forum_board":      PUBLIC,
     # Công việc (CR-216): phạm vi thật là "theo TƯ CÁCH THÀNH VIÊN của list",
     # không diễn đạt được bằng cột phòng ban/pháp nhân của khuôn `apply_scope`.
     # Khai PUBLIC ở đây là CÓ CHỦ Ý, kèm một nghĩa vụ bắt buộc:

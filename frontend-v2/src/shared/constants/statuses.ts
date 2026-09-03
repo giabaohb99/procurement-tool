@@ -58,6 +58,16 @@ export const EMPLOYEE_STATUS: readonly StatusOption[] = [
   {"value": "resigned", "label": "Nghỉ việc", "sort_order": 0, "is_terminal": false, "is_exception": false},
 ]
 
+/** Prefix chủ đề diễn đàn */
+export const FORUM_PREFIX: readonly StatusOption[] = [
+  {"value": "0", "label": "Không prefix", "sort_order": 0, "is_terminal": false, "is_exception": false},
+  {"value": "1", "label": "Thảo luận", "sort_order": 0, "is_terminal": false, "is_exception": false},
+  {"value": "2", "label": "Thắc mắc", "sort_order": 0, "is_terminal": false, "is_exception": false},
+  {"value": "3", "label": "Kiến thức", "sort_order": 0, "is_terminal": false, "is_exception": false},
+  {"value": "4", "label": "Khoe", "sort_order": 0, "is_terminal": false, "is_exception": false},
+  {"value": "5", "label": "Đánh giá", "sort_order": 0, "is_terminal": false, "is_exception": false},
+]
+
 /** Buổi nghỉ */
 export const LEAVE_SESSION: readonly StatusOption[] = [
   {"value": "full", "label": "Cả ngày", "sort_order": 0, "is_terminal": false, "is_exception": false},
@@ -149,6 +159,7 @@ export const STATUS_SETS = {
   contract_status: CONTRACT_STATUS,
   contract_type: CONTRACT_TYPE,
   employee_status: EMPLOYEE_STATUS,
+  forum_prefix: FORUM_PREFIX,
   leave_session: LEAVE_SESSION,
   leave_type: LEAVE_TYPE,
   payable_status: PAYABLE_STATUS,

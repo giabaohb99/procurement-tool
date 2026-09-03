@@ -1,9 +1,18 @@
 import { EditorContent, useEditor, useEditorState, type Editor } from '@tiptap/react'
-import { useEffect, useRef } from 'react'
+import { useEffect, useImperativeHandle, useRef } from 'react'
 
 import { cn } from '@/shared/utils/cn'
 import { contentExtensions } from './content-extensions'
 import { RichTextFieldToolbar } from './rich-text-field-toolbar'
+
+/**
+ * Cần chọc vào trình soạn thảo từ ngoài (nút emoji của diễn đàn chèn chữ vào
+ * đúng chỗ con trỏ — CR-261) thì đi qua handle này, KHÔNG lộ cả `Editor` ra —
+ * lộ editor là mời gọi code ngoài gọi thẳng API tiptap rồi khó đổi ruột.
+ */
+export interface RichTextFieldHandle {
+  insertText: (text: string) => void
+}
 
 interface RichTextFieldProps {
   /**
@@ -23,6 +32,8 @@ interface RichTextFieldProps {
   toolbarPosition?: 'top' | 'bottom'
   /** Đặt con trỏ vào CUỐI nội dung ngay khi dựng — cho ô chỉ hiện lúc bấm sửa. */
   autoFocus?: boolean
+  /** Nhận `RichTextFieldHandle` để chèn chữ từ ngoài (xem chú thích ở interface). */
+  handleRef?: React.Ref<RichTextFieldHandle>
   className?: string
 }
 
@@ -54,6 +65,7 @@ export function RichTextField({
   placeholder,
   toolbarPosition = 'top',
   autoFocus = false,
+  handleRef,
   className,
 }: RichTextFieldProps) {
   //  `onUpdate` của Tiptap đóng băng closure từ lần dựng đầu — giữ hàm mới nhất
@@ -76,6 +88,19 @@ export function RichTextField({
       attributes: { class: 'doc-rich-field' },
     },
   })
+
+  //  Phải đứng TRƯỚC `return null` — hook không được nằm sau một lối ra sớm.
+  //  `focus()` trước khi chèn: bấm nút ngoài làm editor mất focus, không kéo
+  //  lại thì chữ rơi vào vị trí con trỏ đã chết.
+  useImperativeHandle(
+    handleRef,
+    () => ({
+      insertText: (text: string) => {
+        editor?.chain().focus().insertContent(text).run()
+      },
+    }),
+    [editor],
+  )
 
   if (!editor) return null
 

@@ -32,6 +32,9 @@ ENTITIES = [
     # bài người khác, QĐ-D1). Người dùng thường KHÔNG cần grant: đăng/đọc đi
     # theo luật audience riêng trong API diễn đàn, giống comment CR-033.
     "forum_post",
+    # F13a: cấu trúc chuyên mục (nhóm/box kiểu VOZ) — cũng chỉ của `forum_admin`.
+    # Tách khỏi `forum_post` để "quyền dựng box" gán được riêng với "quyền ẩn bài".
+    "forum_board",
     # Phân hệ Công việc (CR-216) — MỘT khóa cho cả phân hệ, cố ý không tách
     # `work_list` riêng: mọi quyền thật nằm ở tầng THÀNH VIÊN (bảng
     # `tab_work_list_member`), tách hai khóa chỉ đẻ thêm ô ma trận không ai hiểu.
@@ -94,6 +97,7 @@ ENTITY_LABELS = {
     "approval_flow": "Luồng phê duyệt (dùng chung)",
     "assistant": "Trợ lý AI",
     "forum_post": "Diễn đàn › Kiểm duyệt bài viết",
+    "forum_board": "Diễn đàn › Quản trị chuyên mục (box)",
     "work_task": "Công việc (task list, kanban)",
 }
 

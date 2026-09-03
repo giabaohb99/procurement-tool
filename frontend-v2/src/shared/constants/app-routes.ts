@@ -121,13 +121,24 @@ export const appRoutes = {
    * KHÔNG dùng sidebar nghiệp vụ. `/forum/me` và `/forum/users/:id` là F3.
    */
   forum: {
+    /** `/forum` chuyển hướng về `boards` — sếp chốt 03/09: Diễn đàn là tab mặc định. */
     root: '/forum',
+    /** Tab «Bảng tin» — feed kiểu Facebook, dời khỏi gốc khi Diễn đàn thành mặc định. */
+    feed: '/forum/feed',
+    /** Tab «Diễn đàn» (F13b/QĐ-D7) — cây nhóm → box chuyên mục kiểu VOZ. */
+    boards: '/forum/boards',
+    /** Danh sách thread của một box. */
+    boardDetail: (id: number | string) => `/forum/boards/${id}`,
     /** Tab «Thông báo» (F9a/CR-199) — mọi bài đang được quản trị viên ghim. */
     announcements: '/forum/announcements',
     postDetail: (id: number | string) => `/forum/posts/${id}`,
     /** Trang cá nhân của CHÍNH MÌNH (QĐ-D3) — thấy cả bài bị ẩn của mình. */
     me: '/forum/me',
     userProfile: (id: number | string) => `/forum/users/${id}`,
+    /** Tìm bài viết (CR-263) — mở cho MỌI người, kết quả tự lọc theo audience. */
+    search: '/forum/search',
+    /** Tab «Quản trị» (CR-263) — chỉ tài khoản có grant `forum_post`/`forum_board`. */
+    admin: '/forum/admin',
   },
   /**
    * Phân hệ DỰ ÁN (CR-216) — task list kiểu Lark Tasks.

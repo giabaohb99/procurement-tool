@@ -74,6 +74,11 @@ export const ENTITIES = [
   //  Phân hệ Công việc (CR-216). MỘT khóa cho cả phân hệ — quyền thật nằm ở
   //  tầng thành viên của từng list, xem `doc/erp/cong-viec/04-phan-quyen.md`.
   'work_task',
+  //  Diễn đàn (CR-263): hai khóa CHỈ của vai trò `forum_admin` — kiểm duyệt bài
+  //  và dựng chuyên mục. Người thường không có grant nào: đọc/đăng đi theo luật
+  //  audience riêng trong API diễn đàn. FE chỉ dùng để hiện tab «Quản trị».
+  'forum_post',
+  'forum_board',
   //  Phân hệ Đặt xe nội bộ (DEGO Booking Auto). Ba khóa khớp backend
   //  `core/permissions.py`: phiếu đặt xe + hai danh mục Xe/Tài xế.
   'vehicle_booking',

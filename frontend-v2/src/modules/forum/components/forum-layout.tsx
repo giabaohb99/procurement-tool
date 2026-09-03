@@ -1,8 +1,9 @@
-import { LayoutGrid, MessagesSquare } from 'lucide-react'
-import { NavLink, Outlet } from 'react-router-dom'
+import { LayoutGrid, MessagesSquare, Search } from 'lucide-react'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 
 import { DemoAccountSwitcher } from '@/app/layouts/demo-account-switcher'
 import { UserMenu } from '@/app/layouts/user-menu'
+import { usePermission } from '@/core/authorization/use-permission'
 import { NotificationBell } from '@/shared/notifications/notification-bell'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
@@ -15,6 +16,15 @@ import { cn } from '@/shared/utils/cn'
  * chỗ cho «Hướng dẫn» (QĐ-D4, vào ở F7).
  */
 export function ForumLayout() {
+  //  F13c: RIÊNG màn «Diễn đàn» nới khung cho cột nội dung + sidebar 300px;
+  //  các màn còn lại giữ một cột 672px kiểu bảng tin.
+  const { pathname } = useLocation()
+  const { can } = usePermission()
+  //  Tab «Quản trị» (CR-263) chỉ cho người có grant diễn đàn — `can()` là tiện
+  //  ẩn/hiện thôi, chốt chặn thật là `require()` trên từng API.
+  const isForumAdmin = can('forum_post', 'write') || can('forum_board', 'write')
+  const wide =
+    pathname === appRoutes.forum.boards || pathname === appRoutes.forum.admin
   return (
     <div className="flex min-h-svh flex-col bg-muted/40">
       {/*  Header trải HẾT bề ngang (không bó max-w-2xl như cột feed) — bó chung
@@ -38,13 +48,33 @@ export function ForumLayout() {
             <span className="hidden md:inline">Diễn đàn</span>
           </span>
 
-          <nav className="ml-1 flex h-full shrink-0 items-stretch gap-1 sm:ml-3">
-            <ForumTab to={appRoutes.forum.root} label="Bảng tin" />
+          {/*  4 tab không còn lọt màn 375px — cho dải tab cuộn ngang (giấu thanh
+              cuộn) thay vì cắt cụt «Trang của tôi» và đẩy chuông/avatar ra ngoài. */}
+          <nav className="ml-1 flex h-full min-w-0 items-stretch gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:ml-3">
+            {/* «Diễn đàn» đứng đầu + là màn mặc định (sếp chốt 03/09/2026);
+                sáng cả ở /forum/boards/:id nên KHÔNG end. */}
+            <ForumTab to={appRoutes.forum.boards} label="Diễn đàn" end={false} />
+            <ForumTab to={appRoutes.forum.feed} label="Bảng tin" />
             <ForumTab to={appRoutes.forum.announcements} label="Thông báo" />
             <ForumTab to={appRoutes.forum.me} label="Trang của tôi" />
+            {isForumAdmin ? (
+              <ForumTab to={appRoutes.forum.admin} label="Quản trị" />
+            ) : null}
           </nav>
 
           <div className="ml-auto flex min-w-0 shrink items-center gap-1">
+            {/*  Tìm kiếm (CR-263) — nút icon thay vì tab thứ 5 cho đỡ chật màn hẹp. */}
+            <Button
+              asChild
+              variant="ghost"
+              size="icon"
+              className="shrink-0 text-muted-foreground hover:text-foreground"
+            >
+              <NavLink to={appRoutes.forum.search} title="Tìm bài viết">
+                <Search className="size-5" />
+                <span className="sr-only">Tìm bài viết</span>
+              </NavLink>
+            </Button>
             <NotificationBell />
             {/*  Chỉ hiện ở bản DEV — tự trả về null khi build thật. */}
             <DemoAccountSwitcher />
@@ -53,7 +83,12 @@ export function ForumLayout() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-2xl flex-1 pb-10 sm:px-4">
+      <main
+        className={cn(
+          'mx-auto w-full flex-1 pb-10 sm:px-4',
+          wide ? 'max-w-5xl' : 'max-w-2xl',
+        )}
+      >
         <Outlet />
       </main>
     </div>
@@ -61,11 +96,11 @@ export function ForumLayout() {
 }
 
 /** Tab kiểu gạch chân dưới đáy thanh trên — khuôn cho «Hướng dẫn» sau này. */
-function ForumTab({ to, label }: { to: string; label: string }) {
+function ForumTab({ to, label, end = true }: { to: string; label: string; end?: boolean }) {
   return (
     <NavLink
       to={to}
-      end
+      end={end}
       // Đang giữa trang mà bấm tab (kể cả tab đang mở) thì về đầu trang —
       // SPA đổi route không tự cuộn, người dùng tưởng bấm không ăn.
       onClick={() => window.scrollTo({ top: 0 })}

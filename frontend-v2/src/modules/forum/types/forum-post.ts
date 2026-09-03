@@ -59,6 +59,16 @@ export const FORUM_POST_KIND = {
 } as const
 
 /**
+ * Định dạng nội dung bài (CR-261) — khớp IntEnum `ForumBodyFormat` backend.
+ * `richHtml` = body là HTML đã qua sanitize server; FE chọn đường vẽ theo cột
+ * này, KHÔNG đoán bằng cách ngửi chuỗi. Bài cũ + bình luận luôn `plain`.
+ */
+export const FORUM_BODY_FORMAT = {
+  plain: 0,
+  richHtml: 1,
+} as const
+
+/**
  * Trạng thái bài — khớp IntEnum `ForumPostStatus` (F5). API chỉ trả về bài
  * `published`/`hidden` (bài ẩn chỉ tác giả + quản trị viên còn thấy);
  * `removed` không bao giờ ra tới FE.
@@ -87,6 +97,8 @@ export interface ForumImage {
 export interface ForumPost {
   id: number
   body: string
+  /** Giá trị của `FORUM_BODY_FORMAT` — 1 thì `body` là HTML đã lọc (CR-261). */
+  body_format: number
   status: number
   audience: ForumAudience
   kind: number
@@ -98,6 +110,21 @@ export interface ForumPost {
   author_code: string
   author_avatar: string
   created_at: string
+  /**
+   * Thread trong box (F13a/QĐ-D7) — `board_id > 0` thì `title` bắt buộc và
+   * `board_name` để thẻ bài trên feed dẫn "đăng trong box X"; bài Bảng tin
+   * thuần cả bốn trường đều rỗng/0.
+   */
+  board_id: number
+  title: string
+  /** Giá trị của bộ mã `FORUM_PREFIX` (statuses.ts) — 0 = không prefix. */
+  prefix: number
+  board_name: string
+  /**
+   * Hoạt động cuối = max(lúc đăng, bình luận cuối) — CHỈ có trong phong bì
+   * thread list của box; feed/chi tiết không trả trường này.
+   */
+  last_activity_at?: string
   /** Mốc ghim (F9a/CR-199) — khác null = bài đang trên dải Thông báo. */
   pinned_at: string | null
   can_delete: boolean
@@ -123,6 +150,35 @@ export interface ForumFeedPage {
   has_more: boolean
 }
 
+/** Bộ lọc gửi lên `GET /api/forum/posts/search` (CR-263) — mọi trường tùy chọn. */
+export interface ForumSearchParams {
+  /** Từ khóa — khớp LIKE trên nội dung + tiêu đề thread. */
+  q?: string
+  /** Chữ gõ tay khớp tên nhân sự / mã NV / email của NGƯỜI TẠO. */
+  author_q?: string
+  /** Ngữ cảnh ĐÓNG BĂNG trên bài lúc đăng, không phải phòng/công ty hiện tại. */
+  company_id?: number
+  dept_id?: number
+  /** Chỉ quản trị dùng được (1 = đang hiện, 2 = đang ẩn) — người thường bị bỏ qua. */
+  status?: number
+  page?: number
+}
+
+/** Một trang kết quả tìm kiếm — phân trang số trang như thread list. */
+export interface ForumSearchPage {
+  items: ForumPost[]
+  total: number
+  page: number
+  per_page: number
+  has_more: boolean
+}
+
+/** Tùy chọn hai ô lọc của màn tìm kiếm — distinct từ chính bảng bài viết. */
+export interface ForumSearchFilters {
+  companies: { id: number; name: string }[]
+  departments: { id: number; name: string }[]
+}
+
 /** Một người đã bày tỏ cảm xúc — kết quả `GET /api/forum/posts/{id}/likes`. */
 export interface ForumPostLiker {
   user_id: number
@@ -145,8 +201,15 @@ export interface ForumUploadedFile {
 /** Thân bài đăng lên `POST /api/forum/posts` (hợp đồng API F1). */
 export interface NewForumPost {
   body: string
+  /** Gửi `FORUM_BODY_FORMAT.richHtml` khi `body` là HTML từ RichTextField (CR-261). */
+  body_format?: number
   audience: ForumAudience
   file_ids: number[]
   /** Bỏ trống = bài thường; bài sự kiện (F10) truyền giá trị của `FORUM_POST_KIND`. */
   kind?: number
+  /** Đăng thread vào box (F13a) — có `board_id` thì `title` bắt buộc,
+   * `audience` bị backend ép theo box nên gửi gì cũng được. */
+  board_id?: number
+  title?: string
+  prefix?: number
 }

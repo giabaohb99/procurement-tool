@@ -19,6 +19,8 @@ export interface MentionInputHandle {
    * đặt cạnh ô soạn. Người dùng chuột thuần không đoán được là phải GÕ `@`.
    */
   insertMentionTrigger: () => void
+  /** Chèn chữ (emoji…) tại con trỏ — cùng đường `insertText` với dán chữ thuần. */
+  insertText: (text: string) => void
 }
 
 interface MentionInputProps {
@@ -79,6 +81,15 @@ export const MentionInput = forwardRef<MentionInputHandle, MentionInputProps>(fu
       document.execCommand('insertText', false, '@')
       refreshEmpty()
       scan(box)
+    },
+    insertText: (text: string) => {
+      const box = boxRef.current
+      if (!box) return
+      // focus lại trước: trình duyệt khôi phục con trỏ cũ trong contenteditable,
+      // ô chưa từng focus thì chèn vào đầu — chấp nhận được cho nút emoji.
+      box.focus()
+      document.execCommand('insertText', false, text)
+      refreshEmpty()
     },
   }))
 

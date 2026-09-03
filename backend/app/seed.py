@@ -201,7 +201,8 @@ _ALL_ACTIONS = ["read", "create", "write", "delete", "approve", "cancel", "print
 # trong tập này.
 # `forum_post` cũng ở đây (27/08/2026): kiểm duyệt bài diễn đàn là việc của vai
 # trò `forum_admin`, không phải của nghiệp vụ thu mua — cùng lý do với help_article.
-_SYS_ENTITIES = {"user", "role", "setting", "backup", "help_article", "mailbox", "forum_post"}
+_SYS_ENTITIES = {"user", "role", "setting", "backup", "help_article", "mailbox",
+                 "forum_post", "forum_board"}
 _PUR_MANAGER_PERMS = {e: (_ALL_ACTIONS, "all") for e in ENTITIES if e not in _SYS_ENTITIES}
 
 STD_ROLES = {
@@ -285,6 +286,8 @@ STD_ROLES = {
     # KHÔNG cần vai trò nào: đăng/đọc bài đi theo luật audience của API diễn đàn.
     "forum_admin": {"name": "Quản trị Diễn đàn", "perms": {
         "forum_post": (["read", "write", "delete"], "all"),
+        # F13a: dựng/sửa/ẩn/xóa nhóm-box chuyên mục kiểu VOZ (QĐ-D7)
+        "forum_board": (["read", "create", "write", "delete"], "all"),
     }},
     # ── Hai vai trò MẪU cho phân hệ Văn bản (24/08/2026) ─────────────────────
     #

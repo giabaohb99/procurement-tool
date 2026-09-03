@@ -67,7 +67,7 @@ def test_khong_khai_thua_entity_khong_ton_tai():
     assert excess == [], f"khai thừa, không có trong ENTITIES: {excess}"
 
 
-def test_du_46_entity():
+def test_du_47_entity():
     """Chốt cứng con số để lần sau đọc test là biết ngay quy mô.
 
     39 → 42 ngày 25/08/2026 (CR-157): tách `doc_template`, `doc_numbering_rule`,
@@ -84,9 +84,12 @@ def test_du_46_entity():
     THÀNH VIÊN của list", không diễn đạt được bằng cột của `apply_scope` — đổi
     lại mọi query trong `app/modules/work/` phải tự lọc qua `visible_list_ids`
     (`doc/erp/cong-viec/04-phan-quyen.md` §2).
+    46 → 47 ngày 03/09/2026: thêm `forum_board` (chuyên mục kiểu VOZ, F13a) —
+    PUBLIC cùng lý do với `forum_post`: entity chỉ gác CRUD cấu trúc nhóm/box
+    của `forum_admin`, ai thấy gì do luật audience của API diễn đàn.
     """
-    assert len(ENTITIES) == 46
-    assert len(SCOPE_FIELDS) == 46
+    assert len(ENTITIES) == 47
+    assert len(SCOPE_FIELDS) == 47
 
 
 # ── 2. Không dựng nổi điều kiện thì chặn ────────────────────────────────────────

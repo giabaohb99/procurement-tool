@@ -42,7 +42,7 @@ Không có "sửa ảnh bìa", không có "trạng thái tâm trạng" — trang
 
 **Ô mồi trên đầu feed** — một dòng "Chia sẻ điều gì đó với mọi người…" kèm avatar. Bấm vào mở **hộp thoại đăng bài**:
 
-1. **Nội dung**: ô chữ thuần, giữ nguyên xuống dòng, tối đa 10.000 ký tự. Link `http(s)://` tự thành bấm được khi hiển thị. **Đợt 1 không có rich text** (đậm nghiêng, tiêu đề) — bài Facebook cũng là chữ thuần; cần trình bày đẹp là việc của bài Hướng dẫn bên Help Center. Tiptap đã có sẵn trong stack nếu đợt sau muốn nâng.
+1. **Nội dung**: ô **rich text** (CR-261, khách chốt 03/09/2026 — đảo quyết định "đợt 1 chữ thuần" bên dưới): in đậm/nghiêng/gạch, danh sách dấu chấm + đánh số, trích dẫn, canh lề — dùng `RichTextField` (bộ mở rộng tiptap CHUNG với văn thư), áp cho **cả Bảng tin lẫn chủ đề trong box** vì bài Facebook thực tế cũng có đậm nhạt, đánh số. Body lưu HTML kèm cột `body_format` (0 = chữ thuần bài cũ, 1 = HTML), server lọc `sanitize_html` của Help Center ngay cửa ghi, FE lọc lại DOMPurify khi vẽ. Trần **40.000 ký tự tính cả markup** (xấp xỉ 10.000 chữ nhìn thấy của trần cũ). Bài cũ chữ thuần giữ nguyên đường hiển thị (xuống dòng + tự nhận link); **bình luận vẫn chữ thuần + emoji**.
 2. **Ảnh**: bấm nút ảnh / kéo thả / dán từ clipboard — dùng lại nguyên khuôn "tải trước, gắn sau" của đính kèm bình luận: ảnh lên R2 ngay khi chọn và nhận `file_id`, bấm Đăng mới gắn vào bài, bỏ dở thì không treo rác. Tối đa **10 ảnh/bài, 10MB mỗi ảnh** (ảnh điện thoại đời mới 3–8MB, trần 5MB của các entity ảnh hiện tại là không đủ). Chỉ nhận đuôi ảnh (`jpg/jpeg/png/webp`) — bài viết không đính PDF/Excel; hồ sơ tài liệu là việc của hệ nghiệp vụ.
 3. **Chọn đối tượng xem** — nút xổ ngay cạnh nút Đăng, 3 mức theo QĐ-D3: **Phòng ban của tôi** · **Công ty của tôi** · **Toàn tập đoàn**. Mặc định là lựa chọn **lần đăng trước** (nhớ ở máy); lần đầu tiên mặc định "Công ty của tôi". Phòng ban/công ty lấy theo hồ sơ nhân sự của người đăng **tại thời điểm đăng** và đóng băng vào bài — người chuyển phòng thì bài cũ vẫn thuộc phòng cũ, đúng ngữ cảnh lúc viết.
 4. Bấm **Đăng** → bài hiện ngay đầu feed, không qua duyệt (QĐ-D1).
@@ -129,7 +129,7 @@ Bảng `tab_forum_reaction` (`post_id` + `user_id`, unique) — chép nguyên kh
 | Comment chỉ nạp khi mở bài, feed chỉ hiện số | Feed 20 bài mà kéo comment cả 20 là tự bóp mình |
 | Bài chỉ nhận ảnh, không nhận PDF/Excel | Diễn đàn là chỗ đọc; hồ sơ tài liệu là việc của hệ nghiệp vụ và Help Center |
 | Ảnh 10MB/tấm, 10 tấm/bài | Ảnh điện thoại 3–8MB; trần 5MB của entity ảnh hiện tại không đủ |
-| Chữ thuần + tự nhận link, chưa rich text | Bài Facebook cũng chữ thuần; rich text để Help Center lo, tiptap sẵn trong stack nếu cần sau |
+| ~~Chữ thuần + tự nhận link, chưa rich text~~ **ĐẢO 03/09/2026 (CR-261): bài viết là rich text** | Khách chỉ thực tế: bài Facebook cũng có đậm nhạt, đánh số → dùng `RichTextField` chung với văn thư, một bộ sanitize (Help Center) + `body_format` phân đường vẽ; bình luận vẫn chữ thuần |
 | Like không sinh chuông (đợt 1) | Cùng lý do CR-030; muốn có thì làm chuông gộp, ghi D-Q6 |
 | Trang cá nhân = tủ bài viết, không sửa hồ sơ | Hồ sơ là của phân hệ Nhân sự; diễn đàn chỉ hiển thị |
 
@@ -139,3 +139,5 @@ Bảng `tab_forum_reaction` (`post_id` + `user_id`, unique) — chép nguyên kh
 |---|---|
 | 26/08/2026 | Lập tài liệu theo yêu cầu: giao diện, trang cá nhân, luồng đăng bài, logic feed và comment khi dữ liệu lớn |
 | 27/08/2026 | Sửa mục 1 theo **QĐ-D6**: phân hệ trong ERP v2 thay vì app riêng — route dời xuống gốc `/forum`, chuông dùng chuông ERP, thêm yêu cầu responsive cho các màn `/forum/*`. Bố cục một cột + tab giữ nguyên |
+| 03/09/2026 | **CR-261**: đảo quyết định chữ thuần — nội dung bài viết (cả Bảng tin lẫn chủ đề trong box) thành **rich text** dùng `RichTextField` chung với văn thư; sửa mục 3 item 1 + bảng quyết định mục 7. Bình luận vẫn chữ thuần + emoji. Chi tiết kỹ thuật ở nhật ký `02` |
+| 03/09/2026 | **CR-263**: thêm hai màn ngoài khung mục 1 — tab **«Quản trị»** `/forum/admin` (chỉ hiện với người có grant `forum_post`/`forum_board`: dựng cây nhóm-box, bỏ ghim tại chỗ, nhật ký kiểm duyệt) và **«Tìm bài viết»** `/forum/search` (nút kính lúp cạnh chuông, MỞ CHO MỌI NGƯỜI — kết quả ép qua luật audience mục 4.2 ngay trong SQL, riêng admin lọc thêm được trạng thái ẩn/hiện). KHÔNG làm quản lý comment (khách chốt: có quyền thì vào bài xóa). Chi tiết kỹ thuật + hợp đồng API ở nhật ký `02` |

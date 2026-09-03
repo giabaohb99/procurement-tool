@@ -46,7 +46,7 @@ export function ForumProfilePage() {
         <MessagesSquare className="size-10 text-muted-foreground opacity-40" aria-hidden />
         <p className="text-sm text-muted-foreground">Không tìm thấy người dùng này.</p>
         <Button asChild variant="outline">
-          <Link to={appRoutes.forum.root}>Về bảng tin</Link>
+          <Link to={appRoutes.forum.feed}>Về bảng tin</Link>
         </Button>
       </div>
     )
@@ -69,7 +69,7 @@ export function ForumProfilePage() {
     <div className="space-y-3 pt-3">
       <div className="px-4 sm:px-0">
         <Link
-          to={appRoutes.forum.root}
+          to={appRoutes.forum.feed}
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="size-4" />

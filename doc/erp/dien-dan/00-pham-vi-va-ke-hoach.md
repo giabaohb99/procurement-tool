@@ -8,7 +8,7 @@ Bộ tài liệu ba tệp: **`00`** (tệp này) — phạm vi, quyết định,
 
 ---
 
-## 1. Các quyết định đã chốt (QĐ-D1..D5 ngày 26/08, QĐ-D6 ngày 27/08/2026)
+## 1. Các quyết định đã chốt (QĐ-D1..D5 ngày 26/08, QĐ-D6 ngày 27/08, QĐ-D7 ngày 03/09/2026)
 
 | # | Quyết định | Hệ quả thiết kế |
 |---|---|---|
@@ -17,6 +17,7 @@ Bộ tài liệu ba tệp: **`00`** (tệp này) — phạm vi, quyết định,
 | QĐ-D3 | **Trang cá nhân chỉ hiện bài của chính mình.** Feed chung hiện nhiều bài. **Mỗi bài viết có cấu hình đối tượng xem: phòng ban của mình / công ty (pháp nhân) / public toàn tập đoàn** | Cột `audience` trên bài viết + lọc feed theo phòng ban/pháp nhân của người xem. Khớp khái niệm "đơn vị" của thiết kế đa pháp nhân erp-v2. KHÔNG cần cơ chế follow ở bản đầu |
 | QĐ-D4 | **Help Center sau này là một TAB trong diễn đàn** | FE diễn đàn dựng dạng nhiều tab ngay từ đầu (Bảng tin · Hướng dẫn · ...). Trước mắt Help Center giữ nguyên app riêng; khi gộp thì tab Hướng dẫn đọc cùng API `help_article` sẵn có, domain help cũ redirect về |
 | QĐ-D5 | **Làm từ từ, song song việc khác** — không mốc ép | Chia đợt nhỏ, mỗi đợt tự chạy được. Không cam kết thời gian, chỉ cam kết thứ tự |
+| QĐ-D7 | **Thêm tab «Diễn đàn» kiểu chuyên mục (khuôn VOZ/XenForo) cạnh Bảng tin** *(03/09/2026)*: nhóm chuyên mục → box → thread có tiêu đề + prefix, sống chung với feed Facebook hiện tại. Là **lớp phân loại đè lên nền bài viết sẵn có**, KHÔNG xây forum engine riêng. Ba lựa chọn kèm theo (chốt theo đề xuất, đổi thì mở CR): **(a)** bài trong box KHÔNG tự chọn đối tượng xem — ai xem đi theo audience của BOX (đợt đầu mọi box đều public toàn tập đoàn; đây là ngoại lệ có chủ ý của QĐ-D3, bài Bảng tin giữ luật cũ) · **(b)** bài trong box VẪN đổ ra Bảng tin — Bảng tin là "mọi bài mình thấy được", box chỉ là cách tổ chức · **(c)** comment giữ mô hình 2 cấp CR-033, chỉ trình bày khác trong màn thread | Bảng `tab_forum_board` + 3 cột mới trên `tab_forum_post` (`board_id`, `title`, `prefix`); 3 màn FE mới; KHÔNG cần rank thành viên / chữ ký / BBCode của VOZ. Chi tiết ở `02` phase F13 |
 | QĐ-D6 | **Diễn đàn là MỘT PHÂN HỆ trong ERP v2, KHÔNG làm app riêng** *(27/08/2026 — đảo phương án app riêng của bản 26/08)*. Nguyên tắc kèm theo: hệ nội bộ gom hết về một ERP; **chỉ tách app khi có người NGOÀI công ty dùng** (đồng bộ sản phẩm cho đối tác, đơn gia công cho NCC...) | FE = module trong `frontend-v2` (route `/forum`, layout riêng một cột, lazy-load) — mục 2 dưới. F6 deploy gọn lại (không Dockerfile/nginx/domain/tunnel mới), câu hỏi D-Q1 (tên domain) **giải thể**. QĐ-D4 giữ nguyên ý (Hướng dẫn thành tab trong diễn đàn) nhưng tab đó nay nằm trong ERP — đích redirect của domain help cũ bàn lại khi làm F7. Backend F0/F1 không đổi |
 
 ## 2. Kiến trúc
@@ -76,3 +77,4 @@ Lưu ý đã biết trước: cột người trên chứng từ hiện là **emp
 | 26/08/2026 | Thêm `01` (giao diện + logic hiển thị) và `02` (lộ trình phase); mục 5 "Chia đợt" nay được `02` chi tiết hóa, lệch nhau thì lấy `02` |
 | 27/08/2026 | **QĐ-D6 — gộp vào ERP v2, bỏ app riêng + domain riêng** (chốt với sếp sau khi F1 xong). Sửa mục 2 Kiến trúc, giải thể D-Q1; `01` mục 1 và `02` F2/F6 sửa theo. Backend F0/F1 không phải đổi gì |
 | 27/08/2026 | Chốt **D-Q2** (forum_admin = vai trò RBAC seed sẵn) và **D-Q3** (cho video mp4/webm, 50MB/tệp — kéo mục "video" của đợt 3 lên làm luôn theo lệnh sếp). Chi tiết ở nhật ký `02` |
+| 03/09/2026 | **QĐ-D7 — tab «Diễn đàn» kiểu chuyên mục VOZ** chốt theo đề xuất (3 lựa chọn a/b/c ở bảng QĐ). Ghi thành phase **F13a/F13b** ở `02`; chưa code |

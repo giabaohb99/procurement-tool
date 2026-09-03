@@ -316,6 +316,28 @@ export const queryKeys = {
     postLikes: (postId: number) => ['forum', 'posts', postId, 'likes'] as const,
     /** Trang bình luận GỐC của một bài (F4) — phản hồi tải riêng khi bung, không có khóa. */
     comments: (postId: number) => ['forum', 'posts', postId, 'comments'] as const,
+    /**
+     * Cây nhóm → box của tab «Diễn đàn» (F13b). Khóa này đồng thời là GỐC của
+     * nhánh boards — invalidate nó là quét luôn mọi trang thread bên dưới.
+     */
+    boards: () => ['forum', 'boards'] as const,
+    /** Sidebar «Đang sôi nổi» + «Mới nhất» (F13c) — nằm dưới gốc `boards` để
+     * invalidate sau khi đăng bài quét luôn (thread mới phải vào «Mới nhất»). */
+    boardHighlights: () => ['forum', 'boards', 'highlights'] as const,
+    /** Một trang thread của box — phân trang SỐ TRANG, khác feed con trỏ. */
+    boardThreads: (boardId: number, page: number) =>
+      ['forum', 'boards', boardId, 'threads', page] as const,
+    /** Một trang kết quả tìm kiếm (CR-263) — key theo NGUYÊN bộ lọc + số trang. */
+    search: (params: Record<string, string | number>) =>
+      ['forum', 'search', params] as const,
+    /** Tiền tố MỌI trang kết quả tìm kiếm — invalidate cả cụm sau kiểm duyệt. */
+    searchAll: () => ['forum', 'search'] as const,
+    /** Tùy chọn ô lọc màn tìm kiếm: công ty + phòng ban đã xuất hiện trên bài. */
+    searchFilters: () => ['forum', 'search-filters'] as const,
+    /** Nhật ký kiểm duyệt (CR-263) — chỉ quản trị viên nạp được. */
+    moderationLogs: (page: number) => ['forum', 'moderation-logs', page] as const,
+    /** Tiền tố mọi trang nhật ký kiểm duyệt — ẩn/khôi phục xong ghi thêm dòng mới. */
+    moderationLogsAll: () => ['forum', 'moderation-logs'] as const,
   },
   /** Trợ lý AI — nhà cung cấp, danh sách hội thoại và từng hội thoại kèm tin. */
   assistant: {

@@ -1,9 +1,18 @@
-import { apiDelete, apiGet, apiPost } from '@/core/api'
+import { apiDelete, apiGet, apiPost, apiPut } from '@/core/api'
 
+import type { ForumBoardInput, ForumModerationLogPage } from '../types/forum-admin'
+import type {
+  ForumBoardGroup,
+  ForumBoardHighlights,
+  ForumBoardThreadsPage,
+} from '../types/forum-board'
 import type {
   ForumFeedPage,
   ForumPost,
   ForumPostLiker,
+  ForumSearchFilters,
+  ForumSearchPage,
+  ForumSearchParams,
   ForumUploadedFile,
   NewForumPost,
 } from '../types/forum-post'
@@ -55,6 +64,33 @@ export function uploadForumMedia(files: File[]): Promise<ForumUploadedFile[]> {
   body.append('entity', 'forum_post')
   files.forEach((file) => body.append('files', file))
   return apiPost<ForumUploadedFile[]>(`${ATTACHMENT_URL}/upload-file`, body)
+}
+
+/** Cây nhóm → box kèm bộ đếm + khối bài-mới-nhất — màn «Diễn đàn» (F13b). */
+export function fetchForumBoards(): Promise<ForumBoardGroup[]> {
+  return apiGet<ForumBoardGroup[]>(`${FORUM_URL}/boards`)
+}
+
+/**
+ * Hai khối sidebar màn «Diễn đàn» (F13c): «Đang sôi nổi» (auto theo tương tác
+ * 7 ngày) + «Mới nhất» — bản thread GỌN, khối «Nổi bật» đi `fetchPinnedForumPosts`.
+ */
+export function fetchBoardHighlights(): Promise<ForumBoardHighlights> {
+  return apiGet<ForumBoardHighlights>(`${FORUM_URL}/boards/highlights`)
+}
+
+/**
+ * Một trang thread của box — phân trang SỐ TRANG kiểu VOZ (nhảy thẳng trang 5
+ * được), KHÔNG dùng con trỏ `before_id` của feed. Box ẩn/không tồn tại → 404.
+ */
+export function fetchBoardThreads(
+  boardId: number,
+  page: number,
+  perPage = 20,
+): Promise<ForumBoardThreadsPage> {
+  return apiGet<ForumBoardThreadsPage>(`${FORUM_URL}/boards/${boardId}/threads`, {
+    params: { page, per_page: perPage },
+  })
 }
 
 export function createForumPost(input: NewForumPost): Promise<ForumPost> {
@@ -113,4 +149,48 @@ export function pinForumPost(id: number): Promise<ForumPost> {
 /** Bỏ ghim — bài vẫn nằm nguyên trên feed theo thời gian. */
 export function unpinForumPost(id: number): Promise<ForumPost> {
   return apiPost<ForumPost>(`${FORUM_URL}/posts/${id}/unpin`, {})
+}
+
+// ── Tìm kiếm (CR-263) — mở cho MỌI người, backend tự lọc theo audience nên
+// người thường không dò được bài ngoài phạm vi (kể cả qua `total`).
+
+/** Một trang kết quả tìm kiếm — chỉ gửi tham số có giá trị cho URL gọn. */
+export function searchForumPosts(params: ForumSearchParams): Promise<ForumSearchPage> {
+  const query: Record<string, string | number> = {}
+  if (params.q) query.q = params.q
+  if (params.author_q) query.author_q = params.author_q
+  if (params.company_id) query.company_id = params.company_id
+  if (params.dept_id) query.dept_id = params.dept_id
+  if (params.status) query.status = params.status
+  query.page = params.page || 1
+  return apiGet<ForumSearchPage>(`${FORUM_URL}/posts/search`, { params: query })
+}
+
+/** Tùy chọn hai ô lọc — chỉ gồm công ty/phòng ban ĐÃ có bài, không lộ danh mục. */
+export function fetchForumSearchFilters(): Promise<ForumSearchFilters> {
+  return apiGet<ForumSearchFilters>(`${FORUM_URL}/search/filters`)
+}
+
+// ── Quản trị (CR-263) — cả cụm dưới đây đòi grant `forum_post`/`forum_board`.
+
+/** Nhật ký kiểm duyệt, mới → cũ — người thường ăn 403. */
+export function fetchForumModerationLogs(page: number): Promise<ForumModerationLogPage> {
+  return apiGet<ForumModerationLogPage>(`${FORUM_URL}/moderation-logs`, {
+    params: { page },
+  })
+}
+
+/** Tạo nhóm (`parent_id = 0`) hoặc box — backend ép audience PUBLIC (QĐ-D7a). */
+export function createForumBoard(input: ForumBoardInput): Promise<{ id: number }> {
+  return apiPost<{ id: number }>(`${FORUM_URL}/boards`, input)
+}
+
+/** Sửa nhóm/box — nhóm đang chứa box thì backend chặn hạ xuống làm box. */
+export function updateForumBoard(id: number, input: ForumBoardInput): Promise<{ id: number }> {
+  return apiPut<{ id: number }>(`${FORUM_URL}/boards/${id}`, input)
+}
+
+/** Xóa nhóm/box — backend chỉ cho xóa khi RỖNG (không thread, không box con). */
+export function deleteForumBoard(id: number): Promise<null> {
+  return apiDelete<null>(`${FORUM_URL}/boards/${id}`)
 }

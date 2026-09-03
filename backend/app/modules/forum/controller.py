@@ -15,7 +15,8 @@ from app.core.database import get_db
 from app.core.response import success
 
 from . import schema, service
-from .model import ForumModerationAction, ForumPost, ForumPostStatus
+from .model import (ForumBoard, ForumBoardStatus, ForumModerationAction,
+                    ForumPost, ForumPostStatus)
 
 router = APIRouter(prefix="/api/forum", tags=["forum"])
 
@@ -42,12 +43,22 @@ def _authors(db: Session, ids: list[int]) -> dict:
 
 
 def _out(p: ForumPost, authors: dict, user_id: int, likes: dict,
-         comments: dict, images: dict, moderator: bool, hidden_reasons: dict) -> dict:
+         comments: dict, images: dict, moderator: bool, hidden_reasons: dict,
+         board_names: dict | None = None) -> dict:
     a = authors.get(p.created_by) or {}
     lk = likes.get(p.id) or {}
     return {
-        "id": p.id, "body": p.body, "status": int(p.status), "audience": int(p.audience),
+        "id": p.id, "body": p.body,
+        # CR-261: FE chọn đường vẽ theo cột này (1 = HTML đã lọc), không ngửi chuỗi.
+        "body_format": int(p.body_format or 0),
+        "status": int(p.status), "audience": int(p.audience),
         "kind": int(p.kind),
+        # F13a — thread trong box: title/prefix chỉ có nghĩa khi board_id > 0;
+        # board_name để thẻ bài trên feed dẫn "đăng trong box X" (QĐ-D7b).
+        "board_id": p.board_id or 0,
+        "title": p.title or "",
+        "prefix": int(p.prefix or 0),
+        "board_name": (board_names or {}).get(p.board_id or 0, ""),
         "dept_id": p.dept_id, "company_id": p.company_id,
         "author_id": p.created_by,
         "author_name": a.get("name", ""),
@@ -82,8 +93,20 @@ def _pack(db: Session, rows: list[ForumPost], user) -> list[dict]:
     moderator = service.can_moderate(db, user)
     hidden_ids = [p.id for p in rows if int(p.status) == int(ForumPostStatus.HIDDEN)]
     hidden_reasons = service.hidden_reason_map(db, hidden_ids)
-    return [_out(p, authors, user.id, likes, comments, images, moderator, hidden_reasons)
+    board_names = _board_names(db, [p.board_id for p in rows if p.board_id])
+    return [_out(p, authors, user.id, likes, comments, images, moderator, hidden_reasons,
+                 board_names)
             for p in rows]
+
+
+def _board_names(db: Session, board_ids: list[int]) -> dict[int, str]:
+    """{board_id: tên box} cho các bài trong trang — 1 query, thường rỗng."""
+    from .model import ForumBoard
+    ids = [i for i in set(board_ids) if i]
+    if not ids:
+        return {}
+    return {b.id: b.name for b in
+            db.query(ForumBoard).filter(ForumBoard.id.in_(ids)).all()}
 
 
 def _page(db: Session, user, rows_plus: list[ForumPost], limit: int) -> dict:
@@ -119,6 +142,38 @@ def pinned_feed(db: Session = Depends(get_db), user=Depends(get_current_user)):
     return success(_pack(db, rows, user))
 
 
+@router.get("/posts/search")
+def search_posts(q: str = Query("", max_length=255),
+                 author_q: str = Query("", max_length=255),
+                 company_id: int = Query(0, ge=0),
+                 dept_id: int = Query(0, ge=0),
+                 board_id: int = Query(0, ge=0),
+                 status: int = Query(0, ge=0),
+                 page: int = Query(1, ge=1),
+                 per_page: int = Query(service.PAGE_SIZE, ge=1, le=50),
+                 db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Tìm bài viết (CR-263) — mở cho MỌI người đăng nhập, kết quả tự lọc qua
+    luật audience trong SQL nên người thường tìm gì cũng chỉ ra bài mình vốn
+    được xem; quản trị thấy cả bài ẩn + lọc `status`. PHẢI khai TRƯỚC
+    `GET /posts/{pid}` — khuôn static-trước-dynamic của `/posts/pinned`."""
+    profile = get_perm_profile(db, user)
+    rows, total = service.search_posts(db, user, profile, q=q, author_q=author_q,
+                                       company_id=company_id, dept_id=dept_id,
+                                       board_id=board_id, status=status,
+                                       page=page, per_page=per_page)
+    return success({"items": _pack(db, rows, user),
+                    "total": total, "page": page, "per_page": per_page,
+                    "has_more": page * per_page < total})
+
+
+@router.get("/search/filters")
+def list_search_filters(db: Session = Depends(get_db),
+                        user=Depends(get_current_user)):
+    """Danh sách công ty + phòng ban cho ô lọc màn tìm kiếm — lấy distinct từ
+    chính bảng bài viết, không đụng grant danh mục của người thường."""
+    return success(service.list_search_filter_options(db))
+
+
 @router.get("/users/{author_id}/posts")
 def user_feed(author_id: int,
               limit: int = Query(service.PAGE_SIZE, ge=1, le=50),
@@ -143,7 +198,9 @@ def create_post(data: schema.PostIn, db: Session = Depends(get_db),
     """Đăng bài — lên feed ngay, không qua duyệt (QĐ-D1)."""
     profile = get_perm_profile(db, user)
     post = service.create_post(db, user, profile, data.body, data.audience,
-                               data.file_ids, data.kind)
+                               data.file_ids, data.kind,
+                               board_id=data.board_id, title=data.title,
+                               prefix=data.prefix, body_format=data.body_format)
     return success(_pack(db, [post], user)[0], "Đã đăng bài", 201)
 
 
@@ -267,6 +324,45 @@ def remove_post(pid: int, data: schema.ModerationIn, background_tasks: Backgroun
     return success(None, "Đã xóa bài viết")
 
 
+@router.get("/moderation-logs")
+def list_moderation_logs(page: int = Query(1, ge=1),
+                         per_page: int = Query(service.PAGE_SIZE, ge=1, le=50),
+                         db: Session = Depends(get_db),
+                         user=Depends(require("forum_post", "read"))):
+    """Nhật ký kiểm duyệt (CR-263) — bảng ghi từ F5, giờ mới có màn đọc.
+    Mỗi dòng kèm nhãn bài (tiêu đề hoặc trích nội dung) + tên quản trị viên;
+    bài REMOVED không mở được nữa nên FE dựa `post_status` mà tắt link."""
+    rows, total = service.list_moderation_logs(db, page=page, per_page=per_page)
+    posts = {}
+    pids = [r.post_id for r in rows if r.post_id]
+    if pids:
+        posts = {p.id: p for p in
+                 db.query(ForumPost).filter(ForumPost.id.in_(pids)).all()}
+    actors = _authors(db, [r.created_by for r in rows])
+
+    def label_post(p: ForumPost | None) -> str:
+        if p is None:
+            return ""
+        if p.title:
+            return p.title
+        text = service.strip_html_text(p.body) if int(p.body_format or 0) else (p.body or "")
+        return text[:120] or "(bài chỉ có ảnh/video)"
+
+    items = []
+    for r in rows:
+        p = posts.get(r.post_id)
+        a = actors.get(r.created_by) or {}
+        items.append({"id": r.id, "post_id": r.post_id,
+                      "post_label": label_post(p),
+                      "post_status": int(p.status) if p else 0,
+                      "action": int(r.action), "reason": r.reason,
+                      "actor_id": r.created_by,
+                      "actor_name": a.get("name", ""),
+                      "created_at": r.created_at, "notified_at": r.notified_at})
+    return success({"items": items, "total": total, "page": page,
+                    "per_page": per_page, "has_more": page * per_page < total})
+
+
 # ── Ghim bài (F9a/CR-199) — cùng cổng quyền `forum_post.write` với ẩn/khôi phục;
 # ghim là ĐỀ CAO chứ không phải chế tài nên không lý do, không nhật ký kiểm
 # duyệt, không chuông.
@@ -287,3 +383,119 @@ def unpin_post(pid: int, db: Session = Depends(get_db),
     post = _get_post_or_404(db, pid)
     service.set_post_pinned(db, user, post, False)
     return success(_pack(db, [post], user)[0], "Đã bỏ ghim bài viết")
+
+
+# ── Chuyên mục kiểu VOZ (F13a, QĐ-D7) ──────────────────────────────────────────
+# Đọc chỉ đòi đăng nhập (đợt đầu box toàn PUBLIC — QĐ-D7a); CRUD cấu trúc đi
+# cổng `forum_board` — grant riêng của `forum_admin`, tách khỏi kiểm duyệt bài.
+
+@router.get("/boards")
+def list_boards(db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Cây nhóm → box kèm bộ đếm + khối bài-mới-nhất — màn «Diễn đàn» (F13b)."""
+    groups = service.list_boards(db, user)
+    # tra tên/avatar người viết cuối cho mọi khối bài-mới-nhất — 2 query cho cả cây
+    last_blocks = [b["last_post"] for g in groups
+                   for b in [g, *g["children"]] if b.get("last_post")]
+    authors = _authors(db, [lp["last_user_id"] for lp in last_blocks])
+    for lp in last_blocks:
+        a = authors.get(lp["last_user_id"]) or {}
+        lp["last_author_name"] = a.get("name", "")
+        lp["last_author_avatar"] = a.get("avatar", "")
+    return success(groups)
+
+
+@router.get("/boards/highlights")
+def list_board_highlights(db: Session = Depends(get_db),
+                          user=Depends(get_current_user)):
+    """Sidebar phải màn «Diễn đàn» (F13c): «Đang sôi nổi» (auto 7 ngày) +
+    «Mới nhất». Khối «Nổi bật» FE gọi `GET /posts/pinned` sẵn có.
+
+    PHẢI khai TRƯỚC nhóm route `/boards/{board_id}` — khuôn static-trước-dynamic
+    (cùng lý do `GET /posts/pinned` đứng trước `GET /posts/{pid}`).
+    Trả bản GỌN từng thread (không body/ảnh/reaction) — sidebar chỉ cần tiêu đề
+    dẫn đường, phình bằng thẻ bài đầy đủ là trả dư dữ liệu cho mọi lần mở tab.
+    """
+    profile = get_perm_profile(db, user)
+    trending, latest = service.list_highlight_threads(db, user, profile)
+    threads = {p.id: p for p in [*trending, *latest]}
+    comments = service.comment_count_map(db, list(threads))
+    board_names = _board_names(db, [p.board_id for p in threads.values()])
+
+    def slim(p: ForumPost) -> dict:
+        return {"id": p.id, "title": p.title or "", "prefix": int(p.prefix or 0),
+                "board_id": p.board_id or 0,
+                "board_name": board_names.get(p.board_id or 0, ""),
+                "comment_count": comments.get(p.id, 0),
+                "created_at": p.created_at}
+
+    return success({"trending": [slim(p) for p in trending],
+                    "latest": [slim(p) for p in latest]})
+
+
+def _get_visible_box(db: Session, user, board_id: int) -> ForumBoard:
+    """Box đọc được: tồn tại, là box; ẩn thì chỉ admin thấy — 404 GỘP để người
+    thường không dò ra box ẩn có thật hay không (cùng triết lý bài kín)."""
+    board = db.get(ForumBoard, board_id)
+    if board is None or board.parent_id is None:
+        raise HTTPException(404, "Box không tồn tại")
+    if (int(board.status) != int(ForumBoardStatus.ACTIVE)
+            and not service.can_moderate(db, user)):
+        raise HTTPException(404, "Box không tồn tại")
+    return board
+
+
+@router.get("/boards/{board_id}/threads")
+def list_board_threads(board_id: int,
+                       page: int = Query(1, ge=1),
+                       per_page: int = Query(service.PAGE_SIZE, ge=1, le=50),
+                       db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Danh sách thread của một box — phân trang số trang, sắp theo hoạt động
+    cuối, thread ghim nổi lên đầu (F13a)."""
+    board = _get_visible_box(db, user, board_id)
+    profile = get_perm_profile(db, user)
+    rows, total = service.list_board_threads(db, user, profile, board_id,
+                                             page=page, per_page=per_page)
+    items = _pack(db, rows, user)
+    # cột «hoạt động cuối» của từng thread = max(lúc đăng, bình luận cuối) —
+    # cùng công thức với thứ tự sắp ở service, thêm đúng 1 query cho cả trang.
+    last_comments = service.last_comment_at_map(db, [p.id for p in rows])
+    for item, p in zip(items, rows):
+        last = last_comments.get(p.id)
+        item["last_activity_at"] = last if last and last > p.created_at else p.created_at
+    return success({
+        "items": items,
+        "total": total, "page": page, "per_page": per_page,
+        "has_more": page * per_page < total,
+        "board": {"id": board.id, "name": board.name, "icon": board.icon,
+                  "description": board.description, "status": int(board.status)},
+    })
+
+
+@router.post("/boards")
+def create_board(data: schema.BoardIn, db: Session = Depends(get_db),
+                 user=Depends(require("forum_board", "create"))):
+    """Tạo nhóm/box — cấu trúc chuyên mục do admin quyết thủ công (chốt 03/09)."""
+    board = service.create_board(db, user, data)
+    return success({"id": board.id}, "Đã tạo nhóm/box", 201)
+
+
+@router.put("/boards/{board_id}")
+def update_board(board_id: int, data: schema.BoardIn, db: Session = Depends(get_db),
+                 user=Depends(require("forum_board", "write"))):
+    """Sửa tên/mô tả/icon/thứ tự/trạng thái — ẩn box là rút khỏi mắt, không xóa."""
+    board = db.get(ForumBoard, board_id)
+    if board is None:
+        raise HTTPException(404, "Nhóm/box không tồn tại")
+    service.update_board(db, user, board, data)
+    return success({"id": board.id}, "Đã cập nhật nhóm/box")
+
+
+@router.delete("/boards/{board_id}")
+def delete_board(board_id: int, db: Session = Depends(get_db),
+                 user=Depends(require("forum_board", "delete"))):
+    """Xóa nhóm/box RỖNG — còn box con hay còn bài thì service chặn 400."""
+    board = db.get(ForumBoard, board_id)
+    if board is None:
+        raise HTTPException(404, "Nhóm/box không tồn tại")
+    service.delete_board(db, board)
+    return success(None, "Đã xóa nhóm/box")
