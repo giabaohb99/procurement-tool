@@ -143,10 +143,19 @@ export function BookingFormDialog({ booking, onClose, onSaved }: BookingFormDial
 
   function validate(): string {
     if (!purpose.trim()) return 'Vui lòng nhập mục đích.'
+    // Lộ trình & thời gian bắt buộc cho cả hai loại.
+    if (!startLocation.trim()) return `Vui lòng nhập ${L.start.toLowerCase()}.`
+    if (!endLocation.trim()) return `Vui lòng nhập ${L.end.toLowerCase()}.`
+    if (!startTime) return `Vui lòng chọn ${L.startTime.toLowerCase()}.`
+    if (!endTime) return `Vui lòng chọn ${L.endTime.toLowerCase()}.`
+    // Chuỗi datetime-local cùng định dạng nên so sánh chuỗi = so sánh thời gian.
+    if (endTime <= startTime) return 'Thời gian về/giao phải SAU thời gian đi/lấy hàng.'
     if (isDelivery) {
       if (!goodsName.trim()) return 'Vui lòng nhập tên hàng hóa.'
       if (!senderName.trim() || !senderPhone.trim()) return 'Vui lòng nhập người gửi và SĐT.'
       if (!receiverName.trim() || !receiverPhone.trim()) return 'Vui lòng nhập người nhận và SĐT.'
+    } else if (!passengerCount || passengerCount < 1) {
+      return 'Số hành khách phải từ 1 trở lên.'
     }
     return ''
   }
@@ -236,10 +245,10 @@ export function BookingFormDialog({ booking, onClose, onSaved }: BookingFormDial
             </Field>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label={L.start}>
+              <Field label={L.start} required>
                 <Input value={startLocation} onChange={(e) => setStartLocation(e.target.value)} />
               </Field>
-              <Field label={L.end}>
+              <Field label={L.end} required>
                 <Input value={endLocation} onChange={(e) => setEndLocation(e.target.value)} />
               </Field>
             </div>
@@ -316,14 +325,14 @@ export function BookingFormDialog({ booking, onClose, onSaved }: BookingFormDial
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label={L.startTime}>
+              <Field label={L.startTime} required>
                 <Input
                   type="datetime-local"
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
                 />
               </Field>
-              <Field label={L.endTime}>
+              <Field label={L.endTime} required>
                 <Input
                   type="datetime-local"
                   value={endTime}
@@ -383,7 +392,7 @@ export function BookingFormDialog({ booking, onClose, onSaved }: BookingFormDial
             <div className="flex flex-col gap-4">
               <SectionHeading>Thông tin chuyến đi</SectionHeading>
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Số hành khách">
+                <Field label="Số hành khách" required>
                   <Input
                     type="number"
                     min={1}
