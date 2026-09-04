@@ -229,4 +229,5 @@ Người dùng báo "không thấy menu Nghỉ phép" thì gần như chắc là
 | Bộ mã CHUỖI của giấy GNP | `backend/app/core/leave_codes.py` |
 | Giao diện | `frontend-v2/src/modules/hr/` (`pages/leave-*`, `components/leave-*`) |
 | Gói tri thức Trợ lý AI | `backend/app/modules/assistant/packs/40-nghi-phep.md` |
+| HDSD cho người dùng (Help Center) | `backend/scripts/seed_help_nghi_phep.py` — chạy `docker compose exec -T api python scripts/seed_help_nghi_phep.py` |
 | Bài kiểm | `test/backend/test_nghi_phep_*.py` · `frontend-v2/src/modules/hr/**/leave-*.test.*` |

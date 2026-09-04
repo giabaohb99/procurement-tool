@@ -165,8 +165,10 @@ dữ liệu thật.
 | Lưới lịch + kéo thả | `frontend-v2/src/modules/hr/` (`components/room-timeline-grid`, `components/room-booking-bar`, `hooks/use-timeline-drag`, `utils/room-drag`) |
 | Giao diện còn lại | `frontend-v2/src/modules/hr/` (`pages/room-*`, `pages/meeting-room-*`, `components/room-*`) |
 | Gói tri thức Trợ lý AI | `backend/app/modules/assistant/packs/50-dat-phong-hop.md` |
+| HDSD cho người dùng (Help Center) | `backend/scripts/seed_help_dat_phong_hop.py` — chạy `docker compose exec -T api python scripts/seed_help_dat_phong_hop.py` |
 | Bài kiểm | `test/backend/test_dat_phong_*.py` · `frontend-v2/src/modules/hr/utils/room-*.test.ts` |
 
-⚠️ Sửa tài liệu này thì **xem lại gói tri thức Trợ lý AI** ở dòng trên — gói đó
-nạp thẳng vào system prompt mỗi lượt hỏi, lệch với tài liệu là trợ lý trả lời sai
-mà không ai biết.
+⚠️ Sửa tài liệu này thì **xem lại hai chỗ ở dòng trên**: gói tri thức Trợ lý AI
+(nạp thẳng vào system prompt mỗi lượt hỏi) và bộ HDSD trong Help Center (thứ
+người dùng đọc). Ba nơi lệch nhau thì người dùng đọc một đằng, trợ lý trả lời một
+nẻo, mà không ai biết.
