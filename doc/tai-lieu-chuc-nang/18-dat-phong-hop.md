@@ -165,7 +165,7 @@ dữ liệu thật.
 | Lưới lịch + kéo thả | `frontend-v2/src/modules/hr/` (`components/room-timeline-grid`, `components/room-booking-bar`, `hooks/use-timeline-drag`, `utils/room-drag`) |
 | Giao diện còn lại | `frontend-v2/src/modules/hr/` (`pages/room-*`, `pages/meeting-room-*`, `components/room-*`) |
 | Gói tri thức Trợ lý AI | `backend/app/modules/assistant/packs/50-dat-phong-hop.md` |
-| HDSD cho người dùng (Help Center) | `backend/scripts/seed_help_dat_phong_hop.py` — chạy `docker compose exec -T api python scripts/seed_help_dat_phong_hop.py` |
+| HDSD cho người dùng (Help Center) | `backend/scripts/seed_help_dat_phong_hop.py` — **8 bài** (bản 2, 04/09/2026), chạy `docker compose exec -T api python scripts/seed_help_dat_phong_hop.py`. Nội dung nằm trong DB **từng môi trường**, chạy script ở môi trường đích thì mới có |
 | Bài kiểm | `test/backend/test_dat_phong_*.py` · `frontend-v2/src/modules/hr/utils/room-*.test.ts` |
 
 ⚠️ Sửa tài liệu này thì **xem lại hai chỗ ở dòng trên**: gói tri thức Trợ lý AI
