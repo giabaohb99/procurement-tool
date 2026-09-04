@@ -99,6 +99,20 @@ export interface CrudConfig<T> {
   listRoute?: string
   /** Đường dẫn tới trang chi tiết (vd (id) => `/inventory/warehouses/${id}`). */
   detailRoute?: (id: number | string) => string
+  /**
+   * Đường dẫn trang THÊM MỚI (vd '/hr/leave-types/new'). Khai nó thì nút «Thêm»
+   * **điều hướng sang trang đó** thay vì bật hộp thoại; bỏ trống = giữ hộp thoại
+   * như cũ.
+   *
+   * Dùng cho danh mục mà form thêm mới dài hoặc nhiều ô cần đọc kỹ (Loại nghỉ có
+   * 10 ô, kèm bậc thâm niên) — nhồi vào hộp thoại thì người dùng phải cuộn TRONG
+   * một khung nổi, bấm ra ngoài là mất sạch, và không dán được link cho người
+   * khác. Danh mục hai ba ô thì hộp thoại vẫn nhanh hơn, đừng dời hết sang trang.
+   *
+   * Trang đó dựng bằng chính `CrudDetailPage`: đăng ký route TĨNH (không có
+   * `:id`) trỏ vào cùng component chi tiết, nó tự nhận ra chế độ tạo mới.
+   */
+  createRoute?: string
   /** Thẻ danh tính hiển thị trên đầu trang chi tiết. */
   chips?: (row: T) => IdentityChip[]
   /** Cảnh báo khi xóa bản ghi (vd 'Dữ liệu tồn kho liên quan có thể bị ảnh hưởng'). */

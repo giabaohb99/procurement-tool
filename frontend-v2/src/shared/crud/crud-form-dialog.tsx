@@ -2,6 +2,7 @@ import { Loader2 } from 'lucide-react'
 import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 
+import { useSingleFlight } from '@/shared/hooks/use-single-flight'
 import { Button } from '@/shared/ui/button'
 import {
   Dialog,
@@ -30,6 +31,8 @@ export function CrudFormDialog<T extends CrudRecord>({
 }: CrudFormDialogProps<T>) {
   const saveMutation = useCrudSave<T>(config.apiPath, config.title)
   const isEditing = Boolean(item)
+  //  Chặn bấm trùng trong cùng một nhịp — xem `useSingleFlight`.
+  const once = useSingleFlight()
 
   const {
     register,
@@ -49,13 +52,14 @@ export function CrudFormDialog<T extends CrudRecord>({
     }
   }, [open, item, config.formFields, reset])
 
-  const onSubmit = async (values: Record<string, unknown>) => {
-    const idKey = (config.idKey as string) || 'id'
-    const id = item ? (item[idKey] as string | number) : undefined
+  const onSubmit = (values: Record<string, unknown>) =>
+    once(async () => {
+      const idKey = (config.idKey as string) || 'id'
+      const id = item ? (item[idKey] as string | number) : undefined
 
-    await saveMutation.mutateAsync({ id, values: toApiPayload(config.formFields, values) })
-    onOpenChange(false)
-  }
+      await saveMutation.mutateAsync({ id, values: toApiPayload(config.formFields, values) })
+      onOpenChange(false)
+    })
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

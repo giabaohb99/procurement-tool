@@ -1,5 +1,6 @@
 """Generic CRUD router factory — dùng cho các danh mục đơn giản (đỡ lặp code)."""
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
@@ -8,6 +9,27 @@ from app.core.base_controller import apply_filters, apply_sort, pagination
 from app.core.database import get_db
 from app.core.response import success
 from app.core.scoping import apply_scope, get_perm_profile, get_scoped
+
+
+def commit_or_conflict(db: Session, message: str) -> None:
+    """`db.commit()` nhưng đổi vi phạm RÀNG BUỘC DUY NHẤT thành lỗi 400 đọc được.
+
+    ⚠️ Không thừa với chốt kiểm trùng ở trên nó. Chốt đó là một câu `SELECT` rồi
+    mới `INSERT`, nên hai lệnh gửi sát nhau đều thấy "chưa có" rồi cùng ghi —
+    người thua cuộc ăn `IntegrityError` bay thẳng ra `unhandled_exception_handler`
+    thành **500 kèm mã sự cố**. Bắt được lỗi này ngày 04/09/2026 bằng cách bấm nút
+    *Tạo loại nghỉ* ba lần liên tiếp: bản ghi tạo đúng một cái, nhưng người dùng
+    nhận một toast xanh rồi hai toast đỏ *"Hệ thống gặp lỗi không lường trước"*.
+
+    Giao diện cũng đã chặn bấm trùng (xem `useSingleFlight`), nhưng chặn ở giao
+    diện chỉ lo được một tab trình duyệt — hai người bấm cùng lúc thì chốt duy
+    nhất còn lại là ở đây.
+    """
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(400, message)
 
 
 def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchema,
@@ -71,7 +93,8 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
             before_create(db, data)
         o = Model(**data.model_dump(), created_by=user.id, updated_by=user.id)
         db.add(o)
-        db.commit()
+        commit_or_conflict(db, f"{unique_field} đã tồn tại" if unique_field
+                           else "Dữ liệu vi phạm ràng buộc duy nhất")
         db.refresh(o)
         record(db, user.id, entity, o.id, "create")
         return success(out(o), "Đã tạo", 201)
@@ -88,7 +111,8 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
         for k, v in values.items():
             setattr(o, k, v)
         o.updated_by = user.id
-        db.commit()
+        commit_or_conflict(db, f"{unique_field} đã tồn tại" if unique_field
+                           else "Dữ liệu vi phạm ràng buộc duy nhất")
         db.refresh(o)
         record(db, user.id, entity, oid, "update")
         return success(out(o), "Đã cập nhật")

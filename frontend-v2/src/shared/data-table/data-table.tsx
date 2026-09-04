@@ -251,6 +251,27 @@ export function DataTable<T>({
   const widthOf = (column: DataTableColumn<T>) => layout.columnWidths[column.key] ?? column.width
 
   /**
+   * SÀN bề rộng của cả bảng = tổng bề rộng các cột đang hiện.
+   *
+   * ⚠️ Đây là `min-width`, KHÔNG phải `width` — bảng vẫn `w-full` nên khung rộng
+   * hơn thì nó giãn ra như cũ và cột không khai bề rộng vẫn nuốt trọn phần dư.
+   * Sàn chỉ có tác dụng khi khung HẸP hơn tổng bề rộng cột: thiếu nó thì
+   * `table-fixed` co mọi cột lại theo tỷ lệ, cột khai `wrap` (Lý do, Ghi chú…)
+   * bị bóp còn vài chục pixel và chữ trong đó rớt xuống ba mươi dòng — một hàng
+   * cao 600px (lỗi thấy được 04/09/2026 ở màn Đơn nghỉ phép, khung 940px). Có
+   * sàn thì phần dôi ra thành thanh cuộn ngang của chính bảng.
+   *
+   * ⚠️ Phải TỰ CỘNG chứ không dùng được `min-w-max` của Tailwind: bảng
+   * `table-fixed` chỉ tính `max-content` từ những cột CÓ khai bề rộng, nên cột
+   * để trống (`width` undefined) tụt về 0 và biến mất. Ở đây cột đó lấy sàn
+   * `minWidth` của chính nó.
+   */
+  const minTableWidth = visibleColumns.reduce(
+    (sum, column) => sum + (widthOf(column) ?? column.minWidth ?? DEFAULT_MIN_WIDTH),
+    0,
+  )
+
+  /**
    * Báo bộ cột đang hiện ra ngoài. Gộp thành chuỗi rồi mới so ở mảng phụ thuộc:
    * `visibleColumns` là mảng dựng lại sau mỗi lần render nên so theo tham chiếu
    * sẽ bắn liên tục, kéo theo vòng render vô tận ở trang cha.
@@ -421,10 +442,13 @@ export function DataTable<T>({
           `table-fixed`: độ rộng cột do khai báo/kéo giãn quyết định, không bị nội
           dung dài trong một ô kéo cả cột phình ra. Không có nó thì kéo giãn xong
           trình duyệt lại tự tính lại và cột nhảy về chỗ cũ.
+
+          `minWidth` là SÀN co lại của bảng — xem `minTableWidth` ở trên.
         */}
         <Table
           ref={tableRef}
           className="table-fixed"
+          style={{ minWidth: minTableWidth }}
           containerClassName={cn(fillHeight && 'min-h-0 flex-1 overflow-auto')}
         >
           {/*

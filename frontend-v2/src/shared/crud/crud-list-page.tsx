@@ -1,6 +1,6 @@
 import { Plus, Search } from 'lucide-react'
-import { useMemo, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useMemo, useState, type ReactNode } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 
 import { PermissionGate } from '@/core/authorization/permission-gate'
 import { appConfig } from '@/core/config/app-config'
@@ -21,9 +21,20 @@ import { useCrudList } from './use-crud'
 
 interface CrudListPageProps<T> {
   config: CrudConfig<T>
+  /**
+   * Chèn giữa TIÊU ĐỀ và bảng — chỗ cho thanh chuyển màn của những phân hệ gom
+   * nhiều màn vào một mục menu (cụm Nghỉ phép, xem `LeaveSectionTabs`).
+   *
+   * Không nhét vào `renderToolbarExtra`: khe đó nằm trong nhóm NÚT bên phải
+   * tiêu đề, còn thanh tab phải chạy hết bề ngang và đứng thành một dải riêng.
+   */
+  beforeContent?: ReactNode
 }
 
-export function CrudListPage<T extends CrudRecord>({ config }: CrudListPageProps<T>) {
+export function CrudListPage<T extends CrudRecord>({
+  config,
+  beforeContent,
+}: CrudListPageProps<T>) {
   /**
    * Bấm "Áp dụng" ở bộ lọc nâng cao là VIẾT LẠI toàn bộ query string, chỉ chừa lại
    * `searchParamName` + `preserveParams` (xem `use-filter-url-sync.ts`). Khai thiếu tên nào
@@ -45,15 +56,18 @@ export function CrudListPage<T extends CrudRecord>({ config }: CrudListPageProps
   if (filterConfig) {
     return (
       <FilterProvider config={filterConfig}>
-        <CrudListContent config={config} />
+        <CrudListContent config={config} beforeContent={beforeContent} />
       </FilterProvider>
     )
   }
 
-  return <CrudListContent config={config} />
+  return <CrudListContent config={config} beforeContent={beforeContent} />
 }
 
-function CrudListContent<T extends CrudRecord>({ config }: CrudListPageProps<T>) {
+function CrudListContent<T extends CrudRecord>({
+  config,
+  beforeContent,
+}: CrudListPageProps<T>) {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const idKey = (config.idKey as string) || 'id'
@@ -130,13 +144,25 @@ function CrudListContent<T extends CrudRecord>({ config }: CrudListPageProps<T>)
             {config.renderToolbarExtra?.()}
 
             <PermissionGate entity={config.entity} action="create">
-              <Button onClick={() => setCreateOpen(true)}>
-                <Plus className="mr-1.5 size-4" /> Thêm {config.unitLabel}
-              </Button>
+              {/*  Khai `createRoute` = form thêm mới nằm ở TRANG RIÊNG, không
+                   phải hộp thoại. Xem `CrudConfig.createRoute`. */}
+              {config.createRoute ? (
+                <Button asChild>
+                  <Link to={config.createRoute}>
+                    <Plus className="mr-1.5 size-4" /> Thêm {config.unitLabel}
+                  </Link>
+                </Button>
+              ) : (
+                <Button onClick={() => setCreateOpen(true)}>
+                  <Plus className="mr-1.5 size-4" /> Thêm {config.unitLabel}
+                </Button>
+              )}
             </PermissionGate>
           </div>
         }
       />
+
+      {beforeContent}
 
       <Card className="flex min-h-0 flex-1 flex-col p-4">
         <DataTable
@@ -204,11 +230,11 @@ function CrudListContent<T extends CrudRecord>({ config }: CrudListPageProps<T>)
         />
       </Card>
 
-      <CrudFormDialog
-        open={isCreateOpen}
-        onOpenChange={setCreateOpen}
-        config={config}
-      />
+      {/*  Không dựng hộp thoại khi đã có trang thêm mới — dựng cả hai là hai
+           nguồn dữ liệu cho cùng một việc, sớm muộn lệch nhau. */}
+      {!config.createRoute && (
+        <CrudFormDialog open={isCreateOpen} onOpenChange={setCreateOpen} config={config} />
+      )}
     </PageContainer>
   )
 }

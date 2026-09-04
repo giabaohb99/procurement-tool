@@ -124,6 +124,29 @@ describe('module-registry', () => {
     expect(missing).toEqual([])
   })
 
+  it('mọi đường trong `matchPaths` đều là một mục menu CÓ THẬT của cùng phân hệ', () => {
+    //  `matchPaths` chỉ lo tô sáng, gõ sai một chữ thì không có gì đỏ lên: mục
+    //  gom cứ tối om ở màn con và không ai biết vì sao. Ràng nó vào mục khai
+    //  thật (thường là mục `hidden`) để sai chính tả là test đỏ ngay.
+    //
+    //  Ràng thêm chiều ngược lại: mục `hidden` mà KHÔNG mục nào trỏ tới thì nó
+    //  vô hình hoàn toàn — không nằm trên menu, cũng không tô sáng chỗ nào.
+    const sai: string[] = []
+    for (const module of moduleRegistry) {
+      const paths = new Set(module.nav.map((i) => i.path))
+      const pointedAt = new Set(module.nav.flatMap((i) => i.matchPaths ?? []))
+      for (const item of module.nav) {
+        for (const p of item.matchPaths ?? []) {
+          if (!paths.has(p)) sai.push(`${module.id} - ${item.label}: ${p} không có mục nào khai`)
+        }
+        if (item.hidden && !pointedAt.has(item.path)) {
+          sai.push(`${module.id} - ${item.label}: mục ẩn không mục nào trỏ tới`)
+        }
+      }
+    }
+    expect(sai).toEqual([])
+  })
+
   it('màu icon phân hệ chạy được ở CẢ hai chế độ nền', () => {
     //  LỖI ĐÃ XẢY RA (27/08/2026): cả 20 phân hệ tô nền ô icon bằng bậc nhạt đặc
     //  (`bg-rose-50`, `bg-slate-100`). Bậc đó có độ sáng 96–98% nên nó trắng ở
