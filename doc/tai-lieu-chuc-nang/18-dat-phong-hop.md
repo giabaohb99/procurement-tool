@@ -152,3 +152,21 @@ dữ liệu thật.
   *Phiếu đặt phòng* với bộ lọc phòng + khoảng thời gian.
 - **Kéo thả sang NGÀY khác**: lưới vẽ một ngày, nên kéo ngang bị kẹp trong
   7:00–20:00 của chính ngày đang xem. Dời sang ngày khác thì mở phiếu ra sửa.
+
+## 8. Đụng vào đâu
+
+| Việc | Tệp |
+|---|---|
+| Bộ mã trạng thái (SMALLINT, R2) | `backend/app/modules/meeting_room/constants.py` |
+| Luật chặn trùng · sức chứa · dời lịch | `backend/app/modules/meeting_room/service.py` |
+| Nối bộ máy duyệt + thư mời / thư đổi giờ | `backend/app/modules/meeting_room/approval_bridge.py` |
+| Chặn giờ kèm múi giờ (`LocalDateTime`) | `backend/app/modules/meeting_room/schema.py` |
+| Seed phòng mẫu | `backend/app/seed_dat_phong_hop.py` |
+| Lưới lịch + kéo thả | `frontend-v2/src/modules/hr/` (`components/room-timeline-grid`, `components/room-booking-bar`, `hooks/use-timeline-drag`, `utils/room-drag`) |
+| Giao diện còn lại | `frontend-v2/src/modules/hr/` (`pages/room-*`, `pages/meeting-room-*`, `components/room-*`) |
+| Gói tri thức Trợ lý AI | `backend/app/modules/assistant/packs/50-dat-phong-hop.md` |
+| Bài kiểm | `test/backend/test_dat_phong_*.py` · `frontend-v2/src/modules/hr/utils/room-*.test.ts` |
+
+⚠️ Sửa tài liệu này thì **xem lại gói tri thức Trợ lý AI** ở dòng trên — gói đó
+nạp thẳng vào system prompt mỗi lượt hỏi, lệch với tài liệu là trợ lý trả lời sai
+mà không ai biết.
