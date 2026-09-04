@@ -25,6 +25,9 @@ export const HOLIDAY_CRUD_CONFIG: CrudConfig<Holiday> = {
   storageKey: 'hr.holidays',
   listRoute: appRoutes.hr.holidays,
   detailRoute: (id) => appRoutes.hr.holidayDetail(id),
+  //  Đi cùng cặp với Loại nghỉ: hai màn nằm chung tab «Thiết lập», một màn mở
+  //  hộp thoại còn màn kia nhảy trang thì thao tác đọc ra như hai phần mềm.
+  createRoute: appRoutes.hr.holidayNew,
   searchParam: 'name',
   searchPlaceholder: 'Tìm theo tên ngày lễ…',
   quickFilters: [

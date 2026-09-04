@@ -1,19 +1,19 @@
-import { Check, Undo2, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { Badge } from '@/shared/ui/badge'
-import { Button } from '@/shared/ui/button'
 import { formatDateTime } from '@/shared/utils/format-date'
-import {
-  useLeaveApprovalDecision,
-  useLeaveToApprove,
-  type ApprovalDecision,
-} from '../hooks/use-leave'
+import { useLeaveToApprove } from '../hooks/use-leave'
 import type { LeaveInboxRow } from '../types/leave'
-import { LeaveDecisionDialog } from './leave-decision-dialog'
+import {
+  ALL_OPTION,
+  filterLeaveRows,
+  isFiltering,
+  leaveTypesIn,
+} from '../utils/filter-leave-rows'
+import { LeaveRowsFilterBar } from './leave-rows-filter-bar'
 import {
   codeColumn,
   dateColumns,
@@ -24,28 +24,40 @@ import {
 } from './leave-request-columns'
 
 /**
- * Tab «CẦN TÔI DUYỆT» — hàng đợi việc, quyết được ngay trên dòng (CR-260).
+ * Tab «CẦN TÔI DUYỆT» — hàng đợi việc đang chờ chính người đăng nhập ký.
  *
  * ⚠️ **Đơn chỉ hiện khi ĐÃ TỚI LƯỢT mình.** Người ở chặng 2 không thấy đơn đang
  * nằm ở chặng 1: thấy sớm thì họ bấm Duyệt rồi ăn câu "bạn không có việc nào
  * đang chờ ở phiếu này" — đúng luật nhưng vô nghĩa với thao tác vừa làm. Luật
  * lọc nằm ở backend (`task_service.my_tasks` chỉ lấy việc `TASK_PENDING`).
  *
+ * ⚠️ **KHÔNG có cột thao tác** (bỏ 04/09/2026). Ba nút Duyệt / Trả về / Từ chối
+ * lặp trên từng dòng ăn 280px và biến cả cột phải thành một mảng xanh-đỏ nhấp
+ * nháy — mắt không còn đọc được dữ liệu nữa. Mà quyết định ở đây là **ký thay
+ * mặt công ty cho người khác nghỉ**: bấm được ngay trên dòng nghĩa là ký mà chưa
+ * đọc ai bàn giao, chưa xem còn bao nhiêu phép. Vào chi tiết rồi duyệt — ba nút
+ * đó nằm sẵn ở đầu trang chi tiết (`LeaveDetailDecisionActions`).
+ *
  * ⚠️ **Không có cột Trạng thái.** Mọi dòng ở đây đều là «Chờ duyệt» — một cột
  * lặp đúng một giá trị chỉ ăn chỗ của cột Luồng duyệt, thứ thật sự nói phiếu
  * đang ở đâu.
+ *
+ * Lọc ở PHÍA MÀN HÌNH: hàng đợi nạp trọn một lượt và không phân trang, nên hỏi
+ * lại backend là thừa một vòng mạng — xem `utils/filter-leave-rows`.
  */
 export function LeaveToApproveTab() {
   const navigate = useNavigate()
   const { data, isLoading, isError } = useLeaveToApprove()
-  const decide = useLeaveApprovalDecision()
+  const [keyword, setKeyword] = useState('')
+  const [typeId, setTypeId] = useState(ALL_OPTION)
 
-  //  Một ô trạng thái cho cả hộp thoại: tờ đơn đang hỏi + quyết định đang chọn.
-  //  Tách hai ô thì lúc đóng hộp có một nhịp render mà đơn đã rỗng còn quyết
-  //  định thì chưa — hộp nháy sang tiêu đề khác trước khi biến mất.
-  const [asking, setAsking] = useState<{ row: LeaveInboxRow; decision: ApprovalDecision } | null>(
-    null,
+  const all = useMemo(() => data?.items ?? [], [data])
+  const types = useMemo(() => leaveTypesIn(all), [all])
+  const rows = useMemo(
+    () => filterLeaveRows(all, { keyword, typeId }),
+    [all, keyword, typeId],
   )
+  const filtering = isFiltering({ keyword, typeId })
 
   const columns = useMemo<DataTableColumn<LeaveInboxRow>[]>(
     () => [
@@ -80,43 +92,6 @@ export function LeaveToApproveTab() {
       },
       reasonColumn(),
       {
-        key: 'actions',
-        header: 'Thao tác',
-        cell: (row) => (
-          //  `stopPropagation`: dòng bảng có `onRowClick` mở trang chi tiết, nên
-          //  không chặn thì bấm Duyệt vừa mở hộp thoại vừa điều hướng đi mất.
-          <div
-            className="flex items-center gap-1"
-            onClick={(e) => e.stopPropagation()}
-            role="presentation"
-          >
-            <Button size="sm" onClick={() => setAsking({ row, decision: 'approve' })}>
-              <Check className="size-4" />
-              Duyệt
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setAsking({ row, decision: 'return' })}
-            >
-              <Undo2 className="size-4" />
-              Trả về
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="text-destructive hover:text-destructive"
-              onClick={() => setAsking({ row, decision: 'reject' })}
-            >
-              <X className="size-4" />
-              Từ chối
-            </Button>
-          </div>
-        ),
-        width: 280,
-        hideable: false,
-      },
-      {
         key: 'due_at',
         header: 'Hạn xử lý',
         cell: (row) =>
@@ -126,46 +101,44 @@ export function LeaveToApproveTab() {
             '—'
           ),
         width: 150,
-        compactHidden: true,
       },
     ],
     [],
   )
 
   return (
-    <>
-      <DataTable
-        fillHeight
-        columns={columns}
-        rows={data?.items}
-        getRowId={(r) => r.id}
-        isLoading={isLoading}
-        isError={isError}
-        emptyMessage="Không có đơn nào đang chờ bạn duyệt."
-        storageKey="hr.leave-to-approve"
-        onRowClick={(r) => navigate(appRoutes.hr.leaveRequestDetail(r.id))}
-      />
-
-      <LeaveDecisionDialog
-        row={asking?.row ?? null}
-        decision={asking?.decision ?? 'approve'}
-        isPending={decide.isPending}
-        onClose={() => setAsking(null)}
-        onConfirm={(reason) => {
-          if (!asking) return
-          decide.mutate(
-            {
-              instanceId: asking.row.task.instance_id,
-              decision: asking.decision,
-              reason,
-            },
-            //  Đóng hộp trong `onSuccess`, KHÔNG đóng ngay lúc bấm: gọi hỏng
-            //  (mất mạng, người khác vừa ký trước) mà hộp đã đóng thì người
-            //  dùng chỉ thấy một dòng lỗi trôi qua và tưởng mình đã ký xong.
-            { onSuccess: () => setAsking(null) },
-          )
-        }}
-      />
-    </>
+    <DataTable
+      fillHeight
+      columns={columns}
+      rows={rows}
+      getRowId={(r) => r.id}
+      isLoading={isLoading}
+      isError={isError}
+      emptyMessage={
+        filtering
+          ? 'Không có đơn nào khớp bộ lọc.'
+          : 'Không có đơn nào đang chờ bạn duyệt.'
+      }
+      storageKey="hr.leave-to-approve"
+      onRowClick={(r) => navigate(appRoutes.hr.leaveRequestDetail(r.id))}
+      toolbar={
+        <LeaveRowsFilterBar
+          keyword={keyword}
+          onKeywordChange={setKeyword}
+          typeId={typeId}
+          onTypeChange={setTypeId}
+          types={types}
+        >
+          {/*  Nói ra đường duyệt: bỏ cột nút rồi thì "bấm vào dòng" là thao tác
+               duy nhất, mà một bảng không có nút nào thì không tự nói điều đó. */}
+          {rows.length > 0 && (
+            <span className="border-l pl-3 text-xs text-muted-foreground">
+              <span className="font-medium text-foreground">{rows.length} đơn</span> · bấm
+              vào một dòng để xem và duyệt
+            </span>
+          )}
+        </LeaveRowsFilterBar>
+      }
+    />
   )
 }

@@ -12,6 +12,7 @@ import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { LeaveHandledTab } from '../components/leave-handled-tab'
+import { LeaveSectionTabs } from '../components/leave-section-tabs'
 import { LeaveMyRequestsTab } from '../components/leave-my-requests-tab'
 import { LeaveToApproveTab } from '../components/leave-to-approve-tab'
 import { useLeaveToApprove } from '../hooks/use-leave'
@@ -65,6 +66,8 @@ export function LeaveRequestListPage() {
         }
       />
 
+      <LeaveSectionTabs />
+
       <Tabs
         value={tab || TAB_MINE}
         onValueChange={setTab}
@@ -86,21 +89,30 @@ export function LeaveRequestListPage() {
         </TabsList>
 
         {/*  Mỗi tab một `Card` riêng chứ không bọc chung ngoài `Tabs`: bảng chạy
-             `fillHeight` nên nó cần đúng một khung cha có chiều cao xác định. */}
+             `fillHeight` nên nó cần đúng một khung cha có chiều cao xác định.
+
+             ⚠️ **`min-w-0` trên `Card` không được bỏ.** `TabsContent` là một hộp
+             flex NGANG, mà mọi ô flex mặc định `min-width: auto` — nghĩa là thẻ
+             không co xuống dưới bề rộng tự nhiên của thứ nằm trong nó. Bảng này
+             khai bề rộng cứng cho từng cột nên bề rộng tự nhiên của nó ~1200px:
+             màn hẹp hơn thế thì thẻ phình ra ngoài và CẢ TRANG trượt ngang —
+             tiêu đề, nút «Nộp đơn», thanh tab đều trôi sang trái và bị cắt (lỗi
+             báo 04/09/2026). Có `min-w-0` thì phần dôi ra quay về đúng chỗ của
+             nó: thanh cuộn ngang bên trong bảng. */}
         <TabsContent value={TAB_TO_APPROVE} className="mt-3 flex min-h-0 flex-1">
-          <Card className="flex min-h-0 flex-1 flex-col p-4">
+          <Card className="flex min-h-0 w-full min-w-0 flex-1 flex-col p-4">
             <LeaveToApproveTab />
           </Card>
         </TabsContent>
 
         <TabsContent value={TAB_MINE} className="mt-3 flex min-h-0 flex-1">
-          <Card className="flex min-h-0 flex-1 flex-col p-4">
+          <Card className="flex min-h-0 w-full min-w-0 flex-1 flex-col p-4">
             <LeaveMyRequestsTab />
           </Card>
         </TabsContent>
 
         <TabsContent value={TAB_HANDLED} className="mt-3 flex min-h-0 flex-1">
-          <Card className="flex min-h-0 flex-1 flex-col p-4">
+          <Card className="flex min-h-0 w-full min-w-0 flex-1 flex-col p-4">
             <LeaveHandledTab />
           </Card>
         </TabsContent>

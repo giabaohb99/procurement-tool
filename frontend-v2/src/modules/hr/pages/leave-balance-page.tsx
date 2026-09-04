@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from '@/shared/ui/select'
 import { cn } from '@/shared/utils/cn'
+import { LeaveSectionTabs } from '../components/leave-section-tabs'
 import { useAllocateLeaveBalance, useLeaveBalances, useLeaveTypes } from '../hooks/use-leave'
 import type { LeaveBalance } from '../types/leave'
 
@@ -187,6 +188,8 @@ export function LeaveBalancePage() {
           ) : undefined
         }
       />
+
+      <LeaveSectionTabs />
 
       <Card className="flex min-h-0 flex-1 flex-col p-4">
         <DataTable

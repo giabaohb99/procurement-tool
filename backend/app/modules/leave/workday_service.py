@@ -1,4 +1,7 @@
-"""NGÀY LÀM VIỆC — đếm số ngày nghỉ thật, đã trừ thứ Bảy / Chủ nhật / ngày lễ.
+"""NGÀY LÀM VIỆC — đếm số ngày nghỉ thật, đã trừ ngày nghỉ tuần và ngày lễ.
+
+⚠️ **DEGO Holding làm cả ngày thứ Bảy**, nên "nghỉ tuần" ở đây chỉ có Chủ nhật.
+Xem `WEEKEND_DAYS` bên dưới — đừng đọc lướt rồi tưởng theo tuần 5 ngày.
 
 Đây là thứ `document/type_metadata.suggested_days()` cố ý **không** làm được ở
 CR-159, và tệp đó ghi thẳng lý do: lúc ấy chưa có bảng lịch làm việc nào, nên
@@ -23,8 +26,18 @@ from sqlalchemy.orm import Session
 from .catalog_model import Holiday
 from .constants import SESSION_CREDIT, SESSION_FULL
 
-#  Thứ Bảy = 5, Chủ nhật = 6 theo `date.weekday()`.
-WEEKEND_DAYS = (5, 6)
+#  Ngày KHÔNG tính vào phép, theo `date.weekday()` (Thứ Hai = 0 … Chủ nhật = 6).
+#
+#  ⚠️ **DEGO Holding làm cả ngày thứ Bảy**, nên chỉ Chủ nhật nằm ở đây (chốt
+#  04/09/2026). Trước đó khai `(5, 6)` — copy theo mặc định "tuần làm 5 ngày" —
+#  và luật đó SAI với công ty này theo đúng hướng tốn tiền: nghỉ riêng một thứ
+#  Bảy bị tính **0 ngày phép**, tức nghỉ không mất gì; còn nghỉ từ thứ Sáu sang
+#  thứ Hai thì trừ 2 thay vì 3. Sai âm thầm, vì con số vẫn ra một số hợp lý.
+#
+#  Áp CHUNG cho mọi pháp nhân (chốt cùng ngày). Nơi nào lịch khác thì mở cấu
+#  hình theo `company_id` như `tab_holiday` đang làm — đừng thêm ngoại lệ rải
+#  rác trong mã.
+WEEKEND_DAYS = (6,)
 
 #  Trần bảo hiểm cho vòng lặp ngày. Thai sản 6 tháng là ~180 ngày; đơn dài hơn
 #  một năm là dữ liệu hỏng hoặc gõ nhầm năm, và ta không muốn một ô nhập sai kéo

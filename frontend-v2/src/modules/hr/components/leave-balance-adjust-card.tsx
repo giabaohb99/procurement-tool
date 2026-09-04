@@ -1,17 +1,15 @@
-import { useState } from 'react'
-
-import { useHasChanged } from '@/shared/hooks/use-has-changed'
-import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { RequiredMark } from '@/shared/ui/required-mark'
 import { Textarea } from '@/shared/ui/textarea'
-import { useAdjustLeaveBalance } from '../hooks/use-leave'
+import type { LeaveBalanceAdjustForm } from '../hooks/use-leave-balance-adjust-form'
 import type { LeaveBalance } from '../types/leave'
 
 interface LeaveBalanceAdjustCardProps {
   balance: LeaveBalance
+  /** Trạng thái dùng chung với nút Lưu trên đầu trang — xem hook cùng tên. */
+  form: LeaveBalanceAdjustForm
 }
 
 const NOTE_MAX = 500
@@ -32,25 +30,14 @@ const NOTE_MAX = 500
  * 2. **Nhận số ÂM.** Đây là cột duy nhất trừ được — dùng khi cấp nhầm.
  * 3. **Bắt buộc có lý do.** Đây là tặng ngày phép; phải truy được ai làm và vì
  *    sao. Backend chặn lớp thứ hai và ghi câu này vào `tab_audit_log`.
+ *
+ * ⚠️ Nút Lưu KHÔNG nằm ở đây (dời 04/09/2026): nó ở đầu trang, cùng hàng với
+ * tiêu đề và dính khi cuộn — trang này có bốn thẻ nên nút nằm dưới đáy thẻ thứ
+ * ba là mỗi lần lưu một lần cuộn xuống rồi cuộn ngược lên. Trạng thái chung nằm
+ * ở `useLeaveBalanceAdjustForm`.
  */
-export function LeaveBalanceAdjustCard({ balance }: LeaveBalanceAdjustCardProps) {
-  const adjust = useAdjustLeaveBalance()
-  const [days, setDays] = useState(balance.adjusted_days)
-  const [note, setNote] = useState(balance.note ?? '')
-
-  //  Nạp lại khi chuyển sang MỘT DÒNG QUỸ KHÁC. Đặt ngay trong lúc render
-  //  (`useHasChanged`) chứ không trong `useEffect`: effect chạy SAU khi đã
-  //  commit nên người dùng thấy một khung hình mang số của dòng TRƯỚC.
-  if (useHasChanged(balance.id)) {
-    setDays(balance.adjusted_days)
-    setNote(balance.note ?? '')
-  }
-
-  const canSave = note.trim().length > 0 && !adjust.isPending
-  //  Xem trước kết quả: người dùng gõ số điều chỉnh nhưng thứ họ quan tâm là
-  //  «còn lại» sẽ thành bao nhiêu. Bắt họ tự cộng trừ là bắt họ tính sai.
-  const preview =
-    Math.round((balance.remaining_days - balance.adjusted_days + days) * 100) / 100
+export function LeaveBalanceAdjustCard({ balance, form }: LeaveBalanceAdjustCardProps) {
+  const { days, setDays, note, setNote, preview } = form
 
   return (
     <Card>
@@ -98,17 +85,6 @@ export function LeaveBalanceAdjustCard({ balance }: LeaveBalanceAdjustCardProps)
           <p className="text-right text-xs text-muted-foreground">
             {note.length} / {NOTE_MAX}
           </p>
-        </div>
-
-        <div className="flex justify-end">
-          <Button
-            disabled={!canSave}
-            onClick={() =>
-              adjust.mutate({ id: balance.id, values: { adjusted_days: days, note: note.trim() } })
-            }
-          >
-            Lưu điều chỉnh
-          </Button>
         </div>
       </CardContent>
     </Card>

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Ban, Check, Save, Send, Trash2, X } from 'lucide-react'
 
 import { usePermission } from '@/core/authorization/use-permission'
@@ -41,7 +41,22 @@ export function LeaveRequestDetailPage() {
   const { id } = useParams<{ id: string }>()
   const requestId = Number(id) || 0
   const navigate = useNavigate()
+  const location = useLocation()
   const { can } = usePermission()
+
+  //  ⚠️ Nút «Về danh sách» phải LÙI THEO LỊCH SỬ, không điều hướng cứng về
+  //  `/hr/leave-requests`. Đường cứng mất sạch trạng thái người dùng vừa đặt:
+  //  màn danh sách có ba tab và mỗi tab một bộ lọc, mà URL sạch thì nó tự chọn
+  //  lại tab mặc định — bấm từ tab «Đơn của tôi» lại rơi về «Cần tôi duyệt»
+  //  (lỗi báo 04/09/2026), và bộ lọc vừa gõ cũng bay theo.
+  //
+  //  `location.key === 'default'` = đây là trang ĐẦU TIÊN của phiên (vào thẳng
+  //  từ link trong thư báo việc, hoặc dán URL). Lùi lúc đó là đẩy người dùng ra
+  //  khỏi ứng dụng, nên mới rơi về danh sách.
+  const goBack = () => {
+    if (location.key === 'default') navigate(appRoutes.hr.leaveRequests)
+    else navigate(-1)
+  }
 
   const { data: request, isLoading } = useLeaveRequest(requestId)
   const save = useSaveLeaveRequest()
@@ -114,7 +129,7 @@ export function LeaveRequestDetailPage() {
             size="icon"
             title="Về danh sách"
             aria-label="Về danh sách"
-            onClick={() => navigate(appRoutes.hr.leaveRequests)}
+            onClick={goBack}
           >
             <ArrowLeft className="size-4" />
           </Button>

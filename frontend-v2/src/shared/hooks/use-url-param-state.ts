@@ -37,3 +37,38 @@ export function useUrlParamState(name: string, defaultValue: string) {
 
   return [value, setValue] as const
 }
+
+/**
+ * Đặt NHIỀU param trong MỘT lượt cập nhật URL.
+ *
+ * ⚠️ **Không gọi hai `setValue` của `useUrlParamState` liên tiếp trong cùng một
+ * lần bấm** — lần thứ hai nhận `current` là URL CŨ (thay đổi của lần đầu chưa
+ * kịp vào), nên nó ghi đè và thay đổi đầu tiên biến mất không dấu vết.
+ *
+ * Lỗi thật, dựng lại được 04/09/2026 ở màn Lịch nghỉ: bấm "+11 người nữa" trên
+ * ô ngày 15 chạy `setAnchorISO('2027-03-15')` rồi `setMode('day')`; kết quả ra
+ * `?mode=day&date=2027-03-01` — đúng chế độ, **sai ngày**, và người dùng rơi
+ * vào một ngày chẳng ai nghỉ ngay sau khi bấm vào ngày có mười bốn người nghỉ.
+ *
+ * Giá trị rỗng hoặc trùng mặc định thì truyền `null` để xóa khỏi URL.
+ */
+export function useSetUrlParams() {
+  const [, setSearchParams] = useSearchParams()
+
+  return useCallback(
+    (next: Record<string, string | null>) => {
+      setSearchParams(
+        (current) => {
+          const params = new URLSearchParams(current)
+          for (const [key, value] of Object.entries(next)) {
+            if (value === null || value === '') params.delete(key)
+            else params.set(key, value)
+          }
+          return params
+        },
+        { replace: true },
+      )
+    },
+    [setSearchParams],
+  )
+}

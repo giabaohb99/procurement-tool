@@ -323,3 +323,22 @@ export function useLeaveApprovalDecision() {
     },
   })
 }
+
+// ── Ngày lễ cho màn Lịch nghỉ ──────────────────────────────────────────────────
+
+/**
+ * Toàn bộ lịch ngày lễ đang bật.
+ *
+ * Nạp HẾT một lượt rồi lọc ở phía màn hình, không lọc theo năm ở backend: bảng
+ * này cỡ vài chục dòng cho cả hệ, mà những ngày `is_recurring` thì không mang
+ * năm nào cả — hỏi backend "lễ năm 2027" sẽ trượt hết Tết Dương lịch và Quốc
+ * khánh vốn nhập một lần từ 2026. Luật khớp nằm ở `utils/calendar-grid.ts`.
+ */
+export function useHolidays() {
+  return useQuery({
+    queryKey: queryKeys.hr.holidays({ all: true }),
+    queryFn: () => leaveApi.listHolidays({ page: 1, page_size: 500 }),
+    //  Lịch lễ gần như không đổi trong một phiên làm việc.
+    staleTime: 5 * 60 * 1000,
+  })
+}

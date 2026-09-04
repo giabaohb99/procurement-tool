@@ -32,6 +32,8 @@ export const LEAVE_TYPE_CRUD_CONFIG: CrudConfig<LeaveType> = {
   storageKey: 'hr.leave-types',
   listRoute: appRoutes.hr.leaveTypes,
   detailRoute: (id) => appRoutes.hr.leaveTypeDetail(id),
+  //  Form 10 ô + bậc thâm niên — quá dài cho một hộp thoại, xem `createRoute`.
+  createRoute: appRoutes.hr.leaveTypeNew,
   searchParam: 'name',
   searchPlaceholder: 'Tìm theo tên hoặc mã loại nghỉ…',
   quickFilters: [

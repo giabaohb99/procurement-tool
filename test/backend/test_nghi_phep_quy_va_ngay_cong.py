@@ -51,10 +51,34 @@ def test_nghi_nua_ngay_la_nua_ngay(db):
     assert got == 0.5
 
 
-def test_bo_qua_thu_bay_chu_nhat(db):
-    """Thứ Sáu 02/01 → Thứ Hai 05/01 = 2 ngày công, không phải 4."""
+def test_bo_qua_CHU_NHAT_nhung_van_tinh_THU_BAY(db):
+    """DEGO Holding **làm cả ngày thứ Bảy** — chỉ Chủ nhật được miễn (04/09/2026).
+
+    Thứ Sáu 02/01 → Thứ Hai 05/01 là 4 ngày lịch: T6, T7, CN, T2. Trừ mỗi Chủ
+    nhật ra thì còn **3 ngày công**.
+
+    ⚠️ Bài này từng khẳng định `2.0` theo mặc định "tuần làm 5 ngày", và con số
+    đó sai với công ty này theo đúng hướng tốn tiền. Đừng sửa ngược lại cho
+    "giống lệ thường" — xem `WEEKEND_DAYS` ở `workday_service`.
+    """
     got = workday_service.count_leave_days(db, date(2026, 1, 2), date(2026, 1, 5))
-    assert got == 2.0
+    assert got == 3.0
+
+
+def test_nghi_RIENG_mot_thu_bay_van_tru_mot_ngay_phep(db):
+    """Ca lộ rõ nhất của luật cũ: nghỉ đúng một thứ Bảy thì trừ **0** ngày phép —
+    tức nghỉ mà không mất gì. 03/01/2026 là thứ Bảy."""
+    assert workday_service.count_leave_days(db, date(2026, 1, 3), date(2026, 1, 3)) == 1.0
+
+
+def test_nghi_RIENG_mot_chu_nhat_khong_tru_phep(db):
+    """Đối chứng cho bài trên — 04/01/2026 là Chủ nhật."""
+    assert workday_service.count_leave_days(db, date(2026, 1, 4), date(2026, 1, 4)) == 0.0
+
+
+def test_tron_mot_tuan_la_sau_ngay_cong(db):
+    """T2 05/01 → CN 11/01: bảy ngày lịch, trừ mỗi Chủ nhật còn sáu."""
+    assert workday_service.count_leave_days(db, date(2026, 1, 5), date(2026, 1, 11)) == 6.0
 
 
 def test_bo_qua_ngay_le(db):

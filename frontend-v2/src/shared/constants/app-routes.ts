@@ -295,8 +295,10 @@ export const appRoutes = {
     leaveBalanceDetail: (id: number | string) => `/hr/leave-balances/${id}`,
     /** Thiết lập: loại nghỉ (kèm bậc thâm niên) và lịch ngày lễ. */
     leaveTypes: '/hr/leave-types',
+    leaveTypeNew: '/hr/leave-types/new',
     leaveTypeDetail: (id: number | string) => `/hr/leave-types/${id}`,
     holidays: '/hr/holidays',
+    holidayNew: '/hr/holidays/new',
     holidayDetail: (id: number | string) => `/hr/holidays/${id}`,
   },
   approvalSeal: {

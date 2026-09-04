@@ -57,38 +57,51 @@ export const hrModule: ErpModule = {
       group: 'Danh mục',
     },
     //  ── Nghỉ phép (CR-259) ────────────────────────────────────────────────
-    //  Nhóm riêng, đặt TRƯỚC «Quản trị»: đơn nghỉ phép là việc của mọi người
-    //  trong công ty, còn phân quyền là việc của một hai người.
+    //  ⚠️ **MỘT mục menu cho cả năm màn** (04/09/2026). Trước đó là năm mục rời
+    //  thành một nhóm riêng, chiếm gần nửa chiều cao menu Nhân sự — trong khi
+    //  bốn trong năm màn là thứ mở vài lần một tháng. Nay chuyển qua lại bằng
+    //  `LeaveSectionTabs` ngay trong trang.
+    //
+    //  Năm ĐƯỜNG DẪN giữ nguyên (xem docstring của `leave-section-tabs.tsx`),
+    //  nên bốn màn kia vẫn khai đủ ở đây với `hidden: true` để **giữ khóa quyền
+    //  riêng của từng màn** cho `canAccessRoute` — gõ thẳng `/hr/leave-types` mà
+    //  không có quyền vẫn phải bị chặn tử tế.
     {
-      label: 'Đơn nghỉ phép',
+      label: 'Nghỉ phép',
       path: appRoutes.hr.leaveRequests,
       icon: CalendarOff,
       entity: 'leave_request',
-      group: 'Nghỉ phép',
+      matchPaths: [
+        appRoutes.hr.leaveCalendar,
+        appRoutes.hr.leaveBalances,
+        appRoutes.hr.leaveTypes,
+        appRoutes.hr.holidays,
+      ],
     },
     {
       label: 'Lịch nghỉ',
       path: appRoutes.hr.leaveCalendar,
       icon: CalendarRange,
       entity: 'leave_request',
-      group: 'Nghỉ phép',
+      hidden: true,
     },
     {
       label: 'Quỹ phép năm',
       path: appRoutes.hr.leaveBalances,
       icon: Wallet,
       entity: 'leave_balance',
-      group: 'Nghỉ phép',
+      hidden: true,
     },
     {
       label: 'Loại nghỉ',
       path: appRoutes.hr.leaveTypes,
       icon: CalendarDays,
       entity: 'leave_type',
-      //  Sửa luật nghỉ là việc quản trị — chỉ hiện với người có quyền ghi, chứ
-      //  không hiện cho mọi người rồi khóa từng nút bên trong.
+      //  Sửa luật nghỉ là việc quản trị — chỉ người có quyền ghi mới vào được,
+      //  chứ không mở cho mọi người rồi khóa từng nút bên trong. Cùng luật với
+      //  tab «Thiết lập» trong `leave-section-tabs.tsx`.
       manage: true,
-      group: 'Nghỉ phép',
+      hidden: true,
     },
     {
       label: 'Lịch ngày lễ',
@@ -96,7 +109,7 @@ export const hrModule: ErpModule = {
       icon: CalendarDays,
       entity: 'holiday',
       manage: true,
-      group: 'Nghỉ phép',
+      hidden: true,
     },
     {
       label: 'Phân quyền tài khoản',
@@ -212,6 +225,14 @@ export const hrModule: ErpModule = {
       }),
     },
     {
+      //  Trang THÊM MỚI dùng chính component chi tiết — nó nhận ra chế độ tạo
+      //  bằng việc route này không có `:id`. Xem `CrudDetailPage`.
+      path: appRoutes.hr.leaveTypeNew,
+      lazy: async () => ({
+        Component: (await import('./pages/leave-type-detail-page')).LeaveTypeDetailPage,
+      }),
+    },
+    {
       path: appRoutes.hr.leaveTypeDetail(':id'),
       lazy: async () => ({
         Component: (await import('./pages/leave-type-detail-page')).LeaveTypeDetailPage,
@@ -221,6 +242,12 @@ export const hrModule: ErpModule = {
       path: appRoutes.hr.holidays,
       lazy: async () => ({
         Component: (await import('./pages/holiday-list-page')).HolidayListPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.holidayNew,
+      lazy: async () => ({
+        Component: (await import('./pages/holiday-detail-page')).HolidayDetailPage,
       }),
     },
     {

@@ -1,158 +1,185 @@
-import { useMemo, useState } from 'react'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { useCallback, useMemo } from 'react'
 
-import { appRoutes } from '@/shared/constants/app-routes'
-import { Button } from '@/shared/ui/button'
-import { Card, CardContent } from '@/shared/ui/card'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
-import { cn } from '@/shared/utils/cn'
-import { Link } from 'react-router-dom'
-import { LeaveStatusBadge } from '../components/leave-status-badge'
-import { useLeaveRequests } from '../hooks/use-leave'
+import { useSetUrlParams, useUrlParamState } from '@/shared/hooks/use-url-param-state'
+import { LeaveCalendarDayView } from '../components/leave-calendar-day-view'
+import { LeaveCalendarMonthGrid } from '../components/leave-calendar-month-grid'
+import { LeaveCalendarToolbar } from '../components/leave-calendar-toolbar'
+import { LeaveCalendarWeekGrid } from '../components/leave-calendar-week-grid'
+import { LeaveSectionTabs } from '../components/leave-section-tabs'
+import { useHolidays, useLeaveRequests } from '../hooks/use-leave'
 import { LEAVE_STATUS, type LeaveRequest } from '../types/leave'
+import { rangeOf, shiftAnchor, toISODate, type CalendarMode } from '../utils/calendar-grid'
 
 /**
- * LỊCH NGHỈ — trả lời câu *"tuần tới ai nghỉ"*.
+ * LỊCH NGHỈ — trả lời câu *"ai nghỉ ngày nào"*, ba mức phóng to: ngày · tuần ·
+ * tháng.
  *
  * Đây là câu QĐ-NP5 nêu ra để giải thích vì sao đơn nghỉ phải là BẢNG chứ không
  * phải ô JSON của giấy GNP: hỏi được nó trên cột `DATE` có chỉ mục, còn quét
  * `JSON_EXTRACT` thì vừa chậm vừa không đánh chỉ mục được.
  *
- * Lọc theo **GIAO NHAU của khoảng**, không theo `from_date` đơn lẻ — một đơn
+ * ⚠️ Lọc theo **GIAO NHAU của khoảng**, không theo `from_date` đơn lẻ — một đơn
  * nghỉ từ tuần trước kéo sang tuần này phải lọt vào. Backend nhận đúng hai tham
- * số `from_date` / `to_date` cho việc đó.
+ * số `from_date` / `to_date` cho việc đó, và `rangeOf` dựng chúng theo chế độ
+ * đang xem (chế độ tháng hỏi theo cả lưới 42 ô, không theo mốc đầu/cuối tháng).
  *
- * Dựng theo TUẦN chứ không theo tháng: người quản lý hỏi câu này để xếp việc
- * cho tuần tới, và một ô lịch tháng không đủ chỗ ghi tên ai nghỉ.
+ * ⚠️ **Chỉ hiện đơn CÒN HIỆU LỰC** — chờ duyệt và đã duyệt. Đơn nháp chưa ai
+ * duyệt, đơn bị từ chối / đã hủy thì người ta vẫn đi làm; vẽ chúng lên lịch là
+ * xếp việc sai người.
+ *
+ * Chế độ và mốc đang xem nằm trên URL để dán được đường dẫn cho nhau.
  */
-const DAY_LABELS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']
 
-/** Thứ Hai của tuần chứa `date`. `getDay()` trả 0 cho Chủ nhật nên phải nắn. */
-function startOfWeek(date: Date): Date {
-  const d = new Date(date)
-  const shift = (d.getDay() + 6) % 7
-  d.setDate(d.getDate() - shift)
-  d.setHours(0, 0, 0, 0)
-  return d
-}
+/** Trần số đơn nạp một lượt. Lưới tháng hỏi 42 ngày nên cần rộng tay. */
+const PAGE_SIZE = 500
 
-function toISODate(d: Date): string {
-  //  Cắt tay theo giờ ĐỊA PHƯƠNG. `toISOString()` quy về UTC, mà Việt Nam lệch
-  //  +7 — ngày 01/09 lúc 00:00 giờ VN thành 31/08 trong chuỗi ISO, và cả lịch
-  //  lệch đi một ngày.
-  const m = `${d.getMonth() + 1}`.padStart(2, '0')
-  const day = `${d.getDate()}`.padStart(2, '0')
-  return `${d.getFullYear()}-${m}-${day}`
-}
+/**
+ * Mảng rỗng DÙNG CHUNG cho ngày không ai nghỉ.
+ *
+ * ⚠️ Không viết `?? []` tại chỗ: mỗi lần gọi sẽ ra một mảng MỚI, nên `useMemo`
+ * ở màn con thấy tham chiếu khác và tính lại toàn bộ mỗi lần vẽ — với lưới tháng
+ * là 42 lần cho một lượt render.
+ */
+const NO_REQUESTS: LeaveRequest[] = []
 
 export function LeaveCalendarPage() {
-  const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()))
+  const [mode, setMode] = useUrlParamState('mode', 'month')
+  const [anchorISO, setAnchorISO] = useUrlParamState('date', toISODate(new Date()))
+  const setUrlParams = useSetUrlParams()
 
-  const days = useMemo(() => {
-    return Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(weekStart)
-      d.setDate(d.getDate() + i)
-      return d
-    })
-  }, [weekStart])
+  //  Dựng `Date` từ chuỗi `YYYY-MM-DD` bằng ba số rời, KHÔNG bằng
+  //  `new Date('2026-09-01')`: dạng chuỗi đó được hiểu là UTC, và ở múi +7 nó
+  //  ra 07:00 ngày 01/09 — đúng ngày, nhưng `new Date('2026-09-01')` ở múi âm
+  //  thì lùi hẳn một ngày. Tách số là không phụ thuộc múi giờ.
+  const anchor = useMemo(() => {
+    const [y, m, d] = anchorISO.split('-').map(Number)
+    if (!y || !m || !d) return new Date()
+    return new Date(y, m - 1, d)
+  }, [anchorISO])
 
-  const params = useMemo(
-    () => ({
-      page: 1,
-      page_size: 200,
-      from_date: toISODate(days[0]),
-      to_date: toISODate(days[6]),
-    }),
-    [days],
+  const calendarMode = (['day', 'week', 'month'] as const).includes(mode as CalendarMode)
+    ? (mode as CalendarMode)
+    : 'month'
+
+  const range = useMemo(() => rangeOf(anchor, calendarMode), [anchor, calendarMode])
+
+  const { data, isLoading } = useLeaveRequests({
+    page: 1,
+    page_size: PAGE_SIZE,
+    from_date: range.from,
+    to_date: range.to,
+  })
+  const { data: holidayData } = useHolidays()
+
+  const shown = useMemo(
+    () =>
+      (data?.items ?? []).filter(
+        (r) => r.status === LEAVE_STATUS.PENDING || r.status === LEAVE_STATUS.APPROVED,
+      ),
+    [data],
   )
-  const { data, isLoading } = useLeaveRequests(params)
 
-  //  Chỉ hiện đơn CÒN HIỆU LỰC. Đơn nháp chưa ai duyệt, đơn bị từ chối / đã hủy
-  //  thì người ta vẫn đi làm — vẽ chúng lên lịch là xếp việc sai.
-  const shown = (data?.items ?? []).filter(
-    (r) => r.status === LEAVE_STATUS.PENDING || r.status === LEAVE_STATUS.APPROVED,
-  )
+  //  Gom theo NGÀY một lượt thay vì để mỗi ô tự quét cả danh sách: lưới tháng có
+  //  42 ô × 500 đơn là 21.000 lượt so sánh cho mỗi lần vẽ lại.
+  const byDay = useMemo(() => {
+    const map = new Map<string, LeaveRequest[]>()
+    for (const r of shown) {
+      //  Rải đơn ra từng ngày nó phủ. Cắt theo khoảng đang xem để đơn nghỉ dài
+      //  ba tháng không sinh ra chín chục khóa vô ích.
+      const from = r.from_date > range.from ? r.from_date : range.from
+      const to = r.to_date < range.to ? r.to_date : range.to
+      const [fy, fm, fd] = from.split('-').map(Number)
+      for (let d = new Date(fy, fm - 1, fd); toISODate(d) <= to; d.setDate(d.getDate() + 1)) {
+        const iso = toISODate(d)
+        const list = map.get(iso)
+        if (list) list.push(r)
+        else map.set(iso, [r])
+      }
+    }
+    return map
+  }, [shown, range])
 
-  const onDay = (day: Date): LeaveRequest[] => {
-    const iso = toISODate(day)
-    return shown.filter((r) => r.from_date <= iso && iso <= r.to_date)
-  }
+  //  `useCallback` để hàm này ỔN ĐỊNH giữa các lần vẽ: màn con dùng nó bên
+  //  trong `useMemo`, mà một hàm mới mỗi render thì mọi memo bên dưới thành vô
+  //  nghĩa (React Compiler cũng báo lỗi `preserve-manual-memoization`).
+  const requestsOn = useCallback((iso: string) => byDay.get(iso) ?? NO_REQUESTS, [byDay])
 
-  const shiftWeek = (weeks: number) => {
-    const d = new Date(weekStart)
-    d.setDate(d.getDate() + weeks * 7)
-    setWeekStart(d)
-  }
-
+  //  Bấm vào một ngày ở lưới tháng / tuần → phóng to đúng ngày đó. Đây là lối
+  //  thoát cho hai chế độ kia khi ô chật không chứa hết người nghỉ.
+  //
+  //  ⚠️ Đổi CẢ HAI param trong MỘT lượt. Gọi `setAnchorISO(...)` rồi
+  //  `setMode(...)` liên tiếp thì lần sau ghi đè lần trước và ngày bị mất —
+  //  xem `useSetUrlParams`.
+  const pickDay = (d: Date) => setUrlParams({ mode: 'day', date: toISODate(d) })
   const todayISO = toISODate(new Date())
+  const holidays = holidayData?.items ?? []
 
   return (
-    <PageContainer>
+    <PageContainer fill>
       <PageHeader
         title="Lịch nghỉ"
-        description="Ai nghỉ ngày nào trong tuần — chỉ hiện đơn đang chờ duyệt và đã duyệt."
-        actions={
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" aria-label="Tuần trước" onClick={() => shiftWeek(-1)}>
-              <ChevronLeft className="size-4" />
-            </Button>
-            <Button variant="outline" onClick={() => setWeekStart(startOfWeek(new Date()))}>
-              Tuần này
-            </Button>
-            <Button variant="outline" size="icon" aria-label="Tuần sau" onClick={() => shiftWeek(1)}>
-              <ChevronRight className="size-4" />
-            </Button>
-          </div>
-        }
+        description="Ai nghỉ ngày nào — chỉ hiện đơn đang chờ duyệt và đã duyệt."
       />
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-7">
-        {days.map((day, i) => {
-          const iso = toISODate(day)
-          const items = onDay(day)
-          const isWeekend = i >= 5
-          return (
-            <Card
-              key={iso}
-              className={cn(
-                'min-h-40',
-                isWeekend && 'bg-muted/40',
-                iso === todayISO && 'ring-2 ring-primary',
-              )}
-            >
-              <CardContent className="space-y-2 p-3">
-                <div className="flex items-baseline justify-between">
-                  <span className="text-sm font-semibold">{DAY_LABELS[i]}</span>
-                  <span className="text-xs tabular-nums text-muted-foreground">
-                    {day.getDate()}/{day.getMonth() + 1}
-                  </span>
-                </div>
+      <LeaveSectionTabs />
 
-                {isLoading ? (
-                  <p className="text-xs text-muted-foreground">Đang tải…</p>
-                ) : items.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">Không ai nghỉ</p>
-                ) : (
-                  items.map((r) => (
-                    <Link
-                      key={r.id}
-                      to={appRoutes.hr.leaveRequestDetail(r.id)}
-                      className="block rounded-md border bg-background p-2 text-xs hover:bg-accent"
-                    >
-                      <div className="font-medium">{r.employee_name || `#${r.employee_id}`}</div>
-                      <div className="text-muted-foreground">{r.leave_type_name}</div>
-                      <div className="mt-1">
-                        <LeaveStatusBadge status={r.status} label={r.status_label} />
-                      </div>
-                    </Link>
-                  ))
-                )}
-              </CardContent>
-            </Card>
-          )
-        })}
+      {/*  Thanh điều hướng đặt DƯỚI tiêu đề, không nhét vào `actions`: nó có
+           năm cụm điều khiển và cần cả chiều ngang, còn khe `actions` thì chia
+           chỗ với tiêu đề nên mọi thứ bị ép lại thành một dải chật. */}
+      <div className="shrink-0 space-y-2.5 pb-3">
+        <LeaveCalendarToolbar
+          anchor={anchor}
+          mode={calendarMode}
+          onModeChange={setMode}
+          onShift={(step) => setAnchorISO(toISODate(shiftAnchor(anchor, calendarMode, step)))}
+          onJump={(d) => setAnchorISO(toISODate(d))}
+        />
+
+        {/*  Chú thích màu: hai màu ở đây là thứ duy nhất phân biệt "chắc chắn
+             nghỉ" với "có thể nghỉ", mà ô lịch chật quá không ghi chữ được. */}
+        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+          {/*  Ký hiệu ở đây phải TRÙNG với chip trong lịch (chấm tròn màu),
+               không phải một hình khác cùng màu — chú thích mà vẽ khác thứ nó
+               chú thích thì người đọc phải tự bắc cầu. */}
+          <span className="flex items-center gap-1.5">
+            <span className="size-2 rounded-full bg-emerald-500" />
+            Đã duyệt
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="size-2 rounded-full bg-amber-500" />
+            Chờ duyệt
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="size-3 rounded-sm bg-rose-100 dark:bg-rose-950" />
+            Ngày lễ
+          </span>
+          {isLoading && <span>Đang tải…</span>}
+        </div>
       </div>
+
+      {calendarMode === 'month' && (
+        <LeaveCalendarMonthGrid
+          anchor={anchor}
+          requestsOn={requestsOn}
+          holidays={holidays}
+          todayISO={todayISO}
+          onPickDay={pickDay}
+        />
+      )}
+      {calendarMode === 'week' && (
+        <LeaveCalendarWeekGrid
+          anchor={anchor}
+          requestsOn={requestsOn}
+          holidays={holidays}
+          todayISO={todayISO}
+          onPickDay={pickDay}
+        />
+      )}
+      {calendarMode === 'day' && (
+        <LeaveCalendarDayView anchor={anchor} requestsOn={requestsOn} holidays={holidays} />
+      )}
     </PageContainer>
   )
 }

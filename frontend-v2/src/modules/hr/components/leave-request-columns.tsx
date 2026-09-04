@@ -15,14 +15,25 @@ import { LeaveStatusCell } from './leave-status-cell'
  * khóa mà khác nội dung sẽ thừa hưởng độ rộng của nhau.
  */
 
-export function codeColumn<T extends LeaveRequest>(): DataTableColumn<T> {
+/**
+ * Cột SỐ ĐƠN.
+ *
+ * `pinned` mặc định BẬT vì ở màn danh sách đơn, mã là cột định danh — ghim trái
+ * để nó không trôi mất khi cuộn ngang. Nhưng ⚠️ **ghim là ép nó lên đầu bảng
+ * bất kể thứ tự khai**, nên màn nào lấy thứ khác làm định danh thì phải tắt:
+ * ở Lịch nghỉ, thứ người ta dò là TÊN NGƯỜI, còn mã đơn chỉ để trao đổi qua
+ * lại — ghim mã ở đó là đẩy cột quan trọng nhất xuống hàng hai.
+ */
+export function codeColumn<T extends LeaveRequest>(
+  { pinned = true }: { pinned?: boolean } = {},
+): DataTableColumn<T> {
   return {
     key: 'code',
     header: 'Số đơn',
     cell: (r) => <span className="font-medium tabular-nums">{r.code}</span>,
     width: 110,
-    hideable: false,
-    defaultPinned: true,
+    hideable: !pinned,
+    defaultPinned: pinned,
   }
 }
 
@@ -90,7 +101,9 @@ export function leaveTypeColumn<T extends LeaveRequest>(): DataTableColumn<T> {
     key: 'leave_type_name',
     header: 'Loại nghỉ',
     cell: (r) => r.leave_type_name || '—',
-    width: 130,
+    //  "Nghỉ không lương" là tên dài nhất trong danh mục mặc định — hẹp hơn thì
+    //  cột nào cũng kết thúc bằng dấu ba chấm.
+    width: 170,
   }
 }
 
