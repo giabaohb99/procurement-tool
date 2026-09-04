@@ -142,6 +142,8 @@ export default function Payables() {
     { key: 'source_type', label: 'Loại', sort: 'source_type', cell: (r) => (r.source_type === 'shipping' ? 'Vận chuyển' : 'Hàng hóa') },
     { key: 'company', label: 'Công ty', sort: 'company', cell: (r) => companyName(r.company_id) },
     { key: 'po_code', label: 'PO', sort: 'po_code' },
+    // Ticket #18 (bao-CR-279): mã MISA lấy từ ĐMH qua po_id — người dùng đối soát theo mã này
+    { key: 'misa_code', label: 'Mã đơn Misa', sort: 'misa_code' },
     {
       key: 'invoice_no', label: 'Số hóa đơn', sort: 'invoice_no',
       cell: (r) => (r.invoice_no ? r.invoice_no : <span style={{ color: 'var(--red)', fontSize: 12 }}>chưa có HĐ</span>),

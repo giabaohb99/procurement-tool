@@ -32,6 +32,21 @@ def get_invoice_date(db: Session, p: Payable) -> str:
     return ""
 
 
+def misa_code_by_po(db: Session, items: list[Payable]) -> dict[int, str]:
+    """Ticket #18 — map po_id -> mã MISA của ĐMH, gom một truy vấn cho cả trang (tránh N+1).
+
+    Payable không lưu misa_code (nhập/sửa trên ĐMH sau khi nợ đã sinh) nên phải join lúc đọc.
+    """
+    from app.modules.purchase_order.model import PurchaseOrder
+
+    po_ids = {p.po_id for p in items if p.po_id}
+    if not po_ids:
+        return {}
+    rows = db.query(PurchaseOrder.id, PurchaseOrder.misa_code).filter(
+        PurchaseOrder.id.in_(po_ids)).all()
+    return {pid: (code or "") for pid, code in rows}
+
+
 def calc_due(incur_date: str, days: int) -> str:
     if not incur_date:
         incur_date = datetime.now().strftime("%Y-%m-%d")

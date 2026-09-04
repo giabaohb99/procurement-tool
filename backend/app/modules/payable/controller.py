@@ -16,11 +16,12 @@ from .model import Payable
 router = APIRouter(prefix="/api/payables", tags=["payable"])
 
 
-def _out(db: Session, p: Payable) -> dict:
+def _out(db: Session, p: Payable, misa_by_po: dict[int, str] | None = None) -> dict:
     return {
         "id": p.id, "company_id": p.company_id, "supplier_code": p.supplier_code,
         "supplier_name": p.supplier_name, "source_type": p.source_type,
         "po_id": p.po_id, "po_code": p.po_code, "invoice_no": p.invoice_no,
+        "misa_code": (misa_by_po or {}).get(p.po_id, ""),
         "invoice_date": service.get_invoice_date(db, p),
         "incur_date": p.incur_date, "due_date": p.due_date, "created_at": p.created_at,
         "amount": float(p.amount or 0), "vat": float(p.vat or 0), "total": float(p.total or 0),
@@ -94,7 +95,8 @@ def list_payables(request: Request, pg: dict = Depends(pagination), db: Session 
     total = q.count()
     rows = (q.order_by(Payable.due_date.asc(), Payable.id.desc())
             .offset(pg["offset"]).limit(pg["limit"]).all())
-    return success({"total": total, "items": [_out(db, p) for p in rows]})
+    misa = service.misa_code_by_po(db, rows)
+    return success({"total": total, "items": [_out(db, p, misa) for p in rows]})
 
 
 @router.get("/summary")
