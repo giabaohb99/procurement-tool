@@ -51,6 +51,11 @@ ENTITIES = [
     #  · `holiday`       — lịch ngày lễ, cũng của quản trị nhưng đổi theo năm
     #    nên thường giao cho hành chính, tách khỏi `leave_type`.
     "leave_request", "leave_balance", "leave_type", "holiday",
+    # Phân hệ Đặt phòng họp (duoc-CR-279). Hai khóa vì hai nhóm người:
+    #  · `room_booking` — ai cũng đặt được, trưởng bộ phận/hành chính duyệt;
+    #  · `meeting_room` — khai danh mục phòng, việc quản trị. Cho quyền sửa danh
+    #    mục KHÁC cho quyền đặt phòng, gộp một khóa là không tách được.
+    "room_booking", "meeting_room",
 ]
 
 ACTIONS = ["read", "create", "write", "delete", "approve", "cancel", "print", "export"]
@@ -112,6 +117,8 @@ ENTITY_LABELS = {
     "leave_balance": "Nghỉ phép › Quỹ phép năm",
     "leave_type": "Nghỉ phép › Thiết lập › Loại nghỉ",
     "holiday": "Nghỉ phép › Thiết lập › Lịch ngày lễ",
+    "room_booking": "Phiếu đặt phòng họp",
+    "meeting_room": "Phòng họp (danh mục)",
 }
 
 ACTION_LABELS = {

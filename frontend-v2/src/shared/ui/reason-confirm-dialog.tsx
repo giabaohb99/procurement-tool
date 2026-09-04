@@ -25,6 +25,16 @@ interface ReasonConfirmDialogProps {
   confirmText: string
   /** Việc không hoàn tác được thì nút xác nhận tô đỏ. */
   destructive?: boolean
+  /**
+   * Cho phép xác nhận khi ô lý do CÒN TRỐNG.
+   *
+   * Mặc định `false` — hộp này sinh ra cho những thao tác mà người khác sẽ đọc
+   * lại lý do (bãi bỏ văn bản, từ chối phiếu). Nhưng cùng một hộp cũng dùng cho
+   * nhánh THUẬN của bộ máy duyệt (bấm *Duyệt*), nơi ý kiến là tùy chọn: bắt
+   * người duyệt gõ chữ cho từng phiếu trong hai chục phiếu một ngày thì họ gõ
+   * dấu chấm cho xong, và ô lý do mất luôn ý nghĩa.
+   */
+  optional?: boolean
   pending?: boolean
   onConfirm: (reason: string) => void
 }
@@ -49,6 +59,7 @@ export function ReasonConfirmDialog({
   placeholder,
   confirmText,
   destructive = false,
+  optional = false,
   pending = false,
   onConfirm,
 }: ReasonConfirmDialogProps) {
@@ -65,6 +76,7 @@ export function ReasonConfirmDialog({
           placeholder={placeholder}
           confirmText={confirmText}
           destructive={destructive}
+          optional={optional}
           pending={pending}
           onCancel={() => onOpenChange(false)}
           onConfirm={onConfirm}
@@ -76,7 +88,7 @@ export function ReasonConfirmDialog({
 
 type ReasonFieldProps = Pick<
   ReasonConfirmDialogProps,
-  'placeholder' | 'confirmText' | 'destructive' | 'pending' | 'onConfirm'
+  'placeholder' | 'confirmText' | 'destructive' | 'optional' | 'pending' | 'onConfirm'
 > & { label: string; onCancel: () => void }
 
 /**
@@ -90,13 +102,14 @@ function ReasonField({
   placeholder,
   confirmText,
   destructive = false,
+  optional = false,
   pending = false,
   onCancel,
   onConfirm,
 }: ReasonFieldProps) {
   const fieldId = useId()
   const [reason, setReason] = useState('')
-  const ready = reason.trim().length > 0 && !pending
+  const ready = (optional || reason.trim().length > 0) && !pending
 
   return (
     <>

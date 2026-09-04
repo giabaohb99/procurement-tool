@@ -174,6 +174,21 @@ SCOPE_FIELDS = {
     #  của pháp nhân mình VỚI dòng dùng chung), không diễn đạt được bằng khuôn
     #  một-cột của `apply_scope`.
     "holiday":          PUBLIC,
+
+    # --- Đặt phòng họp (duoc-CR-279) ---
+    #  Phiếu đặt khai CẢ `owner` LẪN `self`, cùng lẽ với đơn nghỉ phép: một phiếu
+    #  có hai người dính tới nó — người ĐẶT (`requester_employee_id`, chủ trì) và
+    #  người LẬP (`created_by`, thư ký đặt hộ). Chỉ khai một vế thì vế kia mất
+    #  dấu phiếu ở phạm vi `own`.
+    "room_booking":     {"company": "company_id", "dept_id": "department_id",
+                         "owner": "created_by", "self": "requester_employee_id"},
+    #  Danh mục phòng: bảng CÓ `company_id` nhưng cố ý không lọc theo nó — `0`
+    #  nghĩa là "phòng dùng chung mọi pháp nhân", mà lọc `company_id == <của
+    #  tôi>` thì cắt mất đúng những phòng dùng chung ấy. Lọc đúng nằm ở
+    #  `service.list_availability` (gộp phòng của pháp nhân mình VỚI phòng dùng
+    #  chung), không diễn đạt được bằng khuôn một-cột của `apply_scope`. Ai được
+    #  SỬA thì gác bằng quyền `meeting_room.write`, không phải bằng phạm vi.
+    "meeting_room":     PUBLIC,
 }
 
 

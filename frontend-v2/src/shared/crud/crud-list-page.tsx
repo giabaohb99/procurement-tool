@@ -139,6 +139,7 @@ function CrudListContent<T extends CrudRecord>({
     <PageContainer fill>
       <PageHeader
         title={config.title}
+        description={config.description}
         actions={
           <div className="flex items-center gap-2">
             {config.renderToolbarExtra?.()}

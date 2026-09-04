@@ -71,3 +71,4 @@ from app.modules.work import link_model as _work_link  # noqa: F401
 from app.modules.leave import catalog_model as _leave_catalog  # noqa: F401
 from app.modules.leave import balance_model as _leave_balance  # noqa: F401
 from app.modules.leave import request_model as _leave_request  # noqa: F401
+from app.modules.meeting_room import model as _meeting_room  # noqa: F401

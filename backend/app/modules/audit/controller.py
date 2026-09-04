@@ -25,6 +25,27 @@ ACTION_LABEL = {
     "dispatched": "Điều phối",
     "paid": "Ghi nhận đã chi",
     "cancelled": "Hủy",
+    #  ⚠️ Dạng NGUYÊN THỂ của cùng những hành động trên. Bảng quyền của hệ dùng
+    #  `approve` / `cancel` (xem `core/permissions.ACTIONS`), nên controller viết
+    #  sau quen tay ghi dấu vết bằng đúng chữ đó — Nghỉ phép và Đặt phòng đều
+    #  vậy. Thiếu mấy dòng này thì dòng dấu vết hiện mã Anh trần
+    #  («Dego Admin — approve: Duyệt phiếu PH004»), thấy được ngày 04/09/2026.
+    #  Nhận CẢ HAI dạng thay vì đi sửa lời gọi: dữ liệu đã ghi bằng dạng nguyên
+    #  thể vẫn nằm trong bảng, sửa mã nguồn không làm nó đọc được.
+    "submit": "Gửi duyệt",
+    "approve": "Duyệt",
+    "reject": "Từ chối",
+    "return": "Trả về",
+    "withdraw": "Rút phiếu",
+    "cancel": "Hủy",
+    #  Hai hành động còn lại của bảng quyền. Chưa chỗ nào ghi dấu vết bằng chúng,
+    #  nhưng `require(entity, "print")` là hợp lệ ở mọi endpoint nên chỉ cần một
+    #  người thêm `record(..., "print")` là dòng đó hiện mã trần.
+    "print": "In",
+    "export": "Xuất dữ liệu",
+    #  Bảng quyền gọi việc sửa là `write`, dấu vết cũ gọi là `update` — hai chữ
+    #  cho một việc, và cả hai đều đang được ghi ở đâu đó.
+    "write": "Cập nhật",
 }
 
 

@@ -80,6 +80,7 @@ Mỗi dòng ghi trạng thái tài liệu và link tới file `.md` tương ứn
 | 28b | ↳ **Các ca đã kiểm** (phê duyệt · phân quyền · bảo mật · ban hành · stress test) | — | [15-van-thu-cac-ca-da-kiem.md](15-van-thu-cac-ca-da-kiem.md) — đã có tài liệu |
 | 29 | **Dự án — quản lý công việc** (kanban · danh sách · Gantt · hoạt động · việc con · cột mốc · bình luận · đính kèm) | `/project` | [16-du-an-cong-viec.md](16-du-an-cong-viec.md) — đã có tài liệu |
 | 30 | **Nghỉ phép** (đơn nghỉ · lịch nghỉ · quỹ phép năm · loại nghỉ · lịch ngày lễ) | `/hr/leave-requests` | [17-nghi-phep.md](17-nghi-phep.md) — đã có tài liệu |
+| 31 | **Đặt phòng họp** (lịch phòng · phiếu đặt · danh mục phòng) | `/hr/room-calendar` | [18-dat-phong-hop.md](18-dat-phong-hop.md) — đã có tài liệu |
 
 ## Nhóm: Ứng dụng tách riêng (tên miền riêng)
 

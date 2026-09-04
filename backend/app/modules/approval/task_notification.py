@@ -37,6 +37,7 @@ ENTITY_LABELS = {
     "survey_request": "Yêu cầu báo giá",
     "payment_request": "Yêu cầu thanh toán",
     "leave_request": "Đơn nghỉ phép",
+    "room_booking": "Phiếu đặt phòng họp",
 }
 
 #  Đường dẫn trong thư. Văn bản ghi thẳng đường của app v2; mấy loại còn lại ghi
@@ -55,6 +56,8 @@ ENTITY_LINKS = {
     #  phải tự mò vào menu tìm tờ đơn. Đúng lỗi mà `notification-link.ts` đã
     #  phải vá cho phân hệ Văn thư ngày 20/08/2026, chỉ khác chỗ hỏng.
     "leave_request": "/hr/leave-requests/{id}",
+    #  Đặt phòng cũng chỉ tồn tại ở app v2 — xem cảnh báo ngay trên.
+    "room_booking": "/hr/room-bookings/{id}",
 }
 
 

@@ -148,6 +148,25 @@ export const queryKeys = {
     seniorityTiers: (leaveTypeId: number) =>
       ['hr', 'leave-seniority-tiers', leaveTypeId] as const,
     holidays: (params?: Record<string, unknown>) => ['hr', 'holidays', params ?? {}] as const,
+
+    //  ── Đặt phòng họp (duoc-CR-279) ───────────────────────────────────────
+    //  Cũng nằm dưới `hr`: một lượt duyệt/hủy phiếu phải dọn cả danh sách phiếu
+    //  LẪN lịch đặt phòng — hai màn đọc cùng một dữ liệu, dọn lẻ là chắc chắn
+    //  có màn hiện phòng còn trống trong khi nó vừa bị giữ.
+    roomBookings: (params?: Record<string, unknown>) =>
+      ['hr', 'room-bookings', params ?? {}] as const,
+    roomBooking: (id: number) => ['hr', 'room-bookings', 'detail', id] as const,
+    //  Hộp việc duyệt nằm TRONG nhánh `hr` để một lượt ký dọn luôn cả ba tab:
+    //  ký xong thì phiếu rời «Cần tôi duyệt» và rơi sang «Tôi đã duyệt».
+    roomToApprove: () => ['hr', 'room-bookings', 'inbox', 'to-approve'] as const,
+    roomHandled: (params?: Record<string, unknown>) =>
+      ['hr', 'room-bookings', 'inbox', 'handled', params ?? {}] as const,
+    roomBookingAttendees: (id: number) => ['hr', 'room-bookings', 'attendees', id] as const,
+    /** Phòng trống trong MỘT khoảng giờ — cảnh báo sớm trên form đặt. */
+    roomAvailability: (startAt: string, endAt: string, companyId: number) =>
+      ['hr', 'room-availability', startAt, endAt, companyId] as const,
+    meetingRooms: (params?: Record<string, unknown>) =>
+      ['hr', 'meeting-rooms', params ?? {}] as const,
   },
   /** Phân hệ Văn thư. Danh mục nền nạp cả danh sách nên key không mang tham số lọc. */
   document: {

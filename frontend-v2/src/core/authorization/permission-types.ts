@@ -91,6 +91,10 @@ export const ENTITIES = [
   'leave_balance',
   'leave_type',
   'holiday',
+  //  Đặt phòng họp (duoc-CR-279). Hai khóa: đặt phòng là việc của mọi người,
+  //  khai danh mục phòng là việc quản trị.
+  'room_booking',
+  'meeting_room',
 ] as const
 
 export type PermissionEntity = (typeof ENTITIES)[number]

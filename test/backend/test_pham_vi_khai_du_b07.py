@@ -67,7 +67,7 @@ def test_khong_khai_thua_entity_khong_ton_tai():
     assert excess == [], f"khai thừa, không có trong ENTITIES: {excess}"
 
 
-def test_du_51_entity():
+def test_du_53_entity():
     """Chốt cứng con số để lần sau đọc test là biết ngay quy mô.
 
     39 → 42 ngày 25/08/2026 (CR-157): tách `doc_template`, `doc_numbering_rule`,
@@ -92,9 +92,12 @@ def test_du_51_entity():
     một: nộp đơn, cấp quỹ và sửa luật nghỉ là ba việc của ba nhóm người, gộp lại
     thì cho ai xem đơn của mình là cho họ tự tặng thêm ngày phép. Hai khóa đầu
     lọc thật; hai khóa danh mục khai PUBLIC kèm lý do ở `scoping.py`.
+    51 → 53 ngày 04/09/2026: Đặt phòng họp (duoc-CR-279) thêm `room_booking` +
+    `meeting_room`. Hai chứ không một: đặt phòng là việc của mọi người, khai
+    danh mục phòng là việc quản trị — cho quyền sửa danh mục KHÁC cho quyền đặt.
     """
-    assert len(ENTITIES) == 51
-    assert len(SCOPE_FIELDS) == 51
+    assert len(ENTITIES) == 53
+    assert len(SCOPE_FIELDS) == 53
 
 
 # ── 2. Không dựng nổi điều kiện thì chặn ────────────────────────────────────────

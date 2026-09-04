@@ -300,6 +300,19 @@ export const appRoutes = {
     holidays: '/hr/holidays',
     holidayNew: '/hr/holidays/new',
     holidayDetail: (id: number | string) => `/hr/holidays/${id}`,
+
+    //  ── Đặt phòng họp (duoc-CR-279) ───────────────────────────────────────
+    //  Cùng lẽ với Nghỉ phép: đặt phòng là việc hành chính hằng ngày của nhân
+    //  sự, không đáng một ô riêng trên màn chọn phân hệ.
+    roomBookings: '/hr/room-bookings',
+    roomBookingNew: '/hr/room-bookings/new',
+    roomBookingDetail: (id: number | string) => `/hr/room-bookings/${id}`,
+    /** Lịch đặt phòng — «hôm nay phòng nào còn trống». */
+    roomCalendar: '/hr/room-calendar',
+    /** Danh mục phòng họp (quản trị). */
+    meetingRooms: '/hr/meeting-rooms',
+    meetingRoomNew: '/hr/meeting-rooms/new',
+    meetingRoomDetail: (id: number | string) => `/hr/meeting-rooms/${id}`,
   },
   approvalSeal: {
     root: '/approval-seal',

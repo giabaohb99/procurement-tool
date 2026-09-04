@@ -12,6 +12,7 @@ Mục lục toàn bộ tính năng: [00-muc-luc.md](00-muc-luc.md)
 | [01-phieu-khao-sat.md](01-phieu-khao-sat.md) | Phiếu khảo sát (NCC + Sản phẩm) |
 | [16-du-an-cong-viec.md](16-du-an-cong-viec.md) | Dự án — quản lý công việc (ERP v2) |
 | [17-nghi-phep.md](17-nghi-phep.md) | Nghỉ phép — đơn nghỉ · quỹ phép năm · lịch nghỉ (ERP v2, trong phân hệ Nhân sự) |
+| [18-dat-phong-hop.md](18-dat-phong-hop.md) | Đặt phòng họp — lịch phòng · phiếu đặt chạy qua bộ máy duyệt · danh mục phòng (ERP v2, trong phân hệ Nhân sự) |
 
 Danh sách đầy đủ ở [00-muc-luc.md](00-muc-luc.md); bảng trên chỉ liệt kê vài mục
 tiêu biểu, đừng coi là danh sách đủ.

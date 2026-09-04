@@ -72,6 +72,14 @@ export interface CrudConfig<T> {
   entity: PermissionEntity
   /** Tiêu đề danh mục tiếng Việt (vd 'Kho', 'Đơn vị tính'). */
   title: string
+  /**
+   * Câu dưới tiêu đề — nói màn này để làm gì.
+   *
+   * Bỏ trống thì `PageHeader` chỉ có mỗi dòng tiêu đề, và màn CRUD đứng cạnh
+   * những màn viết tay (vốn luôn có mô tả) sẽ trông cụt lủn — khách chỉ đúng
+   * chỗ đó ngày 04/09/2026 ở tab «Danh mục phòng».
+   */
+  description?: string
   /** Tên đơn vị danh từ (vd 'kho', 'đơn vị tính', dùng cho nút "Thêm kho"). */
   unitLabel: string
   /** Đường dẫn API (vd '/api/warehouses'). */

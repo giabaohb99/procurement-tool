@@ -2,6 +2,7 @@ import {
   Building,
   Building2,
   CalendarDays,
+  DoorOpen,
   CalendarOff,
   CalendarRange,
   IdCard,
@@ -108,6 +109,33 @@ export const hrModule: ErpModule = {
       path: appRoutes.hr.holidays,
       icon: CalendarDays,
       entity: 'holiday',
+      manage: true,
+      hidden: true,
+    },
+    //  ── Đặt phòng họp (duoc-CR-279) ───────────────────────────────────────
+    //  MỘT mục menu cho ba màn (lịch · phiếu · danh mục phòng), chuyển bằng
+    //  `RoomSectionTabs`. Cùng luật với cụm Nghỉ phép ngay trên.
+    {
+      label: 'Đặt phòng họp',
+      path: appRoutes.hr.roomCalendar,
+      icon: DoorOpen,
+      entity: 'room_booking',
+      matchPaths: [appRoutes.hr.roomBookings, appRoutes.hr.meetingRooms],
+    },
+    {
+      label: 'Phiếu đặt phòng',
+      path: appRoutes.hr.roomBookings,
+      icon: DoorOpen,
+      entity: 'room_booking',
+      hidden: true,
+    },
+    {
+      label: 'Danh mục phòng họp',
+      path: appRoutes.hr.meetingRooms,
+      icon: DoorOpen,
+      entity: 'meeting_room',
+      //  Khai phòng là việc quản trị — chỉ người SỬA được mới vào, cùng luật
+      //  với tab «Danh mục phòng» trong `RoomSectionTabs`.
       manage: true,
       hidden: true,
     },
@@ -248,6 +276,50 @@ export const hrModule: ErpModule = {
       path: appRoutes.hr.holidayNew,
       lazy: async () => ({
         Component: (await import('./pages/holiday-detail-page')).HolidayDetailPage,
+      }),
+    },
+    //  ── Đặt phòng họp (duoc-CR-279) ───────────────────────────────────────
+    {
+      path: appRoutes.hr.roomCalendar,
+      lazy: async () => ({
+        Component: (await import('./pages/room-calendar-page')).RoomCalendarPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.roomBookings,
+      lazy: async () => ({
+        Component: (await import('./pages/room-booking-list-page')).RoomBookingListPage,
+      }),
+    },
+    {
+      //  `/new` và `/:id` dùng CHUNG component — nó tự nhận ra chế độ đặt mới.
+      path: appRoutes.hr.roomBookingNew,
+      lazy: async () => ({
+        Component: (await import('./pages/room-booking-detail-page')).RoomBookingDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.roomBookingDetail(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/room-booking-detail-page')).RoomBookingDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.meetingRooms,
+      lazy: async () => ({
+        Component: (await import('./pages/meeting-room-list-page')).MeetingRoomListPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.meetingRoomNew,
+      lazy: async () => ({
+        Component: (await import('./pages/meeting-room-detail-page')).MeetingRoomDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.meetingRoomDetail(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/meeting-room-detail-page')).MeetingRoomDetailPage,
       }),
     },
     {

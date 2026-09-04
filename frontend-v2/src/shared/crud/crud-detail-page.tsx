@@ -229,7 +229,7 @@ export function CrudDetailPage<T extends CrudRecord>({
         ) : (
           <PageHeader
             title={`Thêm ${config.unitLabel}`}
-            description={`Điền thông tin rồi bấm «Tạo ${config.unitLabel}».`}
+            description={config.description ?? `Điền thông tin rồi bấm «Tạo ${config.unitLabel}».`}
           />
         )}
 
