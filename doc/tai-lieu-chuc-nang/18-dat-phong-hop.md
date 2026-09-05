@@ -27,6 +27,16 @@ Chưa khai luồng nào thì phiếu vẫn gửi duyệt được và người c
 `room_booking.approve` bấm **Duyệt thẳng** — không có đường lùi này thì cài mới
 xong là không ai đặt nổi phòng.
 
+⚠️ **Còn một công tắc nữa: màn «Bật bộ máy duyệt»** (`/approval/engine`, dòng
+*Đặt phòng họp*). Đó là **đường lui của cả phân hệ** — gạt tắt là mọi phiếu gửi
+duyệt từ giây đó đi đường duyệt thẳng ở đoạn trên, kể cả khi luồng đã khai đầy đủ;
+phiếu đang chạy dở thì đi hết bản luồng đã chụp lúc trình, không bị cắt ngang.
+Phân biệt với đoạn trên: kia là *tình cờ chưa có luồng*, đây là *cố ý tắt để quay
+về*. Cờ mặc định **TẮT** khi chưa có dòng nào trong `tab_approval_switch`, và
+**không có seed nào nạp sẵn cho `room_booking`** — muốn chạy luồng nhiều bước thì
+phải vào màn đó gạt bật một lần. Tắt cờ **không** đụng tới chốt chặn trùng: phòng
+vẫn bị giữ từ lúc gửi duyệt y hệt.
+
 ### 1.1. Lưới lịch và KÉO THẢ
 
 Lưới xếp **mỗi phòng một HÀNG, giờ chạy ngang** (7:00–20:00), tô mờ phần ngoài

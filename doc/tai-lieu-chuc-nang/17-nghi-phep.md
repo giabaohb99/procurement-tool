@@ -174,6 +174,15 @@ có `leave_request.approve` bấm **Duyệt** thẳng ở màn chi tiết. Đơn
 trong luồng thì đường đó bị chặn — không chặn là mở một đường tắt đi vòng qua cả
 luồng.
 
+⚠️ **Còn một công tắc nữa: màn «Bật bộ máy duyệt»** (`/approval/engine`, dòng
+*Nghỉ phép*). Đó là **đường lui của cả phân hệ** — gạt tắt là mọi đơn nộp từ giây
+đó đi đường duyệt thẳng ở đoạn trên, kể cả khi luồng đã khai đầy đủ; đơn đang chạy
+dở thì đi hết bản luồng đã chụp lúc trình, không bị cắt ngang. Phân biệt với đoạn
+trên: kia là *tình cờ chưa có luồng*, đây là *cố ý tắt để quay về*. Cờ mặc định
+**TẮT** khi chưa có dòng nào trong `tab_approval_switch`; `app/seed_nghi_phep.py`
+nạp sẵn một dòng bật cho `leave_request`, nên hệ đã chạy seed đó thì không phải
+làm gì. Tắt cờ **không** đụng tới quỹ phép — giữ chỗ `pending_days` vẫn trừ y hệt.
+
 **Hủy đơn đang trong luồng** thì hệ **rút phiên duyệt** trước rồi mới hủy. Không
 rút thì phiếu vẫn chạy, người duyệt ký xong là hook trừ quỹ cho một tờ đơn đã hủy.
 Chỉ **người nộp** rút được (luật của bộ máy); người khác dùng *Trả lại* / *Từ chối*
