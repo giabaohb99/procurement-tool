@@ -70,6 +70,13 @@ const NAV_GROUPS: NavGroup[] = [
         icon: "ti-chart-bar",
         entity: "report",
       },
+      {
+        // bao-CR-296 — lối vào riêng của báo cáo dòng YCMH (vẫn còn tab cùng tên trong Báo cáo)
+        to: "/pr-lines-report",
+        label: "Chi tiết YC mua hàng",
+        icon: "ti-list-search",
+        entity: "report",
+      },
     ],
   },
   {
