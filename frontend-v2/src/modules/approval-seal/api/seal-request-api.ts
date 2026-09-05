@@ -1,6 +1,10 @@
 import { apiDelete, apiGet, apiPatch, apiPost } from '@/core/api'
 import type { ListParams, PaginatedResult } from '@/shared/types/api'
-import type { SealRequest, SealRequestPayload } from '../types/seal-request'
+import type {
+  SealApproversResult,
+  SealRequest,
+  SealRequestPayload,
+} from '../types/seal-request'
 
 const BASE_URL = '/api/seal-requests'
 
@@ -8,6 +12,9 @@ export const sealRequestApi = {
   list: (params: ListParams) => apiGet<PaginatedResult<SealRequest>>(BASE_URL, { params }),
 
   get: (id: number) => apiGet<SealRequest>(`${BASE_URL}/${id}`),
+
+  /** TBP đủ điều kiện duyệt + id người duyệt mặc định (điền sẵn khi tạo mới). */
+  listApprovers: () => apiGet<SealApproversResult>(`${BASE_URL}/approvers`),
 
   /** `submit=true` gửi duyệt luôn; ngược lại lưu nháp. */
   create: (payload: SealRequestPayload, submit: boolean) =>
@@ -29,7 +36,7 @@ export const sealRequestApi = {
     apiPost<SealRequest>(`${BASE_URL}/${id}/reject`, { reason }),
 
   // --- Văn thư (quyền seal_request.write) ---
-  complete: (id: number, payload: { copies_done?: number; note: string }) =>
+  complete: (id: number, payload: { note: string }) =>
     apiPost<SealRequest>(`${BASE_URL}/${id}/complete`, payload),
   returnClerk: (id: number, reason: string) =>
     apiPost<SealRequest>(`${BASE_URL}/${id}/return-clerk`, { reason }),

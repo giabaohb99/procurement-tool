@@ -10,35 +10,30 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/shared/ui/dialog'
-import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { RequiredMark } from '@/shared/ui/required-mark'
 import { Textarea } from '@/shared/ui/textarea'
 
 interface SealCompleteDialogProps {
   code: string
-  /** Số bản yêu cầu — điền sẵn vào ô "Số bản đã đóng". */
-  copies: number
   pending?: boolean
-  onConfirm: (payload: { copies_done?: number; note: string }) => void
+  onConfirm: (payload: { note: string }) => void
   onClose: () => void
 }
 
 /**
- * Văn thư HOÀN THÀNH đóng dấu: ghi số bản đã đóng (điền sẵn theo số bản yêu cầu)
- * + ghi chú BẮT BUỘC. Theo C-01: chỉ đóng bằng Hủy / X, chặn Esc + nền, hỏi nếu
- * đã nhập dở.
+ * Văn thư HOÀN THÀNH đóng dấu: ghi chú BẮT BUỘC. Theo C-01: chỉ đóng bằng Hủy / X,
+ * chặn Esc + nền, hỏi nếu đã nhập dở.
  */
-export function SealCompleteDialog({ code, copies, pending, onConfirm, onClose }: SealCompleteDialogProps) {
-  const [copiesDone, setCopiesDone] = useState(String(copies || 1))
+export function SealCompleteDialog({ code, pending, onConfirm, onClose }: SealCompleteDialogProps) {
   const [note, setNote] = useState('')
   const [error, setError] = useState('')
 
-  const dirty = note.trim() !== '' || copiesDone !== String(copies || 1)
+  const dirty = note.trim() !== ''
 
   async function attemptClose() {
     if (pending) return
-    if (dirty && !(await confirm({ message: 'Bạn đã nhập số liệu. Đóng và bỏ nội dung này?' }))) return
+    if (dirty && !(await confirm({ message: 'Bạn đã nhập nội dung. Đóng và bỏ nội dung này?' }))) return
     onClose()
   }
 
@@ -48,10 +43,7 @@ export function SealCompleteDialog({ code, copies, pending, onConfirm, onClose }
       return
     }
     setError('')
-    onConfirm({
-      copies_done: copiesDone.trim() === '' ? undefined : Number(copiesDone),
-      note: note.trim(),
-    })
+    onConfirm({ note: note.trim() })
   }
 
   return (
@@ -71,7 +63,7 @@ export function SealCompleteDialog({ code, copies, pending, onConfirm, onClose }
         <DialogHeader className="flex-row items-start justify-between text-left">
           <div>
             <DialogTitle>Hoàn thành đóng dấu {code}</DialogTitle>
-            <DialogDescription>Ghi số bản đã đóng và ghi chú bàn giao.</DialogDescription>
+            <DialogDescription>Ghi chú bàn giao sau khi đã đóng dấu.</DialogDescription>
           </div>
           <Button type="button" variant="ghost" size="icon" onClick={attemptClose} aria-label="Đóng">
             <X className="size-4" />
@@ -79,17 +71,6 @@ export function SealCompleteDialog({ code, copies, pending, onConfirm, onClose }
         </DialogHeader>
 
         <div className="flex flex-col gap-4 py-2">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="seal-copies-done">Số bản đã đóng</Label>
-            <Input
-              id="seal-copies-done"
-              type="number"
-              min={0}
-              inputMode="numeric"
-              value={copiesDone}
-              onChange={(e) => setCopiesDone(e.target.value)}
-            />
-          </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="seal-complete-note">
               Ghi chú

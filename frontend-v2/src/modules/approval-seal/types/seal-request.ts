@@ -46,6 +46,17 @@ export const SEAL_STATUS_BADGE: Record<number, BadgeTone> = {
 /** Chỉ sửa được khi phiếu còn nháp hoặc bị trả về (khớp EDITABLE_STATUSES ở backend). */
 export const EDITABLE_SEAL_STATUSES = new Set<number>([SEAL_STATUS.draft, SEAL_STATUS.returned])
 
+/**
+ * Một pháp nhân cần đóng dấu, kèm sẵn logo + MST để bày trong ô chọn / chip / bản
+ * in mà không phải tra lại danh mục Công ty (khớp phần tử của `companies`).
+ */
+export interface SealCompanyRef {
+  id: number
+  name: string
+  tax_code: string
+  logo: string
+}
+
 // --- Bản ghi phiếu (khớp SealRequestResponse) -----------------------------
 export interface SealRequest {
   id: number
@@ -53,14 +64,11 @@ export interface SealRequest {
   status: number
   status_label: string
   purpose: string
-  title: string
-  seal_type_id: number
-  seal_type_name: string
-  company_id: number
-  company_name: string
-  company_tax_code: string
+  /** Danh sách id pháp nhân cần đóng dấu — nguồn điền lại cho ô chọn khi sửa. */
+  company_ids: number[]
+  /** Bản hiển thị của từng pháp nhân (logo + tên + MST). */
+  companies: SealCompanyRef[]
   department_id: number
-  copies: number
   first_approver_id: number
   approver_name: string
   requester: string
@@ -78,11 +86,25 @@ export interface SealRequest {
 /** Payload tạo/sửa phiếu — form gửi đúng bộ trường backend nhận. */
 export interface SealRequestPayload {
   purpose: string
-  title?: string
-  seal_type_id: number
-  company_id: number
+  company_ids: number[]
   department_id?: number
-  copies?: number
-  first_approver_id?: number
-  note?: string
+  first_approver_id: number
+  note: string
+}
+
+// --- Danh sách người duyệt hợp lệ (GET /api/seal-requests/approvers) -------
+/** Một TBP đủ điều kiện duyệt yêu cầu đóng dấu. */
+export interface SealApprover {
+  id: number
+  name: string
+  email: string
+  department_id: number
+  /** TBP mặc định (trưởng bộ phận của người tạo) — được chọn sẵn khi tạo mới. */
+  is_default: boolean
+}
+
+export interface SealApproversResult {
+  items: SealApprover[]
+  /** Id người duyệt mặc định; 0 khi không suy ra được. */
+  default_id: number
 }

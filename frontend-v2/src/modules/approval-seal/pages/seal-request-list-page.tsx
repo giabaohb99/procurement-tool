@@ -18,7 +18,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { formatDateTime } from '@/shared/utils/format-date'
 import { SealStatusBadge } from '../components/status-pill'
 import { useSealRequests } from '../hooks/use-seal-requests'
-import { useSealTypes } from '../hooks/use-seal-types'
 import { SEAL_STATUS_LABELS, type SealRequest } from '../types/seal-request'
 
 const ALL = 'all'
@@ -29,26 +28,21 @@ export function SealRequestListPage() {
   const canCreate = can('seal_request', 'create')
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [status, setStatus] = useUrlParamState('status', ALL)
-  const [sealType, setSealType] = useUrlParamState('seal_type_id', ALL)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
   const [sortBy, setSortBy] = useState('')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
 
-  const { data: sealTypeData } = useSealTypes({}, { enabled: can('seal_type', 'read') })
-  const sealTypes = sealTypeData?.items ?? []
-
   const params = useMemo<ListParams>(() => {
     const p: ListParams = { page, page_size: pageSize }
     if (debouncedValue) p.search = debouncedValue
     if (status !== ALL) p.status = status
-    if (sealType !== ALL) p.seal_type_id = sealType
     if (sortBy) {
       p.sort_by = sortBy
       p.sort_dir = sortDir
     }
     return p
-  }, [page, pageSize, debouncedValue, status, sealType, sortBy, sortDir])
+  }, [page, pageSize, debouncedValue, status, sortBy, sortDir])
 
   const { data, isLoading, isError } = useSealRequests(params)
 
@@ -72,19 +66,12 @@ export function SealRequestListPage() {
         sortable: true,
       },
       {
-        key: 'seal_type_name',
-        header: 'Loại con dấu',
-        cell: (r) => r.seal_type_name || '—',
-        width: 160,
-        sortable: true,
-      },
-      {
-        key: 'company_name',
+        key: 'companies',
         header: 'Công ty',
-        cell: (r) => r.company_name || '—',
+        cell: (r) =>
+          r.companies.length > 0 ? r.companies.map((c) => c.name).join(', ') : '—',
         wrap: true,
-        minWidth: 180,
-        sortable: true,
+        minWidth: 200,
       },
       {
         key: 'requester',
@@ -181,24 +168,11 @@ export function SealRequestListPage() {
                 <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   className="pl-9"
-                  placeholder="Tìm theo mã, mục đích, chứng từ…"
+                  placeholder="Tìm theo mã, mục đích…"
                   value={keyword}
                   onChange={(e) => setKeyword(e.target.value)}
                 />
               </div>
-              <Select value={sealType} onValueChange={setSealType}>
-                <SelectTrigger className="w-44">
-                  <SelectValue placeholder="Loại con dấu" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALL}>Tất cả loại dấu</SelectItem>
-                  {sealTypes.map((type) => (
-                    <SelectItem key={type.id} value={String(type.id)}>
-                      {type.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
               <Select value={status} onValueChange={setStatus}>
                 <SelectTrigger className="w-40">
                   <SelectValue placeholder="Trạng thái" />

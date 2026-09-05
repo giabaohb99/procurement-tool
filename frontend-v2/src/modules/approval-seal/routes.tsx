@@ -26,13 +26,6 @@ export const approvalSealModule: ErpModule = {
       entity: 'seal_request',
       end: true,
     },
-    {
-      label: 'Loại con dấu',
-      path: appRoutes.approvalSeal.sealTypes,
-      icon: Stamp,
-      entity: 'seal_type',
-      group: 'Danh mục',
-    },
   ],
 
   routes: [

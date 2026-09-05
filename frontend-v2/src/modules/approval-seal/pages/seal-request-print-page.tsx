@@ -96,18 +96,33 @@ function PrintSheet({
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <tbody>
           {row('Mục đích sử dụng', request.purpose)}
-          {row('Tên chứng từ', request.title)}
-          {row('Loại con dấu', request.seal_type_name)}
-          {row('Công ty cần đóng dấu', request.company_name)}
-          {row('Mã số thuế', request.company_tax_code)}
-          {row('Số bản', String(request.copies))}
           {row('Trưởng bộ phận phê duyệt', request.approver_name)}
           {row('Trạng thái', request.status_label)}
           {row('Ngày tạo', formatDateTime(request.created_at) || '')}
         </tbody>
       </table>
 
-      <div style={section}>B. Người tạo</div>
+      <div style={section}>B. Công ty cần đóng dấu</div>
+      {request.companies.length === 0 ? (
+        <div style={{ ...cell, color: '#64748b', fontStyle: 'italic' }}>Chưa chọn công ty.</div>
+      ) : (
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <tbody>
+            <tr>
+              <td style={{ ...cellLabel, width: '55%' }}>Công ty</td>
+              <td style={cellLabel}>Mã số thuế</td>
+            </tr>
+            {request.companies.map((company) => (
+              <tr key={company.id}>
+                <td style={cell}>{company.name}</td>
+                <td style={cell}>{company.tax_code || DOTS}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      <div style={section}>C. Người tạo</div>
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <tbody>
           {row('Tên', request.requester)}
@@ -119,7 +134,7 @@ function PrintSheet({
 
       {request.note ? (
         <>
-          <div style={section}>C. Ghi chú</div>
+          <div style={section}>D. Ghi chú</div>
           <div style={{ ...cell, whiteSpace: 'pre-wrap' }}>{request.note}</div>
         </>
       ) : null}

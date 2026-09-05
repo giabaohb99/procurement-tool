@@ -155,7 +155,6 @@ export function SealWorkflowActions({ request }: { request: SealRequest }) {
       {completeOpen && (
         <SealCompleteDialog
           code={request.code}
-          copies={request.copies}
           pending={complete.isPending}
           onConfirm={(payload) => complete.mutate({ id, ...payload }, { onSuccess: () => setCompleteOpen(false) })}
           onClose={() => setCompleteOpen(false)}

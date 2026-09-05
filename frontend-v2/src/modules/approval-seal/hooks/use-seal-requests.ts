@@ -2,10 +2,17 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { toast } from 'sonner'
 
 import { appConfig } from '@/core/config/app-config'
+// Phân hệ Duyệt dấu dùng chung tầng đính kèm của Mua hàng (DocumentAttachmentsCard,
+// hook đính kèm ở trang chi tiết cũng lấy từ đây) — nên tải tệp đã ký cũng đi qua
+// đúng api đó thay vì dựng lối riêng.
+import { purchaseRequestSupportApi } from '@/modules/procurement/api/purchase-request-support-api'
 import { queryKeys } from '@/shared/constants/query-keys'
 import type { ListParams } from '@/shared/types/api'
 import { sealRequestApi } from '../api/seal-request-api'
 import type { SealRequestPayload } from '../types/seal-request'
+
+/** Loại chứng từ mặc định cho tệp đã ký đính kèm lúc tạo phiếu. */
+const SIGNED_DOC_TYPE = 'signed_doc'
 
 /** Danh sách phiếu đóng dấu trong phạm vi người xem. Server phân trang. */
 export function useSealRequests(params: ListParams = {}) {
@@ -29,12 +36,51 @@ export function useSealRequest(id: number | null) {
   })
 }
 
-/** Tạo phiếu — `submit` quyết định lưu nháp hay gửi duyệt. */
+/**
+ * TBP đủ điều kiện duyệt + id người duyệt mặc định.
+ *
+ * Key cục bộ, chỉ một hook dùng và không ai làm mới từ bên ngoài (theo ngoại lệ
+ * ở `naming.md`). `enabled` để màn tự tắt khi thiếu quyền tạo phiếu.
+ */
+export function useSealApprovers(enabled = true) {
+  return useQuery({
+    queryKey: ['seal-request', 'approvers'] as const,
+    queryFn: () => sealRequestApi.listApprovers(),
+    enabled,
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
+/**
+ * Tạo phiếu KÈM chứng từ đã ký chọn sẵn trên form tạo mới.
+ *
+ * Backend đòi ≥1 tệp đính kèm trước khi gửi duyệt, mà tệp chỉ gắn được sau khi
+ * phiếu đã có id — nên luôn tạo NHÁP trước để lấy id, tải các tệp đã buffer lên,
+ * rồi mới gửi duyệt nếu người dùng bấm "Gửi duyệt". Một toast duy nhất ở cuối.
+ */
 export function useCreateSealRequest() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ payload, submit }: { payload: SealRequestPayload; submit: boolean }) =>
-      sealRequestApi.create(payload, submit),
+    mutationFn: async ({
+      payload,
+      files,
+      submit,
+    }: {
+      payload: SealRequestPayload
+      files: File[]
+      submit: boolean
+    }) => {
+      const created = await sealRequestApi.create(payload, false)
+      if (files.length) {
+        await purchaseRequestSupportApi.uploadAttachments(
+          'seal_request',
+          created.id,
+          files,
+          SIGNED_DOC_TYPE,
+        )
+      }
+      return submit ? sealRequestApi.submit(created.id) : created
+    },
     onSuccess: (_data, { submit }) => {
       qc.invalidateQueries({ queryKey: queryKeys.sealRequest.all })
       toast.success(submit ? 'Đã gửi duyệt yêu cầu đóng dấu' : 'Đã lưu nháp yêu cầu đóng dấu')
@@ -118,8 +164,7 @@ export function useRejectSealRequest() {
 // --- Văn thư ---
 export function useCompleteSealRequest() {
   return useSealTransition(
-    ({ id, copies_done, note }: { id: number; copies_done?: number; note: string }) =>
-      sealRequestApi.complete(id, { copies_done, note }),
+    ({ id, note }: { id: number; note: string }) => sealRequestApi.complete(id, { note }),
     'Đã hoàn thành đóng dấu',
   )
 }

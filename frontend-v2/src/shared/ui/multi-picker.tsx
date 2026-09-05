@@ -1,6 +1,7 @@
 import { Check, ChevronDown, ChevronUp, Search, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
+import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
@@ -21,6 +22,12 @@ export interface MultiPickerOption {
   label: string
   /** Chữ mờ bên phải: mã, số hiệu, chức danh… — thứ để phân biệt hai dòng trùng tên. */
   hint?: string
+  /**
+   * Ảnh đại diện đứng TRƯỚC nhãn (logo công ty, ảnh nhân sự…). Khai trường này —
+   * kể cả để chuỗi rỗng — là bật cột avatar; bỏ hẳn thì dòng vẫn thuần chữ như cũ.
+   * Rỗng / hỏng ảnh thì rơi về chữ cái đầu của nhãn.
+   */
+  avatar?: string
 }
 
 /**
@@ -186,6 +193,7 @@ export function MultiPicker<Id extends MultiPickerId = MultiPickerId>({
                   )}
                 >
                   <Check className={cn('size-4 shrink-0', !checked && 'invisible')} />
+                  {item.avatar !== undefined && <OptionAvatar src={item.avatar} label={item.label} />}
                   <span className="flex-1 truncate">{item.label}</span>
                   {item.hint && (
                     <span className="shrink-0 text-xs text-muted-foreground">{item.hint}</span>
@@ -217,6 +225,7 @@ export function MultiPicker<Id extends MultiPickerId = MultiPickerId>({
           >
             {visibleChips.map((item) => (
               <Badge key={item.id} variant="secondary" className="gap-1 font-normal">
+                {item.avatar !== undefined && <OptionAvatar src={item.avatar} label={item.label} />}
                 {item.label}
                 <button
                   type="button"
@@ -276,5 +285,16 @@ export function MultiPicker<Id extends MultiPickerId = MultiPickerId>({
         </div>
       )}
     </div>
+  )
+}
+
+/** Avatar nhỏ đứng trước nhãn; ảnh rỗng/hỏng thì hiện chữ cái đầu của nhãn. */
+function OptionAvatar({ src, label }: { src: string; label: string }) {
+  const initial = (label.trim()[0] || '?').toUpperCase()
+  return (
+    <Avatar size="sm" className="size-5 shrink-0">
+      {src && <AvatarImage src={src} alt="" className="object-contain" />}
+      <AvatarFallback className="text-[10px]">{initial}</AvatarFallback>
+    </Avatar>
   )
 }
