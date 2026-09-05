@@ -359,7 +359,17 @@ def _role_scope_cond(model, entity, scope, user, profile):
                 cond = or_(cond, getattr(model, f["self"]) == rid)
             return cond
         if f.get("self"):   # entity không có owner (vd. employee) → chỉ chính mình
-            return getattr(model, f["self"]) == (profile.get("employee_id") or 0)
+            #  ⚠️ CÙNG CHỐT `rid` với nhánh có `owner` ngay trên — B11/#21. Nhánh
+            #  này trước đây so thẳng `== (employee_id or 0)`, nên tài khoản CHƯA
+            #  GẮN hồ sơ nhân sự nhận điều kiện `<cột self> == 0`, mà `0` là đúng
+            #  giá trị của MỌI dòng chưa gắn nhân sự: đặt phạm vi `own` trên
+            #  `user` là thấy hết tài khoản chưa gắn nhân sự của cả hệ. Thiếu dữ
+            #  liệu thì CHẶN, đúng tinh thần B-07 (và có một dòng log để đi tìm
+            #  người phải gắn hồ sơ), chứ không nới ra.
+            rid = profile.get("employee_id") or 0
+            if not rid:
+                return _chan(entity, scope, user, "tai khoan chua gan ho so nhan su")
+            return getattr(model, f["self"]) == rid
         scope = "company"
 
     if scope == "dept":
@@ -393,6 +403,29 @@ def _role_scope_cond(model, entity, scope, user, profile):
     return _chan(entity, scope, user, "pham vi la khong hieu duoc")
 
 
+def _parse_int_values(entity, dim, box, values):
+    """Lọc lấy giá trị SỐ trong một ô phạm vi, kêu lên khi gặp rác — B11/#34.
+
+    `auth.py` CỐ Ý giữ nguyên chuỗi khi giá trị `dim=company` không phải số
+    (`int(s.value) if (s.value or "").isdigit() else s.value`), nên một dòng
+    `tab_user_scope` hỏng — gõ tay vào DB, nhập nhầm, hay dữ liệu di trú cũ — đi
+    thẳng xuống đây. `int(v)` trần thì `ValueError` bay lên tận controller ⇒
+    **500 ở MỌI màn danh sách** của riêng người đó, và họ không tự gỡ được vì
+    màn nào cũng chết. Bỏ qua giá trị rác là cách duy nhất còn chừa đường vào để
+    sửa dữ liệu; dòng WARNING (cùng khuôn `_chan`) là chỗ để đi tìm nó.
+    """
+    good, bad = [], []
+    for v in values:
+        try:
+            good.append(int(v))
+        except (TypeError, ValueError):
+            bad.append(v)
+    if bad:
+        log.warning("scope gia tri khong phai so: entity=%s dim=%s o=%s — bo qua %r",
+                    entity, dim, box, bad)
+    return good
+
+
 def _explicit_cond(model, entity, scopeconf):
     """Điều kiện THU HẸP: include công ty/nhân sự + MỌI loại trừ (AND).
     Riêng 'Phòng ban được xem' (department include) = CỘNG THÊM → xử lý ở apply_scope."""
@@ -402,12 +435,21 @@ def _explicit_cond(model, entity, scopeconf):
         if not col:
             continue
         column = getattr(model, col)
-        inc = (scopeconf.get("inc") or {}).get(dim) or []
-        exc = (scopeconf.get("exc") or {}).get(dim) or []
+        raw_inc = (scopeconf.get("inc") or {}).get(dim) or []
+        raw_exc = (scopeconf.get("exc") or {}).get(dim) or []
+        inc = _parse_int_values(entity, dim, "chon", raw_inc)
+        exc = _parse_int_values(entity, dim, "loai tru", raw_exc)
         if inc:
-            cs.append(column.in_([int(v) for v in inc]))
+            cs.append(column.in_(inc))
+        elif raw_inc:
+            #  Ô CHỌN có giá trị nhưng KHÔNG giá trị nào dùng được. Bỏ qua ô này
+            #  là phạm vi NỞ ra đúng bằng bậc vai trò — ngược hẳn ý người khai.
+            #  Chặn, cùng luật với `_chan`. (Ô LOẠI TRỪ toàn rác thì bỏ qua là
+            #  đúng: cột số không bao giờ khớp một chuỗi rác, giữ hay bỏ đều
+            #  không loại được dòng nào.)
+            cs.append(false())
         if exc:
-            cs.append(~column.in_([int(v) for v in exc]))
+            cs.append(~column.in_(exc))
     # Phòng ban: include là CỘNG THÊM (xem `_dept_include_cond`), ở đây chỉ còn loại trừ.
     dc = _dept_match(model, f, (scopeconf.get("exc") or {}).get("department") or [],
                      (scopeconf.get("exc") or {}).get("department_name") or [])

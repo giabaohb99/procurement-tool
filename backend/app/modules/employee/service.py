@@ -150,9 +150,31 @@ def _sync_primary_department(db: Session, obj: Employee, user_id: int) -> None:
                   primary_department=new or None)
 
 
+def clear_perm_cache_of(db: Session, employee_id: int) -> None:
+    """Xóa hồ sơ quyền đang cache của tài khoản gắn với nhân sự này — #28.
+
+    `get_perm_profile` giữ `company_id`/`dept_id` trong `_PERM_CACHE` 60 giây, mà
+    hai giá trị đó CHÍNH là phạm vi dữ liệu (`_role_scope_cond`). Đổi pháp nhân
+    của một người mà không xóa cache = thu hồi tầm nhìn chậm một phút, đủ để họ
+    kịp mở lại danh sách của pháp nhân cũ.
+
+    `department_service.set_departments` đã làm đúng điều này từ CR-167; đây là
+    cùng một việc cho cửa còn lại (màn hồ sơ nhân sự). Nhân sự CHƯA CÓ tài khoản
+    thì không có gì để xóa — vòng lặp rỗng, không nổ.
+    """
+    from app.core.auth import perm_cache_clear
+    from app.modules.user.model import User
+
+    for row in db.query(User.id).filter(User.employee_id == employee_id).all():
+        perm_cache_clear(row[0])
+
+
 def update_employee(db: Session, eid: int, data: EmployeeUpdate, user_id: int) -> Employee:
     obj = get_employee(db, eid)
     old_email = (obj.email or "").strip()
+    #  Hai cột QUYẾT ĐỊNH PHẠM VI DỮ LIỆU — chụp lại trước khi ghi đè để biết có
+    #  phải xóa cache quyền không (xem `clear_perm_cache_of`).
+    old_scope = (obj.company_id or 0, obj.department_id or 0)
     fields = data.model_dump(exclude_unset=True)
     for key, value in fields.items():
         setattr(obj, key, value)
@@ -162,6 +184,10 @@ def update_employee(db: Session, eid: int, data: EmployeeUpdate, user_id: int) -
     db.commit()
     db.refresh(obj)
     record(db, user_id, ENTITY, obj.id, "update")
+    #  ⚠️ Sau `commit` chứ không trước: xóa cache rồi mới ghi thì một request khác
+    #  chen vào giữa sẽ dựng lại hồ sơ CŨ và cache thêm 60 giây nữa.
+    if (obj.company_id or 0, obj.department_id or 0) != old_scope:
+        clear_perm_cache_of(db, obj.id)
 
     # CR-022: hồ sơ nhân sự KHÔNG còn cấp quyền cho tài khoản đăng nhập. Ô ở màn Nhân sự nay là
     # "Vị trí / Chức vụ" (`position`) — chỉ là chữ để hiển thị/in phiếu. Quyền thật của tài khoản

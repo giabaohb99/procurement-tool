@@ -190,7 +190,6 @@ BB4_CONTROLLER_MIEN_TRU = {
     "backup/controller.py": "sao lưu toàn hệ, require('backup') là đúng cổng",
     "setting/controller.py": "cấu hình toàn hệ (PUBLIC)",
     "role/controller.py": "danh mục vai trò (PUBLIC) — cổng là quyền role.write",
-    "audit/controller.py": "# QUYẾT ĐỊNH CHỜ (cụm 07 C1): nhật ký toàn hệ hay bị phạm vi cắt?",
     # -- thư/thông báo của CHÍNH MÌNH, lọc bằng user_id chứ không bằng phạm vi --
     "notification/controller.py": "chỉ đọc thư gửi cho mình, lọc theo user_id — cụm 07 B1",
     "push/controller.py": "đăng ký thiết bị của chính mình",
