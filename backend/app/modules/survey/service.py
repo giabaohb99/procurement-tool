@@ -399,10 +399,18 @@ def sort_report_rows(rows: list[dict], sort_by: str, sort_dir: str) -> list[dict
     return sorted(rows, key=key_of, reverse=str(sort_dir).lower() == "desc")
 
 
-def lines_by_supplier(db: Session, tax_code: str, supplier_code: str):
+def lines_by_supplier(db: Session, tax_code: str, supplier_code: str, base_survey_query):
     """Task 9: dòng khảo sát của 1 NCC. KSNCC match theo tax_code (fallback supplier_code);
-    KSSP match theo supplier_code (product line không có tax_code)."""
+    KSSP match theo supplier_code (product line không có tax_code).
+
+    ⚠️ `base_survey_query` BẮT BUỘC — cùng khuôn với `report_rows` ngay trên.
+    Trước 05/09/2026 hàm này quét thẳng hai bảng dòng, không lọc gì: route anh
+    em `/survey-report/lines` có `apply_scope` còn `/by-supplier` thì không, nên
+    chỉ cần đổi đường dẫn là đọc được dòng khảo sát (giá chào, chính sách công
+    nợ, người liên hệ) của phiếu thuộc pháp nhân khác.
+    """
     from sqlalchemy import or_
+    survey_ids = base_survey_query.with_entities(Survey.id)
     sup = []
     conds = []
     if tax_code:
@@ -410,10 +418,14 @@ def lines_by_supplier(db: Session, tax_code: str, supplier_code: str):
     if supplier_code:
         conds.append(SurveySupplierLine.supplier_code == supplier_code)
     if conds:
-        sup = db.query(SurveySupplierLine).filter(or_(*conds)).order_by(SurveySupplierLine.id.desc()).all()
+        sup = (db.query(SurveySupplierLine)
+               .filter(or_(*conds), SurveySupplierLine.survey_id.in_(survey_ids))
+               .order_by(SurveySupplierLine.id.desc()).all())
     prod = []
     if supplier_code:
-        prod = (db.query(SurveyProductLine).filter(SurveyProductLine.supplier_code == supplier_code)
+        prod = (db.query(SurveyProductLine)
+                .filter(SurveyProductLine.supplier_code == supplier_code,
+                        SurveyProductLine.survey_id.in_(survey_ids))
                 .order_by(SurveyProductLine.id.desc()).all())
     sids = {x.survey_id for x in sup} | {x.survey_id for x in prod}
     codes = {s.id: s.code for s in db.query(Survey).filter(Survey.id.in_(sids)).all()} if sids else {}

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, BackgroundTasks, Depends, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from app.modules.notification.service import trigger_notification
@@ -8,7 +8,7 @@ from app.core.auth import get_perm_profile, require
 from app.core.base_controller import apply_filters, apply_range_filters, apply_equals, apply_sort_from_request, pagination
 from app.core.database import get_db
 from app.core.response import success
-from app.core.scoping import apply_scope
+from app.core.scoping import apply_scope, get_scoped
 from app.modules.company.model import Company
 from app.modules.payable.model import Payable
 from app.modules.supplier.model import Supplier
@@ -64,6 +64,29 @@ def _out(db: Session, req: PaymentRequest) -> dict:
     return d
 
 
+def _scoped(db: Session, rid: int, user, action: str) -> PaymentRequest:
+    """Nạp phiếu CHỈ khi nó nằm trong phạm vi dữ liệu của người gọi.
+
+    `require(...)` trả lời "vai trò này được làm hành động đó không"; nó KHÔNG trả lời
+    "trên phiếu NÀO". Trước bản vá này chỉ đường XEM hỏi phạm vi (`get_`), còn bản in và
+    toàn bộ đường GHI đi thẳng `service.*` → `db.get` — nên cùng một phiếu của pháp nhân
+    khác thì đọc bị 403 mà **duyệt chi / xóa** lại trót lọt.
+
+    ⚠️ `action` phải khớp ĐÚNG action của `require(...)` trên chính route gọi nó. Mượn tạm
+    `read` cho mọi đường là dựng lại lỗ #27 của cụm khác: người "xem toàn công ty, chỉ
+    duyệt phòng mình" sẽ duyệt được cả công ty, còn người chỉ có `approve` mà không có
+    `read` thì bị chặn sạch.
+
+    Trả **404** như `get_scoped` quy ước: người ngoài phạm vi không cần biết phiếu đó có
+    thật hay không.
+    """
+    req = get_scoped(db, PaymentRequest, "payment_request", rid, user,
+                     get_perm_profile(db, user), action)
+    if not req:
+        raise HTTPException(404, "Không tìm thấy phiếu yêu cầu thanh toán")
+    return req
+
+
 @router.get("")
 def list_(request: Request, pg: dict = Depends(pagination), db: Session = Depends(get_db),
           user=Depends(require("payment_request", "read"))):
@@ -111,7 +134,6 @@ def get_hanging_(supplier_code: str, po_code: str = "", unlinked: int = 0,
 
 @router.get("/{rid}")
 def get_(rid: int, db: Session = Depends(get_db), user=Depends(require("payment_request", "read"))):
-    from fastapi import HTTPException
     req = apply_scope(db.query(PaymentRequest).filter(PaymentRequest.id == rid),
                       PaymentRequest, "payment_request", user, get_perm_profile(db, user)).first()
     if not req:
@@ -121,7 +143,10 @@ def get_(rid: int, db: Session = Depends(get_db), user=Depends(require("payment_
 
 @router.get("/{rid}/print")
 def print_(rid: int, db: Session = Depends(get_db), user=Depends(require("payment_request", "print"))):
-    req = service.get_request(db, rid)
+    # Khóa `print` chỉ trả lời "được in hay không", không trả lời "được in phiếu NÀO":
+    # bản in còn RỘNG hơn màn chi tiết (tên pháp nhân, MST, **số tài khoản ngân hàng NCC**,
+    # chức vụ + trưởng phòng người lập), nên nó phải chịu phạm vi ít nhất bằng đường xem.
+    req = _scoped(db, rid, user, "print")
     data = _out(db, req)
     company = db.get(Company, req.company_id) if req.company_id else None
     data["company"] = {"name": company.name, "address": company.address,
@@ -149,8 +174,6 @@ def create_(data: PRequestCreate, db: Session = Depends(get_db),
     # bao-CR-274 — khoản nợ gắn vào phiếu phải nằm trong phạm vi `payable` người tạo được
     # xem: service lấy theo id (`db.get`) nên bỏ qua lọc phạm vi, gõ thẳng id qua API là
     # kéo được nợ của pháp nhân khác vào phiếu dù màn Công nợ không hiển thị khoản đó.
-    from fastapi import HTTPException
-
     from app.modules.payable.model import Payable
 
     ids = {ln.payable_id for ln in data.lines if ln.payable_id}
@@ -169,11 +192,13 @@ def create_(data: PRequestCreate, db: Session = Depends(get_db),
 @router.patch("/{rid}")
 def update_(rid: int, data: PRequestUpdate, db: Session = Depends(get_db),
             user=Depends(require("payment_request", "write"))):
+    _scoped(db, rid, user, "write")
     return success(_out(db, service.update_request(db, rid, data, user.id)), "Đã cập nhật")
 
 
 @router.delete("/{rid}")
 def delete_(rid: int, db: Session = Depends(get_db), user=Depends(require("payment_request", "delete"))):
+    _scoped(db, rid, user, "delete")
     service.delete_request(db, rid, user.id)
     return success(None, "Đã xóa")
 
@@ -183,12 +208,20 @@ def bulk_delete_requests(ids: str, db: Session = Depends(get_db), user=Depends(r
     id_list = [int(i.strip()) for i in ids.split(",") if i.strip().isdigit()]
     if not id_list:
         raise HTTPException(400, "Không có ID hợp lệ")
-    for rid in id_list:
+    # Lọc phạm vi TRƯỚC vòng lặp (khuôn `contract/controller.py`): xóa hàng loạt mà chỉ
+    # `db.get` theo id thì gửi đại một dãy id là xóa được phiếu của pháp nhân khác.
+    in_scope = [r.id for r in apply_scope(
+        db.query(PaymentRequest).filter(PaymentRequest.id.in_(id_list)),
+        PaymentRequest, "payment_request", user, get_perm_profile(db, user), "delete").all()]
+    if not in_scope:
+        raise HTTPException(403, "Ngoài phạm vi được phép xóa")
+    for rid in in_scope:
         try:
             service.delete_request(db, rid, user.id)
         except Exception as e:
             raise HTTPException(400, f"Lỗi khi xóa phiếu ID {rid}: {str(e)}")
-    return success(None, f"Đã xóa {len(id_list)} bản ghi")
+    # Báo đúng số ĐÃ xóa, không báo số đã gửi lên — lệch nhau là có id ngoài phạm vi.
+    return success(None, f"Đã xóa {len(in_scope)} bản ghi")
 
 
 def _notify_pay(db, background_tasks, r, event, reason=""):
@@ -200,6 +233,7 @@ def _notify_pay(db, background_tasks, r, event, reason=""):
 @router.post("/{rid}/submit")
 def submit_(rid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
             user=Depends(require("payment_request", "write"))):
+    _scoped(db, rid, user, "write")
     r = service.set_status(db, rid, "submitted", user.id)
     _notify_pay(db, background_tasks, r, "pay_submitted")
     return success(_out(db, r), "Đã gửi duyệt")
@@ -208,6 +242,7 @@ def submit_(rid: int, background_tasks: BackgroundTasks, db: Session = Depends(g
 @router.post("/{rid}/approve")
 def approve_(rid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
              user=Depends(require("payment_request", "approve"))):
+    _scoped(db, rid, user, "approve")
     r = service.set_status(db, rid, "approved", user.id)
     _notify_pay(db, background_tasks, r, "pay_approved")
     return success(_out(db, r), "Đã duyệt")
@@ -218,6 +253,7 @@ def reject_(rid: int, data: dict, background_tasks: BackgroundTasks, db: Session
             user=Depends(require("payment_request", "approve"))):
     """Từ chối phiếu yêu cầu thanh toán (khóa) — người duyệt thao tác. Body: {reason}."""
     reason = (data.get("reason") or "").strip()
+    _scoped(db, rid, user, "approve")   # từ chối đi cùng cổng với duyệt
     r = service.set_status(db, rid, "cancelled", user.id, reason)
     _notify_pay(db, background_tasks, r, "pay_rejected", reason)
     return success(_out(db, r), "Đã từ chối")
@@ -226,6 +262,7 @@ def reject_(rid: int, data: dict, background_tasks: BackgroundTasks, db: Session
 @router.post("/{rid}/pay")
 def pay_(rid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
          user=Depends(require("payment_request", "write"))):
+    _scoped(db, rid, user, "write")
     r = service.set_status(db, rid, "paid", user.id)
     _notify_pay(db, background_tasks, r, "pay_paid")
     return success(_out(db, r), "Đã ghi nhận chi")
@@ -239,6 +276,7 @@ def refund_(rid: int, data: dict, db: Session = Depends(get_db),
     Body: {amount, note} — amount bỏ trống/0 nghĩa là hoàn toàn bộ phần còn treo."""
     amount = float(data.get("amount") or 0)
     note = (data.get("note") or "").strip()
+    _scoped(db, rid, user, "write")
     taken = service.record_refund(db, rid, amount, note, user.id)
     return success(_out(db, service.get_request(db, rid)),
                    f"Đã ghi nhận NCC hoàn {taken:,.0f} đ")

@@ -13,6 +13,7 @@ Phủ:
 5. Endpoint /print: cash thì bank_account + bank_name rỗng, transfer thì có.
 """
 import json
+from types import SimpleNamespace
 
 import pytest
 
@@ -77,22 +78,35 @@ class TestLuuHinhThuc:
         assert req2.payment_method == "cash"
 
 
-def _print_data(db, rid) -> dict:
+@pytest.fixture
+def nguoi_in(db, seed, cap_quyen):
+    """Người có khóa IN + phạm vi «tất cả».
+
+    Từ 05/09/2026 route `/print` nạp phiếu qua `get_scoped` (P0 #4 — trước đó bản in trả
+    ra nhiều dữ liệu hơn cả màn chi tiết, gồm số tài khoản ngân hàng NCC, mà không hỏi
+    phạm vi lần nào). Nên `user=None` không còn đi qua cổng được: bài kiểm này canh NỘI
+    DUNG bản in, không canh phân quyền, nên cấp phạm vi rộng cho khỏi vướng.
+    """
+    cap_quyen(seed.u_req_id, "payment_request", scope="all", read=True, print=True)
+    return SimpleNamespace(id=seed.u_req_id)
+
+
+def _print_data(db, rid, user) -> dict:
     """Gọi thẳng endpoint /print (bỏ qua tầng Depends) và bóc `data` khỏi envelope."""
-    return json.loads(print_(rid, db=db, user=None).body)["data"]
+    return json.loads(print_(rid, db=db, user=user).body)["data"]
 
 
 class TestBanIn:
-    def test_chuyen_khoan_co_thong_tin_ngan_hang(self, db, seed, payable):
+    def test_chuyen_khoan_co_thong_tin_ngan_hang(self, db, seed, payable, nguoi_in):
         req = _create(db, seed, payable, "transfer")
-        d = _print_data(db, req.id)
+        d = _print_data(db, req.id, nguoi_in)
         assert d["payment_method"] == "transfer"
         assert d["bank_account"] == "161816186868"
         assert d["bank_name"].startswith("Ngân hàng")
 
-    def test_tien_mat_thi_de_trong(self, db, seed, payable):
+    def test_tien_mat_thi_de_trong(self, db, seed, payable, nguoi_in):
         """Chi tiền mặt: server không trả số TK/ngân hàng — cụm chuyển khoản trên bản in để trống."""
         req = _create(db, seed, payable, "cash")
-        d = _print_data(db, req.id)
+        d = _print_data(db, req.id, nguoi_in)
         assert d["payment_method"] == "cash"
         assert d["bank_account"] == "" and d["bank_name"] == ""

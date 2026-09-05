@@ -23,6 +23,19 @@ def _khong_gui_thong_bao(monkeypatch):
     monkeypatch.setattr(controller, "trigger_notification", lambda **kw: None)
 
 
+@pytest.fixture(autouse=True)
+def _user_co_quyen_that(cap_quyen):
+    """`USER` phải là tài khoản CÓ GRANT, nếu không mọi route ăn 404 trước khi tới chốt.
+
+    Từ bản vá phạm vi nhánh ghi (cụm 03), mọi route ĐMH theo id đều nạp đơn qua
+    `controller._in_scope` — mà `SimpleNamespace(id=1)` trơ thì không grant nào, và
+    "không grant" nghĩa là không thấy gì (đúng như chạy thật). Cấp phạm vi `all` để bài
+    kiểm đứng đúng chỗ nó muốn kiểm: LUẬT TRẠNG THÁI, không phải phạm vi dữ liệu.
+    """
+    cap_quyen(USER.id, "purchase_order", scope="all", read=True, create=True, write=True,
+              delete=True, approve=True, cancel=True, print=True, export=True)
+
+
 def _po(db, status="draft", supplier_code="NX", co_dong_hang=True, progress="Chưa đặt hàng"):
     code = "PO%d" % (db.query(PurchaseOrder).count() + 1)   # tab_purchase_order.code là UNIQUE
     po = PurchaseOrder(code=code, status=status, supplier_code=supplier_code,

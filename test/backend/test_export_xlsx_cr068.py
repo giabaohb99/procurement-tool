@@ -63,7 +63,11 @@ def test_cell_value_doi_kieu_theo_cot():
     assert cell_value(Col("x", "X", "date"), {"x": ""}) is None
     assert cell_value(Col("x", "X", "date"), {"x": "hôm qua"}) == "hôm qua"   # không nuốt dữ liệu lạ
     assert cell_value(Col("x", "X", "bool"), {"x": True}) == "Có"
-    assert cell_value(Col("x", "X", "bool"), {"x": False}) == ""
+    #  «Không», KHÔNG để trống — `export_xlsx.cell_value:125` giải thích: ô rỗng
+    #  thì lượt NHẬP LẠI đọc ra "chưa điền" rồi rơi về mặc định, tức False âm
+    #  thầm biến thành True ở những cột mặc định bật. Khẳng định `== ""` là bản
+    #  cũ chưa theo kịp, để đỏ từ trước đợt phạm vi 05/09/2026.
+    assert cell_value(Col("x", "X", "bool"), {"x": False}) == "Không"
 
 
 def test_cell_value_created_at_doi_sang_gio_vn():

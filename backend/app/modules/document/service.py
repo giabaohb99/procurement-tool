@@ -908,15 +908,30 @@ def _apply_effective_side_effects(db: Session, doc: Document) -> list[Document]:
 
 # ── Gợi ý văn bản đã có (B05) ────────────────────────────────────────────────
 def suggestions(db: Session, doc_type_id: int, department_id: int | None,
-                company_id: int | None, exclude_id: int | None = None) -> list[dict]:
+                company_id: int | None, exclude_id: int | None = None,
+                *, user, profile: dict) -> list[dict]:
     """Văn bản CÙNG LOẠI, CÙNG PHÒNG đang còn hiệu lực.
 
     Đây là thứ rẻ nhất còn lại chống việc đẻ trùng quy trình sau khi bước xin
     phép bị cắt (quyết định 7): người soạn nhìn thấy ngay là đã có hay chưa,
     trước khi ngồi gõ một bản thứ hai cho cùng một việc.
+
+    ⚠️ `user`/`profile` là BẮT BUỘC (vá 05/09/2026). Trước đó hàm này không
+    nhận người dùng nên **không lọc được kể cả khi muốn**: hai bộ lọc duy nhất
+    (`department_id`, `company_id`) là tham số do NGƯỜI GỌI truyền, bỏ trống là
+    quét cả bảng. Mà nó trả `title` + `display_code` — đúng thứ `ensure_can`
+    phải trả 404 để giấu (K03) — nên truyền `doc_type_id` của một loại bật
+    `is_personal` là đọc ra tiêu đề đơn nghỉ phép của từng người.
+    Lọc bằng chính `visible_condition` của danh sách văn bản, không viết lại
+    luật xem: hai tầng nói hai câu khác nhau là lệch ngay lần sửa sau.
     """
+    from .access_service import visible_condition
+
     q = documents_query(db).filter(Document.doc_type_id == doc_type_id,
                                    Document.status.in_(ALIVE_STATUSES))
+    visible = visible_condition(user, profile, "read")
+    if visible is not None:
+        q = q.filter(visible)
     if department_id:
         q = q.filter(Document.department_id == department_id)
     if company_id:

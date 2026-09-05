@@ -384,39 +384,39 @@ def test_a6c_quy_phep_pham_vi_cua_minh_la_quy_CUA_TOI_khong_phai_quy_toi_cap(wor
         "người CẤP PHÁT không phải chủ quỹ")
 
 
-def test_a6d_duong_my_balance_doc_duoc_quy_cua_nguoi_ngoai_pham_vi(world):
-    """🔴 LỖ THẬT — `leave/request_controller.py:270-300`.
+def test_a6d_duong_my_balance_bo_theo_pham_vi_quy_phep(world):
+    """CANH KHÔNG TÁI PHÁT — `GET /api/leave-requests/tools/my-balance`.
 
-    ```python
-    @router.get("/tools/my-balance")
-    def my_balance(leave_type_id: int, year: int = 0, employee_id: int = 0, ...,
-                   user=Depends(require(ENTITY, "read"))):      # ENTITY = leave_request
-        employee = request_service.resolve_leave_taker(db, user, employee_id)
-    ```
+    Lỗ cũ: route gác bằng `require("leave_request", "read")` rồi nạp người nghỉ
+    bằng `request_service.resolve_leave_taker` = `db.get(Employee, ...)` trần —
+    không `apply_scope`, không `get_scoped`. Bất kỳ ai có `leave_request.read`
+    **phạm vi hẹp nhất** chỉ cần truyền `employee_id` lên URL là đọc được
+    `total_days` / `used_days` / `remaining_days` của bất kỳ nhân sự nào trong
+    hệ, kể cả pháp nhân khác. Đó là đúng dữ liệu mà khóa `leave_balance` sinh ra
+    để gác, và ca A6/A6b ở trên chứng minh khóa ấy gác đúng ở ĐƯỜNG CHÍNH
+    (`GET /api/leave-balances`) — đường này đi vòng qua nó.
 
-    `resolve_leave_taker` là `db.get(Employee, employee_id)` trần — không
-    `apply_scope`, không `get_scoped`. Nên bất kỳ ai có **`leave_request.read`
-    phạm vi hẹp nhất** đọc được `total_days` / `used_days` / `remaining_days`
-    của **bất kỳ nhân sự nào trong hệ**, kể cả pháp nhân khác, chỉ bằng cách
-    truyền `employee_id` lên URL.
+    Vá 05/09/2026 (`_ensure_balance_in_scope`, `request_controller.py:271-297`):
+    quỹ của NGƯỜI KHÁC phải nằm trong phạm vi khóa **`leave_balance`**, không thì
+    404. Cố ý KHÔNG bó bằng `employee` — dữ liệu bị lộ là quỹ phép, nên hỏi đúng
+    khóa gác quỹ phép. Quỹ của CHÍNH MÌNH thì không đòi thêm khóa nào: ai nộp
+    được đơn cũng phải thấy số còn lại, bắt cấp thêm một khóa nữa là chắc chắn có
+    người quên cấp rồi ô đó hiện 0 vĩnh viễn.
 
-    Đó là đúng dữ liệu mà khóa `leave_balance` sinh ra để gác — và ca A6 ở trên
-    chứng minh khóa ấy đang gác đúng ở đường chính. Đường này đi vòng qua nó.
+    ⚠️ Bản vá còn `db.rollback()` trước khi ném: `ensure_balance` **tự cấp phát**
+    một dòng quỹ khi chưa có, nên không hoàn tác thì một lượt dò id cũng ghi được
+    vào sổ quỹ. Ca này đo cả điều đó.
 
-    Docstring của endpoint giải thích vì sao gác bằng `leave_request.read`:
-    *«đây là quỹ của CHÍNH người đang nộp (hoặc của người mình đang lập hộ)»*.
-    Lý lẽ đúng, nhưng vế «người mình đang lập hộ» hiện KHÔNG bị bó bởi gì cả.
-
-    Ghim HÀNH VI HIỆN TẠI.
-
-    # QUYẾT ĐỊNH CHỜ: `resolve_leave_taker` có nên đi qua `get_scoped(...,
-    # "employee", ...)` khi `employee_id` khác rỗng và khác chính mình? Cùng
-    # một chốt sẽ bịt luôn đường `POST /leave-requests` — nay nộp đơn hộ được
-    # cho bất kỳ ai, và đơn đó ăn vào quỹ phép của họ.
+    Ba vế: chặn người ngoài phạm vi · KHÔNG chặn quỹ của chính mình · KHÔNG chặn
+    hành chính có `leave_balance` trong phạm vi.
     """
     import json
 
+    import pytest
+    from fastapi import HTTPException
+
     from app.modules.leave import request_controller
+    from app.modules.leave.balance_model import LeaveBalance
     from app.modules.leave.catalog_model import LeaveType
 
     db = world.db
@@ -427,20 +427,47 @@ def test_a6d_duong_my_balance_doc_duoc_quy_cua_nguoi_ngoai_pham_vi(world):
     quy_b1 = create_balance(db, employee_id=world.emp["b1"], company_id=world.co["B"])
     quy_b1.leave_type_id = loai.id
     quy_b1.used_days = 3.0
+    quy_a1 = create_balance(db, employee_id=world.emp["a1"], company_id=world.co["A"])
+    quy_a1.leave_type_id = loai.id
+    quy_a1.used_days = 1.0
+    quy_a2 = create_balance(db, employee_id=world.emp["a2"], company_id=world.co["A"])
+    quy_a2.leave_type_id = loai.id
+    quy_a2.used_days = 2.0
     db.commit()
+    truoc = {r.id for r in db.query(LeaveBalance).all()}
 
+    def goi(actor, employee_id):
+        return json.loads(request_controller.my_balance(
+            leave_type_id=loai.id, year=2026, employee_id=employee_id,
+            db=db, user=actor.user).body)["data"]
+
+    #  ── Vế CHẶN: chỉ có `leave_request.read` phạm vi hẹp nhất ────────────────
     a1 = world.grant("a1", "leave_request", scope="own")
-    from app.modules.leave.balance_model import LeaveBalance
     assert a1.can_get(LeaveBalance, quy_b1.id, "leave_balance") is False, (
-        "đường chính đã chặn đúng")
+        "đường chính vẫn chặn đúng")
 
-    ket_qua = json.loads(request_controller.my_balance(
-        leave_type_id=loai.id, year=2026, employee_id=world.emp["b1"],
-        db=db, user=a1.user).body)["data"]
+    with pytest.raises(HTTPException) as err:
+        goi(a1, world.emp["b1"])
+    assert err.value.status_code == 404, "404 chứ không 403 — đừng xác nhận quỹ có thật"
+    assert {r.id for r in db.query(LeaveBalance).all()} == truoc, (
+        "một lượt dò id không được để lại dòng quỹ mới")
 
-    assert ket_qua["employee_id"] == world.emp["b1"]
-    assert ket_qua["used_days"] == 3.0
-    assert ket_qua["total_days"] == 12.0
+    #  ── Vế KHÔNG CHẶN NHẦM 1: quỹ CỦA CHÍNH MÌNH, không cần khóa `leave_balance` ─
+    cua_toi = goi(a1, 0)                       # bỏ trống ô ⇒ chính người đang gọi
+    assert cua_toi["employee_id"] == world.emp["a1"]
+    assert (cua_toi["used_days"], cua_toi["total_days"]) == (1.0, 12.0)
+    assert goi(a1, world.emp["a1"])["used_days"] == 1.0, "gõ đúng id mình cũng vậy"
+
+    #  ── Vế KHÔNG CHẶN NHẦM 2: hành chính lập hộ, có `leave_balance` bậc pháp nhân ─
+    hc = world.grant("a3", "leave_request", scope="own")
+    hc.grant("leave_balance", scope="company")
+    doc_ho = goi(hc, world.emp["a2"])
+    assert (doc_ho["employee_id"], doc_ho["used_days"]) == (world.emp["a2"], 2.0), (
+        "người trong phạm vi quỹ vẫn phải xem hộ được — bản vá không được khóa việc thật")
+
+    with pytest.raises(HTTPException) as err:
+        goi(hc, world.emp["b1"])
+    assert err.value.status_code == 404, "…nhưng dừng đúng ở ranh giới pháp nhân"
 
 
 def test_a7_don_nghi_pham_vi_phong_ban_dung_hai_chieu_phap_nhan_va_phong(world, leave_ids):

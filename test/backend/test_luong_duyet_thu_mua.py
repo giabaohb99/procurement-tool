@@ -56,6 +56,20 @@ def _cat_moi_duong_gui_thong_bao(monkeypatch):
     monkeypatch.setattr(pr_ctl, "_notify_assigned", lambda *a, **kw: None)
 
 
+@pytest.fixture(autouse=True)
+def _user_co_quyen_that(cap_quyen):
+    """`USER` phải là tài khoản CÓ GRANT, nếu không mọi route ăn 404 trước khi tới luật.
+
+    Từ bản vá phạm vi nhánh ghi (cụm 03), các route theo id của YCMH · Khảo sát · YCBG ·
+    YCTT nạp chứng từ qua `_in_scope` thay cho `service.get_*` trần — `SimpleNamespace(id=1)`
+    trơ thì không grant nào, mà "không grant" = không thấy gì (đúng như chạy thật). Cấp
+    phạm vi `all` để bộ này kiểm đúng thứ nó sinh ra để kiểm: LUẬT TRẠNG THÁI.
+    """
+    for entity in ("purchase_request", "survey", "survey_request", "payment_request"):
+        cap_quyen(USER.id, entity, scope="all", read=True, create=True, write=True,
+                  delete=True, approve=True, cancel=True, print=True, export=True)
+
+
 # ── YCMH · Yêu cầu mua hàng ─────────────────────────────────────────────────
 #  Luồng: Nháp → Chờ duyệt → Đã duyệt → (Đã điều phối) → … · Bị trả lại thì sửa
 #  và gửi lại được.
@@ -327,6 +341,22 @@ def test_ycbg_chua_chan_duyet_phieu_da_huy(db, seed):
 
 # ── YCTT · Yêu cầu thanh toán ───────────────────────────────────────────────
 
+@pytest.fixture
+def quyen_yctt(db, cap_quyen):
+    """`USER` phải có vai trò THẬT trên `payment_request` mới đi qua cổng phạm vi.
+
+    Từ 05/09/2026 tám route GHI của YCTT nạp phiếu qua `get_scoped(..., action)` (P0 #3
+    — trước đó duyệt chi / xóa phiếu của pháp nhân khác đều trót lọt). Một
+    `SimpleNamespace(id=1)` trơ không có grant nào, mà "không grant" nghĩa là không thấy
+    gì — đúng như chạy thật, xem chú thích của fixture `cap_quyen` trong `conftest.py`.
+
+    Bộ bài này canh LUẬT TRẠNG THÁI chứ không canh phân quyền, nên cấp phạm vi «tất cả».
+    Phần phạm vi có bài riêng: `test_pham_vi_tai_chinh_kho_bao_cao.py` (C4–C6c).
+    """
+    return cap_quyen(USER.id, "payment_request", scope="all",
+                     read=True, write=True, approve=True, delete=True, print=True)
+
+
 def _yctt(db, status="draft", code="YCTT-N01-01"):
     r = PaymentRequest(code=code, status=status)
     db.add(r)
@@ -335,7 +365,7 @@ def _yctt(db, status="draft", code="YCTT-N01-01"):
     return r
 
 
-def test_yctt_duyet_roi_ghi_nhan_chi(db):
+def test_yctt_duyet_roi_ghi_nhan_chi(db, quyen_yctt):
     """Bắt đầu từ `submitted`: bước gửi duyệt đã có `test_payment_request_cr066.py`
     kiểm kỹ (mỗi dòng phải khớp một khoản công nợ còn nợ), dựng lại ở đây chỉ
     làm bài kiểm này đỏ vì thiếu dữ liệu công nợ chứ không phải vì luật duyệt sai."""
@@ -350,7 +380,7 @@ def test_yctt_duyet_roi_ghi_nhan_chi(db):
     assert r.status == "paid"
 
 
-def test_yctt_tu_choi_la_khoa_phieu(db):
+def test_yctt_tu_choi_la_khoa_phieu(db, quyen_yctt):
     """Từ chối YCTT về `cancelled`, KHÔNG phải `rejected` — phiếu tiền thì khóa hẳn."""
     r = _yctt(db, status="submitted", code="YCTT-N01-TC")
 
@@ -360,7 +390,7 @@ def test_yctt_tu_choi_la_khoa_phieu(db):
     assert r.status == "cancelled"
 
 
-def test_yctt_chua_chan_ghi_chi_phieu_chua_duyet(db):
+def test_yctt_chua_chan_ghi_chi_phieu_chua_duyet(db, quyen_yctt):
     """⚠️ LỖ HỔNG ĐÃ BIẾT, và là cái nặng nhất trong ba cái.
 
     `pay_` không kiểm trạng thái nên gọi API trực tiếp là ghi nhận đã chi cho

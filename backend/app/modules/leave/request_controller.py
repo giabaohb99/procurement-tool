@@ -17,6 +17,7 @@ from app.core.scoping import apply_scope, get_scoped
 
 from . import (approval_bridge, balance_service, request_serializer,
                request_service, workday_service)
+from .balance_model import LeaveBalance
 from .catalog_model import LeaveType
 from .constants import LR_APPROVED, LR_CANCELLED, LR_PENDING, LR_REJECTED
 from .request_model import LeaveRequest
@@ -267,6 +268,36 @@ def estimate_days(from_date: str, to_date: str,
     return success({"total_days": days})
 
 
+def _ensure_balance_in_scope(db: Session, user, employee, row) -> None:
+    """Quỹ của NGƯỜI KHÁC chỉ đọc được trong phạm vi của khóa **`leave_balance`**.
+
+    Vá 05/09/2026. `resolve_leave_taker` là `db.get(Employee, ...)` trần, nên
+    trước đây bất kỳ ai có `leave_request.read` — kể cả phạm vi hẹp nhất — chỉ
+    cần truyền `employee_id` lên URL là đọc được `total_days` / `used_days` /
+    `remaining_days` của bất kỳ nhân sự nào trong hệ, kể cả pháp nhân khác.
+    Đó là **đường vòng qua đúng khóa sinh ra để gác dữ liệu này**: đường chính
+    (`GET /api/leave-balances`) đã lọc bằng `leave_balance` từ CR-259.
+
+    Quỹ của CHÍNH MÌNH thì KHÔNG đòi thêm khóa nào — giữ nguyên lý lẽ trong
+    docstring của endpoint: ai nộp được đơn cũng phải thấy được số còn lại, bắt
+    cấp thêm một khóa nữa là chắc chắn có người quên cấp rồi ô đó hiện 0 vĩnh
+    viễn. Hành chính lập hộ vẫn xem được quỹ của người trong phạm vi họ được
+    khai (`leave_balance` bậc `company` là đủ cho cả pháp nhân).
+
+    ⚠️ `leave_balance` KHÔNG có chiều `owner` (`created_by` là người Nhân sự bấm
+    nút cấp phát), nên đừng lùi về `own` ở đây — xem `SCOPE_FIELDS`.
+    """
+    if employee.id == (getattr(user, "employee_id", 0) or 0):
+        return
+    if get_scoped(db, LeaveBalance, "leave_balance", row.id, user,
+                  get_perm_profile(db, user), "read") is not None:
+        return
+    #  `ensure_balance` vừa có thể CẤP PHÁT một dòng quỹ mới cho người ngoài phạm
+    #  vi — bỏ nó đi, đừng để một lượt dò id cũng ghi được vào sổ quỹ.
+    db.rollback()
+    raise HTTPException(404, "Không tìm thấy quỹ phép của nhân sự này")
+
+
 @router.get("/tools/my-balance")
 def my_balance(leave_type_id: int, year: int = 0, employee_id: int = 0,
                db: Session = Depends(get_db),
@@ -274,9 +305,11 @@ def my_balance(leave_type_id: int, year: int = 0, employee_id: int = 0,
     """Số phép còn lại — ràng buộc §6.1: form phải hiện con số này lúc nộp.
 
     Cố tình gác bằng `leave_request.read` chứ không `leave_balance.read`: đây là
-    quỹ của CHÍNH người đang nộp (hoặc của người mình đang lập hộ), và ai nộp
-    được đơn thì phải thấy được số còn lại — bắt cấp thêm một khóa nữa là chắc
-    chắn có người quên cấp, rồi ô đó hiện 0 vĩnh viễn.
+    quỹ của CHÍNH người đang nộp, và ai nộp được đơn thì phải thấy được số còn
+    lại — bắt cấp thêm một khóa nữa là chắc chắn có người quên cấp, rồi ô đó
+    hiện 0 vĩnh viễn.
+
+    Vế «của người mình đang lập hộ» thì PHẢI bó — xem `_ensure_balance_in_scope`.
     """
     from datetime import date as _date
 
@@ -284,6 +317,7 @@ def my_balance(leave_type_id: int, year: int = 0, employee_id: int = 0,
     leave_type = request_service.get_leave_type(db, leave_type_id)
     year = year or _date.today().year
     row = balance_service.ensure_balance(db, employee, year, leave_type)
+    _ensure_balance_in_scope(db, user, employee, row)
     db.commit()
     return success({
         "employee_id": employee.id,

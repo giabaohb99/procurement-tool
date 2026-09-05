@@ -29,17 +29,21 @@ def _dict(obj) -> dict:
     return d
 
 
-def _scope_with_named_head(user, profile):
-    """Điều kiện phạm vi + MỞ THÊM cho người được chọn đích danh làm TBP duyệt.
+def _scope_with_named_head(user, profile, action: str = "read"):
+    """Điều kiện phạm vi `action` + MỞ THÊM cho người được chọn đích danh làm TBP duyệt.
 
     Người lập được chọn TBP phòng ban KHÁC duyệt phiếu (QA 29/08) — phiếu đó nằm
     ngoài phạm vi vai trò của TBP kia (scope 'dept' lọc theo phòng của phiếu),
     không mở thêm thì họ nhận thông báo mà bấm vào là 403. Chỉ mở từ lúc gửi duyệt
     (bỏ nháp); route vẫn gác `require(...)` nên người không có quyền đọc không lọt.
     Trả None = thấy tất cả, giữ nguyên ngữ nghĩa của `scope_condition`.
+
+    ⚠️ `action` phải đi theo `require(...)` của route gọi. Nhất là nhánh DUYỆT: TBP được
+    chọn đích danh đứng NGOÀI phạm vi vai trò của họ, nên nếu chỉ `scope_condition(approve)`
+    thì đúng người được giao lại không ký được — vế `named_head` dưới đây là chỗ trả họ về.
     """
     from sqlalchemy import and_, or_
-    cond = scope_condition(SurveyRequest, "survey_request", user, profile)
+    cond = scope_condition(SurveyRequest, "survey_request", user, profile, action)
     if cond is None:
         return None
     emp_id = (profile or {}).get("employee_id") or 0
@@ -48,6 +52,26 @@ def _scope_with_named_head(user, profile):
     named_head = and_(SurveyRequest.head_of_dept_id == emp_id,
                       SurveyRequest.status != "draft")
     return or_(cond, named_head)
+
+
+def _in_scope(db: Session, sid: int, user, action: str) -> SurveyRequest:
+    """Nạp YCBG theo id NHƯNG chỉ khi nó nằm trong phạm vi `action` của người gọi.
+
+    Trước bản vá này mọi nhánh GHI (sửa · xóa · gửi duyệt · duyệt · trả đơn · từ chối ·
+    trang Xử lý khảo sát · chốt phương án · sinh YCMH · hoàn thành) đều dừng ở
+    `service.get_sr` = `db.get` trần: gõ id vào URL là thao tác được phiếu pháp nhân khác.
+
+    Đi qua `_scope_with_named_head` chứ không gọi thẳng `apply_scope`, để giữ nguyên phần
+    NỚI cho TBP được chọn đích danh (QA 29/08) — bỏ nó là chặn đúng người được giao duyệt.
+
+    404 cho cả "không có" lẫn "ngoài phạm vi", cùng mã lỗi `service.get_sr` vẫn trả.
+    """
+    cond = _scope_with_named_head(user, get_perm_profile(db, user), action)
+    q = db.query(SurveyRequest).filter(SurveyRequest.id == sid)
+    sr = (q if cond is None else q.filter(cond)).first()
+    if not sr:
+        raise HTTPException(404, "Không tìm thấy phiếu yêu cầu báo giá")
+    return sr
 
 
 def _out(db: Session, s: SurveyRequest, user=None, profile=None) -> dict:
@@ -309,7 +333,9 @@ def create_(data: SurveyRequestCreate, db: Session = Depends(get_db),
 @router.patch("/{sid}")
 def update_(sid: int, data: SurveyRequestUpdate, db: Session = Depends(get_db),
             user=Depends(require("survey_request", "read"))):
-    s = service.get_sr(db, sid)
+    # Phạm vi đi theo `read` (đúng `require` của route): người YÊU CẦU chỉ có read+create+write
+    # phạm vi `own`, và chính họ là người sửa phiếu nháp của mình.
+    s = _in_scope(db, sid, user, "read")
     if not _can_edit_own(db, s, user):
         raise HTTPException(403, "Không có quyền sửa phiếu này")
     return success(_out(db, service.update_sr(db, sid, data, user.id, user, get_perm_profile(db, user))),
@@ -320,6 +346,12 @@ def update_(sid: int, data: SurveyRequestUpdate, db: Session = Depends(get_db),
 def clone_(sid: int, db: Session = Depends(get_db), user=Depends(require("survey_request", "create"))):
     """Nhân bản 1 YCKS thành phiếu nháp mới (sao chép header + dòng)."""
     prof = get_perm_profile(db, user)
+    #  ⚠️ Phạm vi ở đây soi `read`, KHÔNG soi `create` — cố ý, và khác luật chung
+    #  "action khớp `require`" mà các route quanh đây theo. Nguồn để nhân bản là
+    #  thứ mình được ĐỌC; `create` mô tả mình được tạo ra cái gì, không mô tả
+    #  mình được đọc cái gì. Đây cũng là cổng DUY NHẤT của module đã có lọc phạm
+    #  vi từ trước, nên giữ nguyên cả mã 403 — đợt siết phạm vi 05/09/2026 không
+    #  đổi hành vi của cổng đang chạy đúng.
     s = apply_scope(db.query(SurveyRequest).filter(SurveyRequest.id == sid),
                     SurveyRequest, "survey_request", user, prof).first()
     if not s:
@@ -329,6 +361,7 @@ def clone_(sid: int, db: Session = Depends(get_db), user=Depends(require("survey
 
 @router.delete("/{sid}")
 def delete_(sid: int, db: Session = Depends(get_db), user=Depends(require("survey_request", "delete"))):
+    _in_scope(db, sid, user, "delete")
     service.delete_sr(db, sid, user.id)
     return success(None, "Đã xóa")
 
@@ -338,17 +371,25 @@ def bulk_delete_survey_requests(ids: str, db: Session = Depends(get_db), user=De
     id_list = [int(i.strip()) for i in ids.split(",") if i.strip().isdigit()]
     if not id_list:
         raise HTTPException(400, "Không có ID hợp lệ")
-    for sid in id_list:
+    # Lọc phạm vi TRƯỚC vòng lặp (khuôn của `contract/controller.py`): xóa hàng loạt mà chỉ
+    # lặp theo id thì gửi đại một dãy số là dọn sạch YCBG của mọi pháp nhân.
+    rows = apply_scope(db.query(SurveyRequest).filter(SurveyRequest.id.in_(id_list)),
+                       SurveyRequest, "survey_request", user,
+                       get_perm_profile(db, user), "delete").all()
+    if not rows:
+        raise HTTPException(403, "Ngoài phạm vi được phép xóa")
+    for sid in [r.id for r in rows]:
         try:
             service.delete_sr(db, sid, user.id)
         except Exception as e:
             raise HTTPException(400, f"Lỗi khi xóa phiếu ID {sid}: {str(e)}")
-    return success(None, f"Đã xóa {len(id_list)} bản ghi")
+    # Báo đúng số ĐÃ xóa, không báo số đã gửi lên — lệch nhau là có id ngoài phạm vi.
+    return success(None, f"Đã xóa {len(rows)} bản ghi")
 
 
 @router.post("/{sid}/submit")
 def submit_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user=Depends(require("survey_request", "read"))):
-    s = service.get_sr(db, sid)
+    s = _in_scope(db, sid, user, "read")
     if not _can_edit_own(db, s, user):
         raise HTTPException(403, "Không có quyền gửi duyệt phiếu này")
     if s.status not in ("draft", "rejected"):
@@ -374,6 +415,7 @@ def submit_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(g
 
 @router.post("/{sid}/approve")
 def approve_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user=Depends(require("survey_request", "approve"))):
+    _in_scope(db, sid, user, "approve")
     s = service.set_status(db, sid, "approved", user.id)
     service.auto_assign(db, s)                       # tự gán NSTM theo phân loại (Task 4)
     s = service.set_status(db, sid, "processing", user.id)   # duyệt xong -> chuyển sang Đang xử lý
@@ -409,6 +451,7 @@ def approve_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(
 def reject_(sid: int, data: RejectIn, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
             user=Depends(require("survey_request", "approve"))):
     """TRẢ ĐƠN — trả về để người YC sửa & gửi lại (như nháp). status → rejected (còn sửa được)."""
+    _in_scope(db, sid, user, "approve")
     s = service.set_status(db, sid, "rejected", user.id, data.reason)
     from app.modules.user.model import User
     reqs = db.query(User).filter(User.id == (s.created_by or user.id)).all()
@@ -422,6 +465,7 @@ def reject_(sid: int, data: RejectIn, background_tasks: BackgroundTasks, db: Ses
 def cancel_(sid: int, data: RejectIn, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
             user=Depends(require("survey_request", "approve"))):
     """TỪ CHỐI — khóa đơn hẳn (không sửa được nữa, phải làm đơn mới). status → cancelled."""
+    _in_scope(db, sid, user, "approve")
     s = service.set_status(db, sid, "cancelled", user.id, data.reason)
     from app.modules.user.model import User
     reqs = db.query(User).filter(User.id == (s.created_by or user.id)).all()
@@ -434,7 +478,13 @@ def cancel_(sid: int, data: RejectIn, background_tasks: BackgroundTasks, db: Ses
 @router.patch("/{sid}/lines/{line_id}/assignee")
 def set_line_assignee_(sid: int, line_id: int, data: dict, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
                        user=Depends(require("survey_request", "process"))):
-    """Gán/đổi NSTM phụ trách 1 dòng — CHỈ thu mua side (NSTM/QL/Admin TM). Người YC không được. Body: {assignee: mã NV}."""
+    """Gán/đổi NSTM phụ trách 1 dòng — CHỈ thu mua side (NSTM/QL/Admin TM). Người YC không được. Body: {assignee: mã NV}.
+
+    Phạm vi lấy theo `read`: `require(..., "process")` gác bằng CỜ suy ra (`is_purchaser`),
+    không phải một hành động có trong `ACTIONS` — hỏi `scope_condition("process")` thì
+    không grant nào có nó và cổng đóng sạch.
+    """
+    _in_scope(db, sid, user, "read")
     _ensure_sr_editable(service.get_sr(db, sid))
     from .model import SurveyRequestLine
     ln = db.query(SurveyRequestLine).filter(SurveyRequestLine.id == line_id,
@@ -460,9 +510,16 @@ def set_line_assignee_(sid: int, line_id: int, data: dict, background_tasks: Bac
 
 
 @router.patch("/{sid}/lines/{line_id}/status")
-def set_line_status_(sid: int, line_id: int, data: dict, db: Session = Depends(get_db),
-                     user=Depends(require("survey_request", "write"))):
-    """Đổi Tình trạng dòng (is_completed). Body: {is_completed: bool}. Chặn khi phiếu đã từ chối/hoàn thành."""
+def set_line_completed_(sid: int, line_id: int, data: dict, db: Session = Depends(get_db),
+                        user=Depends(require("survey_request", "write"))):
+    """Đổi Tình trạng dòng (is_completed). Body: {is_completed: bool}. Chặn khi phiếu đã từ chối/hoàn thành.
+
+    ⚠️ Tên hàm phải KHÁC `set_line_status_` ở dưới (route `/line-status`, đổi cột
+    `line_status`) — hai hàm từng TRÙNG TÊN. FastAPI đăng ký theo decorator nên
+    cả hai route vẫn chạy đúng, nhưng thuộc tính module bị bản sau đè: ai
+    `import set_line_status_` lấy nhầm hàm, và mọi công cụ đọc mã chỉ thấy một.
+    """
+    _in_scope(db, sid, user, "write")
     _ensure_sr_editable(service.get_sr(db, sid))
     ln = service.get_line(db, sid, line_id)
     ln.is_completed = bool(data.get("is_completed"))
@@ -511,8 +568,15 @@ def _out_process(db: Session, s: SurveyRequest, user=None, profile=None) -> dict
 
 @router.get("/{sid}/process")
 def process_view_(sid: int, db: Session = Depends(get_db), up=Depends(_purchaser)):
+    """Trang *Xử lý khảo sát* (CR-222).
+
+    `_purchaser` là cổng VAI TRÒ (grant `survey_request.read` phạm vi proc|all) — nó chặt
+    hơn `require()` nhưng KHÔNG biết phiếu thuộc pháp nhân nào. Thiếu `_in_scope` thì NSTM
+    lộ đầu phiếu, còn Admin TM (đọc-chỉ, đi nhánh "giám sát" của `_see_all_lines`) lộ cả
+    dòng của phiếu ngoài phạm vi.
+    """
     user, prof = up
-    s = service.get_sr(db, sid)
+    s = _in_scope(db, sid, user, "read")
     return success(_out_process(db, s, user, prof))
 
 
@@ -522,6 +586,7 @@ def available_survey_lines_(sid: int, line_id: int, supplier_code: str = "", ite
                             sort_by: str = "", sort_dir: str = "desc",
                             db: Session = Depends(get_db), up=Depends(_purchaser)):
     from app.modules.survey.model import Survey
+    _in_scope(db, sid, up[0], "read")
     ln = service.get_line(db, sid, line_id)
     # Lọc MỞ (chọn NCC thủ công) — KHÔNG giới hạn liên kết YCKS: option có thể đã có khảo sát sẵn.
     # Phân loại mặc định = của dòng (FE gửi sẵn); có thể đổi hoặc để trống. Cần ≥1 tiêu chí.
@@ -549,7 +614,7 @@ def available_survey_lines_(sid: int, line_id: int, supplier_code: str = "", ite
 @router.post("/{sid}/lines/{line_id}/options")
 def add_option_(sid: int, line_id: int, data: dict, db: Session = Depends(get_db), up=Depends(_purchaser)):
     user, prof = up
-    s = service.get_sr(db, sid)
+    s = _in_scope(db, sid, user, "read")
     if s.status not in ("processing", "survey_done"):
         raise HTTPException(400, "Chỉ gắn phương án khi phiếu đang xử lý hoặc đã khảo sát")
     ln = service.get_line(db, sid, line_id)
@@ -568,7 +633,7 @@ def add_option_(sid: int, line_id: int, data: dict, db: Session = Depends(get_db
 def sync_options_(sid: int, db: Session = Depends(get_db), up=Depends(_purchaser)):
     """Lấy phương án tự động từ các Phiếu khảo sát đã duyệt liên kết với YCKS này (khớp phân loại)."""
     user, _prof = up
-    s = service.get_sr(db, sid)
+    s = _in_scope(db, sid, user, "read")
     if s.status not in ("processing", "survey_done"):
         raise HTTPException(400, "Chỉ lấy phương án khi phiếu đang xử lý hoặc đã khảo sát")
     n = service.sync_options_from_surveys(db, sid, user.id)
@@ -578,6 +643,7 @@ def sync_options_(sid: int, db: Session = Depends(get_db), up=Depends(_purchaser
 @router.delete("/{sid}/lines/{line_id}/options/{oid}")
 def del_option_(sid: int, line_id: int, oid: int, db: Session = Depends(get_db), up=Depends(_purchaser)):
     user, prof = up
+    _in_scope(db, sid, user, "read")
     ln = service.get_line(db, sid, line_id)
     if ln.is_completed:
         raise HTTPException(400, "Dòng đã tạo yêu cầu mua hàng — không xóa phương án được")
@@ -590,6 +656,7 @@ def del_option_(sid: int, line_id: int, oid: int, db: Session = Depends(get_db),
 @router.patch("/{sid}/lines/{line_id}/options/{oid}")
 def edit_option_(sid: int, line_id: int, oid: int, data: dict, db: Session = Depends(get_db), up=Depends(_purchaser)):
     user, prof = up
+    _in_scope(db, sid, user, "read")
     ln = service.get_line(db, sid, line_id)
     if not service.can_process_line(db, ln, prof):
         raise HTTPException(403, "Bạn không phụ trách dòng này")
@@ -606,6 +673,7 @@ def complete_(sid: int, background_tasks: BackgroundTasks, data: dict | None = N
     MỌI dòng (mọi NSTM) đã có option HOẶC được chốt rỗng.
     Body tùy chọn: {empty_line_ids: [...]} — các dòng chưa có option, chốt rỗng (không có NCC phù hợp)."""
     user, prof = up
+    _in_scope(db, sid, user, "read")
     empty_ids = (data or {}).get("empty_line_ids") or []
     s, fully, resurveyed = service.complete_sr(db, sid, user, prof, empty_ids)
     if fully:   # cả phiếu xong -> báo người yêu cầu vào chọn phương án
@@ -750,7 +818,7 @@ def result_view_(sid: int, db: Session = Depends(get_db),
 def choose_option_(sid: int, line_id: int, oid: int, db: Session = Depends(get_db),
                    user=Depends(require("survey_request", "write"))):
     """Người YC chọn 1 phương án cho 1 sản phẩm (chỉ khi đã hoàn thành khảo sát)."""
-    s = service.get_sr(db, sid)
+    s = _in_scope(db, sid, user, "write")
     if not _can_edit_own(db, s, user):
         raise HTTPException(403, "Không có quyền chọn phương án cho phiếu này")
     # Cho chọn/đổi/bỏ chọn khi: Đang xử lý (chốt từng dòng), Đã khảo sát, Đã tạo YCMH, Hoàn thành.
@@ -767,7 +835,7 @@ def choose_option_(sid: int, line_id: int, oid: int, db: Session = Depends(get_d
 def create_prs_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
                 user=Depends(require("survey_request", "write"))):
     """Người YC tạo Yêu cầu mua hàng từ các phương án đã chọn (gom theo NCC)."""
-    s = service.get_sr(db, sid)
+    s = _in_scope(db, sid, user, "write")
     # Chỉ NGƯỜI YÊU CẦU (người tạo phiếu HOẶC người yêu cầu dù admin tạo giùm) hoặc Admin TM
     # (quyền delete) được tạo YCMH — NSTM thì không.
     rid = getattr(user, "employee_id", 0) or 0
@@ -786,7 +854,7 @@ def set_line_status_(sid: int, line_id: int, body: LineStatusIn,
                      user=Depends(require("survey_request", "write"))):
     """Task 2: người YC / cùng phòng ban đổi trạng thái dòng khảo sát
     ("" chưa xác định · cần khảo sát lại · hoàn thành)."""
-    s = service.get_sr(db, sid)
+    s = _in_scope(db, sid, user, "write")
     _ensure_sr_editable(s)
     if not _can_act_as_requester_side(db, s, user):
         raise HTTPException(403, "Chỉ người yêu cầu hoặc cùng phòng ban được đổi trạng thái dòng")
@@ -812,7 +880,7 @@ def finalize_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends
     """Chuyển Hoàn thành (pr_created/survey_done → done). Cho phép Quản lý/Admin thu mua
     (purchaser + quyền approve) HOẶC người yêu cầu / cùng phòng ban người yêu cầu (Task 3).
     Lưu ý: NSTM thường (purchaser nhưng không có approve) KHÔNG được đóng phiếu."""
-    s = service.get_sr(db, sid)
+    s = _in_scope(db, sid, user, "write")
     prof = get_perm_profile(db, user)
     is_mgr = service.is_purchaser(prof) and user_has_permission(db, user, "survey_request", "approve")
     if not (is_mgr or _can_act_as_requester_side(db, s, user)):

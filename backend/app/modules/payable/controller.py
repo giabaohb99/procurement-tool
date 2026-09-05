@@ -136,8 +136,11 @@ def offset_prepay_(pid: int, data: dict, db: Session = Depends(get_db),
     min(treo còn lại, nợ còn lại). Treo GẮN ĐƠN thì hệ thống đã tự trừ lúc nhận
     hàng, không đi qua nút này."""
     from fastapi import HTTPException
+    # Route này ĐỔI TIỀN, nên phải soi phạm vi của `write` — đúng action mà `require(...)`
+    # ngay trên đang gác. Bỏ trống tham số là mượn phạm vi `read`: người "xem toàn công ty,
+    # chỉ sửa phòng mình" cấn trừ được khoản nợ họ không được phép động vào.
     p = apply_scope(db.query(Payable).filter(Payable.id == pid),
-                    Payable, "payable", user, get_perm_profile(db, user)).first()
+                    Payable, "payable", user, get_perm_profile(db, user), "write").first()
     if not p:
         raise HTTPException(403, "Ngoài phạm vi được phép thao tác")
     from app.modules.payment_request import service as prq_service
