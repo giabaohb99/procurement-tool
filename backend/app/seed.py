@@ -375,6 +375,11 @@ STD_ROLES = {
         "seal_request": (["read"], "all"),
         "seal_type": (["read", "create", "write", "delete"], "all"),
     }},
+    # Giám đốc duyệt dấu: CHỈ NHẬN THÔNG BÁO + xem phiếu ĐÃ DUYỆT của công ty mình
+    # (phạm vi company đã lọc thêm trạng thái đã-duyệt ở core/scoping.py). Không phê duyệt.
+    "seal_director": {"name": "Giám đốc duyệt dấu (Duyệt dấu)", "perms": {
+        "seal_request": (["read"], "company"),
+    }},
 }
 
 

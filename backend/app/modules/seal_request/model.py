@@ -49,9 +49,11 @@ class SealRequest(Base, AuditMixin):
     title: Mapped[str] = mapped_column(String(255), default="")
     purpose: Mapped[str] = mapped_column(Text, default="")
 
-    seal_type_id: Mapped[int] = mapped_column(BigInteger, index=True)
-    #  company_id = CÔNG TY CỦA CON DẤU (người tạo chọn, có thể khác công ty phòng
-    #  ban của họ) — quyết định phạm vi Văn thư/Giám đốc và người nhận thông báo.
+    seal_type_id: Mapped[int] = mapped_column(BigInteger, index=True, default=0)
+    #  MỘT phiếu có thể cần đóng dấu của NHIỀU công ty — danh sách công ty nằm ở
+    #  bảng nối `tab_seal_request_company`. `company_id` giữ lại là CÔNG TY CHÍNH
+    #  (công ty đầu tiên) để hiển thị nhanh + tương thích ngược; phạm vi Văn thư/
+    #  Giám đốc lọc theo BẢNG NỐI (xem core/scoping.py).
     department_id: Mapped[int] = mapped_column(BigInteger, default=0)
     company_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
 
@@ -70,3 +72,21 @@ class SealRequest(Base, AuditMixin):
     note: Mapped[str] = mapped_column(Text, default="")
 
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class SealRequestCompany(Base, AuditMixin):
+    """Bảng nối: một yêu cầu đóng dấu ↔ nhiều công ty cần đóng dấu.
+
+    Dùng cho phạm vi dữ liệu: Văn thư / Giám đốc của BẤT KỲ công ty nào trong danh
+    sách đều thấy phiếu (đã duyệt) — lọc bằng subquery (chạy được cả MySQL lẫn SQLite,
+    không đụng JSON). Xem `core/scoping.py` nhánh `seal_request`.
+    """
+    __tablename__ = "tab_seal_request_company"
+
+    __table_args__ = (
+        Index("ix_seal_req_company_req", "seal_request_id"),
+        Index("ix_seal_req_company_company", "company_id"),
+    )
+
+    seal_request_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    company_id: Mapped[int] = mapped_column(BigInteger, index=True)

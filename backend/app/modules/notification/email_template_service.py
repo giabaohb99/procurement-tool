@@ -26,8 +26,8 @@ DX_VARIABLES = [
 
 #  Biến cho các event Duyệt dấu (event bắt đầu bằng `dd_`).
 SEAL_VARIABLES = [
-    "code", "purpose", "seal_type_name", "company_name", "copies",
-    "creator_name", "approver_name", "reason", "recipient_name", "link",
+    "code", "purpose", "company_name", "creator_name", "approver_name",
+    "reason", "recipient_name", "link",
 ]
 
 
@@ -96,8 +96,6 @@ def _wrap_seal(intro: str, *, show_reason: bool = False, cta: str = "Mở phiế
         "<td style=\"padding:6px 0; font-weight:700; color:#0098db;\">{{ code }}</td></tr>"
         "<tr><td style=\"padding:6px 0; color:#64748b;\">Mục đích</td>"
         "<td style=\"padding:6px 0;\">{{ purpose }}</td></tr>"
-        "<tr><td style=\"padding:6px 0; color:#64748b;\">Loại con dấu</td>"
-        "<td style=\"padding:6px 0;\">{{ seal_type_name }}</td></tr>"
         "<tr><td style=\"padding:6px 0; color:#64748b;\">Công ty</td>"
         "<td style=\"padding:6px 0;\">{{ company_name }}</td></tr>"
         "</table>"

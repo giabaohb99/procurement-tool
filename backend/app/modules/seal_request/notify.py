@@ -23,9 +23,9 @@ logger = logging.getLogger(__name__)
 
 #  Vai trò Văn thư đóng dấu (nhận phiếu đã duyệt để đóng dấu).
 _CLERK_ROLE_CODES = ["seal_clerk"]
-#  Vai trò coi là "Giám đốc công ty" — best-effort (chưa có vai trò giám đốc chuẩn;
-#  xem quyết định A ở doc/duyet-dau/README.md). Không có ai → bỏ qua, không lỗi.
-_DIRECTOR_ROLE_CODES = ["company_head"]
+#  Vai trò "Giám đốc duyệt dấu" — CHỈ NHẬN THÔNG BÁO, không tham gia phê duyệt.
+#  Ai được gán vai trò này + đúng công ty thì nhận email/chuông khi phiếu được duyệt.
+_DIRECTOR_ROLE_CODES = ["seal_director"]
 
 _BELL_BODY = {
     "dd_submitted": "Có yêu cầu đóng dấu mới cần bạn phê duyệt.",
@@ -43,27 +43,32 @@ def _creator(db: Session, req: SealRequest):
     return db.get(User, req.requester_id)
 
 
-def _by_company(db: Session, users: list, company_id: int) -> list:
-    """Giữ lại người thuộc đúng công ty (theo hồ sơ nhân sự). company_id=0 → giữ nguyên."""
-    if not company_id:
-        return users
+def _company_ids(db: Session, req: SealRequest) -> set:
+    from .service import get_company_ids
+    return set(get_company_ids(db, req.id))
+
+
+def _by_companies(db: Session, users: list, company_ids: set) -> list:
+    """Giữ người thuộc BẤT KỲ công ty nào trong danh sách (theo hồ sơ nhân sự)."""
+    if not company_ids:
+        return []
     from app.modules.employee.model import Employee
     out = []
     for u in users:
         emp = db.get(Employee, u.employee_id) if getattr(u, "employee_id", 0) else None
-        if emp and emp.company_id == company_id:
+        if emp and emp.company_id in company_ids:
             out.append(u)
     return out
 
 
 def _clerks(db: Session, req: SealRequest) -> list:
     from app.modules.notification.service import get_users_by_role_codes
-    return _by_company(db, get_users_by_role_codes(db, _CLERK_ROLE_CODES), req.company_id or 0)
+    return _by_companies(db, get_users_by_role_codes(db, _CLERK_ROLE_CODES), _company_ids(db, req))
 
 
 def _directors(db: Session, req: SealRequest) -> list:
     from app.modules.notification.service import get_users_by_role_codes
-    return _by_company(db, get_users_by_role_codes(db, _DIRECTOR_ROLE_CODES), req.company_id or 0)
+    return _by_companies(db, get_users_by_role_codes(db, _DIRECTOR_ROLE_CODES), _company_ids(db, req))
 
 
 def _approvers(db: Session, req: SealRequest) -> list:
@@ -92,15 +97,9 @@ def _context(db: Session, req: SealRequest, reason: str = "") -> dict:
     from app.modules.notification.service import _abs_link
     from app.modules.user.model import User
 
-    seal_type_name = ""
-    if req.seal_type_id:
-        from .model import SealType
-        st = db.get(SealType, req.seal_type_id)
-        seal_type_name = st.name if st else ""
-    company_name = ""
-    if req.company_id:
-        co = db.get(Company, req.company_id)
-        company_name = co.name if co else ""
+    cids = list(_company_ids(db, req))
+    names = [c.name for c in db.query(Company).filter(Company.id.in_(cids)).all()] if cids else []
+    company_name = ", ".join(names)
     approver_name = ""
     if req.first_approver_id:
         from app.modules.employee.model import Employee
@@ -110,9 +109,7 @@ def _context(db: Session, req: SealRequest, reason: str = "") -> dict:
     return {
         "code": req.code or "",
         "purpose": req.purpose or "",
-        "seal_type_name": seal_type_name,
         "company_name": company_name,
-        "copies": req.copies or 1,
         "creator_name": req.requester or "",
         "approver_name": approver_name,
         "reason": (reason or "").strip(),

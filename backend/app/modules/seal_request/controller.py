@@ -56,6 +56,13 @@ def list_seal_requests(
     return success({"total": total, "items": service.serialize_seal_requests(db, items)})
 
 
+@router.get("/approvers")
+def list_approvers(db: Session = Depends(get_db),
+                   user=Depends(require("seal_request", "create"))):
+    """Trưởng bộ phận có quyền phê duyệt (để chọn), mặc định = TBP của người tạo."""
+    return success(service.approver_options(db, user))
+
+
 @router.get("/{rid}")
 def get_seal_request(rid: int, db: Session = Depends(get_db),
                      user=Depends(require("seal_request", "read"))):

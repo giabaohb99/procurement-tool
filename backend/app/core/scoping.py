@@ -238,6 +238,25 @@ def _role_scope_cond(model, entity, scope, user, profile):
     dept_names = [x for x in (profile.get("dept_names") or []) if x] \
         or ([profile["dept_name"]] if profile.get("dept_name") else [])
 
+    #  DUYỆT DẤU — MỘT phiếu gắn NHIỀU công ty (bảng nối tab_seal_request_company).
+    #  · own  (Nhân sự): phiếu mình tạo, mọi trạng thái.
+    #  · dept (Trưởng bộ phận): phiếu cùng phòng (theo department_id người tạo),
+    #    KHÔNG chặn theo công ty con dấu — TBP duyệt theo phòng, không theo pháp nhân.
+    #  · company (Văn thư / Giám đốc): phiếu có CÔNG TY MÌNH trong danh sách VÀ đã
+    #    qua TBP (Đã duyệt / Hoàn thành). Giám đốc chỉ thấy phiếu đã duyệt của cty mình.
+    if entity == "seal_request" and scope in ("own", "dept", "company"):
+        from app.modules.seal_request.model import (SEAL_APPROVED, SEAL_COMPLETED,
+                                                    SealRequestCompany)
+        if scope == "own":
+            return model.created_by == user.id
+        if scope == "dept":
+            return model.department_id.in_(dept_ids) if dept_ids else false()
+        if not company_id:
+            return _chan(entity, scope, user, "nguoi dung chua gan phap nhan (company_id=0)")
+        sub = select(SealRequestCompany.seal_request_id).where(
+            SealRequestCompany.company_id == company_id)
+        return and_(model.id.in_(sub), model.status.in_([SEAL_APPROVED, SEAL_COMPLETED]))
+
     # "Được giao": của mình HOẶC được phân bổ cho mình (áp cho PYC)
     if scope in ("assigned", "proc"):
         if entity == "purchase_request":

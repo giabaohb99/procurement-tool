@@ -1,7 +1,7 @@
 """Duyệt dấu (Yêu cầu đóng dấu) — luồng 2 cổng ở tầng service.
 
-Tạo → gửi duyệt (BẮT BUỘC ≥1 chứng từ chữ ký sống) → TBP duyệt → Văn thư hoàn thành
-(đóng dấu). Cùng khuôn test với Đặt xe.
+Tạo → gửi duyệt (BẮT BUỘC ≥1 công ty + TBP + ≥1 chứng từ) → TBP duyệt → Văn thư
+hoàn thành (đóng dấu). Một phiếu gắn NHIỀU công ty (bảng nối).
 """
 from types import SimpleNamespace
 
@@ -16,11 +16,14 @@ from app.modules.seal_request.service import (
     approve_seal,
     complete_seal,
     create_seal_request,
+    get_company_ids,
     reject_seal,
     return_seal,
     serialize_seal_request,
     submit_seal_request,
 )
+
+CTY_A, CTY_B, TBP_UID = 11, 22, 500
 
 
 def _actor(db, *, uid=101):
@@ -31,108 +34,101 @@ def _actor(db, *, uid=101):
     return SimpleNamespace(id=uid, employee_id=emp.id, email="lbd@dego.vn")
 
 
-def _seal_type(db):
-    st = m.SealType(name="Dấu tròn công ty")
-    db.add(st)
-    db.flush()
-    return st
-
-
-def _attach_signed(db, req_id):
-    """Giả lập NSYC đã upload 1 chứng từ có chữ ký sống (doc_type=signed_doc)."""
+def _attach(db, req_id):
+    """Giả lập NSYC đã upload 1 chứng từ."""
     db.add(FileLink(file_id=1, entity="seal_request", entity_id=req_id, doc_type="signed_doc"))
     db.flush()
 
 
-def _payload(st_id, **over):
-    data = dict(purpose="Duyệt dấu Hợp đồng Hồ Gia - Dego", seal_type_id=st_id, copies=2)
+def _payload(**over):
+    data = dict(purpose="Duyệt dấu Hợp đồng Hồ Gia - Dego",
+                company_ids=[CTY_A, CTY_B], first_approver_id=TBP_UID)
     data.update(over)
     return SealRequestCreate(**data)
 
 
+def _ready(db, actor):
+    req = create_seal_request(db, _payload(), actor, submit=False)
+    _attach(db, req.id)
+    return req
+
+
 def test_serialize_handles_datetime_created_at(db):
-    #  Regression: SealRequestResponse.model_validate(req) từng vỡ 500 vì created_at
-    #  là datetime mà schema khai `str | None` — thiếu field_validator chuyển ISO.
+    #  Regression: model_validate(req) từng vỡ 500 vì created_at là datetime.
     actor = _actor(db)
-    st = _seal_type(db)
-    req = create_seal_request(db, _payload(st.id), actor, submit=False)
+    req = create_seal_request(db, _payload(), actor, submit=False)
     out = serialize_seal_request(db, req)
     assert isinstance(out["created_at"], str)
     assert out["status_label"] == "Nháp"
+    assert out["company_ids"] == [CTY_A, CTY_B]
 
 
-def test_create_draft_generates_dd_code(db):
+def test_create_draft_generates_dd_code_and_companies(db):
     actor = _actor(db)
-    st = _seal_type(db)
-    req = create_seal_request(db, _payload(st.id), actor, submit=False)
+    req = create_seal_request(db, _payload(), actor, submit=False)
     assert req.status == m.SEAL_DRAFT
     assert req.code.startswith("DD")
-    assert req.company_id == 3          # auto-fill từ hồ sơ người tạo
+    assert req.company_id == CTY_A                    # công ty CHÍNH = đầu danh sách
+    assert get_company_ids(db, req.id) == [CTY_A, CTY_B]
     assert req.requester == "Lâm Bích Dư"
 
 
-def test_submit_requires_signed_doc(db):
+def test_submit_requires_company_approver_and_doc(db):
     actor = _actor(db)
-    st = _seal_type(db)
-    req = create_seal_request(db, _payload(st.id), actor, submit=False)
-    #  Chưa đính kèm chứng từ chữ ký sống → không gửi duyệt được.
+    # Thiếu công ty → chặn.
+    req = create_seal_request(db, _payload(company_ids=[]), actor, submit=False)
+    _attach(db, req.id)
     with pytest.raises(HTTPException):
         submit_seal_request(db, req, actor)
-    assert req.status == m.SEAL_DRAFT
+    # Thiếu TBP → chặn.
+    req2 = create_seal_request(db, _payload(first_approver_id=0), actor, submit=False)
+    _attach(db, req2.id)
+    with pytest.raises(HTTPException):
+        submit_seal_request(db, req2, actor)
+    # Thiếu chứng từ → chặn.
+    req3 = create_seal_request(db, _payload(), actor, submit=False)
+    with pytest.raises(HTTPException):
+        submit_seal_request(db, req3, actor)
+    assert req3.status == m.SEAL_DRAFT
 
 
 def test_full_flow_two_gates(db):
     actor = _actor(db)
-    st = _seal_type(db)
-    req = create_seal_request(db, _payload(st.id), actor, submit=False)
-    _attach_signed(db, req.id)
-
+    req = _ready(db, actor)
     submit_seal_request(db, req, actor)
     assert req.status == m.SEAL_PENDING
-
     approve_seal(db, req, actor)          # cổng 1: TBP
     assert req.status == m.SEAL_APPROVED
-
-    complete_seal(db, req, CompleteSealIn(copies_done=2, note="Đóng dấu 2 bản"), actor)  # cổng 2: Văn thư
+    complete_seal(db, req, CompleteSealIn(note="Đóng dấu 2 bản"), actor)  # cổng 2: Văn thư
     assert req.status == m.SEAL_COMPLETED
-    assert req.copies == 2
-    assert "Đã đóng dấu 2 bản" in req.note
+    assert "Đã đóng dấu xong" in req.note
+    assert "Đóng dấu 2 bản" in req.note
 
 
 def test_return_then_resubmit(db):
     actor = _actor(db)
-    st = _seal_type(db)
-    req = create_seal_request(db, _payload(st.id), actor, submit=False)
-    _attach_signed(db, req.id)
+    req = _ready(db, actor)
     submit_seal_request(db, req, actor)
-
     return_seal(db, req, ReasonIn(reason="Thiếu chữ ký trang 2"), actor)
     assert req.status == m.SEAL_RETURNED
     assert "Thiếu chữ ký trang 2" in req.note
-    #  Sửa xong gửi lại → về Chờ duyệt.
     submit_seal_request(db, req, actor)
     assert req.status == m.SEAL_PENDING
 
 
 def test_reject_locks(db):
     actor = _actor(db)
-    st = _seal_type(db)
-    req = create_seal_request(db, _payload(st.id), actor, submit=False)
-    _attach_signed(db, req.id)
+    req = _ready(db, actor)
     submit_seal_request(db, req, actor)
     reject_seal(db, req, ReasonIn(reason="Không cần đóng dấu"), actor)
     assert req.status == m.SEAL_REJECTED
-    #  Đã từ chối thì không duyệt lại được.
     with pytest.raises(HTTPException):
         approve_seal(db, req, actor)
 
 
 def test_clerk_can_return_from_approved(db):
-    #  Văn thư yêu cầu chỉnh sửa (phiếu ĐÃ DUYỆT) — vd chụp lại chữ ký rõ hơn.
     actor = _actor(db)
-    st = _seal_type(db)
-    req = create_seal_request(db, _payload(st.id), actor, submit=False)
-    _attach_signed(db, req.id)
+    req = _ready(db, actor)
     submit_seal_request(db, req, actor)
     approve_seal(db, req, actor)
     return_seal(db, req, ReasonIn(reason="Chụp lại chữ ký rõ hơn"), actor)
@@ -141,10 +137,7 @@ def test_clerk_can_return_from_approved(db):
 
 def test_complete_only_from_approved(db):
     actor = _actor(db)
-    st = _seal_type(db)
-    req = create_seal_request(db, _payload(st.id), actor, submit=False)
-    _attach_signed(db, req.id)
+    req = _ready(db, actor)
     submit_seal_request(db, req, actor)
-    #  Chưa duyệt (đang Chờ duyệt) → Văn thư chưa được đóng dấu hoàn thành.
     with pytest.raises(HTTPException):
         complete_seal(db, req, CompleteSealIn(), actor)

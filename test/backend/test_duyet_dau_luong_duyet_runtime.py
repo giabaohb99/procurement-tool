@@ -30,11 +30,9 @@ def _actor(db, *, uid=101):
 
 
 def _draft_ready(db, actor):
-    st = m.SealType(name="Dấu tròn công ty")
-    db.add(st)
-    db.flush()
-    req = create_seal_request(db, SealRequestCreate(purpose="Đóng dấu HĐ", seal_type_id=st.id),
-                              actor, submit=False)
+    req = create_seal_request(
+        db, SealRequestCreate(purpose="Đóng dấu HĐ", company_ids=[3], first_approver_id=500),
+        actor, submit=False)
     db.add(FileLink(file_id=1, entity="seal_request", entity_id=req.id, doc_type="signed_doc"))
     db.flush()
     return req

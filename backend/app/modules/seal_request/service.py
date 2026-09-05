@@ -27,7 +27,7 @@ from .model import (
     SEAL_RETURNED,
     SEAL_STATUS_LABELS,
     SealRequest,
-    SealType,
+    SealRequestCompany,
 )
 from .schema import (
     CompleteSealIn,
@@ -66,6 +66,36 @@ def _requester_context(db: Session, user) -> tuple[str, int, int]:
     return name, dept_id or 0, company_id or 0
 
 
+def approver_options(db: Session, user) -> dict:
+    """Danh sách TRƯỞNG BỘ PHẬN có quyền phê duyệt để đổ vào ô chọn, kèm mặc định.
+
+    Chỉ người có `seal_request.approve`. Mặc định = trưởng bộ phận của CHÍNH người
+    tạo (phòng ban của họ). `id` là id TÀI KHOẢN (khớp `first_approver_id`).
+    """
+    from app.modules.notification.service import (
+        get_approvers_for_entity,
+        get_dept_approver_recipients,
+    )
+    eligible = get_approvers_for_entity(db, "seal_request")
+    _, dept_id, _ = _requester_context(db, user)
+    dept_head_ids = {u.id for u in get_dept_approver_recipients(db, "", dept_id)} if dept_id else set()
+    items = []
+    default_id = 0
+    for u in eligible:
+        emp = db.get(Employee, u.employee_id) if getattr(u, "employee_id", 0) else None
+        is_default = u.id in dept_head_ids
+        if is_default and not default_id:
+            default_id = u.id
+        items.append({
+            "id": u.id,
+            "name": (emp.full_name if emp and emp.full_name else "") or (u.email or ""),
+            "email": u.email or "",
+            "department_id": emp.department_id if emp else 0,
+            "is_default": is_default,
+        })
+    return {"items": items, "default_id": default_id}
+
+
 def _next_seal_code(db: Session) -> str:
     """Sinh mã DD kế tiếp — chỉ xét mã đúng dạng `DD<số>`, lấy max+1, nhảy nếu đụng.
 
@@ -98,6 +128,27 @@ def _append_note(req: SealRequest, label: str, reason: str) -> None:
     req.note = f"{req.note}\n{line}".strip() if req.note else line
 
 
+def get_company_ids(db: Session, req_id: int) -> list[int]:
+    """Danh sách công ty của phiếu (theo thứ tự thêm)."""
+    return [c for (c,) in db.query(SealRequestCompany.company_id)
+            .filter(SealRequestCompany.seal_request_id == req_id)
+            .order_by(SealRequestCompany.id).all()]
+
+
+def set_companies(db: Session, req_id: int, company_ids) -> list[int]:
+    """Ghi lại danh sách công ty (xóa cũ, thêm mới, bỏ trùng, giữ thứ tự)."""
+    db.query(SealRequestCompany).filter(
+        SealRequestCompany.seal_request_id == req_id).delete(synchronize_session=False)
+    seen: list[int] = []
+    for cid in (company_ids or []):
+        cid = int(cid or 0)
+        if cid and cid not in seen:
+            seen.append(cid)
+            db.add(SealRequestCompany(seal_request_id=req_id, company_id=cid))
+    db.flush()
+    return seen
+
+
 def count_attachments(db: Session, req_id: int) -> int:
     """Số tệp chứng từ đã đính kèm phiếu (mọi loại).
 
@@ -116,10 +167,10 @@ def _validate_for_submit(db: Session, req: SealRequest) -> None:
     """Điều kiện gửi duyệt (KHÔNG chặn lúc lưu nháp)."""
     if not (req.purpose or "").strip():
         raise HTTPException(400, "Vui lòng nhập mục đích sử dụng")
-    if not req.seal_type_id:
-        raise HTTPException(400, "Vui lòng chọn loại con dấu")
-    if not req.company_id:
-        raise HTTPException(400, "Vui lòng chọn công ty cần đóng dấu")
+    if not get_company_ids(db, req.id):
+        raise HTTPException(400, "Vui lòng chọn ít nhất 1 công ty cần đóng dấu")
+    if not req.first_approver_id:
+        raise HTTPException(400, "Vui lòng chọn trưởng bộ phận phê duyệt")
     if count_attachments(db, req.id) < 1:
         raise HTTPException(400, "Cần đính kèm ít nhất 1 chứng từ có chữ ký sống để gửi duyệt")
 
@@ -133,13 +184,11 @@ def create_seal_request(db: Session, data: SealRequestCreate, user, submit: bool
     thực tế FE tạo nháp → upload → mới gửi duyệt (endpoint /submit).
     """
     name, dept_id, company_id = _requester_context(db, user)
+    company_ids = [int(c) for c in (data.company_ids or []) if c]
     req = SealRequest(
         purpose=(data.purpose or "").strip(),
-        title=(data.title or "").strip(),
-        seal_type_id=data.seal_type_id or 0,
-        company_id=data.company_id or company_id,
+        company_id=(company_ids[0] if company_ids else 0),  # công ty CHÍNH (hiển thị nhanh)
         department_id=data.department_id or dept_id,
-        copies=data.copies or 1,
         first_approver_id=data.first_approver_id or 0,
         note=data.note or "",
         requester=name,
@@ -151,6 +200,7 @@ def create_seal_request(db: Session, data: SealRequestCreate, user, submit: bool
     db.add(req)
     db.flush()
     req.code = _next_seal_code(db)
+    set_companies(db, req.id, company_ids)
     db.commit()
     db.refresh(req)
     if submit:
@@ -164,6 +214,10 @@ def update_seal_request(db: Session, req: SealRequest, data: SealRequestUpdate,
     if req.status not in EDITABLE_STATUSES:
         raise HTTPException(400, "Phiếu đã vào luồng duyệt — không sửa được nữa")
     patch = data.model_dump(exclude_unset=True)
+    #  company_ids KHÔNG phải cột trên phiếu — đi qua bảng nối.
+    if "company_ids" in patch:
+        ids = set_companies(db, req.id, patch.pop("company_ids"))
+        req.company_id = ids[0] if ids else 0
     for field, value in patch.items():
         setattr(req, field, value)
     req.updated_by = getattr(user, "id", 0)
@@ -251,10 +305,8 @@ def complete_seal(db: Session, req: SealRequest, data: CompleteSealIn, user,
     """Văn thư HOÀN THÀNH: Đã duyệt → Hoàn thành (đã đóng dấu ngoài thực tế)."""
     if req.status != SEAL_APPROVED:
         raise HTTPException(400, "Chỉ hoàn thành được phiếu đã được duyệt")
-    if data.copies_done and data.copies_done > 0:
-        req.copies = data.copies_done
     req.status = SEAL_COMPLETED
-    done_note = f"Đã đóng dấu {req.copies} bản"
+    done_note = "Đã đóng dấu xong"
     if (data.note or "").strip():
         done_note += f" — {data.note.strip()}"
     _append_note(req, "Đóng dấu", done_note)
@@ -274,20 +326,32 @@ def _emp_of_user(db: Session, user_id: int) -> Employee | None:
     return db.get(Employee, u.employee_id) if u and u.employee_id else None
 
 
-def serialize_seal_request(db: Session, req: SealRequest) -> dict:
-    """Một phiếu → dict, nối nhãn loại dấu / công ty (+MST) / thông tin người tạo / TBP."""
-    out = SealRequestResponse.model_validate(req)
-    out.status_label = SEAL_STATUS_LABELS.get(req.status, "")
-    out.created_at = req.created_at.isoformat() if req.created_at else None
-
-    if req.seal_type_id:
-        st = db.get(SealType, req.seal_type_id)
-        out.seal_type_name = st.name if st else ""
-    if req.company_id:
-        co = db.get(Company, req.company_id)
+def _company_refs(db: Session, company_ids: list[int], *, logo_map=None, company_map=None) -> list[dict]:
+    """[{id,name,tax_code,logo}] cho danh sách công ty (giữ thứ tự)."""
+    if not company_ids:
+        return []
+    if company_map is None:
+        company_map = {c.id: c for c in
+                       db.query(Company).filter(Company.id.in_(set(company_ids))).all()}
+    if logo_map is None:
+        from app.modules.company.service import get_company_logo_map
+        logo_map = get_company_logo_map(db, list(set(company_ids)))
+    out = []
+    for cid in company_ids:
+        co = company_map.get(cid)
         if co:
-            out.company_name = co.name
-            out.company_tax_code = co.tax_code or ""
+            out.append({"id": cid, "name": co.name, "tax_code": co.tax_code or "",
+                        "logo": logo_map.get(cid, "")})
+    return out
+
+
+def serialize_seal_request(db: Session, req: SealRequest) -> dict:
+    """Một phiếu → dict, nối công ty (tên/MST/logo) + thông tin người tạo + TBP."""
+    out = SealRequestResponse.model_validate(req)   # created_at datetime→ISO qua validator
+    out.status_label = SEAL_STATUS_LABELS.get(req.status, "")
+    cids = get_company_ids(db, req.id)
+    out.company_ids = cids
+    out.companies = _company_refs(db, cids)
     emp = _emp_of_user(db, req.requester_id)
     if emp:
         out.requester_email = emp.email or ""
@@ -304,27 +368,21 @@ def serialize_seal_request(db: Session, req: SealRequest) -> dict:
 
 
 def serialize_seal_requests(db: Session, reqs: list[SealRequest]) -> list[dict]:
-    """Danh sách phiếu → list dict, nối nhãn theo LÔ (tránh N+1)."""
-    type_ids = {r.seal_type_id for r in reqs if r.seal_type_id}
-    company_ids = {r.company_id for r in reqs if r.company_id}
-    type_map = (
-        {t.id: t for t in db.query(SealType).filter(SealType.id.in_(type_ids)).all()}
-        if type_ids else {}
-    )
-    company_map = (
-        {c.id: c for c in db.query(Company).filter(Company.id.in_(company_ids)).all()}
-        if company_ids else {}
-    )
+    """Danh sách phiếu → list dict, nối công ty theo LÔ (tránh N+1)."""
+    ids_map = {r.id: get_company_ids(db, r.id) for r in reqs}
+    all_cids = {c for cids in ids_map.values() for c in cids}
+    company_map = ({c.id: c for c in db.query(Company).filter(Company.id.in_(all_cids)).all()}
+                   if all_cids else {})
+    logo_map = {}
+    if all_cids:
+        from app.modules.company.service import get_company_logo_map
+        logo_map = get_company_logo_map(db, list(all_cids))
     result = []
     for r in reqs:
         out = SealRequestResponse.model_validate(r)
         out.status_label = SEAL_STATUS_LABELS.get(r.status, "")
-        out.created_at = r.created_at.isoformat() if r.created_at else None
-        st = type_map.get(r.seal_type_id)
-        out.seal_type_name = st.name if st else ""
-        co = company_map.get(r.company_id)
-        if co:
-            out.company_name = co.name
-            out.company_tax_code = co.tax_code or ""
+        cids = ids_map.get(r.id, [])
+        out.company_ids = cids
+        out.companies = _company_refs(db, cids, logo_map=logo_map, company_map=company_map)
         result.append(out.model_dump())
     return result

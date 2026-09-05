@@ -31,11 +31,9 @@ def _creator(db):
 
 
 def _ready_request(db, actor):
-    st = m.SealType(name="Dấu tròn công ty")
-    db.add(st)
-    db.flush()
-    req = create_seal_request(db, SealRequestCreate(purpose="Duyệt dấu HĐ", seal_type_id=st.id),
-                              actor, submit=False)
+    req = create_seal_request(
+        db, SealRequestCreate(purpose="Duyệt dấu HĐ", company_ids=[3], first_approver_id=500),
+        actor, submit=False)
     db.add(FileLink(file_id=1, entity="seal_request", entity_id=req.id, doc_type="signed_doc"))
     db.flush()
     submit_seal_request(db, req, actor)
@@ -62,10 +60,7 @@ def test_return_notifies_creator_with_reason_title(db):
 def test_notify_silent_without_recipients(db):
     #  Không có User cho requester_id → không ai nhận → không tạo chuông, không lỗi.
     actor = SimpleNamespace(id=99999, employee_id=0, email="ghost@dego.vn")
-    st = m.SealType(name="Dấu treo")
-    db.add(st)
-    db.flush()
-    req = create_seal_request(db, SealRequestCreate(purpose="X", seal_type_id=st.id, company_id=3),
+    req = create_seal_request(db, SealRequestCreate(purpose="X", company_ids=[3], first_approver_id=500),
                               actor, submit=False)
     db.add(FileLink(file_id=1, entity="seal_request", entity_id=req.id, doc_type="x"))
     db.flush()
