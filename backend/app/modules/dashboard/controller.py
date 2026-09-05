@@ -11,12 +11,34 @@ router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 
 @router.get("/stats")
 def stats(days: str = "30", db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Thống kê nhanh — CÙNG LUẬT VỚI `/overview` (vá 05/09/2026).
+
+    Trước bản vá này route chỉ có `get_current_user`: không `require`, không
+    `apply_scope`. Một tài khoản `perms_union` RỖNG vẫn đếm được YCMH · ĐMH ·
+    nhân sự · NCC · sản phẩm của TOÀN HỆ, xuyên mọi pháp nhân.
+
+    Nay chép đúng khuôn `/overview` ngay bên dưới: route chỉ đòi ĐĂNG NHẬP, rồi
+    gác TỪNG KHỐI bằng `can(entity)` và lọc bằng `apply_scope` theo entity
+    nguồn. Thiếu quyền thì **khóa vắng mặt** chứ không trả `0` — `0` nghĩa là
+    "đếm được, không có dòng nào", khác hẳn "không được xem". Nơi gọi đọc `can`
+    để chọn ẩn khối, và luôn đọc số kèm `?? 0`.
+    """
+    from app.core.auth import get_perm_profile
+    from app.core.scoping import apply_scope
     from app.modules.employee.model import Employee
     from app.modules.product.model import Product
     from app.modules.purchase_request.model import PurchaseRequest
     from app.modules.supplier.model import Supplier
     from app.modules.survey.model import Survey
     from app.modules.purchase_order.model import PurchaseOrder
+
+    prof = get_perm_profile(db, user)
+
+    def can(e):
+        return bool(prof["perms_union"].get(e, {}).get("read"))
+
+    def scoped(model, entity):
+        return apply_scope(db.query(model), model, entity, user, prof)
 
     since = None
     if days != "all":
@@ -31,30 +53,46 @@ def stats(days: str = "30", db: Session = Depends(get_db), user=Depends(get_curr
             return query.filter(model.created_at >= since)
         return query
 
-    # General statistics
-    suppliers_count = filter_since(db.query(Supplier), Supplier).count()
-    products_count = filter_since(db.query(Product), Product).count()
-    employees_count = filter_since(db.query(Employee), Employee).count()
+    data: dict = {}
 
-    # PR / Purchase Request stats
-    pr_query = db.query(PurchaseRequest)
-    pr_total = filter_since(pr_query, PurchaseRequest).count()
-    pr_pending = filter_since(pr_query.filter(PurchaseRequest.status == "submitted"), PurchaseRequest).count()
-    # CR-034: "đã duyệt" gồm cả phiếu chờ điều phối lẫn đã điều phối (khỏi tụt số so với trước)
-    pr_approved = filter_since(pr_query.filter(PurchaseRequest.status.in_(["approved", "dispatched"])), PurchaseRequest).count()
+    # ===== Danh mục nền =====
+    if can("supplier"):
+        data["suppliers"] = filter_since(scoped(Supplier, "supplier"), Supplier).count()
+    if can("product"):
+        data["products"] = filter_since(scoped(Product, "product"), Product).count()
+    if can("employee"):
+        data["employees"] = filter_since(scoped(Employee, "employee"), Employee).count()
 
-    # Survey stats (Real data)
-    survey_query = db.query(Survey)
-    survey_pending = filter_since(survey_query.filter(Survey.status == "submitted"), Survey).count()
+    # ===== Yêu cầu mua =====
+    if can("purchase_request"):
+        pr_query = scoped(PurchaseRequest, "purchase_request")
+        data["pr_total"] = filter_since(pr_query, PurchaseRequest).count()
+        data["pr_pending"] = filter_since(
+            pr_query.filter(PurchaseRequest.status == "submitted"), PurchaseRequest).count()
+        # CR-034: "đã duyệt" gồm cả phiếu chờ điều phối lẫn đã điều phối (khỏi tụt số so với trước)
+        data["pr_processing"] = filter_since(
+            pr_query.filter(PurchaseRequest.status.in_(["approved", "dispatched"])),
+            PurchaseRequest).count()
 
-    # PO / Purchase Order stats (Real data)
-    po_query = db.query(PurchaseOrder)
-    po_ordered = filter_since(po_query.filter(PurchaseOrder.status.in_(["approved", "partial", "received"])), PurchaseOrder).count()
-    po_delivered = filter_since(po_query.filter(PurchaseOrder.status == "received"), PurchaseOrder).count()
-    po_partial = filter_since(po_query.filter(PurchaseOrder.status == "partial"), PurchaseOrder).count()
-    po_completed = filter_since(po_query.filter(PurchaseOrder.status == "completed"), PurchaseOrder).count()
+    # ===== Khảo sát =====
+    if can("survey"):
+        data["survey_pending"] = filter_since(
+            scoped(Survey, "survey").filter(Survey.status == "submitted"), Survey).count()
 
-    # Generate trend data based on timeframe
+    # ===== Đơn mua hàng =====
+    if can("purchase_order"):
+        po_query = scoped(PurchaseOrder, "purchase_order")
+        data["po_ordered"] = filter_since(
+            po_query.filter(PurchaseOrder.status.in_(["approved", "partial", "received"])),
+            PurchaseOrder).count()
+        data["po_delivered"] = filter_since(
+            po_query.filter(PurchaseOrder.status == "received"), PurchaseOrder).count()
+        data["po_partial"] = filter_since(
+            po_query.filter(PurchaseOrder.status == "partial"), PurchaseOrder).count()
+        data["po_completed"] = filter_since(
+            po_query.filter(PurchaseOrder.status == "completed"), PurchaseOrder).count()
+
+    # ===== Đường xu hướng =====
     trends = []
     end_date = datetime.now()
     if days == "7":
@@ -76,32 +114,26 @@ def stats(days: str = "30", db: Session = Depends(get_db), user=Depends(get_curr
         if interval_days > 1:
             start_range = (d - timedelta(days=interval_days - 1)).replace(hour=0, minute=0, second=0)
 
-        pr_cnt = db.query(PurchaseRequest).filter(
-            PurchaseRequest.created_at >= start_range,
-            PurchaseRequest.created_at <= end_range
-        ).count()
+        point = {"label": d_str}
+        #  Cùng luật khóa-vắng-mặt với các khối trên: không có quyền thì điểm dữ
+        #  liệu KHÔNG có khóa đó, chứ không vẽ một đường 0 trông như "kỳ này
+        #  không ai mua gì".
+        if can("purchase_request"):
+            point["pr"] = scoped(PurchaseRequest, "purchase_request").filter(
+                PurchaseRequest.created_at >= start_range,
+                PurchaseRequest.created_at <= end_range
+            ).count()
+        if can("purchase_order"):
+            point["po"] = scoped(PurchaseOrder, "purchase_order").filter(
+                PurchaseOrder.created_at >= start_range,
+                PurchaseOrder.created_at <= end_range
+            ).count()
+        trends.append(point)
 
-        po_cnt = db.query(PurchaseOrder).filter(
-            PurchaseOrder.created_at >= start_range,
-            PurchaseOrder.created_at <= end_range
-        ).count()
-
-        trends.append({"label": d_str, "pr": pr_cnt, "po": po_cnt})
-
-    return success({
-        "suppliers": suppliers_count,
-        "products": products_count,
-        "employees": employees_count,
-        "pr_total": pr_total,
-        "pr_pending": pr_pending,
-        "pr_processing": pr_approved,
-        "survey_pending": survey_pending,
-        "po_ordered": po_ordered,
-        "po_delivered": po_delivered,
-        "po_partial": po_partial,
-        "po_completed": po_completed,
-        "trends": trends,
-    })
+    data["trends"] = trends
+    data["can"] = {e: can(e) for e in ["supplier", "product", "employee",
+                                       "purchase_request", "survey", "purchase_order"]}
+    return success(data)
 
 
 @router.get("/overview")
