@@ -1,15 +1,14 @@
-import { Plus, Search } from 'lucide-react'
+import { Copy, Plus, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { usePermission } from '@/core/authorization/use-permission'
 import { appConfig } from '@/core/config/app-config'
+import { appRoutes } from '@/shared/constants/app-routes'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
-import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import type { ListParams } from '@/shared/types/api'
-import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { Input } from '@/shared/ui/input'
@@ -23,24 +22,11 @@ import {
   SelectValue,
 } from '@/shared/ui/select'
 import { CarBookingIcon, DeliveryBookingIcon } from '../components/booking-type-icons'
+import { BookingStatusBadge } from '../components/status-pill'
 import { useVehicleBookings } from '../hooks/use-vehicle-bookings'
-import {
-  BOOKING_STATUS_LABELS,
-  BOOKING_STATUS_TONE,
-  REQUEST_TYPE,
-  type VehicleBooking,
-} from '../types/vehicle-booking'
+import { BOOKING_STATUS_LABELS, REQUEST_TYPE, type VehicleBooking } from '../types/vehicle-booking'
 
 const ALL = 'all'
-
-/** Sắc thái badge trạng thái → variant của `<Badge>`. */
-const TONE_VARIANT: Record<string, 'secondary' | 'default' | 'destructive' | 'outline'> = {
-  neutral: 'secondary',
-  info: 'default',
-  success: 'default',
-  warning: 'outline',
-  danger: 'destructive',
-}
 
 function formatDateTime(value: string): string {
   if (!value) return ''
@@ -55,19 +41,27 @@ function formatDateTime(value: string): string {
 export function VehicleBookingListPage() {
   const navigate = useNavigate()
   const { can } = usePermission()
+  const canCreate = can('vehicle_booking', 'create')
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [status, setStatus] = useUrlParamState('status', ALL)
   const [requestType, setRequestType] = useUrlParamState('request_type', ALL)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
+  // Sắp xếp phía server theo cột (backend whitelist cột thật, xem apply_sort_from_request).
+  const [sortBy, setSortBy] = useState('')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
 
   const params = useMemo<ListParams>(() => {
     const p: ListParams = { page, page_size: pageSize }
     if (debouncedValue) p.search = debouncedValue
     if (status !== ALL) p.status = status
     if (requestType !== ALL) p.request_type = requestType
+    if (sortBy) {
+      p.sort_by = sortBy
+      p.sort_dir = sortDir
+    }
     return p
-  }, [page, pageSize, debouncedValue, status, requestType])
+  }, [page, pageSize, debouncedValue, status, requestType, sortBy, sortDir])
 
   const { data, isLoading, isError } = useVehicleBookings(params)
 
@@ -80,10 +74,12 @@ export function VehicleBookingListPage() {
         width: 110,
         hideable: false,
         defaultPinned: true,
+        sortable: true,
       },
       {
         key: 'request_type',
         header: 'Loại',
+        sortable: true,
         cell: (r) => (
           <span className="inline-flex items-center gap-1.5">
             {r.request_type === REQUEST_TYPE.delivery ? (
@@ -102,12 +98,14 @@ export function VehicleBookingListPage() {
         cell: (r) => r.purpose,
         wrap: true,
         minWidth: 180,
+        sortable: true,
       },
       {
         key: 'route',
         header: 'Lộ trình',
         cell: (r) => {
-          const parts = [r.start_location, ...(r.stops ?? []), r.end_location].filter(Boolean)
+          const stopNames = (r.stops ?? []).map((s) => s.location).filter(Boolean)
+          const parts = [r.start_location, ...stopNames, r.end_location].filter(Boolean)
           return parts.length ? parts.join(' → ') : ''
         },
         wrap: true,
@@ -118,25 +116,57 @@ export function VehicleBookingListPage() {
         header: 'Thời gian đi',
         cell: (r) => <span className="tabular-nums">{formatDateTime(r.start_time)}</span>,
         width: 140,
+        sortable: true,
       },
       {
         key: 'requester',
         header: 'Người tạo',
         cell: (r) => r.requester,
         width: 150,
+        sortable: true,
+      },
+      {
+        key: 'assigned',
+        header: 'Xe / Tài xế',
+        cell: (r) => {
+          const parts = [r.assigned_vehicle_label, r.assigned_driver_label].filter(Boolean)
+          return parts.length ? parts.join(' · ') : '—'
+        },
+        wrap: true,
+        minWidth: 160,
       },
       {
         key: 'status',
         header: 'Trạng thái',
-        cell: (r) => (
-          <Badge variant={TONE_VARIANT[BOOKING_STATUS_TONE[r.status] ?? 'neutral']}>
-            {r.status_label || BOOKING_STATUS_LABELS[r.status] || '—'}
-          </Badge>
-        ),
+        cell: (r) => <BookingStatusBadge status={r.status} label={r.status_label} />,
         width: 130,
+        sortable: true,
+      },
+      {
+        key: 'actions',
+        header: 'Thao tác',
+        align: 'center',
+        width: 90,
+        hideable: false,
+        cell: (r) =>
+          canCreate ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label={`Nhân bản ${r.code}`}
+              title="Nhân bản"
+              // Ô hành động phải chặn nổi bọt, không thì bấm là mở luôn trang chi tiết.
+              onClick={(e) => {
+                e.stopPropagation()
+                navigate(`${appRoutes.vehicleBooking.new}?from=${r.id}`)
+              }}
+            >
+              <Copy className="size-4" />
+            </Button>
+          ) : null,
       },
     ],
-    [],
+    [canCreate, navigate],
   )
 
   return (
@@ -160,10 +190,18 @@ export function VehicleBookingListPage() {
           columns={columns}
           rows={data?.items}
           getRowId={(r) => r.id}
+          onRowClick={(r) => navigate(appRoutes.vehicleBooking.detail(r.id))}
           isLoading={isLoading}
           isError={isError}
           emptyMessage="Chưa có yêu cầu đặt xe nào."
           storageKey="vehicle-booking.list"
+          sortBy={sortBy}
+          sortDir={sortDir}
+          onSortChange={(by, dir) => {
+            setSortBy(by)
+            setSortDir(dir)
+            setPage(1)
+          }}
           pagination={{
             page,
             pageSize,

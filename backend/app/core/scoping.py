@@ -331,6 +331,14 @@ def _role_scope_cond(model, entity, scope, user, profile):
             if ec is not None:
                 conds.append(ec)
             return or_(*conds)
+        if entity == "vehicle_booking":
+            # Tài xế thấy phiếu ĐƯỢC PHÂN cho mình (nối qua Driver.user_id) + phiếu mình
+            # tạo. Nhờ vậy nút Chấp nhận/Bắt đầu/Hoàn tất mới tới được đúng tài xế.
+            from app.modules.vehicle_booking.model import Driver
+            conds = [model.created_by == user.id]
+            drv_sub = select(Driver.id).where(Driver.user_id == user.id)
+            conds.append(model.assigned_driver_id.in_(drv_sub))
+            return or_(*conds)
         scope = "own"   # entity khác chưa có phân bổ → coi như của mình
 
     if scope == "own":

@@ -237,6 +237,8 @@ export const appRoutes = {
     root: '/system',
     /** Cấu hình chạy nóng (email, lưu trữ, công tắc quy trình) — lưu ở DB, không phải `.env`. */
     settings: '/system/settings',
+    /** Trang con sửa nội dung một mẫu email theo bước. */
+    emailTemplate: (event: string) => `/system/settings/email/${event}`,
     /** Quản lý sao lưu CSDL hệ thống. */
     backups: '/system/backups',
     /** Nhật ký hệ thống (Audit Logs). */
@@ -319,8 +321,23 @@ export const appRoutes = {
   },
   vehicleBooking: {
     root: '/vehicle-booking',
+    //  Tạo/Sửa đều là TRANG riêng (không còn popup). Chi tiết `/:id` = xem + thao
+    //  tác; sửa ở `/:id/edit`; tạo mới ở `/new`.
     new: '/vehicle-booking/new',
     detail: (id: number | string) => `/vehicle-booking/${id}`,
+    edit: (id: number | string) => `/vehicle-booking/${id}/edit`,
+    /** Màn của TÀI XẾ — chỉ chuyến được phân cho chính mình. */
+    myTrips: '/vehicle-booking/my-trips',
+    /** Bản in phiếu đặt xe (khổ A4). */
+    print: (id: number | string) => `/print/vehicle-booking/${id}`,
+    /** Danh mục Xe. */
+    vehicles: '/vehicle-booking/vehicles',
+    vehicleNew: '/vehicle-booking/vehicles/new',
+    vehicleDetail: (id: number | string) => `/vehicle-booking/vehicles/${id}`,
+    /** Danh mục Tài xế. */
+    drivers: '/vehicle-booking/drivers',
+    driverNew: '/vehicle-booking/drivers/new',
+    driverDetail: (id: number | string) => `/vehicle-booking/drivers/${id}`,
   },
   degoCoffee: {
     root: '/dego-coffee',

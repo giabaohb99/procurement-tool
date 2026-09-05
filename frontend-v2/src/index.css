@@ -65,7 +65,7 @@
      của nó (xem `DERIVED_TOKENS` trong `shared/theme/build-theme-css.ts`). */
   --row-head: #e6ebf2;
   --row-head-foreground: #0f172a;
-  --row-stripe: #f1f5f9;
+  --row-stripe: #fafcff;
   --row-hover: #e0f2fe;
   --row-selected: #dbeafe;
 

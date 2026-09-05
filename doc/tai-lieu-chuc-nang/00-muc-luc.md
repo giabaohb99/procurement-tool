@@ -81,6 +81,8 @@ Mỗi dòng ghi trạng thái tài liệu và link tới file `.md` tương ứn
 | 29 | **Dự án — quản lý công việc** (kanban · danh sách · Gantt · hoạt động · việc con · cột mốc · bình luận · đính kèm) | `/project` | [16-du-an-cong-viec.md](16-du-an-cong-viec.md) — đã có tài liệu |
 | 30 | **Nghỉ phép** (đơn nghỉ · lịch nghỉ · quỹ phép năm · loại nghỉ · lịch ngày lễ) | `/hr/leave-requests` | [17-nghi-phep.md](17-nghi-phep.md) — đã có tài liệu |
 | 31 | **Đặt phòng họp** (lịch phòng · phiếu đặt · danh mục phòng) | `/hr/room-calendar` | [18-dat-phong-hop.md](18-dat-phong-hop.md) — đã có tài liệu |
+| 32 | **Đặt xe nội bộ** (yêu cầu đặt xe 2 loại · điều phối xe/tài xế · luồng duyệt theo vai trò · danh mục Xe & Tài xế nội bộ/thuê ngoài) | `/vehicle-booking` | [16-dat-xe.md](16-dat-xe.md) — đã có tài liệu |
+| 33 | **Duyệt dấu** (yêu cầu đóng dấu · upload chứng từ chữ ký sống · TBP duyệt · Văn thư đóng dấu/hoàn thành · thông báo NSYC/Văn thư/Giám đốc · danh mục Loại con dấu) | `/approval-seal` | [17-duyet-dau.md](17-duyet-dau.md) — **kế hoạch** (backend đang là stub), xem `doc/duyet-dau/` |
 
 ## Nhóm: Ứng dụng tách riêng (tên miền riêng)
 

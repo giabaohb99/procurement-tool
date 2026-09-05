@@ -1,6 +1,7 @@
 import {
   ArrowLeft,
   Layers,
+  Save,
   Settings2,
   SlidersHorizontal,
   X,
@@ -20,6 +21,7 @@ import { ENTITY_LABELS } from '../helpers/entity-link'
 import {
   useApprovalFlow,
   useDeleteApprovalNode,
+  useSaveApprovalFlow,
   useSaveApprovalNode,
 } from '../hooks/use-approvals'
 import type { ApprovalNode } from '../types/approval'
@@ -43,6 +45,7 @@ export function ApprovalFlowDesignerPage() {
   const { data: flow, isLoading } = useApprovalFlow(isCreating ? undefined : flowId)
   const saveNode = useSaveApprovalNode(flowId)
   const deleteNode = useDeleteApprovalNode(flowId)
+  const saveFlow = useSaveApprovalFlow()
 
   const [bangPhai, setBangPhai] = useState<RightTable>(null)
   const [entityMoi, setEntityMoi] = useState('document')
@@ -157,6 +160,31 @@ export function ApprovalFlowDesignerPage() {
               Ngừng dùng
             </Badge>
           )}
+
+          {/* Bước & cài đặt vốn tự lưu ngay từng lần sửa; nút này lưu lại toàn
+              luồng để có phản hồi rõ ràng (toast "Đã lưu luồng duyệt"). */}
+          <Button
+            variant="default"
+            size="sm"
+            disabled={saveFlow.isPending}
+            onClick={() =>
+              saveFlow.mutate({
+                id: flow.id,
+                values: {
+                  entity: flow.entity,
+                  name: flow.name,
+                  is_active: flow.is_active,
+                  priority: flow.priority,
+                  condition: flow.condition,
+                  company_id: flow.company_id,
+                },
+              })
+            }
+            className="h-8.5 gap-1.5 rounded-xl font-medium shadow-2xs"
+          >
+            <Save className="size-3.5" />
+            Lưu
+          </Button>
 
           <Button
             variant={bangPhai?.loai === 'cai-dat' ? 'default' : 'outline'}

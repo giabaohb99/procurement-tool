@@ -55,6 +55,16 @@ DRIVER_STATUS_LABELS = {
     DRV_REJECTED: "Tài xế từ chối",
 }
 
+# Nguồn của tài xế THUÊ NGOÀI — doanh nghiệp hay cá nhân (R2: SMALLINT + hằng số).
+SUPPLIER_NONE = 0        # nội bộ / chưa áp dụng
+SUPPLIER_ENTERPRISE = 1  # doanh nghiệp (có tên DN, MST, địa chỉ thuế)
+SUPPLIER_INDIVIDUAL = 2  # cá nhân (có CCCD)
+SUPPLIER_TYPE_LABELS = {
+    SUPPLIER_NONE: "",
+    SUPPLIER_ENTERPRISE: "Doanh nghiệp",
+    SUPPLIER_INDIVIDUAL: "Cá nhân",
+}
+
 
 class Vehicle(Base, AuditMixin):
     """Quản lý xe."""
@@ -63,23 +73,46 @@ class Vehicle(Base, AuditMixin):
     license_plate: Mapped[str] = mapped_column(String(50), unique=True)
     model: Mapped[str] = mapped_column(String(100), default="")
     type: Mapped[str] = mapped_column(String(50), default="")
-    capacity: Mapped[int] = mapped_column(Integer, default=4)
+    # Tải trọng: SỐ CHỖ (chở người) hoặc TẤN (chở hàng) — nên là Float để chứa 2.4 / 6.8.
+    capacity: Mapped[float] = mapped_column(Float, default=4)
     status: Mapped[str] = mapped_column(String(30), default="available")  # available, on_trip, maintenance
     is_external: Mapped[bool] = mapped_column(Boolean, default=False)
-    external_company: Mapped[str] = mapped_column(String(255), default="")
+    external_company: Mapped[str] = mapped_column(String(255), default="")  # tên đơn vị / doanh nghiệp
+    # --- Riêng XE THUÊ NGOÀI: là doanh nghiệp hay cá nhân (dùng chung hằng số SUPPLIER_*) ---
+    supplier_type: Mapped[int] = mapped_column(SmallInteger, default=SUPPLIER_NONE)
+    tax_code: Mapped[str] = mapped_column(String(50), default="")        # MST (doanh nghiệp)
+    tax_address: Mapped[str] = mapped_column(String(255), default="")    # địa chỉ thuế (doanh nghiệp)
+    id_number: Mapped[str] = mapped_column(String(50), default="")       # CCCD (cá nhân)
+
+    @property
+    def supplier_type_label(self) -> str:
+        return SUPPLIER_TYPE_LABELS.get(self.supplier_type, "")
 
 
 class Driver(Base, AuditMixin):
     """Quản lý tài xế."""
     __tablename__ = "tab_driver"
 
-    user_id: Mapped[int] = mapped_column(BigInteger, nullable=True)  # Liêk kết với tab_user
+    # Tài xế NỘI BỘ có thể liên kết một tài khoản đăng nhập (để sau này tài xế
+    # tự xem "Chuyến của tôi"). Tài xế thuê ngoài thì bỏ trống.
+    user_id: Mapped[int] = mapped_column(BigInteger, nullable=True, index=True)
     name: Mapped[str] = mapped_column(String(255))
+    email: Mapped[str] = mapped_column(String(255), default="")  # liên hệ / trùng email tài khoản
     phone: Mapped[str] = mapped_column(String(20), default="")
-    license_number: Mapped[str] = mapped_column(String(50), default="")
+    license_number: Mapped[str] = mapped_column(String(50), default="")   # SỐ giấy phép lái xe
+    license_class: Mapped[str] = mapped_column(String(20), default="")     # HẠNG GPLX (B2/C/D…)
     status: Mapped[str] = mapped_column(String(30), default="available")
     is_external: Mapped[bool] = mapped_column(Boolean, default=False)
-    external_company: Mapped[str] = mapped_column(String(255), default="")
+    external_company: Mapped[str] = mapped_column(String(255), default="")  # tên đơn vị / doanh nghiệp
+    # --- Riêng TÀI XẾ THUÊ NGOÀI: là doanh nghiệp hay cá nhân ---
+    supplier_type: Mapped[int] = mapped_column(SmallInteger, default=SUPPLIER_NONE)
+    tax_code: Mapped[str] = mapped_column(String(50), default="")        # MST (doanh nghiệp)
+    tax_address: Mapped[str] = mapped_column(String(255), default="")    # địa chỉ thuế (doanh nghiệp)
+    id_number: Mapped[str] = mapped_column(String(50), default="")       # CCCD (cá nhân)
+
+    @property
+    def supplier_type_label(self) -> str:
+        return SUPPLIER_TYPE_LABELS.get(self.supplier_type, "")
 
 
 class VehicleBooking(Base, AuditMixin):
@@ -92,6 +125,14 @@ class VehicleBooking(Base, AuditMixin):
     # TYPE_CAR = đặt xe công tác · TYPE_DELIVERY = giao hàng (xem hằng số ở đầu tệp)
     request_type: Mapped[int] = mapped_column(SmallInteger, default=TYPE_CAR)
     purpose: Mapped[str] = mapped_column(Text, default="")
+
+    # --- TỰ LÁI ---
+    # Người yêu cầu tự lái xe (không cần điều phối tài xế). Điều phối viên chỉ gán XE;
+    # người yêu cầu đóng vai tài xế: chấp nhận / bắt đầu / hoàn tất chuyến.
+    is_self_drive: Mapped[bool] = mapped_column(Boolean, default=False)
+    # GPLX của người yêu cầu (bắt buộc khi tự lái) — tự điền nếu họ đã là tài xế.
+    license_number: Mapped[str] = mapped_column(String(50), default="")
+    license_class: Mapped[str] = mapped_column(String(20), default="")
 
     start_location: Mapped[str] = mapped_column(String(255), default="")
     end_location: Mapped[str] = mapped_column(String(255), default="")

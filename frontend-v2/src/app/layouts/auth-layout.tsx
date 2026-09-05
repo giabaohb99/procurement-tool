@@ -36,11 +36,11 @@ export function AuthLayout() {
           className="relative z-10 h-11 w-auto drop-shadow-[0_2px_8px_rgba(0,0,0,0.25)]"
         />
 
-        <div className="relative z-10 max-w-[460px]">
+        <div className="relative z-10">
           <h1 className="mb-3.5 text-[34px] leading-[1.12] font-extrabold tracking-[-0.6px]">
             Hệ thống Quản trị Doanh nghiệp
           </h1>
-          <p className="mb-6.5 max-w-[42ch] text-[15.5px] leading-relaxed text-white/75">
+          <p className="mb-6.5 text-[15.5px] leading-relaxed text-white/75">
             Nền tảng ERP nội bộ của DEGO Holding — bán hàng, kho, mua hàng, tài chính và
             nhân sự, gọn trong một chỗ.
           </p>

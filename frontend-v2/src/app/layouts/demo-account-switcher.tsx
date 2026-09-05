@@ -131,7 +131,7 @@ export function DemoAccountSwitcher() {
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[13px] font-medium">{row.label}</span>
                     <span className="block truncate text-[11px] text-muted-foreground">
-                      {row.username}
+                      {row.code ?? row.username}
                       {row.hint && ` · ${row.hint}`}
                     </span>
                   </span>

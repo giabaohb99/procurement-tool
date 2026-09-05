@@ -25,11 +25,22 @@ export interface DemoAccount {
   group: string
   /** Chú thích ngắn bên phải: pháp nhân hoặc phạm vi dữ liệu. */
   hint?: string
+  /** Mã nhân viên (hiện thay `username` ở dòng phụ khi có). */
+  code?: string
 }
 
 export const DEMO_ACCOUNTS: DemoAccount[] = [
   { username: 'DEGO0001', password: 'admin', label: 'Dego Admin', group: 'Quản trị', hint: 'toàn quyền' },
   { username: 'admin', password: 'admin', label: 'Quản trị viên (admin)', group: 'Quản trị', hint: 'toàn quyền' },
+
+  // TK Đặt xe — 7 tài khoản test phân quyền phân hệ Đặt xe (mật khẩu seed: dego123).
+  { username: 'duonghaiyen.idagroup@dego.com', password: 'dego123', code: 'NSU203', label: 'Dương Hải Yến (NS1)', group: 'TK Đặt xe', hint: 'Nhân sự — chỉ xem của mình' },
+  { username: 'ndquyen.idagroup@dego.com', password: 'dego123', code: 'NSU202', label: 'Nguyễn Đỗ Quyên (TP1)', group: 'TK Đặt xe', hint: 'Trưởng bộ phận — duyệt, xem phòng ban' },
+  { username: 'hnqanh.idagroup@dego.com', password: 'dego123', code: 'NSU171', label: 'Hồ Ngọc Quế Anh (NS2)', group: 'TK Đặt xe', hint: 'Nhân sự — chỉ xem của mình' },
+  { username: 'nmtoan.idagroup@dego.com', password: 'dego123', code: 'NSU170', label: 'Nguyễn Minh Toàn (TP2)', group: 'TK Đặt xe', hint: 'Trưởng bộ phận — duyệt, xem phòng ban' },
+  { username: 'bhtthanh.idaglobal@dego.com', password: 'dego123', code: 'NSU055', label: 'Bùi Huỳnh Trường Thành (ĐPV)', group: 'TK Đặt xe', hint: 'Điều phối viên — xem tất cả' },
+  { username: 'ltnhut.idagroup@dego.com', password: 'dego123', code: 'NSU060', label: 'Lê Tấn Nhựt (TX1)', group: 'TK Đặt xe', hint: 'Tài xế — chỉ xem chuyến được giao' },
+  { username: 'tqthai.idagroup@dego.com', password: 'dego123', code: 'NSU058', label: 'Trần Quốc Thái (TX2)', group: 'TK Đặt xe', hint: 'Tài xế — chỉ xem chuyến được giao' },
 
   // Các tài khoản test chính có dữ liệu mẫu DB
   { username: 'TESTREQ', password: 'TESTREQ', label: 'TESTREQ', group: 'Tài khoản Test (Data)', hint: 'người tạo phiếu test' },

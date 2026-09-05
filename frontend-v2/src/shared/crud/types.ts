@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { ComponentType, ReactNode } from 'react'
 
 import type { PermissionEntity } from '@/core/authorization/permission-types'
 import type { FilterFieldDefinition } from '@/shared/conditional-filter'
@@ -135,4 +135,25 @@ export interface CrudConfig<T> {
   dialogMaxWidth?: string
   /** Render thêm nội dung ở đầu thanh công cụ. */
   renderToolbarExtra?: () => ReactNode
+  /**
+   * Ghi đè hộp thoại Thêm/Sửa bằng component RIÊNG khi biểu mẫu quá đặc thù cho khung
+   * generic (vd form Tài xế có nút Nội bộ/Thuê ngoài + tìm nhân sự theo SĐT). Nhận đúng
+   * props như `CrudFormDialog`; bỏ trống thì dùng form dựng từ `formFields`.
+   */
+  FormDialog?: ComponentType<CrudFormDialogProps<T>>
+  /**
+   * Bấm một dòng MỞ POPUP Thêm/Sửa (với bản ghi đó) thay vì điều hướng sang trang chi
+   * tiết. Dùng khi danh mục xem/sửa gọn trong popup (vd Tài xế). Bỏ trống = giữ hành vi
+   * cũ: điều hướng theo `detailRoute`.
+   */
+  openFormOnRowClick?: boolean
+}
+
+/** Props chuẩn của hộp thoại Thêm/Sửa — dùng cho cả `CrudFormDialog` lẫn bản ghi đè. */
+export interface CrudFormDialogProps<T> {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  config: CrudConfig<T>
+  /** Có = SỬA bản ghi này; bỏ trống = THÊM mới. */
+  item?: T | null
 }

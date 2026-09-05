@@ -1,6 +1,6 @@
 import { Plus, Search } from 'lucide-react'
 import { useMemo, useState, type ReactNode } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import { PermissionGate } from '@/core/authorization/permission-gate'
 import { appConfig } from '@/core/config/app-config'
@@ -78,7 +78,8 @@ function CrudListContent<T extends CrudRecord>({
 
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
-  const [isCreateOpen, setCreateOpen] = useState(false)
+  // Trạng thái popup Thêm/Sửa: undefined = đóng · null = THÊM mới · bản ghi = SỬA.
+  const [formItem, setFormItem] = useState<T | null | undefined>(undefined)
 
   const { queryParams, queryKey } = useFilterQuery()
   const [page, setPage] = usePageResetOnFilterChange([queryKey, debouncedValue, searchParams.toString()])
@@ -105,7 +106,10 @@ function CrudListContent<T extends CrudRecord>({
   const { data, isLoading, isError } = useCrudList<T>(config.apiPath, params)
 
   const handleRowClick = (row: T) => {
-    if (config.detailRoute) {
+    // Mở popup Sửa tại chỗ, hoặc điều hướng sang trang chi tiết (mặc định).
+    if (config.openFormOnRowClick) {
+      setFormItem(row)
+    } else if (config.detailRoute) {
       navigate(config.detailRoute(row[idKey] as string | number))
     }
   }
@@ -145,19 +149,13 @@ function CrudListContent<T extends CrudRecord>({
             {config.renderToolbarExtra?.()}
 
             <PermissionGate entity={config.entity} action="create">
-              {/*  Khai `createRoute` = form thêm mới nằm ở TRANG RIÊNG, không
-                   phải hộp thoại. Xem `CrudConfig.createRoute`. */}
-              {config.createRoute ? (
-                <Button asChild>
-                  <Link to={config.createRoute}>
-                    <Plus className="mr-1.5 size-4" /> Thêm {config.unitLabel}
-                  </Link>
-                </Button>
-              ) : (
-                <Button onClick={() => setCreateOpen(true)}>
-                  <Plus className="mr-1.5 size-4" /> Thêm {config.unitLabel}
-                </Button>
-              )}
+              <Button
+                onClick={() =>
+                  config.createRoute ? navigate(config.createRoute) : setFormItem(null)
+                }
+              >
+                <Plus className="mr-1.5 size-4" /> Thêm {config.unitLabel}
+              </Button>
             </PermissionGate>
           </div>
         }
@@ -231,11 +229,21 @@ function CrudListContent<T extends CrudRecord>({
         />
       </Card>
 
-      {/*  Không dựng hộp thoại khi đã có trang thêm mới — dựng cả hai là hai
-           nguồn dữ liệu cho cùng một việc, sớm muộn lệch nhau. */}
-      {!config.createRoute && (
-        <CrudFormDialog open={isCreateOpen} onOpenChange={setCreateOpen} config={config} />
-      )}
+      {/* Form riêng nếu config khai `FormDialog` (vd Tài xế), ngược lại dùng form generic.
+          Chỉ dựng khi MỞ để hộp thoại nạp state sạch mỗi lần (khỏi cần effect reset).
+          `formItem`: null = Thêm mới · bản ghi = Sửa. */}
+      {formItem !== undefined &&
+        (() => {
+          const FormDialog = config.FormDialog ?? CrudFormDialog
+          return (
+            <FormDialog
+              open
+              onOpenChange={(next) => !next && setFormItem(undefined)}
+              config={config}
+              item={formItem ?? undefined}
+            />
+          )
+        })()}
     </PageContainer>
   )
 }

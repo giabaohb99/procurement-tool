@@ -18,4 +18,10 @@ export {
   useCrudDelete,
   useCrudSourceOptions,
 } from './use-crud'
-export type { CrudConfig, CrudFormField, CrudOption, CrudTab } from './types'
+export type {
+  CrudConfig,
+  CrudFormDialogProps,
+  CrudFormField,
+  CrudOption,
+  CrudTab,
+} from './types'

@@ -9,8 +9,10 @@ import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-fil
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import type { ListParams } from '@/shared/types/api'
+import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
+import { Card } from '@/shared/ui/card'
 import { ConfirmIconButton } from '@/shared/ui/confirm-icon-button'
 import { Input } from '@/shared/ui/input'
 import {
@@ -26,6 +28,7 @@ import {
   useSetUserActive,
   useUserAccounts,
 } from '../hooks/use-user-accounts'
+import { employeeInitials } from '../types/employee'
 import type { Role } from '../types/role'
 import type { UserAccount } from '../types/user-account'
 
@@ -81,6 +84,27 @@ export function UserAccountTable({ roles }: { roles: Role[] }) {
 
   const columns = useMemo<DataTableColumn<UserAccount>[]>(
     () => [
+      {
+        key: 'avatar',
+        // Có nhãn để còn hiện được trong menu "Cột" (mục không tên là mục trống).
+        header: 'Ảnh',
+        width: 72,
+        minWidth: 56,
+        cell: (account) => (
+          <Avatar className="size-7">
+            <AvatarImage src={account.avatar} alt={account.full_name} />
+            <AvatarFallback className="text-xs">
+              {employeeInitials(account.full_name)}
+            </AvatarFallback>
+          </Avatar>
+        ),
+      },
+      {
+        key: 'code',
+        header: 'Mã NV',
+        width: 130,
+        cell: (account) => account.code || '—',
+      },
       {
         key: 'user',
         header: 'Người dùng',
@@ -200,6 +224,11 @@ export function UserAccountTable({ roles }: { roles: Role[] }) {
   )
 
   return (
+    // Bọc `Card` (bg-card) cho khớp bảng Nhân sự: bộ lọc + bảng dữ liệu nằm chung
+    // một khung nền, không đặt trần lên nền trang. Trang Phân quyền có tab nên KHÔNG
+    // ở chế độ `PageContainer fill` — dùng Card thường (cao theo nội dung), đừng gắn
+    // `fillHeight` vì thiếu mắt xích fill là bảng co sập.
+    <Card className="p-4">
     <DataTable
       columns={columns}
       rows={data?.items}
@@ -274,5 +303,6 @@ export function UserAccountTable({ roles }: { roles: Role[] }) {
         </>
       }
     />
+    </Card>
   )
 }
