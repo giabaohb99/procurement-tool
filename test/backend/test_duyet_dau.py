@@ -18,6 +18,7 @@ from app.modules.seal_request.service import (
     create_seal_request,
     reject_seal,
     return_seal,
+    serialize_seal_request,
     submit_seal_request,
 )
 
@@ -47,6 +48,17 @@ def _payload(st_id, **over):
     data = dict(purpose="Duyệt dấu Hợp đồng Hồ Gia - Dego", seal_type_id=st_id, copies=2)
     data.update(over)
     return SealRequestCreate(**data)
+
+
+def test_serialize_handles_datetime_created_at(db):
+    #  Regression: SealRequestResponse.model_validate(req) từng vỡ 500 vì created_at
+    #  là datetime mà schema khai `str | None` — thiếu field_validator chuyển ISO.
+    actor = _actor(db)
+    st = _seal_type(db)
+    req = create_seal_request(db, _payload(st.id), actor, submit=False)
+    out = serialize_seal_request(db, req)
+    assert isinstance(out["created_at"], str)
+    assert out["status_label"] == "Nháp"
 
 
 def test_create_draft_generates_dd_code(db):

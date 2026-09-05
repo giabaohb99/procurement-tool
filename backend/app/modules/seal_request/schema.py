@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 # --- Loại con dấu (danh mục nền) -------------------------------------------
@@ -85,6 +85,15 @@ class SealRequestResponse(SealRequestBase):
     #  Đang chạy LUỒNG DUYỆT NHIỀU BƯỚC (engine) → FE ẩn nút duyệt một bước (cổng 1).
     approval_running: bool = False
     created_at: str | None = None
+
+    @field_validator("created_at", mode="before")
+    @classmethod
+    def _fmt_created_at(cls, v):
+        """AuditMixin trả datetime; API dùng chuỗi ISO. Không có validator này thì
+        `model_validate(req)` vỡ ngay (đúng lỗi 500 khi tạo phiếu)."""
+        if v is None:
+            return None
+        return v.isoformat() if hasattr(v, "isoformat") else str(v)
 
     class Config:
         from_attributes = True
