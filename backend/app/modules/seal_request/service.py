@@ -15,6 +15,8 @@ from app.modules.company.model import Company
 from app.modules.employee.model import Employee
 from app.modules.user.model import User
 
+from .notify import notify
+
 from .model import (
     EDITABLE_STATUSES,
     SEAL_APPROVED,
@@ -122,7 +124,8 @@ def _validate_for_submit(db: Session, req: SealRequest) -> None:
         raise HTTPException(400, "Cần đính kèm ít nhất 1 chứng từ có chữ ký sống để gửi duyệt")
 
 
-def create_seal_request(db: Session, data: SealRequestCreate, user, submit: bool) -> SealRequest:
+def create_seal_request(db: Session, data: SealRequestCreate, user, submit: bool,
+                        background_tasks=None) -> SealRequest:
     """Tạo phiếu. submit=True → gửi duyệt ngay (kiểm dữ liệu + tệp); ngược lại lưu Nháp.
 
     ⚠️ Tệp chứng từ được upload RIÊNG qua /api/attachments sau khi có id phiếu; vì vậy
@@ -151,12 +154,12 @@ def create_seal_request(db: Session, data: SealRequestCreate, user, submit: bool
     db.commit()
     db.refresh(req)
     if submit:
-        submit_seal_request(db, req, user)
+        submit_seal_request(db, req, user, background_tasks)
     return req
 
 
 def update_seal_request(db: Session, req: SealRequest, data: SealRequestUpdate,
-                        user, submit: bool) -> SealRequest:
+                        user, submit: bool, background_tasks=None) -> SealRequest:
     """Sửa — CHỈ khi còn Nháp hoặc bị Yêu cầu chỉnh sửa. Sau khi vào luồng thì khóa."""
     if req.status not in EDITABLE_STATUSES:
         raise HTTPException(400, "Phiếu đã vào luồng duyệt — không sửa được nữa")
@@ -167,11 +170,11 @@ def update_seal_request(db: Session, req: SealRequest, data: SealRequestUpdate,
     db.commit()
     db.refresh(req)
     if submit:
-        submit_seal_request(db, req, user)
+        submit_seal_request(db, req, user, background_tasks)
     return req
 
 
-def submit_seal_request(db: Session, req: SealRequest, user) -> SealRequest:
+def submit_seal_request(db: Session, req: SealRequest, user, background_tasks=None) -> SealRequest:
     """Gửi duyệt: Nháp / Yêu cầu chỉnh sửa → Chờ duyệt (kiểm dữ liệu + tệp)."""
     if req.status not in EDITABLE_STATUSES:
         raise HTTPException(400, "Chỉ gửi duyệt được phiếu Nháp hoặc bị Yêu cầu chỉnh sửa")
@@ -180,13 +183,13 @@ def submit_seal_request(db: Session, req: SealRequest, user) -> SealRequest:
     req.updated_by = getattr(user, "id", 0)
     db.commit()
     db.refresh(req)
-    # PHA 3: notify(db, "dd_submitted", req, ..., actor=user)  # báo TBP
+    notify(db, "dd_submitted", req, background_tasks, actor=user)  # báo TBP
     return req
 
 
 # --- Cổng 1: Trưởng bộ phận (quyền approve) --------------------------------
 
-def approve_seal(db: Session, req: SealRequest, user) -> SealRequest:
+def approve_seal(db: Session, req: SealRequest, user, background_tasks=None) -> SealRequest:
     """TBP DUYỆT: Chờ duyệt → Đã duyệt (chờ Văn thư đóng dấu)."""
     if req.status != SEAL_PENDING:
         raise HTTPException(400, "Chỉ duyệt được phiếu đang Chờ duyệt")
@@ -194,11 +197,12 @@ def approve_seal(db: Session, req: SealRequest, user) -> SealRequest:
     req.updated_by = getattr(user, "id", 0)
     db.commit()
     db.refresh(req)
-    # PHA 3: notify(db, "dd_approved", req, ..., actor=user)  # báo NSYC + Văn thư + Giám đốc
+    notify(db, "dd_approved", req, background_tasks, actor=user)  # báo NSYC + Văn thư + Giám đốc
     return req
 
 
-def return_seal(db: Session, req: SealRequest, data: ReasonIn, user) -> SealRequest:
+def return_seal(db: Session, req: SealRequest, data: ReasonIn, user,
+                background_tasks=None) -> SealRequest:
     """YÊU CẦU CHỈNH SỬA — từ Chờ duyệt (TBP) hoặc Đã duyệt (Văn thư) → trả người tạo."""
     if req.status not in (SEAL_PENDING, SEAL_APPROVED):
         raise HTTPException(400, "Chỉ yêu cầu chỉnh sửa khi phiếu Chờ duyệt hoặc Đã duyệt")
@@ -207,11 +211,12 @@ def return_seal(db: Session, req: SealRequest, data: ReasonIn, user) -> SealRequ
     req.updated_by = getattr(user, "id", 0)
     db.commit()
     db.refresh(req)
-    # PHA 3: notify(db, "dd_returned", req, ..., actor=user, reason=data.reason)
+    notify(db, "dd_returned", req, background_tasks, actor=user, reason=data.reason)
     return req
 
 
-def reject_seal(db: Session, req: SealRequest, data: ReasonIn, user) -> SealRequest:
+def reject_seal(db: Session, req: SealRequest, data: ReasonIn, user,
+                background_tasks=None) -> SealRequest:
     """TỪ CHỐI — từ Chờ duyệt (TBP) hoặc Đã duyệt (Văn thư) → khóa."""
     if req.status not in (SEAL_PENDING, SEAL_APPROVED):
         raise HTTPException(400, "Chỉ từ chối khi phiếu Chờ duyệt hoặc Đã duyệt")
@@ -220,13 +225,14 @@ def reject_seal(db: Session, req: SealRequest, data: ReasonIn, user) -> SealRequ
     req.updated_by = getattr(user, "id", 0)
     db.commit()
     db.refresh(req)
-    # PHA 3: notify(db, "dd_rejected", req, ..., actor=user, reason=data.reason)
+    notify(db, "dd_rejected", req, background_tasks, actor=user, reason=data.reason)
     return req
 
 
 # --- Cổng 2: Văn thư (quyền write, phạm vi company) ------------------------
 
-def complete_seal(db: Session, req: SealRequest, data: CompleteSealIn, user) -> SealRequest:
+def complete_seal(db: Session, req: SealRequest, data: CompleteSealIn, user,
+                  background_tasks=None) -> SealRequest:
     """Văn thư HOÀN THÀNH: Đã duyệt → Hoàn thành (đã đóng dấu ngoài thực tế)."""
     if req.status != SEAL_APPROVED:
         raise HTTPException(400, "Chỉ hoàn thành được phiếu đã được duyệt")
@@ -240,7 +246,7 @@ def complete_seal(db: Session, req: SealRequest, data: CompleteSealIn, user) -> 
     req.updated_by = getattr(user, "id", 0)
     db.commit()
     db.refresh(req)
-    # PHA 3: notify(db, "dd_completed", req, ..., actor=user)  # báo NSYC
+    notify(db, "dd_completed", req, background_tasks, actor=user)  # báo NSYC
     return req
 
 

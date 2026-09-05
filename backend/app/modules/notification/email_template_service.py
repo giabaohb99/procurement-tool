@@ -24,6 +24,16 @@ DX_VARIABLES = [
     "start_time", "end_location", "reason", "recipient_name", "link",
 ]
 
+#  Biến cho các event Duyệt dấu (event bắt đầu bằng `dd_`).
+SEAL_VARIABLES = [
+    "code", "purpose", "seal_type_name", "company_name", "copies",
+    "creator_name", "approver_name", "reason", "recipient_name", "link",
+]
+
+
+def _variables_for(event: str) -> list[str]:
+    return SEAL_VARIABLES if (event or "").startswith("dd_") else DX_VARIABLES
+
 
 def _wrap(intro: str, *, show_reason: bool = False, cta: str = "Mở phiếu đặt xe") -> str:
     """Dựng thân HTML mặc định kiểu thẻ DEGO cho một event.
@@ -60,6 +70,42 @@ def _wrap(intro: str, *, show_reason: bool = False, cta: str = "Mở phiếu đ�
         "style=\"display:inline-block; background:#0098db; color:#fff; text-decoration:none; "
         f"padding:11px 22px; border-radius:6px; font-weight:700; font-size:14px;\">{cta}</a></div>"
         "<p style=\"margin:18px 0 0; font-size:12px; color:#94a3b8;\">Email tự động từ hệ thống Đặt xe "
+        "DEGO — vui lòng không trả lời email này.</p>"
+        "</div></div>"
+    )
+
+
+def _wrap_seal(intro: str, *, show_reason: bool = False, cta: str = "Mở phiếu duyệt dấu") -> str:
+    """Thân HTML mặc định cho một event DUYỆT DẤU (thẻ DEGO, rows theo con dấu)."""
+    reason_block = (
+        "{% if reason %}<div style=\"margin:16px 0; padding:12px 14px; background:#fef2f2; "
+        "border:1px solid #fecaca; border-radius:6px; color:#991b1b;\">"
+        "<strong>Lý do:</strong> {{ reason }}</div>{% endif %}"
+        if show_reason else ""
+    )
+    return (
+        "<div style=\"font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; "
+        "max-width:600px; margin:0 auto; border:1px solid #e2e8f0; border-radius:8px; overflow:hidden;\">"
+        "<div style=\"background:#0098db; border-bottom:3px solid #f5871f; padding:16px 24px; "
+        "color:#fff; font-weight:700; letter-spacing:1px;\">DEGO HOLDING — DUYỆT DẤU</div>"
+        "<div style=\"padding:24px;\">"
+        "<p style=\"margin:0 0 8px; font-size:15px;\">Kính gửi {{ recipient_name }},</p>"
+        f"<p style=\"margin:0 0 16px; font-size:15px; color:#334155;\">{intro}</p>"
+        "<table style=\"width:100%; font-size:14px; border-collapse:collapse;\">"
+        "<tr><td style=\"padding:6px 0; color:#64748b; width:38%;\">Mã phiếu</td>"
+        "<td style=\"padding:6px 0; font-weight:700; color:#0098db;\">{{ code }}</td></tr>"
+        "<tr><td style=\"padding:6px 0; color:#64748b;\">Mục đích</td>"
+        "<td style=\"padding:6px 0;\">{{ purpose }}</td></tr>"
+        "<tr><td style=\"padding:6px 0; color:#64748b;\">Loại con dấu</td>"
+        "<td style=\"padding:6px 0;\">{{ seal_type_name }}</td></tr>"
+        "<tr><td style=\"padding:6px 0; color:#64748b;\">Công ty</td>"
+        "<td style=\"padding:6px 0;\">{{ company_name }}</td></tr>"
+        "</table>"
+        f"{reason_block}"
+        "<div style=\"margin-top:22px;\"><a href=\"{{ link }}\" target=\"_blank\" "
+        "style=\"display:inline-block; background:#0098db; color:#fff; text-decoration:none; "
+        f"padding:11px 22px; border-radius:6px; font-weight:700; font-size:14px;\">{cta}</a></div>"
+        "<p style=\"margin:18px 0 0; font-size:12px; color:#94a3b8;\">Email tự động từ hệ thống Duyệt dấu "
         "DEGO — vui lòng không trả lời email này.</p>"
         "</div></div>"
     )
@@ -107,6 +153,25 @@ DEFAULTS: list[dict] = [
     {"event": "dx_completed_creator", "label": "Hoàn tất", "recipient": "Người tạo",
      "subject": "Yêu cầu đặt xe {{ code }} đã hoàn tất",
      "body_html": _wrap("Chuyến xe của bạn đã hoàn tất. Cảm ơn bạn đã sử dụng dịch vụ đặt xe.")},
+
+    # --- Duyệt dấu (Yêu cầu đóng dấu) ---
+    {"event": "dd_submitted", "label": "Gửi duyệt", "recipient": "Trưởng bộ phận",
+     "subject": "YCĐD {{ code }} chờ bạn duyệt",
+     "body_html": _wrap_seal("Có một yêu cầu đóng dấu mới cần bạn phê duyệt.", cta="Xem & duyệt phiếu")},
+    {"event": "dd_approved", "label": "Duyệt", "recipient": "Người tạo · Văn thư · Giám đốc",
+     "subject": "Yêu cầu đóng dấu {{ code }} đã được duyệt",
+     "body_html": _wrap_seal("Yêu cầu đóng dấu đã được duyệt. Văn thư vui lòng đối chiếu chứng từ "
+                             "và đóng dấu.", cta="Xem phiếu")},
+    {"event": "dd_returned", "label": "Yêu cầu chỉnh sửa", "recipient": "Người tạo",
+     "subject": "YCĐD {{ code }} bị trả lại để chỉnh sửa",
+     "body_html": _wrap_seal("Yêu cầu đóng dấu của bạn bị trả lại — hãy chỉnh sửa và gửi lại.",
+                             show_reason=True, cta="Chỉnh sửa phiếu")},
+    {"event": "dd_rejected", "label": "Từ chối", "recipient": "Người tạo",
+     "subject": "YCĐD {{ code }} đã bị từ chối",
+     "body_html": _wrap_seal("Yêu cầu đóng dấu của bạn đã bị từ chối.", show_reason=True)},
+    {"event": "dd_completed", "label": "Hoàn thành", "recipient": "Người tạo",
+     "subject": "Yêu cầu đóng dấu {{ code }} đã đóng dấu xong",
+     "body_html": _wrap_seal("Văn thư đã đóng dấu xong yêu cầu của bạn.")},
 ]
 
 _DEFAULT_MAP = {d["event"]: d for d in DEFAULTS}
@@ -137,7 +202,7 @@ def get_effective(db: Session, event: str) -> dict | None:
         return None
     row = db.query(EmailTemplate).filter(EmailTemplate.event == event).first()
     if row is None:
-        return {**base, "enabled": True, "is_custom": False, "variables": DX_VARIABLES}
+        return {**base, "enabled": True, "is_custom": False, "variables": _variables_for(event)}
     return {
         "event": event,
         "label": base["label"],
@@ -146,7 +211,7 @@ def get_effective(db: Session, event: str) -> dict | None:
         "subject": row.subject or base["subject"],
         "body_html": row.body_html or base["body_html"],
         "is_custom": True,
-        "variables": DX_VARIABLES,
+        "variables": _variables_for(event),
     }
 
 

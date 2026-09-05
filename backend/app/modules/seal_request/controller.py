@@ -4,7 +4,7 @@ Gác hai trục như mọi module: `require("seal_request", action)` cho quyền
 `apply_scope`/`get_scoped` bó phạm vi theo công ty/phòng ban/người tạo. Tệp chứng từ có
 chữ ký sống đi qua module `attachment` dùng chung (entity="seal_request").
 """
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 
 from app.core.audit import record as audit_record
@@ -66,11 +66,12 @@ def get_seal_request(rid: int, db: Session = Depends(get_db),
 @router.post("")
 def create_seal_request(
     data: SealRequestCreate,
+    background_tasks: BackgroundTasks,
     submit: bool = Query(False, description="true = gửi duyệt luôn; false = lưu nháp"),
     db: Session = Depends(get_db),
     user=Depends(require("seal_request", "create")),
 ):
-    obj = service.create_seal_request(db, data, user, submit)
+    obj = service.create_seal_request(db, data, user, submit, background_tasks)
     audit_record(db, user.id, "seal_request", obj.id, "create",
                  f"Tạo yêu cầu đóng dấu {obj.code}")
     msg = "Đã gửi duyệt yêu cầu đóng dấu" if submit else "Đã lưu nháp yêu cầu đóng dấu"
@@ -81,23 +82,25 @@ def create_seal_request(
 def update_seal_request(
     rid: int,
     data: SealRequestUpdate,
+    background_tasks: BackgroundTasks,
     submit: bool = Query(False, description="true = lưu rồi gửi duyệt"),
     db: Session = Depends(get_db),
     user=Depends(require("seal_request", "write")),
 ):
     obj = _scoped_or_404(db, rid, user, "write")
-    obj = service.update_seal_request(db, obj, data, user, submit)
+    obj = service.update_seal_request(db, obj, data, user, submit, background_tasks)
     audit_record(db, user.id, "seal_request", obj.id, "update",
                  f"Cập nhật yêu cầu đóng dấu {obj.code}")
     return success(service.serialize_seal_request(db, obj), "Đã cập nhật")
 
 
 @router.post("/{rid}/submit")
-def submit_seal_request(rid: int, db: Session = Depends(get_db),
+def submit_seal_request(rid: int, background_tasks: BackgroundTasks,
+                        db: Session = Depends(get_db),
                         user=Depends(require("seal_request", "write"))):
     """Gửi duyệt phiếu Nháp / bị Yêu cầu chỉnh sửa (kiểm dữ liệu + ≥1 chứng từ chữ ký sống)."""
     obj = _scoped_or_404(db, rid, user, "write")
-    obj = service.submit_seal_request(db, obj, user)
+    obj = service.submit_seal_request(db, obj, user, background_tasks)
     audit_record(db, user.id, "seal_request", obj.id, "update",
                  f"Gửi duyệt yêu cầu đóng dấu {obj.code}")
     return success(service.serialize_seal_request(db, obj), "Đã gửi duyệt")
@@ -106,30 +109,32 @@ def submit_seal_request(rid: int, db: Session = Depends(get_db),
 # --- Cổng 1: Trưởng bộ phận (approve) --------------------------------------
 
 @router.post("/{rid}/approve")
-def approve_seal(rid: int, db: Session = Depends(get_db),
+def approve_seal(rid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
                  user=Depends(require("seal_request", "approve"))):
     obj = _scoped_or_404(db, rid, user, "approve")
-    obj = service.approve_seal(db, obj, user)
+    obj = service.approve_seal(db, obj, user, background_tasks)
     audit_record(db, user.id, "seal_request", obj.id, "approve",
                  f"Duyệt yêu cầu đóng dấu {obj.code}")
     return success(service.serialize_seal_request(db, obj), "Đã duyệt yêu cầu")
 
 
 @router.post("/{rid}/return")
-def return_seal(rid: int, data: ReasonIn, db: Session = Depends(get_db),
+def return_seal(rid: int, data: ReasonIn, background_tasks: BackgroundTasks,
+                db: Session = Depends(get_db),
                 user=Depends(require("seal_request", "approve"))):
     obj = _scoped_or_404(db, rid, user, "approve")
-    obj = service.return_seal(db, obj, data, user)
+    obj = service.return_seal(db, obj, data, user, background_tasks)
     audit_record(db, user.id, "seal_request", obj.id, "update",
                  _with_reason("Yêu cầu chỉnh sửa", data.reason))
     return success(service.serialize_seal_request(db, obj), "Đã trả lại để chỉnh sửa")
 
 
 @router.post("/{rid}/reject")
-def reject_seal(rid: int, data: ReasonIn, db: Session = Depends(get_db),
+def reject_seal(rid: int, data: ReasonIn, background_tasks: BackgroundTasks,
+                db: Session = Depends(get_db),
                 user=Depends(require("seal_request", "approve"))):
     obj = _scoped_or_404(db, rid, user, "approve")
-    obj = service.reject_seal(db, obj, data, user)
+    obj = service.reject_seal(db, obj, data, user, background_tasks)
     audit_record(db, user.id, "seal_request", obj.id, "cancel",
                  _with_reason("Từ chối yêu cầu", data.reason))
     return success(service.serialize_seal_request(db, obj), "Đã từ chối yêu cầu")
@@ -138,33 +143,36 @@ def reject_seal(rid: int, data: ReasonIn, db: Session = Depends(get_db),
 # --- Cổng 2: Văn thư (write) -----------------------------------------------
 
 @router.post("/{rid}/complete")
-def complete_seal(rid: int, data: CompleteSealIn, db: Session = Depends(get_db),
+def complete_seal(rid: int, data: CompleteSealIn, background_tasks: BackgroundTasks,
+                  db: Session = Depends(get_db),
                   user=Depends(require("seal_request", "write"))):
     """Văn thư đóng dấu xong → Hoàn thành."""
     obj = _scoped_or_404(db, rid, user, "write")
-    obj = service.complete_seal(db, obj, data, user)
+    obj = service.complete_seal(db, obj, data, user, background_tasks)
     audit_record(db, user.id, "seal_request", obj.id, "update",
                  f"Hoàn thành (đóng dấu) yêu cầu {obj.code}")
     return success(service.serialize_seal_request(db, obj), "Đã hoàn thành đóng dấu")
 
 
 @router.post("/{rid}/return-clerk")
-def return_seal_clerk(rid: int, data: ReasonIn, db: Session = Depends(get_db),
+def return_seal_clerk(rid: int, data: ReasonIn, background_tasks: BackgroundTasks,
+                      db: Session = Depends(get_db),
                       user=Depends(require("seal_request", "write"))):
     """Văn thư YÊU CẦU CHỈNH SỬA (phiếu Đã duyệt) — vd chụp lại chữ ký rõ hơn."""
     obj = _scoped_or_404(db, rid, user, "write")
-    obj = service.return_seal(db, obj, data, user)
+    obj = service.return_seal(db, obj, data, user, background_tasks)
     audit_record(db, user.id, "seal_request", obj.id, "update",
                  _with_reason("Yêu cầu chỉnh sửa (Văn thư)", data.reason))
     return success(service.serialize_seal_request(db, obj), "Đã trả lại để chỉnh sửa")
 
 
 @router.post("/{rid}/reject-clerk")
-def reject_seal_clerk(rid: int, data: ReasonIn, db: Session = Depends(get_db),
+def reject_seal_clerk(rid: int, data: ReasonIn, background_tasks: BackgroundTasks,
+                      db: Session = Depends(get_db),
                       user=Depends(require("seal_request", "write"))):
     """Văn thư TỪ CHỐI (phiếu Đã duyệt)."""
     obj = _scoped_or_404(db, rid, user, "write")
-    obj = service.reject_seal(db, obj, data, user)
+    obj = service.reject_seal(db, obj, data, user, background_tasks)
     audit_record(db, user.id, "seal_request", obj.id, "cancel",
                  _with_reason("Từ chối (Văn thư)", data.reason))
     return success(service.serialize_seal_request(db, obj), "Đã từ chối yêu cầu")

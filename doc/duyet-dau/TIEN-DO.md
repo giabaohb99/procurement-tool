@@ -57,15 +57,17 @@ docker compose exec -T api python -m pytest test/backend -q
 | [x] | Chốt chặn: `require` + trạng thái nguồn + `get_scoped`; TBP `approve`, Văn thư `write` | có test `test_duyet_dau.py` (7 ca) |
 | [x] | FE: `SealWorkflowActions` bày nút theo vai trò + `seal-reason-dialog` / `seal-complete-dialog` (popup) | |
 
-## PHA 3 — Thông báo & Email theo bước
+## PHA 3 — Thông báo & Email theo bước ✅ (05/09/2026)
 > Chi tiết: [phase-3-thong-bao-va-email.md](phase-3-thong-bao-va-email.md).
 
 | TT | Việc | Ghi chú |
 |---|---|---|
-| [ ] | `seal_request/notify.py`: sự kiện `dd_submitted/approved/returned/rejected/completed` | mẫu `vehicle_booking/notify.py` |
-| [ ] | Duyệt xong → chuông + email **NSYC + Văn thư (theo company) + Giám đốc công ty** | recipient helpers |
-| [ ] | Mẫu email mặc định (`DEFAULTS`) + đăng ký vào trang cài đặt `/system/settings` | `email_template_*` |
-| [ ] | Loại trừ email theo cá nhân/phòng/công ty cho sự kiện Duyệt dấu | reuse `email_exclusion_*` |
+| [x] | `seal_request/notify.py`: sự kiện `dd_submitted/approved/returned/rejected/completed` | mẫu `vehicle_booking/notify.py`, best-effort |
+| [x] | Duyệt xong → chuông + email **NSYC + Văn thư (lọc theo company) + Giám đốc (role `company_head` best-effort)** | wired vào service (submit/approve/return/reject/complete) |
+| [x] | Mẫu email mặc định (`_wrap_seal` + 5 dd_* trong `DEFAULTS`) + biến `SEAL_VARIABLES` — tự hiện ở `/system/settings` | `email_template_service.py` |
+| [x] | Loại trừ email — dùng chung `email_exclusion` (`send_event_email` đã gọi `filter_recipients`), dd_* tự vào bộ lọc | không cần code thêm |
+| [x] | Test `test_duyet_dau_thong_bao.py` (3 ca: báo người tạo khi duyệt/trả · im khi không người nhận) | |
+| — | ⚠️ "Giám đốc" = vai trò `company_head` (chưa có vai trò giám đốc chuẩn) — chốt ở quyết định A | |
 
 ## PHA 4 — Đồng bộ UI/UX + bản in + nhân bản
 > Chi tiết: [phase-4-dong-bo-ui-va-ban-in.md](phase-4-dong-bo-ui-va-ban-in.md).
