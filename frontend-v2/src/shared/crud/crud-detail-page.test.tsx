@@ -164,3 +164,42 @@ describe('CrudDetailPage — thêm mới', () => {
     expect(apiPost).not.toHaveBeenCalled()
   })
 })
+
+/**
+ * ─── D5: id NGOÀI PHẠM VI dữ liệu ───
+ *
+ * Backend không phân biệt "không tồn tại" với "ngoài phạm vi": `get_scoped(...)`
+ * lọc trước rồi trả **404** cho cả hai — cố ý, vì trả 403 là xác nhận bản ghi đó
+ * có thật (rò rỉ thông tin qua mã lỗi). Nghĩa là gõ thẳng một id vào URL để dò
+ * dữ liệu ngoài phạm vi thì màn hình phải nói được điều gì đó, chứ không được
+ * treo ở khung trắng hay ở skeleton vĩnh viễn.
+ */
+describe('CrudDetailPage — id ngoài phạm vi (D5)', () => {
+  it('404 -> hiện "Không tìm thấy", KHÔNG phải trang trắng', async () => {
+    apiGet.mockRejectedValue(Object.assign(new Error('404'), { response: { status: 404 } }))
+    build('/hr/leave-types/999999')
+
+    expect(await screen.findByText('Không tìm thấy loại nghỉ')).toBeInTheDocument()
+    //  Câu mô tả phải nêu CẢ HAI khả năng: người dùng không có cách nào tự phân
+    //  biệt, nói thiếu một vế là họ đi báo lỗi nhầm chỗ.
+    expect(screen.getByText(/đã bị xóa hoặc bạn không có quyền xem/)).toBeInTheDocument()
+  })
+
+  it('có lối quay về danh sách, không bắt bấm nút Back của trình duyệt', async () => {
+    apiGet.mockRejectedValue(new Error('404'))
+    build('/hr/leave-types/999999')
+
+    await userEvent.click(await screen.findByRole('button', { name: /Về danh sách/ }))
+    expect(await screen.findByText('trang danh sách')).toBeInTheDocument()
+  })
+
+  it('API trả `null` (bản ghi bị lọc mất) cũng vào nhánh không tìm thấy', async () => {
+    //  Không phải mọi đường đọc đều ném lỗi: có endpoint trả `data: null` trong
+    //  phong bì thành công. Thiếu nhánh `!item` thì trang render với dữ liệu
+    //  rỗng — form trắng trơn trông y như một bản ghi mới.
+    apiGet.mockResolvedValue(null)
+    build('/hr/leave-types/999999')
+
+    expect(await screen.findByText('Không tìm thấy loại nghỉ')).toBeInTheDocument()
+  })
+})

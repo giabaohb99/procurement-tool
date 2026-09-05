@@ -5,6 +5,7 @@ import { FileText } from 'lucide-react'
 import type { PermissionAction, PermissionEntity } from '@/core/authorization/permission-types'
 import type { ErpModule } from './module-definition'
 import { canAccessRoute, canOpenModule, visibleNavItems } from './module-visibility'
+import { allModules, moduleRegistry } from './module-registry'
 
 function module(nav: ErpModule['nav'], entity?: string): ErpModule {
   return { id: 'x', title: 'X', path: '/x', enabled: true, entity, nav } as ErpModule
@@ -220,5 +221,80 @@ describe('phân hệ LINK RA NGOÀI', () => {
   //  Chốt chiều ngược: đừng nới thành "phân hệ nào không có mục menu cũng mở".
   it('phân hệ THƯỜNG mà không thấy mục nào thì vẫn khóa', () => {
     expect(canOpenModule(module([]), allow())).toBe(false)
+  })
+})
+
+/**
+ * ─── B3/B4/B5: chạy trên BẢNG ĐĂNG KÝ THẬT, không phải phân hệ giả ───
+ *
+ * Mấy khẳng định trên kiểm đúng LUẬT của `module-visibility`. Nhóm dưới đây
+ * kiểm luật đó áp lên 20 phân hệ có thật — chỗ mà một mục khai thiếu, một
+ * đường dẫn gõ nhầm hay một mục công khai đặt sai chỗ sẽ lọt qua mọi bài kiểm
+ * dùng dữ liệu bịa.
+ */
+const DENY_ALL = () => false
+
+describe('B3 — gõ thẳng URL màn không có quyền', () => {
+  it('mọi mục CÓ gác quyền đều bị chặn khi tài khoản không có quyền nào', () => {
+    //  Không chỉ là nhắc lại `itemAllowed`: `canAccessRoute` chọn mục khớp path
+    //  DÀI NHẤT, nên một mục công khai (`/hr/emp/dir`) đặt trùm lên một mục có
+    //  gác sẽ âm thầm mở khóa màn kia. Bài này bắt đúng chuyện đó.
+    const lot: string[] = []
+    for (const module of moduleRegistry) {
+      for (const item of module.nav) {
+        if (!item.entity && !item.entities?.length) continue
+        if (canAccessRoute(module, item.path, DENY_ALL)) {
+          lot.push(`${module.id} - ${item.label} (${item.path})`)
+        }
+      }
+    }
+    expect(lot).toEqual([])
+  })
+
+  it('trang CHI TIẾT của mục có gác cũng bị chặn, không chỉ trang danh sách', () => {
+    //  `/x/y/5` không có mục riêng -> phải ăn theo quyền của `/x/y`. Nếu không,
+    //  người bị chặn ở danh sách chỉ cần gõ thêm một id là vào được.
+    const lot: string[] = []
+    for (const module of moduleRegistry) {
+      for (const item of module.nav) {
+        if (!item.entity && !item.entities?.length) continue
+        if (canAccessRoute(module, `${item.path}/12345`, DENY_ALL)) {
+          lot.push(`${module.id} - ${item.label}`)
+        }
+      }
+    }
+    expect(lot).toEqual([])
+  })
+})
+
+describe('B4 — thẻ phân hệ khi không có quyền nào', () => {
+  it('chỉ ba phân hệ CÔNG KHAI (+ phân hệ link ra ngoài) là mở', () => {
+    //  Danh sách chủ ý, giữ song song với `module-registry.test.ts`. Thêm tên
+    //  vào đây phải kèm lý do, kẻo lại tái diễn lỗi 27/08/2026: thẻ phân hệ mở
+    //  cho người ngoài, vào trong toàn số 0.
+    const congKhai = new Set([
+      'document', // «Chờ tôi duyệt» dành cho người duyệt NGOÀI phân hệ
+      'forum', // bảng tin toàn công ty
+      'appearance', // tùy chọn hiển thị của chính người đăng nhập
+    ])
+    //  Chỉ xét phân hệ ĐANG BẬT: phân hệ tắt (`sales`, `dego-coffee`,
+    //  `approval-seal`) mới có mỗi mục «Tổng quan» chưa khai khóa, nhưng chúng
+    //  không vào router nên không ai mở được.
+    const mo = moduleRegistry
+      .filter((m) => !m.externalUrl && canOpenModule(m, DENY_ALL))
+      .map((m) => m.id)
+    expect(new Set(mo)).toEqual(congKhai)
+  })
+})
+
+describe('B5 — phân hệ đang tắt', () => {
+  it('không nằm trong bảng đăng ký, nên không có route và không dò được theo URL', () => {
+    for (const module of allModules.filter((m) => !m.enabled)) {
+      expect(moduleRegistry.map((m) => m.id), module.id).not.toContain(module.id)
+    }
+  })
+
+  it('bảng đăng ký chỉ chứa phân hệ đang bật', () => {
+    expect(moduleRegistry.filter((m) => !m.enabled)).toEqual([])
   })
 })

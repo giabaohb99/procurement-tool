@@ -72,6 +72,14 @@ services:
     volumes:
       - ./backend:/app # mount code -> hot reload, không cần build lại
       - ./test:/app/test # mount test dir để pytest chạy trong container
+      # CHỈ-ĐỌC. Có mặt cho đúng MỘT bài kiểm: `test_dong_bo_giao_dien_v2.py`,
+      # nơi so cổng quyền của frontend-v2 với `ENTITIES` + `require()` của
+      # backend. Bài đó cần đọc CẢ HAI bên mà container này không mount
+      # `./frontend-v2`. Không có mount thì bài kiểm tự skip (vẫn chạy được ở
+      # máy thật / CI — xem chú thích trong chính tệp test).
+      # ⚠️ `:ro` không được bỏ: uvicorn ở đây chạy `--reload`, mount ghi được là
+      # thêm một cây mã nữa cho nó dò, và không có lý do gì backend ghi vào FE.
+      - ./frontend-v2/src:/app/fe-src:ro
     ports:
       - "8000:8000"
 

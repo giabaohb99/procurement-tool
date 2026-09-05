@@ -64,6 +64,13 @@ export const ENTITIES = [
   'document_book',
   'document',
   'security_level',
+  //  Phân hệ Duyệt dấu. Chưa có màn nào ở v2 gọi `can('seal_request', …)`, nhưng
+  //  danh sách này là BẢN SAO của `ENTITIES` backend chứ không phải "những khóa
+  //  v2 đang dùng" — thiếu một khóa thì `can()` không gõ nổi tên nó (union type),
+  //  và người viết màn mới sẽ ép kiểu hoặc bỏ luôn cổng quyền.
+  //  Bài kiểm canh: `test/backend/test_dong_bo_giao_dien_v2.py`.
+  'seal_request',
+  'seal_type',
   // Bộ máy phê duyệt dùng chung — không thuộc phân hệ nào.
   'approval_flow',
   // Trợ lý AI — cổng quyền thuần (chỉ ban lãnh đạo), khai PUBLIC ở scoping backend.

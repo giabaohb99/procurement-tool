@@ -109,3 +109,82 @@ describe('DataTable — sàn bề rộng', () => {
     expect(table.className).toContain('table-fixed')
   })
 })
+
+/**
+ * ─── BA TRẠNG THÁI RỖNG (D1–D3) ───
+ *
+ * Kiểu hỏng đắt nhất của giao diện phân quyền: **một bảng trống có ba nghĩa**
+ * hoàn toàn khác nhau và người dùng không phân biệt được cái nào —
+ *
+ * | Thật ra là | Người dùng thấy |
+ * |---|---|
+ * | Không có dữ liệu | bảng rỗng |
+ * | Có dữ liệu nhưng ngoài phạm vi | bảng rỗng |
+ * | Không có quyền (403) | bảng rỗng |
+ *
+ * Đây là nguồn số 1 của câu "hệ thống lỗi rồi" mỗi lần khai quyền hẹp, và cũng
+ * là lý do một lỗ phạm vi sống rất lâu: người bị lọc nhầm trông giống hệt người
+ * không có dữ liệu. `DataTable` phải tách được ÍT NHẤT hai nhánh (rỗng / lỗi),
+ * và trang gọi nó có trách nhiệm truyền câu chữ đúng cho nhánh còn lại.
+ */
+function buildState(props: Partial<Parameters<typeof DataTable<Row>>[0]>) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const { container } = render(
+    <QueryClientProvider client={client}>
+      <DataTable
+        columns={[{ key: 'id', header: 'Mã', cell: (r) => r.id, width: 100 }]}
+        rows={[]}
+        getRowId={(r) => r.id}
+        {...props}
+      />
+    </QueryClientProvider>,
+  )
+  return container
+}
+
+describe('DataTable — ba trạng thái rỗng', () => {
+  it('không có dữ liệu và lỗi tải là HAI câu khác nhau', () => {
+    const rong = buildState({}).textContent ?? ''
+    const loi = buildState({ isError: true }).textContent ?? ''
+
+    expect(rong).toContain('Không có dữ liệu.')
+    expect(loi).toContain('Không tải được danh sách')
+    //  Dùng chung một câu = mất luôn khả năng phân biệt, và đó chính là lỗ 09-C.
+    expect(loi).not.toContain('Không có dữ liệu.')
+  })
+
+  it('đang tải KHÔNG được hiện câu "không có dữ liệu"', () => {
+    //  Nháy câu đó trong lúc chờ mạng là người dùng đọc được "không có gì" rồi
+    //  bỏ đi trước khi dữ liệu về.
+    const container = buildState({ isLoading: true })
+    expect(container.textContent).not.toContain('Không có dữ liệu.')
+    expect(container.textContent).not.toContain('Không tải được danh sách')
+  })
+
+  it('lỗi thì KHÔNG vẽ dòng dữ liệu cũ lẫn vào', () => {
+    const container = buildState({ isError: true, rows: ROWS })
+    expect(container.textContent).not.toContain('Nguyễn Văn A')
+  })
+
+  it('trang truyền được câu riêng cho nhánh THIẾU QUYỀN', () => {
+    //  Backend lọc phạm vi bằng cách trả DANH SÁCH RỖNG (không phải 403), nên
+    //  chính trang mới biết nên nói gì. `DataTable` chỉ cần đừng nói dối thay nó.
+    const container = buildState({
+      emptyMessage: 'Không có chứng từ nào trong phạm vi dữ liệu của bạn.',
+    })
+    expect(container.textContent).toContain('trong phạm vi dữ liệu của bạn')
+    expect(container.textContent).not.toContain('Không có dữ liệu.')
+  })
+
+  it('câu lỗi MẶC ĐỊNH có nhắc tới quyền, vì 403 trên GET không bật toast', () => {
+    //  `core/api/http-client.ts` chỉ toast cho POST/PATCH/PUT/DELETE. Nghĩa là
+    //  ô chữ này là NƠI DUY NHẤT người dùng biết mình vừa bị chặn.
+    expect(buildState({ isError: true }).textContent).toMatch(/quyền/)
+  })
+
+  it('`rows` chưa về (undefined) khác hẳn `rows` rỗng', () => {
+    //  `data?.items ?? []` ở tầng trang biến "chưa gọi xong" thành "rỗng" —
+    //  bảng phải không tự bịa thêm câu nào khi chưa có mảng.
+    expect(buildState({ rows: undefined }).textContent).not.toContain('Không có dữ liệu.')
+  })
+})
