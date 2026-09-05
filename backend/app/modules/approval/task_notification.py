@@ -38,6 +38,10 @@ ENTITY_LABELS = {
     "payment_request": "Yêu cầu thanh toán",
     "leave_request": "Đơn nghỉ phép",
     "room_booking": "Phiếu đặt phòng họp",
+    #  Đặt xe có ĐỦ hook (`register_hooks` + `register_subject` + `register_reader`
+    #  trong `vehicle_booking/approval_bridge.py`) nhưng bị quên ở hai bảng này,
+    #  nên thư báo ghi «Phiếu XE009» — mất luôn chữ nói đây là việc gì.
+    "vehicle_booking": "Phiếu đặt xe",
 }
 
 #  Đường dẫn trong thư. Văn bản ghi thẳng đường của app v2; mấy loại còn lại ghi
@@ -58,6 +62,12 @@ ENTITY_LINKS = {
     "leave_request": "/hr/leave-requests/{id}",
     #  Đặt phòng cũng chỉ tồn tại ở app v2 — xem cảnh báo ngay trên.
     "room_booking": "/hr/room-bookings/{id}",
+    #  Đặt xe cũng chỉ có ở app v2 (`appRoutes.vehicleBooking.detail`), và
+    #  `/vehicle-booking` đã nằm trong `V2_PREFIXES` của `notification-link.ts`
+    #  nên `toAppPath()` cho đi thẳng, không dịch tiền tố. Thiếu dòng này thì
+    #  `.get(...)` trả chuỗi RỖNG ⇒ `link` rỗng, bấm vào thông báo không đi đâu
+    #  cả — mà `notify_new_tasks` nuốt lỗi nên không một chỗ nào đỏ lên.
+    "vehicle_booking": "/vehicle-booking/{id}",
 }
 
 
