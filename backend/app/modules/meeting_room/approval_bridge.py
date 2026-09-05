@@ -16,6 +16,12 @@ chung một hàm `_release_and_set`, đừng tách ba bản chép.
 không luồng nào áp; lúc đó phiếu vẫn vào *Chờ duyệt* với `approval_instance_id = 0`
 và người có quyền `room_booking.approve` bấm duyệt thẳng. Không có đường lùi này
 thì cài mới xong là không ai đặt nổi phòng cho tới khi quản trị khai xong luồng.
+
+**Và cả cái cờ nữa** (`ApprovalSwitch` cho entity `room_booking`, màn «Bật bộ máy
+duyệt»). Trước đây đặt phòng trình thẳng vào bộ máy không hỏi cờ, nên dòng công
+tắc của nó bày ra cũng chỉ là nút giả. Nay `start_approval` hỏi cờ trước: TẮT thì
+đi đúng đường lùi ở đoạn trên. Đó là điểm khác biệt so với "chưa khai luồng" —
+đường lùi kia là *tình cờ chưa có luồng*, còn cái này là *cố ý tắt để quay về*.
 """
 import logging
 from datetime import datetime
@@ -23,7 +29,7 @@ from datetime import datetime
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from app.modules.approval import entity_hooks, instance_service
+from app.modules.approval import entity_hooks, flow_service, instance_service
 
 from . import service
 from .constants import (RB_APPROVED, RB_DRAFT, RB_PENDING, RB_REJECTED,
@@ -51,6 +57,11 @@ def entity_context(obj: RoomBooking) -> dict:
         "department_id": obj.department_id,
         "attendee_count": obj.attendee_count,
     }
+
+
+def is_enabled(db: Session) -> bool:
+    """Bộ máy duyệt nhiều bước có đang bật cho đặt phòng họp không (màn «Bật bộ máy duyệt»)."""
+    return flow_service.is_enabled(db, ENTITY)
 
 
 def running_instance(db: Session, booking_id: int):
@@ -107,7 +118,15 @@ def cancel_booking(db: Session, obj: RoomBooking, reason: str, user) -> RoomBook
 
 
 def start_approval(db: Session, obj: RoomBooking, user) -> int:
-    """Trình phiếu vào bộ máy. Trả id phiên, hoặc `0` khi không luồng nào áp."""
+    """Trình phiếu vào bộ máy. Trả id phiên, hoặc `0` khi cờ TẮT / không luồng nào áp.
+
+    Hỏi cờ TRƯỚC khi mở phiên, không phải sau: `instance_service.start()` đã ghi
+    bản chụp luồng và sinh việc cho người duyệt rồi thì hủy đi là vứt luôn mấy
+    dòng dấu vết vừa tạo.
+    """
+    if not is_enabled(db):
+        return 0
+
     instance = instance_service.start(
         db, ENTITY, obj.id, entity_context(obj),
         submitter_employee_id=obj.requester_employee_id, actor=user.id,

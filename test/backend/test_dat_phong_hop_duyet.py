@@ -9,7 +9,10 @@ from datetime import datetime
 from types import SimpleNamespace
 
 import pytest
+from fastapi import HTTPException
 
+from app.modules.approval.flow_model import (APPROVER_EMPLOYEE, ApprovalFlow,
+                                             ApprovalNode, ApprovalSwitch)
 from app.modules.company.model import Company
 from app.modules.department.model import Department
 from app.modules.employee.model import Employee
@@ -72,6 +75,77 @@ class _FakeInstance:
     def __init__(self, reason: str = ""):
         self.updated_by = 9
         self.finish_reason = reason
+
+
+def _declare_flow(db, env, *, switch_on: bool):
+    """Khai một luồng MỘT bước cho đặt phòng, kèm/không kèm bật cờ.
+
+    Khai luồng và bật cờ là HAI việc tách nhau ở màn «Bật bộ máy duyệt», nên
+    tham số hoá đúng chỗ đó chứ không dựng hai hàm chép nhau.
+    """
+    flow = ApprovalFlow(entity=approval_bridge.ENTITY, code="PH-TEST",
+                        name="Duyệt đặt phòng (thử)", is_active=True,
+                        created_by=1, updated_by=1)
+    db.add(flow)
+    db.flush()
+    db.add(ApprovalNode(flow_id=flow.id, seq=1, name="Trưởng bộ phận",
+                        approver_kind=APPROVER_EMPLOYEE, approver_ref=str(env.binh.id),
+                        created_by=1, updated_by=1))
+    if switch_on:
+        db.add(ApprovalSwitch(entity=approval_bridge.ENTITY, is_enabled=True,
+                              created_by=1, updated_by=1))
+    db.commit()
+    return flow
+
+
+# ── Công tắc «Bật bộ máy duyệt» ────────────────────────────────────────────────
+
+def test_co_luong_nhung_co_TAT_thi_phieu_di_duong_duyet_THANG(db, env):
+    """Công tắc phải THẬT SỰ cắt được, không phải nút giả.
+
+    Trước 05/09/2026 đặt phòng trình thẳng vào bộ máy mà không hỏi cờ, nên gạt
+    tắt xong phiếu vẫn chui vào luồng nhiều bước — đúng cái mà cả màn hình đó
+    nói là "đường lui".
+    """
+    _declare_flow(db, env, switch_on=False)
+    obj = _pending_booking(db, env)
+
+    assert approval_bridge.start_approval(db, obj, env.user) == 0, \
+        "Cờ TẮT mà vẫn mở phiên nghĩa là công tắc là nút giả"
+    assert approval_bridge.running_instance(db, obj.id) is None
+
+    #  Đường lui phải đi được thật: không có phiên nên chốt chặn duyệt thẳng
+    #  không được ném. Thiếu khẳng định này thì phiếu vào Chờ duyệt mà không ai
+    #  ký nổi — tức là phòng bị khóa vĩnh viễn, đúng nỗi lo ở đầu tệp.
+    approval_bridge.block_legacy_path(db, obj)
+
+
+def test_co_BAT_va_co_luong_thi_mo_phien_nhieu_buoc(db, env):
+    """Bật cờ lên là phiếu đi bộ máy — và lúc đó ba nút duyệt thẳng phải khóa."""
+    _declare_flow(db, env, switch_on=True)
+    obj = _pending_booking(db, env)
+
+    instance_id = approval_bridge.start_approval(db, obj, env.user)
+
+    assert instance_id > 0, "Có luồng + cờ bật mà `start` trả 0 nghĩa là chưa nối được"
+    assert approval_bridge.running_instance(db, obj.id) is not None
+    with pytest.raises(HTTPException):
+        approval_bridge.block_legacy_path(db, obj)
+
+
+def test_chua_khai_luong_thi_bat_co_cung_khong_ket_phieu(db, env):
+    """Cờ BẬT nhưng chưa luồng nào áp → vẫn rơi về đường duyệt thẳng.
+
+    Hai đường lui khác nhau và cả hai đều phải sống: *cố ý tắt* và *tình cờ chưa
+    khai luồng*. Bật cờ trước rồi mới khai luồng là thứ tự người ta hay làm.
+    """
+    db.add(ApprovalSwitch(entity=approval_bridge.ENTITY, is_enabled=True,
+                          created_by=1, updated_by=1))
+    db.commit()
+    obj = _pending_booking(db, env)
+
+    assert approval_bridge.start_approval(db, obj, env.user) == 0
+    approval_bridge.block_legacy_path(db, obj)
 
 
 # ── Bốn kết cục ────────────────────────────────────────────────────────────────

@@ -66,8 +66,13 @@ def approver(db):
 
 
 @pytest.fixture()
-def flow(db, approver):
-    """Luồng MỘT bước, người duyệt khai đích danh — đủ để chạy hết vòng đời."""
+def flow_switch_off(db, approver):
+    """Luồng MỘT bước đã khai, NHƯNG cờ bộ máy còn TẮT.
+
+    Tách riêng khỏi `flow` để dựng được đúng cảnh của màn «Bật bộ máy duyệt»:
+    quản trị khai luồng xong nhưng chưa gạt công tắc. Khai luồng và bật cờ là
+    HAI việc, và giữa hai việc đó đơn vẫn phải nộp được.
+    """
     row = ApprovalFlow(entity=ENTITY, code="NP-TEST", name="Duyệt nghỉ phép (thử)",
                        is_active=True, created_by=ACTOR, updated_by=ACTOR)
     db.add(row)
@@ -75,11 +80,18 @@ def flow(db, approver):
     db.add(ApprovalNode(flow_id=row.id, seq=1, name="Trưởng bộ phận",
                         approver_kind=APPROVER_EMPLOYEE, approver_ref=str(approver.id),
                         created_by=ACTOR, updated_by=ACTOR))
-    db.add(ApprovalSwitch(entity=ENTITY, is_enabled=True,
-                          created_by=ACTOR, updated_by=ACTOR))
     db.commit()
     db.refresh(row)
     return row
+
+
+@pytest.fixture()
+def flow(db, flow_switch_off):
+    """Luồng MỘT bước, người duyệt khai đích danh, cờ đã BẬT — chạy hết vòng đời."""
+    db.add(ApprovalSwitch(entity=ENTITY, is_enabled=True,
+                          created_by=ACTOR, updated_by=ACTOR))
+    db.commit()
+    return flow_switch_off
 
 
 def _user(employee: Employee, uid: int = 1):
@@ -103,6 +115,40 @@ def _remaining(db, employee, leave_type):
 
 
 # ── 1. Nối vào bộ máy ───────────────────────────────────────────────────────
+
+def test_co_luong_nhung_co_TAT_thi_don_di_duong_duyet_THANG(db, flow_switch_off,
+                                                            leave_type, submitter):
+    """Công tắc ở màn «Bật bộ máy duyệt» phải THẬT SỰ cắt được, không phải nút giả.
+
+    Trước 05/09/2026 nghỉ phép trình thẳng vào bộ máy mà không hỏi cờ, nên gạt
+    tắt xong đơn vẫn chui vào luồng nhiều bước — đúng cái mà cả màn hình đó nói
+    là "đường lui". Đây là bài chốt: có luồng hẳn hoi mà cờ tắt thì không phiên
+    nào được mở, và đơn rơi về đường duyệt thẳng một bước.
+    """
+    obj, instance_id = _submit(db, leave_type, submitter)
+
+    assert instance_id == 0, "Cờ TẮT mà vẫn mở phiên nghĩa là công tắc là nút giả"
+    assert approval_bridge.running_instance(db, obj.id) is None
+    assert obj.status == LR_PENDING, "Đơn vẫn phải vào Chờ duyệt, không kẹt ở Nháp"
+
+    #  Và đường lui phải đi được thật: không có phiên nên chốt chặn duyệt thẳng
+    #  không được ném. Thiếu khẳng định này thì "rơi về đường cũ" mới chỉ đúng
+    #  một nửa — đơn vào Chờ duyệt nhưng không ai ký nổi.
+    approval_bridge.block_legacy_path(db, obj)
+
+
+def test_quy_phep_van_giu_cho_khi_co_TAT(db, flow_switch_off, leave_type, submitter):
+    """Tắt cờ là đổi ĐƯỜNG DUYỆT, không phải đổi luật quỹ.
+
+    Giữ chỗ nằm ở `mark_submitted` chứ không ở bộ máy duyệt, nên nó phải trừ y
+    hệt. Lẫn hai thứ này là nộp mười đơn liền tay đều lọt (xem QĐ `pending_days`).
+    """
+    _submit(db, leave_type, submitter, days=2)
+
+    #  12 ngày quỹ − 2 ngày đang giữ chỗ. Đúng con số mà nhánh cờ BẬT ra
+    #  (`test_gui_duyet_giu_cho_quy_phep`), vì cờ không được đụng tới quỹ.
+    assert _remaining(db, submitter, leave_type) == leave_type.annual_quota_days - 2
+
 
 def test_gui_duyet_mo_dung_mot_phien_tren_bo_may_dung_chung(db, flow, leave_type, submitter):
     obj, instance_id = _submit(db, leave_type, submitter)
