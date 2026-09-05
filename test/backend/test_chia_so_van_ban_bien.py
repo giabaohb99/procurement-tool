@@ -70,7 +70,7 @@ def cty_khac(db, seed):
 
 
 # ── Người được chia ở phạm vi HẸP NHẤT ──────────────────────────────────────
-def test_pham_vi_own_van_thay_so_duoc_chia(db, seed, cty_khac, cap_quyen):
+def test_pham_vi_own_van_thay_so_duoc_chia(db, seed, cty_khac, grant_role):
     """`own` là phạm vi hẹp nhất: chỉ thấy thứ do chính mình tạo.
 
     Người được chia sổ hầu hết rơi vào đây. Chia đích danh phải THẮNG được cả
@@ -78,7 +78,7 @@ def test_pham_vi_own_van_thay_so_duoc_chia(db, seed, cty_khac, cap_quyen):
     những người vốn đã xem được.
     """
     nv, tk = _people(db, "SO_OWN", cty_khac.id)
-    cap_quyen(tk.id, "document_book", scope="own", read=True)
+    grant_role(tk.id, "document_book", scope="own", read=True)
     so = _so(db, company_id=seed.company_id, manager_ids=[seed.emp_tp_id])
     db.commit()
 
@@ -133,7 +133,7 @@ def test_so_CHUA_GAN_PHAP_NHAN_khong_no_va_van_chia_duoc(db, cty_khac):
     assert _danh_sach(db, tk) == [so.code]
 
 
-def test_nhan_su_da_NGHI_thi_khong_con_thay(db, seed, cty_khac, cap_quyen):
+def test_nhan_su_da_NGHI_thi_khong_con_thay(db, seed, cty_khac, grant_role):
     """Nghỉ việc thì khóa TÀI KHOẢN, còn dòng thành viên sổ vẫn nằm đó.
 
     Bài này chốt hành vi ĐANG CÓ để ai đổi thì biết mình đang đổi cái gì: lớp
@@ -192,14 +192,14 @@ def test_khong_chia_so_nao_thi_danh_sach_RONG_chu_khong_no(db, cty_khac):
 
 
 # ── Thấy TẤT CẢ (điều kiện = None) ───────────────────────────────────────────
-def test_pham_vi_ALL_thi_dieu_kien_la_None_va_thay_het(db, seed, cty_khac, cap_quyen):
+def test_pham_vi_ALL_thi_dieu_kien_la_None_va_thay_het(db, seed, cty_khac, grant_role):
     """`scope_condition` trả `None` nghĩa là "không lọc gì".
 
     Nhánh OR phải nhường đường: `or_(None, ...)` là lỗi lập trình, mà lỡ tay ghép
     vào thì người quản trị lại hóa ra chỉ thấy sổ mình là thành viên.
     """
     _, tk = _people(db, "SO_ALL", cty_khac.id)
-    cap_quyen(tk.id, "document_book", scope="all", read=True)
+    grant_role(tk.id, "document_book", scope="all", read=True)
     so_a = _so(db, name="Sổ A", company_id=seed.company_id, manager_ids=[seed.emp_tp_id])
     so_b = _so(db, name="Sổ B", company_id=cty_khac.id, manager_ids=[seed.emp_tp_id])
     db.commit()

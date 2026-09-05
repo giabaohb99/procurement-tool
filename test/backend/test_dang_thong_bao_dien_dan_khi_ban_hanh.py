@@ -56,21 +56,21 @@ def test_clone_thanh_bai_ghim_toan_tap_doan(db, seed, issued):
     assert post.id in [p.id for p in list_pinned_posts(db, other, get_perm_profile(db, other))]
 
 
-def test_khong_tich_o_thi_khong_co_bai(db, seed, issued, cap_quyen):
+def test_khong_tich_o_thi_khong_co_bai(db, seed, issued, grant_role):
     """Cờ `forum_announce` mặc định TẮT — đường gọi cũ không lặng lẽ đăng bài."""
     assert ApproveIn().forum_announce is False
 
     user = db.get(User, seed.u_nstm_id)
-    cap_quyen(user.id, "document", read=True, approve=True)
+    grant_role(user.id, "document", read=True, approve=True)
     controller.approve_document(issued.id, ApproveIn(), db=db, user=user)
 
     assert db.get(Document, issued.id).status == STATUS_EFFECTIVE
     assert db.query(ForumPost).count() == 0
 
 
-def test_dien_dan_loi_khong_lam_that_bai_viec_ban_hanh(db, seed, issued, cap_quyen, monkeypatch):
+def test_dien_dan_loi_khong_lam_that_bai_viec_ban_hanh(db, seed, issued, grant_role, monkeypatch):
     user = db.get(User, seed.u_nstm_id)
-    cap_quyen(user.id, "document", read=True, approve=True)
+    grant_role(user.id, "document", read=True, approve=True)
 
     def fail(*_args):
         raise RuntimeError("Diễn đàn tạm hỏng")
@@ -82,9 +82,9 @@ def test_dien_dan_loi_khong_lam_that_bai_viec_ban_hanh(db, seed, issued, cap_quy
     assert db.query(ForumPost).count() == 0
 
 
-def test_tich_o_qua_controller_thi_co_dung_mot_bai_ghim(db, seed, issued, cap_quyen):
+def test_tich_o_qua_controller_thi_co_dung_mot_bai_ghim(db, seed, issued, grant_role):
     user = db.get(User, seed.u_nstm_id)
-    cap_quyen(user.id, "document", read=True, approve=True)
+    grant_role(user.id, "document", read=True, approve=True)
 
     controller.approve_document(issued.id, ApproveIn(forum_announce=True), db=db, user=user)
 

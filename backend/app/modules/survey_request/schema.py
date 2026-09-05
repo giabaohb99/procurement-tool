@@ -13,6 +13,12 @@ class SurveyRequestLineIn(BaseModel):
     uom: str = ""
     proposed_price: float = 0
     image_file: str = ""
+    # P6-1 (bao-CR-277): trường của YCMH mang lên dòng phiếu gộp. `qty_ordered`/`qty_received`
+    # CỐ Ý không có ở đây — hai cột đó do đồng bộ từ ĐMH ghi (P6-4), client không được gửi.
+    product_code: str = ""
+    warehouse: str = ""
+    required_date: str = ""
+    vat_pct: float = 0
     src_pr_item_id: int = 0   # CR-027: dòng YCMH nguồn — chỉ dùng lúc TẠO dòng mới để kéo ảnh sang
 
 
@@ -28,6 +34,11 @@ class _Header(BaseModel):
     purpose: str = ""
     request_date: str = ""
     note: str = ""
+    is_urgent: bool = False       # bao-CR-289: cờ Đơn gấp (mirror YCMH)
+    # P6-9 (bao-CR-287): NCC người yêu cầu đề xuất (mirror cụm `req` của YCMH) — dùng cho bản in
+    suggested_supplier: str = ""
+    suggested_supplier_tax_code: str = ""
+    suggested_supplier_contact: str = ""
 
 
 class SurveyRequestCreate(_Header):
@@ -47,6 +58,10 @@ class SurveyRequestUpdate(BaseModel):
     purpose: str | None = None
     request_date: str | None = None
     note: str | None = None
+    is_urgent: bool | None = None                      # bao-CR-289
+    suggested_supplier: str | None = None              # P6-9 (bao-CR-287)
+    suggested_supplier_tax_code: str | None = None
+    suggested_supplier_contact: str | None = None
     lines: list[SurveyRequestLineIn] | None = None
 
 
@@ -57,3 +72,8 @@ class RejectIn(BaseModel):
 class LineStatusIn(BaseModel):
     # "" chưa xác định · "resurvey" cần khảo sát lại · "completed" hoàn thành
     line_status: str = ""
+
+
+class LineConfirmIn(BaseModel):
+    # P6-3 (bao-CR-281): true = chốt phương án đang chọn của dòng · false = bỏ chốt
+    confirmed: bool = True

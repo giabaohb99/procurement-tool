@@ -50,6 +50,8 @@ export interface SurveyProcessLine {
   assignee_name: string
   is_completed: boolean
   no_option: boolean
+  /** Mã trạng thái dòng — `confirmed` là người yêu cầu đã chốt phương án (P6-3). */
+  line_status: string
   options: SurveyProcessOption[]
   /**
    * Người đang xem có được GẮN/XÓA phương án trên dòng này không. Admin TM thấy

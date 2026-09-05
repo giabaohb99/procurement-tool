@@ -24,8 +24,9 @@ from app.core.filter_operators import apply_operator_filters_map
 from app.core.ref_filter import apply_ref_filters
 from app.core.response import success
 from app.core.scoping import apply_scope
-from app.modules.survey_request.model import (LS_COMPLETED, LS_RESURVEY, SurveyRequest,
-                                              SurveyRequestLine, SurveyRequestOption)
+from app.modules.survey_request.model import (LS_COMPLETED, LS_CONFIRMED, LS_RESURVEY,
+                                              SurveyRequest, SurveyRequestLine,
+                                              SurveyRequestOption)
 
 from . import export as ex
 
@@ -107,15 +108,25 @@ def _state_cond(state: str):
     if state == ex.STATE_DONE:
         return line_st == LS_COMPLETED
     not_done = line_st != LS_COMPLETED
+    # P6-6 (bao-CR-284): "Đã lên đơn" (po_code — luồng v2 lên thẳng ĐMH) xét TRƯỚC pr_code,
+    # bám `progress_state`. Trước đây chuỗi này quên hẳn po_code: hai nhãn P6-3 lọc ra None
+    # (lặng lẽ không lọc), còn dòng đã lên đơn thẳng thì lọt vào các nhãn phía sau.
+    no_po = func.coalesce(L.po_code, "") == ""
+    if state == ex.STATE_PO_CREATED:
+        return and_(not_done, func.coalesce(L.po_code, "") != "")
+    r0 = and_(not_done, no_po)                                # chưa hoàn thành, chưa lên đơn
     if state == ex.STATE_PR_CREATED:
-        return and_(not_done, func.coalesce(L.pr_code, "") != "")
-    r1 = and_(not_done, no_pr)                                # chưa hoàn thành, chưa tạo YCMH
+        return and_(r0, func.coalesce(L.pr_code, "") != "")
+    r1 = and_(r0, no_pr)                                      # … và chưa tạo YCMH
     if state == ex.STATE_RESURVEY:
         return and_(r1, line_st == LS_RESURVEY)
     r2 = and_(r1, line_st != LS_RESURVEY)
+    if state == ex.STATE_CONFIRMED:
+        return and_(r2, line_st == LS_CONFIRMED)
+    r2b = and_(r2, line_st != LS_CONFIRMED)
     if state == ex.STATE_CHOSEN:
-        return and_(r2, chosen)
-    r3 = and_(r2, ~chosen)
+        return and_(r2b, chosen)
+    r3 = and_(r2b, ~chosen)
     if state == ex.STATE_NO_OPTION:
         return and_(r3, L.no_option.is_(True))
     r4 = and_(r3, L.no_option.is_(False))
@@ -227,6 +238,12 @@ def _build_query(request: Request, db: Session, user, prof: dict,
         cond = _state_cond(state)
         if cond is not None:
             q = q.filter(cond)
+    # P6-6 (bao-CR-284): bước "Đang so giá" của màn Tiến độ mua hàng gộp — chỉ lấy dòng
+    # CHƯA rời giai đoạn báo giá: chưa hoàn thành, chưa tạo YCMH, chưa lên đơn thẳng.
+    if (request.query_params.get("phase") or "").strip() == "quoting":
+        q = q.filter(func.coalesce(SurveyRequestLine.line_status, "") != LS_COMPLETED,
+                     func.coalesce(SurveyRequestLine.pr_code, "") == "",
+                     func.coalesce(SurveyRequestLine.po_code, "") == "")
     month = (request.query_params.get("month") or "").strip()      # YYYY-MM theo ngày tiếp nhận
     if month:
         q = q.filter(SurveyRequestLine.received_date.like(f"{month}%"))

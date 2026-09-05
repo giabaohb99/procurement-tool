@@ -295,7 +295,7 @@ def test_SMTP_cua_hop_thu_no_thi_ghi_that_bai_kem_ly_do(db, smtp, bat_email, mon
 # ── 4 · Chuỗi đầu–cuối: khai qua API → ban hành → soi thư ───────────────────
 
 @pytest.fixture()
-def align(db, seed, cap_quyen):
+def align(db, seed, grant_role):
     """Nhân sự hành chính (soạn) + giám đốc (ký) + loại Thông báo chờ ban hành."""
     def _people(code, name, email):
         emp = Employee(code=code, full_name=name, email=email,
@@ -311,7 +311,7 @@ def align(db, seed, cap_quyen):
     hc = _people("HC01", "Nhân sự hành chính", "nhanvien@gmail.com")
     gd = _people("GD01", "Giám đốc", "giamdoc@dego.vn")
     governance_flow = _people("QT01", "Quản trị", "admin@dego.vn")
-    cap_quyen(governance_flow.id, "mailbox", scope="all",
+    grant_role(governance_flow.id, "mailbox", scope="all",
               read=True, create=True, write=True, delete=True)
 
     tb = DocType(code="TB", name="Thông báo", id_scheme=1, number_when=2,

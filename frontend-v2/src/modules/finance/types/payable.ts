@@ -20,6 +20,12 @@ export interface Payable {
   source_type: PayableSourceType
   po_id: number
   po_code: string
+  /**
+   * Mã đơn MISA của ĐMH (ticket #18, bao-CR-279). Payable không lưu cột này —
+   * backend join từ `tab_purchase_order` qua `po_id` lúc đọc; rỗng khi khoản nợ
+   * không gắn đơn hoặc đơn chưa nhập mã.
+   */
+  misa_code: string
   /** Rỗng = chưa có hóa đơn -> chưa lên được yêu cầu thanh toán. */
   invoice_no: string
   /** Ngày phát sinh (= ngày nhận hàng), dạng `YYYY-MM-DD`. */

@@ -17,8 +17,9 @@ from datetime import date, datetime
 from app.core.export_xlsx import Col
 from app.modules.survey_request.export import LINE_STATUS_LABEL, STATUS_LABEL, opt_cells
 from app.modules.survey_request.line_state import (  # noqa: F401 — dùng lại nguyên bộ nhãn
-    STATE_ANSWERED, STATE_CHOSEN, STATE_DONE, STATE_NOT_RECEIVED, STATE_NO_OPTION,
-    STATE_PR_CREATED, STATE_RECEIVED, STATE_RESURVEY, STATE_SURVEYING, STATES, progress_state)
+    STATE_ANSWERED, STATE_CHOSEN, STATE_CONFIRMED, STATE_DONE, STATE_NOT_RECEIVED,
+    STATE_NO_OPTION, STATE_PO_CREATED, STATE_PR_CREATED, STATE_RECEIVED, STATE_RESURVEY,
+    STATE_SURVEYING, STATES, progress_state)
 from app.modules.survey_request.model import (SurveyRequest, SurveyRequestLine,
                                               SurveyRequestOption)
 

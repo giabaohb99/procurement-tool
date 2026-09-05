@@ -26,6 +26,13 @@ FIELDS = [
              "tự phân bổ nhân sự (phiếu sang \"Đã điều phối\"). "
              "TẮT: quay về luồng cũ — trưởng bộ phận duyệt là phân bổ nhân sự ngay, bỏ hẳn bước thứ 2. "
              "Đổi lúc nào cũng được, có hiệu lực ngay, không ảnh hưởng phiếu đã xử lý xong."},
+    {"key": "merged_flow_enabled", "group": "workflow", "type": "bool",
+     "label": "Yêu cầu báo giá: luồng gộp chứng từ (chốt phương án → tạo thẳng đơn mua hàng)",
+     "hint": "BẬT: người yêu cầu CHỐT phương án ngay trên Yêu cầu báo giá, thu mua tạo THẲNG "
+             "đơn mua hàng từ các dòng đã chốt — bỏ bước Yêu cầu mua hàng trung gian. "
+             "TẮT: về hành vi cũ — chọn phương án rồi bấm \"Tạo yêu cầu mua\"; nút Chốt phương án "
+             "và Tạo đơn mua hàng ẩn đi. Đơn đã tạo thẳng trước khi tắt vẫn đồng bộ số lượng "
+             "bình thường. Đổi lúc nào cũng được, có hiệu lực ngay, không cần deploy."},
 ]
 # Trường bí mật: NHẬP được (mã hóa lưu DB), KHÔNG hiển thị lại
 SECRET_FIELDS = [

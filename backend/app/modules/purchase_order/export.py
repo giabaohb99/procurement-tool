@@ -47,7 +47,8 @@ HEADER_COLS = [
 # Cụm dòng — bê nguyên bộ cột màn Tiến độ mua hàng, bỏ những cột đã nằm ở cụm đầu đơn
 # (STT/Mã ĐMH/Mã MISA/Mã PYC/Mã NCC/Hồ sơ CT) và đổi tên key `amount` -> `recv_amount`
 # để không đụng cột "Tiền hàng" của đầu đơn. Ba cột cuối là phần riêng của màn ĐMH.
-_SKIP_FROM_PROGRESS = {"stt", "po_code", "misa_code", "pr_code", "supplier_code", "document_status"}
+_SKIP_FROM_PROGRESS = {"stt", "po_code", "misa_code", "pr_code", "survey_code",
+                       "supplier_code", "document_status"}
 _RENAME = {
     "amount": Col("recv_amount", "Thành tiền nhận", "money", 16),
     # Đầu đơn đã có cột "Nhà cung cấp" (mã), đổi nhãn cột tên cho khỏi hai cột trùng tên

@@ -20,10 +20,10 @@ def test_tao_phieu_thieu_quyen_thi_tu_choi(db, seed):
     assert "draft" not in out
 
 
-def test_tao_phieu_chuan_hoa_gia_tri_model_dien(db, seed, cap_quyen):
+def test_tao_phieu_chuan_hoa_gia_tri_model_dien(db, seed, grant_role):
     """Nhóm tiếp nhận / ưu tiên ngoài danh sách -> về mặc định; draft mang kind='ticket'
     để FE phân biệt với bản nháp YCBG/YCMH/nghỉ phép; và KHÔNG có phiếu nào bị ghi DB."""
-    cap_quyen(seed.u_req_id, "ticket", scope="all", create=True)
+    grant_role(seed.u_req_id, "ticket", scope="all", create=True)
     user = db.get(User, seed.u_req_id)
 
     out = T.run_tool(db, user, "ticket_create", {
@@ -43,8 +43,8 @@ def test_tao_phieu_chuan_hoa_gia_tri_model_dien(db, seed, cap_quyen):
     assert db.query(Ticket).count() == 0                # soạn nháp thật sự không ghi gì
 
 
-def test_tao_phieu_giu_gia_tri_hop_le(db, seed, cap_quyen):
-    cap_quyen(seed.u_req_id, "ticket", scope="all", create=True)
+def test_tao_phieu_giu_gia_tri_hop_le(db, seed, grant_role):
+    grant_role(seed.u_req_id, "ticket", scope="all", create=True)
     user = db.get(User, seed.u_req_id)
     out = T.run_tool(db, user, "ticket_create", {
         "subject": "Xin cấp quyền xem công nợ",
@@ -57,8 +57,8 @@ def test_tao_phieu_giu_gia_tri_hop_le(db, seed, cap_quyen):
     assert out["priority_label"]                        # nhãn tiếng Việt cho model tóm tắt
 
 
-def test_tao_phieu_thieu_subject_hoac_body_bao_loi_mem(db, seed, cap_quyen):
-    cap_quyen(seed.u_req_id, "ticket", scope="all", create=True)
+def test_tao_phieu_thieu_subject_hoac_body_bao_loi_mem(db, seed, grant_role):
+    grant_role(seed.u_req_id, "ticket", scope="all", create=True)
     user = db.get(User, seed.u_req_id)
     assert "error" in T.run_tool(db, user, "ticket_create", {"subject": "", "body": "x"})
     assert "error" in T.run_tool(db, user, "ticket_create", {"subject": "x", "body": "   "})
@@ -91,10 +91,10 @@ def test_phieu_cua_toi_thieu_quyen_thi_tu_choi(db, seed):
     assert "items" not in out
 
 
-def test_phieu_cua_toi_chinh_chu_theo_ca_hai_cot(db, seed, cap_quyen):
+def test_phieu_cua_toi_chinh_chu_theo_ca_hai_cot(db, seed, grant_role):
     """Thấy cả phiếu người khác tạo HỘ (requester_id = hồ sơ nhân sự mình); phiếu của hẳn
     người khác thì không — dù quyền read scope=all, điều kiện chính chủ vẫn chặt hơn."""
-    cap_quyen(seed.u_req_id, "ticket", scope="all", read=True)
+    grant_role(seed.u_req_id, "ticket", scope="all", read=True)
     rows = _tao_phieu_ho_tro(db, seed)
 
     out = T.run_tool(db, db.get(User, seed.u_req_id), "my_tickets", {})
@@ -104,8 +104,8 @@ def test_phieu_cua_toi_chinh_chu_theo_ca_hai_cot(db, seed, cap_quyen):
     assert out["items"][0]["url"] == f"/support/tickets/{rows[1].id}"
 
 
-def test_phieu_cua_toi_loc_trang_thai_va_kep_limit(db, seed, cap_quyen):
-    cap_quyen(seed.u_req_id, "ticket", scope="all", read=True)
+def test_phieu_cua_toi_loc_trang_thai_va_kep_limit(db, seed, grant_role):
+    grant_role(seed.u_req_id, "ticket", scope="all", read=True)
     _tao_phieu_ho_tro(db, seed)
     user = db.get(User, seed.u_req_id)
 

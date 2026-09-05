@@ -37,7 +37,7 @@ def _people(db, code: str, company_id: int, dept_id: int):
 
 
 @pytest.fixture()
-def align(db, seed, cap_quyen):
+def align(db, seed, grant_role):
     """Một sổ của pháp nhân A + một người của pháp nhân B.
 
     Người B có quyền `document_book.read` nhưng phạm vi `company` — tức là theo
@@ -50,8 +50,8 @@ def align(db, seed, cap_quyen):
 
     _, tk_a = _people(db, "SO_A", seed.company_id, seed.dept_id)
     nv_b, tk_b = _people(db, "SO_B", other.id, seed.dept_id)
-    cap_quyen(tk_a.id, "document_book", scope="company", read=True)
-    cap_quyen(tk_b.id, "document_book", scope="company", read=True)
+    grant_role(tk_a.id, "document_book", scope="company", read=True)
+    grant_role(tk_b.id, "document_book", scope="company", read=True)
 
     so = book_service.create_book(db, DocumentBookCreate(
         name="Sổ văn bản đến", kind=1, company_id=seed.company_id,
@@ -111,12 +111,12 @@ def test_nguoi_cung_phap_nhan_van_thay_nhu_cu(db, align):
     assert _danh_sach(db, align["tk_a"]) == [align["so"].code]
 
 
-def test_tai_khoan_chua_gan_nhan_su_khong_no(db, align, cap_quyen):
+def test_tai_khoan_chua_gan_nhan_su_khong_no(db, align, grant_role):
     """Tài khoản hệ thống không có hồ sơ nhân sự — không có gì để cộng thêm."""
     tk = User(email="hethong@test.local", employee_id=None, password_hash="x", is_active=True)
     db.add(tk)
     db.flush()
-    cap_quyen(tk.id, "document_book", scope="company", read=True)
+    grant_role(tk.id, "document_book", scope="company", read=True)
 
     assert _danh_sach(db, tk) == []
 
@@ -129,14 +129,14 @@ def _sua(**doi):
 
 # ── Chiều GHI: sửa / xóa sổ ──────────────────────────────────────────────────
 
-def test_co_quyen_ghi_nhung_so_cua_phap_nhan_KHAC_thi_khong_sua_duoc(db, align, cap_quyen):
+def test_co_quyen_ghi_nhung_so_cua_phap_nhan_KHAC_thi_khong_sua_duoc(db, align, grant_role):
     """Quyền vai trò `write` nói "được sửa sổ", KHÔNG nói "sổ của mọi pháp nhân".
 
     Trước 25/08/2026 hai endpoint sửa / xóa sổ không gọi một hàm phạm vi nào —
     ai có `document_book.write` là sửa được mọi quyển, kể cả sổ của pháp nhân
     khác. Cùng họ lỗi với chỗ đọc sổ ở trên.
     """
-    cap_quyen(align["tk_b"].id, "document_book", scope="company", write=True, delete=True)
+    grant_role(align["tk_b"].id, "document_book", scope="company", write=True, delete=True)
     profile = get_perm_profile(db, align["tk_b"])
 
     for action in ("write", "delete"):
@@ -146,13 +146,13 @@ def test_co_quyen_ghi_nhung_so_cua_phap_nhan_KHAC_thi_khong_sua_duoc(db, align, 
         assert error.value.status_code == 404, action
 
 
-def test_NGUOI_QUAN_LY_so_thi_sua_duoc_du_o_phap_nhan_khac(db, align, cap_quyen):
+def test_NGUOI_QUAN_LY_so_thi_sua_duoc_du_o_phap_nhan_khac(db, align, grant_role):
     """Đúng câu chú thích dưới ô *Người quản lý*: «Sửa, đóng và xóa được sổ».
 
     Trước đây câu đó là chữ suông — backend không đọc tới bảng thành viên khi
     xét quyền sửa.
     """
-    cap_quyen(align["tk_b"].id, "document_book", scope="company", write=True, delete=True)
+    grant_role(align["tk_b"].id, "document_book", scope="company", write=True, delete=True)
     book_service.update_book(db, align["so"].id,
                              _sua(manager_ids=[align["nv_b"].id]), ACTOR)
     db.commit()
@@ -162,9 +162,9 @@ def test_NGUOI_QUAN_LY_so_thi_sua_duoc_du_o_phap_nhan_khac(db, align, cap_quyen)
         db, align["so"].id, align["tk_b"], profile, "write").id == align["so"].id
 
 
-def test_chi_NGUOI_XEM_thi_van_khong_sua_duoc(db, align, cap_quyen):
+def test_chi_NGUOI_XEM_thi_van_khong_sua_duoc(db, align, grant_role):
     """Chia để đọc không phải là chia để sửa — hai vai khác nhau."""
-    cap_quyen(align["tk_b"].id, "document_book", scope="company", write=True)
+    grant_role(align["tk_b"].id, "document_book", scope="company", write=True)
     book_service.update_book(db, align["so"].id,
                              _sua(viewer_ids=[align["nv_b"].id]), ACTOR)
     db.commit()
@@ -179,7 +179,7 @@ def test_chi_NGUOI_XEM_thi_van_khong_sua_duoc(db, align, cap_quyen):
     assert error.value.status_code == 404
 
 
-def test_vua_quan_ly_vua_nguoi_xem_thi_danh_sach_KHONG_nhan_doi(db, align, cap_quyen):
+def test_vua_quan_ly_vua_nguoi_xem_thi_danh_sach_KHONG_nhan_doi(db, align, grant_role):
     """Một người khai ở cả hai vai là chuyện thường; sổ không được hiện hai dòng."""
     book_service.update_book(db, align["so"].id, _sua(
         manager_ids=[align["nv_b"].id], viewer_ids=[align["nv_b"].id]), ACTOR)

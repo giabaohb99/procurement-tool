@@ -60,6 +60,23 @@ export const router = createBrowserRouter([
             errorElement: <RouteErrorPage />,
           },
           {
+            path: appRoutes.procurement.surveyRequestPrint(':id'),
+            lazy: async () => ({
+              Component: (await import('@/modules/procurement/pages/survey-request-print-page'))
+                .SurveyRequestPrintPage,
+            }),
+            errorElement: <RouteErrorPage />,
+          },
+          {
+            path: appRoutes.procurement.surveyRequestPurchasingPrint(':id'),
+            lazy: async () => ({
+              Component: (
+                await import('@/modules/procurement/pages/survey-request-purchasing-print-page')
+              ).SurveyRequestPurchasingPrintPage,
+            }),
+            errorElement: <RouteErrorPage />,
+          },
+          {
             path: appRoutes.procurement.purchaseOrderPrint(':id'),
             lazy: async () => ({
               Component: (await import('@/modules/procurement/pages/purchase-order-print-page'))

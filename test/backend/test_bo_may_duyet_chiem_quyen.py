@@ -266,7 +266,7 @@ def test_chiem_duoc_viec_la_ky_duoc_ngay(db, vai):
 
 
 # ── ĐƯỜNG 4: chiếm luôn ĐƯỜNG DUYỆT thay vì chiếm chữ ký ────────────────────
-def test_pham_vi_hep_khong_khai_duoc_luong_cho_MOI_phap_nhan(db, seed, vai, cap_quyen):
+def test_pham_vi_hep_khong_khai_duoc_luong_cho_MOI_phap_nhan(db, seed, vai, grant_role):
     """Không giả chữ ký của ai — chỉ đổi chỗ cần chữ ký.
 
     Khai một luồng `company_id = None` (áp cho MỌI pháp nhân) với `priority` cao
@@ -278,7 +278,7 @@ def test_pham_vi_hep_khong_khai_duoc_luong_cho_MOI_phap_nhan(db, seed, vai, cap_
     """
     from app.modules.approval.flow_controller import _block_scope_on_declare
 
-    cap_quyen(vai["ke_gian_user"], "approval_flow", scope="company",
+    grant_role(vai["ke_gian_user"], "approval_flow", scope="company",
               create=True, write=True)
     tk = db.get(User, vai["ke_gian_user"])
 
@@ -287,10 +287,10 @@ def test_pham_vi_hep_khong_khai_duoc_luong_cho_MOI_phap_nhan(db, seed, vai, cap_
     assert error.value.status_code == 403
 
 
-def test_pham_vi_hep_khong_khai_duoc_luong_cho_phap_nhan_KHAC(db, seed, vai, cap_quyen):
+def test_pham_vi_hep_khong_khai_duoc_luong_cho_phap_nhan_KHAC(db, seed, vai, grant_role):
     from app.modules.approval.flow_controller import _block_scope_on_declare
 
-    cap_quyen(vai["ke_gian_user"], "approval_flow", scope="company", create=True)
+    grant_role(vai["ke_gian_user"], "approval_flow", scope="company", create=True)
     tk = db.get(User, vai["ke_gian_user"])
 
     with pytest.raises(HTTPException) as error:
@@ -298,25 +298,25 @@ def test_pham_vi_hep_khong_khai_duoc_luong_cho_phap_nhan_KHAC(db, seed, vai, cap
     assert error.value.status_code == 403
 
 
-def test_pham_vi_hep_VAN_khai_duoc_luong_cua_phap_nhan_MINH(db, seed, vai, cap_quyen):
+def test_pham_vi_hep_VAN_khai_duoc_luong_cua_phap_nhan_MINH(db, seed, vai, grant_role):
     """CẶP ĐỐI CHỨNG — văn thư pháp nhân con vẫn phải khai được luồng của mình."""
     from app.modules.approval.flow_controller import _block_scope_on_declare
 
-    cap_quyen(vai["ke_gian_user"], "approval_flow", scope="company", create=True)
+    grant_role(vai["ke_gian_user"], "approval_flow", scope="company", create=True)
     tk = db.get(User, vai["ke_gian_user"])
     _block_scope_on_declare(db, tk, seed.company_id, "create")
 
 
-def test_quan_tri_toan_he_van_khai_duoc_luong_dung_chung(db, vai, cap_quyen):
+def test_quan_tri_toan_he_van_khai_duoc_luong_dung_chung(db, vai, grant_role):
     """CẶP ĐỐI CHỨNG — luồng dùng chung cho mọi pháp nhân là tính năng thật."""
     from app.modules.approval.flow_controller import _block_scope_on_declare
 
-    cap_quyen(vai["ke_gian_user"], "approval_flow", scope="all", create=True)
+    grant_role(vai["ke_gian_user"], "approval_flow", scope="all", create=True)
     tk = db.get(User, vai["ke_gian_user"])
     _block_scope_on_declare(db, tk, None, "create")
 
 
-def test_cong_tac_TOAN_HE_doi_pham_vi_toan_he(db, vai, cap_quyen):
+def test_cong_tac_TOAN_HE_doi_pham_vi_toan_he(db, vai, grant_role):
     """Công tắc I26 tắt bộ máy duyệt cho CẢ 13 PHÁP NHÂN.
 
     Nó không có `flow_id` nên `get_scoped` không với tới; chỉ `require(...)` thôi
@@ -326,10 +326,10 @@ def test_cong_tac_TOAN_HE_doi_pham_vi_toan_he(db, vai, cap_quyen):
     from app.core.auth import get_perm_profile
     from app.core.scoping import has_global_scope
 
-    cap_quyen(vai["ke_gian_user"], "approval_flow", scope="company", write=True)
+    grant_role(vai["ke_gian_user"], "approval_flow", scope="company", write=True)
     tk_hep = db.get(User, vai["ke_gian_user"])
     assert has_global_scope(get_perm_profile(db, tk_hep), "approval_flow", "write") is False
 
-    cap_quyen(vai["nguoi_la_user"], "approval_flow", scope="all", write=True)
+    grant_role(vai["nguoi_la_user"], "approval_flow", scope="all", write=True)
     tk_rong = db.get(User, vai["nguoi_la_user"])
     assert has_global_scope(get_perm_profile(db, tk_rong), "approval_flow", "write") is True

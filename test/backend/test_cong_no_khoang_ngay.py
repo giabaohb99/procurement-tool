@@ -55,9 +55,9 @@ def khoan_no(db, seed):
 
 
 @pytest.fixture
-def loc(db, seed, cap_quyen, khoan_no):
+def loc(db, seed, grant_role, khoan_no):
     """Trả về hàm lọc, đứng ở tư thế người dùng có `payable.read` phạm vi toàn hệ."""
-    cap_quyen(seed.u_req_id, "payable", scope="all", read=True)
+    grant_role(seed.u_req_id, "payable", scope="all", read=True)
     user = db.get(User, seed.u_req_id)
 
     def _loc(qs: str) -> set[str]:

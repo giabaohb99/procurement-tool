@@ -77,6 +77,7 @@ const EXPORT_COLUMN_KEYS: Record<string, string> = {
   source_type: 'source_type',
   company: 'company',
   po_code: 'po_code',
+  misa_code: 'misa_code',
   invoice_no: 'invoice_no',
   incur_date: 'created_at',
   due_date: 'due_date',
@@ -279,6 +280,15 @@ function PayableListContent() {
         cell: (p) => companyName(p.company_id),
       },
       { key: 'po_code', header: 'Mã ĐMH', width: 150, wrap: true, cell: (p) => p.po_code || '—' },
+      {
+        // Ticket #18 (bao-CR-279): mã MISA lấy từ ĐMH qua po_id — kế toán đối
+        // soát sổ nợ với phần mềm MISA theo mã này.
+        key: 'misa_code',
+        header: 'Mã đơn Misa',
+        width: 130,
+        wrap: true,
+        cell: (p) => p.misa_code || '—',
+      },
       {
         key: 'invoice_no',
         header: 'Số hóa đơn',

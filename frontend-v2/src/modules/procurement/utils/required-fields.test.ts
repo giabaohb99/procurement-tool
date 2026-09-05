@@ -100,6 +100,16 @@ function srLine(overrides: Partial<SurveyRequestLine> = {}): SurveyRequestLine {
     request_qty: 100,
     uom: 'Cái',
     proposed_price: 0,
+    product_code: '',
+    // bao-CR-289: bộ trường mirror YCMH — mặc định ĐỦ để dòng chuẩn qua cổng gửi duyệt.
+    warehouse: 'Kho A',
+    required_date: '2026-09-01',
+    vat_pct: 8,
+    qty_ordered: 0,
+    qty_received: 0,
+    expected_date: '',
+    progress_note: '',
+    purchaser_note: '',
     received_date: '',
     result_due_date: '',
     result_date: '',
@@ -107,6 +117,8 @@ function srLine(overrides: Partial<SurveyRequestLine> = {}): SurveyRequestLine {
     assignee_name: '',
     pr_id: 0,
     pr_code: '',
+    po_id: 0,
+    po_code: '',
     is_completed: false,
     line_status: '',
     no_option: false,
@@ -135,8 +147,13 @@ function srDoc(lines: SurveyRequestLine[]): SurveyRequestDetail {
     status: 'draft',
     note: '',
     reject_reason: '',
+    is_urgent: false,
+    suggested_supplier: '',
+    suggested_supplier_tax_code: '',
+    suggested_supplier_contact: '',
     created_at: '',
     created_by: 0,
+    merged_flow_enabled: true,
     lines,
   }
 }
@@ -277,10 +294,24 @@ describe('validateSurveyRequest', () => {
     expect(validateSurveyRequest(srDoc([srLine({ item_group: '' })]))).toBe('')
   })
 
-  it('thiếu mục đích khảo sát thì chặn ngay từ lúc Lưu', () => {
+  it('thiếu mục đích mua hàng thì chặn ngay từ lúc Lưu', () => {
+    // bao-CR-289: phiếu gộp là Yêu cầu mua hàng nên câu chặn đổi theo nhãn mới.
     expect(validateSurveyRequest({ ...srDoc([srLine()]), purpose: '  ' })).toBe(
-      'Vui lòng nhập Mục đích khảo sát',
+      'Vui lòng nhập Mục đích mua hàng',
     )
+  })
+
+  it('bao-CR-289: gửi duyệt bắt thêm Số lượng + Kho nhận + Ngày cần hàng như YCMH cũ', () => {
+    const data = srDoc([srLine({ request_qty: 0, warehouse: '', required_date: '' })])
+    expect(validateSurveyRequest(data, true)).toBe(
+      'Dòng 1 còn thiếu: Số lượng dự kiến mua, Kho nhận, Ngày cần hàng.',
+    )
+    // Lúc LƯU vẫn cất được — luật chặn chỉ áp ở Gửi duyệt.
+    expect(validateSurveyRequest(data)).toBe('')
+  })
+
+  it('bao-CR-289: Mã hàng CỐ Ý không bắt buộc — backend điền lúc chốt phương án', () => {
+    expect(validateSurveyRequest(srDoc([srLine({ product_code: '' })]), true)).toBe('')
   })
 
   it('phiếu không có dòng nào thì chặn', () => {

@@ -37,9 +37,9 @@ def _no(db, supplier_code, supplier_name, total, paid, status="unpaid"):
     return row
 
 
-def test_top_ncc_cong_no_cong_don_theo_ncc_va_bo_khoan_da_tra(db, seed, cap_quyen):
+def test_top_ncc_cong_no_cong_don_theo_ncc_va_bo_khoan_da_tra(db, seed, grant_role):
     user = db.get(User, seed.u_req_id)
-    cap_quyen(user.id, "payable", scope="all", read=True)
+    grant_role(user.id, "payable", scope="all", read=True)
 
     _no(db, "NCC_A", "Nhà cung cấp A", 500, 200)      # còn 300
     _no(db, "NCC_A", "Nhà cung cấp A", 200, 0)        # còn 200 -> gộp thành 500
@@ -55,10 +55,10 @@ def test_top_ncc_cong_no_cong_don_theo_ncc_va_bo_khoan_da_tra(db, seed, cap_quye
     ]
 
 
-def test_chi_co_quyen_cong_no_van_thay_top_ncc_no(db, seed, cap_quyen):
+def test_chi_co_quyen_cong_no_van_thay_top_ncc_no(db, seed, grant_role):
     """Không có quyền Đơn mua hàng thì `top_suppliers` rỗng — nhưng số NỢ phải còn."""
     user = db.get(User, seed.u_req_id)
-    cap_quyen(user.id, "payable", scope="all", read=True)
+    grant_role(user.id, "payable", scope="all", read=True)
 
     _no(db, "NCC_A", "Nhà cung cấp A", 1000, 0)
     db.commit()
@@ -69,9 +69,9 @@ def test_chi_co_quyen_cong_no_van_thay_top_ncc_no(db, seed, cap_quyen):
     assert data["top_debt_suppliers"] == [{"name": "Nhà cung cấp A", "value": 1000}]
 
 
-def test_khong_co_quyen_cong_no_thi_khong_lo_so_no(db, seed, cap_quyen):
+def test_khong_co_quyen_cong_no_thi_khong_lo_so_no(db, seed, grant_role):
     user = db.get(User, seed.u_req_id)
-    cap_quyen(user.id, "purchase_request", scope="all", read=True)
+    grant_role(user.id, "purchase_request", scope="all", read=True)
 
     _no(db, "NCC_A", "Nhà cung cấp A", 1000, 0)
     db.commit()

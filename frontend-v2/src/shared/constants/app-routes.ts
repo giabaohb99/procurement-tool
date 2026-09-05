@@ -36,6 +36,10 @@ export const appRoutes = {
     surveyRequestDetail: (id: number | string) => `/procurement/survey-requests/${id}`,
     /** Màn XỬ LÝ KHẢO SÁT riêng cho NSTM — tách khỏi trang chi tiết như bản v1 (QA 29/08). */
     surveyRequestProcess: (id: number | string) => `/procurement/survey-requests/${id}/process`,
+    /** P6-9 (bao-CR-287): bản in YCBG cho NGƯỜI YÊU CẦU — nằm ngoài khung phân hệ như mọi bản in. */
+    surveyRequestPrint: (id: number | string) => `/print/survey-request/${id}`,
+    /** P6-9 (bao-CR-287): bộ bản in THU MUA tách theo NCC — cần quyền xem Nhà cung cấp. */
+    surveyRequestPurchasingPrint: (id: number | string) => `/print/survey-request/${id}/purchasing`,
     /** Yêu cầu mua hàng (PYC). */
     purchaseRequests: '/procurement/purchase-requests',
     purchaseRequestNew: '/procurement/purchase-requests/new',

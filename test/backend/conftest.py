@@ -279,7 +279,7 @@ def seed(db):
 
 
 @pytest.fixture(scope="function")
-def cap_quyen(db):
+def grant_role(db):
     """Cấp cho một tài khoản một vai trò thật, kèm phạm vi — B-07.
 
     Từ B-07 các controller đều đi qua `apply_scope`/`get_scoped`, nên test gọi thẳng hàm
@@ -287,7 +287,7 @@ def cap_quyen(db):
     grant nào, mà "không grant" nghĩa là không thấy gì (đúng như chạy thật). Fixture này
     dựng vai trò + quyền + gán vai trò để test đứng đúng tư thế người dùng thật.
 
-        cap_quyen(user_id, "approval_flow", scope="all", read=True, write=True)
+        grant_role(user_id, "approval_flow", scope="all", read=True, write=True)
     """
     from app.core.auth import perm_cache_clear
     from app.modules.role.model import Permission, Role

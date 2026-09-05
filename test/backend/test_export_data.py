@@ -12,17 +12,17 @@ from app.modules.export_log import service
 from app.modules.export_log.model import ExportLog
 
 
-def test_available_entities_chi_hien_bang_co_quyen_export(db, seed, cap_quyen):
+def test_available_entities_chi_hien_bang_co_quyen_export(db, seed, grant_role):
     user = SimpleNamespace(id=seed.u_req_id)
-    cap_quyen(seed.u_req_id, "department", scope="all", export=True)
+    grant_role(seed.u_req_id, "department", scope="all", export=True)
     avail = service.available_entities(db, user)
     assert [a["entity"] for a in avail] == ["department"]
     assert avail[0]["label"] == "Phòng ban"
 
 
-def test_run_export_csv_ghi_log_va_dem_dung(db, seed, cap_quyen):
+def test_run_export_csv_ghi_log_va_dem_dung(db, seed, grant_role):
     user = SimpleNamespace(id=seed.u_req_id)
-    cap_quyen(seed.u_req_id, "employee", scope="all", read=True, export=True)
+    grant_role(seed.u_req_id, "employee", scope="all", read=True, export=True)
     total_emp = db.query(Employee).count()
 
     content, filename, media, n = service.run_export(db, user, "employee", "csv")
@@ -39,9 +39,9 @@ def test_run_export_csv_ghi_log_va_dem_dung(db, seed, cap_quyen):
     assert logs[0].file_size == len(content)
 
 
-def test_run_export_xlsx_tra_file_hop_le(db, seed, cap_quyen):
+def test_run_export_xlsx_tra_file_hop_le(db, seed, grant_role):
     user = SimpleNamespace(id=seed.u_req_id)
-    cap_quyen(seed.u_req_id, "company", scope="all", read=True, export=True)
+    grant_role(seed.u_req_id, "company", scope="all", read=True, export=True)
 
     content, filename, _media, _n = service.run_export(db, user, "company", "xlsx")
 
@@ -61,11 +61,11 @@ def test_registry_du_bang_va_gom_dung_phan_he(db):
         assert a["model"] is not None and a["scope"] and a["columns"], e
 
 
-def test_scope_chan_khi_khong_co_grant_tren_bang_do(db, seed, cap_quyen):
+def test_scope_chan_khi_khong_co_grant_tren_bang_do(db, seed, grant_role):
     # Có quyền trên company nhưng KHÔNG có grant nào trên employee → apply_scope
     # trả về rỗng (chặn hết), nên xuất ra 0 dòng — không rò dữ liệu ngoài phạm vi.
     user = SimpleNamespace(id=seed.u_req_id)
-    cap_quyen(seed.u_req_id, "company", scope="all", read=True, export=True)
+    grant_role(seed.u_req_id, "company", scope="all", read=True, export=True)
 
     _c, _f, _m, n = service.run_export(db, user, "employee", "csv")
     assert n == 0

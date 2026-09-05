@@ -78,11 +78,11 @@ def test_doc_read_thieu_quyen_hoac_entity_sai(db, seed, ho_so):
     assert sai.get("error")
 
 
-def test_doc_read_recap_dmh_du_khoi(db, seed, ho_so, cap_quyen):
+def test_doc_read_recap_dmh_du_khoi(db, seed, ho_so, grant_role):
     """Đủ quyền: recap ĐMH có NCC, tổng tiền, tiến độ từng dòng và khối công nợ."""
-    cap_quyen(seed.u_nstm_id, "purchase_order", scope="all", read=True)
-    cap_quyen(seed.u_nstm_id, "supplier", scope="all", read=True)
-    cap_quyen(seed.u_nstm_id, "payable", scope="all", read=True)
+    grant_role(seed.u_nstm_id, "purchase_order", scope="all", read=True)
+    grant_role(seed.u_nstm_id, "supplier", scope="all", read=True)
+    grant_role(seed.u_nstm_id, "payable", scope="all", read=True)
     user = db.get(User, seed.u_nstm_id)
 
     out = T.run_tool(db, user, "procurement_doc_read",
@@ -98,9 +98,9 @@ def test_doc_read_recap_dmh_du_khoi(db, seed, ho_so, cap_quyen):
     assert "supplier_note" not in out
 
 
-def test_doc_read_an_ncc_va_cong_no_khi_thieu_quyen(db, seed, ho_so, cap_quyen):
+def test_doc_read_an_ncc_va_cong_no_khi_thieu_quyen(db, seed, ho_so, grant_role):
     """Chỉ có purchase_order.read: NCC bị ẩn kèm ghi chú, khối công nợ không trả về."""
-    cap_quyen(seed.u_nstm_id, "purchase_order", scope="all", read=True)
+    grant_role(seed.u_nstm_id, "purchase_order", scope="all", read=True)
     user = db.get(User, seed.u_nstm_id)
 
     out = T.run_tool(db, user, "procurement_doc_read",
@@ -111,10 +111,10 @@ def test_doc_read_an_ncc_va_cong_no_khi_thieu_quyen(db, seed, ho_so, cap_quyen):
     assert out.get("payable_note")
 
 
-def test_doc_read_ngoai_pham_vi_thi_khong_thay(db, seed, ho_so, cap_quyen):
+def test_doc_read_ngoai_pham_vi_thi_khong_thay(db, seed, ho_so, grant_role):
     """Scope own mà phiếu của người khác -> báo không tìm thấy, không lộ dữ liệu."""
     # PO-K1 do u_nstm tạo; u_req chỉ có scope own.
-    cap_quyen(seed.u_req_id, "purchase_order", scope="own", read=True)
+    grant_role(seed.u_req_id, "purchase_order", scope="own", read=True)
     user = db.get(User, seed.u_req_id)
     out = T.run_tool(db, user, "procurement_doc_read",
                      {"entity": "purchase_order", "code": "PO-K1"})
@@ -122,10 +122,10 @@ def test_doc_read_ngoai_pham_vi_thi_khong_thay(db, seed, ho_so, cap_quyen):
     assert "header" not in out
 
 
-def test_doc_read_ycmh_va_ycks(db, seed, ho_so, cap_quyen):
+def test_doc_read_ycmh_va_ycks(db, seed, ho_so, grant_role):
     """YCMH: có dòng + đã lọc xóa mềm. YCKS: chỉ ĐẾM phương án, không lộ NCC option."""
-    cap_quyen(seed.u_req_id, "purchase_request", scope="all", read=True)
-    cap_quyen(seed.u_req_id, "survey_request", scope="all", read=True)
+    grant_role(seed.u_req_id, "purchase_request", scope="all", read=True)
+    grant_role(seed.u_req_id, "survey_request", scope="all", read=True)
     user = db.get(User, seed.u_req_id)
 
     pr = T.run_tool(db, user, "procurement_doc_read",
@@ -148,9 +148,9 @@ def test_doc_read_ycmh_va_ycks(db, seed, ho_so, cap_quyen):
 
 # ── pending_procurement_approvals ───────────────────────────────────────────────────────
 
-def test_pending_dem_theo_quyen_duyet(db, seed, ho_so, cap_quyen):
+def test_pending_dem_theo_quyen_duyet(db, seed, ho_so, grant_role):
     """Chỉ đếm loại phiếu người hỏi có quyền duyệt; phiếu xóa mềm không được đếm."""
-    cap_quyen(seed.u_nstm_id, "purchase_request", scope="all", read=True, approve=True)
+    grant_role(seed.u_nstm_id, "purchase_request", scope="all", read=True, approve=True)
     user = db.get(User, seed.u_nstm_id)
 
     out = T.run_tool(db, user, "pending_procurement_approvals", {})
@@ -172,9 +172,9 @@ def test_pending_khong_quyen_duyet_gi(db, seed, ho_so):
     assert out.get("note")
 
 
-def test_pending_loc_dich_danh_loai_khong_co_quyen(db, seed, ho_so, cap_quyen):
+def test_pending_loc_dich_danh_loai_khong_co_quyen(db, seed, ho_so, grant_role):
     """Hỏi đích danh một loại mà không có quyền duyệt loại đó -> denied nói rõ."""
-    cap_quyen(seed.u_req_id, "purchase_request", scope="all", read=True, approve=True)
+    grant_role(seed.u_req_id, "purchase_request", scope="all", read=True, approve=True)
     user = db.get(User, seed.u_req_id)
 
     out = T.run_tool(db, user, "pending_procurement_approvals",
@@ -187,7 +187,7 @@ def test_pending_loc_dich_danh_loai_khong_co_quyen(db, seed, ho_so, cap_quyen):
 
 # ── my_procurement_requests ─────────────────────────────────────────────────────────────
 
-def test_my_requests_chi_thay_phieu_cua_minh(db, seed, ho_so, cap_quyen):
+def test_my_requests_chi_thay_phieu_cua_minh(db, seed, ho_so, grant_role):
     """Scope all nhưng hỏi "phiếu CỦA TÔI" thì chỉ trả phiếu mình đứng tên, kèm tiến độ."""
     # Phiếu của người khác — dù scope all cũng không được lọt vào "của tôi".
     other = PurchaseRequest(code="PYC-NGUOI-KHAC", status="approved",
@@ -196,8 +196,8 @@ def test_my_requests_chi_thay_phieu_cua_minh(db, seed, ho_so, cap_quyen):
     db.add(other)
     db.commit()
 
-    cap_quyen(seed.u_req_id, "purchase_request", scope="all", read=True)
-    cap_quyen(seed.u_req_id, "survey_request", scope="all", read=True)
+    grant_role(seed.u_req_id, "purchase_request", scope="all", read=True)
+    grant_role(seed.u_req_id, "survey_request", scope="all", read=True)
     user = db.get(User, seed.u_req_id)
 
     out = T.run_tool(db, user, "my_procurement_requests", {})
@@ -219,14 +219,14 @@ def test_my_requests_chi_thay_phieu_cua_minh(db, seed, ho_so, cap_quyen):
     assert sr_group["items"][0]["lines_completed"] == 0
 
 
-def test_my_requests_thieu_quyen(db, seed, ho_so, cap_quyen):
+def test_my_requests_thieu_quyen(db, seed, ho_so, grant_role):
     """Không có quyền xem loại nào -> total 0 + note; hỏi đích danh loại thiếu quyền -> denied."""
     user = db.get(User, seed.u_req_id)
     out = T.run_tool(db, user, "my_procurement_requests", {})
     assert out["total"] == 0 and out["groups"] == []
     assert out.get("note")
 
-    cap_quyen(seed.u_req_id, "purchase_request", scope="own", read=True)
+    grant_role(seed.u_req_id, "purchase_request", scope="own", read=True)
     dich_danh = T.run_tool(db, user, "my_procurement_requests", {"entity": "survey_request"})
     assert dich_danh.get("denied") is True
 

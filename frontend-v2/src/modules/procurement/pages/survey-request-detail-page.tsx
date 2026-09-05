@@ -11,6 +11,7 @@ import {
   FilePlus,
   Loader2,
   Plus,
+  Printer,
   Save,
   Send,
 } from 'lucide-react'
@@ -60,8 +61,10 @@ import { purchaseRequestSupportApi } from '../api/purchase-request-support-api'
 import { surveyRequestApi } from '../api/survey-request-api'
 import { StatusBadge } from '../components/document-status-badge'
 import { DocumentComments } from '../components/document-comments'
+import { DocumentMoneyTotals } from '../components/document-money-totals'
 import { SurveyRequestInfoCard } from '../components/survey-request-info-card'
 import { SurveyRequestLineDialog } from '../components/survey-request-line-dialog'
+import { SurveyRequestSupplierCard } from '../components/survey-request-supplier-card'
 import {
   EMPTY_SURVEY_REQUEST_LINE,
   SurveyRequestLinesTable,
@@ -75,10 +78,12 @@ import {
 import {
   useAssignSurveyLine,
   useChooseSurveyOption,
+  useConfirmSurveyLineOption,
   useCreatePurchaseRequestsFromSurvey,
   useDeleteSurveyRequest,
   useDeptHeadLookup,
   useSaveSurveyRequest,
+  useSetSurveyLineProgress,
   useSetSurveyLineStatus,
   useSurveyRequest,
   useSurveyRequestAction,
@@ -168,8 +173,10 @@ export function SurveyRequestDetailPage() {
   const runAction = useSurveyRequestAction(surveyRequestId)
   const deleteSurveyRequest = useDeleteSurveyRequest()
   const assignLine = useAssignSurveyLine(surveyRequestId)
+  const setLineProgress = useSetSurveyLineProgress(surveyRequestId)
   const setLineStatus = useSetSurveyLineStatus(surveyRequestId)
   const chooseOption = useChooseSurveyOption(surveyRequestId)
+  const confirmLineOption = useConfirmSurveyLineOption(surveyRequestId)
   const createPurchaseRequests = useCreatePurchaseRequestsFromSurvey(surveyRequestId)
 
   const [draft, setDraft] = useState<SurveyRequestDetail | null>(() =>
@@ -317,6 +324,11 @@ export function SurveyRequestDetailPage() {
     isRequester ||
     can('survey_request', 'delete')
   const canCreatePr = isRequester || can('survey_request', 'delete')
+  /**
+   * Cờ luồng gộp — phiếu YCBG kiêm luôn vai trò yêu cầu mua hàng. bao-CR-290: mọi
+   * lối dẫn sang YCMH trung gian (nút + câu hướng dẫn) đều tắt theo cờ này.
+   */
+  const mergedFlowEnabled = loadedDraft.merged_flow_enabled
   const canSetLineStatus =
     canCreatePr && ['processing', 'survey_done', 'pr_created'].includes(status)
   const canChooseOption = CREATE_PR_STATUSES.includes(status) && canCreatePr
@@ -369,6 +381,37 @@ export function SurveyRequestDetailPage() {
 
   const selectedLine = lineIndex === null ? null : (loadedDraft.lines[lineIndex] ?? null)
 
+  /**
+   * bao-CR-291: đính kèm của DÒNG không đi theo chế độ sửa phiếu. Ảnh NCC gửi về hay
+   * hóa đơn đối chiếu toàn đến sau lúc gửi duyệt — buộc vào `editable` thì đúng lúc
+   * cần đính nhất lại không ai đính được.
+   */
+  const canManageLineAttachments =
+    can('survey_request', 'write') || can('survey_request', 'create')
+  /** Khối ảnh gốc đọc kho ảnh của danh mục sản phẩm — thiếu quyền là ăn 403. */
+  const canViewProductImages = can('product', 'read')
+  /**
+   * Sửa tiến độ dòng: mirror `can_process_line` của backend — quản lý (duyệt/xóa) hoặc
+   * chính NSTM phụ trách dòng. Dòng CHƯA gán ai thì để mở: backend còn xét người phụ
+   * trách theo phân loại, dữ liệu đó giao diện không có; siết ở đây là giấu nút của
+   * người thật sự có quyền, còn nới thì backend vẫn chặn.
+   */
+  const canManageLines = can('survey_request', 'approve') || can('survey_request', 'delete')
+  const canEditSelectedProgress =
+    !!selectedLine &&
+    canAssignNstm &&
+    (canManageLines || !selectedLine.assignee || selectedLine.assignee === user?.emp_code)
+
+  // bao-CR-289: tổng tiền ước tính từ giá đề xuất — cùng công thức với cột Thành tiền.
+  const lineSubtotal = loadedDraft.lines.reduce(
+    (sum, line) => sum + line.request_qty * line.proposed_price,
+    0,
+  )
+  const lineVat = loadedDraft.lines.reduce(
+    (sum, line) => sum + (line.request_qty * line.proposed_price * (line.vat_pct || 0)) / 100,
+    0,
+  )
+
   function patch(changes: Partial<SurveyRequestDetail>) {
     dirtyRef.current = true
     setDraft((current) => (current ? { ...current, ...changes } : current))
@@ -408,6 +451,12 @@ export function SurveyRequestDetailPage() {
         purpose: loadedDraft.purpose,
         request_date: loadedDraft.request_date,
         note: loadedDraft.note,
+        // bao-CR-289: cờ Đơn gấp (mirror YCMH).
+        is_urgent: loadedDraft.is_urgent,
+        // P6-9 (bao-CR-287): NCC người yêu cầu đề xuất — dùng cho bản in luồng gộp.
+        suggested_supplier: loadedDraft.suggested_supplier,
+        suggested_supplier_tax_code: loadedDraft.suggested_supplier_tax_code,
+        suggested_supplier_contact: loadedDraft.suggested_supplier_contact,
         lines: loadedDraft.lines,
       },
     })
@@ -448,7 +497,7 @@ export function SurveyRequestDetailPage() {
           </Link>
         </Button>
         <h1 className="text-xl font-semibold tracking-tight text-navy dark:text-foreground">
-          {isNew ? 'Tạo Yêu cầu báo giá mới' : data.code || 'Phiếu nháp'}
+          {isNew ? 'Tạo Yêu cầu mua hàng mới' : data.code || 'Phiếu nháp'}
         </h1>
         {!isNew && <StatusBadge status={status} labels={SR_STATUS_LABELS} />}
 
@@ -541,7 +590,11 @@ export function SurveyRequestDetailPage() {
             </PermissionGate>
           )}
 
-          {!isNew && CREATE_PR_STATUSES.includes(status) && canCreatePr && (
+          {/* Đường CŨ: sinh YCMH trung gian từ các phương án đã chọn.
+              bao-CR-290: luồng gộp BẬT thì phiếu này ĐÃ là yêu cầu mua, người YC chỉ
+              cần Chốt phương án rồi thu mua lên thẳng ĐMH — để nút này lại là mời
+              người dùng đẻ thêm một chứng từ thừa. Cờ TẮT thì đường cũ vẫn nguyên. */}
+          {!isNew && !mergedFlowEnabled && CREATE_PR_STATUSES.includes(status) && canCreatePr && (
             <Button
               disabled={!anyChosen || createPurchaseRequests.isPending}
               title={anyChosen ? '' : 'Chọn ít nhất 1 phương án ở phần Kết quả khảo sát'}
@@ -556,6 +609,21 @@ export function SurveyRequestDetailPage() {
             <Button variant="outline" onClick={() => setConfirmAction('finalize')}>
               <CheckCheck />
               Chuyển Hoàn thành
+            </Button>
+          )}
+
+          {/* P6-9 (bao-CR-287): bản in cho NGƯỜI YÊU CẦU — luồng gộp phiếu này kiêm
+              vai trò đề xuất mua hàng nên phải in được. Mở tab mới như YCMH. */}
+          {!isNew && (
+            <Button variant="outline" asChild>
+              <Link
+                to={appRoutes.procurement.surveyRequestPrint(data.id)}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <Printer />
+                In phiếu
+              </Link>
             </Button>
           )}
 
@@ -624,10 +692,13 @@ export function SurveyRequestDetailPage() {
           onChange={patch}
         />
 
+        {/* bao-CR-289: NCC đề xuất tách thành thẻ riêng cho khớp bố cục YCMH. */}
+        <SurveyRequestSupplierCard data={loadedDraft} editing={editable} onChange={patch} />
+
         <Card className="gap-4 py-4">
           <CardHeader className="min-h-9 flex flex-row items-center justify-between gap-3 border-b px-4 pb-3!">
             <CardTitle className="text-base text-navy dark:text-foreground">
-              Danh sách Sản phẩm cần Khảo sát
+              Danh sách sản phẩm cần mua
             </CardTitle>
             {editable ? (
               <Button
@@ -667,6 +738,13 @@ export function SurveyRequestDetailPage() {
                 setPendingFiles((current) => shiftPendingAfterInsert(current, index))
               }
             />
+            {/* bao-CR-289: khối tổng tiền như YCMH — tính từ giá ĐỀ XUẤT nên chỉ
+                là ước tính, giá thật chốt ở phương án khảo sát. */}
+            <DocumentMoneyTotals
+              subtotal={lineSubtotal}
+              vat={lineVat}
+              total={lineSubtotal + lineVat}
+            />
           </CardContent>
         </Card>
 
@@ -681,6 +759,9 @@ export function SurveyRequestDetailPage() {
               void chooseOption.mutateAsync({ lineId, optionId })
             }
             onRequestResurvey={setResurveyLineId}
+            onConfirmLine={(lineId, confirmed) =>
+              void confirmLineOption.mutateAsync({ lineId, confirmed })
+            }
           />
         )}
 
@@ -716,6 +797,18 @@ export function SurveyRequestDetailPage() {
           })
         }}
         onAssigneeChange={handleAssigneeChange}
+        canManageAttachments={canManageLineAttachments}
+        canViewProductImages={canViewProductImages}
+        canEditProgress={canEditSelectedProgress}
+        onProgressSave={(line, progress) => {
+          if (!line.id) return
+          void setLineProgress.mutateAsync({
+            lineId: line.id,
+            expectedDate: progress.expectedDate,
+            progressNote: progress.progressNote,
+            purchaserNote: progress.purchaserNote,
+          })
+        }}
       />
 
       <Dialog open={reasonFor !== null} onOpenChange={(open) => !open && setReasonFor(null)}>
@@ -868,9 +961,19 @@ function createEmptySurveyRequest(user?: AuthUser | null): SurveyRequestDetail {
     status: 'draft',
     note: '',
     reject_reason: '',
+    // bao-CR-289: cờ Đơn gấp — mặc định tắt.
+    is_urgent: false,
+    // P6-9 (bao-CR-287): NCC người yêu cầu đề xuất — mặc định trống, nhập ở Thông tin chung.
+    suggested_supplier: '',
+    suggested_supplier_tax_code: '',
+    suggested_supplier_contact: '',
     created_at: new Date().toISOString(),
     created_by: user?.id ?? 0,
-    lines: [],
+    // P6-8 (bao-CR-286): phiếu rỗng coi như cờ BẬT — giá trị thật backend trả khi tải phiếu.
+    merged_flow_enabled: true,
+    // bao-CR-289: phiếu mới mở sẵn MỘT dòng trống — người lập gõ được ngay,
+    // khỏi phải bấm "Thêm dòng" trước.
+    lines: [{ ...EMPTY_SURVEY_REQUEST_LINE }],
   }
 }
 

@@ -37,6 +37,15 @@ router = APIRouter(prefix="/api/purchase-progress", tags=["purchase_progress"])
 # Cột nhạy cảm — ẩn với người không có `supplier.read`
 _SUPPLIER_HIDDEN = ex.SUPPLIER_HIDDEN_KEYS
 
+# P6-6 (bao-CR-284): màn Tiến độ mua hàng GỘP — mỗi "bước" là một NHÓM mã tiến độ dòng
+# (`PO_PROGRESS_STATUS`, app/core/status_codes.py). Bước "Đang so giá" KHÔNG nằm ở đây:
+# dữ liệu của nó là dòng YCBG chưa lên đơn, màn gộp gọi `/api/survey-progress?phase=quoting`.
+# `paused`/`cancelled` là ngoại lệ ngoài luồng nên chỉ hiện ở "Tất cả".
+STEP_STATUS = {
+    "purchasing": ("not_ordered", "ordered"),
+    "receiving": ("received", "doc_pending", "doc_sent"),
+}
+
 
 def _sort_map():
     """Key cột (FE) -> cột DB thật để sort tại server. Các cột tính toán
@@ -44,7 +53,11 @@ def _sort_map():
     return {
         # Đơn mua hàng
         "po_code": PurchaseOrder.code, "misa_code": PurchaseOrder.misa_code,
-        "pr_code": PurchaseOrder.pr_code, "company_id": PurchaseOrder.company_id,
+        "pr_code": PurchaseOrder.pr_code,
+        # P6-5 (bao-CR-283): nguồn thứ hai của đơn — phiếu YCBG gộp (đơn LÊN THẲNG,
+        # pr_code rỗng). Vào `_sort_map` là tự chảy xuống `_cond_map` (CR-080).
+        "survey_code": PurchaseOrder.survey_code,
+        "company_id": PurchaseOrder.company_id,
         "department": PurchaseOrder.department, "supplier_code": PurchaseOrder.supplier_code,
         "supplier_name": PurchaseOrder.supplier_name, "nspt": PurchaseOrder.nspt,
         "order_date": PurchaseOrder.order_date, "document_status": PurchaseOrder.document_status,
@@ -95,9 +108,14 @@ def _cond_map(show_supplier: bool) -> dict:
 
 
 def _require_progress(user=Depends(get_current_user), db: Session = Depends(get_db)):
-    """Gate OR: purchase_order.read HOẶC purchase_request.read."""
+    """Gate OR: purchase_order.read HOẶC purchase_request.read HOẶC survey_request.read.
+
+    Vế thứ ba là P6-5 (bao-CR-283): luồng YCBG gộp không còn YCMH, người yêu cầu chỉ
+    có quyền trên phiếu — không mở thì họ ăn 403 dù đơn sinh từ phiếu của chính họ.
+    """
     if (user_has_permission(db, user, "purchase_order", "read")
-            or user_has_permission(db, user, "purchase_request", "read")):
+            or user_has_permission(db, user, "purchase_request", "read")
+            or user_has_permission(db, user, "survey_request", "read")):
         return user
     raise HTTPException(403, "Không có quyền xem tiến độ mua hàng")
 
@@ -141,6 +159,11 @@ def _build_query(request: Request, db: Session, user, prof: dict, po_scope: bool
     status = (request.query_params.get("status") or "").strip()  # theo tiến độ dòng
     if status:
         q = q.filter(POItem.progress_status == status)
+    # P6-6 (bao-CR-284): lọc theo BƯỚC (đang mua / đang nhận hàng). Giá trị lạ bỏ qua —
+    # người dùng sửa tay URL thì coi như không lọc, hơn là bảng rỗng khó hiểu.
+    step = (request.query_params.get("step") or "").strip()
+    if step in STEP_STATUS:
+        q = q.filter(POItem.progress_status.in_(STEP_STATUS[step]))
     # Khoảng NGÀY ĐẶT HÀNG (chuỗi YYYY-MM-DD so sánh vẫn đúng thứ tự)
     od_from = (request.query_params.get("order_date_from") or "").strip()
     od_to = (request.query_params.get("order_date_to") or "").strip()
@@ -161,6 +184,7 @@ def _build_query(request: Request, db: Session, user, prof: dict, po_scope: bool
         q = q.filter((PurchaseOrder.code.like(like))
                      | (PurchaseOrder.misa_code.like(like))
                      | (PurchaseOrder.pr_code.like(like))
+                     | (PurchaseOrder.survey_code.like(like))
                      | (PurchaseOrder.supplier_name.like(like))
                      | (PurchaseOrder.supplier_code.like(like))
                      | (PurchaseOrder.department.like(like))
@@ -168,7 +192,9 @@ def _build_query(request: Request, db: Session, user, prof: dict, po_scope: bool
                      | (POItem.product_code.like(like))
                      | (POItem.product_name.like(like))
                      | (POItem.item_group.like(like))
-                     | (POItem.nspt.like(like))
+                     # `POItem` KHÔNG có cột nspt (NSPT nằm trên đơn, đã tìm ở trên) —
+                     # vế `POItem.nspt` cũ làm MỌI tìm kiếm q= của màn này ăn 500,
+                     # phát hiện khi viết test P6-5 (bao-CR-283).
                      | (PODelivery.progress_note.like(like)))
 
     # ----- Bộ lọc điều kiện (CR-080) -----
@@ -208,13 +234,31 @@ def _build_query(request: Request, db: Session, user, prof: dict, po_scope: bool
     if po_scope:
         q = apply_scope(q, PurchaseOrder, "purchase_order", user, prof)
     else:
-        # Phòng yêu cầu (chỉ purchase_request.read) → chỉ thấy ĐMH LIÊN KẾT với PYC
-        # trong phạm vi của mình (đơn phát sinh từ yêu cầu mua hàng của mình/phòng mình).
+        # Không có `purchase_order.read` → chỉ thấy ĐMH LIÊN KẾT với chứng từ nguồn
+        # trong phạm vi của mình. P6-5 (bao-CR-283): nguồn nay là HAI — YCMH cũ qua
+        # `pr_code` VÀ phiếu YCBG gộp qua `survey_code` (đơn lên thẳng, pr_code rỗng).
+        # HỢP hai vế theo nguồn, còn "của ai" vẫn do apply_scope từng entity quyết —
+        # nới nguồn không được nới người.
         from app.modules.purchase_request.model import PurchaseRequest
+        from app.modules.survey_request.model import SurveyRequest
         pr_q = apply_scope(db.query(PurchaseRequest.code), PurchaseRequest,
                            "purchase_request", user, prof)
-        codes = [c for (c,) in pr_q.all() if c]
-        q = q.filter(PurchaseOrder.pr_code.in_(codes)) if codes else q.filter(PurchaseOrder.id == -1)
+        pr_codes = [c for (c,) in pr_q.all() if c]
+        sr_q = apply_scope(db.query(SurveyRequest.code), SurveyRequest,
+                           "survey_request", user, prof)
+        sr_codes = [c for (c,) in sr_q.all() if c]
+        conds = []
+        if pr_codes:
+            conds.append(PurchaseOrder.pr_code.in_(pr_codes))
+        if sr_codes:
+            conds.append(PurchaseOrder.survey_code.in_(sr_codes))
+        if conds:
+            cond = conds[0]
+            for extra in conds[1:]:
+                cond = cond | extra
+            q = q.filter(cond)
+        else:
+            q = q.filter(PurchaseOrder.id == -1)
 
     # ----- Sort -----
     # Cột do người dùng chọn (nếu là cột thật) đứng trước, thứ tự mặc định làm tiebreak
@@ -242,9 +286,11 @@ def list_progress(request: Request, pg: dict = Depends(pagination),
 
 
 def _require_progress_export(user=Depends(get_current_user), db: Session = Depends(get_db)):
-    """Gate OR cho việc XUẤT: `export` trên ĐMH HOẶC trên YCMH — cùng lối gộp quyền của trang."""
+    """Gate OR cho việc XUẤT: `export` trên ĐMH / YCMH / YCBG — cùng lối gộp quyền của trang
+    (vế YCBG là P6-5, bao-CR-283)."""
     if (user_has_permission(db, user, "purchase_order", "export")
-            or user_has_permission(db, user, "purchase_request", "export")):
+            or user_has_permission(db, user, "purchase_request", "export")
+            or user_has_permission(db, user, "survey_request", "export")):
         return user
     raise HTTPException(403, "Không có quyền xuất dữ liệu tiến độ mua hàng")
 

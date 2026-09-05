@@ -43,6 +43,8 @@ COLS = [
     Col("po_code", "Mã ĐMH", width=18),
     Col("misa_code", "Mã MISA", width=14),
     Col("pr_code", "Mã PYC", width=16),
+    # P6-5 (bao-CR-283): nguồn thứ hai — đơn LÊN THẲNG từ phiếu YCBG gộp (pr_code rỗng).
+    Col("survey_code", "Mã YCBG", width=16),
     Col("company", "Công ty", width=26),
     Col("department", "Bộ phận", width=18),
     Col("supplier_code", "Mã NCC", width=14),
@@ -125,7 +127,8 @@ def row_values(po: PurchaseOrder, it: POItem, dl: PODelivery | None, show_suppli
     r = {
         # ----- Đơn mua hàng -----
         "po_id": po.id, "po_code": po.code, "misa_code": po.misa_code,
-        "pr_code": po.pr_code, "company_id": po.company_id, "department": po.department,
+        "pr_code": po.pr_code, "survey_code": po.survey_code,
+        "company_id": po.company_id, "department": po.department,
         "supplier_code": po.supplier_code, "supplier_name": po.supplier_name,
         "nspt": po.nspt, "order_date": po.order_date, "po_status": po.status,
         "document_status": po.document_status, "payment_terms": po.payment_terms,

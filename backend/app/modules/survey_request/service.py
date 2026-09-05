@@ -6,8 +6,9 @@ from sqlalchemy.orm import Session
 from app.core.audit import record
 from app.core.utils import assert_unique_product_codes
 
-from .model import (LINE_STATUSES, LS_COMPLETED, LS_RESURVEY, SurveyRequest,
-                    SurveyRequestLine, SurveyRequestOption, SurveyRequestPr)
+from .model import (LINE_STATUSES, LS_COMPLETED, LS_CONFIRMED, LS_RESURVEY,
+                    SurveyRequest, SurveyRequestLine, SurveyRequestOption,
+                    SurveyRequestPo, SurveyRequestPr)
 
 ENTITY = "survey_request"
 # request_date: cho bộ lọc điều kiện lọc theo ngày (apply_range_filters vẫn lo _from/_to)
@@ -16,7 +17,11 @@ FILTERABLE = ["code", "status", "requester", "department", "request_date",
 MAX_OPTIONS_PER_LINE = 5   # mỗi sản phẩm (dòng YCKS) tối đa 5 phương án khảo sát
 HEADER_FIELDS = ["company_id", "requester", "requester_id", "requester_position",
                  "department_id", "department",
-                 "head_of_dept_id", "head_of_dept", "purpose", "request_date", "note"]
+                 "head_of_dept_id", "head_of_dept", "purpose", "request_date", "note",
+                 "is_urgent",   # bao-CR-289: cờ Đơn gấp
+
+                 # P6-9 (bao-CR-287): cụm NCC người yêu cầu đề xuất — cho bản in luồng gộp
+                 "suggested_supplier", "suggested_supplier_tax_code", "suggested_supplier_contact"]
 
 
 VN_OFFSET = timedelta(hours=7)   # container chạy giờ UTC — ngày phải quy về giờ Việt Nam
@@ -70,6 +75,20 @@ def valid_options_of(db: Session, line_id: int):
             if (not o.product_survey_line_id)              # option nhập tay, không gắn nguồn
             or (o.product_survey_line_id not in existing)  # nguồn đã bị xóa → giữ snapshot
             or (o.product_survey_line_id in approved)]     # nguồn còn & Đã duyệt
+
+
+def code_visible_options(line: SurveyRequestLine, opts: list):
+    """P6-2 (bao-CR-280): dòng ĐÃ CÓ mã hàng thì chỉ hiện phương án khớp đúng mã đó.
+    Vẫn GIỮ: phương án CHƯA gắn mã (NSTM chưa gắn không có nghĩa là sai mã — mã dòng
+    vẫn là mã chốt khi tạo chứng từ) và phương án ĐANG CHỌN (dữ liệu cũ lệch mã mà
+    giấu đi thì dòng hiện 'chưa chọn' trong khi DB đã chọn)."""
+    code = (line.product_code or "").strip()
+    if not code:
+        return opts
+    return [o for o in opts
+            if o.is_chosen
+            or not (o.system_product_code or "").strip()
+            or (o.system_product_code or "").strip() == code]
 
 
 def _gen_code(db: Session) -> str:
@@ -621,6 +640,17 @@ def choose_option(db: Session, line_id: int, oid: int, user_id: int) -> SurveyRe
     if not target:
         raise HTTPException(404, "Không tìm thấy option")
     already = bool(target.is_chosen)
+    ln = db.query(SurveyRequestLine).filter(SurveyRequestLine.id == line_id).first()
+    # P6-3 (bao-CR-281): dòng ĐÃ CHỐT phương án thì khóa lựa chọn — thu mua có thể đang
+    # lên đơn theo đúng phương án đó; muốn đổi phải bỏ chốt trước (một hành động có chủ đích).
+    if ln and ln.line_status == LS_CONFIRMED:
+        raise HTTPException(400, "Dòng đã chốt phương án — bỏ chốt trước rồi mới đổi/bỏ lựa chọn")
+    opt_code = (target.system_product_code or "").strip()
+    line_code = (ln.product_code or "").strip() if ln else ""
+    # P6-2 (bao-CR-280): dòng đã gắn mã thì không chọn chéo sang phương án mang mã khác —
+    # giao diện đã lọc sẵn (code_visible_options), chặn ở đây phòng gọi API thẳng.
+    if not already and opt_code and line_code and opt_code != line_code:
+        raise HTTPException(400, f"Dòng đã gắn mã {line_code} — phương án này mang mã {opt_code}, không chọn được")
     for o in options_of(db, line_id):
         o.is_chosen = (o.id == oid) and not already   # bấm lại option đang chọn -> bỏ chọn cả dòng
         if o.is_chosen:
@@ -629,16 +659,70 @@ def choose_option(db: Session, line_id: int, oid: int, user_id: int) -> SurveyRe
     # Hướng B: vừa chọn 1 PA (not already) thì TỰ GỠ cờ "Cần khảo sát lại" nếu đang bật —
     # coi như người YC đã đồng ý phương án, không còn yêu cầu khảo sát lại.
     if not already:
-        ln = db.query(SurveyRequestLine).filter(SurveyRequestLine.id == line_id).first()
         if ln and ln.line_status == LS_RESURVEY:
             ln.line_status = ""
             ln.updated_by = user_id
+        # P6-2: chọn phương án có mã cho dòng CHƯA có mã -> điền mã lên dòng (gợi ý mã).
+        if ln and opt_code and not line_code:
+            ln.product_code = opt_code
+            ln.updated_by = user_id
+    elif ln and opt_code and line_code == opt_code:
+        # P6-2: BỎ CHỌN thì gỡ lại mã do chính phương án này điền — không gỡ thì bộ lọc
+        # theo mã khóa luôn các phương án mang mã khác, dòng kẹt với mã của lựa chọn cũ.
+        ln.product_code = ""
+        ln.updated_by = user_id
     db.commit()
     db.refresh(target)
     return target
 
 
+def merged_flow_enabled() -> bool:
+    """P6-8 (bao-CR-286) — CÔNG TẮC luồng gộp chứng từ.
+
+    BẬT (mặc định): người YC chốt phương án ngay trên YCBG, thu mua tạo THẲNG đơn mua hàng
+    từ dòng đã chốt (bỏ bước YCMH trung gian). TẮT: về hành vi cũ — chọn phương án rồi tạo
+    YCMH; hai endpoint chốt/tạo-đơn chặn 400, FE ẩn nút theo cờ trong payload.
+    Đồng bộ ngược từ ĐMH (P6-4) KHÔNG gác cờ: đơn thẳng đã tạo trước khi tắt vẫn chạy tiến độ.
+    Nguồn: màn Cấu hình hệ thống (key `merged_flow_enabled`, lưu DB) → fallback .env
+    (`MERGED_FLOW_ENABLED`). Đổi có hiệu lực ngay, không cần deploy."""
+    from app.core import app_settings
+    return bool(app_settings.get("merged_flow_enabled"))
+
+
+def confirm_line_option(db: Session, sid: int, line_id: int, confirmed: bool, user_id: int) -> SurveyRequestLine:
+    """P6-3 (bao-CR-281): người YC CHỐT phương án cho 1 dòng (khóa lựa chọn để thu mua lên đơn
+    thẳng), hoặc BỎ CHỐT. Tiền điều kiện chốt: dòng đang có đúng 1 phương án được chọn."""
+    ln = get_line(db, sid, line_id)
+    if confirmed:
+        if ln.line_status == LS_COMPLETED:
+            raise HTTPException(400, "Dòng đã chốt Hoàn thành — bỏ trạng thái Hoàn thành trước khi chốt phương án")
+        if not any(o.is_chosen for o in options_of(db, line_id)):
+            raise HTTPException(400, "Dòng chưa chọn phương án — chọn một phương án trước rồi mới chốt")
+        ln.line_status = LS_CONFIRMED
+    elif ln.line_status == LS_CONFIRMED:   # bỏ chốt: về lại "Đã chọn phương án" (giữ lựa chọn)
+        ln.line_status = ""
+    ln.updated_by = user_id
+    db.commit()
+    db.refresh(ln)
+    return ln
+
+
 # ───────────────────────── Phase 5D: sinh PYC từ option đã chọn ─────────────────────────
+
+def resolve_catalog_name(db: Session, code: str) -> str:
+    """Tên sản phẩm trong danh mục theo mã — rỗng nếu mã trống/không khớp.
+
+    bao-CR-291: dòng YCBG không lưu tên hàng, chỉ lưu mã. Trước đây tên hàng của YCMH/ĐMH
+    sinh ra từ dòng rơi thẳng về `requirement_detail` (ô thông số kỹ thuật) hoặc chuỗi
+    "Sản phẩm" — nay ô tên đã tách khỏi ô thông số nên phải tra danh mục trước.
+    """
+    from app.modules.product.model import Product
+    c = (code or "").strip()
+    if not c:
+        return ""
+    p = db.query(Product).filter(Product.code == c).first()
+    return (p.name or "") if p else ""
+
 
 def _gen_pr_code(db: Session, request_date: str = "") -> str:
     from app.modules.purchase_request.model import PurchaseRequest
@@ -739,7 +823,9 @@ def create_prs(db: Session, sid: int, user_id: int):
             db.add(PurchaseRequestItem(
                 pr_id=pr.id,
                 product_code=(opt.system_product_code or "").strip(),   # mã SP hệ thống gắn ở option
-                product_name=opt.snap_product_name or ln.requirement_detail or "Sản phẩm",
+                product_name=(opt.snap_product_name
+                              or resolve_catalog_name(db, opt.system_product_code or ln.product_code)
+                              or ln.requirement_detail or "Sản phẩm"),
                 item_group=ln.item_group or "", qty=qty, unit=opt.snap_quote_unit or ln.uom or "",
                 price=price, vat_pct=vat,
                 # Thành tiền GỒM VAT — cùng công thức với khi lưu YCMH (purchase_request/service.py)
@@ -769,6 +855,234 @@ def create_prs(db: Session, sid: int, user_id: int):
     return created
 
 
+def create_pos_from_confirmed(db: Session, sid: int, user_id: int, profile: dict | None = None):
+    """P6-3 (bao-CR-281): thu mua tạo THẲNG đơn mua hàng từ các dòng ĐÃ CHỐT phương án —
+    gom theo NCC, mỗi NCC 1 ĐMH nháp; giá/VAT/NCC/giao hàng lấy từ snapshot của phương án.
+    Bỏ hẳn bước sinh YCMH trung gian: bên yêu cầu chốt cái nào thì thu mua đi mua cái đó.
+    Sau khi tạo: dòng ghi po_id/po_code (+ 1 dòng tab_survey_request_po), tự BỎ CHỌN và
+    GỠ chốt để dòng tái sử dụng được (mua lại) — đối xứng luật của create_prs.
+
+    bao-CR-290: truyền `profile` thì CHỈ lấy dòng người đó được phân phối
+    (`can_process_line` — Quản lý/Admin TM vẫn thấy hết). Trước đó ai có quyền tạo ĐMH
+    cũng lên đơn được cho dòng của NSTM khác."""
+    from app.modules.purchase_order import service as po_service
+    from app.modules.purchase_order.schema import POCreate, POItemIn
+    from app.modules.supplier.model import Supplier
+    s = get_sr(db, sid)
+    if s.status not in ("processing", "survey_done", "pr_created", "done"):
+        raise HTTPException(400, "Chỉ tạo đơn mua hàng khi phiếu đang xử lý trở đi")
+
+    groups: dict[str, list] = {}
+    skipped_other_assignee = 0
+    for ln in lines_of(db, sid):
+        if ln.line_status != LS_CONFIRMED:
+            continue
+        if profile is not None and not can_process_line(db, ln, profile):
+            skipped_other_assignee += 1
+            continue
+        chosen = [o for o in options_of(db, ln.id) if o.is_chosen]
+        if not chosen:   # chốt mà mất lựa chọn = dữ liệu lệch (chốt luôn đòi có chọn) — bỏ qua dòng
+            continue
+        groups.setdefault(chosen[0].supplier_code or "", []).append((ln, chosen[0]))
+    if not groups:
+        if skipped_other_assignee:
+            raise HTTPException(403, "Các dòng đã chốt phương án đều do nhân sự thu mua khác phụ trách "
+                                     "— chỉ người được phân phối dòng mới lên đơn được")
+        raise HTTPException(400, "Chưa có dòng nào chốt phương án để tạo đơn mua hàng")
+    # Cùng lý do với create_prs: 2 dòng cùng NCC trùng mã hàng sẽ đẻ 2 dòng trùng mã trên ĐMH,
+    # làm sai đồng bộ SL (P6-4). Chặn TRƯỚC vòng lặp vì vòng lặp commit theo từng NCC.
+    for group_items in groups.values():
+        assert_unique_product_codes(
+            [((ln.product_code or o.system_product_code or "")) for ln, o in group_items],
+            message=("Nhiều dòng đã chốt của cùng một nhà cung cấp đang mang trùng mã hàng: "
+                     "{codes}. Mỗi mã chỉ được 1 dòng trên đơn mua hàng — gắn lại mã cho đúng "
+                     "hoặc gộp các dòng đó làm một."))
+
+    today = datetime.now().strftime("%Y-%m-%d")
+    created = []
+    for sup_code, items in groups.items():
+        sup = db.query(Supplier).filter(Supplier.code == sup_code).first() if sup_code else None
+        first_opt = items[0][1]
+        po_items = []
+        for ln, opt in items:
+            qty = float(ln.request_qty or 0)
+            price = float(opt.snap_price_by_volume or 0)
+            # VAT theo snapshot phương án (spec P6-3); phương án chưa khai VAT thì lấy
+            # vat_pct người YC đã điền trên dòng (P6-1) — đừng để mặc định 0% (bài học CR-058).
+            vat = float(opt.snap_vat or 0) or float(ln.vat_pct or 0)
+            note_bits = [b for b in [(opt.snap_delivery_time or "").strip(),
+                                     (opt.snap_delivery_place or "").strip()] if b]
+            po_items.append(POItemIn(
+                product_code=(ln.product_code or opt.system_product_code or "").strip(),
+                product_name=(opt.snap_product_name
+                              or resolve_catalog_name(db, ln.product_code or opt.system_product_code)
+                              or ln.requirement_detail or "Sản phẩm"),
+                item_group=ln.item_group or "",
+                spec=(opt.snap_spec or opt.snap_origin or "")[:255],
+                required_date=ln.required_date or "",
+                unit=opt.snap_quote_unit or ln.uom or "",
+                qty_request=qty, qty_order=qty, price=price, vat=vat,
+                warehouse_code=ln.warehouse or "",
+                # ĐMH không có ô "thời gian giao" theo dòng — giữ cam kết giao của phương án vào ghi chú
+                note=(f"Giao hàng: {' — '.join(note_bits)}"[:255] if note_bits else ""),
+            ))
+        data = POCreate(
+            pr_code="",              # P6-5: pr_code GIỮ nghĩa "mã YCMH nguồn" — luồng v2 không có YCMH
+            survey_code=s.code,      # nguồn YCBG đi bằng cột sẵn có + bảng tab_survey_request_po
+            company_id=s.company_id,
+            supplier_code=sup_code,
+            supplier_name=first_opt.supplier_name or (sup.name if sup else ""),
+            department_id=s.department_id, department=s.department,
+            order_date=today,
+            note=f"Sinh tự động từ Yêu cầu báo giá {s.code} (dòng đã chốt phương án)",
+            items=po_items,
+        )
+        po = po_service.create_po(db, data, user_id)   # sinh mã PO, neo phòng ban/NSPT, recompute
+        for ln, opt in items:
+            db.add(SurveyRequestPo(
+                survey_request_id=sid, survey_request_line_id=ln.id, option_id=opt.id,
+                product_survey_line_id=opt.product_survey_line_id or 0,
+                po_id=po.id, po_code=po.code, created_by=user_id, updated_by=user_id))
+            opt.is_chosen = False          # tự bỏ chọn sau khi lên đơn
+            ln.po_id = po.id               # giữ ĐMH gần nhất (tiến độ dòng: Đã lên đơn)
+            ln.po_code = po.code
+            ln.line_status = ""            # gỡ chốt — dòng tái sử dụng được (mua lại)
+            ln.updated_by = user_id
+        db.commit()
+        created.append(po)
+
+    # Cùng máy trạng thái phiếu với đường YCMH: chỉ nâng 'Đã khảo sát' → 'pr_created'
+    # (nhãn hiển thị đổi ở P6-8); KHÔNG hạ cấp phiếu đã Hoàn thành.
+    if s.status == "survey_done":
+        s.status = "pr_created"
+    s.updated_by = user_id
+    db.commit()
+    record(db, user_id, ENTITY, sid, "po_created")
+    # P6-4: đồng bộ ngay để dòng vừa lên đơn hiện "Chưa đặt hàng" (đối xứng CR-074 bên YCMH)
+    # thay vì nằm ở "" vô danh cho tới lần sửa đơn kế tiếp.
+    sync_lines_from_purchase_orders(db, s.code)
+    return created
+
+
+# ───────────────────── P6-4: đồng bộ ngược tiến độ từ ĐMH về dòng YCBG ─────────────────────
+
+def sync_lines_from_purchase_orders(db: Session, survey_code: str) -> None:
+    """P6-4 (bao-CR-282): suy qty_ordered / qty_received / line_status của từng dòng YCBG từ
+    các dòng ĐMH lên thẳng (PurchaseOrder.survey_code, khớp theo product_code) — chép luật của
+    purchase_request.service.sync_from_purchase_orders để hai màn tiến độ đọc CÙNG một bộ cột.
+
+    - Chỉ tính ĐMH đã duyệt trở đi; dòng ĐMH hủy không cộng SL; tạm ngưng dùng mức trước ngưng.
+    - Mã đã có đơn (kể cả Nháp) nhưng chưa đặt -> "not_ordered"; hết đơn (đơn bị xóa) -> về "".
+    - KHÁC YCMH ba chỗ, cố ý:
+      (1) dòng mã RỖNG bỏ qua hẳn — không có khóa để khớp, hai dòng rỗng cộng chung là sai gấp đôi
+          (đơn từ dòng rỗng vẫn tạo được vì assert_unique_product_codes bỏ qua mã rỗng);
+      (2) dòng KHÔNG có ĐMH nào để yên — "" / "resurvey" của đời sống trước-PO có nghĩa riêng,
+          không có mã "no_po" như YCMH;
+      (3) "resurvey"/"confirmed" là mã NGƯỜI YÊU CẦU giữ (đang chốt lại để mua lại) — chỉ ghi SL,
+          không giẫm trạng thái. "completed" thì là mã suy (được phép hạ khi đơn lùi), trùng chuỗi
+          LS_COMPLETED nên tiến độ dòng tự ra Hoàn thành.
+    """
+    if not (survey_code or "").strip():
+        return
+    s = db.query(SurveyRequest).filter(SurveyRequest.code == survey_code).first()
+    if not s:
+        return
+    from sqlalchemy import func
+    from app.core.status_codes import PO_PROGRESS_STATUS
+    from app.modules.purchase_order.model import PODelivery, POItem, PurchaseOrder
+
+    progress_order = list(PO_PROGRESS_STATUS.ordered_values)
+    done_idx = progress_order.index("completed")
+    po_lines = (db.query(POItem).join(PurchaseOrder, PurchaseOrder.id == POItem.po_id)
+                .filter(PurchaseOrder.survey_code == survey_code,
+                        PurchaseOrder.status.notin_(["draft", "submitted", "cancelled", "rejected"]))
+                .all())
+    # Rổ RỘNG HƠN po_lines (CR-074): trả lời "mã này đã có ai lập đơn chưa" — tính cả đơn Nháp.
+    created_prods = {r[0] for r in
+                     db.query(POItem.product_code).join(PurchaseOrder, PurchaseOrder.id == POItem.po_id)
+                     .filter(PurchaseOrder.survey_code == survey_code,
+                             PurchaseOrder.status != "cancelled",
+                             POItem.progress_status != "cancelled").distinct().all()}
+    recv_by_item: dict[int, float] = {}
+    item_ids = [ln.id for ln in po_lines]
+    if item_ids:
+        rows = (db.query(PODelivery.po_item_id, func.coalesce(func.sum(PODelivery.received_qty), 0))
+                .filter(PODelivery.po_item_id.in_(item_ids)).group_by(PODelivery.po_item_id).all())
+        recv_by_item = {r[0]: float(r[1] or 0) for r in rows}
+
+    ordered_min: dict[str, int] = {}         # mã -> mức KÉM TIẾN NHẤT trong các dòng ĐÃ ĐẶT
+    has_cancel: set[str] = set()
+    ordered_by_prod: dict[str, float] = {}
+    received_by_prod: dict[str, float] = {}
+    for it in po_lines:
+        p = it.product_code
+        ps = it.progress_status or "not_ordered"
+        if ps == "cancelled":
+            has_cancel.add(p)
+            continue
+        if ps == "paused":
+            ps = it.status_before_pause or "ordered"
+        idx = progress_order.index(ps) if ps in progress_order else 0
+        if idx < 1:
+            continue   # dòng ĐMH chưa đặt không kéo tiến độ xuống — bỏ qua
+        ordered_by_prod[p] = ordered_by_prod.get(p, 0.0) + float(it.qty_order or 0)
+        received_by_prod[p] = received_by_prod.get(p, 0.0) + recv_by_item.get(it.id, 0.0)
+        cur = ordered_min.get(p)
+        ordered_min[p] = idx if cur is None else min(cur, idx)
+
+    for ln in lines_of(db, s.id):
+        p = (ln.product_code or "").strip()
+        if not p:
+            continue   # (1) không có khóa để khớp
+        if (p not in created_prods and p not in ordered_min and p not in has_cancel
+                and not (ln.po_code or "").strip()):
+            continue   # (2) dòng chưa từng đi đường ĐMH — để yên đời sống trước-PO
+        ordered = ordered_by_prod.get(p, 0.0)
+        received = received_by_prod.get(p, 0.0)
+        ln.qty_ordered = round(ordered, 3)
+        ln.qty_received = round(received, 3)
+        if ln.line_status in (LS_RESURVEY, LS_CONFIRMED):
+            continue   # (3) mã người YC giữ — chỉ SL ở trên được tươi
+        if p not in ordered_min:
+            if p in has_cancel and p not in created_prods:
+                ln.line_status = "cancelled"
+            elif p in created_prods:
+                ln.line_status = "not_ordered"
+            else:
+                ln.line_status = ""   # đơn đã bị xóa sạch — dòng về lại chưa xác định
+        elif ordered_min[p] >= done_idx:
+            ln.line_status = LS_COMPLETED
+        elif received > 0:
+            ln.line_status = "received"
+        else:
+            ln.line_status = "ordered"
+    db.commit()
+
+    # Phiếu tự Hoàn thành (đối xứng auto_complete_from_pr): đứng ở "pr_created", mọi ĐMH thẳng
+    # (bỏ đơn hủy — đơn chết không chặn) VÀ mọi YCMH nguồn (P6-5 hai nguồn cùng tồn tại) đều xong.
+    if s.status != "pr_created":
+        return
+    pos = (db.query(PurchaseOrder.status)
+           .filter(PurchaseOrder.survey_code == survey_code,
+                   PurchaseOrder.status != "cancelled").all())
+    if not pos or any(st != "completed" for (st,) in pos):
+        return
+    if _has_unfinished_source_prs(db, s.id):
+        return
+    set_status(db, s.id, "done", s.created_by or 0)
+    record(db, s.created_by or 0, ENTITY, s.id, "auto_done",
+           "Tự hoàn thành: mọi đơn mua hàng lên thẳng từ phiếu đã hoàn thành")
+
+
+def _has_unfinished_source_prs(db: Session, sid: int) -> bool:
+    """Còn YCMH sinh từ phiếu này chưa 'completed' không? (P6-5: nguồn kép chặn tự Hoàn thành.)"""
+    from app.modules.purchase_request.model import PurchaseRequest
+    pr_ids = [r[0] for r in db.query(SurveyRequestPr.pr_id)
+              .filter(SurveyRequestPr.survey_request_id == sid).distinct().all()]
+    prs = [db.get(PurchaseRequest, pid) for pid in pr_ids]
+    return any(p and p.status != "completed" for p in prs)
+
+
 def finalize_sr(db: Session, sid: int, user_id: int) -> SurveyRequest:
     """Admin/QL chuyển Hoàn thành (dừng hẳn). Cho phép từ 'Đã khảo sát' hoặc 'Đã tạo YCMH'."""
     s = get_sr(db, sid)
@@ -792,9 +1106,21 @@ def auto_complete_from_pr(db: Session, pr_id: int, user_id: int = 0) -> None:
         prs = [db.get(PurchaseRequest, pid) for pid in pr_ids]
         prs = [p for p in prs if p]
         if prs and all(p.status == "completed" for p in prs):
+            # P6-4/P6-5 (bao-CR-282): phiếu nay có NGUỒN KÉP — vừa YCMH vừa ĐMH lên thẳng
+            # (survey_code). Mọi YCMH xong nhưng còn đơn lên thẳng đang chạy thì CHƯA done.
+            if _has_running_direct_pos(db, s.code):
+                continue
             set_status(db, sid, "done", user_id or s.created_by or 0)
             record(db, user_id or s.created_by or 0, ENTITY, sid, "auto_done",
                    "Tự hoàn thành: mọi Yêu cầu mua hàng liên quan đã hoàn thành")
+
+
+def _has_running_direct_pos(db: Session, survey_code: str) -> bool:
+    """Còn ĐMH lên thẳng (survey_code) chưa 'completed' không? Đơn hủy không tính."""
+    from app.modules.purchase_order.model import PurchaseOrder
+    return db.query(PurchaseOrder.id).filter(
+        PurchaseOrder.survey_code == survey_code,
+        PurchaseOrder.status.notin_(["cancelled", "completed"])).first() is not None
 
 
 def complete_sr(db: Session, sid: int, user, profile: dict = None, empty_line_ids=None):

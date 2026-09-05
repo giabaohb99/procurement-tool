@@ -5,18 +5,22 @@ import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ListParams } from '@/shared/types/api'
-import { SurveyProgressPage } from './survey-progress-page'
+import { SurveyQuotingPanel } from './survey-quoting-panel'
 import type { SurveyProgressItem } from '../types/survey-progress-types'
 
-//  Chặn ở tầng HOOK dữ liệu chứ không ở `@/core/api`: màn này phải bắt được BỘ
-//  THAM SỐ nó gửi đi (`received_date_from` / `result_due_date_from` / …), mà
-//  tham số đó chỉ hiện nguyên vẹn ở đầu vào của hook.
+//  Chặn ở tầng HOOK dữ liệu chứ không ở `@/core/api`: panel này phải bắt được BỘ
+//  THAM SỐ nó gửi đi (`phase` / `received_date_from` / …), mà tham số đó chỉ hiện
+//  nguyên vẹn ở đầu vào của hook.
 const listCalls: ListParams[] = []
 
 vi.mock('../hooks/use-purchase-documents', () => ({
   useSurveyProgress: (params: ListParams) => {
     listCalls.push(params)
-    return { data: { total: rows.length, items: rows, show_supplier: true }, isLoading: false, isError: false }
+    return {
+      data: { total: rows.length, items: rows, show_supplier: true },
+      isLoading: false,
+      isError: false,
+    }
   },
 }))
 
@@ -50,15 +54,17 @@ const rows: SurveyProgressItem[] = [
   } as SurveyProgressItem,
 ]
 
-function build(url = '/procurement/survey-progress') {
+//  P6-6: panel sống bên trong trang Tiến độ mua hàng gộp — URL thật của nó là
+//  `/procurement/purchase-progress?step=quoting&…`.
+function build(url = '/procurement/purchase-progress?step=quoting') {
   //  `DataTable` gọi `useQueryClient` cho nút Tải lại — vẫn phải có provider dù
-  //  mọi hook dữ liệu của màn này đã bị chặn.
+  //  mọi hook dữ liệu của panel này đã bị chặn.
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
 
   return render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter initialEntries={[url]}>
-        <SurveyProgressPage />
+        <SurveyQuotingPanel />
       </MemoryRouter>
     </QueryClientProvider>,
   )
@@ -74,9 +80,27 @@ beforeEach(() => {
   localStorage.clear()
 })
 
-describe('SurveyProgressPage — khoảng ngày', () => {
+describe('SurveyQuotingPanel — bước Đang so giá (P6-6)', () => {
+  it('always asks the server for the quoting phase — lines already turned into PR/PO stay out', () => {
+    build()
+
+    expect(lastCall().phase).toBe('quoting')
+  })
+
+  it('exports through the survey-progress endpoint with the same quoting phase', async () => {
+    const user = userEvent.setup()
+    build()
+
+    await user.click(screen.getByRole('button', { name: /Xuất Excel/ }))
+
+    expect(downloads[0]).toContain('/api/survey-progress/export/xlsx')
+    expect(downloads[0]).toContain('phase=quoting')
+  })
+})
+
+describe('SurveyQuotingPanel — khoảng ngày', () => {
   it('sends the range as received dates by default — same mốc as the month filter', () => {
-    build('/procurement/survey-progress?date_from=2026-08-01&date_to=2026-08-31')
+    build('/procurement/purchase-progress?step=quoting&date_from=2026-08-01&date_to=2026-08-31')
 
     expect(lastCall()).toMatchObject({
       received_date_from: '2026-08-01',
@@ -87,7 +111,9 @@ describe('SurveyProgressPage — khoảng ngày', () => {
   })
 
   it('switches to the hạn trả KQ dates when the user picks that mốc', () => {
-    build('/procurement/survey-progress?date_field=result_due&date_from=2026-08-01&date_to=2026-08-31')
+    build(
+      '/procurement/purchase-progress?step=quoting&date_field=result_due&date_from=2026-08-01&date_to=2026-08-31',
+    )
 
     expect(lastCall()).toMatchObject({
       result_due_date_from: '2026-08-01',
@@ -99,7 +125,9 @@ describe('SurveyProgressPage — khoảng ngày', () => {
   it('switches to the ngày trả KQ dates when the user picks that mốc', () => {
     //  Ba mốc của cùng một dòng lệch nhau cả tháng: tiếp nhận 03/08, hạn 10/08,
     //  trả thật 01/09. Hỏi nhầm mốc là ra tập khác hẳn.
-    build('/procurement/survey-progress?date_field=result&date_from=2026-09-01&date_to=2026-09-30')
+    build(
+      '/procurement/purchase-progress?step=quoting&date_field=result&date_from=2026-09-01&date_to=2026-09-30',
+    )
 
     expect(lastCall()).toMatchObject({
       result_date_from: '2026-09-01',
@@ -112,13 +140,13 @@ describe('SurveyProgressPage — khoảng ngày', () => {
   it('falls back to the first mốc when the URL names one that does not exist', () => {
     //  Đường dẫn cũ ai đó lưu lại, hoặc gõ tay sai. Không được ném lỗi, cũng
     //  không được lặng lẽ bỏ luôn khoảng ngày.
-    build('/procurement/survey-progress?date_field=khong-co&date_from=2026-08-01')
+    build('/procurement/purchase-progress?step=quoting&date_field=khong-co&date_from=2026-08-01')
 
     expect(lastCall().received_date_from).toBe('2026-08-01')
   })
 
   it('accepts a half-open range — "từ 01/08 tới nay" is a real question', () => {
-    build('/procurement/survey-progress?date_from=2026-08-01')
+    build('/procurement/purchase-progress?step=quoting&date_from=2026-08-01')
 
     expect(lastCall().received_date_from).toBe('2026-08-01')
     expect(lastCall().received_date_to).toBeUndefined()
@@ -127,14 +155,16 @@ describe('SurveyProgressPage — khoảng ngày', () => {
   it('sends no date param at all when the range is empty', () => {
     //  Chuỗi rỗng gửi lên là backend so `col >= ""` — loại sạch dòng chưa có
     //  ngày, bảng rỗng ngay lúc mở màn.
-    build('/procurement/survey-progress?date_from=&date_to=')
+    build('/procurement/purchase-progress?step=quoting&date_from=&date_to=')
 
     expect(lastCall().received_date_from).toBeUndefined()
     expect(lastCall().received_date_to).toBeUndefined()
   })
 
   it('keeps the other filters while a range is active', () => {
-    build('/procurement/survey-progress?state=Đã trả kết quả&late=1&date_from=2026-08-01')
+    build(
+      '/procurement/purchase-progress?step=quoting&state=Đã trả kết quả&late=1&date_from=2026-08-01',
+    )
 
     expect(lastCall()).toMatchObject({
       state: 'Đã trả kết quả',
@@ -145,7 +175,9 @@ describe('SurveyProgressPage — khoảng ngày', () => {
 
   it('exports the SAME range the table is showing', async () => {
     const user = userEvent.setup()
-    build('/procurement/survey-progress?date_field=result&date_from=2026-09-01&date_to=2026-09-30')
+    build(
+      '/procurement/purchase-progress?step=quoting&date_field=result&date_from=2026-09-01&date_to=2026-09-30',
+    )
 
     await user.click(screen.getByRole('button', { name: /Xuất Excel/ }))
 
@@ -163,7 +195,7 @@ describe('SurveyProgressPage — khoảng ngày', () => {
   })
 })
 
-describe('SurveyProgressPage — cột chữ đọc đủ', () => {
+describe('SurveyQuotingPanel — cột chữ đọc đủ', () => {
   //  Khách nêu 31/08/2026: "cho show full ra chứ đừng có …". Xuống dòng là hiệu
   //  ứng CSS, jsdom không đo được, nên đành khẳng định theo class — đây là chỗ
   //  DUY NHẤT trong bộ test này làm vậy, vì class CHÍNH LÀ hành vi.

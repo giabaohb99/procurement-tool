@@ -79,12 +79,12 @@ def test_tim_khong_lo_bai_ngoai_pham_vi(db, bo_may):
     assert p.id in ids                              # tác giả luôn thấy bài mình
 
 
-def test_nguoi_thuong_khong_loc_duoc_trang_thai_an(db, bo_may, cap_quyen):
+def test_nguoi_thuong_khong_loc_duoc_trang_thai_an(db, bo_may, grant_role):
     """Người thường gửi status=2 phải bị BỎ QUA — không thành cửa dò bài ẩn."""
     from app.modules.user.model import User
     p = _dang(db, bo_may.tac_gia, "bài sắp bị ẩn")
     admin = bo_may.khac_cty
-    cap_quyen(admin.id, "forum_post", scope="all", read=True, write=True, delete=True)
+    grant_role(admin.id, "forum_post", scope="all", read=True, write=True, delete=True)
     admin = db.get(User, admin.id)
     service.moderate(db, admin, p, ForumModerationAction.HIDE, "vi phạm")
 
@@ -164,10 +164,10 @@ def test_phan_trang_khong_lap_khong_sot(db, bo_may):
 
 # ── 6. Nhật ký kiểm duyệt ──────────────────────────────────────────────────────
 
-def test_nhat_ky_kiem_duyet_moi_truoc_cu_sau(db, bo_may, cap_quyen):
+def test_nhat_ky_kiem_duyet_moi_truoc_cu_sau(db, bo_may, grant_role):
     from app.modules.user.model import User
     admin = bo_may.khac_cty
-    cap_quyen(admin.id, "forum_post", scope="all", read=True, write=True, delete=True)
+    grant_role(admin.id, "forum_post", scope="all", read=True, write=True, delete=True)
     admin = db.get(User, admin.id)
     p = _dang(db, bo_may.tac_gia, "bài bị xử")
     service.moderate(db, admin, p, ForumModerationAction.HIDE, "lý do ẩn")

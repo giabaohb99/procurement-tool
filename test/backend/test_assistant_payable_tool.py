@@ -45,9 +45,9 @@ def test_lookup_thieu_quyen_thi_denied(db, seed, khoan_no):
     assert "summary" not in out and "items" not in out
 
 
-def test_lookup_loc_ncc_va_tong_con_lai(db, seed, khoan_no, cap_quyen):
+def test_lookup_loc_ncc_va_tong_con_lai(db, seed, khoan_no, grant_role):
     """Lọc theo NCC, mặc định CHỈ khoản còn phải trả; summary tính đúng còn lại."""
-    cap_quyen(seed.u_req_id, "payable", scope="all", read=True)
+    grant_role(seed.u_req_id, "payable", scope="all", read=True)
     user = db.get(User, seed.u_req_id)
 
     out = T.run_tool(db, user, "payable_lookup", {"supplier": "NCCA"})
@@ -60,34 +60,34 @@ def test_lookup_loc_ncc_va_tong_con_lai(db, seed, khoan_no, cap_quyen):
     assert ca_paid["total"] == 3
 
 
-def test_lookup_cong_ty_khong_khop_thi_bao_danh_muc(db, seed, khoan_no, cap_quyen):
+def test_lookup_cong_ty_khong_khop_thi_bao_danh_muc(db, seed, khoan_no, grant_role):
     """Tên công ty ngoài danh mục -> error + danh sách hợp lệ, KHÔNG lặng lẽ bỏ lọc."""
-    cap_quyen(seed.u_req_id, "payable", scope="all", read=True)
+    grant_role(seed.u_req_id, "payable", scope="all", read=True)
     user = db.get(User, seed.u_req_id)
     out = T.run_tool(db, user, "payable_lookup", {"company": "Cong ty khong ton tai"})
     assert out.get("error")
     assert out.get("companies")
 
 
-def test_draft_can_du_hai_quyen(db, seed, khoan_no, cap_quyen):
+def test_draft_can_du_hai_quyen(db, seed, khoan_no, grant_role):
     """Soạn nháp YCTT cần CẢ payment_request.create lẫn payable.read — thiếu một là denied."""
     # Chỉ có quyền xem công nợ, không có quyền tạo YCTT.
-    cap_quyen(seed.u_req_id, "payable", scope="all", read=True)
+    grant_role(seed.u_req_id, "payable", scope="all", read=True)
     user = db.get(User, seed.u_req_id)
     out = T.run_tool(db, user, "draft_payment_request", {"supplier": "NCCA"})
     assert out.get("denied") is True
 
     # Chỉ có quyền tạo YCTT, không được xem công nợ — không được vòng qua hàng rào payable.
     user2 = db.get(User, seed.u_nstm_id)
-    cap_quyen(seed.u_nstm_id, "payment_request", scope="all", create=True)
+    grant_role(seed.u_nstm_id, "payment_request", scope="all", create=True)
     out2 = T.run_tool(db, user2, "draft_payment_request", {"supplier": "NCCA"})
     assert out2.get("denied") is True
 
 
-def test_draft_chi_chon_khoan_con_no(db, seed, khoan_no, cap_quyen):
+def test_draft_chi_chon_khoan_con_no(db, seed, khoan_no, grant_role):
     """Nháp theo NCC chỉ gom khoản remaining > 0; khoản đã tất toán không được lọt vào."""
-    cap_quyen(seed.u_req_id, "payable", scope="all", read=True)
-    cap_quyen(seed.u_req_id, "payment_request", scope="all", create=True)
+    grant_role(seed.u_req_id, "payable", scope="all", read=True)
+    grant_role(seed.u_req_id, "payment_request", scope="all", create=True)
     user = db.get(User, seed.u_req_id)
 
     out = T.run_tool(db, user, "draft_payment_request", {"supplier": "NCCA"})
@@ -99,10 +99,10 @@ def test_draft_chi_chon_khoan_con_no(db, seed, khoan_no, cap_quyen):
     assert out["draft"]["suppliers"][0]["supplier_code"] == "NCCA"
 
 
-def test_draft_theo_ids_loai_khoan_tat_toan(db, seed, khoan_no, cap_quyen):
+def test_draft_theo_ids_loai_khoan_tat_toan(db, seed, khoan_no, grant_role):
     """Truyền payable_ids có lẫn khoản đã tất toán -> khoản đó vào skipped_ids."""
-    cap_quyen(seed.u_req_id, "payable", scope="all", read=True)
-    cap_quyen(seed.u_req_id, "payment_request", scope="all", create=True)
+    grant_role(seed.u_req_id, "payable", scope="all", read=True)
+    grant_role(seed.u_req_id, "payment_request", scope="all", create=True)
     user = db.get(User, seed.u_req_id)
 
     ids = [khoan_no[0].id, khoan_no[2].id]   # khoan_no[2] đã paid
@@ -111,10 +111,10 @@ def test_draft_theo_ids_loai_khoan_tat_toan(db, seed, khoan_no, cap_quyen):
     assert out["skipped_ids"] == [khoan_no[2].id]
 
 
-def test_draft_thieu_ncc_lan_ids_thi_hoi_lai(db, seed, khoan_no, cap_quyen):
+def test_draft_thieu_ncc_lan_ids_thi_hoi_lai(db, seed, khoan_no, grant_role):
     """Không có supplier lẫn payable_ids -> error bảo model hỏi lại, không gom nợ cả hệ."""
-    cap_quyen(seed.u_req_id, "payable", scope="all", read=True)
-    cap_quyen(seed.u_req_id, "payment_request", scope="all", create=True)
+    grant_role(seed.u_req_id, "payable", scope="all", read=True)
+    grant_role(seed.u_req_id, "payment_request", scope="all", create=True)
     user = db.get(User, seed.u_req_id)
     out = T.run_tool(db, user, "draft_payment_request", {})
     assert out.get("error")
@@ -123,10 +123,10 @@ def test_draft_thieu_ncc_lan_ids_thi_hoi_lai(db, seed, khoan_no, cap_quyen):
 
 # ── Lọc hạn trả + tổng hợp nhóm + nhắc tách công ty (bao-CR-273) ────────────────────────
 
-def test_lookup_loc_theo_han_tra(db, seed, khoan_no, cap_quyen):
+def test_lookup_loc_theo_han_tra(db, seed, khoan_no, grant_role):
     """due_from/due_to lọc theo HẠN TRẢ chứ không phải ngày phát sinh — 'cần thanh toán
     trong tháng 8' chỉ ra PO-02 (hạn 20/08) dù PO-01 cũng phát sinh trong tháng 8."""
-    cap_quyen(seed.u_req_id, "payable", scope="all", read=True)
+    grant_role(seed.u_req_id, "payable", scope="all", read=True)
     user = db.get(User, seed.u_req_id)
 
     out = T.run_tool(db, user, "payable_lookup",
@@ -136,11 +136,11 @@ def test_lookup_loc_theo_han_tra(db, seed, khoan_no, cap_quyen):
     assert out["summary"]["remaining"] == 300.0
 
 
-def test_lookup_gom_nhom_theo_ncc(db, seed, khoan_no, cap_quyen):
+def test_lookup_gom_nhom_theo_ncc(db, seed, khoan_no, grant_role):
     """group_by=supplier: mỗi NCC một dòng tổng hợp, xếp còn-nợ giảm dần, quá hạn tính
     đúng từng nhóm (hôm nay sau 20/08 nên PO-02 của NCCA quá hạn 300); không liệt kê
     từng khoản nữa."""
-    cap_quyen(seed.u_req_id, "payable", scope="all", read=True)
+    grant_role(seed.u_req_id, "payable", scope="all", read=True)
     user = db.get(User, seed.u_req_id)
 
     out = T.run_tool(db, user, "payable_lookup", {"group_by": "supplier"})
@@ -157,9 +157,9 @@ def test_lookup_gom_nhom_theo_ncc(db, seed, khoan_no, cap_quyen):
     assert sai.get("error")
 
 
-def test_lookup_gom_nhom_theo_cong_ty(db, seed, khoan_no, cap_quyen):
+def test_lookup_gom_nhom_theo_cong_ty(db, seed, khoan_no, grant_role):
     """group_by=company: gom theo pháp nhân nợ tiền, kèm TÊN công ty tra từ danh mục."""
-    cap_quyen(seed.u_req_id, "payable", scope="all", read=True)
+    grant_role(seed.u_req_id, "payable", scope="all", read=True)
     user = db.get(User, seed.u_req_id)
 
     out = T.run_tool(db, user, "payable_lookup", {"group_by": "company"})
@@ -170,13 +170,13 @@ def test_lookup_gom_nhom_theo_cong_ty(db, seed, khoan_no, cap_quyen):
     assert g["count"] == 3 and g["remaining"] == 1700.0
 
 
-def test_draft_nhieu_cong_ty_thi_bao_tach_theo_cong_ty(db, seed, khoan_no, cap_quyen):
+def test_draft_nhieu_cong_ty_thi_bao_tach_theo_cong_ty(db, seed, khoan_no, grant_role):
     """Khoản nợ trải trên 2 công ty: từ bao-CR-274 hệ thống tách phiếu theo cả công ty
     nhận hóa đơn, reminder phải BÁO TRƯỚC việc tách đó; một công ty thì không nhắc."""
     from app.modules.company.model import Company
 
-    cap_quyen(seed.u_req_id, "payable", scope="all", read=True)
-    cap_quyen(seed.u_req_id, "payment_request", scope="all", create=True)
+    grant_role(seed.u_req_id, "payable", scope="all", read=True)
+    grant_role(seed.u_req_id, "payment_request", scope="all", create=True)
     user = db.get(User, seed.u_req_id)
 
     # Một công ty -> không được nhắc vô cớ.
@@ -235,19 +235,19 @@ def test_doc_yctt_thieu_quyen_thi_denied(db, seed):
     assert "lines" not in out
 
 
-def test_doc_yctt_ngoai_pham_vi_bao_khong_thay(db, seed, cap_quyen):
+def test_doc_yctt_ngoai_pham_vi_bao_khong_thay(db, seed, grant_role):
     """Scope `own` mà phiếu của người khác -> 'Không tìm thấy', không lộ số tiền lẫn NCC."""
-    cap_quyen(seed.u_req_id, "payment_request", scope="own", read=True)
+    grant_role(seed.u_req_id, "payment_request", scope="own", read=True)
     _tao_yctt(db, seed, created_by=seed.u_nstm_id)
     out = T.run_tool(db, db.get(User, seed.u_req_id), "payment_request_read",
                      {"code": "YCTT-TEST-1"})
     assert "Không tìm thấy" in out["error"]
 
 
-def test_doc_yctt_recap_du_hinh(db, seed, cap_quyen):
+def test_doc_yctt_recap_du_hinh(db, seed, grant_role):
     """Happy path: header + dòng + print_texts đã parse + url — mã thường cũng khớp
     (tool tự upper), hình thức thanh toán trả NHÃN tiếng Việt chứ không trả mã."""
-    cap_quyen(seed.u_req_id, "payment_request", scope="own", read=True)
+    grant_role(seed.u_req_id, "payment_request", scope="own", read=True)
     req = _tao_yctt(db, seed, created_by=seed.u_req_id)
 
     out = T.run_tool(db, db.get(User, seed.u_req_id), "payment_request_read",
@@ -290,10 +290,10 @@ def _tao_phieu_treo(db, seed, created_by, po_code="", allocated=0, refunded=0):
     return req
 
 
-def test_lookup_dinh_kem_tien_treo_khi_du_quyen(db, seed, khoan_no, cap_quyen):
+def test_lookup_dinh_kem_tien_treo_khi_du_quyen(db, seed, khoan_no, grant_role):
     """Lọc về đúng 1 NCC còn treo -> kèm `prepay_hanging` (tách phần unlinked); nhưng
     thiếu quyền payment_request thì KHÔNG đính kèm — treo là dữ liệu phân hệ YCTT."""
-    cap_quyen(seed.u_req_id, "payable", scope="all", read=True)
+    grant_role(seed.u_req_id, "payable", scope="all", read=True)
     user = db.get(User, seed.u_req_id)
     _tao_phieu_treo(db, seed, created_by=seed.u_req_id, po_code="", refunded=300)
 
@@ -301,7 +301,7 @@ def test_lookup_dinh_kem_tien_treo_khi_du_quyen(db, seed, khoan_no, cap_quyen):
     out = T.run_tool(db, user, "payable_lookup", {"supplier": "NCCA"})
     assert "prepay_hanging" not in out
 
-    cap_quyen(seed.u_req_id, "payment_request", scope="all", read=True)
+    grant_role(seed.u_req_id, "payment_request", scope="all", read=True)
     out2 = T.run_tool(db, user, "payable_lookup", {"supplier": "NCCA"})
     assert out2["prepay_hanging"]["total"] == 500.0      # 800 - 300 hoàn
     assert out2["prepay_hanging"]["unlinked"] == 500.0   # dòng không gắn đơn
@@ -312,9 +312,9 @@ def test_lookup_dinh_kem_tien_treo_khi_du_quyen(db, seed, khoan_no, cap_quyen):
     assert "prepay_hanging" not in out3
 
 
-def test_doc_yctt_tra_truoc_kem_so_treo(db, seed, cap_quyen):
+def test_doc_yctt_tra_truoc_kem_so_treo(db, seed, grant_role):
     """Phiếu trả trước đã chi: từng dòng kèm allocated/refunded/hanging + tổng treo + hint."""
-    cap_quyen(seed.u_req_id, "payment_request", scope="own", read=True)
+    grant_role(seed.u_req_id, "payment_request", scope="own", read=True)
     _tao_phieu_treo(db, seed, created_by=seed.u_req_id, po_code="PO-01", allocated=600)
 
     out = T.run_tool(db, db.get(User, seed.u_req_id), "payment_request_read",
@@ -358,10 +358,10 @@ def _tao_no_khop_hd(db, seed, total=500.0, paid=0.0):
     return p
 
 
-def test_doc_yctt_nhap_can_tru_chi_la_y_dinh(db, seed, cap_quyen):
+def test_doc_yctt_nhap_can_tru_chi_la_y_dinh(db, seed, grant_role):
     """Bản nháp có cấn trừ: dòng kèm offset_amount, có offset_total + hint nói rõ đây mới
     là Ý ĐỊNH; KHÔNG chạy soát khô (offset_check) cho nháp — nháp sửa thoải mái."""
-    cap_quyen(seed.u_req_id, "payment_request", scope="own", read=True)
+    grant_role(seed.u_req_id, "payment_request", scope="own", read=True)
     _tao_yctt_can_tru(db, seed, created_by=seed.u_req_id, status="draft")
 
     out = T.run_tool(db, db.get(User, seed.u_req_id), "payment_request_read",
@@ -373,9 +373,9 @@ def test_doc_yctt_nhap_can_tru_chi_la_y_dinh(db, seed, cap_quyen):
     assert "offset_check" not in out
 
 
-def test_doc_yctt_cho_duyet_soat_kho_ok(db, seed, cap_quyen):
+def test_doc_yctt_cho_duyet_soat_kho_ok(db, seed, grant_role):
     """Chờ duyệt + treo đủ + nợ đủ -> offset_check.ok=True, không có problems."""
-    cap_quyen(seed.u_req_id, "payment_request", scope="own", read=True)
+    grant_role(seed.u_req_id, "payment_request", scope="own", read=True)
     _tao_phieu_treo(db, seed, created_by=seed.u_req_id)     # treo cấp NCC còn 800
     _tao_no_khop_hd(db, seed)                               # nợ còn 500 >= cấn trừ 300
     _tao_yctt_can_tru(db, seed, created_by=seed.u_req_id, status="submitted")
@@ -386,10 +386,10 @@ def test_doc_yctt_cho_duyet_soat_kho_ok(db, seed, cap_quyen):
     assert "hợp lệ" in out["offset_hint"]
 
 
-def test_doc_yctt_cho_duyet_bao_thieu_treo(db, seed, cap_quyen):
+def test_doc_yctt_cho_duyet_bao_thieu_treo(db, seed, grant_role):
     """Chờ duyệt mà NCC KHÔNG còn treo -> ok=False, problems nói vượt tiền treo, hint
     chỉ đúng luật: không duyệt một phần, Từ chối để người lập tạo phiếu mới."""
-    cap_quyen(seed.u_req_id, "payment_request", scope="own", read=True)
+    grant_role(seed.u_req_id, "payment_request", scope="own", read=True)
     _tao_no_khop_hd(db, seed)
     _tao_yctt_can_tru(db, seed, created_by=seed.u_req_id, status="submitted")
 
@@ -400,10 +400,10 @@ def test_doc_yctt_cho_duyet_bao_thieu_treo(db, seed, cap_quyen):
     assert "TỪ CHỐI" in out["offset_hint"]
 
 
-def test_doc_yctt_cho_duyet_bao_no_khong_du(db, seed, cap_quyen):
+def test_doc_yctt_cho_duyet_bao_no_khong_du(db, seed, grant_role):
     """Nợ đích đã bị trả bớt nơi khác (còn 100 < cấn trừ 300) -> problems nêu đúng dòng.
     Đây là đúng tình huống chặn duyệt của apply_line_offsets — soát khô phải bắt được."""
-    cap_quyen(seed.u_req_id, "payment_request", scope="own", read=True)
+    grant_role(seed.u_req_id, "payment_request", scope="own", read=True)
     _tao_phieu_treo(db, seed, created_by=seed.u_req_id)     # treo đủ 800
     _tao_no_khop_hd(db, seed, total=500, paid=400)          # nợ chỉ còn 100
     _tao_yctt_can_tru(db, seed, created_by=seed.u_req_id, status="submitted")
@@ -414,9 +414,9 @@ def test_doc_yctt_cho_duyet_bao_no_khong_du(db, seed, cap_quyen):
     assert any("PO-CT" in p for p in out["offset_check"]["problems"])
 
 
-def test_doc_yctt_da_duyet_bao_da_thuc_thi(db, seed, cap_quyen):
+def test_doc_yctt_da_duyet_bao_da_thuc_thi(db, seed, grant_role):
     """Phiếu đã duyệt: không soát khô nữa, hint nói phần cấn trừ ĐÃ trừ lúc duyệt."""
-    cap_quyen(seed.u_req_id, "payment_request", scope="own", read=True)
+    grant_role(seed.u_req_id, "payment_request", scope="own", read=True)
     _tao_yctt_can_tru(db, seed, created_by=seed.u_req_id, status="approved")
 
     out = T.run_tool(db, db.get(User, seed.u_req_id), "payment_request_read",
@@ -428,11 +428,11 @@ def test_doc_yctt_da_duyet_bao_da_thuc_thi(db, seed, cap_quyen):
 
 # ── Nháp YCTT tự chia cấn trừ FIFO (CR-264) ─────────────────────────────────────────────
 
-def test_draft_chia_can_tru_fifo_theo_han(db, seed, khoan_no, cap_quyen):
+def test_draft_chia_can_tru_fifo_theo_han(db, seed, khoan_no, grant_role):
     """NCC còn treo 800: nháp chia cấn trừ theo FIFO hạn nợ — PO-02 (hạn 20/08, nợ 300)
     ăn trước, PO-01 (hạn 05/09) nhận phần còn lại 500; cash_total = tổng nợ - cấn trừ."""
-    cap_quyen(seed.u_req_id, "payable", scope="all", read=True)
-    cap_quyen(seed.u_req_id, "payment_request", scope="all", create=True, read=True)
+    grant_role(seed.u_req_id, "payable", scope="all", read=True)
+    grant_role(seed.u_req_id, "payment_request", scope="all", create=True, read=True)
     _tao_phieu_treo(db, seed, created_by=seed.u_req_id)      # treo cấp NCC = 800
     user = db.get(User, seed.u_req_id)
 
@@ -444,10 +444,10 @@ def test_draft_chia_can_tru_fifo_theo_han(db, seed, khoan_no, cap_quyen):
     assert "cấn trừ" in out["reminder"]
 
 
-def test_draft_khong_treo_thi_khong_de_xuat_can_tru(db, seed, khoan_no, cap_quyen):
+def test_draft_khong_treo_thi_khong_de_xuat_can_tru(db, seed, khoan_no, grant_role):
     """NCC không còn treo -> nháp KHÔNG có cụm offsets, reminder không nhắc cấn trừ vô cớ."""
-    cap_quyen(seed.u_req_id, "payable", scope="all", read=True)
-    cap_quyen(seed.u_req_id, "payment_request", scope="all", create=True, read=True)
+    grant_role(seed.u_req_id, "payable", scope="all", read=True)
+    grant_role(seed.u_req_id, "payment_request", scope="all", create=True, read=True)
     user = db.get(User, seed.u_req_id)
 
     out = T.run_tool(db, user, "draft_payment_request", {"supplier": "NCCA"})
@@ -455,11 +455,11 @@ def test_draft_khong_treo_thi_khong_de_xuat_can_tru(db, seed, khoan_no, cap_quye
     assert "offset_total" not in out["draft"]
 
 
-def test_draft_thieu_quyen_doc_yctt_thi_khong_chia_treo(db, seed, khoan_no, cap_quyen):
+def test_draft_thieu_quyen_doc_yctt_thi_khong_chia_treo(db, seed, khoan_no, grant_role):
     """Chỉ có payment_request.create (không read): vẫn nháp được nhưng KHÔNG đề xuất
     cấn trừ — số treo là dữ liệu phân hệ YCTT, quyền tạo không kéo theo quyền đọc."""
-    cap_quyen(seed.u_req_id, "payable", scope="all", read=True)
-    cap_quyen(seed.u_req_id, "payment_request", scope="all", create=True)
+    grant_role(seed.u_req_id, "payable", scope="all", read=True)
+    grant_role(seed.u_req_id, "payment_request", scope="all", create=True)
     _tao_phieu_treo(db, seed, created_by=seed.u_req_id)      # treo có thật nhưng không được lộ
     user = db.get(User, seed.u_req_id)
 
@@ -468,11 +468,11 @@ def test_draft_thieu_quyen_doc_yctt_thi_khong_chia_treo(db, seed, khoan_no, cap_
     assert "offsets" not in out["draft"]
 
 
-def test_draft_treo_it_hon_no_chi_chia_du_treo(db, seed, khoan_no, cap_quyen):
+def test_draft_treo_it_hon_no_chi_chia_du_treo(db, seed, khoan_no, grant_role):
     """Treo chỉ còn 250 (< nợ 1300): FIFO cấp hết 250 cho khoản tới hạn sớm nhất (PO-02),
     khoản sau không được chia — tổng cấn trừ không bao giờ vượt treo còn lại."""
-    cap_quyen(seed.u_req_id, "payable", scope="all", read=True)
-    cap_quyen(seed.u_req_id, "payment_request", scope="all", create=True, read=True)
+    grant_role(seed.u_req_id, "payable", scope="all", read=True)
+    grant_role(seed.u_req_id, "payment_request", scope="all", create=True, read=True)
     _tao_phieu_treo(db, seed, created_by=seed.u_req_id, refunded=550)   # treo còn 250
     user = db.get(User, seed.u_req_id)
 

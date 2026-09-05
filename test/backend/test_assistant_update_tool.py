@@ -51,9 +51,9 @@ def _de_xuat(db, seed, args):
 
 # ── propose_document_update ─────────────────────────────────────────────────────────────
 
-def test_thieu_quyen_write_thi_tu_choi(db, seed, cap_quyen):
+def test_thieu_quyen_write_thi_tu_choi(db, seed, grant_role):
     """Có mỗi quyền ĐỌC vẫn không đề xuất sửa được — tool đòi đúng `entity.write`."""
-    cap_quyen(seed.u_req_id, "purchase_request", scope="all", read=True)
+    grant_role(seed.u_req_id, "purchase_request", scope="all", read=True)
     _tao_ycmh(db, seed, created_by=seed.u_req_id)
     out = _de_xuat(db, seed, {"entity": "purchase_request", "code": "YCMH-TEST-1",
                               "changes": {"purpose": "Mua giấy A5"}})
@@ -61,18 +61,18 @@ def test_thieu_quyen_write_thi_tu_choi(db, seed, cap_quyen):
     assert "proposal" not in out
 
 
-def test_ngoai_pham_vi_ghi_coi_nhu_khong_co(db, seed, cap_quyen):
+def test_ngoai_pham_vi_ghi_coi_nhu_khong_co(db, seed, grant_role):
     """Scope `own` mà phiếu của người khác -> 'Không tìm thấy', không lộ cả việc phiếu tồn tại."""
-    cap_quyen(seed.u_req_id, "purchase_request", scope="own", read=True, write=True)
+    grant_role(seed.u_req_id, "purchase_request", scope="own", read=True, write=True)
     _tao_ycmh(db, seed, created_by=seed.u_nstm_id)
     out = _de_xuat(db, seed, {"entity": "purchase_request", "code": "YCMH-TEST-1",
                               "changes": {"purpose": "Mua giấy A5"}})
     assert "Không tìm thấy" in out["error"]
 
 
-def test_sai_trang_thai_khong_de_xuat(db, seed, cap_quyen):
+def test_sai_trang_thai_khong_de_xuat(db, seed, grant_role):
     """Phiếu đã gửi duyệt thì chặn ngay từ bước đề xuất — đừng để người dùng bấm rồi mới vỡ."""
-    cap_quyen(seed.u_req_id, "purchase_request", scope="own", read=True, write=True)
+    grant_role(seed.u_req_id, "purchase_request", scope="own", read=True, write=True)
     _tao_ycmh(db, seed, created_by=seed.u_req_id, status="submitted")
     out = _de_xuat(db, seed, {"entity": "purchase_request", "code": "YCMH-TEST-1",
                               "changes": {"purpose": "Mua giấy A5"}})
@@ -80,10 +80,10 @@ def test_sai_trang_thai_khong_de_xuat(db, seed, cap_quyen):
     assert "proposal" not in out
 
 
-def test_truong_ngoai_whitelist_bi_chan(db, seed, cap_quyen):
+def test_truong_ngoai_whitelist_bi_chan(db, seed, grant_role):
     """YCBG không có `need_date` trong whitelist — model điền lạc trường phải bị chặn kèm
     danh sách trường hợp lệ, không được lẳng lặng bỏ qua trường lạ rồi sửa phần còn lại."""
-    cap_quyen(seed.u_req_id, "survey_request", scope="own", read=True, write=True)
+    grant_role(seed.u_req_id, "survey_request", scope="own", read=True, write=True)
     _tao_ycbg(db, seed, created_by=seed.u_req_id)
     out = _de_xuat(db, seed, {"entity": "survey_request", "code": "YCBG-TEST-1",
                               "changes": {"purpose": "Mục đích mới",
@@ -92,18 +92,18 @@ def test_truong_ngoai_whitelist_bi_chan(db, seed, cap_quyen):
     assert "proposal" not in out
 
 
-def test_gia_tri_trung_thi_khong_co_gi_de_sua(db, seed, cap_quyen):
-    cap_quyen(seed.u_req_id, "purchase_request", scope="own", read=True, write=True)
+def test_gia_tri_trung_thi_khong_co_gi_de_sua(db, seed, grant_role):
+    grant_role(seed.u_req_id, "purchase_request", scope="own", read=True, write=True)
     _tao_ycmh(db, seed, created_by=seed.u_req_id, purpose="Mua giấy A4")
     out = _de_xuat(db, seed, {"entity": "purchase_request", "code": "YCMH-TEST-1",
                               "changes": {"purpose": "  Mua giấy A4  "}})
     assert "trùng" in out["error"]
 
 
-def test_de_xuat_thanh_cong_tra_proposal_va_token_dung_chu(db, seed, cap_quyen):
+def test_de_xuat_thanh_cong_tra_proposal_va_token_dung_chu(db, seed, grant_role):
     """Happy path: khối `proposal` đủ hình cho FE + token Fernet buộc đúng người hỏi,
     và phiếu CHƯA bị đụng tới."""
-    cap_quyen(seed.u_req_id, "purchase_request", scope="own", read=True, write=True)
+    grant_role(seed.u_req_id, "purchase_request", scope="own", read=True, write=True)
     pr = _tao_ycmh(db, seed, created_by=seed.u_req_id, purpose="Mua giấy A4")
     out = _de_xuat(db, seed, {"entity": "purchase_request", "code": "ycmh-test-1",
                               "changes": {"purpose": "Mua giấy A5", "note": "Ghi chú cũ"}})
@@ -127,8 +127,8 @@ def test_de_xuat_thanh_cong_tra_proposal_va_token_dung_chu(db, seed, cap_quyen):
 
 # ── confirm_update ──────────────────────────────────────────────────────────────────────
 
-def test_xac_nhan_ghi_qua_dung_service_cua_form(db, seed, cap_quyen):
-    cap_quyen(seed.u_req_id, "purchase_request", scope="own", read=True, write=True)
+def test_xac_nhan_ghi_qua_dung_service_cua_form(db, seed, grant_role):
+    grant_role(seed.u_req_id, "purchase_request", scope="own", read=True, write=True)
     pr = _tao_ycmh(db, seed, created_by=seed.u_req_id)
     out = _de_xuat(db, seed, {"entity": "purchase_request", "code": "YCMH-TEST-1",
                               "changes": {"purpose": "Mua giấy A5",
@@ -145,8 +145,8 @@ def test_xac_nhan_ghi_qua_dung_service_cua_form(db, seed, cap_quyen):
     assert pr.updated_by == seed.u_req_id        # update_pr chạy thật -> audit trail có chủ
 
 
-def test_xac_nhan_ycbg_cung_ghi_duoc(db, seed, cap_quyen):
-    cap_quyen(seed.u_req_id, "survey_request", scope="own", read=True, write=True)
+def test_xac_nhan_ycbg_cung_ghi_duoc(db, seed, grant_role):
+    grant_role(seed.u_req_id, "survey_request", scope="own", read=True, write=True)
     sr = _tao_ycbg(db, seed, created_by=seed.u_req_id)
     out = _de_xuat(db, seed, {"entity": "survey_request", "code": "YCBG-TEST-1",
                               "changes": {"note": "Cần báo giá trước cuối tháng"}})
@@ -156,10 +156,10 @@ def test_xac_nhan_ycbg_cung_ghi_duoc(db, seed, cap_quyen):
     assert sr.note == "Cần báo giá trước cuối tháng"
 
 
-def test_token_cua_nguoi_khac_thi_403(db, seed, cap_quyen):
+def test_token_cua_nguoi_khac_thi_403(db, seed, grant_role):
     """Người B cầm token của người A bấm xác nhận -> 403, kể cả khi B cũng có quyền write."""
-    cap_quyen(seed.u_req_id, "purchase_request", scope="own", read=True, write=True)
-    cap_quyen(seed.u_nstm_id, "purchase_request", scope="all", read=True, write=True)
+    grant_role(seed.u_req_id, "purchase_request", scope="own", read=True, write=True)
+    grant_role(seed.u_nstm_id, "purchase_request", scope="all", read=True, write=True)
     _tao_ycmh(db, seed, created_by=seed.u_req_id)
     out = _de_xuat(db, seed, {"entity": "purchase_request", "code": "YCMH-TEST-1",
                               "changes": {"purpose": "Mua giấy A5"}})
@@ -169,8 +169,8 @@ def test_token_cua_nguoi_khac_thi_403(db, seed, cap_quyen):
     assert ei.value.status_code == 403
 
 
-def test_token_het_han_hoac_rac_thi_400(db, seed, cap_quyen):
-    cap_quyen(seed.u_req_id, "purchase_request", scope="own", read=True, write=True)
+def test_token_het_han_hoac_rac_thi_400(db, seed, grant_role):
+    grant_role(seed.u_req_id, "purchase_request", scope="own", read=True, write=True)
     pr = _tao_ycmh(db, seed, created_by=seed.u_req_id)
     user = db.get(User, seed.u_req_id)
 
@@ -188,10 +188,10 @@ def test_token_het_han_hoac_rac_thi_400(db, seed, cap_quyen):
     assert rac.value.status_code == 400
 
 
-def test_phieu_doi_trang_thai_giua_hai_buoc_thi_chan(db, seed, cap_quyen):
+def test_phieu_doi_trang_thai_giua_hai_buoc_thi_chan(db, seed, grant_role):
     """Đề xuất lúc Nháp nhưng phiếu được duyệt TRƯỚC khi người dùng bấm -> phải kiểm lại
     và chặn 400, token không phải giấy thông hành."""
-    cap_quyen(seed.u_req_id, "purchase_request", scope="own", read=True, write=True)
+    grant_role(seed.u_req_id, "purchase_request", scope="own", read=True, write=True)
     pr = _tao_ycmh(db, seed, created_by=seed.u_req_id)
     out = _de_xuat(db, seed, {"entity": "purchase_request", "code": "YCMH-TEST-1",
                               "changes": {"purpose": "Mua giấy A5"}})
@@ -205,10 +205,10 @@ def test_phieu_doi_trang_thai_giua_hai_buoc_thi_chan(db, seed, cap_quyen):
     assert pr.purpose == "Mua giấy A4"
 
 
-def test_token_gia_mang_truong_ngoai_whitelist_van_bi_chan(db, seed, cap_quyen):
+def test_token_gia_mang_truong_ngoai_whitelist_van_bi_chan(db, seed, grant_role):
     """Whitelist phải kiểm LẠI ở bước xác nhận — token tự chế nhét `status` vào changes
     không được phép lọt qua dù chữ ký Fernet hợp lệ."""
-    cap_quyen(seed.u_req_id, "purchase_request", scope="own", read=True, write=True)
+    grant_role(seed.u_req_id, "purchase_request", scope="own", read=True, write=True)
     pr = _tao_ycmh(db, seed, created_by=seed.u_req_id)
     user = db.get(User, seed.u_req_id)
 
@@ -221,13 +221,13 @@ def test_token_gia_mang_truong_ngoai_whitelist_van_bi_chan(db, seed, cap_quyen):
     assert pr.status == "draft"
 
 
-def test_yctt_print_texts_gop_cau_khong_sua_va_mo_ca_khi_da_duyet(db, seed, cap_quyen):
+def test_yctt_print_texts_gop_cau_khong_sua_va_mo_ca_khi_da_duyet(db, seed, grant_role):
     """YCTT: 3 câu bản in sửa được cả khi Đã duyệt (CR-149), và chỉ đè khóa người dùng đổi —
     câu không nhắc tới phải giữ nguyên sau khi gộp."""
     from app.modules.payment_request.model import PaymentRequest
     from app.modules.payment_request.service import parse_print_texts
 
-    cap_quyen(seed.u_req_id, "payment_request", scope="own", read=True, write=True)
+    grant_role(seed.u_req_id, "payment_request", scope="own", read=True, write=True)
     req = PaymentRequest(code="YCTT-TEST-1", supplier_code="NX", supplier_name="Nhà Xuất NX",
                          company_id=seed.company_id, status="approved",
                          print_texts=json.dumps({"content": "Thanh toán đợt 1",

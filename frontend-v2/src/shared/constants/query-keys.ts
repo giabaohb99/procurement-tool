@@ -39,6 +39,12 @@ export const queryKeys = {
      */
     surveyRequestProcess: (id: number) =>
       ['procurement', 'survey-requests', id, 'process'] as const,
+    /** Bản in NGƯỜI YÊU CẦU của YCBG (`/{id}/print`, P6-9 bao-CR-287). */
+    surveyRequestPrint: (id: number) =>
+      ['procurement', 'survey-requests', id, 'print'] as const,
+    /** Bộ bản in THU MUA tách theo NCC (`/{id}/print-purchasing`, P6-9 bao-CR-287). */
+    surveyRequestPurchasingPrint: (id: number) =>
+      ['procurement', 'survey-requests', id, 'print-purchasing'] as const,
     /** Bảng "Kết quả khảo sát đã duyệt" chọn được cho MỘT dòng của khung xử lý. */
     surveyRequestAvailableLines: (id: number, lineId: number, params?: Record<string, unknown>) =>
       ['procurement', 'survey-requests', id, 'process', 'available', lineId, params ?? {}] as const,

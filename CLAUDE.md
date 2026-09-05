@@ -144,10 +144,12 @@ tab _Mẫu thuế_ giống hệt bản v1 (CR-127). Nghĩa là **không còn mà
 "chặn nghiệp vụ chỉ còn Yêu cầu thanh toán" ở các bản CLAUDE.md trước nay đã sai, bỏ đi.
 _Quản lý Import_ (MC-6) từng bị hoãn nhưng khách **mở lại 25/08/2026**: hai màn `/system/imports`
 (+ `/:id`) và cụm `/system/exports` **đã chạy** (CR-186, Đ-13a/13b); phần còn dở của Đ-13 là **mở
-rộng tính năng**, không phải màn thiếu — xem `doc/erp/16-quan-ly-import-export-v2.md` §9. _Tiến độ báo giá_ và _Xử lý khảo sát_ từng quyết bỏ nhưng
-**đã SỐNG LẠI 29/08/2026** (CR-227 + CR-222) — xem đính chính ở `doc/erp/12-...` mục 2.7:
-Xử lý khảo sát là trang riêng `/procurement/survey-requests/:id/process`, Tiến độ báo giá ở
-`/procurement/survey-progress`, menu Thu mua v2 xếp đúng thứ tự bản v1.
+rộng tính năng**, không phải màn thiếu — xem `doc/erp/16-quan-ly-import-export-v2.md` §9. _Tiến độ báo giá_ và _Xử lý khảo sát_ từng quyết bỏ, **sống lại
+29/08/2026** (CR-227 + CR-222), rồi tới P6 hợp nhất chứng từ thì _Tiến độ báo giá_ **GỘP HẲN
+vào Tiến độ mua hàng** (bao-CR-284, 04/09/2026) — màn `/procurement/purchase-progress` nay có
+4 tab bước, bước _Đang so giá_ chính là nội dung màn cũ (`survey-quoting-panel.tsx`), route cũ
+`/procurement/survey-progress` chỉ còn chuyển hướng. Xử lý khảo sát vẫn là trang riêng
+`/procurement/survey-requests/:id/process`. Xem hai đính chính ở `doc/erp/12-...` mục 2.7.
 **Đã xong Đ-11** (CR-132 — số cũ CR-129 bị trùng nên đánh lại): Trang chủ có lại đủ 4 khối
 (_Top nhà cung cấp_, _Chi tiêu theo bộ phận_, _Trạng thái đơn hàng_, _Tuổi nợ_) và thao tác nhanh
 _Duyệt / Trả lại_ YCMH; **Tổng quan Tài chính** và **Tổng quan Kho** đã dựng xong. §1.8 của `13`

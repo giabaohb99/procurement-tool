@@ -54,10 +54,10 @@ def test_thieu_quyen_thi_denied(db, seed, contracts):
     assert "active" not in out
 
 
-def test_co_quyen_thi_dem_dung(db, seed, contracts, cap_quyen):
+def test_co_quyen_thi_dem_dung(db, seed, contracts, grant_role):
     """Có `contract.read` -> đếm đúng 1 còn hạn / 1 hết hạn / 1 unknown."""
     from app.modules.user.model import User
-    cap_quyen(seed.u_req_id, "contract", scope="all", read=True)
+    grant_role(seed.u_req_id, "contract", scope="all", read=True)
     user = db.get(User, seed.u_req_id)
     out = T.run_tool(db, user, "contract_count_by_status", {"group_by": "none"})
     assert out["total"] == 3
@@ -66,11 +66,11 @@ def test_co_quyen_thi_dem_dung(db, seed, contracts, cap_quyen):
     assert out["unknown"] == 1
 
 
-def test_dem_va_liet_ke_khop_nhau(db, seed, contracts, cap_quyen):
+def test_dem_va_liet_ke_khop_nhau(db, seed, contracts, grant_role):
     """Chốt lỗi vừa vá: hợp đồng KHÔNG ngày phải là unknown ở CẢ đếm lẫn liệt kê,
     nên số 'active' của count == tổng dòng của list active."""
     from app.modules.user.model import User
-    cap_quyen(seed.u_req_id, "contract", scope="all", read=True)
+    grant_role(seed.u_req_id, "contract", scope="all", read=True)
     user = db.get(User, seed.u_req_id)
     count = T.run_tool(db, user, "contract_count_by_status", {"group_by": "none"})
     listed = T.run_tool(db, user, "contract_list_by_expiry",
@@ -80,7 +80,7 @@ def test_dem_va_liet_ke_khop_nhau(db, seed, contracts, cap_quyen):
     assert all(it["end_date"] for it in listed["items"])
 
 
-def test_product_search_can_quyen_product(db, seed, cap_quyen):
+def test_product_search_can_quyen_product(db, seed, grant_role):
     """product_search: thiếu product.read -> denied; có thì tra được theo tên."""
     from app.modules.user.model import User
     db.add(Product(code="THUNG-01", name="Thùng Carton 5 lớp",
@@ -91,7 +91,7 @@ def test_product_search_can_quyen_product(db, seed, cap_quyen):
     denied = T.run_tool(db, user, "product_search", {"keyword": "thùng"})
     assert denied.get("denied") is True
 
-    cap_quyen(seed.u_req_id, "product", scope="all", read=True)
+    grant_role(seed.u_req_id, "product", scope="all", read=True)
     user = db.get(User, seed.u_req_id)
     ok = T.run_tool(db, user, "product_search", {"keyword": "thùng"})
     assert ok["total"] == 1
@@ -118,13 +118,13 @@ def history(db):
     return rows
 
 
-def test_top_suppliers_can_supplier_va_xep_hang(db, seed, history, cap_quyen):
+def test_top_suppliers_can_supplier_va_xep_hang(db, seed, history, grant_role):
     """Thiếu supplier.read -> denied; có thì xếp NCC-A (21000/2 lần) trên NCC-B (1000/1)."""
     from app.modules.user.model import User
     user = db.get(User, seed.u_req_id)
     assert T.run_tool(db, user, "top_suppliers_by_purchase", {}).get("denied") is True
 
-    cap_quyen(seed.u_req_id, "supplier", scope="all", read=True)
+    grant_role(seed.u_req_id, "supplier", scope="all", read=True)
     user = db.get(User, seed.u_req_id)
     out = T.run_tool(db, user, "top_suppliers_by_purchase", {"top_n": 5})
     items = out["items"]
@@ -134,10 +134,10 @@ def test_top_suppliers_can_supplier_va_xep_hang(db, seed, history, cap_quyen):
     assert items[1]["supplier_code"] == "B"
 
 
-def test_recent_purchases_sort_moi_nhat(db, seed, history, cap_quyen):
+def test_recent_purchases_sort_moi_nhat(db, seed, history, grant_role):
     """recent_purchases đòi product.read, trả theo ngày mới nhất trước."""
     from app.modules.user.model import User
-    cap_quyen(seed.u_req_id, "product", scope="all", read=True)
+    grant_role(seed.u_req_id, "product", scope="all", read=True)
     user = db.get(User, seed.u_req_id)
     out = T.run_tool(db, user, "recent_purchases", {"limit": 10})
     assert out["items"][0]["order_date"] == "2026-03-05"   # dòng mới nhất
@@ -146,10 +146,10 @@ def test_recent_purchases_sort_moi_nhat(db, seed, history, cap_quyen):
     assert out.get("note")
 
 
-def test_purchase_report_tong_chi_tieu(db, seed, history, cap_quyen):
+def test_purchase_report_tong_chi_tieu(db, seed, history, grant_role):
     """Báo cáo: tổng chi tiêu = 11000+10000+1000, đếm đúng mã hàng; NCC ẩn khi thiếu quyền."""
     from app.modules.user.model import User
-    cap_quyen(seed.u_req_id, "product", scope="all", read=True)
+    grant_role(seed.u_req_id, "product", scope="all", read=True)
     user = db.get(User, seed.u_req_id)
     out = T.run_tool(db, user, "purchase_report", {"group_by": "month"})
     assert out["total_spend"] == 22000.0
@@ -159,10 +159,10 @@ def test_purchase_report_tong_chi_tieu(db, seed, history, cap_quyen):
     assert len(out["by_month"]) == 3          # 3 tháng khác nhau
 
 
-def test_analytics_none_tong_gop(db, seed, history, cap_quyen):
+def test_analytics_none_tong_gop(db, seed, history, grant_role):
     """analytics_query không chia chiều -> một con số: tổng chi tiêu = 11000+10000+1000."""
     from app.modules.user.model import User
-    cap_quyen(seed.u_req_id, "product", scope="all", read=True)
+    grant_role(seed.u_req_id, "product", scope="all", read=True)
     user = db.get(User, seed.u_req_id)
     out = T.run_tool(db, user, "analytics_query",
                      {"metric": "total_amount", "dimension": "none"})
@@ -172,16 +172,16 @@ def test_analytics_none_tong_gop(db, seed, history, cap_quyen):
     assert cnt["value"] == 3
 
 
-def test_analytics_theo_ncc_can_supplier_va_xep_hang(db, seed, history, cap_quyen):
+def test_analytics_theo_ncc_can_supplier_va_xep_hang(db, seed, history, grant_role):
     """Chia theo NCC lộ danh tính NCC -> đòi supplier.read; xếp NCC-A (21000) trên NCC-B (1000)."""
     from app.modules.user.model import User
-    cap_quyen(seed.u_req_id, "product", scope="all", read=True)
+    grant_role(seed.u_req_id, "product", scope="all", read=True)
     user = db.get(User, seed.u_req_id)
     # Có product.read nhưng CHƯA có supplier.read -> chặn khi dimension=supplier
     assert T.run_tool(db, user, "analytics_query",
                       {"dimension": "supplier"}).get("denied") is True
 
-    cap_quyen(seed.u_req_id, "supplier", scope="all", read=True)
+    grant_role(seed.u_req_id, "supplier", scope="all", read=True)
     user = db.get(User, seed.u_req_id)
     out = T.run_tool(db, user, "analytics_query",
                      {"metric": "total_amount", "dimension": "supplier"})
@@ -190,7 +190,7 @@ def test_analytics_theo_ncc_can_supplier_va_xep_hang(db, seed, history, cap_quye
     assert out["items"][1]["group"] == "B"
 
 
-def test_recent_purchase_orders_gac_scope(db, seed, cap_quyen):
+def test_recent_purchase_orders_gac_scope(db, seed, grant_role):
     """PO gần nhất: đòi purchase_order.read; giá trị = tổng amount các dòng."""
     from app.modules.user.model import User
     po = PurchaseOrder(code="PO-001", supplier_code="A", supplier_name="NCC A",
@@ -206,7 +206,7 @@ def test_recent_purchase_orders_gac_scope(db, seed, cap_quyen):
     user = db.get(User, seed.u_req_id)
     assert T.run_tool(db, user, "recent_purchase_orders", {}).get("denied") is True
 
-    cap_quyen(seed.u_req_id, "purchase_order", scope="all", read=True)
+    grant_role(seed.u_req_id, "purchase_order", scope="all", read=True)
     user = db.get(User, seed.u_req_id)
     out = T.run_tool(db, user, "recent_purchase_orders", {"limit": 10})
     assert out["total"] == 1

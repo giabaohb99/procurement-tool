@@ -389,7 +389,7 @@ def test_cau_truy_van_viec_cua_toi_khong_dung_NULLS_LAST(db, seed):
 
 # ── Kéo thả đổi thứ tự các bước ─────────────────────────────────────────────
 
-def test_doi_thu_tu_buoc_khong_dam_vao_rang_buoc_duy_nhat(db, seed, person, cap_quyen):
+def test_doi_thu_tu_buoc_khong_dam_vao_rang_buoc_duy_nhat(db, seed, person, grant_role):
     """Hoán vị hai chặng phải đi HAI LƯỢT.
 
     `UNIQUE(flow_id, seq, branch_key)` nổ ngay giữa chừng nếu gán thẳng: có một
@@ -397,7 +397,7 @@ def test_doi_thu_tu_buoc_khong_dam_vao_rang_buoc_duy_nhat(db, seed, person, cap_
     """
     from app.modules.approval.flow_controller import ReorderIn, reorder_nodes
 
-    cap_quyen(ACTOR, "approval_flow", write=True)   # B-07: sửa luồng phải có grant thật
+    grant_role(ACTOR, "approval_flow", write=True)   # B-07: sửa luồng phải có grant thật
     flow = _luong(db, code="LUONG-DND")
     a = _buoc(db, flow, 1, person["a"])
     b = _buoc(db, flow, 2, person["b"])
@@ -410,7 +410,7 @@ def test_doi_thu_tu_buoc_khong_dam_vao_rang_buoc_duy_nhat(db, seed, person, cap_
     assert (b.seq, a.seq) == (1, 2)
 
 
-def test_gop_hai_buoc_vao_cung_mot_chang_thi_tach_nhanh_khac_nhau(db, seed, person, cap_quyen):
+def test_gop_hai_buoc_vao_cung_mot_chang_thi_tach_nhanh_khac_nhau(db, seed, person, grant_role):
     """Hai nhánh song song phải khác `branch_key`, nếu không cũng đâm ràng buộc.
 
     Đánh lại theo vị trí thay vì tin giá trị cũ — kéo một bước từ chặng khác
@@ -418,7 +418,7 @@ def test_gop_hai_buoc_vao_cung_mot_chang_thi_tach_nhanh_khac_nhau(db, seed, pers
     """
     from app.modules.approval.flow_controller import ReorderIn, reorder_nodes
 
-    cap_quyen(ACTOR, "approval_flow", write=True)
+    grant_role(ACTOR, "approval_flow", write=True)
     flow = _luong(db, code="LUONG-NHANH")
     a = _buoc(db, flow, 1, person["a"])
     b = _buoc(db, flow, 2, person["b"])
@@ -432,12 +432,12 @@ def test_gop_hai_buoc_vao_cung_mot_chang_thi_tach_nhanh_khac_nhau(db, seed, pers
     assert a.branch_key != b.branch_key
 
 
-def test_doi_thu_tu_thi_luong_len_ban_moi(db, seed, person, cap_quyen):
+def test_doi_thu_tu_thi_luong_len_ban_moi(db, seed, person, grant_role):
     """Phiếu ĐANG chạy giữ bản chụp riêng nên không bị ảnh hưởng — nhưng số bản
     vẫn phải tăng, không thì hai luồng khác hẳn nhau cùng mang một số."""
     from app.modules.approval.flow_controller import ReorderIn, reorder_nodes
 
-    cap_quyen(ACTOR, "approval_flow", write=True)
+    grant_role(ACTOR, "approval_flow", write=True)
     flow = _luong(db, code="LUONG-BAN")
     a = _buoc(db, flow, 1, person["a"])
     ban_cu = flow.version_no

@@ -42,7 +42,7 @@ def _doc(response) -> object:
 
 
 @pytest.fixture()
-def align(db, seed, cap_quyen):
+def align(db, seed, grant_role):
     """Một quản trị có đủ quyền `mailbox`, và một nhân sự để cấp hộp thư."""
     nhan_su = Employee(code="HC01", full_name="Nhân sự hành chính",
                        email="nhanvien@gmail.com", company_id=seed.company_id,
@@ -54,7 +54,7 @@ def align(db, seed, cap_quyen):
     db.add(governance_flow)
     db.commit()
 
-    cap_quyen(governance_flow.id, "mailbox", scope="all",
+    grant_role(governance_flow.id, "mailbox", scope="all",
               read=True, create=True, write=True, delete=True)
     return {"user": governance_flow, "emp": nhan_su, "seed": seed}
 
@@ -190,7 +190,7 @@ def test_loc_theo_tu_khoa_va_trang_thai(db, align):
 
 # ── 4 · Danh sách hộp thư CỦA TÔI ──────────────────────────────────────────
 
-def test_hop_thu_cua_toi_chi_ra_cai_minh_duoc_cap(db, align, cap_quyen):
+def test_hop_thu_cua_toi_chi_ra_cai_minh_duoc_cap(db, align, grant_role):
     """Đường mà hộp thoại Ban hành gọi. Người chưa được cấp thì thấy rỗng."""
     mb_ctl.create_mailbox(_payload(employee_ids=[align["emp"].id]),
                           db=db, user=align["user"])
@@ -199,7 +199,7 @@ def test_hop_thu_cua_toi_chi_ra_cai_minh_duoc_cap(db, align, cap_quyen):
                       password_hash="x", is_active=True)
     db.add(nguoi_khac)
     db.commit()
-    cap_quyen(nguoi_khac.id, "document", scope="all", read=True)
+    grant_role(nguoi_khac.id, "document", scope="all", read=True)
 
     mine = _doc(mb_ctl.my_mailboxes(db=db, user=align["user"]))
     assert [row["email"] for row in mine] == ["hr@gmail.com"]

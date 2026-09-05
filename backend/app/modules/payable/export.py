@@ -27,6 +27,7 @@ COLS = [
     Col("source_type", "Loại", width=12),
     Col("company", "Công ty", width=26),
     Col("po_code", "PO", width=18),
+    Col("misa_code", "Mã đơn Misa", width=15),
     Col("invoice_no", "Số hóa đơn", width=16),
     Col("created_at", "Ngày phát sinh", "datetime", 17),
     Col("due_date", "Hạn trả", "date", 12),
@@ -40,6 +41,7 @@ COLS = [
 
 def build_rows(db: Session, items: list[Payable]) -> list[dict]:
     company_name = dict(db.query(Company.id, Company.name).all())
+    misa_by_po = service.misa_code_by_po(db, items)
     rows = []
     for p in items:
         aging = service.aging_bucket(p.due_date)
@@ -49,6 +51,7 @@ def build_rows(db: Session, items: list[Payable]) -> list[dict]:
             "source_type": _SOURCE_LABEL.get(p.source_type, p.source_type),
             "company": company_name.get(p.company_id, ""),
             "po_code": p.po_code,
+            "misa_code": misa_by_po.get(p.po_id, ""),
             "invoice_no": p.invoice_no,
             # như màn hình: khoản không có created_at rơi về ngày phát sinh nhập tay
             "created_at": p.created_at or p.incur_date,

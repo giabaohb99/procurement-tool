@@ -10,6 +10,7 @@ import {
   Truck,
   UserCheck,
 } from 'lucide-react'
+import { Navigate } from 'react-router-dom'
 
 import type { ErpModule } from '@/app/router/module-definition'
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -54,27 +55,19 @@ export const procurementModule: ErpModule = {
       icon: ChartColumnBig,
       entity: 'report',
     },
+    // bao-CR-288: chạy thử luồng gộp P6 — YCBG đứng tên "Yêu cầu mua hàng" (nó
+    // chính là phiếu yêu cầu của luồng mới), mục YCMH cũ ẨN TẠM khỏi menu. Route
+    // /procurement/purchase-requests vẫn đăng ký để phiếu YCMH cũ mở từ link /
+    // thông báo còn đọc được. Khách chốt bỏ hẳn thì mới gỡ route + càn quét nhãn.
     {
-      label: 'Yêu cầu báo giá',
+      label: 'Yêu cầu mua hàng',
       path: appRoutes.procurement.surveyRequests,
       icon: ClipboardList,
       entity: 'survey_request',
       group: 'Mua hàng',
     },
-    {
-      label: 'Tiến độ báo giá',
-      path: appRoutes.procurement.surveyProgress,
-      icon: Truck,
-      entity: 'survey_request',
-      group: 'Mua hàng',
-    },
-    {
-      label: 'Yêu cầu mua hàng',
-      path: appRoutes.procurement.purchaseRequests,
-      icon: FileText,
-      entity: 'purchase_request',
-      group: 'Mua hàng',
-    },
+    // P6-6 (bao-CR-284): mục "Tiến độ báo giá" đã gộp vào "Tiến độ mua hàng"
+    // (bước "Đang so giá") — xem đính chính doc/erp/12 §2.7.
     {
       label: 'Đơn mua hàng',
       path: appRoutes.procurement.purchaseOrders,
@@ -240,10 +233,12 @@ export const procurementModule: ErpModule = {
       }),
     },
     {
+      // P6-6 (bao-CR-284): màn Tiến độ báo giá đã gộp vào Tiến độ mua hàng —
+      // đường dẫn cũ (bookmark, link trong thông báo) đưa thẳng về bước So giá.
       path: appRoutes.procurement.surveyProgress,
-      lazy: async () => ({
-        Component: (await import('./pages/survey-progress-page')).SurveyProgressPage,
-      }),
+      element: (
+        <Navigate to={`${appRoutes.procurement.purchaseProgress}?step=quoting`} replace />
+      ),
     },
     {
       path: appRoutes.procurement.surveyReport,

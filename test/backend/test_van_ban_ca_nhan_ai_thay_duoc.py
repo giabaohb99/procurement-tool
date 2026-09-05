@@ -49,7 +49,7 @@ def _people(db, seed, code: str, department_id=None):
 
 
 @pytest.fixture()
-def align(db, seed, cap_quyen):
+def align(db, seed, grant_role):
     """Một đơn nghỉ phép của Nam, đang chờ trưởng phòng duyệt.
 
     Kèm một CÔNG VĂN cùng pháp nhân làm đối chứng.
@@ -68,10 +68,10 @@ def align(db, seed, cap_quyen):
 
     #  Nam và đồng nghiệp: quyền đọc phạm vi CÔNG TY — đúng vai trò `vanban_xem`
     #  của dữ liệu thật. Đây chính là cái phạm vi làm lộ đơn nghỉ phép.
-    cap_quyen(tk_nam.id, "document", scope="company", read=True, create=True, write=True)
-    cap_quyen(tk_dong_nghiep.id, "document", scope="company", read=True)
+    grant_role(tk_nam.id, "document", scope="company", read=True, create=True, write=True)
+    grant_role(tk_dong_nghiep.id, "document", scope="company", read=True)
     #  HR: phạm vi TẤT CẢ — cố ý vẫn thấy.
-    cap_quyen(tk_hr.id, "document", scope="all", read=True)
+    grant_role(tk_hr.id, "document", scope="all", read=True)
 
     #  Luồng một bước, người duyệt là trưởng phòng (khai đích danh cho gọn; cách
     #  chọn theo phòng ban kiểm riêng ở `test_nguoi_duyet_theo_phong_ban.py`).

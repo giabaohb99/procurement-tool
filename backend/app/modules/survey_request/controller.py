@@ -14,9 +14,10 @@ from app.core.scoping import apply_scope, scope_condition
 
 from . import service
 from . import line_state
-from .model import (LS_RESURVEY, SurveyRequest, SurveyRequestLine,
-                    SurveyRequestOption)
-from .schema import LineStatusIn, RejectIn, SurveyRequestCreate, SurveyRequestUpdate
+from .model import (LS_CONFIRMED, LS_RESURVEY, SurveyRequest, SurveyRequestLine,
+                    SurveyRequestOption, SurveyRequestPo)
+from .schema import (LineConfirmIn, LineStatusIn, RejectIn, SurveyRequestCreate,
+                     SurveyRequestUpdate)
 
 router = APIRouter(prefix="/api/survey-requests", tags=["survey_request"])
 
@@ -27,6 +28,40 @@ def _dict(obj) -> dict:
         v = getattr(obj, c.key)
         d[c.key] = float(v) if isinstance(v, Decimal) else v
     return d
+
+
+def _resolve_products(db: Session, codes) -> dict[str, dict]:
+    """Tra danh mục sản phẩm theo `product_code` của các dòng — 2 query cho cả phiếu.
+
+    bao-CR-291: dòng YCBG chỉ lưu MÃ hàng (không lưu tên như `tab_pr_item.product_name`),
+    nên tên và ảnh gốc phải tra live. Tra live cũng đúng hơn: đổi tên trong danh mục là
+    phiếu hiện tên mới, không phải một bản chụp cũ.
+
+    Trả `{code: {"product_id", "product_name", "product_thumbnail_url"}}`; mã không khớp
+    danh mục thì không có khóa (caller tự mặc định rỗng/0).
+    """
+    from app.modules.attachment.model import FileLink, StoredFile
+    from app.modules.product.model import Product
+    wanted = {(c or "").strip() for c in codes if (c or "").strip()}
+    if not wanted:
+        return {}
+    by_code: dict[str, dict] = {}
+    for pid, code, name in db.query(Product.id, Product.code, Product.name).filter(
+            Product.code.in_(wanted)):
+        by_code.setdefault(code, {"product_id": pid, "product_name": name or "",
+                                  "product_thumbnail_url": ""})
+    pids = [info["product_id"] for info in by_code.values()]
+    if pids:
+        rows = (db.query(FileLink.entity_id, StoredFile.url)
+                .join(StoredFile, StoredFile.id == FileLink.file_id)
+                .filter(FileLink.entity == "product", FileLink.entity_id.in_(pids))
+                .order_by(FileLink.entity_id, FileLink.sort_order.asc(), FileLink.id.desc()))
+        thumb_by_pid: dict[int, str] = {}
+        for eid, url in rows:
+            thumb_by_pid.setdefault(eid, url)      # ảnh sort_order nhỏ nhất mỗi SP
+        for info in by_code.values():
+            info["product_thumbnail_url"] = thumb_by_pid.get(info["product_id"], "")
+    return by_code
 
 
 def _scope_with_named_head(user, profile):
@@ -70,10 +105,17 @@ def _out(db: Session, s: SurveyRequest, user=None, profile=None) -> dict:
     name_by_code = {}
     if codes:
         name_by_code = {e.code: e.full_name for e in db.query(Employee).filter(Employee.code.in_(codes)).all()}
+    product_by_code = _resolve_products(db, [ln.product_code for ln in lines])
     out_lines = []
     for x in lines:
         d = _dict(x)
         d["assignee_name"] = name_by_code.get(x.assignee, "")
+        # bao-CR-291: có mã hàng thì tên + ảnh gốc lấy từ danh mục; không có mã thì để
+        # rỗng, giao diện nhắc người lập mô tả vào ô Chi tiết thông số.
+        info = product_by_code.get((x.product_code or "").strip(), {})
+        d["product_id"] = info.get("product_id", 0)
+        d["product_name"] = info.get("product_name", "")
+        d["product_thumbnail_url"] = info.get("product_thumbnail_url", "")
         opts = service.valid_options_of(db, x.id)
         d["option_count"] = len(opts)
         d["has_chosen"] = any(o.is_chosen for o in opts)
@@ -83,6 +125,8 @@ def _out(db: Session, s: SurveyRequest, user=None, profile=None) -> dict:
         d["progress_tone"] = line_state.STATE_TONE.get(d["progress_state"], "gray")
         out_lines.append(d)
     base["lines"] = out_lines
+    # P6-8 (bao-CR-286): FE ẩn/hiện nút Chốt phương án + Tạo ĐMH theo cờ này (backend vẫn chặn 400).
+    base["merged_flow_enabled"] = service.merged_flow_enabled()
     return base
 
 
@@ -459,6 +503,32 @@ def set_line_assignee_(sid: int, line_id: int, data: dict, background_tasks: Bac
     return success(_out(db, service.get_sr(db, sid)), "Đã gán nhân sự phụ trách")
 
 
+@router.patch("/{sid}/lines/{line_id}/progress")
+def set_line_progress_(sid: int, line_id: int, data: dict, db: Session = Depends(get_db),
+                       user=Depends(require("survey_request", "process"))):
+    """bao-CR-289: NSTM cập nhật tiến độ dòng — ngày dự kiến có hàng + chi tiết tiến độ.
+    Đi endpoint riêng (không qua PATCH phiếu) vì người YC lưu phiếu không được đè hai ô này.
+    Body: {expected_date: "YYYY-MM-DD", progress_note: str, purchaser_note: str}.
+
+    bao-CR-291: gác thêm theo DÒNG. Quyền `survey_request.process` chỉ nói "là người thu
+    mua", không nói dòng nào của ai — thiếu nhịp này thì NSTM sửa được tiến độ dòng của
+    đồng nghiệp, ngược hẳn với luật vừa siết ở nút lên đơn (bao-CR-290).
+    """
+    _ensure_sr_editable(service.get_sr(db, sid))
+    ln = service.get_line(db, sid, line_id)
+    if not service.can_process_line(db, ln, get_perm_profile(db, user)):
+        raise HTTPException(403, "Dòng này do nhân sự thu mua khác phụ trách — không sửa tiến độ được")
+    if "expected_date" in data:
+        ln.expected_date = (data.get("expected_date") or "").strip()
+    if "progress_note" in data:
+        ln.progress_note = data.get("progress_note") or ""
+    if "purchaser_note" in data:
+        ln.purchaser_note = data.get("purchaser_note") or ""
+    ln.updated_by = user.id
+    db.commit()
+    return success(_out(db, service.get_sr(db, sid)), "Đã cập nhật tiến độ dòng")
+
+
 @router.patch("/{sid}/lines/{line_id}/status")
 def set_line_status_(sid: int, line_id: int, data: dict, db: Session = Depends(get_db),
                      user=Depends(require("survey_request", "write"))):
@@ -506,6 +576,7 @@ def _out_process(db: Session, s: SurveyRequest, user=None, profile=None) -> dict
                             if profile is not None else True)
         out_lines.append(d)
     base["lines"] = out_lines
+    base["merged_flow_enabled"] = service.merged_flow_enabled()   # P6-8: FE ẩn nút "Tạo đơn mua hàng"
     return base
 
 
@@ -643,6 +714,10 @@ _LINE_PUBLIC_FIELDS = [
     "id", "item_group", "requirement_detail", "other_requirement",
     "request_qty", "uom", "proposed_price", "is_completed", "line_status",
     "pr_id", "pr_code", "no_option",
+    # P6-1 (bao-CR-277): trường YCMH trên dòng phiếu gộp — không dính NCC nên trả được cho người YC.
+    "product_code", "warehouse", "required_date", "vat_pct", "qty_ordered", "qty_received",
+    # P6-3 (bao-CR-281): ĐMH gần nhất tạo thẳng từ dòng — mã đơn không lộ NCC.
+    "po_id", "po_code",
 ]
 
 
@@ -716,7 +791,10 @@ def _out_result(db: Session, s: SurveyRequest, user=None, profile=None) -> dict:
         d["request_qty"] = float(d["request_qty"] or 0)
         d["proposed_price"] = float(d["proposed_price"] or 0)
         opts = []
-        for o in service.valid_options_of(db, ln.id):
+        # P6-2 (bao-CR-280): dòng đã có mã hàng -> chỉ đưa người YC phương án khớp mã
+        # (giữ phương án chưa gắn mã + phương án đang chọn). Khung /process của NSTM
+        # KHÔNG lọc — NSTM phải thấy hết để sửa mã phương án gắn sai.
+        for o in service.code_visible_options(ln, service.valid_options_of(db, ln.id)):
             od = _opt_public(o, db)
             ref = _ncc_ref(o.supplier_code)
             od["ncc_ref"] = ref
@@ -731,6 +809,7 @@ def _out_result(db: Session, s: SurveyRequest, user=None, profile=None) -> dict:
         d["progress_tone"] = line_state.STATE_TONE.get(d["progress_state"], "gray")
         out_lines.append(d)
     base["lines"] = out_lines
+    base["merged_flow_enabled"] = service.merged_flow_enabled()   # P6-8: FE ẩn nút Chốt/Bỏ chốt
     return base
 
 
@@ -761,6 +840,26 @@ def choose_option_(sid: int, line_id: int, oid: int, db: Session = Depends(get_d
     return success(_out_result(db, s, user, get_perm_profile(db, user)), "Đã chọn phương án")
 
 
+@router.patch("/{sid}/lines/{line_id}/confirm-option")
+def confirm_line_option_(sid: int, line_id: int, body: LineConfirmIn,
+                         db: Session = Depends(get_db),
+                         user=Depends(require("survey_request", "write"))):
+    """P6-3 (bao-CR-281): người YC CHỐT phương án đang chọn của 1 dòng (khóa lựa chọn để
+    thu mua lên đơn thẳng) hoặc BỎ CHỐT. Cùng cổng quyền + cổng trạng thái với chọn phương án."""
+    s = service.get_sr(db, sid)
+    # P6-8 (bao-CR-286): tắt cờ thì chặn CHỐT mới, nhưng vẫn cho BỎ CHỐT — kẻo dòng
+    # đã chốt trước khi tắt bị khóa lựa chọn vĩnh viễn, không quay về luồng cũ được.
+    if body.confirmed and not service.merged_flow_enabled():
+        raise HTTPException(400, "Luồng gộp chứng từ đang TẮT — chọn phương án rồi tạo Yêu cầu mua hàng như luồng cũ")
+    if not _can_edit_own(db, s, user):
+        raise HTTPException(403, "Không có quyền chốt phương án cho phiếu này")
+    if s.status not in ("processing", "survey_done", "pr_created", "done"):
+        raise HTTPException(400, "Chỉ chốt phương án khi phiếu đang xử lý trở đi")
+    service.confirm_line_option(db, sid, line_id, body.confirmed, user.id)
+    return success(_out_result(db, s, user, get_perm_profile(db, user)),
+                   "Đã chốt phương án" if body.confirmed else "Đã bỏ chốt phương án")
+
+
 # ─────────────── Phase 5D: sinh PYC + hoàn thành ───────────────
 
 @router.post("/{sid}/create-prs")
@@ -777,6 +876,113 @@ def create_prs_(sid: int, background_tasks: BackgroundTasks, db: Session = Depen
     prs = service.create_prs(db, sid, user.id)
     return success({"created_prs": [{"id": p.id, "code": p.code} for p in prs], "sr": _out(db, s)},
                    f"Đã tạo {len(prs)} phiếu yêu cầu mua hàng")
+
+
+@router.post("/{sid}/create-pos")
+def create_pos_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
+                up=Depends(_purchaser)):
+    """P6-3 (bao-CR-281): thu mua tạo THẲNG đơn mua hàng từ các dòng đã chốt phương án
+    (gom theo NCC, bỏ bước YCMH). Cần thêm quyền tạo đơn mua hàng — gác thật ở backend
+    vì đây là hành động sinh chứng từ bên phân hệ ĐMH."""
+    user, _prof = up
+    if not service.merged_flow_enabled():
+        raise HTTPException(400, "Luồng gộp chứng từ đang TẮT — không tạo thẳng đơn mua hàng từ phiếu báo giá")
+    if not user_has_permission(db, user, "purchase_order", "create"):
+        raise HTTPException(403, "Không có quyền tạo đơn mua hàng")
+    s = service.get_sr(db, sid)
+    # bao-CR-290: chỉ lên đơn cho dòng mình được phân phối (Quản lý/Admin TM vẫn hết).
+    pos = service.create_pos_from_confirmed(db, sid, user.id, _prof)
+    from app.modules.user.model import User
+    reqs = db.query(User).filter(User.id == (s.created_by or user.id)).all()
+    _notify(db, reqs, f"[Đã lên đơn] Yêu cầu báo giá {s.code}",
+            f"Thu mua đã tạo {len(pos)} đơn mua hàng từ các dòng đã chốt phương án của phiếu {s.code}.",
+            f"/survey-requests/{s.id}", user.id, background_tasks, doc_code=s.code)
+    return success({"created_pos": [{"id": p.id, "code": p.code} for p in pos],
+                    "sr": _out_process(db, s, user, _prof)},
+                   f"Đã tạo {len(pos)} đơn mua hàng")
+
+
+# ─────────────────────── P6-9 (bao-CR-287): bản in phiếu gộp ───────────────────────
+
+def _chosen_option_by_line(db: Session, line_ids: list[int]) -> dict:
+    """Phương án ĐANG CHỌN của từng dòng — nguồn NCC/giá cho hai bản in."""
+    if not line_ids:
+        return {}
+    rows = db.query(SurveyRequestOption).filter(
+        SurveyRequestOption.survey_request_line_id.in_(line_ids),
+        SurveyRequestOption.is_chosen.is_(True)).all()
+    return {o.survey_request_line_id: o for o in rows}
+
+
+@router.get("/{sid}/print")
+def print_view_(sid: int, db: Session = Depends(get_db),
+                user=Depends(require("survey_request", "read"))):
+    """P6-9a: payload BẢN IN cho NGƯỜI YÊU CẦU — cả phiếu, mọi dòng (doc/erp/12 §P6-9a).
+
+    Cột NCC: dòng ĐÃ CHỐT phương án in NCC của phương án đã chốt — không vướng luật ẩn
+    NCC vì ở luồng gộp chính người yêu cầu là người chốt; dòng CHƯA chốt in cụm NCC người
+    yêu cầu tự nhập trên đầu phiếu (`suggested_supplier*`). Phương án chưa chốt vẫn ẩn NCC
+    như cũ — bản in chỉ mở đúng phương án đã khóa, không mở gì thêm."""
+    prof = get_perm_profile(db, user)
+    cond = _scope_with_named_head(user, prof)
+    q = db.query(SurveyRequest).filter(SurveyRequest.id == sid)
+    s = (q if cond is None else q.filter(cond)).first()
+    if not s:
+        raise HTTPException(403, "Ngoài phạm vi được phép xem")
+    base = _out(db, s)
+    chosen = _chosen_option_by_line(db, [ln["id"] for ln in base["lines"]])
+    for ln in base["lines"]:
+        o = chosen.get(ln["id"])
+        confirmed = ln.get("line_status") == LS_CONFIRMED and o is not None
+        ln["print_supplier_name"] = ((o.supplier_name or o.supplier_code)
+                                     if confirmed else (s.suggested_supplier or ""))
+        # 'confirmed' = NCC của phương án đã chốt · 'requester' = NCC người YC tự nhập
+        ln["print_supplier_source"] = "confirmed" if confirmed else "requester"
+        ln["chosen_price"] = float(o.snap_price_by_volume or 0) if confirmed else 0
+        ln["chosen_vat"] = float(o.snap_vat or 0) if confirmed else 0
+        ln["chosen_delivery_time"] = (o.snap_delivery_time or "") if confirmed else ""
+    return success(base)
+
+
+@router.get("/{sid}/print-purchasing")
+def print_purchasing_view_(sid: int, db: Session = Depends(get_db),
+                           user=Depends(require("survey_request", "read"))):
+    """P6-9b: payload BẢN IN cho THU MUA — bộ phiếu tách theo từng NCC (mỗi NCC một phiếu
+    gồm các dòng đã chốt về NCC đó) + danh sách ĐMH đã sinh từ phiếu (số đơn, NCC, trạng
+    thái). Gác `supplier.read` — người yêu cầu không thấy bản này (doc/erp/12 §P6-9b)."""
+    if not user_has_permission(db, user, "supplier", "read"):
+        raise HTTPException(403, "Bản in theo nhà cung cấp dành cho thu mua — cần quyền xem Nhà cung cấp")
+    s = service.get_sr(db, sid)
+    lines = service.lines_of(db, s.id)
+    chosen = _chosen_option_by_line(db, [ln.id for ln in lines])
+    groups: dict[str, dict] = {}
+    for ln in lines:
+        o = chosen.get(ln.id)
+        if ln.line_status != LS_CONFIRMED or o is None:
+            continue
+        key = o.supplier_code or o.supplier_name
+        g = groups.setdefault(key, {"supplier_code": o.supplier_code or "",
+                                    "supplier_name": o.supplier_name or "", "lines": []})
+        d = _dict(ln)
+        d["chosen_price"] = float(o.snap_price_by_volume or 0)
+        d["chosen_vat"] = float(o.snap_vat or 0)
+        d["chosen_delivery_time"] = o.snap_delivery_time or ""
+        d["chosen_product_name"] = o.snap_product_name or ""
+        d["chosen_quote_unit"] = o.snap_quote_unit or ""
+        g["lines"].append(d)
+    from app.modules.purchase_order.model import PurchaseOrder
+    po_ids = {r.po_id for r in db.query(SurveyRequestPo).filter(
+        SurveyRequestPo.survey_request_id == s.id).all()}
+    pos = []
+    if po_ids:
+        pos = [{"id": po.id, "code": po.code, "supplier_code": po.supplier_code,
+                "supplier_name": po.supplier_name, "status": po.status}
+               for po in db.query(PurchaseOrder).filter(PurchaseOrder.id.in_(po_ids))
+                           .order_by(PurchaseOrder.id).all()]
+    base = _dict(s)
+    base["groups"] = list(groups.values())
+    base["purchase_orders"] = pos
+    return success(base)
 
 
 @router.patch("/{sid}/lines/{line_id}/line-status")

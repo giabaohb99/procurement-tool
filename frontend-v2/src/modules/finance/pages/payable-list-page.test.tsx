@@ -201,6 +201,7 @@ describe('PayableListPage — xuất Excel (bao-CR-275)', () => {
           'source_type',
           'company',
           'po_code',
+          'misa_code',
           'invoice_no',
           'created_at',
           'due_date',

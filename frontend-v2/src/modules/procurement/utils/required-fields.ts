@@ -108,9 +108,19 @@ export function validatePurchaseRequest(
  * nhưng bản đang chạy đánh sao đỏ ở Phân loại — khách chốt lấy luật CHẶT: thiếu
  * Phân loại là không gửi duyệt được, vì phân loại quyết định thời gian chuẩn để
  * tính ngày trả kết quả.
+ *
+ * bao-CR-289: phiếu gộp kiêm luôn vai trò YCMH nên bắt thêm Số lượng + Kho nhận
+ * + Ngày cần hàng (bộ của YCMH cũ trừ Mã hàng — mã hàng để trống được, backend
+ * điền lúc chốt phương án khảo sát). `key` là đuôi khóa khoanh đỏ
+ * `line-${index}-${key}`, phải khớp case trong `survey-request-lines-table.tsx`.
  */
-export const SURVEY_REQUEST_LINE_REQUIRED: RequiredLineField<SurveyRequestLine>[] = [
-  { label: 'Phân loại', filled: (line) => hasText(line.item_group) },
+export const SURVEY_REQUEST_LINE_REQUIRED: (RequiredLineField<SurveyRequestLine> & {
+  key: string
+})[] = [
+  { key: 'item_group', label: 'Phân loại', filled: (line) => hasText(line.item_group) },
+  { key: 'request_qty', label: 'Số lượng dự kiến mua', filled: (line) => isPositive(line.request_qty) },
+  { key: 'warehouse', label: 'Kho nhận', filled: (line) => hasText(line.warehouse) },
+  { key: 'required_date', label: 'Ngày cần hàng', filled: (line) => hasText(line.required_date) },
 ]
 
 export function missingSurveyRequestLineFields(line: SurveyRequestLine): string[] {
@@ -123,7 +133,7 @@ export function validateSurveyRequest(
 ): string {
   if (!data.company_id) return 'Vui lòng chọn Công ty'
   if (!data.requester) return 'Vui lòng nhập Người yêu cầu'
-  if (!hasText(data.purpose)) return 'Vui lòng nhập Mục đích khảo sát'
+  if (!hasText(data.purpose)) return 'Vui lòng nhập Mục đích mua hàng'
   if (!data.lines.length) return 'Cần ít nhất 1 dòng sản phẩm cần khảo sát'
 
   if (!forSubmit) return ''
@@ -152,7 +162,9 @@ export function invalidSurveyRequestKeys(
   if (!forSubmit) return invalid
 
   for (const [index, line] of data.lines.entries()) {
-    if (missingSurveyRequestLineFields(line).length) invalid.add(`line-${index}-item_group`)
+    for (const field of SURVEY_REQUEST_LINE_REQUIRED) {
+      if (!field.filled(line)) invalid.add(`line-${index}-${field.key}`)
+    }
   }
   return invalid
 }

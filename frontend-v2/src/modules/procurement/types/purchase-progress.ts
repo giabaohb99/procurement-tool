@@ -11,6 +11,8 @@ export interface PurchaseProgressRow {
   po_code: string
   misa_code: string
   pr_code: string
+  /** P6-5: nguồn thứ hai — đơn LÊN THẲNG từ phiếu YCBG gộp (khi đó `pr_code` rỗng). */
+  survey_code: string
   company_id: number
   department: string
   supplier_code: string

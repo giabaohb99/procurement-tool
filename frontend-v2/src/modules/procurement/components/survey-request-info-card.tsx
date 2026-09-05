@@ -2,6 +2,7 @@ import type { Company } from '@/modules/hr/types/company'
 import type { Department } from '@/modules/hr/types/department'
 import type { Employee } from '@/modules/hr/types/employee'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { Checkbox } from '@/shared/ui/checkbox'
 import { DatePicker } from '@/shared/ui/date-picker'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
@@ -275,15 +276,30 @@ export function SurveyRequestInfoCard({
           )}
         </div>
 
+        {/* bao-CR-289: cờ Đơn gấp — mirror khối "Tùy chọn phiếu" của YCMH. */}
+        <div className="space-y-1.5 md:col-span-2">
+          <Label>Tùy chọn phiếu</Label>
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-destructive">
+            <Checkbox
+              checked={data.is_urgent}
+              disabled={!editing}
+              onCheckedChange={(checked) => onChange({ is_urgent: checked === true })}
+            />
+            Đơn gấp
+          </label>
+        </div>
+
+        {/* bao-CR-289: phiếu gộp là Yêu cầu mua hàng nên nhãn đổi theo YCMH cũ —
+            "Mục đích mua hàng" / "Nội dung mua hàng" (trước là Mục đích khảo sát / Ghi chú). */}
         <div className="space-y-1.5 md:col-span-2">
           <Label>
-            Mục đích khảo sát
+            Mục đích mua hàng
             <RequiredMark />
           </Label>
           {editing ? (
             <Textarea
               rows={3}
-              placeholder="Nhập mục đích cần khảo sát giá..."
+              placeholder="Nhập mục đích mua hàng..."
               value={data.purpose}
               aria-invalid={invalid?.has('purpose') || undefined}
               onChange={(event) => onChange({ purpose: event.target.value })}
@@ -294,11 +310,11 @@ export function SurveyRequestInfoCard({
         </div>
 
         <div className="space-y-1.5 md:col-span-2">
-          <Label>Ghi chú</Label>
+          <Label>Nội dung mua hàng</Label>
           {editing ? (
             <Textarea
               rows={3}
-              placeholder="Ghi chú thêm cho phiếu..."
+              placeholder="Nội dung mua hàng / ghi chú thêm cho phiếu..."
               value={data.note}
               onChange={(event) => onChange({ note: event.target.value })}
             />
@@ -306,6 +322,9 @@ export function SurveyRequestInfoCard({
             <ReadOnlyValue multiline>{data.note || '—'}</ReadOnlyValue>
           )}
         </div>
+
+        {/* P6-9 (bao-CR-287) chuyển đi: cụm NCC đề xuất nay nằm ở thẻ "Nhà cung cấp"
+            riêng (`survey-request-supplier-card.tsx`, bao-CR-289) cho khớp YCMH. */}
       </CardContent>
     </Card>
   )

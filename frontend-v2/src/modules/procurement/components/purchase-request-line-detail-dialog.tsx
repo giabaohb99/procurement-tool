@@ -1,11 +1,10 @@
-import { Image, Loader2, Pencil, Save, Trash2, Upload } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { Loader2, Pencil, Save } from 'lucide-react'
+import { useState } from 'react'
 
 import { PR_LINE_STATUS, labelOf } from '@/shared/constants/statuses'
 import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
-import { ConfirmIconButton } from '@/shared/ui/confirm-icon-button'
 import {
   Dialog,
   DialogContent,
@@ -19,16 +18,11 @@ import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { ReadOnlyValue } from '@/shared/ui/read-only-value'
 import { RequiredMark } from '@/shared/ui/required-mark'
-import { Skeleton } from '@/shared/ui/skeleton'
 import { Textarea } from '@/shared/ui/textarea'
 import { formatDate } from '@/shared/utils/format-date'
 import { formatMoney, formatQuantity, formatUnitPrice } from '@/shared/utils/format-money'
-import {
-  useDeletePurchaseRequestAttachment,
-  usePurchaseRequestAttachments,
-  useUploadPurchaseRequestAttachments,
-} from '../hooks/use-purchase-request-support'
 import type { PurchaseRequestItem } from '../types/purchase-request-detail'
+import { LineImageGallery } from './line-image-gallery'
 
 interface PurchaseRequestLineDetailDialogProps {
   item: PurchaseRequestItem | null
@@ -352,101 +346,5 @@ function LineField({
       </Label>
       {children}
     </div>
-  )
-}
-
-function LineImageGallery({
-  title,
-  entity,
-  entityId,
-  fallbackUrl,
-  canManage,
-}: {
-  title: string
-  entity: string
-  entityId: number
-  fallbackUrl?: string
-  canManage?: boolean
-}) {
-  const inputRef = useRef<HTMLInputElement>(null)
-  const { data, isLoading } = usePurchaseRequestAttachments(entity, entityId)
-  const upload = useUploadPurchaseRequestAttachments(entity, entityId)
-  const remove = useDeletePurchaseRequestAttachment(entity, entityId)
-  const images = (data ?? []).filter(
-    (file) => file.content_type.startsWith('image/') || /\.(jpe?g|png|webp|gif)$/i.test(file.filename),
-  )
-
-  return (
-    <section className="rounded-lg border p-3">
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <h4 className="flex items-center gap-2 text-sm font-semibold text-navy dark:text-foreground">
-          <Image className="size-4 text-primary" />
-          {title}
-        </h4>
-        {canManage && entityId > 0 && (
-          <>
-            <input
-              ref={inputRef}
-              className="hidden"
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={(event) => {
-                const files = Array.from(event.target.files ?? [])
-                if (files.length) void upload.mutateAsync({ files })
-                event.target.value = ''
-              }}
-            />
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={upload.isPending}
-              onClick={() => inputRef.current?.click()}
-            >
-              <Upload />
-              Thêm ảnh
-            </Button>
-          </>
-        )}
-      </div>
-      {isLoading && entityId > 0 && <Skeleton className="h-20 w-full" />}
-      {!isLoading && !images.length && fallbackUrl && (
-        <a href={fallbackUrl} target="_blank" rel="noreferrer">
-          <img className="size-20 rounded-md border object-cover" src={fallbackUrl} alt={title} />
-        </a>
-      )}
-      {!isLoading && !images.length && !fallbackUrl && (
-        <p className="text-xs text-muted-foreground">Chưa có ảnh.</p>
-      )}
-      {!!images.length && (
-        <div className="flex flex-wrap gap-2">
-          {images.map((file) => (
-            <div key={file.id} className="group relative">
-              <a href={file.url} target="_blank" rel="noreferrer">
-                <img
-                  className="size-20 rounded-md border object-cover"
-                  src={file.url}
-                  alt={file.filename}
-                />
-              </a>
-              {canManage && (
-                <div className="absolute right-1 top-1 rounded-md bg-background/90 opacity-0 shadow-sm transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-                  <ConfirmIconButton
-                    icon={Trash2}
-                    title="Xóa ảnh"
-                    confirmTitle={`Xóa ảnh ${file.filename}?`}
-                    confirmDescription="Ảnh đối chiếu sẽ bị gỡ khỏi dòng sản phẩm."
-                    confirmLabel="Xóa"
-                    destructive
-                    disabled={remove.isPending}
-                    onConfirm={() => void remove.mutateAsync(file.id)}
-                  />
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-    </section>
   )
 }

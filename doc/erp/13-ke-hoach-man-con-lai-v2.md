@@ -169,6 +169,19 @@ sẵn từ lâu mà **không route nào dùng**, nhìn qua tưởng xong; và b�
 > *Tiến độ báo giá* do khách trực tiếp dựng ở `survey-progress-page.tsx` (CR-227), menu Thu mua
 > cũng xếp lại đúng thứ tự bản v1. Mục này giữ nguyên làm dấu vết quyết định cũ.
 
+### 1.10 Tính năng làm ở BẢN CŨ (prod) — PHẢI mang sang v2
+
+Khách gửi 4 ticket ngày 05/09/2026, đều gấp trên bản đang chạy thật nên làm ở nhánh `main`
+trước. **Ghi ở đây vì cả bốn đều là tính năng mới, không phải vá lỗi hiển thị — làm xong ở
+prod là v2 nợ ngay bốn khoản.** Đóng khoản nào thì gạch dòng đó và ghi số CR của bản v2.
+
+| Ticket | Nội dung | Chỗ v2 phải sửa theo | CR prod | CR v2 |
+|---|---|---|---|---|
+| **22** | Tách trạng thái *Đang xử lý* của Yêu cầu mua hàng thành **ba mốc**, suy theo độ phủ đơn mua hàng + mã đơn MISA: đã lập ĐMH nhưng **chưa nhập mã MISA** → vẫn *Đang xử lý* · đã nhập MISA nhưng **mới phủ một phần mã hàng** → mốc giữa · **đủ mã hàng + đã nhập MISA** → mốc cuối | Bản đồ nhãn trạng thái + bộ lọc của màn danh sách YCMH ở v2, và **ba nhãn tiến độ dòng của luồng gộp** (`12` §P6-13) — hai chỗ này phải cùng một luật, kẻo cùng một đơn mà màn YCMH và màn YCBG nói hai kiểu | bao-CR-292 (xong, deploy prod 05/09/2026 — mã `purchasing`/`purchased`) | *(chưa)* |
+| **20** | *Ngày tiếp nhận* của YCMH tính từ lúc **Admin thu mua duyệt**, không phải lúc lập phiếu | `purchase-request-info-card.tsx` (ô đang cho sửa tay) và mọi chỗ lấy *Ngày tiếp nhận* làm mốc tính *Ngày QĐ có hàng* | bao-CR-293 (xong, deploy prod 05/09/2026) | *(chưa)* |
+| **21** | Thêm cột **Ngày cập nhật** ra ngoài bảng danh sách + sắp xếp theo ngày cập nhật gần nhất | Đây chính là khoản `DataTable` + `CrudListPage` **chưa có sắp xếp** — nền phải dựng trước, xem `14` | bao-CR-294 (xong, deploy prod 05/09/2026 — 14 bảng, bấm header cột) | *(chưa)* |
+| **23** | Báo cáo **Yêu cầu mua hàng** — bảng theo DÒNG hàng (18 cột) để NSTM soi mã nào chưa lên đơn | Màn *Báo cáo mua hàng* ở v2 (`purchase-report-page.tsx`) phải có thêm tab này | bao-CR-295 (xong, deploy prod 05/09/2026 — tab *Chi tiết YC mua hàng* + `GET /api/reports/pr-lines`; GRAM lấy từ `Product.specs`) + bao-CR-296 (trang riêng `/pr-lines-report` + mục sidebar, component dùng chung `PrLinesReport.tsx`) | *(chưa)* |
+
 ---
 
 ## 2. Quyết định thiết kế

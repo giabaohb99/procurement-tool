@@ -203,7 +203,7 @@ def test_bo_dem_va_bai_moi_nhat(db, bo_may):
     assert box["last_post"]["title"] == "Chủ đề 1"
 
 
-def test_box_an_bien_khoi_cay_voi_nguoi_thuong(db, bo_may, cap_quyen, seed):
+def test_box_an_bien_khoi_cay_voi_nguoi_thuong(db, bo_may, grant_role, seed):
     from app.modules.user.model import User
     bo_may.box.status = int(ForumBoardStatus.HIDDEN)
     db.commit()
@@ -212,7 +212,7 @@ def test_box_an_bien_khoi_cay_voi_nguoi_thuong(db, bo_may, cap_quyen, seed):
     assert groups[0]["children"] == []
     # admin (grant forum_post.read) vẫn thấy kèm status để dọn
     admin = db.get(User, seed.u_nstm_id)
-    cap_quyen(admin.id, "forum_post", scope="all", read=True)
+    grant_role(admin.id, "forum_post", scope="all", read=True)
     groups = service.list_boards(db, admin)
     assert [b["id"] for b in groups[0]["children"]] == [bo_may.box.id]
     assert groups[0]["children"][0]["status"] == int(ForumBoardStatus.HIDDEN)
@@ -255,7 +255,7 @@ def test_soi_noi_xep_theo_diem_7_ngay(db, bo_may):
     assert [p.id for p in latest] == [c.id, b.id, a.id]
 
 
-def test_sidebar_khong_lo_thread_cua_box_an(db, bo_may, cap_quyen, seed):
+def test_sidebar_khong_lo_thread_cua_box_an(db, bo_may, grant_role, seed):
     """Thread nằm trong box ẩn phải biến khỏi CẢ hai khối với người thường —
     admin thì vẫn thấy (thấy hết mới dọn được, cùng luật thread list)."""
     from app.modules.user.model import User
@@ -270,7 +270,7 @@ def test_sidebar_khong_lo_thread_cua_box_an(db, bo_may, cap_quyen, seed):
     assert trending == [] and latest == []
 
     admin = db.get(User, seed.u_nstm_id)
-    cap_quyen(admin.id, "forum_post", scope="all", read=True)
+    grant_role(admin.id, "forum_post", scope="all", read=True)
     trending, latest = service.list_highlight_threads(
         db, admin, get_perm_profile(db, admin))
     assert [x.id for x in trending] == [p.id]

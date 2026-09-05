@@ -266,27 +266,27 @@ class TestPhamViKhoanNoKhiTao:
     """bao-CR-274: endpoint tạo phiếu chặn payable_id NGOÀI phạm vi `payable` được xem —
     service lấy theo id nên gõ thẳng id qua API từng kéo được nợ pháp nhân khác vào phiếu."""
 
-    def test_go_id_ngoai_pham_vi_thi_403(self, db, seed, cap_quyen):
+    def test_go_id_ngoai_pham_vi_thi_403(self, db, seed, grant_role):
         from app.modules.payment_request import controller as C
         from app.modules.user.model import User
 
         p = _payable(db, seed)   # created_by = u_req
-        cap_quyen(seed.u_nstm_id, "payment_request", scope="all", create=True)
-        cap_quyen(seed.u_nstm_id, "payable", scope="own", read=True)  # chỉ thấy nợ mình tạo
+        grant_role(seed.u_nstm_id, "payment_request", scope="all", create=True)
+        grant_role(seed.u_nstm_id, "payable", scope="own", read=True)  # chỉ thấy nợ mình tạo
         data = PRequestCreate(request_date="2026-08-04", lines=[LineIn(payable_id=p.id)])
         with pytest.raises(HTTPException) as e:
             C.create_(data, db=db, user=db.get(User, seed.u_nstm_id))
         assert e.value.status_code == 403
         assert "ngoài phạm vi" in e.value.detail
 
-    def test_dung_pham_vi_thi_tao_binh_thuong(self, db, seed, cap_quyen):
+    def test_dung_pham_vi_thi_tao_binh_thuong(self, db, seed, grant_role):
         from app.modules.payment_request import controller as C
         from app.modules.payment_request.model import PaymentRequest
         from app.modules.user.model import User
 
         p = _payable(db, seed)
-        cap_quyen(seed.u_req_id, "payment_request", scope="all", create=True)
-        cap_quyen(seed.u_req_id, "payable", scope="own", read=True)
+        grant_role(seed.u_req_id, "payment_request", scope="all", create=True)
+        grant_role(seed.u_req_id, "payable", scope="own", read=True)
         data = PRequestCreate(request_date="2026-08-04", lines=[LineIn(payable_id=p.id)])
         C.create_(data, db=db, user=db.get(User, seed.u_req_id))
         assert db.query(PaymentRequest).count() == 1

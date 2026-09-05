@@ -266,8 +266,8 @@ function SurveyRequestListContent() {
   return (
     <PageContainer fill>
       <PageHeader
-        title="Yêu cầu báo giá"
-        description="Phiếu yêu cầu khảo sát giá (YCBG) trước khi lên yêu cầu mua hàng."
+        title="Yêu cầu mua hàng"
+        description="Phiếu yêu cầu mua hàng theo luồng gộp (mã YCBG) — khảo sát giá, chốt phương án rồi lên thẳng đơn mua hàng."
         actions={
           <div className="flex items-center gap-2">
             {canExport && (

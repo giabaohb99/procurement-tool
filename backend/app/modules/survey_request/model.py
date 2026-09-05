@@ -8,6 +8,11 @@ from app.core.base_model import Base, AuditMixin
 LS_RESURVEY = "resurvey"      # cần khảo sát lại
 LS_COMPLETED = "completed"    # hoàn thành
 LINE_STATUSES = ("", LS_RESURVEY, LS_COMPLETED)
+# P6-3 (bao-CR-281): "đã chốt phương án" — người YC khóa lựa chọn để thu mua lên đơn thẳng.
+# CỐ Ý không nằm trong LINE_STATUSES: bộ đó là whitelist của dropdown trạng thái dòng (Task 2),
+# còn chốt phương án có tiền điều kiện riêng (phải có phương án đang chọn) — đi qua
+# service.confirm_line_option, không cho set thẳng qua endpoint line-status.
+LS_CONFIRMED = "confirmed"
 
 
 class SurveyRequest(Base, AuditMixin):
@@ -32,12 +37,21 @@ class SurveyRequest(Base, AuditMixin):
     purpose: Mapped[str] = mapped_column(String(255), default="")
     request_date: Mapped[str] = mapped_column(String(10), default="")
     status: Mapped[str] = mapped_column(String(30), default="draft", index=True)  # draft|submitted|approved|rejected|processing|survey_done
+    # bao-CR-289: cờ "Đơn gấp" — mirror PurchaseRequest.is_urgent (luồng gộp phải đủ trường YCMH)
+    is_urgent: Mapped[bool] = mapped_column(Boolean, default=False)
     # BỎ: `assignee_id` (NSTM chính toàn phiếu). Việc khảo sát thuộc về DÒNG
     # (`SurveyRequestLine.assignee`) — xem CR-018 trong doc/tai-lieu-ky-thuat/change-log.md.
     # Cột đã drop khỏi DB bằng migration `a3f5c81d7e64`. ĐỪNG nhầm với
     # `PurchaseRequest.assignee_id` (YCMH) — trùng tên nhưng vẫn đang dùng.
     note: Mapped[str] = mapped_column(Text, default="")
     reject_reason: Mapped[str] = mapped_column(Text, default="")
+    # P6-9 (bao-CR-287): NCC do NGƯỜI YÊU CẦU đề xuất — mirror cụm `req` của YCMH
+    # (PurchaseRequest.suggested_supplier*, cũng header-level). Dùng cho BẢN IN luồng gộp:
+    # dòng CHƯA chốt phương án in cụm này ở cột NCC; dòng ĐÃ chốt in NCC của phương án đã chốt.
+    # Người yêu cầu tự nhập nên KHÔNG dính luật giấu NCC (không phải dữ liệu khảo sát của thu mua).
+    suggested_supplier: Mapped[str] = mapped_column(String(255), default="")
+    suggested_supplier_tax_code: Mapped[str] = mapped_column(String(50), default="")
+    suggested_supplier_contact: Mapped[str] = mapped_column(String(255), default="")
 
 
 class SurveyRequestLine(Base, AuditMixin):
@@ -70,6 +84,29 @@ class SurveyRequestLine(Base, AuditMixin):
     # Đồng bộ: is_completed = (line_status == LS_COMPLETED).
     line_status: Mapped[str] = mapped_column(String(30), default="", index=True)
     no_option: Mapped[bool] = mapped_column(Boolean, default=False)           # chốt rỗng: khảo sát nhưng không có phương án phù hợp
+
+    # P6-1 (bao-CR-277): phiếu này là CHỨNG TỪ SỐNG SÓT của vụ gộp YCBG + YCMH (Q4, doc/erp/12).
+    # Sáu cột dưới mang trường của YCMH lên dòng, đặt tên Y HỆT `PurchaseRequestItem` để P6-4
+    # (đồng bộ ngược từ ĐMH) chép được logic thay vì viết lại. Phiếu cũ để mặc định rỗng/0.
+    product_code: Mapped[str] = mapped_column(String(50), default="")         # mã hàng (rỗng = chưa có mã, chờ chốt phương án điền)
+    warehouse: Mapped[str] = mapped_column(String(100), default="")           # kho nhận
+    required_date: Mapped[str] = mapped_column(String(10), default="")        # ngày cần hàng (theo dòng)
+    vat_pct: Mapped[float] = mapped_column(Numeric(5, 2), default=0)          # % VAT theo dòng
+    qty_ordered: Mapped[float] = mapped_column(Numeric(18, 3), default=0)     # tổng SL đã đặt (P6-4 đồng bộ từ ĐMH)
+    qty_received: Mapped[float] = mapped_column(Numeric(18, 3), default=0)    # tổng SL đã nhận (P6-4 đồng bộ từ ĐMH)
+    # bao-CR-289: hai trường tiến độ còn thiếu của YCMH (PurchaseRequestItem.expected_date /
+    # progress_note). CỐ Ý không nằm trong SurveyRequestLineIn: NSTM ghi qua endpoint
+    # lines/{id}/progress riêng — để người YC lưu phiếu không xóa trắng dữ liệu của thu mua.
+    expected_date: Mapped[str] = mapped_column(String(10), default="")        # ngày dự kiến có hàng (NSTM cập nhật)
+    progress_note: Mapped[str] = mapped_column(Text, default="")              # chi tiết tiến độ
+    # bao-CR-291: ô ghi chú RIÊNG của thu mua (mirror PurchaseRequestItem.note). Không dùng
+    # chung `other_requirement`: ô đó của người yêu cầu, hai bên ghi đè nhau thì mất dữ liệu.
+    # Cùng đường ghi với hai cột tiến độ ở trên (endpoint lines/{id}/progress).
+    purchaser_note: Mapped[str] = mapped_column(Text, default="")             # ghi chú của thu mua
+    # P6-3 (bao-CR-281): ĐMH gần nhất tạo THẲNG từ dòng (bỏ bước YCMH) — đối xứng cặp pr_id/pr_code.
+    # Lịch sử đầy đủ nằm ở tab_survey_request_po (1 dòng có thể lên đơn nhiều lần — mua lại).
+    po_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    po_code: Mapped[str] = mapped_column(String(50), default="")
 
 
 class SurveyRequestOption(Base, AuditMixin):
@@ -123,3 +160,18 @@ class SurveyRequestPr(Base, AuditMixin):
     product_survey_line_id: Mapped[int] = mapped_column(BigInteger, default=0)  # nguồn khảo sát (đếm toàn hệ thống sau này)
     pr_id: Mapped[int] = mapped_column(BigInteger, index=True)
     pr_code: Mapped[str] = mapped_column(String(50), default="")
+
+
+class SurveyRequestPo(Base, AuditMixin):
+    """P6-3 (bao-CR-281): liên kết mỗi lần tạo ĐMH THẲNG từ 1 option đã chốt của 1 dòng YCBG
+    (luồng v2 bỏ bước YCMH). Đối xứng SurveyRequestPr; pr_code trên đơn mua hàng GIỮ NGUYÊN
+    nghĩa "mã YCMH nguồn" (ràng buộc P6-5) — nguồn YCBG đi bằng bảng này + PurchaseOrder.survey_code."""
+
+    __tablename__ = "tab_survey_request_po"
+
+    survey_request_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    survey_request_line_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    option_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
+    product_survey_line_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    po_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    po_code: Mapped[str] = mapped_column(String(50), default="")

@@ -101,11 +101,11 @@ def test_xem_mot_bai_ngoai_pham_vi_bi_403(db, bo_may):
     assert service.get_visible_post(db, bo_may.cung_phong, p.id).id == p.id
 
 
-def test_forum_admin_thay_het_khong_theo_audience(db, bo_may, cap_quyen):
+def test_forum_admin_thay_het_khong_theo_audience(db, bo_may, grant_role):
     """Quản trị phải thấy hết mới dọn được (mục 4.2 của `01`)."""
     p = _dang(db, bo_may.tac_gia, ForumAudience.DEPT)
     admin = bo_may.khac_cty
-    cap_quyen(admin.id, "forum_post", scope="all", read=True, write=True, delete=True)
+    grant_role(admin.id, "forum_post", scope="all", read=True, write=True, delete=True)
     assert p.id in _feed_ids(db, admin)
 
 
@@ -319,16 +319,16 @@ def test_bai_avatar_f10_rang_buoc_kind(db, bo_may):
 
 # ── F5. Kiểm duyệt: ẩn/xóa/khôi phục + chuông cho tác giả ──────────────────────
 
-def _admin(db, bo_may, cap_quyen):
+def _admin(db, bo_may, grant_role):
     admin = bo_may.khac_cty
-    cap_quyen(admin.id, "forum_post", scope="all", read=True, write=True, delete=True)
+    grant_role(admin.id, "forum_post", scope="all", read=True, write=True, delete=True)
     return admin
 
 
-def test_an_bai_khong_ly_do_bi_400(db, bo_may, cap_quyen):
+def test_an_bai_khong_ly_do_bi_400(db, bo_may, grant_role):
     """Điều kiện đủ F5: không có đường "ẩn lặng lẽ" (QĐ-D1)."""
     from app.modules.forum.model import ForumModerationAction
-    admin = _admin(db, bo_may, cap_quyen)
+    admin = _admin(db, bo_may, grant_role)
     p = _dang(db, bo_may.tac_gia, ForumAudience.PUBLIC)
     for reason in ("", "   "):
         with pytest.raises(HTTPException) as e:
@@ -340,11 +340,11 @@ def test_an_bai_khong_ly_do_bi_400(db, bo_may, cap_quyen):
     assert int(p.status) == int(ForumPostStatus.PUBLISHED)   # chưa gì đổi cả
 
 
-def test_an_bai_khoi_feed_nhung_tac_gia_va_admin_con_thay(db, bo_may, cap_quyen):
+def test_an_bai_khoi_feed_nhung_tac_gia_va_admin_con_thay(db, bo_may, grant_role):
     """Điều kiện đủ F5: bài ẩn biến khỏi feed mọi người, còn ở trang cá nhân
     tác giả và mắt admin — kèm nhãn lý do."""
     from app.modules.forum.model import ForumModerationAction, ForumModerationLog
-    admin = _admin(db, bo_may, cap_quyen)
+    admin = _admin(db, bo_may, grant_role)
     p = _dang(db, bo_may.tac_gia, ForumAudience.PUBLIC)
     service.moderate(db, admin, p, ForumModerationAction.HIDE, "sai quy định nội bộ")
 
@@ -360,10 +360,10 @@ def test_an_bai_khoi_feed_nhung_tac_gia_va_admin_con_thay(db, bo_may, cap_quyen)
         service.get_visible_post(db, bo_may.cung_phong, p.id)
 
 
-def test_chuyen_trang_thai_kiem_duyet_dung_luat(db, bo_may, cap_quyen):
+def test_chuyen_trang_thai_kiem_duyet_dung_luat(db, bo_may, grant_role):
     """HIDE chỉ từ PUBLISHED, RESTORE chỉ từ HIDDEN; REMOVE đi từ cả hai."""
     from app.modules.forum.model import ForumModerationAction
-    admin = _admin(db, bo_may, cap_quyen)
+    admin = _admin(db, bo_may, grant_role)
     p = _dang(db, bo_may.tac_gia, ForumAudience.PUBLIC)
     with pytest.raises(HTTPException) as e:                    # restore bài đang hiện
         service.moderate(db, admin, p, ForumModerationAction.RESTORE, "")
@@ -380,12 +380,12 @@ def test_chuyen_trang_thai_kiem_duyet_dung_luat(db, bo_may, cap_quyen):
     assert int(p.status) == int(ForumPostStatus.REMOVED)
 
 
-def test_xoa_kiem_duyet_giu_dong_va_tac_gia_het_duong_xoa(db, bo_may, cap_quyen):
+def test_xoa_kiem_duyet_giu_dong_va_tac_gia_het_duong_xoa(db, bo_may, grant_role):
     """REMOVE giữ dòng + nhật ký để đối soát; bài biến khỏi mọi mắt kể cả tác
     giả, và tác giả cũng không xóa vật lý được nữa (mất dấu là mất chứng cứ)."""
     from app.modules.forum import controller
     from app.modules.forum.model import ForumModerationAction
-    admin = _admin(db, bo_may, cap_quyen)
+    admin = _admin(db, bo_may, grant_role)
     p = _dang(db, bo_may.tac_gia, ForumAudience.PUBLIC)
     service.moderate(db, admin, p, ForumModerationAction.REMOVE, "vi phạm")
 
@@ -397,13 +397,13 @@ def test_xoa_kiem_duyet_giu_dong_va_tac_gia_het_duong_xoa(db, bo_may, cap_quyen)
     assert e.value.status_code == 404
 
 
-def test_an_bai_tac_gia_nhan_dung_mot_chuong(db, bo_may, cap_quyen):
+def test_an_bai_tac_gia_nhan_dung_mot_chuong(db, bo_may, grant_role):
     """Điều kiện đủ F5: tác giả nhận đúng MỘT chuông kèm lý do; admin tự xử bài
     mình thì không tự báo mình. `notified_at` ghi lên nhật ký để đối soát."""
     from app.modules.forum import controller, schema
     from app.modules.forum.model import ForumModerationLog
     from app.modules.notification.model import Notification
-    admin = _admin(db, bo_may, cap_quyen)
+    admin = _admin(db, bo_may, grant_role)
     p = _dang(db, bo_may.tac_gia, ForumAudience.PUBLIC)
     controller.hide_post(p.id, schema.ModerationIn(reason="đăng nhầm nhóm"), None,
                          db=db, user=admin)
@@ -443,10 +443,10 @@ def _pinned_ids(db, user):
     return [p.id for p in rows]
 
 
-def test_ghim_va_bo_ghim(db, bo_may, cap_quyen):
+def test_ghim_va_bo_ghim(db, bo_may, grant_role):
     """Ghim xong bài vào dải Thông báo mới → cũ theo MỐC GHIM (không theo lúc
     đăng); bỏ ghim là rời dải nhưng bài vẫn nguyên trên feed thường."""
-    admin = _admin(db, bo_may, cap_quyen)
+    admin = _admin(db, bo_may, grant_role)
     cu = _dang(db, bo_may.tac_gia, ForumAudience.PUBLIC, "thông báo cũ")
     moi = _dang(db, bo_may.tac_gia, ForumAudience.PUBLIC, "thông báo mới")
     assert _pinned_ids(db, bo_may.cung_phong) == []
@@ -468,21 +468,21 @@ def test_ghim_va_bo_ghim(db, bo_may, cap_quyen):
     assert cu.id in _feed_ids(db, bo_may.cung_phong)   # feed thường vẫn còn
 
 
-def test_dai_ghim_van_theo_luat_audience(db, bo_may, cap_quyen):
+def test_dai_ghim_van_theo_luat_audience(db, bo_may, grant_role):
     """Ghim không phá luật audience: thông báo phạm vi phòng ban ghim lên thì
     phòng khác vẫn không thấy — cả trên dải ghim lẫn feed."""
-    admin = _admin(db, bo_may, cap_quyen)
+    admin = _admin(db, bo_may, grant_role)
     p = _dang(db, bo_may.tac_gia, ForumAudience.DEPT, "họp phòng cuối tuần")
     service.set_post_pinned(db, admin, p, True)
     assert p.id in _pinned_ids(db, bo_may.cung_phong)
     assert p.id not in _pinned_ids(db, bo_may.khac_phong)
 
 
-def test_ghim_bai_an_bi_chan_va_bai_ghim_bi_an_roi_dai(db, bo_may, cap_quyen):
+def test_ghim_bai_an_bi_chan_va_bai_ghim_bi_an_roi_dai(db, bo_may, grant_role):
     """Ghim bài đang ẩn phải 400 (treo thông báo không ai đọc được); bài ghim
     bị ẩn SAU ĐÓ tự rời dải của người thường nhưng admin còn thấy để dọn."""
     from app.modules.forum.model import ForumModerationAction
-    admin = _admin(db, bo_may, cap_quyen)
+    admin = _admin(db, bo_may, grant_role)
     p = _dang(db, bo_may.tac_gia, ForumAudience.PUBLIC)
     service.moderate(db, admin, p, ForumModerationAction.HIDE, "sai chỗ")
     with pytest.raises(HTTPException) as e:

@@ -76,6 +76,15 @@ class Settings(BaseSettings):
     # `pr_dispatch_enabled`, lưu DB, đổi có hiệu lực ngay, không cần deploy).
     PR_DISPATCH_ENABLED: bool = True
 
+    # --- Luồng gộp chứng từ P6 (bao-CR-286) ---
+    # BẬT (mặc định): người yêu cầu CHỐT phương án ngay trên Yêu cầu báo giá và thu mua tạo
+    # THẲNG đơn mua hàng từ dòng đã chốt (bỏ bước YCMH trung gian — doc/erp/12 §P6).
+    # TẮT: về hành vi cũ — chọn phương án rồi tạo YCMH; nút Chốt/Tạo ĐMH ẩn, endpoint chặn 400.
+    # Đơn thẳng ĐÃ tạo trước khi tắt vẫn đồng bộ số lượng bình thường (P6-4 không gác cờ).
+    # Đây chỉ là giá trị DỰ PHÒNG; công tắc thật nằm ở màn "Cấu hình hệ thống" (key
+    # `merged_flow_enabled`, lưu DB, đổi có hiệu lực ngay, không cần deploy).
+    MERGED_FLOW_ENABLED: bool = True
+
     # --- Cảnh báo mở/tải tệp đính kèm văn bản (xem `document/file_access_log.py`) ---
     #  Bao nhiêu lượt mở/tải của CÙNG một người trong cửa sổ thì coi là bất
     #  thường. **0 = tắt hẳn phần cảnh báo**, vẫn ghi nhật ký như thường.

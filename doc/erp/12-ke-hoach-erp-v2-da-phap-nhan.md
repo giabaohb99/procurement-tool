@@ -55,9 +55,10 @@ nhưng phải sửa cho đa pháp nhân · **Gộp** = nhập vào màn khác ·
 | Tính năng | Việc | Giai đoạn | Ghi chú |
 |---|---|---|---|
 | Tổng quan thu mua | Nâng cấp | P2 | Lọc theo pháp nhân đang làm việc |
-| **Yêu cầu mua hàng (chứng từ hợp nhất)** | Nâng cấp lớn | P6 | Dựng trên `tab_survey_request` (luồng YCBG), thêm mã hàng và các trường YCMH lên dòng; phần lớn không bắt buộc |
+| **Yêu cầu mua hàng (chứng từ hợp nhất)** | Nâng cấp lớn | P6 | Dựng trên `tab_survey_request` (luồng YCBG), thêm mã hàng và các trường YCMH lên dòng; phần lớn không bắt buộc. **Đủ trường + bố cục như YCMH cũ từ 04/09/2026 (bao-CR-289)**: mã hàng (picker + lịch sử mua hàng), kho nhận, ngày cần hàng, VAT %, thành tiền + 3 dòng tổng, tiến độ nhận/đặt + ngày dự kiến (NSTM cập nhật qua popup dòng), đơn gấp, cụm NCC đề xuất thành mục riêng; gửi duyệt bắt buộc thêm SL/kho nhận/ngày cần hàng mỗi dòng, mã hàng vẫn tùy chọn |
 | Chọn phương án nhà cung cấp trên phiếu | Mới | P6 | Chưa có mã thì phương án gợi ý mã; có mã rồi thì lọc phương án theo mã |
 | **Chọn phương án là tạo thẳng đơn mua hàng** | Mới | P6 | Nhân sự thu mua tạo; bỏ hẳn bước sinh YCMH trung gian |
+| Bản in phiếu gộp: bản người yêu cầu + bộ bản in theo NCC cho thu mua | Mới | P6 | Xem P6-9 (bổ sung 04/09/2026) |
 | ~~Yêu cầu mua hàng bản cũ (`tab_purchase_request`)~~ | **Đóng băng chỉ đọc** | P6 | Giữ để tra cứu, không tạo mới, không sửa — nhờ vậy **không phải chuyển đổi dữ liệu** |
 | Đơn mua hàng (gồm nhận hàng) | Nâng cấp | P2 | Kiểm tra chéo pháp nhân khi lấy dòng từ yêu cầu |
 | Tiến độ mua hàng | Nâng cấp | P6 | Nuốt luôn phần tiến độ báo giá thành một bộ lọc |
@@ -134,6 +135,13 @@ chỉ là thiếu màn.
   > (`survey-progress-page.tsx`, route `/procurement/survey-progress`) và xếp lại menu Thu mua
   > theo đúng bản v1 — quyết định gộp vào Tiến độ mua hàng coi như **ĐẢO**. Khi P6 hợp nhất
   > chứng từ thì xem lại: hoặc giữ hai màn với chú thích cách đếm, hoặc quay về phương án gộp.
+  >
+  > **ĐÍNH CHÍNH 04/09/2026 (bao-CR-284, P6-6):** tới lúc P6 hợp nhất chứng từ, khách chốt
+  > **QUAY VỀ phương án gộp** đúng như dòng trên đã hẹn. **Tiến độ mua hàng** nay có 4 tab bước
+  > (*Tất cả đơn hàng · Đang so giá · Đang mua · Đang nhận hàng*); màn **Tiến độ báo giá** rút
+  > khỏi menu v2, nội dung của nó thành panel bước *Đang so giá* (`survey-quoting-panel.tsx`),
+  > route cũ `/procurement/survey-progress` chuyển hướng về bước đó nên bookmark không gãy.
+  > Backend `survey_progress` **giữ nguyên** vì `frontend/` v1 vẫn dùng tới P6-8.
 - **Màn xử lý Yêu cầu báo giá** (798 dòng ở bản cũ). Nhiệm vụ của nó — nhặt phương án nhà cung cấp
   rồi đẩy sang Yêu cầu mua hàng — biến mất theo Q4: chọn phương án xảy ra **ngay trong chi tiết
   phiếu** và đi **thẳng ra đơn mua hàng**, không còn bước chuyển phiếu nào ở giữa.
@@ -273,9 +281,16 @@ liệu cũ** — đó là chỗ rẻ hơn hẳn so với hướng cũ.
 - **P6-1.** Thêm trường của YCMH lên `tab_survey_request_line`: **mã hàng**, kho nhận, ngày cần
   hàng, VAT dòng, `qty_ordered`, `qty_received`. Các trường nghiệp vụ khác (phân loại, số lượng,
   đơn vị, giá đề xuất, người phụ trách, trạng thái dòng) **đã có sẵn**.
+  *— XONG 04/09/2026 (bao-CR-277, migration `1c5d9c4ee981`): tên cột đặt y hệt
+  `tab_purchase_request_item` để P6-4 chép logic; `qty_ordered`/`qty_received` không
+  client-writable (P6-4 ghi); whitelist `_LINE_PUBLIC_FIELDS` đã khai 6 trường.*
 - **P6-2.** Khối phương án: dòng **chưa có mã** thì phương án gợi ý mã (`system_product_code` đã có
   sẵn trên `tab_survey_request_option`), chọn xong điền mã lên dòng; dòng **đã có mã** thì lọc
   phương án theo đúng mã đó.
+  *— XONG 04/09/2026 (bao-CR-280): `choose_option` điền mã khi chọn / gỡ mã khi bỏ chọn
+  đúng phương án đã điền / chặn 400 khi chọn chéo mã; lọc ở `code_visible_options` chỉ áp
+  cho khung `/result` (GIỮ phương án chưa gắn mã + phương án đang chọn), khung `/process`
+  của NSTM cố ý không lọc để còn sửa phương án gắn sai mã.*
 - **P6-3.** **Phân vai chốt phương án — CHỐT 24/08/2026.** Tách rõ hai hành động:
   *(a)* **Bộ phận yêu cầu CHỐT phương án** cho từng dòng (mỗi dòng chọn đúng một phương án NCC
   trong số phương án thu mua đã khảo sát). *(b)* **Nhân sự thu mua tạo thẳng đơn mua hàng** từ các
@@ -285,16 +300,144 @@ liệu cũ** — đó là chỗ rẻ hơn hẳn so với hướng cũ.
   cầu, thu mua chỉ khảo sát + thực thi đơn.)* Kéo theo: thêm quyền/hành động "chốt phương án" cho
   vai trò bộ phận yêu cầu, và một bước trạng thái dòng "đã chốt phương án" trước bước "đã lên đơn".
   Chỉnh máy trạng thái phiếu và trạng thái dòng cho khớp.
+  *— XONG 04/09/2026 (bao-CR-281): endpoint `confirm-option` chốt/bỏ chốt từng dòng (đòi dòng
+  đang chọn phương án; `LS_CONFIRMED` nằm NGOÀI dropdown trạng thái dòng, chỉ set qua endpoint);
+  `create-pos` gom dòng đã chốt theo NCC → mỗi NCC một ĐMH nháp, giá/VAT/kho/ngày giao từ snapshot,
+  `pr_code` để rỗng + tham chiếu nguồn qua `PurchaseOrder.survey_code` và bảng lịch sử
+  `tab_survey_request_po` (đúng luật P6-5 "thêm tham chiếu mới, không sửa nghĩa `pr_code`");
+  sau khi lên đơn dòng tự bỏ chọn + bỏ chốt để còn mua lại, ghi `po_id/po_code` và trạng thái
+  tiến độ "Đã lên đơn". Migration `05d254cf1755`; 13 test backend + UI v2 (nút Chốt/Bỏ chốt ở
+  thẻ kết quả, nút "Tạo đơn mua hàng" ở màn Xử lý khảo sát, gác `purchase_order.create`).*
+  *— BỔ SUNG 05/09/2026 (bao-CR-291): dòng YCBG gánh vai trò dòng YCMH thì popup chi tiết dòng
+  phải đủ như popup cũ, mà nó hụt 5 thứ — ảnh gốc sản phẩm, đính kèm bị khóa theo chế độ sửa,
+  tên vật tư, trạng thái/mã ĐMH của dòng, ô ghi chú riêng của thu mua. Vá cả 5 (chi tiết ở dòng
+  change-log cùng mã). **Luật đặt ra ở đây: tên vật tư đi CẶP với mã hàng** — dòng không lưu tên,
+  có mã thì tra danh mục LIVE (đổi tên trong danh mục là dòng cũ đổi theo), không mã thì ô tên
+  khóa hẳn và người lập mô tả vào ô Chi tiết thông số. Kéo theo: chọn mã hàng không còn ghi đè ô
+  thông số, và hai chỗ sinh ĐMH/YCMH phải tra tên danh mục trước khi rơi về chữ "Sản phẩm".*
 - **P6-4.** **Đồng bộ ngược** `qty_ordered` · `qty_received` · `line_status` từ đơn mua hàng về
   `tab_survey_request_line`. **Đây là chỗ dễ vỡ nhất của cả kế hoạch** — hôm nay nó đang đồng bộ về
   `tab_purchase_request_item`, và màn Tiến độ mua hàng đọc chính mấy cột đó. Viết test trước khi
   sửa.
+  *— XONG 04/09/2026 (bao-CR-282): `sync_lines_from_purchase_orders(db, survey_code)` trong
+  service YCBG chép luật của `sync_from_purchase_orders` bên YCMH (khớp `product_code`, đơn tính
+  từ duyệt trở đi, tạm ngưng dùng mức trước ngưng, hủy không cộng SL, "completed" = `LS_COMPLETED`
+  nên tiến độ dòng tự ra Hoàn thành), móc `_sync_survey` vào đủ 6 điểm của service ĐMH song song
+  `_sync_pr` + gọi cuối `create-pos` (dòng có mã vừa lên đơn ra ngay "Chưa đặt hàng"). KHÁC YCMH
+  ba chỗ cố ý: dòng mã RỖNG bỏ qua (không có khóa khớp); dòng chưa từng có đơn để yên (không có mã
+  `no_po`); `resurvey`/`confirmed` là mã người yêu cầu giữ — sync chỉ ghi SL. Phiếu tự Hoàn thành
+  khi mọi ĐMH thẳng xong, có gác NGUỒN KÉP hai chiều (đơn thẳng chưa xong chặn `auto_complete_from_pr`
+  và ngược lại — làm sớm một phần P6-5). 15 test mới + 13 test P6-3 cập nhật 1 khẳng định.*
 - **P6-5.** Giai đoạn chuyển tiếp **hai nguồn cùng tồn tại**: đơn cũ vẫn bám YCMH cũ, đơn mới bám
   phiếu gộp. Tiến độ mua hàng phải đọc được cả hai; `pr_code` trên đơn mua hàng **giữ nguyên ý
   nghĩa**, thêm tham chiếu mới chứ không sửa tại chỗ.
+  *— XONG 04/09/2026 (bao-CR-283): màn Tiến độ mua hàng (`purchase_progress`) đọc cả hai nguồn.
+  Cổng quyền xem/xuất thêm vế `survey_request.read`/`.export` (luồng gộp không còn YCMH); phạm vi
+  lùi khi thiếu `purchase_order.read` HỢP hai vế `pr_code IN (YCMH trong phạm vi)` OR `survey_code
+  IN (YCBG trong phạm vi)` — nới nguồn không nới người, rỗng cả hai vẫn ra danh sách rỗng. Hàng
+  dữ liệu (`row_values`) + sort/lọc điều kiện + tìm `q=` + Excel thêm `survey_code` ("Mã YCBG",
+  không thuộc cụm che NCC); file xuất màn ĐMH mượn chung `COLS` nên `survey_code` vào
+  `_SKIP_FROM_PROGRESS` để khối dòng không đổi. v2 thêm cột "Mã YCBG" cạnh "Mã PYC". Nhân tiện
+  test bắt được lỗi cũ: vế `POItem.nspt` trong tìm kiếm — cột không tồn tại, mọi tìm `q=` của màn
+  này 500 — đã gỡ. 12 test mới (`test_p6_5_tien_do_hai_nguon.py`).*
 - **P6-6.** Gộp hai màn tiến độ thành **Tiến độ mua hàng** có bộ lọc theo bước.
+  *— XONG 04/09/2026 (bao-CR-284): một màn 4 tab bước. Bước "Đang so giá" là panel tách từ màn
+  Tiến độ báo giá cũ, gọi `/api/survey-progress?phase=quoting` (chỉ dòng chưa hoàn thành, chưa
+  tạo YCMH, chưa lên đơn thẳng); hai bước còn lại là `step=purchasing|receiving` trên
+  `/api/purchase-progress` (nhóm mã `PO_PROGRESS_STATUS`; `paused`/`cancelled` chỉ hiện ở
+  "Tất cả"). Nhân tiện vá `_state_cond` của survey_progress: hai nhãn P6-3 ("Đã chốt phương án",
+  "Đã lên đơn") trước đây lọc ra None lặng lẽ, và dòng lên đơn thẳng lọt vào các nhãn phía sau.
+  Màn Tiến độ báo giá rời menu v2, route cũ chuyển hướng — xem đính chính §2.7. 7 test backend
+  (`test_p6_6_gop_man_tien_do.py`) + 13 test panel.*
 - **P6-7.** Phiếu khảo sát (chi tiết) port sang v2 — giữ nguyên vai trò **sổ giá**.
+  *— XONG 04/09/2026 (bao-CR-285): rà lại thì việc này ĐÃ XONG TỪ TRƯỚC ở CR-091
+  (`survey-detail-page.tsx` + `survey-quoting-panel.tsx`), vai trò sổ giá giữ nguyên — chỉ xác
+  nhận và đóng dòng, không phát sinh mã mới.*
 - **P6-8.** Bật bằng cờ tính năng; `frontend/` giữ nguyên hai màn cũ cho tới khi v2 chạy ổn.
+  *— XONG 04/09/2026 (bao-CR-286): cờ `merged_flow_enabled` khai đủ ba tầng (REGISTRY
+  `app_settings` + `.env` dự phòng + màn Cấu hình hệ thống, nhóm workflow, mặc định BẬT). Tắt cờ
+  chặn CHỐT phương án mới + chặn tạo thẳng ĐMH (400 ở controller); vẫn cho BỎ chốt (gỡ dòng kẹt
+  khóa) và vẫn cho chọn phương án / tạo YCMH — đúng "tắt cờ là về hành vi cũ" của điều kiện đủ.
+  Ba payload YCBG mang cờ để v2 ẩn nút Chốt / Tạo ĐMH theo backend. 8 test
+  (`test_p6_8_co_tinh_nang_luong_gop.py`).*
+  *— BỔ SUNG 05/09/2026 (bao-CR-290): cờ mới chỉ gác chiều BẬT, còn đường CŨ thì bỏ ngỏ — khách
+  chạy thử thấy nút "Tạo yêu cầu mua" vẫn nằm đó và hỏi đúng chỗ đau. Nay cờ BẬT thì ẩn nút đó ở
+  chi tiết YCBG và đổi ba câu hướng dẫn ở thẻ Kết quả khảo sát sang ngôn ngữ luồng gộp (chốt
+  phương án / lên đơn mua hàng); cờ TẮT giữ nguyên đường YCMH làm lối lui. Kèm một lỗ quyền
+  cùng đợt: nút "Tạo đơn mua hàng" trước chỉ gác `purchase_order.create` nên NSTM này lên đơn
+  được cho dòng của NSTM khác — `create_pos_from_confirmed` nay lọc dòng đã chốt qua
+  `can_process_line` và trả **403** khi mọi dòng đã chốt đều của người khác (khác 400 "chưa có
+  dòng nào chốt"); v2 đếm số dòng đã chốt từ `/process` theo `can_process` và ẩn nút khi bằng 0.
+  5 test (`test_p6_10_len_don_theo_nstm.py`) + 3 test thẻ kết quả.*
+- **P6-9.** **Bản in phiếu gộp — bổ sung 04/09/2026** (bản đầu của P6 sót đầu việc này; khách chốt
+  hai bản in theo hai đối tượng):
+  - *(a)* **Bản in cho người yêu cầu** — in cả phiếu, gom hết các dòng; cột nhà cung cấp in **NCC
+    của phương án đã chốt** với dòng đã chốt, dòng chưa chốt in **thông tin NCC người yêu cầu tự
+    nhập** (cụm `req` hiện hành). Không vướng luật giấu NCC cũ: ở luồng gộp, bộ phận yêu cầu là
+    người chốt phương án nên vốn đã thấy NCC các phương án.
+  - *(b)* **Bản in cho thu mua** — từ một phiếu in ra **bộ bản in tách theo từng NCC** (mỗi NCC một
+    phiếu gồm các dòng đã chốt về NCC đó), kèm **danh sách đơn mua hàng đã sinh từ yêu cầu** (số
+    đơn, NCC, trạng thái). Gác quyền `supplier.read` — người yêu cầu không thấy bản này.
+  - Layout kế thừa bản in YCMH hiện có ở v2 (`purchase-request-print-page.tsx`); phiếu in theo
+    pháp nhân của chứng từ vẫn là việc của **P8-2**, không gộp vào đây.
+
+  *— XONG 04/09/2026 (bao-CR-287): cụm `suggested_supplier` / `_tax_code` / `_contact` trên đầu
+  phiếu YCBG (migration `31bcabd9c377`, nhập ở thẻ thông tin, đối xứng cụm `req` của YCMH). Hai
+  endpoint: `GET /{sid}/print` (bản (a) — dòng đã chốt in NCC + giá/VAT/giao hàng của phương án
+  đã chốt, dòng chưa chốt in NCC đề xuất và KHÔNG lộ giá phương án chưa khóa; qua
+  `_scope_with_named_head`) và `GET /{sid}/print-purchasing` (bản (b) — gác `supplier.read`, gom
+  dòng đã chốt theo từng NCC + danh sách ĐMH sinh từ phiếu qua `tab_survey_request_po`). v2 hai
+  trang in tự chứa `/print/survey-request/:id` (+ `/purchasing`, mỗi NCC một trang A4, ngắt trang
+  CSS): nút "In phiếu" ở chi tiết YCBG, nút "In theo NCC" ở màn Xử lý khảo sát (ẩn khi thiếu
+  `supplier.read`). 7 test (`test_p6_9_ban_in_phieu_gop.py`).*
+
+#### Đợt bổ sung sau khi khách chạy thử — mở ngày 05/09/2026
+
+Khách chạy thử luồng gộp trên dev và trả về 6 đầu việc. **Chưa bắt tay** (khách hoãn 05/09 để
+ưu tiên ticket prod); chia nhỏ sẵn ở đây, mỗi mục dưới đây là **một CR độc lập**, làm được rời
+nhau theo đúng thứ tự liệt kê. Số CR cấp lúc nhận việc, không đặt trước.
+
+- **P6-11. Chốt MUA — mốc thứ hai của người yêu cầu.** Hiện chỉ có "Chốt phương án"
+  (`LS_CONFIRMED`), và thu mua lên đơn thẳng từ mốc đó. Thêm `LS_BUY_CONFIRMED` = *"chốt sẽ mua
+  đúng mã hàng này và giá này"*; **chỉ dòng đã chốt mua mới lên đơn được**. Cách bấm (khách chốt
+  05/09): bấm *Chốt phương án* thì hiện hộp hỏi luôn *"chốt mua không?"* — đồng ý là đi thẳng hai
+  mốc; **vẫn giữ thêm một nút *Chốt mua* riêng** cạnh nút *Chốt phương án* cho dòng đã chốt phương
+  án từ trước. Dòng **chưa có mã hàng** thì tự lấy phương án có mã, điền mã lên dòng, **không ghi
+  đè số lượng**; muốn ghi đè số lượng + tiền theo phương án thì phải qua hộp xác nhận riêng.
+- **P6-12. Khóa dòng đã lên đơn.** Hiện `create_pos_from_confirmed` chạy xong là **tự bỏ chọn
+  phương án và xóa `line_status`** (mở đường "mua lại"). Khách chốt 05/09: **đã tạo đơn thì khóa
+  hẳn dòng**, không cho đổi/bỏ phương án. Bỏ nhịp reset, giữ `is_chosen`, chặn `choose_option` khi
+  dòng có `po_code`, và loại dòng đã có `po_code` khỏi lượt lên đơn kế tiếp (kẻo lên đơn trùng).
+- **P6-13. Ba nhãn tiến độ mới.** Nhãn *Đã lên đơn* hiện gom hết mọi thứ sau khi có ĐMH — số
+  lượng đã đặt / đã nhận có đồng bộ về nhưng không nổi lên mặt bảng. Tách thành ba mốc, **tên và
+  luật chốt lại 05/09/2026 theo bảng của khách (ticket 22), dùng chung với trạng thái phiếu YCMH
+  — xem bao-CR-292 + `13` §1.10**: **Đang xử lý** (đã chốt mua; kể cả đã lập ĐMH nhưng ĐMH
+  **chưa nhập mã đơn MISA**) · **Đang mua hàng** (ĐMH đã nhập MISA nhưng **mới phủ một phần** mã
+  hàng của phiếu) · **Đã mua hàng** (mọi mã hàng đều đã có ĐMH nhập MISA). *Bản chốt cũ "Đang
+  đặt hàng / Đã đặt hàng theo dòng giao hàng" BỎ — khách đổi sang mốc MISA.* Đụng
+  `line_state.progress_state`, `survey_progress._state_cond` (SQL phải khớp từng nhánh của hàm
+  suy), `survey_progress/export.py` và bảng màu badge ở v2.
+- **P6-14. Nút *Tạo đơn mua hàng* ở chi tiết YCBG.** Nút này hiện **chỉ có ở màn Xử lý khảo sát**
+  (`survey-request-process-page.tsx`), nên nhìn từ màn chi tiết thì luồng gộp cụt — đây là hai lần
+  khách báo "thiếu nút tạo đơn mua hàng" và "chưa có chỗ tạo đơn mua hàng từ yêu cầu mua hàng".
+  Dùng lại endpoint `POST /{sid}/create-pos` sẵn có, gác đúng luật bao-CR-290 (chỉ dòng NSTM được
+  phân phối) và chỉ hiện khi có dòng đã **chốt mua**.
+- **P6-15. Bản in — phần của thu mua và chọn nhà cung cấp.** Mục *PHẦN DÀNH CHO BỘ PHẬN MUA HÀNG*
+  của mẫu 003/BM/PKT đang in chấm chấm cứng, chưa đổ dữ liệu. Luật khách chốt 05/09: **người yêu
+  cầu không có quyền xem NCC** thì ô NCC luôn tự điền *"Nhà cung cấp tối ưu nhất"* (họ sửa tay thì
+  tùy họ) — tức `/print` phải **gác `supplier.read`** chứ không như hiện nay cứ dòng đã chốt là trả
+  tên NCC ra. Thu mua thì được **chọn nhà cung cấp trên thanh công cụ bản in**: chọn **1** NCC thì
+  chỉ in các dòng của NCC đó; chọn **nhiều hoặc tất cả** thì in gộp một bản kèm **một dòng ghi chú**
+  cho người đọc hiểu bản này gộp mấy NCC. Ghi chú đặt vào ô *"Yêu cầu khác (nếu có)"* sẵn có của
+  mẫu — **không thêm chữ mới nào vào khuôn** (bài học bao-CR-288).
+- **P6-16. Bản in — chữ ký sát góc.** Khối *XÉT DUYỆT* đang canh giữa bốn cột, khách muốn hai ô
+  ngoài cùng **sát mép trái/phải** của tờ phiếu. Sửa CSS `.sr-print-signature-grid`, không đụng
+  câu chữ.
+- **P6-17 *(hoãn 05/09/2026 theo lệnh khách — "từ từ làm, giữ như cũ trước")*.** Đổi mã tự động
+  của phiếu gộp: hiện vẫn dùng khuôn của Yêu cầu báo giá `YCBG{ddmmyy}{nn}` (`service._gen_code`),
+  khách muốn về dạng đếm phẳng `YCMH000078`. Tiền tố `YCMH` **còn trống** trong bảng
+  `tab_survey_request` (phiếu YCMH cũ dùng `PYC{ddmmyy}`), nên không đụng mã cũ; phiếu đã phát
+  hành **giữ nguyên mã**, chỉ phiếu tạo mới mang khuôn mới.
 
 *Điều kiện cần:* **P1 xong** *(đã xong 24/08)*. ~~P2 xong~~ — P2 hoãn, P6 làm độc lập với nền pháp
 nhân (xem khối cập nhật §4). Bỏ **P6-7b** (map người xử lý theo cặp *pháp nhân, phòng ban*) khỏi

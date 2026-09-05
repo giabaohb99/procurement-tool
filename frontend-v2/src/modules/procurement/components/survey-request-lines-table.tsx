@@ -1,10 +1,12 @@
-import { useMemo } from 'react'
-import { Copy, Pencil, Trash2 } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Copy, History, Pencil, Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 import { LinesTable } from '@/shared/data-table/lines-table'
 import { cn } from '@/shared/utils/cn'
 import type { LinesTableColumn } from '@/shared/data-table/types'
 import { Button } from '@/shared/ui/button'
+import { CopyButton } from '@/shared/ui/copy-button'
 import { DatePicker } from '@/shared/ui/date-picker'
 import { Input } from '@/shared/ui/input'
 import { Textarea } from '@/shared/ui/textarea'
@@ -16,13 +18,21 @@ import {
   SelectValue,
 } from '@/shared/ui/select'
 import { formatDate } from '@/shared/utils/format-date'
-import { formatQuantity, formatUnitPrice } from '@/shared/utils/format-money'
+import { formatMoney, formatQuantity, formatUnitPrice } from '@/shared/utils/format-money'
+import type {
+  ProductOption,
+  PurchaseHistoryRow,
+} from '../api/purchase-request-support-api'
 import {
   usePurchaseRequestItemGroups,
   usePurchaseRequestUnits,
+  usePurchaseRequestWarehouses,
 } from '../hooks/use-purchase-request-support'
+import { VAT_OPTIONS } from '../types/purchase-request-detail'
 import type { SurveyRequestLine } from '../types/survey-request-detail'
 import { SurveyLineStateBadge } from './document-status-badge'
+import { PurchaseHistoryDialog } from './purchase-history-dialog'
+import { PurchaseRequestProductPicker } from './purchase-request-product-picker'
 
 /** Dòng trống khi bấm "Thêm dòng". */
 export const EMPTY_SURVEY_REQUEST_LINE: SurveyRequestLine = {
@@ -32,6 +42,16 @@ export const EMPTY_SURVEY_REQUEST_LINE: SurveyRequestLine = {
   request_qty: 0,
   uom: '',
   proposed_price: 0,
+  product_code: '',
+  warehouse: '',
+  required_date: '',
+  // bao-CR-289: mặc định 8% như dòng YCMH — 0 vẫn chọn được cho hàng không chịu thuế.
+  vat_pct: 8,
+  qty_ordered: 0,
+  qty_received: 0,
+  expected_date: '',
+  progress_note: '',
+  purchaser_note: '',
   received_date: '',
   result_due_date: '',
   result_date: '',
@@ -39,6 +59,8 @@ export const EMPTY_SURVEY_REQUEST_LINE: SurveyRequestLine = {
   assignee_name: '',
   pr_id: 0,
   pr_code: '',
+  po_id: 0,
+  po_code: '',
   is_completed: false,
   line_status: '',
   no_option: false,
@@ -52,7 +74,11 @@ export const EMPTY_SURVEY_REQUEST_LINE: SurveyRequestLine = {
 const UNASSIGNED = '__unassigned__'
 const EMPTY_CATALOG_VALUE = '__empty__'
 
-const TABLE_STORAGE_KEY = 'survey-request-lines'
+// bao-CR-289: đổi khóa để bố cục cũ trong localStorage không đè lên bộ cột mới
+// — giữ khóa cũ là cột Mã hàng/Kho nhận/VAT... bị ẩn theo bản nhớ cũ.
+// v3: nới bề rộng mặc định ĐVT/VAT (góp ý 04/09), phải đổi khóa lần nữa vì bản
+// nhớ v2 đã ghi bề rộng hẹp cũ.
+const TABLE_STORAGE_KEY = 'survey-request-lines-v3'
 
 interface SurveyRequestLinesTableProps {
   lines: SurveyRequestLine[]
@@ -105,6 +131,8 @@ export function SurveyRequestLinesTable({
 }: SurveyRequestLinesTableProps) {
   const units = usePurchaseRequestUnits(editing)
   const itemGroups = usePurchaseRequestItemGroups(editing)
+  const warehouses = usePurchaseRequestWarehouses(editing)
+  const [historyIndex, setHistoryIndex] = useState<number | null>(null)
 
   const columns = useMemo<LinesTableColumn[]>(() => [
     {
@@ -117,18 +145,34 @@ export function SurveyRequestLinesTable({
       align: 'center',
     },
     {
-      key: 'item_group',
-      header: 'Phân loại *',
-      width: 180,
-      minWidth: 100,
+      // bao-CR-289: mã hàng chọn được ngay lúc lập phiếu — KHÔNG bắt buộc,
+      // dòng chưa có mã sẽ được điền khi người YC chốt phương án mang mã (P6-2).
+      key: 'product_code',
+      header: 'Mã hàng',
+      // Rộng hơn bề ngang của mã: ô còn chứa nút chép mã và nút lịch sử mua hàng.
+      width: 196,
+      minWidth: 90,
       defaultPinned: true,
     },
     {
       key: 'requirement_detail',
       header: 'Chi tiết thông số',
-      width: 320,
+      width: 300,
       minWidth: 140,
       defaultPinned: true,
+    },
+    {
+      key: 'item_group',
+      header: 'Phân loại *',
+      width: 170,
+      minWidth: 100,
+    },
+    {
+      key: 'warehouse',
+      header: 'Kho nhận *',
+      width: 200,
+      minWidth: 100,
+      compactHidden: true,
     },
     ...(showNstmColumns
       ? [
@@ -148,14 +192,47 @@ export function SurveyRequestLinesTable({
       minWidth: 100,
       compactHidden: true,
     },
-    { key: 'request_qty', header: 'SL dự kiến', width: 100, minWidth: 50, align: 'right' },
-    { key: 'uom', header: 'ĐVT', width: 90, minWidth: 50 },
+    // ĐVT + VAT nới hơn mặc định gốc theo góp ý 04/09 — 90/72px làm chữ wrap.
+    { key: 'uom', header: 'ĐVT', width: 120, minWidth: 70 },
+    { key: 'request_qty', header: 'SL dự kiến *', width: 110, minWidth: 50, align: 'right' },
     {
       key: 'proposed_price',
       header: 'Giá đề xuất',
       width: 130,
       minWidth: 70,
       align: 'right',
+      compactHidden: true,
+    },
+    {
+      key: 'vat',
+      header: 'VAT %',
+      width: 104,
+      minWidth: 70,
+      align: 'right',
+      compactHidden: true,
+    },
+    { key: 'amount', header: 'Thành tiền', width: 130, minWidth: 80, align: 'right' },
+    {
+      key: 'required_date',
+      header: 'Ngày cần hàng *',
+      width: 170,
+      minWidth: 130,
+      align: 'center',
+    },
+    {
+      key: 'progress',
+      header: 'Tiến độ nhận/đặt',
+      width: 130,
+      minWidth: 70,
+      align: 'center',
+      compactHidden: true,
+    },
+    {
+      key: 'expected',
+      header: 'Ngày dự kiến có hàng',
+      width: 150,
+      minWidth: 100,
+      align: 'center',
       compactHidden: true,
     },
     ...(showNstmColumns
@@ -194,6 +271,53 @@ export function SurveyRequestLinesTable({
     onChange(lines.map((line, i) => (i === index ? { ...line, ...changes } : line)))
   }
 
+  // bao-CR-289: chọn sản phẩm từ danh mục — YCBG không có cột tên riêng nên tên
+  // sản phẩm chỉ điền vào Chi tiết thông số khi ô đó còn trống, không đè chữ đã gõ.
+  function applyProduct(index: number, product: ProductOption | null) {
+    if (!product) {
+      patch(index, { product_code: '' })
+      return
+    }
+    const current = lines[index]
+    if (!current) return
+    patch(index, {
+      product_code: product.code,
+      uom: product.unit || current.uom,
+      item_group: product.item_group || current.item_group,
+      requirement_detail: current.requirement_detail || product.name,
+    })
+  }
+
+  // bao-CR-289: áp lịch sử mua gần nhất của mã hàng — mirror YCMH nhưng đổ vào
+  // bộ trường của dòng YCBG (SL dự kiến / giá đề xuất).
+  function applyPurchaseHistory(index: number, history: PurchaseHistoryRow) {
+    const current = lines[index]
+    if (!current) return
+
+    const vat = Number(history.vat)
+    const previousWarehouse = history.extra?.warehouse_code?.trim() || ''
+    const warehouse = previousWarehouse
+      ? warehouses.data?.items.find(
+          (option) =>
+            option.code === previousWarehouse || option.name === previousWarehouse,
+        )?.name || current.warehouse
+      : current.warehouse
+
+    patch(index, {
+      uom: history.unit || current.uom,
+      request_qty: Number(history.qty_order) || 0,
+      proposed_price: Number(history.price) || 0,
+      vat_pct: VAT_OPTIONS.some((option) => option === vat) ? vat : current.vat_pct,
+      item_group: history.extra?.item_group?.trim() || current.item_group,
+      warehouse,
+    })
+    toast.success('Đã áp dụng dữ liệu từ lịch sử — bấm Lưu để ghi nhận')
+  }
+
+  // Đang sửa thì tính sống theo SL × giá × VAT để người gõ thấy ngay số đổi.
+  const lineTotal = (line: SurveyRequestLine) =>
+    line.request_qty * line.proposed_price * (1 + (line.vat_pct || 0) / 100)
+
   function duplicate(index: number) {
     const source = lines[index]
     if (!source) return
@@ -206,6 +330,8 @@ export function SurveyRequestLinesTable({
       assignee_name: '',
       pr_id: 0,
       pr_code: '',
+      po_id: 0,
+      po_code: '',
       is_completed: false,
       line_status: '',
       no_option: false,
@@ -213,6 +339,11 @@ export function SurveyRequestLinesTable({
       has_chosen: false,
       progress_state: '',
       progress_tone: 'gray',
+      // bao-CR-289: tiến độ là của dòng gốc, dòng nhân bản bắt đầu từ số 0.
+      qty_ordered: 0,
+      qty_received: 0,
+      expected_date: '',
+      progress_note: '',
     }
     onChange([...lines.slice(0, index + 1), copy, ...lines.slice(index + 1)])
     onLineDuplicated?.(index)
@@ -227,6 +358,121 @@ export function SurveyRequestLinesTable({
     switch (key) {
       case 'no':
         return <span className="text-muted-foreground">{index + 1}</span>
+
+      case 'product_code':
+        return (
+          <div className="flex min-w-0 items-center gap-0.5">
+            <div className="min-w-0 flex-1">
+              {editing ? (
+                <PurchaseRequestProductPicker
+                  code={line.product_code}
+                  name={line.requirement_detail}
+                  onPick={(product) => applyProduct(index, product)}
+                />
+              ) : (
+                <span
+                  className="block break-words whitespace-normal leading-snug font-medium"
+                  title={line.product_code}
+                >
+                  {line.product_code || '—'}
+                </span>
+              )}
+            </div>
+            {/* Đang sửa thì mã nằm trong ô chọn (một <button>) nên bôi đen không
+                được — nút chép là đường duy nhất lấy được mã ra ngoài. */}
+            <CopyButton value={line.product_code} label="mã hàng" className="size-7" />
+            {!!line.product_code && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                className="size-7 shrink-0 text-muted-foreground"
+                title="Xem lịch sử mua hàng gần nhất"
+                aria-label={`Xem lịch sử mua hàng của ${line.product_code}`}
+                onClick={() => setHistoryIndex(index)}
+              >
+                <History />
+              </Button>
+            )}
+          </div>
+        )
+
+      case 'warehouse':
+        return editing ? (
+          <CatalogSelect
+            value={line.warehouse}
+            placeholder="-- Kho --"
+            invalid={invalid?.has(`line-${index}-warehouse`)}
+            options={(warehouses.data?.items ?? []).map((warehouse) => ({
+              value: warehouse.name,
+              label: warehouse.code
+                ? `${warehouse.code} - ${warehouse.name}`
+                : warehouse.name,
+            }))}
+            onChange={(value) => patch(index, { warehouse: value })}
+          />
+        ) : (
+          <span className="block break-words whitespace-normal leading-snug" title={line.warehouse}>
+            {line.warehouse || '—'}
+          </span>
+        )
+
+      case 'vat':
+        return editing ? (
+          <Select
+            value={String(line.vat_pct ?? 8)}
+            onValueChange={(value) => patch(index, { vat_pct: Number(value) })}
+          >
+            <SelectTrigger size="sm" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent position="popper" align="end">
+              {VAT_OPTIONS.map((vat) => (
+                <SelectItem key={vat} value={String(vat)}>
+                  {vat}%
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          <span className="tabular-nums">{line.vat_pct || 0}%</span>
+        )
+
+      case 'amount':
+        return (
+          <span className="tabular-nums font-semibold text-navy">
+            {formatMoney(lineTotal(line))}
+          </span>
+        )
+
+      case 'required_date':
+        return editing ? (
+          <DatePicker
+            size="sm"
+            value={line.required_date || ''}
+            placeholder="Chọn ngày"
+            className={cn(
+              invalid?.has(`line-${index}-required_date`) &&
+                'border-destructive ring-2 ring-destructive/20',
+            )}
+            onChange={(next) => patch(index, { required_date: next })}
+          />
+        ) : (
+          <span className="tabular-nums">{formatDate(line.required_date) || '—'}</span>
+        )
+
+      case 'progress':
+        return (
+          <span className="tabular-nums">
+            {formatQuantity(line.qty_received)} / {formatQuantity(line.qty_ordered)}
+          </span>
+        )
+
+      case 'expected':
+        // Chỉ hiển thị — NSTM sửa trong popup Chi tiết dòng (endpoint progress riêng).
+        return (
+          <span className="tabular-nums">{formatDate(line.expected_date) || '—'}</span>
+        )
 
       case 'item_group':
         return editing ? (
@@ -285,7 +531,11 @@ export function SurveyRequestLinesTable({
       case 'request_qty':
         return editing ? (
           <Input
-            className="text-right"
+            className={cn(
+              'text-right',
+              invalid?.has(`line-${index}-request_qty`) &&
+                'border-destructive ring-2 ring-destructive/20',
+            )}
             type="number"
             min={0}
             step="0.001"
@@ -406,15 +656,31 @@ export function SurveyRequestLinesTable({
   }
 
   return (
-    <LinesTable
-      columns={columns}
-      rows={lines}
-      storageKey={TABLE_STORAGE_KEY}
-      rowKey={(line, index) => line.id || `new-${index}`}
-      renderCell={renderCell}
-      title={`Danh sách sản phẩm cần khảo sát (${lines.length} dòng)`}
-      emptyMessage='Chưa có dòng nào — nhấn "Thêm dòng" để bắt đầu'
-    />
+    <>
+      <LinesTable
+        columns={columns}
+        rows={lines}
+        storageKey={TABLE_STORAGE_KEY}
+        rowKey={(line, index) => line.id || `new-${index}`}
+        renderCell={renderCell}
+        title={`Danh sách sản phẩm (${lines.length} dòng)`}
+        emptyMessage='Chưa có dòng nào — nhấn "Thêm dòng" để bắt đầu'
+      />
+
+      {/* bao-CR-289: lịch sử mua hàng của mã trên dòng — mirror YCMH. */}
+      <PurchaseHistoryDialog
+        open={historyIndex !== null}
+        productCode={historyIndex === null ? '' : lines[historyIndex]?.product_code || ''}
+        productName={historyIndex === null ? '' : lines[historyIndex]?.requirement_detail || ''}
+        readOnly={!editing}
+        onOpenChange={(open) => {
+          if (!open) setHistoryIndex(null)
+        }}
+        onPick={(history) => {
+          if (historyIndex !== null) applyPurchaseHistory(historyIndex, history)
+        }}
+      />
+    </>
   )
 }
 

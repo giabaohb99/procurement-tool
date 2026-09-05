@@ -1,4 +1,14 @@
-import { AlertTriangle, Ban, Clock, ClipboardCheck, FileDown, FileText, Lock, RefreshCw } from 'lucide-react'
+import {
+  AlertTriangle,
+  Ban,
+  Clock,
+  ClipboardCheck,
+  FileDown,
+  FileText,
+  Lock,
+  LockOpen,
+  RefreshCw,
+} from 'lucide-react'
 import { useState } from 'react'
 
 import { downloadFile } from '@/core/api'
@@ -21,7 +31,7 @@ import type {
   SurveyResultLine,
   SurveyResultOption,
 } from '../types/survey-request-detail'
-import { LINE_STATUS_RESURVEY } from '../types/survey-request-detail'
+import { LINE_STATUS_CONFIRMED, LINE_STATUS_RESURVEY } from '../types/survey-request-detail'
 import { SurveyLineStateBadge } from './document-status-badge'
 
 interface SurveyRequestResultCardProps {
@@ -30,12 +40,18 @@ interface SurveyRequestResultCardProps {
   canChoose: boolean
   /** Người yêu cầu được gắn cờ "cần khảo sát lại". */
   canSetLineStatus: boolean
-  /** Nhắc người dùng bấm "Tạo yêu cầu mua" khi chưa chọn phương án nào. */
+  /**
+   * Nhắc người dùng bước kế tiếp khi chưa chọn phương án nào — câu chữ đổi theo
+   * `result.merged_flow_enabled`: luồng gộp nhắc "Chốt phương án", luồng cũ nhắc
+   * nút "Tạo yêu cầu mua" (bao-CR-290).
+   */
   showCreatePrHint: boolean
-  /** Đã tạo YCMH nhưng người đang xem không có quyền chuyển Hoàn thành. */
+  /** Đã lên đơn / tạo YCMH nhưng người đang xem không có quyền chuyển Hoàn thành. */
   showWaitFinalizeHint: boolean
   onChooseOption: (lineId: number, optionId: number) => void
   onRequestResurvey: (lineId: number) => void
+  /** P6-3 (bao-CR-281): chốt / bỏ chốt phương án đang chọn của một dòng. */
+  onConfirmLine: (lineId: number, confirmed: boolean) => void
 }
 
 /**
@@ -53,6 +69,7 @@ export function SurveyRequestResultCard({
   showWaitFinalizeHint,
   onChooseOption,
   onRequestResurvey,
+  onConfirmLine,
 }: SurveyRequestResultCardProps) {
   const [previewUrl, setPreviewUrl] = useState('')
   const [ycmhOf, setYcmhOf] = useState<SurveyResultOption | null>(null)
@@ -70,9 +87,11 @@ export function SurveyRequestResultCard({
         {canChoose && (
           <p className="text-xs text-muted-foreground">
             Với mỗi sản phẩm, nhấn chọn 1 phương án phù hợp nhất; bấm lại phương án đang chọn để
-            BỎ CHỌN. Không bắt buộc chọn hết — dòng không chọn sẽ không tạo YCMH. Đổi/bỏ được cho
-            tới khi dòng đã tạo YCMH. (Tên NCC ẩn theo chính sách; "NCC #" cùng số là cùng nhà
-            cung cấp.)
+            BỎ CHỌN. Không bắt buộc chọn hết —{' '}
+            {result.merged_flow_enabled
+              ? 'dòng không chốt sẽ không lên đơn mua hàng. Đổi/bỏ được cho tới khi dòng đã lên đơn.'
+              : 'dòng không chọn sẽ không tạo YCMH. Đổi/bỏ được cho tới khi dòng đã tạo YCMH.'}{' '}
+            (Tên NCC ẩn theo chính sách; "NCC #" cùng số là cùng nhà cung cấp.)
           </p>
         )}
 
@@ -81,24 +100,40 @@ export function SurveyRequestResultCard({
             key={line.id}
             line={line}
             lineNumber={index + 1}
+            mergedFlowEnabled={result.merged_flow_enabled}
             canChoose={canChoose}
             canSetLineStatus={canSetLineStatus}
             onChooseOption={onChooseOption}
             onRequestResurvey={onRequestResurvey}
+            onConfirmLine={onConfirmLine}
             onPreviewImage={setPreviewUrl}
             onOpenYcmh={setYcmhOf}
           />
         ))}
 
+        {/* bao-CR-290: luồng gộp không còn bước YCMH, nên câu hướng dẫn phải dẫn
+            sang nút "Chốt phương án" của từng dòng — nút "Tạo yêu cầu mua" ở góc
+            phải trên đã ẩn theo cờ. */}
         {showCreatePrHint && (
           <p className="text-xs text-muted-foreground">
-            Chọn phương án cho (những) sản phẩm muốn mua, rồi bấm <b>"Tạo yêu cầu mua"</b> ở góc
-            phải trên. Có thể tạo YCMH nhiều lần (mua lại) kể cả khi phiếu đã Hoàn thành.
+            {result.merged_flow_enabled ? (
+              <>
+                Chọn phương án cho (những) sản phẩm muốn mua, rồi bấm <b>"Chốt phương án"</b> ở
+                từng dòng. Nhân sự thu mua phụ trách dòng đó sẽ lên đơn mua hàng theo phương án
+                đã chốt.
+              </>
+            ) : (
+              <>
+                Chọn phương án cho (những) sản phẩm muốn mua, rồi bấm <b>"Tạo yêu cầu mua"</b> ở
+                góc phải trên. Có thể tạo YCMH nhiều lần (mua lại) kể cả khi phiếu đã Hoàn thành.
+              </>
+            )}
           </p>
         )}
         {showWaitFinalizeHint && (
           <p className="text-xs text-muted-foreground">
-            Đã tạo YCMH — chờ Quản lý/Admin thu mua chuyển Hoàn thành.
+            {result.merged_flow_enabled ? 'Đã lên đơn mua hàng' : 'Đã tạo YCMH'} — chờ Quản
+            lý/Admin thu mua chuyển Hoàn thành.
           </p>
         )}
       </CardContent>
@@ -112,24 +147,33 @@ export function SurveyRequestResultCard({
 function ResultLineBlock({
   line,
   lineNumber,
+  mergedFlowEnabled,
   canChoose,
   canSetLineStatus,
   onChooseOption,
   onRequestResurvey,
+  onConfirmLine,
   onPreviewImage,
   onOpenYcmh,
 }: {
   line: SurveyResultLine
   lineNumber: number
+  /** P6-8 (bao-CR-286): TẮT thì ẩn nút Chốt phương án — Bỏ chốt vẫn hiện để gỡ dòng kẹt khóa. */
+  mergedFlowEnabled: boolean
   canChoose: boolean
   canSetLineStatus: boolean
   onChooseOption: (lineId: number, optionId: number) => void
   onRequestResurvey: (lineId: number) => void
+  onConfirmLine: (lineId: number, confirmed: boolean) => void
   onPreviewImage: (url: string) => void
   onOpenYcmh: (option: SurveyResultOption) => void
 }) {
   const options = line.options ?? []
   const flagged = line.line_status === LINE_STATUS_RESURVEY
+  // P6-3 (bao-CR-281): dòng đã chốt thì KHÓA chọn/bỏ chọn — backend cũng chặn 400,
+  // nhưng khóa ngay trên giao diện để người dùng khỏi bấm hụt rồi mới thấy lỗi.
+  const confirmed = line.line_status === LINE_STATUS_CONFIRMED
+  const hasChosen = options.some((option) => option.is_chosen)
 
   return (
     <section className="space-y-2.5">
@@ -140,17 +184,66 @@ function ResultLineBlock({
       <p className="text-xs text-muted-foreground">
         Phân loại: <b>{line.item_group || '—'}</b> · SL dự kiến:{' '}
         <b>{formatQuantity(line.request_qty) || '—'}</b> {line.uom} · Giá đề xuất của bạn:{' '}
-        <b>{formatUnitPrice(line.proposed_price) || '—'}</b>
+        <b>{formatUnitPrice(line.proposed_price) || '—'}</b> · Mã hàng:{' '}
+        <b>{line.product_code || 'chưa có'}</b>
+        {!!line.po_code && (
+          <>
+            {' '}
+            · ĐMH gần nhất: <b>{line.po_code}</b>
+          </>
+        )}
       </p>
+
+      {/* P6-2 (bao-CR-280): dòng đã gắn mã thì backend chỉ trả phương án khớp mã;
+          dòng chưa có mã thì chọn phương án mang "Mã VTBB" sẽ tự điền mã lên dòng. */}
+      {canChoose && (
+        <p className="text-xs text-muted-foreground">
+          {line.product_code
+            ? 'Dòng đã gắn mã hàng — chỉ hiện phương án khớp mã này (và phương án chưa gắn mã). Bỏ chọn phương án đã điền mã sẽ gỡ mã, hiện lại đủ phương án.'
+            : 'Dòng chưa có mã hàng — chọn phương án có "Mã VTBB" thì mã đó tự điền lên dòng.'}
+        </p>
+      )}
 
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs text-muted-foreground">Trạng thái dòng:</span>
         <SurveyLineStateBadge state={line.progress_state} tone={line.progress_tone} />
 
+        {/* P6-3 (bao-CR-281): chốt phương án đang chọn để thu mua tạo THẲNG đơn
+            mua hàng. Chốt được khi dòng đang chọn 1 phương án; bỏ chốt giữ nguyên
+            lựa chọn, chỉ mở khóa lại. */}
+        {mergedFlowEnabled &&
+          canChoose &&
+          !confirmed &&
+          hasChosen &&
+          (
+            <Button
+              variant="ghost"
+              size="sm"
+              title="Khóa phương án đang chọn — thu mua sẽ tạo thẳng đơn mua hàng theo phương án này"
+              onClick={() => onConfirmLine(line.id, true)}
+            >
+              <Lock />
+              Chốt phương án
+            </Button>
+          )}
+        {canChoose && confirmed && (
+          <Button
+            variant="ghost"
+            size="sm"
+            title="Mở khóa để đổi / bỏ lựa chọn (giữ nguyên phương án đang chọn)"
+            onClick={() => onConfirmLine(line.id, false)}
+          >
+            <LockOpen />
+            Bỏ chốt
+          </Button>
+        )}
+
         {/* Cờ khảo sát lại chỉ gắn được, không gỡ tay: backend tự gỡ khi người YC
             chọn lại một phương án. Gỡ tay thì dòng về "đã chọn" trong khi NSTM
-            chưa khảo sát lại gì cả. */}
+            chưa khảo sát lại gì cả. Dòng ĐÃ CHỐT thì ẩn — gắn cờ sẽ âm thầm gỡ
+            chốt (cùng cột line_status), muốn đổi phải Bỏ chốt trước cho tường minh. */}
         {canSetLineStatus &&
+          !confirmed &&
           options.length > 0 &&
           (flagged ? (
             <Button
@@ -186,6 +279,16 @@ function ResultLineBlock({
         </p>
       )}
 
+      {confirmed && (
+        <p className="flex items-start gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-xs">
+          <Lock className="mt-0.5 size-4 shrink-0 text-primary" />
+          <span>
+            Dòng đã <b>chốt phương án</b> — thu mua sẽ tạo thẳng đơn mua hàng theo phương án đang
+            chọn. Lựa chọn đang khóa; muốn đổi/bỏ phải bấm <b>Bỏ chốt</b> trước.
+          </span>
+        </p>
+      )}
+
       {options.length === 0 ? (
         line.no_option ? (
           <p className="flex items-start gap-2 rounded-lg border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
@@ -209,7 +312,7 @@ function ResultLineBlock({
             <OptionCard
               key={option.id}
               option={option}
-              canChoose={canChoose}
+              canChoose={canChoose && !confirmed}
               onChoose={() => onChooseOption(line.id, option.id)}
               onPreviewImage={onPreviewImage}
               onOpenYcmh={onOpenYcmh}

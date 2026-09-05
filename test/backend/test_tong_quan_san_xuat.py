@@ -48,9 +48,9 @@ def _hop_dong(db, code, end_date, status="active", signed=True):
                     party_type="supplier", party_code="NCC_A", party_name="Nhà cung cấp A"))
 
 
-def test_dem_ncc_tach_hang_hoa_va_van_chuyen(db, seed, cap_quyen):
+def test_dem_ncc_tach_hang_hoa_va_van_chuyen(db, seed, grant_role):
     user = db.get(User, seed.u_req_id)
-    cap_quyen(user.id, "supplier", scope="all", read=True)
+    grant_role(user.id, "supplier", scope="all", read=True)
 
     _ncc(db, "NCC_A", "Nhà cung cấp A")
     _ncc(db, "NCC_B", "Nhà cung cấp B")
@@ -66,10 +66,10 @@ def test_dem_ncc_tach_hang_hoa_va_van_chuyen(db, seed, cap_quyen):
     assert kpi["supplier_inactive"] == 1
 
 
-def test_chi_co_quyen_ncc_thi_khong_lo_so_cua_danh_muc_khac(db, seed, cap_quyen):
+def test_chi_co_quyen_ncc_thi_khong_lo_so_cua_danh_muc_khac(db, seed, grant_role):
     """Khối bị gác phải BỎ HẲN khóa, không trả 0 — 0 là "đếm được, không có dòng"."""
     user = db.get(User, seed.u_req_id)
-    cap_quyen(user.id, "supplier", scope="all", read=True)
+    grant_role(user.id, "supplier", scope="all", read=True)
 
     _ncc(db, "NCC_A", "Nhà cung cấp A")
     _san_pham(db, "SP01", "Thùng carton", item_group="Bao bì")
@@ -89,7 +89,7 @@ def test_chi_co_quyen_ncc_thi_khong_lo_so_cua_danh_muc_khac(db, seed, cap_quyen)
                            "item_group": False, "contract": False}
 
 
-def test_khong_co_quyen_nao_thi_tra_ve_rong_chu_khong_no(db, seed, cap_quyen):
+def test_khong_co_quyen_nao_thi_tra_ve_rong_chu_khong_no(db, seed, grant_role):
     """Người dùng trơ (không grant nào) vẫn phải nhận phản hồi hợp lệ, rỗng."""
     user = db.get(User, seed.u_req_id)
 
@@ -105,10 +105,10 @@ def test_khong_co_quyen_nao_thi_tra_ve_rong_chu_khong_no(db, seed, cap_quyen):
     assert not any(data["can"].values())
 
 
-def test_gom_san_pham_theo_phan_loai_va_don_duoi_vao_khac(db, seed, cap_quyen):
+def test_gom_san_pham_theo_phan_loai_va_don_duoi_vao_khac(db, seed, grant_role):
     """Bảy phân loại: sáu nhóm lớn đứng riêng, phần đuôi gộp thành "Khác"."""
     user = db.get(User, seed.u_req_id)
-    cap_quyen(user.id, "product", scope="all", read=True)
+    grant_role(user.id, "product", scope="all", read=True)
 
     # Số lượng giảm dần để thứ tự sắp xếp có thể khẳng định được.
     for so_luong, ten in enumerate(["G1", "G2", "G3", "G4", "G5", "G6", "G7"]):
@@ -122,10 +122,10 @@ def test_gom_san_pham_theo_phan_loai_va_don_duoi_vao_khac(db, seed, cap_quyen):
     assert [g["value"] for g in groups] == [7, 6, 5, 4, 3, 2, 1]
 
 
-def test_san_pham_chua_dat_phan_loai_van_duoc_dem(db, seed, cap_quyen):
+def test_san_pham_chua_dat_phan_loai_van_duoc_dem(db, seed, grant_role):
     """`item_group` rỗng là chuyện thường trên dữ liệu thật — không được rơi mất."""
     user = db.get(User, seed.u_req_id)
-    cap_quyen(user.id, "product", scope="all", read=True)
+    grant_role(user.id, "product", scope="all", read=True)
 
     _san_pham(db, "SP01", "Thùng carton", item_group="")
     _san_pham(db, "SP02", "Băng keo", item_group="")
@@ -141,10 +141,10 @@ def test_san_pham_chua_dat_phan_loai_van_duoc_dem(db, seed, cap_quyen):
     }
 
 
-def test_dvt_va_phan_loai_dem_doc_lap_theo_tung_quyen(db, seed, cap_quyen):
+def test_dvt_va_phan_loai_dem_doc_lap_theo_tung_quyen(db, seed, grant_role):
     """Hai danh mục nhỏ nhất cũng là hai khối riêng — có quyền cái này không kéo theo cái kia."""
     user = db.get(User, seed.u_req_id)
-    cap_quyen(user.id, "item_group", scope="all", read=True)
+    grant_role(user.id, "item_group", scope="all", read=True)
 
     db.add(Unit(code="DVT01", name="Cái"))
     db.add(ItemGroup(code="PLO01", name="Bao bì"))
@@ -156,10 +156,10 @@ def test_dvt_va_phan_loai_dem_doc_lap_theo_tung_quyen(db, seed, cap_quyen):
     assert "unit_total" not in kpi
 
 
-def test_hop_dong_vo_thoi_han_khong_bi_dem_la_sap_het_han(db, seed, cap_quyen):
+def test_hop_dong_vo_thoi_han_khong_bi_dem_la_sap_het_han(db, seed, grant_role):
     """Lỗi so chuỗi: `"" <= "<ngày>"` là ĐÚNG, nên thiếu `end_date != ""` là đếm sai."""
     user = db.get(User, seed.u_req_id)
-    cap_quyen(user.id, "contract", scope="all", read=True)
+    grant_role(user.id, "contract", scope="all", read=True)
 
     _hop_dong(db, "HD_VO_HAN", "")           # không đặt hạn
     _hop_dong(db, "HD_SAP_HET", _ngay(10))   # trong 30 ngày tới
@@ -174,9 +174,9 @@ def test_hop_dong_vo_thoi_han_khong_bi_dem_la_sap_het_han(db, seed, cap_quyen):
     assert kpi["contract_expired"] == 1
 
 
-def test_hop_dong_da_thanh_ly_khong_con_canh_bao(db, seed, cap_quyen):
+def test_hop_dong_da_thanh_ly_khong_con_canh_bao(db, seed, grant_role):
     user = db.get(User, seed.u_req_id)
-    cap_quyen(user.id, "contract", scope="all", read=True)
+    grant_role(user.id, "contract", scope="all", read=True)
 
     _hop_dong(db, "HD01", _ngay(10), status="liquidated")
     _hop_dong(db, "HD02", _ngay(10), status="cancelled")
@@ -192,10 +192,10 @@ def test_hop_dong_da_thanh_ly_khong_con_canh_bao(db, seed, cap_quyen):
     assert [c["code"] for c in data["expiring_contracts"]] == ["HD03"]
 
 
-def test_hop_dong_sap_het_han_xep_theo_han_gan_nhat_va_cat_ngon(db, seed, cap_quyen):
+def test_hop_dong_sap_het_han_xep_theo_han_gan_nhat_va_cat_ngon(db, seed, grant_role):
     """Danh sách chỉ lấy 8 dòng — phải là 8 dòng GẤP NHẤT, không phải 8 dòng đầu bảng."""
     user = db.get(User, seed.u_req_id)
-    cap_quyen(user.id, "contract", scope="all", read=True)
+    grant_role(user.id, "contract", scope="all", read=True)
 
     # Thêm theo thứ tự hạn XA -> GẦN để `id` đi ngược với `end_date`.
     for i in range(10, 0, -1):

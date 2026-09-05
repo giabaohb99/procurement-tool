@@ -2,6 +2,8 @@ import { apiDelete, apiGet, apiPatch, apiPost } from '@/core/api'
 import type {
   SurveyRequestDetail,
   SurveyRequestLine,
+  SurveyRequestPrint,
+  SurveyRequestPurchasingPrint,
   SurveyRequestResult,
 } from '../types/survey-request-detail'
 import type {
@@ -26,11 +28,23 @@ export interface SurveyRequestPayload {
   purpose: string
   request_date: string
   note: string
+  /** bao-CR-289: cờ Đơn gấp (mirror YCMH). */
+  is_urgent: boolean
+  /** P6-9 (bao-CR-287): NCC người yêu cầu đề xuất — đầu phiếu, dùng cho bản in luồng gộp. */
+  suggested_supplier: string
+  suggested_supplier_tax_code: string
+  suggested_supplier_contact: string
   lines: Partial<SurveyRequestLine>[]
 }
 
 /** YCMH sinh ra từ một lần bấm "Tạo YCMH". */
 export interface CreatedPurchaseRequest {
+  id: number
+  code: string
+}
+
+/** ĐMH sinh ra từ một lần bấm "Tạo đơn mua hàng" (P6-3, bao-CR-281). */
+export interface CreatedPurchaseOrder {
   id: number
   code: string
 }
@@ -49,6 +63,19 @@ export const surveyRequestApi = {
 
   /** Khung KẾT QUẢ: kèm phương án đã bỏ danh tính NCC ngay ở backend. */
   getResult: (id: number) => apiGet<SurveyRequestResult>(`${BASE_URL}/${id}/result`),
+
+  /**
+   * P6-9 (bao-CR-287): bản in cho NGƯỜI YÊU CẦU — cả phiếu, mọi dòng; NCC chỉ lộ
+   * ở dòng đã chốt phương án, dòng chưa chốt in NCC người yêu cầu tự đề xuất.
+   */
+  getPrint: (id: number) => apiGet<SurveyRequestPrint>(`${BASE_URL}/${id}/print`),
+
+  /**
+   * P6-9 (bao-CR-287): bộ bản in cho THU MUA tách theo NCC + danh sách ĐMH đã
+   * sinh. Backend gác `supplier.read` — người yêu cầu gọi là 403.
+   */
+  getPurchasingPrint: (id: number) =>
+    apiGet<SurveyRequestPurchasingPrint>(`${BASE_URL}/${id}/print-purchasing`),
 
   create: (payload: SurveyRequestPayload) => apiPost<SurveyRequestDetail>(BASE_URL, payload),
 
@@ -78,6 +105,18 @@ export const surveyRequestApi = {
     apiPatch<SurveyRequestDetail>(`${BASE_URL}/${id}/lines/${lineId}/assignee`, { assignee }),
 
   /**
+   * bao-CR-289: NSTM cập nhật tiến độ dòng (ngày dự kiến có hàng + chi tiết tiến độ).
+   * Endpoint riêng vì ba trường này CỐ Ý không nằm trong payload lưu phiếu —
+   * backend gác `survey_request.process` VÀ gác theo dòng được phân phối
+   * (bao-CR-291), người yêu cầu hoặc NSTM khác gọi là 403.
+   */
+  setLineProgress: (
+    id: number,
+    lineId: number,
+    payload: { expected_date: string; progress_note: string; purchaser_note: string },
+  ) => apiPatch<SurveyRequestDetail>(`${BASE_URL}/${id}/lines/${lineId}/progress`, payload),
+
+  /**
    * Người YC chốt trạng thái dòng: '' · 'resurvey' (cần khảo sát lại, backend tự
    * BỎ CHỌN phương án đang chọn) · 'completed'.
    * Đừng nhầm với `PATCH /lines/{id}/status` — endpoint đó đổi cờ `is_completed`
@@ -98,6 +137,23 @@ export const surveyRequestApi = {
   /** Sinh YCMH từ các phương án đã chọn, gom theo NCC. Dòng chưa chọn bị bỏ qua. */
   createPurchaseRequests: (id: number) =>
     apiPost<{ created_prs: CreatedPurchaseRequest[] }>(`${BASE_URL}/${id}/create-prs`, {}),
+
+  /**
+   * P6-3 (bao-CR-281): người YC CHỐT phương án đang chọn của một dòng (khóa lựa
+   * chọn để thu mua tạo thẳng ĐMH), hoặc BỎ CHỐT (`confirmed: false` — giữ nguyên
+   * lựa chọn). Backend đòi dòng đang có phương án được chọn mới chốt được.
+   */
+  confirmLineOption: (id: number, lineId: number, confirmed: boolean) =>
+    apiPatch<SurveyRequestResult>(`${BASE_URL}/${id}/lines/${lineId}/confirm-option`, {
+      confirmed,
+    }),
+
+  /**
+   * P6-3 (bao-CR-281): thu mua tạo THẲNG đơn mua hàng từ các dòng đã chốt phương
+   * án, gom theo NCC — bỏ bước sinh YCMH trung gian. Cần quyền `purchase_order.create`.
+   */
+  createPurchaseOrders: (id: number) =>
+    apiPost<{ created_pos: CreatedPurchaseOrder[] }>(`${BASE_URL}/${id}/create-pos`, {}),
 
   /**
    * Trưởng bộ phận của một phòng — người yêu cầu không xem được danh mục Nhân sự.

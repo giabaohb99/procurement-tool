@@ -26,6 +26,24 @@ export function useSurveyRequestResult(id: number, status: string) {
   })
 }
 
+/** P6-9 (bao-CR-287): payload bản in NGƯỜI YÊU CẦU — trang in gọi riêng, không dùng lại cache chi tiết. */
+export function useSurveyRequestPrint(id: number) {
+  return useQuery({
+    queryKey: queryKeys.procurement.surveyRequestPrint(id),
+    queryFn: () => surveyRequestApi.getPrint(id),
+    enabled: id > 0,
+  })
+}
+
+/** P6-9 (bao-CR-287): bộ bản in THU MUA tách theo NCC — backend gác `supplier.read`. */
+export function useSurveyRequestPurchasingPrint(id: number) {
+  return useQuery({
+    queryKey: queryKeys.procurement.surveyRequestPurchasingPrint(id),
+    queryFn: () => surveyRequestApi.getPurchasingPrint(id),
+    enabled: id > 0,
+  })
+}
+
 /** Tạo mới HOẶC cập nhật — một form dùng cho cả hai màn. */
 export function useSaveSurveyRequest() {
   const queryClient = useQueryClient()
@@ -124,6 +142,38 @@ export function useAssignSurveyLine(id: number) {
 }
 
 /**
+ * bao-CR-289: NSTM cập nhật tiến độ một dòng (ngày dự kiến có hàng + chi tiết).
+ * bao-CR-291: gánh thêm ghi chú riêng của thu mua — cùng một đường ghi vì cùng
+ * một người nhập, tách endpoint nữa chỉ để thêm một lần gọi mạng.
+ */
+export function useSetSurveyLineProgress(id: number) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      lineId,
+      expectedDate,
+      progressNote,
+      purchaserNote,
+    }: {
+      lineId: number
+      expectedDate: string
+      progressNote: string
+      purchaserNote: string
+    }) =>
+      surveyRequestApi.setLineProgress(id, lineId, {
+        expected_date: expectedDate,
+        progress_note: progressNote,
+        purchaser_note: purchaserNote,
+      }),
+    onSuccess: () => {
+      toast.success('Đã cập nhật tiến độ dòng')
+      void queryClient.invalidateQueries({ queryKey: queryKeys.procurement.all })
+    },
+  })
+}
+
+/**
  * Người YC chốt trạng thái một dòng (cần khảo sát lại / hoàn thành).
  * Phải nạp lại CẢ khung kết quả: "Cần khảo sát lại" bỏ chọn phương án ở backend,
  * không nạp lại thì khu Kết quả vẫn hiện phương án "Đã chọn" cũ, lệch với bảng trên.
@@ -168,6 +218,38 @@ export function useCreatePurchaseRequestsFromSurvey(id: number) {
       const created = data?.created_prs ?? []
       const codes = created.map((pr) => pr.code).join(', ')
       toast.success(`Đã tạo ${created.length} phiếu yêu cầu mua: ${codes}`)
+      void queryClient.invalidateQueries({ queryKey: queryKeys.procurement.all })
+    },
+  })
+}
+
+/** P6-3 (bao-CR-281): người YC chốt / bỏ chốt phương án của một dòng. */
+export function useConfirmSurveyLineOption(id: number) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ lineId, confirmed }: { lineId: number; confirmed: boolean }) =>
+      surveyRequestApi.confirmLineOption(id, lineId, confirmed),
+    onSuccess: (_data, variables) => {
+      toast.success(variables.confirmed ? 'Đã chốt phương án' : 'Đã bỏ chốt phương án')
+      void queryClient.invalidateQueries({ queryKey: queryKeys.procurement.all })
+    },
+  })
+}
+
+/**
+ * P6-3 (bao-CR-281): thu mua tạo THẲNG đơn mua hàng từ các dòng đã chốt phương án
+ * — bỏ bước YCMH trung gian.
+ */
+export function useCreatePurchaseOrdersFromSurvey(id: number) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: () => surveyRequestApi.createPurchaseOrders(id),
+    onSuccess: (data) => {
+      const created = data?.created_pos ?? []
+      const codes = created.map((po) => po.code).join(', ')
+      toast.success(`Đã tạo ${created.length} đơn mua hàng: ${codes}`)
       void queryClient.invalidateQueries({ queryKey: queryKeys.procurement.all })
     },
   })

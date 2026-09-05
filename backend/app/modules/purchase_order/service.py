@@ -474,6 +474,7 @@ def create_po(db: Session, data: POCreate, user_id: int) -> PurchaseOrder:
     db.refresh(po)
     # CR-074: dòng YCMH phải đổi sang `not_ordered` NGAY khi đơn vừa được lập, kể cả đơn Nháp.
     _sync_pr(db, po.pr_code)
+    _sync_survey(db, po.survey_code)   # P6-4: đơn lên thẳng từ YCBG cũng vậy
     record(db, user_id, ENTITY, po.id, "create")
     return po
 
@@ -672,6 +673,7 @@ def update_po(db: Session, pid: int, data: POUpdate, user_id: int) -> PurchaseOr
     # SL đặt/nhận thay đổi (vd sửa SL nhận 1800→1900). apply_auto_progress chỉ sync khi có
     # đổi trạng thái nên nếu thiếu bước này, tiến độ SL bên YCMH sẽ bị cũ.
     _sync_pr(db, po.pr_code)
+    _sync_survey(db, po.survey_code)
     db.refresh(po)
     return po
 
@@ -708,12 +710,13 @@ def delete_po(db: Session, pid: int, user_id: int):
             db.delete(d)
         db.delete(it)
     delete_attachments_for(db, pairs)
-    _pr_code = po.pr_code
+    _pr_code, _survey_code = po.pr_code, po.survey_code
     db.delete(po)
     db.commit()
     # CR-074: xóa đơn xong thì dòng YCMH phải quay lại `no_po` nếu không còn
     # đơn nào khác — nên phải đồng bộ lại, lấy mã YCMH trước khi xóa.
     _sync_pr(db, _pr_code)
+    _sync_survey(db, _survey_code)   # P6-4: dòng YCBG quay về "" khi hết đơn
     record(db, user_id, ENTITY, pid, "delete")
 
 
@@ -746,6 +749,7 @@ def set_status(db: Session, pid: int, status: str, user_id: int, message: str = 
     # Mọi đổi trạng thái ĐƠN đều ảnh hưởng việc đơn có được TÍNH vào YCMH hay không
     # (duyệt → bắt đầu tính; hủy/từ chối → thôi tính) nên luôn đồng bộ lại tiến độ dòng YCMH.
     _sync_pr(db, po.pr_code)
+    _sync_survey(db, po.survey_code)
     db.refresh(po)
     return po
 
@@ -895,6 +899,7 @@ def apply_auto_progress(db: Session, po: PurchaseOrder, user_id: int | None = No
     if changed:
         db.commit()
         _sync_pr(db, po.pr_code)
+        _sync_survey(db, po.survey_code)
     return changed
 
 
@@ -932,6 +937,7 @@ def set_item_progress(db: Session, pid: int, item_id: int, target: str, reason: 
     label = "Tiếp tục" if target == "__resume__" else PO_PROGRESS_STATUS.label_of(target, target)
     record(db, user_id, ENTITY, pid, "item_progress", f"{item.product_name}: {label}")
     _sync_pr(db, po.pr_code)   # đồng bộ tiến độ sang YCMH nguồn
+    _sync_survey(db, po.survey_code)   # P6-4: và sang YCBG nguồn nếu đơn lên thẳng
     db.refresh(po)
     return po
 
@@ -960,5 +966,17 @@ def _sync_pr(db: Session, pr_code: str) -> None:
     try:
         from app.modules.purchase_request import service as pr_service
         pr_service.sync_from_purchase_orders(db, pr_code)
+    except Exception:
+        pass  # sync không được phép làm hỏng thao tác chính
+
+
+def _sync_survey(db: Session, survey_code: str) -> None:
+    """P6-4 (bao-CR-282): bản song sinh của _sync_pr cho đơn LÊN THẲNG từ YCBG
+    (PurchaseOrder.survey_code) — đồng bộ tiến độ về dòng tab_survey_request_line."""
+    if not survey_code:
+        return
+    try:
+        from app.modules.survey_request import service as survey_service
+        survey_service.sync_lines_from_purchase_orders(db, survey_code)
     except Exception:
         pass  # sync không được phép làm hỏng thao tác chính
