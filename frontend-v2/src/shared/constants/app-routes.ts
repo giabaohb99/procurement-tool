@@ -268,6 +268,8 @@ export const appRoutes = {
     new: '/approval-seal/new',
     detail: (id: number | string) => `/approval-seal/${id}`,
     edit: (id: number | string) => `/approval-seal/${id}/edit`,
+    /** Bản in phiếu yêu cầu đóng dấu (khổ A4) — nằm ngoài khung phân hệ. */
+    print: (id: number | string) => `/print/approval-seal/${id}`,
     /** Danh mục Loại con dấu. */
     sealTypes: '/approval-seal/seal-types',
     sealTypeNew: '/approval-seal/seal-types/new',

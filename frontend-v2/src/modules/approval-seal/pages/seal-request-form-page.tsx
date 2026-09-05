@@ -1,5 +1,5 @@
 import { ArrowLeft } from 'lucide-react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 
 import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
@@ -18,14 +18,23 @@ import type { SealRequest } from '../types/seal-request'
 export function SealRequestFormPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const isEdit = Boolean(id)
+  const fromId = Number(searchParams.get('from')) || null
 
   const backToList = () => navigate(appRoutes.approvalSeal.root)
   const backToDetail = () => navigate(appRoutes.approvalSeal.detail(Number(id)))
 
-  const { data, isLoading, isError } = useSealRequest(isEdit ? Number(id) : null)
+  //  Sửa: nạp phiếu theo :id. Nhân bản: nạp phiếu nguồn theo ?from=.
+  const loadId = isEdit ? Number(id) : fromId
+  const { data, isLoading, isError } = useSealRequest(loadId)
 
-  const title = isEdit ? 'Chỉnh sửa yêu cầu đóng dấu' : 'Tạo yêu cầu đóng dấu'
+  const needsLoad = isEdit || fromId !== null
+  const title = isEdit
+    ? 'Chỉnh sửa yêu cầu đóng dấu'
+    : fromId
+      ? 'Nhân bản yêu cầu đóng dấu'
+      : 'Tạo yêu cầu đóng dấu'
 
   //  Sau khi lưu: đã gửi duyệt → về chi tiết; còn nháp → sang trang SỬA của phiếu
   //  vừa lưu để người dùng đính kèm chứng từ đã ký rồi gửi duyệt.
@@ -35,7 +44,7 @@ export function SealRequestFormPage() {
 
   return (
     <PageContainer className="w-full">
-      {!isEdit ? (
+      {!needsLoad ? (
         <SealRequestForm title={title} onCancel={backToList} onSaved={handleSaved} />
       ) : isLoading ? (
         <>
@@ -55,8 +64,10 @@ export function SealRequestFormPage() {
             </Button>
           </ErrorState>
         </>
-      ) : (
+      ) : isEdit ? (
         <SealRequestForm request={data} title={title} onCancel={backToDetail} onSaved={handleSaved} />
+      ) : (
+        <SealRequestForm duplicateFrom={data} title={title} onCancel={backToList} onSaved={handleSaved} />
       )}
     </PageContainer>
   )

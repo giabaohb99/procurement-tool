@@ -32,6 +32,8 @@ import { SealPageHeader } from './seal-page-header'
 interface SealRequestFormProps {
   /** Có = SỬA phiếu này. Bỏ trống = TẠO mới. */
   request?: SealRequest
+  /** NHÂN BẢN: tạo mới, chép nội dung từ phiếu này (KHÔNG chép mã/trạng thái/đính kèm). */
+  duplicateFrom?: SealRequest
   title: string
   /** Hủy / back — điều hướng đi (page tự quyết). */
   onCancel: () => void
@@ -44,8 +46,10 @@ interface SealRequestFormProps {
  * `/approval-seal/:id/edit`). Chứng từ đã ký đính kèm hiện ngay dưới form khi
  * phiếu đã có id — backend đòi ≥1 tệp trước khi gửi duyệt.
  */
-export function SealRequestForm({ request, title, onCancel, onSaved }: SealRequestFormProps) {
+export function SealRequestForm({ request, duplicateFrom, title, onCancel, onSaved }: SealRequestFormProps) {
   const isEdit = Boolean(request)
+  //  Nguồn điền sẵn: SỬA thì từ chính phiếu, NHÂN BẢN thì từ phiếu nguồn.
+  const source = request ?? duplicateFrom
   const { can } = usePermission()
   const createMutation = useCreateSealRequest()
   const updateMutation = useUpdateSealRequest()
@@ -59,22 +63,22 @@ export function SealRequestForm({ request, title, onCancel, onSaved }: SealReque
   //  Loại con dấu chỉ hiện cái đang bật; giữ lại cái đã chọn dù bị ẩn để không mất giá trị cũ.
   const sealTypes = useMemo(() => {
     const items = sealTypeData?.items ?? []
-    return items.filter((t) => t.is_active || t.id === request?.seal_type_id)
-  }, [sealTypeData, request?.seal_type_id])
+    return items.filter((t) => t.is_active || t.id === source?.seal_type_id)
+  }, [sealTypeData, source?.seal_type_id])
   const companies = companyData?.items ?? []
   const employees = employeeData?.items ?? []
 
-  const [purpose, setPurpose] = useState(request?.purpose ?? '')
-  const [docTitle, setDocTitle] = useState(request?.title ?? '')
-  const [sealTypeId, setSealTypeId] = useState(request?.seal_type_id ?? 0)
-  const [companyId, setCompanyId] = useState(request?.company_id ?? 0)
-  const [copies, setCopies] = useState(request?.copies ?? 1)
-  const [approverId, setApproverId] = useState(request?.first_approver_id ?? 0)
-  const [note, setNote] = useState(request?.note ?? '')
+  const [purpose, setPurpose] = useState(source?.purpose ?? '')
+  const [docTitle, setDocTitle] = useState(source?.title ?? '')
+  const [sealTypeId, setSealTypeId] = useState(source?.seal_type_id ?? 0)
+  const [companyId, setCompanyId] = useState(source?.company_id ?? 0)
+  const [copies, setCopies] = useState(source?.copies ?? 1)
+  const [approverId, setApproverId] = useState(source?.first_approver_id ?? 0)
+  const [note, setNote] = useState(source?.note ?? '')
 
   const selectedCompany = companies.find((c) => c.id === companyId)
   //  MST hiển thị: ưu tiên công ty vừa chọn, lùi về giá trị backend đã lưu.
-  const taxCode = selectedCompany?.tax_code || request?.company_tax_code || ''
+  const taxCode = selectedCompany?.tax_code || source?.company_tax_code || ''
 
   const canManageFiles = !isEdit
     ? false
@@ -88,7 +92,7 @@ export function SealRequestForm({ request, title, onCancel, onSaved }: SealReque
       seal_type_id: sealTypeId,
       company_id: companyId,
       //  Bộ phận phê duyệt suy từ hồ sơ nhân sự người được chọn (nếu có).
-      department_id: employee?.department_id || request?.department_id || 0,
+      department_id: employee?.department_id || source?.department_id || 0,
       copies,
       first_approver_id: approverId,
       note: note.trim(),

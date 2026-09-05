@@ -1,4 +1,4 @@
-import { ArrowLeft, Pencil, Send } from 'lucide-react'
+import { ArrowLeft, Copy, Pencil, Printer, Send } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import { usePermission } from '@/core/authorization/use-permission'
@@ -36,6 +36,7 @@ export function SealRequestDetailPage() {
   const editable = Boolean(data) && EDITABLE_SEAL_STATUSES.has(data!.status)
   const canEdit = editable && can('seal_request', 'write')
   const canDelete = Boolean(data) && can('seal_request', 'delete')
+  const canCreate = can('seal_request', 'create')
 
   return (
     <PageContainer className="w-full">
@@ -71,6 +72,21 @@ export function SealRequestDetailPage() {
             <Button variant="outline" onClick={() => navigate(appRoutes.approvalSeal.edit(data.id))}>
               <Pencil className="size-4" />
               Sửa
+            </Button>
+          )}
+          {canCreate && data && (
+            <Button
+              variant="outline"
+              onClick={() => navigate(`${appRoutes.approvalSeal.new}?from=${data.id}`)}
+            >
+              <Copy className="size-4" />
+              Nhân bản
+            </Button>
+          )}
+          {data && (
+            <Button variant="outline" onClick={() => navigate(appRoutes.approvalSeal.print(data.id))}>
+              <Printer className="size-4" />
+              In phiếu
             </Button>
           )}
           {canDelete && data && (

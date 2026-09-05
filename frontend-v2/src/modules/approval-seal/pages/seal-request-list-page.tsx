@@ -1,4 +1,4 @@
-import { Plus, Search } from 'lucide-react'
+import { Copy, Plus, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -107,8 +107,31 @@ export function SealRequestListPage() {
         width: 150,
         sortable: true,
       },
+      {
+        key: 'actions',
+        header: 'Thao tác',
+        align: 'center',
+        width: 90,
+        hideable: false,
+        cell: (r) =>
+          canCreate ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label={`Nhân bản ${r.code}`}
+              title="Nhân bản"
+              //  Ô hành động phải chặn nổi bọt, không thì bấm là mở luôn trang chi tiết.
+              onClick={(e) => {
+                e.stopPropagation()
+                navigate(`${appRoutes.approvalSeal.new}?from=${r.id}`)
+              }}
+            >
+              <Copy className="size-4" />
+            </Button>
+          ) : null,
+      },
     ],
-    [],
+    [canCreate, navigate],
   )
 
   return (

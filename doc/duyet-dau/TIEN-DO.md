@@ -69,16 +69,17 @@ docker compose exec -T api python -m pytest test/backend -q
 | [x] | Test `test_duyet_dau_thong_bao.py` (3 ca: báo người tạo khi duyệt/trả · im khi không người nhận) | |
 | — | ⚠️ "Giám đốc" = vai trò `company_head` (chưa có vai trò giám đốc chuẩn) — chốt ở quyết định A | |
 
-## PHA 4 — Đồng bộ UI/UX + bản in + nhân bản
+## PHA 4 — Đồng bộ UI/UX + bản in + nhân bản 🟡 (05/09/2026)
 > Chi tiết: [phase-4-dong-bo-ui-va-ban-in.md](phase-4-dong-bo-ui-va-ban-in.md).
 
 | TT | Việc | Ghi chú |
 |---|---|---|
-| [ ] | Header có nút back + tiêu đề = Mục đích + badge (mẫu `booking-page-header.tsx`) | |
-| [ ] | Ghi chú **đính kèm ảnh** (`doc_type="note"`) hiển thị inline | |
-| [ ] | Bản in phiếu (`/print/approval-seal/:id`) — kèm ảnh chứng từ chữ ký sống | |
-| [ ] | Nhân bản phiếu (`/new?from=<id>`, không chép tệp) | |
-| [ ] | Badge pill + confirm dialog + sort cột (dùng chung) | |
+| [x] | Header có nút back + tiêu đề = Mục đích + badge | `SealPageHeader` (từ PHA 1) |
+| [x] | Bản in phiếu (`/print/approval-seal/:id`) — nhúng ảnh chứng từ (fetch attachments, `<img>`), liệt kê PDF | `seal-request-print-page.tsx` + route ở `app-router.tsx` |
+| [x] | Nhân bản phiếu (`/new?from=<id>`, prefill trừ code/status/tệp) — nút ở chi tiết + dòng danh sách | |
+| [x] | Nút **In phiếu** ở chi tiết | |
+| [x] | Badge pill + confirm dialog + sort cột (dùng chung) | có từ PHA 1 |
+| [ ] | Tách khối **chứng từ chữ ký sống** vs **ảnh ghi chú** (`doc_type` signed_doc/note) — **HOÃN** (đang dùng chung `DocumentAttachmentsCard`; cần UI 2 khối riêng, chờ khách quyết có làm không) | |
 
 ## PHA 5 — Runtime luồng duyệt + test tổng thể + phân quyền
 > Chi tiết: [phase-5-runtime-duyet-va-test.md](phase-5-runtime-duyet-va-test.md).

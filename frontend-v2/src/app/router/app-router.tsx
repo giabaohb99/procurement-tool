@@ -91,6 +91,14 @@ export const router = createBrowserRouter([
             }),
             errorElement: <RouteErrorPage />,
           },
+          {
+            path: appRoutes.approvalSeal.print(':id'),
+            lazy: async () => ({
+              Component: (await import('@/modules/approval-seal/pages/seal-request-print-page'))
+                .SealRequestPrintPage,
+            }),
+            errorElement: <RouteErrorPage />,
+          },
           //  Phân hệ TỰ MANG KHUNG riêng (Diễn đàn) — đứng ngoài `ModuleLayout`
           //  như các trang in; `routes.tsx` của phân hệ tự lo layout + errorElement.
           ...customModuleRoutes,
