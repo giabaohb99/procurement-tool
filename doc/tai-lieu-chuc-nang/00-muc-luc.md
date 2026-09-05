@@ -78,6 +78,7 @@ Mỗi dòng ghi trạng thái tài liệu và link tới file `.md` tương ứn
 |---|-----------|-----------|-------------------|
 | 28 | **Văn thư — Quản lý văn bản** (soạn thảo · phiên bản · phê duyệt · ban hành · đánh số · phạm vi · quan hệ · bản trích · clone · chữ ký) | `/document` | [14-van-thu-van-ban.md](14-van-thu-van-ban.md) — đã có tài liệu |
 | 28b | ↳ **Các ca đã kiểm** (phê duyệt · phân quyền · bảo mật · ban hành · stress test) | — | [15-van-thu-cac-ca-da-kiem.md](15-van-thu-cac-ca-da-kiem.md) — đã có tài liệu |
+| 29 | **Đặt xe nội bộ** (yêu cầu đặt xe 2 loại · điều phối xe/tài xế · luồng duyệt theo vai trò · danh mục Xe & Tài xế nội bộ/thuê ngoài) | `/vehicle-booking` | [16-dat-xe.md](16-dat-xe.md) — đã có tài liệu |
 
 ## Nhóm: Ứng dụng tách riêng (tên miền riêng)
 

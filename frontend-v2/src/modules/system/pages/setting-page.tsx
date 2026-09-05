@@ -25,6 +25,8 @@ import { PageHeader } from '@/shared/ui/page-header'
 import { Skeleton } from '@/shared/ui/skeleton'
 
 import { settingApi } from '../api/setting-api'
+import { EmailExclusionPanel } from '../components/email-exclusion-panel'
+import { EmailTemplatePanel } from '../components/email-template-panel'
 import { SettingFieldRow } from '../components/setting-field-row'
 import { SettingSecretRow } from '../components/setting-secret-row'
 import { useSaveSettings, useSettings } from '../hooks/use-settings'
@@ -135,7 +137,7 @@ export function SettingPage() {
   }
 
   return (
-    <PageContainer className="mx-auto w-full max-w-4xl">
+    <PageContainer className="w-full">
       <PageHeader
         title="Cấu hình hệ thống"
         description="Thông số chạy nóng: quy trình duyệt, email gửi đi và kho lưu trữ tệp"
@@ -273,6 +275,11 @@ export function SettingPage() {
               </FormCard>
             )
           })}
+
+          {/* Mẫu email theo bước (Đặt xe) — cùng gác `setting.write` như cả trang. */}
+          <EmailTemplatePanel canWrite={canWrite} />
+          {/* Loại trừ email theo cá nhân / phòng ban / công ty. */}
+          <EmailExclusionPanel canWrite={canWrite} />
         </div>
       )}
 

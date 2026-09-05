@@ -1,4 +1,4 @@
-import { Car, ClipboardList, IdCard } from 'lucide-react'
+import { ClipboardList, IdCard, Route } from 'lucide-react'
 
 import type { ErpModule } from '@/app/router/module-definition'
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -33,9 +33,17 @@ export const vehicleBookingModule: ErpModule = {
       end: true,
     },
     {
+      label: 'Chuyến của tôi',
+      path: appRoutes.vehicleBooking.myTrips,
+      icon: Route,
+      entity: 'vehicle_booking',
+    },
+    {
       label: 'Quản lý xe',
+      // Icon sedan tự vẽ (viewBox 39×28) — dùng `currentColor` nên ĂN MÀU theo menu,
+      // không ghim màu xanh; cùng dáng với thẻ phân hệ Đặt xe.
       path: appRoutes.vehicleBooking.vehicles,
-      icon: Car,
+      icon: CarTileIcon,
       entity: 'vehicle',
       group: 'Danh mục',
     },
@@ -56,15 +64,39 @@ export const vehicleBookingModule: ErpModule = {
       }),
     },
     {
+      path: appRoutes.vehicleBooking.myTrips,
+      lazy: async () => ({
+        Component: (await import('./pages/my-trips-page')).MyTripsPage,
+      }),
+    },
+    {
+      path: appRoutes.vehicleBooking.new,
+      lazy: async () => ({
+        Component: (await import('./pages/vehicle-booking-form-page')).VehicleBookingFormPage,
+      }),
+    },
+    {
+      path: appRoutes.vehicleBooking.edit(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/vehicle-booking-form-page')).VehicleBookingFormPage,
+      }),
+    },
+    {
       path: appRoutes.vehicleBooking.vehicles,
       lazy: async () => ({
         Component: (await import('./pages/vehicle-list-page')).VehicleListPage,
       }),
     },
     {
+      path: appRoutes.vehicleBooking.vehicleNew,
+      lazy: async () => ({
+        Component: (await import('./pages/vehicle-catalog-form-page')).VehicleCatalogFormPage,
+      }),
+    },
+    {
       path: `${appRoutes.vehicleBooking.vehicles}/:id`,
       lazy: async () => ({
-        Component: (await import('./pages/vehicle-catalog-detail-page')).VehicleCatalogDetailPage,
+        Component: (await import('./pages/vehicle-catalog-form-page')).VehicleCatalogFormPage,
       }),
     },
     {
@@ -74,9 +106,15 @@ export const vehicleBookingModule: ErpModule = {
       }),
     },
     {
+      path: appRoutes.vehicleBooking.driverNew,
+      lazy: async () => ({
+        Component: (await import('./pages/driver-catalog-form-page')).DriverCatalogFormPage,
+      }),
+    },
+    {
       path: `${appRoutes.vehicleBooking.drivers}/:id`,
       lazy: async () => ({
-        Component: (await import('./pages/driver-detail-page')).DriverDetailPage,
+        Component: (await import('./pages/driver-catalog-form-page')).DriverCatalogFormPage,
       }),
     },
     {

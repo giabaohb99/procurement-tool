@@ -102,7 +102,8 @@ def list_users(db: Session, pg: dict, search: str = "", department: str = "", ro
     if search:
         like = f"%{search.strip()}%"
         emp_ids = [e.id for e in db.query(Employee).filter(
-            (Employee.full_name.ilike(like)) | (Employee.code.ilike(like)) | (Employee.email.ilike(like))
+            (Employee.full_name.ilike(like)) | (Employee.code.ilike(like))
+            | (Employee.email.ilike(like)) | (Employee.phone.ilike(like))  # tìm theo SĐT (chọn tài xế nội bộ)
         ).all()]
         cond = User.email.ilike(like)
         if emp_ids:

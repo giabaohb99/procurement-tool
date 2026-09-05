@@ -2,12 +2,13 @@ import { Building2, IdCard, Phone } from 'lucide-react'
 
 import { appRoutes } from '@/shared/constants/app-routes'
 import type { CrudConfig } from '@/shared/crud'
-import { Badge } from '@/shared/ui/badge'
+import { AvailabilityBadge, SourceBadge } from '../components/status-pill'
 import { DRIVER_STATUS_LABELS, type Driver } from '../types/driver'
 
 const STATUS_OPTIONS = [
   { value: 'available', label: 'Sẵn sàng' },
   { value: 'on_leave', label: 'Nghỉ phép' },
+  { value: 'inactive', label: 'Ngưng sử dụng' },
 ]
 
 export const DRIVER_CRUD_CONFIG: CrudConfig<Driver> = {
@@ -15,6 +16,8 @@ export const DRIVER_CRUD_CONFIG: CrudConfig<Driver> = {
   title: 'Danh mục Tài xế',
   unitLabel: 'tài xế',
   apiPath: '/api/drivers',
+  // Thêm/Sửa mở TRANG riêng (không popup): nút "Thêm" đi `/new`, bấm dòng đi `/:id`.
+  createRoute: appRoutes.vehicleBooking.driverNew,
   storageKey: 'vehicle-booking.drivers',
   listRoute: appRoutes.vehicleBooking.drivers,
   detailRoute: (id) => appRoutes.vehicleBooking.driverDetail(id),
@@ -36,40 +39,46 @@ export const DRIVER_CRUD_CONFIG: CrudConfig<Driver> = {
       width: 220,
       hideable: false,
       defaultPinned: true,
+      sortable: true,
       cell: (d) => <span className="font-medium">{d.name}</span>,
     },
-    { key: 'phone', header: 'Điện thoại', width: 150, cell: (d) => d.phone || '—' },
+    { key: 'phone', header: 'Điện thoại', width: 150, sortable: true, cell: (d) => d.phone || '—' },
     {
       key: 'email',
       header: 'Email',
       width: 220,
       defaultHidden: true,
+      sortable: true,
       cell: (d) => d.email || '—',
     },
     {
       key: 'license_number',
       header: 'Số GPLX',
-      width: 130,
+      width: 150,
+      sortable: true,
       cell: (d) => d.license_number || '—',
+    },
+    {
+      key: 'license_class',
+      header: 'Hạng',
+      width: 90,
+      sortable: true,
+      cell: (d) => d.license_class || '—',
     },
     {
       key: 'is_external',
       header: 'Nguồn',
       width: 120,
-      cell: (d) => (
-        <Badge variant={d.is_external ? 'outline' : 'secondary'}>
-          {d.is_external ? 'Thuê ngoài' : 'Nội bộ'}
-        </Badge>
-      ),
+      sortable: true,
+      cell: (d) => <SourceBadge isExternal={d.is_external} />,
     },
     {
       key: 'status',
       header: 'Trạng thái',
       width: 130,
+      sortable: true,
       cell: (d) => (
-        <Badge variant={d.status === 'available' ? 'default' : 'outline'}>
-          {DRIVER_STATUS_LABELS[d.status] ?? d.status}
-        </Badge>
+        <AvailabilityBadge status={d.status} label={DRIVER_STATUS_LABELS[d.status] ?? d.status} />
       ),
     },
   ],
@@ -101,13 +110,8 @@ export const DRIVER_CRUD_CONFIG: CrudConfig<Driver> = {
     { name: 'name', label: 'Tên tài xế', type: 'text', required: true, placeholder: 'VD: Lê Minh Thông' },
     { name: 'phone', label: 'Số điện thoại', type: 'text', required: true, placeholder: 'VD: 0907507103' },
     { name: 'email', label: 'Email', type: 'text', placeholder: 'VD: taixe@degoholding.com' },
-    {
-      name: 'license_number',
-      label: 'Số giấy phép lái xe (hạng)',
-      type: 'text',
-      required: true,
-      placeholder: 'VD: B2, C, D',
-    },
+    { name: 'license_number', label: 'Số giấy phép lái xe', type: 'text', required: true, placeholder: 'VD: 790112345678' },
+    { name: 'license_class', label: 'Hạng GPLX', type: 'text', placeholder: 'VD: B2, C, D' },
     {
       name: 'user_id',
       label: 'Tài khoản đăng nhập (nội bộ)',

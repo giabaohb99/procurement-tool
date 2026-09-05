@@ -11,6 +11,7 @@ import {
 import { DialogContent } from '@/shared/ui/dialog'
 import { Label } from '@/shared/ui/label'
 import { RequiredMark } from '@/shared/ui/required-mark'
+import { confirm } from '@/shared/ui/confirm-dialog'
 import {
   Select,
   SelectContent,
@@ -36,6 +37,7 @@ interface BookingDispatchDialogProps {
 const NONE = ''
 
 export function BookingDispatchDialog({ booking, onClose, onDispatched }: BookingDispatchDialogProps) {
+  const selfDrive = booking.is_self_drive
   const dispatchMutation = useDispatchVehicleBooking()
   const { data: vehicles, isLoading: vehiclesLoading } = useVehicleOptions()
   const { data: drivers, isLoading: driversLoading } = useDriverOptions()
@@ -52,20 +54,29 @@ export function BookingDispatchDialog({ booking, onClose, onDispatched }: Bookin
   const dirty = `${vehicleId}|${driverId}` !== initial
   const pending = dispatchMutation.isPending
 
-  function attemptClose() {
+  async function attemptClose() {
     if (pending) return
-    if (dirty && !window.confirm('Bạn có thay đổi chưa lưu. Đóng và bỏ các thay đổi này?')) return
+    if (dirty && !(await confirm({ message: 'Bạn có thay đổi chưa lưu. Đóng và bỏ các thay đổi này?' }))) return
     onClose()
   }
 
   function handleSubmit() {
-    if (!vehicleId || !driverId) {
-      setError('Vui lòng chọn cả xe và tài xế.')
+    if (!vehicleId) {
+      setError('Vui lòng chọn xe.')
+      return
+    }
+    if (!selfDrive && !driverId) {
+      setError('Vui lòng chọn tài xế.')
       return
     }
     setError('')
     dispatchMutation.mutate(
-      { id: booking.id, assigned_vehicle_id: Number(vehicleId), assigned_driver_id: Number(driverId) },
+      {
+        id: booking.id,
+        assigned_vehicle_id: Number(vehicleId),
+        //  Tự lái: người yêu cầu là tài xế → không gán tài xế.
+        assigned_driver_id: selfDrive ? 0 : Number(driverId),
+      },
       { onSuccess: onDispatched },
     )
   }
@@ -87,7 +98,9 @@ export function BookingDispatchDialog({ booking, onClose, onDispatched }: Bookin
         <DialogHeader className="flex-row items-start justify-between text-left">
           <div>
             <DialogTitle>Điều phối {booking.code}</DialogTitle>
-            <DialogDescription>Chọn 1 xe và 1 tài xế cho phiếu này.</DialogDescription>
+            <DialogDescription>
+              {selfDrive ? 'Chuyến tự lái — chỉ cần chọn 1 xe.' : 'Chọn 1 xe và 1 tài xế cho phiếu này.'}
+            </DialogDescription>
           </div>
           <Button type="button" variant="ghost" size="icon" onClick={attemptClose} aria-label="Đóng">
             <X className="size-4" />
@@ -117,27 +130,40 @@ export function BookingDispatchDialog({ booking, onClose, onDispatched }: Bookin
             </Select>
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <Label>
-              Tài xế
-              <RequiredMark />
-            </Label>
-            <Select value={driverId} onValueChange={setDriverId} disabled={driversLoading}>
-              <SelectTrigger>
-                <SelectValue placeholder={driversLoading ? 'Đang tải…' : 'Chọn tài xế'} />
-              </SelectTrigger>
-              <SelectContent>
-                {(drivers?.items ?? []).map((d) => (
-                  <SelectItem key={d.id} value={String(d.id)}>
-                    {d.name}
-                    {d.phone ? ` · ${d.phone}` : ''}
-                    {` · ${DRIVER_STATUS_LABELS[d.status] ?? d.status}`}
-                    {d.is_external ? ' · Thuê ngoài' : ''}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {selfDrive ? (
+            //  Tự lái: tài xế KHÓA = người yêu cầu (không chọn).
+            <div className="flex flex-col gap-1.5">
+              <Label>Tài xế</Label>
+              <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm">
+                {booking.requester || '—'} <span className="text-muted-foreground">(tự lái)</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Chuyến tự lái — người yêu cầu là tài xế, không cần chọn.
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-1.5">
+              <Label>
+                Tài xế
+                <RequiredMark />
+              </Label>
+              <Select value={driverId} onValueChange={setDriverId} disabled={driversLoading}>
+                <SelectTrigger>
+                  <SelectValue placeholder={driversLoading ? 'Đang tải…' : 'Chọn tài xế'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {(drivers?.items ?? []).map((d) => (
+                    <SelectItem key={d.id} value={String(d.id)}>
+                      {d.name}
+                      {d.phone ? ` · ${d.phone}` : ''}
+                      {` · ${DRIVER_STATUS_LABELS[d.status] ?? d.status}`}
+                      {d.is_external ? ' · Thuê ngoài' : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {error && <p className="text-sm text-destructive">{error}</p>}
         </div>

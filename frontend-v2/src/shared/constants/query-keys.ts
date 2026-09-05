@@ -274,6 +274,10 @@ export const queryKeys = {
     auditLogs: (params?: Record<string, unknown>) => ['system', 'audit-logs', params ?? {}] as const,
     /** Hộp thư gửi danh nghĩa địa chỉ khác (26/08/2026). */
     mailboxes: () => ['system', 'mailboxes'] as const,
+    /** Mẫu email thông báo theo bước (Đặt xe) — sửa được trong Cấu hình. */
+    emailTemplates: () => ['system', 'email-templates'] as const,
+    /** Loại trừ email theo cá nhân / phòng ban / công ty. */
+    emailExclusions: () => ['system', 'email-exclusions'] as const,
     imports: (params?: Record<string, unknown>) => ['system', 'imports', params ?? {}] as const,
     importDetail: (id: number | string) => ['system', 'imports', 'detail', id] as const,
     importLogs: (id: number | string, params?: Record<string, unknown>) =>

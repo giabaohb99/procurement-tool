@@ -87,6 +87,12 @@ export const systemModule: ErpModule = {
       }),
     },
     {
+      path: appRoutes.system.emailTemplate(':event'),
+      lazy: async () => ({
+        Component: (await import('./pages/email-template-editor-page')).EmailTemplateEditorPage,
+      }),
+    },
+    {
       path: appRoutes.system.backups,
       lazy: async () => ({
         Component: (await import('./pages/backup-list-page')).BackupListPage,

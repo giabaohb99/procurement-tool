@@ -83,6 +83,14 @@ export const router = createBrowserRouter([
             }),
             errorElement: <RouteErrorPage />,
           },
+          {
+            path: appRoutes.vehicleBooking.print(':id'),
+            lazy: async () => ({
+              Component: (await import('@/modules/vehicle-booking/pages/vehicle-booking-print-page'))
+                .VehicleBookingPrintPage,
+            }),
+            errorElement: <RouteErrorPage />,
+          },
           //  Phân hệ TỰ MANG KHUNG riêng (Diễn đàn) — đứng ngoài `ModuleLayout`
           //  như các trang in; `routes.tsx` của phân hệ tự lo layout + errorElement.
           ...customModuleRoutes,

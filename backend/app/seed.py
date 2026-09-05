@@ -348,10 +348,11 @@ STD_ROLES = {
         "driver": (["read", "create", "write", "delete"], "all"),
     }},
     # Tài xế: xem + cập nhật CHUYẾN CỦA MÌNH (nhận / bắt đầu / hoàn thành / xin
-    # điều phối lại — đều tính là `write`). Phạm vi 'own' tạm thời; màn "Chuyến
-    # của tôi" lọc theo tài xế ĐƯỢC PHÂN sẽ mở khi có scope assigned_driver riêng.
+    # điều phối lại — đều tính là `write`). Phạm vi 'assigned' = phiếu mình tạo +
+    # phiếu ĐƯỢC PHÂN cho mình (nối qua Driver.user_id, xem scoping.py) — nhờ vậy
+    # nút của tài xế mới tới đúng người được phân, không phải chỉ phiếu tự tạo.
     "booking_driver": {"name": "Tài xế (Đặt xe)", "perms": {
-        "vehicle_booking": (["read", "write"], "own"),
+        "vehicle_booking": (["read", "write"], "assigned"),
         "vehicle": (["read"], "all"),
         "driver": (["read"], "all"),
     }},

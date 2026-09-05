@@ -64,7 +64,8 @@ function CrudListContent<T extends CrudRecord>({ config }: CrudListPageProps<T>)
 
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
-  const [isCreateOpen, setCreateOpen] = useState(false)
+  // Trạng thái popup Thêm/Sửa: undefined = đóng · null = THÊM mới · bản ghi = SỬA.
+  const [formItem, setFormItem] = useState<T | null | undefined>(undefined)
 
   const { queryParams, queryKey } = useFilterQuery()
   const [page, setPage] = usePageResetOnFilterChange([queryKey, debouncedValue, searchParams.toString()])
@@ -91,7 +92,10 @@ function CrudListContent<T extends CrudRecord>({ config }: CrudListPageProps<T>)
   const { data, isLoading, isError } = useCrudList<T>(config.apiPath, params)
 
   const handleRowClick = (row: T) => {
-    if (config.detailRoute) {
+    // Mở popup Sửa tại chỗ, hoặc điều hướng sang trang chi tiết (mặc định).
+    if (config.openFormOnRowClick) {
+      setFormItem(row)
+    } else if (config.detailRoute) {
       navigate(config.detailRoute(row[idKey] as string | number))
     }
   }
@@ -122,7 +126,11 @@ function CrudListContent<T extends CrudRecord>({ config }: CrudListPageProps<T>)
             {config.renderToolbarExtra?.()}
 
             <PermissionGate entity={config.entity} action="create">
-              <Button onClick={() => setCreateOpen(true)}>
+              <Button
+                onClick={() =>
+                  config.createRoute ? navigate(config.createRoute) : setFormItem(null)
+                }
+              >
                 <Plus className="mr-1.5 size-4" /> Thêm {config.unitLabel}
               </Button>
             </PermissionGate>
@@ -196,11 +204,21 @@ function CrudListContent<T extends CrudRecord>({ config }: CrudListPageProps<T>)
         />
       </Card>
 
-      <CrudFormDialog
-        open={isCreateOpen}
-        onOpenChange={setCreateOpen}
-        config={config}
-      />
+      {/* Form riêng nếu config khai `FormDialog` (vd Tài xế), ngược lại dùng form generic.
+          Chỉ dựng khi MỞ để hộp thoại nạp state sạch mỗi lần (khỏi cần effect reset).
+          `formItem`: null = Thêm mới · bản ghi = Sửa. */}
+      {formItem !== undefined &&
+        (() => {
+          const FormDialog = config.FormDialog ?? CrudFormDialog
+          return (
+            <FormDialog
+              open
+              onOpenChange={(next) => !next && setFormItem(undefined)}
+              config={config}
+              item={formItem ?? undefined}
+            />
+          )
+        })()}
     </PageContainer>
   )
 }

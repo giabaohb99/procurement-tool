@@ -9,6 +9,14 @@ export interface UserAccount {
   /** Lấy từ hồ sơ nhân sự; không có thì controller trả về email. */
   full_name: string
   department_name: string
+  /** Mã nhân sự (chỉ có ở danh sách; rỗng khi tài khoản không còn hồ sơ). */
+  code?: string
+  /** SĐT của hồ sơ nhân sự (tìm & tự điền tài xế nội bộ). */
+  phone?: string
+  /** Email LIÊN HỆ của nhân sự (khác `email` = email đăng nhập). */
+  contact_email?: string
+  /** Ảnh đại diện (cùng ảnh tài khoản đăng nhập); rỗng thì hiện chữ viết tắt. */
+  avatar?: string
   /** Chỉ có ở danh sách: hồ sơ nhân sự đã bị xóa -> tài khoản không còn hồ sơ. */
   is_orphan?: boolean
 }

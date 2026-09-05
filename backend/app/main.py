@@ -45,7 +45,7 @@ from app.modules.department.controller import router as department_router
 from app.modules.employee.controller import router as employee_router
 from app.modules.vehicle_booking.controller import router as vehicle_booking_router
 from app.modules.vehicle_booking.catalog_controller import (
-    driver_router, vehicle_router)
+    dispatch_router, driver_router, vehicle_router)
 from app.modules.product.controller import router as product_router
 from app.modules.purchase_history.controller import router as purchase_history_router
 from app.modules.role.controller import router as role_router
@@ -56,6 +56,8 @@ from app.modules.user.controller import router as user_router
 from app.modules.setting.controller import router as setting_router
 from app.modules.user_preference.controller import router as user_preference_router
 from app.modules.notification.controller import router as notification_router
+from app.modules.notification.email_template_controller import router as email_template_router
+from app.modules.notification.email_exclusion_controller import router as email_exclusion_router
 from app.modules.notification.mailbox_controller import router as mailbox_router
 from app.modules.push.controller import router as push_router
 from app.modules.category_assignee.controller import router as category_assignee_router
@@ -80,6 +82,7 @@ from app.modules.approval.delegation_controller import router as delegation_rout
 #  Nạp lười (chỉ khi có người bấm gửi duyệt) thì phiên duyệt đầu tiên chạy
 #  xong mà văn bản không đổi trạng thái, vì lúc đó chưa ai khai hàm.
 from app.modules.document import approval_bridge  # noqa: F401
+from app.modules.vehicle_booking import approval_bridge as _vehicle_booking_bridge  # noqa: F401
 
 app = FastAPI(title="Procurement Tool API", version="0.1.0")
 
@@ -197,6 +200,8 @@ app.include_router(alert_router)
 app.include_router(setting_router)
 app.include_router(user_preference_router)
 app.include_router(notification_router)
+app.include_router(email_template_router)
+app.include_router(email_exclusion_router)
 app.include_router(mailbox_router)
 app.include_router(push_router)
 app.include_router(category_assignee_router)
@@ -216,6 +221,7 @@ app.include_router(work_task_router)
 app.include_router(vehicle_booking_router)
 app.include_router(vehicle_router)
 app.include_router(driver_router)
+app.include_router(dispatch_router)
 #  Bộ máy phê duyệt dùng chung — không thuộc phân hệ nào, mọi loại chứng từ
 #  đều chạy qua nó.
 app.include_router(approval_flow_router)

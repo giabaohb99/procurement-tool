@@ -81,6 +81,77 @@ export function useDriverOptions() {
   })
 }
 
+/** Hồ sơ tài xế của chính người đăng nhập — để form TỰ LÁI tự điền GPLX. */
+export function useMyDriver(enabled = true) {
+  return useQuery({
+    queryKey: ['vehicle-booking', 'my-driver'],
+    queryFn: dispatchOptionsApi.myDriver,
+    staleTime: 5 * 60 * 1000,
+    enabled,
+  })
+}
+
+/**
+ * Các nút chuyển trạng thái theo vai trò (duyệt / trả / từ chối · tài xế nhận /
+ * bắt đầu / hoàn tất). Mọi mutation làm mới danh sách + chi tiết và bắn toast từ
+ * thông điệp `message` server trả về — nên thông điệp chỉ khai một chỗ (backend).
+ */
+function useBookingTransition<TVars extends { id: number }>(
+  mutationFn: (vars: TVars) => Promise<unknown>,
+  successMsg: string,
+) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn,
+    onSuccess: (_data, { id }) => {
+      qc.invalidateQueries({ queryKey: queryKeys.vehicleBooking.all })
+      qc.invalidateQueries({ queryKey: queryKeys.vehicleBooking.booking(id) })
+      toast.success(successMsg)
+    },
+  })
+}
+
+export function useApproveBooking() {
+  return useBookingTransition(({ id }: { id: number }) => vehicleBookingApi.approve(id), 'Đã duyệt yêu cầu')
+}
+export function useReturnBooking() {
+  return useBookingTransition(
+    ({ id, reason }: { id: number; reason: string }) => vehicleBookingApi.returnForEdit(id, reason),
+    'Đã trả lại để chỉnh sửa',
+  )
+}
+export function useRejectBooking() {
+  return useBookingTransition(
+    ({ id, reason }: { id: number; reason: string }) => vehicleBookingApi.reject(id, reason),
+    'Đã từ chối yêu cầu',
+  )
+}
+export function useDriverAcceptBooking() {
+  return useBookingTransition(
+    ({ id }: { id: number }) => vehicleBookingApi.driverAccept(id),
+    'Đã nhận chuyến',
+  )
+}
+export function useDriverRejectBooking() {
+  return useBookingTransition(
+    ({ id, reason }: { id: number; reason: string }) => vehicleBookingApi.driverReject(id, reason),
+    'Đã từ chối chuyến — chờ điều phối lại',
+  )
+}
+export function useDriverStartBooking() {
+  return useBookingTransition(
+    ({ id }: { id: number }) => vehicleBookingApi.driverStart(id),
+    'Đã bắt đầu chuyến',
+  )
+}
+export function useDriverCompleteBooking() {
+  return useBookingTransition(
+    ({ id, distance_km, cost }: { id: number; distance_km?: number; cost?: number }) =>
+      vehicleBookingApi.driverComplete(id, { distance_km, cost }),
+    'Đã hoàn tất chuyến',
+  )
+}
+
 /** Sửa phiếu (chỉ khi còn nháp / bị trả về) — `submit` để gửi duyệt sau khi lưu. */
 export function useUpdateVehicleBooking() {
   const qc = useQueryClient()

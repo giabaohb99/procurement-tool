@@ -176,6 +176,18 @@ def test_dispatch_blocked_when_closed(db):
         dispatch_booking(db, b, DispatchIn(assigned_vehicle_id=veh.id, assigned_driver_id=drv.id), actor)
 
 
+def test_code_generation_robust_with_mixed_codes(db):
+    #  Dữ liệu có mã LẪN CHỮ (kiểu demo DXTC10) + mã số — sinh mã kế tiếp không đụng khóa.
+    #  Lỗi cũ: generate_code sắp chuỗi giảm dần chọn DXTC10 → int lỗi → rơi về DX001 (trùng).
+    actor = _actor(db)
+    db.add_all([m.VehicleBooking(code="DXTC10", status=m.BK_DRAFT),
+                m.VehicleBooking(code="DX001", status=m.BK_DRAFT),
+                m.VehicleBooking(code="DX005", status=m.BK_DRAFT)])
+    db.flush()
+    b = create_booking(db, _car_payload(), actor, submit=False)
+    assert b.code == "DX006"  # max số (5) + 1, bỏ qua mã có chữ
+
+
 def test_keyword_search_matches_code_and_purpose(db):
     actor = _actor(db)
     create_booking(db, _car_payload(purpose="Đón đối tác sân bay"), actor, submit=False)

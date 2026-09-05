@@ -5,8 +5,15 @@ Cả hai là danh mục nền (entity `vehicle` / `driver`, khai PUBLIC ở scop
 kèm xuất/nhập CSV. Không có migration — model đã đủ trường (xem model.py).
 """
 
-from app.core.crud import make_crud_router
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
 
+from app.core.auth import require
+from app.core.crud import make_crud_router
+from app.core.database import get_db
+from app.core.response import success
+
+from . import service
 from .model import Driver, Vehicle
 from .schema import (
     DriverCreate,
@@ -40,3 +47,23 @@ driver_router = make_crud_router(
         "license_number": "Số GPLX", "status": "Trạng thái",
     },
 )
+
+
+# Ô chọn tài xế khi ĐIỀU PHỐI — lọc theo vai trò (chỉ người thật sự là tài xế).
+# Gác `vehicle_booking.write` (quyền của điều phối viên), không phải `driver`.
+dispatch_router = APIRouter(prefix="/api/dispatch", tags=["vehicle-booking"])
+
+
+@dispatch_router.get("/drivers")
+def dispatch_driver_options(db: Session = Depends(get_db),
+                            user=Depends(require("vehicle_booking", "write"))):
+    """Tài xế để đổ vào ô chọn khi điều phối (xem `service.drivers_for_dispatch`)."""
+    rows = service.drivers_for_dispatch(db)
+    return success({"items": rows, "total": len(rows)})
+
+
+@dispatch_router.get("/my-driver")
+def my_driver(db: Session = Depends(get_db),
+              user=Depends(require("vehicle_booking", "read"))):
+    """Hồ sơ tài xế của chính người đăng nhập — để form TỰ LÁI tự điền GPLX. `null` nếu chưa là tài xế."""
+    return success(service.my_driver_profile(db, user))

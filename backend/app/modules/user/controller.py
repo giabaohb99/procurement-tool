@@ -48,6 +48,11 @@ def list_users(
         emp = db.get(Employee, u.employee_id) if u.employee_id else None
         d["full_name"] = (emp.full_name if emp else "") or u.email or ""
         d["department_name"] = (emp.department_name if emp else "") or ""
+        d["code"] = emp.code if emp else ""          # mã nhân sự (rỗng nếu mồ côi)
+        d["phone"] = (emp.phone if emp else "") or ""  # SĐT nhân sự — tìm & tự điền tài xế nội bộ
+        # Email LIÊN HỆ của nhân sự (khác `email` = email ĐĂNG NHẬP của tài khoản, giữ nguyên).
+        d["contact_email"] = (emp.email if emp else "") or ""
+        d["avatar"] = u.avatar or ""                 # ảnh: cùng ảnh tài khoản đăng nhập
         d["is_orphan"] = emp is None      # không còn hồ sơ nhân sự -> tài khoản mồ côi
         out.append(d)
     return success({"total": total, "items": out})

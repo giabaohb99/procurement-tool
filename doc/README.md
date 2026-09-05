@@ -46,7 +46,8 @@
 - `FEATURE_CHECKLIST.md`, `NAMING_CONVENTIONS.md`, `Plan_Celery_Worker.md`
 
 ## Khác
-- `testcase/` — kịch bản test tay; `ke-hoach-import/`, `ke-hoach-celery/` — kế hoạch từng mảng
+- `testcase/` — kịch bản test tay; `ke-hoach-import/`, `ke-hoach-celery/`, `dat-xe-duyet-dau/` — kế hoạch từng mảng
+  - `dat-xe-duyet-dau/` — **Phân hệ Đặt xe nội bộ** (kế hoạch + tiến độ theo phase). Xem `README.md` + `TIEN-DO.md`.
 - `datamau/`, `sheet/` — dữ liệu mẫu / bảng gốc
 - `../TASKS.md` — tiến độ triển khai
 - `../help-center/README.md` — Trung tâm Hướng dẫn sử dụng (app riêng)

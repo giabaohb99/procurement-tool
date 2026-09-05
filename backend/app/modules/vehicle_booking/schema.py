@@ -36,13 +36,19 @@ def _normalize_stops(v):
 
 
 class VehicleBase(BaseModel):
+    # Biển số (xe nội bộ) HOẶC tên gọi (xe thuê ngoài không có biển) — luôn có, là khóa duy nhất.
     license_plate: str = Field(..., max_length=50)
     model: str = Field("", max_length=100)
     type: str = Field("", max_length=50)
-    capacity: int = 4
+    capacity: float = 4  # số chỗ (chở người) hoặc tấn (chở hàng)
     status: str = "available"
     is_external: bool = False
-    external_company: str = ""
+    external_company: str = ""                          # tên đơn vị / doanh nghiệp
+    # Xe thuê ngoài: 1 = doanh nghiệp, 2 = cá nhân (0 = không áp dụng)
+    supplier_type: int = 0
+    tax_code: str = Field("", max_length=50)           # MST (doanh nghiệp)
+    tax_address: str = Field("", max_length=255)       # địa chỉ thuế (doanh nghiệp)
+    id_number: str = Field("", max_length=50)          # CCCD (cá nhân)
 
 class VehicleCreate(VehicleBase):
     pass
@@ -51,13 +57,18 @@ class VehicleUpdate(BaseModel):
     license_plate: str | None = None
     model: str | None = None
     type: str | None = None
-    capacity: int | None = None
+    capacity: float | None = None
     status: str | None = None
     is_external: bool | None = None
     external_company: str | None = None
+    supplier_type: int | None = None
+    tax_code: str | None = None
+    tax_address: str | None = None
+    id_number: str | None = None
 
 class VehicleResponse(VehicleBase):
     id: int
+    supplier_type_label: str = ""
     class Config:
         from_attributes = True
 
@@ -65,10 +76,16 @@ class DriverBase(BaseModel):
     name: str = Field(..., max_length=255)
     email: str = Field("", max_length=255)
     phone: str = Field("", max_length=20)
-    license_number: str = Field("", max_length=50)
+    license_number: str = Field("", max_length=50)   # SỐ giấy phép lái xe
+    license_class: str = Field("", max_length=20)     # HẠNG GPLX (B2/C/D…)
     status: str = "available"
     is_external: bool = False
-    external_company: str = ""
+    external_company: str = ""                          # tên đơn vị / doanh nghiệp
+    # Tài xế thuê ngoài: 1 = doanh nghiệp, 2 = cá nhân (0 = không áp dụng)
+    supplier_type: int = 0
+    tax_code: str = Field("", max_length=50)           # MST (doanh nghiệp)
+    tax_address: str = Field("", max_length=255)       # địa chỉ thuế (doanh nghiệp)
+    id_number: str = Field("", max_length=50)          # CCCD (cá nhân)
     # Liên kết tài khoản đăng nhập (tài xế nội bộ). Bỏ trống = chưa liên kết.
     user_id: int | None = None
 
@@ -86,9 +103,14 @@ class DriverUpdate(BaseModel):
     email: str | None = None
     phone: str | None = None
     license_number: str | None = None
+    license_class: str | None = None
     status: str | None = None
     is_external: bool | None = None
     external_company: str | None = None
+    supplier_type: int | None = None
+    tax_code: str | None = None
+    tax_address: str | None = None
+    id_number: str | None = None
     user_id: int | None = None
 
     @field_validator("user_id", mode="before")
@@ -98,6 +120,7 @@ class DriverUpdate(BaseModel):
 
 class DriverResponse(DriverBase):
     id: int
+    supplier_type_label: str = ""
     class Config:
         from_attributes = True
 
@@ -105,6 +128,10 @@ class VehicleBookingBase(BaseModel):
     # 1 = đặt xe công tác · 2 = giao hàng (xem hằng số TYPE_* ở model)
     request_type: int = 1
     purpose: str
+    # TỰ LÁI: người yêu cầu tự lái; kèm GPLX (bắt buộc khi gửi duyệt, kiểm ở service)
+    is_self_drive: bool = False
+    license_number: str = Field("", max_length=50)
+    license_class: str = Field("", max_length=20)
     start_location: str = Field("", max_length=255)
     end_location: str = Field("", max_length=255)
     stops: list[StopItem] = Field(default_factory=list)  # điểm dừng trung gian, giữ thứ tự
@@ -140,13 +167,25 @@ class VehicleBookingCreate(VehicleBookingBase):
     pass
 
 class DispatchIn(BaseModel):
-    """Điều phối: gán 1 xe + 1 tài xế cho phiếu."""
+    """Điều phối: gán 1 xe (+ 1 tài xế; tự lái thì bỏ trống, người yêu cầu là tài xế)."""
     assigned_vehicle_id: int
-    assigned_driver_id: int
+    assigned_driver_id: int = 0
+
+class ReasonIn(BaseModel):
+    """Lý do đi kèm khi trả lại / từ chối (người duyệt hoặc tài xế)."""
+    reason: str = Field("", max_length=1000)
+
+class CompleteIn(BaseModel):
+    """Tài xế hoàn tất chuyến: km + chi phí thực tế (đều tùy chọn)."""
+    distance_km: float | None = None
+    cost: int | None = None
 
 class VehicleBookingUpdate(BaseModel):
     request_type: int | None = None
     purpose: str | None = None
+    is_self_drive: bool | None = None
+    license_number: str | None = None
+    license_class: str | None = None
     start_location: str | None = None
     end_location: str | None = None
     stops: list[StopItem] | None = None
@@ -196,6 +235,11 @@ class VehicleBookingResponse(VehicleBookingBase):
     actual_end_time: str = ""
     distance_km: float = 0
     cost: int = 0
+    # True khi người ĐANG XEM chính là tài xế được phân — frontend bày nút tài xế.
+    is_assigned_driver: bool = False
+    # True khi phiếu đang chạy trong LUỒNG DUYỆT NHIỀU BƯỚC — frontend ẩn 3 nút
+    # duyệt một bước, hiện banner "xử lý ở Việc của tôi" (chỉ set ở API chi tiết).
+    approval_running: bool = False
     created_at: str | None = None
 
     @field_validator("created_at", mode="before")

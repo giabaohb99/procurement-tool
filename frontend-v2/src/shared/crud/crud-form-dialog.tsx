@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/shared/ui/dialog'
+import { confirm } from '@/shared/ui/confirm-dialog'
 import { CrudField } from './crud-field'
 import { buildFormDefaults, toApiPayload } from './field-values'
 import type { CrudConfig, CrudRecord } from './types'
@@ -44,9 +45,9 @@ export function CrudFormDialog<T extends CrudRecord>({
   const pending = isSubmitting || saveMutation.isPending
 
   /** Đóng theo case C-01: chỉ Hủy/X; form đã sửa thì hỏi xác nhận, tránh mất dữ liệu. */
-  const attemptClose = () => {
+  const attemptClose = async () => {
     if (pending) return
-    if (isDirty && !window.confirm('Bạn có thay đổi chưa lưu. Đóng và bỏ các thay đổi này?')) return
+    if (isDirty && !(await confirm({ message: 'Bạn có thay đổi chưa lưu. Đóng và bỏ các thay đổi này?' }))) return
     onOpenChange(false)
   }
 
