@@ -225,8 +225,11 @@ export default function PurchaseRequestDetail() {
   // CR-034: các trạng thái "làm việc được" (tạo ĐMH / hoàn thành phiếu). Bình thường phải qua
   // bước duyệt điều phối; nếu công tắc điều phối bị TẮT thì "Đã duyệt" cũng làm việc được
   // (phiếu cũ còn kẹt ở đó từ lúc công tắc còn bật).
+  // bao-CR-292: thêm hai mốc mới 'purchasing'/'purchased' — phiếu đã mua đủ vẫn có thể cần
+  // thêm ĐMH (đặt bổ sung / NCC khác) nên không khóa nút ở hai mốc này.
   const workableStatuses = pr.dispatch_enabled === false
-    ? ['approved', 'dispatched', 'processing'] : ['dispatched', 'processing']
+    ? ['approved', 'dispatched', 'processing', 'purchasing', 'purchased']
+    : ['dispatched', 'processing', 'purchasing', 'purchased']
   // Còn dòng nào chưa đặt hàng → vẫn cho tạo ĐMH (không ẩn khi mới hoàn thành 1 dòng).
   // CR-074: phải tính CẢ hai nhãn "chưa động tới", nếu không thì vừa lập đơn Nháp là nút
   // "Tạo ĐMH" biến mất, trong khi dòng đó vẫn có thể cần thêm đơn cho NCC khác.
@@ -835,8 +838,10 @@ export default function PurchaseRequestDetail() {
                 </>
               )}
               <div className="form-row">
-                <label>Ngày tiếp nhận <span className="req">*</span></label>
-                <DateInput value={pr.request_date || ''} disabled={!editable} onChange={(v) => setH('request_date', v)} />
+                {/* bao-CR-293 (ticket 20): Ngày tiếp nhận do backend TỰ ĐIỀN khi thu mua duyệt
+                    điều phối — khóa ô nhập, trước lúc đó giá trị chỉ là tạm (ngày lập phiếu) */}
+                <label>Ngày tiếp nhận <span style={{ color: '#94a3b8', fontWeight: 400, fontSize: 12 }}>(tự điền khi thu mua duyệt điều phối)</span></label>
+                <DateInput value={pr.request_date || ''} disabled onChange={(v) => setH('request_date', v)} />
               </div>
               <div className="form-row">
                 <label>Công ty nhận hóa đơn <span className="req">*</span></label>

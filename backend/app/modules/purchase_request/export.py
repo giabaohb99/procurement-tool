@@ -15,7 +15,8 @@ from .model import PurchaseRequest, PurchaseRequestItem
 STATUS_LABEL = {
     "draft": "Nháp", "submitted": "Chờ duyệt", "approved": "Đã duyệt",
     "dispatched": "Đã điều phối", "rejected": "Bị trả lại", "cancelled": "Đã từ chối",
-    "processing": "Đang xử lý", "completed": "Hoàn thành",
+    "processing": "Đang xử lý", "purchasing": "Đang mua hàng", "purchased": "Đã mua hàng",
+    "completed": "Hoàn thành",
 }
 
 # Cụm đầu phiếu — key trùng key cột trên bảng danh sách để lọc theo "cột đang hiển thị"

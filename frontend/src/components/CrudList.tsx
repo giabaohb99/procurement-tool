@@ -135,8 +135,11 @@ export default function CrudList() {
   const table = useTableColumns(`crud:${entity || ''}`, tableColumns)
 
   function handleSort(field: string) {
-    // Sort phía server: đổi hướng nếu cùng cột, ngược lại asc; luôn về trang 1
-    const nextDir: 'asc' | 'desc' = (sortField === field && sortDir === 'asc') ? 'desc' : 'asc'
+    // Sort phía server: đổi hướng nếu cùng cột; cột mới thì asc — riêng cột thời gian
+    // (bao-CR-294) bấm lần đầu ra DESC luôn vì người dùng muốn "gần nhất trước"
+    const nextDir: 'asc' | 'desc' = sortField === field
+      ? (sortDir === 'asc' ? 'desc' : 'asc')
+      : ((field === 'updated_at' || field === 'created_at') ? 'desc' : 'asc')
     setSortField(field)
     setSortDir(nextDir)
     setPage(1)

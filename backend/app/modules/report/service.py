@@ -324,7 +324,7 @@ def compute_dept_range(db: Session, date_from: str, date_to: str, company_id) ->
 
 # Bộ trạng thái đúng theo enum thật trong DB (để Tổng = tổng các cột)
 _REQ_STATUS = {
-    "pyc": ["draft", "submitted", "approved", "dispatched", "processing", "completed", "rejected", "cancelled"],
+    "pyc": ["draft", "submitted", "approved", "dispatched", "processing", "purchasing", "purchased", "completed", "rejected", "cancelled"],
     "ycks": ["draft", "submitted", "processing", "survey_done", "pr_created", "done", "cancelled"],
 }
 
@@ -434,6 +434,77 @@ def compute_request_range(db, kind, date_from, date_to, company_id, user) -> lis
     if allow is not None:
         rows = [r for r in rows if r["key"] in allow]
     return rows
+
+
+def compute_pr_lines(db, user, *, year=None, company_id=None, status=None, line_status=None,
+                     assignee=None, search=None, page=1, page_size=50) -> dict:
+    """Báo cáo Yêu cầu mua hàng theo DÒNG hàng (bao-CR-295 / ticket 23).
+
+    Mục tiêu: NSTM nhìn vào biết MÃ HÀNG nào chưa được đặt (1 phiếu 3 mã thuộc 3 NCC -> phải
+    tách 3 ĐMH, dễ đặt sót). Phân trang server (50/trang); scope phòng ban giống báo cáo PYC
+    (phòng ban YÊU CẦU chỉ thấy phòng mình). Cột GRAM lấy từ Thông số (specs) của Sản phẩm —
+    hệ thống không có trường gram riêng."""
+    from app.modules.employee.model import Employee
+    from app.modules.product.model import Product
+    from app.modules.purchase_request.model import PurchaseRequest, PurchaseRequestItem
+    from app.modules.purchase_request.service import LINE_STATUS_IDLE
+
+    q = (db.query(PurchaseRequestItem, PurchaseRequest)
+         .join(PurchaseRequest, PurchaseRequestItem.pr_id == PurchaseRequest.id)
+         .filter(PurchaseRequest.is_deleted == False))
+    if company_id:
+        q = q.filter(PurchaseRequest.company_id == int(company_id))
+    if year and year != "all":
+        q = q.filter(PurchaseRequest.request_date.like(f"{year}%"))
+    allow = report_dept_scope(db, user)   # phòng ban YÊU CẦU chỉ thấy phòng của mình
+    if allow is not None:
+        q = q.filter(PurchaseRequest.department.in_(list(allow)))   # set rỗng -> IN () = không dòng nào
+
+    # Danh sách NSTM cho dropdown lọc: tính TRƯỚC các lọc chi tiết (như shipping-detail trả carriers)
+    assignees = sorted({a for (a,) in q.with_entities(PurchaseRequestItem.assignee)
+                        .filter(PurchaseRequestItem.assignee != "").distinct().all()})
+
+    if status:
+        q = q.filter(PurchaseRequest.status == status)
+    if line_status == "chua_dat":   # gộp "Chưa tạo đơn mua hàng" + "Chưa đặt hàng" — đúng mục tiêu soi sót
+        q = q.filter(PurchaseRequestItem.line_status.in_(LINE_STATUS_IDLE))
+    elif line_status:
+        q = q.filter(PurchaseRequestItem.line_status == line_status)
+    if assignee:
+        q = q.filter(PurchaseRequestItem.assignee == assignee)
+    if search:
+        like = f"%{search}%"
+        q = q.filter(PurchaseRequestItem.product_code.like(like)
+                     | PurchaseRequestItem.product_name.like(like)
+                     | PurchaseRequest.code.like(like))
+
+    total = q.count()
+    page = max(1, int(page or 1)); page_size = max(1, int(page_size or 50))
+    pairs = (q.order_by(PurchaseRequest.request_date.desc(), PurchaseRequest.id.desc(),
+                        PurchaseRequestItem.id.asc())
+             .offset((page - 1) * page_size).limit(page_size).all())
+
+    # GRAM = Product.specs (thông số) + tên NSTM theo mã NV — chỉ tra cho các dòng của TRANG này
+    codes = {it.product_code for it, _ in pairs if it.product_code}
+    specs = dict(db.query(Product.code, Product.specs).filter(Product.code.in_(codes)).all()) if codes else {}
+    emp_codes = {it.assignee for it, _ in pairs if it.assignee} | set(assignees)
+    emp_names = dict(db.query(Employee.code, Employee.full_name)
+                     .filter(Employee.code.in_(emp_codes)).all()) if emp_codes else {}
+
+    items = [{
+        "id": it.id, "pr_id": pr.id, "pr_code": pr.code, "created_date": pr.request_date,
+        "requester": pr.requester, "department": pr.department,
+        "product_code": it.product_code, "product_name": it.product_name,
+        "warehouse": it.warehouse, "item_group": it.item_group,
+        "gram": specs.get(it.product_code, ""),
+        "qty": float(it.qty or 0), "price": float(it.price or 0),
+        "vat_pct": float(it.vat_pct or 0), "amount": float(it.amount or 0),
+        "status": pr.status, "line_status": it.line_status,
+        "expected_date": it.expected_date,
+        "assignee": it.assignee, "assignee_name": emp_names.get(it.assignee, ""),
+    } for it, pr in pairs]
+    return {"items": items, "total": total, "page": page, "page_size": page_size,
+            "assignees": [{"code": c, "name": emp_names.get(c, "")} for c in assignees]}
 
 
 def compute_shipping_detail(db, year, company_id, carrier=None, month=None, page=1, page_size=50) -> dict:

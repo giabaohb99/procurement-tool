@@ -188,6 +188,26 @@ def shipping_detail(request: Request, db: Session = Depends(get_db), user=Depend
     return success(report_service.compute_shipping_detail(db, year, company_id, carrier, month, page, page_size))
 
 
+@router.get("/pr-lines")
+def pr_lines(request: Request, db: Session = Depends(get_db), user=Depends(require("report", "read"))):
+    """Báo cáo Yêu cầu mua hàng theo DÒNG hàng (bao-CR-295) — phân trang server (50/trang).
+
+    Cho NSTM soi mã hàng nào CHƯA được đặt (line_status=chua_dat gộp 2 trạng thái chưa đặt).
+    Scope phòng ban như báo cáo PYC: phòng ban YÊU CẦU chỉ thấy phòng của mình."""
+    qp = request.query_params
+    try:
+        page = int(qp.get("page") or 1)
+        page_size = int(qp.get("page_size") or 50)
+    except ValueError:
+        page, page_size = 1, 50
+    return success(report_service.compute_pr_lines(
+        db, user,
+        year=qp.get("year") or str(datetime.now().year), company_id=qp.get("company_id"),
+        status=qp.get("status") or None, line_status=qp.get("line_status") or None,
+        assignee=qp.get("assignee") or None, search=(qp.get("search") or "").strip() or None,
+        page=page, page_size=page_size))
+
+
 @router.get("/dept-range")
 def dept_range(request: Request, db: Session = Depends(get_db), user=Depends(require("report", "read"))):
     """Đặt hàng & đơn gấp theo Bộ phận trong khoảng NGÀY (date_from, date_to = YYYY-MM-DD). Tính realtime."""

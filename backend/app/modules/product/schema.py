@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel
 
 
@@ -32,4 +34,5 @@ class ProductUpdate(BaseModel):
 
 class ProductOut(ProductBase):
     id: int
+    updated_at: datetime | None = None   # bao-CR-294 — cột "Ngày cập nhật" ở màn danh sách
     model_config = {"from_attributes": True}

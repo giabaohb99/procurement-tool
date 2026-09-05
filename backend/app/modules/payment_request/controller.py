@@ -75,7 +75,8 @@ def list_(request: Request, pg: dict = Depends(pagination), db: Session = Depend
     q = apply_sort_from_request(q, PaymentRequest, request, default=PaymentRequest.id.desc())
     items = q.offset(pg["offset"]).limit(pg["limit"]).all()
     out = [{c: getattr(p, c) for c in HEADER}
-           | {"total": float(p.total or 0), "created_by_name": resolve_actor(db, p.created_by)}
+           | {"total": float(p.total or 0), "created_by_name": resolve_actor(db, p.created_by),
+              "updated_at": p.updated_at}   # bao-CR-294 — cột "Ngày cập nhật" ở màn danh sách
            for p in items]
     return success({"total": total, "items": out})
 

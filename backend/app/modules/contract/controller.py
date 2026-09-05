@@ -47,7 +47,8 @@ def _out(c: Contract) -> dict:
     return {"id": c.id, "code": c.code, "party_type": c.party_type, "party_code": c.party_code,
             "party_name": c.party_name, "company_id": c.company_id, "title": c.title,
             "contract_type": c.contract_type, "start_date": c.start_date, "end_date": c.end_date,
-            "signed": bool(c.signed), "status": c.status, "note": c.note, "expiry": expiry_state(c.end_date)}
+            "signed": bool(c.signed), "status": c.status, "note": c.note, "expiry": expiry_state(c.end_date),
+            "updated_at": c.updated_at}   # bao-CR-294 — cột "Ngày cập nhật" ở màn danh sách
 
 
 @router.get("")

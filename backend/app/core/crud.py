@@ -14,7 +14,11 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
     router = APIRouter(prefix=prefix, tags=[entity])
 
     def out(o):
-        return OutSchema.model_validate(o).model_dump()
+        d = OutSchema.model_validate(o).model_dump()
+        # bao-CR-294 — mọi bảng danh sách cần cột "Ngày cập nhật": gắn chung ở đây
+        # thay vì thêm vào từng OutSchema của danh mục.
+        d.setdefault("updated_at", getattr(o, "updated_at", None))
+        return d
 
     @router.get("")
     def list_items(request: Request, pg: dict = Depends(pagination),

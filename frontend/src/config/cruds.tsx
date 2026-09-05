@@ -31,6 +31,12 @@ export type FieldDef = {
 // link?: trả URL → cell thành clickable, điều hướng tới URL đó (chặn click lan ra dòng)
 export type Column = { key: string; label: string; render?: (row: any) => any; link?: (row: any) => string }
 
+// bao-CR-294 — cột "Ngày cập nhật" dùng chung cho mọi bảng danh sách. Bấm header để sắp xếp
+// theo lần cập nhật gần nhất (lần bấm đầu ra DESC — xem handleSort của CrudList).
+const UPDATED_AT_COL: Column = {
+  key: 'updated_at', label: 'Ngày cập nhật', render: (r) => fmtDateTime(r.updated_at) || '—',
+}
+
 export type CrudConfig = {
   slug: string
   entity: string
@@ -112,7 +118,10 @@ export const PR_STATUS: Record<string, { label: string; cls: string }> = {
   // thu mua bấm Điều phối mới sang 'Đã điều phối' — mốc bắt đầu làm việc thật.
   dispatched: { label: 'Đã điều phối', cls: 'ok' },
   rejected: { label: 'Bị trả lại', cls: 'warn' },   // Trả về — sửa & gửi duyệt lại được
-  processing: { label: 'Đang xử lý', cls: 'warn' },
+  // bao-CR-292 (ticket 22): "Đang xử lý" tách 3 mốc theo mã đơn MISA + độ phủ mã hàng
+  processing: { label: 'Đang xử lý', cls: 'warn' },      // đã có ĐMH, chưa đơn nào nhập MISA
+  purchasing: { label: 'Đang mua hàng', cls: 'warn' },   // có ĐMH nhập MISA, mới phủ một phần mã hàng
+  purchased: { label: 'Đã mua hàng', cls: 'ok' },        // mọi mã hàng đều có ĐMH nhập MISA
   survey_done: { label: 'Đã khảo sát', cls: 'ok' },
   pr_created: { label: 'Đã tạo YCMH', cls: 'warn' },
   done: { label: 'Hoàn thành', cls: 'ok' },
@@ -197,6 +206,7 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'code', label: 'Mã' }, { key: 'tax_code', label: 'MST' },
       { key: 'legal_rep_name', label: 'Người đại diện' },
       { key: 'is_active', label: 'Trạng thái', render: (r) => badge(r.is_active) },
+      UPDATED_AT_COL,
     ],
     filters: [
       { key: 'code', label: 'Mã' }, { key: 'name', label: 'Tên' },
@@ -230,6 +240,7 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'supplier_type', label: 'Vai trò', render: (r) => (r.supplier_type === 'transport' ? 'Vận chuyển' : 'Bán hàng') },
       { key: 'payment_terms', label: 'Thanh toán' },
       { key: 'is_active', label: 'Trạng thái', render: (r) => badge(r.is_active) },
+      UPDATED_AT_COL,
     ],
     filters: [
       // 'legal_type' đã bỏ: backend KHÔNG xử lý param này ở đâu (không có trong FILTERABLE,
@@ -267,6 +278,7 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'unit', label: 'ĐVT' },
       { key: 'hh_code', label: 'Mã HH' }, { key: 'hh_name', label: 'Tên SP (HH)' },
       { key: 'is_active', label: 'Trạng thái', render: (r) => badge(r.is_active) },
+      UPDATED_AT_COL,
     ],
     filters: [
       { key: 'code', label: 'Mã VTBB/NL' }, { key: 'name', label: 'Tên' },
@@ -303,6 +315,7 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'signed', label: 'Đã ký', render: (r) => (r.signed ? '✓' : '—') },
       { key: 'expiry', label: 'Hết hạn', render: (r) => contractExpiryBadge(r.expiry) },
       { key: 'status', label: 'Trạng thái' },
+      UPDATED_AT_COL,
     ],
     filters: [
       { key: 'code', label: 'Mã HĐ' },
@@ -355,6 +368,7 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'department_name', label: 'Phòng ban' },
       { key: 'position', label: 'Vị trí' },
       { key: 'status', label: 'Trạng thái', render: (r) => badge(r.status === 'Chính thức', r.status, r.status) },
+      UPDATED_AT_COL,
     ],
     filters: [
       { key: 'code', label: 'Mã NV' }, { key: 'full_name', label: 'Họ tên' },
@@ -405,6 +419,7 @@ export const cruds: Record<string, CrudConfig> = {
     columns: [
       { key: 'code', label: 'Mã PYC' },
       { key: 'created_at', label: 'Ngày tạo', render: (r) => fmtDateTime(r.created_at) || '—' },
+      UPDATED_AT_COL,
       { key: 'requester', label: 'Người yêu cầu' },
       { key: 'department', label: 'Bộ phận' },
       { key: 'need_date', label: 'Ngày cần hàng', render: (r) => (r.need_date ? fmtDateStr(r.need_date) : '—') },
@@ -426,7 +441,8 @@ export const cruds: Record<string, CrudConfig> = {
         { value: 'approved', label: 'Đã duyệt' }, { value: 'dispatched', label: 'Đã điều phối' },
         { value: 'rejected', label: 'Bị trả lại' },
         { value: 'cancelled', label: 'Đã từ chối' },
-        { value: 'processing', label: 'Đang xử lý' }, { value: 'completed', label: 'Hoàn thành' },
+        { value: 'processing', label: 'Đang xử lý' }, { value: 'purchasing', label: 'Đang mua hàng' },
+        { value: 'purchased', label: 'Đã mua hàng' }, { value: 'completed', label: 'Hoàn thành' },
       ] },
     ],
     // company_id / assignee / item_group lọc qua bảng con hoặc scope -> không có trong FILTERABLE
@@ -440,7 +456,8 @@ export const cruds: Record<string, CrudConfig> = {
         { value: 'approved', label: 'Đã duyệt' }, { value: 'dispatched', label: 'Đã điều phối' },
         { value: 'rejected', label: 'Bị trả lại' },
         { value: 'cancelled', label: 'Đã từ chối' },
-        { value: 'processing', label: 'Đang xử lý' }, { value: 'completed', label: 'Hoàn thành' }]),
+        { value: 'processing', label: 'Đang xử lý' }, { value: 'purchasing', label: 'Đang mua hàng' },
+        { value: 'purchased', label: 'Đã mua hàng' }, { value: 'completed', label: 'Hoàn thành' }]),
     ],
     fields: [],  // chi tiết dùng trang riêng (PurchaseRequestDetail)
   },
@@ -452,6 +469,7 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'requester', label: 'Người yêu cầu' },
       { key: 'department', label: 'Bộ phận' },
       { key: 'created_at', label: 'Ngày tạo', render: (r) => fmtDateTime(r.created_at) || '—' },
+      UPDATED_AT_COL,
       { key: 'status', label: 'Trạng thái', render: (r) => srBadge(r.status) },
     ],
     filters: [
@@ -492,6 +510,7 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'code', label: 'Mã' }, { key: 'name', label: 'Tên kho' },
       { key: 'address', label: 'Địa chỉ', render: (r) => <div style={{ maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.address}>{r.address || '—'}</div> },
       { key: 'is_active', label: 'Trạng thái', render: (r) => <div style={{ textAlign: 'center', minWidth: 80 }}>{badge(r.is_active)}</div> },
+      UPDATED_AT_COL,
     ],
     filters: [
       { key: 'code', label: 'Mã' }, { key: 'name', label: 'Tên kho' },
@@ -526,6 +545,7 @@ export const cruds: Record<string, CrudConfig> = {
     columns: [
       { key: 'code', label: 'Mã' }, { key: 'name', label: 'Tên ĐVT' },
       { key: 'is_active', label: 'Trạng thái', render: (r) => badge(r.is_active) },
+      UPDATED_AT_COL,
     ],
     filters: [
       { key: 'code', label: 'Mã' }, { key: 'name', label: 'Tên' },
@@ -558,6 +578,7 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'std_days', label: 'Ngày QĐ (sẵn hàng)' }, { key: 'std_days_unavail', label: 'Ngày QĐ (không sẵn)' },
       { key: 'apply_date', label: 'Ngày áp dụng' },
       { key: 'is_active', label: 'Trạng thái', render: (r) => badge(r.is_active) },
+      UPDATED_AT_COL,
     ],
     filters: [
       { key: 'name', label: 'Phân loại' },
@@ -607,6 +628,7 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'name', label: 'Phòng ban' },
       { key: 'manager_name', label: 'Trưởng bộ phận' },
       { key: 'is_active', label: 'Trạng thái', render: (r) => badge(r.is_active, 'Hoạt động', 'Đã ẩn') },
+      UPDATED_AT_COL,
     ],
     filters: [
       { key: 'q', label: 'Tìm kiếm' },   // tìm chung: tên phòng ban / trưởng bộ phận
@@ -650,6 +672,7 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'code', label: 'Mã PO' },
       { key: 'misa_code', label: 'Mã MISA', render: (r) => r.misa_code || '' },
       { key: 'created_at', label: 'Ngày đặt', render: (r) => fmtDateTime(r.created_at) || '' },
+      UPDATED_AT_COL,
       { key: 'note', label: 'Ghi chú', render: (r) => {
         const t = String(r.note || '').trim();
         return t
@@ -712,6 +735,7 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'payment_method', label: 'Hình thức TT', render: (r) => (r.payment_method === 'cash' ? 'Tiền mặt' : 'Chuyển khoản') },
       { key: 'total', label: 'Số tiền', render: (r) => (r.total ? fmtVND(r.total) + ' đ' : '0 đ') },
       { key: 'status', label: 'Trạng thái', render: (r) => (r.status === 'cancelled' ? <span className="badge err">Đã từ chối</span> : poBadge(r.status === 'paid' ? 'received' : r.status)) },
+      UPDATED_AT_COL,
     ],
     filters: [
       // po_code / company_id lọc qua bảng con hoặc scope → không đưa xuống bộ lọc điều kiện được
@@ -747,6 +771,7 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'item_code', label: 'Mã hàng' },
       { key: 'item_group', label: 'Nhóm hàng' }, { key: 'nspt', label: 'NSPT' },
       { key: 'created_at', label: 'Ngày tạo', render: (r) => fmtDateTime(r.created_at) || '—' },
+      UPDATED_AT_COL,
       { key: 'status', label: 'Trạng thái', render: (r) => srBadge(r.status) },
     ],
     filters: [

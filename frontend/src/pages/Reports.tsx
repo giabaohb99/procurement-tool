@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { api } from '../api/client'
 import { fmtPrice, fmtVND } from '../utils/money'
 import Pagination from '../components/Pagination'
-import { poBadge } from '../config/cruds'
+import { poBadge, prBadge, PR_STATUS } from '../config/cruds'
 import SearchSelect from '../components/SearchSelect'
 import MatrixPivotTab from '../components/MatrixPivotTab'
 import { ReportTable, fmt, pctv } from '../components/report-table'
@@ -16,6 +17,7 @@ const TABS = [
   { key: 'department', label: 'Bộ phận (đơn gấp)' },                          // phòng ban YC chỉ thấy phòng mình (scope BE)
   { key: 'shipping', label: 'Chi phí vận chuyển', need: 'purchase_order' },   // phía thu mua -> ẩn với phòng ban YC
   { key: 'pyc_req', label: 'Yêu cầu mua hàng', need: 'purchase_request' },   // theo phòng ban
+  { key: 'pyc_lines', label: 'Chi tiết YC mua hàng', need: 'purchase_request' },  // bao-CR-295: theo DÒNG hàng — soi mã chưa đặt
   { key: 'ycks_req', label: 'Yêu cầu báo giá', need: 'survey_request' },    // theo phòng ban
   // { key: 'inventory', label: 'Tồn kho' },   // tạm ẩn tab Tồn kho
 ]
@@ -24,13 +26,27 @@ const TABS = [
 const PYC_METRICS = [
   { key: 'total', label: 'Tổng' }, { key: 'draft', label: 'Nháp' }, { key: 'submitted', label: 'Chờ duyệt' },
   { key: 'approved', label: 'Đã duyệt' }, { key: 'dispatched', label: 'Đã điều phối' },
-  { key: 'processing', label: 'Đang xử lý' }, { key: 'completed', label: 'Hoàn tất' },
+  { key: 'processing', label: 'Đang xử lý' }, { key: 'purchasing', label: 'Đang mua hàng' },
+  { key: 'purchased', label: 'Đã mua hàng' }, { key: 'completed', label: 'Hoàn tất' },
   { key: 'rejected', label: 'Từ chối' }, { key: 'cancelled', label: 'Đã hủy' },
 ]
 const YCKS_METRICS = [
   { key: 'total', label: 'Tổng' }, { key: 'draft', label: 'Nháp' }, { key: 'submitted', label: 'Chờ duyệt' },
   { key: 'processing', label: 'Đang khảo sát' }, { key: 'survey_done', label: 'Đã khảo sát' }, { key: 'pr_created', label: 'Đã tạo yêu cầu mua hàng' },
   { key: 'done', label: 'Hoàn tất' }, { key: 'cancelled', label: 'Đã hủy' },
+]
+
+// bao-CR-295 — bộ lọc TIẾN ĐỘ dòng hàng của báo cáo "Chi tiết YC mua hàng".
+// 'chua_dat' là giá trị GỘP (backend hiểu = Chưa tạo đơn mua hàng + Chưa đặt hàng) — đúng mục
+// tiêu báo cáo: soi mã hàng chưa được đặt để khỏi đặt sót đơn.
+const PRL_LINE_STATUS = [
+  { value: 'chua_dat', label: 'Chưa được đặt hàng (gộp)' },
+  { value: 'Chưa tạo đơn mua hàng', label: 'Chưa tạo đơn mua hàng' },
+  { value: 'Chưa đặt hàng', label: 'Chưa đặt hàng' },
+  { value: 'Đã đặt hàng', label: 'Đã đặt hàng' },
+  { value: 'Đã nhận hàng', label: 'Đã nhận hàng' },
+  { value: 'Hoàn thành', label: 'Hoàn thành' },
+  { value: 'Hủy đơn', label: 'Hủy đơn' },
 ]
 
 const shortNum = (n: any) => {
@@ -135,6 +151,9 @@ export default function Reports() {
   const [shipPage, setShipPage] = useState(1)                     // phân trang chi tiết VC (server, 50/trang)
   const [shipData, setShipData] = useState<any>({ items: [], total: 0, carriers: [], months: [], page: 1, page_size: 50 })
   const [reqMx, setReqMx] = useState<Record<string, any>>({})   // cache báo cáo YC: key `kind|year|company` -> {months,rows}
+  const [prlF, setPrlF] = useState({ status: '', line_status: '', assignee: '', search: '' })  // lọc báo cáo dòng YCMH (bao-CR-295)
+  const [prlPage, setPrlPage] = useState(1)                     // phân trang dòng YCMH (server, 50/trang)
+  const [prlData, setPrlData] = useState<any>({ items: [], total: 0, assignees: [], page: 1, page_size: 50 })
   const [xlsMenu, setXlsMenu] = useState(false)   // popup chọn báo cáo để xuất Excel
 
   // Xuất Excel 1 form (hoặc tất cả) — khớp form thumua1 sheet 12–16. Luôn theo 1 năm cụ thể.
@@ -176,6 +195,19 @@ export default function Reports() {
     if (shipF.month) params.month = shipF.month
     api.get('/api/reports/shipping-detail', { params }).then((r) => setShipData(r.data.data)).catch(() => {})
   }, [tab, f.year, f.company_id, shipF.carrier, shipF.month, shipPage])
+
+  // Báo cáo dòng YCMH (bao-CR-295): phân trang phía server (50/trang) như chi tiết VC
+  useEffect(() => {
+    if (tab !== 'pyc_lines') return
+    const params: any = { page: prlPage, page_size: 50 }
+    if (f.year) params.year = f.year
+    if (f.company_id) params.company_id = f.company_id
+    if (prlF.status) params.status = prlF.status
+    if (prlF.line_status) params.line_status = prlF.line_status
+    if (prlF.assignee) params.assignee = prlF.assignee
+    if (prlF.search) params.search = prlF.search
+    api.get('/api/reports/pr-lines', { params }).then((r) => setPrlData(r.data.data)).catch(() => {})
+  }, [tab, f.year, f.company_id, prlF, prlPage])
 
   async function openDaily(m: any) {
     setDaily({ month: m.monthKey, label: m.month, data: null })
@@ -255,11 +287,11 @@ export default function Reports() {
           <div className="filter-item" style={{ flex: '0 0 190px' }}><label>Công ty</label>
             <SearchSelect value={f.company_id} placeholder="Tất cả"
               options={companies.map((c) => ({ value: String(c.id), label: c.name }))}
-              onChange={(v) => { setShipPage(1); setF((s: any) => ({ ...s, company_id: v })) }} /></div>
+              onChange={(v) => { setShipPage(1); setPrlPage(1); setF((s: any) => ({ ...s, company_id: v })) }} /></div>
           <div className="filter-item" style={{ flex: '0 0 150px', minWidth: 150 }}><label>Năm</label>
             <SearchSelect value={String(f.year)} placeholder="Tất cả"
               options={[{ value: 'all', label: 'Tất cả' }, ...[thisYear, thisYear - 1, thisYear - 2].map((y) => ({ value: String(y), label: String(y) }))]}
-              onChange={(v) => { setShipPage(1); setF((s: any) => ({ ...s, year: v })) }} /></div>
+              onChange={(v) => { setShipPage(1); setPrlPage(1); setF((s: any) => ({ ...s, year: v })) }} /></div>
           <button className="btn" disabled={busy} onClick={() => load(false)}>Lọc</button>
           <button className="btn secondary" disabled={busy} onClick={() => load(true)} title="Tính lại số liệu báo cáo"><i className="ti ti-refresh" />Cập nhật</button>
           <button className="btn ghost" onClick={() => window.print()}><i className="ti ti-printer" />In</button>
@@ -393,6 +425,67 @@ export default function Reports() {
             metrics={kind === 'pyc' ? PYC_METRICS : YCKS_METRICS} />
         )
       })()}
+
+      {tab === 'pyc_lines' && (
+        <div className="card" style={{ padding: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+            <h3 className="sec-title" style={{ margin: 0 }}>Chi tiết Yêu cầu mua hàng theo dòng hàng <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--muted)' }}>(soi mã hàng chưa được đặt để không đặt sót đơn)</span></h3>
+            <div className="no-print" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: 'var(--muted)', flexWrap: 'wrap' }}>Lọc:
+              <input className="input" style={{ width: 190 }} placeholder="Mã hàng / tên SP / mã PYC" defaultValue={prlF.search}
+                onKeyDown={(e) => { if (e.key === 'Enter') { setPrlPage(1); setPrlF((s) => ({ ...s, search: (e.target as HTMLInputElement).value.trim() })) } }}
+                onBlur={(e) => { const v = e.target.value.trim(); if (v !== prlF.search) { setPrlPage(1); setPrlF((s) => ({ ...s, search: v })) } }} />
+              <div style={{ minWidth: 160 }}>
+                <SearchSelect value={prlF.line_status} placeholder="Tất cả tiến độ"
+                  options={[{ value: '', label: 'Tất cả tiến độ' }, ...PRL_LINE_STATUS]}
+                  onChange={(v) => { setPrlPage(1); setPrlF((s) => ({ ...s, line_status: v })) }} />
+              </div>
+              <div style={{ minWidth: 150 }}>
+                <SearchSelect value={prlF.status} placeholder="Tất cả trạng thái"
+                  options={[{ value: '', label: 'Tất cả trạng thái' }, ...Object.entries(PR_STATUS).map(([k, v]) => ({ value: k, label: v.label }))]}
+                  onChange={(v) => { setPrlPage(1); setPrlF((s) => ({ ...s, status: v })) }} />
+              </div>
+              <div style={{ minWidth: 160 }}>
+                <SearchSelect value={prlF.assignee} placeholder="Tất cả NSTM"
+                  options={[{ value: '', label: 'Tất cả NSTM' }, ...(prlData.assignees || []).map((a: any) => ({ value: a.code, label: a.name ? `${a.name} (${a.code})` : a.code }))]}
+                  onChange={(v) => { setPrlPage(1); setPrlF((s) => ({ ...s, assignee: v })) }} />
+              </div>
+            </div>
+          </div>
+          <div className="items-scroll">
+            <table className="items-table" style={{ minWidth: 1650 }}>
+              <thead><tr>
+                <th>ID</th><th>Mã PYC</th><th>Ngày tạo</th><th>Người yêu cầu</th><th>Bộ phận</th>
+                <th>Mã hàng</th><th>Tên sản phẩm</th><th>Kho nhận</th><th>Phân loại</th><th>Gram</th>
+                <th style={{ textAlign: 'right' }}>SL</th><th style={{ textAlign: 'right' }}>Đơn giá</th>
+                <th style={{ textAlign: 'right' }}>VAT</th><th style={{ textAlign: 'right' }}>Thành tiền</th>
+                <th>Trạng thái</th><th>Tiến độ</th><th>Ngày dự kiến có hàng</th><th>NSTM phụ trách</th>
+              </tr></thead>
+              <tbody>
+                {(prlData.items || []).map((r: any) => (
+                  <tr key={r.id}>
+                    <td>{r.id}</td>
+                    <td><Link to={`/purchase-requests/${r.pr_id}`}>{r.pr_code}</Link></td>
+                    <td>{r.created_date}</td><td>{r.requester}</td><td>{r.department}</td>
+                    <td>{r.product_code}</td><td>{r.product_name}</td><td>{r.warehouse}</td><td>{r.item_group}</td><td>{r.gram}</td>
+                    <td style={{ textAlign: 'right' }}>{fmt(r.qty)}</td>
+                    <td style={{ textAlign: 'right' }}>{fmtPrice(r.price)}</td>
+                    <td style={{ textAlign: 'right' }}>{r.vat_pct ? `${fmt(r.vat_pct)}%` : ''}</td>
+                    <td style={{ textAlign: 'right' }}>{fmtVND(r.amount)}</td>
+                    <td>{prBadge(r.status)}</td><td>{r.line_status}</td>
+                    <td>{r.expected_date}</td><td>{r.assignee_name || r.assignee}</td>
+                  </tr>))}
+                {(prlData.total || 0) === 0 && <tr><td colSpan={18} style={{ textAlign: 'center', color: '#999', padding: 14 }}>{(prlF.status || prlF.line_status || prlF.assignee || prlF.search) ? 'Không có dòng khớp bộ lọc' : 'Chưa có dữ liệu'}</td></tr>}
+              </tbody>
+            </table>
+          </div>
+          {prlData.total > 0 && (
+            <div className="no-print" style={{ marginTop: 10 }}>
+              <Pagination page={prlData.page} pageSize={prlData.page_size} total={prlData.total}
+                hideSize onChange={(p) => setPrlPage(p)} />
+            </div>
+          )}
+        </div>
+      )}
 
       {tab === 'shipping' && <>
         <div className="card" style={{ padding: 16, marginBottom: 14 }}>

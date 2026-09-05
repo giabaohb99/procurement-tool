@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel
 
 
@@ -17,6 +19,7 @@ class RoleOut(BaseModel):
     code: str
     name: str
     description: str = ""
+    updated_at: datetime | None = None   # bao-CR-294 — cột "Ngày cập nhật" (roles sort phía client)
     model_config = {"from_attributes": True}
 
 

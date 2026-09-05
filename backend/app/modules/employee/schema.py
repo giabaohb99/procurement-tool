@@ -37,6 +37,7 @@ class EmployeeOut(EmployeeBase):
     department_name: str | None = None
     manager_name: str | None = None
     created_at: datetime | None = None
+    updated_at: datetime | None = None   # bao-CR-294 — cột "Ngày cập nhật" ở màn danh sách
     # Ảnh đại diện lấy từ tài khoản đăng nhập (tab_user.avatar). Danh sách phải
     # selectinload(Employee.user) — xem service.list_employees — để không thành N+1.
     avatar: str = ""

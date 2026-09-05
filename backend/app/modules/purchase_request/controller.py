@@ -72,8 +72,8 @@ def _notify_assigned(db: Session, pr, user, background_tasks: BackgroundTasks) -
 
 # Chữ ký 2 bước duyệt trên phiếu in chỉ có hiệu lực từ mốc trạng thái tương ứng trở đi.
 # Phiếu bị TRẢ VỀ (Nháp / Chờ duyệt) sẽ KHÔNG in lại chữ ký duyệt của lần trước.
-_AFTER_APPROVE = ("approved", "dispatched", "processing", "completed", "done")
-_AFTER_DISPATCH = ("dispatched", "processing", "completed", "done")
+_AFTER_APPROVE = ("approved", "dispatched", "processing", "purchasing", "purchased", "completed", "done")
+_AFTER_DISPATCH = ("dispatched", "processing", "purchasing", "purchased", "completed", "done")
 
 
 def _approval_signers(db: Session, pr) -> dict:
@@ -268,6 +268,7 @@ def list_pr(
     for p in items:
         d = {c: getattr(p, c) for c in HEADER_COLS}
         d["created_at"] = p.created_at   # thời điểm tạo (có giờ) — hiển thị giờ VN ở list
+        d["updated_at"] = p.updated_at   # bao-CR-294 — cột "Ngày cập nhật" + sort ở màn danh sách
         d["need_date"] = need_dates.get(p.id) or p.need_date or ""
         d["total"] = round(subtotals.get(p.id, 0.0), 2)   # gồm VAT (tính từ amount dòng)
         d["has_cancelled_line"] = p.id in cancelled_ids
