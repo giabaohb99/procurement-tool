@@ -14,7 +14,7 @@ from app.core.database import get_db
 from app.core.response import success
 from app.core.scoping import apply_scope, get_scoped
 
-from . import service
+from . import approval_bridge, service
 from .model import SealRequest
 from .schema import (
     CompleteSealIn,
@@ -112,6 +112,7 @@ def submit_seal_request(rid: int, background_tasks: BackgroundTasks,
 def approve_seal(rid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
                  user=Depends(require("seal_request", "approve"))):
     obj = _scoped_or_404(db, rid, user, "approve")
+    approval_bridge.block_legacy_path(db, obj)  # đang chạy luồng nhiều bước thì chặn đường tắt
     obj = service.approve_seal(db, obj, user, background_tasks)
     audit_record(db, user.id, "seal_request", obj.id, "approve",
                  f"Duyệt yêu cầu đóng dấu {obj.code}")
@@ -123,6 +124,7 @@ def return_seal(rid: int, data: ReasonIn, background_tasks: BackgroundTasks,
                 db: Session = Depends(get_db),
                 user=Depends(require("seal_request", "approve"))):
     obj = _scoped_or_404(db, rid, user, "approve")
+    approval_bridge.block_legacy_path(db, obj)
     obj = service.return_seal(db, obj, data, user, background_tasks)
     audit_record(db, user.id, "seal_request", obj.id, "update",
                  _with_reason("Yêu cầu chỉnh sửa", data.reason))
@@ -134,6 +136,7 @@ def reject_seal(rid: int, data: ReasonIn, background_tasks: BackgroundTasks,
                 db: Session = Depends(get_db),
                 user=Depends(require("seal_request", "approve"))):
     obj = _scoped_or_404(db, rid, user, "approve")
+    approval_bridge.block_legacy_path(db, obj)
     obj = service.reject_seal(db, obj, data, user, background_tasks)
     audit_record(db, user.id, "seal_request", obj.id, "cancel",
                  _with_reason("Từ chối yêu cầu", data.reason))

@@ -9,6 +9,7 @@ import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { DeleteConfirmButton } from '@/shared/ui/delete-confirm-button'
 import { PageContainer } from '@/shared/ui/page-container'
+import { SealApprovalPanel } from '../components/seal-approval-panel'
 import { SealDetailBody } from '../components/seal-detail-body'
 import { SealStatusBadge } from '../components/status-pill'
 import { SealWorkflowActions } from '../components/seal-workflow-actions'
@@ -122,6 +123,9 @@ export function SealRequestDetailPage() {
             />
           </div>
           <div className="flex flex-col gap-5">
+            {/* Luồng duyệt nhiều bước — chỉ hiện khi phiếu đang chạy trong bộ máy
+                (bật ApprovalSwitch); cụm nút cổng-1 (TBP) ở đầu trang đã tự ẩn. */}
+            {data.approval_running && <SealApprovalPanel requestId={data.id} />}
             <Card className="flex flex-col gap-3 p-5">
               <h3 className="border-b pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Lịch sử thao tác

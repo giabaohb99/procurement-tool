@@ -85,6 +85,9 @@ from app.modules.approval.delegation_controller import router as delegation_rout
 #  xong mà văn bản không đổi trạng thái, vì lúc đó chưa ai khai hàm.
 from app.modules.document import approval_bridge  # noqa: F401
 from app.modules.vehicle_booking import approval_bridge as _vehicle_booking_bridge  # noqa: F401
+#  Cùng lý do, cho Duyệt dấu: nạp lười thì phiên duyệt đầu tiên chạy xong mà phiếu
+#  không đổi trạng thái, vì lúc đó chưa ai khai hàm hook.
+from app.modules.seal_request import approval_bridge as _seal_request_bridge  # noqa: F401
 
 app = FastAPI(title="Procurement Tool API", version="0.1.0")
 

@@ -82,6 +82,8 @@ class SealRequestResponse(SealRequestBase):
     requester_role: str = ""
     approver_name: str = ""         # tên Trưởng bộ phận phê duyệt
     signed_doc_count: int = 0       # số tệp chứng từ chữ ký sống đã đính kèm
+    #  Đang chạy LUỒNG DUYỆT NHIỀU BƯỚC (engine) → FE ẩn nút duyệt một bước (cổng 1).
+    approval_running: bool = False
     created_at: str | None = None
 
     class Config:

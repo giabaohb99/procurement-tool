@@ -81,16 +81,17 @@ docker compose exec -T api python -m pytest test/backend -q
 | [x] | Badge pill + confirm dialog + sort cột (dùng chung) | có từ PHA 1 |
 | [ ] | Tách khối **chứng từ chữ ký sống** vs **ảnh ghi chú** (`doc_type` signed_doc/note) — **HOÃN** (đang dùng chung `DocumentAttachmentsCard`; cần UI 2 khối riêng, chờ khách quyết có làm không) | |
 
-## PHA 5 — Runtime luồng duyệt + test tổng thể + phân quyền
+## PHA 5 — Runtime luồng duyệt + test tổng thể + phân quyền 🟡 (05/09/2026)
 > Chi tiết: [phase-5-runtime-duyet-va-test.md](phase-5-runtime-duyet-va-test.md).
 
 | TT | Việc | Ghi chú |
 |---|---|---|
-| [ ] | `seal_request/approval_bridge.py` (register 4 kết cục + subject + reader) + `block_legacy_path` | mẫu Đặt xe |
-| [ ] | `_after_submit` mở phiên khi cờ `ApprovalSwitch` bật; tắt = đường cũ (tương thích ngược) | |
-| [ ] | FE: `SealApprovalPanel` (Duyệt/Trả/Từ chối qua engine + dấu vết), ẩn nút cũ khi `approval_running` | reuse `ApprovalActionDialog` |
-| [ ] | Test tổng thể tầng service: happy path 2 cổng + nhánh trả/từ chối (TBP & Văn thư) + bắt buộc tệp | `test_duyet_dau_tong_the.py` |
-| [ ] | Kịch bản phân quyền: NS(own) · TBP(dept) · Văn thư(company) · Giám đốc(company) · seal_admin(all) | `test_duyet_dau_phan_quyen.py` |
+| [x] | `seal_request/approval_bridge.py` (register 4 kết cục + subject + reader) + `block_legacy_path` (cổng 1) + đăng ký `main.py` | mẫu Đặt xe |
+| [x] | `_after_submit` mở phiên khi cờ `ApprovalSwitch` bật; tắt = đường cũ (tương thích ngược); `approval_running` ở serialize | |
+| [x] | Test runtime `test_duyet_dau_luong_duyet_runtime.py` (9 ca: engine off/fallback · 4 hook · block · context) | |
+| [x] | Kịch bản phân quyền `test_duyet_dau_phan_quyen.py` — NS(own)·TBP(dept)·Văn thư A/B(company)·admin(all) | 1 ca ma trận |
+| — | Flow tổng thể 2 cổng đã phủ ở `test_duyet_dau.py` (7 ca) + thông báo `test_duyet_dau_thong_bao.py` (3 ca) | |
+| [ ] | FE: `SealApprovalPanel` (Duyệt/Trả/Từ chối qua engine + dấu vết), ẩn nút cổng-1 khi `approval_running` | reuse `ApprovalActionDialog` |
 | [ ] | ↳ E2E trình duyệt (Playwright) cho luồng 2 cổng | host-run, cần tài khoản demo |
 
 ---

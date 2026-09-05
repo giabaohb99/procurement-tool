@@ -71,6 +71,8 @@ export interface SealRequest {
   signed_doc_count: number
   note: string
   created_at: string | null
+  /** True khi phiếu đang chạy một phiên duyệt nhiều bước (bộ máy `ApprovalSwitch`). */
+  approval_running: boolean
 }
 
 /** Payload tạo/sửa phiếu — form gửi đúng bộ trường backend nhận. */

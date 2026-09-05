@@ -25,7 +25,10 @@ type ReasonKind = 'return' | 'reject' | 'returnClerk' | 'rejectClerk' | null
  * - Văn thư (quyền `write`), phiếu Đã duyệt → Hoàn thành đóng dấu · Yêu cầu chỉnh
  *   sửa · Từ chối.
  *
- * Backend mới là chốt chặn thật (`require` + đúng trạng thái); ở đây chỉ ẩn/hiện.
+ * Phiếu đang chạy luồng duyệt NHIỀU BƯỚC (`request.approval_running`) thì cụm cổng-1
+ * (TBP) phải ẩn — duyệt qua bảng luồng ở màn chi tiết / "Việc của tôi". Cổng-2 (Văn
+ * thư) không bị ảnh hưởng. Backend mới là chốt chặn thật (`require` + đúng trạng thái);
+ * ở đây chỉ ẩn/hiện.
  */
 export function SealWorkflowActions({ request }: { request: SealRequest }) {
   const { can } = usePermission()
@@ -55,7 +58,8 @@ export function SealWorkflowActions({ request }: { request: SealRequest }) {
 
   const isPending = request.status === SEAL_STATUS.pending
   const isApproved = request.status === SEAL_STATUS.approved
-  const showApprove = canApprove && isPending
+  //  Đang chạy bộ máy duyệt nhiều bước thì ẩn cổng-1 (TBP); cổng-2 (Văn thư) giữ nguyên.
+  const showApprove = canApprove && isPending && !request.approval_running
   const showClerk = canWrite && isApproved
 
   return (

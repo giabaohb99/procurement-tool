@@ -174,6 +174,21 @@ def update_seal_request(db: Session, req: SealRequest, data: SealRequestUpdate,
     return req
 
 
+def _after_submit(db: Session, req: SealRequest, user, background_tasks) -> None:
+    """Sau khi phiếu sang Chờ duyệt.
+
+    Bộ máy duyệt nhiều bước BẬT và có luồng khớp → mở một phiên (bộ máy tự báo người
+    duyệt). Cờ TẮT / chưa khai luồng → đường cũ: báo thẳng TBP bằng `dd_submitted`.
+    """
+    from .approval_bridge import is_enabled, submit_for_approval
+
+    if is_enabled(db):
+        instance = submit_for_approval(db, req, getattr(user, "id", 0))
+        if instance is not None:
+            return  # bộ máy nhiều bước lo tiếp + tự báo người duyệt
+    notify(db, "dd_submitted", req, background_tasks, actor=user)  # báo TBP
+
+
 def submit_seal_request(db: Session, req: SealRequest, user, background_tasks=None) -> SealRequest:
     """Gửi duyệt: Nháp / Yêu cầu chỉnh sửa → Chờ duyệt (kiểm dữ liệu + tệp)."""
     if req.status not in EDITABLE_STATUSES:
@@ -183,7 +198,7 @@ def submit_seal_request(db: Session, req: SealRequest, user, background_tasks=No
     req.updated_by = getattr(user, "id", 0)
     db.commit()
     db.refresh(req)
-    notify(db, "dd_submitted", req, background_tasks, actor=user)  # báo TBP
+    _after_submit(db, req, user, background_tasks)
     return req
 
 
@@ -282,6 +297,9 @@ def serialize_seal_request(db: Session, req: SealRequest) -> dict:
     if approver:
         out.approver_name = approver.full_name or ""
     out.signed_doc_count = count_attachments(db, req.id)
+    #  Có phiên duyệt nhiều bước đang chạy? → FE ẩn nút duyệt cổng-1 trực tiếp.
+    from .approval_bridge import running_instance
+    out.approval_running = running_instance(db, req.id) is not None
     return out.model_dump()
 
 
