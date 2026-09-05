@@ -356,6 +356,25 @@ STD_ROLES = {
         "vehicle": (["read"], "all"),
         "driver": (["read"], "all"),
     }},
+    # --- Duyệt dấu (Yêu cầu đóng dấu) ---
+    # Văn thư: tiếp nhận phiếu ĐÃ DUYỆT của CÔNG TY MÌNH rồi đóng dấu ngoài thực tế
+    # và bấm Hoàn thành (tính là `write`). Phạm vi 'company' = lọc theo company_id
+    # (công ty của con dấu) — mỗi văn thư chỉ thấy phiếu con dấu công ty mình.
+    "seal_clerk": {"name": "Văn thư (Duyệt dấu)", "perms": {
+        "seal_request": (["read", "write"], "company"),
+        "seal_type": (["read"], "all"),
+    }},
+    # Trưởng bộ phận duyệt dấu (cổng 1): Duyệt / Yêu cầu chỉnh sửa / Từ chối phiếu
+    # phòng mình. Phạm vi 'dept'. (Thực tế có thể cấp `seal_request:approve` cho vai
+    # trò trưởng bộ phận sẵn có thay vì vai trò riêng — xem quyết định C ở kế hoạch.)
+    "seal_approver": {"name": "Trưởng bộ phận duyệt dấu", "perms": {
+        "seal_request": (["read", "approve"], "dept"),
+    }},
+    # Quản trị con dấu: quản danh mục Loại con dấu + xem mọi phiếu.
+    "seal_admin": {"name": "Quản trị con dấu (Duyệt dấu)", "perms": {
+        "seal_request": (["read"], "all"),
+        "seal_type": (["read", "create", "write", "delete"], "all"),
+    }},
 }
 
 

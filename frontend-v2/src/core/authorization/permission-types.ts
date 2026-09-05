@@ -79,6 +79,10 @@ export const ENTITIES = [
   'vehicle_booking',
   'vehicle',
   'driver',
+  //  Phân hệ Duyệt dấu. Hai khóa khớp backend `core/permissions.py`: phiếu yêu
+  //  cầu đóng dấu + danh mục Loại con dấu.
+  'seal_request',
+  'seal_type',
 ] as const
 
 export type PermissionEntity = (typeof ENTITIES)[number]

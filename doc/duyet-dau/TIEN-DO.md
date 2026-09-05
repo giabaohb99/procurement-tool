@@ -17,43 +17,45 @@ docker compose exec -T api python -m pytest test/backend -q
 
 ---
 
-## PHA 0 — Nền & mô hình dữ liệu
+## PHA 0 — Nền & mô hình dữ liệu ✅ (05/09/2026)
 > Chi tiết: [phase-0-nen-mo-hinh.md](phase-0-nen-mo-hinh.md).
 
 | TT | Việc | Ghi chú |
 |---|---|---|
-| [ ] | `seal_request.status` **String→SmallInteger** + hằng số `SEAL_*` (R2) | `model.py` |
-| [ ] | Thêm cột `copies` (SmallInteger, số bản cần đóng dấu) | `model.py` |
-| [ ] | Migration `seal1status01` (đổi kiểu status + thêm copies) — bảng chưa có dữ liệu | `migrations/versions/` |
-| [ ] | Khai `FILE_POLICY["seal_request"]` (pdf/ảnh, dung lượng tối đa) | `core/file_registry.py` |
-| [ ] | Xác nhận scoping `seal_request` (company/dept/owner) + `seal_type` PUBLIC (đã có) | `core/scoping.py` |
-| [ ] | Vai trò seed: `seal_clerk` (Văn thư), `seal_admin` (Quản trị con dấu) + cấp `seal_request:approve` cho TBP | `seed.py` (STD_ROLES) |
-| [ ] | Đăng ký entity `seal_request` vào `/approval/flows` (ENTITY_LABELS/ROUTES, `entity-link.ts`) | frontend-v2 |
+| [x] | `seal_request.status` **String→SmallInteger** + hằng số `SEAL_*` (R2) | `model.py` |
+| [x] | Thêm cột `copies` (SmallInteger, số bản cần đóng dấu) | `model.py` |
+| [x] | Migration `seal1status01` (đổi kiểu status + thêm copies) — bảng chưa có dữ liệu | đã `upgrade head`, status=SMALLINT |
+| [x] | Khai `FILE_POLICY["seal_request"]` (pdf/ảnh, ≤50MB) | `core/file_registry.py` |
+| [x] | Xác nhận scoping `seal_request` (company/dept/owner) + `seal_type` PUBLIC (đã có) | `core/scoping.py`, b07 test xanh |
+| [x] | Vai trò seed: `seal_clerk` (Văn thư, company), `seal_approver` (TBP, dept), `seal_admin` (all) | `seed.py` STD_ROLES |
+| [x] | Đăng ký nhãn `seal_request='Duyệt dấu'` vào `/approval/flows` (ENTITY_LABELS) | `entity-link.ts` (route thêm ở PHA 1) |
 
-## PHA 1 — MVP phiếu + upload chứng từ + Danh mục Loại con dấu
+## PHA 1 — MVP phiếu + upload chứng từ + Danh mục Loại con dấu 🟡 (backend xong 05/09)
 > Chi tiết: [phase-1-mvp-phieu-va-upload.md](phase-1-mvp-phieu-va-upload.md).
 
 | TT | Việc | Ghi chú |
 |---|---|---|
-| [ ] | `service.py`: `create_seal_request` / `update` / list / `get` / delete (+ `_next_seal_code` DD###) | hand-write |
-| [ ] | `schema.py`: bổ sung Create/Update/Response + action inputs (ReasonIn/CompleteIn) | |
-| [ ] | `controller.py` + include_router `main.py` (prefix `/api/seal-requests`) | require + get_scoped |
-| [ ] | Upload **chứng từ chữ ký sống** (`doc_type="signed_doc"`) + validate ≥1 khi gửi duyệt | reuse `attachment` |
-| [ ] | Danh mục Loại con dấu: `catalog_controller.py` `make_crud_router` `/api/seal-types` + seed | |
-| [ ] | FE: bật module (`enabled:true`), route list/detail/new/edit, `api/` + hooks TanStack Query | `approval-seal/` |
-| [ ] | FE: `SealRequestForm` (TRANG riêng) + khối upload + khối tệp (mở tab/xem/tải) | C-02 |
-| [ ] | FE: danh sách `DataTable` + chi tiết + badge pill | |
+| [x] | `service.py`: `create_seal_request` / `update` / list / `get` / delete (+ `_next_seal_code` DD###) | hand-write, có test |
+| [x] | `schema.py`: Create/Update/Response + action inputs (ReasonIn/CompleteSealIn) | + nhãn status, join loại dấu/công ty(MST)/người tạo |
+| [x] | `controller.py` + include_router `main.py` (prefix `/api/seal-requests`) | require + get_scoped |
+| [x] | Validate **chứng từ chữ ký sống** (`doc_type="signed_doc"`) ≥1 khi gửi duyệt | `count_signed_docs` (reuse `attachment`) |
+| [x] | Danh mục Loại con dấu: `catalog_controller.py` `make_crud_router` `/api/seal-types` + seed | `seed_seal_types.py` |
+| [x] | FE: bật module (`enabled:true`, icon Stamp), route list/detail/new/edit + seal-types, `api/` + hooks | `approval-seal/` |
+| [x] | FE: `SealRequestForm` (TRANG riêng) + khối tệp (tái dùng `DocumentAttachmentsCard entity="seal_request"`, mở tab/xem/tải) | C-02 |
+| [x] | FE: danh sách `DataTable` + chi tiết (header back+badge, info người tạo, AuditTimeline) + `SealStatusBadge` | |
+| [x] | FE: danh mục Loại con dấu (CrudListPage + popup) | `config/seal-type-crud.tsx` |
+| — | ⚠️ Gate tệp nới thành **≥1 tệp bất kỳ** (`count_attachments`) — `DocumentAttachmentsCard` không gắn `doc_type=signed_doc`; tách signed_doc/note để PHA 4 | `service.py` |
 
-## PHA 2 — Luồng duyệt 2 cổng (TBP + Văn thư)
+## PHA 2 — Luồng duyệt 2 cổng (TBP + Văn thư) 🟡 (backend xong 05/09)
 > Chi tiết: [phase-2-luong-duyet-2-cong.md](phase-2-luong-duyet-2-cong.md).
 
 | TT | Việc | Ghi chú |
 |---|---|---|
-| [ ] | TBP: `approve_seal` · `return_seal` · `reject_seal` (endpoints `/approve /return /reject`) | kiểm trạng thái nguồn = Chờ duyệt |
-| [ ] | Văn thư: `complete_seal` (đóng dấu xong, `copies`+ghi chú) · return/reject từ *Đã duyệt* | endpoint `/complete` |
-| [ ] | Ghi lý do có nhãn vào `note` (`_append_note`) | service |
-| [ ] | Chốt chặn: `require` + trạng thái nguồn + `get_scoped`; Văn thư phạm vi `company` | service + controller |
-| [ ] | FE: `SealWorkflowActions` bày nút theo vai trò + dialog lý do / hoàn thành (popup) | |
+| [x] | TBP: `approve_seal` · `return_seal` · `reject_seal` (endpoints `/approve /return /reject`) | kiểm trạng thái nguồn |
+| [x] | Văn thư: `complete_seal` (đóng dấu xong, `copies`+ghi chú) · return/reject từ *Đã duyệt* (`/complete`, `/return-clerk`, `/reject-clerk`) | |
+| [x] | Ghi lý do có nhãn vào `note` (`_append_note`) | service |
+| [x] | Chốt chặn: `require` + trạng thái nguồn + `get_scoped`; TBP `approve`, Văn thư `write` | có test `test_duyet_dau.py` (7 ca) |
+| [x] | FE: `SealWorkflowActions` bày nút theo vai trò + `seal-reason-dialog` / `seal-complete-dialog` (popup) | |
 
 ## PHA 3 — Thông báo & Email theo bước
 > Chi tiết: [phase-3-thong-bao-va-email.md](phase-3-thong-bao-va-email.md).

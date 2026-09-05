@@ -48,6 +48,11 @@ FILE_POLICY: dict[str, tuple[str, set[str], int]] = {
     # vào văn bản: bản đã duyệt phải tra ra đúng bộ tệp lúc duyệt, kể cả sau khi
     # bản mới đã gỡ bớt. Quyền kiểm trên entity cha `document`.
     "document_version":       ("document", _DOC, 50),
+    # Duyệt dấu: chứng từ có CHỮ KÝ SỐNG (doc_type="signed_doc", NSYC upload để Văn
+    # thư đối chiếu trước khi đóng dấu) + ảnh minh họa cho ghi chú (doc_type="note").
+    # Chứng từ có thể là PDF hợp đồng ~17MB nên dùng trần _DOC 50MB. Quyền kiểm trên
+    # entity cha `seal_request` (read/write + phạm vi dữ liệu của phiếu).
+    "seal_request":           ("seal_request", _DOC, 50),
 }
 
 #  ENTITY RIÊNG TƯ — API **không trả `url` công khai** cho những entity này, chỉ

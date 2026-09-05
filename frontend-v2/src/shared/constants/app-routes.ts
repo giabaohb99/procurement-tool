@@ -263,6 +263,15 @@ export const appRoutes = {
   },
   approvalSeal: {
     root: '/approval-seal',
+    //  Tạo/Sửa là TRANG riêng: chi tiết `/:id` = xem + thao tác; sửa ở `/:id/edit`;
+    //  tạo mới ở `/new`. Cùng khuôn với phân hệ Đặt xe.
+    new: '/approval-seal/new',
+    detail: (id: number | string) => `/approval-seal/${id}`,
+    edit: (id: number | string) => `/approval-seal/${id}/edit`,
+    /** Danh mục Loại con dấu. */
+    sealTypes: '/approval-seal/seal-types',
+    sealTypeNew: '/approval-seal/seal-types/new',
+    sealTypeDetail: (id: number | string) => `/approval-seal/seal-types/${id}`,
   },
   vehicleBooking: {
     root: '/vehicle-booking',

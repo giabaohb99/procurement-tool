@@ -356,4 +356,16 @@ export const queryKeys = {
       ['vehicle-booking', 'bookings', params ?? {}] as const,
     booking: (id: number) => ['vehicle-booking', 'bookings', id] as const,
   },
+  /** Phân hệ Duyệt dấu — phiếu yêu cầu đóng dấu + danh mục Loại con dấu. */
+  sealRequest: {
+    all: ['seal-request'] as const,
+    list: (params?: Record<string, unknown>) =>
+      ['seal-request', 'list', params ?? {}] as const,
+    detail: (id: number) => ['seal-request', 'list', id] as const,
+  },
+  sealType: {
+    all: ['seal-type'] as const,
+    list: (params?: Record<string, unknown>) => ['seal-type', 'list', params ?? {}] as const,
+    detail: (id: number) => ['seal-type', 'list', id] as const,
+  },
 } as const
