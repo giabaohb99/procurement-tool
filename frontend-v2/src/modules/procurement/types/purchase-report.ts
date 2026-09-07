@@ -168,6 +168,10 @@ export const PYC_METRICS: ReportMetric[] = [
   { key: 'approved', label: 'Đã duyệt' },
   { key: 'dispatched', label: 'Đã điều phối' },
   { key: 'processing', label: 'Đang xử lý' },
+  // bao-CR-292/297 (ticket 22): hai mốc tách từ "Đang xử lý" — thiếu là phiếu ở
+  // hai mốc này rơi khỏi bảng và cột Tổng không còn bằng tổng các cột sau.
+  { key: 'purchasing', label: 'Đang mua hàng' },
+  { key: 'purchased', label: 'Đã mua hàng' },
   { key: 'completed', label: 'Hoàn tất' },
   { key: 'rejected', label: 'Từ chối' },
   { key: 'cancelled', label: 'Đã hủy' },

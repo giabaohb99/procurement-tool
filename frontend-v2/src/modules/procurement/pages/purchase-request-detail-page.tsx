@@ -244,9 +244,11 @@ export function PurchaseRequestDetailPage() {
   const canManage = can('purchase_request', 'cancel')
   const canAssign = can('purchase_request', 'approve') && !closed
   const showAssignee = can('survey_request', 'process')
+  // bao-CR-292/297 (ticket 22): thêm hai mốc purchasing/purchased — phiếu đã mua
+  // đủ vẫn có thể cần thêm ĐMH (đặt bổ sung / NCC khác) nên không khóa nút ở đó.
   const workableStatuses = data.dispatch_enabled === false
-    ? ['approved', 'dispatched', 'processing']
-    : ['dispatched', 'processing']
+    ? ['approved', 'dispatched', 'processing', 'purchasing', 'purchased']
+    : ['dispatched', 'processing', 'purchasing', 'purchased']
   const allItemsDone =
     data.items.length > 0 &&
     data.items.every((item) => ['completed', 'cancelled'].includes(item.line_status))

@@ -98,6 +98,12 @@ export const PR_STATUS_LABELS: Record<string, string> = {
   rejected: 'Bị trả lại',
   cancelled: 'Đã từ chối',
   processing: 'Đang xử lý',
+  // bao-CR-292/297 (ticket 22): "Đang xử lý" tách ba mốc theo mã đơn MISA —
+  // processing (có ĐMH, chưa đơn nào nhập MISA) → purchasing (MISA phủ MỘT PHẦN
+  // mã hàng) → purchased (MISA phủ ĐỦ mã hàng chưa hủy). Thứ tự khai ở đây quyết
+  // định thứ tự option trong ô lọc trạng thái, nên xếp theo dòng chảy nghiệp vụ.
+  purchasing: 'Đang mua hàng',
+  purchased: 'Đã mua hàng',
   completed: 'Hoàn thành',
 }
 
