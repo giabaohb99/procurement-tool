@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel, Field, field_validator
 
 from app.core.status_codes import SUPPLIER_LEGAL_TYPE
@@ -56,4 +58,5 @@ class SupplierOut(SupplierBase):
     id: int
     # B-03: nhãn tiếng Việt gửi kèm; đọc từ `Supplier.legal_type_label`.
     legal_type_label: str = ""
+    updated_at: datetime | None = None   # bao-CR-294 — cột "Ngày cập nhật" ở màn danh sách
     model_config = {"from_attributes": True}
