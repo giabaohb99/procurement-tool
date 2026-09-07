@@ -490,3 +490,98 @@ def test_draft_treo_it_hon_no_chi_chia_du_treo(db, seed, khoan_no, cap_quyen):
     assert out["draft"]["offsets"] == {khoan_no[1].id: 250.0}
     assert out["draft"]["offset_total"] == 250.0
     assert out["draft"]["cash_total"] == 1050.0
+
+
+# ── Lọc theo NGÀY HÓA ĐƠN (bao-CR-309, bám bộ lọc bao-CR-305 của màn Công nợ) ────────────
+
+@pytest.fixture
+def no_theo_ngay_hd(db, seed):
+    """3 khoản phủ ba nhánh của `get_invoice_date` — ngày hóa đơn KHÁC ngày phát sinh.
+
+    X: đợt giao ghi 07/09 (phát sinh 03/09) · Y: đợt giao trống, dòng ĐMH ghi 20/08 ·
+    Z: không gắn đợt giao nhưng có số HĐ nên rơi về ngày phát sinh 14/08.
+    """
+    from app.modules.purchase_order.model import PODelivery, POItem
+
+    giao_x = PODelivery(po_id=1, po_item_id=0, invoice_date="2026-09-07")
+    dong_y = POItem(po_id=1, product_code="SP-Y", invoice_date="2026-08-20")
+    db.add_all([giao_x, dong_y])
+    db.flush()
+    giao_y = PODelivery(po_id=1, po_item_id=dong_y.id, invoice_date="")
+    db.add(giao_y)
+    db.flush()
+
+    def _no(po_code, ref_id, incur, invoice_no):
+        p = Payable(company_id=seed.company_id, supplier_code="NCCH",
+                    supplier_name="NCC Hồng", source_type="goods", po_code=po_code,
+                    ref_type="delivery", ref_id=ref_id, invoice_no=invoice_no,
+                    incur_date=incur, period=incur[:4], due_date=CHUA_TOI_HAN,
+                    total=1000, paid_amount=0, remaining=1000, status="unpaid")
+        db.add(p)
+        return p
+
+    x = _no("PO-X", giao_x.id, "2026-09-03", "HD-X")
+    y = _no("PO-Y", giao_y.id, "2026-08-10", "HD-Y")
+    z = _no("PO-Z", 0, "2026-08-14", "HD-Z")
+    db.commit()
+    return x, y, z
+
+
+def test_lookup_loc_theo_ngay_hoa_don(db, seed, no_theo_ngay_hd, cap_quyen):
+    """invoice_from/invoice_to lọc theo NGÀY HÓA ĐƠN, không phải ngày phát sinh: hỏi
+    "hóa đơn tháng 8" phải ra Y + Z, còn X (hóa đơn 07/09) bị loại dù phát sinh 03/09."""
+    cap_quyen(seed.u_req_id, "payable", scope="all", read=True)
+    user = db.get(User, seed.u_req_id)
+    x, y, z = no_theo_ngay_hd
+
+    thang_8 = T.run_tool(db, user, "payable_lookup",
+                         {"supplier": "NCCH", "invoice_from": "2026-08-01",
+                          "invoice_to": "2026-08-31"})
+    assert {i["payable_id"] for i in thang_8["items"]} == {y.id, z.id}
+    # Hai outer-join là 1-1 nên summary không được nhân đôi tiền.
+    assert thang_8["total"] == 2 and thang_8["summary"]["remaining"] == 2000.0
+
+    thang_9 = T.run_tool(db, user, "payable_lookup",
+                         {"supplier": "NCCH", "invoice_from": "2026-09-01"})
+    assert {i["payable_id"] for i in thang_9["items"]} == {x.id}
+
+
+def test_lookup_tra_ve_ngay_hoa_don_tung_khoan(db, seed, no_theo_ngay_hd, cap_quyen):
+    """Mỗi khoản trả kèm `invoice_date` dò theo chuỗi chứng từ — trợ lý phải phân biệt
+    được ba mốc ngày, đừng đọc ngày phát sinh khi người dùng hỏi ngày hóa đơn."""
+    cap_quyen(seed.u_req_id, "payable", scope="all", read=True)
+    user = db.get(User, seed.u_req_id)
+
+    out = T.run_tool(db, user, "payable_lookup", {"supplier": "NCCH"})
+    theo_po = {i["po_code"]: i for i in out["items"]}
+    assert theo_po["PO-X"]["invoice_date"] == "2026-09-07"   # đợt giao thắng ngày phát sinh
+    assert theo_po["PO-X"]["incur_date"] == "2026-09-03"
+    assert theo_po["PO-Y"]["invoice_date"] == "2026-08-20"   # rơi xuống dòng ĐMH
+    assert theo_po["PO-Z"]["invoice_date"] == "2026-08-14"   # rơi về ngày phát sinh
+
+
+def test_lookup_ngay_hoa_don_khong_pha_gom_nhom(db, seed, no_theo_ngay_hd, cap_quyen):
+    """group_by chạy trên chính query đã join — join nhân dòng thì count/sum sẽ phồng lên."""
+    cap_quyen(seed.u_req_id, "payable", scope="all", read=True)
+    user = db.get(User, seed.u_req_id)
+
+    out = T.run_tool(db, user, "payable_lookup",
+                     {"supplier": "NCCH", "invoice_from": "2026-08-01",
+                      "invoice_to": "2026-08-31", "group_by": "supplier"})
+    assert out["group_count"] == 1
+    assert out["groups"][0]["count"] == 2
+    assert out["groups"][0]["remaining"] == 2000.0
+
+
+def test_draft_loc_theo_ngay_hoa_don(db, seed, no_theo_ngay_hd, cap_quyen):
+    """Bản nháp YCTT dùng chung bộ lọc: "trả các hóa đơn tháng 8" chỉ gom Y + Z."""
+    cap_quyen(seed.u_req_id, "payable", scope="all", read=True)
+    cap_quyen(seed.u_req_id, "payment_request", scope="all", create=True)
+    user = db.get(User, seed.u_req_id)
+    _x, y, z = no_theo_ngay_hd
+
+    out = T.run_tool(db, user, "draft_payment_request",
+                     {"supplier": "NCCH", "invoice_from": "2026-08-01",
+                      "invoice_to": "2026-08-31"})
+    assert set(out["draft"]["payable_ids"]) == {y.id, z.id}
+    assert out["draft"]["total_remaining"] == 2000.0

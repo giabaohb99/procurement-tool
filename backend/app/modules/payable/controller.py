@@ -74,20 +74,13 @@ def _filtered(db: Session, request: Request, user):
     if due_to:
         q = q.filter(Payable.due_date != "", Payable.due_date <= due_to)
     # bao-CR-305: khoảng NGÀY HÓA ĐƠN — không lưu trên tab_payable mà dò từ đợt giao
-    # (PODelivery.invoice_date -> POItem.invoice_date -> incur_date khi đã có số HĐ),
-    # nên phải outer-join 1-1 rồi dựng biểu thức cùng luật với service.get_invoice_date.
+    # (PODelivery.invoice_date -> POItem.invoice_date -> incur_date khi đã có số HĐ).
+    # Join + biểu thức nằm ở service để tool Trợ lý AI dùng CHUNG một luật (bao-CR-309).
     inv_from = request.query_params.get("invoice_from")
     inv_to = request.query_params.get("invoice_to")
     if inv_from or inv_to:
-        from app.modules.purchase_order.model import PODelivery, POItem
-
-        inv_expr = func.coalesce(
-            func.nullif(PODelivery.invoice_date, ""),
-            func.nullif(POItem.invoice_date, ""),
-            case((Payable.invoice_no != "", func.nullif(Payable.incur_date, "")), else_=None),
-        )
-        q = (q.outerjoin(PODelivery, (Payable.ref_type == "delivery") & (Payable.ref_id == PODelivery.id))
-              .outerjoin(POItem, POItem.id == PODelivery.po_item_id))
+        q = service.join_invoice_date(q)
+        inv_expr = service.invoice_date_expr()
         if inv_from:
             q = q.filter(inv_expr >= inv_from)
         if inv_to:

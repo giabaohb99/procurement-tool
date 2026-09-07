@@ -232,3 +232,43 @@ def test_my_requests_thieu_quyen(db, seed, ho_so, cap_quyen):
 
     sai = T.run_tool(db, user, "my_procurement_requests", {"entity": "linh_tinh"})
     assert sai.get("error")
+
+
+# \u2500\u2500 Nh\u00e3n tr\u1ea1ng th\u00e1i b\u00e1m theo m\u00e0n h\u00ecnh (bao-CR-309) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+def test_nhan_trang_thai_ycmh_du_ba_moc_misa(db, seed):
+    """bao-CR-292 t\u00e1ch "\u0110ang x\u1eed l\u00fd" th\u00e0nh processing/purchasing/purchased \u2014 thi\u1ebfu hai m\u00e3
+    sau th\u00ec tr\u1ee3 l\u00fd \u0111\u1ecdc nguy\u00ean m\u00e3 ti\u1ebfng Anh cho ng\u01b0\u1eddi d\u00f9ng nghe."""
+    from app.modules.assistant.tools.procurement_doc_tool import _label
+
+    assert _label("purchase_request", "processing") == "\u0110ang x\u1eed l\u00fd"
+    assert _label("purchase_request", "purchasing") == "\u0110ang mua h\u00e0ng"
+    assert _label("purchase_request", "purchased") == "\u0110\u00e3 mua h\u00e0ng"
+
+
+def test_nhan_trang_thai_yctt_da_chi(db, seed):
+    """M\u00e0n h\u00ecnh g\u1ecdi tr\u1ea1ng th\u00e1i cu\u1ed1i c\u1ee7a YCTT l\u00e0 "\u0110\u00e3 chi" \u2014 chat ph\u1ea3i n\u00f3i c\u00f9ng m\u1ed9t ch\u1eef,
+    k\u1ebbo ng\u01b0\u1eddi d\u00f9ng t\u01b0\u1edfng c\u00f3 hai tr\u1ea1ng th\u00e1i kh\u00e1c nhau."""
+    from app.modules.assistant.tools.procurement_doc_tool import _label
+
+    assert _label("payment_request", "paid") == "\u0110\u00e3 chi"
+
+
+def test_nhan_trang_thai_phu_moi_ma_backend_sinh_ra(db, seed):
+    """M\u1ecdi m\u00e3 tr\u1ea1ng th\u00e1i backend c\u00f3 th\u1ec3 ghi \u0111\u1ec1u ph\u1ea3i c\u00f3 nh\u00e3n \u2014 `_label` r\u01a1i v\u1ec1 ch\u00ednh m\u00e3
+    l\u00e0 l\u1ed7i im l\u1eb7ng: kh\u00f4ng ch\u1ed7 n\u00e0o \u0111\u1ecf l\u00ean, ch\u1ec9 c\u00f3 ng\u01b0\u1eddi d\u00f9ng \u0111\u1ecdc th\u1ea5y ch\u1eef ti\u1ebfng Anh."""
+    from app.modules.assistant.tools.procurement_doc_tool import _label
+
+    ma_theo_entity = {
+        "purchase_request": ["draft", "submitted", "approved", "dispatched", "processing",
+                             "purchasing", "purchased", "completed", "rejected", "cancelled"],
+        "survey_request": ["draft", "submitted", "approved", "processing", "survey_done",
+                           "pr_created", "done", "rejected", "cancelled"],
+        "purchase_order": ["draft", "submitted", "approved", "partial", "received",
+                           "completed", "rejected", "cancelled"],
+        "survey": ["draft", "submitted", "approved", "rejected", "cancelled"],
+        "payment_request": ["draft", "submitted", "approved", "paid", "cancelled"],
+    }
+    for entity, codes in ma_theo_entity.items():
+        for code in codes:
+            assert _label(entity, code) != code, f"{entity}.{code} chưa có nhãn tiếng Việt"

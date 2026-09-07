@@ -14,7 +14,8 @@ from sqlalchemy import case, func, or_
 
 from app.core.scoping import apply_scope
 from app.modules.payable.model import Payable
-from app.modules.payable.service import ST_PAID, status_label
+from app.modules.payable.service import (ST_PAID, get_invoice_date, invoice_date_expr,
+                                         join_invoice_date, status_label)
 
 from .base import ToolContext, ToolSpec, denied
 from .draft_tool import _clean_text
@@ -79,10 +80,24 @@ def _scoped_payables(ctx: ToolContext, args: dict):
     due_to = _clean_text(args.get("due_to"), 10)
     if due_to:
         q = q.filter(Payable.due_date != "", Payable.due_date <= due_to)
+
+    # bao-CR-309 — lọc theo NGÀY HÓA ĐƠN, bám đúng cặp lọc mà màn Công nợ có từ bao-CR-305.
+    # Ngày này không nằm trên `tab_payable` mà dò dọc chuỗi chứng từ, nên mượn nguyên join +
+    # biểu thức của phân hệ công nợ thay vì chép luật lần nữa — lệch luật là màn hình một
+    # đằng trợ lý một nẻo. Hai join đều 1-1 nên không nhân dòng, group_by/sum vẫn đúng.
+    inv_from = _clean_text(args.get("invoice_from"), 10)
+    inv_to = _clean_text(args.get("invoice_to"), 10)
+    if inv_from or inv_to:
+        q = join_invoice_date(q)
+        inv_expr = invoice_date_expr()
+        if inv_from:
+            q = q.filter(inv_expr >= inv_from)
+        if inv_to:
+            q = q.filter(inv_expr <= inv_to)
     return q, company_hit, None
 
 
-def _payable_out(p: Payable) -> dict:
+def _payable_out(db, p: Payable) -> dict:
     return {
         "payable_id": p.id,
         "supplier_code": p.supplier_code,
@@ -90,6 +105,9 @@ def _payable_out(p: Payable) -> dict:
         "source_type": _SOURCE_LABELS.get(p.source_type, p.source_type),
         "po_code": p.po_code,
         "invoice_no": p.invoice_no,
+        # Ba mốc ngày khác nhau, đừng gộp: ngày hóa đơn (chứng từ NCC) · ngày phát sinh
+        # (nhận hàng) · hạn trả. Ngày hóa đơn dò theo chuỗi chứng từ nên phải hỏi service.
+        "invoice_date": get_invoice_date(db, p),
         "incur_date": p.incur_date,
         "due_date": p.due_date,
         "total": float(p.total or 0),
@@ -200,7 +218,7 @@ def _run_lookup(ctx: ToolContext, args: dict) -> dict:
         "total": int(total[0]),
         "summary": {"total": float(total[1]), "paid": float(total[2]),
                     "remaining": float(total[3]), "overdue": float(total[4])},
-        "items": [_payable_out(p) for p in rows],
+        "items": [_payable_out(ctx.db, p) for p in rows],
     }
     if total[0] > limit:
         out["note"] = (f"Chỉ liệt kê {limit}/{total[0]} khoản tới hạn sớm nhất — summary vẫn "
@@ -244,9 +262,11 @@ PAYABLE_LOOKUP_SPEC = ToolSpec(
         "nào quá hạn chưa trả'. Kết quả có summary (tổng nợ / đã trả / CÒN LẠI / quá hạn) "
         "tính trên toàn bộ kết quả lọc, kèm từng khoản nợ với payable_id — muốn lập Yêu cầu "
         "thanh toán từ các khoản này thì gọi tiếp draft_payment_request và truyền đúng các "
-        "payable_id đó. Mặc định chỉ lấy khoản CÒN PHẢI TRẢ. Câu 'cần thanh toán tháng "
-        "này/tuần này' lọc theo HẠN TRẢ bằng due_from/due_to (date_from/date_to là ngày "
-        "PHÁT SINH nợ — đừng nhầm). Câu 'bao nhiêu NCC cần trả / công ty nào nợ nhiều nhất' "
+        "payable_id đó. Mặc định chỉ lấy khoản CÒN PHẢI TRẢ. Có BA MỐC NGÀY khác nhau, chọn "
+        "đúng cặp: date_from/date_to = ngày PHÁT SINH nợ (lúc nhận hàng); due_from/due_to = "
+        "HẠN TRẢ, dùng cho 'cần thanh toán tháng này/tuần này'; invoice_from/invoice_to = "
+        "NGÀY HÓA ĐƠN trên chứng từ NCC, dùng cho 'hóa đơn tháng 8', 'nợ theo hóa đơn kỳ "
+        "này' — đúng cặp lọc màn Công nợ đang có. Câu 'bao nhiêu NCC cần trả / công ty nào nợ nhiều nhất' "
         "thì truyền group_by=supplier|company — trả tổng hợp từng nhóm (số khoản / còn nợ / "
         "quá hạn) tính trên TOÀN BỘ kết quả lọc, ĐỪNG tự đếm trên danh sách liệt kê vì danh "
         "sách có trần dòng. Lọc về đúng một NCC mà NCC đó "
@@ -280,6 +300,11 @@ PAYABLE_LOOKUP_SPEC = ToolSpec(
                                         "toán trong tháng/tuần' (tùy chọn)."},
             "due_to": {"type": "string",
                        "description": "HẠN TRẢ đến ngày, YYYY-MM-DD (tùy chọn)."},
+            "invoice_from": {"type": "string",
+                             "description": "NGÀY HÓA ĐƠN từ ngày, YYYY-MM-DD — dùng khi "
+                                            "người dùng nói 'hóa đơn tháng ...' (tùy chọn)."},
+            "invoice_to": {"type": "string",
+                           "description": "NGÀY HÓA ĐƠN đến ngày, YYYY-MM-DD (tùy chọn)."},
             "group_by": {
                 "type": "string",
                 "enum": ["supplier", "company"],
@@ -304,9 +329,11 @@ _DRAFT_DESC = (
     "dùng muốn lập yêu cầu/đề nghị thanh toán công nợ cho NCC. Cách chọn khoản nợ, ưu tiên "
     "theo thứ tự: (1) đã gọi payable_lookup trong hội thoại thì truyền đúng danh sách "
     "payable_ids người dùng muốn trả; (2) chưa tra thì truyền supplier (bắt buộc nếu không "
-    "có payable_ids) + company/date_from/date_to/due_from/due_to nếu người dùng nêu — tool "
+    "có payable_ids) + company + một trong ba cặp mốc ngày nếu người dùng nêu — tool "
     "tự lấy các khoản còn phải trả khớp điều kiện ('trả các khoản tới hạn tháng này' = lọc "
-    "due_from/due_to theo HẠN TRẢ). Khoản đã tất toán bị loại tự động. NCC còn TIỀN TREO trả "
+    "due_from/due_to theo HẠN TRẢ; 'trả các hóa đơn tháng 8' = lọc invoice_from/invoice_to "
+    "theo NGÀY HÓA ĐƠN; date_from/date_to là ngày PHÁT SINH nợ). "
+    "Khoản đã tất toán bị loại tự động. NCC còn TIỀN TREO trả "
     "trước thì bản nháp chia sẵn phần 'Cấn trừ trả trước' theo FIFO (draft.offsets + "
     "offset_total + cash_total — chi thật = còn lại trừ cấn trừ, thực thi khi phiếu được "
     "DUYỆT theo CR-260) và form mở ra điền sẵn cột cấn trừ. Sau khi gọi, báo người dùng bấm "
@@ -614,6 +641,13 @@ DRAFT_PAYMENT_REQUEST_SPEC = ToolSpec(
                                         "cho 'trả các khoản tới hạn tháng/tuần này' (tùy chọn)."},
             "due_to": {"type": "string",
                        "description": "Chỉ lấy khoản có HẠN TRẢ đến ngày, YYYY-MM-DD (tùy chọn)."},
+            "invoice_from": {"type": "string",
+                             "description": "Chỉ lấy khoản có NGÀY HÓA ĐƠN từ ngày, "
+                                            "YYYY-MM-DD — dùng cho 'trả các hóa đơn tháng "
+                                            "...' (tùy chọn)."},
+            "invoice_to": {"type": "string",
+                           "description": "Chỉ lấy khoản có NGÀY HÓA ĐƠN đến ngày, "
+                                          "YYYY-MM-DD (tùy chọn)."},
         },
     },
     handler=_run_draft,

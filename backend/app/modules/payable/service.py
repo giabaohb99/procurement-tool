@@ -2,6 +2,7 @@
 import re
 from datetime import datetime, timedelta
 
+from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 
 from app.core.status_codes import PAYABLE_STATUS
@@ -40,6 +41,36 @@ def get_invoice_date(db: Session, p: Payable) -> str:
     if p and (p.invoice_no or "").strip() and (p.incur_date or "").strip():
         return p.incur_date
     return ""
+
+
+def join_invoice_date(q):
+    """Gắn sẵn hai outer-join mà `invoice_date_expr()` cần vào một query trên Payable.
+
+    Cả hai đều 1-1 (`ref_id` trỏ đúng một đợt giao, `po_item_id` trỏ đúng một dòng) nên
+    KHÔNG nhân dòng — gọi trước `count`/`sum`/`group_by` vẫn ra đúng số.
+    """
+    from app.modules.purchase_order.model import PODelivery, POItem
+
+    return (q.outerjoin(PODelivery,
+                        (Payable.ref_type == "delivery") & (Payable.ref_id == PODelivery.id))
+             .outerjoin(POItem, POItem.id == PODelivery.po_item_id))
+
+
+def invoice_date_expr():
+    """Bản SQL của `get_invoice_date` — dùng để LỌC/SẮP ngay trong câu truy vấn.
+
+    Ngày hóa đơn không có cột trên `tab_payable`, phải dò dọc chuỗi chứng từ, nên tồn tại
+    hai bản: bản Python đọc từng dòng (`get_invoice_date`) và bản SQL này. **Sửa luật thì
+    phải sửa CẢ HAI** — lệch nhau là màn hình hiện một ngày còn bộ lọc hiểu một ngày khác,
+    đúng kiểu lỗi bao-CR-305 vừa phải vá. Phải `join_invoice_date(q)` trước khi dùng.
+    """
+    from app.modules.purchase_order.model import PODelivery, POItem
+
+    return func.coalesce(
+        func.nullif(PODelivery.invoice_date, ""),
+        func.nullif(POItem.invoice_date, ""),
+        case((Payable.invoice_no != "", func.nullif(Payable.incur_date, "")), else_=None),
+    )
 
 
 def misa_code_by_po(db: Session, items: list[Payable]) -> dict[int, str]:

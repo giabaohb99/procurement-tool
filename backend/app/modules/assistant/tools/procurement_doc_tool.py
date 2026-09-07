@@ -51,7 +51,12 @@ _STATUS_LABELS: dict[str, dict[str, str]] = {
     "purchase_request": {
         "draft": "Nháp", "submitted": "Chờ duyệt", "approved": "Đã duyệt",
         "dispatched": "Đã điều phối", "rejected": "Bị trả lại", "cancelled": "Đã từ chối",
-        "processing": "Đang xử lý", "completed": "Hoàn thành",
+        # bao-CR-292 tách "Đang xử lý" thành ba mốc theo độ phủ mã đơn MISA:
+        # processing (có ĐMH, chưa đơn nào nhập MISA) -> purchasing (MISA phủ MỘT PHẦN mã
+        # hàng) -> purchased (phủ ĐỦ). Thiếu hai mã sau thì `_label` trả về chính mã tiếng
+        # Anh và trợ lý đọc "purchasing" cho người dùng nghe.
+        "processing": "Đang xử lý", "purchasing": "Đang mua hàng",
+        "purchased": "Đã mua hàng", "completed": "Hoàn thành",
     },
     "survey_request": {
         "draft": "Nháp", "submitted": "Chờ duyệt", "approved": "Đã duyệt",
@@ -69,7 +74,9 @@ _STATUS_LABELS: dict[str, dict[str, str]] = {
     },
     "payment_request": {
         "draft": "Nháp", "submitted": "Chờ duyệt", "approved": "Đã duyệt",
-        "paid": "Đã thanh toán", "cancelled": "Đã từ chối",
+        #  Màn hình gọi trạng thái cuối là "Đã chi" chứ không phải "Đã thanh toán" — chat
+        #  nói khác màn hình là người dùng tưởng có hai trạng thái.
+        "paid": "Đã chi", "cancelled": "Đã từ chối",
     },
 }
 
