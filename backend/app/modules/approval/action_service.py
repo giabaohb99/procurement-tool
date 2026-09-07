@@ -356,9 +356,9 @@ def _reassign_comment(db: Session, from_employee_id: int, to_employee_id: int,
     đi vào BẢN IN dấu vết, mà bản in không có chỗ nào tra tên nhân sự.
     """
     names = _employee_names(db, {from_employee_id, to_employee_id})
-    cau = (f"Chuyển việc từ «{names.get(from_employee_id) or f'#{from_employee_id}'}» "
+    text = (f"Chuyển việc từ «{names.get(from_employee_id) or f'#{from_employee_id}'}» "
            f"sang «{names.get(to_employee_id) or f'#{to_employee_id}'}»")
-    return f"{cau} · {reason.strip()}" if reason and reason.strip() else cau
+    return f"{text} · {reason.strip()}" if reason and reason.strip() else text
 
 
 def _employee_names(db: Session, ids: set[int]) -> dict[int, str]:

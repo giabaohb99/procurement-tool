@@ -247,6 +247,7 @@ def cancel_request(rid: int, reason: str = Query("", max_length=500),
 def estimate_days(from_date: str, to_date: str,
                   leave_type_id: int = 0,
                   from_session: int = 1, to_session: int = 1,
+                  from_time: str = "", to_time: str = "",
                   employee_id: int = 0,
                   db: Session = Depends(get_db),
                   user=Depends(require(ENTITY, "read"))):
@@ -257,9 +258,23 @@ def estimate_days(from_date: str, to_date: str,
     không đụng nhau, khỏi phải nhớ thứ tự khai route.
     """
     from datetime import date as _date
+    from datetime import time as _time
 
     employee = request_service.resolve_leave_taker(db, user, employee_id)
     leave_type = (db.get(LeaveType, leave_type_id) if leave_type_id else None)
+
+    #  Nghỉ theo GIỜ: số ngày là phép chia, không đụng tới lịch ngày lễ. Tính ở
+    #  đây chứ không để giao diện tự chia — giờ công một ngày là luật của công
+    #  ty, khai ở `constants.WORK_HOURS_PER_DAY`, và hai chỗ chia thì sớm muộn
+    #  lệch nhau.
+    if request_service.is_hourly(from_session, to_session):
+        return success({"total_days": request_service.hourly_days(
+            db, _date.fromisoformat(from_date), _date.fromisoformat(to_date),
+            _time.fromisoformat(from_time) if from_time else None,
+            _time.fromisoformat(to_time) if to_time else None,
+            company_id=employee.company_id or 0,
+            exclude_holiday=bool(leave_type.exclude_holiday) if leave_type else True)})
+
     days = workday_service.count_leave_days(
         db, _date.fromisoformat(from_date), _date.fromisoformat(to_date),
         from_session, to_session,

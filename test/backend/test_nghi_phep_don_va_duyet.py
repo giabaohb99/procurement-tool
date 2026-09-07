@@ -5,7 +5,7 @@ phần giữ chỗ**. Quên một cái thì số ngày đó treo vĩnh viễn tr
 người ta mất phép, và lỗi không có triệu chứng nào cho tới khi ai đó cộng tay
 lại sổ cuối năm.
 """
-from datetime import date, timedelta
+from datetime import date, time, timedelta
 from types import SimpleNamespace
 
 import pytest
@@ -16,7 +16,8 @@ from app.modules.leave import approval_bridge, balance_service, request_service
 from app.modules.leave.catalog_model import LeaveType
 from app.modules.leave.constants import (GENDER_FEMALE, GENDER_MALE, LR_APPROVED,
                                          LR_CANCELLED, LR_DRAFT, LR_PENDING,
-                                         LR_REJECTED, LR_RETURNED)
+                                         LR_REJECTED, LR_RETURNED, SESSION_FULL,
+                                         SESSION_HOURLY, UNIT_DAY, UNIT_HOUR)
 from app.modules.leave.request_model import LeaveHandover, LeaveRequest
 from app.modules.leave.schema import (HandoverItem, LeaveRequestCreate,
                                       LeaveRequestUpdate)
@@ -103,14 +104,158 @@ def test_chep_phap_nhan_va_phong_cua_NGUOI_NGHI(db):
     assert (obj.company_id, obj.department_id) == (3, 9)
 
 
-def test_lap_ho_nguoi_khac(db):
-    """Hành chính lập hộ là việc có thật — người nghỉ khai tường minh."""
+def test_lap_ho_nguoi_khac(db, cap_quyen):
+    """Hành chính lập hộ là việc có thật — người nghỉ khai tường minh.
+
+    Cần ĐỦ HAI quyền: tạo đơn với phạm vi rộng hơn «của mình», và đọc được hồ sơ
+    nhân sự của người đó (xem `ensure_can_create_for`).
+    """
     hanh_chinh = _employee(db, code="NV009", name="Trần Hành Chính")
     nguoi_nghi = _employee(db, code="NV002", name="Lê Thị B")
+    cap_quyen(9, "leave_request", scope="all", read=True, create=True)
+    cap_quyen(9, "employee", scope="all", read=True)
+
     obj = _create(db, _user(hanh_chinh.id, uid=9), _leave_type(db),
                   employee_id=nguoi_nghi.id)
     assert obj.employee_id == nguoi_nghi.id
     assert obj.created_by == 9
+
+
+def test_nguoi_thuong_khong_lap_ho_duoc(db):
+    """Chốt vá 07/09/2026 — trước đó gửi kèm `employee_id` bất kỳ là nộp được đơn
+    đứng tên người khác, ở bất kỳ pháp nhân nào. Ô «người nghỉ» chỉ có ở API nên
+    không ai để ý; nay màn hình có ô chọn thật."""
+    nhan_vien = _employee(db, code="NV010", name="Nhân viên thường")
+    nguoi_khac = _employee(db, code="NV011", name="Người khác")
+
+    with pytest.raises(HTTPException) as e:
+        _create(db, _user(nhan_vien.id, uid=11), _leave_type(db),
+                employee_id=nguoi_khac.id)
+    assert e.value.status_code == 403
+    assert "chính mình" in e.value.detail
+
+
+def test_lap_ho_nguoi_NGOAI_pham_vi_bi_chan(db, cap_quyen):
+    """Được phép lập hộ không có nghĩa là lập cho cả tập đoàn."""
+    hanh_chinh = _employee(db, code="NV012", name="Hành chính phòng 7")
+    nguoi_khac = _employee(db, code="NV013", name="Người phòng khác",
+                           department_id=99)
+    cap_quyen(12, "leave_request", scope="dept", read=True, create=True)
+    cap_quyen(12, "employee", scope="dept", read=True)
+
+    with pytest.raises(HTTPException) as e:
+        _create(db, _user(hanh_chinh.id, uid=12), _leave_type(db),
+                employee_id=nguoi_khac.id)
+    assert e.value.status_code == 403
+    assert "ngoài phạm vi" in e.value.detail
+
+
+# ── 1b. Nghỉ theo GIỜ (07/09/2026) ─────────────────────────────────────────────
+
+def _create_hourly(db, user, leave_type, tu="09:00", den="11:00", **kw):
+    return _create(db, user, leave_type,
+                   from_session=SESSION_HOURLY, to_session=SESSION_HOURLY,
+                   from_time=time.fromisoformat(tu), to_time=time.fromisoformat(den),
+                   **kw)
+
+
+def test_nghi_theo_gio_quy_ra_ngay_theo_gio_cong(db):
+    """2 tiếng trong ngày công 8 giờ = 0.25 ngày phép."""
+    emp = _employee(db)
+    obj = _create_hourly(db, _user(emp.id), _leave_type(db))
+    assert obj.total_days == 0.25
+    assert obj.unit == UNIT_HOUR
+    assert (obj.from_time, obj.to_time) == (time(9, 0), time(11, 0))
+
+
+def test_nghi_theo_gio_KHONG_cho_go_de_so_ngay(db):
+    """Người dùng đã chọn hai đầu giờ rồi — con số thứ ba là đường cho tờ đơn
+    nghỉ 2 tiếng trừ 3 ngày phép."""
+    emp = _employee(db)
+    obj = _create_hourly(db, _user(emp.id), _leave_type(db), total_days=3)
+    assert obj.total_days == 0.25
+
+
+def test_nghi_theo_gio_VAT_QUA_nhieu_ngay(db):
+    """Khách bác thẳng bản bó-một-ngày (07/09/2026): *từ 14:00 ngày A đến 10:00
+    ngày B* là tờ đơn có thật. Ngày đầu tính tới hết giờ làm, ngày cuối tính từ
+    đầu giờ làm, ngày giữa trọn một công.
+
+    T2 05/01 14:00 → T4 07/01 10:00 = 3h + 8h + 2h = 13h / 8 = 1.62 ngày."""
+    emp = _employee(db)
+    obj = _create_hourly(db, _user(emp.id), _leave_type(db),
+                         tu="14:00", den="10:00", days_to=2)
+    assert obj.total_days == 1.62
+
+
+def test_nghi_theo_gio_tru_gio_nghi_trua(db):
+    """11:30 → 13:30 chỉ là 1 giờ công: giờ ăn trưa không ai làm việc."""
+    emp = _employee(db)
+    obj = _create_hourly(db, _user(emp.id), _leave_type(db), tu="11:30", den="13:30")
+    assert obj.total_days == 0.12
+
+
+def test_nghi_tron_gio_lam_ra_dung_MOT_ngay(db):
+    """8:00 → 17:00 phải ra 1.0, nếu không thì bốn hằng số giờ làm lệch nhau."""
+    emp = _employee(db)
+    obj = _create_hourly(db, _user(emp.id), _leave_type(db), tu="08:00", den="17:00")
+    assert obj.total_days == 1.0
+
+
+def test_khoang_gio_ngoai_gio_lam_bi_chan(db):
+    """Nghỉ 19:00 → 21:00 không phải nghỉ phép — không có giờ công nào ở đó."""
+    emp = _employee(db)
+    with pytest.raises(HTTPException) as e:
+        _create_hourly(db, _user(emp.id), _leave_type(db), tu="19:00", den="21:00")
+    assert "giờ làm việc" in e.value.detail
+
+
+def test_nghi_theo_gio_thieu_gio_bi_chan(db):
+    emp = _employee(db)
+    with pytest.raises(HTTPException) as e:
+        _create(db, _user(emp.id), _leave_type(db),
+                from_session=SESSION_HOURLY, to_session=SESSION_HOURLY)
+    assert "Từ giờ" in e.value.detail
+
+
+def test_gio_nguoc_bi_chan(db):
+    emp = _employee(db)
+    with pytest.raises(HTTPException) as e:
+        _create_hourly(db, _user(emp.id), _leave_type(db), tu="15:00", den="09:00")
+    assert "sau «Từ giờ»" in e.value.detail
+
+
+def test_khai_gio_ma_buoi_khong_phai_theo_gio_bi_chan(db):
+    """Lưu một khoảng giờ không ai đọc thì lần sau sẽ có người đọc nó thật."""
+    emp = _employee(db)
+    with pytest.raises(HTTPException) as e:
+        _create(db, _user(emp.id), _leave_type(db), from_time=time(9, 0),
+                to_time=time(11, 0))
+    assert "không phải «Theo giờ»" in e.value.detail
+
+
+def test_doi_tu_theo_gio_sang_ca_ngay_thi_XOA_gio_cu(db):
+    """Giờ cũ còn lại trên tờ đơn nghỉ cả ngày là dữ liệu rác, và số ngày sẽ
+    tính lại theo đường của buổi chứ không theo giờ."""
+    emp = _employee(db)
+    obj = _create_hourly(db, _user(emp.id), _leave_type(db))
+    request_service.update(db, obj, LeaveRequestUpdate(
+        from_session=SESSION_FULL, to_session=SESSION_FULL), _user(emp.id))
+
+    assert (obj.from_time, obj.to_time) == (None, None)
+    assert obj.total_days == 1.0
+    assert obj.unit == UNIT_DAY
+
+
+def test_nghi_theo_gio_tru_dung_phan_le_cua_quy(db):
+    """09:00 → 13:00 = 3 giờ công (đã trừ nghỉ trưa) = 0.38 ngày, và quỹ phép
+    phải giữ chỗ ĐÚNG con số lẻ đó chứ không làm tròn lên."""
+    emp = _employee(db)
+    lt = _leave_type(db)
+    obj = _submit(db, _create_hourly(db, _user(emp.id), lt, den="13:00"), _user(emp.id))
+
+    row = balance_service.get_balance(db, emp.id, MONDAY.year, lt.id)
+    assert obj.total_days == 0.38 and row.pending_days == 0.38
 
 
 def test_tai_khoan_khong_gan_ho_so_nhan_su_bi_chan(db):

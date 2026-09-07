@@ -30,7 +30,15 @@ LEAVE_SESSION_SET = register(CodeSet("leave_session", "Buổi nghỉ", [
     Code("full",      "Cả ngày"),
     Code("morning",   "Buổi sáng"),
     Code("afternoon", "Buổi chiều"),
+    #  Nghỉ theo GIỜ (07/09/2026) — đi khám nửa buổi, ra ngân hàng hai tiếng.
+    #  Khoảng giờ nằm trên tờ ĐƠN nghỉ phép (`tab_leave_request.from_time`),
+    #  giấy GNP chỉ chép lại buổi và tổng số ngày đã quy đổi.
+    Code("hourly",    "Theo giờ"),
 ]))
 
 #  Số công của mỗi buổi — dùng để GỢI Ý tổng số ngày.
-SESSION_WORK_CREDIT = {"full": 1.0, "morning": 0.5, "afternoon": 0.5}
+#  `hourly` = 0.0 vì con số của nó KHÔNG suy ra được từ buổi: nó là số giờ chia
+#  giờ công một ngày. Giấy sinh từ đơn nghỉ phép đã mang sẵn số ngày đúng; còn
+#  người khai giấy TAY thì phải tự gõ ô «Tổng số ngày» — thà để trống còn hơn
+#  gợi ý một con số bịa.
+SESSION_WORK_CREDIT = {"full": 1.0, "morning": 0.5, "afternoon": 0.5, "hourly": 0.0}

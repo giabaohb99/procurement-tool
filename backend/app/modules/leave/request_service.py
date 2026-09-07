@@ -12,7 +12,7 @@ Bốn luật đặt ở đây và chỉ ở đây:
 Chốt "nhập đủ" đặt ở lúc **GỬI DUYỆT**, không phải lúc lưu nháp — cùng luật với
 `required-fields.ts` của Thu mua và với `type_metadata.require_on_submit`.
 """
-from datetime import date, datetime
+from datetime import date, datetime, time
 
 from fastapi import HTTPException
 from sqlalchemy import and_, or_
@@ -25,7 +25,9 @@ from . import balance_service, workday_service
 from .catalog_model import LeaveType
 from .constants import (EDITABLE_STATUSES, GENDER_UNKNOWN, HOLDING_STATUSES,
                         LR_APPROVED, LR_CANCELLED, LR_DRAFT, LR_PENDING,
-                        SESSION_AFTERNOON, SESSION_MORNING, UNIT_DAY)
+                        LUNCH_END, LUNCH_START, SESSION_AFTERNOON,
+                        SESSION_HOURLY, SESSION_MORNING, UNIT_DAY, UNIT_HOUR,
+                        WORK_DAY_END, WORK_DAY_START)
 from .request_model import LeaveHandover, LeaveRequest
 
 #  Bộ lọc danh sách (whitelist của `apply_filters`). `code` để ô tìm nhanh lo.
@@ -66,19 +68,102 @@ def resolve_leave_taker(db: Session, user, employee_id: int) -> Employee:
     if not target:
         raise HTTPException(
             400, "Chưa xác định được người nghỉ — tài khoản này chưa gắn hồ sơ nhân sự.")
+    #  ⚠️ KHÔNG gác quyền ở đây. Hàm này còn dùng cho mấy đường CHỈ ĐỌC (ước
+    #  lượng số ngày, tra quỹ phép hộ người khác), nên nhét chốt "được lập hộ
+    #  không" vào đây là chặn nhầm cả việc xem — đã làm đỏ hai bài
+    #  `test_va_ro_du_lieu_xuyen_phap_nhan` ngay lần chạy đầu. Chốt nằm ở
+    #  `ensure_can_create_for`, gọi từ `create()` và `update()`.
     return get_employee(db, target)
+
+
+def ensure_can_create_for(db: Session, user, employee: Employee) -> None:
+    """LẬP HỘ — ai được đứng tên người khác trên tờ đơn nghỉ (07/09/2026).
+
+    ⚠️ Trước hôm nay ô «người nghỉ» chỉ có ở API chứ không có trên màn hình, và
+    **không ai gác nó**: gửi kèm `employee_id` bất kỳ là nộp được đơn đứng tên
+    người đó, ở bất kỳ pháp nhân nào. Nay màn hình có ô chọn thật nên chốt này
+    là bắt buộc, không phải trang trí.
+
+    Hai điều kiện, cả hai đều phải đúng — mỗi cái trả lời một câu khác nhau:
+
+    1. **Được phép lập hộ** — có ít nhất một vai trò cho `leave_request.create`
+       với phạm vi RỘNG HƠN «của mình». Người thường chỉ có `own`: họ nộp đơn
+       cho chính mình, chấm hết.
+    2. **Người đó nằm trong tầm mình** — hồ sơ nhân sự ấy phải đọc được trong
+       phạm vi khóa `employee`. Trưởng phòng lập hộ cho người phòng mình được,
+       cho phòng khác thì không; phòng Nhân sự (`employee` phạm vi `all`) lập
+       cho ai cũng được.
+
+    Lập cho CHÍNH MÌNH thì không kiểm gì — đó là đường đi của mọi nhân viên.
+    """
+    from app.core.auth import get_perm_profile
+    from app.core.scoping import get_scoped
+
+    if employee.id == (getattr(user, "employee_id", 0) or 0):
+        return
+
+    profile = get_perm_profile(db, user)
+    can_create_for_others = any(
+        grant.get("perms", {}).get("leave_request", {}).get("create")
+        and grant.get("perms", {}).get("leave_request", {}).get("scope") != "own"
+        for grant in profile.get("grants", [])
+    )
+    if not can_create_for_others:
+        raise HTTPException(
+            403, "Bạn chỉ nộp được đơn nghỉ cho chính mình. Muốn lập hộ người khác "
+                 "thì cần vai trò có phạm vi rộng hơn «của mình».")
+
+    if get_scoped(db, Employee, "employee", employee.id, user, profile, "read") is None:
+        raise HTTPException(
+            403, f"«{employee.full_name}» nằm ngoài phạm vi nhân sự của bạn.")
 
 
 # ── Kiểm tra tờ đơn ────────────────────────────────────────────────────────────
 
 def check_date_range(from_date: date, to_date: date,
-                     from_session: int, to_session: int) -> None:
+                     from_session: int, to_session: int,
+                     from_time: time | None = None,
+                     to_time: time | None = None) -> None:
     if to_date < from_date:
         raise HTTPException(400, "«Đến ngày» phải bằng hoặc sau «Từ ngày»")
     if (from_date == to_date and from_session == SESSION_AFTERNOON
             and to_session == SESSION_MORNING):
         #  Cùng câu chữ với `_check_leave` của giấy GNP — một luật, một câu báo.
         raise HTTPException(400, "Nghỉ từ buổi chiều đến buổi sáng cùng ngày là khoảng trống")
+    check_hourly(from_date, to_date, from_session, to_session, from_time, to_time)
+
+
+def is_hourly(from_session: int, to_session: int) -> bool:
+    """Đơn khai theo GIỜ. Một trong hai ô buổi mang `SESSION_HOURLY` là đủ để
+    coi là đơn theo giờ — `check_hourly` sẽ đòi ô kia khai giống vậy."""
+    return SESSION_HOURLY in (from_session, to_session)
+
+
+def check_hourly(from_date: date, to_date: date, from_session: int, to_session: int,
+                 from_time: time | None, to_time: time | None) -> None:
+    """Chốt của nghỉ theo giờ — chỗ nào bỏ qua thì số ngày ra sai.
+
+    ⚠️ **Vắt qua nhiều ngày là HỢP LỆ**: *từ 14:00 ngày 07 đến 10:00 ngày 09* là
+    tờ đơn có thật (đi viện hai hôm, đi công tác về muộn). Bản đầu bó trong một
+    ngày và khách bác ngay — quy đổi nhiều ngày nằm ở
+    `workday_service.count_hourly_days`, không khó như tưởng.
+    """
+    if not is_hourly(from_session, to_session):
+        #  Không khai theo giờ mà vẫn gửi giờ lên → chặn tại đây, đừng lưu một
+        #  khoảng giờ mà không chỗ nào đọc: lần sau có người đọc nó thật.
+        if from_time is not None or to_time is not None:
+            raise HTTPException(
+                400, "Có khoảng giờ nhưng buổi nghỉ không phải «Theo giờ» — chọn lại buổi.")
+        return
+
+    if from_session != to_session:
+        raise HTTPException(400, "Nghỉ theo giờ thì cả hai ô buổi đều phải là «Theo giờ»")
+    if from_time is None or to_time is None:
+        raise HTTPException(400, "Nghỉ theo giờ phải nhập đủ «Từ giờ» và «Đến giờ»")
+    #  Chỉ so giờ khi CÙNG MỘT NGÀY: nghỉ 14:00 hôm nay tới 10:00 ngày kia thì
+    #  «đến giờ» nhỏ hơn «từ giờ» là chuyện bình thường.
+    if from_date == to_date and to_time <= from_time:
+        raise HTTPException(400, "«Đến giờ» phải sau «Từ giờ»")
 
 
 def check_gender(leave_type: LeaveType, employee: Employee) -> None:
@@ -136,11 +221,20 @@ def check_overlap(db: Session, employee_id: int, from_date: date, to_date: date,
 
 def compute_days(db: Session, leave_type: LeaveType, employee: Employee,
                  from_date: date, to_date: date, from_session: int, to_session: int,
-                 requested: float = 0.0) -> float:
+                 requested: float = 0.0,
+                 from_time: time | None = None, to_time: time | None = None) -> float:
     """Số ngày của đơn. `requested > 0` là người dùng sửa đè, tôn trọng con số đó.
 
     Sửa đè vẫn phải > 0: `0` ngày thì không có gì để duyệt và quỹ không trừ gì.
+
+    ⚠️ **Đơn theo giờ KHÔNG cho sửa đè.** Số ngày của nó là phép chia thuần túy
+    (`số giờ / giờ công một ngày`), người dùng đã tự chọn hai đầu giờ rồi — cho
+    gõ thêm một con số thứ ba là mở đường cho tờ đơn nghỉ 2 tiếng trừ 3 ngày phép.
     """
+    if is_hourly(from_session, to_session):
+        return hourly_days(db, from_date, to_date, from_time, to_time,
+                           company_id=employee.company_id or 0,
+                           exclude_holiday=bool(leave_type.exclude_holiday))
     if requested and requested > 0:
         return round(float(requested), 2)
     days = workday_service.count_leave_days(
@@ -151,6 +245,28 @@ def compute_days(db: Session, leave_type: LeaveType, employee: Employee,
         raise HTTPException(
             400, "Khoảng ngày này không có ngày làm việc nào (rơi trọn vào cuối tuần "
                  "hoặc ngày lễ). Sửa lại ngày, hoặc nhập tay «Tổng số ngày».")
+    return days
+
+
+def hourly_days(db: Session, from_date: date, to_date: date,
+                from_time: time | None, to_time: time | None, *,
+                company_id: int = 0, exclude_holiday: bool = True) -> float:
+    """Nghỉ theo giờ quy ra ngày phép — mỏng, việc thật nằm ở `workday_service`.
+
+    Làm tròn 2 chữ số ở đó: 1 tiếng trong ngày công 8 giờ ra `0.13`, hụt một
+    chút so với 1/8 thật. Chấp nhận, vì quỹ phép lưu dạng số ngày và sai số này
+    luôn nghiêng về phía NGƯỜI LAO ĐỘNG (trừ ít hơn) chứ không ngược lại.
+    """
+    if from_time is None or to_time is None:
+        raise HTTPException(400, "Nghỉ theo giờ phải nhập đủ «Từ giờ» và «Đến giờ»")
+    days = workday_service.count_hourly_days(
+        db, from_date, to_date, from_time, to_time,
+        company_id=company_id, exclude_holiday=exclude_holiday)
+    if days <= 0:
+        raise HTTPException(
+            400, "Khoảng giờ này không rơi vào giờ làm việc nào — kiểm lại ngày và giờ "
+                 f"(giờ làm {WORK_DAY_START:%H:%M}–{WORK_DAY_END:%H:%M}, nghỉ trưa "
+                 f"{LUNCH_START:%H:%M}–{LUNCH_END:%H:%M}).")
     return days
 
 
@@ -171,14 +287,18 @@ def _replace_handovers(db: Session, request_id: int, items, actor: int) -> None:
 def create(db: Session, data, user) -> LeaveRequest:
     """Lập đơn — luôn ở trạng thái **Nháp**. Gửi duyệt là một bước riêng."""
     employee = resolve_leave_taker(db, user, data.employee_id)
+    ensure_can_create_for(db, user, employee)
     leave_type = get_leave_type(db, data.leave_type_id)
 
-    check_date_range(data.from_date, data.to_date, data.from_session, data.to_session)
+    check_date_range(data.from_date, data.to_date, data.from_session, data.to_session,
+                     data.from_time, data.to_time)
     check_gender(leave_type, employee)
     days = compute_days(db, leave_type, employee, data.from_date, data.to_date,
-                        data.from_session, data.to_session, data.total_days)
+                        data.from_session, data.to_session, data.total_days,
+                        data.from_time, data.to_time)
     check_max_days(leave_type, days)
 
+    hourly = is_hourly(data.from_session, data.to_session)
     obj = LeaveRequest(
         code=generate_code(db, LeaveRequest, CODE_PREFIX),
         company_id=employee.company_id or 0,
@@ -187,7 +307,10 @@ def create(db: Session, data, user) -> LeaveRequest:
         leave_type_id=leave_type.id,
         from_date=data.from_date, to_date=data.to_date,
         from_session=data.from_session, to_session=data.to_session,
-        unit=data.unit or UNIT_DAY, total_days=days,
+        from_time=data.from_time, to_time=data.to_time,
+        #  `unit` bám theo cách khai, không để người gửi tự đặt: đơn theo giờ mà
+        #  ghi đơn vị «Ngày» thì mọi báo cáo đọc sau này hiểu sai bản chất.
+        unit=UNIT_HOUR if hourly else (data.unit or UNIT_DAY), total_days=days,
         reason=(data.reason or "").strip()[:1000],
         contact_phone=(data.contact_phone or "").strip()[:30],
         contact_address=(data.contact_address or "").strip()[:255],
@@ -223,20 +346,28 @@ def update(db: Session, obj: LeaveRequest, data, user) -> LeaveRequest:
 
     employee = (resolve_leave_taker(db, user, values["employee_id"])
                 if "employee_id" in values else get_employee(db, obj.employee_id))
+    #  Đổi người nghỉ khi SỬA cũng phải qua chốt lập hộ — nếu không thì lập đơn
+    #  cho mình rồi sửa sang tên người khác là đi vòng qua đúng cái chốt đó.
+    ensure_can_create_for(db, user, employee)
     leave_type = get_leave_type(db, values.get("leave_type_id", obj.leave_type_id))
 
     from_date = values.get("from_date", obj.from_date)
     to_date = values.get("to_date", obj.to_date)
     from_session = values.get("from_session", obj.from_session)
     to_session = values.get("to_session", obj.to_session)
-    check_date_range(from_date, to_date, from_session, to_session)
+    #  Đổi buổi mà KHÔNG gửi kèm giờ thì đọc giờ cũ trên phiếu — trừ khi vừa
+    #  chuyển ra khỏi «Theo giờ», lúc đó giờ cũ phải bị xóa chứ không giữ lại.
+    hourly = is_hourly(from_session, to_session)
+    from_time = values.get("from_time", obj.from_time if hourly else None)
+    to_time = values.get("to_time", obj.to_time if hourly else None)
+    check_date_range(from_date, to_date, from_session, to_session, from_time, to_time)
     check_gender(leave_type, employee)
 
     #  `total_days` chỉ coi là "sửa đè" khi người dùng GỬI LÊN nó. Không gửi thì
     #  tính lại — sửa ngày mà giữ nguyên số ngày cũ là sai ngay lập tức.
     requested = values.get("total_days", 0.0) if "total_days" in values else 0.0
     days = compute_days(db, leave_type, employee, from_date, to_date,
-                        from_session, to_session, requested)
+                        from_session, to_session, requested, from_time, to_time)
     check_max_days(leave_type, days)
 
     for key, value in values.items():
@@ -245,6 +376,9 @@ def update(db: Session, obj: LeaveRequest, data, user) -> LeaveRequest:
     obj.company_id = employee.company_id or 0
     obj.department_id = employee.department_id or 0
     obj.leave_type_id = leave_type.id
+    obj.from_time = from_time
+    obj.to_time = to_time
+    obj.unit = UNIT_HOUR if hourly else UNIT_DAY
     obj.total_days = days
     obj.updated_by = user.id
 

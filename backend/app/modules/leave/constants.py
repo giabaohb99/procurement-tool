@@ -17,6 +17,7 @@ Vì sao **loại nghỉ** không nằm ở đây mà thành BẢNG: V1-6 đòi n
 được luật (thêm loại, sửa hạn mức, sửa bậc thâm niên) mà không cần sửa mã và
 deploy. Bảng thì sửa được; hằng số thì không.
 """
+from datetime import time
 
 # --------------------------------------------------------------------------
 # Trạng thái ĐƠN nghỉ phép
@@ -56,15 +57,37 @@ HOLDING_STATUSES = (LR_PENDING, LR_APPROVED)
 SESSION_FULL = 1       # Cả ngày
 SESSION_MORNING = 2    # Buổi sáng
 SESSION_AFTERNOON = 3  # Buổi chiều
+#  Nghỉ THEO GIỜ (07/09/2026): chọn giờ bắt đầu / kết thúc thay vì cả buổi —
+#  đi khám nửa buổi, ra ngân hàng hai tiếng. Chỉ dùng cho đơn nghỉ TRONG MỘT
+#  NGÀY: nghỉ nhiều ngày mà lẻ giờ ở hai đầu là chuyện của bảng công, không
+#  phải của tờ đơn (xem `check_date_range`).
+SESSION_HOURLY = 4
 
 LEAVE_SESSION_LABELS = {
     SESSION_FULL: "Cả ngày",
     SESSION_MORNING: "Buổi sáng",
     SESSION_AFTERNOON: "Buổi chiều",
+    SESSION_HOURLY: "Theo giờ",
 }
 
-#  Số công của mỗi buổi — dùng khi GỢI Ý tổng số ngày.
+#  Số công của mỗi buổi — dùng khi GỢI Ý tổng số ngày. `SESSION_HOURLY` cố ý
+#  KHÔNG có mặt ở đây: số công của nó tính từ khoảng giờ, không phải một hằng số.
 SESSION_CREDIT = {SESSION_FULL: 1.0, SESSION_MORNING: 0.5, SESSION_AFTERNOON: 0.5}
+
+#  ── Khung giờ làm việc, dùng để quy đổi «nghỉ mấy giờ» ra «mấy ngày phép» ────
+#
+#  ⚠️ Hằng số vì hệ CHƯA có phân hệ Lịch làm việc (xem ghi chú ở `UNIT_HOUR`
+#  bên dưới). Công ty đổi giờ làm thì sửa ĐÚNG bốn dòng này; đừng rải `/ 8` hay
+#  `time(8, 0)` khắp nơi trong mã.
+#
+#  Bốn con số phải KHỚP NHAU: (kết thúc − bắt đầu) − nghỉ trưa = giờ công một
+#  ngày. Lệch thì nghỉ từ đầu giờ tới cuối giờ ra một con số khác 1.0 ngày, và
+#  không ai hiểu vì sao.
+WORK_DAY_START = time(8, 0)
+WORK_DAY_END = time(17, 0)
+LUNCH_START = time(12, 0)
+LUNCH_END = time(13, 0)
+WORK_HOURS_PER_DAY = 8.0
 
 #  Cầu nối sang mã chuỗi của giấy GNP (`core/leave_codes.LEAVE_SESSION_SET`).
 #  Bảng dịch nằm ở ĐÂY, một chỗ — chứ không nội suy bằng `if` rải trong bridge.
@@ -72,6 +95,7 @@ SESSION_TO_DOC_CODE = {
     SESSION_FULL: "full",
     SESSION_MORNING: "morning",
     SESSION_AFTERNOON: "afternoon",
+    SESSION_HOURLY: "hourly",
 }
 
 # --------------------------------------------------------------------------

@@ -73,6 +73,7 @@ export const LEAVE_SESSION: readonly StatusOption[] = [
   {"value": "full", "label": "Cả ngày", "sort_order": 0, "is_terminal": false, "is_exception": false},
   {"value": "morning", "label": "Buổi sáng", "sort_order": 0, "is_terminal": false, "is_exception": false},
   {"value": "afternoon", "label": "Buổi chiều", "sort_order": 0, "is_terminal": false, "is_exception": false},
+  {"value": "hourly", "label": "Theo giờ", "sort_order": 0, "is_terminal": false, "is_exception": false},
 ]
 
 /** Loại nghỉ phép */

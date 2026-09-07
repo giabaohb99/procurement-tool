@@ -41,12 +41,28 @@ export const EDITABLE_LEAVE_STATUSES: number[] = [
 
 // ── Buổi nghỉ ──────────────────────────────────────────────────────────────────
 
-export const LEAVE_SESSION = { FULL: 1, MORNING: 2, AFTERNOON: 3 } as const
+export const LEAVE_SESSION = { FULL: 1, MORNING: 2, AFTERNOON: 3, HOURLY: 4 } as const
 
 export const LEAVE_SESSION_LABELS: Record<number, string> = {
   [LEAVE_SESSION.FULL]: 'Cả ngày',
   [LEAVE_SESSION.MORNING]: 'Buổi sáng',
   [LEAVE_SESSION.AFTERNOON]: 'Buổi chiều',
+  [LEAVE_SESSION.HOURLY]: 'Theo giờ',
+}
+
+/**
+ * Giờ công một ngày — mẫu số quy đổi «nghỉ mấy giờ» ra «mấy ngày phép».
+ * ⚠️ Phải khớp `WORK_HOURS_PER_DAY` ở `backend/.../leave/constants.py`. Con số
+ * THẬT do backend tính; ở đây chỉ để nói cho người dùng biết đang chia cho mấy.
+ */
+export const WORK_HOURS_PER_DAY = 8
+
+/** Khung giờ làm, chỉ để HIỆN cho người dùng biết đang quy đổi theo cái gì. */
+export const WORK_DAY_LABEL = '08:00–17:00, nghỉ trưa 12:00–13:00'
+
+/** Đơn khai theo GIỜ — hai ô buổi đều là «Theo giờ», và chỉ trong MỘT ngày. */
+export function isHourlyLeave(fromSession: number, toSession: number): boolean {
+  return fromSession === LEAVE_SESSION.HOURLY || toSession === LEAVE_SESSION.HOURLY
 }
 
 // ── Đơn vị nghỉ (QĐ-NP4) ───────────────────────────────────────────────────────
@@ -167,6 +183,9 @@ export interface LeaveRequest {
   to_date: string
   from_session: number
   to_session: number
+  /** `HH:MM:SS` — chỉ có khi buổi là «Theo giờ». */
+  from_time?: string | null
+  to_time?: string | null
   unit: number
   total_days: number
   reason: string

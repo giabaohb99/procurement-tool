@@ -1,6 +1,7 @@
 import { CalendarDays } from 'lucide-react'
 import { useEffect, useMemo, useRef } from 'react'
 
+import { cn } from '@/shared/utils/cn'
 import { DatePicker } from '@/shared/ui/date-picker'
 import { FormCard } from '@/shared/ui/form-card'
 import { Input } from '@/shared/ui/input'
@@ -15,11 +16,23 @@ import {
   SelectValue,
 } from '@/shared/ui/select'
 import { Textarea } from '@/shared/ui/textarea'
+import { useAuth } from '@/core/auth/use-auth'
+import { usePermission } from '@/core/authorization/use-permission'
+import { ReadOnlyValue } from '@/shared/ui/read-only-value'
+import { SearchSelect } from '@/shared/ui/search-select'
+import { useEmployees } from '../hooks/use-employees'
 import { useEstimateLeaveDays, useLeaveTypes } from '../hooks/use-leave'
 import { REASON_MAX, type LeaveFormValues } from '../utils/leave-form-values'
 import { LeaveBalanceHintBox } from './leave-balance-hint-box'
 import { LeaveHandoverEditor } from './leave-handover-editor'
-import { LEAVE_SESSION, LEAVE_SESSION_LABELS, type LeaveRequest } from '../types/leave'
+import {
+  LEAVE_SESSION,
+  LEAVE_SESSION_LABELS,
+  WORK_DAY_LABEL,
+  WORK_HOURS_PER_DAY,
+  isHourlyLeave,
+  type LeaveRequest,
+} from '../types/leave'
 
 interface LeaveRequestFormProps {
   value: LeaveFormValues
@@ -57,6 +70,32 @@ export function LeaveRequestForm({ value, onChange, request }: LeaveRequestFormP
   const { data: typeData } = useLeaveTypes()
   const types = typeData?.items ?? []
 
+  //  LẬP HỘ — ô «Người nghỉ» chỉ dựng cho người đọc được danh bạ nhân sự. Đó
+  //  cũng đúng một trong hai điều kiện backend đòi (`ensure_can_create_for`);
+  //  điều kiện còn lại (phạm vi tạo đơn rộng hơn «của mình») backend giữ, vì
+  //  giao diện không được là chốt chặn cuối.
+  //  ⚠️ Không có quyền thì KHÔNG gọi danh bạ: cứ mount là ăn toast 403, đúng
+  //  bẫy đã dính ở tab «Công nợ» của Nhà cung cấp (CR-106).
+  const { can } = usePermission()
+  const canPickTaker = can('employee', 'read')
+  const { data: employeeData } = useEmployees(
+    { page_size: 1000, is_active: true },
+    { enabled: canPickTaker },
+  )
+  const employees = employeeData?.items ?? []
+  const employeeOptions = employees.map((e) => ({
+    value: String(e.id),
+    label: `${e.full_name} (${e.code})`,
+  }))
+
+  const isHourly = isHourlyLeave(value.from_session, value.to_session)
+  //  NGƯỜI NGHỈ mặc định là CHÍNH MÌNH — đó là đường đi của gần như mọi tờ đơn.
+  //  Thứ tự: ô trên form → người của tờ đơn đang sửa → hồ sơ của người đăng nhập.
+  //  Để ô trống kèm câu gợi ý "mặc định là bạn" thì người dùng vẫn phải tự đoán
+  //  xem đơn sẽ đứng tên ai, và câu đó lại nằm ngay chỗ đáng ra là câu trả lời.
+  const { user } = useAuth()
+  const takerId = value.employee_id || request?.employee_id || user?.employee_id || 0
+
   const estimateParams = useMemo(
     () => ({
       from_date: value.from_date,
@@ -64,7 +103,9 @@ export function LeaveRequestForm({ value, onChange, request }: LeaveRequestFormP
       leave_type_id: value.leave_type_id || undefined,
       from_session: value.from_session,
       to_session: value.to_session,
-      employee_id: request?.employee_id || undefined,
+      from_time: isHourly ? value.from_time || undefined : undefined,
+      to_time: isHourly ? value.to_time || undefined : undefined,
+      employee_id: takerId || undefined,
     }),
     //  Chỉ mấy ô này mới đổi con số gợi ý. Phụ thuộc cả `value` thì gõ một chữ
     //  trong ô lý do cũng dựng lại tham số và chạy lại hook truy vấn.
@@ -74,7 +115,10 @@ export function LeaveRequestForm({ value, onChange, request }: LeaveRequestFormP
       value.leave_type_id,
       value.from_session,
       value.to_session,
-      request?.employee_id,
+      value.from_time,
+      value.to_time,
+      isHourly,
+      takerId,
     ],
   )
   const { data: estimate } = useEstimateLeaveDays(estimateParams)
@@ -119,11 +163,67 @@ export function LeaveRequestForm({ value, onChange, request }: LeaveRequestFormP
   const set = <K extends keyof LeaveFormValues>(key: K, v: LeaveFormValues[K]) =>
     onChange({ ...value, [key]: v })
 
+  /**
+   * Đổi ô BUỔI — hai ô buổi và hai ô ngày phải đi cùng nhau khi chọn «Theo giờ».
+   *
+   * Chọn «Theo giờ» ở một đầu thì đầu kia theo luôn — backend đòi hai ô buổi
+   * khai giống nhau, và bắt người dùng chọn hai lần cùng một thứ là thừa. Hai ô
+   * NGÀY giữ nguyên: nghỉ theo giờ vắt qua nhiều ngày là hợp lệ.
+   * Bỏ «Theo giờ» thì XÓA khoảng giờ: giữ lại là lưu một khoảng giờ mà tờ đơn
+   * không còn khai theo giờ nữa.
+   */
+  const setSession = (which: 'from_session' | 'to_session', next: number) => {
+    const other = which === 'from_session' ? 'to_session' : 'from_session'
+    if (next === LEAVE_SESSION.HOURLY) {
+      onChange({ ...value, [which]: next, [other]: next })
+      return
+    }
+    const leavingHourly = value[other] === LEAVE_SESSION.HOURLY
+    onChange({
+      ...value,
+      [which]: next,
+      ...(leavingHourly ? { [other]: LEAVE_SESSION.FULL } : null),
+      ...(leavingHourly || isHourly ? { from_time: '', to_time: '' } : null),
+    })
+  }
+
   const year = value.from_date ? Number(value.from_date.slice(0, 4)) : new Date().getFullYear()
 
   return (
     <FormCard title="Đơn nghỉ phép" icon={CalendarDays} iconClassName="text-primary">
       <div className="grid items-start gap-x-4 gap-y-4 md:grid-cols-2">
+        {/*  NGƯỜI NGHỈ — chỉ hiện với người được phép lập hộ. Người thường không
+             thấy ô này: đơn của họ luôn đứng tên chính họ, bày ra một ô chỉ chọn
+             được đúng một giá trị là bắt họ đọc thừa một dòng. */}
+        {canPickTaker && (
+          <div className="space-y-1.5 md:col-span-2">
+            <Label htmlFor="leave-taker">
+              Người nghỉ
+              <RequiredMark />
+            </Label>
+            <SearchSelect
+              value={takerId ? String(takerId) : ''}
+              options={employeeOptions}
+              placeholder="Chọn người nghỉ"
+              searchPlaceholder="Tìm theo tên hoặc mã…"
+              emptyMessage="Không tìm thấy nhân sự nào."
+              clearable
+              onChange={(id) => {
+                const employeeId = Number(id) || 0
+                const picked = employees.find((e) => e.id === employeeId)
+                onChange({
+                  ...value,
+                  employee_id: employeeId,
+                  employee_name: picked?.full_name ?? '',
+                })
+              }}
+            />
+            <p className="text-xs text-muted-foreground">
+              Đơn sẽ đứng tên người này; bạn vẫn là người lập và vẫn theo dõi được nó.
+            </p>
+          </div>
+        )}
+
         <div className="space-y-1.5">
           <Label htmlFor="leave-type">
             Loại nghỉ
@@ -151,38 +251,58 @@ export function LeaveRequestForm({ value, onChange, request }: LeaveRequestFormP
             Tổng số ngày
             <RequiredMark />
           </Label>
-          <NumberInput
-            id="total-days"
-            value={value.total_days}
-            maxDecimals={1}
-            placeholder="0"
-            onChange={(v) => set('total_days', v)}
-          />
+          {/*  Theo giờ thì con số này là PHÉP CHIA từ hai đầu giờ, không cho gõ
+               đè: người dùng đã chọn giờ rồi, thêm một con số thứ ba là mở đường
+               cho tờ đơn nghỉ 2 tiếng trừ 3 ngày phép (backend cũng bỏ qua số
+               gõ tay ở nhánh này). Ô chỉ xem dùng `ReadOnlyValue`, KHÔNG dùng
+               `<Input disabled>` — xem docstring đầu tệp. */}
+          {isHourly ? (
+            <ReadOnlyValue>{value.total_days} ngày</ReadOnlyValue>
+          ) : (
+            <NumberInput
+              id="total-days"
+              value={value.total_days}
+              maxDecimals={1}
+              placeholder="0"
+              onChange={(v) => set('total_days', v)}
+            />
+          )}
           <p className="text-xs text-muted-foreground">
-            {manualDays
-              ? `Bạn đang nhập tay. Hệ thống gợi ý ${suggestedDays ?? '—'} ngày.`
-              : 'Tự tính, đã trừ thứ Bảy · Chủ nhật · ngày lễ. Sửa được nếu lịch khác.'}
+            {isHourly
+              ? `Quy đổi từ khoảng giờ đã chọn, theo ngày công ${WORK_HOURS_PER_DAY} giờ.`
+              : manualDays
+                ? `Bạn đang nhập tay. Hệ thống gợi ý ${suggestedDays ?? '—'} ngày.`
+                : 'Tự tính, đã trừ thứ Bảy · Chủ nhật · ngày lễ. Sửa được nếu lịch khác.'}
           </p>
         </div>
 
         {/*  Ràng buộc §6.1 — số phép còn lại chạy hết bề ngang, ngay dưới ô loại
              nghỉ và ô số ngày, đúng hai con số nó đang đối chiếu. */}
         <div className="md:col-span-2">
+          {/*  Quỹ phép của NGƯỜI NGHỈ, không phải của người đang lập: lập hộ
+               mà hiện quỹ của chính mình thì con số đối chiếu vô nghĩa, tệ hơn
+               là nó khiến người lập tưởng người kia còn phép. */}
           <LeaveBalanceHintBox
             leaveTypeId={value.leave_type_id}
             year={year}
-            employeeId={request?.employee_id ?? 0}
+            employeeId={takerId}
             requestedDays={value.total_days}
           />
         </div>
 
+        {/*  Hai đầu ngày GIỮ NGUYÊN khi chọn «Theo giờ», chỉ mọc thêm ô giờ:
+             nghỉ *từ 14:00 ngày 07 đến 10:00 ngày 09* là tờ đơn có thật, gộp hai
+             ô ngày làm một là cắt mất đúng ca đó. */}
         <DateSessionField
           label="Từ ngày"
           date={value.from_date}
           session={value.from_session}
           sessionLabel="Buổi bắt đầu"
+          time={isHourly ? value.from_time : undefined}
+          timeLabel="Từ giờ"
           onDateChange={(v) => set('from_date', v)}
-          onSessionChange={(v) => set('from_session', v)}
+          onSessionChange={(v) => setSession('from_session', v)}
+          onTimeChange={(v) => set('from_time', v)}
         />
 
         <DateSessionField
@@ -190,9 +310,20 @@ export function LeaveRequestForm({ value, onChange, request }: LeaveRequestFormP
           date={value.to_date}
           session={value.to_session}
           sessionLabel="Buổi kết thúc"
+          time={isHourly ? value.to_time : undefined}
+          timeLabel="Đến giờ"
           onDateChange={(v) => set('to_date', v)}
-          onSessionChange={(v) => set('to_session', v)}
+          onSessionChange={(v) => setSession('to_session', v)}
+          onTimeChange={(v) => set('to_time', v)}
         />
+
+        {isHourly && (
+          <p className="text-xs text-muted-foreground md:col-span-2">
+            Nghỉ theo giờ quy đổi theo ngày công {WORK_HOURS_PER_DAY} giờ ({WORK_DAY_LABEL}),
+            đã trừ giờ nghỉ trưa. Vắt qua nhiều ngày cũng được: ngày đầu tính tới hết giờ
+            làm, ngày cuối tính từ đầu giờ làm.
+          </p>
+        )}
 
         <div className="space-y-1.5 md:col-span-2">
           <Label htmlFor="reason">
@@ -217,7 +348,7 @@ export function LeaveRequestForm({ value, onChange, request }: LeaveRequestFormP
         <LeaveHandoverEditor
           value={value.handovers}
           onChange={(rows) => set('handovers', rows)}
-          excludeEmployeeId={request?.employee_id ?? 0}
+          excludeEmployeeId={takerId}
         />
 
         <div className="space-y-1.5">
@@ -259,23 +390,40 @@ function DateSessionField({
   date,
   session,
   sessionLabel,
+  time,
+  timeLabel,
   onDateChange,
   onSessionChange,
+  onTimeChange,
 }: {
   label: string
   date: string
   session: number
   sessionLabel: string
+  /** Có giá trị = buổi đang là «Theo giờ» → mọc thêm ô giờ ở cuối hàng. */
+  time?: string
+  timeLabel?: string
   onDateChange: (value: string) => void
   onSessionChange: (value: number) => void
+  onTimeChange?: (value: string) => void
 }) {
+  const withTime = time !== undefined
   return (
     <div className="space-y-1.5">
       <Label>
         {label}
         <RequiredMark />
       </Label>
-      <div className="grid grid-cols-[minmax(0,1fr)_9rem] gap-2">
+      {/*  Ô giờ chen vào CÙNG MỘT HÀNG với ngày và buổi: ba thứ đó là một câu
+           trả lời («nghỉ từ lúc nào»), tách xuống dòng thì mắt phải ghép lại. */}
+      <div
+        className={cn(
+          'grid gap-2',
+          withTime
+            ? 'grid-cols-[minmax(0,1fr)_8rem_7rem]'
+            : 'grid-cols-[minmax(0,1fr)_9rem]',
+        )}
+      >
         {/*  Ô bắt buộc thì bỏ nút ✕: cho xóa là để người dùng tự tay tạo ra lỗi
              validate (docs/ui/date.md §1). */}
         <DatePicker value={date} onChange={onDateChange} clearable={false} />
@@ -294,6 +442,14 @@ function DateSessionField({
             ))}
           </SelectContent>
         </Select>
+        {withTime && (
+          <Input
+            type="time"
+            aria-label={timeLabel}
+            value={time}
+            onChange={(e) => onTimeChange?.(e.target.value)}
+          />
+        )}
       </div>
     </div>
   )

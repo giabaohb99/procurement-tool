@@ -18,13 +18,14 @@ mà máy không biết — ca kíp, nghỉ bù, công trường chạy cả Ch�
 đều là **0.5** ở cả hai đầu. Đổi quy ước ở đây thôi thì cùng một tờ đơn ra hai
 con số khác nhau tùy người nhập qua màn Nghỉ phép hay qua giấy GNP.
 """
-from datetime import date, timedelta
+from datetime import date, time, timedelta
 
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from .catalog_model import Holiday
-from .constants import SESSION_CREDIT, SESSION_FULL
+from .constants import (LUNCH_END, LUNCH_START, SESSION_CREDIT, SESSION_FULL,
+                        WORK_DAY_END, WORK_DAY_START, WORK_HOURS_PER_DAY)
 
 #  Ngày KHÔNG tính vào phép, theo `date.weekday()` (Thứ Hai = 0 … Chủ nhật = 6).
 #
@@ -103,6 +104,70 @@ def session_credit(day: date, from_date: date, to_date: date,
     if day == to_date:
         return SESSION_CREDIT.get(to_session, 1.0)
     return 1.0
+
+
+def worked_hours(start: time, end: time) -> float:
+    """Số GIỜ CÔNG trong khoảng `[start, end)` của một ngày làm việc.
+
+    Cắt theo khung giờ làm (`WORK_DAY_START`/`WORK_DAY_END`) rồi trừ phần chồng
+    lên giờ nghỉ trưa. Nhờ vậy nghỉ nguyên ngày (8:00 → 17:00) ra đúng 8 giờ,
+    còn nghỉ 11:30 → 13:30 chỉ tính 1 giờ chứ không phải 2 — người ta có làm gì
+    trong giờ ăn trưa đâu mà trừ phép.
+
+    Khai giờ NGOÀI khung làm việc (nghỉ lúc 19:00) thì phần ngoài không tính:
+    vắng mặt ngoài giờ làm không phải là nghỉ phép.
+    """
+    lo = max(_minutes(start), _minutes(WORK_DAY_START))
+    hi = min(_minutes(end), _minutes(WORK_DAY_END))
+    if hi <= lo:
+        return 0.0
+    lunch = max(0, min(hi, _minutes(LUNCH_END)) - max(lo, _minutes(LUNCH_START)))
+    return (hi - lo - lunch) / 60.0
+
+
+def _minutes(value: time) -> int:
+    return value.hour * 60 + value.minute
+
+
+def count_hourly_days(db: Session, from_date: date, to_date: date,
+                      from_time: time, to_time: time,
+                      *, company_id: int = 0, exclude_holiday: bool = True) -> float:
+    """Số ngày phép của một đơn khai THEO GIỜ — kể cả khi vắt qua nhiều ngày.
+
+    Nghỉ *từ 14:00 ngày 07 đến 10:00 ngày 09* là chuyện thường (đi công tác về
+    muộn, đi viện hai hôm), nên đây KHÔNG bó trong một ngày:
+
+    * ngày đầu tính từ giờ khai tới hết giờ làm;
+    * ngày cuối tính từ đầu giờ làm tới giờ khai;
+    * ngày ở giữa tính trọn `WORK_HOURS_PER_DAY`;
+    * ngày nào là T7/CN/lễ thì bỏ qua (trừ loại nghỉ khai `exclude_holiday=False`).
+
+    Gọn trong MỘT ngày thì chỉ còn phép trừ hai đầu giờ — nhánh riêng ở dòng đầu.
+    """
+    if to_date < from_date:
+        return 0.0
+
+    holidays = (holiday_dates(db, company_id, from_date, to_date)
+                if exclude_holiday else set())
+
+    def is_workday(day: date) -> bool:
+        return not exclude_holiday or is_working_day(day, holidays)
+
+    if from_date == to_date:
+        return round(worked_hours(from_time, to_time) / WORK_HOURS_PER_DAY, 2)\
+            if is_workday(from_date) else 0.0
+
+    hours = 0.0
+    for day in date_range(from_date, to_date):
+        if not is_workday(day):
+            continue
+        if day == from_date:
+            hours += worked_hours(from_time, WORK_DAY_END)
+        elif day == to_date:
+            hours += worked_hours(WORK_DAY_START, to_time)
+        else:
+            hours += WORK_HOURS_PER_DAY
+    return round(hours / WORK_HOURS_PER_DAY, 2)
 
 
 def count_leave_days(db: Session, from_date: date, to_date: date,

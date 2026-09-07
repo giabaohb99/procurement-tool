@@ -31,6 +31,9 @@ export interface LeaveRequestPayload {
   to_date: string
   from_session?: number
   to_session?: number
+  /** `HH:MM` khi buổi là «Theo giờ»; `null` để XÓA giờ cũ khi đổi sang buổi khác. */
+  from_time?: string | null
+  to_time?: string | null
   unit?: number
   /** `0` = để backend tự tính. Khác 0 là người dùng sửa đè. */
   total_days?: number

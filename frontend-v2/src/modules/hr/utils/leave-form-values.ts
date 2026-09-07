@@ -1,5 +1,5 @@
 import type { LeaveRequestPayload } from '../api/leave-api'
-import { LEAVE_SESSION, type LeaveRequest } from '../types/leave'
+import { LEAVE_SESSION, isHourlyLeave, type LeaveRequest } from '../types/leave'
 
 /**
  * Giá trị của form đơn nghỉ phép, và ba hàm dựng nó.
@@ -25,11 +25,17 @@ export interface LeaveHandoverValue {
 }
 
 export interface LeaveFormValues {
+  /** NGƯỜI NGHỈ. `0` = chính người đang lập đơn — xem `toLeavePayload`. */
+  employee_id: number
+  employee_name: string
   leave_type_id: number
   from_date: string
   to_date: string
   from_session: number
   to_session: number
+  /** `HH:MM` — chỉ dùng khi buổi là «Theo giờ», rỗng thì không gửi lên. */
+  from_time: string
+  to_time: string
   total_days: number
   reason: string
   contact_phone: string
@@ -54,11 +60,15 @@ function todayISO(): string {
 export function emptyLeaveForm(): LeaveFormValues {
   const today = todayISO()
   return {
+    employee_id: 0,
+    employee_name: '',
     leave_type_id: 0,
     from_date: today,
     to_date: today,
     from_session: LEAVE_SESSION.FULL,
     to_session: LEAVE_SESSION.FULL,
+    from_time: '',
+    to_time: '',
     //  `0` = để backend tự tính. Khác 0 nghĩa là người dùng đã sửa đè.
     total_days: 0,
     reason: '',
@@ -68,13 +78,22 @@ export function emptyLeaveForm(): LeaveFormValues {
   }
 }
 
+/** `HH:MM:SS` của API → `HH:MM` cho ô nhập giờ. Rỗng khi không khai theo giờ. */
+function hhmm(value?: string | null): string {
+  return (value ?? '').slice(0, 5)
+}
+
 export function formValuesOf(request: LeaveRequest): LeaveFormValues {
   return {
+    employee_id: request.employee_id,
+    employee_name: request.employee_name ?? '',
     leave_type_id: request.leave_type_id,
     from_date: request.from_date,
     to_date: request.to_date,
     from_session: request.from_session,
     to_session: request.to_session,
+    from_time: hhmm(request.from_time),
+    to_time: hhmm(request.to_time),
     total_days: request.total_days,
     reason: request.reason,
     contact_phone: request.contact_phone,
@@ -99,12 +118,18 @@ export function formValuesOf(request: LeaveRequest): LeaveFormValues {
  * qua, nhưng lọc sớm thì thân yêu cầu sạch và log dễ đọc.
  */
 export function toLeavePayload(values: LeaveFormValues): LeaveRequestPayload {
+  const isHourly = isHourlyLeave(values.from_session, values.to_session)
   return {
+    employee_id: values.employee_id,
     leave_type_id: values.leave_type_id,
     from_date: values.from_date,
     to_date: values.to_date,
     from_session: values.from_session,
     to_session: values.to_session,
+    //  `null` chứ không phải chuỗi rỗng: cột giờ nhận `NULL` khi đơn không khai
+    //  theo giờ, và backend chặn nếu có giờ mà buổi lại không phải «Theo giờ».
+    from_time: isHourly && values.from_time ? values.from_time : null,
+    to_time: isHourly && values.to_time ? values.to_time : null,
     total_days: values.total_days,
     reason: values.reason,
     contact_phone: values.contact_phone,

@@ -20,9 +20,18 @@ export function LeaveRequestSummary({ request }: LeaveRequestSummaryProps) {
   //  bốn chữ thừa trên mọi tờ đơn.
   const withSession = (date: string, session: number) => {
     const text = formatDate(date)
-    return session === LEAVE_SESSION.FULL
-      ? text
-      : `${text} (${LEAVE_SESSION_LABELS[session]})`
+    if (session === LEAVE_SESSION.FULL) return text
+    //  Theo giờ thì phải nói RA KHOẢNG GIỜ, không chỉ ghi «(Theo giờ)»: người
+    //  duyệt cần biết vắng mặt lúc nào để xếp việc, mà đó chính là thứ duy nhất
+    //  tờ đơn theo giờ nói thêm so với tờ đơn cả ngày.
+    if (session === LEAVE_SESSION.HOURLY) {
+      const range = [request.from_time, request.to_time]
+        .map((t) => (t ?? '').slice(0, 5))
+        .filter(Boolean)
+        .join(' – ')
+      return range ? `${text} (${range})` : `${text} (${LEAVE_SESSION_LABELS[session]})`
+    }
+    return `${text} (${LEAVE_SESSION_LABELS[session]})`
   }
 
   return (

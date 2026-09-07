@@ -33,12 +33,12 @@ down_revision = "62d3b3a81136"
 branch_labels = None
 depends_on = None
 
-CO = ("can_read", "can_create", "can_write", "can_delete",
-      "can_approve", "can_cancel", "can_print", "can_export")
+FLAGS = ("can_read", "can_create", "can_write", "can_delete",
+         "can_approve", "can_cancel", "can_print", "can_export")
 
 #  Bộ quyền TỐI THIỂU mọi vai trò phải có, khớp đúng hai vòng `setdefault` trong
 #  `seed.py`. Dạng: entity -> (tập hành động, phạm vi).
-MAC_DINH = {
+DEFAULT_PERMS = {
     "leave_request": ({"read", "create", "write", "delete"}, "own"),
     "leave_balance": ({"read"}, "own"),
     #  Danh mục: thiếu là form nộp đơn không dựng nổi ô «Loại nghỉ» và không tính
@@ -52,14 +52,14 @@ MAC_DINH = {
 #  Vai trò CẤP QUẢN LÝ → duyệt đơn nghỉ phép và phiếu đặt phòng của phạm vi mình.
 #  Liệt kê theo MÃ vai trò chứ không đoán theo tên: tên vai trò người dùng sửa
 #  được trên màn Phân quyền, mã thì không.
-QUAN_LY = {
+MANAGER_SCOPES = {
     "dept_head": "dept",
     "manager": "dept",             # Trưởng bộ phận (bản demo)
     "manager_purchase": "dept",    # Trưởng phòng Thu mua (bản demo)
     "company_head": "company",
     "pur_manager": "company",      # Quản lý thu mua — quản cả pháp nhân
 }
-QUAN_LY_THEM = {
+MANAGER_ACTIONS = {
     "leave_request": {"read", "create", "write", "delete", "approve", "export"},
     "room_booking": {"read", "create", "write", "delete", "approve", "cancel"},
 }
@@ -70,8 +70,8 @@ QUAN_LY_THEM = {
 ACTOR = 0
 
 
-def _co(actions: set) -> dict:
-    return {ten: (ten[len("can_"):] in actions) for ten in CO}
+def _flags(actions: set) -> dict:
+    return {flag: (flag[len("can_"):] in actions) for flag in FLAGS}
 
 
 def upgrade() -> None:
@@ -80,32 +80,32 @@ def upgrade() -> None:
     if not roles:
         return
 
-    dang_co = {
+    existing = {
         (row["role_id"], row["entity"]): row
         for row in conn.execute(sa.text(
-            "SELECT role_id, entity, scope, " + ", ".join(CO) +
+            "SELECT role_id, entity, scope, " + ", ".join(FLAGS) +
             " FROM tab_permission WHERE entity IN :ds"
-        ).bindparams(sa.bindparam("ds", expanding=True)), {"ds": list(MAC_DINH)}).mappings()
+        ).bindparams(sa.bindparam("ds", expanding=True)), {"ds": list(DEFAULT_PERMS)}).mappings()
     }
 
-    cot = ", ".join(CO)
-    tham_so = ", ".join(f":{ten}" for ten in CO)
+    columns = ", ".join(FLAGS)
+    placeholders = ", ".join(f":{flag}" for flag in FLAGS)
     for role in roles:
-        for entity, (actions, scope) in MAC_DINH.items():
+        for entity, (actions, scope) in DEFAULT_PERMS.items():
             #  Vai trò quản lý được cấp bộ rộng hơn ngay từ đầu, khỏi chèn rồi sửa.
-            if role["code"] in QUAN_LY and entity in QUAN_LY_THEM:
-                actions, scope = QUAN_LY_THEM[entity], QUAN_LY[role["code"]]
+            if role["code"] in MANAGER_SCOPES and entity in MANAGER_ACTIONS:
+                actions, scope = MANAGER_ACTIONS[entity], MANAGER_SCOPES[role["code"]]
 
-            hien_tai = dang_co.get((role["id"], entity))
-            if hien_tai is None:
+            current = existing.get((role["id"], entity))
+            if current is None:
                 conn.execute(
                     sa.text(
                         f"INSERT INTO tab_permission "
-                        f"(role_id, entity, scope, {cot}, created_by, updated_by) "
-                        f"VALUES (:role_id, :entity, :scope, {tham_so}, :actor, :actor)"
+                        f"(role_id, entity, scope, {columns}, created_by, updated_by) "
+                        f"VALUES (:role_id, :entity, :scope, {placeholders}, :actor, :actor)"
                     ),
                     {"role_id": role["id"], "entity": entity, "scope": scope,
-                     "actor": ACTOR, **_co(actions)},
+                     "actor": ACTOR, **_flags(actions)},
                 )
                 continue
 
@@ -114,21 +114,21 @@ def upgrade() -> None:
             #  và phần đó phải còn nguyên. Ví dụ thật: vai trò `employee` trên DB
             #  đang chạy có `leave_request` nhưng thiếu `delete`, nên nhân viên
             #  không xóa nổi đơn NHÁP của chính mình.
-            co_moi = {ten: bool(hien_tai[ten]) or _co(actions)[ten] for ten in CO}
+            merged = {flag: bool(current[flag]) or _flags(actions)[flag] for flag in FLAGS}
             #  Phạm vi chỉ NỚI cho vai trò quản lý — `approve` mà phạm vi `own`
             #  là quyền duyệt không dùng được (xem phần mở đầu).
-            scope_moi = (scope if role["code"] in QUAN_LY and entity in QUAN_LY_THEM
-                         else hien_tai["scope"])
-            if co_moi == {ten: bool(hien_tai[ten]) for ten in CO} and scope_moi == hien_tai["scope"]:
+            next_scope = (scope if role["code"] in MANAGER_SCOPES and entity in MANAGER_ACTIONS
+                         else current["scope"])
+            if merged == {flag: bool(current[flag]) for flag in FLAGS} and next_scope == current["scope"]:
                 continue
             conn.execute(
                 sa.text(
                     "UPDATE tab_permission SET scope = :scope, updated_by = :actor, "
-                    + ", ".join(f"{ten} = :{ten}" for ten in CO)
+                    + ", ".join(f"{flag} = :{flag}" for flag in FLAGS)
                     + " WHERE role_id = :role_id AND entity = :entity"
                 ),
-                {"role_id": role["id"], "entity": entity, "scope": scope_moi,
-                 "actor": ACTOR, **co_moi},
+                {"role_id": role["id"], "entity": entity, "scope": next_scope,
+                 "actor": ACTOR, **merged},
             )
 
 

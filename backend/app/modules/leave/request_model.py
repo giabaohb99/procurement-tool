@@ -10,10 +10,10 @@ Giấy GNP vẫn còn — nó là **giấy tờ hồ sơ** (có số hiệu, có
 văn bản), sinh ra từ đơn này sau khi duyệt xong. Đơn là **chứng từ**, giấy là
 **hồ sơ**. Hai thứ khác nhau, giữ cả hai và nối lại bằng `document_id`.
 """
-from datetime import date, datetime
+from datetime import date, datetime, time
 
 from sqlalchemy import (BigInteger, Boolean, Date, DateTime, Float, Index,
-                        Integer, SmallInteger, String)
+                        Integer, SmallInteger, String, Time)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.base_model import AuditMixin, Base
@@ -54,6 +54,13 @@ class LeaveRequest(Base, AuditMixin):
     to_date: Mapped[date] = mapped_column(Date)
     from_session: Mapped[int] = mapped_column(SmallInteger, default=SESSION_FULL)
     to_session: Mapped[int] = mapped_column(SmallInteger, default=SESSION_FULL)
+
+    #  Khoảng GIỜ — chỉ có nghĩa khi buổi là `SESSION_HOURLY`, còn lại để `NULL`.
+    #  ⚠️ `NULL` chứ không phải `00:00`: một tờ đơn nghỉ cả ngày mà mang giờ
+    #  `00:00 → 00:00` thì mọi báo cáo sau này phải nhớ bỏ qua nó, và sớm muộn
+    #  có chỗ quên. Rỗng nghĩa là "không khai theo giờ", đọc ra là biết ngay.
+    from_time: Mapped[time | None] = mapped_column(Time, nullable=True)
+    to_time: Mapped[time | None] = mapped_column(Time, nullable=True)
 
     #  QĐ-NP4: bản này chỉ ghi `UNIT_DAY`. Cột khai sẵn để khi có phân hệ Lịch
     #  làm việc thì chỉ thêm cách quy đổi, không phải chạy migration đổi cấu trúc.

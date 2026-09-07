@@ -86,14 +86,18 @@ describe('emptyLeaveForm', () => {
 })
 
 describe('formValuesOf', () => {
-  it('bê nguyên chín ô của tờ đơn, không tự nắn giá trị nào', () => {
+  it('bê nguyên các ô của tờ đơn, không tự nắn giá trị nào', () => {
     const form = formValuesOf(request())
     expect(form).toEqual({
+      employee_id: 3,
+      employee_name: '',
       leave_type_id: 4,
       from_date: '2026-01-05',
       to_date: '2026-01-07',
       from_session: LEAVE_SESSION.AFTERNOON,
       to_session: LEAVE_SESSION.MORNING,
+      from_time: '',
+      to_time: '',
       total_days: 2,
       reason: 'Về quê',
       contact_phone: '0900000000',

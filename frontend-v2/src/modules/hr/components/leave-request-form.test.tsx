@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LeaveRequestForm } from './leave-request-form'
 import { emptyLeaveForm, type LeaveFormValues } from '../utils/leave-form-values'
+import { LEAVE_SESSION } from '../types/leave'
 
 /**
  * Ô «Tổng số ngày» — con số tự tính KHÔNG được đè lên con số người dùng đã gõ.
@@ -26,11 +27,19 @@ vi.mock('../hooks/use-leave', () => ({
 }))
 
 vi.mock('../hooks/use-employees', () => ({
-  useEmployees: () => ({ data: { items: [] } }),
+  useEmployees: () => ({
+    data: { items: [{ id: 7, code: 'NV007', full_name: 'Lê Thị B' }] },
+  }),
 }))
 
+const { can } = vi.hoisted(() => ({ can: vi.fn(() => true) }))
+
 vi.mock('@/core/authorization/use-permission', () => ({
-  usePermission: () => ({ can: () => true }),
+  usePermission: () => ({ can }),
+}))
+
+vi.mock('@/core/auth/use-auth', () => ({
+  useAuth: () => ({ user: { id: 1, employee_id: 7, full_name: 'Lê Thị B' } }),
 }))
 
 /** Bọc form trong state thật — form là component có kiểm soát, cha giữ giá trị. */
@@ -50,6 +59,8 @@ function formWith(overrides: Partial<LeaveFormValues>): LeaveFormValues {
 beforeEach(() => {
   useEstimateLeaveDays.mockReset()
   useEstimateLeaveDays.mockReturnValue({ data: { total_days: 3 } })
+  can.mockReset()
+  can.mockReturnValue(true)
 })
 
 describe('LeaveRequestForm — ô Tổng số ngày', () => {
@@ -83,5 +94,80 @@ describe('LeaveRequestForm — ô Tổng số ngày', () => {
     useEstimateLeaveDays.mockReturnValue({ data: { total_days: 5 } })
     rerender(<Harness initial={formWith({ total_days: 0 })} />)
     expect(daysInput()).toHaveValue('4')
+  })
+})
+
+describe('LeaveRequestForm — nghỉ theo GIỜ', () => {
+  it('chọn «Theo giờ» thì mọc thêm ô giờ ở CẢ HAI đầu, hai ô ngày còn nguyên', async () => {
+    //  Khách bác bản gộp hai ô ngày làm một (07/09/2026): nghỉ từ 14:00 ngày A
+    //  đến 10:00 ngày B là tờ đơn có thật.
+    const user = userEvent.setup()
+    render(<Harness initial={formWith({})} />)
+
+    await user.click(screen.getByRole('combobox', { name: 'Buổi bắt đầu' }))
+    await user.click(screen.getByRole('option', { name: 'Theo giờ' }))
+
+    expect(screen.getByLabelText('Từ giờ')).toBeInTheDocument()
+    expect(screen.getByLabelText('Đến giờ')).toBeInTheDocument()
+    expect(screen.getByText('Từ ngày')).toBeInTheDocument()
+    expect(screen.getByText('Đến ngày')).toBeInTheDocument()
+    //  Chọn một đầu là đầu kia theo luôn — backend đòi hai ô buổi giống nhau.
+    expect(screen.getByRole('combobox', { name: 'Buổi kết thúc' })).toHaveTextContent(
+      'Theo giờ',
+    )
+  })
+
+  it('số ngày của đơn theo giờ là ô CHỈ XEM — không cho gõ đè', () => {
+    render(
+      <Harness
+        initial={formWith({
+          from_session: LEAVE_SESSION.HOURLY,
+          to_session: LEAVE_SESSION.HOURLY,
+          from_time: '09:00',
+          to_time: '11:00',
+          total_days: 0.25,
+        })}
+      />,
+    )
+    expect(screen.queryByLabelText(/Tổng số ngày/)).not.toBeInTheDocument()
+    expect(screen.getByText('0.25 ngày')).toBeInTheDocument()
+  })
+
+  it('bỏ «Theo giờ» thì XÓA khoảng giờ đã nhập', async () => {
+    const user = userEvent.setup()
+    render(
+      <Harness
+        initial={formWith({
+          from_session: LEAVE_SESSION.HOURLY,
+          to_session: LEAVE_SESSION.HOURLY,
+          from_time: '09:00',
+          to_time: '11:00',
+        })}
+      />,
+    )
+    await user.click(screen.getByRole('combobox', { name: 'Buổi bắt đầu' }))
+    await user.click(screen.getByRole('option', { name: 'Cả ngày' }))
+
+    expect(screen.queryByLabelText('Đến giờ')).not.toBeInTheDocument()
+  })
+})
+
+describe('LeaveRequestForm — lập hộ người khác', () => {
+  it('có quyền đọc danh bạ thì hiện ô «Người nghỉ»', () => {
+    render(<Harness initial={formWith({})} />)
+    expect(screen.getByText('Người nghỉ')).toBeInTheDocument()
+  })
+
+  it('đơn MỚI thì ô «Người nghỉ» điền sẵn CHÍNH MÌNH', () => {
+    //  Để trống kèm câu "mặc định là bạn" thì người dùng vẫn phải đoán đơn đứng
+    //  tên ai — mà chỗ đó đáng ra là câu trả lời.
+    render(<Harness initial={formWith({})} />)
+    expect(screen.getByText('Lê Thị B (NV007)')).toBeInTheDocument()
+  })
+
+  it('KHÔNG có quyền thì giấu hẳn ô đó — đơn luôn đứng tên chính mình', () => {
+    can.mockReturnValue(false)
+    render(<Harness initial={formWith({})} />)
+    expect(screen.queryByText('Người nghỉ')).not.toBeInTheDocument()
   })
 })

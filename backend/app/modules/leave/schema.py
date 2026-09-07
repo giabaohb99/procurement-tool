@@ -4,7 +4,7 @@ Quy ước chung của bộ ERP: cột trạng thái/loại/buổi ra API là **
 (`status` + `status_label`), tiếng Việt chỉ ở nhãn. Giao diện đọc số để so sánh,
 đọc nhãn để hiện — không bao giờ so chuỗi tiếng Việt.
 """
-from datetime import date, datetime
+from datetime import date, datetime, time
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -197,6 +197,10 @@ class LeaveRequestBase(BaseModel):
     to_date: date
     from_session: int = SESSION_FULL
     to_session: int = SESSION_FULL
+    #  Chỉ khai khi buổi là «Theo giờ» (`SESSION_HOURLY`). `None` = không nghỉ
+    #  theo giờ — xem `request_service.check_hourly`.
+    from_time: time | None = None
+    to_time: time | None = None
     unit: int = UNIT_DAY
     #  `0` = để backend tự tính bằng `workday_service`. Nhập khác 0 là sửa đè.
     total_days: float = 0.0
@@ -217,6 +221,8 @@ class LeaveRequestUpdate(BaseModel):
     to_date: date | None = None
     from_session: int | None = None
     to_session: int | None = None
+    from_time: time | None = None
+    to_time: time | None = None
     unit: int | None = None
     total_days: float | None = None
     reason: str | None = None
@@ -247,6 +253,8 @@ class LeaveRequestResponse(BaseModel):
     to_date: date
     from_session: int
     to_session: int
+    from_time: time | None = None
+    to_time: time | None = None
     unit: int
     total_days: float
     reason: str
