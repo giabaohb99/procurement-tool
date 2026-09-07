@@ -102,6 +102,57 @@ def delivery_invoice_date(db: Session, payables: list[Payable]) -> str:
     return ""
 
 
+def misa_by_po_code(db: Session, po_codes: list[str]) -> dict[str, str]:
+    """Ticket #26 — map mã PO -> mã MISA của ĐMH, gom một truy vấn cho cả phiếu (tránh N+1).
+
+    Dòng phiếu chỉ chụp lại mã PO dạng chuỗi (không có po_id), còn mã MISA nhập/sửa
+    trên ĐMH sau khi phiếu đã lập nên phải join theo mã lúc đọc, không lưu lên dòng.
+    """
+    from app.modules.purchase_order.model import PurchaseOrder
+
+    codes = {(c or "").strip() for c in po_codes if (c or "").strip()}
+    if not codes:
+        return {}
+    rows = db.query(PurchaseOrder.code, PurchaseOrder.misa_code).filter(
+        PurchaseOrder.code.in_(codes)).all()
+    return {code: (misa or "") for code, misa in rows}
+
+
+def filter_by_misa_code(q, misa_code: str):
+    """Ticket #26 (đợt 2) — lọc danh sách phiếu theo mã MISA của ĐMH.
+
+    Phiếu không lưu mã MISA (chỉ dòng phiếu chụp mã PO) nên lọc đi ba nhịp bằng subquery:
+    ĐMH có mã MISA khớp -> mã PO -> dòng phiếu -> phiếu. Cùng khuôn với lọc po_code ở list_.
+    """
+    from sqlalchemy import select
+
+    from app.modules.purchase_order.model import PurchaseOrder
+
+    po_sub = select(PurchaseOrder.code).where(PurchaseOrder.misa_code.like(f"%{misa_code}%"))
+    sub = select(PaymentRequestLine.request_id).where(PaymentRequestLine.po_code.in_(po_sub))
+    return q.filter(PaymentRequest.id.in_(sub))
+
+
+def misa_codes_by_request(db: Session, request_ids: list[int]) -> dict[int, str]:
+    """Ticket #26 — gộp mã MISA các dòng của mỗi phiếu thành chuỗi "MS1, MS2" cho màn danh sách.
+
+    Hai truy vấn cho cả trang (tránh N+1): dòng phiếu -> mã PO, rồi mã PO -> mã MISA.
+    Một phiếu nhiều PO nên phải gộp; mã trùng trong cùng phiếu chỉ hiện một lần.
+    """
+    if not request_ids:
+        return {}
+    rows = db.query(PaymentRequestLine.request_id, PaymentRequestLine.po_code).filter(
+        PaymentRequestLine.request_id.in_(request_ids)).order_by(PaymentRequestLine.id).all()
+    misa = misa_by_po_code(db, [po for _, po in rows])
+    agg: dict[int, list[str]] = {}
+    for rid, po in rows:
+        code = misa.get((po or "").strip(), "")
+        bucket = agg.setdefault(rid, [])
+        if code and code not in bucket:
+            bucket.append(code)
+    return {rid: ", ".join(codes) for rid, codes in agg.items()}
+
+
 def _remaining(p: Payable) -> float:
     return round(float(p.total or 0) - float(p.paid_amount or 0), 2)
 

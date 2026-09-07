@@ -697,9 +697,12 @@ export const cruds: Record<string, CrudConfig> = {
     ],
     filters: [
       // company_id / item_group / invoice_no lọc qua bảng con hoặc scope → không đưa xuống
-      // bộ lọc điều kiện được. Phần còn lại (mã MISA, NSPT, mã PYC, ngày đặt, hồ sơ
-      // chứng từ, đơn gấp) đã có trong "Bộ lọc điều kiện".
+      // bộ lọc điều kiện được. Phần còn lại (NSPT, mã PYC, ngày đặt, hồ sơ chứng từ,
+      // đơn gấp) đã có trong "Bộ lọc điều kiện".
       { key: 'code', label: 'Mã PO' },
+      // Ticket #24 (bao-CR-301): mã MISA kéo ra lọc nhanh — kế toán tra đơn theo mã MISA
+      // hằng ngày, mở "Bộ lọc điều kiện" từng lần quá chậm.
+      { key: 'misa_code', label: 'Mã MISA' },
       // Ticket #17 (bao-CR-278): NCC kéo ra lọc nhanh — người thiếu supplier.read chỉ thấy
       // dropdown rỗng (FilterBar nuốt lỗi tải nguồn), không ăn 403.
       { key: 'supplier_code', label: 'Nhà cung cấp', source: { url: '/api/suppliers', value: 'code', label: 'name' } },
@@ -737,6 +740,8 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'request_date', label: 'Ngày lập' },
       { key: 'created_by_name', label: 'Người yêu cầu' },
       { key: 'supplier_name', label: 'Nhà cung cấp', render: (r) => r.supplier_name || r.supplier_code },
+      // Ticket #26 (bao-CR-302): phiếu gồm nhiều PO nên mã MISA hiển thị gộp "MS1, MS2"
+      { key: 'misa_code', label: 'Mã MISA' },
       { key: 'source_type', label: 'Loại', render: (r) => (r.source_type === 'shipping' ? 'Vận chuyển' : 'Hàng hóa') },
       { key: 'payment_method', label: 'Hình thức TT', render: (r) => (r.payment_method === 'cash' ? 'Tiền mặt' : 'Chuyển khoản') },
       { key: 'total', label: 'Số tiền', render: (r) => (r.total ? fmtVND(r.total) + ' đ' : '0 đ') },
@@ -747,6 +752,8 @@ export const cruds: Record<string, CrudConfig> = {
       // po_code / company_id lọc qua bảng con hoặc scope → không đưa xuống bộ lọc điều kiện được
       { key: 'code', label: 'Mã phiếu' },
       { key: 'po_code', label: 'Mã PO' },
+      // Ticket #26 (đợt 2): lọc theo mã MISA — backend đi qua dòng phiếu + ĐMH
+      { key: 'misa_code', label: 'Mã MISA' },
       { key: 'company_id', label: 'Công ty', source: { url: '/api/companies', value: 'id', label: 'name' } },
       { key: 'status', label: 'Trạng thái', type: 'select', options: [
         { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },
