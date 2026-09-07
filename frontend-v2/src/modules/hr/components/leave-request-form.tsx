@@ -146,10 +146,19 @@ export function LeaveRequestForm({ value, onChange, request }: LeaveRequestFormP
   useEffect(() => {
     if (typeof suggestedDays !== 'number') return
     const current = latestValue.current
-    //  `0` = ô trống, chưa ai quyết con số nào. Khác `0` mà cũng khác con số máy
-    //  điền lần trước nghĩa là người dùng đã gõ đè — để yên.
+    //  Đơn THEO GIỜ không có "số người dùng gõ" để mà giữ — ô đó chỉ xem, con số
+    //  là phép chia từ hai đầu giờ. Nên nó luôn bám con số mới.
+    //  ⚠️ Thiếu nhánh này thì mở một đơn theo giờ đã lưu rồi đổi ngày/giờ, ô số
+    //  ngày đứng im ở giá trị cũ: `lastAutoDays` khởi tạo `null` nên bản thân
+    //  con số đã lưu bị coi là "người dùng gõ tay" (bắt được lúc test tay
+    //  07/09/2026 — đổi «Đến ngày» sang 09/09 mà vẫn hiện 0.38).
+    //
+    //  Ngoài ra: `0` = ô trống, chưa ai quyết con số nào. Khác `0` mà cũng khác
+    //  con số máy điền lần trước nghĩa là người dùng đã gõ đè — để yên.
     const untouched =
-      current.total_days === 0 || current.total_days === lastAutoDays.current
+      isHourlyLeave(current.from_session, current.to_session) ||
+      current.total_days === 0 ||
+      current.total_days === lastAutoDays.current
     if (!untouched) return
     lastAutoDays.current = suggestedDays
     onChange({ ...current, total_days: suggestedDays })

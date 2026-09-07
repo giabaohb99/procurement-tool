@@ -118,6 +118,7 @@ describe('LeaveRequestForm — nghỉ theo GIỜ', () => {
   })
 
   it('số ngày của đơn theo giờ là ô CHỈ XEM — không cho gõ đè', () => {
+    useEstimateLeaveDays.mockReturnValue({ data: { total_days: 0.25 } })
     render(
       <Harness
         initial={formWith({
@@ -131,6 +132,25 @@ describe('LeaveRequestForm — nghỉ theo GIỜ', () => {
     )
     expect(screen.queryByLabelText(/Tổng số ngày/)).not.toBeInTheDocument()
     expect(screen.getByText('0.25 ngày')).toBeInTheDocument()
+  })
+
+  it('đơn theo giờ LUÔN bám con số máy tính, kể cả khi mở lại đơn đã lưu', () => {
+    //  Bắt được lúc test tay 07/09/2026: mở đơn theo giờ đã lưu 0.38 rồi đổi
+    //  «Đến ngày», ô số ngày đứng im — vì con số đã lưu bị coi là "người dùng gõ
+    //  tay", mà đơn theo giờ thì không có đường gõ tay nào cả.
+    useEstimateLeaveDays.mockReturnValue({ data: { total_days: 2.31 } })
+    render(
+      <Harness
+        initial={formWith({
+          from_session: LEAVE_SESSION.HOURLY,
+          to_session: LEAVE_SESSION.HOURLY,
+          from_time: '09:30',
+          to_time: '12:30',
+          total_days: 0.38,
+        })}
+      />,
+    )
+    expect(screen.getByText('2.31 ngày')).toBeInTheDocument()
   })
 
   it('bỏ «Theo giờ» thì XÓA khoảng giờ đã nhập', async () => {
