@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from '@/shared/ui/dialog'
 import { confirm } from '@/shared/ui/confirm-dialog'
-import { CrudField } from './crud-field'
+import { CrudFormFields } from './crud-form-fields'
 import { buildFormDefaults, toApiPayload } from './field-values'
 import type { CrudConfig, CrudRecord } from './types'
 import { useCrudSave } from './use-crud'
@@ -40,6 +40,7 @@ export function CrudFormDialog<T extends CrudRecord>({
     handleSubmit,
     control,
     reset,
+    watch,
     formState: { errors, isSubmitting, isDirty },
   } = useForm<Record<string, unknown>>({
     defaultValues: buildFormDefaults(config.formFields, item),
@@ -102,18 +103,15 @@ export function CrudFormDialog<T extends CrudRecord>({
           }}
           className="space-y-4 pt-2"
         >
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {config.formFields.map((field) => (
-              <CrudField
-                key={field.name}
-                field={field}
-                register={register}
-                control={control}
-                errors={errors}
-                isReadonly={isEditing && field.readonlyOnEdit}
-              />
-            ))}
-          </div>
+          <CrudFormFields
+            fields={config.formFields}
+            register={register}
+            control={control}
+            errors={errors}
+            watch={watch}
+            sectionHints={config.formSections}
+            isReadonly={(field) => isEditing && Boolean(field.readonlyOnEdit)}
+          />
 
           <DialogFooter className="pt-2">
             <Button

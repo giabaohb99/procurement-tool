@@ -43,6 +43,8 @@ export const SUPPLIER_CRUD_CONFIG: CrudConfig<Supplier> = {
   unitLabel: 'nhà cung cấp',
   apiPath: '/api/suppliers',
   storageKey: 'production.suppliers',
+  //  Bốn trong năm tab là BẢNG (hợp đồng, công nợ, lịch sử mua hàng, khảo sát).
+  detailMaxWidth: 'max-w-none',
   listRoute: appRoutes.production.suppliers,
   detailRoute: (id) => appRoutes.production.supplierDetail(id),
   // Backend không có tham số `search` cho NCC; whitelist FILTERABLE có `name` nên
