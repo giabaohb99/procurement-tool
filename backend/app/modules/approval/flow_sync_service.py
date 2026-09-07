@@ -122,6 +122,20 @@ def _rebuild_tasks(db: Session, instance: ApprovalInstance, node: ApprovalNode,
     return len(new_tasks)
 
 
+def _reload_open(db: Session, instance_id: int) -> ApprovalInstance | None:
+    """Đọc lại phiên VÀ KHÓA nó, chỉ trả về khi phiên còn mở.
+
+    SQLite (bộ test) không có `FOR UPDATE` — bỏ khóa, phần lọc trạng thái vẫn
+    chạy đúng, và bộ test không có hai giao dịch chạy song song để mà đua.
+    """
+    query = db.query(ApprovalInstance).filter(
+        ApprovalInstance.id == instance_id,
+        ApprovalInstance.status.in_(INSTANCE_OPEN_STATUSES))
+    if db.bind is not None and db.bind.dialect.name in ("mysql", "postgresql"):
+        query = query.with_for_update()
+    return query.first()
+
+
 def sync_after_step_edit(db: Session, node: ApprovalNode, actor: int,
                              entity_context) -> int:
     """Đẩy thay đổi của một bước xuống mọi phiếu ĐANG CHẠY theo luồng đó.
@@ -143,6 +157,18 @@ def sync_after_step_edit(db: Session, node: ApprovalNode, actor: int,
 
     count = 0
     for instance in instances:
+        #  ⚠️ ĐỌC LẠI CÓ KHÓA trước khi đụng vào phiếu. Danh sách ở trên chụp một
+        #  lúc trước đó; giữa hai nhịp, người duyệt có thể vừa ký xong và phiếu
+        #  đã đóng. Dựng việc mới cho một phiên đã đóng đẻ ra **việc treo mồ
+        #  côi**: hộp việc không bày nó ra (`task_service.my_tasks` lọc phiên
+        #  đóng) nhưng `steps_service.has_pending_task` thì có đọc — nghĩa là
+        #  người đó giữ quyền ĐỌC tờ chứng từ đó vĩnh viễn, dù phiếu xong lâu rồi.
+        #
+        #  Dựng lại được bằng bài ép tải 07/09/2026: đổi người duyệt 6 lượt
+        #  trong lúc 7 phiếu đang được bấm Duyệt → **7 việc treo trên 7 phiên đã
+        #  đóng**. Khóa hàng phiên thì lượt sửa luồng phải xếp sau lượt ký.
+        if _reload_open(db, instance.id) is None:
+            continue
         if not _patch_snapshot(instance, node):
             continue
         count += 1

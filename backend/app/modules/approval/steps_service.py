@@ -289,6 +289,12 @@ def has_pending_task(db: Session, entity: str, entity_id: int, employee_id: int)
         .join(ApprovalInstance, ApprovalInstance.id == ApprovalTask.instance_id)
         .filter(ApprovalInstance.entity == entity,
                 ApprovalInstance.entity_id == entity_id,
+                #  ⚠️ Phiên phải CÒN MỞ. Việc treo trên một phiên đã đóng là dữ
+                #  liệu lệch (sửa luồng đúng lúc người ta vừa ký — xem
+                #  `flow_sync_service._reload_open`), và ở đây nó biến thành
+                #  quyền ĐỌC chứng từ không bao giờ hết hạn. Hộp việc đã lọc
+                #  như vậy từ đầu; chỗ này thì quên.
+                ApprovalInstance.status.in_(INSTANCE_OPEN_STATUSES),
                 ApprovalTask.assignee_employee_id == employee_id,
                 ApprovalTask.status == TASK_PENDING)
         .exists()

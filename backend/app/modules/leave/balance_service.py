@@ -65,18 +65,31 @@ def seniority_days(db: Session, leave_type_id: int, years: int) -> float:
     return round(best, 2)
 
 
-def get_balance(db: Session, employee_id: int, year: int,
-                leave_type_id: int) -> LeaveBalance | None:
-    """Dòng quỹ, hoặc `None` nếu chưa cấp phát. KHÔNG tự tạo — xem `ensure_balance`."""
-    return (db.query(LeaveBalance)
-            .filter(LeaveBalance.employee_id == employee_id,
-                    LeaveBalance.year == year,
-                    LeaveBalance.leave_type_id == leave_type_id)
-            .first())
+#  CSDL có khóa hàng thật. SQLite (bộ test) không có `FOR UPDATE`.
+_ROW_LOCK_DIALECTS = ("mysql", "postgresql")
+
+
+def get_balance(db: Session, employee_id: int, year: int, leave_type_id: int,
+                *, for_update: bool = False) -> LeaveBalance | None:
+    """Dòng quỹ, hoặc `None` nếu chưa cấp phát. KHÔNG tự tạo — xem `ensure_balance`.
+
+    ⚠️ `for_update=True` = **khóa dòng quỹ tới hết giao dịch**. Bắt buộc dùng ở
+    mọi đường ĐỌC-RỒI-GHI (kiểm đủ phép · giữ chỗ · trừ thật · trả lại), xem
+    ghi chú dài ở `reserve`.
+    """
+    query = (db.query(LeaveBalance)
+             .filter(LeaveBalance.employee_id == employee_id,
+                     LeaveBalance.year == year,
+                     LeaveBalance.leave_type_id == leave_type_id))
+    if for_update and db.bind is not None and db.bind.dialect.name in _ROW_LOCK_DIALECTS:
+        #  Đọc-có-khóa cũng đi thẳng vào bản GHI MỚI NHẤT, không qua ảnh chụp
+        #  MVCC của mức REPEATABLE READ — đó là nửa thứ hai của bản vá.
+        query = query.with_for_update()
+    return query.first()
 
 
 def ensure_balance(db: Session, employee, year: int, leave_type: LeaveType,
-                   actor: int = 0) -> LeaveBalance:
+                   actor: int = 0, *, for_update: bool = False) -> LeaveBalance:
     """Lấy dòng quỹ, tự cấp phát nếu chưa có. Không commit — nơi gọi tự chốt.
 
     Cấp phát tự động lúc chạm tới, thay vì một công việc nền chạy đêm 31/12:
@@ -86,7 +99,7 @@ def ensure_balance(db: Session, employee, year: int, leave_type: LeaveType,
     Q1 của kế hoạch: cấp **một lần đầu năm**, cấn thâm niên tính tại 01/01 —
     không cộng dần theo tháng làm việc. Đổi được sau vì nằm gọn trong hàm này.
     """
-    existing = get_balance(db, employee.id, year, leave_type.id)
+    existing = get_balance(db, employee.id, year, leave_type.id, for_update=for_update)
     if existing is not None:
         return existing
 
@@ -132,7 +145,11 @@ def check_enough(db: Session, employee, year: int, leave_type: LeaveType,
     if not leave_type.counts_balance:
         return
 
-    row = ensure_balance(db, employee, year, leave_type)
+    #  Khóa dòng quỹ NGAY TỪ LÚC KIỂM: hai đơn gửi duyệt cùng lúc mà cùng đọc
+    #  một con số cũ thì cả hai đều thấy "đủ phép" rồi cùng lọt (ép tải
+    #  07/09/2026: quỹ còn 11 ngày, 12 đơn gửi song song, **cả 12 đều qua**).
+    #  Khóa giữ tới commit nên phiên sau đọc ra số đã trừ và bị chặn đúng lúc.
+    row = ensure_balance(db, employee, year, leave_type, for_update=True)
     available = round(row.remaining_days + exclude_days, 2)
     if days > available:
         raise HTTPException(
@@ -143,10 +160,21 @@ def check_enough(db: Session, employee, year: int, leave_type: LeaveType,
 
 def reserve(db: Session, employee, year: int, leave_type: LeaveType,
             days: float, actor: int = 0) -> None:
-    """GIỮ CHỖ khi gửi duyệt. Xem đầu tệp về vì sao nhịp này bắt buộc."""
+    """GIỮ CHỖ khi gửi duyệt. Xem đầu tệp về vì sao nhịp này bắt buộc.
+
+    ⚠️ **KHÓA DÒNG QUỸ.** Bốn nhịp của sổ quỹ đều là "đọc rồi ghi"
+    (`pending_days = pending_days + n`), nên chạy song song là **mất cập nhật**:
+    n phiên cùng đọc `0`, cùng ghi `1`, và sổ chỉ nhớ một lượt.
+
+    Đo được bằng bài ép tải qua Chrome DevTools (07/09/2026): gửi duyệt **12
+    đơn × 1 ngày cùng lúc** → sổ quỹ chỉ ghi **3** ngày giữ chỗ thay vì 12.
+    Đây đúng là kiểu lỗi tài liệu đã cảnh báo — *"không có triệu chứng nào cho
+    tới khi ai đó cộng tay lại sổ cuối năm"*: người ta nghỉ hết phép mà máy vẫn
+    báo còn.
+    """
     if not leave_type.counts_balance or days <= 0:
         return
-    row = ensure_balance(db, employee, year, leave_type, actor)
+    row = ensure_balance(db, employee, year, leave_type, actor, for_update=True)
     row.pending_days = round(row.pending_days + days, 2)
     row.updated_by = actor
 
@@ -159,7 +187,7 @@ def release(db: Session, employee_id: int, year: int, leave_type_id: int,
     nó sẽ phình lặng lẽ. Rơi vào đây là sổ đã lệch từ trước — kẹp lại để nó
     không lệch thêm, phần điều tra thuộc về dữ liệu chứ không thuộc về hàm này.
     """
-    row = get_balance(db, employee_id, year, leave_type_id)
+    row = get_balance(db, employee_id, year, leave_type_id, for_update=True)
     if row is None or days <= 0:
         return
     row.pending_days = round(max(0.0, row.pending_days - days), 2)
@@ -174,7 +202,7 @@ def consume(db: Session, employee_id: int, year: int, leave_type_id: int,
     khoảnh khắc quỹ hiện thừa hoặc thiếu đúng số ngày đó, và người mở màn Quỹ
     phép đúng lúc ấy sẽ báo lỗi.
     """
-    row = get_balance(db, employee_id, year, leave_type_id)
+    row = get_balance(db, employee_id, year, leave_type_id, for_update=True)
     if row is None or days <= 0:
         return
     row.pending_days = round(max(0.0, row.pending_days - days), 2)
@@ -190,7 +218,7 @@ def refund_used(db: Session, employee_id: int, year: int, leave_type_id: int,
     ngày phép của họ mất luôn và Nhân sự phải bù bằng cột «điều chỉnh tay», tức
     là sửa sổ bằng tay cho một việc lẽ ra tự chạy.
     """
-    row = get_balance(db, employee_id, year, leave_type_id)
+    row = get_balance(db, employee_id, year, leave_type_id, for_update=True)
     if row is None or days <= 0:
         return
     row.used_days = round(max(0.0, row.used_days - days), 2)

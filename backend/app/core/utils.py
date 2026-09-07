@@ -32,12 +32,63 @@ def assert_unique_product_codes(new_codes: Iterable[str],
     raise HTTPException(400, tmpl.format(codes=", ".join(bad)))
 
 
+#  CSDL có khóa hàng thật. SQLite (bộ test) không có `FOR UPDATE` — gọi vào là
+#  ném lỗi cú pháp, nên phải hỏi phương ngữ trước.
+_ROW_LOCK_DIALECTS = ("mysql", "postgresql")
+
+
 def generate_code(db: Session, model, prefix: str) -> str:
-    """Generate a sequential code with a given prefix (e.g. CTY001)."""
-    last_obj = db.query(model).filter(model.code.like(f"{prefix}%")).order_by(model.code.desc()).first()
+    """Số chứng từ kế tiếp cho một tiền tố (`CTY001`, `NP027`…).
+
+    ⚠️ **KHÓA HÀNG LỚN NHẤT trong lúc đọc.** Không khóa thì đây là "đọc rồi mới
+    ghi" kinh điển: hai phiên cùng đọc ra `NP035`, cùng dựng `NP036`, và phiên
+    về sau đâm vào ràng buộc UNIQUE của cột `code` → **500 Internal Server
+    Error** ngay trên đường đi bình thường nhất của hệ (bấm *Lưu*).
+
+    Dựng lại được 07/09/2026 bằng bài ép tải qua Chrome DevTools: bắn **30 lượt
+    lập đơn nghỉ phép cùng lúc → chỉ 5 lượt sống, 25 lượt ăn 500**
+    (`Duplicate entry 'NP035' for key 'tab_leave_request.code'`). Hàm này dùng
+    ở **27 chỗ** — thu mua, văn thư, đặt xe, phòng họp, nhân sự — nên lỗi đó có
+    ở mọi màn "bấm Lưu", chỉ cần hai người bấm trùng nhịp.
+
+    Cách chữa: khóa **hàng NHỎ NHẤT** của tiền tố làm cái then cửa, rồi mới đọc
+    hàng lớn nhất. Đọc-có-khóa của InnoDB luôn thấy bản GHI MỚI NHẤT (không đi
+    qua ảnh chụp MVCC), nên phiên xếp sau chờ phiên trước commit rồi đọc lại là
+    ra đúng số kế tiếp. Khóa giữ tới lúc commit — mọi chỗ gọi đều `add` +
+    `commit` ngay sau đây.
+
+    ⚠️ **Khóa hàng NHỎ NHẤT chứ không phải hàng lớn nhất**, dù hàng lớn nhất mới
+    là hàng ta cần đọc. Bản vá đầu khóa hàng lớn nhất và đổi 500 *trùng mã*
+    thành 500 *deadlock* (MySQL 1213): khóa-kèm-khoảng-trống của hàng cuối nằm
+    đúng chỗ các phiên khác đang CHÈN, nên chúng vừa chờ nhau vừa chặn nhau.
+    Hàng nhỏ nhất thì không ai chèn vào trước nó — mọi phiên cùng xin đúng một
+    hàng đó nên xếp thành hàng đợi, không có vòng chờ để mà kẹt.
+
+    Vẫn còn đúng một khe hẹp: bảng RỖNG thì không có hàng nào để khóa, hai phiên
+    cùng ra `001`. Chấp nhận — đó là bản ghi đầu tiên của cả một danh mục, và
+    người thua vẫn thấy câu lỗi rồi bấm lại.
+    """
+    same_prefix = db.query(model).filter(model.code.like(f"{prefix}%"))
+    lockable = db.bind is not None and db.bind.dialect.name in _ROW_LOCK_DIALECTS
+    if lockable:
+        #  Then cửa. Kết quả không dùng tới — chỉ cần giữ khóa cho tới commit.
+        same_prefix.order_by(model.code.asc()).with_for_update().first()
+
+    last_query = same_prefix.order_by(model.code.desc())
+    if lockable:
+        #  ⚠️ Câu đọc SỐ LỚN NHẤT cũng phải CÓ KHÓA, không chỉ then cửa ở trên.
+        #  MySQL chạy mức cô lập REPEATABLE READ: đọc thường lấy theo ẢNH CHỤP
+        #  mở tại câu truy vấn ĐẦU TIÊN của giao dịch — mà trước khi tới đây,
+        #  chỗ gọi đã đọc hồ sơ quyền / nhân sự, nên ảnh chụp có từ lúc đó. Kết
+        #  quả: phiên xếp sau chờ then cửa xong, đọc lại vẫn ra số CŨ và lại
+        #  dựng trùng mã. Đọc-có-khóa thì đi thẳng vào bản ghi mới nhất.
+        #  Không sợ kẹt khóa như bản trước: then cửa đã xếp mọi phiên thành hàng
+        #  nên chỉ MỘT phiên giữ khóa cuối bảng tại một thời điểm.
+        last_query = last_query.with_for_update()
+    last_obj = last_query.first()
     if not last_obj or not last_obj.code.startswith(prefix):
         return f"{prefix}001"
-    
+
     try:
         num = int(last_obj.code[len(prefix):]) + 1
         return f"{prefix}{num:03d}"
