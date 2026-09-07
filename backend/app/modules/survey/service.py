@@ -138,7 +138,7 @@ def update_survey(db: Session, sid: int, data, user_id: int) -> Survey:
     return s
 
 
-def _purge_yc_options(db: Session, product_line_ids: list[int]) -> int:
+def _purge_yc_options(db: Session, product_line_ids: list[int], user_id: int = 0) -> int:
     """Gỡ các option Yêu cầu khảo sát (YCKS) đang tham chiếu dòng khảo sát SP KHÔNG còn hợp lệ
     (dòng bị 'Không duyệt' hoặc phiếu khảo sát bị hủy). Tránh option lỗi vẫn hiện/gắn được.
     Dùng delete_option để tự cập nhật trạng thái YCKS. Trả số option đã gỡ."""
@@ -150,7 +150,7 @@ def _purge_yc_options(db: Session, product_line_ids: list[int]) -> int:
     opts = (db.query(SurveyRequestOption)
             .filter(SurveyRequestOption.product_survey_line_id.in_(ids)).all())
     for o in opts:
-        delete_option(db, o.survey_request_line_id, o.id)
+        delete_option(db, o.survey_request_line_id, o.id, user_id)
     return len(opts)
 
 
@@ -181,7 +181,7 @@ def approve_lines(db: Session, sid: int, data, user_id: int) -> Survey:
                 stale_product_ids.append(row.id)     # (trạng thái tạm để valid_options_of ẩn tạm)
     s.updated_by = user_id
     db.commit()
-    _purge_yc_options(db, stale_product_ids)   # dòng bị Không duyệt -> gỡ option YCKS tham chiếu
+    _purge_yc_options(db, stale_product_ids, user_id)   # dòng bị Không duyệt -> gỡ option YCKS tham chiếu
     record(db, user_id, ENTITY, sid, "line_approve", "Duyệt dòng khảo sát")
     db.refresh(s)
     return s
@@ -308,7 +308,7 @@ def set_status(db: Session, sid: int, status: str, user_id: int, msg: str = "") 
         s.approve_note = msg
     db.commit()
     if status == "cancelled":   # phiếu khảo sát bị hủy -> gỡ option YCKS tham chiếu mọi dòng SP của phiếu
-        _purge_yc_options(db, [ln.id for ln in product_lines_of(db, sid)])
+        _purge_yc_options(db, [ln.id for ln in product_lines_of(db, sid)], user_id)
     record(db, user_id, ENTITY, sid, status, msg)
     db.refresh(s)
     return s

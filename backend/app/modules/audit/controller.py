@@ -15,6 +15,13 @@ ACTION_LABEL = {
     "submitted": "Gửi duyệt", "approved": "Duyệt", "rejected": "Từ chối",
     "dispatched": "Điều phối",
     "paid": "Ghi nhận đã chi", "cancelled": "Hủy",
+    #  bao-CR-311 — thao tác phương án trên Yêu cầu báo giá. Trước 07/09/2026 cả ba
+    #  KHÔNG ghi dấu vết gì: gắn nhầm một phương án thì dấu duy nhất là cột
+    #  `created_by` nằm trên chính dòng option, mà không màn nào hiện nó ra.
+    "add_option": "Gắn phương án",
+    "del_option": "Gỡ phương án",
+    "choose_option": "Chốt phương án",
+    "unchoose_option": "Bỏ chốt phương án",
 }
 
 

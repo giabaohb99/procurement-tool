@@ -452,8 +452,17 @@ def available_survey_lines(db: Session, supplier_code: str = "", item_group: str
     return items, total
 
 
-def create_option(db: Session, line: SurveyRequestLine, psl_id: int, user_id: int) -> SurveyRequestOption:
-    """Gắn 1 dòng khảo sát SP đã duyệt vào dòng yêu cầu → tạo option (snapshot + ẩn danh public_id)."""
+def _line_label(line: SurveyRequestLine) -> str:
+    """Nhãn ngắn của dòng YCBG để ghi vào dấu vết — phân loại, không có thì lấy id."""
+    return (line.item_group or "").strip() or f"dòng #{line.id}"
+
+
+def create_option(db: Session, line: SurveyRequestLine, psl_id: int, user_id: int,
+                  audit: bool = True) -> SurveyRequestOption:
+    """Gắn 1 dòng khảo sát SP đã duyệt vào dòng yêu cầu → tạo option (snapshot + ẩn danh public_id).
+
+    `audit=False` cho đường ĐỒNG BỘ TỰ ĐỘNG — nó đã tự ghi một dòng `sync_options`
+    tổng kết cả lượt, thêm dấu vết từng option nữa là ghi đôi."""
     from app.modules.survey.model import Survey, SurveyProductLine
     psl = db.get(SurveyProductLine, psl_id)
     if not psl:
@@ -501,6 +510,17 @@ def create_option(db: Session, line: SurveyRequestLine, psl_id: int, user_id: in
     db.refresh(o)
     o.display_label = f"Option {public_id} — ID {o.id}"
     db.commit()
+    if audit:
+        #  ⚠️ KHÔNG ghi tên NCC vào đây. Nhật ký của phiếu đọc được bằng
+        #  `survey_request.read` — người YÊU CẦU có khóa đó, mà cả cơ chế option là
+        #  để giấu NCC với chính họ. Tên SP thì đã hiện sẵn trên thẻ phương án.
+        #  Phân loại của phiếu khảo sát nguồn ghi kèm để đối chiếu về sau — ticket
+        #  07/09/2026 là một phương án "Thùng" nằm trong dòng "Chai Pet", và không
+        #  có dòng nhật ký nào nói ra chuyện đó.
+        sv_group = (survey.item_group or "") if survey else ""
+        record(db, user_id, ENTITY, line.survey_request_id, "add_option",
+               f"Gắn {o.display_label} vào dòng «{_line_label(line)}»: "
+               f"{o.snap_product_name or '—'} (khảo sát thuộc «{sv_group or '—'}»)")
     return o
 
 
@@ -533,7 +553,7 @@ def sync_options_from_surveys(db: Session, sid: int, user_id: int = 0) -> int:
                 if psl.id in existing:
                     continue
                 try:
-                    create_option(db, ln, psl.id, user_id or 0)
+                    create_option(db, ln, psl.id, user_id or 0, audit=False)
                     added += 1
                 except HTTPException:
                     pass
@@ -543,17 +563,21 @@ def sync_options_from_surveys(db: Session, sid: int, user_id: int = 0) -> int:
     return added
 
 
-def delete_option(db: Session, line_id: int, oid: int):
+def delete_option(db: Session, line_id: int, oid: int, user_id: int = 0):
     o = (db.query(SurveyRequestOption)
          .filter(SurveyRequestOption.id == oid, SurveyRequestOption.survey_request_line_id == line_id).first())
     if not o:
         raise HTTPException(404, "Không tìm thấy option")
+    label, product = o.display_label, o.snap_product_name
     db.delete(o)
     db.commit()
 
     # Tự động cập nhật trạng thái phiếu thành đang xử lý nếu không còn option nào
     line = db.query(SurveyRequestLine).filter(SurveyRequestLine.id == line_id).first()
     if line:
+        record(db, user_id, ENTITY, line.survey_request_id, "del_option",
+               f"Gỡ {label or f'option #{oid}'} khỏi dòng «{_line_label(line)}»: "
+               f"{product or '—'}")
         req_id = line.survey_request_id
         total_opts = (db.query(SurveyRequestOption)
                       .join(SurveyRequestLine, SurveyRequestOption.survey_request_line_id == SurveyRequestLine.id)
@@ -600,13 +624,19 @@ def choose_option(db: Session, line_id: int, oid: int, user_id: int) -> SurveyRe
             o.updated_by = user_id
     # Hướng B: vừa chọn 1 PA (not already) thì TỰ GỠ cờ "Cần khảo sát lại" nếu đang bật —
     # coi như người YC đã đồng ý phương án, không còn yêu cầu khảo sát lại.
+    ln = db.query(SurveyRequestLine).filter(SurveyRequestLine.id == line_id).first()
     if not already:
-        ln = db.query(SurveyRequestLine).filter(SurveyRequestLine.id == line_id).first()
         if ln and ln.line_status == LS_RESURVEY:
             ln.line_status = ""
             ln.updated_by = user_id
     db.commit()
     db.refresh(target)
+    if ln:
+        note = (f"Chốt {target.display_label} cho dòng «{_line_label(ln)}»: "
+                f"{target.snap_product_name or '—'}") if not already else \
+               (f"Bỏ chốt {target.display_label} của dòng «{_line_label(ln)}»")
+        record(db, user_id, ENTITY, ln.survey_request_id,
+               "unchoose_option" if already else "choose_option", note)
     return target
 
 
