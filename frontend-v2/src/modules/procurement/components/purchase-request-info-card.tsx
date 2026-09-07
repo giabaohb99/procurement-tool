@@ -1,6 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Checkbox } from '@/shared/ui/checkbox'
-import { DatePicker } from '@/shared/ui/date-picker'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { ReadOnlyValue } from '@/shared/ui/read-only-value'
@@ -71,16 +70,13 @@ export function PurchaseRequestInfoCard({
         <div className="space-y-1.5">
           <Label>
             Ngày tiếp nhận
-            <RequiredMark />
+            {/* bao-CR-293/298 (ticket 20): backend TỰ ĐIỀN khi thu mua duyệt điều
+                phối — khóa ô nhập, trước lúc đó giá trị chỉ là tạm (ngày lập phiếu) */}
+            <span className="text-xs font-normal text-muted-foreground">
+              (tự điền khi thu mua duyệt điều phối)
+            </span>
           </Label>
-          {editing ? (
-            <DatePicker
-              value={data.request_date || ''}
-              onChange={(value) => onChange({ request_date: value })}
-            />
-          ) : (
-            <ReadOnlyValue>{formatDate(data.request_date) || '—'}</ReadOnlyValue>
-          )}
+          <ReadOnlyValue>{formatDate(data.request_date) || '—'}</ReadOnlyValue>
         </div>
 
         <div className="space-y-1.5">
