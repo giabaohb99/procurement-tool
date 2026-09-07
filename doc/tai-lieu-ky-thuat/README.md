@@ -12,7 +12,8 @@ Thư mục gom toàn bộ tài liệu mô tả kỹ thuật của hệ thống.
 | [thiet-ke-ky-thuat-chi-tiet.md](thiet-ke-ky-thuat-chi-tiet.md) | LLD (chi tiết) | Từ điển dữ liệu 39 bảng (cột + kiểu + liên kết) + RBAC chi tiết |
 | [so-do-ky-thuat.md](so-do-ky-thuat.md) | Sơ đồ | 9 sơ đồ chuẩn Mermaid: kiến trúc, use-case, luồng, state machine, ERD, sequence |
 | [quy-trinh-tai-lieu.md](quy-trinh-tai-lieu.md) | Quy trình | Logic các loại tài liệu (BRD/PRD/TDD/bàn giao) + kiểm soát thay đổi cho team nhỏ |
-| [change-log.md](change-log.md) | Change Log / CR | Nhật ký thay đổi + Decision log (quyết định đã chốt) |
+| [change-log.md](change-log.md) | Change Log / CR | Nhật ký thay đổi + việc còn nợ (N-xxx) + Decision log (D-xxx) + deploy |
+| [change-log-bao.md](change-log-bao.md) | Change Log / CR — dải `bao` | Cùng sổ đó, phần `bao-CR-310` trở đi (tách 07/09/2026 để hết xung đột merge). **Tra CR hay cấp số mới đều phải xem CẢ HAI tệp** |
 | [tdd-redesign-kho.md](tdd-redesign-kho.md) | TDD (1 phân hệ) | Thiết kế redesign phân hệ Kho — CR-001 (DRAFT, chờ duyệt) |
 
 ## Xuất PDF / PNG
@@ -39,4 +40,4 @@ python doc/tai-lieu-ky-thuat/export/build_diagrams.py
 
 - Sửa nội dung ở file **`.md`** → chạy lại lệnh trên để ra PDF mới (không sửa tay PDF).
 - Sơ đồ dùng **Mermaid** — xem trực tiếp trên GitHub/VS Code, hoặc paste vào mermaid.live.
-- Mọi thay đổi cấu trúc/luồng → ghi **Change Request** ở `change-log.md` (khi tạo) + cập nhật tài liệu tương ứng.
+- Mọi thay đổi cấu trúc/luồng → ghi **Change Request** (khi tạo) + cập nhật tài liệu tương ứng. Dải `bao` ghi ở `change-log-bao.md`, còn lại ghi ở `change-log.md`; **cấp số mới thì grep cả hai** vì dải số dùng chung.
