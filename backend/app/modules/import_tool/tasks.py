@@ -29,6 +29,8 @@ _MODULE_LABEL = {
     ImportModule.VEHICLE: "Xe",
     ImportModule.DRIVER: "Tài xế",
     ImportModule.SEAL_TYPE: "Loại con dấu",
+    ImportModule.VEHICLE_BOOKING: "Yêu cầu đặt xe",
+    ImportModule.SEAL_REQUEST: "Yêu cầu đóng dấu",
 }
 
 

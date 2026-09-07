@@ -92,6 +92,13 @@ Cột **Khoá trùng** = trường dùng để phân biệt "tạo mới" hay "c
 > Loại con dấu · Yêu cầu đóng dấu** (`export_log/registry.py`). Hai phân hệ mới trong picker Nhập/Xuất
 > (`config/data-modules.ts`: `vehicle-booking`, `seal`). Quyền export cấp cho `booking_manager` (Xe/Tài xế/
 > Yêu cầu đặt xe) và `seal_admin` (Loại con dấu/Yêu cầu đóng dấu). Test `test_import_datxe_duyetdau.py`.
+>
+> **Import PHIẾU Yêu cầu đặt xe / đóng dấu (enum 23/24).** Hai phiếu này là chứng từ **header-only**
+> (không có bảng dòng), nên `doc_import.py` được mở rộng: adapter **không khai `line_model`** thì tạo
+> header đơn (bỏ luật "phải có ≥1 dòng"), và hỗ trợ `post_apply(db, header, header_data)` — Duyệt dấu
+> dùng nó ghi **bảng nối công ty** từ cột "Công ty chính (mã)" để đúng phạm vi Văn thư/Giám đốc. Import
+> chỉ **TẠO MỚI** (mã trùng bỏ qua), mặc định trạng thái **Hoàn thành** (dữ liệu lịch sử), đổi bằng cột
+> "Trạng thái (mã)". Multi-công ty ở import v1 = một công ty chính/phiếu.
 
 ### 3.2 Dữ liệu nghiệp vụ / lịch sử — Import dữ liệu cũ + Export
 

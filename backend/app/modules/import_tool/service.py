@@ -27,8 +27,8 @@ _SUBSYSTEM_MODULES = {
     "production": [ImportModule.SUPPLIER, ImportModule.PRODUCT, ImportModule.UNIT,
                    ImportModule.ITEM_GROUP],
     "inventory": [ImportModule.WAREHOUSE],
-    "vehicle-booking": [ImportModule.VEHICLE, ImportModule.DRIVER],
-    "seal": [ImportModule.SEAL_TYPE],
+    "vehicle-booking": [ImportModule.VEHICLE, ImportModule.DRIVER, ImportModule.VEHICLE_BOOKING],
+    "seal": [ImportModule.SEAL_TYPE, ImportModule.SEAL_REQUEST],
 }
 
 # tăng đếm theo level của log

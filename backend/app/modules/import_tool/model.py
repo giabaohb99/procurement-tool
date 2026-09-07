@@ -34,6 +34,9 @@ class ImportModule(IntEnum):
     VEHICLE = 20
     DRIVER = 21
     SEAL_TYPE = 22
+    # Chứng từ header-only (không có dòng) — Đặt xe + Duyệt dấu.
+    VEHICLE_BOOKING = 23
+    SEAL_REQUEST = 24
 
 
 class ImportMode(IntEnum):

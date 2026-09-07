@@ -21,8 +21,10 @@ from app.modules.department.model import Department
 from app.modules.employee.model import Employee
 from app.modules.purchase_order.model import POItem, PurchaseOrder
 from app.modules.purchase_request.model import PurchaseRequest, PurchaseRequestItem
+from app.modules.seal_request.model import SealRequest
 from app.modules.survey.model import Survey, SurveySupplierLine
 from app.modules.survey_request.model import SurveyRequest, SurveyRequestLine
+from app.modules.vehicle_booking.model import VehicleBooking
 
 from . import catalog_import
 from .catalog_import import _norm, _s, _to_bool, _to_float, _to_int
@@ -45,6 +47,14 @@ def _to_date_str(v) -> str:
     if isinstance(v, (datetime, date)):
         return v.strftime("%Y-%m-%d")
     return _s(v)[:10]
+
+
+def _seal_set_companies(db: Session, header, header_data: dict) -> None:
+    """Duyệt dấu: một phiếu gắn NHIỀU công ty qua bảng nối; import v1 nhận CÔNG TY
+    CHÍNH (cột 'Công ty chính (mã)') và ghi 1 dòng bảng nối cho đúng phạm vi Văn thư."""
+    from app.modules.seal_request.service import set_companies
+    cid = int(getattr(header, "company_id", 0) or 0)
+    set_companies(db, header.id, [cid] if cid else [])
 
 
 DOC_ADAPTERS: dict[int, dict] = {
@@ -145,6 +155,43 @@ DOC_ADAPTERS: dict[int, dict] = {
             _df("Đơn giá", "price", kind="float"),
         ],
     },
+    # ── Chứng từ KHÔNG có dòng (header-only) — Đặt xe & Duyệt dấu ─────────────
+    ImportModule.VEHICLE_BOOKING: {
+        "label": "Yêu cầu đặt xe",
+        "sheet": "Yeu cau dat xe",
+        "header_model": VehicleBooking,
+        # Không có bảng dòng — mỗi mã phiếu = một phiếu, lấy đúng dòng đầu.
+        "code": _df("Mã phiếu *", "code", required=True),
+        "header_fields": [
+            _df("Loại (1 công tác/2 giao hàng)", "request_type", kind="int", default=1),
+            _df("Mục đích *", "purpose", required=True),
+            _df("Điểm đi", "start_location"),
+            _df("Điểm đến", "end_location"),
+            _df("Thời gian đi", "start_time"),
+            _df("Thời gian về", "end_time"),
+            _df("Người tạo", "requester"),
+            _df("Công ty (mã)", "company_id", kind="ref", ref="company"),
+            _df("Phòng ban (mã)", "department_id", kind="ref", ref="department"),
+            # Mặc định Hoàn thành (5) — thường nhập dữ liệu LỊCH SỬ; đổi bằng cột này.
+            _df("Trạng thái (mã)", "status", kind="int", default=5),
+        ],
+    },
+    ImportModule.SEAL_REQUEST: {
+        "label": "Yêu cầu đóng dấu",
+        "sheet": "Yeu cau dong dau",
+        "header_model": SealRequest,
+        "code": _df("Mã phiếu *", "code", required=True),
+        "header_fields": [
+            _df("Mục đích sử dụng *", "purpose", required=True),
+            _df("Người tạo", "requester"),
+            _df("Công ty chính (mã)", "company_id", kind="ref", ref="company"),
+            _df("Phòng ban (mã)", "department_id", kind="ref", ref="department"),
+            # Mặc định Hoàn thành (4) cho dữ liệu lịch sử.
+            _df("Trạng thái (mã)", "status", kind="int", default=4),
+        ],
+        # Ghi bảng nối công ty sau khi tạo header (đúng phạm vi Văn thư/Giám đốc).
+        "post_apply": _seal_set_companies,
+    },
 }
 
 
@@ -155,11 +202,12 @@ def is_doc_module(module: int) -> bool:
 def run(db: Session, batch, wb, apply: bool) -> None:
     adapter = DOC_ADAPTERS[batch.module]
     header_model = adapter["header_model"]
-    line_model = adapter["line_model"]
-    line_fk = adapter["line_fk"]
+    line_model = adapter.get("line_model")   # None = chứng từ KHÔNG có dòng (Đặt xe / Duyệt dấu)
+    line_fk = adapter.get("line_fk")
+    line_fields = adapter.get("line_fields", [])
     ws = wb[adapter["sheet"]] if adapter["sheet"] in wb.sheetnames else wb.worksheets[0]
 
-    all_fields = [adapter["code"], *adapter["header_fields"], *adapter["line_fields"]]
+    all_fields = [adapter["code"], *adapter["header_fields"], *line_fields]
     header_col: dict[str, int] = {}
     for col in range(1, (ws.max_column or 0) + 1):
         key = _norm(ws.cell(row=HEADER_ROW, column=col).value)
@@ -245,35 +293,41 @@ def run(db: Session, batch, wb, apply: bool) -> None:
         db.flush()
 
         nlines = 0
-        for r in rows:
-            missing = [f["header"].replace(" *", "") for f in adapter["line_fields"]
-                       if f["required"] and not _s(read(r, f["attr"]))]
-            if missing:
-                log(r, LogLevel.ERROR, "line_missing",
-                    f"Dòng thiếu: {', '.join(missing)} — bỏ dòng", ref_key=code, target_code=code)
-                continue
-            line_data: dict = {line_fk: header.id}
-            build(adapter["line_fields"], r, line_data, code)
-            # Bỏ dòng rỗng (không có nội dung nào ngoài khoá ngoại).
-            if not any(_s(v) for k, v in line_data.items() if k != line_fk):
-                continue
-            db.add(line_model(created_by=batch.created_by, updated_by=batch.created_by, **line_data))
-            nlines += 1
-
-        db.flush()
-        # Phiếu không có DÒNG hợp lệ nào -> không tạo phiếu rỗng, gỡ header vừa thêm.
-        if nlines == 0:
-            db.delete(header)
+        if line_model is not None:
+            for r in rows:
+                missing = [f["header"].replace(" *", "") for f in line_fields
+                           if f["required"] and not _s(read(r, f["attr"]))]
+                if missing:
+                    log(r, LogLevel.ERROR, "line_missing",
+                        f"Dòng thiếu: {', '.join(missing)} — bỏ dòng", ref_key=code, target_code=code)
+                    continue
+                line_data: dict = {line_fk: header.id}
+                build(line_fields, r, line_data, code)
+                # Bỏ dòng rỗng (không có nội dung nào ngoài khoá ngoại).
+                if not any(_s(v) for k, v in line_data.items() if k != line_fk):
+                    continue
+                db.add(line_model(created_by=batch.created_by, updated_by=batch.created_by, **line_data))
+                nlines += 1
             db.flush()
-            counts["skipped"] += len(rows)
-            log(rows[0], LogLevel.WARNING, "doc_no_line",
-                f"Phiếu '{code}' không có dòng hợp lệ — bỏ qua", ref_key=code)
-            continue
+            # Phiếu không có DÒNG hợp lệ nào -> không tạo phiếu rỗng, gỡ header vừa thêm.
+            if nlines == 0:
+                db.delete(header)
+                db.flush()
+                counts["skipped"] += len(rows)
+                log(rows[0], LogLevel.WARNING, "doc_no_line",
+                    f"Phiếu '{code}' không có dòng hợp lệ — bỏ qua", ref_key=code)
+                continue
+
+        #  Hook sau khi tạo header (vd Duyệt dấu: ghi bảng nối công ty từ company_id).
+        if adapter.get("post_apply"):
+            adapter["post_apply"](db, header, header_data)
+            db.flush()
 
         counts["created"] += 1
         changes.append({"target_id": header.id, "was_new": True, "snapshot": ""})
+        line_note = f" với {nlines} dòng" if line_model is not None else ""
         log(rows[0], LogLevel.INFO, "doc_created",
-            f"Tạo {adapter['label']} '{code}' với {nlines} dòng", ref_key=code, target_code=code)
+            f"Tạo {adapter['label']} '{code}'{line_note}", ref_key=code, target_code=code)
 
     if apply:
         db.commit()
@@ -304,8 +358,8 @@ def revert(db: Session, module: int, changes, user_id: int) -> tuple[int, int]:
     """Hoàn tác: xoá phiếu do batch tạo (kèm dòng). v1 create-only nên không có khôi phục."""
     adapter = DOC_ADAPTERS[module]
     header_model = adapter["header_model"]
-    line_model = adapter["line_model"]
-    line_fk = adapter["line_fk"]
+    line_model = adapter.get("line_model")
+    line_fk = adapter.get("line_fk")
     deleted = 0
     for ch in changes:
         if not ch.was_new:
@@ -313,7 +367,8 @@ def revert(db: Session, module: int, changes, user_id: int) -> tuple[int, int]:
         h = db.get(header_model, ch.survey_id)   # survey_id dùng chung = header id
         if not h:
             continue
-        db.query(line_model).filter(getattr(line_model, line_fk) == h.id).delete(synchronize_session=False)
+        if line_model is not None:
+            db.query(line_model).filter(getattr(line_model, line_fk) == h.id).delete(synchronize_session=False)
         db.delete(h)
         deleted += 1
     return deleted, 0
@@ -327,7 +382,7 @@ def build_template(module: int) -> bytes:
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = adapter["sheet"]
-    cols = [adapter["code"], *adapter["header_fields"], *adapter["line_fields"]]
+    cols = [adapter["code"], *adapter["header_fields"], *adapter.get("line_fields", [])]
     for i, f in enumerate(cols, start=1):
         ws.cell(row=1, column=i, value=f["header"])
         ws.column_dimensions[ws.cell(row=1, column=i).column_letter].width = max(14, len(f["header"]) + 2)

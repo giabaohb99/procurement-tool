@@ -25,6 +25,9 @@ export const IMPORT_MODULE_PURCHASE_REQUEST = 19
 export const IMPORT_MODULE_VEHICLE = 20
 export const IMPORT_MODULE_DRIVER = 21
 export const IMPORT_MODULE_SEAL_TYPE = 22
+// Chứng từ header-only — Đặt xe + Duyệt dấu.
+export const IMPORT_MODULE_VEHICLE_BOOKING = 23
+export const IMPORT_MODULE_SEAL_REQUEST = 24
 
 export const IMPORT_MODULE_LABELS: Record<number, string> = {
   [IMPORT_MODULE_SURVEY]: 'Khảo sát',
@@ -42,6 +45,8 @@ export const IMPORT_MODULE_LABELS: Record<number, string> = {
   [IMPORT_MODULE_VEHICLE]: 'Xe',
   [IMPORT_MODULE_DRIVER]: 'Tài xế',
   [IMPORT_MODULE_SEAL_TYPE]: 'Loại con dấu',
+  [IMPORT_MODULE_VEHICLE_BOOKING]: 'Yêu cầu đặt xe',
+  [IMPORT_MODULE_SEAL_REQUEST]: 'Yêu cầu đóng dấu',
 }
 
 /**
@@ -71,7 +76,9 @@ export const IMPORT_MODULE_OPTIONS: {
   { value: IMPORT_MODULE_WAREHOUSE, label: 'Danh mục kho', moduleId: 'inventory', hasTemplate: true },
   { value: IMPORT_MODULE_VEHICLE, label: 'Xe', moduleId: 'vehicle-booking', hasTemplate: true },
   { value: IMPORT_MODULE_DRIVER, label: 'Tài xế', moduleId: 'vehicle-booking', hasTemplate: true },
+  { value: IMPORT_MODULE_VEHICLE_BOOKING, label: 'Yêu cầu đặt xe', moduleId: 'vehicle-booking', hasTemplate: true },
   { value: IMPORT_MODULE_SEAL_TYPE, label: 'Loại con dấu', moduleId: 'seal', hasTemplate: true },
+  { value: IMPORT_MODULE_SEAL_REQUEST, label: 'Yêu cầu đóng dấu', moduleId: 'seal', hasTemplate: true },
 ]
 
 export const IMPORT_MODE_DRY_RUN = 0
