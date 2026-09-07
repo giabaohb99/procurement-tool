@@ -1,8 +1,15 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import {
+  applyClientFilter,
+  ConditionalFilter,
+  FilterProvider,
+  useFilterContext,
+} from '@/shared/conditional-filter'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
+import { LEAVE_INBOX_FILTER_FIELDS } from '../config/leave-request-filter-fields'
 import { useLeaveHandled } from '../hooks/use-leave'
 import type { LeaveInboxRow } from '../types/leave'
 import {
@@ -35,16 +42,32 @@ import {
  * sang phải. Giờ ký chính xác vẫn còn ở dấu vết trong trang chi tiết.
  */
 export function LeaveHandledTab() {
+  return (
+    <FilterProvider config={FILTER_CONFIG}>
+      <LeaveHandledContent />
+    </FilterProvider>
+  )
+}
+
+//  `tab` phải giữ lại, nếu không bấm «Áp dụng» là màn nhảy về tab mặc định.
+const FILTER_CONFIG = {
+  fields: LEAVE_INBOX_FILTER_FIELDS,
+  allowConjunctionToggle: true,
+  preserveParams: ['tab'],
+}
+
+function LeaveHandledContent() {
   const navigate = useNavigate()
   const { data, isLoading, isError } = useLeaveHandled()
   const [keyword, setKeyword] = useState('')
   const [typeId, setTypeId] = useState(ALL_OPTION)
+  const { appliedState, activeCount } = useFilterContext()
 
   const all = useMemo(() => data?.items ?? [], [data])
   const types = useMemo(() => leaveTypesIn(all), [all])
   const rows = useMemo(
-    () => filterLeaveRows(all, { keyword, typeId }),
-    [all, keyword, typeId],
+    () => applyClientFilter(filterLeaveRows(all, { keyword, typeId }), appliedState),
+    [all, keyword, typeId, appliedState],
   )
 
   const columns = useMemo<DataTableColumn<LeaveInboxRow>[]>(
@@ -68,7 +91,7 @@ export function LeaveHandledTab() {
       isLoading={isLoading}
       isError={isError}
       emptyMessage={
-        isFiltering({ keyword, typeId })
+        isFiltering({ keyword, typeId }) || activeCount > 0
           ? 'Không có đơn nào khớp bộ lọc.'
           : 'Bạn chưa duyệt đơn nghỉ phép nào trong 30 ngày qua.'
       }
@@ -81,7 +104,9 @@ export function LeaveHandledTab() {
           typeId={typeId}
           onTypeChange={setTypeId}
           types={types}
-        />
+        >
+          <ConditionalFilter />
+        </LeaveRowsFilterBar>
       }
     />
   )

@@ -1,10 +1,17 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import {
+  applyClientFilter,
+  ConditionalFilter,
+  FilterProvider,
+  useFilterContext,
+} from '@/shared/conditional-filter'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { Badge } from '@/shared/ui/badge'
 import { formatDateTime } from '@/shared/utils/format-date'
+import { LEAVE_INBOX_FILTER_FIELDS } from '../config/leave-request-filter-fields'
 import { useLeaveToApprove } from '../hooks/use-leave'
 import type { LeaveInboxRow } from '../types/leave'
 import {
@@ -43,21 +50,44 @@ import {
  * đang ở đâu.
  *
  * Lọc ở PHÍA MÀN HÌNH: hàng đợi nạp trọn một lượt và không phân trang, nên hỏi
- * lại backend là thừa một vòng mạng — xem `utils/filter-leave-rows`.
+ * lại backend là thừa một vòng mạng — xem `utils/filter-leave-rows` (ô tìm nhanh)
+ * và `config/leave-request-filter-fields` (bộ lọc nâng cao).
  */
 export function LeaveToApproveTab() {
+  return (
+    <FilterProvider config={FILTER_CONFIG}>
+      <LeaveToApproveContent />
+    </FilterProvider>
+  )
+}
+
+/**
+ * `preserveParams`: thiếu tên nào ở đây thì bấm «Áp dụng» của bộ lọc nâng cao sẽ
+ * XÓA tham số đó khỏi URL — mà `tab` mất là màn nhảy về tab mặc định ngay sau
+ * khi lọc, đúng lúc người dùng vừa nói rõ mình muốn xem gì.
+ */
+const FILTER_CONFIG = {
+  fields: LEAVE_INBOX_FILTER_FIELDS,
+  allowConjunctionToggle: true,
+  preserveParams: ['tab'],
+}
+
+function LeaveToApproveContent() {
   const navigate = useNavigate()
   const { data, isLoading, isError } = useLeaveToApprove()
   const [keyword, setKeyword] = useState('')
   const [typeId, setTypeId] = useState(ALL_OPTION)
+  const { appliedState, activeCount } = useFilterContext()
 
   const all = useMemo(() => data?.items ?? [], [data])
   const types = useMemo(() => leaveTypesIn(all), [all])
   const rows = useMemo(
-    () => filterLeaveRows(all, { keyword, typeId }),
-    [all, keyword, typeId],
+    () => applyClientFilter(filterLeaveRows(all, { keyword, typeId }), appliedState),
+    [all, keyword, typeId, appliedState],
   )
-  const filtering = isFiltering({ keyword, typeId })
+  //  Câu "bảng rỗng" phải kể cả bộ lọc nâng cao: rỗng vì mình vừa lọc khác hẳn
+  //  rỗng vì không có việc nào — người đọc phải biết mình đang nhìn cái nào.
+  const filtering = isFiltering({ keyword, typeId }) || activeCount > 0
 
   const columns = useMemo<DataTableColumn<LeaveInboxRow>[]>(
     () => [
@@ -131,6 +161,8 @@ export function LeaveToApproveTab() {
         >
           {/*  Nói ra đường duyệt: bỏ cột nút rồi thì "bấm vào dòng" là thao tác
                duy nhất, mà một bảng không có nút nào thì không tự nói điều đó. */}
+          <ConditionalFilter />
+
           {rows.length > 0 && (
             <span className="border-l pl-3 text-xs text-muted-foreground">
               <span className="font-medium text-foreground">{rows.length} đơn</span> · bấm

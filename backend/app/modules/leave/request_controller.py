@@ -69,7 +69,8 @@ def list_requests(
     từ tuần trước sang tuần này phải lọt vào.
     """
     query = db.query(LeaveRequest).filter(LeaveRequest.is_deleted.is_(False))
-    query = apply_filters(query, LeaveRequest, request, request_service.FILTERABLE)
+    query = apply_filters(query, LeaveRequest, request, request_service.FILTERABLE,
+                          request_service.FILTER_OPERATORS)
     query = request_service.apply_keyword_search(query, search)
     if from_date:
         query = query.filter(LeaveRequest.to_date >= from_date)

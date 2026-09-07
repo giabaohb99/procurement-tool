@@ -36,6 +36,16 @@ from .request_model import LeaveHandover, LeaveRequest, LeaveRequestLine
 #  lọc trên bảng con đòi JOIN và màn danh sách chưa ai hỏi tới.
 FILTERABLE = ["status", "employee_id", "leave_type_id", "company_id",
               "department_id", "unit"]
+
+#  Whitelist RIÊNG cho BỘ LỌC ĐIỀU KIỆN (`<cột>__<toán tử>=`), rộng hơn bộ trên.
+#  Tách hai vì mấy cột này phải loại khỏi lọc TRẦN mà vẫn phải lọc được ở bộ lọc
+#  nâng cao: `code` và `reason` đã nhường param trần cho ô tìm nhanh đa trường,
+#  còn `from_date`/`to_date` thì param trần mang nghĩa KHÁC hẳn — chúng lọc theo
+#  GIAO NHAU của khoảng cho màn Lịch nghỉ, không phải so từng cột. Hậu tố `__gte`
+#  không đụng vào nghĩa đó. Thiếu tên nào ở đây thì điều kiện của nó bị **bỏ qua
+#  im lặng**: người dùng bấm Áp dụng, danh sách không đổi, không báo gì.
+FILTER_OPERATORS = FILTERABLE + ["code", "reason", "from_date", "to_date",
+                                 "total_days"]
 SEARCH_FIELDS = ("code", "reason")
 
 CODE_PREFIX = "NP"
