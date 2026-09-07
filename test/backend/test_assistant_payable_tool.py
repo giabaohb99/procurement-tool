@@ -4,11 +4,21 @@ CHỈ kiểm phần vừa làm: gác quyền hai lớp, tổng hợp số liệu
 phải trả khi soạn nháp (bài học lỗi phân bổ thanh toán 82ce6ad — tiền dồn vào khoản đã
 tất toán là công nợ âm).
 """
+from datetime import date, timedelta
+
 import pytest
 
 from app.modules.assistant import tools as T
 from app.modules.payable.model import Payable
 from app.modules.user.model import User
+
+
+#  ⚠️ Hạn trả CHƯA TỚI phải tính từ HÔM NAY, đừng gõ một ngày cứng.
+#  Bản cũ ghi `due_date="2026-09-05"` với ý "chưa quá hạn"; tới 07/09/2026 thì
+#  chính ngày đó đã thành quá khứ và bài `test_lookup_gom_nhom_theo_ncc` đỏ lên
+#  dù không ai đụng vào mã — số quá hạn của NCCA nhảy từ 300 lên 1300.
+#  Ngày ĐÃ quá hạn thì cứ để cứng: quá khứ không tự đổi mặt.
+CHUA_TOI_HAN = (date.today() + timedelta(days=90)).isoformat()
 
 
 @pytest.fixture
@@ -17,7 +27,7 @@ def khoan_no(db, seed):
     rows = [
         Payable(company_id=seed.company_id, supplier_code="NCCA", supplier_name="NCC Anpha",
                 source_type="goods", po_code="PO-01", incur_date="2026-08-05", period="2026",
-                due_date="2026-09-05", total=1000, paid_amount=0, remaining=1000,
+                due_date=CHUA_TOI_HAN, total=1000, paid_amount=0, remaining=1000,
                 status="unpaid"),
         Payable(company_id=seed.company_id, supplier_code="NCCA", supplier_name="NCC Anpha",
                 source_type="goods", po_code="PO-02", incur_date="2026-08-10", period="2026",
@@ -29,7 +39,7 @@ def khoan_no(db, seed):
                 status="paid"),
         Payable(company_id=seed.company_id, supplier_code="NCCB", supplier_name="NCC Beta",
                 source_type="goods", po_code="PO-04", incur_date="2026-08-15", period="2026",
-                due_date="2026-09-15", total=400, paid_amount=0, remaining=400,
+                due_date=CHUA_TOI_HAN, total=400, paid_amount=0, remaining=400,
                 status="unpaid"),
     ]
     db.add_all(rows)

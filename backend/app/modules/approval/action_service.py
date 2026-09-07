@@ -328,15 +328,48 @@ def reassign(db: Session, task: ApprovalTask, to_employee_id: int,
     task.assignee_employee_id = to_employee_id
     task.updated_by = actor
 
+    #  ⚠️ Dấu vết phải nói ĐÚNG BA VAI: ai bấm · lấy của ai · giao cho ai.
+    #
+    #  Bản cũ ghi `actor_employee_id = người NHẬN` và `on_behalf_of_id = người
+    #  CŨ`, nên dòng thời gian đọc ra *«Quản trị viên đã chuyển người xử lý ·
+    #  Thực hiện thay Trưởng phòng Thu mua»* — sai cả hai vế: người nhận không
+    #  hề bấm gì, và `on_behalf_of` là ô của ỦY QUYỀN («B ký thay A»), mượn sang
+    #  đây thì bản in nói rằng có một tờ ủy quyền không tồn tại. Chuyển người xử
+    #  lý là thao tác của NGƯỜI THỨ BA (quản trị / người đang giữ việc nhường
+    #  lại), nên tên đứng đầu câu phải là họ; hai người còn lại nói bằng lời.
     instance_service.record_audit(
         db, instance, ACTION_REASSIGN, actor, node_seq=task.node_seq,
         node_name=task.node_name, task_id=task.id,
-        actor_employee_id=to_employee_id, on_behalf_of_id=old_assignee,
-        comment=reason or "Chuyển người xử lý",
+        actor_employee_id=actor_employee_id,
+        comment=_reassign_comment(db, old_assignee, to_employee_id, reason),
     )
     db.commit()
     db.refresh(task)
     return task
+
+
+def _reassign_comment(db: Session, from_employee_id: int, to_employee_id: int,
+                      reason: str = "") -> str:
+    """Câu kể của một lượt chuyển việc: từ ai sang ai, kèm lý do nếu có.
+
+    Tên nhúng thẳng vào câu chứ không để giao diện tự ghép: cùng một câu này còn
+    đi vào BẢN IN dấu vết, mà bản in không có chỗ nào tra tên nhân sự.
+    """
+    names = _employee_names(db, {from_employee_id, to_employee_id})
+    cau = (f"Chuyển việc từ «{names.get(from_employee_id) or f'#{from_employee_id}'}» "
+           f"sang «{names.get(to_employee_id) or f'#{to_employee_id}'}»")
+    return f"{cau} · {reason.strip()}" if reason and reason.strip() else cau
+
+
+def _employee_names(db: Session, ids: set[int]) -> dict[int, str]:
+    from app.modules.employee.model import Employee
+
+    wanted = {i for i in ids if i}
+    if not wanted:
+        return {}
+    return {row.id: row.full_name for row in
+            db.query(Employee.id, Employee.full_name)
+            .filter(Employee.id.in_(wanted)).all()}
 
 
 def bulk_handover(db: Session, from_employee_id: int, to_employee_id: int,

@@ -399,14 +399,37 @@ for _role_info in STD_ROLES.values():
     _role_info["perms"].setdefault("leave_type", (["read"], "all"))
     _role_info["perms"].setdefault("holiday", (["read"], "all"))
 
+#  ── Đặt phòng họp (07/09/2026) ──────────────────────────────────────────────
+#  Cùng lý lẽ: **ai cũng phải đặt được phòng họp**. Trước hôm nay hai khóa này
+#  chỉ có ở vai trò `admin` (và `pur_manager` nhờ vét cạn `_PUR_MANAGER_PERMS`),
+#  nên mọi người khác mở menu *Đặt phòng họp* ra là ăn 403.
+#
+#  `room_booking` phạm vi `own` — phiếu mình đặt. `meeting_room` chỉ `read`:
+#  danh mục phòng khai bằng quyền riêng, và nó là `PUBLIC` trong `SCOPE_FIELDS`
+#  nên phạm vi ở đây không lọc gì (xem ghi chú ở `scoping.py`).
+for _role_info in STD_ROLES.values():
+    _role_info["perms"].setdefault(
+        "room_booking", (["read", "create", "write", "delete", "cancel"], "own"))
+    _role_info["perms"].setdefault("meeting_room", (["read"], "all"))
+
 #  Trưởng phòng duyệt đơn của phòng mình. Đặt SAU vòng `setdefault` ở trên nên
 #  phải gán ĐÈ, không `setdefault` — dòng `own` đã nằm sẵn ở đó rồi.
+#
+#  ⚠️ `approve` mà để phạm vi `own` là **vô nghĩa**: người duyệt chỉ với tới đơn
+#  của chính mình, tức là bấm được đúng đơn họ không được phép tự duyệt (I08).
+#  Cặp (hành động, phạm vi) phải đi cùng nhau — đã dính đúng lỗi này trên DB
+#  đang chạy, `dept_head` có `approve` nhưng phạm vi `own` nên trưởng phòng mở
+#  màn Nghỉ phép ra không thấy đơn nào của nhân viên.
 STD_ROLES["dept_head"]["perms"]["leave_request"] = (
     ["read", "create", "write", "delete", "approve", "export"], "dept")
 STD_ROLES["dept_head"]["perms"]["leave_balance"] = (["read"], "dept")
+STD_ROLES["dept_head"]["perms"]["room_booking"] = (
+    ["read", "create", "write", "delete", "approve", "cancel"], "dept")
 STD_ROLES["company_head"]["perms"]["leave_request"] = (
     ["read", "approve", "export"], "company")
 STD_ROLES["company_head"]["perms"]["leave_balance"] = (["read"], "company")
+STD_ROLES["company_head"]["perms"]["room_booking"] = (
+    ["read", "create", "write", "approve", "cancel"], "company")
 
 #  Vai trò MẪU cho phòng Nhân sự — người cấp quỹ và giữ luật nghỉ. Không gán tự
 #  động cho ai; gán ở màn *Nhân sự ▸ Phân quyền tài khoản*.
@@ -425,6 +448,10 @@ STD_ROLES["hr_leave"] = {"name": "Nhân sự — Quản lý nghỉ phép", "perm
     "department": (["read"], "all"),
     "company": (["read"], "all"),
     "work_task": (["read", "create", "write", "delete"], "all"),
+    #  Khai TAY vì vai trò này dựng SAU hai vòng `setdefault` ở trên — không
+    #  chép vào đây thì người phòng Nhân sự không đặt nổi một phòng họp.
+    "room_booking": (["read", "create", "write", "delete", "cancel"], "own"),
+    "meeting_room": (["read"], "all"),
 }}
 
 

@@ -204,6 +204,20 @@ def _one_step(seq: int, group: list[ApprovalTask], planned_name: str | None,
     }
 
 
+#  Việc CÒN SỐNG ở một chặng: đang chờ người này, hoặc chờ tới lượt (bước lần
+#  lượt). Mọi trạng thái khác đã xong chuyện hoặc đã bị hủy.
+_LIVE_TASK_STATUSES = (TASK_PENDING, TASK_WAITING)
+
+
+def _unique_names(names) -> list[str]:
+    """Bỏ tên rỗng và tên trùng, GIỮ NGUYÊN thứ tự gặp.
+
+    Một người có thể giữ hai việc cùng chặng (hai nhánh song song) — kể tên họ
+    hai lần thì người đọc tưởng phải chờ hai chữ ký của hai người khác nhau.
+    """
+    return list(dict.fromkeys(name for name in names if name))
+
+
 def _summary(instance: ApprovalInstance, steps: list[dict], current: dict | None) -> str:
     total = len(steps)
     if instance.status == INSTANCE_APPROVED:
@@ -220,7 +234,16 @@ def _summary(instance: ApprovalInstance, steps: list[dict], current: dict | None
         #  người vào khai lại luồng thì phiếu mới nhúc nhích.
         return "Kẹt — chưa tìm được người duyệt"
     if instance.status == INSTANCE_RUNNING and current:
-        who = ", ".join(a["name"] for a in current["assignees"] if a["name"])
+        #  ⚠️ Chỉ người CÒN GIỮ việc. `assignees` mang MỌI việc của chặng, kể cả
+        #  việc đã hủy khi luồng bị sửa hoặc khi chuyển người xử lý — liệt kê tất
+        #  thì câu tóm tắt đọc ra *«Đang ở chặng 1/2 · Dego Admin, Trưởng phòng
+        #  Thu mua, Dego Admin»*: ba cái tên cho một chặng một người, trong đó
+        #  hai cái đã không còn liên quan và một cái lặp lại (NP006, 07/09/2026).
+        #  Người xem đếm tên để biết còn phải chờ mấy chữ ký, nên tên thừa ở đây
+        #  là số liệu sai chứ không phải chữ thừa.
+        who = ", ".join(
+            _unique_names(a["name"] for a in current["assignees"]
+                          if a["status"] in _LIVE_TASK_STATUSES))
         vitri = f"Đang ở chặng {current['seq']}/{total}"
         return f"{vitri} · {who}" if who else vitri
     return INSTANCE_STATUS_LABELS.get(instance.status, "")

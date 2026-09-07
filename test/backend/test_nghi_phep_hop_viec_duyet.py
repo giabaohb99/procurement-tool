@@ -19,6 +19,7 @@ import pytest
 from app.modules.approval import action_service, instance_service, steps_service
 from app.modules.approval.flow_model import (APPROVER_EMPLOYEE, ApprovalFlow,
                                              ApprovalNode, ApprovalSwitch)
+from app.modules.approval.instance_model import ApprovalAction, TASK_PENDING
 from app.modules.employee.model import Employee
 from app.modules.leave import approval_bridge, request_service
 from app.modules.leave.catalog_model import LeaveType
@@ -100,6 +101,17 @@ def _steps(db, obj):
     return steps_service.steps_of_entities(db, ENTITY, [obj.id]).get(obj.id)
 
 
+def _pending_task(db, obj):
+    return next(t for t in instance_service.tasks_of_instance(db, _instance(db, obj).id)
+                if t.status == TASK_PENDING)
+
+
+def _last_action(db, obj):
+    return (db.query(ApprovalAction)
+            .filter(ApprovalAction.instance_id == _instance(db, obj).id)
+            .order_by(ApprovalAction.id.desc()).first())
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 #  1. Dải chấm nói đúng phiếu đang ở đâu
 # ══════════════════════════════════════════════════════════════════════════════
@@ -128,6 +140,46 @@ def test_ky_xong_chang_1_thi_cham_do_tat_va_chang_2_sang_len(db, flow_2_buoc, le
     assert [s["state"] for s in flow["steps"]] == [steps_service.STEP_DONE,
                                                    steps_service.STEP_CURRENT]
     assert flow["summary"] == f"Đang ở chặng 2/2 · {approver2.full_name}"
+
+
+def test_cau_tom_tat_chi_ke_nguoi_CON_GIU_viec(db, flow_2_buoc, leave_type,
+                                               submitter, approver1, approver2):
+    """Việc đã HỦY không được kể tên trong câu «đang chờ ai» (lỗi 07/09/2026).
+
+    Sửa luồng hoặc chuyển người xử lý là hủy việc cũ rồi dựng việc mới, nên một
+    chặng tích lại nhiều dòng việc chết. Kể hết thì câu tóm tắt của NP006 đọc ra
+    *«Đang ở chặng 1/2 · Dego Admin, Trưởng phòng Thu mua, Dego Admin»* — ba tên
+    cho một chặng một người, hai tên đã hết liên quan và một tên lặp lại.
+    """
+    obj = _submit(db, leave_type, submitter)
+    task = _pending_task(db, obj)
+    action_service.reassign(db, task, approver2.id, ACTOR,
+                            actor_employee_id=approver1.id)
+
+    flow = _steps(db, obj)
+    #  Bảng việc vẫn giữ đủ dấu vết — câu tóm tắt mới là chỗ phải chắt lọc.
+    assert len(flow["steps"][0]["assignees"]) >= 1
+    assert flow["summary"] == f"Đang ở chặng 1/2 · {approver2.full_name}"
+    assert approver1.full_name not in flow["summary"]
+
+
+def test_chuyen_nguoi_xu_ly_ghi_dung_ba_vai_vao_dau_vet(db, flow_2_buoc, leave_type,
+                                                        submitter, approver1, approver2):
+    """Ai BẤM · lấy của ai · giao cho ai — bản cũ ghi người NHẬN là người bấm.
+
+    `on_behalf_of` là ô của ủy quyền («B ký thay A»); mượn nó cho lượt chuyển
+    việc thì dòng thời gian bịa ra một tờ ủy quyền không hề tồn tại.
+    """
+    obj = _submit(db, leave_type, submitter)
+    task = _pending_task(db, obj)
+    action_service.reassign(db, task, approver2.id, ACTOR, "Đi công tác",
+                            actor_employee_id=approver1.id)
+
+    line = _last_action(db, obj)
+    assert line.actor_employee_id == approver1.id
+    assert line.on_behalf_of_id is None
+    assert approver1.full_name in line.comment and approver2.full_name in line.comment
+    assert "Đi công tác" in line.comment
 
 
 def test_duyet_het_thi_moi_chang_deu_xong(db, flow_2_buoc, leave_type, submitter,
