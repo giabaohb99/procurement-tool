@@ -188,9 +188,11 @@ describe('PayableListPage — xuất Excel (bao-CR-275)', () => {
 
     await user.click(exportButton())
 
-    //  Cột tick chọn + cột cấn trừ không có mặt trong file; `incur_date` phải
-    //  dịch thành `created_at` (file chỉ có MỘT cột "Ngày phát sinh"); ba cột ẩn
-    //  mặc định (Ngày ghi sổ / tiền trước VAT / VAT) không được lọt vào.
+    //  Cột tick chọn + cột cấn trừ không có mặt trong file; ba cột ẩn mặc định
+    //  (Ngày ghi sổ / tiền trước VAT / VAT) không được lọt vào. bao-CR-306: bảng
+    //  dịch nay 1-1 — `incur_date` xuất đúng `incur_date`, có thêm `invoice_date`;
+    //  hồi map `incur_date -> created_at` file xuất nhầm giờ ghi sổ dưới nhãn
+    //  "Ngày phát sinh", đừng quay lại bản map đó.
     expect(downloadFileMock).toHaveBeenCalledWith(
       '/api/payables/export/xlsx',
       'cong-no-phai-tra.xlsx',
@@ -202,7 +204,8 @@ describe('PayableListPage — xuất Excel (bao-CR-275)', () => {
           'company',
           'po_code',
           'invoice_no',
-          'created_at',
+          'invoice_date',
+          'incur_date',
           'due_date',
           'aging',
           'total',

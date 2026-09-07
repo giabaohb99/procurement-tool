@@ -24,6 +24,12 @@ export interface Payable {
   misa_code: string
   /** Rỗng = chưa có hóa đơn -> chưa lên được yêu cầu thanh toán. */
   invoice_no: string
+  /**
+   * bao-CR-306 — ngày hóa đơn, KHÔNG lưu trên tab_payable: backend dò lúc đọc
+   * theo thứ tự đợt giao -> dòng ĐMH -> incur_date (khi đã có số HĐ). Rỗng khi
+   * chưa có số hóa đơn.
+   */
+  invoice_date: string
   /** Ngày phát sinh (= ngày nhận hàng), dạng `YYYY-MM-DD`. */
   incur_date: string
   /** Hạn trả, suy từ hình thức thanh toán của NCC. */

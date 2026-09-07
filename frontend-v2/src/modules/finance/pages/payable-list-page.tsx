@@ -60,16 +60,20 @@ const THIS_YEAR = new Date().getFullYear()
 const DATE_FIELDS = [
   { value: 'due', label: 'Theo hạn trả', from: 'due_from', to: 'due_to' },
   { value: 'incur', label: 'Theo ngày phát sinh', from: 'incur_from', to: 'incur_to' },
+  // bao-CR-306: ngày HĐ có thể lệch ngày phát sinh (nhận 3/9, hóa đơn xuất 7/9) —
+  // kế toán đối chiếu theo kỳ hóa đơn cần mốc riêng. Khoản chưa có số HĐ bị loại.
+  { value: 'invoice', label: 'Theo ngày hóa đơn', from: 'invoice_from', to: 'invoice_to' },
 ] as const
 
 const DEFAULT_DATE_FIELD = DATE_FIELDS[0].value
 
 /**
  * Khóa cột trên bảng -> khóa cột file Excel (`COLS` trong
- * `backend/app/modules/payable/export.py`, bao-CR-275). `incur_date` dịch sang
- * `created_at` vì file chỉ có MỘT cột "Ngày phát sinh" (backend tự rơi về
- * incur_date khi thiếu created_at). Cột không có trong bảng dịch (tick chọn,
- * cấn trừ, tiền trước VAT / VAT, "Ngày ghi sổ") vốn không nằm trong file xuất.
+ * `backend/app/modules/payable/export.py`, bao-CR-275). Từ bao-CR-305 file có đủ
+ * BA cột ngày tách bạch (hóa đơn / phát sinh / ghi nhận) nên bảng dịch là 1-1 —
+ * bản map cũ `incur_date -> created_at` là di tích thời file chỉ có một cột ngày,
+ * giữ lại là xuất nhầm giờ ghi sổ dưới nhãn "Ngày phát sinh". Cột không có trong
+ * bảng dịch (tick chọn, cấn trừ, tiền trước VAT / VAT) vốn không nằm trong file.
  */
 const EXPORT_COLUMN_KEYS: Record<string, string> = {
   supplier_name: 'supplier_name',
@@ -78,7 +82,9 @@ const EXPORT_COLUMN_KEYS: Record<string, string> = {
   company: 'company',
   po_code: 'po_code',
   invoice_no: 'invoice_no',
-  incur_date: 'created_at',
+  invoice_date: 'invoice_date',
+  incur_date: 'incur_date',
+  created_at: 'created_at',
   due_date: 'due_date',
   aging: 'aging',
   total: 'total',
@@ -288,6 +294,14 @@ function PayableListContent() {
         // chứ không để trống như một ô rỗng bình thường.
         cell: (p) =>
           p.invoice_no || <span className="text-xs text-destructive">chưa có HĐ</span>,
+      },
+      {
+        key: 'invoice_date',
+        header: 'Ngày hóa đơn',
+        width: 130,
+        // bao-CR-306: giá trị dò từ phía ĐMH lúc đọc (đợt giao -> dòng -> incur_date),
+        // không có bản lưu bên công nợ — sửa ngày HĐ trên ĐMH là cột này đổi theo ngay.
+        cell: (p) => formatDate(p.invoice_date) || '—',
       },
       {
         key: 'incur_date',

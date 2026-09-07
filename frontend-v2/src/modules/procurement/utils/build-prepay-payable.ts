@@ -28,6 +28,7 @@ export function buildPrepayPayable(order: PurchaseOrderDetail): Payable {
     misa_code: order.misa_code || '',
     // Chưa có hóa đơn đỏ; mã MISA là thứ duy nhất kế toán bám được lúc này.
     invoice_no: order.misa_code || '',
+    invoice_date: '',
     incur_date: '',
     due_date: '',
     created_at: '',
