@@ -13,6 +13,8 @@ export const PRODUCT_CRUD_CONFIG: CrudConfig<Product> = {
   unitLabel: 'sản phẩm',
   apiPath: '/api/products',
   storageKey: 'production.products',
+  //  Tab «Lịch sử mua hàng» là một BẢNG — bóp còn 1024px là cụt cột.
+  detailMaxWidth: 'max-w-none',
   listRoute: appRoutes.production.products,
   detailRoute: (id) => appRoutes.production.productDetail(id),
   searchParam: 'search',

@@ -92,43 +92,53 @@ export function SeniorityTierCard({ leaveTypeId }: SeniorityTierCardProps) {
         )}
 
         {canWrite && (
-          <div className="grid grid-cols-1 items-end gap-3 rounded-md border bg-muted/30 p-3 sm:grid-cols-4">
-            <div className="space-y-1">
-              <Label htmlFor="tier-from">Từ năm thứ</Label>
-              <Input
-                id="tier-from"
-                type="number"
-                min={0}
-                value={form.years_from}
-                onChange={(e) => setForm({ ...form, years_from: Number(e.target.value) })}
-              />
+          <div className="rounded-md border bg-muted/30 p-3">
+            <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-4">
+              <div className="space-y-1">
+                <Label htmlFor="tier-from">Từ năm thứ</Label>
+                <Input
+                  id="tier-from"
+                  type="number"
+                  min={0}
+                  value={form.years_from}
+                  onChange={(e) => setForm({ ...form, years_from: Number(e.target.value) })}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="tier-to">Đến dưới năm thứ</Label>
+                <Input
+                  id="tier-to"
+                  type="number"
+                  min={0}
+                  value={form.years_to}
+                  onChange={(e) => setForm({ ...form, years_to: Number(e.target.value) })}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="tier-extra">Cộng thêm (ngày)</Label>
+                <Input
+                  id="tier-extra"
+                  type="number"
+                  min={0}
+                  step={0.5}
+                  value={form.extra_days}
+                  onChange={(e) => setForm({ ...form, extra_days: Number(e.target.value) })}
+                />
+              </div>
+              <Button onClick={addTier} disabled={save.isPending}>
+                <Plus className="mr-1 size-4" />
+                Thêm bậc
+              </Button>
             </div>
-            <div className="space-y-1">
-              <Label htmlFor="tier-to">Đến dưới năm thứ</Label>
-              <Input
-                id="tier-to"
-                type="number"
-                min={0}
-                value={form.years_to}
-                onChange={(e) => setForm({ ...form, years_to: Number(e.target.value) })}
-              />
-              <p className="text-xs text-muted-foreground">0 = bậc cuối, không có trần trên</p>
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="tier-extra">Cộng thêm (ngày)</Label>
-              <Input
-                id="tier-extra"
-                type="number"
-                min={0}
-                step={0.5}
-                value={form.extra_days}
-                onChange={(e) => setForm({ ...form, extra_days: Number(e.target.value) })}
-              />
-            </div>
-            <Button onClick={addTier} disabled={save.isPending}>
-              <Plus className="mr-1 size-4" />
-              Thêm bậc
-            </Button>
+
+            {/*  ⚠️ Chú thích ĐỨNG RIÊNG một dòng dưới cả cụm, KHÔNG nhét dưới ô
+                «Đến dưới năm thứ». Lưới này căn ĐÁY (`items-end`) để nút bấm
+                thẳng hàng với ô nhập, nên ô nào có thêm một dòng chữ bên dưới là
+                ô nhập của nó bị đẩy lên cao hơn hai ô kia — ba ô nhập nằm ba mức
+                khác nhau, đúng lỗi thấy ở tab «Bậc thâm niên» 07/09/2026. */}
+            <p className="mt-2 text-xs text-muted-foreground">
+              «Đến dưới năm thứ» để <strong>0</strong> nghĩa là bậc cuối, không có trần trên.
+            </p>
           </div>
         )}
       </CardContent>

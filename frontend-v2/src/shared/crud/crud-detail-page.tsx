@@ -16,7 +16,8 @@ import { RecordIdentityCard, type IdentityChip } from '@/shared/ui/record-identi
 import { Skeleton } from '@/shared/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { useSingleFlight } from '@/shared/hooks/use-single-flight'
-import { CrudField } from './crud-field'
+import { cn } from '@/shared/utils/cn'
+import { CrudFormFields } from './crud-form-fields'
 import { buildFormDefaults, toApiPayload } from './field-values'
 import type { CrudConfig, CrudRecord } from './types'
 import { useCrudDelete, useCrudDetail, useCrudSave } from './use-crud'
@@ -57,11 +58,17 @@ export function CrudDetailPage<T extends CrudRecord>({
 
   const listUrl = config.listRoute || '/'
 
+  //  ⚠️ MỘT CỘT cho CẢ TRANG — xem `CrudConfig.detailMaxWidth`. Chặn riêng biểu
+  //  mẫu thì nó ngắn cụt nằm dưới thẻ danh tính rộng hết màn hình, trông như một
+  //  khối bị lỗi chứ không phải một cột cố ý.
+  const pageWidth = cn('mx-auto w-full', config.detailMaxWidth ?? 'max-w-5xl')
+
   const {
     register,
     handleSubmit,
     control,
     reset,
+    watch,
     formState: { errors },
   } = useForm<Record<string, unknown>>({
     defaultValues: buildFormDefaults(config.formFields, item),
@@ -76,7 +83,7 @@ export function CrudDetailPage<T extends CrudRecord>({
 
   if (!isCreate && isLoading) {
     return (
-      <PageContainer>
+      <PageContainer className={pageWidth}>
         <Skeleton className="mb-5 h-20 w-full" />
         <Skeleton className="h-80 w-full" />
       </PageContainer>
@@ -148,7 +155,7 @@ export function CrudDetailPage<T extends CrudRecord>({
       ]
 
   const infoPanel = (
-    <>
+    <div className="space-y-6">
       <form
         id="crud-detail-form"
         onSubmit={handleSubmit(onSubmit)}
@@ -159,35 +166,32 @@ export function CrudDetailPage<T extends CrudRecord>({
         }}
       >
         <Card className="gap-4 p-5">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {config.formFields.map((field) => (
-              <CrudField
-                key={field.name}
-                field={field}
-                register={register}
-                control={control}
-                errors={errors}
-                //  `readonlyOnEdit` chỉ khóa lúc SỬA — ô «Mã loại nghỉ» phải
-                //  nhập được đúng một lần, chính là lần tạo này.
-                isReadonly={!canSave || (!isCreate && field.readonlyOnEdit)}
-              />
-            ))}
-          </div>
+          <CrudFormFields
+            fields={config.formFields}
+            register={register}
+            control={control}
+            errors={errors}
+            watch={watch}
+            sectionHints={config.formSections}
+            //  `readonlyOnEdit` chỉ khóa lúc SỬA — ô «Mã loại nghỉ» phải nhập
+            //  được đúng một lần, chính là lần tạo này.
+            isReadonly={(field) => !canSave || (!isCreate && Boolean(field.readonlyOnEdit))}
+          />
         </Card>
       </form>
 
       {item && config.renderExtra && <div>{config.renderExtra(item)}</div>}
 
-      {item?.[idKey] && (
+      {Boolean(item?.[idKey]) && item && (
         <div>
           <AuditTimeline entity={config.entity} entityId={Number(item[idKey])} />
         </div>
       )}
-    </>
+    </div>
   )
 
   return (
-    <PageContainer>
+    <PageContainer className={pageWidth}>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <Button variant="ghost" size="sm" asChild>
           <Link to={listUrl}>

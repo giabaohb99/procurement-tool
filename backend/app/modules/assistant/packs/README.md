@@ -31,12 +31,13 @@ Help Center và trợ lý tra bằng `search_docs` (RAG index `help_article` + F
 | `10-quy-trinh-thu-mua.md` | Thu mua | ~830 |
 | `20-van-thu-van-ban.md` | Văn thư | ~3 100 |
 | `30-du-an-cong-viec.md` | Dự án (quản lý công việc) | ~2 300 |
-| `40-nghi-phep.md` | Nghỉ phép (Nhân sự) | ~1 500 |
+| `40-nghi-phep.md` | Nghỉ phép (Nhân sự) | ~2 300 (07/09/2026: + kết sổ cuối năm, nghỉ vợ sinh con) |
 | `50-dat-phong-hop.md` | Đặt phòng họp (Nhân sự) | ~1 900 |
 | `nhamay-tri-thuc-co-dong.md` | Nhà máy DEGO Organic | ~11 000 |
 
-Tổng system prompt hiện ~**21,0k token/lượt** (đo 04/09/2026 bằng
-`knowledge.build_system()`, ước 3,2 ký tự/token cho tiếng Việt).
+Tổng system prompt hiện ~**21,8k token/lượt** (đo 04/09/2026 bằng
+`knowledge.build_system()`, ước 3,2 ký tự/token cho tiếng Việt; cộng phần thêm
+07/09/2026 vào gói Nghỉ phép — ước theo ký tự, chưa đo lại bằng `build_system()`).
 
 Viết gói phân hệ thì bám ba nguyên tắc:
 

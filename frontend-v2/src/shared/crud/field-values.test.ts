@@ -109,3 +109,26 @@ describe('field-values', () => {
     expect(withCurrentValue(options, null)).toBe(options)
   })
 })
+
+describe('withCurrentValue', () => {
+  it('bù giá trị cũ ngoài danh sách để ô không hiện trống', () => {
+    //  Loại hợp đồng đã bỏ khỏi danh mục thì hợp đồng cũ vẫn phải đọc được nó.
+    const got = withCurrentValue([{ value: 'purchase', label: 'Mua bán' }], 'legacy')
+    expect(got).toHaveLength(2)
+  })
+
+  it('KHÔNG bù `0` — với ô chọn tham chiếu đó là "chưa chọn", không phải một mục', () => {
+    //  Backend khai id là số nên chưa chọn lưu thành `0`. Bù vào thì ô hiện đúng
+    //  chữ «0» và người dùng đọc ra một lựa chọn tên là "0" (CR màn Loại nghỉ,
+    //  07/09/2026).
+    const options = [{ value: 3, label: 'Nghỉ bù' }]
+    expect(withCurrentValue(options, 0)).toEqual(options)
+    expect(withCurrentValue(options, '0')).toEqual(options)
+  })
+
+  it('vẫn bù `0` dạng CÓ mục thật — ô chọn nào khai `0` là một lựa chọn thì giữ nguyên', () => {
+    //  «Áp dụng cho giới tính» khai `0 = Mọi giới`: mục có sẵn nên không đụng tới.
+    const options = [{ value: 0, label: 'Mọi giới' }]
+    expect(withCurrentValue(options, 0)).toEqual(options)
+  })
+})

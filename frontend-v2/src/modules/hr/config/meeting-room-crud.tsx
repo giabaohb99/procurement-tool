@@ -25,6 +25,8 @@ export const MEETING_ROOM_CRUD_CONFIG: CrudConfig<MeetingRoom> = {
   unitLabel: 'phòng họp',
   apiPath: '/api/meeting-rooms',
   storageKey: 'hr.meeting-rooms',
+  //  Tab «Lịch đặt của phòng» cần cả bề ngang để xếp khung giờ.
+  detailMaxWidth: 'max-w-none',
   listRoute: appRoutes.hr.meetingRooms,
   detailRoute: (id) => appRoutes.hr.meetingRoomDetail(id),
   //  Form 9 ô — dài quá cho một hộp thoại. Xem `CrudConfig.createRoute`.
