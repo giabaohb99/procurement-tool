@@ -688,9 +688,12 @@ export const cruds: Record<string, CrudConfig> = {
     ],
     filters: [
       // company_id / item_group / invoice_no lọc qua bảng con hoặc scope → không đưa xuống
-      // bộ lọc điều kiện được. Phần còn lại (mã MISA, NSPT, mã PYC, ngày đặt, hồ sơ
-      // chứng từ, đơn gấp) đã có trong "Bộ lọc điều kiện".
+      // bộ lọc điều kiện được. Phần còn lại (NSPT, mã PYC, ngày đặt, hồ sơ chứng từ,
+      // đơn gấp) đã có trong "Bộ lọc điều kiện".
       { key: 'code', label: 'Mã PO' },
+      // Ticket #24 (bao-CR-301): mã MISA kéo ra lọc nhanh — kế toán tra đơn theo mã MISA
+      // hằng ngày, mở "Bộ lọc điều kiện" từng lần quá chậm.
+      { key: 'misa_code', label: 'Mã MISA' },
       // Ticket #17 (bao-CR-278): NCC kéo ra lọc nhanh — người thiếu supplier.read chỉ thấy
       // dropdown rỗng (FilterBar nuốt lỗi tải nguồn), không ăn 403.
       { key: 'supplier_code', label: 'Nhà cung cấp', source: { url: '/api/suppliers', value: 'code', label: 'name' } },
