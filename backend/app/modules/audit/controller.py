@@ -72,6 +72,13 @@ ACTION_LABEL = {
     "item_progress_auto": "Tự cập nhật tiến độ dòng",
     "pr_created": "Sinh yêu cầu mua hàng",
     "sync_options": "Đồng bộ phương án",
+    #  bao-CR-311 — thao tác phương án trên Yêu cầu báo giá. Trước 07/09/2026 cả ba
+    #  KHÔNG ghi dấu vết gì: gắn nhầm một phương án thì dấu duy nhất là cột
+    #  `created_by` nằm trên chính dòng option, mà không màn nào hiện nó ra.
+    "add_option": "Gắn phương án",
+    "del_option": "Gỡ phương án",
+    "choose_option": "Chốt phương án",
+    "unchoose_option": "Bỏ chốt phương án",
     "reply": "Phản hồi",
 }
 

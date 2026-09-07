@@ -649,7 +649,7 @@ def del_option_(sid: int, line_id: int, oid: int, db: Session = Depends(get_db),
         raise HTTPException(400, "Dòng đã tạo yêu cầu mua hàng — không xóa phương án được")
     if not service.can_process_line(db, ln, prof):
         raise HTTPException(403, "Bạn không phụ trách dòng này")
-    service.delete_option(db, line_id, oid)
+    service.delete_option(db, line_id, oid, user.id)
     return success(_out_process(db, service.get_sr(db, sid), user, prof), "Đã xóa option")
 
 
