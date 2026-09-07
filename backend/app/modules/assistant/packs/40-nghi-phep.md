@@ -52,11 +52,36 @@ sinh; tạo tay là ra một tờ giấy không gắn với quỹ phép nào.
 - **Không có ứng phép, không ghi nợ.** Xin vượt quỹ là bị **chặn lúc gửi duyệt**.
   Muốn nghỉ tiếp thì chọn loại **«Nghỉ không lương»**.
 
+## Một đơn khai được NHIỀU loại nghỉ
+
+*"Nghỉ 4 ngày: 3 ngày phép năm + 1 ngày không lương"* — làm **trong một tờ đơn**,
+không phải hai. Trên form, phần *Loại nghỉ* là một bảng: bấm **«Thêm loại nghỉ»**
+để có dòng thứ hai, mỗi dòng chọn loại và ghi số ngày.
+
+- **Cả đơn dùng chung một khoảng ngày.** Dòng chỉ chia số ngày, không khai ngày riêng.
+- **Quỹ phép trừ theo từng loại** — 3 ngày vào quỹ phép năm, 1 ngày vào quỹ không
+  lương. Số phép còn lại hiện ngay dưới từng dòng.
+- **Một loại chỉ khai một dòng.** Muốn 3 ngày phép năm thì ghi 3 vào một dòng,
+  đừng tách thành hai dòng 2+1.
+- **Người dùng hỏi "hết phép năm rồi thì làm sao"**: thêm một dòng *Nghỉ không
+  lương* cho phần vượt, thay vì lập đơn thứ hai — đơn thứ hai sẽ bị chặn vì
+  **chồng ngày** với đơn đầu.
+- **Nghỉ theo giờ thì chỉ một loại.**
+
 ## Số ngày nghỉ
 
-Hệ tự tính và **đã trừ thứ Bảy, Chủ nhật và ngày lễ** (theo danh mục *Lịch ngày
-lễ*). Người dùng **sửa đè được** con số đó — lịch làm việc thật có ngoại lệ máy
-không biết (ca kíp, công trường chạy Chủ nhật).
+Hệ tự tính và **đã trừ Chủ nhật + ngày lễ** (theo danh mục *Lịch ngày lễ*).
+
+⚠️ **DEGO Holding làm cả ngày thứ Bảy** — T7 **vẫn tính là ngày phép**. Người
+dùng hỏi *"sao nghỉ thứ Bảy vẫn bị trừ phép"* thì đó là đúng, không phải lỗi.
+
+Người dùng **sửa đè được** con số đó — lịch làm việc thật có ngoại lệ máy không
+biết (ca kíp, công trường chạy Chủ nhật). Đơn nhiều loại thì con số máy tính chỉ
+là mốc đối chiếu; người dùng tự phân bổ vào từng dòng.
+
+**Hai ô buổi nói MỐC, không nói buổi**: *Buổi bắt đầu = Sáng* nghĩa là nghỉ từ
+đầu ngày đó (trọn ngày), *Buổi kết thúc = Chiều* nghĩa là nghỉ tới hết ngày đó
+(trọn ngày). Muốn nghỉ đúng nửa ngày thì khai cùng một buổi ở cả hai ô.
 
 Ngoại lệ: loại nghỉ dài liên tục như **Thai sản** cố ý **không** trừ cuối tuần và lễ.
 

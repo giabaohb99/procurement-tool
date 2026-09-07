@@ -26,6 +26,7 @@ con số đó đúng.
 | Thứ | Bảng | Là gì |
 |---|---|---|
 | **Đơn nghỉ phép** | `tab_leave_request` | **Chứng từ nghiệp vụ**, nguồn sự thật. Có số `NP001`. |
+| **Dòng loại nghỉ** | `tab_leave_request_line` | Một loại nghỉ trong đơn kèm số ngày. Một đơn nhiều dòng — xem §7.1. |
 | **Giấy nghỉ phép (GNP)** | `tab_document` loại `GNP` | **Hồ sơ lưu sổ**, tự sinh sau khi đơn đã duyệt. |
 | **Loại nghỉ** | `tab_leave_type` | Danh mục cấu hình — đổi luật bằng dữ liệu, không sửa mã. |
 | **Quỹ phép** | `tab_leave_balance` | Số ngày của (một người × một năm × một loại nghỉ). |
@@ -139,6 +140,43 @@ hiện tại và gõ con số họ muốn nó thành; cộng dồn thì bấm L�
 `workday_service.count_leave_days()` là nơi **duy nhất** tính. Đã trừ thứ Bảy,
 Chủ nhật và ngày lễ theo `tab_holiday`.
 
+### Hai ô buổi là MỐC, không phải buổi (vá 07/09/2026)
+
+`from_session` nói nghỉ **bắt đầu** lúc nào, `to_session` nói nghỉ **kết thúc**
+lúc nào. Nên **ngày đầu và ngày cuối tra hai bảng khác nhau**:
+
+| Ô buổi | Ngày ĐẦU | Ngày CUỐI |
+|---|---|---|
+| Cả ngày | 1.0 | 1.0 |
+| Buổi sáng | **1.0** — bắt đầu từ sáng là nghỉ trọn ngày | 0.5 |
+| Buổi chiều | 0.5 | **1.0** — kết thúc cuối chiều là nghỉ trọn ngày |
+
+Nghỉ gọn trong **một ngày** thì hai ô cùng nói về ngày ấy, phải xét cả hai
+(`constants.same_day_credit`): *Cả ngày → Sáng* là **0.5**, *Sáng → Chiều* là **1.0**.
+
+⚠️ Bản trước 07/09/2026 tra CHUNG một bảng `{Cả ngày: 1, Sáng: .5, Chiều: .5}`
+cho cả hai đầu — tức đọc ô buổi thành *"buổi nào của ngày đó được nghỉ"*, mâu
+thuẫn với chính luật *«chiều → sáng cùng ngày là khoảng trống»* mà nó đang chặn.
+Ba nhóm ca sai, **im lặng**, vì con số ra vẫn hợp lý:
+
+| Ca | Bản cũ | Đúng | Ai chịu |
+|---|---|---|---|
+| Sáng 05 → hết 07 | 2.5 | 3.0 | công ty trừ hụt phép |
+| Cả ngày 05 → Chiều 07 | 2.5 | 3.0 | công ty trừ hụt phép |
+| Cả ngày → Sáng, cùng ngày | 1.0 | 0.5 | **người lao động mất nửa ngày** |
+
+Cùng luật đó phải khớp ở **ba nơi**: `leave/constants.py` (đơn),
+`core/leave_codes.py` (giấy GNP), và bản TypeScript
+`document/helpers/suggested-day-count.ts`. Lệch một nơi là cùng một tờ đơn ra
+hai con số tùy người nhập qua màn nào.
+
+### Trần khoảng ngày
+
+Một tờ đơn tối đa `MAX_RANGE_DAYS = 400` ngày dương lịch, chặn ở
+`check_date_range`. ⚠️ Không có chốt này thì `date_range` lặng lẽ dừng ở 400 và
+trả con số nhỏ hơn sự thật — gõ nhầm năm 2036 (3651 ngày) ra đúng **343 ngày**,
+không có triệu chứng nào cho tới lúc đối chiếu sổ.
+
 - Người dùng **sửa đè được** — lịch làm việc thật luôn có ngoại lệ máy không biết
   (ca kíp, nghỉ bù, công trường chạy Chủ nhật).
 - Loại nghỉ dài liên tục (**Thai sản**) tắt cờ `exclude_holiday` nên đếm tuốt —
@@ -160,6 +198,51 @@ Chủ nhật và ngày lễ theo `tab_holiday`.
 | Nhập đủ | Chốt ở lúc **gửi duyệt**, không phải lúc lưu nháp — cùng luật với `required-fields.ts` của Thu mua |
 | Lập hộ | Được, và từ 07/09/2026 form có ô **Người nghỉ** (mặc định điền sẵn chính mình). Gác bằng `ensure_can_create_for`: phải có `leave_request.create` phạm vi **rộng hơn `own`** VÀ đọc được hồ sơ người đó trong phạm vi `employee`. Cả người lập (`created_by`) lẫn người nghỉ (`employee_id`) đều thấy tờ đơn ở phạm vi «của mình» |
 | Nghỉ **theo giờ** | Buổi nghỉ có lựa chọn thứ tư **«Theo giờ»** (`SESSION_HOURLY = 4`, 07/09/2026): khai `from_time`/`to_time`, **vắt qua nhiều ngày được** (từ 14:00 ngày A đến 10:00 ngày B). Số ngày do máy quy đổi, **không cho gõ đè** — ngày đầu tính tới hết giờ làm, ngày cuối từ đầu giờ làm, ngày giữa trọn một công, T7/CN/lễ bỏ qua. Khung giờ làm khai ở `constants`: **08:00–17:00, nghỉ trưa 12:00–13:00, 8 giờ công/ngày**; giờ ngoài khung không tính |
+
+### 7.1. Nhiều loại nghỉ trong một đơn (07/09/2026)
+
+*"Nghỉ 07→10/09, trong đó 3 ngày phép năm + 1 ngày không lương"* — trước đó phải
+lập hai đơn, mà chốt **chồng ngày** ở trên lại chặn đúng chuyện đó.
+
+**Cả đơn dùng CHUNG một khoảng ngày; dòng chỉ chia SỐ NGÀY.** Bản khai ngày riêng
+cho từng dòng tra được *"ngày 09 nghỉ loại gì"*, nhưng đổi lại người nhập phải gõ
+hai đầu ngày cho mỗi loại và chốt chống chồng ngày phải chạy cả trong lẫn ngoài
+tờ đơn. Khách chọn bản gọn.
+
+Hai cột đầu đơn thành **dẫn xuất — backend tự đặt, giao diện không gõ**:
+
+```
+total_days    = Σ line.days
+leave_type_id = loại của dòng NHIỀU NGÀY NHẤT (hòa → dòng đầu)
+```
+
+Sáu luật trên bảng dòng (`request_service.collect_lines` → `resolve_days` → `check_lines`):
+
+| Luật | Chi tiết |
+|---|---|
+| Không trùng loại | Một loại chỉ một dòng — hai dòng cùng loại là hai lượt trừ vào cùng một sổ quỹ |
+| Số ngày > 0 | Ngoại lệ: đơn có **đúng một dòng** để trống thì máy tự tính từ khoảng ngày, y như trước |
+| Trần số loại | `MAX_LINES = 10` |
+| Giới tính · trần mỗi lần | Xét theo **từng dòng**, theo loại của dòng đó — Thai sản nằm ở dòng phụ vẫn bị chặn với hồ sơ nam |
+| Theo giờ | Khóa còn **một dòng** — nghỉ hai tiếng chia hai loại là ca chưa từng có, và nó phá phép quy đổi giờ→ngày |
+| Trần theo khoảng | `Σ days` không vượt số ngày **dương lịch** của khoảng. Trần đếm cả T7/CN/lễ nên không chặn nhầm ca hợp lệ (công trường chạy Chủ nhật), nhưng bịt được lỗ cũ: `total_days` sửa đè tự do nên gõ 30 ngày trên khoảng hai ngày lọt thẳng vào sổ quỹ |
+
+⚠️ **Sổ quỹ chạy theo DÒNG ở cả bốn nhịp.** Gói vào bốn hàm `reserve_lines` ·
+`consume_lines` · `release_lines` · `refund_lines` chứ không để nơi gọi tự lặp:
+nơi gọi có bốn chỗ và chỉ cần một chỗ quên vòng lặp là sổ lệch âm thầm. `check_enough`
+cũng theo dòng — 4 ngày = 3 phép năm + 1 không lương có thể qua trong khi 4 ngày
+phép năm thì hết phép.
+
+**Giấy GNP: một tờ cho cả đơn.** `metadata.leave_type` là loại chính; ô `leave_lines`
+liệt kê đủ và **chỉ ghi khi từ hai dòng trở lên**, để đơn một loại giữ nguyên hình
+dạng cũ. Mã loại trong ô đó cố ý không đối chiếu `LEAVE_TYPE_SET` — giấy là bản
+chép của một quyết định đã ký, chặn ở đó không cứu được gì.
+
+⚠️ **Hạn chế đã biết — không phải lỗi.** Điều kiện rẽ nhánh của luồng duyệt đọc
+`leave_type_id`, tức **loại chính**. Nhánh khai *"loại nghỉ = không lương thì thêm
+chặng Giám đốc"* sẽ KHÔNG chạy cho tờ đơn 3 ngày phép năm + 1 ngày không lương.
+Cố ý không đưa danh sách loại vào `entity_context`: `condition_service` chỉ so được
+giá trị vô hướng, thêm một ô mà phép `in` của nó không đọc nổi thì tệ hơn không có.
 
 ## 8. Duyệt
 
@@ -227,12 +310,14 @@ Người dùng báo "không thấy menu Nghỉ phép" thì gần như chắc là
 | Danh sách **bàn giao** trên giao diện | Bảng `tab_leave_handover` và API đã có; form v2 chưa dựng ô nhập (bản chỉ xem thì hiện đủ) |
 | **Chuyển phép sang năm sau** | Cờ `carry_over` đã có, mặc định TẮT; chưa có việc chạy cuối năm để chuyển (Q2 chưa chốt) |
 | **Báo cáo / thống kê** nghỉ phép | Chưa dựng màn riêng |
-| Nạp `hire_date` cho hồ sơ cũ | Phải nhập bù trước khi chạy thật, nếu không thâm niên tính bằng 0 (Q4) |
+| Nạp `hire_date` cho hồ sơ cũ | **Ô nhập đã có từ 07/09/2026** ở *Nhân sự ▸ chi tiết hồ sơ* (kèm ô *Giới tính*) — trước đó hai cột này có trong bảng nhưng không schema nào khai, nên không màn nào nhập được và thâm niên của cả công ty tính bằng 0. Việc còn lại là **nhập bù dữ liệu**, không phải dựng màn |
 
 ## 11. Tra cứu nhanh
 
 | Cần gì | Ở đâu |
 |---|---|
+| Luật bảng dòng loại nghỉ | `backend/app/modules/leave/request_service.py` — `collect_lines` · `resolve_days` · `check_lines` |
+| Bảng dòng trên giao diện | `frontend-v2/src/modules/hr/components/leave-request-lines-editor.tsx` |
 | Bộ mã số (trạng thái, buổi, đơn vị, giới tính) | `backend/app/modules/leave/constants.py` |
 | Công thức đếm ngày công | `backend/app/modules/leave/workday_service.py` |
 | Sổ quỹ (bốn nhịp) | `backend/app/modules/leave/balance_service.py` |
