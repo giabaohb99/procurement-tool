@@ -58,6 +58,9 @@ export function LeaveBalanceHintBox({
   }
 
   const enough = requestedDays <= data.remaining_days
+  //  Số còn lại SAU khi trừ chính dòng đang nhập. Làm tròn 2 chữ số vì nửa ngày
+  //  phép là hợp lệ và `4 - 0.1` trong dấu phẩy động ra `3.9000000000000004`.
+  const afterThis = Math.round((data.remaining_days - requestedDays) * 100) / 100
 
   return (
     <div
@@ -68,21 +71,36 @@ export function LeaveBalanceHintBox({
           : 'border-destructive/50 bg-destructive/5 text-destructive dark:text-destructive-foreground',
       )}
     >
+      {/*  BA CON SỐ, MỘT DÒNG. Bản đầu tách ba dòng riêng và cụm đó chiếm gần
+           trọn chiều cao hộp trong khi cả ba nói về cùng một quỹ — khách bác
+           đúng chỗ đó. Ba mảnh, mảnh nào không có số thì không dựng:
+             · quỹ còn lại  — luôn có;
+             · CHỜ DUYỆT    — phần giữ chỗ, phải nói ra vì nó đã bị trừ khỏi «còn
+               lại» rồi; im thì người ta thấy hụt ngày và tưởng máy tính sai;
+             · TRỪ ĐƠN NÀY  — nhẩm hộ người dùng; nhẩm sai thì họ nộp một tờ đơn
+               sẽ bị chặn. Vượt quỹ thì bỏ, số âm ở đây vô nghĩa và đã có câu
+               cảnh báo riêng bên dưới. */}
       <div className="flex items-center gap-2">
         {!enough && <AlertTriangle className="size-4 shrink-0" />}
         <span>
-          Phép còn lại năm {year}:{' '}
-          <strong className="tabular-nums">{data.remaining_days}</strong> / {data.total_days} ngày
+          Phép năm {year}: còn{' '}
+          <strong className="tabular-nums">{data.remaining_days}</strong>/{data.total_days} ngày
+          {data.pending_days > 0 && (
+            <span className="text-muted-foreground">
+              {' · chờ duyệt '}
+              <span className="tabular-nums">{data.pending_days}</span>
+            </span>
+          )}
+          {enough && requestedDays > 0 && (
+            <span className="text-muted-foreground">
+              {' · trừ đơn này '}
+              <span className="tabular-nums">{requestedDays}</span>
+              {' còn '}
+              <strong className="tabular-nums text-foreground">{afterThis}</strong>
+            </span>
+          )}
         </span>
       </div>
-
-      {data.pending_days > 0 && (
-        //  Phần GIỮ CHỖ phải nói ra: nó đã bị trừ khỏi «còn lại» rồi. Không nói
-        //  thì người ta thấy hụt ngày và tưởng hệ thống tính sai.
-        <p className="mt-0.5 text-xs text-muted-foreground">
-          Đã trừ {data.pending_days} ngày của đơn đang chờ duyệt.
-        </p>
-      )}
 
       {!enough && (
         <p className="mt-1 text-xs font-medium">

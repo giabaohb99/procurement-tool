@@ -40,6 +40,16 @@ function setHint(data: LeaveBalanceHint | undefined, isLoading = false) {
   hookResult.current = { data, isLoading }
 }
 
+/**
+ * Cụm ba con số (còn lại · chờ duyệt · trừ đơn này) nay nằm trên MỘT dòng, ghép
+ * từ nhiều thẻ `<strong>`/`<span>` để tô đậm được từng số. Khẳng định theo chuỗi
+ * đã gộp: hỏi từng thẻ con thì mỗi lần đổi chỗ tô đậm là test đỏ oan, mà cái
+ * người dùng đọc vốn là cả câu.
+ */
+function shownText() {
+  return document.body.textContent?.replace(/\s+/g, ' ') ?? ''
+}
+
 describe('LeaveBalanceHintBox', () => {
   it('nhắc người dùng chọn loại nghỉ khi chưa chọn, thay vì để trống', () => {
     setHint(undefined)
@@ -51,10 +61,33 @@ describe('LeaveBalanceHintBox', () => {
     setHint(hint())
     render(<LeaveBalanceHintBox leaveTypeId={3} year={2026} requestedDays={3} />)
 
-    expect(screen.getByText('10')).toBeInTheDocument()
-    expect(screen.getByText(/\/ 12 ngày/)).toBeInTheDocument()
+    expect(shownText()).toContain('Phép năm 2026: còn 10/12 ngày')
     //  Đủ phép thì KHÔNG được dọa người dùng.
     expect(screen.queryByText(/vượt quỹ/)).not.toBeInTheDocument()
+  })
+
+  it('trừ luôn số ngày đang gõ, để người dùng không phải nhẩm', () => {
+    setHint(hint({ remaining_days: 4, pending_days: 0 }))
+    render(<LeaveBalanceHintBox leaveTypeId={3} year={2026} requestedDays={3} />)
+    expect(shownText()).toContain('còn 4/12 ngày · trừ đơn này 3 còn 1')
+  })
+
+  it('trừ nửa ngày không để dấu phẩy động rò ra (4 − 0.1 ≠ 3.9000000000000004)', () => {
+    setHint(hint({ remaining_days: 4 }))
+    render(<LeaveBalanceHintBox leaveTypeId={3} year={2026} requestedDays={0.1} />)
+    expect(shownText()).toContain('trừ đơn này 0.1 còn 3.9')
+  })
+
+  it('chưa gõ số ngày thì không hiện mảnh trừ — trừ 0 là câu thừa', () => {
+    setHint(hint())
+    render(<LeaveBalanceHintBox leaveTypeId={3} year={2026} requestedDays={0} />)
+    expect(shownText()).not.toContain('trừ đơn này')
+  })
+
+  it('vượt quỹ thì KHÔNG hiện mảnh trừ — số âm ở đó vô nghĩa, đã có câu cảnh báo', () => {
+    setHint(hint({ remaining_days: 2 }))
+    render(<LeaveBalanceHintBox leaveTypeId={3} year={2026} requestedDays={5} />)
+    expect(shownText()).not.toContain('trừ đơn này')
   })
 
   it('cảnh báo vượt quỹ và chỉ đường sang «Nghỉ không lương» — QĐ-NP2 không cho ứng phép', () => {
@@ -76,13 +109,13 @@ describe('LeaveBalanceHintBox', () => {
   it('nói rõ phần ĐANG CHỜ DUYỆT đã bị trừ, để người dùng không tưởng hệ thống tính sai', () => {
     setHint(hint({ pending_days: 3, remaining_days: 7 }))
     render(<LeaveBalanceHintBox leaveTypeId={3} year={2026} requestedDays={1} />)
-    expect(screen.getByText(/Đã trừ 3 ngày của đơn đang chờ duyệt/)).toBeInTheDocument()
+    expect(shownText()).toContain('còn 7/12 ngày · chờ duyệt 3')
   })
 
-  it('không hiện dòng chờ duyệt khi không có đơn nào treo', () => {
+  it('không hiện mảnh chờ duyệt khi không có đơn nào treo', () => {
     setHint(hint({ pending_days: 0 }))
     render(<LeaveBalanceHintBox leaveTypeId={3} year={2026} requestedDays={1} />)
-    expect(screen.queryByText(/đơn đang chờ duyệt/)).not.toBeInTheDocument()
+    expect(shownText()).not.toContain('chờ duyệt')
   })
 
   it('loại nghỉ KHÔNG trừ quỹ thì nói thẳng là không giới hạn, không hiện số 0', () => {
