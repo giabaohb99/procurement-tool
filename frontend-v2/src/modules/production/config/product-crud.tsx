@@ -3,6 +3,7 @@ import { Boxes, CircleCheck, CircleX, Hash, ImageIcon, Tag } from 'lucide-react'
 import { appRoutes } from '@/shared/constants/app-routes'
 import type { CrudConfig } from '@/shared/crud'
 import { Badge } from '@/shared/ui/badge'
+import { formatDateTime } from '@/shared/utils/format-date'
 import { PurchaseHistoryTable } from '../components/purchase-history-table'
 import type { Product } from '../types/product'
 
@@ -118,6 +119,15 @@ export const PRODUCT_CRUD_CONFIG: CrudConfig<Product> = {
           {p.is_active ? 'Đang dùng' : 'Ngừng'}
         </Badge>
       ),
+    },
+    {
+      // bao-CR-300 (ticket 21) — cột "Ngày cập nhật", bấm lần đầu ra mới nhất trước.
+      key: 'updated_at',
+      header: 'Ngày cập nhật',
+      width: 150,
+      sortable: true,
+      sortDescFirst: true,
+      cell: (p) => formatDateTime(p.updated_at) || '',
     },
   ],
   filterConfig: {

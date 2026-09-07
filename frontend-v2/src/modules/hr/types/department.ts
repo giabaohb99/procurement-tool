@@ -15,6 +15,8 @@ export interface Department {
   is_active: boolean
   /** Cột join từ hồ sơ nhân sự của `manager_id`. */
   manager_name?: string | null
+  /** Lần sửa gần nhất — cột "Ngày cập nhật" (bao-CR-300, ticket 21). */
+  updated_at?: string
 }
 
 export const DEPARTMENT_KIND_LABELS: Record<Department['kind'], string> = {

@@ -10,6 +10,7 @@ import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
+import { useUrlSort } from '@/shared/hooks/use-url-sort'
 import type { ListParams } from '@/shared/types/api'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
@@ -18,6 +19,7 @@ import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
+import { formatDateTime } from '@/shared/utils/format-date'
 import { CompanyFormDialog } from '../components/company-form-dialog'
 import { COMPANY_FILTER_FIELDS } from '../config/hr-filter-fields'
 import { useCompanies } from '../hooks/use-companies'
@@ -34,7 +36,7 @@ const ALL = 'all'
 const FILTER_CONFIG = {
   fields: COMPANY_FILTER_FIELDS,
   allowConjunctionToggle: true,
-  preserveParams: ['is_active', 'level'],
+  preserveParams: ['is_active', 'level', 'sort_by', 'sort_dir'],
 }
 
 export function CompanyListPage() {
@@ -59,15 +61,27 @@ function CompanyListContent() {
   const [level, setLevel] = useUrlParamState('level', ALL)
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
   const [isFormOpen, setFormOpen] = useState(false)
+  const { sortBy, sortDir, handleSortChange } = useUrlSort()
 
   const { queryParams, queryKey } = useFilterQuery()
 
-  const [page, setPage] = usePageResetOnFilterChange([queryKey, debouncedValue, active, level])
+  const [page, setPage] = usePageResetOnFilterChange([
+    queryKey,
+    debouncedValue,
+    active,
+    level,
+    sortBy,
+    sortDir,
+  ])
 
   const params: ListParams = { page, page_size: pageSize, ...queryParams }
   if (debouncedValue) params.name = debouncedValue
   if (active !== ALL) params.is_active = active === 'true'
   if (level !== ALL) params.level = Number(level)
+  if (sortBy) {
+    params.sort_by = sortBy
+    params.sort_dir = sortDir
+  }
 
   const { data, isLoading, isError } = useCompanies(params)
 
@@ -77,6 +91,7 @@ function CompanyListContent() {
         key: 'name',
         header: 'Tên pháp nhân',
         width: 340,
+        sortable: true,
         hideable: false,
         cell: (company) => (
           <span className="flex min-w-0 items-center gap-2.5">
@@ -92,7 +107,7 @@ function CompanyListContent() {
           </span>
         ),
       },
-      { key: 'code', header: 'Mã', width: 140, cell: (c) => c.code },
+      { key: 'code', header: 'Mã', width: 140, sortable: true, cell: (c) => c.code },
       {
         key: 'level',
         header: 'Cấp',
@@ -137,6 +152,15 @@ function CompanyListContent() {
           </Badge>
         ),
       },
+      {
+        // bao-CR-300 (ticket 21) — cột "Ngày cập nhật", bấm lần đầu ra mới nhất trước.
+        key: 'updated_at',
+        header: 'Ngày cập nhật',
+        width: 150,
+        sortable: true,
+        sortDescFirst: true,
+        cell: (c) => formatDateTime(c.updated_at) || '',
+      },
     ],
     [],
   )
@@ -167,6 +191,9 @@ function CompanyListContent() {
           emptyMessage="Không tìm thấy công ty nào."
           storageKey="hr.companies"
           onRowClick={(company) => navigate(appRoutes.hr.companyDetail(company.id))}
+          sortBy={sortBy}
+          sortDir={sortDir}
+          onSortChange={handleSortChange}
           pagination={{
             page,
             pageSize,

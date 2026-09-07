@@ -501,8 +501,13 @@ export function DataTable<T>({
                           //  `if (sortBy)` trước khi gắn `sort_by` vào tham số,
                           //  nên rỗng nghĩa là không gửi gì và backend xếp theo
                           //  mặc định của nó.
-                          if (sortBy !== column.key) return onSortChange(column.key, 'asc')
-                          if (sortDir === 'asc') return onSortChange(column.key, 'desc')
+                          //  Cột khai `sortDescFirst` (cột thời gian) đảo chu
+                          //  kỳ: giảm → tăng → thôi — bấm vào "Ngày cập nhật"
+                          //  là muốn thấy bản ghi mới nhất ngay nhịp đầu.
+                          const firstDir = column.sortDescFirst ? 'desc' : 'asc'
+                          const secondDir = column.sortDescFirst ? 'asc' : 'desc'
+                          if (sortBy !== column.key) return onSortChange(column.key, firstDir)
+                          if (sortDir === firstDir) return onSortChange(column.key, secondDir)
                           onSortChange('', 'asc')
                         }
                       : undefined

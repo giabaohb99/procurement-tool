@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render } from '@testing-library/react'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { DataTable } from './data-table'
 import type { DataTableColumn } from './types'
@@ -186,5 +187,89 @@ describe('DataTable — ba trạng thái rỗng', () => {
     //  `data?.items ?? []` ở tầng trang biến "chưa gọi xong" thành "rỗng" —
     //  bảng phải không tự bịa thêm câu nào khi chưa có mảng.
     expect(buildState({ rows: undefined }).textContent).not.toContain('Không có dữ liệu.')
+  })
+})
+
+/**
+ * ─── CHU KỲ SẮP XẾP KHI BẤM TIÊU ĐỀ (bao-CR-300) ───
+ *
+ * Ba nhịp: tăng → giảm → THÔI (khóa cột rỗng). Cột khai `sortDescFirst`
+ * (cột thời gian như "Ngày cập nhật") đảo chu kỳ thành giảm → tăng → thôi:
+ * bấm vào là muốn thấy bản ghi mới nhất ngay nhịp đầu.
+ */
+function buildSortable(opts: { sortDescFirst?: boolean; sortBy?: string; sortDir?: 'asc' | 'desc' }) {
+  const onSortChange = vi.fn()
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  render(
+    <QueryClientProvider client={client}>
+      <DataTable
+        columns={[
+          { key: 'name', header: 'Tên', cell: (r: Row) => r.name, width: 200, sortable: true },
+          {
+            key: 'updated_at',
+            header: 'Ngày cập nhật',
+            cell: () => '',
+            width: 150,
+            sortable: true,
+            sortDescFirst: opts.sortDescFirst,
+          },
+        ]}
+        rows={ROWS}
+        getRowId={(r) => r.id}
+        sortBy={opts.sortBy ?? ''}
+        sortDir={opts.sortDir ?? 'asc'}
+        onSortChange={onSortChange}
+      />
+    </QueryClientProvider>,
+  )
+  return { onSortChange }
+}
+
+describe('DataTable — chu kỳ sắp xếp', () => {
+  it('a plain column cycles asc, then desc, then clears the sort key', async () => {
+    const user = userEvent.setup()
+
+    const first = buildSortable({})
+    await user.click(screen.getByText('Tên'))
+    expect(first.onSortChange).toHaveBeenCalledWith('name', 'asc')
+
+    const second = buildSortable({ sortBy: 'name', sortDir: 'asc' })
+    await user.click(screen.getAllByText('Tên')[1])
+    expect(second.onSortChange).toHaveBeenCalledWith('name', 'desc')
+
+    //  Nhịp ba trả khóa RỖNG — trang bọc `if (sortBy)` nên rỗng = về mặc định.
+    const third = buildSortable({ sortBy: 'name', sortDir: 'desc' })
+    await user.click(screen.getAllByText('Tên')[2])
+    expect(third.onSortChange).toHaveBeenCalledWith('', 'asc')
+  })
+
+  it('a sortDescFirst column shows the newest first: desc, then asc, then clears', async () => {
+    const user = userEvent.setup()
+
+    const first = buildSortable({ sortDescFirst: true })
+    await user.click(screen.getByText('Ngày cập nhật'))
+    expect(first.onSortChange).toHaveBeenCalledWith('updated_at', 'desc')
+
+    const second = buildSortable({ sortDescFirst: true, sortBy: 'updated_at', sortDir: 'desc' })
+    await user.click(screen.getAllByText('Ngày cập nhật')[1])
+    expect(second.onSortChange).toHaveBeenCalledWith('updated_at', 'asc')
+
+    const third = buildSortable({ sortDescFirst: true, sortBy: 'updated_at', sortDir: 'asc' })
+    await user.click(screen.getAllByText('Ngày cập nhật')[2])
+    expect(third.onSortChange).toHaveBeenCalledWith('', 'asc')
+  })
+
+  it('clicking another column restarts its own cycle instead of continuing the old one', async () => {
+    //  Đang xếp theo "Tên" mà bấm "Ngày cập nhật" thì phải ra desc (nhịp đầu
+    //  của cột thời gian), không phải nối tiếp chu kỳ của cột cũ.
+    const user = userEvent.setup()
+    const { onSortChange } = buildSortable({
+      sortDescFirst: true,
+      sortBy: 'name',
+      sortDir: 'desc',
+    })
+
+    await user.click(screen.getByText('Ngày cập nhật'))
+    expect(onSortChange).toHaveBeenCalledWith('updated_at', 'desc')
   })
 })

@@ -3,6 +3,7 @@ import { CircleCheck, CircleX, Hash } from 'lucide-react'
 import { appRoutes } from '@/shared/constants/app-routes'
 import type { CrudConfig } from '@/shared/crud'
 import { Badge } from '@/shared/ui/badge'
+import { formatDateTime } from '@/shared/utils/format-date'
 import type { Unit } from '../types/unit'
 
 export const UNIT_CRUD_CONFIG: CrudConfig<Unit> = {
@@ -63,6 +64,15 @@ export const UNIT_CRUD_CONFIG: CrudConfig<Unit> = {
           {u.is_active ? 'Đang dùng' : 'Ngừng'}
         </Badge>
       ),
+    },
+    {
+      // bao-CR-300 (ticket 21) — cột "Ngày cập nhật", bấm lần đầu ra mới nhất trước.
+      key: 'updated_at',
+      header: 'Ngày cập nhật',
+      width: 150,
+      sortable: true,
+      sortDescFirst: true,
+      cell: (u) => formatDateTime(u.updated_at) || '',
     },
   ],
   filterConfig: {

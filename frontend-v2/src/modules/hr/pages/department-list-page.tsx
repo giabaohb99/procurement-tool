@@ -11,6 +11,7 @@ import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
+import { useUrlSort } from '@/shared/hooks/use-url-sort'
 import type { ListParams } from '@/shared/types/api'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
@@ -19,6 +20,7 @@ import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
+import { formatDateTime } from '@/shared/utils/format-date'
 import { DepartmentFormDialog } from '../components/department-form-dialog'
 import { DEPARTMENT_FILTER_FIELDS } from '../config/hr-filter-fields'
 import { useCompanies } from '../hooks/use-companies'
@@ -35,7 +37,7 @@ const ALL = 'all'
 const FILTER_CONFIG = {
   fields: DEPARTMENT_FILTER_FIELDS,
   allowConjunctionToggle: true,
-  preserveParams: ['is_active', 'kind', 'company_id'],
+  preserveParams: ['is_active', 'kind', 'company_id', 'sort_by', 'sort_dir'],
 }
 
 export function DepartmentListPage() {
@@ -67,6 +69,7 @@ function DepartmentListContent() {
   const [companyId, setCompanyId] = useUrlParamState('company_id', ALL)
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
   const [isFormOpen, setFormOpen] = useState(false)
+  const { sortBy, sortDir, handleSortChange } = useUrlSort()
 
   const { data: companies } = useCompanies({ page_size: 500 }, { enabled: canReadCompany })
   const { queryParams, queryKey } = useFilterQuery()
@@ -77,6 +80,8 @@ function DepartmentListContent() {
     active,
     kind,
     companyId,
+    sortBy,
+    sortDir,
   ])
 
   const params: ListParams = { page, page_size: pageSize, ...queryParams }
@@ -86,12 +91,16 @@ function DepartmentListContent() {
   if (active !== ALL) params.is_active = active === 'true'
   if (kind !== ALL) params.kind = Number(kind)
   if (companyId !== ALL) params.company_id = Number(companyId)
+  if (sortBy) {
+    params.sort_by = sortBy
+    params.sort_dir = sortDir
+  }
 
   const { data, isLoading, isError } = useDepartments(params)
 
   const columns = useMemo<DataTableColumn<Department>[]>(
     () => [
-      { key: 'code', header: 'Mã', width: 150, cell: (d) => d.code },
+      { key: 'code', header: 'Mã', width: 150, sortable: true, cell: (d) => d.code },
       {
         key: 'issue_code',
         header: 'Mã số hiệu',
@@ -102,6 +111,7 @@ function DepartmentListContent() {
         key: 'name',
         header: 'Phòng ban',
         width: 300,
+        sortable: true,
         hideable: false,
         cell: (d) => <span className="truncate">{d.name}</span>,
       },
@@ -126,6 +136,15 @@ function DepartmentListContent() {
             {d.is_active ? 'Hoạt động' : 'Đã ẩn'}
           </Badge>
         ),
+      },
+      {
+        // bao-CR-300 (ticket 21) — cột "Ngày cập nhật", bấm lần đầu ra mới nhất trước.
+        key: 'updated_at',
+        header: 'Ngày cập nhật',
+        width: 150,
+        sortable: true,
+        sortDescFirst: true,
+        cell: (d) => formatDateTime(d.updated_at) || '',
       },
     ],
     [],
@@ -157,6 +176,9 @@ function DepartmentListContent() {
           emptyMessage="Không tìm thấy phòng ban nào."
           storageKey="hr.departments"
           onRowClick={(d) => navigate(appRoutes.hr.departmentDetail(d.id))}
+          sortBy={sortBy}
+          sortDir={sortDir}
+          onSortChange={handleSortChange}
           pagination={{
             page,
             pageSize,

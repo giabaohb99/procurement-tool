@@ -26,6 +26,8 @@ export interface PurchaseRequest {
   note: string
   /** Thời điểm tạo (có giờ), khác `request_date` do người dùng tự nhập. */
   created_at: string
+  /** Lần sửa gần nhất — cột "Ngày cập nhật" (bao-CR-300, ticket 21). */
+  updated_at?: string
   /** Tổng tiền gồm VAT, backend cộng từ các dòng. */
   total: number
   /** Có ít nhất một dòng "Hủy đơn" — bản cũ tô đỏ cả dòng. */
@@ -44,6 +46,7 @@ export interface SurveyRequest {
   status: string
   note: string
   created_at: string
+  updated_at?: string
 }
 
 /** Đơn mua hàng — `/api/purchase-orders`. */
@@ -68,6 +71,7 @@ export interface PurchaseOrder {
   document_status: string
   note: string
   created_at: string
+  updated_at?: string
   /** Tiền hàng. */
   amount: number
 }
@@ -87,6 +91,7 @@ export interface Survey {
   nspt: string
   status: string
   created_at: string
+  updated_at?: string
 }
 
 /** Nhãn tiếng Việt của mã trạng thái, theo từng loại chứng từ. */

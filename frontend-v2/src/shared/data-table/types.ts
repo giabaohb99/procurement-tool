@@ -49,6 +49,13 @@ export interface DataTableColumn<T> {
   wrap?: boolean
   /** `true` = cột có thể sắp xếp. */
   sortable?: boolean
+  /**
+   * Bấm lần đầu sắp GIẢM dần thay vì tăng (chu kỳ thành giảm → tăng → thôi).
+   * Dành cho cột thời gian (*Ngày cập nhật*, *Ngày tạo*): người dùng bấm vào đó
+   * là muốn xem BẢN GHI MỚI NHẤT trước — bắt họ bấm hai lần là ngược tay
+   * (luật mang từ bản v1, bao-CR-294).
+   */
+  sortDescFirst?: boolean
 }
 
 /**

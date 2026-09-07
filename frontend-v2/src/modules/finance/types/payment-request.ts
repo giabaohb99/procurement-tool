@@ -105,6 +105,8 @@ export interface PaymentRequestSummary {
   reject_reason: string
   status: PaymentRequestStatus
   created_by_name: string
+  /** Lần sửa gần nhất — cột "Ngày cập nhật" (bao-CR-300, ticket 21). */
+  updated_at?: string
 }
 
 /**

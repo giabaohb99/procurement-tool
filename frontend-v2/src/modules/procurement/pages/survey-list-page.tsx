@@ -175,6 +175,7 @@ function SurveyListContent() {
         header: 'Ngày tạo',
         width: 150,
         sortable: true,
+        sortDescFirst: true,
         cell: (survey) => formatDateTime(survey.created_at) || '',
       },
       {
@@ -183,6 +184,15 @@ function SurveyListContent() {
         width: 150,
         sortable: true,
         cell: (survey) => <StatusBadge status={survey.status} labels={SURVEY_STATUS_LABELS} />,
+      },
+      {
+        // bao-CR-300 (ticket 21) — cột "Ngày cập nhật", bấm lần đầu ra mới nhất trước.
+        key: 'updated_at',
+        header: 'Ngày cập nhật',
+        width: 150,
+        sortable: true,
+        sortDescFirst: true,
+        cell: (survey) => formatDateTime(survey.updated_at) || '',
       },
       {
         key: 'actions',

@@ -16,7 +16,7 @@ import type { CrudConfig } from '@/shared/crud'
 import { Badge } from '@/shared/ui/badge'
 import { TONE_CLASS, type StatusTone } from '@/shared/ui/status-tone'
 import { cn } from '@/shared/utils/cn'
-import { formatDate } from '@/shared/utils/format-date'
+import { formatDate, formatDateTime } from '@/shared/utils/format-date'
 import { CONTRACT_FILTER_FIELDS } from './contract-filter-fields'
 import { contractTypeLabel } from './contract-type-options'
 import { ContractFilesTab } from '../components/contract-files-tab'
@@ -190,6 +190,15 @@ export const CONTRACT_CRUD_CONFIG: CrudConfig<Contract> = {
       wrap: true,
       defaultHidden: true,
       cell: (c) => c.note || '—',
+    },
+    {
+      // bao-CR-300 (ticket 21) — cột "Ngày cập nhật", bấm lần đầu ra mới nhất trước.
+      key: 'updated_at',
+      header: 'Ngày cập nhật',
+      width: 150,
+      sortable: true,
+      sortDescFirst: true,
+      cell: (c) => formatDateTime(c.updated_at) || '',
     },
   ],
   formFields: [

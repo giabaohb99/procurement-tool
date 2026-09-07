@@ -251,6 +251,15 @@ function PurchaseRequestListContent() {
         cell: (pr) => <StatusBadge status={pr.status} labels={PR_STATUS_LABELS} />,
       },
       {
+        // bao-CR-300 (ticket 21) — cột "Ngày cập nhật", bấm lần đầu ra mới nhất trước.
+        key: 'updated_at',
+        header: 'Ngày cập nhật',
+        width: 150,
+        sortable: true,
+        sortDescFirst: true,
+        cell: (pr) => formatDateTime(pr.updated_at) || '',
+      },
+      {
         key: 'actions',
         header: '',
         width: 60,

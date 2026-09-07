@@ -29,6 +29,8 @@ export interface Employee {
   avatar: string
   /** Ảnh chữ ký, cũng từ tài khoản đăng nhập (`tab_user.signature`). */
   signature: string
+  /** Lần sửa gần nhất — cột "Ngày cập nhật" (bao-CR-300, ticket 21). */
+  updated_at?: string
 }
 
 /** Bản chi tiết — kèm id tài khoản đăng nhập (0 = nhân sự chưa được cấp tài khoản). */

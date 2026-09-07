@@ -251,6 +251,7 @@ function PurchaseOrderListContent() {
         header: 'Ngày đặt',
         width: 150,
         sortable: true,
+        sortDescFirst: true,
         cell: (po) => formatDateTime(po.created_at) || '',
       },
       {
@@ -309,6 +310,15 @@ function PurchaseOrderListContent() {
         width: 150,
         sortable: true,
         cell: (po) => <StatusBadge status={po.status} labels={PO_STATUS_LABELS} />,
+      },
+      {
+        // bao-CR-300 (ticket 21) — cột "Ngày cập nhật", bấm lần đầu ra mới nhất trước.
+        key: 'updated_at',
+        header: 'Ngày cập nhật',
+        width: 150,
+        sortable: true,
+        sortDescFirst: true,
+        cell: (po) => formatDateTime(po.updated_at) || '',
       },
       {
         key: 'actions',
