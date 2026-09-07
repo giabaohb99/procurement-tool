@@ -36,6 +36,7 @@ const stBadge = (s: string) => <span className={'badge ' + (s === 'Đã TT' ? 'o
 const EMPTY_FILTERS = (year: number) => ({
   company_id: '', supplier_code: '', po_code: '', invoice_no: '',
   source_type: '', status: '', aging: '', incur_from: '', incur_to: '',
+  invoice_from: '', invoice_to: '',
   amount_from: 0, amount_to: 0, year: String(year),
 })
 
@@ -148,7 +149,11 @@ export default function Payables() {
       key: 'invoice_no', label: 'Số hóa đơn', sort: 'invoice_no',
       cell: (r) => (r.invoice_no ? r.invoice_no : <span style={{ color: 'var(--red)', fontSize: 12 }}>chưa có HĐ</span>),
     },
-    { key: 'created_at', label: 'Ngày phát sinh', sort: 'created_at', cell: (r) => fmtDateTime(r.created_at) || r.incur_date },
+    // bao-CR-305: "Ngày phát sinh" trước đây chiếu created_at (giờ hệ thống ghi sổ) trong khi
+    // bộ lọc lọc theo incur_date (ngày nhận hàng) — dòng nhập bù trông như lọt lưới lọc tháng.
+    { key: 'invoice_date', label: 'Ngày hóa đơn', sort: 'invoice_date', cell: (r) => r.invoice_date || '—' },
+    { key: 'incur_date', label: 'Ngày phát sinh', sort: 'incur_date', cell: (r) => r.incur_date || '—' },
+    { key: 'created_at', label: 'Ngày ghi nhận', sort: 'created_at', defaultHidden: true, cell: (r) => fmtDateTime(r.created_at) },
     { key: 'due_date', label: 'Hạn trả', sort: 'due_date' },
     { key: 'aging', label: 'Tuổi nợ', sort: 'aging', cell: (r) => agingBadge(r.aging) },
     { key: 'total', label: 'Tổng nợ', sort: 'total', align: 'right', td: R, cell: (r) => fmt(r.total) },
@@ -273,6 +278,10 @@ export default function Payables() {
         <FilterItem label="Ngày phát sinh" width={260} secondary active={!!(f.incur_from || f.incur_to)}>
           <DateRangePicker block value={{ from: f.incur_from, to: f.incur_to }}
             onChange={(v) => setF((s: any) => ({ ...s, incur_from: v.from, incur_to: v.to }))} />
+        </FilterItem>
+        <FilterItem label="Ngày hóa đơn" width={260} secondary active={!!(f.invoice_from || f.invoice_to)}>
+          <DateRangePicker block value={{ from: f.invoice_from, to: f.invoice_to }}
+            onChange={(v) => setF((s: any) => ({ ...s, invoice_from: v.from, invoice_to: v.to }))} />
         </FilterItem>
         <FilterItem label="Số tiền (từ → đến)" width={230} secondary active={!!(f.amount_from || f.amount_to)}>
           <div className="filter-pair">
