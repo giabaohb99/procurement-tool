@@ -321,6 +321,7 @@ def delete_node(flow_id: int, node_id: int, db: Session = Depends(get_db),
     node = db.get(ApprovalNode, node_id)
     if node is None or node.flow_id != flow.id:
         raise HTTPException(404, "Không tìm thấy bước này")
+    _block_delete_step_in_use(db, flow.id, node)
     db.delete(node)
     _new_version(db, flow, user.id)
     return success(None, "Đã xóa bước")
@@ -405,6 +406,37 @@ def _next_version(db: Session, flow: ApprovalFlow) -> int:
     while next_no in in_use:
         next_no += 1
     return next_no
+
+
+def _block_delete_step_in_use(db: Session, flow_id: int, node: ApprovalNode) -> None:
+    """Không xóa bước mà một phiếu đang ĐỨNG ở đó (ép tải 07/09/2026).
+
+    Xóa cả luồng đã có `_block_while_running` chặn, nhưng xóa MỘT BƯỚC thì
+    trước đây không có chốt nào — mà hậu quả nặng hơn vì nó lặng lẽ:
+
+      · phiếu vẫn chạy được (nó đi theo bản chụp lúc gửi duyệt, không đọc lại
+        bảng bước), nên không có gì đỏ lên;
+      · nhưng `flow_sync_service` bám theo **bước**, mà bước đã bị xóa thì
+        **mất luôn đường sửa người duyệt** của những phiếu đang đứng ở đó.
+        Người duyệt nghỉ việc là phiếu chết hẳn, gỡ bằng script chạy tay.
+
+    Chỉ chặn khi phiếu đang ĐỨNG ĐÚNG chặng đó. Bước chưa tới / đã qua thì xóa
+    thoải mái: bản chụp của phiếu vẫn giữ nguyên bản của nó.
+    """
+    stuck = (
+        db.query(ApprovalInstance.id)
+        .filter(ApprovalInstance.flow_id == flow_id,
+                ApprovalInstance.status.in_(INSTANCE_OPEN_STATUSES),
+                ApprovalInstance.current_seq == node.seq)
+        .count()
+    )
+    if stuck:
+        raise HTTPException(
+            400,
+            f"Còn {stuck} phiếu đang dừng ở bước «{node.name or node.seq}». Xóa bước "
+            f"này thì không còn đường đổi người duyệt cho chúng nữa. Đổi người "
+            f"duyệt của bước, hoặc đợi các phiếu đó đi qua rồi hãy xóa.",
+        )
 
 
 def _block_while_running(db: Session, flow_id: int) -> None:

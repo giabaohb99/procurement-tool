@@ -34,11 +34,17 @@ from . import approver_resolver, flow_service, instance_service, task_notificati
 from .flow_model import MULTI_SEQUENTIAL, NODE_CC, ApprovalNode
 from .instance_model import (ACTION_REASSIGN, INSTANCE_BLOCKED,
                              INSTANCE_OPEN_STATUSES, INSTANCE_RUNNING,
-                             TASK_CANCELLED, TASK_PENDING, TASK_WAITING,
+                             TASK_APPROVED, TASK_CANCELLED, TASK_PENDING,
+                             TASK_SKIPPED_DUPLICATE, TASK_WAITING,
                              ApprovalInstance, ApprovalTask)
 
 #  Trạng thái của việc CÒN TREO — chỉ những việc này mới dựng lại được.
 PENDING_STATUSES = (TASK_WAITING, TASK_PENDING)
+
+#  Việc đã CHỐT XONG ở chặng này: chữ ký đã đặt, hoặc bước tự qua vì trùng
+#  người. Người mang một trong hai thì không được giao lại việc của chính chặng
+#  đó — xem ghi chú dài trong `_rebuild_tasks`.
+DECIDED_STATUSES = (TASK_APPROVED, TASK_SKIPPED_DUPLICATE)
 
 
 def _patch_snapshot(instance: ApprovalInstance, node: ApprovalNode) -> bool:
@@ -71,8 +77,9 @@ def _rebuild_tasks(db: Session, instance: ApprovalInstance, node: ApprovalNode,
     đối không tự đi tiếp: bước không ai duyệt mà vẫn qua là văn bản có hiệu lực
     mà không ai chịu trách nhiệm.
     """
-    pending = [row for row in instance_service.tasks_of_instance(db, instance.id)
-            if row.node_seq == node.seq and row.status in PENDING_STATUSES]
+    rows = [row for row in instance_service.tasks_of_instance(db, instance.id)
+            if row.node_seq == node.seq]
+    pending = [row for row in rows if row.status in PENDING_STATUSES]
     old = [row.assignee_employee_id for row in pending]
 
     approvers = approver_resolver.resolve(db, node, subject,
@@ -81,6 +88,21 @@ def _rebuild_tasks(db: Session, instance: ApprovalInstance, node: ApprovalNode,
     #  KHÔNG chạy lại `_tach_nguoi_trung` ở đây: nó ghi thêm việc "tự qua" và
     #  thêm dấu vết, mà bước này vốn đã được xét trùng người lúc mở chặng. Chạy
     #  lại là nhân đôi dòng nhật ký cho cùng một sự việc.
+
+    #  ⚠️ **AI ĐÃ KÝ CHẶNG NÀY RỒI THÌ KHÔNG GIAO LẠI** (ép tải 07/09/2026).
+    #  Chặng song song «cả hai phải duyệt» mà A ký xong, B chưa: quản trị đổi
+    #  B → C thì bản cũ tính ra danh sách [A, C] và mở việc mới cho CẢ HAI —
+    #  A bị đòi ký lần thứ hai cho đúng chặng vừa ký, và chặng đứng im chờ chữ
+    #  ký đó. Nghĩa là một lượt sửa luồng nhằm GỠ tắc lại đẻ ra tắc mới, im
+    #  lặng. Tệ hơn nếu A đã nghỉ việc: không còn ai ký được nữa.
+    #
+    #  Cũng chính chỗ này khiến một lượt sửa VÔ HẠI (đổi tên bước, sửa hạn) trên
+    #  chặng đã ký một nửa vẫn đá văng việc của B — `old` chỉ có B trong khi
+    #  danh sách tính ra là [A, B], hai vế không bằng nhau nên rơi vào nhánh
+    #  dựng lại.
+    decided = {row.assignee_employee_id for row in rows
+               if row.status in DECIDED_STATUSES}
+    approvers = [employee_id for employee_id in approvers if employee_id not in decided]
 
     if old == approvers:
         #  Người duyệt tính ra vẫn y nguyên (vd chỉ sửa hạn xử lý, đổi tên bước)
