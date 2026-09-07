@@ -52,6 +52,20 @@ sinh; tạo tay là ra một tờ giấy không gắn với quỹ phép nào.
 - **Không có ứng phép, không ghi nợ.** Xin vượt quỹ là bị **chặn lúc gửi duyệt**.
   Muốn nghỉ tiếp thì chọn loại **«Nghỉ không lương»**.
 
+## Phép không dùng hết thì đi đâu (kết sổ cuối năm)
+
+**Tùy từng loại nghỉ**, phòng Nhân sự khai ở *Thiết lập ▸ Loại nghỉ*. Ba nước:
+**«Hết năm là mất»** (mặc định) · **«Mang sang năm sau»** · **«Quy đổi sang loại
+nghỉ khác»** (đổi theo tỷ lệ, ví dụ 2 ngày phép đổi 1 ngày nghỉ bù).
+
+- ⚠️ **Không có gì tự chạy đêm 31/12.** Phải có người của Nhân sự bấm nút **«Kết
+  sổ năm …»** ở màn *Quỹ phép năm*. Người dùng hỏi *"sang năm rồi sao chưa thấy
+  phép cũ"* thì đó là chưa ai bấm — bảo họ hỏi phòng Nhân sự, đừng nói hệ lỗi.
+- **Phép mang sang có HẠN DÙNG**, thông lệ là **hết 31/3** năm sau (mỗi loại khai
+  một hạn riêng, có thể để không hết hạn). Quá hạn là mất phần chưa dùng.
+- **Phép mang sang được tiêu TRƯỚC phép của năm mới** — cố ý, vì nó sắp hết hạn.
+- Đừng tự tính giúp họ mang được mấy ngày: con số đó nằm trên màn *Quỹ phép năm*.
+
 ## Một đơn khai được NHIỀU loại nghỉ
 
 *"Nghỉ 4 ngày: 3 ngày phép năm + 1 ngày không lương"* — làm **trong một tờ đơn**,
@@ -92,6 +106,10 @@ Ngoại lệ: loại nghỉ dài liên tục như **Thai sản** cố ý **khôn
 - **Cưới hỏi và tang chế tối đa 3 ngày mỗi lần.**
 - **Thai sản chỉ hiện với hồ sơ nữ.** Hồ sơ **chưa khai giới tính** thì **không bị
   chặn** — cứ nộp được.
+- **«Nghỉ vợ sinh con» chỉ hiện với hồ sơ nam**, cần đính kèm giấy chứng sinh. Hệ
+  chỉ chặn ở **trần 14 ngày** — đó là mức cao nhất của luật (sinh đôi trở lên, mổ);
+  mức thường là 5 ngày, sinh mổ 7 ngày. **Đừng khẳng định họ được bao nhiêu ngày** —
+  máy không biết ca nào, người duyệt quyết.
 - **Hai đơn không được chồng ngày** của cùng một người. Chồng thì cùng một ngày bị
   trừ phép hai lần.
 - **Nghỉ từ buổi chiều đến buổi sáng cùng ngày** là khoảng trống — hệ chặn.
@@ -124,3 +142,5 @@ Người dùng báo "không thấy menu Nghỉ phép" thì gần như chắc là
 | Trả về chỉnh sửa | trả lại (dễ lẫn với Từ chối) |
 | Điều chỉnh tay | cộng phép, bù phép |
 | Lịch ngày lễ | ngày nghỉ lễ (đó là danh mục, tên đúng là «Lịch ngày lễ») |
+| Kết sổ cuối năm | chốt sổ, khóa sổ, chuyển phép tự động |
+| Mang sang năm sau | bảo lưu phép, cộng dồn phép |

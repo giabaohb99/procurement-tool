@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| Bản | 1.0 — 03/09/2026 |
-| CR | **CR-259** |
+| Bản | 1.2 — 07/09/2026 (kết sổ cuối năm · bảng trường Loại nghỉ) |
+| CR | **CR-259** · duoc-CR-302 · duoc-CR-303 · **duoc-CR-304** |
 | Giao diện | **chỉ có trên `frontend-v2/`** (cổng 8083), menu *Nhân sự ▸ Nghỉ phép* |
 | Kế hoạch gốc | `plans/260903-0956-quan-ly-nghi-phep/plan.md` |
 | Nguồn nghiệp vụ | `doc/erp/tham-khao-hrm/02-don-tu-va-duyet.md` (DT1, DT6) · `10-de-xuat-ap-dung.md` (V1-6, V1-7) |
@@ -128,6 +128,43 @@ lần đầu năm** (Q1), thâm niên tính tại 01/01 — không cộng dần 
 
 ⚠️ Cố ý **không** cập nhật dòng đã có theo hạn mức mới: đổi hạn mức giữa năm thì
 quỹ đã cấp giữ nguyên, luật mới áp cho lần cấp sau.
+
+### Kết sổ cuối năm (07/09/2026)
+
+Số dư năm cũ đi đâu là **luật của từng loại nghỉ** (`year_end_mode`), không phải
+luật chung:
+
+| Nước | Mã | Làm gì |
+|---|---|---|
+| Hết năm là mất | `0` | Mặc định. Không đụng tới dòng quỹ nào |
+| Mang sang năm sau | `1` | Cộng vào `carried_days` của **chính loại đó**, năm sau |
+| Quy đổi sang loại nghỉ khác | `2` | Cộng vào loại **nhận**, sau khi nhân `convert_ratio` |
+
+⚠️ **Không có gì tự chạy đêm 31/12.** Phải có người bấm *Kết sổ năm N* ở màn Quỹ
+phép. Cùng lý lẽ với nút *Cấp quỹ*: hệ không có bộ chạy nền, mà một việc nền hỏng
+lặng lẽ đêm 31/12 thì tới tháng Ba mới có người phát hiện — lúc đó cả công ty đã
+nghỉ theo một con số sai.
+
+- **Gác bằng `leave_balance.write`**, không phải `create` như nút Cấp quỹ: kết sổ
+  **sửa hai dòng quỹ đã có** (trừ năm cũ, cộng năm mới) — cùng mức nguy hiểm với
+  cột điều chỉnh tay. Chỉ chạm tới nhân sự **trong phạm vi người bấm**.
+- **Chạy lại được, và lượt sau vét nốt.** Mỗi lượt chỉ đẩy phần `remaining_days`
+  còn lại, cộng dồn vào `carried_out_days`. Bấm hai lần liền không nhân đôi; nhưng
+  nếu giữa hai lượt có đơn năm cũ **bị từ chối** hoặc đơn đã duyệt **bị hủy** thì
+  số ngày quay lại đó được đẩy tiếp — bản đầu bỏ qua hẳn dòng đã kết sổ nên mấy
+  ngày ấy kẹt vĩnh viễn ở năm cũ.
+- **Cấu hình quy đổi hỏng thì BỎ dòng, không đoán** — và trả về `skipped_config`
+  để câu thông báo nói ra. Backend còn chặn sớm hơn, **ngay lúc lưu loại nghỉ**
+  (`catalog_controller._check_year_end_config`): tỷ lệ phải > 0, phải chọn loại
+  nhận, loại nhận phải **khác chính nó** và phải bật «Trừ vào quỹ phép năm».
+- **Phần mang sang HẾT HẠN** cuối tháng `carry_over_expire_month` của năm nhận
+  (thông lệ: hết 31/3; `0` = không hết hạn). Thu hồi lúc **chạm vào** dòng quỹ
+  (`expire_carried`), không phải bằng việc chạy nền.
+- ⚠️ **Phần mang sang được coi là TIÊU TRƯỚC.** Sổ chỉ có một cục `used_days`,
+  không biết ngày nào tiêu vào quỹ nào, nên phải chọn một phía — chọn phía có lợi
+  cho người lao động, vì phép mang sang là phép sắp hết hạn.
+- Phần đã **quy đổi** thì sống theo luật hết hạn của **loại nhận**, không theo
+  loại nguồn.
 
 ### Điều chỉnh tay
 
@@ -305,14 +342,86 @@ Người dùng báo "không thấy menu Nghỉ phép" thì gần như chắc là
 
 | Thiếu | Ghi chú |
 |---|---|
-| Nghỉ **nửa ngày / theo giờ** | Cột `unit` đã khai sẵn ba giá trị nhưng bản này chỉ dùng *Ngày* (QĐ-NP4). Chờ phân hệ **Lịch làm việc**; lúc đó chỉ thêm cách quy đổi, không đổi cấu trúc bảng |
+| ~~Nghỉ **nửa ngày / theo giờ**~~ | **ĐÃ CÓ 07/09/2026** — nửa ngày qua hai ô buổi (§6), theo giờ qua buổi thứ tư *«Theo giờ»* (§7). Cột `unit` vẫn chỉ dùng giá trị *Ngày*: số giờ được **quy đổi ra ngày**, không lưu thành đơn vị riêng |
 | **Đính kèm** trên đơn | Cột `require_attachment` của loại nghỉ đã có nhưng chưa nối vào hạ tầng đính kèm |
 | Danh sách **bàn giao** trên giao diện | Bảng `tab_leave_handover` và API đã có; form v2 chưa dựng ô nhập (bản chỉ xem thì hiện đủ) |
-| **Chuyển phép sang năm sau** | Cờ `carry_over` đã có, mặc định TẮT; chưa có việc chạy cuối năm để chuyển (Q2 chưa chốt) |
+| ~~**Chuyển phép sang năm sau**~~ | **ĐÃ CÓ 07/09/2026** — ba nước *mất / mang sang / quy đổi* + nút **Kết sổ cuối năm**, xem §5. Cờ `carry_over` cũ thành di tích (§11.2). Còn thiếu: **báo cáo đối chiếu** trước/sau kết sổ — hiện chỉ có câu thông báo đếm dòng |
 | **Báo cáo / thống kê** nghỉ phép | Chưa dựng màn riêng |
 | Nạp `hire_date` cho hồ sơ cũ | **Ô nhập đã có từ 07/09/2026** ở *Nhân sự ▸ chi tiết hồ sơ* (kèm ô *Giới tính*) — trước đó hai cột này có trong bảng nhưng không schema nào khai, nên không màn nào nhập được và thâm niên của cả công ty tính bằng 0. Việc còn lại là **nhập bù dữ liệu**, không phải dựng màn |
 
-## 11. Tra cứu nhanh
+## 11. Danh mục **Loại nghỉ** — từng trường
+
+`/hr/leave-types` (danh sách) · `/hr/leave-types/new` (thêm) · `/hr/leave-types/:id`
+(sửa, kèm tab *Bậc thâm niên*). Dựng bằng khung CRUD khai báo — mọi thứ dưới đây
+khai ở **một chỗ**: `frontend-v2/src/modules/hr/config/leave-type-crud.tsx`.
+Bảng: `tab_leave_type` (`leave/catalog_model.py`).
+
+Form thêm/sửa **dài nên đi trang riêng, không hộp thoại**, và chia **ba cụm** —
+người khai danh mục là nhân sự, không phải người viết luật, mà ở màn này đoán sai
+quan hệ giữa hai ô là khai sai luật nghỉ cho **cả công ty**.
+
+### 11.1. Các trường có trên form
+
+| Ô | Cột | Kiểu | Mặc định | Ghi chú |
+|---|---|---|---|---|
+| **Mã loại nghỉ** | `code` | chữ | — | ⚠️ **KHÓA sau khi tạo** (`readonlyOnEdit` + backend chặn lớp hai): mã này đi vào metadata mọi giấy GNP đã phát hành. Phải khớp `core/leave_codes.LEAVE_TYPE_SET` |
+| **Tên loại nghỉ** | `name` | chữ | — | Bắt buộc |
+| *Cụm «Quỹ phép và lương»* | | | | |
+| Trừ vào quỹ phép năm | `counts_balance` | công tắc | Tắt | Bật thì nộp đơn **bị chặn khi hết phép** (không ứng trước). Đứng **đầu cụm, cột trái** vì nó mở ra ô hạn mức ngay bên dưới |
+| Có hưởng lương | `is_paid` | công tắc | Bật | Tách khỏi `counts_balance`: cưới hỏi vẫn hưởng lương nhưng không ăn vào phép năm |
+| Hạn mức mỗi năm (ngày) | `annual_quota_days` | số | 0 | **Chỉ hiện khi** «Trừ vào quỹ phép năm» bật. Bậc thâm niên cộng thêm khai ở tab riêng |
+| *Cụm «Điều kiện áp dụng»* | | | | |
+| Áp dụng cho giới tính | `gender` | chọn | Mọi giới (`0`) | Hồ sơ **chưa khai** giới tính vẫn nộp được — chặn là khóa cả công ty tới khi Nhân sự nhập bù |
+| Tối đa mỗi lần nghỉ (ngày) | `max_days_per_request` | số | 0 | `0` = không giới hạn. Trần của **một đơn**, không dính quỹ năm |
+| Trừ Chủ nhật và ngày lễ | `exclude_holiday` | công tắc | Bật | ⚠️ **Thứ Bảy VẪN tính công** — DEGO làm cả T7 (`WEEKEND_DAYS = (6,)`). Tắt cho loại nghỉ dài liên tục (thai sản) |
+| Bắt buộc đính kèm | `require_attachment` | công tắc | Tắt | Cột đã có; **chưa nối vào hạ tầng đính kèm** (xem §10) |
+| *Cụm «Số dư cuối năm»* — xem §5 | | | | |
+| Cách xử lý số dư | `year_end_mode` | chọn | Hết năm là mất (`0`) | Ba nước loại trừ nhau nên là ô chọn, không phải hai công tắc |
+| Hạn dùng phép mang sang | `carry_over_expire_month` | chọn 13 mục | Đến hết tháng 3 năm sau | **Chỉ hiện khi** «Mang sang năm sau». `0` = không hết hạn. Ô CHỌN chứ không phải ô gõ số: hạn này **lặp mỗi năm** nên không chốt cứng được thành một cặp ngày, mà tháng 2 còn nhảy 28/29 |
+| Loại nghỉ nhận số ngày | `convert_to_type_id` | chọn (nạp từ API) | 0 | **Chỉ hiện khi** «Quy đổi». Phải khác chính nó và phải bật «Trừ vào quỹ phép năm» — backend chặn **ngay lúc lưu** |
+| Tỷ lệ quy đổi | `convert_ratio` | số | 1 | **Chỉ hiện khi** «Quy đổi». 1 ngày dư đổi được mấy ngày ở loại nhận; hai đổi một thì ghi `0.5`. Phải > 0 |
+| **Ghi chú** | `note` | nhiều dòng | rỗng | |
+| **Đang dùng** | `is_active` | công tắc | Bật | Tắt = ẩn khỏi ô chọn; đơn cũ giữ nguyên |
+
+⚠️ **Ẩn/hiện chỉ là chuyện HIỂN THỊ** (`showWhen`) — giá trị vẫn nằm trong form và
+vẫn gửi lên. Luật thật nằm ở backend.
+
+### 11.2. Cột CÓ trong bảng nhưng KHÔNG hỏi trên form
+
+| Cột | Vì sao |
+|---|---|
+| `carry_over_max_days` | Trần số ngày mỗi người được chuyển. **Bỏ khỏi form 07/09/2026**: DEGO không có luật trần (dư bao nhiêu mang hết bấy nhiêu), mà ô đó đứng cạnh chữ *«số dư»* thì đọc mãi vẫn ra "số dư của người này" — trong khi số dư do `balance_service.remaining()` tính, không ai gõ tay. `0` = không giới hạn, và mọi loại đang là `0`. Khai lại ô này nếu công ty đặt trần thật |
+| `sort_order` | **Bỏ khỏi form 07/09/2026** — bộ loại nghỉ hơn chục dòng, thứ tự đã seed sẵn; bắt người khai nghĩ ra một con số xếp hạng là hỏi một câu họ không có câu trả lời. Backend vẫn xếp theo nó |
+| `carry_over` (bool) | **Di tích.** Công tắc hai nước, đã thay bằng `year_end_mode` (07/09/2026) vì nó không nói được nước thứ ba — *quy đổi*. Đừng đọc, đừng ghi |
+| `min_notice_days` | **Di tích.** Luật "phải nộp trước N ngày" đã bỏ 05/09/2026, không còn trong schema lẫn form |
+
+### 11.3. Tám loại nghỉ seed sẵn
+
+`app/seed_nghi_phep.py` — chỉ **THÊM** loại còn thiếu, loại đã có thì không đụng
+vào (người ta đã sửa). Chạy tay: `docker compose exec api python -m app.seed_nghi_phep`.
+
+| Mã | Tên | Lương | Trừ quỹ | Hạn mức | Trần/lần | Giới tính | Đính kèm | Trừ CN+lễ |
+|---|---|---|---|---|---|---|---|---|
+| `annual` | Phép năm | ✔ | ✔ | 12 | — | mọi | — | ✔ |
+| `unpaid` | Nghỉ không lương | — | — | — | — | mọi | — | ✔ |
+| `sick` | Nghỉ ốm đau | ✔ | — | — | — | mọi | ✔ | ✔ |
+| `maternity` | Nghỉ thai sản | ✔ | — | — | — | **nữ** | ✔ | **—** |
+| `paternity` | Nghỉ vợ sinh con | ✔ | — | — | **14** | **nam** | ✔ | ✔ |
+| `wedding` | Nghỉ cưới hỏi | ✔ | — | — | 3 | mọi | — | ✔ |
+| `funeral` | Nghỉ tang chế | ✔ | — | — | 3 | mọi | — | ✔ |
+| `comp_off` | Nghỉ bù | ✔ | — | — | — | mọi | — | ✔ |
+
+⚠️ **Nghỉ vợ sinh con** (07/09/2026): trần **14** là mức **cao nhất** của luật
+(sinh đôi trở lên, mổ); mức thường là 5, mổ là 7. Máy không biết ca nào nên chỉ
+chặn trần — **người duyệt canh phần còn lại**.
+
+### 11.4. Bậc thâm niên (tab riêng)
+
+`tab_leave_type_seniority`, mỗi dòng là *«từ năm thứ A đến dưới năm thứ B: +N ngày»*.
+`B = 0` là bậc cuối, không có trần trên. Khoảng **nửa mở**: khớp khi
+`A <= thâm niên < B`. Lấy **bậc cao nhất khớp được, KHÔNG cộng dồn**.
+
+## 12. Tra cứu nhanh
 
 | Cần gì | Ở đâu |
 |---|---|
@@ -321,6 +430,8 @@ Người dùng báo "không thấy menu Nghỉ phép" thì gần như chắc là
 | Bộ mã số (trạng thái, buổi, đơn vị, giới tính) | `backend/app/modules/leave/constants.py` |
 | Công thức đếm ngày công | `backend/app/modules/leave/workday_service.py` |
 | Sổ quỹ (bốn nhịp) | `backend/app/modules/leave/balance_service.py` |
+| Kết sổ cuối năm · hết hạn phép mang sang | `backend/app/modules/leave/carryover_service.py` — `close_year` · `expire_carried` |
+| Khai báo màn **Loại nghỉ** (toàn bộ trường) | `frontend-v2/src/modules/hr/config/leave-type-crud.tsx` |
 | Luật trên tờ đơn | `backend/app/modules/leave/request_service.py` |
 | Nối bộ máy duyệt + sinh giấy GNP | `backend/app/modules/leave/approval_bridge.py` |
 | Seed loại nghỉ · ngày lễ · luồng | `backend/app/seed_nghi_phep.py` |
