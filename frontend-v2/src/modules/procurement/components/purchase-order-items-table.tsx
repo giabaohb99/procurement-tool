@@ -123,6 +123,15 @@ export function PurchaseOrderItemsTable({
       align: 'center',
       compactHidden: true,
     },
+    // bao-CR-307: giá một đơn vị ĐÃ gồm VAT — kế toán đối chiếu giá chẵn trên hóa đơn
+    {
+      key: 'price_after_vat',
+      header: 'Đơn giá (Sau VAT)',
+      width: 130,
+      minWidth: 80,
+      align: 'right',
+      compactHidden: true,
+    },
     { key: 'amount', header: 'Thành tiền', width: 140, minWidth: 80, align: 'right' },
     {
       key: 'delivered',
@@ -316,6 +325,18 @@ export function PurchaseOrderItemsTable({
           </Select>
         ) : (
           `${item.vat ?? 0}%`
+        )
+
+      // bao-CR-307: đơn giá sau VAT làm tròn 2 số lẻ — 166.666,67 × 1,08 phải ra
+      // 180.000 chứ không phải 180.000,0036
+      case 'price_after_vat':
+        return (
+          <span className="tabular-nums text-muted-foreground">
+            {formatUnitPrice(
+              Math.round((Number(item.price) || 0) * (1 + (Number(item.vat) || 0) / 100) * 100) /
+                100,
+            )}
+          </span>
         )
 
       case 'amount':

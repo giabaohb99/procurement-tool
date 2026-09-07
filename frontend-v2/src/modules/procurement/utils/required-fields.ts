@@ -193,12 +193,11 @@ export function validatePurchaseOrder(data: PurchaseOrderDetail, forSubmit = fal
   const lines = purchaseOrderLines(data)
   if (!lines.length) return 'Cần ít nhất một dòng hàng'
 
-  // Mỗi mã hàng CHỈ một dòng: dòng ĐMH nối về dòng YCMH bằng mã, trùng mã là
-  // tiến độ số lượng của cả hai phiếu sai.
-  const duplicated = duplicateCodes(lines.map((line) => line.product_code))
-  if (duplicated.length) {
-    return `Mã hàng bị trùng: ${duplicated.join(', ')}. Mỗi mã chỉ được một dòng.`
-  }
+  // bao-CR-308: ĐMH KHÔNG chặn trùng mã nữa — nghiệp vụ cần tách dòng theo bộ
+  // chứng từ (cùng mã, khác lô / khác Tên trên hóa đơn); đồng bộ về YCMH cộng gộp
+  // theo mã nên số vẫn đúng. Trang dùng `duplicatePurchaseOrderCodes` để HỎI XÁC
+  // NHẬN lúc lưu (chặn gõ nhầm). YCMH bên trên vẫn chặn cứng: trùng bên đó mới
+  // làm tiến độ nhân đôi.
 
   if (!forSubmit) return ''
 
@@ -213,6 +212,14 @@ export function validatePurchaseOrder(data: PurchaseOrderDetail, forSubmit = fal
     )
   if (problems.length) return `Chưa gửi duyệt được — còn thiếu ${problems.join('; ')}.`
   return ''
+}
+
+/**
+ * Các mã hàng đang nằm trên NHIỀU dòng của ĐMH — cho trang hỏi xác nhận lúc lưu
+ * (bao-CR-308). Không phải lỗi: trùng hợp lệ khi tách dòng theo bộ chứng từ.
+ */
+export function duplicatePurchaseOrderCodes(data: PurchaseOrderDetail): string[] {
+  return duplicateCodes(purchaseOrderLines(data).map((line) => line.product_code))
 }
 
 /* ----------------------------------------------------------------- chung -- */

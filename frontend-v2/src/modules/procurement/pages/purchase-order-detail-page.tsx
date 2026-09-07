@@ -31,6 +31,7 @@ import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { confirm as confirmDialog } from '@/shared/ui/confirm-dialog'
 import { DeleteConfirmButton } from '@/shared/ui/delete-confirm-button'
 import { ErrorState } from '@/shared/ui/error-state'
 import { PageContainer } from '@/shared/ui/page-container'
@@ -74,7 +75,7 @@ import {
   toPurchaseOrderPayload,
   type PurchaseOrderDraftFromRequest,
 } from '../utils/purchase-order-draft'
-import { validatePurchaseOrder } from '../utils/required-fields'
+import { duplicatePurchaseOrderCodes, validatePurchaseOrder } from '../utils/required-fields'
 import { summarizeShipping } from '../utils/purchase-order-shipping'
 import {
   isDeliveryStage,
@@ -252,6 +253,23 @@ export function PurchaseOrderDetailPage() {
     if (message) {
       toast.error(message)
       return
+    }
+    // bao-CR-308: trùng mã được phép (tách dòng theo bộ chứng từ) — chỉ hỏi xác
+    // nhận để chặn gõ nhầm mã, không chặn cứng nữa.
+    const duplicated = duplicatePurchaseOrderCodes(data)
+    if (duplicated.length) {
+      const ok = await confirmDialog({
+        title: 'Mã hàng trùng trên đơn',
+        tone: 'default',
+        confirmLabel: 'Vẫn lưu',
+        cancelLabel: 'Quay lại sửa',
+        message:
+          `Các mã sau xuất hiện trên NHIỀU dòng: ${duplicated.join(', ')}.\n\n` +
+          'Nếu cố ý tách dòng theo bộ chứng từ (cùng mã nhưng khác lô / khác Tên trên hóa đơn ' +
+          '/ số hóa đơn) thì bấm Vẫn lưu — tiến độ trên YCMH vẫn cộng gộp đúng theo mã.\n\n' +
+          'Nếu chỉ là gõ nhầm mã thì bấm Quay lại sửa.',
+      })
+      if (!ok) return
     }
     const saved = await savePurchaseOrder.mutateAsync({
       id: isNew ? undefined : purchaseOrderId,
