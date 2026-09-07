@@ -27,7 +27,7 @@ import {
 } from '@/shared/ui/select'
 import { Textarea } from '@/shared/ui/textarea'
 import { formatDate } from '@/shared/utils/format-date'
-import { formatMoney, formatQuantity } from '@/shared/utils/format-money'
+import { formatMoney, formatQuantity, formatUnitPrice } from '@/shared/utils/format-money'
 import {
   usePurchaseRequestItemGroups,
   usePurchaseRequestUnits,
@@ -395,6 +395,13 @@ export function PurchaseOrderLineDialog({
             </div>
           </div>
 
+          {/* bao-CR-307: đơn giá đã gồm VAT, làm tròn 2 số lẻ — khớp cột cùng tên trên bảng dòng */}
+          <Field label="Đơn giá (Sau VAT)">
+            {formatUnitPrice(
+              Math.round((item.price || 0) * (1 + (item.vat || 0) / 100) * 100) / 100,
+            )}{' '}
+            đ
+          </Field>
           <Field label="Tổng tiền đặt hàng">
             {formatMoney(
               item.order_total ??

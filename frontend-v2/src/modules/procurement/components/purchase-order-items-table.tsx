@@ -331,7 +331,7 @@ export function PurchaseOrderItemsTable({
       // 180.000 chứ không phải 180.000,0036
       case 'price_after_vat':
         return (
-          <span className="tabular-nums text-muted-foreground">
+          <span className="tabular-nums font-semibold">
             {formatUnitPrice(
               Math.round((Number(item.price) || 0) * (1 + (Number(item.vat) || 0) / 100) * 100) /
                 100,
