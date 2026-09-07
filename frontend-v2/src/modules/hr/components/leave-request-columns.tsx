@@ -1,6 +1,7 @@
 import type { DataTableColumn } from '@/shared/data-table'
 import { formatDate } from '@/shared/utils/format-date'
 import type { ApprovalFlowStrip as FlowStrip, LeaveRequest } from '../types/leave'
+import { leaveLinesText, leaveTypeLabel } from '../utils/leave-type-label'
 import { LeaveStatusCell } from './leave-status-cell'
 
 /**
@@ -100,7 +101,10 @@ export function leaveTypeColumn<T extends LeaveRequest>(): DataTableColumn<T> {
   return {
     key: 'leave_type_name',
     header: 'Loại nghỉ',
-    cell: (r) => r.leave_type_name || '—',
+    //  Đơn nhiều loại hiện «Phép năm +1» chứ không liệt kê hết: ô bảng cao 35px
+    //  không chứa nổi hai tên loại, và liệt kê hết thì cột nào cũng cụt bằng dấu
+    //  ba chấm — mất luôn tên loại chính. Bản kê đủ nằm ở `title` và ở màn chi tiết.
+    cell: (r) => <span title={leaveLinesText(r) || undefined}>{leaveTypeLabel(r)}</span>,
     //  "Nghỉ không lương" là tên dài nhất trong danh mục mặc định — hẹp hơn thì
     //  cột nào cũng kết thúc bằng dấu ba chấm.
     width: 170,

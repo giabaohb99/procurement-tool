@@ -133,9 +133,9 @@ def _create(db, leave_type, employee, days=2, start=MONDAY):
 def _submit(db, obj, employee):
     """Gửi duyệt qua đúng ba bước mà controller đi."""
     user = _user(employee)
-    emp, lt = request_service.prepare_submit(db, obj, user)
+    emp = request_service.prepare_submit(db, obj, user)
     instance_id = approval_bridge.start_approval(db, obj, user)
-    return request_service.mark_submitted(db, obj, emp, lt, user, instance_id)
+    return request_service.mark_submitted(db, obj, emp, user, instance_id)
 
 
 def _create_and_submit(db, leave_type, employee, days=2, start=MONDAY):

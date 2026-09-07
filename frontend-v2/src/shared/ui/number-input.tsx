@@ -66,6 +66,12 @@ interface NumberInputProps {
   onChange: (value: number) => void
   /** Nối với `<Label htmlFor>` — thiếu thì nhãn trỏ vào hư không, bấm nhãn không vào ô. */
   id?: string
+  /**
+   * Tên đọc được của ô khi KHÔNG có nhãn nhìn thấy được — ô nằm trong bảng, nơi
+   * nhãn là tiêu đề cột dùng chung cho cả cột. Thiếu nó thì trình đọc màn hình
+   * đọc ra một ô số không tên, và bài kiểm cũng không có cách nào trỏ vào đúng ô.
+   */
+  'aria-label'?: string
   /** `false` = ép số nguyên (số thứ tự, số ngày). Mặc định cho nhập số lẻ. */
   decimals?: boolean
   maxDecimals?: number
@@ -88,6 +94,7 @@ export function NumberInput({
   placeholder,
   className,
   title,
+  'aria-label': ariaLabel,
 }: NumberInputProps) {
   const [focused, setFocused] = useState(false)
   const [raw, setRaw] = useState('')
@@ -102,6 +109,7 @@ export function NumberInput({
     <Input
       id={id}
       type="text"
+      aria-label={ariaLabel}
       inputMode={decimals ? 'decimal' : 'numeric'}
       disabled={disabled}
       title={title}

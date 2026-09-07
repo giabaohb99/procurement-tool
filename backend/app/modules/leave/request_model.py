@@ -48,6 +48,15 @@ class LeaveRequest(Base, AuditMixin):
     #  NGƯỜI NGHỈ. Khác `created_by` (tài khoản lập đơn) — hành chính lập hộ là
     #  việc có thật, và cả hai đều phải thấy được đơn ở phạm vi `own`.
     employee_id: Mapped[int] = mapped_column(BigInteger, default=0)
+
+    #  LOẠI NGHỈ CHÍNH — **cột DẪN XUẤT** từ 07/09/2026, khi một đơn khai được
+    #  nhiều loại nghỉ (`LeaveRequestLine`). Backend tự đặt bằng loại của dòng
+    #  chiếm nhiều ngày nhất; giao diện KHÔNG gõ vào đây.
+    #
+    #  Giữ lại chứ không bỏ, vì ba chỗ đang đọc thẳng nó và cả ba đều chỉ cần
+    #  một giá trị: bộ lọc danh sách, cột *Loại nghỉ* của Lịch nghỉ, và
+    #  `entity_context` của bộ máy duyệt. Bỏ đi thì phải sửa cả điều kiện rẽ
+    #  nhánh mà khách đã khai trên hệ đang chạy.
     leave_type_id: Mapped[int] = mapped_column(BigInteger, default=0)
 
     from_date: Mapped[date] = mapped_column(Date)
@@ -65,8 +74,10 @@ class LeaveRequest(Base, AuditMixin):
     #  QĐ-NP4: bản này chỉ ghi `UNIT_DAY`. Cột khai sẵn để khi có phân hệ Lịch
     #  làm việc thì chỉ thêm cách quy đổi, không phải chạy migration đổi cấu trúc.
     unit: Mapped[int] = mapped_column(SmallInteger, default=UNIT_DAY)
-    #  Tổng số ngày nghỉ. Người dùng nhập được (sửa đè gợi ý của
-    #  `workday_service`) vì lịch làm việc thật luôn có ngoại lệ máy không biết.
+    #  Tổng số ngày nghỉ = **tổng số ngày của các dòng** (`LeaveRequestLine`).
+    #  Vẫn là con số người dùng quyết — họ gõ vào từng dòng, ở đó có gợi ý của
+    #  `workday_service` để sửa đè, vì lịch làm việc thật luôn có ngoại lệ máy
+    #  không biết. Cột này chỉ là bản cộng lại, backend tự đặt.
     total_days: Mapped[float] = mapped_column(Float, default=0.0)
 
     reason: Mapped[str] = mapped_column(String(1000), default="")
@@ -96,6 +107,49 @@ class LeaveRequest(Base, AuditMixin):
         uselist=True,
         viewonly=True,
     )
+
+    lines = relationship(
+        "LeaveRequestLine",
+        primaryjoin="foreign(LeaveRequestLine.request_id) == LeaveRequest.id",
+        order_by="LeaveRequestLine.sort_order",
+        uselist=True,
+        viewonly=True,
+    )
+
+
+class LeaveRequestLine(Base, AuditMixin):
+    """MỘT LOẠI NGHỈ trong tờ đơn — *"3 ngày phép năm + 1 ngày không lương"*.
+
+    Bảng con chứ không phải cột: quỹ phép trừ theo **(người × năm × loại nghỉ)**,
+    nên một đơn hai loại là hai lượt trừ vào hai dòng quỹ khác nhau. Nhét hai
+    loại vào một cột thì bốn nhịp của sổ quỹ (giữ chỗ · trừ thật · trả lại ·
+    hoàn) không biết trừ vào đâu.
+
+    ⚠️ **Không có cột ngày** — chốt ngày 07/09/2026: cả đơn dùng CHUNG một
+    khoảng ngày ở đầu phiếu, dòng chỉ chia SỐ NGÀY. Khai ngày riêng cho từng
+    dòng thì tra được "ngày 09 nghỉ loại gì", nhưng đổi lại người nhập phải gõ
+    hai đầu ngày cho mỗi loại và chốt chống chồng ngày phải chạy cả trong lẫn
+    ngoài tờ đơn. Khách chọn bản gọn.
+
+    Một loại chỉ được khai **một dòng** (`request_service.check_lines`): hai
+    dòng cùng loại là hai lượt trừ vào cùng một dòng quỹ, đọc sổ ra không hiểu
+    vì sao trừ hai lần.
+    """
+
+    __tablename__ = "tab_leave_request_line"
+    __table_args__ = (
+        Index("ix_leave_request_line_request", "request_id"),
+        #  "Loại nghỉ này còn đơn nào dùng không" — câu của chốt xóa loại nghỉ
+        #  ở `catalog_controller`.
+        Index("ix_leave_request_line_type", "leave_type_id"),
+    )
+
+    request_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    leave_type_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    #  Số ngày nghỉ theo loại này. Luôn > 0 — dòng 0 ngày thì không có gì để
+    #  duyệt và quỹ không trừ gì, `check_lines` loại nó từ đầu.
+    days: Mapped[float] = mapped_column(Float, default=0.0)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
 
 
 class LeaveHandover(Base, AuditMixin):

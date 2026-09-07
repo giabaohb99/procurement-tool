@@ -268,6 +268,15 @@ backend ở `app/modules/leave/`. Tài liệu đầy đủ: `doc/tai-lieu-chuc-n
   ngay. Thiếu nhịp này thì nộp mười đơn liền tay đều lọt. Đối xứng: **ba kết cục
   không-duyệt (từ chối · trả về · rút) đều phải TRẢ LẠI** — gộp chung một hàm
   `_release_and_set`, đừng tách ba bản chép.
+- ⚠️ **MỘT ĐƠN KHAI NHIỀU LOẠI NGHỈ** (07/09/2026, `tab_leave_request_line`). Cả đơn
+  dùng chung một khoảng ngày, dòng chỉ chia SỐ NGÀY. Hai cột đầu đơn thành **dẫn
+  xuất**: `total_days` = tổng các dòng, `leave_type_id` = loại của dòng nhiều ngày
+  nhất. **Sổ quỹ phải chạy THEO DÒNG ở cả bốn nhịp** — dùng `reserve_lines` ·
+  `consume_lines` · `release_lines` · `refund_lines` của `request_service`, đừng gọi
+  thẳng `balance_service` với `obj.total_days` (trừ tổng vào loại chính là cộng ngày
+  không lương vào quỹ phép năm). Chốt xóa loại nghỉ phải hỏi **cả hai bảng**. Điều
+  kiện rẽ nhánh luồng duyệt chỉ thấy loại CHÍNH — hạn chế đã biết, xem §7.1 của
+  `doc/tai-lieu-chuc-nang/17-nghi-phep.md`.
 - ⚠️ **Số phép còn lại KHÔNG lưu thành cột** — `balance_service.remaining()` là nơi duy
   nhất tính. **Số ngày nghỉ** chỉ tính ở `workday_service.count_leave_days()`.
 - ⚠️ **Hủy đơn KHÔNG được gọi `block_legacy_path`** (chốt đó chỉ dành cho duyệt/từ chối

@@ -39,7 +39,13 @@ def _names(db: Session, employee_ids: set[int]) -> dict[int, str]:
 
 def _dump(db: Session, obj: LeaveRequest, names: dict[int, str],
           types: dict[int, str]) -> dict:
-    return request_serializer.dump_request(obj, names, types)
+    """Một tờ đơn kèm bản kê loại nghỉ của chính nó.
+
+    Đường MỘT đơn nên tra dòng tại chỗ là đúng một lượt truy vấn. Đường danh
+    sách KHÔNG đi qua đây — nó gom trước bằng `lines_by_request`.
+    """
+    return request_serializer.dump_request(
+        obj, names, types, request_serializer.lines_by_request(db, {obj.id}))
 
 
 def _type_names(db: Session) -> dict[int, str]:
@@ -77,8 +83,10 @@ def list_requests(
 
     names = _names(db, {i.employee_id for i in items})
     types = _type_names(db)
+    lines = request_serializer.lines_by_request(db, {i.id for i in items})
     return success({"total": total,
-                    "items": [_dump(db, i, names, types) for i in items]})
+                    "items": [request_serializer.dump_request(i, names, types, lines)
+                              for i in items]})
 
 
 def _get_or_404(db: Session, rid: int, user, action: str = "read") -> LeaveRequest:
@@ -164,9 +172,9 @@ def submit_request(rid: int, db: Session = Depends(get_db),
     rút phiếu, và người dùng đã kịp thấy một phiếu duyệt hiện ra rồi biến mất.
     """
     obj = _get_or_404(db, rid, user, "write")
-    employee, leave_type = request_service.prepare_submit(db, obj, user)
+    employee = request_service.prepare_submit(db, obj, user)
     instance_id = approval_bridge.start_approval(db, obj, user)
-    obj = request_service.mark_submitted(db, obj, employee, leave_type, user, instance_id)
+    obj = request_service.mark_submitted(db, obj, employee, user, instance_id)
     audit_record(db, user.id, ENTITY, obj.id, "update",
                  f"Gửi duyệt đơn nghỉ phép {obj.code}")
     return success(_dump(db, obj, _names(db, {obj.employee_id}), _type_names(db)),

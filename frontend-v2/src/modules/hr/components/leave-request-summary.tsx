@@ -16,6 +16,8 @@ interface LeaveRequestSummaryProps {
  * như chữ gợi ý. `ReadOnlyValue` là chữ thật trong khung viền nền mờ.
  */
 export function LeaveRequestSummary({ request }: LeaveRequestSummaryProps) {
+  const lines = request.lines ?? []
+
   //  Buổi chỉ đáng nhắc khi KHÁC «Cả ngày» — thêm "(Cả ngày)" vào mọi dòng là
   //  bốn chữ thừa trên mọi tờ đơn.
   const withSession = (date: string, session: number) => {
@@ -37,11 +39,42 @@ export function LeaveRequestSummary({ request }: LeaveRequestSummaryProps) {
   return (
     <div className="grid gap-5 md:grid-cols-2">
       <Field label="Người nghỉ" value={request.employee_name || `#${request.employee_id}`} />
-      <Field label="Loại nghỉ" value={request.leave_type_name || '—'} />
+      <Field label="Điện thoại liên hệ" value={request.contact_phone || '—'} />
       <Field label="Từ ngày" value={withSession(request.from_date, request.from_session)} />
       <Field label="Đến ngày" value={withSession(request.to_date, request.to_session)} />
-      <Field label="Tổng số ngày" value={`${request.total_days} ngày`} />
-      <Field label="Điện thoại liên hệ" value={request.contact_phone || '—'} />
+
+      {/*  LOẠI NGHỈ — bảng, vì một đơn khai được nhiều loại (07/09/2026). Đơn
+           một loại vẫn ra đúng một dòng, không phải dựng hai bố cục khác nhau
+           cho cùng một thứ. */}
+      <div className="space-y-1.5 md:col-span-2">
+        <Label>Loại nghỉ</Label>
+        {lines.length > 0 ? (
+          <ul className="divide-y rounded-md border text-sm">
+            {lines.map((line) => (
+              <li key={line.id} className="flex justify-between gap-3 px-3 py-2">
+                <span>{line.leave_type_name || `#${line.leave_type_id}`}</span>
+                <span className="shrink-0 font-medium tabular-nums">{line.days} ngày</span>
+              </li>
+            ))}
+            <li className="flex justify-between gap-3 bg-muted/30 px-3 py-2">
+              <span className="text-muted-foreground">Tổng số ngày</span>
+              <span className="shrink-0 font-medium tabular-nums">
+                {request.total_days} ngày
+              </span>
+            </li>
+          </ul>
+        ) : (
+          //  Đường trả về không gom bản kê, hoặc đơn cũ trước đợt nhiều loại.
+          <ul className="divide-y rounded-md border text-sm">
+            <li className="flex justify-between gap-3 px-3 py-2">
+              <span>{request.leave_type_name || '—'}</span>
+              <span className="shrink-0 font-medium tabular-nums">
+                {request.total_days} ngày
+              </span>
+            </li>
+          </ul>
+        )}
+      </div>
 
       <div className="md:col-span-2">
         <Field label="Địa chỉ khi nghỉ" value={request.contact_address || '—'} />

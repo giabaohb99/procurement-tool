@@ -170,6 +170,21 @@ export interface LeaveHandover {
   sort_order: number
 }
 
+/**
+ * MỘT LOẠI NGHỈ trong tờ đơn — *"3 ngày phép năm + 1 ngày không lương"*.
+ *
+ * ⚠️ **Không có ngày riêng.** Cả đơn dùng chung một khoảng ngày ở đầu phiếu;
+ * dòng chỉ chia SỐ NGÀY. Quỹ phép trừ theo (người × năm × loại nghỉ) nên hai
+ * loại là hai lượt trừ vào hai sổ khác nhau — đó là lý do có bảng dòng.
+ */
+export interface LeaveRequestLine {
+  id: number
+  leave_type_id: number
+  leave_type_name?: string
+  days: number
+  sort_order: number
+}
+
 export interface LeaveRequest {
   id: number
   code: string
@@ -177,8 +192,14 @@ export interface LeaveRequest {
   department_id: number
   employee_id: number
   employee_name?: string
+  /**
+   * Loại nghỉ CHÍNH — dòng chiếm nhiều ngày nhất. Cột dẫn xuất do backend đặt,
+   * dùng cho bộ lọc và cột gọn của Lịch nghỉ. Bản kê đủ nằm ở `lines`.
+   */
   leave_type_id: number
   leave_type_name?: string
+  /** Rỗng ở những đường trả về không gom bản kê — luôn đọc kèm `?? []`. */
+  lines?: LeaveRequestLine[]
   from_date: string
   to_date: string
   from_session: number

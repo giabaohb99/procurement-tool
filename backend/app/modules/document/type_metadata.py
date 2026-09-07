@@ -17,7 +17,8 @@ from datetime import date
 
 from fastapi import HTTPException
 
-from app.core.leave_codes import (SESSION_WORK_CREDIT, LEAVE_SESSION_SET,
+from app.core.leave_codes import (END_DAY_WORK_CREDIT, START_DAY_WORK_CREDIT,
+                                  same_day_work_credit, LEAVE_SESSION_SET,
                                   LEAVE_TYPE_SET)
 
 #  Mã loại văn bản — dùng ở nhiều nơi nên đặt hằng, đừng gõ chuỗi rải rác.
@@ -68,13 +69,20 @@ def suggested_days(from_date: str, to_date: str, from_session: str, to_session: 
     (mà mỗi pháp nhân lại làm việc khác nhau), nên đoán ra một con số trông có vẻ
     chính xác còn tệ hơn đưa ra con số thô để người ta sửa. Ô này người dùng sửa
     đè được, và người duyệt là chốt cuối.
+
+    Hai đầu tra **hai bảng khác nhau** (vá 07/09/2026) — ô buổi nói MỐC bắt đầu /
+    kết thúc, xem `core/leave_codes.START_DAY_WORK_CREDIT`.
     """
     d1, d2 = date.fromisoformat(from_date), date.fromisoformat(to_date)
     if d1 == d2:
-        #  Trong CÙNG một ngày thì hai ô buổi nói về cùng một buổi — lấy một cái.
-        return SESSION_WORK_CREDIT.get(from_session, 1.0)
+        #  Trong CÙNG một ngày thì hai ô buổi cùng nói về ngày ấy — phải xét CẢ
+        #  HAI. Lấy riêng `from_session` như bản cũ thì «Cả ngày → Sáng» ra
+        #  nguyên một ngày trong khi người khai kết thúc lúc hết buổi sáng.
+        return same_day_work_credit(from_session, to_session)
     full_days = (d2 - d1).days - 1
-    return max(0.0, full_days) + SESSION_WORK_CREDIT.get(from_session, 1.0) + SESSION_WORK_CREDIT.get(to_session, 1.0)
+    return (max(0.0, full_days)
+            + START_DAY_WORK_CREDIT.get(from_session, 1.0)
+            + END_DAY_WORK_CREDIT.get(to_session, 1.0))
 
 
 def _check_leave(payload: dict, creator_employee_id: int | None) -> dict:
@@ -112,7 +120,7 @@ def _check_leave(payload: dict, creator_employee_id: int | None) -> dict:
     if day_count <= 0:
         raise HTTPException(400, "«Tổng số ngày» phải lớn hơn 0")
 
-    return {
+    cleaned = {
         "employee_id": leave_taker,
         "leave_type": _string_in_set(payload.get("leave_type"), LEAVE_TYPE_SET,
                                       "Loại nghỉ", ANNUAL_LEAVE),
@@ -126,6 +134,48 @@ def _check_leave(payload: dict, creator_employee_id: int | None) -> dict:
                                     "Người bàn giao", required=False),
         "contact_phone": (payload.get("contact_phone") or "").strip()[:30],
     }
+    lines = _leave_lines(payload.get("leave_lines"))
+    if lines:
+        cleaned["leave_lines"] = lines
+    return cleaned
+
+
+#  Trần số dòng ghi vào giấy — khớp `leave/request_service.MAX_LINES`. Lệch nhau
+#  thì đơn lưu đủ mà giấy cắt bớt, và không ai thấy chỗ mất.
+MAX_LEAVE_LINES = 10
+
+
+def _leave_lines(raw) -> list[dict]:
+    """Bản kê «loại nghỉ nào mấy ngày» của đơn khai NHIỀU loại (07/09/2026).
+
+    Chỉ ghi khi có **từ hai dòng trở lên**: đơn một loại thì ô `leave_type` ở
+    trên đã nói đủ, và thêm một danh sách một phần tử chỉ làm mọi chỗ đọc giấy
+    phải xử lý hai hình dạng cho cùng một thứ.
+
+    ⚠️ Mã loại nghỉ ở đây **không đối chiếu `LEAVE_TYPE_SET`**, khác ô
+    `leave_type` phía trên. Đây là bản CHÉP LẠI của tờ đơn — nơi đã kiểm đủ và
+    đã được người có thẩm quyền ký. Bắt nó qua bộ mã cố định nghĩa là một loại
+    nghỉ do quản trị tự thêm sẽ làm hỏng việc sinh giấy cho một quyết định đã
+    xong; giấy là hồ sơ lưu, chặn ở đó không cứu được gì.
+    """
+    if not isinstance(raw, list):
+        return []
+    lines = []
+    for item in raw[:MAX_LEAVE_LINES]:
+        if not isinstance(item, dict):
+            continue
+        try:
+            days = float(item.get("days") or 0)
+        except (TypeError, ValueError):
+            continue
+        if days <= 0:
+            continue
+        lines.append({
+            "leave_type": str(item.get("leave_type") or "").strip()[:30],
+            "name": str(item.get("name") or "").strip()[:100],
+            "days": days,
+        })
+    return lines if len(lines) > 1 else []
 
 
 #  mã loại → hàm kiểm. Loại không có mặt ở đây thì KHÔNG nhận metadata.

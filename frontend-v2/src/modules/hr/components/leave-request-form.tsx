@@ -6,7 +6,6 @@ import { DatePicker } from '@/shared/ui/date-picker'
 import { FormCard } from '@/shared/ui/form-card'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
-import { NumberInput } from '@/shared/ui/number-input'
 import { RequiredMark } from '@/shared/ui/required-mark'
 import {
   Select,
@@ -18,13 +17,12 @@ import {
 import { Textarea } from '@/shared/ui/textarea'
 import { useAuth } from '@/core/auth/use-auth'
 import { usePermission } from '@/core/authorization/use-permission'
-import { ReadOnlyValue } from '@/shared/ui/read-only-value'
 import { SearchSelect } from '@/shared/ui/search-select'
 import { useEmployees } from '../hooks/use-employees'
 import { useEstimateLeaveDays, useLeaveTypes } from '../hooks/use-leave'
 import { REASON_MAX, type LeaveFormValues } from '../utils/leave-form-values'
-import { LeaveBalanceHintBox } from './leave-balance-hint-box'
 import { LeaveHandoverEditor } from './leave-handover-editor'
+import { LeaveRequestLinesEditor } from './leave-request-lines-editor'
 import {
   LEAVE_SESSION,
   LEAVE_SESSION_LABELS,
@@ -96,11 +94,16 @@ export function LeaveRequestForm({ value, onChange, request }: LeaveRequestFormP
   const { user } = useAuth()
   const takerId = value.employee_id || request?.employee_id || user?.employee_id || 0
 
+  //  Loại nghỉ dùng để tra số ngày gợi ý: lấy dòng ĐẦU. Nó chỉ quyết định một
+  //  thứ — có trừ ngày lễ hay không (`exclude_holiday`) — và đơn nhiều loại thì
+  //  con số gợi ý cũng chỉ là mốc đối chiếu, không phải con số đi vào sổ.
+  const firstTypeId = value.lines[0]?.leave_type_id ?? 0
+
   const estimateParams = useMemo(
     () => ({
       from_date: value.from_date,
       to_date: value.to_date,
-      leave_type_id: value.leave_type_id || undefined,
+      leave_type_id: firstTypeId || undefined,
       from_session: value.from_session,
       to_session: value.to_session,
       from_time: isHourly ? value.from_time || undefined : undefined,
@@ -112,7 +115,7 @@ export function LeaveRequestForm({ value, onChange, request }: LeaveRequestFormP
     [
       value.from_date,
       value.to_date,
-      value.leave_type_id,
+      firstTypeId,
       value.from_session,
       value.to_session,
       value.from_time,
@@ -146,6 +149,12 @@ export function LeaveRequestForm({ value, onChange, request }: LeaveRequestFormP
   useEffect(() => {
     if (typeof suggestedDays !== 'number') return
     const current = latestValue.current
+    //  ⚠️ CHỈ đơn MỘT dòng mới tự điền. Nhiều loại nghỉ thì máy không đoán được
+    //  chia 4 ngày thành 3+1 hay 2+2 — đè con số gợi ý lên một dòng bất kỳ là
+    //  âm thầm sửa vào phần quỹ người dùng vừa phân bổ.
+    if (current.lines.length !== 1) return
+    const line = current.lines[0]
+
     //  Đơn THEO GIỜ không có "số người dùng gõ" để mà giữ — ô đó chỉ xem, con số
     //  là phép chia từ hai đầu giờ. Nên nó luôn bám con số mới.
     //  ⚠️ Thiếu nhánh này thì mở một đơn theo giờ đã lưu rồi đổi ngày/giờ, ô số
@@ -157,17 +166,13 @@ export function LeaveRequestForm({ value, onChange, request }: LeaveRequestFormP
     //  con số máy điền lần trước nghĩa là người dùng đã gõ đè — để yên.
     const untouched =
       isHourlyLeave(current.from_session, current.to_session) ||
-      current.total_days === 0 ||
-      current.total_days === lastAutoDays.current
+      line.days === 0 ||
+      line.days === lastAutoDays.current
     if (!untouched) return
     lastAutoDays.current = suggestedDays
-    onChange({ ...current, total_days: suggestedDays })
+    onChange({ ...current, lines: [{ ...line, days: suggestedDays }] })
     // eslint-disable-next-line react-hooks/exhaustive-deps -- chỉ chạy khi con số gợi ý đổi
   }, [suggestedDays])
-
-  //  "Đang nhập tay" là một SỰ THẬT so sánh được, không phải một cờ nhớ trong
-  //  đầu: ô đang khác con số máy tính ra thì đúng là người dùng tự quyết.
-  const manualDays = typeof suggestedDays === 'number' && value.total_days !== suggestedDays
 
   const set = <K extends keyof LeaveFormValues>(key: K, v: LeaveFormValues[K]) =>
     onChange({ ...value, [key]: v })
@@ -233,71 +238,22 @@ export function LeaveRequestForm({ value, onChange, request }: LeaveRequestFormP
           </div>
         )}
 
-        <div className="space-y-1.5">
-          <Label htmlFor="leave-type">
-            Loại nghỉ
-            <RequiredMark />
-          </Label>
-          <Select
-            value={value.leave_type_id ? String(value.leave_type_id) : ''}
-            onValueChange={(v) => set('leave_type_id', Number(v))}
-          >
-            <SelectTrigger id="leave-type" className="w-full">
-              <SelectValue placeholder="Chọn loại nghỉ" />
-            </SelectTrigger>
-            <SelectContent>
-              {types.map((t) => (
-                <SelectItem key={t.id} value={String(t.id)}>
-                  {t.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-1.5">
-          <Label htmlFor="total-days">
-            Tổng số ngày
-            <RequiredMark />
-          </Label>
-          {/*  Theo giờ thì con số này là PHÉP CHIA từ hai đầu giờ, không cho gõ
-               đè: người dùng đã chọn giờ rồi, thêm một con số thứ ba là mở đường
-               cho tờ đơn nghỉ 2 tiếng trừ 3 ngày phép (backend cũng bỏ qua số
-               gõ tay ở nhánh này). Ô chỉ xem dùng `ReadOnlyValue`, KHÔNG dùng
-               `<Input disabled>` — xem docstring đầu tệp. */}
-          {isHourly ? (
-            <ReadOnlyValue>{value.total_days} ngày</ReadOnlyValue>
-          ) : (
-            <NumberInput
-              id="total-days"
-              value={value.total_days}
-              maxDecimals={1}
-              placeholder="0"
-              onChange={(v) => set('total_days', v)}
-            />
-          )}
-          <p className="text-xs text-muted-foreground">
-            {isHourly
-              ? `Quy đổi từ khoảng giờ đã chọn, theo ngày công ${WORK_HOURS_PER_DAY} giờ.`
-              : manualDays
-                ? `Bạn đang nhập tay. Hệ thống gợi ý ${suggestedDays ?? '—'} ngày.`
-                : 'Tự tính, đã trừ thứ Bảy · Chủ nhật · ngày lễ. Sửa được nếu lịch khác.'}
-          </p>
-        </div>
-
-        {/*  Ràng buộc §6.1 — số phép còn lại chạy hết bề ngang, ngay dưới ô loại
-             nghỉ và ô số ngày, đúng hai con số nó đang đối chiếu. */}
-        <div className="md:col-span-2">
-          {/*  Quỹ phép của NGƯỜI NGHỈ, không phải của người đang lập: lập hộ
-               mà hiện quỹ của chính mình thì con số đối chiếu vô nghĩa, tệ hơn
-               là nó khiến người lập tưởng người kia còn phép. */}
-          <LeaveBalanceHintBox
-            leaveTypeId={value.leave_type_id}
-            year={year}
-            employeeId={takerId}
-            requestedDays={value.total_days}
-          />
-        </div>
+        {/*  Bảng LOẠI NGHỈ — một đơn khai được nhiều loại (07/09/2026). Số phép
+             còn lại nằm ngay dưới từng dòng, đúng ràng buộc §6.1: mỗi loại một
+             sổ quỹ riêng nên một hộp chung ở cuối bảng không trả lời được câu
+             người dùng đang hỏi.
+             Quỹ phép hiện là của NGƯỜI NGHỈ, không phải của người đang lập: lập
+             hộ mà hiện quỹ của chính mình thì con số đối chiếu vô nghĩa, tệ hơn
+             là nó khiến người lập tưởng người kia còn phép. */}
+        <LeaveRequestLinesEditor
+          value={value.lines}
+          onChange={(lines) => set('lines', lines)}
+          types={types}
+          year={year}
+          employeeId={takerId}
+          suggestedDays={suggestedDays}
+          isHourly={isHourly}
+        />
 
         {/*  Hai đầu ngày GIỮ NGUYÊN khi chọn «Theo giờ», chỉ mọc thêm ô giờ:
              nghỉ *từ 14:00 ngày 07 đến 10:00 ngày 09* là tờ đơn có thật, gộp hai

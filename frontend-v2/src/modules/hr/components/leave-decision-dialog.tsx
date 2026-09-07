@@ -15,6 +15,7 @@ import { Textarea } from '@/shared/ui/textarea'
 import { formatDate } from '@/shared/utils/format-date'
 import type { ApprovalDecision } from '../hooks/use-leave'
 import type { LeaveInboxRow } from '../types/leave'
+import { leaveLinesText } from '../utils/leave-type-label'
 
 interface LeaveDecisionDialogProps {
   row: LeaveInboxRow | null
@@ -118,7 +119,10 @@ export function LeaveDecisionDialog({
           <dl className="grid grid-cols-2 gap-x-4 gap-y-3 rounded-md border bg-muted/20 px-4 py-3 text-sm">
             <Field label="Số đơn" value={row.code} />
             <Field label="Người nghỉ" value={row.employee_name || `#${row.employee_id}`} />
-            <Field label="Loại nghỉ" value={row.leave_type_name || '—'} />
+            {/*  Đơn nhiều loại phải nói RA từng loại mấy ngày, không rút thành
+                 «Phép năm +1»: người duyệt đang quyết chính vào con số đó —
+                 3 ngày phép năm khác hẳn 3 ngày không lương về mặt tiền lương. */}
+            <Field label="Loại nghỉ" value={leaveLinesText(row) || row.leave_type_name || '—'} />
             <Field label="Số ngày" value={`${row.total_days} ngày`} />
             <Field
               label="Thời gian nghỉ"

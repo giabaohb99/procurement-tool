@@ -205,10 +205,13 @@ export const LEAVE_TYPE_CRUD_CONFIG: CrudConfig<LeaveType> = {
     },
     {
       name: 'exclude_holiday',
-      label: 'Trừ thứ Bảy, Chủ nhật và ngày lễ',
+      //  ⚠️ DEGO Holding **làm cả thứ Bảy** — chỉ Chủ nhật là ngày nghỉ tuần
+      //  (`workday_service.WEEKEND_DAYS`). Nhãn cũ ghi "Trừ thứ Bảy" là mô tả
+      //  sai chính thứ nút này đang bật.
+      label: 'Trừ Chủ nhật và ngày lễ',
       type: 'switch',
       defaultValue: true,
-      hint: 'Tắt cho loại nghỉ dài liên tục (thai sản 6 tháng thì không bù cuối tuần).',
+      hint: 'Thứ Bảy vẫn tính vì công ty làm cả T7. Tắt nút này cho loại nghỉ dài liên tục (thai sản 6 tháng thì không bù cuối tuần).',
     },
     {
       name: 'require_attachment',

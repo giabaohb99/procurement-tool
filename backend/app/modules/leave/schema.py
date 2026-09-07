@@ -188,11 +188,29 @@ class HandoverItem(BaseModel):
     content: str = Field("", max_length=500)
 
 
+class LeaveLineItem(BaseModel):
+    """Một loại nghỉ trong đơn (07/09/2026).
+
+    `days = 0` chỉ hợp lệ khi đơn có ĐÚNG MỘT dòng — lúc đó máy tự tính từ
+    khoảng ngày, đúng hành vi của `total_days = 0` thời một loại. Nhiều dòng thì
+    phải gõ rõ từng con số: máy không đoán được chia 4 ngày thành 3+1 hay 2+2.
+    """
+
+    leave_type_id: int
+    days: float = 0.0
+
+
 class LeaveRequestBase(BaseModel):
     #  Bỏ trống = người đang lập đơn. Lập hộ vẫn được — hành chính lập hộ là việc
     #  có thật, cùng luật với `_check_leave` của giấy GNP.
     employee_id: int = 0
-    leave_type_id: int
+    #  ⚠️ **Còn nhận `leave_type_id` là CỐ Ý.** Từ 07/09/2026 nguồn thật là
+    #  `lines`, nhưng bỏ ô này thì mọi đường gọi cũ (gói tri thức Trợ lý AI, bài
+    #  kiểm, kịch bản seed) gãy cùng lúc mà chẳng đổi lấy gì. Không gửi `lines`
+    #  thì backend dựng một dòng từ đúng cặp `leave_type_id` + `total_days` cũ —
+    #  xem `request_service.build_lines`.
+    leave_type_id: int = 0
+    lines: list[LeaveLineItem] = Field(default_factory=list)
     from_date: date
     to_date: date
     from_session: int = SESSION_FULL
@@ -217,6 +235,9 @@ class LeaveRequestCreate(LeaveRequestBase):
 class LeaveRequestUpdate(BaseModel):
     employee_id: int | None = None
     leave_type_id: int | None = None
+    #  `None` = không đụng tới danh sách dòng; gửi lên là GHI ĐÈ cả danh sách,
+    #  cùng quy ước với `handovers`.
+    lines: list[LeaveLineItem] | None = None
     from_date: date | None = None
     to_date: date | None = None
     from_session: int | None = None
@@ -236,6 +257,17 @@ class HandoverResponse(BaseModel):
     employee_id: int
     employee_name: str = ""
     content: str
+    sort_order: int
+
+    class Config:
+        from_attributes = True
+
+
+class LeaveLineResponse(BaseModel):
+    id: int
+    leave_type_id: int
+    leave_type_name: str = ""
+    days: float
     sort_order: int
 
     class Config:

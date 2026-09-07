@@ -21,7 +21,7 @@ from app.core.response import success
 
 from .balance_model import LeaveBalance
 from .catalog_model import Holiday, LeaveType, LeaveTypeSeniority
-from .request_model import LeaveRequest
+from .request_model import LeaveRequest, LeaveRequestLine
 from .schema import (HolidayCreate, HolidayResponse, HolidayUpdate,
                      LeaveTypeCreate, LeaveTypeResponse, LeaveTypeUpdate,
                      SeniorityTierCreate, SeniorityTierResponse,
@@ -30,7 +30,14 @@ from .schema import (HolidayCreate, HolidayResponse, HolidayUpdate,
 
 def _block_delete_used_type(db: Session, obj: LeaveType) -> None:
     """Chốt `before_delete` — xem đầu tệp về dữ liệu mồ côi."""
-    if db.query(LeaveRequest).filter(LeaveRequest.leave_type_id == obj.id).count():
+    #  Hỏi CẢ HAI bảng. Cột `leave_type_id` ở đầu đơn chỉ ghi loại CHÍNH, nên một
+    #  loại chỉ xuất hiện ở dòng phụ (2 ngày trong đơn 5 ngày) thì hỏi mỗi bảng
+    #  đơn là thấy "không ai dùng" — xóa xong bản kê của những tờ đơn đó trỏ vào
+    #  hư không.
+    used = db.query(LeaveRequest).filter(LeaveRequest.leave_type_id == obj.id).count() \
+        or db.query(LeaveRequestLine).filter(
+            LeaveRequestLine.leave_type_id == obj.id).count()
+    if used:
         raise HTTPException(
             400, f"«{obj.name}» đang có đơn nghỉ phép nên không xóa được. "
                  "Bỏ tick «Đang dùng» để ẩn khỏi ô chọn thay vì xóa.")

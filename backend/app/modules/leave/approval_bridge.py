@@ -33,7 +33,6 @@ from sqlalchemy.orm import Session
 
 from app.modules.approval import entity_hooks, flow_service, instance_service
 
-from . import balance_service
 from .constants import (LR_APPROVED, LR_DRAFT, LR_PENDING, LR_REJECTED,
                         LR_RETURNED, SESSION_TO_DOC_CODE)
 from .request_model import LeaveRequest
@@ -50,6 +49,13 @@ def entity_context(obj: LeaveRequest) -> dict:
     `department_id` là của NGƯỜI NGHỈ (chép lúc lập đơn), nên bước «trưởng bộ
     phận của phòng chủ trì» trỏ đúng vào sếp trực tiếp của họ chứ không phải sếp
     của người lập hộ.
+
+    ⚠️ **`leave_type_id` là loại CHÍNH của đơn** (dòng chiếm nhiều ngày nhất),
+    không phải "loại nghỉ duy nhất" — đơn khai nhiều loại được từ 07/09/2026.
+    Nhánh khai *"loại nghỉ = không lương thì thêm chặng Giám đốc"* sẽ KHÔNG chạy
+    cho tờ đơn 3 ngày phép năm + 1 ngày không lương. Cố ý không đưa cả danh sách
+    loại vào đây: `condition_service` chỉ so được giá trị vô hướng, thêm một ô mà
+    phép `in` của nó không đọc nổi thì tệ hơn là không có ô đó.
     """
     return {
         "id": obj.id,
@@ -183,9 +189,12 @@ def _on_approved(db: Session, request_id: int, instance) -> None:
     if obj is None or obj.status == LR_APPROVED:
         return
 
-    balance_service.consume(db, obj.employee_id, obj.from_date.year,
-                            obj.leave_type_id, obj.total_days,
-                            instance.updated_by or 0)
+    from . import request_service
+
+    #  Trừ theo TỪNG DÒNG loại nghỉ — đơn khai được nhiều loại từ 07/09/2026, và
+    #  mỗi loại có sổ quỹ riêng. Trừ tổng vào loại chính là cộng nhầm ngày không
+    #  lương vào quỹ phép năm.
+    request_service.consume_lines(db, obj, instance.updated_by or 0)
     obj.status = LR_APPROVED
     obj.decided_at = datetime.now()
     obj.decision_note = ""
@@ -205,9 +214,11 @@ def _release_and_set(db: Session, request_id: int, instance, status: int,
     obj = _get(db, request_id)
     if obj is None or obj.status != LR_PENDING:
         return
+
+    from . import request_service
+
     actor = instance.updated_by or 0
-    balance_service.release(db, obj.employee_id, obj.from_date.year,
-                            obj.leave_type_id, obj.total_days, actor)
+    request_service.release_lines(db, obj, actor)
     obj.status = status
     obj.decision_note = _reason(instance, default_reason)
     obj.decided_at = datetime.now()
@@ -336,7 +347,13 @@ def create_leave_document(db: Session, obj: LeaveRequest, actor: int) -> int:
             "employee_id": obj.employee_id,
             #  Mã CHUỖI của loại nghỉ — đây chính là mối nối giữa bảng cấu hình
             #  và ô JSON của giấy. Xem đầu `leave/constants.py`.
+            #
+            #  ⚠️ Đơn nhiều loại thì đây là loại CHÍNH (dòng nhiều ngày nhất);
+            #  bản kê đủ nằm ở `leave_lines` ngay dưới. Giấy GNP giữ một ô
+            #  `leave_type` vì bản in và mọi báo cáo cũ đọc thẳng ô đó — đổi nó
+            #  thành danh sách là phải sửa cả phân hệ Văn thư cho một tờ giấy.
             "leave_type": (leave_type.code if leave_type else "annual"),
+            "leave_lines": _document_lines(db, obj),
             "from_date": obj.from_date.isoformat(),
             "to_date": obj.to_date.isoformat(),
             "from_session": SESSION_TO_DOC_CODE.get(obj.from_session, "full"),
@@ -354,3 +371,28 @@ def create_leave_document(db: Session, obj: LeaveRequest, actor: int) -> int:
     obj.document_id = doc.id
     db.flush()
     return doc.id
+
+
+def _document_lines(db: Session, obj: LeaveRequest) -> list[dict]:
+    """Bản kê từng loại nghỉ để ghi vào giấy GNP.
+
+    Mang cả `code` lẫn `name`: mã để máy đọc (cùng bộ với `core/leave_codes.py`),
+    tên để bản in hiện ra chữ mà không phải tra ngược bảng cấu hình — giấy đã
+    phát hành phải đọc được cả khi loại nghỉ đó về sau bị đổi tên hoặc ngừng dùng.
+    """
+    from .catalog_model import LeaveType
+    from .request_model import LeaveRequestLine
+
+    lines = (db.query(LeaveRequestLine)
+             .filter(LeaveRequestLine.request_id == obj.id)
+             .order_by(LeaveRequestLine.sort_order)
+             .all())
+    types = {row.id: row for row in db.query(LeaveType).all()}
+    return [
+        {"leave_type": (types[line.leave_type_id].code
+                        if line.leave_type_id in types else ""),
+         "name": (types[line.leave_type_id].name
+                  if line.leave_type_id in types else ""),
+         "days": line.days}
+        for line in lines
+    ]

@@ -326,8 +326,8 @@ def test_khong_sua_duoc_don_da_gui_duyet(db):
     emp = _employee(db)
     lt = _leave_type(db)
     obj = _create(db, _user(emp.id), lt)
-    employee, leave_type = request_service.prepare_submit(db, obj, _user(emp.id))
-    request_service.mark_submitted(db, obj, employee, leave_type, _user(emp.id))
+    employee = request_service.prepare_submit(db, obj, _user(emp.id))
+    request_service.mark_submitted(db, obj, employee, _user(emp.id))
 
     with pytest.raises(HTTPException) as e:
         request_service.update(db, obj, LeaveRequestUpdate(reason="Khác"), _user(emp.id))
@@ -350,8 +350,8 @@ def test_ghi_de_danh_sach_ban_giao(db):
 # ── 3. Gửi duyệt và bốn kết cục ────────────────────────────────────────────────
 
 def _submit(db, obj, user):
-    employee, leave_type = request_service.prepare_submit(db, obj, user)
-    return request_service.mark_submitted(db, obj, employee, leave_type, user)
+    employee = request_service.prepare_submit(db, obj, user)
+    return request_service.mark_submitted(db, obj, employee, user)
 
 
 def test_gui_duyet_giu_cho_quy_ngay_lap_tuc(db):

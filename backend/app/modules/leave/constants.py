@@ -70,9 +70,43 @@ LEAVE_SESSION_LABELS = {
     SESSION_HOURLY: "Theo giờ",
 }
 
-#  Số công của mỗi buổi — dùng khi GỢI Ý tổng số ngày. `SESSION_HOURLY` cố ý
-#  KHÔNG có mặt ở đây: số công của nó tính từ khoảng giờ, không phải một hằng số.
-SESSION_CREDIT = {SESSION_FULL: 1.0, SESSION_MORNING: 0.5, SESSION_AFTERNOON: 0.5}
+#  Số công của NGÀY ĐẦU và NGÀY CUỐI khoảng nghỉ, theo ô buổi.
+#
+#  ⚠️ **Hai bảng KHÁC NHAU, và đó chính là chỗ bản cũ tính sai** (vá 07/09/2026).
+#  Trước đó cả hai đầu dùng chung một bảng `{Cả ngày: 1, Sáng: .5, Chiều: .5}`,
+#  tức coi ô buổi là *"buổi nào của ngày đó được nghỉ"*. Nhưng nhãn trên màn hình
+#  là **«Buổi bắt đầu»** / **«Buổi kết thúc»** — nó nói MỐC, không nói buổi:
+#
+#      bắt đầu buổi Sáng ngày 05  →  nghỉ TRỌN ngày 05 (1.0), không phải nửa
+#      kết thúc buổi Chiều ngày 07 →  nghỉ TRỌN ngày 07 (1.0), không phải nửa
+#
+#  Chính luật *"chiều → sáng cùng ngày là khoảng trống"* (`check_date_range`)
+#  cũng chỉ đúng khi đọc theo mốc: kết thúc trước lúc bắt đầu. Bản cũ chặn theo
+#  mốc nhưng lại tính theo buổi, nên hai vế mâu thuẫn nhau — hậu quả: đơn *«từ
+#  Sáng 05 đến hết 07»* bị trừ 2.5 thay vì 3 ngày, im lặng, không ai thấy.
+#
+#  `SESSION_HOURLY` cố ý KHÔNG có mặt: số công của nó tính từ khoảng giờ
+#  (`count_hourly_days`), không phải một hằng số.
+START_DAY_CREDIT = {SESSION_FULL: 1.0, SESSION_MORNING: 1.0, SESSION_AFTERNOON: 0.5}
+END_DAY_CREDIT = {SESSION_FULL: 1.0, SESSION_MORNING: 0.5, SESSION_AFTERNOON: 1.0}
+
+
+def same_day_credit(from_session: int, to_session: int) -> float:
+    """Số công khi nghỉ GỌN trong một ngày — hai ô buổi cùng nói về ngày đó.
+
+    Tính bằng hai mốc nửa ngày: bắt đầu ở nửa `0` (sáng) hay `1` (chiều), kết
+    thúc ở nửa `0` hay `1`. Số nửa ngày phủ được là `end − start + 1`.
+
+    Không lấy riêng một trong hai ô như bản cũ: lấy `from_session` thì
+    *«Cả ngày → Sáng»* ra **1.0** trong khi người dùng khai kết thúc lúc hết
+    buổi sáng, tức nửa ngày — và người lao động mất oan 0.5 ngày phép.
+
+    *«Chiều → Sáng»* ra `0.0` (kết thúc trước lúc bắt đầu); `check_date_range`
+    đã chặn trước, đây chỉ là để hàm không trả số âm.
+    """
+    start = 1 if from_session == SESSION_AFTERNOON else 0
+    end = 0 if to_session == SESSION_MORNING else 1
+    return max(0.0, (end - start + 1) * 0.5)
 
 #  ── Khung giờ làm việc, dùng để quy đổi «nghỉ mấy giờ» ra «mấy ngày phép» ────
 #

@@ -24,11 +24,28 @@ export interface LeaveHandoverValue {
   content: string
 }
 
+/**
+ * Một dòng loại nghỉ trong form.
+ *
+ * `days = 0` nghĩa là **chưa có con số** — đơn một dòng thì backend tự tính từ
+ * khoảng ngày, đơn nhiều dòng thì backend chặn và đòi nhập rõ.
+ */
+export interface LeaveLineValue {
+  leave_type_id: number
+  days: number
+}
+
 export interface LeaveFormValues {
   /** NGƯỜI NGHỈ. `0` = chính người đang lập đơn — xem `toLeavePayload`. */
   employee_id: number
   employee_name: string
-  leave_type_id: number
+  /**
+   * Bản kê loại nghỉ. **Không có ô `leave_type_id` lẫn `total_days` trong form
+   * nữa**: cả hai là con số DẪN XUẤT từ danh sách này (loại chính = dòng nhiều
+   * ngày nhất, tổng ngày = tổng các dòng), và backend tự đặt. Giữ chúng ở đây
+   * là nuôi hai nguồn sự thật cho cùng một con số, rồi cái thứ hai sẽ lệch.
+   */
+  lines: LeaveLineValue[]
   from_date: string
   to_date: string
   from_session: number
@@ -36,7 +53,6 @@ export interface LeaveFormValues {
   /** `HH:MM` — chỉ dùng khi buổi là «Theo giờ», rỗng thì không gửi lên. */
   from_time: string
   to_time: string
-  total_days: number
   reason: string
   contact_phone: string
   contact_address: string
@@ -44,6 +60,16 @@ export interface LeaveFormValues {
 }
 
 export const REASON_MAX = 1000
+
+/** Trần số loại nghỉ trong một đơn — khớp `MAX_LINES` ở backend. */
+export const MAX_LEAVE_LINES = 10
+
+/** Tổng số ngày của đơn = tổng các dòng. Nguồn DUY NHẤT của con số này ở v2. */
+export function totalLeaveDays(lines: LeaveLineValue[]): number {
+  //  Làm tròn 2 chữ số vì cộng số thực: 0.13 + 0.5 ra 0.6300000000000001 và ô
+  //  «Tổng cộng» hiện nguyên cái đuôi đó ra màn hình.
+  return Math.round(lines.reduce((sum, line) => sum + (line.days || 0), 0) * 100) / 100
+}
 
 /** Ngày hôm nay theo giờ ĐỊA PHƯƠNG, dạng `YYYY-MM-DD`.
  *
@@ -62,15 +88,15 @@ export function emptyLeaveForm(): LeaveFormValues {
   return {
     employee_id: 0,
     employee_name: '',
-    leave_type_id: 0,
+    //  MỘT dòng trống sẵn: gần như mọi tờ đơn chỉ có một loại nghỉ, nên bắt
+    //  người dùng bấm «Thêm loại nghỉ» trước khi gõ được gì là thừa một nhịp.
+    lines: [{ leave_type_id: 0, days: 0 }],
     from_date: today,
     to_date: today,
     from_session: LEAVE_SESSION.FULL,
     to_session: LEAVE_SESSION.FULL,
     from_time: '',
     to_time: '',
-    //  `0` = để backend tự tính. Khác 0 nghĩa là người dùng đã sửa đè.
-    total_days: 0,
     reason: '',
     contact_phone: '',
     contact_address: '',
@@ -84,17 +110,25 @@ function hhmm(value?: string | null): string {
 }
 
 export function formValuesOf(request: LeaveRequest): LeaveFormValues {
+  //  Đơn cũ chưa có bản kê (dữ liệu trước 07/09/2026 mà backfill bỏ qua vì
+  //  `total_days = 0`) thì dựng lại một dòng từ hai cột đầu đơn — mở ra sửa vẫn
+  //  thấy đúng loại nghỉ mình đã chọn, không phải một bảng trống.
+  const lines = (request.lines ?? []).map((line) => ({
+    leave_type_id: line.leave_type_id,
+    days: line.days,
+  }))
   return {
     employee_id: request.employee_id,
     employee_name: request.employee_name ?? '',
-    leave_type_id: request.leave_type_id,
+    lines: lines.length
+      ? lines
+      : [{ leave_type_id: request.leave_type_id, days: request.total_days }],
     from_date: request.from_date,
     to_date: request.to_date,
     from_session: request.from_session,
     to_session: request.to_session,
     from_time: hhmm(request.from_time),
     to_time: hhmm(request.to_time),
-    total_days: request.total_days,
     reason: request.reason,
     contact_phone: request.contact_phone,
     contact_address: request.contact_address,
@@ -116,12 +150,18 @@ export function formValuesOf(request: LeaveRequest): LeaveFormValues {
  *
  * Dòng chưa chọn người (`employee_id = 0`) bị loại ngay ở đây — backend cũng bỏ
  * qua, nhưng lọc sớm thì thân yêu cầu sạch và log dễ đọc.
+ *
+ * `lines` cũng vậy: dòng chưa chọn loại nghỉ bị loại. Bảng dòng luôn chừa sẵn
+ * một dòng trống để gõ, và đẩy nó lên là ăn câu chặn *"Chưa chọn loại nghỉ"*
+ * cho một dòng người dùng còn chưa động tới.
  */
 export function toLeavePayload(values: LeaveFormValues): LeaveRequestPayload {
   const isHourly = isHourlyLeave(values.from_session, values.to_session)
   return {
     employee_id: values.employee_id,
-    leave_type_id: values.leave_type_id,
+    lines: values.lines
+      .filter((line) => line.leave_type_id > 0)
+      .map((line) => ({ leave_type_id: line.leave_type_id, days: line.days })),
     from_date: values.from_date,
     to_date: values.to_date,
     from_session: values.from_session,
@@ -130,7 +170,6 @@ export function toLeavePayload(values: LeaveFormValues): LeaveRequestPayload {
     //  theo giờ, và backend chặn nếu có giờ mà buổi lại không phải «Theo giờ».
     from_time: isHourly && values.from_time ? values.from_time : null,
     to_time: isHourly && values.to_time ? values.to_time : null,
-    total_days: values.total_days,
     reason: values.reason,
     contact_phone: values.contact_phone,
     contact_address: values.contact_address,

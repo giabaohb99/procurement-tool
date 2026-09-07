@@ -105,9 +105,9 @@ def _submit(db, leave_type, employee, days=2):
         leave_type_id=leave_type.id,
         from_date=MONDAY, to_date=MONDAY + timedelta(days=days - 1),
         reason="Về quê"), user)
-    emp, lt = request_service.prepare_submit(db, obj, user)
+    emp = request_service.prepare_submit(db, obj, user)
     instance_id = approval_bridge.start_approval(db, obj, user)
-    return request_service.mark_submitted(db, obj, emp, lt, user, instance_id), instance_id
+    return request_service.mark_submitted(db, obj, emp, user, instance_id), instance_id
 
 
 def _remaining(db, employee, leave_type):

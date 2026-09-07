@@ -26,7 +26,15 @@ const APPROVAL_STEPS = `${APPROVALS}/steps`
 
 export interface LeaveRequestPayload {
   employee_id?: number
-  leave_type_id: number
+  /**
+   * Bản kê loại nghỉ của đơn. Gửi lên là **ghi đè cả danh sách** (cùng quy ước
+   * với `handovers`). Backend tự cộng ra `total_days` và tự đặt loại chính, nên
+   * giao diện KHÔNG gửi hai ô đó nữa.
+   *
+   * `days = 0` chỉ hợp lệ khi danh sách có đúng một dòng — lúc đó backend tính
+   * từ khoảng ngày, đúng hành vi của `total_days = 0` thời một loại.
+   */
+  lines: { leave_type_id: number; days: number }[]
   from_date: string
   to_date: string
   from_session?: number
@@ -35,8 +43,6 @@ export interface LeaveRequestPayload {
   from_time?: string | null
   to_time?: string | null
   unit?: number
-  /** `0` = để backend tự tính. Khác 0 là người dùng sửa đè. */
-  total_days?: number
   reason?: string
   contact_phone?: string
   contact_address?: string

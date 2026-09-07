@@ -28,14 +28,22 @@ from .constants import (EDITABLE_STATUSES, GENDER_UNKNOWN, HOLDING_STATUSES,
                         LUNCH_END, LUNCH_START, SESSION_AFTERNOON,
                         SESSION_HOURLY, SESSION_MORNING, UNIT_DAY, UNIT_HOUR,
                         WORK_DAY_END, WORK_DAY_START)
-from .request_model import LeaveHandover, LeaveRequest
+from .request_model import LeaveHandover, LeaveRequest, LeaveRequestLine
 
 #  Bộ lọc danh sách (whitelist của `apply_filters`). `code` để ô tìm nhanh lo.
+#  `leave_type_id` lọc theo **loại chính** của đơn — xem ghi chú ở cột đó trong
+#  `request_model`. Đơn hai loại lọc theo loại phụ thì không ra; chấp nhận, vì
+#  lọc trên bảng con đòi JOIN và màn danh sách chưa ai hỏi tới.
 FILTERABLE = ["status", "employee_id", "leave_type_id", "company_id",
               "department_id", "unit"]
 SEARCH_FIELDS = ("code", "reason")
 
 CODE_PREFIX = "NP"
+
+#  Trần số loại nghỉ trong một đơn. Không phải giới hạn kỹ thuật — chỉ là mức mà
+#  quá nó thì gần như chắc chắn người dùng đang nhập nhầm, và mỗi dòng là một
+#  lượt khóa dòng quỹ lúc gửi duyệt.
+MAX_LINES = 10
 
 
 def apply_keyword_search(query, keyword: str | None):
@@ -126,6 +134,15 @@ def check_date_range(from_date: date, to_date: date,
                      to_time: time | None = None) -> None:
     if to_date < from_date:
         raise HTTPException(400, "«Đến ngày» phải bằng hoặc sau «Từ ngày»")
+    #  ⚠️ Chặn khoảng DÀI QUÁ TRẦN — không có chốt này thì `date_range` lặng lẽ
+    #  dừng ở `MAX_RANGE_DAYS` và trả về một con số nhỏ hơn sự thật: gõ nhầm năm
+    #  2036 (3651 ngày) ra đúng **343 ngày**, một con số trông hoàn toàn hợp lý.
+    #  Sai kiểu này không có triệu chứng nào cho tới lúc đối chiếu sổ.
+    span = (to_date - from_date).days + 1
+    if span > workday_service.MAX_RANGE_DAYS:
+        raise HTTPException(
+            400, f"Khoảng nghỉ dài {span} ngày, vượt trần {workday_service.MAX_RANGE_DAYS} "
+                 "ngày của một tờ đơn. Kiểm lại năm ở hai ô ngày.")
     if (from_date == to_date and from_session == SESSION_AFTERNOON
             and to_session == SESSION_MORNING):
         #  Cùng câu chữ với `_check_leave` của giấy GNP — một luật, một câu báo.
@@ -270,6 +287,174 @@ def hourly_days(db: Session, from_date: date, to_date: date,
     return days
 
 
+# ── Dòng loại nghỉ (07/09/2026) ────────────────────────────────────────────────
+#
+#  Một tờ đơn khai được NHIỀU loại nghỉ — *"nghỉ 07→10/09: 3 ngày phép năm +
+#  1 ngày không lương"*. Cả đơn dùng chung MỘT khoảng ngày; dòng chỉ chia số
+#  ngày. Ba hàm dưới đây chạy nối nhau và đúng thứ tự đó:
+#
+#      collect_lines  →  đọc ô `lines` (hoặc cặp cột cũ) ra [(loại nghỉ, ngày)]
+#      resolve_days   →  điền số ngày máy tính cho dòng để trống
+#      check_lines    →  bốn chốt: trùng loại · ngày ≤ 0 · quá trần · quá khoảng
+
+def collect_lines(db: Session, raw_lines, leave_type_id: int,
+                  total_days: float) -> list[tuple[LeaveType, float]]:
+    """Danh sách dòng của đơn, dạng `[(LeaveType, số ngày)]`.
+
+    Không gửi `lines` thì dựng MỘT dòng từ cặp `leave_type_id` + `total_days`
+    cũ. Đó là cả đường tương thích ngược lẫn đường đi của đơn một loại — tức
+    gần như mọi tờ đơn — nên nó không phải nhánh phụ tạm bợ.
+    """
+    items = [(item.leave_type_id, float(item.days or 0.0))
+             for item in (raw_lines or []) if item.leave_type_id]
+    if not items:
+        if not leave_type_id:
+            raise HTTPException(400, "Chưa chọn loại nghỉ cho đơn này")
+        items = [(leave_type_id, float(total_days or 0.0))]
+    if len(items) > MAX_LINES:
+        raise HTTPException(
+            400, f"Một đơn khai tối đa {MAX_LINES} loại nghỉ. Nghỉ dài nhiều đợt "
+                 "thì lập nhiều đơn.")
+    return [(get_leave_type(db, type_id), days) for type_id, days in items]
+
+
+def resolve_days(db: Session, pairs: list[tuple[LeaveType, float]], employee: Employee,
+                 from_date: date, to_date: date, from_session: int, to_session: int,
+                 from_time: time | None, to_time: time | None
+                 ) -> list[tuple[LeaveType, float]]:
+    """Chốt số ngày của từng dòng.
+
+    Đơn MỘT dòng đi qua `compute_days` y như trước: để trống thì máy tính từ
+    khoảng ngày, gõ vào thì tôn trọng con số đó (đơn theo giờ vẫn không cho gõ
+    đè). Đơn NHIỀU dòng thì mỗi dòng phải gõ rõ — máy không đoán được chia
+    4 ngày thành 3+1 hay 2+2, và đoán sai là trừ nhầm quỹ.
+
+    ⚠️ **Theo giờ thì đúng một dòng.** Nghỉ hai tiếng mà chia hai loại nghỉ là
+    ca chưa từng có, còn cho vào thì phải chia con số quy đổi giờ→ngày ra nhiều
+    phần — thêm một đường sinh lỗi cho một thứ không ai dùng.
+    """
+    if is_hourly(from_session, to_session) and len(pairs) > 1:
+        raise HTTPException(
+            400, "Nghỉ theo giờ chỉ khai được một loại nghỉ. Bỏ bớt dòng, hoặc "
+                 "chọn lại buổi nghỉ.")
+
+    if len(pairs) == 1:
+        leave_type, days = pairs[0]
+        return [(leave_type, compute_days(db, leave_type, employee, from_date, to_date,
+                                          from_session, to_session, days,
+                                          from_time, to_time))]
+
+    resolved = []
+    for leave_type, days in pairs:
+        if days <= 0:
+            raise HTTPException(
+                400, f"Dòng «{leave_type.name}» chưa có số ngày. Đơn nhiều loại nghỉ "
+                     "phải ghi rõ mỗi loại mấy ngày.")
+        resolved.append((leave_type, round(days, 2)))
+    return resolved
+
+
+def check_lines(pairs: list[tuple[LeaveType, float]],
+                from_date: date, to_date: date) -> float:
+    """Bốn chốt trên danh sách dòng. Trả TỔNG số ngày của đơn.
+
+    Chốt cuối là **trần theo khoảng ngày**: tổng số ngày nghỉ không vượt quá số
+    ngày dương lịch của khoảng đã chọn. Trần này cố ý đếm cả T7/CN/lễ nên nó
+    không bao giờ chặn nhầm một ca hợp lệ — kể cả công trường chạy Chủ nhật —
+    nhưng nó chặn được ca gõ nhầm 30 ngày trên khoảng hai ngày, thứ mà trước đây
+    lọt thẳng vào sổ quỹ vì `total_days` cho sửa đè tự do.
+    """
+    seen: set[int] = set()
+    for leave_type, days in pairs:
+        if leave_type.id in seen:
+            raise HTTPException(
+                400, f"Loại nghỉ «{leave_type.name}» khai hai lần — gộp lại thành "
+                     "một dòng.")
+        seen.add(leave_type.id)
+        if days <= 0:
+            raise HTTPException(400, f"Dòng «{leave_type.name}» phải có số ngày lớn hơn 0")
+        check_max_days(leave_type, days)
+
+    total = round(sum(days for _, days in pairs), 2)
+    ceiling = (to_date - from_date).days + 1
+    if total > ceiling:
+        raise HTTPException(
+            400, f"Tổng {total} ngày nhiều hơn số ngày của khoảng đã chọn "
+                 f"({ceiling} ngày). Sửa lại số ngày, hoặc nới khoảng ngày nghỉ.")
+    return total
+
+
+def primary_type_id(pairs: list[tuple[LeaveType, float]]) -> int:
+    """Loại nghỉ CHÍNH của đơn — dòng chiếm nhiều ngày nhất, hòa thì dòng đầu.
+
+    Đây là con số đi vào cột dẫn xuất `LeaveRequest.leave_type_id`, tức cũng là
+    thứ bộ lọc danh sách và điều kiện rẽ nhánh của luồng duyệt đọc được. Xem
+    phần *Hạn chế đã biết* ở `doc/tai-lieu-chuc-nang/17-nghi-phep.md`.
+    """
+    return max(pairs, key=lambda pair: pair[1])[0].id if pairs else 0
+
+
+def replace_lines(db: Session, request_id: int,
+                  pairs: list[tuple[LeaveType, float]], actor: int) -> None:
+    """Ghi đè danh sách dòng. Xóa hết rồi thêm lại — cùng lý lẽ với `_replace_handovers`."""
+    db.query(LeaveRequestLine).filter(LeaveRequestLine.request_id == request_id).delete()
+    for i, (leave_type, days) in enumerate(pairs):
+        db.add(LeaveRequestLine(request_id=request_id, leave_type_id=leave_type.id,
+                                days=days, sort_order=i,
+                                created_by=actor, updated_by=actor))
+
+
+def lines_of(db: Session, request_id: int) -> list[LeaveRequestLine]:
+    """Dòng của một đơn, theo thứ tự nhập. Rỗng chỉ xảy ra với dữ liệu hỏng."""
+    return (db.query(LeaveRequestLine)
+            .filter(LeaveRequestLine.request_id == request_id)
+            .order_by(LeaveRequestLine.sort_order)
+            .all())
+
+
+# ── Bốn nhịp sổ quỹ, chạy THEO DÒNG ────────────────────────────────────────────
+#
+#  Quỹ phép là (người × năm × **loại nghỉ**), nên đơn hai loại là hai lượt ghi
+#  vào hai dòng quỹ khác nhau. Gói lại thành bốn hàm ở đây chứ không để nơi gọi
+#  tự lặp: nơi gọi có bốn chỗ (gửi duyệt · duyệt xong · ba kết cục không duyệt ·
+#  hủy đơn) và chỉ cần một chỗ quên vòng lặp là sổ lệch âm thầm.
+
+def check_enough_lines(db: Session, employee: Employee, obj: LeaveRequest) -> None:
+    """Đủ phép cho MỌI dòng. Một dòng thiếu là cả đơn không gửi được (QĐ-NP2)."""
+    year = obj.from_date.year
+    for line in lines_of(db, obj.id):
+        balance_service.check_enough(db, employee, year,
+                                     get_leave_type(db, line.leave_type_id), line.days)
+
+
+def reserve_lines(db: Session, employee: Employee, obj: LeaveRequest, actor: int) -> None:
+    year = obj.from_date.year
+    for line in lines_of(db, obj.id):
+        balance_service.reserve(db, employee, year,
+                                get_leave_type(db, line.leave_type_id), line.days, actor)
+
+
+def release_lines(db: Session, obj: LeaveRequest, actor: int) -> None:
+    year = obj.from_date.year
+    for line in lines_of(db, obj.id):
+        balance_service.release(db, obj.employee_id, year, line.leave_type_id,
+                                line.days, actor)
+
+
+def consume_lines(db: Session, obj: LeaveRequest, actor: int) -> None:
+    year = obj.from_date.year
+    for line in lines_of(db, obj.id):
+        balance_service.consume(db, obj.employee_id, year, line.leave_type_id,
+                                line.days, actor)
+
+
+def refund_lines(db: Session, obj: LeaveRequest, actor: int) -> None:
+    year = obj.from_date.year
+    for line in lines_of(db, obj.id):
+        balance_service.refund_used(db, obj.employee_id, year, line.leave_type_id,
+                                    line.days, actor)
+
+
 # ── Tạo · sửa · xóa ────────────────────────────────────────────────────────────
 
 def _replace_handovers(db: Session, request_id: int, items, actor: int) -> None:
@@ -288,15 +473,15 @@ def create(db: Session, data, user) -> LeaveRequest:
     """Lập đơn — luôn ở trạng thái **Nháp**. Gửi duyệt là một bước riêng."""
     employee = resolve_leave_taker(db, user, data.employee_id)
     ensure_can_create_for(db, user, employee)
-    leave_type = get_leave_type(db, data.leave_type_id)
 
     check_date_range(data.from_date, data.to_date, data.from_session, data.to_session,
                      data.from_time, data.to_time)
-    check_gender(leave_type, employee)
-    days = compute_days(db, leave_type, employee, data.from_date, data.to_date,
-                        data.from_session, data.to_session, data.total_days,
-                        data.from_time, data.to_time)
-    check_max_days(leave_type, days)
+    pairs = collect_lines(db, data.lines, data.leave_type_id, data.total_days)
+    for leave_type, _ in pairs:
+        check_gender(leave_type, employee)
+    pairs = resolve_days(db, pairs, employee, data.from_date, data.to_date,
+                         data.from_session, data.to_session, data.from_time, data.to_time)
+    days = check_lines(pairs, data.from_date, data.to_date)
 
     hourly = is_hourly(data.from_session, data.to_session)
     obj = LeaveRequest(
@@ -304,7 +489,7 @@ def create(db: Session, data, user) -> LeaveRequest:
         company_id=employee.company_id or 0,
         department_id=employee.department_id or 0,
         employee_id=employee.id,
-        leave_type_id=leave_type.id,
+        leave_type_id=primary_type_id(pairs),
         from_date=data.from_date, to_date=data.to_date,
         from_session=data.from_session, to_session=data.to_session,
         from_time=data.from_time, to_time=data.to_time,
@@ -319,6 +504,7 @@ def create(db: Session, data, user) -> LeaveRequest:
     )
     db.add(obj)
     db.flush()
+    replace_lines(db, obj.id, pairs, user.id)
     _replace_handovers(db, obj.id, data.handovers, user.id)
     db.commit()
     db.refresh(obj)
@@ -332,6 +518,32 @@ def check_editable(obj: LeaveRequest) -> None:
                  "rồi lập lại.")
 
 
+def _lines_for_update(db: Session, obj: LeaveRequest, raw_lines,
+                      leave_type_id: int | None,
+                      requested: float) -> list[tuple[LeaveType, float]]:
+    """Dòng của tờ đơn SAU khi sửa, theo ba đường vào — xếp từ rõ ràng nhất.
+
+    1. Gửi `lines` → dùng đúng danh sách đó.
+    2. Gửi `leave_type_id` (đường cũ, một loại) → một dòng loại đó.
+    3. Không gửi gì về loại nghỉ → giữ nguyên dòng đang có trong sổ.
+
+    Ở đường 3, đơn MỘT dòng trả về số ngày `requested` chứ không phải số ngày đã
+    lưu: `resolve_days` sẽ tính lại từ khoảng ngày khi `requested = 0`, tức giữ
+    đúng hành vi cũ *"sửa ngày thì số ngày tự tính lại"*. Đơn NHIỀU dòng thì giữ
+    nguyên phân bổ — máy không có cách nào chia lại hộ, và im lặng chia lại là
+    sửa vào quỹ phép của người ta.
+    """
+    if raw_lines is not None:
+        return collect_lines(db, raw_lines, 0, 0.0)
+    if leave_type_id:
+        return collect_lines(db, None, leave_type_id, requested)
+
+    existing = lines_of(db, obj.id)
+    if len(existing) <= 1:
+        return collect_lines(db, None, obj.leave_type_id, requested)
+    return [(get_leave_type(db, line.leave_type_id), line.days) for line in existing]
+
+
 def update(db: Session, obj: LeaveRequest, data, user) -> LeaveRequest:
     check_editable(obj)
     values = data.model_dump(exclude_unset=True)
@@ -343,13 +555,16 @@ def update(db: Session, obj: LeaveRequest, data, user) -> LeaveRequest:
     has_handovers = "handovers" in values
     values.pop("handovers", None)
     handovers = data.handovers if has_handovers else None
+    #  Cùng quy ước với `handovers`: CÓ MẶT khóa `lines` là ghi đè cả danh sách,
+    #  vắng mặt là giữ nguyên dòng đang có.
+    has_lines = "lines" in values
+    values.pop("lines", None)
 
     employee = (resolve_leave_taker(db, user, values["employee_id"])
                 if "employee_id" in values else get_employee(db, obj.employee_id))
     #  Đổi người nghỉ khi SỬA cũng phải qua chốt lập hộ — nếu không thì lập đơn
     #  cho mình rồi sửa sang tên người khác là đi vòng qua đúng cái chốt đó.
     ensure_can_create_for(db, user, employee)
-    leave_type = get_leave_type(db, values.get("leave_type_id", obj.leave_type_id))
 
     from_date = values.get("from_date", obj.from_date)
     to_date = values.get("to_date", obj.to_date)
@@ -361,27 +576,31 @@ def update(db: Session, obj: LeaveRequest, data, user) -> LeaveRequest:
     from_time = values.get("from_time", obj.from_time if hourly else None)
     to_time = values.get("to_time", obj.to_time if hourly else None)
     check_date_range(from_date, to_date, from_session, to_session, from_time, to_time)
-    check_gender(leave_type, employee)
 
     #  `total_days` chỉ coi là "sửa đè" khi người dùng GỬI LÊN nó. Không gửi thì
     #  tính lại — sửa ngày mà giữ nguyên số ngày cũ là sai ngay lập tức.
     requested = values.get("total_days", 0.0) if "total_days" in values else 0.0
-    days = compute_days(db, leave_type, employee, from_date, to_date,
-                        from_session, to_session, requested, from_time, to_time)
-    check_max_days(leave_type, days)
+    pairs = _lines_for_update(db, obj, data.lines if has_lines else None,
+                              values.get("leave_type_id"), requested)
+    for line_type, _ in pairs:
+        check_gender(line_type, employee)
+    pairs = resolve_days(db, pairs, employee, from_date, to_date,
+                         from_session, to_session, from_time, to_time)
+    days = check_lines(pairs, from_date, to_date)
 
     for key, value in values.items():
         setattr(obj, key, value)
     obj.employee_id = employee.id
     obj.company_id = employee.company_id or 0
     obj.department_id = employee.department_id or 0
-    obj.leave_type_id = leave_type.id
+    obj.leave_type_id = primary_type_id(pairs)
     obj.from_time = from_time
     obj.to_time = to_time
     obj.unit = UNIT_HOUR if hourly else UNIT_DAY
     obj.total_days = days
     obj.updated_by = user.id
 
+    replace_lines(db, obj.id, pairs, user.id)
     if has_handovers:
         _replace_handovers(db, obj.id, handovers, user.id)
     db.commit()
@@ -413,7 +632,7 @@ def check_ready_to_submit(obj: LeaveRequest) -> None:
         raise HTTPException(400, "«Tổng số ngày» phải lớn hơn 0")
 
 
-def prepare_submit(db: Session, obj: LeaveRequest, user) -> tuple[Employee, LeaveType]:
+def prepare_submit(db: Session, obj: LeaveRequest, user) -> Employee:
     """Mọi chốt chặn của bước GỬI DUYỆT, theo thứ tự rẻ trước đắt sau.
 
     Tách khỏi `submit()` để controller gọi được trước khi đụng vào bộ máy duyệt:
@@ -425,23 +644,23 @@ def prepare_submit(db: Session, obj: LeaveRequest, user) -> tuple[Employee, Leav
     check_ready_to_submit(obj)
 
     employee = get_employee(db, obj.employee_id)
-    leave_type = get_leave_type(db, obj.leave_type_id)
     check_overlap(db, obj.employee_id, obj.from_date, obj.to_date, exclude_id=obj.id)
-    balance_service.check_enough(db, employee, obj.from_date.year, leave_type,
-                                 obj.total_days)
-    return employee, leave_type
+    #  Kiểm TỪNG DÒNG, không kiểm tổng: mỗi loại nghỉ có sổ quỹ riêng, nên
+    #  4 ngày = 3 phép năm + 1 không lương có thể qua trong khi 4 ngày phép năm
+    #  thì hết phép.
+    check_enough_lines(db, employee, obj)
+    return employee
 
 
 def mark_submitted(db: Session, obj: LeaveRequest, employee: Employee,
-                   leave_type: LeaveType, user, instance_id: int = 0) -> LeaveRequest:
+                   user, instance_id: int = 0) -> LeaveRequest:
     """Đặt đơn vào *Chờ duyệt* và GIỮ CHỖ quỹ. Gọi sau khi đã trình bộ máy duyệt."""
     obj.status = LR_PENDING
     obj.approval_instance_id = instance_id
     obj.submitted_at = datetime.now()
     obj.decision_note = ""
     obj.updated_by = user.id
-    balance_service.reserve(db, employee, obj.from_date.year, leave_type,
-                            obj.total_days, user.id)
+    reserve_lines(db, employee, obj, user.id)
     db.commit()
     db.refresh(obj)
     return obj
@@ -455,13 +674,10 @@ def cancel(db: Session, obj: LeaveRequest, reason: str, actor: int) -> LeaveRequ
     """
     if obj.status == LR_CANCELLED:
         return obj
-    year = obj.from_date.year
     if obj.status == LR_PENDING:
-        balance_service.release(db, obj.employee_id, year, obj.leave_type_id,
-                                obj.total_days, actor)
+        release_lines(db, obj, actor)
     elif obj.status == LR_APPROVED:
-        balance_service.refund_used(db, obj.employee_id, year, obj.leave_type_id,
-                                    obj.total_days, actor)
+        refund_lines(db, obj, actor)
 
     obj.status = LR_CANCELLED
     obj.decision_note = (reason or "")[:500]

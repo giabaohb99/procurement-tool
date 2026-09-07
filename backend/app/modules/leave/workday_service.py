@@ -13,10 +13,11 @@ Vẫn giữ nguyên một điều: con số này là **GỢI Ý**. Người dùn
 (`LeaveRequest.total_days` là cột nhập), vì lịch làm việc thật luôn có ngoại lệ
 mà máy không biết — ca kíp, nghỉ bù, công trường chạy cả Chủ nhật.
 
-⚠️ Quy ước hai ô buổi giữ **y hệt** `suggested_days()`: `from_session` /
-`to_session` nói *buổi nào của ngày đó được nghỉ*, nên `morning` và `afternoon`
-đều là **0.5** ở cả hai đầu. Đổi quy ước ở đây thôi thì cùng một tờ đơn ra hai
-con số khác nhau tùy người nhập qua màn Nghỉ phép hay qua giấy GNP.
+⚠️ Quy ước hai ô buổi giữ **y hệt** `suggested_days()` của giấy GNP — đổi quy
+ước ở một bên thôi thì cùng một tờ đơn ra hai con số khác nhau tùy người nhập
+qua màn Nghỉ phép hay qua giấy GNP. Quy ước đó là **MỐC**, không phải buổi:
+`from_session` nói nghỉ *bắt đầu* lúc nào, `to_session` nói nghỉ *kết thúc* lúc
+nào. Chi tiết và lý do vá 07/09/2026 nằm ở `constants.START_DAY_CREDIT`.
 """
 from datetime import date, time, timedelta
 
@@ -24,8 +25,9 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from .catalog_model import Holiday
-from .constants import (LUNCH_END, LUNCH_START, SESSION_CREDIT, SESSION_FULL,
-                        WORK_DAY_END, WORK_DAY_START, WORK_HOURS_PER_DAY)
+from .constants import (END_DAY_CREDIT, LUNCH_END, LUNCH_START, SESSION_FULL,
+                        START_DAY_CREDIT, WORK_DAY_END, WORK_DAY_START,
+                        WORK_HOURS_PER_DAY, same_day_credit)
 
 #  Ngày KHÔNG tính vào phép, theo `date.weekday()` (Thứ Hai = 0 … Chủ nhật = 6).
 #
@@ -93,16 +95,21 @@ def session_credit(day: date, from_date: date, to_date: date,
                    from_session: int, to_session: int) -> float:
     """Số công của MỘT ngày trong khoảng nghỉ, chưa xét lễ / cuối tuần.
 
-    Ngày ở giữa luôn là 1.0. Hai ngày đầu và cuối lấy theo ô buổi. Nghỉ gọn
-    trong MỘT ngày thì hai ô buổi nói về cùng một buổi — lấy một cái, đúng như
-    `suggested_days()` đang làm.
+    Ngày ở giữa luôn là 1.0. Ngày đầu và ngày cuối tra **hai bảng khác nhau** —
+    xem ghi chú dài ở `constants.START_DAY_CREDIT`: ô buổi nói MỐC bắt đầu /
+    kết thúc, nên *bắt đầu buổi Sáng* là nghỉ trọn ngày đó, còn *kết thúc buổi
+    Chiều* cũng là nghỉ trọn ngày đó.
+
+    Nghỉ gọn trong MỘT ngày thì hai ô buổi cùng nói về ngày ấy — phải xét CẢ
+    HAI (`same_day_credit`), lấy riêng một cái là *«Cả ngày → Sáng»* ra nguyên
+    một ngày trong khi người dùng khai nửa.
     """
     if from_date == to_date:
-        return SESSION_CREDIT.get(from_session, 1.0)
+        return same_day_credit(from_session, to_session)
     if day == from_date:
-        return SESSION_CREDIT.get(from_session, 1.0)
+        return START_DAY_CREDIT.get(from_session, 1.0)
     if day == to_date:
-        return SESSION_CREDIT.get(to_session, 1.0)
+        return END_DAY_CREDIT.get(to_session, 1.0)
     return 1.0
 
 
