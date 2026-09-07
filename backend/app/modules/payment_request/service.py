@@ -118,6 +118,21 @@ def misa_by_po_code(db: Session, po_codes: list[str]) -> dict[str, str]:
     return {code: (misa or "") for code, misa in rows}
 
 
+def filter_by_misa_code(q, misa_code: str):
+    """Ticket #26 (đợt 2) — lọc danh sách phiếu theo mã MISA của ĐMH.
+
+    Phiếu không lưu mã MISA (chỉ dòng phiếu chụp mã PO) nên lọc đi ba nhịp bằng subquery:
+    ĐMH có mã MISA khớp -> mã PO -> dòng phiếu -> phiếu. Cùng khuôn với lọc po_code ở list_.
+    """
+    from sqlalchemy import select
+
+    from app.modules.purchase_order.model import PurchaseOrder
+
+    po_sub = select(PurchaseOrder.code).where(PurchaseOrder.misa_code.like(f"%{misa_code}%"))
+    sub = select(PaymentRequestLine.request_id).where(PaymentRequestLine.po_code.in_(po_sub))
+    return q.filter(PaymentRequest.id.in_(sub))
+
+
 def misa_codes_by_request(db: Session, request_ids: list[int]) -> dict[int, str]:
     """Ticket #26 — gộp mã MISA các dòng của mỗi phiếu thành chuỗi "MS1, MS2" cho màn danh sách.
 

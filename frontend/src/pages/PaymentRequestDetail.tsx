@@ -387,6 +387,11 @@ function PaymentRequestView() {
           </button>
         )}
         {req.status === 'approved' && can('payment_request', 'write') && <button className="btn" onClick={async () => { if (await askConfirm({ message: 'Xác nhận đã chi tiền? Công nợ sẽ được trừ tương ứng.', confirmText: 'Ghi nhận đã chi', danger: false })) action('pay') }}><i className="ti ti-cash" />Ghi nhận đã chi</button>}
+        {/* bao-CR-303: nút Xóa đặt trên thanh nút đầu trang — bản dưới cuối trang khó thấy */}
+        {req.status === 'draft' && can('payment_request', 'delete') && (
+          <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)' }}
+                  onClick={async () => { if (await askConfirm({ message: 'Xóa phiếu này?' })) { await api.delete(`${API}/${id}`); navigate('/payment-requests') } }}><i className="ti ti-trash" />Xóa phiếu</button>
+        )}
       </div>
 
       {req.status === 'cancelled' && req.reject_reason && (
@@ -531,12 +536,6 @@ function PaymentRequestView() {
         </div>
       )}
 
-      {/* bao-CR-303: xóa chỉ cần quyền delete + phiếu còn nháp — trước đây trói vào `editable`
-          (đòi thêm quyền write) nên người yêu cầu có quyền xóa vẫn không thấy nút. */}
-      {req.status === 'draft' && can('payment_request', 'delete') && (
-        <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)', marginTop: 16 }}
-                onClick={async () => { if (await askConfirm({ message: 'Xóa phiếu này?' })) { await api.delete(`${API}/${id}`); navigate('/payment-requests') } }}><i className="ti ti-trash" /> Xóa phiếu</button>
-      )}
     </div>
   )
 }

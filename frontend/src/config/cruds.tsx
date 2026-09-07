@@ -746,6 +746,8 @@ export const cruds: Record<string, CrudConfig> = {
       // po_code / company_id lọc qua bảng con hoặc scope → không đưa xuống bộ lọc điều kiện được
       { key: 'code', label: 'Mã phiếu' },
       { key: 'po_code', label: 'Mã PO' },
+      // Ticket #26 (đợt 2): lọc theo mã MISA — backend đi qua dòng phiếu + ĐMH
+      { key: 'misa_code', label: 'Mã MISA' },
       { key: 'company_id', label: 'Công ty', source: { url: '/api/companies', value: 'id', label: 'name' } },
       { key: 'status', label: 'Trạng thái', type: 'select', options: [
         { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },

@@ -41,6 +41,29 @@ class TestMisaByPoCode:
         assert S.misa_by_po_code(db, ["", "   "]) == {}
 
 
+class TestLocTheoMaMisa:
+    def test_loc_ra_dung_phieu_theo_ma_misa(self, db, seed):
+        from app.modules.payment_request.model import PaymentRequest
+        _po(db, seed, "PO-302-A", misa="MS-A")
+        _po(db, seed, "PO-302-B", misa="MS-B")
+        pa = _payable(db, seed, "PO-302-A")
+        pb = _payable(db, seed, "PO-302-B")
+        req_a = S.create_requests(db, PRequestCreate(
+            request_date="2026-09-01", lines=[LineIn(payable_id=pa.id)]), seed.u_req_id)[0]
+        req_b = S.create_requests(db, PRequestCreate(
+            request_date="2026-09-01", lines=[LineIn(payable_id=pb.id)]), seed.u_req_id)[0]
+        ids = [r.id for r in S.filter_by_misa_code(db.query(PaymentRequest), "MS-A").all()]
+        assert req_a.id in ids and req_b.id not in ids
+
+    def test_ma_khong_ton_tai_thi_rong(self, db, seed):
+        from app.modules.payment_request.model import PaymentRequest
+        _po(db, seed, "PO-302-A", misa="MS-A")
+        p = _payable(db, seed, "PO-302-A")
+        S.create_requests(db, PRequestCreate(
+            request_date="2026-09-01", lines=[LineIn(payable_id=p.id)]), seed.u_req_id)
+        assert S.filter_by_misa_code(db.query(PaymentRequest), "KHONG-CO").all() == []
+
+
 class TestGopMaMisaChoDanhSach:
     def test_phieu_nhieu_po_gop_chuoi_khong_trung(self, db, seed):
         _po(db, seed, "PO-302-A", misa="MS-A")

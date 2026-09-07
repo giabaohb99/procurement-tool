@@ -74,6 +74,10 @@ def list_(request: Request, pg: dict = Depends(pagination), db: Session = Depend
         from .model import PaymentRequestLine
         sub = select(PaymentRequestLine.request_id).where(PaymentRequestLine.po_code.like(f"%{po_code}%"))
         q = q.filter(PaymentRequest.id.in_(sub))
+    misa_code = (request.query_params.get("misa_code") or "").strip()
+    if misa_code:
+        # Ticket #26 (đợt 2): phiếu không lưu mã MISA -> lọc qua dòng phiếu + ĐMH
+        q = service.filter_by_misa_code(q, misa_code)
     q = apply_scope(q, PaymentRequest, "payment_request", user, get_perm_profile(db, user))
     total = q.count()
     q = apply_sort_from_request(q, PaymentRequest, request, default=PaymentRequest.id.desc())
