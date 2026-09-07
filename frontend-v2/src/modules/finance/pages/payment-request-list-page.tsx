@@ -48,6 +48,13 @@ export function PaymentRequestListPage() {
   const navigate = useNavigate()
   const { can } = usePermission()
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
+  // bao-CR-304 (ticket 26) — lọc theo mã MISA của ĐMH: phiếu không lưu mã nên
+  // backend lọc subquery ba nhịp dòng phiếu -> mã PO -> ĐMH (filter_by_misa_code).
+  const {
+    value: misaKeyword,
+    setValue: setMisaKeyword,
+    debouncedValue: debouncedMisa,
+  } = useUrlSearchParam('misa_code')
   const [companyId, setCompanyId] = useUrlParamState('company_id', ALL)
   const [status, setStatus] = useUrlParamState('status', ALL)
   const [source, setSource] = useUrlParamState('source_type', ALL)
@@ -59,6 +66,7 @@ export function PaymentRequestListPage() {
 
   const [page, setPage] = usePageResetOnFilterChange([
     debouncedValue,
+    debouncedMisa,
     companyId,
     status,
     source,
@@ -69,6 +77,7 @@ export function PaymentRequestListPage() {
 
   const filterParams: ListParams = {}
   if (debouncedValue) filterParams.code = debouncedValue
+  if (debouncedMisa) filterParams.misa_code = debouncedMisa
   if (companyId !== ALL) filterParams.company_id = Number(companyId)
   if (status !== ALL) filterParams.status = status
   if (source !== ALL) filterParams.source_type = source
@@ -128,6 +137,13 @@ export function PaymentRequestListPage() {
         header: 'Loại nợ',
         width: 120,
         cell: (r) => PAYMENT_SOURCE_LABELS[r.source_type] ?? r.source_type,
+      },
+      {
+        // bao-CR-304 (ticket 26) — phiếu gồm nhiều PO nên mã MISA hiển thị gộp "MS1, MS2".
+        key: 'misa_code',
+        header: 'Mã MISA',
+        width: 150,
+        cell: (r) => r.misa_code || '—',
       },
       { key: 'company', header: 'Công ty', width: 200, cell: (r) => companyName(r.company_id) },
       {
@@ -213,6 +229,13 @@ export function PaymentRequestListPage() {
                   onChange={(e) => setKeyword(e.target.value)}
                 />
               </div>
+
+              <Input
+                className="w-40"
+                placeholder="Mã MISA…"
+                value={misaKeyword}
+                onChange={(e) => setMisaKeyword(e.target.value)}
+              />
 
               <Select value={companyId} onValueChange={setCompanyId}>
                 <SelectTrigger className="w-48">

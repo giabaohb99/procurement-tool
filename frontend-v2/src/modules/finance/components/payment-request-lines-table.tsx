@@ -22,6 +22,8 @@ export interface EditablePaymentLine {
   supplier_name: string
   source_type: string
   po_code: string
+  /** bao-CR-304 (ticket 26) — mã MISA của ĐMH, chỉ hiển thị; đổi mã PO thì cập nhật sau khi Lưu. */
+  misa_code: string
   invoice_no: string
   invoice_date: string
   due_date: string
@@ -78,6 +80,8 @@ export function PaymentRequestLinesTable({
     }
     cols.push(
       { key: 'po', header: 'PO', width: 150, minWidth: 90 },
+      // bao-CR-304 (ticket 26) — cột Mã MISA chỉ hiển thị, mã nhập/sửa trên ĐMH.
+      { key: 'misa', header: 'Mã MISA', width: 140, minWidth: 90 },
       { key: 'invoice_no', header: 'Số hóa đơn', width: 160, minWidth: 100 },
       { key: 'invoice_date', header: 'Ngày hóa đơn', width: 160, minWidth: 110 },
       { key: 'due_date', header: 'Hạn trả', width: 120, minWidth: 90, align: 'center' },
@@ -123,6 +127,9 @@ export function PaymentRequestLinesTable({
         ) : (
           row.po_code || '—'
         )
+
+      case 'misa':
+        return row.misa_code || '—'
 
       case 'invoice_no':
         return editable ? (

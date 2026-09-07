@@ -113,6 +113,7 @@ function blankLine(): EditablePaymentLine {
     supplier_name: '',
     source_type: '',
     po_code: '',
+    misa_code: '',
     invoice_no: '',
     invoice_date: '',
     due_date: '',
@@ -142,6 +143,7 @@ function fromPayable(row: Payable, offsets?: Map<number, number>): EditablePayme
     supplier_name: row.supplier_name,
     source_type: row.source_type || 'goods',
     po_code: row.po_code,
+    misa_code: row.misa_code || '',
     invoice_no: row.invoice_no,
     invoice_date: '',
     due_date: row.due_date,
@@ -161,6 +163,7 @@ function fromRequestLine(line: PaymentRequestLine, index: number): EditablePayme
     supplier_name: '',
     source_type: '',
     po_code: line.po_code,
+    misa_code: line.misa_code || '',
     invoice_no: line.invoice_no,
     invoice_date: line.invoice_date,
     due_date: line.due_date,
@@ -747,7 +750,9 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
             </Button>
           )}
 
-          {editable && can('payment_request', 'delete') && (
+          {/* bao-CR-304 (port bao-CR-303): xóa chỉ cần quyền `delete` + phiếu còn nháp —
+              không trói vào `editable` (đòi thêm `write`) kẻo người chỉ có quyền xóa không thấy nút. */}
+          {req.status === 'draft' && can('payment_request', 'delete') && (
             <DeleteConfirmButton
               recordName={req.code || `#${req.id}`}
               pending={remove.isPending}

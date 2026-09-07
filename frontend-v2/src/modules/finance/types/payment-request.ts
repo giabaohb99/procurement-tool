@@ -43,6 +43,8 @@ export interface PaymentRequestLine {
   /** `0` = dòng gõ tay, chưa gắn khoản nợ nào. */
   payable_id: number
   po_code: string
+  /** bao-CR-304 (ticket 26) — mã MISA của ĐMH khớp theo mã PO, chỉ hiển thị (nhập/sửa trên ĐMH). */
+  misa_code: string
   invoice_no: string
   invoice_date: string
   amount: number
@@ -104,6 +106,8 @@ export interface PaymentRequestSummary {
   note: string
   reject_reason: string
   status: PaymentRequestStatus
+  /** bao-CR-304 (ticket 26) — mã MISA các dòng gộp thành "MS1, MS2" (phiếu gồm nhiều PO). */
+  misa_code: string
   created_by_name: string
   /** Lần sửa gần nhất — cột "Ngày cập nhật" (bao-CR-300, ticket 21). */
   updated_at?: string
