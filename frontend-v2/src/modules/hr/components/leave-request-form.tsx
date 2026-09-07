@@ -1,5 +1,5 @@
 import { CalendarDays } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 
 import { DatePicker } from '@/shared/ui/date-picker'
 import { FormCard } from '@/shared/ui/form-card'
@@ -57,10 +57,6 @@ export function LeaveRequestForm({ value, onChange, request }: LeaveRequestFormP
   const { data: typeData } = useLeaveTypes()
   const types = typeData?.items ?? []
 
-  //  Người dùng đã gõ tay số ngày chưa. Gõ rồi thì thôi ghi đè bằng số máy tính
-  //  — ghi đè là họ gõ xong nhìn con số nhảy về chỗ cũ.
-  const [manualDays, setManualDays] = useState(false)
-
   const estimateParams = useMemo(
     () => ({
       from_date: value.from_date,
@@ -70,18 +66,55 @@ export function LeaveRequestForm({ value, onChange, request }: LeaveRequestFormP
       to_session: value.to_session,
       employee_id: request?.employee_id || undefined,
     }),
-    [value, request],
+    //  Chỉ mấy ô này mới đổi con số gợi ý. Phụ thuộc cả `value` thì gõ một chữ
+    //  trong ô lý do cũng dựng lại tham số và chạy lại hook truy vấn.
+    [
+      value.from_date,
+      value.to_date,
+      value.leave_type_id,
+      value.from_session,
+      value.to_session,
+      request?.employee_id,
+    ],
   )
   const { data: estimate } = useEstimateLeaveDays(estimateParams)
   const suggestedDays = estimate?.total_days
 
+  //  Con số máy vừa tự điền lần gần nhất. So với ô hiện tại để biết người dùng
+  //  đã gõ đè hay chưa — KHÔNG dùng cờ `useState` như trước (lỗi báo 05/09/2026):
+  //  cờ đó chết theo component, nên mở lại một tờ đơn đã lưu số ngày gõ tay là
+  //  cờ về `false` và con số gợi ý đè mất số đã lưu. Người dùng nhập 4, mở lại
+  //  thấy 3, lưu xong lại nhảy về 4 — màn hình nói một đằng, sổ sách một nẻo.
+  const lastAutoDays = useRef<number | null>(null)
+
+  //  Giá trị form MỚI NHẤT, để effect bên dưới không ghi đè bằng bản chụp cũ:
+  //  effect chỉ chạy khi `suggestedDays` đổi, mà giữa hai lần đó người dùng có
+  //  thể đã gõ lý do / đổi người bàn giao. Dựng `{...value}` từ bản chụp cũ là
+  //  xóa trắng những gì họ vừa gõ.
+  //  Gán trong effect chứ không giữa lúc render — đọc/ghi `ref.current` lúc
+  //  render là thứ `react-hooks` bắt lỗi, và effect này khai TRƯỚC effect dưới
+  //  nên nó luôn chạy trước ở cùng một lượt commit.
+  const latestValue = useRef(value)
   useEffect(() => {
-    if (manualDays) return
-    if (typeof suggestedDays === 'number') {
-      onChange({ ...value, total_days: suggestedDays })
-    }
+    latestValue.current = value
+  })
+
+  useEffect(() => {
+    if (typeof suggestedDays !== 'number') return
+    const current = latestValue.current
+    //  `0` = ô trống, chưa ai quyết con số nào. Khác `0` mà cũng khác con số máy
+    //  điền lần trước nghĩa là người dùng đã gõ đè — để yên.
+    const untouched =
+      current.total_days === 0 || current.total_days === lastAutoDays.current
+    if (!untouched) return
+    lastAutoDays.current = suggestedDays
+    onChange({ ...current, total_days: suggestedDays })
     // eslint-disable-next-line react-hooks/exhaustive-deps -- chỉ chạy khi con số gợi ý đổi
-  }, [suggestedDays, manualDays])
+  }, [suggestedDays])
+
+  //  "Đang nhập tay" là một SỰ THẬT so sánh được, không phải một cờ nhớ trong
+  //  đầu: ô đang khác con số máy tính ra thì đúng là người dùng tự quyết.
+  const manualDays = typeof suggestedDays === 'number' && value.total_days !== suggestedDays
 
   const set = <K extends keyof LeaveFormValues>(key: K, v: LeaveFormValues[K]) =>
     onChange({ ...value, [key]: v })
@@ -119,13 +152,11 @@ export function LeaveRequestForm({ value, onChange, request }: LeaveRequestFormP
             <RequiredMark />
           </Label>
           <NumberInput
+            id="total-days"
             value={value.total_days}
             maxDecimals={1}
             placeholder="0"
-            onChange={(v) => {
-              setManualDays(true)
-              set('total_days', v)
-            }}
+            onChange={(v) => set('total_days', v)}
           />
           <p className="text-xs text-muted-foreground">
             {manualDays

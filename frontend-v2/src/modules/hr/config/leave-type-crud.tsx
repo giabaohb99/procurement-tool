@@ -107,15 +107,6 @@ export const LEAVE_TYPE_CRUD_CONFIG: CrudConfig<LeaveType> = {
         ),
     },
     {
-      key: 'min_notice_days',
-      header: 'Báo trước',
-      width: 120,
-      cell: (t) =>
-        t.min_notice_days ? `${t.min_notice_days} ngày` : (
-          <span className="text-muted-foreground">Không cần</span>
-        ),
-    },
-    {
       key: 'gender',
       header: 'Áp dụng cho',
       width: 130,
@@ -203,13 +194,6 @@ export const LEAVE_TYPE_CRUD_CONFIG: CrudConfig<LeaveType> = {
       type: 'number',
       defaultValue: 0,
       hint: '0 = không giới hạn. Dùng cho loại có luật cứng như cưới hỏi 3 ngày.',
-    },
-    {
-      name: 'min_notice_days',
-      label: 'Phải nộp trước (ngày)',
-      type: 'number',
-      defaultValue: 0,
-      hint: '0 = nộp lúc nào cũng được. Nghỉ ốm để 0 — không ai biết trước mai mình ốm.',
     },
     {
       name: 'gender',

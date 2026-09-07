@@ -64,8 +64,10 @@ class LeaveType(Base, AuditMixin):
     #  ở `constants.GENDER_UNKNOWN`.
     gender: Mapped[int] = mapped_column(SmallInteger, default=GENDER_UNKNOWN)
 
-    #  Phải nộp trước mấy ngày. `0` = nộp lúc nào cũng được (nghỉ ốm — không ai
-    #  báo trước được là mai mình ốm).
+    #  ⚠️ ĐÃ BỎ (05/09/2026) — luật "phải nộp trước N ngày" không còn chặn lúc
+    #  gửi duyệt, và cột này không còn trong schema lẫn màn danh mục. Giữ lại cột
+    #  để khỏi phải bỏ dữ liệu cũ; đừng đọc, đừng dựng lại luật nếu khách không
+    #  yêu cầu. Xem `request_service.prepare_submit`.
     min_notice_days: Mapped[int] = mapped_column(SmallInteger, default=0)
     #  Bắt đính kèm (giấy khám bệnh, giấy đăng ký kết hôn…).
     require_attachment: Mapped[bool] = mapped_column(Boolean, default=False)

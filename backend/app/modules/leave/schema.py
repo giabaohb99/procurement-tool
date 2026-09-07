@@ -33,7 +33,8 @@ class LeaveTypeBase(BaseModel):
     carry_over_max_days: float = 0.0
     carry_over_expire_month: int = 3
     gender: int = 0
-    min_notice_days: int = 0
+    #  ⚠️ KHÔNG khai `min_notice_days`: luật "phải nộp trước N ngày" đã bỏ
+    #  (05/09/2026). Cột còn trong bảng nhưng không đọc, không sửa, không trả về.
     require_attachment: bool = False
     exclude_holiday: bool = True
     sort_order: int = 0
@@ -64,7 +65,6 @@ class LeaveTypeUpdate(BaseModel):
     carry_over_max_days: float | None = None
     carry_over_expire_month: int | None = None
     gender: int | None = None
-    min_notice_days: int | None = None
     require_attachment: bool | None = None
     exclude_holiday: bool | None = None
     sort_order: int | None = None

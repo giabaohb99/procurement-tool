@@ -41,19 +41,20 @@ PRIORITY = 30
 
 #  `code` PHẢI khớp `core/leave_codes.LEAVE_TYPE_SET` — đó là mã ghi sang
 #  metadata của giấy GNP. Lệch một ký tự là giấy sinh ra mang loại nghỉ vô nghĩa.
+#  ⚠️ KHÔNG có cột "báo trước N ngày" — luật đó đã bỏ 05/09/2026.
 LEAVE_TYPES = [
     #  (code, tên, có lương, trừ quỹ, hạn mức năm, trần/lần, giới tính,
-    #   báo trước, cần đính kèm, trừ lễ+cuối tuần, thứ tự)
-    ("annual",    "Phép năm",           True,  True,  12.0, 0.0, 0, 3, False, True,  10),
-    ("unpaid",    "Nghỉ không lương",   False, False,  0.0, 0.0, 0, 3, False, True,  20),
-    #  Nghỉ ốm: KHÔNG báo trước được — không ai biết mai mình ốm. Cần giấy khám.
-    ("sick",      "Nghỉ ốm đau",        True,  False,  0.0, 0.0, 0, 0, True,  True,  30),
+    #   cần đính kèm, trừ lễ+cuối tuần, thứ tự)
+    ("annual",    "Phép năm",           True,  True,  12.0, 0.0, 0, False, True,  10),
+    ("unpaid",    "Nghỉ không lương",   False, False,  0.0, 0.0, 0, False, True,  20),
+    #  Nghỉ ốm: cần giấy khám.
+    ("sick",      "Nghỉ ốm đau",        True,  False,  0.0, 0.0, 0, True,  True,  30),
     #  Thai sản: nghỉ 6 tháng LIÊN TỤC nên KHÔNG trừ cuối tuần / lễ.
     ("maternity", "Nghỉ thai sản",      True,  False,  0.0, 0.0,
-     GENDER_FEMALE, 15, True,  False, 40),
-    ("wedding",   "Nghỉ cưới hỏi",      True,  False,  0.0, 3.0, 0, 7, False, True,  50),
-    ("funeral",   "Nghỉ tang chế",      True,  False,  0.0, 3.0, 0, 0, False, True,  60),
-    ("comp_off",  "Nghỉ bù",            True,  False,  0.0, 0.0, 0, 1, False, True,  70),
+     GENDER_FEMALE, True,  False, 40),
+    ("wedding",   "Nghỉ cưới hỏi",      True,  False,  0.0, 3.0, 0, False, True,  50),
+    ("funeral",   "Nghỉ tang chế",      True,  False,  0.0, 3.0, 0, False, True,  60),
+    ("comp_off",  "Nghỉ bù",            True,  False,  0.0, 0.0, 0, False, True,  70),
 ]
 
 #  Luật *cứ 5 năm thâm niên thì thêm 1 ngày phép*. Khai bằng DỮ LIỆU chứ không
@@ -87,13 +88,13 @@ def seed_leave_types(db) -> int:
     """Thêm loại nghỉ còn thiếu. Loại đã có thì KHÔNG đụng vào — người ta đã sửa."""
     added = 0
     for (code, name, is_paid, counts, quota, cap, gender,
-         notice, attach, exclude, order) in LEAVE_TYPES:
+         attach, exclude, order) in LEAVE_TYPES:
         if db.query(LeaveType).filter(LeaveType.code == code).first():
             continue
         db.add(LeaveType(
             code=code, name=name, is_paid=is_paid, counts_balance=counts,
             annual_quota_days=quota, max_days_per_request=cap, gender=gender,
-            min_notice_days=notice, require_attachment=attach,
+            require_attachment=attach,
             exclude_holiday=exclude, sort_order=order,
             created_by=ACTOR, updated_by=ACTOR,
         ))

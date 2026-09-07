@@ -256,8 +256,12 @@ def test_don_nhap_khong_tinh_la_chong_ngay(db):
     request_service.prepare_submit(db, obj2, _user(emp.id))   # không ném
 
 
-def test_phai_nop_truoc_n_ngay(db):
-    """`min_notice_days` so với HÔM NAY, không với ngày lập đơn."""
+def test_khong_con_chan_nop_gap(db):
+    """Luật "phải nộp trước N ngày" ĐÃ BỎ (05/09/2026).
+
+    Dòng cũ trong DB vẫn còn `min_notice_days` — test đặt hẳn 30 để chắc rằng
+    không ai đọc lại cột đó. Nghỉ NGÀY MAI vẫn gửi duyệt được.
+    """
     emp = _employee(db)
     lt = _leave_type(db, min_notice_days=30)
     obj = _create(db, _user(emp.id), lt)
@@ -265,9 +269,7 @@ def test_phai_nop_truoc_n_ngay(db):
     obj.to_date = obj.from_date
     db.flush()
 
-    with pytest.raises(HTTPException) as e:
-        request_service.prepare_submit(db, obj, _user(emp.id))
-    assert "trước ít nhất 30 ngày" in e.value.detail
+    request_service.prepare_submit(db, obj, _user(emp.id))   # không ném
 
 
 def test_duyet_chuyen_giu_cho_sang_da_dung(db):

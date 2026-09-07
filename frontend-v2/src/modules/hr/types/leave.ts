@@ -96,8 +96,6 @@ export type LeaveType = {
   carry_over_expire_month: number
   /** `0` = mọi giới. */
   gender: number
-  /** Phải nộp trước mấy ngày. `0` = nộp lúc nào cũng được. */
-  min_notice_days: number
   require_attachment: boolean
   /** Tính số ngày có trừ T7/CN và ngày lễ không. */
   exclude_holiday: boolean

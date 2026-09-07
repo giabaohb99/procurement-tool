@@ -100,16 +100,9 @@ def check_max_days(leave_type: LeaveType, days: float) -> None:
             400, f"«{leave_type.name}» chỉ cho nghỉ tối đa {trần} ngày mỗi lần, đơn này xin {days}.")
 
 
-def check_notice(leave_type: LeaveType, from_date: date) -> None:
-    """Nộp trước N ngày. `0` = nộp lúc nào cũng được (nghỉ ốm).
-
-    So với HÔM NAY chứ không với ngày lập đơn: đơn nháp nằm lại một tuần rồi mới
-    gửi thì luật phải tính tại lúc gửi.
-    """
-    need = int(leave_type.min_notice_days or 0)
-    if need and (from_date - date.today()).days < need:
-        raise HTTPException(
-            400, f"«{leave_type.name}» phải nộp trước ít nhất {need} ngày.")
+#  ⚠️ KHÔNG có chốt "phải nộp trước N ngày" (bỏ 05/09/2026). Cột
+#  `tab_leave_type.min_notice_days` còn nằm trong bảng nhưng KHÔNG ai đọc nữa —
+#  đừng dựng lại luật này trừ khi khách yêu cầu.
 
 
 def check_overlap(db: Session, employee_id: int, from_date: date, to_date: date,
@@ -299,7 +292,6 @@ def prepare_submit(db: Session, obj: LeaveRequest, user) -> tuple[Employee, Leav
 
     employee = get_employee(db, obj.employee_id)
     leave_type = get_leave_type(db, obj.leave_type_id)
-    check_notice(leave_type, obj.from_date)
     check_overlap(db, obj.employee_id, obj.from_date, obj.to_date, exclude_id=obj.id)
     balance_service.check_enough(db, employee, obj.from_date.year, leave_type,
                                  obj.total_days)

@@ -64,6 +64,8 @@ export function parseNumberVn(
 interface NumberInputProps {
   value: number
   onChange: (value: number) => void
+  /** Nối với `<Label htmlFor>` — thiếu thì nhãn trỏ vào hư không, bấm nhãn không vào ô. */
+  id?: string
   /** `false` = ép số nguyên (số thứ tự, số ngày). Mặc định cho nhập số lẻ. */
   decimals?: boolean
   maxDecimals?: number
@@ -78,6 +80,7 @@ interface NumberInputProps {
 export function NumberInput({
   value,
   onChange,
+  id,
   decimals = true,
   maxDecimals = DEFAULT_MAX_DECIMALS,
   max,
@@ -97,6 +100,7 @@ export function NumberInput({
 
   return (
     <Input
+      id={id}
       type="text"
       inputMode={decimals ? 'decimal' : 'numeric'}
       disabled={disabled}

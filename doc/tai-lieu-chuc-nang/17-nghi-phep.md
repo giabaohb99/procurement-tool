@@ -156,7 +156,7 @@ Chủ nhật và ngày lễ theo `tab_holiday`.
 | Chồng ngày | Hai đơn còn hiệu lực (chờ duyệt / đã duyệt) của **cùng một người** không được chồng khoảng — chồng là trừ phép hai lần cho một ngày |
 | Giới tính | Thai sản chỉ áp cho hồ sơ nữ. **Hồ sơ chưa khai giới tính KHÔNG bị chặn** — chặn là khóa cả công ty tới khi Nhân sự nhập bù |
 | Trần mỗi lần | Cưới hỏi · tang chế 3 ngày. `0` = không giới hạn |
-| Báo trước | Nghỉ ốm `0` ngày (không ai biết trước mai mình ốm); phép năm 3 ngày; thai sản 15 ngày. So với **hôm nay**, không với ngày lập đơn |
+| ~~Báo trước~~ | **ĐÃ BỎ 05/09/2026.** Không còn luật "phải nộp trước N ngày" — nghỉ ngày mai vẫn gửi duyệt được. Cột `min_notice_days` còn trong bảng nhưng không ai đọc, và đã gỡ khỏi schema lẫn màn danh mục loại nghỉ |
 | Nhập đủ | Chốt ở lúc **gửi duyệt**, không phải lúc lưu nháp — cùng luật với `required-fields.ts` của Thu mua |
 | Lập hộ | Được. Cả người lập (`created_by`) lẫn người nghỉ (`employee_id`) đều thấy tờ đơn ở phạm vi «của mình» |
 
@@ -168,6 +168,9 @@ người xin nghỉ → trưởng phòng Nhân sự**, cả hai chặng đều k
 
 ⚠️ Dự phòng là bắt buộc: luật I08 bỏ người nộp ra khỏi danh sách người duyệt, nên
 trưởng phòng tự xin nghỉ thì chặng 1 rỗng — mà quản lý thì cũng phải nghỉ phép.
+Luồng mẫu này dùng **trưởng bộ phận / trưởng phòng Nhân sự**, tức người duyệt
+được SUY RA, nên I08 vẫn áp đủ. (Từ 05/09/2026 I08 **không** áp cho bước khai
+đích danh một người — xem `instance_service._exclude_submitter`.)
 
 **Chưa khai luồng thì vẫn nộp được.** Lúc đó `approval_instance_id = 0` và người
 có `leave_request.approve` bấm **Duyệt** thẳng ở màn chi tiết. Đơn **đang** chạy
