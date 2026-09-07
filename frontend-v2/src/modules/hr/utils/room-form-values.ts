@@ -8,7 +8,7 @@ import { defaultSlot, fromApiTime, toApiTime } from './room-time'
 export interface RoomBookingFormValues {
   roomId: number
   title: string
-  /** Dạng `datetime-local` (`2026-09-10T09:00`), giờ ĐỊA PHƯƠNG. */
+  /** Dạng `YYYY-MM-DDTHH:mm` (`2026-09-10T09:00`), giờ ĐỊA PHƯƠNG — xem `DateTimePicker`. */
   startAt: string
   endAt: string
   attendeeCount: number

@@ -11,7 +11,7 @@ function pad(value: number): string {
   return String(value).padStart(2, '0')
 }
 
-/** `2026-09-10T09:00` — dạng mà `<input type="datetime-local">` đọc và ghi. */
+/** `2026-09-10T09:00` — dạng mà `DateTimePicker` đọc và ghi (giờ ĐỊA PHƯƠNG). */
 export function toLocalInput(date: Date): string {
   return (
     `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
@@ -25,7 +25,7 @@ export function toApiTime(value: string): string {
   return value.length === 16 ? `${value}:00` : value
 }
 
-/** Chuỗi từ API → giá trị cho ô `datetime-local`. */
+/** Chuỗi từ API → giá trị cho `DateTimePicker` (cắt giây). */
 export function fromApiTime(value: string | null | undefined): string {
   return (value || '').slice(0, 16)
 }

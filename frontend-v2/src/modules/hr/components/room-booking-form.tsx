@@ -1,6 +1,7 @@
 import { DoorOpen } from 'lucide-react'
 
 import { usePermission } from '@/core/authorization/use-permission'
+import { DateTimePicker } from '@/shared/ui/date-time-picker'
 import { FormCard } from '@/shared/ui/form-card'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
@@ -70,28 +71,30 @@ export function RoomBookingForm({ value, onChange, lockedRoom }: RoomBookingForm
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="room-start">
+          <Label>
             Bắt đầu
             <RequiredMark />
           </Label>
-          <Input
-            id="room-start"
-            type="datetime-local"
+          {/*  `DateTimePicker` chứ không phải `<input type="datetime-local">`:
+               ô đó là widget của trình duyệt, không nhận bộ giao diện chung và
+               trên Windows còn hiện mm/dd/yyyy. Giá trị vào/ra vẫn nguyên dạng
+               `YYYY-MM-DDTHH:mm` nên `room-time.ts` không phải đổi gì. */}
+          <DateTimePicker
+            label="Bắt đầu"
             value={value.startAt}
-            onChange={(e) => set('startAt', e.target.value)}
+            onChange={(next) => set('startAt', next)}
           />
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="room-end">
+          <Label>
             Kết thúc
             <RequiredMark />
           </Label>
-          <Input
-            id="room-end"
-            type="datetime-local"
+          <DateTimePicker
+            label="Kết thúc"
             value={value.endAt}
-            onChange={(e) => set('endAt', e.target.value)}
+            onChange={(next) => set('endAt', next)}
           />
           {value.startAt && value.endAt && value.endAt <= value.startAt && (
             <p className="text-xs text-destructive">
