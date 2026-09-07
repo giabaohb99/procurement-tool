@@ -21,7 +21,8 @@ from fastapi import HTTPException
 
 from app.modules.approval import (action_service, flow_service,
                                   instance_service)
-from app.modules.approval.flow_model import (APPROVER_EMPLOYEE, MULTI_ALL,
+from app.modules.approval.flow_model import (APPROVER_EMPLOYEE, APPROVER_FIELD,
+                                             MULTI_ALL,
                                              NO_APPROVER_FALLBACK, NODE_CC,
                                              SKIP_ADJACENT, SKIP_ANY_BEFORE,
                                              SKIP_NONE, ApprovalFlow,
@@ -232,14 +233,57 @@ def test_bai3_khong_ai_duyet_va_khong_du_phong_thi_KET_chu_khong_tu_duyet(db, se
     assert "không tìm được người duyệt" in instance.finish_reason.lower()
 
 
-def test_bai3_nguoi_nop_khong_tu_duyet_phieu_cua_minh(db, seed, person):
-    """I08 — bước chỉ có mỗi người nộp thì không tự ký cho xong được."""
+def test_bai3_nguoi_nop_khong_tu_duyet_khi_nguoi_duyet_do_SUY_RA(db, seed, person):
+    """I08 — người duyệt suy ra đúng người vừa nộp thì bỏ họ, bước rỗng → kẹt.
+
+    Đây mới là ca luật này sinh ra để chặn: không ai CỐ Ý khai như vậy, nó rơi
+    ra từ chỗ khác (trưởng bộ phận của chính người nộp, hoặc người nộp cũng
+    mang vai trò được khai ở bước).
+    """
+    flow = _luong(db)
+    _buoc(db, flow, 1, approver_kind=APPROVER_FIELD, approver_ref="nguoi_ky")
+
+    instance = _trinh(db, subject={"nguoi_ky": person["nop"]}, submitter=person["nop"])
+
+    assert instance.status == INSTANCE_BLOCKED
+
+
+def test_bai3b_khai_dich_danh_nguoi_nop_thi_ho_van_ky_duoc(db, seed, person):
+    """Sửa 05/09/2026 — khai ĐÍCH DANH là một quyết định có chủ ý, bộ máy nghe theo.
+
+    Bản cũ gạt luôn cả trường hợp này, và phiếu chết giữa đường: CR-113 (văn bản
+    #212) phải gỡ bằng script chạy tay, NP022 thì dòng thời gian ghi «đang chờ
+    phản hồi» trong khi không ai có nút duyệt.
+    """
     flow = _luong(db)
     _buoc(db, flow, 1, person["nop"])
 
     instance = _trinh(db, submitter=person["nop"])
 
-    assert instance.status == INSTANCE_BLOCKED
+    assert instance.status == INSTANCE_RUNNING
+    viec = instance_service.tasks_of_instance(db, instance.id)
+    assert [(t.assignee_employee_id, t.status) for t in viec] == \
+        [(person["nop"], TASK_PENDING)]
+
+
+def test_bai3c_hai_chang_cung_mot_nguoi_thi_chang_sau_van_co_viec(db, seed, person):
+    """Đúng ca người dùng báo 05/09/2026: hai chặng khai cùng một người.
+
+    Tắt *bỏ qua khi trùng người* (`SKIP_NONE`) thì chặng 2 phải mở việc THẬT cho
+    họ — không có việc là màn hình không có nút duyệt và phiếu đứng im.
+    """
+    flow = _luong(db)
+    _buoc(db, flow, 1, person["nop"])
+    _buoc(db, flow, 2, person["nop"])
+
+    instance = _trinh(db, submitter=person["nop"])
+    action_service.approve(db, instance, person["nop"], ACTOR, {})
+
+    assert instance.status == INSTANCE_RUNNING
+    dang_cho = [t for t in instance_service.tasks_of_instance(db, instance.id)
+                if t.status == TASK_PENDING]
+    assert [(t.node_seq, t.assignee_employee_id) for t in dang_cho] == \
+        [(2, person["nop"])]
 
 
 # ── Bài 4 · sửa luồng khi phiếu đang chạy ───────────────────────────────────

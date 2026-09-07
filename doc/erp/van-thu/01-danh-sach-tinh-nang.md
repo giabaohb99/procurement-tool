@@ -246,7 +246,7 @@ Tổng: **174 tính năng**, trong đó **132 thuộc bản đầu tiên**.
 | I05 | Nhiều người trong một bước | Ba chế độ: một người duyệt là xong · tất cả phải duyệt · duyệt lần lượt | 1 | `[ ]` |
 | I06 | **Trùng thao tác thì bỏ qua** | Ba mức cấu hình: bỏ qua khi trùng liền kề · bỏ qua khi trùng bất kỳ chỗ nào phía trước · không bỏ qua | 1 | `[ ]` |
 | I07 | **Người duyệt nghỉ việc thì chỉ định người khác** | Cấu hình người thay thế theo bước. **Cấm tùy chọn tự động duyệt qua** với văn bản | 1 | `[ ]` |
-| I08 | Chặn tự duyệt | Người nộp không duyệt phiếu của chính mình. Nếu luồng bắt buộc trùng thì phải chuyển lên cấp trên | 1 | `[ ]` |
+| I08 | Chặn tự duyệt | Người nộp không duyệt phiếu của chính mình — **chỉ khi người duyệt được SUY RA** (trưởng bộ phận, vai trò, lên N cấp, đại diện pháp nhân, lấy từ ô trên phiếu). Bước **khai đích danh** người nộp thì họ vẫn ký được: đó là quyết định có chủ ý của người khai luồng, gạt đi là phiếu kẹt không lối ra (CR-113, NP022 — sửa 05/09/2026) | 1 | `[ ]` |
 | I09 | Trả lại | Trả về người nộp hoặc về một bước cụ thể. **Bắt buộc nhập lý do** | 1 | `[ ]` |
 | I10 | Từ chối | Kết thúc luồng, bắt buộc nhập lý do | 1 | `[ ]` |
 | I11 | Rút lại | Người nộp rút phiếu khi chưa ai duyệt | 1 | `[ ]` |

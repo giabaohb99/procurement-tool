@@ -10,9 +10,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from . import approver_resolver, entity_hooks, flow_service, task_notification
-from .flow_model import (MULTI_ALL, MULTI_ANY, MULTI_QUORUM, MULTI_SEQUENTIAL,
-                         NO_APPROVER_FALLBACK, NODE_CC, SKIP_ADJACENT,
-                         SKIP_ANY_BEFORE, SKIP_NONE)
+from .flow_model import (APPROVER_EMPLOYEE, MULTI_ALL, MULTI_ANY, MULTI_QUORUM,
+                         MULTI_SEQUENTIAL, NO_APPROVER_FALLBACK, NODE_CC,
+                         SKIP_ADJACENT, SKIP_ANY_BEFORE, SKIP_NONE)
 from .instance_model import (ACTION_APPROVE, ACTION_FINISH,
                              ACTION_SKIP_DUPLICATE, ACTION_START,
                              INSTANCE_APPROVED, INSTANCE_BLOCKED,
@@ -174,11 +174,32 @@ def _exclude_submitter(instance: ApprovalInstance, node, ids: list[int]) -> list
     """I08 — người nộp không duyệt phiếu của chính mình.
 
     Bỏ họ khỏi danh sách chứ không chặn cả bước: bước còn người khác thì vẫn
-    chạy bình thường. Bỏ hết thì rơi vào `_khong_co_nguoi_duyet`, và ở đó luật
-    thường là đẩy lên cấp trên — đúng câu tài liệu ghi.
+    chạy bình thường. Bỏ hết thì rơi vào `_handle_no_approver`.
+
+    ⚠️ **KHÔNG áp dụng khi bước KHAI ĐÍCH DANH người duyệt** (`APPROVER_EMPLOYEE`)
+    — sửa 05/09/2026. Luật này sinh ra để chặn cái *tình cờ*: người duyệt được
+    SUY RA (trưởng bộ phận, vai trò, lên N cấp, đại diện pháp nhân, lấy từ ô
+    trên phiếu) rất dễ tra ra đúng người vừa nộp, và không ai cố ý khai như vậy
+    cả. Còn khi quản trị gõ thẳng TÊN một người vào bước thì đó là một quyết
+    định có chủ ý, đã ghi ra giấy — bộ máy gạt nó đi là tự cãi lại cấu hình.
+
+    Cái giá của bản cũ đã trả hai lần bằng phiếu chết giữa đường:
+
+    * **CR-113** — văn bản #212 khai đúng người trình ở bước 2 → bước rỗng →
+      `on_no_approver = dừng phiếu` → phải gỡ bằng script chạy tay;
+    * **NP022 (05/09/2026)** — luồng hai chặng cùng một người: chặng 1 sống nhờ
+      *người dự phòng* (mà người dự phòng lại chính là người nộp — cùng một luật
+      bị bỏ qua ở đường khác), chặng 2 không khai dự phòng nên phiếu **kẹt**:
+      dòng thời gian vẫn ghi «đang chờ phản hồi» trong khi KHÔNG AI có nút duyệt.
+
+    Hai chặng cùng một người thì `_split_duplicate_approvers` (I06) mới là chỗ
+    quyết định — bật *bỏ qua khi trùng người* thì chặng sau tự qua, tắt thì họ
+    ký thật lần nữa. Đó là lựa chọn của người khai luồng, không phải của bộ máy.
     """
     submitter = instance.started_by_employee_id
     if not submitter:
+        return ids
+    if getattr(node, "approver_kind", None) == APPROVER_EMPLOYEE:
         return ids
     return [employee_id for employee_id in ids if employee_id != submitter]
 
