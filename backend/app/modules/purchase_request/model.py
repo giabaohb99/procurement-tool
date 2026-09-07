@@ -1,7 +1,8 @@
-from sqlalchemy import BigInteger, Boolean, Index, Numeric, String, Text
+from sqlalchemy import BigInteger, Boolean, Index, Integer, Numeric, SmallInteger, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base_model import Base, AuditMixin
+from app.modules.purchase_request.constants import PR_OPT_SURVEY
 
 
 class PurchaseRequest(Base, AuditMixin):
@@ -79,3 +80,61 @@ class PurchaseRequestItem(Base, AuditMixin):
     qty_received: Mapped[float] = mapped_column(Numeric(18, 3), default=0)  # tổng SL đã nhận (đồng bộ từ ĐMH liên kết)
     progress_note: Mapped[str] = mapped_column(Text, default="")           # chi tiết tiến độ
     note: Mapped[str] = mapped_column(String(255), default="")
+
+
+class PurchaseRequestItemOption(Base, AuditMixin):
+    """PHƯƠNG ÁN mua gắn vào 1 dòng YCMH (bao-CR-310) — NCC + giá do NSTM đề xuất.
+
+    Vì sao có bảng này: trước đây muốn có giá thật thì phải đi vòng qua Yêu cầu báo giá
+    (YCBG) — dòng YCMH chỉ mang `price` là GIÁ ĐỀ XUẤT của người yêu cầu. Nay NSTM gắn
+    thẳng phương án lên dòng YCMH rồi chốt và lên ĐMH, không phải lập thêm chứng từ.
+    YCBG giữ nguyên, không đụng tới: ai quen luồng cũ vẫn đi luồng cũ.
+
+    ⚠️ **Bảng RIÊNG, cố ý không dùng lại `tab_survey_request_option`.** Bảng kia khai rõ
+    trong docstring là "bảng trung tâm cho cơ chế ẩn NCC" của YCBG và neo bằng
+    `survey_request_line_id`; nhét thêm chủ thứ hai vào đó là đẻ ra cột nghĩa kép
+    (một trong hai khóa luôn = 0), đúng cái bẫy hệ này đã dính vài lần.
+
+    ⚠️ **Không có cột "đã chốt phương án chưa" trên dòng YCMH** — suy từ chính bảng này
+    (`is_chosen`). Thêm cột là tạo nguồn sự thật thứ hai, rồi lệch (bài học: số phép còn
+    lại của Nghỉ phép cũng cố ý không lưu thành cột).
+
+    Ẩn NCC: các cột `supplier_*` + `snap_internal_code` CHỈ trả cho người có quyền
+    `supplier.read`, bám đúng luật cụm `pur` của Task 4 (xem controller `_out_item`).
+    Snapshot thông số + giá thì người yêu cầu ĐƯỢC thấy — giống hệt phương án bên YCBG.
+    """
+
+    __tablename__ = "tab_purchase_request_item_option"
+
+    pr_item_id: Mapped[int] = mapped_column(BigInteger, index=True)   # dòng YCMH sở hữu
+    # Nguồn phương án — xem PR_OPT_* trong constants.py. Nhập tay thì không truy được
+    # về phiếu khảo sát nào, nên phải phân biệt để soát và để báo cáo không trộn.
+    source: Mapped[int] = mapped_column(SmallInteger, default=PR_OPT_SURVEY)
+    product_survey_line_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
+    public_id: Mapped[int] = mapped_column(Integer, default=0)        # số hiệu ẩn danh (Phương án 1, 2…) trong 1 dòng
+    display_label: Mapped[str] = mapped_column(String(50), default="")
+    is_chosen: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    chosen_by: Mapped[int] = mapped_column(BigInteger, default=0)
+
+    # SNAPSHOT — chép tại thời điểm gắn, KHÔNG đọc lại phiếu khảo sát về sau. Phiếu khảo
+    # sát sửa giá sau đó không được phép làm đổi phương án đã chốt của một YCMH đang chạy.
+    snap_product_name: Mapped[str] = mapped_column(String(255), default="")
+    snap_spec: Mapped[str] = mapped_column(Text, default="")
+    snap_origin: Mapped[str] = mapped_column(String(100), default="")
+    snap_quote_unit: Mapped[str] = mapped_column(String(25), default="")
+    snap_moq: Mapped[float] = mapped_column(Numeric(18, 3), default=0)
+    snap_price_by_volume: Mapped[float] = mapped_column(Numeric(18, 4), default=0)  # đơn giá giữ 4 số lẻ
+    snap_volume_range: Mapped[str] = mapped_column(String(100), default="")
+    snap_vat: Mapped[float] = mapped_column(Numeric(5, 2), default=0)
+    snap_delivery_time: Mapped[str] = mapped_column(String(100), default="")
+    snap_delivery_place: Mapped[str] = mapped_column(String(255), default="")
+    snap_shipping_cost: Mapped[float] = mapped_column(Numeric(18, 2), default=0)
+    snap_sample_ready: Mapped[bool] = mapped_column(Boolean, default=False)
+    snap_lab_result: Mapped[str] = mapped_column(String(20), default="")
+
+    # ----- NỘI BỘ NSTM: backend LỌC, không trả cho người thiếu quyền supplier.read -----
+    snap_internal_code: Mapped[str] = mapped_column(String(50), default="")  # mã SP theo NCC
+    supplier_code: Mapped[str] = mapped_column(String(50), default="", index=True)
+    supplier_name: Mapped[str] = mapped_column(String(255), default="")
+    supplier_survey_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    nstm_note: Mapped[str] = mapped_column(Text, default="")   # lý do NSTM chọn — HIỆN cho người YC (CR-147)

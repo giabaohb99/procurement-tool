@@ -50,10 +50,19 @@ function missingFields<T>(line: T, fields: RequiredLineField<T>[]): string[] {
 
 /**
  * Dòng sản phẩm của YCMH. Backend KHÔNG chặn gì ở `submit_pr`, nên luật thật sự
- * nằm ở đây — giữ đúng bộ bốn ô của bản `frontend` đang chạy.
+ * nằm ở đây.
+ *
+ * **Mã hàng KHÔNG còn bắt buộc** (bao-CR-310): giống phiếu khảo sát vốn có cả
+ * loại có mã lẫn loại không mã, người yêu cầu phải mua được thứ chưa nằm trong
+ * danh mục mà không phải chờ mở mã trước. Dòng không mã vẫn gửi duyệt được;
+ * `duplicateCodes` bên dưới đã bỏ qua dòng trống nên luật trùng mã không đụng tới.
+ *
+ * Đánh đổi phải biết: dòng ĐMH nối ngược về dòng YCMH bằng **chuỗi `product_code`**
+ * (`sync_from_purchase_orders`), nên dòng KHÔNG MÃ sẽ không được cộng tiến độ
+ * `qty_ordered` / `qty_received` tự động — NSTM phải tự cập nhật `line_status`.
+ * Muốn bỏ hẳn ràng buộc này thì phải nối bằng khóa dòng, xem việc còn nợ N-004.
  */
 export const PURCHASE_REQUEST_LINE_REQUIRED: RequiredLineField<PurchaseRequestItem>[] = [
-  { label: 'Mã hàng', filled: (line) => hasText(line.product_code) },
   { label: 'Số lượng mua', filled: (line) => isPositive(line.qty) },
   { label: 'Kho nhận', filled: (line) => hasText(line.warehouse) },
   { label: 'Ngày cần hàng', filled: (line) => hasText(line.required_date) },

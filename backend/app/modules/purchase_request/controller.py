@@ -11,9 +11,11 @@ from app.core.status_codes import PR_LINE_STATUS
 from app.modules.notification.service import trigger_notification
 
 from sqlalchemy import func, select
-from . import service
+from . import option_service, service
+from .constants import PR_OPTION_SOURCE_LABELS
 from .model import PurchaseRequest, PurchaseRequestItem
-from .schema import ApproveIn, AssignIn, ItemStatusIn, PRCreate, PRUpdate, ReasonIn, RejectIn, UrgentIn
+from .schema import (ApproveIn, AssignIn, ItemStatusIn, PRCreate, PROptionManualIn,
+                     PROptionSurveyIn, PROptionUpdateIn, PRUpdate, ReasonIn, RejectIn, UrgentIn)
 
 router = APIRouter(prefix="/api/purchase-requests", tags=["purchase_request"])
 
@@ -32,6 +34,45 @@ def _blank_supplier(d: dict) -> None:
     """Task 5: che NCC đề xuất khi user không có quyền supplier.read."""
     for k in _SUPPLIER_FIELDS:
         d[k] = ""
+
+
+def _out_option(db: Session, o, can_sup_read: bool) -> dict:
+    """Một phương án ra API (bao-CR-310).
+
+    Cụm NCC (`supplier_*`, `snap_internal_code`, `supplier_survey_id`) chỉ trả cho người
+    có `supplier.read` — đúng luật cụm `pur` của Task 4. Phần thông số + GIÁ thì người
+    yêu cầu ĐƯỢC thấy, giống hệt thẻ phương án bên Yêu cầu báo giá: họ cần so giá để
+    chốt, chỉ không được biết giá đó của ai.
+    """
+    d = {
+        "id": o.id, "pr_item_id": o.pr_item_id,
+        "source": int(o.source or 0),
+        "source_label": PR_OPTION_SOURCE_LABELS.get(int(o.source or 0), ""),
+        "product_survey_line_id": o.product_survey_line_id,
+        "public_id": o.public_id, "display_label": o.display_label,
+        "is_chosen": bool(o.is_chosen),
+        "snap_product_name": o.snap_product_name, "snap_spec": o.snap_spec,
+        "snap_origin": o.snap_origin, "snap_quote_unit": o.snap_quote_unit,
+        "snap_moq": float(o.snap_moq or 0),
+        "snap_price_by_volume": float(o.snap_price_by_volume or 0),
+        "snap_volume_range": o.snap_volume_range,
+        "snap_vat": float(o.snap_vat or 0),
+        "snap_delivery_time": o.snap_delivery_time,
+        "snap_delivery_place": o.snap_delivery_place,
+        "snap_shipping_cost": float(o.snap_shipping_cost or 0),
+        "snap_sample_ready": bool(o.snap_sample_ready),
+        "snap_lab_result": o.snap_lab_result,
+        "nstm_note": o.nstm_note,
+        "created_at": o.created_at,
+    }
+    if can_sup_read:
+        d.update({"supplier_code": o.supplier_code, "supplier_name": o.supplier_name,
+                  "supplier_survey_id": o.supplier_survey_id,
+                  "snap_internal_code": o.snap_internal_code})
+    else:
+        d.update({"supplier_code": "", "supplier_name": "", "supplier_survey_id": 0,
+                  "snap_internal_code": ""})
+    return d
 
 
 def _can_dispatch(profile: dict) -> bool:
@@ -223,9 +264,14 @@ def _out(db: Session, pr, user=None) -> dict:
              .order_by(FileLink.entity_id, FileLink.sort_order.asc(), FileLink.id.desc()))
         for eid, url in q:
             thumb_by_pid.setdefault(eid, url)      # ảnh sort_order nhỏ nhất mỗi SP
+    # bao-CR-310: tóm tắt phương án cho từng dòng — 2 truy vấn cho cả phiếu, không N+1.
+    item_ids = [i.id for i in items]
+    opt_counts = option_service.count_map(db, item_ids)
+    chosen_by_item = option_service.chosen_map(db, item_ids)
     d["items"] = []
     for i in items:
         pid_ = prod_by_code.get(i.product_code or "")
+        chosen = chosen_by_item.get(i.id)
         d["items"].append(
             {"id": i.id, "product_code": i.product_code, "product_name": i.product_name,
              "item_group": i.item_group, "group_desc": i.group_desc, "qty": float(i.qty or 0),
@@ -239,7 +285,11 @@ def _out(db: Session, pr, user=None) -> dict:
              "progress_note": i.progress_note, "note": i.note,
              "qty_ordered": float(i.qty_ordered or 0), "qty_received": float(i.qty_received or 0),
              "product_id": pid_ or 0,                          # 0 = code không khớp catalog
-             "product_thumbnail_url": thumb_by_pid.get(pid_, "") if pid_ else ""}
+             "product_thumbnail_url": thumb_by_pid.get(pid_, "") if pid_ else "",
+             # bao-CR-310 — "đã chốt phương án chưa" SUY từ bảng phương án, dòng YCMH
+             # không có cột nào lưu việc đó (một nguồn sự thật).
+             "option_count": opt_counts.get(i.id, 0),
+             "chosen_option": _out_option(db, chosen, can_sup_read) if chosen else None}
         )
     # Task 4: PYC tính VAT lại theo dòng — tiền hàng (chưa VAT) · VAT · tổng cộng (gồm VAT)
     subtotal = round(sum(x["qty"] * x["price"] for x in d["items"]), 2)   # chưa VAT
@@ -707,3 +757,151 @@ def reject_pr(pid: int, data: RejectIn, background_tasks: BackgroundTasks, db: S
         link=f"/purchase-requests/{pr.id}"
     )
     return success(_out(db, pr, user), "Đã từ chối")
+
+
+# ═══════════════ PHƯƠNG ÁN trên dòng YCMH (bao-CR-310) ═══════════════
+#
+# Xử lý khảo sát làm THẲNG trên Yêu cầu mua hàng: NSTM gắn phương án (NCC + giá) lên
+# từng dòng, chốt, rồi lên Đơn mua hàng. Yêu cầu báo giá không đụng tới.
+#
+# ⚠️ Mọi nhánh GHI đều đi qua `_open_line(...)` — nó gộp đủ BỐN cổng (phạm vi phiếu ·
+# giai đoạn phiếu · dòng có thuộc phiếu không · dòng có được giao cho mình không).
+# Gọi thiếu một cổng là mở đúng lỗ mà `_in_scope` sinh ra để bịt.
+
+
+def _open_line(db: Session, pid: int, item_id: int, user, action: str):
+    """Nạp (phiếu, dòng) cho một thao tác phương án, sau khi qua đủ các cổng."""
+    pr = _in_scope(db, pid, user, action)
+    option_service.ensure_stage(pr)
+    item = option_service.get_item(db, pr, item_id)
+    profile = get_perm_profile(db, user)
+    option_service.ensure_own_line(item, profile.get("emp_code") or "",
+                                   _see_all_items(profile, pr, user))
+    return pr, item
+
+
+@router.get("/{pid}/items/{item_id}/options")
+def list_options(pid: int, item_id: int, db: Session = Depends(get_db),
+                 user=Depends(require("purchase_request", "read"))):
+    pr = _in_scope(db, pid, user, "read")
+    item = option_service.get_item(db, pr, item_id)
+    # Đọc thì KHÔNG chặn theo giai đoạn phiếu (xem lại phiếu đã đóng vẫn phải thấy phương
+    # án đã chốt), nhưng vẫn chặn theo dòng: màn hình giấu dòng của người khác thì API
+    # cũng phải giấu, không thì gõ id dòng là đọc được giá NCC của phần việc không phải mình.
+    profile = get_perm_profile(db, user)
+    option_service.ensure_own_line(item, profile.get("emp_code") or "",
+                                   _see_all_items(profile, pr, user))
+    can_sup_read = user_has_permission(db, user, "supplier", "read")
+    rows = option_service.options_of(db, item.id)
+    return success({"items": [_out_option(db, o, can_sup_read) for o in rows]})
+
+
+@router.get("/{pid}/items/{item_id}/available-survey-lines")
+def available_survey_lines(pid: int, item_id: int, supplier_code: str = "", item_group: str = "",
+                           search: str = "", page: int = 1, page_size: int = 8,
+                           sort_by: str = "", sort_dir: str = "desc",
+                           db: Session = Depends(get_db),
+                           user=Depends(require("purchase_request", "write"))):
+    """Kho phương án: các dòng khảo sát SẢN PHẨM đã duyệt, để NSTM nhặt vào dòng YCMH.
+
+    Dùng lại nguyên hàm tra cứu của Yêu cầu báo giá — nó chỉ hỏi bảng khảo sát, không
+    dính gì tới YCBG, nên chép sang đây là đẻ ra hai bản luật lọc phải giữ đồng bộ.
+    Đòi `supplier.read` vì kết quả là danh sách NCC kèm giá.
+    """
+    from app.modules.survey.model import Survey
+    from app.modules.survey_request import service as sr_service
+
+    if not user_has_permission(db, user, "supplier", "read"):
+        raise HTTPException(403, "Cần quyền xem nhà cung cấp để tra kho khảo sát")
+    pr, item = _open_line(db, pid, item_id, user, "write")
+    # Bỏ trống hết tiêu chí thì trả rỗng thay vì quét cả bảng khảo sát (cùng lối với YCBG).
+    if not (supplier_code or (item_group or "").strip() or (search or "").strip()):
+        return success({"items": [], "total": 0})
+    rows, total = sr_service.available_survey_lines(
+        db, supplier_code=supplier_code, item_group=item_group, search=search,
+        page=page, page_size=page_size, sort_by=sort_by, sort_dir=sort_dir)
+    sv_cache: dict = {}
+    out = []
+    for r in rows:
+        sv = sv_cache.get(r.survey_id)
+        if r.survey_id not in sv_cache:
+            sv = sv_cache[r.survey_id] = db.get(Survey, r.survey_id)
+        out.append({
+            "id": r.id, "supplier_code": r.supplier_code,
+            "supplier_name": sr_service.resolve_supplier_name(db, r.supplier_code or ""),
+            "internal_code": r.internal_code, "product_name": r.product_name,
+            "spec": r.spec, "origin": r.origin, "quote_unit": r.quote_unit,
+            "moq": float(r.moq or 0), "price_by_volume": float(r.price_by_volume or 0),
+            "volume_range": r.volume_range, "vat": float(r.vat or 0),
+            "delivery_time": r.delivery_time, "delivery_place": r.delivery_place,
+            "shipping_cost": float(r.shipping_cost or 0), "lab_result": r.lab_result,
+            "result_date": r.result_date,
+            "survey_code": sv.code if sv else "",
+            "survey_item_code": sv.item_code if sv else "",
+            "survey_item_group": sv.item_group if sv else "",   # để FE cảnh báo lệch phân loại
+        })
+    return success({"items": out, "total": total})
+
+
+@router.post("/{pid}/items/{item_id}/options")
+def add_option_from_survey(pid: int, item_id: int, data: PROptionSurveyIn,
+                           db: Session = Depends(get_db),
+                           user=Depends(require("purchase_request", "write"))):
+    pr, item = _open_line(db, pid, item_id, user, "write")
+    o = option_service.create_from_survey(db, pr, item, data.product_survey_line_id, user.id)
+    return success(_out_option(db, o, user_has_permission(db, user, "supplier", "read")),
+                   "Đã gắn phương án từ khảo sát", 201)
+
+
+@router.post("/{pid}/items/{item_id}/options/manual")
+def add_option_manual(pid: int, item_id: int, data: PROptionManualIn,
+                      db: Session = Depends(get_db),
+                      user=Depends(require("purchase_request", "write"))):
+    """Phương án NSTM gõ tay — dùng khi giá biến động liên tục, kho khảo sát không kịp
+    theo, NSTM phải đưa ra một mức hợp lý cho người yêu cầu chốt.
+
+    Đòi `supplier.read` chứ KHÔNG phải `supplier.write`: đây là công cụ chính của NSTM,
+    mà `pur_staff` chỉ có `supplier.read` — đòi `write` là khóa chết đúng người dùng nó.
+    Và `supplier.write` là quyền sửa cả DANH MỤC nhà cung cấp, rộng hơn hẳn việc ghi một
+    cái tên NCC vào phương án của một dòng. Xem hàng rào 2 cụm NCC ở Task 4.
+    """
+    if not user_has_permission(db, user, "supplier", "read"):
+        raise HTTPException(403, "Cần quyền xem nhà cung cấp để nhập tay phương án")
+    pr, item = _open_line(db, pid, item_id, user, "write")
+    o = option_service.create_manual(db, pr, item, data, user.id)
+    return success(_out_option(db, o, True), "Đã thêm phương án nhập tay", 201)
+
+
+@router.patch("/{pid}/items/{item_id}/options/{oid}")
+def update_option(pid: int, item_id: int, oid: int, data: PROptionUpdateIn,
+                  db: Session = Depends(get_db),
+                  user=Depends(require("purchase_request", "write"))):
+    pr, item = _open_line(db, pid, item_id, user, "write")
+    o = option_service.update_option(db, item.id, oid, data, user.id)
+    return success(_out_option(db, o, user_has_permission(db, user, "supplier", "read")),
+                   "Đã cập nhật phương án")
+
+
+@router.delete("/{pid}/items/{item_id}/options/{oid}")
+def delete_option(pid: int, item_id: int, oid: int, db: Session = Depends(get_db),
+                  user=Depends(require("purchase_request", "write"))):
+    pr, item = _open_line(db, pid, item_id, user, "write")
+    option_service.delete_option(db, pr, item.id, oid, user.id)
+    return success(None, "Đã gỡ phương án")
+
+
+@router.post("/{pid}/items/{item_id}/options/{oid}/choose")
+def choose_option(pid: int, item_id: int, oid: int, db: Session = Depends(get_db),
+                  user=Depends(require("purchase_request", "read"))):
+    """Chốt phương án cho dòng — bấm lại đúng phương án đang chốt thì BỎ chốt.
+
+    Cổng ở đây KHÁC các nhánh ghi còn lại: đòi `read` chứ không `write`, vì người
+    chốt là NGƯỜI YÊU CẦU — họ thường chỉ có `read` trên phiếu sau khi phiếu đã duyệt.
+    Ai được chốt thì `ensure_can_choose` quyết, xem docstring của nó.
+    """
+    pr, item = _open_line(db, pid, item_id, user, "read")
+    option_service.ensure_can_choose(
+        pr, user, user_has_permission(db, user, "purchase_request", "approve"))
+    o = option_service.choose_option(db, pr, item, oid, user.id)
+    msg = "Đã chốt phương án" if o.is_chosen else "Đã bỏ chốt phương án"
+    return success(_out_option(db, o, user_has_permission(db, user, "supplier", "read")), msg)

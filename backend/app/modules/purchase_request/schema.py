@@ -126,3 +126,45 @@ class ItemStatusIn(BaseModel):
 
 class ReasonIn(BaseModel):
     reason: str = ""
+
+
+# ───────────────── PHƯƠNG ÁN trên dòng YCMH (bao-CR-310) ─────────────────
+
+class PROptionSurveyIn(BaseModel):
+    """Gắn phương án bằng cách chọn một dòng khảo sát sản phẩm đã duyệt."""
+    product_survey_line_id: int
+
+
+class PROptionManualIn(BaseModel):
+    """NSTM gõ thẳng NCC + giá. Chỉ NCC là bắt buộc (service kiểm), phần còn lại
+    bỏ trống được — tên SP / ĐVT / VAT trống thì lấy theo dòng YCMH."""
+    supplier_code: str = ""
+    supplier_name: str = ""
+    snap_product_name: str = ""
+    snap_internal_code: str = ""
+    snap_spec: str = ""
+    snap_origin: str = ""
+    snap_quote_unit: str = ""
+    snap_moq: float = Field(0, ge=0)
+    snap_price_by_volume: float = Field(0, ge=0)
+    snap_volume_range: str = ""
+    # Cột DB là Numeric(5,2) — thả cửa thì trên 999,99 là MySQL báo lỗi tràn thay vì 422.
+    snap_vat: float | None = Field(None, ge=0, lt=100)
+    snap_delivery_time: str = ""
+    snap_delivery_place: str = ""
+    snap_shipping_cost: float = Field(0, ge=0)
+    nstm_note: str = ""
+
+
+class PROptionUpdateIn(BaseModel):
+    """Sửa phương án đã gắn. Bộ trường phải khớp `option_service.EDITABLE_FIELDS`;
+    `supplier_code` cố ý KHÔNG có ở đây — đổi NCC là một phương án khác."""
+    nstm_note: str | None = None
+    snap_price_by_volume: float | None = Field(None, ge=0)
+    snap_vat: float | None = Field(None, ge=0, lt=100)
+    snap_moq: float | None = Field(None, ge=0)
+    snap_quote_unit: str | None = None
+    snap_volume_range: str | None = None
+    snap_delivery_time: str | None = None
+    snap_delivery_place: str | None = None
+    snap_shipping_cost: float | None = Field(None, ge=0)

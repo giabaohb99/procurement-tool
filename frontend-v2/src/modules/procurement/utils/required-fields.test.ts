@@ -244,14 +244,27 @@ describe('validatePurchaseRequest', () => {
 })
 
 describe('missingPurchaseRequestLineFields', () => {
-  it('liệt kê đúng bốn ô bắt buộc khi dòng trống trơn', () => {
+  it('liệt kê đúng ba ô bắt buộc khi dòng trống trơn', () => {
     const empty = prLine({ product_code: '', qty: 0, warehouse: '', required_date: '' })
     expect(missingPurchaseRequestLineFields(empty)).toEqual([
-      'Mã hàng',
       'Số lượng mua',
       'Kho nhận',
       'Ngày cần hàng',
     ])
+  })
+
+  // bao-CR-310: mua được thứ chưa có trong danh mục, giống phiếu khảo sát không mã.
+  it('dòng KHÔNG CÓ MÃ HÀNG vẫn gửi duyệt được', () => {
+    expect(missingPurchaseRequestLineFields(prLine({ product_code: '' }))).toEqual([])
+    expect(validatePurchaseRequest(prDoc([prLine({ product_code: '' })]), true)).toBe('')
+  })
+
+  it('nhiều dòng cùng bỏ trống mã thì không bị tính là trùng mã', () => {
+    const data = prDoc([
+      prLine({ product_code: '', product_name: 'Ly thủy tinh đặt riêng' }),
+      prLine({ product_code: '', product_name: 'Khay gỗ đặt riêng' }),
+    ])
+    expect(validatePurchaseRequest(data, true)).toBe('')
   })
 
   it('ô chỉ có dấu cách vẫn là ô trống', () => {
