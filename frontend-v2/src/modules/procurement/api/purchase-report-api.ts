@@ -2,6 +2,7 @@ import { apiGet, downloadFile } from '@/core/api'
 import type {
   DailyReport,
   MatrixRow,
+  PrLinesResult,
   ProcurementReport,
   ReportMatrix,
   RequestMatrix,
@@ -81,6 +82,21 @@ export const purchaseReportApi = {
       page_size: number
     },
   ) => apiGet<ShippingDetailResult>(`/api/reports/shipping-detail${toQuery({ ...params })}`),
+
+  /**
+   * Chi tiết YC mua hàng theo DÒNG hàng (bao-CR-295/299) — phân trang server.
+   * `line_status: 'chua_dat'` là giá trị GỘP, backend hiểu = no_po + not_ordered.
+   */
+  getPrLines: (
+    params: ReportScope & {
+      status?: string
+      line_status?: string
+      assignee?: string
+      search?: string
+      page: number
+      page_size: number
+    },
+  ) => apiGet<PrLinesResult>(`/api/reports/pr-lines${toQuery({ ...params })}`),
 
   /** Chi phí theo NGÀY trong một tháng — mở khi bấm vào cột biểu đồ. */
   getDaily: (params: { month: string; company_id?: string }) =>

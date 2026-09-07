@@ -85,6 +85,26 @@ export function useShippingDetail(
   })
 }
 
+/** Chi tiết YC mua hàng theo dòng hàng (bao-CR-295/299) — phân trang server. */
+export function usePrLines(
+  params: ReportScope & {
+    status?: string
+    line_status?: string
+    assignee?: string
+    search?: string
+    page: number
+    page_size: number
+  },
+  enabled: boolean,
+) {
+  return useQuery({
+    queryKey: queryKeys.procurement.reportPrLines(params),
+    queryFn: () => purchaseReportApi.getPrLines(params),
+    placeholderData: keepPreviousData,
+    enabled,
+  })
+}
+
 /** Chi phí theo ngày của một tháng. `month` rỗng = hộp thoại đang đóng. */
 export function useDailyReport(month: string, companyId?: string) {
   const params = { month, company_id: companyId }

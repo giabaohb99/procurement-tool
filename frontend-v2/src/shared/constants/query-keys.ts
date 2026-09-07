@@ -70,6 +70,8 @@ export const queryKeys = {
       ['procurement', 'purchase-report', 'shipping-detail', params ?? {}] as const,
     reportDaily: (params?: Record<string, unknown>) =>
       ['procurement', 'purchase-report', 'daily', params ?? {}] as const,
+    reportPrLines: (params?: Record<string, unknown>) =>
+      ['procurement', 'purchase-report', 'pr-lines', params ?? {}] as const,
 
     /** Số liệu trang Tổng quan Thu mua (`/api/dashboard/overview`). */
     dashboard: () => ['procurement', 'dashboard'] as const,

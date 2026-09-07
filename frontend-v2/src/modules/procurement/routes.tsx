@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   ReceiptText,
   ShoppingCart,
+  TextSearch,
   Truck,
   UserCheck,
 } from 'lucide-react'
@@ -52,6 +53,14 @@ export const procurementModule: ErpModule = {
       label: 'Báo cáo mua hàng',
       path: appRoutes.procurement.purchaseReport,
       icon: ChartColumnBig,
+      entity: 'report',
+    },
+    // bao-CR-296/299 — trang riêng của tab "Chi tiết YC mua hàng", đứng ngay
+    // dưới Báo cáo mua hàng như bản v1 (entity `report` như menu v1).
+    {
+      label: 'Chi tiết YC mua hàng',
+      path: appRoutes.procurement.prLinesReport,
+      icon: TextSearch,
       entity: 'report',
     },
     {
@@ -255,6 +264,12 @@ export const procurementModule: ErpModule = {
       path: appRoutes.procurement.purchaseReport,
       lazy: async () => ({
         Component: (await import('./pages/purchase-report-page')).PurchaseReportPage,
+      }),
+    },
+    {
+      path: appRoutes.procurement.prLinesReport,
+      lazy: async () => ({
+        Component: (await import('./pages/pr-lines-report-page')).PrLinesReportPage,
       }),
     },
     {

@@ -59,8 +59,11 @@ export const appRoutes = {
     surveyProgress: '/procurement/survey-progress',
     /** Báo cáo khảo sát, cắt theo dòng khảo sát. */
     surveyReport: '/procurement/survey-report',
-    /** Báo cáo mua hàng — tám tab trên cùng một bộ lọc công ty / năm. */
+    /** Báo cáo mua hàng — chín tab trên cùng một bộ lọc công ty / năm. */
     purchaseReport: '/procurement/purchase-report',
+    /** Trang riêng của báo cáo Chi tiết YC mua hàng (bao-CR-296/299) — nội dung
+        dùng chung với tab cùng tên trong Báo cáo mua hàng. */
+    prLinesReport: '/procurement/pr-lines-report',
     /** Phân công phụ trách NSTM theo phân loại. */
     categoryAssignees: '/procurement/category-assignees',
     categoryAssigneeNew: '/procurement/category-assignees/new',
