@@ -23,7 +23,7 @@ HEADER = ["id", "code", "supplier_code", "supplier_name", "company_id", "source_
           "request_date", "payment_method", "prepay", "total", "note", "reject_reason", "status"]
 
 
-def _line(db, ln) -> dict:
+def _line(db, ln, misa_by_po: dict | None = None) -> dict:
     """Tổng nợ / Đã trả / Hạn trả luôn ĐỌC từ Công nợ (không lưu trên phiếu, tránh lệch số);
     còn mã PO / số hóa đơn / ngày hóa đơn là dữ liệu nhập trên phiếu (CR-066).
     Dòng chưa khớp khoản nợ nào (form trắng, hàng chưa về) thì các cột nợ trả về 0 / rỗng."""
@@ -41,6 +41,7 @@ def _line(db, ln) -> dict:
     # Ngày hóa đơn: giá trị đã nhập trên phiếu > ngày hóa đơn của lần giao hàng
     invoice_date = (ln.invoice_date or "").strip() or service.delivery_invoice_date(db, payables)
     return {"id": ln.id, "payable_id": ln.payable_id, "po_code": ln.po_code,
+            "misa_code": (misa_by_po or {}).get((ln.po_code or "").strip(), ""),
             "invoice_no": ln.invoice_no, "amount": float(ln.amount or 0),
             "invoice_date": invoice_date, "due_date": due_date, "incur_date": incur_date,
             "payable_total": tot, "payable_paid": paid,
@@ -54,7 +55,10 @@ def _out(db: Session, req: PaymentRequest) -> dict:
     d["print_texts"] = service.parse_print_texts(req.print_texts)
     d["created_by_name"] = resolve_actor(db, req.created_by)
     d["created_at"] = req.created_at
-    d["lines"] = [_line(db, ln) for ln in service.lines_of(db, req.id)]
+    lines = service.lines_of(db, req.id)
+    # Ticket #26: mã MISA join theo mã PO một lượt cho cả phiếu
+    misa_by_po = service.misa_by_po_code(db, [ln.po_code for ln in lines])
+    d["lines"] = [_line(db, ln, misa_by_po) for ln in lines]
     return d
 
 
@@ -74,8 +78,11 @@ def list_(request: Request, pg: dict = Depends(pagination), db: Session = Depend
     total = q.count()
     q = apply_sort_from_request(q, PaymentRequest, request, default=PaymentRequest.id.desc())
     items = q.offset(pg["offset"]).limit(pg["limit"]).all()
+    # Ticket #26 (bao-CR-302): cột Mã MISA gộp theo phiếu, join một lượt cho cả trang
+    misa_by_req = service.misa_codes_by_request(db, [p.id for p in items])
     out = [{c: getattr(p, c) for c in HEADER}
            | {"total": float(p.total or 0), "created_by_name": resolve_actor(db, p.created_by),
+              "misa_code": misa_by_req.get(p.id, ""),
               "updated_at": p.updated_at}   # bao-CR-294 — cột "Ngày cập nhật" ở màn danh sách
            for p in items]
     return success({"total": total, "items": out})

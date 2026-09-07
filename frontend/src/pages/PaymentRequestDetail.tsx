@@ -61,6 +61,7 @@ type NewLine = {
   supplier_name: string
   source_type: string
   po_code: string
+  misa_code: string
   invoice_no: string
   invoice_date: string
   due_date: string
@@ -72,11 +73,11 @@ type NewLine = {
 let seqKey = 0
 const blankLine = (): NewLine => ({
   key: ++seqKey, payable_id: 0, supplier_code: '', supplier_name: '', source_type: '',
-  po_code: '', invoice_no: '', invoice_date: '', due_date: '', payable_total: 0, payable_paid: 0, amount: 0,
+  po_code: '', misa_code: '', invoice_no: '', invoice_date: '', due_date: '', payable_total: 0, payable_paid: 0, amount: 0,
 })
 const fromPayable = (r: any): NewLine => ({
   key: ++seqKey, payable_id: r.id, supplier_code: r.supplier_code || '', supplier_name: r.supplier_name || '',
-  source_type: r.source_type || 'goods', po_code: r.po_code || '', invoice_no: r.invoice_no || '',
+  source_type: r.source_type || 'goods', po_code: r.po_code || '', misa_code: r.misa_code || '', invoice_no: r.invoice_no || '',
   invoice_date: r.invoice_date || '', due_date: r.due_date || '',
   payable_total: Number(r.total) || 0, payable_paid: Number(r.paid_amount) || 0,
   amount: Number(r.remaining) || 0,
@@ -237,9 +238,10 @@ function PaymentRequestCreate() {
       <div className="card" style={{ padding: 18, marginBottom: 16 }}>
         <h3 className="sec-title">Các khoản công nợ thanh toán ({lines.length})</h3>
         <div className="items-scroll">
-          <table className="items-table" style={{ minWidth: 1100 }}>
+          <table className="items-table" style={{ minWidth: 1200 }}>
+            {/* Ticket #26 (bao-CR-302): cột Mã MISA chỉ hiển thị — mã nhập/sửa trên ĐMH */}
             <thead><tr><th style={{ width: 36 }}>#</th><th>Nhà cung cấp</th><th>Loại</th><th>PO</th>
-              <th>Số hóa đơn</th><th>Ngày hóa đơn</th><th>Hạn trả</th>
+              <th>Mã MISA</th><th>Số hóa đơn</th><th>Ngày hóa đơn</th><th>Hạn trả</th>
               <th style={{ textAlign: 'right' }}>Tổng nợ</th><th style={{ textAlign: 'right' }}>Đã trả</th>
               <th style={{ textAlign: 'right' }}>Đề nghị trả</th>
               <th style={{ width: 50, textAlign: 'center' }}>Bỏ</th></tr></thead>
@@ -253,6 +255,7 @@ function PaymentRequestCreate() {
                   <td>{l.payable_id ? l.po_code : (
                     <input className="cell-input" style={{ width: 130 }} value={l.po_code}
                       onChange={(e) => setLine(l.key, { po_code: e.target.value })} placeholder="Mã PO" />)}</td>
+                  <td>{l.misa_code || '—'}</td>
                   <td><input className="cell-input" style={{ width: 130 }} value={l.invoice_no}
                     onChange={(e) => setLine(l.key, { invoice_no: e.target.value })} placeholder="(để trống = in tay)" /></td>
                   <td><DateInput value={l.invoice_date} onChange={(v) => setLine(l.key, { invoice_date: v })} /></td>
@@ -435,8 +438,10 @@ function PaymentRequestView() {
           </div>
         )}
         <div className="items-scroll">
-          <table className="items-table" style={{ minWidth: 900 }}>
-            <thead><tr><th>#</th><th>PO</th><th>Số hóa đơn</th><th>Ngày hóa đơn</th><th>Hạn trả</th>
+          <table className="items-table" style={{ minWidth: 1000 }}>
+            {/* Ticket #26 (bao-CR-302): Mã MISA backend join theo mã PO lúc đọc — sửa mã PO
+                tại chỗ thì cột này chỉ cập nhật sau khi Lưu (nạp lại phiếu). */}
+            <thead><tr><th>#</th><th>PO</th><th>Mã MISA</th><th>Số hóa đơn</th><th>Ngày hóa đơn</th><th>Hạn trả</th>
               <th style={{ textAlign: 'right' }}>Tổng nợ</th><th style={{ textAlign: 'right' }}>Đã trả</th>
               <th style={{ textAlign: 'right' }}>Đề nghị trả</th>
               {editable && <th style={{ width: 50, textAlign: 'center' }}>Bỏ</th>}</tr></thead>
@@ -446,6 +451,7 @@ function PaymentRequestView() {
                   <td>{i + 1}</td>
                   <td>{editable ? <input className="cell-input" style={{ width: 130 }} value={l.po_code || ''}
                     onChange={(e) => setLine(i, { po_code: e.target.value })} placeholder="Mã PO" /> : l.po_code}</td>
+                  <td>{l.misa_code || '—'}</td>
                   <td>{editable ? <input className="cell-input" style={{ width: 130 }} value={l.invoice_no || ''}
                     onChange={(e) => setLine(i, { invoice_no: e.target.value })} placeholder="(để trống = in tay)" /> : l.invoice_no}</td>
                   <td>{editable ? <DateInput value={l.invoice_date || ''} onChange={(v) => setLine(i, { invoice_date: v })} /> : l.invoice_date}</td>
@@ -525,7 +531,9 @@ function PaymentRequestView() {
         </div>
       )}
 
-      {editable && can('payment_request', 'delete') && (
+      {/* bao-CR-303: xóa chỉ cần quyền delete + phiếu còn nháp — trước đây trói vào `editable`
+          (đòi thêm quyền write) nên người yêu cầu có quyền xóa vẫn không thấy nút. */}
+      {req.status === 'draft' && can('payment_request', 'delete') && (
         <button className="btn ghost" style={{ color: 'var(--red)', borderColor: 'var(--red)', marginTop: 16 }}
                 onClick={async () => { if (await askConfirm({ message: 'Xóa phiếu này?' })) { await api.delete(`${API}/${id}`); navigate('/payment-requests') } }}><i className="ti ti-trash" /> Xóa phiếu</button>
       )}
