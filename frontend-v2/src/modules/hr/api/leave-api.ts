@@ -120,6 +120,18 @@ export const leaveApi = {
       missing_hire_date_count: number
     }>(`${BALANCES}/allocate`, payload),
 
+  /** Kết sổ cuối năm — số dư `year` đi tiếp theo luật của từng loại nghỉ. */
+  closeYear: (payload: { year: number; employee_ids?: number[] }) =>
+    apiPost<{
+      year: number
+      row_count: number
+      moved_rows: number
+      moved_days: number
+      credited_days: number
+      /** Dòng bị bỏ vì loại đích khai sai — con số PHẢI nói ra, xem hook. */
+      skipped_config: number
+    }>(`${BALANCES}/close-year`, payload),
+
   // ── Danh mục nền ────────────────────────────────────────────────────────────
   listTypes: (params: ListParams = {}) =>
     apiGet<PaginatedResult<LeaveType>>(TYPES, { params }),

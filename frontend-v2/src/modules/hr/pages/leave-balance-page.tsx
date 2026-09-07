@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { CalendarPlus, Search } from 'lucide-react'
+import { ArchiveRestore, CalendarPlus, Search } from 'lucide-react'
 
 import { usePermission } from '@/core/authorization/use-permission'
 import { appConfig } from '@/core/config/app-config'
@@ -11,6 +11,7 @@ import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import type { ListParams } from '@/shared/types/api'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
+import { confirm } from '@/shared/ui/confirm-dialog'
 import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
@@ -23,7 +24,12 @@ import {
 } from '@/shared/ui/select'
 import { cn } from '@/shared/utils/cn'
 import { LeaveSectionTabs } from '../components/leave-section-tabs'
-import { useAllocateLeaveBalance, useLeaveBalances, useLeaveTypes } from '../hooks/use-leave'
+import {
+  useAllocateLeaveBalance,
+  useCloseLeaveYear,
+  useLeaveBalances,
+  useLeaveTypes,
+} from '../hooks/use-leave'
 import type { LeaveBalance } from '../types/leave'
 
 const ALL = 'all'
@@ -35,11 +41,14 @@ const YEAR_SPAN = 3
 /**
  * QUỸ PHÉP NĂM — màn của phòng Nhân sự.
  *
- * Hai thao tác, và cả hai đều là thao tác **tặng ngày phép cho người khác**, nên
- * cả hai gác sau `leave_balance.create` / `write` chứ không đi chung khóa với
+ * Ba thao tác, cả ba đều là thao tác **đụng vào ngày phép của người khác**, nên
+ * cả ba gác sau `leave_balance.create` / `write` chứ không đi chung khóa với
  * đơn nghỉ:
  *  · **Cấp quỹ năm** — chạy lại được, chỉ tạo dòng còn thiếu. Bấm hai lần không
  *    nhân đôi quỹ, và thêm người giữa năm thì bấm lại là họ có quỹ.
+ *  · **Kết sổ cuối năm** (07/09/2026) — đẩy số dư năm cũ sang năm mới theo luật
+ *    khai ở từng loại nghỉ (`year_end_mode`). Cũng chạy lại được: dòng đã kết
+ *    sổ mang dấu `carried_out_days` nên lượt sau bỏ qua.
  *  · **Điều chỉnh tay** — ghi ĐÈ, bắt buộc có lý do, ghi vào dấu vết. Nằm ở
  *    TRANG CHI TIẾT (`/hr/leave-balances/:id`), không phải popup từ dòng: xem
  *    docstring của `leave-balance-detail-page.tsx`.
@@ -61,7 +70,31 @@ export function LeaveBalancePage() {
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
 
   const allocate = useAllocateLeaveBalance()
+  const closeYear = useCloseLeaveYear()
   const { data: typeData } = useLeaveTypes()
+
+  //  Kết sổ SỬA hai dòng quỹ đã có (trừ bên năm cũ, cộng bên năm mới) nên gác
+  //  bằng `write` như cột điều chỉnh tay, không phải `create` như nút Cấp quỹ.
+  const canCloseYear = can('leave_balance', 'write')
+
+  //  Kết sổ năm TRƯỚC năm đang xem: số dư của năm vừa xong mới là thứ cần đẩy
+  //  đi. Hỏi lại trước khi chạy — nó chạm tới quỹ của mọi người trong phạm vi,
+  //  và câu hỏi là chỗ duy nhất nói ra rằng nó chỉ chuyển những loại nghỉ CÓ
+  //  khai luật, chứ không phải mọi loại.
+  const closeYearNow = async () => {
+    const target = Number(year) - 1
+    const ok = await confirm({
+      title: `Kết sổ quỹ phép năm ${target}?`,
+      message:
+        `Số dư năm ${target} của những loại nghỉ có khai «Mang sang năm sau» hoặc ` +
+        `«Quy đổi sang loại nghỉ khác» sẽ được đẩy sang năm ${target + 1}. ` +
+        'Loại để mặc định «Hết năm là mất» thì không đụng tới. ' +
+        'Chạy lại được: dòng đã kết sổ sẽ bị bỏ qua, không nhân đôi số ngày.',
+      confirmLabel: 'Kết sổ',
+      tone: 'default',
+    })
+    if (ok) closeYear.mutate({ year: target })
+  }
 
   const params = useMemo<ListParams>(() => {
     const p: ListParams = { page, page_size: pageSize, year }
@@ -116,6 +149,30 @@ export function LeaveBalancePage() {
         header: 'Chuyển năm trước',
         cell: (b) => <DayCount value={b.carried_days} signed />,
         width: 150,
+        align: 'right',
+      },
+      {
+        key: 'carried_out_days',
+        header: 'Đã chuyển đi',
+        //  Phần đã mang sang năm sau lúc kết sổ. Nó ĐÃ bị trừ khỏi «Còn lại»,
+        //  nên không có cột này thì số dư năm cũ tụt mà không dòng nào giải
+        //  thích — và người xem sẽ đi tìm xem ai vừa nghỉ mấy ngày đó.
+        cell: (b) => <DayCount value={b.carried_out_days} />,
+        width: 130,
+        align: 'right',
+      },
+      {
+        key: 'carried_expired_days',
+        header: 'Hết hạn',
+        //  Phép mang sang quá hạn dùng thì mất. Cột này KHÔNG nằm trong công
+        //  thức còn lại — nó chỉ nói ra chỗ số ngày đã đi đâu.
+        cell: (b) => (
+          <DayCount
+            value={b.carried_expired_days}
+            className="text-muted-foreground line-through"
+          />
+        ),
+        width: 110,
         align: 'right',
       },
       {
@@ -177,15 +234,26 @@ export function LeaveBalancePage() {
         title="Quỹ phép năm"
         description="Cấp phát, theo dõi và điều chỉnh số ngày phép của từng nhân sự."
         actions={
-          canAllocate ? (
-            <Button
-              onClick={() => allocate.mutate({ year: Number(year) })}
-              disabled={allocate.isPending}
-            >
-              <CalendarPlus className="size-4" />
-              Cấp quỹ năm {year}
-            </Button>
-          ) : undefined
+          <>
+            {/*  Kết sổ đứng TRƯỚC và ở dạng nút phụ: nó chạy mỗi năm một lần,
+                 còn Cấp quỹ là nút hằng ngày. Để hai nút cùng cỡ cùng màu thì
+                 người ta bấm nhầm, mà nhầm ở đây là dời phép của cả công ty. */}
+            {canCloseYear && (
+              <Button variant="outline" onClick={closeYearNow} disabled={closeYear.isPending}>
+                <ArchiveRestore className="size-4" />
+                Kết sổ năm {Number(year) - 1}
+              </Button>
+            )}
+            {canAllocate && (
+              <Button
+                onClick={() => allocate.mutate({ year: Number(year) })}
+                disabled={allocate.isPending}
+              >
+                <CalendarPlus className="size-4" />
+                Cấp quỹ năm {year}
+              </Button>
+            )}
+          </>
         }
       />
 

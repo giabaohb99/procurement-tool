@@ -7,10 +7,15 @@ Muốn hiện được thì phải có chỗ để hỏi, và chỗ đó là đ�
 
 **Số còn lại KHÔNG lưu thành cột.** Nó là hiệu:
 
-    còn lại = allocated + seniority + carried + adjusted − used − pending
+    còn lại = allocated + seniority + carried + adjusted − used − pending − carried_out
 
 Lưu thêm một cột `remaining` thì có hai nguồn sự thật, và cái thứ hai sẽ lệch —
 sớm hay muộn. `balance_service.remaining_days()` là nơi duy nhất tính.
+
+Số hạng `carried_out` là phần đã **mang khỏi dòng này** lúc kết sổ cuối năm
+(`carryover_service`). Không trừ nó thì số dư năm cũ vẫn hiện nguyên trong khi
+số ngày đó đã nằm ở dòng quỹ năm sau — cộng hai dòng lại là công ty thấy mình
+nợ gấp đôi số ngày phép thật.
 """
 from sqlalchemy import BigInteger, Float, Index, SmallInteger, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
@@ -47,7 +52,8 @@ class LeaveBalance(Base, AuditMixin):
     #  điểm cấp phát. Tách khỏi `allocated_days` để màn Quỹ phép giải thích được
     #  "12 + 2" thay vì trưng ra con số 14 không rõ từ đâu ra.
     seniority_days: Mapped[float] = mapped_column(Float, default=0.0)
-    #  Chuyển từ năm trước sang (Q2 — chỉ khi `LeaveType.carry_over` bật).
+    #  Chuyển từ năm trước sang (Q2 — khi loại nghỉ khai `year_end_mode` mang đi).
+    #  Với chế độ QUY ĐỔI, đây là số ngày ĐÃ nhân tỷ lệ.
     carried_days: Mapped[float] = mapped_column(Float, default=0.0)
     #  Nhân sự chỉnh tay, cộng hoặc TRỪ. Cột duy nhất mang được số âm — mọi cột
     #  khác là số ngày nên không âm bao giờ.
@@ -60,6 +66,16 @@ class LeaveBalance(Base, AuditMixin):
     #  tay đều lọt, vì đơn nào cũng thấy quỹ còn nguyên — lỗi cổ điển của mọi hệ
     #  nghỉ phép. Trả lại khi đơn bị từ chối / trả về / hủy.
     pending_days: Mapped[float] = mapped_column(Float, default=0.0)
+    #  ĐÃ MANG ĐI lúc kết sổ cuối năm — sang dòng quỹ năm sau (mang sang) hoặc
+    #  sang loại nghỉ khác (quy đổi). Khác `0` cũng chính là dấu «dòng này đã kết
+    #  sổ rồi», nên bấm Kết sổ lần hai không nhân đôi số ngày.
+    carried_out_days: Mapped[float] = mapped_column(Float, default=0.0)
+
+    # --- ghi nhận, KHÔNG vào công thức ------------------------------------
+    #  Phần mang sang đã HẾT HẠN (quá `carry_over_expire_month`). Ghi riêng chứ
+    #  không lặng lẽ trừ vào `carried_days`: người mở màn Quỹ phép thấy con số
+    #  tụt mà không có dòng nào giải thích thì họ báo lỗi, và họ báo đúng.
+    carried_expired_days: Mapped[float] = mapped_column(Float, default=0.0)
 
     note: Mapped[str] = mapped_column(String(500), default="")
 
@@ -72,9 +88,10 @@ class LeaveBalance(Base, AuditMixin):
 
     @property
     def remaining_days(self) -> float:
-        """Số ngày còn nghỉ được — đã trừ cả phần đang chờ duyệt.
+        """Số ngày còn nghỉ được — đã trừ phần chờ duyệt VÀ phần đã mang đi.
 
         Làm tròn 2 chữ số vì `Float` cộng dồn nửa ngày ra `13.999999999999998`,
         và người dùng đọc con số đó thì tưởng hệ thống hỏng.
         """
-        return round(self.total_days - self.used_days - self.pending_days, 2)
+        return round(self.total_days - self.used_days - self.pending_days
+                     - self.carried_out_days, 2)

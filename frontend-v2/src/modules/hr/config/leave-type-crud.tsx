@@ -1,10 +1,16 @@
-import { CalendarOff, CircleCheck, CircleX, Coins, Hash } from 'lucide-react'
+import { ArrowRightLeft, CalendarOff, CircleCheck, CircleX, Coins, Hash } from 'lucide-react'
 
 import { appRoutes } from '@/shared/constants/app-routes'
 import type { CrudConfig } from '@/shared/crud'
 import { Badge } from '@/shared/ui/badge'
 import { SeniorityTierCard } from '../components/seniority-tier-card'
-import { GENDER, GENDER_LABELS, type LeaveType } from '../types/leave'
+import {
+  GENDER,
+  GENDER_LABELS,
+  YEAR_END_MODE,
+  YEAR_END_MODE_LABELS,
+  type LeaveType,
+} from '../types/leave'
 
 /**
  * LOẠI NGHỈ (V1-6) — cấu hình luật nghỉ bằng DỮ LIỆU, không bằng mã nguồn.
@@ -22,6 +28,15 @@ const GENDER_OPTIONS = [
   { value: GENDER.UNKNOWN, label: GENDER_LABELS[GENDER.UNKNOWN] },
   { value: GENDER.MALE, label: GENDER_LABELS[GENDER.MALE] },
   { value: GENDER.FEMALE, label: GENDER_LABELS[GENDER.FEMALE] },
+]
+
+//  Ba nước xử lý số dư cuối năm — xem `YEAR_END_MODE`. Trước 07/09/2026 chỗ này
+//  là một công tắc hai nước và ba ô của nó là CỘT CHẾT: lưu được, hiện được, và
+//  không chỗ nào trong backend đọc tới. Nay `carryover_service` chạy thật.
+const YEAR_END_OPTIONS = [
+  { value: YEAR_END_MODE.DROP, label: YEAR_END_MODE_LABELS[YEAR_END_MODE.DROP] },
+  { value: YEAR_END_MODE.CARRY, label: YEAR_END_MODE_LABELS[YEAR_END_MODE.CARRY] },
+  { value: YEAR_END_MODE.CONVERT, label: YEAR_END_MODE_LABELS[YEAR_END_MODE.CONVERT] },
 ]
 
 export const LEAVE_TYPE_CRUD_CONFIG: CrudConfig<LeaveType> = {
@@ -56,6 +71,17 @@ export const LEAVE_TYPE_CRUD_CONFIG: CrudConfig<LeaveType> = {
     ...(t.counts_balance
       ? [{ icon: Coins, text: `Quỹ ${t.annual_quota_days} ngày/năm`, tone: 'ok' as const }]
       : [{ icon: CalendarOff, text: 'Không trừ quỹ phép', tone: 'muted' as const }]),
+    //  Chỉ hiện khi số dư ĐI ĐÂU ĐÓ. Bày cả «Hết năm là mất» thì mọi loại đều
+    //  có thêm một huy hiệu nói đúng thứ mặc định — nhiễu, không phải thông tin.
+    ...(t.year_end_mode !== YEAR_END_MODE.DROP
+      ? [
+          {
+            icon: ArrowRightLeft,
+            text: YEAR_END_MODE_LABELS[t.year_end_mode] ?? '',
+            tone: 'muted' as const,
+          },
+        ]
+      : []),
     {
       icon: t.is_active ? CircleCheck : CircleX,
       text: t.is_active ? 'Đang dùng' : 'Ngừng / Ẩn',
@@ -221,24 +247,43 @@ export const LEAVE_TYPE_CRUD_CONFIG: CrudConfig<LeaveType> = {
       hint: 'Giấy khám bệnh, giấy đăng ký kết hôn…',
     },
     {
-      name: 'carry_over',
-      label: 'Cho chuyển phép sang năm sau',
-      type: 'switch',
-      defaultValue: false,
-      hint: 'Mặc định TẮT. Bật rồi tắt lại thì phải đi gỡ số đã chuyển, tắt rồi bật thì không mất gì.',
+      name: 'year_end_mode',
+      label: 'Số dư cuối năm',
+      type: 'select',
+      options: YEAR_END_OPTIONS,
+      defaultValue: YEAR_END_MODE.DROP,
+      hint: 'Chạy khi bấm «Kết sổ cuối năm» ở màn Quỹ phép — không tự chạy đêm 31/12.',
     },
     {
       name: 'carry_over_max_days',
-      label: 'Chuyển tối đa (ngày)',
+      label: 'Tối đa mang đi (ngày)',
       type: 'number',
       defaultValue: 0,
+      hint: '0 = mang hết số dư. Kẹp TRƯỚC khi nhân tỷ lệ quy đổi.',
     },
     {
       name: 'carry_over_expire_month',
-      label: 'Phép chuyển hết hạn cuối tháng',
+      label: 'Phần mang sang hết hạn cuối tháng',
       type: 'number',
       defaultValue: 3,
-      hint: 'Thông lệ: hết tháng 3 của năm sau.',
+      hint: 'Thông lệ: hết tháng 3 của năm sau. 0 = không hết hạn. Chỉ áp cho «Mang sang năm sau» — phần đã quy đổi sống theo luật của loại đích.',
+    },
+    {
+      name: 'convert_to_type_id',
+      label: 'Quy đổi sang loại',
+      type: 'select',
+      //  Nạp động: danh sách loại nghỉ là dữ liệu, không phải hằng số — thêm
+      //  một loại mới mà phải sửa config là quay lại đúng chỗ V1-6 muốn thoát.
+      source: { url: '/api/leave-types', valueKey: 'id', labelKey: 'name' },
+      defaultValue: 0,
+      hint: 'Chỉ dùng khi chọn «Quy đổi sang loại nghỉ khác». Loại đích phải bật «Trừ vào quỹ phép năm», nếu không backend chặn lúc lưu.',
+    },
+    {
+      name: 'convert_ratio',
+      label: 'Tỷ lệ quy đổi',
+      type: 'number',
+      defaultValue: 1,
+      hint: '1 ngày dư đổi được mấy ngày ở loại đích. Hai đổi một thì ghi 0.5.',
     },
     {
       name: 'sort_order',

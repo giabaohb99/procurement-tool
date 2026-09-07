@@ -19,11 +19,13 @@ import { LEAVE_STATUS, LEAVE_SESSION, LEAVE_UNIT, type LeaveRequest } from '../t
 vi.mock('@/modules/approval/components/approval-trail-card', () => ({
   ApprovalTrailCard: ({
     extraEvents = [],
+    trailingEvents = [],
   }: {
     extraEvents?: { title: string; detail?: string }[]
+    trailingEvents?: { title: string; detail?: string }[]
   }) => (
     <div data-testid="approval-trail">
-      {extraEvents.map((event) => (
+      {[...extraEvents, ...trailingEvents].map((event) => (
         <div key={event.title}>
           <span>{event.title}</span>
           {event.detail && <span>{event.detail}</span>}
@@ -187,17 +189,45 @@ describe('LeaveApprovalTimeline — đường CÓ LUỒNG nhiều bước', () =
           })}
         />,
       )
-      expect(screen.getByTestId('approval-trail')).toBeEmptyDOMElement()
+      //  Chỉ còn mốc «lập đơn» — không có mốc kết cục nào của riêng tờ đơn.
+      expect(screen.queryByText(/từ chối|trả .* về/i)).not.toBeInTheDocument()
+      expect(screen.getByText('Lập đơn')).toBeInTheDocument()
       unmount()
     }
   })
 
-  it('đơn đang chờ duyệt thì không chèn mốc nào của riêng đơn', () => {
+  it('đơn đang chờ duyệt thì không chèn mốc KẾT CỤC nào của riêng đơn', () => {
     render(
       <LeaveApprovalTimeline
         request={request({ status: LEAVE_STATUS.PENDING, approval_instance_id: 77 })}
       />,
     )
-    expect(screen.getByTestId('approval-trail')).toBeEmptyDOMElement()
+    expect(screen.queryByText(/hủy|từ chối/i)).not.toBeInTheDocument()
+  })
+
+  it('luôn nối mốc LẬP ĐƠN vào cuối dấu vết của bộ máy', () => {
+    //  Dấu vết của bộ máy duyệt bắt đầu từ lượt GỬI, nên thiếu mốc này thì tờ
+    //  đơn đã duyệt kể chuyện từ giữa: người xem không thấy đơn ra đời lúc nào
+    //  (NP141, 07/09/2026).
+    render(
+      <LeaveApprovalTimeline
+        request={request({
+          status: LEAVE_STATUS.APPROVED,
+          approval_instance_id: 77,
+          created_by_name: 'Hành chính',
+        })}
+      />,
+    )
+    expect(screen.getByText('Hành chính đã lập đơn')).toBeInTheDocument()
+    expect(screen.getByText('Số đơn NP001')).toBeInTheDocument()
+  })
+
+  it('không biết ai lập thì vẫn nói mốc đó, bằng câu vô chủ', () => {
+    render(
+      <LeaveApprovalTimeline
+        request={request({ status: LEAVE_STATUS.APPROVED, approval_instance_id: 77 })}
+      />,
+    )
+    expect(screen.getByText('Lập đơn')).toBeInTheDocument()
   })
 })

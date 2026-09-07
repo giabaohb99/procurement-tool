@@ -88,6 +88,18 @@ export const GENDER_LABELS: Record<number, string> = {
   [GENDER.FEMALE]: 'Nữ',
 }
 
+// ── Số dư cuối năm ─────────────────────────────────────────────────────────────
+
+//  Ba nước LOẠI TRỪ nhau nên là một ô chọn, không phải hai công tắc — xem
+//  `constants.YEAR_END_*` ở backend.
+export const YEAR_END_MODE = { DROP: 0, CARRY: 1, CONVERT: 2 } as const
+
+export const YEAR_END_MODE_LABELS: Record<number, string> = {
+  [YEAR_END_MODE.DROP]: 'Hết năm là mất',
+  [YEAR_END_MODE.CARRY]: 'Mang sang năm sau',
+  [YEAR_END_MODE.CONVERT]: 'Quy đổi sang loại nghỉ khác',
+}
+
 // ── Bản ghi ────────────────────────────────────────────────────────────────────
 
 /**
@@ -107,9 +119,16 @@ export type LeaveType = {
   annual_quota_days: number
   /** `0` = không giới hạn. */
   max_days_per_request: number
-  carry_over: boolean
+  /** Số dư cuối năm đi đâu — xem `YEAR_END_MODE`. */
+  year_end_mode: number
+  /** Trần MANG ĐI, tính trước khi nhân tỷ lệ. `0` = không trần. */
   carry_over_max_days: number
+  /** Phần mang sang hết hạn cuối tháng thứ mấy của năm sau. `0` = không hết hạn. */
   carry_over_expire_month: number
+  /** Loại nghỉ ĐÍCH khi quy đổi. `0` = chưa chọn. */
+  convert_to_type_id: number
+  /** 1 ngày dư → bao nhiêu ngày ở loại đích. 2 đổi 1 thì ghi `0.5`. */
+  convert_ratio: number
   /** `0` = mọi giới. */
   gender: number
   require_attachment: boolean
@@ -157,6 +176,10 @@ export interface LeaveBalance {
   used_days: number
   /** Đang giữ chỗ cho đơn chờ duyệt — đã trừ khỏi `remaining_days`. */
   pending_days: number
+  /** Đã mang khỏi dòng này lúc kết sổ cuối năm — cũng đã trừ khỏi `remaining_days`. */
+  carried_out_days: number
+  /** Phần mang sang đã HẾT HẠN. Chỉ để giải thích, không nằm trong công thức. */
+  carried_expired_days: number
   note: string
   total_days: number
   remaining_days: number
@@ -221,6 +244,8 @@ export interface LeaveRequest {
   approval_instance_id: number
   /** Giấy GNP sinh ra sau khi duyệt. `0` = chưa sinh. */
   document_id: number
+  /** Thời điểm LẬP đơn — mốc đầu tiên của dòng thời gian phê duyệt. */
+  created_at?: string | null
   submitted_at?: string | null
   decided_at?: string | null
   decision_note: string
@@ -229,6 +254,8 @@ export interface LeaveRequest {
    * MỘT đơn — danh sách không trả, vì tra tên cho từng dòng là N+1.
    */
   decided_by_name?: string
+  /** Tên người LẬP đơn (hành chính lập hộ thì khác người nghỉ). Chỉ có ở đường lấy MỘT đơn. */
+  created_by_name?: string
   handovers?: LeaveHandover[]
 }
 

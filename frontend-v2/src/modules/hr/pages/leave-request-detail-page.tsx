@@ -98,6 +98,19 @@ export function LeaveRequestDetailPage() {
     )
   }
 
+  //  ⚠️ GỬI DUYỆT PHẢI LƯU TRƯỚC. Backend kiểm «đã nhập đủ» trên BẢN ĐÃ LƯU
+  //  (`request_service.check_ready_to_submit`), còn người dùng thì đang nhìn
+  //  chữ họ vừa gõ. Trước 07/09/2026 nút này gửi thẳng, nên gõ lý do rồi bấm
+  //  Gửi duyệt ăn đúng câu «Thiếu Lý do nghỉ — nhập đủ trước khi gửi duyệt» —
+  //  một câu chặn nói ngược lại thứ đang hiện trên màn hình, không cách nào
+  //  đoán ra là phải bấm «Lưu nháp» trước.
+  const saveThenSubmit = () => {
+    save.mutate(
+      { id: requestId, values: toLeavePayload(form) },
+      { onSuccess: () => act.mutate({ id: requestId, action: 'submit' }) },
+    )
+  }
+
   if (!isNew && isLoading) {
     return (
       <PageContainer>
@@ -138,7 +151,9 @@ export function LeaveRequestDetailPage() {
         description={
           request?.submitted_at
             ? `Gửi duyệt lúc ${formatDateTime(request.submitted_at)}`
-            : 'Lưu nháp rồi gửi duyệt khi đã nhập đủ.'
+            : //  Nút «Gửi duyệt» nay tự lưu trước, nên câu cũ ("Lưu nháp rồi
+              //  gửi duyệt") mô tả một thao tác không còn bắt buộc.
+              'Gửi duyệt sẽ tự lưu những gì đang nhập.'
         }
         actions={
           <>
@@ -168,8 +183,8 @@ export function LeaveRequestDetailPage() {
                      thì không có gì để trình. */}
                 {!isNew && (
                   <Button
-                    onClick={() => act.mutate({ id: requestId, action: 'submit' })}
-                    disabled={act.isPending}
+                    onClick={saveThenSubmit}
+                    disabled={act.isPending || save.isPending}
                   >
                     <Send className="size-4" />
                     Gửi duyệt

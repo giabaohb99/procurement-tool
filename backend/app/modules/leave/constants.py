@@ -149,6 +149,30 @@ LEAVE_UNIT_LABELS = {
 }
 
 # --------------------------------------------------------------------------
+# Xử lý SỐ DƯ CUỐI NĂM của một loại nghỉ
+# --------------------------------------------------------------------------
+#  Thay cho công tắc `LeaveType.carry_over` cũ — công tắc đó chỉ có hai nước
+#  (mang sang / không), mà thực tế có ba, và cái thứ ba mới là cái công ty hay
+#  dùng: phép năm không dùng hết thì **đổi sang một loại nghỉ khác** (nghỉ bù,
+#  nghỉ việc riêng) thay vì mất trắng.
+#
+#  ⚠️ Ba nước này loại trừ nhau nên phải là MỘT cột, không phải hai công tắc:
+#  hai công tắc thì có trạng thái *"vừa mang sang vừa quy đổi"* — không ai định
+#  nghĩa nó, và người khai danh mục sẽ bật trúng nó lúc nào không hay.
+YEAR_END_DROP = 0     # Hết năm là mất — mặc định, và là luật của phần lớn loại
+YEAR_END_CARRY = 1    # Mang sang năm sau, cùng loại nghỉ
+YEAR_END_CONVERT = 2  # Quy đổi sang loại nghỉ KHÁC, theo tỷ lệ
+
+YEAR_END_MODE_LABELS = {
+    YEAR_END_DROP: "Hết năm là mất",
+    YEAR_END_CARRY: "Mang sang năm sau",
+    YEAR_END_CONVERT: "Quy đổi sang loại nghỉ khác",
+}
+
+#  Hai nước MANG ĐI được — dùng để lọc lúc kết sổ, đừng rải `mode != 0`.
+YEAR_END_MOVING_MODES = (YEAR_END_CARRY, YEAR_END_CONVERT)
+
+# --------------------------------------------------------------------------
 # Giới tính — dùng cho `tab_employee.gender` và bộ lọc loại nghỉ
 # --------------------------------------------------------------------------
 #  `0` là **chưa khai**, không phải "khác". Hồ sơ cũ nhập trước đợt này đều rơi

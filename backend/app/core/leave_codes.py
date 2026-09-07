@@ -22,6 +22,11 @@ LEAVE_TYPE_SET = register(CodeSet("leave_type", "Loại nghỉ phép", [
     Code("wedding",   "Nghỉ cưới hỏi"),
     Code("funeral",   "Nghỉ tang chế"),
     Code("comp_off",  "Nghỉ bù"),
+    #  Chế độ của NGƯỜI CHỒNG khi vợ sinh con (07/09/2026). Tách khỏi
+    #  `maternity` vì hai bên khác nhau ở mọi chỗ đáng kể: giới tính áp dụng,
+    #  số ngày, và thai sản nghỉ liên tục nên không trừ ngày lễ còn nghỉ vợ sinh
+    #  thì có. Nhét chung một mã là ô «Áp dụng cho giới tính» không còn dùng được.
+    Code("paternity", "Nghỉ vợ sinh con"),
 ]))
 
 #  Nửa ngày phép là chuyện thường. Bỏ bộ này đi thì người ta khai một ngày cho

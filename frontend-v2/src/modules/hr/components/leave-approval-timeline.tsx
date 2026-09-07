@@ -56,6 +56,7 @@ export function LeaveApprovalTimeline({ request }: LeaveApprovalTimelineProps) {
       <ApprovalTrailCard
         instanceId={request.approval_instance_id}
         extraEvents={outcome ? [outcome] : undefined}
+        trailingEvents={[createdEvent(request)]}
       />
     )
   }
@@ -149,6 +150,29 @@ function badOutcomeEvent(request: LeaveRequest): TrailExtraEvent | null {
     detail: parts.detail,
     time: request.decided_at,
     emphasizeBad: true,
+  }
+}
+
+/**
+ * Mốc «LẬP ĐƠN» — phần đầu câu chuyện mà bộ máy duyệt không biết.
+ *
+ * Dấu vết của bộ máy bắt đầu từ lượt GỬI, nên trước 07/09/2026 tờ đơn đã duyệt
+ * chỉ kể được ba mốc: trình duyệt → ký → kết thúc. Người xem không thấy đơn ra
+ * đời lúc nào, cũng không thấy AI lập nó — mà hành chính lập hộ là chuyện
+ * thường ở đây, nên «người nghỉ» và «người lập» không phải một.
+ *
+ * ⚠️ Đi vào `trailingEvents` chứ không `extraEvents`: danh sách đọc mới nhất
+ * trước, mốc lập đơn là mốc CŨ NHẤT nên phải nằm đáy. Chèn lên đầu thì dòng
+ * thời gian đọc ra là đơn được duyệt xong rồi mới lập.
+ */
+function createdEvent(request: LeaveRequest): TrailExtraEvent {
+  const actor = request.created_by_name?.trim()
+  return {
+    icon: FileText,
+    iconClassName: TONE_CLASS.done,
+    title: actor ? `${actor} đã lập đơn` : 'Lập đơn',
+    detail: `Số đơn ${request.code}`,
+    time: request.created_at,
   }
 }
 

@@ -17,7 +17,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.base_model import AuditMixin, Base
 
-from .constants import GENDER_UNKNOWN
+from .constants import GENDER_UNKNOWN, YEAR_END_DROP
 
 
 class LeaveType(Base, AuditMixin):
@@ -52,12 +52,29 @@ class LeaveType(Base, AuditMixin):
     #  (cưới hỏi 3 ngày, tang chế 3 ngày) mà không cần lập quỹ riêng.
     max_days_per_request: Mapped[float] = mapped_column(Float, default=0.0)
 
-    #  Q2 của kế hoạch — chuyển phép thừa sang năm sau. MẶC ĐỊNH TẮT, vì bật rồi
-    #  tắt lại thì phải đi gỡ số đã chuyển, còn tắt rồi bật thì không mất gì.
+    #  ⚠️ ĐÃ THAY bằng `year_end_mode` (07/09/2026). Công tắc hai nước này không
+    #  nói được nước thứ ba — *quy đổi sang loại nghỉ khác* — mà công ty hay
+    #  dùng nhất. Cột giữ lại để khỏi bỏ dữ liệu cũ (migration đã đổ sang
+    #  `year_end_mode`); **đừng đọc, đừng ghi**. Cùng kiểu di tích với
+    #  `min_notice_days` bên dưới.
     carry_over: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    #  Q2 — số dư cuối năm đi đâu. Xem `constants.YEAR_END_*`.
+    year_end_mode: Mapped[int] = mapped_column(SmallInteger, default=YEAR_END_DROP)
+    #  Trần MANG ĐI, tính trên số ngày dư trước khi nhân tỷ lệ. `0` = không trần.
     carry_over_max_days: Mapped[float] = mapped_column(Float, default=0.0)
-    #  Phép chuyển sang hết hạn cuối tháng thứ mấy của năm sau (thông lệ: 3).
+    #  Phần mang sang hết hạn cuối tháng thứ mấy của năm sau (thông lệ: 3).
+    #  `0` = không hết hạn. Chỉ có nghĩa với `YEAR_END_CARRY`: phần đã quy đổi
+    #  sang loại khác thì sống theo luật của loại ĐÍCH, không theo loại nguồn.
     carry_over_expire_month: Mapped[int] = mapped_column(SmallInteger, default=3)
+
+    #  Loại nghỉ ĐÍCH khi quy đổi (`YEAR_END_CONVERT`). Không đặt khóa ngoại:
+    #  cả bộ ERP này nối bằng id trần, và khóa ngoại ở đây sẽ chặn việc xóa một
+    #  loại nghỉ chỉ vì có loại khác từng trỏ tới nó.
+    convert_to_type_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    #  Tỷ lệ quy đổi: 1 ngày dư → bao nhiêu ngày ở loại đích. `2` ngày phép đổi
+    #  `1` ngày nghỉ bù thì ghi `0.5`.
+    convert_ratio: Mapped[float] = mapped_column(Float, default=1.0)
 
     #  Lọc theo giới tính — thai sản chỉ hiện với nữ. `0` = mọi giới.
     #  ⚠️ Nhân sự CHƯA khai giới tính (`gender = 0`) thì vẫn cho qua, xem ghi chú

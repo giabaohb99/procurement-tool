@@ -56,6 +56,14 @@ interface ApprovalTrailCardProps {
   instanceId: number
   /** Mốc của chứng từ, chèn lên ĐẦU danh sách (danh sách đọc mới nhất trước). */
   extraEvents?: TrailExtraEvent[]
+  /**
+   * Mốc của chứng từ nằm TRƯỚC mọi thứ bộ máy biết — chèn xuống CUỐI danh sách.
+   *
+   * Dấu vết của bộ máy duyệt bắt đầu từ lượt GỬI, nên nếu chứng từ có đời sống
+   * trước đó (lập đơn, sửa nháp) thì dòng thời gian kể chuyện từ giữa. Đây là
+   * chỗ nối phần đầu câu chuyện vào.
+   */
+  trailingEvents?: TrailExtraEvent[]
   className?: string
 }
 
@@ -122,6 +130,7 @@ const ACTION_APPEARANCE: Partial<Record<number, ActionAppearance>> = {
 export function ApprovalTrailCard({
   instanceId,
   extraEvents = [],
+  trailingEvents = [],
   className,
 }: ApprovalTrailCardProps) {
   const { data, isLoading } = useApprovalTrail(instanceId)
@@ -205,7 +214,10 @@ export function ApprovalTrailCard({
                 </Badge>
               </div>
 
-              {lines.length === 0 && pending.length === 0 && extraEvents.length === 0 ? (
+              {lines.length === 0 &&
+              pending.length === 0 &&
+              extraEvents.length === 0 &&
+              trailingEvents.length === 0 ? (
                 <p className="rounded-md border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">
                   Chưa có thao tác nào.
                 </p>
@@ -218,18 +230,29 @@ export function ApprovalTrailCard({
                       showRail={
                         index < extraEvents.length - 1 ||
                         pending.length > 0 ||
-                        recentLines.length > 0
+                        recentLines.length > 0 ||
+                        trailingEvents.length > 0
                       }
                     />
                   ))}
                   {pending.length > 0 && (
-                    <PendingEvent tasks={pending} showRail={recentLines.length > 0} />
+                    <PendingEvent
+                      tasks={pending}
+                      showRail={recentLines.length > 0 || trailingEvents.length > 0}
+                    />
                   )}
                   {recentLines.map((line, index) => (
                     <ApprovalEvent
                       key={line.id}
                       line={line}
-                      showRail={index < recentLines.length - 1}
+                      showRail={index < recentLines.length - 1 || trailingEvents.length > 0}
+                    />
+                  ))}
+                  {trailingEvents.map((event, index) => (
+                    <ExtraEvent
+                      key={event.title}
+                      event={event}
+                      showRail={index < trailingEvents.length - 1}
                     />
                   ))}
                 </ol>

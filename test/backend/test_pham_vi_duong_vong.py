@@ -10,9 +10,9 @@ controller. Ba kiểu dưới đây có chung một đặc điểm khó chịu: 
     D. bộ lọc người dùng tự truyền chạy TRƯỚC `apply_scope`
 
 ────────────────────────────────────────────────────────────────────────────────
-A. BẢNG PHÂN LOẠI 64 LẦN GỌI `db.get(` TRONG TỆP CONTROLLER
+A. BẢNG PHÂN LOẠI 65 LẦN GỌI `db.get(` TRONG TỆP CONTROLLER
 ────────────────────────────────────────────────────────────────────────────────
-`DB_GET_TRONG_CONTROLLER` dưới đây phân loại **đủ 64 lần**, không dòng nào còn
+`DB_GET_TRONG_CONTROLLER` dưới đây phân loại **đủ 65 lần**, không dòng nào còn
 nhãn "chưa rà". Bài kiểm A1 đối chiếu bảng này với mã nguồn THẬT, nên thêm một
 lần `db.get` vào bất kỳ controller nào cũng làm đỏ và buộc người thêm phải phân
 loại nó.
@@ -24,7 +24,7 @@ Ba nhãn (đúng đặc tả phase-08):
                    hình, bản ghi của CHÍNH MÌNH, tra tên để hiển thị)
   `LỖ`           — chứng từ CÓ phạm vi mà không kiểm
 
-**Kết quả: 64/64 an toàn — KHÔNG còn dòng 🔴 nào.** Đó là con số sau khi ĐỌC MÃ
+**Kết quả: 65/65 an toàn — KHÔNG còn dòng 🔴 nào.** Đó là con số sau khi ĐỌC MÃ
 từng chỗ, không phải đếm grep: bốn module gác bằng hàm tự viết trong thân hàm
 (`attachment._check` → `core/attachment_scope.ensure_in_scope`,
 `comment.resolve_doc`, `document.ensure_can`, `export_log._guard_view`) nên grep
@@ -257,6 +257,8 @@ DB_GET_TRONG_CONTROLLER: dict[str, list[tuple[str, str]]] = {
     ],
     # ── Nghỉ phép ────────────────────────────────────────────────────────────
     "leave/catalog_controller.py": [
+        (OK_KHONG_CAN, "L67 `LeaveType` — loại nghỉ ĐÍCH của «quy đổi số dư cuối "
+                       "năm»; danh mục PUBLIC, chỉ kiểm tồn tại + có trừ quỹ không"),
         (OK_KHONG_CAN, "L110 `LeaveType` — PUBLIC, chỉ kiểm tồn tại"),
         (OK_KHONG_CAN, "L144 `LeaveTypeSeniority` — bậc thâm niên của `leave_type` PUBLIC"),
         (OK_KHONG_CAN, "L162 `LeaveTypeSeniority` (xóa) — cùng lý do L144, PUBLIC"),
@@ -334,7 +336,7 @@ def _dem_db_get_that() -> dict[str, int]:
     return out
 
 
-def test_a1_bang_64_lan_db_get_trong_controller_da_phan_loai_du():
+def test_a1_bang_65_lan_db_get_trong_controller_da_phan_loai_du():
     """Bảng trên phải khớp mã nguồn — cả tên tệp lẫn SỐ LẦN gọi trong mỗi tệp.
 
     Đây là bài kiểm DANH SÁCH TRẮNG, cùng loại BB-4: nó không biết chỗ nào thật
@@ -342,9 +344,11 @@ def test_a1_bang_64_lan_db_get_trong_controller_da_phan_loai_du():
     controller** — thêm là đỏ, và người thêm phải viết ra một trong ba nhãn kèm
     lý do đọc được.
 
-    Số hôm nay: **64** lần trên 27 tệp / 26 module (ba trong số đó là dòng
+    Số hôm nay: **65** lần trên 27 tệp / 26 module (ba trong số đó là dòng
     docstring, đã ghi rõ trong bảng). Đợt vá phạm vi 05/09/2026 làm con số nhích
-    từ 63 lên 64: `leave/request_controller.py` mọc thêm một dòng docstring kể
+    từ 64 lên 65 (07/09/2026): `leave/catalog_controller.py` tra loại nghỉ ĐÍCH
+    của «quy đổi số dư cuối năm» — danh mục PUBLIC nên không cần lọc phạm vi.
+    Trước đó từ 63 lên 64: `leave/request_controller.py` mọc thêm một dòng docstring kể
     lại lỗ cũ của `resolve_leave_taker` — bản thân đường đó nay đi qua
     `get_scoped(..., "leave_balance")`, tức bảng dày thêm mà mã thì chặt lại.
 
@@ -368,7 +372,7 @@ def test_a1_bang_64_lan_db_get_trong_controller_da_phan_loai_du():
         f"số lần gọi `db.get(` đã đổi ở {list(lech)} (thật, đã khai) = "
         f"{lech}. Phân loại lần gọi mới rồi cập nhật bảng."
     )
-    assert sum(that.values()) == 64, f"tổng phải là 64, đang là {sum(that.values())}"
+    assert sum(that.values()) == 65, f"tổng phải là 65, đang là {sum(that.values())}"
 
 
 def test_a1b_moi_dong_deu_co_nhan_hop_le_va_ly_do_that():

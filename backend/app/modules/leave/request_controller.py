@@ -130,6 +130,10 @@ def get_request(rid: int, db: Session = Depends(get_db),
         resolve_actor(db, obj.updated_by)
         if obj.decided_at and obj.status in DECIDED_FINAL_STATUSES else ""
     )
+    #  AI LẬP tờ đơn — mốc đầu tiên của dòng thời gian. Hành chính lập hộ là
+    #  chuyện thường ở phân hệ này (`created_by` khác `employee_id`), nên ghi
+    #  «{tên người nghỉ} lập đơn» là gán nhầm việc cho người không làm.
+    data["created_by_name"] = resolve_actor(db, obj.created_by)
     data["handovers"] = request_serializer.dump_handovers(obj, names)
     return success(data)
 

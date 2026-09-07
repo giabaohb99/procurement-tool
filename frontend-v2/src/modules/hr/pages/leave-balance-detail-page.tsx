@@ -52,6 +52,8 @@ const EMPTY_BALANCE: LeaveBalance = {
   adjusted_days: 0,
   used_days: 0,
   pending_days: 0,
+  carried_out_days: 0,
+  carried_expired_days: 0,
   remaining_days: 0,
   total_days: 0,
   note: '',

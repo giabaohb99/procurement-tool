@@ -101,6 +101,16 @@ def ensure_balance(db: Session, employee, year: int, leave_type: LeaveType,
     """
     existing = get_balance(db, employee.id, year, leave_type.id, for_update=for_update)
     if existing is not None:
+        #  Thu hồi phần MANG SANG đã quá hạn, ngay tại đây. Hàm này là chỗ hẹp
+        #  mà mọi đường chặn đi qua (`check_enough`, `reserve`, ô gợi ý trên
+        #  form), nên đặt ở đây thì không có đường nào tiêu được ngày phép đã
+        #  hết hạn. Đặt ở tầng màn hình thì đường nào quên gọi là thủng đúng
+        #  đường đó, mà thủng ở dạng "cho nghỉ dư" nên không ai báo lỗi.
+        #
+        #  Nhập TRONG HÀM vì `carryover_service` cần `ensure_balance` để dựng
+        #  dòng quỹ nhận — nhập ở đầu tệp là vòng tròn.
+        from . import carryover_service
+        carryover_service.expire_carried(existing, leave_type)
         return existing
 
     years = seniority_years(getattr(employee, "hire_date", None), date(year, 1, 1))

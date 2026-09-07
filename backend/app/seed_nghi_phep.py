@@ -30,7 +30,7 @@ from app.modules.approval.flow_model import (APPROVER_DEPT_HEAD,
                                              ApprovalSwitch)
 from app.modules.company.model import Company
 from app.modules.leave.catalog_model import Holiday, LeaveType, LeaveTypeSeniority
-from app.modules.leave.constants import GENDER_FEMALE
+from app.modules.leave.constants import GENDER_FEMALE, GENDER_MALE
 from app.seed_luong_nghi_phep import find_hr_department
 
 ACTOR = 1
@@ -55,6 +55,12 @@ LEAVE_TYPES = [
     ("wedding",   "Nghỉ cưới hỏi",      True,  False,  0.0, 3.0, 0, False, True,  50),
     ("funeral",   "Nghỉ tang chế",      True,  False,  0.0, 3.0, 0, False, True,  60),
     ("comp_off",  "Nghỉ bù",            True,  False,  0.0, 0.0, 0, False, True,  70),
+    #  Chế độ người CHỒNG khi vợ sinh (07/09/2026). Trần 14 ngày là mức cao nhất
+    #  của luật (sinh đôi trở lên, mổ); mức thường là 5 và mức mổ là 7 — máy
+    #  không biết ca nào nên chỉ chặn trần, người duyệt canh phần còn lại.
+    #  Cần đính kèm: giấy chứng sinh.
+    ("paternity", "Nghỉ vợ sinh con",   True,  False,  0.0, 14.0,
+     GENDER_MALE, True,  True,  45),
 ]
 
 #  Luật *cứ 5 năm thâm niên thì thêm 1 ngày phép*. Khai bằng DỮ LIỆU chứ không

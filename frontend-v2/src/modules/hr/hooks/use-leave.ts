@@ -87,6 +87,11 @@ export function useLeaveRequestAction() {
     onSuccess: (_data, variables) => {
       toast.success(ACTION_MESSAGES[variables.action])
       void queryClient.invalidateQueries({ queryKey: queryKeys.hr.all })
+      //  ⚠️ Dọn CẢ nhánh `approval`. Bốn thao tác này đều đụng vào phiên duyệt
+      //  (gửi duyệt mở phiên, hủy đơn rút phiên), mà thẻ «Lịch sử phê duyệt»
+      //  nằm dưới khóa `approval.trail` / `approval.of-entity` — chỉ dọn `hr`
+      //  thì đầu trang đổi trạng thái còn thẻ dấu vết vẫn vẽ cảnh cũ.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.approval.all })
     },
   })
 }
@@ -181,6 +186,29 @@ export function useAllocateLeaveBalance() {
         toast.warning(
           `${data.missing_hire_date_count} nhân sự chưa có ngày vào làm — quỹ của họ ` +
             'tính thâm niên bằng 0. Nhập ngày vào làm rồi chỉnh tay phần thiếu.',
+        )
+      }
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.all })
+    },
+  })
+}
+
+export function useCloseLeaveYear() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (values: { year: number; employee_ids?: number[] }) =>
+      leaveApi.closeYear(values),
+    onSuccess: (data) => {
+      toast.success(
+        `Đã kết sổ năm ${data.year} — chuyển ${data.moved_days} ngày của ` +
+          `${data.moved_rows} dòng sang năm ${data.year + 1}`,
+      )
+      //  Dòng bị bỏ vì cấu hình quy đổi hỏng là thứ DUY NHẤT người bấm phải đi
+      //  sửa. Gộp nó vào câu thành công là nó biến mất khỏi tầm mắt.
+      if (data.skipped_config > 0) {
+        toast.warning(
+          `${data.skipped_config} dòng bị bỏ qua vì loại nghỉ đích chưa khai đúng. ` +
+            'Kiểm lại ô «Quy đổi sang loại» của các loại nghỉ rồi kết sổ lại.',
         )
       }
       void queryClient.invalidateQueries({ queryKey: queryKeys.hr.all })
@@ -320,6 +348,12 @@ export function useLeaveApprovalDecision() {
       //  Dọn cả nhánh `hr`: một lượt ký đổi hàng đợi, đổi danh sách đơn, đổi
       //  luồng duyệt, và đổi quỹ phép của người nghỉ.
       void queryClient.invalidateQueries({ queryKey: queryKeys.hr.all })
+      //  ⚠️ Và cả nhánh `approval` — thẻ «Lịch sử phê duyệt» đọc
+      //  `approval.trail(instanceId)`, không đọc khóa nào của `hr`. Thiếu dòng
+      //  này thì ký xong: đầu trang ghi «Đã duyệt», thẻ dấu vết ngay dưới vẫn
+      //  ghi «Đang chạy · Đang chờ phản hồi» — hai câu trái nhau trên cùng một
+      //  màn hình, và người dùng tin câu bi quan hơn (NP141, 07/09/2026).
+      void queryClient.invalidateQueries({ queryKey: queryKeys.approval.all })
     },
   })
 }

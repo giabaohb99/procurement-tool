@@ -21,6 +21,7 @@ from app.core.response import success
 
 from .balance_model import LeaveBalance
 from .catalog_model import Holiday, LeaveType, LeaveTypeSeniority
+from .constants import YEAR_END_CONVERT
 from .request_model import LeaveRequest, LeaveRequestLine
 from .schema import (HolidayCreate, HolidayResponse, HolidayUpdate,
                      LeaveTypeCreate, LeaveTypeResponse, LeaveTypeUpdate,
@@ -44,6 +45,48 @@ def _block_delete_used_type(db: Session, obj: LeaveType) -> None:
     if db.query(LeaveBalance).filter(LeaveBalance.leave_type_id == obj.id).count():
         raise HTTPException(
             400, f"«{obj.name}» đang có quỹ phép đã cấp nên không xóa được.")
+    #  Hỏi luôn chiều NGƯỢC: loại khác đang quy đổi VÀO nó. Xóa mất thì kết sổ
+    #  cuối năm âm thầm bỏ qua những dòng đó và số dư của người ta mất trắng.
+    pointing = (db.query(LeaveType)
+                .filter(LeaveType.convert_to_type_id == obj.id).all())
+    if pointing:
+        names = ", ".join(f"«{t.name}»" for t in pointing[:5])
+        raise HTTPException(
+            400, f"{names} đang quy đổi số dư sang «{obj.name}» nên không xóa được. "
+                 "Đổi cách xử lý số dư cuối năm của các loại đó trước.")
+
+
+def _check_year_end_config(db: Session, mode: int, target_id: int, ratio: float,
+                           self_id: int = 0) -> None:
+    """Chặn cấu hình QUY ĐỔI không chạy được — chặn lúc KHAI, không lúc kết sổ.
+
+    Kết sổ chạy mỗi năm một lần cho cả công ty; sai một ô ở đây thì phải tới
+    31/12 mới lộ, và lộ dưới dạng "bỏ qua N dòng" — quá muộn để hỏi lại người
+    khai xem họ định gì.
+    """
+    if mode != YEAR_END_CONVERT:
+        return
+    if ratio is not None and ratio <= 0:
+        raise HTTPException(400, "Tỷ lệ quy đổi phải lớn hơn 0.")
+    if not target_id:
+        raise HTTPException(400, "Chọn «Quy đổi sang loại nghỉ khác» thì phải chọn loại đích.")
+    if target_id == self_id:
+        #  Tự trỏ vào chính mình là vòng lặp: kết sổ sẽ trừ rồi cộng lại vào
+        #  cùng một dòng quỹ. Muốn giữ nguyên loại thì đó là «Mang sang năm sau».
+        raise HTTPException(400, "Loại đích phải khác chính nó — muốn giữ nguyên loại "
+                                 "thì chọn «Mang sang năm sau».")
+    target = db.get(LeaveType, target_id)
+    if target is None:
+        raise HTTPException(400, "Loại nghỉ đích không tồn tại.")
+    if not target.counts_balance:
+        raise HTTPException(400, f"«{target.name}» không trừ vào quỹ phép nên không "
+                                 "nhận được ngày quy đổi. Bật «Trừ vào quỹ phép năm» "
+                                 "cho loại đó trước.")
+
+
+def _check_type_create(db: Session, data) -> None:
+    _check_year_end_config(db, data.year_end_mode, data.convert_to_type_id,
+                           data.convert_ratio)
 
 
 def _block_code_change(db: Session, obj: LeaveType, values: dict) -> None:
@@ -57,12 +100,24 @@ def _block_code_change(db: Session, obj: LeaveType, values: dict) -> None:
     if new_code and new_code != obj.code:
         raise HTTPException(400, "Không đổi được «Mã loại nghỉ» sau khi đã tạo.")
 
+    #  Sửa lẻ một ô thì ba ô kia lấy giá trị ĐANG CÓ — người dùng bật chế độ quy
+    #  đổi mà không gửi lại loại đích vẫn phải bị kiểm theo loại đích cũ.
+    _check_year_end_config(
+        db,
+        values.get("year_end_mode", obj.year_end_mode),
+        values.get("convert_to_type_id", obj.convert_to_type_id),
+        values.get("convert_ratio", obj.convert_ratio),
+        obj.id,
+    )
+
 
 leave_type_router = make_crud_router(
     "/api/leave-types", "leave_type", LeaveType,
     LeaveTypeCreate, LeaveTypeUpdate, LeaveTypeResponse,
-    filterable=["code", "name", "is_active", "counts_balance", "gender"],
+    filterable=["code", "name", "is_active", "counts_balance", "gender",
+                "year_end_mode"],
     unique_field="code",
+    before_create=_check_type_create,
     before_update=_block_code_change,
     before_delete=_block_delete_used_type,
 )

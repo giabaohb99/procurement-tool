@@ -19,11 +19,11 @@ from app.core.response import success
 from app.core.scoping import apply_scope, get_scoped
 from app.modules.employee.model import Employee
 
-from . import balance_service
+from . import balance_service, carryover_service
 from .balance_model import LeaveBalance
 from .catalog_model import LeaveType
 from .schema import (LeaveBalanceAdjust, LeaveBalanceAllocate,
-                     LeaveBalanceResponse)
+                     LeaveBalanceCloseYear, LeaveBalanceResponse)
 
 router = APIRouter(prefix="/api/leave-balances", tags=["leave"])
 
@@ -40,6 +40,18 @@ def _dump(obj: LeaveBalance, names: dict[int, str], types: dict[int, str]) -> di
     data["employee_name"] = names.get(obj.employee_id, "")
     data["leave_type_name"] = types.get(obj.leave_type_id, "")
     return data
+
+
+def _expire_then_commit(db: Session, rows: list[LeaveBalance]) -> None:
+    """Thu hồi phần mang sang QUÁ HẠN trước khi trưng số ra màn hình.
+
+    Đường ghi đã có chốt ở `balance_service.ensure_balance`, nhưng màn Quỹ phép
+    đọc thẳng bảng nên không đi qua đó. Không gọi ở đây thì người dùng thấy
+    *"còn 3 ngày"* của phép mang sang đã hết hạn 31/03, nộp đơn, rồi ăn một câu
+    chặn không giải thích được — hai con số cho cùng một quỹ.
+    """
+    if carryover_service.expire_rows(db, rows):
+        db.commit()
 
 
 def _names(db: Session, ids: set[int]) -> dict[int, str]:
@@ -100,6 +112,7 @@ def list_balances(request: Request, pg: dict = Depends(pagination),
     total = query.count()
     items = (query.order_by(LeaveBalance.year.desc(), LeaveBalance.employee_id)
              .offset(pg["offset"]).limit(pg["limit"]).all())
+    _expire_then_commit(db, items)
 
     names = _names(db, {i.employee_id for i in items})
     types = _type_names(db)
@@ -112,6 +125,7 @@ def get_balance(bid: int, db: Session = Depends(get_db),
     obj = get_scoped(db, LeaveBalance, ENTITY, bid, user, get_perm_profile(db, user))
     if obj is None:
         raise HTTPException(404, "Không tìm thấy dòng quỹ phép")
+    _expire_then_commit(db, [obj])
     return success(_dump(obj, _names(db, {obj.employee_id}), _type_names(db)))
 
 
@@ -204,6 +218,47 @@ def allocate(data: LeaveBalanceAllocate, db: Session = Depends(get_db),
     }, f"Đã cấp quỹ phép năm {year} — thêm {created} dòng")
 
 
+@router.post("/close-year")
+def close_year(data: LeaveBalanceCloseYear, db: Session = Depends(get_db),
+               user=Depends(require(ENTITY, "write"))):
+    """Kết sổ cuối năm — số dư đi tiếp theo luật của từng loại nghỉ.
+
+    Gác bằng `write` chứ không `create` như nút Cấp quỹ: cấp quỹ chỉ THÊM dòng
+    còn thiếu, còn kết sổ **sửa hai dòng quỹ đã có** (trừ bên năm cũ, cộng bên
+    năm mới). Đó là cùng một mức nguy hiểm với cột điều chỉnh tay.
+
+    Chỉ chạm tới nhân sự trong PHẠM VI người bấm — không có dòng đó thì Nhân sự
+    công ty con kết sổ cho cả tập đoàn.
+    """
+    year = data.year or (date.today().year - 1)
+
+    employees = db.query(Employee)
+    if data.employee_ids:
+        employees = employees.filter(Employee.id.in_(data.employee_ids))
+    employee_ids = [e.id for e in apply_scope(employees, Employee, "employee", user,
+                                              get_perm_profile(db, user)).all()]
+    #  Không lọc `is_active`: người vừa nghỉ việc cuối năm vẫn phải được kết sổ
+    #  đúng, nếu không thì số dư của họ treo lại vĩnh viễn ở năm cũ.
+    rows = (db.query(LeaveBalance)
+            .filter(LeaveBalance.year == year,
+                    LeaveBalance.employee_id.in_(employee_ids or [0]))
+            .all()) if employee_ids else []
+
+    result = carryover_service.close_year(db, year, rows, user.id)
+    db.commit()
+
+    audit_record(db, user.id, ENTITY, 0, "update",
+                 f"Kết sổ quỹ phép năm {year}: chuyển {result['moved_days']} ngày "
+                 f"của {result['moved_rows']} dòng sang năm {year + 1}")
+    message = (f"Đã kết sổ năm {year} — chuyển {result['moved_days']} ngày "
+               f"sang năm {year + 1}")
+    if result["skipped_config"]:
+        #  Nói ra chỗ hỏng, đừng để nó lẫn vào con số thành công: dòng bị bỏ vì
+        #  loại đích khai sai là thứ DUY NHẤT người bấm phải đi sửa.
+        message += f" · bỏ qua {result['skipped_config']} dòng do cấu hình quy đổi chưa đúng"
+    return success(result, message)
+
+
 @router.get("/tools/summary")
 def balance_summary(employee_id: int = 0, year: int = Query(0),
                     db: Session = Depends(get_db),
@@ -223,6 +278,7 @@ def balance_summary(employee_id: int = 0, year: int = Query(0),
              .filter(LeaveBalance.employee_id == target, LeaveBalance.year == year))
     query = apply_scope(query, LeaveBalance, ENTITY, user, get_perm_profile(db, user))
     rows = query.all()
+    _expire_then_commit(db, rows)
 
     names, types = _names(db, {target}), _type_names(db)
     return success({

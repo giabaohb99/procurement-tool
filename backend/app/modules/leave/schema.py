@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from .constants import (GENDER_LABELS, LEAVE_REQUEST_STATUS_LABELS,
                         LEAVE_SESSION_LABELS, LEAVE_UNIT_LABELS, SESSION_FULL,
-                        UNIT_DAY, label)
+                        UNIT_DAY, YEAR_END_DROP, YEAR_END_MODE_LABELS, label)
 
 #  Bí danh của `datetime.date`, dùng cho các lớp có TRƯỜNG TÊN LÀ `date`
 #  (`HolidayBase`, `HolidayUpdate`). Trong thân lớp, Python gán tên đích TRƯỚC
@@ -29,9 +29,14 @@ class LeaveTypeBase(BaseModel):
     counts_balance: bool = False
     annual_quota_days: float = 0.0
     max_days_per_request: float = 0.0
-    carry_over: bool = False
+    #  ⚠️ KHÔNG khai `carry_over`: công tắc hai nước đó đã thay bằng
+    #  `year_end_mode` (07/09/2026). Cột còn trong bảng nhưng không đọc, không
+    #  sửa, không trả về — cùng luật với `min_notice_days` bên dưới.
+    year_end_mode: int = YEAR_END_DROP
     carry_over_max_days: float = 0.0
     carry_over_expire_month: int = 3
+    convert_to_type_id: int = 0
+    convert_ratio: float = 1.0
     gender: int = 0
     #  ⚠️ KHÔNG khai `min_notice_days`: luật "phải nộp trước N ngày" đã bỏ
     #  (05/09/2026). Cột còn trong bảng nhưng không đọc, không sửa, không trả về.
@@ -61,9 +66,11 @@ class LeaveTypeUpdate(BaseModel):
     counts_balance: bool | None = None
     annual_quota_days: float | None = None
     max_days_per_request: float | None = None
-    carry_over: bool | None = None
+    year_end_mode: int | None = None
     carry_over_max_days: float | None = None
     carry_over_expire_month: int | None = None
+    convert_to_type_id: int | None = None
+    convert_ratio: float | None = None
     gender: int | None = None
     require_attachment: bool | None = None
     exclude_holiday: bool | None = None
@@ -78,6 +85,10 @@ class LeaveTypeResponse(LeaveTypeBase):
     @property
     def gender_label(self) -> str:
         return label(GENDER_LABELS, self.gender)
+
+    @property
+    def year_end_mode_label(self) -> str:
+        return label(YEAR_END_MODE_LABELS, self.year_end_mode)
 
     class Config:
         from_attributes = True
@@ -154,6 +165,10 @@ class LeaveBalanceResponse(BaseModel):
     adjusted_days: float
     used_days: float
     pending_days: float
+    #  Đã mang khỏi dòng này lúc kết sổ; `carried_expired_days` là phần mang
+    #  sang đã hết hạn. Cái đầu vào công thức còn lại, cái sau chỉ để giải thích.
+    carried_out_days: float = 0.0
+    carried_expired_days: float = 0.0
     note: str
     #  Hai số DẪN XUẤT, tính ở model. Trả kèm để màn hình không phải cộng trừ lại
     #  — cộng trừ ở hai đầu là hai công thức, và cái thứ hai sẽ lệch.
@@ -178,6 +193,19 @@ class LeaveBalanceAllocate(BaseModel):
     #  Bỏ trống = mọi loại nghỉ CÓ trừ quỹ. Khai rõ thì chỉ cấp các loại đó.
     leave_type_ids: list[int] = Field(default_factory=list)
     #  Bỏ trống = mọi nhân sự đang làm việc trong phạm vi người bấm.
+    employee_ids: list[int] = Field(default_factory=list)
+
+
+class LeaveBalanceCloseYear(BaseModel):
+    """Kết sổ cuối năm — đẩy số dư sang năm sau theo luật của từng loại nghỉ.
+
+    Khai `year` là năm ĐANG kết, phần nhận rơi vào `year + 1`. Không có
+    `leave_type_ids`: luật nằm ở chính loại nghỉ (`year_end_mode`), chọn tay ở
+    đây thì có đường bỏ sót một loại mà không ai biết là đã bỏ.
+    """
+
+    year: int
+    #  Bỏ trống = mọi nhân sự trong phạm vi người bấm.
     employee_ids: list[int] = Field(default_factory=list)
 
 
@@ -295,6 +323,11 @@ class LeaveRequestResponse(BaseModel):
     status: int
     approval_instance_id: int
     document_id: int
+    #  Thời điểm LẬP đơn. Trả ra để dòng thời gian phê duyệt có mốc đầu tiên:
+    #  dấu vết của bộ máy duyệt bắt đầu từ lúc GỬI, nên thiếu cột này thì màn
+    #  chi tiết kể chuyện từ giữa — người xem không thấy đơn ra đời lúc nào,
+    #  cũng không thấy nó nằm nháp bao lâu trước khi trình.
+    created_at: datetime | None = None
     submitted_at: datetime | None = None
     decided_at: datetime | None = None
     decision_note: str

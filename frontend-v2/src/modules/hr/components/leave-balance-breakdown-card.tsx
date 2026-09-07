@@ -47,13 +47,19 @@ export function LeaveBalanceBreakdownCard({ balance }: LeaveBalanceBreakdownCard
         {/*  Vế TRỪ — những gì đã tiêu hoặc đang bị giữ. */}
         <div className="border-t pt-4">
           <p className="mb-2 text-xs font-medium text-muted-foreground">Đã dùng</p>
-          <dl className="grid max-w-3xl gap-3 sm:grid-cols-3">
+          <dl className="grid max-w-4xl gap-3 sm:grid-cols-4">
             <Stat label="Đã nghỉ" value={balance.used_days} />
             <Stat
               label="Chờ duyệt (đang giữ chỗ)"
               value={balance.pending_days}
               className="text-amber-600 dark:text-amber-400"
             />
+            {/*  Chỉ mọc khi ĐÃ kết sổ. Bày ô «Đã chuyển đi: 0» quanh năm cho mọi
+                 dòng quỹ là thêm một con số không nói gì vào đúng chỗ người ta
+                 đang lần theo phép tính. */}
+            {balance.carried_out_days > 0 && (
+              <Stat label="Đã chuyển sang năm sau" value={balance.carried_out_days} />
+            )}
             {/*  ⚠️ KHÔNG `text-primary`: primary là navy — đúng màu nút hành
                  động chính — nên con số đọc ra như một cái link bấm được. */}
             <Stat
@@ -65,6 +71,18 @@ export function LeaveBalanceBreakdownCard({ balance }: LeaveBalanceBreakdownCard
               )}
             />
           </dl>
+
+          {/*  Phần HẾT HẠN đứng ngoài phép tính, và phải nói thành câu: nó không
+               nằm trong công thức còn lại (đã bị trừ khỏi «Chuyển năm trước»),
+               nên đặt nó thành một ô số nữa là mời người đọc cộng nhầm. */}
+          {balance.carried_expired_days > 0 && (
+            <p className="mt-3 text-sm text-muted-foreground">
+              <strong className="tabular-nums text-foreground">
+                {balance.carried_expired_days}
+              </strong>{' '}
+              ngày chuyển từ năm trước đã hết hạn và không dùng được nữa.
+            </p>
+          )}
         </div>
 
         {balance.note?.trim() && (

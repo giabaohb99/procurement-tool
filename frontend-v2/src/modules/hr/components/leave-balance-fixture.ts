@@ -24,6 +24,8 @@ export function balanceFixture(overrides: Partial<LeaveBalance> = {}): LeaveBala
     adjusted_days: 0,
     used_days: 3,
     pending_days: 2,
+    carried_out_days: 0,
+    carried_expired_days: 0,
     note: '',
     total_days: 15,
     remaining_days: 10,
