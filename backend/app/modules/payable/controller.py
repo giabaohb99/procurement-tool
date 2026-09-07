@@ -73,6 +73,25 @@ def _filtered(db: Session, request: Request, user):
     due_to = request.query_params.get("due_to")
     if due_to:
         q = q.filter(Payable.due_date != "", Payable.due_date <= due_to)
+    # bao-CR-305: khoảng NGÀY HÓA ĐƠN — không lưu trên tab_payable mà dò từ đợt giao
+    # (PODelivery.invoice_date -> POItem.invoice_date -> incur_date khi đã có số HĐ),
+    # nên phải outer-join 1-1 rồi dựng biểu thức cùng luật với service.get_invoice_date.
+    inv_from = request.query_params.get("invoice_from")
+    inv_to = request.query_params.get("invoice_to")
+    if inv_from or inv_to:
+        from app.modules.purchase_order.model import PODelivery, POItem
+
+        inv_expr = func.coalesce(
+            func.nullif(PODelivery.invoice_date, ""),
+            func.nullif(POItem.invoice_date, ""),
+            case((Payable.invoice_no != "", func.nullif(Payable.incur_date, "")), else_=None),
+        )
+        q = (q.outerjoin(PODelivery, (Payable.ref_type == "delivery") & (Payable.ref_id == PODelivery.id))
+              .outerjoin(POItem, POItem.id == PODelivery.po_item_id))
+        if inv_from:
+            q = q.filter(inv_expr >= inv_from)
+        if inv_to:
+            q = q.filter(inv_expr <= inv_to)
     # Khoảng số tiền theo TỔNG NỢ (từ A - đến B)
     for key, op in (("amount_from", "ge"), ("amount_to", "le")):
         val = request.query_params.get(key)

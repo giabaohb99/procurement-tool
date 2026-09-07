@@ -93,12 +93,14 @@ def test_build_rows_nhan_day_du_nhu_man_hinh(db, seed):
     assert rows[1]["aging"] == "31-60 ngày"
 
 
-def test_created_at_rong_roi_ve_ngay_phat_sinh(db, seed):
-    # Khoản chưa flush (created_at chưa được gán) — như màn hình, cột Ngày phát sinh
-    # phải rơi về incur_date chứ không được để trống
+def test_ba_cot_ngay_tach_bach_cr305(db, seed):
+    # bao-CR-305: created_at KHÔNG còn rơi về incur_date — "Ngày phát sinh" (incur_date)
+    # nay có cột riêng, gộp tiếp là tái diễn đúng lỗi "lọc tháng 8 mà thấy ngày 3/9".
     p = Payable(company_id=seed.company_id, supplier_code="NX", incur_date="2026-01-15")
     rows = build_rows(db, [p])
-    assert rows[0]["created_at"] == "2026-01-15"
+    assert not rows[0]["created_at"]                 # chưa ghi sổ thì để trống, không mượn ngày khác
+    assert rows[0]["incur_date"] == "2026-01-15"
+    assert rows[0]["invoice_date"] == ""             # chưa có số HĐ -> không suy ra ngày hóa đơn
 
 
 # ── endpoint ────────────────────────────────────────────────────────────────────
