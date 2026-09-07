@@ -1,12 +1,15 @@
-"""Mã hàng phải DUY NHẤT trên mỗi phiếu (YCMH / ĐMH).
+"""Mã hàng DUY NHẤT trên phiếu YCMH — còn ĐMH ĐƯỢC PHÉP trùng (bao-CR-308).
 
-Dòng ĐMH nối ngược về dòng YCMH bằng CHUỖI `product_code` (không có khóa dòng), nên
+YCMH chặn vì dòng ĐMH nối ngược về dòng YCMH bằng CHUỖI `product_code` (không có khóa dòng):
 `sync_from_purchase_orders` cộng dồn SL đặt/nhận theo mã rồi ghi CÙNG con số đó vào MỌI dòng
-trùng mã → tiến độ nhân đôi, kéo theo trạng thái dòng và trạng thái phiếu sai.
+YCMH trùng mã → tiến độ nhân đôi, kéo theo trạng thái dòng và trạng thái phiếu sai.
 
-Luật là RATCHET: chỉ chặn TRÙNG MỚI. Phiếu đã lỡ trùng từ trước vẫn phải lưu lại được, vì
-dòng ĐMH "Hoàn thành"/"Hủy đơn" bị khóa và giao diện không cho xóa — chặn cứng sẽ khóa chết
-những đơn đó, không ai sửa được nữa.
+ĐMH thì chiều gộp là an toàn (nhiều dòng cùng mã cộng gộp đúng, giống một YCMH rải ra nhiều
+ĐMH) và nghiệp vụ CẦN trùng: mua theo bộ chứng từ — cùng mã nắp cho 2 lô chai khác nhau,
+khác Tên trên hóa đơn / số hóa đơn. Giao diện hỏi xác nhận để chặn gõ nhầm, backend không chặn.
+
+Luật YCMH là RATCHET: chỉ chặn TRÙNG MỚI. Phiếu đã lỡ trùng từ trước vẫn phải lưu lại được,
+vì dòng bị khóa không xóa được — chặn cứng sẽ khóa chết những phiếu đó.
 """
 import pytest
 from fastapi import HTTPException
@@ -43,13 +46,17 @@ def _pr_line(code: str, name: str = "Hàng A"):
     return PRItemIn(product_code=code, product_name=name, qty=1, unit="Cái")
 
 
-# ── ĐMH ─────────────────────────────────────────────────────────────────────────
-def test_dmh_chan_hai_dong_cung_ma(db):
+# ── ĐMH: trùng mã ĐƯỢC PHÉP (bao-CR-308) ───────────────────────────────────────
+def test_dmh_hai_dong_cung_ma_luu_duoc(db):
+    """Case bộ chứng từ: 2 dòng cùng mã, khác Tên trên hóa đơn — phải lưu được CẢ HAI."""
     po = _po(db)
-    with pytest.raises(HTTPException) as e:
-        po_save_items(db, po, [_po_line("SP001"), _po_line("SP001")], user_id=1)
-    assert e.value.status_code == 400
-    assert "SP001" in e.value.detail
+    po_save_items(db, po,
+                  [_po_line("SP001", invoice_name="Nắp chai lô xám"),
+                   _po_line("SP001", invoice_name="Nắp chai lô vàng")], user_id=1)
+    rows = db.query(POItem).filter(POItem.po_id == po.id).order_by(POItem.id).all()
+    assert len(rows) == 2
+    # Mỗi dòng giữ nguyên Tên trên hóa đơn của mình, không bị dòng kia đè
+    assert {r.invoice_name for r in rows} == {"Nắp chai lô xám", "Nắp chai lô vàng"}
 
 
 def test_dmh_ma_khac_nhau_thi_luu_binh_thuong(db):
@@ -58,26 +65,8 @@ def test_dmh_ma_khac_nhau_thi_luu_binh_thuong(db):
     assert db.query(POItem).filter(POItem.po_id == po.id).count() == 2
 
 
-def test_dmh_dong_chua_chon_ma_khong_bi_tinh_trung(db):
-    """Nhiều dòng còn bỏ trống Mã hàng là chuyện bình thường lúc nhập dở."""
-    po = _po(db)
-    po_save_items(db, po, [_po_line("", "Hàng A"), _po_line("", "Hàng B")], user_id=1)
-    assert db.query(POItem).filter(POItem.po_id == po.id).count() == 2
-
-
-def test_dmh_da_trung_san_van_luu_lai_duoc(db):
-    """Đơn cũ có 2 dòng trùng + 1 dòng đã Hoàn thành (không xóa được trên UI) → vẫn lưu được."""
-    po = _po(db)
-    for st in ("Đã đặt hàng", "Hoàn thành"):
-        db.add(POItem(po_id=po.id, product_code="SP001", product_name="Hàng A", unit="Cái",
-                      qty_order=1, progress_status=st))
-    db.commit()
-    rows = db.query(POItem).filter(POItem.po_id == po.id).order_by(POItem.id).all()
-    po_save_items(db, po, [_po_line("SP001", id=r.id) for r in rows], user_id=1)
-    assert db.query(POItem).filter(POItem.po_id == po.id).count() == 2
-
-
-def test_dmh_da_trung_san_nhung_khong_duoc_them_dong_trung_nua(db):
+def test_dmh_don_cu_da_trung_them_dong_trung_nua_van_luu(db):
+    """Trước bao-CR-308 chỗ này chặn 400 — nay thêm dòng trùng thứ ba vẫn lưu bình thường."""
     po = _po(db)
     for _ in range(2):
         db.add(POItem(po_id=po.id, product_code="SP001", product_name="Hàng A", unit="Cái",
@@ -85,12 +74,11 @@ def test_dmh_da_trung_san_nhung_khong_duoc_them_dong_trung_nua(db):
     db.commit()
     rows = db.query(POItem).filter(POItem.po_id == po.id).order_by(POItem.id).all()
     payload = [_po_line("SP001", id=r.id) for r in rows] + [_po_line("SP001")]
-    with pytest.raises(HTTPException) as e:
-        po_save_items(db, po, payload, user_id=1)
-    assert e.value.status_code == 400
+    po_save_items(db, po, payload, user_id=1)
+    assert db.query(POItem).filter(POItem.po_id == po.id).count() == 3
 
 
-# ── YCMH ────────────────────────────────────────────────────────────────────────
+# ── YCMH: vẫn chặn như cũ ───────────────────────────────────────────────────────
 def test_ycmh_chan_hai_dong_cung_ma(db):
     pr = _pr(db)
     with pytest.raises(HTTPException) as e:

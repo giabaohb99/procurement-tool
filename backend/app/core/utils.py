@@ -8,13 +8,14 @@ from sqlalchemy.orm import Session
 def assert_unique_product_codes(new_codes: Iterable[str],
                                 old_codes: Iterable[str] = (),
                                 message: str = "") -> None:
-    """Mã hàng phải DUY NHẤT trên mỗi phiếu (YCMH / ĐMH).
+    """Mã hàng phải DUY NHẤT trên phiếu YCMH (ĐMH KHÔNG còn dùng luật này — bao-CR-308).
 
     VÌ SAO: dòng ĐMH nối ngược về dòng YCMH bằng CHUỖI `product_code`, không có khóa dòng
     (`purchase_request/service.sync_from_purchase_orders`). Hàm đó cộng dồn SL đặt/nhận theo
-    mã rồi ghi CÙNG một con số vào MỌI dòng trùng mã → tiến độ nhân đôi, kéo theo trạng thái
-    dòng và trạng thái phiếu sai. Trùng mã cũng khiến người dùng không biết dòng nào là dòng
-    thật khi đối chiếu.
+    mã rồi ghi CÙNG một con số vào MỌI dòng YCMH trùng mã → tiến độ nhân đôi, kéo theo trạng
+    thái dòng và trạng thái phiếu sai. Chiều ngược lại thì an toàn: nhiều dòng ĐMH cùng mã
+    được cộng gộp đúng (giống một YCMH rải ra nhiều ĐMH), nên từ bao-CR-308 ĐMH cho phép
+    trùng mã để mua theo bộ chứng từ (cùng mã, khác lô / khác Tên trên hóa đơn).
 
     CHỈ CHẶN TRÙNG MỚI (số lần xuất hiện của một mã tăng so với dữ liệu đang lưu). Dữ liệu đã
     trùng sẵn vẫn lưu lại được — vì dòng ĐMH `completed`/`cancelled` bị khóa, giao diện không
