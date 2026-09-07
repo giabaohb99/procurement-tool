@@ -5,16 +5,29 @@ import type { EmployeeFormValues } from '../schemas/employee-schema'
 
 const BASE_URL = '/api/employees'
 
+/**
+ * Ô NGÀY VÀO LÀM rỗng phải gửi lên `null`, không gửi chuỗi rỗng.
+ *
+ * Cột `hire_date` là `DATE NULL`; `""` không phải ngày hợp lệ nên Pydantic trả
+ * 422 và người dùng ăn lỗi khi mở một hồ sơ cũ ra sửa đúng cái tên. Đặt ở tầng
+ * API để CẢ hộp thoại tạo mới lẫn màn chi tiết dùng chung một luật.
+ */
+function toEmployeePayload(values: Partial<EmployeeFormValues>) {
+  if (!('hire_date' in values)) return values
+  return { ...values, hire_date: values.hire_date ? values.hire_date : null }
+}
+
 /** Tầng API của phân hệ Nhân sự — chỉ gọi HTTP, không chứa logic React. */
 export const employeeApi = {
   list: (params: ListParams) => apiGet<PaginatedResult<Employee>>(BASE_URL, { params }),
 
   getById: (id: number) => apiGet<EmployeeDetail>(`${BASE_URL}/${id}`),
 
-  create: (payload: EmployeeFormValues) => apiPost<Employee>(BASE_URL, payload),
+  create: (payload: EmployeeFormValues) =>
+    apiPost<Employee>(BASE_URL, toEmployeePayload(payload)),
 
   update: (id: number, payload: Partial<EmployeeFormValues>) =>
-    apiPatch<Employee>(`${BASE_URL}/${id}`, payload),
+    apiPatch<Employee>(`${BASE_URL}/${id}`, toEmployeePayload(payload)),
 
   remove: (id: number) => apiDelete<null>(`${BASE_URL}/${id}`),
 

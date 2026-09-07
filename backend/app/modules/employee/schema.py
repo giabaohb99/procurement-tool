@@ -1,7 +1,12 @@
-from datetime import datetime
+from datetime import date, datetime
 from pydantic import BaseModel, field_validator
 
 from app.core.status_codes import EMPLOYEE_STATUS
+
+#  Bí danh của `datetime.date` — cùng lý do với `schema.DateOnly` của Nghỉ phép:
+#  lớp nào có trường tên là `date` thì tên đó che mất kiểu. Ở đây chưa có trường
+#  nào tên vậy, nhưng giữ một tên rõ ràng cho các cột ngày thì đọc dễ hơn.
+DateOnly = date
 
 
 class EmployeeBase(BaseModel):
@@ -15,6 +20,33 @@ class EmployeeBase(BaseModel):
     role_name: str = ""
     status: str = "official"      # B-03: MÃ, xem `EMPLOYEE_STATUS`
     is_active: bool = True
+
+    #  ⚠️ QĐ-NP3 — hai cột này có trong bảng từ 03/09/2026 nhưng **không nằm
+    #  trong schema nào cho tới 07/09/2026**, nên API không nhận cũng không trả:
+    #  cả hai luật nghỉ phép dựa vào chúng đều im lặng không chạy.
+    #
+    #  · `hire_date` là mốc tính THÂM NIÊN. Rỗng thì `balance_service` coi là
+    #    0 năm, tức mọi người mất phần ngày phép cộng thêm mà không ai báo.
+    #  · `gender` để chặn loại nghỉ theo giới (thai sản). `0` = chưa khai, và
+    #    chưa khai thì KHÔNG bị chặn — nên khi không ô nào khai được, chốt giới
+    #    tính coi như không tồn tại.
+    #
+    #  Cả hai đều để trống được: hồ sơ cũ chưa ai nhập, và chặn thì cả công ty
+    #  không sửa nổi hồ sơ cho tới khi Nhân sự nhập bù hàng trăm dòng (D-018).
+    hire_date: DateOnly | None = None
+    gender: int = 0
+
+    @field_validator("gender", mode="before")
+    @classmethod
+    def _gender_none_is_unknown(cls, v):
+        """`NULL` trong cột → `0` (chưa khai), đừng để nó nổ ở tầng đọc.
+
+        Cột khai `default=0` nhưng đó là mặc định lúc INSERT: bản ghi dựng trong
+        bộ nhớ mà chưa flush vẫn mang `None`, và dòng cũ có trước cột này cũng
+        có thể `NULL`. Ném ở đây thì **cả màn danh sách nhân sự** trả 500 vì một
+        ô chưa ai nhập — đắt hơn nhiều so với việc đọc nó thành «chưa khai».
+        """
+        return 0 if v is None else v
 
 
 class EmployeeCreate(EmployeeBase):
@@ -32,6 +64,13 @@ class EmployeeCreate(EmployeeBase):
     def _check_status(cls, v: str) -> str:
         return EMPLOYEE_STATUS.validate(v, allow_blank=False)
 
+    @field_validator("gender")
+    @classmethod
+    def _check_gender(cls, v: int) -> int:
+        if v not in (0, 1, 2):
+            raise ValueError("Giới tính chỉ nhận 0 (chưa khai), 1 (nam) hoặc 2 (nữ)")
+        return v
+
 
 class EmployeeUpdate(BaseModel):
     full_name: str | None = None
@@ -43,6 +82,23 @@ class EmployeeUpdate(BaseModel):
     role_name: str | None = None
     status: str | None = None
     is_active: bool | None = None
+    #  `None` = không gửi (giữ nguyên). Muốn XÓA ngày vào làm thì gửi `null`
+    #  tường minh — Pydantic phân biệt được hai thứ đó qua `exclude_unset`.
+    hire_date: DateOnly | None = None
+    gender: int | None = None
+
+    @field_validator("gender")
+    @classmethod
+    def _check_gender(cls, v: int | None) -> int | None:
+        """Chỉ nhận `0` chưa khai · `1` nam · `2` nữ — khớp `leave/constants.py`.
+
+        Chặn ở đây chứ không để cột `SMALLINT` nhận bừa: giá trị lạ thì
+        `check_gender` của nghỉ phép so `want != got` ra True và chặn nhầm loại
+        nghỉ, mà không chỗ nào giải thích được vì sao.
+        """
+        if v is not None and v not in (0, 1, 2):
+            raise ValueError("Giới tính chỉ nhận 0 (chưa khai), 1 (nam) hoặc 2 (nữ)")
+        return v
 
     @field_validator("status")
     @classmethod

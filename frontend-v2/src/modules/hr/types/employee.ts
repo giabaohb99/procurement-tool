@@ -23,6 +23,14 @@ export interface Employee {
   /** Nhãn tiếng Việt của `status`, backend gửi kèm. Rỗng khi mã lạ. */
   status_label: string
   is_active: boolean
+  /**
+   * NGÀY VÀO LÀM (`YYYY-MM-DD`) — mốc tính THÂM NIÊN, tức số ngày phép cộng
+   * thêm. `null` = chưa khai, và lúc đó thâm niên tính bằng **0 năm**: hồ sơ
+   * thiếu ô này thì người đó mất phần phép cộng thêm mà không ai báo.
+   */
+  hire_date?: string | null
+  /** `0` chưa khai · `1` nam · `2` nữ. Dùng để lọc loại nghỉ (thai sản). */
+  gender: number
   department_name?: string | null
   manager_name?: string | null
   /** Lấy từ tài khoản đăng nhập (`tab_user.avatar`) — nguồn ảnh duy nhất. */
@@ -36,6 +44,24 @@ export interface Employee {
 /** Bản chi tiết — kèm id tài khoản đăng nhập (0 = nhân sự chưa được cấp tài khoản). */
 export interface EmployeeDetail extends Employee {
   user_id: number
+}
+
+/**
+ * Giới tính của HỒ SƠ NHÂN SỰ — khớp `leave/constants.py` (`GENDER_*`).
+ *
+ * ⚠️ Khác `GENDER_LABELS` ở `types/leave.ts`: bên đó `0` là *«Mọi giới»* vì nó
+ * mô tả một LOẠI NGHỈ áp cho ai. Ở đây `0` là *«Chưa khai»* — nó mô tả một con
+ * người, và một người thì không thể "mọi giới". Dùng nhầm bảng nhãn là màn hồ sơ
+ * hiện «Mọi giới» cho người chưa nhập, đọc ra như đã khai xong.
+ */
+export const EMPLOYEE_GENDER_OPTIONS = [
+  { value: 0, label: 'Chưa khai' },
+  { value: 1, label: 'Nam' },
+  { value: 2, label: 'Nữ' },
+] as const
+
+export function employeeGenderLabel(value?: number | null): string {
+  return EMPLOYEE_GENDER_OPTIONS.find((item) => item.value === (value ?? 0))?.label ?? ''
 }
 
 /**
