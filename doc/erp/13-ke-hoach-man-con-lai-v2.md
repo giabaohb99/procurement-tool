@@ -171,9 +171,9 @@ sẵn từ lâu mà **không route nào dùng**, nhìn qua tưởng xong; và b�
 
 ### 1.10 Tính năng làm ở BẢN CŨ (prod) — PHẢI mang sang v2
 
-Khách gửi 4 ticket ngày 05/09/2026, đều gấp trên bản đang chạy thật nên làm ở nhánh `main`
-trước. **Ghi ở đây vì cả bốn đều là tính năng mới, không phải vá lỗi hiển thị — làm xong ở
-prod là v2 nợ ngay bốn khoản.** Đóng khoản nào thì gạch dòng đó và ghi số CR của bản v2.
+Khách gửi 4 ticket ngày 05/09/2026 (+ đợt bổ sung 07/09), đều gấp trên bản đang chạy thật nên
+làm ở nhánh `main` trước. **Ghi ở đây vì đều là tính năng mới, không phải vá lỗi hiển thị — làm
+xong ở prod là v2 nợ ngay từng khoản.** Đóng khoản nào thì gạch dòng đó và ghi số CR của bản v2.
 
 | Ticket | Nội dung | Chỗ v2 phải sửa theo | CR prod | CR v2 |
 |---|---|---|---|---|
@@ -181,6 +181,8 @@ prod là v2 nợ ngay bốn khoản.** Đóng khoản nào thì gạch dòng đ�
 | **20** | *Ngày tiếp nhận* của YCMH tính từ lúc **Admin thu mua duyệt**, không phải lúc lập phiếu | `purchase-request-info-card.tsx` (ô đang cho sửa tay) và mọi chỗ lấy *Ngày tiếp nhận* làm mốc tính *Ngày QĐ có hàng* | bao-CR-293 (xong, deploy prod 05/09/2026) | bao-CR-298 (xong 07/09/2026 — khóa ô ở `purchase-request-info-card.tsx`; backend dùng chung sau merge) |
 | **21** | Thêm cột **Ngày cập nhật** ra ngoài bảng danh sách + sắp xếp theo ngày cập nhật gần nhất | Đây chính là khoản `DataTable` + `CrudListPage` **chưa có sắp xếp** — nền phải dựng trước, xem `14` | bao-CR-294 (xong, deploy prod 05/09/2026 — 14 bảng, bấm header cột) | bao-CR-300 (xong 07/09/2026 — 14 màn: cột *Ngày cập nhật* `sortDescFirst` + bấm header; nền sort của `DataTable`/`CrudListPage` dựng kèm, xem `14`) |
 | **23** | Báo cáo **Yêu cầu mua hàng** — bảng theo DÒNG hàng (18 cột) để NSTM soi mã nào chưa lên đơn | Màn *Báo cáo mua hàng* ở v2 (`purchase-report-page.tsx`) phải có thêm tab này | bao-CR-295 (xong, deploy prod 05/09/2026 — tab *Chi tiết YC mua hàng* + `GET /api/reports/pr-lines`; GRAM lấy từ `Product.specs`) + bao-CR-296 (trang riêng `/pr-lines-report` + mục sidebar, component dùng chung `PrLinesReport.tsx`) | bao-CR-299 (xong 07/09/2026 — tab `pr_lines` + trang riêng `/procurement/pr-lines-report`, component dùng chung `report-pr-lines-tab.tsx`) |
+| **26** | YCTT hiển thị **Mã MISA**: cột chỉ xem trong bảng dòng (màn Tạo + màn xem phiếu) và cột GỘP "MS1, MS2" ở màn danh sách | Cụm YCTT v2 `finance/pages/payment-request-{list,detail}-page.tsx` — backend dùng chung sau merge (`misa_code` trên dòng, `misa_code` gộp trên item danh sách đã có sẵn trong API) | bao-CR-302 (xong, deploy prod 07/09/2026, commit `49d0fd59`) | *(chưa nhận)* |
+| — | Nút **Xóa phiếu** YCTT nháp chỉ cần quyền `delete` (bỏ trói vào quyền `write`) | Chi tiết YCTT v2 (`payment-request-detail-page.tsx`) — rà xem điều kiện nút Xóa có trói vào write không | bao-CR-303 (xong, deploy prod 07/09/2026, commit `49d0fd59`) | *(chưa nhận)* |
 
 ---
 
