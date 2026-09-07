@@ -7,7 +7,6 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
-from app.core.utils import assert_unique_product_codes
 from app.modules.catalog import lead_time
 from app.modules.goods_receipt import service as gr_service
 from app.modules.inventory import service as inv_service
@@ -80,8 +79,10 @@ def pr_expected_map(db: Session, pr_code: str) -> dict[str, str]:
     """{mã hàng -> thời gian dự kiến có hàng} của phiếu YCMH nguồn.
 
     Không có khóa ngoại giữa dòng YCMH và dòng ĐMH: cầu nối duy nhất là
-    `PurchaseOrder.pr_code` + `product_code`. Mã hàng là DUY NHẤT trên mỗi phiếu ở cả hai
-    phía (xem app/core/utils.assert_unique_product_codes) nên cặp đó xác định đúng một dòng.
+    `PurchaseOrder.pr_code` + `product_code`. Mã hàng là DUY NHẤT trên phiếu YCMH
+    (app/core/utils.assert_unique_product_codes) nên map theo mã trỏ đúng một dòng nguồn.
+    Phía ĐMH được phép trùng mã (bao-CR-308) — các dòng trùng cùng chiếu về một dòng YCMH,
+    cùng nhận một ngày dự kiến là đúng nghiệp vụ.
     """
     if not (pr_code or "").strip():
         return {}
@@ -99,9 +100,11 @@ def _save_items(db: Session, po: PurchaseOrder, items, user_id: int):
     if items is None:
         return
     existing_items = {it.id: it for it in items_of(db, po.id)}
-    # Mã hàng duy nhất trên đơn — xem app/core/utils.assert_unique_product_codes
-    assert_unique_product_codes([getattr(r, "product_code", "") for r in items],
-                                [it.product_code for it in existing_items.values()])
+    # bao-CR-308: ĐMH ĐƯỢC PHÉP trùng mã hàng (mua theo bộ chứng từ: cùng mã, khác lô /
+    # khác Tên trên hóa đơn). An toàn vì đồng bộ về YCMH cộng GỘP theo mã
+    # (sync_from_purchase_orders), còn nhận hàng/công nợ/lịch sử đi theo ID dòng.
+    # YCMH vẫn chặn trùng (assert_unique_product_codes) — trùng bên đó mới làm tiến độ
+    # nhân đôi. Giao diện hỏi xác nhận trước khi lưu để chặn gõ nhầm.
     keep_item_ids = set()
     specs_by_code = _product_specs_map(db, items)
     std_map = lead_time.std_days_map(db)          # số ngày QĐ theo phân loại (mốc dài nhất)

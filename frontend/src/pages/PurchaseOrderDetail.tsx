@@ -421,9 +421,21 @@ export default function PurchaseOrderDetail() {
 
   async function save() {
     const sentItems = items.filter((it: any) => it.product_name || it.product_code)
-    // Mã hàng duy nhất trên đơn: dòng ĐMH nối về dòng YCMH bằng mã, trùng mã làm tiến độ SL sai
+    // bao-CR-308: ĐMH ĐƯỢC PHÉP trùng mã (mua theo bộ chứng từ: cùng mã, khác lô / khác Tên
+    // trên hóa đơn) — đồng bộ về YCMH cộng GỘP theo mã nên số vẫn đúng. Chỉ HỎI XÁC NHẬN
+    // để chặn gõ nhầm mã; YCMH bên kia vẫn chặn cứng như cũ.
     if (dupCodes.length) {
-      toast.error(`Mã hàng bị trùng: ${dupCodes.join(', ')}. Mỗi mã chỉ được 1 dòng — gộp số lượng vào một dòng hoặc đổi mã.`); return
+      const ok = await askConfirm({
+        title: 'Mã hàng trùng trên đơn',
+        danger: false,
+        confirmText: 'Vẫn lưu',
+        cancelText: 'Quay lại sửa',
+        message: `Các mã sau xuất hiện trên NHIỀU dòng: ${dupCodes.join(', ')}.\n\n`
+          + 'Nếu cố ý tách dòng theo bộ chứng từ (cùng mã nhưng khác lô / khác Tên trên hóa đơn '
+          + '/ số hóa đơn) thì bấm Vẫn lưu — tiến độ trên YCMH vẫn cộng gộp đúng theo mã.\n\n'
+          + 'Nếu chỉ là gõ nhầm mã thì bấm Quay lại sửa.',
+      })
+      if (!ok) return
     }
     // Ràng buộc nhập liệu (để công nợ sinh đúng): có SL nhận thì phải có Ngày nhận; có cước thì phải chọn Đơn vị VC
     for (const it of sentItems) {
@@ -784,7 +796,7 @@ export default function PurchaseOrderDetail() {
               </div>
             )}
             <div className="items-scroll">
-              <table className="items-table" style={{ minWidth: 1220 }}>
+              <table className="items-table" style={{ minWidth: 1345 }}>
                 <thead>
                   <tr>
                     <th style={{ width: 36 }}>#</th>
@@ -794,6 +806,7 @@ export default function PurchaseOrderDetail() {
                     <th style={{ width: 90 }}>SL đặt</th>
                     <th style={{ width: 105 }}>Đơn giá</th>
                     <th style={{ width: 64 }}>VAT%</th>
+                    <th style={{ width: 125 }}>Đơn giá (Sau VAT)</th>
                     <th style={{ width: 150, background: '#fff3cd' }}>Thành tiền đơn hàng</th>
                     <th style={{ width: 150 }}>Tiến độ giao</th>
                     <th style={{ width: 170 }}>Trạng thái</th>
@@ -804,11 +817,13 @@ export default function PurchaseOrderDetail() {
                   {items.map((it: any, i: number) => (
                     <tr key={i}>
                       <td>{i + 1}</td>
+                      {/* bao-CR-308: trùng mã được phép (tách dòng theo bộ chứng từ) — chỉ tô vàng
+                          cảnh báo cho dễ soát gõ nhầm, khi lưu sẽ hỏi xác nhận */}
                       <td
                         style={dupCodes.includes((it.product_code || '').trim())
-                          ? { minWidth: 215, background: 'var(--red-bg)', boxShadow: 'inset 3px 0 0 var(--red)' } : { minWidth: 215 }}
+                          ? { minWidth: 215, background: '#fef3c7', boxShadow: 'inset 3px 0 0 #f59e0b' } : { minWidth: 215 }}
                         title={dupCodes.includes((it.product_code || '').trim())
-                          ? 'Mã hàng này đã có ở dòng khác — mỗi mã chỉ được 1 dòng'
+                          ? 'Mã hàng này đang có ở dòng khác — nếu cố ý tách dòng theo bộ chứng từ thì vẫn lưu được'
                           : (lineReceived(it) ? PRODUCT_LOCK_HINT : undefined)}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -843,6 +858,8 @@ export default function PurchaseOrderDetail() {
                       <td>{num(i, 'qty_order', 80)}</td>
                       <td>{num(i, 'price', 95)}</td>
                       <td style={{ textAlign: 'center' }}>{(Number(it.vat) || 0)}%</td>
+                      {/* bao-CR-307: đơn giá đã gồm VAT, làm tròn 2 số lẻ — 166.666,67 × 1,08 ra 180.000 chứ không phải 180.000,0036 */}
+                      <td style={{ textAlign: 'right', color: 'var(--muted)' }}>{fmtPrice(Math.round((Number(it.price) || 0) * (1 + (Number(it.vat) || 0) / 100) * 100) / 100)}</td>
                       <td style={{ textAlign: 'right', fontWeight: 600, background: '#fff8e6' }}>{fmtVND(orderAmount(it))}</td>
                       <td style={{ textAlign: 'center', fontSize: 12 }}>
                         <div style={{ color: 'var(--muted)' }}>
@@ -894,7 +911,7 @@ export default function PurchaseOrderDetail() {
                       </td>
                     </tr>
                   ))}
-                  {items.length === 0 && <tr><td colSpan={11} style={{ textAlign: 'center', color: '#999', padding: 14 }}>Chưa có dòng nào</td></tr>}
+                  {items.length === 0 && <tr><td colSpan={12} style={{ textAlign: 'center', color: '#999', padding: 14 }}>Chưa có dòng nào</td></tr>}
                 </tbody>
               </table>
             </div>

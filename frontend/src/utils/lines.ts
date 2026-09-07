@@ -12,12 +12,16 @@ const count = (codes: string[]) => {
 /**
  * Mã hàng bị trùng MỚI so với bản đã lưu trên server.
  *
- * Mã phải duy nhất trên mỗi phiếu: dòng ĐMH nối ngược về dòng YCMH bằng chuỗi mã hàng, trùng
- * mã làm SL đặt/nhận bị cộng dồn rồi ghi vào mọi dòng trùng → tiến độ sai.
+ * Hai màn dùng KHÁC nhau (bao-CR-308):
+ * - YCMH: CHẶN CỨNG — dòng ĐMH nối ngược về dòng YCMH bằng chuỗi mã hàng, YCMH trùng mã làm
+ *   SL đặt/nhận cộng dồn bị ghi vào mọi dòng trùng → tiến độ nhân đôi. Backend chặn cùng luật
+ *   (`app/core/utils.assert_unique_product_codes`).
+ * - ĐMH: chỉ HỎI XÁC NHẬN khi lưu — nghiệp vụ cần trùng mã để tách dòng theo bộ chứng từ
+ *   (cùng mã, khác lô / khác Tên trên hóa đơn); đồng bộ về YCMH cộng gộp theo mã nên vẫn đúng.
+ *   Backend ĐMH không còn chặn.
  *
  * Chỉ tính TRÙNG MỚI (số lần xuất hiện tăng so với `saved`) — phiếu cũ đã lỡ trùng vẫn phải
- * lưu lại được, vì dòng đã Hoàn thành/Hủy đơn không có nút xóa. Giống hệt luật ở backend
- * (`app/core/utils.assert_unique_product_codes`).
+ * lưu lại được, vì dòng đã Hoàn thành/Hủy đơn không có nút xóa.
  */
 export function newDupCodes(current: string[], saved: string[] = []): string[] {
   const before = count(saved)

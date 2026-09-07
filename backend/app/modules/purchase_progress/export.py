@@ -40,6 +40,8 @@ COLS = [
     Col("qty_order", "SL đặt", "qty", 10),
     Col("price", "Đơn giá", "price", 14),
     Col("vat", "VAT%", "int", 8),
+    # bao-CR-307: giá một đơn vị ĐÃ gồm VAT — kế toán đối chiếu giá chẵn trên hóa đơn
+    Col("price_after_vat", "Đơn giá (Sau VAT)", "price", 15),
     Col("order_amount", "Thành tiền ĐH", "money", 16),
     Col("progress_status", "Tiến độ", width=18),
     Col("delivery_no", "Lần giao", "int", 9),
@@ -114,7 +116,11 @@ def row_values(po: PurchaseOrder, it: POItem, dl: PODelivery | None, show_suppli
         "required_date": it.required_date, "expected_date": it.expected_date or "",
         "supplier_ready": bool(it.supplier_ready),
         "unit": it.unit, "qty_request": float(it.qty_request or 0),
-        "qty_order": qty_order, "price": price, "vat": vat, "order_amount": order_amount,
+        "qty_order": qty_order, "price": price, "vat": vat,
+        # bao-CR-307: đơn giá sau VAT làm tròn 2 số lẻ — 166.666,67 × 1,08 phải ra 180.000
+        # chứ không phải 180.000,0036
+        "price_after_vat": round(price * (1 + vat / 100), 2),
+        "order_amount": order_amount,
         "line_status": it.line_status, "progress_status": it.progress_status or "Chưa đặt hàng",
         "document_delivery_date": it.document_delivery_date or "",
         # ----- Lần giao -----
