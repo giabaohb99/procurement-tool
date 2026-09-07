@@ -30,6 +30,10 @@ class ImportModule(IntEnum):
     # Chứng từ nhiều dòng (CR-175) — mẫu chuẩn (khác importer Misa của SURVEY/PO).
     SURVEY_REQUEST = 18
     PURCHASE_REQUEST = 19
+    # Danh mục Đặt xe + Duyệt dấu.
+    VEHICLE = 20
+    DRIVER = 21
+    SEAL_TYPE = 22
 
 
 class ImportMode(IntEnum):

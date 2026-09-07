@@ -15,8 +15,10 @@ from app.modules.employee.model import Employee
 from app.modules.product.model import Product
 from app.modules.purchase_order.model import PurchaseOrder
 from app.modules.purchase_request.model import PurchaseRequest
+from app.modules.seal_request.model import SealRequest, SealType
 from app.modules.supplier.model import Supplier
 from app.modules.survey_request.model import SurveyRequest
+from app.modules.vehicle_booking.model import Driver, Vehicle, VehicleBooking
 
 EXPORT_ADAPTERS: dict[str, dict] = {
     "employee": {
@@ -187,6 +189,82 @@ EXPORT_ADAPTERS: dict[str, dict] = {
             Col("name", "Tên kho", width=24),
             Col("address", "Địa chỉ", width=30),
             Col("is_active", "Hoạt động", kind="bool", width=12),
+        ],
+    },
+    # ── Đặt xe ───────────────────────────────────────────────────────────────
+    "vehicle": {
+        "label": "Xe",
+        "module": "vehicle-booking",
+        "model": Vehicle,
+        "scope": "vehicle",
+        "columns": [
+            Col("license_plate", "Biển số / Tên xe", width=20),
+            Col("model", "Mẫu xe", width=20),
+            Col("type", "Loại xe", width=14),
+            Col("capacity", "Tải (người/tấn)", width=16),
+            Col("status", "Trạng thái", width=14),
+            Col("is_external", "Thuê ngoài (1/0)", kind="bool", width=14),
+            Col("external_company", "Đơn vị (thuê ngoài)", width=24),
+            Col("tax_code", "Mã số thuế", width=16),
+        ],
+    },
+    "driver": {
+        "label": "Tài xế",
+        "module": "vehicle-booking",
+        "model": Driver,
+        "scope": "driver",
+        "columns": [
+            Col("name", "Họ tên", width=24),
+            Col("phone", "Điện thoại", width=16),
+            Col("email", "Email", width=22),
+            Col("license_number", "Số GPLX", width=16),
+            Col("license_class", "Hạng GPLX", width=12),
+            Col("status", "Trạng thái", width=14),
+            Col("is_external", "Thuê ngoài (1/0)", kind="bool", width=14),
+            Col("external_company", "Đơn vị (thuê ngoài)", width=24),
+        ],
+    },
+    "vehicle_booking": {
+        "label": "Yêu cầu đặt xe",
+        "module": "vehicle-booking",
+        "model": VehicleBooking,
+        "scope": "vehicle_booking",
+        "columns": [
+            Col("code", "Mã phiếu", width=14),
+            Col("request_type", "Loại (1 công tác/2 giao hàng)", kind="int", width=26),
+            Col("purpose", "Mục đích", width=28),
+            Col("start_location", "Điểm đi", width=22),
+            Col("end_location", "Điểm đến", width=22),
+            Col("start_time", "Thời gian đi", width=18),
+            Col("requester", "Người tạo", width=22),
+            Col("status", "Trạng thái (mã)", kind="int", width=16),
+            Col("created_at", "Ngày tạo", kind="date", width=14),
+        ],
+    },
+    # ── Duyệt dấu ────────────────────────────────────────────────────────────
+    "seal_type": {
+        "label": "Loại con dấu",
+        "module": "seal",
+        "model": SealType,
+        "scope": "seal_type",
+        "columns": [
+            Col("name", "Tên loại con dấu", width=24),
+            Col("description", "Mô tả", width=30),
+            Col("is_active", "Đang dùng (1/0)", kind="bool", width=14),
+        ],
+    },
+    "seal_request": {
+        "label": "Yêu cầu đóng dấu",
+        "module": "seal",
+        "model": SealRequest,
+        "scope": "seal_request",
+        "columns": [
+            Col("code", "Mã phiếu", width=14),
+            Col("purpose", "Mục đích sử dụng", width=30),
+            Col("company_id", "Công ty chính (mã)", ref="company", width=18),
+            Col("requester", "Người tạo", width=22),
+            Col("status", "Trạng thái (mã)", kind="int", width=16),
+            Col("created_at", "Ngày tạo", kind="date", width=14),
         ],
     },
 }

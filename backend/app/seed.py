@@ -342,10 +342,10 @@ STD_ROLES = {
         "driver": (["read"], "all"),
     }},
     "booking_manager": {"name": "Quản lý điều phối (Đặt xe)", "perms": {
-        "vehicle_booking": (["read", "approve", "cancel", "write"], "all"),
-        # Quản lý còn quản được danh mục Xe/Tài xế.
-        "vehicle": (["read", "create", "write", "delete"], "all"),
-        "driver": (["read", "create", "write", "delete"], "all"),
+        "vehicle_booking": (["read", "approve", "cancel", "write", "export"], "all"),
+        # Quản lý còn quản được danh mục Xe/Tài xế (+ xuất dữ liệu).
+        "vehicle": (["read", "create", "write", "delete", "export"], "all"),
+        "driver": (["read", "create", "write", "delete", "export"], "all"),
     }},
     # Tài xế: xem + cập nhật CHUYẾN CỦA MÌNH (nhận / bắt đầu / hoàn thành / xin
     # điều phối lại — đều tính là `write`). Phạm vi 'assigned' = phiếu mình tạo +
@@ -372,8 +372,8 @@ STD_ROLES = {
     }},
     # Quản trị con dấu: quản danh mục Loại con dấu + xem mọi phiếu.
     "seal_admin": {"name": "Quản trị con dấu (Duyệt dấu)", "perms": {
-        "seal_request": (["read"], "all"),
-        "seal_type": (["read", "create", "write", "delete"], "all"),
+        "seal_request": (["read", "export"], "all"),
+        "seal_type": (["read", "create", "write", "delete", "export"], "all"),
     }},
     # Giám đốc duyệt dấu: CHỈ NHẬN THÔNG BÁO + xem phiếu ĐÃ DUYỆT của công ty mình
     # (phạm vi company đã lọc thêm trạng thái đã-duyệt ở core/scoping.py). Không phê duyệt.

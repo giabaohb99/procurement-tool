@@ -23,7 +23,9 @@ from app.modules.company.model import Company
 from app.modules.department.model import Department
 from app.modules.employee.model import Employee
 from app.modules.product.model import Product
+from app.modules.seal_request.model import SealType
 from app.modules.supplier.model import Supplier
+from app.modules.vehicle_booking.model import Driver, Vehicle
 
 from .model import (ImportBatch, ImportChange, ImportLog, ImportModule,
                     ImportStatus, LogLevel)
@@ -44,6 +46,8 @@ _AUTO_PREFIX = {
     ImportModule.EMPLOYEE: "NV", ImportModule.SUPPLIER: "NCC",
     ImportModule.PRODUCT: "SP", ImportModule.UNIT: "DVT",
     ImportModule.ITEM_GROUP: "PL", ImportModule.WAREHOUSE: "KHO",
+    ImportModule.VEHICLE: "XE", ImportModule.DRIVER: "TX",
+    ImportModule.SEAL_TYPE: "CD",
 }
 
 
@@ -292,6 +296,52 @@ ADAPTERS: dict[int, dict] = {
             _f("Tên kho *", "name", required=True),
             _f("Địa chỉ", "address"),
             _f("Hoạt động (1/0)", "is_active", kind="bool", default=True),
+        ],
+    },
+    # ── Đặt xe: Xe (khoá trùng = BIỂN SỐ) & Tài xế (khoá trùng = ĐIỆN THOẠI) ──
+    ImportModule.VEHICLE: {
+        "label": "Xe",
+        "model": Vehicle,
+        "sheet": "Xe",
+        "dedupe": "license_plate",
+        "fields": [
+            _f("Biển số / Tên xe *", "license_plate", required=True),
+            _f("Mẫu xe", "model"),
+            _f("Loại xe", "type"),
+            _f("Tải (người/tấn)", "capacity", kind="float", default=4),
+            _f("Trạng thái (available/maintenance/inactive)", "status", default="available"),
+            _f("Thuê ngoài (1/0)", "is_external", kind="bool", default=False),
+            _f("Đơn vị (thuê ngoài)", "external_company"),
+            _f("Mã số thuế", "tax_code"),
+        ],
+    },
+    ImportModule.DRIVER: {
+        "label": "Tài xế",
+        "model": Driver,
+        "sheet": "Tai xe",
+        # Tài xế không có mã duy nhất — dùng SĐT làm khoá trùng (không nhập → dòng lỗi).
+        "dedupe": "phone",
+        "fields": [
+            _f("Điện thoại *", "phone", required=True),
+            _f("Họ tên *", "name", required=True),
+            _f("Email", "email"),
+            _f("Số GPLX", "license_number"),
+            _f("Hạng GPLX", "license_class"),
+            _f("Trạng thái (available/on_leave/inactive)", "status", default="available"),
+            _f("Thuê ngoài (1/0)", "is_external", kind="bool", default=False),
+            _f("Đơn vị (thuê ngoài)", "external_company"),
+        ],
+    },
+    # ── Duyệt dấu: Loại con dấu (khoá trùng = TÊN) ───────────────────────────
+    ImportModule.SEAL_TYPE: {
+        "label": "Loại con dấu",
+        "model": SealType,
+        "sheet": "Loai con dau",
+        "dedupe": "name",
+        "fields": [
+            _f("Tên loại con dấu *", "name", required=True),
+            _f("Mô tả", "description"),
+            _f("Đang dùng (1/0)", "is_active", kind="bool", default=True),
         ],
     },
 }

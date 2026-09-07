@@ -83,6 +83,15 @@ Cột **Khoá trùng** = trường dùng để phân biệt "tạo mới" hay "c
 | P1 | `item_group` | Phân loại VTBB/NL | ✓ | ✓ | `code` | Dùng chung toàn tập đoàn |
 | P2 | `brand` | Thương hiệu | ✓ | ✓ | `code` | Ít dùng |
 | P2 | `contract` | Hợp đồng | ✓ | ✓ | `code` | `contract_type` = mã tiếng Anh (CR-118); **tệp đính kèm không qua import** |
+| P1 | `vehicle` | Xe (Đặt xe) | ✅ | ✅ | `license_plate` | Nhập/xuất qua registry; phân hệ picker "Đặt xe" |
+| P1 | `driver` | Tài xế (Đặt xe) | ✅ | ✅ | `phone` | Không có mã duy nhất → khoá trùng theo SĐT |
+| P1 | `seal_type` | Loại con dấu (Duyệt dấu) | ✅ | ✅ | `name` | Danh mục nền của phân hệ Duyệt dấu |
+
+> **Bổ sung 05/09/2026 — Đặt xe & Duyệt dấu.** Thêm import danh mục **Xe · Tài xế · Loại con dấu**
+> (enum `ImportModule` 20/21/22, adapter ở `catalog_import.py`) và export **Xe · Tài xế · Yêu cầu đặt xe ·
+> Loại con dấu · Yêu cầu đóng dấu** (`export_log/registry.py`). Hai phân hệ mới trong picker Nhập/Xuất
+> (`config/data-modules.ts`: `vehicle-booking`, `seal`). Quyền export cấp cho `booking_manager` (Xe/Tài xế/
+> Yêu cầu đặt xe) và `seal_admin` (Loại con dấu/Yêu cầu đóng dấu). Test `test_import_datxe_duyetdau.py`.
 
 ### 3.2 Dữ liệu nghiệp vụ / lịch sử — Import dữ liệu cũ + Export
 

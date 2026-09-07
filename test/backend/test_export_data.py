@@ -52,10 +52,10 @@ def test_run_export_xlsx_tra_file_hop_le(db, seed, cap_quyen):
 
 def test_registry_du_bang_va_gom_dung_phan_he(db):
     from app.modules.export_log.registry import EXPORT_ADAPTERS
-    # 3 hr + 3 thu mua + 4 sản xuất + 1 kho = 11 (CR-174)
-    assert len(EXPORT_ADAPTERS) == 11
+    # 3 hr + 3 thu mua + 4 sản xuất + 1 kho + 3 đặt xe + 2 duyệt dấu = 16
+    assert len(EXPORT_ADAPTERS) == 16
     mods = {a["module"] for a in EXPORT_ADAPTERS.values()}
-    assert mods == {"hr", "procurement", "production", "inventory"}
+    assert mods == {"hr", "procurement", "production", "inventory", "vehicle-booking", "seal"}
     # Bảng nào cũng phải khai model + scope + ít nhất một cột.
     for e, a in EXPORT_ADAPTERS.items():
         assert a["model"] is not None and a["scope"] and a["columns"], e

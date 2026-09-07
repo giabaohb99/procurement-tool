@@ -21,6 +21,10 @@ export const IMPORT_MODULE_WAREHOUSE = 17
 // Chứng từ nhiều dòng (CR-175).
 export const IMPORT_MODULE_SURVEY_REQUEST = 18
 export const IMPORT_MODULE_PURCHASE_REQUEST = 19
+// Danh mục Đặt xe + Duyệt dấu.
+export const IMPORT_MODULE_VEHICLE = 20
+export const IMPORT_MODULE_DRIVER = 21
+export const IMPORT_MODULE_SEAL_TYPE = 22
 
 export const IMPORT_MODULE_LABELS: Record<number, string> = {
   [IMPORT_MODULE_SURVEY]: 'Khảo sát',
@@ -35,6 +39,9 @@ export const IMPORT_MODULE_LABELS: Record<number, string> = {
   [IMPORT_MODULE_WAREHOUSE]: 'Danh mục kho',
   [IMPORT_MODULE_SURVEY_REQUEST]: 'Yêu cầu báo giá',
   [IMPORT_MODULE_PURCHASE_REQUEST]: 'Yêu cầu mua hàng',
+  [IMPORT_MODULE_VEHICLE]: 'Xe',
+  [IMPORT_MODULE_DRIVER]: 'Tài xế',
+  [IMPORT_MODULE_SEAL_TYPE]: 'Loại con dấu',
 }
 
 /**
@@ -62,6 +69,9 @@ export const IMPORT_MODULE_OPTIONS: {
   { value: IMPORT_MODULE_UNIT, label: 'Đơn vị tính', moduleId: 'production', hasTemplate: true },
   { value: IMPORT_MODULE_ITEM_GROUP, label: 'Phân loại VTBB', moduleId: 'production', hasTemplate: true },
   { value: IMPORT_MODULE_WAREHOUSE, label: 'Danh mục kho', moduleId: 'inventory', hasTemplate: true },
+  { value: IMPORT_MODULE_VEHICLE, label: 'Xe', moduleId: 'vehicle-booking', hasTemplate: true },
+  { value: IMPORT_MODULE_DRIVER, label: 'Tài xế', moduleId: 'vehicle-booking', hasTemplate: true },
+  { value: IMPORT_MODULE_SEAL_TYPE, label: 'Loại con dấu', moduleId: 'seal', hasTemplate: true },
 ]
 
 export const IMPORT_MODE_DRY_RUN = 0

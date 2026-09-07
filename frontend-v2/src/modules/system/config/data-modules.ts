@@ -1,4 +1,4 @@
-import { Boxes, Factory, ShoppingCart, Users, type LucideIcon } from 'lucide-react'
+import { Boxes, Car, Factory, ShoppingCart, Stamp, Users, type LucideIcon } from 'lucide-react'
 
 /**
  * Phân hệ chứa các BẢNG dữ liệu có thể Nhập/Xuất — dùng chung cho hộp thoại Nhập
@@ -21,6 +21,8 @@ export const DATA_MODULES: DataModule[] = [
   { id: 'procurement', label: 'Thu mua', icon: ShoppingCart, accent: 'bg-sky-50 text-sky-600 dark:bg-sky-950/40' },
   { id: 'production', label: 'Sản xuất', icon: Factory, accent: 'bg-teal-50 text-teal-600 dark:bg-teal-950/40' },
   { id: 'inventory', label: 'Kho', icon: Boxes, accent: 'bg-amber-50 text-amber-600 dark:bg-amber-950/40' },
+  { id: 'vehicle-booking', label: 'Đặt xe', icon: Car, accent: 'bg-orange-50 text-orange-600 dark:bg-orange-950/40' },
+  { id: 'seal', label: 'Duyệt dấu', icon: Stamp, accent: 'bg-rose-50 text-rose-600 dark:bg-rose-950/40' },
 ]
 
 export function getDataModule(id: string): DataModule | undefined {

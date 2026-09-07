@@ -26,6 +26,9 @@ _MODULE_LABEL = {
     ImportModule.WAREHOUSE: "Danh mục kho",
     ImportModule.SURVEY_REQUEST: "Yêu cầu báo giá",
     ImportModule.PURCHASE_REQUEST: "Yêu cầu mua hàng",
+    ImportModule.VEHICLE: "Xe",
+    ImportModule.DRIVER: "Tài xế",
+    ImportModule.SEAL_TYPE: "Loại con dấu",
 }
 
 
