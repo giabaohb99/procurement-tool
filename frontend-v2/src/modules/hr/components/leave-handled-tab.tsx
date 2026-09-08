@@ -23,7 +23,6 @@ import {
   codeColumn,
   dateColumns,
   employeeColumn,
-  flowColumn,
   leaveTypeColumn,
   statusColumn,
 } from './leave-request-columns'
@@ -74,7 +73,6 @@ function LeaveHandledContent() {
     () => [
       codeColumn(),
       statusColumn(),
-      flowColumn((row) => row.flow),
       employeeColumn(),
       leaveTypeColumn(),
       ...dateColumns(),

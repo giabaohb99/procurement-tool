@@ -22,13 +22,12 @@ import {
   SelectValue,
 } from '@/shared/ui/select'
 import { LEAVE_REQUEST_FILTER_FIELDS } from '../config/leave-request-filter-fields'
-import { useLeaveFlowStrips, useLeaveRequests, useLeaveTypes } from '../hooks/use-leave'
+import { useLeaveRequests, useLeaveTypes } from '../hooks/use-leave'
 import { LEAVE_STATUS, LEAVE_STATUS_LABELS, type LeaveRequest } from '../types/leave'
 import {
   codeColumn,
   dateColumns,
   employeeColumn,
-  flowColumn,
   leaveTypeColumn,
   reasonColumn,
   statusColumn,
@@ -43,9 +42,15 @@ const ALL = 'all'
  * phòng, Nhân sự thấy toàn công ty. Cùng một bảng, backend lọc — màn hình không
  * cần biết mình đang đứng ở vai nào.
  *
- * ⚠️ Luồng duyệt lấy bằng MỘT lượt gọi cho cả trang, không phải mỗi dòng một
- * lượt: hai mươi dòng × một lượt là hai mươi lượt mạng cho một lần mở bảng.
- * Backend cũng gom sẵn — xem `approval/steps_service.py`.
+ * ⚠️ **KHÔNG có cột «Luồng duyệt»** (bỏ 08/09/2026, khách chốt). Đây là danh
+ * sách đơn CỦA MÌNH: cột «Trạng thái» ngay bên cạnh đã trả lời câu người nộp
+ * hỏi (*đơn của tôi tới đâu rồi*), còn tên từng chặng và ai đang cầm là việc
+ * của người duyệt — xem ở tab «Cần tôi duyệt» hoặc mở chi tiết đơn.
+ *
+ * Bỏ cột thì bỏ luôn lượt gọi `useLeaveFlowStrips` đi kèm — nó chỉ dựng cho
+ * cột đó, giữ lại là mỗi lần mở bảng thêm một vòng mạng cho dữ liệu không ai
+ * nhìn. Hook và endpoint vẫn còn (tab «Tôi đã duyệt» và bản in dùng chung
+ * `approval/steps_service.py`), chỉ màn này thôi không gọi nữa.
  */
 export function LeaveMyRequestsTab() {
   return (
@@ -103,20 +108,16 @@ function LeaveMyRequestsContent() {
 
   const { data, isLoading, isError } = useLeaveRequests(params)
 
-  const pageIds = useMemo(() => (data?.items ?? []).map((r) => r.id), [data])
-  const { data: flows } = useLeaveFlowStrips(pageIds)
-
   const columns = useMemo<DataTableColumn<LeaveRequest>[]>(
     () => [
       codeColumn(),
       statusColumn(),
-      flowColumn((row) => flows?.[String(row.id)]),
       employeeColumn(),
       leaveTypeColumn(),
       ...dateColumns(),
       reasonColumn(),
     ],
-    [flows],
+    [],
   )
 
   return (

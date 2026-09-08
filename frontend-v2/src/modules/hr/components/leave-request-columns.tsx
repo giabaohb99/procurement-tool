@@ -63,9 +63,17 @@ export function statusColumn<T extends LeaveRequest>(): DataTableColumn<T> {
  * cho bản in và thông báo — chép luật sang TypeScript là sớm muộn hai chỗ nói
  * khác nhau.
  *
- * `flowOf` tra luồng theo id đơn thay vì đọc thẳng từ dòng, vì ở tab «Đơn của
- * tôi» luồng đến từ một lượt gọi RIÊNG cho cả trang (`useLeaveFlowStrips`) —
- * gộp vào từng dòng nghĩa là mỗi dòng một lượt gọi mạng.
+ * `flowOf` tra luồng theo id đơn thay vì đọc thẳng từ dòng: ở hai tab hàng đợi
+ * luồng nằm sẵn trong `row.flow`, nhưng danh sách phân trang thì phải lấy bằng
+ * MỘT lượt gọi cho cả trang (`useLeaveFlowStrips`) — gộp vào từng dòng nghĩa là
+ * mỗi dòng một lượt gọi mạng. Giữ tham số hàm để cả hai nguồn dùng chung một
+ * cột.
+ *
+ * ⚠️ **Không tab nào của màn Đơn nghỉ phép còn BÀY cột này** (khách chốt
+ * 08/09/2026). «Đơn của tôi» và «Tôi đã duyệt» bỏ hẳn khỏi danh sách cột; «Cần
+ * tôi duyệt» giữ nhưng `defaultHidden` — bật lại được ở menu «Cột». Câu tóm tắt
+ * vẫn sống ở màn CHI TIẾT đơn và ở bản in, nên đừng xóa hàm này hay
+ * `steps_service._summary`.
  */
 export function flowColumn<T extends LeaveRequest>(
   flowOf: (row: T) => FlowStrip | null | undefined,

@@ -295,6 +295,18 @@ Người dùng tự chỉnh, bảng nhớ vào localStorage theo `storageKey`:
 | Tô màu cột | Bảng màu trong menu | `columnColors` |
 | Vừa nội dung tất cả | Mục cuối menu | `columnWidths` |
 
+⚠️ **`defaultHidden` chỉ áp cho người CHƯA từng đụng menu «Cột» của bảng đó.**
+`useTableLayout` đọc `readLayout(storageKey) ?? defaultLayout` — có bản lưu trong
+localStorage là bản đó thắng, **toàn bộ**, không trộn. Nên thêm một cột mới với
+`defaultHidden: true` thì người dùng cũ vẫn thấy nó hiện (khóa của nó không có
+trong `hiddenColumns` đã lưu), còn đổi một cột đang hiện thành ẩn sẵn thì họ vẫn
+thấy nó. Hệ quả khi kiểm thử: sửa `defaultHidden` xong mà màn hình không đổi thì
+**không phải mã sai** — xóa khóa `erp.table.<storageKey>` rồi tải lại.
+
+⚠️ Cùng lý do: **đừng đổi ý nghĩa của một `key` đã phát hành**. Bảng nhớ độ rộng
+và trạng thái ẩn/hiện theo `storageKey` + `key`, nên một cột mới mượn lại `key`
+cũ sẽ thừa hưởng độ rộng và trạng thái ẩn của cột đã chết.
+
 Chỉ báo khi kéo thả:
 
 - **Kéo trên hàng tiêu đề** → lớp phủ `column-drag-overlay.tsx`, dựng theo lối
