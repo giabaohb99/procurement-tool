@@ -13,11 +13,10 @@ from .field_limits import Str30, Str100, Str500
 def _require_text(value: str, field: str) -> str:
     """Cắt khoảng trắng thừa và chặn ô rỗng.
 
-    Chặn ở đây vì `code` và `name` là hai thứ người dùng NHÌN THẤY để phân biệt
-    các dòng danh mục. Một dòng tên rỗng thì ô chọn chức vụ hiện một mục trắng
-    không bấm trúng, còn mã rỗng thì ràng buộc duy nhất chỉ cho phép **đúng
-    một** dòng như vậy tồn tại — lần thứ hai người dùng gặp lỗi trùng mã mà
-    không hiểu trùng với cái gì.
+    Một dòng tên rỗng thì ô chọn chức vụ hiện một mục trắng không bấm trúng.
+
+    ⚠️ Chỉ áp cho `name`. `code` để trống được vì bộ sinh CRUD tự cấp mã — xem
+    chú thích ở `JobPositionCreate`.
     """
     text = (value or "").strip()
     if not text:
@@ -26,17 +25,41 @@ def _require_text(value: str, field: str) -> str:
 
 
 class JobPositionCreate(BaseModel):
-    code: Str30
+    #  ⚠️ `code` ĐỂ TRỐNG ĐƯỢC, và đó là đường đi bình thường: bộ sinh CRUD tự
+    #  cấp `cv001`, `cv002`… khi ô này rỗng (`code_prefix="cv"` ở controller).
+    #
+    #  Trước 08/09/2026 ô này bắt buộc, nên câu gợi ý trên biểu mẫu — *«bỏ trống
+    #  thì hệ thống tự sinh»* — là một **lời hứa chưa từng chạy**: schema chặn
+    #  rỗng trước khi bộ sinh kịp cấp mã, người dùng làm đúng như chỉ dẫn thì ăn
+    #  lỗi 422. Đừng thêm lại `_require_text` cho `code` nếu không đồng thời gỡ
+    #  `code_prefix` và sửa câu gợi ý.
+    code: Str30 = ""
     name: Str100
     is_active: bool = True
     sort_order: int = 0
     note: Str500 = ""
     department_id: int = 0
 
-    @field_validator("code", "name")
+    @field_validator("name")
     @classmethod
-    def _not_blank(cls, v: str, info) -> str:
-        return _require_text(v, "Mã chức vụ" if info.field_name == "code" else "Tên chức vụ")
+    def _not_blank(cls, v: str) -> str:
+        return _require_text(v, "Tên chức vụ")
+
+    @field_validator("code")
+    @classmethod
+    def _code_lowercase(cls, v: str) -> str:
+        """Mã chức vụ luôn CHỮ THƯỜNG (khách chốt 08/09/2026).
+
+        ⚠️ Ép ở tầng schema chứ không ở giao diện, vì mã còn vào hệ qua **đường
+        nhập CSV** và qua bất kỳ ai gọi thẳng API — vá mỗi ô nhập thì hai đường
+        kia vẫn đẻ ra mã hoa.
+
+        Nó cũng chữa một chỗ lệch có sẵn: chốt trùng mã của bộ sinh CRUD so bằng
+        `==`, mà MySQL đối chiếu **không phân biệt hoa thường** còn SQLite của bộ
+        test thì **có** — nên `TP` và `tp` là một dòng trên chạy thật nhưng là
+        hai dòng trong test. Chuẩn hóa về một dạng thì hai nơi nói giống nhau.
+        """
+        return v.strip().lower()
 
 
 class JobPositionUpdate(BaseModel):

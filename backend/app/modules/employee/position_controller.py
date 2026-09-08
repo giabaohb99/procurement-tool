@@ -116,7 +116,9 @@ router.include_router(make_crud_router(
     #  `frontend-v2/.../config/job-position-crud.tsx`.
     filterable=["code", "name", "note", "is_active", "department_id"],
     unique_field="code",
-    code_prefix="CV",
+    #  Chữ THƯỜNG cho khớp luật mã của danh mục này (`_code_lowercase` ở
+    #  schema) — mã tự sinh mà hoa thì hai nguồn mã trông như hai hệ.
+    code_prefix="cv",
     csv_headers={"code": "Mã chức vụ", "name": "Tên chức vụ",
                  "is_active": "Đang dùng", "note": "Ghi chú"},
     before_update=_propagate_rename,

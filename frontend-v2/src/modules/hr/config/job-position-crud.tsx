@@ -186,8 +186,11 @@ export const JOB_POSITION_CRUD_CONFIG: CrudConfig<JobPosition> = {
       name: 'code',
       label: 'Mã chức vụ',
       readonlyOnEdit: true,
-      placeholder: 'Bỏ trống để hệ thống tự sinh',
-      hint: 'Tệp Excel nhập/xuất trỏ vào dòng này bằng mã, nên KHÔNG đổi được sau khi tạo.',
+      placeholder: 'Bỏ trống để hệ thống tự sinh — vd: truong-phong-mua-hang',
+      //  Không tự hạ chữ thường ở ô nhập: backend đã ép (`_code_lowercase`) nên
+      //  gõ hoa vẫn lưu đúng, mà ép ngay lúc gõ thì con trỏ nhảy về đầu ô ở
+      //  Safari. Nói ra trong `hint` là đủ.
+      hint: 'Luôn lưu thành chữ thường. Tệp Excel nhập/xuất trỏ vào dòng này bằng mã, nên KHÔNG đổi được sau khi tạo.',
     },
     {
       name: 'is_active',

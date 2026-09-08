@@ -397,6 +397,8 @@ Khách chốt: ô «Vị trí / Chức vụ» phải **lấy từ một danh m�
 - **Không gán id chết** — cột không có khóa ngoại cứng (cùng quy ước `department_id` / `manager_id`), không kiểm ở tầng dịch vụ thì `position_id = 99999` ghi xuống êm ru.
 - **Không gán MỚI chức vụ đã ngừng dùng**, nhưng ⚠️ **hồ sơ đang giữ nó vẫn lưu được**: màn hồ sơ gửi lại mọi ô mỗi lần lưu, nên không có ngoại lệ này thì người đó **không sửa nổi ô nào khác** cho tới khi ai đó đi đổi chức vụ của họ.
 - **Mã không sửa được sau khi tạo** — mã đi vào tệp CSV đã phát ra ngoài.
+- **Mã luôn CHỮ THƯỜNG** (08/09/2026, `position_schema._code_lowercase`; migration `4f5033c40f3c` hạ 13 dòng cũ). Ép ở tầng **schema** chứ không ở ô nhập, vì mã còn vào hệ qua đường nhập CSV và qua bất kỳ ai gọi thẳng API. Nó cũng chữa một chỗ lệch có sẵn: chốt trùng mã so bằng `==`, mà MySQL đối chiếu **không phân biệt hoa thường** còn SQLite của bộ test thì **có** — `TP` và `tp` là một dòng trên chạy thật nhưng hai dòng trong test.
+- ⚠️ **Mã ĐỂ TRỐNG được, và đó là đường đi bình thường** — bộ sinh CRUD tự cấp `cv001`. Trước 08/09/2026 schema bắt buộc ô này, nên câu gợi ý trên biểu mẫu *«bỏ trống thì hệ thống tự sinh»* là **lời hứa chưa từng chạy**: schema chặn rỗng trước khi bộ sinh kịp cấp mã, người dùng làm đúng chỉ dẫn thì ăn 422. Cùng họ với lời hứa sai của `sort_order` ở trên — khai một câu gợi ý thì phải thử đúng cái việc nó hứa.
 
 ⚠️ **Luật "khóa = 0 thì xóa nhãn" CHỈ đúng ở đường CẬP NHẬT** (người dùng vừa bỏ chọn). Áp cả vào lúc TẠO thì đường nhập CSV, seed và mã cũ — những nơi chỉ truyền `position` chữ — làm hồ sơ **mất chức danh ngay khi ra đời**, im lặng. Lỗi thật đã dính khi làm đợt này; `test_employee_position.py` bắt được.
 

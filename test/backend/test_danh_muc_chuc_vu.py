@@ -235,9 +235,13 @@ def test_overlong_name_is_blocked_at_schema_level():
         JobPositionCreate(code="TP", name="Trưởng phòng", note="x" * 501)
 
 
-def test_blank_code_and_name_are_blocked():
-    """Tên rỗng → ô chọn hiện một mục trắng không bấm trúng; mã rỗng → chỉ tồn tại
-    được ĐÚNG MỘT dòng như vậy, lần sau người dùng ăn lỗi trùng mã khó hiểu."""
+def test_blank_name_is_blocked_but_blank_code_is_allowed():
+    """Tên rỗng → ô chọn hiện một mục trắng không bấm trúng, phải chặn.
+
+    Mã rỗng thì NGƯỢC LẠI: đó là đường đi bình thường, bộ sinh CRUD tự cấp
+    `cv001`. Trước 08/09/2026 chỗ này chặn cả mã rỗng, nên câu gợi ý trên biểu
+    mẫu — «bỏ trống thì hệ thống tự sinh» — là lời hứa chưa từng chạy: làm đúng
+    như chỉ dẫn thì ăn lỗi 422."""
     from pydantic import ValidationError
 
     from app.modules.employee.position_schema import JobPositionCreate, JobPositionUpdate
@@ -245,9 +249,9 @@ def test_blank_code_and_name_are_blocked():
     with pytest.raises(ValidationError):
         JobPositionCreate(code="TP", name="   ")
     with pytest.raises(ValidationError):
-        JobPositionCreate(code="", name="Trưởng phòng")
-    with pytest.raises(ValidationError):
         JobPositionUpdate(name="  ")
+
+    assert JobPositionCreate(code="", name="Trưởng phòng").code == ""
 
 
 def test_update_schema_rejects_code():
@@ -369,3 +373,20 @@ def test_profile_without_account_yields_blank_avatar(db):
     faces = position_service.list_holder_faces(db, db.query(Employee))
 
     assert faces[manager.id][0]["avatar"] == ""
+
+
+# ── 8. Mã luôn CHỮ THƯỜNG (08/09/2026) ────────────────────────────────────────
+
+def test_ma_chuc_vu_ha_ve_chu_thuong():
+    """Ép ở tầng SCHEMA chứ không ở ô nhập: mã còn vào hệ qua đường nhập CSV và
+    qua bất kỳ ai gọi thẳng API."""
+    from app.modules.employee.position_schema import JobPositionCreate
+
+    assert JobPositionCreate(code="TP-MUA-HANG", name="Trưởng phòng").code == "tp-mua-hang"
+    assert JobPositionCreate(code="  TP  ", name="Trưởng phòng").code == "tp"
+
+
+def test_ma_da_thuong_thi_giu_nguyen():
+    from app.modules.employee.position_schema import JobPositionCreate
+
+    assert JobPositionCreate(code="van-thu", name="Văn thư").code == "van-thu"
