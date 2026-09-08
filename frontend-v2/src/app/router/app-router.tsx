@@ -60,6 +60,18 @@ export const router = createBrowserRouter([
             errorElement: <RouteErrorPage />,
           },
           {
+            //  bao-CR-314 — cùng trang in, nhưng `:id` là id ĐƠN MUA HÀNG và bản in chỉ
+            //  gồm dòng hàng của đơn đó. Cổng quyền là quyền in ĐƠN (gác ở backend).
+            path: appRoutes.procurement.purchaseRequestPrintFromPo(':id'),
+            lazy: async () => {
+              const { PurchaseRequestPrintPage } = await import(
+                '@/modules/procurement/pages/purchase-request-print-page'
+              )
+              return { Component: () => <PurchaseRequestPrintPage fromPo /> }
+            },
+            errorElement: <RouteErrorPage />,
+          },
+          {
             path: appRoutes.procurement.purchaseOrderPrint(':id'),
             lazy: async () => ({
               Component: (await import('@/modules/procurement/pages/purchase-order-print-page'))

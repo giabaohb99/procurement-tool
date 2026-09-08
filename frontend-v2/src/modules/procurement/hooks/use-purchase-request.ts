@@ -16,6 +16,18 @@ export function usePurchaseRequest(id: number) {
   })
 }
 
+/**
+ * bao-CR-314 — phiếu YCMH của một ĐƠN MUA HÀNG, đã cắt còn dòng hàng của đơn đó.
+ * `purchaseOrderId <= 0` (không phải chế độ in-từ-đơn) thì không gọi API.
+ */
+export function usePurchaseRequestOfPurchaseOrder(purchaseOrderId: number) {
+  return useQuery({
+    queryKey: queryKeys.procurement.purchaseRequestOfPurchaseOrder(purchaseOrderId),
+    queryFn: () => purchaseRequestApi.getForPurchaseOrder(purchaseOrderId),
+    enabled: purchaseOrderId > 0,
+  })
+}
+
 /** Số lượng đã đặt theo mã hàng — để cột "Đã đặt" trên bảng dòng hàng. */
 export function useOrderProgress(id: number) {
   return useQuery({

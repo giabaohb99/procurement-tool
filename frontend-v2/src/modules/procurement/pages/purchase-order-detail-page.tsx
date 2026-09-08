@@ -6,6 +6,7 @@ import {
   CircleCheck,
   Copy,
   CornerUpLeft,
+  FileText,
   Loader2,
   LockOpen,
   Plus,
@@ -353,6 +354,21 @@ export function PurchaseOrderDetailPage() {
               >
                 <Printer />
                 In đơn
+              </Link>
+            </Button>
+          )}
+
+          {/* bao-CR-314: chỉ hiện khi đơn có gắn YCMH. Bản in chỉ gồm những dòng hàng
+              có trên đơn này — không cần quyền đọc YCMH vì cổng là quyền in ĐƠN. */}
+          {!isNew && can('purchase_order', 'print') && (data.pr_code || '').trim() && (
+            <Button variant="outline" asChild>
+              <Link
+                to={appRoutes.procurement.purchaseRequestPrintFromPo(data.id)}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <FileText />
+                In Phiếu yêu cầu
               </Link>
             </Button>
           )}

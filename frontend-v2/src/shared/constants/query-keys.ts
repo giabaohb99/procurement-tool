@@ -21,6 +21,12 @@ export const queryKeys = {
     /** Số đã đặt theo mã hàng của một phiếu YCMH. */
     purchaseRequestProgress: (id: number) =>
       ['procurement', 'purchase-requests', id, 'order-progress'] as const,
+    /**
+     * bao-CR-314 — phiếu YCMH cắt theo MỘT ĐƠN MUA HÀNG. Khóa gắn với id ĐƠN chứ
+     * không gắn id phiếu: cùng một phiếu mở từ hai đơn khác nhau ra hai bản khác nhau.
+     */
+    purchaseRequestOfPurchaseOrder: (purchaseOrderId: number) =>
+      ['procurement', 'purchase-orders', purchaseOrderId, 'purchase-request'] as const,
     /** Những người được phép duyệt bước 1 của một phiếu YCMH (CR-071). */
     purchaseRequestDeptHeads: (id: number) =>
       ['procurement', 'purchase-requests', id, 'dept-head-candidates'] as const,

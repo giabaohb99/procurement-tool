@@ -105,6 +105,21 @@ export interface PurchaseRequestDetail {
 }
 
 /**
+ * Phiếu YCMH mở TỪ MỘT ĐƠN MUA HÀNG — `GET /api/purchase-orders/{id}/purchase-request`
+ * (bao-CR-314). Backend đã cắt `items` còn đúng các dòng có trên đơn đó và tính lại
+ * `subtotal` / `vat` / `total` theo phần cắt, nên đây vẫn là một phiếu hợp lệ để in.
+ */
+export interface PurchaseRequestFromPo extends PurchaseRequestDetail {
+  /** Mã đơn mua hàng đã mở bản in này. */
+  po_code: string
+  /**
+   * Số dòng trên ĐƠN không đối chiếu được sang phiếu (bỏ trống mã hàng, hoặc mã không
+   * có trên phiếu) nên KHÔNG in ra. Chỉ báo ở thanh công cụ, không in vào tờ giấy.
+   */
+  po_lines_unmatched: number
+}
+
+/**
  * Một người ĐƯỢC PHÉP duyệt bước 1 của phiếu — nguồn của ô "Trưởng bộ phận"
  * (`GET /api/purchase-requests/{id}/dept-head-candidates`, CR-071).
  * Danh sách rỗng = chưa ai đủ điều kiện, ô để dạng chữ như cũ.
@@ -136,4 +151,19 @@ export function isClosed(status: string): boolean {
 /** Chỉ nháp và bị trả lại mới sửa được nội dung phiếu. */
 export function isEditable(status: string): boolean {
   return ['draft', 'rejected'].includes(status)
+}
+
+/**
+ * Phiếu đã qua bước ĐIỀU PHỐI chưa — tức thu mua đã thật sự nhận việc chưa.
+ *
+ * bao-CR-315: chỉ từ mốc này `request_date` mới mang nghĩa "Ngày tiếp nhận"; trước đó nó
+ * là ngày lập phiếu, giữ lại để tạm tính ngày QĐ có hàng và cờ Đơn gấp (bao-CR-293).
+ * Công tắc điều phối TẮT không phải ngoại lệ: lúc đó bước duyệt gọi thẳng `dispatch_pr`
+ * nên phiếu vẫn sang `dispatched` và vẫn được điền ngày — vì vậy luật này soi TRẠNG THÁI
+ * phiếu chứ không soi công tắc.
+ */
+export function isDispatched(status: string): boolean {
+  return ['dispatched', 'processing', 'purchasing', 'purchased', 'completed', 'done'].includes(
+    status,
+  )
 }

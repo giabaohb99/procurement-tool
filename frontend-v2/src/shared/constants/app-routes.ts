@@ -49,6 +49,12 @@ export const appRoutes = {
     purchaseOrderDocuments: (id: number | string) =>
       `/procurement/purchase-orders/${id}/documents`,
     purchaseOrderPrint: (id: number | string) => `/print/purchase-order/${id}`,
+    /**
+     * bao-CR-314 — in phiếu YCMH từ một ĐƠN MUA HÀNG. Tham số là id của ĐƠN, và bản in
+     * chỉ gồm những dòng hàng có trên đơn đó.
+     */
+    purchaseRequestPrintFromPo: (purchaseOrderId: number | string) =>
+      `/print/purchase-request-from-po/${purchaseOrderId}`,
     /** Báo cáo tiến độ theo từng lần giao hàng. */
     purchaseProgress: '/procurement/purchase-progress',
     /** Phiếu khảo sát NCC / sản phẩm. */
