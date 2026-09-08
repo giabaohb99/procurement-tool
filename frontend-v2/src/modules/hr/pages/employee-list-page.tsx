@@ -1,4 +1,4 @@
-import { Plus, Search } from 'lucide-react'
+import { Plus, Search, TriangleAlert } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -157,7 +157,44 @@ function EmployeeListContent() {
         width: 180,
         cell: (e) => e.department_name || '—',
       },
+      //  Cột đọc NHÃN (`position`) chứ không join sang danh mục: backend chép
+      //  sẵn tên vào đó và giữ đồng bộ khi đổi tên (duoc-CR-320), nên một câu
+      //  truy vấn là đủ. Bộ lọc thì ngược lại — lọc theo KHÓA, xem
+      //  `hr-filter-fields.ts`.
       { key: 'position', header: 'Chức vụ', width: 180, cell: (e) => e.position || '—' },
+      {
+        //  Ba cột của HRM Đợt 2. `compactHidden` không có ở `DataTable` (đó là
+        //  của `LinesTable`), nên để mặc định HIỆN — người dùng ẩn bớt bằng menu
+        //  "Cột" và `storageKey` nhớ lựa chọn đó.
+        key: 'employment_type_label',
+        header: 'Hình thức',
+        width: 150,
+        cell: (e) => e.employment_type_label || '—',
+      },
+      {
+        key: 'job_level_label',
+        header: 'Cấp bậc',
+        width: 150,
+        cell: (e) => e.job_level_label || '—',
+      },
+      {
+        //  ⚠️ K5 — cảnh báo hồ sơ THIẾU người quản lý trực tiếp. Ô này là thứ bộ
+        //  máy duyệt đọc để tìm người ký; bỏ trống thì đơn từ lặng lẽ chạy về
+        //  trưởng bộ phận, không ai biết là đã đi sai đường. Cột hiện thẳng cảnh
+        //  báo chứ không phải một dấu gạch ngang như mọi ô rỗng khác.
+        key: 'direct_manager_name',
+        header: 'Quản lý trực tiếp',
+        width: 200,
+        cell: (e) =>
+          e.direct_manager_name ? (
+            e.direct_manager_name
+          ) : (
+            <span className="inline-flex items-center gap-1 text-destructive">
+              <TriangleAlert className="size-3.5" />
+              Chưa gán
+            </span>
+          ),
+      },
       {
         key: 'status',
         header: 'Tình trạng',

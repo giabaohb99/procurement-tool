@@ -7,6 +7,7 @@ from app.core.utils import generate_code
 
 from app.modules.department.model import Department
 
+from . import position_service
 from .model import Employee
 from .schema import EmployeeCreate, EmployeeUpdate
 
@@ -14,8 +15,16 @@ from .schema import EmployeeCreate, EmployeeUpdate
 # đây để cả lọc cơ bản lẫn lọc điều kiện đều chạy.
 # B-03: cột này nay lưu MÃ (`official`…), nên ô lọc phải GỬI MÃ chứ không gửi nhãn tiếng Việt.
 # Gửi nhãn thì câu lọc vẫn chạy, chỉ là ra 0 dòng — đúng cái bẫy CR-118 đã dính một lần.
-FILTERABLE = ["code", "full_name", "email", "is_active", "position", "role_names", "department_id",
-              "status"]
+#  ⚠️ Thêm cột vào bảng KHÔNG tự làm nó lọc được. Thiếu tên ở đây thì
+#  `apply_filters` **im lặng bỏ qua** điều kiện — màn hình vẫn trả kết quả, chỉ
+#  là không lọc gì, và người dùng tưởng bộ lọc hỏng chứ không biết là chưa khai.
+#  Ba cột của HRM Đợt 2 (hình thức · cấp bậc · quản lý trực tiếp) là ba ô lọc
+#  trên màn danh sách, phải có mặt.
+#  `position_id` (duoc-CR-320): lọc theo CHỨC VỤ đi bằng id, không bằng chữ.
+#  Cột chữ `position` vẫn để đó cho tệp CSV cũ và cho hồ sơ chưa map.
+FILTERABLE = ["code", "full_name", "email", "is_active", "position", "position_id",
+              "role_names", "department_id",
+              "status", "company_id", "employment_type", "job_level", "manager_id"]
 ENTITY = "employee"
 
 # Ô tìm nhanh MỘT chỗ: một từ khoá quét đồng thời (OR) trên mã NV / họ tên / email /
@@ -94,6 +103,10 @@ def list_employees(db: Session, base_query, pg: dict):
             selectinload(Employee.user),
             selectinload(Employee.company),
             selectinload(Employee.department).selectinload(Department.manager),
+            #  Cột «Quản lý trực tiếp» của màn danh sách (C1). Cùng bài học với
+            #  `company` ở trên: thiếu dòng này là mỗi dòng một truy vấn, và
+            #  `test_nhan_su_hien_cong_ty.py` đếm truy vấn nên nó đỏ ngay.
+            selectinload(Employee.direct_manager),
         )
         .order_by(Employee.id.desc())
         .offset(pg["offset"])
@@ -110,12 +123,85 @@ def get_employee(db: Session, eid: int) -> Employee:
     return obj
 
 
+#  Trần số cấp khi dò ngược chuỗi quản lý. Cao hơn mọi sơ đồ tổ chức có thật
+#  (DEGO sâu nhất 6 cấp) nhưng vẫn là một con số hữu hạn — vòng lặp mà lọt qua
+#  được chốt dưới đây thì thà dừng ở cấp thứ 50 còn hơn treo cả tiến trình.
+_MAX_MANAGER_DEPTH = 50
+
+
+def block_manager_cycle(db: Session, employee_id: int, manager_id: int) -> None:
+    """Chuỗi «người quản lý trực tiếp» KHÔNG được tạo thành vòng.
+
+    ⚠️ Đây không phải một chốt cho gọn gàng dữ liệu. `manager_id` là thứ mà vai
+    tương đối `APPROVER_DIRECT_MANAGER` của bộ máy duyệt đọc để tìm người ký.
+    A quản lý B, B quản lý A — hai ô nhìn riêng ra thì cả hai đều hợp lý, nhưng
+    mọi đoạn mã đi ngược chuỗi để tìm cấp trên sẽ chạy mãi không dừng. Lỗi đó
+    không nổ lúc lưu hồ sơ; nó nổ lúc một người nộp đơn nghỉ phép, và nổ ở một
+    tệp không có chữ "employee" nào.
+
+    Ba ca chặn: tự làm quản lý của chính mình · vòng dài · trỏ vào hồ sơ không
+    tồn tại. Trỏ vào hồ sơ đã nghỉ việc thì KHÔNG chặn — người thay thế chưa
+    chắc đã được bổ nhiệm, và chặn ở đây là khóa luôn việc sửa hồ sơ.
+    """
+    mid = int(manager_id or 0)
+    if not mid:
+        return                                    # `0` = chưa gán, hợp lệ
+    if mid == int(employee_id or 0):
+        raise HTTPException(400, "Không thể đặt chính người này làm quản lý trực tiếp của họ")
+    if not db.get(Employee, mid):
+        raise HTTPException(400, "Người quản lý trực tiếp không tồn tại")
+
+    #  Đi ngược từ người quản lý mới lên trên: gặp lại `employee_id` nghĩa là
+    #  gắn xong sẽ thành vòng.
+    seen: set[int] = set()
+    cur = mid
+    for _ in range(_MAX_MANAGER_DEPTH):
+        if not cur or cur in seen:
+            return                                # đứt chuỗi, hoặc vòng CŨ đã có sẵn
+        seen.add(cur)
+        if cur == int(employee_id or 0):
+            raise HTTPException(
+                400, "Gán như vậy tạo thành vòng quản lý (A quản lý B, B quản lý A) — "
+                     "bộ máy duyệt sẽ không tìm được người ký")
+        row = db.query(Employee.manager_id).filter(Employee.id == cur).first()
+        cur = int(row[0] or 0) if row else 0
+
+    #  ⚠️ Chạm trần độ sâu mà chuỗi VẪN CHƯA ĐỨT thì phải CHẶN, không được im
+    #  lặng cho qua.
+    #
+    #  Bản đầu (duoc-CR-314) rơi ra khỏi vòng lặp rồi trả về — tức "dò không
+    #  thấy vòng" bị hiểu thành "không có vòng". Chuỗi dài hơn 50 cấp mà khép
+    #  vòng ở cấp cuối sẽ lọt, và cái lọt đó là **vòng lặp vô hạn trong bộ máy
+    #  duyệt**: nó nổ lúc ai đó nộp đơn nghỉ phép, ở một tệp không có chữ
+    #  `employee` nào.
+    #
+    #  Chặn là lựa chọn AN TOÀN HƠN dù có thể chặn nhầm: sơ đồ tổ chức thật sâu
+    #  6 cấp, nên một chuỗi 50 cấp đã là dấu hiệu dữ liệu hỏng — đáng để người
+    #  dùng đọc câu này và đi kiểm, hơn là để hệ thống treo về sau.
+    raise HTTPException(
+        400, f"Chuỗi quản lý vượt quá {_MAX_MANAGER_DEPTH} cấp — nhiều khả năng dữ liệu "
+             "đang có vòng. Kiểm tra lại ô «Người quản lý trực tiếp» của những người trên "
+             "cấp trước khi gán.")
+
+
 def create_employee(db: Session, data: EmployeeCreate, user_id: int) -> Employee:
     if not data.code:
         data.code = generate_code(db, Employee, "NSU")
     elif db.query(Employee).filter(Employee.code == data.code).first():
         raise HTTPException(400, "Mã nhân viên đã tồn tại")
+    #  Hồ sơ chưa có id nên không thể tự trỏ vào chính mình; chỉ còn phải kiểm
+    #  người quản lý có thật.
+    block_manager_cycle(db, 0, data.manager_id)
     obj = Employee(**data.model_dump(), created_by=user_id, updated_by=user_id)
+    #  Nhãn chức vụ chép từ danh mục — xem `position_service`.
+    #
+    #  ⚠️ CHỈ khi có `position_id`. Khác hẳn đường CẬP NHẬT, nơi `position_id = 0`
+    #  nghĩa là "người dùng vừa bỏ chọn" nên phải xóa cả nhãn. Ở đây chưa có gì
+    #  để bỏ chọn, mà lại có những người gọi CHỈ truyền chữ: đường nhập CSV, seed
+    #  và các bài kiểm cũ. Xóa nhãn của họ là **mất chức danh ngay lúc tạo hồ
+    #  sơ**, im lặng — `test_employee_position.py` bắt được đúng ca này.
+    if obj.position_id:
+        position_service.sync_label(db, obj, {"position_id": obj.position_id})
     db.add(obj)
     db.flush()
     _sync_primary_department(db, obj, user_id)
@@ -175,9 +261,15 @@ def update_employee(db: Session, eid: int, data: EmployeeUpdate, user_id: int) -
     #  Hai cột QUYẾT ĐỊNH PHẠM VI DỮ LIỆU — chụp lại trước khi ghi đè để biết có
     #  phải xóa cache quyền không (xem `clear_perm_cache_of`).
     old_scope = (obj.company_id or 0, obj.department_id or 0)
+    #  Chức vụ ĐANG giữ — `sync_label` cần nó để phân biệt "gán mới" với "gửi
+    #  lại y nguyên", xem ghi chú ở đó. Phải chụp TRƯỚC vòng `setattr`.
+    old_position_id = obj.position_id or 0
     fields = data.model_dump(exclude_unset=True)
+    if "manager_id" in fields:
+        block_manager_cycle(db, obj.id, fields["manager_id"])
     for key, value in fields.items():
         setattr(obj, key, value)
+    position_service.sync_label(db, obj, fields, old_position_id)
     obj.updated_by = user_id
     if "department_id" in fields:
         _sync_primary_department(db, obj, user_id)
@@ -253,8 +345,21 @@ def detach_users(db: Session, eid: int, actor_id: int) -> int:
 
 
 def delete_employee(db: Session, eid: int, user_id: int) -> int:
+    from . import contact_service
+
     obj = get_employee(db, eid)
     locked = detach_users(db, eid, user_id)
+    #  Hai bảng con mang dữ liệu cá nhân của NGƯỜI THỨ BA (cha mẹ, vợ chồng,
+    #  con). Xóa hồ sơ mà để chúng lại là giữ hồ sơ CCCD của những người chưa
+    #  bao giờ là nhân viên, gắn vào một id không còn ai. FK đã khai CASCADE
+    #  nhưng bộ test chạy SQLite (khóa ngoại mặc định tắt) — xem `delete_all_of`.
+    contact_service.delete_all_of(db, eid)
+    #  ⚠️ Người này đang là quản lý trực tiếp của ai đó thì ô `manager_id` bên
+    #  kia thành con số trỏ vào hư không, và bộ máy duyệt lùi về trưởng bộ phận
+    #  một cách IM LẶNG. Gỡ tường minh về `0` — cùng nghĩa "chưa gán", nhưng màn
+    #  danh sách có cảnh báo cho `0` (K5) còn cho id chết thì không.
+    db.query(Employee).filter(Employee.manager_id == eid).update(
+        {Employee.manager_id: 0, Employee.updated_by: user_id}, synchronize_session=False)
     db.delete(obj)
     db.commit()
     msg = f"Khoá {locked} tài khoản đăng nhập kèm theo" if locked else ""

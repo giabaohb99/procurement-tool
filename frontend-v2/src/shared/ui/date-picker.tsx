@@ -21,6 +21,15 @@ interface DatePickerProps {
   className?: string
   /** Cho xóa ngày đã chọn bằng nút ✕ trên nút bấm. */
   clearable?: boolean
+  /**
+   * `id` của nút bấm, để một `<label htmlFor>` bên ngoài nối được vào.
+   *
+   * Cần khi ô ngày nằm trong bảng nhập liệu tự dựng nhãn (không đi qua
+   * `FormLabel` của shadcn, thứ tự lo phần nối này). Thiếu nó thì nhãn hiện ra
+   * bằng mắt nhưng trình đọc màn hình đọc ô đó là một nút không tên, và bấm vào
+   * chữ không nhảy được vào ô.
+   */
+  id?: string
 }
 
 /**
@@ -42,6 +51,7 @@ export function DatePicker({
   placeholder = 'Chọn ngày',
   className,
   clearable = true,
+  id,
 }: DatePickerProps) {
   const [open, setOpen] = useState(false)
   // `new Date('2026-08-11')` bị hiểu là giờ UTC nên ở múi giờ VN sẽ lệch về
@@ -57,6 +67,7 @@ export function DatePicker({
     <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button
+          id={id}
           type="button"
           variant="outline"
           disabled={disabled}

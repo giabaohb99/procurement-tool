@@ -5,7 +5,10 @@ import { appConfig } from '@/core/config/app-config'
 import { queryKeys } from '@/shared/constants/query-keys'
 import type { ListParams } from '@/shared/types/api'
 import { employeeApi } from '../api/employee-api'
-import type { EmployeeFormValues } from '../schemas/employee-schema'
+import type {
+  EmployeeFormValues,
+  EmployeeProfileFormValues,
+} from '../schemas/employee-schema'
 
 /**
  * Danh sách nhân viên có phân trang + lọc.
@@ -71,8 +74,19 @@ export function useSaveEmployee() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ id, values }: { id?: number; values: EmployeeFormValues }) =>
-      id ? employeeApi.update(id, values) : employeeApi.create(values),
+    //  ⚠️ `values` khi SỬA là `Partial` — màn chi tiết bỏ bớt các ô nhạy cảm mà
+    //  người lưu không được xem (`pickWritableProfile`). Khi TẠO thì phải đủ
+    //  `EmployeeFormValues`, nên hai nhánh khai kiểu khác nhau.
+    mutationFn: ({
+      id,
+      values,
+    }: {
+      id?: number
+      values: EmployeeFormValues | Partial<EmployeeProfileFormValues>
+    }) =>
+      id
+        ? employeeApi.update(id, values)
+        : employeeApi.create(values as EmployeeFormValues),
 
     onSuccess: (_data, variables) => {
       toast.success(variables.id ? 'Đã cập nhật nhân sự' : 'Đã thêm nhân sự')

@@ -11,8 +11,16 @@ export interface Employee {
   /** Tên pháp nhân, backend trả kèm (`EmployeeOut.company_name`). */
   company_name?: string | null
   department_id: number
-  /** Vị trí / chức vụ — CHỈ là chữ, không liên quan tới phân quyền. */
+  /** NHÃN chức vụ — backend chép từ danh mục, chỉ để hiển thị/in. */
   position: string
+  /**
+   * KHÓA chức vụ trong `tab_job_position`; `0` = chưa gán (duoc-CR-320).
+   *
+   * Để TÙY CHỌN như mọi cột thêm sau: bản ghi cũ trong bộ test (và mọi câu trả
+   * lời API dựng trước cột này) không có khóa đó, và bắt buộc thì mọi chỗ dựng
+   * một `Employee` giả đều phải nhớ thêm một số 0 vô nghĩa.
+   */
+  position_id?: number
   /**
    * ⚠️ Cột cũ, KHÔNG còn dùng để cấp quyền (CR-022). Quyền nay chỉ gán ở màn
    * "Phân quyền tài khoản". Giữ lại vì dữ liệu cũ vẫn còn.
@@ -39,6 +47,86 @@ export interface Employee {
   signature: string
   /** Lần sửa gần nhất — cột "Ngày cập nhật" (bao-CR-300, ticket 21). */
   updated_at?: string
+
+  // ── HỒ SƠ MỞ RỘNG (duoc-CR-314, 08/09/2026) ────────────────────────────────
+  //  ⚠️ 15 trường trong nhóm này bị backend CHE ở tầng serializer khi người xem
+  //  không có `employee_sensitive.read` — chúng về `''` / `null`, y như chưa
+  //  nhập. Không có cách nào phân biệt từ đây, và đó là chủ ý: người không có
+  //  quyền không cần biết ô đó có dữ liệu hay không. Muốn nói với người dùng
+  //  «bạn không được xem» thì hỏi `can('employee_sensitive', 'read')` rồi đổi
+  //  câu chữ, ĐỪNG suy từ giá trị rỗng.
+
+  // Nhóm 1 — cá nhân
+  /** NHẠY CẢM. `YYYY-MM-DD` hoặc `null`. */
+  date_of_birth?: string | null
+  place_of_birth?: string
+  ethnicity?: string
+  religion?: string
+  marital_status?: number
+  marital_status_label?: string
+  children_count?: number
+  /** Email CÁ NHÂN — KHÁC `email` (email công việc, cũng là tên đăng nhập). */
+  personal_email?: string
+  /** NHẠY CẢM. Mã số thuế cá nhân. */
+  tax_code?: string
+  education_level?: number
+  education_level_label?: string
+  major?: string
+
+  // Nhóm 2 — công việc
+  /**
+   * NGƯỜI QUẢN LÝ TRỰC TIẾP. `0` = chưa gán.
+   *
+   * ⚠️ Không phải trường hiển thị cho đẹp — đây là dữ liệu mà vai tương đối
+   * «người quản lý trực tiếp» của bộ máy duyệt đọc để tìm người ký. Sai ô này
+   * thì đơn từ chạy sai đường mà không màn nào báo.
+   */
+  manager_id?: number
+  /**
+   * Tên người quản lý trực tiếp, backend trả kèm.
+   *
+   * ⚠️ ĐỪNG lẫn với `manager_name` phía trên — cái đó là trưởng PHÒNG BAN, đọc
+   * qua `department.manager`. Hai người này thường khác nhau.
+   */
+  direct_manager_name?: string
+  employment_type?: number
+  employment_type_label?: string
+  job_level?: number
+  job_level_label?: string
+  work_location?: string
+  resign_date?: string | null
+
+  // Nhóm 3 — liên hệ (cả hai NHẠY CẢM)
+  permanent_address?: string
+  current_address?: string
+
+  // Nhóm 4 — ngân hàng (toàn bộ NHẠY CẢM)
+  bank_account_no?: string
+  bank_account_name?: string
+  bank_name?: string
+  bank_branch?: string
+
+  // Nhóm 5 — giấy tờ và BHXH/BHYT
+  /** NHẠY CẢM. */
+  id_number?: string
+  /** NHẠY CẢM. */
+  id_issue_date?: string | null
+  /** NHẠY CẢM. */
+  id_issue_place?: string
+  /** NHẠY CẢM. */
+  id_expiry_date?: string | null
+  /** NHẠY CẢM. Đặt qua cửa upload riêng, KHÔNG gửi kèm form. */
+  id_front_image?: string
+  /** NHẠY CẢM. Đặt qua cửa upload riêng, KHÔNG gửi kèm form. */
+  id_back_image?: string
+  /** NHẠY CẢM. */
+  social_insurance_no?: string
+  /** Nơi khám chữa bệnh BHYT — CỐ Ý không nằm trong nhóm nhạy cảm. */
+  health_care_place?: string
+  health_care_code?: string
+
+  // Nhóm 7 — tùy biến
+  extra_fields?: Record<string, unknown>
 }
 
 /** Bản chi tiết — kèm id tài khoản đăng nhập (0 = nhân sự chưa được cấp tài khoản). */
@@ -46,18 +134,52 @@ export interface EmployeeDetail extends Employee {
   user_id: number
 }
 
+/** Người báo tin trong trường hợp cần thiết — `tab_employee_contact`. */
+export interface EmployeeContact {
+  id: number
+  full_name: string
+  /**
+   * MÃ SỐ quan hệ với NHÂN VIÊN — xem `RELATION_OPTIONS`.
+   *
+   * Từng là chữ tự do; khách chốt thành ô CHỌN 08/09/2026 vì mỗi người gõ một
+   * kiểu («vợ» · «Vợ» · «v/c») nên không lọc được, không đếm được.
+   */
+  relation: number
+  address: string
+  phone: string
+  sort_order: number
+}
+
+/** Thành viên hộ gia đình — `tab_employee_family`, phục vụ kê khai BHXH. */
+export interface EmployeeFamily {
+  id: number
+  full_name: string
+  /** MÃ SỐ quan hệ với CHỦ HỘ (không phải với nhân viên) — hồ sơ BHXH hỏi vậy. */
+  relation: number
+  /** Cùng quy ước `Employee.gender`: 0 chưa khai · 1 nam · 2 nữ. */
+  gender: number
+  date_of_birth: string | null
+  phone: string
+  id_number: string
+  sort_order: number
+}
+
 /**
  * Giới tính của HỒ SƠ NHÂN SỰ — khớp `leave/constants.py` (`GENDER_*`).
  *
- * ⚠️ Khác `GENDER_LABELS` ở `types/leave.ts`: bên đó `0` là *«Mọi giới»* vì nó
- * mô tả một LOẠI NGHỈ áp cho ai. Ở đây `0` là *«Chưa khai»* — nó mô tả một con
- * người, và một người thì không thể "mọi giới". Dùng nhầm bảng nhãn là màn hồ sơ
- * hiện «Mọi giới» cho người chưa nhập, đọc ra như đã khai xong.
+ * ⚠️ Khác `GENDER_LABELS` ở `types/leave.ts` ở HAI chỗ:
+ * · bên đó `0` là *«Mọi giới»* vì nó mô tả một LOẠI NGHỈ áp cho ai; ở đây `0` là
+ *   *«Chưa khai»* — nó mô tả một con người, và một người thì không thể "mọi
+ *   giới". Dùng nhầm bảng nhãn là màn hồ sơ hiện «Mọi giới» cho người chưa nhập,
+ *   đọc ra như đã khai xong.
+ * · bên đó KHÔNG có `3` («Khác»): loại nghỉ "chỉ dành cho giới Khác" không có
+ *   nghĩa. Mã `3` chỉ sống trong hồ sơ con người (08/09/2026).
  */
 export const EMPLOYEE_GENDER_OPTIONS = [
   { value: 0, label: 'Chưa khai' },
   { value: 1, label: 'Nam' },
   { value: 2, label: 'Nữ' },
+  { value: 3, label: 'Khác' },
 ] as const
 
 export function employeeGenderLabel(value?: number | null): string {

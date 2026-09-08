@@ -15,7 +15,7 @@ import {
   FORUM_REACTION_META,
 } from '../types/forum-post'
 import type { ForumPost, ForumReactionKind } from '../types/forum-post'
-import { authorInitials } from '../utils/author-initials'
+import { nameInitials } from '@/shared/utils/name-initials'
 import { PostActionsMenu } from './post-actions-menu'
 import { PostBody } from './post-body'
 import { ThreadPrefixChip } from './thread-prefix-chip'
@@ -88,7 +88,7 @@ export function PostCard({ post, detail = false, flat = false }: PostCardProps) 
           <Avatar className="size-10">
             <AvatarImage className="object-cover" src={post.author_avatar} alt={post.author_name} />
             <AvatarFallback className="bg-navy-solid text-sm font-semibold text-white">
-              {authorInitials(post.author_name)}
+              {nameInitials(post.author_name)}
             </AvatarFallback>
           </Avatar>
         </Link>

@@ -41,7 +41,19 @@ export function DeleteConfirmButton({
 
   return (
     <>
+      {/*  ⚠️ `type="button"` là BẮT BUỘC, không phải cho đẹp.
+
+           Nút này đứng trong `<form>` ở gần hết màn chi tiết (hồ sơ nhân sự,
+           công ty, phòng ban, YCMH, YCBG, ĐMH, YCTT…). Thiếu `type` thì HTML
+           mặc định là `submit`: bấm «Xóa» là form **LƯU bản ghi** trước, rồi
+           hộp xác nhận mới mở ra. Người dùng đổi ý bấm Hủy — nhưng bản ghi đã
+           bị lưu rồi, và dòng «Cập nhật» trong lịch sử thao tác là của một
+           thao tác không ai thực hiện.
+
+           Dựng lại được trên trình duyệt thật 08/09/2026. Lỗi có từ lâu, im
+           lặng vì hai việc (lưu và mở hộp thoại) đều "thành công". */}
       <Button
+        type="button"
         variant="outline"
         className="text-destructive hover:text-destructive"
         onClick={() => setOpen(true)}

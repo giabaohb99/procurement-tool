@@ -208,7 +208,14 @@ _ALL_ACTIONS = ["read", "create", "write", "delete", "approve", "cancel", "print
 # dưới vẫn cấp cho vai trò này quyền nộp đơn của chính mình — đúng phần cần.
 _SYS_ENTITIES = {"user", "role", "setting", "backup", "help_article", "mailbox",
                  "forum_post", "forum_board",
-                 "leave_request", "leave_balance", "leave_type", "holiday"}
+                 "leave_request", "leave_balance", "leave_type", "holiday",
+                 #  ⚠️ Nhóm trường nhạy cảm của hồ sơ nhân sự (08/09/2026). Phải
+                 #  nằm trong tập loại-trừ này, không thì vòng `_PUR_MANAGER_PERMS`
+                 #  quét cả `ENTITIES` và Quản lý thu mua tự nhiên đọc được số
+                 #  CCCD + tài khoản ngân hàng của toàn công ty — thứ chẳng liên
+                 #  quan gì tới nghiệp vụ mua hàng. Cùng lý do đã loại
+                 #  `leave_balance` ra khỏi đây.
+                 "employee_sensitive"}
 _PUR_MANAGER_PERMS = {e: (_ALL_ACTIONS, "all") for e in ENTITIES if e not in _SYS_ENTITIES}
 
 STD_ROLES = {
@@ -222,6 +229,27 @@ STD_ROLES = {
         "purchase_request": (["read", "create"], "own"),
         "survey_request": (["read", "create", "write"], "own"),
         "ticket": (["read", "create", "write"], "own"),
+    }},
+    #  Vai trò MẪU cho phòng Nhân sự — người giữ HỒ SƠ nhân viên. Không gán tự
+    #  động cho ai; gán ở màn *Nhân sự ▸ Phân quyền tài khoản*.
+    #
+    #  ⚠️ Đây là vai trò DUY NHẤT (ngoài admin) được seed kèm `employee_sensitive`.
+    #  Cho vai trò này là cho quyền đọc số CCCD, địa chỉ nhà và tài khoản ngân
+    #  hàng của mọi nhân viên — đúng phần việc của Nhân sự khi làm hợp đồng và
+    #  bảng lương, nhưng không phải phần việc của bất kỳ ai khác.
+    #
+    #  Tách khỏi `hr_leave` (quản lý nghỉ phép) vì hai việc do hai người khác
+    #  nhau làm ở phần lớn công ty: người cấp quỹ phép không nhất thiết được xem
+    #  CCCD, và người giữ hồ sơ không nhất thiết được tặng ngày phép.
+    "hr_profile": {"name": "Nhân sự — Hồ sơ nhân viên", "perms": {
+        "employee": (["read", "create", "write", "delete", "export"], "all"),
+        "employee_sensitive": (["read"], "all"),
+        "department": (["read"], "all"),
+        "company": (["read"], "all"),
+        #  Danh mục Chức vụ — người giữ hồ sơ cũng là người thêm chức danh mới
+        #  (duoc-CR-320). Vòng `setdefault` phía dưới chỉ cấp `read` cho mọi vai
+        #  trò; quyền SỬA khai đích danh ở đây.
+        "job_position": (["read", "create", "write", "delete"], "all"),
     }},
     "dept_head": {"name": "Trưởng phòng (duyệt PYC)", "perms": {
         **_CATALOG_READ, **_CONTRACT_READ,
@@ -435,6 +463,12 @@ for _role_info in STD_ROLES.values():
     _role_info["perms"].setdefault(
         "room_booking", (["read", "create", "write", "delete", "cancel"], "own"))
     _role_info["perms"].setdefault("meeting_room", (["read"], "all"))
+    #  ⚠️ Danh mục Chức vụ phải ĐỌC được với MỌI vai trò (duoc-CR-320): nó là
+    #  nguồn của ô chọn «Vị trí / Chức vụ» trên hồ sơ nhân sự. Thiếu `read` thì
+    #  ô chọn đó rỗng sạch và người dùng đọc ra "công ty chưa khai chức vụ nào",
+    #  trong khi thứ họ gặp là một lỗi 403 bị nuốt. Chỉ `read` — thêm bớt chức
+    #  vụ là việc của `hr_profile`.
+    _role_info["perms"].setdefault("job_position", (["read"], "all"))
 
 #  Trưởng phòng duyệt đơn của phòng mình. Đặt SAU vòng `setdefault` ở trên nên
 #  phải gán ĐÈ, không `setdefault` — dòng `own` đã nằm sẵn ở đó rồi.

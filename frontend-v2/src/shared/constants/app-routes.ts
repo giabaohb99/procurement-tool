@@ -287,6 +287,11 @@ export const appRoutes = {
     departmentDetail: (id: number | string) => `/hr/departments/${id}`,
     companies: '/hr/companies',
     companyDetail: (id: number | string) => `/hr/companies/${id}`,
+    /** Danh mục Chức vụ — nguồn của ô chọn «Vị trí / Chức vụ» trên hồ sơ. */
+    jobPositions: '/hr/job-positions',
+    /** Thêm chức vụ mở TRANG RIÊNG, không phải hộp thoại — xem `CrudConfig.createRoute`. */
+    jobPositionNew: '/hr/job-positions/new',
+    jobPositionDetail: (id: number | string) => `/hr/job-positions/${id}`,
     /** Ma trận vai trò × quyền + danh sách tài khoản. */
     permissions: '/hr/permissions',
     /** Gán vai trò và phạm vi dữ liệu cho MỘT tài khoản. */

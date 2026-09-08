@@ -1,64 +1,82 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowLeft, Briefcase, Building2, Hash, Loader2, Save, UserCheck } from 'lucide-react'
-import { useEffect } from 'react'
+import {
+  ArrowLeft,
+  Briefcase,
+  Building2,
+  CalendarDays,
+  Hash,
+  IdCard,
+  Loader2,
+  Phone,
+  Save,
+  UserCheck,
+  UserCog,
+} from 'lucide-react'
+import { useEffect, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { toast } from 'sonner'
 
 import { useAuth } from '@/core/auth/use-auth'
 import { PermissionGate } from '@/core/authorization/permission-gate'
 import { usePermission } from '@/core/authorization/use-permission'
 import { AuditTimeline } from '@/shared/audit'
 import { appRoutes } from '@/shared/constants/app-routes'
+import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { AvatarUploader } from '@/shared/ui/avatar-uploader'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
-import { DatePicker } from '@/shared/ui/date-picker'
 import { DeleteConfirmButton } from '@/shared/ui/delete-confirm-button'
 import { ErrorState } from '@/shared/ui/error-state'
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/shared/ui/form'
-import { FormSection } from '@/shared/ui/form-section'
-import { ReadOnlyValue } from '@/shared/ui/read-only-value'
-import { Input } from '@/shared/ui/input'
+import { Form } from '@/shared/ui/form'
 import { PageContainer } from '@/shared/ui/page-container'
 import { RecordIdentityCard, type IdentityChip } from '@/shared/ui/record-identity-card'
 import { SectionHeading } from '@/shared/ui/section-heading'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { Skeleton } from '@/shared/ui/skeleton'
-import { ActiveStatusSelect } from '../components/active-status-select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { EmployeeAccountCard } from '../components/employee-account-card'
 import { EmployeeDepartmentCard } from '../components/employee-department-card'
 import { EmployeeSignatureCard } from '../components/employee-signature-card'
-import { LookupSelect } from '../components/lookup-select'
+import { EmployeeTabContact } from '../components/employee-tab-contact'
+import { EmployeeTabDocuments } from '../components/employee-tab-documents'
+import { EmployeeTabGeneral } from '../components/employee-tab-general'
+import { EmployeeTabLeave } from '../components/employee-tab-leave'
+import { useCanReadSensitive } from '../hooks/use-employee-profile'
 import { useDepartments } from '../hooks/use-departments'
 import {
   useDeleteEmployee,
   useEmployee,
+  useEmployees,
   useSaveEmployee,
   useUploadEmployeeAvatar,
 } from '../hooks/use-employees'
 import {
-  EMPTY_EMPLOYEE_FORM,
-  employeeFormValues,
-  employeeSchema,
-  type EmployeeFormValues,
+  EMPTY_EMPLOYEE_PROFILE_FORM,
+  employeeProfileFormValues,
+  employeeProfileSchema,
+  pickWritableProfile,
+  type EmployeeProfileFormValues,
 } from '../schemas/employee-schema'
-import {
-  EMPLOYEE_GENDER_OPTIONS,
-  employeeInitials,
-  employeeStatusLabel,
-  employeeStatusOptions,
-  type EmployeeDetail,
-} from '../types/employee'
+import { employeeInitials, employeeStatusLabel, type EmployeeDetail } from '../types/employee'
+import { firstInvalidTab } from '../utils/profile-field-tab'
 
-/** Chi tiết hồ sơ nhân sự — form sửa trực tiếp + thẻ tài khoản đăng nhập. */
+/**
+ * Chi tiết hồ sơ nhân sự — 5 TAB (duoc-CR-314 Đợt 2).
+ *
+ * Hồ sơ có hơn 30 ô sau khi mở rộng; dồn hết vào một trang cuộn thì không ai
+ * tìm được ô mình cần. Bốn tab đầu chia theo NGƯỜI DÙNG chứ không theo bảng:
+ * *Chung* (ai cũng xem) · *Liên hệ & Ngân hàng* + *Giấy tờ & BHXH* (việc của
+ * Nhân sự) · *Quỹ phép* (lối sang phân hệ Nghỉ phép) · *Tài khoản*.
+ *
+ * ⚠️ **MỘT form cho cả bốn tab đầu.** `Tabs` của Radix hủy mount nội dung tab
+ * ẩn, nhưng `react-hook-form` giữ giá trị trong `useForm` chứ không trong DOM —
+ * nên sửa ở tab Chung rồi sang tab khác bấm Lưu vẫn gửi đủ. Tách bốn form là
+ * bốn nút Lưu và bốn lần người dùng quên bấm.
+ *
+ * ⚠️ Hai bảng con (người báo tin, hộ gia đình) và hai ảnh CCCD **KHÔNG** nằm
+ * trong form này — chúng đi cửa API riêng và có nút Lưu riêng, vì backend gác
+ * chúng bằng một khóa quyền khác.
+ */
 export function EmployeeDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -67,20 +85,29 @@ export function EmployeeDetailPage() {
   const { can } = usePermission()
   const { user: currentUser } = useAuth()
   const canWrite = can('employee', 'write')
+  const canReadSensitive = useCanReadSensitive(employeeId)
+
+  const [tab, setTab] = useUrlParamState('tab', 'general')
 
   const { data: employee, isLoading, isError } = useEmployee(employeeId)
   const saveEmployee = useSaveEmployee()
   const deleteEmployee = useDeleteEmployee()
   const uploadAvatar = useUploadEmployeeAvatar(employeeId)
   const { data: departments } = useDepartments({ page_size: 500, is_active: true })
+  //  Danh bạ để chọn NGƯỜI QUẢN LÝ TRỰC TIẾP. Lấy đủ một lượt — công ty cỡ này
+  //  vài trăm người, không cần ô tìm động.
+  const { data: colleagues } = useEmployees({ page_size: 500, is_active: true })
 
-  const form = useForm<EmployeeFormValues>({
-    resolver: zodResolver(employeeSchema),
-    defaultValues: EMPTY_EMPLOYEE_FORM,
+  const form = useForm<EmployeeProfileFormValues>({
+    resolver: zodResolver(employeeProfileSchema),
+    defaultValues: EMPTY_EMPLOYEE_PROFILE_FORM,
   })
 
+  //  Cờ «đang gửi» đổi NGAY trong tick — xem `onSubmit`.
+  const submittingRef = useRef(false)
+
   useEffect(() => {
-    if (employee) form.reset(employeeFormValues(employee))
+    if (employee) form.reset(employeeProfileFormValues(employee))
   }, [employee, form])
 
   if (isLoading) {
@@ -106,8 +133,48 @@ export function EmployeeDetailPage() {
     )
   }
 
-  async function onSubmit(values: EmployeeFormValues) {
-    await saveEmployee.mutateAsync({ id: employeeId, values })
+  async function onSubmit(values: EmployeeProfileFormValues) {
+    //  ⚠️ Chặn GỬI HAI LẦN bằng ref, không dựa vào `disabled={isPending}`.
+    //
+    //  `isPending` là state React nên chỉ đúng ở lần render SAU. Bấm đúp — hay
+    //  bấm liên tiếp trong cùng một tick — thì cả hai lần bấm đều thấy nút còn
+    //  bật. Bấm 5 lần liền tay ra **5 `PATCH`** (dựng lại được trên trình duyệt
+    //  thật 08/09/2026), tức 5 dòng «Cập nhật» trong lịch sử thao tác cho một
+    //  lần lưu — làm nhiễu đúng cái nhật ký vừa được đầu tư ở bao-CR-311.
+    //
+    //  Ref đổi NGAY trong cùng tick nên nó chặn được, còn `disabled` giữ vai
+    //  trò báo hiệu cho người dùng.
+    //
+    //  ⚠️ Lỗ này là của KHUÔN CHUNG (`disabled={mutation.isPending}` dùng khắp
+    //  các màn chi tiết), không riêng màn này. Ở đây vá khu trú; sửa cả khuôn
+    //  là việc riêng, cần rà từng màn.
+    if (submittingRef.current) return
+    submittingRef.current = true
+    try {
+      //  Bỏ các ô NHẠY CẢM khi người lưu không được xem chúng — backend đã che
+      //  nên form đang cầm chuỗi RỖNG, gửi lên là ghi đè rỗng đè lên số tài
+      //  khoản ngân hàng thật. Lý lẽ đầy đủ ở `pickWritableProfile`.
+      await saveEmployee.mutateAsync({
+        id: employeeId,
+        values: pickWritableProfile(values, canReadSensitive),
+      })
+    } finally {
+      submittingRef.current = false
+    }
+  }
+
+  /**
+   * Submit bị chặn vì còn ô sai — NHẢY tới tab chứa ô đó rồi nói ra.
+   *
+   * Không có hàm này thì lỗi ở tab ẩn = im lặng tuyệt đối (xem ghi chú ở
+   * `<form>`). Chuyển tab TRƯỚC khi toast, để lúc người dùng đọc xong câu thông
+   * báo thì ô đỏ đã nằm sẵn trên màn hình.
+   */
+  function onInvalid(errors: Record<string, unknown>) {
+    const first = firstInvalidTab(errors)
+    if (!first) return
+    setTab(first.tab)
+    toast.error('Còn ô chưa hợp lệ. Đã chuyển tới tab có ô đó.')
   }
 
   async function handleDelete() {
@@ -121,7 +188,18 @@ export function EmployeeDetailPage() {
   return (
     <PageContainer>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
+        {/*  Dựng handler NGAY TRONG sự kiện, không dựng lúc render: `onSubmit`
+             đóng trên `submittingRef`, mà truyền một hàm-đọc-ref vào lúc render là
+             thứ `react-hooks/refs` cảnh báo. Ở đây `handleSubmit` chỉ được gọi
+             khi người dùng bấm, nên không có gì đọc ref trong lúc vẽ. */}
+        <form onSubmit={(event) => void form.handleSubmit(onSubmit, onInvalid)(event)}>
+          {/*  ⚠️ `onInvalid` là BẮT BUỘC với biểu mẫu chia tab, không phải tiện ích.
+
+               Radix hủy mount nội dung tab ẩn, nên câu lỗi của một ô ở tab khác
+               không có chỗ nào để hiện ra. Không có nhánh này thì bấm Lưu là
+               **không có gì xảy ra**: không toast, không lỗi trên màn, không
+               một lời gọi API nào — nút Lưu đọc ra như bị hỏng. Dựng lại được
+               trên trình duyệt thật 08/09/2026. */}
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <Button variant="ghost" size="sm" asChild>
               <Link to={appRoutes.hr.employees}>
@@ -143,7 +221,7 @@ export function EmployeeDetailPage() {
                   recordName={employee.full_name}
                   pending={deleteEmployee.isPending}
                   onConfirm={handleDelete}
-                  warning="Tài khoản đăng nhập của nhân sự này sẽ bị khóa theo."
+                  warning="Tài khoản đăng nhập sẽ bị khóa. Người báo tin và thành viên hộ gia đình cũng bị xóa theo."
                 />
               </PermissionGate>
             </div>
@@ -167,274 +245,90 @@ export function EmployeeDetailPage() {
             chips={identityChips(employee)}
           />
 
-          {/* Hàng 1: 2 cột cao BẰNG NHAU — cột 1 [Thông tin cá nhân]+[Liên hệ]
-              (form sửa trực tiếp), cột 2 [Chữ ký]. */}
-          <div className="grid items-stretch gap-5 lg:grid-cols-2">
-            <div className="flex flex-col gap-5">
-              <Card className="gap-4 p-5">
-                <FormSection title="Thông tin cá nhân">
-                  <FormField
-                    control={form.control}
-                    name="code"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Mã NV</FormLabel>
-                        <FormControl>
-                          {/* Mã dùng khắp hệ — đổi sau khi tạo sẽ vỡ tham chiếu. */}
-                          <Input disabled {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+          <Tabs value={tab} onValueChange={setTab} className="mt-5">
+            <TabsList>
+              <TabsTrigger value="general">Chung</TabsTrigger>
+              <TabsTrigger value="contact">
+                <Phone className="size-4" />
+                Liên hệ &amp; Ngân hàng
+              </TabsTrigger>
+              <TabsTrigger value="documents">
+                <IdCard className="size-4" />
+                Giấy tờ &amp; BHXH
+              </TabsTrigger>
+              <TabsTrigger value="leave">
+                <CalendarDays className="size-4" />
+                Quỹ phép
+              </TabsTrigger>
+              <TabsTrigger value="account">
+                <UserCog className="size-4" />
+                Tài khoản
+              </TabsTrigger>
+            </TabsList>
 
-                  <FormField
-                    control={form.control}
-                    name="full_name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Họ tên</FormLabel>
-                        <FormControl>
-                          <Input disabled={!canWrite} {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  {/* Công ty · Phòng ban · Vị trí · Tình trạng nằm CHUNG khối
-                    "Thông tin cá nhân"; email/phone tách xuống thẻ "Liên hệ". */}
-                  {/*  CÔNG TY (pháp nhân) — CHỈ XEM (26/08/2026).
+            <TabsContent value="general" className="mt-5">
+              <EmployeeTabGeneral
+                employee={employee}
+                canWrite={canWrite}
+                canReadSensitive={canReadSensitive}
+                departments={departments?.items ?? []}
+                colleagues={(colleagues?.items ?? [])
+                  //  Bỏ CHÍNH MÌNH khỏi ô chọn: tự làm quản lý của mình là một
+                  //  vòng, backend chặn bằng 400 — thà đừng bày ra để chọn.
+                  .filter((e) => e.id !== employeeId)
+                  .map((e) => ({ id: e.id, label: `${e.full_name} (${e.code})` }))}
+              />
+            </TabsContent>
 
-                     Cột `company_id` vốn có trong bảng nhưng chưa bao giờ hiện
-                     ra màn hình, nên mở hồ sơ không biết người này thuộc pháp
-                     nhân nào — trong khi pháp nhân là thứ quyết định phạm vi dữ
-                     liệu họ nhìn thấy.
+            <TabsContent value="contact" className="mt-5">
+              <EmployeeTabContact
+                employeeId={employeeId}
+                canWrite={canWrite}
+                canReadSensitive={canReadSensitive}
+              />
+            </TabsContent>
 
-                     Để CHỈ XEM chứ chưa cho sửa: đổi pháp nhân của một người là
-                     đổi luôn tập dữ liệu họ đọc được, và phải kèm luật "phòng
-                     ban đang gán có thuộc pháp nhân mới không". Bày một ô chọn
-                     ra mà chưa có luật đó là mở đường lệch dữ liệu.
+            <TabsContent value="documents" className="mt-5">
+              <EmployeeTabDocuments
+                employee={employee}
+                canWrite={canWrite}
+                canReadSensitive={canReadSensitive}
+              />
+            </TabsContent>
 
-                     Dùng `ReadOnlyValue`, KHÔNG dùng `<Input disabled>`: ô mờ
-                     thì không bôi đen, không copy được tên pháp nhân. */}
-                  <FormItem>
-                    <FormLabel>Công ty</FormLabel>
-                    <ReadOnlyValue>{employee.company_name || '— Chưa gán công ty —'}</ReadOnlyValue>
-                    <FormDescription>
-                      Pháp nhân của nhân sự. Đổi pháp nhân làm ở màn Công ty.
-                    </FormDescription>
-                  </FormItem>
+            <TabsContent value="leave" className="mt-5">
+              <EmployeeTabLeave employee={employee} />
+            </TabsContent>
 
-                  <FormField
-                    control={form.control}
-                    name="department_id"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Phòng ban</FormLabel>
-                        <LookupSelect
-                          value={field.value}
-                          onChange={field.onChange}
-                          disabled={!canWrite}
-                          placeholder="Chọn phòng ban"
-                          emptyLabel="— Chưa gán phòng ban —"
-                          fallbackLabel={employee.department_name ?? ''}
-                          items={(departments?.items ?? []).map((d) => ({
-                            id: d.id,
-                            label: d.name,
-                          }))}
-                        />
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+            <TabsContent value="account" className="mt-5">
+              {/* Kiêm nhiệm và tài khoản là hai nửa của câu «người này thấy được gì». */}
+              <div className="grid items-stretch gap-5 lg:grid-cols-2">
+                <EmployeeDepartmentCard
+                  employeeId={employee.id}
+                  companyId={employee.company_id}
+                  primaryDepartmentId={employee.department_id}
+                  canWrite={canWrite}
+                  isSelf={currentUser?.employee_id === employee.id}
+                  className="h-full"
+                />
+                <EmployeeAccountCard
+                  employeeId={employee.id}
+                  email={employee.email}
+                  className="h-full"
+                />
+              </div>
 
-                  <FormField
-                    control={form.control}
-                    name="position"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Vị trí / Chức vụ</FormLabel>
-                        <FormControl>
-                          <Input disabled={!canWrite} {...field} />
-                        </FormControl>
-                        <FormDescription>
-                          Chỉ là chức danh hiển thị trên phiếu — không phải phân quyền.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+              <EmployeeSignatureCard
+                employeeId={employee.id}
+                signature={employee.signature}
+                canEdit={canWrite}
+                hasAccount={employee.user_id > 0}
+                className="mt-5"
+              />
+            </TabsContent>
+          </Tabs>
 
-                  <FormField
-                    control={form.control}
-                    name="status"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Tình trạng làm việc</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
-                          disabled={!canWrite}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {employeeStatusOptions(field.value).map((item) => (
-                              <SelectItem key={item.value} value={item.value}>
-                                {item.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="is_active"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Trạng thái hồ sơ</FormLabel>
-                        <ActiveStatusSelect
-                          value={field.value}
-                          onChange={field.onChange}
-                          disabled={!canWrite}
-                        />
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/*  NGÀY VÀO LÀM — cột đã có trong bảng từ 03/09/2026 nhưng
-                       không ô nào khai được cho tới 07/09: mọi hồ sơ đều rỗng,
-                       nên THÂM NIÊN của cả công ty tính bằng 0 và không ai được
-                       cộng ngày phép thêm. Ô này là chỗ vá điều đó. */}
-                  <FormField
-                    control={form.control}
-                    name="hire_date"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Ngày vào làm</FormLabel>
-                        <DatePicker
-                          value={field.value}
-                          onChange={field.onChange}
-                          disabled={!canWrite}
-                        />
-                        <FormDescription>
-                          Mốc tính thâm niên — quyết định người này được cộng thêm mấy
-                          ngày phép mỗi năm. Bỏ trống thì tính bằng 0 năm.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="gender"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Giới tính</FormLabel>
-                        <Select
-                          onValueChange={(v) => field.onChange(Number(v))}
-                          value={String(field.value)}
-                          disabled={!canWrite}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {EMPLOYEE_GENDER_OPTIONS.map((item) => (
-                              <SelectItem key={item.value} value={String(item.value)}>
-                                {item.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormDescription>
-                          Dùng để lọc loại nghỉ theo giới (thai sản). Bỏ trống thì không
-                          chặn loại nào.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </FormSection>
-              </Card>
-
-              <Card className="gap-4 p-5">
-                <FormSection title="Liên hệ">
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input type="email" disabled={!canWrite} {...field} />
-                        </FormControl>
-                        <FormDescription>
-                          Cũng là tên đăng nhập — đổi email KHÔNG tự đổi tài khoản đã cấp.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="phone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Số điện thoại</FormLabel>
-                        <FormControl>
-                          <Input disabled={!canWrite} {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </FormSection>
-              </Card>
-            </div>
-
-            {/* Cột 2: chữ ký — kéo cao đầy cột cho bằng cột 1. */}
-            <EmployeeSignatureCard
-              employeeId={employee.id}
-              signature={employee.signature}
-              canEdit={canWrite}
-              hasAccount={employee.user_id > 0}
-              className="h-full"
-            />
-          </div>
-
-          {/* Hàng 2: kiêm nhiệm + tài khoản đăng nhập (nơi hiện Vai trò). Kiêm
-              nhiệm và vai trò là hai nửa của câu «người này thấy được gì». */}
-          {/* Hàng 2: kiêm nhiệm + tài khoản đăng nhập — CAO BẰNG NHAU
-              (items-stretch + h-full trên từng thẻ). */}
-          <div className="mt-5 grid items-stretch gap-5 lg:grid-cols-2">
-            <EmployeeDepartmentCard
-              employeeId={employee.id}
-              companyId={employee.company_id}
-              primaryDepartmentId={employee.department_id}
-              canWrite={canWrite}
-              isSelf={currentUser?.employee_id === employee.id}
-              className="h-full"
-            />
-            <EmployeeAccountCard
-              employeeId={employee.id}
-              email={employee.email}
-              className="h-full"
-            />
-          </div>
-
+          {/* Ngoài mọi TabsContent — lịch sử thao tác đúng ở mọi tab. */}
           <Card className="mt-5 gap-4 p-5">
             <SectionHeading>Lịch sử thao tác</SectionHeading>
             <AuditTimeline entity="employee" entityId={employeeId} />
@@ -452,10 +346,15 @@ function identityChips(employee: EmployeeDetail): IdentityChip[] {
   if (employee.department_name) {
     chips.push({ icon: Building2, text: employee.department_name })
   }
+  //  Người quản lý trực tiếp lên tận thẻ tiêu đề: đây là ô mà bộ máy duyệt đọc,
+  //  nên nó đáng được nhìn thấy mà không phải mở tab nào.
+  if (employee.direct_manager_name) {
+    chips.push({ icon: UserCog, text: `QL: ${employee.direct_manager_name}` })
+  }
   if (employee.status) {
     // B-03: hiện NHÃN. `status` giờ là mã, dán thẳng vào chip là người dùng đọc `official`.
-    const nhan = employee.status_label || employeeStatusLabel(employee.status)
-    chips.push({ icon: UserCheck, text: nhan, tone: 'ok' })
+    const statusLabel = employee.status_label || employeeStatusLabel(employee.status)
+    chips.push({ icon: UserCheck, text: statusLabel, tone: 'ok' })
   }
   return chips
 }

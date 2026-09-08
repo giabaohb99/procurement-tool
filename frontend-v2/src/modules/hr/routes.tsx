@@ -1,4 +1,5 @@
 import {
+  BriefcaseBusiness,
   Building,
   Building2,
   CalendarDays,
@@ -55,6 +56,19 @@ export const hrModule: ErpModule = {
       path: appRoutes.hr.companies,
       icon: Building2,
       entity: 'company',
+      group: 'Danh mục',
+    },
+    {
+      //  Danh mục CHỨC VỤ (duoc-CR-320) — nguồn của ô chọn «Vị trí / Chức vụ».
+      //  `manage: true`: mọi vai trò đều ĐỌC được danh mục (ô chọn cần thế),
+      //  nhưng vào màn quản lý thì chỉ người SỬA được — cùng luật với «Danh mục
+      //  phòng họp». Không có nó thì cả công ty thấy một mục menu mở ra chỉ để
+      //  nhìn, mọi nút đều xám.
+      label: 'Chức vụ',
+      path: appRoutes.hr.jobPositions,
+      icon: BriefcaseBusiness,
+      entity: 'job_position',
+      manage: true,
       group: 'Danh mục',
     },
     //  ── Nghỉ phép (CR-259) ────────────────────────────────────────────────
@@ -302,6 +316,27 @@ export const hrModule: ErpModule = {
       path: appRoutes.hr.roomBookingDetail(':id'),
       lazy: async () => ({
         Component: (await import('./pages/room-booking-detail-page')).RoomBookingDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.jobPositions,
+      lazy: async () => ({
+        Component: (await import('./pages/job-position-list-page')).JobPositionListPage,
+      }),
+    },
+    {
+      //  ⚠️ Phải đứng TRƯỚC `:id` — cùng khuôn với `/hr/meeting-rooms/new`.
+      //  Cùng một trang phục vụ hai vai: `CrudDetailPage` tự nhận ra mình đang
+      //  ở `createRoute` và chuyển sang chế độ THÊM MỚI.
+      path: appRoutes.hr.jobPositionNew,
+      lazy: async () => ({
+        Component: (await import('./pages/job-position-detail-page')).JobPositionDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.jobPositionDetail(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/job-position-detail-page')).JobPositionDetailPage,
       }),
     },
     {

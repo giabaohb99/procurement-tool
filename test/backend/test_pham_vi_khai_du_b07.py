@@ -69,7 +69,7 @@ def test_khong_khai_thua_entity_khong_ton_tai():
     assert excess == [], f"khai thừa, không có trong ENTITIES: {excess}"
 
 
-def test_du_53_entity():
+def test_du_55_entity():
     """Chốt cứng con số để lần sau đọc test là biết ngay quy mô.
 
     39 → 42 ngày 25/08/2026 (CR-157): tách `doc_template`, `doc_numbering_rule`,
@@ -97,9 +97,30 @@ def test_du_53_entity():
     51 → 53 ngày 04/09/2026: Đặt phòng họp (duoc-CR-279) thêm `room_booking` +
     `meeting_room`. Hai chứ không một: đặt phòng là việc của mọi người, khai
     danh mục phòng là việc quản trị — cho quyền sửa danh mục KHÁC cho quyền đặt.
+    53 → 54 ngày 08/09/2026: hồ sơ nhân sự mở rộng (HRM Đợt 1) thêm
+    `employee_sensitive` — nhóm trường CCCD / ngân hàng / địa chỉ nhà. Khóa
+    riêng chứ không phải action của `employee`, vì `employee.read` là quyền gần
+    như mọi vai trò đều có (cần để đổ ô chọn người trong form): nhét nhóm nhạy
+    cảm vào đó là cả công ty đọc được số tài khoản ngân hàng của nhau.
+    PUBLIC ở `SCOPE_FIELDS` vì đây là cổng `require()` thuần — hồ sơ NÀO thì
+    khóa `employee` đã lọc, khóa này chỉ trả lời được xem NỘI DUNG hay không.
+
+    ⚠️ Hai bảng con `tab_employee_contact` / `tab_employee_family` CỐ Ý không có
+    khóa riêng, nên con số chỉ tăng 1 chứ không phải 3 (bản thiết kế
+    `doc/erp/hrm/01-ho-so-nhan-su.md` K2 ghi 3 là chưa tính tới hai điều: chúng
+    không có màn hình riêng — luật «một khóa = một màn hình» của CR-157 — và
+    phạm vi của chúng KHÔNG diễn đạt được bằng khuôn một-cột của `apply_scope`
+    vì bảng con chỉ có `employee_id`. Chốt của chúng là chốt của hồ sơ CHA).
+
+    54 → 55 ngày 08/09/2026: danh mục CHỨC VỤ (`job_position`, duoc-CR-320) —
+    nguồn của ô chọn «Vị trí / Chức vụ» trên hồ sơ. Khóa riêng theo luật «một
+    khóa = một màn hình»: MỌI vai trò cần `read` để đổ ô chọn đó, nhưng THÊM
+    BỚT chức vụ là việc của Nhân sự. PUBLIC ở `SCOPE_FIELDS` — bảng có
+    `department_id` nhưng `0` nghĩa là "dùng chung mọi phòng ban", nên lọc theo
+    cột đó cắt mất đúng những dòng dùng chung (cùng bẫy của `meeting_room`).
     """
-    assert len(ENTITIES) == 53
-    assert len(SCOPE_FIELDS) == 53
+    assert len(ENTITIES) == 55
+    assert len(SCOPE_FIELDS) == 55
 
 
 # ── 2. Không dựng nổi điều kiện thì chặn ────────────────────────────────────────

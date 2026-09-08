@@ -13,7 +13,7 @@ import { BoardsSidebar, PinnedSpotlight } from '../components/boards-sidebar'
 import { ThreadPrefixChip } from '../components/thread-prefix-chip'
 import { FORUM_BOARD_STATUS } from '../types/forum-board'
 import type { ForumBoardNode } from '../types/forum-board'
-import { authorInitials } from '../utils/author-initials'
+import { nameInitials } from '@/shared/utils/name-initials'
 import { useForumBoards } from '../hooks/use-forum-boards'
 
 /**
@@ -144,7 +144,7 @@ function BoardRow({ box }: { box: ForumBoardNode }) {
               alt={last.last_author_name}
             />
             <AvatarFallback className="bg-navy-solid text-xs font-semibold text-white">
-              {authorInitials(last.last_author_name)}
+              {nameInitials(last.last_author_name)}
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0">
