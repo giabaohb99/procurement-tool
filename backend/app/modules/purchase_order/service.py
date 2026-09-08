@@ -122,6 +122,44 @@ def pr_expected_map(db: Session, pr_code: str) -> dict[str, str]:
             for r in rows if (r.product_code or "").strip() and (r.expected_date or "").strip()}
 
 
+def pr_items_for_po(pr_data: dict, po_items) -> dict:
+    """Cắt phiếu YCMH (đã serialize) còn ĐÚNG các dòng hàng có trên đơn mua hàng — bao-CR-314.
+
+    Một phiếu YCMH được chia cho nhiều NSTM phụ trách rồi tách thành nhiều đơn, nên bản in
+    kèm theo một đơn chỉ được mang phần hàng của đơn đó. Ghép bằng `product_code` vì giữa
+    hai bảng dòng KHÔNG có khóa ngoại — cùng cầu nối `pr_expected_map` đang dùng. Mã hàng là
+    duy nhất trên YCMH (`assert_unique_product_codes`) nên tra ngược trúng đúng một dòng;
+    ĐMH được phép trùng mã (bao-CR-308) thì các dòng trùng cùng chiếu về một dòng nguồn và
+    chỉ in một lần.
+
+    Tổng tiền tính LẠI tại đây: `_out` của YCMH cộng từ danh sách dòng chứ không đọc cột lưu
+    sẵn, nên cắt dòng mà giữ nguyên tổng là in ra 3 dòng kèm tổng của 10 dòng.
+
+    `po_lines_unmatched` = số dòng trên ĐƠN không đối chiếu được (bỏ trống mã hàng, hoặc mã
+    không có trên phiếu). Giao diện báo con số này ở thanh công cụ, KHÔNG in vào tờ giấy —
+    người in phải biết bản in thiếu, nhưng tờ phiếu thì giữ nguyên khuôn cũ.
+    """
+    pr_codes = {(i.get("product_code") or "").strip() for i in pr_data.get("items", [])}
+    pr_codes.discard("")
+    keep, unmatched = set(), 0
+    for it in po_items or []:
+        code = (getattr(it, "product_code", "") or "").strip()
+        if code and code in pr_codes:
+            keep.add(code)
+        else:
+            unmatched += 1
+    items = [i for i in pr_data.get("items", [])
+             if (i.get("product_code") or "").strip() in keep]
+    subtotal = round(sum(i["qty"] * i["price"] for i in items), 2)   # chưa VAT
+    total = round(sum(i["amount"] for i in items), 2)                # gồm VAT
+    pr_data["items"] = items
+    pr_data["subtotal"] = subtotal
+    pr_data["vat"] = round(total - subtotal, 2)
+    pr_data["total"] = total
+    pr_data["po_lines_unmatched"] = unmatched
+    return pr_data
+
+
 def _save_items(db: Session, po: PurchaseOrder, items, user_id: int):
     """Upsert dòng hàng + các lần giao theo id (giữ id ổn định để side-effect idempotent)."""
     if items is None:

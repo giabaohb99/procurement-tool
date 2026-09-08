@@ -650,6 +650,11 @@ export default function PurchaseOrderDetail() {
                 <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 4, background: '#fff', border: '1px solid var(--border)', borderRadius: 8, boxShadow: '0 10px 30px rgba(27,37,89,.15)', zIndex: 51, minWidth: 190, whiteSpace: 'nowrap', overflow: 'hidden' }}>
                   <button className="btn ghost" style={{ display: 'flex', width: '100%', justifyContent: 'flex-start', border: 'none', borderRadius: 0 }} onClick={() => { window.open(`/print/purchase-order/${id}`, '_blank'); setPrintOpen(false) }}><i className="ti ti-printer" />In Đơn đặt hàng</button>
                   <button className="btn ghost" style={{ display: 'flex', width: '100%', justifyContent: 'flex-start', border: 'none', borderRadius: 0 }} onClick={() => { window.open(`/print/purchase-order-mh/${id}`, '_blank'); setPrintOpen(false) }}><i className="ti ti-file-invoice" />In Đơn mua hàng</button>
+                  {/* bao-CR-314: chỉ hiện khi đơn có gắn YCMH. Bản in chỉ gồm những dòng hàng
+                      có trên đơn này — không cần quyền đọc YCMH vì cổng là quyền in ĐƠN. */}
+                  {(po.pr_code || '').trim() && (
+                    <button className="btn ghost" style={{ display: 'flex', width: '100%', justifyContent: 'flex-start', border: 'none', borderRadius: 0 }} onClick={() => { window.open(`/print/purchase-request-from-po/${id}`, '_blank'); setPrintOpen(false) }}><i className="ti ti-file-text" />In Phiếu yêu cầu</button>
+                  )}
                 </div>
               </>
             )}
