@@ -129,8 +129,14 @@ def overview(db: Session = Depends(get_db), user=Depends(get_current_user)):
     in30 = (today + timedelta(days=30)).strftime("%Y-%m-%d")
 
     def item_amt(it):
-        a = float(it.amount or 0)
-        return a if a > 0 else float(it.qty_order or 0) * float(it.price or 0) * (1 + float(it.vat or 0) / 100)
+        # bao-CR-319: các khối chi tiêu cộng gộp mọi đơn nên đọc bản ĐÃ QUY ĐỔI (`base_amount`).
+        # Dòng cũ chưa có số quy đổi thì lùi về `amount` × tỷ giá — đơn VNĐ tỷ giá 1, số không đổi.
+        rate = float(getattr(it, "exchange_rate", 0) or 0) or 1.0
+        base = float(getattr(it, "base_amount", 0) or 0)
+        if base > 0:
+            return base
+        a = float(it.amount or 0) * rate
+        return a if a > 0 else float(it.qty_order or 0) * float(it.price or 0) * (1 + float(it.vat or 0) / 100) * rate
 
     kpi = {}
     cost_12m, categories, top_suppliers, dept_spend = [], [], [], []

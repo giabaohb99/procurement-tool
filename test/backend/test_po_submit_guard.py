@@ -167,8 +167,8 @@ def test_bao_dich_danh_dong_nao_thieu_o_nao(db):
 
 
 def test_thieu_truong_dong_tra_ve_dung_nhan(db):
-    assert service.thieu_truong_dong(POItem(**dong_day_du())) == []
-    assert service.thieu_truong_dong(POItem(**dong_day_du(unit="", qty_order=0))) \
+    assert service.missing_line_fields(POItem(**dong_day_du())) == []
+    assert service.missing_line_fields(POItem(**dong_day_du(unit="", qty_order=0))) \
         == ["ĐVT", "SL đặt NCC"]                # đúng thứ tự hiện trên màn Chi tiết dòng
 
 

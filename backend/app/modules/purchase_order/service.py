@@ -14,8 +14,18 @@ from app.modules.payable import service as pay_service
 from app.modules.payment_request.model import PaymentRequest, PaymentRequestLine
 from app.modules.supplier.model import Supplier
 
-from .model import PODelivery, POItem, PurchaseOrder
+from .model import (ALLOCATION_METHOD_LABELS, AllocationMethod, DEFAULT_CURRENCY, ImportCostType,
+                    OrderType, PODelivery, POImportCost, POItem, PurchaseOrder)
 from .schema import POCreate, POUpdate
+
+
+def rate_of(obj) -> float:
+    """Tỷ giá dùng để quy đổi về đồng tiền hạch toán.
+
+    bao-CR-319. Dòng cũ (trước khi có cột) và dòng VNĐ đều để trống hoặc 0 — phải đọc
+    thành 1, vì nhân với 0 sẽ biến cả đơn hàng thành 0 đồng mà không báo lỗi ở đâu cả.
+    """
+    return float(getattr(obj, "exchange_rate", 0) or 0) or 1.0
 
 
 def _pdate(s: str):
@@ -33,7 +43,7 @@ def _days(a: str, b: str) -> int:
 # order_date nằm trong whitelist để BỘ LỌC ĐIỀU KIỆN lọc theo ngày (order_date__between/gte…).
 # Lọc khoảng kiểu cũ (order_date_from/_to của thanh lọc cơ bản) vẫn do apply_range_filters lo.
 FILTERABLE = ["code", "status", "supplier_code", "pr_code", "misa_code", "nspt", "is_urgent",
-              "department", "document_status", "order_date"]
+              "department", "document_status", "order_date", "order_type"]
 ENTITY = "purchase_order"
 
 
@@ -161,6 +171,19 @@ def _save_items(db: Session, po: PurchaseOrder, items, user_id: int):
         # Chỉ điền lúc TẠO dòng: dòng đang sửa mà người dùng cố ý xóa trắng thì giữ trắng.
         if not (data.get("spec") or "").strip() and not data.get("id"):
             data["spec"] = specs_by_code.get((data.get("product_code") or "").strip(), "")
+        # bao-CR-319: dòng không khai loại tiền / tỷ giá thì lấy theo ĐƠN. Không để trống hay
+        # để 0 nằm trong CSDL — nhân với 0 là mất trắng số tiền mà không báo lỗi.
+        if not (data.get("currency") or "").strip():
+            data["currency"] = (po.currency or "").strip() or DEFAULT_CURRENCY
+        if not float(data.get("exchange_rate") or 0):
+            data["exchange_rate"] = rate_of(po) if data["currency"] == (po.currency or DEFAULT_CURRENCY) else 1
+        # bao-CR-319 P3 — ĐƠN NHẬP KHẨU: VAT dòng hàng luôn 0, khóa ở BACKEND.
+        # Hóa đơn của NCC nước ngoài không có thuế GTGT Việt Nam; thuế GTGT hàng nhập nộp
+        # cho ngân sách nhà nước theo tờ khai và đã khai thành một dòng ở bảng chi phí nhập
+        # khẩu. Để người dùng gõ VAT ở dòng hàng nữa là cộng thuế HAI LẦN, đồng thời sinh
+        # công nợ thuế cho chính NCC bán hàng — người không hề nhận khoản đó.
+        if int(po.order_type or OrderType.DOMESTIC) == int(OrderType.IMPORT):
+            data["vat"] = 0
         if not (data.get("expected_date") or "").strip():
             exp_from_pr = pr_expected.get((data.get("product_code") or "").strip(), "")
             if exp_from_pr:
@@ -179,7 +202,7 @@ def _save_items(db: Session, po: PurchaseOrder, items, user_id: int):
             # Dòng ĐÃ NHẬN HÀNG → khóa nhận diện sản phẩm. Đổi mã hàng/tên hàng/ĐVT lúc này
             # sẽ dời phiếu nhập kho + tồn kho đã ghi nhận sang hàng khác (sai số liệu kho).
             if float(it.qty_received or 0) > 0:
-                ten_dong = (it.product_name or "").strip() or (it.product_code or "").strip() or f"#{it.id}"
+                line_name = (it.product_name or "").strip() or (it.product_code or "").strip() or f"#{it.id}"
                 for f, label in (("product_code", "Mã hàng"), ("product_name", "Tên hàng"), ("unit", "ĐVT")):
                     new_v = (data.get(f) or "").strip()
                     old_v = (getattr(it, f, "") or "").strip()
@@ -206,6 +229,190 @@ def _save_items(db: Session, po: PurchaseOrder, items, user_id: int):
                 _cleanup_delivery(db, d.id)
                 db.delete(d)
             db.delete(it)
+    db.flush()
+
+
+# ───────────────────────── Chi phí lô hàng nhập khẩu (bao-CR-319 P3) ─────────────────────────
+def import_costs_of(db: Session, po_id: int):
+    return (db.query(POImportCost).filter(POImportCost.po_id == po_id)
+            .order_by(POImportCost.id.asc()).all())
+
+
+def import_cost_base(row) -> float:
+    """Tổng một khoản chi phí, ĐÃ gồm VAT, quy về đồng tiền hạch toán.
+
+    Cùng quy ước với dòng hàng: số nguyên tệ nằm ở `amount`, số quy đổi nằm ở
+    `base_amount`. Mọi nơi cộng tiền ngoài phân hệ này chỉ được đọc bản quy đổi.
+    """
+    return round(float(getattr(row, "amount", 0) or 0)
+                 * (1 + float(getattr(row, "vat", 0) or 0) / 100)
+                 * rate_of(row), 2)
+
+
+# ───────────────────────── Phân bổ chi phí về dòng hàng (bao-CR-319 P4) ─────────────────────────
+# Kết quả chia CHỈ ĐỂ XEM: tính lúc xem / lúc in, không ghi xuống cột nào, không đẩy vào
+# giá tồn kho. Vì vậy hàm nhận/trả dict thuần (đúng dạng `_item` / `_import_cost` của
+# controller) để màn hình, bản in và P5 cùng đọc một con số — giao diện tự cộng là lệch.
+EQUAL_SHARE_LABEL = "Chia đều"
+
+
+def _line_goods_base(line: dict) -> float:
+    """Tiền hàng QUY ĐỔI của một dòng theo SL đặt (cùng cách tính `goods_base` ở controller)."""
+    return float(line.get("order_total") or 0) * float(line.get("exchange_rate") or 1)
+
+
+def _basis_goods_base(line: dict) -> float:
+    """Tiền hàng của một DÒNG ĐÃ CHUẨN HÓA trong `allocate_import_costs` (khóa `goods_base`)."""
+    return float(line.get("goods_base") or 0)
+
+
+def _allocation_basis(method: AllocationMethod, target: str, lines: list[dict]):
+    """Trả (cơ sở chia từng dòng, cách chia THỰC TẾ, lời cảnh báo nếu phải đổi cách).
+
+    Cơ sở nào cộng lại bằng 0 (chưa ai gõ kg, SL đặt toàn 0...) thì không chia được;
+    lùi về theo giá trị, giá trị cũng 0 thì chia đều — và NÓI RÕ ra chứ không im lặng
+    đổi cách, vì người xem sẽ tưởng số kg của họ đã được dùng.
+    """
+    if method == AllocationMethod.BY_PRODUCT:
+        code = (target or "").strip()
+        matched = [(line.get("product_code") or "").strip() == code for line in lines]
+        if code and any(matched):
+            # Dòng ĐMH được phép trùng mã: mọi dòng cùng mã chia nhau khoản này theo giá trị,
+            # giá trị trống thì theo SL đặt, cũng trống thì chia đều.
+            for pick in (_basis_goods_base, lambda l: float(l.get("qty_order") or 0), lambda l: 1.0):
+                basis = [pick(line) if hit else 0.0 for line, hit in zip(lines, matched)]
+                if sum(basis) > 0:
+                    return basis, method, ""
+        warning = (f"Khoản chỉ định cho mã '{code}' nhưng đơn không có dòng hàng mã này"
+                   if code else "Khoản chọn chỉ định mã hàng nhưng chưa ghi mã")
+        return _allocation_basis(AllocationMethod.BY_VALUE, "", lines)[0], AllocationMethod.BY_VALUE, \
+            warning + " — đã chia theo giá trị"
+
+    if method == AllocationMethod.BY_WEIGHT:
+        basis = [float(line.get("weight_kg") or 0) for line in lines]
+        if sum(basis) > 0:
+            return basis, method, ""
+        warning = "chọn chia theo khối lượng nhưng chưa dòng nào có số kg"
+    elif method == AllocationMethod.BY_QUANTITY:
+        basis = [float(line.get("qty_order") or 0) for line in lines]
+        if sum(basis) > 0:
+            return basis, method, ""
+        warning = "chọn chia theo số lượng nhưng SL đặt của mọi dòng đều bằng 0"
+    else:
+        warning = ""
+
+    basis = [_basis_goods_base(line) for line in lines]
+    if sum(basis) > 0:
+        return basis, AllocationMethod.BY_VALUE, (warning + " — đã chia theo giá trị") if warning else ""
+    return [1.0] * len(lines), None, (warning + " — đã chia đều") if warning else ""
+
+
+def allocate_import_costs(items: list[dict], costs: list[dict]) -> dict:
+    """Chia từng khoản chi phí về các dòng hàng theo `allocation_method` của khoản đó.
+
+    Vào: `items` đúng dạng `_item()` và `costs` đúng dạng `_import_cost()` của controller
+    (đã quy đổi VNĐ). Ra: mỗi dòng hàng là CHA, bên trong liệt kê từng khoản đã gánh kèm cách
+    chia + tỷ lệ, cuối cùng là tổng toàn đơn — đúng chiều lồng đại ca chốt cho màn hình.
+
+    Làm tròn: phần lệch DỒN VÀO DÒNG CUỐI (dòng cuối trong số các dòng có nhận khoản đó)
+    để tổng các phần luôn bằng đúng số tiền khoản chi — kế toán đối chiếu là phải khớp.
+    """
+    lines = [{"item_id": it.get("id"), "product_code": it.get("product_code") or "",
+              "product_name": it.get("product_name") or "", "unit": it.get("unit") or "",
+              "qty_order": float(it.get("qty_order") or 0), "weight_kg": float(it.get("weight_kg") or 0),
+              "goods_base": round(_line_goods_base(it), 2), "cost_base": 0.0, "landed_base": 0.0,
+              "costs": []} for it in items]
+    warnings: list[str] = []
+    if not lines:
+        if costs:
+            warnings.append("Đơn chưa có dòng hàng nên chưa chia được chi phí")
+        goods_total = 0.0
+        cost_total = round(sum(float(c.get("base_amount") or 0) for c in costs), 2)
+        return {"lines": [], "goods_base_total": goods_total, "cost_total": cost_total,
+                "landed_total": cost_total, "warnings": warnings}
+
+    for cost in costs:
+        try:
+            method = AllocationMethod(int(cost.get("allocation_method") or 0))
+        except ValueError:
+            method = AllocationMethod.BY_VALUE
+        basis, effective, warning = _allocation_basis(method, cost.get("allocation_target") or "", lines)
+        if warning:
+            warnings.append(f"Khoản '{cost.get('description') or cost.get('cost_type_label') or ''}': {warning}")
+        total_basis = sum(basis)
+        amount = float(cost.get("base_amount") or 0)
+        receivers = [i for i, b in enumerate(basis) if b > 0]
+        last = receivers[-1]
+        allocated = 0.0
+        for i in receivers:
+            ratio = basis[i] / total_basis
+            share = round(amount - allocated, 2) if i == last else round(amount * ratio, 2)
+            allocated = round(allocated + share, 2)
+            lines[i]["costs"].append({
+                "cost_id": cost.get("id"), "cost_type": cost.get("cost_type"),
+                "cost_type_label": cost.get("cost_type_label") or "",
+                "description": cost.get("description") or "",
+                "supplier_code": cost.get("supplier_code") or "", "supplier_name": cost.get("supplier_name") or "",
+                "allocation_method": int(method),
+                "allocation_method_label": ALLOCATION_METHOD_LABELS.get(method, ""),
+                # Cách chia THỰC TẾ đã dùng (khác cách chọn khi phải lùi về giá trị / chia đều)
+                "effective_method": int(effective) if effective else 0,
+                "effective_method_label": ALLOCATION_METHOD_LABELS.get(effective, "") if effective else EQUAL_SHARE_LABEL,
+                "ratio": round(ratio, 6), "base_amount": share,
+            })
+            lines[i]["cost_base"] = round(lines[i]["cost_base"] + share, 2)
+
+    for line in lines:
+        line["landed_base"] = round(line["goods_base"] + line["cost_base"], 2)
+    goods_total = round(sum(line["goods_base"] for line in lines), 2)
+    cost_total = round(sum(line["cost_base"] for line in lines), 2)
+    return {"lines": lines, "goods_base_total": goods_total, "cost_total": cost_total,
+            "landed_total": round(goods_total + cost_total, 2), "warnings": warnings}
+
+
+def _save_import_costs(db: Session, po: PurchaseOrder, costs, user_id: int):
+    """Upsert bảng chi phí theo id, xóa dòng không còn trong payload.
+
+    Không gửi khóa `import_costs` (costs is None) = màn hình không đụng tới bảng này,
+    giữ nguyên. Gửi mảng rỗng = người dùng đã xóa hết dòng.
+    """
+    if costs is None:
+        return
+    existing = {c.id: c for c in import_costs_of(db, po.id)}
+    keep = set()
+    for raw in costs:
+        data = raw.model_dump()
+        # Mã lạ (payload cũ, hoặc gõ tay qua API) không được rơi vào cột theo kiểu im lặng.
+        try:
+            data["cost_type"] = int(ImportCostType(int(data.get("cost_type") or 0)))
+        except ValueError:
+            data["cost_type"] = int(ImportCostType.OTHER)
+        if not (data.get("currency") or "").strip():
+            data["currency"] = (po.currency or "").strip() or DEFAULT_CURRENCY
+        if not float(data.get("exchange_rate") or 0):
+            # Chi phí ghi bằng đúng đồng tiền của đơn thì theo tỷ giá đơn; khác đồng tiền
+            # (cước nội địa trả bằng VNĐ trong đơn USD) thì để 1 chứ không mượn tỷ giá đơn.
+            data["exchange_rate"] = rate_of(po) if data["currency"] == (po.currency or DEFAULT_CURRENCY) else 1
+        # Chia theo chỉ định mà không chọn mã hàng thì không chia được — về mặc định theo giá trị.
+        if int(data.get("allocation_method") or 0) == int(AllocationMethod.BY_PRODUCT) \
+                and not (data.get("allocation_target") or "").strip():
+            data["allocation_method"] = int(AllocationMethod.BY_VALUE)
+        cid = data.pop("id", None)
+        if cid and cid in existing:
+            row = existing[cid]
+            for k, v in data.items():
+                setattr(row, k, v)
+            row.updated_by = user_id
+        else:
+            row = POImportCost(po_id=po.id, created_by=user_id, updated_by=user_id, **data)
+            db.add(row)
+        row.base_amount = import_cost_base(row)
+        db.flush()
+        keep.add(row.id)
+
+    for old_id, row in existing.items():
+        if old_id not in keep:
+            db.delete(row)
     db.flush()
 
 
@@ -270,6 +477,11 @@ def recompute_effects(db: Session, po: PurchaseOrder, user_id: int):
     for it in items_of(db, po.id):
         qty_order = float(it.qty_order or 0)
         vat = float(it.vat or 0)
+        # bao-CR-319: đơn giá ghi theo đồng tiền của dòng. Công nợ, tồn kho và mọi báo cáo
+        # đều không có khái niệm loại tiền nên phải nhận GIÁ ĐÃ QUY ĐỔI. Đơn VNĐ có tỷ giá 1
+        # nên số liệu cũ không đổi một đồng nào.
+        rate = rate_of(it)
+        base_price = float(it.price or 0) * rate
 
         recv_sum = 0.0
         for d in deliveries_of(db, it.id):
@@ -286,9 +498,9 @@ def recompute_effects(db: Session, po: PurchaseOrder, user_id: int):
                 inv_service.apply_delivery(
                     db, delivery_id=d.id, company_id=po.company_id, warehouse_code=wh,
                     product_code=it.product_code, product_name=it.product_name, unit=it.unit,
-                    qty=recv, price=float(it.price or 0), user_id=user_id)
+                    qty=recv, price=base_price, user_id=user_id)
                 # Công nợ hàng (NCC bán) — số HĐ lấy theo sản phẩm (po_item)
-                amt = recv * float(it.price or 0)
+                amt = recv * base_price
                 pay_service.upsert(
                     db, source_type="goods", ref_id=d.id, company_id=po.company_id,
                     supplier_code=po.supplier_code, supplier_name=po.supplier_name,
@@ -336,8 +548,9 @@ def recompute_effects(db: Session, po: PurchaseOrder, user_id: int):
 
         it.qty_received = round(recv_sum, 3)
         it.qty_remaining = round(qty_order - recv_sum, 3)
-        # Thành tiền đơn hàng = SL THỰC NHẬN × đơn giá × (1+VAT) (đã chốt)
+        # Thành tiền đơn hàng = SL THỰC NHẬN × đơn giá × (1+VAT) (đã chốt) — NGUYÊN TỆ
         it.amount = round(recv_sum * float(it.price or 0) * (1 + vat / 100), 2)
+        it.base_amount = round(it.amount * rate, 2)   # bao-CR-319: bản quy đổi cho báo cáo
         if recv_sum <= 0:
             it.line_status = "Chưa giao"
         elif recv_sum + 0.001 < qty_order:
@@ -362,7 +575,8 @@ def recompute_effects(db: Session, po: PurchaseOrder, user_id: int):
 # KHÔNG copy Số hóa đơn / Ngày hóa đơn — chứng từ riêng từng đơn, phải nhập lại ở bản sao)
 _ITEM_COPY_FIELDS = ["product_code", "product_name", "invoice_name", "item_group", "spec",
                      "fg_code", "fg_name", "supplier_ready", "required_date", "unit",
-                     "qty_request", "qty_order", "price", "vat", "warehouse_code", "note"]
+                     "qty_request", "qty_order", "price", "vat", "warehouse_code", "note",
+                     "currency", "exchange_rate", "weight_kg", "dimension"]
 
 
 def copy_po(db: Session, pid: int, user_id: int) -> PurchaseOrder:
@@ -374,6 +588,12 @@ def copy_po(db: Session, pid: int, user_id: int) -> PurchaseOrder:
         department=src.department, nspt=src.nspt, order_date=src.order_date, vat_rate=src.vat_rate,
         payment_terms=src.payment_terms, is_urgent=src.is_urgent, note=src.note,
         status="draft", created_by=user_id, updated_by=user_id,
+        # bao-CR-319: nhân bản giữ loại đơn + tiền tệ; KHÔNG chép số tờ khai hải quan,
+        # cũng KHÔNG chép bảng chi phí nhập khẩu (mỗi lô hàng một tờ khai và một bộ hóa
+        # đơn cước riêng — chép sang là gán chứng từ của lô này cho lô khác).
+        order_type=src.order_type or int(OrderType.DOMESTIC),
+        currency=(src.currency or "").strip() or DEFAULT_CURRENCY,
+        exchange_rate=rate_of(src),
     )
     db.add(po)
     db.flush()
@@ -435,10 +655,10 @@ def _ensure_pr_dispatched(db: Session, pr_code: str) -> None:
     # Công tắc điều phối TẮT → không còn bước duyệt lần 2, phiếu "Đã duyệt" (phiếu cũ còn kẹt lại
     # từ lúc công tắc còn bật) coi như làm việc được, nếu không sẽ không ai gỡ được cho nó.
     from app.modules.purchase_request.service import dispatch_enabled
-    chua_lam_viec_duoc = ["draft", "submitted", "rejected"]
+    not_actionable_statuses = ["draft", "submitted", "rejected"]
     if dispatch_enabled():
-        chua_lam_viec_duoc.append("approved")
-    if pr.status in chua_lam_viec_duoc:
+        not_actionable_statuses.append("approved")
+    if pr.status in not_actionable_statuses:
         raise HTTPException(400, f"YCMH {pr_code} chưa được điều phối (chưa có nhân sự phụ trách) "
                                  f"— chưa tạo được đơn mua hàng.")
     if pr.status == "cancelled":
@@ -454,12 +674,17 @@ def create_po(db: Session, data: POCreate, user_id: int) -> PurchaseOrder:
         supplier_name=data.supplier_name, department=data.department, nspt=nspt,
         order_date=data.order_date, vat_rate=data.vat_rate, payment_terms=data.payment_terms,
         is_urgent=data.is_urgent, note=data.note, status="draft", created_by=user_id, updated_by=user_id,
+        order_type=data.order_type or int(OrderType.DOMESTIC),
+        currency=(data.currency or "").strip() or DEFAULT_CURRENCY,
+        exchange_rate=float(data.exchange_rate or 0) or 1,
+        customs_decl_no=data.customs_decl_no, customs_decl_date=data.customs_decl_date,
     )
     db.add(po)
     db.flush()
     if not po.code:
         po.code = f"PO{po.id:05d}"
     _save_items(db, po, data.items, user_id)
+    _save_import_costs(db, po, data.import_costs, user_id)
     recompute_effects(db, po, user_id)
     db.commit()
     db.refresh(po)
@@ -475,10 +700,10 @@ def create_po(db: Session, data: POCreate, user_id: int) -> PurchaseOrder:
 # cung cấp một nẻo mà không để lại dấu vết nào. Từ nay đơn đã duyệt chỉ còn sửa được các
 # ô PHÁT SINH SAU KHI DUYỆT; muốn đổi phần đã duyệt thì bấm "Hủy duyệt" (đơn về Nháp)
 # rồi gửi duyệt lại — đi qua đúng cổng kiểm tra CR-095 một lần nữa.
-TRANG_THAI_DA_DUYET = ("approved", "partial", "received")
+APPROVED_STATUSES = ("approved", "partial", "received")
 
 # Ô của DÒNG HÀNG còn sửa được sau khi duyệt (đúng các ô khoanh đỏ trong phiếu hỗ trợ).
-TRUONG_DONG_SUA_SAU_DUYET = {
+LINE_FIELDS_EDITABLE_AFTER_APPROVAL = {
     "invoice_name",            # Tên trên hóa đơn — kế toán chốt sau khi có hóa đơn thật
     "expected_date",           # Ngày dự kiến có hàng — NCC hẹn lại liên tục
     "warehouse_code",          # Kho nhận mặc định
@@ -490,77 +715,87 @@ TRUONG_DONG_SUA_SAU_DUYET = {
 }
 
 # Nhãn tiếng Việt để câu báo lỗi gọi đúng tên ô người dùng nhìn thấy trên màn hình.
-NHAN_TRUONG_DONG = {
+LINE_FIELD_LABELS = {
     "product_code": "Mã hàng", "product_name": "Tên hàng", "item_group": "Phân loại",
     "spec": "Xuất xứ / TSKT / chất liệu", "fg_code": "Mã HH (thành phẩm)",
     "fg_name": "Tên HH (thành phẩm)", "invoice_no": "Số hóa đơn", "invoice_date": "Ngày hóa đơn",
     "supplier_ready": "NCC có sẵn hàng", "required_date": "Ngày yêu cầu có hàng",
     "unit": "ĐVT", "qty_request": "SL yêu cầu", "qty_order": "SL đặt NCC",
     "price": "Đơn giá", "vat": "VAT (%)",
+    "currency": "Đồng tiền", "exchange_rate": "Tỷ giá",
+    "weight_kg": "Khối lượng (kg)", "dimension": "Quy cách / kích thước",
 }
-NHAN_TRUONG_DON = {
+ORDER_FIELD_LABELS = {
     "misa_code": "Số hóa đơn (MISA)", "pr_code": "Mã YCMH nguồn", "survey_code": "Mã YCBG nguồn",
     "company_id": "Pháp nhân", "supplier_code": "Nhà cung cấp", "supplier_name": "Tên NCC",
     "department": "Bộ phận", "nspt": "NSPT phụ trách", "order_date": "Ngày đặt hàng",
     "vat_rate": "VAT chung", "payment_terms": "Điều khoản thanh toán", "is_urgent": "Đơn gấp",
     "note": "Ghi chú đơn",
+    "order_type": "Loại đơn", "currency": "Đồng tiền đơn hàng", "exchange_rate": "Tỷ giá",
+    "customs_decl_no": "Số tờ khai hải quan", "customs_decl_date": "Ngày tờ khai",
 }
 # Ô của ĐƠN còn sửa được sau khi duyệt: hồ sơ chứng từ (đã có endpoint riêng, cập nhật
 # được cả khi đơn Hoàn thành) và mã đơn MISA (kế toán nhập/sửa sau khi đã duyệt trên phần
 # mềm MISA) — mọi ô còn lại là nội dung đã được duyệt.
-TRUONG_DON_SUA_SAU_DUYET = {"document_status", "misa_code"}
+# bao-CR-319: tờ khai hải quan cũng nằm ở đây — tờ khai chỉ có SAU khi hàng thông quan,
+# mà lúc đó đơn đã duyệt từ lâu. Khóa lại thì không đơn nhập khẩu nào ghi được số tờ khai.
+ORDER_FIELDS_EDITABLE_AFTER_APPROVAL = {"document_status", "misa_code",
+                            "customs_decl_no", "customs_decl_date"}
 
-_HUONG_DAN = "Bấm 'Hủy duyệt' để đưa đơn về Nháp, chỉnh rồi gửi duyệt lại."
+_EDIT_HINT = "Bấm 'Hủy duyệt' để đưa đơn về Nháp, chỉnh rồi gửi duyệt lại."
 
 
-def _khac_nhau(cu, moi) -> bool:
+def _differs(old, new) -> bool:
     """So sánh giá trị cũ (DB) với giá trị gửi lên, bỏ qua khác biệt kiểu Decimal/float
     và None/chuỗi rỗng — nếu không thì lần lưu nào cũng báo 'đã sửa' dù không ai chạm vào."""
-    if isinstance(cu, bool) or isinstance(moi, bool):
-        return bool(cu) != bool(moi)
-    if isinstance(cu, (int, float, Decimal)) or isinstance(moi, (int, float, Decimal)):
+    if isinstance(old, bool) or isinstance(new, bool):
+        return bool(old) != bool(new)
+    if isinstance(old, (int, float, Decimal)) or isinstance(new, (int, float, Decimal)):
         try:
-            return abs(float(cu or 0) - float(moi or 0)) > 1e-6
+            return abs(float(old or 0) - float(new or 0)) > 1e-6
         except (TypeError, ValueError):
             pass
-    return (str(cu or "").strip()) != (str(moi or "").strip())
+    return (str(old or "").strip()) != (str(new or "").strip())
 
 
-def chan_sua_don_da_duyet(db: Session, po: PurchaseOrder, data: POUpdate) -> None:
+def block_edit_approved_order(db: Session, po: PurchaseOrder, data: POUpdate) -> None:
     """Chặn mọi thay đổi ngoài danh sách cho phép khi đơn đã duyệt. So theo GIÁ TRỊ chứ
     không theo 'có gửi lên hay không': màn hình luôn gửi nguyên cả đơn mỗi lần Lưu."""
-    if po.status not in TRANG_THAI_DA_DUYET:
+    if po.status not in APPROVED_STATUSES:
         return
     payload = data.model_dump(exclude_unset=True)
     for k, v in payload.items():
-        if k == "items" or k in TRUONG_DON_SUA_SAU_DUYET:
+        # bao-CR-319 P3: bảng chi phí nhập khẩu KHÔNG bị khóa sau khi duyệt — hóa đơn cước,
+        # tờ khai thuế, phí lưu bãi đều về sau ngày duyệt đơn hàng cả tháng. Khóa lại thì
+        # không đơn nhập khẩu nào ghi được chi phí thật.
+        if k in ("items", "import_costs") or k in ORDER_FIELDS_EDITABLE_AFTER_APPROVAL:
             continue
-        if _khac_nhau(getattr(po, k, None), v):
-            raise HTTPException(400, f"Đơn đã duyệt — không sửa được '{NHAN_TRUONG_DON.get(k, k)}'. {_HUONG_DAN}")
+        if _differs(getattr(po, k, None), v):
+            raise HTTPException(400, f"Đơn đã duyệt — không sửa được '{ORDER_FIELD_LABELS.get(k, k)}'. {_EDIT_HINT}")
 
     rows = payload.get("items")
     if rows is None:
         return
-    dang_co = {it.id: it for it in items_of(db, po.id)}
+    existing = {it.id: it for it in items_of(db, po.id)}
     if any(not r.get("id") for r in rows):
-        raise HTTPException(400, f"Đơn đã duyệt — không thêm dòng hàng mới. {_HUONG_DAN}")
-    gui_len = {r.get("id") for r in rows}
-    if set(dang_co) - gui_len:
-        raise HTTPException(400, f"Đơn đã duyệt — không xóa dòng hàng. {_HUONG_DAN}")
+        raise HTTPException(400, f"Đơn đã duyệt — không thêm dòng hàng mới. {_EDIT_HINT}")
+    submitted_ids = {r.get("id") for r in rows}
+    if set(existing) - submitted_ids:
+        raise HTTPException(400, f"Đơn đã duyệt — không xóa dòng hàng. {_EDIT_HINT}")
     for r in rows:
-        it = dang_co.get(r.get("id"))
+        it = existing.get(r.get("id"))
         if it is None:
             raise HTTPException(400, "Dòng hàng không thuộc đơn này.")
         # Dòng Hoàn thành / Hủy đơn: _save_items đã bỏ qua nguyên dòng, không cần chặn thêm.
         if (it.progress_status or "") in ("Hoàn thành", "Hủy đơn"):
             continue
-        ten_dong = (it.product_name or "").strip() or (it.product_code or "").strip() or f"#{it.id}"
+        line_name = (it.product_name or "").strip() or (it.product_code or "").strip() or f"#{it.id}"
         for k, v in r.items():
-            if k in ("id", "deliveries") or k in TRUONG_DONG_SUA_SAU_DUYET:
+            if k in ("id", "deliveries") or k in LINE_FIELDS_EDITABLE_AFTER_APPROVAL:
                 continue
-            if _khac_nhau(getattr(it, k, None), v):
-                nhan = NHAN_TRUONG_DONG.get(k, k)
-                raise HTTPException(400, f"Đơn đã duyệt — dòng '{ten_dong}' không sửa được '{nhan}'. {_HUONG_DAN}")
+            if _differs(getattr(it, k, None), v):
+                label = LINE_FIELD_LABELS.get(k, k)
+                raise HTTPException(400, f"Đơn đã duyệt — dòng '{line_name}' không sửa được '{label}'. {_EDIT_HINT}")
 
 
 def unapprove_po(db: Session, pid: int, user_id: int, reason: str = "") -> PurchaseOrder:
@@ -571,7 +806,7 @@ def unapprove_po(db: Session, pid: int, user_id: int, reason: str = "") -> Purch
     thì không lọt lên người duyệt được.
     """
     po = get_po(db, pid)
-    if po.status not in TRANG_THAI_DA_DUYET:
+    if po.status not in APPROVED_STATUSES:
         raise HTTPException(400, "Chỉ hủy duyệt được đơn đang ở trạng thái Đã duyệt / Nhận một phần / Đã nhận.")
     items = items_of(db, pid)
     if any(float(i.qty_received or 0) > 0 for i in items):
@@ -579,13 +814,13 @@ def unapprove_po(db: Session, pid: int, user_id: int, reason: str = "") -> Purch
                                  "muốn dừng thì hủy từng dòng ở cột Trạng thái.")
     if any((i.progress_status or "") == "Hoàn thành" for i in items):
         raise HTTPException(400, "Đơn có dòng đã Hoàn thành — không hủy duyệt được.")
-    dinh_yctt = db.query(PaymentRequestLine.id).join(
+    linked_payment_lines = db.query(PaymentRequestLine.id).join(
         PaymentRequest, PaymentRequest.id == PaymentRequestLine.request_id
     ).filter(
         PaymentRequestLine.po_code == (po.code or ""),
         PaymentRequest.status != "cancelled",
     ).first()
-    if dinh_yctt:
+    if linked_payment_lines:
         raise HTTPException(400, "Đơn đã có yêu cầu thanh toán — không hủy duyệt được. "
                                  "Hủy phiếu thanh toán liên quan trước.")
     return set_status(db, pid, "draft", user_id, reason)
@@ -595,15 +830,16 @@ def update_po(db: Session, pid: int, data: POUpdate, user_id: int) -> PurchaseOr
     po = get_po(db, pid)
     if po.status in ("completed", "cancelled"):
         raise HTTPException(400, "Đơn đã hoàn thành/đã hủy — không sửa được. Dùng 'Nhân bản' để tạo đơn mới.")
-    chan_sua_don_da_duyet(db, po, data)
+    block_edit_approved_order(db, po, data)
     _new_pr_code = (data.model_dump(exclude_unset=True).get("pr_code") or "").strip()
     if _new_pr_code and _new_pr_code != (po.pr_code or ""):
         _ensure_pr_dispatched(db, _new_pr_code)   # CR-034: đổi sang YCMH khác cũng phải đã điều phối
     old_urgent = bool(po.is_urgent)
-    for k, v in data.model_dump(exclude_unset=True, exclude={"items"}).items():
+    for k, v in data.model_dump(exclude_unset=True, exclude={"items", "import_costs"}).items():
         setattr(po, k, v)
     po.updated_by = user_id
     _save_items(db, po, data.items, user_id)
+    _save_import_costs(db, po, data.import_costs, user_id)
     recompute_effects(db, po, user_id)
     db.commit()
     db.refresh(po)
@@ -653,6 +889,8 @@ def delete_po(db: Session, pid: int, user_id: int):
             _cleanup_delivery(db, d.id)
             db.delete(d)
         db.delete(it)
+    for row in import_costs_of(db, pid):
+        db.delete(row)
     delete_attachments_for(db, pairs)
     _pr_code = po.pr_code
     db.delete(po)
@@ -708,7 +946,7 @@ def set_status(db: Session, pid: int, status: str, user_id: int, message: str = 
 # "chưa nhập" vừa nghĩa là "hàng không chịu thuế / thuế suất 0%" — hai thứ đó không phân
 # biệt được, chặn thì khóa luôn mặt hàng 0% hợp lệ. Ô nào để trống KHÔNG bắt buộc thì
 # giữ nguyên: xuất xứ/TSKT, mã & tên HH thành phẩm, ngày giao chứng từ cho KT, ghi chú.
-TRUONG_BAT_BUOC_DONG: list[tuple[str, str]] = [
+REQUIRED_LINE_FIELDS: list[tuple[str, str]] = [
     ("product_code", "Mã hàng"),
     ("item_group", "Phân loại"),
     ("product_name", "Tên hàng"),
@@ -723,18 +961,18 @@ TRUONG_BAT_BUOC_DONG: list[tuple[str, str]] = [
 ]
 # Ô số: 0 ở đây là "chưa nhập" thật — dòng hàng không có số lượng hoặc không có giá thì
 # không phải là dòng để đặt mua.
-_TRUONG_SO = {"qty_request", "qty_order", "price"}
+_NUMERIC_FIELDS = {"qty_request", "qty_order", "price"}
 
 
-def thieu_truong_dong(item: POItem) -> list[str]:
+def missing_line_fields(item: POItem) -> list[str]:
     """Nhãn các ô còn trống của MỘT dòng hàng, theo thứ tự hiện trên màn Chi tiết dòng."""
-    thieu = []
-    for ten, nhan in TRUONG_BAT_BUOC_DONG:
-        gia_tri = getattr(item, ten, None)
-        rong = float(gia_tri or 0) <= 0 if ten in _TRUONG_SO else not str(gia_tri or "").strip()
-        if rong:
-            thieu.append(nhan)
-    return thieu
+    missing = []
+    for field, label in REQUIRED_LINE_FIELDS:
+        value = getattr(item, field, None)
+        is_empty = float(value or 0) <= 0 if field in _NUMERIC_FIELDS else not str(value or "").strip()
+        if is_empty:
+            missing.append(label)
+    return missing
 
 
 # ───────────────────────── Máy trạng thái TIẾN ĐỘ của DÒNG ĐMH (progress_status) ─────────────────────────

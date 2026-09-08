@@ -58,7 +58,7 @@ Muốn đổi phần đã duyệt thì bấm **"Hủy duyệt"** (`POST /{id}/un
 - có dòng ở tiến độ "Hoàn thành",
 - hoặc đơn đã có yêu cầu thanh toán chưa hủy.
 
-Backend chặn ở `chan_sua_don_da_duyet()` (`purchase_order/service.py`) — gửi thẳng PATCH cũng không lách được; giao diện chỉ khóa cho êm tay. Test: `test/backend/test_po_lock_after_approve_cr108.py`.
+Backend chặn ở `block_edit_approved_order()` (`purchase_order/service.py`) — gửi thẳng PATCH cũng không lách được; giao diện chỉ khóa cho êm tay. Test: `test/backend/test_po_lock_after_approve_cr108.py`.
 
 ### Trạng thái dòng hàng (`line_status` — tự động)
 
@@ -233,6 +233,51 @@ Backend chặn ở `chan_sua_don_da_duyet()` (`purchase_order/service.py`) — g
 - Nguồn dữ liệu / liên kết: 3 giá trị cố định: `"chưa có chứng từ"` / `"đã có thông tin chứng từ"` / `"đã đủ chứng từ"`
 - Người sửa: Người có quyền `purchase_order:write`; cho phép cập nhật kể cả khi đơn đã `completed` (chứng từ có thể bổ sung sau)
 - Logic đặc biệt: Phản ánh tình trạng hồ sơ chứng từ vật lý (hóa đơn, phiếu giao nhận...) — không liên kết với luồng tiến độ `progress_status` của dòng hàng. Hiển thị trên màn hình Tiến độ mua hàng (`/purchase-progress`) dưới dạng cột "Hồ sơ CT". Endpoint riêng `PATCH /{id}/document-status`, body `{document_status}`.
+
+### 18. Loại đơn (`order_type`) — bao-CR-319
+
+- Kiểu nhập: Chọn từ danh sách cố định
+- Mặc định: `1` (Trong nước)
+- Bắt buộc: Có (server kẹp `1 ≤ order_type ≤ 2`)
+- Nguồn dữ liệu / liên kết: `OrderType` IntEnum — `1` Trong nước · `2` Nhập khẩu
+- Người sửa: NSPT/Người tạo (quyền `purchase_order:write`) khi đơn chưa khóa
+- Logic đặc biệt: Cột MỚI nên lưu **SMALLINT + IntEnum** theo luật R2/QĐ-11, không lưu chữ. Chọn *Nhập khẩu* mới mở cụm tờ khai hải quan, ô đồng tiền và các ô khối lượng / quy cách trên dòng hàng. Chuyển ngược về *Trong nước* thì giao diện đặt lại đồng tiền = VNĐ, tỷ giá = 1. Danh sách ĐMH chỉ đánh dấu đơn nhập khẩu (đơn trong nước để trống cho gọn) và lọc được qua **Bộ lọc điều kiện → Loại đơn**.
+
+### 19. Đồng tiền đơn hàng (`currency`) — bao-CR-319
+
+- Kiểu nhập: Nhập tay có gợi ý (datalist VND · USD · CNY · EUR · JPY · KRW · THB), chỉ hiện với đơn nhập khẩu
+- Mặc định: `"VND"`
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: Là giá trị MẶC ĐỊNH chép xuống dòng hàng khi dòng không tự khai
+- Người sửa: NSPT/Người tạo (quyền `purchase_order:write`) khi đơn chưa khóa
+- Logic đặc biệt: Đồng tiền dùng để tính là đồng tiền **của dòng hàng**, không phải của đơn — một đơn nhập khẩu vẫn lẫn dòng trả bằng tiền Việt (phí nội địa). Ô ở header chỉ là giá trị mặc định.
+
+### 20. Tỷ giá (`exchange_rate`) — bao-CR-319
+
+- Kiểu nhập: Nhập số, tối đa 6 số thập phân; chỉ hiện khi đồng tiền đơn khác VNĐ
+- Mặc định: `1`
+- Bắt buộc: Không (nhưng để 0 sẽ được hiểu thành 1)
+- Nguồn dữ liệu / liên kết: Chép xuống dòng hàng cùng với `currency`
+- Người sửa: NSPT/Người tạo (quyền `purchase_order:write`) khi đơn chưa khóa
+- Logic đặc biệt: Mọi chỗ đọc tỷ giá đều đi qua `service.rate_of` — thiếu giá trị hoặc bằng 0 đều trả về 1, vì nhân với 0 sẽ biến cả đơn hàng thành 0 đồng mà không có lỗi nào nổi lên.
+
+### 21. Số tờ khai hải quan (`customs_decl_no`) — bao-CR-319
+
+- Kiểu nhập: Nhập tay, chỉ hiện với đơn nhập khẩu
+- Mặc định: trống
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: NSPT/Người tạo (quyền `purchase_order:write`) — **sửa được cả sau khi đơn đã duyệt**
+- Logic đặc biệt: Nằm trong `ORDER_FIELDS_EDITABLE_AFTER_APPROVAL` (cùng nhóm với `misa_code` và `document_status`) vì tờ khai chỉ có sau khi hàng thông quan, tức luôn muộn hơn bước duyệt đơn. Nhân bản đơn (`copy_po`) **cố ý không chép** số/ngày tờ khai — mỗi lô hàng một tờ khai riêng.
+
+### 22. Ngày tờ khai hải quan (`customs_decl_date`) — bao-CR-319
+
+- Kiểu nhập: Chọn ngày, chỉ hiện với đơn nhập khẩu
+- Mặc định: trống
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: Như `customs_decl_no` — sửa được sau khi duyệt
+- Logic đặc biệt: Xem mục 21.
 
 ---
 
@@ -541,6 +586,51 @@ Mỗi dòng = một sản phẩm/hàng hóa trong đơn. Bảng tóm tắt hiể
 - Người sửa: Hệ thống
 - Logic đặc biệt: `remaining_total > 0` khi còn nợ chưa trả; tổng `remaining_total` của tất cả dòng (cộng thêm công nợ vận chuyển) tạo thành `unpaid_total` trên header đơn — khi `unpaid_total > 0` mới bật nút Tạo yêu cầu thanh toán.
 
+### 30. Đồng tiền của dòng (`currency`) — bao-CR-319
+
+- Kiểu nhập: Chọn từ danh sách, trong popup Chi tiết dòng; chỉ hiện khi đơn là nhập khẩu hoặc đã có dòng khác VNĐ
+- Mặc định: trống ở lớp gửi lên — backend chép từ đồng tiền của ĐƠN xuống
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: `PurchaseOrder.currency`
+- Người sửa: NSPT/Người tạo (quyền `purchase_order:write`) khi đơn chưa khóa
+- Logic đặc biệt: `POItemIn.currency` **cố ý để mặc định rỗng** chứ không phải `"VND"` — đặt sẵn VNĐ ở lớp schema thì dòng sinh tự động (tạo ĐMH từ YCMH, nhân bản đơn) sẽ mang cứng VNĐ vào đơn ngoại tệ. `_save_items` điền: dòng không khai thì lấy theo đơn; khai khác đồng tiền của đơn mà không khai tỷ giá thì tỷ giá = 1.
+
+### 31. Tỷ giá của dòng (`exchange_rate`) — bao-CR-319
+
+- Kiểu nhập: Nhập số, tối đa 6 số thập phân; chỉ hiện khi đồng tiền dòng khác VNĐ
+- Mặc định: 0 khi gửi lên (nghĩa là "chưa khai") → backend điền theo đơn hoặc 1
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: `PurchaseOrder.exchange_rate`
+- Người sửa: NSPT/Người tạo (quyền `purchase_order:write`) khi đơn chưa khóa
+- Logic đặc biệt: Đây là tỷ giá THỰC SỰ dùng để quy đổi, đọc qua `service.rate_of` (0 hoặc rỗng đều thành 1).
+
+### 32. Thành tiền quy đổi (`base_amount`) — bao-CR-319
+
+- Kiểu nhập: Tự tính
+- Mặc định: 0
+- Bắt buộc: — (hệ thống tính, không sửa)
+- Nguồn dữ liệu / liên kết: `amount × exchange_rate`
+- Người sửa: Hệ thống (tính lại trong `recompute_effects` sau mỗi lần lưu)
+- Logic đặc biệt: `price` và `amount` giữ nghĩa **NGUYÊN TỆ**; `base_amount` là bản quy đổi cho báo cáo. **Cấm đặt tên cột kiểu `amount_vnd`** — khóa cứng một loại tiền là sai hướng ngay từ tên cột. Công nợ và tồn kho KHÔNG có cột loại tiền nên `recompute_effects` đẩy sang hai chỗ đó giá đã quy đổi (`price × rate`). Hai chỗ cộng tiền ở phân hệ khác cũng nhân tỷ giá: `dashboard/controller.py::item_amt` và `report/service.py::_amt` / `_recv_amt`. Migration `c5a81b3f6d24` backfill `base_amount = amount` nên dữ liệu VNĐ cũ (tỷ giá 1) không đổi một đồng nào.
+
+### 33. Khối lượng (`weight_kg`) — bao-CR-319
+
+- Kiểu nhập: Nhập số (kg), tối đa 3 số thập phân; chỉ hiện với đơn nhập khẩu
+- Mặc định: 0
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: NSPT/Người tạo — cho sửa cả sau khi đơn duyệt (nhóm `deSau`)
+- Logic đặc biệt: Là căn cứ chia chi phí lô hàng theo khối lượng ở phase P4 (phân bổ). Nhập ngay từ P1 để lúc bật phân bổ không phải gõ lại cho các đơn đã có.
+
+### 34. Quy cách / kích thước (`dimension`) — bao-CR-319
+
+- Kiểu nhập: Nhập tay; chỉ hiện với đơn nhập khẩu
+- Mặc định: trống
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: —
+- Người sửa: Như `weight_kg`
+- Logic đặc biệt: Chỉ để tra cứu và in — không tham gia phép tính nào.
+
 ---
 
 ## C. Lần giao hàng (`tab_po_delivery`) — popup chi tiết dòng
@@ -778,7 +868,7 @@ Ngoài 2 mẫu trên, phiếu liên quan là **Phiếu đề xuất mua hàng h�
 ## F. Quy tắc nghiệp vụ
 
 1. Lưu đơn: dòng hàng không có `product_name` và `product_code` bị loại bỏ trước khi gửi lên BE. Mỗi lần lưu gọi `recompute_effects` để tính lại toàn bộ số liệu và side-effect.
-2. Gửi duyệt: bắt buộc điền `misa_code` (kiểm tra ở cả FE và BE). **Từ CR-095 mỗi dòng hàng phải điền đủ 11 ô bắt buộc**: Mã hàng, Phân loại, Tên hàng, Tên trên hóa đơn, Ngày yêu cầu có hàng, Ngày dự kiến có hàng, ĐVT, Kho nhận mặc định, SL yêu cầu, SL đặt NCC, Đơn giá — thiếu ô nào thì BE trả 400 kèm tên dòng và tên ô, FE khóa sẵn nút Gửi duyệt và hiện khối cảnh báo liệt kê. Danh sách nằm ở `TRUONG_BAT_BUOC_DONG` (`purchase_order/service.py`), FE mirror ở `REQUIRED_LINE_FIELDS`. **VAT KHÔNG bắt buộc** (0 vừa là "chưa nhập" vừa là "không chịu thuế"), các ô còn lại (xuất xứ/TSKT, mã & tên HH thành phẩm, ngày giao chứng từ cho KT, ghi chú) cũng không bắt buộc. Chỉ chặn lúc **Gửi duyệt**, Lưu nháp vẫn lưu được đơn còn thiếu.
+2. Gửi duyệt: bắt buộc điền `misa_code` (kiểm tra ở cả FE và BE). **Từ CR-095 mỗi dòng hàng phải điền đủ 11 ô bắt buộc**: Mã hàng, Phân loại, Tên hàng, Tên trên hóa đơn, Ngày yêu cầu có hàng, Ngày dự kiến có hàng, ĐVT, Kho nhận mặc định, SL yêu cầu, SL đặt NCC, Đơn giá — thiếu ô nào thì BE trả 400 kèm tên dòng và tên ô, FE khóa sẵn nút Gửi duyệt và hiện khối cảnh báo liệt kê. Danh sách nằm ở `REQUIRED_LINE_FIELDS` (`purchase_order/service.py`), FE mirror ở `REQUIRED_LINE_FIELDS`. **VAT KHÔNG bắt buộc** (0 vừa là "chưa nhập" vừa là "không chịu thuế"), các ô còn lại (xuất xứ/TSKT, mã & tên HH thành phẩm, ngày giao chứng từ cho KT, ghi chú) cũng không bắt buộc. Chỉ chặn lúc **Gửi duyệt**, Lưu nháp vẫn lưu được đơn còn thiếu.
 3. Duyệt đơn: bắt buộc `misa_code` không trống (kiểm tra ở BE).
 4. Từ chối / Hủy: yêu cầu nhập lý do (`reason`); lý do lưu vào `approve_note`.
 5. Khóa sửa: đơn `completed` hoặc `cancelled` trả lỗi 400 khi `PATCH`; chỉ cho phép Nhân bản.

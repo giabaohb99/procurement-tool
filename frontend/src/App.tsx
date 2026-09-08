@@ -16,6 +16,7 @@ import SurveyDetail from './pages/SurveyDetail'
 import PurchaseOrderDetail from './pages/PurchaseOrderDetail'
 import PrintPurchaseOrder from './pages/PrintPurchaseOrder'
 import PrintPurchaseOrderMH from './pages/PrintPurchaseOrderMH'
+import PrintPurchaseOrderImport from './pages/PrintPurchaseOrderImport'
 import Inventory from './pages/Inventory'
 import Payables from './pages/Payables'
 import Notifications from './pages/Notifications'
@@ -63,6 +64,7 @@ export default function App() {
           <Route path="/print/purchase-request-from-po/:id" element={<Protected><PrintPurchaseRequest fromPo /></Protected>} />
           <Route path="/print/purchase-order/:id" element={<Protected><PrintPurchaseOrder /></Protected>} />
           <Route path="/print/purchase-order-mh/:id" element={<Protected><PrintPurchaseOrderMH /></Protected>} />
+          <Route path="/print/purchase-order-import/:id" element={<Protected><PrintPurchaseOrderImport /></Protected>} />
           <Route path="/print/payment-request/:id" element={<Protected><PrintPaymentRequest /></Protected>} />
           <Route path="/" element={<Protected><AppLayout /></Protected>}>
             <Route index element={<Dashboard />} />

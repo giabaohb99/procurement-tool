@@ -674,6 +674,11 @@ export const cruds: Record<string, CrudConfig> = {
     slug: 'purchase-orders', entity: 'purchase_order', title: 'Đơn mua hàng (PO)', apiPath: '/api/purchase-orders', txn: true, cloneable: true, exportXlsx: true,
     columns: [
       { key: 'code', label: 'Mã PO' },
+      // bao-CR-319: chỉ đánh dấu đơn nhập khẩu. Đơn trong nước là số đông nên để trống
+      // cho gọn mắt — cột đầy chữ "Trong nước" thì cái cần thấy lại chìm đi.
+      { key: 'order_type', label: 'Loại đơn', render: (r) => (Number(r.order_type) === 2
+        ? <span className="badge" style={{ background: '#e0e7ff', color: '#3730a3' }}>{r.order_type_label || 'Nhập khẩu'}</span>
+        : '') },
       { key: 'misa_code', label: 'Mã MISA', render: (r) => r.misa_code || '' },
       { key: 'created_at', label: 'Ngày đặt', render: (r) => fmtDateTime(r.created_at) || '' },
       UPDATED_AT_COL,
@@ -718,6 +723,8 @@ export const cruds: Record<string, CrudConfig> = {
       condSource('nspt', 'NSPT phụ trách', { url: '/api/employees', value: 'full_name', label: 'full_name' }),
       condText('department', 'Bộ phận'),
       condDate('order_date', 'Ngày đặt'),
+      condSelect('order_type', 'Loại đơn', [
+        { value: '1', label: 'Trong nước' }, { value: '2', label: 'Nhập khẩu' }]),
       { name: 'is_urgent', label: 'Đơn gấp', type: 'boolean' },
       condSelect('document_status', 'Hồ sơ chứng từ', [
         { value: 'chưa có chứng từ', label: 'Chưa có chứng từ' },

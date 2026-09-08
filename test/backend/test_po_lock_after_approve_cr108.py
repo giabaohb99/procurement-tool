@@ -11,7 +11,7 @@ from fastapi import HTTPException
 from app.modules.payment_request.model import PaymentRequest, PaymentRequestLine
 from app.modules.purchase_order.model import POItem, PurchaseOrder
 from app.modules.purchase_order.schema import POItemIn, POUpdate
-from app.modules.purchase_order.service import chan_sua_don_da_duyet, unapprove_po
+from app.modules.purchase_order.service import block_edit_approved_order, unapprove_po
 
 
 def _don(db, status="approved", qty_received=0.0, progress_status="Đã đặt hàng"):
@@ -44,7 +44,7 @@ def _dong(it, **doi):
 def test_da_duyet_khong_doi_duoc_ncc(db):
     po, it = _don(db)
     with pytest.raises(HTTPException) as e:
-        chan_sua_don_da_duyet(db, po, POUpdate(supplier_name="NCC Hai", items=[_dong(it)]))
+        block_edit_approved_order(db, po, POUpdate(supplier_name="NCC Hai", items=[_dong(it)]))
     assert e.value.status_code == 400
     assert "Tên NCC" in e.value.detail
     assert "Hủy duyệt" in e.value.detail
@@ -53,20 +53,20 @@ def test_da_duyet_khong_doi_duoc_ncc(db):
 def test_da_duyet_khong_doi_duoc_vat_chung(db):
     po, it = _don(db)
     with pytest.raises(HTTPException) as e:
-        chan_sua_don_da_duyet(db, po, POUpdate(vat_rate=0.1))
+        block_edit_approved_order(db, po, POUpdate(vat_rate=0.1))
     assert "VAT chung" in e.value.detail
 
 
 def test_da_duyet_van_cap_nhat_duoc_ho_so_chung_tu(db):
     """document_status có endpoint riêng, sửa được cả khi đơn Hoàn thành — không chặn."""
     po, it = _don(db)
-    chan_sua_don_da_duyet(db, po, POUpdate(document_status="đã đủ chứng từ", items=[_dong(it)]))
+    block_edit_approved_order(db, po, POUpdate(document_status="đã đủ chứng từ", items=[_dong(it)]))
 
 
 def test_da_duyet_van_sua_duoc_ma_don_misa(db):
     """Kế toán đối chiếu số MISA sau khi đơn đã duyệt — mã đơn MISA phải sửa được sau duyệt."""
     po, it = _don(db)
-    chan_sua_don_da_duyet(db, po, POUpdate(misa_code="MISA-2026-001", items=[_dong(it)]))
+    block_edit_approved_order(db, po, POUpdate(misa_code="MISA-2026-001", items=[_dong(it)]))
 
 
 # ───────────────────────── Ô của DÒNG HÀNG ─────────────────────────
@@ -81,7 +81,7 @@ def test_da_duyet_van_sua_duoc_ma_don_misa(db):
 def test_da_duyet_khoa_o_dong_hang(db, doi, nhan):
     po, it = _don(db)
     with pytest.raises(HTTPException) as e:
-        chan_sua_don_da_duyet(db, po, POUpdate(items=[_dong(it, **doi)]))
+        block_edit_approved_order(db, po, POUpdate(items=[_dong(it, **doi)]))
     assert e.value.status_code == 400
     assert nhan in e.value.detail
     assert "Hàng A" in e.value.detail          # gọi đúng tên dòng để biết sửa dòng nào
@@ -90,7 +90,7 @@ def test_da_duyet_khoa_o_dong_hang(db, doi, nhan):
 def test_da_duyet_van_sua_duoc_cac_o_phat_sinh_sau_duyet(db):
     """5 ô khách chốt cho sửa + ngày giao chứng từ cho KT (điều kiện của bước tiến độ)."""
     po, it = _don(db)
-    chan_sua_don_da_duyet(db, po, POUpdate(items=[_dong(
+    block_edit_approved_order(db, po, POUpdate(items=[_dong(
         it, invoice_name="Tên trên hóa đơn", expected_date="2026-09-01",
         warehouse_code="KHO2", note="NCC hẹn lại", document_delivery_date="2026-09-02",
     )]))
@@ -100,21 +100,21 @@ def test_da_duyet_khong_them_dong_moi(db):
     po, it = _don(db)
     moi = POItemIn(product_code="SP002", product_name="Hàng C", unit="Cái", qty_order=5)
     with pytest.raises(HTTPException) as e:
-        chan_sua_don_da_duyet(db, po, POUpdate(items=[_dong(it), moi]))
+        block_edit_approved_order(db, po, POUpdate(items=[_dong(it), moi]))
     assert "không thêm dòng hàng mới" in e.value.detail
 
 
 def test_da_duyet_khong_xoa_dong(db):
     po, it = _don(db)
     with pytest.raises(HTTPException) as e:
-        chan_sua_don_da_duyet(db, po, POUpdate(items=[]))
+        block_edit_approved_order(db, po, POUpdate(items=[]))
     assert "không xóa dòng hàng" in e.value.detail
 
 
 def test_luu_lai_y_nguyen_khong_bao_loi_oan(db):
     """Màn hình gửi nguyên cả đơn mỗi lần Lưu; Decimal/float và None/'' phải coi là bằng nhau."""
     po, it = _don(db)
-    chan_sua_don_da_duyet(db, po, POUpdate(
+    block_edit_approved_order(db, po, POUpdate(
         supplier_code="NCC01", supplier_name="NCC Một", department="Thu mua",
         vat_rate=0.08, misa_code="", note="", items=[_dong(it)],
     ))
@@ -122,14 +122,14 @@ def test_luu_lai_y_nguyen_khong_bao_loi_oan(db):
 
 def test_don_nhap_khong_bi_chan(db):
     po, it = _don(db, status="draft")
-    chan_sua_don_da_duyet(db, po, POUpdate(supplier_name="NCC Hai",
+    block_edit_approved_order(db, po, POUpdate(supplier_name="NCC Hai",
                                            items=[_dong(it, qty_order=99, price=7)]))
 
 
 def test_dong_hoan_thanh_khong_chan_them(db):
     """Dòng Hoàn thành đã bị _save_items bỏ qua nguyên dòng — không cần chặn thêm ở đây."""
     po, it = _don(db, progress_status="Hoàn thành")
-    chan_sua_don_da_duyet(db, po, POUpdate(items=[_dong(it, price=9999)]))
+    block_edit_approved_order(db, po, POUpdate(items=[_dong(it, price=9999)]))
 
 
 # ───────────────────────── Hủy duyệt ─────────────────────────
