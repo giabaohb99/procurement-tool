@@ -5,6 +5,8 @@ import { usePermission } from '@/core/authorization/use-permission'
 import { Button } from '@/shared/ui/button'
 import {
   useApproveBooking,
+  useDispatchRejectBooking,
+  useDispatchReturnBooking,
   useDriverAcceptBooking,
   useDriverCompleteBooking,
   useDriverRejectBooking,
@@ -29,7 +31,13 @@ interface BookingWorkflowActionsProps {
  */
 
 /** Loại dialog lý do đang mở (mỗi loại một hành động khác nhau). */
-type ReasonKind = 'return' | 'reject' | 'driverReject' | null
+type ReasonKind =
+  | 'return'
+  | 'reject'
+  | 'driverReject'
+  | 'dispatchReturn'
+  | 'dispatchReject'
+  | null
 
 /**
  * Cụm nút chuyển trạng thái phiếu đặt xe, bày THEO VAI TRÒ + trạng thái hiện tại:
@@ -52,6 +60,8 @@ export function BookingWorkflowActions({ booking, onDispatch }: BookingWorkflowA
   const approve = useApproveBooking()
   const returnEdit = useReturnBooking()
   const reject = useRejectBooking()
+  const dispatchReturn = useDispatchReturnBooking()
+  const dispatchReject = useDispatchRejectBooking()
   const driverAccept = useDriverAcceptBooking()
   const driverReject = useDriverRejectBooking()
   const driverStart = useDriverStartBooking()
@@ -64,6 +74,8 @@ export function BookingWorkflowActions({ booking, onDispatch }: BookingWorkflowA
     approve.isPending ||
     returnEdit.isPending ||
     reject.isPending ||
+    dispatchReturn.isPending ||
+    dispatchReject.isPending ||
     driverAccept.isPending ||
     driverReject.isPending ||
     driverStart.isPending ||
@@ -87,12 +99,32 @@ export function BookingWorkflowActions({ booking, onDispatch }: BookingWorkflowA
           Điều phối
         </Button>
       )}
-      {canWrite && isDispatched && dstatus === DRIVER_STATUS.rejected && (
-        <Button onClick={onDispatch} disabled={busy}>
-          <Route className="size-4" />
-          Điều phối lại
-        </Button>
-      )}
+      {/*  Đã điều phối (tài xế chưa nhận) hoặc tài xế từ chối → điều phối viên đổi xe/tài xế khác. */}
+      {canWrite &&
+        isDispatched &&
+        (dstatus === DRIVER_STATUS.waiting || dstatus === DRIVER_STATUS.rejected) && (
+          <Button onClick={onDispatch} disabled={busy}>
+            <Route className="size-4" />
+            Điều phối lại
+          </Button>
+        )}
+      {/*  Điều phối viên: ở khâu ĐÃ DUYỆT (chưa điều phối) hoặc Điều phối / Điều phối lại
+          (tài xế chưa nhận) có thể TRẢ VỀ NGƯỜI TẠO chỉnh sửa hoặc TỪ CHỐI hẳn yêu cầu. */}
+      {canWrite &&
+        (isApproved ||
+          (isDispatched &&
+            (dstatus === DRIVER_STATUS.waiting || dstatus === DRIVER_STATUS.rejected))) && (
+          <>
+            <Button variant="outline" onClick={() => setReasonKind('dispatchReturn')} disabled={busy}>
+              <Undo2 className="size-4" />
+              Yêu cầu chỉnh sửa
+            </Button>
+            <Button variant="destructive" onClick={() => setReasonKind('dispatchReject')} disabled={busy}>
+              <Ban className="size-4" />
+              Từ chối yêu cầu
+            </Button>
+          </>
+        )}
 
       {/* Người duyệt */}
       {showApprove && (
@@ -128,7 +160,7 @@ export function BookingWorkflowActions({ booking, onDispatch }: BookingWorkflowA
       {driverStage && dstatus === DRIVER_STATUS.ongoing && (
         <Button onClick={() => setCompleteOpen(true)} disabled={busy}>
           <Flag className="size-4" />
-          Hoàn tất
+          Hoàn thành
         </Button>
       )}
       {driverStage &&
@@ -178,6 +210,35 @@ export function BookingWorkflowActions({ booking, onDispatch }: BookingWorkflowA
           pending={driverReject.isPending}
           onConfirm={(reason) =>
             driverReject.mutate({ id, reason }, { onSuccess: () => setReasonKind(null) })
+          }
+          onClose={() => setReasonKind(null)}
+        />
+      )}
+      {reasonKind === 'dispatchReturn' && (
+        <BookingReasonDialog
+          title={`Yêu cầu chỉnh sửa "${subject}"`}
+          description="Trả phiếu về người tạo để sửa rồi gửi lại (gỡ điều phối đã phân)."
+          label="Lý do cần chỉnh sửa"
+          placeholder="Sai lộ trình, cần đổi thời gian…"
+          confirmLabel="Trả lại chỉnh sửa"
+          pending={dispatchReturn.isPending}
+          onConfirm={(reason) =>
+            dispatchReturn.mutate({ id, reason }, { onSuccess: () => setReasonKind(null) })
+          }
+          onClose={() => setReasonKind(null)}
+        />
+      )}
+      {reasonKind === 'dispatchReject' && (
+        <BookingReasonDialog
+          title={`Từ chối yêu cầu "${subject}"`}
+          description="Từ chối yêu cầu ở khâu điều phối — phiếu bị khóa, không đi tiếp."
+          label="Lý do từ chối"
+          placeholder="Không bố trí được xe, yêu cầu không hợp lệ…"
+          confirmLabel="Từ chối yêu cầu"
+          destructive
+          pending={dispatchReject.isPending}
+          onConfirm={(reason) =>
+            dispatchReject.mutate({ id, reason }, { onSuccess: () => setReasonKind(null) })
           }
           onClose={() => setReasonKind(null)}
         />

@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| Bản | 1.2 — 07/09/2026 (kết sổ cuối năm · bảng trường Loại nghỉ) |
-| CR | **CR-259** · duoc-CR-302 · duoc-CR-303 · **duoc-CR-304** |
+| Bản | 1.3 — 08/09/2026 (ba tab của màn Đơn nghỉ phép và cột trên từng tab — §8.1) |
+| CR | **CR-259** · duoc-CR-302 · duoc-CR-303 · **duoc-CR-304** · duoc-CR-323 |
 | Giao diện | **chỉ có trên `frontend-v2/`** (cổng 8083), menu *Nhân sự ▸ Nghỉ phép* |
 | Kế hoạch gốc | `plans/260903-0956-quan-ly-nghi-phep/plan.md` |
 | Nguồn nghiệp vụ | `doc/erp/tham-khao-hrm/02-don-tu-va-duyet.md` (DT1, DT6) · `10-de-xuat-ap-dung.md` (V1-6, V1-7) |
@@ -311,6 +311,49 @@ làm gì. Tắt cờ **không** đụng tới quỹ phép — giữ chỗ `pendi
 rút thì phiếu vẫn chạy, người duyệt ký xong là hook trừ quỹ cho một tờ đơn đã hủy.
 Chỉ **người nộp** rút được (luật của bộ máy); người khác dùng *Trả lại* / *Từ chối*
 ở màn Phê duyệt, nơi có ô ghi lý do.
+
+### 8.1. Màn `/hr/leave-requests` có BA TAB
+
+| Tab | Ai mở | Nội dung |
+|---|---|---|
+| **Cần tôi duyệt** | người đang có việc treo | Đơn đang chờ chính mình ký. Không có nút thao tác trên dòng — **bấm vào dòng** để vào chi tiết rồi duyệt. |
+| **Đơn của tôi** | ai cũng có | Đơn trong phạm vi dữ liệu của mình: người thường thấy đơn của chính mình, trưởng phòng thấy cả phòng, Nhân sự thấy toàn công ty. |
+| **Tôi đã duyệt** | người từng ký | Lịch sử đã ký, **gộp mỗi đơn một dòng** — ký hai chặng của cùng tờ đơn thì vẫn một dòng. |
+
+⚠️ **`apply_scope` một mình KHÔNG đủ.** Người duyệt chặng 2 thường là Trưởng
+phòng Nhân sự, mà phạm vi dữ liệu của họ không với tới đơn của nhân viên phòng
+khác — bộ máy giao việc rồi chặn chính người được giao. Nên đang có việc
+`TASK_PENDING` trên tờ đơn thì đọc được nó. Nới **đúng lúc treo**, không nới cho
+"đã từng ký": ký xong quyền đó đóng lại, xem lại thì vào tab *Tôi đã duyệt*.
+
+**Cột trên ba tab** (chốt 08/09/2026, sau khi khách bấm thử):
+
+- Cột **«Luồng duyệt»** — câu chữ một dòng kiểu *«Đang ở chặng 1/2 · Dego Admin»*
+  — nay **không tab nào bày ra**. Hai tab *Đơn của tôi* / *Tôi đã duyệt* bỏ hẳn;
+  tab *Cần tôi duyệt* giữ nhưng **ẩn sẵn**, bật lại ở menu **«Cột»**. Với người
+  nộp thì cột *Trạng thái* ngay bên cạnh đã trả lời đúng câu họ hỏi (*đơn của tôi
+  tới đâu rồi*); tên từng chặng và ai đang cầm là việc của người duyệt.
+  ⚠️ Câu tóm tắt đó **vẫn sống** ở màn chi tiết đơn và ở bản in, và vẫn do
+  **backend** dựng (`approval/steps_service._summary`) — đừng xóa hàm đó, cũng
+  đừng chép luật dựng câu sang TypeScript.
+- Cột **«Việc của tôi»** ở tab *Cần tôi duyệt* — **bỏ hẳn**. Cột «Hạn xử lý» rút
+  về ngày giờ trần.
+
+⚠️ **Hai tín hiệu mất theo hai cột đó. Ghi ra đây để lần sau không ai tưởng là
+sót:**
+
+1. Dấu **«Quá hạn»**. Cờ `task.is_overdue` backend **vẫn gửi và vẫn đúng**, chỉ
+   là màn hình thôi không vẽ. Muốn bày lại thì đọc cờ đó, đừng tự so ngày ở tầng
+   giao diện.
+2. Dòng **«Bấm thay ‹tên›»** — báo cho người được ủy quyền biết họ đang ký **thay
+   mặt người khác**. Nay không còn chỗ nào trên màn danh sách; họ chỉ biết khi mở
+   chi tiết đơn. Đây là tín hiệu **trách nhiệm** (chữ ký đi vào dấu vết mang cả
+   hai tên), không phải trang trí — cần bày lại thì gắn vào cột «Số đơn» hoặc
+   «Người nghỉ», đừng dựng lại cả một cột cho một dòng chữ hiếm khi có.
+
+⚠️ **Ẩn sẵn (`defaultHidden`) KHÔNG áp cho người đã từng đụng menu «Cột»** của
+bảng đó: bảng nhớ bố cục trong `localStorage`, có bản lưu là bản đó thắng. Muốn
+thấy đúng mặc định mới thì xóa khóa `erp.table.hr.leave-to-approve`.
 
 ## 9. Phân quyền — bốn khóa, đừng gộp
 

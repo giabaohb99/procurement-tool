@@ -56,6 +56,28 @@ ENTITIES = [
     #  · `meeting_room` — khai danh mục phòng, việc quản trị. Cho quyền sửa danh
     #    mục KHÁC cho quyền đặt phòng, gộp một khóa là không tách được.
     "room_booking", "meeting_room",
+    # Hồ sơ nhân sự mở rộng (08/09/2026) — nhóm trường NHẠY CẢM: ngày sinh, MST,
+    # địa chỉ nhà, tài khoản ngân hàng, CCCD, số BHXH, và hai bảng người thân.
+    #
+    # Vì sao là khóa RIÊNG chứ không phải một action của `employee`: `employee.read`
+    # là quyền đang có của gần như mọi vai trò — cần nó để đổ ô chọn người trong
+    # form. Nhét nhóm nhạy cảm vào đó là mọi người trong công ty đọc được số tài
+    # khoản ngân hàng của nhau. Cùng lý lẽ đã tách `leave_balance` khỏi
+    # `leave_request`.
+    #
+    # ⚠️ Không có bảng nào để lọc — đây là cổng `require()` thuần, phạm vi dữ
+    # liệu vẫn do khóa `employee` quyết định. Nên khai PUBLIC ở `scoping.py`.
+    # ⚠️ Hai bảng con (`tab_employee_contact`, `tab_employee_family`) CỐ Ý KHÔNG
+    # có khóa riêng — chúng không có màn hình riêng, và phạm vi của chúng là
+    # phạm vi của hồ sơ cha. Xem `modules/employee/sensitive.py`.
+    "employee_sensitive",
+    # Danh mục CHỨC VỤ (duoc-CR-320) — nguồn của ô chọn «Vị trí / Chức vụ».
+    #
+    # Khóa riêng theo luật «một khóa = một màn hình» (CR-157), và vì hai việc do
+    # hai người làm: ai cũng cần `employee.read` để đổ ô chọn người, nhưng THÊM
+    # BỚT chức vụ là việc của Nhân sự — gộp vào `employee.write` thì hành chính
+    # sửa số điện thoại một hồ sơ cũng dựng thêm được chức vụ mới.
+    "job_position",
 ]
 
 ACTIONS = ["read", "create", "write", "delete", "approve", "cancel", "print", "export"]
@@ -65,6 +87,8 @@ ENTITY_LABELS = {
     "company": "Công ty (pháp nhân)",
     "department": "Phòng ban",
     "employee": "Nhân viên",
+    "employee_sensitive": "Nhân viên — thông tin nhạy cảm (CCCD, ngân hàng, địa chỉ)",
+    "job_position": "Danh mục Chức vụ",
     "user": "Tài khoản",
     "role": "Vai trò & phân quyền",
     "warehouse": "Kho",

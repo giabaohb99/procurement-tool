@@ -1,6 +1,7 @@
 import { Check, ChevronDown, ChevronUp, Search, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
+import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
@@ -21,6 +22,12 @@ export interface MultiPickerOption {
   label: string
   /** Chữ mờ bên phải: mã, số hiệu, chức danh… — thứ để phân biệt hai dòng trùng tên. */
   hint?: string
+  /**
+   * Ảnh đại diện đứng TRƯỚC nhãn (logo công ty, ảnh nhân sự…). Khai trường này —
+   * kể cả để chuỗi rỗng — là bật cột avatar; bỏ hẳn thì dòng vẫn thuần chữ như cũ.
+   * Rỗng / hỏng ảnh thì rơi về chữ cái đầu của nhãn.
+   */
+  avatar?: string
 }
 
 /**
@@ -35,6 +42,15 @@ interface MultiPickerProps<Id extends MultiPickerId = MultiPickerId> {
   searchPlaceholder?: string
   emptyMessage?: string
   disabled?: boolean
+  /** Lớp bề rộng cho danh sách thả xuống (mặc định `w-80`) — nới rộng khi nhãn dài (vd tên công ty + MST). */
+  contentClassName?: string
+  /** Đưa nút "Bỏ hết" thành dấu **X ở bên phải TRONG khung chọn** (bỏ hàng "Bỏ hết" bên dưới). */
+  clearInTrigger?: boolean
+  /**
+   * Hiện các mục ĐÃ CHỌN dạng chip NGAY TRONG khung chọn (thay cho "Đã chọn N") và
+   * bỏ dải chip bên dưới. Hợp với ô chọn ít mục, nhãn cần thấy ngay (vd công ty).
+   */
+  chipsInTrigger?: boolean
 }
 
 /** Số dòng tối đa trong danh sách thả xuống — dài hơn thì bắt gõ tìm. */
@@ -74,6 +90,9 @@ export function MultiPicker<Id extends MultiPickerId = MultiPickerId>({
   searchPlaceholder = 'Tìm…',
   emptyMessage = 'Không tìm thấy mục nào.',
   disabled,
+  contentClassName,
+  clearInTrigger = false,
+  chipsInTrigger = false,
 }: MultiPickerProps<Id>) {
   const [open, setOpen] = useState(false)
   const [keyword, setKeyword] = useState('')
@@ -129,17 +148,58 @@ export function MultiPicker<Id extends MultiPickerId = MultiPickerId>({
             disabled={disabled}
             className={cn(
               'w-full justify-start font-normal',
+              chipsInTrigger && selected.length > 0 && 'h-auto min-h-9 flex-wrap gap-1 py-1.5',
               selected.length === 0 && 'text-muted-foreground',
             )}
           >
-            <Search className="size-4" />
-            {/*  Có chọn rồi thì nút nói SỐ LƯỢNG, không lặp lại câu mời chọn:
-                 với dải chip đã gập, đây là chỗ duy nhất đọc ra "đang chọn bao
-                 nhiêu" mà không phải đếm tay. */}
-            {selected.length > 0 ? `Đã chọn ${selected.length}` : placeholder}
+            <Search className="size-4 shrink-0 self-center" />
+            {chipsInTrigger && selected.length > 0 ? (
+              //  Hiện thẳng các mục ĐÃ CHỌN (chip có X riêng) trong khung — không "Đã chọn N".
+              selected.map((item) => (
+                <Badge key={item.id} variant="secondary" className="gap-1 font-normal">
+                  {item.avatar !== undefined && <OptionAvatar src={item.avatar} label={item.label} />}
+                  <span className="max-w-[16rem] truncate">{item.label}</span>
+                  <span
+                    role="button"
+                    tabIndex={-1}
+                    aria-label={`Bỏ ${item.label}`}
+                    className="text-muted-foreground hover:text-foreground"
+                    onPointerDown={(event) => {
+                      event.preventDefault()
+                      event.stopPropagation()
+                      toggle(item.id)
+                    }}
+                  >
+                    <X className="size-3" />
+                  </span>
+                </Badge>
+              ))
+            ) : (
+              /*  Có chọn rồi thì nút nói SỐ LƯỢNG, không lặp lại câu mời chọn. */
+              <span className="flex-1 truncate self-center text-left">
+                {selected.length > 0 ? `Đã chọn ${selected.length}` : placeholder}
+              </span>
+            )}
+            {/*  Dấu X BỎ HẾT nằm ngay trong khung chọn (khi bật `clearInTrigger`).
+                 `onPointerDown` chặn mở popover — bấm X là xóa, không phải mở danh sách. */}
+            {clearInTrigger && selected.length > 0 && !disabled && (
+              <span
+                role="button"
+                tabIndex={-1}
+                aria-label="Bỏ hết"
+                className="ml-auto self-center rounded-sm text-muted-foreground opacity-70 hover:text-destructive hover:opacity-100"
+                onPointerDown={(event) => {
+                  event.preventDefault()
+                  event.stopPropagation()
+                  onChange([])
+                }}
+              >
+                <X className="size-4" />
+              </span>
+            )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent align="start" className="w-80 p-0">
+        <PopoverContent align="start" className={cn('p-0', contentClassName ?? 'w-80')}>
           <div className="border-b p-2">
             <Input
               autoFocus
@@ -186,6 +246,7 @@ export function MultiPicker<Id extends MultiPickerId = MultiPickerId>({
                   )}
                 >
                   <Check className={cn('size-4 shrink-0', !checked && 'invisible')} />
+                  {item.avatar !== undefined && <OptionAvatar src={item.avatar} label={item.label} />}
                   <span className="flex-1 truncate">{item.label}</span>
                   {item.hint && (
                     <span className="shrink-0 text-xs text-muted-foreground">{item.hint}</span>
@@ -205,7 +266,8 @@ export function MultiPicker<Id extends MultiPickerId = MultiPickerId>({
         </PopoverContent>
       </Popover>
 
-      {selected.length > 0 && (
+      {/*  Dải chip dưới ô — bỏ khi đã hiện chip NGAY TRONG khung chọn (`chipsInTrigger`). */}
+      {!chipsInTrigger && selected.length > 0 && (
         <div className="space-y-1.5">
           {/*  Dải chip. Khi bung thì đóng khung + cho cuộn, không để nó đẩy phần
                dưới của form đi (xem `CAO_TOI_DA_KHI_BUNG`). */}
@@ -217,6 +279,7 @@ export function MultiPicker<Id extends MultiPickerId = MultiPickerId>({
           >
             {visibleChips.map((item) => (
               <Badge key={item.id} variant="secondary" className="gap-1 font-normal">
+                {item.avatar !== undefined && <OptionAvatar src={item.avatar} label={item.label} />}
                 {item.label}
                 <button
                   type="button"
@@ -233,7 +296,7 @@ export function MultiPicker<Id extends MultiPickerId = MultiPickerId>({
           {/*  HÀNG THAO TÁC riêng, không trộn vào dải chip: hai nút này không
                phải là "một người đã chọn" nên đứng lẫn giữa các chip là đọc
                nhầm. Trái = xem thêm / thu gọn, phải = bỏ hết. */}
-          {(exceedsCollapseLimit || selected.length > 1) && (
+          {(exceedsCollapseLimit || (!clearInTrigger && selected.length > 1)) && (
             <div className="flex items-center justify-between gap-2">
               {exceedsCollapseLimit ? (
                 <Button
@@ -259,7 +322,7 @@ export function MultiPicker<Id extends MultiPickerId = MultiPickerId>({
                 <span />
               )}
 
-              {selected.length > 1 && (
+              {!clearInTrigger && selected.length > 1 && (
                 <Button
                   type="button"
                   variant="ghost"
@@ -276,5 +339,16 @@ export function MultiPicker<Id extends MultiPickerId = MultiPickerId>({
         </div>
       )}
     </div>
+  )
+}
+
+/** Avatar nhỏ đứng trước nhãn; ảnh rỗng/hỏng thì hiện chữ cái đầu của nhãn. */
+function OptionAvatar({ src, label }: { src: string; label: string }) {
+  const initial = (label.trim()[0] || '?').toUpperCase()
+  return (
+    <Avatar size="sm" className="size-5 shrink-0">
+      {src && <AvatarImage src={src} alt="" className="object-contain" />}
+      <AvatarFallback className="text-[10px]">{initial}</AvatarFallback>
+    </Avatar>
   )
 }

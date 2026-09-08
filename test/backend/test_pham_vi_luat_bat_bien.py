@@ -112,6 +112,9 @@ BB3_PUBLIC_CO_LY_DO = {
     "doc_numbering_rule": "cùng lý do CR-157",
     "doc_link_rule": "cùng lý do CR-157",
     "security_level": "thang mức mật dùng chung",
+    "employee_sensitive": ("cổng require() thuần cho nhóm trường CCCD/ngân hàng/địa chỉ — "
+                           "hồ sơ NÀO thì khóa `employee` đã lọc, khóa này chỉ trả lời "
+                           "được xem NỘI DUNG hay không (modules/employee/sensitive.py)"),
     "external_party": "danh bạ đối tác ngoài dùng chung",
     "seal_type": "danh mục loại dấu dùng chung",
     "vehicle": "danh mục xe dùng chung",
@@ -131,6 +134,10 @@ BB3_PUBLIC_CO_LY_DO = {
     "leave_type": "danh mục luật nghỉ dùng chung; ai sửa gác bằng leave_type.write",
     "holiday": "company_id = 0 nghĩa là 'áp mọi pháp nhân'; lọc đúng ở workday_service",
     "meeting_room": "company_id = 0 nghĩa là 'phòng dùng chung'; lọc đúng ở list_availability",
+    "job_position": "danh mục chức vụ dùng chung — MỌI vai trò cần đọc để đổ ô chọn "
+                    "trên hồ sơ; department_id = 0 nghĩa là 'dùng chung mọi phòng ban' "
+                    "nên lọc theo cột đó cắt mất đúng những dòng ấy. Ai SỬA gác bằng "
+                    "job_position.write",
 }
 
 
@@ -209,6 +216,7 @@ BB4_CONTROLLER_MIEN_TRU = {
     "doc_catalog/numbering_rule_controller.py": "doc_numbering_rule — PUBLIC (CR-157)",
     "leave/catalog_controller.py": "leave_type + holiday — PUBLIC, xem lý do ở scoping.py",
     "vehicle_booking/catalog_controller.py": "vehicle + driver — PUBLIC",
+    "seal_request/catalog_controller.py": "seal_type — PUBLIC (danh mục loại con dấu dùng chung)",
     "help_center/controller.py": "help_article — PUBLIC, bài hướng dẫn ai cũng đọc",
     "faq/controller.py": "câu hỏi thường gặp, nội dung công khai",
 }

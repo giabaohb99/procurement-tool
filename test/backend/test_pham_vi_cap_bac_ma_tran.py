@@ -117,6 +117,15 @@ def expect_outcome(entity: str, scope: str, profile: dict, model):
         return COND, tuple(cols), False
 
     if scope == "company":
+        if entity == "seal_request":
+            #  DUYỆT DẤU — nhánh riêng: Văn thư lọc theo BẢNG NỐI đa công ty
+            #  (`tab_seal_request_company`) + trạng thái ĐÃ QUA TBP, KHÔNG theo cột
+            #  `company_id` của bảng chính. Điều kiện đụng `tab_seal_request.status`
+            #  (cổng «đã duyệt») và `tab_seal_request.id` (vế trái subquery bảng nối);
+            #  chiều đa-công-ty được kiểm bằng dữ liệu thật ở `test_duyet_dau_phan_quyen`.
+            if not company_id:
+                return BLOCK, (), True
+            return COND, ("id", "status"), False
         if not f.get("company"):
             return BLOCK, (), True           # `_chan` — `scoping.py:384`
         if not company_id:

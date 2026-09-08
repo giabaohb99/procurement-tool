@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 from app.modules.employee.model import Employee
 
 from .model import (
+    BOOKING_STATUS_LABELS,
     BK_APPROVED,
     BK_CANCELLED,
     BK_COMPLETED,
@@ -26,6 +27,7 @@ from .model import (
     BK_RETURNED,
     DRV_ACCEPTED,
     DRV_COMPLETED,
+    DRV_NONE,
     DRV_ONGOING,
     DRV_REJECTED,
     DRV_WAITING,
@@ -64,19 +66,27 @@ def apply_keyword_search(query, keyword: str | None):
     return query.filter(or_(*[getattr(VehicleBooking, f).like(like) for f in SEARCH_FIELDS]))
 
 
-def _requester_context(db: Session, user) -> tuple[str, int, int]:
-    """Suy ra (tên hiển thị, phòng ban, công ty) của người tạo từ hồ sơ nhân sự.
+def _requester_context(db: Session, user):
+    """Chụp thông tin người tạo từ hồ sơ nhân sự → SimpleNamespace.
 
     Snapshot lúc tạo để phiếu vẫn đúng dù hồ sơ đổi sau. Không có hồ sơ nhân sự thì
-    lấy email làm tên, phạm vi để 0.
+    lấy email làm tên, phạm vi để 0. `role` = "chức danh · phòng ban" (bỏ vế nào trống).
     """
+    from types import SimpleNamespace
+
+    from app.modules.department.model import Department
     emp = None
     if getattr(user, "employee_id", 0):
         emp = db.get(Employee, user.employee_id)
     name = (emp.full_name if emp and emp.full_name else "") or getattr(user, "email", "") or ""
-    dept_id = emp.department_id if emp else 0
-    company_id = emp.company_id if emp else 0
-    return name, dept_id or 0, company_id or 0
+    dept_id = (emp.department_id if emp else 0) or 0
+    company_id = (emp.company_id if emp else 0) or 0
+    email = (emp.email if emp and emp.email else "") or getattr(user, "email", "") or ""
+    phone = (emp.phone if emp and getattr(emp, "phone", "") else "")
+    dept = db.get(Department, dept_id) if dept_id else None
+    role = " · ".join(x for x in [(emp.position if emp else ""), (dept.name if dept else "")] if x)
+    return SimpleNamespace(name=name, dept_id=dept_id, company_id=company_id,
+                           email=email, phone=phone, role=role)
 
 
 def _normalize_type(value: int | None) -> int:
@@ -149,7 +159,7 @@ def create_booking(db: Session, data: VehicleBookingCreate, user, submit: bool,
         raise HTTPException(400, "Mục đích không được để trống")
 
     req_type = _normalize_type(data.request_type)
-    name, dept_id, company_id = _requester_context(db, user)
+    ctx = _requester_context(db, user)
 
     booking = VehicleBooking(
         request_type=req_type,
@@ -175,11 +185,14 @@ def create_booking(db: Session, data: VehicleBookingCreate, user, submit: bool,
         receiver_name=data.receiver_name or "",
         receiver_phone=data.receiver_phone or "",
         special_instructions=data.special_instructions or "",
-        # Người tạo + phạm vi
-        requester=name,
+        # Người tạo + phạm vi (chụp email/SĐT/chức danh lúc tạo)
+        requester=ctx.name,
         requester_id=getattr(user, "id", 0),
-        department_id=data.department_id or dept_id,
-        company_id=data.company_id or company_id,
+        requester_email=ctx.email,
+        requester_phone=ctx.phone,
+        requester_role=ctx.role,
+        department_id=data.department_id or ctx.dept_id,
+        company_id=data.company_id or ctx.company_id,
         first_approver_id=data.first_approver_id or 0,
         status=BK_PENDING if submit else BK_DRAFT,
         note=data.note or "",
@@ -325,15 +338,14 @@ def filter_my_trips(query, db: Session, user):
     bao giờ khớp), thay vì trả cả danh sách.
     """
     uid = getattr(user, "id", 0)
-    my_driver = db.query(Driver).filter(Driver.user_id == uid).first()
-    driver_id = my_driver.id if my_driver else -1
-    #  Chuyến của tôi = được phân cho tài xế của tôi HOẶC chuyến TỰ LÁI của chính tôi.
-    return query.filter(
-        or_(
-            VehicleBooking.assigned_driver_id == driver_id,
-            and_(VehicleBooking.is_self_drive == True, VehicleBooking.requester_id == uid),  # noqa: E712
-        )
-    )
+    #  Một người CÓ THỂ có nhiều hồ sơ tài xế (vd bản NHẬP KHẨU theo SĐT nằm tách với
+    #  bản đã gắn tài khoản) — khớp MỌI hồ sơ tài xế nối tài khoản này, không chỉ bản đầu.
+    driver_ids = [d.id for d in db.query(Driver).filter(Driver.user_id == uid).all()]
+    #  Chuyến của tôi = được phân cho MỘT trong các tài xế của tôi HOẶC chuyến TỰ LÁI.
+    conds = [and_(VehicleBooking.is_self_drive == True, VehicleBooking.requester_id == uid)]  # noqa: E712
+    if driver_ids:
+        conds.append(VehicleBooking.assigned_driver_id.in_(driver_ids))
+    return query.filter(or_(*conds))
 
 
 # --- Nguồn tài xế khi điều phối (lọc theo vai trò) -------------------------
@@ -391,6 +403,8 @@ def approve_booking(db: Session, booking: VehicleBooking, user,
     if booking.status != BK_PENDING:
         raise HTTPException(400, "Chỉ duyệt được phiếu đang Chờ duyệt")
     booking.status = BK_APPROVED
+    booking.approved_by = getattr(user, "id", 0)   # NGƯỜI bấm Duyệt (có thể khác người được chọn)
+    booking.approved_at = datetime.now().isoformat(timespec="seconds")
     booking.updated_by = getattr(user, "id", 0)
     db.commit()
     db.refresh(booking)
@@ -399,11 +413,30 @@ def approve_booking(db: Session, booking: VehicleBooking, user,
     return booking
 
 
+def _clear_dispatch(booking: VehicleBooking) -> None:
+    """Gỡ phần điều phối (xe/tài xế/mốc) khi trả lại hoặc từ chối phiếu ĐÃ ĐIỀU PHỐI —
+    phiếu quay về người tạo / bị khóa, không còn giữ xe-tài xế đã phân."""
+    booking.assigned_vehicle_id = None
+    booking.assigned_driver_id = None
+    booking.dispatched_by = None
+    booking.dispatched_at = ""
+    booking.driver_status = DRV_NONE
+
+
+#  Trả lại / từ chối áp cho: CHỜ DUYỆT (người duyệt), ĐÃ DUYỆT và ĐÃ ĐIỀU PHỐI
+#  (điều phối viên) — điều phối viên có thể trả về người tạo / từ chối cả khi phiếu vừa
+#  được duyệt (chưa điều phối) lẫn khi đã điều phối.
+_RETURNABLE = (BK_PENDING, BK_APPROVED, BK_DISPATCHED)
+
+
 def return_booking(db: Session, booking: VehicleBooking, data: ReasonIn, user,
                    background_tasks=None) -> VehicleBooking:
-    """Người duyệt YÊU CẦU CHỈNH SỬA: trả phiếu về người tạo sửa lại rồi gửi lại."""
-    if booking.status != BK_PENDING:
-        raise HTTPException(400, "Chỉ trả lại được phiếu đang Chờ duyệt")
+    """YÊU CẦU CHỈNH SỬA: trả phiếu về người tạo sửa lại rồi gửi lại.
+    Người duyệt dùng ở Chờ duyệt; điều phối viên dùng ở Đã điều phối (gỡ luôn điều phối)."""
+    if booking.status not in _RETURNABLE:
+        raise HTTPException(400, "Chỉ trả lại được phiếu đang Chờ duyệt, Đã duyệt hoặc Đã điều phối")
+    if booking.status == BK_DISPATCHED:
+        _clear_dispatch(booking)
     booking.status = BK_RETURNED
     _append_note(booking, "Yêu cầu chỉnh sửa", data.reason)
     booking.updated_by = getattr(user, "id", 0)
@@ -415,9 +448,12 @@ def return_booking(db: Session, booking: VehicleBooking, data: ReasonIn, user,
 
 def reject_booking(db: Session, booking: VehicleBooking, data: ReasonIn, user,
                    background_tasks=None) -> VehicleBooking:
-    """Người duyệt TỪ CHỐI: khóa phiếu, không đi tiếp luồng."""
-    if booking.status != BK_PENDING:
-        raise HTTPException(400, "Chỉ từ chối được phiếu đang Chờ duyệt")
+    """TỪ CHỐI: khóa phiếu, không đi tiếp luồng. Áp ở Chờ duyệt (người duyệt) và Đã
+    điều phối (điều phối viên)."""
+    if booking.status not in _RETURNABLE:
+        raise HTTPException(400, "Chỉ từ chối được phiếu đang Chờ duyệt, Đã duyệt hoặc Đã điều phối")
+    if booking.status == BK_DISPATCHED:
+        _clear_dispatch(booking)
     booking.status = BK_REJECTED
     _append_note(booking, "Từ chối", data.reason)
     booking.updated_by = getattr(user, "id", 0)
@@ -517,10 +553,39 @@ def driver_complete(db: Session, booking: VehicleBooking, data: CompleteIn, user
 
 # --- Nối nhãn xe / tài xế khi trả API --------------------------------------
 
+def _display_status_label(obj: VehicleBooking) -> str:
+    """Nhãn trạng thái CHUNG có tính bước tài xế khi đã điều phối: 'Đã điều phối' →
+    'Tài xế đã nhận' (tài xế nhận) → 'Đang đi' (đang chạy). Giữ ĐỒNG BỘ với
+    `bookingStatusLabel` ở frontend (types/vehicle-booking.ts)."""
+    if obj.status == BK_DISPATCHED:
+        if obj.driver_status == DRV_ACCEPTED:
+            return "Tài xế đã nhận"
+        if obj.driver_status == DRV_ONGOING:
+            return "Đang đi"
+        if obj.driver_status == DRV_REJECTED:
+            return "Điều phối lại"  # tài xế từ chối → chờ điều phối viên phân lại
+    return BOOKING_STATUS_LABELS.get(obj.status, "")
+
+
 def _vehicle_label(vehicle) -> str:
     if not vehicle:
         return ""
     return vehicle.license_plate + (f" — {vehicle.model}" if vehicle.model else "")
+
+
+def _emp_name_of_user(db: Session, user_id: int) -> str:
+    """Tên hiển thị của một TÀI KHOẢN (người duyệt / người điều phối) — join nhân sự."""
+    if not user_id:
+        return ""
+    from app.modules.user.model import User
+    u = db.get(User, user_id)
+    if not u:
+        return ""
+    if getattr(u, "employee_id", 0):
+        emp = db.get(Employee, u.employee_id)
+        if emp and emp.full_name:
+            return emp.full_name
+    return getattr(u, "email", "") or ""
 
 
 def _is_assigned_driver(db: Session, obj: VehicleBooking, viewer) -> bool:
@@ -553,6 +618,11 @@ def serialize_booking(db: Session, obj: VehicleBooking, viewer=None) -> dict:
     elif obj.is_self_drive:
         out.assigned_driver_label = f"{obj.requester} (tự lái)" if obj.requester else "Tự lái"
     out.is_assigned_driver = _is_assigned_driver(db, obj, viewer)
+    out.status_label = _display_status_label(obj)  # nhãn có tính bước tài xế
+    #  "Người phê duyệt" = người THẬT đã bấm Duyệt (approved_by); phiếu chưa duyệt / phiếu cũ
+    #  chưa có thì lùi về người được CHỌN duyệt (first_approver_id).
+    out.approver_name = _emp_name_of_user(db, obj.approved_by or obj.first_approver_id)
+    out.dispatched_by_name = _emp_name_of_user(db, obj.dispatched_by or 0)
     #  Có phiên duyệt nhiều bước đang chạy? → frontend ẩn nút duyệt một bước.
     from .approval_bridge import running_instance
     out.approval_running = running_instance(db, obj.id) is not None
@@ -574,6 +644,7 @@ def serialize_bookings(db: Session, objs: list[VehicleBooking]) -> list[dict]:
     result = []
     for o in objs:
         out = VehicleBookingResponse.model_validate(o)
+        out.status_label = _display_status_label(o)  # nhãn có tính bước tài xế
         out.assigned_vehicle_label = _vehicle_label(veh_map.get(o.assigned_vehicle_id))
         driver = drv_map.get(o.assigned_driver_id)
         if driver:

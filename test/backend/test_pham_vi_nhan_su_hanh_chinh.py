@@ -768,31 +768,45 @@ def test_b6_phieu_ho_tro_khong_co_chieu_phong_ban_nen_hai_o_do_cam(world):
 
 
 def test_b7_duyet_dau_khai_du_pham_vi_du_chua_co_controller_nao(world):
-    """`seal_request` nằm trong `SCOPE_FIELDS` với đủ ba chiều nhưng CHƯA có API.
+    """`seal_request` — Duyệt dấu — NAY ĐÃ CÓ module thật (controller + service).
 
-    Ghi vào danh sách trắng: ngày ai đó dựng controller cho nó thì khai báo
-    phạm vi đã sẵn sàng và đúng. Ca này chạy `apply_scope` thật trên dữ liệu
-    thật để lời hứa đó không phải chỉ là một dòng trong bảng — thêm entity vào
-    `ENTITIES` mà khai sai cột thì đây là chỗ đỏ lên.
+    Trước đây đây chỉ là dòng khai chờ sẵn trong `SCOPE_FIELDS` (đợi «ngày ai đó
+    dựng controller»). Ngày đó tới rồi: phân hệ Duyệt dấu đã chạy, và phạm vi của
+    nó KHÔNG phải phạm vi chung. Hai điểm khác:
+    · `dept` (Trưởng bộ phận): phiếu cùng phòng người tạo, MỌI trạng thái — nhánh
+      chung, đúng như mọi entity có `dept_id`.
+    · `company` (Văn thư / Giám đốc): MỘT phiếu gắn NHIỀU công ty, nên lọc theo
+      BẢNG NỐI `tab_seal_request_company` (chứ không theo cột `company_id` của
+      phiếu) VÀ chỉ thấy phiếu ĐÃ QUA TBP (Đã duyệt / Hoàn thành) — nhánh riêng ở
+      `core/scoping.py`. Ma trận đầy đủ ở `test_duyet_dau_phan_quyen`.
     """
-    from app.modules.seal_request.model import SealRequest
+    from app.modules.seal_request.model import (SEAL_APPROVED, SealRequest,
+                                                 SealRequestCompany)
 
     db = world.db
+    #  Đặt trạng thái ĐÃ DUYỆT: phạm vi `company` chỉ tính phiếu đã qua TBP.
     s_akt = SealRequest(code="DD_AKT", seal_type_id=1, company_id=world.co["A"],
-                        department_id=world.dept["A.kt"],
+                        department_id=world.dept["A.kt"], status=SEAL_APPROVED,
                         created_by=world.actor("a2").user.id)
     s_amua = SealRequest(code="DD_AMUA", seal_type_id=1, company_id=world.co["A"],
-                         department_id=world.dept["A.mua"],
+                         department_id=world.dept["A.mua"], status=SEAL_APPROVED,
                          created_by=world.actor("a3").user.id)
     s_b = SealRequest(code="DD_B", seal_type_id=1, company_id=world.co["B"],
-                      department_id=world.dept["B.kt"],
+                      department_id=world.dept["B.kt"], status=SEAL_APPROVED,
                       created_by=world.actor("b1").user.id)
     db.add_all([s_akt, s_amua, s_b])
+    db.flush()
+    #  Bảng nối «công ty cần đóng dấu» — nguồn LỌC của bậc `company`.
+    db.add_all([SealRequestCompany(seal_request_id=s_akt.id, company_id=world.co["A"]),
+                SealRequestCompany(seal_request_id=s_amua.id, company_id=world.co["A"]),
+                SealRequestCompany(seal_request_id=s_b.id, company_id=world.co["B"])])
     db.commit()
 
+    #  TBP phòng A.kt: chỉ phiếu cùng phòng (theo `department_id`) → s_akt.
     a1 = world.grant("a1", "seal_request", scope="dept")
     assert a1.sees(SealRequest, "seal_request") == {s_akt.id}
 
+    #  Văn thư công ty A: phiếu đã duyệt có công ty A trong bảng nối → s_akt + s_amua.
     a2 = world.grant("a2", "seal_request", scope="company")
     assert a2.sees(SealRequest, "seal_request") == {s_akt.id, s_amua.id}
 

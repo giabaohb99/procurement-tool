@@ -15,8 +15,10 @@ from app.modules.employee.model import Employee
 from app.modules.product.model import Product
 from app.modules.purchase_order.model import PurchaseOrder
 from app.modules.purchase_request.model import PurchaseRequest
+from app.modules.seal_request.model import SealRequest, SealType
 from app.modules.supplier.model import Supplier
 from app.modules.survey_request.model import SurveyRequest
+from app.modules.vehicle_booking.model import Driver, Vehicle, VehicleBooking
 
 EXPORT_ADAPTERS: dict[str, dict] = {
     "employee": {
@@ -189,6 +191,115 @@ EXPORT_ADAPTERS: dict[str, dict] = {
             Col("name", "Tên kho", width=24),
             Col("address", "Địa chỉ", width=30),
             Col("is_active", "Hoạt động", kind="bool", width=12),
+        ],
+    },
+    # ── Đặt xe ───────────────────────────────────────────────────────────────
+    "vehicle": {
+        "label": "Xe",
+        "module": "vehicle-booking",
+        "model": Vehicle,
+        "scope": "vehicle",
+        "columns": [
+            Col("license_plate", "Biển số / Tên xe", width=20),
+            Col("model", "Mẫu xe", width=20),
+            Col("type", "Loại xe", width=14),
+            Col("capacity", "Tải (người/tấn)", width=16),
+            Col("status", "Trạng thái", width=14),
+            Col("is_external", "Thuê ngoài (1/0)", kind="bool", width=14),
+            Col("external_company", "Đơn vị (thuê ngoài)", width=24),
+            Col("tax_code", "Mã số thuế", width=16),
+        ],
+    },
+    "driver": {
+        "label": "Tài xế",
+        "module": "vehicle-booking",
+        "model": Driver,
+        "scope": "driver",
+        "columns": [
+            Col("name", "Họ tên", width=24),
+            Col("phone", "Điện thoại", width=16),
+            Col("email", "Email", width=22),
+            Col("license_number", "Số GPLX", width=16),
+            Col("license_class", "Hạng GPLX", width=12),
+            Col("status", "Trạng thái", width=14),
+            Col("is_external", "Thuê ngoài (1/0)", kind="bool", width=14),
+            Col("external_company", "Đơn vị (thuê ngoài)", width=24),
+        ],
+    },
+    "vehicle_booking": {
+        "label": "Yêu cầu đặt xe",
+        "module": "vehicle-booking",
+        "model": VehicleBooking,
+        "scope": "vehicle_booking",
+        #  Bộ cột HỢP NHẤT cho cả đặt xe công tác lẫn giao hàng — nhãn khớp mẫu import
+        #  (xuất ra import lại được). Loại/Trạng thái xuất NHÃN; Công ty/Xe/Tài xế theo
+        #  mã/biển số/tên; thời gian là chuỗi ISO đã lưu; Tệp đính kèm gộp tên tệp.
+        "columns": [
+            Col("code", "Mã yêu cầu", width=16),
+            Col("request_type_label", "Loại yêu cầu", width=16),
+            Col("purpose", "Tiêu đề", width=28),
+            Col("status_label", "Trạng thái chung", width=16),
+            Col("requester", "Tên người tạo", width=22),
+            Col("company_id", "Công ty", ref="company", width=16),
+            Col("department_id", "Phòng ban người tạo", ref="department", width=18),
+            Col("start_time", "Thời gian đi", width=18),
+            Col("end_time", "Thời gian về", width=18),
+            Col("start_location", "Điểm đi", width=22),
+            Col("end_location", "Điểm đến", width=22),
+            Col("passenger_count", "Số hành khách", kind="int", width=12),
+            Col("attendees", "Người tham gia", width=22),
+            Col("contact_phone", "SĐT người tham gia", width=16),
+            Col("is_round_trip", "Khứ hồi", kind="bool", width=10),
+            Col("note", "Ghi chú", width=28),
+            Col("goods_name", "Tên hàng hóa", width=20),
+            Col("goods_size", "Kích thước/KL", width=14),
+            Col("sender_name", "Tên người gửi", width=18),
+            Col("sender_phone", "SĐT người gửi", width=16),
+            Col("receiver_name", "Tên người nhận", width=18),
+            Col("receiver_phone", "SĐT người nhận", width=16),
+            Col("special_instructions", "Chỉ dẫn đặc biệt", width=28),
+            Col("dispatched_at", "Thời gian điều phối", width=18),
+            Col("assigned_vehicle_id", "Biển số xe", ref="vehicle", width=16),
+            Col("assigned_driver_id", "Tên tài xế", ref="driver", width=20),
+            Col("driver_status_label", "Trạng thái tài xế", width=16),
+            Col("actual_start_time", "Bắt đầu thực tế", width=18),
+            Col("actual_end_time", "Kết thúc thực tế", width=18),
+            Col("_attachments", "Tệp đính kèm", kind="attachments", width=24),
+            Col("created_at", "Ngày tạo", kind="datetime", width=18),
+        ],
+    },
+    # ── Duyệt dấu ────────────────────────────────────────────────────────────
+    "seal_type": {
+        "label": "Loại con dấu",
+        "module": "seal",
+        "model": SealType,
+        "scope": "seal_type",
+        "columns": [
+            Col("name", "Tên loại con dấu", width=24),
+            Col("description", "Mô tả", width=30),
+            Col("is_active", "Đang dùng (1/0)", kind="bool", width=14),
+        ],
+    },
+    "seal_request": {
+        "label": "Yêu cầu đóng dấu",
+        "module": "seal",
+        "model": SealRequest,
+        "scope": "seal_request",
+        #  Nhãn khớp mẫu import (xuất ra import lại được). Trạng thái xuất NHÃN; Công
+        #  ty/Phòng ban theo mã; Người duyệt (id tài khoản) hiện HỌ TÊN; Tệp đính kèm
+        #  gộp tên tệp.
+        "columns": [
+            Col("code", "Mã yêu cầu", width=16),
+            Col("title", "Tiêu đề", width=28),
+            Col("purpose", "Chi tiết loại", width=24),
+            Col("status_label", "Trạng thái chung", width=16),
+            Col("requester", "Tên người tạo", width=22),
+            Col("department_id", "Phòng ban người tạo", ref="department", width=18),
+            Col("company_id", "Công ty", ref="company", width=16),
+            Col("first_approver_id", "Người duyệt cấp 1", ref="approver", width=20),
+            Col("note", "Ghi chú", width=28),
+            Col("_attachments", "Tệp đính kèm", kind="attachments", width=24),
+            Col("created_at", "Ngày tạo", kind="datetime", width=18),
         ],
     },
 }

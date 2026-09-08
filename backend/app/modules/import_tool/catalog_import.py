@@ -23,7 +23,9 @@ from app.modules.company.model import Company
 from app.modules.department.model import Department
 from app.modules.employee.model import Employee
 from app.modules.product.model import Product
+from app.modules.seal_request.model import SealType
 from app.modules.supplier.model import Supplier
+from app.modules.vehicle_booking.model import Driver, Vehicle
 
 from .model import (ImportBatch, ImportChange, ImportLog, ImportModule,
                     ImportStatus, LogLevel)
@@ -44,6 +46,8 @@ _AUTO_PREFIX = {
     ImportModule.EMPLOYEE: "NV", ImportModule.SUPPLIER: "NCC",
     ImportModule.PRODUCT: "SP", ImportModule.UNIT: "DVT",
     ImportModule.ITEM_GROUP: "PL", ImportModule.WAREHOUSE: "KHO",
+    ImportModule.VEHICLE: "XE", ImportModule.DRIVER: "TX",
+    ImportModule.SEAL_TYPE: "CD",
 }
 
 
@@ -160,6 +164,50 @@ def _f(header, attr, kind="str", required=False, ref=None, default=None, aliases
 
 
 _REF_MODEL = {"company": Company, "department": Department, "employee": Employee}
+
+#  Đối chiếu tham chiếu "bằng MÃ HOẶC bằng TÊN" (yêu cầu KH 07/09/2026): thử lần
+#  lượt các cột — MÃ trước (chính xác, duy nhất), rồi tới TÊN / khoá tự nhiên khác.
+#  Công ty còn nhận cả MST và tên viết tắt; nhân sự nhận cả email.
+_REF_MATCH = {
+    "company": ["code", "name", "tax_code", "short_name"],
+    "department": ["code", "name"],
+    "employee": ["code", "full_name", "email"],
+    "self": ["code", "name"],
+}
+
+
+def resolve_ref_obj(db: Session, ref: str, value, self_model=None):
+    """Tìm bản ghi tham chiếu theo MÃ hoặc TÊN (thử lần lượt các cột ở `_REF_MATCH`).
+
+    Nhận cả chuỗi ghép "TÊN - MST" (bản xuất của hệ thống cũ ghi công ty kiểu
+    «CÔNG TY … - 0314562909»): không khớp trọn thì tách phần trước « - » thử theo
+    tên và phần sau thử theo MST. `self_model` cho tham chiếu cùng bảng (parent)."""
+    v = _s(value)
+    if not v:
+        return None
+    model = self_model if ref == "self" else _REF_MODEL.get(ref)
+    if model is None:
+        return None
+    cols = _REF_MATCH.get(ref, ["code"])
+
+    def _hit(val: str):
+        for col in cols:
+            attr = getattr(model, col, None)
+            if attr is None:
+                continue
+            obj = db.query(model).filter(attr == val).first()
+            if obj:
+                return obj
+        return None
+
+    obj = _hit(v)
+    if obj:
+        return obj
+    #  Chuỗi ghép "TÊN - MST" → thử tách.
+    if " - " in v:
+        left, right = v.rsplit(" - ", 1)
+        return _hit(left.strip()) or _hit(right.strip())
+    return None
 
 ADAPTERS: dict[int, dict] = {
     ImportModule.COMPANY: {
@@ -294,6 +342,52 @@ ADAPTERS: dict[int, dict] = {
             _f("Hoạt động (1/0)", "is_active", kind="bool", default=True),
         ],
     },
+    # ── Đặt xe: Xe (khoá trùng = BIỂN SỐ) & Tài xế (khoá trùng = ĐIỆN THOẠI) ──
+    ImportModule.VEHICLE: {
+        "label": "Xe",
+        "model": Vehicle,
+        "sheet": "Xe",
+        "dedupe": "license_plate",
+        "fields": [
+            _f("Biển số / Tên xe *", "license_plate", required=True),
+            _f("Mẫu xe", "model"),
+            _f("Loại xe", "type"),
+            _f("Tải (người/tấn)", "capacity", kind="float", default=4),
+            _f("Trạng thái (available/maintenance/inactive)", "status", default="available"),
+            _f("Thuê ngoài (1/0)", "is_external", kind="bool", default=False),
+            _f("Đơn vị (thuê ngoài)", "external_company"),
+            _f("Mã số thuế", "tax_code"),
+        ],
+    },
+    ImportModule.DRIVER: {
+        "label": "Tài xế",
+        "model": Driver,
+        "sheet": "Tai xe",
+        # Tài xế không có mã duy nhất — dùng SĐT làm khoá trùng (không nhập → dòng lỗi).
+        "dedupe": "phone",
+        "fields": [
+            _f("Điện thoại *", "phone", required=True),
+            _f("Họ tên *", "name", required=True),
+            _f("Email", "email"),
+            _f("Số GPLX", "license_number"),
+            _f("Hạng GPLX", "license_class"),
+            _f("Trạng thái (available/on_leave/inactive)", "status", default="available"),
+            _f("Thuê ngoài (1/0)", "is_external", kind="bool", default=False),
+            _f("Đơn vị (thuê ngoài)", "external_company"),
+        ],
+    },
+    # ── Duyệt dấu: Loại con dấu (khoá trùng = TÊN) ───────────────────────────
+    ImportModule.SEAL_TYPE: {
+        "label": "Loại con dấu",
+        "model": SealType,
+        "sheet": "Loai con dau",
+        "dedupe": "name",
+        "fields": [
+            _f("Tên loại con dấu *", "name", required=True),
+            _f("Mô tả", "description"),
+            _f("Đang dùng (1/0)", "is_active", kind="bool", default=True),
+        ],
+    },
 }
 
 
@@ -342,11 +436,10 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
         return ws.cell(row=row, column=col).value if col else None
 
     def resolve_ref(ref, code, row_no, header):
-        """code -> id. Không thấy -> log REVIEW, trả 0 (để trống)."""
+        """Mã HOẶC tên -> id. Không thấy -> log REVIEW, trả 0 (để trống)."""
         if not code:
             return 0
-        ref_model = model if ref == "self" else _REF_MODEL[ref]
-        obj = db.query(ref_model).filter(ref_model.code == code).first()
+        obj = resolve_ref_obj(db, ref, code, self_model=model)
         if obj:
             return obj.id
         log(row_no, LogLevel.REVIEW, "ref_not_found",

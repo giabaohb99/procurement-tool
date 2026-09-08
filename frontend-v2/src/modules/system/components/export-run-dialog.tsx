@@ -113,12 +113,13 @@ function ExportRunForm({ onClose }: { onClose: () => void }) {
         </div>
 
         {noEntity ? (
-          <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50/70 p-3 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
+          <div className="flex min-h-[76px] items-start gap-2 rounded-xl border border-amber-200 bg-amber-50/70 p-3 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
             <Info className="mt-0.5 size-4 shrink-0" />
             <p>Bạn chưa được cấp quyền xuất bảng nào. Liên hệ quản trị để được cấp quyền «Xuất».</p>
           </div>
         ) : (
-          <div className="flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50/70 p-3 text-xs text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-200">
+          //  min-h cố định — khớp hộp ghi chú của popup Nhập để hai popup bằng chiều cao.
+          <div className="flex min-h-[76px] items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50/70 p-3 text-xs text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-200">
             <Info className="mt-0.5 size-4 shrink-0" />
             <p>
               Tải toàn bộ <strong className="font-semibold">{selectedLabel}</strong> ra file{' '}

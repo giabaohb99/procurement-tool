@@ -91,6 +91,7 @@ export const ENTITIES = [
   'vehicle_booking',
   'vehicle',
   'driver',
+  //  (seal_request / seal_type đã khai ở trên — không lặp lại.)
   //  Phân hệ Nghỉ phép (CR-259). Bốn khóa vì bốn màn của ba nhóm người khác
   //  nhau — gộp lại thì cho ai xem đơn của mình là cho họ tự tặng thêm ngày
   //  phép (`leave_balance.write` mở cột điều chỉnh tay).
@@ -102,6 +103,20 @@ export const ENTITIES = [
   //  khai danh mục phòng là việc quản trị.
   'room_booking',
   'meeting_room',
+  //  Hồ sơ nhân sự mở rộng (HRM Đợt 1, 08/09/2026) — nhóm trường CCCD / ngân
+  //  hàng / địa chỉ nhà / số BHXH và hai bảng người thân.
+  //
+  //  ⚠️ Khóa RIÊNG chứ không phải một action của `employee`: `employee.read` là
+  //  quyền gần như mọi vai trò đều có (cần để đổ ô chọn người trong form), nhét
+  //  nhóm nhạy cảm vào đó là cả công ty đọc được số tài khoản ngân hàng của nhau.
+  //
+  //  ⚠️ `can('employee_sensitive', 'read')` ở đây CHỈ để ẩn tab/ô cho đỡ vướng
+  //  mắt. Backend đã che thẳng ở tầng serializer (`modules/employee/sensitive.py`)
+  //  nên thiếu quyền thì các ô đó về rỗng dù giao diện có vẽ ra hay không.
+  'employee_sensitive',
+  //  Danh mục Chức vụ (duoc-CR-320) — nguồn của ô chọn «Vị trí / Chức vụ».
+  //  MỌI vai trò được `read` (seed), quyền sửa dành cho `hr_profile`.
+  'job_position',
 ] as const
 
 export type PermissionEntity = (typeof ENTITIES)[number]

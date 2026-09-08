@@ -109,6 +109,11 @@ export const queryKeys = {
     employees: (params?: Record<string, unknown>) => ['hr', 'employees', params ?? {}] as const,
     employee: (id: number) => ['hr', 'employees', id] as const,
     employeeDepartments: (id: number) => ['hr', 'employees', id, 'departments'] as const,
+    //  Hai bảng con của hồ sơ (duoc-CR-314). Nằm DƯỚI khóa hồ sơ nên
+    //  `invalidateQueries({ queryKey: hr.all })` quét luôn — không cần nhớ gọi
+    //  riêng sau khi sửa hồ sơ.
+    employeeContacts: (id: number) => ['hr', 'employees', id, 'contacts'] as const,
+    employeeFamilies: (id: number) => ['hr', 'employees', id, 'families'] as const,
     departments: (params?: Record<string, unknown>) => ['hr', 'departments', params ?? {}] as const,
     department: (id: number) => ['hr', 'departments', id] as const,
     departmentCompanies: (id: number) => ['hr', 'departments', id, 'companies'] as const,
@@ -116,6 +121,13 @@ export const queryKeys = {
     departmentsByCompanies: (companyIds: number[]) =>
       ['hr', 'departments', 'by-companies', [...companyIds].sort((a, b) => a - b)] as const,
     companies: (params?: Record<string, unknown>) => ['hr', 'companies', params ?? {}] as const,
+    /** Danh mục Chức vụ (duoc-CR-320) — nguồn ô chọn «Vị trí / Chức vụ». */
+    jobPositions: (params?: Record<string, unknown>) =>
+      ['hr', 'job-positions', params ?? {}] as const,
+    //  Đếm ngược người giữ từng chức vụ (duoc-CR-322). MỘT khóa cho cả bảng —
+    //  mỗi ô trong cột «Đang giữ» gọi cùng hook này, react-query gộp lại thành
+    //  một lời gọi. Khóa theo từng dòng là 13 request cho 13 dòng.
+    jobPositionStats: () => ['hr', 'job-positions', 'stats'] as const,
     company: (id: number) => ['hr', 'companies', id] as const,
     roles: (params?: Record<string, unknown>) => ['hr', 'roles', params ?? {}] as const,
     /** Danh sách entity/action/scope để dựng ma trận — gần như bất biến. */
@@ -461,5 +473,17 @@ export const queryKeys = {
     bookings: (params?: Record<string, unknown>) =>
       ['vehicle-booking', 'bookings', params ?? {}] as const,
     booking: (id: number) => ['vehicle-booking', 'bookings', id] as const,
+  },
+  /** Phân hệ Duyệt dấu — phiếu yêu cầu đóng dấu + danh mục Loại con dấu. */
+  sealRequest: {
+    all: ['seal-request'] as const,
+    list: (params?: Record<string, unknown>) =>
+      ['seal-request', 'list', params ?? {}] as const,
+    detail: (id: number) => ['seal-request', 'list', id] as const,
+  },
+  sealType: {
+    all: ['seal-type'] as const,
+    list: (params?: Record<string, unknown>) => ['seal-type', 'list', params ?? {}] as const,
+    detail: (id: number) => ['seal-type', 'list', id] as const,
   },
 } as const

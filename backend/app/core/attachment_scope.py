@@ -96,6 +96,12 @@ def parent_records(db: Session, entity: str, entity_id: int):
         from app.modules.payment_request.model import PaymentRequest
         return PaymentRequest, [entity_id]
 
+    if entity == "seal_request":
+        #  Đính kèm treo thẳng vào phiếu (entity_id = id phiếu). Phạm vi ăn theo
+        #  chính `seal_request` (company/dept/owner đã khai ở SCOPE_FIELDS).
+        from app.modules.seal_request.model import SealRequest
+        return SealRequest, [entity_id]
+
     if entity == "ticket":
         from app.modules.ticket.model import Ticket
         return Ticket, [entity_id]

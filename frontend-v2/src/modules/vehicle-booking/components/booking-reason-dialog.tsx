@@ -76,7 +76,7 @@ export function BookingReasonDialog({
         onEscapeKeyDown={(e) => e.preventDefault()}
         onInteractOutside={(e) => e.preventDefault()}
         onPointerDownOutside={(e) => e.preventDefault()}
-        className="sm:max-w-md"
+        className="sm:max-w-[600px]"
       >
         <DialogHeader className="flex-row items-start justify-between text-left">
           <div>

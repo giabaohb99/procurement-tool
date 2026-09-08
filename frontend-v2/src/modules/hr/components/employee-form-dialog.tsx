@@ -1,9 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Loader2 } from 'lucide-react'
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 
 import { Button } from '@/shared/ui/button'
+import { DatePicker } from '@/shared/ui/date-picker'
 import {
   Dialog,
   DialogContent,
@@ -29,7 +30,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
+import { usePermission } from '@/core/authorization/use-permission'
+import { useCompanies } from '../hooks/use-companies'
 import { useDepartments } from '../hooks/use-departments'
+import { useJobPositions } from '../hooks/use-job-positions'
 import { useSaveEmployee } from '../hooks/use-employees'
 import {
   EMPTY_EMPLOYEE_FORM,
@@ -37,7 +41,11 @@ import {
   employeeSchema,
   type EmployeeFormValues,
 } from '../schemas/employee-schema'
-import { employeeStatusOptions, type Employee } from '../types/employee'
+import {
+  EMPLOYEE_GENDER_OPTIONS,
+  employeeStatusOptions,
+  type Employee,
+} from '../types/employee'
 import { ActiveStatusSelect } from './active-status-select'
 import { LookupSelect } from './lookup-select'
 
@@ -57,11 +65,36 @@ export function EmployeeFormDialog({
   const saveEmployee = useSaveEmployee()
   // Đủ để phủ hết phòng ban của một doanh nghiệp cỡ này; không cần tìm kiếm động.
   const { data: departments } = useDepartments({ page_size: 500, is_active: true })
+  //  `enabled: open` — hộp thoại KHÔNG unmount giữa các lần mở, nên không tắt
+  //  thì hai danh sách này nạp ngay lúc vào màn danh sách, trước cả khi ai bấm
+  //  «Thêm mới». Người thiếu `company.read` còn ăn toast 403 chẳng liên quan.
+  const { data: companies } = useCompanies({ page_size: 200, is_active: true }, { enabled: open })
+  //  Danh mục Chức vụ (duoc-CR-320) — cùng luật `enabled` với danh sách pháp
+  //  nhân ở trên, cộng thêm chốt quyền: vai trò cũ trên hệ đang chạy KHÔNG tự
+  //  có khóa `job_position` (D-018), mà gọi khi thiếu quyền là một toast 403
+  //  bật lên ngay khi bấm «Thêm mới».
+  const { can } = usePermission()
+  const { data: positions } = useJobPositions(open && can('job_position', 'read'))
+  const positionOptions = useMemo(
+    () => (positions?.items ?? []).map((p) => ({ id: p.id, label: p.name })),
+    [positions],
+  )
 
   const form = useForm<EmployeeFormValues>({
     resolver: zodResolver(employeeSchema),
     defaultValues: EMPTY_EMPLOYEE_FORM,
   })
+
+  //  Phòng ban lọc theo PHÁP NHÂN đang chọn — chưa chọn pháp nhân thì hiện hết.
+  //  Không lọc thì hồ sơ ra đời đã lệch: công ty A, phòng ban của công ty B, và
+  //  không màn nào báo cho tới lúc phạm vi dữ liệu chạy sai.
+  const companyId = form.watch('company_id')
+  const departmentOptions = useMemo(() => {
+    const rows = departments?.items ?? []
+    return rows
+      .filter((d) => !companyId || d.company_id === companyId)
+      .map((d) => ({ id: d.id, label: d.name }))
+  }, [departments, companyId])
 
   // Dialog không unmount giữa các lần mở nên phải nạp lại giá trị mỗi lần mở,
   // nếu không sẽ thấy dữ liệu của bản ghi trước.
@@ -157,6 +190,34 @@ export function EmployeeFormDialog({
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
+              {/*  PHÁP NHÂN — hỏi NGAY ở form tạo (C2). Hồ sơ không gắn pháp
+                   nhân thì phạm vi dữ liệu của người đó rỗng ngay từ đầu, mà
+                   màn chi tiết CỐ Ý để ô này chỉ xem (đổi pháp nhân là đổi tập
+                   dữ liệu họ đọc được) — nên đây là chỗ duy nhất đặt được nó. */}
+              <FormField
+                control={form.control}
+                name="company_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Pháp nhân</FormLabel>
+                    <LookupSelect
+                      value={field.value}
+                      onChange={(v) => {
+                        field.onChange(v)
+                        //  Đổi pháp nhân thì BỎ phòng ban đang chọn: phòng của
+                        //  pháp nhân cũ không còn hợp lệ, mà để nguyên thì hồ sơ
+                        //  ra đời đã lệch — công ty A, phòng ban của công ty B.
+                        if (v !== field.value) form.setValue('department_id', 0)
+                      }}
+                      placeholder="Chọn pháp nhân"
+                      emptyLabel="— Chưa gán pháp nhân —"
+                      items={(companies?.items ?? []).map((c) => ({ id: c.id, label: c.name }))}
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <FormField
                 control={form.control}
                 name="department_id"
@@ -168,25 +229,33 @@ export function EmployeeFormDialog({
                       onChange={field.onChange}
                       placeholder="Chọn phòng ban"
                       emptyLabel="— Chưa gán phòng ban —"
-                      items={(departments?.items ?? []).map((d) => ({
-                        id: d.id,
-                        label: d.name,
-                      }))}
+                      items={departmentOptions}
                     />
                     <FormMessage />
                   </FormItem>
                 )}
               />
+            </div>
 
+            <div className="grid gap-4 sm:grid-cols-2">
+              {/*  Ô CHỌN từ danh mục Chức vụ (duoc-CR-320), không gõ tay nữa.
+                   Danh mục rỗng — hoặc người tạo hồ sơ không có quyền đọc nó —
+                   thì vẫn tạo được hồ sơ và để trống ô này; chức vụ điền sau ở
+                   màn chi tiết. Chặn ở đây là chặn đúng việc "khai nhanh một
+                   người mới", thứ cả form này sinh ra để làm. */}
               <FormField
                 control={form.control}
-                name="position"
+                name="position_id"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Vị trí / Chức vụ</FormLabel>
-                    <FormControl>
-                      <Input placeholder="VD: Trưởng phòng mua hàng" {...field} />
-                    </FormControl>
+                    <LookupSelect
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Chọn chức vụ"
+                      emptyLabel="— Chưa gán chức vụ —"
+                      items={positionOptions}
+                    />
                     <FormMessage />
                   </FormItem>
                 )}
@@ -226,6 +295,65 @@ export function EmployeeFormDialog({
                   <FormItem>
                     <FormLabel>Trạng thái hồ sơ</FormLabel>
                     <ActiveStatusSelect value={field.value} onChange={field.onChange} />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/*  Ba ô cuối của form TẠO NHANH (C2). Cố ý dừng ở đây, không hỏi
+                 tiếp 20 ô còn lại của hồ sơ: bài học của HrOnline là bắt điền đủ
+                 30+ ô ngay từ đầu thì không ai nhập. Phần còn lại điền dần ở màn
+                 chi tiết, nơi có đủ 5 tab. */}
+            <div className="grid gap-4 sm:grid-cols-3">
+              <FormField
+                control={form.control}
+                name="hire_date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Ngày vào làm</FormLabel>
+                    <DatePicker value={field.value} onChange={field.onChange} />
+                    <FormDescription>Mốc tính thâm niên (ngày phép cộng thêm).</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="date_of_birth"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Ngày sinh</FormLabel>
+                    <DatePicker value={field.value} onChange={field.onChange} />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="gender"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Giới tính</FormLabel>
+                    <Select
+                      onValueChange={(v) => field.onChange(Number(v))}
+                      value={String(field.value)}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {EMPLOYEE_GENDER_OPTIONS.map((item) => (
+                          <SelectItem key={item.value} value={String(item.value)}>
+                            {item.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}

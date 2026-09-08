@@ -285,7 +285,9 @@ function ImportUploadForm({ lockedModule, onClose, onCreated }: ImportUploadForm
         {/* Ghi chú theo chế độ */}
         <div
           className={cn(
-            'flex items-start gap-2 rounded-xl border p-3 text-xs',
+            //  min-h cố định để hộp ghi chú (dài/ngắn theo chế độ) không làm popup
+            //  Nhập cao thấp khác popup Xuất — hai popup bằng chiều cao (khớp export-run-dialog).
+            'flex min-h-[76px] items-start gap-2 rounded-xl border p-3 text-xs',
             mode === IMPORT_MODE_DRY_RUN
               ? 'border-blue-200 bg-blue-50/70 text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-200'
               : 'border-amber-200 bg-amber-50/70 text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200',

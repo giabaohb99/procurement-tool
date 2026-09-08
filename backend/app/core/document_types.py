@@ -10,6 +10,10 @@ DOCUMENT_TYPES = [
     {"value": "goods_receipt", "label": "Phiếu nhập kho"},
     {"value": "payment_document", "label": "Chứng từ thanh toán"},
     {"value": "co_cq", "label": "CO/CQ (Chứng nhận xuất xứ / chất lượng)"},
+    # Duyệt dấu: chứng từ CÓ CHỮ KÝ SỐNG mà NSYC đính kèm để Văn thư đối chiếu. Thiếu value
+    # này thì mọi lần tải tệp (ảnh/PDF/Word/Excel) cho phiếu đóng dấu bị 400 "loại chứng từ
+    # không hợp lệ" — chính là lỗi không upload được ở Duyệt dấu.
+    {"value": "signed_doc", "label": "Chứng từ đã ký"},
     {"value": "other", "label": "Khác"},
 ]
 

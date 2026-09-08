@@ -14,7 +14,7 @@ import { PostComposerDialog } from '../components/post-composer-dialog'
 import { ThreadPrefixChip } from '../components/thread-prefix-chip'
 import { useBoardThreads } from '../hooks/use-board-threads'
 import type { ForumPost } from '../types/forum-post'
-import { authorInitials } from '../utils/author-initials'
+import { nameInitials } from '@/shared/utils/name-initials'
 
 /**
  * Màn thread của một box (F13b, QĐ-D7): mỗi dòng là chip prefix + tiêu đề +
@@ -140,7 +140,7 @@ function ThreadRow({ thread }: { thread: ForumPost }) {
       <Avatar className="size-8 shrink-0">
         <AvatarImage className="object-cover" src={thread.author_avatar} alt={thread.author_name} />
         <AvatarFallback className="bg-navy-solid text-xs font-semibold text-white">
-          {authorInitials(thread.author_name)}
+          {nameInitials(thread.author_name)}
         </AvatarFallback>
       </Avatar>
       <div className="min-w-0 flex-1">

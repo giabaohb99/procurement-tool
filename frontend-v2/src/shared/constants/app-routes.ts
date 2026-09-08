@@ -287,6 +287,11 @@ export const appRoutes = {
     departmentDetail: (id: number | string) => `/hr/departments/${id}`,
     companies: '/hr/companies',
     companyDetail: (id: number | string) => `/hr/companies/${id}`,
+    /** Danh mục Chức vụ — nguồn của ô chọn «Vị trí / Chức vụ» trên hồ sơ. */
+    jobPositions: '/hr/job-positions',
+    /** Thêm chức vụ mở TRANG RIÊNG, không phải hộp thoại — xem `CrudConfig.createRoute`. */
+    jobPositionNew: '/hr/job-positions/new',
+    jobPositionDetail: (id: number | string) => `/hr/job-positions/${id}`,
     /** Ma trận vai trò × quyền + danh sách tài khoản. */
     permissions: '/hr/permissions',
     /** Gán vai trò và phạm vi dữ liệu cho MỘT tài khoản. */
@@ -327,6 +332,17 @@ export const appRoutes = {
   },
   approvalSeal: {
     root: '/approval-seal',
+    //  Tạo/Sửa là TRANG riêng: chi tiết `/:id` = xem + thao tác; sửa ở `/:id/edit`;
+    //  tạo mới ở `/new`. Cùng khuôn với phân hệ Đặt xe.
+    new: '/approval-seal/new',
+    detail: (id: number | string) => `/approval-seal/${id}`,
+    edit: (id: number | string) => `/approval-seal/${id}/edit`,
+    /** Bản in phiếu yêu cầu đóng dấu (khổ A4) — nằm ngoài khung phân hệ. */
+    print: (id: number | string) => `/print/approval-seal/${id}`,
+    /** Danh mục Loại con dấu. */
+    sealTypes: '/approval-seal/seal-types',
+    sealTypeNew: '/approval-seal/seal-types/new',
+    sealTypeDetail: (id: number | string) => `/approval-seal/seal-types/${id}`,
   },
   vehicleBooking: {
     root: '/vehicle-booking',

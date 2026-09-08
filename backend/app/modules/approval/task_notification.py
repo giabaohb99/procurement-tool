@@ -42,6 +42,8 @@ ENTITY_LABELS = {
     #  trong `vehicle_booking/approval_bridge.py`) nhưng bị quên ở hai bảng này,
     #  nên thư báo ghi «Phiếu XE009» — mất luôn chữ nói đây là việc gì.
     "vehicle_booking": "Phiếu đặt xe",
+    #  Duyệt dấu có hook duyệt (bridge) — thiếu nhãn thì thư báo ghi «Phiếu <mã>».
+    "seal_request": "Phiếu đóng dấu",
 }
 
 #  Đường dẫn trong thư. Văn bản ghi thẳng đường của app v2; mấy loại còn lại ghi
@@ -68,6 +70,8 @@ ENTITY_LINKS = {
     #  `.get(...)` trả chuỗi RỖNG ⇒ `link` rỗng, bấm vào thông báo không đi đâu
     #  cả — mà `notify_new_tasks` nuốt lỗi nên không một chỗ nào đỏ lên.
     "vehicle_booking": "/vehicle-booking/{id}",
+    #  Duyệt dấu chỉ có ở app v2 (`/approval-seal`) — ghi thẳng đường v2 như trên.
+    "seal_request": "/approval-seal/{id}",
 }
 
 

@@ -304,6 +304,18 @@ _Tôi đã duyệt_. Người duyệt không phải sang màn Phê duyệt nữa
   (chặng đang chờ sáng lên) đã dựng rồi BỎ ngày 03/09/2026 — trong ô bảng cao 35px
   nó đọc ra như một dãy biểu tượng lỗi. Câu chữ do **backend** dựng
   (`approval/steps_service._summary`) vì còn dùng cho bản in; đừng chép luật sang TS.
+- ⚠️ **Không tab nào của màn Đơn nghỉ phép còn BÀY cột đó nữa** (duoc-CR-323,
+  08/09/2026): _Đơn của tôi_ và _Tôi đã duyệt_ bỏ hẳn, _Cần tôi duyệt_ giữ nhưng
+  `defaultHidden`. Cột **Việc của tôi** bỏ hẳn, **Hạn xử lý** rút về ngày giờ
+  trần. Hai tín hiệu mất theo, đừng tưởng là sót: dấu **«Quá hạn»** (cờ
+  `task.is_overdue` backend vẫn gửi, màn hình thôi không vẽ — bày lại thì đọc cờ
+  đó, đừng tự so ngày ở TS) và dòng **«Bấm thay ‹tên›»**, thứ báo cho người được
+  ủy quyền biết họ đang ký THAY người khác; nay chỉ còn ở màn chi tiết. Chi tiết
+  ở §8.1 của `doc/tai-lieu-chuc-nang/17-nghi-phep.md`.
+- ⚠️ **`defaultHidden` KHÔNG áp cho người đã từng đụng menu «Cột»** của bảng đó:
+  `useTableLayout` đọc `readLayout(storageKey) ?? defaultLayout`, có bản lưu
+  trong `localStorage` là bản đó thắng. Muốn thấy đúng mặc định mới thì xóa khóa
+  `erp.table.<storageKey>`.
 - ⚠️ `steps_service` đọc **cả bảng việc lẫn `flow_snapshot`**. Bảng việc chỉ có
   chặng ĐÃ MỞ, nên hỏi riêng nó thì luồng 2 chặng vừa gửi đi chỉ ra một chấm.
   Tổng số chặng lấy từ bản chụp luồng nằm trong chính phiếu. Gom **3 truy vấn cho
@@ -325,6 +337,196 @@ _Tôi đã duyệt_. Người duyệt không phải sang màn Phê duyệt nữa
   đó"*. Mà **thiếu người bàn giao là lý do trả đơn phổ biến nhất**, tức chính là
   thứ quyết định họ bấm Duyệt hay Trả về — nó phải nói thành lời, không để suy ra
   từ một khoảng trống. Hộp việc duyệt trả kèm `handovers` đúng vì lý do đó.
+
+### HỒ SƠ NHÂN SỰ mở rộng (duoc-CR-314, 08/09/2026 — Đợt 1/4)
+
+Thiết kế + nhật ký từng đợt: `doc/erp/hrm/01-ho-so-nhan-su.md`. Đợt 1 là **nền dữ
+liệu backend**, chưa có màn hình nào ở `frontend-v2` (đó là Đợt 2).
+
+- `tab_employee` thêm **30 cột** + `extra_fields` (JSON, trần 20 khóa) và hai bảng
+  con `tab_employee_contact` · `tab_employee_family`. Bốn ô phân loại lưu
+  **SMALLINT + bộ mã số** ở `employee/constants.py` (R2/QĐ-11); `Employee.status`
+  vẫn là mã CHUỖI — ngoại lệ lịch sử B-03, đừng lấy làm mẫu.
+- ⚠️ **Khóa quyền mới `employee_sensitive`** (ENTITIES **53 → 54**). Che **15
+  trường** (ngày sinh · MST · địa chỉ nhà · ngân hàng · CCCD · số BHXH) ở **tầng
+  serializer** — `modules/employee/sensitive.py` là nơi DUY NHẤT khai danh sách
+  đó. Ẩn ô trên giao diện là vô nghĩa: API, CSV và trợ lý AI đi đường khác.
+  **Cửa GHI cũng che.** Ngoại lệ `self`: ai cũng đọc đủ hồ sơ của chính mình
+  (nhánh này chặn `employee_id = 0`, nếu không «chưa gắn ai» khớp mọi hồ sơ).
+- ⚠️ **Thêm entity mới vào `ENTITIES` thì phải hỏi: nó có nên rơi vào
+  `_SYS_ENTITIES` của `seed.py` không?** `_PUR_MANAGER_PERMS` là
+  `{e: ALL for e in ENTITIES if e not in _SYS_ENTITIES}` — quên một dòng là Quản
+  lý thu mua tự nhiên có khóa đó. Với `employee_sensitive` nghĩa là đọc được CCCD
+  + tài khoản ngân hàng của toàn công ty. Có test canh
+  (`test_ho_so_nhan_su_dot1.py`).
+- ⚠️ **Hai bảng con CỐ Ý không có khóa phân quyền riêng** — chúng không có màn
+  hình riêng (luật «một khóa = một màn hình», CR-157) và phạm vi của chúng không
+  diễn đạt được bằng khuôn một-cột của `apply_scope` (bảng con chỉ có
+  `employee_id`). Chốt là **hai lớp của hồ sơ CHA**: `get_scoped(Employee, ...)`
+  → 404 ngoài phạm vi, rồi `employee_sensitive.read` → 403. Bản thiết kế K2 ghi
+  3 khóa mới là chưa tính tới điều đó, xem §5.4.
+- ⚠️ **`manager_id` không phải trường hiển thị cho đẹp** — đó là dữ liệu mà
+  `APPROVER_DIRECT_MANAGER` (Đợt 3) sẽ đọc. `block_manager_cycle` chặn vòng, kể
+  cả vòng dài A→B→C→A: vòng lặp **không nổ lúc lưu hồ sơ**, nó nổ lúc ai đó nộp
+  đơn nghỉ phép, ở một tệp không có chữ `employee` nào. Xóa hồ sơ thì gỡ
+  `manager_id` của cấp dưới về `0` (id chết → bộ máy duyệt lùi IM LẶNG).
+- ⚠️ **Cột mới có `default=` trên model vẫn ra `None` khi bản ghi chưa flush** —
+  `default` là mặc định lúc INSERT. Thiếu validator `mode="before"` thì
+  `EmployeeOut.model_validate()` ném 26 lỗi cùng lúc và **cả màn danh sách nhân
+  sự trả 500** vì một ô chưa ai nhập. Cùng bài học `_gender_none_is_unknown`.
+- ⚠️ Trên hệ ĐANG CHẠY, vai trò cũ **không tự có** `employee_sensitive` (D-018):
+  tick ở màn Phân quyền, hoặc `SEED_FORCE_SYNC=true` một lần rồi trả về `false`.
+  Vai trò mẫu seed sẵn: **`hr_profile`** — "Nhân sự — Hồ sơ nhân viên".
+  Kèm theo: người **đang đăng nhập giữ map quyền CŨ** tới khi đăng xuất/đăng
+  nhập lại — thêm entity xong mà màn hình vẫn báo thiếu quyền thì đó là lý do,
+  đừng đi tìm lỗi ở `require()`.
+
+Màn hình ở `frontend-v2` (duoc-CR-315, Đợt 2/4):
+`/hr/employees/:id` nay **5 tab**, tab nhớ ở URL `?tab=`; danh sách có 3 cột mới
++ cảnh báo «Chưa gán» quản lý trực tiếp (K5).
+
+- ⚠️ **`pickWritableProfile` (`hr/schemas/employee-schema.ts`) là chốt chống MẤT
+  DỮ LIỆU — đừng gỡ.** Backend che trường nhạy cảm bằng **chuỗi rỗng**, nên
+  người có `employee.write` mà thiếu `employee_sensitive.read` mở hồ sơ ra sửa
+  số điện thoại rồi bấm Lưu là **PATCH rỗng đè lên số tài khoản ngân hàng thật**
+  — không ai biết cho tới kỳ trả lương. Backend **cố ý không tự chặn**: nó không
+  phân biệt được "gửi rỗng vì bị che" với "gửi rỗng vì muốn xóa ô đó". Chỗ duy
+  nhất biết là nơi dựng form. `SENSITIVE_PROFILE_FIELDS` (13 trường) phải khớp
+  `SENSITIVE_FIELDS` của `backend/.../employee/sensitive.py`; lệch là lủng.
+- ⚠️ **Ô bị che trông y hệt ô chưa ai nhập.** Luôn dựng `SensitiveFieldsNotice`
+  khi `can('employee_sensitive','read')` sai — không có nó thì người dùng đọc hồ
+  sơ và tin rằng công ty chưa có số tài khoản ngân hàng của người đó.
+- **MỘT form cho cả 4 tab đầu.** Radix hủy mount tab ẩn nhưng react-hook-form giữ
+  giá trị trong `useForm` chứ không trong DOM — sửa ở tab này, bấm Lưu ở tab kia
+  vẫn gửi đủ. Hai bảng con và hai ảnh CCCD **ngoài** form đó: cửa API riêng, khóa
+  quyền riêng, nút Lưu riêng.
+- Bộ mã số của hồ sơ gõ tay ở `hr/types/employee-codes.ts` (`gen_status_ts.py`
+  chỉ sinh cho bộ mã CHUỖI) — cùng cảnh với `hr/types/leave.ts`. Có test chốt số
+  mục, nhưng đổi ở backend vẫn phải nhớ sửa tay bên này.
+
+### Danh mục CHỨC VỤ (duoc-CR-320, 08/09/2026)
+
+Ô «Vị trí / Chức vụ» nay là **ô CHỌN** đọc từ `tab_job_position`; màn quản lý ở
+`/hr/job-positions`. Khóa quyền mới **`job_position`** (ENTITIES **54 → 55**,
+PUBLIC ở `SCOPE_FIELDS`); seed cấp `read` cho MỌI vai trò vì ô chọn cần nó, sửa
+thì chỉ `hr_profile`. Chi tiết: `doc/erp/hrm/01-ho-so-nhan-su.md` §7.7.
+
+- ⚠️ **HAI CỘT CHO MỘT SỰ THẬT.** `tab_employee.position_id` là khóa,
+  `tab_employee.position` là **nhãn đã chép** — giữ cột chữ vì mười chỗ đọc
+  thẳng nó (bản in YCMH/YCBG, tệp Excel, `core/audit`, trợ lý AI). Toàn hệ chỉ
+  có **hai đường ghi** vào cột nhãn, cả hai ở `employee/position_service.py`:
+  `sync_label` (lưu hồ sơ) và `propagate_rename` (đổi tên trong danh mục). Thêm
+  đường thứ ba là nhãn trôi, và **bản in đưa cho khách ra tên cũ** trong khi màn
+  hình hiện tên mới.
+- ⚠️ **Luật «khóa = 0 thì xóa nhãn» CHỈ đúng ở đường CẬP NHẬT** (người dùng vừa
+  bỏ chọn). Áp cả lúc TẠO thì đường nhập CSV / seed — những nơi chỉ truyền chữ —
+  làm hồ sơ **mất chức danh ngay khi ra đời**, im lặng.
+- ⚠️ **Chức vụ đã ngừng dùng: chặn gán MỚI, nhưng hồ sơ đang giữ vẫn lưu được.**
+  Màn hồ sơ gửi lại mọi ô mỗi lần lưu, nên không có ngoại lệ đó thì người đó
+  không sửa nổi ô nào khác cho tới khi ai đi đổi chức vụ của họ.
+- ⚠️ Đừng lẫn với **`job_level` (Cấp bậc)** — thang bậc CỐ ĐỊNH bảy mức khai
+  trong mã nguồn (`employee/constants.py`), dùng để lọc và làm báo cáo cơ cấu.
+  Chức vụ là chức danh cụ thể in trên phiếu, người dùng tự thêm bớt.
+- ⚠️ Lọc danh sách nhân sự theo chức vụ đi bằng **`position_id`**, không bằng
+  chữ: lọc bằng chữ thì đổi tên là bộ lọc đã lưu trượt sạch, và `contains` khớp
+  cả chuỗi con («Phó phòng» lọt vào kết quả tìm «Trưởng phòng»).
+- ⚠️ **Danh sách cột của bảng KHÁC danh sách ô nhập** (duoc-CR-321). `sort_order`
+  và `department_id` còn dưới DB nhưng **cố ý không lên giao diện**: cột thứ tự
+  là khái niệm của người dựng hệ thống (bảng hiện toàn 10·20·130, không chỗ nào
+  giải nghĩa), còn «phòng ban thường giữ» không chặn gì cả nên hỏi cũng bằng
+  thừa. Ô chọn chức vụ vì thế **phải khai `sort_by=name`** — mặc định của
+  `make_crud_router` là `id desc`, tức danh sách tự đổi chỗ mỗi lần có ai thêm
+  một dòng.
+- ⚠️ **Đếm ngược người giữ đi qua `/api/job-positions/stats`, KHÔNG qua
+  serializer** (duoc-CR-322): serializer chạy cho từng dòng nên đếm ở đó là
+  N+1. Hai luật ngược nhau, cố ý — **số bày cho người xem thì lọc theo phạm vi**
+  (`apply_scope` trên `employee`), **chốt chặn xóa thì đếm toàn công ty** vì đó
+  là toàn vẹn dữ liệu; câu chặn nói rõ «trên toàn công ty» để hai số lệch nhau
+  không đọc thành lỗi. Thiếu `employee.read` thì backend **không ném 403**, nó
+  trả rỗng — giao diện phải tự tắt cột, không thì mọi dòng hiện 0 và người đọc
+  tin là chưa ai giữ chức vụ nào.
+- ⚠️ **`Employee.avatar` và `User.avatar` là `@property`, không phải cột** — đưa
+  vào `with_entities` là `ArgumentError` lúc chạy. Ảnh thật ở `tab_file`, nối
+  qua `tab_user.avatar_file_id`, ưu tiên `thumb_url or url`.
+- Nút _Thêm chức vụ_ mở **trang riêng** `/hr/job-positions/new`
+  (`CrudConfig.createRoute`) chứ không phải hộp thoại — khuôn có sẵn, dùng chung
+  với Loại nghỉ · Phòng họp · Ngày lễ · Xe · Tài xế. Lý do không phải form dài
+  (4 ô) mà là mỗi ô kéo theo một hệ quả phải đọc TRƯỚC khi gõ, hộp thoại thì
+  buộc cắt ngắn cho vừa khung.
+- ⚠️ **Hai cột ảnh xếp chồng nói HAI thứ khác nhau**: «Đang giữ» là ảnh của
+  NGƯỜI, «Phòng ban đang giữ» là ảnh của PHÒNG BAN (vòng tròn chữ viết tắt tên
+  phòng). Bản đầu cột sau xếp gương mặt nhân viên theo phòng và **lặp lại đúng
+  nhóm mặt của cột trước trên cùng một dòng** — hai cột nói cùng một điều. Chữ
+  viết tắt: tên NGƯỜI lấy hai từ **cuối**, tên PHÒNG lấy hai từ **đầu** (họ Việt
+  đứng trước nên phần phân biệt ở cuối; tên phòng đọc xuôi nên ở đầu — lấy hai
+  từ cuối thì «Công nghệ thông tin» ra «TT», trùng «Truyền thông»). Cả hai hàm ở
+  `shared/utils/name-initials.ts`.
+- Trang chi tiết chạy hết bề ngang (`detailMaxWidth: 'max-w-none'`) vì có tab
+  **«Người đang giữ»** — bảng nhân sự phân trang thật, kèm ô tìm kiếm và hai ô
+  lọc *phòng ban* · *tình trạng*.
+
+⚠️ **BỐN BẪY CỦA BIỂU MẪU, tìm ra bằng cách bấm tay trên trình duyệt** (duoc-CR-317
+— áp cho MỌI màn, không riêng nhân sự). Cả bốn im lặng, không test đơn vị nào bắt
+được, và ba trong số đó là lỗi có sẵn của khuôn chung:
+
+- **Ô sai ở TAB ĐANG ẨN → bấm Lưu không có gì xảy ra.** Radix hủy mount tab ẩn
+  nên `FormMessage` không có chỗ hiện; react-hook-form chặn submit trong im lặng
+  tuyệt đối — không toast, không lỗi, không request. Biểu mẫu chia tab **bắt
+  buộc** có nhánh `onInvalid` nhảy tới tab chứa ô sai. Mẫu:
+  `hr/utils/profile-field-tab.ts` + `form.handleSubmit(onSubmit, onInvalid)`.
+- **Nhấn Enter trong ô con nằm trong `<form>` → submit form CHA.** Bảng con có
+  nút Lưu riêng thì Enter phải bị `preventDefault`, không thì người dùng gõ dở
+  một dòng, nhấn Enter, và hệ thống lưu thứ khác rồi **báo thành công**.
+- **Nút mở hộp thoại trong `<form>` phải khai `type="button"`.** Thiếu thì HTML
+  mặc định `submit`: bấm «Xóa» là form LƯU bản ghi trước, hộp xác nhận mở sau —
+  bấm Hủy thì đã lưu rồi. `shared/ui/delete-confirm-button.tsx` từng thiếu, ảnh
+  hưởng ~11 màn chi tiết.
+- **`disabled={mutation.isPending}` KHÔNG chặn được bấm đúp.** Nó là state React
+  nên chỉ đúng ở lần render sau; bấm 5 lần liền tay ra 5 request và 5 dòng nhật
+  ký cho một lần lưu. Chặn bằng `useRef` đổi ngay trong tick, `disabled` chỉ để
+  báo hiệu. Khuôn chung còn lỗ này ở nhiều màn.
+
+⚠️ **BA BẪY CỦA BẢNG CÓ BỘ LỌC** (duoc-CR-322 — áp cho MỌI màn danh sách):
+
+- **`id = 0` là một GIÁ TRỊ THẬT, đừng lấy làm mốc «tất cả».** Cột tham chiếu
+  bỏ trống (`department_id`, `company_id`, `manager_id`…) lưu `0`, và
+  `apply_filters` so khớp CHÍNH XÁC nên `department_id=0` lọc ra đúng nhóm *chưa
+  gắn*. Lấy `0` làm sentinel thì nhóm đó thành thứ **duy nhất không lọc ra
+  được**, mà nó lại chính là nhóm người ta cần tìm để đi gắn cho đủ. Dùng `-1`.
+- **Đổi bộ lọc phải kéo trang về 1** — dùng `usePageResetOnFilterChange`, KHÔNG
+  `useEffect(() => setPage(1), [...])`: effect chạy sau khi commit nên lượt
+  render đầu vẫn gọi API với số trang cũ (một request thừa vào trang không còn
+  tồn tại), và ESLint chặn `setState` trong effect. Theo dõi giá trị tìm kiếm
+  **đã hoãn** chứ không theo ô nhập thô, kẻo mỗi ký tự một lần đặt lại trang.
+- **Câu «bảng rỗng» phải phân biệt _rỗng vì bộ lọc_ với _rỗng vì chưa có gì_.**
+  Một câu chung cho cả hai thì người vừa gõ nhầm một chữ đọc ra "chưa có dữ
+  liệu" và tin là vậy.
+
+Bẫy thứ tư nằm ở `frontend-v2/docs/ui/table.md` §4: **`defaultHidden` chỉ áp cho
+người chưa từng đụng menu «Cột»** — bảng nhớ bố cục trong `localStorage` và bản
+lưu thắng toàn bộ, nên sửa `defaultHidden` xong mà màn hình không đổi thì không
+phải mã sai.
+
+⚠️ **CỘT `String(n)` MÀ SCHEMA KHÔNG KHAI `max_length` = LỖI 500, KHÔNG PHẢI
+422** (duoc-CR-316 — luật này áp cho MỌI module, không riêng nhân sự). Chuỗi dài
+đi thẳng xuống MySQL, và MySQL là chỗ đầu tiên phản đối: người dùng dán nhầm một
+đoạn văn bản vào ô là nhận «mã sự cố», quản trị đi tra một lỗi vốn đáng ra là câu
+«tối đa n ký tự». Rà 22 trường của hồ sơ nhân sự thì **12 ca trả 500**, trong đó
+4 trường có lỗ từ lâu.
+
+- Khai bằng bí danh ở `modules/employee/field_limits.py` (`Str20`, `Str255`…),
+  số phải khớp ĐÚNG `String(n)` ở `model.py`.
+- ⚠️ **`test/backend` chạy SQLite, và SQLite KHÔNG ép độ dài `VARCHAR`.** Bài
+  kiểm nào ghi xuống DB rồi khẳng định là **xanh giả** — đúng lý do lỗ hổng này
+  sống lâu vậy. Phải kiểm ở tầng SCHEMA (`pytest.raises(ValidationError)`).
+- Cùng họ với nó: cột JSON cần trần **kích thước** chứ không chỉ trần số khóa
+  (20 khóa × 2MB = 40MB một bản ghi, MySQL nhận hết); cột ngày cần **dải năm**
+  hợp lý (MySQL nhận tới năm 9999, mà `hire_date` năm 0001 là hai nghìn năm
+  thâm niên); danh sách con cần **trần số dòng** (`sort_order` SMALLINT tràn ở
+  dòng 32768).
+- ⚠️ Vòng dò có TRẦN ĐỘ SÂU thì chạm trần phải **chặn**, đừng trả về im lặng —
+  "dò không thấy" không phải "không có". `block_manager_cycle` từng bỏ lọt đúng
+  kiểu đó, và cái lọt là vòng lặp vô hạn trong bộ máy duyệt.
 
 ## Tests
 

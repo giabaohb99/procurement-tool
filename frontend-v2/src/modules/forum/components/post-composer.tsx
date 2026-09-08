@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useAuth } from '@/core/auth/use-auth'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 
-import { authorInitials } from '../utils/author-initials'
+import { nameInitials } from '@/shared/utils/name-initials'
 import { PostComposerDialog } from './post-composer-dialog'
 
 /**
@@ -21,7 +21,7 @@ export function PostComposer() {
         <Avatar className="size-10">
           <AvatarImage className="object-cover" src={user?.avatar} alt={user?.full_name ?? ''} />
           <AvatarFallback className="bg-navy-solid text-sm font-semibold text-white">
-            {authorInitials(user?.full_name ?? '')}
+            {nameInitials(user?.full_name ?? '')}
           </AvatarFallback>
         </Avatar>
         <button

@@ -26,6 +26,11 @@ _MODULE_LABEL = {
     ImportModule.WAREHOUSE: "Danh mục kho",
     ImportModule.SURVEY_REQUEST: "Yêu cầu báo giá",
     ImportModule.PURCHASE_REQUEST: "Yêu cầu mua hàng",
+    ImportModule.VEHICLE: "Xe",
+    ImportModule.DRIVER: "Tài xế",
+    ImportModule.SEAL_TYPE: "Loại con dấu",
+    ImportModule.VEHICLE_BOOKING: "Yêu cầu đặt xe",
+    ImportModule.SEAL_REQUEST: "Yêu cầu đóng dấu",
 }
 
 
@@ -105,7 +110,8 @@ def precheck_headers(module: int, wb) -> None:
         fields = adapter["fields"]
     elif doc_import.is_doc_module(module):
         adapter = doc_import.DOC_ADAPTERS[module]
-        fields = [adapter["code"], *adapter["header_fields"], *adapter["line_fields"]]
+        #  Chứng từ header-only (Đặt xe / Duyệt dấu) KHÔNG có `line_fields` -> .get([]).
+        fields = [adapter["code"], *adapter["header_fields"], *adapter.get("line_fields", [])]
     else:
         return  # module chưa hỗ trợ — để bước sau báo
     sheet = adapter["sheet"]

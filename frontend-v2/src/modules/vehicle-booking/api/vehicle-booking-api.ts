@@ -23,6 +23,12 @@ export const vehicleBookingApi = {
   dispatch: (id: number, payload: { assigned_vehicle_id: number; assigned_driver_id: number }) =>
     apiPost<VehicleBooking>(`${BASE_URL}/${id}/dispatch`, payload),
 
+  //  Điều phối viên (quyền write) trả lại / từ chối phiếu ĐANG Đã điều phối.
+  dispatchReturn: (id: number, reason: string) =>
+    apiPost<VehicleBooking>(`${BASE_URL}/${id}/dispatch/return`, { reason }),
+  dispatchReject: (id: number, reason: string) =>
+    apiPost<VehicleBooking>(`${BASE_URL}/${id}/dispatch/reject`, { reason }),
+
   // --- Người duyệt (quyền approve) ---
   approve: (id: number) => apiPost<VehicleBooking>(`${BASE_URL}/${id}/approve`, {}),
   /** Yêu cầu chỉnh sửa: trả phiếu về người tạo, kèm lý do. */
@@ -45,6 +51,8 @@ export interface VehicleOption {
   id: number
   license_plate: string
   model: string
+  /** Loại xe (Xe con, Xe tải…) — hiển thị cạnh biển số khi điều phối. */
+  type: string
   status: string
   is_external: boolean
 }

@@ -9,8 +9,11 @@ from app.core.database import get_db
 from app.core.response import success
 from app.core.scoping import apply_scope, get_scoped
 
-from . import department_service, service
-from .schema import EmployeeCreate, EmployeeDetailOut, EmployeeOut, EmployeeUpdate
+from . import (contact_service, department_service, position_service, sensitive,
+               service)
+from .schema import (EmployeeContactOut, EmployeeContactsIn, EmployeeCreate,
+                     EmployeeDetailOut, EmployeeFamiliesIn, EmployeeFamilyOut,
+                     EmployeeOut, EmployeeUpdate)
 
 router = APIRouter(prefix="/api/employees", tags=["employee"])
 
@@ -27,15 +30,21 @@ def list_employees(
     query = apply_scope(query, service.Employee, "employee", user, get_perm_profile(db, user))
     query = apply_sort_from_request(query, service.Employee, request)
     total, items = service.list_employees(db, query, pg)
+    rows = [EmployeeOut.model_validate(i).model_dump() for i in items]
+    #  Che nhóm nhạy cảm NGAY Ở ĐÂY, không để tầng giao diện tự ẩn — danh sách
+    #  này còn đi ra qua trợ lý AI và qua mọi client gọi thẳng API.
     return success({
         "total": total,
-        "items": [EmployeeOut.model_validate(i).model_dump() for i in items],
+        "items": sensitive.mask_many(rows, get_perm_profile(db, user)),
     })
 
 
 @router.get("/{eid}")
 def get_employee(eid: int, db: Session = Depends(get_db), user=Depends(require("employee", "read"))):
-    return success(EmployeeDetailOut.model_validate(service.get_employee(db, eid)).model_dump())
+    obj = service.get_employee(db, eid)
+    data = EmployeeDetailOut.model_validate(obj).model_dump()
+    profile = get_perm_profile(db, user)
+    return success(sensitive.mask(data, sensitive.can_read_sensitive(profile, obj.id)))
 
 
 @router.post("/{eid}/avatar")
@@ -212,7 +221,7 @@ def create_employee(
     user=Depends(require("employee", "create")),
 ):
     obj = service.create_employee(db, data, user.id)
-    return success(EmployeeOut.model_validate(obj).model_dump(), "Đã tạo nhân viên", 201)
+    return success(_masked(db, obj, user), "Đã tạo nhân viên", 201)
 
 
 @router.patch("/{eid}")
@@ -231,7 +240,20 @@ def update_employee(
         department_service.block_out_of_scope_departments(db, [data.department_id], user, profile)
 
     obj = service.update_employee(db, eid, data, user.id)
-    return success(EmployeeOut.model_validate(obj).model_dump(), "Đã cập nhật")
+    return success(_masked(db, obj, user), "Đã cập nhật")
+
+
+def _masked(db: Session, obj, user) -> dict:
+    """Bản `EmployeeOut` đã che nhóm nhạy cảm cho đúng người đang gọi.
+
+    ⚠️ Cửa GHI cũng phải che. `employee.write` mà không có `employee_sensitive.read`
+    là một tổ hợp có thật (hành chính sửa số điện thoại); không che thì họ PATCH
+    một ô vô hại rồi đọc số tài khoản ngân hàng trong chính câu trả lời — một
+    đường vòng không cần biết gõ gì đặc biệt.
+    """
+    data = EmployeeOut.model_validate(obj).model_dump()
+    allowed = sensitive.can_read_sensitive(get_perm_profile(db, user), obj.id)
+    return sensitive.mask(data, allowed)
 
 
 def _employee_in_scope(db, eid: int, user, profile, action: str = "read"):
@@ -300,6 +322,121 @@ def set_employee_departments(
                  f"Đặt lại phòng kiêm nhiệm: {ids}")
     return success({"primary_department_id": emp.department_id or 0,
                     "extra_department_ids": ids}, "Đã cập nhật phòng kiêm nhiệm")
+
+
+# ── Hai bảng con của hồ sơ ──────────────────────────────────────────────────
+#  Chốt của chúng là chốt của HỒ SƠ CHA — hai lớp, cả hai đều phải qua:
+#    1. `_employee_in_scope(...)` — hồ sơ này có nằm trong phạm vi dữ liệu của
+#       người gọi không (nếu không: 404, không phải 403);
+#    2. `employee_sensitive.read` — có được xem NỘI DUNG không.
+#  Hai bảng cố ý KHÔNG có khóa phân quyền riêng; lý lẽ ở `sensitive.py`.
+
+def _block_sensitive(db: Session, user, employee_id: int) -> None:
+    """Chặn khi không được xem nhóm nhạy cảm. 403 chứ KHÔNG phải 404.
+
+    Khác `_employee_in_scope`: ở đó giấu cả sự tồn tại của hồ sơ, còn ở đây người
+    gọi ĐÃ biết hồ sơ tồn tại (họ vừa mở nó). Trả 404 lúc này chỉ làm giao diện
+    hiểu nhầm là hồ sơ vừa bị xóa và đá người dùng về danh sách.
+    """
+    if not sensitive.can_read_sensitive(get_perm_profile(db, user), employee_id):
+        raise HTTPException(403, "Bạn không có quyền xem thông tin nhạy cảm của hồ sơ nhân sự")
+
+
+@router.get("/{eid}/contacts")
+def list_employee_contacts(
+    eid: int, db: Session = Depends(get_db), user=Depends(require("employee", "read")),
+):
+    """Người báo tin trong trường hợp cần thiết."""
+    emp = _employee_in_scope(db, eid, user, get_perm_profile(db, user))
+    _block_sensitive(db, user, emp.id)
+    rows = contact_service.list_contacts(db, emp.id)
+    return success([EmployeeContactOut.model_validate(r).model_dump() for r in rows])
+
+
+@router.put("/{eid}/contacts")
+def set_employee_contacts(
+    eid: int, data: EmployeeContactsIn, db: Session = Depends(get_db),
+    user=Depends(require("employee", "write")),
+):
+    profile = get_perm_profile(db, user)
+    emp = _employee_in_scope(db, eid, user, profile, "write")
+    _block_sensitive(db, user, emp.id)
+    rows = contact_service.set_contacts(db, emp.id, data.items, user.id)
+    db.commit()
+    audit_record(db, user.id, "employee", emp.id, "update",
+                 f"Cập nhật người báo tin ({len(rows)} người)")
+    return success([EmployeeContactOut.model_validate(r).model_dump() for r in rows],
+                   "Đã cập nhật người báo tin")
+
+
+@router.get("/{eid}/families")
+def list_employee_families(
+    eid: int, db: Session = Depends(get_db), user=Depends(require("employee", "read")),
+):
+    """Thành viên hộ gia đình — phục vụ kê khai BHXH."""
+    emp = _employee_in_scope(db, eid, user, get_perm_profile(db, user))
+    _block_sensitive(db, user, emp.id)
+    rows = contact_service.list_families(db, emp.id)
+    return success([EmployeeFamilyOut.model_validate(r).model_dump() for r in rows])
+
+
+@router.put("/{eid}/families")
+def set_employee_families(
+    eid: int, data: EmployeeFamiliesIn, db: Session = Depends(get_db),
+    user=Depends(require("employee", "write")),
+):
+    profile = get_perm_profile(db, user)
+    emp = _employee_in_scope(db, eid, user, profile, "write")
+    _block_sensitive(db, user, emp.id)
+    rows = contact_service.set_families(db, emp.id, data.items, user.id)
+    db.commit()
+    audit_record(db, user.id, "employee", emp.id, "update",
+                 f"Cập nhật thành viên hộ gia đình ({len(rows)} người)")
+    return success([EmployeeFamilyOut.model_validate(r).model_dump() for r in rows],
+                   "Đã cập nhật thành viên hộ gia đình")
+
+
+#  Hai ô ảnh CCCD chỉ đặt được qua cửa này — `EmployeeUpdate` cố ý không khai
+#  chúng. Nhận chuỗi đường dẫn từ client là để người ta trỏ ô ảnh vào một URL
+#  bất kỳ, rồi màn hồ sơ và bản in sẽ tải nó về hộ.
+_ID_IMAGE_SIDES = {"front": "id_front_image", "back": "id_back_image"}
+
+
+@router.post("/{eid}/id-image/{side}")
+def upload_id_image(
+    eid: int, side: str, file: UploadFile = File(...), db: Session = Depends(get_db),
+    user=Depends(require("employee", "write")),
+):
+    """Tải ảnh CCCD mặt trước / mặt sau. `side` = `front` | `back`."""
+    import uuid
+
+    from app.core.storage import env_prefix, safe_name, upload_fileobj
+
+    col = _ID_IMAGE_SIDES.get((side or "").lower())
+    if not col:
+        raise HTTPException(400, "Mặt ảnh chỉ nhận 'front' (mặt trước) hoặc 'back' (mặt sau)")
+    profile = get_perm_profile(db, user)
+    emp = _employee_in_scope(db, eid, user, profile, "write")
+    #  ⚠️ Ảnh CCCD thuộc nhóm nhạy cảm nên GHI cũng phải có khóa đó, không chỉ
+    #  ĐỌC: ghi đè được ảnh CCCD của người khác là thay giấy tờ tùy thân của họ
+    #  trong hồ sơ mà người đọc hồ sơ không có cách nào biết.
+    _block_sensitive(db, user, emp.id)
+    if not (file.content_type or "").startswith("image/"):
+        raise HTTPException(400, "Ảnh CCCD phải là file ảnh (PNG, JPG…).")
+    try:
+        key = (f"{env_prefix()}/employee-id/{emp.id}/{side}-"
+               f"{uuid.uuid4().hex[:12]}-{safe_name(file.filename or 'cccd')}")
+        url = upload_fileobj(file.file, key, file.content_type or "")
+        setattr(emp, col, url)
+        emp.updated_by = user.id
+        db.commit()
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(400, f"Lỗi tải ảnh CCCD: {str(e)}")
+    audit_record(db, user.id, "employee", emp.id, "update",
+                 f"Cập nhật ảnh CCCD mặt {'trước' if side == 'front' else 'sau'}")
+    return success({col: url}, "Đã cập nhật ảnh CCCD")
 
 
 @router.delete("/{eid}")
@@ -443,6 +580,14 @@ def import_employees_csv(
             if dept:
                 department_id = dept.id
 
+        #  Chức vụ trong tệp là CHỮ; khớp được vào danh mục thì gắn luôn khóa
+        #  (duoc-CR-320). Không khớp → giữ chữ, `position_id = 0`: tệp CSV cũ
+        #  vẫn nhập được như trước, chỉ là hồ sơ đó chưa nối vào danh mục.
+        matched_position = position_service.resolve_by_name(db, position)
+        position_id = matched_position.id if matched_position else 0
+        if matched_position:
+            position = matched_position.name      # chuẩn hóa hoa thường theo danh mục
+
         existing = db.query(Employee).filter(Employee.code == code).first() if code else None
         if existing:
             if action in ["xóa", "delete"]:
@@ -455,6 +600,7 @@ def import_employees_csv(
                 existing.phone = phone
                 if department_id: existing.department_id = department_id
                 existing.position = position
+                existing.position_id = position_id
                 existing.status = status
                 existing.is_active = is_active
                 existing.updated_by = user.id
@@ -465,7 +611,8 @@ def import_employees_csv(
             if not code: code = generate_code(db, Employee, "NSU")
             new_obj = Employee(
                 code=code, full_name=full_name, email=email, phone=phone,
-                department_id=department_id, position=position, status=status,
+                department_id=department_id, position=position,
+                position_id=position_id, status=status,
                 is_active=is_active, created_by=user.id, updated_by=user.id
             )
             db.add(new_obj)

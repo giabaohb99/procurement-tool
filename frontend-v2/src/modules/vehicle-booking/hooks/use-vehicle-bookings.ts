@@ -126,6 +126,20 @@ export function useRejectBooking() {
     'Đã từ chối yêu cầu',
   )
 }
+
+//  Điều phối viên (quyền write) ở khâu Đã điều phối: trả về người tạo / từ chối phiếu.
+export function useDispatchReturnBooking() {
+  return useBookingTransition(
+    ({ id, reason }: { id: number; reason: string }) => vehicleBookingApi.dispatchReturn(id, reason),
+    'Đã trả lại để chỉnh sửa',
+  )
+}
+export function useDispatchRejectBooking() {
+  return useBookingTransition(
+    ({ id, reason }: { id: number; reason: string }) => vehicleBookingApi.dispatchReject(id, reason),
+    'Đã từ chối yêu cầu',
+  )
+}
 export function useDriverAcceptBooking() {
   return useBookingTransition(
     ({ id }: { id: number }) => vehicleBookingApi.driverAccept(id),
@@ -168,6 +182,8 @@ export function useUpdateVehicleBooking() {
     onSuccess: (_data, { id, submit }) => {
       qc.invalidateQueries({ queryKey: queryKeys.vehicleBooking.all })
       qc.invalidateQueries({ queryKey: queryKeys.vehicleBooking.booking(id) })
+      //  Ở LẠI trang sửa sau khi Lưu → nạp lại Lịch sử thao tác cho thấy mốc vừa ghi.
+      qc.invalidateQueries({ queryKey: ['audit-logs', 'vehicle_booking', id] })
       toast.success(submit ? 'Đã gửi duyệt yêu cầu đặt xe' : 'Đã lưu thay đổi')
     },
   })

@@ -35,9 +35,12 @@ export function ReadOnlyValue({ children, multiline = false, className }: ReadOn
   return (
     <div
       className={cn(
-        'rounded-lg border border-input bg-locked px-3 text-sm font-medium text-locked-foreground',
+        //  `min-w-0` + `break-words`: chuỗi dài KHÔNG khoảng trắng (email, URL, mã) phải
+        //  xuống dòng trong ô thay vì đẩy tràn cả lưới ra ngoài màn hình (lỗi responsive).
+        //  Màu: nền `bg-locked` + viền `input` + chữ `locked-foreground` (giữ theo erp-v2).
+        'min-w-0 break-words rounded-lg border border-input bg-locked px-3 text-sm font-medium text-locked-foreground',
         multiline
-          ? 'min-h-16 py-2.5 break-words whitespace-pre-wrap'
+          ? 'min-h-16 py-2.5 whitespace-pre-wrap'
           : 'flex min-h-9 items-center py-2',
         className,
       )}

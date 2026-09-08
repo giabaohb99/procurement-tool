@@ -79,6 +79,12 @@ ACTION_LABEL = {
     "del_option": "Gỡ phương án",
     "choose_option": "Chốt phương án",
     "unchoose_option": "Bỏ chốt phương án",
+    #  bao-CR-310 — gắn/gỡ PHƯƠNG ÁN lên dòng Yêu cầu MUA HÀNG (khác CR-311 ở trên
+    #  là trên Yêu cầu BÁO GIÁ, nên mã cũng khác: `option_add`/`option_remove`).
+    #  `purchase_request/option_service.py` ghi ba lời gọi này; thiếu nhãn thì dòng
+    #  dấu vết hiện mã Anh trần cho người đọc.
+    "option_add": "Gắn phương án",
+    "option_remove": "Gỡ phương án",
     "reply": "Phản hồi",
 }
 

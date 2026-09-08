@@ -33,12 +33,16 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
   { username: 'DEGO0001', password: 'admin', label: 'Dego Admin', group: 'Quản trị', hint: 'toàn quyền' },
   { username: 'admin', password: 'admin', label: 'Quản trị viên (admin)', group: 'Quản trị', hint: 'toàn quyền' },
 
-  // TK Đặt xe — 7 tài khoản test phân quyền phân hệ Đặt xe (mật khẩu seed: dego123).
-  { username: 'duonghaiyen.idagroup@dego.com', password: 'dego123', code: 'NSU203', label: 'Dương Hải Yến (NS1)', group: 'TK Đặt xe', hint: 'Nhân sự — chỉ xem của mình' },
-  { username: 'ndquyen.idagroup@dego.com', password: 'dego123', code: 'NSU202', label: 'Nguyễn Đỗ Quyên (TP1)', group: 'TK Đặt xe', hint: 'Trưởng bộ phận — duyệt, xem phòng ban' },
-  { username: 'hnqanh.idagroup@dego.com', password: 'dego123', code: 'NSU171', label: 'Hồ Ngọc Quế Anh (NS2)', group: 'TK Đặt xe', hint: 'Nhân sự — chỉ xem của mình' },
-  { username: 'nmtoan.idagroup@dego.com', password: 'dego123', code: 'NSU170', label: 'Nguyễn Minh Toàn (TP2)', group: 'TK Đặt xe', hint: 'Trưởng bộ phận — duyệt, xem phòng ban' },
-  { username: 'bhtthanh.idaglobal@dego.com', password: 'dego123', code: 'NSU055', label: 'Bùi Huỳnh Trường Thành (ĐPV)', group: 'TK Đặt xe', hint: 'Điều phối viên — xem tất cả' },
+  // TK Đặt xe — 7 tài khoản test phân quyền phân hệ Đặt xe (mật khẩu: dego123).
+  //  TÊN + MÃ khớp tài khoản THẬT mà email đăng nhập vào (đối chiếu DB 07/09/2026, sau khi
+  //  gỡ email trùng do seed cũ lệch 1 mã). Vai trò lấy theo grant thật: `dept_head` → Trưởng
+  //  bộ phận (NSU203, NSU171); `booking_dispatcher` → Điều phối viên (NSU056); `booking_driver`
+  //  → Tài xế (NSU060, NSU058); còn lại là Nhân sự. Sửa dòng nào thì đối chiếu lại DB.
+  { username: 'duonghaiyen.idagroup@dego.com', password: 'dego123', code: 'NSU204', label: 'Dương Hải Yến (NS1)', group: 'TK Đặt xe', hint: 'Nhân sự — chỉ xem của mình' },
+  { username: 'ndquyen.idagroup@dego.com', password: 'dego123', code: 'NSU203', label: 'Nguyễn Đỗ Quyên (TP1)', group: 'TK Đặt xe', hint: 'Trưởng bộ phận — duyệt, xem phòng ban' },
+  { username: 'hnqanh.idagroup@dego.com', password: 'dego123', code: 'NSU172', label: 'Hồ Ngọc Quế Anh (NS2)', group: 'TK Đặt xe', hint: 'Nhân sự — chỉ xem của mình' },
+  { username: 'nmtoan.idagroup@dego.com', password: 'dego123', code: 'NSU171', label: 'Nguyễn Minh Toàn (TP2)', group: 'TK Đặt xe', hint: 'Trưởng bộ phận — duyệt, xem phòng ban' },
+  { username: 'bhtthanh.idaglobal@dego.com', password: 'dego123', code: 'NSU056', label: 'Bùi Huỳnh Trường Thành (ĐPV)', group: 'TK Đặt xe', hint: 'Điều phối viên — điều phối xe/tài xế' },
   { username: 'ltnhut.idagroup@dego.com', password: 'dego123', code: 'NSU060', label: 'Lê Tấn Nhựt (TX1)', group: 'TK Đặt xe', hint: 'Tài xế — chỉ xem chuyến được giao' },
   { username: 'tqthai.idagroup@dego.com', password: 'dego123', code: 'NSU058', label: 'Trần Quốc Thái (TX2)', group: 'TK Đặt xe', hint: 'Tài xế — chỉ xem chuyến được giao' },
 

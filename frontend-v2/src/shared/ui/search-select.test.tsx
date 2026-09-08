@@ -138,6 +138,35 @@ describe('SearchSelect', () => {
     expect(screen.getByText(/Còn 15 mục nữa/)).toBeInTheDocument()
   })
 
+  it('kiểu searchInTrigger: ô đã chọn hiện NGAY nhãn trong ô nhập (không phải nút)', () => {
+    //  Yêu cầu 07/09/2026: cho gõ từ khóa ngay trên ô đang hiện giá trị đã chọn
+    //  (ô điều phối Xe/Tài xế). Ô lúc này là <input> mang sẵn nhãn đã chọn.
+    render(
+      <SearchSelect value="5" onChange={vi.fn()} options={DOC_TYPES} searchInTrigger placeholder="Chọn loại" />,
+    )
+    expect(screen.getByRole('combobox')).toHaveValue('Hợp đồng · HD')
+  })
+
+  it('kiểu searchInTrigger: gõ THẲNG trên ô để lọc rồi chọn, báo đúng value', async () => {
+    const nguoi = userEvent.setup()
+    const onChange = vi.fn()
+    render(
+      <SearchSelect
+        value=""
+        onChange={onChange}
+        options={DOC_TYPES}
+        searchInTrigger
+        placeholder="Chọn loại"
+      />,
+    )
+    const oInput = screen.getByRole('combobox')
+    await nguoi.click(oInput)
+    await nguoi.type(oInput, 'nghi phep')
+    //  Gõ ngay trên ô → lọc; chọn xong báo đúng value cho bên gọi.
+    await nguoi.click(screen.getByText('Giấy nghỉ phép · GNP'))
+    expect(onChange).toHaveBeenCalledWith('28')
+  })
+
   it('lọc còn ít hơn mức cắt thì KHÔNG hiện câu «còn … mục»', async () => {
     const nhieu = Array.from({ length: 75 }, (_, i) => ({
       value: String(i),

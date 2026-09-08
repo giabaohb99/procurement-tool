@@ -291,6 +291,11 @@ DB_GET_TRONG_CONTROLLER: dict[str, list[tuple[str, str]]] = {
         (OK_KHONG_CAN, "L351 `Company` — tra tên; lỗ của `GET /{pid}/print` nằm ở L349 "
                        "`service.get_po` (= D3 cụm 03)"),
     ],
+    "purchase_request/controller.py": [
+        (OK_KHONG_CAN, "L828 `db.get(Survey)` — tra tên/thông tin phiếu khảo sát cho ô chọn "
+                       "kho khảo sát; phạm vi đã hỏi ở `_open_line(..., \"write\")` trên PR nền, "
+                       "khảo sát là dữ liệu tham chiếu (cùng khuôn survey_request L539)."),
+    ],
     # ── Thu mua ──────────────────────────────────────────────────────────────
     "survey_request/controller.py": [
         (OK_KHONG_CAN, "L109 `Employee` — của CHÍNH người đang gọi, để so phòng ban"),
@@ -372,7 +377,7 @@ def test_a1_bang_65_lan_db_get_trong_controller_da_phan_loai_du():
         f"số lần gọi `db.get(` đã đổi ở {list(lech)} (thật, đã khai) = "
         f"{lech}. Phân loại lần gọi mới rồi cập nhật bảng."
     )
-    assert sum(that.values()) == 65, f"tổng phải là 65, đang là {sum(that.values())}"
+    assert sum(that.values()) == 66, f"tổng phải là 66, đang là {sum(that.values())}"
 
 
 def test_a1b_moi_dong_deu_co_nhan_hop_le_va_ly_do_that():

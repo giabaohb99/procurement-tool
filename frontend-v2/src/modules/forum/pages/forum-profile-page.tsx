@@ -11,7 +11,7 @@ import { PostCard } from '../components/post-card'
 import { PostComposer } from '../components/post-composer'
 import { useInfiniteSentinel } from '../hooks/use-infinite-sentinel'
 import { useUserPosts } from '../hooks/use-user-posts'
-import { authorInitials } from '../utils/author-initials'
+import { nameInitials } from '@/shared/utils/name-initials'
 
 /** Tên/avatar `PostCard` gửi kèm theo `Link` để đầu trang hiện được ngay. */
 interface ProfileLinkState {
@@ -81,7 +81,7 @@ export function ForumProfilePage() {
         <Avatar className="size-16">
           <AvatarImage className="object-cover" src={avatar} alt={name} />
           <AvatarFallback className="bg-navy-solid text-lg font-semibold text-white">
-            {authorInitials(name)}
+            {nameInitials(name)}
           </AvatarFallback>
         </Avatar>
         <div className="min-w-0">

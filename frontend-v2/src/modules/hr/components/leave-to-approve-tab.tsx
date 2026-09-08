@@ -9,7 +9,6 @@ import {
 } from '@/shared/conditional-filter'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
-import { Badge } from '@/shared/ui/badge'
 import { formatDateTime } from '@/shared/utils/format-date'
 import { LEAVE_INBOX_FILTER_FIELDS } from '../config/leave-request-filter-fields'
 import { useLeaveToApprove } from '../hooks/use-leave'
@@ -46,8 +45,18 @@ import {
  * đó nằm sẵn ở đầu trang chi tiết (`LeaveDetailDecisionActions`).
  *
  * ⚠️ **Không có cột Trạng thái.** Mọi dòng ở đây đều là «Chờ duyệt» — một cột
- * lặp đúng một giá trị chỉ ăn chỗ của cột Luồng duyệt, thứ thật sự nói phiếu
- * đang ở đâu.
+ * lặp đúng một giá trị thì không nói thêm được gì.
+ *
+ * ⚠️ **Bỏ cột «Việc của tôi»** (khách chốt 08/09/2026), và cột «Hạn xử lý» chỉ
+ * còn ngày giờ trần. Hai tín hiệu mất theo, ghi ra đây để lần sau không ai
+ * tưởng là sót:
+ *
+ * · dấu **«Quá hạn»** — cờ `task.is_overdue` backend vẫn gửi, màn này thôi
+ *   không vẽ; bày lại thì đọc cờ đó chứ đừng tự so ngày ở TypeScript;
+ * · dòng **«Bấm thay X»** — nay không còn chỗ nào trên màn này, người được ủy
+ *   quyền ký hộ chỉ biết khi mở chi tiết đơn. Cần bày lại thì gắn vào cột «Số
+ *   đơn» hoặc «Người nghỉ», đừng dựng lại cả một cột cho một dòng chữ hiếm khi
+ *   có.
  *
  * Lọc ở PHÍA MÀN HÌNH: hàng đợi nạp trọn một lượt và không phân trang, nên hỏi
  * lại backend là thừa một vòng mạng — xem `utils/filter-leave-rows` (ô tìm nhanh)
@@ -95,35 +104,17 @@ function LeaveToApproveContent() {
       employeeColumn(),
       leaveTypeColumn(),
       ...dateColumns(),
-      flowColumn((row) => row.flow),
-      {
-        key: 'task_node',
-        header: 'Việc của tôi',
-        cell: (row) => (
-          <div className="min-w-0">
-            <span className="block truncate">
-              {row.task.node_name || `Chặng ${row.task.node_seq}`}
-            </span>
-            {/*  Bấm THAY người khác phải nói ra TRƯỚC khi bấm, không phải sau:
-                 chữ ký đi vào dấu vết mang cả hai tên. */}
-            {row.task.on_behalf_of_name && (
-              <span className="block truncate text-xs text-muted-foreground">
-                Bấm thay {row.task.on_behalf_of_name}
-              </span>
-            )}
-            {row.task.is_overdue && (
-              <Badge variant="outline" className="mt-0.5 border-destructive/40 text-destructive">
-                Quá hạn
-              </Badge>
-            )}
-          </div>
-        ),
-        width: 170,
-      },
+      //  ⚠️ Cột «Luồng duyệt» ẩn SẴN, không xóa (khách chốt 08/09/2026): vẫn bật
+      //  lại được ở menu «Cột», và câu tóm tắt do backend dựng
+      //  (`steps_service._summary`) còn dùng cho bản in.
+      { ...flowColumn((row) => row.flow), defaultHidden: true },
       reasonColumn(),
       {
         key: 'due_at',
         header: 'Hạn xử lý',
+        //  ⚠️ CHỈ ngày giờ, KHÔNG có dấu «Quá hạn» (khách chốt 08/09/2026). Cờ
+        //  `task.is_overdue` backend vẫn gửi và vẫn đúng — chỉ là màn này thôi
+        //  không vẽ nó ra; muốn bày lại thì đọc cờ đó, đừng tự so ngày ở TS.
         cell: (row) =>
           row.task.due_at ? (
             <span className="tabular-nums">{formatDateTime(row.task.due_at)}</span>

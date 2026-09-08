@@ -29,7 +29,7 @@ import {
   useForumCommentActions,
   useForumComments,
 } from '../hooks/use-forum-comments'
-import { authorInitials } from '../utils/author-initials'
+import { nameInitials } from '@/shared/utils/name-initials'
 import { EmojiPickerButton } from './emoji-picker-button'
 
 interface PostCommentsProps {
@@ -276,7 +276,7 @@ function CommentRow({
           alt={comment.author_name}
         />
         <AvatarFallback className="bg-navy-solid text-xs font-semibold text-white">
-          {authorInitials(comment.author_name)}
+          {nameInitials(comment.author_name)}
         </AvatarFallback>
       </Avatar>
       <div className="min-w-0 flex-1">

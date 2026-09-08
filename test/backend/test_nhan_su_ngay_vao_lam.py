@@ -48,12 +48,24 @@ def test_gui_null_TUONG_MINH_la_lenh_XOA_ngay_vao_lam():
     assert data.model_dump(exclude_unset=True) == {"hire_date": None}
 
 
-@pytest.mark.parametrize("value", [0, 1, 2])
-def test_gioi_tinh_nhan_du_ba_gia_tri(value):
+@pytest.mark.parametrize("value", [0, 1, 2, 3])
+def test_gioi_tinh_nhan_du_bon_gia_tri(value):
+    """`3` = «Khác», thêm 08/09/2026 — xem `employee/constants.GENDER_OTHER`."""
     assert EmployeeCreate(full_name="A", gender=value).gender == value
 
 
-@pytest.mark.parametrize("value", [3, -1, 99])
+def test_bo_loc_cua_LOAI_NGHI_khong_co_muc_Khac():
+    """«Khác» mô tả một CON NGƯỜI, không mô tả một loại nghỉ áp cho ai.
+
+    Lọt mã `3` vào bảng nhãn của nghỉ phép là màn Loại nghỉ bày ra lựa chọn
+    "chỉ dành cho giới Khác" — không ai định nghĩa nổi nó nghĩa gì.
+    """
+    from app.modules.leave.constants import GENDER_LABELS
+
+    assert 3 not in GENDER_LABELS
+
+
+@pytest.mark.parametrize("value", [4, -1, 99])
 def test_gioi_tinh_LA_bi_chan(value):
     """Giá trị lạ thì `check_gender` của nghỉ phép so `want != got` ra True và
     chặn nhầm loại nghỉ, mà không chỗ nào giải thích được vì sao."""

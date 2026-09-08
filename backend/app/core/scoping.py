@@ -189,6 +189,26 @@ SCOPE_FIELDS = {
     #  chung), không diễn đạt được bằng khuôn một-cột của `apply_scope`. Ai được
     #  SỬA thì gác bằng quyền `meeting_room.write`, không phải bằng phạm vi.
     "meeting_room":     PUBLIC,
+
+    # --- Hồ sơ nhân sự mở rộng (08/09/2026) ---
+    #  Cổng `require()` thuần: nó trả lời "được xem NỘI DUNG nhạy cảm hay
+    #  không", còn "được xem HỒ SƠ NÀO" thì khóa `employee` phía trên đã trả lời
+    #  rồi. Hai câu hỏi khác nhau, và cả hai đều phải qua — trưởng phòng có
+    #  `employee.read` phạm vi *dept* mà thêm khóa này thì đọc được CCCD của
+    #  phòng mình, không phải của cả công ty.
+    #
+    #  ⚠️ PUBLIC ở đây KHÔNG có nghĩa là dữ liệu công khai. Nghĩa là entity này
+    #  không có bảng riêng để `apply_scope` lọc. Che nội dung nằm ở
+    #  `modules/employee/sensitive.py`, và ai xóa dòng này thì đọc đó trước.
+    "employee_sensitive": PUBLIC,
+
+    #  Danh mục CHỨC VỤ (duoc-CR-320). Bảng CÓ `department_id` nhưng cố ý không
+    #  lọc theo nó — `0` nghĩa là "chức vụ dùng chung mọi phòng ban", nên lọc
+    #  `department_id == <phòng tôi>` cắt mất đúng những dòng dùng chung ấy
+    #  (cùng bẫy đã ghi ở `meeting_room`). Danh mục này ai đọc cũng được, vì
+    #  thiếu nó thì ô chọn chức vụ trên hồ sơ rỗng; ai được SỬA thì gác bằng
+    #  `job_position.write`.
+    "job_position":     PUBLIC,
 }
 
 
@@ -388,6 +408,22 @@ def _role_scope_cond(model, entity, scope, user, profile):
         return and_(*cs)
 
     if scope == "company":
+        #  DUYỆT DẤU — Văn thư / Giám đốc: MỘT phiếu gắn NHIỀU công ty (bảng nối
+        #  `tab_seal_request_company`), nên lọc theo BẢNG NỐI chứ không theo cột
+        #  `company_id` (công ty chính) — Văn thư của BẤT KỲ công ty nào trong danh
+        #  sách đều thấy phiếu. Và chỉ thấy phiếu ĐÃ QUA TBP (Đã duyệt / Hoàn thành);
+        #  phiếu nháp/chờ duyệt KHÔNG hiện. Subquery chạy được cả MySQL lẫn SQLite.
+        #  `own`/`dept` KHÔNG chặn ở đây — nhánh chung phía trên đã đúng: `own` =
+        #  người tạo ∨ người yêu cầu; `dept` = cùng công ty chính ∧ cùng phòng.
+        if entity == "seal_request":
+            if not company_id:
+                return _chan(entity, scope, user, "nguoi dung chua gan phap nhan (company_id=0)")
+            from app.modules.seal_request.model import (SEAL_APPROVED, SEAL_COMPLETED,
+                                                        SealRequestCompany)
+            sub = select(SealRequestCompany.seal_request_id).where(
+                SealRequestCompany.company_id == company_id)
+            return and_(model.id.in_(sub),
+                        model.status.in_([SEAL_APPROVED, SEAL_COMPLETED]))
         if not f.get("company"):
             # Entity không có cột pháp nhân (vd. `survey`, `user`). Không có gì để lọc mà vẫn
             # trả None thì "company" hóa ra rộng bằng "all" — đúng lỗ N-14.
