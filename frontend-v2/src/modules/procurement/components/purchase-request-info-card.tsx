@@ -15,10 +15,9 @@ import { Textarea } from '@/shared/ui/textarea'
 import { formatDate, formatDateTime } from '@/shared/utils/format-date'
 import type { Company } from '@/modules/hr/types/company'
 import type { Employee } from '@/modules/hr/types/employee'
-import {
-  isDispatched,
-  type DeptHeadCandidate,
-  type PurchaseRequestDetail,
+import type {
+  DeptHeadCandidate,
+  PurchaseRequestDetail,
 } from '../types/purchase-request-detail'
 
 interface InfoCardProps {
@@ -77,11 +76,10 @@ export function PurchaseRequestInfoCard({
               (tự điền khi thu mua duyệt điều phối)
             </span>
           </Label>
-          {/* bao-CR-315: chưa điều phối thì chưa có ngày tiếp nhận — bày ngày lập phiếu ra
-              dưới nhãn này, người lập tưởng thu mua đã nhận việc rồi. */}
-          <ReadOnlyValue>
-            {isDispatched(data.status) ? formatDate(data.request_date) || '—' : 'Chưa tiếp nhận'}
-          </ReadOnlyValue>
+          {/* bao-CR-316: đọc cột RIÊNG `received_date` — `request_date` nay chỉ còn nghĩa
+              ngày LẬP phiếu. Rỗng = thu mua chưa tiếp nhận (bao-CR-315: bày ngày lập ra
+              dưới nhãn này thì người lập tưởng thu mua đã nhận việc rồi). */}
+          <ReadOnlyValue>{formatDate(data.received_date) || 'Chưa tiếp nhận'}</ReadOnlyValue>
         </div>
 
         <div className="space-y-1.5">

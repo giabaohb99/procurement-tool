@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
-import { fmtDateTime, fmtDate } from '../utils/datetime'
+import { fmtDateTime, fmtDate, fmtDateStr } from '../utils/datetime'
 import { toast } from '../components/toast'
 import { askConfirm, askPrompt } from '../components/confirm'
 import { useAuth } from '../auth/AuthContext'
@@ -232,14 +232,10 @@ export default function PurchaseRequestDetail() {
   const workableStatuses = pr.dispatch_enabled === false
     ? ['approved', 'dispatched', 'processing', 'purchasing', 'purchased']
     : ['dispatched', 'processing', 'purchasing', 'purchased']
-  // bao-CR-315: phiếu đã qua bước ĐIỀU PHỐI thì mới thật sự có "Ngày tiếp nhận" — backend điền
-  // vào `request_date` đúng lúc đó (bao-CR-293). Trước mốc này cột đó mới chỉ là ngày lập phiếu,
-  // giữ để làm mốc tạm tính ngày QĐ có hàng, nên KHÔNG được bày ra ô "Ngày tiếp nhận": người
-  // dùng nhìn thấy ngày hôm nay ngay lúc tạo phiếu thì tưởng thu mua đã nhận việc rồi.
-  // Công tắc điều phối TẮT cũng không phải ngoại lệ: lúc đó bước duyệt chạy luôn `dispatch_pr`,
-  // phiếu vẫn sang 'dispatched' và vẫn được điền ngày.
-  const daTiepNhan = ['dispatched', 'processing', 'purchasing', 'purchased', 'completed', 'done']
-    .includes(pr.status)
+  // bao-CR-316: MỐC ĐẾM hạn = Ngày tiếp nhận nếu thu mua đã nhận việc, chưa nhận thì tạm lấy
+  // Ngày lập phiếu (để cảnh báo trễ hạn có hiệu lực ngay lúc lập, chứ không đợi tới điều phối).
+  // Khớp `sla_base_date` bên backend — sửa một bên phải sửa cả hai.
+  const slaBase = (pr.received_date || '') || (pr.request_date || '')
   // Còn dòng nào chưa đặt hàng → vẫn cho tạo ĐMH (không ẩn khi mới hoàn thành 1 dòng).
   // CR-074: phải tính CẢ hai nhãn "chưa động tới", nếu không thì vừa lập đơn Nháp là nút
   // "Tạo ĐMH" biến mất, trong khi dòng đó vẫn có thể cần thêm đơn cho NCC khác.
@@ -269,15 +265,15 @@ export default function PurchaseRequestDetail() {
   // Số ngày QĐ theo tên phân loại (mốc dài nhất, thiếu thì 15 ngày — khớp backend)
   const stdMap = useMemo(() => stdDaysMap(itemGroups), [itemGroups])
   // Ngày QĐ có hàng của 1 dòng = Ngày tiếp nhận phiếu + số ngày QĐ của phân loại
-  const qdDate = (itemGroup: string) => regulatedDate(stdMap, itemGroup || '', pr.request_date || '')
+  const qdDate = (itemGroup: string) => regulatedDate(stdMap, itemGroup || '', slaBase)
   // CR-082 — các dòng khiến phiếu thành Đơn gấp (rỗng = không dòng nào vi phạm).
-  const urgentLines = useMemo(() => urgentLinesPR(pr.items || [], pr.request_date || '', stdMap),
-    [pr.items, pr.request_date, stdMap])
+  const urgentLines = useMemo(() => urgentLinesPR(pr.items || [], slaBase, stdMap),
+    [pr.items, slaBase, stdMap])
   // Tự tính lại cờ Đơn gấp khi dữ liệu nguồn (ngày tiếp nhận / dòng hàng) đổi. CR-082: chỉ BẬT,
   // KHÔNG bao giờ tự tắt — chiều tắt nằm ở effect bên dưới (CR-133).
   const recalcUrgent = (next: any) => {
     if (Object.keys(stdMap).length === 0 || next.is_urgent) return next
-    return urgentLinesPR(next.items || [], next.request_date, stdMap).length
+    return urgentLinesPR(next.items || [], next.received_date || next.request_date, stdMap).length
       ? { ...next, is_urgent: true } : next
   }
   // CR-133 — chiều TẮT của cờ Đơn gấp.
@@ -849,10 +845,12 @@ export default function PurchaseRequestDetail() {
               )}
               <div className="form-row">
                 {/* bao-CR-293 (ticket 20): Ngày tiếp nhận do backend TỰ ĐIỀN khi thu mua duyệt
-                    điều phối — khóa ô nhập, trước lúc đó giá trị chỉ là tạm (ngày lập phiếu) */}
+                    điều phối — khóa ô nhập.
+                    bao-CR-316: đọc cột RIÊNG `received_date`, không đọc `request_date` nữa —
+                    cột đó nay chỉ còn nghĩa ngày lập phiếu. */}
                 <label>Ngày tiếp nhận <span style={{ color: '#94a3b8', fontWeight: 400, fontSize: 12 }}>(tự điền khi thu mua duyệt điều phối)</span></label>
-                {daTiepNhan
-                  ? <DateInput value={pr.request_date || ''} disabled onChange={(v) => setH('request_date', v)} />
+                {pr.received_date
+                  ? <input value={fmtDateStr(pr.received_date)} disabled />
                   : <input value="Chưa tiếp nhận" disabled />}
               </div>
               <div className="form-row">

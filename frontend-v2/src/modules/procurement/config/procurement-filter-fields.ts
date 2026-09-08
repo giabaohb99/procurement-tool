@@ -48,7 +48,11 @@ export const PURCHASE_REQUEST_FILTER_FIELDS: FilterFieldDefinition[] = [
   { ...EMPLOYEE_FIELD, name: 'requester_id', label: 'Người yêu cầu' },
   { ...DEPARTMENT_FIELD, label: 'Bộ phận yêu cầu' },
   { name: 'purpose', label: 'Mục đích', type: 'text' },
-  { name: 'request_date', label: 'Ngày tạo', type: 'date' },
+  // bao-CR-316: hai mốc ngày RIÊNG — `request_date` là ngày LẬP phiếu, `received_date` là ngày
+  // thu mua TIẾP NHẬN (rỗng = chưa tiếp nhận). Trước CR này chỉ có một ô và nó lọc lẫn lộn
+  // cả hai loại ngày, vì `dispatch_pr` ghi đè `request_date` lúc điều phối.
+  { name: 'request_date', label: 'Ngày lập phiếu', type: 'date' },
+  { name: 'received_date', label: 'Ngày tiếp nhận', type: 'date' },
   { name: 'need_date', label: 'Ngày cần hàng', type: 'date' },
   { name: 'is_urgent', label: 'Đơn gấp', type: 'boolean', operators: ['is'] },
   {

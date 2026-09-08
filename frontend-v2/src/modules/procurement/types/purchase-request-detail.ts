@@ -55,7 +55,10 @@ export interface PurchaseRequestDetail {
    */
   head_of_dept_id: number
   purpose: string
+  /** bao-CR-316: ngày LẬP phiếu — không ai ghi đè nữa, xem `received_date` ngay dưới. */
   request_date: string
+  /** Ngày thu mua TIẾP NHẬN phiếu; rỗng = chưa tiếp nhận. Chỉ backend điền lúc điều phối. */
+  received_date: string
   need_date: string
   status: string
   is_urgent: boolean
@@ -156,11 +159,12 @@ export function isEditable(status: string): boolean {
 /**
  * Phiếu đã qua bước ĐIỀU PHỐI chưa — tức thu mua đã thật sự nhận việc chưa.
  *
- * bao-CR-315: chỉ từ mốc này `request_date` mới mang nghĩa "Ngày tiếp nhận"; trước đó nó
- * là ngày lập phiếu, giữ lại để tạm tính ngày QĐ có hàng và cờ Đơn gấp (bao-CR-293).
  * Công tắc điều phối TẮT không phải ngoại lệ: lúc đó bước duyệt gọi thẳng `dispatch_pr`
- * nên phiếu vẫn sang `dispatched` và vẫn được điền ngày — vì vậy luật này soi TRẠNG THÁI
- * phiếu chứ không soi công tắc.
+ * nên phiếu vẫn sang `dispatched` — vì vậy luật này soi TRẠNG THÁI phiếu chứ không soi
+ * công tắc.
+ *
+ * bao-CR-316: muốn HIỂN THỊ Ngày tiếp nhận thì đọc thẳng `received_date` (rỗng = chưa tiếp
+ * nhận), đừng suy từ trạng thái. Luật này chỉ còn để bật/tắt thao tác theo bước làm việc.
  */
 export function isDispatched(status: string): boolean {
   return ['dispatched', 'processing', 'purchasing', 'purchased', 'completed', 'done'].includes(

@@ -21,7 +21,9 @@ router = APIRouter(prefix="/api/purchase-requests", tags=["purchase_request"])
 
 HEADER_COLS = ["id", "code", "company_id", "requester", "requester_id", "requester_position",
                "department_id", "department", "head_of_dept", "head_of_dept_id",
-               "purpose", "request_date", "need_date",
+               # bao-CR-316: `received_date` CHỈ có ở đây (đọc ra), cố ý KHÔNG nằm trong
+               # PRCreate/PRUpdate — Ngày tiếp nhận do `dispatch_pr` điền, không ai sửa tay.
+               "purpose", "request_date", "received_date", "need_date",
                "status", "is_urgent", "vat_rate", "assignee_id", "note",
                "show_code_on_print", "suggested_supplier", "suggested_supplier_tax_code",
                "suggested_supplier_contact", "quote_filename", "quote_file_url"]
@@ -308,7 +310,8 @@ def _list_query(request: Request, db: Session, user):
     filterable = [f for f in service.FILTERABLE if f != "code"]
     query = apply_filters(db.query(PurchaseRequest).filter(PurchaseRequest.is_deleted == False), PurchaseRequest, request, filterable, operator_filterable=service.FILTERABLE)
     query = apply_ref_filters(query, PurchaseRequest, request, db)   # CR-088
-    query = apply_range_filters(query, PurchaseRequest, request, ["request_date", "need_date"])
+    query = apply_range_filters(query, PurchaseRequest, request,
+                                ["request_date", "received_date", "need_date"])
     query = apply_equals(query, PurchaseRequest, request, ["company_id"])
     item_group = (request.query_params.get("item_group") or "").strip()
     if item_group:

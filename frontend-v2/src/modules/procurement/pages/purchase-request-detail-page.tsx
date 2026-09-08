@@ -883,6 +883,8 @@ function createEmptyPurchaseRequest(user?: AuthUser | null): PurchaseRequestDeta
     head_of_dept_id: 0,
     purpose: '',
     request_date: new Date().toISOString().slice(0, 10),
+    // bao-CR-316: phiếu mới thì thu mua CHƯA tiếp nhận — để rỗng, backend điền lúc điều phối.
+    received_date: '',
     need_date: '',
     status: 'draft',
     is_urgent: false,

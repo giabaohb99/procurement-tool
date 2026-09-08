@@ -209,7 +209,10 @@ function PurchaseRequestListContent() {
         ),
       },
       {
-        key: 'request_date',
+        // bao-CR-316: ô này in `created_at` nên phải SẮP theo `created_at`. Khóa cũ là
+        // `request_date` — cột đó nay là ngày LẬP phiếu (người dùng sửa được), sắp theo nó
+        // thì thứ tự hiện ra không khớp con số đang bày trong ô.
+        key: 'created_at',
         header: 'Ngày tạo',
         width: 150,
         sortable: true,

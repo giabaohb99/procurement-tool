@@ -28,7 +28,13 @@ class PurchaseRequest(Base, AuditMixin):
     # Cột `head_of_dept` ở trên GIỮ LẠI làm bản chụp tên lúc lập phiếu (phiếu cũ không có id).
     head_of_dept_id: Mapped[int] = mapped_column(BigInteger, default=0)    # id NHÂN SỰ (tab_employee)
     purpose: Mapped[str] = mapped_column(String(255), default="")          # mục đích mua hàng
-    request_date: Mapped[str] = mapped_column(String(10), default="")      # ngày tạo (YYYY-MM-DD)
+    # bao-CR-316: HAI mốc ngày, hai cột, mỗi cột một nghĩa duy nhất. Trước CR này chỉ có
+    # `request_date` và `dispatch_pr` ghi đè nó lúc điều phối (bao-CR-293), nên cùng một cột
+    # lúc thì là ngày lập lúc thì là ngày tiếp nhận — bộ lọc và báo cáo trộn hai loại ngày,
+    # còn ngày lập gốc thì mất hẳn. Đừng gộp lại.
+    request_date: Mapped[str] = mapped_column(String(10), default="")      # ngày LẬP phiếu (YYYY-MM-DD)
+    # Rỗng = thu mua CHƯA tiếp nhận. Chỉ `dispatch_pr` được ghi, người dùng không sửa tay.
+    received_date: Mapped[str] = mapped_column(String(10), default="")     # ngày TIẾP NHẬN (YYYY-MM-DD)
     need_date: Mapped[str] = mapped_column(String(10), default="")         # ngày cần hàng
     status: Mapped[str] = mapped_column(String(30), default="draft")       # draft|submitted|approved|rejected
     is_urgent: Mapped[bool] = mapped_column(Boolean, default=False)

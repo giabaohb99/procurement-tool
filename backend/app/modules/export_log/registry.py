@@ -97,6 +97,8 @@ EXPORT_ADAPTERS: dict[str, dict] = {
             Col("department", "Phòng ban", width=22),
             Col("purpose", "Mục đích", width=26),
             Col("request_date", "Ngày yêu cầu", kind="date", width=14),
+            # bao-CR-316: rỗng nghĩa là thu mua chưa tiếp nhận phiếu, không phải thiếu dữ liệu.
+            Col("received_date", "Ngày tiếp nhận", kind="date", width=14),
             Col("need_date", "Ngày cần hàng", kind="date", width=14),
             Col("status", "Trạng thái", width=14),
         ],

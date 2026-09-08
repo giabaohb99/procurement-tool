@@ -457,7 +457,11 @@ export const cruds: Record<string, CrudConfig> = {
       // CR-088: hai ô này lọc theo ID (xem `conditional-filters.ts`).
       condSource('requester_id', 'Người yêu cầu', EMP_SRC),
       condSource('department_id', 'Bộ phận YC', DEPT_SRC),
-      condDate('request_date', 'Ngày tạo'), condDate('need_date', 'Ngày cần hàng'),
+      // bao-CR-316: hai mốc ngày RIÊNG — `request_date` là ngày LẬP phiếu, `received_date` là
+      // ngày thu mua TIẾP NHẬN (rỗng = chưa tiếp nhận). Trước CR này chỉ có một ô, lọc ra lẫn
+      // lộn cả hai loại ngày.
+      condDate('request_date', 'Ngày lập phiếu'), condDate('received_date', 'Ngày tiếp nhận'),
+      condDate('need_date', 'Ngày cần hàng'),
       { name: 'is_urgent', label: 'Đơn gấp', type: 'boolean' },
       condSelect('status', 'Trạng thái', [
         { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },
