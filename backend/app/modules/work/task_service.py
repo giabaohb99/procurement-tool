@@ -12,18 +12,22 @@ from datetime import datetime
 
 from fastapi import HTTPException
 from sqlalchemy import func
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
+from app.modules.work.audit_entity import AUDIT_TASK
 from app.modules.work import serializer as ser
 from app.modules.work import task_enrich
 from app.modules.work import label_value_service as label_values
+from app.modules.work import link_service as links
 from app.modules.work.label_model import (WorkLabelField, WorkLabelOption,
                                           WorkTaskLabel)
 from app.modules.work.membership_service import (CAN_EDIT, CAN_MANAGE, Actor,
                                                  block_if_archived,
                                                  effective_role, get_list_or_403)
-from app.modules.work.model import WorkAssigneeKind, WorkTaskStatus
+from app.modules.work.model import (WorkAssigneeKind, WorkTaskKind,
+                                    WorkTaskStatus)
 from app.modules.work.task_model import WorkSection, WorkTask, WorkTaskAssignee
 
 
@@ -74,6 +78,10 @@ def board(db: Session, actor: Actor, list_id: int) -> dict:
         "list": ser.list_out(lst, effective_role(db, actor.employee_id, list_id)),
         "sections": [ser.section_out(s) for s in sections],
         "tasks": _shape(tasks, task_enrich.collect(db, tasks)),
+        #  Mũi tên phụ thuộc đi CHUNG payload này (B-15): Gantt cần chúng cùng
+        #  lúc với các thanh, tách thành lượt gọi thứ hai là biểu đồ vẽ xong rồi
+        #  mũi tên mới nhảy vào sau, giật một nhịp.
+        "links": [ser.task_link_out(link) for link in links.list_links(db, list_id)],
     }
 
 
@@ -114,10 +122,17 @@ def create_task(db: Session, actor: Actor, data) -> dict:
         if section_id and not _section_belongs(db, section_id, list_id):
             raise HTTPException(400, "Cột không thuộc danh sách này")
 
+    #  Tên rỗng phải chặn ở ĐÂY chứ không ở schema: `title: str` nhận cả chuỗi
+    #  toàn dấu cách, `.strip()` xong thành rỗng và đẻ ra một việc không tên —
+    #  trên kanban là một thẻ trắng trơn, nhìn như giao diện hỏng.
+    title = data.title.strip()
+    if not title:
+        raise HTTPException(400, "Công việc phải có tên")
+
     t = WorkTask(company_id=lst.company_id, list_id=list_id, section_id=section_id,
                  parent_id=parent.id if parent else None,
-                 title=data.title.strip(), description=data.description or "",
-                 status=int(WorkTaskStatus.OPEN),
+                 title=title, description=data.description or "",
+                 status=int(WorkTaskStatus.OPEN), kind=_valid_kind(data.kind),
                  start_date=data.start_date or "", due_date=data.due_date or "",
                  sort_order=data.sort_order or _next_sort_order(
                      db, list_id, section_id, parent.id if parent else None),
@@ -127,8 +142,14 @@ def create_task(db: Session, actor: Actor, data) -> dict:
     db.commit()
     if data.assignee_ids:
         set_assignees(db, actor, t.id, data.assignee_ids, [])
-    record(db, actor.user_id, "work_task", t.id, "create", f"Tạo công việc: {t.title}")
+    record(db, actor.user_id, AUDIT_TASK, t.id, "create", f"Tạo công việc: {t.title}")
     return _shape([t], task_enrich.collect(db, [t]))[0]
+
+
+def _valid_kind(kind) -> int:
+    """Việc thường hay cột mốc (B-14). Số lạ về `1` chứ không 400: đây là trường
+    HIỂN THỊ, chặn cả lượt tạo vì nó thì mất việc mà chẳng cứu được gì."""
+    return int(kind) if int(kind or 0) in {int(k) for k in WorkTaskKind} else 1
 
 
 def _first_section_id(db: Session, list_id: int) -> int | None:
@@ -159,42 +180,58 @@ def _next_sort_order(db: Session, list_id: int, section_id: int | None,
     return int(q.scalar() or 0) + SORT_STEP
 
 
-def move_task(db: Session, actor: Actor, task_id: int, section_id: int,
+def move_task(db: Session, actor: Actor, task_id: int, section_id: int | None,
               before_task_id: int | None) -> dict:
-    """Kéo thả kanban: đưa task vào cột `section_id`, NGAY TRƯỚC `before_task_id`.
+    """Kéo thả: đưa task vào cột `section_id`, NGAY TRƯỚC `before_task_id`.
 
     Nhận MỐC TƯƠNG ĐỐI chứ không nhận `sort_order` tính sẵn ở trình duyệt, vì
     bảng trên màn hình có thể đang lọc (lát cắt / từ khóa) — client chỉ thấy một
     phần của cột, tự tính số thì mọi thẻ đang bị ẩn văng lên đầu.
 
-    Cả cột đích được ĐÁNH SỐ LẠI theo bước `SORT_STEP` trong cùng một giao dịch,
+    Cả hàng đích được ĐÁNH SỐ LẠI theo bước `SORT_STEP` trong cùng một giao dịch,
     nên sau mỗi cú thả thứ tự là duy nhất và không bao giờ hết khe.
+
+    Hai kiểu kéo đi chung một đường vì luật xếp chỗ y hệt nhau, chỉ khác cái
+    HÀNG được đánh số lại:
+
+    - **Task cha** → đổi cột và xếp lại trong cột đó. Bắt buộc có `section_id`.
+    - **Việc con** → xếp lại trong cụm của CHA nó, `section_id` phải rỗng: việc
+      con không thuộc cột nào (C-05), gửi kèm cột là dấu hiệu client nhầm nó với
+      một thẻ kanban.
     """
     t = get_task_or_403(db, actor, task_id, CAN_EDIT)
     lst = get_list_or_403(db, actor, t.list_id, CAN_EDIT)
     block_if_archived(lst)
 
     if t.parent_id:
-        raise HTTPException(400, "Việc con không nằm trong cột nào")
-    if not _section_belongs(db, section_id, t.list_id):
-        raise HTTPException(400, "Cột không thuộc danh sách này")
+        if section_id is not None:
+            raise HTTPException(400, "Việc con không nằm trong cột nào")
+        rows = (db.query(WorkTask)
+                .filter(WorkTask.parent_id == t.parent_id,
+                        WorkTask.deleted_at.is_(None))
+                .order_by(WorkTask.sort_order, WorkTask.id).all())
+    else:
+        if section_id is None:
+            raise HTTPException(400, "Thiếu cột đích")
+        if not _section_belongs(db, section_id, t.list_id):
+            raise HTTPException(400, "Cột không thuộc danh sách này")
 
-    t.section_id = section_id
-    db.flush()
+        t.section_id = section_id
+        db.flush()
+        rows = (db.query(WorkTask)
+                .filter(WorkTask.list_id == t.list_id,
+                        WorkTask.section_id == section_id,
+                        WorkTask.parent_id.is_(None),
+                        WorkTask.deleted_at.is_(None))
+                .order_by(WorkTask.sort_order, WorkTask.id).all())
 
-    rows = (db.query(WorkTask)
-            .filter(WorkTask.list_id == t.list_id,
-                    WorkTask.section_id == section_id,
-                    WorkTask.parent_id.is_(None),
-                    WorkTask.deleted_at.is_(None))
-            .order_by(WorkTask.sort_order, WorkTask.id).all())
     others = [r for r in rows if r.id != task_id]
 
     if before_task_id == task_id:
         pos = min(rows.index(t), len(others))       # "chèn trước chính nó" = đứng yên
     else:
-        #  Mốc lạ (thẻ vừa bị người khác kéo đi nơi khác) thì thả xuống CUỐI cột:
-        #  lệch một chỗ còn hơn ném thẻ về đầu cột.
+        #  Mốc lạ (thẻ vừa bị người khác kéo đi nơi khác) thì thả xuống CUỐI hàng:
+        #  lệch một chỗ còn hơn ném thẻ về đầu.
         pos = next((i for i, r in enumerate(others) if r.id == before_task_id),
                    len(others))
 
@@ -204,7 +241,8 @@ def move_task(db: Session, actor: Actor, task_id: int, section_id: int,
 
     t.updated_by = actor.user_id
     db.commit()
-    record(db, actor.user_id, "work_task", t.id, "update", f"Chuyển công việc: {t.title}")
+    what = "việc con" if t.parent_id else "công việc"
+    record(db, actor.user_id, AUDIT_TASK, t.id, "update", f"Chuyển {what}: {t.title}")
     return _shape([t], task_enrich.collect(db, [t]))[0]
 
 
@@ -225,17 +263,31 @@ def update_task(db: Session, actor: Actor, task_id: int, data) -> dict:
             raise HTTPException(400, "Cột không thuộc danh sách này")
         t.section_id = data.section_id or None
 
+    #  Cùng luật với lúc tạo: đổi tên thành rỗng cũng là một việc không tên.
+    if data.title is not None and not data.title.strip():
+        raise HTTPException(400, "Công việc phải có tên")
+
     for field in ("title", "description", "start_date", "due_date", "sort_order"):
         val = getattr(data, field, None)
         if val is not None:
             setattr(t, field, val.strip() if isinstance(val, str) else val)
+
+    if data.kind is not None:
+        t.kind = _valid_kind(data.kind)
+        #  Cột mốc là một điểm, không phải một quãng: giữ lại ngày bắt đầu cũ thì
+        #  Gantt có hai ngày để vẽ một hình thoi và không biết chọn cái nào —
+        #  `due_date` là ngày ai cũng đọc là "mốc rơi vào hôm nào".
+        if t.kind == int(WorkTaskKind.MILESTONE):
+            if not t.due_date:
+                t.due_date = t.start_date
+            t.start_date = ""
 
     if data.status is not None and int(data.status) != int(t.status):
         _apply_status(db, actor, t, int(data.status))
 
     t.updated_by = actor.user_id
     db.commit()
-    record(db, actor.user_id, "work_task", t.id, "update", f"Sửa công việc: {t.title}")
+    record(db, actor.user_id, AUDIT_TASK, t.id, "update", f"Sửa công việc: {t.title}")
     return _shape([t], task_enrich.collect(db, [t]))[0]
 
 
@@ -273,7 +325,7 @@ def delete_task(db: Session, actor: Actor, task_id: int) -> None:
      .filter(WorkTask.parent_id == task_id, WorkTask.deleted_at.is_(None))
      .update({WorkTask.deleted_at: now}, synchronize_session=False))
     db.commit()
-    record(db, actor.user_id, "work_task", task_id, "delete", f"Xóa công việc: {t.title}")
+    record(db, actor.user_id, AUDIT_TASK, task_id, "delete", f"Xóa công việc: {t.title}")
 
 
 def set_assignees(db: Session, actor: Actor, task_id: int,
@@ -299,7 +351,7 @@ def set_assignees(db: Session, actor: Actor, task_id: int,
                                 kind=int(WorkAssigneeKind.FOLLOWER),
                                 created_by=actor.user_id, updated_by=actor.user_id))
     db.commit()
-    record(db, actor.user_id, "work_task", task_id, "update", "Đổi người phụ trách")
+    record(db, actor.user_id, AUDIT_TASK, task_id, "update", "Đổi người phụ trách")
     return _shape([t], task_enrich.collect(db, [t]))[0]
 
 
@@ -318,6 +370,37 @@ def set_label(db: Session, actor: Actor, task_id: int, field_id: int, value) -> 
     if not field or field.list_id != t.list_id:
         raise HTTPException(400, "Trường nhãn không thuộc danh sách này")
 
-    label_values.write_value(db, field, task_id, value, actor.user_id)
-    db.commit()
+    _write_label_retrying_deadlock(db, field, task_id, value, actor.user_id)
     return _shape([t], task_enrich.collect(db, [t]))[0]
+
+
+#  MySQL: "Deadlock found when trying to get lock; try restarting transaction".
+_MYSQL_DEADLOCK = 1213
+_LABEL_WRITE_ATTEMPTS = 3
+
+
+def _write_label_retrying_deadlock(db: Session, field, task_id: int, value,
+                                   user_id: int) -> None:
+    """Ghi nhãn, thử lại khi CSDL báo deadlock.
+
+    `write_value` xóa sạch dòng cũ của trường rồi chèn lại, nên hai lượt ghi
+    CÙNG một `(task_id, field_id)` chồng nhau là hai giao dịch cùng khóa đúng
+    một khoảng chỉ mục theo hai thứ tự khác nhau — MySQL bắn 1213 và giết một
+    bên. Đây không phải chuyện hiếm: ô chọn NHIỀU giữ menu mở để tick liên tiếp,
+    mỗi lần tick là một lượt gọi, và hai người cùng sửa một việc cũng ra y vậy.
+    Người dùng thì thấy toast «Hệ thống gặp lỗi không lường trước».
+
+    Nạn nhân của deadlock đã bị cuộn lại sạch sẽ nên thử lại là an toàn — đúng
+    khuyến nghị của MySQL. Không thử lại vô hạn: lỗi 1213 lặp ba lần liền là dấu
+    hiệu của chuyện khác, để nó nổi lên còn hơn treo tiến trình.
+    """
+    for lan in range(_LABEL_WRITE_ATTEMPTS):
+        try:
+            label_values.write_value(db, field, task_id, value, user_id)
+            db.commit()
+            return
+        except OperationalError as loi:
+            db.rollback()
+            ma = loi.orig.args[0] if getattr(loi, "orig", None) and loi.orig.args else None
+            if ma != _MYSQL_DEADLOCK or lan == _LABEL_WRITE_ATTEMPTS - 1:
+                raise

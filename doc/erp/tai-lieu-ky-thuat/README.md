@@ -19,8 +19,12 @@ Bộ này mô tả **hệ thống SAU khi update** — nền ERP nhiều phân h
 
 ## Quan hệ với các tài liệu khác — đọc cái nào khi nào
 
-- **Nhật ký thay đổi (change-log / CR) DÙNG CHUNG một chỗ:** [`doc/tai-lieu-ky-thuat/change-log.md`](../../tai-lieu-ky-thuat/change-log.md).
-  Bộ này KHÔNG có change-log riêng — hai nhật ký cho một kho mã là hai nguồn sự thật, sớm muộn lệch nhau.
+- **Nhật ký thay đổi (change-log / CR) DÙNG CHUNG một sổ:** [`doc/tai-lieu-ky-thuat/change-log.md`](../../tai-lieu-ky-thuat/change-log.md)
+  **+** [`change-log-bao.md`](../../tai-lieu-ky-thuat/change-log-bao.md) — **đọc cả hai**.
+  Bộ này KHÔNG có change-log riêng — một change-log **theo phân hệ** là hai nguồn sự thật cho
+  một kho mã, sớm muộn lệch nhau. Việc tách tệp ngày 07/09/2026 khác hẳn: vẫn **một sổ, một
+  dải số**, chỉ chia chỗ ghi **theo người** để hai người thôi chèn vào cùng một dòng đầu bảng
+  rồi xung đột mỗi lần merge. Chia theo phân hệ thì vẫn cấm.
 - **Quy trình nhánh + deploy:** [`doc/tai-lieu-ky-thuat/quy-trinh-nhanh-va-deploy.md`](../../tai-lieu-ky-thuat/quy-trinh-nhanh-va-deploy.md) — bắt buộc đọc trước khi đụng `main` hoặc VPS. Không chép lại ở đây.
 - **Kế hoạch và quyết định** (vì sao làm, làm theo thứ tự nào) nằm ở các tệp đánh số của
   [`doc/erp/`](../README.md) (`07` vỏ ERP, `11`–`13` đa pháp nhân + màn còn lại, `15` đổ bê tông nền).

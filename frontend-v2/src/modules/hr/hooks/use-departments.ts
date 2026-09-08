@@ -29,8 +29,14 @@ export function useDepartmentsByCompanies(companyIds: number[]) {
 /**
  * Danh sách phòng ban. Tham số tìm kiếm là `q` (tên phòng ban HOẶC tên trưởng
  * bộ phận), không phải `name` — xem chú thích ở `department-api.ts`.
+ *
+ * `enabled`: backend gác `department.read`. Màn nào chỉ MƯỢN danh mục này
+ * (hộp thoại phạm vi ở màn Phân quyền) phải tự tắt khi thiếu quyền — cứ mount
+ * là gọi thì người dùng ăn 403, mà 403 trên GET không bật toast nên ô chỉ hiện
+ * rỗng và họ tưởng "chưa khai phòng ban nào". Cùng khuôn với `useCompanies` /
+ * `useEmployees`.
  */
-export function useDepartments(params: ListParams = {}) {
+export function useDepartments(params: ListParams = {}, options: { enabled?: boolean } = {}) {
   const query: ListParams = {
     page: 1,
     page_size: appConfig.defaultPageSize,
@@ -41,6 +47,7 @@ export function useDepartments(params: ListParams = {}) {
     queryKey: queryKeys.hr.departments(query),
     queryFn: () => departmentApi.list(query),
     placeholderData: keepPreviousData,
+    enabled: options.enabled ?? true,
   })
 }
 

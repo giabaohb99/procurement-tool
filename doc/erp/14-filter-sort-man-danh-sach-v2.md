@@ -279,6 +279,10 @@ hợp đồng / đối tác**.
    trạng thái sort (cột đang sort, hướng) + nút "Sắp xếp"; `CrudListPage` và các page
    thu mua truyền `sort_by`/`sort_dir` vào `ListParams`. Không có bước này thì mọi mục
    "Sắp xếp" ở trên chưa chạy được.
+   → **XONG 07/09/2026 (bao-CR-300):** sort bằng bấm tiêu đề cột (chu kỳ tăng → giảm →
+   thôi; cột thời gian khai `sortDescFirst` đảo thành giảm → tăng → thôi), hook dùng
+   chung `useUrlSort` giữ `sort_by`/`sort_dir` trên URL, `CrudListPage` tự nối. Nút
+   "Sắp xếp" riêng KHÔNG làm — bấm header là đủ, theo đúng bản prod bao-CR-294.
 2. **Ô lọc nhanh cho `CrudListPage`.** Hiện khung chỉ render 1 ô tìm; cần cho khai một
    mảng "ô lọc nhanh" (select/combobox/date-range) để 5 màn Sản xuất có thanh lọc ngoài.
 3. **Control "Khoảng ngày + preset".** Một component dùng chung (Hôm nay/Tuần/Tháng/Quý)

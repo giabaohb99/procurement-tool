@@ -79,7 +79,11 @@ export function buildFormDefaults(
  */
 export function withCurrentValue(options: CrudOption[], value: unknown): CrudOption[] {
   const current = String(value ?? '')
-  if (!current) return options
+  //  `'0'` cũng là RỖNG với ô chọn tham chiếu (`convert_to_type_id`, `parent_id`…):
+  //  backend khai id là số nên "chưa chọn" lưu thành `0`, không phải `null`. Bù
+  //  nó vào danh sách thì ô hiện đúng chữ **0** — người dùng đọc ra một lựa chọn
+  //  tên là "0". Bỏ qua thì ô rơi về chữ gợi ý, đúng nghĩa chưa chọn.
+  if (!current || current === '0') return options
   if (options.some((option) => String(option.value) === current)) return options
   return [...options, { value: current, label: current }]
 }

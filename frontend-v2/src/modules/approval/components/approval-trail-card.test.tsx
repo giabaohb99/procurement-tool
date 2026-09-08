@@ -84,9 +84,15 @@ describe('ApprovalTrailCard', () => {
     render(<ApprovalTrailCard instanceId={8} />)
 
     expect(screen.getByText('Lịch sử phê duyệt')).toBeInTheDocument()
-    expect(screen.getByText('Ban hành văn bản hành chính')).toBeInTheDocument()
-    expect(screen.getByText('Phiên bản 8')).toBeInTheDocument()
-    expect(screen.getByText('2 mốc đã ghi nhận')).toBeInTheDocument()
+    //  KHÔNG còn dòng đếm "N mốc đã ghi nhận": con số trôi ra mép phải và không
+    //  nói thêm được gì so với chính danh sách ngay dưới nó.
+    expect(screen.queryByText(/mốc đã ghi nhận/)).not.toBeInTheDocument()
+    //  KHÔNG còn dải tóm tắt 4 ô: bốn nhãn đó nói lại đúng thứ dòng thời gian
+    //  ngay dưới đã nói, nhưng bằng từ của bộ máy nên người đọc phải dịch.
+    expect(screen.queryByText('Luồng xử lý')).not.toBeInTheDocument()
+    expect(screen.queryByText('Người trình')).not.toBeInTheDocument()
+    expect(screen.queryByText('Vị trí hiện tại')).not.toBeInTheDocument()
+    expect(screen.queryByText('Phiên bản 8')).not.toBeInTheDocument()
     expect(screen.getByText('đã duyệt')).toBeInTheDocument()
     expect(screen.getAllByText('Chặng 1').length).toBeGreaterThan(0)
     expect(screen.getAllByText('Trưởng bộ phận duyệt nội dung').length).toBeGreaterThan(0)
@@ -121,6 +127,23 @@ describe('ApprovalTrailCard', () => {
     expect(screen.getByText('Trưởng bộ phận (Demo)')).toBeInTheDocument()
     expect(screen.getByText(/Hạn xử lý:/)).toBeInTheDocument()
     expect(screen.queryByText('Chi tiết')).not.toBeInTheDocument()
+  })
+
+  it('ý kiến dài không dấu cách phải BẺ ĐƯỢC, không đẩy tràn thẻ', () => {
+    //  Lỗi thật, dựng lại được trên giao diện 03/09/2026: lý do hủy 420 ký tự
+    //  liền không khoảng trắng làm đoạn chữ rộng 3139px nằm trong khung 768px,
+    //  đè lên cột bên cạnh và sinh thanh cuộn ngang cho cả trang.
+    //  `whitespace-pre-wrap` một mình KHÔNG đủ — nó chỉ xuống dòng ở chỗ có
+    //  khoảng trắng, mà chuỗi này không có chỗ nào.
+    const dai = 'Lydobitraveratdaikhongcodaucachnaoca'.repeat(12)
+    mockUseApprovalTrail.mockReturnValue({
+      data: { ...TRAIL, lines: [{ ...TRAIL.lines[1], comment: dai }] },
+      isLoading: false,
+    })
+
+    render(<ApprovalTrailCard instanceId={8} />)
+
+    expect(screen.getByText(dai)).toHaveClass('break-words')
   })
 
   it('nêu rõ nguyên nhân khi luồng bị kẹt', () => {

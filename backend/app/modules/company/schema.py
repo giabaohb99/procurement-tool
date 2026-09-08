@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel, Field
 
 
@@ -44,4 +46,5 @@ class CompanyOut(CompanyBase):
     id: int
     legal_rep_name: str | None = None
     logo: str = ""
+    updated_at: datetime | None = None   # bao-CR-294 — cột "Ngày cập nhật" ở màn danh sách
     model_config = {"from_attributes": True}

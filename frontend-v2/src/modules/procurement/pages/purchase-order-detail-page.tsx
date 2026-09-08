@@ -6,6 +6,7 @@ import {
   CircleCheck,
   Copy,
   CornerUpLeft,
+  FileText,
   Loader2,
   LockOpen,
   Plus,
@@ -20,6 +21,8 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { usePermission } from '@/core/authorization/use-permission'
+// CR-268: mượn hook tiền treo của phân hệ Tài chính — báo đơn còn tiền trả trước.
+import { usePrepayHanging } from '@/modules/finance/hooks/use-payment-requests'
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
 import { useEmployees } from '@/modules/hr/hooks/use-employees'
 import { useSuppliers } from '@/modules/production/hooks/use-suppliers'
@@ -29,6 +32,7 @@ import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { confirm as confirmDialog } from '@/shared/ui/confirm-dialog'
 import { DeleteConfirmButton } from '@/shared/ui/delete-confirm-button'
 import { ErrorState } from '@/shared/ui/error-state'
 import { PageContainer } from '@/shared/ui/page-container'
@@ -44,6 +48,7 @@ import {
 } from '../components/purchase-order-items-table'
 import { PurchaseOrderLineDialog } from '../components/purchase-order-line-dialog'
 import { PurchaseOrderPaymentDialog } from '../components/purchase-order-payment-dialog'
+import { PurchaseOrderPaymentRequestsCard } from '../components/purchase-order-payment-requests-card'
 import { PurchaseOrderReasonDialog } from '../components/purchase-order-reason-dialog'
 import {
   parseDeliveryFileKey,
@@ -71,13 +76,14 @@ import {
   toPurchaseOrderPayload,
   type PurchaseOrderDraftFromRequest,
 } from '../utils/purchase-order-draft'
-import { validatePurchaseOrder } from '../utils/required-fields'
+import { duplicatePurchaseOrderCodes, validatePurchaseOrder } from '../utils/required-fields'
 import { summarizeShipping } from '../utils/purchase-order-shipping'
 import {
   isDeliveryStage,
   isPurchaseOrderApproved,
   isPurchaseOrderLocked,
   PO_FIELDS_EDITABLE_AFTER_APPROVE,
+  PO_MISA_AFTER_APPROVE_HINT,
   type PurchaseOrderDetail,
   type PurchaseOrderItem,
 } from '../types/purchase-order-detail'
@@ -177,6 +183,14 @@ export function PurchaseOrderDetailPage() {
   /** Cước vận chuyển gom từ các lần giao — để giải thích con số ở dưới bảng. */
   const shipping = useMemo(() => summarizeShipping(draft?.items ?? []), [draft?.items])
 
+  // CR-268: đơn có tiền TRẢ TRƯỚC chưa đối trừ thì báo ngay dưới bảng dòng hàng.
+  // Gác quyền `payment_request.read` kẻo người không xem được YCTT ăn toast 403.
+  const { data: prepayHangingData } = usePrepayHanging(
+    { supplier_code: serverData?.supplier_code ?? '', po_code: serverData?.code ?? '' },
+    { enabled: !isNew && Boolean(serverData?.code) && can('payment_request', 'read') },
+  )
+  const prepayHangingTotal = prepayHangingData?.total ?? 0
+
   /** Giỏ phiếu giao của riêng dòng đang mở, đổi về khóa theo chỉ số lần giao. */
   const linePendingFiles = useMemo(
     () => (lineIndex === null ? {} : pendingFilesOfLine(pendingFiles, lineIndex)),
@@ -240,6 +254,23 @@ export function PurchaseOrderDetailPage() {
     if (message) {
       toast.error(message)
       return
+    }
+    // bao-CR-308: trùng mã được phép (tách dòng theo bộ chứng từ) — chỉ hỏi xác
+    // nhận để chặn gõ nhầm mã, không chặn cứng nữa.
+    const duplicated = duplicatePurchaseOrderCodes(data)
+    if (duplicated.length) {
+      const ok = await confirmDialog({
+        title: 'Mã hàng trùng trên đơn',
+        tone: 'default',
+        confirmLabel: 'Vẫn lưu',
+        cancelLabel: 'Quay lại sửa',
+        message:
+          `Các mã sau xuất hiện trên NHIỀU dòng: ${duplicated.join(', ')}.\n\n` +
+          'Nếu cố ý tách dòng theo bộ chứng từ (cùng mã nhưng khác lô / khác Tên trên hóa đơn ' +
+          '/ số hóa đơn) thì bấm Vẫn lưu — tiến độ trên YCMH vẫn cộng gộp đúng theo mã.\n\n' +
+          'Nếu chỉ là gõ nhầm mã thì bấm Quay lại sửa.',
+      })
+      if (!ok) return
     }
     const saved = await savePurchaseOrder.mutateAsync({
       id: isNew ? undefined : purchaseOrderId,
@@ -327,10 +358,29 @@ export function PurchaseOrderDetailPage() {
             </Button>
           )}
 
+          {/* bao-CR-314: chỉ hiện khi đơn có gắn YCMH. Bản in chỉ gồm những dòng hàng
+              có trên đơn này — không cần quyền đọc YCMH vì cổng là quyền in ĐƠN. */}
+          {!isNew && can('purchase_order', 'print') && (data.pr_code || '').trim() && (
+            <Button variant="outline" asChild>
+              <Link
+                to={appRoutes.procurement.purchaseRequestPrintFromPo(data.id)}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <FileText />
+                In Phiếu yêu cầu
+              </Link>
+            </Button>
+          )}
+
+          {/*
+            CỐ Ý không gác theo `unpaid_total > 0.01`: đơn chưa nhận hàng thì chưa
+            có công nợ, nhưng vẫn phải lập được phiếu THANH TOÁN TRƯỚC (CR-067) —
+            hộp thoại tự đổi sang luồng đó. Bản v1 cũng đã bỏ điều kiện này.
+          */}
           {!isNew &&
             ['approved', 'partial', 'received', 'completed'].includes(data.status) &&
-            can('payment_request', 'create') &&
-            data.unpaid_total > 0.01 && (
+            can('payment_request', 'create') && (
               <Button variant="outline" onClick={() => setPaymentOpen(true)}>
                 <Receipt />
                 Tạo yêu cầu thanh toán
@@ -372,7 +422,10 @@ export function PurchaseOrderDetailPage() {
             </Button>
           )}
 
-          {!isNew && ['partial', 'received', 'approved'].includes(data.status) && canWrite && (
+          {/* Chỉ hiện từ khi có hàng về. Đơn mới duyệt mà chưa nhận dòng nào thì
+              backend chặn `/complete` (400 "Còn N dòng chưa Hoàn thành/Hủy") —
+              để nút ở đó chỉ tổ mời người dùng bấm vào một lỗi. */}
+          {!isNew && ['partial', 'received'].includes(data.status) && canWrite && (
             <Button variant="outline" onClick={() => void handleAction('complete')}>
               <CircleCheck />
               Hoàn thành
@@ -431,6 +484,7 @@ export function PurchaseOrderDetailPage() {
         <PurchaseOrderInfoCard
           data={data}
           editable={headerEditable}
+          misaEditable={afterApproveEditable}
           companies={companiesData?.items}
           suppliers={(suppliersData?.items ?? []).filter(
             (supplier) => supplier.supplier_type !== 'transport',
@@ -465,7 +519,7 @@ export function PurchaseOrderDetailPage() {
             {afterApproveEditable && (
               <p className="rounded-md border border-info/30 bg-info/8 px-3 py-1.5 text-xs text-muted-foreground">
                 Đơn đã duyệt — nội dung đã ký khóa lại. Mở nút bút chì ở cột Hành động để sửa:{' '}
-                {PO_FIELDS_EDITABLE_AFTER_APPROVE}.
+                {PO_FIELDS_EDITABLE_AFTER_APPROVE}.{PO_MISA_AFTER_APPROVE_HINT}
                 {canUnapprove && ' Muốn đổi phần khác thì bấm Hủy duyệt để đưa đơn về Nháp.'}
               </p>
             )}
@@ -515,10 +569,24 @@ export function PurchaseOrderDetailPage() {
                     chuyển — cước đó chưa vào công nợ.
                   </p>
                 )}
+                {/* CR-268: tiền trả trước còn treo của đơn — nhận hàng sinh công nợ
+                    tới đâu hệ thống tự đối trừ tới đó, hết treo thì dòng này biến mất. */}
+                {prepayHangingTotal > 0.01 && (
+                  <p className="flex items-center justify-end gap-1.5 text-warning">
+                    <AlertTriangle className="size-3.5" />
+                    <span title="Tiền phiếu thanh toán trước đã chi cho đơn này nhưng chưa đối trừ vào công nợ. Khi nhận hàng sinh công nợ, hệ thống tự trừ dần.">
+                      Đã trả trước{' '}
+                      {prepayHangingTotal.toLocaleString('vi-VN', { maximumFractionDigits: 0 })} đ —
+                      chưa đối trừ vào công nợ.
+                    </span>
+                  </p>
+                )}
               </div>
             )}
           </CardContent>
         </Card>
+
+        {!isNew && <PurchaseOrderPaymentRequestsCard poCode={data.code} />}
 
         <DocumentAttachmentsCard
           entity="purchase_order"
@@ -540,11 +608,7 @@ export function PurchaseOrderDetailPage() {
         )}
       </div>
 
-      <PurchaseOrderPaymentDialog
-        open={paymentOpen}
-        purchaseOrderCode={data.code}
-        onOpenChange={setPaymentOpen}
-      />
+      <PurchaseOrderPaymentDialog open={paymentOpen} order={data} onOpenChange={setPaymentOpen} />
 
       <PurchaseOrderLineDialog
         item={lineIndex === null ? null : (data.items[lineIndex] ?? null)}
@@ -562,6 +626,7 @@ export function PurchaseOrderDetailPage() {
         carriers={(suppliersData?.items ?? []).filter(
           (supplier) => supplier.supplier_type === 'transport',
         )}
+        orderDate={data.order_date || ''}
         pendingFiles={linePendingFiles}
         onChange={(item) => {
           if (lineIndex === null) return

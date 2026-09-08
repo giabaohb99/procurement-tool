@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Annotated
 
 from pydantic import BaseModel, Field, field_validator
@@ -48,6 +49,7 @@ class RoleOut(BaseModel):
     name: str
     description: str = ""
     sort_order: int = 0
+    updated_at: datetime | None = None   # bao-CR-294 — cột "Ngày cập nhật" (roles sort phía client)
     model_config = {"from_attributes": True}
 
 

@@ -110,7 +110,7 @@ export interface ReportTab {
 }
 
 /**
- * Tám tab của báo cáo mua hàng.
+ * Chín tab của báo cáo mua hàng.
  *
  * Ba tab gắn `purchase_order` là dữ liệu phía THU MUA (NCC, nhân sự phụ trách,
  * chi phí vận chuyển): phòng ban yêu cầu không được xem. Tab "Bộ phận" thì ai
@@ -126,6 +126,9 @@ export const REPORT_TABS: ReportTab[] = [
   { key: 'shipping', label: 'Chi phí vận chuyển', need: 'purchase_order' },
   { key: 'pyc_req', label: 'Yêu cầu mua hàng', need: 'purchase_request' },
   { key: 'ycks_req', label: 'Yêu cầu báo giá', need: 'survey_request' },
+  // bao-CR-295/299 (ticket 23): báo cáo theo DÒNG hàng của YCMH — soi mã nào
+  // chưa được đặt để khỏi đặt sót đơn. Cũng có trang riêng (bao-CR-296).
+  { key: 'pr_lines', label: 'Chi tiết YC mua hàng', need: 'purchase_request' },
 ]
 
 export const SUPPLIER_METRICS: ReportMetric[] = [
@@ -168,6 +171,10 @@ export const PYC_METRICS: ReportMetric[] = [
   { key: 'approved', label: 'Đã duyệt' },
   { key: 'dispatched', label: 'Đã điều phối' },
   { key: 'processing', label: 'Đang xử lý' },
+  // bao-CR-292/297 (ticket 22): hai mốc tách từ "Đang xử lý" — thiếu là phiếu ở
+  // hai mốc này rơi khỏi bảng và cột Tổng không còn bằng tổng các cột sau.
+  { key: 'purchasing', label: 'Đang mua hàng' },
+  { key: 'purchased', label: 'Đã mua hàng' },
   { key: 'completed', label: 'Hoàn tất' },
   { key: 'rejected', label: 'Từ chối' },
   { key: 'cancelled', label: 'Đã hủy' },
@@ -292,6 +299,46 @@ export interface ShippingDetailResult {
   /** Danh sách đơn vị vận chuyển / tháng có phát sinh — dựng ô lọc từ đây. */
   carriers: string[]
   months: string[]
+}
+
+/**
+ * Một DÒNG hàng của báo cáo Chi tiết YC mua hàng (bao-CR-295/299).
+ *
+ * `created_date` / `expected_date` là chuỗi 'YYYY-MM-DD' như trên YCMH;
+ * `gram` = `Product.specs` (hệ không có trường gram riêng — chờ khách xác nhận);
+ * `status` là mã trạng thái PHIẾU, `line_status` là mã tiến độ DÒNG (B-06).
+ */
+export interface PrLineRow {
+  id: number
+  pr_id: number
+  pr_code: string
+  created_date: string
+  requester: string
+  department: string
+  product_code: string
+  product_name: string
+  warehouse: string
+  item_group: string
+  gram: string
+  qty: number
+  price: number
+  vat_pct: number
+  amount: number
+  status: string
+  line_status: string
+  expected_date: string
+  /** Mã nhân viên NSTM; `assignee_name` rỗng khi mã không tra ra hồ sơ nhân sự. */
+  assignee: string
+  assignee_name: string
+}
+
+export interface PrLinesResult {
+  items: PrLineRow[]
+  total: number
+  page: number
+  page_size: number
+  /** NSTM có phát sinh trong kỳ — dựng ô lọc từ đây. */
+  assignees: { code: string; name: string }[]
 }
 
 /** Một cột của biểu đồ chi phí theo tháng. */

@@ -22,12 +22,16 @@ export interface EditablePaymentLine {
   supplier_name: string
   source_type: string
   po_code: string
+  /** bao-CR-304 (ticket 26) — mã MISA của ĐMH, chỉ hiển thị; đổi mã PO thì cập nhật sau khi Lưu. */
+  misa_code: string
   invoice_no: string
   invoice_date: string
   due_date: string
   payable_total: number
   payable_paid: number
   amount: number
+  /** CR-260 — phần đề nghị cấn trừ tiền treo, backend thực thi khi phiếu được Duyệt. */
+  offset_amount: number
 }
 
 interface PaymentRequestLinesTableProps {
@@ -41,6 +45,11 @@ interface PaymentRequestLinesTableProps {
   showSupplierColumns: boolean
   /** Khóa PO của dòng đã gắn khoản nợ — chỉ dòng gõ tay mới cho sửa PO (màn TẠO). */
   lockLinkedPo: boolean
+  /**
+   * CR-260 — hiện cột "Cấn trừ trả trước". Chỉ bật khi phiếu có dòng mang phần
+   * cấn trừ (hoặc đang sửa nháp có tiền treo) để phiếu thường không dài thêm cột.
+   */
+  showOffsetColumn: boolean
   supplierDisplay: (row: EditablePaymentLine) => string
   sourceDisplay: (row: EditablePaymentLine) => string
   onPatch: (index: number, patch: Partial<EditablePaymentLine>) => void
@@ -53,6 +62,7 @@ export function PaymentRequestLinesTable({
   storageKey,
   showSupplierColumns,
   lockLinkedPo,
+  showOffsetColumn,
   supplierDisplay,
   sourceDisplay,
   onPatch,
@@ -70,18 +80,25 @@ export function PaymentRequestLinesTable({
     }
     cols.push(
       { key: 'po', header: 'PO', width: 150, minWidth: 90 },
+      // bao-CR-304 (ticket 26) — cột Mã MISA chỉ hiển thị, mã nhập/sửa trên ĐMH.
+      { key: 'misa', header: 'Mã MISA', width: 140, minWidth: 90 },
       { key: 'invoice_no', header: 'Số hóa đơn', width: 160, minWidth: 100 },
       { key: 'invoice_date', header: 'Ngày hóa đơn', width: 160, minWidth: 110 },
       { key: 'due_date', header: 'Hạn trả', width: 120, minWidth: 90, align: 'center' },
       { key: 'payable_total', header: 'Tổng nợ', width: 140, minWidth: 90, align: 'right' },
       { key: 'payable_paid', header: 'Đã trả', width: 140, minWidth: 90, align: 'right' },
+    )
+    if (showOffsetColumn) {
+      cols.push({ key: 'offset', header: 'Cấn trừ trả trước', width: 160, minWidth: 110, align: 'right' })
+    }
+    cols.push(
       { key: 'amount', header: 'Đề nghị trả', width: 160, minWidth: 110, align: 'right' },
     )
     if (editable) {
       cols.push({ key: 'action', header: 'Bỏ', width: 56, minWidth: 44, hideable: false, align: 'center' })
     }
     return cols
-  }, [showSupplierColumns, editable])
+  }, [showSupplierColumns, showOffsetColumn, editable])
 
   function renderCell(key: string, row: EditablePaymentLine, index: number) {
     const poEditable = editable && (!lockLinkedPo || !row.payable_id)
@@ -110,6 +127,9 @@ export function PaymentRequestLinesTable({
         ) : (
           row.po_code || '—'
         )
+
+      case 'misa':
+        return row.misa_code || '—'
 
       case 'invoice_no':
         return editable ? (
@@ -141,6 +161,19 @@ export function PaymentRequestLinesTable({
 
       case 'payable_paid':
         return <span className="tabular-nums">{formatMoney(row.payable_paid)}</span>
+
+      case 'offset':
+        // CR-260 — ý định cấn trừ tiền treo: nháp sửa được, duyệt xong chỉ xem
+        return editable ? (
+          <Input
+            type="number"
+            className="w-full px-2 text-right tabular-nums"
+            value={row.offset_amount ?? 0}
+            onChange={(e) => onPatch(index, { offset_amount: Number(e.target.value) || 0 })}
+          />
+        ) : (
+          <span className="tabular-nums text-primary">{formatMoney(row.offset_amount)}</span>
+        )
 
       case 'amount':
         return editable ? (

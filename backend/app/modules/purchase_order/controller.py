@@ -28,6 +28,28 @@ HEADER = ["id", "code", "misa_code", "pr_code", "survey_code", "company_id", "su
           "is_urgent", "status", "document_status", "note", "approve_note"]
 
 
+def _in_scope(db: Session, pid: int, user, action: str) -> PurchaseOrder:
+    """Nạp ĐMH theo id NHƯNG chỉ khi nó nằm trong phạm vi `action` của người gọi.
+
+    `require(entity, action)` chỉ trả lời "vai trò này được làm hành động đó không"; nó
+    KHÔNG biết đơn thuộc pháp nhân nào. Trước bản vá này mọi nhánh GHI/IN dừng ở
+    `service.get_po` = `db.get` trần, nên đổi đuôi URL sang `/print` là vòng qua được đúng
+    bộ lọc mà `GET /{pid}` ngay bên trên đã đặt.
+
+    `action` PHẢI khớp `require(...)` của route gọi (in → `print`, duyệt → `approve`, …);
+    lấy `read` cho tất cả là mượn phạm vi rộng hơn phạm vi thật của hành động.
+
+    404 cho cả "không có" lẫn "ngoài phạm vi" — cùng mã lỗi `service.get_po` vẫn trả, nên
+    người ngoài phạm vi không suy ra được đơn có thật hay không.
+    """
+    po = apply_scope(db.query(PurchaseOrder).filter(PurchaseOrder.id == pid),
+                     PurchaseOrder, "purchase_order", user,
+                     get_perm_profile(db, user), action).first()
+    if not po:
+        raise HTTPException(404, "Không tìm thấy đơn mua hàng")
+    return po
+
+
 def _require_awaiting_approval(db: Session, pid: int, action_label: str) -> None:
     """CR-073: duyệt / từ chối / trả về chỉ hợp lệ khi đơn đang CHỜ DUYỆT.
 
@@ -189,6 +211,7 @@ def list_po(request: Request, pg: dict = Depends(pagination), db: Session = Depe
     for p in items:
         row = {c: getattr(p, c) for c in HEADER}
         row["created_at"] = p.created_at   # thời điểm tạo (có giờ) — hiển thị giờ VN ở list
+        row["updated_at"] = p.updated_at   # bao-CR-294 — cột "Ngày cập nhật" + sort ở màn danh sách
         # Tiền hàng ở danh sách = GIÁ TRỊ ĐẶT HÀNG (SL đặt × đơn giá × VAT) — ổn định, không về 0
         # khi dòng chuyển sang `ordered` mà chưa nhận (it.amount tính theo SL thực nhận).
         row["amount"] = round(sum(
@@ -309,10 +332,45 @@ def get_po(pid: int, db: Session = Depends(get_db), user=Depends(require("purcha
     return success(_out(db, service.get_po(db, pid)))
 
 
+# Đơn đã qua duyệt thì mới in chữ ký người duyệt. Hủy duyệt (CR-108) đưa đơn về `draft`
+# nên nó tự rơi khỏi tập này; đơn bị hủy / từ chối cũng không in chữ ký duyệt.
+_PO_APPROVED_STATUSES = {"approved", "partial", "received", "completed"}
+
+
+def resolve_print_signers(db: Session, po: PurchaseOrder) -> dict:
+    """Họ tên + ảnh chữ ký cho các ô ký trên bản in Đơn mua hàng.
+
+    `creator_*` = người lập đơn (`created_by`). `approver_*` = người bấm Duyệt, tra từ
+    nhật ký thao tác chứ không có cột riêng — đơn có thể bị hủy duyệt rồi duyệt lại,
+    nên lấy dòng GẦN NHẤT.
+
+    Ô "Người nhận" trên mẫu Đơn mua hàng cố ý không có ở đây: hệ thống không có thao tác
+    nào ứng với việc nhận hàng tận tay, ô đó để ký tươi lúc giao nhận.
+    """
+    from app.core.audit import resolve_actor, resolve_signature
+    from app.modules.audit.model import AuditLog
+
+    out = {"creator_name": resolve_actor(db, po.created_by),
+           "creator_signature": resolve_signature(db, po.created_by),
+           "approver_name": "", "approver_signature": ""}
+    if po.status not in _PO_APPROVED_STATUSES:
+        return out
+
+    row = (db.query(AuditLog.created_by)
+           .filter(AuditLog.entity == service.ENTITY, AuditLog.entity_id == po.id,
+                   AuditLog.action == "approved")
+           .order_by(AuditLog.id.desc()).first())
+    if row and row[0]:
+        out["approver_name"] = resolve_actor(db, row[0])
+        out["approver_signature"] = resolve_signature(db, row[0])
+    return out
+
+
 @router.get("/{pid}/print")
 def print_po(pid: int, db: Session = Depends(get_db), user=Depends(require("purchase_order", "print"))):
-    po = service.get_po(db, pid)
+    po = _in_scope(db, pid, user, "print")
     data = _out(db, po)
+    data["signers"] = resolve_print_signers(db, po)
     company = db.get(Company, po.company_id) if po.company_id else None
     sup = db.query(Supplier).filter(Supplier.code == po.supplier_code).first()
     data["company"] = {"name": company.name, "address": company.address, "tax_code": company.tax_code,
@@ -335,6 +393,39 @@ def print_po(pid: int, db: Session = Depends(get_db), user=Depends(require("purc
     return success(data)
 
 
+@router.get("/{pid}/purchase-request")
+def get_po_purchase_request(pid: int, db: Session = Depends(get_db),
+                            user=Depends(require("purchase_order", "print"))):
+    """Phiếu YCMH nguồn của đơn, đã cắt còn đúng các dòng hàng có trên đơn — bao-CR-314.
+
+    Cổng đặt ở ĐƠN MUA HÀNG chứ không ở phiếu yêu cầu, cố ý: một phiếu YCMH chia cho nhiều
+    NSTM phụ trách (`tab_purchase_request_item.assignee`) nên phạm vi dữ liệu của người cầm
+    đơn thường KHÔNG với tới cả phiếu — gọi thẳng `/api/purchase-requests/{id}` là 403 đúng
+    những người cần in. Ai mở được đơn (quyền `print` + đơn nằm trong phạm vi) thì in được
+    phần phiếu tương ứng, và không thấy hàng của người khác vì danh sách đã cắt theo mã hàng
+    trên đơn. Luật che NCC cụm `pur` (Task 4) giữ nguyên vì vẫn đi qua `_out` của YCMH.
+    """
+    scoped = apply_scope(db.query(PurchaseOrder).filter(PurchaseOrder.id == pid),
+                         PurchaseOrder, "purchase_order", user, get_perm_profile(db, user))
+    if not scoped.first():
+        raise HTTPException(403, "Ngoài phạm vi được phép xem")
+    po = service.get_po(db, pid)
+    pr_code = (po.pr_code or "").strip()
+    if not pr_code:
+        raise HTTPException(404, "Đơn mua hàng này không gắn phiếu yêu cầu mua hàng")
+    #  Nhập trong hàm: `purchase_request.controller` nạp cả cụm model/serializer của YCMH,
+    #  kéo lên đầu tệp là buộc hai controller phụ thuộc vòng nhau lúc `app.main` dựng router.
+    from app.modules.purchase_request.controller import _out as pr_out
+    from app.modules.purchase_request.model import PurchaseRequest
+    pr = db.query(PurchaseRequest).filter(PurchaseRequest.code == pr_code,
+                                          PurchaseRequest.is_deleted == False).first()  # noqa: E712
+    if not pr:
+        raise HTTPException(404, f"Không tìm thấy phiếu yêu cầu mua hàng {pr_code}")
+    data = service.pr_items_for_po(pr_out(db, pr, user), service.items_of(db, po.id))
+    data["po_code"] = po.code
+    return success(data)
+
+
 @router.post("")
 def create_po(data: POCreate, db: Session = Depends(get_db), user=Depends(require("purchase_order", "create"))):
     return success(_out(db, service.create_po(db, data, user.id)), "Đã tạo đơn mua hàng", 201)
@@ -342,17 +433,20 @@ def create_po(data: POCreate, db: Session = Depends(get_db), user=Depends(requir
 
 @router.post("/{pid}/copy")
 def copy_po(pid: int, db: Session = Depends(get_db), user=Depends(require("purchase_order", "create"))):
+    _in_scope(db, pid, user, "create")
     return success(_out(db, service.copy_po(db, pid, user.id)), "Đã nhân bản thành đơn Nháp mới", 201)
 
 
 @router.post("/{pid}/clone")
 def clone_po(pid: int, db: Session = Depends(get_db), user=Depends(require("purchase_order", "create"))):
     """Alias của /copy — dùng cho nút Nhân bản ở danh sách (đồng bộ với YCMH/YCKS)."""
+    _in_scope(db, pid, user, "create")
     return success(_out(db, service.copy_po(db, pid, user.id)), "Đã nhân bản thành đơn Nháp mới", 201)
 
 
 @router.patch("/{pid}")
 def update_po(pid: int, data: POUpdate, db: Session = Depends(get_db), user=Depends(require("purchase_order", "write"))):
+    _in_scope(db, pid, user, "write")
     return success(_out(db, service.update_po(db, pid, data, user.id)), "Đã cập nhật")
 
 
@@ -360,12 +454,14 @@ def update_po(pid: int, data: POUpdate, db: Session = Depends(get_db), user=Depe
 def set_document_status(pid: int, body: DocumentStatusIn, db: Session = Depends(get_db),
                         user=Depends(require("purchase_order", "write"))):
     """Task 10b: cập nhật tay trạng thái hồ sơ chứng từ (cho phép cả khi đơn đã hoàn thành)."""
+    _in_scope(db, pid, user, "write")
     po = service.set_document_status(db, pid, body.document_status, user.id)
     return success(_out(db, po), "Đã cập nhật hồ sơ chứng từ")
 
 
 @router.delete("/{pid}")
 def delete_po(pid: int, db: Session = Depends(get_db), user=Depends(require("purchase_order", "delete"))):
+    _in_scope(db, pid, user, "delete")
     service.delete_po(db, pid, user.id)
     return success(None, "Đã xóa")
 
@@ -375,12 +471,20 @@ def bulk_delete_pos(ids: str, db: Session = Depends(get_db), user=Depends(requir
     id_list = [int(i.strip()) for i in ids.split(",") if i.strip().isdigit()]
     if not id_list:
         raise HTTPException(400, "Không có ID hợp lệ")
-    for pid in id_list:
+    # Lọc phạm vi TRƯỚC vòng lặp (khuôn của `contract/controller.py`) — lặp theo id trần
+    # thì gửi đại một dãy số là xóa được đơn Nháp của pháp nhân khác.
+    rows = apply_scope(db.query(PurchaseOrder).filter(PurchaseOrder.id.in_(id_list)),
+                       PurchaseOrder, "purchase_order", user,
+                       get_perm_profile(db, user), "delete").all()
+    if not rows:
+        raise HTTPException(403, "Ngoài phạm vi được phép xóa")
+    for pid in [r.id for r in rows]:
         try:
             service.delete_po(db, pid, user.id)
         except Exception as e:
             raise HTTPException(400, f"Lỗi khi xóa đơn ID {pid}: {str(e)}")
-    return success(None, f"Đã xóa {len(id_list)} bản ghi")
+    # Báo đúng số ĐÃ xóa, không báo số đã gửi lên.
+    return success(None, f"Đã xóa {len(rows)} bản ghi")
 
 
 @router.post("/{pid}/submit")
@@ -389,7 +493,7 @@ def submit_po(pid: int, background_tasks: BackgroundTasks, db: Session = Depends
     # CR-073: trước đây gọi thẳng set_status nên gửi duyệt được đơn thiếu NCC, thiếu dòng
     # hàng, hoặc đơn đang ở trạng thái bất kỳ. set_status chỉ GÁN trạng thái, không kiểm gì —
     # chốt phải đặt ở đây (đồng bộ cách làm của submit_pr).
-    po = service.get_po(db, pid)
+    po = _in_scope(db, pid, user, "write")
     if po.status not in ("draft", "rejected"):
         raise HTTPException(400, "Chỉ gửi duyệt được đơn ở trạng thái Nháp hoặc Bị trả lại")
     missing = []
@@ -416,6 +520,7 @@ def submit_po(pid: int, background_tasks: BackgroundTasks, db: Session = Depends
 @router.post("/{pid}/approve")
 def approve_po(pid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
                user=Depends(require("purchase_order", "approve"))):
+    _in_scope(db, pid, user, "approve")
     _require_awaiting_approval(db, pid, "duyệt")
     po = service.set_status(db, pid, "approved", user.id)
     trigger_notification(db=db, event="po_approved", doc_type="purchase_order", doc_code=po.code,
@@ -432,6 +537,7 @@ def unapprove_po(pid: int, data: RejectIn, db: Session = Depends(get_db),
     Chỉ người có quyền DUYỆT được bấm: sau khi duyệt, đơn là cam kết đã ký với NCC, mở
     lại để sửa là quyết định của trưởng phòng chứ không phải của người lập đơn.
     """
+    _in_scope(db, pid, user, "approve")
     if not (data.reason or "").strip():
         raise HTTPException(400, "Vui lòng nhập lý do hủy duyệt")
     po = service.unapprove_po(db, pid, user.id, data.reason.strip())
@@ -442,6 +548,7 @@ def unapprove_po(pid: int, data: RejectIn, db: Session = Depends(get_db),
 def reject_po(pid: int, data: RejectIn, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
               user=Depends(require("purchase_order", "approve"))):
     # Từ chối = KHÓA đơn (Đã từ chối) — không sửa/gửi lại được, phải Nhân bản thành đơn mới.
+    _in_scope(db, pid, user, "approve")
     _require_awaiting_approval(db, pid, "từ chối")
     po = service.set_status(db, pid, "cancelled", user.id, data.reason)
     trigger_notification(db=db, event="po_rejected", doc_type="purchase_order", doc_code=po.code,
@@ -454,6 +561,7 @@ def reject_po(pid: int, data: RejectIn, background_tasks: BackgroundTasks, db: S
 def return_po(pid: int, data: RejectIn, background_tasks: BackgroundTasks, db: Session = Depends(get_db),
               user=Depends(require("purchase_order", "approve"))):
     # Trả về = Bị trả lại — người tạo SỬA & GỬI DUYỆT LẠI được (đồng bộ YCMH).
+    _in_scope(db, pid, user, "approve")
     _require_awaiting_approval(db, pid, "trả về")
     po = service.set_status(db, pid, "rejected", user.id, data.reason)
     trigger_notification(db=db, event="po_returned", doc_type="purchase_order", doc_code=po.code,
@@ -465,6 +573,7 @@ def return_po(pid: int, data: RejectIn, background_tasks: BackgroundTasks, db: S
 @router.post("/{pid}/cancel")
 def cancel_po(pid: int, data: RejectIn, db: Session = Depends(get_db),
               user=Depends(require("purchase_order", "cancel"))):
+    _in_scope(db, pid, user, "cancel")
     # Hủy phải có lý do
     if not (data.reason or "").strip():
         raise HTTPException(400, "Vui lòng nhập lý do hủy đơn")
@@ -484,6 +593,7 @@ def complete_po(pid: int, db: Session = Depends(get_db),
     # Chỉ cho Hoàn thành ĐƠN khi MỌI dòng đã ở điểm cuối (`completed`/`cancelled`) —
     # giữ header nhất quán với tiến độ dòng (tránh đơn đã hoàn thành mà dòng chưa nhập
     # Số HĐ / chưa thanh toán, dẫn tới không tạo được Yêu cầu thanh toán).
+    _in_scope(db, pid, user, "write")
     lines = db.query(POItem).filter(POItem.po_id == pid).all()
     pending = [it for it in lines
                if (it.progress_status or "") not in (service.PROG_COMPLETED, service.PROG_CANCELLED)]
@@ -501,6 +611,7 @@ def complete_po(pid: int, db: Session = Depends(get_db),
 @router.post("/{pid}/reopen")
 def reopen_po(pid: int, db: Session = Depends(get_db),
               user=Depends(require("purchase_order", "write"))):
+    _in_scope(db, pid, user, "write")
     po = service.reopen_po(db, pid, user.id)
     return success(_out(db, po), "Đã mở lại đơn để xử lý tiếp")
 
@@ -509,6 +620,7 @@ def reopen_po(pid: int, db: Session = Depends(get_db),
 def set_item_progress(pid: int, item_id: int, data: ItemProgressIn, db: Session = Depends(get_db),
                       user=Depends(require("purchase_order", "write"))):
     """Người phụ trách cập nhật trạng thái tiến độ 1 dòng (có gate điều kiện) + đồng bộ sang YCMH."""
+    _in_scope(db, pid, user, "write")
     return success(_out(db, service.set_item_progress(db, pid, item_id, data.status, data.reason, user.id)),
                    "Đã cập nhật trạng thái dòng")
 

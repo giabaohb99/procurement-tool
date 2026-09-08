@@ -2,6 +2,7 @@ import { Loader2 } from 'lucide-react'
 import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 
+import { useSingleFlight } from '@/shared/hooks/use-single-flight'
 import { Button } from '@/shared/ui/button'
 import {
   Dialog,
@@ -11,7 +12,7 @@ import {
   DialogTitle,
 } from '@/shared/ui/dialog'
 import { confirm } from '@/shared/ui/confirm-dialog'
-import { CrudField } from './crud-field'
+import { CrudFormFields } from './crud-form-fields'
 import { buildFormDefaults, toApiPayload } from './field-values'
 import type { CrudConfig, CrudRecord } from './types'
 import { useCrudSave } from './use-crud'
@@ -31,12 +32,15 @@ export function CrudFormDialog<T extends CrudRecord>({
 }: CrudFormDialogProps<T>) {
   const saveMutation = useCrudSave<T>(config.apiPath, config.title)
   const isEditing = Boolean(item)
+  //  Chặn bấm trùng trong cùng một nhịp — xem `useSingleFlight`.
+  const once = useSingleFlight()
 
   const {
     register,
     handleSubmit,
     control,
     reset,
+    watch,
     formState: { errors, isSubmitting, isDirty },
   } = useForm<Record<string, unknown>>({
     defaultValues: buildFormDefaults(config.formFields, item),
@@ -59,13 +63,14 @@ export function CrudFormDialog<T extends CrudRecord>({
     }
   }, [open, item, config.formFields, reset])
 
-  const onSubmit = async (values: Record<string, unknown>) => {
-    const idKey = (config.idKey as string) || 'id'
-    const id = item ? (item[idKey] as string | number) : undefined
+  const onSubmit = (values: Record<string, unknown>) =>
+    once(async () => {
+      const idKey = (config.idKey as string) || 'id'
+      const id = item ? (item[idKey] as string | number) : undefined
 
-    await saveMutation.mutateAsync({ id, values: toApiPayload(config.formFields, values) })
-    onOpenChange(false)
-  }
+      await saveMutation.mutateAsync({ id, values: toApiPayload(config.formFields, values) })
+      onOpenChange(false)
+    })
 
   return (
     <Dialog
@@ -98,18 +103,15 @@ export function CrudFormDialog<T extends CrudRecord>({
           }}
           className="space-y-4 pt-2"
         >
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {config.formFields.map((field) => (
-              <CrudField
-                key={field.name}
-                field={field}
-                register={register}
-                control={control}
-                errors={errors}
-                isReadonly={isEditing && field.readonlyOnEdit}
-              />
-            ))}
-          </div>
+          <CrudFormFields
+            fields={config.formFields}
+            register={register}
+            control={control}
+            errors={errors}
+            watch={watch}
+            sectionHints={config.formSections}
+            isReadonly={(field) => isEditing && Boolean(field.readonlyOnEdit)}
+          />
 
           <DialogFooter className="pt-2">
             <Button

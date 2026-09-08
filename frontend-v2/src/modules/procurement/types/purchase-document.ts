@@ -26,6 +26,8 @@ export interface PurchaseRequest {
   note: string
   /** Thời điểm tạo (có giờ), khác `request_date` do người dùng tự nhập. */
   created_at: string
+  /** Lần sửa gần nhất — cột "Ngày cập nhật" (bao-CR-300, ticket 21). */
+  updated_at?: string
   /** Tổng tiền gồm VAT, backend cộng từ các dòng. */
   total: number
   /** Có ít nhất một dòng "Hủy đơn" — bản cũ tô đỏ cả dòng. */
@@ -44,6 +46,7 @@ export interface SurveyRequest {
   status: string
   note: string
   created_at: string
+  updated_at?: string
 }
 
 /** Đơn mua hàng — `/api/purchase-orders`. */
@@ -68,6 +71,7 @@ export interface PurchaseOrder {
   document_status: string
   note: string
   created_at: string
+  updated_at?: string
   /** Tiền hàng. */
   amount: number
 }
@@ -87,6 +91,7 @@ export interface Survey {
   nspt: string
   status: string
   created_at: string
+  updated_at?: string
 }
 
 /** Nhãn tiếng Việt của mã trạng thái, theo từng loại chứng từ. */
@@ -98,6 +103,12 @@ export const PR_STATUS_LABELS: Record<string, string> = {
   rejected: 'Bị trả lại',
   cancelled: 'Đã từ chối',
   processing: 'Đang xử lý',
+  // bao-CR-292/297 (ticket 22): "Đang xử lý" tách ba mốc theo mã đơn MISA —
+  // processing (có ĐMH, chưa đơn nào nhập MISA) → purchasing (MISA phủ MỘT PHẦN
+  // mã hàng) → purchased (MISA phủ ĐỦ mã hàng chưa hủy). Thứ tự khai ở đây quyết
+  // định thứ tự option trong ô lọc trạng thái, nên xếp theo dòng chảy nghiệp vụ.
+  purchasing: 'Đang mua hàng',
+  purchased: 'Đã mua hàng',
   completed: 'Hoàn thành',
 }
 
@@ -132,7 +143,19 @@ export const SURVEY_STATUS_LABELS: Record<string, string> = {
   cancelled: 'Đã từ chối',
 }
 
+/**
+ * Nhãn LOẠI phiếu khảo sát.
+ *
+ * `combined` là loại DUY NHẤT còn sinh ra: backend đặt cứng `survey_type="combined"`
+ * cho mọi phiếu tạo mới (`app/modules/survey/service.py`) vì một phiếu nay ôm cả hai
+ * bảng NCC và SP. Hai mã còn lại là dữ liệu CŨ (8 phiếu `supplier`, 9 phiếu `product`
+ * trên bản dev) — vẫn phải khai ở đây, bỏ đi là 17 phiếu đó hiện mã tiếng Anh trần.
+ *
+ * Thiếu `combined` chính là lỗi đã lủng: cột "Loại" in thẳng chữ `combined` ra màn
+ * hình, và ô lọc không có mục nào chọn được đúng 2.693 phiếu đang có.
+ */
 export const SURVEY_TYPE_LABELS: Record<string, string> = {
+  combined: 'Khảo sát NCC & SP',
   supplier: 'Khảo sát NCC',
   product: 'Khảo sát SP',
 }

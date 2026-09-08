@@ -37,6 +37,11 @@ interface PostActionsMenuProps {
   detail: boolean
 }
 
+/** Xóa/gỡ xong từ trang chi tiết thì về box của thread, bài feed thuần về Bảng tin. */
+function afterLeaveTarget(post: ForumPost): string {
+  return post.board_id > 0 ? appRoutes.forum.boardDetail(post.board_id) : appRoutes.forum.feed
+}
+
 /**
  * Nút «...» góc bài viết. Tác giả có «Xóa bài» (F3); quản trị viên (F5,
  * `post.can_moderate`) có Ẩn / Khôi phục / Gỡ theo trạng thái bài — hai đường
@@ -57,7 +62,7 @@ export function PostActionsMenu({ post, detail }: PostActionsMenuProps) {
     try {
       await remove.mutateAsync(post.id)
       toast.success('Đã xóa bài viết')
-      if (detail) navigate(appRoutes.forum.root)
+      if (detail) navigate(afterLeaveTarget(post))
     } catch (error) {
       toast.error(extractErrorMessage(error))
     }
@@ -160,7 +165,7 @@ export function PostActionsMenu({ post, detail }: PostActionsMenuProps) {
           action={moderating}
           open
           onOpenChange={(next) => !next && setModerating(null)}
-          onRemoved={detail ? () => navigate(appRoutes.forum.root) : undefined}
+          onRemoved={detail ? () => navigate(afterLeaveTarget(post)) : undefined}
         />
       )}
     </>

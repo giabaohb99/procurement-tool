@@ -61,6 +61,7 @@ Bản 1.0 — 28/08/2026. Đếm tại chỗ: **46 module backend** (`backend/ap
 | `backup` | Backup DB lên R2 qua Celery beat |
 | `meta` | Endpoint meta/enum dùng chung cho FE |
 | `vehicle_booking` | Đặt xe (backend có, phân hệ FE chưa bật) |
+| `meeting_room` | Đặt phòng họp: danh mục phòng + phiếu đặt chạy qua bộ máy duyệt, chặn trùng khung giờ (nằm trong phân hệ FE Nhân sự) |
 
 ## 2. Frontend-v2 — 20 phân hệ
 

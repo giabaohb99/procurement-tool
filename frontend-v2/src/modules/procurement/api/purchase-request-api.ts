@@ -2,6 +2,7 @@ import { apiDelete, apiGet, apiPatch, apiPost } from '@/core/api'
 import type {
   DeptHeadCandidate,
   PurchaseRequestDetail,
+  PurchaseRequestFromPo,
   PurchaseRequestItem,
 } from '../types/purchase-request-detail'
 
@@ -41,6 +42,15 @@ export interface PurchaseRequestPayload {
  */
 export const purchaseRequestApi = {
   getById: (id: number) => apiGet<PurchaseRequestDetail>(`${BASE_URL}/${id}`),
+
+  /**
+   * bao-CR-314 — phiếu YCMH của MỘT ĐƠN MUA HÀNG, đã cắt còn đúng dòng hàng của đơn.
+   * Cổng vào là ĐƠN chứ không phải phiếu: một YCMH chia cho nhiều NSTM phụ trách nên
+   * người cầm đơn thường không có phạm vi đọc cả phiếu. Vì vậy endpoint nằm bên
+   * `/api/purchase-orders` và gác bằng quyền in ĐƠN.
+   */
+  getForPurchaseOrder: (purchaseOrderId: number) =>
+    apiGet<PurchaseRequestFromPo>(`/api/purchase-orders/${purchaseOrderId}/purchase-request`),
 
   create: (payload: PurchaseRequestPayload) =>
     apiPost<PurchaseRequestDetail>(BASE_URL, payload),

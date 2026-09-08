@@ -30,6 +30,7 @@ import {
   useForumComments,
 } from '../hooks/use-forum-comments'
 import { authorInitials } from '../utils/author-initials'
+import { EmojiPickerButton } from './emoji-picker-button'
 
 interface PostCommentsProps {
   postId: number
@@ -416,6 +417,7 @@ function CommentComposer({
           <Paperclip />
           Đính kèm
         </Button>
+        <EmojiPickerButton onPick={(emoji) => editorRef.current?.insertText(emoji)} />
         <div className="ml-auto flex gap-2">
           {onCancel && (
             <Button variant="ghost" size="sm" onClick={onCancel}>

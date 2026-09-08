@@ -21,13 +21,29 @@ toàn bộ màn hình** của bản cũ, và chia phần còn lại thành **15 
    *Cập nhật 24/08/2026 (Đ-11, CR-132):* **Trang chủ** đã đủ 9 khối + thao tác nhanh, **Tổng quan Tài chính** và **Tổng quan Kho** đã dựng ⇒ **35 xong** · **1 có nhưng khuyết** *(chi tiết Yêu cầu báo giá, chờ P6)* · **9 chưa có** — trong đó **5 màn thuộc ba thứ khách hoãn**.
    *Cập nhật 24/08/2026 (Tối ưu UX & Phân quyền Thu mua v2):* Fix 4 màn chi tiết chứng từ (YCBG, YCMH, ĐMH, Phiếu KS) mở lại bình thường; mở màn Tiến độ mua hàng (`/procurement/purchase-progress`) cho Nhân viên & Trưởng phòng YC; bổ sung 7 tài khoản Test có data (`TESTREQ`, `DEMONV`, `DEMOTP`, `DEMOQL`, `DEMOAD`, `DEMOTP2`, `DEMOTP3`) vào menu Switch User (Dev); tùy chỉnh màu sọc chẵn/lẻ bảng, font-bold tên cột, phẳng hóa ô trống rỗng trên toàn bộ bảng & màn chi tiết.
    *Cập nhật 29/08/2026 (CR-222, CR-227):* **HAI MÀN TỪNG QUYẾT BỎ ĐÃ SỐNG LẠI** theo yêu cầu khách trong đợt QA 29/08 — *Màn xử lý Yêu cầu báo giá* dựng lại thành trang riêng `/procurement/survey-requests/:id/process` (CR-222), *Tiến độ báo giá* do khách trực tiếp dựng lại ở `/procurement/survey-progress` (CR-227); chi tiết YCBG có nút *Xử lý khảo sát* nên hết khuyết ⇒ **38 xong** · **0 có nhưng khuyết** · **9 chưa có** · **0 đã bỏ** · **1 chờ quyết**.
+   *Cập nhật 03/09/2026 (CR-265 — rà lại từng dòng §1 đối chiếu mã nguồn):* con số "9 chưa có" ở trên **đã
+   sai từ lâu** — ba dòng còn ghi *Thiếu* thực ra đã có màn trong `frontend-v2`: **Phân công phụ
+   trách** *(Đ-10, CR-126)*, **Quản lý Import danh sách + chi tiết** *(Đ-13a, CR-186)*; ngoài ra
+   `/system/exports` là màn **mới**, bản cũ không có, nay thêm thành dòng 41b. Đếm lại toàn bảng
+   §1 *(50 dòng = 48 màn bản cũ + 41b + 44b)*: **49 xong** · **0 khuyết** · **0 thiếu** ·
+   **1 chờ quyết**. **Chỉ còn đúng MỘT màn chưa dời: dòng 48 *Chứng từ*** *(`frontend/src/pages/
+   Documents.tsx`, route `documents`)* — và nó là **việc quyết định** *(dời hay bỏ, xem §8)*, không
+   phải việc dựng màn. Nghĩa là **không còn màn nào phải dựng**; phần dở của Đ-13 là mở rộng tính
+   năng, xem bảng §3.
+
+   *Cập nhật 03/09/2026 (CR-266):* khách đã quyết — **dời**, không bỏ. Màn *Chứng từ* nay đã chạy ở
+   `/procurement/purchase-orders/:id/documents`, vào từ nút *Xem cả chuỗi chứng từ* trong thẻ chứng
+   từ của chi tiết đơn hàng. Bảng §1 nay là **50 xong · 0 chờ quyết**; **không còn màn nào tồn**.
 2. **Không phải viết backend dòng nào** cho 16 màn còn thiếu. Toàn bộ endpoint đã chạy thật ở bản
    cũ — đây thuần là dựng lại giao diện. (Việc backend của ERP v2 nằm ở `12`, giai đoạn P1/P2/P5…,
    không dính tới tệp này.)
 3. **22 – 32 ngày công** cho cả 15 đợt: mười đợt đầu **12,5 – 19**, ba đợt hoãn **7,5 – 10**, hai
    đợt còn lại **2 – 3**.
-4. **Ba màn khách hoãn vẫn chặn việc tắt bản cũ** — chúng không có chỗ nào khác để chạy. Hoãn là
-   quyền của khách, nhưng hoãn thì `frontend/` phải sống tiếp, đừng hứa ngày tắt.
+4. ~~**Ba màn khách hoãn vẫn chặn việc tắt bản cũ**~~ — **hết hạn từ 03/09/2026** *(CR-265)*. Cả ba thứ từng
+   hoãn đều đã chạy: *Sao lưu CSDL* `/system/backups` *(CR-121)*, *Quản lý Import* `/system/imports`
+   *(CR-186)*, *Phiếu hỗ trợ* `/support/tickets` *(CR-015…017)*. ~~Chỗ chặn tắt `frontend/` nay chỉ còn
+   **dòng 48 *Chứng từ* đang chờ khách quyết dời hay bỏ**~~ — dòng 48 đã dời xong *(CR-266, 03/09/2026)*.
+   **Không còn gì chặn Đ-15.**
 
 ---
 
@@ -100,7 +116,7 @@ tiết, chỉ khác nhãn. v2 gộp làm một, không phải màn thiếu.*
 | 31 | Đơn vị tính | `/production/units` *(+ chi tiết)* | Xong *(Đ-02, CR-099)* |
 | 32 | Phân loại | `/production/item-groups` *(+ chi tiết)* | Xong *(Đ-02, CR-099)* |
 | 33 | Phòng ban | `/hr/departments` *(+ chi tiết)* | Xong |
-| 34 | Phân công phụ trách *(170 + 187 dòng)* | *(chưa có)* | **Thiếu** |
+| 34 | Phân công phụ trách *(170 + 187 dòng)* | `/procurement/category-assignees` *(+ `/new`)* | Xong *(Đ-10, CR-126)* |
 
 ~~Chỗ dễ đếm nhầm: **chi tiết Nhà cung cấp mới có một nửa**.~~ **Đã làm xong ở CR-106** — xem §Đ-05.
 Ghi lại chỗ từng đếm nhầm để người sau khỏi lặp: hằng số `appRoutes.production.supplierDetail` khai
@@ -115,8 +131,9 @@ sẵn từ lâu mà **không route nào dùng**, nhìn qua tưởng xong; và b�
 | 37 | Phân quyền tài khoản | `/hr/permissions` | Xong |
 | 38 | Phân quyền một tài khoản | `/hr/permissions/users/:id` | Xong |
 | 39 | Cấu hình hệ thống | `/system/settings` | Xong *(MC-4)* |
-| 40 | Quản lý Import — danh sách *(415 dòng)* | *(chưa có)* | **Thiếu** *(MC-6)* |
-| 41 | Quản lý Import — chi tiết *(141 dòng)* | *(chưa có)* | **Thiếu** *(MC-6)* |
+| 40 | Quản lý Import — danh sách *(415 dòng)* | `/system/imports` | Xong *(Đ-13a, CR-186)* |
+| 41 | Quản lý Import — chi tiết *(141 dòng)* | `/system/imports/:id` | Xong *(Đ-13a, CR-186)* |
+| 41b | *(bản cũ KHÔNG có)* Quản lý Export + nhật ký xuất | `/system/exports` *(+ `/:id`)* | Xong *(Đ-13b, CR-186)* — màn mới, không nằm trong 48 màn bản cũ |
 | 42 | Sao lưu CSDL *(167 dòng)* | `/system/backups` | Xong *(MC-5, CR-113)* |
 | 43 | Phiếu hỗ trợ — danh sách *(173 dòng)* | `/me?tab=tickets` | Xong *(MC-7, CR-116)* |
 | 44 | Phiếu hỗ trợ — chi tiết *(387 dòng)* | `/support/tickets/:id` | Xong *(MC-7, CR-116)* |
@@ -129,7 +146,7 @@ sẵn từ lâu mà **không route nào dùng**, nhìn qua tưởng xong; và b�
 | 45 | In Yêu cầu mua hàng | `/print/purchase-request/:id` | Xong |
 | 46 | In Đơn mua hàng — 2 mẫu *(bản cũ 2 route)* | `/print/purchase-order/:id` — **gộp một trang có công tắc mẫu** | Xong |
 | 47 | In Yêu cầu thanh toán *(259 dòng)* | `/print/payment-request/:id` | Xong *(Đ-08, CR-119)* |
-| 48 | Chứng từ *(169 dòng, không có trong menu)* | *(chưa có)* | **Chờ quyết** — xem §6 |
+| 48 | Chứng từ *(169 dòng, không có trong menu)* | `/procurement/purchase-orders/:id/documents` | Xong *(CR-266)* — vào từ thẻ chứng từ của chi tiết ĐMH, xem §8 |
 
 ### 1.8 Màn đã có nhưng khuyết — đừng tính là xong
 
@@ -137,6 +154,7 @@ sẵn từ lâu mà **không route nào dùng**, nhìn qua tưởng xong; và b�
 |---|---|
 | ~~**Trang chủ / Tổng quan Thu mua**~~ | ~~Bản cũ có 9 khối, v2 có 5. **Thiếu 4 khối**: *Top nhà cung cấp*, *Chi tiêu theo bộ phận*, *Trạng thái đơn hàng*, *Tuổi nợ*. Danh sách *Yêu cầu mua gần đây* ở bản cũ **duyệt / từ chối ngay tại chỗ**, v2 chỉ xem~~ **Đã vá ở Đ-11 (CR-132)** — đủ 4 khối, thao tác nhanh *Duyệt / Trả lại* đã có lại |
 | ~~**Tổng quan Tài chính** và **Tổng quan Kho**~~ | ~~Đang là trang rỗng 11 dòng, chỉ có tiêu đề~~ **Đã dựng ở Đ-11 (CR-132)** — hai khối *Tuổi nợ* và *Công nợ quá hạn* nay nằm đúng chỗ, bên Tài chính |
+| ~~**Tổng quan Sản xuất**~~ | ~~Chỉ hai thẻ đếm NCC + một ô lối tắt, và cả trang gác sau `supplier.read` nên người giữ mỗi danh mục ĐVT vào là thấy trang trắng~~ **Đã dựng ở CR-246 (31/08)** — endpoint gộp `/api/dashboard/production`, gác từng khối theo quyền, thêm biểu đồ *Sản phẩm theo phân loại* + danh sách *Hợp đồng sắp hết hạn* |
 | ~~**Công nợ**~~ | ~~Thiếu cột tick chọn + nút lên phiếu thanh toán từ các dòng đã chọn~~ **Đã trả lại ở Đ-09 (CR-119)** — cột *Chọn* ghim đầu bảng + nút *Tạo đề nghị thanh toán*, giữ chọn xuyên trang, tách phiếu theo NCC |
 | ~~**Chi tiết Yêu cầu báo giá**~~ | ~~Thiếu nút *Xử lý khảo sát* — nhưng màn đó đã quyết bỏ, việc chọn phương án sẽ nằm ngay trong chi tiết phiếu ở P6~~ **Đã xong ở CR-222 (29/08)** — màn Xử lý khảo sát sống lại thành trang riêng, nút trên chi tiết dẫn sang; việc CHỌN phương án của người yêu cầu vẫn nằm ngay trong chi tiết phiếu |
 | ~~**Xem ảnh đính kèm**~~ *(chung nhiều màn — không tính là một màn riêng)* | ~~Bản cũ `AttachmentGallery` bấm ảnh mở lightbox tại chỗ; v2 bọc `<a target="_blank">` nên bấm là bung tab mới.~~ **Đã xong:** dựng component dùng chung `shared/ui/image-lightbox.tsx` + hook `useImageLightbox` (nút ‹ › + phím mũi tên + bộ đếm + dải thumbnail) và **nối cả 5 chỗ có đính kèm ảnh**: Ticket, đính kèm dòng (`line-attachments.tsx`), bình luận (`document-comments.tsx`), bộ chứng từ (`document-attachments-card.tsx`), file giao hàng ĐMH (`purchase-order-delivery-files.tsx`) — chuyển ảnh trong CÙNG cụm. *(Avatar và cột ảnh sản phẩm đã có thumbnail sẵn, không thuộc khoản này; muốn bấm-để-phóng-to ở đó thì mở việc riêng.)* |
@@ -150,6 +168,22 @@ sẵn từ lâu mà **không route nào dùng**, nhìn qua tưởng xong; và b�
 > *Màn xử lý Yêu cầu báo giá* thành trang riêng `survey-request-process-page.tsx` (CR-222),
 > *Tiến độ báo giá* do khách trực tiếp dựng ở `survey-progress-page.tsx` (CR-227), menu Thu mua
 > cũng xếp lại đúng thứ tự bản v1. Mục này giữ nguyên làm dấu vết quyết định cũ.
+
+### 1.10 Tính năng làm ở BẢN CŨ (prod) — PHẢI mang sang v2
+
+Khách gửi 4 ticket ngày 05/09/2026 (+ đợt bổ sung 07/09), đều gấp trên bản đang chạy thật nên
+làm ở nhánh `main` trước. **Ghi ở đây vì đều là tính năng mới, không phải vá lỗi hiển thị — làm
+xong ở prod là v2 nợ ngay từng khoản.** Đóng khoản nào thì gạch dòng đó và ghi số CR của bản v2.
+
+| Ticket | Nội dung | Chỗ v2 phải sửa theo | CR prod | CR v2 |
+|---|---|---|---|---|
+| **22** | Tách trạng thái *Đang xử lý* của Yêu cầu mua hàng thành **ba mốc**, suy theo độ phủ đơn mua hàng + mã đơn MISA: đã lập ĐMH nhưng **chưa nhập mã MISA** → vẫn *Đang xử lý* · đã nhập MISA nhưng **mới phủ một phần mã hàng** → mốc giữa · **đủ mã hàng + đã nhập MISA** → mốc cuối | Bản đồ nhãn trạng thái + bộ lọc của màn danh sách YCMH ở v2, và **ba nhãn tiến độ dòng của luồng gộp** (`12` §P6-13) — hai chỗ này phải cùng một luật, kẻo cùng một đơn mà màn YCMH và màn YCBG nói hai kiểu | bao-CR-292 (xong, deploy prod 05/09/2026 — mã `purchasing`/`purchased`) | bao-CR-297 (xong 07/09/2026 — màn YCMH; riêng nhãn luồng gộp `12` §P6-13 chờ nhánh P6 mở băng) |
+| **20** | *Ngày tiếp nhận* của YCMH tính từ lúc **Admin thu mua duyệt**, không phải lúc lập phiếu | `purchase-request-info-card.tsx` (ô đang cho sửa tay) và mọi chỗ lấy *Ngày tiếp nhận* làm mốc tính *Ngày QĐ có hàng* | bao-CR-293 (xong, deploy prod 05/09/2026) | bao-CR-298 (xong 07/09/2026 — khóa ô ở `purchase-request-info-card.tsx`; backend dùng chung sau merge) |
+| **21** | Thêm cột **Ngày cập nhật** ra ngoài bảng danh sách + sắp xếp theo ngày cập nhật gần nhất | Đây chính là khoản `DataTable` + `CrudListPage` **chưa có sắp xếp** — nền phải dựng trước, xem `14` | bao-CR-294 (xong, deploy prod 05/09/2026 — 14 bảng, bấm header cột) | bao-CR-300 (xong 07/09/2026 — 14 màn: cột *Ngày cập nhật* `sortDescFirst` + bấm header; nền sort của `DataTable`/`CrudListPage` dựng kèm, xem `14`) |
+| **23** | Báo cáo **Yêu cầu mua hàng** — bảng theo DÒNG hàng (18 cột) để NSTM soi mã nào chưa lên đơn | Màn *Báo cáo mua hàng* ở v2 (`purchase-report-page.tsx`) phải có thêm tab này | bao-CR-295 (xong, deploy prod 05/09/2026 — tab *Chi tiết YC mua hàng* + `GET /api/reports/pr-lines`; GRAM lấy từ `Product.specs`) + bao-CR-296 (trang riêng `/pr-lines-report` + mục sidebar, component dùng chung `PrLinesReport.tsx`) | bao-CR-299 (xong 07/09/2026 — tab `pr_lines` + trang riêng `/procurement/pr-lines-report`, component dùng chung `report-pr-lines-tab.tsx`) |
+| **26** | YCTT hiển thị **Mã MISA**: cột chỉ xem trong bảng dòng (màn Tạo + màn xem phiếu), cột GỘP "MS1, MS2" ở màn danh sách + bộ lọc nhanh *Mã MISA* ngoài danh sách | Cụm YCTT v2 `finance/pages/payment-request-{list,detail}-page.tsx` — backend dùng chung sau merge (`misa_code` trên dòng, `misa_code` gộp trên item danh sách và param lọc `misa_code` đã có sẵn trong API) | bao-CR-302 (xong, deploy prod 07/09/2026, commit `49d0fd59` + `02cc7bbc`) | **bao-CR-304** (xong 07/09/2026) |
+| — | Nút **Xóa phiếu** YCTT nháp chỉ cần quyền `delete` (bỏ trói vào quyền `write`) | Chi tiết YCTT v2 (`payment-request-detail-page.tsx`) — rà xem điều kiện nút Xóa có trói vào write không | bao-CR-303 (xong, deploy prod 07/09/2026, commit `49d0fd59`) | **bao-CR-304** (xong 07/09/2026 — v2 vốn đặt nút trên thanh đầu trang, chỉ gỡ trói quyền write) |
+| — | Màn Công nợ: cột **Ngày hóa đơn** + bộ lọc khoảng `invoice_from`/`invoice_to` (backend join lúc lọc, dùng chung sau merge). Cột *Ngày phát sinh* v2 vốn đã chiếu đúng `incur_date`, KHÔNG dính lỗi v1 | `payable-list-page.tsx`: thêm cột `invoice_date` + cặp lọc ngày HĐ; sửa bảng dịch `EXPORT_KEYS` — mapping `incur_date → created_at` hết hạn vì export backend nay có cột `incur_date`/`invoice_date` thật, cột *Ngày ghi nhận* đổi nhãn | bao-CR-305 (xong, deploy prod 07/09/2026, commit `a091990d`) | **bao-CR-306** (xong 07/09/2026 — mốc *Theo ngày hóa đơn* gắn vào ô "Mốc ngày" sẵn có thay vì thêm ô lọc riêng như v1; `EXPORT_COLUMN_KEYS` về 1-1) |
 
 ---
 
@@ -218,9 +252,9 @@ công, và đợt sau không chặn việc dùng thử đợt trước. Ai làm 
 | **Đ-10** | **Phân công phụ trách** — port nguyên trạng *(QĐ-6)* | 1 – 1,5 | Có | **Dễ** | AI | **Xong** *(CR-126)* |
 | **Đ-11** | Vá **4 khối thiếu** ở Trang chủ + dựng Tổng quan Tài chính / Kho | 1,5 – 2 | Không* | Vừa | AI | **Xong** *(CR-132)* |
 | **Đ-12** | **Sao lưu CSDL** *(MC-5)* | 1,5 – 2 | Có | Vừa | AI | **Xong** *(CR-113)* |
-| **Đ-13** | **Quản lý Import** *(MC-6)* | 3 – 4 | Có | **Khó** | *(chưa nhận)* | **Hoãn** |
+| **Đ-13** | **Quản lý Import** *(MC-6)* | 3 – 4 | Có | **Khó** | AI | **Xong** *(CR-186)* — ~~Hoãn~~ khách mở lại 25/08, tách thành Đ-13a…Đ-13e ở [`16`](./16-quan-ly-import-export-v2.md) §9. Hai màn của bản cũ *(40, 41)* đã có, thêm màn Export *(41b)* bản cũ không có; phần còn dở **Đ-13c / Đ-13d phần 2 / Đ-13e** là **mở rộng tính năng**, không phải màn thiếu |
 | **Đ-14** | **Phiếu hỗ trợ** *(MC-7)* | 3 – 4 | Có | Vừa | AI | **Xong** *(CR-116)* |
-| **Đ-15** | Đổi `FRONTEND_URL`, chuyển hướng bản cũ, tắt `frontend/` | 0,5 – 1 | — | Vừa | *(chưa nhận)* | Chưa làm |
+| **Đ-15** | Đổi `FRONTEND_URL`, chuyển hướng bản cũ, tắt `frontend/` | 0,5 – 1 | — | Vừa | *(chưa nhận)* | Chưa làm — **đợt DUY NHẤT còn lại** *(03/09/2026)*, không phải dựng màn; ~~chờ màn *Chứng từ*~~ nay **không còn gì chặn** *(CR-266)* |
 | | **Cộng** | **22 – 32** | | | | |
 
 Tách theo nhóm cho dễ hẹn: **Đ-01…Đ-05 danh mục 7,5–11** · **Đ-06…Đ-09 thanh toán 4–6,5** ·
@@ -849,10 +883,17 @@ khối — tùy tài khoản thấy khác nhau đúng như mong đợi.
 
 ## 8. Không nằm trong kế hoạch này
 
-- **Màn "Chứng từ"** (`frontend/src/pages/Documents.tsx`, 169 dòng — kho tệp đính kèm gom theo đơn
-  mua hàng, không có trong menu). **Chờ quyết port hay bỏ.** Ở v2 tệp đính kèm đã hiện ngay trong
-  từng chứng từ nên khả năng cao là bỏ, nhưng bản cũ gom tệp theo đơn nên ai quen dùng sẽ hỏi. Hỏi
-  người dùng trước khi xóa khỏi danh sách.
+- ~~**Màn "Chứng từ"**~~ — **đã dời 03/09/2026** *(CR-266)*, không còn ngoài kế hoạch. Khách chọn
+  giữ vì bản cũ gom tệp theo đơn, quen tay. Ở v2 nó là `/procurement/purchase-orders/:id/documents`
+  *(`modules/procurement/pages/purchase-order-document-chain-page.tsx`)*, **không đứng trong menu** —
+  vào từ nút *Xem cả chuỗi chứng từ* trong thẻ chứng từ của chi tiết ĐMH, đúng chỗ bản cũ vào.
+  Ba chỗ làm khác bản cũ, cả ba đều là lỗi của bản cũ:
+  - **khử tệp trùng theo `link_id`** — `_resolve_chain` khai entity `survey_line` hai lần *(id dòng
+    NCC và id dòng sản phẩm)* nên cùng một tệp về hai lần; bản cũ đếm dôi và hiện trùng;
+  - **xem trước qua `/api/attachments/{id}/view`** *(có kiểm quyền)* chứ không gán thẳng `url` của
+    kho lưu trữ vào `<img>`/`<iframe>` — backend để `url` **rỗng** với entity riêng tư, và đường đọc
+    thẳng kho không chặn được người vừa bị thu hồi quyền;
+  - **id nằm trong đường dẫn**, không phải query `?po=` — F5 hay dán link đều còn đúng đơn.
 - **Toàn bộ việc backend của ERP v2** — vá lỗ hổng phạm vi (P1), nền đa pháp nhân (P2), danh mục
   theo đơn vị (P5), gộp Yêu cầu báo giá với Yêu cầu mua hàng (P6), định tuyến đơn vị xử lý (P7),
   công nợ theo pháp nhân (P8), báo cáo tổng (P9). Xem `12` §3.

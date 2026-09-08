@@ -64,6 +64,13 @@ export const ENTITIES = [
   'document_book',
   'document',
   'security_level',
+  //  Phân hệ Duyệt dấu. Chưa có màn nào ở v2 gọi `can('seal_request', …)`, nhưng
+  //  danh sách này là BẢN SAO của `ENTITIES` backend chứ không phải "những khóa
+  //  v2 đang dùng" — thiếu một khóa thì `can()` không gõ nổi tên nó (union type),
+  //  và người viết màn mới sẽ ép kiểu hoặc bỏ luôn cổng quyền.
+  //  Bài kiểm canh: `test/backend/test_dong_bo_giao_dien_v2.py`.
+  'seal_request',
+  'seal_type',
   // Bộ máy phê duyệt dùng chung — không thuộc phân hệ nào.
   'approval_flow',
   // Trợ lý AI — cổng quyền thuần (chỉ ban lãnh đạo), khai PUBLIC ở scoping backend.
@@ -74,15 +81,28 @@ export const ENTITIES = [
   //  Phân hệ Công việc (CR-216). MỘT khóa cho cả phân hệ — quyền thật nằm ở
   //  tầng thành viên của từng list, xem `doc/erp/cong-viec/04-phan-quyen.md`.
   'work_task',
+  //  Diễn đàn (CR-263): hai khóa CHỈ của vai trò `forum_admin` — kiểm duyệt bài
+  //  và dựng chuyên mục. Người thường không có grant nào: đọc/đăng đi theo luật
+  //  audience riêng trong API diễn đàn. FE chỉ dùng để hiện tab «Quản trị».
+  'forum_post',
+  'forum_board',
   //  Phân hệ Đặt xe nội bộ (DEGO Booking Auto). Ba khóa khớp backend
   //  `core/permissions.py`: phiếu đặt xe + hai danh mục Xe/Tài xế.
   'vehicle_booking',
   'vehicle',
   'driver',
-  //  Phân hệ Duyệt dấu. Hai khóa khớp backend `core/permissions.py`: phiếu yêu
-  //  cầu đóng dấu + danh mục Loại con dấu.
-  'seal_request',
-  'seal_type',
+  //  (seal_request / seal_type đã khai ở trên — không lặp lại.)
+  //  Phân hệ Nghỉ phép (CR-259). Bốn khóa vì bốn màn của ba nhóm người khác
+  //  nhau — gộp lại thì cho ai xem đơn của mình là cho họ tự tặng thêm ngày
+  //  phép (`leave_balance.write` mở cột điều chỉnh tay).
+  'leave_request',
+  'leave_balance',
+  'leave_type',
+  'holiday',
+  //  Đặt phòng họp (duoc-CR-279). Hai khóa: đặt phòng là việc của mọi người,
+  //  khai danh mục phòng là việc quản trị.
+  'room_booking',
+  'meeting_room',
 ] as const
 
 export type PermissionEntity = (typeof ENTITIES)[number]

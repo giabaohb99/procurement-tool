@@ -1,4 +1,4 @@
-import { AlertTriangle, Clock, FileText, Truck } from 'lucide-react'
+import { AlertTriangle, CircleCheck, Clock, FileText, Truck } from 'lucide-react'
 
 import { cn } from '@/shared/utils/cn'
 import type { DashboardAlert } from '../api/procurement-dashboard-api'
@@ -27,9 +27,12 @@ function toneClass(level: string): string {
 export function ProcurementAlertList({ alerts }: { alerts: DashboardAlert[] }) {
   if (alerts.length === 0) {
     return (
-      <p className="py-8 text-center text-sm text-muted-foreground">
-        Không có việc nào cần xử lý.
-      </p>
+      <div className="flex flex-col items-center gap-2 py-10 text-center">
+        <span className="grid size-10 place-items-center rounded-full bg-success/10">
+          <CircleCheck className="size-5 text-success" />
+        </span>
+        <p className="text-sm text-muted-foreground">Không có việc nào cần xử lý.</p>
+      </div>
     )
   }
 

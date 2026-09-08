@@ -1,15 +1,26 @@
 import type { PurchaseOrderPrintData } from '../api/purchase-order-api'
 import { formatMoney, formatQuantity, formatUnitPrice } from '@/shared/utils/format-money'
+import { PurchaseOrderPrintSignatureBox } from './purchase-order-print-signature-box'
+
+interface PurchaseOrderPrintOrderFormProps {
+  data: PurchaseOrderPrintData
+  /** Tắt thì chỉ bỏ ẢNH chữ ký, họ tên vẫn in để người ký tay biết ký vào ô nào. */
+  showSignature?: boolean
+}
 
 /**
  * Mẫu **ĐƠN ĐẶT HÀNG** gửi nhà cung cấp (khổ ngang).
  *
  * Số liệu lấy theo SL ĐẶT — đây là cam kết mua, không phải biên bản nhận hàng.
  */
-export function PurchaseOrderPrintOrderForm({ data }: { data: PurchaseOrderPrintData }) {
+export function PurchaseOrderPrintOrderForm({
+  data,
+  showSignature = true,
+}: PurchaseOrderPrintOrderFormProps) {
   const company = data.company ?? {}
   const supplier = data.supplier ?? {}
   const warehouse = data.warehouse ?? {}
+  const signers = data.signers
 
   return (
     <article className="po-print-doc po-print-doc--landscape">
@@ -119,17 +130,19 @@ export function PurchaseOrderPrintOrderForm({ data }: { data: PurchaseOrderPrint
       <p className="mt-2 text-[11.5px]">Các thông tin, file, hình ảnh gửi kèm đơn hàng:</p>
 
       <div className="mt-4 flex justify-between text-[12px]">
-        <div className="w-[48%] text-center">
-          <b>Trưởng bộ phận</b>
-          <p className="text-[11px] italic">(Ký, ghi rõ họ tên)</p>
-          <div className="h-16" />
-        </div>
-        <div className="w-[48%] text-center">
-          <p className="mb-1 text-[11.5px] italic">{signatureDate(data.order_date)}</p>
-          <b>Người lập</b>
-          <p className="text-[11px] italic">(Ký, ghi rõ họ tên)</p>
-          <div className="h-16" />
-        </div>
+        <PurchaseOrderPrintSignatureBox
+          className="w-[48%]"
+          title="Trưởng bộ phận"
+          name={signers?.approver_name}
+          signature={showSignature ? signers?.approver_signature : ''}
+        />
+        <PurchaseOrderPrintSignatureBox
+          className="w-[48%]"
+          title="Người lập"
+          dateLine={signatureDate(data.order_date)}
+          name={signers?.creator_name}
+          signature={showSignature ? signers?.creator_signature : ''}
+        />
       </div>
     </article>
   )

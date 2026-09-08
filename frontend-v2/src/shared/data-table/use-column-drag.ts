@@ -86,6 +86,10 @@ export function useColumnDrag(
           moved = true
           // Kéo ngang qua cả bảng mà không bôi đen chữ trong ô tiêu đề.
           document.body.classList.add('select-none', 'cursor-grabbing')
+          // Nhãn cột nay CHO bôi đen (`column-header-cell.tsx`) nên 4px đầu tiên
+          // của cú kéo kịp quét xanh một mẩu chữ trước khi `select-none` khóa
+          // lại; xoá đi kẻo vệt xanh đó dính trên ô nguồn suốt lúc kéo.
+          window.getSelection()?.removeAllRanges()
           // Chụp một lần lúc bắt đầu kéo, không chụp lại mỗi khung hình: nội
           // dung cột không đổi trong lúc kéo, mà `cloneNode` cả chục dòng thì
           // không rẻ.

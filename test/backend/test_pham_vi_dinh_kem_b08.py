@@ -107,12 +107,41 @@ def _doc(db, user, entity, entity_id, mode="read"):
 def test_moi_loai_dinh_kem_deu_tra_duoc_chung_tu_cha(db):
     """Thêm dòng vào `FILE_POLICY` mà quên khai bộ tra ở đây = mở lại đúng lỗ N-13.
 
-    Ba loại `__self__` (`avatar`, `comment`) và văn bản đi nhánh riêng nên trừ ra.
+    Trừ ra ba nhóm, và CHỈ ba nhóm ấy — mỗi nhóm đều có nhánh kiểm riêng trong
+    `ensure_in_scope`, tức là vẫn bị soi, chỉ là không soi bằng `apply_scope`:
+      - `__self__` (`comment`, `forum_post`): không có chứng từ cha cố định;
+      - `document`: quyền gồm cả chia sẻ đích danh, `apply_scope` cắt mất họ;
+      - `work_task`: phạm vi là TƯ CÁCH THÀNH VIÊN của dự án, không diễn đạt
+        được bằng cột phòng ban/pháp nhân nên entity này khai `PUBLIC` ở
+        `SCOPE_FIELDS` — `apply_scope` chạy qua nó mà không thêm mệnh đề nào.
+
+    Thêm tên vào danh sách trừ mà KHÔNG kèm một nhánh trong `ensure_in_scope` là
+    tự tay mở lại lỗ; kiểm luôn điều đó ở bài dưới.
     """
     missing = [e for e, (parent, _, _) in FILE_POLICY.items()
-             if parent not in ("__self__", "document")
+             if parent not in ("__self__", "document", "work_task")
              and asc.parent_records(db, e, 1)[0] is None]
     assert missing == []
+
+
+def test_moi_entity_duoc_tru_deu_phai_co_nhanh_kiem_rieng():
+    """Chốt cái danh sách trừ ở bài trên, kẻo nó thành chỗ để né kiểm.
+
+    Danh sách ấy đọc như một lời hứa: "mấy entity này KHÔNG đi `apply_scope` vì
+    đã có nhánh riêng". Không ai canh lời hứa đó thì lần sau chỉ cần thêm một tên
+    vào là entity mới hết bị soi phạm vi, mà bài trên vẫn xanh — im lặng mở lại
+    đúng lỗ N-13.
+
+    Soi thẳng mã nguồn của `ensure_in_scope` chứ không gọi nó: gọi thì phải dựng
+    đủ dữ liệu của từng phân hệ, mà thứ cần khẳng định chỉ là "có nhánh hay không".
+    """
+    import inspect
+
+    from app.core import attachment_scope as scope
+
+    than_ham = inspect.getsource(scope.ensure_in_scope)
+    for parent in ("__self__", "document", "work_task"):
+        assert f'"{parent}"' in than_ham, f"{parent} nằm trong danh sách trừ mà không có nhánh kiểm"
 
 
 def test_dinh_kem_theo_dong_lan_nguoc_ra_phieu_chu_khong_nhan_id_dong(data):

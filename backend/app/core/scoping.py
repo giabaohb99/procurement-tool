@@ -139,6 +139,9 @@ SCOPE_FIELDS = {
     # viết thẳng trong WHERE của API feed. Entity này chỉ gác cổng kiểm duyệt
     # của `forum_admin` bằng require(), nên khai PUBLIC.
     "forum_post":       PUBLIC,
+    # F13a: cùng lý do — box đợt đầu toàn PUBLIC (QĐ-D7a), ai thấy gì do luật
+    # audience của API diễn đàn, entity chỉ gác CRUD cấu trúc của `forum_admin`.
+    "forum_board":      PUBLIC,
     # Công việc (CR-216): phạm vi thật là "theo TƯ CÁCH THÀNH VIÊN của list",
     # không diễn đạt được bằng cột phòng ban/pháp nhân của khuôn `apply_scope`.
     # Khai PUBLIC ở đây là CÓ CHỦ Ý, kèm một nghĩa vụ bắt buộc:
@@ -147,6 +150,45 @@ SCOPE_FIELDS = {
     #   Khai PUBLIC mà quên lọc là lộ sạch việc của cả công ty — đọc
     #   `doc/erp/cong-viec/04-phan-quyen.md` §2 trước khi viết endpoint đầu tiên.
     "work_task":        PUBLIC,
+
+    # --- Nghỉ phép (CR-259) ---
+    #  Đơn nghỉ khai CẢ `owner` LẪN `self`, và đó là điểm khác mọi entity phía
+    #  trên. Lý do: một tờ đơn có HAI người dính tới nó — người NGHỈ
+    #  (`employee_id`) và người LẬP (`created_by`, hành chính lập hộ là việc có
+    #  thật). Chỉ khai `owner` thì người nghỉ ở phạm vi `own` không thấy đơn của
+    #  chính mình; chỉ khai `self` thì người lập hộ nộp xong mất dấu tờ đơn.
+    #  Nhánh `own` ở `_role_scope_cond` HỢP cả hai — xem ghi chú tại đó.
+    "leave_request":    {"company": "company_id", "dept_id": "department_id",
+                         "owner": "created_by", "self": "employee_id"},
+    #  Quỹ phép KHÔNG có `owner`: `created_by` là người Nhân sự bấm nút cấp phát,
+    #  lấy đó làm "của mình" thì nhân viên xem quỹ của chính họ lại không ra dòng
+    #  nào. Chỉ `self` — `own` nghĩa là "quỹ của tôi".
+    "leave_balance":    {"company": "company_id", "self": "employee_id"},
+    #  Loại nghỉ: danh mục luật dùng chung MỌI pháp nhân, bảng không có cột nào
+    #  để lọc. Ai được SỬA thì gác bằng quyền `leave_type.write`, không phải
+    #  bằng phạm vi.
+    "leave_type":       PUBLIC,
+    #  Lịch lễ: bảng CÓ `company_id` nhưng cố ý không lọc theo nó — `0` ở đây
+    #  nghĩa là "áp cho mọi pháp nhân", mà `company_id == <của tôi>` thì cắt mất
+    #  đúng những dòng dùng chung ấy. Lọc đúng nằm ở `workday_service` (gộp dòng
+    #  của pháp nhân mình VỚI dòng dùng chung), không diễn đạt được bằng khuôn
+    #  một-cột của `apply_scope`.
+    "holiday":          PUBLIC,
+
+    # --- Đặt phòng họp (duoc-CR-279) ---
+    #  Phiếu đặt khai CẢ `owner` LẪN `self`, cùng lẽ với đơn nghỉ phép: một phiếu
+    #  có hai người dính tới nó — người ĐẶT (`requester_employee_id`, chủ trì) và
+    #  người LẬP (`created_by`, thư ký đặt hộ). Chỉ khai một vế thì vế kia mất
+    #  dấu phiếu ở phạm vi `own`.
+    "room_booking":     {"company": "company_id", "dept_id": "department_id",
+                         "owner": "created_by", "self": "requester_employee_id"},
+    #  Danh mục phòng: bảng CÓ `company_id` nhưng cố ý không lọc theo nó — `0`
+    #  nghĩa là "phòng dùng chung mọi pháp nhân", mà lọc `company_id == <của
+    #  tôi>` thì cắt mất đúng những phòng dùng chung ấy. Lọc đúng nằm ở
+    #  `service.list_availability` (gộp phòng của pháp nhân mình VỚI phòng dùng
+    #  chung), không diễn đạt được bằng khuôn một-cột của `apply_scope`. Ai được
+    #  SỬA thì gác bằng quyền `meeting_room.write`, không phải bằng phạm vi.
+    "meeting_room":     PUBLIC,
 }
 
 
@@ -238,25 +280,6 @@ def _role_scope_cond(model, entity, scope, user, profile):
     dept_names = [x for x in (profile.get("dept_names") or []) if x] \
         or ([profile["dept_name"]] if profile.get("dept_name") else [])
 
-    #  DUYỆT DẤU — MỘT phiếu gắn NHIỀU công ty (bảng nối tab_seal_request_company).
-    #  · own  (Nhân sự): phiếu mình tạo, mọi trạng thái.
-    #  · dept (Trưởng bộ phận): phiếu cùng phòng (theo department_id người tạo),
-    #    KHÔNG chặn theo công ty con dấu — TBP duyệt theo phòng, không theo pháp nhân.
-    #  · company (Văn thư / Giám đốc): phiếu có CÔNG TY MÌNH trong danh sách VÀ đã
-    #    qua TBP (Đã duyệt / Hoàn thành). Giám đốc chỉ thấy phiếu đã duyệt của cty mình.
-    if entity == "seal_request" and scope in ("own", "dept", "company"):
-        from app.modules.seal_request.model import (SEAL_APPROVED, SEAL_COMPLETED,
-                                                    SealRequestCompany)
-        if scope == "own":
-            return model.created_by == user.id
-        if scope == "dept":
-            return model.department_id.in_(dept_ids) if dept_ids else false()
-        if not company_id:
-            return _chan(entity, scope, user, "nguoi dung chua gan phap nhan (company_id=0)")
-        sub = select(SealRequestCompany.seal_request_id).where(
-            SealRequestCompany.company_id == company_id)
-        return and_(model.id.in_(sub), model.status.in_([SEAL_APPROVED, SEAL_COMPLETED]))
-
     # "Được giao": của mình HOẶC được phân bổ cho mình (áp cho PYC)
     if scope in ("assigned", "proc"):
         if entity == "purchase_request":
@@ -325,9 +348,28 @@ def _role_scope_cond(model, entity, scope, user, profile):
             rid = profile.get("employee_id") or 0
             if rid and hasattr(model, "requester_id"):
                 cond = or_(cond, model.requester_id == rid)
+            #  CR-259 — entity khai CẢ `owner` LẪN `self`: chứng từ có hai người
+            #  dính tới nó, người LẬP và người CHỊU (đơn nghỉ phép: `created_by`
+            #  và `employee_id`). Cả hai đều phải thấy nó ở phạm vi «của mình».
+            #  Cùng ý với nhánh `requester_id` ngay trên, chỉ khác là tên cột do
+            #  `SCOPE_FIELDS` khai chứ không đoán bằng `hasattr`.
+            #  ⚠️ Chặn `rid = 0`: `employee_id == 0` sẽ trúng mọi dòng chưa gắn
+            #  nhân sự, tức là mở rộng phạm vi thay vì thu hẹp.
+            if rid and f.get("self"):
+                cond = or_(cond, getattr(model, f["self"]) == rid)
             return cond
         if f.get("self"):   # entity không có owner (vd. employee) → chỉ chính mình
-            return getattr(model, f["self"]) == (profile.get("employee_id") or 0)
+            #  ⚠️ CÙNG CHỐT `rid` với nhánh có `owner` ngay trên — B11/#21. Nhánh
+            #  này trước đây so thẳng `== (employee_id or 0)`, nên tài khoản CHƯA
+            #  GẮN hồ sơ nhân sự nhận điều kiện `<cột self> == 0`, mà `0` là đúng
+            #  giá trị của MỌI dòng chưa gắn nhân sự: đặt phạm vi `own` trên
+            #  `user` là thấy hết tài khoản chưa gắn nhân sự của cả hệ. Thiếu dữ
+            #  liệu thì CHẶN, đúng tinh thần B-07 (và có một dòng log để đi tìm
+            #  người phải gắn hồ sơ), chứ không nới ra.
+            rid = profile.get("employee_id") or 0
+            if not rid:
+                return _chan(entity, scope, user, "tai khoan chua gan ho so nhan su")
+            return getattr(model, f["self"]) == rid
         scope = "company"
 
     if scope == "dept":
@@ -346,6 +388,22 @@ def _role_scope_cond(model, entity, scope, user, profile):
         return and_(*cs)
 
     if scope == "company":
+        #  DUYỆT DẤU — Văn thư / Giám đốc: MỘT phiếu gắn NHIỀU công ty (bảng nối
+        #  `tab_seal_request_company`), nên lọc theo BẢNG NỐI chứ không theo cột
+        #  `company_id` (công ty chính) — Văn thư của BẤT KỲ công ty nào trong danh
+        #  sách đều thấy phiếu. Và chỉ thấy phiếu ĐÃ QUA TBP (Đã duyệt / Hoàn thành);
+        #  phiếu nháp/chờ duyệt KHÔNG hiện. Subquery chạy được cả MySQL lẫn SQLite.
+        #  `own`/`dept` KHÔNG chặn ở đây — nhánh chung phía trên đã đúng: `own` =
+        #  người tạo ∨ người yêu cầu; `dept` = cùng công ty chính ∧ cùng phòng.
+        if entity == "seal_request":
+            if not company_id:
+                return _chan(entity, scope, user, "nguoi dung chua gan phap nhan (company_id=0)")
+            from app.modules.seal_request.model import (SEAL_APPROVED, SEAL_COMPLETED,
+                                                        SealRequestCompany)
+            sub = select(SealRequestCompany.seal_request_id).where(
+                SealRequestCompany.company_id == company_id)
+            return and_(model.id.in_(sub),
+                        model.status.in_([SEAL_APPROVED, SEAL_COMPLETED]))
         if not f.get("company"):
             # Entity không có cột pháp nhân (vd. `survey`, `user`). Không có gì để lọc mà vẫn
             # trả None thì "company" hóa ra rộng bằng "all" — đúng lỗ N-14.
@@ -361,6 +419,29 @@ def _role_scope_cond(model, entity, scope, user, profile):
     return _chan(entity, scope, user, "pham vi la khong hieu duoc")
 
 
+def _parse_int_values(entity, dim, box, values):
+    """Lọc lấy giá trị SỐ trong một ô phạm vi, kêu lên khi gặp rác — B11/#34.
+
+    `auth.py` CỐ Ý giữ nguyên chuỗi khi giá trị `dim=company` không phải số
+    (`int(s.value) if (s.value or "").isdigit() else s.value`), nên một dòng
+    `tab_user_scope` hỏng — gõ tay vào DB, nhập nhầm, hay dữ liệu di trú cũ — đi
+    thẳng xuống đây. `int(v)` trần thì `ValueError` bay lên tận controller ⇒
+    **500 ở MỌI màn danh sách** của riêng người đó, và họ không tự gỡ được vì
+    màn nào cũng chết. Bỏ qua giá trị rác là cách duy nhất còn chừa đường vào để
+    sửa dữ liệu; dòng WARNING (cùng khuôn `_chan`) là chỗ để đi tìm nó.
+    """
+    good, bad = [], []
+    for v in values:
+        try:
+            good.append(int(v))
+        except (TypeError, ValueError):
+            bad.append(v)
+    if bad:
+        log.warning("scope gia tri khong phai so: entity=%s dim=%s o=%s — bo qua %r",
+                    entity, dim, box, bad)
+    return good
+
+
 def _explicit_cond(model, entity, scopeconf):
     """Điều kiện THU HẸP: include công ty/nhân sự + MỌI loại trừ (AND).
     Riêng 'Phòng ban được xem' (department include) = CỘNG THÊM → xử lý ở apply_scope."""
@@ -370,12 +451,21 @@ def _explicit_cond(model, entity, scopeconf):
         if not col:
             continue
         column = getattr(model, col)
-        inc = (scopeconf.get("inc") or {}).get(dim) or []
-        exc = (scopeconf.get("exc") or {}).get(dim) or []
+        raw_inc = (scopeconf.get("inc") or {}).get(dim) or []
+        raw_exc = (scopeconf.get("exc") or {}).get(dim) or []
+        inc = _parse_int_values(entity, dim, "chon", raw_inc)
+        exc = _parse_int_values(entity, dim, "loai tru", raw_exc)
         if inc:
-            cs.append(column.in_([int(v) for v in inc]))
+            cs.append(column.in_(inc))
+        elif raw_inc:
+            #  Ô CHỌN có giá trị nhưng KHÔNG giá trị nào dùng được. Bỏ qua ô này
+            #  là phạm vi NỞ ra đúng bằng bậc vai trò — ngược hẳn ý người khai.
+            #  Chặn, cùng luật với `_chan`. (Ô LOẠI TRỪ toàn rác thì bỏ qua là
+            #  đúng: cột số không bao giờ khớp một chuỗi rác, giữ hay bỏ đều
+            #  không loại được dòng nào.)
+            cs.append(false())
         if exc:
-            cs.append(~column.in_([int(v) for v in exc]))
+            cs.append(~column.in_(exc))
     # Phòng ban: include là CỘNG THÊM (xem `_dept_include_cond`), ở đây chỉ còn loại trừ.
     dc = _dept_match(model, f, (scopeconf.get("exc") or {}).get("department") or [],
                      (scopeconf.get("exc") or {}).get("department_name") or [])

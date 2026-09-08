@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
@@ -6,7 +6,7 @@ from app.core.auth import get_perm_profile, require
 from app.core.base_controller import apply_filters, pagination
 from app.core.database import get_db
 from app.core.response import success
-from app.core.scoping import apply_scope
+from app.core.scoping import apply_scope, has_global_scope
 
 from . import service
 from .model import Inventory, InventoryMove
@@ -59,6 +59,11 @@ def list_moves(request: Request, pg: dict = Depends(pagination), db: Session = D
     q = db.query(InventoryMove, Employee.full_name).\
         outerjoin(User, User.id == InventoryMove.created_by).\
         outerjoin(Employee, Employee.id == User.employee_id)
+    # Cùng khóa `inventory.read` với màn Tồn kho ngay trên, nên phải cùng phạm vi:
+    # nhật ký nhập/xuất mang mã hàng, ĐƠN GIÁ NHẬP và tên người thao tác, tức là
+    # chi tiết hơn cả bảng tồn kho mà nó đứng cạnh. `tab_inventory_move` có
+    # `company_id` nên chiều `company` của entity `inventory` áp thẳng được.
+    q = apply_scope(q, InventoryMove, "inventory", user, get_perm_profile(db, user))
 
     for k in ("warehouse_code", "product_code", "company_id"):
         v = request.query_params.get(k)
@@ -88,9 +93,36 @@ def list_moves(request: Request, pg: dict = Depends(pagination), db: Session = D
     return success({"total": total, "items": items})
 
 
+def _writable_company(db: Session, data: AdjustIn, user) -> int:
+    """Pháp nhân được phép GHI tồn kho — lấy từ hồ sơ quyền, không tin body.
+
+    `company_id` trong body là đường ghi đè tồn kho của pháp nhân người gửi không được
+    xem: `service.adjust` upsert theo `(company, kho, sp)` nên gõ id lạ vào là sửa thẳng
+    số tồn bên đó, lại có `record(...)` nên nhật ký nhìn vẫn hợp lệ.
+
+    Không dùng `get_scoped` được vì điều chỉnh có thể TẠO MỚI dòng tồn (mặt hàng chưa có
+    trong kho đó) — chưa có bản ghi nào để soi. Nên chốt đặt trên GIÁ TRỊ pháp nhân:
+
+    * bỏ trống ⇒ lấy pháp nhân của chính người thao tác;
+    * khác pháp nhân của mình ⇒ chỉ người có phạm vi **tất cả** trên `inventory.write`
+      mới được (quản trị đa pháp nhân vẫn làm việc bình thường);
+    * người chưa gắn pháp nhân (`company_id = 0`) thì chặn — cùng luật với
+      `_role_scope_cond` ở bậc `company`, chứ không ghi vào "pháp nhân số 0".
+    """
+    prof = get_perm_profile(db, user)
+    mine = prof.get("company_id") or 0
+    company_id = int(data.company_id or 0) or mine
+    if not company_id:
+        raise HTTPException(400, "Tài khoản chưa gắn pháp nhân — không điều chỉnh tồn kho được")
+    if company_id != mine and not has_global_scope(prof, "inventory", "write"):
+        raise HTTPException(403, "Ngoài phạm vi được phép điều chỉnh tồn kho")
+    return company_id
+
+
 @router.post("/adjust")
 def adjust(data: AdjustIn, db: Session = Depends(get_db), user=Depends(require("inventory", "write"))):
-    row = service.adjust(db, company_id=data.company_id, warehouse_code=data.warehouse_code,
+    row = service.adjust(db, company_id=_writable_company(db, data, user),
+                         warehouse_code=data.warehouse_code,
                          product_code=data.product_code, product_name=data.product_name,
                          unit=data.unit, qty=data.qty, note=data.note, user_id=user.id,
                          unit_price=data.unit_price)

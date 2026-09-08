@@ -26,6 +26,11 @@ USER = SimpleNamespace(id=1, employee_id=1)
 def _no_scope(monkeypatch, module):
     monkeypatch.setattr(module, "apply_scope", lambda q, *a, **k: q)
     monkeypatch.setattr(module, "get_perm_profile", lambda db, u: {"grants": []})
+    #  YCBG lọc danh sách bằng `_scope_with_named_head` → `scope_condition`, KHÔNG qua
+    #  `apply_scope`. Bỏ sót tên này thì hồ sơ quyền rỗng ở trên biến thành `false()` và
+    #  mọi bài tìm kiếm của YCBG trả rỗng — bài đỏ vì phạm vi chứ không vì ô tìm kiếm.
+    if hasattr(module, "scope_condition"):
+        monkeypatch.setattr(module, "scope_condition", lambda *a, **k: None)
     return module
 
 

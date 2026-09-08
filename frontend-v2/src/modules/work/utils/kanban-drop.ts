@@ -66,22 +66,40 @@ export function parseDropTarget(id: string | number | undefined | null): DropTar
 }
 
 /**
+ * Mốc «đứng ngay trước» sau một cú kéo bên trong MỘT hàng phẳng; `null` = xuống
+ * cuối. `null` cả hàm khi một trong hai id không có trong hàng — thả ra ngoài.
+ *
+ * Đúng phép `arrayMove` của dnd-kit: hàng đã BỎ món đang kéo ra, rồi món nào
+ * đang đứng ở ô đích chính là mốc. Nhờ vậy kéo xuôi thì nằm SAU ô đích, kéo
+ * ngược thì nằm TRƯỚC — khớp với cái người dùng vừa thấy lúc rê.
+ *
+ * Dùng chung cho ba chỗ có cùng luật ấy: đổi thứ tự cột, xếp lại việc con, và
+ * (gián tiếp) xếp lại thẻ trong một cột ở {@link resolveDropPlace}.
+ */
+export function resolveReorder(
+  ids: number[],
+  activeId: number,
+  overId: number,
+): { beforeId: number | null } | null {
+  const from = ids.indexOf(activeId)
+  const to = ids.indexOf(overId)
+  if (from === -1 || to === -1) return null
+  const rest = ids.filter((id) => id !== activeId)
+  return { beforeId: rest[to] ?? null }
+}
+
+/**
  * Cột sẽ đứng NGAY TRƯỚC cột nào sau khi kéo; `null` = đẩy xuống cuối hàng.
  *
- * Cùng phép `arrayMove` của dnd-kit như kéo thẻ trong một cột (kéo sang PHẢI thì
- * nằm SAU ô đích, sang TRÁI thì nằm TRƯỚC) — xem `resolveDropPlace`. Máy chủ
- * nhận mốc rồi đánh số lại cả hàng cột (`list_config_service.move_section`).
+ * Máy chủ nhận mốc rồi đánh số lại cả hàng cột (`list_config_service.move_section`).
  */
 export function resolveColumnDrop(
   sectionIds: number[],
   activeSectionId: number,
   overSectionId: number,
 ): { beforeSectionId: number | null } | null {
-  const from = sectionIds.indexOf(activeSectionId)
-  const to = sectionIds.indexOf(overSectionId)
-  if (from === -1 || to === -1) return null
-  const rest = sectionIds.filter((id) => id !== activeSectionId)
-  return { beforeSectionId: rest[to] ?? null }
+  const moved = resolveReorder(sectionIds, activeSectionId, overSectionId)
+  return moved && { beforeSectionId: moved.beforeId }
 }
 
 /** Cột đang chứa một thẻ; `null` nếu thẻ không có trên bảng. */

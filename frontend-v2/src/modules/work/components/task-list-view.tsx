@@ -1,15 +1,3 @@
-import {
-  DndContext,
-  DragOverlay,
-  KeyboardSensor,
-  PointerSensor,
-  closestCenter,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-  type DragStartEvent,
-} from '@dnd-kit/core'
-import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { useMemo, useRef, useState } from 'react'
 
 import { Skeleton } from '@/shared/ui/skeleton'
@@ -18,23 +6,13 @@ import { columnWidthVar, useListColumnWidths } from '../hooks/use-list-column-wi
 import type { CardFields } from '../types/view-options'
 import type { WorkLabelField, WorkMember, WorkSection, WorkTask } from '../types/work'
 import { groupTasksBySection } from '../utils/group-tasks'
-import { buildListColumns } from '../utils/list-columns'
-import {
-  isSamePlace,
-  parseDropTarget,
-  resolveDropPlace,
-  type KanbanDropPlace,
-} from '../utils/kanban-drop'
-import { HEADER_TITLE_PAD } from '../utils/list-metrics'
+import { TITLE_COLUMN, buildListColumns } from '../utils/list-columns'
+import type { KanbanDropPlace } from '../utils/kanban-drop'
+import { COLUMN_GAP, LEAD_WIDTH, ROW_PAD_LEFT } from '../utils/list-metrics'
 import { ListColumnResizer } from './list-column-resizer'
 import type { NewTaskDraft } from './task-draft-row'
-import { TaskListGroup } from './task-list-group'
+import { TaskGroupsBoard } from './task-groups-board'
 import type { TaskRowActions } from './task-list-row'
-
-/** Chỗ tối thiểu cho cột tên: mũi tên bung + ô tick + đủ chữ để đọc ra việc gì. */
-const TITLE_MIN_WIDTH = 320
-/** `gap-1.5` giữa các ô, tính bằng px — phải khớp với lớp Tailwind của dòng. */
-const COLUMN_GAP = 6
 
 interface TaskListViewProps extends TaskRowActions {
   listId: number
@@ -44,6 +22,8 @@ interface TaskListViewProps extends TaskRowActions {
   members: WorkMember[]
   fields: CardFields
   canEdit: boolean
+  /** Quản trị dự án — chỉ họ mới xếp lại được CỘT (cột là cấu hình của dự án). */
+  canManage: boolean
   isLoading?: boolean
   /** Nhân sự đang đăng nhập — dòng nháp gán sẵn làm người phụ trách. */
   defaultPicId?: number
@@ -54,6 +34,8 @@ interface TaskListViewProps extends TaskRowActions {
    */
   dragEnabled: boolean
   onMoveTask: (taskId: number, place: KanbanDropPlace) => void
+  onMoveSubtask: (parentId: number, subtaskId: number, beforeTaskId: number | null) => void
+  onMoveSection: (sectionId: number, beforeSectionId: number | null) => void
   onAddTask: (sectionId: number | null, draft: NewTaskDraft) => void
 }
 
@@ -68,8 +50,11 @@ interface TaskListViewProps extends TaskRowActions {
  * phải một bảng tự ghép ở tầng trang.
  *
  * Cột hiện gì và theo thứ tự nào lấy từ chính bộ «Tùy chỉnh» của thẻ kanban
- * (`fields`), nên tắt một trường là nó biến mất ở cả hai khung nhìn. Bề rộng thì
+ * (`fields`), nên tắt một trường là nó biến mất ở cả ba khung nhìn. Bề rộng thì
  * kéo giãn được và nhớ riêng theo từng dự án.
+ *
+ * Màn này giờ chỉ còn lo **hàng tiêu đề + bề rộng cột**; phần nhóm và ba tầng
+ * kéo thả nằm ở `TaskGroupsBoard` — dùng chung với lưới trái của Gantt.
  */
 export function TaskListView({
   listId,
@@ -79,66 +64,35 @@ export function TaskListView({
   members,
   fields,
   canEdit,
+  canManage,
   isLoading,
   defaultPicId,
   dragEnabled,
   onMoveTask,
+  onMoveSubtask,
+  onMoveSection,
   onAddTask,
   ...rowActions
 }: TaskListViewProps) {
   const { isCollapsed, toggle } = useCollapsedGroups(listId)
   const gridRef = useRef<HTMLDivElement>(null)
-  const [draggingId, setDraggingId] = useState<number | null>(null)
+  //  Chỉ bung MỘT việc con một lúc — bung năm bảy cụm rồi cuộn tìm nhau thì
+  //  bảng dài ra gấp đôi mà chẳng ai đọc nổi.
+  const [expandedTaskId, setExpandedTaskId] = useState<number | null>(null)
 
   const groups = useMemo(() => groupTasksBySection(tasks, sections), [tasks, sections])
   const columns = useMemo(() => buildListColumns(fields, labelFields), [fields, labelFields])
-  const { resize, styleVars, totalWidth } = useListColumnWidths(listId, columns)
+  //  Cột TÊN đi cùng các cột dữ liệu trong bộ bề rộng — nó cũng kéo giãn và nhớ
+  //  được — nhưng KHÔNG nằm trong `columns`: nó có bố cục riêng (mũi tên bung, ô
+  //  tick, huy hiệu) chứ không phải một ô dữ liệu vẽ bằng `TaskListCell`.
+  const widthColumns = useMemo(() => [TITLE_COLUMN, ...columns], [columns])
+  const { resize, styleVars, totalWidth } = useListColumnWidths(listId, widthColumns)
 
-  /*  Bản đồ cột→việc cho `resolveDropPlace` — dùng lại nguyên bộ tính vị trí của
-      kanban thay vì viết bản thứ hai. Nhóm "Chưa phân cột" (`sectionId` null) bị
-      loại: nó không phải một cột có thật nên không thể là đích thả.  */
-  const columnMap = useMemo(() => {
-    const map = new Map<number, WorkTask[]>()
-    for (const g of groups) if (g.sectionId !== null) map.set(g.sectionId, g.tasks)
-    return map
-  }, [groups])
-
-  const draggingTask = useMemo(
-    () => (draggingId === null ? null : tasks.find((t) => t.id === draggingId) ?? null),
-    [draggingId, tasks],
-  )
-
-  const sensors = useSensors(
-    //  Ngưỡng 6px: dưới mức đó vẫn tính là CÚ BẤM, nếu không thì bấm mở panel
-    //  chi tiết mà tay hơi rung là thành một cú kéo hụt.
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  )
-
-  function handleDragStart(event: DragStartEvent) {
-    const target = parseDropTarget(event.active.id)
-    setDraggingId(target?.type === 'task' ? target.taskId : null)
-  }
-
-  function handleDragEnd(event: DragEndEvent) {
-    const activeId = draggingId
-    setDraggingId(null)
-    if (activeId === null) return
-
-    const place = resolveDropPlace(columnMap, activeId, parseDropTarget(event.over?.id))
-    const task = tasks.find((t) => t.id === activeId)
-    //  Thả về đúng chỗ cũ thì im lặng — đừng bắn một lượt PATCH không đổi gì,
-    //  nó chỉ làm bẩn nhật ký thao tác.
-    if (!place || !task || isSamePlace(columnMap, task, place)) return
-    onMoveTask(activeId, place)
-  }
-
-
-  /*  Bề rộng tối thiểu TÍNH RA chứ không gõ cứng: cột tên là cột `flex-1` duy
-      nhất, nên nếu khung hẹp hơn tổng các cột cố định thì nó bị ép về gần 0 và
-      mọi tiêu đề việc cụt còn đúng một chữ cái. Số cột lẫn bề rộng đều đổi được
-      lúc chạy, nên một hằng số không thể đúng mãi.  */
-  const minWidth = TITLE_MIN_WIDTH + totalWidth + columns.length * COLUMN_GAP
+  /*  Bề rộng tối thiểu TÍNH RA chứ không gõ cứng: hẹp hơn tổng các cột là cột
+      nào đó bị bóp lại và chữ trong nó cụt còn dăm ba chữ cái — thà cho cuộn
+      ngang. Số cột lẫn bề rộng đều đổi được lúc chạy nên một hằng số không thể
+      đúng mãi. Cộng cả lề trái của dòng: nó nằm ngoài mọi cột.  */
+  const minWidth = ROW_PAD_LEFT + totalWidth + widthColumns.length * COLUMN_GAP
 
   if (isLoading) {
     return (
@@ -159,26 +113,41 @@ export function TaskListView({
   }
 
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-      onDragCancel={() => setDraggingId(null)}
-    >
-      <div className="overflow-x-auto">
-        <div ref={gridRef} style={{ ...styleVars, minWidth }}>
+    <div className="overflow-x-auto">
+      <div ref={gridRef} style={{ ...styleVars, minWidth }}>
         <div
           role="row"
-          className="group/head flex items-center gap-1.5 border-b bg-muted/30 px-2 py-1.5 text-xs font-medium text-muted-foreground"
+          /*  Cùng `paddingLeft` với dòng việc (không phải `px-2` như trước):
+              có thế mép TRÁI của ô tiêu đề mới trùng mép trái ô tên bên dưới,
+              mà hai ô nay rộng bằng nhau nên mép PHẢI — chỗ đặt tay cầm kéo —
+              cũng trùng nốt. `py-2.5` cho hàng tiêu đề thở hơn phần thân.  */
+          style={{ paddingLeft: ROW_PAD_LEFT, gap: COLUMN_GAP }}
+          className="group/head flex items-center border-b bg-muted/30 py-2.5 pr-2 text-xs font-medium text-muted-foreground"
         >
-          <span className="min-w-0 flex-1" style={{ paddingLeft: HEADER_TITLE_PAD }}>
-            Tên công việc
+          <span
+            className="relative shrink-0"
+            style={{
+              width: `var(${columnWidthVar(TITLE_COLUMN.key)})`,
+              paddingLeft: LEAD_WIDTH,
+            }}
+          >
+            <span className="block truncate">{TITLE_COLUMN.label}</span>
+            <ListColumnResizer
+              columnKey={TITLE_COLUMN.key}
+              gridRef={gridRef}
+              minWidth={TITLE_COLUMN.minWidth}
+              onResize={(width) => resize(TITLE_COLUMN.key, width)}
+            />
           </span>
+
+          {/*  Khoảng đệm nuốt phần dư của khung: các cột dữ liệu vẫn dính mép
+               phải như trước, còn cột tên thì có bề rộng thật để mà kéo. */}
+          <span className="min-w-0 flex-1" aria-hidden />
+
           {columns.map((col) => (
             //  KHÔNG đặt `truncate` ở đây: nó kèm `overflow-hidden`, mà tay cầm
-            //  kéo giãn nằm ở `-right-1` — tức NGOÀI hộp — nên bị cắt mất, nhìn
-            //  như bảng không kéo giãn được. Cắt chữ để cho lớp con bên trong.
+            //  kéo giãn nằm ở `-right-1.5` — tức NGOÀI hộp — nên bị cắt mất,
+            //  nhìn như bảng không kéo giãn được. Cắt chữ để cho lớp con.
             <span
               key={col.key}
               className="relative shrink-0"
@@ -194,36 +163,30 @@ export function TaskListView({
           ))}
         </div>
 
-        {groups.map((group) => (
-          <TaskListGroup
-            key={group.key}
-            group={group}
-            columns={columns}
-            fields={fields}
-            labelFields={labelFields}
-            members={members}
-            canEdit={canEdit}
-            collapsed={isCollapsed(group.key)}
-            onToggleCollapse={() => toggle(group.key)}
-            defaultPicId={defaultPicId}
-            draggable={dragEnabled}
-            onAddTask={onAddTask}
-            {...rowActions}
-          />
-        ))}
-        </div>
+        <TaskGroupsBoard
+          groups={groups}
+          sections={sections}
+          columns={columns}
+          fields={fields}
+          labelFields={labelFields}
+          members={members}
+          canEdit={canEdit}
+          canManage={canManage}
+          defaultPicId={defaultPicId}
+          dragEnabled={dragEnabled}
+          isCollapsed={isCollapsed}
+          onToggleCollapse={toggle}
+          expandedTaskId={expandedTaskId}
+          onToggleExpand={(taskId) =>
+            setExpandedTaskId((prev) => (prev === taskId ? null : taskId))
+          }
+          onMoveTask={onMoveTask}
+          onMoveSubtask={onMoveSubtask}
+          onMoveSection={onMoveSection}
+          onAddTask={onAddTask}
+          {...rowActions}
+        />
       </div>
-
-      {/*  Lớp phủ bám con trỏ: chỉ mình nó vẽ lại trong lúc kéo, nên cả trăm
-           dòng bên dưới đứng yên. Rút gọn còn mỗi tên việc — kéo theo nguyên
-           dòng đủ ô nhập thì lớp phủ vừa nặng vừa che mất chỗ sắp thả. */}
-      <DragOverlay dropAnimation={null}>
-        {draggingTask && (
-          <div className="rounded-md border bg-card px-3 py-1.5 text-sm shadow-lg">
-            {draggingTask.title}
-          </div>
-        )}
-      </DragOverlay>
-    </DndContext>
+    </div>
   )
 }

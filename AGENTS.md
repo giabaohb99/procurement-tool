@@ -15,8 +15,18 @@ Stack: FastAPI 0.115 · SQLAlchemy 2.0 · Pydantic v2 · MySQL 8 · Alembic · R
 
 Everything runs in Docker; there is no local venv/npm workflow.
 
+⚠️ **Machine freezing / apps force-quitting during tests or builds? Read `doc/tai-lieu-ky-thuat/gioi-han-tai-nguyen-docker.md`.**
+The local stack is **11 containers**; `docker-compose.yml` already sets `mem_limit` + `cpus` per
+service — **do not strip them**. Those cap individual containers only; capping the whole Docker VM
+needs `%USERPROFILE%\.wslconfig` (template at `docker/wslconfig.example`, per-machine, never committed).
+Four rules for AI assistants: **run only the tests for the part you just changed** (never sweep all of
+`test/backend`) · prefer `restart` over `up --build` unless `requirements.txt`/`package.json`/`Dockerfile.*`
+changed · **never run `wsl --shutdown` yourself** (it kills every container) · weaker machines get their
+own `docker-compose.override.yml` (gitignored) instead of editing the shared file.
+
 ```bash
 docker compose up --build           # start db + api + web + adminer
+# Lighter: docker compose stop adminer redisinsight qdrant   (+ web help if only working on erp)
 # Web http://localhost:8080 · API http://localhost:8000/docs · Adminer http://localhost:8081
 ```
 

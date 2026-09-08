@@ -12,7 +12,8 @@ như cột người trên chứng từ thu mua — chốt rõ từ đầu để 
 from datetime import datetime
 from enum import IntEnum
 
-from sqlalchemy import BigInteger, DateTime, Index, SmallInteger, Text, UniqueConstraint
+from sqlalchemy import (BigInteger, DateTime, Index, SmallInteger, String, Text,
+                        UniqueConstraint)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base_model import AuditMixin, Base
@@ -51,6 +52,19 @@ class ForumPostKind(IntEnum):
     AVATAR_UPDATE = 1  # đổi ảnh đại diện — đúng 1 ảnh là chính avatar mới
 
 
+class ForumBodyFormat(IntEnum):
+    """Định dạng nội dung bài (CR-261) — chữ trơn hay HTML đã soạn thảo.
+
+    RICH_HTML lưu HTML từ `RichTextField` (bộ mở rộng CHUNG với văn thư),
+    ĐÃ qua `sanitize_html` của help_center ngay tại cửa ghi — một bộ lọc
+    duy nhất cho cả hệ, không viết bộ lọc thứ hai. Bài cũ giữ PLAIN, FE
+    vẫn vẽ theo đường chữ trơn như trước.
+    """
+
+    PLAIN = 0      # chữ trơn — bài cũ + bình luận
+    RICH_HTML = 1  # HTML đã lọc — bài đăng từ hộp soạn có định dạng
+
+
 class ForumModerationAction(IntEnum):
     """Hành động của quản trị viên trên một bài (QĐ-D1)."""
 
@@ -75,6 +89,55 @@ class ForumReactionKind(IntEnum):
     ANGRY = 6    # Phẫn nộ
 
 
+class ForumBoardStatus(IntEnum):
+    """Trạng thái box/nhóm chuyên mục (F13a). Ẩn là RÚT KHỎI MẮT chứ không xóa:
+    box ẩn không nhận bài mới, không hiện trên cây, bài cũ giữ nguyên."""
+
+    ACTIVE = 1   # đang mở
+    HIDDEN = 2   # admin ẩn — chờ dọn hoặc ngưng hẳn
+
+
+class ForumPrefix(IntEnum):
+    """Prefix của chủ đề trong box (F13a) — nhãn màu đầu tiêu đề kiểu VOZ.
+
+    Nhãn tiếng Việt khai ở `app/core/forum_codes.py` (bộ `forum_prefix`) để
+    `gen_status_ts.py` sinh cho FE — hai nơi phải cùng dải giá trị, có test giữ.
+    """
+
+    NONE = 0        # không prefix
+    DISCUSSION = 1  # thảo luận
+    QUESTION = 2    # thắc mắc
+    KNOWLEDGE = 3   # kiến thức
+    SHOWCASE = 4    # khoe
+    REVIEW = 5      # đánh giá
+
+
+class ForumBoard(Base, AuditMixin):
+    """Nhóm/box chuyên mục kiểu VOZ (F13a, QĐ-D7) — MỘT bảng cho cả hai tầng.
+
+    `parent_id` NULL = NHÓM chỉ làm tiêu đề (không chứa bài trực tiếp);
+    có `parent_id` = BOX nhận bài. Đúng hai tầng, không đệ quy sâu hơn —
+    service chặn từ lúc tạo. Cấu trúc do `forum_admin` quyết thủ công
+    (nguyên tắc kiểm duyệt chốt 03/09/2026), bài trong box KHÔNG duyệt trước.
+    """
+
+    __tablename__ = "tab_forum_board"
+
+    parent_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    name: Mapped[str] = mapped_column(String(255), default="")
+    description: Mapped[str] = mapped_column(Text, default="")
+    # Tên icon lucide hoặc 1 emoji do admin chọn lúc tạo box — FE tự vẽ.
+    icon: Mapped[str] = mapped_column(String(50), default="")
+    sort_order: Mapped[int] = mapped_column(SmallInteger, default=0)
+    status: Mapped[int] = mapped_column(
+        SmallInteger, default=int(ForumBoardStatus.ACTIVE)
+    )
+    # Đợt đầu ÉP PUBLIC (QĐ-D7a) — cột chừa sẵn cho box theo phòng/pháp nhân sau.
+    audience: Mapped[int] = mapped_column(
+        SmallInteger, default=int(ForumAudience.PUBLIC)
+    )
+
+
 class ForumPost(Base, AuditMixin):
     """Bài viết trên diễn đàn. Tác giả = `created_by` (user_id).
 
@@ -92,9 +155,17 @@ class ForumPost(Base, AuditMixin):
     __table_args__ = (
         Index("ix_forum_post_status_id", "status", "id"),
         Index("ix_forum_post_author_id", "created_by", "id"),
+        # (board_id, id) — danh sách thread của một box (F13a):
+        #   WHERE board_id=? AND status=1, sắp theo hoạt động cuối
+        Index("ix_forum_post_board_id", "board_id", "id"),
     )
 
     body: Mapped[str] = mapped_column(Text, default="")
+    # CR-261: 0 = chữ trơn (bài cũ), 1 = HTML đã qua sanitize ở service —
+    # FE dựa cột này chọn đường vẽ, KHÔNG đoán bằng cách ngửi chuỗi.
+    body_format: Mapped[int] = mapped_column(
+        SmallInteger, default=int(ForumBodyFormat.PLAIN), server_default="0"
+    )
     status: Mapped[int] = mapped_column(
         SmallInteger, default=int(ForumPostStatus.PUBLISHED)
     )
@@ -110,6 +181,14 @@ class ForumPost(Base, AuditMixin):
     # kiêm luôn thứ tự dải ghim (mới ghim lên đầu). Không cột boolean riêng,
     # không index: số bài ghim đếm trên đầu ngón tay.
     pinned_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # F13a — chuyên mục kiểu VOZ. NULL = bài Bảng tin thuần như cũ; có board_id
+    # thì bài là một THREAD trong box: `title` bắt buộc (service chặn 400),
+    # `prefix` theo `ForumPrefix`. Bài box vẫn ra feed (QĐ-D7b).
+    board_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    title: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    prefix: Mapped[int] = mapped_column(
+        SmallInteger, default=int(ForumPrefix.NONE), server_default="0"
+    )
 
 
 class ForumReaction(Base, AuditMixin):

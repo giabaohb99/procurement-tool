@@ -228,10 +228,11 @@ Mỗi dòng = một sản phẩm / vật tư yêu cầu mua. Bảng tóm tắt h
 
 - Kiểu nhập: Chọn sản phẩm (ProductPicker — tìm theo mã hoặc tên)
 - Mặc định: trống
-- Bắt buộc: Có (khi dòng có `product_name`, `validate()` yêu cầu phải chọn mã hàng từ danh mục: "cần chọn Mã hàng (chọn từ danh mục)")
+- Bắt buộc: **KHÔNG** (bao-CR-310). Trước đây bắt buộc khi dòng có `product_name`; nay bỏ, giống phiếu khảo sát vốn có cả loại **có mã** lẫn loại **không mã** — người yêu cầu phải mua được thứ chưa nằm trong danh mục mà không phải chờ mở mã trước.
 - Nguồn dữ liệu / liên kết: Danh mục Sản phẩm (`product`), API `/api/products`
 - Người sửa: Người tạo / có `write`, khi phiếu ở `draft` hoặc `rejected`
-- Logic đặc biệt: Chọn mã tự điền `product_name`, `unit`, `item_group`, `group_desc`. Nhập thủ công `product_name` mà không chọn mã sẽ bị chặn khi gửi duyệt.
+- Logic đặc biệt: Chọn mã tự điền `product_name`, `unit`, `item_group`, `group_desc`. Gõ thẳng `product_name` mà không chọn mã thì **vẫn gửi duyệt được** — người lập tự điền ĐVT và phân loại.
+- **Đánh đổi của dòng KHÔNG MÃ**: dòng ĐMH nối ngược về dòng YCMH bằng **chuỗi `product_code`** (`sync_from_purchase_orders`, quy tắc 14), nên dòng không mã **không được cộng tiến độ** `qty_ordered` / `qty_received` tự động — NSTM phải tự cập nhật `line_status`. Muốn bỏ hẳn ràng buộc này thì phải nối dòng bằng khóa dòng, xem việc còn nợ **N-004**.
 - **DUY NHẤT trên phiếu (CR-047)**: mỗi mã hàng chỉ được đứng ở **1 dòng**. Cần mua thêm cùng một mã thì **cộng số lượng vào một dòng**, đừng thêm dòng thứ hai. Ô mã trùng được tô đỏ ngay khi nhập; bấm Lưu sẽ báo `Mã hàng bị trùng: <mã>`. Xem quy tắc 22 mục C.
 - **Tham chiếu giá cũ**: sau khi chọn mã hàng, trong ô có nút mở **Lịch sử mua hàng** của mặt hàng đó (từng mua của NCC nào, giá bao nhiêu). Chọn 1 dòng lịch sử sẽ điền ĐVT / SL / đơn giá / VAT vào dòng, **không tự lưu**. Nút chỉ hiện khi dòng còn sửa được — xem `04-don-mua-hang.md` mục I và tài liệu riêng `12-lich-su-mua-hang.md`. Từ CR-058, VAT của lần mua trước được điền **nguyên giá trị** (trước đây chỉ điền khi trùng một trong các mức 0/5/8/10, không trùng thì âm thầm bỏ qua); chỉ số rác (âm hoặc ≥ 100) mới bị bỏ để giữ VAT đang có của dòng.
 - **Người yêu cầu KHÔNG thấy Nhà cung cấp trong popup này (CR-060)**: popup mở được từ YCMH, mà route `/api/products/{code}/purchase-history` chỉ đòi `product.read` — nên trước đây người yêu cầu (không có `supplier.read`) vẫn đọc nguyên tên/mã NCC, trong khi mọi màn khác đã che theo quy tắc 2 cụm NCC ở mục A.14. Nay **backend** tự xóa `supplier_code`/`supplier_name` khỏi dữ liệu trả về, **và bỏ luôn tên NCC khỏi vế tìm kiếm** — chỉ che cột thôi thì gõ tên một NCC rồi xem có ra dòng nào là suy ngược ra được ai bán mã hàng đó. Giao diện ẩn hẳn cột cho gọn, nhưng đó chỉ là trang trí: chốt chặn nằm ở server.
@@ -403,7 +404,7 @@ và nút "Tạo ĐMH" vẫn hiện khi dòng mới có đơn Nháp (dòng đó c
 ## C. Quy tắc nghiệp vụ
 
 1. Lưu (Nháp): lọc bỏ dòng không có `product_name`; dòng còn lại được lưu theo cơ chế upsert — dòng có `id` thì cập nhật tại chỗ (giữ nguyên `id`), dòng không có `id` thêm mới, dòng cũ không còn trong danh sách thì xóa (`_save_items`). Cơ chế upsert thay cho DELETE+INSERT cũ, giữ nguyên `id` để ảnh đính kèm theo dòng (`purchase_request_line_image`) không bị mồ côi.
-2. Gửi duyệt: kiểm tra `validate()` — phải có `company_id`, `requester`, ít nhất 1 dòng có `product_name`; mỗi dòng đó phải có `product_code` (chọn từ danh mục), `qty > 0`, `warehouse` và `required_date`. Nếu không pass, thông báo lỗi cụ thể từng trường.
+2. Gửi duyệt: kiểm tra `validate()` — phải có `company_id`, `requester`, ít nhất 1 dòng có `product_name`; mỗi dòng đó phải có `qty > 0`, `warehouse` và `required_date`. **`product_code` KHÔNG còn bắt buộc** từ bao-CR-310 (xem mục B.1). Nếu không pass, thông báo lỗi cụ thể từng trường. Luật khai một chỗ ở `frontend-v2/src/modules/procurement/utils/required-fields.ts`; backend không kiểm gì ở `submit_pr`.
 3. Mã phiếu tự sinh: định dạng `PYC{ddmmyy}{seq:02d}`, trong đó `ddmmyy` lấy từ `request_date` (không có thì lấy ngày hiện tại), `seq` là số thứ tự tăng dần trong ngày.
 4. Chọn Nhân sự YC: tự điền `requester_position` (chức vụ), `department` (phòng ban), `head_of_dept` (trưởng bộ phận theo `manager_id` của phòng ban), `company_id`. Trưởng bộ phận tra qua API `/api/purchase-requests/meta/dept-head` (với người không có quyền xem DS nhân sự). Sau đó **đổi được** sang người khác trong danh sách người duyệt được phiếu — chỉ đổi tên in, không đổi quyền duyệt (CR-071, xem §8).
 5. Chọn Mã hàng: tự điền `product_name`, `unit`, `item_group`, `group_desc`.
@@ -451,6 +452,8 @@ Entity: `purchase_request`
 | Xem chi tiết dòng (tất cả dòng) | `purchase_request:read` + là người tạo, người yêu cầu (khớp `requester_id`), có `approve`, hoặc scope `dept`/`company`/`all` | mọi trạng thái; NSTM chỉ thấy dòng được giao |
 | Tạo mới / Nhân bản | `purchase_request:create` | — |
 | Sửa nội dung header + dòng | `purchase_request:write` hoặc là người tạo phiếu hoặc người yêu cầu (khớp `requester_id`) | `draft`, `rejected` |
+| Gắn phương án lên dòng (H) | `purchase_request:write` + là NSTM phụ trách dòng (hoặc scope `dept`/`company`/`all`) | `dispatched`, `processing`, `purchasing`, `purchased` |
+| **Chốt phương án** (H) | là người yêu cầu (`created_by` / `requester_id`) **hoặc** `purchase_request:approve` | `dispatched`, `processing`, `purchasing`, `purchased` |
 | Gửi duyệt | `purchase_request:write` hoặc là người tạo phiếu hoặc người yêu cầu (khớp `requester_id`) | `draft`, `rejected` |
 | Duyệt | `purchase_request:approve` | `submitted` |
 | Trả về (→ `rejected`) | `purchase_request:approve` (tại `submitted`) hoặc `purchase_request:cancel` | `submitted`, `approved`, `processing` |
@@ -588,3 +591,143 @@ NV thu mua · Admin thu mua · Quản lý thu mua · Quản trị hệ thống*.
 yêu cầu thường) **KHÔNG** được xuất — muốn cho ai đó xuất thì tạo một **vai trò riêng** chỉ tick ô
 "Xuất" của màn tương ứng rồi gán thêm cho người đó (quyền là hợp của các vai trò được gán, nên
 không phải sửa vai trò "Nhân sự"). Vai trò **tự tạo tay** cũng phải tick ô "Xuất" mới thấy nút.
+
+## H. Phương án trên dòng hàng (bao-CR-310)
+
+Cho phép **xử lý khảo sát ngay trên YCMH**: NSTM gắn phương án (NCC + giá) lên từng dòng hàng,
+người yêu cầu chốt, rồi từ các dòng đã chốt sinh thẳng đơn mua hàng. Yêu cầu báo giá (YCBG)
+**giữ nguyên không đụng tới** — đây là đường thứ hai, dùng khi phiếu đã đủ mã hàng và thông tin
+mà chỉ vướng giá biến động.
+
+Thay cho hướng gộp YCMH vào YCBG của cụm bao-CR-277..291 (đã khai tử).
+
+### H.1 Bài toán
+
+Người yêu cầu lập phiếu mua cái ly, đã có mã hàng, đã có giá. Thu mua tiếp nhận thì phát hiện
+**giá vừa biến động** — có khi phải đổi sang NCC khác. Trước đây phải trả phiếu về hoặc mở
+một YCBG mới. Nay thu mua gắn thêm vài phương án ngay trên dòng đó để người yêu cầu chốt lại.
+
+### H.2 Ai làm gì
+
+| Vai | Thao tác |
+|-----|----------|
+| NSTM (`pur_staff`) | **Gắn** phương án lên dòng được giao. Không chốt. |
+| Người yêu cầu | **Chốt** phương án — vì chỉ họ biết mức giá đó còn đáng mua không. |
+| Quản lý TM / Admin TM (có `purchase_request:approve`) | **Chốt được luôn** — đường tắt cho hàng gấp, khỏi chờ người yêu cầu. |
+
+Điều kiện chốt: **là người yêu cầu (`created_by` hoặc `requester_id`) HOẶC có
+`purchase_request:approve`**. Khóa `approve` chia đúng ranh giới sẵn có: `pur_manager` và
+`pur_admin` có, `pur_staff` không có — không phải đẻ quyền mới.
+
+### H.3 Quy tắc
+
+1. Mỗi dòng gắn **tối đa 5 phương án** (`option_service.MAX_OPTIONS_PER_LINE`).
+2. Hai nguồn phương án: **chọn từ kho khảo sát đã duyệt** (`line_approve = "Đã duyệt"`), hoặc
+   **NSTM gõ tay**. Gõ tay dành cho trường hợp giá biến động liên tục, NSTM cần đưa ra một mức
+   hợp lý cho người yêu cầu chốt — không phải để lách kho khảo sát.
+3. Phương án là **bản chụp (snapshot)**: phiếu khảo sát gốc sửa giá về sau thì phương án đã gắn
+   không đổi theo.
+4. **Mỗi dòng chốt đúng 1 phương án.** Bấm lại chính nó = bỏ chốt (toggle, giống YCBG).
+5. "Dòng này đã chốt chưa" **không lưu thành cột** — suy ra từ cờ `is_chosen`.
+6. **Cổng thời điểm**: chỉ gắn/chốt khi phiếu ở `dispatched`, `processing`, `purchasing`,
+   `purchased` — tức sau khi thu mua tiếp nhận, trước khi phiếu đóng.
+7. **Hàng rào dòng**: NSTM chỉ gắn được vào dòng có `assignee` là mình. Dòng của người khác 403.
+8. **Người yêu cầu không thấy tên NCC** — giữ đúng luật 2 cụm NCC (Task 4). Họ thấy
+   *"Phương án 1 / 2 / 3"* kèm giá và thời gian giao, chốt theo giá chứ không theo NCC.
+
+### H.4 Dòng hàng và phương án không ghi đè nhau
+
+> Dòng hàng = **"tôi cần gì"**. Phương án = **"mua ở đâu, giá nào"**.
+
+| Nhóm trường | Nguồn |
+|---|---|
+| Nhu cầu: mã hàng, tên hàng, số lượng, ĐVT, ngày cần, kho nhận | **Luôn** lấy từ dòng hàng. Phương án không đụng. |
+| Thương mại: NCC, đơn giá, VAT, thời gian giao, nơi giao, phí vận chuyển, MOQ | Lấy từ **phương án đã chốt**; chưa chốt thì dùng giá đề xuất trên dòng. |
+
+**Chốt phương án KHÔNG ghi đè `price` / `vat_pct` của dòng hàng.** Ba lý do: giữ được dấu vết
+*giá đề xuất → giá chốt* (chính là thứ cần nhất khi giá biến động); bỏ chốt không phải khôi phục
+gì; báo cáo cũ không bị đổi ngược sau lưng. Bản in vì vậy có **hai cột song song**
+`Giá đề xuất | Giá chốt | Chênh lệch`.
+
+Ba chỗ va chạm cần xử riêng:
+
+- **ĐVT lệch nhau** (dòng ghi "cái", NCC báo giá theo "thùng 100 cái"): **không tự quy đổi** —
+  sai hệ số một lần là sai tiền cả đơn. Màn hình cảnh báo, bản in ghi cả hai đơn vị, NSTM tự quy
+  giá về đúng ĐVT của dòng khi nhập tay.
+- **MOQ lớn hơn SL cần** (cần 100, NCC bán tối thiểu 500): cảnh báo ngay trên thẻ phương án để
+  người yêu cầu thấy **trước khi** chốt. Tạo ĐMH vẫn lấy SL của dòng.
+- **Tên hàng lệch nhau**: bản in ưu tiên **tên nội bộ**; tên NCC gọi chỉ in nhỏ ở bản của thu mua.
+
+### H.5 Từ phương án đã chốt ra đơn mua hàng
+
+`PurchaseOrder` chỉ mang **một** `supplier_code`, nên **N nhà cung cấp = bắt buộc N đơn mua hàng**.
+
+Nút *Tạo đơn mua hàng theo phương án* gom các dòng đã chốt **theo `supplier_code`** rồi sinh
+**N đơn nháp** một lượt: đơn giá lấy `snap_price_by_volume`, VAT lấy `snap_vat` (trống thì rơi về
+`vat_pct` của dòng — CR-058), cam kết giao hàng đưa vào ghi chú.
+
+Cùng khuôn với `survey_request.create_prs` (gom option đã chọn theo NCC ra nhiều YCMH nháp) —
+chỉ khác là áp xuống một tầng.
+
+### H.6 Hai bản in
+
+**Bản A — cho người yêu cầu.** **Không đẻ mẫu mới** — vẫn là bản in phiếu đề xuất ở mục F,
+in toàn bộ dòng của phiếu, không tick chọn gì. Phương án chỉ **điền vào các ô sẵn có**:
+
+| Ô trên bản in | Lấy từ đâu |
+|---|---|
+| Nhà cung cấp (khối `supplier_pur`, mục A.14) | NCC của **phương án đã chốt** — tức NCC tối ưu nhất. Chưa chốt dòng nào thì rơi về **NCC do chính người yêu cầu ghi** (`supplier_req`, mục A.14). |
+| Đơn giá / %VAT trên từng dòng | Phương án đã chốt của dòng đó; dòng chưa chốt thì giữ **giá đề xuất** (`price` / `vat_pct`). |
+| Thành tiền, tổng cộng | Tính lại theo giá đang in. |
+
+Nghĩa là người yêu cầu cầm về một tờ phiếu **quen thuộc y như cũ**, chỉ khác là số tiền và tên
+NCC nay là con số đã chốt chứ không còn là ước lượng lúc lập phiếu.
+
+**3 sản phẩm chốt 3 NCC khác nhau vẫn in CHUNG MỘT BẢNG**, không tách trang, không thêm cột NCC
+theo dòng. Người yêu cầu vốn không thấy NCC, nên chuyện phiếu này mua ở mấy nơi là việc của thu
+mua, không phải thứ cần đưa vào tờ trình của họ. Việc tách theo NCC chỉ xảy ra ở **bản B**.
+
+Ô NCC chung vì vậy luôn ghi **đúng một** cái tên: NCC của phương án chốt **chiếm giá trị lớn nhất
+trong phiếu** (hiểu là "NCC tối ưu nhất"); chưa chốt dòng nào thì rơi về NCC người yêu cầu tự ghi.
+
+**Luật ẩn NCC vẫn áp** (H.3.8): người không có `supplier:read` thì ô NCC của cụm `pur` hiện
+*"Phương án 2"* thay cho tên thật — đây là hành vi **đã có sẵn** của bản in hiện tại, không phải
+luật mới. Riêng cụm `supplier_req` là do chính người yêu cầu gõ vào nên họ luôn thấy.
+
+**Bản B — cho thu mua.** Bảng gom theo NCC, mỗi NCC một dòng có ô tick:
+
+```
+[x] NCC A    3 dòng    12.400.000 đ
+[x] NCC B    1 dòng     3.200.000 đ
+[ ] NCC C    2 dòng     8.750.000 đ
+```
+
+Tick 2 NCC rồi bấm In → **1 file 2 trang**, mỗi trang một NCC: đầu trang thông tin NCC + số YCMH,
+giữa là các dòng đã chốt cho NCC đó, cuối trang tổng tiền + ô ký.
+
+`STT | Mã hàng | Tên hàng | ĐVT | SL | Đơn giá | VAT | Thành tiền | Thời gian giao | Nơi giao`
+
+Mỗi trang chính là **bản nháp của một đơn mua hàng sắp tạo**: in ra ký trước, ký xong bấm *Tạo
+đơn mua hàng* thì ra đúng N đơn khớp 1-1 với N trang vừa ký, không lệch một dòng nào.
+
+### H.7 Bảng dữ liệu
+
+`tab_purchase_request_item_option` (migration `6835fb9cfecd`) — 29 cột, khóa về
+`tab_purchase_request_item.id`. Cụm `snap_*` là bản chụp từ dòng khảo sát; `supplier_code` /
+`supplier_name` / `snap_internal_code` chịu hàng rào 2 cụm NCC như `supplier_pur` (cần
+`supplier:read` để xem, `supplier:write` để sửa).
+
+### H.8 Các đợt làm
+
+| Đợt | Nội dung | Tình trạng |
+|-----|----------|-----------|
+| P1 | Bảng dữ liệu + service + 6 endpoint (gắn từ khảo sát · gắn tay · sửa · gỡ · chốt · liệt kê) + 19 test | **Xong** (chưa commit) |
+| P2 | Chốt phương án → gom theo NCC → sinh N đơn mua hàng nháp | Chưa làm |
+| P3 | Màn *Xử lý phương án* ở `frontend-v2` (`/procurement/purchase-requests/:id/process`) | Chưa làm |
+| P4 | Hai bản in ở H.6 + cập nhật HDSD | Chưa làm |
+
+### H.9 Còn nợ
+
+- **N-17**: quyền `print` của `purchase_request` **backend không kiểm ở đâu cả** — ai mở được chi
+  tiết phiếu (`read`) là in được. Bản B lộ tên NCC, nên trước khi bật bản B phải gác lại bằng
+  `supplier:read`.

@@ -16,11 +16,12 @@ from .model import Payable
 router = APIRouter(prefix="/api/payables", tags=["payable"])
 
 
-def _out(db: Session, p: Payable) -> dict:
+def _out(db: Session, p: Payable, misa_by_po: dict[int, str] | None = None) -> dict:
     return {
         "id": p.id, "company_id": p.company_id, "supplier_code": p.supplier_code,
         "supplier_name": p.supplier_name, "source_type": p.source_type,
         "po_id": p.po_id, "po_code": p.po_code, "invoice_no": p.invoice_no,
+        "misa_code": (misa_by_po or {}).get(p.po_id, ""),
         "invoice_date": service.get_invoice_date(db, p),
         "incur_date": p.incur_date, "due_date": p.due_date, "created_at": p.created_at,
         "amount": float(p.amount or 0), "vat": float(p.vat or 0), "total": float(p.total or 0),
@@ -62,6 +63,28 @@ def _filtered(db: Session, request: Request, user):
     incur_to = request.query_params.get("incur_to")
     if incur_to:
         q = q.filter(Payable.incur_date != "", Payable.incur_date <= incur_to)
+    # Khoảng HẠN TRẢ (từ - đến) — câu hỏi thường gặp nhất của kế toán: "kỳ này
+    # phải trả NCC nào, bao nhiêu". `due_date` rỗng (chưa có hạn) bị loại khỏi
+    # khoảng, giống cách `incur_date` xử ở trên: so chuỗi rỗng với ngày thì "" bé
+    # hơn mọi ngày, không chặn thì mọi khoản chưa có hạn đều lọt vào "từ ngày".
+    due_from = request.query_params.get("due_from")
+    if due_from:
+        q = q.filter(Payable.due_date != "", Payable.due_date >= due_from)
+    due_to = request.query_params.get("due_to")
+    if due_to:
+        q = q.filter(Payable.due_date != "", Payable.due_date <= due_to)
+    # bao-CR-305: khoảng NGÀY HÓA ĐƠN — không lưu trên tab_payable mà dò từ đợt giao
+    # (PODelivery.invoice_date -> POItem.invoice_date -> incur_date khi đã có số HĐ).
+    # Join + biểu thức nằm ở service để tool Trợ lý AI dùng CHUNG một luật (bao-CR-309).
+    inv_from = request.query_params.get("invoice_from")
+    inv_to = request.query_params.get("invoice_to")
+    if inv_from or inv_to:
+        q = service.join_invoice_date(q)
+        inv_expr = service.invoice_date_expr()
+        if inv_from:
+            q = q.filter(inv_expr >= inv_from)
+        if inv_to:
+            q = q.filter(inv_expr <= inv_to)
     # Khoảng số tiền theo TỔNG NỢ (từ A - đến B)
     for key, op in (("amount_from", "ge"), ("amount_to", "le")):
         val = request.query_params.get(key)
@@ -97,7 +120,8 @@ def list_payables(request: Request, pg: dict = Depends(pagination), db: Session 
     total = q.count()
     rows = (q.order_by(Payable.due_date.asc(), Payable.id.desc())
             .offset(pg["offset"]).limit(pg["limit"]).all())
-    return success({"total": total, "items": [_out(db, p) for p in rows]})
+    misa = service.misa_code_by_po(db, rows)
+    return success({"total": total, "items": [_out(db, p, misa) for p in rows]})
 
 
 @router.get("/summary")
@@ -116,3 +140,43 @@ def summary(request: Request, db: Session = Depends(get_db), user=Depends(requir
     ).one()
     return success({"total": float(row[0]), "paid": float(row[1]),
                     "remaining": float(row[2]), "overdue": float(row[3])})
+
+
+@router.post("/{pid}/offset-prepay")
+def offset_prepay_(pid: int, data: dict, db: Session = Depends(get_db),
+                   user=Depends(require("payable", "write"))):
+    """CR-268 — kế toán cấn trừ TIỀN TREO CẤP NCC (phiếu trả trước không gắn đơn)
+    vào khoản công nợ này. Body: {amount} — bỏ trống/0 nghĩa là trừ tối đa
+    min(treo còn lại, nợ còn lại). Treo GẮN ĐƠN thì hệ thống đã tự trừ lúc nhận
+    hàng, không đi qua nút này."""
+    from fastapi import HTTPException
+    # Route này ĐỔI TIỀN, nên phải soi phạm vi của `write` — đúng action mà `require(...)`
+    # ngay trên đang gác. Bỏ trống tham số là mượn phạm vi `read`: người "xem toàn công ty,
+    # chỉ sửa phòng mình" cấn trừ được khoản nợ họ không được phép động vào.
+    p = apply_scope(db.query(Payable).filter(Payable.id == pid),
+                    Payable, "payable", user, get_perm_profile(db, user), "write").first()
+    if not p:
+        raise HTTPException(403, "Ngoài phạm vi được phép thao tác")
+    from app.modules.payment_request import service as prq_service
+    taken = prq_service.offset_supplier_hanging(db, p, float(data.get("amount") or 0), user.id)
+    return success(_out(db, p), f"Đã cấn trừ {taken:,.0f} đ tiền treo vào khoản nợ")
+
+
+@router.get("/export/xlsx")
+def export_xlsx(request: Request, cols: str = "", db: Session = Depends(get_db),
+                user=Depends(require("payable", "export"))):
+    """Ticket #16 — xuất Excel danh sách Công nợ đúng bộ lọc + phạm vi màn hình.
+
+    Tham số `ids` (khoản người dùng tick chọn) đã được `_filtered` xử lý sẵn — có `ids`
+    thì chỉ xuất các khoản đó và bỏ giới hạn theo năm, rỗng thì theo bộ lọc đang đặt.
+    `cols` = các cột đang hiện trên bảng, xuất đúng thứ tự người dùng thấy.
+    """
+    from app.core.export_xlsx import check_row_limit, pick_columns, xlsx_response
+
+    from . import export as ex
+
+    q = _filtered(db, request, user)
+    items = q.order_by(Payable.due_date.asc(), Payable.id.desc()).all()
+    check_row_limit(len(items))
+    columns = pick_columns(ex.COLS, cols)
+    return xlsx_response(ex.FILE_NAME, columns, ex.build_rows(db, items), ex.SHEET_TITLE)

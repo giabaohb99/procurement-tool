@@ -125,3 +125,35 @@ export function usePaymentRequestAction(id: number) {
     },
   })
 }
+
+/**
+ * CR-268 — tiền treo của một NCC (phiếu trả trước đã chi, chưa đối trừ/hoàn hết).
+ * `po_code` -> treo gắn đúng đơn đó · `unlinked: 1` -> chỉ treo cấp NCC (không gắn đơn).
+ * `enabled`: chỉ gọi khi thật sự cần (có NCC + có quyền `payment_request.read`).
+ */
+export function usePrepayHanging(
+  params: { supplier_code: string; po_code?: string; unlinked?: number; source_type?: string },
+  options: { enabled?: boolean } = {},
+) {
+  return useQuery({
+    queryKey: queryKeys.finance.prepayHanging(params),
+    queryFn: () => paymentRequestApi.hanging(params),
+    enabled: (options.enabled ?? true) && Boolean(params.supplier_code),
+  })
+}
+
+/**
+ * CR-268 — ghi nhận NCC hoàn tiền phần treo của phiếu trả trước đã chi.
+ * Đổi số trên cả phiếu lẫn tiền treo -> làm mất hiệu lực toàn nhánh `finance`.
+ */
+export function useRefundPrepay(id: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: { amount: number; note: string }) =>
+      paymentRequestApi.refund(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.finance.all })
+      toast.success('Đã ghi nhận nhà cung cấp hoàn tiền')
+    },
+  })
+}

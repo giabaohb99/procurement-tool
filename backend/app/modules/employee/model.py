@@ -1,4 +1,6 @@
-from sqlalchemy import BigInteger, Boolean, String
+from datetime import date
+
+from sqlalchemy import BigInteger, Boolean, Date, SmallInteger, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.base_model import Base, AuditMixin
@@ -24,6 +26,18 @@ class Employee(Base, AuditMixin):
     # Nhãn hiển thị đi kèm ở `status_label` bên dưới.
     status: Mapped[str] = mapped_column(String(50), default="official")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    #  QĐ-NP3 (03/09/2026) — hai cột nền của phân hệ Nghỉ phép. CHỈ THÊM, không
+    #  sửa cột nào đang có (quy tắc 1 của bộ ERP).
+    #
+    #  `hire_date` là mốc tính THÂM NIÊN, thứ quyết định người này được cộng mấy
+    #  ngày phép (`tab_leave_type_seniority`). Cho phép NULL vì hồ sơ cũ chưa ai
+    #  nhập; `balance_service` coi NULL là 0 năm và màn Quỹ phép trưng cảnh báo
+    #  ra — chặn thì cả công ty không cấp được quỹ cho tới khi nhập xong.
+    hire_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    #  `gender` để LỌC loại nghỉ (thai sản chỉ hiện với nữ). `0` = chưa khai, và
+    #  chưa khai thì KHÔNG bị chặn — xem `leave/constants.GENDER_UNKNOWN`.
+    gender: Mapped[int] = mapped_column(SmallInteger, default=0)
 
     department = relationship(
         "Department",

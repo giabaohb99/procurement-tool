@@ -1,7 +1,8 @@
-import { FilePlus2, Search } from 'lucide-react'
+import { Download, FilePlus2, Scale, Search } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import { downloadFile } from '@/core/api/download-file'
 import { usePermission } from '@/core/authorization/use-permission'
 import { appConfig } from '@/core/config/app-config'
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
@@ -11,11 +12,13 @@ import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
+import { useUrlRangeParam } from '@/shared/hooks/use-url-range-param'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import type { ListParams } from '@/shared/types/api'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { Checkbox } from '@/shared/ui/checkbox'
+import { DateRangePicker } from '@/shared/ui/date-range-picker'
 import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
@@ -31,6 +34,7 @@ import { formatDate, formatDateTime } from '@/shared/utils/format-date'
 import { formatMoney } from '@/shared/utils/format-money'
 import { cn } from '@/shared/utils/cn'
 import { PayableAgingBadge, PayableStatusBadge } from '../components/payable-badges'
+import { PayableOffsetPrepayDialog } from '../components/payable-offset-prepay-dialog'
 import { PAYABLE_FILTER_FIELDS } from '../config/payable-filter-fields'
 import { usePayableSummary, usePayables } from '../hooks/use-payables'
 import {
@@ -46,12 +50,63 @@ const ALL = 'all'
 /** Năm hiện tại — mặc định của ô "Năm", trùng mặc định của backend khi không gửi param. */
 const THIS_YEAR = new Date().getFullYear()
 
+/**
+ * Khoảng ngày lọc theo MỐC nào. Hai mốc lệch nhau thật sự: hàng nhận tháng 7 mà
+ * công nợ 30 ngày thì hạn trả rơi sang tháng 8.
+ *
+ * Mặc định là HẠN TRẢ — câu hỏi khách nêu 31/08/2026 là "cần thanh toán từ ngày
+ * tới ngày cho một NCC", tức là kỳ chi tiền, không phải kỳ nhận hàng.
+ */
+const DATE_FIELDS = [
+  { value: 'due', label: 'Theo hạn trả', from: 'due_from', to: 'due_to' },
+  { value: 'incur', label: 'Theo ngày phát sinh', from: 'incur_from', to: 'incur_to' },
+  // bao-CR-306: ngày HĐ có thể lệch ngày phát sinh (nhận 3/9, hóa đơn xuất 7/9) —
+  // kế toán đối chiếu theo kỳ hóa đơn cần mốc riêng. Khoản chưa có số HĐ bị loại.
+  { value: 'invoice', label: 'Theo ngày hóa đơn', from: 'invoice_from', to: 'invoice_to' },
+] as const
+
+const DEFAULT_DATE_FIELD = DATE_FIELDS[0].value
+
+/**
+ * Khóa cột trên bảng -> khóa cột file Excel (`COLS` trong
+ * `backend/app/modules/payable/export.py`, bao-CR-275). Từ bao-CR-305 file có đủ
+ * BA cột ngày tách bạch (hóa đơn / phát sinh / ghi nhận) nên bảng dịch là 1-1 —
+ * bản map cũ `incur_date -> created_at` là di tích thời file chỉ có một cột ngày,
+ * giữ lại là xuất nhầm giờ ghi sổ dưới nhãn "Ngày phát sinh". Cột không có trong
+ * bảng dịch (tick chọn, cấn trừ, tiền trước VAT / VAT) vốn không nằm trong file.
+ */
+const EXPORT_COLUMN_KEYS: Record<string, string> = {
+  supplier_name: 'supplier_name',
+  supplier_code: 'supplier_code',
+  source_type: 'source_type',
+  company: 'company',
+  po_code: 'po_code',
+  invoice_no: 'invoice_no',
+  invoice_date: 'invoice_date',
+  incur_date: 'incur_date',
+  created_at: 'created_at',
+  due_date: 'due_date',
+  aging: 'aging',
+  total: 'total',
+  paid_amount: 'paid_amount',
+  remaining: 'remaining',
+  status: 'status',
+}
+
 const FILTER_CONFIG = {
   fields: PAYABLE_FILTER_FIELDS,
   allowConjunctionToggle: true,
-  // Bốn ô chọn trên thanh công cụ. Thiếu tên nào ở đây là bấm "Áp dụng" bộ lọc
+  // Mọi ô lọc trên thanh công cụ. Thiếu tên nào ở đây là bấm "Áp dụng" bộ lọc
   // nâng cao xong mất luôn ô đó.
-  preserveParams: ['company_id', 'status', 'aging', 'year'],
+  preserveParams: [
+    'company_id',
+    'status',
+    'aging',
+    'year',
+    'date_field',
+    'date_from',
+    'date_to',
+  ],
 }
 
 export function PayableListPage() {
@@ -81,38 +136,59 @@ function PayableListContent() {
   const [status, setStatus] = useUrlParamState('status', ALL)
   const [aging, setAging] = useUrlParamState('aging', ALL)
   const [year, setYear] = useUrlParamState('year', String(THIS_YEAR))
+  const [dateField, setDateField] = useUrlParamState('date_field', DEFAULT_DATE_FIELD)
+  const [dateFrom, dateTo, setDateRange] = useUrlRangeParam('date_from', 'date_to')
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
+  /** Cột đang hiện trên bảng — nút "Xuất Excel" bám theo để file khớp màn hình. */
+  const [visibleColumnKeys, setVisibleColumnKeys] = useState<string[]>([])
 
   // Khoản đang tick để lên đề nghị thanh toán. Giữ CẢ BẢN GHI (không chỉ id) để
   // đếm được số NCC và truyền thẳng sang màn tạo phiếu, khỏi phải tải lại theo id.
   const [selected, setSelected] = useState<Record<number, Payable>>({})
 
+  // CR-268: khoản nợ đang mở hộp cấn trừ tiền treo trả trước (null = đóng).
+  const [offsetTarget, setOffsetTarget] = useState<Payable | null>(null)
+
   const { data: companies } = useCompanies({ page_size: 500, is_active: true })
   const { queryParams, queryKey } = useFilterQuery()
 
-  const [page, setPage] = usePageResetOnFilterChange([
+  //  Chữ ký của TOÀN BỘ phần lọc — dùng chung cho "về trang 1" và "bỏ hết tick".
+  //  KHÔNG có `page` trong này, nên chỉ sang trang thì lựa chọn được giữ nguyên.
+  const filterSignature = [
     queryKey,
     debouncedValue,
     companyId,
     status,
     aging,
     year,
-  ])
+    dateField,
+    dateFrom,
+    dateTo,
+  ]
 
-  // Đổi bộ lọc thì bỏ hết tick (dùng đúng chữ ký của phần lọc — KHÔNG có `page`,
-  // nên chỉ sang trang thì lựa chọn được giữ nguyên).
-  const filterChanged = useHasChanged(
-    JSON.stringify([queryKey, debouncedValue, companyId, status, aging, year]),
-  )
+  const [page, setPage] = usePageResetOnFilterChange(filterSignature)
+
+  const filterChanged = useHasChanged(JSON.stringify(filterSignature))
   if (filterChanged) setSelected({})
+
+  const hasDateRange = Boolean(dateFrom || dateTo)
 
   // Tách riêng phần LỌC khỏi phần phân trang: bốn ô tổng phải tính trên cả tập
   // kết quả chứ không phải trên 20 dòng đang hiện.
-  const filterParams: ListParams = { ...queryParams, year }
+  //
+  //  ⚠️ Có khoảng ngày thì ép `year=all`. Backend mặc định lọc theo NĂM HIỆN TẠI
+  //  khi không nhận `year`, nên khoảng vắt qua giao thừa (12/2025 – 01/2026) sẽ
+  //  lặng lẽ trả về rỗng — người dùng tưởng kỳ đó không có nợ nào.
+  const filterParams: ListParams = { ...queryParams, year: hasDateRange ? ALL : year }
   if (debouncedValue) filterParams.po_code = debouncedValue
   if (companyId !== ALL) filterParams.company_id = Number(companyId)
   if (status !== ALL) filterParams.status = status
   if (aging !== ALL) filterParams.aging = aging
+  if (hasDateRange) {
+    const field = DATE_FIELDS.find((f) => f.value === dateField) ?? DATE_FIELDS[0]
+    if (dateFrom) filterParams[field.from] = dateFrom
+    if (dateTo) filterParams[field.to] = dateTo
+  }
 
   const { data, isLoading, isError } = usePayables({ page, page_size: pageSize, ...filterParams })
   const { data: summary, isLoading: isSummaryLoading } = usePayableSummary(filterParams)
@@ -124,6 +200,10 @@ function PayableListContent() {
   )
 
   const canCreatePayment = can('payment_request', 'create')
+
+  // CR-268: nút cấn trừ tiền treo cần `payable.write` (endpoint) và
+  // `payment_request.read` (hộp thoại phải đọc được danh sách phiếu treo).
+  const canOffsetPrepay = can('payable', 'write') && can('payment_request', 'read')
 
   // Chỉ tick được khoản CHƯA tất toán, CÒN nợ và ĐÃ có số hóa đơn — đúng ba điều
   // kiện backend cần để lên đề nghị thanh toán.
@@ -141,7 +221,34 @@ function PayableListContent() {
     })
   }, [])
 
+  //  Ô tick "chọn hết" chỉ tính TRÊN TRANG ĐANG XEM — không thể tick hộ những
+  //  khoản chưa tải về, mà tự đi tải cả nghìn dòng để tick hộ thì đúng cái bẫy
+  //  bản v1 đã dính. Dòng thiếu số hóa đơn vẫn bị loại y như tick từng dòng.
+  const selectableRows = useMemo(
+    () => (data?.items ?? []).filter(isPayable),
+    [data?.items, isPayable],
+  )
+  const selectedOnPage = selectableRows.filter((p) => selected[p.id]).length
+  const allOnPageSelected = selectableRows.length > 0 && selectedOnPage === selectableRows.length
+
+  const toggleAllOnPage = useCallback(() => {
+    setSelected((prev) => {
+      const next = { ...prev }
+      // Đang chọn đủ cả trang -> bỏ đúng trang này, giữ nguyên tick ở trang khác.
+      const clearing = selectableRows.length > 0 && selectableRows.every((p) => prev[p.id])
+      for (const row of selectableRows) {
+        if (clearing) delete next[row.id]
+        else next[row.id] = row
+      }
+      return next
+    })
+  }, [selectableRows])
+
   const columns = useMemo<DataTableColumn<Payable>[]>(() => {
+    //  `wrap: true` ở các cột CHỮ: khách báo 31/08/2026 tên NCC dài bị cắt thành
+    //  "Công ty TNHH Thương mại…" nên phải rê chuột từng dòng mới đọc nổi, trong
+    //  khi đây là sổ để đối chiếu. Cột số / ngày / trạng thái giữ nguyên một dòng
+    //  vì chúng vốn ngắn, cho xuống dòng chỉ làm hàng cao lệch nhau.
     const base: DataTableColumn<Payable>[] = [
       {
         key: 'supplier_name',
@@ -150,16 +257,18 @@ function PayableListContent() {
         hideable: false,
         // Bảng 15 cột: ghim tên NCC để cuộn tới cột tiền vẫn biết đang xem nợ ai.
         defaultPinned: true,
+        wrap: true,
+        //  KHÔNG đặt `truncate` ở đây: class của ô con thắng lớp bọc `wrap` của
+        //  DataTable, gắn vào là cờ `wrap` thành vô hiệu.
         cell: (p) => (
-          <span className="truncate font-medium" title={p.supplier_name || p.supplier_code}>
-            {p.supplier_name || p.supplier_code || '—'}
-          </span>
+          <span className="font-medium">{p.supplier_name || p.supplier_code || '—'}</span>
         ),
       },
       {
         key: 'supplier_code',
         header: 'Mã NCC',
         width: 130,
+        wrap: true,
         cell: (p) => <span className="text-muted-foreground">{p.supplier_code || '—'}</span>,
       },
       {
@@ -168,16 +277,31 @@ function PayableListContent() {
         width: 120,
         cell: (p) => PAYABLE_SOURCE_LABELS[p.source_type] ?? p.source_type,
       },
-      { key: 'company', header: 'Công ty', width: 200, cell: (p) => companyName(p.company_id) },
-      { key: 'po_code', header: 'Mã ĐMH', width: 150, cell: (p) => p.po_code || '—' },
+      {
+        key: 'company',
+        header: 'Công ty',
+        width: 200,
+        wrap: true,
+        cell: (p) => companyName(p.company_id),
+      },
+      { key: 'po_code', header: 'Mã ĐMH', width: 150, wrap: true, cell: (p) => p.po_code || '—' },
       {
         key: 'invoice_no',
         header: 'Số hóa đơn',
         width: 150,
+        wrap: true,
         // Chưa có số HĐ = chưa lên được yêu cầu thanh toán, nên phải nhìn ra ngay
         // chứ không để trống như một ô rỗng bình thường.
         cell: (p) =>
           p.invoice_no || <span className="text-xs text-destructive">chưa có HĐ</span>,
+      },
+      {
+        key: 'invoice_date',
+        header: 'Ngày hóa đơn',
+        width: 130,
+        // bao-CR-306: giá trị dò từ phía ĐMH lúc đọc (đợt giao -> dòng -> incur_date),
+        // không có bản lưu bên công nợ — sửa ngày HĐ trên ĐMH là cột này đổi theo ngay.
+        cell: (p) => formatDate(p.invoice_date) || '—',
       },
       {
         key: 'incur_date',
@@ -250,6 +374,33 @@ function PayableListContent() {
       },
     ]
 
+    // CR-268: cột cấn trừ tiền treo — kế toán trừ tiền TRẢ TRƯỚC CẤP NCC (phiếu
+    // không gắn đơn) vào khoản nợ. Chỉ hiện với người đủ quyền, chỉ bấm được khi
+    // khoản còn nợ. Có treo hay không thì hộp thoại tự tra và tự nói.
+    if (canOffsetPrepay) {
+      base.push({
+        key: 'offset_prepay',
+        header: 'Cấn trừ',
+        width: 90,
+        align: 'center',
+        cell: (p) =>
+          p.status !== 'paid' && p.remaining > 0.01 ? (
+            <span className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-7"
+                title="Cấn trừ tiền treo trả trước của NCC vào khoản nợ này"
+                aria-label="Cấn trừ tiền treo trả trước"
+                onClick={() => setOffsetTarget(p)}
+              >
+                <Scale className="size-4" />
+              </Button>
+            </span>
+          ) : null,
+      })
+    }
+
     // Không có quyền lập đề nghị thanh toán thì bỏ hẳn cột tick — người chỉ được
     // xem công nợ không cần chỗ chọn.
     if (!canCreatePayment) return base
@@ -264,6 +415,19 @@ function PayableListContent() {
       align: 'center',
       hideable: false,
       defaultPinned: true,
+      headerContent: (
+        <Checkbox
+          checked={
+            allOnPageSelected ? true : selectedOnPage > 0 ? 'indeterminate' : false
+          }
+          disabled={selectableRows.length === 0}
+          aria-label={
+            allOnPageSelected ? 'Bỏ chọn mọi khoản trong trang' : 'Chọn mọi khoản trong trang'
+          }
+          title="Chọn / bỏ chọn mọi khoản đủ điều kiện trong trang này"
+          onCheckedChange={toggleAllOnPage}
+        />
+      ),
       cell: (p) => (
         <span
           className="flex items-center justify-center"
@@ -280,7 +444,18 @@ function PayableListContent() {
       ),
     }
     return [selectColumn, ...base]
-  }, [companyName, canCreatePayment, selected, isPayable, toggleRow])
+  }, [
+    companyName,
+    canCreatePayment,
+    canOffsetPrepay,
+    selected,
+    isPayable,
+    toggleRow,
+    allOnPageSelected,
+    selectedOnPage,
+    selectableRows.length,
+    toggleAllOnPage,
+  ])
 
   const selectedRows = useMemo(() => Object.values(selected), [selected])
   const selectedSupplierCount = useMemo(
@@ -300,6 +475,24 @@ function PayableListContent() {
     })
   }
 
+  // Ticket #16 (bao-CR-275): xuất Excel đúng những gì đang thấy — bộ lọc + phạm
+  // vi + cột đang hiện; có tick chọn thì CHỈ xuất các khoản đã tick (backend nhận
+  // `ids` và tự bỏ giới hạn năm cho các khoản đó).
+  const canExport = can('payable', 'export')
+
+  const handleExportExcel = async () => {
+    const cols = visibleColumnKeys
+      .map((key) => EXPORT_COLUMN_KEYS[key])
+      .filter(Boolean)
+      .join(',')
+    const ids = selectedRows.map((r) => r.id).join(',')
+    await downloadFile('/api/payables/export/xlsx', 'cong-no-phai-tra.xlsx', {
+      ...filterParams,
+      ...(ids ? { ids } : {}),
+      ...(cols ? { cols } : {}),
+    })
+  }
+
   // Bấm dòng thì mở ĐƠN MUA HÀNG sinh ra khoản nợ đó — đường tra ngược duy nhất
   // từ sổ nợ về chứng từ gốc. Không có quyền đọc ĐMH thì bỏ hẳn, kẻo bấm xong
   // rơi vào màn báo thiếu quyền.
@@ -311,13 +504,32 @@ function PayableListContent() {
         title="Công nợ phải trả"
         description="Khoản phải trả nhà cung cấp và đơn vị vận chuyển, sinh tự động khi nhận hàng."
         actions={
-          canCreatePayment ? (
-            <Button disabled={selectedRows.length === 0} onClick={createRequest}>
-              <FilePlus2 className="size-4" />
-              Tạo đề nghị thanh toán
-              {selectedRows.length > 0 &&
-                ` (${selectedRows.length} khoản · ${selectedSupplierCount} NCC)`}
-            </Button>
+          canExport || canCreatePayment ? (
+            <div className="flex items-center gap-2">
+              {canExport && (
+                <Button
+                  variant="outline"
+                  onClick={handleExportExcel}
+                  title={
+                    selectedRows.length > 0
+                      ? `Chỉ xuất ${selectedRows.length} khoản đang tick chọn`
+                      : 'Xuất mọi khoản khớp bộ lọc đang đặt'
+                  }
+                >
+                  <Download className="size-4" />
+                  Xuất Excel
+                  {selectedRows.length > 0 && ` (${selectedRows.length} khoản đã tick)`}
+                </Button>
+              )}
+              {canCreatePayment && (
+                <Button disabled={selectedRows.length === 0} onClick={createRequest}>
+                  <FilePlus2 className="size-4" />
+                  Tạo đề nghị thanh toán
+                  {selectedRows.length > 0 &&
+                    ` (${selectedRows.length} khoản · ${selectedSupplierCount} NCC)`}
+                </Button>
+              )}
+            </div>
           ) : undefined
         }
       />
@@ -361,6 +573,7 @@ function PayableListContent() {
           isError={isError}
           emptyMessage="Không có khoản công nợ nào khớp bộ lọc."
           storageKey="finance.payables"
+          onVisibleColumnsChange={setVisibleColumnKeys}
           pagination={{
             page,
             pageSize,
@@ -423,8 +636,42 @@ function PayableListContent() {
                 </SelectContent>
               </Select>
 
-              <Select value={year} onValueChange={setYear}>
-                <SelectTrigger className="w-36">
+              {/*  Chọn MỐC trước, rồi tới khoảng ngày — đọc xuôi thành một câu
+                   "theo hạn trả, từ … tới …". Hai ô đứng liền nhau để không ai
+                   lọc nhầm mốc mà không để ý. */}
+              <Select value={dateField} onValueChange={setDateField}>
+                <SelectTrigger className="w-44">
+                  <SelectValue placeholder="Mốc ngày" />
+                </SelectTrigger>
+                <SelectContent>
+                  {DATE_FIELDS.map((field) => (
+                    <SelectItem key={field.value} value={field.value}>
+                      {field.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <DateRangePicker
+                from={dateFrom}
+                to={dateTo}
+                onChange={setDateRange}
+                placeholder="Từ ngày – tới ngày"
+              />
+
+              <Select value={hasDateRange ? ALL : year} onValueChange={setYear}>
+                <SelectTrigger
+                  className="w-36"
+                  //  Khóa ô Năm khi đang lọc theo khoảng ngày: khoảng ngày đã
+                  //  ép `year=all` rồi, để ô này bấm được thì người dùng chọn
+                  //  2026 mà bảng vẫn ra cả 2025 — nhìn như bộ lọc hỏng.
+                  disabled={hasDateRange}
+                  title={
+                    hasDateRange
+                      ? 'Đang lọc theo khoảng ngày nên tính trên mọi năm. Xóa khoảng ngày để chọn lại năm.'
+                      : undefined
+                  }
+                >
                   <SelectValue placeholder="Năm" />
                 </SelectTrigger>
                 <SelectContent>
@@ -453,6 +700,10 @@ function PayableListContent() {
           Đang chọn {selectedSupplierCount} nhà cung cấp — hệ thống sẽ tách thành{' '}
           {selectedSupplierCount} phiếu đề nghị thanh toán riêng.
         </p>
+      )}
+
+      {canOffsetPrepay && (
+        <PayableOffsetPrepayDialog payable={offsetTarget} onClose={() => setOffsetTarget(null)} />
       )}
     </PageContainer>
   )

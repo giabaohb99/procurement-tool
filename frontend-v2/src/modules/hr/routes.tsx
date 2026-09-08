@@ -1,4 +1,16 @@
-import { Building, Building2, IdCard, LayoutDashboard, ShieldCheck, Users } from 'lucide-react'
+import {
+  Building,
+  Building2,
+  CalendarDays,
+  DoorOpen,
+  CalendarOff,
+  CalendarRange,
+  IdCard,
+  LayoutDashboard,
+  ShieldCheck,
+  Users,
+  Wallet,
+} from 'lucide-react'
 
 import type { ErpModule } from '@/app/router/module-definition'
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -44,6 +56,88 @@ export const hrModule: ErpModule = {
       icon: Building2,
       entity: 'company',
       group: 'Danh mục',
+    },
+    //  ── Nghỉ phép (CR-259) ────────────────────────────────────────────────
+    //  ⚠️ **MỘT mục menu cho cả năm màn** (04/09/2026). Trước đó là năm mục rời
+    //  thành một nhóm riêng, chiếm gần nửa chiều cao menu Nhân sự — trong khi
+    //  bốn trong năm màn là thứ mở vài lần một tháng. Nay chuyển qua lại bằng
+    //  `LeaveSectionTabs` ngay trong trang.
+    //
+    //  Năm ĐƯỜNG DẪN giữ nguyên (xem docstring của `leave-section-tabs.tsx`),
+    //  nên bốn màn kia vẫn khai đủ ở đây với `hidden: true` để **giữ khóa quyền
+    //  riêng của từng màn** cho `canAccessRoute` — gõ thẳng `/hr/leave-types` mà
+    //  không có quyền vẫn phải bị chặn tử tế.
+    {
+      label: 'Nghỉ phép',
+      path: appRoutes.hr.leaveRequests,
+      icon: CalendarOff,
+      entity: 'leave_request',
+      matchPaths: [
+        appRoutes.hr.leaveCalendar,
+        appRoutes.hr.leaveBalances,
+        appRoutes.hr.leaveTypes,
+        appRoutes.hr.holidays,
+      ],
+    },
+    {
+      label: 'Lịch nghỉ',
+      path: appRoutes.hr.leaveCalendar,
+      icon: CalendarRange,
+      entity: 'leave_request',
+      hidden: true,
+    },
+    {
+      label: 'Quỹ phép năm',
+      path: appRoutes.hr.leaveBalances,
+      icon: Wallet,
+      entity: 'leave_balance',
+      hidden: true,
+    },
+    {
+      label: 'Loại nghỉ',
+      path: appRoutes.hr.leaveTypes,
+      icon: CalendarDays,
+      entity: 'leave_type',
+      //  Sửa luật nghỉ là việc quản trị — chỉ người có quyền ghi mới vào được,
+      //  chứ không mở cho mọi người rồi khóa từng nút bên trong. Cùng luật với
+      //  tab «Thiết lập» trong `leave-section-tabs.tsx`.
+      manage: true,
+      hidden: true,
+    },
+    {
+      label: 'Lịch ngày lễ',
+      path: appRoutes.hr.holidays,
+      icon: CalendarDays,
+      entity: 'holiday',
+      manage: true,
+      hidden: true,
+    },
+    //  ── Đặt phòng họp (duoc-CR-279) ───────────────────────────────────────
+    //  MỘT mục menu cho ba màn (lịch · phiếu · danh mục phòng), chuyển bằng
+    //  `RoomSectionTabs`. Cùng luật với cụm Nghỉ phép ngay trên.
+    {
+      label: 'Đặt phòng họp',
+      path: appRoutes.hr.roomCalendar,
+      icon: DoorOpen,
+      entity: 'room_booking',
+      matchPaths: [appRoutes.hr.roomBookings, appRoutes.hr.meetingRooms],
+    },
+    {
+      label: 'Phiếu đặt phòng',
+      path: appRoutes.hr.roomBookings,
+      icon: DoorOpen,
+      entity: 'room_booking',
+      hidden: true,
+    },
+    {
+      label: 'Danh mục phòng họp',
+      path: appRoutes.hr.meetingRooms,
+      icon: DoorOpen,
+      entity: 'meeting_room',
+      //  Khai phòng là việc quản trị — chỉ người SỬA được mới vào, cùng luật
+      //  với tab «Danh mục phòng» trong `RoomSectionTabs`.
+      manage: true,
+      hidden: true,
     },
     {
       label: 'Phân quyền tài khoản',
@@ -109,6 +203,129 @@ export const hrModule: ErpModule = {
       lazy: async () => ({
         Component: (await import('./pages/user-permission-detail-page'))
           .UserPermissionDetailPage,
+      }),
+    },
+
+    //  ── Nghỉ phép (CR-259) ────────────────────────────────────────────────
+    //  ⚠️ `/new` phải đứng TRƯỚC `/:id`: react-router khớp theo độ cụ thể nên
+    //  thứ tự khai không quyết định, nhưng để cạnh nhau đúng thứ tự đọc thì
+    //  người sau không phải tự kiểm chứng lại điều đó.
+    {
+      path: appRoutes.hr.leaveRequests,
+      lazy: async () => ({
+        Component: (await import('./pages/leave-request-list-page')).LeaveRequestListPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.leaveRequestNew,
+      lazy: async () => ({
+        Component: (await import('./pages/leave-request-detail-page')).LeaveRequestDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.leaveRequestDetail(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/leave-request-detail-page')).LeaveRequestDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.leaveCalendar,
+      lazy: async () => ({
+        Component: (await import('./pages/leave-calendar-page')).LeaveCalendarPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.leaveBalances,
+      lazy: async () => ({
+        Component: (await import('./pages/leave-balance-page')).LeaveBalancePage,
+      }),
+    },
+    {
+      path: appRoutes.hr.leaveBalanceDetail(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/leave-balance-detail-page')).LeaveBalanceDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.leaveTypes,
+      lazy: async () => ({
+        Component: (await import('./pages/leave-type-list-page')).LeaveTypeListPage,
+      }),
+    },
+    {
+      //  Trang THÊM MỚI dùng chính component chi tiết — nó nhận ra chế độ tạo
+      //  bằng việc route này không có `:id`. Xem `CrudDetailPage`.
+      path: appRoutes.hr.leaveTypeNew,
+      lazy: async () => ({
+        Component: (await import('./pages/leave-type-detail-page')).LeaveTypeDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.leaveTypeDetail(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/leave-type-detail-page')).LeaveTypeDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.holidays,
+      lazy: async () => ({
+        Component: (await import('./pages/holiday-list-page')).HolidayListPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.holidayNew,
+      lazy: async () => ({
+        Component: (await import('./pages/holiday-detail-page')).HolidayDetailPage,
+      }),
+    },
+    //  ── Đặt phòng họp (duoc-CR-279) ───────────────────────────────────────
+    {
+      path: appRoutes.hr.roomCalendar,
+      lazy: async () => ({
+        Component: (await import('./pages/room-calendar-page')).RoomCalendarPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.roomBookings,
+      lazy: async () => ({
+        Component: (await import('./pages/room-booking-list-page')).RoomBookingListPage,
+      }),
+    },
+    {
+      //  `/new` và `/:id` dùng CHUNG component — nó tự nhận ra chế độ đặt mới.
+      path: appRoutes.hr.roomBookingNew,
+      lazy: async () => ({
+        Component: (await import('./pages/room-booking-detail-page')).RoomBookingDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.roomBookingDetail(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/room-booking-detail-page')).RoomBookingDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.meetingRooms,
+      lazy: async () => ({
+        Component: (await import('./pages/meeting-room-list-page')).MeetingRoomListPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.meetingRoomNew,
+      lazy: async () => ({
+        Component: (await import('./pages/meeting-room-detail-page')).MeetingRoomDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.meetingRoomDetail(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/meeting-room-detail-page')).MeetingRoomDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.hr.holidayDetail(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/holiday-detail-page')).HolidayDetailPage,
       }),
     },
   ],

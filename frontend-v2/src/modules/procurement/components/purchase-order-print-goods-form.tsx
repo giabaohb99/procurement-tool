@@ -2,6 +2,13 @@ import { formatMoney, formatQuantity, formatUnitPrice } from '@/shared/utils/for
 import { formatDate } from '@/shared/utils/format-date'
 import { numberToVietnameseWords } from '@/shared/utils/number-to-vietnamese-words'
 import type { PurchaseOrderPrintData } from '../api/purchase-order-api'
+import { PurchaseOrderPrintSignatureBox } from './purchase-order-print-signature-box'
+
+interface PurchaseOrderPrintGoodsFormProps {
+  data: PurchaseOrderPrintData
+  /** Tắt thì chỉ bỏ ẢNH chữ ký, họ tên vẫn in để người ký tay biết ký vào ô nào. */
+  showSignature?: boolean
+}
 
 /**
  * Mẫu **ĐƠN MUA HÀNG** lưu nội bộ / gửi kế toán (khổ dọc).
@@ -9,10 +16,14 @@ import type { PurchaseOrderPrintData } from '../api/purchase-order-api'
  * Khác mẫu Đơn đặt hàng ở chỗ có cột SL THỰC NHẬP, tiền thuế tách riêng và số
  * tiền viết bằng chữ — đây là bản đối chiếu khi nhận hàng, không phải bản chào.
  */
-export function PurchaseOrderPrintGoodsForm({ data }: { data: PurchaseOrderPrintData }) {
+export function PurchaseOrderPrintGoodsForm({
+  data,
+  showSignature = true,
+}: PurchaseOrderPrintGoodsFormProps) {
   const company = data.company ?? {}
   const supplier = data.supplier ?? {}
   const warehouseNames = data.wh_names ?? {}
+  const signers = data.signers
   const total = data.order_total || 0
   const tax = Math.round((total - (data.order_subtotal || 0)) * 100) / 100
   /** "Công nợ 30 ngày" -> 30. Chỉ để điền ô "Số ngày được nợ". */
@@ -143,14 +154,24 @@ export function PurchaseOrderPrintGoodsForm({ data }: { data: PurchaseOrderPrint
         </div>
       </div>
 
-      <div className="mt-5 flex justify-around text-center text-[11.5px]">
-        {['Người lập', 'Người nhận', 'Trưởng phòng / Trưởng BP'].map((role) => (
-          <div key={role} className="flex-1">
-            <b>{role}</b>
-            <p className="text-[10.5px] italic">(Ký, họ tên)</p>
-            <div className="h-16" />
-          </div>
-        ))}
+      {/* Ô "Người nhận" luôn để trống: hệ thống không có thao tác nào ứng với việc
+          nhận hàng tận tay, ô đó ký tươi lúc giao nhận. */}
+      <div className="mt-5 flex justify-around text-[11.5px]">
+        <PurchaseOrderPrintSignatureBox
+          className="flex-1"
+          title="Người lập"
+          hint="(Ký, họ tên)"
+          name={signers?.creator_name}
+          signature={showSignature ? signers?.creator_signature : ''}
+        />
+        <PurchaseOrderPrintSignatureBox className="flex-1" title="Người nhận" hint="(Ký, họ tên)" />
+        <PurchaseOrderPrintSignatureBox
+          className="flex-1"
+          title="Trưởng phòng / Trưởng BP"
+          hint="(Ký, họ tên)"
+          name={signers?.approver_name}
+          signature={showSignature ? signers?.approver_signature : ''}
+        />
       </div>
     </article>
   )

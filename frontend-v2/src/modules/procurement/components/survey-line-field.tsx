@@ -5,6 +5,7 @@ import { Button } from '@/shared/ui/button'
 import { Checkbox } from '@/shared/ui/checkbox'
 import { DatePicker } from '@/shared/ui/date-picker'
 import { Input } from '@/shared/ui/input'
+import { ReadOnlyValue } from '@/shared/ui/read-only-value'
 import { SearchSelect } from '@/shared/ui/search-select'
 import {
   Select,
@@ -40,8 +41,19 @@ const LAB_TEXT_CLASS: Record<string, string> = {
  *
  * CR-090: ô chỉ đọc cũng phải xuống dòng — cắt cụt là mất nội dung mà người xem
  * không biết là đang bị cắt. Giữ `title` để rê chuột vẫn đọc được cả câu.
+ *
+ * Trong POPUP (`boxed`) thì hiện dạng hộp xám như mọi màn khác: ở đó ô chỉ xem
+ * nằm ngay cạnh ô nhập được, không có nền phân biệt thì nhìn như ô bỏ trống.
+ * Trong BẢNG thì không đóng hộp — 27 cái hộp xám một hàng chỉ tổ rối mắt.
  */
-function ReadOnlyText({ value }: { value: string }) {
+function ReadOnlyText({ value, boxed }: { value: string; boxed?: boolean }) {
+  if (boxed)
+    return (
+      <ReadOnlyValue multiline className="min-h-9 py-2">
+        {value}
+      </ReadOnlyValue>
+    )
+
   return (
     <div className="whitespace-pre-wrap break-words leading-snug" title={value || undefined}>
       {value || <span className="text-muted-foreground">—</span>}
@@ -128,7 +140,7 @@ export function SurveyLineField({
         field.key === 'supplier_available'
           ? isSupplierFromCatalog(line, catalog.supplierCodes)
           : value === true
-      if (!editable) return <ReadOnlyText value={checked ? 'Có' : 'Không'} />
+      if (!editable) return <ReadOnlyText value={checked ? 'Có' : 'Không'} boxed={!isCell} />
       return (
         <div className={cn(isCell && 'flex justify-center')}>
           <Checkbox
@@ -140,7 +152,7 @@ export function SurveyLineField({
     }
 
     case 'date':
-      if (!editable) return <ReadOnlyText value={text} />
+      if (!editable) return <ReadOnlyText value={text} boxed={!isCell} />
       return (
         <DatePicker
           value={text}
@@ -152,13 +164,13 @@ export function SurveyLineField({
 
     case 'computed':
       // Thành tiền suy từ giá × MOQ × VAT, nhưng số đã lưu được ưu tiên.
-      return <ReadOnlyText value={formatMoney(rowAmount(line))} />
+      return <ReadOnlyText value={formatMoney(rowAmount(line))} boxed={!isCell} />
 
     case 'num':
     case 'vat': {
       if (!editable) {
         return (
-          <ReadOnlyText value={type === 'vat' ? `${text || 0}%` : formatQuantity(toNumber(value))} />
+          <ReadOnlyText value={type === 'vat' ? `${text || 0}%` : formatQuantity(toNumber(value))} boxed={!isCell} />
         )
       }
       return (
@@ -261,7 +273,7 @@ export function SurveyLineField({
     }
 
     case 'select': {
-      if (!editable) return <ReadOnlyText value={text} />
+      if (!editable) return <ReadOnlyText value={text} boxed={!isCell} />
       const options = field.options ?? []
       // Dữ liệu cũ có thể mang giá trị không còn trong danh sách — giữ lại làm
       // một lựa chọn, bỏ đi là mở phiếu ra ô trắng rồi lưu đè mất.
@@ -289,7 +301,7 @@ export function SurveyLineField({
     }
 
     case 'unit':
-      if (!editable) return <ReadOnlyText value={text} />
+      if (!editable) return <ReadOnlyText value={text} boxed={!isCell} />
       return (
         <SearchSelect
           value={text}
@@ -308,12 +320,12 @@ export function SurveyLineField({
     case 'legal': {
       const supplierCode = String(line.supplier_code ?? '').trim()
       const legalName = catalog.supplierByCode.get(supplierCode)?.name ?? ''
-      return <ReadOnlyText value={legalName} />
+      return <ReadOnlyText value={legalName} boxed={!isCell} />
     }
 
     /* ---- Ô NCC: chọn từ danh mục, hoặc gõ tay khi NCC chưa được tạo ---- */
     case 'supplier': {
-      if (!editable) return <ReadOnlyText value={text} />
+      if (!editable) return <ReadOnlyText value={text} boxed={!isCell} />
       if (!isSupplierFromCatalog(line, catalog.supplierCodes)) return textEditor(false)
       return (
         <SearchSelect
@@ -342,11 +354,11 @@ export function SurveyLineField({
     }
 
     case 'textarea':
-      if (!editable) return <ReadOnlyText value={text} />
+      if (!editable) return <ReadOnlyText value={text} boxed={!isCell} />
       return textEditor(true)
 
     default:
-      if (!editable) return <ReadOnlyText value={text} />
+      if (!editable) return <ReadOnlyText value={text} boxed={!isCell} />
       return textEditor(false)
   }
 }

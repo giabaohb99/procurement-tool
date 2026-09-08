@@ -20,6 +20,12 @@ export function usePinForumPost() {
     onSuccess: (post) => {
       patchPostInCaches(queryClient, post)
       void queryClient.invalidateQueries({ queryKey: queryKeys.forum.pinned() })
+      // Thread trong box: ghim còn ĐẢO THỨ TỰ trang thread (bài ghim nổi lên
+      // đầu) nên vá tại chỗ không đủ — quét gốc `boards` (thread + highlights),
+      // kẻo quay về danh sách box vẫn thấy bản chưa ghim tới khi F5.
+      if (post.board_id > 0) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.forum.boards() })
+      }
     },
   })
 }

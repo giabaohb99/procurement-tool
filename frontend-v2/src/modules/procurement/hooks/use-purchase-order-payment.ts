@@ -30,6 +30,8 @@ export function useCreatePaymentRequest() {
       toast.success(`Đã tạo ${requests.length} phiếu yêu cầu thanh toán`)
       // Công nợ đổi theo -> nạp lại đơn (số "còn phải trả" nằm trên header).
       void queryClient.invalidateQueries({ queryKey: queryKeys.procurement.all })
+      // Phiếu mới phải hiện ngay ở danh sách YCTT + khối "YCTT của đơn này".
+      void queryClient.invalidateQueries({ queryKey: queryKeys.finance.all })
     },
   })
 }

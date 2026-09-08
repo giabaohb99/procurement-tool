@@ -21,6 +21,12 @@ export const queryKeys = {
     /** Số đã đặt theo mã hàng của một phiếu YCMH. */
     purchaseRequestProgress: (id: number) =>
       ['procurement', 'purchase-requests', id, 'order-progress'] as const,
+    /**
+     * bao-CR-314 — phiếu YCMH cắt theo MỘT ĐƠN MUA HÀNG. Khóa gắn với id ĐƠN chứ
+     * không gắn id phiếu: cùng một phiếu mở từ hai đơn khác nhau ra hai bản khác nhau.
+     */
+    purchaseRequestOfPurchaseOrder: (purchaseOrderId: number) =>
+      ['procurement', 'purchase-orders', purchaseOrderId, 'purchase-request'] as const,
     /** Những người được phép duyệt bước 1 của một phiếu YCMH (CR-071). */
     purchaseRequestDeptHeads: (id: number) =>
       ['procurement', 'purchase-requests', id, 'dept-head-candidates'] as const,
@@ -70,12 +76,16 @@ export const queryKeys = {
       ['procurement', 'purchase-report', 'shipping-detail', params ?? {}] as const,
     reportDaily: (params?: Record<string, unknown>) =>
       ['procurement', 'purchase-report', 'daily', params ?? {}] as const,
+    reportPrLines: (params?: Record<string, unknown>) =>
+      ['procurement', 'purchase-report', 'pr-lines', params ?? {}] as const,
 
     /** Số liệu trang Tổng quan Thu mua (`/api/dashboard/overview`). */
     dashboard: () => ['procurement', 'dashboard'] as const,
   },
   production: {
     all: ['production'] as const,
+    /** Số liệu trang Tổng quan Sản xuất (`/api/dashboard/production`). */
+    dashboard: () => ['production', 'dashboard'] as const,
     // Danh mục NCC nằm ở phân hệ Sản xuất (không phải Thu mua).
     suppliers: (params?: Record<string, unknown>) =>
       ['production', 'suppliers', params ?? {}] as const,
@@ -115,6 +125,56 @@ export const queryKeys = {
     userAccount: (id: number) => ['hr', 'users', id] as const,
     userScope: (userId: number, roleId: number) =>
       ['hr', 'users', userId, 'scope', roleId] as const,
+
+    //  ── Nghỉ phép (CR-259) ────────────────────────────────────────────────
+    //  Nằm dưới `hr` vì phân hệ Nghỉ phép ở trong phân hệ Nhân sự. Đổi quỹ hay
+    //  duyệt đơn thì dọn cả nhánh `hr.all` — số phép còn lại xuất hiện ở ba màn
+    //  khác nhau, dọn lẻ là chắc chắn có màn hiện số cũ.
+    leaveRequests: (params?: Record<string, unknown>) =>
+      ['hr', 'leave-requests', params ?? {}] as const,
+    leaveRequest: (id: number) => ['hr', 'leave-requests', 'detail', id] as const,
+    //  ── Hộp việc duyệt (CR-260) ───────────────────────────────────────────
+    //  Nằm TRONG nhánh `hr` để một lượt duyệt dọn luôn cả ba tab: ký xong thì
+    //  đơn rời tab «Cần tôi duyệt» và rơi sang tab «Tôi đã duyệt» cùng lúc.
+    leaveToApprove: () => ['hr', 'leave-requests', 'inbox', 'to-approve'] as const,
+    leaveHandled: (params?: Record<string, unknown>) =>
+      ['hr', 'leave-requests', 'inbox', 'handled', params ?? {}] as const,
+    /** Luồng duyệt của một trang đơn. Khóa mang danh sách id đã sắp xếp. */
+    leaveFlowStrips: (ids: number[]) =>
+      ['hr', 'leave-requests', 'flow-strips', [...ids].sort((a, b) => a - b)] as const,
+    /** Số phép còn lại cho MỘT (người × loại × năm) — ô hiện trên form nộp đơn. */
+    leaveBalanceHint: (employeeId: number, leaveTypeId: number, year: number) =>
+      ['hr', 'leave-balance-hint', employeeId, leaveTypeId, year] as const,
+    leaveBalances: (params?: Record<string, unknown>) =>
+      ['hr', 'leave-balances', params ?? {}] as const,
+    leaveBalance: (id: number) => ['hr', 'leave-balances', 'detail', id] as const,
+    leaveBalanceSummary: (employeeId: number, year: number) =>
+      ['hr', 'leave-balances', 'summary', employeeId, year] as const,
+    leaveTypes: (params?: Record<string, unknown>) =>
+      ['hr', 'leave-types', params ?? {}] as const,
+    /** Bậc thâm niên của MỘT loại nghỉ. `0` = mọi loại. */
+    seniorityTiers: (leaveTypeId: number) =>
+      ['hr', 'leave-seniority-tiers', leaveTypeId] as const,
+    holidays: (params?: Record<string, unknown>) => ['hr', 'holidays', params ?? {}] as const,
+
+    //  ── Đặt phòng họp (duoc-CR-279) ───────────────────────────────────────
+    //  Cũng nằm dưới `hr`: một lượt duyệt/hủy phiếu phải dọn cả danh sách phiếu
+    //  LẪN lịch đặt phòng — hai màn đọc cùng một dữ liệu, dọn lẻ là chắc chắn
+    //  có màn hiện phòng còn trống trong khi nó vừa bị giữ.
+    roomBookings: (params?: Record<string, unknown>) =>
+      ['hr', 'room-bookings', params ?? {}] as const,
+    roomBooking: (id: number) => ['hr', 'room-bookings', 'detail', id] as const,
+    //  Hộp việc duyệt nằm TRONG nhánh `hr` để một lượt ký dọn luôn cả ba tab:
+    //  ký xong thì phiếu rời «Cần tôi duyệt» và rơi sang «Tôi đã duyệt».
+    roomToApprove: () => ['hr', 'room-bookings', 'inbox', 'to-approve'] as const,
+    roomHandled: (params?: Record<string, unknown>) =>
+      ['hr', 'room-bookings', 'inbox', 'handled', params ?? {}] as const,
+    roomBookingAttendees: (id: number) => ['hr', 'room-bookings', 'attendees', id] as const,
+    /** Phòng trống trong MỘT khoảng giờ — cảnh báo sớm trên form đặt. */
+    roomAvailability: (startAt: string, endAt: string, companyId: number) =>
+      ['hr', 'room-availability', startAt, endAt, companyId] as const,
+    meetingRooms: (params?: Record<string, unknown>) =>
+      ['hr', 'meeting-rooms', params ?? {}] as const,
   },
   /** Phân hệ Văn thư. Danh mục nền nạp cả danh sách nên key không mang tham số lọc. */
   document: {
@@ -265,6 +325,9 @@ export const queryKeys = {
       ['finance', 'payment-requests', params ?? {}] as const,
     /** Một phiếu YCTT theo id — hành động (duyệt/chi…) làm mất hiệu lực khóa này. */
     paymentRequest: (id: number) => ['finance', 'payment-requests', id] as const,
+    /** CR-268 — tiền treo (phiếu trả trước đã chi, chưa đối trừ) theo NCC/đơn. */
+    prepayHanging: (params?: Record<string, unknown>) =>
+      ['finance', 'payment-requests', 'hanging', params ?? {}] as const,
   },
   system: {
     all: ['system'] as const,
@@ -315,6 +378,29 @@ export const queryKeys = {
     postLikes: (postId: number) => ['forum', 'posts', postId, 'likes'] as const,
     /** Trang bình luận GỐC của một bài (F4) — phản hồi tải riêng khi bung, không có khóa. */
     comments: (postId: number) => ['forum', 'posts', postId, 'comments'] as const,
+    /**
+     * Cây nhóm → box của tab «Diễn đàn» (F13b). Khóa này đồng thời là GỐC của
+     * nhánh boards — invalidate nó là quét luôn mọi trang thread bên dưới.
+     */
+    boards: () => ['forum', 'boards'] as const,
+    /** Sidebar «Đang sôi nổi» + «Mới nhất» (F13c) — nằm dưới gốc `boards` để
+     * invalidate sau khi đăng bài quét luôn (thread mới phải vào «Mới nhất»). */
+    boardHighlights: () => ['forum', 'boards', 'highlights'] as const,
+    /** Một trang thread của box — phân trang SỐ TRANG, khác feed con trỏ. */
+    boardThreads: (boardId: number, page: number) =>
+      ['forum', 'boards', boardId, 'threads', page] as const,
+    /** Một trang kết quả tìm kiếm (CR-263) — key theo NGUYÊN bộ lọc + số trang. */
+    search: (params: Record<string, string | number>) =>
+      ['forum', 'search', params] as const,
+    /** Tiền tố MỌI trang kết quả tìm kiếm — invalidate cả cụm sau kiểm duyệt. */
+    searchAll: () => ['forum', 'search'] as const,
+    /** Tùy chọn ô lọc màn tìm kiếm: công ty + phòng ban đã xuất hiện trên bài. */
+    searchFilters: () => ['forum', 'search-filters'] as const,
+    /** Nhật ký kiểm duyệt (CR-263) — chỉ quản trị viên nạp được. */
+    moderationLogs: (page: number, action: number, q: string) =>
+      ['forum', 'moderation-logs', page, action, q] as const,
+    /** Tiền tố mọi trang nhật ký kiểm duyệt — ẩn/khôi phục xong ghi thêm dòng mới. */
+    moderationLogsAll: () => ['forum', 'moderation-logs'] as const,
   },
   /** Trợ lý AI — nhà cung cấp, danh sách hội thoại và từng hội thoại kèm tin. */
   assistant: {
@@ -348,7 +434,27 @@ export const queryKeys = {
     members: (listId: number) => ['work', 'lists', listId, 'members'] as const,
     sections: (listId: number) => ['work', 'lists', listId, 'sections'] as const,
     labelFields: (listId: number) => ['work', 'lists', listId, 'label-fields'] as const,
+    /**
+     * Dòng hoạt động của dự án (D-09). Bộ lọc nằm TRONG khóa nên đổi loại sự
+     * kiện / đổi người là một truy vấn khác, không phải nạp lại rồi lọc lại ở
+     * trình duyệt — dòng hoạt động cuộn vô hạn, lọc tại chỗ là sai số trang.
+     */
+    activities: (listId: number, params: Record<string, unknown>) =>
+      ['work', 'lists', listId, 'activities', params] as const,
+    activityActors: (listId: number) =>
+      ['work', 'lists', listId, 'activity-actors'] as const,
     task: (id: number) => ['work', 'tasks', id] as const,
+    /**
+     * Bình luận (E-01) và đính kèm (E-03) của một việc.
+     *
+     * Đặt DƯỚI nhánh `['work','tasks',id]` để mọi chỗ đang invalidate theo id
+     * việc quét trúng luôn. Gửi bình luận còn phải làm mới `board(listId)` nữa:
+     * huy hiệu số bình luận nằm trên thẻ kanban, không nằm trong khối này.
+     */
+    taskComments: (taskId: number) => ['work', 'tasks', taskId, 'comments'] as const,
+    taskAttachments: (taskId: number) => ['work', 'tasks', taskId, 'attachments'] as const,
+    taskMentionable: (taskId: number, q: string) =>
+      ['work', 'tasks', taskId, 'mentionable', q] as const,
   },
   vehicleBooking: {
     all: ['vehicle-booking'] as const,

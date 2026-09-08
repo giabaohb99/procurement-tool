@@ -8,7 +8,6 @@ from sqlalchemy.orm import Session
 
 from app.core.audit import record
 from app.core.status_codes import PO_DELIVERY_STATUS, PO_DOCUMENT_STATUS, PO_PROGRESS_STATUS
-from app.core.utils import assert_unique_product_codes
 from app.modules.catalog import lead_time
 from app.modules.department.service import sync_department_ref
 from app.modules.employee.service import sync_employee_ref
@@ -107,8 +106,10 @@ def pr_expected_map(db: Session, pr_code: str) -> dict[str, str]:
     """{mã hàng -> thời gian dự kiến có hàng} của phiếu YCMH nguồn.
 
     Không có khóa ngoại giữa dòng YCMH và dòng ĐMH: cầu nối duy nhất là
-    `PurchaseOrder.pr_code` + `product_code`. Mã hàng là DUY NHẤT trên mỗi phiếu ở cả hai
-    phía (xem app/core/utils.assert_unique_product_codes) nên cặp đó xác định đúng một dòng.
+    `PurchaseOrder.pr_code` + `product_code`. Mã hàng là DUY NHẤT trên phiếu YCMH
+    (app/core/utils.assert_unique_product_codes) nên map theo mã trỏ đúng một dòng nguồn.
+    Phía ĐMH được phép trùng mã (bao-CR-308) — các dòng trùng cùng chiếu về một dòng YCMH,
+    cùng nhận một ngày dự kiến là đúng nghiệp vụ.
     """
     if not (pr_code or "").strip():
         return {}
@@ -121,14 +122,54 @@ def pr_expected_map(db: Session, pr_code: str) -> dict[str, str]:
             for r in rows if (r.product_code or "").strip() and (r.expected_date or "").strip()}
 
 
+def pr_items_for_po(pr_data: dict, po_items) -> dict:
+    """Cắt phiếu YCMH (đã serialize) còn ĐÚNG các dòng hàng có trên đơn mua hàng — bao-CR-314.
+
+    Một phiếu YCMH được chia cho nhiều NSTM phụ trách rồi tách thành nhiều đơn, nên bản in
+    kèm theo một đơn chỉ được mang phần hàng của đơn đó. Ghép bằng `product_code` vì giữa
+    hai bảng dòng KHÔNG có khóa ngoại — cùng cầu nối `pr_expected_map` đang dùng. Mã hàng là
+    duy nhất trên YCMH (`assert_unique_product_codes`) nên tra ngược trúng đúng một dòng;
+    ĐMH được phép trùng mã (bao-CR-308) thì các dòng trùng cùng chiếu về một dòng nguồn và
+    chỉ in một lần.
+
+    Tổng tiền tính LẠI tại đây: `_out` của YCMH cộng từ danh sách dòng chứ không đọc cột lưu
+    sẵn, nên cắt dòng mà giữ nguyên tổng là in ra 3 dòng kèm tổng của 10 dòng.
+
+    `po_lines_unmatched` = số dòng trên ĐƠN không đối chiếu được (bỏ trống mã hàng, hoặc mã
+    không có trên phiếu). Giao diện báo con số này ở thanh công cụ, KHÔNG in vào tờ giấy —
+    người in phải biết bản in thiếu, nhưng tờ phiếu thì giữ nguyên khuôn cũ.
+    """
+    pr_codes = {(i.get("product_code") or "").strip() for i in pr_data.get("items", [])}
+    pr_codes.discard("")
+    keep, unmatched = set(), 0
+    for it in po_items or []:
+        code = (getattr(it, "product_code", "") or "").strip()
+        if code and code in pr_codes:
+            keep.add(code)
+        else:
+            unmatched += 1
+    items = [i for i in pr_data.get("items", [])
+             if (i.get("product_code") or "").strip() in keep]
+    subtotal = round(sum(i["qty"] * i["price"] for i in items), 2)   # chưa VAT
+    total = round(sum(i["amount"] for i in items), 2)                # gồm VAT
+    pr_data["items"] = items
+    pr_data["subtotal"] = subtotal
+    pr_data["vat"] = round(total - subtotal, 2)
+    pr_data["total"] = total
+    pr_data["po_lines_unmatched"] = unmatched
+    return pr_data
+
+
 def _save_items(db: Session, po: PurchaseOrder, items, user_id: int):
     """Upsert dòng hàng + các lần giao theo id (giữ id ổn định để side-effect idempotent)."""
     if items is None:
         return
     existing_items = {it.id: it for it in items_of(db, po.id)}
-    # Mã hàng duy nhất trên đơn — xem app/core/utils.assert_unique_product_codes
-    assert_unique_product_codes([getattr(r, "product_code", "") for r in items],
-                                [it.product_code for it in existing_items.values()])
+    # bao-CR-308: ĐMH ĐƯỢC PHÉP trùng mã hàng (mua theo bộ chứng từ: cùng mã, khác lô /
+    # khác Tên trên hóa đơn). An toàn vì đồng bộ về YCMH cộng GỘP theo mã
+    # (sync_from_purchase_orders), còn nhận hàng/công nợ/lịch sử đi theo ID dòng.
+    # YCMH vẫn chặn trùng (assert_unique_product_codes) — trùng bên đó mới làm tiến độ
+    # nhân đôi. Giao diện hỏi xác nhận trước khi lưu để chặn gõ nhầm.
     keep_item_ids = set()
     specs_by_code = _product_specs_map(db, items)
     std_map = lead_time.std_days_map(db)          # số ngày QĐ theo phân loại (mốc dài nhất)
@@ -336,6 +377,14 @@ def recompute_effects(db: Session, po: PurchaseOrder, user_id: int):
             it.line_status = LINE_FULL
         total_order += qty_order
         total_received += recv_sum
+
+    # CR-268 — nhận hàng sinh/cập nhật công nợ xong thì TỰ ĐỘNG đối trừ tiền treo
+    # (phiếu THANH TOÁN TRƯỚC gắn đúng đơn này, đã chi). Phải chạy TRƯỚC
+    # apply_auto_progress (gọi ngay sau recompute_effects) vì is_line_paid đọc
+    # paid_amount của công nợ. Treo CẤP NCC (không gắn đơn) KHÔNG tự trừ — kế toán
+    # bấm tay, xem payment_request.service.
+    from app.modules.payment_request import service as prq_service   # LAZY: tránh circular
+    prq_service.apply_prepay_offsets(db, po.code, po.supplier_code, user_id)
 
     # Trạng thái PO theo tiến độ nhận (không hạ cấp khi chưa duyệt)
     if po.status in ("approved", "partial", "received") and total_order > 0:
@@ -564,6 +613,39 @@ def block_edit_approved_order(db: Session, po: PurchaseOrder, data: POUpdate) ->
                 raise HTTPException(400, f"Đơn đã duyệt — dòng '{line_name}' không sửa được '{label}'. {_EDIT_HINT}")
 
 
+def block_clear_misa_in_use(db: Session, po: PurchaseOrder, data: POUpdate) -> None:
+    """Chặn XÓA TRẮNG Mã đơn MISA khi đã có dòng tiến qua bước cần mã đó.
+
+    Bước 1 của máy trạng thái tiến độ dòng đòi đơn phải có mã MISA (xem `_step_ok`), mà
+    `auto_advance_line` chỉ TIẾN chứ không bao giờ lùi. Nên xóa trắng ô này xong là dòng
+    kẹt lại ở bậc cao trong khi điều kiện của bậc đó đã hết đúng — trên màn hiện ra cảnh
+    "chưa có mã MISA mà đã Chưa gửi ĐMH cho KT".
+
+    Sửa mã thành mã KHÁC thì vẫn cho: điều kiện "có mã" vẫn thỏa, gõ nhầm phải sửa được.
+    """
+    payload = data.model_dump(exclude_unset=True)
+    if "misa_code" not in payload:
+        return
+    if (payload.get("misa_code") or "").strip():
+        return
+    if not (po.misa_code or "").strip():
+        return
+
+    def advanced(item: POItem) -> bool:
+        #  Dòng Tạm ngưng giữ bậc cũ ở `status_before_pause` và sẽ quay lại đó khi tiếp tục.
+        for value in (item.progress_status or "", item.status_before_pause or ""):
+            if value in PROGRESS_ORDER and PROGRESS_ORDER.index(value) >= 1:
+                return True
+        return False
+
+    stuck = [it for it in items_of(db, po.id) if advanced(it)]
+    if stuck:
+        names = ", ".join((it.product_code or it.product_name or f"#{it.id}") for it in stuck[:3])
+        more = f" và {len(stuck) - 3} dòng nữa" if len(stuck) > 3 else ""
+        raise HTTPException(400, f"Không xóa trắng được Mã đơn MISA: {len(stuck)} dòng đã tiến qua bước "
+                                 f"cần mã này ({names}{more}). Nhập mã khác thì được.")
+
+
 def unapprove_po(db: Session, pid: int, user_id: int, reason: str = "") -> PurchaseOrder:
     """Hủy duyệt: đưa đơn ĐÃ DUYỆT về Nháp để sửa rồi gửi duyệt lại (CR-108).
 
@@ -597,6 +679,7 @@ def update_po(db: Session, pid: int, data: POUpdate, user_id: int) -> PurchaseOr
     if po.status in ("completed", "cancelled"):
         raise HTTPException(400, "Đơn đã hoàn thành/đã hủy — không sửa được. Dùng 'Nhân bản' để tạo đơn mới.")
     block_edit_approved_order(db, po, data)
+    block_clear_misa_in_use(db, po, data)
     _new_pr_code = (data.model_dump(exclude_unset=True).get("pr_code") or "").strip()
     if _new_pr_code and _new_pr_code != (po.pr_code or ""):
         _ensure_pr_dispatched(db, _new_pr_code)   # CR-034: đổi sang YCMH khác cũng phải đã điều phối

@@ -37,6 +37,27 @@ export interface CrudFormField {
   fullWidth?: boolean
   /** Chú thích gợi ý mờ phía dưới ô nhập. */
   hint?: string
+  /**
+   * Tên NHÓM ô. Các ô cùng nhóm được gom lại dưới một tiêu đề nhỏ, theo thứ tự
+   * nhóm xuất hiện lần đầu trong `formFields`.
+   *
+   * Form quá 8–10 ô mà bày phẳng thì người khai không biết ô nào ăn với ô nào —
+   * và ở màn danh mục, đoán sai quan hệ giữa hai ô là khai sai luật cho cả công
+   * ty. Bỏ trống = ô đứng ở nhóm đầu, không tiêu đề (giữ nguyên khuôn cũ cho
+   * các màn chưa chia nhóm).
+   */
+  section?: string
+  /**
+   * Chỉ hiện ô này khi giá trị đang nhập thỏa điều kiện.
+   *
+   * Dùng cho những ô CHỈ CÓ NGHĨA ở một nhánh cấu hình (vd tỷ lệ quy đổi khi
+   * chưa chọn «quy đổi» thì không nói lên gì). Ẩn hẳn thay vì làm mờ: ô mờ vẫn
+   * chiếm chỗ và vẫn khiến người đọc dừng lại đọc chú thích của nó.
+   *
+   * ⚠️ Ẩn chỉ là chuyện HIỂN THỊ — giá trị vẫn nằm trong form và vẫn gửi lên.
+   * Luật thật phải nằm ở backend, xem `catalog_controller._check_year_end_config`.
+   */
+  showWhen?: (values: CrudRecord) => boolean
   placeholder?: string
   /** Tùy chọn tĩnh cho trường `select`. */
   options?: CrudOption[]
@@ -72,6 +93,14 @@ export interface CrudConfig<T> {
   entity: PermissionEntity
   /** Tiêu đề danh mục tiếng Việt (vd 'Kho', 'Đơn vị tính'). */
   title: string
+  /**
+   * Câu dưới tiêu đề — nói màn này để làm gì.
+   *
+   * Bỏ trống thì `PageHeader` chỉ có mỗi dòng tiêu đề, và màn CRUD đứng cạnh
+   * những màn viết tay (vốn luôn có mô tả) sẽ trông cụt lủn — khách chỉ đúng
+   * chỗ đó ngày 04/09/2026 ở tab «Danh mục phòng».
+   */
+  description?: string
   /** Tên đơn vị danh từ (vd 'kho', 'đơn vị tính', dùng cho nút "Thêm kho"). */
   unitLabel: string
   /** Đường dẫn API (vd '/api/warehouses'). */
@@ -95,10 +124,30 @@ export interface CrudConfig<T> {
   }
   /** Cấu hình các trường trong Form thêm / sửa. */
   formFields: CrudFormField[]
+  /**
+   * Câu mô tả của từng NHÓM ô (khóa = `field.section`). Tùy chọn — nhóm nào
+   * không khai thì chỉ hiện tiêu đề. Dùng để nói bằng tiếng người cái mà tên
+   * nhóm nói bằng từ chuyên môn.
+   */
+  formSections?: Record<string, string>
   /** Đường dẫn trang danh sách (vd '/inventory/warehouses'). */
   listRoute?: string
   /** Đường dẫn tới trang chi tiết (vd (id) => `/inventory/warehouses/${id}`). */
   detailRoute?: (id: number | string) => string
+  /**
+   * Đường dẫn trang THÊM MỚI (vd '/hr/leave-types/new'). Khai nó thì nút «Thêm»
+   * **điều hướng sang trang đó** thay vì bật hộp thoại; bỏ trống = giữ hộp thoại
+   * như cũ.
+   *
+   * Dùng cho danh mục mà form thêm mới dài hoặc nhiều ô cần đọc kỹ (Loại nghỉ có
+   * 10 ô, kèm bậc thâm niên) — nhồi vào hộp thoại thì người dùng phải cuộn TRONG
+   * một khung nổi, bấm ra ngoài là mất sạch, và không dán được link cho người
+   * khác. Danh mục hai ba ô thì hộp thoại vẫn nhanh hơn, đừng dời hết sang trang.
+   *
+   * Trang đó dựng bằng chính `CrudDetailPage`: đăng ký route TĨNH (không có
+   * `:id`) trỏ vào cùng component chi tiết, nó tự nhận ra chế độ tạo mới.
+   */
+  createRoute?: string
   /** Thẻ danh tính hiển thị trên đầu trang chi tiết. */
   chips?: (row: T) => IdentityChip[]
   /** Cảnh báo khi xóa bản ghi (vd 'Dữ liệu tồn kho liên quan có thể bị ảnh hưởng'). */
@@ -111,6 +160,19 @@ export interface CrudConfig<T> {
   getItemName?: (row: T) => string
   /** Chiều rộng tối đa của hộp thoại thêm mới (mặc định 'sm:max-w-lg'). */
   dialogMaxWidth?: string
+  /**
+   * Bề ngang tối đa của TRANG CHI TIẾT (mặc định `'max-w-5xl'`).
+   *
+   * Danh mục thường chỉ có một biểu mẫu, mà lưới ô nhập nhiều nhất 2 cột: thả
+   * cho giãn hết màn 24" thì mỗi cột rộng ~800px — ô nhập một con số dài bằng
+   * nửa màn hình, hàng công tắc thì nhãn dính mép trái nút dính mép phải. Chặn
+   * ở TRANG (không chặn riêng biểu mẫu) để thẻ danh tính, tab và dấu vết cùng
+   * một cột — chặn mỗi biểu mẫu thì nó ngắn cụt dưới một cái thẻ rộng gấp rưỡi.
+   *
+   * Đặt `'max-w-none'` cho màn có tab chứa BẢNG rộng (Sản phẩm, Nhà cung cấp,
+   * Phòng họp) — bảng bị bóp còn 1024px là cụt cột.
+   */
+  detailMaxWidth?: string
   /** Render thêm nội dung ở đầu thanh công cụ. */
   renderToolbarExtra?: () => ReactNode
   /**
@@ -125,11 +187,6 @@ export interface CrudConfig<T> {
    * cũ: điều hướng theo `detailRoute`.
    */
   openFormOnRowClick?: boolean
-  /**
-   * Có = nút "Thêm" ĐIỀU HƯỚNG sang trang tạo mới (thay vì mở popup form). Dùng khi
-   * biểu mẫu tạo/sửa nằm trên TRANG riêng (vd Xe / Tài xế).
-   */
-  createRoute?: string
 }
 
 /** Props chuẩn của hộp thoại Thêm/Sửa — dùng cho cả `CrudFormDialog` lẫn bản ghi đè. */

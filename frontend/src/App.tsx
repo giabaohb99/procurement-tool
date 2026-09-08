@@ -22,6 +22,7 @@ import Notifications from './pages/Notifications'
 import Me from './pages/Me'
 import PaymentRequestDetail from './pages/PaymentRequestDetail'
 import Reports from './pages/Reports'
+import PrLinesReportPage from './pages/PrLinesReportPage'
 import SurveyReport from './pages/SurveyReport'
 import CategoryAssignees from './pages/CategoryAssignees'
 import CategoryAssigneeNew from './pages/CategoryAssigneeNew'
@@ -57,6 +58,9 @@ export default function App() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/print/purchase-request/:id" element={<Protected><PrintPurchaseRequest /></Protected>} />
+          {/* bao-CR-314: in phiếu yêu cầu TỪ đơn mua hàng — `:id` ở đây là id của ĐƠN, dữ liệu
+              lấy qua API bên đơn và chỉ còn các dòng hàng có trên đơn đó. */}
+          <Route path="/print/purchase-request-from-po/:id" element={<Protected><PrintPurchaseRequest fromPo /></Protected>} />
           <Route path="/print/purchase-order/:id" element={<Protected><PrintPurchaseOrder /></Protected>} />
           <Route path="/print/purchase-order-mh/:id" element={<Protected><PrintPurchaseOrderMH /></Protected>} />
           <Route path="/print/payment-request/:id" element={<Protected><PrintPaymentRequest /></Protected>} />
@@ -86,6 +90,8 @@ export default function App() {
             <Route path="notifications" element={<Notifications />} />
             <Route path="me" element={<Me />} />
             <Route path="reports" element={<Reports />} />
+            {/* bao-CR-296: trang riêng của báo cáo dòng YCMH — nội dung dùng chung tab trong Báo cáo */}
+            <Route path="pr-lines-report" element={<PrLinesReportPage />} />
             <Route path="survey-report" element={<SurveyReport />} />
             <Route path="category-assignees" element={<CategoryAssignees />} />
             <Route path="category-assignees/new" element={<CategoryAssigneeNew />} />

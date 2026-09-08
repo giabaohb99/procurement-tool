@@ -5,9 +5,16 @@ Cặp đôi với `hdsd_dump.py`. Nội dung LUÔN đi qua sanitize_html trướ
 Ghi DB thẳng nên hook tự reindex của tầng service KHÔNG chạy — script tự queue
 `reindex_source_task` để chỉ mục vector của trợ lý AI không lệch nội dung mới.
 
+⚠️ **sanitize_html gỡ luôn `srcdoc` + `sandbox` của iframe**, mà nhiều bài HDSD có sẵn khối
+nhúng guideflow hợp lệ do CHÍNH trình soạn của Trung tâm HDSD sinh ra (bài 39 dài 6287 ký tự,
+sanitize xong còn 5135 — mất trắng khối nhúng, không báo gì). Nên dump → sửa → load một bài
+có khối nhúng là im lặng xóa nó. Từ 07/09/2026 script **dừng lại** khi phát hiện chuyện đó;
+cố ý bỏ khối nhúng thì thêm cờ `--bo-embed`.
+
 Cách chạy (trong container api):
     python scripts/hdsd_load.py article 7
     python scripts/hdsd_load.py faq 2
+    python scripts/hdsd_load.py article 39 --bo-embed   # chấp nhận mất khối nhúng
 """
 import sys
 from datetime import datetime
@@ -52,6 +59,13 @@ def main() -> None:
 
         raw = path.read_text(encoding="utf-8")
         clean = sanitize_html(raw)
+        if "srcdoc=" in raw and "srcdoc=" not in clean and "--bo-embed" not in sys.argv:
+            sys.exit(
+                f"DUNG LAI: sanitize_html da go khoi nhung (srcdoc) khoi {kind}#{obj_id} — "
+                f"{len(raw)} -> {len(clean)} ky tu. Khoi nhung guideflow do trinh soan HDSD "
+                f"sinh ra la hop le, ghi de la mat han. Giu lai thi sua tep roi chay lai; "
+                f"co y bo that thi them co --bo-embed."
+            )
         before = len((row.content if kind == "article" else row.answer) or "")
         if kind == "article":
             row.content = clean

@@ -22,6 +22,11 @@ interface ReadOnlyValueProps {
  *
  * `readOnly` cũng giữ được việc bôi đen, nhưng ô vẫn trông như đang mời gõ vào.
  * Ở đây phần lớn màn là XEM chứng từ, nên hiện thẳng dạng chữ đúng hơn.
+ *
+ * MÀU: nền `--locked` (xám thấy rõ) + viền `--input`, đối lại ô nhập được nay
+ * ghim nền TRẮNG (`bg-background`). Hai nền phải khác nhau đủ để liếc một cái
+ * là biết ô nào gõ được — nền `bg-muted/35` cũ nhạt tới mức lẫn với ô trắng
+ * (khách báo 31/08/2026).
  */
 export function ReadOnlyValue({ children, multiline = false, className }: ReadOnlyValueProps) {
   const isDash = typeof children === 'string' && (children === '—' || children === '-')
@@ -32,7 +37,8 @@ export function ReadOnlyValue({ children, multiline = false, className }: ReadOn
       className={cn(
         //  `min-w-0` + `break-words`: chuỗi dài KHÔNG khoảng trắng (email, URL, mã) phải
         //  xuống dòng trong ô thay vì đẩy tràn cả lưới ra ngoài màn hình (lỗi responsive).
-        'min-w-0 break-words rounded-lg border bg-muted/35 px-3 text-sm font-medium',
+        //  Màu: nền `bg-locked` + viền `input` + chữ `locked-foreground` (giữ theo erp-v2).
+        'min-w-0 break-words rounded-lg border border-input bg-locked px-3 text-sm font-medium text-locked-foreground',
         multiline
           ? 'min-h-16 py-2.5 whitespace-pre-wrap'
           : 'flex min-h-9 items-center py-2',

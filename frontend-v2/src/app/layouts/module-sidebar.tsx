@@ -1,4 +1,4 @@
-import { Link, NavLink } from 'react-router-dom'
+import { Link, NavLink, useLocation } from 'react-router-dom'
 
 import type { ErpModule, ModuleNavItem } from '@/app/router/module-definition'
 import { visibleNavItems } from '@/app/router/module-visibility'
@@ -101,7 +101,9 @@ export function ModuleSidebar({
   const { isMobile, setOpenMobile } = useSidebar()
 
   //  Cùng luật với màn chọn phân hệ — xem `module-visibility.ts`.
-  const visibleItems = visibleNavItems(module, can)
+  //  ⚠️ `hidden` lọc ở ĐÂY thôi, không lọc trong `visibleNavItems`: mục ẩn vẫn
+  //  phải giữ khóa quyền của nó cho `canAccessRoute`. Xem `ModuleNavItem.hidden`.
+  const visibleItems = visibleNavItems(module, can).filter((item) => !item.hidden)
   // Mục không khai `group` đứng đầu, không tiêu đề — thường là "Tổng quan".
   const ungrouped = visibleItems.filter((item) => !item.group)
   const groups = groupByLabel(visibleItems.filter((item) => item.group))
@@ -207,6 +209,13 @@ function NavMenuItem({
   item: ModuleNavItem
   onNavigate: () => void
 }) {
+  const { pathname } = useLocation()
+  //  Mục gom nhiều màn: `NavLink` một mình chỉ so đúng đường của chính nó, nên
+  //  đang ở màn con là cả menu không có mục nào sáng. Xem `matchPaths`.
+  const alsoActive = item.matchPaths?.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`),
+  )
+
   return (
     <SidebarMenuItem>
       {/*
@@ -217,7 +226,7 @@ function NavMenuItem({
         {({ isActive }) => (
           <SidebarMenuButton
             asChild
-            isActive={isActive}
+            isActive={isActive || alsoActive}
             tooltip={item.label}
             className={navItemClass}
           >

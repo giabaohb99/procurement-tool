@@ -16,6 +16,8 @@ export const ENTITY_LABELS: Record<string, string> = {
   payment_request: 'Yêu cầu thanh toán',
   vehicle_booking: 'Đặt xe',
   seal_request: 'Duyệt dấu',
+  leave_request: 'Nghỉ phép',
+  room_booking: 'Đặt phòng họp',
 }
 
 /** Danh sách mã loại chứng từ, dùng cho ô lọc và cụm công tắc bộ máy. */
@@ -27,6 +29,8 @@ const ENTITY_ROUTES: Record<string, (id: number) => string> = {
   purchase_order: appRoutes.procurement.purchaseOrderDetail,
   vehicle_booking: appRoutes.vehicleBooking.detail,
   seal_request: appRoutes.approvalSeal.detail,
+  leave_request: appRoutes.hr.leaveRequestDetail,
+  room_booking: appRoutes.hr.roomBookingDetail,
 }
 
 /**

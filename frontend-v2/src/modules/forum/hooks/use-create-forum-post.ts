@@ -17,6 +17,9 @@ export function useCreateForumPost() {
       // trang đã cuộn, vừa chậm vừa thừa.
       await queryClient.resetQueries({ queryKey: queryKeys.forum.feed() })
       await queryClient.resetQueries({ queryKey: queryKeys.forum.userPostsAll() })
+      // F13b: thread mới phải hiện ngay trong box lẫn bộ đếm màn «Diễn đàn» —
+      // khóa boards() là gốc của cả nhánh nên một lệnh quét đủ hai màn.
+      await queryClient.invalidateQueries({ queryKey: queryKeys.forum.boards() })
     },
   })
 }

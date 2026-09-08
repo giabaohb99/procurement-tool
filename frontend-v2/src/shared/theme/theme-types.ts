@@ -64,6 +64,9 @@ export type ThemeColorKey =
   | 'shadow-spread'
   | 'shadow-offset-x'
   | 'shadow-offset-y'
+  //  Nền + chữ của ô CHỈ XEM (`shared/ui/read-only-value.tsx`).
+  | 'locked'
+  | 'locked-foreground'
   | 'row-head'
   | 'row-head-foreground'
   | 'row-stripe'

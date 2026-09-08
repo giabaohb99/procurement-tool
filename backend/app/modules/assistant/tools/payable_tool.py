@@ -14,7 +14,8 @@ from sqlalchemy import case, func, or_
 
 from app.core.scoping import apply_scope
 from app.modules.payable.model import Payable
-from app.modules.payable.service import ST_PAID, status_label
+from app.modules.payable.service import (ST_PAID, get_invoice_date, invoice_date_expr,
+                                         join_invoice_date, status_label)
 
 from .base import ToolContext, ToolSpec, denied
 from .draft_tool import _clean_text
@@ -70,10 +71,33 @@ def _scoped_payables(ctx: ToolContext, args: dict):
     date_to = _clean_text(args.get("date_to"), 10)
     if date_to:
         q = q.filter(Payable.incur_date != "", Payable.incur_date <= date_to)
+
+    # bao-CR-273 — lọc theo HẠN TRẢ: "cần thanh toán tháng này" là due_date chứ không phải
+    # ngày phát sinh. Khoản không có hạn trả bị loại khi bộ lọc này được dùng.
+    due_from = _clean_text(args.get("due_from"), 10)
+    if due_from:
+        q = q.filter(Payable.due_date != "", Payable.due_date >= due_from)
+    due_to = _clean_text(args.get("due_to"), 10)
+    if due_to:
+        q = q.filter(Payable.due_date != "", Payable.due_date <= due_to)
+
+    # bao-CR-309 — lọc theo NGÀY HÓA ĐƠN, bám đúng cặp lọc mà màn Công nợ có từ bao-CR-305.
+    # Ngày này không nằm trên `tab_payable` mà dò dọc chuỗi chứng từ, nên mượn nguyên join +
+    # biểu thức của phân hệ công nợ thay vì chép luật lần nữa — lệch luật là màn hình một
+    # đằng trợ lý một nẻo. Hai join đều 1-1 nên không nhân dòng, group_by/sum vẫn đúng.
+    inv_from = _clean_text(args.get("invoice_from"), 10)
+    inv_to = _clean_text(args.get("invoice_to"), 10)
+    if inv_from or inv_to:
+        q = join_invoice_date(q)
+        inv_expr = invoice_date_expr()
+        if inv_from:
+            q = q.filter(inv_expr >= inv_from)
+        if inv_to:
+            q = q.filter(inv_expr <= inv_to)
     return q, company_hit, None
 
 
-def _payable_out(p: Payable) -> dict:
+def _payable_out(db, p: Payable) -> dict:
     return {
         "payable_id": p.id,
         "supplier_code": p.supplier_code,
@@ -81,6 +105,9 @@ def _payable_out(p: Payable) -> dict:
         "source_type": _SOURCE_LABELS.get(p.source_type, p.source_type),
         "po_code": p.po_code,
         "invoice_no": p.invoice_no,
+        # Ba mốc ngày khác nhau, đừng gộp: ngày hóa đơn (chứng từ NCC) · ngày phát sinh
+        # (nhận hàng) · hạn trả. Ngày hóa đơn dò theo chuỗi chứng từ nên phải hỏi service.
+        "invoice_date": get_invoice_date(db, p),
         "incur_date": p.incur_date,
         "due_date": p.due_date,
         "total": float(p.total or 0),
@@ -91,6 +118,61 @@ def _payable_out(p: Payable) -> dict:
 
 
 # ── payable_lookup ──────────────────────────────────────────────────────────────────────
+
+def _grouped_out(ctx: ToolContext, q, overdue, total, group_by: str) -> dict:
+    """bao-CR-273 — tổng hợp NHÓM theo NCC/công ty trên TOÀN BỘ kết quả lọc.
+
+    Trả lời "bao nhiêu NCC cần trả / công ty nào nợ nhiều nhất" bằng số thật thay vì để
+    model tự đếm trên danh sách liệt kê trần 30 dòng (đếm thiếu khi nhiều hơn).
+    """
+    keys = ((Payable.supplier_code, Payable.supplier_name) if group_by == "supplier"
+            else (Payable.company_id,))
+    agg = (q.with_entities(
+               *keys,
+               func.count(Payable.id),
+               func.coalesce(func.sum(Payable.total), 0),
+               func.coalesce(func.sum(Payable.paid_amount), 0),
+               func.coalesce(func.sum(Payable.remaining), 0),
+               func.coalesce(func.sum(overdue), 0))
+           .group_by(*keys)
+           .order_by(func.coalesce(func.sum(Payable.remaining), 0).desc())
+           .all())
+
+    names: dict[int, str] = {}
+    if group_by == "company":
+        from app.modules.company.model import Company
+
+        ids = [r[0] for r in agg if r[0]]
+        if ids:
+            names = {c.id: c.name for c in
+                     ctx.db.query(Company).filter(Company.id.in_(ids)).all()}
+
+    groups = []
+    for r in agg[:MAX_ROWS]:
+        if group_by == "supplier":
+            head, n = {"supplier_code": r[0], "supplier_name": r[1]}, 2
+        else:
+            head, n = {"company_id": r[0], "company_name": names.get(r[0], "(không rõ)")}, 1
+        groups.append({**head, "count": int(r[n]), "total": float(r[n + 1]),
+                       "paid": float(r[n + 2]), "remaining": float(r[n + 3]),
+                       "overdue": float(r[n + 4])})
+
+    out = {
+        "total": int(total[0]),
+        "summary": {"total": float(total[1]), "paid": float(total[2]),
+                    "remaining": float(total[3]), "overdue": float(total[4])},
+        "group_by": group_by,
+        "group_count": len(agg),
+        "groups": groups,
+    }
+    if len(agg) > MAX_ROWS:
+        out["note"] = (f"Chỉ liệt kê {MAX_ROWS}/{len(agg)} nhóm nợ nhiều nhất — "
+                       "group_count và summary vẫn tính trên toàn bộ.")
+    if not agg:
+        out["note"] = ("Không có khoản nợ nào khớp điều kiện trong phạm vi người hỏi được "
+                       "xem — nói thẳng, đừng bịa số.")
+    return out
+
 
 def _run_lookup(ctx: ToolContext, args: dict) -> dict:
     if not ctx.can("payable"):
@@ -122,6 +204,12 @@ def _run_lookup(ctx: ToolContext, args: dict) -> dict:
         func.coalesce(func.sum(overdue), 0),
     ).one()
 
+    group_by = _clean_text(args.get("group_by"), 20)
+    if group_by:
+        if group_by not in ("supplier", "company"):
+            return {"error": "group_by chỉ nhận supplier | company."}
+        return _grouped_out(ctx, q, overdue, total, group_by)
+
     limit = args.get("limit")
     limit = max(1, min(int(limit), MAX_ROWS)) if isinstance(limit, (int, float)) else 20
     rows = q.order_by(Payable.due_date.asc(), Payable.id.desc()).limit(limit).all()
@@ -130,7 +218,7 @@ def _run_lookup(ctx: ToolContext, args: dict) -> dict:
         "total": int(total[0]),
         "summary": {"total": float(total[1]), "paid": float(total[2]),
                     "remaining": float(total[3]), "overdue": float(total[4])},
-        "items": [_payable_out(p) for p in rows],
+        "items": [_payable_out(ctx.db, p) for p in rows],
     }
     if total[0] > limit:
         out["note"] = (f"Chỉ liệt kê {limit}/{total[0]} khoản tới hạn sớm nhất — summary vẫn "
@@ -138,6 +226,31 @@ def _run_lookup(ctx: ToolContext, args: dict) -> dict:
     if not total[0]:
         out["note"] = ("Không có khoản nợ nào khớp điều kiện trong phạm vi người hỏi được "
                        "xem — nói thẳng, đừng bịa số.")
+
+    # CR-268 — kết quả gom về ĐÚNG MỘT NCC mà NCC đó còn TIỀN TREO trả trước thì đính kèm
+    # để trợ lý chủ động gợi ý cấn trừ. Treo là dữ liệu phân hệ YCTT nên phải có quyền
+    # payment_request mới được xem — không vòng qua hàng rào bằng tool công nợ.
+    supplier_codes = {p.supplier_code for p in rows if p.supplier_code}
+    if len(supplier_codes) == 1 and ctx.can("payment_request"):
+        from app.modules.payment_request.service import summarize_hanging
+
+        hang = summarize_hanging(ctx.db, next(iter(supplier_codes)))
+        if hang["total"] > 0.01:
+            unlinked = round(sum(it["hanging"] for it in hang["items"] if not it["po_code"]), 2)
+            out["prepay_hanging"] = {
+                "total": hang["total"],
+                "unlinked": unlinked,
+                "items": hang["items"],
+                "hint": ("NCC này còn TIỀN TREO trả trước (CR-268) — nhắc người dùng cấn "
+                         "trừ trước khi chi thêm. Phần KHÔNG gắn đơn (unlinked): đường "
+                         "CHÍNH là ghi phần 'Cấn trừ trả trước' ngay trên phiếu YCTT "
+                         "tiếp theo (hộp thoại tạo YCTT ở đơn mua hàng gợi ý sẵn, trừ "
+                         "thật khi phiếu được DUYỆT — CR-260); đường phụ là nút Cấn trừ "
+                         "(icon cái cân) trên màn Công nợ. Cả hai đều trừ tối đa = "
+                         "min(treo, nợ còn lại). Phần gắn đơn sẽ TỰ đối trừ khi đơn đó "
+                         "nhận hàng, không cần thao tác. Nghiệp vụ đầy đủ: "
+                         "doc/tai-lieu-chuc-nang/05-yeu-cau-thanh-toan.md mục F."),
+            }
     return out
 
 
@@ -149,7 +262,16 @@ PAYABLE_LOOKUP_SPEC = ToolSpec(
         "nào quá hạn chưa trả'. Kết quả có summary (tổng nợ / đã trả / CÒN LẠI / quá hạn) "
         "tính trên toàn bộ kết quả lọc, kèm từng khoản nợ với payable_id — muốn lập Yêu cầu "
         "thanh toán từ các khoản này thì gọi tiếp draft_payment_request và truyền đúng các "
-        "payable_id đó. Mặc định chỉ lấy khoản CÒN PHẢI TRẢ."
+        "payable_id đó. Mặc định chỉ lấy khoản CÒN PHẢI TRẢ. Có BA MỐC NGÀY khác nhau, chọn "
+        "đúng cặp: date_from/date_to = ngày PHÁT SINH nợ (lúc nhận hàng); due_from/due_to = "
+        "HẠN TRẢ, dùng cho 'cần thanh toán tháng này/tuần này'; invoice_from/invoice_to = "
+        "NGÀY HÓA ĐƠN trên chứng từ NCC, dùng cho 'hóa đơn tháng 8', 'nợ theo hóa đơn kỳ "
+        "này' — đúng cặp lọc màn Công nợ đang có. Câu 'bao nhiêu NCC cần trả / công ty nào nợ nhiều nhất' "
+        "thì truyền group_by=supplier|company — trả tổng hợp từng nhóm (số khoản / còn nợ / "
+        "quá hạn) tính trên TOÀN BỘ kết quả lọc, ĐỪNG tự đếm trên danh sách liệt kê vì danh "
+        "sách có trần dòng. Lọc về đúng một NCC mà NCC đó "
+        "còn TIỀN TREO trả trước (CR-268) thì kết quả kèm `prepay_hanging` — đọc `hint` "
+        "trong đó để gợi ý người dùng cấn trừ trước khi lập phiếu chi mới."
     ),
     parameters={
         "type": "object",
@@ -173,6 +295,23 @@ PAYABLE_LOOKUP_SPEC = ToolSpec(
                           "description": "Ngày phát sinh nợ từ, YYYY-MM-DD (tùy chọn)."},
             "date_to": {"type": "string",
                         "description": "Ngày phát sinh nợ đến, YYYY-MM-DD (tùy chọn)."},
+            "due_from": {"type": "string",
+                         "description": "HẠN TRẢ từ ngày, YYYY-MM-DD — dùng cho 'cần thanh "
+                                        "toán trong tháng/tuần' (tùy chọn)."},
+            "due_to": {"type": "string",
+                       "description": "HẠN TRẢ đến ngày, YYYY-MM-DD (tùy chọn)."},
+            "invoice_from": {"type": "string",
+                             "description": "NGÀY HÓA ĐƠN từ ngày, YYYY-MM-DD — dùng khi "
+                                            "người dùng nói 'hóa đơn tháng ...' (tùy chọn)."},
+            "invoice_to": {"type": "string",
+                           "description": "NGÀY HÓA ĐƠN đến ngày, YYYY-MM-DD (tùy chọn)."},
+            "group_by": {
+                "type": "string",
+                "enum": ["supplier", "company"],
+                "description": "Trả TỔNG HỢP NHÓM thay vì liệt kê từng khoản: supplier = "
+                               "gom theo NCC, company = gom theo công ty nợ tiền. Dùng cho "
+                               "'bao nhiêu NCC cần trả', 'công ty nào nợ nhiều nhất'.",
+            },
             "limit": {"type": "integer",
                       "description": f"Số khoản liệt kê tối đa, mặc định 20, trần {MAX_ROWS}."},
         },
@@ -190,10 +329,16 @@ _DRAFT_DESC = (
     "dùng muốn lập yêu cầu/đề nghị thanh toán công nợ cho NCC. Cách chọn khoản nợ, ưu tiên "
     "theo thứ tự: (1) đã gọi payable_lookup trong hội thoại thì truyền đúng danh sách "
     "payable_ids người dùng muốn trả; (2) chưa tra thì truyền supplier (bắt buộc nếu không "
-    "có payable_ids) + company/date_from/date_to nếu người dùng nêu — tool tự lấy các khoản "
-    "còn phải trả khớp điều kiện. Khoản đã tất toán bị loại tự động. Sau khi gọi, báo người "
-    "dùng bấm nút 'Tạo đề nghị thanh toán' dưới câu trả lời — nhấn mạnh phiếu CHƯA được tạo, "
-    "số tiền đề nghị mặc định bằng số còn lại từng khoản và sửa được trên form."
+    "có payable_ids) + company + một trong ba cặp mốc ngày nếu người dùng nêu — tool "
+    "tự lấy các khoản còn phải trả khớp điều kiện ('trả các khoản tới hạn tháng này' = lọc "
+    "due_from/due_to theo HẠN TRẢ; 'trả các hóa đơn tháng 8' = lọc invoice_from/invoice_to "
+    "theo NGÀY HÓA ĐƠN; date_from/date_to là ngày PHÁT SINH nợ). "
+    "Khoản đã tất toán bị loại tự động. NCC còn TIỀN TREO trả "
+    "trước thì bản nháp chia sẵn phần 'Cấn trừ trả trước' theo FIFO (draft.offsets + "
+    "offset_total + cash_total — chi thật = còn lại trừ cấn trừ, thực thi khi phiếu được "
+    "DUYỆT theo CR-260) và form mở ra điền sẵn cột cấn trừ. Sau khi gọi, báo người dùng bấm "
+    "nút 'Tạo đề nghị thanh toán' dưới câu trả lời — nhấn mạnh phiếu CHƯA được tạo, số tiền "
+    "đề nghị mặc định bằng số còn lại từng khoản và sửa được trên form."
 )
 
 
@@ -240,6 +385,31 @@ def _run_draft(ctx: ToolContext, args: dict) -> dict:
         g["lines"] += 1
         g["remaining"] += float(p.remaining or 0)
 
+    # CR-264 — NCC còn TIỀN TREO cấp NCC (không gắn đơn) thì chia sẵn phần cấn trừ theo
+    # FIFO trên chính các khoản đã chọn (khoản tới hạn sớm trước, cùng thứ tự liệt kê) —
+    # giống hộp thoại tạo YCTT ở ĐMH. Chỉ là ĐỀ XUẤT: form điền sẵn cột 'Cấn trừ trả
+    # trước', người dùng sửa/bỏ được; thực thi vẫn ở lúc DUYỆT (CR-260). Treo là dữ liệu
+    # phân hệ YCTT nên phải có quyền payment_request.read mới gợi ý — cùng hàng rào với
+    # payable_lookup (create không kéo theo read).
+    offsets: dict[int, float] = {}
+    if ctx.can("payment_request"):
+        from app.modules.payment_request.service import get_hanging_lines, line_hanging
+
+        treo_left: dict[tuple, float] = {}
+        for p in rows:
+            key = (p.supplier_code, p.source_type)
+            if key not in treo_left:
+                treo = get_hanging_lines(ctx.db, p.supplier_code or "",
+                                         p.source_type or "goods", "")
+                treo_left[key] = round(sum(line_hanging(t) for _r, t in treo), 2)
+            take = round(min(float(p.remaining or 0), treo_left[key]), 2)
+            if take > 0.01:
+                offsets[p.id] = take
+                treo_left[key] = round(treo_left[key] - take, 2)
+                g = by_supplier.get(p.supplier_code or "?")
+                if g is not None:
+                    g["offset"] = round(g.get("offset", 0.0) + take, 2)
+
     result = {
         "status": "ready",
         "draft": {
@@ -255,6 +425,17 @@ def _run_draft(ctx: ToolContext, args: dict) -> dict:
                     "câu trả lời — form mở ra đã tick sẵn các khoản này, số tiền đề nghị "
                     "mặc định bằng số CÒN LẠI từng khoản, sửa được trước khi Lưu.",
     }
+    if offsets:
+        offset_total = round(sum(offsets.values()), 2)
+        result["draft"]["offsets"] = offsets
+        result["draft"]["offset_total"] = offset_total
+        result["draft"]["cash_total"] = round(result["draft"]["total_remaining"] - offset_total, 2)
+        result["reminder"] += (
+            f" NCC còn TIỀN TREO trả trước: đã chia sẵn phần cấn trừ {offset_total:,.0f} đ "
+            "vào các khoản (FIFO, khoản tới hạn sớm trước) — form mở ra điền sẵn cột 'Cấn "
+            "trừ trả trước', phần CHI THẬT giảm tương ứng (cash_total); người dùng sửa/bỏ "
+            "được từng dòng. Cấn trừ chỉ THỰC THI khi phiếu được DUYỆT (CR-260) — nói rõ "
+            "hai con số: chi thật và cấn trừ.")
     if ids:
         missing = sorted(set(ids) - {p.id for p in rows})
         if missing:
@@ -267,6 +448,22 @@ def _run_draft(ctx: ToolContext, args: dict) -> dict:
     if len(by_supplier) > 1:
         result["reminder"] += (" Các khoản thuộc NHIỀU nhà cung cấp — khi lưu hệ thống tự "
                                "tách mỗi NCC một phiếu, báo trước cho người dùng.")
+    # bao-CR-274 — khoản nợ trải trên NHIỀU công ty: khi lưu hệ thống tách phiếu theo cả
+    # công ty nhận hóa đơn (mỗi cặp NCC + công ty một phiếu) — báo trước để người dùng
+    # không tưởng tất cả gom chung một phiếu.
+    company_ids = {p.company_id for p in rows if p.company_id}
+    if len(company_ids) > 1:
+        from app.modules.company.model import Company
+
+        company_names = sorted(
+            c.name for c in ctx.db.query(Company).filter(Company.id.in_(company_ids)).all()
+            if c.name)
+        result["draft"]["companies"] = company_names
+        result["reminder"] += (
+            f" Các khoản thuộc {len(company_ids)} CÔNG TY khác nhau "
+            f"({', '.join(company_names)}) — khi lưu hệ thống tự tách mỗi cặp NCC + công "
+            "ty một phiếu, phiếu đứng tên đúng công ty nhận hóa đơn; báo trước cho người "
+            "dùng. Muốn lập cho riêng một công ty thì gọi lại kèm company=<tên công ty>.")
     return result
 
 
@@ -285,7 +482,8 @@ def _run_read_request(ctx: ToolContext, args: dict) -> dict:
         return {"error": "Thiếu code — hỏi người dùng mã phiếu YCTT cần xem."}
 
     from app.modules.payment_request.model import PaymentRequest, PaymentRequestLine
-    from app.modules.payment_request.service import parse_print_texts
+    from app.modules.payment_request.service import (check_line_offsets, line_hanging,
+                                                     parse_print_texts)
 
     from .procurement_doc_tool import _label
 
@@ -299,7 +497,29 @@ def _run_read_request(ctx: ToolContext, args: dict) -> dict:
     lines = (ctx.db.query(PaymentRequestLine)
              .filter(PaymentRequestLine.request_id == req.id)
              .order_by(PaymentRequestLine.id.asc()).all())
-    return {
+
+    def _line_out(ln: PaymentRequestLine) -> dict:
+        d = {
+            "po_code": ln.po_code,
+            "invoice_no": ln.invoice_no,
+            "invoice_date": ln.invoice_date,
+            "amount": float(ln.amount or 0),
+        }
+        # CR-260 — dòng có phần cấn trừ tiền treo thì nói rõ: `amount` là phần CHI THẬT,
+        # `offset_amount` là phần trừ vào tiền treo; nghĩa vụ của dòng = amount + offset.
+        if float(ln.offset_amount or 0) > 0.01:
+            d["offset_amount"] = float(ln.offset_amount or 0)
+        # CR-268 — phiếu trả trước ĐÃ CHI thì kèm sổ treo từng dòng để trợ lý giải thích
+        # được "tiền đi đâu": đã đối trừ / NCC đã hoàn / còn treo.
+        if req.prepay and req.status == "paid":
+            d.update({
+                "allocated_amount": float(ln.allocated_amount or 0),
+                "refunded_amount": float(ln.refunded_amount or 0),
+                "hanging": line_hanging(ln),
+            })
+        return d
+
+    out = {
         "code": req.code,
         "status": req.status,
         "status_label": _label("payment_request", req.status),
@@ -313,15 +533,53 @@ def _run_read_request(ctx: ToolContext, args: dict) -> dict:
         "note": req.note,
         "reject_reason": req.reject_reason,
         "print_texts": parse_print_texts(req.print_texts),
-        "lines": [{
-            "po_code": ln.po_code,
-            "invoice_no": ln.invoice_no,
-            "invoice_date": ln.invoice_date,
-            "amount": float(ln.amount or 0),
-        } for ln in lines],
+        "lines": [_line_out(ln) for ln in lines],
         "url": f"/finance/payment-requests/{req.id}",
         "total_lines": len(lines),
     }
+    # CR-260 — phiếu có phần cấn trừ tiền treo: `total` chỉ là phần CHI THẬT, kèm tổng
+    # cấn trừ + trạng thái thực thi để trợ lý nói đúng bản chất từng giai đoạn.
+    offset_total = round(sum(float(ln.offset_amount or 0) for ln in lines), 2)
+    if offset_total > 0.01:
+        out["offset_total"] = offset_total
+        if req.status in ("approved", "paid"):
+            out["offset_hint"] = (
+                f"Phần cấn trừ {offset_total:,.0f} đ ĐÃ được trừ vào công nợ ngay lúc "
+                "phiếu được DUYỆT (CR-260) — chỉ còn phần chi thật (`total`) đi tiếp "
+                "các bước chi tiền.")
+        elif req.status == "submitted":
+            problems = check_line_offsets(ctx.db, req)
+            out["offset_check"] = {"ok": not problems, "problems": problems}
+            if problems:
+                out["offset_hint"] = (
+                    "Phiếu đang Chờ duyệt nhưng phần cấn trừ HIỆN KHÔNG còn khớp (xem "
+                    "`offset_check.problems`) — bấm Duyệt sẽ bị chặn với đúng lý do đó. "
+                    "KHÔNG có duyệt một phần: hướng xử lý là người duyệt TỪ CHỐI kèm lý "
+                    "do, người lập mở lại hộp thoại tạo YCTT ở đơn mua hàng (số liệu tự "
+                    "tính lại theo hiện trạng) rồi tạo phiếu mới.")
+            else:
+                out["offset_hint"] = (
+                    f"Phiếu đang Chờ duyệt, phần cấn trừ {offset_total:,.0f} đ hợp lệ "
+                    "tại thời điểm soát — bấm Duyệt sẽ trừ thật vào công nợ (CR-260). "
+                    "Lưu ý tiền treo/nợ vẫn có thể bị phiếu khác dùng trong lúc chờ.")
+        else:
+            out["offset_hint"] = (
+                f"Phần cấn trừ {offset_total:,.0f} đ trên phiếu mới là Ý ĐỊNH — chưa "
+                "đụng công nợ, chỉ thực thi khi phiếu được DUYỆT (CR-260). Sửa/xóa nháp "
+                "vô hại.")
+    if req.prepay and req.status == "paid":
+        hanging_total = round(sum(line_hanging(ln) for ln in lines), 2)
+        out["prepay_hanging_total"] = hanging_total
+        if hanging_total > 0.01:
+            out["prepay_hint"] = (
+                "Phiếu TRẢ TRƯỚC còn tiền treo. Dòng CÓ mã ĐMH sẽ tự đối trừ khi đơn đó "
+                "nhận hàng, không cần thao tác. Dòng KHÔNG gắn đơn: đường CHÍNH là ghi "
+                "phần 'Cấn trừ trả trước' trên phiếu YCTT tiếp theo của NCC này (hộp "
+                "thoại tạo YCTT ở đơn mua hàng gợi ý sẵn, trừ thật khi phiếu được duyệt "
+                "— CR-260); đường phụ là kế toán cấn trừ tay ở màn Công nợ (nút icon "
+                "cái cân) hoặc ghi nhận NCC hoàn tiền ngay trên phiếu này. Xem "
+                "doc/tai-lieu-chuc-nang/05-yeu-cau-thanh-toan.md mục F.")
+    return out
 
 
 PAYMENT_REQUEST_READ_SPEC = ToolSpec(
@@ -330,9 +588,15 @@ PAYMENT_REQUEST_READ_SPEC = ToolSpec(
         "Xem chi tiết MỘT phiếu Yêu cầu thanh toán (YCTT) theo mã phiếu — trạng thái, NCC, "
         "hình thức thanh toán, tổng tiền, các dòng đề nghị chi (mã ĐMH, số hóa đơn, số "
         "tiền) và 3 câu chữ bản in (print_texts). Gọi khi người dùng hỏi về một YCTT cụ "
-        "thể ('YCTT00045 tới đâu rồi', 'phiếu thanh toán đó bao nhiêu tiền'). Khi trả "
-        "lời, kèm `url` dạng link để người dùng bấm mở phiếu. Trợ lý KHÔNG duyệt/chi hộ "
-        "được — việc đó người dùng tự làm trên màn chi tiết."
+        "thể ('YCTT00045 tới đâu rồi', 'phiếu thanh toán đó bao nhiêu tiền', 'phiếu này "
+        "duyệt được chưa / sao bị chặn duyệt'). Phiếu có phần CẤN TRỪ tiền treo (CR-260) "
+        "trả thêm `offset_amount` từng dòng + `offset_total` (`total` chỉ là phần chi "
+        "thật) và `offset_hint`; phiếu Chờ duyệt còn kèm `offset_check` — soát khô xem "
+        "bấm Duyệt có bị chặn không, có vấn đề thì đọc `problems` để giải thích. Phiếu "
+        "TRẢ TRƯỚC (prepay) đã chi còn trả thêm sổ tiền treo (đã đối trừ / NCC đã hoàn / "
+        "còn treo, CR-268) — còn treo thì đọc `prepay_hint` để tư vấn bước xử lý. Khi "
+        "trả lời, kèm `url` dạng link để người dùng bấm mở phiếu. Trợ lý KHÔNG duyệt/chi "
+        "hộ được — việc đó người dùng tự làm trên màn chi tiết."
     ),
     parameters={
         "type": "object",
@@ -372,6 +636,18 @@ DRAFT_PAYMENT_REQUEST_SPEC = ToolSpec(
                           "description": "Chỉ lấy khoản phát sinh từ ngày, YYYY-MM-DD (tùy chọn)."},
             "date_to": {"type": "string",
                         "description": "Chỉ lấy khoản phát sinh đến ngày, YYYY-MM-DD (tùy chọn)."},
+            "due_from": {"type": "string",
+                         "description": "Chỉ lấy khoản có HẠN TRẢ từ ngày, YYYY-MM-DD — dùng "
+                                        "cho 'trả các khoản tới hạn tháng/tuần này' (tùy chọn)."},
+            "due_to": {"type": "string",
+                       "description": "Chỉ lấy khoản có HẠN TRẢ đến ngày, YYYY-MM-DD (tùy chọn)."},
+            "invoice_from": {"type": "string",
+                             "description": "Chỉ lấy khoản có NGÀY HÓA ĐƠN từ ngày, "
+                                            "YYYY-MM-DD — dùng cho 'trả các hóa đơn tháng "
+                                            "...' (tùy chọn)."},
+            "invoice_to": {"type": "string",
+                           "description": "Chỉ lấy khoản có NGÀY HÓA ĐƠN đến ngày, "
+                                          "YYYY-MM-DD (tùy chọn)."},
         },
     },
     handler=_run_draft,

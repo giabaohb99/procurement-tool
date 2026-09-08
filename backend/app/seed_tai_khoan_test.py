@@ -14,8 +14,9 @@ người dùng hỏi tới:
   · DEMONV — CHỈ XEM văn bản, không thao tác được gì (vai trò `vanban_xem`);
   · DEMOTP — soạn và SỬA được nhưng KHÔNG xóa, KHÔNG duyệt (`vanban_sua`).
 
-Hai vai trò đó khai ở `seed.py::STD_ROLES` để mọi môi trường đều có sẵn mẫu; tệp
-này chỉ *gán* chúng cho tài khoản demo.
+Mọi vai trò đều khai ở `seed.py::STD_ROLES` để mọi môi trường có sẵn mẫu; tệp
+này chỉ *gán* chúng cho tài khoản demo — vai chính ở `ACCOUNTS`, vai gán thêm ở
+`EXTRA_ROLES`.
 
 ⚠️ CHỈ chạy ở LOCAL (`seed.py`). `seed_prod.py` không gọi tệp này: mật khẩu bằng
 đúng mã nhân viên, tuyệt đối không để lên hệ thật.
@@ -53,14 +54,22 @@ ACCOUNTS = [
      "pur_admin", "Phòng Thu mua", "admin thu mua"),
 ]
 
-#  Vai trò Văn bản gán THÊM cho hai tài khoản làm ví dụ. Cộng dồn với vai trò
-#  nghiệp vụ ở trên — hệ phân quyền là hợp (OR) của mọi vai trò người đó giữ.
-DOCUMENT_ROLES = {
-    "DEMONV": "vanban_xem",
-    "DEMOTP": "vanban_sua",
-    #  Quản lý công ty duyệt được văn bản của pháp nhân mình — dùng lại vai trò
-    #  sẵn có thay vì đẻ thêm một vai trò gần giống.
-    "DEMOQL": "vanthu_phapnhan",
+#  Vai trò gán THÊM ngoài vai trò chính ở `ACCOUNTS`. Cộng dồn chứ không thay
+#  thế — hệ phân quyền là hợp (OR) của mọi vai trò người đó giữ.
+EXTRA_ROLES = {
+    "DEMONV": ["vanban_xem"],
+    "DEMOTP": ["vanban_sua"],
+    "DEMOQL": [
+        #  Quản lý công ty duyệt được văn bản của pháp nhân mình — dùng lại vai
+        #  trò sẵn có thay vì đẻ thêm một vai trò gần giống.
+        "vanthu_phapnhan",
+        #  `company_head` cố ý CHỈ XEM trên cả 13 nhóm dữ liệu, nên một mình nó
+        #  không mở được phần Giao hàng nhiều lần của ĐMH (màn hình đòi
+        #  `purchase_order.write`). Gán thêm vai thu mua để tài khoản demo này
+        #  bấm vào là nhập được tiến độ giao, thay vì nới quyền ghi cho
+        #  `company_head` — nới ở đó thì MỌI trưởng pháp nhân sửa được chứng từ.
+        "pur_manager",
+    ],
 }
 
 COMPANY_ME_ID = 1
@@ -125,18 +134,20 @@ def seed_test_accounts(db, company_id: int = COMPANY_ME_ID) -> int:
         db.query(UserRole).filter(UserRole.user_id == user.id).delete(synchronize_session=False)
         db.add(UserRole(user_id=user.id, role_id=role.id, created_by=1, updated_by=1))
 
-        extra_role = DOCUMENT_ROLES.get(code)
-        role_vb = _role(db, extra_role) if extra_role else None
-        if extra_role and role_vb is None:
-            print(f"  {code}: chưa có vai trò Văn bản «{extra_role}», bỏ phần đó.")
-        if role_vb is not None:
-            db.add(UserRole(user_id=user.id, role_id=role_vb.id, created_by=1, updated_by=1))
+        extra_role_ids = set()
+        for extra_code in EXTRA_ROLES.get(code, []):
+            extra_role = _role(db, extra_code)
+            if extra_role is None:
+                print(f"  {code}: chưa có vai trò «{extra_code}», bỏ phần đó.")
+                continue
+            extra_role_ids.add(extra_role.id)
+            db.add(UserRole(user_id=user.id, role_id=extra_role.id, created_by=1, updated_by=1))
 
         #  Phạm vi dữ liệu: đúng pháp nhân của mình. Không có dòng này thì vai trò
         #  phạm vi `company` không biết "công ty nào" và `apply_scope` chặn sạch
         #  (B-07/CR-131 — scope không dựng được điều kiện thì trả `false()`).
         db.query(UserScope).filter(UserScope.user_id == user.id).delete(synchronize_session=False)
-        for r in {role.id} | ({role_vb.id} if role_vb is not None else set()):
+        for r in {role.id} | extra_role_ids:
             db.add(UserScope(user_id=user.id, role_id=r, entity="", dim="company",
                              value=str(company_id), is_exclude=False,
                              created_by=1, updated_by=1))

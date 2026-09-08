@@ -10,6 +10,9 @@ class LineIn(BaseModel):
     invoice_no: str = ""
     invoice_date: str = ""
     amount: float = 0
+    # CR-260 — phần đề nghị CẤN TRỪ tiền treo cấp NCC vào khoản nợ của dòng;
+    # chỉ thực thi khi phiếu được DUYỆT (xem apply_line_offsets trong service).
+    offset_amount: float = 0
 
 
 class PRequestCreate(BaseModel):

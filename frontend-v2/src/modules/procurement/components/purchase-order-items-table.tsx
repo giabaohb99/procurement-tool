@@ -8,6 +8,7 @@ import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { CopyButton } from '@/shared/ui/copy-button'
 import { Input } from '@/shared/ui/input'
+import { NumberInput, PRICE_MAX_DECIMALS } from '@/shared/ui/number-input'
 import {
   Select,
   SelectContent,
@@ -15,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
-import { formatMoney, formatQuantity } from '@/shared/utils/format-money'
+import { formatMoney, formatQuantity, formatUnitPrice } from '@/shared/utils/format-money'
 import type {
   ProductOption,
   PurchaseHistoryRow,
@@ -120,6 +121,15 @@ export function PurchaseOrderItemsTable({
       width: 80,
       minWidth: 50,
       align: 'center',
+      compactHidden: true,
+    },
+    // bao-CR-307: giá một đơn vị ĐÃ gồm VAT — kế toán đối chiếu giá chẵn trên hóa đơn
+    {
+      key: 'price_after_vat',
+      header: 'Đơn giá (Sau VAT)',
+      width: 130,
+      minWidth: 80,
+      align: 'right',
       compactHidden: true,
     },
     { key: 'amount', header: 'Thành tiền', width: 140, minWidth: 80, align: 'right' },
@@ -283,13 +293,16 @@ export function PurchaseOrderItemsTable({
           />
         )
 
+      //  ĐƠN GIÁ giữ tới 4 chữ số lẻ (CR-058) — dùng `formatMoney` là làm tròn tới
+      //  đồng ngay trên màn, người dùng tưởng mất số lẻ đã nhập.
       case 'price':
         return (
           <NumberCell
             value={item.price}
             editable={cellEditable}
             onChange={(value) => patch(index, { price: value })}
-            format={formatMoney}
+            format={formatUnitPrice}
+            maxDecimals={PRICE_MAX_DECIMALS}
           />
         )
 
@@ -312,6 +325,18 @@ export function PurchaseOrderItemsTable({
           </Select>
         ) : (
           `${item.vat ?? 0}%`
+        )
+
+      // bao-CR-307: đơn giá sau VAT làm tròn 2 số lẻ — 166.666,67 × 1,08 phải ra
+      // 180.000 chứ không phải 180.000,0036
+      case 'price_after_vat':
+        return (
+          <span className="tabular-nums font-semibold">
+            {formatUnitPrice(
+              Math.round((Number(item.price) || 0) * (1 + (Number(item.vat) || 0) / 100) * 100) /
+                100,
+            )}
+          </span>
         )
 
       case 'amount':
@@ -460,26 +485,32 @@ export function PurchaseOrderItemsTable({
   )
 }
 
-/** Ô số: gõ tự do khi sửa, còn lại hiện đã định dạng theo chuẩn tiền/số lượng. */
+/**
+ * Ô số: định dạng theo chuẩn Việt (ngăn nghìn bằng dấu chấm) cả lúc nhập lẫn lúc
+ * chỉ xem — `<Input type="number">` để số trần nên `1500000` với `150000` nhìn
+ * gần như nhau, mà đây là cột đơn giá.
+ */
 function NumberCell({
   value,
   editable,
   onChange,
   format,
+  maxDecimals,
 }: {
   value: number
   editable: boolean
   onChange: (value: number) => void
   format: (value: number) => string
+  maxDecimals?: number
 }) {
   if (!editable) return <span className="tabular-nums">{format(value || 0)}</span>
 
   return (
-    <Input
-      type="number"
-      className="w-full px-2 text-right tabular-nums"
+    <NumberInput
+      className="px-2 text-right"
       value={value ?? 0}
-      onChange={(event) => onChange(Number(event.target.value) || 0)}
+      maxDecimals={maxDecimals}
+      onChange={onChange}
     />
   )
 }

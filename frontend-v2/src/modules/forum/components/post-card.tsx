@@ -18,6 +18,7 @@ import type { ForumPost, ForumReactionKind } from '../types/forum-post'
 import { authorInitials } from '../utils/author-initials'
 import { PostActionsMenu } from './post-actions-menu'
 import { PostBody } from './post-body'
+import { ThreadPrefixChip } from './thread-prefix-chip'
 import { PostComments } from './post-comments'
 import { PostImageGrid } from './post-image-grid'
 import { PostLikesDialog } from './post-likes-dialog'
@@ -158,7 +159,36 @@ export function PostCard({ post, detail = false, flat = false }: PostCardProps) 
         </div>
       )}
 
-      <PostBody body={post.body} />
+      {post.board_id > 0 && post.title && (
+        // Thread trong box (F13b): chip tên box + tiêu đề đậm đứng trên nội
+        // dung; ngoài feed bấm tiêu đề là mở thread, trong chi tiết đứng yên.
+        <div className="px-4 pb-0.5">
+          <div className="flex flex-wrap items-center gap-1.5">
+            {post.board_name && (
+              <Link
+                to={appRoutes.forum.boardDetail(post.board_id)}
+                className="inline-flex items-center rounded bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
+              >
+                {post.board_name}
+              </Link>
+            )}
+            <ThreadPrefixChip prefix={post.prefix} />
+          </div>
+          {detail ? (
+            // Khung đọc bài: tiêu đề phải ra dáng tiêu đề, 15px lẫn vào nội dung.
+            <h2 className="mt-1 text-xl font-semibold">{post.title}</h2>
+          ) : (
+            <Link
+              to={appRoutes.forum.postDetail(post.id)}
+              className="mt-1 block text-base font-semibold hover:underline"
+            >
+              {post.title}
+            </Link>
+          )}
+        </div>
+      )}
+
+      <PostBody body={post.body} format={post.body_format} detail={detail} />
       <PostImageGrid images={post.images} />
 
       <footer className="px-4 pb-1.5">
@@ -240,7 +270,7 @@ function PostDetailDialog({ post, onClose }: { post: ForumPost; onClose: () => v
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent
         aria-describedby={undefined}
-        className="flex max-h-[90svh] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl"
+        className="flex max-h-[92svh] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl"
       >
         <DialogHeader className="border-b border-border px-4 py-3 text-center sm:text-center">
           <DialogTitle className="text-base">

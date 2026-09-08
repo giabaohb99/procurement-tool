@@ -1,7 +1,8 @@
 # TỪ ĐIỂN DỮ LIỆU ERP V2 — CHỈ MỤC
 
-Bản 1.0 — 28/08/2026. Toàn hệ có **101 bảng** (đếm bằng `__tablename__` trong `backend/app/`,
-sau 151 migration). Từ điển chia 5 tệp theo cụm — mỗi bảng liệt kê đủ cột, kiểu, ý nghĩa,
+Bản 1.0 — 28/08/2026, cập nhật 03/09/2026 (F13a thêm `tab_forum_board`). Từ điển đang tả **102 bảng**.
+CHÚ Ý (03/09/2026): mã nguồn đã có 114 `__tablename__` — chênh lệch chủ yếu là cụm bảng phân hệ
+Công việc (CR-216) chưa có mục từ điển; ai làm tài liệu Công việc thì bổ sung và sửa con số ở đây. Từ điển chia 5 tệp theo cụm — mỗi bảng liệt kê đủ cột, kiểu, ý nghĩa,
 khóa nối và logic nghiệp vụ chính rút từ `service.py`:
 
 | Tệp | Cụm | Bảng tiêu biểu |
@@ -10,10 +11,10 @@ khóa nối và logic nghiệp vụ chính rút từ `service.py`:
 | [05b-du-lieu-tai-chinh-danh-muc-kho.md](05b-du-lieu-tai-chinh-danh-muc-kho.md) | Tài chính · Danh mục · Kho (14 bảng) | Công nợ, YCTT, NCC, hợp đồng, sản phẩm (SKU), ĐVT/phân loại, tồn kho, snapshot báo cáo |
 | [05c-du-lieu-to-chuc-he-thong.md](05c-du-lieu-to-chuc-he-thong.md) | Tổ chức · Tài khoản · Hạ tầng (21 bảng) | User, vai trò + ma trận quyền, nhân sự, phòng ban, pháp nhân, file đính kèm, import/export, audit |
 | [05d-du-lieu-van-thu-duyet.md](05d-du-lieu-van-thu-duyet.md) | Văn thư · Bộ máy duyệt · Duyệt dấu (30 bảng) | Văn bản + phiên bản + chữ ký + clone, sổ/loại/cấp mật, luồng duyệt + phiếu duyệt + ủy quyền |
-| [05e-du-lieu-cong-tac-ho-tro.md](05e-du-lieu-cong-tac-ho-tro.md) | Cộng tác · Hỗ trợ · Thông báo (22 bảng) | Diễn đàn, bình luận, phiếu hỗ trợ, HDSD, trợ lý AI, thông báo + hộp thư gửi, đặt xe |
+| [05e-du-lieu-cong-tac-ho-tro.md](05e-du-lieu-cong-tac-ho-tro.md) | Cộng tác · Hỗ trợ · Thông báo (23 bảng) | Diễn đàn (kèm nhóm/box chuyên mục F13a), bình luận, phiếu hỗ trợ, HDSD, trợ lý AI, thông báo + hộp thư gửi, đặt xe |
 
-Cộng đúng **14 + 14 + 21 + 30 + 22 = 101 bảng** — mỗi bảng có đúng một mục, khớp con số đếm máy
-(`grep __tablename__` ngày 28/08/2026). Thêm bảng mới thì thêm mục ở đúng tệp cụm và sửa con số ở đây.
+Cộng đúng **14 + 14 + 21 + 30 + 23 = 102 bảng** — mỗi bảng đã tả có đúng một mục. Thêm bảng mới
+thì thêm mục ở đúng tệp cụm và sửa con số ở đây.
 
 ## Cách đọc và cách giữ đúng
 

@@ -43,6 +43,8 @@ export interface PaymentRequestLine {
   /** `0` = dòng gõ tay, chưa gắn khoản nợ nào. */
   payable_id: number
   po_code: string
+  /** bao-CR-304 (ticket 26) — mã MISA của ĐMH khớp theo mã PO, chỉ hiển thị (nhập/sửa trên ĐMH). */
+  misa_code: string
   invoice_no: string
   invoice_date: string
   amount: number
@@ -52,6 +54,40 @@ export interface PaymentRequestLine {
   payable_paid: number
   /** Đã khớp được vào một khoản công nợ hay chưa. */
   matched: boolean
+  /** CR-268 — chỉ có nghĩa với phiếu `prepay=1` đã chi: phần đã ĐỐI TRỪ vào công nợ. */
+  allocated_amount: number
+  /** CR-268 — phần NCC đã HOÀN TIỀN lại (ghi nhận tay). */
+  refunded_amount: number
+  /**
+   * CR-260 — phần đề nghị CẤN TRỪ tiền treo cấp NCC vào khoản nợ của dòng.
+   * Lúc phiếu còn nháp/chờ duyệt chỉ là Ý ĐỊNH; backend THỰC THI khi bấm Duyệt.
+   */
+  offset_amount: number
+  /** CR-268 — tiền TREO còn lại = amount - allocated_amount - refunded_amount. */
+  hanging: number
+}
+
+/**
+ * CR-268 — một dòng tiền treo trả về từ `GET /api/payment-requests/hanging`:
+ * phiếu trả trước ĐÃ CHI còn phần chưa đối trừ / chưa được hoàn.
+ */
+export interface HangingItem {
+  request_id: number
+  request_code: string
+  request_date: string
+  line_id: number
+  /** Rỗng = treo CẤP NCC (không gắn đơn nào). */
+  po_code: string
+  amount: number
+  allocated_amount: number
+  refunded_amount: number
+  hanging: number
+}
+
+/** CR-268 — gói tổng tiền treo của một NCC (lọc được theo đơn / chỉ cấp NCC). */
+export interface HangingSummary {
+  total: number
+  items: HangingItem[]
 }
 
 /** Phần đầu phiếu — cũng chính là dòng của danh sách (list KHÔNG trả `lines`). */
@@ -70,7 +106,11 @@ export interface PaymentRequestSummary {
   note: string
   reject_reason: string
   status: PaymentRequestStatus
+  /** bao-CR-304 (ticket 26) — mã MISA các dòng gộp thành "MS1, MS2" (phiếu gồm nhiều PO). */
+  misa_code: string
   created_by_name: string
+  /** Lần sửa gần nhất — cột "Ngày cập nhật" (bao-CR-300, ticket 21). */
+  updated_at?: string
 }
 
 /**
@@ -114,19 +154,23 @@ export interface PaymentRequestLineInput {
   invoice_no: string
   invoice_date: string
   amount: number
+  /** CR-260 — phần cấn trừ tiền treo đề nghị trên dòng (thực thi khi Duyệt). */
+  offset_amount?: number
 }
 
 /**
  * Payload TẠO — server tách theo (supplier_code × source_type), trả về MẢNG phiếu.
  *
- * CR-149: ô chọn `prepay` đã BỎ khỏi giao diện (khách chốt: mặc định luôn
- * "Thanh toán công nợ ...", ai cần câu khác tự gõ vào `print_texts`) — cờ vẫn
- * còn ở backend cho phiếu cũ nên không khai ở đây nữa.
+ * CR-149 từng BỎ ô chọn `prepay` (lúc đó cờ chỉ đổi câu chữ bản in). CR-268 cho cờ
+ * này nghĩa THẬT — phiếu trả trước được duyệt-chi không cần khớp công nợ, tiền chi
+ * thành TIỀN TREO chờ đối trừ — nên ô chọn quay lại ở chế độ form trắng.
  */
 export interface PaymentRequestCreateInput {
   request_date: string
   note: string
   payment_method: PaymentMethod
+  /** CR-268: `1` = phiếu THANH TOÁN TRƯỚC / tạm ứng NCC (miễn cổng khớp công nợ CR-066). */
+  prepay?: number
   supplier_code: string
   company_id: number
   source_type: string

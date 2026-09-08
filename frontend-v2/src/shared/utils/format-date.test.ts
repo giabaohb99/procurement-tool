@@ -4,6 +4,7 @@ import {
   formatDate,
   formatDateTime,
   formatRelativeTime,
+  formatTime,
   formatWeekdayDate,
   toDateInputValue,
 } from './format-date'
@@ -53,6 +54,24 @@ describe('formatDateTime', () => {
 
   it('trả rỗng khi không có giá trị', () => {
     expect(formatDateTime(null)).toBe('')
+  })
+})
+
+describe('formatTime', () => {
+  it('bù múi giờ y như formatDateTime, chỉ bỏ phần ngày', () => {
+    expect(formatTime('2026-08-11T09:30:00')).toBe('16:30')
+  })
+
+  it('luôn 24 giờ và luôn hai chữ số — cột giờ phải thẳng hàng', () => {
+    // `vi-VN` mặc định có thể trả "07:05" hoặc "7:05 SA" tùy môi trường; cột
+    // giờ của tab Hoạt động lệch một ký tự là cả dải dòng so le.
+    expect(formatTime('2026-08-11T00:05:00')).toBe('07:05')
+    expect(formatTime('2026-08-11T17:00:00')).toBe('00:00')
+  })
+
+  it('trả rỗng khi không có giá trị hoặc giá trị hỏng', () => {
+    expect(formatTime(null)).toBe('')
+    expect(formatTime('không phải ngày')).toBe('')
   })
 })
 

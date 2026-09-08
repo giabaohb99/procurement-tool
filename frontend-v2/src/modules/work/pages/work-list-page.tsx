@@ -1,6 +1,6 @@
-import { GanttChartSquare, KanbanSquare, Settings2, Table2, Users } from 'lucide-react'
+import { GanttChartSquare, History, KanbanSquare, Settings2, Table2, Users } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 
 import { useAuth } from '@/core/auth/use-auth'
 import { logger } from '@/core/telemetry/logger'
@@ -14,27 +14,24 @@ import {
 } from '@/shared/ui/dropdown-menu'
 import { ErrorState } from '@/shared/ui/error-state'
 import { Skeleton } from '@/shared/ui/skeleton'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/ui/select'
 import { Tabs, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { cn } from '@/shared/utils/cn'
 import { buildTaskFilterFields } from '../config/task-filter-fields'
+import { ActivityFeed } from '../components/activity-feed'
 import { GanttView } from '../components/gantt-view'
 import { ListConfigDialog } from '../components/list-config-dialog'
-import { ListMembersDialog } from '../components/list-members-dialog'
+import { ListManageDialog } from '../components/list-manage-dialog'
 import { KanbanBoard } from '../components/kanban-board'
+import { ProjectHeaderInlineEdit } from '../components/project-header-inline-edit'
 import { SectionEditDialog, type SectionDialogMode } from '../components/section-edit-dialog'
 import { TaskDetailSheet } from '../components/task-detail-sheet'
 import type { NewTaskDraft } from '../components/task-draft-row'
 import { TaskListView } from '../components/task-list-view'
+import { WorkSidebarPeekButton } from '../components/work-sidebar-peek-button'
 import { WorkToolbar } from '../components/work-toolbar'
 import {
   useCreateTask,
+  useMoveSubtask,
   useMoveTask,
   useSetAssignees,
   useSetTaskLabel,
@@ -42,14 +39,16 @@ import {
   useUpdateTask,
   useWorkBoard,
 } from '../hooks/use-work-board'
+import { useCreateTaskLink, useDeleteTaskLink, useUpdateTaskLink } from '../hooks/use-task-links'
 import { useWorkViewState } from '../hooks/use-view-state'
 import { useMoveSection, useWorkLabelFields, useWorkMembers } from '../hooks/use-work-config'
+import { useUpdateWorkList } from '../hooks/use-work-lists'
 import type { WorkSection } from '../types/work'
-import { fieldHasOptions, WORK_ROLE, WORK_TASK_STATUS } from '../types/work'
+import { fieldHasOptions, WORK_ROLE, WORK_TASK_KIND, WORK_TASK_STATUS } from '../types/work'
+import { today } from '../utils/due-date'
 import { prepareTasks } from '../utils/filter-tasks'
 import { buildOptionRank, findPriorityField } from '../utils/priority-field'
 import { applyTaskConditions } from '../utils/task-conditions'
-import { ZOOM_LABELS, type GanttZoom } from '../utils/gantt-scale'
 import {
   mergeCardFields,
   WORK_SORTS,
@@ -63,6 +62,7 @@ const VIEW_ICONS = {
   kanban: KanbanSquare,
   list: Table2,
   gantt: GanttChartSquare,
+  activities: History,
 } as const
 
 /**
@@ -104,6 +104,9 @@ function WorkListContent({ listId }: { listId: number }) {
   const { data: labelFields = [] } = useWorkLabelFields(listId)
   const createTask = useCreateTask(listId)
   const updateTask = useUpdateTask(listId)
+  //  Sửa TÊN / MÔ TẢ ngay trên tiêu đề. Cùng hook với thẻ Thông tin trong hộp
+  //  Quản lý dự án — hai lối vào, một đường ghi.
+  const updateList = useUpdateWorkList()
   const moveTask = useMoveTask(listId)
   const moveSection = useMoveSection(listId)
   //  Nguồn cho ô «Phụ trách» và trường tùy biến kiểu NGƯỜI sửa ngay trên dòng
@@ -112,6 +115,12 @@ function WorkListContent({ listId }: { listId: number }) {
   const setAssignees = useSetAssignees(listId)
   const setLabel = useSetTaskLabel(listId)
   const toggleSubtask = useToggleSubtask(listId)
+  const moveSubtask = useMoveSubtask(listId)
+  //  Mũi tên phụ thuộc của Gantt (B-15) — dữ liệu nằm sẵn trong payload bảng
+  //  nên chỉ cần hai mutation, không có hook đọc riêng.
+  const createLink = useCreateTaskLink(listId)
+  const updateLink = useUpdateTaskLink(listId)
+  const deleteLink = useDeleteTaskLink(listId)
 
   /*  Việc tự thêm gần như luôn là việc của chính mình, nên dòng nháp gán sẵn
       người đang đăng nhập. Chỉ gán khi họ THỰC SỰ là thành viên dự án: gán một
@@ -141,6 +150,7 @@ function WorkListContent({ listId }: { listId: number }) {
         list_id: listId,
         title: draft.title,
         section_id: sectionId,
+        start_date: draft.startDate || undefined,
         due_date: draft.dueDate || undefined,
         assignee_ids: draft.picIds.length ? draft.picIds : undefined,
       })
@@ -160,8 +170,25 @@ function WorkListContent({ listId }: { listId: number }) {
   const { view, sort, fields, ganttZoom } = viewState
   const [keyword, setKeyword] = useState('')
 
-  const [openTaskId, setOpenTaskId] = useState<number | null>(null)
-  const [membersOpen, setMembersOpen] = useState(false)
+  /*  Việc đang mở panel. Nhận mồi từ `?task=` để link CHUÔNG mở thẳng được một
+      việc: chuông trỏ tới `/project/tasks/{id}`, trang đó tra dự án rồi dẫn về
+      đây kèm tham số này (xem `TaskRedirectPage`).
+
+      Đóng panel thì XÓA tham số khỏi URL, không thì bấm Đóng xong nó mở lại
+      ngay ở nhịp render kế — và người dùng tưởng nút Đóng hỏng.  */
+  const [searchParams, setSearchParams] = useSearchParams()
+  const taskFromUrl = Number(searchParams.get('task') ?? 0) || null
+  const [openTaskId, setOpenTaskId] = useState<number | null>(taskFromUrl)
+
+  function closeTaskPanel() {
+    setOpenTaskId(null)
+    if (searchParams.has('task')) {
+      const next = new URLSearchParams(searchParams)
+      next.delete('task')
+      setSearchParams(next, { replace: true })
+    }
+  }
+  const [manageOpen, setManageOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [sectionDialog, setSectionDialog] = useState<SectionDialogMode | null>(null)
   const [editingSection, setEditingSection] = useState<WorkSection | null>(null)
@@ -169,12 +196,20 @@ function WorkListContent({ listId }: { listId: number }) {
   const myRole = board?.list.my_role ?? null
   const canEdit = myRole !== null && myRole <= WORK_ROLE.MEMBER && !board?.list.is_archived
   const canManage = myRole !== null && myRole <= WORK_ROLE.ADMIN && !board?.list.is_archived
+  //  Đổi tên / mô tả / màu / lưu trữ dự án: backend gác `update_list` bằng
+  //  `CAN_OWN`, KHÔNG phải `CAN_MANAGE`. Mở ô nhập cho Quản trị là họ gõ xong
+  //  bấm Lưu rồi ăn 403.
+  const canOwn = myRole === WORK_ROLE.OWNER && !board?.list.is_archived
 
   //  Bộ nhãn tùy biến là của TỪNG dự án nên danh sách trường trên thẻ không cố
   //  định được: trộn thứ tự đã nhớ với bộ nhãn đang có (thêm nhãn mới, bỏ nhãn
   //  đã xóa) — xem `mergeCardFields`.
   const cardFields = useMemo(
-    () => mergeCardFields(fields, labelFields.map((f) => f.id)),
+    () =>
+      mergeCardFields(
+        fields,
+        labelFields.map((f) => f.id),
+      ),
     [fields, labelFields],
   )
 
@@ -225,20 +260,34 @@ function WorkListContent({ listId }: { listId: number }) {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3 p-4 lg:p-6">
+    <div
+      className={cn(
+        'flex min-h-0 flex-1 flex-col gap-3 p-4 lg:p-6',
+        //  Gantt chạy SÁT ĐÁY cửa sổ, không chừa đệm dưới — đúng lối Lark (khách
+        //  đối chiếu 03/09/2026). Lưới ngày của nó kẻ suốt tới đáy, mà dưới cùng
+        //  lại hở một dải trắng 24px thì cả biểu đồ đọc ra như một cái khối nổi
+        //  giữa trang thay vì một mặt phẳng liền. Ba khung nhìn kia là thẻ/bảng
+        //  có mép thật nên vẫn cần đệm.
+        //  Phải khai CẢ HAI nấc: `tailwind-merge` không gộp được hai lớp khác
+        //  biến thể, nên `pb-0` trần đứng cạnh `lg:p-6` là thua — biến thể
+        //  responsive xếp sau trong tệp CSS nên nó thắng, và đệm 24px vẫn còn.
+        view === 'gantt' && 'pb-0 lg:pb-0',
+      )}
+    >
       <header className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight text-navy">
-            {board.list.name}
-            {board.list.is_archived === 1 && (
-              <span className="rounded bg-muted px-2 py-0.5 text-xs font-normal text-muted-foreground">
-                Đã lưu trữ
-              </span>
-            )}
-          </h1>
-          {board.list.description && (
-            <p className="mt-1 text-sm text-muted-foreground">{board.list.description}</p>
-          )}
+        {/*  Nút mở lại cây dự án đứng NGANG tiêu đề (chỉ hiện khi cây đang ẩn),
+             chứ không phải một cột nút riêng bên trái — xem `WorkSidebarPeekButton`. */}
+        <div className="flex min-w-0 items-start gap-2">
+          <WorkSidebarPeekButton />
+          {/*  Tên và mô tả sửa NGAY TẠI ĐÂY — bấm vào chữ là thành ô nhập. Hộp
+               thoại «Sửa dự án» trong menu bên phải vẫn còn vì nó giữ thêm ô MÀU;
+               cả hai đường đều đi qua `useUpdateWorkList` nên không có hai luật. */}
+          <ProjectHeaderInlineEdit
+            list={board.list}
+            canEdit={canOwn}
+            pending={updateList.isPending}
+            onSave={(values) => updateList.mutate({ id: listId, values })}
+          />
         </div>
 
         {/*  MỘT nút cho cả thành viên lẫn thiết lập: hai việc này đều là "sửa
@@ -253,14 +302,17 @@ function WorkListContent({ listId }: { listId: number }) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setMembersOpen(true)}>
+            {/*  Thành viên + thông tin dự án gom vào MỘT hộp hai thẻ: cả hai
+                 đều là "sửa chính cái dự án này", tách ra thì người dùng phải
+                 đoán tên nào chứa cái mình cần. */}
+            <DropdownMenuItem onClick={() => setManageOpen(true)}>
               <Users className="size-4" />
-              Thành viên
+              Thành viên & thông tin
             </DropdownMenuItem>
             {canManage && (
               <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
                 <Settings2 className="size-4" />
-                Thiết lập
+                Trường của dự án
               </DropdownMenuItem>
             )}
           </DropdownMenuContent>
@@ -282,58 +334,62 @@ function WorkListContent({ listId }: { listId: number }) {
           </TabsList>
         </Tabs>
 
-        {/*  Mức phóng chỉ có nghĩa với Gantt — hiện ở hai khung kia là một ô
-            chọn không làm gì, người dùng bấm rồi tự hỏi tại sao không đổi. */}
-        {view === 'gantt' && (
-          <Select
-            value={ganttZoom}
-            onValueChange={(v) => setViewState({ ganttZoom: v as GanttZoom })}
-          >
-            <SelectTrigger size="sm" className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {(Object.keys(ZOOM_LABELS) as GanttZoom[]).map((z) => (
-                <SelectItem key={z} value={z}>
-                  {ZOOM_LABELS[z]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
+        {/*  Mức phóng KHÔNG còn ở đây: nó chỉ nói về trục thời gian nên đã dời
+            vào cụm điều khiển ngay trên biểu đồ (`GanttTimelineControls`), đúng
+            chỗ Lark đặt. Ở cạnh ba tab khung nhìn thì nó nhìn như tab thứ tư. */}
       </div>
 
-      <WorkToolbar
-        listId={listId}
-        sort={sort}
-        sortOptions={sortOptions}
-        onSortChange={(value) => setViewState({ sort: value })}
-        keyword={keyword}
-        onKeywordChange={setKeyword}
-        fields={cardFields}
-        onFieldsChange={(value) => setViewState({ fields: value })}
-        labelFields={labelFields}
-        onAddField={canManage ? () => setSettingsOpen(true) : undefined}
-        canEdit={canEdit}
-        canManage={canManage}
-        onNewTask={() => {
-          const firstSection = board.sections[0]
-          if (!firstSection) {
-            setEditingSection(null)
-            setSectionDialog('create')
-            return
+      {/*  Thanh công cụ là của BA khung nhìn việc: «Việc mới», lọc điều kiện,
+          sắp xếp, trường hiện trên thẻ — không cái nào có nghĩa trên một cuốn
+          nhật ký. Tab «Hoạt động» mang bộ lọc riêng của nó (`ActivityFilterBar`). */}
+      {view !== 'activities' && (
+        <WorkToolbar
+          listId={listId}
+          sort={sort}
+          sortOptions={sortOptions}
+          onSortChange={(value) => setViewState({ sort: value })}
+          keyword={keyword}
+          onKeywordChange={setKeyword}
+          fields={cardFields}
+          onFieldsChange={(value) => setViewState({ fields: value })}
+          labelFields={labelFields}
+          onAddField={canManage ? () => setSettingsOpen(true) : undefined}
+          canEdit={canEdit}
+          canManage={canManage}
+          onNewTask={() => {
+            const firstSection = board.sections[0]
+            if (!firstSection) {
+              setEditingSection(null)
+              setSectionDialog('create')
+              return
+            }
+            createTask.mutate({ list_id: listId, title: 'Việc mới', section_id: firstSection.id })
+          }}
+          /*  Cột mốc tạo ra là có NGÀY ngay (hôm nay): mốc không ngày thì không
+            có hình thoi nào trên biểu đồ, người dùng bấm xong tưởng hụt. Đổi
+            ngày sau bằng cách kéo hình thoi hoặc sửa ở panel chi tiết. */
+          onNewMilestone={
+            canEdit
+              ? () =>
+                  createTask.mutate({
+                    list_id: listId,
+                    title: 'Cột mốc mới',
+                    section_id: board.sections[0]?.id ?? null,
+                    kind: WORK_TASK_KIND.MILESTONE,
+                    due_date: today(),
+                  })
+              : undefined
           }
-          createTask.mutate({ list_id: listId, title: 'Việc mới', section_id: firstSection.id })
-        }}
-        onAddSection={
-          canManage
-            ? () => {
-                setEditingSection(null)
-                setSectionDialog('create')
-              }
-            : undefined
-        }
-      />
+          onAddSection={
+            canManage
+              ? () => {
+                  setEditingSection(null)
+                  setSectionDialog('create')
+                }
+              : undefined
+          }
+        />
+      )}
 
       <div className={cn('flex min-h-0 flex-1 flex-col', view === 'kanban' && 'overflow-hidden')}>
         {view === 'kanban' && (
@@ -346,6 +402,15 @@ function WorkListContent({ listId }: { listId: number }) {
             canManage={canManage}
             sortLocked={sort !== 'manual'}
             onOpenTask={setOpenTaskId}
+            //  ĐÚNG một đường lật trạng thái cho cả ba khung nhìn: kanban,
+            //  Danh sách và Gantt cùng gọi `updateTask` với `status`, nên tick
+            //  ở đâu cũng làm mới cùng một khóa và ba khung không lệch nhau.
+            onToggleDone={(taskId, done) =>
+              updateTask.mutate({
+                id: taskId,
+                values: { status: done ? WORK_TASK_STATUS.DONE : WORK_TASK_STATUS.OPEN },
+              })
+            }
             onCreateTask={(sectionId, title) =>
               createTask.mutate({ list_id: listId, title, section_id: sectionId })
             }
@@ -377,6 +442,7 @@ function WorkListContent({ listId }: { listId: number }) {
             members={members}
             fields={cardFields}
             canEdit={canEdit}
+            canManage={canManage}
             onOpenTask={setOpenTaskId}
             onToggleDone={(taskId, done) =>
               updateTask.mutate({
@@ -392,26 +458,85 @@ function WorkListContent({ listId }: { listId: number }) {
             onSetDue={(taskId, dueDate) =>
               updateTask.mutate({ id: taskId, values: { due_date: dueDate } })
             }
+            onSetStart={(taskId, startDate) =>
+              updateTask.mutate({ id: taskId, values: { start_date: startDate } })
+            }
+            onSetStatus={(taskId, status) => updateTask.mutate({ id: taskId, values: { status } })}
             onSetLabel={(taskId, fieldId, value) => setLabel.mutate({ taskId, fieldId, value })}
             defaultPicId={defaultPicId}
             //  Cùng luật với kanban (§3.4): đang sắp theo tiêu chí thì KHÓA kéo,
             //  vì thả xong danh sách tự xếp lại chỗ cũ, nhìn như thao tác bị nuốt.
             dragEnabled={sort === 'manual'}
             onMoveTask={(taskId, place) => moveTask.mutate({ taskId, place })}
+            onMoveSubtask={(parentId, subtaskId, beforeTaskId) =>
+              moveSubtask.mutate({ parentId, subtaskId, beforeTaskId })
+            }
+            onMoveSection={(sectionId, beforeSectionId) =>
+              moveSection.mutate({ sectionId, beforeSectionId })
+            }
             onAddTask={addTaskFromDraft}
           />
         )}
 
         {view === 'gantt' && (
           <GanttView
+            listId={listId}
             tasks={tasks}
+            sections={board.sections}
+            links={board.links ?? []}
+            labelFields={labelFields}
+            members={members}
+            fields={cardFields}
             priorityField={priorityField}
             zoom={ganttZoom}
+            onZoomChange={(z) => setViewState({ ganttZoom: z })}
             canEdit={canEdit}
+            canManage={canManage}
+            //  Cùng luật với kanban và Danh sách (§3.4): đang sắp theo tiêu chí
+            //  thì KHÓA kéo, vì thả xong danh sách tự xếp lại chỗ cũ.
+            dragEnabled={sort === 'manual'}
+            defaultPicId={defaultPicId}
             onOpenTask={setOpenTaskId}
             onMoveDates={(taskId, values) => updateTask.mutate({ id: taskId, values })}
+            onToggleDone={(taskId, done) =>
+              updateTask.mutate({
+                id: taskId,
+                values: { status: done ? WORK_TASK_STATUS.DONE : WORK_TASK_STATUS.OPEN },
+              })
+            }
+            onToggleSubtaskDone={(parentId, subtaskId, done) =>
+              toggleSubtask.mutate({ parentId, subtaskId, done })
+            }
+            onRename={(taskId, title) => updateTask.mutate({ id: taskId, values: { title } })}
+            onMoveTask={(taskId, place) => moveTask.mutate({ taskId, place })}
+            onMoveSubtask={(parentId, subtaskId, beforeTaskId) =>
+              moveSubtask.mutate({ parentId, subtaskId, beforeTaskId })
+            }
+            onMoveSection={(sectionId, beforeSectionId) =>
+              moveSection.mutate({ sectionId, beforeSectionId })
+            }
+            onAddTask={addTaskFromDraft}
+            onSetAssignees={(taskId, picIds) => setAssignees.mutate({ taskId, picIds })}
+            onSetDue={(taskId, dueDate) =>
+              updateTask.mutate({ id: taskId, values: { due_date: dueDate } })
+            }
+            onSetStart={(taskId, startDate) =>
+              updateTask.mutate({ id: taskId, values: { start_date: startDate } })
+            }
+            onSetStatus={(taskId, status) => updateTask.mutate({ id: taskId, values: { status } })}
+            onSetLabel={(taskId, fieldId, value) => setLabel.mutate({ taskId, fieldId, value })}
+            onCreateLink={(values) => createLink.mutate(values)}
+            onChangeLinkType={(linkId, linkType) =>
+              updateLink.mutate({ linkId, values: { link_type: linkType } })
+            }
+            onDeleteLink={(linkId) => deleteLink.mutate(linkId)}
           />
         )}
+
+        {/*  Nhật ký gộp của cả dự án (D-09). KHÔNG nhận `tasks` đã lọc: bộ lọc
+            điều kiện nói về VIỆC, còn đây là dòng sự kiện — lọc theo nó thì
+            "Gỡ nhân sự khỏi dự án" chẳng biết xếp vào đâu. */}
+        {view === 'activities' && <ActivityFeed listId={listId} onOpenTask={setOpenTaskId} />}
       </div>
 
       <TaskDetailSheet
@@ -419,14 +544,14 @@ function WorkListContent({ listId }: { listId: number }) {
         listId={listId}
         sections={board.sections}
         canEdit={canEdit}
-        onClose={() => setOpenTaskId(null)}
+        onClose={closeTaskPanel}
       />
 
-      <ListMembersDialog
-        open={membersOpen}
-        listId={listId}
+      <ListManageDialog
+        open={manageOpen}
+        list={board.list}
         myRole={myRole}
-        onClose={() => setMembersOpen(false)}
+        onClose={() => setManageOpen(false)}
       />
 
       <ListConfigDialog

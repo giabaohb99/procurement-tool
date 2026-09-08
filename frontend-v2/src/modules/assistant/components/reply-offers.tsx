@@ -2,18 +2,10 @@ import { FileDown, FilePlus } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 import { downloadFile } from '@/core/api'
-import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
 import type { DraftOffer, DraftTarget, FileOffer, UpdateOffer } from '../utils/reply-offers'
+import { draftNavigation } from '../utils/reply-offers'
 import { UpdateProposalCard } from './update-proposal-card'
-
-const DRAFT_ROUTES: Record<DraftTarget, string> = {
-  survey: appRoutes.procurement.surveyRequestNew,
-  purchase: appRoutes.procurement.purchaseRequestNew,
-  leave: appRoutes.document.documentNew,
-  payment: appRoutes.finance.paymentRequestNew,
-  ticket: appRoutes.support.root,
-}
 
 const DRAFT_LABELS: Record<DraftTarget, string> = {
   survey: 'Tạo yêu cầu báo giá',
@@ -21,29 +13,6 @@ const DRAFT_LABELS: Record<DraftTarget, string> = {
   leave: 'Tạo đơn nghỉ phép',
   payment: 'Tạo đề nghị thanh toán',
   ticket: 'Tạo phiếu hỗ trợ',
-}
-
-/**
- * YCTT không truyền state: form tạo YCTT đọc `?payables=<ids>` rồi tự nạp lại các khoản
- * dưới quyền người đang đăng nhập (CR-025) — backend kiểm lại phạm vi, an toàn hơn tin
- * dữ liệu chat. Phiếu hỗ trợ truyền qua `state.assistantTicketDraft` (trang `/support`
- * mở sẵn dialog tạo phiếu). Các loại còn lại truyền nguyên bản nháp qua
- * `state.assistantDraft`.
- */
-function draftNavigation(draft: DraftOffer): {
-  to: string
-  state?: Record<string, unknown>
-} {
-  if (draft.target === 'payment') {
-    const ids = Array.isArray(draft.args.payable_ids)
-      ? draft.args.payable_ids.filter((v): v is number => typeof v === 'number')
-      : []
-    return { to: `${DRAFT_ROUTES.payment}?payables=${ids.join(',')}` }
-  }
-  if (draft.target === 'ticket') {
-    return { to: DRAFT_ROUTES.ticket, state: { assistantTicketDraft: draft.args } }
-  }
-  return { to: DRAFT_ROUTES[draft.target], state: { assistantDraft: draft.args } }
 }
 
 interface ReplyOffersProps {

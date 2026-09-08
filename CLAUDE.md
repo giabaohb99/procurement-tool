@@ -33,8 +33,18 @@ Repo có **hai nhánh chạy song song**: `main` = prod (backend + `frontend/` +
 
 Everything runs in Docker; there is no local venv/npm workflow.
 
+⚠️ **Máy đơ / tự thoát app khi chạy test hay build? Đọc `doc/tai-lieu-ky-thuat/gioi-han-tai-nguyen-docker.md`.**
+Stack local có **11 container**; `docker-compose.yml` đã đặt `mem_limit` + `cpus` cho từng cái —
+**không tự ý gỡ**. Trần đó chỉ chặn từng container; chặn cả máy ảo Docker phải đặt thêm
+`%USERPROFILE%\.wslconfig` (mẫu ở `docker/wslconfig.example`, mỗi máy tự chép, không commit).
+Bốn luật cho trợ lý AI: **chỉ chạy test của phần vừa sửa** (đừng quét cả `test/backend`) ·
+`restart` thay vì `up --build` khi không đổi `requirements.txt`/`package.json`/`Dockerfile.*` ·
+**không tự chạy `wsl --shutdown`** (giết mọi container) · máy yếu thì tạo
+`docker-compose.override.yml` riêng (đã gitignore) chứ đừng sửa tệp dùng chung.
+
 ```bash
 docker compose up --build           # start db + api + web + erp + help + adminer
+# Nhẹ máy: docker compose stop adminer redisinsight qdrant   (+ web help nếu chỉ làm erp)
 # Web (frontend/, đóng băng) http://localhost:8080
 # ERP v2 (frontend-v2/, đang phát triển) http://localhost:8083
 # Help Center http://localhost:8082
@@ -112,10 +122,15 @@ shadcn/Radix + TanStack Query + zustand). Backend không đổi: v2 gọi đúng
 Phân xử khi có yêu cầu mới: **sửa lỗi** màn đang chạy thật → `frontend/`; **tính năng mới**
 → `frontend-v2/`, màn đó chưa có ở v2 thì dựng màn đó trước. `frontend/` chưa được tắt vì v2
 còn thiếu màn. **Số đo đầy đủ và kế hoạch dời nằm ở `doc/erp/13-ke-hoach-man-con-lai-v2.md`**
-(bản 2.0, xem **CR-097**): bản cũ có **48 màn** — _(đếm 24/08/2026, CR-132)_ **35 xong** ·
-**1 có nhưng KHUYẾT** · **9 chưa có** · 2 đã bỏ · 1 chờ quyết. Chia **15 đợt Đ-01 … Đ-15**: đã
-xong **Đ-01…Đ-12, Đ-14**; còn mỗi **Đ-15** (tắt `frontend/`), mà nó chờ **Đ-13** _Quản lý Import_
-đang **hoãn**. Nghĩa là **không còn việc dựng màn hình nào trước mắt**.
+(bản 2.0, xem **CR-097**): bản cũ có **48 màn** — _(rà lại từng dòng 03/09/2026)_ bảng §1 nay
+**50 dòng** *(48 màn cũ + `/system/exports` + 44b)*: **50 xong** · **0 khuyết** · **0 thiếu** ·
+**0 chờ quyết**. Chia **15 đợt Đ-01 … Đ-15**: đã xong **Đ-01…Đ-14**; còn mỗi **Đ-15**
+(tắt `frontend/`), và **không còn gì chặn nó**. Màn cuối cùng — **_Chứng từ_** — đã dời
+03/09/2026 (CR-266): `/procurement/purchase-orders/:id/documents`, **không đứng trong menu**,
+vào từ nút _Xem cả chuỗi chứng từ_ trong thẻ chứng từ của chi tiết ĐMH. ⚠️ Đụng vào nó thì nhớ
+`/api/attachments/chain` khai entity `survey_line` **hai lần** (id dòng NCC + id dòng sản phẩm)
+nên **phải khử trùng theo `link_id`** — bản v1 không khử nên đếm dôi; và `url` trong kết quả
+**rỗng với entity riêng tư**, xem trước phải đi qua `/api/attachments/{id}/view`.
 ⚠️ Mấy con số này cũ rất nhanh — **luôn mở §0 và bảng §3 của `13-...md` để lấy số mới nhất**,
 đừng trích lại dòng này.
 ⚠️ **NHẬN ĐỢT TRƯỚC KHI LÀM.** Nhiều người cùng đẩy lên `erp-v2`, nên cột **_Ai làm_** trong bảng
@@ -127,8 +142,9 @@ giữa chừng thì trả về _(chưa nhận)_. `git fetch` trước mỗi lầ
 route in đăng ở `app/router/app-router.tsx`. Bản in cũng đã có **gom dòng trùng số chứng từ** và
 tab _Mẫu thuế_ giống hệt bản v1 (CR-127). Nghĩa là **không còn màn nào chặn nghiệp vụ** — dòng
 "chặn nghiệp vụ chỉ còn Yêu cầu thanh toán" ở các bản CLAUDE.md trước nay đã sai, bỏ đi.
-Trong 9 màn còn thiếu, nặng nhất là _Quản lý Import_ (MC-6) và khách đã cho **hoãn**; danh sách
-đầy đủ ở §1 của `13-...md`. _Tiến độ báo giá_ và _Xử lý khảo sát_ từng quyết bỏ nhưng
+_Quản lý Import_ (MC-6) từng bị hoãn nhưng khách **mở lại 25/08/2026**: hai màn `/system/imports`
+(+ `/:id`) và cụm `/system/exports` **đã chạy** (CR-186, Đ-13a/13b); phần còn dở của Đ-13 là **mở
+rộng tính năng**, không phải màn thiếu — xem `doc/erp/16-quan-ly-import-export-v2.md` §9. _Tiến độ báo giá_ và _Xử lý khảo sát_ từng quyết bỏ nhưng
 **đã SỐNG LẠI 29/08/2026** (CR-227 + CR-222) — xem đính chính ở `doc/erp/12-...` mục 2.7:
 Xử lý khảo sát là trang riêng `/procurement/survey-requests/:id/process`, Tiến độ báo giá ở
 `/procurement/survey-progress`, menu Thu mua v2 xếp đúng thứ tự bản v1.
@@ -233,6 +249,82 @@ Docker; code bind-mount nên HMR chạy. Gọi API bằng đường **tương đ
 **Money formatting.** Never call `toLocaleString('vi-VN')` straight on an amount — it defaults to 3 fraction digits, so cents leak into list columns (`4.760.000,08 đ`). Use `src/utils/money.ts`: `fmtVND` for TIỀN (rounds to đồng) and `fmtPrice` for ĐƠN GIÁ (keeps all 4 decimals allowed since migration `d4b9e7c1a305`). Display-only — stored values stay exact.
 
 **API client.** `src/api/client.ts` — axios instance with a request interceptor injecting the Bearer token and a response interceptor that auto-refreshes the access token once on 401 (via `/api/auth/refresh`) then retries, logging out on failure. Non-GET errors auto-toast unless `config._silent` is set.
+
+### Phân hệ NGHỈ PHÉP (CR-259, 03/09/2026)
+
+Nằm **trong phân hệ Nhân sự** (`frontend-v2/src/modules/hr/`, menu *Nghỉ phép*),
+backend ở `app/modules/leave/`. Tài liệu đầy đủ: `doc/tai-lieu-chuc-nang/17-nghi-phep.md`.
+
+- ⚠️ **Bốn khóa quyền mới** — `leave_request` · `leave_balance` · `leave_type` · `holiday`
+  (ENTITIES 46 → **50**). Tách bốn vì `leave_balance` ghi được nghĩa là **tặng thêm
+  ngày phép cho bất kỳ ai**. Trên hệ ĐANG CHẠY, vai trò cũ **không tự có** chúng (seed
+  không ghi đè — D-018): phải tick ở màn Phân quyền, hoặc `SEED_FORCE_SYNC=true` một lần.
+- ⚠️ **`leave_request` là entity đầu tiên khai CẢ `owner` LẪN `self`** trong `SCOPE_FIELDS`.
+  Một tờ đơn có hai người dính tới nó — người **lập** (`created_by`, hành chính lập hộ) và
+  người **nghỉ** (`employee_id`). Nhánh `own` của `_role_scope_cond` HỢP cả hai, và chặn
+  khi `employee_id = 0` (nếu không thì `== 0` trúng mọi dòng chưa gắn nhân sự → **mở rộng**
+  phạm vi thay vì thu hẹp).
+- ⚠️ **`pending_days` (giữ chỗ) là cột bắt buộc, không phải tối ưu.** Gửi duyệt là trừ
+  ngay. Thiếu nhịp này thì nộp mười đơn liền tay đều lọt. Đối xứng: **ba kết cục
+  không-duyệt (từ chối · trả về · rút) đều phải TRẢ LẠI** — gộp chung một hàm
+  `_release_and_set`, đừng tách ba bản chép.
+- ⚠️ **MỘT ĐƠN KHAI NHIỀU LOẠI NGHỈ** (07/09/2026, `tab_leave_request_line`). Cả đơn
+  dùng chung một khoảng ngày, dòng chỉ chia SỐ NGÀY. Hai cột đầu đơn thành **dẫn
+  xuất**: `total_days` = tổng các dòng, `leave_type_id` = loại của dòng nhiều ngày
+  nhất. **Sổ quỹ phải chạy THEO DÒNG ở cả bốn nhịp** — dùng `reserve_lines` ·
+  `consume_lines` · `release_lines` · `refund_lines` của `request_service`, đừng gọi
+  thẳng `balance_service` với `obj.total_days` (trừ tổng vào loại chính là cộng ngày
+  không lương vào quỹ phép năm). Chốt xóa loại nghỉ phải hỏi **cả hai bảng**. Điều
+  kiện rẽ nhánh luồng duyệt chỉ thấy loại CHÍNH — hạn chế đã biết, xem §7.1 của
+  `doc/tai-lieu-chuc-nang/17-nghi-phep.md`.
+- ⚠️ **Số phép còn lại KHÔNG lưu thành cột** — `balance_service.remaining()` là nơi duy
+  nhất tính. **Số ngày nghỉ** chỉ tính ở `workday_service.count_leave_days()`.
+- ⚠️ **Hủy đơn KHÔNG được gọi `block_legacy_path`** (chốt đó chỉ dành cho duyệt/từ chối
+  thẳng). Đường hủy đi qua `approval_bridge.cancel_request()` — nó **rút phiên duyệt**
+  trước. Không rút thì người duyệt ký xong là hook trừ quỹ cho một tờ đơn đã hủy.
+- Bộ mã **số** ở `leave/constants.py` (R2/QĐ-11), bản TypeScript gõ tay ở
+  `hr/types/leave.ts` — `gen_status_ts.py` chỉ sinh cho bộ mã CHUỖI. Đừng lẫn với
+  `core/leave_codes.py`: tệp đó khai mã **chuỗi** cho ô JSON của giấy GNP, và hai thế
+  giới nối nhau qua `tab_leave_type.code`.
+- **Seed chạy tay**, cố ý không nằm trong `app/seed.py`:
+  `docker compose exec api python -m app.seed_nghi_phep` (chỉ THÊM, chạy lại được).
+
+#### Duyệt NGAY trong màn Nghỉ phép (CR-260, 03/09/2026)
+
+Màn `/hr/leave-requests` nay có **ba tab**: _Cần tôi duyệt_ · _Đơn của tôi_ ·
+_Tôi đã duyệt_. Người duyệt không phải sang màn Phê duyệt nữa.
+
+- ⚠️ **`apply_scope` một mình KHÔNG đủ cho nghỉ phép.** Người duyệt chặng 2 thường
+  là Trưởng phòng Nhân sự, mà phạm vi dữ liệu của họ không với tới đơn của nhân
+  viên phòng khác — bộ máy giao việc rồi chặn chính người được giao. `_get_or_404`
+  và `approval_bridge.can_read_request` nay nới thêm: **đang có việc `TASK_PENDING`
+  trên tờ đơn thì đọc được nó**. Nới đúng lúc treo, KHÔNG nới cho "đã từng ký" —
+  ký xong quyền đó đóng lại, xem lại thì vào tab _Tôi đã duyệt_.
+- ⚠️ Cột **Luồng duyệt** là **CHỮ một dòng**, không phải dải chấm. Bản dải chấm
+  (chặng đang chờ sáng lên) đã dựng rồi BỎ ngày 03/09/2026 — trong ô bảng cao 35px
+  nó đọc ra như một dãy biểu tượng lỗi. Câu chữ do **backend** dựng
+  (`approval/steps_service._summary`) vì còn dùng cho bản in; đừng chép luật sang TS.
+- ⚠️ `steps_service` đọc **cả bảng việc lẫn `flow_snapshot`**. Bảng việc chỉ có
+  chặng ĐÃ MỞ, nên hỏi riêng nó thì luồng 2 chặng vừa gửi đi chỉ ra một chấm.
+  Tổng số chặng lấy từ bản chụp luồng nằm trong chính phiếu. Gom **3 truy vấn cho
+  cả trang** bất kể bao nhiêu dòng — có test đếm truy vấn canh, đừng đặt query
+  trong vòng lặp.
+- ⚠️ Tab _Tôi đã duyệt_ **gộp mỗi đơn một dòng** (`_latest_per_request`):
+  `handled_tasks` trả theo dấu vết nên ký hai chặng của cùng tờ đơn ra hai dòng
+  giống hệt nhau.
+- ⚠️ **`ENTITY_LABELS` + `ENTITY_LINKS` của `task_notification.py` phải có mọi
+  entity mới.** Thiếu thì thư vẫn gửi nhưng ghi "Phiếu NP009" và `link` RỖNG —
+  bấm vào không đi đâu cả, và `notify_new_tasks` nuốt lỗi nên không chỗ nào đỏ lên.
+  Test canh: `test_nghi_phep_thong_bao_duyet.py`.
+- Hai hook duyệt **khác nhau, đừng gọi nhầm**: `useLeaveRequestAction` bấm vào tờ
+  ĐƠN (duyệt thẳng, chỉ chạy khi chưa khai luồng — nút này nay chỉ hiện khi
+  `approval_instance_id === 0`), còn `useLeaveApprovalDecision` bấm vào PHIÊN DUYỆT.
+- ⚠️ **Mục «Bàn giao công việc» LUÔN dựng, kể cả khi rỗng** — ở cả màn chi tiết
+  lẫn hộp xác nhận duyệt. Trước 03/09/2026 nó ẩn hẳn khi không có ai, và người
+  duyệt không phân biệt được *"người nộp chưa khai ai"* với *"màn hình thiếu mục
+  đó"*. Mà **thiếu người bàn giao là lý do trả đơn phổ biến nhất**, tức chính là
+  thứ quyết định họ bấm Duyệt hay Trả về — nó phải nói thành lời, không để suy ra
+  từ một khoảng trống. Hộp việc duyệt trả kèm `handovers` đúng vì lý do đó.
 
 ## Tests
 

@@ -25,6 +25,7 @@ import { useCompanies } from '@/modules/hr/hooks/use-companies'
 import { purchaseReportApi, RANGE_ENDPOINTS } from '../api/purchase-report-api'
 import { ReportMatrixTab } from '../components/report-matrix-tab'
 import { ReportOverviewTab } from '../components/report-overview-tab'
+import { ReportPrLinesTab } from '../components/report-pr-lines-tab'
 import { ReportShippingTab } from '../components/report-shipping-tab'
 import {
   useProcurementReport,
@@ -50,7 +51,7 @@ const ALL_COMPANY = 'all'
 const ALL_YEAR = 'all'
 
 /**
- * BÁO CÁO MUA HÀNG — tám tab trên cùng một bộ lọc (công ty · năm).
+ * BÁO CÁO MUA HÀNG — chín tab trên cùng một bộ lọc (công ty · năm).
  *
  * Một lần gọi `/matrix` trả đủ số liệu cho năm tab ma trận, nên đổi tab KHÔNG
  * gọi lại API; chỉ hai tab Yêu cầu mua hàng / Yêu cầu báo giá có đường riêng và
@@ -187,7 +188,7 @@ export function PurchaseReportPage() {
 
       <Tabs value={activeTab} onValueChange={setTab}>
         <div className="flex flex-wrap items-center justify-between gap-2 print:hidden">
-          {/* Tám tab, nhãn dài -> cho cuộn ngang thay vì ép xuống dòng. */}
+          {/* Chín tab, nhãn dài -> cho cuộn ngang thay vì ép xuống dòng. */}
           <TabsList className="max-w-full justify-start overflow-x-auto">
             {tabs.map((item) => (
               <TabsTrigger key={item.key} value={item.key}>
@@ -331,6 +332,12 @@ export function PurchaseReportPage() {
             nameWidth={220}
             isLoading={requestMatrix.isLoading}
           />
+        </TabsContent>
+
+        {/* bao-CR-295/299 (ticket 23): báo cáo theo DÒNG hàng — TabsContent chỉ
+            mount khi tab mở nên component tự gọi API lúc đó, không cần enabled. */}
+        <TabsContent value="pr_lines" className="mt-2">
+          <ReportPrLinesTab year={year} companyId={company} />
         </TabsContent>
       </Tabs>
     </PageContainer>

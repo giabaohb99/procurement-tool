@@ -11,6 +11,7 @@ import DateInput from '../components/DateInput'
 import { toast } from '../components/toast'
 import NotFound from '../components/NotFound'
 import FileDropzone from '../components/FileDropzone'
+import Lightbox from '../components/Lightbox'
 import CommentThread from '../components/CommentThread'
 import AuditTimeline from '../components/AuditTimeline'
 
@@ -229,7 +230,12 @@ export default function SurveyRequestDetail() {
 
   // --- Phase 5C/5D: kết quả khảo sát (ẩn NCC) + sinh PYC ---
   const [result, setResult] = useState<any>(null)
-  const [viewImg, setViewImg] = useState<string | null>(null)   // lightbox ảnh đính kèm
+  // Lightbox ảnh đính kèm — giữ cả nhóm ảnh để chuyển qua lại + tải xuống / chép liên kết
+  const [viewImg, setViewImg] = useState<{ images: { url: string; filename?: string }[]; index: number } | null>(null)
+  const moAnh = (atts: any[], url: string) => {
+    const imgs = (atts || []).filter(isImageAtt).map((a: any) => ({ url: a.url, filename: a.filename }))
+    setViewImg({ images: imgs, index: Math.max(0, imgs.findIndex((x) => x.url === url)) })
+  }
   const [ycmhPopup, setYcmhPopup] = useState<{ label: string; prs: { code: string; id: number; date?: string; status?: string }[] } | null>(null)
   const [showPrModal, setShowPrModal] = useState(false)         // popup DS phiếu YCMH đã sinh
 
@@ -1017,7 +1023,7 @@ export default function SurveyRequestDetail() {
                             {(o.attachments || []).length > 0 ? (
                               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                                 {(o.attachments || []).map((a: any) => isImageAtt(a) ? (
-                                  <img key={a.file_id} src={a.url} title={a.filename} onClick={() => setViewImg(a.url)}
+                                  <img key={a.file_id} src={a.url} title={a.filename} onClick={() => moAnh(o.attachments || [], a.url)}
                                     style={{ width: 54, height: 54, objectFit: 'cover', borderRadius: 8, border: '1px solid #E9EDF7', cursor: 'pointer' }} />
                                 ) : (
                                   <button key={a.file_id} type="button" className="btn ghost" style={{ height: 32, fontSize: 12.5 }} onClick={() => openAtt(a)}>
@@ -1185,11 +1191,14 @@ export default function SurveyRequestDetail() {
                           const isImg = /\.(jpg|jpeg|png|webp)$/i.test(f.filename || '')
                           return (
                             <div key={f.id} style={{ position: 'relative', border: '1px solid #E9EDF7', borderRadius: 10, padding: 6, width: isImg ? 96 : 160 }}>
-                              <a href={f.url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none', color: 'inherit' }} title={f.filename}>
-                                {isImg
-                                  ? <img src={f.url} style={{ width: 82, height: 82, objectFit: 'cover', borderRadius: 6, display: 'block' }} />
-                                  : <div style={{ fontSize: 12, lineHeight: 1.3, wordBreak: 'break-all' }}><i className="ti ti-file" /> {f.filename}</div>}
-                              </a>
+                              {isImg ? (
+                                <img src={f.url} title={f.filename} onClick={() => moAnh(lineFiles, f.url)}
+                                  style={{ width: 82, height: 82, objectFit: 'cover', borderRadius: 6, display: 'block', cursor: 'zoom-in' }} />
+                              ) : (
+                                <a href={f.url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none', color: 'inherit' }} title={f.filename}>
+                                  <div style={{ fontSize: 12, lineHeight: 1.3, wordBreak: 'break-all' }}><i className="ti ti-file" /> {f.filename}</div>
+                                </a>
+                              )}
                               <button type="button" title="Xóa" onClick={() => delLineFile(f.id, edit.id)}
                                 style={{ position: 'absolute', top: -8, right: -8, width: 22, height: 22, borderRadius: '50%', border: '1px solid #E9EDF7', background: '#fff', cursor: 'pointer', lineHeight: 1 }}>
                                 <i className="ti ti-x" style={{ color: 'var(--red)', fontSize: 13 }} />
@@ -1276,17 +1285,10 @@ export default function SurveyRequestDetail() {
         </div>
       )}
 
-      {/* Lightbox xem ảnh đính kèm — click nền hoặc nút X để đóng */}
+      {/* Lightbox xem ảnh đính kèm — chuyển hình, tải xuống, sao chép liên kết */}
       {viewImg && (
-        <div onClick={() => setViewImg(null)}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.8)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <button className="icon-btn" onClick={() => setViewImg(null)}
-            style={{ position: 'absolute', top: 16, right: 16, color: '#fff', fontSize: 22 }}>
-            <i className="ti ti-x" />
-          </button>
-          <img src={viewImg} onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: '92vw', maxHeight: '88vh', objectFit: 'contain', borderRadius: 8 }} />
-        </div>
+        <Lightbox images={viewImg.images} index={viewImg.index} onClose={() => setViewImg(null)}
+          onNav={(i) => setViewImg({ ...viewImg, index: i })} />
       )}
 
       {/* Popup: Yêu cầu mua hàng đã tạo từ 1 phương án */}

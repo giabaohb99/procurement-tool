@@ -48,6 +48,32 @@ class WorkTaskStatus(IntEnum):
 #  dự án tự đặt. Xem đầu `label_model.py`.
 
 
+class WorkTaskKind(IntEnum):
+    """Việc thường hay CỘT MỐC (B-14).
+
+    Cột mốc là một task như mọi task khác, chỉ khác cách đọc NGÀY: nó là một mốc
+    zero-duration nên chỉ `due_date` có nghĩa, và Gantt vẽ nó thành hình thoi
+    thay vì một thanh. Cố ý KHÔNG làm bảng riêng: mốc vẫn cần người phụ trách,
+    bình luận, phụ thuộc — tách ra là chép lại cả nửa phân hệ.
+    """
+
+    TASK = 1
+    MILESTONE = 2
+
+
+class WorkLinkType(IntEnum):
+    """Bốn kiểu phụ thuộc việc trước–sau (B-15), đúng bộ của DHTMLX/MS Project.
+
+    Chữ đọc theo thứ tự "đầu của việc TRƯỚC → đầu của việc SAU":
+    `FS` = xong việc trước mới bắt đầu việc sau (kiểu thường gặp nhất, mặc định).
+    """
+
+    FS = 1      # Finish → Start
+    SS = 2      # Start → Start
+    FF = 3      # Finish → Finish
+    SF = 4      # Start → Finish
+
+
 class WorkMemberRole(IntEnum):
     """Vai trò trong nhóm/list. **Số NHỎ = quyền TO** — cố ý (Q9).
 
@@ -110,6 +136,16 @@ ENUM_LABELS: dict[str, dict[int, str]] = {
     "work_assignee_kind": {
         WorkAssigneeKind.PIC: "Người phụ trách",
         WorkAssigneeKind.FOLLOWER: "Người theo dõi",
+    },
+    "work_task_kind": {
+        WorkTaskKind.TASK: "Công việc",
+        WorkTaskKind.MILESTONE: "Cột mốc",
+    },
+    "work_link_type": {
+        WorkLinkType.FS: "Xong → Bắt đầu",
+        WorkLinkType.SS: "Bắt đầu → Bắt đầu",
+        WorkLinkType.FF: "Xong → Xong",
+        WorkLinkType.SF: "Bắt đầu → Xong",
     },
 }
 

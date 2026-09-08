@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { FilterFieldDefinition, FilterState } from '@/shared/conditional-filter'
 import type { WorkTask } from '../types/work'
-import { WORK_ASSIGNEE_KIND, WORK_TASK_STATUS } from '../types/work'
+import { WORK_ASSIGNEE_KIND, WORK_TASK_KIND, WORK_TASK_STATUS } from '../types/work'
 import { applyTaskConditions, multiKey, toFilterableTask } from './task-conditions'
 
 /**
@@ -22,6 +22,7 @@ function task(patch: Partial<WorkTask> = {}): WorkTask {
     title: 'Việc',
     description: '',
     status: WORK_TASK_STATUS.OPEN,
+    kind: WORK_TASK_KIND.TASK,
     start_date: '',
     due_date: '',
     sort_order: 0,

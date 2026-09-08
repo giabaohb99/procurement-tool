@@ -10,6 +10,7 @@ import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
+import { useUrlSort } from '@/shared/hooks/use-url-sort'
 import type { ListParams } from '@/shared/types/api'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
@@ -23,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
-import { formatDate } from '@/shared/utils/format-date'
+import { formatDate, formatDateTime } from '@/shared/utils/format-date'
 import { formatMoney } from '@/shared/utils/format-money'
 import { PaymentRequestStatusBadge } from '../components/payment-request-status-badge'
 import { usePaymentRequests } from '../hooks/use-payment-requests'
@@ -47,28 +48,44 @@ export function PaymentRequestListPage() {
   const navigate = useNavigate()
   const { can } = usePermission()
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
+  // bao-CR-304 (ticket 26) — lọc theo mã MISA của ĐMH: phiếu không lưu mã nên
+  // backend lọc subquery ba nhịp dòng phiếu -> mã PO -> ĐMH (filter_by_misa_code).
+  const {
+    value: misaKeyword,
+    setValue: setMisaKeyword,
+    debouncedValue: debouncedMisa,
+  } = useUrlSearchParam('misa_code')
   const [companyId, setCompanyId] = useUrlParamState('company_id', ALL)
   const [status, setStatus] = useUrlParamState('status', ALL)
   const [source, setSource] = useUrlParamState('source_type', ALL)
   const [method, setMethod] = useUrlParamState('payment_method', ALL)
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
+  const { sortBy, sortDir, handleSortChange } = useUrlSort()
 
   const { data: companies } = useCompanies({ page_size: 500, is_active: true })
 
   const [page, setPage] = usePageResetOnFilterChange([
     debouncedValue,
+    debouncedMisa,
     companyId,
     status,
     source,
     method,
+    sortBy,
+    sortDir,
   ])
 
   const filterParams: ListParams = {}
   if (debouncedValue) filterParams.code = debouncedValue
+  if (debouncedMisa) filterParams.misa_code = debouncedMisa
   if (companyId !== ALL) filterParams.company_id = Number(companyId)
   if (status !== ALL) filterParams.status = status
   if (source !== ALL) filterParams.source_type = source
   if (method !== ALL) filterParams.payment_method = method
+  if (sortBy) {
+    filterParams.sort_by = sortBy
+    filterParams.sort_dir = sortDir
+  }
 
   const { data, isLoading, isError } = usePaymentRequests({
     page,
@@ -87,6 +104,7 @@ export function PaymentRequestListPage() {
         key: 'code',
         header: 'Mã phiếu',
         width: 150,
+        sortable: true,
         hideable: false,
         defaultPinned: true,
         cell: (r) => <span className="font-medium">{r.code || '—'}</span>,
@@ -95,6 +113,7 @@ export function PaymentRequestListPage() {
         key: 'request_date',
         header: 'Ngày lập',
         width: 120,
+        sortable: true,
         cell: (r) => formatDate(r.request_date) || '—',
       },
       {
@@ -119,6 +138,13 @@ export function PaymentRequestListPage() {
         width: 120,
         cell: (r) => PAYMENT_SOURCE_LABELS[r.source_type] ?? r.source_type,
       },
+      {
+        // bao-CR-304 (ticket 26) — phiếu gồm nhiều PO nên mã MISA hiển thị gộp "MS1, MS2".
+        key: 'misa_code',
+        header: 'Mã MISA',
+        width: 150,
+        cell: (r) => r.misa_code || '—',
+      },
       { key: 'company', header: 'Công ty', width: 200, cell: (r) => companyName(r.company_id) },
       {
         key: 'payment_method',
@@ -137,7 +163,17 @@ export function PaymentRequestListPage() {
         key: 'status',
         header: 'Trạng thái',
         width: 140,
+        sortable: true,
         cell: (r) => <PaymentRequestStatusBadge status={r.status} />,
+      },
+      {
+        // bao-CR-300 (ticket 21) — cột "Ngày cập nhật", bấm lần đầu ra mới nhất trước.
+        key: 'updated_at',
+        header: 'Ngày cập nhật',
+        width: 150,
+        sortable: true,
+        sortDescFirst: true,
+        cell: (r) => formatDateTime(r.updated_at) || '',
       },
     ],
     [companyName],
@@ -171,6 +207,9 @@ export function PaymentRequestListPage() {
           isError={isError}
           emptyMessage="Chưa có yêu cầu thanh toán nào khớp bộ lọc."
           storageKey="finance.payment-requests"
+          sortBy={sortBy}
+          sortDir={sortDir}
+          onSortChange={handleSortChange}
           pagination={{
             page,
             pageSize,
@@ -190,6 +229,13 @@ export function PaymentRequestListPage() {
                   onChange={(e) => setKeyword(e.target.value)}
                 />
               </div>
+
+              <Input
+                className="w-40"
+                placeholder="Mã MISA…"
+                value={misaKeyword}
+                onChange={(e) => setMisaKeyword(e.target.value)}
+              />
 
               <Select value={companyId} onValueChange={setCompanyId}>
                 <SelectTrigger className="w-48">

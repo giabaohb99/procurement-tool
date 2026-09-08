@@ -102,7 +102,7 @@ Phiếu gom nhiều khoản nợ của cùng một NCC thành một đề nghị
 
 **Logic chính:**
 
-- Tạo phiếu (`create_requests`): nếu các khoản nợ gửi lên thuộc nhiều NCC, hệ thống tách tự động thành nhiều phiếu — mỗi NCC một phiếu.
+- Tạo phiếu (`create_requests`): nếu các khoản nợ gửi lên thuộc nhiều NCC hoặc nhiều CÔNG TY nhận hóa đơn, hệ thống tách tự động thành nhiều phiếu — mỗi cặp (NCC, công ty) một phiếu, phiếu đứng tên đúng pháp nhân của khoản nợ (bao-CR-274; trước đây chỉ tách theo NCC nên `company_id` lấy nhầm theo khoản nợ đầu tiên). Endpoint tạo phiếu cũng chặn 403 khi `payable_id` gửi lên nằm ngoài phạm vi `payable` người tạo được xem (cùng CR).
 - Các dòng cùng `(po_code, invoice_no)` được gom thành một dòng phiếu duy nhất.
 - Ở trạng thái `draft`: số hóa đơn được phép để trống (để in ra trình ký rồi điền tay); điều kiện đủ chỉ bắt khi gửi duyệt (`submitted`).
 - Khi gửi duyệt (`check_submit`): mỗi dòng phải có số hóa đơn và phải khớp ít nhất một khoản nợ còn lại (`remaining > 0`).

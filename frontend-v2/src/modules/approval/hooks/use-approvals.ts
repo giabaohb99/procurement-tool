@@ -223,6 +223,10 @@ const HO_QUERY_CUA_CHUNG_TU: Record<string, readonly string[]> = {
   purchase_request: queryKeys.procurement.all,
   survey_request: queryKeys.procurement.all,
   purchase_order: queryKeys.procurement.all,
+  //  Nghỉ phép và Đặt phòng nằm trong phân hệ Nhân sự — ký xong phải nạp lại cả
+  //  họ `hr`, vì một phiếu xuất hiện ở danh sách, ở chi tiết và ở lịch.
+  leave_request: queryKeys.hr.all,
+  room_booking: queryKeys.hr.all,
 }
 
 /**

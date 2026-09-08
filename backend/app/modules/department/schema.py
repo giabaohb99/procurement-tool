@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel, Field, field_validator
 
 from app.modules.company.schema import ISSUE_CODE_PATTERN
@@ -32,6 +34,7 @@ class DepartmentUpdate(BaseModel):
 class DepartmentOut(DepartmentBase):
     id: int
     manager_name: str | None = None
+    updated_at: datetime | None = None   # bao-CR-294 — cột "Ngày cập nhật" ở màn danh sách
     model_config = {"from_attributes": True}
 
 

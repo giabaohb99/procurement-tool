@@ -20,6 +20,7 @@ function makePost(overrides: Partial<ForumPost> = {}): ForumPost {
   return {
     id: 1,
     body: 'nội dung thử',
+    body_format: 0,
     status: 1,
     audience: 3,
     kind: FORUM_POST_KIND.normal,
@@ -30,6 +31,10 @@ function makePost(overrides: Partial<ForumPost> = {}): ForumPost {
     author_code: 'NV001',
     author_avatar: '',
     created_at: '2026-08-27T08:00:00',
+    board_id: 0,
+    title: '',
+    prefix: 0,
+    board_name: '',
     pinned_at: null,
     can_delete: false,
     can_moderate: false,
@@ -69,6 +74,29 @@ describe('PostCard — dòng hệ thống của bài sự kiện (F10)', () => {
   it('bài thường không hiện dòng hệ thống', () => {
     renderCard(makePost())
     expect(screen.queryByText('đã cập nhật ảnh đại diện')).not.toBeInTheDocument()
+  })
+})
+
+describe('PostCard — thread trong box (F13b)', () => {
+  it('bài thuộc box hiện chip tên box + tiêu đề đậm link vào thread', () => {
+    renderCard(
+      makePost({ board_id: 7, board_name: 'Kiến thức nội bộ', title: 'Chia sẻ quy trình', prefix: 3 }),
+    )
+    expect(screen.getByRole('link', { name: 'Kiến thức nội bộ' })).toHaveAttribute(
+      'href',
+      '/forum/boards/7',
+    )
+    expect(screen.getByRole('link', { name: 'Chia sẻ quy trình' })).toHaveAttribute(
+      'href',
+      '/forum/posts/1',
+    )
+    // nhãn prefix lấy từ bộ mã sinh `FORUM_PREFIX` — 3 = Kiến thức
+    expect(screen.getByText('Kiến thức')).toBeInTheDocument()
+  })
+
+  it('bài Bảng tin thuần không vẽ khối tiêu đề', () => {
+    renderCard(makePost({ title: 'tiêu đề lạc nhưng board_id = 0' }))
+    expect(screen.queryByRole('link', { name: /tiêu đề lạc/ })).not.toBeInTheDocument()
   })
 })
 
@@ -164,6 +192,36 @@ describe('PostCard — popup chi tiết (kiểu Facebook)', () => {
 
     await userEvent.click(screen.getByRole('button', { name: '2 bình luận' }))
     expect(await screen.findByText('Bài viết của Trần Thử Nghiệm')).toBeInTheDocument()
+  })
+})
+
+describe('PostCard — nội dung rich text (CR-261)', () => {
+  it('bài rich vẽ định dạng thật: chữ đậm ra strong, đánh số ra li', () => {
+    renderCard(
+      makePost({
+        body: '<p>xin <strong>chào</strong></p><ol><li>mục một</li></ol>',
+        body_format: 1,
+      }),
+    )
+    expect(screen.getByText('chào').tagName).toBe('STRONG')
+    expect(screen.getByText('mục một').tagName).toBe('LI')
+  })
+
+  it('bài rich vẫn qua DOMPurify phía FE — dữ liệu cũ/đường ghi backend sót không chạy được script', () => {
+    renderCard(
+      makePost({
+        body: '<p>lành</p><img src="x" onerror="window.hacked=1">',
+        body_format: 1,
+      }),
+    )
+    expect(screen.getByText('lành')).toBeInTheDocument()
+    expect(document.querySelector('img[onerror]')).toBeNull()
+  })
+
+  it('bài cũ chữ trơn có dán thẻ hiện NGUYÊN VĂN, không bị hiểu thành HTML', () => {
+    // body_format=0 mà đem vẽ dangerouslySetInnerHTML là "a < b" nuốt mất nửa câu
+    renderCard(makePost({ body: 'a < b và <b>không đậm</b>' }))
+    expect(screen.getByText('a < b và <b>không đậm</b>')).toBeInTheDocument()
   })
 })
 

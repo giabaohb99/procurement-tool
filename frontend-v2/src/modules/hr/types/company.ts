@@ -22,6 +22,8 @@ export interface Company {
   legal_rep_name?: string | null
   /** Đặt qua endpoint upload riêng, KHÔNG nhập trong form. */
   logo: string
+  /** Lần sửa gần nhất — cột "Ngày cập nhật" (bao-CR-300, ticket 21). */
+  updated_at?: string
 }
 
 export const COMPANY_LEVEL_LABELS: Record<Company['level'], string> = {

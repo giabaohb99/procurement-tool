@@ -50,6 +50,37 @@ describe('mergeCardFields', () => {
     expect(merged.find((f) => f.key === 'due')?.visible).toBe(false)
   })
 
+  it('slots a new builtin field into its own place, NOT after the label fields', () => {
+    //  Nối vào cuối thì «Trạng thái» rơi xuống sau mọi nhãn tùy biến của dự án;
+    //  ở Gantt, nơi lưới trái chỉ hiện được vài cột đầu, nó bị cắt mất và người
+    //  dùng kết luận là chưa làm.
+    const saved: CardFields = [
+      { key: 'assignees', visible: true },
+      { key: 'due', visible: true },
+      { key: 'label:5', visible: true },
+    ]
+    const merged = keys(mergeCardFields(saved, [5]))
+    expect(merged.indexOf('status')).toBeLessThan(merged.indexOf('label:5'))
+    expect(merged.indexOf('start')).toBeLessThan(merged.indexOf('label:5'))
+    //  Thứ tự người dùng đã kéo giữ NGUYÊN, không bị xáo theo bảng khai của ta.
+    expect(merged.indexOf('assignees')).toBeLessThan(merged.indexOf('due'))
+  })
+
+  it('keeps new builtins before the labels even when the order was reshuffled', () => {
+    const merged = keys(
+      mergeCardFields(
+        [
+          { key: 'due', visible: true },
+          { key: 'label:9', visible: true },
+          { key: 'assignees', visible: true },
+        ],
+        [9],
+      ),
+    )
+    expect(merged.slice(0, 2)).toEqual(['due', 'status'])
+    expect(merged.indexOf('start')).toBeLessThan(merged.indexOf('label:9'))
+  })
+
   it('never duplicates a key, whatever junk the storage holds', () => {
     const saved: CardFields = [
       { key: 'due', visible: true },

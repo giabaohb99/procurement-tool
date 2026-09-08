@@ -19,6 +19,10 @@ const STATUS_TONE: Record<string, Tone> = {
   // "Đang xử lý" là đang chờ người khác làm tiếp → cùng tông chờ với v1, không
   // phải tông "đã xong một bước".
   processing: 'pending',
+  // bao-CR-292/297 (ticket 22): hai mốc tách từ "Đang xử lý". Màu theo bản v1:
+  // đang mua = vàng cảnh chờ ('warn' → pending), đã mua đủ = xanh xong ('ok' → done).
+  purchasing: 'pending',
+  purchased: 'done',
   partial: 'progress',
   survey_done: 'progress',
   pr_created: 'progress',

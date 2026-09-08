@@ -12,6 +12,7 @@ import { appRoutes } from '@/shared/constants/app-routes'
 import { AvatarUploader } from '@/shared/ui/avatar-uploader'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
+import { DatePicker } from '@/shared/ui/date-picker'
 import { DeleteConfirmButton } from '@/shared/ui/delete-confirm-button'
 import { ErrorState } from '@/shared/ui/error-state'
 import {
@@ -45,10 +46,12 @@ import {
 } from '../hooks/use-employees'
 import {
   EMPTY_EMPLOYEE_FORM,
+  employeeFormValues,
   employeeSchema,
   type EmployeeFormValues,
 } from '../schemas/employee-schema'
 import {
+  EMPLOYEE_GENDER_OPTIONS,
   employeeInitials,
   employeeStatusLabel,
   employeeStatusOptions,
@@ -77,7 +80,7 @@ export function EmployeeDetailPage() {
   })
 
   useEffect(() => {
-    if (employee) form.reset({ ...EMPTY_EMPLOYEE_FORM, ...employee })
+    if (employee) form.reset(employeeFormValues(employee))
   }, [employee, form])
 
   if (isLoading) {
@@ -302,6 +305,63 @@ export function EmployeeDetailPage() {
                           onChange={field.onChange}
                           disabled={!canWrite}
                         />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/*  NGÀY VÀO LÀM — cột đã có trong bảng từ 03/09/2026 nhưng
+                       không ô nào khai được cho tới 07/09: mọi hồ sơ đều rỗng,
+                       nên THÂM NIÊN của cả công ty tính bằng 0 và không ai được
+                       cộng ngày phép thêm. Ô này là chỗ vá điều đó. */}
+                  <FormField
+                    control={form.control}
+                    name="hire_date"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Ngày vào làm</FormLabel>
+                        <DatePicker
+                          value={field.value}
+                          onChange={field.onChange}
+                          disabled={!canWrite}
+                        />
+                        <FormDescription>
+                          Mốc tính thâm niên — quyết định người này được cộng thêm mấy
+                          ngày phép mỗi năm. Bỏ trống thì tính bằng 0 năm.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="gender"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Giới tính</FormLabel>
+                        <Select
+                          onValueChange={(v) => field.onChange(Number(v))}
+                          value={String(field.value)}
+                          disabled={!canWrite}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="w-full">
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {EMPLOYEE_GENDER_OPTIONS.map((item) => (
+                              <SelectItem key={item.value} value={String(item.value)}>
+                                {item.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          Dùng để lọc loại nghỉ theo giới (thai sản). Bỏ trống thì không
+                          chặn loại nào.
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}

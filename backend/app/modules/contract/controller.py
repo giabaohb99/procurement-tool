@@ -89,7 +89,8 @@ def _out(c: Contract) -> dict:
             "party_type_label": CONTRACT_PARTY_TYPE.label_of(c.party_type),
             "status_label": CONTRACT_STATUS.label_of(c.status),
             "expiry_label": CONTRACT_EXPIRY.label_of(expiry),
-            "contract_type_label": CONTRACT_TYPE_LABEL.get(c.contract_type, "")}
+            "contract_type_label": CONTRACT_TYPE_LABEL.get(c.contract_type, ""),
+            "updated_at": c.updated_at}   # bao-CR-294 — cột "Ngày cập nhật" ở màn danh sách
 
 
 @router.get("")

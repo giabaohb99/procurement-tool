@@ -2,6 +2,7 @@ import {
   ArrowUpDown,
   Check,
   ChevronDown,
+  Diamond,
   Funnel,
   Plus,
   Rows3,
@@ -49,7 +50,13 @@ interface WorkToolbarProps {
   /** ADMIN trở lên: được sửa tag / trường tùy biến ngay trong menu «Tùy chỉnh». */
   canManage: boolean
   onNewTask: () => void
-  /** Thêm cột — nằm trong mũi tên cạnh «Việc mới». Vắng = không đủ quyền. */
+  /**
+   * Thêm CỘT MỐC (B-14) — nằm trong mũi tên cạnh «Việc mới». Vắng = không đủ
+   * quyền sửa. Tách khỏi «Việc mới» vì mốc mang ngày khác hẳn (chỉ một mốc) và
+   * hiện thành hình thoi trên Gantt.
+   */
+  onNewMilestone?: () => void
+  /** Thêm cột — cũng nằm trong mũi tên ấy. Vắng = không đủ quyền quản trị. */
   onAddSection?: () => void
 }
 
@@ -82,8 +89,13 @@ export function WorkToolbar({
   canEdit,
   canManage,
   onNewTask,
+  onNewMilestone,
   onAddSection,
 }: WorkToolbarProps) {
+  //  Mũi tên chỉ mọc ra khi có ÍT NHẤT một mục khác «Việc mới» — một menu chỉ
+  //  chứa đúng cái nút bên cạnh đã làm là menu thừa.
+  const hasMenu = Boolean(onNewMilestone || onAddSection)
+
   return (
     <div className="flex flex-wrap items-center gap-1">
       {canEdit && (
@@ -93,15 +105,13 @@ export function WorkToolbar({
           <Button
             variant="ghost"
             size="sm"
-            className={cn('px-2.5', onAddSection && 'rounded-r-none')}
+            className={cn('px-2.5', hasMenu && 'rounded-r-none')}
             onClick={onNewTask}
           >
             <Plus className="size-4" />
             Việc mới
           </Button>
-          {/*  Không đủ quyền thêm cột thì mũi tên biến mất luôn — một menu chỉ
-              có đúng mục đang mở sẵn ở nút bên cạnh là menu thừa. */}
-          {onAddSection && (
+          {hasMenu && (
             <>
               <span aria-hidden className="h-5 w-px bg-border" />
               <DropdownMenu>
@@ -122,10 +132,18 @@ export function WorkToolbar({
                     <Plus className="size-4" />
                     Việc mới
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={onAddSection}>
-                    <Rows3 className="size-4" />
-                    Cột mới
-                  </DropdownMenuItem>
+                  {onNewMilestone && (
+                    <DropdownMenuItem onClick={onNewMilestone}>
+                      <Diamond className="size-4" />
+                      Cột mốc mới
+                    </DropdownMenuItem>
+                  )}
+                  {onAddSection && (
+                    <DropdownMenuItem onClick={onAddSection}>
+                      <Rows3 className="size-4" />
+                      Cột mới
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </>

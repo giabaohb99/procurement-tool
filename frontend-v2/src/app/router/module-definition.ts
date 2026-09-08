@@ -32,6 +32,43 @@ export interface ModuleNavItem {
   /** Chỉ sáng khi khớp CHÍNH XÁC path (dùng cho mục Tổng quan của module). */
   end?: boolean
   /**
+   * **Còn sáng khi đang ở những đường này nữa.** Dùng cho mục menu gom nhiều màn
+   * có ĐƯỜNG DẪN RIÊNG (khác `entities`, vốn dành cho nhiều khóa quyền trên cùng
+   * một đường).
+   *
+   * Sinh ra cho cụm *Nghỉ phép* (04/09/2026): năm màn giữ nguyên năm đường cũ —
+   * link trong thư báo việc duyệt trỏ thẳng `/hr/leave-requests/{id}` — nhưng
+   * menu chỉ còn một mục, chuyển qua lại bằng thanh tab trong trang. Không khai
+   * đây thì mở «Lịch nghỉ» xong cả menu trái tối om, không mục nào sáng.
+   */
+  matchPaths?: string[]
+  /**
+   * **Không vẽ trên menu trái**, nhưng vẫn là một mục khai báo đầy đủ.
+   *
+   * Vẫn tính trong `canAccessRoute` (gõ thẳng URL màn không có quyền vẫn bị chặn
+   * tử tế) và trong `canOpenModule`. Dùng khi nhiều màn gom về một mục menu:
+   * mục gom mang `matchPaths`, các màn con mang `hidden` để GIỮ NGUYÊN khóa
+   * quyền riêng của từng màn — bỏ hẳn chúng đi thì `/hr/leave-types` không còn
+   * mục nào khớp và rơi về nhánh "cho xem", tức mất chốt gác phía giao diện.
+   */
+  hidden?: boolean
+  /**
+   * **Đường dẫn phụ trỏ sang phân hệ KHÁC.** Mục vẫn nằm trong menu phân hệ này
+   * nhưng `path` nằm ngoài `module.path`, bấm vào là chuyển hẳn sang phân hệ kia.
+   *
+   * Sinh ra cho Thu mua (31/08/2026): người mua hàng tra công nợ và lên đề nghị
+   * thanh toán suốt ngày, bắt họ quay ra màn chọn phân hệ rồi vào Tài chính là
+   * thừa hai cú bấm cho việc làm mỗi ngày.
+   *
+   * Hai chỗ CỐ Ý xử khác mục thường:
+   * - `module-registry.test.ts` bỏ qua nó ở khẳng định "mục menu nằm trong đường
+   *   dẫn của chính phân hệ", nhưng đổi lại bắt path phải trỏ vào một phân hệ có
+   *   thật trong bảng đăng ký — gõ sai đường dẫn thì test đỏ chứ không ra 404.
+   * - `canOpenModule` KHÔNG đếm nó: người chỉ có `payable.read` mà thấy thẻ Thu
+   *   mua mở, vào trong rỗng tuếch thì đúng lại lỗi ngày 27/08.
+   */
+  crossModule?: boolean
+  /**
    * Tiêu đề nhóm trên menu trái (vd "Danh mục", "Nghiệp vụ"). Các mục cùng chuỗi
    * này gom lại dưới một tiêu đề. Bỏ trống = đứng riêng ở đầu menu, không tiêu đề.
    */

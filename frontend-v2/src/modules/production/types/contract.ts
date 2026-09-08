@@ -41,4 +41,6 @@ export type Contract = {
   status_label: string
   expiry_label: string
   contract_type_label: string
+  /** Lần sửa gần nhất — cột "Ngày cập nhật" (bao-CR-300, ticket 21). */
+  updated_at?: string
 }

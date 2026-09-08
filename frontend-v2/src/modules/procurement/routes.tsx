@@ -5,7 +5,9 @@ import {
   ClipboardList,
   FileText,
   LayoutDashboard,
+  ReceiptText,
   ShoppingCart,
+  TextSearch,
   Truck,
   UserCheck,
 } from 'lucide-react'
@@ -51,6 +53,14 @@ export const procurementModule: ErpModule = {
       label: 'Báo cáo mua hàng',
       path: appRoutes.procurement.purchaseReport,
       icon: ChartColumnBig,
+      entity: 'report',
+    },
+    // bao-CR-296/299 — trang riêng của tab "Chi tiết YC mua hàng", đứng ngay
+    // dưới Báo cáo mua hàng như bản v1 (entity `report` như menu v1).
+    {
+      label: 'Chi tiết YC mua hàng',
+      path: appRoutes.procurement.prLinesReport,
+      icon: TextSearch,
       entity: 'report',
     },
     {
@@ -101,6 +111,27 @@ export const procurementModule: ErpModule = {
       icon: BarChart3,
       entity: 'survey',
       group: 'Khảo sát',
+    },
+    // Hai lối tắt sang phân hệ TÀI CHÍNH (`crossModule`) — màn hình vẫn là của
+    // Tài chính, đây chỉ là đường dẫn phụ. Người mua hàng tra công nợ rồi lên đề
+    // nghị thanh toán hằng ngày, bắt vòng qua màn chọn phân hệ là thừa hai cú
+    // bấm (khách yêu cầu 31/08/2026). Nhãn và icon giữ y hệt bên Tài chính để
+    // vào rồi không thấy lạc.
+    {
+      label: 'Công nợ phải trả',
+      path: appRoutes.finance.payables,
+      icon: ReceiptText,
+      entity: 'payable',
+      crossModule: true,
+      group: 'Tài chính',
+    },
+    {
+      label: 'Yêu cầu thanh toán',
+      path: appRoutes.finance.paymentRequests,
+      icon: FileText,
+      entity: 'payment_request',
+      crossModule: true,
+      group: 'Tài chính',
     },
     {
       label: 'Phân công phụ trách',
@@ -187,6 +218,13 @@ export const procurementModule: ErpModule = {
       }),
     },
     {
+      path: appRoutes.procurement.purchaseOrderDocuments(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/purchase-order-document-chain-page'))
+          .PurchaseOrderDocumentChainPage,
+      }),
+    },
+    {
       path: appRoutes.procurement.purchaseProgress,
       lazy: async () => ({
         Component: (await import('./pages/purchase-progress-page')).PurchaseProgressPage,
@@ -226,6 +264,12 @@ export const procurementModule: ErpModule = {
       path: appRoutes.procurement.purchaseReport,
       lazy: async () => ({
         Component: (await import('./pages/purchase-report-page')).PurchaseReportPage,
+      }),
+    },
+    {
+      path: appRoutes.procurement.prLinesReport,
+      lazy: async () => ({
+        Component: (await import('./pages/pr-lines-report-page')).PrLinesReportPage,
       }),
     },
     {

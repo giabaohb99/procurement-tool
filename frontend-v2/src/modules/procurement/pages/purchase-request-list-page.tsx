@@ -172,8 +172,16 @@ function PurchaseRequestListContent() {
 
   const handleSortChange = (newSortBy: string, newSortDir: 'asc' | 'desc') => {
     const next = new URLSearchParams(searchParams)
-    next.set('sort_by', newSortBy)
-    next.set('sort_dir', newSortDir)
+    //  Khóa cột rỗng = nhịp thứ ba của tiêu đề cột: thôi sắp xếp. Phải XÓA tham
+    //  số chứ đừng ghi chuỗi rỗng, kẻo đường dẫn gửi cho nhau còn dính
+    //  `?sort_by=&sort_dir=asc`, đọc như đang sắp xếp theo một cột không tên.
+    if (newSortBy) {
+      next.set('sort_by', newSortBy)
+      next.set('sort_dir', newSortDir)
+    } else {
+      next.delete('sort_by')
+      next.delete('sort_dir')
+    }
     setSearchParams(next)
   }
 
@@ -241,6 +249,15 @@ function PurchaseRequestListContent() {
         width: 150,
         sortable: true,
         cell: (pr) => <StatusBadge status={pr.status} labels={PR_STATUS_LABELS} />,
+      },
+      {
+        // bao-CR-300 (ticket 21) — cột "Ngày cập nhật", bấm lần đầu ra mới nhất trước.
+        key: 'updated_at',
+        header: 'Ngày cập nhật',
+        width: 150,
+        sortable: true,
+        sortDescFirst: true,
+        cell: (pr) => formatDateTime(pr.updated_at) || '',
       },
       {
         key: 'actions',

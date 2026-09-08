@@ -33,6 +33,7 @@ import { useDepartments } from '../hooks/use-departments'
 import { useSaveEmployee } from '../hooks/use-employees'
 import {
   EMPTY_EMPLOYEE_FORM,
+  employeeFormValues,
   employeeSchema,
   type EmployeeFormValues,
 } from '../schemas/employee-schema'
@@ -66,7 +67,7 @@ export function EmployeeFormDialog({
   // nếu không sẽ thấy dữ liệu của bản ghi trước.
   useEffect(() => {
     if (!open) return
-    form.reset(employee ? { ...EMPTY_EMPLOYEE_FORM, ...employee } : EMPTY_EMPLOYEE_FORM)
+    form.reset(employeeFormValues(employee))
   }, [open, employee, form])
 
   async function onSubmit(values: EmployeeFormValues) {

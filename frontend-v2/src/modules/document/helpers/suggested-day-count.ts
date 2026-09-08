@@ -13,11 +13,43 @@
  * duyệt là chốt cuối.
  */
 
-/** Số công của mỗi buổi — khớp `CONG_CUA_BUOI` bên backend. */
-const SESSION_CREDIT: Record<string, number> = {
+/**
+ * Số công của NGÀY ĐẦU và NGÀY CUỐI — khớp `START_DAY_WORK_CREDIT` /
+ * `END_DAY_WORK_CREDIT` ở `backend/app/core/leave_codes.py`.
+ *
+ * ⚠️ **Hai bảng khác nhau** (vá 07/09/2026). Ô buổi nói MỐC, không nói buổi:
+ * *bắt đầu buổi Sáng* là nghỉ trọn ngày đó, *kết thúc buổi Chiều* cũng là nghỉ
+ * trọn ngày đó. Bản cũ tra chung một bảng `{full: 1, morning: .5, afternoon: .5}`
+ * cho cả hai đầu nên đơn *«từ Sáng 05 đến hết 07»* gợi ý 2.5 thay vì 3 ngày.
+ */
+const START_DAY_CREDIT: Record<string, number> = {
+  full: 1,
+  morning: 1,
+  afternoon: 0.5,
+  //  Theo giờ: con số suy ra từ khoảng giờ, không suy ra được từ ô buổi.
+  hourly: 0,
+}
+
+const END_DAY_CREDIT: Record<string, number> = {
   full: 1,
   morning: 0.5,
-  afternoon: 0.5,
+  afternoon: 1,
+  hourly: 0,
+}
+
+/**
+ * Nghỉ gọn trong MỘT ngày — hai ô buổi cùng nói về ngày ấy nên phải xét CẢ HAI.
+ *
+ * Hai mốc nửa ngày: bắt đầu ở nửa `0` (sáng) hay `1` (chiều), kết thúc ở nửa `0`
+ * hay `1`; số nửa phủ được là `end − start + 1`. Lấy riêng ô đi như bản cũ thì
+ * *«Cả ngày → Sáng»* ra nguyên một ngày trong khi người khai kết thúc lúc hết
+ * buổi sáng — người lao động mất oan nửa ngày phép.
+ */
+function sameDayCredit(outgoing: string, incoming: string): number {
+  if (outgoing === 'hourly' || incoming === 'hourly') return 0
+  const start = outgoing === 'afternoon' ? 1 : 0
+  const end = incoming === 'morning' ? 0 : 1
+  return Math.max(0, (end - start + 1) * 0.5)
 }
 
 export function suggestedDayCount(
@@ -32,14 +64,17 @@ export function suggestedDayCount(
   const d2 = new Date(`${toDate}T00:00:00`)
   if (Number.isNaN(d1.getTime()) || Number.isNaN(d2.getTime()) || d2 < d1) return 0
 
-  const outgoing = SESSION_CREDIT[buoiDi ?? 'full'] ?? 1
-  const incoming = SESSION_CREDIT[buoiVe ?? 'full'] ?? 1
+  const outgoing = buoiDi ?? 'full'
+  const incoming = buoiVe ?? 'full'
 
-  //  Cùng một ngày thì hai ô buổi nói về CÙNG một buổi — lấy một cái.
-  if (fromDate === toDate) return outgoing
+  if (fromDate === toDate) return sameDayCredit(outgoing, incoming)
 
   const tronVen = Math.round((d2.getTime() - d1.getTime()) / 86_400_000) - 1
-  return Math.max(0, tronVen) + outgoing + incoming
+  return (
+    Math.max(0, tronVen) +
+    (START_DAY_CREDIT[outgoing] ?? 1) +
+    (END_DAY_CREDIT[incoming] ?? 1)
+  )
 }
 
 /**

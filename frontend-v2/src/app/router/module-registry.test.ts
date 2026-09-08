@@ -59,10 +59,30 @@ describe('module-registry', () => {
   it('mục menu trái nào cũng nằm trong đường dẫn của chính phân hệ đó', () => {
     for (const module of moduleRegistry) {
       for (const item of module.nav) {
+        if (item.crossModule) continue // lối tắt sang phân hệ khác — xét riêng bên dưới
         expect(item.path, `${module.id} - ${item.label}`).toMatch(
           new RegExp(`^${module.path}(/|$)`),
         )
       }
+    }
+  })
+
+  it('đường dẫn phụ sang phân hệ khác phải trỏ vào một phân hệ CÓ THẬT và đang bật', () => {
+    //  `crossModule` là khe duy nhất được phép ra khỏi đường dẫn của phân hệ mình
+    //  (Thu mua mượn Công nợ / YCTT của Tài chính). Không canh thì gõ nhầm một
+    //  chữ trong path là mục menu dẫn thẳng vào trang 404 mà chẳng ai hay.
+    const shortcuts = moduleRegistry.flatMap((m) =>
+      m.nav.filter((i) => i.crossModule).map((i) => ({ module: m, item: i })),
+    )
+    expect(shortcuts.length).toBeGreaterThan(0) // Thu mua -> Tài chính
+    for (const { module, item } of shortcuts) {
+      const target = moduleRegistry.find(
+        (m) => m.path && (item.path === m.path || item.path.startsWith(`${m.path}/`)),
+      )
+      expect(target, `${module.id} - ${item.label}`).toBeDefined()
+      // Trỏ về chính mình thì đừng khai `crossModule` — cờ đó tắt luôn phần kiểm
+      // đường dẫn ở khẳng định trên, dùng bừa là mất chốt canh.
+      expect(target?.id, `${module.id} - ${item.label}`).not.toBe(module.id)
     }
   })
 
@@ -102,6 +122,29 @@ describe('module-registry', () => {
       }
     }
     expect(missing).toEqual([])
+  })
+
+  it('mọi đường trong `matchPaths` đều là một mục menu CÓ THẬT của cùng phân hệ', () => {
+    //  `matchPaths` chỉ lo tô sáng, gõ sai một chữ thì không có gì đỏ lên: mục
+    //  gom cứ tối om ở màn con và không ai biết vì sao. Ràng nó vào mục khai
+    //  thật (thường là mục `hidden`) để sai chính tả là test đỏ ngay.
+    //
+    //  Ràng thêm chiều ngược lại: mục `hidden` mà KHÔNG mục nào trỏ tới thì nó
+    //  vô hình hoàn toàn — không nằm trên menu, cũng không tô sáng chỗ nào.
+    const sai: string[] = []
+    for (const module of moduleRegistry) {
+      const paths = new Set(module.nav.map((i) => i.path))
+      const pointedAt = new Set(module.nav.flatMap((i) => i.matchPaths ?? []))
+      for (const item of module.nav) {
+        for (const p of item.matchPaths ?? []) {
+          if (!paths.has(p)) sai.push(`${module.id} - ${item.label}: ${p} không có mục nào khai`)
+        }
+        if (item.hidden && !pointedAt.has(item.path)) {
+          sai.push(`${module.id} - ${item.label}: mục ẩn không mục nào trỏ tới`)
+        }
+      }
+    }
+    expect(sai).toEqual([])
   })
 
   it('màu icon phân hệ chạy được ở CẢ hai chế độ nền', () => {

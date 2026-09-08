@@ -19,6 +19,12 @@ const PRINT_MODES = [
 
 type PrintMode = (typeof PRINT_MODES)[number]['value']
 
+/** Bản gửi ra ngoài thường phải ký tươi + đóng dấu, nên phải bỏ được ảnh chữ ký số. */
+const SIGNATURE_MODES = [
+  { value: true, label: 'Có chữ ký' },
+  { value: false, label: 'Không chữ ký' },
+] as const
+
 /**
  * Bản in Đơn mua hàng. Route nằm NGOÀI `ModuleLayout` để trang in không mang
  * theo menu và thanh tiêu đề.
@@ -31,6 +37,7 @@ export function PurchaseOrderPrintPage() {
   const purchaseOrderId = Number(id)
   const { data, isLoading, isError } = usePurchaseOrderPrintData(purchaseOrderId)
   const [mode, setMode] = useState<PrintMode>('order')
+  const [showSignature, setShowSignature] = useState(true)
 
   useEffect(() => {
     if (!data?.code) return
@@ -83,24 +90,39 @@ export function PurchaseOrderPrintPage() {
           Đóng
         </Button>
 
-        <div className="ml-auto flex gap-1 rounded-lg border bg-white p-1">
-          {PRINT_MODES.map((option) => (
-            <Button
-              key={option.value}
-              size="sm"
-              variant={mode === option.value ? 'default' : 'ghost'}
-              onClick={() => setMode(option.value)}
-            >
-              {option.label}
-            </Button>
-          ))}
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <div className="flex gap-1 rounded-lg border bg-white p-1">
+            {SIGNATURE_MODES.map((option) => (
+              <Button
+                key={option.label}
+                size="sm"
+                variant={showSignature === option.value ? 'default' : 'ghost'}
+                onClick={() => setShowSignature(option.value)}
+              >
+                {option.label}
+              </Button>
+            ))}
+          </div>
+
+          <div className="flex gap-1 rounded-lg border bg-white p-1">
+            {PRINT_MODES.map((option) => (
+              <Button
+                key={option.value}
+                size="sm"
+                variant={mode === option.value ? 'default' : 'ghost'}
+                onClick={() => setMode(option.value)}
+              >
+                {option.label}
+              </Button>
+            ))}
+          </div>
         </div>
       </div>
 
       {mode === 'order' ? (
-        <PurchaseOrderPrintOrderForm data={data} />
+        <PurchaseOrderPrintOrderForm data={data} showSignature={showSignature} />
       ) : (
-        <PurchaseOrderPrintGoodsForm data={data} />
+        <PurchaseOrderPrintGoodsForm data={data} showSignature={showSignature} />
       )}
     </main>
   )

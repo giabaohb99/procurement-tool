@@ -192,8 +192,13 @@ def list_suggestions(
     db: Session = Depends(get_db),
     user=Depends(require("document", "read")),
 ):
-    """Văn bản cùng loại cùng phòng đang hiệu lực — hiện ngay trong form soạn (B05)."""
-    return success(service.suggestions(db, doc_type_id, department_id, company_id, exclude_id))
+    """Văn bản cùng loại cùng phòng đang hiệu lực — hiện ngay trong form soạn (B05).
+
+    Lọc theo đúng quyền xem của người đang đăng nhập (xem `service.suggestions`).
+    """
+    return success(service.suggestions(db, doc_type_id, department_id, company_id,
+                                       exclude_id, user=user,
+                                       profile=get_perm_profile(db, user)))
 
 
 @router.get("/storage-locations")

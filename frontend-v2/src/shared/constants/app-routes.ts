@@ -45,7 +45,16 @@ export const appRoutes = {
     purchaseOrders: '/procurement/purchase-orders',
     purchaseOrderNew: '/procurement/purchase-orders/new',
     purchaseOrderDetail: (id: number | string) => `/procurement/purchase-orders/${id}`,
+    /** Hồ sơ chứng từ cả chuỗi ĐMH → YCMH → phiếu khảo sát → YCBG. */
+    purchaseOrderDocuments: (id: number | string) =>
+      `/procurement/purchase-orders/${id}/documents`,
     purchaseOrderPrint: (id: number | string) => `/print/purchase-order/${id}`,
+    /**
+     * bao-CR-314 — in phiếu YCMH từ một ĐƠN MUA HÀNG. Tham số là id của ĐƠN, và bản in
+     * chỉ gồm những dòng hàng có trên đơn đó.
+     */
+    purchaseRequestPrintFromPo: (purchaseOrderId: number | string) =>
+      `/print/purchase-request-from-po/${purchaseOrderId}`,
     /** Báo cáo tiến độ theo từng lần giao hàng. */
     purchaseProgress: '/procurement/purchase-progress',
     /** Phiếu khảo sát NCC / sản phẩm. */
@@ -56,8 +65,11 @@ export const appRoutes = {
     surveyProgress: '/procurement/survey-progress',
     /** Báo cáo khảo sát, cắt theo dòng khảo sát. */
     surveyReport: '/procurement/survey-report',
-    /** Báo cáo mua hàng — tám tab trên cùng một bộ lọc công ty / năm. */
+    /** Báo cáo mua hàng — chín tab trên cùng một bộ lọc công ty / năm. */
     purchaseReport: '/procurement/purchase-report',
+    /** Trang riêng của báo cáo Chi tiết YC mua hàng (bao-CR-296/299) — nội dung
+        dùng chung với tab cùng tên trong Báo cáo mua hàng. */
+    prLinesReport: '/procurement/pr-lines-report',
     /** Phân công phụ trách NSTM theo phân loại. */
     categoryAssignees: '/procurement/category-assignees',
     categoryAssigneeNew: '/procurement/category-assignees/new',
@@ -118,13 +130,24 @@ export const appRoutes = {
    * KHÔNG dùng sidebar nghiệp vụ. `/forum/me` và `/forum/users/:id` là F3.
    */
   forum: {
+    /** `/forum` chuyển hướng về `boards` — sếp chốt 03/09: Diễn đàn là tab mặc định. */
     root: '/forum',
+    /** Tab «Bảng tin» — feed kiểu Facebook, dời khỏi gốc khi Diễn đàn thành mặc định. */
+    feed: '/forum/feed',
+    /** Tab «Diễn đàn» (F13b/QĐ-D7) — cây nhóm → box chuyên mục kiểu VOZ. */
+    boards: '/forum/boards',
+    /** Danh sách thread của một box. */
+    boardDetail: (id: number | string) => `/forum/boards/${id}`,
     /** Tab «Thông báo» (F9a/CR-199) — mọi bài đang được quản trị viên ghim. */
     announcements: '/forum/announcements',
     postDetail: (id: number | string) => `/forum/posts/${id}`,
     /** Trang cá nhân của CHÍNH MÌNH (QĐ-D3) — thấy cả bài bị ẩn của mình. */
     me: '/forum/me',
     userProfile: (id: number | string) => `/forum/users/${id}`,
+    /** Tìm bài viết (CR-263) — mở cho MỌI người, kết quả tự lọc theo audience. */
+    search: '/forum/search',
+    /** Tab «Quản trị» (CR-263) — chỉ tài khoản có grant `forum_post`/`forum_board`. */
+    admin: '/forum/admin',
   },
   /**
    * Phân hệ DỰ ÁN (CR-216) — task list kiểu Lark Tasks.
@@ -144,6 +167,14 @@ export const appRoutes = {
     list: '/project/lists',
     /** Một dự án — kanban/danh sách/Gantt nằm trong đây, đổi bằng tab. */
     detail: (id: number | string) => `/project/lists/${id}`,
+    /**
+     * Mở MỘT công việc theo id — địa chỉ cho link của chuông thông báo.
+     *
+     * Panel chi tiết không có route riêng (nó là `Sheet` mở bằng state), nên
+     * đây là trang trung chuyển: tra dự án chứa việc rồi dẫn tiếp kèm `?task=`.
+     * Phải KHỚP với `route` khai ở `backend/app/core/comment_registry.py`.
+     */
+    task: (id: number | string) => `/project/tasks/${id}`,
   },
   document: {
     root: '/document',
@@ -260,6 +291,39 @@ export const appRoutes = {
     permissions: '/hr/permissions',
     /** Gán vai trò và phạm vi dữ liệu cho MỘT tài khoản. */
     userPermissionDetail: (userId: number | string) => `/hr/permissions/users/${userId}`,
+
+    //  ── Nghỉ phép (CR-259) ────────────────────────────────────────────────
+    //  Nằm trong phân hệ Nhân sự chứ không tách phân hệ riêng: người dùng đi
+    //  tìm "xin nghỉ phép" ở chỗ họ tìm hồ sơ nhân sự, không ở một ô thứ hai
+    //  trên màn chọn phân hệ.
+    leaveRequests: '/hr/leave-requests',
+    leaveRequestNew: '/hr/leave-requests/new',
+    leaveRequestDetail: (id: number | string) => `/hr/leave-requests/${id}`,
+    /** Lịch nghỉ — «tuần tới ai nghỉ». */
+    leaveCalendar: '/hr/leave-calendar',
+    /** Quỹ phép năm: cấp phát, chỉnh tay. */
+    leaveBalances: '/hr/leave-balances',
+    leaveBalanceDetail: (id: number | string) => `/hr/leave-balances/${id}`,
+    /** Thiết lập: loại nghỉ (kèm bậc thâm niên) và lịch ngày lễ. */
+    leaveTypes: '/hr/leave-types',
+    leaveTypeNew: '/hr/leave-types/new',
+    leaveTypeDetail: (id: number | string) => `/hr/leave-types/${id}`,
+    holidays: '/hr/holidays',
+    holidayNew: '/hr/holidays/new',
+    holidayDetail: (id: number | string) => `/hr/holidays/${id}`,
+
+    //  ── Đặt phòng họp (duoc-CR-279) ───────────────────────────────────────
+    //  Cùng lẽ với Nghỉ phép: đặt phòng là việc hành chính hằng ngày của nhân
+    //  sự, không đáng một ô riêng trên màn chọn phân hệ.
+    roomBookings: '/hr/room-bookings',
+    roomBookingNew: '/hr/room-bookings/new',
+    roomBookingDetail: (id: number | string) => `/hr/room-bookings/${id}`,
+    /** Lịch đặt phòng — «hôm nay phòng nào còn trống». */
+    roomCalendar: '/hr/room-calendar',
+    /** Danh mục phòng họp (quản trị). */
+    meetingRooms: '/hr/meeting-rooms',
+    meetingRoomNew: '/hr/meeting-rooms/new',
+    meetingRoomDetail: (id: number | string) => `/hr/meeting-rooms/${id}`,
   },
   approvalSeal: {
     root: '/approval-seal',

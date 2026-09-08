@@ -3,6 +3,7 @@ import { api } from '../api/client'
 import { fmtPrice, fmtVND } from '../utils/money'
 import Pagination from '../components/Pagination'
 import { poBadge } from '../config/cruds'
+import PrLinesReport from '../components/PrLinesReport'
 import SearchSelect from '../components/SearchSelect'
 import MatrixPivotTab from '../components/MatrixPivotTab'
 import { ReportTable, fmt, pctv } from '../components/report-table'
@@ -16,6 +17,7 @@ const TABS = [
   { key: 'department', label: 'Bộ phận (đơn gấp)' },                          // phòng ban YC chỉ thấy phòng mình (scope BE)
   { key: 'shipping', label: 'Chi phí vận chuyển', need: 'purchase_order' },   // phía thu mua -> ẩn với phòng ban YC
   { key: 'pyc_req', label: 'Yêu cầu mua hàng', need: 'purchase_request' },   // theo phòng ban
+  { key: 'pyc_lines', label: 'Chi tiết YC mua hàng', need: 'purchase_request' },  // bao-CR-295: theo DÒNG hàng — soi mã chưa đặt
   { key: 'ycks_req', label: 'Yêu cầu báo giá', need: 'survey_request' },    // theo phòng ban
   // { key: 'inventory', label: 'Tồn kho' },   // tạm ẩn tab Tồn kho
 ]
@@ -24,7 +26,8 @@ const TABS = [
 const PYC_METRICS = [
   { key: 'total', label: 'Tổng' }, { key: 'draft', label: 'Nháp' }, { key: 'submitted', label: 'Chờ duyệt' },
   { key: 'approved', label: 'Đã duyệt' }, { key: 'dispatched', label: 'Đã điều phối' },
-  { key: 'processing', label: 'Đang xử lý' }, { key: 'completed', label: 'Hoàn tất' },
+  { key: 'processing', label: 'Đang xử lý' }, { key: 'purchasing', label: 'Đang mua hàng' },
+  { key: 'purchased', label: 'Đã mua hàng' }, { key: 'completed', label: 'Hoàn tất' },
   { key: 'rejected', label: 'Từ chối' }, { key: 'cancelled', label: 'Đã hủy' },
 ]
 const YCKS_METRICS = [
@@ -393,6 +396,9 @@ export default function Reports() {
             metrics={kind === 'pyc' ? PYC_METRICS : YCKS_METRICS} />
         )
       })()}
+
+      {/* bao-CR-296: nội dung tab tách thành component dùng chung với trang riêng /pr-lines-report */}
+      {tab === 'pyc_lines' && <PrLinesReport year={String(f.year)} companyId={f.company_id} />}
 
       {tab === 'shipping' && <>
         <div className="card" style={{ padding: 16, marginBottom: 14 }}>

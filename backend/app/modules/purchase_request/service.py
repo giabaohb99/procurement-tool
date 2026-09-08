@@ -28,6 +28,8 @@ LINE_STATUS_RECEIVED = "received"
 LINE_STATUS_COMPLETED = "completed"
 LINE_STATUS_CANCELLED = "cancelled"
 # Nhóm "chưa động tới" — dùng để suy trạng thái phiếu; thêm giá trị mới phải nhớ chỗ này.
+# bao-CR-292: recompute_status không dùng LINE_STATUS_IDLE nữa (mốc rời 'dispatched'
+# nay là "đã có ĐMH" = khác LINE_STATUS_NO_PO), giữ lại làm tài liệu cho nơi khác tham chiếu.
 LINE_STATUS_IDLE = (LINE_STATUS_NO_PO, LINE_STATUS_NOT_ORDERED)
 # Điểm cuối của một dòng: không còn gì để làm nữa (đủ điều kiện đóng phiếu).
 LINE_STATUS_DONE = (LINE_STATUS_COMPLETED, LINE_STATUS_CANCELLED)
@@ -275,18 +277,48 @@ def has_cancelled_line(db: Session, pr_id: int) -> bool:
         PurchaseRequestItem.line_status == LINE_STATUS_CANCELLED).first() is not None
 
 
+def _misa_covered_codes(db: Session, pr_code: str) -> set[str]:
+    """bao-CR-292 (ticket 22) — các mã hàng ĐÃ được phủ bởi ĐMH có nhập mã đơn MISA.
+
+    'Phủ' = tồn tại dòng ĐMH (khớp product_code) thuộc đơn còn sống (bỏ nháp/chờ duyệt/
+    bị trả lại/đã từ chối — cùng rổ với sync_from_purchase_orders) mà đơn đó đã có
+    `misa_code`, và bản thân dòng ĐMH không bị Hủy đơn."""
+    if not pr_code:
+        return set()
+    from sqlalchemy import func
+    from app.modules.purchase_order.model import PurchaseOrder, POItem
+    rows = (db.query(POItem.product_code)
+            .join(PurchaseOrder, PurchaseOrder.id == POItem.po_id)
+            .filter(PurchaseOrder.pr_code == pr_code,
+                    PurchaseOrder.status.notin_(["draft", "submitted", "cancelled", "rejected"]),
+                    func.trim(func.coalesce(PurchaseOrder.misa_code, "")) != "",
+                    # B-06: erp-v2 lưu MÃ (PO_PROGRESS_STATUS) — bản main so "Hủy đơn" tiếng Việt.
+                    POItem.progress_status != "cancelled")
+            .distinct().all())
+    return {r[0] for r in rows}
+
+
 def recompute_status(db: Session, pr: PurchaseRequest) -> None:
-    """Tự suy trạng thái phiếu từ trạng thái các dòng (chỉ khi đã điều phối / đang xử lý / hoàn thành).
+    """Tự suy trạng thái phiếu từ trạng thái các dòng (chỉ khi đã điều phối trở đi).
 
     CR-034: 'approved' (TP duyệt xong) KHÔNG nằm ở đây — lúc đó phiếu chưa có NSTM, chưa đặt
     hàng được nên không có gì để suy. Mốc "làm việc được" giờ là 'dispatched'.
-    Ngoại lệ: công tắc điều phối TẮT thì 'approved' cũng là mốc làm việc (phiếu cũ còn kẹt lại)."""
-    threshold = ["dispatched", "processing", "completed"]
+    Ngoại lệ: công tắc điều phối TẮT thì 'approved' cũng là mốc làm việc (phiếu cũ còn kẹt lại).
+
+    bao-CR-292 (ticket 22): 'Đang xử lý' tách thành BA mốc theo mã đơn MISA + độ phủ mã hàng
+    (luật chốt với khách 05/09/2026, phải khớp nhãn tiến độ dòng của luồng gộp — doc/erp/12 P6-13):
+      - processing  «Đang xử lý»  : đã có ĐMH (kể cả đơn Nháp) nhưng CHƯA đơn nào nhập MISA;
+      - purchasing  «Đang mua hàng»: có ĐMH nhập MISA nhưng mới phủ MỘT PHẦN mã hàng;
+      - purchased   «Đã mua hàng» : MỌI mã hàng (trừ dòng Hủy) đều có ĐMH đã nhập MISA.
+    Mốc lên 'processing' cũng ĐỔI theo khách: trước đây phải có dòng ĐÃ ĐẶT HÀNG, nay chỉ cần
+    NSTM đã tạo ĐMH ('not_ordered' trở đi) là phiếu rời 'dispatched'."""
+    threshold = ["dispatched", "processing", "purchasing", "purchased", "completed"]
     if not dispatch_enabled():
         threshold.append("approved")
     if pr.status not in threshold:
         return
-    st = [(i.line_status or LINE_STATUS_NO_PO) for i in items_of(db, pr.id)]
+    items = items_of(db, pr.id)
+    st = [(i.line_status or LINE_STATUS_NO_PO) for i in items]
     if not st:
         return
     was_completed = pr.status == "completed"
@@ -294,12 +326,19 @@ def recompute_status(db: Session, pr: PurchaseRequest) -> None:
     active = [s for s in st if s != LINE_STATUS_CANCELLED]
     if active and all(s == LINE_STATUS_COMPLETED for s in active):
         pr.status = "completed"
-    # CR-074: cả hai nhãn "chưa động tới" đều tính như nhau ở đây. Trạng thái PHIẾU giữ nguyên
-    # luật cũ — mới lập ĐMH mà chưa bấm đặt hàng thì phiếu vẫn ở mốc đã điều phối.
-    elif any(s not in LINE_STATUS_IDLE + (LINE_STATUS_CANCELLED,) for s in st):
-        pr.status = "processing"
+    elif any(s != LINE_STATUS_NO_PO for s in active):
+        # Đã có ít nhất một dòng được lập ĐMH → nằm trong cụm ba mốc "đang xử lý".
+        active_codes = {i.product_code for i in items
+                        if (i.line_status or LINE_STATUS_NO_PO) != LINE_STATUS_CANCELLED}
+        covered = _misa_covered_codes(db, pr.code) & active_codes
+        if not covered:
+            pr.status = "processing"
+        elif active_codes - covered:
+            pr.status = "purchasing"
+        else:
+            pr.status = "purchased"
     else:
-        pr.status = "dispatched"   # mọi dòng lùi về mức chưa đặt → về lại mốc đã điều phối
+        pr.status = "dispatched"   # chưa dòng nào có ĐMH → vẫn ở mốc đã điều phối
     db.commit()
     if pr.status == "completed" and not was_completed:
         _notify_survey_request_done(db, pr.id, pr.updated_by or 0)
@@ -606,10 +645,27 @@ def dispatch_pr(db: Session, pid: int, user_id: int) -> tuple[PurchaseRequest, i
     n = auto_assign_by_category(db, pr)
     blank_count = sum(1 for it in items_of(db, pid) if not (it.assignee or "").strip())
     pr.status = "dispatched"
+    # bao-CR-293 (ticket 20): Ngày tiếp nhận = ngày thu mua duyệt điều phối, KHÔNG phải ngày lập
+    # phiếu — thời gian quy định có hàng phải đếm từ lúc thu mua thật sự nhận việc. Dòng nào
+    # "Thời gian dự kiến có hàng" vẫn là giá trị TỰ ĐIỀN theo mốc cũ thì dời theo mốc mới;
+    # dòng NSTM đã sửa tay (giá trị khác bản tự điền) giữ nguyên.
+    from datetime import date
+    old_base = (pr.request_date or "").strip()
+    new_base = date.today().isoformat()
+    std = lead_time.std_days_map(db)
+    for it in items_of(db, pid):
+        auto_old = lead_time.regulated_date(std, it.item_group or "", old_base)
+        if auto_old and (it.expected_date or "").strip() == auto_old:
+            it.expected_date = lead_time.regulated_date(std, it.item_group or "", new_base)
+    pr.request_date = new_base
     pr.updated_by = user_id
     db.commit()
     record(db, user_id, ENTITY, pid, "dispatched",
-           f"Điều phối — tự động phân bổ {n} dòng" + (f", còn {blank_count} dòng chưa có người" if blank_count else ""))
+           f"Điều phối — tự động phân bổ {n} dòng" + (f", còn {blank_count} dòng chưa có người" if blank_count else "")
+           + (f" · Ngày tiếp nhận {old_base or '(trống)'} -> {new_base}" if old_base != new_base else ""))
+    # Mốc gốc dời muộn hơn -> ngày QĐ có hàng dời theo, dòng "cần sớm hơn ngày QĐ" có thể phát
+    # sinh mới -> soát lại cờ Đơn gấp (CR-082: chỉ BẬT, không tự tắt).
+    apply_auto_urgent(db, pr, user_id, std)
     db.refresh(pr)
     return pr, n, blank_count
 

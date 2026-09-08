@@ -28,6 +28,21 @@ import app.main  # noqa: F401 — side-effect: đăng ký tất cả router + mo
 from app.core.base_model import Base
 
 
+# ── Cache quyền: xóa quanh MỌI test ─────────────────────────────────────────────
+@pytest.fixture(autouse=True)
+def _clear_perm_cache():
+    """`_PERM_CACHE` sống 60 giây trong tiến trình pytest, không theo DB.
+
+    Fixture `db` đã xóa một lần lúc dựng, nhưng test nào cấp thêm vai trò GIỮA
+    chừng mà quên xóa thì ca sau đọc trúng hồ sơ quyền của ca trước — sai âm
+    thầm và phụ thuộc thứ tự chạy. Xóa cả hai đầu, đừng trông vào việc nhớ gọi tay.
+    """
+    from app.core.auth import perm_cache_clear
+    perm_cache_clear()
+    yield
+    perm_cache_clear()
+
+
 # ── Fixture db ──────────────────────────────────────────────────────────────────
 @pytest.fixture(scope="function")
 def db():
@@ -276,6 +291,13 @@ def seed(db):
         sup_id=sup.id,
         sup_name=sup.name,
     )
+
+
+@pytest.fixture(scope="function")
+def world(db):
+    """Thế giới mẫu cho test PHẠM VI — xem `test/backend/scope_factory.py`."""
+    from scope_factory import build_world
+    return build_world(db)
 
 
 @pytest.fixture(scope="function")

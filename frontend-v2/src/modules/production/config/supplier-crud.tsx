@@ -5,6 +5,7 @@ import { SUPPLIER_LEGAL_TYPE } from '@/shared/constants/statuses'
 import type { CrudConfig } from '@/shared/crud'
 import { ratioToPercentInput } from '@/shared/crud'
 import { Badge } from '@/shared/ui/badge'
+import { formatDateTime } from '@/shared/utils/format-date'
 import { formatPercent } from '@/shared/utils/format-money'
 import { PurchaseHistoryTable } from '../components/purchase-history-table'
 import { SupplierContractsTable } from '../components/supplier-contracts-table'
@@ -42,6 +43,8 @@ export const SUPPLIER_CRUD_CONFIG: CrudConfig<Supplier> = {
   unitLabel: 'nhà cung cấp',
   apiPath: '/api/suppliers',
   storageKey: 'production.suppliers',
+  //  Bốn trong năm tab là BẢNG (hợp đồng, công nợ, lịch sử mua hàng, khảo sát).
+  detailMaxWidth: 'max-w-none',
   listRoute: appRoutes.production.suppliers,
   detailRoute: (id) => appRoutes.production.supplierDetail(id),
   // Backend không có tham số `search` cho NCC; whitelist FILTERABLE có `name` nên
@@ -147,6 +150,15 @@ export const SUPPLIER_CRUD_CONFIG: CrudConfig<Supplier> = {
           {s.is_active ? 'Đang giao dịch' : 'Ngừng'}
         </Badge>
       ),
+    },
+    {
+      // bao-CR-300 (ticket 21) — cột "Ngày cập nhật", bấm lần đầu ra mới nhất trước.
+      key: 'updated_at',
+      header: 'Ngày cập nhật',
+      width: 150,
+      sortable: true,
+      sortDescFirst: true,
+      cell: (s) => formatDateTime(s.updated_at) || '',
     },
   ],
   filterConfig: {

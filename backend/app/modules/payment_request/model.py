@@ -47,3 +47,13 @@ class PaymentRequestLine(Base, AuditMixin):
     # Ngày hóa đơn — mặc định lấy từ dòng giao hàng (tab_po_delivery.invoice_date), sửa tay được
     invoice_date: Mapped[str] = mapped_column(String(10), default="")
     amount: Mapped[float] = mapped_column(Numeric(18, 2), default=0)
+    # CR-268 — theo dõi TIỀN TREO của phiếu thanh toán trước (prepay=1):
+    # allocated_amount = phần đã đối trừ vào công nợ; refunded_amount = phần NCC đã hoàn lại.
+    # Treo còn lại = amount - allocated_amount - refunded_amount (xem line_hanging trong service).
+    allocated_amount: Mapped[float] = mapped_column(Numeric(18, 2), default=0)
+    refunded_amount: Mapped[float] = mapped_column(Numeric(18, 2), default=0)
+    # CR-260 — phần ĐỀ NGHỊ CẤN TRỪ tiền treo cấp NCC vào khoản nợ của dòng này.
+    # Chỉ là Ý ĐỊNH ghi lúc lập phiếu (nháp sửa/xóa vô hại, chưa đụng công nợ);
+    # THỰC THI khi phiếu được DUYỆT (apply_line_offsets) — người duyệt là người
+    # nắm logic tiền treo, không phải thu mua bấm ở màn ĐMH.
+    offset_amount: Mapped[float] = mapped_column(Numeric(18, 2), default=0)

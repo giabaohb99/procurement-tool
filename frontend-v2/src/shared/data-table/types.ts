@@ -9,6 +9,14 @@ export interface DataTableColumn<T> {
    * chuỗi này còn dùng làm nhãn kéo thả và tên cột trong menu ẩn/hiện.
    */
   header: string
+  /**
+   * Thay NHÃN tiêu đề bằng một thành phần (ô tick "chọn hết", huy hiệu đếm…).
+   * `header` vẫn phải khai vì nó còn là nhãn lúc kéo cột và tên trong menu "Cột".
+   *
+   * Bảng đã tự chặn nổi bọt cả `pointerdown` (kéo đổi vị trí cột) lẫn `click`
+   * (sắp xếp) quanh chỗ này, nên bên trong cứ đặt nút / ô tick bình thường.
+   */
+  headerContent?: ReactNode
   /** Nội dung ô. Trả `null`/chuỗi rỗng thì bảng tự hiện dấu gạch ngang. */
   cell: (row: T) => ReactNode
   /** Độ rộng ban đầu (px). Bỏ trống = cột co giãn theo phần còn lại. */
@@ -41,6 +49,13 @@ export interface DataTableColumn<T> {
   wrap?: boolean
   /** `true` = cột có thể sắp xếp. */
   sortable?: boolean
+  /**
+   * Bấm lần đầu sắp GIẢM dần thay vì tăng (chu kỳ thành giảm → tăng → thôi).
+   * Dành cho cột thời gian (*Ngày cập nhật*, *Ngày tạo*): người dùng bấm vào đó
+   * là muốn xem BẢN GHI MỚI NHẤT trước — bắt họ bấm hai lần là ngược tay
+   * (luật mang từ bản v1, bao-CR-294).
+   */
+  sortDescFirst?: boolean
 }
 
 /**

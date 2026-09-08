@@ -244,19 +244,34 @@ export function PurchaseRequestDetailPage() {
   const canManage = can('purchase_request', 'cancel')
   const canAssign = can('purchase_request', 'approve') && !closed
   const showAssignee = can('survey_request', 'process')
+  // bao-CR-292/297 (ticket 22): thêm hai mốc purchasing/purchased — phiếu đã mua
+  // đủ vẫn có thể cần thêm ĐMH (đặt bổ sung / NCC khác) nên không khóa nút ở đó.
   const workableStatuses = data.dispatch_enabled === false
-    ? ['approved', 'dispatched', 'processing']
-    : ['dispatched', 'processing']
+    ? ['approved', 'dispatched', 'processing', 'purchasing', 'purchased']
+    : ['dispatched', 'processing', 'purchasing', 'purchased']
   const allItemsDone =
     data.items.length > 0 &&
     data.items.every((item) => ['completed', 'cancelled'].includes(item.line_status))
   /**
    * NSTM = nhân sự PHÒNG THU MUA; ô chọn hiện TÊN nhưng lưu MÃ nhân viên
    * (backend nối dòng YCMH với người phụ trách bằng mã).
+   * QA 29/08: bổ sung người đã gán ở từng dòng dù họ nằm ngoài danh mục tải về
+   * (danh sách nhân sự chưa tải xong / tải lỗi / khác phòng) — không thì ô Select
+   * hiện trống như chưa phân công dù DB đã có, cùng bẫy trang Khảo sát từng dính.
    */
-  const purchasers = (employeesData?.items ?? [])
-    .filter((employee) => (employee.department_name || '').toLowerCase().includes('thu mua'))
-    .map((employee) => ({ code: employee.code, name: employee.full_name }))
+  const purchasers = (() => {
+    const employees = employeesData?.items ?? []
+    const options = employees
+      .filter((employee) => (employee.department_name || '').toLowerCase().includes('thu mua'))
+      .map((employee) => ({ code: employee.code, name: employee.full_name }))
+    for (const item of data.items) {
+      if (item.assignee && !options.some((option) => option.code === item.assignee)) {
+        const found = employees.find((employee) => employee.code === item.assignee)
+        options.push({ code: item.assignee, name: found?.full_name || item.assignee })
+      }
+    }
+    return options
+  })()
 
   /** Sửa tiến độ dòng: quản lý/người duyệt, hoặc chính NSTM phụ trách dòng đó. */
   const canEditLine = (item: PurchaseRequestItem) =>
@@ -687,8 +702,8 @@ export function PurchaseRequestDetailPage() {
                   dòng chữ ở tiêu đề làm thẻ này cao hơn hẳn các thẻ còn lại. */}
               {!editing && (
                 <p className="text-xs text-muted-foreground">
-                  Trạng thái và tiến độ tự đồng bộ từ ĐMH. Mở Chi tiết để xem ngày cần hàng,
-                  ghi chú và ảnh đối chiếu.
+                  Trạng thái và tiến độ tự đồng bộ từ ĐMH. Mở Chi tiết để xem ghi chú
+                  và ảnh đối chiếu.
                 </p>
               )}
               <PurchaseRequestItemsTable

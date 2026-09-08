@@ -71,10 +71,6 @@ export const workApi = {
 
   leaveList: (listId: number) => apiPost(`/api/work/lists/${listId}/leave`, {}),
 
-  /** Chuyển quyền sở hữu (A-04) — nguyên tử ở backend, giữ đúng một chủ. */
-  transferList: (listId: number, employeeId: number) =>
-    apiPost<WorkMember>(`/api/work/lists/${listId}/transfer`, { employee_id: employeeId }),
-
   sections: (listId: number) => apiGet<WorkSection[]>(`/api/work/lists/${listId}/sections`),
 
   createSection: (listId: number, values: { name: string; color?: string; sort_order?: number }) =>

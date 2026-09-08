@@ -11,12 +11,34 @@ router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 
 @router.get("/stats")
 def stats(days: str = "30", db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Thống kê nhanh — CÙNG LUẬT VỚI `/overview` (vá 05/09/2026).
+
+    Trước bản vá này route chỉ có `get_current_user`: không `require`, không
+    `apply_scope`. Một tài khoản `perms_union` RỖNG vẫn đếm được YCMH · ĐMH ·
+    nhân sự · NCC · sản phẩm của TOÀN HỆ, xuyên mọi pháp nhân.
+
+    Nay chép đúng khuôn `/overview` ngay bên dưới: route chỉ đòi ĐĂNG NHẬP, rồi
+    gác TỪNG KHỐI bằng `can(entity)` và lọc bằng `apply_scope` theo entity
+    nguồn. Thiếu quyền thì **khóa vắng mặt** chứ không trả `0` — `0` nghĩa là
+    "đếm được, không có dòng nào", khác hẳn "không được xem". Nơi gọi đọc `can`
+    để chọn ẩn khối, và luôn đọc số kèm `?? 0`.
+    """
+    from app.core.auth import get_perm_profile
+    from app.core.scoping import apply_scope
     from app.modules.employee.model import Employee
     from app.modules.product.model import Product
     from app.modules.purchase_request.model import PurchaseRequest
     from app.modules.supplier.model import Supplier
     from app.modules.survey.model import Survey
     from app.modules.purchase_order.model import PurchaseOrder
+
+    prof = get_perm_profile(db, user)
+
+    def can(e):
+        return bool(prof["perms_union"].get(e, {}).get("read"))
+
+    def scoped(model, entity):
+        return apply_scope(db.query(model), model, entity, user, prof)
 
     since = None
     if days != "all":
@@ -31,30 +53,46 @@ def stats(days: str = "30", db: Session = Depends(get_db), user=Depends(get_curr
             return query.filter(model.created_at >= since)
         return query
 
-    # General statistics
-    suppliers_count = filter_since(db.query(Supplier), Supplier).count()
-    products_count = filter_since(db.query(Product), Product).count()
-    employees_count = filter_since(db.query(Employee), Employee).count()
+    data: dict = {}
 
-    # PR / Purchase Request stats
-    pr_query = db.query(PurchaseRequest)
-    pr_total = filter_since(pr_query, PurchaseRequest).count()
-    pr_pending = filter_since(pr_query.filter(PurchaseRequest.status == "submitted"), PurchaseRequest).count()
-    # CR-034: "đã duyệt" gồm cả phiếu chờ điều phối lẫn đã điều phối (khỏi tụt số so với trước)
-    pr_approved = filter_since(pr_query.filter(PurchaseRequest.status.in_(["approved", "dispatched"])), PurchaseRequest).count()
+    # ===== Danh mục nền =====
+    if can("supplier"):
+        data["suppliers"] = filter_since(scoped(Supplier, "supplier"), Supplier).count()
+    if can("product"):
+        data["products"] = filter_since(scoped(Product, "product"), Product).count()
+    if can("employee"):
+        data["employees"] = filter_since(scoped(Employee, "employee"), Employee).count()
 
-    # Survey stats (Real data)
-    survey_query = db.query(Survey)
-    survey_pending = filter_since(survey_query.filter(Survey.status == "submitted"), Survey).count()
+    # ===== Yêu cầu mua =====
+    if can("purchase_request"):
+        pr_query = scoped(PurchaseRequest, "purchase_request")
+        data["pr_total"] = filter_since(pr_query, PurchaseRequest).count()
+        data["pr_pending"] = filter_since(
+            pr_query.filter(PurchaseRequest.status == "submitted"), PurchaseRequest).count()
+        # CR-034: "đã duyệt" gồm cả phiếu chờ điều phối lẫn đã điều phối (khỏi tụt số so với trước)
+        data["pr_processing"] = filter_since(
+            pr_query.filter(PurchaseRequest.status.in_(["approved", "dispatched"])),
+            PurchaseRequest).count()
 
-    # PO / Purchase Order stats (Real data)
-    po_query = db.query(PurchaseOrder)
-    po_ordered = filter_since(po_query.filter(PurchaseOrder.status.in_(["approved", "partial", "received"])), PurchaseOrder).count()
-    po_delivered = filter_since(po_query.filter(PurchaseOrder.status == "received"), PurchaseOrder).count()
-    po_partial = filter_since(po_query.filter(PurchaseOrder.status == "partial"), PurchaseOrder).count()
-    po_completed = filter_since(po_query.filter(PurchaseOrder.status == "completed"), PurchaseOrder).count()
+    # ===== Khảo sát =====
+    if can("survey"):
+        data["survey_pending"] = filter_since(
+            scoped(Survey, "survey").filter(Survey.status == "submitted"), Survey).count()
 
-    # Generate trend data based on timeframe
+    # ===== Đơn mua hàng =====
+    if can("purchase_order"):
+        po_query = scoped(PurchaseOrder, "purchase_order")
+        data["po_ordered"] = filter_since(
+            po_query.filter(PurchaseOrder.status.in_(["approved", "partial", "received"])),
+            PurchaseOrder).count()
+        data["po_delivered"] = filter_since(
+            po_query.filter(PurchaseOrder.status == "received"), PurchaseOrder).count()
+        data["po_partial"] = filter_since(
+            po_query.filter(PurchaseOrder.status == "partial"), PurchaseOrder).count()
+        data["po_completed"] = filter_since(
+            po_query.filter(PurchaseOrder.status == "completed"), PurchaseOrder).count()
+
+    # ===== Đường xu hướng =====
     trends = []
     end_date = datetime.now()
     if days == "7":
@@ -76,32 +114,26 @@ def stats(days: str = "30", db: Session = Depends(get_db), user=Depends(get_curr
         if interval_days > 1:
             start_range = (d - timedelta(days=interval_days - 1)).replace(hour=0, minute=0, second=0)
 
-        pr_cnt = db.query(PurchaseRequest).filter(
-            PurchaseRequest.created_at >= start_range,
-            PurchaseRequest.created_at <= end_range
-        ).count()
+        point = {"label": d_str}
+        #  Cùng luật khóa-vắng-mặt với các khối trên: không có quyền thì điểm dữ
+        #  liệu KHÔNG có khóa đó, chứ không vẽ một đường 0 trông như "kỳ này
+        #  không ai mua gì".
+        if can("purchase_request"):
+            point["pr"] = scoped(PurchaseRequest, "purchase_request").filter(
+                PurchaseRequest.created_at >= start_range,
+                PurchaseRequest.created_at <= end_range
+            ).count()
+        if can("purchase_order"):
+            point["po"] = scoped(PurchaseOrder, "purchase_order").filter(
+                PurchaseOrder.created_at >= start_range,
+                PurchaseOrder.created_at <= end_range
+            ).count()
+        trends.append(point)
 
-        po_cnt = db.query(PurchaseOrder).filter(
-            PurchaseOrder.created_at >= start_range,
-            PurchaseOrder.created_at <= end_range
-        ).count()
-
-        trends.append({"label": d_str, "pr": pr_cnt, "po": po_cnt})
-
-    return success({
-        "suppliers": suppliers_count,
-        "products": products_count,
-        "employees": employees_count,
-        "pr_total": pr_total,
-        "pr_pending": pr_pending,
-        "pr_processing": pr_approved,
-        "survey_pending": survey_pending,
-        "po_ordered": po_ordered,
-        "po_delivered": po_delivered,
-        "po_partial": po_partial,
-        "po_completed": po_completed,
-        "trends": trends,
-    })
+    data["trends"] = trends
+    data["can"] = {e: can(e) for e in ["supplier", "product", "employee",
+                                       "purchase_request", "survey", "purchase_order"]}
+    return success(data)
 
 
 @router.get("/overview")
@@ -271,7 +303,9 @@ def overview(db: Session = Depends(get_db), user=Depends(get_current_user)):
     # ===== Hợp đồng (dùng chung) =====
     if can("contract"):
         # B-02: mã của bộ `CONTRACT_STATUS` (`app/core/status_codes.py`), trước là "Thanh lý".
-        kpi["contract_expiring"] = db.query(Contract).filter(
+        # `apply_scope` là BẮT BUỘC: phạm vi hợp đồng lọc theo `company_id`, thiếu nó thì
+        # người xem phạm vi một pháp nhân vẫn đếm cả hợp đồng của pháp nhân khác.
+        kpi["contract_expiring"] = apply_scope(db.query(Contract), Contract, "contract", user, prof).filter(
             Contract.status != "liquidated", Contract.end_date != "", Contract.end_date <= in30).count()
 
     # ===== Tồn kho =====
@@ -313,6 +347,106 @@ def overview(db: Session = Depends(get_db), user=Depends(get_current_user)):
         "pending_srs_list": pending_srs_list,
         "pending_surveys_list": pending_surveys_list,
         "late_deliveries_list": late_deliveries_list,
+    })
+
+
+@router.get("/production")
+def production_overview(db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Tổng quan phân hệ Sản xuất — danh mục NCC · Sản phẩm · ĐVT · Phân loại · Hợp đồng.
+
+    Cùng luật với `/overview`: route chỉ đòi ĐĂNG NHẬP, rồi gác TỪNG KHỐI bằng
+    `can(entity)` và **bỏ hẳn khóa** khi thiếu quyền. Không trả `0` cho người
+    không có quyền — `0` nghĩa là "đếm được, không có dòng nào", khác hẳn
+    "không được xem"; FE đọc `can` để chọn ẩn khối hay hiện số không.
+
+    Phân hệ Sản xuất chưa có bảng nghiệp vụ nào của riêng nó (không có lệnh sản
+    xuất, không có định mức), nên toàn bộ số liệu ở đây là danh mục nền.
+    """
+    from sqlalchemy import func
+
+    from app.core.auth import get_perm_profile
+    from app.core.scoping import apply_scope
+    from app.modules.catalog.model import ItemGroup, Unit
+    from app.modules.contract.model import Contract
+    from app.modules.product.model import Product
+    from app.modules.supplier.model import Supplier
+
+    prof = get_perm_profile(db, user)
+
+    def can(e):
+        return bool(prof["perms_union"].get(e, {}).get("read"))
+
+    today = datetime.now().date()
+    tstr = today.strftime("%Y-%m-%d")
+    in30 = (today + timedelta(days=30)).strftime("%Y-%m-%d")
+
+    # Số thẻ hiện trên trang; lấy dư thì thẻ cao lêu nghêu, phần đuôi gom vào "Khác".
+    TOP_GROUPS = 6
+    EXPIRING_ROWS = 8
+
+    kpi: dict = {}
+    product_groups: list[dict] = []
+    expiring_contracts: list[dict] = []
+
+    # ===== Nhà cung cấp =====
+    if can("supplier"):
+        sup_q = apply_scope(db.query(Supplier), Supplier, "supplier", user, prof)
+        kpi["supplier_total"] = sup_q.count()
+        kpi["supplier_goods"] = sup_q.filter(Supplier.supplier_type == "goods").count()
+        kpi["supplier_transport"] = sup_q.filter(Supplier.supplier_type == "transport").count()
+        kpi["supplier_inactive"] = sup_q.filter(Supplier.is_active.is_(False)).count()
+
+    # ===== Sản phẩm & Vật tư =====
+    if can("product"):
+        prod_q = apply_scope(db.query(Product), Product, "product", user, prof)
+        kpi["product_total"] = prod_q.count()
+        kpi["product_inactive"] = prod_q.filter(Product.is_active.is_(False)).count()
+        # GROUP BY chứ không kéo cả bảng về đếm trong Python: `tab_product` là bảng
+        # SKU (mỗi quy cách một dòng), trên prod đã hàng nghìn dòng.
+        rows = (apply_scope(db.query(Product.item_group, func.count(Product.id)),
+                            Product, "product", user, prof)
+                .group_by(Product.item_group).all())
+        counted = sorted(((g or "(Chưa phân loại)", int(n)) for g, n in rows), key=lambda x: -x[1])
+        product_groups = [{"name": g, "value": n} for g, n in counted[:TOP_GROUPS]]
+        rest = sum(n for _, n in counted[TOP_GROUPS:])
+        if rest:
+            product_groups.append({"name": "Khác", "value": rest})
+
+    # ===== Đơn vị tính / Phân loại VTBB =====
+    if can("unit"):
+        kpi["unit_total"] = apply_scope(db.query(Unit), Unit, "unit", user, prof).count()
+    if can("item_group"):
+        kpi["item_group_total"] = apply_scope(db.query(ItemGroup), ItemGroup, "item_group", user, prof).count()
+
+    # ===== Hợp đồng =====
+    if can("contract"):
+        ct_q = apply_scope(db.query(Contract), Contract, "contract", user, prof)
+        # Hợp đồng đã thanh lý / đã hủy không còn là việc của ai — mọi con số cảnh
+        # báo bên dưới đều đếm trên tập CÒN SỐNG này.
+        live_q = ct_q.filter(Contract.status.notin_(["liquidated", "cancelled"]))
+        kpi["contract_total"] = ct_q.count()
+        kpi["contract_live"] = live_q.count()
+        # `end_date != ""` là BẮT BUỘC: cột là VARCHAR, hợp đồng không đặt hạn lưu
+        # chuỗi rỗng, mà "" <= "2026-09-30" là ĐÚNG — bỏ điều kiện này thì mọi hợp
+        # đồng vô thời hạn bị đếm là sắp hết hạn.
+        soon_q = live_q.filter(Contract.end_date != "", Contract.end_date >= tstr,
+                               Contract.end_date <= in30)
+        kpi["contract_expiring"] = soon_q.count()
+        kpi["contract_expired"] = live_q.filter(Contract.end_date != "", Contract.end_date < tstr).count()
+        kpi["contract_unsigned"] = live_q.filter(Contract.signed.is_(False)).count()
+        for c in soon_q.order_by(Contract.end_date.asc()).limit(EXPIRING_ROWS).all():
+            expiring_contracts.append({
+                "id": c.id, "code": c.code, "title": c.title or "",
+                "party_name": c.party_name or c.party_code or "", "end_date": c.end_date,
+            })
+
+    can_map = {e: can(e) for e in ["supplier", "product", "unit", "item_group", "contract"]}
+
+    return success({
+        "kpi": kpi,
+        "product_groups": product_groups,
+        "expiring_contracts": expiring_contracts,
+        "can": can_map,
     })
 
 

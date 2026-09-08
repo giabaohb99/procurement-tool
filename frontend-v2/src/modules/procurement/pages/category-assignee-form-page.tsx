@@ -9,6 +9,7 @@ import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { MultiPicker } from '@/shared/ui/multi-picker'
+import { RequiredMark } from '@/shared/ui/required-mark'
 
 interface Option {
   value: number
@@ -177,7 +178,8 @@ export function CategoryAssigneeFormPage() {
             <div className="space-y-2">
               <label className="text-sm font-medium leading-none flex items-center justify-between">
                 <span>
-                  Phân loại VTBB <span className="text-red-500">*</span>
+                  Phân loại VTBB
+                  <RequiredMark />
                 </span>
                 <span className="text-xs text-muted-foreground font-normal">
                   Đã chọn {selectedCatIds.length} phân loại
@@ -199,12 +201,13 @@ export function CategoryAssigneeFormPage() {
             {/* Primary Employee */}
             <div className="space-y-2">
               <label className="text-sm font-medium leading-none">
-                NSTM chính <span className="text-red-500">*</span>
+                NSTM chính
+                <RequiredMark />
               </label>
               <select
                 value={String(primaryId || '')}
                 onChange={(e) => setPrimaryId(Number(e.target.value) || 0)}
-                className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
                 <option value="">-- Chọn Nhân sự thu mua chính --</option>
                 {employees.map((e) => (
@@ -225,7 +228,7 @@ export function CategoryAssigneeFormPage() {
               <select
                 value={String(backupId || '')}
                 onChange={(e) => setBackupId(Number(e.target.value) || 0)}
-                className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
                 <option value="">-- Không có dự phòng --</option>
                 {employees.map((e) => (

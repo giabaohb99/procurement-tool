@@ -3,6 +3,7 @@ import { CircleCheck, CircleX, Hash } from 'lucide-react'
 import { appRoutes } from '@/shared/constants/app-routes'
 import type { CrudConfig } from '@/shared/crud'
 import { Badge } from '@/shared/ui/badge'
+import { formatDateTime } from '@/shared/utils/format-date'
 import type { Warehouse } from '../types/warehouse'
 
 export const WAREHOUSE_CRUD_CONFIG: CrudConfig<Warehouse> = {
@@ -30,6 +31,7 @@ export const WAREHOUSE_CRUD_CONFIG: CrudConfig<Warehouse> = {
       key: 'code',
       header: 'Mã kho',
       width: 140,
+      sortable: true,
       hideable: false,
       cell: (w) => <span className="font-semibold text-primary">{w.code}</span>,
     },
@@ -37,6 +39,7 @@ export const WAREHOUSE_CRUD_CONFIG: CrudConfig<Warehouse> = {
       key: 'name',
       header: 'Tên kho',
       width: 280,
+      sortable: true,
       hideable: false,
       cell: (w) => <span className="font-medium">{w.name}</span>,
     },
@@ -59,6 +62,15 @@ export const WAREHOUSE_CRUD_CONFIG: CrudConfig<Warehouse> = {
           {w.is_active ? 'Đang dùng' : 'Ngừng'}
         </Badge>
       ),
+    },
+    {
+      // bao-CR-300 (ticket 21) — cột "Ngày cập nhật", bấm lần đầu ra mới nhất trước.
+      key: 'updated_at',
+      header: 'Ngày cập nhật',
+      width: 150,
+      sortable: true,
+      sortDescFirst: true,
+      cell: (w) => formatDateTime(w.updated_at) || '',
     },
   ],
   filterConfig: {

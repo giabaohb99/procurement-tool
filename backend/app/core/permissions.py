@@ -32,6 +32,9 @@ ENTITIES = [
     # bài người khác, QĐ-D1). Người dùng thường KHÔNG cần grant: đăng/đọc đi
     # theo luật audience riêng trong API diễn đàn, giống comment CR-033.
     "forum_post",
+    # F13a: cấu trúc chuyên mục (nhóm/box kiểu VOZ) — cũng chỉ của `forum_admin`.
+    # Tách khỏi `forum_post` để "quyền dựng box" gán được riêng với "quyền ẩn bài".
+    "forum_board",
     # Phân hệ Công việc (CR-216) — MỘT khóa cho cả phân hệ, cố ý không tách
     # `work_list` riêng: mọi quyền thật nằm ở tầng THÀNH VIÊN (bảng
     # `tab_work_list_member`), tách hai khóa chỉ đẻ thêm ô ma trận không ai hiểu.
@@ -39,6 +42,20 @@ ENTITIES = [
     # máy duyệt và `/api/dashboard/tasks` (Việc cần làm). Xem
     # `doc/erp/cong-viec/04-phan-quyen.md` §1.
     "work_task",
+    # Phân hệ Nghỉ phép (CR-259). Bốn khóa vì bốn màn hình do BA nhóm người
+    # khác nhau dùng, và gộp lại thì không tách được:
+    #  · `leave_request` — nhân viên nộp đơn, trưởng phòng duyệt;
+    #  · `leave_balance` — Nhân sự cấp phát và chỉnh quỹ (cho quyền này là cho
+    #    quyền tặng thêm ngày phép, không thể chung khóa với việc nộp đơn);
+    #  · `leave_type`    — cấu hình luật nghỉ (V1-6), việc của quản trị;
+    #  · `holiday`       — lịch ngày lễ, cũng của quản trị nhưng đổi theo năm
+    #    nên thường giao cho hành chính, tách khỏi `leave_type`.
+    "leave_request", "leave_balance", "leave_type", "holiday",
+    # Phân hệ Đặt phòng họp (duoc-CR-279). Hai khóa vì hai nhóm người:
+    #  · `room_booking` — ai cũng đặt được, trưởng bộ phận/hành chính duyệt;
+    #  · `meeting_room` — khai danh mục phòng, việc quản trị. Cho quyền sửa danh
+    #    mục KHÁC cho quyền đặt phòng, gộp một khóa là không tách được.
+    "room_booking", "meeting_room",
 ]
 
 ACTIONS = ["read", "create", "write", "delete", "approve", "cancel", "print", "export"]
@@ -94,7 +111,14 @@ ENTITY_LABELS = {
     "approval_flow": "Luồng phê duyệt (dùng chung)",
     "assistant": "Trợ lý AI",
     "forum_post": "Diễn đàn › Kiểm duyệt bài viết",
+    "forum_board": "Diễn đàn › Quản trị chuyên mục (box)",
     "work_task": "Công việc (task list, kanban)",
+    "leave_request": "Nghỉ phép › Đơn nghỉ phép",
+    "leave_balance": "Nghỉ phép › Quỹ phép năm",
+    "leave_type": "Nghỉ phép › Thiết lập › Loại nghỉ",
+    "holiday": "Nghỉ phép › Thiết lập › Lịch ngày lễ",
+    "room_booking": "Phiếu đặt phòng họp",
+    "meeting_room": "Phòng họp (danh mục)",
 }
 
 ACTION_LABELS = {

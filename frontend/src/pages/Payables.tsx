@@ -33,6 +33,7 @@ const stBadge = (s: string) => <span className={'badge ' + (s === 'paid' ? 'ok' 
 const EMPTY_FILTERS = (year: number) => ({
   company_id: '', supplier_code: '', po_code: '', invoice_no: '',
   source_type: '', status: '', aging: '', incur_from: '', incur_to: '',
+  invoice_from: '', invoice_to: '',
   amount_from: 0, amount_to: 0, year: String(year),
 })
 
@@ -139,11 +140,17 @@ export default function Payables() {
     { key: 'source_type', label: 'Loại', sort: 'source_type', cell: (r) => (r.source_type === 'shipping' ? 'Vận chuyển' : 'Hàng hóa') },
     { key: 'company', label: 'Công ty', sort: 'company', cell: (r) => companyName(r.company_id) },
     { key: 'po_code', label: 'PO', sort: 'po_code' },
+    // Ticket #18 (bao-CR-279): mã MISA lấy từ ĐMH qua po_id — người dùng đối soát theo mã này
+    { key: 'misa_code', label: 'Mã đơn Misa', sort: 'misa_code' },
     {
       key: 'invoice_no', label: 'Số hóa đơn', sort: 'invoice_no',
       cell: (r) => (r.invoice_no ? r.invoice_no : <span style={{ color: 'var(--red)', fontSize: 12 }}>chưa có HĐ</span>),
     },
-    { key: 'created_at', label: 'Ngày phát sinh', sort: 'created_at', cell: (r) => fmtDateTime(r.created_at) || r.incur_date },
+    // bao-CR-305: "Ngày phát sinh" trước đây chiếu created_at (giờ hệ thống ghi sổ) trong khi
+    // bộ lọc lọc theo incur_date (ngày nhận hàng) — dòng nhập bù trông như lọt lưới lọc tháng.
+    { key: 'invoice_date', label: 'Ngày hóa đơn', sort: 'invoice_date', cell: (r) => r.invoice_date || '—' },
+    { key: 'incur_date', label: 'Ngày phát sinh', sort: 'incur_date', cell: (r) => r.incur_date || '—' },
+    { key: 'created_at', label: 'Ngày ghi nhận', sort: 'created_at', defaultHidden: true, cell: (r) => fmtDateTime(r.created_at) },
     { key: 'due_date', label: 'Hạn trả', sort: 'due_date' },
     { key: 'aging', label: 'Tuổi nợ', sort: 'aging', cell: (r) => agingBadge(r.aging) },
     { key: 'total', label: 'Tổng nợ', sort: 'total', align: 'right', td: R, cell: (r) => fmt(r.total) },
@@ -162,6 +169,36 @@ export default function Payables() {
     navigate(`/payment-requests/new?payables=${picked.map((r) => r.id).join(',')}`, { state: { rows: picked } })
   }
 
+  /** Ticket #16 — xuất Excel đúng bộ lọc + đúng cột đang hiện; có tick chọn thì chỉ xuất
+   *  các khoản đã tick (backend chặn ở 5.000 dòng). */
+  async function exportXlsx() {
+    try {
+      const p: any = params()
+      if (sel.length) p.ids = sel.join(',')
+      p.cols = table.columns.map((c) => c.key).join(',')
+      const r = await api.get('/api/payables/export/xlsx', { params: p, responseType: 'blob' })
+      const cd = String(r.headers['content-disposition'] || '')
+      const name = /filename="?([^"]+)"?/.exec(cd)?.[1] || 'cong-no-phai-tra.xlsx'
+      const url = window.URL.createObjectURL(new Blob([r.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', name)
+      document.body.appendChild(link)
+      link.click()
+      link.parentNode?.removeChild(link)
+      window.URL.revokeObjectURL(url)
+    } catch (e: any) {
+      // Lỗi trả về cũng ở dạng blob (do responseType) -> đọc text rồi lấy message
+      let msg = 'Lỗi khi xuất file Excel'
+      try {
+        const body = e?.response?.data
+        const text = body instanceof Blob ? await body.text() : ''
+        msg = JSON.parse(text)?.error?.message || msg
+      } catch { /* giữ thông báo mặc định */ }
+      setErr(msg)
+    }
+  }
+
   const Card = ({ label, val, color }: any) => (
     <div className="card" style={{ padding: 14, flex: 1, minWidth: 150 }}>
       <div style={{ fontSize: 12, color: 'var(--muted)' }}>{label}</div>
@@ -173,11 +210,19 @@ export default function Payables() {
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 10 }}>
         <h2 className="page-title" style={{ margin: 0 }}>Công nợ phải trả</h2>
-        {can('payment_request', 'create') && (
-          <button className="btn" disabled={!sel.length} onClick={createRequest}>
-            <i className="ti ti-receipt" />Tạo yêu cầu thanh toán {sel.length ? `(${sel.length} khoản · ${selSuppliers.size} NCC)` : ''}
-          </button>
-        )}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {can('payable', 'export') && (
+            <button className="btn outline" onClick={exportXlsx}
+              title={sel.length ? 'Xuất các khoản đang tick chọn ra Excel' : 'Xuất toàn bộ kết quả đang lọc ra Excel'}>
+              <i className="ti ti-file-spreadsheet" />Xuất Excel {sel.length ? `(${sel.length} khoản)` : ''}
+            </button>
+          )}
+          {can('payment_request', 'create') && (
+            <button className="btn" disabled={!sel.length} onClick={createRequest}>
+              <i className="ti ti-receipt" />Tạo yêu cầu thanh toán {sel.length ? `(${sel.length} khoản · ${selSuppliers.size} NCC)` : ''}
+            </button>
+          )}
+        </div>
       </div>
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
@@ -230,6 +275,10 @@ export default function Payables() {
         <FilterItem label="Ngày phát sinh" width={260} secondary active={!!(f.incur_from || f.incur_to)}>
           <DateRangePicker block value={{ from: f.incur_from, to: f.incur_to }}
             onChange={(v) => setF((s: any) => ({ ...s, incur_from: v.from, incur_to: v.to }))} />
+        </FilterItem>
+        <FilterItem label="Ngày hóa đơn" width={260} secondary active={!!(f.invoice_from || f.invoice_to)}>
+          <DateRangePicker block value={{ from: f.invoice_from, to: f.invoice_to }}
+            onChange={(v) => setF((s: any) => ({ ...s, invoice_from: v.from, invoice_to: v.to }))} />
         </FilterItem>
         <FilterItem label="Số tiền (từ → đến)" width={230} secondary active={!!(f.amount_from || f.amount_to)}>
           <div className="filter-pair">

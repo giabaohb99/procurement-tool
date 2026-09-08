@@ -7,7 +7,10 @@ import { Button } from '@/shared/ui/button'
 import { ErrorState } from '@/shared/ui/error-state'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { formatMoney, formatQuantity, formatUnitPrice } from '@/shared/utils/format-money'
-import { usePurchaseRequest } from '../hooks/use-purchase-request'
+import {
+  usePurchaseRequest,
+  usePurchaseRequestOfPurchaseOrder,
+} from '../hooks/use-purchase-request'
 import { usePurchaseRequestPrintWarehouses } from '../hooks/use-purchase-request-support'
 import type { PurchaseRequestDetail, PurchaseRequestItem } from '../types/purchase-request-detail'
 import { cn } from '@/shared/utils/cn'
@@ -17,12 +20,24 @@ import { cn } from '@/shared/utils/cn'
  *
  * Route này nằm ngoài ModuleLayout để bản in không mang theo menu và topbar.
  * Bố cục, dữ liệu và hai chế độ Mẫu thường/Mẫu thuế được giữ theo frontend v1.
+ *
+ * bao-CR-314 — `fromPo`: mở từ ĐƠN MUA HÀNG, `id` trên URL là id của ĐƠN chứ không phải
+ * của phiếu. Lúc đó dữ liệu lấy qua API bên đơn, đã cắt còn đúng các dòng hàng có trên
+ * đơn — vì phiếu YCMH chia cho nhiều NSTM phụ trách, người cầm đơn thường không có phạm
+ * vi đọc cả phiếu.
+ *
+ * Bản in giữ NGUYÊN khuôn: vẫn mã phiếu gốc, vẫn cụm chữ ký duyệt, không thêm dòng chữ
+ * nào báo đây là bản trích (khách chốt 08/09/2026). Hai mẫu thường/thuế cũng giữ y như cũ.
  */
-export function PurchaseRequestPrintPage() {
+export function PurchaseRequestPrintPage({ fromPo = false }: { fromPo?: boolean }) {
   const { id } = useParams()
   const navigate = useNavigate()
-  const purchaseRequestId = Number(id)
-  const { data: purchaseRequest, isLoading, isError } = usePurchaseRequest(purchaseRequestId)
+  const routeId = Number(id)
+  //  Hai nguồn dữ liệu, mỗi lần chỉ một cái chạy — hook kia nhận 0 nên `enabled` tắt nó.
+  const byRequest = usePurchaseRequest(fromPo ? 0 : routeId)
+  const byOrder = usePurchaseRequestOfPurchaseOrder(fromPo ? routeId : 0)
+  const { data: purchaseRequest, isLoading, isError } = fromPo ? byOrder : byRequest
+  const unmatchedLines = fromPo ? (byOrder.data?.po_lines_unmatched ?? 0) : 0
   const { data: warehouses } = usePurchaseRequestPrintWarehouses()
   const [taxMode, setTaxMode] = useState(false)
   const [showSignature, setShowSignature] = useState(true)
@@ -54,7 +69,11 @@ export function PurchaseRequestPrintPage() {
     return (
       <ErrorState
         title="Không mở được bản in"
-        description="Phiếu có thể đã bị xóa, hoặc ngoài phạm vi dữ liệu bạn được xem."
+        description={
+          fromPo
+            ? 'Không tìm thấy phiếu yêu cầu mua hàng gắn với đơn này, hoặc đơn ngoài phạm vi dữ liệu bạn được xem.'
+            : 'Phiếu có thể đã bị xóa, hoặc ngoài phạm vi dữ liệu bạn được xem.'
+        }
       >
         <Button variant="outline" onClick={() => navigate(appRoutes.procurement.purchaseRequests)}>
           <ArrowLeft />
@@ -86,6 +105,15 @@ export function PurchaseRequestPrintPage() {
             <X />
             Đóng
           </Button>
+          {/* Dòng ĐMH không đối chiếu được sang phiếu (thiếu mã hàng, hoặc mã không có trên
+              phiếu) thì KHÔNG in ra được. Báo ở đây chứ không in vào tờ giấy: người in phải
+              biết bản in thiếu, còn tờ phiếu giữ nguyên khuôn cũ. */}
+          {unmatchedLines > 0 && (
+            <span className="text-[12.5px] text-warning">
+              {unmatchedLines} dòng trên đơn mua hàng không đối chiếu được sang phiếu yêu cầu
+              (thiếu mã hàng hoặc mã không có trên phiếu) — không in ra.
+            </span>
+          )}
         </div>
 
         <div className="pr-print-toolbar-options">

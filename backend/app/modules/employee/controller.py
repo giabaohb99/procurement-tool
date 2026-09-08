@@ -7,7 +7,7 @@ from app.core.auth import get_perm_profile, hash_password, require
 from app.core.base_controller import apply_filters, apply_sort_from_request, pagination
 from app.core.database import get_db
 from app.core.response import success
-from app.core.scoping import apply_scope
+from app.core.scoping import apply_scope, get_scoped
 
 from . import department_service, service
 from .schema import EmployeeCreate, EmployeeDetailOut, EmployeeOut, EmployeeUpdate
@@ -143,6 +143,35 @@ class SetPasswordIn(BaseModel):
     password: str
 
 
+def _block_set_password_out_of_scope(db: Session, eid: int, actor) -> None:
+    """Nhân sự #eid phải nằm trong phạm vi GHI của người đang thao tác.
+
+    Đặt lại mật khẩu của người khác **không phải sửa một ô hồ sơ** — nó là trao
+    quyền đăng nhập bằng danh nghĩa người đó. Cửa song sinh
+    `POST /users/{id}/reset-password` đã hiểu vậy và gọi `_block_out_of_scope`
+    (`user/controller.py:75`); cửa này thì trước 05/09/2026 chỉ có
+    `require("employee", "write")` — tức là kiểm **có quyền hay không**, không
+    kiểm **trên ai**. Hệ quả: `employee.write` phạm vi *own*, phạm vi hẹp nhất
+    tồn tại, vẫn đặt được mật khẩu tài khoản quản trị rồi đăng nhập bằng nó.
+
+    Đường đó đi vòng qua cả CR-158 lẫn ba chốt của CR-167: chúng canh việc bạn
+    nâng quyền cho **chính mình**, còn đây là mượn tài khoản người khác — không
+    có dòng phân quyền nào thay đổi để mà chặn.
+
+    ⚠️ Còn một tầng NỮA chưa gắn, và cố ý chưa gắn ở đây: người có
+    `employee.write` phạm vi *tất cả* (hành chính) vẫn đặt được mật khẩu của
+    người mang quyền cao hơn mình. Luật L2 của `core/privilege_escalation.py`
+    diễn đạt đúng thứ cần chặn, nhưng gắn vào đây mà không gắn vào cửa song
+    sinh thì hai cửa cùng làm một việc lại chặt lỏng khác nhau — và nó cắt luôn
+    việc hành chính đặt lại mật khẩu hộ người phòng khác, một việc có thật hằng
+    ngày. Đó là câu hỏi CHÍNH SÁCH cho cả hai cửa, không phải bản vá của riêng
+    cửa này.
+    """
+    if get_scoped(db, service.Employee, "employee", eid, actor,
+                  get_perm_profile(db, actor), "write") is None:
+        raise HTTPException(404, "Không tìm thấy nhân sự")
+
+
 @router.post("/{eid}/set-password")
 def set_password(eid: int, data: SetPasswordIn, db: Session = Depends(get_db),
                  user=Depends(require("employee", "write"))):
@@ -151,6 +180,7 @@ def set_password(eid: int, data: SetPasswordIn, db: Session = Depends(get_db),
     from app.modules.user.model import User
     if not (data.password or "").strip() or len(data.password) < 4:
         raise HTTPException(400, "Mật khẩu tối thiểu 4 ký tự")
+    _block_set_password_out_of_scope(db, eid, user)
     u = db.query(User).filter(User.employee_id == eid).first()
     if u:
         u.password_hash = hash_password(data.password)

@@ -1,4 +1,5 @@
-import { Megaphone, MessagesSquare, UserRound } from 'lucide-react'
+import { Library, Megaphone, MessagesSquare, UserRound } from 'lucide-react'
+import { Navigate } from 'react-router-dom'
 
 import type { ErpModule } from '@/app/router/module-definition'
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -23,9 +24,15 @@ export const forumModule: ErpModule = {
   customLayout: true,
 
   nav: [
+    // «Diễn đàn» đứng trước và là màn mặc định của phân hệ (sếp chốt 03/09/2026).
+    {
+      label: 'Diễn đàn',
+      path: appRoutes.forum.boards,
+      icon: Library,
+    },
     {
       label: 'Bảng tin',
-      path: appRoutes.forum.root,
+      path: appRoutes.forum.feed,
       icon: MessagesSquare,
       end: true,
     },
@@ -58,9 +65,28 @@ export const forumModule: ErpModule = {
           errorElement: <RouteErrorPage />,
           children: [
             {
+              // `/forum` = Diễn đàn (danh sách box). Bảng tin dời sang `/forum/feed`;
+              // link cũ trỏ `/forum` vẫn sống nhờ chuyển hướng này.
               index: true,
+              element: <Navigate to={appRoutes.forum.boards} replace />,
+            },
+            {
+              path: 'feed',
               lazy: async () => ({
                 Component: (await import('./pages/forum-feed-page')).ForumFeedPage,
+              }),
+            },
+            {
+              path: 'boards',
+              lazy: async () => ({
+                Component: (await import('./pages/forum-boards-page')).ForumBoardsPage,
+              }),
+            },
+            {
+              path: 'boards/:id',
+              lazy: async () => ({
+                Component: (await import('./pages/forum-board-threads-page'))
+                  .ForumBoardThreadsPage,
               }),
             },
             {
@@ -86,6 +112,20 @@ export const forumModule: ErpModule = {
               path: 'users/:id',
               lazy: async () => ({
                 Component: (await import('./pages/forum-profile-page')).ForumProfilePage,
+              }),
+            },
+            {
+              // Tìm bài (CR-263) — mở cho MỌI người, kết quả backend tự lọc audience.
+              path: 'search',
+              lazy: async () => ({
+                Component: (await import('./pages/forum-search-page')).ForumSearchPage,
+              }),
+            },
+            {
+              // Tab «Quản trị» (CR-263) — trang tự đá về Diễn đàn khi thiếu grant.
+              path: 'admin',
+              lazy: async () => ({
+                Component: (await import('./pages/forum-admin-page')).ForumAdminPage,
               }),
             },
           ],

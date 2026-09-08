@@ -14,6 +14,7 @@ import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
+import { useUrlSort } from '@/shared/hooks/use-url-sort'
 import type { ListParams } from '@/shared/types/api'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Badge } from '@/shared/ui/badge'
@@ -29,6 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
+import { formatDateTime } from '@/shared/utils/format-date'
 import { EmployeeFormDialog } from '../components/employee-form-dialog'
 import { EMPLOYEE_FILTER_FIELDS } from '../config/hr-filter-fields'
 import { useDepartments } from '../hooks/use-departments'
@@ -52,7 +54,7 @@ const ALL = 'all'
 const FILTER_CONFIG = {
   fields: EMPLOYEE_FILTER_FIELDS,
   allowConjunctionToggle: true,
-  preserveParams: ['department_id', 'status'],
+  preserveParams: ['department_id', 'status', 'sort_by', 'sort_dir'],
 }
 
 export function EmployeeListPage() {
@@ -78,13 +80,21 @@ function EmployeeListContent() {
   const [status, setStatus] = useUrlParamState('status', ALL)
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
   const [isFormOpen, setFormOpen] = useState(false)
+  const { sortBy, sortDir, handleSortChange } = useUrlSort()
 
   const { data: departments } = useDepartments({ page_size: 500 })
   const { queryParams, queryKey } = useFilterQuery()
 
   // Đổi BẤT KỲ điều kiện lọc nào cũng phải về trang 1, nếu không sẽ rơi vào
   // trang trống khi kết quả mới ít hơn trang đang đứng.
-  const [page, setPage] = usePageResetOnFilterChange([queryKey, debouncedValue, departmentId, status])
+  const [page, setPage] = usePageResetOnFilterChange([
+    queryKey,
+    debouncedValue,
+    departmentId,
+    status,
+    sortBy,
+    sortDir,
+  ])
 
   // Chỉ gửi key nằm trong whitelist FILTERABLE của backend.
   const params: ListParams = { page, page_size: pageSize, ...queryParams }
@@ -92,6 +102,10 @@ function EmployeeListContent() {
   if (debouncedValue) params.search = debouncedValue
   if (departmentId !== ALL) params.department_id = Number(departmentId)
   if (status !== ALL) params.status = status
+  if (sortBy) {
+    params.sort_by = sortBy
+    params.sort_dir = sortDir
+  }
 
   const { data, isLoading, isError } = useEmployees(params)
 
@@ -112,11 +126,12 @@ function EmployeeListContent() {
           </Avatar>
         ),
       },
-      { key: 'code', header: 'Mã NV', width: 140, cell: (e) => e.code },
+      { key: 'code', header: 'Mã NV', width: 140, sortable: true, cell: (e) => e.code },
       {
         key: 'full_name',
         header: 'Họ tên',
         width: 260,
+        sortable: true,
         // Ẩn cột tên thì bảng không còn nhận ra ai với ai.
         hideable: false,
         cell: (e) => <span className="truncate">{e.full_name}</span>,
@@ -155,6 +170,15 @@ function EmployeeListContent() {
           </Badge>
         ),
       },
+      {
+        // bao-CR-300 (ticket 21) — cột "Ngày cập nhật", bấm lần đầu ra mới nhất trước.
+        key: 'updated_at',
+        header: 'Ngày cập nhật',
+        width: 150,
+        sortable: true,
+        sortDescFirst: true,
+        cell: (e) => formatDateTime(e.updated_at) || '',
+      },
     ],
     [],
   )
@@ -185,6 +209,9 @@ function EmployeeListContent() {
           emptyMessage="Không tìm thấy nhân sự nào."
           storageKey="hr.employees"
           onRowClick={(employee) => navigate(appRoutes.hr.employeeDetail(employee.id))}
+          sortBy={sortBy}
+          sortDir={sortDir}
+          onSortChange={handleSortChange}
           pagination={{
             page,
             pageSize,

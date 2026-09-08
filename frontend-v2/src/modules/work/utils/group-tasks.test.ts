@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { WorkSection, WorkTask } from '../types/work'
-import { WORK_TASK_STATUS } from '../types/work'
+import { WORK_TASK_KIND, WORK_TASK_STATUS } from '../types/work'
 import { groupTasksBySection, UNGROUPED_KEY } from './group-tasks'
 
 function section(id: number, name: string, sortOrder = id): WorkSection {
@@ -17,6 +17,7 @@ function task(id: number, sectionId: number | null): WorkTask {
     title: `Việc ${id}`,
     description: '',
     status: WORK_TASK_STATUS.OPEN,
+    kind: WORK_TASK_KIND.TASK,
     start_date: '',
     due_date: '',
     sort_order: id,

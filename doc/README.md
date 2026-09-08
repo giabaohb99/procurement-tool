@@ -5,14 +5,16 @@
 | Muốn biết | Đọc |
 |---|---|
 | Hệ thống làm được gì, màn nào chạy ra sao | [tai-lieu-chuc-nang/00-muc-luc.md](tai-lieu-chuc-nang/00-muc-luc.md) |
-| Ai đổi gì, khi nào, ảnh hưởng ra sao (+ nhật ký deploy, quyết định đã chốt) | [tai-lieu-ky-thuat/change-log.md](tai-lieu-ky-thuat/change-log.md) |
+| Ai đổi gì, khi nào, ảnh hưởng ra sao (+ nhật ký deploy, quyết định đã chốt) | [tai-lieu-ky-thuat/change-log.md](tai-lieu-ky-thuat/change-log.md) **+** [change-log-bao.md](tai-lieu-ky-thuat/change-log-bao.md) — **đọc cả hai** |
 | Xây bằng cách nào (kiến trúc, DB, API, phân quyền) | [tai-lieu-ky-thuat/technical-design.md](tai-lieu-ky-thuat/technical-design.md) |
 
 ## tai-lieu-chuc-nang/ — Tài liệu chức năng (nghiệp vụ, cho người dùng & BA)
-- `00-muc-luc.md` — mục lục; `01`…`11` theo từng phân hệ (Phiếu khảo sát, YCBG, YCMH, ĐMH, YCTT, Tồn kho & Công nợ, Danh mục, Báo cáo, Thông báo & Trang cá nhân, Phiếu hỗ trợ, Bình luận)
+- `00-muc-luc.md` — mục lục; `01`…`17` theo từng phân hệ (Phiếu khảo sát, YCBG, YCMH, ĐMH, YCTT, Tồn kho & Công nợ, Danh mục, Báo cáo, Thông báo & Trang cá nhân, Phiếu hỗ trợ, Bình luận, Lịch sử mua hàng, Trung tâm HDSD, Văn thư, **Dự án — quản lý công việc**, **Nghỉ phép**)
+- ⚠️ Sửa tài liệu chức năng của một phân hệ thì xem luôn có cần cập nhật **gói tri thức Trợ lý AI** không: `backend/app/modules/assistant/packs/` — gói đó nạp thẳng vào system prompt mỗi lượt hỏi, lệch với tài liệu là trợ lý trả lời sai mà không ai biết.
 
 ## tai-lieu-ky-thuat/ — Tài liệu kỹ thuật
-- `change-log.md` — **sổ CR** (mỗi thay đổi 1 dòng) + việc còn nợ + quyết định đã chốt (D-xxx) + **nhật ký deploy**
+- `change-log.md` — **sổ CR** (mỗi thay đổi 1 dòng) + việc còn nợ (N-xxx) + quyết định đã chốt (D-xxx) + **nhật ký deploy**
+- `change-log-bao.md` — **cùng một sổ CR đó, phần của dải `bao` từ bao-CR-310** (tách 07/09/2026 vì cả đội chèn chung một dòng đầu bảng nên merge nào cũng xung đột). **Tra CR thì đọc cả hai tệp; cấp số mới cũng grep cả hai** — dải số vẫn chung cho cả đội. N-xxx / D-xxx / deploy cũ vẫn chỉ ở `change-log.md`
 - `technical-design.md`, `thiet-ke-ky-thuat-chi-tiet.md`, `so-do-ky-thuat.md` — TDD
 - `mo-hinh-du-lieu-san-pham.md` — **đọc trước khi đụng vào cấu trúc Sản phẩm**: vì sao `tab_product` là bảng variant, thuộc tính động, tầng họ sản phẩm, hợp đồng "chọn mã VTBB → tự động điền", và danh sách việc CẤM làm
 - `quy-trinh-tai-lieu.md` — quy trình tài liệu & kiểm soát thay đổi (tài liệu nào ra đời khi nào)

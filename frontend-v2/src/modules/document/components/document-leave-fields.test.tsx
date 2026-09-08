@@ -98,13 +98,27 @@ describe('DocumentLeaveFields', () => {
     expect(lay().getValues('leave.total_days')).toBe(4)
   })
 
-  it('nửa ngày: cùng ngày + buổi sáng ra 0.5 công', () => {
+  it('nửa ngày: cùng ngày, bắt đầu VÀ kết thúc buổi sáng ra 0.5 công', () => {
+    const lay = build()
+    setDate(lay(), '2026-09-11', '2026-09-11')
+    act(() => {
+      lay().setValue('leave.from_session', 'morning')
+      lay().setValue('leave.to_session', 'morning')
+    })
+
+    expect(lay().getValues('leave.total_days')).toBe(0.5)
+  })
+
+  it('cùng ngày, bắt đầu buổi sáng nhưng kết thúc CẢ NGÀY vẫn là trọn một công', () => {
+    //  ⚠️ Bài này từng khẳng định 0.5 — theo đúng bản cũ tra chung một bảng cho
+    //  cả hai đầu. Ô buổi nói MỐC: bắt đầu buổi sáng, kết thúc cuối ngày thì
+    //  nghỉ trọn ngày. Xem `core/leave_codes.START_DAY_WORK_CREDIT` (07/09/2026).
     const lay = build()
     setDate(lay(), '2026-09-11', '2026-09-11')
     act(() => {
       lay().setValue('leave.from_session', 'morning')
     })
 
-    expect(lay().getValues('leave.total_days')).toBe(0.5)
+    expect(lay().getValues('leave.total_days')).toBe(1)
   })
 })

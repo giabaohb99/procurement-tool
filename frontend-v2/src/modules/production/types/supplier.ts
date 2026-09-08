@@ -22,6 +22,8 @@ export type Supplier = {
   /** Thuế suất VAT dạng thập phân: 0.08 = 8%. */
   vat: number
   is_active: boolean
+  /** Lần sửa gần nhất — cột "Ngày cập nhật" (bao-CR-300, ticket 21). */
+  updated_at?: string
 }
 
 export type SupplierType = 'goods' | 'transport'

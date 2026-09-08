@@ -50,10 +50,19 @@ function missingFields<T>(line: T, fields: RequiredLineField<T>[]): string[] {
 
 /**
  * Dòng sản phẩm của YCMH. Backend KHÔNG chặn gì ở `submit_pr`, nên luật thật sự
- * nằm ở đây — giữ đúng bộ bốn ô của bản `frontend` đang chạy.
+ * nằm ở đây.
+ *
+ * **Mã hàng KHÔNG còn bắt buộc** (bao-CR-310): giống phiếu khảo sát vốn có cả
+ * loại có mã lẫn loại không mã, người yêu cầu phải mua được thứ chưa nằm trong
+ * danh mục mà không phải chờ mở mã trước. Dòng không mã vẫn gửi duyệt được;
+ * `duplicateCodes` bên dưới đã bỏ qua dòng trống nên luật trùng mã không đụng tới.
+ *
+ * Đánh đổi phải biết: dòng ĐMH nối ngược về dòng YCMH bằng **chuỗi `product_code`**
+ * (`sync_from_purchase_orders`), nên dòng KHÔNG MÃ sẽ không được cộng tiến độ
+ * `qty_ordered` / `qty_received` tự động — NSTM phải tự cập nhật `line_status`.
+ * Muốn bỏ hẳn ràng buộc này thì phải nối bằng khóa dòng, xem việc còn nợ N-004.
  */
 export const PURCHASE_REQUEST_LINE_REQUIRED: RequiredLineField<PurchaseRequestItem>[] = [
-  { label: 'Mã hàng', filled: (line) => hasText(line.product_code) },
   { label: 'Số lượng mua', filled: (line) => isPositive(line.qty) },
   { label: 'Kho nhận', filled: (line) => hasText(line.warehouse) },
   { label: 'Ngày cần hàng', filled: (line) => hasText(line.required_date) },
@@ -193,12 +202,11 @@ export function validatePurchaseOrder(data: PurchaseOrderDetail, forSubmit = fal
   const lines = purchaseOrderLines(data)
   if (!lines.length) return 'Cần ít nhất một dòng hàng'
 
-  // Mỗi mã hàng CHỈ một dòng: dòng ĐMH nối về dòng YCMH bằng mã, trùng mã là
-  // tiến độ số lượng của cả hai phiếu sai.
-  const duplicated = duplicateCodes(lines.map((line) => line.product_code))
-  if (duplicated.length) {
-    return `Mã hàng bị trùng: ${duplicated.join(', ')}. Mỗi mã chỉ được một dòng.`
-  }
+  // bao-CR-308: ĐMH KHÔNG chặn trùng mã nữa — nghiệp vụ cần tách dòng theo bộ
+  // chứng từ (cùng mã, khác lô / khác Tên trên hóa đơn); đồng bộ về YCMH cộng gộp
+  // theo mã nên số vẫn đúng. Trang dùng `duplicatePurchaseOrderCodes` để HỎI XÁC
+  // NHẬN lúc lưu (chặn gõ nhầm). YCMH bên trên vẫn chặn cứng: trùng bên đó mới
+  // làm tiến độ nhân đôi.
 
   if (!forSubmit) return ''
 
@@ -213,6 +221,14 @@ export function validatePurchaseOrder(data: PurchaseOrderDetail, forSubmit = fal
     )
   if (problems.length) return `Chưa gửi duyệt được — còn thiếu ${problems.join('; ')}.`
   return ''
+}
+
+/**
+ * Các mã hàng đang nằm trên NHIỀU dòng của ĐMH — cho trang hỏi xác nhận lúc lưu
+ * (bao-CR-308). Không phải lỗi: trùng hợp lệ khi tách dòng theo bộ chứng từ.
+ */
+export function duplicatePurchaseOrderCodes(data: PurchaseOrderDetail): string[] {
+  return duplicateCodes(purchaseOrderLines(data).map((line) => line.product_code))
 }
 
 /* ----------------------------------------------------------------- chung -- */

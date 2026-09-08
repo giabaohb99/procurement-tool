@@ -65,8 +65,16 @@ class TestLuuCoTraTruoc:
         assert req2.prepay == 1
 
 
-def test_ban_in_tra_co_prepay(db, seed, payable):
-    """Trang in đọc d['prepay'] để đổi câu 'Thanh toán trước cho nhà cung cấp ...'."""
+def test_ban_in_tra_co_prepay(db, seed, payable, cap_quyen):
+    """Trang in đọc d['prepay'] để đổi câu 'Thanh toán trước cho nhà cung cấp ...'.
+
+    Phải cấp quyền thật cho người in: từ 05/09/2026 route `/print` nạp phiếu qua
+    `get_scoped` (P0 #4), nên `user=None` không còn qua cổng. Bài này canh NỘI DUNG bản
+    in, không canh phân quyền — cấp phạm vi «tất cả» cho khỏi vướng.
+    """
+    from types import SimpleNamespace
+
     req = _create(db, seed, payable, 1)
-    d = json.loads(print_(req.id, db=db, user=None).body)["data"]
+    cap_quyen(seed.u_req_id, "payment_request", scope="all", read=True, print=True)
+    d = json.loads(print_(req.id, db=db, user=SimpleNamespace(id=seed.u_req_id)).body)["data"]
     assert d["prepay"] == 1

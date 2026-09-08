@@ -15,11 +15,17 @@ from app.core.scoping import has_global_scope
 from app.core.database import get_db
 from app.core.response import success
 
-from . import action_service, entity_hooks, serializer, task_service
+from . import (action_service, entity_hooks, serializer, steps_service,
+               task_service)
 from .concurrency import run_with_contention_retry
 from .instance_model import ApprovalInstance, ApprovalTask
 
 router = APIRouter(prefix="/api/approvals", tags=["approval"])
+
+#  Trần số chứng từ hỏi một lượt. Bằng cỡ trang lớn nhất của bảng danh sách —
+#  hỏi nhiều hơn nghĩa là chỗ gọi đang quét cả bảng, và câu `IN (...)` dài vô
+#  hạn là một đường làm nghẽn cơ sở dữ liệu mà không cần đăng nhập quản trị.
+MAX_STEPS_IDS = 200
 
 
 def _acting_employee_id(db: Session, user, action: str) -> int | None:
@@ -112,6 +118,46 @@ def my_tasks(entity: str = "", db: Session = Depends(get_db),
         return success({"total": 0, "items": []})
     items = task_service.my_tasks(db, user.employee_id, entity)
     return success({"total": len(items), "items": items})
+
+
+@router.get("/steps")
+def steps_of_many(entity: str, ids: str = "", db: Session = Depends(get_db),
+                  user=Depends(get_current_user)):
+    """LUỒNG DUYỆT DẠNG NGANG cho nhiều chứng từ cùng lúc (CR-260).
+
+    Màn danh sách vẽ trên mỗi dòng một dải chấm «chặng 1 → chặng 2 → …». Hỏi
+    từng dòng một là hơn sáu mươi lượt vào cơ sở dữ liệu cho một lần mở trang;
+    ở đây gom còn ba, xem `steps_service`.
+
+    ⚠️ **Lọc theo `entity_hooks.can_read`, đừng bỏ qua vì "chỉ là mấy cái chấm".**
+    Dải chấm mang TÊN người duyệt và tên chặng — đủ để dựng lại sơ đồ tổ chức
+    và biết ai đang xin nghỉ. Đúng loại rò rỉ mà `/of/{entity}/{entity_id}` đã
+    phải vá ngày 25/08/2026, chỉ khác là ở đây rò cả một trang một lúc.
+    """
+    entity_ids = [int(part) for part in ids.split(",") if part.strip().isdigit()]
+    if not entity_ids:
+        return success({})
+
+    rows = steps_service.steps_of_entities(db, entity, entity_ids[:MAX_STEPS_IDS])
+    allowed = {
+        entity_id: data for entity_id, data in rows.items()
+        if entity_hooks.can_read(db, _instance_ref(entity, entity_id, data), user)
+    }
+    #  Khóa JSON là chuỗi — nói ra ở đây để tầng giao diện khỏi đoán.
+    return success({str(k): v for k, v in allowed.items()})
+
+
+def _instance_ref(entity: str, entity_id: int, data: dict) -> ApprovalInstance:
+    """Đối tượng tối thiểu cho `can_read` — nó chỉ đọc `entity` và `entity_id`.
+
+    Nạp lại cả bản ghi phiên chỉ để hỏi quyền là thêm một truy vấn mỗi dòng,
+    đúng thứ `steps_service` vừa gom lại để tránh.
+    """
+    ref = ApprovalInstance()
+    ref.id = data.get("instance_id", 0)
+    ref.entity = entity
+    ref.entity_id = entity_id
+    return ref
 
 
 @router.get("/my-history")

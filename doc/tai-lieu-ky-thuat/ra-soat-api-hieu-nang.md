@@ -45,6 +45,7 @@ Mỗi endpoint (ưu tiên `list` / `report` / `export`) soi qua các mẫu sau:
 | Văn thư | danh sách văn bản, phạm vi áp dụng (CR-117) | Chưa | by-companies gộp 2 nguồn, soi C2 |
 | Hệ thống | nhật ký kiểm toán (audit log), sao lưu | Chưa | audit log lớn dần theo thời gian → C3/C4 |
 | Phiếu hỗ trợ | danh sách ticket | Chưa | |
+| Diễn đàn | feed, thread box, **posts/search** | Chưa | `posts/search` có ghi chú sẵn ở §5 (LIKE full-scan) |
 
 ## 4. Cách làm
 
@@ -70,6 +71,7 @@ Mỗi endpoint (ưu tiên `list` / `report` / `export`) soi qua các mẫu sau:
   **đã vá** C7 ở `96158d1`: `order_by(id.desc())` giờ chỉ là nhánh lùi khi query chưa có
   `order_by`, không đè `apply_sort_from_request` nữa. Trùng với việc dựng sort ở
   [14-filter-sort-man-danh-sach-v2.md](../erp/14-filter-sort-man-danh-sach-v2.md).
+- `forum/service.py::search_posts` — **chưa cần sửa, ghi để canh ngưỡng** (03/09/2026, bao-CR-273.1): tìm bài dùng `LIKE '%kw%'` trên `title` + `body` (wildcard đầu chuỗi → không ăn index, quét toàn bảng) và `count()` chạy quét lần hai. Dữ liệu hiện vài chục bài nên vô hại, nhưng từ bao-CR-273.1 ô tìm header sổ gợi ý khi gõ → tần suất gọi tăng theo người dùng. **Ngưỡng hành động: bài đông cỡ chục nghìn** thì (1) FULLTEXT index ngram parser cho MySQL 8 thay LIKE, (2) quick search bỏ `count()` chính xác — lấy `limit+1` để biết còn nữa, (3) cân nhắc bóc chữ trơn ra cột riêng để khỏi so chữ trên markup HTML của bài rich (giờ tìm "strong" khớp oan tên thẻ). Phía FE đã chặn sẵn: min 2 ký tự, debounce 250ms, cache 30s, per_page=5.
 - **C9 (lọc "câm") có ca thật, không phải lo xa** — xem CR-127: whitelist của bộ lọc điều kiện
   dùng chung với whitelist param trần, nên field FE khai mà backend loại đi thì bị bỏ qua
   KHÔNG báo lỗi. Soát C9 ở phân hệ nào cũng phải đối chiếu danh sách field FE gửi với

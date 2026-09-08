@@ -75,8 +75,8 @@ Tùy chỉnh · trạng thái khung nhìn nhớ ở `localStorage`. `npm run che
 2. **Kéo ngang đổi thứ tự CỘT** (§4) — thẻ kéo được rồi, cột thì chưa.
 3. Ghim list hay dùng trên sidebar (A-05).
 4. «Gom nhóm» ngoài cột tự đặt là D-08 (P1) nên KHÔNG chặn mốc này; tab
-   Dashboard/Activities cũng vậy — §2 cấm render tab chưa làm. **Gantt thì đã
-   có** (CR-219, làm sớm khỏi W5).
+   **Dashboard** cũng vậy — §2 cấm render tab chưa làm. **Gantt** (CR-219) và
+   **tab Hoạt động** (D-09, CR-249) thì đã có, làm sớm khỏi W4/W5.
 Chưa có đội nào dùng thử trọn vòng trên dev, nên **mốc MVP chưa đóng**.
 
 ## W3 — Nối vào nền thông báo
@@ -96,7 +96,8 @@ cần làm và "Đánh dấu làm xong" ẩn được; test tập cha mở rộn
 celery-worker/beat) · G-03 màn "Việc của tôi" · B-09 thùng rác · B-10 chuyển list ·
 A-06 mời theo phòng ban (cột `department_id`) · C-03 việc con có PIC/hạn riêng ·
 E-02 nhắc tên @ · E-03 đính kèm R2 qua kiểm quyền · D-06 dashboard thống kê list ·
-D-08 gom nhóm kanban theo PIC/ưu tiên/hạn · D-09 tab Activities cấp list ·
+D-08 gom nhóm kanban theo PIC/ưu tiên/hạn · ~~D-09 tab Activities cấp list~~
+(**đã làm sớm 31/08/2026, CR-249**) ·
 A-10 list kiểu dự án (cờ `kind` + hồ sơ ngày/vòng đời + tiến độ tự tính — QĐ-T2, 01 §4b).
 
 **Điều kiện cần:** W3 chạy ổn trên dev ít nhất một chu kỳ dùng thật.
@@ -106,15 +107,16 @@ ngưỡng (không spam chuông mỗi lần beat chạy).
 ## W5 — P2 theo nhu cầu thật (chỉ làm cái có người đòi)
 
 **D-05 Gantt đã LÀM SỚM** ngày 28/08/2026 (CR-219) theo yêu cầu trực tiếp của khách —
-tự dựng theo bố cục DHTMLX, không cài thư viện GPLv2 của họ; phần phụ thuộc việc
-trước–sau vẫn chưa có (cần bảng `tab_work_task_link`).
+tự dựng theo bố cục DHTMLX, không cài thư viện GPLv2 của họ. **Cụm Gantt mở rộng cũng đã
+XONG** ngày 31/08/2026 (CR-226): B-14 cột mốc + B-15 phụ thuộc FS/SS/FF/SF (bảng
+`tab_work_task_link`, service chặn vòng lặp), kèm dựng lại cả khung nhìn theo Lark.
+**B-13** trường tùy chỉnh sáu kiểu cũng đã xong trước đó.
 
-Ứng viên còn lại: B-13 trường tùy chỉnh kiểu chữ/số/ngày/người · B-11 việc lặp · B-12 gắn
-chứng từ ERP · D-04 lịch · A-07 nhân bản/mẫu list · C-04 nâng việc con
-thành task · G-04 lưu bộ lọc · H-04 xuất Excel (chờ khung Đ-13) · F-05 web push ·
-F-06 tool Trợ lý AI · Q10 toggle hiện việc con ra kanban · tích hợp Project-M (QĐ-T1) ·
-**cụm Gantt mở rộng** B-14 cột mốc + B-15 phụ thuộc FS/SS/FF/SF (`tab_work_task_link`,
-service chặn vòng lặp — 01 §4b) — làm chung một đợt với D-05 ·
+Ứng viên còn lại: B-11 việc lặp · B-12 gắn chứng từ ERP · D-04 lịch · A-07 nhân bản/mẫu
+list · C-04 nâng việc con thành task · G-04 lưu bộ lọc · H-04 xuất Excel (chờ khung Đ-13) ·
+F-05 web push · F-06 tool Trợ lý AI · Q10 toggle hiện việc con ra kanban ·
+tích hợp Project-M (QĐ-T1) · **phần đuôi của cụm Gantt**: dời lịch dây chuyền theo
+`lag_days`, đường găng (critical path), baseline ·
 **lịch làm việc — ngày nghỉ** (nhóm F tài liệu QLDA, chốt 28/08/2026 KHÔNG làm bây giờ):
 chỉ cần khi tính ngày kết thúc theo ngày công hoặc Gantt trừ ngày nghỉ; khi đến lượt thì
 ƯU TIÊN dựng ở nền HRM dùng chung rồi phân hệ này gọi sang, không làm bảng riêng trong

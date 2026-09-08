@@ -231,6 +231,21 @@ const TABLE_SHORT_LABELS: Record<SurveyTable, string> = {
   product: 'Dòng SP',
 }
 
+/**
+ * Ô của dòng khảo sát có BẮT BUỘC trước khi gửi duyệt không.
+ *
+ * Xuất ra ngoài để popup chi tiết dòng vẽ dấu sao đỏ từ ĐÚNG hàm đang chặn lúc
+ * gửi duyệt — khai tay một danh sách sao thứ hai là sớm muộn lệch với luật, mà
+ * lệch kiểu đó thì người dùng điền hết ô có sao rồi vẫn bị chặn không hiểu vì sao.
+ */
+export function isSurveyLineFieldRequired(
+  table: SurveyTable,
+  key: string,
+  line: SurveyLine,
+): boolean {
+  return isRequiredKey(table, key, line)
+}
+
 function isRequiredKey(table: SurveyTable, key: string, line: SurveyLine): boolean {
   if (key === 'note') return false
   if ((MANAGER_KEYS as readonly string[]).includes(key)) return false

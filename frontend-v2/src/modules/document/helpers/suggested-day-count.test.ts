@@ -16,14 +16,54 @@ describe('soNgayGoiY', () => {
     expect(suggestedDayCount('2026-09-01', '2026-09-01', 'morning', 'morning')).toBe(0.5)
   })
 
-  it('cùng một ngày thì hai ô buổi nói về CÙNG một buổi, chỉ lấy một', () => {
-    //  Lấy cả hai là ra 1 công cho một buổi sáng — sai gấp đôi.
+  it('cùng một ngày, cùng một buổi thì ra nửa công', () => {
     expect(suggestedDayCount('2026-09-01', '2026-09-01', 'afternoon', 'afternoon')).toBe(0.5)
   })
 
   it('đi từ chiều, về buổi sáng: hai đầu nửa ngày cộng phần giữa', () => {
     // 01 chiều (0.5) + 02 trọn (1) + 03 sáng (0.5) = 2
     expect(suggestedDayCount('2026-09-01', '2026-09-03', 'afternoon', 'morning')).toBe(2)
+  })
+
+  /**
+   * ⚠️ Ô buổi nói MỐC bắt đầu / kết thúc, không nói *"buổi nào được nghỉ"*.
+   * Bản cũ tra chung một bảng cho cả hai đầu nên ba nhóm ca dưới đây ra sai —
+   * và sai im lặng, vì con số vẫn là một số hợp lý (vá 07/09/2026).
+   */
+  describe('ô buổi là MỐC, không phải buổi', () => {
+    it('bắt đầu buổi SÁNG là nghỉ trọn ngày đó, không phải nửa', () => {
+      //  Bản cũ ra 2.5.
+      expect(suggestedDayCount('2026-09-01', '2026-09-03', 'morning', 'full')).toBe(3)
+    })
+
+    it('kết thúc buổi CHIỀU là nghỉ trọn ngày đó, không phải nửa', () => {
+      //  Bản cũ ra 2.5.
+      expect(suggestedDayCount('2026-09-01', '2026-09-03', 'full', 'afternoon')).toBe(3)
+    })
+
+    it('sáng → chiều là trọn cả khoảng', () => {
+      //  Bản cũ ra 2.0.
+      expect(suggestedDayCount('2026-09-01', '2026-09-03', 'morning', 'afternoon')).toBe(3)
+    })
+
+    it('CÙNG ngày «cả ngày → sáng» chỉ là NỬA ngày', () => {
+      //  Bản cũ ra 1.0 — người lao động mất oan nửa ngày phép.
+      expect(suggestedDayCount('2026-09-01', '2026-09-01', 'full', 'morning')).toBe(0.5)
+    })
+
+    it('CÙNG ngày «sáng → chiều» là trọn một ngày', () => {
+      //  Bản cũ ra 0.5.
+      expect(suggestedDayCount('2026-09-01', '2026-09-01', 'morning', 'afternoon')).toBe(1)
+    })
+
+    it('CÙNG ngày «chiều → sáng» là khoảng trống, trả 0 chứ không ra số âm', () => {
+      //  Backend chặn hẳn ca này; ở đây chỉ cần không sinh ra số âm.
+      expect(suggestedDayCount('2026-09-01', '2026-09-01', 'afternoon', 'morning')).toBe(0)
+    })
+
+    it('khai THEO GIỜ thì không gợi ý con số bịa', () => {
+      expect(suggestedDayCount('2026-09-01', '2026-09-01', 'hourly', 'hourly')).toBe(0)
+    })
   })
 
   it('đếm CẢ cuối tuần — hệ chưa có lịch làm việc nên không tự trừ', () => {

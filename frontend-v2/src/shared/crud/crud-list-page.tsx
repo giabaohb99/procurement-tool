@@ -1,5 +1,5 @@
 import { Plus, Search } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import { PermissionGate } from '@/core/authorization/permission-gate'
@@ -21,9 +21,20 @@ import { useCrudList } from './use-crud'
 
 interface CrudListPageProps<T> {
   config: CrudConfig<T>
+  /**
+   * Chèn giữa TIÊU ĐỀ và bảng — chỗ cho thanh chuyển màn của những phân hệ gom
+   * nhiều màn vào một mục menu (cụm Nghỉ phép, xem `LeaveSectionTabs`).
+   *
+   * Không nhét vào `renderToolbarExtra`: khe đó nằm trong nhóm NÚT bên phải
+   * tiêu đề, còn thanh tab phải chạy hết bề ngang và đứng thành một dải riêng.
+   */
+  beforeContent?: ReactNode
 }
 
-export function CrudListPage<T extends CrudRecord>({ config }: CrudListPageProps<T>) {
+export function CrudListPage<T extends CrudRecord>({
+  config,
+  beforeContent,
+}: CrudListPageProps<T>) {
   /**
    * Bấm "Áp dụng" ở bộ lọc nâng cao là VIẾT LẠI toàn bộ query string, chỉ chừa lại
    * `searchParamName` + `preserveParams` (xem `use-filter-url-sync.ts`). Khai thiếu tên nào
@@ -45,15 +56,18 @@ export function CrudListPage<T extends CrudRecord>({ config }: CrudListPageProps
   if (filterConfig) {
     return (
       <FilterProvider config={filterConfig}>
-        <CrudListContent config={config} />
+        <CrudListContent config={config} beforeContent={beforeContent} />
       </FilterProvider>
     )
   }
 
-  return <CrudListContent config={config} />
+  return <CrudListContent config={config} beforeContent={beforeContent} />
 }
 
-function CrudListContent<T extends CrudRecord>({ config }: CrudListPageProps<T>) {
+function CrudListContent<T extends CrudRecord>({
+  config,
+  beforeContent,
+}: CrudListPageProps<T>) {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const idKey = (config.idKey as string) || 'id'
@@ -102,8 +116,16 @@ function CrudListContent<T extends CrudRecord>({ config }: CrudListPageProps<T>)
 
   const handleSortChange = (newSortBy: string, newSortDir: 'asc' | 'desc') => {
     const nextParams = new URLSearchParams(searchParams)
-    nextParams.set('sort_by', newSortBy)
-    nextParams.set('sort_dir', newSortDir)
+    //  Khóa cột rỗng = nhịp thứ ba của tiêu đề cột: thôi sắp xếp. Phải XÓA tham
+    //  số chứ đừng ghi chuỗi rỗng, kẻo đường dẫn gửi cho nhau còn dính
+    //  `?sort_by=&sort_dir=asc`, đọc như đang sắp xếp theo một cột không tên.
+    if (newSortBy) {
+      nextParams.set('sort_by', newSortBy)
+      nextParams.set('sort_dir', newSortDir)
+    } else {
+      nextParams.delete('sort_by')
+      nextParams.delete('sort_dir')
+    }
     setSearchParams(nextParams)
   }
 
@@ -121,6 +143,7 @@ function CrudListContent<T extends CrudRecord>({ config }: CrudListPageProps<T>)
     <PageContainer fill>
       <PageHeader
         title={config.title}
+        description={config.description}
         actions={
           <div className="flex items-center gap-2">
             {config.renderToolbarExtra?.()}
@@ -137,6 +160,8 @@ function CrudListContent<T extends CrudRecord>({ config }: CrudListPageProps<T>)
           </div>
         }
       />
+
+      {beforeContent}
 
       <Card className="flex min-h-0 flex-1 flex-col p-4">
         <DataTable

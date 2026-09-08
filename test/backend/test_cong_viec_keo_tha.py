@@ -327,3 +327,115 @@ def test_list_luu_tru_thi_khoa_keo_cot(db, owner, work_list, sections):
     list_service.update_list(db, owner, work_list["id"], schema.ListUpdate(is_archived=1))
     with pytest.raises(HTTPException):
         cfg.move_section(db, owner, sections[0], None)
+
+
+# ---------------------------------------------------------------------------
+#  Xếp lại VIỆC CON trong cụm của cha (khung nhìn Danh sách kiểu Lark).
+#
+#  Cùng `move_task` với kéo thẻ kanban, khác ở chỗ `section_id` để rỗng: việc
+#  con không thuộc cột nào (C-05) nên hàng được đánh số lại là cụm anh em cùng
+#  cha, chứ không phải một cột.
+# ---------------------------------------------------------------------------
+
+
+def _make_subtasks(db, owner, list_id, parent_id, titles):
+    return [task_service.create_task(db, owner, schema.TaskCreate(
+        list_id=list_id, title=t, parent_id=parent_id))["id"] for t in titles]
+
+
+def _subtask_order(db, owner, parent_id):
+    return [s["id"] for s in task_service.get_task(db, owner, parent_id)["subtasks"]]
+
+
+@pytest.fixture()
+def parent_with_subs(db, owner, work_list, sections):
+    """Một việc cha kèm ba việc con A · B · C, đúng thứ tự ấy."""
+    parent = _create_task(db, owner, work_list["id"], "Cha", sections[0])["id"]
+    return parent, _make_subtasks(db, owner, work_list["id"], parent, ["A", "B", "C"])
+
+
+def test_keo_viec_con_xuong_giua_cum(db, owner, parent_with_subs):
+    parent, (a, b, c) = parent_with_subs
+
+    task_service.move_task(db, owner, a, None, c)      # A xuống ngay trước C
+    assert _subtask_order(db, owner, parent) == [b, a, c]
+
+
+def test_keo_viec_con_xuong_cuoi_cum(db, owner, parent_with_subs):
+    parent, (a, b, c) = parent_with_subs
+
+    task_service.move_task(db, owner, a, None, None)   # mốc rỗng = xuống cuối
+    assert _subtask_order(db, owner, parent) == [b, c, a]
+
+
+def test_cum_viec_con_duoc_danh_so_lai_deu_buoc(db, owner, parent_with_subs):
+    """Y hệt cột kanban: sau mỗi cú thả `sort_order` là bội của STEP và duy nhất.
+
+    Nếu không, cụm nào còn việc con trùng số (dữ liệu cũ để `0` hết) sẽ có thứ
+    tự lạc quan ở trình duyệt khác thứ tự khi refetch — dòng nhảy chỗ một nhịp
+    ngay sau khi người dùng buông tay.
+    """
+    parent, (a, _b, _c) = parent_with_subs
+
+    task_service.move_task(db, owner, a, None, None)
+    orders = [db.get(WorkTask, i).sort_order for i in _subtask_order(db, owner, parent)]
+    assert orders == [STEP, 2 * STEP, 3 * STEP]
+
+
+def test_viec_con_khong_bi_day_sang_cum_khac(db, owner, work_list, sections, parent_with_subs):
+    """Mốc là việc con của CHA KHÁC: thả xuống cuối cụm của mình, không đổi cha."""
+    parent, (a, b, c) = parent_with_subs
+    other = _create_task(db, owner, work_list["id"], "Cha 2", sections[0])["id"]
+    (x,) = _make_subtasks(db, owner, work_list["id"], other, ["X"])
+
+    task_service.move_task(db, owner, a, None, x)
+
+    assert _subtask_order(db, owner, parent) == [b, c, a]
+    assert _subtask_order(db, owner, other) == [x]
+    assert db.get(WorkTask, a).parent_id == parent
+
+
+def test_keo_viec_con_khong_dong_toi_section(db, owner, parent_with_subs):
+    """`section_id` của việc con phải Ở NGUYÊN NULL — chạm vào là nó lọt ra kanban."""
+    _parent, (a, _b, _c) = parent_with_subs
+
+    task_service.move_task(db, owner, a, None, None)
+    assert db.get(WorkTask, a).section_id is None
+
+
+def test_cum_mot_viec_con_van_chay(db, owner, work_list, sections):
+    """Cụm một phần tử: không có gì để đổi, nhưng cũng không được nổ."""
+    parent = _create_task(db, owner, work_list["id"], "Cha", sections[0])["id"]
+    (only,) = _make_subtasks(db, owner, work_list["id"], parent, ["Một mình"])
+
+    task_service.move_task(db, owner, only, None, None)
+    assert _subtask_order(db, owner, parent) == [only]
+    assert db.get(WorkTask, only).sort_order == STEP
+
+
+def test_moc_la_chinh_no_thi_viec_con_dung_yen(db, owner, parent_with_subs):
+    parent, (a, b, c) = parent_with_subs
+
+    task_service.move_task(db, owner, b, None, b)
+    assert _subtask_order(db, owner, parent) == [a, b, c]
+
+
+def test_viec_con_da_xoa_mem_khong_chiem_cho_trong_cum(db, owner, parent_with_subs):
+    parent, (a, b, c) = parent_with_subs
+    task_service.delete_task(db, owner, b)
+
+    task_service.move_task(db, owner, a, None, None)
+
+    assert _subtask_order(db, owner, parent) == [c, a]
+    assert [db.get(WorkTask, i).sort_order for i in (c, a)] == [STEP, 2 * STEP]
+
+
+def test_task_cha_bat_buoc_phai_co_cot_dich(db, owner, work_list, sections):
+    """`section_id` rỗng chỉ có nghĩa với VIỆC CON. Với task cha là thiếu tham số —
+    nhận bừa thì thẻ rơi khỏi mọi cột và biến mất khỏi kanban."""
+    a = _create_task(db, owner, work_list["id"], "A", sections[0])["id"]
+
+    with pytest.raises(HTTPException) as e:
+        task_service.move_task(db, owner, a, None, None)
+    assert e.value.status_code == 400
+    assert db.get(WorkTask, a).section_id == sections[0]

@@ -1,6 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Checkbox } from '@/shared/ui/checkbox'
-import { DatePicker } from '@/shared/ui/date-picker'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { ReadOnlyValue } from '@/shared/ui/read-only-value'
@@ -16,9 +15,10 @@ import { Textarea } from '@/shared/ui/textarea'
 import { formatDate, formatDateTime } from '@/shared/utils/format-date'
 import type { Company } from '@/modules/hr/types/company'
 import type { Employee } from '@/modules/hr/types/employee'
-import type {
-  DeptHeadCandidate,
-  PurchaseRequestDetail,
+import {
+  isDispatched,
+  type DeptHeadCandidate,
+  type PurchaseRequestDetail,
 } from '../types/purchase-request-detail'
 
 interface InfoCardProps {
@@ -71,16 +71,17 @@ export function PurchaseRequestInfoCard({
         <div className="space-y-1.5">
           <Label>
             Ngày tiếp nhận
-            <RequiredMark />
+            {/* bao-CR-293/298 (ticket 20): backend TỰ ĐIỀN khi thu mua duyệt điều
+                phối — khóa ô nhập, trước lúc đó giá trị chỉ là tạm (ngày lập phiếu) */}
+            <span className="text-xs font-normal text-muted-foreground">
+              (tự điền khi thu mua duyệt điều phối)
+            </span>
           </Label>
-          {editing ? (
-            <DatePicker
-              value={data.request_date || ''}
-              onChange={(value) => onChange({ request_date: value })}
-            />
-          ) : (
-            <ReadOnlyValue>{formatDate(data.request_date) || '—'}</ReadOnlyValue>
-          )}
+          {/* bao-CR-315: chưa điều phối thì chưa có ngày tiếp nhận — bày ngày lập phiếu ra
+              dưới nhãn này, người lập tưởng thu mua đã nhận việc rồi. */}
+          <ReadOnlyValue>
+            {isDispatched(data.status) ? formatDate(data.request_date) || '—' : 'Chưa tiếp nhận'}
+          </ReadOnlyValue>
         </div>
 
         <div className="space-y-1.5">

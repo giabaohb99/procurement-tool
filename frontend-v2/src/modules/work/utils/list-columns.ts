@@ -2,18 +2,42 @@ import type { CardFields } from '../types/view-options'
 import { labelFieldId } from '../types/view-options'
 import type { WorkLabelField } from '../types/work'
 
-/** Một cột dữ liệu bên phải cột tên trên khung nhìn Danh sách. */
+/** Một cột của khung nhìn Danh sách — kể cả cột TÊN, xem {@link TITLE_COLUMN}. */
 export interface TaskListColumn {
   key: string
   label: string
-  /** Bề rộng cố định (px). Cột tên là cột DUY NHẤT co giãn. */
+  /** Bề rộng mặc định (px), người dùng kéo giãn được và nhớ theo từng dự án. */
   width: number
+  /** Chặn dưới riêng khi kéo giãn; bỏ trống thì dùng `MIN_COLUMN_WIDTH` chung. */
+  minWidth?: number
   /** Có với cột nhãn tùy biến; trường dựng sẵn thì `undefined`. */
   field?: WorkLabelField
 }
 
+/**
+ * Cột TÊN CÔNG VIỆC — khai ở đây để nó cũng có bề rộng nhớ được và kéo giãn
+ * được như mọi cột khác.
+ *
+ * Trước đây cột này là `flex-1`: nó nuốt hết phần dư của khung nên không có bề
+ * rộng nào để kéo, người dùng rê vào mép phải của nó là không thấy tay cầm đâu.
+ * Nay nó rộng cố định, còn phần dư dồn vào một KHOẢNG ĐỆM co giãn nằm ngay sau
+ * nó — nhờ vậy các cột dữ liệu vẫn dính mép phải như cũ, mà mép phải của cột tên
+ * thì kéo được.
+ *
+ * Chặn dưới lớn hơn hẳn các cột khác: 90px vừa đủ cho một cái chip, nhưng với
+ * tên việc thì cụt còn dăm ba chữ cái, coi như mất cột.
+ */
+export const TITLE_COLUMN: TaskListColumn = {
+  key: 'title',
+  label: 'Tên công việc',
+  width: 360,
+  minWidth: 260,
+}
+
 const BUILTIN_WIDTH: Record<string, { label: string; width: number }> = {
   assignees: { label: 'Phụ trách', width: 180 },
+  status: { label: 'Trạng thái', width: 140 },
+  start: { label: 'Ngày bắt đầu', width: 130 },
   due: { label: 'Hạn chót', width: 130 },
 }
 

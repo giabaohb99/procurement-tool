@@ -36,11 +36,18 @@ DOC_ID = 909
 
 @pytest.fixture()
 def person(db, seed):
+    """Bốn nhân sự. `nghi_viec` là cách dựng cảnh «bước không còn ai duyệt».
+
+    ⚠️ Trước 05/09/2026 các bài dưới đây dựng cảnh đó bằng cách chỉ bước vào
+    CHÍNH NGƯỜI NỘP — hồi ấy luật I08 gạt họ nên bước rỗng. Nay bước khai đích
+    danh thì người nộp vẫn ký được (xem `_exclude_submitter`), nên phải dùng
+    người đã nghỉ việc: `approver_resolver` lọc bỏ nhân sự không còn hoạt động.
+    """
     ids = {"nop": seed.emp_req_id}
-    for name in ("a", "b", "c"):
+    for name in ("a", "b", "c", "nghi_viec"):
         employee = Employee(code=f"NV_{name.upper()}", full_name=f"Người {name.upper()}",
                             company_id=seed.company_id, department_id=seed.dept_id,
-                            is_active=True)
+                            is_active=name != "nghi_viec")
         db.add(employee)
         db.flush()
         ids[name] = employee.id
@@ -165,8 +172,8 @@ def test_buoc_da_ky_giu_nguyen_chu_ky(db, seed, person, entity_context):
 def test_phieu_ket_hoi_sinh_khi_buoc_do_co_nguoi_duyet(db, seed, person, entity_context):
     """Đây là đường gỡ kẹt bằng CẤU HÌNH, khỏi sửa tay dưới cơ sở dữ liệu."""
     flow = _luong(db)
-    #  Bước chỉ tay vào chính người nộp → họ bị loại (I08) → không còn ai → kẹt.
-    b1 = _buoc(db, flow, 1, person["nop"])
+    #  Bước chỉ tay vào người đã nghỉ việc → không còn ai duyệt → kẹt.
+    b1 = _buoc(db, flow, 1, person["nghi_viec"])
 
     instance = _trinh(db, person["nop"])
     assert instance.status == INSTANCE_BLOCKED
@@ -189,7 +196,7 @@ def test_sua_thanh_khong_con_ai_thi_phieu_ket_chu_khong_di_tiep(db, seed, person
     _buoc(db, flow, 2, person["b"])
 
     instance = _trinh(db, person["nop"])
-    b1.approver_ref = str(person["nop"])   # chỉ còn chính người nộp
+    b1.approver_ref = str(person["nghi_viec"])   # sửa thành người đã nghỉ việc
     flow_sync_service.sync_after_step_edit(db, b1, ACTOR, entity_context)
     db.commit()
 
@@ -206,7 +213,7 @@ def test_bo_nhanh_day_len_cap_tren_thi_phieu_ket(db, seed, person):
     người ta sửa luồng, chứ không lặng lẽ giao cho một người lạ.
     """
     flow = _luong(db)
-    _buoc(db, flow, 1, person["nop"], on_no_approver=NO_APPROVER_ESCALATE)
+    _buoc(db, flow, 1, person["nghi_viec"], on_no_approver=NO_APPROVER_ESCALATE)
 
     instance = _trinh(db, person["nop"])
 

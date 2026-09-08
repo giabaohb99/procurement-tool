@@ -31,8 +31,11 @@ Bảng trung tâm của diễn đàn nội bộ. Mỗi dòng là một bài đă
 | `dept_id` | BIGINT | ID phòng ban của tác giả tại thời điểm đăng (đóng băng) |
 | `company_id` | BIGINT | ID pháp nhân của tác giả tại thời điểm đăng (đóng băng) |
 | `pinned_at` | DATETIME NULL | Mốc thời gian ghim bài (NULL = bài thường; có giá trị = đang ghim, dùng để sắp xếp dải ghim mới lên đầu) |
+| `board_id` | BIGINT NULL | F13a: box chứa bài (trỏ `tab_forum_board.id`). NULL = bài Bảng tin thuần |
+| `title` | VARCHAR(255) NULL | F13a: tiêu đề thread — bắt buộc khi có `board_id` (service chặn 400), bài feed để NULL |
+| `prefix` | SMALLINT | F13a: prefix thread (`ForumPrefix`): 0=NONE, 1=DISCUSSION (thảo luận), 2=QUESTION (thắc mắc), 3=KNOWLEDGE (kiến thức), 4=SHOWCASE (khoe), 5=REVIEW (đánh giá). Nhãn TV khai ở `core/forum_codes.py`, sinh TS qua `gen_status_ts.py` |
 
-Index: `(status, id)` cho feed chung; `(created_by, id)` cho trang cá nhân.
+Index: `(status, id)` cho feed chung; `(created_by, id)` cho trang cá nhân; `(board_id, id)` cho thread list của box (F13a).
 
 **Logic chính:**
 - Feed lọc theo điều kiện: `status=PUBLISHED AND (audience=PUBLIC OR (audience=COMPANY AND company_id=pháp_nhân_người_xem) OR (audience=DEPT AND dept_id=phòng_người_xem) OR created_by=người_xem)`.
@@ -42,6 +45,29 @@ Index: `(status, id)` cho feed chung; `(created_by, id)` cho trang cá nhân.
 - Bài `HIDDEN` chỉ tác giả và `forum_admin` còn thấy, kèm lý do từ `tab_forum_moderation_log`.
 - Đính kèm ảnh/video đi qua `FileLink` entity `forum_post`; tối đa 10 file/bài.
 - Bài `AVATAR_UPDATE` phải kèm đúng 1 file (chính avatar mới); thiếu thì bị 400.
+- Bài trong box (F13a): audience bị ÉP theo box (đợt đầu toàn PUBLIC — QĐ-D7a); bài vẫn ra feed như thường (QĐ-D7b). Thread list của box phân trang SỐ TRANG `page/per_page`, sắp theo hoạt động cuối = max(lúc đăng, bình luận cuối), thread ghim (`pinned_at`) nổi lên đầu.
+
+---
+
+### `tab_forum_board` — Nhóm/box chuyên mục (F13a, QĐ-D7)
+
+Cấu trúc chuyên mục kiểu VOZ — MỘT bảng cho cả hai tầng: dòng không `parent_id` là NHÓM chỉ làm tiêu đề (không chứa bài trực tiếp), dòng có `parent_id` là BOX nhận bài. Đúng hai tầng, service chặn lồng sâu hơn. Cấu trúc do `forum_admin` quyết thủ công (entity `forum_board` — grant riêng, tách khỏi kiểm duyệt bài); bài trong box đăng là hiện ngay, KHÔNG duyệt trước (chốt 03/09/2026).
+
+| Cột | Kiểu | Ý nghĩa |
+|---|---|---|
+| `parent_id` | BIGINT NULL | NULL = nhóm tiêu đề; có giá trị = box thuộc nhóm đó |
+| `name` | VARCHAR(255) | Tên nhóm/box |
+| `description` | TEXT | Mô tả ngắn hiện dưới tên box |
+| `icon` | VARCHAR(50) | Tên icon lucide hoặc 1 emoji do admin chọn — FE tự vẽ |
+| `sort_order` | SMALLINT | Thứ tự hiển thị trong cây (nhỏ trước) |
+| `status` | SMALLINT | `ForumBoardStatus`: 1=ACTIVE (đang mở), 2=HIDDEN (admin ẩn — không nhận bài mới, biến khỏi cây với người thường, bài cũ giữ nguyên) |
+| `audience` | SMALLINT | Chừa sẵn cho box theo phòng/pháp nhân — đợt đầu ÉP PUBLIC=3 (QĐ-D7a), không nhận từ client |
+
+**Logic chính:**
+- `GET /api/forum/boards` trả cây nhóm → box, mỗi box kèm bộ đếm (số thread + tổng bình luận, COUNT trực tiếp chưa denormalize) và khối bài-mới-nhất (thread + mốc + người viết cuối theo công thức hoạt động cuối).
+- Box ẩn / nhóm cha ẩn / nhóm tiêu đề / id không tồn tại đều KHÔNG nhận bài (400 gộp).
+- Xóa chỉ được khi RỖNG: nhóm còn box hay box còn bài thì 400 — muốn rút khỏi mắt thì ẨN.
+- Nhóm đang chứa box không hạ xuống làm box được (chặn đẻ tầng ba).
 
 ---
 
@@ -506,6 +532,8 @@ Index: `(created_by)` cho phạm vi của người tạo.
 ## Quan hệ trong cụm
 
 ```
+tab_forum_board ──< tab_forum_board            (parent_id — nhóm chứa box, đúng 2 tầng)
+tab_forum_board ──< tab_forum_post             (board_id NULL = bài feed thuần)
 tab_forum_post ──< tab_forum_reaction          (post_id)
 tab_forum_post ──< tab_forum_moderation_log    (post_id)
 tab_forum_post ──< tab_comment [entity='forum_post'] (entity_id)

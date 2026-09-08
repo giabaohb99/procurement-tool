@@ -36,6 +36,14 @@ ENTITY_LABELS = {
     "survey": "Phiếu khảo sát",
     "survey_request": "Yêu cầu báo giá",
     "payment_request": "Yêu cầu thanh toán",
+    "leave_request": "Đơn nghỉ phép",
+    "room_booking": "Phiếu đặt phòng họp",
+    #  Đặt xe có ĐỦ hook (`register_hooks` + `register_subject` + `register_reader`
+    #  trong `vehicle_booking/approval_bridge.py`) nhưng bị quên ở hai bảng này,
+    #  nên thư báo ghi «Phiếu XE009» — mất luôn chữ nói đây là việc gì.
+    "vehicle_booking": "Phiếu đặt xe",
+    #  Duyệt dấu có hook duyệt (bridge) — thiếu nhãn thì thư báo ghi «Phiếu <mã>».
+    "seal_request": "Phiếu đóng dấu",
 }
 
 #  Đường dẫn trong thư. Văn bản ghi thẳng đường của app v2; mấy loại còn lại ghi
@@ -48,6 +56,22 @@ ENTITY_LINKS = {
     "survey": "/surveys/{id}",
     "survey_request": "/survey-requests/{id}",
     "payment_request": "/payment-requests/{id}",
+    #  Nghỉ phép chỉ tồn tại ở app v2 nên ghi thẳng đường v2, như văn bản.
+    #  ⚠️ Thiếu dòng này thì `ENTITY_LINKS.get(...)` trả chuỗi RỖNG, thư vẫn gửi
+    #  nhưng bấm vào **không đi đâu cả** — người duyệt đọc "đang chờ bạn" rồi
+    #  phải tự mò vào menu tìm tờ đơn. Đúng lỗi mà `notification-link.ts` đã
+    #  phải vá cho phân hệ Văn thư ngày 20/08/2026, chỉ khác chỗ hỏng.
+    "leave_request": "/hr/leave-requests/{id}",
+    #  Đặt phòng cũng chỉ tồn tại ở app v2 — xem cảnh báo ngay trên.
+    "room_booking": "/hr/room-bookings/{id}",
+    #  Đặt xe cũng chỉ có ở app v2 (`appRoutes.vehicleBooking.detail`), và
+    #  `/vehicle-booking` đã nằm trong `V2_PREFIXES` của `notification-link.ts`
+    #  nên `toAppPath()` cho đi thẳng, không dịch tiền tố. Thiếu dòng này thì
+    #  `.get(...)` trả chuỗi RỖNG ⇒ `link` rỗng, bấm vào thông báo không đi đâu
+    #  cả — mà `notify_new_tasks` nuốt lỗi nên không một chỗ nào đỏ lên.
+    "vehicle_booking": "/vehicle-booking/{id}",
+    #  Duyệt dấu chỉ có ở app v2 (`/approval-seal`) — ghi thẳng đường v2 như trên.
+    "seal_request": "/approval-seal/{id}",
 }
 
 

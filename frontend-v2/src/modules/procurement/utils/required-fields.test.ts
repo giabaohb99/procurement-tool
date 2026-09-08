@@ -7,6 +7,7 @@ import type {
 } from '../types/purchase-request-detail'
 import type { SurveyRequestDetail, SurveyRequestLine } from '../types/survey-request-detail'
 import {
+  duplicatePurchaseOrderCodes,
   missingPurchaseOrderLineFields,
   missingPurchaseRequestLineFields,
   missingSurveyRequestLineFields,
@@ -243,14 +244,27 @@ describe('validatePurchaseRequest', () => {
 })
 
 describe('missingPurchaseRequestLineFields', () => {
-  it('liệt kê đúng bốn ô bắt buộc khi dòng trống trơn', () => {
+  it('liệt kê đúng ba ô bắt buộc khi dòng trống trơn', () => {
     const empty = prLine({ product_code: '', qty: 0, warehouse: '', required_date: '' })
     expect(missingPurchaseRequestLineFields(empty)).toEqual([
-      'Mã hàng',
       'Số lượng mua',
       'Kho nhận',
       'Ngày cần hàng',
     ])
+  })
+
+  // bao-CR-310: mua được thứ chưa có trong danh mục, giống phiếu khảo sát không mã.
+  it('dòng KHÔNG CÓ MÃ HÀNG vẫn gửi duyệt được', () => {
+    expect(missingPurchaseRequestLineFields(prLine({ product_code: '' }))).toEqual([])
+    expect(validatePurchaseRequest(prDoc([prLine({ product_code: '' })]), true)).toBe('')
+  })
+
+  it('nhiều dòng cùng bỏ trống mã thì không bị tính là trùng mã', () => {
+    const data = prDoc([
+      prLine({ product_code: '', product_name: 'Ly thủy tinh đặt riêng' }),
+      prLine({ product_code: '', product_name: 'Khay gỗ đặt riêng' }),
+    ])
+    expect(validatePurchaseRequest(data, true)).toBe('')
   })
 
   it('ô chỉ có dấu cách vẫn là ô trống', () => {
@@ -328,9 +342,26 @@ describe('validatePurchaseOrder', () => {
     expect(validatePurchaseOrder(poDoc([poLine({ vat: 0 })]), true)).toBe('')
   })
 
-  it('chặn trùng mã hàng ngay từ lúc Lưu', () => {
+  it('KHÔNG chặn trùng mã hàng nữa — bao-CR-308 cho tách dòng theo bộ chứng từ', () => {
+    // Trước bao-CR-308 chỗ này trả "Mã hàng bị trùng" — nay trùng là hợp lệ
+    // (cùng mã, khác lô / khác Tên trên hóa đơn), trang chỉ hỏi xác nhận lúc lưu.
     const data = poDoc([poLine(), poLine()])
-    expect(validatePurchaseOrder(data)).toContain('Mã hàng bị trùng: SP001')
+    expect(validatePurchaseOrder(data)).toBe('')
+    expect(validatePurchaseOrder(data, true)).toBe('')
+  })
+
+  it('duplicatePurchaseOrderCodes chỉ ra đúng mã nằm trên nhiều dòng, bỏ dòng chưa có mã', () => {
+    expect(duplicatePurchaseOrderCodes(poDoc([poLine(), poLine()]))).toEqual(['SP001'])
+    expect(
+      duplicatePurchaseOrderCodes(poDoc([poLine(), poLine({ product_code: 'SP002' })])),
+    ).toEqual([])
+    // Hai dòng cùng CHƯA có mã không phải là trùng — đừng bắt người dùng xác nhận
+    // vì hai dòng nháp trống.
+    expect(
+      duplicatePurchaseOrderCodes(
+        poDoc([poLine({ product_code: '' }), poLine({ product_code: '' })]),
+      ),
+    ).toEqual([])
   })
 
   it('thiếu công ty / nhà cung cấp thì chặn cả khi Lưu', () => {
