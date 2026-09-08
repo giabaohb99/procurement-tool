@@ -841,6 +841,23 @@ export default function PurchaseRequestDetail() {
                     <label>Ngày tạo</label>
                     <input value={fmtDateTime(pr.created_at) || '—'} disabled />
                   </div>
+                  {/* bao-CR-318: đường quay về YCBG nguồn. Chiều ĐMH -> YCMH vốn đã có, chiều
+                      YCMH -> YCBG thì trước chỉ nằm trong câu chữ ô Nội dung nên bấm không ra.
+                      Chỉ hiện khi phiếu sinh ra TỪ yêu cầu báo giá; lập tay thì không có gì. */}
+                  {pr.survey_request_code && (
+                    <div className="form-row">
+                      <label>Từ yêu cầu báo giá</label>
+                      {can('survey_request', 'read') && pr.survey_request_id
+                        ? <div style={{ display: 'flex', alignItems: 'center', minHeight: 38 }}>
+                            <span className="clickable" style={{ color: 'var(--teal)', fontWeight: 500, cursor: 'pointer' }}
+                              title="Mở phiếu yêu cầu báo giá nguồn"
+                              onClick={() => navigate(`/survey-requests/${pr.survey_request_id}`)}>
+                              <i className="ti ti-external-link" style={{ marginRight: 4 }} />{pr.survey_request_code}
+                            </span>
+                          </div>
+                        : <input value={pr.survey_request_code} disabled />}
+                    </div>
+                  )}
                 </>
               )}
               <div className="form-row">

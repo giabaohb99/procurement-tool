@@ -8,7 +8,7 @@ from app.core.database import get_db
 from app.core.response import success
 from app.modules.notification.service import trigger_notification
 
-from sqlalchemy import func, select
+from sqlalchemy import and_ as sa_and, func, or_ as sa_or, select
 from . import service
 from .model import PurchaseRequest, PurchaseRequestItem
 from .schema import ApproveIn, AssignIn, ItemStatusIn, PRCreate, PRUpdate, ReasonIn, RejectIn, UrgentIn
@@ -111,6 +111,53 @@ def _approval_signers(db: Session, pr) -> dict:
     return out
 
 
+def _has_quote_file(db: Session, pr) -> bool:
+    """bao-CR-317 — phiếu này có BÁO GIÁ đính kèm hay không (ô tick trên bản in).
+
+    Trước CR này bản in chỉ soi cột `quote_file_url` — ô tải đúng 1 file từ thời đầu, nay
+    không màn nào ghi vào nữa (prod: 0/116 phiếu có giá trị). Chứng từ đã dời hết sang khối
+    "Chứng từ & Tài liệu đính kèm" (`tab_file_link`, loại `quotation`), nên bản in luôn tick
+    "Không" kể cả khi phiếu có báo giá thật. Đếm lại theo cả ba nguồn:
+      1. cột cũ `quote_file_url` — phiếu đời đầu, giữ để không mất dữ liệu;
+      2. file loại "Báo giá" trong khối đính kèm — đường đi hiện tại;
+      3. entity cũ `purchase_request_quote` — khối tải báo giá riêng, loại chứng từ để rỗng.
+    """
+    from app.modules.attachment.model import FileLink
+
+    if (pr.quote_file_url or "").strip():
+        return True
+    q = (db.query(FileLink.id)
+         .filter(FileLink.entity_id == pr.id,
+                 sa_or(sa_and(FileLink.entity == "purchase_request", FileLink.doc_type == "quotation"),
+                       FileLink.entity == "purchase_request_quote")))
+    return db.query(q.exists()).scalar() is True
+
+
+def _source_survey_request(db: Session, pr) -> tuple[int, str]:
+    """bao-CR-318 — YÊU CẦU BÁO GIÁ (YCBG) đã sinh ra phiếu này, để YCMH có đường quay về.
+
+    Đơn mua hàng có `pr_code` trỏ ngược về YCMH, nhưng chiều YCMH -> YCBG thì chỉ nằm trong
+    câu chữ ở ô Nội dung, bấm không ra. Liên kết thật vốn đã có sẵn trong CSDL:
+      - `tab_survey_request_pr`: mỗi lần chốt phương án tạo YCMH ghi 1 dòng (nguồn chuẩn);
+      - `tab_survey_request_line.pr_id`: đường cũ, dùng cho phiếu tạo trước khi có bảng trên.
+    Không tra ra thì trả (0, "") và giao diện không hiện gì — phiếu lập tay là bình thường.
+    """
+    from app.modules.survey_request.model import (SurveyRequest, SurveyRequestLine,
+                                                  SurveyRequestPr)
+
+    sr_id = (db.query(SurveyRequestPr.survey_request_id)
+             .filter(SurveyRequestPr.pr_id == pr.id)
+             .order_by(SurveyRequestPr.id.asc()).limit(1).scalar())
+    if not sr_id:
+        sr_id = (db.query(SurveyRequestLine.survey_request_id)
+                 .filter(SurveyRequestLine.pr_id == pr.id)
+                 .order_by(SurveyRequestLine.id.asc()).limit(1).scalar())
+    if not sr_id:
+        return 0, ""
+    code = db.query(SurveyRequest.code).filter(SurveyRequest.id == sr_id).scalar()
+    return (int(sr_id), code or "") if code else (0, "")
+
+
 def _out(db: Session, pr, user=None) -> dict:
     from app.core.audit import (resolve_actor, resolve_signature,
                                 resolve_signature_by_employee)
@@ -146,6 +193,10 @@ def _out(db: Session, pr, user=None) -> dict:
         _blank_supplier(d)
     d["created_at"] = pr.created_at
     d["created_by_name"] = resolve_actor(db, pr.created_by)
+    # bao-CR-317: ô "Báo giá đính kèm" trên bản in — xem `_has_quote_file`.
+    d["has_quote_file"] = _has_quote_file(db, pr)
+    # bao-CR-318: đường quay về YCBG nguồn — xem `_source_survey_request`. Rỗng = phiếu lập tay.
+    d["survey_request_id"], d["survey_request_code"] = _source_survey_request(db, pr)
     # Chữ ký ô "Người lập" trên phiếu in. Tra theo NHÂN SỰ người yêu cầu (đúng cái TÊN đang in);
     # phiếu cũ chưa có requester_id thì mới lấy chữ ký người tạo, và chỉ khi tên trùng nhau —
     # tránh in chữ ký người A dưới tên người B khi thu mua lập phiếu hộ bộ phận khác.
