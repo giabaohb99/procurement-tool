@@ -6,7 +6,6 @@ import { useAuth } from '@/core/auth/use-auth'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { Checkbox } from '@/shared/ui/checkbox'
-import { DateTimePicker } from '@/shared/ui/date-time-picker'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { ReadOnlyValue } from '@/shared/ui/read-only-value'
@@ -14,6 +13,7 @@ import { RequiredMark } from '@/shared/ui/required-mark'
 import { Textarea } from '@/shared/ui/textarea'
 
 import { cn } from '@/shared/utils/cn'
+import { BookingDateTimePicker } from './booking-date-time-picker'
 import { BookingPageHeader } from './booking-page-header'
 import {
   useCreateVehicleBooking,
@@ -399,7 +399,7 @@ export function BookingForm({
             <Field label={L.startTime} required>
               {/*  DD/MM/YYYY HH:MM (24h), giờ Hà Nội GMT+7. `min=hiện tại` → khoá ngày
                   quá khứ trên lịch + cảnh báo; kiểm lại lúc Lưu/Gửi duyệt. */}
-              <DateTimePicker
+              <BookingDateTimePicker
                 value={startTime}
                 min={now}
                 minLabel="Không được ở quá khứ"
@@ -413,7 +413,7 @@ export function BookingForm({
             </Field>
             <Field label={L.endTime} required>
               {/*  Không được sớm hơn thời gian lấy hàng/đi (mốc = startTime, lùi về hiện tại). */}
-              <DateTimePicker
+              <BookingDateTimePicker
                 value={endTime}
                 min={startTime || now}
                 minLabel={`Không được trước ${L.startTime.toLowerCase()}`}

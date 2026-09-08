@@ -119,7 +119,7 @@ function dateOnly(s: Seg): string {
 
 const LEN: Record<keyof Seg, number> = { da: 2, mo: 2, y: 4, h: 2, mi: 2 }
 
-export function DateTimePicker({
+export function BookingDateTimePicker({
   value,
   onChange,
   disabled,
