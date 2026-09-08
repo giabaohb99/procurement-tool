@@ -138,7 +138,7 @@ export function VehicleBookingListPage() {
       {
         key: 'status',
         header: 'Trạng thái',
-        cell: (r) => <BookingStatusBadge status={r.status} label={r.status_label} />,
+        cell: (r) => <BookingStatusBadge status={r.status} driverStatus={r.driver_status} />,
         width: 130,
         sortable: true,
       },

@@ -1,12 +1,12 @@
-import { ArrowLeft, Pencil, Printer } from 'lucide-react'
+import { ArrowLeft, Printer } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import { usePermission } from '@/core/authorization/use-permission'
+import { DocumentComments } from '@/modules/procurement/components/document-comments'
 import { AuditTimeline } from '@/shared/audit/audit-timeline'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
-import { Card } from '@/shared/ui/card'
 import { PageContainer } from '@/shared/ui/page-container'
 import { BookingApprovalPanel } from '../components/booking-approval-panel'
 import { BookingDetailBody } from '../components/booking-detail-body'
@@ -32,20 +32,31 @@ export function VehicleBookingDetailPage() {
   const bookingId = Number(id)
   const { data, isLoading, isError } = useVehicleBooking(Number.isFinite(bookingId) ? bookingId : null)
   const [dispatchOpen, setDispatchOpen] = useState(false)
-  //  Sửa NGAY trên trang này (không điều hướng sang trang riêng) — "1 bước".
-  const [editing, setEditing] = useState(false)
 
   const canEdit = Boolean(data) && can('vehicle_booking', 'write') && EDITABLE.has(data!.status)
 
-  //  Đang sửa: hiện biểu mẫu chỉnh sửa ngay trên trang chi tiết. Lưu/Hủy/back → quay
-  //  lại chế độ xem. Lưu xong trạng thái đổi (vd Chờ duyệt) thì tự về chế độ xem.
-  if (data && editing && canEdit) {
+  //  Phiếu SỬA ĐƯỢC (Nháp / Yêu cầu chỉnh sửa) mở THẲNG vào biểu mẫu chỉnh sửa —
+  //  không có chế độ xem trung gian, KHÔNG có nút "Sửa". Hủy hoặc Lưu/Gửi duyệt xong
+  //  (onDone) về danh sách; muốn xem lại thì mở lại phiếu (khi đó có thể đã hết sửa được).
+  if (data && canEdit) {
     return (
       <PageContainer className="w-full">
+        {/*  Bố cục KHỚP trang xem: một HÀNG NÚT + tiêu đề + badge trạng thái trên cùng,
+            liền dưới là 2 khung (biểu mẫu nội dung | Trao đổi + Lịch sử). BookingForm tự
+            dựng header full-width rồi xếp body + `aside` theo lưới. onSaved trống → LƯU /
+            GỬI DUYỆT xong Ở LẠI trang (dữ liệu tự nạp lại; hết sửa được thì tự sang trang xem). */}
         <BookingForm
           booking={data}
-          title="Chỉnh sửa yêu cầu đặt xe"
-          onDone={() => setEditing(false)}
+          title={data.purpose || `Yêu cầu đặt xe ${data.code}`}
+          badge={<BookingStatusBadge status={data.status} driverStatus={data.driver_status} />}
+          onDone={() => navigate(appRoutes.vehicleBooking.root)}
+          onSaved={() => undefined}
+          aside={
+            <>
+              <DocumentComments entity="vehicle_booking" entityId={data.id} />
+              <AuditTimeline entity="vehicle_booking" entityId={data.id} messageOnly dense />
+            </>
+          }
         />
       </PageContainer>
     )
@@ -66,16 +77,11 @@ export function VehicleBookingDetailPage() {
         <h1 className="text-xl font-semibold tracking-tight text-navy dark:text-foreground">
           {data ? data.purpose || `Yêu cầu đặt xe ${data.code}` : 'Chi tiết yêu cầu đặt xe'}
         </h1>
-        {data && <BookingStatusBadge status={data.status} />}
+        {data && <BookingStatusBadge status={data.status} driverStatus={data.driver_status} />}
         <div className="min-w-4 flex-1" />
         <div className="flex flex-wrap items-center justify-end gap-2">
           {data && <BookingWorkflowActions booking={data} onDispatch={() => setDispatchOpen(true)} />}
-          {canEdit && data && (
-            <Button variant="outline" onClick={() => setEditing(true)}>
-              <Pencil className="size-4" />
-              Sửa
-            </Button>
-          )}
+          {/*  Không có nút "Sửa": phiếu sửa được đã mở thẳng vào biểu mẫu ở trên. */}
           {data && (
             <Button variant="outline" onClick={() => navigate(appRoutes.vehicleBooking.print(data.id))}>
               <Printer className="size-4" />
@@ -93,7 +99,7 @@ export function VehicleBookingDetailPage() {
 
       {data && (
         //  Màn rộng: nội dung chính bên trái, luồng duyệt + lịch sử dồn cột phải.
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
           <div className="flex min-w-0 flex-col gap-5">
             <BookingDetailBody booking={data} />
           </div>
@@ -101,12 +107,12 @@ export function VehicleBookingDetailPage() {
             {/* Luồng duyệt nhiều bước — chỉ hiện khi phiếu đang chạy trong bộ máy
                 (bật ApprovalSwitch); 3 nút duyệt một bước ở đầu trang đã tự ẩn. */}
             {data.approval_running && <BookingApprovalPanel bookingId={data.id} />}
-            <Card className="flex flex-col gap-3 p-5">
-              <h3 className="border-b pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Lịch sử thao tác
-              </h3>
-              <AuditTimeline entity="vehicle_booking" entityId={data.id} />
-            </Card>
+            {/*  Trao đổi trên phiếu — dùng chung widget bình luận (entity/entityId). */}
+            <DocumentComments entity="vehicle_booking" entityId={data.id} />
+            {/*  AuditTimeline tự dựng thẻ có tiêu đề "Lịch sử thao tác" (không bọc thêm Card
+                kẻo lặp tiêu đề). messageOnly: backend ghi câu tự mô tả ("Chỉnh sửa: …",
+                "Đã điều phối Xe…", "Yêu cầu chỉnh sửa — Lý do: …") nên hiện thẳng. */}
+            <AuditTimeline entity="vehicle_booking" entityId={data.id} messageOnly dense />
           </div>
         </div>
       )}

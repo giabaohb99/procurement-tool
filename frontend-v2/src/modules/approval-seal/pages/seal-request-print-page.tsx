@@ -132,7 +132,7 @@ function PrintSheet({
         </tbody>
       </table>
 
-      {request.note ? (
+      {request.note?.trim() ? (
         <>
           <div style={section}>D. Ghi chú</div>
           <div style={{ ...cell, whiteSpace: 'pre-wrap' }}>{request.note}</div>

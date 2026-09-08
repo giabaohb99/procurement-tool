@@ -3,9 +3,9 @@ import type { ReactNode } from 'react'
 import { cn } from '@/shared/utils/cn'
 import {
   BOOKING_STATUS_BADGE,
-  BOOKING_STATUS_LABELS,
   DRIVER_STATUS_BADGE,
   DRIVER_STATUS_LABELS,
+  bookingStatusLabel,
   type BadgeTone,
 } from '../types/vehicle-booking'
 
@@ -44,11 +44,20 @@ export function StatusPill({ tone, children, className }: StatusPillProps) {
   )
 }
 
-/** Badge trạng thái CHUNG của phiếu (Nháp / Chờ duyệt / Điều phối…). */
-export function BookingStatusBadge({ status, label }: { status: number; label?: string }) {
+/**
+ * Badge trạng thái CHUNG của phiếu (Nháp / Chờ duyệt / Đã điều phối…). Truyền
+ * `driverStatus` để hiện bước tài xế khi đã điều phối ("Tài xế đã nhận" / "Đang đi").
+ */
+export function BookingStatusBadge({
+  status,
+  driverStatus,
+}: {
+  status: number
+  driverStatus?: number
+}) {
   return (
     <StatusPill tone={BOOKING_STATUS_BADGE[status] ?? 'gray'}>
-      {label || BOOKING_STATUS_LABELS[status] || '—'}
+      {bookingStatusLabel(status, driverStatus)}
     </StatusPill>
   )
 }

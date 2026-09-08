@@ -3,10 +3,10 @@ import { useNavigate, useParams } from 'react-router-dom'
 
 import { usePermission } from '@/core/authorization/use-permission'
 import { DocumentAttachmentsCard } from '@/modules/procurement/components/document-attachments-card'
+import { DocumentComments } from '@/modules/procurement/components/document-comments'
 import { AuditTimeline } from '@/shared/audit/audit-timeline'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
-import { Card } from '@/shared/ui/card'
 import { DeleteConfirmButton } from '@/shared/ui/delete-confirm-button'
 import { PageContainer } from '@/shared/ui/page-container'
 import { SealApprovalPanel } from '../components/seal-approval-panel'
@@ -50,14 +50,18 @@ export function SealRequestDetailPage() {
         >
           <ArrowLeft className="size-4" />
         </Button>
-        <div className="min-w-0">
-          <h1 className="truncate text-xl font-semibold tracking-tight text-navy dark:text-foreground">
+        {/*  Tiêu đề + badge gom vào một nhóm co giãn (`flex-1 min-w-0`): tiêu đề DÀI bị
+            `truncate` cắt "…" trong khoảng cho phép, KHÔNG đẩy cụm nút (Duyệt…) tràn khỏi
+            màn hình. `min-w-0` trên cả nhóm LẪN h1 để chữ co được dưới bề rộng nội dung. */}
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <h1
+            className="min-w-0 truncate text-xl font-semibold tracking-tight text-navy dark:text-foreground"
+            title={data ? data.purpose || `Yêu cầu đóng dấu ${data.code}` : undefined}
+          >
             {data ? data.purpose || `Yêu cầu đóng dấu ${data.code}` : 'Chi tiết yêu cầu đóng dấu'}
           </h1>
-          {data && <p className="text-sm text-muted-foreground">Yêu cầu đóng dấu {data.code}</p>}
+          {data && <SealStatusBadge status={data.status} label={data.status_label} />}
         </div>
-        {data && <SealStatusBadge status={data.status} label={data.status_label} />}
-        <div className="min-w-4 flex-1" />
         <div className="flex flex-wrap items-center justify-end gap-2">
           {data && <SealWorkflowActions request={data} />}
           {canEdit && data && (
@@ -112,7 +116,9 @@ export function SealRequestDetailPage() {
       )}
 
       {data && (
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+        //  2 cột như trang Đặt xe: nội dung bên trái, Trao đổi + Lịch sử dồn cột phải
+        //  (đổi breakpoint lg + 360px cho khớp `/vehicle-booking/:id`).
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
           <div className="flex min-w-0 flex-col gap-5">
             <SealDetailBody request={data} />
             <DocumentAttachmentsCard
@@ -126,12 +132,10 @@ export function SealRequestDetailPage() {
             {/* Luồng duyệt nhiều bước — chỉ hiện khi phiếu đang chạy trong bộ máy
                 (bật ApprovalSwitch); cụm nút cổng-1 (TBP) ở đầu trang đã tự ẩn. */}
             {data.approval_running && <SealApprovalPanel requestId={data.id} />}
-            <Card className="flex flex-col gap-3 p-5">
-              <h3 className="border-b pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Lịch sử thao tác
-              </h3>
-              <AuditTimeline entity="seal_request" entityId={data.id} />
-            </Card>
+            {/*  Trao đổi trên phiếu — dùng chung widget bình luận (entity/entityId). */}
+            <DocumentComments entity="seal_request" entityId={data.id} />
+            {/*  AuditTimeline tự dựng thẻ có tiêu đề — không bọc thêm Card kẻo lặp tiêu đề. */}
+            <AuditTimeline entity="seal_request" entityId={data.id} showMessage dense />
           </div>
         </div>
       )}

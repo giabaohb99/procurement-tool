@@ -12,15 +12,17 @@ from app.core.database import SessionLocal
 from app.modules.employee.model import Employee
 from app.modules.user.model import User
 
-#  (mã nhân viên, email đăng nhập mong muốn) — vai trò/phòng ban đã set sẵn.
+#  (mã nhân viên, email đăng nhập) — email khớp ĐÚNG nhân sự (đối chiếu DB 07/09/2026).
+#  ⚠️ Bản cũ lệch 1 mã (NSU203↔duonghaiyen…) nên mỗi email bị stamp lên nhầm người một
+#  bậc, đẻ ra email TRÙNG và đăng nhập ra sai người. Mã dưới đây đã sửa cho khớp local-part.
 ACCOUNTS = [
-    ("NSU203", "duonghaiyen.idagroup@dego.com"),   # NS1 — Nhân sự
-    ("NSU202", "ndquyen.idagroup@dego.com"),        # TP1 — Trưởng bộ phận
-    ("NSU171", "hnqanh.idagroup@dego.com"),         # NS2 — Nhân sự
-    ("NSU170", "nmtoan.idagroup@dego.com"),         # TP2 — Trưởng bộ phận
-    ("NSU055", "bhtthanh.idaglobal@dego.com"),      # ĐPV — Điều phối viên
-    ("NSU060", "ltnhut.idagroup@dego.com"),         # TX1 — Lê Tấn Nhựt (emp#82)
-    ("NSU058", "tqthai.idagroup@dego.com"),         # TX2 — Trần Quốc Thái (emp#80)
+    ("NSU204", "duonghaiyen.idagroup@dego.com"),   # Dương Hải Yến — Nhân sự
+    ("NSU203", "ndquyen.idagroup@dego.com"),        # Nguyễn Đỗ Quyên — Trưởng bộ phận (dept_head)
+    ("NSU172", "hnqanh.idagroup@dego.com"),         # Hồ Ngọc Quế Anh — Nhân sự
+    ("NSU171", "nmtoan.idagroup@dego.com"),         # Nguyễn Minh Toàn — Trưởng bộ phận (dept_head)
+    ("NSU056", "bhtthanh.idaglobal@dego.com"),      # Bùi Huỳnh Trường Thành — Điều phối viên (booking_dispatcher)
+    ("NSU060", "ltnhut.idagroup@dego.com"),         # Lê Tấn Nhựt — Tài xế (booking_driver)
+    ("NSU058", "tqthai.idagroup@dego.com"),         # Trần Quốc Thái — Tài xế (booking_driver)
 ]
 PASSWORD = "dego123"
 

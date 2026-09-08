@@ -23,6 +23,12 @@ interface AuditTimelineProps {
    * phần diễn giải trong `message`.
    */
   showMessage?: boolean
+  /**
+   * Chỉ hiện `message` (lùi về `action_label` khi rỗng), KHÔNG kèm nhãn hành động.
+   * Dùng khi backend đã ghi câu tự mô tả đủ "ai làm gì + đổi gì" (vd Đặt xe:
+   * "Chỉnh sửa: Thời gian giao, Điểm đến"), tránh lặp "Cập nhật: Chỉnh sửa: …".
+   */
+  messageOnly?: boolean
   /** Bố cục gọn dành cho trang chứng từ xếp các khối full-width. */
   dense?: boolean
 }
@@ -39,6 +45,7 @@ export function AuditTimeline({
   entity,
   entityId,
   showMessage = false,
+  messageOnly = false,
   dense = false,
 }: AuditTimelineProps) {
   const [visible, setVisible] = useState(PAGE_STEP)
@@ -83,8 +90,10 @@ export function AuditTimeline({
                   />
                   <div className="min-w-0">
                     <p className="text-sm">
-                      <b>{log.by}</b> — {log.action_label}
-                      {showMessage && log.message ? `: ${log.message}` : ''}
+                      <b>{log.by}</b> —{' '}
+                      {messageOnly
+                        ? log.message || log.action_label
+                        : `${log.action_label}${showMessage && log.message ? `: ${log.message}` : ''}`}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {formatDateTime(log.at)}

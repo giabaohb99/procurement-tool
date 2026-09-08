@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { usePermission } from '@/core/authorization/use-permission'
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
 import { DocumentAttachmentsCard } from '@/modules/procurement/components/document-attachments-card'
+import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { FileDropzone } from '@/shared/ui/file-dropzone'
@@ -190,6 +191,11 @@ export function SealRequestForm({ request, duplicateFrom, title, onCancel, onSav
               placeholder="Chọn công ty cần đóng dấu"
               searchPlaceholder="Tìm theo tên hoặc mã số thuế…"
               emptyMessage="Không tìm thấy công ty nào."
+              //  Nới rộng để hiện đủ tên công ty + MST; hiện chip công ty đã chọn NGAY
+              //  trong khung (không "Đã chọn N"); nút Bỏ hết là dấu X trong khung.
+              contentClassName="w-[min(34rem,92vw)]"
+              clearInTrigger
+              chipsInTrigger
             />
           </Field>
 
@@ -204,7 +210,18 @@ export function SealRequestForm({ request, duplicateFrom, title, onCancel, onSav
               <SelectContent>
                 {approvers.map((approver) => (
                   <SelectItem key={approver.id} value={String(approver.id)}>
-                    {approver.name}
+                    <span className="flex items-center gap-2">
+                      <Avatar size="sm" className="size-6">
+                        {approver.avatar && <AvatarImage src={approver.avatar} alt="" />}
+                        <AvatarFallback className="text-[10px]">
+                          {approver.name.trim()[0]?.toUpperCase() || '?'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span>{approver.name}</span>
+                      {approver.is_dept_head && (
+                        <span className="text-xs text-muted-foreground">· Trưởng bộ phận</span>
+                      )}
+                    </span>
                   </SelectItem>
                 ))}
               </SelectContent>

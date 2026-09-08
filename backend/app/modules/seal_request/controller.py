@@ -39,6 +39,12 @@ def _scoped_or_404(db: Session, rid: int, user, action: str) -> SealRequest:
     return obj
 
 
+def _seal_snapshot(db: Session, obj: SealRequest) -> tuple:
+    """Ảnh chụp các trường người dùng sửa (gồm danh sách công ty) — để biết có đổi gì không."""
+    return (obj.purpose, obj.department_id, obj.first_approver_id, obj.note,
+            tuple(sorted(service.get_company_ids(db, obj.id))))
+
+
 @router.get("")
 def list_seal_requests(
     request: Request,
@@ -95,9 +101,12 @@ def update_seal_request(
     user=Depends(require("seal_request", "write")),
 ):
     obj = _scoped_or_404(db, rid, user, "write")
+    before = _seal_snapshot(db, obj)
     obj = service.update_seal_request(db, obj, data, user, submit, background_tasks)
-    audit_record(db, user.id, "seal_request", obj.id, "update",
-                 f"Cập nhật yêu cầu đóng dấu {obj.code}")
+    #  KHÔNG đổi gì (và không gửi duyệt) thì KHÔNG ghi lịch sử — bỏ dòng "Cập nhật" vô nghĩa.
+    if _seal_snapshot(db, obj) != before or submit:
+        audit_record(db, user.id, "seal_request", obj.id, "update",
+                     f"Cập nhật yêu cầu đóng dấu {obj.code}")
     return success(service.serialize_seal_request(db, obj), "Đã cập nhật")
 
 

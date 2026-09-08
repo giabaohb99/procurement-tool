@@ -35,6 +35,9 @@ export function DeleteConfirmButton({
   warning,
 }: DeleteConfirmButtonProps) {
   const [open, setOpen] = useState(false)
+  //  Tên bản ghi có thể rất dài (vd mục đích phiếu là cả đoạn văn) → cắt gọn + "…" để
+  //  tiêu đề hộp xác nhận không phình ra khỏi khung.
+  const shortName = recordName.length > 80 ? `${recordName.slice(0, 80).trimEnd()}…` : recordName
 
   return (
     <>
@@ -51,7 +54,7 @@ export function DeleteConfirmButton({
       <AlertDialog open={open} onOpenChange={setOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Xóa "{recordName}"?</AlertDialogTitle>
+            <AlertDialogTitle className="break-words">Xóa "{shortName}"?</AlertDialogTitle>
             <AlertDialogDescription>
               Thao tác này không hoàn tác được.
               {warning ? ` ${warning}` : ''}

@@ -57,16 +57,43 @@ def _csv_cell(col, value) -> str:
 
 
 def _code_map(db: Session, ref: str, self_model) -> dict:
-    """Bản đồ id -> code cho một bảng tham chiếu (để xuất MÃ thay vì id/tên)."""
+    """Bản đồ id -> nhãn đối chiếu cho một bảng tham chiếu (để xuất MÃ/tên thay vì id).
+
+    Danh mục nền xuất theo MÃ (import lại được); Xe theo BIỂN SỐ, Tài xế theo TÊN,
+    Người duyệt (id tài khoản) theo HỌ TÊN nhân sự — khớp cách import đối chiếu ngược."""
     from app.modules.company.model import Company
     from app.modules.department.model import Department
     from app.modules.employee.model import Employee
-    model = {"company": Company, "department": Department, "employee": Employee}.get(ref)
+    from app.modules.user.model import User
+    from app.modules.vehicle_booking.model import Driver, Vehicle
     if ref == "self":
-        model = self_model
+        return {row[0]: row[1] for row in db.query(self_model.id, self_model.code).all()}
+    if ref == "vehicle":
+        return {row[0]: row[1] for row in db.query(Vehicle.id, Vehicle.license_plate).all()}
+    if ref == "driver":
+        return {row[0]: row[1] for row in db.query(Driver.id, Driver.name).all()}
+    if ref == "approver":  # id TÀI KHOẢN -> họ tên nhân sự gắn với tài khoản đó
+        return {u_id: name for u_id, name in
+                db.query(User.id, Employee.full_name).join(Employee, User.employee_id == Employee.id).all()}
+    model = {"company": Company, "department": Department, "employee": Employee}.get(ref)
     if model is None:
         return {}
     return {row[0]: row[1] for row in db.query(model.id, model.code).all()}
+
+
+def _attachment_map(db: Session, entity: str, ids: list[int]) -> dict:
+    """id phiếu -> chuỗi TÊN các tệp đính kèm (gộp bằng ', '). Một truy vấn cho cả trang."""
+    from app.modules.attachment.model import FileLink, StoredFile
+    if not ids:
+        return {}
+    rows = (db.query(FileLink.entity_id, StoredFile.filename)
+            .join(StoredFile, StoredFile.id == FileLink.file_id)
+            .filter(FileLink.entity == entity, FileLink.entity_id.in_(ids))
+            .order_by(FileLink.sort_order.asc(), FileLink.id.asc()).all())
+    out: dict[int, list[str]] = {}
+    for eid, name in rows:
+        out.setdefault(eid, []).append(name or "")
+    return {eid: ", ".join(n for n in names if n) for eid, names in out.items()}
 
 
 def _build_csv(cols, rows) -> bytes:
@@ -95,10 +122,15 @@ def run_export(db: Session, user, entity: str, fmt: str) -> tuple[bytes, str, st
     cols = adapter["columns"]
     # Cột tham chiếu -> đổi id sang MÃ (xuất một lần bản đồ id->code cho mỗi bảng).
     ref_maps = {c.ref: _code_map(db, c.ref, model) for c in cols if getattr(c, "ref", None)}
+    # Cột TỆP ĐÍNH KÈM (kind='attachments') -> gộp tên tệp theo phiếu (một truy vấn).
+    att_map = (_attachment_map(db, entity, [it.id for it in items])
+               if any(c.kind == "attachments" for c in cols) else {})
     rows = [
         {
             c.key: (ref_maps[c.ref].get(getattr(it, c.key, 0) or 0, "")
-                    if getattr(c, "ref", None) else getattr(it, c.key, ""))
+                    if getattr(c, "ref", None)
+                    else att_map.get(it.id, "") if c.kind == "attachments"
+                    else getattr(it, c.key, ""))
             for c in cols
         }
         for it in items

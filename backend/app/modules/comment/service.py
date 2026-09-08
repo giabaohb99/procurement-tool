@@ -177,13 +177,68 @@ def file_map(db: Session, comment_ids: list[int]) -> dict[int, list[dict]]:
     return out
 
 
+#  Bao nhiêu người tối đa hiện trong menu gợi ý @. Đủ rộng để một họ phổ biến
+#  ("Nguyễn", "Trần"…) không bị cắt mất người cần, nhưng vẫn cuộn được gọn (menu
+#  đã `max-h-64 overflow-y-auto`). Người TRONG PHIẾU luôn được thêm ngoài hạn này.
+MENTION_LIMIT = 20
+#  Số dòng lấy về từ DB trước khi sắp xếp — lấy dư rồi mới cắt còn `MENTION_LIMIT`.
+_MENTION_FETCH = 80
+
+
+def _resolve_names_to_user_ids(db: Session, names) -> set[int]:
+    """Khớp chuỗi HỌ TÊN ghi trên phiếu (người gửi/nhận hàng…) sang tài khoản đang hoạt động.
+
+    Đơn giao hàng lưu người nhận là CHỮ (`receiver_name`) chứ không phải khóa tài khoản, nên
+    muốn ưu tiên họ lên đầu menu @ thì phải dò ngược tên → nhân sự → tài khoản. Trùng tên thì
+    lấy hết các tài khoản trùng — thà dư còn hơn bỏ sót đúng người đang đứng trên phiếu.
+    """
+    from app.modules.employee.model import Employee
+    from app.modules.user.model import User
+
+    clean = {n.strip() for n in names if isinstance(n, str) and n.strip()}
+    if not clean:
+        return set()
+    emp_ids = [e.id for e in db.query(Employee.id).filter(Employee.full_name.in_(clean)).all()]
+    if not emp_ids:
+        return set()
+    return {uid for (uid,) in db.query(User.id).filter(
+        User.is_active == True, User.employee_id.in_(emp_ids)).all()}  # noqa: E712
+
+
+def _doc_participant_ids(db: Session, doc, entity: str) -> set[int]:
+    """User_id của những người XUẤT HIỆN TRÊN PHIẾU — để ưu tiên lên đầu danh sách @.
+
+    Gồm người tạo, người yêu cầu, người duyệt, người điều phối (các cột lưu thẳng khóa tài
+    khoản) + tài khoản gắn với tài xế được phân + người gửi/nhận hàng dò từ chữ. Dùng `getattr`
+    nên phiếu không có cột nào thì bỏ qua cột đó, một hàm chạy chung mọi loại chứng từ.
+    """
+    ids: set[int] = set()
+    for field in ("created_by", "requester_id", "first_approver_id", "dispatched_by"):
+        v = getattr(doc, field, 0) or 0
+        if v:
+            ids.add(int(v))
+    drv_id = getattr(doc, "assigned_driver_id", 0) or 0
+    if drv_id:
+        from app.modules.vehicle_booking.model import Driver
+        drv = db.get(Driver, drv_id)
+        if drv and getattr(drv, "user_id", 0):
+            ids.add(int(drv.user_id))
+    ids |= _resolve_names_to_user_ids(
+        db, [getattr(doc, f, "") for f in ("sender_name", "receiver_name", "requester")])
+    ids.discard(0)
+    return ids
+
+
 def mentionable(db: Session, doc, entity: str, entity_id: int, me_id: int,
-                q: str = "", limit: int = 8) -> list[dict]:
+                q: str = "", limit: int = MENTION_LIMIT) -> list[dict]:
     """Người có thể `@` trong phiếu này.
 
-    Chưa gõ chữ nào thì chỉ gợi ý NGƯỜI ĐANG DÍNH TỚI PHIẾU (người tạo phiếu + ai đã bình luận)
-    — mở ra là bấm được ngay, đúng 90% trường hợp. Gõ thêm chữ thì tìm trong TOÀN BỘ nhân sự
-    đang hoạt động, để còn kéo người mới vào cuộc.
+    Chưa gõ chữ nào thì chỉ gợi ý NGƯỜI ĐANG DÍNH TỚI PHIẾU (người tạo, người yêu cầu, người
+    duyệt, tài xế, người gửi/nhận hàng… + ai đã bình luận) — mở ra là bấm được ngay. Gõ thêm chữ
+    thì tìm trong TOÀN BỘ nhân sự đang hoạt động, nhưng NGƯỜI TRONG PHIẾU khớp từ khóa vẫn được
+    kéo lên đầu và LUÔN có mặt: trước đây menu chỉ lấy 60 dòng chưa sắp xếp rồi cắt còn 8, nên với
+    một họ đông người (81 tài khoản tên "Nguyễn") thì đúng người đứng trên phiếu — ví dụ người
+    nhận "Nguyễn Trường Giang" — lại rơi khỏi danh sách; giờ họ được truy riêng nên không mất.
 
     Không lọc theo quyền xem phiếu: người bị nhắc chỉ nhận một dòng chuông, bấm vào mà không có
     quyền thì vẫn bị 403 như thường — chặn ở đây chỉ tốn thêm một vòng apply_scope cho mỗi ký tự gõ.
@@ -195,25 +250,29 @@ def mentionable(db: Session, doc, entity: str, entity_id: int, me_id: int,
     related = {getattr(doc, "created_by", 0) or 0}
     related.update(uid for (uid,) in db.query(Comment.created_by)
                      .filter(Comment.entity == entity, Comment.entity_id == entity_id).distinct())
+    related |= _doc_participant_ids(db, doc, entity)
     related.discard(0)
     related.discard(me_id)
 
     q = (q or "").strip()
-    users = db.query(User).filter(User.is_active == True)  # noqa: E712
+    active = db.query(User).filter(User.is_active == True)  # noqa: E712
     if q:
         # Tìm theo tên/mã nhân sự, và cả email cho tài khoản chưa gắn nhân sự
         emp_ids = [e.id for e in db.query(Employee.id).filter(
-            or_(Employee.full_name.like(f"%{q}%"), Employee.code.like(f"%{q}%"))).limit(200).all()]
+            or_(Employee.full_name.like(f"%{q}%"), Employee.code.like(f"%{q}%"))).limit(300).all()]
         cond = [User.email.like(f"%{q}%")]
         if emp_ids:
             cond.append(User.employee_id.in_(emp_ids))
-        users = users.filter(or_(*cond))
+        matched = active.filter(or_(*cond))
+        #  Người TRONG PHIẾU khớp từ khóa: lấy hết, không để hạn cắt (đây là chỗ vá lỗi).
+        on_doc = matched.filter(User.id.in_(related)).all() if related else []
+        seen = {u.id for u in on_doc}
+        rows = on_doc + [u for u in matched.limit(_MENTION_FETCH).all() if u.id not in seen]
     elif related:
-        users = users.filter(User.id.in_(related))
+        rows = active.filter(User.id.in_(related)).all()
     else:
         return []
 
-    rows = users.limit(60).all()
     emp = {e.id: e for e in db.query(Employee).filter(
         Employee.id.in_([u.employee_id for u in rows if u.employee_id])).all()} if rows else {}
     out = [{"user_id": u.id,

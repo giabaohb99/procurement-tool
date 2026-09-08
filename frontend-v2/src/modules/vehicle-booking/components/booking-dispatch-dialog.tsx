@@ -12,20 +12,12 @@ import { DialogContent } from '@/shared/ui/dialog'
 import { Label } from '@/shared/ui/label'
 import { RequiredMark } from '@/shared/ui/required-mark'
 import { confirm } from '@/shared/ui/confirm-dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/ui/select'
+import { SearchSelect, type SearchSelectOption } from '@/shared/ui/search-select'
 import {
   useDispatchVehicleBooking,
   useDriverOptions,
   useVehicleOptions,
 } from '../hooks/use-vehicle-bookings'
-import { VEHICLE_STATUS_LABELS } from '../types/vehicle'
-import { DRIVER_STATUS_LABELS } from '../types/driver'
 import type { VehicleBooking } from '../types/vehicle-booking'
 
 interface BookingDispatchDialogProps {
@@ -53,6 +45,22 @@ export function BookingDispatchDialog({ booking, onClose, onDispatched }: Bookin
   const initial = `${booking.assigned_vehicle_id ?? ''}|${booking.assigned_driver_id ?? ''}`
   const dirty = `${vehicleId}|${driverId}` !== initial
   const pending = dispatchMutation.isPending
+
+  //  Chỉ đổ xe/tài xế ĐANG SẴN SÀNG vào ô chọn: xe bảo trì/ngưng dùng và tài xế nghỉ
+  //  phép/nghỉ việc không phân được. Vẫn giữ lại đúng cái ĐANG được phân (dù trạng thái
+  //  đã đổi) để ô hiện đúng lựa chọn hiện tại khi điều phối lại, không bị trống.
+  const vehicleOptions: SearchSelectOption[] = (vehicles?.items ?? [])
+    .filter((v) => v.status === 'available' || v.id === booking.assigned_vehicle_id)
+    .map((v) => ({
+      value: String(v.id),
+      label: `${v.license_plate || '—'}${v.type ? ` — ${v.type}` : ''}`,
+    }))
+  const driverOptions: SearchSelectOption[] = (drivers?.items ?? [])
+    .filter((d) => d.status === 'available' || d.id === booking.assigned_driver_id)
+    .map((d) => ({
+      value: String(d.id),
+      label: `${d.name}${d.phone ? ` · ${d.phone}` : ''}`,
+    }))
 
   async function attemptClose() {
     if (pending) return
@@ -93,7 +101,7 @@ export function BookingDispatchDialog({ booking, onClose, onDispatched }: Bookin
         onEscapeKeyDown={(e) => e.preventDefault()}
         onInteractOutside={(e) => e.preventDefault()}
         onPointerDownOutside={(e) => e.preventDefault()}
-        className="sm:max-w-md"
+        className="sm:max-w-[600px]"
       >
         <DialogHeader className="flex-row items-start justify-between text-left">
           <div>
@@ -113,21 +121,16 @@ export function BookingDispatchDialog({ booking, onClose, onDispatched }: Bookin
               Xe
               <RequiredMark />
             </Label>
-            <Select value={vehicleId} onValueChange={setVehicleId} disabled={vehiclesLoading}>
-              <SelectTrigger>
-                <SelectValue placeholder={vehiclesLoading ? 'Đang tải…' : 'Chọn xe'} />
-              </SelectTrigger>
-              <SelectContent>
-                {(vehicles?.items ?? []).map((v) => (
-                  <SelectItem key={v.id} value={String(v.id)}>
-                    {v.license_plate}
-                    {v.model ? ` — ${v.model}` : ''}
-                    {` · ${VEHICLE_STATUS_LABELS[v.status] ?? v.status}`}
-                    {v.is_external ? ' · Thuê ngoài' : ''}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchSelect
+              value={vehicleId}
+              onChange={setVehicleId}
+              options={vehicleOptions}
+              disabled={vehiclesLoading}
+              searchInTrigger
+              placeholder={vehiclesLoading ? 'Đang tải…' : 'Chọn xe'}
+              searchPlaceholder="Gõ biển số / loại xe…"
+              emptyMessage="Không có xe phù hợp."
+            />
           </div>
 
           {selfDrive ? (
@@ -147,21 +150,16 @@ export function BookingDispatchDialog({ booking, onClose, onDispatched }: Bookin
                 Tài xế
                 <RequiredMark />
               </Label>
-              <Select value={driverId} onValueChange={setDriverId} disabled={driversLoading}>
-                <SelectTrigger>
-                  <SelectValue placeholder={driversLoading ? 'Đang tải…' : 'Chọn tài xế'} />
-                </SelectTrigger>
-                <SelectContent>
-                  {(drivers?.items ?? []).map((d) => (
-                    <SelectItem key={d.id} value={String(d.id)}>
-                      {d.name}
-                      {d.phone ? ` · ${d.phone}` : ''}
-                      {` · ${DRIVER_STATUS_LABELS[d.status] ?? d.status}`}
-                      {d.is_external ? ' · Thuê ngoài' : ''}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchSelect
+                value={driverId}
+                onChange={setDriverId}
+                options={driverOptions}
+                disabled={driversLoading}
+                searchInTrigger
+                placeholder={driversLoading ? 'Đang tải…' : 'Chọn tài xế'}
+                searchPlaceholder="Gõ tên / số điện thoại…"
+                emptyMessage="Không có tài xế phù hợp."
+              />
             </div>
           )}
 

@@ -110,7 +110,8 @@ def precheck_headers(module: int, wb) -> None:
         fields = adapter["fields"]
     elif doc_import.is_doc_module(module):
         adapter = doc_import.DOC_ADAPTERS[module]
-        fields = [adapter["code"], *adapter["header_fields"], *adapter["line_fields"]]
+        #  Chứng từ header-only (Đặt xe / Duyệt dấu) KHÔNG có `line_fields` -> .get([]).
+        fields = [adapter["code"], *adapter["header_fields"], *adapter.get("line_fields", [])]
     else:
         return  # module chưa hỗ trợ — để bước sau báo
     sheet = adapter["sheet"]

@@ -9,6 +9,7 @@ import { Skeleton } from '@/shared/ui/skeleton'
 import { BookingForm } from '../components/booking-form'
 import { BookingPageHeader } from '../components/booking-page-header'
 import { useVehicleBooking } from '../hooks/use-vehicle-bookings'
+import type { VehicleBooking } from '../types/vehicle-booking'
 
 /**
  * Trang Thêm mới (`/vehicle-booking/new`, kèm `?from=<id>` khi nhân bản) và Chỉnh sửa
@@ -24,6 +25,10 @@ export function VehicleBookingFormPage() {
   const backToList = () => navigate(appRoutes.vehicleBooking.root)
   //  SỬA thì back/hủy quay lại CHI TIẾT phiếu (`/:id`), không về danh sách.
   const backToDetail = () => navigate(appRoutes.vehicleBooking.detail(Number(id)))
+  //  LƯU / GỬI DUYỆT (tạo mới / nhân bản): KHÔNG về danh sách — sang CHI TIẾT phiếu
+  //  vừa tạo để tiếp tục xử lý cùng phiếu. Chỉ back/Hủy mới thoát về danh sách.
+  const toSavedDetail = (saved: VehicleBooking) =>
+    navigate(appRoutes.vehicleBooking.detail(saved.id))
 
   // Sửa: nạp phiếu theo :id. Nhân bản: nạp phiếu nguồn theo ?from=.
   const loadId = isEdit ? Number(id) : fromId
@@ -39,7 +44,7 @@ export function VehicleBookingFormPage() {
   return (
     <PageContainer className="w-full">
       {!needsLoad ? (
-        <BookingForm title={title} onDone={backToList} />
+        <BookingForm title={title} onDone={backToList} onSaved={toSavedDetail} />
       ) : isLoading ? (
         <>
           <BookingPageHeader title={title} onBack={backToList} />
@@ -56,9 +61,9 @@ export function VehicleBookingFormPage() {
           </ErrorState>
         </>
       ) : isEdit ? (
-        <BookingForm booking={data} title={title} onDone={backToDetail} />
+        <BookingForm booking={data} title={title} onDone={backToDetail} onSaved={backToDetail} />
       ) : (
-        <BookingForm duplicateFrom={data} title={title} onDone={backToList} />
+        <BookingForm duplicateFrom={data} title={title} onDone={backToList} onSaved={toSavedDetail} />
       )}
     </PageContainer>
   )

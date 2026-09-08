@@ -35,7 +35,7 @@ export const BOOKING_STATUS_LABELS: Record<number, string> = {
   [BOOKING_STATUS.draft]: 'Nháp',
   [BOOKING_STATUS.pending]: 'Chờ duyệt',
   [BOOKING_STATUS.approved]: 'Đã duyệt',
-  [BOOKING_STATUS.dispatched]: 'Điều phối',
+  [BOOKING_STATUS.dispatched]: 'Đã điều phối',
   [BOOKING_STATUS.completed]: 'Hoàn thành',
   [BOOKING_STATUS.rejected]: 'Từ chối',
   [BOOKING_STATUS.cancelled]: 'Đã hủy',
@@ -90,6 +90,21 @@ export const DRIVER_STATUS_LABELS: Record<number, string> = {
   [DRIVER_STATUS.ongoing]: 'Đang đi',
   [DRIVER_STATUS.completed]: 'Hoàn thành',
   [DRIVER_STATUS.rejected]: 'Tài xế từ chối',
+}
+
+/**
+ * Nhãn trạng thái CHUNG của phiếu — có tính tới bước của TÀI XẾ khi đã điều phối:
+ * "Đã điều phối" → "Tài xế đã nhận" (tài xế nhận chuyến) → "Đang đi" (đang chạy).
+ * Ngoài các bước đó dùng nhãn trạng thái phiếu bình thường. Giữ ĐỒNG BỘ với
+ * `status_label` ở backend (`serialize_booking`) để danh sách/bản in/khớp badge.
+ */
+export function bookingStatusLabel(status: number, driverStatus?: number): string {
+  if (status === BOOKING_STATUS.dispatched) {
+    if (driverStatus === DRIVER_STATUS.accepted) return 'Tài xế đã nhận'
+    if (driverStatus === DRIVER_STATUS.ongoing) return 'Đang đi'
+    if (driverStatus === DRIVER_STATUS.rejected) return 'Điều phối lại' // tài xế từ chối → phân lại
+  }
+  return BOOKING_STATUS_LABELS[status] || '—'
 }
 
 export const DRIVER_STATUS_BADGE: Record<number, BadgeTone> = {
@@ -148,15 +163,26 @@ export interface VehicleBooking {
   first_approver_id: number
   requester: string
   requester_id: number
+  /** Chụp lúc tạo phiếu — email/SĐT/chức danh·phòng ban của người tạo. */
+  requester_email: string
+  requester_phone: string
+  requester_role: string
   status: number
   status_label: string
   note: string
+  // Thông tin phê duyệt
+  /** Tên Trưởng bộ phận phê duyệt (backend nối từ first_approver_id). */
+  approver_name: string
+  /** Thời điểm duyệt (ISO), rỗng nếu chưa duyệt. */
+  approved_at: string
   // Điều phối / chạy chuyến
   assigned_vehicle_id: number | null
   assigned_driver_id: number | null
   assigned_vehicle_label: string
   assigned_driver_label: string
   dispatched_by: number | null
+  /** Tên người điều phối (backend nối từ dispatched_by). */
+  dispatched_by_name: string
   dispatched_at: string | null
   driver_status: number
   driver_status_label: string

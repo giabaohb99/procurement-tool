@@ -2,11 +2,14 @@ import { ArrowDown, ArrowUp, Loader2, MapPin, Plus, Send, Trash2 } from 'lucide-
 import { useState } from 'react'
 import { toast } from 'sonner'
 
+import { useAuth } from '@/core/auth/use-auth'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { Checkbox } from '@/shared/ui/checkbox'
+import { DateTimePicker } from '@/shared/ui/date-time-picker'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
+import { ReadOnlyValue } from '@/shared/ui/read-only-value'
 import { RequiredMark } from '@/shared/ui/required-mark'
 import { Textarea } from '@/shared/ui/textarea'
 
@@ -35,6 +38,13 @@ function labelsFor(isDelivery: boolean) {
   }
 }
 
+/** Thời điểm hiện tại (giờ máy) dạng `yyyy-MM-ddTHH:mm` — mốc chặn quá khứ cho bộ chọn. */
+function nowLocalISO(): string {
+  const d = new Date()
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`
+}
+
 interface BookingFormProps {
   /** Có = SỬA phiếu này. */
   booking?: VehicleBooking
@@ -42,23 +52,44 @@ interface BookingFormProps {
   duplicateFrom?: VehicleBooking
   /** Tiêu đề trang (vd "Tạo yêu cầu đặt xe"). */
   title: string
-  /** Gọi sau khi lưu/gửi duyệt thành công hoặc bấm Hủy/back — điều hướng đi. */
+  /** Gọi khi bấm Hủy / back — điều hướng đi (chỉ đây mới THOÁT phiếu). */
   onDone: () => void
-}
-
-/** Đổi `Date` → chuỗi cho `<input type="datetime-local">` theo GIỜ ĐỊA PHƯƠNG. */
-function toLocalInputValue(d: Date): string {
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+  /**
+   * Gọi sau khi LƯU / GỬI DUYỆT thành công, kèm PHIẾU vừa lưu + có phải gửi duyệt.
+   * KHÔNG được thoát về danh sách — dẫn tới trang của CHÍNH phiếu đó (Tạo mới → chi
+   * tiết phiếu vừa tạo; Sửa tại chỗ → `() => {}` ở lại nhờ query invalidate). Mặc
+   * định (không truyền) = `onDone`.
+   */
+  onSaved?: (saved: VehicleBooking, submitted: boolean) => void
+  /** Badge cạnh tiêu đề (vd trạng thái phiếu khi đang sửa). */
+  badge?: React.ReactNode
+  /** Khối phụ (Trao đổi + Lịch sử) — có thì xếp bên phải body theo lưới 2 cột. */
+  aside?: React.ReactNode
 }
 
 /**
  * Biểu mẫu YÊU CẦU ĐẶT XE dùng trên TRANG (tạo `/vehicle-booking/new`, sửa
  * `/vehicle-booking/:id/edit`). Hai loại: công tác (chở người) / giao hàng.
  */
-export function BookingForm({ booking, duplicateFrom, title, onDone }: BookingFormProps) {
+export function BookingForm({
+  booking,
+  duplicateFrom,
+  title,
+  onDone,
+  onSaved,
+  badge,
+  aside,
+}: BookingFormProps) {
   const isEdit = Boolean(booking)
   const source = booking ?? duplicateFrom
+  //  Sau khi lưu/gửi duyệt: có onSaved thì dẫn theo phiếu vừa lưu; không thì onDone.
+  const afterSave = (saved: VehicleBooking, submitted: boolean) =>
+    onSaved ? onSaved(saved, submitted) : onDone()
+  //  Người tạo = tài khoản đang đăng nhập (khóa cứng, chỉ xem). Backend tự gán
+  //  requester theo tài khoản nên không gửi mấy trường này lên.
+  const { user } = useAuth()
+  //  "Vai trò" người tạo = chức danh · phòng ban (khớp bản chụp backend lưu vào phiếu).
+  const creatorRole = [user?.position, user?.department_name].filter(Boolean).join(' · ')
   const createMutation = useCreateVehicleBooking()
   const updateMutation = useUpdateVehicleBooking()
   const pending = createMutation.isPending || updateMutation.isPending
@@ -66,6 +97,8 @@ export function BookingForm({ booking, duplicateFrom, title, onDone }: BookingFo
   const [requestType, setRequestType] = useState<number>(source?.request_type ?? REQUEST_TYPE.car)
   const isDelivery = requestType === REQUEST_TYPE.delivery
   const L = labelsFor(isDelivery)
+  //  Mốc chặn quá khứ cho bộ chọn thời gian (giờ máy).
+  const now = nowLocalISO()
 
   //  TỰ LÁI: người yêu cầu là tài xế + GPLX. Tự điền nếu họ đã là tài xế.
   const [selfDrive, setSelfDrive] = useState(source?.is_self_drive ?? false)
@@ -103,7 +136,6 @@ export function BookingForm({ booking, duplicateFrom, title, onDone }: BookingFo
   const [senderPhone, setSenderPhone] = useState(source?.sender_phone ?? '')
   const [receiverName, setReceiverName] = useState(source?.receiver_name ?? '')
   const [receiverPhone, setReceiverPhone] = useState(source?.receiver_phone ?? '')
-  const [specialInstructions, setSpecialInstructions] = useState(source?.special_instructions ?? '')
 
 
   function setStopField(index: number, field: keyof Stop, value: string) {
@@ -149,7 +181,6 @@ export function BookingForm({ booking, duplicateFrom, title, onDone }: BookingFo
         sender_phone: senderPhone.trim(),
         receiver_name: receiverName.trim(),
         receiver_phone: receiverPhone.trim(),
-        special_instructions: specialInstructions.trim(),
       }
     }
     return {
@@ -195,17 +226,34 @@ export function BookingForm({ booking, duplicateFrom, title, onDone }: BookingFo
     }
     const body = buildPayload()
     if (isEdit && booking) {
-      updateMutation.mutate({ id: booking.id, payload: body, submit }, { onSuccess: onDone })
+      updateMutation.mutate(
+        { id: booking.id, payload: body, submit },
+        { onSuccess: (saved) => afterSave(saved, submit) },
+      )
     } else {
-      createMutation.mutate({ payload: body, submit }, { onSuccess: onDone })
+      createMutation.mutate(
+        { payload: body, submit },
+        { onSuccess: (saved) => afterSave(saved, submit) },
+      )
     }
   }
 
   return (
     <div className="flex w-full flex-col">
       <BookingPageHeader
-        title={title}
+        title={
+          //  Mục đích chỉnh sửa NGAY trên tiêu đề (đồng bộ với ô "Mục đích" bên dưới —
+          //  cùng một state `purpose`). Trống thì hiện gợi ý = tiêu đề mặc định.
+          <input
+            value={purpose}
+            onChange={(e) => setPurpose(e.target.value)}
+            placeholder={title}
+            aria-label="Mục đích (tiêu đề)"
+            className="w-[min(26rem,55vw)] min-w-0 rounded-md border border-dashed border-transparent bg-transparent px-1 text-xl font-semibold tracking-tight text-navy outline-none hover:border-input focus:border-primary dark:text-foreground"
+          />
+        }
         onBack={onDone}
+        badge={badge}
         actions={
           <>
             <Button variant="outline" onClick={onDone} disabled={pending}>
@@ -221,14 +269,17 @@ export function BookingForm({ booking, duplicateFrom, title, onDone }: BookingFo
           </>
         }
       />
-      <Card className="flex flex-col gap-5 p-5">
+      {/*  Có `aside` (Trao đổi + Lịch sử) → xếp body bên trái, khối phụ bên phải theo
+          lưới 2 cột (ngưỡng lg, khớp trang xem). Không có → body chiếm trọn bề ngang. */}
+      <div className={cn(aside && 'grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]')}>
+      <Card className="flex min-w-0 flex-col gap-5 p-5">
         {/* Chọn loại yêu cầu — 2 loại × (có tài xế / TỰ LÁI) */}
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <TypeCard
             active={!isDelivery && !selfDrive}
             title="Đặt xe công tác"
             desc="Chở người đi công tác, họp, đón khách."
-            icon={<CarBookingIcon className="size-7" />}
+            icon={<CarBookingIcon className="size-6" />}
             onClick={() => selectType(REQUEST_TYPE.car, false)}
           />
           <TypeCard
@@ -236,14 +287,14 @@ export function BookingForm({ booking, duplicateFrom, title, onDone }: BookingFo
             tone="amber"
             title="Đặt xe giao hàng"
             desc="Vận chuyển hàng hóa, chứng từ giữa các điểm."
-            icon={<DeliveryBookingIcon className="size-7" />}
+            icon={<DeliveryBookingIcon className="size-6" />}
             onClick={() => selectType(REQUEST_TYPE.delivery, false)}
           />
           <TypeCard
             active={!isDelivery && selfDrive}
             title="Đặt xe ô tô (tự lái)"
             desc="Bạn tự lái đi công tác — chỉ cần điều phối xe."
-            icon={<CarBookingIcon className="size-7" />}
+            icon={<CarBookingIcon className="size-6" />}
             onClick={() => selectType(REQUEST_TYPE.car, true)}
           />
           <TypeCard
@@ -251,9 +302,20 @@ export function BookingForm({ booking, duplicateFrom, title, onDone }: BookingFo
             tone="amber"
             title="Đặt xe giao hàng (tự lái)"
             desc="Bạn tự lái giao hàng — chỉ cần điều phối xe."
-            icon={<DeliveryBookingIcon className="size-7" />}
+            icon={<DeliveryBookingIcon className="size-6" />}
             onClick={() => selectType(REQUEST_TYPE.delivery, true)}
           />
+        </div>
+
+        {/* Người tạo — khóa cứng theo tài khoản đang đăng nhập (chỉ xem) */}
+        <div className="flex flex-col gap-4">
+          <SectionHeading>Người tạo</SectionHeading>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <ReadOnlyField label="Họ tên">{user?.full_name || '—'}</ReadOnlyField>
+            <ReadOnlyField label="Email">{user?.email || '—'}</ReadOnlyField>
+            <ReadOnlyField label="Số điện thoại">{user?.phone || '—'}</ReadOnlyField>
+            <ReadOnlyField label="Vai trò">{creatorRole || '—'}</ReadOnlyField>
+          </div>
         </div>
 
         {/* GPLX của người yêu cầu — chỉ khi TỰ LÁI (bắt buộc; tự điền nếu đã là tài xế) */}
@@ -335,13 +397,13 @@ export function BookingForm({ booking, duplicateFrom, title, onDone }: BookingFo
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label={L.startTime} required>
-              {/* Chặn giờ quá khứ ở bộ chọn + báo NGAY khi chọn; kiểm lại lúc Lưu/Gửi duyệt. */}
-              <Input
-                type="datetime-local"
-                min={toLocalInputValue(new Date())}
+              {/*  DD/MM/YYYY HH:MM (24h), giờ Hà Nội GMT+7. `min=hiện tại` → khoá ngày
+                  quá khứ trên lịch + cảnh báo; kiểm lại lúc Lưu/Gửi duyệt. */}
+              <DateTimePicker
                 value={startTime}
-                onChange={(e) => {
-                  const value = e.target.value
+                min={now}
+                minLabel="Không được ở quá khứ"
+                onChange={(value) => {
                   setStartTime(value)
                   if (value && new Date(value).getTime() < Date.now()) {
                     toast.error(`${L.startTime} không được ở quá khứ.`)
@@ -350,11 +412,12 @@ export function BookingForm({ booking, duplicateFrom, title, onDone }: BookingFo
               />
             </Field>
             <Field label={L.endTime} required>
-              <Input
-                type="datetime-local"
-                min={startTime || toLocalInputValue(new Date())}
+              {/*  Không được sớm hơn thời gian lấy hàng/đi (mốc = startTime, lùi về hiện tại). */}
+              <DateTimePicker
                 value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
+                min={startTime || now}
+                minLabel={`Không được trước ${L.startTime.toLowerCase()}`}
+                onChange={setEndTime}
               />
             </Field>
           </div>
@@ -391,9 +454,6 @@ export function BookingForm({ booking, duplicateFrom, title, onDone }: BookingFo
                 <Input value={receiverPhone} onChange={(e) => setReceiverPhone(e.target.value)} />
               </Field>
             </div>
-            <Field label="Chỉ dẫn đặc biệt">
-              <Textarea value={specialInstructions} onChange={(e) => setSpecialInstructions(e.target.value)} placeholder="VD: Tránh mưa, hàng dễ vỡ." />
-            </Field>
           </div>
         ) : (
           <div className="flex flex-col gap-4">
@@ -417,6 +477,8 @@ export function BookingForm({ booking, duplicateFrom, title, onDone }: BookingFo
         </Field>
 
       </Card>
+        {aside && <div className="flex flex-col gap-5">{aside}</div>}
+      </div>
     </div>
   )
 }
@@ -459,10 +521,23 @@ function TypeCard({
         active ? activeClass : 'border-border text-muted-foreground hover:border-primary/40 hover:bg-accent',
       )}
     >
-      <span className={cn(active ? iconActive : 'text-muted-foreground')}>{icon}</span>
-      <span className="text-sm font-semibold text-foreground">{title}</span>
+      {/*  Icon + tiêu đề trên CÙNG MỘT HÀNG; mô tả xuống dưới. */}
+      <span className="flex items-center gap-2">
+        <span className={cn('shrink-0', active ? iconActive : 'text-muted-foreground')}>{icon}</span>
+        <span className="text-sm font-semibold text-foreground">{title}</span>
+      </span>
       <span className="text-xs text-muted-foreground">{desc}</span>
     </button>
+  )
+}
+
+/** Ô CHỈ XEM có nhãn — không dùng `<Input disabled>` (mất copy/bôi đen, bị làm mờ). */
+function ReadOnlyField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <Label>{label}</Label>
+      <ReadOnlyValue>{children}</ReadOnlyValue>
+    </div>
   )
 }
 

@@ -1,9 +1,9 @@
 import { Check, ChevronsUpDown, X } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
-import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
+import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
 import { cn } from '@/shared/utils/cn'
 
 export interface SearchSelectOption {
@@ -27,6 +27,12 @@ interface SearchSelectProps {
    */
   wrap?: boolean
   size?: 'sm' | 'default'
+  /**
+   * Gõ từ khóa NGAY TRÊN ô chọn (typeahead) thay vì mở ra mới có ô tìm riêng.
+   * Ô lúc này là `<input>` full-width: bấm/gõ là lọc, chọn xong hiện nhãn đã chọn.
+   * Mặc định tắt để giữ nguyên hành vi cũ ở mọi nơi đang dùng.
+   */
+  searchInTrigger?: boolean
   className?: string
 }
 
@@ -77,10 +83,12 @@ export function SearchSelect({
   clearable,
   wrap,
   size = 'default',
+  searchInTrigger,
   className,
 }: SearchSelectProps) {
   const [open, setOpen] = useState(false)
   const [keyword, setKeyword] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const selectedLabel = useMemo(
     () => options.find((option) => option.value === value)?.label ?? value,
@@ -96,6 +104,114 @@ export function SearchSelect({
       : options
     return { matches: rows.slice(0, MAX_VISIBLE), remaining: Math.max(rows.length - MAX_VISIBLE, 0) }
   }, [options, keyword])
+
+  function pick(optionValue: string) {
+    onChange(optionValue)
+    setOpen(false)
+    setKeyword('')
+  }
+
+  //  Danh sách kết quả — dùng chung cho cả hai kiểu (ô tìm riêng / gõ ngay trên ô).
+  const optionList = (
+    <div className="max-h-72 overflow-y-auto p-1">
+      {matches.length === 0 && (
+        <p className="px-2 py-4 text-center text-sm text-muted-foreground">{emptyMessage}</p>
+      )}
+      {matches.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          onClick={() => pick(option.value)}
+          className={cn(
+            'flex w-full items-start gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent',
+            option.value === value && 'bg-accent/50',
+          )}
+        >
+          <Check className={cn('mt-0.5 size-4 shrink-0', option.value !== value && 'invisible')} />
+          <span className="flex-1 whitespace-pre-wrap break-words">{option.label}</span>
+        </button>
+      ))}
+
+      {/*  NÓI RA phần bị cắt. Danh sách nhân sự lên tới cả nghìn dòng, cắt còn 60 mà im
+           lặng thì người dùng cuộn tới đáy, không thấy tên mình cần, rồi kết luận là hệ
+           thống chưa có người đó. */}
+      {remaining > 0 && (
+        <p className="px-2 py-2 text-center text-xs text-muted-foreground">
+          Còn {remaining} mục nữa — gõ để tìm.
+        </p>
+      )}
+    </div>
+  )
+
+  //  Kiểu GÕ NGAY TRÊN Ô (typeahead): ô chọn chính là ô nhập từ khóa, full-width.
+  if (searchInTrigger) {
+    return (
+      <Popover
+        open={open}
+        onOpenChange={(next) => {
+          setOpen(next)
+          if (!next) setKeyword('')
+        }}
+      >
+        <PopoverAnchor asChild>
+          <div className={cn('relative w-full', className)}>
+            <input
+              ref={inputRef}
+              type="text"
+              role="combobox"
+              aria-expanded={open}
+              disabled={disabled}
+              //  Đang mở → ô là chỗ GÕ từ khóa; đóng lại → hiện nhãn đã chọn. Mở mà chưa
+              //  gõ gì thì placeholder nhắc lại lựa chọn hiện tại cho người dùng khỏi quên.
+              value={open ? keyword : selectedLabel}
+              placeholder={open ? selectedLabel || searchPlaceholder : placeholder}
+              onFocus={() => {
+                setOpen(true)
+                setKeyword('')
+              }}
+              onClick={() => setOpen(true)}
+              onChange={(event) => {
+                setKeyword(event.target.value)
+                setOpen(true)
+              }}
+              className={cn(
+                'flex w-full truncate rounded-md border border-input bg-transparent pr-9 text-left font-normal shadow-xs outline-none',
+                'focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                'disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30',
+                size === 'sm' ? 'h-8 px-2 text-sm' : 'h-9 px-3 text-sm',
+                !value && !open && 'text-muted-foreground',
+              )}
+            />
+            {clearable && value && !open ? (
+              <button
+                type="button"
+                tabIndex={-1}
+                aria-label="Xóa lựa chọn"
+                onClick={(event) => {
+                  event.preventDefault()
+                  onChange('')
+                }}
+                className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <X className="size-4" />
+              </button>
+            ) : (
+              <ChevronsUpDown className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 opacity-50" />
+            )}
+          </div>
+        </PopoverAnchor>
+
+        <PopoverContent
+          align="start"
+          //  Giữ con trỏ Ở LẠI ô gõ, đừng để Radix nhảy focus vào danh sách (gõ tiếp được).
+          onOpenAutoFocus={(event) => event.preventDefault()}
+          className="w-(--radix-popover-trigger-width) min-w-64 p-0"
+        >
+          {optionList}
+        </PopoverContent>
+      </Popover>
+    )
+  }
 
   return (
     <Popover
@@ -160,42 +276,7 @@ export function SearchSelect({
             onChange={(event) => setKeyword(event.target.value)}
           />
         </div>
-        <div className="max-h-72 overflow-y-auto p-1">
-          {matches.length === 0 && (
-            <p className="px-2 py-4 text-center text-sm text-muted-foreground">{emptyMessage}</p>
-          )}
-          {matches.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => {
-                onChange(option.value)
-                setOpen(false)
-              }}
-              className={cn(
-                'flex w-full items-start gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent',
-                option.value === value && 'bg-accent/50',
-              )}
-            >
-              <Check
-                className={cn(
-                  'mt-0.5 size-4 shrink-0',
-                  option.value !== value && 'invisible',
-                )}
-              />
-              <span className="flex-1 whitespace-pre-wrap break-words">{option.label}</span>
-            </button>
-          ))}
-
-          {/*  NÓI RA phần bị cắt. Danh sách nhân sự lên tới cả nghìn dòng, cắt
-               còn 60 mà im lặng thì người dùng cuộn tới đáy, không thấy tên
-               mình cần, và kết luận là hệ thống chưa có người đó. */}
-          {remaining > 0 && (
-            <p className="px-2 py-2 text-center text-xs text-muted-foreground">
-              Còn {remaining} mục nữa — gõ để tìm.
-            </p>
-          )}
-        </div>
+        {optionList}
       </PopoverContent>
     </Popover>
   )

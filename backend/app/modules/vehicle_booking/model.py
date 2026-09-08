@@ -30,7 +30,7 @@ BOOKING_STATUS_LABELS = {
     BK_DRAFT: "Nháp",
     BK_PENDING: "Chờ duyệt",
     BK_APPROVED: "Đã duyệt",
-    BK_DISPATCHED: "Điều phối",
+    BK_DISPATCHED: "Đã điều phối",
     BK_COMPLETED: "Hoàn thành",
     BK_REJECTED: "Từ chối",
     BK_CANCELLED: "Đã hủy",
@@ -159,10 +159,19 @@ class VehicleBooking(Base, AuditMixin):
     # Nguoi tao
     requester: Mapped[str] = mapped_column(String(255), default="")
     requester_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
+    #  CHỤP LẠI lúc tạo phiếu (không join lúc hiển thị): email/SĐT/chức danh của người tạo
+    #  giữ nguyên kể cả khi hồ sơ nhân sự đổi về sau. "Vai trò" = chức danh · phòng ban.
+    requester_email: Mapped[str] = mapped_column(String(255), default="")
+    requester_phone: Mapped[str] = mapped_column(String(30), default="")
+    requester_role: Mapped[str] = mapped_column(String(255), default="")
     department_id: Mapped[int] = mapped_column(BigInteger, default=0)
     company_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
-    
+
     first_approver_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    #  NGƯỜI phê duyệt THẬT (tài khoản bấm Duyệt) + thời điểm duyệt. Khác `first_approver_id`
+    #  (người được CHỌN để duyệt): admin có thể duyệt thay. Để trống nếu chưa duyệt.
+    approved_by: Mapped[int] = mapped_column(BigInteger, default=0)
+    approved_at: Mapped[str] = mapped_column(String(20), default="")
 
     status: Mapped[int] = mapped_column(SmallInteger, default=BK_DRAFT, index=True)
     note: Mapped[str] = mapped_column(Text, default="")

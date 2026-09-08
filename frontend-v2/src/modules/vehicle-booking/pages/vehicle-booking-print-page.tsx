@@ -109,7 +109,6 @@ function PrintSheet({ booking }: { booking: VehicleBooking }) {
               {row('Kích thước / khối lượng', booking.goods_size)}
               {row('Người gửi', `${booking.sender_name} — ${booking.sender_phone}`)}
               {row('Người nhận', `${booking.receiver_name} — ${booking.receiver_phone}`)}
-              {row('Chỉ dẫn đặc biệt', booking.special_instructions)}
             </>
           )}
         </tbody>

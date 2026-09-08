@@ -221,13 +221,22 @@ class VehicleBookingResponse(VehicleBookingBase):
     request_type_label: str = ""
     requester: str
     requester_id: int
+    #  Chụp lúc tạo phiếu (khối "Người tạo"): email/SĐT/chức danh·phòng ban.
+    requester_email: str = ""
+    requester_phone: str = ""
+    requester_role: str = ""
     status: int
     status_label: str = ""
+    #  Khối "Thông tin phê duyệt": tên người duyệt + mốc duyệt (backend nối/chụp).
+    #  (first_approver_id đã có ở VehicleBookingBase.)
+    approver_name: str = ""
+    approved_at: str = ""
     assigned_vehicle_id: int | None = None
     assigned_driver_id: int | None = None
     assigned_vehicle_label: str = ""  # biển số + mẫu xe, backend nối
     assigned_driver_label: str = ""   # tên tài xế, backend nối
     dispatched_by: int | None = None
+    dispatched_by_name: str = ""      # tên người điều phối, backend nối
     dispatched_at: str | None = None
     driver_status: int = 0
     driver_status_label: str = ""

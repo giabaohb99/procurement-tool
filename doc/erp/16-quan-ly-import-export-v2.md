@@ -96,9 +96,31 @@ Cột **Khoá trùng** = trường dùng để phân biệt "tạo mới" hay "c
 > **Import PHIẾU Yêu cầu đặt xe / đóng dấu (enum 23/24).** Hai phiếu này là chứng từ **header-only**
 > (không có bảng dòng), nên `doc_import.py` được mở rộng: adapter **không khai `line_model`** thì tạo
 > header đơn (bỏ luật "phải có ≥1 dòng"), và hỗ trợ `post_apply(db, header, header_data)` — Duyệt dấu
-> dùng nó ghi **bảng nối công ty** từ cột "Công ty chính (mã)" để đúng phạm vi Văn thư/Giám đốc. Import
-> chỉ **TẠO MỚI** (mã trùng bỏ qua), mặc định trạng thái **Hoàn thành** (dữ liệu lịch sử), đổi bằng cột
-> "Trạng thái (mã)". Multi-công ty ở import v1 = một công ty chính/phiếu.
+> dùng nó ghi **bảng nối công ty** từ cột "Công ty" để đúng phạm vi Văn thư/Giám đốc. Import
+> chỉ **TẠO MỚI** (mã trùng bỏ qua), mặc định trạng thái **Hoàn thành** (dữ liệu lịch sử).
+> Multi-công ty ở import v1 = một công ty chính/phiếu.
+>
+> **Bổ sung 07/09/2026 — nhập trọn phiếu từ bản xuất hệ cũ.** Nhãn cột của hai adapter đặt **khớp
+> bản xuất hệ cũ** (Mã yêu cầu · Tiêu đề · Loại yêu cầu · Trạng thái chung · Công ty · Lộ trình · Biển
+> số xe · SĐT tài xế · Tệp đính kèm…), có `aliases` để nhận cả biến thể phiếu **Giao hàng** (Thời gian
+> lấy hàng/giao, Tên hàng hóa, người gửi/nhận…). Nên **một sheet xuất ra import lại được ngay**.
+> Điểm mới ở `doc_import.py`/`catalog_import.py`:
+> - **Tham chiếu bằng MÃ hoặc TÊN** (`catalog_import.resolve_ref_obj`, bộ `_REF_MATCH`): Công ty nhận
+>   code/tên/MST/tên viết tắt (kể cả chuỗi ghép "TÊN - MST"), Phòng ban nhận code/tên, Nhân sự nhận
+>   code/họ tên/email. Xe theo **biển số**, Tài xế theo **SĐT/tên**, "Người duyệt cấp 1" (kind `approver`)
+>   suy ra **id tài khoản** qua Nhân sự → User.
+> - **Trạng thái / Loại nhận MÃ hoặc NHÃN** (kind `coded` + bộ `labels`): "Hoàn thành" ≡ 5, "Chờ duyệt" ≡ 2…
+> - **Suy diễn nhiều cột từ một ô** (`derive`): "Loại yêu cầu" → `request_type` + `is_self_drive`;
+>   "Lộ trình" 'A -> B -> C' → điểm đi/đến + `stops`. Thời gian hệ cũ ("06:30:00 3/3/2026") parse qua
+>   kind `isodt`/`datetime`.
+> - **Tệp đính kèm** (`attachment`): tạo dòng `tab_file` **giữ chỗ** (file_key/url rỗng, giữ TÊN tệp) +
+>   `tab_file_link` — bản xuất chỉ có tên tệp; revert dọn cả tệp giữ chỗ lẫn bảng nối công ty.
+> - Chuỗi tự do vượt độ dài cột được **cắt** (`_cap_strings`) thay vì làm sập cả lô.
+>
+> Phía **Export** (`export_log/registry.py` + `service.py`): hai adapter Yêu cầu đặt xe/đóng dấu mở rộng
+> đủ cột (Loại/Trạng thái xuất **nhãn**; Công ty/Phòng ban theo mã; Xe theo biển số, Tài xế theo tên,
+> Người duyệt theo họ tên — `_code_map` thêm ref `vehicle`/`driver`/`approver`; **Tệp đính kèm** gộp tên
+> tệp qua `_attachment_map`). Test `test_import_datxe_duyetdau.py`.
 
 ### 3.2 Dữ liệu nghiệp vụ / lịch sử — Import dữ liệu cũ + Export
 

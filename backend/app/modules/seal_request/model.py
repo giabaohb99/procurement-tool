@@ -63,15 +63,30 @@ class SealRequest(Base, AuditMixin):
     # Nguoi tao (Luu log)
     requester: Mapped[str] = mapped_column(String(255), default="")
     requester_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
+    #  CHỤP LẠI lúc tạo phiếu (không join lúc hiển thị): email/SĐT/chức danh người tạo
+    #  giữ nguyên kể cả khi hồ sơ nhân sự đổi. "Vai trò" = chức danh · phòng ban.
+    requester_email: Mapped[str] = mapped_column(String(255), default="")
+    requester_phone: Mapped[str] = mapped_column(String(30), default="")
+    requester_role: Mapped[str] = mapped_column(String(255), default="")
 
     # Submitter choice — Trưởng bộ phận sẽ duyệt (cổng 1).
     first_approver_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    #  NGƯỜI phê duyệt THẬT (tài khoản bấm Duyệt, có thể khác first_approver_id) + mốc duyệt.
+    approved_by: Mapped[int] = mapped_column(BigInteger, default=0)
+    #  Thời điểm DUYỆT (TBP) và HOÀN THÀNH (Văn thư đóng dấu) — ISO string, trống nếu chưa.
+    approved_at: Mapped[str] = mapped_column(String(20), default="")
+    completed_at: Mapped[str] = mapped_column(String(20), default="")
+    completed_by: Mapped[int] = mapped_column(BigInteger, default=0)  # tài khoản Văn thư
 
     #  R2: SMALLINT + hằng số SEAL_* (không lưu chữ tiếng Việt).
     status: Mapped[int] = mapped_column(SmallInteger, default=SEAL_DRAFT)
     note: Mapped[str] = mapped_column(Text, default="")
 
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    @property
+    def status_label(self) -> str:
+        return SEAL_STATUS_LABELS.get(self.status, "")
 
 
 class SealRequestCompany(Base, AuditMixin):

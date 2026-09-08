@@ -30,9 +30,11 @@ export function ReadOnlyValue({ children, multiline = false, className }: ReadOn
   return (
     <div
       className={cn(
-        'rounded-lg border bg-muted/35 px-3 text-sm font-medium',
+        //  `min-w-0` + `break-words`: chuỗi dài KHÔNG khoảng trắng (email, URL, mã) phải
+        //  xuống dòng trong ô thay vì đẩy tràn cả lưới ra ngoài màn hình (lỗi responsive).
+        'min-w-0 break-words rounded-lg border bg-muted/35 px-3 text-sm font-medium',
         multiline
-          ? 'min-h-16 py-2.5 break-words whitespace-pre-wrap'
+          ? 'min-h-16 py-2.5 whitespace-pre-wrap'
           : 'flex min-h-9 items-center py-2',
         className,
       )}

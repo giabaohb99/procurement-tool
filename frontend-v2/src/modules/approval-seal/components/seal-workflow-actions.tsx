@@ -12,7 +12,7 @@ import {
   useReturnSealRequest,
 } from '../hooks/use-seal-requests'
 import { SEAL_STATUS, type SealRequest } from '../types/seal-request'
-import { SealCompleteDialog } from './seal-complete-dialog'
+import { SealApproveDialog } from './seal-approve-dialog'
 import { SealReasonDialog } from './seal-reason-dialog'
 
 /** Loại dialog lý do đang mở (mỗi loại một hành động khác nhau). */
@@ -36,7 +36,7 @@ export function SealWorkflowActions({ request }: { request: SealRequest }) {
   const canWrite = can('seal_request', 'write')
 
   const [reasonKind, setReasonKind] = useState<ReasonKind>(null)
-  const [completeOpen, setCompleteOpen] = useState(false)
+  const [approveOpen, setApproveOpen] = useState(false)
 
   const approve = useApproveSealRequest()
   const returnEdit = useReturnSealRequest()
@@ -67,7 +67,8 @@ export function SealWorkflowActions({ request }: { request: SealRequest }) {
       {/* Trưởng bộ phận — phiếu Chờ duyệt */}
       {showApprove && (
         <>
-          <Button onClick={() => approve.mutate({ id })} disabled={busy}>
+          {/*  Duyệt phải qua hộp thoại xác nhận: bắt buộc tick "đã xem & hiểu" mới duyệt được. */}
+          <Button onClick={() => setApproveOpen(true)} disabled={busy}>
             <Check className="size-4" />
             Duyệt
           </Button>
@@ -85,7 +86,8 @@ export function SealWorkflowActions({ request }: { request: SealRequest }) {
       {/* Văn thư — phiếu Đã duyệt (chờ đóng dấu) */}
       {showClerk && (
         <>
-          <Button onClick={() => setCompleteOpen(true)} disabled={busy}>
+          {/*  Hoàn thành đóng dấu chạy THẲNG khi bấm — không popup, không cần ghi chú. */}
+          <Button onClick={() => complete.mutate({ id, note: '' })} disabled={busy}>
             <Stamp className="size-4" />
             Hoàn thành đóng dấu
           </Button>
@@ -152,12 +154,12 @@ export function SealWorkflowActions({ request }: { request: SealRequest }) {
         />
       )}
 
-      {completeOpen && (
-        <SealCompleteDialog
-          code={request.code}
-          pending={complete.isPending}
-          onConfirm={(payload) => complete.mutate({ id, ...payload }, { onSuccess: () => setCompleteOpen(false) })}
-          onClose={() => setCompleteOpen(false)}
+      {approveOpen && (
+        <SealApproveDialog
+          subject={subject}
+          pending={approve.isPending}
+          onConfirm={() => approve.mutate({ id }, { onSuccess: () => setApproveOpen(false) })}
+          onClose={() => setApproveOpen(false)}
         />
       )}
     </>

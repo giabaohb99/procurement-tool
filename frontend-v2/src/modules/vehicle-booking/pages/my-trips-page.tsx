@@ -84,7 +84,7 @@ function TripCard({ trip }: { trip: VehicleBooking }) {
           >
             {trip.code}
           </Link>
-          <BookingStatusBadge status={trip.status} />
+          <BookingStatusBadge status={trip.status} driverStatus={trip.driver_status} />
           <DriverStatusBadge status={trip.driver_status} />
         </div>
         <span className="text-xs text-muted-foreground">{trip.request_type_label}</span>

@@ -53,17 +53,25 @@ def apply_keyword_search(query, keyword: str | None):
     )
 
 
-def _requester_context(db: Session, user) -> tuple[str, int, int]:
-    """(tên hiển thị, phòng ban, công ty) của người tạo từ hồ sơ nhân sự.
+def _requester_context(db: Session, user):
+    """Chụp thông tin người tạo từ hồ sơ nhân sự → SimpleNamespace.
 
     company mặc định = công ty người tạo, nhưng người dùng CÓ THỂ chọn công ty con
-    dấu khác ở form (không đè khi client đã gửi company_id).
+    dấu khác ở form (không đè khi client đã gửi company_id). `role` = "chức danh · phòng ban".
     """
+    from types import SimpleNamespace
+
+    from app.modules.department.model import Department
     emp = db.get(Employee, user.employee_id) if getattr(user, "employee_id", 0) else None
     name = (emp.full_name if emp and emp.full_name else "") or getattr(user, "email", "") or ""
-    dept_id = emp.department_id if emp else 0
-    company_id = emp.company_id if emp else 0
-    return name, dept_id or 0, company_id or 0
+    dept_id = (emp.department_id if emp else 0) or 0
+    company_id = (emp.company_id if emp else 0) or 0
+    email = (emp.email if emp and emp.email else "") or getattr(user, "email", "") or ""
+    phone = (emp.phone if emp and getattr(emp, "phone", "") else "")
+    dept = db.get(Department, dept_id) if dept_id else None
+    role = " · ".join(x for x in [(emp.position if emp else ""), (dept.name if dept else "")] if x)
+    return SimpleNamespace(name=name, dept_id=dept_id, company_id=company_id,
+                           email=email, phone=phone, role=role)
 
 
 def approver_options(db: Session, user) -> dict:
@@ -72,17 +80,21 @@ def approver_options(db: Session, user) -> dict:
     Chỉ người có `seal_request.approve`. Mặc định = trưởng bộ phận của CHÍNH người
     tạo (phòng ban của họ). `id` là id TÀI KHOẢN (khớp `first_approver_id`).
     """
+    from app.modules.department.model import Department
     from app.modules.notification.service import (
         get_approvers_for_entity,
         get_dept_approver_recipients,
     )
     eligible = get_approvers_for_entity(db, "seal_request")
-    _, dept_id, _ = _requester_context(db, user)
+    dept_id = _requester_context(db, user).dept_id
     dept_head_ids = {u.id for u in get_dept_approver_recipients(db, "", dept_id)} if dept_id else set()
+    #  Ai đang là TRƯỞNG BỘ PHẬN (quản lý một phòng ban) — để ưu tiên đưa họ lên đầu.
+    manager_emp_ids = {d.manager_id for d in db.query(Department).filter(Department.manager_id != 0).all()}
     items = []
     default_id = 0
     for u in eligible:
-        emp = db.get(Employee, u.employee_id) if getattr(u, "employee_id", 0) else None
+        emp_id = getattr(u, "employee_id", 0)
+        emp = db.get(Employee, emp_id) if emp_id else None
         is_default = u.id in dept_head_ids
         if is_default and not default_id:
             default_id = u.id
@@ -90,9 +102,14 @@ def approver_options(db: Session, user) -> dict:
             "id": u.id,
             "name": (emp.full_name if emp and emp.full_name else "") or (u.email or ""),
             "email": u.email or "",
+            "avatar": u.avatar or "",  # ảnh đại diện để hiện cạnh tên
             "department_id": emp.department_id if emp else 0,
+            #  Là trưởng bộ phận thật → đưa lên đầu danh sách (options gọn, đúng vai trò).
+            "is_dept_head": bool(emp_id and emp_id in manager_emp_ids),
             "is_default": is_default,
         })
+    #  Sắp: trưởng bộ phận trước, rồi mặc định, rồi theo tên.
+    items.sort(key=lambda x: (not x["is_dept_head"], not x["is_default"], x["name"]))
     return {"items": items, "default_id": default_id}
 
 
@@ -183,16 +200,19 @@ def create_seal_request(db: Session, data: SealRequestCreate, user, submit: bool
     submit lúc TẠO chỉ pass khi client đã upload trước rồi mới gọi tạo-kèm-submit — trên
     thực tế FE tạo nháp → upload → mới gửi duyệt (endpoint /submit).
     """
-    name, dept_id, company_id = _requester_context(db, user)
+    ctx = _requester_context(db, user)
     company_ids = [int(c) for c in (data.company_ids or []) if c]
     req = SealRequest(
         purpose=(data.purpose or "").strip(),
         company_id=(company_ids[0] if company_ids else 0),  # công ty CHÍNH (hiển thị nhanh)
-        department_id=data.department_id or dept_id,
+        department_id=data.department_id or ctx.dept_id,
         first_approver_id=data.first_approver_id or 0,
         note=data.note or "",
-        requester=name,
+        requester=ctx.name,
         requester_id=getattr(user, "id", 0),
+        requester_email=ctx.email,
+        requester_phone=ctx.phone,
+        requester_role=ctx.role,
         status=SEAL_DRAFT,
         created_by=getattr(user, "id", 0),
         updated_by=getattr(user, "id", 0),
@@ -263,6 +283,8 @@ def approve_seal(db: Session, req: SealRequest, user, background_tasks=None) -> 
     if req.status != SEAL_PENDING:
         raise HTTPException(400, "Chỉ duyệt được phiếu đang Chờ duyệt")
     req.status = SEAL_APPROVED
+    req.approved_by = getattr(user, "id", 0)   # NGƯỜI bấm Duyệt (có thể khác người được chọn)
+    req.approved_at = datetime.now().isoformat(timespec="seconds")
     req.updated_by = getattr(user, "id", 0)
     db.commit()
     db.refresh(req)
@@ -306,6 +328,8 @@ def complete_seal(db: Session, req: SealRequest, data: CompleteSealIn, user,
     if req.status != SEAL_APPROVED:
         raise HTTPException(400, "Chỉ hoàn thành được phiếu đã được duyệt")
     req.status = SEAL_COMPLETED
+    req.completed_at = datetime.now().isoformat(timespec="seconds")
+    req.completed_by = getattr(user, "id", 0)   # tài khoản Văn thư đóng dấu
     done_note = "Đã đóng dấu xong"
     if (data.note or "").strip():
         done_note += f" — {data.note.strip()}"
@@ -352,15 +376,21 @@ def serialize_seal_request(db: Session, req: SealRequest) -> dict:
     cids = get_company_ids(db, req.id)
     out.company_ids = cids
     out.companies = _company_refs(db, cids)
-    emp = _emp_of_user(db, req.requester_id)
-    if emp:
-        out.requester_email = emp.email or ""
-        out.requester_phone = emp.phone or ""
-        out.requester_role = emp.position or ""
-    approver = _emp_of_user(db, req.first_approver_id)
+    #  Ưu tiên bản CHỤP lúc tạo (cột requester_*); phiếu cũ chưa chụp thì lùi về join hồ sơ.
+    if not (out.requester_email or out.requester_phone or out.requester_role):
+        emp = _emp_of_user(db, req.requester_id)
+        if emp:
+            out.requester_email = emp.email or ""
+            out.requester_phone = emp.phone or ""
+            out.requester_role = emp.position or ""
+    #  "Người phê duyệt" = người THẬT đã bấm Duyệt (approved_by); chưa duyệt / phiếu cũ thì
+    #  lùi về người được CHỌN duyệt (first_approver_id).
+    approver = _emp_of_user(db, req.approved_by or req.first_approver_id)
     if approver:
         out.approver_name = approver.full_name or ""
-    out.signed_doc_count = count_attachments(db, req.id)
+    #  Văn thư đã đóng dấu (khối "Thông tin phê duyệt") — tên từ tài khoản completed_by.
+    clerk = _emp_of_user(db, req.completed_by)
+    out.completed_by_name = (clerk.full_name if clerk else "") or ""
     #  Có phiên duyệt nhiều bước đang chạy? → FE ẩn nút duyệt cổng-1 trực tiếp.
     from .approval_bridge import running_instance
     out.approval_running = running_instance(db, req.id) is not None

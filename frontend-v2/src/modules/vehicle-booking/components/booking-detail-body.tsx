@@ -1,7 +1,8 @@
-import { MapPin } from 'lucide-react'
+import { BadgeCheck, MapPin, Package, Route, Users } from 'lucide-react'
 
 import { Card } from '@/shared/ui/card'
 import { ReadOnlyValue } from '@/shared/ui/read-only-value'
+import { cn } from '@/shared/utils/cn'
 import { formatMoney } from '@/shared/utils/format-money'
 import { REQUEST_TYPE, type VehicleBooking } from '../types/vehicle-booking'
 import { CarBookingIcon, DeliveryBookingIcon } from './booking-type-icons'
@@ -17,6 +18,22 @@ function formatDateTime(value: string): string {
   return `${d}/${m}/${y}${hm ? ` ${hm}` : ''}`
 }
 
+/**
+ * Tiêu đề block chi tiết theo C-03: icon lucide (màu theme) + nhãn `font-medium`, gạch
+ * dưới KÉO HẾT bề ngang thẻ (`-mx-5 px-5 border-b` bù `p-5` của Card), `-mt-1` cho
+ * padding-top 16px. Card bọc dùng `p-5 pb-4` (đáy 16px).
+ */
+function BlockHeader({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <div className="-mx-5 -mt-1 flex items-center justify-between border-b px-5 pb-3">
+      <span className="inline-flex items-center gap-2 font-medium">
+        {icon}
+        {children}
+      </span>
+    </div>
+  )
+}
+
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
     <h3 className="border-b pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -25,9 +42,18 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
   )
 }
 
-function InfoRow({ label, children }: { label: string; children: React.ReactNode }) {
+function InfoRow({
+  label,
+  children,
+  className,
+}: {
+  label: string
+  children: React.ReactNode
+  className?: string
+}) {
   return (
-    <div className="flex flex-col gap-1">
+    //  `min-w-0`: ô lưới co được dưới bề rộng một từ dài (email/URL) để không đẩy tràn lưới.
+    <div className={cn('flex min-w-0 flex-col gap-1', className)}>
       <span className="text-xs text-muted-foreground">{label}</span>
       <ReadOnlyValue>{children}</ReadOnlyValue>
     </div>
@@ -35,40 +61,42 @@ function InfoRow({ label, children }: { label: string; children: React.ReactNode
 }
 
 /**
- * Thân chi tiết phiếu đặt xe (các thẻ Lộ trình / Thông tin / Điều phối). Dùng chung
- * cho cả trang chi tiết `/vehicle-booking/:id` LẪN popup mở từ danh sách — nên đặt
- * riêng ở đây, không nằm trong page.
+ * Thân chi tiết phiếu đặt xe (các thẻ Thông tin / Phê duyệt / Lộ trình / Giao hàng).
+ * Dùng chung cho cả trang chi tiết `/vehicle-booking/:id` LẪN popup mở từ danh sách —
+ * nên đặt riêng ở đây, không nằm trong page. Header các block theo C-03 (icon + gạch dưới).
  */
 export function BookingDetailBody({ booking }: { booking: VehicleBooking }) {
   const isDelivery = booking.request_type === REQUEST_TYPE.delivery
-  const dispatched =
-    booking.assigned_vehicle_id ||
-    booking.assigned_driver_id ||
-    booking.driver_status ||
-    booking.distance_km ||
-    booking.cost
 
   return (
     <>
-      <Card className="flex flex-col gap-4 p-5">
-        <div className="flex items-center justify-between">
-          <span className="inline-flex items-center gap-2 font-medium">
-            {isDelivery ? (
+      {/* Block 1 — tiêu đề loại + thông tin phiếu/người tạo */}
+      <Card className="flex flex-col gap-4 p-5 pb-4">
+        <BlockHeader
+          icon={
+            isDelivery ? (
               <DeliveryBookingIcon className="size-5 text-orange-600 dark:text-orange-400" />
             ) : (
               <CarBookingIcon className="size-5 text-sky-600 dark:text-sky-400" />
-            )}
-            {booking.request_type_label}
-          </span>
-          {/* Badge trạng thái đã hiển thị ở tiêu đề trang — không lặp lại ở đây. */}
-        </div>
+            )
+          }
+        >
+          {/*  Tự lái gộp vào nhãn loại — bỏ dòng "Hình thức" riêng (mặc định "Có tài xế
+              điều phối" là dư thừa, chỉ trường hợp Tự lái mới cần nêu). */}
+          {booking.request_type_label}
+          {booking.is_self_drive ? ' (Tự lái)' : ''}
+        </BlockHeader>
         <div className="grid gap-4 sm:grid-cols-2">
           <InfoRow label="Mã phiếu">{booking.code}</InfoRow>
-          <InfoRow label="Người tạo">{booking.requester}</InfoRow>
-          <InfoRow label="Hình thức">
-            {booking.is_self_drive ? 'Tự lái (người yêu cầu là tài xế)' : 'Có tài xế điều phối'}
+          <InfoRow label="Ngày tạo">{formatDateTime((booking.created_at ?? '').replace(' ', 'T')) || '—'}</InfoRow>
+          <InfoRow label="Người tạo">{booking.requester || '—'}</InfoRow>
+          <InfoRow label="Email">{booking.requester_email || '—'}</InfoRow>
+          <InfoRow label="Số điện thoại">{booking.requester_phone || '—'}</InfoRow>
+          <InfoRow label="Vai trò">{booking.requester_role || '—'}</InfoRow>
+          {/*  Mục đích trải hết 2 cột (rộng = SĐT + Vai trò) để đọc câu dài không bị cắt. */}
+          <InfoRow label="Mục đích" className="sm:col-span-2">
+            {booking.purpose || '—'}
           </InfoRow>
-          <InfoRow label="Mục đích">{booking.purpose}</InfoRow>
           {booking.is_self_drive && (
             <InfoRow label="GPLX người lái">
               {[booking.license_number, booking.license_class].filter(Boolean).join(' · ') || '—'}
@@ -77,9 +105,30 @@ export function BookingDetailBody({ booking }: { booking: VehicleBooking }) {
         </div>
       </Card>
 
+      {/* Block 2 — Thông tin phê duyệt (duyệt · điều phối · tài xế · xe · hoàn thành · km/chi phí) */}
+      <Card className="flex flex-col gap-4 p-5 pb-4">
+        <BlockHeader icon={<BadgeCheck className="size-5 text-emerald-600 dark:text-emerald-400" />}>
+          Thông tin phê duyệt
+        </BlockHeader>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <InfoRow label="Người phê duyệt">{booking.approver_name || '—'}</InfoRow>
+          <InfoRow label="Ngày duyệt">{formatDateTime(booking.approved_at) || '—'}</InfoRow>
+          <InfoRow label="Người điều phối">{booking.dispatched_by_name || '—'}</InfoRow>
+          <InfoRow label="Ngày điều phối">{formatDateTime(booking.dispatched_at ?? '') || '—'}</InfoRow>
+          <InfoRow label="Tài xế">{booking.assigned_driver_label || '—'}</InfoRow>
+          <InfoRow label="Trạng thái tài xế">
+            <DriverStatusBadge status={booking.driver_status} label={booking.driver_status_label} />
+          </InfoRow>
+          <InfoRow label="Xe được phân">{booking.assigned_vehicle_label || '—'}</InfoRow>
+          <InfoRow label="Ngày hoàn thành yêu cầu">{formatDateTime(booking.actual_end_time) || '—'}</InfoRow>
+          <InfoRow label="Số km">{booking.distance_km ? String(booking.distance_km) : '—'}</InfoRow>
+          <InfoRow label="Chi phí">{booking.cost ? formatMoney(booking.cost) : '—'}</InfoRow>
+        </div>
+      </Card>
+
       {/* Lộ trình */}
-      <Card className="flex flex-col gap-4 p-5">
-        <SectionHeading>Lộ trình</SectionHeading>
+      <Card className="flex flex-col gap-4 p-5 pb-4">
+        <BlockHeader icon={<Route className="size-5 text-sky-600 dark:text-sky-400" />}>Lộ trình</BlockHeader>
         <div className="grid gap-4 sm:grid-cols-2">
           <InfoRow label={isDelivery ? 'Điểm lấy hàng' : 'Điểm đi'}>{booking.start_location}</InfoRow>
           <InfoRow label={isDelivery ? 'Điểm giao hàng' : 'Điểm đến'}>{booking.end_location}</InfoRow>
@@ -115,8 +164,10 @@ export function BookingDetailBody({ booking }: { booking: VehicleBooking }) {
 
       {/* Khối riêng theo loại */}
       {isDelivery ? (
-        <Card className="flex flex-col gap-4 p-5">
-          <SectionHeading>Thông tin giao hàng</SectionHeading>
+        <Card className="flex flex-col gap-4 p-5 pb-4">
+          <BlockHeader icon={<Package className="size-5 text-orange-600 dark:text-orange-400" />}>
+            Thông tin giao hàng
+          </BlockHeader>
           <div className="grid gap-4 sm:grid-cols-2">
             <InfoRow label="Tên hàng hóa">{booking.goods_name}</InfoRow>
             <InfoRow label="Kích thước / Khối lượng">{booking.goods_size}</InfoRow>
@@ -125,11 +176,12 @@ export function BookingDetailBody({ booking }: { booking: VehicleBooking }) {
             <InfoRow label="Người nhận">{booking.receiver_name}</InfoRow>
             <InfoRow label="SĐT người nhận">{booking.receiver_phone}</InfoRow>
           </div>
-          <InfoRow label="Chỉ dẫn đặc biệt">{booking.special_instructions}</InfoRow>
         </Card>
       ) : (
-        <Card className="flex flex-col gap-4 p-5">
-          <SectionHeading>Thông tin chuyến đi</SectionHeading>
+        <Card className="flex flex-col gap-4 p-5 pb-4">
+          <BlockHeader icon={<Users className="size-5 text-sky-600 dark:text-sky-400" />}>
+            Thông tin chuyến đi
+          </BlockHeader>
           <div className="grid gap-4 sm:grid-cols-2">
             <InfoRow label="Số hành khách">{booking.passenger_count}</InfoRow>
             <InfoRow label="SĐT liên hệ">{booking.contact_phone}</InfoRow>
@@ -138,26 +190,9 @@ export function BookingDetailBody({ booking }: { booking: VehicleBooking }) {
         </Card>
       )}
 
-      {/* Điều phối & chạy chuyến — chỉ hiện khi đã có */}
-      {dispatched ? (
-        <Card className="flex flex-col gap-4 p-5">
-          <SectionHeading>Điều phối &amp; chuyến đi</SectionHeading>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <InfoRow label="Xe được phân">{booking.assigned_vehicle_label}</InfoRow>
-            <InfoRow label="Tài xế được phân">{booking.assigned_driver_label}</InfoRow>
-            <InfoRow label="Trạng thái tài xế">
-              <DriverStatusBadge status={booking.driver_status} label={booking.driver_status_label} />
-            </InfoRow>
-            <InfoRow label="Thời gian điều phối">{formatDateTime(booking.dispatched_at ?? '')}</InfoRow>
-            <InfoRow label="Bắt đầu thực tế">{formatDateTime(booking.actual_start_time)}</InfoRow>
-            <InfoRow label="Kết thúc thực tế">{formatDateTime(booking.actual_end_time)}</InfoRow>
-            <InfoRow label="Số km">{booking.distance_km ? String(booking.distance_km) : '—'}</InfoRow>
-            <InfoRow label="Chi phí">{booking.cost ? formatMoney(booking.cost) : '—'}</InfoRow>
-          </div>
-        </Card>
-      ) : null}
-
-      {booking.note && (
+      {/*  Chỉ hiện khi ghi chú CÓ NỘI DUNG THẬT — `.trim()` để ô toàn khoảng trắng /
+          xuống dòng cũng coi như rỗng, không dựng khung trống. */}
+      {booking.note?.trim() && (
         <Card className="flex flex-col gap-2 p-5">
           <SectionHeading>Ghi chú</SectionHeading>
           <ReadOnlyValue multiline>{booking.note}</ReadOnlyValue>

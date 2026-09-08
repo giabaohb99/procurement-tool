@@ -59,7 +59,7 @@ export function BookingCompleteDialog({ code, pending, onConfirm, onClose }: Boo
       >
         <DialogHeader className="flex-row items-start justify-between text-left">
           <div>
-            <DialogTitle>Hoàn tất chuyến {code}</DialogTitle>
+            <DialogTitle>Hoàn thành chuyến {code}</DialogTitle>
             <DialogDescription>Ghi số km và chi phí thực tế (có thể để trống).</DialogDescription>
           </div>
           <Button type="button" variant="ghost" size="icon" onClick={attemptClose} aria-label="Đóng">
@@ -98,7 +98,7 @@ export function BookingCompleteDialog({ code, pending, onConfirm, onClose }: Boo
           </Button>
           <Button onClick={handleConfirm} disabled={pending}>
             <CheckCircle2 className="size-4" />
-            Hoàn tất chuyến
+            Hoàn thành chuyến
           </Button>
         </div>
       </DialogContent>

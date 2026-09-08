@@ -34,6 +34,32 @@ def _with_reason(action: str, reason: str) -> str:
     return f"{action} — Lý do: {reason}" if reason else action
 
 
+#  Nhãn tiếng Việt của các trường người dùng SỬA — để nhật ký ghi CỤ THỂ đã đổi gì
+#  ("Chỉnh sửa: Thời gian giao (dự kiến), Điểm đến") thay vì "Cập nhật" chung chung.
+_EDIT_LABELS = {
+    "request_type": "Loại yêu cầu", "purpose": "Mục đích", "is_self_drive": "Hình thức tự lái",
+    "license_number": "Số GPLX", "license_class": "Hạng GPLX",
+    "start_location": "Điểm đi / lấy hàng", "end_location": "Điểm đến / giao hàng",
+    "stops": "Điểm dừng", "start_time": "Thời gian đi / lấy hàng",
+    "end_time": "Thời gian về / giao", "passenger_count": "Số hành khách",
+    "attendees": "Người tham gia", "contact_phone": "SĐT liên hệ", "is_round_trip": "Khứ hồi",
+    "goods_name": "Tên hàng hóa", "goods_size": "Kích thước / KL",
+    "sender_name": "Người gửi", "sender_phone": "SĐT người gửi",
+    "receiver_name": "Người nhận", "receiver_phone": "SĐT người nhận",
+    "special_instructions": "Chỉ dẫn đặc biệt", "note": "Ghi chú",
+}
+
+
+def _snapshot(obj) -> dict:
+    """Chụp giá trị các trường theo dõi trước khi sửa (so sánh dạng chuỗi cho gọn)."""
+    return {k: str(getattr(obj, k, "")) for k in _EDIT_LABELS}
+
+
+def _changed_labels(before: dict, obj) -> list[str]:
+    """Danh sách NHÃN các trường đã đổi giá trị so với ảnh chụp trước khi sửa."""
+    return [lbl for k, lbl in _EDIT_LABELS.items() if before.get(k) != str(getattr(obj, k, ""))]
+
+
 @router.get("")
 def list_bookings(
     request: Request,
@@ -80,6 +106,9 @@ def create_booking(
     obj = service.create_booking(db, data, user, submit, background_tasks)
     audit_record(db, user.id, "vehicle_booking", obj.id, "create",
                  f"Tạo yêu cầu đặt xe {obj.code}")
+    #  Gửi duyệt = một dòng nhật ký riêng ("Ai — Gửi duyệt") để đọc rõ luồng.
+    if submit:
+        audit_record(db, user.id, "vehicle_booking", obj.id, "submitted", "Gửi duyệt yêu cầu")
     msg = "Đã gửi duyệt yêu cầu đặt xe" if submit else "Đã lưu nháp yêu cầu đặt xe"
     return success(service.serialize_booking(db, obj), msg, 201)
 
@@ -97,9 +126,16 @@ def update_booking(
                      user, get_perm_profile(db, user), "write")
     if obj is None or obj.is_deleted:
         raise HTTPException(404, "Không tìm thấy yêu cầu đặt xe")
+    before = _snapshot(obj)
     obj = service.update_booking(db, obj, data, user, submit, background_tasks)
-    audit_record(db, user.id, "vehicle_booking", obj.id, "update",
-                 f"Cập nhật yêu cầu đặt xe {obj.code}")
+    #  Ghi CỤ THỂ đã sửa trường nào (vd "Chỉnh sửa: Thời gian giao (dự kiến), Điểm đến").
+    #  KHÔNG đổi gì thì KHÔNG ghi lịch sử — tránh dòng "Cập nhật (không đổi nội dung)" vô nghĩa.
+    changed = _changed_labels(before, obj)
+    if changed:
+        audit_record(db, user.id, "vehicle_booking", obj.id, "update",
+                     f"Chỉnh sửa: {', '.join(changed)}")
+    if submit:
+        audit_record(db, user.id, "vehicle_booking", obj.id, "submitted", "Gửi duyệt yêu cầu")
     return success(service.serialize_booking(db, obj), "Đã cập nhật")
 
 
@@ -123,6 +159,30 @@ def dispatch_booking(
                  f"Đã điều phối Xe {veh.license_plate if veh else '?'} "
                  f"và Tài xế {drv.name if drv else '?'}")
     return success(service.serialize_booking(db, obj, viewer=user), "Đã điều phối")
+
+
+@router.post("/{bid}/dispatch/return")
+def dispatch_return_booking(bid: int, data: ReasonIn, background_tasks: BackgroundTasks,
+                            db: Session = Depends(get_db),
+                            user=Depends(require("vehicle_booking", "write"))):
+    """Điều phối viên YÊU CẦU CHỈNH SỬA phiếu ĐANG Đã điều phối → trả về người tạo (gỡ điều phối)."""
+    obj = _scoped_or_404(db, bid, user, "write")
+    obj = service.return_booking(db, obj, data, user, background_tasks)
+    audit_record(db, user.id, "vehicle_booking", obj.id, "update",
+                 _with_reason("Yêu cầu chỉnh sửa (điều phối)", data.reason))
+    return success(service.serialize_booking(db, obj, viewer=user), "Đã trả lại để chỉnh sửa")
+
+
+@router.post("/{bid}/dispatch/reject")
+def dispatch_reject_booking(bid: int, data: ReasonIn, background_tasks: BackgroundTasks,
+                            db: Session = Depends(get_db),
+                            user=Depends(require("vehicle_booking", "write"))):
+    """Điều phối viên TỪ CHỐI phiếu ĐANG Đã điều phối → khóa phiếu (gỡ điều phối)."""
+    obj = _scoped_or_404(db, bid, user, "write")
+    obj = service.reject_booking(db, obj, data, user, background_tasks)
+    audit_record(db, user.id, "vehicle_booking", obj.id, "cancel",
+                 _with_reason("Từ chối yêu cầu (điều phối)", data.reason))
+    return success(service.serialize_booking(db, obj, viewer=user), "Đã từ chối yêu cầu")
 
 
 # --- Chuyển trạng thái theo vai trò ----------------------------------------

@@ -68,8 +68,10 @@ export function ModuleTablePicker({
                 onClick={() => pickModule(m.id)}
                 className={cn(
                   'flex h-9 w-full items-center justify-start gap-2 rounded-lg px-3 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60',
+                  //  Ô đang chọn tô đúng màu thẻ phân hệ ở Trang chủ (`m.accent` gồm cả
+                  //  màu viền); `border-2` để viền hiện rõ.
                   active
-                    ? 'border-2 border-primary bg-primary/10 text-primary'
+                    ? cn('border-2', m.accent)
                     : 'border border-input bg-background text-muted-foreground hover:bg-accent',
                 )}
               >

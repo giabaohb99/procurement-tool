@@ -13,6 +13,9 @@ COMMENT_POLICY: dict[str, tuple[str, str, str]] = {
     "survey_request":   ("survey_request",   "Yêu cầu báo giá",  "/survey-requests"),
     "survey":           ("survey",           "Phiếu khảo sát",   "/surveys"),
     "purchase_order":   ("purchase_order",   "Đơn mua hàng",     "/purchase-orders"),
+    #  Đặt xe & Duyệt dấu — trao đổi trên phiếu (route v2 để chuông dẫn đúng trang chi tiết).
+    "vehicle_booking":  ("vehicle_booking",  "Yêu cầu đặt xe",   "/vehicle-booking"),
+    "seal_request":     ("seal_request",     "Yêu cầu đóng dấu", "/approval-seal"),
     # Diễn đàn (F1): entity cha chỉ để ĐẶT TÊN — `resolve_doc` rẽ nhánh riêng kiểm
     # theo luật audience của bài, KHÔNG kiểm RBAC (người thường không có grant nào).
     # Route ghi THẲNG dạng v2 (khuôn Văn thư): diễn đàn chỉ có trên `frontend-v2`,
@@ -43,6 +46,12 @@ def doc_model(entity: str):
     if entity == "purchase_order":
         from app.modules.purchase_order.model import PurchaseOrder
         return PurchaseOrder
+    if entity == "vehicle_booking":
+        from app.modules.vehicle_booking.model import VehicleBooking
+        return VehicleBooking
+    if entity == "seal_request":
+        from app.modules.seal_request.model import SealRequest
+        return SealRequest
     if entity == "forum_post":
         from app.modules.forum.model import ForumPost
         return ForumPost

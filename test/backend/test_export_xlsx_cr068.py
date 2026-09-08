@@ -63,7 +63,8 @@ def test_cell_value_doi_kieu_theo_cot():
     assert cell_value(Col("x", "X", "date"), {"x": ""}) is None
     assert cell_value(Col("x", "X", "date"), {"x": "hôm qua"}) == "hôm qua"   # không nuốt dữ liệu lạ
     assert cell_value(Col("x", "X", "bool"), {"x": True}) == "Có"
-    assert cell_value(Col("x", "X", "bool"), {"x": False}) == ""
+    #  False -> "Không" (KHÔNG để trống): import đọc lại đúng False, không nhầm mặc định.
+    assert cell_value(Col("x", "X", "bool"), {"x": False}) == "Không"
 
 
 def test_cell_value_created_at_doi_sang_gio_vn():

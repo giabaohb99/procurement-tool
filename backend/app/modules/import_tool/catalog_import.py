@@ -165,6 +165,50 @@ def _f(header, attr, kind="str", required=False, ref=None, default=None, aliases
 
 _REF_MODEL = {"company": Company, "department": Department, "employee": Employee}
 
+#  Đối chiếu tham chiếu "bằng MÃ HOẶC bằng TÊN" (yêu cầu KH 07/09/2026): thử lần
+#  lượt các cột — MÃ trước (chính xác, duy nhất), rồi tới TÊN / khoá tự nhiên khác.
+#  Công ty còn nhận cả MST và tên viết tắt; nhân sự nhận cả email.
+_REF_MATCH = {
+    "company": ["code", "name", "tax_code", "short_name"],
+    "department": ["code", "name"],
+    "employee": ["code", "full_name", "email"],
+    "self": ["code", "name"],
+}
+
+
+def resolve_ref_obj(db: Session, ref: str, value, self_model=None):
+    """Tìm bản ghi tham chiếu theo MÃ hoặc TÊN (thử lần lượt các cột ở `_REF_MATCH`).
+
+    Nhận cả chuỗi ghép "TÊN - MST" (bản xuất của hệ thống cũ ghi công ty kiểu
+    «CÔNG TY … - 0314562909»): không khớp trọn thì tách phần trước « - » thử theo
+    tên và phần sau thử theo MST. `self_model` cho tham chiếu cùng bảng (parent)."""
+    v = _s(value)
+    if not v:
+        return None
+    model = self_model if ref == "self" else _REF_MODEL.get(ref)
+    if model is None:
+        return None
+    cols = _REF_MATCH.get(ref, ["code"])
+
+    def _hit(val: str):
+        for col in cols:
+            attr = getattr(model, col, None)
+            if attr is None:
+                continue
+            obj = db.query(model).filter(attr == val).first()
+            if obj:
+                return obj
+        return None
+
+    obj = _hit(v)
+    if obj:
+        return obj
+    #  Chuỗi ghép "TÊN - MST" → thử tách.
+    if " - " in v:
+        left, right = v.rsplit(" - ", 1)
+        return _hit(left.strip()) or _hit(right.strip())
+    return None
+
 ADAPTERS: dict[int, dict] = {
     ImportModule.COMPANY: {
         "label": "Công ty",
@@ -392,11 +436,10 @@ def run(db: Session, batch: ImportBatch, wb, apply: bool) -> None:
         return ws.cell(row=row, column=col).value if col else None
 
     def resolve_ref(ref, code, row_no, header):
-        """code -> id. Không thấy -> log REVIEW, trả 0 (để trống)."""
+        """Mã HOẶC tên -> id. Không thấy -> log REVIEW, trả 0 (để trống)."""
         if not code:
             return 0
-        ref_model = model if ref == "self" else _REF_MODEL[ref]
-        obj = db.query(ref_model).filter(ref_model.code == code).first()
+        obj = resolve_ref_obj(db, ref, code, self_model=model)
         if obj:
             return obj.id
         log(row_no, LogLevel.REVIEW, "ref_not_found",

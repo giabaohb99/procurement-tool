@@ -146,3 +146,100 @@ def test_revert_document_deletes_new(db):
     service.revert_batch(db, b, user_id=1)
     assert db.query(VehicleBooking).filter(VehicleBooking.code == "DX902").count() == 0
     assert b.status == ImportStatus.REVERTED
+
+
+# ── Cột theo NHÃN (khớp bản xuất hệ cũ): mã/tên, trạng thái, suy diễn, tệp ─────
+def _named_wb(sheet: str, headers: list[str], rows: list[dict]):
+    """Workbook với TIÊU ĐỀ tuỳ ý (mô phỏng file xuất hệ cũ), giá trị đọc theo header."""
+    import openpyxl
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = sheet
+    for i, h in enumerate(headers, start=1):
+        ws.cell(row=1, column=i, value=h)
+    for ri, row in enumerate(rows, start=2):
+        for i, h in enumerate(headers, start=1):
+            if h in row:
+                ws.cell(row=ri, column=i, value=row[h])
+    return wb
+
+
+def test_precheck_headers_accepts_header_only_docs(db):
+    #  Regression: precheck bước upload từng dùng adapter["line_fields"] -> KeyError với
+    #  chứng từ header-only (Đặt xe / Duyệt dấu) => UI báo "Không đọc được file".
+    from app.modules.import_tool.tasks import precheck_headers
+    for module in (ImportModule.VEHICLE_BOOKING, ImportModule.SEAL_REQUEST):
+        wb = _named_wb(doc_import.DOC_ADAPTERS[module]["sheet"], ["Mã yêu cầu", "Tiêu đề"],
+                       [{"Mã yêu cầu": "X1", "Tiêu đề": "t"}])
+        precheck_headers(module, wb)  # không được ném lỗi
+
+
+def test_import_booking_resolves_company_by_name_and_status_by_label(db):
+    db.add(Company(code="IDA", name="CÔNG TY TNHH XUẤT NHẬP KHẨU IDA GLOBAL", tax_code="0314562909"))
+    db.flush()
+    wb = _named_wb("Yeu cau dat xe",
+                   ["Mã yêu cầu", "Tiêu đề", "Loại yêu cầu", "Trạng thái chung", "Công ty",
+                    "Lộ trình", "Khứ hồi"],
+                   [{"Mã yêu cầu": "DX010", "Tiêu đề": "Đi thăm khách",
+                     "Loại yêu cầu": "Đi công tác", "Trạng thái chung": "Hoàn thành",
+                     # Công ty ghi kiểu "TÊN - MST" như bản xuất cũ → vẫn khớp.
+                     "Công ty": "CÔNG TY TNHH XUẤT NHẬP KHẨU IDA GLOBAL - 0314562909",
+                     "Lộ trình": "Văn phòng -> An Giang", "Khứ hồi": "Có"}])
+    b = _batch(db, ImportModule.VEHICLE_BOOKING)
+    doc_import.run(db, b, wb, apply=True)
+    bk = db.query(VehicleBooking).filter(VehicleBooking.code == "DX010").one()
+    assert bk.company_id == db.query(Company).filter(Company.code == "IDA").one().id
+    assert bk.status == 5          # "Hoàn thành" (nhãn) → BK_COMPLETED
+    assert bk.request_type == 1    # "Đi công tác" → công tác
+    assert bk.is_self_drive is False
+    assert bk.start_location == "Văn phòng" and bk.end_location == "An Giang"
+    assert bk.is_round_trip is True
+
+
+def test_import_delivery_type_and_self_drive_and_vehicle_driver(db):
+    db.add(Vehicle(license_plate="51D-629.48", model="MAZDA BT50"))
+    db.add(Driver(name="Lưu Nhựt Minh", phone="0937187336"))
+    db.flush()
+    wb = _named_wb("Yeu cau dat xe",
+                   ["Mã yêu cầu", "Loại yêu cầu", "Tên hàng hóa", "Biển số xe", "SĐT tài xế",
+                    "Trạng thái tài xế", "Thời gian lấy hàng"],
+                   [{"Mã yêu cầu": "DX011", "Loại yêu cầu": "Giao hàng tự lái",
+                     "Tên hàng hóa": "N2 MgZn 70", "Biển số xe": "51D-629.48",
+                     "SĐT tài xế": "0937187336", "Trạng thái tài xế": "Hoàn thành",
+                     "Thời gian lấy hàng": "08:30:00 21/7/2026"}])
+    b = _batch(db, ImportModule.VEHICLE_BOOKING)
+    doc_import.run(db, b, wb, apply=True)
+    bk = db.query(VehicleBooking).filter(VehicleBooking.code == "DX011").one()
+    assert bk.request_type == 2 and bk.is_self_drive is True      # "Giao hàng tự lái"
+    assert bk.goods_name == "N2 MgZn 70"
+    assert bk.assigned_vehicle_id == db.query(Vehicle).one().id   # theo biển số
+    assert bk.assigned_driver_id == db.query(Driver).one().id     # theo SĐT
+    assert bk.driver_status == 4                                  # "Hoàn thành" → DRV_COMPLETED
+    assert bk.start_time == "2026-07-21T08:30:00"                 # "Thời gian lấy hàng" → ISO
+
+
+def test_import_seal_creates_attachment_placeholder_and_revert_cleans_it(db):
+    from app.modules.attachment.model import FileLink, StoredFile
+    db.add(Company(code="ABA", name="CÔNG TY TNHH HÓA CHẤT NÔNG NGHIỆP ABA", tax_code="1801818328"))
+    db.flush()
+    wb = _named_wb("Yeu cau dong dau",
+                   ["Mã yêu cầu", "Tiêu đề", "Chi tiết loại", "Trạng thái chung", "Công ty",
+                    "Tệp đính kèm"],
+                   [{"Mã yêu cầu": "DD010", "Tiêu đề": "Duyệt dấu hợp đồng",
+                     "Chi tiết loại": "Phê duyệt dấu", "Trạng thái chung": "Hoàn thành",
+                     "Công ty": "CÔNG TY TNHH HÓA CHẤT NÔNG NGHIỆP ABA", "Tệp đính kèm": "AV-ABA.pdf"}])
+    b = _batch(db, ImportModule.SEAL_REQUEST)
+    doc_import.run(db, b, wb, apply=True)
+    req = db.query(SealRequest).filter(SealRequest.code == "DD010").one()
+    assert req.title == "Duyệt dấu hợp đồng" and req.status == 4
+    assert get_company_ids(db, req.id) == [db.query(Company).filter(Company.code == "ABA").one().id]
+    #  Tệp đính kèm giữ chỗ (tên tệp còn, chưa có nội dung) + liên kết đúng phiếu.
+    link = db.query(FileLink).filter(FileLink.entity == "seal_request",
+                                     FileLink.entity_id == req.id).one()
+    assert db.get(StoredFile, link.file_id).filename == "AV-ABA.pdf"
+
+    #  Revert xoá cả phiếu, bảng nối công ty lẫn tệp giữ chỗ.
+    service.revert_batch(db, b, user_id=1)
+    assert db.query(SealRequest).filter(SealRequest.code == "DD010").count() == 0
+    assert db.query(FileLink).filter(FileLink.entity == "seal_request",
+                                     FileLink.entity_id == req.id).count() == 0

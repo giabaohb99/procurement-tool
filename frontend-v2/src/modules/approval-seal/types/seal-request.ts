@@ -71,12 +71,16 @@ export interface SealRequest {
   department_id: number
   first_approver_id: number
   approver_name: string
+  /** Thời điểm TBP duyệt (ISO), rỗng nếu chưa duyệt. */
+  approved_at: string
+  /** Văn thư đã đóng dấu + thời điểm hoàn thành. */
+  completed_by_name: string
+  completed_at: string
   requester: string
   requester_id: number
   requester_email: string
   requester_phone: string
   requester_role: string
-  signed_doc_count: number
   note: string
   created_at: string | null
   /** True khi phiếu đang chạy một phiên duyệt nhiều bước (bộ máy `ApprovalSwitch`). */
@@ -98,7 +102,11 @@ export interface SealApprover {
   id: number
   name: string
   email: string
+  /** Ảnh đại diện của TBP (rỗng → hiện chữ cái đầu). */
+  avatar: string
   department_id: number
+  /** Là trưởng bộ phận thật (quản lý một phòng ban) — được xếp lên đầu danh sách. */
+  is_dept_head: boolean
   /** TBP mặc định (trưởng bộ phận của người tạo) — được chọn sẵn khi tạo mới. */
   is_default: boolean
 }

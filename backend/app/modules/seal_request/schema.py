@@ -79,8 +79,11 @@ class SealRequestResponse(SealRequestBase):
     requester_email: str = ""
     requester_phone: str = ""
     requester_role: str = ""
+    #  Khối "Thông tin phê duyệt": TBP duyệt + mốc duyệt · Văn thư đóng dấu + mốc hoàn thành.
     approver_name: str = ""         # tên Trưởng bộ phận phê duyệt
-    signed_doc_count: int = 0       # số tệp chứng từ đã đính kèm
+    approved_at: str = ""           # thời điểm TBP duyệt
+    completed_by_name: str = ""     # tên Văn thư đã đóng dấu
+    completed_at: str = ""          # thời điểm hoàn thành (đóng dấu)
     #  Đang chạy LUỒNG DUYỆT NHIỀU BƯỚC (engine) → FE ẩn nút duyệt một bước (cổng 1).
     approval_running: bool = False
     created_at: str | None = None
