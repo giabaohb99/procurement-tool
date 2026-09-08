@@ -33,11 +33,28 @@ Help Center và trợ lý tra bằng `search_docs` (RAG index `help_article` + F
 | `30-du-an-cong-viec.md` | Dự án (quản lý công việc) | ~2 300 |
 | `40-nghi-phep.md` | Nghỉ phép (Nhân sự) | ~2 300 (07/09/2026: + kết sổ cuối năm, nghỉ vợ sinh con) |
 | `50-dat-phong-hop.md` | Đặt phòng họp (Nhân sự) | ~1 900 |
+| `60-nhan-su-ho-so.md` | Hồ sơ nhân sự + danh mục Chức vụ | ~1 260 (08/09/2026) |
 | `nhamay-tri-thuc-co-dong.md` | Nhà máy DEGO Organic | ~11 000 |
 
-Tổng system prompt hiện ~**21,8k token/lượt** (đo 04/09/2026 bằng
-`knowledge.build_system()`, ước 3,2 ký tự/token cho tiếng Việt; cộng phần thêm
-07/09/2026 vào gói Nghỉ phép — ước theo ký tự, chưa đo lại bằng `build_system()`).
+⚠️ **`60-nhan-su-ho-so.md` cố ý chỉ giữ LUẬT, không giữ các bước bấm nút** — đúng
+luật của thư mục này. Các bước nằm ở bài Help Center *«Chức vụ và hồ sơ nhân
+sự»*, trợ lý tra bằng `search_docs`. Chia đôi như vậy vì gói đi vào **mọi** câu
+hỏi (kể cả câu chẳng liên quan tới nhân sự), còn bài HDSD thì chỉ được nạp khi
+đúng chủ đề. Thứ phải nằm trong gói là thứ **nói sai thì người dùng làm hỏng dữ
+liệu thật** — ví dụ "đổi tên một chức vụ là đổi luôn chức danh của mọi người đang
+giữ nó".
+
+⚠️ Trợ lý đọc hồ sơ nhân sự **chỉ 5 trường** của chính người hỏi (`service.py`
+`_asker_profile`: họ tên · mã NV · chức vụ · phòng ban · công ty) và `full_name`
+của người duyệt (`document_tool`). **Không** trường nào thuộc nhóm nhạy cảm
+(CCCD · ngân hàng · địa chỉ nhà — xem `employee/sensitive.py`), nên đường này
+không cần `sensitive.mask`. Thêm trường vào chân dung người hỏi thì phải kiểm
+lại đúng chỗ đó. Lưu ý `emp.position` là **nhãn đã chép**, không phải khóa —
+đúng một trong những lý do cột nhãn còn tồn tại.
+
+Tổng system prompt hiện ~**22,8k token/lượt** — 72 928 ký tự, đo lại 08/09/2026
+bằng `knowledge.build_system()` (ước 3,2 ký tự/token cho tiếng Việt). Lần trước
+ghi ~21,8k, chênh là do gói Nghỉ phép bổ sung 07/09 và gói Nhân sự mới.
 
 Viết gói phân hệ thì bám ba nguyên tắc:
 
