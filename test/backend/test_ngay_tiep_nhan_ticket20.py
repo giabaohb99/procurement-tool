@@ -2,9 +2,13 @@
 
 Trước đây `request_date` điền lúc lập phiếu (frontend prefill = hôm nay) và cho sửa tay,
 nên thời gian quy định có hàng đếm từ lúc người yêu cầu gõ phiếu — phiếu nằm chờ duyệt
-một tuần thì NSTM mất oan một tuần SLA. Nay `dispatch_pr` ghi đè `request_date` = ngày
-điều phối, và dời theo các dòng mà "Thời gian dự kiến có hàng" vẫn là giá trị TỰ ĐIỀN
+một tuần thì NSTM mất oan một tuần SLA. Nay `dispatch_pr` ghi ngày điều phối làm Ngày
+tiếp nhận, và dời theo các dòng mà "Thời gian dự kiến có hàng" vẫn là giá trị TỰ ĐIỀN
 theo mốc cũ; dòng NSTM đã sửa tay hoặc cố ý để trống thì giữ nguyên.
+
+bao-CR-316 sửa CHỖ GHI: ngày điều phối vào cột RIÊNG `received_date`, không ghi đè
+`request_date` nữa (bản CR-293 ghi đè nên xóa mất ngày lập phiếu). Mốc đếm hạn đọc qua
+`sla_base_date` — xem thêm `test_tach_ngay_tiep_nhan_cr316.py`.
 """
 from datetime import date, timedelta
 
@@ -36,12 +40,16 @@ def _make_pr(db, seed, code: str, request_date: str, lines: list[dict]):
     return pr
 
 
-def test_dieu_phoi_ghi_de_ngay_tiep_nhan(db, seed):
-    """Phiếu lập 10 ngày trước → điều phối hôm nay thì Ngày tiếp nhận = hôm nay."""
-    pr = _make_pr(db, seed, "PYC-T20-01", _old_base(), [{"group": "Nhãn"}])
+def test_dieu_phoi_ghi_ngay_tiep_nhan(db, seed):
+    """Phiếu lập 10 ngày trước → điều phối hôm nay thì Ngày tiếp nhận = hôm nay.
+
+    bao-CR-316: và Ngày lập vẫn còn nguyên 10 ngày trước, không bị ghi đè."""
+    lap = _old_base()
+    pr = _make_pr(db, seed, "PYC-T20-01", lap, [{"group": "Nhãn"}])
     pr2, _, _ = S.dispatch_pr(db, pr.id, seed.u_req_id)
     assert pr2.status == "dispatched"
-    assert pr2.request_date == date.today().isoformat()
+    assert pr2.received_date == date.today().isoformat()
+    assert pr2.request_date == lap
 
 
 def test_dong_tu_dien_thi_doi_theo_moc_moi(db, seed):
@@ -75,4 +83,4 @@ def test_phieu_khong_co_moc_cu_van_dien_duoc(db, seed):
     """Phiếu cũ `request_date` trống (dữ liệu legacy) → điều phối vẫn điền được, không nổ."""
     pr = _make_pr(db, seed, "PYC-T20-05", "", [{"group": "Nhãn"}])
     pr2, _, _ = S.dispatch_pr(db, pr.id, seed.u_req_id)
-    assert pr2.request_date == date.today().isoformat()
+    assert pr2.received_date == date.today().isoformat()

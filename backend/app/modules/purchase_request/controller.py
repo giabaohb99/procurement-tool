@@ -16,7 +16,10 @@ from .schema import ApproveIn, AssignIn, ItemStatusIn, PRCreate, PRUpdate, Reaso
 router = APIRouter(prefix="/api/purchase-requests", tags=["purchase_request"])
 
 HEADER_COLS = ["id", "code", "company_id", "requester", "requester_id", "requester_position",
-               "department", "head_of_dept", "head_of_dept_id", "purpose", "request_date", "need_date",
+               "department", "head_of_dept", "head_of_dept_id", "purpose",
+               # bao-CR-316: `received_date` CHỈ có ở đây (đọc ra), cố ý KHÔNG nằm trong
+               # PRCreate/PRUpdate — Ngày tiếp nhận do `dispatch_pr` điền, không ai sửa tay.
+               "request_date", "received_date", "need_date",
                "status", "is_urgent", "vat_rate", "assignee_id", "note",
                "show_code_on_print", "suggested_supplier", "suggested_supplier_tax_code",
                "suggested_supplier_contact", "quote_filename", "quote_file_url"]
@@ -206,7 +209,8 @@ def _list_query(request: Request, db: Session, user):
     """Câu truy vấn danh sách (lọc + phạm vi + sắp xếp) — dùng chung cho màn danh sách và xuất Excel,
     để file xuất luôn ra ĐÚNG những phiếu người dùng đang thấy."""
     query = apply_filters(db.query(PurchaseRequest).filter(PurchaseRequest.is_deleted == False), PurchaseRequest, request, service.FILTERABLE)
-    query = apply_range_filters(query, PurchaseRequest, request, ["request_date", "need_date"])
+    query = apply_range_filters(query, PurchaseRequest, request,
+                                ["request_date", "received_date", "need_date"])
     query = apply_equals(query, PurchaseRequest, request, ["company_id"])
     item_group = (request.query_params.get("item_group") or "").strip()
     if item_group:

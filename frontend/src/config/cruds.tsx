@@ -449,7 +449,11 @@ export const cruds: Record<string, CrudConfig> = {
     condFilters: [
       condText('code', 'Mã PYC'), condText('requester', 'Người yêu cầu'),
       condSource('department', 'Bộ phận YC', { url: '/api/departments', value: 'name', label: 'name' }),
-      condDate('request_date', 'Ngày tạo'), condDate('need_date', 'Ngày cần hàng'),
+      // bao-CR-316: hai mốc ngày RIÊNG — `request_date` là ngày LẬP phiếu, `received_date` là
+      // ngày thu mua TIẾP NHẬN (rỗng = chưa tiếp nhận). Trước CR này chỉ có một ô, lọc ra lẫn
+      // lộn cả hai loại ngày vì `dispatch_pr` ghi đè `request_date` lúc điều phối.
+      condDate('request_date', 'Ngày lập phiếu'), condDate('received_date', 'Ngày tiếp nhận'),
+      condDate('need_date', 'Ngày cần hàng'),
       { name: 'is_urgent', label: 'Đơn gấp', type: 'boolean' },
       condSelect('status', 'Trạng thái', [
         { value: 'draft', label: 'Nháp' }, { value: 'submitted', label: 'Chờ duyệt' },

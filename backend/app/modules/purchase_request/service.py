@@ -10,10 +10,28 @@ from app.modules.catalog import lead_time
 from .model import PurchaseRequest, PurchaseRequestItem
 from .schema import AssignIn, ItemStatusIn, PRCreate, PRUpdate
 
-# request_date/need_date nằm trong whitelist để bộ lọc điều kiện lọc theo ngày; lọc khoảng kiểu cũ
-# (<field>_from/_to) vẫn do apply_range_filters lo.
-FILTERABLE = ["code", "status", "requester", "department", "is_urgent", "request_date", "need_date"]
+# request_date/received_date/need_date nằm trong whitelist để bộ lọc điều kiện lọc theo ngày;
+# lọc khoảng kiểu cũ (<field>_from/_to) vẫn do apply_range_filters lo.
+FILTERABLE = ["code", "status", "requester", "department", "is_urgent", "request_date",
+              "received_date", "need_date"]
 ENTITY = "purchase_request"
+
+
+def sla_base_date(pr) -> str:
+    """bao-CR-316 — MỐC ĐẾM hạn của phiếu: Ngày tiếp nhận nếu đã có, chưa có thì Ngày lập.
+
+    Thời gian quy định có hàng phải đếm từ lúc thu mua THẬT SỰ nhận việc (bao-CR-293); phiếu
+    chưa được điều phối thì tạm đếm từ ngày lập, để cảnh báo trễ hạn có hiệu lực ngay lúc lập
+    phiếu chứ không đợi tới bước điều phối.
+
+    Mọi chỗ tính hạn (`regulated_date`, `urgent_reasons`) phải đi qua hàm này, đừng đọc thẳng
+    cột: trước CR-316 hai nghĩa nằm chung một cột nên đọc `request_date` thế nào cũng đúng,
+    tách rồi thì đọc thẳng là sai một trong hai nhóm phiếu."""
+    if pr is None:
+        return ""
+    return ((getattr(pr, "received_date", "") or "").strip()
+            or (getattr(pr, "request_date", "") or "").strip())
+
 
 # CR-074: tách bạch "chưa ai lập ĐMH" với "đã có ĐMH nhưng chưa bấm đặt hàng". Trước đây hai
 # tình huống này chung một nhãn nên người yêu cầu không biết NSTM đã bắt tay làm chưa.
@@ -607,15 +625,17 @@ def dispatch_pr(db: Session, pid: int, user_id: int) -> tuple[PurchaseRequest, i
     # phiếu — thời gian quy định có hàng phải đếm từ lúc thu mua thật sự nhận việc. Dòng nào
     # "Thời gian dự kiến có hàng" vẫn là giá trị TỰ ĐIỀN theo mốc cũ thì dời theo mốc mới;
     # dòng NSTM đã sửa tay (giá trị khác bản tự điền) giữ nguyên.
+    # bao-CR-316: ghi vào cột RIÊNG `received_date`. Bản CR-293 ghi đè thẳng `request_date`,
+    # tức xóa mất ngày lập phiếu và làm cột đó đổi nghĩa giữa chừng.
     from datetime import date
-    old_base = (pr.request_date or "").strip()
+    old_base = sla_base_date(pr)
     new_base = date.today().isoformat()
     std = lead_time.std_days_map(db)
     for it in items_of(db, pid):
         auto_old = lead_time.regulated_date(std, it.item_group or "", old_base)
         if auto_old and (it.expected_date or "").strip() == auto_old:
             it.expected_date = lead_time.regulated_date(std, it.item_group or "", new_base)
-    pr.request_date = new_base
+    pr.received_date = new_base
     pr.updated_by = user_id
     db.commit()
     record(db, user_id, ENTITY, pid, "dispatched",
@@ -682,7 +702,7 @@ def apply_auto_urgent(db: Session, pr: PurchaseRequest, user_id: int, std: dict 
     if pr is None or pr.is_urgent or pr.status == "cancelled":
         return False
     reasons = urgent_reasons(std if std is not None else lead_time.std_days_map(db),
-                             (pr.request_date or "").strip(), items_of(db, pr.id))
+                             sla_base_date(pr), items_of(db, pr.id))
     if not reasons:
         return False
     pr.is_urgent = True
@@ -706,7 +726,7 @@ def _save_items(db: Session, pr_id: int, items, user_id: int, auto_urgent: bool 
     assert_unique_product_codes([getattr(it, "product_code", "") for it in (items or [])],
                                 [r.product_code for r in existing.values()])
     _pr = db.get(PurchaseRequest, pr_id)
-    _base = (getattr(_pr, "request_date", "") or "").strip()   # Ngày tiếp nhận = mốc tính ngày QĐ
+    _base = sla_base_date(_pr)                   # mốc tính ngày QĐ có hàng — xem sla_base_date
     _std = lead_time.std_days_map(db)
     keep: set[int] = set()
     for it in items or []:
@@ -824,7 +844,7 @@ def copy_pr(db: Session, pid: int, user_id: int) -> PurchaseRequest:
                                    # Ngày dự kiến của phiếu gốc là chuyện của phiếu gốc — dòng nhân
                                    # bản khởi tạo lại theo ngày QĐ như dòng mới.
                                    expected_date=lead_time.regulated_date(
-                                       _std, it.item_group, (pr.request_date or "").strip()),
+                                       _std, it.item_group, sla_base_date(pr)),
                                    **data))
     db.commit()
     record(db, user_id, ENTITY, pr.id, "create", f"Nhân bản từ {src.code}")
