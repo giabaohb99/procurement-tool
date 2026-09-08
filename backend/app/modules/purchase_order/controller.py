@@ -293,6 +293,39 @@ def print_po(pid: int, db: Session = Depends(get_db), user=Depends(require("purc
     return success(data)
 
 
+@router.get("/{pid}/purchase-request")
+def get_po_purchase_request(pid: int, db: Session = Depends(get_db),
+                            user=Depends(require("purchase_order", "print"))):
+    """Phiếu YCMH nguồn của đơn, đã cắt còn đúng các dòng hàng có trên đơn — bao-CR-314.
+
+    Cổng đặt ở ĐƠN MUA HÀNG chứ không ở phiếu yêu cầu, cố ý: một phiếu YCMH chia cho nhiều
+    NSTM phụ trách (`tab_purchase_request_item.assignee`) nên phạm vi dữ liệu của người cầm
+    đơn thường KHÔNG với tới cả phiếu — gọi thẳng `/api/purchase-requests/{id}` là 403 đúng
+    những người cần in. Ai mở được đơn (quyền `print` + đơn nằm trong phạm vi) thì in được
+    phần phiếu tương ứng, và không thấy hàng của người khác vì danh sách đã cắt theo mã hàng
+    trên đơn. Luật che NCC cụm `pur` (Task 4) giữ nguyên vì vẫn đi qua `_out` của YCMH.
+    """
+    scoped = apply_scope(db.query(PurchaseOrder).filter(PurchaseOrder.id == pid),
+                         PurchaseOrder, "purchase_order", user, get_perm_profile(db, user))
+    if not scoped.first():
+        raise HTTPException(403, "Ngoài phạm vi được phép xem")
+    po = service.get_po(db, pid)
+    pr_code = (po.pr_code or "").strip()
+    if not pr_code:
+        raise HTTPException(404, "Đơn mua hàng này không gắn phiếu yêu cầu mua hàng")
+    #  Nhập trong hàm: `purchase_request.controller` nạp cả cụm model/serializer của YCMH,
+    #  kéo lên đầu tệp là buộc hai controller phụ thuộc vòng nhau lúc `app.main` dựng router.
+    from app.modules.purchase_request.controller import _out as pr_out
+    from app.modules.purchase_request.model import PurchaseRequest
+    pr = db.query(PurchaseRequest).filter(PurchaseRequest.code == pr_code,
+                                          PurchaseRequest.is_deleted == False).first()  # noqa: E712
+    if not pr:
+        raise HTTPException(404, f"Không tìm thấy phiếu yêu cầu mua hàng {pr_code}")
+    data = service.pr_items_for_po(pr_out(db, pr, user), service.items_of(db, po.id))
+    data["po_code"] = po.code
+    return success(data)
+
+
 @router.post("")
 def create_po(data: POCreate, db: Session = Depends(get_db), user=Depends(require("purchase_order", "create"))):
     return success(_out(db, service.create_po(db, data, user.id)), "Đã tạo đơn mua hàng", 201)

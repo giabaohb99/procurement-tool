@@ -59,7 +59,16 @@ function getClosestNeedDate(items: any[]) {
   return fmtDate(closestDate);
 }
 
-export default function PrintPurchaseRequest() {
+/**
+ * bao-CR-314 — `fromPo`: mở từ ĐƠN MUA HÀNG, `id` trên URL là id của ĐƠN chứ không phải
+ * của phiếu. Lúc đó dữ liệu lấy qua API bên đơn (`/api/purchase-orders/{id}/purchase-request`),
+ * đã cắt còn đúng các dòng hàng có trên đơn — vì phiếu YCMH chia cho nhiều NSTM phụ trách,
+ * người cầm đơn thường không có phạm vi đọc cả phiếu.
+ *
+ * Bản in giữ NGUYÊN khuôn: vẫn mã phiếu gốc, vẫn cụm chữ ký duyệt, không thêm dòng chữ nào
+ * báo đây là bản trích (khách chốt 08/09/2026). Hai mẫu thường/thuế cũng giữ y như cũ.
+ */
+export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: boolean }) {
   const { id } = useParams();
   const [pr, setPr] = useState<any>(null);
   const [company, setCompany] = useState("");
@@ -76,7 +85,11 @@ export default function PrintPurchaseRequest() {
 
   useEffect(() => {
     api
-      .get(`/api/purchase-requests/${id}`)
+      .get(
+        fromPo
+          ? `/api/purchase-orders/${id}/purchase-request`
+          : `/api/purchase-requests/${id}`,
+      )
       .then(async (r) => {
         const d = r.data.data;
         setPr(d);
@@ -96,13 +109,17 @@ export default function PrintPurchaseRequest() {
         ),
       )
       .catch(() => {});
-  }, [id]);
+  }, [id, fromPo]);
   // Tên file gợi ý khi lưu PDF = Mã YCMH + ngày yêu cầu (xem chú thích ở usePrintTitle).
   usePrintTitle(pr ? tenFileIn(pr.code, pr.request_date) : "");
 
   if (notFound)
     return (
-      <div style={{ padding: 40 }}>Không tìm thấy phiếu yêu cầu mua hàng.</div>
+      <div style={{ padding: 40 }}>
+        {fromPo
+          ? "Không tìm thấy phiếu yêu cầu mua hàng gắn với đơn này."
+          : "Không tìm thấy phiếu yêu cầu mua hàng."}
+      </div>
     );
   if (!pr) return <div style={{ padding: 40 }}>Đang tải...</div>;
 
@@ -170,6 +187,15 @@ export default function PrintPurchaseRequest() {
         <button className="btn ghost" onClick={() => window.close()}>
           Đóng
         </button>
+        {/* Dòng ĐMH không đối chiếu được sang phiếu (thiếu mã hàng, hoặc mã không có trên
+            phiếu) thì KHÔNG in ra được. Báo ở đây chứ không in vào tờ giấy: người in phải
+            biết bản in thiếu, còn tờ phiếu giữ nguyên khuôn cũ. */}
+        {fromPo && pr.po_lines_unmatched > 0 && (
+          <span style={{ fontSize: 12.5, color: "#b45309" }}>
+            {pr.po_lines_unmatched} dòng trên đơn mua hàng không đối chiếu được sang
+            phiếu yêu cầu (thiếu mã hàng hoặc mã không có trên phiếu) — không in ra.
+          </span>
+        )}
         <span style={{ flex: 1 }} />
         {/* Chỉ mẫu thường mới có chữ ký sẵn để mà tắt/bật — mẫu thuế vốn để trống toàn bộ. */}
         {!taxMode && (

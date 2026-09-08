@@ -58,6 +58,9 @@ export default function App() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/print/purchase-request/:id" element={<Protected><PrintPurchaseRequest /></Protected>} />
+          {/* bao-CR-314: in phiếu yêu cầu TỪ đơn mua hàng — `:id` ở đây là id của ĐƠN, dữ liệu
+              lấy qua API bên đơn và chỉ còn các dòng hàng có trên đơn đó. */}
+          <Route path="/print/purchase-request-from-po/:id" element={<Protected><PrintPurchaseRequest fromPo /></Protected>} />
           <Route path="/print/purchase-order/:id" element={<Protected><PrintPurchaseOrder /></Protected>} />
           <Route path="/print/purchase-order-mh/:id" element={<Protected><PrintPurchaseOrderMH /></Protected>} />
           <Route path="/print/payment-request/:id" element={<Protected><PrintPaymentRequest /></Protected>} />
