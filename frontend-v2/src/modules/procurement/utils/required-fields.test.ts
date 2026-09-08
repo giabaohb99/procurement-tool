@@ -60,6 +60,7 @@ function prDoc(items: PurchaseRequestItem[]): PurchaseRequestDetail {
     head_of_dept_id: 0,
     purpose: 'Đóng gói lô hàng tháng 9',
     request_date: '2026-08-20',
+    received_date: '',
     need_date: '',
     status: 'draft',
     is_urgent: false,
@@ -379,7 +380,7 @@ describe('validatePurchaseOrder', () => {
 })
 
 describe('missingPurchaseOrderLineFields', () => {
-  it('giữ đúng 11 ô và đúng thứ tự của `TRUONG_BAT_BUOC_DONG` bên backend', () => {
+  it('giữ đúng 11 ô và đúng thứ tự của `REQUIRED_LINE_FIELDS` bên backend', () => {
     // Lệch danh sách này là màn cho bấm Gửi duyệt rồi API mới trả 400 — hoặc
     // ngược lại, màn chặn một ô mà backend không hề bắt.
     const empty = poLine({

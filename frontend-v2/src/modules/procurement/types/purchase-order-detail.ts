@@ -166,7 +166,7 @@ export function isPurchaseOrderLocked(status: string): boolean {
  * Từ mốc này nội dung đơn là thứ trưởng phòng đã ký, không sửa được nữa — chỉ còn
  * mở vài ô PHÁT SINH SAU KHI DUYỆT (xem `PO_FIELDS_EDITABLE_AFTER_APPROVE`). Muốn
  * đổi phần đã duyệt thì bấm "Hủy duyệt" để đơn về Nháp rồi gửi duyệt lại. Backend
- * chặn y hệt (`chan_sua_don_da_duyet`), đây chỉ là lớp khóa cho êm tay.
+ * chặn y hệt (`block_edit_approved_order`), đây chỉ là lớp khóa cho êm tay.
  */
 export function isPurchaseOrderApproved(status: string): boolean {
   return ['approved', 'partial', 'received'].includes(status)

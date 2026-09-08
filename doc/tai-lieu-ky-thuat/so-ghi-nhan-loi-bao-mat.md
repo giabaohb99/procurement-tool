@@ -50,10 +50,10 @@ nó là bằng chứng cho lần soát sau rằng chỗ này từng hở.
 
 | ID | Mức | Phát hiện | Trạng thái |
 |---|---|---|---|
-| BM-001 | **Cao** | `/api/audit-logs` chỉ gác bằng đăng nhập — mọi tài khoản đọc được nhật ký của mọi phân hệ | **Mở** |
+| BM-001 | **Cao** | `/api/audit-logs` chỉ gác bằng đăng nhập — mọi tài khoản đọc được nhật ký của mọi phân hệ | **Đang vá (bao-CR-313).** `erp-v2` đã gác từ 05/09 (d413481f). `main`: mã + 16 test xong local 08/09/2026, **chưa commit, prod vẫn hở** |
 | BM-002 | **Cao** | Không có phiên đăng nhập phía máy chủ — token lộ thì không thu hồi được | **Mở** |
-| BM-003 | Trung bình | Gia hạn token không để lại dấu vết nào | **Mở** |
-| BM-004 | Trung bình | Giới hạn tần suất đăng nhập dùng chung MỘT xô cho cả công ty | **Mở** |
+| BM-003 | Trung bình | Gia hạn token không để lại dấu vết nào | Đang vá (bao-CR-313) — mã xong local 08/09/2026, chưa commit |
+| BM-004 | Trung bình | Giới hạn tần suất đăng nhập dùng chung MỘT xô cho cả công ty | Đang vá (bao-CR-313) — mã xong local 08/09/2026, chưa commit; phải kiểm `CF-Connecting-IP` trên dev sau deploy |
 | BM-005 | Trung bình | Nhật ký không lưu giá trị trước / sau — không chứng minh được đã đổi gì | Đang vá (bao-CR-312, mới ở mức đề xuất) |
 | BM-006 | Thấp | Dấu vết là tùy chọn theo từng lời gọi — quên gọi là mất | Vá một phần (bao-CR-311) |
 | BM-007 | Thấp | Dòng nhật ký không có IP / trình duyệt / mã lượt gọi | Đang vá (bao-CR-312, mới ở mức đề xuất) |
@@ -110,6 +110,22 @@ vai trò quản trị. Cấm bỏ trống `entity_id` trừ khi có khóa cấp 
 `apply_scope` trên chính bản ghi được hỏi, để người chỉ thấy phiếu phòng mình thì cũng chỉ đọc
 được nhật ký phiếu phòng mình.
 
+**Cập nhật 08/09/2026 — đã gõ mã trên `main`, chưa commit.** Khi bắt tay mới thấy `erp-v2`
+đã có `_guard` từ 05/09 (d413481f, minhduoc-tran) nên `main` chép lại + thêm ba chốt. Luật
+cuối cùng KHÁC hướng vá ở trên ba chỗ, ghi lại để khỏi cãi nhau sau:
+
+- Entity lạ trả **403 chứ không 400**, cùng mã với "không có khóa" — người dò không phân
+  biệt được "entity không tồn tại" với "tồn tại mà tôi không được xem".
+- `entity_id` bỏ trống **được phép**, nhưng lọc theo tập id nằm trong phạm vi (`entity_id IN
+  (SELECT id ... WHERE <phạm vi>)`) — Help Center cần lối này cho màn *Lịch sử*. Không kèm
+  id mà cũng không lọc mới là lỗ hổng, còn kèm hay không kèm thì cùng một phạm vi.
+- Người có khóa `setting` (`read` hoặc `write`) đọc được **mọi** entity kể cả `auth` — lọc
+  theo entity không được khắt khe hơn "không lọc". Đây là màn nhật ký đăng nhập của quản trị.
+
+Thêm: `faq` ghi dấu vết dưới tên riêng nhưng gác bằng khóa `help_article` → bảng alias
+`PERMISSION_KEY_ALIAS` trong `audit/controller.py`. Hồ sơ của chính mình (`user`/`employee`
++ id mình) đọc được không cần khóa. Test: `test/backend/test_va_nhat_ky_cr313.py` (9 ca).
+
 ---
 
 ### BM-002 — Không có phiên đăng nhập phía máy chủ
@@ -151,6 +167,13 @@ thấy đúng một lần đăng nhập hợp lệ từ đầu.
 **Hướng vá:** ghi một dòng cho mỗi lượt refresh kèm IP. Rẻ, làm được ngay, không chờ CR-312 —
 gộp vào bao-CR-313.
 
+**Cập nhật 08/09/2026 — đã gõ mã trên `main`, chưa commit.** Mỗi lượt gia hạn là một dòng
+`auth`: `refresh` (thành công, `created_by` = người dùng) hoặc `refresh_failed` (token hỏng →
+`created_by = 0`; tài khoản bị khóa → `created_by` = id đó), đều kèm IP thật. Nhãn `Gia hạn
+phiên` / `Gia hạn phiên thất bại` thêm vào `ACTION_LABEL`. Ước lượng thêm ~8 dòng/người/ngày
+trên prod — chấp nhận được cho tới khi `tab_login_session` (CR-312 P1) thay thế.
+Test: `test/backend/test_client_ip_cr313.py` (3 ca refresh).
+
 ---
 
 ### BM-004 — Giới hạn tần suất đăng nhập dùng chung một xô
@@ -186,6 +209,20 @@ bằng cách gắn middleware vào mà chưa xử lý chuyện IP.
 `_client_ip` sẵn có ở `auth/controller.py:22`. Chọn hướng nào cũng phải xác nhận nginx thật sự
 đặt header đó và **không cho client tự đặt** — nếu không thì đổi xong ai cũng tự khai IP giả để
 thoát giới hạn, tệ hơn hiện tại.
+
+**Cập nhật 08/09/2026 — đã gõ mã trên `main`, chưa commit.** Đã soi cấu hình thật trên VPS:
+nginx (`docker/nginx.prod.conf`) đặt `X-Real-IP = $remote_addr` và `X-Forwarded-For =
+$proxy_add_x_forwarded_for` — tức **NỐI THÊM** vào giá trị client gửi, nên phần tử ĐẦU của
+XFF là thứ client tự đặt được (và `_client_ip` cũ của đăng nhập lấy đúng phần tử đó → dòng
+`login_failed` từng ghi IP giả được). Cloudflared chạy dạng container `cloudflare_tunnel`,
+không mở cổng công khai, nên mọi lượt vào đều qua Cloudflare và `CF-Connecting-IP` là header
+duy nhất client không đặt được. Chọn **không** bật `--proxy-headers` (nó cũng tin XFF), mà
+viết `core/client_ip.py::get_client_ip` dùng chung cho limiter lẫn nhật ký đăng nhập, thứ
+tự tin cậy: `CF-Connecting-IP` → phần tử **CUỐI** của XFF (do nginx nối, không giả được) →
+`request.client.host`. Dấu hiệu hỏng nhìn thấy được: nếu sau deploy nhật ký đăng nhập hiện
+IP `172.x` thì `CF-Connecting-IP` không tới api. **Việc còn lại sau deploy dev:** curl từ
+VPS với `X-Forwarded-For: 9.9.9.9` + mật khẩu sai, dòng `login_failed` phải ghi IP công
+khai của VPS, không phải `9.9.9.9` hay `172.x`. Test: `test_client_ip_cr313.py` (5 ca IP).
 
 ---
 

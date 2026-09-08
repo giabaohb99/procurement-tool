@@ -13,7 +13,7 @@
  * 2. **Nêu đích danh dòng nào thiếu ô nào.** Báo "còn thiếu thông tin" thì người
  *    lập phải mở lần lượt từng dòng để dò.
  * 3. **ĐMH bám sát backend.** Danh sách dưới đây là bản sao của
- *    `TRUONG_BAT_BUOC_DONG` trong `backend/app/modules/purchase_order/service.py`
+ *    `REQUIRED_LINE_FIELDS` trong `backend/app/modules/purchase_order/service.py`
  *    (CR-095). Kiểm ở đây chỉ để báo lỗi sớm và tử tế hơn — backend vẫn là chốt
  *    thật. Sửa một bên thì phải sửa bên kia, kẻo màn cho bấm rồi API mới chặn.
  *    VAT CỐ Ý không nằm trong danh sách: 0 vừa nghĩa "chưa nhập" vừa nghĩa
@@ -169,7 +169,7 @@ export function invalidSurveyRequestKeys(
 /* ------------------------------------------------------------------- ĐMH -- */
 
 /**
- * Bản sao `TRUONG_BAT_BUOC_DONG` của backend, GIỮ NGUYÊN thứ tự và nhãn để câu
+ * Bản sao `REQUIRED_LINE_FIELDS` của backend, GIỮ NGUYÊN thứ tự và nhãn để câu
  * báo lỗi của hai bên đọc giống nhau.
  */
 export const PURCHASE_ORDER_LINE_REQUIRED: RequiredLineField<PurchaseOrderItem>[] = [

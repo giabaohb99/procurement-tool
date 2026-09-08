@@ -730,7 +730,7 @@ buộc phải nhập đó"*.
 
 | Chứng từ | Bắt buộc trên từng dòng | Nguồn của luật |
 |---|---|---|
-| **ĐMH** | Mã hàng · Phân loại · Tên hàng · Tên trên hóa đơn · ĐVT · Kho nhận mặc định · SL yêu cầu · SL đặt · Đơn giá · Ngày yêu cầu có hàng · Ngày dự kiến có hàng *(11 ô)* | `TRUONG_BAT_BUOC_DONG` ở `backend/app/modules/purchase_order/service.py` — cổng **CR-095**, backend chặn thật |
+| **ĐMH** | Mã hàng · Phân loại · Tên hàng · Tên trên hóa đơn · ĐVT · Kho nhận mặc định · SL yêu cầu · SL đặt · Đơn giá · Ngày yêu cầu có hàng · Ngày dự kiến có hàng *(11 ô)* | `REQUIRED_LINE_FIELDS` ở `backend/app/modules/purchase_order/service.py` — cổng **CR-095**, backend chặn thật |
 | **YCMH** | Mã hàng · Số lượng mua · Kho nhận · Ngày cần hàng | Bản `frontend` đang chạy thật. Backend **không kiểm** nội dung ở `submit_pr` |
 | **YCBG** | Phân loại | Như trên; khách chốt **bắt buộc cứng**, bỏ luật "Phân loại HOẶC Chi tiết thông số" của bản v2 |
 

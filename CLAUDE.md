@@ -188,7 +188,7 @@ phải gắn `shared/ui/copy-button.tsx` bên cạnh (xem CR-105).
 ⚠️ **TRƯỜNG BẮT BUỘC của YCMH · YCBG · ĐMH khai MỘT CHỖ:**
 `modules/procurement/utils/required-fields.ts` (CR-107) — vừa là nguồn vẽ dấu sao đỏ, vừa là
 nguồn câu chặn lúc **gửi duyệt** (không chặn lúc lưu nháp). Bộ trường của ĐMH phải khớp
-`TRUONG_BAT_BUOC_DONG` ở `backend/app/modules/purchase_order/service.py` (cổng CR-095); YCMH và
+`REQUIRED_LINE_FIELDS` ở `backend/app/modules/purchase_order/service.py` (cổng CR-095); YCMH và
 YCBG thì backend **không kiểm**, luật chỉ nằm ở giao diện. Đừng gõ `*` thẳng vào chuỗi nhãn —
 ô nhập dùng `shared/ui/required-mark.tsx`, tiêu đề cột dùng đuôi `" *"`
 (`shared/data-table/required-header.ts`, xem `docs/ui/table.md` §1). **VAT cố ý KHÔNG bắt buộc**:
