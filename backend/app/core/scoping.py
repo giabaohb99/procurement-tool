@@ -4,7 +4,7 @@ Mỗi vai trò của user là 1 grant: có quyền hành động + phạm vi ri�
 (cấp bậc own/dept/company/all theo vai trò + chọn cụ thể công ty/phòng ban/nhân sự + loại trừ).
 `apply_scope` = HỢP (OR) điều kiện của mọi grant có quyền `action` trên entity.
 """
-from sqlalchemy import and_, or_, select
+from sqlalchemy import and_, false, or_, select
 
 from app.core.auth import get_perm_profile  # noqa: F401  (re-export tiện dùng)
 
@@ -137,8 +137,18 @@ def _dept_include_cond(model, entity, scopeconf):
     return getattr(model, col).in_(list(inc))
 
 
-def apply_scope(query, model, entity: str, user, profile: dict, action: str = "read"):
-    """Lọc query theo HỢP các grant có quyền `action` trên entity."""
+def scope_condition(model, entity: str, user, profile: dict, action: str = "read"):
+    """ĐIỀU KIỆN phạm vi (chưa gắn vào query nào) = HỢP các grant có `action`.
+
+    Ba giá trị trả về, phân biệt rõ:
+      * `None` — thấy TẤT CẢ, không lọc gì;
+      * `false()` — không grant nào cấp quyền này, không thấy gì;
+      * điều kiện — phạm vi thật.
+
+    Tách khỏi `apply_scope` (bao-CR-313, chép từ nhánh `erp-v2`) cho những chỗ chỉ có
+    điều kiện chứ không có query để lọc — nhật ký thao tác cần "bản ghi này có nằm trong
+    phạm vi không" và "tập id nằm trong phạm vi" để lọc bảng nhật ký bằng subquery.
+    """
     conds = []
     for g in profile.get("grants", []):
         p = g["perms"].get(entity)
@@ -153,8 +163,14 @@ def apply_scope(query, model, entity: str, user, profile: dict, action: str = "r
         ec = _explicit_cond(model, entity, scopeconf)   # thu hẹp: company include + mọi loại trừ
         parts = [c for c in (base, ec) if c is not None]
         if not parts:
-            return query          # grant này thấy tất cả → không lọc
+            return None           # grant này thấy tất cả → không lọc
         conds.append(and_(*parts))
     if not conds:
-        return query.filter(model.id == -1)   # không grant nào cấp quyền này → không thấy gì
-    return query.filter(or_(*conds))
+        return false()            # không grant nào cấp quyền này → không thấy gì
+    return or_(*conds)
+
+
+def apply_scope(query, model, entity: str, user, profile: dict, action: str = "read"):
+    """Lọc query theo HỢP các grant có quyền `action` trên entity."""
+    cond = scope_condition(model, entity, user, profile, action)
+    return query if cond is None else query.filter(cond)
