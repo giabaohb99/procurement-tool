@@ -218,7 +218,7 @@ export function PurchaseOrderPaymentDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] w-[96vw] overflow-y-auto sm:max-w-[900px]">
+      <DialogContent className="max-h-[90dvh] w-[96vw] overflow-y-auto sm:max-w-[900px]">
         <DialogHeader>
           <DialogTitle>
             {noPayables ? 'Tạo yêu cầu thanh toán trước' : 'Tạo yêu cầu thanh toán — chọn hóa đơn'}

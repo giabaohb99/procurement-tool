@@ -32,3 +32,27 @@ if (!globalThis.ResizeObserver) {
     disconnect() {}
   }
 }
+
+// jsdom không có `matchMedia` — mà `useIsMobile` gọi thẳng vào nó, và `DataTable`
+// gọi `useIsMobile` cho chế độ thẻ ở màn hẹp. Thiếu bản giả này thì MỌI test
+// render một bảng đều chết bằng `window.matchMedia is not a function`, kể cả
+// những test chẳng liên quan gì tới bề rộng màn hình.
+//
+// ⚠️ Luôn trả `matches: false` — tức test chạy ở khổ DESKTOP. jsdom không dựng
+// bố cục nên không có "bề rộng thật" để hỏi; chọn một mốc cố định còn hơn để mỗi
+// test đoán một kiểu. Test nào cần khổ hẹp thì tự `vi.stubGlobal('matchMedia',…)`
+// trong chính tệp đó (xem `use-typewriter.test.ts`) — nói rõ ra ngay tại chỗ
+// khẳng định là mình đang kiểm bản mobile.
+if (!window.matchMedia) {
+  window.matchMedia = (query: string) =>
+    ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    }) as MediaQueryList
+}

@@ -146,10 +146,10 @@ export function RoleSidePanel({ roles, selectedId, onSelect }: RoleSidePanelProp
 
       {/*  `flex-1 min-h-0`: danh sách GIÃN đầy chiều cao còn lại của thẻ (thẻ đã cao
            bằng thẻ ma trận bên phải nhờ lưới stretch), cuộn bên trong — không chờ
-           chọn vai trò mới giãn. `max-h-[60vh]` vừa là TRẦN theo khung nhìn (thẻ không
+           chọn vai trò mới giãn. `max-h-[60dvh]` vừa là TRẦN theo khung nhìn (thẻ không
            vượt quá màn hình), vừa CHẶN cột trái tự bơm cao khi CHƯA chọn vai trò (lúc
            đó thẻ ma trận rất thấp, không có gì ghì chiều cao hàng lại). */}
-      <div className="max-h-[60vh] min-h-0 flex-1 space-y-1 overflow-y-auto">
+      <div className="max-h-[60dvh] min-h-0 flex-1 space-y-1 overflow-y-auto">
         {visible.length === 0 && (
           <p className="py-4 text-center text-sm text-muted-foreground">
             Không có vai trò nào khớp.

@@ -54,6 +54,44 @@ văn bản ở Văn thư. Tạo tay ở Văn thư là ra một tờ giấy **kh�
 Hai màn thiết lập dựng bằng **khung CRUD khai báo** (`shared/crud/`), ba màn còn
 lại viết tay vì có nghiệp vụ riêng.
 
+### 3.1. Lịch nghỉ ở khổ điện thoại (duoc-CR-329, 09/09/2026)
+
+Ba chế độ xem của `/hr/leave-calendar` đổi hình dạng khác nhau ở khổ hẹp, và
+đó là **ba vai khác nhau** chứ không phải ba bản thu nhỏ của cùng một thứ:
+
+| Chế độ | Khổ rộng | Khổ hẹp | Trả lời câu |
+|---|---|---|---|
+| Tháng | chip tên trong ô | **vạch ngang xếp chồng** (một vạch một người: xanh = đã duyệt ở trên, vàng = chờ duyệt ở dưới), cả ô là một nút | *tháng này ngày nào đông người nghỉ* |
+| Tuần | hàng ngang, nhãn ngày một cột | hàng ngang, nhãn ngày + số đếm ở dòng trên, chip tên xuống dòng dưới | *tuần này ai nghỉ* |
+| Ngày | bảng 7 cột | danh sách **thẻ** (`LeaveRequestCard`), ô lọc dọn vào tờ trượt «Bộ lọc» | *hôm đó ai nghỉ, nghỉ mấy ngày* |
+
+- ⚠️ **Chế độ tháng ở khổ hẹp KHÔNG có tên người — cố ý.** Ô rộng ~48px, chip
+  tên cắt còn ba ký tự («Deg», «Phạ») thì tốn trọn chỗ mà không nói được ai.
+  Đường xem tên là **đổi sang Tuần** hoặc **chạm vào ô** để mở chế độ Ngày.
+  Đã dựng thêm một **bản liệt kê dọc** dưới lưới để bù, rồi **bỏ** cùng ngày:
+  một tháng 21 lượt nghỉ ra 21 hàng dài hơn 2000px và nói lại gần đúng thứ chế
+  độ Tuần đã bày sẵn.
+- ⚠️ Ngưỡng đổi hình dạng tính trên **bề rộng ĐO ĐƯỢC của lưới** (`< 92px` một
+  ô), không trên bề rộng màn hình: máy 820px với menu trái mở chỉ còn 75px một
+  ô — hỏng y hệt điện thoại nhưng không ai gọi nó là điện thoại.
+- Nhãn khoảng đang xem ở khổ hẹp **là nút mở bảng chọn tháng/năm**
+  (`LeaveCalendarMonthPicker`), gộp ba thứ mà khổ rộng bày rời. Hàng đầu xếp
+  *trái là "đang ở đâu", phải là "đi đâu"* (**Hôm nay** + cặp mũi tên).
+- **Lối bày lưới tháng theo Google Calendar** (duoc-CR-330): số ngày canh giữa
+  đầu ô · không tô nền cuối tuần / ngoài tháng (chỉ làm nhạt chữ) · ngày lễ là
+  chip đầu tiên trong ô · ngày 1 kèm tên tháng («1 thg 10»). Riêng **nền hồng
+  của ngày lễ thì giữ** — với Google đó chỉ là một sự kiện, với bảng công nó là
+  cả công ty nghỉ.
+- ⚠️ **Số chip bày được trong một ô là ĐO, không đặt cứng**
+  (`utils/month-cell-lines.ts`): ô cao ~96px trên màn 1440×900 (3 chip) nhưng
+  chỉ ~79px trên laptop 1280×800 (2 chip). Dòng «+N người nữa» **chiếm chỗ của
+  một chip** chứ không cộng thêm — vẽ đủ chip rồi thêm dòng đó là nó bị đường kẻ
+  ô cắt ngang, mà nó là lối duy nhất đọc tên những người bị giấu.
+- ⚠️ Bộ chọn **Ngày · Tuần · Tháng** ở khổ hẹp dựng kiểu **cấp hai** — chữ trần
+  + gạch chân, không khung không nền xanh. Dải tab chuyển màn ngay phía trên đã
+  là nút xanh nền đặc; hai dải cùng kiểu thì đọc thành cùng một cấp và không ai
+  biết cái nào chuyển màn, cái nào đổi cách nhìn.
+
 ## 4. Vòng đời một tờ đơn
 
 ```

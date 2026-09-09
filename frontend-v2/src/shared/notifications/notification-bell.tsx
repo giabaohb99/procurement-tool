@@ -81,7 +81,7 @@ export function NotificationBell() {
           </Tabs>
         </div>
 
-        <div className="max-h-[58vh] overflow-y-auto">
+        <div className="max-h-[58dvh] overflow-y-auto">
           {items.length === 0 && alertItems.length === 0 && (
             <p className="px-3 py-8 text-center text-sm text-muted-foreground">
               {tab === 'unread' ? 'Không có thông báo chưa đọc.' : 'Không có thông báo nào.'}

@@ -39,14 +39,17 @@ export function ModuleLayout() {
     // nhớ trạng thái vào cookie — không cần tự quản lý state.
     // `--sidebar-width` ghi đè mặc định 16rem bằng bề rộng người dùng đã kéo.
     <SidebarProvider
-      // `h-svh` + `overflow-hidden`: khóa cả khung đúng một màn hình để phần
+      // `h-dvh` + `overflow-hidden`: khóa cả khung đúng một màn hình để phần
       // cuộn nằm TRONG `<main>` bên dưới. Thiếu nó thì khung của shadcn chỉ có
-      // `min-h-svh` — trang dài làm khung dài theo, `overflow-auto` của `main`
+      // `min-h-dvh` — trang dài làm khung dài theo, `overflow-auto` của `main`
       // không bao giờ kích hoạt và **cửa sổ** mới là chỗ cuộn. Hệ quả: mọi
       // `sticky top-0` bên trong `main` chết lặng (trình duyệt neo chúng vào
       // `main`, mà `main` thì không cuộn) — đó là lý do dải tiêu đề trang chi
       // tiết vẫn trôi lên mất.
-      className="h-svh overflow-hidden"
+      //  `dvh` chứ không `svh`/`vh`: `vh` (= khung nhìn LỚN) đẩy đáy khung xuống
+      //  dưới thanh công cụ iOS, còn `svh` (= khung nhìn NHỎ) thì lúc thanh công
+      //  cụ thu lại để hở một dải trống dưới đáy. `dvh` bám đúng phần đang thấy.
+      className="h-dvh overflow-hidden"
       style={{ '--sidebar-width': `${width}px` } as CSSProperties}
     >
       <ModuleSidebar module={activeModule} onResizeWidth={setWidth} />

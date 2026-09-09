@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { LeaveCalendarMonthGrid } from './leave-calendar-month-grid'
 import { LEAVE_SESSION, LEAVE_STATUS, LEAVE_UNIT, type Holiday, type LeaveRequest } from '../types/leave'
@@ -72,28 +72,54 @@ describe('LeaveCalendarMonthGrid', () => {
     expect(link).toHaveAttribute('href', '/hr/leave-requests/1')
   })
 
-  it('quá BA người thì gộp phần dư thành nút "+N người nữa"', () => {
-    //  Không cắt thì một ngày cả phòng nghỉ sẽ đẩy ô cao vọt và phá lưới 6 hàng.
+  it('tràn thì dòng "+N người nữa" CHIẾM CHỖ của một chip, không cộng thêm', () => {
+    //  Ô cao ~95px chứa bốn dòng: số ngày + ba chip. Vẽ đủ ba chip RỒI thêm dòng
+    //  "+N" là năm dòng — dòng cuối bị đường kẻ ô cắt ngang, mà nó chính là lối
+    //  duy nhất đọc tên những người bị giấu.
     const many = Array.from({ length: 7 }, (_, i) =>
       request({ id: i + 1, employee_name: `Người ${i + 1}` }),
     )
     renderGrid((iso) => (iso === '2026-12-14' ? many : []))
 
-    expect(screen.getAllByRole('link')).toHaveLength(3)
-    expect(screen.getByRole('button', { name: '+4 người nữa' })).toBeInTheDocument()
+    expect(screen.getAllByRole('link')).toHaveLength(2)
+    expect(screen.getByRole('button', { name: '+5 người nữa' })).toBeInTheDocument()
+  })
+
+  it('ngày lễ cũng ăn một dòng nên bày ít chip hơn', () => {
+    //  Tên ngày lễ là chip đầu tiên trong ô (lối Google Calendar). Không trừ nó
+    //  ra thì ngày lễ có người nghỉ luôn tràn đúng một dòng.
+    const holiday: Holiday = {
+      id: 1,
+      company_id: 0,
+      date: '2026-12-14',
+      name: 'Nghỉ bù',
+      is_recurring: false,
+      is_active: true,
+    }
+    const many = Array.from({ length: 4 }, (_, i) => request({ id: i + 1 }))
+    renderGrid((iso) => (iso === '2026-12-14' ? many : []), [holiday])
+
+    expect(screen.getAllByRole('link')).toHaveLength(1)
+    expect(screen.getByRole('button', { name: '+3 người nữa' })).toBeInTheDocument()
   })
 
   it('"+N người nữa" BẤM ĐƯỢC và mở đúng ngày đó', () => {
     //  Cắt bớt mà không chừa đường xem tiếp thì màn hình biết có 7 người nghỉ
-    //  nhưng người dùng không bao giờ đọc được tên bốn người còn lại.
+    //  nhưng người dùng không bao giờ đọc được tên năm người còn lại.
     const picked: Date[] = []
     const many = Array.from({ length: 7 }, (_, i) => request({ id: i + 1 }))
     renderGrid((iso) => (iso === '2026-12-14' ? many : []), [], undefined, (d) => picked.push(d))
 
-    screen.getByRole('button', { name: '+4 người nữa' }).click()
+    screen.getByRole('button', { name: '+5 người nữa' }).click()
     expect(picked).toHaveLength(1)
     expect(picked[0].getDate()).toBe(14)
     expect(picked[0].getMonth()).toBe(11)
+  })
+
+  it('ngày 1 kèm TÊN THÁNG — hàng cuối bày 1…11 của tháng sau, chữ mờ thôi chưa đủ', () => {
+    renderGrid(() => [])
+    expect(screen.getByRole('button', { name: '1 thg 12' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '1 thg 1' })).toBeInTheDocument()
   })
 
   it('bấm SỐ NGÀY cũng mở chế độ ngày', () => {
@@ -150,5 +176,113 @@ describe('LeaveCalendarMonthGrid', () => {
     const { container } = renderGrid(() => [], [], new Date(2027, 1, 1))
     const grid = container.querySelector('.grid-rows-6')
     expect(grid?.children).toHaveLength(42)
+  })
+})
+
+/**
+ * Khổ điện thoại — ô rộng ~48px nên lưới đổi hẳn hình dạng, xem
+ * `LeaveCalendarMonthCellCompact`.
+ *
+ * `setup.ts` cố định `matchMedia` ở khổ desktop cho cả bộ test, nên khổ hẹp phải
+ * nói rõ ra ngay tại đây.
+ */
+describe('LeaveCalendarMonthGrid — khổ điện thoại', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  function renderMobileGrid(
+    requestsOn: (iso: string) => LeaveRequest[],
+    holidays: Holiday[] = [],
+    onPickDay: (d: Date) => void = () => {},
+  ) {
+    vi.stubGlobal('matchMedia', (q: string) => ({
+      matches: true,
+      media: q,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }))
+    return renderGrid(requestsOn, holidays, new Date(2026, 11, 1), onPickDay)
+  }
+
+  it('KHÔNG kê tên người — ô 48px chỉ cắt được ba ký tự, không nói được ai nghỉ', () => {
+    const items = [
+      request({ id: 1, employee_name: 'Nguyễn Văn A' }),
+      request({ id: 2, employee_name: 'Trần Thị B' }),
+    ]
+    renderMobileGrid((iso) => (iso === '2026-12-14' ? items : []))
+
+    expect(screen.queryAllByRole('link')).toHaveLength(0)
+  })
+
+  it('nói ĐỦ SỐ và tách đã duyệt / chờ duyệt thành lời — hàng chấm là hình, không đọc được', () => {
+    //  Ô khổ hẹp chỉ vẽ chấm (lối Google Calendar trên điện thoại). Hai màu là
+    //  thứ duy nhất phân biệt "chắc chắn nghỉ" với "có thể nghỉ", mà người dùng
+    //  trình đọc màn hình không thấy màu — thiếu câu này là họ mất sạch.
+    const items = [
+      request({ id: 1, status: LEAVE_STATUS.APPROVED }),
+      request({ id: 2, status: LEAVE_STATUS.APPROVED }),
+      request({ id: 3, status: LEAVE_STATUS.APPROVED }),
+      request({ id: 4, status: LEAVE_STATUS.PENDING }),
+    ]
+    renderMobileGrid((iso) => (iso === '2026-12-14' ? items : []))
+
+    expect(
+      screen.getByRole('button', {
+        name: 'Ngày 14/12 — 4 người nghỉ (3 đã duyệt, 1 chờ duyệt)',
+      }),
+    ).toBeInTheDocument()
+  })
+
+  it('CẢ Ô là một nút — ngón tay không nhắm được vào con số 12px', () => {
+    const picked: Date[] = []
+    renderMobileGrid(() => [], [], (d) => picked.push(d))
+
+    screen.getByRole('button', { name: /Ngày 25\/12/ }).click()
+    expect(picked).toHaveLength(1)
+    expect(picked[0].getDate()).toBe(25)
+  })
+
+  it('MÀN RỘNG nhưng LƯỚI hẹp cũng đổi sang ô đếm — menu trái ăn mất 256px', () => {
+    //  Máy 820px với menu trái mở: lưới chỉ còn 530px, ô 75px, tên cắt thành
+    //  «Dego …» y hệt trên điện thoại. `matchMedia` ở đây vẫn nói "khổ rộng"
+    //  (mặc định của `setup.ts`) — chỉ phép đo bắt được ca này.
+    class NarrowResizeObserver {
+      constructor(private readonly callback: ResizeObserverCallback) {}
+      observe() {
+        this.callback(
+          [{ contentRect: { width: 530 } } as ResizeObserverEntry],
+          this as unknown as ResizeObserver,
+        )
+      }
+      unobserve() {}
+      disconnect() {}
+    }
+    vi.stubGlobal('ResizeObserver', NarrowResizeObserver)
+
+    renderGrid(
+      (iso) => (iso === '2026-12-14' ? [request({ employee_name: 'Nguyễn Văn A' })] : []),
+      [],
+      new Date(2026, 11, 1),
+    )
+
+    expect(screen.queryAllByRole('link')).toHaveLength(0)
+    expect(screen.getByRole('button', { name: /Ngày 14\/12 — 1 người nghỉ/ })).toBeInTheDocument()
+  })
+
+  it('tên ngày lễ nói được thành LỜI dù ô không còn chỗ hiện chữ', () => {
+    //  Ô khổ hẹp chỉ tô nền hồng + một chấm; thiếu tên trong `aria-label` thì
+    //  người dùng trình đọc màn hình mất hẳn thông tin ngày lễ.
+    const holiday: Holiday = {
+      id: 1,
+      company_id: 0,
+      date: '2026-12-25',
+      name: 'Nghỉ bù cuối năm',
+      is_recurring: false,
+      is_active: true,
+    }
+    renderMobileGrid(() => [], [holiday])
+
+    expect(
+      screen.getByRole('button', { name: /Ngày 25\/12 — Nghỉ bù cuối năm/ }),
+    ).toBeInTheDocument()
   })
 })

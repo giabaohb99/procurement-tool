@@ -1,7 +1,7 @@
 import { ArrowRightLeft, CalendarOff, CircleCheck, CircleX, Coins, Hash } from 'lucide-react'
 
 import { appRoutes } from '@/shared/constants/app-routes'
-import type { CrudConfig } from '@/shared/crud'
+import { CrudRecordCard, type CrudConfig } from '@/shared/crud'
 import { Badge } from '@/shared/ui/badge'
 import { SeniorityTierCard } from '../components/seniority-tier-card'
 import {
@@ -62,6 +62,34 @@ const CARRY_EXPIRE_OPTIONS = [
   })),
 ]
 
+/**
+ * Huy hiệu mô tả nhanh một loại nghỉ — dùng chung cho **thẻ danh tính** ở trang
+ * chi tiết và **thẻ ở khổ điện thoại**. Cùng một bản ghi thì hai màn phải nói
+ * cùng một câu; chép hai bộ là hai chỗ trôi khác nhau sau vài lần sửa.
+ */
+const leaveTypeChips = (t: LeaveType) => [
+  { icon: Hash, text: t.code, tone: 'code' as const },
+  ...(t.counts_balance
+    ? [{ icon: Coins, text: `Quỹ ${t.annual_quota_days} ngày/năm`, tone: 'ok' as const }]
+    : [{ icon: CalendarOff, text: 'Không trừ quỹ phép', tone: 'muted' as const }]),
+  //  Chỉ hiện khi số dư ĐI ĐÂU ĐÓ. Bày cả «Hết năm là mất» thì mọi loại đều có
+  //  thêm một huy hiệu nói đúng thứ mặc định — nhiễu, không phải thông tin.
+  ...(t.year_end_mode !== YEAR_END_MODE.DROP
+    ? [
+        {
+          icon: ArrowRightLeft,
+          text: YEAR_END_MODE_LABELS[t.year_end_mode] ?? '',
+          tone: 'muted' as const,
+        },
+      ]
+    : []),
+  {
+    icon: t.is_active ? CircleCheck : CircleX,
+    text: t.is_active ? 'Đang dùng' : 'Ngừng / Ẩn',
+    tone: t.is_active ? ('ok' as const) : ('muted' as const),
+  },
+]
+
 export const LEAVE_TYPE_CRUD_CONFIG: CrudConfig<LeaveType> = {
   entity: 'leave_type',
   title: 'Loại nghỉ',
@@ -89,28 +117,24 @@ export const LEAVE_TYPE_CRUD_CONFIG: CrudConfig<LeaveType> = {
   deleteWarning:
     'Loại nghỉ đang có đơn hoặc đã cấp quỹ thì backend chặn xóa. Muốn ẩn khỏi ô chọn ' +
     'mà giữ dữ liệu cũ thì bỏ tick «Đang dùng».',
-  chips: (t) => [
-    { icon: Hash, text: t.code, tone: 'code' as const },
-    ...(t.counts_balance
-      ? [{ icon: Coins, text: `Quỹ ${t.annual_quota_days} ngày/năm`, tone: 'ok' as const }]
-      : [{ icon: CalendarOff, text: 'Không trừ quỹ phép', tone: 'muted' as const }]),
-    //  Chỉ hiện khi số dư ĐI ĐÂU ĐÓ. Bày cả «Hết năm là mất» thì mọi loại đều
-    //  có thêm một huy hiệu nói đúng thứ mặc định — nhiễu, không phải thông tin.
-    ...(t.year_end_mode !== YEAR_END_MODE.DROP
-      ? [
-          {
-            icon: ArrowRightLeft,
-            text: YEAR_END_MODE_LABELS[t.year_end_mode] ?? '',
-            tone: 'muted' as const,
-          },
-        ]
-      : []),
-    {
-      icon: t.is_active ? CircleCheck : CircleX,
-      text: t.is_active ? 'Đang dùng' : 'Ngừng / Ẩn',
-      tone: t.is_active ? ('ok' as const) : ('muted' as const),
-    },
-  ],
+  chips: leaveTypeChips,
+  //  Khổ hẹp: thẻ thay bảng — bảng này bảy cột, trên máy 393px chỉ thấy hai cột
+  //  đầu (Mã · Tên) nên mọi LUẬT của loại nghỉ nằm sau một thao tác cuộn ngang.
+  mobileCard: (t) => (
+    <CrudRecordCard
+      title={t.name}
+      subtitle={
+        <>
+          {t.is_paid ? 'Hưởng lương' : 'Không hưởng lương'}
+          {' · '}
+          {t.max_days_per_request
+            ? `Tối đa ${t.max_days_per_request} ngày/lần`
+            : 'Không giới hạn số ngày'}
+        </>
+      }
+      chips={leaveTypeChips(t)}
+    />
+  ),
   columns: [
     {
       key: 'code',

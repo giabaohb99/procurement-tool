@@ -1,15 +1,16 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { Button } from '@/shared/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/ui/select'
-import { cn } from '@/shared/utils/cn'
-import { rangeLabel, startOfMonth, type CalendarMode } from '../utils/calendar-grid'
+  buildYearOptions,
+  rangeLabel,
+  startOfMonth,
+  type CalendarMode,
+} from '../utils/calendar-grid'
+import { LeaveCalendarModeSwitch } from './leave-calendar-mode-switch'
+import { LeaveCalendarMonthPicker } from './leave-calendar-month-picker'
 
 interface LeaveCalendarToolbarProps {
   anchor: Date
@@ -18,15 +19,6 @@ interface LeaveCalendarToolbarProps {
   onShift: (step: number) => void
   onJump: (date: Date) => void
 }
-
-const MODES: { value: CalendarMode; label: string }[] = [
-  { value: 'day', label: 'Ngày' },
-  { value: 'week', label: 'Tuần' },
-  { value: 'month', label: 'Tháng' },
-]
-
-/** Bao nhiêu năm bày ra ô chọn, tính từ năm sau lùi về. */
-const YEAR_SPAN = 3
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => i)
 
@@ -42,6 +34,20 @@ const MONTHS = Array.from({ length: 12 }, (_, i) => i)
  * ⚠️ Ô chọn **Tháng và Năm hiện ở cả ba chế độ**, không riêng chế độ tháng. Nút
  * mũi tên ở chế độ ngày dịch từng ngày một — muốn xem một ngày của bốn tháng sau
  * thì phải bấm hơn trăm lần.
+ *
+ * ⚠️ **Khổ hẹp dựng HAI HÀNG, không phải bản khổ rộng cho xuống dòng.** Để
+ * `flex-wrap` tự lo thì trên máy 393px cả cụm vỡ thành **ba dòng** (đo trên bản
+ * chạy) và đẩy ô lịch đầu tiên xuống quá nửa màn hình. Hai hàng ở đây là:
+ *
+ * · hàng 1 — `[‹] [Tháng 9/2026 ▾] [›]`: nhãn khoảng NUỐT LUÔN hai ô chọn
+ *   tháng/năm, xem `LeaveCalendarMonthPicker`;
+ * · hàng 2 — bộ chọn *Ngày · Tuần · Tháng* trải hết hàng, nút «Hôm nay» đứng
+ *   cuối.
+ *
+ * ⚠️ Rẽ bằng `useIsMobile` chứ không bằng hai khối `md:hidden` / `hidden md:flex`:
+ * hai khối nghĩa là **hai nút «Tháng», hai nút «Lùi lại»** cùng nằm trong cây
+ * DOM: trình đọc màn hình đọc cả sáu chế độ xem, và mọi bài kiểm tìm nút theo
+ * tên đều vớ phải hai kết quả.
  */
 export function LeaveCalendarToolbar({
   anchor,
@@ -50,8 +56,9 @@ export function LeaveCalendarToolbar({
   onShift,
   onJump,
 }: LeaveCalendarToolbarProps) {
-  const currentYear = new Date().getFullYear()
-  const years = Array.from({ length: YEAR_SPAN + 2 }, (_, i) => currentYear + 1 - i)
+  const isMobile = useIsMobile()
+  const years = buildYearOptions(new Date().getFullYear())
+  const label = rangeLabel(anchor, mode)
 
   //  Nhảy tới tháng/năm thì về NGÀY 1 của tháng đó. Giữ nguyên ngày trong tháng
   //  sẽ tràn khi tháng đích ngắn hơn (31/01 sang tháng 2), xem `shiftAnchor`.
@@ -59,6 +66,63 @@ export function LeaveCalendarToolbar({
     const d = startOfMonth(anchor)
     d.setFullYear(year, month, 1)
     onJump(d)
+  }
+
+  if (isMobile) {
+    return (
+      <div className="flex flex-col gap-2">
+        {/*  Hàng 1 — **trái là "đang ở đâu", phải là "đi đâu"**. Nhãn khoảng
+             đóng vai tiêu đề (bấm vào để nhảy tháng/năm), còn hai mũi tên dính
+             liền thành MỘT khối ở mép phải, cạnh nút «Hôm nay».
+
+             ⚠️ Không cho khối nào trải hết hàng nữa. Bản trước xếp
+             `[‹] [nhãn trải hết hàng] [›]`: ba khung viền rời nhau cách đều,
+             mắt không nhóm được cái nào với cái nào, và khung giữa rộng gấp đôi
+             chữ bên trong nên đọc ra như một ô nhập bỏ trống. */}
+        <div className="flex items-center gap-1">
+          <LeaveCalendarMonthPicker
+            anchor={anchor}
+            label={label}
+            onJump={onJump}
+            className="flex-1"
+          />
+
+          <Button
+            variant="ghost"
+            className="h-9 shrink-0 px-2.5 text-sm"
+            onClick={() => onJump(new Date())}
+          >
+            Hôm nay
+          </Button>
+
+          <div className="flex shrink-0 items-center rounded-md border">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="rounded-r-none"
+              aria-label="Lùi lại"
+              onClick={() => onShift(-1)}
+            >
+              <ChevronLeft className="size-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="rounded-l-none border-l"
+              aria-label="Tiến tới"
+              onClick={() => onShift(1)}
+            >
+              <ChevronRight className="size-4" />
+            </Button>
+          </div>
+        </div>
+
+        {/*  Hàng 2 — chỉ còn bộ chọn chế độ, kiểu CẤP HAI (chữ + gạch chân):
+             dải tab chuyển màn ngay phía trên đã là nút xanh nền đặc, thêm một
+             dải nền đặc nữa là hai cấp đọc thành một. Xem `LeaveCalendarModeSwitch`. */}
+        <LeaveCalendarModeSwitch mode={mode} onModeChange={onModeChange} variant="underline" />
+      </div>
+    )
   }
 
   return (
@@ -97,7 +161,7 @@ export function LeaveCalendarToolbar({
 
       {/*  Nhãn khoảng đang xem — cỡ chữ lớn hơn phần còn lại vì nó là câu trả
            lời cho "tôi đang nhìn lúc nào", còn mấy nút kia chỉ là cách đổi nó. */}
-      <span className="text-base font-semibold tabular-nums">{rangeLabel(anchor, mode)}</span>
+      <span className="text-base font-semibold tabular-nums">{label}</span>
 
       {/*  Đẩy hai cụm còn lại sang phải: bên trái là "đang ở đâu", bên phải là
            "muốn nhìn thế nào" — hai việc khác nhau, tách xa cho khỏi lẫn. */}
@@ -136,31 +200,7 @@ export function LeaveCalendarToolbar({
           </Select>
         </div>
 
-        {/*  Nhóm chế độ tự dựng thay vì `Tabs`: `TabsList` có nền `bg-muted` rất
-             nhạt nên trên nền trắng nó đọc ra như ba chữ trần, không ra một bộ
-             chọn. Ở đây viền rõ + ô đang chọn tô nền đặc. */}
-        <div
-          className="flex items-center rounded-md border p-0.5"
-          role="group"
-          aria-label="Chế độ xem lịch"
-        >
-          {MODES.map((m) => (
-            <button
-              key={m.value}
-              type="button"
-              aria-pressed={mode === m.value}
-              onClick={() => onModeChange(m.value)}
-              className={cn(
-                'rounded-sm px-3 py-1 text-sm font-medium transition-colors',
-                mode === m.value
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-accent hover:text-foreground',
-              )}
-            >
-              {m.label}
-            </button>
-          ))}
-        </div>
+        <LeaveCalendarModeSwitch mode={mode} onModeChange={onModeChange} />
       </div>
     </div>
   )

@@ -1,4 +1,3 @@
-import { Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -6,6 +5,7 @@ import { appConfig } from '@/core/config/app-config'
 import {
   ConditionalFilter,
   FilterProvider,
+  useFilterContext,
   useFilterQuery,
 } from '@/shared/conditional-filter'
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -13,7 +13,9 @@ import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import type { ListParams } from '@/shared/types/api'
-import { Input } from '@/shared/ui/input'
+import { AdvancedFilterSection } from '@/shared/ui/advanced-filter-section'
+import { QuickFilterField, QuickFilterSheet } from '@/shared/ui/quick-filter-sheet'
+import { SearchField } from '@/shared/ui/search-field'
 import {
   Select,
   SelectContent,
@@ -24,6 +26,8 @@ import {
 import { LEAVE_REQUEST_FILTER_FIELDS } from '../config/leave-request-filter-fields'
 import { useLeaveRequests, useLeaveTypes } from '../hooks/use-leave'
 import { LEAVE_STATUS, LEAVE_STATUS_LABELS, type LeaveRequest } from '../types/leave'
+import { LEAVE_TOOLBAR_STICKY } from '../utils/leave-list-sticky'
+import { LeaveRequestCard } from './leave-request-card'
 import {
   codeColumn,
   dateColumns,
@@ -82,6 +86,7 @@ function LeaveMyRequestsContent() {
   //  Lọc ở BACKEND, không `applyClientFilter`: bảng này có phân trang, lọc trên
   //  trang đang mở là ra kết quả sai.
   const { queryParams, queryKey } = useFilterQuery()
+  const filter = useFilterContext()
 
   const { data: typeData } = useLeaveTypes()
 
@@ -108,6 +113,40 @@ function LeaveMyRequestsContent() {
 
   const { data, isLoading, isError } = useLeaveRequests(params)
 
+  //  Hai ô chọn dựng hai lần (hàng ngang ở màn rộng · tờ trượt ở màn hẹp);
+  //  state nằm trên URL nên hai bản luôn nói cùng một giá trị.
+  const typeSelect = (
+    <Select value={leaveTypeId} onValueChange={setLeaveTypeId}>
+      <SelectTrigger className="w-full md:w-44">
+        <SelectValue placeholder="Loại nghỉ" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={ALL}>Tất cả loại nghỉ</SelectItem>
+        {(typeData?.items ?? []).map((t) => (
+          <SelectItem key={t.id} value={String(t.id)}>
+            {t.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+
+  const statusSelect = (
+    <Select value={status} onValueChange={setStatus}>
+      <SelectTrigger className="w-full md:w-40">
+        <SelectValue placeholder="Trạng thái" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={ALL}>Mọi trạng thái</SelectItem>
+        {Object.values(LEAVE_STATUS).map((s) => (
+          <SelectItem key={s} value={String(s)}>
+            {LEAVE_STATUS_LABELS[s]}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+
   const columns = useMemo<DataTableColumn<LeaveRequest>[]>(
     () => [
       codeColumn(),
@@ -129,8 +168,12 @@ function LeaveMyRequestsContent() {
       isLoading={isLoading}
       isError={isError}
       emptyMessage="Chưa có đơn nghỉ phép nào."
+      toolbarClassName={LEAVE_TOOLBAR_STICKY}
       storageKey="hr.leave-requests"
       onRowClick={(r) => navigate(appRoutes.hr.leaveRequestDetail(r.id))}
+      //  Màn hẹp: thẻ thay bảng. Giữ huy hiệu trạng thái — đây là câu hỏi đầu
+      //  tiên của người nộp («đơn của tôi tới đâu rồi»).
+      mobileCard={(r) => <LeaveRequestCard request={r} />}
       pagination={{
         page,
         pageSize,
@@ -141,45 +184,40 @@ function LeaveMyRequestsContent() {
       }}
       toolbar={
         <>
-          <div className="relative min-w-56 flex-1 md:max-w-xs">
-            <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              className="pl-9"
-              placeholder="Tìm theo số đơn hoặc lý do…"
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-            />
+          {/*  Khổ hẹp: nút «Bộ lọc» nằm lồng trong ô tìm, hai ô chọn dọn vào tờ
+               trượt — cùng lý do và cùng khuôn với `leave-rows-filter-bar.tsx`,
+               đọc ghi chú ở đầu tệp đó. */}
+          <SearchField
+            value={keyword}
+            onChange={setKeyword}
+            placeholder="Tìm theo số đơn hoặc lý do…"
+            className="md:min-w-56 md:max-w-xs"
+          />
+
+          {/*  Nút lọc đứng riêng, giữ chữ — xem ghi chú ở
+               `leave-rows-filter-bar.tsx`. `activeCount` cộng cả ô lọc nhanh lẫn
+               điều kiện nâng cao vì cả hai nằm sau đúng nút này. */}
+          <QuickFilterSheet
+            activeCount={
+              (leaveTypeId !== ALL ? 1 : 0) + (status !== ALL ? 1 : 0) + filter.activeCount
+            }
+            onClearAll={() => {
+              setLeaveTypeId(ALL)
+              setStatus(ALL)
+              filter.reset()
+            }}
+            onApply={filter.apply}
+          >
+            <QuickFilterField label="Loại nghỉ">{typeSelect}</QuickFilterField>
+            <QuickFilterField label="Trạng thái">{statusSelect}</QuickFilterField>
+            <AdvancedFilterSection />
+          </QuickFilterSheet>
+
+          <div className="hidden items-center gap-3 md:flex md:flex-wrap">
+            {typeSelect}
+            {statusSelect}
+            <ConditionalFilter />
           </div>
-
-          <Select value={leaveTypeId} onValueChange={setLeaveTypeId}>
-            <SelectTrigger className="w-44">
-              <SelectValue placeholder="Loại nghỉ" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL}>Tất cả loại nghỉ</SelectItem>
-              {(typeData?.items ?? []).map((t) => (
-                <SelectItem key={t.id} value={String(t.id)}>
-                  {t.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={status} onValueChange={setStatus}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="Trạng thái" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL}>Mọi trạng thái</SelectItem>
-              {Object.values(LEAVE_STATUS).map((s) => (
-                <SelectItem key={s} value={String(s)}>
-                  {LEAVE_STATUS_LABELS[s]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <ConditionalFilter />
         </>
       }
     />

@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { RotateCw } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { Button } from '@/shared/ui/button'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { Table, TableBody, TableCell, TableHeader, TableRow } from '@/shared/ui/table'
@@ -10,6 +11,7 @@ import { columnColorStyle } from './column-color-palette'
 import { ColumnDragOverlay } from './column-drag-overlay'
 import { ColumnHeaderCell } from './column-header-cell'
 import { ColumnVisibilityMenu } from './column-visibility-menu'
+import { DataTableMobileCards } from './data-table-mobile-cards'
 import { DataTablePagination } from './data-table-pagination'
 import { FilterResetButton } from './filter-reset-button'
 import { measureColumnContentWidth } from './measure-column-width'
@@ -148,6 +150,15 @@ export interface DataTableProps<T> {
   /** Nội dung chèn bên TRÁI menu "Cột" (ô tìm kiếm, select, nút Bộ lọc…). */
   toolbar?: ReactNode
   /**
+   * Class thêm cho DẢI thanh công cụ (khối bọc `toolbar` + nhóm nút bên phải).
+   *
+   * Có để trang ghim được dải này lên đầu khung cuộn (`sticky top-… bg-card`)
+   * khi ở khổ điện thoại — lúc đó bảng biến thành danh sách thẻ dài và cả trang
+   * cuộn, nên ô tìm kiếm sẽ trôi mất nếu không ghim. Trang phải tự khai vì mốc
+   * `top` tùy thuộc thứ đang ghim phía trên nó ở CHÍNH trang đó.
+   */
+  toolbarClassName?: string
+  /**
    * Việc chạy khi bấm **Xóa lọc**. Bỏ trống = nút tự xóa mọi param lọc trên URL
    * (đúng cho mọi màn danh sách, vì state bộ lọc nằm trên URL). Chỉ truyền vào
    * khi bảng giữ bộ lọc bằng state cục bộ — bảng con trong trang chi tiết.
@@ -182,6 +193,20 @@ export interface DataTableProps<T> {
    * `<PageContainer fill>`.
    */
   fillHeight?: boolean
+  /**
+   * Nội dung MỘT THẺ ở chế độ màn hẹp (< 768px). Khai prop này là bật chế độ
+   * đó: dưới ngưỡng mobile, bảng biến mất và danh sách vẽ thành thẻ xếp dọc.
+   *
+   * ⚠️ **Tự nguyện, không mặc định.** Màn nào chưa khai thì vẫn ra bảng cuộn
+   * ngang như cũ — đổi hình dạng cho cả hệ bằng một prop mặc định là 40+ màn
+   * đồng loạt đổi mà không ai xem lại từng cái. Dời dần từng màn.
+   *
+   * ⚠️ Thẻ KHÔNG đọc `columns`: cột khai bề rộng, thứ tự, ghim — toàn thứ chỉ
+   * có nghĩa trong lưới. Ở thẻ, người dựng tự chọn bày trường nào và bày theo
+   * thứ bậc nào; suy máy móc từ danh sách cột chỉ ra một cái bảng dựng đứng.
+   * Cũng vì thế menu «Cột» tự ẩn ở chế độ này — không còn cột nào để ẩn/hiện.
+   */
+  mobileCard?: (row: T) => ReactNode
 }
 
 /**
@@ -204,6 +229,7 @@ export function DataTable<T>({
   onRowHover,
   onRefresh,
   toolbar,
+  toolbarClassName,
   onResetFilters,
   filtersActive,
   keepFilterParams,
@@ -214,9 +240,13 @@ export function DataTable<T>({
   sortDir,
   onSortChange,
   fillHeight = false,
+  mobileCard,
 }: DataTableProps<T>) {
   const queryClient = useQueryClient()
   const [refreshing, setRefreshing] = useState(false)
+  //  Chỉ đúng khi màn khai `mobileCard`; không khai thì hook vẫn chạy nhưng
+  //  không ai đọc kết quả — rẻ hơn nhiều so với gọi hook có điều kiện (cấm).
+  const asCards = useIsMobile() && !!mobileCard
 
   /**
    * Tải lại dữ liệu. Cờ `refreshing` do CHÍNH nút giữ (không dùng `isFetching`
@@ -381,8 +411,10 @@ export function DataTable<T>({
 
   return (
     <div className={cn('flex flex-col', fillHeight && 'min-h-0 flex-1')}>
-      {(toolbar || columns.some((c) => c.hideable !== false)) && (
-        <div className="mb-4 flex shrink-0 flex-wrap items-center gap-3">
+      {(toolbar || (!asCards && columns.some((c) => c.hideable !== false))) && (
+        <div
+          className={cn('mb-4 flex shrink-0 flex-wrap items-center gap-3', toolbarClassName)}
+        >
           {toolbar}
           <div className="ml-auto flex items-center gap-2">
             {/*  Nút "Xóa lọc" do BẢNG vẽ, không bắt từng màn tự nhớ: quên một
@@ -407,22 +439,41 @@ export function DataTable<T>({
               <RotateCw className={cn('size-4', refreshing && 'animate-spin')} />
             </Button>
 
-            <ColumnVisibilityMenu
-              // Menu liệt kê theo thứ tự đang xem, không theo thứ tự khai báo —
-              // kéo cột xong mà menu vẫn xếp kiểu cũ thì rất khó dò.
-              columns={orderedColumns}
-              hiddenColumns={layout.hiddenColumns}
-              pinnedColumns={layout.pinnedColumns}
-              columnColors={layout.columnColors}
-              onToggle={toggleColumn}
-              onTogglePin={togglePin}
-              onAutoFitAll={autoFitAll}
-              onColorChange={setColumnColor}
-              onMove={moveColumn}
-              onReset={resetLayout}
-            />
+            {/*  Chế độ thẻ không có cột nào để ẩn/hiện, ghim hay đổi thứ tự —
+                 để menu lại là mời người dùng bấm vào một bảng điều khiển
+                 không điều khiển thứ gì đang nhìn thấy. */}
+            {!asCards && (
+              <ColumnVisibilityMenu
+                // Menu liệt kê theo thứ tự đang xem, không theo thứ tự khai báo —
+                // kéo cột xong mà menu vẫn xếp kiểu cũ thì rất khó dò.
+                columns={orderedColumns}
+                hiddenColumns={layout.hiddenColumns}
+                pinnedColumns={layout.pinnedColumns}
+                columnColors={layout.columnColors}
+                onToggle={toggleColumn}
+                onTogglePin={togglePin}
+                onAutoFitAll={autoFitAll}
+                onColorChange={setColumnColor}
+                onMove={moveColumn}
+                onReset={resetLayout}
+              />
+            )}
           </div>
         </div>
+      )}
+
+      {asCards && mobileCard && (
+        <DataTableMobileCards
+          rows={rows}
+          getRowId={getRowId}
+          renderCard={mobileCard}
+          isLoading={isLoading}
+          isError={isError}
+          emptyMessage={emptyMessage}
+          errorMessage={errorMessage}
+          onRowClick={onRowClick}
+          fillHeight={fillHeight}
+        />
       )}
 
       {/*
@@ -431,7 +482,13 @@ export function DataTable<T>({
         `isolate` (isolation: isolate) TẠO NGỮ CẢNH XẾP LỚP riêng: mọi `z-index`
         của hàng tiêu đề dính và cột ghim bên trong chỉ so với nhau, không thể
         trồi lên trên thanh tiêu đề của trang (z-10) khi cuộn.
+
+        ⚠️ Chế độ thẻ GỠ HẲN bảng khỏi cây, không phải giấu bằng `hidden`: bảng
+        tự đo cột từ DOM (`usePinnedOffsets`, `measureColumnContentWidth`) mà mọi
+        kích thước đọc trong cây `display:none` đều là 0 — mốc `left` của cột
+        ghim sẽ bị ghi đè bằng số rác ngay trong lúc không ai nhìn thấy.
       */}
+      {!asCards && (
       <div
         className={cn(
           'isolate overflow-hidden rounded-lg border',
@@ -607,6 +664,7 @@ export function DataTable<T>({
           </TableBody>
         </Table>
       </div>
+      )}
 
       {pagination && <DataTablePagination {...pagination} />}
 

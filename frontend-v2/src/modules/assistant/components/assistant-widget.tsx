@@ -75,7 +75,12 @@ export function AssistantWidget() {
 
   // Trợ lý tắt ở máy chủ (AI_ENABLED) hoặc chưa có khóa -> /providers trả 403.
   // Ẩn hẳn bong bóng thay vì hiện nút bấm vào rồi báo lỗi.
-  if (providersQuery.isError) return null
+  //
+  // ⚠️ Chặn CẢ lúc đang hỏi (`isPending`), không riêng lúc đã biết là lỗi: vẽ
+  // trước rồi gỡ đi thì người dùng thấy bong bóng "nhảy một cái rồi mất tiêu",
+  // và đó là thứ trông y hệt một lỗi giao diện. Query này `retry: false` +
+  // `staleTime: Infinity` nên `isPending` chỉ đúng ở lượt hỏi đầu tiên.
+  if (providersQuery.isPending || providersQuery.isError) return null
 
   const configured = providersQuery.data?.providers.filter((p) => p.configured) ?? []
   const selectedProvider = providersQuery.data?.default_provider || configured[0]?.name || ''
@@ -143,7 +148,20 @@ export function AssistantWidget() {
       : appRoutes.assistant.root
 
   return (
-    <div className="fixed right-4 bottom-4 z-50 flex flex-col items-end gap-3 sm:right-6 sm:bottom-6">
+    /*
+      ⚠️ `bottom` tính bằng `calc(100lvh - 100dvh + <lề>)` chứ KHÔNG phải `1rem` trần.
+
+      `position: fixed` neo vào khung nhìn LỚN (`lvh` — cỡ lúc thanh công cụ đã
+      thu), nên trên điện thoại `bottom-4` nghĩa là "cách đáy khung nhìn lớn 16px"
+      — chỗ đó nằm DƯỚI thanh công cụ của trình duyệt, tức bong bóng chat bị che
+      mất. Càng chắc bị che ở hai khung app hiện nay (`h-dvh overflow-hidden`):
+      tài liệu không cuộn thì trình duyệt không có dịp thu thanh công cụ lại.
+
+      `100lvh - 100dvh` chính là bề dày phần thanh công cụ đang chiếm; cộng lề
+      vào là bong bóng nằm ngay trên nó. Trên màn hình thường `lvh == dvh` nên
+      biểu thức rút về đúng `1rem` / `1.5rem` như cũ.
+    */
+    <div className="fixed right-4 bottom-[calc(100lvh-100dvh+1rem)] z-50 flex flex-col items-end gap-3 sm:right-6 sm:bottom-[calc(100lvh-100dvh+1.5rem)]">
       {open && (
         <div
           className={cn(

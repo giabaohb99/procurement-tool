@@ -1,10 +1,15 @@
 import { useMemo } from 'react'
 
 import { usePermission } from '@/core/authorization/use-permission'
-import { CHART_COLORS, CHART_NEUTRAL, type ChartDatum } from '@/shared/ui/chart'
+import type { ChartDatum } from '@/shared/ui/chart'
 import type { DonutSlice } from '@/shared/ui/donut-chart'
-import type { Employee } from '../types/employee'
-import { EMPLOYEE_STATUS_OPTIONS } from '../types/employee'
+import {
+  buildStatusSlices,
+  countProfileGaps,
+  countRecentHires,
+  groupCount,
+  type ProfileGaps,
+} from '../utils/hr-overview-metrics'
 import { useCompanies } from './use-companies'
 import { useDepartments } from './use-departments'
 import { useEmployees } from './use-employees'
@@ -17,8 +22,11 @@ import { useUserAccounts } from './use-user-accounts'
  */
 const FULL_LIST_PAGE_SIZE = 1000
 
-/** Số hạng mục tối đa vẽ trên một biểu đồ cột; phần đuôi gom vào "Khác". */
-const MAX_BARS = 12
+/** Cửa sổ tính "mới vào" của thẻ số liệu. */
+export const NEW_HIRE_DAYS = 30
+
+/** Số dòng tối đa của thẻ "Nhân sự theo pháp nhân" — xem chú thích ở `byCompany`. */
+const COMPANY_BARS = 8
 
 export interface AccountCoverage {
   /** Nhân sự đang làm việc đã được cấp tài khoản đăng nhập. */
@@ -33,19 +41,62 @@ export interface AccountCoverage {
   totalAccounts: number
 }
 
-/**
- * Dữ liệu cho trang Tổng quan Nhân sự: 4 thẻ số liệu + 4 biểu đồ, gom từ đúng
- * bốn lời gọi danh sách (nhân viên, phòng ban, công ty, tài khoản).
- */
-export function useHrOverview() {
-  const { can } = usePermission()
+export interface HrOverview {
+  stats: {
+    active: number
+    inactive: number
+    departments: number
+    companies: number
+    newHires: number
+  }
+  /**
+   * Dòng phụ của thẻ "Đang làm việc" — `undefined` khi hai danh mục còn đang
+   * tải HOẶC người xem không có quyền đọc chúng. Ghép sẵn ở đây vì chỉ nơi này
+   * biết khóa nào đọc được: dựng ở tầng thẻ thì thiếu quyền sẽ ra "0 phòng ban".
+   */
+  orgHint?: string
+  byDepartment: ChartDatum[]
+  byCompany: ChartDatum[]
+  byStatus: DonutSlice[]
+  gaps: ProfileGaps
+  accounts: AccountCoverage
+  isLoading: boolean
+  isLoadingAccounts: boolean
+  canReadEmployees: boolean
+  canReadAccounts: boolean
+}
 
-  const employeesQuery = useEmployees({ page_size: FULL_LIST_PAGE_SIZE })
-  const companiesQuery = useCompanies({ page_size: FULL_LIST_PAGE_SIZE, is_active: true })
-  const departmentsQuery = useDepartments({ page_size: 1, is_active: true })
+/**
+ * Dữ liệu người & tổ chức cho trang Tổng quan Nhân sự.
+ *
+ * Phần nghỉ phép nằm ở `use-hr-leave-glance.ts` — hai nguồn, hai bộ quyền, và
+ * gộp một hook thì màn hình thiếu `leave_request.read` phải chờ luôn cả khối
+ * hồ sơ.
+ */
+export function useHrOverview(): HrOverview {
+  const { can } = usePermission()
+  const canReadEmployees = can('employee', 'read')
+  const canReadAccounts = can('user', 'read')
+  const canReadDepartments = can('department', 'read')
+  const canReadCompanies = can('company', 'read')
+
+  const employeesQuery = useEmployees(
+    { page_size: FULL_LIST_PAGE_SIZE },
+    { enabled: canReadEmployees },
+  )
+  //  `page_size: 1` — chỉ lấy `total` để đếm danh mục. Tên pháp nhân của biểu đồ
+  //  đọc thẳng `Employee.company_name` (backend gửi kèm), nên không cần kéo cả
+  //  danh sách công ty về nữa. Bản cũ kéo về rồi tra bảng, và vì lọc
+  //  `is_active: true` nên nhân sự thuộc pháp nhân đã ngừng dùng bị dồn hết vào
+  //  cột "Chưa gán pháp nhân".
+  const companiesQuery = useCompanies({ page_size: 1 }, { enabled: canReadCompanies })
+  const departmentsQuery = useDepartments(
+    { page_size: 1, is_active: true },
+    { enabled: canReadDepartments },
+  )
   const usersQuery = useUserAccounts(
     { page_size: FULL_LIST_PAGE_SIZE },
-    { enabled: can('user', 'read') },
+    { enabled: canReadAccounts },
   )
 
   const employees = useMemo(() => employeesQuery.data?.items ?? [], [employeesQuery.data])
@@ -53,12 +104,6 @@ export function useHrOverview() {
     () => employees.filter((employee) => employee.is_active),
     [employees],
   )
-
-  const companyNameById = useMemo(() => {
-    const map = new Map<number, string>()
-    for (const company of companiesQuery.data?.items ?? []) map.set(company.id, company.name)
-    return map
-  }, [companiesQuery.data])
 
   const byDepartment = useMemo(
     () =>
@@ -68,16 +113,29 @@ export function useHrOverview() {
     [activeEmployees],
   )
 
+  //  Ít dòng hơn thẻ phòng ban: tập đoàn có hàng chục pháp nhân mà phần đuôi
+  //  toàn 1 người, liệt kê hết thì thẻ cao gấp rưỡi hai thẻ nằm cùng hàng và
+  //  chừa lại một mảng trắng bên cạnh. Phần bị gom vẫn hiện thành dòng
+  //  "Khác (n mục)", không cắt lặng lẽ.
   const byCompany = useMemo(
     () =>
       groupCount(
         activeEmployees,
-        (employee) => companyNameById.get(employee.company_id) ?? 'Chưa gán pháp nhân',
+        (employee) =>
+          employee.company_name?.trim() ? employee.company_name.trim() : 'Chưa gán pháp nhân',
+        COMPANY_BARS,
       ),
-    [activeEmployees, companyNameById],
+    [activeEmployees],
   )
 
   const byStatus = useMemo(() => buildStatusSlices(employees), [employees])
+  const gaps = useMemo(() => countProfileGaps(employees), [employees])
+  //  Mốc "hôm nay" chốt MỘT LẦN cho cả lượt render: gọi `new Date()` trong hàm
+  //  đếm thì hai thẻ cạnh nhau có thể rơi vào hai ngày khác nhau lúc nửa đêm.
+  const newHires = useMemo(
+    () => countRecentHires(employees, new Date(), NEW_HIRE_DAYS),
+    [employees],
+  )
 
   const accounts = useMemo<AccountCoverage>(() => {
     const users = usersQuery.data?.items ?? []
@@ -98,77 +156,31 @@ export function useHrOverview() {
     }
   }, [usersQuery.data, activeEmployees])
 
+  const departments = departmentsQuery.data?.total ?? 0
+  const companies = companiesQuery.data?.total ?? 0
+  const orgParts = [
+    canReadDepartments && !departmentsQuery.isPending ? `${departments} phòng ban` : '',
+    canReadCompanies && !companiesQuery.isPending ? `${companies} pháp nhân` : '',
+  ].filter(Boolean)
+
   return {
     stats: {
       active: activeEmployees.length,
       inactive: employees.length - activeEmployees.length,
-      departments: departmentsQuery.data?.total ?? 0,
-      companies: companiesQuery.data?.total ?? 0,
+      departments,
+      companies,
+      newHires,
     },
+    orgHint: orgParts.length > 0 ? orgParts.join(' · ') : undefined,
     byDepartment,
     byCompany,
     byStatus,
+    gaps,
     accounts,
     /** Chỉ true ở lần tải đầu — refetch giữ nguyên khung, không nháy skeleton. */
-    isLoading: employeesQuery.isPending,
-    isLoadingCompanies: companiesQuery.isPending,
-    isLoadingAccounts: usersQuery.isPending && can('user', 'read'),
-    canReadAccounts: can('user', 'read'),
+    isLoading: canReadEmployees && employeesQuery.isPending,
+    isLoadingAccounts: canReadAccounts && usersQuery.isPending,
+    canReadEmployees,
+    canReadAccounts,
   }
-}
-
-/** Đếm theo khóa rồi xếp giảm dần; phần đuôi quá dài gom vào một cột "Khác". */
-function groupCount(employees: Employee[], keyOf: (employee: Employee) => string): ChartDatum[] {
-  const counter = new Map<string, number>()
-  for (const employee of employees) {
-    const key = keyOf(employee)
-    counter.set(key, (counter.get(key) ?? 0) + 1)
-  }
-
-  const rows = [...counter.entries()]
-    .map(([label, value]) => ({ label, value }))
-    .sort((a, b) => b.value - a.value || a.label.localeCompare(b.label, 'vi'))
-
-  if (rows.length <= MAX_BARS) return rows
-
-  const head = rows.slice(0, MAX_BARS - 1)
-  const tail = rows.slice(MAX_BARS - 1)
-  return [...head, { label: `Khác (${tail.length} mục)`, value: sum(tail) }]
-}
-
-const OTHER = 'Khác'
-
-/**
- * Lát bánh theo trạng thái nhân sự. Màu bám THỨ TỰ CỐ ĐỊNH của
- * `EMPLOYEE_STATUS_OPTIONS`, không bám thứ hạng số lượng — có vậy "Chính thức" mới
- * luôn là một màu dù dữ liệu đổi. Trạng thái lạ (dữ liệu cũ, để trống) gom vào
- * "Khác" màu xám.
- *
- * B-03: đếm theo MÃ, chỉ đổi sang nhãn lúc dựng lát. Đếm theo nhãn thì sửa một chữ
- * trong nhãn là mọi nhân sự rơi hết vào "Khác".
- */
-function buildStatusSlices(employees: Employee[]): DonutSlice[] {
-  const counter = new Map<string, number>()
-  const biet = new Set(EMPLOYEE_STATUS_OPTIONS.map((o) => o.value))
-  for (const employee of employees) {
-    const status = employee.status?.trim() || ''
-    const key = biet.has(status) ? status : OTHER
-    counter.set(key, (counter.get(key) ?? 0) + 1)
-  }
-
-  const slices: DonutSlice[] = EMPLOYEE_STATUS_OPTIONS.map(({ value, label }, index) => ({
-    label,
-    value: counter.get(value) ?? 0,
-    color: CHART_COLORS[index],
-  }))
-
-  const other = counter.get(OTHER) ?? 0
-  if (other > 0) slices.push({ label: 'Khác', value: other, color: CHART_NEUTRAL })
-
-  // Bỏ lát rỗng để chú giải không liệt kê một loạt số 0.
-  return slices.filter((slice) => slice.value > 0)
-}
-
-function sum(rows: ChartDatum[]): number {
-  return rows.reduce((total, row) => total + row.value, 0)
 }

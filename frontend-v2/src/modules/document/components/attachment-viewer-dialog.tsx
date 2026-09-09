@@ -150,7 +150,7 @@ function ViewerBody({
 
       {/*  `relative` + lớp watermark tuyệt đối phủ lên trên. `select-none` và
              `pointer-events-none` để lớp chữ không chắn thao tác cuộn PDF. */}
-      <div className="relative max-h-[70vh] min-h-64 overflow-auto rounded-md border bg-muted/30">
+      <div className="relative max-h-[70dvh] min-h-64 overflow-auto rounded-md border bg-muted/30">
         {!blobUrl && !html && !loi && (
           <div className="flex h-64 items-center justify-center text-muted-foreground">
             <Loader2 className="size-5 animate-spin" />
@@ -166,7 +166,7 @@ function ViewerBody({
             srcDoc={htmlPage(html)}
             title={filename}
             sandbox=""
-            className="h-[70vh] w-full bg-white"
+            className="h-[70dvh] w-full bg-white"
           />
         )}
 
@@ -177,7 +177,7 @@ function ViewerBody({
             //  `<iframe>` chứ không `<embed>`: trình xem PDF sẵn có của trình
             //  duyệt chạy trong khung riêng, và backend đã gắn
             //  `Content-Security-Policy: sandbox` cho nội dung này.
-            <iframe src={blobUrl} title={filename} className="h-[70vh] w-full" />
+            <iframe src={blobUrl} title={filename} className="h-[70dvh] w-full" />
           ))}
 
         {(blobUrl || html !== null) && (

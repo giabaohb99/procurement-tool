@@ -97,6 +97,21 @@ export function buildWeekDays(anchor: Date): Date[] {
   return Array.from({ length: 7 }, (_, i) => addDays(start, i))
 }
 
+/** Bao nhiêu năm bày ra ô chọn năm, tính từ NĂM SAU lùi về. */
+export const YEAR_SPAN = 3
+
+/**
+ * Danh sách năm cho ô chọn năm — mới nhất đứng đầu.
+ *
+ * Khai ở đây chứ không ở tầng màn vì **hai bộ chọn khác nhau cùng đọc nó**:
+ * hai ô `Select` của thanh công cụ khổ rộng và bộ đếm năm trong tờ chọn tháng ở
+ * khổ hẹp. Hai nơi tự tính lấy thì một hôm nào đó điện thoại nhảy được tới 2030
+ * còn máy tính thì không.
+ */
+export function buildYearOptions(currentYear: number): number[] {
+  return Array.from({ length: YEAR_SPAN + 2 }, (_, i) => currentYear + 1 - i)
+}
+
 export interface MonthCell {
   date: Date
   /** `false` = ngày của tháng trước / tháng sau, chỉ để lấp đầy lưới. */

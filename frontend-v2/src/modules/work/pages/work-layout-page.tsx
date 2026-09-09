@@ -30,7 +30,7 @@ export function WorkLayoutPage() {
   const isOverview = useMatch(appRoutes.project.root) !== null
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
+    <div className="flex h-[calc(100dvh-4rem)] overflow-hidden">
       {/*  Ẩn cây thì ẩn HẲN, không chừa dải rìa nào — nút mở lại nằm ngang tiêu
            đề của từng trang con (`WorkSidebarPeekButton`), rê vào ra một thẻ
            nổi. Đã thử hai bản khác rồi bỏ, lý do ghi ở component ấy.  */}

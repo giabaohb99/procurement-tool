@@ -128,7 +128,7 @@ export function InventoryAdjustDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] w-[96vw] overflow-y-auto sm:max-w-[560px]">
+      <DialogContent className="max-h-[90dvh] w-[96vw] overflow-y-auto sm:max-w-[560px]">
         <DialogHeader>
           <DialogTitle>Điều chỉnh tồn kho</DialogTitle>
           <DialogDescription>

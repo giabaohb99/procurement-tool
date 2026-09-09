@@ -87,7 +87,7 @@ export function IssueCodeDialog({ open, onOpenChange }: IssueCodeDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[85vh] flex-col sm:max-w-3xl">
+      <DialogContent className="flex max-h-[85dvh] flex-col sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Mã đưa vào số hiệu</DialogTitle>
           <DialogDescription>

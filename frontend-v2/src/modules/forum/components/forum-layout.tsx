@@ -32,7 +32,7 @@ export function ForumLayout() {
   const reading = pathname.startsWith(`${appRoutes.forum.root}/posts/`)
 
   return (
-    <div className="flex min-h-svh flex-col bg-muted/40">
+    <div className="flex min-h-dvh flex-col bg-muted/40">
       {/*  Header trải HẾT bề ngang (không bó max-w-2xl như cột feed) — bó chung
           với feed thì gặp tên tài khoản dài là tab bị ép gãy chữ xuống hai dòng. */}
       <header className="sticky top-0 z-10 border-b border-border bg-background">

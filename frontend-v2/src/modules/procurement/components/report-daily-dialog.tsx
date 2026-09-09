@@ -46,7 +46,7 @@ export function ReportDailyDialog({
 
   return (
     <Dialog open={!!month} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-h-[88vh] gap-4 overflow-y-auto sm:max-w-3xl">
+      <DialogContent className="max-h-[88dvh] gap-4 overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Chi phí theo ngày — {monthLabel}</DialogTitle>
           <DialogDescription>

@@ -29,7 +29,7 @@ export function OperatorSelect({
       value={selectedOperator ?? ''}
       onValueChange={(value) => updateOperator(rowId, value as OperatorType)}
     >
-      <SelectTrigger className="w-40 shrink-0">
+      <SelectTrigger className="w-full shrink-0 md:w-40">
         <SelectValue placeholder="Điều kiện…" />
       </SelectTrigger>
       <SelectContent>

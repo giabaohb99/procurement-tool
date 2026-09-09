@@ -25,6 +25,12 @@ export interface ConditionalFilterProps {
  *
  * Mặc định `align="start"` để khi nút nằm phía bên trái thanh công cụ (sau ô tìm kiếm),
  * khung popover mở rộng sang bên phải, không bị lệch/tràn ra khỏi mép trái màn hình.
+ *
+ * ⚠️ **Ở khổ điện thoại đừng dùng component này** — popover neo vào một nút,
+ * mà nút đó trên máy 393px thì popover rộng `95vw` dán sát mép và không còn chỗ
+ * cho hàng điều kiện. Nhúng `ConditionalFilterBody` vào tờ trượt lọc
+ * (`QuickFilterSheet`) thay vì mở thêm một lớp nổi thứ hai; xem
+ * `modules/hr/components/leave-rows-filter-bar.tsx` làm mẫu.
  */
 export function ConditionalFilter({
   align = 'start',
@@ -32,7 +38,7 @@ export function ConditionalFilter({
   className,
   icon: Icon = SlidersHorizontal,
 }: ConditionalFilterProps = {}) {
-  const { state, config, activeCount } = useFilterContext()
+  const { config, activeCount } = useFilterContext()
   const locale = config.locale ?? {}
 
   return (
@@ -50,22 +56,55 @@ export function ConditionalFilter({
       </PopoverTrigger>
 
       <PopoverContent align={align} className="w-[min(46rem,95vw)] p-3">
-        <div className="max-h-[24rem] overflow-y-auto pr-1">
-          {state.rows.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">
-              {locale.noFilters}
-            </p>
-          ) : (
-            <div className="flex flex-col gap-1">
-              {state.rows.map((row) => (
-                <FilterRowItem key={row.id} rowId={row.id} />
-              ))}
-            </div>
-          )}
-        </div>
-
-        <FilterFooter />
+        <ConditionalFilterBody className="max-h-[24rem] overflow-y-auto pr-1" />
       </PopoverContent>
     </Popover>
+  )
+}
+
+export interface ConditionalFilterBodyProps {
+  /**
+   * Bày cặp nút **Xóa hết / Áp dụng** ở chân. Tắt khi khung chứa đã có nút chính
+   * của nó — xem `FilterFooterProps.actions`.
+   */
+  actions?: boolean
+  /** Đang nằm trong một `Popover` — xem `FilterFooterProps.inPopover`. */
+  inPopover?: boolean
+  className?: string
+}
+
+/**
+ * RUỘT của bộ lọc điều kiện: danh sách dòng + chân («Thêm điều kiện», VÀ/HOẶC,
+ * và tùy chọn cặp nút Xóa hết / Áp dụng).
+ *
+ * Tách khỏi `ConditionalFilter` để cùng một bộ lọc dùng được ở hai chỗ mở khác
+ * hẳn nhau — popover ở màn rộng, tờ trượt từ đáy ở màn hẹp — mà không phải chép
+ * lại phần ruột. Chép ra hai bản là sớm muộn hai khổ màn lọc ra hai kết quả
+ * khác nhau cho cùng một điều kiện.
+ */
+export function ConditionalFilterBody({
+  actions = true,
+  inPopover = false,
+  className,
+}: ConditionalFilterBodyProps = {}) {
+  const { state, config } = useFilterContext()
+  const locale = config.locale ?? {}
+
+  return (
+    <>
+      <div className={className}>
+        {state.rows.length === 0 ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">{locale.noFilters}</p>
+        ) : (
+          <div className="flex flex-col gap-2 md:gap-1">
+            {state.rows.map((row) => (
+              <FilterRowItem key={row.id} rowId={row.id} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      <FilterFooter actions={actions} inPopover={inPopover} />
+    </>
   )
 }

@@ -53,7 +53,7 @@ export function InventoryDetailDialog({
 
   return (
     <Dialog open={!!item} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] w-[96vw] overflow-y-auto sm:max-w-[900px]">
+      <DialogContent className="max-h-[90dvh] w-[96vw] overflow-y-auto sm:max-w-[900px]">
         <DialogHeader>
           <DialogTitle>Chi tiết tồn kho & lịch sử biến động</DialogTitle>
           <DialogDescription>

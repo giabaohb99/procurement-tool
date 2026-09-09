@@ -68,7 +68,14 @@ export function ChartCard({
   return (
     // `h-full` + nội dung căn giữa dọc: thẻ cùng hàng luôn cao bằng nhau, biểu
     // đồ ít dòng thì nằm giữa thẻ chứ không dồn lên đầu bỏ trống một mảng dưới.
-    <Card className={cn('h-full gap-4', className)}>
+    //
+    //  ⚠️ `min-w-0` là chốt chống TRÀN NGANG, không phải tinh chỉnh cho đẹp. Ô
+    //  lưới mặc định `min-width: auto` nên nó KHÔNG co xuống dưới bề rộng nội
+    //  dung; recharts thì đo trục Y theo nhãn dài nhất rồi báo ngược ra một bề
+    //  ngang tối thiểu. Thiếu chữ này thì trên điện thoại cả lưới bị nong ra
+    //  (đo 08/09/2026 ở màn Tổng quan Nhân sự: 544px trong khung 358px) và cả
+    //  TRANG sinh thanh cuộn ngang, không riêng cái thẻ chứa biểu đồ.
+    <Card className={cn('h-full min-w-0 gap-4', className)}>
       <CardHeader className="pb-0">
         {/* `dark:text-foreground` vì --navy là màu thương hiệu cố định, để
             nguyên trên nền tối sẽ chìm hẳn. */}
