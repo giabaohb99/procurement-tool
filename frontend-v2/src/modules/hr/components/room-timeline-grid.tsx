@@ -1,7 +1,9 @@
 import { Plus, Users } from 'lucide-react'
 
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { cn } from '@/shared/utils/cn'
 import { useTimelineDrag, type TimelineDrop } from '../hooks/use-timeline-drag'
+import { RoomDayList } from './room-day-list'
 import type { MeetingRoom, RoomBooking } from '../types/room'
 import {
   buildRowBars,
@@ -73,6 +75,10 @@ export function RoomTimelineGrid({
   onReschedule,
   now = new Date(),
 }: RoomTimelineGridProps) {
+  //  Khổ hẹp đổi HẲN hình dạng, không co lưới lại — xem `RoomDayList`. Gọi hook
+  //  trước mọi nhánh `return` (luật hook), nhánh chọn nằm dưới.
+  const isMobile = useIsMobile()
+
   const labels = hourLabels()
   const slots = halfHourSlots()
   const bands = dimBandsX()
@@ -98,6 +104,20 @@ export function RoomTimelineGrid({
           Bỏ bớt bộ lọc, hoặc vào tab «Danh mục phòng» để thêm phòng.
         </p>
       </div>
+    )
+  }
+
+  if (isMobile) {
+    return (
+      <RoomDayList
+        rooms={rooms}
+        bookings={bookings}
+        onOpenBooking={onOpenBooking}
+        //  Danh sách không có trục giờ để chỉ vào, nên chỉ mang PHÒNG sang form;
+        //  giờ thì người dùng tự chọn ở đó. Thiếu `onPickSlot` (không có quyền
+        //  tạo phiếu) thì cũng không dựng đường đặt ở đây.
+        onPickRoom={onPickSlot ? (roomId) => onPickSlot(roomId, DAY_START_HOUR) : undefined}
+      />
     )
   }
 

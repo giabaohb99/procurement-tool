@@ -1,14 +1,14 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronDown, ChevronLeft, ChevronRight, Plus, Search } from 'lucide-react'
+import { ChevronDown, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 
 import { usePermission } from '@/core/authorization/use-permission'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { Button } from '@/shared/ui/button'
 import { Calendar } from '@/shared/ui/calendar'
-import { Input } from '@/shared/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
+import { SearchField } from '@/shared/ui/search-field'
 import { Card } from '@/shared/ui/card'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
@@ -79,6 +79,14 @@ export function RoomCalendarPage() {
 
   const shift = (days: number) => setDateParam(toISODate(addDays(day, days)))
 
+  //  Hai bản nhãn ngày, dựng sẵn để phần JSX chỉ còn việc chọn — xem chỗ dùng.
+  const dateOnly = { day: '2-digit', month: '2-digit', year: 'numeric' } as const
+  const fullDayLabel = day.toLocaleDateString('vi-VN', { weekday: 'long', ...dateOnly })
+  //  ⚠️ `weekday: 'narrow'`, KHÔNG phải `'short'`: với `vi-VN` thì `'short'` ra
+  //  «Thứ 4, 09/09/2026» — dài gần bằng bản đầy đủ và vẫn bị cắt trên màn 390px.
+  //  `'narrow'` mới ra «T4», thứ thật sự vừa chỗ.
+  const shortDayLabel = day.toLocaleDateString('vi-VN', { weekday: 'narrow', ...dateOnly })
+
   return (
     <PageContainer fill>
       <PageHeader
@@ -86,7 +94,12 @@ export function RoomCalendarPage() {
         description="Phòng nào đang bận, ai giữ, tới mấy giờ. Bấm vào ô trống để đặt ngay."
         actions={
           can('room_booking', 'create') ? (
-            <Button onClick={() => navigate(appRoutes.hr.roomBookingNew)}>
+            //  Nhóm nút của `PageHeader` chiếm trọn hàng ở khổ hẹp, nên một nút
+            //  co theo chữ nép ở mép phải trông như bị bỏ quên giữa hàng trống.
+            <Button
+              className="max-md:w-full"
+              onClick={() => navigate(appRoutes.hr.roomBookingNew)}
+            >
               <Plus className="size-4" />
               Đặt phòng
             </Button>
@@ -112,7 +125,12 @@ export function RoomCalendarPage() {
              chú giải màu là thứ phải nắm trước khi hiểu lưới bên dưới, còn nút
              điều hướng thì chỉ tìm tới khi đã muốn đổi ngày. */}
         <div className="flex shrink-0 flex-wrap items-center gap-2 border-b px-3 py-2">
-          <div className="flex h-8 items-center gap-3 border-r pr-3 text-xs text-muted-foreground">
+          {/*  ⚠️ CHÚ GIẢI MÀU bỏ hẳn dưới `md`. Ở khổ hẹp lưới đổi thành danh
+               sách (`RoomDayList`) và mỗi phiếu ở đó tự mang huy hiệu chữ, nên
+               ba mục chú giải chỉ còn là một hàng đi giải nghĩa thứ ngay bên
+               dưới đã nói thành lời — mà «Ngoài giờ làm» thì hết nghĩa luôn,
+               danh sách không có dải nền giờ nào để tô. */}
+          <div className="flex h-8 items-center gap-3 border-r pr-3 text-xs text-muted-foreground max-md:hidden">
             <span className="flex items-center gap-1.5">
               <span className="h-3 w-1 rounded-sm bg-emerald-500" /> Đã duyệt
             </span>
@@ -124,28 +142,21 @@ export function RoomCalendarPage() {
             </span>
           </div>
 
-          <div className="ml-auto flex flex-wrap items-center gap-2">
-            <span className="flex h-8 items-center rounded-md bg-muted px-2.5 text-xs text-muted-foreground tabular-nums">
-              {heldCount} lượt giữ ·{' '}
-              {rooms.length === allRooms.length
-                ? `${allRooms.length} phòng`
-                : `${rooms.length}/${allRooms.length} phòng`}
-            </span>
+          {/*  ⚠️ Ở khổ hẹp cụm này chiếm TRỌN bề ngang và chia thành đúng HAI
+               hàng — *ngày + điều hướng*, rồi *lọc + con số*. Bản trước để nguyên
+               `ml-auto` với bốn phần tử co theo nội dung, nên trên máy 390px nó
+               rơi thành **bốn hàng chồng nhau, ~200px** trước khi thấy dòng dữ
+               liệu đầu tiên (khách báo 09/09/2026).
 
-            {/*  Chỉ dựng ô lọc khi danh sách đủ dài để phải lọc — công ty bốn
-                 phòng mà bày thêm một ô tìm là thêm thứ để đọc mà không dùng tới. */}
-            {allRooms.length > 6 && (
-              <div className="relative">
-                <Search className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  className="h-8 w-52 pl-8"
-                  placeholder="Lọc phòng, tầng, thiết bị…"
-                  aria-label="Lọc phòng"
-                  value={roomQuery}
-                  onChange={(e) => setRoomQuery(e.target.value)}
-                />
-              </div>
-            )}
+               ⚠️ Chia hàng bằng HAI KHỐI BỌC tường minh, không trông vào
+               `flex-wrap`: bốn phần tử cùng `flex-wrap` thì hai ô co giãn (nút
+               ngày và ô lọc) tranh nhau chỗ, và bản thử đầu cho ra nút ngày bị
+               bóp còn *«Thứ …»* trong khi ô lọc trèo lên cùng hàng. `md:contents`
+               gỡ hai khối bọc ở khổ rộng để bốn phần tử về lại đúng một hàng
+               ngang như cũ; `md:order-*` giữ nguyên thứ tự trái→phải của bản
+               desktop (con số · lọc · ngày · điều hướng). */}
+          <div className="flex w-full flex-col gap-2 md:ml-auto md:w-auto md:flex-row md:flex-wrap md:items-center">
+            <div className="flex items-center gap-2 md:contents">
 
             {/*  TÊN NGÀY là nút mở lịch — gộp hai thứ vốn lặp nhau: bản đầu có
                  cả dòng «Thứ Sáu, 04/09/2026» LẪN một ô `<input type="date">`
@@ -156,16 +167,15 @@ export function RoomCalendarPage() {
               <PopoverTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="h-8 gap-1.5 px-2 text-base font-semibold"
+                  className="h-8 min-w-0 flex-1 justify-start gap-1.5 px-2 font-semibold md:order-3 md:flex-none md:text-base"
                   aria-label="Chọn ngày xem lịch"
                 >
-                  {day.toLocaleDateString('vi-VN', {
-                    weekday: 'long',
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                  })}
-                  <ChevronDown className="size-4 text-muted-foreground" />
+                  {/*  Khổ hẹp rút «Thứ Tư» thành «T4» và bỏ cỡ chữ `text-base`:
+                       cả cụm ngày + ba nút điều hướng phải nằm trọn MỘT hàng
+                       358px, bản đầy đủ một mình đã ăn ~190px. */}
+                  <span className="truncate md:hidden">{shortDayLabel}</span>
+                  <span className="truncate max-md:hidden">{fullDayLabel}</span>
+                  <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
                 </Button>
               </PopoverTrigger>
               <PopoverContent align="end" className="w-auto p-0">
@@ -184,7 +194,7 @@ export function RoomCalendarPage() {
 
             {/*  Ba nút dính liền thành một cụm: lùi · hôm nay · tiến là MỘT thao
                  tác điều hướng, tách rời ra thì mắt phải tìm lại từng nút. */}
-            <div className="flex h-8 items-center rounded-md border">
+            <div className="flex h-8 shrink-0 items-center rounded-md border md:order-4">
               <Button
                 variant="ghost"
                 size="icon"
@@ -210,6 +220,41 @@ export function RoomCalendarPage() {
               >
                 <ChevronRight className="size-4" />
               </Button>
+            </div>
+            </div>
+
+            <div className="flex items-center gap-2 md:contents">
+              {/*  ⚠️ Con số tổng ẨN dưới `md`. Ở khổ hẹp nó ngồi cùng hàng với
+                   ô lọc và bóp ô đó còn ~205px, đủ để câu gợi ý bị cắt giữa
+                   chừng («Lọc phòng, tầng, thi») — một ô tìm mà không đọc nổi
+                   nó tìm được những gì (khách báo 09/09/2026). Bỏ đi không mất
+                   thông tin: hai tiêu đề phần ngay dưới đã nói *«Đang có lịch ·
+                   N phòng»* và *«Còn trống · M phòng»*. Chỉ «lượt giữ» là không
+                   còn, mà con số ấy chính là mấy dòng phiếu đang bày bên dưới. */}
+              <span className="flex h-8 shrink-0 items-center rounded-md bg-muted px-2.5 text-xs text-muted-foreground tabular-nums max-md:hidden md:order-1">
+                {heldCount} lượt giữ ·{' '}
+                {rooms.length === allRooms.length
+                  ? `${allRooms.length} phòng`
+                  : `${rooms.length}/${allRooms.length} phòng`}
+              </span>
+
+              {/*  Chỉ dựng ô lọc khi danh sách đủ dài để phải lọc — công ty bốn
+                   phòng mà bày thêm một ô tìm là thêm thứ để đọc mà không dùng tới.
+
+                   Dùng `SearchField` chứ không `<Input>` trần: nó mang sẵn **nút
+                   xóa chữ**, thứ đáng giá nhất trên điện thoại — không có thì bỏ
+                   bộ lọc là giữ · kéo hai đầu · bấm xóa, cho một việc đáng ra một
+                   chạm. `h-8` để giữ luật «mọi thứ trên thanh này cao đúng 32px»
+                   ở khổ rộng. */}
+              {allRooms.length > 6 && (
+                <SearchField
+                  className="h-8 md:order-2 md:w-52 md:flex-none"
+                  placeholder="Lọc phòng, tầng, thiết bị…"
+                  aria-label="Lọc phòng"
+                  value={roomQuery}
+                  onChange={setRoomQuery}
+                />
+              )}
             </div>
           </div>
         </div>

@@ -1,7 +1,7 @@
 import { CrudListPage } from '@/shared/crud'
 import { LEAVE_TYPE_CRUD_CONFIG } from '../config/leave-type-crud'
 import { LeaveSectionTabs } from '../components/leave-section-tabs'
-import { LEAVE_SETTINGS_TOOLBAR_STICKY } from '../utils/leave-list-sticky'
+import { LEAVE_SETTINGS_TOOLBAR_STICKY } from '../utils/list-sticky'
 
 export function LeaveTypeListPage() {
   return (

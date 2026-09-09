@@ -53,7 +53,7 @@ interface LeaveRowsFilterBarProps {
  * vào tờ trượt (`QuickFilterSheet`).
  *
  * Không phải để cho đẹp — thanh này được GHIM đầu trang khi cuộn (xem
- * `leave-list-sticky.ts`), nên mỗi pixel của nó là pixel bị che suốt cả buổi
+ * `list-sticky.ts`), nên mỗi pixel của nó là pixel bị che suốt cả buổi
  * đọc. Bản trải hết ô ra cao 157px; cộng dải tab 44px là **201px trên màn
  * 852px**, gần một phần tư màn hình, cho những thứ người ta chạm tới vài giây
  * một lần. Rút còn một hàng thì cả cụm ghim ~100px.
@@ -113,10 +113,14 @@ export function LeaveRowsFilterBar({
            nhóm nút bên phải chắc chắn ở lại cùng hàng; để bề rộng cứng thì tổng
            vượt lòng thẻ và nhóm bên phải rớt xuống một hàng riêng, mà vì nó
            `ml-auto` nên hàng đó chỉ có đúng một nút nép mép phải. */}
+      {/*  Câu gợi ý ngắn để ĐỌC HẾT được ở khổ hẹp: ô còn 142px sau khi chia
+           chỗ cho nút Bộ lọc và nút Tải lại, bản cũ cần 215px nên cụt thành
+           «Tìm theo tên, số đơn h». Một ô tìm không nói nổi mình tìm được những
+           gì thì người dùng đoán, và thường đoán là chỉ tìm được mã. */}
       <SearchField
         value={keyword}
         onChange={onKeywordChange}
-        placeholder="Tìm theo tên, số đơn hoặc lý do…"
+        placeholder="Tìm tên, đơn, lý do…"
         className="md:min-w-56 md:max-w-xs"
       />
 

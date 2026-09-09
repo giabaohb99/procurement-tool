@@ -1,13 +1,15 @@
-import { AlertTriangle, CalendarClock, DoorOpen, Timer, Users } from 'lucide-react'
+import { CalendarClock, DoorOpen, Timer, Users } from 'lucide-react'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { cn } from '@/shared/utils/cn'
 import { useMeetingRooms } from '../hooks/use-room'
 import type { RoomBookingFormValues } from '../utils/room-form-values'
 import { formatTimeRange, minutesBetween } from '../utils/room-time'
+import { RoomCapacityWarning } from './room-capacity-warning'
 
 interface RoomBookingSidePanelProps {
   value: RoomBookingFormValues
+  className?: string
 }
 
 /**
@@ -24,8 +26,16 @@ interface RoomBookingSidePanelProps {
  * ⚠️ Việc CHỌN PHÒNG đã rời khỏi đây (04/09/2026): dải chip liệt kê mọi phòng
  * dài hơn cả form khi công ty có 21 phòng, và nó lặp lại ô chọn phòng bên trái.
  * Nay chỉ còn MỘT chỗ chọn phòng — `RoomPickerField` trong form.
+ *
+ * ⚠️ **Thẻ này TẮT dưới `lg`** (trang truyền `max-lg:hidden`, 09/09/2026). Cả
+ * giá trị của nó nằm ở chữ "soi lại **trong lúc** đang gõ" — mà điều đó chỉ có
+ * khi nó là một CỘT dính bên cạnh form. Lưới về một cột thì nó rơi xuống dưới
+ * form: người dùng phải cuộn qua đúng những ô mình vừa điền để đọc lại chính
+ * những giá trị đó, còn cảnh báo sức chứa thì nằm ngoài tầm mắt lúc gõ số
+ * người. Phần duy nhất còn việc để làm ở khổ hẹp là câu cảnh báo, và nó mọc
+ * lại ngay dưới ô «Số người dự» — xem `RoomCapacityWarning`.
  */
-export function RoomBookingSidePanel({ value }: RoomBookingSidePanelProps) {
+export function RoomBookingSidePanel({ value, className }: RoomBookingSidePanelProps) {
   const { data: roomData } = useMeetingRooms()
   const room = roomData?.items.find((r) => r.id === value.roomId)
 
@@ -35,7 +45,7 @@ export function RoomBookingSidePanel({ value }: RoomBookingSidePanelProps) {
   const isOverCapacity = Boolean(room?.capacity && value.attendeeCount > room.capacity)
 
   return (
-    <div className="space-y-4 lg:sticky lg:top-20">
+    <div className={cn('space-y-4 lg:sticky lg:top-20', className)}>
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Phiếu này</CardTitle>
@@ -87,12 +97,8 @@ export function RoomBookingSidePanel({ value }: RoomBookingSidePanelProps) {
           {/*  Cảnh báo sức chứa đứng ở ĐÂY chứ không nằm cạnh ô nhập: người dùng
                gõ số người trước rồi mới chọn phòng, nên lỗi chỉ lộ ra khi ghép
                hai thứ lại — mà chỗ ghép chính là thẻ tóm tắt này. */}
-          {isOverCapacity && (
-            <p className="flex items-start gap-1.5 rounded-md border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive">
-              <AlertTriangle className="mt-px size-3.5 shrink-0" />
-              Vượt sức chứa của {room?.name}. Phiếu sẽ bị chặn lúc lưu — chọn phòng lớn hơn
-              hoặc sửa lại số người.
-            </p>
+          {isOverCapacity && room && (
+            <RoomCapacityWarning roomName={room.name} capacity={room.capacity} />
           )}
         </CardContent>
       </Card>

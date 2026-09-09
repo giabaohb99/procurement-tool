@@ -61,7 +61,12 @@ export function DataTablePagination({
         </span>
       </div>
 
-      <div className="flex items-center gap-1">
+      {/*  ⚠️ Khổ hẹp: dãy nút **rớt xuống hàng riêng và phải BÁM MÉP PHẢI**.
+           `justify-between` của khối cha chỉ chia chỗ trong PHẠM VI MỘT HÀNG —
+           hàng thứ hai chỉ có một phần tử nên nó rơi về mép trái, tức dãy nút
+           đổi bên tuỳ theo nó có xuống dòng hay không. `w-full` + `justify-end`
+           giữ nó ở đúng bên phải như màn rộng. */}
+      <div className="flex items-center gap-1 max-md:w-full max-md:justify-end">
         <Button
           variant="outline"
           size="icon-sm"

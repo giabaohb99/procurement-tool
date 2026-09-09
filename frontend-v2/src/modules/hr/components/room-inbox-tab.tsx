@@ -5,6 +5,7 @@ import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { useRoomHandled, useRoomToApprove } from '../hooks/use-room'
 import type { RoomInboxRow } from '../types/room'
+import { RoomBookingCard } from './room-booking-card'
 import {
   codeColumn,
   flowColumn,
@@ -62,6 +63,20 @@ export function RoomInboxTab({ mode }: { mode: 'to-approve' | 'handled' }) {
       }
       storageKey={`hr.room-${mode}`}
       onRowClick={(r) => navigate(appRoutes.hr.roomBookingDetail(r.id))}
+      //  Màn hẹp: thẻ thay bảng.
+      //
+      //  ⚠️ Tab «Cần tôi duyệt» TẮT huy hiệu trạng thái: mọi phiếu ở đó đều là
+      //  «Chờ duyệt», in lại y hệt trên từng thẻ chỉ ăn chỗ của dòng tiêu đề
+      //  đứng cạnh nó. Đổi lại nó bày HẠN XỬ LÝ — thứ duy nhất phân biệt hai
+      //  việc đang chờ cùng một người. Tab «Tôi đã duyệt» thì ngược lại: trạng
+      //  thái ở đó khác nhau (duyệt · từ chối · trả về) nên nó là thông tin.
+      mobileCard={(r) =>
+        mode === 'to-approve' ? (
+          <RoomBookingCard booking={r} showStatus={false} dueAt={r.task?.due_at} />
+        ) : (
+          <RoomBookingCard booking={r} />
+        )
+      }
     />
   )
 }
