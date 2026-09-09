@@ -127,6 +127,66 @@ def _check_departments_exist(db: Session, employee: Employee,
     return department
 
 
+def detach_other_company_departments(db: Session, employee: Employee, actor: int) -> list[str]:
+    """Gỡ nhân sự khỏi mọi phòng KHÔNG thuộc pháp nhân HIỆN TẠI của họ.
+
+    Gọi đúng một chỗ: `update_employee`, ngay sau khi `company_id` vừa đổi
+    (duoc-CR-342, lúc mở ô chọn Công ty ở màn hồ sơ).
+
+    ⚠️ **Không có hàm này thì việc đổi pháp nhân KHÔNG LÀM ĐƯỢC**, chứ không phải
+    chỉ bất tiện. Lý do là hai luật cũ ghép lại thành một cái bẫy:
+
+    1. `_sync_primary_department` đổi phòng chính thì **hạ phòng cũ xuống kiêm
+       nhiệm** chứ không xóa — kể cả khi phòng chính mới là "không có". Nên xóa
+       ô «Phòng ban» ở giao diện không hề gỡ người đó khỏi phòng cũ.
+    2. `_check_departments_exist` (L3) chặn mọi phòng khác pháp nhân.
+
+    Kết quả: đổi pháp nhân xong là ăn 400 *"Phòng ban thuộc pháp nhân khác"* trỏ
+    vào chính cái phòng vừa bỏ. Mà người dùng cũng không sửa được từ giao diện —
+    thẻ «Kiêm nhiệm» chỉ quản lý phòng PHỤ, còn phòng đang vướng lại là phòng
+    CHÍNH vừa bị hạ xuống.
+
+    Gỡ chứ không chặn: chuyển pháp nhân nghĩa là người đó **không còn ở** phòng
+    của pháp nhân cũ — giữ lại đúng là thứ L3 sinh ra để cấm. Trả về tên các
+    phòng đã gỡ để nơi gọi ghi vào dấu vết; gỡ âm thầm thì tháng sau không ai
+    tra ra vì sao mất phòng ban.
+
+    ⚠️ Phòng vừa được chọn trong CHÍNH lần lưu này (`employee.department_id`)
+    phải được giữ lại: `set_departments` ghi đè cột đó theo danh sách truyền vào,
+    nên bỏ quên nó là xóa trắng đúng lựa chọn người dùng vừa bấm.
+    """
+    if not employee.company_id:
+        return []
+
+    current = departments_of(db, employee.id)
+    wanted = employee.department_id or 0
+    if not current and not wanted:
+        return []
+
+    ids = set(current) | ({wanted} if wanted else set())
+    rows = {row.id: row for row in
+            db.query(Department).filter(Department.id.in_(ids)).all()}
+
+    def same_company(department_id: int) -> bool:
+        row = rows.get(department_id)
+        #  Không tìm thấy phòng, hoặc phòng chưa gắn pháp nhân → KHÔNG gỡ. Cùng
+        #  luật với L3: chỉ chặn khi cả hai bên đều khai.
+        return not row or not row.company_id or row.company_id == employee.company_id
+
+    dropped = [rows[x].name for x in current if not same_company(x)]
+    if not dropped:
+        return []
+
+    keep = [x for x in current if same_company(x)]
+    if wanted and wanted not in keep:
+        keep.insert(0, wanted)
+    primary = wanted if wanted in keep else (keep[0] if keep else 0)
+    #  `set_departments` chạy lại L3 trên danh sách còn lại — phòng mới chọn mà
+    #  vẫn sai pháp nhân thì người dùng nhận đúng câu chặn cũ, không lọt.
+    set_departments(db, employee, keep, actor, primary_department=primary)
+    return dropped
+
+
 def block_edit_own_department(db: Session, employee_id: int, actor) -> None:
     """L1 — xem đầu tệp. Gọi ở MỌI cửa ghi vào bảng này.
 

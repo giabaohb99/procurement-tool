@@ -54,8 +54,16 @@ export const MEETING_ROOM_CRUD_CONFIG: CrudConfig<MeetingRoom> = {
   unitLabel: 'phòng họp',
   apiPath: '/api/meeting-rooms',
   storageKey: 'hr.meeting-rooms',
-  //  Tab «Lịch đặt của phòng» cần cả bề ngang để xếp khung giờ.
-  detailMaxWidth: 'max-w-none',
+  //  ⚠️ **KHÔNG khai `detailMaxWidth`** — dùng `max-w-5xl` mặc định như mọi màn
+  //  chi tiết CRUD khác. Bản cũ khai `max-w-none` với lý do "tab Lịch đặt cần cả
+  //  bề ngang để xếp khung giờ", nhưng tab đó là một **`DataTable`** chứ không
+  //  phải lưới khung giờ (có lẽ đúng ở bản đầu, rồi đổi mà ghi chú ở lại). Sáu
+  //  cột của nó cộng lại **960px**, vừa trong 976px lòng trang.
+  //
+  //  Cái giá của `max-w-none` thì trả ở tab Thông tin — tab mở ra đầu tiên: trên
+  //  màn 1440px ô «Tên phòng» dài 545px và ô «Thiết bị» dài 1090px để chứa hai
+  //  chữ, mắt phải quét ngang gần cả màn hình mới đi hết một dòng. Bề ngang của ô
+  //  nhập là lời hứa về lượng chữ phải gõ.
   listRoute: appRoutes.hr.meetingRooms,
   detailRoute: (id) => appRoutes.hr.meetingRoomDetail(id),
   //  Form 9 ô — dài quá cho một hộp thoại. Xem `CrudConfig.createRoute`.

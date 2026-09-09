@@ -271,11 +271,25 @@ def update_employee(db: Session, eid: int, data: EmployeeUpdate, user_id: int) -
         setattr(obj, key, value)
     position_service.sync_label(db, obj, fields, old_position_id)
     obj.updated_by = user_id
+
+    #  ĐỔI PHÁP NHÂN — gỡ khỏi phòng ban của pháp nhân cũ TRƯỚC khi đồng bộ phòng
+    #  chính. Không có nhịp này thì việc đổi pháp nhân bị chính chốt L3 chặn lại
+    #  bởi cái phòng người dùng vừa bỏ; lý lẽ đầy đủ ở
+    #  `department_service.detach_other_company_departments`.
+    dropped_departments: list[str] = []
+    if "company_id" in fields and (obj.company_id or 0) != old_scope[0]:
+        from .department_service import detach_other_company_departments
+        dropped_departments = detach_other_company_departments(db, obj, user_id)
+
     if "department_id" in fields:
         _sync_primary_department(db, obj, user_id)
     db.commit()
     db.refresh(obj)
-    record(db, user_id, ENTITY, obj.id, "update")
+    #  Nói ra phòng nào bị gỡ. Gỡ âm thầm thì tháng sau không ai tra được vì sao
+    #  một người mất phòng ban.
+    note = (f"Đổi pháp nhân — gỡ khỏi phòng ban của pháp nhân cũ: "
+            f"{', '.join(dropped_departments)}") if dropped_departments else ""
+    record(db, user_id, ENTITY, obj.id, "update", note)
     #  ⚠️ Sau `commit` chứ không trước: xóa cache rồi mới ghi thì một request khác
     #  chen vào giữa sẽ dựng lại hồ sơ CŨ và cache thêm 60 giây nữa.
     if (obj.company_id or 0, obj.department_id or 0) != old_scope:

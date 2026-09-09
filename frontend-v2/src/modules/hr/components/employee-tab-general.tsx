@@ -4,7 +4,6 @@ import { usePermission } from '@/core/authorization/use-permission'
 import { Card } from '@/shared/ui/card'
 import { FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/shared/ui/form'
 import { FormSection } from '@/shared/ui/form-section'
-import { ReadOnlyValue } from '@/shared/ui/read-only-value'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { ActiveStatusSelect } from './active-status-select'
 import {
@@ -15,6 +14,7 @@ import {
   SensitiveFieldsNotice,
 } from './employee-form-fields'
 import { LookupSelect } from './lookup-select'
+import { useCompanies } from '../hooks/use-companies'
 import { useJobPositions } from '../hooks/use-job-positions'
 import type { EmployeeProfileFormValues } from '../schemas/employee-schema'
 import { employeeStatusOptions, type EmployeeDetail } from '../types/employee'
@@ -31,7 +31,9 @@ interface EmployeeTabGeneralProps {
   employee: EmployeeDetail
   canWrite: boolean
   canReadSensitive: boolean
-  departments: { id: number; name: string }[]
+  //  ⚠️ `company_id` là BẮT BUỘC, không phải thừa: ô «Phòng ban» lọc theo pháp
+  //  nhân đang chọn, và luật đó chính là điều kiện để mở khóa ô «Công ty».
+  departments: { id: number; name: string; company_id: number }[]
   /** Danh bạ để chọn NGƯỜI QUẢN LÝ TRỰC TIẾP. */
   colleagues: { id: number; label: string }[]
 }
@@ -56,6 +58,48 @@ export function EmployeeTabGeneral({
   const { can } = usePermission()
   const { data: positions } = useJobPositions(can('job_position', 'read'))
   const jobPositions = (positions?.items ?? []).map((p) => ({ id: p.id, label: p.name }))
+
+  //  Danh mục Công ty cũng là dữ liệu của MÀN KHÁC — cùng luật tự-tắt với Chức
+  //  vụ ở trên, kẻo thiếu `company.read` là ăn toast 403 ngay lúc mở hồ sơ.
+  const canReadCompany = can('company', 'read')
+  const { data: companies } = useCompanies(
+    { page_size: 200, is_active: true },
+    { enabled: canReadCompany },
+  )
+
+  //  ⚠️ Lọc theo pháp nhân ĐANG CHỌN TRONG FORM, không theo `employee.company_id`
+  //  đã lưu: người dùng đổi công ty xong phải thấy ngay phòng ban của công ty
+  //  mới, chứ không phải sau khi bấm Lưu rồi tải lại trang.
+  //
+  //  Phòng `company_id = 0` là phòng DÙNG CHUNG, luôn chọn được — cùng luật với
+  //  `EmployeeDepartmentCard` (tab Kiêm nhiệm) ở ngay màn này.
+  const companyId = form.watch('company_id')
+  const selectableDepartments = departments.filter(
+    (d) => !companyId || !d.company_id || d.company_id === companyId,
+  )
+
+  /**
+   * Đổi pháp nhân — và dọn phòng ban theo nếu nó không còn hợp lệ.
+   *
+   * ⚠️ Chỉ bỏ khi phòng THẬT SỰ lệch, đừng bỏ vô điều kiện: phòng dùng chung
+   * (`company_id = 0`) vẫn đúng ở mọi pháp nhân, xóa nó đi là bắt người dùng gán
+   * lại đúng thứ họ vừa có. Không dọn thì hồ sơ lưu xuống ở trạng thái công ty A
+   * / phòng ban của công ty B, mà backend chặn gán chéo pháp nhân nên họ ăn lỗi
+   * lúc bấm Lưu và phải tự đoán ô nào sai.
+   */
+  function handleCompanyChange(next: number, apply: (value: number) => void) {
+    apply(next)
+    const current = form.getValues('department_id')
+    if (!current) return
+    const dept = departments.find((d) => d.id === current)
+    //  Không tìm thấy phòng trong danh mục (đã ngừng dùng / ngoài phạm vi) thì
+    //  ĐỂ NGUYÊN: "không biết" không phải "sai", và xóa nhầm ở đây là mất dữ
+    //  liệu thật của một hồ sơ cũ.
+    if (!dept) return
+    if (next && dept.company_id && dept.company_id !== next) {
+      form.setValue('department_id', 0, { shouldDirty: true })
+    }
+  }
 
   return (
     <div className="grid gap-5 lg:grid-cols-2">
@@ -170,16 +214,49 @@ export function EmployeeTabGeneral({
 
       <Card className="gap-4 p-5">
         <FormSection title="Công việc">
-          {/*  CÔNG TY — CHỈ XEM. Đổi pháp nhân là đổi tập dữ liệu người đó đọc
-               được, và phải kèm luật "phòng ban đang gán có thuộc pháp nhân mới
-               không". Bày ô chọn ra mà chưa có luật đó là mở đường lệch dữ liệu.
-               Dùng `ReadOnlyValue` chứ KHÔNG `<Input disabled>`: ô mờ thì không
-               bôi đen, không copy được tên pháp nhân. */}
-          <FormItem>
-            <FormLabel>Công ty</FormLabel>
-            <ReadOnlyValue>{employee.company_name || '— Chưa gán công ty —'}</ReadOnlyValue>
-            <FormDescription>Pháp nhân của nhân sự. Đổi pháp nhân làm ở màn Công ty.</FormDescription>
-          </FormItem>
+          {/*  CÔNG TY — ô CHỌN, sửa được (duoc-CR-342, khách yêu cầu).
+               Trước đây ô này CHỈ XEM với lý do "đổi pháp nhân là đổi tập dữ
+               liệu người đó đọc được, và phải kèm luật «phòng ban đang gán có
+               thuộc pháp nhân mới không»". Luật đó nay có mặt ngay dưới đây, nên
+               lý do khóa hết hiệu lực. Ba việc phải đi CÙNG NHAU:
+
+               1. Ô chọn đọc từ danh mục Công ty (không gõ tay — tên pháp nhân
+                  nằm trên hợp đồng và bản in, gõ tay là bốn cách viết).
+               2. Danh sách phòng ban lọc theo pháp nhân ĐANG CHỌN trong form.
+               3. Đổi pháp nhân mà phòng ban đang giữ không thuộc pháp nhân mới
+                  thì BỎ phòng ban — xem `handleCompanyChange`.
+
+               ⚠️ Backend tự xóa cache quyền khi `company_id` đổi
+               (`update_employee` → `clear_perm_cache_of`), nhưng người ĐANG ĐĂNG
+               NHẬP vẫn giữ map quyền cũ tới lúc đăng nhập lại — nói ra ở dòng
+               mô tả, không để họ tưởng đổi xong là có hiệu lực ngay. */}
+          <FormField
+            control={form.control}
+            name="company_id"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Công ty</FormLabel>
+                <LookupSelect
+                  value={field.value}
+                  onChange={(next) => handleCompanyChange(next, field.onChange)}
+                  //  Thiếu `company.read` thì danh sách rỗng — chọn từ một danh
+                  //  sách rỗng là không chọn được gì, nên khóa hẳn cho thành
+                  //  thật. `fallbackLabel` vẫn giữ tên pháp nhân hiện tại.
+                  disabled={disabled || !canReadCompany}
+                  placeholder="Chọn công ty"
+                  emptyLabel="— Chưa gán công ty —"
+                  fallbackLabel={employee.company_name ?? ''}
+                  items={(companies?.items ?? []).map((c) => ({ id: c.id, label: c.name }))}
+                />
+                <FormDescription>
+                  Pháp nhân quyết định phạm vi dữ liệu người này đọc được. Đổi pháp nhân
+                  sẽ <strong>gỡ họ khỏi mọi phòng ban của pháp nhân cũ</strong>, kể cả
+                  phòng kiêm nhiệm. Họ phải đăng xuất rồi đăng nhập lại mới thấy hiệu lực.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
           <FormField
             control={form.control}
@@ -194,7 +271,7 @@ export function EmployeeTabGeneral({
                   placeholder="Chọn phòng ban"
                   emptyLabel="— Chưa gán phòng ban —"
                   fallbackLabel={employee.department_name ?? ''}
-                  items={departments.map((d) => ({ id: d.id, label: d.name }))}
+                  items={selectableDepartments.map((d) => ({ id: d.id, label: d.name }))}
                 />
                 <FormMessage />
               </FormItem>

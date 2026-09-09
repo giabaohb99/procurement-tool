@@ -204,11 +204,25 @@ export function CrudDetailPage<T extends CrudRecord>({
            của `PageContainer` — dính mà còn hai mép hở thì nhìn ra ngay là vá. */}
       <div className="sticky top-0 z-20 -mx-4 -mt-4 mb-4 flex flex-wrap items-center justify-between gap-3 border-b bg-canvas px-4 py-3 lg:-mx-6 lg:-mt-6 lg:px-6">
         {/*  `-ml-2` kéo chữ về sát mép: nút `ghost` có phần đệm ngang riêng nên
-             không có nó thì dòng «Danh sách …» thụt vào so với mọi thẻ bên dưới. */}
+             không có nó thì dòng «Danh sách …» thụt vào so với mọi thẻ bên dưới.
+
+             ⚠️ Tên danh mục THÔI HIỆN ở khổ điện thoại. «Danh sách phòng họp»
+             đo được **186px trên 390px** — gần một nửa hàng — trong khi hàng này
+             còn phải chứa nút Lưu và nút Xóa; ba thứ chen nhau còn 24px khe.
+             Giấu đi không mất nghĩa: mũi tên đã nói đây là đường lùi, và dòng
+             chỉ mục ngay phía trên vẫn ghi đủ tên danh mục.
+
+             ⚠️ `sr-only` chứ KHÔNG `hidden`: `hidden` là `display:none`, tức
+             trình đọc màn hình cũng mất luôn và người mù chỉ nghe được "Danh
+             sách" — trong khi họ không có mũi tên lẫn dòng chỉ mục để suy ra
+             danh sách nào. `sr-only` giấu khỏi mắt mà vẫn đọc được, và nó
+             `position:absolute` nên cũng không chiếm chỗ trong hàng. */}
         <Button variant="ghost" size="sm" className="-ml-2 min-w-0" asChild>
           <Link to={listUrl}>
             <ArrowLeft />
-            <span className="truncate">Danh sách {config.unitLabel}</span>
+            <span className="truncate">
+              Danh sách<span className="max-sm:sr-only"> {config.unitLabel}</span>
+            </span>
           </Link>
         </Button>
 
