@@ -33,11 +33,23 @@ import {
   usePurchaseOrderPayables,
 } from '../hooks/use-purchase-order-payment'
 
-/** Hai luồng công nợ tách bạch: tiền hàng và cước vận chuyển (khác nhà cung cấp). */
+/**
+ * Ba luồng công nợ tách bạch theo nhà cung cấp: tiền hàng, cước vận chuyển và
+ * (bao-CR-319) chi phí lô hàng nhập khẩu — hãng tàu, khai thuê, ngân sách nhà nước.
+ */
 const SOURCE_TABS = [
   { value: 'goods', label: 'NCC sản xuất (hàng)' },
   { value: 'shipping', label: 'NCC vận chuyển' },
+  { value: 'import_cost', label: 'Chi phí nhập khẩu' },
 ] as const
+
+type SourceTab = (typeof SOURCE_TABS)[number]['value']
+
+const SOURCE_SUPPLIER_HEADERS: Record<SourceTab, string> = {
+  goods: 'Nhà cung cấp',
+  shipping: 'Đơn vị vận chuyển',
+  import_cost: 'NCC nhận tiền',
+}
 
 const PAYMENT_METHODS = [
   { value: 'transfer', label: 'Chuyển khoản' },
@@ -70,7 +82,7 @@ export function PurchaseOrderPaymentDialog({
   const navigate = useNavigate()
   const { can } = usePermission()
 
-  const [tab, setTab] = useState<'goods' | 'shipping'>('goods')
+  const [tab, setTab] = useState<SourceTab>('goods')
   const [selected, setSelected] = useState<number[]>([])
   const [note, setNote] = useState('')
   const [method, setMethod] = useState<string>('transfer')
@@ -101,7 +113,11 @@ export function PurchaseOrderPaymentDialog({
   if (openChanged || payablesChanged) {
     const goods = payables.filter((payable) => payable.source_type === 'goods')
     setSelected(goods.map((payable) => payable.id))
-    setTab(goods.length ? 'goods' : 'shipping')
+    // Không có nợ hàng thì mở tab đầu tiên còn khoản để tick.
+    const firstWithRows = SOURCE_TABS.find((source) =>
+      payables.some((payable) => payable.source_type === source.value),
+    )
+    setTab(goods.length ? 'goods' : (firstWithRows?.value ?? 'goods'))
     setNote('')
     setMethod('transfer')
     setUseOffset(true)
@@ -242,7 +258,7 @@ export function PurchaseOrderPaymentDialog({
           <PrepayPanel order={order} onCancel={() => onOpenChange(false)} onConfirm={goPrepay} />
         ) : (
           <>
-            <Tabs value={tab} onValueChange={(value) => setTab(value as 'goods' | 'shipping')}>
+            <Tabs value={tab} onValueChange={(value) => setTab(value as SourceTab)}>
               <TabsList>
                 {SOURCE_TABS.map((source) => {
                   const count = payables.filter(
@@ -272,9 +288,7 @@ export function PurchaseOrderPaymentDialog({
                           aria-label="Chọn tất cả"
                         />
                       </TableHead>
-                      <TableHead>
-                        {tab === 'goods' ? 'Nhà cung cấp' : 'Đơn vị vận chuyển'}
-                      </TableHead>
+                      <TableHead>{SOURCE_SUPPLIER_HEADERS[tab]}</TableHead>
                       <TableHead className="w-40">Số hóa đơn</TableHead>
                       <TableHead className="w-32">Ngày phát sinh</TableHead>
                       <TableHead className="w-32 text-right">Phải trả</TableHead>

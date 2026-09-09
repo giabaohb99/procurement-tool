@@ -1,6 +1,36 @@
 import { describe, expect, it } from 'vitest'
 
-import { formatMoney, formatPercent, formatQuantity, formatUnitPrice } from './format-money'
+import {
+  formatMoney,
+  formatMoneyWithCurrency,
+  formatPercent,
+  formatQuantity,
+  formatUnitPrice,
+} from './format-money'
+
+describe('formatMoneyWithCurrency', () => {
+  it('rounds VND to the dong and appends the dong sign', () => {
+    expect(formatMoneyWithCurrency(4_760_000.08, 'VND')).toBe('4.760.000 đ')
+    expect(formatMoneyWithCurrency(4_760_000.08, 'vnd')).toBe('4.760.000 đ')
+  })
+
+  it('treats a blank currency as VND', () => {
+    expect(formatMoneyWithCurrency(1_000, '')).toBe('1.000 đ')
+    expect(formatMoneyWithCurrency(1_000, null)).toBe('1.000 đ')
+    expect(formatMoneyWithCurrency(1_000)).toBe('1.000 đ')
+  })
+
+  // Lỗi bao-CR-319: đơn USD từng hiện "5.230 đ" — mất số lẻ và sai đơn vị.
+  it('keeps decimals and shows the code for a foreign currency instead of the dong sign', () => {
+    expect(formatMoneyWithCurrency(5_230.5, 'USD')).toBe('5.230,5 USD')
+    expect(formatMoneyWithCurrency(12, 'cny')).toBe('12 CNY')
+  })
+
+  it('leaves only the unit for an empty amount', () => {
+    expect(formatMoneyWithCurrency(null, 'USD')).toBe(' USD')
+    expect(formatMoneyWithCurrency('abc', 'VND')).toBe(' đ')
+  })
+})
 
 describe('formatMoney', () => {
   it('làm tròn tới đồng, không để lẻ rò ra cột danh sách', () => {

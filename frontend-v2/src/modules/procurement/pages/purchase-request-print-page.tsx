@@ -197,7 +197,13 @@ export function PurchaseRequestPrintPage({ fromPo = false }: { fromPo?: boolean 
           <PrintLine label="Liên hệ" value={supplier.contact} />
           <PrintLine
             label="Báo giá đính kèm"
-            value={purchaseRequest.quote_file_url ? '☑ Có     ☐ Không' : '☐ Có     ☑ Không'}
+            // bao-CR-317: tệp đính kèm mới nằm ở tab_file, `quote_file_url` chỉ là cột cũ —
+            // backend gộp hai nguồn thành `has_quote_file`; backend cũ chưa có thì lùi về cột cũ.
+            value={
+              (purchaseRequest.has_quote_file ?? Boolean(purchaseRequest.quote_file_url))
+                ? '☑ Có     ☐ Không'
+                : '☐ Có     ☑ Không'
+            }
           />
         </PrintSection>
 

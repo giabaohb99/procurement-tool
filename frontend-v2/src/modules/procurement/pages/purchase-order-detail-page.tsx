@@ -29,6 +29,7 @@ import { useSuppliers } from '@/modules/production/hooks/use-suppliers'
 import { AuditTimeline } from '@/shared/audit'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { useHasChanged } from '@/shared/hooks/use-has-changed'
+import { formatMoney } from '@/shared/utils/format-money'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
@@ -41,6 +42,7 @@ import { DocumentAttachmentsCard } from '../components/document-attachments-card
 import { DocumentComments } from '../components/document-comments'
 import { DocumentMoneyTotals } from '../components/document-money-totals'
 import { StatusBadge } from '../components/document-status-badge'
+import { PurchaseOrderImportCostsCard } from '../components/purchase-order-import-costs-card'
 import { PurchaseOrderInfoCard } from '../components/purchase-order-info-card'
 import {
   orderLineAmount,
@@ -77,9 +79,14 @@ import {
   type PurchaseOrderDraftFromRequest,
 } from '../utils/purchase-order-draft'
 import { duplicatePurchaseOrderCodes, validatePurchaseOrder } from '../utils/required-fields'
+import {
+  displayLineBaseAmount,
+  isMissingExchangeRate,
+} from '../utils/purchase-order-import-cost'
 import { summarizeShipping } from '../utils/purchase-order-shipping'
 import {
   isDeliveryStage,
+  isImportOrder,
   isPurchaseOrderApproved,
   isPurchaseOrderLocked,
   PO_FIELDS_EDITABLE_AFTER_APPROVE,
@@ -179,6 +186,18 @@ export function PurchaseOrderDetailPage() {
     const total = items.reduce((sum, item) => sum + orderLineAmount(item), 0)
     return { subtotal, vat: total - subtotal, total }
   }, [draft?.items])
+
+  /** bao-CR-319: đơn nhập khẩu — tổng tiền hàng đã quy đổi VNĐ (dòng để trống thì theo đơn). */
+  const baseTotal = useMemo(() => {
+    if (!draft || !isImportOrder(draft)) return 0
+    return draft.items.reduce((sum, item) => sum + displayLineBaseAmount(item, draft), 0)
+  }, [draft])
+
+  /** Đơn NK có dòng ngoại tệ chưa nhập tỷ giá thì tổng quy đổi đang thiếu — phải nói rõ. */
+  const missingRateCount = useMemo(() => {
+    if (!draft || !isImportOrder(draft)) return 0
+    return draft.items.filter((item) => isMissingExchangeRate(item, draft)).length
+  }, [draft])
 
   /** Cước vận chuyển gom từ các lần giao — để giải thích con số ở dưới bảng. */
   const shipping = useMemo(() => summarizeShipping(draft?.items ?? []), [draft?.items])
@@ -319,6 +338,17 @@ export function PurchaseOrderDetailPage() {
         return
       }
     }
+    // bao-CR-319: chi phí lô hàng còn nợ thì nhắc trước — Hoàn thành không chặn,
+    // nhưng người dùng hay tưởng "xong đơn" là "xong tiền".
+    if (action === 'complete' && (data.import_cost_summary?.remaining_total ?? 0) > 0.01) {
+      const proceed = await confirmDialog({
+        title: 'Chi phí lô hàng còn nợ',
+        message: `Đơn còn ${(data.import_cost_summary?.remaining_total ?? 0).toLocaleString('vi-VN', { maximumFractionDigits: 0 })} đ chi phí lô hàng chưa thanh toán. Vẫn đánh dấu Hoàn thành? Công nợ đó vẫn theo dõi được ở phân hệ Tài chính.`,
+        confirmLabel: 'Vẫn hoàn thành',
+        cancelLabel: 'Để sau',
+      })
+      if (!proceed) return
+    }
     const result = await runAction.mutateAsync({ action })
     if (action === 'copy' && result?.id) {
       navigate(appRoutes.procurement.purchaseOrderDetail(result.id))
@@ -354,6 +384,20 @@ export function PurchaseOrderDetailPage() {
               >
                 <Printer />
                 In đơn
+              </Link>
+            </Button>
+          )}
+
+          {/* bao-CR-319: đơn nhập khẩu có bản in riêng — nguyên tệ + quy đổi + chi phí lô hàng. */}
+          {!isNew && can('purchase_order', 'print') && isImportOrder(data) && (
+            <Button variant="outline" asChild>
+              <Link
+                to={appRoutes.procurement.purchaseOrderImportPrint(data.id)}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <Printer />
+                In Đơn nhập khẩu
               </Link>
             </Button>
           )}
@@ -525,6 +569,7 @@ export function PurchaseOrderDetailPage() {
             )}
             <PurchaseOrderItemsTable
               items={data.items}
+              order={data}
               editable={headerEditable}
               progressEditable={progressEditable}
               onChange={(items) => patch({ items })}
@@ -546,9 +591,38 @@ export function PurchaseOrderDetailPage() {
             />
             <DocumentMoneyTotals
               {...orderTotals}
-              subtotalLabel="Tiền hàng theo SL đặt (chưa VAT)"
-              totalLabel="Tổng đơn đặt (gồm VAT)"
+              subtotalLabel={
+                isImportOrder(data)
+                  ? `Tiền hàng theo SL đặt (nguyên tệ ${data.currency || 'VND'})`
+                  : 'Tiền hàng theo SL đặt (chưa VAT)'
+              }
+              totalLabel={
+                isImportOrder(data)
+                  ? `Tổng đơn đặt (nguyên tệ ${data.currency || 'VND'})`
+                  : 'Tổng đơn đặt (gồm VAT)'
+              }
+              currency={isImportOrder(data) ? data.currency : undefined}
             />
+            {isImportOrder(data) && (
+              <div className="ml-auto w-full max-w-sm space-y-1 text-sm">
+                <p className="flex justify-between gap-4">
+                  <span className="text-muted-foreground">Tổng quy đổi (VNĐ)</span>
+                  <span
+                    className="font-semibold text-navy tabular-nums dark:text-foreground"
+                    title="Cộng thành tiền quy đổi của từng dòng theo tỷ giá dòng (trống thì theo tỷ giá đơn)."
+                  >
+                    {formatMoney(baseTotal)} đ
+                  </span>
+                </p>
+                {missingRateCount > 0 && (
+                  <p className="flex items-center justify-end gap-1.5 text-xs text-warning">
+                    <AlertTriangle className="size-3.5" />
+                    {missingRateCount} dòng ngoại tệ chưa có tỷ giá — nhập tỷ giá ở đầu đơn
+                    hoặc trong chi tiết dòng để quy đổi.
+                  </p>
+                )}
+              </div>
+            )}
             {!isNew && (
               <div className="space-y-1 text-right text-xs text-muted-foreground">
                 <p>
@@ -586,6 +660,18 @@ export function PurchaseOrderDetailPage() {
           </CardContent>
         </Card>
 
+        {/* bao-CR-319: thẻ chi phí lô hàng chỉ có ở đơn NHẬP KHẨU. */}
+        {isImportOrder(data) && (
+          <PurchaseOrderImportCostsCard
+            order={data}
+            // Bảng chi phí mở cả khi đơn đã duyệt (cước tàu, thuế về sau) — giống v1.
+            editable={headerEditable || afterApproveEditable}
+            isNew={isNew}
+            suppliers={suppliersData?.items ?? []}
+            onChange={(import_costs) => patch({ import_costs })}
+          />
+        )}
+
         {!isNew && <PurchaseOrderPaymentRequestsCard poCode={data.code} />}
 
         <DocumentAttachmentsCard
@@ -612,6 +698,7 @@ export function PurchaseOrderDetailPage() {
 
       <PurchaseOrderLineDialog
         item={lineIndex === null ? null : (data.items[lineIndex] ?? null)}
+        order={data}
         lineNumber={(lineIndex ?? 0) + 1}
         open={lineIndex !== null}
         editable={headerEditable}
@@ -753,6 +840,11 @@ function createEmptyPurchaseOrderItem(vatRate: number): PurchaseOrderItem {
     vat: Math.round((vatRate || 0) * 100),
     warehouse_code: '',
     note: '',
+    // bao-CR-319: rỗng / 0 = theo đồng tiền + tỷ giá của đơn.
+    currency: '',
+    exchange_rate: 0,
+    weight_kg: 0,
+    dimension: '',
     deliveries: [],
   }
 }

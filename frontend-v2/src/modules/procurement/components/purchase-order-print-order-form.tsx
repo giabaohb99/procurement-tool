@@ -1,5 +1,6 @@
 import type { PurchaseOrderPrintData } from '../api/purchase-order-api'
 import { formatMoney, formatQuantity, formatUnitPrice } from '@/shared/utils/format-money'
+import { resolvePrintTerms } from '../utils/purchase-order-print-terms'
 import { PurchaseOrderPrintSignatureBox } from './purchase-order-print-signature-box'
 
 interface PurchaseOrderPrintOrderFormProps {
@@ -21,6 +22,7 @@ export function PurchaseOrderPrintOrderForm({
   const supplier = data.supplier ?? {}
   const warehouse = data.warehouse ?? {}
   const signers = data.signers
+  const terms = resolvePrintTerms(data)
 
   return (
     <article className="po-print-doc po-print-doc--landscape">
@@ -98,7 +100,7 @@ export function PurchaseOrderPrintOrderForm({
           {data.payment_terms || supplier.payment_terms || '............'}
         </p>
         <p>
-          <b>2. Thời gian nhận hóa đơn:</b> Chậm nhất 24h kể từ khi nhận hàng
+          <b>2. Thời gian nhận hóa đơn:</b> {terms.invoice_deadline}
         </p>
         <p>
           <b>3. Thông tin nhận hàng:</b>
@@ -117,13 +119,16 @@ export function PurchaseOrderPrintOrderForm({
         <p>
           <b>5. Hàng lỗi, sai mẫu:</b>
         </p>
-        <p className="pl-4">- Bên mua kiểm tra hàng trong vòng 15 ngày kể từ ngày nhận hàng.</p>
+        <p className="pl-4">
+          - Bên mua kiểm tra hàng trong vòng {terms.inspection_days_label} ngày kể từ ngày nhận
+          hàng.
+        </p>
         <p className="pl-4">
           - Nếu hàng lỗi/sai mẫu, Bên mua thông báo kèm bằng chứng cho Bên bán.
         </p>
         <p className="pl-4">
-          - Bên bán phải thu hồi, đổi trả trong vòng 07 ngày; mọi chi phí phát sinh do Bên bán
-          chịu.
+          - Bên bán phải thu hồi, đổi trả trong vòng {terms.return_days_label} ngày; mọi chi phí
+          phát sinh do Bên bán chịu.
         </p>
       </div>
 

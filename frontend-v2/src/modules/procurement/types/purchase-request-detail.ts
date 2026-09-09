@@ -82,6 +82,14 @@ export interface PurchaseRequestDetail {
   suggested_supplier_contact: string
   quote_filename: string
   quote_file_url: string
+  /**
+   * bao-CR-317 — backend tính: có báo giá đính kèm hay không, gộp cả tệp cũ
+   * (`quote_file_url`) lẫn tệp đính kèm mới qua `tab_file`. Bản in đọc cờ này.
+   */
+  has_quote_file?: boolean
+  /** bao-CR-318 — YCBG sinh ra phiếu này (0 / rỗng = lập tay). */
+  survey_request_id?: number
+  survey_request_code?: string
 
   /**
    * Công tắc "duyệt điều phối" của hệ thống. TẮT thì phiếu "Đã duyệt" đã làm

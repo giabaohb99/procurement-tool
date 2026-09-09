@@ -66,6 +66,9 @@ export interface PurchaseOrder {
   nspt: string
   order_date: string
   is_urgent: boolean
+  /** bao-CR-319 — 1 = trong nước, 2 = nhập khẩu (`ORDER_TYPE_*` ở `purchase-order-detail.ts`). */
+  order_type: number
+  order_type_label?: string
   status: string
   /** Tình trạng hồ sơ chứng từ — lưu CHUỖI TIẾNG VIỆT, không phải mã. */
   document_status: string

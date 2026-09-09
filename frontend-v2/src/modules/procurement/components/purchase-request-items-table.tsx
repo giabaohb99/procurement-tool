@@ -328,13 +328,16 @@ export function PurchaseRequestItemsTable({
             {/* Đang sửa thì mã nằm trong ô chọn (một <button>) nên bôi đen không
                 được — nút chép là đường duy nhất lấy được mã ra ngoài. */}
             <CopyButton value={item.product_code} label="mã hàng" className="size-7" />
-            {editing && !!item.product_code && (
+            {/* bao-CR-320: phiếu đã khóa vẫn xem được lịch sử (chỉ xem, không điền giá). */}
+            {!!item.product_code && (
               <Button
                 type="button"
                 variant="ghost"
                 size="icon-sm"
                 className="size-7 shrink-0 text-muted-foreground"
-                title="Xem lịch sử mua hàng gần nhất"
+                title={
+                  editing ? 'Xem lịch sử mua hàng gần nhất' : 'Xem lịch sử mua hàng (chỉ xem)'
+                }
                 aria-label={`Xem lịch sử mua hàng của ${item.product_code}`}
                 onClick={() => setHistoryIndex(index)}
               >
@@ -650,6 +653,7 @@ export function PurchaseRequestItemsTable({
 
       <PurchaseHistoryDialog
         open={historyIndex !== null}
+        readOnly={!editing}
         productCode={historyIndex === null ? '' : items[historyIndex]?.product_code || ''}
         productName={historyIndex === null ? '' : items[historyIndex]?.product_name || ''}
         onOpenChange={(open) => {

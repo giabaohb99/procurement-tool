@@ -16,6 +16,10 @@ export type Supplier = {
   contact_person: string
   phone: string
   payment_terms: string
+  /** bao-CR-321 — điều khoản in trên Đơn đặt hàng; 0 / rỗng = dùng mặc định của bản in. */
+  inspection_days: number
+  return_days: number
+  invoice_deadline: string
   bank_account: string
   bank_name: string
   bank_account_name: string

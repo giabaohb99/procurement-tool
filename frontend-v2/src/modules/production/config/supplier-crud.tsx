@@ -261,6 +261,32 @@ export const SUPPLIER_CRUD_CONFIG: CrudConfig<Supplier> = {
       options: PAYMENT_TERMS_OPTIONS,
       placeholder: 'Chọn hình thức thanh toán',
     },
+    // bao-CR-321 — điều khoản in trên Đơn đặt hàng (mục 2 và mục 5 "Thỏa thuận khác").
+    // Để trống thì bản in dùng mặc định cũ; Đơn mua hàng chép ba ô này lúc chọn NCC.
+    {
+      name: 'inspection_days',
+      label: 'Số ngày kiểm tra hàng',
+      type: 'number',
+      defaultValue: 0,
+      placeholder: '15',
+      hint: 'Mục 5 bản in: "Bên mua kiểm tra hàng trong vòng N ngày". 0 = dùng mặc định 15 ngày.',
+    },
+    {
+      name: 'return_days',
+      label: 'Số ngày thu hồi / đổi trả',
+      type: 'number',
+      defaultValue: 0,
+      placeholder: '7',
+      hint: 'Mục 5 bản in: "Bên bán phải thu hồi, đổi trả trong vòng N ngày". 0 = dùng mặc định 07 ngày.',
+    },
+    {
+      name: 'invoice_deadline',
+      label: 'Thời gian nhận hóa đơn',
+      type: 'text',
+      fullWidth: true,
+      placeholder: 'Chậm nhất 24h kể từ khi nhận hàng',
+      hint: 'Mục 2 bản in. Để trống thì in "Chậm nhất 24h kể từ khi nhận hàng".',
+    },
     {
       name: 'bank_account_name',
       label: 'Tên tài khoản thụ hưởng',

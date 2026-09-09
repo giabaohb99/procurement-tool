@@ -329,7 +329,12 @@ function SurveyRequestListContent() {
                 />
               </div>
 
-              <div className="hidden md:flex md:flex-wrap md:items-center md:gap-2">
+              {/*  `md:contents` chứ KHÔNG phải `md:flex`: bọc cụm lọc trong một thẻ
+                   flex riêng thì với thanh công cụ nó là MỘT ô, không đủ chỗ là
+                   rớt nguyên khối xuống dòng dưới và chừa khoảng trống dài bên
+                   phải ô tìm kiếm. Màn Đơn mua hàng đã vỡ đúng kiểu đó khi thêm
+                   ô lọc thứ sáu (bao-CR-319). */}
+              <div className="hidden md:contents">
                 {filterControls}
                 <ConditionalFilter />
               </div>

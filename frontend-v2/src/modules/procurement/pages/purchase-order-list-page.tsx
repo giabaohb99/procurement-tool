@@ -48,6 +48,7 @@ import {
   statusOptions,
   type PurchaseOrder,
 } from '../types/purchase-document'
+import { ORDER_TYPE_IMPORT, ORDER_TYPE_OPTIONS } from '../types/purchase-order-detail'
 
 const ALL = 'all'
 
@@ -82,6 +83,7 @@ const FILTER_CONFIG = {
     'status',
     'invoice_no',
     'is_urgent',
+    'order_type',
     'order_date_from',
     'order_date_to',
     'sort_by',
@@ -111,6 +113,7 @@ function PurchaseOrderListContent() {
   const [docStatus, setDocStatus] = useUrlParamState('document_status', ALL)
   const [status, setStatus] = useUrlParamState('status', ALL)
   const [isUrgent, setIsUrgent] = useUrlParamState('is_urgent', ALL)
+  const [orderType, setOrderType] = useUrlParamState('order_type', ALL)
   const [orderDateFrom, setOrderDateFrom] = useUrlParamState('order_date_from', '')
   const [orderDateTo, setOrderDateTo] = useUrlParamState('order_date_to', '')
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
@@ -134,6 +137,7 @@ function PurchaseOrderListContent() {
     docStatus,
     status,
     isUrgent,
+    orderType,
     orderDateFrom,
     orderDateTo,
     sortBy,
@@ -154,6 +158,7 @@ function PurchaseOrderListContent() {
   if (docStatus !== ALL) filterParams.document_status = docStatus
   if (status !== ALL) filterParams.status = status
   if (isUrgent === 'true') filterParams.is_urgent = true
+  if (orderType !== ALL) filterParams.order_type = Number(orderType)
   if (orderDateFrom) filterParams.order_date_from = orderDateFrom
   if (orderDateTo) filterParams.order_date_to = orderDateTo
   if (sortBy) {
@@ -198,6 +203,7 @@ function PurchaseOrderListContent() {
     docStatus !== ALL,
     status !== ALL,
     isUrgent === 'true',
+    orderType !== ALL,
     Boolean(orderDateFrom || orderDateTo),
   ].filter(Boolean).length
 
@@ -208,6 +214,7 @@ function PurchaseOrderListContent() {
     setDocStatus(ALL)
     setStatus(ALL)
     setIsUrgent(ALL)
+    setOrderType(ALL)
     setOrderDateFrom('')
     setOrderDateTo('')
   }
@@ -295,6 +302,18 @@ function PurchaseOrderListContent() {
           po.is_urgent ? (
             <Badge variant="secondary" className="border-0 bg-warning/10 text-warning">
               Gấp
+            </Badge>
+          ) : null,
+      },
+      {
+        // bao-CR-319 — đơn nhập khẩu có nhãn riêng; đơn trong nước để trống cho đỡ rối.
+        key: 'order_type',
+        header: 'Loại đơn',
+        width: 110,
+        cell: (po) =>
+          Number(po.order_type) === ORDER_TYPE_IMPORT ? (
+            <Badge variant="secondary" className="border-0 bg-navy/10 text-navy">
+              {po.order_type_label || 'Nhập khẩu'}
             </Badge>
           ) : null,
       },
@@ -413,6 +432,20 @@ function PurchaseOrderListContent() {
         </SelectContent>
       </Select>
 
+      <Select value={orderType} onValueChange={setOrderType}>
+        <SelectTrigger className="w-full md:w-36 text-xs h-9">
+          <SelectValue placeholder="Loại đơn" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={ALL}>Tất cả loại đơn</SelectItem>
+          {ORDER_TYPE_OPTIONS.map((option) => (
+            <SelectItem key={option.value} value={String(option.value)}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
       <DateRangePicker
         from={orderDateFrom}
         to={orderDateTo}
@@ -495,8 +528,14 @@ function PurchaseOrderListContent() {
                 Gấp
               </Button>
 
-              {/* Desktop Filter Controls */}
-              <div className="hidden md:flex md:flex-wrap md:items-center md:gap-2">
+              {/*  Desktop Filter Controls — `md:contents` chứ KHÔNG phải `md:flex`.
+                   Bọc trong một thẻ flex riêng thì cả cụm lọc là MỘT ô của thanh
+                   công cụ: không đủ chỗ là nó rớt nguyên khối xuống dòng dưới, để
+                   lại một khoảng trống dài bên phải ô tìm kiếm rồi tự xuống dòng
+                   thêm lần nữa bên trong. Thêm ô lọc *Loại đơn* (bao-CR-319) là
+                   vượt ngưỡng đó. `display: contents` cho các ô lọc thành ô trực
+                   tiếp của thanh công cụ nên chúng xếp kín từng dòng. */}
+              <div className="hidden md:contents">
                 {filterControls}
                 <ConditionalFilter />
               </div>

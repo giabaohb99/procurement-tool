@@ -49,6 +49,10 @@ function item(deliveries: PurchaseOrderDelivery[]): PurchaseOrderItem {
     vat: 0,
     warehouse_code: '',
     note: '',
+    currency: '',
+    exchange_rate: 0,
+    weight_kg: 0,
+    dimension: '',
     deliveries,
   }
 }

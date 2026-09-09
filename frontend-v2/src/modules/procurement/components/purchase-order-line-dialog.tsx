@@ -18,6 +18,7 @@ import { NumberInput } from '@/shared/ui/number-input'
 import { Label } from '@/shared/ui/label'
 import { ReadOnlyValue } from '@/shared/ui/read-only-value'
 import { RequiredMark } from '@/shared/ui/required-mark'
+import { SearchSelect } from '@/shared/ui/search-select'
 import {
   Select,
   SelectContent,
@@ -37,15 +38,28 @@ import { buildStdDaysMap, calcRegulatedDate, findStdDays } from '../utils/lead-t
 import { ProgressStatusBadge } from './document-status-badge'
 import { PurchaseOrderDeliveriesTable } from './purchase-order-deliveries-table'
 import {
+  CURRENCY_OPTIONS,
+  isImportOrder,
   isLineLocked,
   isLineReceived,
   PO_FIELDS_EDITABLE_AFTER_APPROVE,
   PRODUCT_LOCK_HINT,
+  type PurchaseOrderDetail,
   type PurchaseOrderItem,
 } from '../types/purchase-order-detail'
+import {
+  displayLineBaseAmount,
+  isMissingExchangeRate,
+  resolveLineCurrency,
+} from '../utils/purchase-order-import-cost'
+
+/** Giá trị ô chọn đồng tiền nghĩa là "theo đơn" — Radix Select không nhận chuỗi rỗng. */
+const CURRENCY_FOLLOW_ORDER = '__order__'
 
 interface PurchaseOrderLineDialogProps {
   item: PurchaseOrderItem | null
+  /** bao-CR-319 — loại đơn + đồng tiền / tỷ giá của đơn (dòng để trống thì theo đơn). */
+  order: Pick<PurchaseOrderDetail, 'order_type' | 'currency' | 'exchange_rate'>
   lineNumber: number
   open: boolean
   /** Sửa được nội dung dòng (đơn chưa chốt + có quyền ghi). */
@@ -82,6 +96,7 @@ interface PurchaseOrderLineDialogProps {
  */
 export function PurchaseOrderLineDialog({
   item,
+  order,
   lineNumber,
   open,
   editable,
@@ -103,6 +118,10 @@ export function PurchaseOrderLineDialog({
   //  Danh mục Phân loại VTBB/NL giữ số ngày quy định — nguồn tính mốc giao hàng.
   const { data: itemGroups } = usePurchaseRequestItemGroups(open)
   const stdDaysMap = useMemo(() => buildStdDaysMap(itemGroups?.items), [itemGroups])
+  const itemGroupOptions = useMemo(
+    () => (itemGroups?.items ?? []).map((group) => ({ value: group.name, label: group.name })),
+    [itemGroups],
+  )
 
   if (!item) return null
 
@@ -116,6 +135,8 @@ export function PurchaseOrderLineDialog({
    */
   const lateEditable = fieldEditable || (afterApproveEditable && !locked)
   const remaining = (item.qty_order || 0) - (item.qty_received || 0)
+  const importMode = isImportOrder(order)
+  const lineCurrency = resolveLineCurrency(item, order)
 
   const patch = (changes: Partial<PurchaseOrderItem>) => onChange({ ...item, ...changes })
 
@@ -171,9 +192,14 @@ export function PurchaseOrderLineDialog({
               <RequiredMark />
             </Label>
             {fieldEditable ? (
-              <Input
+              <SearchSelect
                 value={item.item_group || ''}
-                onChange={(event) => patch({ item_group: event.target.value })}
+                onChange={(value) => patch({ item_group: value })}
+                options={itemGroupOptions}
+                placeholder="Chọn phân loại"
+                searchPlaceholder="Tìm phân loại..."
+                emptyMessage="Không có phân loại phù hợp"
+                clearable
               />
             ) : (
               <ReadOnlyValue>{item.item_group}</ReadOnlyValue>
@@ -395,19 +421,113 @@ export function PurchaseOrderLineDialog({
             </div>
           </div>
 
-          {/* bao-CR-307: đơn giá đã gồm VAT, làm tròn 2 số lẻ — khớp cột cùng tên trên bảng dòng */}
-          <Field label="Đơn giá (Sau VAT)">
-            {formatUnitPrice(
-              Math.round((item.price || 0) * (1 + (item.vat || 0) / 100) * 100) / 100,
-            )}{' '}
-            đ
-          </Field>
+          {/* bao-CR-319: cụm nhập khẩu — khối lượng / quy cách để khai hải quan và
+              chia chi phí theo trọng lượng; đồng tiền + tỷ giá riêng của dòng. */}
+          {importMode && (
+            <>
+              <div className="space-y-1.5">
+                <Label>Khối lượng (kg)</Label>
+                {fieldEditable ? (
+                  <NumberInput
+                    value={item.weight_kg || 0}
+                    onChange={(value) => patch({ weight_kg: value })}
+                    maxDecimals={3}
+                    aria-label="Khối lượng (kg)"
+                  />
+                ) : (
+                  <ReadOnlyValue className="tabular-nums">
+                    {formatQuantity(item.weight_kg || 0)}
+                  </ReadOnlyValue>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Quy cách / kích thước</Label>
+                {fieldEditable ? (
+                  <Input
+                    value={item.dimension || ''}
+                    onChange={(event) => patch({ dimension: event.target.value })}
+                    placeholder="VD: 120 x 80 x 60 cm"
+                  />
+                ) : (
+                  <ReadOnlyValue>{item.dimension}</ReadOnlyValue>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Đồng tiền của dòng</Label>
+                {fieldEditable ? (
+                  <Select
+                    value={item.currency || CURRENCY_FOLLOW_ORDER}
+                    onValueChange={(value) =>
+                      patch({ currency: value === CURRENCY_FOLLOW_ORDER ? '' : value })
+                    }
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={CURRENCY_FOLLOW_ORDER}>
+                        Theo đơn ({order.currency || 'VND'})
+                      </SelectItem>
+                      {CURRENCY_OPTIONS.map((code) => (
+                        <SelectItem key={code} value={code}>
+                          {code}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <ReadOnlyValue>
+                    {item.currency || `Theo đơn (${lineCurrency.currency})`}
+                  </ReadOnlyValue>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Tỷ giá của dòng (0 = theo đơn)</Label>
+                {fieldEditable ? (
+                  <NumberInput
+                    value={item.exchange_rate || 0}
+                    onChange={(value) => patch({ exchange_rate: value })}
+                    maxDecimals={6}
+                    aria-label="Tỷ giá của dòng"
+                  />
+                ) : (
+                  <ReadOnlyValue className="tabular-nums">
+                    {item.exchange_rate
+                      ? formatUnitPrice(item.exchange_rate)
+                      : `Theo đơn (${formatUnitPrice(lineCurrency.exchangeRate)})`}
+                  </ReadOnlyValue>
+                )}
+              </div>
+
+              <Field label="Thành tiền quy đổi (VNĐ)">
+                {isMissingExchangeRate(item, order) ? (
+                  <span className="text-warning">Chưa có tỷ giá</span>
+                ) : (
+                  `${formatMoney(displayLineBaseAmount(item, order))} đ`
+                )}
+              </Field>
+            </>
+          )}
+
+          {/* bao-CR-307: đơn giá đã gồm VAT, làm tròn 2 số lẻ — khớp cột cùng tên trên bảng dòng.
+              Đơn nhập khẩu không có VAT dòng nên bỏ ô này. */}
+          {!importMode && (
+            <Field label="Đơn giá (Sau VAT)">
+              {formatUnitPrice(
+                Math.round((item.price || 0) * (1 + (item.vat || 0) / 100) * 100) / 100,
+              )}{' '}
+              đ
+            </Field>
+          )}
           <Field label="Tổng tiền đặt hàng">
             {formatMoney(
               item.order_total ??
                 (item.qty_order || 0) * (item.price || 0) * (1 + (item.vat || 0) / 100),
             )}{' '}
-            đ
+            {importMode && lineCurrency.currency !== 'VND' ? lineCurrency.currency : 'đ'}
           </Field>
           <Field label="Tiền hàng đã nhận">{formatMoney(item.goods_total ?? 0)} đ</Field>
           <Field label="Đã trả">{formatMoney(item.paid_total ?? 0)} đ</Field>

@@ -11,6 +11,7 @@ import { Checkbox } from '@/shared/ui/checkbox'
 import { DatePicker } from '@/shared/ui/date-picker'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
+import { NumberInput } from '@/shared/ui/number-input'
 import { ReadOnlyValue } from '@/shared/ui/read-only-value'
 import { RequiredMark } from '@/shared/ui/required-mark'
 import {
@@ -24,9 +25,19 @@ import { Textarea } from '@/shared/ui/textarea'
 import { formatDate } from '@/shared/utils/format-date'
 
 import {
+  CURRENCY_OPTIONS,
+  DEFAULT_CURRENCY,
+  isImportOrder,
+  ORDER_TYPE_DOMESTIC,
+  ORDER_TYPE_OPTIONS,
   PAYMENT_TERMS_OPTIONS,
   type PurchaseOrderDetail,
 } from '../types/purchase-order-detail'
+import { DEFAULT_PRINT_TERMS } from '../utils/purchase-order-print-terms'
+import { switchOrderType } from '../utils/purchase-order-import-cost'
+
+/** Tỷ giá nhập tới 6 số lẻ (1 JPY = 0,0065 USD kiểu vậy) — 3 số mặc định là mất. */
+const EXCHANGE_RATE_MAX_DECIMALS = 6
 
 interface PurchaseOrderInfoCardProps {
   data: PurchaseOrderDetail
@@ -79,8 +90,20 @@ export function PurchaseOrderInfoCard({
       supplier_name: supplier?.name ?? '',
       vat_rate: supplier?.vat || data.vat_rate,
       payment_terms: supplier?.payment_terms || data.payment_terms,
+      // bao-CR-321: NCC có khai điều khoản riêng thì kéo theo, không thì giữ số đang có.
+      inspection_days: supplier?.inspection_days || data.inspection_days,
+      return_days: supplier?.return_days || data.return_days,
+      invoice_deadline: supplier?.invoice_deadline || data.invoice_deadline,
     })
   }
+
+  const importOrder = isImportOrder(data)
+  const currency = data.currency || DEFAULT_CURRENCY
+  const showExchangeRate = importOrder || currency !== DEFAULT_CURRENCY
+  /** Đơn cũ có thể ghi đồng tiền ngoài danh sách gợi ý — vẫn phải chọn lại được. */
+  const currencyOptions = CURRENCY_OPTIONS.includes(currency)
+    ? CURRENCY_OPTIONS
+    : [...CURRENCY_OPTIONS, currency]
 
   return (
     <Card className="gap-4 py-4">
@@ -259,6 +282,155 @@ export function PurchaseOrderInfoCard({
           )}
         </div>
 
+        {/* bao-CR-321: ba điều khoản in ở mục 2 và mục 5 bản in Đơn đặt hàng. 0 / rỗng
+            = bản in dùng mặc định cũ; chọn NCC thì kéo theo điều khoản NCC đó khai. */}
+        <div className="space-y-1.5">
+          <Label>Số ngày kiểm tra hàng (bản in)</Label>
+          {editable ? (
+            <NumberInput
+              value={data.inspection_days || 0}
+              placeholder={String(DEFAULT_PRINT_TERMS.inspection_days)}
+              onChange={(value) => onChange({ inspection_days: Math.max(0, Math.trunc(value)) })}
+            />
+          ) : (
+            <ReadOnlyValue>{printDaysLabel(data.inspection_days, DEFAULT_PRINT_TERMS.inspection_days)}</ReadOnlyValue>
+          )}
+        </div>
+
+        <div className="space-y-1.5">
+          <Label>Số ngày thu hồi / đổi trả (bản in)</Label>
+          {editable ? (
+            <NumberInput
+              value={data.return_days || 0}
+              placeholder={String(DEFAULT_PRINT_TERMS.return_days)}
+              onChange={(value) => onChange({ return_days: Math.max(0, Math.trunc(value)) })}
+            />
+          ) : (
+            <ReadOnlyValue>{printDaysLabel(data.return_days, DEFAULT_PRINT_TERMS.return_days)}</ReadOnlyValue>
+          )}
+        </div>
+
+        <div className="space-y-1.5 md:col-span-2">
+          <Label>Thời gian nhận hóa đơn (bản in)</Label>
+          {editable ? (
+            <Input
+              value={data.invoice_deadline || ''}
+              placeholder={DEFAULT_PRINT_TERMS.invoice_deadline}
+              onChange={(event) => onChange({ invoice_deadline: event.target.value })}
+            />
+          ) : (
+            <ReadOnlyValue>
+              {data.invoice_deadline || DEFAULT_PRINT_TERMS.invoice_deadline}
+            </ReadOnlyValue>
+          )}
+        </div>
+
+        {/* bao-CR-319: loại đơn + đồng tiền. Đổi loại đơn kéo theo dòng hàng và chi phí
+            lô hàng (xem `switchOrderType`), nên gửi cả cụm trong một lần onChange. */}
+        <div className="space-y-1.5">
+          <Label>Loại đơn</Label>
+          {editable ? (
+            <Select
+              value={String(data.order_type || ORDER_TYPE_DOMESTIC)}
+              onValueChange={(value) => onChange(switchOrderType(data, Number(value)))}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ORDER_TYPE_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={String(option.value)}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <ReadOnlyValue>
+              {data.order_type_label ||
+                ORDER_TYPE_OPTIONS.find((option) => option.value === data.order_type)?.label ||
+                '—'}
+            </ReadOnlyValue>
+          )}
+        </div>
+
+        <div className="space-y-1.5">
+          <Label>Đồng tiền</Label>
+          {editable ? (
+            <Select
+              value={currency}
+              onValueChange={(value) =>
+                onChange({
+                  currency: value,
+                  // Về VND thì tỷ giá chỉ có thể là 1, đừng bắt người dùng sửa tay.
+                  exchange_rate: value === DEFAULT_CURRENCY ? 1 : data.exchange_rate,
+                })
+              }
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {currencyOptions.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <ReadOnlyValue>{currency}</ReadOnlyValue>
+          )}
+        </div>
+
+        {showExchangeRate && (
+          <div className="space-y-1.5">
+            <Label>
+              Tỷ giá (1 {currency} = ? VND)
+              {importOrder && <RequiredMark />}
+            </Label>
+            {editable ? (
+              <NumberInput
+                value={data.exchange_rate || 0}
+                decimals
+                maxDecimals={EXCHANGE_RATE_MAX_DECIMALS}
+                onChange={(value) => onChange({ exchange_rate: value })}
+              />
+            ) : (
+              <ReadOnlyValue className="tabular-nums">{data.exchange_rate || '—'}</ReadOnlyValue>
+            )}
+          </div>
+        )}
+
+        {importOrder && (
+          <>
+            <div className="space-y-1.5">
+              <Label>Số tờ khai hải quan</Label>
+              {editable ? (
+                <Input
+                  value={data.customs_decl_no || ''}
+                  placeholder="Số tờ khai"
+                  onChange={(event) => onChange({ customs_decl_no: event.target.value })}
+                />
+              ) : (
+                <ReadOnlyValue>{data.customs_decl_no || '—'}</ReadOnlyValue>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Ngày tờ khai</Label>
+              {editable ? (
+                <DatePicker
+                  value={data.customs_decl_date || ''}
+                  onChange={(value) => onChange({ customs_decl_date: value })}
+                />
+              ) : (
+                <ReadOnlyValue>{formatDate(data.customs_decl_date) || '—'}</ReadOnlyValue>
+              )}
+            </div>
+          </>
+        )}
+
         <div className="space-y-1.5">
           <Label>Hồ sơ chứng từ</Label>
           {documentStatusEditable && onDocumentStatusChange ? (
@@ -310,6 +482,15 @@ export function PurchaseOrderInfoCard({
       </CardContent>
     </Card>
   )
+}
+
+/**
+ * "15 ngày". Ô trống thì bày thẳng con số bản in sẽ dùng, KHÔNG chú thêm chữ
+ * "Mặc định bản in" — khách đọc ra thành một trạng thái lạ chứ không ra con số
+ * (09/09/2026). Số hiện ở đây luôn đúng bằng số in ra giấy.
+ */
+function printDaysLabel(days: number, fallback: number): string {
+  return `${days > 0 ? days : fallback} ngày`
 }
 
 function ReadOnlyField({

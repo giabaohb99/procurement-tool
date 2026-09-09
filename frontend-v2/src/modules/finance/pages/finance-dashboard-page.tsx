@@ -24,6 +24,7 @@ import { usePayableSummary } from '../hooks/use-payables'
 import { usePaymentRequests } from '../hooks/use-payment-requests'
 import { PaymentRequestStatusBadge } from '../components/payment-request-status-badge'
 import type { PaymentRequestStatus } from '../types/payment-request'
+import { PAYABLE_SOURCE_LABELS } from '../types/payable'
 
 /**
  * Tổng quan Tài chính: KPI Công nợ, tuổi nợ, top nợ NCC và danh sách YCTT gần đây.
@@ -202,7 +203,9 @@ export function FinanceDashboardPage() {
                         {row.code}
                       </TableCell>
                       <TableCell className="font-medium">{row.supplier_name || row.supplier_code}</TableCell>
-                      <TableCell>{row.source_type === 'shipping' ? 'Vận chuyển' : 'Hàng hóa'}</TableCell>
+                      <TableCell>
+                        {PAYABLE_SOURCE_LABELS[row.source_type] ?? row.source_type}
+                      </TableCell>
                       <TableCell>{formatDate(row.request_date) || '—'}</TableCell>
                       <TableCell className="text-right font-medium tabular-nums">
                         {formatMoney(row.total)} đ

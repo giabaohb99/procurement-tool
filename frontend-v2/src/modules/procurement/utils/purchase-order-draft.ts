@@ -3,7 +3,16 @@ import type {
   PurchaseRequestDetail,
   PurchaseRequestItem,
 } from '../types/purchase-request-detail'
-import type { PurchaseOrderDetail, PurchaseOrderItem } from '../types/purchase-order-detail'
+import type {
+  PurchaseOrderDetail,
+  PurchaseOrderImportCost,
+  PurchaseOrderItem,
+} from '../types/purchase-order-detail'
+import {
+  ALLOCATION_BY_VALUE,
+  DEFAULT_CURRENCY,
+  ORDER_TYPE_DOMESTIC,
+} from '../types/purchase-order-detail'
 
 /**
  * Dữ liệu điền sẵn khi tạo ĐMH TỪ một phiếu YCMH. Đi kèm điều hướng
@@ -40,11 +49,20 @@ export function createEmptyPurchaseOrder(
     order_date: new Date().toISOString().slice(0, 10),
     vat_rate: from?.vat_rate ?? 0.08,
     payment_terms: '',
+    inspection_days: 0,
+    return_days: 0,
+    invoice_deadline: '',
+    order_type: ORDER_TYPE_DOMESTIC,
+    currency: DEFAULT_CURRENCY,
+    exchange_rate: 1,
+    customs_decl_no: '',
+    customs_decl_date: '',
     is_urgent: from?.is_urgent ?? false,
     status: 'draft',
     document_status: '',
     note: from?.note ?? '',
     items: from?.items ?? [],
+    import_costs: [],
     subtotal: 0,
     vat: 0,
     total: 0,
@@ -69,8 +87,34 @@ export function toPurchaseOrderPayload(data: PurchaseOrderDetail): PurchaseOrder
     order_date: data.order_date,
     vat_rate: Number(data.vat_rate) || 0,
     payment_terms: data.payment_terms,
+    inspection_days: Number(data.inspection_days) || 0,
+    return_days: Number(data.return_days) || 0,
+    invoice_deadline: data.invoice_deadline ?? '',
+    order_type: Number(data.order_type) || ORDER_TYPE_DOMESTIC,
+    currency: data.currency || DEFAULT_CURRENCY,
+    exchange_rate: Number(data.exchange_rate) || 1,
+    customs_decl_no: data.customs_decl_no ?? '',
+    customs_decl_date: data.customs_decl_date ?? '',
     is_urgent: data.is_urgent,
     note: data.note,
+    import_costs: (data.import_costs ?? []).map((cost) => ({
+      id: cost.id,
+      cost_type: Number(cost.cost_type) || 99,
+      description: cost.description,
+      supplier_code: cost.supplier_code,
+      supplier_name: cost.supplier_name,
+      currency: cost.currency,
+      exchange_rate: Number(cost.exchange_rate) || 0,
+      amount: Number(cost.amount) || 0,
+      vat: Number(cost.vat) || 0,
+      allocation_method: Number(cost.allocation_method) || ALLOCATION_BY_VALUE,
+      allocation_target: cost.allocation_target,
+      manual_allocation: cost.manual_allocation ?? {},
+      invoice_no: cost.invoice_no,
+      invoice_date: cost.invoice_date,
+      payment_due_date: cost.payment_due_date,
+      note: cost.note,
+    })),
     items: data.items
       .filter((item) => item.product_name.trim() || item.product_code.trim())
       .map((item) => ({
@@ -95,8 +139,33 @@ export function toPurchaseOrderPayload(data: PurchaseOrderDetail): PurchaseOrder
         vat: Number(item.vat) || 0,
         warehouse_code: item.warehouse_code,
         note: item.note,
+        currency: item.currency ?? '',
+        exchange_rate: Number(item.exchange_rate) || 0,
+        weight_kg: Number(item.weight_kg) || 0,
+        dimension: item.dimension ?? '',
         deliveries: item.deliveries ?? [],
       })),
+  }
+}
+
+/** Khoản chi phí lô hàng trống — dòng mới trong thẻ "Chi phí lô hàng nhập khẩu". */
+export function createEmptyImportCost(): PurchaseOrderImportCost {
+  return {
+    cost_type: 1,
+    description: '',
+    supplier_code: '',
+    supplier_name: '',
+    currency: '',
+    exchange_rate: 0,
+    amount: 0,
+    vat: 0,
+    allocation_method: ALLOCATION_BY_VALUE,
+    allocation_target: '',
+    manual_allocation: {},
+    invoice_no: '',
+    invoice_date: '',
+    payment_due_date: '',
+    note: '',
   }
 }
 
@@ -169,6 +238,10 @@ function toOrderLine(item: PurchaseRequestItem, qty: number): PurchaseOrderItem 
     vat: Number(item.vat_pct) || 0,
     warehouse_code: '',
     note: item.note || '',
+    currency: '',
+    exchange_rate: 0,
+    weight_kg: 0,
+    dimension: '',
     deliveries: [],
   }
 }

@@ -9,6 +9,7 @@ import { Button } from '@/shared/ui/button'
 import { CopyButton } from '@/shared/ui/copy-button'
 import { Input } from '@/shared/ui/input'
 import { NumberInput, PRICE_MAX_DECIMALS } from '@/shared/ui/number-input'
+import { SearchSelect } from '@/shared/ui/search-select'
 import {
   Select,
   SelectContent,
@@ -21,71 +22,43 @@ import type {
   ProductOption,
   PurchaseHistoryRow,
 } from '../api/purchase-request-support-api'
-import { usePurchaseRequestUnits } from '../hooks/use-purchase-request-support'
+import {
+  usePurchaseRequestItemGroups,
+  usePurchaseRequestUnits,
+} from '../hooks/use-purchase-request-support'
 import { ProgressStatusBadge } from './document-status-badge'
 import { PurchaseHistoryDialog } from './purchase-history-dialog'
 import { PurchaseRequestProductPicker } from './purchase-request-product-picker'
 import {
+  isImportOrder,
   isLineLocked,
   isLineReceived,
   PO_VAT_OPTIONS,
   PRODUCT_LOCK_HINT,
+  type PurchaseOrderDetail,
   type PurchaseOrderItem,
 } from '../types/purchase-order-detail'
+import {
+  displayLineBaseAmount,
+  isMissingExchangeRate,
+  resolveLineCurrency,
+} from '../utils/purchase-order-import-cost'
 
 /** Thành tiền theo SL ĐẶT — hiện ngay khi gõ, không chờ backend tính lại. */
 export function orderLineAmount(item: PurchaseOrderItem): number {
   return (item.qty_order || 0) * (item.price || 0) * (1 + (item.vat || 0) / 100)
 }
 
-const TABLE_STORAGE_KEY = 'purchase-order-items'
-
-/** Lịch sử có ghi thì lấy, không thì giữ nguyên thứ đang có trên dòng. */
-function preferHistory(previous: string, historyValue?: string): string {
-  return (historyValue ?? '').trim() || previous || ''
-}
-
-interface PurchaseOrderItemsTableProps {
-  items: PurchaseOrderItem[]
-  /** Sửa được nội dung dòng (đơn chưa chốt + có quyền ghi). */
-  editable: boolean
-  /** Cập nhật tiến độ dòng (đơn đã duyệt trở đi). */
-  progressEditable: boolean
-  onChange: (items: PurchaseOrderItem[]) => void
-  /** Đổi tiến độ dòng — trang gọi endpoint riêng và hỏi lý do khi cần. */
-  onProgressChange?: (item: PurchaseOrderItem, status: string) => void
-  /** Mở hộp chi tiết dòng (thông tin đầy đủ + các lần giao). */
-  onOpenDetail?: (index: number) => void
-  /**
-   * Xóa / nhân bản dòng làm lệch chỉ số của mọi dòng phía sau. Trang đang giữ hộ
-   * phiếu giao của lần giao chưa lưu theo chỉ số nên phải biết chỗ vừa đổi.
-   */
-  onLineRemoved?: (index: number) => void
-  onLineDuplicated?: (index: number) => void
-}
-
 /**
- * Bảng dòng hàng của ĐMH hỗ trợ:
- * - Ghim cột cố định (default: No, Code, Name).
- * - Kéo thả trực tiếp tiêu đề cột trên bảng để đổi thứ tự.
- * - Chế độ Bảng rút gọn vs Bảng đầy đủ.
- * - Kéo giãn / co nhỏ độ rộng cột & nhớ tự động vào localStorage.
+ * Hậu tố `-v2`: bộ cột vừa đổi (thêm Phân loại, thêm Quy đổi VNĐ cho đơn nhập khẩu).
+ * `useTableLayout` ưu tiên bố cục đã lưu và nối cột lạ vào cuối, nên bố cục cũ trong
+ * `localStorage` sẽ đẩy hai cột mới xuống cuối bảng. Đổi bộ cột lần sau thì tăng số.
  */
-export function PurchaseOrderItemsTable({
-  items,
-  editable,
-  progressEditable,
-  onChange,
-  onProgressChange,
-  onOpenDetail,
-  onLineRemoved,
-  onLineDuplicated,
-}: PurchaseOrderItemsTableProps) {
-  const { data: units } = usePurchaseRequestUnits(editable)
-  /** Dòng đang xem lịch sử mua hàng; `null` = hộp thoại đang đóng. */
-  const [historyIndex, setHistoryIndex] = useState<number | null>(null)
+const TABLE_STORAGE_KEY = 'purchase-order-items-v2'
 
-  const columns = useMemo<LinesTableColumn[]>(() => [
+/** Cột của bảng dòng ĐMH TRONG NƯỚC — đơn nhập khẩu lọc bớt / thêm cột ở trên. */
+function buildColumns(): LinesTableColumn[] {
+  return [
     {
       key: 'no',
       header: '#',
@@ -111,6 +84,15 @@ export function PurchaseOrderItemsTable({
       minWidth: 140,
       hideable: false,
       defaultPinned: true,
+    },
+    // Cột Phân loại có ở bản v1; khách đòi lại 09/09/2026 khi xem đơn nhập khẩu.
+    {
+      key: 'item_group',
+      header: 'Phân loại',
+      width: 160,
+      minWidth: 90,
+      compactHidden: true,
+      wrap: true,
     },
     { key: 'unit', header: 'ĐVT *', width: 90, minWidth: 50 },
     { key: 'qty', header: 'SL đặt *', width: 108, minWidth: 60, align: 'right' },
@@ -157,7 +139,86 @@ export function PurchaseOrderItemsTable({
       hideable: false,
       align: 'center',
     },
-  ], [])
+  ]
+}
+
+/** Lịch sử có ghi thì lấy, không thì giữ nguyên thứ đang có trên dòng. */
+function preferHistory(previous: string, historyValue?: string): string {
+  return (historyValue ?? '').trim() || previous || ''
+}
+
+interface PurchaseOrderItemsTableProps {
+  items: PurchaseOrderItem[]
+  /** Sửa được nội dung dòng (đơn chưa chốt + có quyền ghi). */
+  editable: boolean
+  /** Cập nhật tiến độ dòng (đơn đã duyệt trở đi). */
+  progressEditable: boolean
+  onChange: (items: PurchaseOrderItem[]) => void
+  /** Đổi tiến độ dòng — trang gọi endpoint riêng và hỏi lý do khi cần. */
+  onProgressChange?: (item: PurchaseOrderItem, status: string) => void
+  /** Mở hộp chi tiết dòng (thông tin đầy đủ + các lần giao). */
+  onOpenDetail?: (index: number) => void
+  /**
+   * Xóa / nhân bản dòng làm lệch chỉ số của mọi dòng phía sau. Trang đang giữ hộ
+   * phiếu giao của lần giao chưa lưu theo chỉ số nên phải biết chỗ vừa đổi.
+   */
+  onLineRemoved?: (index: number) => void
+  onLineDuplicated?: (index: number) => void
+  /**
+   * bao-CR-319 — loại đơn + đồng tiền / tỷ giá của đơn. Đơn NHẬP KHẨU ẩn cột VAT
+   * (thuế GTGT hàng nhập là một khoản chi phí lô hàng) và thêm cột quy đổi VNĐ.
+   */
+  order?: Pick<PurchaseOrderDetail, 'order_type' | 'currency' | 'exchange_rate'>
+}
+
+const DOMESTIC_ONLY_COLUMNS = new Set(['vat', 'price_after_vat'])
+
+/**
+ * Bảng dòng hàng của ĐMH hỗ trợ:
+ * - Ghim cột cố định (default: No, Code, Name).
+ * - Kéo thả trực tiếp tiêu đề cột trên bảng để đổi thứ tự.
+ * - Chế độ Bảng rút gọn vs Bảng đầy đủ.
+ * - Kéo giãn / co nhỏ độ rộng cột & nhớ tự động vào localStorage.
+ */
+export function PurchaseOrderItemsTable({
+  items,
+  editable,
+  progressEditable,
+  onChange,
+  onProgressChange,
+  onOpenDetail,
+  onLineRemoved,
+  onLineDuplicated,
+  order,
+}: PurchaseOrderItemsTableProps) {
+  const { data: units } = usePurchaseRequestUnits(editable)
+  const { data: itemGroups } = usePurchaseRequestItemGroups(editable)
+  const itemGroupOptions = useMemo(
+    () => (itemGroups?.items ?? []).map((group) => ({ value: group.name, label: group.name })),
+    [itemGroups],
+  )
+  /** Dòng đang xem lịch sử mua hàng; `null` = hộp thoại đang đóng. */
+  const [historyIndex, setHistoryIndex] = useState<number | null>(null)
+  const importMode = order ? isImportOrder(order) : false
+  const orderCurrency = { currency: order?.currency ?? '', exchange_rate: order?.exchange_rate ?? 0 }
+
+  const columns = useMemo<LinesTableColumn[]>(() => {
+    const all = buildColumns()
+    if (!importMode) return all
+    // `useTableLayout` đối chiếu theo khóa nên ẩn/thêm cột lúc chạy là an toàn:
+    // khóa `vat` trong bản lưu bị bỏ qua. Chèn `base_amount` ngay sau `amount` để
+    // lần đầu mở đơn nhập khẩu đã thấy cột quy đổi nằm cạnh thành tiền.
+    const kept = all.filter((column) => !DOMESTIC_ONLY_COLUMNS.has(column.key))
+    const amountIndex = kept.findIndex((column) => column.key === 'amount')
+    kept.splice(amountIndex + 1, 0, {
+      key: 'base_amount',
+      header: 'Quy đổi (VNĐ)',
+      width: 150,
+      minWidth: 80,
+      align: 'right',
+    })
+    return kept
+  }, [importMode])
 
   const patch = (index: number, changes: Partial<PurchaseOrderItem>) =>
     onChange(items.map((item, current) => (current === index ? { ...item, ...changes } : item)))
@@ -188,7 +249,8 @@ export function PurchaseOrderItemsTable({
       qty_order: Number(history.qty_order) || 0,
       price: Number(history.price) || 0,
       // VAT ngoài danh sách chọn thì giữ mức cũ, không thì ô VAT hiện trống trơn.
-      vat: PO_VAT_OPTIONS.some((option) => option === vat) ? vat : current.vat,
+      // Đơn nhập khẩu giữ VAT dòng = 0 (thuế GTGT nằm ở chi phí lô hàng).
+      vat: importMode ? 0 : PO_VAT_OPTIONS.some((option) => option === vat) ? vat : current.vat,
       invoice_name: preferHistory(current.invoice_name, history.extra?.invoice_name),
       item_group: preferHistory(current.item_group, history.extra?.item_group),
       spec: preferHistory(current.spec, history.extra?.spec),
@@ -204,7 +266,8 @@ export function PurchaseOrderItemsTable({
     const locked = isLineLocked(item)
     const received = isLineReceived(item)
     const cellEditable = editable && !locked
-
+    const lineCurrency = importMode ? resolveLineCurrency(item, orderCurrency).currency : ''
+    const currencySuffix = importMode ? (lineCurrency === 'VND' ? 'đ' : lineCurrency) : 'đ'
     switch (key) {
       case 'no':
         return <span className="text-muted-foreground">{index + 1}</span>
@@ -342,7 +405,41 @@ export function PurchaseOrderItemsTable({
       case 'amount':
         return (
           <span className="tabular-nums font-semibold text-navy">
-            {formatMoney(orderLineAmount(item))} đ
+            {importMode && lineCurrency !== 'VND'
+              ? formatUnitPrice(orderLineAmount(item))
+              : formatMoney(orderLineAmount(item))}{' '}
+            {currencySuffix}
+          </span>
+        )
+
+      // bao-CR-319: thành tiền quy đổi VNĐ — backend trả `base_amount` khi đã lưu,
+      // chưa lưu thì tính tại chỗ theo tỷ giá dòng / tỷ giá đơn.
+      case 'base_amount':
+        return isMissingExchangeRate(item, orderCurrency) ? (
+          <span className="text-xs text-warning" title="Nhập tỷ giá ở đầu đơn hoặc trong chi tiết dòng">
+            Chưa có tỷ giá
+          </span>
+        ) : (
+          <span className="tabular-nums font-semibold">
+            {formatMoney(displayLineBaseAmount(item, orderCurrency))} đ
+          </span>
+        )
+
+      case 'item_group':
+        return cellEditable && !received ? (
+          <SearchSelect
+            value={item.item_group || ''}
+            onChange={(value) => patch(index, { item_group: value })}
+            options={itemGroupOptions}
+            placeholder="—"
+            searchPlaceholder="Tìm phân loại..."
+            emptyMessage="Không có phân loại phù hợp"
+            clearable
+            wrap
+          />
+        ) : (
+          <span className="block break-words whitespace-normal leading-snug">
+            {item.item_group || '—'}
           </span>
         )
 
@@ -459,7 +556,9 @@ export function PurchaseOrderItemsTable({
         renderCell={renderCell}
         title={`Danh sách dòng hàng (${items.length} dòng)`}
         emptyMessage="Chưa có dòng hàng nào."
-        cellClassName={(key) => (key === 'amount' ? 'bg-warning/8' : undefined)}
+        cellClassName={(key) =>
+          key === 'amount' || key === 'base_amount' ? 'bg-warning/8' : undefined
+        }
       />
 
       <PurchaseHistoryDialog

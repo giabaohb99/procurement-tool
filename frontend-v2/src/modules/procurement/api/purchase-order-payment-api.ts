@@ -14,8 +14,8 @@ export interface Payable {
   id: number
   supplier_code: string
   supplier_name: string
-  /** `goods` = tiền hàng (NCC sản xuất), `shipping` = cước vận chuyển. */
-  source_type: 'goods' | 'shipping'
+  /** `goods` = tiền hàng (NCC sản xuất), `shipping` = cước vận chuyển, `import_cost` = chi phí lô hàng (bao-CR-319). */
+  source_type: 'goods' | 'shipping' | 'import_cost'
   po_code: string
   invoice_no: string
   incur_date: string

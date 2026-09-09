@@ -65,12 +65,16 @@ export interface PayableSummary {
   overdue: number
 }
 
-/** `goods` = nợ NCC bán hàng · `shipping` = nợ đơn vị vận chuyển. */
-export type PayableSourceType = 'goods' | 'shipping'
+/**
+ * `goods` = nợ NCC bán hàng · `shipping` = nợ đơn vị vận chuyển ·
+ * `import_cost` = chi phí lô hàng nhập khẩu (bao-CR-319: hãng tàu, khai thuê, ngân sách nhà nước).
+ */
+export type PayableSourceType = 'goods' | 'shipping' | 'import_cost'
 
 export const PAYABLE_SOURCE_LABELS: Record<string, string> = {
   goods: 'Hàng hóa',
   shipping: 'Vận chuyển',
+  import_cost: 'Chi phí nhập khẩu',
 }
 
 /**

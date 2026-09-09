@@ -1,3 +1,8 @@
+import { ExternalLink } from 'lucide-react'
+import { Link } from 'react-router-dom'
+
+import { usePermission } from '@/core/authorization/use-permission'
+import { appRoutes } from '@/shared/constants/app-routes'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Checkbox } from '@/shared/ui/checkbox'
 import { Input } from '@/shared/ui/input'
@@ -53,6 +58,10 @@ export function PurchaseRequestInfoCard({
   deptHeadCandidates = [],
   onChange,
 }: InfoCardProps) {
+  const { can } = usePermission()
+  // bao-CR-318: đường về YCBG nguồn — chỉ thành link khi người xem đọc được YCBG,
+  // không thì hiện mã dạng chữ (bấm vào chỉ ăn 403).
+  const surveyRequestLinkable = Boolean(data.survey_request_id) && can('survey_request', 'read')
   return (
     <Card className="gap-4 py-4">
       {/* Cùng một khuôn với các thẻ khác trên trang — xem ghi chú `pb-3!` ở
@@ -66,6 +75,22 @@ export function PurchaseRequestInfoCard({
       <CardContent className="grid gap-x-4 gap-y-3 px-4 md:grid-cols-2">
         <Field label="Mã phiếu yêu cầu">{data.code || '— (phiếu nháp)'}</Field>
         <Field label="Ngày tạo">{formatDateTime(data.created_at) || '—'}</Field>
+
+        {data.survey_request_code && (
+          <Field label="Từ yêu cầu báo giá">
+            {surveyRequestLinkable && data.survey_request_id ? (
+              <Link
+                className="inline-flex items-center gap-1 text-primary hover:underline"
+                to={appRoutes.procurement.surveyRequestDetail(data.survey_request_id)}
+              >
+                {data.survey_request_code}
+                <ExternalLink className="size-3.5" />
+              </Link>
+            ) : (
+              data.survey_request_code
+            )}
+          </Field>
+        )}
 
         <div className="space-y-1.5">
           <Label>

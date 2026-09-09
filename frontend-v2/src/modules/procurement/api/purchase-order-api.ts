@@ -2,6 +2,7 @@ import { apiDelete, apiGet, apiPatch, apiPost } from '@/core/api'
 import type {
   PurchaseOrderDelivery,
   PurchaseOrderDetail,
+  PurchaseOrderImportCost,
   PurchaseOrderItem,
 } from '../types/purchase-order-detail'
 
@@ -31,10 +32,35 @@ export interface PurchaseOrderItemPayload
     | 'vat'
     | 'warehouse_code'
     | 'note'
+    | 'currency'
+    | 'exchange_rate'
+    | 'weight_kg'
+    | 'dimension'
   > {
   id?: number
   deliveries: PurchaseOrderDelivery[]
 }
+
+/** Khoản chi phí lô hàng gửi lên — bỏ các cột backend tính (`base_amount`, công nợ...). */
+export type PurchaseOrderImportCostPayload = Pick<
+  PurchaseOrderImportCost,
+  | 'id'
+  | 'cost_type'
+  | 'description'
+  | 'supplier_code'
+  | 'supplier_name'
+  | 'currency'
+  | 'exchange_rate'
+  | 'amount'
+  | 'vat'
+  | 'allocation_method'
+  | 'allocation_target'
+  | 'manual_allocation'
+  | 'invoice_no'
+  | 'invoice_date'
+  | 'payment_due_date'
+  | 'note'
+>
 
 export interface PurchaseOrderPayload {
   misa_code: string
@@ -48,9 +74,30 @@ export interface PurchaseOrderPayload {
   order_date: string
   vat_rate: number
   payment_terms: string
+  /** bao-CR-321 */
+  inspection_days: number
+  return_days: number
+  invoice_deadline: string
+  /** bao-CR-319 */
+  order_type: number
+  currency: string
+  exchange_rate: number
+  customs_decl_no: string
+  customs_decl_date: string
   is_urgent: boolean
   note: string
   items: PurchaseOrderItemPayload[]
+  import_costs: PurchaseOrderImportCostPayload[]
+}
+
+/** bao-CR-321 — điều khoản đã gộp đơn -> NCC -> mặc định, backend trả ở endpoint in. */
+export interface PurchaseOrderPrintTerms {
+  inspection_days: number
+  return_days: number
+  /** Dạng hai chữ số ("07") vì bản in ghi "trong vòng 07 ngày". */
+  inspection_days_label: string
+  return_days_label: string
+  invoice_deadline: string
 }
 
 /**
@@ -81,6 +128,8 @@ export interface PurchaseOrderPrintData extends PurchaseOrderDetail {
   warehouse: { code?: string; name?: string; address?: string }
   /** Mã kho -> tên kho, cho cột "Tên kho nhập". */
   wh_names: Record<string, string>
+  /** bao-CR-321 — thiếu (bản backend cũ) thì bản in dùng mặc định. */
+  print_terms?: PurchaseOrderPrintTerms
   /**
    * Họ tên + ảnh chữ ký cho các ô ký. Đơn chưa duyệt thì `approver_*` rỗng,
    * còn ô "Người nhận" không có ở đây vì luôn ký tươi lúc giao nhận.

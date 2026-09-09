@@ -34,6 +34,19 @@ export function formatPercent(value: number | string | null | undefined): string
   return `${num.toLocaleString(locale, { maximumFractionDigits: 2 })}%`
 }
 
+/**
+ * Số kèm ĐƠN VỊ TIỀN: VND làm tròn tới đồng + "đ", ngoại tệ giữ số lẻ + mã tiền
+ * (bao-CR-319: "5.230,5 USD" chứ không phải "5.230 đ"). Trống hiểu là VND.
+ */
+export function formatMoneyWithCurrency(
+  value: number | string | null | undefined,
+  currency?: string | null,
+): string {
+  const code = (currency || 'VND').toUpperCase()
+  if (code === 'VND') return `${formatMoney(value)} đ`
+  return `${formatUnitPrice(value)} ${code}`
+}
+
 /** Số lượng — tối đa 3 chữ số thập phân. */
 export function formatQuantity(value: number | string | null | undefined): string {
   const num = toNumber(value)

@@ -49,6 +49,8 @@ export const appRoutes = {
     purchaseOrderDocuments: (id: number | string) =>
       `/procurement/purchase-orders/${id}/documents`,
     purchaseOrderPrint: (id: number | string) => `/print/purchase-order/${id}`,
+    /** bao-CR-319 — bản in riêng của đơn NHẬP KHẨU (nguyên tệ + quy đổi + chi phí lô hàng). */
+    purchaseOrderImportPrint: (id: number | string) => `/print/purchase-order-import/${id}`,
     /**
      * bao-CR-314 — in phiếu YCMH từ một ĐƠN MUA HÀNG. Tham số là id của ĐƠN, và bản in
      * chỉ gồm những dòng hàng có trên đơn đó.
