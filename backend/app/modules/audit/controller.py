@@ -7,12 +7,19 @@ from app.core.audit import resolve_actor
 from app.core.auth import get_current_user, get_perm_profile, user_has_permission
 from app.core.database import get_db
 from app.core.entity_models import model_of
+from app.core.permissions import ENTITIES
 from app.core.response import success
 from app.core.scoping import scope_condition
 
 from .model import AuditLog
 
 router = APIRouter(prefix="/api/audit-logs", tags=["audit"])
+
+#  Entity ghi trong nhật ký -> khóa trong bảng quyền, khi hai bên KHÔNG trùng tên.
+#  FAQ của Help Center ghi dấu vết dưới entity `faq` nhưng mọi route của nó gác bằng
+#  `help_article` (không có khóa `faq` trong ENTITIES). Thiếu dòng này thì màn
+#  "Lịch sử" của Help Center mất sạch phần FAQ sau khi gác.
+PERMISSION_KEY_ALIAS = {"faq": "help_article"}
 
 ACTION_LABEL = {
     "create": "Tạo mới",
@@ -65,6 +72,9 @@ ACTION_LABEL = {
     #  Chín mã CÓ trong mã nguồn nhưng chưa (hoặc hiếm khi) rơi vào bảng — quét
     #  bằng `ast` chứ không bằng dữ liệu, để bắt NGUỒN thay vì triệu chứng.
     "logout": "Đăng xuất",
+    #  bao-CR-313 / BM-003: gia hạn phiên bằng refresh token nay có dấu vết + IP.
+    "refresh": "Gia hạn phiên",
+    "refresh_failed": "Gia hạn phiên thất bại",
     "adjust": "Điều chỉnh tồn",
     "auto_done": "Tự động hoàn tất",
     "fill_line": "Bổ sung dòng",
@@ -112,11 +122,20 @@ def _guard(db: Session, user, entity: str | None, entity_id: int | None):
       (`system/routes.tsx:57`); backend nay gác cho khớp. Nhận **`read` HOẶC
       `write`** vì vai trò có thể cấp `write` mà không cấp `read` — chặt hơn
       menu là khóa nhầm đúng người đang dùng thật.
+
+    Ba chốt bổ sung ngày 09/09/2026 (bao-CR-313, chuyển ngược từ nhánh `main`).
     """
+    #  Người đọc được toàn hệ thì đọc được từng phần. Không có nhánh này, quản trị
+    #  LỌC theo `entity=auth` ngay trên màn Nhật ký hệ thống lại ăn 403, vì `auth`
+    #  không phải khóa quyền nên `user_has_permission` luôn trả False — tức là lọc
+    #  khắt khe hơn không lọc, đúng cái màn nhật ký đăng nhập cần dùng nhất.
+    is_system_admin = (user_has_permission(db, user, "setting", "read")
+                       or user_has_permission(db, user, "setting", "write"))
     if not entity:
-        if not (user_has_permission(db, user, "setting", "read")
-                or user_has_permission(db, user, "setting", "write")):
+        if not is_system_admin:
             raise HTTPException(403, "Không có quyền xem nhật ký toàn hệ thống")
+        return None
+    if is_system_admin:
         return None
 
     #  Hồ sơ của CHÍNH MÌNH thì luôn xem được lịch sử, không cần khóa nào.
@@ -125,13 +144,21 @@ def _guard(db: Session, user, entity: str | None, entity_id: int | None):
     #  thường không có. Thiếu ngoại lệ này thì ai cũng thấy Trang cá nhân của
     #  mình trống lịch sử, và vì 403 trên GET đang im lặng (xem `http-client.ts`)
     #  thì trống đó không phân biệt được với "chưa có thao tác nào".
-    minh_xem_minh = ((entity == "user" and entity_id == user.id)
-                     or (entity == "employee" and entity_id
-                         and entity_id == getattr(user, "employee_id", 0)))
-    if not minh_xem_minh and not user_has_permission(db, user, entity, "read"):
-        raise HTTPException(403, f"Không có quyền xem nhật ký của: {entity}")
-    if minh_xem_minh:
+    is_own_profile = ((entity == "user" and entity_id == user.id)
+                      or (entity == "employee" and entity_id
+                          and entity_id == getattr(user, "employee_id", 0)))
+    if is_own_profile:
         return None
+
+    #  `auth`, `assistant`, chuỗi gõ bừa... không nằm trong bảng quyền nên không vai
+    #  trò nào cấp được `read` cho chúng. Nói thẳng thay vì dựa vào việc tra quyền
+    #  trả False: mai có người thêm một entity "kỹ thuật" vào ENTITIES thì luật này
+    #  vẫn đúng, còn luật ngầm thì không ai nhớ.
+    perm_key = PERMISSION_KEY_ALIAS.get(entity, entity)
+    if perm_key not in ENTITIES:
+        raise HTTPException(403, f"Không có quyền xem nhật ký của: {entity}")
+    if not user_has_permission(db, user, perm_key, "read"):
+        raise HTTPException(403, f"Không có quyền xem nhật ký của: {entity}")
 
     #  `model_of` trả None cho entity khai `PUBLIC` (danh mục dùng chung): không
     #  có cột nào để lọc theo dòng, và lớp quyền vai trò ở trên đúng là cổng của
