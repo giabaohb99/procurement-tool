@@ -380,13 +380,17 @@ function DateSessionField({
         <RequiredMark />
       </Label>
       {/*  Ô giờ chen vào CÙNG MỘT HÀNG với ngày và buổi: ba thứ đó là một câu
-           trả lời («nghỉ từ lúc nào»), tách xuống dòng thì mắt phải ghép lại. */}
+           trả lời («nghỉ từ lúc nào»), tách xuống dòng thì mắt phải ghép lại.
+           ⚠️ Chỉ đúng từ `sm` trở lên. Ba ô cứng trên màn 390px thì hai ô sau
+           chiếm 240px, ô NGÀY còn chưa tới 60px — không đọc nổi ngày nào. Dưới
+           `sm` thì ô ngày trải hết hàng, buổi và giờ chia đôi hàng dưới: vẫn
+           đọc thành một câu, chỉ là câu đó ngắt làm hai dòng. */}
       <div
         className={cn(
           'grid gap-2',
           withTime
-            ? 'grid-cols-[minmax(0,1fr)_8rem_7rem]'
-            : 'grid-cols-[minmax(0,1fr)_9rem]',
+            ? 'grid-cols-2 [&>*:first-child]:col-span-2 sm:grid-cols-[minmax(0,1fr)_8rem_7rem] sm:[&>*:first-child]:col-span-1'
+            : 'grid-cols-[minmax(0,1fr)_7.5rem] sm:grid-cols-[minmax(0,1fr)_9rem]',
         )}
       >
         {/*  Ô bắt buộc thì bỏ nút ✕: cho xóa là để người dùng tự tay tạo ra lỗi

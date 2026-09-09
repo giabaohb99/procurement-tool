@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { formatDate } from '@/shared/utils/format-date'
 import { useLeaveRequests } from '../hooks/use-leave'
 import type { LeaveBalance, LeaveRequest } from '../types/leave'
+import { LeaveRequestCard } from './leave-request-card'
 import { LeaveStatusCell } from './leave-status-cell'
 
 interface LeaveBalanceRequestsCardProps {
@@ -95,7 +96,7 @@ export function LeaveBalanceRequestsCard({ balance }: LeaveBalanceRequestsCardPr
         </p>
       </CardHeader>
 
-      <CardContent>
+      <CardContent className="px-4 sm:px-6">
         <DataTable
           columns={columns}
           rows={data?.items}
@@ -105,6 +106,15 @@ export function LeaveBalanceRequestsCard({ balance }: LeaveBalanceRequestsCardPr
           emptyMessage="Người này chưa nộp đơn nghỉ nào thuộc loại nghỉ này trong năm."
           storageKey="hr.leave-balance-requests"
           onRowClick={(r) => navigate(appRoutes.hr.leaveRequestDetail(r.id))}
+          //  ⚠️ Bảng này khai 6 cột với bề rộng cứng, tổng ~830px. Trên máy
+          //  390px người dùng thấy đúng «Số đơn» và một nửa «Trạng thái»; ngay
+          //  cả câu «chưa nộp đơn nào» cũng nằm trong vùng cuộn ngang nên nó bị
+          //  cắt giữa chừng (báo 09/09/2026). Thẻ xếp dọc thì cả tờ đơn nằm
+          //  trong tầm mắt.
+          //  `showEmployee` TẮT: cả danh sách là đơn của đúng một người và tên
+          //  người ấy đã ở tiêu đề trang — đúng lý do bảng cũng không có cột
+          //  Nhân sự.
+          mobileCard={(r) => <LeaveRequestCard request={r} showEmployee={false} />}
         />
       </CardContent>
     </Card>

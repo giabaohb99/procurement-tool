@@ -146,6 +146,26 @@ describe('ApprovalTrailCard', () => {
     expect(screen.getByText(dai)).toHaveClass('break-words')
   })
 
+  it('TÊN NGƯỜI dài không dấu cách cũng phải bẻ được, y như ý kiến', () => {
+    //  Cùng một lỗi với bài ngay trên, nhưng ở DÒNG TÊN — chỗ bị bỏ sót khi vá
+    //  dòng ý kiến hồi 03/09/2026. Đo lại trên giao diện thật 09/09/2026 ở khổ
+    //  390px: `actor_name` là một email 53 ký tự cho ra 422px nội dung trong
+    //  khung 268px, chữ chạy qua viền phải của thẻ rồi mất hẳn phần đuôi.
+    //  `actor_name` KHÔNG bảo đảm là tên có dấu cách: ô đó nhận cả email lẫn mã
+    //  tài khoản dán vào.
+    const tenLien = 'nguyenhoangthiminhphuongngoclananh@degoholding.com.vn'
+    mockUseApprovalTrail.mockReturnValue({
+      data: { ...TRAIL, lines: [{ ...TRAIL.lines[1], actor_name: tenLien }] },
+      isLoading: false,
+    })
+
+    render(<ApprovalTrailCard instanceId={8} />)
+
+    //  Khẳng định trên THẺ CHỨA cả câu, không trên `<span>` tên: `break-words`
+    //  là thuộc tính kế thừa nên đặt ở dòng bao mới chặn được mọi phần của câu.
+    expect(screen.getByText(tenLien).closest('p')).toHaveClass('break-words')
+  })
+
   it('nêu rõ nguyên nhân khi luồng bị kẹt', () => {
     mockUseApprovalTrail.mockReturnValue({
       data: {

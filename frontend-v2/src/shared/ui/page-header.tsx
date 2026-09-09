@@ -44,12 +44,20 @@ export function PageHeader({
           'sticky top-0 z-20 -mx-4 -mt-4 border-b bg-canvas px-4 py-3 lg:-mx-6 lg:-mt-6 lg:px-6',
       )}
     >
-      {/* `min-w-0 flex-1`: khối tiêu đề phải CO ĐƯỢC, nếu không nó luôn đòi bề
-          rộng của dòng mô tả dài nhất và đẩy cụm nút xuống một hàng riêng ngay
-          từ ~820px — `flex-wrap` xuống dòng TRƯỚC khi co, nên không có vế này
-          thì chữ không bao giờ tự ngắt. Có nó: mô tả ngắt làm hai dòng, cụm nút
-          ở lại bên phải tiêu đề (báo 09/09/2026 ở màn Quỹ phép năm). */}
-      <div className="flex min-w-0 flex-1 items-start gap-3">
+      {/* `min-w-0`: khối tiêu đề phải CO ĐƯỢC, nếu không nó luôn đòi bề rộng của
+          dòng mô tả dài nhất và đẩy cụm nút xuống một hàng riêng ngay từ ~820px
+          — `flex-wrap` xuống dòng TRƯỚC khi co, nên không có vế này thì chữ
+          không bao giờ tự ngắt. Có nó: mô tả ngắt làm hai dòng, cụm nút ở lại
+          bên phải tiêu đề (báo 09/09/2026 ở màn Quỹ phép năm).
+
+          `flex-[1_1_16rem]` chứ KHÔNG `flex-1`: `flex-1` đặt cỡ gốc bằng 0, tức
+          khối tiêu đề không đòi lấy một pixel nào và cụm nút cứ thế lấn hết —
+          màn chi tiết 4 nút ở 768px bóp tiêu đề còn ~60px, «Đơn nghỉ phép NP010»
+          rơi xuống thành bốn dòng mỗi dòng một chữ, trong khi cụm nút vẫn nằm
+          thong dong một hàng (báo 09/09/2026). 16rem là mức tiêu đề đòi giữ:
+          còn đủ chỗ thì nút vẫn ở cùng hàng, không đủ thì cả cụm nút xuống hàng
+          riêng — đúng thứ tự ưu tiên, vì tiêu đề nói ĐANG XEM CÁI GÌ. */}
+      <div className="flex min-w-0 flex-[1_1_16rem] items-start gap-3">
         {leading}
         <div>
           <h1 className="text-xl font-semibold tracking-tight text-navy">{title}</h1>

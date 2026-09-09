@@ -151,7 +151,10 @@ function CrudSwitchRow({
       control={control}
       name={field.name}
       render={({ field: controllerField }) => (
-        <div className="flex items-start justify-between gap-3 rounded-md border bg-muted/20 px-3.5 py-3">
+        //  Lề trong hẹp lại ở khổ điện thoại — đây là lớp khung THỨ BA (thẻ form
+        //  › nhóm › ô công tắc) và lề của cả ba cộng lại mới là thứ bóp chữ, xem
+        //  ghi chú ở `crud-form-fields.tsx`.
+        <div className="flex items-start justify-between gap-3 rounded-md border bg-muted/20 px-3 py-2.5 sm:px-3.5 sm:py-3">
           <div className="min-w-0 space-y-0.5">
             <Label htmlFor={field.name} className="cursor-pointer">
               {field.label}

@@ -2,11 +2,16 @@ import { Check, Undo2, X } from 'lucide-react'
 import { useState } from 'react'
 
 import { Button } from '@/shared/ui/button'
+import { cn } from '@/shared/utils/cn'
 import {
   useLeaveApprovalDecision,
   useLeaveToApprove,
   type ApprovalDecision,
 } from '../hooks/use-leave'
+import {
+  PRIMARY_ACTION_SLOT,
+  SECONDARY_ACTION_SLOT,
+} from '../utils/leave-detail-action-slots'
 import { LeaveDecisionDialog } from './leave-decision-dialog'
 
 interface LeaveDetailDecisionActionsProps {
@@ -38,20 +43,31 @@ export function LeaveDetailDecisionActions({ requestId }: LeaveDetailDecisionAct
 
   return (
     <>
-      <Button variant="outline" onClick={() => setDecision('return')} disabled={decide.isPending}>
+      <Button
+        variant="outline"
+        className={SECONDARY_ACTION_SLOT}
+        onClick={() => setDecision('return')}
+        disabled={decide.isPending}
+      >
         <Undo2 className="size-4" />
         Trả về
       </Button>
       <Button
         variant="outline"
-        className="text-destructive hover:text-destructive"
+        className={cn('text-destructive hover:text-destructive', SECONDARY_ACTION_SLOT)}
         onClick={() => setDecision('reject')}
         disabled={decide.isPending}
       >
         <X className="size-4" />
         Từ chối
       </Button>
-      <Button onClick={() => setDecision('approve')} disabled={decide.isPending}>
+      {/*  Duyệt là việc người mở màn này định làm — nút CHÍNH, xem
+           `leave-detail-action-slots.ts`. */}
+      <Button
+        className={PRIMARY_ACTION_SLOT}
+        onClick={() => setDecision('approve')}
+        disabled={decide.isPending}
+      >
         <Check className="size-4" />
         Duyệt đơn
       </Button>

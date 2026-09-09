@@ -92,7 +92,11 @@ export function LeaveRequestLinesEditor({
 
   //  Ba cột dùng CHUNG một khai báo lưới cho hàng tiêu đề và mọi dòng — khai hai
   //  lần là tiêu đề «Số ngày» trôi khỏi ô số ngay lần đầu ai đó chỉnh bề rộng.
-  const grid = 'grid grid-cols-[minmax(0,1fr)_7rem_2rem] items-center gap-2'
+  //  Cột «Số ngày» hẹp lại trên điện thoại: 7rem cho một con số một chữ số là
+  //  thừa, mà phần thừa đó lấy đúng từ ô CHỌN LOẠI NGHỈ — thứ duy nhất ở hàng
+  //  này có chữ dài ("Nghỉ không lương" cụt thành "Nghỉ khô…" trên màn 390px).
+  const grid =
+    'grid grid-cols-[minmax(0,1fr)_4.5rem_2rem] items-center gap-2 sm:grid-cols-[minmax(0,1fr)_7rem_2rem]'
 
   return (
     <div className="space-y-1.5 md:col-span-2">

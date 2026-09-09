@@ -135,9 +135,16 @@ export function CrudFormFields({
             </div>
           )
         }
+        //  ⚠️ **Lề trong hẹp lại ở khổ điện thoại.** Form này lồng BA lớp khung —
+        //  thẻ form (`CrudDetailPage`) › nhóm có tên (chỗ này) › ô công tắc
+        //  (`CrudField`) — và lề của cả ba cộng lại: đo trên màn 390px thì câu
+        //  giải thích của một công tắc chỉ còn **208px, tức 53% bề ngang màn
+        //  hình**, phần còn lại là lề với viền (báo 09/09/2026). Từng lớp nhìn
+        //  riêng đều hợp lý, cái sai chỉ lộ ra khi cộng dồn — nên phải sửa cả ba
+        //  chỗ, sửa một chỗ thì không đủ để thấy khác.
         return (
           <section key={section} className="rounded-lg border bg-card">
-            <header className="border-b bg-muted/30 px-4 py-2.5">
+            <header className="border-b bg-muted/30 px-3 py-2.5 sm:px-4">
               <h3 className="text-sm font-semibold">{section}</h3>
               {sectionHints?.[section] && (
                 <p className="mt-0.5 text-xs text-muted-foreground">
@@ -145,7 +152,7 @@ export function CrudFormFields({
                 </p>
               )}
             </header>
-            <div className="space-y-4 px-4 py-4">{renderGroup(group)}</div>
+            <div className="space-y-4 px-3 py-3.5 sm:px-4 sm:py-4">{renderGroup(group)}</div>
           </section>
         )
       })}

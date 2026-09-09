@@ -92,6 +92,58 @@ Ba chế độ xem của `/hr/leave-calendar` đổi hình dạng khác nhau ở
   là nút xanh nền đặc; hai dải cùng kiểu thì đọc thành cùng một cấp và không ai
   biết cái nào chuyển màn, cái nào đổi cách nhìn.
 
+### 3.2. Chi tiết đơn ở khổ điện thoại (duoc-CR-333, 09/09/2026)
+
+`/hr/leave-requests/:id` là **một trang cho hai chế độ**: đơn còn sửa được thì
+dựng `LeaveRequestForm`, đã gửi duyệt thì dựng `LeaveRequestSummary`. Cả hai
+chế độ đều đã bấm tay ở 360 · 390 · 768 · 1024 · 1440.
+
+- ⚠️ **Bản chỉ xem KHÔNG bày trường bằng khung kiểu ô nhập.** Đến 09/09/2026 mỗi
+  trường còn là một `ReadOnlyValue` (viền, nền xám, cao 36px) xếp theo lưới của
+  form. Ba cái sai của lối đó, thấy rõ nhất trên điện thoại:
+  1. **Ô không ai khai thành một khung trống trơn** — ở một trang không cho gõ,
+     nó đọc ra *"màn hình lỗi"* chứ không đọc ra *"người nộp không khai số điện
+     thoại"*. Nay ô trống hiện **dấu gạch**.
+  2. **Bốn giá trị ngắn ngốn 330px chiều cao**, trong khi giá trị dài nhất là
+     mười ba ký tự.
+  3. **Hai thứ ngôn ngữ trong cùng một thẻ** — khung kiểu-ô-nhập nằm cạnh hai
+     bảng viền thật (*Loại nghỉ*, *Bàn giao*) đọc ra như hai màn ghép lại.
+
+  Nay cả thẻ dùng chung một ngôn ngữ: hàng có viền, nhãn xám, giá trị đậm
+  (`InfoList` / `InfoRow`). Khổ hẹp nhãn nằm trên giá trị, từ `sm` nhãn thành
+  cột trái rộng 11rem. ⚠️ **Vẫn là chữ thật trong thẻ thường** — luật cấm
+  `<Input disabled>` không đổi, chỉ đổi hình dạng. ⚠️ Và **không dùng
+  `justify-between`** cho hàng nhãn–giá trị: trên màn 1440 nó đẩy giá trị ra tận
+  mép phải, cách nhãn cả nghìn pixel.
+- ⚠️ **Nhóm nút xếp theo CẤP BẬC, không xếp lưới đều.** Bản đầu dựng lưới 2×2
+  đều tăm tắp rồi bỏ ngay trong ngày (*"4 cục nhìn nó xấu á"*): bốn khối trắng
+  bằng vai nhau thì mắt không biết bấm cái nào, mà cả bốn cùng to nên nút xanh
+  cũng chẳng nổi hơn. Nay **đúng một nút chính** trải hết hàng trên, mọi nút còn
+  lại chia đều hàng dưới. Hai lớp `PRIMARY_ACTION_SLOT` /
+  `SECONDARY_ACTION_SLOT` khai ở `hr/utils/leave-detail-action-slots.ts` — khai
+  một chỗ vì cụm nút do **hai tệp** cùng dựng (trang chi tiết +
+  `leave-detail-decision-actions.tsx`), chép tay hai bản là hai bên xếp lệch
+  nhau. Nút chính đổi theo trạng thái: *Duyệt đơn* khi đang duyệt · *Gửi duyệt*
+  khi đơn đã lưu · *Lưu nháp* khi đơn chưa có id.
+- ⚠️ **«Lưu nháp» chỉ xanh đặc khi đơn CHƯA có id.** Đơn đã lưu rồi thì việc
+  người ta định làm là *Gửi duyệt*; hai nút xanh đứng cạnh nhau thì chẳng nút
+  nào còn là nút chính nữa.
+- ⚠️ **Huy hiệu trạng thái nằm ở dòng MÔ TẢ, không nằm trong nhóm nút.** Nó là
+  thông tin về tờ đơn chứ không phải một hành động; đứng chung với cụm nút thì
+  nó ăn mất một chỗ và mọi nút sau lệch đi một nhịp.
+- ⚠️ **`PageHeader` dùng `flex-[1_1_16rem]`, không dùng `flex-1`** — sửa ở tầng
+  dùng chung nên mọi trang chi tiết hưởng theo. `flex-1` đặt cỡ gốc bằng **0**,
+  tức khối tiêu đề không đòi lấy một pixel nào: ở 768px màn 4 nút bóp tiêu đề
+  còn ~60px và «Đơn nghỉ phép NP010» rơi xuống bốn dòng mỗi dòng một chữ, trong
+  khi cụm nút vẫn thong dong một hàng. 16rem là mức tiêu đề đòi giữ — đủ chỗ thì
+  nút vẫn ở cùng hàng, không đủ thì cả cụm xuống hàng riêng.
+- **Form**: hàng *ngày · buổi · giờ* của đơn **nghỉ theo giờ** chỉ đứng cùng một
+  hàng từ `sm`. Ba ô cứng trên màn 390px thì hai ô sau chiếm 240px, ô NGÀY còn
+  chưa tới 60px — không đọc nổi ngày nào. Dưới `sm` ô ngày trải hết hàng, buổi
+  và giờ chia đôi hàng dưới. Cột «Số ngày» của bảng loại nghỉ cũng rút lại dưới
+  `sm`: phần thừa đó lấy đúng từ ô chọn loại nghỉ, thứ duy nhất ở hàng có chữ
+  dài («Nghỉ không lương»).
+
 ## 4. Vòng đời một tờ đơn
 
 ```

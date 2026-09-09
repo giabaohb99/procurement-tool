@@ -23,6 +23,10 @@ import {
 } from '../utils/leave-form-values'
 import { LeaveRequestSummary } from '../components/leave-request-summary'
 import {
+  PRIMARY_ACTION_SLOT,
+  SECONDARY_ACTION_SLOT,
+} from '../utils/leave-detail-action-slots'
+import {
   useDeleteLeaveRequest,
   useLeaveRequest,
   useLeaveRequestAction,
@@ -149,21 +153,36 @@ export function LeaveRequestDetailPage() {
         }
         title={isNew ? 'Nộp đơn nghỉ phép' : `Đơn nghỉ phép ${request?.code}`}
         description={
-          request?.submitted_at
-            ? `Gửi duyệt lúc ${formatDateTime(request.submitted_at)}`
-            : //  Nút «Gửi duyệt» nay tự lưu trước, nên câu cũ ("Lưu nháp rồi
-              //  gửi duyệt") mô tả một thao tác không còn bắt buộc.
-              'Gửi duyệt sẽ tự lưu những gì đang nhập.'
-        }
-        actions={
+          //  ⚠️ Huy hiệu trạng thái đi CÙNG DÒNG MÔ TẢ, không đứng chung với
+          //  nhóm nút. Trên điện thoại nhóm nút chiếm trọn bề ngang và xuống
+          //  dòng theo lưới; nhét một huy hiệu vào giữa thì nó ăn mất một ô của
+          //  lưới đó và mọi nút sau nó lệch đi một nhịp (ảnh báo 09/09/2026:
+          //  «Chờ duyệt» + 2 nút ở hàng trên, «Hủy đơn» rơi lẻ xuống hàng dưới).
+          //  Trạng thái vốn là thông tin về tờ đơn, không phải một hành động.
           <>
             {request && <LeaveStatusBadge status={request.status} label={request.status_label} />}
-
+            <span>
+              {request?.submitted_at
+                ? `Gửi duyệt lúc ${formatDateTime(request.submitted_at)}`
+                : //  Nút «Gửi duyệt» nay tự lưu trước, nên câu cũ ("Lưu nháp rồi
+                  //  gửi duyệt") mô tả một thao tác không còn bắt buộc.
+                  'Gửi duyệt sẽ tự lưu những gì đang nhập.'}
+            </span>
+          </>
+        }
+        actions={
+          /*  NHÓM NÚT — hàng ngang bám mép phải từ `md`; dưới `md` thì MỘT nút
+              chính trải hết hàng trên, những nút còn lại chia đều hàng dưới.
+              Việc ngắt hàng do chính các nút tự lo bằng `basis-full` /
+              `flex-1` — xem `utils/leave-detail-action-slots.ts`, ở đó có cả lý
+              do vì sao không xếp lưới đều tăm tắp nữa. */
+          <div className="flex w-full flex-wrap items-center gap-2 md:w-auto md:justify-end">
             {editable && canWrite && (
               <>
                 {!isNew && can('leave_request', 'delete') && (
                   <Button
                     variant="outline"
+                    className={SECONDARY_ACTION_SLOT}
                     onClick={() =>
                       remove.mutate(requestId, {
                         onSuccess: () => navigate(appRoutes.hr.leaveRequests),
@@ -175,7 +194,16 @@ export function LeaveRequestDetailPage() {
                     Xóa đơn
                   </Button>
                 )}
-                <Button onClick={submitSave} disabled={save.isPending}>
+                {/*  ⚠️ «Lưu nháp» chỉ là nút CHÍNH khi đơn chưa có id — lúc đó
+                     nó là việc duy nhất làm được. Đơn đã lưu rồi thì việc người
+                     ta định làm là GỬI DUYỆT, mà hai nút xanh đặc đứng cạnh nhau
+                     thì chẳng nút nào còn là nút chính nữa. */}
+                <Button
+                  variant={isNew ? 'default' : 'outline'}
+                  className={isNew ? PRIMARY_ACTION_SLOT : SECONDARY_ACTION_SLOT}
+                  onClick={submitSave}
+                  disabled={save.isPending}
+                >
                   <Save className="size-4" />
                   Lưu nháp
                 </Button>
@@ -183,6 +211,7 @@ export function LeaveRequestDetailPage() {
                      thì không có gì để trình. */}
                 {!isNew && (
                   <Button
+                    className={PRIMARY_ACTION_SLOT}
                     onClick={saveThenSubmit}
                     disabled={act.isPending || save.isPending}
                   >
@@ -214,6 +243,7 @@ export function LeaveRequestDetailPage() {
               <>
                 <Button
                   variant="outline"
+                  className={SECONDARY_ACTION_SLOT}
                   onClick={() => setReasonFor('reject')}
                   disabled={act.isPending}
                 >
@@ -221,6 +251,7 @@ export function LeaveRequestDetailPage() {
                   Từ chối
                 </Button>
                 <Button
+                  className={PRIMARY_ACTION_SLOT}
                   onClick={() => act.mutate({ id: requestId, action: 'approve' })}
                   disabled={act.isPending}
                 >
@@ -236,6 +267,7 @@ export function LeaveRequestDetailPage() {
               canCancel && (
                 <Button
                   variant="outline"
+                  className={SECONDARY_ACTION_SLOT}
                   onClick={() => setReasonFor('cancel')}
                   disabled={act.isPending}
                 >
@@ -243,7 +275,7 @@ export function LeaveRequestDetailPage() {
                   Hủy đơn
                 </Button>
               )}
-          </>
+          </div>
         }
       />
 
@@ -257,8 +289,10 @@ export function LeaveRequestDetailPage() {
           <LeaveRequestForm value={form} onChange={setForm} request={request} />
         ) : (
           request && (
-            <Card>
-              <CardContent className="py-6">
+            <Card className="py-4 sm:py-6">
+              {/*  Lề trong hẹp lại trên điện thoại: `px-6` mặc định ăn 48px của
+                   một màn 390px, tức 12% bề ngang chỉ để lấy khoảng trắng. */}
+              <CardContent className="px-3 sm:px-6">
                 <LeaveRequestSummary request={request} />
               </CardContent>
             </Card>

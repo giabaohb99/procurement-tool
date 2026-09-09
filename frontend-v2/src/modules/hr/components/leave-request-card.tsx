@@ -14,6 +14,13 @@ interface LeaveRequestCardProps {
    * chữ đứng cạnh nó — đúng lý do bảng cũng không có cột Trạng thái ở tab đó.
    */
   showStatus?: boolean
+  /**
+   * Bày tên người nghỉ không. Tắt ở màn CHI TIẾT MỘT DÒNG QUỸ PHÉP: cả danh
+   * sách ở đó là đơn của đúng một người, mà tên người ấy đã nằm ngay trên tiêu
+   * đề trang — lặp lại trên từng thẻ chỉ ăn mất dòng đầu. Bảng ở màn đó cũng
+   * không có cột Nhân sự, cùng một lý do.
+   */
+  showEmployee?: boolean
   /** Hạn xử lý việc duyệt — chỉ tab «Cần tôi duyệt» có. */
   dueAt?: string | null
 }
@@ -37,18 +44,26 @@ interface LeaveRequestCardProps {
  * Lý do bị từ chối / trả về vì thế hiện thẳng thành chữ (bảng thì giấu trong
  * tooltip vì ô cao 35px không chứa nổi).
  */
-export function LeaveRequestCard({ request, showStatus = true, dueAt }: LeaveRequestCardProps) {
+export function LeaveRequestCard({
+  request,
+  showStatus = true,
+  showEmployee = true,
+  dueAt,
+}: LeaveRequestCardProps) {
   const note = decisionNoteOf(request)
   const linesText = leaveLinesText(request)
 
   return (
     <div className="flex items-start gap-2">
       <div className="min-w-0 flex-1 space-y-1.5">
-        {/*  Hàng đầu: TÊN NGƯỜI + trạng thái. `min-w-0` + `truncate` trên khối
-             tên — thiếu nó thì tên dài đẩy huy hiệu tràn ra ngoài mép thẻ. */}
+        {/*  Hàng đầu: thứ ĐỊNH DANH tờ đơn trong ngữ cảnh này + trạng thái.
+             Bình thường là tên người; danh sách một-người thì tên vô nghĩa nên
+             mã đơn lên thay (và dòng chân bỏ mã đi, không in hai lần).
+             `min-w-0` + `truncate` trên khối bên trái — thiếu nó thì tên dài đẩy
+             huy hiệu tràn ra ngoài mép thẻ. */}
         <div className="flex items-start justify-between gap-2">
-          <span className="min-w-0 truncate font-medium text-foreground">
-            {request.employee_name || `#${request.employee_id}`}
+          <span className="min-w-0 truncate font-medium text-foreground tabular-nums">
+            {showEmployee ? request.employee_name || `#${request.employee_id}` : request.code}
           </span>
           {showStatus && (
             <span className="shrink-0">
@@ -105,15 +120,13 @@ export function LeaveRequestCard({ request, showStatus = true, dueAt }: LeaveReq
           </p>
         )}
 
-        <div className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
-          <span className="tabular-nums">{request.code}</span>
-          {dueAt && (
-            <>
-              <span aria-hidden="true">·</span>
-              <span className="tabular-nums">Hạn xử lý {formatDateTime(dueAt)}</span>
-            </>
-          )}
-        </div>
+        {(showEmployee || dueAt) && (
+          <div className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
+            {showEmployee && <span className="tabular-nums">{request.code}</span>}
+            {showEmployee && dueAt && <span aria-hidden="true">·</span>}
+            {dueAt && <span className="tabular-nums">Hạn xử lý {formatDateTime(dueAt)}</span>}
+          </div>
+        )}
       </div>
 
       {/*  Mũi tên nói THẺ NÀY BẤM ĐƯỢC. Trên bảng, con trỏ đổi hình khi rê qua
