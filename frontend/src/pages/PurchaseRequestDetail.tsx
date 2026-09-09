@@ -999,7 +999,18 @@ export default function PurchaseRequestDetail() {
                               </button>
                             )}
                           </div>
-                        ) : <span style={{ display: 'block', whiteSpace: 'normal', overflowWrap: 'anywhere' }}>{it.product_code || '—'}</span>}
+                        ) : (
+                          // bao-CR-320 (ticket 36): đã duyệt / đã điều phối vẫn tra được lịch sử mua hàng
+                          // (chỉ xem — popup mở readOnly, không ghi đè dòng)
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <span style={{ flex: 1, minWidth: 0, display: 'block', whiteSpace: 'normal', overflowWrap: 'anywhere' }}>{it.product_code || '—'}</span>
+                            {it.product_code && (
+                              <button className="icon-btn" style={{ flexShrink: 0 }} title="Lịch sử mua hàng gần nhất của mã hàng này (chỉ xem)" onClick={() => setHistoryIdx(i)}>
+                                <i className="ti ti-history" style={{ fontSize: 16, color: 'var(--muted)' }} />
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </td>
                       {/* Tên sản phẩm: hiện đủ, dài thì xuống dòng (đọc thiếu dễ hiểu lầm) */}
                       <td title={it.product_name}>
@@ -1353,6 +1364,7 @@ export default function PurchaseRequestDetail() {
           productName={items[historyIdx].product_name}
           onPick={(h) => applyHistory(historyIdx, h)}
           onClose={() => setHistoryIdx(null)}
+          readOnly={!editable}
         />
       )}
 
