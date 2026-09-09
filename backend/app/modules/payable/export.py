@@ -18,7 +18,7 @@ FILE_NAME = "cong-no-phai-tra"
 SHEET_TITLE = "Cong no phai tra"
 
 # Nhãn đầy đủ — trạng thái lấy từ bộ mã chuẩn (status_codes.PAYABLE_STATUS, xem B-06)
-_SOURCE_LABEL = {"goods": "Hàng hóa", "shipping": "Vận chuyển"}
+_SOURCE_LABEL = {"goods": "Hàng hóa", "shipping": "Vận chuyển", "import_cost": "Chi phí nhập khẩu"}
 
 # Key và nhãn khớp bảng trên màn hình (cột tick chọn `sel` không có mặt trong file)
 COLS = [

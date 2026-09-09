@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Float, String, Text
+from sqlalchemy import Boolean, Float, SmallInteger, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base_model import Base, AuditMixin
@@ -31,3 +31,9 @@ class Supplier(Base, AuditMixin):
     def legal_type_label(self) -> str:
         """Nhãn tiếng Việt của `legal_type` (B-03). Mã lạ / rỗng -> rỗng."""
         return SUPPLIER_LEGAL_TYPE.label_of(self.legal_type)
+    # bao-CR-321 — điều khoản in trên Đơn mua hàng, theo từng NCC. 0 / rỗng = chưa khai,
+    # bản in lùi về mặc định (15 ngày · 07 ngày · "Chậm nhất 24h kể từ khi nhận hàng").
+    # Chép xuống đơn lúc chọn NCC (như payment_terms), trên đơn sửa lại được cho từng đơn.
+    inspection_days: Mapped[int] = mapped_column(SmallInteger, default=0)     # số ngày bên mua kiểm tra hàng
+    return_days: Mapped[int] = mapped_column(SmallInteger, default=0)         # số ngày bên bán thu hồi / đổi trả
+    invoice_deadline: Mapped[str] = mapped_column(String(255), default="")    # hạn xuất hóa đơn (chữ ngắn)

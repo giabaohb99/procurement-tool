@@ -1,7 +1,94 @@
-from sqlalchemy import BigInteger, Boolean, Index, Numeric, String, Text
+from enum import IntEnum
+
+from sqlalchemy import BigInteger, Boolean, Index, Numeric, SmallInteger, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base_model import Base, AuditMixin
+
+# Đồng tiền mặc định của cả hệ. Đơn thường vẫn ghi "VND" + tỷ giá 1 để mọi dòng có cùng
+# một cách đọc số tiền — không có dòng nào "không loại tiền".
+DEFAULT_CURRENCY = "VND"
+
+
+class OrderType(IntEnum):
+    """Loại đơn mua hàng (bao-CR-319). Cột mới nên lưu SỐ theo luật R2/QĐ-11."""
+
+    DOMESTIC = 1        # Trong nước
+    IMPORT = 2          # Nhập khẩu
+
+
+ORDER_TYPE_LABELS = {OrderType.DOMESTIC: "Trong nước", OrderType.IMPORT: "Nhập khẩu"}
+
+
+class ImportCostType(IntEnum):
+    """Loại chi phí của lô hàng nhập khẩu (bao-CR-319 P3).
+
+    Hai nhóm khác hẳn nhau về NGƯỜI NHẬN tiền, đừng gộp lại:
+    - Thuế (IMPORT_DUTY · IMPORT_VAT · EXCISE_TAX · ENV_TAX) nộp NGÂN SÁCH NHÀ NƯỚC.
+    - Còn lại trả cho hãng tàu / đơn vị khai thuê / kho bãi / bảo hiểm — mỗi khoản một
+      nhà cung cấp riêng, nên NCC khai ở TỪNG DÒNG chứ không lấy theo đơn.
+    """
+
+    OCEAN_FREIGHT = 1     # Cước vận tải quốc tế (đường biển / hàng không)
+    LOCAL_CHARGE = 2      # Phí địa phương tại cảng (THC, nâng hạ, D/O...)
+    CUSTOMS_SERVICE = 3   # Phí dịch vụ khai thuê hải quan
+    IMPORT_DUTY = 4       # Thuế nhập khẩu
+    IMPORT_VAT = 5        # Thuế GTGT hàng nhập khẩu
+    EXCISE_TAX = 6        # Thuế tiêu thụ đặc biệt
+    ENV_TAX = 7           # Thuế bảo vệ môi trường
+    INSPECTION = 8        # Phí kiểm tra chuyên ngành / kiểm dịch
+    INSURANCE = 9         # Bảo hiểm hàng hóa
+    INLAND_FREIGHT = 10   # Vận chuyển nội địa từ cảng về kho
+    STORAGE = 11          # Lưu kho / lưu bãi / lưu container
+    OTHER = 99            # Chi phí khác
+
+
+IMPORT_COST_TYPE_LABELS = {
+    ImportCostType.OCEAN_FREIGHT: "Cước vận tải quốc tế",
+    ImportCostType.LOCAL_CHARGE: "Phí địa phương tại cảng",
+    ImportCostType.CUSTOMS_SERVICE: "Phí dịch vụ hải quan",
+    ImportCostType.IMPORT_DUTY: "Thuế nhập khẩu",
+    ImportCostType.IMPORT_VAT: "Thuế GTGT hàng nhập khẩu",
+    ImportCostType.EXCISE_TAX: "Thuế tiêu thụ đặc biệt",
+    ImportCostType.ENV_TAX: "Thuế bảo vệ môi trường",
+    ImportCostType.INSPECTION: "Phí kiểm tra chuyên ngành",
+    ImportCostType.INSURANCE: "Bảo hiểm hàng hóa",
+    ImportCostType.INLAND_FREIGHT: "Vận chuyển nội địa",
+    ImportCostType.STORAGE: "Lưu kho / lưu bãi",
+    ImportCostType.OTHER: "Chi phí khác",
+}
+
+# Khoản nộp cho nhà nước — giao diện gợi ý sẵn NCC "Ngân sách nhà nước" cho mấy loại này.
+IMPORT_COST_TAX_TYPES = frozenset({ImportCostType.IMPORT_DUTY, ImportCostType.IMPORT_VAT,
+                                   ImportCostType.EXCISE_TAX, ImportCostType.ENV_TAX})
+
+# NCC đại diện cho khoản nộp thuế. Có thật trong danh mục NCC (migration seed) để công nợ
+# và Yêu cầu thanh toán ở P5 đi chung một đường với mọi khoản chi phí khác.
+STATE_BUDGET_SUPPLIER_CODE = "NSNN"
+STATE_BUDGET_SUPPLIER_NAME = "Ngân sách nhà nước"
+
+
+class AllocationMethod(IntEnum):
+    """Cách chia một khoản chi phí về các dòng hàng (bao-CR-319 P3/P4).
+
+    Chỉ để XEM: kết quả chia tính lúc xem / lúc in, không ghi xuống cột nào, không
+    đẩy vào giá tồn kho — hệ chưa có phân hệ hóa đơn nên chưa tính giá vốn.
+    """
+
+    BY_VALUE = 1      # theo giá trị dòng hàng (mặc định)
+    BY_WEIGHT = 2     # theo khối lượng
+    BY_QUANTITY = 3   # theo số lượng
+    BY_PRODUCT = 4    # chỉ định đích danh một mã hàng
+    MANUAL = 5        # thu mua gõ tay số tiền từng dòng hàng (`manual_allocation`), tổng phải khớp khoản
+
+
+ALLOCATION_METHOD_LABELS = {
+    AllocationMethod.BY_VALUE: "Theo giá trị",
+    AllocationMethod.BY_WEIGHT: "Theo khối lượng",
+    AllocationMethod.BY_QUANTITY: "Theo số lượng",
+    AllocationMethod.BY_PRODUCT: "Chỉ định một mã hàng",
+    AllocationMethod.MANUAL: "Nhập tay",
+}
 
 
 class PurchaseOrder(Base, AuditMixin):
@@ -38,6 +125,18 @@ class PurchaseOrder(Base, AuditMixin):
     document_status: Mapped[str] = mapped_column(String(30), default="none", index=True)
     note: Mapped[str] = mapped_column(Text, default="")
     approve_note: Mapped[str] = mapped_column(Text, default="")
+    # --- bao-CR-319: đơn nhập khẩu -------------------------------------------------------
+    order_type: Mapped[int] = mapped_column(SmallInteger, default=int(OrderType.DOMESTIC), index=True)
+    # Đồng tiền + tỷ giá MẶC ĐỊNH của đơn — dòng hàng chép xuống khi thêm mới, sửa riêng được.
+    currency: Mapped[str] = mapped_column(String(10), default=DEFAULT_CURRENCY)
+    exchange_rate: Mapped[float] = mapped_column(Numeric(18, 6), default=1)
+    customs_decl_no: Mapped[str] = mapped_column(String(50), default="")     # số tờ khai hải quan
+    customs_decl_date: Mapped[str] = mapped_column(String(10), default="")   # ngày tờ khai
+    # --- bao-CR-321: điều khoản in trên đơn, chép từ NCC lúc chọn, sửa riêng từng đơn ---
+    # 0 / rỗng = chưa khai -> bản in lùi về giá trị của NCC, rồi về mặc định (xem resolve_print_terms).
+    inspection_days: Mapped[int] = mapped_column(SmallInteger, default=0)
+    return_days: Mapped[int] = mapped_column(SmallInteger, default=0)
+    invoice_deadline: Mapped[str] = mapped_column(String(255), default="")
 
 
 class POItem(Base, AuditMixin):
@@ -64,7 +163,16 @@ class POItem(Base, AuditMixin):
     qty_order: Mapped[float] = mapped_column(Numeric(18, 3), default=0)
     price: Mapped[float] = mapped_column(Numeric(18, 4), default=0)        # ĐƠN GIÁ giữ 4 số lẻ (giá quy đổi hay lẻ tới phần nghìn đồng)
     vat: Mapped[float] = mapped_column(Numeric(5, 2), default=0)            # % VAT của dòng
-    amount: Mapped[float] = mapped_column(Numeric(18, 2), default=0)        # qty_order*price*(1+vat%)
+    amount: Mapped[float] = mapped_column(Numeric(18, 2), default=0)        # qty_order*price*(1+vat%) — NGUYÊN TỆ
+    # --- bao-CR-319: dòng hàng ngoại tệ ---------------------------------------------------
+    # `price` và `amount` ghi theo ĐỒNG TIỀN CỦA DÒNG. Mọi nơi tiền rời khỏi phân hệ này
+    # (công nợ, tồn kho, báo cáo, trang chủ) phải dùng `base_amount` / giá đã nhân tỷ giá —
+    # bảng công nợ không có cột loại tiền nên cộng thẳng số nguyên tệ vào là sai âm thầm.
+    currency: Mapped[str] = mapped_column(String(10), default=DEFAULT_CURRENCY)
+    exchange_rate: Mapped[float] = mapped_column(Numeric(18, 6), default=1)
+    base_amount: Mapped[float] = mapped_column(Numeric(18, 2), default=0)   # amount × exchange_rate
+    weight_kg: Mapped[float] = mapped_column(Numeric(18, 3), default=0)     # khối lượng — dùng chia chi phí theo cân nặng
+    dimension: Mapped[str] = mapped_column(String(100), default="")         # quy cách / kích thước (dài×rộng×cao)
     qty_received: Mapped[float] = mapped_column(Numeric(18, 3), default=0)  # auto = Σ giao đã nhận
     qty_remaining: Mapped[float] = mapped_column(Numeric(18, 3), default=0)
     # MÃ cố định, xem PO_ITEM_LINE_STATUS (B-06): not_delivered | partial | full. Rỗng = chưa
@@ -81,6 +189,43 @@ class POItem(Base, AuditMixin):
     # Rỗng = dòng chưa từng tạm ngưng. Đổi bộ mã của cột trên thì PHẢI đổi cột này cùng lúc,
     # nếu không nút "Bỏ tạm ngưng" khôi phục sai trạng thái mà không báo lỗi (xem B-06 nhịp 2).
     status_before_pause: Mapped[str] = mapped_column(String(40), default="")
+
+
+class POImportCost(Base, AuditMixin):
+    """Một khoản chi phí của lô hàng nhập khẩu (bao-CR-319 P3).
+
+    Bảng PHẲNG, gắn thẳng vào ĐƠN chứ không vào dòng hàng: một khoản cước biển là của
+    cả lô, không của riêng mã nào. Việc chia về dòng hàng là chuyện XEM (P4), tính lúc
+    xem/in theo `allocation_method`, không lưu kết quả xuống đây.
+
+    Mỗi dòng tự khai NCC vì tiền đi về nhiều nơi khác nhau: cước trả hãng tàu, thuế nộp
+    ngân sách nhà nước, phí khai thuê trả đơn vị dịch vụ.
+    """
+
+    __tablename__ = "tab_po_import_cost"
+
+    po_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    cost_type: Mapped[int] = mapped_column(SmallInteger, default=int(ImportCostType.OTHER), index=True)
+    description: Mapped[str] = mapped_column(String(255), default="")
+    supplier_code: Mapped[str] = mapped_column(String(50), default="", index=True)
+    supplier_name: Mapped[str] = mapped_column(String(255), default="")
+    # Tiền của khoản chi phí. Cùng quy ước với dòng hàng: `amount` là số TRƯỚC thuế theo
+    # đồng tiền của chính dòng chi phí, `base_amount` là tổng ĐÃ gồm VAT quy về VNĐ.
+    currency: Mapped[str] = mapped_column(String(10), default=DEFAULT_CURRENCY)
+    exchange_rate: Mapped[float] = mapped_column(Numeric(18, 6), default=1)
+    amount: Mapped[float] = mapped_column(Numeric(18, 2), default=0)
+    vat: Mapped[float] = mapped_column(Numeric(5, 2), default=0)             # % VAT của khoản chi phí
+    base_amount: Mapped[float] = mapped_column(Numeric(18, 2), default=0)    # amount × (1 + vat%) × tỷ giá
+    allocation_method: Mapped[int] = mapped_column(SmallInteger, default=int(AllocationMethod.BY_VALUE))
+    allocation_target: Mapped[str] = mapped_column(String(50), default="")   # mã hàng, chỉ dùng khi chỉ định
+    # Cách 5 "Nhập tay": JSON {"<id dòng hàng>": số tiền VNĐ}. Đây là cách chia DUY NHẤT phải lưu
+    # kết quả, vì con số do người gõ chứ không suy ra được từ dữ liệu khác. Tổng phải bằng đúng
+    # `base_amount` (kiểm khi lưu); cách khác thì cột này để trống.
+    manual_allocation: Mapped[str] = mapped_column(Text, default="")
+    invoice_no: Mapped[str] = mapped_column(String(50), default="")
+    invoice_date: Mapped[str] = mapped_column(String(10), default="")
+    payment_due_date: Mapped[str] = mapped_column(String(10), default="")    # hạn trả khoản chi phí
+    note: Mapped[str] = mapped_column(String(255), default="")
 
 
 class PODelivery(Base, AuditMixin):

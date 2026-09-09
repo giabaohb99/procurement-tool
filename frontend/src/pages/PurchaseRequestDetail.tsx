@@ -235,6 +235,8 @@ export default function PurchaseRequestDetail() {
   // bao-CR-316: MỐC ĐẾM hạn = Ngày tiếp nhận nếu thu mua đã nhận việc, chưa nhận thì tạm lấy
   // Ngày lập phiếu (để cảnh báo trễ hạn có hiệu lực ngay lúc lập, chứ không đợi tới điều phối).
   // Khớp `sla_base_date` bên backend — sửa một bên phải sửa cả hai.
+  // Ô "Ngày tiếp nhận" thì đọc thẳng `received_date` (rỗng = chưa tiếp nhận), không suy từ
+  // trạng thái nữa: bản CR-315 phải suy vì hai nghĩa còn chung một cột.
   const slaBase = (pr.received_date || '') || (pr.request_date || '')
   // Còn dòng nào chưa đặt hàng → vẫn cho tạo ĐMH (không ẩn khi mới hoàn thành 1 dòng).
   // CR-074: phải tính CẢ hai nhãn "chưa động tới", nếu không thì vừa lập đơn Nháp là nút
@@ -841,6 +843,23 @@ export default function PurchaseRequestDetail() {
                     <label>Ngày tạo</label>
                     <input value={fmtDateTime(pr.created_at) || '—'} disabled />
                   </div>
+                  {/* bao-CR-318: đường quay về YCBG nguồn. Chiều ĐMH -> YCMH vốn đã có, chiều
+                      YCMH -> YCBG thì trước chỉ nằm trong câu chữ ô Nội dung nên bấm không ra.
+                      Chỉ hiện khi phiếu sinh ra TỪ yêu cầu báo giá; lập tay thì không có gì. */}
+                  {pr.survey_request_code && (
+                    <div className="form-row">
+                      <label>Từ yêu cầu báo giá</label>
+                      {can('survey_request', 'read') && pr.survey_request_id
+                        ? <div style={{ display: 'flex', alignItems: 'center', minHeight: 38 }}>
+                            <span className="clickable" style={{ color: 'var(--teal)', fontWeight: 500, cursor: 'pointer' }}
+                              title="Mở phiếu yêu cầu báo giá nguồn"
+                              onClick={() => navigate(`/survey-requests/${pr.survey_request_id}`)}>
+                              <i className="ti ti-external-link" style={{ marginRight: 4 }} />{pr.survey_request_code}
+                            </span>
+                          </div>
+                        : <input value={pr.survey_request_code} disabled />}
+                    </div>
+                  )}
                 </>
               )}
               <div className="form-row">
@@ -982,7 +1001,18 @@ export default function PurchaseRequestDetail() {
                               </button>
                             )}
                           </div>
-                        ) : <span style={{ display: 'block', whiteSpace: 'normal', overflowWrap: 'anywhere' }}>{it.product_code || '—'}</span>}
+                        ) : (
+                          // bao-CR-320 (ticket 36): đã duyệt / đã điều phối vẫn tra được lịch sử mua hàng
+                          // (chỉ xem — popup mở readOnly, không ghi đè dòng)
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <span style={{ flex: 1, minWidth: 0, display: 'block', whiteSpace: 'normal', overflowWrap: 'anywhere' }}>{it.product_code || '—'}</span>
+                            {it.product_code && (
+                              <button className="icon-btn" style={{ flexShrink: 0 }} title="Lịch sử mua hàng gần nhất của mã hàng này (chỉ xem)" onClick={() => setHistoryIdx(i)}>
+                                <i className="ti ti-history" style={{ fontSize: 16, color: 'var(--muted)' }} />
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </td>
                       {/* Tên sản phẩm: hiện đủ, dài thì xuống dòng (đọc thiếu dễ hiểu lầm) */}
                       <td title={it.product_name}>
@@ -1336,6 +1366,7 @@ export default function PurchaseRequestDetail() {
           productName={items[historyIdx].product_name}
           onPick={(h) => applyHistory(historyIdx, h)}
           onClose={() => setHistoryIdx(null)}
+          readOnly={!editable}
         />
       )}
 

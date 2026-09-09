@@ -73,9 +73,9 @@ Thông báo gửi qua chuông trong app (và Web Push nếu thiết bị đã đ
 ### 4. Loại công nợ (`source_type`)
 
 - Kiểu nhập: Tự động
-- Mặc định: `goods` (hàng hóa); hoặc `shipping` (vận chuyển) — lấy từ `payable.source_type`
+- Mặc định: `goods` (hàng hóa); hoặc `shipping` (vận chuyển); hoặc `import_cost` (chi phí nhập khẩu — bao-CR-319 P5) — lấy từ `payable.source_type`
 - Bắt buộc: — (hệ thống điền, không sửa)
-- Nguồn dữ liệu / liên kết: `payable.source_type`; hiển thị: `goods` -> "Hàng hóa", `shipping` -> "Vận chuyển"
+- Nguồn dữ liệu / liên kết: `payable.source_type`; hiển thị: `goods` -> "Hàng hóa", `shipping` -> "Vận chuyển", `import_cost` -> "Chi phí nhập khẩu" (nhãn dùng chung `frontend/src/utils/payable.ts`). Với dòng `import_cost`, `check_submit` / chi tiền không khớp được theo số HĐ thì lùi về `payable_id` của dòng — xem [04-don-mua-hang.md §K.4](04-don-mua-hang.md)
 - Người sửa: Hệ thống (khóa hoàn toàn; là khóa nhóm cùng với `supplier_code` khi tách phiếu)
 
 ### 5. Công ty (`company_id`)

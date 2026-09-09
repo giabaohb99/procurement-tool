@@ -417,6 +417,7 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
           const sup = (pr.supplier_pur?.name || pr.supplier_pur?.tax_code || pr.supplier_pur?.contact)
             ? pr.supplier_pur
             : pr.supplier_req;
+          const hasQuote = Boolean(pr.has_quote_file ?? pr.quote_file_url);
           return (
             <>
               <div style={SH}>NHÀ CUNG CẤP DO BỘ PHẬN ĐỀ XUẤT</div>
@@ -430,8 +431,11 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
                 <div>
                   <b>Liên hệ:</b> {sup?.contact || ""}
                 </div>
+                {/* bao-CR-317: `has_quote_file` do backend tính — gồm cả file loại "Báo giá"
+                    ở khối đính kèm, không chỉ cột cũ `quote_file_url` (nay không màn nào ghi
+                    nữa nên ô này luôn tick "Không"). Vẫn đọc cột cũ để phiếu đời đầu in đúng. */}
                 <div>
-                  <b>Báo giá đính kèm:</b> {pr.quote_file_url ? "☑" : "☐"} Có &nbsp;&nbsp; {pr.quote_file_url ? "☐" : "☑"} Không
+                  <b>Báo giá đính kèm:</b> {hasQuote ? "☑" : "☐"} Có &nbsp;&nbsp; {hasQuote ? "☐" : "☑"} Không
                 </div>
               </div>
             </>

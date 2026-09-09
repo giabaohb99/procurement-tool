@@ -19,12 +19,18 @@ def _mk(s):
     return (s or "")[:7]  # 'YYYY-MM'
 
 
+def _rate_of(it):
+    """bao-CR-319 — tỷ giá của dòng hàng; dòng cũ / dòng VNĐ đọc thành 1."""
+    return float(getattr(it, "exchange_rate", 0) or 0) or 1.0
+
+
 def _amt(it):
-    return float(it.qty_order or 0) * float(it.price or 0) * (1 + float(it.vat or 0) / 100)
+    # Báo cáo cộng gộp nhiều đơn nên PHẢI quy đổi về một loại tiền, không thì tổng vô nghĩa.
+    return float(it.qty_order or 0) * float(it.price or 0) * (1 + float(it.vat or 0) / 100) * _rate_of(it)
 
 
 def _recv_amt(it):
-    return float(it.qty_received or 0) * float(it.price or 0) * (1 + float(it.vat or 0) / 100)
+    return float(it.qty_received or 0) * float(it.price or 0) * (1 + float(it.vat or 0) / 100) * _rate_of(it)
 
 
 def _rate(part, whole):

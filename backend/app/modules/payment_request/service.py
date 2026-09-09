@@ -16,6 +16,10 @@ from .schema import PRequestCreate, PRequestUpdate
 FILTERABLE = ["code", "supplier_code", "status", "source_type", "request_date", "payment_method"]
 ENTITY = "payment_request"
 
+# Loại công nợ một phiếu gom: hàng · vận chuyển · chi phí lô hàng nhập khẩu (bao-CR-319 P5).
+# Mỗi phiếu chỉ MỘT loại × MỘT nhà cung cấp — `create_requests` tự tách theo cặp đó.
+SOURCE_TYPES = ("goods", "shipping", "import_cost")
+
 # CR-035 — hình thức thanh toán. Mặc định 'transfer' để phiếu cũ giữ nguyên bản in (có chuyển khoản).
 PAYMENT_METHODS = ("transfer", "cash")
 
@@ -224,7 +228,7 @@ def create_requests(db: Session, data: PRequestCreate, user_id: int) -> list[Pay
         supplier_code = (data.supplier_code or "").strip()
         if not supplier_code:
             raise HTTPException(400, "Chưa chọn nhà cung cấp cho phiếu")
-        source_type = data.source_type if data.source_type in ("goods", "shipping") else "goods"
+        source_type = data.source_type if data.source_type in SOURCE_TYPES else "goods"
         # Form không chọn công ty mà các khoản nợ kèm theo đều thuộc MỘT công ty thì dòng
         # gõ tay đi chung phiếu đó (đúng hành vi cũ); nhiều công ty thì đứng phiếu riêng.
         pay_companies = {k[2] for k in groups}
@@ -348,6 +352,13 @@ def check_submit(db: Session, req: PaymentRequest) -> None:
             problems.append(f"{label}: chưa có Số hóa đơn")
             continue
         pays = matching_payables(db, req.supplier_code, req.source_type, ln.po_code, ln.invoice_no)
+        if not pays and req.source_type == "import_cost" and ln.payable_id:
+            # bao-CR-319 P5: khoản chi phí thường sinh nợ TRƯỚC khi có số hóa đơn (tờ khai,
+            # hóa đơn cước về sau), người lập gõ số HĐ ngay trên phiếu → khớp theo đúng khoản
+            # nợ mà dòng phiếu trỏ tới. Lúc chi tiền `set_status` cũng lùi về payable_id như vậy.
+            p = db.get(Payable, ln.payable_id)
+            if p and p.supplier_code == req.supplier_code and p.source_type == req.source_type:
+                pays = [p]
         if not pays:
             problems.append(f"{label}: không có khoản công nợ nào khớp Số HĐ {ln.invoice_no} "
                             f"(sai số hóa đơn / mã PO, hoặc hàng chưa được ghi nhận nhận)")

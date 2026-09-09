@@ -38,7 +38,7 @@ export default function SupplierDetail() {
   const isNew = id === 'new'
   const { can } = useAuth()
   const navigate = useNavigate()
-  const [sup, setSup] = useState<any>({ code: '', name: '', legal_type: '', tax_code: '', address: '', supplier_type: 'goods', contact_person: '', phone: '', payment_terms: '', bank_account: '', bank_name: '', vat: 8, is_active: true })
+  const [sup, setSup] = useState<any>({ code: '', name: '', legal_type: '', tax_code: '', address: '', supplier_type: 'goods', contact_person: '', phone: '', payment_terms: '', bank_account: '', bank_name: '', vat: 8, is_active: true, inspection_days: 0, return_days: 0, invoice_deadline: '' })
   const [tab, setTab] = useState('info')
   const [contracts, setContracts] = useState<any[]>([])
   const [surveySup, setSurveySup] = useState<any[]>([])
@@ -98,6 +98,9 @@ export default function SupplierDetail() {
       supplier_type: sup.supplier_type, contact_person: sup.contact_person, phone: sup.phone,
       payment_terms: sup.payment_terms, bank_account: sup.bank_account, bank_name: sup.bank_name,
       vat: vatNum / 100, is_active: sup.is_active,
+      // bao-CR-321 — điều khoản in trên ĐMH; 0 / rỗng = chưa khai, bản in dùng mặc định
+      inspection_days: Number(sup.inspection_days) || 0, return_days: Number(sup.return_days) || 0,
+      invoice_deadline: (sup.invoice_deadline || '').trim(),
     }
     try {
       if (isNew) { const r = await api.post('/api/suppliers', { code: sup.code, ...body }); navigate(`/suppliers/${r.data.data.id}`) }
@@ -199,6 +202,20 @@ export default function SupplierDetail() {
               <div className="form-row" style={{ gridColumn: '1 / -1' }}>
                 <label>Hình thức thanh toán</label>
                 <SearchSelect value={sup.payment_terms || ''} options={PAYMENT_TERMS_OPTIONS} disabled={!canEdit} placeholder="Chọn hình thức thanh toán…" onChange={(v) => setH('payment_terms', v)} />
+              </div>
+              {/* bao-CR-321 — điều khoản in trên Đơn đặt hàng (mục 2 + mục 5 "Thoả thuận khác").
+                  Để trống = dùng mặc định cũ của bản in; chọn NCC trên ĐMH sẽ chép các ô này xuống đơn. */}
+              <div className="form-row">
+                <label>Số ngày kiểm tra hàng (bản in ĐMH)</label>
+                <input type="number" min="0" max="365" value={sup.inspection_days || ''} disabled={!canEdit} onChange={(e) => setH('inspection_days', e.target.value === '' ? 0 : Number(e.target.value))} placeholder="Trống = 15 ngày" />
+              </div>
+              <div className="form-row">
+                <label>Số ngày thu hồi / đổi trả (bản in ĐMH)</label>
+                <input type="number" min="0" max="365" value={sup.return_days || ''} disabled={!canEdit} onChange={(e) => setH('return_days', e.target.value === '' ? 0 : Number(e.target.value))} placeholder="Trống = 07 ngày" />
+              </div>
+              <div className="form-row" style={{ gridColumn: '1 / -1' }}>
+                <label>Thời gian nhận hóa đơn (bản in ĐMH)</label>
+                <input value={sup.invoice_deadline || ''} maxLength={255} disabled={!canEdit} onChange={(e) => setH('invoice_deadline', e.target.value)} placeholder="Trống = Chậm nhất 24h kể từ khi nhận hàng" />
               </div>
               <div className="form-row">
                 <label>Số tài khoản ngân hàng</label>

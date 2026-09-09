@@ -122,13 +122,20 @@ def status_label(v: str) -> str:
 
 def upsert(db: Session, *, source_type: str, ref_id: int, company_id: int, supplier_code: str,
            supplier_name: str, po_id: int, po_code: str, invoice_no: str, incur_date: str,
-           amount: float, vat: float, due_days: int, user_id: int):
-    """Tạo/cập nhật 1 khoản nợ (idempotent theo source_type + ref_id = delivery_id)."""
+           amount: float, vat: float, due_days: int, user_id: int,
+           ref_type: str = "delivery", due_date: str = ""):
+    """Tạo/cập nhật 1 khoản nợ (idempotent theo source_type + ref_type + ref_id).
+
+    `ref_type = "delivery"` (mặc định): `ref_id` là id lần giao — hai luồng goods/shipping.
+    `ref_type = "import_cost"` (bao-CR-319 P5): `ref_id` là id dòng chi phí lô hàng nhập khẩu.
+    `due_date` có giá trị thì dùng thẳng (dòng chi phí có ô *Hạn thanh toán* riêng),
+    rỗng thì tính từ ngày phát sinh + số ngày công nợ của NCC như trước.
+    """
     p = db.query(Payable).filter(
-        Payable.source_type == source_type, Payable.ref_type == "delivery", Payable.ref_id == ref_id
+        Payable.source_type == source_type, Payable.ref_type == ref_type, Payable.ref_id == ref_id
     ).first()
     if not p:
-        p = Payable(source_type=source_type, ref_type="delivery", ref_id=ref_id, created_by=user_id)
+        p = Payable(source_type=source_type, ref_type=ref_type, ref_id=ref_id, created_by=user_id)
         db.add(p)
     p.company_id = company_id
     p.supplier_code = supplier_code
@@ -138,7 +145,7 @@ def upsert(db: Session, *, source_type: str, ref_id: int, company_id: int, suppl
     p.invoice_no = invoice_no
     p.incur_date = incur_date
     p.period = (incur_date or "")[:4]
-    p.due_date = calc_due(incur_date, due_days)
+    p.due_date = (due_date or "").strip() or calc_due(incur_date, due_days)
     p.amount = round(amount, 2)
     p.vat = round(vat, 2)
     p.total = round(amount + vat, 2)
@@ -148,9 +155,9 @@ def upsert(db: Session, *, source_type: str, ref_id: int, company_id: int, suppl
     return p
 
 
-def remove(db: Session, source_type: str, ref_id: int):
+def remove(db: Session, source_type: str, ref_id: int, ref_type: str = "delivery"):
     p = db.query(Payable).filter(
-        Payable.source_type == source_type, Payable.ref_type == "delivery", Payable.ref_id == ref_id
+        Payable.source_type == source_type, Payable.ref_type == ref_type, Payable.ref_id == ref_id
     ).first()
     if p:
         db.delete(p)

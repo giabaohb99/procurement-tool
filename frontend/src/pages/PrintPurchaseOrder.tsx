@@ -45,6 +45,12 @@ export default function PrintPurchaseOrder() {
   const co = po.company || {}
   const sup = po.supplier || {}
   const wh = po.warehouse || {}
+  // bao-CR-321 — điều khoản mục 2 + mục 5 do backend gộp sẵn (đơn -> NCC -> mặc định).
+  // Vẫn để mặc định ở đây phòng gọi nhầm bản API cũ chưa trả `print_terms`.
+  const terms = po.print_terms || {}
+  const inspectionDays = terms.inspection_days_label || '15'
+  const returnDays = terms.return_days_label || '07'
+  const invoiceDeadline = terms.invoice_deadline || 'Chậm nhất 24h kể từ khi nhận hàng'
   const cell = { border: '1px solid #555', padding: '4px 6px', fontSize: 11, verticalAlign: 'top' } as const
   const head = { ...cell, background: '#dfe7df', fontWeight: 700, textAlign: 'center' as const }
 
@@ -129,7 +135,7 @@ export default function PrintPurchaseOrder() {
         <div style={{ fontSize: 11.5, marginTop: 12, lineHeight: 1.7 }}>
           <div style={{ fontStyle: 'italic', fontWeight: 700 }}>* Thoả thuận khác:</div>
           <div><b>1. Thời gian thanh toán/ Số ngày công nợ:</b> {po.payment_terms || sup.payment_terms || '............'}</div>
-          <div><b>2. Thời gian nhận hóa đơn:</b> Chậm nhất 24h kể từ khi nhận hàng</div>
+          <div><b>2. Thời gian nhận hóa đơn:</b> {invoiceDeadline}</div>
           <div><b>3. Thông tin nhận hàng:</b></div>
           <div style={{ paddingLeft: 16 }}>- Phương thức giao nhận:</div>
           <div style={{ paddingLeft: 16 }}>- Nơi giao (kho nhận): {wh.name || co.name || ''}</div>
@@ -141,9 +147,9 @@ export default function PrintPurchaseOrder() {
           <div style={{ paddingLeft: 16 }}>- Địa chỉ: {co.address || ''}</div>
           <div style={{ paddingLeft: 16 }}>- Mail nhận hóa đơn: {co.invoice_email || ''}</div>
           <div><b>5. Hàng lỗi, sai mẫu:</b></div>
-          <div style={{ paddingLeft: 16 }}>- Bên mua kiểm tra hàng trong vòng 15 ngày kể từ ngày nhận hàng.</div>
+          <div style={{ paddingLeft: 16 }}>- Bên mua kiểm tra hàng trong vòng {inspectionDays} ngày kể từ ngày nhận hàng.</div>
           <div style={{ paddingLeft: 16 }}>- Nếu hàng lỗi/sai mẫu, Bên mua thông báo kèm bằng chứng cho Bên bán.</div>
-          <div style={{ paddingLeft: 16 }}>- Bên bán phải thu hồi, đổi trả trong vòng 07 ngày; mọi chi phí phát sinh do Bên bán chịu.</div>
+          <div style={{ paddingLeft: 16 }}>- Bên bán phải thu hồi, đổi trả trong vòng {returnDays} ngày; mọi chi phí phát sinh do Bên bán chịu.</div>
         </div>
 
         <div style={{ fontSize: 11.5, marginTop: 10 }}>Các thông tin, file, hình ảnh gửi kèm đơn hàng:</div>

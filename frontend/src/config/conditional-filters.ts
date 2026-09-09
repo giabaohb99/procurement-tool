@@ -2,6 +2,7 @@ import type { FilterFieldDefinition, OperatorType } from '../components/conditio
 import {
   PAYABLE_STATUSES, PO_DELIVERY_STATUSES, PO_DOCUMENT_STATUSES, PO_PROGRESS_STATUSES,
 } from '../utils/statusLabels'
+import { SOURCE_TYPE_OPTIONS } from '../utils/payable'
 
 // Khai báo BỘ LỌC ĐIỀU KIỆN dùng chung.
 //
@@ -42,8 +43,8 @@ export const PAYABLE_COND_FILTERS: FilterFieldDefinition[] = [
   condSource('supplier_code', 'Nhà cung cấp', { url: '/api/suppliers', value: 'code', label: 'name' }),
   condText('po_code', 'Mã PO'),
   condText('invoice_no', 'Số hóa đơn'),
-  condSelect('source_type', 'Loại nợ', [
-    { value: 'goods', label: 'Hàng hóa' }, { value: 'shipping', label: 'Vận chuyển' }]),
+  // bao-CR-319: có thêm loại "Chi phí nhập khẩu" — danh sách dùng chung ở utils/payable
+  condSelect('source_type', 'Loại nợ', SOURCE_TYPE_OPTIONS),
   // Giá trị gửi lên là MÃ (`unpaid | partial | paid`) từ B-05, không phải nhãn tiếng Việt.
   condSelect('status', 'Trạng thái', PAYABLE_STATUSES),
 ]

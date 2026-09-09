@@ -118,6 +118,33 @@ Lưu trữ thông tin pháp lý, liên lạc và tài chính của các đối t
 - Người sửa: Người dùng có quyền `supplier:write`
 - Logic: NCC không hoạt động vẫn giữ nguyên trong hệ thống và không bị xóa khỏi các chứng từ cũ
 
+### 14. Số ngày kiểm tra hàng (`inspection_days`) — bao-CR-321
+
+- Kiểu nhập: Nhập tay (số nguyên 0–365), card "Thông tin tài chính & Giao dịch"
+- Mặc định: 0 = **chưa khai**
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: Bản in **Đơn đặt hàng** (`PrintPurchaseOrder.tsx`), mục 5 "Hàng lỗi, sai mẫu": "Bên mua kiểm tra hàng trong vòng **N** ngày kể từ ngày nhận hàng"
+- Người sửa: Người dùng có quyền `supplier:write`
+- Logic: Đây là **giá trị nguồn**. Khi chọn NCC trên Đơn mua hàng, giá trị được chép xuống cột cùng tên của đơn (`04-don-mua-hang.md` mục A.23); sửa NCC sau đó **không** đổi đơn đã tạo. Bản in lấy theo thứ tự đơn -> NCC -> mặc định **15 ngày** (`resolve_print_terms`, `purchase_order/service.py`), nên NCC cũ chưa khai in ra y hệt trước.
+
+### 15. Số ngày thu hồi / đổi trả (`return_days`) — bao-CR-321
+
+- Kiểu nhập: Nhập tay (số nguyên 0–365)
+- Mặc định: 0 = chưa khai
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: Bản in Đơn đặt hàng, mục 5: "Bên bán phải thu hồi, đổi trả trong vòng **NN** ngày" (in hai chữ số, ví dụ `07`)
+- Người sửa: Người dùng có quyền `supplier:write`
+- Logic: Như mục 14; mặc định **07 ngày**.
+
+### 16. Thời gian nhận hóa đơn (`invoice_deadline`) — bao-CR-321
+
+- Kiểu nhập: Nhập tay, chữ tự do tối đa 255 ký tự
+- Mặc định: trống = chưa khai
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: Bản in Đơn đặt hàng, mục 2 "Thời gian nhận hóa đơn"
+- Người sửa: Người dùng có quyền `supplier:write`
+- Logic: Như mục 14; mặc định **"Chậm nhất 24h kể từ khi nhận hàng"**. Chuỗi toàn khoảng trắng được coi là chưa khai. Ba ô này **không** liên quan tới `payment_terms` (mục 1 của bản in, tính số ngày công nợ) và không ảnh hưởng công nợ hay tiến độ nhận hàng — chỉ là chữ trên giấy gửi NCC.
+
 ---
 
 ## Sản phẩm

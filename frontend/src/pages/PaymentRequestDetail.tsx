@@ -9,6 +9,7 @@ import NumberInput from '../components/NumberInput'
 import SearchSelect from '../components/SearchSelect'
 import { toast } from '../components/toast'
 import { fmtDateTime } from '../utils/datetime'
+import { SOURCE_TYPE_OPTIONS, sourceTypeLabel } from '../utils/payable'
 import DocumentAttachmentSection from '../components/DocumentAttachmentSection'
 import AuditTimeline from '../components/AuditTimeline'
 
@@ -215,8 +216,7 @@ function PaymentRequestCreate() {
               </div>
               <div className="form-row"><label>Loại công nợ</label>
                 <select value={sourceType} onChange={(e) => setSourceType(e.target.value)}>
-                  <option value="goods">Hàng hóa</option>
-                  <option value="shipping">Vận chuyển</option>
+                  {SOURCE_TYPE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
               </div>
             </>
@@ -251,7 +251,7 @@ function PaymentRequestCreate() {
                   <td>{i + 1}</td>
                   <td>{l.payable_id ? (l.supplier_name || l.supplier_code)
                     : (suppliers.find((s) => s.code === headSupplier)?.name || headPayable?.supplier_name || headSupplier || '—')}</td>
-                  <td>{(l.payable_id ? l.source_type : headSource) === 'shipping' ? 'Vận chuyển' : 'Hàng hóa'}</td>
+                  <td>{sourceTypeLabel(l.payable_id ? l.source_type : headSource)}</td>
                   <td>{l.payable_id ? l.po_code : (
                     <input className="cell-input" style={{ width: 130 }} value={l.po_code}
                       onChange={(e) => setLine(l.key, { po_code: e.target.value })} placeholder="Mã PO" />)}</td>
@@ -409,7 +409,7 @@ function PaymentRequestView() {
         <h3 className="sec-title">Thông tin phiếu</h3>
         <div className="form-grid">
           <div className="form-row"><label>Nhà cung cấp</label><input value={req.supplier_name || req.supplier_code} disabled /></div>
-          <div className="form-row"><label>Loại công nợ</label><input value={req.source_type === 'shipping' ? 'Vận chuyển' : 'Hàng hóa'} disabled /></div>
+          <div className="form-row"><label>Loại công nợ</label><input value={sourceTypeLabel(req.source_type)} disabled /></div>
           <div className="form-row"><label>Công ty</label><input value={companyName} disabled /></div>
           <div className="form-row"><label>Người yêu cầu</label><input value={req.created_by_name || '—'} disabled /></div>
           <div className="form-row"><label>Ngày lập</label><input value={fmtDateTime(req.created_at) || '—'} disabled /></div>

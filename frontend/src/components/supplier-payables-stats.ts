@@ -9,6 +9,7 @@
  *   - `remainNet` = debt − credit → số dư thực còn nợ NCC (có thể âm nếu ta đang trả dư).
  * Khoản âm KHÔNG được xếp vào mốc tuổi nợ (không thể "quá hạn" một khoản mình không nợ).
  */
+import { SOURCE_TYPE_LABELS } from '../utils/payable'
 
 export const AGING_ORDER = ['Chưa đến hạn', '1-30', '31-60', '61-90', '>90']
 export const AGING_COLOR: Record<string, string> = {
@@ -97,8 +98,9 @@ export function buildPayableStats(rows: any[]) {
     }
   })
   const bySource = [
-    { key: 'goods', label: 'Hàng hóa', color: '#00AEEF' },
-    { key: 'shipping', label: 'Vận chuyển', color: '#7C8DB5' },
+    { key: 'goods', label: SOURCE_TYPE_LABELS.goods, color: '#00AEEF' },
+    { key: 'shipping', label: SOURCE_TYPE_LABELS.shipping, color: '#7C8DB5' },
+    { key: 'import_cost', label: SOURCE_TYPE_LABELS.import_cost, color: '#d97706' },
   ].map((s) => {
     const g = rows.filter((p) => p.source_type === s.key)
     return { label: s.label, value: sum(g, (p) => p.total), color: s.color, note: g.length ? `${g.length} khoản` : '' }

@@ -19,6 +19,7 @@ import {
 import { fmtDateStr, fmtDateTime } from '../utils/datetime'
 import { fmtVND } from '../utils/money'
 import { initialsOf } from '../utils/name'
+import { SOURCE_TYPE_OPTIONS, sourceTypeLabel } from '../utils/payable'
 
 export type FieldDef = {
   key: string
@@ -262,6 +263,10 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'payment_terms', label: 'Hình thức thanh toán', type: 'select', options: PAYMENT_TERMS_OPTIONS },       // Ô này gửi thẳng TỈ LỆ lên API (khác trang chi tiết NCC — ở đó nhập theo % rồi chia 100).
       // BE chặn 0 ≤ vat < 1 (CR-058), nên nhãn phải nói rõ đơn vị kẻo người dùng gõ 8 rồi ăn 422.
       { key: 'vat', label: 'VAT — tỉ lệ, dưới 1 (0.08 = 8%)', type: 'number' },
+      // bao-CR-321 — điều khoản in trên ĐMH theo NCC; 0 / trống = bản in dùng mặc định (15 · 07 · 24h)
+      { key: 'inspection_days', label: 'Số ngày kiểm tra hàng (trống = 15)', type: 'number' },
+      { key: 'return_days', label: 'Số ngày thu hồi / đổi trả (trống = 07)', type: 'number' },
+      { key: 'invoice_deadline', label: 'Thời gian nhận hóa đơn (trống = Chậm nhất 24h kể từ khi nhận hàng)' },
       { key: 'is_active', label: 'Đang dùng', type: 'checkbox' },
     ],
   },
@@ -683,6 +688,11 @@ export const cruds: Record<string, CrudConfig> = {
     slug: 'purchase-orders', entity: 'purchase_order', title: 'Đơn mua hàng (PO)', apiPath: '/api/purchase-orders', txn: true, cloneable: true, exportXlsx: true,
     columns: [
       { key: 'code', label: 'Mã PO' },
+      // bao-CR-319: chỉ đánh dấu đơn nhập khẩu. Đơn trong nước là số đông nên để trống
+      // cho gọn mắt — cột đầy chữ "Trong nước" thì cái cần thấy lại chìm đi.
+      { key: 'order_type', label: 'Loại đơn', render: (r) => (Number(r.order_type) === 2
+        ? <span className="badge" style={{ background: '#e0e7ff', color: '#3730a3' }}>{r.order_type_label || 'Nhập khẩu'}</span>
+        : '') },
       { key: 'misa_code', label: 'Mã MISA', render: (r) => r.misa_code || '' },
       { key: 'created_at', label: 'Ngày đặt', render: (r) => fmtDateTime(r.created_at) || '' },
       UPDATED_AT_COL,
@@ -727,6 +737,8 @@ export const cruds: Record<string, CrudConfig> = {
       condSource('nspt_id', 'NSPT phụ trách', EMP_SRC),      // CR-088: lọc theo ID
       condSource('department_id', 'Bộ phận', DEPT_SRC),
       condDate('order_date', 'Ngày đặt'),
+      condSelect('order_type', 'Loại đơn', [
+        { value: '1', label: 'Trong nước' }, { value: '2', label: 'Nhập khẩu' }]),
       { name: 'is_urgent', label: 'Đơn gấp', type: 'boolean' },
       condSelect('document_status', 'Hồ sơ chứng từ', PO_DOCUMENT_STATUSES),
       condSelect('status', 'Trạng thái', [
@@ -746,7 +758,7 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'supplier_name', label: 'Nhà cung cấp', render: (r) => r.supplier_name || r.supplier_code },
       // Ticket #26 (bao-CR-302): phiếu gồm nhiều PO nên mã MISA hiển thị gộp "MS1, MS2"
       { key: 'misa_code', label: 'Mã MISA' },
-      { key: 'source_type', label: 'Loại', render: (r) => (r.source_type === 'shipping' ? 'Vận chuyển' : 'Hàng hóa') },
+      { key: 'source_type', label: 'Loại', render: (r) => sourceTypeLabel(r.source_type) },
       { key: 'payment_method', label: 'Hình thức TT', render: (r) => (r.payment_method === 'cash' ? 'Tiền mặt' : 'Chuyển khoản') },
       { key: 'total', label: 'Số tiền', render: (r) => (r.total ? fmtVND(r.total) + ' đ' : '0 đ') },
       { key: 'status', label: 'Trạng thái', render: (r) => (r.status === 'cancelled' ? <span className="badge err">Đã từ chối</span> : poBadge(r.status === 'paid' ? 'received' : r.status)) },
@@ -768,8 +780,7 @@ export const cruds: Record<string, CrudConfig> = {
     condFilters: [
       condText('code', 'Mã phiếu'),
       condSource('supplier_code', 'Nhà cung cấp', { url: '/api/suppliers', value: 'code', label: 'name' }),
-      condSelect('source_type', 'Loại',
-        [{ value: 'goods', label: 'Hàng hóa' }, { value: 'shipping', label: 'Vận chuyển' }]),
+      condSelect('source_type', 'Loại', SOURCE_TYPE_OPTIONS),
       condSelect('payment_method', 'Hình thức thanh toán',
         [{ value: 'transfer', label: 'Chuyển khoản' }, { value: 'cash', label: 'Tiền mặt' }]),
       condDate('request_date', 'Ngày lập'),
