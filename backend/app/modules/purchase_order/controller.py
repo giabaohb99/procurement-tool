@@ -25,7 +25,8 @@ router = APIRouter(prefix="/api/purchase-orders", tags=["purchase_order"])
 HEADER = ["id", "code", "misa_code", "pr_code", "survey_code", "company_id", "supplier_code",
           "supplier_name", "department", "nspt", "order_date", "vat_rate", "payment_terms",
           "is_urgent", "status", "document_status", "note", "approve_note",
-          "order_type", "currency", "customs_decl_no", "customs_decl_date"]
+          "order_type", "currency", "customs_decl_no", "customs_decl_date",
+          "inspection_days", "return_days", "invoice_deadline"]
 
 
 def _require_awaiting_approval(db: Session, pid: int, action_label: str) -> None:
@@ -382,6 +383,8 @@ def print_po(pid: int, db: Session = Depends(get_db), user=Depends(require("purc
                        "invoice_email": company.invoice_email} if company else {}
     data["supplier"] = {"name": sup.name, "address": sup.address, "tax_code": sup.tax_code,
                         "payment_terms": sup.payment_terms} if sup else {}
+    # bao-CR-321: điều khoản mục 2 + mục 5 của bản in, đã gộp đơn -> NCC -> mặc định ở một chỗ
+    data["print_terms"] = service.resolve_print_terms(po, sup)
     # Nơi nhận hàng = kho nhận (lấy kho đầu tiên có trên dòng hàng / lần giao)
     wcode = ""
     for it in data["items"]:

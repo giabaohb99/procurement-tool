@@ -191,6 +191,8 @@ export default function PurchaseOrderDetail() {
     vat_rate: 0.08, payment_terms: '', is_urgent: false, note: '', status: 'draft', items: [],
     order_type: ORDER_TYPE_DOMESTIC, currency: DEFAULT_CURRENCY, exchange_rate: 1,
     customs_decl_no: '', customs_decl_date: '',
+    // bao-CR-321 — điều khoản in, chép từ NCC lúc chọn; 0 / rỗng = bản in dùng NCC rồi mặc định
+    inspection_days: 0, return_days: 0, invoice_deadline: '',
   })
   const [companies, setCompanies] = useState<any[]>([])
   const [suppliers, setSuppliers] = useState<any[]>([])
@@ -535,7 +537,15 @@ export default function PurchaseOrderDetail() {
 
   const onPickSupplier = (code: string) => {
     const s = goodsSuppliers.find((x) => x.code === code)
-    setPo((st: any) => ({ ...st, supplier_code: code, supplier_name: s ? s.name : '', vat_rate: s ? (Number(s.vat) || st.vat_rate) : st.vat_rate, payment_terms: s ? (s.payment_terms || st.payment_terms) : st.payment_terms }))
+    setPo((st: any) => ({
+      ...st, supplier_code: code, supplier_name: s ? s.name : '',
+      vat_rate: s ? (Number(s.vat) || st.vat_rate) : st.vat_rate,
+      payment_terms: s ? (s.payment_terms || st.payment_terms) : st.payment_terms,
+      // bao-CR-321 — điều khoản in đi theo NCC; NCC chưa khai thì giữ giá trị đang có trên đơn
+      inspection_days: s ? (Number(s.inspection_days) || st.inspection_days) : st.inspection_days,
+      return_days: s ? (Number(s.return_days) || st.return_days) : st.return_days,
+      invoice_deadline: s ? (s.invoice_deadline || st.invoice_deadline) : st.invoice_deadline,
+    }))
   }
   const onPickCarrier = (ii: number, di: number, val: string) => {
     // 3 trạng thái: '' = chưa chọn (name rỗng); '__self__' = tự vận chuyển (đánh dấu name); còn lại = NCC thật
@@ -652,6 +662,9 @@ export default function PurchaseOrderDetail() {
       currency: (po.currency || '').trim() || DEFAULT_CURRENCY,
       exchange_rate: Number(po.exchange_rate) || 1,
       customs_decl_no: po.customs_decl_no || '', customs_decl_date: po.customs_decl_date || '',
+      // bao-CR-321 — điều khoản in
+      inspection_days: Number(po.inspection_days) || 0, return_days: Number(po.return_days) || 0,
+      invoice_deadline: (po.invoice_deadline || '').trim(),
       import_costs: importCosts.map((c: any) => ({
         id: c.id, cost_type: Number(c.cost_type) || 99, description: c.description || '',
         supplier_code: c.supplier_code || '', supplier_name: c.supplier_name || '',
@@ -1011,6 +1024,20 @@ export default function PurchaseOrderDetail() {
                   placeholder={canPickNspt ? 'Chọn nhân sự phụ trách' : ''} />
               </div>
               <div className="form-row"><label>Hình thức thanh toán NCC</label><SearchSelect value={po.payment_terms || ''} options={PAYMENT_TERMS_OPTIONS} disabled={!headerEditable} placeholder="Chọn hình thức thanh toán…" onChange={(v) => setH('payment_terms', v)} /></div>
+              {/* bao-CR-321 — điều khoản in (mục 2 + mục 5 bản in). Tự chép từ NCC khi chọn, sửa riêng
+                  từng đơn lúc còn nháp; khóa sau duyệt như hình thức thanh toán. Trống = mặc định cũ. */}
+              <div className="form-row"><label>Số ngày kiểm tra hàng (bản in)</label>
+                <input type="number" min="0" max="365" value={po.inspection_days || ''} disabled={!headerEditable} placeholder="Trống = 15 ngày"
+                  onChange={(e) => setH('inspection_days', e.target.value === '' ? 0 : Number(e.target.value))} />
+              </div>
+              <div className="form-row"><label>Số ngày thu hồi / đổi trả (bản in)</label>
+                <input type="number" min="0" max="365" value={po.return_days || ''} disabled={!headerEditable} placeholder="Trống = 07 ngày"
+                  onChange={(e) => setH('return_days', e.target.value === '' ? 0 : Number(e.target.value))} />
+              </div>
+              <div className="form-row"><label>Thời gian nhận hóa đơn (bản in)</label>
+                <input value={po.invoice_deadline || ''} maxLength={255} disabled={!headerEditable} placeholder="Trống = Chậm nhất 24h kể từ khi nhận hàng"
+                  onChange={(e) => setH('invoice_deadline', e.target.value)} />
+              </div>
               <div className="form-row"><label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
                 <input type="checkbox" checked={!!po.is_urgent} disabled={!headerEditable} onChange={(e) => setH('is_urgent', e.target.checked)} style={{ width: 18, height: 18 }} /> Đơn gấp
               </label></div>
@@ -1451,10 +1478,12 @@ export default function PurchaseOrderDetail() {
                 </div>
               )}
               {importCosts.length > 0 && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginTop: 16 }}>
+                // Dồn các cụm tổng về mép phải, mỗi cụm rộng cố định để nhãn và số nằm sát nhau
+                // (trước dùng grid auto-fit: chỉ còn một cụm là nó dàn hết bề ngang, nhãn một bên số một bên)
+                <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 32, marginTop: 16 }}>
                   {/* Đã có bảng thanh toán theo NCC ở trên thì thôi lặp lại cụm "Theo nhà cung cấp" */}
                   {[['Theo loại chi phí', costByType], ...(costPayReady ? [] : [['Theo nhà cung cấp', costBySupplier]])].map(([title, rows]: any) => (
-                    <div key={title}>
+                    <div key={title} style={{ width: 380, maxWidth: '100%' }}>
                       <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--navy)', marginBottom: 6 }}>{title}</div>
                       {rows.map((r: any) => (
                         <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, padding: '3px 0', fontSize: 13 }}>

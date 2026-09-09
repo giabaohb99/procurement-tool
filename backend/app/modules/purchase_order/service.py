@@ -30,6 +30,39 @@ def rate_of(obj) -> float:
     return float(getattr(obj, "exchange_rate", 0) or 0) or 1.0
 
 
+# bao-CR-321 — mặc định của ba điều khoản in trên Đơn đặt hàng (mục 2 và mục 5 của
+# "Thoả thuận khác"). Đây là các số từng chốt cứng trong bản in, giữ nguyên để đơn cũ và
+# NCC chưa khai in ra y hệt trước.
+DEFAULT_INSPECTION_DAYS = 15
+DEFAULT_RETURN_DAYS = 7
+DEFAULT_INVOICE_DEADLINE = "Chậm nhất 24h kể từ khi nhận hàng"
+
+
+def resolve_print_terms(po, sup=None) -> dict:
+    """Điều khoản in trên đơn: ưu tiên giá trị trên ĐƠN, trống thì lấy của NCC, vẫn trống thì
+    mặc định. Ba mức để đơn cũ (chưa có cột) và NCC chưa khai vẫn in đúng như trước.
+    `days` trả về dạng chuỗi hai chữ số ("07") vì bản in ghi "trong vòng 07 ngày".
+    """
+    def _pick(field: str, default):
+        for obj in (po, sup):
+            v = getattr(obj, field, None) if obj is not None else None
+            if isinstance(v, str):
+                v = v.strip()
+            if v:
+                return v
+        return default
+
+    inspection = int(_pick("inspection_days", DEFAULT_INSPECTION_DAYS))
+    return_ = int(_pick("return_days", DEFAULT_RETURN_DAYS))
+    return {
+        "inspection_days": inspection,
+        "return_days": return_,
+        "inspection_days_label": f"{inspection:02d}",
+        "return_days_label": f"{return_:02d}",
+        "invoice_deadline": str(_pick("invoice_deadline", DEFAULT_INVOICE_DEADLINE)),
+    }
+
+
 def _pdate(s: str):
     try:
         return datetime.strptime(s, "%Y-%m-%d").date() if s else None
@@ -778,6 +811,9 @@ def copy_po(db: Session, pid: int, user_id: int) -> PurchaseOrder:
         order_type=src.order_type or int(OrderType.DOMESTIC),
         currency=(src.currency or "").strip() or DEFAULT_CURRENCY,
         exchange_rate=rate_of(src),
+        # bao-CR-321: điều khoản in đi theo NCC nên nhân bản giữ nguyên
+        inspection_days=src.inspection_days or 0, return_days=src.return_days or 0,
+        invoice_deadline=src.invoice_deadline or "",
     )
     db.add(po)
     db.flush()
@@ -862,6 +898,8 @@ def create_po(db: Session, data: POCreate, user_id: int) -> PurchaseOrder:
         currency=(data.currency or "").strip() or DEFAULT_CURRENCY,
         exchange_rate=float(data.exchange_rate or 0) or 1,
         customs_decl_no=data.customs_decl_no, customs_decl_date=data.customs_decl_date,
+        inspection_days=data.inspection_days or 0, return_days=data.return_days or 0,
+        invoice_deadline=(data.invoice_deadline or "").strip(),
     )
     db.add(po)
     db.flush()
@@ -917,6 +955,9 @@ ORDER_FIELD_LABELS = {
     "note": "Ghi chú đơn",
     "order_type": "Loại đơn", "currency": "Đồng tiền đơn hàng", "exchange_rate": "Tỷ giá",
     "customs_decl_no": "Số tờ khai hải quan", "customs_decl_date": "Ngày tờ khai",
+    # bao-CR-321 — điều khoản in; là nội dung đã duyệt nên KHÔNG nằm trong danh sách sửa sau duyệt
+    "inspection_days": "Số ngày kiểm tra hàng", "return_days": "Số ngày đổi trả",
+    "invoice_deadline": "Hạn xuất hóa đơn",
 }
 # Ô của ĐƠN còn sửa được sau khi duyệt: hồ sơ chứng từ (đã có endpoint riêng, cập nhật
 # được cả khi đơn Hoàn thành) và mã đơn MISA (kế toán nhập/sửa sau khi đã duyệt trên phần

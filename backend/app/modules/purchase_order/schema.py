@@ -105,6 +105,10 @@ class POCreate(BaseModel):
     exchange_rate: float = Field(1, ge=0)
     customs_decl_no: str = ""
     customs_decl_date: str = ""
+    # bao-CR-321 — điều khoản in theo NCC; 0 / rỗng = lùi về NCC rồi về mặc định
+    inspection_days: int = Field(0, ge=0, le=365)
+    return_days: int = Field(0, ge=0, le=365)
+    invoice_deadline: str = Field("", max_length=255)
     note: str = ""
     items: list[POItemIn] = []
     import_costs: list[POImportCostIn] = []
@@ -128,6 +132,9 @@ class POUpdate(BaseModel):
     exchange_rate: float | None = Field(None, ge=0)
     customs_decl_no: str | None = None
     customs_decl_date: str | None = None
+    inspection_days: int | None = Field(None, ge=0, le=365)
+    return_days: int | None = Field(None, ge=0, le=365)
+    invoice_deadline: str | None = Field(None, max_length=255)
     document_status: str | None = None   # Trạng thái hồ sơ chứng từ, cập nhật tay (Task 10b)
     note: str | None = None
     items: list[POItemIn] | None = None

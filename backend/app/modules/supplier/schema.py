@@ -20,6 +20,10 @@ class SupplierBase(BaseModel):
     # Chặn dưới 1 = dưới 100% (CR-058). Trang chi tiết NCC nhập theo % rồi chia 100 trước khi gửi.
     vat: float = Field(0.08, ge=0, lt=1)
     is_active: bool = True
+    # bao-CR-321 — điều khoản in trên ĐMH theo NCC; 0 / rỗng = dùng mặc định của bản in
+    inspection_days: int = Field(0, ge=0, le=365)
+    return_days: int = Field(0, ge=0, le=365)
+    invoice_deadline: str = Field("", max_length=255)
 
 
 class SupplierCreate(SupplierBase):
@@ -40,6 +44,9 @@ class SupplierUpdate(BaseModel):
     bank_account_name: str | None = None
     vat: float | None = Field(None, ge=0, lt=1)   # tỉ lệ, dưới 1 = dưới 100% (CR-058)
     is_active: bool | None = None
+    inspection_days: int | None = Field(None, ge=0, le=365)
+    return_days: int | None = Field(None, ge=0, le=365)
+    invoice_deadline: str | None = Field(None, max_length=255)
 
 
 class SupplierOut(SupplierBase):

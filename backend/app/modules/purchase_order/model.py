@@ -125,6 +125,11 @@ class PurchaseOrder(Base, AuditMixin):
     exchange_rate: Mapped[float] = mapped_column(Numeric(18, 6), default=1)
     customs_decl_no: Mapped[str] = mapped_column(String(50), default="")     # số tờ khai hải quan
     customs_decl_date: Mapped[str] = mapped_column(String(10), default="")   # ngày tờ khai
+    # --- bao-CR-321: điều khoản in trên đơn, chép từ NCC lúc chọn, sửa riêng từng đơn ---
+    # 0 / rỗng = chưa khai -> bản in lùi về giá trị của NCC, rồi về mặc định (xem resolve_print_terms).
+    inspection_days: Mapped[int] = mapped_column(SmallInteger, default=0)
+    return_days: Mapped[int] = mapped_column(SmallInteger, default=0)
+    invoice_deadline: Mapped[str] = mapped_column(String(255), default="")
 
 
 class POItem(Base, AuditMixin):

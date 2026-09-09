@@ -279,6 +279,31 @@ Backend chặn ở `block_edit_approved_order()` (`purchase_order/service.py`) �
 - Người sửa: Như `customs_decl_no` — sửa được sau khi duyệt
 - Logic đặc biệt: Xem mục 21.
 
+### 23. Số ngày kiểm tra hàng (`inspection_days`) — bao-CR-321
+
+- Kiểu nhập: Nhập tay (số nguyên 0–365), cụm đầu đơn ngay dưới "Hình thức thanh toán NCC"
+- Mặc định: 0 = chưa khai; khi chọn NCC (`onPickSupplier`) tự chép giá trị của NCC xuống (`07-danh-muc.md` mục 14), NCC chưa khai thì giữ giá trị đang có trên đơn
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: In ở mục 5 bản in Đơn đặt hàng ("kiểm tra hàng trong vòng N ngày")
+- Người sửa: NSPT/Người tạo (quyền `purchase_order:write`) khi đơn còn nháp / bị từ chối; **khóa sau khi duyệt** như `payment_terms` (KHÔNG nằm trong `ORDER_FIELDS_EDITABLE_AFTER_APPROVAL` vì là nội dung đã gửi NCC duyệt)
+- Logic đặc biệt: Là **bản chép** trên đơn, sửa riêng từng đơn được mà không đụng NCC. Nhân bản đơn (`copy_po`) chép nguyên ba ô. Bản in không đọc thẳng cột này mà đọc `print_terms` do backend gộp (mục E).
+
+### 24. Số ngày thu hồi / đổi trả (`return_days`) — bao-CR-321
+
+- Kiểu nhập: Nhập tay (số nguyên 0–365)
+- Mặc định: 0 = chưa khai, chép từ NCC khi chọn
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: Mục 5 bản in ("thu hồi, đổi trả trong vòng NN ngày", in hai chữ số)
+- Người sửa / Logic: Như mục 23.
+
+### 25. Thời gian nhận hóa đơn (`invoice_deadline`) — bao-CR-321
+
+- Kiểu nhập: Nhập tay, chữ tự do tối đa 255 ký tự
+- Mặc định: trống = chưa khai, chép từ NCC khi chọn
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: Mục 2 bản in "Thời gian nhận hóa đơn"
+- Người sửa / Logic: Như mục 23. Không phải hạn kế toán, không sinh nhắc việc hay ảnh hưởng `document_status`.
+
 ---
 
 ## B. Dòng hàng (`tab_po_item`)
@@ -853,6 +878,8 @@ File lưu trên Cloudflare R2.
 ## E. Chức năng in (2 mẫu A4)
 
 Cả hai mẫu gọi cùng endpoint `GET /api/purchase-orders/{id}/print` (yêu cầu quyền `purchase_order:print`). Endpoint bổ sung thêm thông tin công ty, NCC, kho nhận, và `wh_names` map vào dữ liệu trả về.
+
+**Điều khoản in theo NCC (bao-CR-321).** Ba chỗ trên mẫu Đơn đặt hàng từng là chữ cứng — mục 2 "Thời gian nhận hóa đơn: Chậm nhất 24h kể từ khi nhận hàng", mục 5 "kiểm tra hàng trong vòng 15 ngày" và "thu hồi, đổi trả trong vòng 07 ngày" — nay là dữ liệu. Endpoint print trả thêm khóa `print_terms` do `resolve_print_terms(po, sup)` (`purchase_order/service.py`) gộp theo thứ tự **đơn -> NCC -> mặc định** (0 / chuỗi rỗng / toàn khoảng trắng = chưa khai): `{inspection_days, return_days, inspection_days_label, return_days_label, invoice_deadline}`, hai `*_label` là chuỗi hai chữ số để in "07". Gộp ở backend một chỗ để bản in, test và sau này frontend-v2 cùng một logic; `PrintPurchaseOrder.tsx` vẫn giữ mặc định cục bộ phòng API cũ chưa có khóa. Mẫu nội bộ (`PrintPurchaseOrderMH.tsx`) và mẫu nhập khẩu không có cụm điều khoản này nên không đổi. Mặc định giữ nguyên số cũ nên toàn bộ đơn đã có trước CR in ra y hệt. Test: `test/backend/test_po_dieu_khoan_in_cr321.py`.
 
 | Mẫu | File | Trang in | Nội dung chính | Tổng tiền hiển thị |
 |-----|------|----------|----------------|-------------------|
