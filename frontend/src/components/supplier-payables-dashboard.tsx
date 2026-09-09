@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
 import { fmtVND } from '../utils/money'
+import { sourceTypeLabel } from '../utils/payable'
 import { ConditionalFilter, RestQueryParams } from './conditional-filter'
 import { SUPPLIER_PAYABLE_COND_FILTERS } from '../config/conditional-filters'
 import SupplierPayablesFilters from './supplier-payables-filters'
@@ -226,7 +227,7 @@ function Dashboard({ supplierCode, cond, kpi, contractCount }: {
                   {p.po_code || '—'}{p.invoice_no ? ` · HĐ ${p.invoice_no}` : ''}
                 </div>
                 <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>
-                  {p.source_type === 'shipping' ? 'Vận chuyển' : 'Hàng hóa'} · Hạn trả {p.due_date || '—'}
+                  {sourceTypeLabel(p.source_type)} · Hạn trả {p.due_date || '—'}
                 </div>
               </div>
               <div style={{ textAlign: 'right', flex: 'none' }}>
@@ -256,7 +257,7 @@ function Dashboard({ supplierCode, cond, kpi, contractCount }: {
                   const st = rowStatus(p)
                   return (
                     <tr key={p.id}>
-                      <td>{p.source_type === 'shipping' ? 'Vận chuyển' : 'Hàng hóa'}</td><td>{p.po_code}</td><td>{p.invoice_no}</td>
+                      <td>{sourceTypeLabel(p.source_type)}</td><td>{p.po_code}</td><td>{p.invoice_no}</td>
                       <td>{p.incur_date}</td><td>{p.due_date}</td>
                       <td style={{ textAlign: 'right' }}>{fmtVND(p.total)}</td><td style={{ textAlign: 'right' }}>{fmtVND(p.paid_amount)}</td>
                       <td style={{ textAlign: 'right', fontWeight: 600, color: p.remaining < 0 ? ST_COLOR['Trả dư'] : undefined }}>{fmtVND(p.remaining)}</td>

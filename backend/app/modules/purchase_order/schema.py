@@ -75,8 +75,10 @@ class POImportCostIn(BaseModel):
     exchange_rate: float = Field(0, ge=0)
     amount: float = Field(0, ge=0)             # tiền TRƯỚC thuế, theo đồng tiền của dòng chi phí
     vat: float = Field(0, ge=0, lt=100)
-    allocation_method: int = Field(int(AllocationMethod.BY_VALUE), ge=1, le=4)
+    allocation_method: int = Field(int(AllocationMethod.BY_VALUE), ge=1, le=5)
     allocation_target: str = ""                # mã hàng — chỉ dùng khi chia theo chỉ định
+    # Cách 5 "Nhập tay": {"<id dòng hàng>": số tiền VNĐ}; tổng phải bằng số quy đổi của khoản
+    manual_allocation: dict[str, float] = {}
     invoice_no: str = ""
     invoice_date: str = ""
     payment_due_date: str = ""

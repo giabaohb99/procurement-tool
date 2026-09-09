@@ -84,15 +84,27 @@ const STATE_BUDGET_SUPPLIER_CODE = 'NSNN'
 const STATE_BUDGET_SUPPLIER_NAME = 'Ngân sách nhà nước'
 const ALLOC_BY_VALUE = 1
 const ALLOC_BY_PRODUCT = 4
+// Cách 5: thu mua gõ tay số tiền từng dòng hàng ở bảng "Chi phí theo dòng hàng" (để cân số
+// với chứng từ); tổng phải bằng số quy đổi của khoản, backend chặn khi Lưu.
+const ALLOC_MANUAL = 5
 const ALLOCATION_OPTS: [number, string][] = [
   [ALLOC_BY_VALUE, 'Theo giá trị'], [2, 'Theo khối lượng'], [3, 'Theo số lượng'],
-  [ALLOC_BY_PRODUCT, 'Chỉ định một mã hàng'],
+  [ALLOC_BY_PRODUCT, 'Chỉ định một mã hàng'], [ALLOC_MANUAL, 'Nhập tay'],
 ]
+// Tổng nhập tay được lệch tối đa chừng này so với số quy đổi (khớp MANUAL_ALLOCATION_TOLERANCE backend)
+const MANUAL_ALLOC_TOLERANCE = 1
+// bao-CR-319 P5 — popup Tạo YCTT có 3 luồng nợ; `import_cost` là nợ từng dòng chi phí lô hàng
+type PayTab = 'goods' | 'shipping' | 'import_cost'
+const PAY_TABS: [PayTab, string][] = [
+  ['goods', 'NCC sản xuất (hàng)'], ['shipping', 'NCC vận chuyển'], ['import_cost', 'Chi phí lô hàng'],
+]
+// Trạng thái đơn mà công nợ chi phí đã sinh (khớp IMPORT_COST_PAYABLE_STATUSES ở backend)
+const PO_PAYABLE_STATUSES = ['approved', 'partial', 'received', 'completed']
 const emptyImportCost = {
   cost_type: 1, description: '', supplier_code: '', supplier_name: '',
   // Để trống đồng tiền / tỷ giá là cố ý: backend chép xuống từ đơn (xem _save_import_costs)
   currency: '', exchange_rate: 0, amount: 0, vat: 0,
-  allocation_method: ALLOC_BY_VALUE, allocation_target: '',
+  allocation_method: ALLOC_BY_VALUE, allocation_target: '', manual_allocation: {} as Record<string, number>,
   invoice_no: '', invoice_date: '', payment_due_date: '', note: '',
 }
 
@@ -193,6 +205,7 @@ export default function PurchaseOrderDetail() {
   const [docTypeLabels, setDocTypeLabels] = useState<Record<string, string>>({})
   const [attByDelivery, setAttByDelivery] = useState<Record<number, any[]>>({})
   const [editingItemIdx, setEditingItemIdx] = useState<number | null>(null)
+  const [editingCostIdx, setEditingCostIdx] = useState<number | null>(null)   // popup chi tiết một khoản chi phí NK
   const [historyIdx, setHistoryIdx] = useState<number | null>(null)   // dòng đang mở popup lịch sử mua hàng
   const [printOpen, setPrintOpen] = useState(false)   // dropdown chọn loại bản in
   const [allocOpen, setAllocOpen] = useState<Set<number>>(new Set())   // dòng hàng đang mở ở panel chi phí theo dòng
@@ -200,7 +213,8 @@ export default function PurchaseOrderDetail() {
   const [payModal, setPayModal] = useState(false)              // popup tạo yêu cầu thanh toán
   const [payables, setPayables] = useState<any[]>([])          // các khoản nợ chưa trả đủ của đơn (hàng + vận chuyển)
   const [paySel, setPaySel] = useState<number[]>([])           // id khoản nợ được chọn
-  const [payTab, setPayTab] = useState<'goods' | 'shipping'>('goods')
+  const [payTab, setPayTab] = useState<PayTab>('goods')
+  const [costSel, setCostSel] = useState<number[]>([])         // bao-CR-319 P5: id khoản nợ chi phí được tick ở bảng chi phí
 
   useEffect(() => {
     api.get('/api/companies', { params: { page_size: 200 } }).then((r) => setCompanies(r.data.data.items))
@@ -402,8 +416,64 @@ export default function PurchaseOrderDetail() {
   }
   // P4: kết quả chia về dòng hàng do backend tính từ dữ liệu ĐÃ LƯU (xem panel bên dưới)
   const allocation: any = po.import_cost_allocation || null
+  // Cách "Nhập tay": số gõ nằm trong `c.manual_allocation` {id dòng hàng: số tiền}, chỉ có hiệu
+  // lực khi bấm Lưu của đơn. Ba hàm dưới dùng chung cho ô nhập, dải báo lệch và chặn lúc Lưu.
+  const isManualCost = (c: any) => Number(c?.allocation_method) === ALLOC_MANUAL
+  const manualEntered = (c: any): number =>
+    Object.values((c?.manual_allocation || {}) as Record<string, any>).reduce((s: number, v: any) => s + (Number(v) || 0), 0)
+  const manualDiff = (c: any): number => manualEntered(c) - costBase(c)
+  const setManualAmount = (i: number, itemId: any, value: string) =>
+    setPo((s: any) => ({
+      ...s,
+      import_costs: (s.import_costs || []).map((c: any, idx: number) => {
+        if (idx !== i) return c
+        const next: Record<string, number> = { ...(c.manual_allocation || {}) }
+        const n = Number(value)
+        if (value === '' || !(n > 0)) delete next[String(itemId)]
+        else next[String(itemId)] = n
+        return { ...c, manual_allocation: next }
+      }),
+    }))
+  // Đổi sang "Nhập tay" thì điền sẵn số đang chia (từ dữ liệu đã lưu) để thu mua chỉ sửa
+  // vài dòng cần cân, khỏi gõ lại từ đầu. Khoản mới chưa Lưu thì chưa có số để điền.
+  const switchAllocationMethod = (i: number, c: any, method: number) => {
+    const patch: any = { allocation_method: method }
+    if (method === ALLOC_MANUAL && !Object.keys(c.manual_allocation || {}).length && c.id && allocation?.lines) {
+      const prefill: Record<string, number> = {}
+      for (const ln of allocation.lines) {
+        const hit = (ln.costs || []).find((x: any) => Number(x.cost_id) === Number(c.id))
+        if (hit && Number(hit.base_amount) > 0) prefill[String(ln.item_id)] = Math.round(Number(hit.base_amount))
+      }
+      patch.manual_allocation = prefill
+    }
+    // Mở sẵn mọi dòng hàng ở bảng dưới để thấy ngay ô gõ số
+    if (method === ALLOC_MANUAL && allocation?.lines?.length) {
+      setAllocOpen(new Set(allocation.lines.map((ln: any, k: number) => Number(ln.item_id) || -(k + 1))))
+    }
+    setCost(i, patch)
+  }
+  const manualCostIndexes = importCosts.map((c: any, i: number) => (isManualCost(c) ? i : -1)).filter((i) => i >= 0)
   const costByType = groupCosts((c) => COST_TYPE_LABEL(c.cost_type))
   const costBySupplier = groupCosts((c) => (c.supplier_name || '').trim() || (c.supplier_code || '').trim() || '(chưa chọn NCC)')
+
+  // ---- bao-CR-319 P5: công nợ + thanh toán chi phí lô hàng ----
+  // Công nợ mỗi dòng chi phí do backend sinh khi đơn đã duyệt (sync_import_cost_payables) và
+  // trả về ngay trên dòng (payable_id / paid_amount / remaining) — số ĐÃ LƯU, sửa bảng chưa Lưu
+  // thì "còn lại" của dòng vẫn là số cũ. Cụm tổng theo NCC cũng lấy từ backend cho khỏi lệch.
+  const costSummary: any = po.import_cost_summary || null
+  const costPayReady = !isNew && PO_PAYABLE_STATUSES.includes(po.status) && can('payment_request', 'create')
+  const costPaidTotal = Number(costSummary?.paid_total) || 0
+  const costRemainingTotal = Math.max(costTotal - costPaidTotal, 0)
+  const costPct = (n: number) => (orderBaseTotal > 0 ? `${(n / orderBaseTotal * 100).toFixed(1)}% so với tiền hàng` : '')
+  const costPayable = (c: any) => costPayReady && Number(c.payable_id) > 0 && (Number(c.remaining) || 0) > 0.01
+  const costPayableIds = importCosts.filter(costPayable).map((c: any) => Number(c.payable_id))
+  const toggleCostSel = (payableId: number, on: boolean) =>
+    setCostSel((s) => on ? Array.from(new Set([...s, payableId])) : s.filter((x) => x !== payableId))
+  // Đưa id khoản nợ sang màn lập phiếu; backend tự tách mỗi NCC một phiếu (create_requests)
+  const goCreatePayment = (payableIds: number[]) => {
+    if (payableIds.length === 0) { toast.error('Chưa chọn khoản chi phí nào còn phải chi'); return }
+    navigate(`/payment-requests/new?payables=${payableIds.join(',')}`)
+  }
 
   // ---- deliveries within an item ----
   const setDelivery = (ii: number, di: number, patch: any) =>
@@ -559,6 +629,18 @@ export default function PurchaseOrderDetail() {
       })
       if (!ok) return
     }
+    // Nhập tay: tổng các dòng phải bằng số quy đổi của khoản — backend cũng chặn (400), báo
+    // sớm ở đây để người dùng khỏi mất công gửi.
+    for (const c of importCosts) {
+      if (!isManualCost(c)) continue
+      const label = (c.description || '').trim() || COST_TYPE_LABEL(c.cost_type)
+      if (manualEntered(c) <= 0) {
+        toast.error(`Khoản "${label}" chọn Nhập tay nhưng chưa nhập số tiền dòng nào ở bảng Chi phí theo dòng hàng`); return
+      }
+      if (Math.abs(manualDiff(c)) > MANUAL_ALLOC_TOLERANCE) {
+        toast.error(`Khoản "${label}": tổng nhập tay ${fmtVND(manualEntered(c))} phải bằng ${fmtVND(costBase(c))} (lệch ${fmtVND(manualDiff(c))})`); return
+      }
+    }
     const body: any = {
       misa_code: po.misa_code, pr_code: po.pr_code, survey_code: po.survey_code,
       company_id: Number(po.company_id) || 0, supplier_code: po.supplier_code, supplier_name: po.supplier_name,
@@ -576,7 +658,9 @@ export default function PurchaseOrderDetail() {
         currency: c.currency || '', exchange_rate: Number(c.exchange_rate) || 0,
         amount: Number(c.amount) || 0, vat: Number(c.vat) || 0,
         allocation_method: Number(c.allocation_method) || ALLOC_BY_VALUE,
-        allocation_target: c.allocation_target || '', invoice_no: c.invoice_no || '',
+        allocation_target: c.allocation_target || '',
+        manual_allocation: isManualCost(c) ? (c.manual_allocation || {}) : {},
+        invoice_no: c.invoice_no || '',
         invoice_date: c.invoice_date || '', payment_due_date: c.payment_due_date || '',
         note: c.note || '',
       })),
@@ -651,8 +735,9 @@ export default function PurchaseOrderDetail() {
         return
       }
       setPayables(list)
-      setPaySel(list.filter((p: any) => p.source_type === 'goods').map((p: any) => p.id))   // mặc định CHỈ tick NCC sản xuất; vận chuyển tự chọn thêm
-      setPayTab((list.some((p: any) => p.source_type === 'goods')) ? 'goods' : 'shipping')
+      setPaySel(list.filter((p: any) => p.source_type === 'goods').map((p: any) => p.id))   // mặc định CHỈ tick NCC sản xuất; vận chuyển / chi phí tự chọn thêm
+      // Mở tab đầu tiên có khoản nợ, theo thứ tự hàng → vận chuyển → chi phí lô hàng
+      setPayTab(PAY_TABS.map(([k]) => k).find((k) => list.some((p: any) => p.source_type === k)) || 'goods')
       setPayModal(true)
     } catch { /* interceptor đã toast lỗi */ }
   }
@@ -821,7 +906,16 @@ export default function PurchaseOrderDetail() {
             }}><i className="ti ti-lock-open" />Hủy duyệt</button>
         )}
         {!isNew && ['received', 'partial'].includes(po.status) && can('purchase_order', 'write') && (
-          <button className="btn" onClick={async () => { if (await askConfirm({ message: po.status === 'partial' ? 'Đơn mới nhận MỘT PHẦN. Xác nhận HOÀN THÀNH (chốt đơn dù còn thiếu)? Sau khi hoàn thành sẽ khóa, không chỉnh sửa được nữa.' : 'Xác nhận HOÀN THÀNH đơn mua hàng này? Sau khi hoàn thành sẽ khóa, không chỉnh sửa được nữa.', confirmText: 'Hoàn thành', danger: false })) action('complete') }}><i className="ti ti-circle-check" />Hoàn thành</button>
+          <button className="btn" onClick={async () => {
+            // Đơn NK: backend chặn khi còn chi phí lô hàng chưa trả — nhắc trước để khỏi bấm rồi ăn lỗi
+            const importHint = isImport && Number(po.import_cost_summary?.remaining_total || 0) > 0.01
+              ? ` Đơn nhập khẩu còn ${fmtVND(po.import_cost_summary.remaining_total)} chi phí lô hàng chưa chi — hệ thống sẽ không cho hoàn thành.`
+              : ''
+            const message = (po.status === 'partial'
+              ? 'Đơn mới nhận MỘT PHẦN. Xác nhận HOÀN THÀNH (chốt đơn dù còn thiếu)? Sau khi hoàn thành sẽ khóa, không chỉnh sửa được nữa.'
+              : 'Xác nhận HOÀN THÀNH đơn mua hàng này? Sau khi hoàn thành sẽ khóa, không chỉnh sửa được nữa.') + importHint
+            if (await askConfirm({ message, confirmText: 'Hoàn thành', danger: false })) action('complete')
+          }}><i className="ti ti-circle-check" />Hoàn thành</button>
         )}
         {!isNew && po.status === 'completed' && can('purchase_order', 'write') && (
           <button className="btn ghost" onClick={async () => { if (await askConfirm({ message: 'Mở lại đơn đã hoàn thành để xử lý tiếp (nhập Số HĐ, tạo yêu cầu thanh toán, cập nhật tiến độ)? Đơn trở về trạng thái theo tiến độ nhận hàng.', confirmText: 'Mở lại' })) action('reopen') }}><i className="ti ti-lock-open" />Mở lại</button>
@@ -962,7 +1056,7 @@ export default function PurchaseOrderDetail() {
               </div>
             )}
             <div className="items-scroll">
-              <table className="items-table" style={{ minWidth: showCurrency ? 1475 : 1345 }}>
+              <table className="items-table" style={{ minWidth: (showCurrency ? 1475 : 1345) - (isImport ? 189 : 0) }}>
                 <thead>
                   <tr>
                     <th style={{ width: 36 }}>#</th>
@@ -973,8 +1067,10 @@ export default function PurchaseOrderDetail() {
                     <th style={{ width: 105 }}>Đơn giá</th>
                     {/* bao-CR-319 — chỉ hiện khi đơn có ngoại tệ, đơn trong nước giữ nguyên bảng cũ */}
                     {showCurrency && <th style={{ width: 130 }}>Tiền tệ / Tỷ giá</th>}
-                    <th style={{ width: 64 }}>VAT%</th>
-                    <th style={{ width: 125 }}>Đơn giá (Sau VAT)</th>
+                    {/* bao-CR-319: đơn NHẬP KHẨU ẩn VAT dòng hàng (luôn 0, thuế khai ở bảng Chi phí lô hàng) —
+                        khách yêu cầu 09/09 để bảng khỏi thừa hai cột vô nghĩa */}
+                    {!isImport && <th style={{ width: 64 }}>VAT%</th>}
+                    {!isImport && <th style={{ width: 125 }}>Đơn giá (Sau VAT)</th>}
                     <th style={{ width: 150, background: '#fff3cd' }}>Thành tiền đơn hàng</th>
                     <th style={{ width: 150 }}>Tiến độ giao</th>
                     <th style={{ width: 170 }}>Trạng thái</th>
@@ -1035,9 +1131,9 @@ export default function PurchaseOrderDetail() {
                           )}
                         </td>
                       )}
-                      <td style={{ textAlign: 'center' }}>{(Number(it.vat) || 0)}%</td>
+                      {!isImport && <td style={{ textAlign: 'center' }}>{(Number(it.vat) || 0)}%</td>}
                       {/* bao-CR-307: đơn giá đã gồm VAT, làm tròn 2 số lẻ — 166.666,67 × 1,08 ra 180.000 chứ không phải 180.000,0036 */}
-                      <td style={{ textAlign: 'right', fontWeight: 600 }}>{fmtPrice(Math.round((Number(it.price) || 0) * (1 + (Number(it.vat) || 0) / 100) * 100) / 100)}</td>
+                      {!isImport && <td style={{ textAlign: 'right', fontWeight: 600 }}>{fmtPrice(Math.round((Number(it.price) || 0) * (1 + (Number(it.vat) || 0) / 100) * 100) / 100)}</td>}
                       <td style={{ textAlign: 'right', fontWeight: 600, background: '#fff8e6' }}>{fmtVND(orderAmount(it))}</td>
                       <td style={{ textAlign: 'center', fontSize: 12 }}>
                         <div style={{ color: 'var(--muted)' }}>
@@ -1131,9 +1227,17 @@ export default function PurchaseOrderDetail() {
             <div className="card" style={{ padding: 18, marginBottom: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 10 }}>
                 <h3 className="sec-title" style={{ margin: 0, border: 'none', padding: 0 }}>Chi phí lô hàng nhập khẩu</h3>
-                {costEditable && (
-                  <button className="btn ghost" onClick={addCost} style={{ height: 32, fontSize: 13 }}><i className="ti ti-plus" />Thêm chi phí</button>
-                )}
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {/* P5: tick các dòng còn phải chi rồi lập YCTT — nhiều NCC thì backend tự tách phiếu */}
+                  {costPayReady && costPayableIds.length > 0 && (
+                    <button className="btn secondary" disabled={costSel.length === 0} onClick={() => goCreatePayment(costSel)} style={{ height: 32, fontSize: 13 }}>
+                      <i className="ti ti-receipt" />Tạo YCTT{costSel.length ? ` (${costSel.length} dòng đã tick)` : ''}
+                    </button>
+                  )}
+                  {costEditable && (
+                    <button className="btn ghost" onClick={addCost} style={{ height: 32, fontSize: 13 }}><i className="ti ti-plus" />Thêm chi phí</button>
+                  )}
+                </div>
               </div>
               <div style={{ marginBottom: 12, padding: '8px 12px', borderRadius: 8, background: '#eff6ff',
                 border: '1px solid #bfdbfe', color: '#1e40af', fontSize: 12.5 }}>
@@ -1142,30 +1246,48 @@ export default function PurchaseOrderDetail() {
                 (hóa đơn cước, tờ khai thuế, phí lưu bãi đều có sau).
               </div>
               <div className="items-scroll">
-                <table className="items-table" style={{ minWidth: 2050 }}>
+                <table className="items-table" style={{ minWidth: costPayReady ? 2460 : 2420 }}>
                   <thead>
                     <tr>
+                      {/* P5: cột tick chỉ có khi đơn đã duyệt (mới có công nợ để trả) */}
+                      {costPayReady && (
+                        <th style={{ width: 36, textAlign: 'center' }}>
+                          <input type="checkbox" title="Tick mọi dòng còn phải chi" disabled={costPayableIds.length === 0}
+                            checked={costPayableIds.length > 0 && costPayableIds.every((id) => costSel.includes(id))}
+                            onChange={(e) => setCostSel(e.target.checked ? costPayableIds : [])} />
+                        </th>
+                      )}
                       <th style={{ width: 36 }}>#</th>
                       <th style={{ width: 185 }}>Loại chi phí</th>
-                      <th style={{ minWidth: 190 }}>Diễn giải</th>
+                      <th style={{ minWidth: 320 }}>Diễn giải</th>
+                      {/* Cách chia đứng ngay sau diễn giải để khỏi phải cuộn ngang mới thấy */}
+                      <th style={{ width: 160 }}>Cách phân bổ</th>
+                      <th style={{ width: 155 }}>Mã hàng chỉ định</th>
                       <th style={{ width: 230 }}>Nhà cung cấp</th>
                       <th style={{ width: 95 }}>Tiền tệ</th>
                       <th style={{ width: 110 }}>Tỷ giá</th>
                       <th style={{ width: 130 }}>Số tiền (trước thuế)</th>
                       <th style={{ width: 70 }}>VAT%</th>
                       <th style={{ width: 145, background: '#fff3cd' }}>Quy đổi (VNĐ)</th>
-                      <th style={{ width: 160 }}>Cách phân bổ</th>
-                      <th style={{ width: 155 }}>Mã hàng chỉ định</th>
+                      <th style={{ width: 120, textAlign: 'right' }}>Đã chi</th>
+                      <th style={{ width: 120, textAlign: 'right' }}>Còn lại</th>
                       <th style={{ width: 110 }}>Số hóa đơn</th>
                       <th style={{ width: 130 }}>Ngày hóa đơn</th>
                       <th style={{ width: 130 }}>Hạn thanh toán</th>
                       <th style={{ width: 150 }}>Ghi chú</th>
-                      <th style={{ width: 60, textAlign: 'center' }}>Xóa</th>
+                      <th style={{ width: 90, textAlign: 'center' }}>Hành động</th>
                     </tr>
                   </thead>
                   <tbody>
                     {importCosts.map((c: any, i: number) => (
                       <tr key={i}>
+                        {costPayReady && (
+                          <td style={{ textAlign: 'center' }}>
+                            {costPayable(c)
+                              ? <input type="checkbox" checked={costSel.includes(Number(c.payable_id))} onChange={(e) => toggleCostSel(Number(c.payable_id), e.target.checked)} />
+                              : <span title={Number(c.payable_id) > 0 ? 'Đã chi đủ' : 'Chưa thành công nợ (dòng mới chưa Lưu, chưa chọn NCC hoặc số tiền 0)'} style={{ color: 'var(--muted)' }}>—</span>}
+                          </td>
+                        )}
                         <td>{i + 1}</td>
                         <td>
                           <select className="cell-input" value={String(Number(c.cost_type) || 99)} disabled={!costEditable}
@@ -1183,8 +1305,33 @@ export default function PurchaseOrderDetail() {
                             {IMPORT_COST_TYPE_OPTS.map(([v, label]) => <option key={v} value={String(v)}>{label}</option>)}
                           </select>
                         </td>
-                        <td><input className="cell-input" value={c.description || ''} disabled={!costEditable}
-                          placeholder="VD: Cước biển Thượng Hải – Cát Lái" onChange={(e) => setCost(i, { description: e.target.value })} /></td>
+                        {/* Diễn giải xuống dòng + cao theo nội dung (như Tên hàng) để đọc đủ, không cắt cụt */}
+                        <td><TextAreaAuto className="cell-input cell-textarea" style={{ width: '100%' }} value={c.description || ''} disabled={!costEditable}
+                          placeholder="VD: Cước biển Thượng Hải – Cát Lái" onChange={(v) => setCost(i, { description: v })} /></td>
+                        <td>
+                          <select className="cell-input" value={String(Number(c.allocation_method) || ALLOC_BY_VALUE)} disabled={!costEditable}
+                            onChange={(e) => switchAllocationMethod(i, c, Number(e.target.value) || ALLOC_BY_VALUE)}>
+                            {ALLOCATION_OPTS.map(([v, label]) => <option key={v} value={String(v)}>{label}</option>)}
+                          </select>
+                        </td>
+                        <td>
+                          {isManualCost(c) ? (
+                            isNew
+                              ? <span style={{ fontSize: 11.5, color: '#b45309' }}>Lưu đơn trước rồi gõ số ở bảng Chi phí theo dòng hàng</span>
+                              : <span style={{ fontSize: 11.5, color: Math.abs(manualDiff(c)) > MANUAL_ALLOC_TOLERANCE ? '#b91c1c' : '#15803d' }}>
+                                  {manualEntered(c) > 0
+                                    ? (Math.abs(manualDiff(c)) > MANUAL_ALLOC_TOLERANCE ? `Lệch ${fmtVND(manualDiff(c))}` : 'Đã khớp tổng')
+                                    : 'Gõ số ở bảng Chi phí theo dòng hàng'}
+                                </span>
+                          ) : Number(c.allocation_method) === ALLOC_BY_PRODUCT ? (
+                            <select className="cell-input" value={c.allocation_target || ''} disabled={!costEditable}
+                              onChange={(e) => setCost(i, { allocation_target: e.target.value })}>
+                              <option value="">— chọn mã hàng —</option>
+                              {items.filter((it: any) => (it.product_code || '').trim())
+                                .map((it: any, k: number) => <option key={k} value={it.product_code}>{it.product_code}</option>)}
+                            </select>
+                          ) : <span style={{ color: 'var(--muted)' }}>—</span>}
+                        </td>
                         <td>
                           <SearchSelect variant="table" wrap value={c.supplier_code || ''} disabled={!costEditable} placeholder="Chọn/tìm NCC…"
                             options={suppliers.map((s) => ({ value: s.code, label: `${s.code} — ${s.name}` }))}
@@ -1214,58 +1361,99 @@ export default function PurchaseOrderDetail() {
                         <td><NumberInput className="cell-input" value={c.vat ?? 0} max={VAT_MAX} maxDecimals={VAT_DECIMALS} disabled={!costEditable}
                           onChange={(v: any) => setCost(i, { vat: v })} /></td>
                         <td style={{ textAlign: 'right', fontWeight: 600, background: '#fff8e6' }}>{fmtVND(costBase(c))}</td>
-                        <td>
-                          <select className="cell-input" value={String(Number(c.allocation_method) || ALLOC_BY_VALUE)} disabled={!costEditable}
-                            onChange={(e) => setCost(i, { allocation_method: Number(e.target.value) || ALLOC_BY_VALUE })}>
-                            {ALLOCATION_OPTS.map(([v, label]) => <option key={v} value={String(v)}>{label}</option>)}
-                          </select>
-                        </td>
-                        <td>
-                          {Number(c.allocation_method) === ALLOC_BY_PRODUCT ? (
-                            <select className="cell-input" value={c.allocation_target || ''} disabled={!costEditable}
-                              onChange={(e) => setCost(i, { allocation_target: e.target.value })}>
-                              <option value="">— chọn mã hàng —</option>
-                              {items.filter((it: any) => (it.product_code || '').trim())
-                                .map((it: any, k: number) => <option key={k} value={it.product_code}>{it.product_code}</option>)}
-                            </select>
-                          ) : <span style={{ color: 'var(--muted)' }}>—</span>}
+                        {/* P5: số đã chi / còn lại lấy từ công nợ ĐÃ LƯU của dòng; dòng chưa thành nợ thì còn lại = quy đổi hiện tại */}
+                        <td style={{ textAlign: 'right', color: 'var(--green)' }}>{Number(c.payable_id) > 0 ? fmtVND(c.paid_amount) : '—'}</td>
+                        <td style={{ textAlign: 'right', fontWeight: 600, color: Number(c.payable_id) > 0 && (Number(c.remaining) || 0) > 0.01 ? 'var(--red)' : 'var(--muted)' }}>
+                          {Number(c.payable_id) > 0 ? fmtVND(c.remaining) : fmtVND(costBase(c))}
                         </td>
                         <td><input className="cell-input" value={c.invoice_no || ''} disabled={!costEditable} onChange={(e) => setCost(i, { invoice_no: e.target.value })} /></td>
                         <td><DateInput className="cell-input" style={{ width: 110 }} value={c.invoice_date || ''} disabled={!costEditable} onChange={(v) => setCost(i, { invoice_date: v })} /></td>
                         <td><DateInput className="cell-input" style={{ width: 110 }} value={c.payment_due_date || ''} disabled={!costEditable} onChange={(v) => setCost(i, { payment_due_date: v })} /></td>
-                        <td><input className="cell-input" value={c.note || ''} disabled={!costEditable} onChange={(e) => setCost(i, { note: e.target.value })} /></td>
+                        <td><TextAreaAuto className="cell-input cell-textarea" style={{ width: '100%' }} value={c.note || ''} disabled={!costEditable} onChange={(v) => setCost(i, { note: v })} /></td>
                         <td style={{ textAlign: 'center' }}>
-                          {costEditable && (
-                            <button className="icon-btn" title="Xóa dòng chi phí"
-                              onClick={async () => { if (await askConfirm({ message: 'Xóa dòng chi phí này?' })) delCost(i) }}>
-                              <i className="ti ti-trash" style={{ fontSize: 16, color: 'var(--red)' }} />
+                          <div style={{ display: 'inline-flex', gap: 6 }}>
+                            {/* Cây bút mở popup xem/sửa đủ ô của một khoản — bảng rộng 2.400px khó soát từng dòng */}
+                            <button className="icon-btn" title="Chi tiết khoản chi phí" onClick={() => setEditingCostIdx(i)}>
+                              <i className="ti ti-edit" style={{ fontSize: 16, color: 'var(--teal)' }} />
                             </button>
-                          )}
+                            {costEditable && (
+                              <button className="icon-btn" title="Xóa dòng chi phí"
+                                onClick={async () => { if (await askConfirm({ message: 'Xóa dòng chi phí này?' })) delCost(i) }}>
+                                <i className="ti ti-trash" style={{ fontSize: 16, color: 'var(--red)' }} />
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
-                    {importCosts.length === 0 && <tr><td colSpan={16} style={{ textAlign: 'center', color: '#999', padding: 14 }}>Chưa khai chi phí nào cho lô hàng này</td></tr>}
+                    {importCosts.length === 0 && <tr><td colSpan={costPayReady ? 19 : 18} style={{ textAlign: 'center', color: '#999', padding: 14 }}>Chưa khai chi phí nào cho lô hàng này</td></tr>}
                   </tbody>
                 </table>
               </div>
 
-              {/* Ba con số hay bị hỏi nhất khi soát một lô nhập: tiền hàng, tiền chi phí,
-                  và tổng giá trị lô về tới kho. */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 12, marginTop: 16 }}>
+              {/* Các con số hay bị hỏi nhất khi soát một lô nhập: tiền hàng, tiền chi phí (kèm % so
+                  tiền hàng), đã chi / còn phải chi (P5, chỉ khi đơn đã duyệt) và tổng giá trị lô về tới kho. */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 12, marginTop: 16 }}>
                 {[
-                  ['Tiền hàng (quy đổi)', orderBaseTotal, 'var(--navy)'],
-                  ['Tổng chi phí nhập khẩu', costTotal, '#d97706'],
-                  ['Tổng giá trị lô hàng', landedTotal, 'var(--teal)'],
-                ].map(([label, value, color]: any) => (
+                  ['Tiền hàng (quy đổi)', orderBaseTotal, 'var(--navy)', ''],
+                  ['Tổng chi phí nhập khẩu', costTotal, '#d97706', costPct(costTotal)],
+                  ...(costPayReady || costPaidTotal > 0 ? [
+                    ['Đã chi', costPaidTotal, 'var(--green)', costPct(costPaidTotal)],
+                    ['Còn phải chi', costRemainingTotal, 'var(--red)', costPct(costRemainingTotal)],
+                  ] : []),
+                  ['Tổng giá trị lô hàng', landedTotal, 'var(--teal)', ''],
+                ].map(([label, value, color, hint]: any) => (
                   <div key={label} style={{ border: '1px solid var(--border)', borderRadius: 10, padding: '12px 14px' }}>
                     <div style={{ fontSize: 12.5, color: 'var(--muted)', marginBottom: 4 }}>{label}</div>
                     <div style={{ fontSize: 18, fontWeight: 700, color, fontVariantNumeric: 'tabular-nums' }}>{fmtVND(value)} đ</div>
+                    {hint && <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 2 }}>{hint}</div>}
                   </div>
                 ))}
               </div>
+
+              {/* P5: khối THANH TOÁN theo nhà cung cấp — mỗi NCC một dòng tổng · đã chi · còn lại
+                  + nút lập YCTT riêng (một phiếu chỉ một NCC). Số từ backend (import_cost_summary),
+                  là dữ liệu ĐÃ LƯU; sửa bảng xong phải Lưu thì khối này mới đổi. */}
+              {costPayReady && (costSummary?.by_supplier || []).length > 0 && (
+                <div style={{ marginTop: 16 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 6 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--navy)' }}>Thanh toán chi phí theo nhà cung cấp</div>
+                    <div style={{ fontSize: 12, color: 'var(--muted)' }}>Mỗi yêu cầu thanh toán chỉ một nhà cung cấp — bấm nút ở dòng NCC để lập phiếu cho các khoản còn phải chi của NCC đó.</div>
+                  </div>
+                  <div className="items-scroll">
+                    <table className="items-table" style={{ width: '100%', minWidth: 760 }}>
+                      <thead><tr>
+                        <th>Nhà cung cấp</th><th style={{ width: 70, textAlign: 'center' }}>Số khoản</th>
+                        <th style={{ width: 140, textAlign: 'right' }}>Phải trả</th><th style={{ width: 140, textAlign: 'right' }}>Đã chi</th>
+                        <th style={{ width: 140, textAlign: 'right' }}>Còn lại</th><th style={{ width: 150, textAlign: 'center' }}></th>
+                      </tr></thead>
+                      <tbody>
+                        {(costSummary.by_supplier as any[]).map((r) => {
+                          const ids: number[] = r.unpaid_payable_ids || []
+                          return (
+                            <tr key={r.supplier_code || r.supplier_name || '_'}>
+                              <td>{(r.supplier_name || '').trim() || (r.supplier_code || '').trim() || <span style={{ color: 'var(--muted)' }}>(chưa chọn NCC — chưa thành công nợ)</span>}</td>
+                              <td style={{ textAlign: 'center' }}>{r.count}</td>
+                              <td style={{ textAlign: 'right' }}>{fmtVND(r.base_amount)}</td>
+                              <td style={{ textAlign: 'right', color: 'var(--green)' }}>{fmtVND(r.paid_amount)}</td>
+                              <td style={{ textAlign: 'right', fontWeight: 600, color: (Number(r.remaining) || 0) > 0.01 ? 'var(--red)' : 'var(--muted)' }}>{fmtVND(r.remaining)}</td>
+                              <td style={{ textAlign: 'center' }}>
+                                {ids.length > 0
+                                  ? <button className="btn secondary" style={{ height: 28, fontSize: 12.5 }} onClick={() => goCreatePayment(ids)}><i className="ti ti-receipt" />Tạo YCTT</button>
+                                  : <span className="badge ok">Đã chi đủ</span>}
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
               {importCosts.length > 0 && (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginTop: 16 }}>
-                  {[['Theo loại chi phí', costByType], ['Theo nhà cung cấp', costBySupplier]].map(([title, rows]: any) => (
+                  {/* Đã có bảng thanh toán theo NCC ở trên thì thôi lặp lại cụm "Theo nhà cung cấp" */}
+                  {[['Theo loại chi phí', costByType], ...(costPayReady ? [] : [['Theo nhà cung cấp', costBySupplier]])].map(([title, rows]: any) => (
                     <div key={title}>
                       <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--navy)', marginBottom: 6 }}>{title}</div>
                       {rows.map((r: any) => (
@@ -1281,18 +1469,44 @@ export default function PurchaseOrderDetail() {
             </div>
           )}
 
-          {/* bao-CR-319 P4 — Chi phí theo dòng hàng, CHỈ ĐỌC. Lồng NGƯỢC theo ý đại ca: dòng hàng
-              là CHA, mở ra thấy từng khoản đã gánh + cách chia + tỷ lệ; cuối là dòng tổng toàn đơn.
+          {/* bao-CR-319 P4 — Chi phí theo dòng hàng. Lồng NGƯỢC theo ý đại ca: dòng hàng là CHA,
+              mở ra thấy từng khoản được phân bổ + cách chia + tỷ lệ; cuối là dòng tổng toàn đơn.
               Số do backend chia (allocate_import_costs) từ dữ liệu ĐÃ LƯU — không tính lại ở đây
-              để màn hình, bản in và YCTT sau này cùng một con số. */}
+              để màn hình, bản in và YCTT sau này cùng một con số. Riêng khoản chọn "Nhập tay" thì
+              dòng con là ô gõ số tiền, có hiệu lực khi bấm Lưu của đơn. */}
           {isImport && !isNew && allocation && (
             <div className="card" style={{ padding: 18, marginBottom: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 10, flexWrap: 'wrap' }}>
                 <h3 className="sec-title" style={{ margin: 0, border: 'none', padding: 0 }}>Chi phí theo dòng hàng</h3>
-                <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>
-                  Chỉ để xem — chia lúc mở đơn từ dữ liệu đã lưu, không ghi vào kho. Sửa bảng chi phí xong bấm Lưu để cập nhật.
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                  <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>
+                    Số chia lấy từ dữ liệu đã lưu, không ghi vào kho. Khoản chọn "Nhập tay" thì gõ số tiền từng dòng ở đây; sửa xong bấm Lưu mới có hiệu lực.
+                  </div>
+                  {allocation.lines?.length > 0 && (
+                    <button type="button" className="btn ghost" style={{ padding: '3px 10px', fontSize: 12 }}
+                      onClick={() => setAllocOpen(allocOpen.size >= allocation.lines.length
+                        ? new Set()
+                        : new Set(allocation.lines.map((ln: any, k: number) => Number(ln.item_id) || -(k + 1))))}>
+                      {allocOpen.size >= allocation.lines.length ? 'Thu gọn' : 'Mở tất cả'}
+                    </button>
+                  )}
                 </div>
               </div>
+              {manualCostIndexes.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 10 }}>
+                  {manualCostIndexes.map((k) => {
+                    const c = importCosts[k]
+                    const ok = manualEntered(c) > 0 && Math.abs(manualDiff(c)) <= MANUAL_ALLOC_TOLERANCE
+                    return (
+                      <div key={k} style={{ background: ok ? '#f0fdf4' : '#fef2f2', border: `1px solid ${ok ? '#86efac' : '#fca5a5'}`,
+                        borderRadius: 8, padding: '6px 12px', fontSize: 12.5, color: ok ? '#166534' : '#991b1b' }}>
+                        Nhập tay khoản "{(c.description || '').trim() || COST_TYPE_LABEL(c.cost_type)}": đã nhập {fmtVND(manualEntered(c))} / {fmtVND(costBase(c))}
+                        {ok ? ' — đã khớp tổng' : manualEntered(c) > 0 ? ` — lệch ${fmtVND(manualDiff(c))}, phải bằng nhau mới Lưu được` : ' — chưa nhập số tiền dòng nào'}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
               {allocation.warnings?.length > 0 && (
                 <div style={{ background: '#fff7ed', border: '1px solid #fdba74', borderRadius: 8, padding: '8px 12px', fontSize: 12.5, color: '#9a3412', marginBottom: 10 }}>
                   {allocation.warnings.map((w: string, i: number) => <div key={i}>{w}</div>)}
@@ -1307,9 +1521,9 @@ export default function PurchaseOrderDetail() {
                       <th style={{ textAlign: 'right' }}>SL đặt</th>
                       <th style={{ textAlign: 'right' }}>KL (kg)</th>
                       <th style={{ textAlign: 'right' }}>Tiền hàng (quy đổi)</th>
-                      <th style={{ textAlign: 'right' }}>Chi phí gánh</th>
+                      <th style={{ textAlign: 'right' }}>Chi phí phân bổ</th>
                       <th style={{ textAlign: 'right' }}>Tổng giá trị</th>
-                      <th style={{ textAlign: 'right' }}>CP / tiền hàng</th>
+                      <th style={{ textAlign: 'right' }}>Tỷ lệ chi phí</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1334,36 +1548,65 @@ export default function PurchaseOrderDetail() {
                             <tr>
                               <td />
                               <td colSpan={8} style={{ padding: '4px 0 10px' }}>
-                                {ln.costs.length === 0 ? (
-                                  <div style={{ fontSize: 12.5, color: 'var(--muted)', padding: '4px 8px' }}>Dòng này không gánh khoản chi phí nào.</div>
-                                ) : (
-                                  <table className="table" style={{ background: '#fafbfd', fontSize: 12.5 }}>
-                                    <thead>
-                                      <tr>
-                                        <th>Loại chi phí</th><th>Diễn giải</th><th>Nhà cung cấp</th>
-                                        <th>Cách chia</th>
-                                        <th style={{ textAlign: 'right' }}>Tỷ lệ</th>
-                                        <th style={{ textAlign: 'right' }}>Phần gánh (đ)</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {ln.costs.map((c: any, j: number) => (
-                                        <tr key={j}>
-                                          <td>{c.cost_type_label}</td>
-                                          <td>{c.description}</td>
-                                          <td>{c.supplier_name || c.supplier_code}</td>
-                                          <td>
-                                            {c.effective_method === c.allocation_method
-                                              ? c.allocation_method_label
-                                              : <>{c.effective_method_label} <span style={{ color: '#b45309' }}>(chọn {String(c.allocation_method_label || '').toLowerCase()}, thiếu cơ sở)</span></>}
-                                          </td>
-                                          <td style={{ textAlign: 'right' }}>{(Number(c.ratio) * 100).toFixed(2)}%</td>
-                                          <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>{fmtVND(c.base_amount)}</td>
+                                {(() => {
+                                  // Khoản đang chọn "Nhập tay" trên bảng chi phí (kể cả chưa Lưu) hiện ô gõ số
+                                  // thay cho số đã chia; khoản còn lại lấy nguyên số backend đã chia.
+                                  const manualIds = new Set(manualCostIndexes.map((k) => Number(importCosts[k]?.id) || 0).filter((x) => x > 0))
+                                  const savedRows = (ln.costs || []).filter((c: any) => !manualIds.has(Number(c.cost_id)))
+                                  if (savedRows.length === 0 && manualCostIndexes.length === 0) {
+                                    return <div style={{ fontSize: 12.5, color: 'var(--muted)', padding: '4px 8px' }}>Dòng này không được phân bổ khoản chi phí nào.</div>
+                                  }
+                                  return (
+                                    <table className="table" style={{ background: '#fafbfd', fontSize: 12.5 }}>
+                                      <thead>
+                                        <tr>
+                                          <th>Loại chi phí</th><th>Diễn giải</th><th>Nhà cung cấp</th>
+                                          <th>Cách chia</th>
+                                          <th style={{ textAlign: 'right' }}>Tỷ lệ</th>
+                                          <th style={{ textAlign: 'right', width: 150 }}>Số tiền (đ)</th>
                                         </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                )}
+                                      </thead>
+                                      <tbody>
+                                        {savedRows.map((c: any, j: number) => (
+                                          <tr key={j}>
+                                            <td>{c.cost_type_label}</td>
+                                            <td>{c.description}</td>
+                                            <td>{c.supplier_name || c.supplier_code}</td>
+                                            <td>
+                                              {c.effective_method === c.allocation_method
+                                                ? c.allocation_method_label
+                                                : <>{c.effective_method_label} <span style={{ color: '#b45309' }}>(chọn {String(c.allocation_method_label || '').toLowerCase()}, thiếu cơ sở)</span></>}
+                                            </td>
+                                            <td style={{ textAlign: 'right' }}>{(Number(c.ratio) * 100).toFixed(2)}%</td>
+                                            <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>{fmtVND(c.base_amount)}</td>
+                                          </tr>
+                                        ))}
+                                        {manualCostIndexes.map((k) => {
+                                          const c = importCosts[k]
+                                          const raw = c.manual_allocation?.[String(ln.item_id)]
+                                          const val = Number(raw) || 0
+                                          const base = costBase(c)
+                                          return (
+                                            <tr key={`m${k}`} style={{ background: '#fffbeb' }}>
+                                              <td>{COST_TYPE_LABEL(c.cost_type)}</td>
+                                              <td>{c.description}</td>
+                                              <td>{c.supplier_name || c.supplier_code}</td>
+                                              <td>Nhập tay</td>
+                                              <td style={{ textAlign: 'right' }}>{base > 0 && val > 0 ? `${(val / base * 100).toFixed(2)}%` : '-'}</td>
+                                              <td style={{ textAlign: 'right' }}>
+                                                <input type="number" min={0} step={1} className="cell-input" disabled={!costEditable} placeholder="0"
+                                                  style={{ textAlign: 'right', width: 140, fontWeight: 600 }}
+                                                  value={raw === undefined || raw === null ? '' : String(raw)}
+                                                  onClick={(e) => e.stopPropagation()}
+                                                  onChange={(e) => setManualAmount(k, ln.item_id, e.target.value)} />
+                                              </td>
+                                            </tr>
+                                          )
+                                        })}
+                                      </tbody>
+                                    </table>
+                                  )
+                                })()}
                               </td>
                             </tr>
                           )}
@@ -1568,8 +1811,12 @@ export default function PurchaseOrderDetail() {
                         nhập nộp ngân sách nhà nước theo tờ khai và đã khai thành một dòng ở
                         bảng Chi phí lô hàng; gõ thêm ở đây là cộng thuế hai lần VÀ ghi khoản
                         thuế đó thành nợ của chính NCC nước ngoài. Backend cũng ép 0. */}
-                    <div className="form-row"><label>VAT (%)</label><NumberInput value={isImport ? 0 : it.vat} max={VAT_MAX} maxDecimals={VAT_DECIMALS} disabled={de || isImport} placeholder={isImport ? 'Đơn nhập khẩu — khai ở bảng Chi phí lô hàng' : 'Nhập % VAT (0 – 99,99)'} onChange={(v) => setItem(ii, { vat: v })} /></div>
-                    <div className="form-row"><label>Đơn giá (Sau VAT)</label><input value={fmtPrice(Math.round((Number(it.price) || 0) * (1 + (Number(it.vat) || 0) / 100) * 100) / 100)} disabled style={{ fontWeight: 600 }} /></div>
+                    {!isImport && (
+                      <div className="form-row"><label>VAT (%)</label><NumberInput value={it.vat} max={VAT_MAX} maxDecimals={VAT_DECIMALS} disabled={de} placeholder="Nhập % VAT (0 – 99,99)" onChange={(v) => setItem(ii, { vat: v })} /></div>
+                    )}
+                    {!isImport && (
+                      <div className="form-row"><label>Đơn giá (Sau VAT)</label><input value={fmtPrice(Math.round((Number(it.price) || 0) * (1 + (Number(it.vat) || 0) / 100) * 100) / 100)} disabled style={{ fontWeight: 600 }} /></div>
+                    )}
                     <div className="form-row"><label>Tổng tiền đặt hàng{showCurrency ? ` (${lineCurrency(it)})` : ''}</label><input value={fmtAmt(it.order_total ?? orderAmount(it))} disabled /></div>
                     <div className="form-row"><label>Tổng tiền hàng (đã nhận)</label><input value={fmtVND(it.goods_total || 0)} disabled /></div>
                     <div className="form-row"><label>Tổng đã trả</label><input value={fmtVND(it.paid_total || 0)} disabled style={{ color: 'var(--green)', fontWeight: 600 }} /></div>
@@ -1598,7 +1845,7 @@ export default function PurchaseOrderDetail() {
                       <th style={{ width: 80 }}>SL đặt</th>
                       <th style={{ width: 90 }}>SL nhận</th>
                       <th style={{ width: 100 }}>Đơn giá</th>
-                      <th style={{ width: 64 }}>VAT%</th>
+                      {!isImport && <th style={{ width: 64 }}>VAT%</th>}
                       <th style={{ width: 130, background: '#fff3cd' }}>Thành tiền (nhận)</th>
                       <th style={{ width: 130 }}>Số hóa đơn</th>
                       <th style={{ width: 110 }}>Ngày hóa đơn</th>
@@ -1648,7 +1895,7 @@ export default function PurchaseOrderDetail() {
                           <td style={{ textAlign: 'right', color: 'var(--muted)' }}>{fmt(items[ii].qty_order)}</td>
                           <td><NumberInput decimals className="cell-input" style={{ width: 80 }} value={d.received_qty} disabled={dis} onChange={(v) => setDelivery(ii, di, { received_qty: v })} /></td>
                           <td style={{ textAlign: 'right', color: 'var(--muted)' }}>{fmtPrice(items[ii].price)}</td>
-                          <td style={{ textAlign: 'center', color: 'var(--muted)' }}>{Number(items[ii].vat) || 0}%</td>
+                          {!isImport && <td style={{ textAlign: 'center', color: 'var(--muted)' }}>{Number(items[ii].vat) || 0}%</td>}
                           <td style={{ textAlign: 'right', fontWeight: 600, background: '#fff8e6' }}>{fmtVND((Number(d.received_qty) || 0) * (Number(items[ii].price) || 0) * (1 + (Number(items[ii].vat) || 0) / 100))}</td>
                           <td><input className="cell-input" style={{ width: 120 }} value={d.invoice_no || ''} placeholder="Số HĐ đợt này" disabled={dis} onChange={(e) => { const v = e.target.value; setDelivery(ii, di, { invoice_no: v, ...(v && !(d.invoice_date || '').trim() ? { invoice_date: new Date().toISOString().slice(0, 10) } : {}) }) }} /></td>
                           <td><DateInput className="cell-input" style={{ width: 110 }} value={d.invoice_date || ''} disabled={dis} onChange={(v) => setDelivery(ii, di, { invoice_date: v })} /></td>
@@ -1728,6 +1975,132 @@ export default function PurchaseOrderDetail() {
       )}
 
       {/* Popup chọn hóa đơn để tạo Yêu cầu thanh toán */}
+      {/* bao-CR-319 — Popup chi tiết MỘT khoản chi phí nhập khẩu. Cùng state với bảng
+          (setCost), nên sửa ở đây hay ở bảng đều là một, và vẫn phải bấm Lưu của đơn. */}
+      {editingCostIdx !== null && importCosts[editingCostIdx] && (() => {
+        const ci = editingCostIdx
+        const c = importCosts[ci]
+        const de = !costEditable
+        const hasPayable = Number(c.payable_id) > 0
+        return (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,.45)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12 }} onClick={() => setEditingCostIdx(null)}>
+            <div className="modal-card" style={{ width: 860, maxWidth: '96vw', background: '#fff', borderRadius: 12, boxShadow: '0 20px 25px -5px rgba(0,0,0,.15)', display: 'flex', flexDirection: 'column', maxHeight: '92vh', overflow: 'hidden' }} onClick={(e) => e.stopPropagation()}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderBottom: '1px solid var(--border)' }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 16, color: 'var(--navy)' }}>Chi tiết chi phí #{ci + 1}: {COST_TYPE_LABEL(c.cost_type)}</h3>
+                  <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 2 }}>
+                    Quy đổi {fmtVND(costBase(c))}
+                    {hasPayable
+                      ? <> · Đã chi <span style={{ color: 'var(--green)' }}>{fmtVND(c.paid_amount)}</span> · Còn lại <span style={{ color: (Number(c.remaining) || 0) > 0.01 ? 'var(--red)' : 'var(--muted)' }}>{fmtVND(c.remaining)}</span></>
+                      : <> · Chưa thành công nợ{isNew || !c.id ? ' (dòng mới, Lưu đơn trước)' : PO_PAYABLE_STATUSES.includes(po.status) ? ' (chưa chọn NCC hoặc số tiền 0)' : ' (đơn chưa duyệt)'}</>}
+                  </div>
+                </div>
+                <button className="icon-btn" onClick={() => setEditingCostIdx(null)}><i className="ti ti-x" style={{ fontSize: 18 }} /></button>
+              </div>
+
+              <div style={{ padding: '16px 18px', overflowY: 'auto', flex: 1, minWidth: 0, maxWidth: '100%' }}>
+                <h4 style={{ margin: '0 0 10px', fontSize: 14, color: 'var(--navy)' }}>Khoản chi phí</h4>
+                <div className="form-grid" style={{ marginBottom: 18 }}>
+                  <div className="form-row">
+                    <label>Loại chi phí</label>
+                    <select value={String(Number(c.cost_type) || 99)} disabled={de}
+                      onChange={(e) => {
+                        const v = Number(e.target.value) || 99
+                        const patch: any = { cost_type: v }
+                        if (IMPORT_COST_TAX_TYPES.includes(v) && !(c.supplier_code || '').trim()) {
+                          patch.supplier_code = STATE_BUDGET_SUPPLIER_CODE
+                          patch.supplier_name = STATE_BUDGET_SUPPLIER_NAME
+                        }
+                        setCost(ci, patch)
+                      }}>
+                      {IMPORT_COST_TYPE_OPTS.map(([v, label]) => <option key={v} value={String(v)}>{label}</option>)}
+                    </select>
+                  </div>
+                  <div className="form-row">
+                    <label>Nhà cung cấp</label>
+                    <SearchSelect value={c.supplier_code || ''} disabled={de} placeholder="Chọn/tìm NCC…"
+                      options={suppliers.map((s) => ({ value: s.code, label: `${s.code} — ${s.name}` }))}
+                      onChange={(v) => {
+                        const s = suppliers.find((x) => x.code === v)
+                        setCost(ci, { supplier_code: v, supplier_name: s ? s.name : '' })
+                      }} />
+                  </div>
+                  <div className="form-row" style={{ gridColumn: '1 / -1' }}>
+                    <label>Diễn giải</label>
+                    <TextAreaAuto style={POPUP_TEXT} value={c.description || ''} disabled={de} placeholder="VD: Cước biển Thượng Hải – Cát Lái, 1x20DC" onChange={(v) => setCost(ci, { description: v })} />
+                  </div>
+                  <div className="form-row">
+                    <label>Tiền tệ</label>
+                    <select value={costCurrency(c)} disabled={de}
+                      onChange={(e) => {
+                        const cur = e.target.value
+                        setCost(ci, { currency: cur, exchange_rate: cur === DEFAULT_CURRENCY ? 1 : 0 })
+                      }}>
+                      {Array.from(new Set([...CURRENCY_OPTS, costCurrency(c)])).map((cur) => <option key={cur} value={cur}>{cur}</option>)}
+                    </select>
+                  </div>
+                  <div className="form-row">
+                    <label>Tỷ giá</label>
+                    {costCurrency(c) === DEFAULT_CURRENCY
+                      ? <CopyText value="1" />
+                      : <NumberInput value={c.exchange_rate || costRate(c)} maxDecimals={6} disabled={de} onChange={(v: any) => setCost(ci, { exchange_rate: v })} />}
+                  </div>
+                  <div className="form-row"><label>Số tiền (trước thuế, {costCurrency(c)})</label><CurrencyInput className="" value={c.amount ?? 0} disabled={de} onChange={(v: number) => setCost(ci, { amount: v })} /></div>
+                  <div className="form-row"><label>VAT %</label><NumberInput value={c.vat ?? 0} max={VAT_MAX} maxDecimals={VAT_DECIMALS} disabled={de} onChange={(v: any) => setCost(ci, { vat: v })} /></div>
+                  <div className="form-row"><label>Quy đổi (VNĐ, đã gồm VAT)</label><CopyText value={fmtVND(costBase(c))} /></div>
+                  <div className="form-row">
+                    <label>Cách phân bổ</label>
+                    <select value={String(Number(c.allocation_method) || ALLOC_BY_VALUE)} disabled={de}
+                      onChange={(e) => switchAllocationMethod(ci, c, Number(e.target.value) || ALLOC_BY_VALUE)}>
+                      {ALLOCATION_OPTS.map(([v, label]) => <option key={v} value={String(v)}>{label}</option>)}
+                    </select>
+                  </div>
+                  {Number(c.allocation_method) === ALLOC_BY_PRODUCT && (
+                    <div className="form-row">
+                      <label>Mã hàng chỉ định</label>
+                      <select value={c.allocation_target || ''} disabled={de} onChange={(e) => setCost(ci, { allocation_target: e.target.value })}>
+                        <option value="">— chọn mã hàng —</option>
+                        {items.filter((it: any) => (it.product_code || '').trim())
+                          .map((it: any, k: number) => <option key={k} value={it.product_code}>{it.product_code}</option>)}
+                      </select>
+                    </div>
+                  )}
+                  {isManualCost(c) && (
+                    <div className="form-row">
+                      <label>Nhập tay</label>
+                      <div style={{ fontSize: 12.5, color: Math.abs(manualDiff(c)) > MANUAL_ALLOC_TOLERANCE ? '#b91c1c' : '#15803d', paddingTop: 6 }}>
+                        {manualEntered(c) > 0
+                          ? `Đã nhập ${fmtVND(manualEntered(c))} / ${fmtVND(costBase(c))}${Math.abs(manualDiff(c)) > MANUAL_ALLOC_TOLERANCE ? ` — lệch ${fmtVND(manualDiff(c))}` : ' — đã khớp tổng'}`
+                          : 'Gõ số tiền từng dòng ở bảng Chi phí theo dòng hàng'}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <h4 style={{ margin: '0 0 10px', fontSize: 14, color: 'var(--navy)' }}>Hóa đơn và thanh toán</h4>
+                <div className="form-grid">
+                  <div className="form-row"><label>Số hóa đơn</label><input value={c.invoice_no || ''} disabled={de} onChange={(e) => setCost(ci, { invoice_no: e.target.value })} /></div>
+                  <div className="form-row"><label>Ngày hóa đơn</label><DateInput value={c.invoice_date || ''} disabled={de} onChange={(v) => setCost(ci, { invoice_date: v })} /></div>
+                  <div className="form-row"><label>Hạn thanh toán</label><DateInput value={c.payment_due_date || ''} disabled={de} onChange={(v) => setCost(ci, { payment_due_date: v })} /></div>
+                  {hasPayable && (
+                    <div className="form-row"><label>Công nợ</label><CopyText value={`Đã chi ${fmtVND(c.paid_amount)} · Còn lại ${fmtVND(c.remaining)}`} /></div>
+                  )}
+                  <div className="form-row" style={{ gridColumn: '1 / -1' }}>
+                    <label>Ghi chú</label>
+                    <TextAreaAuto style={POPUP_TEXT} value={c.note || ''} disabled={de} onChange={(v) => setCost(ci, { note: v })} />
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ padding: '12px 18px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 12.5, color: 'var(--muted)' }}>{de ? 'Đơn đang khóa sửa chi phí.' : 'Sửa xong đóng lại rồi bấm Lưu của đơn mới có hiệu lực.'}</span>
+                <button className="btn ghost" onClick={() => setEditingCostIdx(null)}>Đóng</button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
+
       {payModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,.45)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12 }} onClick={() => setPayModal(false)}>
           <div className="modal-card" style={{ width: 780, maxWidth: '96vw', background: '#fff', borderRadius: 12, boxShadow: '0 20px 25px -5px rgba(0,0,0,.15)', display: 'flex', flexDirection: 'column', maxHeight: '90vh', overflow: 'hidden' }} onClick={(e) => e.stopPropagation()}>
@@ -1735,9 +2108,9 @@ export default function PurchaseOrderDetail() {
               <h3 style={{ margin: 0, fontSize: 16, color: 'var(--navy)' }}>Tạo yêu cầu thanh toán — chọn hóa đơn</h3>
               <button className="icon-btn" onClick={() => setPayModal(false)}><i className="ti ti-x" style={{ fontSize: 18 }} /></button>
             </div>
-            {/* Tab: NCC sản xuất (hàng) · NCC vận chuyển */}
+            {/* Tab: NCC sản xuất (hàng) · NCC vận chuyển · Chi phí lô hàng (P5, chỉ đơn nhập khẩu mới có dòng) */}
             <div style={{ display: 'flex', gap: 6, padding: '10px 18px 0', borderBottom: '1px solid var(--border)' }}>
-              {([['goods', 'NCC sản xuất (hàng)'], ['shipping', 'NCC vận chuyển']] as const).map(([k, lbl]) => {
+              {PAY_TABS.filter(([k]) => k !== 'import_cost' || payables.some((p) => p.source_type === 'import_cost')).map(([k, lbl]) => {
                 const n = payables.filter((p) => p.source_type === k).length
                 return (
                   <button key={k} onClick={() => setPayTab(k)} style={{ border: 'none', background: 'none', padding: '8px 12px', cursor: 'pointer', fontSize: 13.5, fontWeight: payTab === k ? 700 : 500, color: payTab === k ? 'var(--teal)' : 'var(--muted)', borderBottom: payTab === k ? '2px solid var(--teal)' : '2px solid transparent', whiteSpace: 'nowrap' }}>{lbl}{n ? ` (${n})` : ''}</button>
@@ -1751,12 +2124,14 @@ export default function PurchaseOrderDetail() {
                 const allSel = rows.length > 0 && rowIds.every((id) => paySel.includes(id))
                 return (<>
                   <div style={{ fontSize: 12.5, color: 'var(--muted)', marginBottom: 8 }}>
-                    {payTab === 'goods' ? 'Công nợ hàng (NCC sản xuất)' : 'Công nợ vận chuyển'} chưa trả đủ của đơn <b>{po.code}</b> — mỗi lần nhận là 1 dòng (cùng số HĐ có thể nhiều dòng). Bỏ tick nếu chưa thanh toán.
+                    {payTab === 'import_cost'
+                      ? <>Công nợ chi phí lô hàng chưa chi đủ của đơn <b>{po.code}</b> — mỗi dòng chi phí là 1 khoản; tick nhiều NCC thì hệ thống tự tách mỗi NCC một phiếu.</>
+                      : <>{payTab === 'goods' ? 'Công nợ hàng (NCC sản xuất)' : 'Công nợ vận chuyển'} chưa trả đủ của đơn <b>{po.code}</b> — mỗi lần nhận là 1 dòng (cùng số HĐ có thể nhiều dòng). Bỏ tick nếu chưa thanh toán.</>}
                   </div>
                   <table className="items-table" style={{ width: '100%' }}>
                     <thead><tr>
                       <th style={{ width: 36, textAlign: 'center' }}><input type="checkbox" checked={allSel} onChange={(e) => setPaySel((s) => e.target.checked ? Array.from(new Set([...s, ...rowIds])) : s.filter((x) => !rowIds.includes(x)))} /></th>
-                      <th>{payTab === 'goods' ? 'Nhà cung cấp' : 'Đơn vị vận chuyển'}</th>
+                      <th>{payTab === 'goods' ? 'Nhà cung cấp' : payTab === 'shipping' ? 'Đơn vị vận chuyển' : 'Nhà cung cấp / cơ quan thu'}</th>
                       <th>Số hóa đơn</th><th>Ngày phát sinh</th>
                       <th style={{ textAlign: 'right' }}>Phải trả</th><th style={{ textAlign: 'right' }}>Đã trả</th><th style={{ textAlign: 'right' }}>Còn lại</th>
                     </tr></thead>

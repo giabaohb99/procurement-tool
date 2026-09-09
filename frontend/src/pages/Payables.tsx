@@ -13,6 +13,7 @@ import { PAYABLE_COND_FILTERS } from '../config/conditional-filters'
 import Pagination from '../components/Pagination'
 import { fmtDateTime } from '../utils/datetime'
 import { fmtVND } from '../utils/money'
+import { SOURCE_TYPE_OPTIONS, sourceTypeLabel } from '../utils/payable'
 import TableHead, { TableCells } from '../components/TableHead'
 import TableToolbar from '../components/TableToolbar'
 import { useTableColumns, TableColumn } from '../hooks/useTableColumns'
@@ -140,7 +141,7 @@ export default function Payables() {
     },
     { key: 'supplier_name', label: 'Nhà cung cấp', sort: 'supplier_name', cell: (r) => r.supplier_name || r.supplier_code },
     { key: 'supplier_code', label: 'Mã NCC', sort: 'supplier_code', td: { color: 'var(--muted)' } },
-    { key: 'source_type', label: 'Loại', sort: 'source_type', cell: (r) => (r.source_type === 'shipping' ? 'Vận chuyển' : 'Hàng hóa') },
+    { key: 'source_type', label: 'Loại', sort: 'source_type', cell: (r) => sourceTypeLabel(r.source_type) },
     { key: 'company', label: 'Công ty', sort: 'company', cell: (r) => companyName(r.company_id) },
     { key: 'po_code', label: 'PO', sort: 'po_code' },
     // Ticket #18 (bao-CR-279): mã MISA lấy từ ĐMH qua po_id — người dùng đối soát theo mã này
@@ -262,7 +263,7 @@ export default function Payables() {
         </FilterItem>
         <FilterItem label="Loại nợ" width={150} secondary active={!!f.source_type}>
           <SearchSelect value={f.source_type} placeholder="Tất cả"
-            options={[{ value: 'goods', label: 'Hàng hóa' }, { value: 'shipping', label: 'Vận chuyển' }]}
+            options={SOURCE_TYPE_OPTIONS}
             onChange={(v) => setFilter('source_type', v)} />
         </FilterItem>
         <FilterItem label="Tuổi nợ" width={150} secondary active={!!f.aging}>

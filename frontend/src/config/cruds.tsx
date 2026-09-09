@@ -10,6 +10,7 @@ import WarehousePurchaseLines from '../components/warehouse-purchase-lines'
 import { fmtDateStr, fmtDateTime } from '../utils/datetime'
 import { fmtVND } from '../utils/money'
 import { initialsOf } from '../utils/name'
+import { SOURCE_TYPE_OPTIONS, sourceTypeLabel } from '../utils/payable'
 
 export type FieldDef = {
   key: string
@@ -747,7 +748,7 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'supplier_name', label: 'Nhà cung cấp', render: (r) => r.supplier_name || r.supplier_code },
       // Ticket #26 (bao-CR-302): phiếu gồm nhiều PO nên mã MISA hiển thị gộp "MS1, MS2"
       { key: 'misa_code', label: 'Mã MISA' },
-      { key: 'source_type', label: 'Loại', render: (r) => (r.source_type === 'shipping' ? 'Vận chuyển' : 'Hàng hóa') },
+      { key: 'source_type', label: 'Loại', render: (r) => sourceTypeLabel(r.source_type) },
       { key: 'payment_method', label: 'Hình thức TT', render: (r) => (r.payment_method === 'cash' ? 'Tiền mặt' : 'Chuyển khoản') },
       { key: 'total', label: 'Số tiền', render: (r) => (r.total ? fmtVND(r.total) + ' đ' : '0 đ') },
       { key: 'status', label: 'Trạng thái', render: (r) => (r.status === 'cancelled' ? <span className="badge err">Đã từ chối</span> : poBadge(r.status === 'paid' ? 'received' : r.status)) },
@@ -769,8 +770,7 @@ export const cruds: Record<string, CrudConfig> = {
     condFilters: [
       condText('code', 'Mã phiếu'),
       condSource('supplier_code', 'Nhà cung cấp', { url: '/api/suppliers', value: 'code', label: 'name' }),
-      condSelect('source_type', 'Loại',
-        [{ value: 'goods', label: 'Hàng hóa' }, { value: 'shipping', label: 'Vận chuyển' }]),
+      condSelect('source_type', 'Loại', SOURCE_TYPE_OPTIONS),
       condSelect('payment_method', 'Hình thức thanh toán',
         [{ value: 'transfer', label: 'Chuyển khoản' }, { value: 'cash', label: 'Tiền mặt' }]),
       condDate('request_date', 'Ngày lập'),

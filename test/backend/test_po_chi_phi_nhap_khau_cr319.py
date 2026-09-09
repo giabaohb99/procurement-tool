@@ -155,6 +155,64 @@ def test_chia_theo_chi_dinh_ma_khong_chon_ma_hang_thi_ve_theo_gia_tri(db, seed):
     assert service.import_costs_of(db, po.id)[0].allocation_method == int(AllocationMethod.BY_VALUE)
 
 
+# ── Nhập tay: tổng phải khớp số quy đổi, chỉ giữ khóa của dòng hàng còn tồn tại ──
+def _po_hai_dong(db, seed, code="PO-NK-NT"):
+    po = _make_po(db, seed, code=code)
+    service._save_items(db, po, [_item_in(product_code="SP01"), _item_in(product_code="SP02")], user_id=1)
+    db.flush()
+    return po, [it.id for it in service.items_of(db, po.id)]
+
+
+def test_nhap_tay_khop_tong_thi_luu_json_theo_id_dong_hang(db, seed):
+    po, (id1, id2) = _po_hai_dong(db, seed)
+    # 1.000.000 VNĐ + VAT 8% = 1.080.000 (chi phí trả bằng VNĐ nên tỷ giá 1)
+    service._save_import_costs(db, po, [_cost_in(
+        currency="VND", allocation_method=int(AllocationMethod.MANUAL),
+        manual_allocation={str(id1): 1_000_000, str(id2): 80_000, "999999": 5})], user_id=1)
+    db.flush()
+
+    row = service.import_costs_of(db, po.id)[0]
+    assert row.allocation_method == int(AllocationMethod.MANUAL)
+    # Khóa của dòng hàng không tồn tại bị bỏ, số còn lại giữ nguyên
+    assert service.parse_manual_allocation(row.manual_allocation) == {str(id1): 1_000_000.0, str(id2): 80_000.0}
+
+
+def test_nhap_tay_lech_tong_thi_chan_400(db, seed):
+    po, (id1, id2) = _po_hai_dong(db, seed, code="PO-NK-NT2")
+    with pytest.raises(HTTPException) as exc:
+        service._save_import_costs(db, po, [_cost_in(
+            currency="VND", allocation_method=int(AllocationMethod.MANUAL),
+            manual_allocation={str(id1): 500_000, str(id2): 500_000})], user_id=1)
+    assert exc.value.status_code == 400
+    assert "1,080,000" in exc.value.detail
+
+
+def test_nhap_tay_chua_go_dong_nao_thi_chan_400(db, seed):
+    po, _ids = _po_hai_dong(db, seed, code="PO-NK-NT3")
+    with pytest.raises(HTTPException) as exc:
+        service._save_import_costs(db, po, [_cost_in(
+            currency="VND", allocation_method=int(AllocationMethod.MANUAL))], user_id=1)
+    assert exc.value.status_code == 400
+    assert "chưa nhập" in exc.value.detail
+
+
+def test_doi_sang_cach_khac_thi_xoa_so_nhap_tay(db, seed):
+    po, (id1, id2) = _po_hai_dong(db, seed, code="PO-NK-NT4")
+    service._save_import_costs(db, po, [_cost_in(
+        currency="VND", allocation_method=int(AllocationMethod.MANUAL),
+        manual_allocation={str(id1): 1_000_000, str(id2): 80_000})], user_id=1)
+    db.flush()
+    cid = service.import_costs_of(db, po.id)[0].id
+
+    service._save_import_costs(db, po, [_cost_in(
+        id=cid, currency="VND", allocation_method=int(AllocationMethod.BY_VALUE),
+        manual_allocation={str(id1): 1_000_000, str(id2): 80_000})], user_id=1)
+    db.flush()
+    row = service.import_costs_of(db, po.id)[0]
+    assert row.allocation_method == int(AllocationMethod.BY_VALUE)
+    assert (row.manual_allocation or "") == ""
+
+
 def test_luu_lai_thi_upsert_theo_id_va_xoa_dong_khong_con_gui_len(db, seed):
     po = _make_po(db, seed)
     service._save_import_costs(db, po, [_cost_in(), _cost_in(

@@ -79,6 +79,7 @@ class AllocationMethod(IntEnum):
     BY_WEIGHT = 2     # theo khối lượng
     BY_QUANTITY = 3   # theo số lượng
     BY_PRODUCT = 4    # chỉ định đích danh một mã hàng
+    MANUAL = 5        # thu mua gõ tay số tiền từng dòng hàng (`manual_allocation`), tổng phải khớp khoản
 
 
 ALLOCATION_METHOD_LABELS = {
@@ -86,6 +87,7 @@ ALLOCATION_METHOD_LABELS = {
     AllocationMethod.BY_WEIGHT: "Theo khối lượng",
     AllocationMethod.BY_QUANTITY: "Theo số lượng",
     AllocationMethod.BY_PRODUCT: "Chỉ định một mã hàng",
+    AllocationMethod.MANUAL: "Nhập tay",
 }
 
 
@@ -197,6 +199,10 @@ class POImportCost(Base, AuditMixin):
     base_amount: Mapped[float] = mapped_column(Numeric(18, 2), default=0)    # amount × (1 + vat%) × tỷ giá
     allocation_method: Mapped[int] = mapped_column(SmallInteger, default=int(AllocationMethod.BY_VALUE))
     allocation_target: Mapped[str] = mapped_column(String(50), default="")   # mã hàng, chỉ dùng khi chỉ định
+    # Cách 5 "Nhập tay": JSON {"<id dòng hàng>": số tiền VNĐ}. Đây là cách chia DUY NHẤT phải lưu
+    # kết quả, vì con số do người gõ chứ không suy ra được từ dữ liệu khác. Tổng phải bằng đúng
+    # `base_amount` (kiểm khi lưu); cách khác thì cột này để trống.
+    manual_allocation: Mapped[str] = mapped_column(Text, default="")
     invoice_no: Mapped[str] = mapped_column(String(50), default="")
     invoice_date: Mapped[str] = mapped_column(String(10), default="")
     payment_due_date: Mapped[str] = mapped_column(String(10), default="")    # hạn trả khoản chi phí

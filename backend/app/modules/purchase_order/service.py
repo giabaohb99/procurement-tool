@@ -1,5 +1,6 @@
 """Đơn mua hàng: lưu header + dòng hàng + các lần giao; mỗi lần lưu reconcile side-effect
 (phiếu nhập kho ngầm, tồn kho, công nợ 2 luồng). Idempotent theo id của dòng giao."""
+import json
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 
@@ -11,11 +12,12 @@ from app.modules.catalog import lead_time
 from app.modules.goods_receipt import service as gr_service
 from app.modules.inventory import service as inv_service
 from app.modules.payable import service as pay_service
+from app.modules.payable.model import Payable
 from app.modules.payment_request.model import PaymentRequest, PaymentRequestLine
 from app.modules.supplier.model import Supplier
 
-from .model import (ALLOCATION_METHOD_LABELS, AllocationMethod, DEFAULT_CURRENCY, ImportCostType,
-                    OrderType, PODelivery, POImportCost, POItem, PurchaseOrder)
+from .model import (ALLOCATION_METHOD_LABELS, AllocationMethod, DEFAULT_CURRENCY, IMPORT_COST_TYPE_LABELS,
+                    ImportCostType, OrderType, PODelivery, POImportCost, POItem, PurchaseOrder)
 from .schema import POCreate, POUpdate
 
 
@@ -209,7 +211,7 @@ def _save_items(db: Session, po: PurchaseOrder, items, user_id: int):
                     if new_v != old_v:
                         raise HTTPException(
                             400,
-                            f"Dòng '{ten_dong}' đã nhận hàng — không đổi được {label} "
+                            f"Dòng '{line_name}' đã nhận hàng — không đổi được {label} "
                             f"('{old_v}' → '{new_v}'). Hãy hủy dòng này rồi thêm dòng mới.",
                         )
             for k, v in data.items():
@@ -249,11 +251,152 @@ def import_cost_base(row) -> float:
                  * rate_of(row), 2)
 
 
+# ───────────────────────── Công nợ chi phí lô hàng (bao-CR-319 P5) ─────────────────────────
+# Mỗi dòng chi phí là MỘT khoản nợ riêng trên `tab_payable`: source_type = ref_type =
+# "import_cost", ref_id = id dòng chi phí. Đi chung bảng với goods/shipping để Yêu cầu
+# thanh toán, màn Công nợ và tuổi nợ dùng lại y nguyên, không phải dựng luồng thứ hai.
+IMPORT_COST_SOURCE = "import_cost"
+# Đơn ở các trạng thái này mới sinh nợ cho dòng chi phí. Nháp / chờ duyệt là số ước tính,
+# hủy / từ chối thì không còn gì phải trả (khớp REAL_PO_STATUSES của báo cáo).
+IMPORT_COST_PAYABLE_STATUSES = frozenset({"approved", "partial", "received", "completed"})
+
+
+def import_cost_payables_of(db: Session, po_id: int) -> dict[int, Payable]:
+    """Khoản nợ chi phí của một đơn, khóa theo id dòng chi phí."""
+    rows = db.query(Payable).filter(Payable.po_id == po_id,
+                                    Payable.ref_type == IMPORT_COST_SOURCE).all()
+    return {int(p.ref_id or 0): p for p in rows}
+
+
+def sync_import_cost_payables(db: Session, po: PurchaseOrder, user_id: int,
+                              suppliers: dict | None = None) -> None:
+    """Đồng bộ công nợ cho TOÀN BỘ dòng chi phí của đơn — idempotent, gọi sau mỗi lần lưu
+    bảng chi phí và mỗi lần đơn đổi trạng thái.
+
+    Đơn chưa duyệt / đã hủy: gỡ khoản nợ chưa chi đồng nào; khoản đã chi một phần thì giữ
+    lại (tiền đã ra khỏi két, xóa dấu vết là mất đối chiếu — cùng cách đối xử với nợ hàng
+    khi hủy đơn). Dòng chi phí 0 đồng hoặc chưa khai NCC thì không thành nợ.
+    """
+    rows = import_costs_of(db, po.id)
+    if not rows:
+        return
+    existing = import_cost_payables_of(db, po.id)
+    active = po.status in IMPORT_COST_PAYABLE_STATUSES
+    suppliers = suppliers if suppliers is not None else _supplier_map(db)
+    for row in rows:
+        base_total = import_cost_base(row)
+        has_supplier = bool((row.supplier_code or "").strip() or (row.supplier_name or "").strip())
+        if not active or base_total <= 0 or not has_supplier:
+            old = existing.get(row.id)
+            if old and float(old.paid_amount or 0) <= 0:
+                db.delete(old)
+                db.flush()
+            continue
+        # Cùng quy ước với nợ hàng: `amount` là gốc trước VAT đã quy đổi, `vat` là tiền thuế.
+        base_before_vat = round(float(row.amount or 0) * rate_of(row), 2)
+        sup = suppliers.get((row.supplier_code or "").strip())
+        pay_service.upsert(
+            db, source_type=IMPORT_COST_SOURCE, ref_type=IMPORT_COST_SOURCE, ref_id=row.id,
+            company_id=po.company_id, supplier_code=(row.supplier_code or "").strip(),
+            supplier_name=(row.supplier_name or "").strip() or (sup.name if sup else ""),
+            po_id=po.id, po_code=po.code, invoice_no=(row.invoice_no or "").strip(),
+            incur_date=(row.invoice_date or "").strip() or po.order_date or "",
+            amount=base_before_vat, vat=round(base_total - base_before_vat, 2),
+            due_days=pay_service.debt_days(sup.payment_terms if sup else ""),
+            due_date=(row.payment_due_date or "").strip(), user_id=user_id)
+
+
+def block_complete_unpaid_import_costs(db: Session, po: PurchaseOrder) -> None:
+    """Đơn NHẬP KHẨU chỉ được Hoàn thành khi MỌI khoản chi phí lô hàng đã trả đủ (09/09/2026,
+    khách chốt mức chặt, chỉ áp cho đơn nhập khẩu).
+
+    Tiến độ dòng hàng chỉ xét nợ HÀNG (`is_line_paid`), nên không có chốt này thì đơn nhập khẩu
+    vẫn "Hoàn thành" trong khi cước tàu, thuế nộp ngân sách, phí lưu bãi chưa trả đồng nào — mà
+    Hoàn thành xong là khóa sửa đơn, muốn khai thêm chi phí phải Mở lại. Dòng chi phí có tiền
+    nhưng chưa thành công nợ (chưa chọn NCC) cũng chặn: khoản đó không có đường nào để trả.
+    Đơn trong nước không đổi luật.
+    """
+    if int(po.order_type or OrderType.DOMESTIC) != int(OrderType.IMPORT):
+        return
+    rows = import_costs_of(db, po.id)
+    if not rows:
+        return
+    pays = import_cost_payables_of(db, po.id)
+    problems: list[str] = []
+    for row in rows:
+        if import_cost_base(row) <= 0:
+            continue
+        try:
+            cost_type = ImportCostType(int(row.cost_type or 0))
+        except ValueError:
+            cost_type = ImportCostType.OTHER
+        label = (row.description or "").strip() or IMPORT_COST_TYPE_LABELS.get(cost_type, "Chi phí")
+        pay = pays.get(row.id)
+        if not pay:
+            problems.append(f"{label}: chưa thành công nợ (chưa chọn NCC hoặc chưa Lưu đơn)")
+            continue
+        # Tính từ total - paid (như YCTT) thay vì đọc cột `remaining` tính sẵn, để không lệ thuộc
+        # vào việc cột đó đã được cập nhật hay chưa.
+        remaining = round(float(pay.total or 0) - float(pay.paid_amount or 0), 2)
+        if remaining > 0.01:
+            who = (pay.supplier_name or pay.supplier_code or "").strip()
+            problems.append(f"{label} ({who}): còn {remaining:,.0f} đ")
+    if problems:
+        raise HTTPException(
+            400, f"Đơn nhập khẩu chỉ Hoàn thành khi đã trả đủ chi phí lô hàng. Còn {len(problems)} khoản: "
+                 + "; ".join(problems) + ". Tạo và chi Yêu cầu thanh toán cho các khoản này trước.")
+
+
+def block_delete_paid_import_cost(db: Session, row: POImportCost) -> None:
+    """Dòng chi phí đã có tiền chi thì không xóa được — xóa là mất chỗ để đối chiếu số đã trả."""
+    pay = db.query(Payable).filter(Payable.ref_type == IMPORT_COST_SOURCE,
+                                   Payable.ref_id == row.id).first()
+    if pay and float(pay.paid_amount or 0) > 0:
+        raise HTTPException(
+            400, f"Dòng chi phí '{row.description or row.supplier_name or row.id}' đã chi "
+                 f"{float(pay.paid_amount):,.0f} đ, không xóa được. Sửa số tiền hoặc ghi chú thay vì xóa.")
+    if pay:
+        db.delete(pay)
+        db.flush()
+
+
 # ───────────────────────── Phân bổ chi phí về dòng hàng (bao-CR-319 P4) ─────────────────────────
 # Kết quả chia CHỈ ĐỂ XEM: tính lúc xem / lúc in, không ghi xuống cột nào, không đẩy vào
 # giá tồn kho. Vì vậy hàm nhận/trả dict thuần (đúng dạng `_item` / `_import_cost` của
 # controller) để màn hình, bản in và P5 cùng đọc một con số — giao diện tự cộng là lệch.
 EQUAL_SHARE_LABEL = "Chia đều"
+# Cách 5 "Nhập tay": tổng số gõ được phép lệch tối đa chừng này so với số quy đổi của khoản
+# (số quy đổi là số thập phân sau nhân tỷ giá, người gõ số tròn đồng).
+MANUAL_ALLOCATION_TOLERANCE = 1.0
+
+
+def parse_manual_allocation(raw) -> dict[str, float]:
+    """Đọc cột / payload `manual_allocation` thành {"<id dòng hàng>": số tiền VNĐ}.
+
+    Nhận cả chuỗi JSON (từ DB) lẫn dict (từ payload); giá trị hỏng, khóa rỗng, số âm hay
+    không phải số đều bị bỏ chứ không làm đổ cả đơn — cột này chỉ là dữ liệu phụ của khoản.
+    """
+    if not raw:
+        return {}
+    if isinstance(raw, str):
+        try:
+            raw = json.loads(raw)
+        except ValueError:
+            return {}
+    if not isinstance(raw, dict):
+        return {}
+    out: dict[str, float] = {}
+    for key, value in raw.items():
+        key = str(key).strip()
+        if not key:
+            continue
+        try:
+            amount = float(value or 0)
+        except (TypeError, ValueError):
+            continue
+        if amount > 0:
+            out[key] = round(amount, 2)
+    return out
 
 
 def _line_goods_base(line: dict) -> float:
@@ -266,13 +409,30 @@ def _basis_goods_base(line: dict) -> float:
     return float(line.get("goods_base") or 0)
 
 
-def _allocation_basis(method: AllocationMethod, target: str, lines: list[dict]):
+def _allocation_basis(method: AllocationMethod, target: str, lines: list[dict],
+                      manual: dict[str, float] | None = None, amount: float = 0.0):
     """Trả (cơ sở chia từng dòng, cách chia THỰC TẾ, lời cảnh báo nếu phải đổi cách).
 
     Cơ sở nào cộng lại bằng 0 (chưa ai gõ kg, SL đặt toàn 0...) thì không chia được;
     lùi về theo giá trị, giá trị cũng 0 thì chia đều — và NÓI RÕ ra chứ không im lặng
     đổi cách, vì người xem sẽ tưởng số kg của họ đã được dùng.
+
+    Cách "Nhập tay": cơ sở chính là số tiền đã gõ cho từng dòng (`manual`, khóa = id dòng
+    hàng). Lúc lưu đã chặn tổng lệch, nhưng dòng hàng có thể bị xóa / số tiền khoản đổi sau
+    đó nên lúc xem vẫn kiểm lại: lệch quá `MANUAL_ALLOCATION_TOLERANCE` thì lùi về giá trị
+    và nói rõ.
     """
+    if method == AllocationMethod.MANUAL:
+        manual = manual or {}
+        basis = [float(manual.get(str(line.get("item_id") or ""), 0) or 0) for line in lines]
+        entered = round(sum(basis), 2)
+        if entered > 0 and abs(entered - float(amount or 0)) <= MANUAL_ALLOCATION_TOLERANCE:
+            return basis, method, ""
+        warning = (f"chọn nhập tay nhưng tổng đã gõ {entered:,.0f} đ lệch số tiền khoản {float(amount or 0):,.0f} đ"
+                   if entered > 0 else "chọn nhập tay nhưng chưa gõ số tiền dòng nào")
+        return _allocation_basis(AllocationMethod.BY_VALUE, "", lines)[0], AllocationMethod.BY_VALUE, \
+            warning + " — đã chia theo giá trị"
+
     if method == AllocationMethod.BY_PRODUCT:
         code = (target or "").strip()
         matched = [(line.get("product_code") or "").strip() == code for line in lines]
@@ -336,11 +496,13 @@ def allocate_import_costs(items: list[dict], costs: list[dict]) -> dict:
             method = AllocationMethod(int(cost.get("allocation_method") or 0))
         except ValueError:
             method = AllocationMethod.BY_VALUE
-        basis, effective, warning = _allocation_basis(method, cost.get("allocation_target") or "", lines)
+        amount = float(cost.get("base_amount") or 0)
+        basis, effective, warning = _allocation_basis(
+            method, cost.get("allocation_target") or "", lines,
+            manual=parse_manual_allocation(cost.get("manual_allocation")), amount=amount)
         if warning:
             warnings.append(f"Khoản '{cost.get('description') or cost.get('cost_type_label') or ''}': {warning}")
         total_basis = sum(basis)
-        amount = float(cost.get("base_amount") or 0)
         receivers = [i for i, b in enumerate(basis) if b > 0]
         last = receivers[-1]
         allocated = 0.0
@@ -379,9 +541,13 @@ def _save_import_costs(db: Session, po: PurchaseOrder, costs, user_id: int):
     if costs is None:
         return
     existing = {c.id: c for c in import_costs_of(db, po.id)}
+    # `_save_items` chạy trước nên id dòng hàng đã có; số nhập tay chỉ giữ khóa của dòng còn tồn tại.
+    item_ids = {str(it.id) for it in items_of(db, po.id)}
     keep = set()
     for raw in costs:
         data = raw.model_dump()
+        manual = {k: v for k, v in parse_manual_allocation(data.pop("manual_allocation", None)).items()
+                  if k in item_ids}
         # Mã lạ (payload cũ, hoặc gõ tay qua API) không được rơi vào cột theo kiểu im lặng.
         try:
             data["cost_type"] = int(ImportCostType(int(data.get("cost_type") or 0)))
@@ -407,13 +573,31 @@ def _save_import_costs(db: Session, po: PurchaseOrder, costs, user_id: int):
             row = POImportCost(po_id=po.id, created_by=user_id, updated_by=user_id, **data)
             db.add(row)
         row.base_amount = import_cost_base(row)
+        # Nhập tay: tổng các dòng phải bằng đúng số quy đổi của khoản — chặn ngay lúc lưu chứ
+        # không im lặng lùi về giá trị, vì thu mua gõ tay là để cân số với chứng từ.
+        if int(data.get("allocation_method") or 0) == int(AllocationMethod.MANUAL):
+            label = (data.get("description") or "").strip() or "chi phí"
+            if not manual:
+                raise HTTPException(400, f"Khoản '{label}' chọn nhập tay nhưng chưa nhập số tiền dòng nào")
+            entered = round(sum(manual.values()), 2)
+            target_amount = float(row.base_amount or 0)
+            if abs(entered - target_amount) > MANUAL_ALLOCATION_TOLERANCE:
+                raise HTTPException(
+                    400, f"Khoản '{label}' chọn nhập tay: tổng đã nhập {entered:,.0f} đ, "
+                         f"phải bằng {target_amount:,.0f} đ (lệch {entered - target_amount:,.0f} đ)")
+            row.manual_allocation = json.dumps(manual)
+        else:
+            row.manual_allocation = ""
         db.flush()
         keep.add(row.id)
 
     for old_id, row in existing.items():
         if old_id not in keep:
+            block_delete_paid_import_cost(db, row)
             db.delete(row)
     db.flush()
+    # bao-CR-319 P5 — bảng chi phí đổi là công nợ chi phí đổi theo, cùng một lần lưu.
+    sync_import_cost_payables(db, po, user_id)
 
 
 def _save_deliveries(db: Session, po: PurchaseOrder, item: POItem, delivs, user_id: int,
@@ -890,6 +1074,8 @@ def delete_po(db: Session, pid: int, user_id: int):
             db.delete(d)
         db.delete(it)
     for row in import_costs_of(db, pid):
+        # Đơn nháp/từ chối chưa từng sinh nợ chi phí; có sót thì gỡ theo (chặn nếu đã chi).
+        block_delete_paid_import_cost(db, row)
         db.delete(row)
     delete_attachments_for(db, pairs)
     _pr_code = po.pr_code
@@ -925,6 +1111,8 @@ def set_status(db: Session, pid: int, status: str, user_id: int, message: str = 
     if message:
         po.approve_note = message
     po.updated_by = user_id
+    # bao-CR-319 P5 — duyệt xong thì chi phí đã khai lúc lập đơn thành nợ; hủy/từ chối thì gỡ.
+    sync_import_cost_payables(db, po, user_id)
     db.commit()
     record(db, user_id, ENTITY, pid, status, message)
     # Mọi đổi trạng thái ĐƠN đều ảnh hưởng việc đơn có được TÍNH vào YCMH hay không

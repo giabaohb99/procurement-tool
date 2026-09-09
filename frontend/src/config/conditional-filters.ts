@@ -1,4 +1,5 @@
 import type { FilterFieldDefinition, OperatorType } from '../components/conditional-filter'
+import { SOURCE_TYPE_OPTIONS } from '../utils/payable'
 
 // Khai báo BỘ LỌC ĐIỀU KIỆN dùng chung.
 //
@@ -39,8 +40,7 @@ export const PAYABLE_COND_FILTERS: FilterFieldDefinition[] = [
   condSource('supplier_code', 'Nhà cung cấp', { url: '/api/suppliers', value: 'code', label: 'name' }),
   condText('po_code', 'Mã PO'),
   condText('invoice_no', 'Số hóa đơn'),
-  condSelect('source_type', 'Loại nợ', [
-    { value: 'goods', label: 'Hàng hóa' }, { value: 'shipping', label: 'Vận chuyển' }]),
+  condSelect('source_type', 'Loại nợ', SOURCE_TYPE_OPTIONS),
   condSelect('status', 'Trạng thái', [
     { value: 'Chờ TT', label: 'Chờ thanh toán' },
     { value: 'Trả một phần', label: 'Thanh toán một phần' },

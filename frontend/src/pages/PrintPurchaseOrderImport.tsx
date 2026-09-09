@@ -44,6 +44,8 @@ export default function PrintPurchaseOrderImport() {
   const alloc = po.import_cost_allocation || { lines: [], warnings: [], goods_base_total: 0, cost_total: 0, landed_total: 0 }
   const currency = (po.currency || 'VND').trim()
   const rate = Number(po.exchange_rate) || 1
+  // bao-CR-319 P5: tiền hàng đã trả = tổng "Đã trả theo dòng" (B.28), chi phí đã chi lấy từ summary
+  const goodsPaid = items.reduce((s, it) => s + (Number(it.paid_total) || 0), 0)
   const goodsForeign = items.reduce((s, it) => s + (Number(it.order_total) || 0), 0)
 
   // Khối B: lồng theo loại — mỗi loại một dòng tổng, bên dưới là từng khoản
@@ -191,6 +193,7 @@ export default function PrintPurchaseOrderImport() {
               <tr>
                 <td style={head}>STT</td><td style={head}>Nhà cung cấp</td><td style={head}>Nội dung</td>
                 <td style={head}>Số khoản</td><td style={head}>Phải trả (VNĐ)</td>
+                <td style={head}>Đã chi (VNĐ)</td><td style={head}>Còn lại (VNĐ)</td>
               </tr>
             </thead>
             <tbody>
@@ -200,6 +203,8 @@ export default function PrintPurchaseOrderImport() {
                 <td style={cell}>Tiền hàng ({currency})</td>
                 <td style={{ ...cell, textAlign: 'center' }}>{items.length} dòng</td>
                 <td style={right}>{fmtVND(summary.goods_base_total)}</td>
+                <td style={right}>{fmtVND(goodsPaid)}</td>
+                <td style={right}>{fmtVND(Math.max((summary.goods_base_total || 0) - goodsPaid, 0))}</td>
               </tr>
               {(summary.by_supplier || []).map((s: any, i: number) => (
                 <tr key={i}>
@@ -208,11 +213,17 @@ export default function PrintPurchaseOrderImport() {
                   <td style={cell}>Chi phí lô hàng</td>
                   <td style={{ ...cell, textAlign: 'center' }}>{s.count} khoản</td>
                   <td style={right}>{fmtVND(s.base_amount)}</td>
+                  <td style={right}>{fmtVND(s.paid_amount)}</td>
+                  <td style={right}>{fmtVND(s.remaining)}</td>
                 </tr>
               ))}
               <tr>
                 <td style={{ ...cell, ...bold }} colSpan={4}>Tổng phải trả:</td>
                 <td style={{ ...right, ...bold }}>{fmtVND(summary.landed_total)}</td>
+                <td style={{ ...right, ...bold }}>{fmtVND(goodsPaid + (summary.paid_total || 0))}</td>
+                <td style={{ ...right, ...bold }}>
+                  {fmtVND(Math.max((summary.landed_total || 0) - goodsPaid - (summary.paid_total || 0), 0))}
+                </td>
               </tr>
             </tbody>
           </table>
@@ -234,7 +245,7 @@ export default function PrintPurchaseOrderImport() {
             <thead>
               <tr>
                 <td style={head}>STT</td><td style={head}>Mã hàng / Khoản chi phí</td><td style={head}>Cách chia</td>
-                <td style={head}>Tỷ lệ</td><td style={head}>Tiền hàng (VNĐ)</td><td style={head}>Chi phí gánh (VNĐ)</td>
+                <td style={head}>Tỷ lệ</td><td style={head}>Tiền hàng (VNĐ)</td><td style={head}>Chi phí phân bổ (VNĐ)</td>
                 <td style={head}>Tổng giá trị (VNĐ)</td>
               </tr>
             </thead>

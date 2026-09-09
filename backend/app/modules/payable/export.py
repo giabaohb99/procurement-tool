@@ -20,7 +20,7 @@ SHEET_TITLE = "Cong no phai tra"
 # Nhãn đầy đủ — khớp màn hình (frontend/src/pages/Payables.tsx)
 _STATUS_LABEL = {"Chờ TT": "Chờ thanh toán", "Trả một phần": "Thanh toán một phần",
                  "Đã TT": "Đã thanh toán"}
-_SOURCE_LABEL = {"goods": "Hàng hóa", "shipping": "Vận chuyển"}
+_SOURCE_LABEL = {"goods": "Hàng hóa", "shipping": "Vận chuyển", "import_cost": "Chi phí nhập khẩu"}
 
 # Key và nhãn khớp bảng trên màn hình (cột tick chọn `sel` không có mặt trong file)
 COLS = [

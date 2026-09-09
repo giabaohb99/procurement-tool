@@ -98,8 +98,12 @@ def _item(db, it, pay_by_del: dict, inv_by_code: dict | None = None,
             "deliveries": del_out}
 
 
-def _import_cost(c) -> dict:
-    """Một dòng chi phí nhập khẩu — trả cả SỐ lẫn NHÃN (R2/QĐ-11)."""
+def _import_cost(c, pay: Payable | None = None) -> dict:
+    """Một dòng chi phí nhập khẩu — trả cả SỐ lẫn NHÃN (R2/QĐ-11).
+
+    `pay` là khoản nợ của dòng (bao-CR-319 P5), None khi đơn chưa duyệt / dòng chưa thành nợ:
+    khi đó `payable_id = 0`, đã chi 0 và còn lại = tổng dòng để giao diện vẫn cộng được.
+    """
     try:
         cost_type = ImportCostType(int(c.cost_type or 0))
     except ValueError:
@@ -108,16 +112,23 @@ def _import_cost(c) -> dict:
         alloc = AllocationMethod(int(c.allocation_method or 0))
     except ValueError:
         alloc = AllocationMethod.BY_VALUE
+    base_amount = float(c.base_amount or 0) or service.import_cost_base(c)
+    paid = float(pay.paid_amount or 0) if pay else 0.0
     return {"id": c.id, "cost_type": int(cost_type), "cost_type_label": IMPORT_COST_TYPE_LABELS.get(cost_type, ""),
+            "payable_id": pay.id if pay else 0,
+            "paid_amount": round(paid, 2),
+            "remaining": round(float(pay.remaining or 0), 2) if pay else round(base_amount, 2),
+            "payable_status": (pay.status or "") if pay else "",
             "description": c.description or "",
             "supplier_code": c.supplier_code or "", "supplier_name": c.supplier_name or "",
             # `amount` NGUYÊN TỆ và chưa gồm VAT; `base_amount` đã gồm VAT và đã quy đổi.
             "currency": c.currency or DEFAULT_CURRENCY, "exchange_rate": service.rate_of(c),
             "amount": float(c.amount or 0), "vat": float(c.vat or 0),
-            "base_amount": float(c.base_amount or 0) or service.import_cost_base(c),
+            "base_amount": base_amount,
             "allocation_method": int(alloc),
             "allocation_method_label": ALLOCATION_METHOD_LABELS.get(alloc, ""),
             "allocation_target": c.allocation_target or "",
+            "manual_allocation": service.parse_manual_allocation(getattr(c, "manual_allocation", "")),
             "invoice_no": c.invoice_no or "", "invoice_date": c.invoice_date or "",
             "payment_due_date": c.payment_due_date or "", "note": c.note or ""}
 
@@ -129,6 +140,7 @@ def _import_cost_summary(rows: list[dict], goods_base: float) -> dict:
     để giao diện tự cộng thì hai nơi dễ lệch nhau. Mọi số ở đây đã quy đổi về VNĐ.
     """
     cost_total = round(sum(r["base_amount"] for r in rows), 2)
+    paid_total = round(sum(r["paid_amount"] for r in rows), 2)
     by_type: dict[int, dict] = {}
     by_supplier: dict[str, dict] = {}
     for r in rows:
@@ -138,15 +150,24 @@ def _import_cost_summary(rows: list[dict], goods_base: float) -> dict:
         g["base_amount"] = round(g["base_amount"] + r["base_amount"], 2)
         g["count"] += 1
         code = r["supplier_code"] or ""
+        # P5: mỗi NCC một dòng tổng · đã chi · còn lại + danh sách id khoản nợ CÒN NỢ để nút
+        # "Tạo yêu cầu thanh toán" của NCC đó đưa thẳng sang màn lập phiếu (mỗi phiếu một NCC).
         n = by_supplier.setdefault(code, {"supplier_code": code, "supplier_name": r["supplier_name"],
-                                          "base_amount": 0.0, "count": 0})
+                                          "base_amount": 0.0, "paid_amount": 0.0, "remaining": 0.0,
+                                          "count": 0, "unpaid_payable_ids": []})
         n["base_amount"] = round(n["base_amount"] + r["base_amount"], 2)
+        n["paid_amount"] = round(n["paid_amount"] + r["paid_amount"], 2)
+        n["remaining"] = round(n["remaining"] + r["remaining"], 2)
         n["count"] += 1
+        if r["payable_id"] and r["remaining"] > 0.01:
+            n["unpaid_payable_ids"].append(r["payable_id"])
         if not n["supplier_name"]:
             n["supplier_name"] = r["supplier_name"]
     return {
         "goods_base_total": round(goods_base, 2),          # tiền HÀNG đã quy đổi (theo SL đặt)
         "cost_total": cost_total,                          # tổng chi phí đã quy đổi
+        "paid_total": paid_total,                          # đã chi cho chi phí (P5)
+        "remaining_total": round(cost_total - paid_total, 2),  # còn phải chi (P5)
         "landed_total": round(goods_base + cost_total, 2),  # tổng giá vốn lô hàng về tới kho
         "by_type": sorted(by_type.values(), key=lambda x: -x["base_amount"]),
         "by_supplier": sorted(by_supplier.values(), key=lambda x: -x["base_amount"]),
@@ -186,11 +207,13 @@ def _out(db: Session, po: PurchaseOrder) -> dict:
     order_vat = round(sum(i["qty_order"] * i["price"] * (i["vat"] / 100) for i in items), 2)
     d["order_subtotal"] = order_sub
     d["order_total"] = round(order_sub + order_vat, 2)
-    # Tổng công nợ CHƯA TRẢ (hàng + vận chuyển) → dùng bật nút Tạo yêu cầu thanh toán
-    d["unpaid_total"] = round(sum(float(p.remaining or 0) for p in all_pays), 2)
     # bao-CR-319 P3 — chi phí lô hàng nhập khẩu. Trả cho MỌI đơn (đơn trong nước ra mảng
     # rỗng) để giao diện không phải rẽ nhánh đọc dữ liệu; việc ẩn/hiện là chuyện hiển thị.
-    costs = [_import_cost(c) for c in service.import_costs_of(db, po.id)]
+    cost_pays = service.import_cost_payables_of(db, po.id)
+    costs = [_import_cost(c, cost_pays.get(c.id)) for c in service.import_costs_of(db, po.id)]
+    # Tổng công nợ CHƯA TRẢ (hàng + vận chuyển + chi phí lô hàng) → dùng bật nút Tạo yêu cầu thanh toán
+    d["unpaid_total"] = round(sum(float(p.remaining or 0) for p in all_pays)
+                              + sum(float(p.remaining or 0) for p in cost_pays.values()), 2)
     d["import_costs"] = costs
     goods_base = round(sum(i["order_total"] * i["exchange_rate"] for i in items), 2)
     d["import_cost_summary"] = _import_cost_summary(costs, goods_base)
@@ -566,6 +589,8 @@ def complete_po(pid: int, db: Session = Depends(get_db),
             f"Còn {len(pending)} dòng chưa Hoàn thành/Hủy: {names}{more}. "
             "Hãy hoàn tất tiến độ từng dòng (nhập Số HĐ → tạo & chi Yêu cầu thanh toán → Hoàn thành dòng) "
             "trước khi hoàn thành đơn.")
+    # bao-CR-319: đơn nhập khẩu còn phải trả đủ chi phí lô hàng (cước, thuế, phí) mới được đóng.
+    service.block_complete_unpaid_import_costs(db, service.get_po(db, pid))
     return success(_out(db, service.set_status(db, pid, "completed", user.id)), "Đã hoàn thành đơn")
 
 

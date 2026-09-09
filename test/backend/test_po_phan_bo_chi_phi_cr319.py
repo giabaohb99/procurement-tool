@@ -111,6 +111,61 @@ def test_chi_dinh_ma_khong_co_tren_don_thi_lui_ve_gia_tri_va_bao():
     assert "ZZZ" in result["warnings"][0]
 
 
+# ── Nhập tay (cách 5): dùng nguyên số đã gõ, khóa = id dòng hàng ───────────────
+def test_nhap_tay_khop_tong_thi_dung_nguyen_so_da_go():
+    items = [_line(1, "A", 100), _line(2, "B", 300)]
+    cost = _cost(9, 400, AllocationMethod.MANUAL)
+    cost["manual_allocation"] = {"1": 250.0, "2": 150.0}   # cố ý ngược tỷ lệ giá trị
+    result = service.allocate_import_costs(items, [cost])
+    assert _shares(result, 9) == [250.0, 150.0]
+    assert result["lines"][0]["costs"][0]["effective_method"] == int(AllocationMethod.MANUAL)
+    assert result["lines"][0]["costs"][0]["ratio"] == 0.625
+    assert result["warnings"] == []
+
+
+def test_nhap_tay_doc_duoc_chuoi_json_tu_db():
+    items = [_line(1, "A", 100), _line(2, "B", 300)]
+    cost = _cost(9, 400, AllocationMethod.MANUAL)
+    cost["manual_allocation"] = '{"1": 100, "2": 300}'
+    result = service.allocate_import_costs(items, [cost])
+    assert _shares(result, 9) == [100.0, 300.0]
+    assert result["warnings"] == []
+
+
+def test_nhap_tay_lech_tong_thi_lui_ve_gia_tri_va_bao():
+    # Dòng hàng bị xóa sau khi gõ / số tiền khoản đổi → tổng gõ không còn khớp
+    items = [_line(1, "A", 100), _line(2, "B", 300)]
+    cost = _cost(9, 400, AllocationMethod.MANUAL)
+    cost["manual_allocation"] = {"1": 250.0, "2": 250.0}
+    result = service.allocate_import_costs(items, [cost])
+    assert _shares(result, 9) == [100.0, 300.0]
+    assert result["lines"][0]["costs"][0]["effective_method"] == int(AllocationMethod.BY_VALUE)
+    assert "nhập tay" in result["warnings"][0] and "giá trị" in result["warnings"][0]
+
+
+def test_nhap_tay_chua_go_gi_thi_lui_ve_gia_tri_va_bao():
+    items = [_line(1, "A", 100), _line(2, "B", 300)]
+    cost = _cost(9, 400, AllocationMethod.MANUAL)
+    result = service.allocate_import_costs(items, [cost])
+    assert _shares(result, 9) == [100.0, 300.0]
+    assert "chưa gõ" in result["warnings"][0]
+
+
+def test_nhap_tay_dong_khong_go_thi_khong_nhan_khoan():
+    items = [_line(1, "A", 100), _line(2, "B", 300), _line(3, "C", 600)]
+    cost = _cost(9, 400, AllocationMethod.MANUAL)
+    cost["manual_allocation"] = {"1": 400.0}
+    result = service.allocate_import_costs(items, [cost])
+    assert _shares(result, 9) == [400.0, None, None]
+
+
+def test_parse_manual_allocation_bo_gia_tri_hong():
+    assert service.parse_manual_allocation(None) == {}
+    assert service.parse_manual_allocation("không phải json") == {}
+    assert service.parse_manual_allocation("[1, 2]") == {}
+    assert service.parse_manual_allocation({"1": "abc", "2": -5, "": 10, 3: "7.5"}) == {"3": 7.5}
+
+
 # ── Biên ─────────────────────────────────────────────────────────────────────────
 def test_don_khong_co_dong_hang_thi_khong_do_vo():
     result = service.allocate_import_costs([], [_cost(9, 400)])

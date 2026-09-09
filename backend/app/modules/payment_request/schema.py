@@ -21,7 +21,7 @@ class PRequestCreate(BaseModel):
     # Chỉ dùng khi các dòng KHÔNG gắn khoản nợ; đi từ Công nợ thì lấy theo khoản nợ.
     supplier_code: str = ""
     company_id: int = 0
-    source_type: str = "goods"         # goods = Hàng hóa | shipping = Vận chuyển
+    source_type: str = "goods"         # goods = Hàng hóa | shipping = Vận chuyển | import_cost = Chi phí nhập khẩu (bao-CR-319 P5)
     lines: list[LineIn] = []   # có thể gồm nhiều NCC -> server tự tách mỗi NCC 1 phiếu
 
 

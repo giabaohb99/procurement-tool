@@ -240,7 +240,7 @@ Theo dõi các khoản công nợ phải trả phát sinh từ hoạt động mu
 
 Đường dẫn: `/payables` (danh sách công nợ).
 
-Bảng DB: `tab_payable` (1 dòng = 1 lần giao × 1 luồng `goods`/`shipping`).
+Bảng DB: `tab_payable` (1 dòng = 1 lần giao × 1 luồng `goods`/`shipping`; hoặc 1 dòng chi phí lô hàng nhập khẩu với luồng `import_cost` — bao-CR-319 P5).
 
 ## Vai trò tham gia
 
@@ -334,7 +334,7 @@ Hiển thị bốn chỉ số tổng hợp theo bộ lọc hiện tại (gọi e
 - Kiểu nhập: Bộ lọc — Chọn từ danh sách
 - Mặc định: Tất cả
 - Bắt buộc: Không
-- Nguồn dữ liệu / liên kết: `goods` (Hàng hóa) / `shipping` (Vận chuyển)
+- Nguồn dữ liệu / liên kết: `goods` (Hàng hóa) / `shipping` (Vận chuyển) / `import_cost` (Chi phí nhập khẩu — bao-CR-319 P5). Nhãn dùng chung ở `frontend/src/utils/payable.ts`
 - Người sửa: Người dùng
 
 ### 6. Trạng thái (`status`)
@@ -419,7 +419,7 @@ Mỗi dòng tương ứng một bản ghi `Payable`. Khoản nợ không thể s
 - Kiểu nhập: Chỉ hiển thị (cột bảng)
 - Mặc định: —
 - Bắt buộc: —
-- Nguồn dữ liệu / liên kết: `goods` hiển thị "Hàng hóa"; `shipping` hiển thị "Vận chuyển"
+- Nguồn dữ liệu / liên kết: `goods` hiển thị "Hàng hóa"; `shipping` hiển thị "Vận chuyển"; `import_cost` hiển thị "Chi phí nhập khẩu" (bao-CR-319 P5)
 - Người sửa: Hệ thống
 
 ### 5. Công ty (`company_id`)
@@ -533,6 +533,15 @@ Hàm `recompute_effects` trong `purchase_order/service.py` được gọi mỗi 
 7. Nếu carrier bị xóa hoặc `shipping_amount` về 0: gọi `pay_service.remove("shipping", delivery_id)`.
 
 **Xóa công nợ:** khi dòng giao bị xóa hoặc `received_qty` về 0, hàm `_cleanup_delivery` gọi `pay_service.remove("goods", delivery_id)` và `pay_service.remove("shipping", delivery_id)`.
+
+### Luồng 3: Công nợ chi phí lô hàng nhập khẩu (`source_type = "import_cost"`) — bao-CR-319 P5
+
+1. Nguồn: mỗi dòng của bảng `tab_po_import_cost` (đơn nhập khẩu) là một khoản nợ, `ref_type = "import_cost"`, `ref_id` = id dòng chi phí (KHÔNG phải id lần giao).
+2. Điều kiện: đơn ở `approved`/`partial`/`received`/`completed`, dòng có NCC và tiền > 0. Nháp / chờ duyệt / hủy không sinh nợ.
+3. NCC: khai ở **từng dòng chi phí** (hãng tàu, khai thuê, kho bãi, `NSNN` *Ngân sách nhà nước* cho các khoản thuế), không lấy theo NCC bán hàng.
+4. Số tiền: `amount` = tiền trước VAT đã quy đổi, `vat` = tiền thuế, `total = base_amount` của dòng. `incur_date` = ngày hóa đơn của dòng (trống thì ngày đặt hàng). `due_date` ưu tiên "Hạn thanh toán" của dòng, trống thì tính theo điều khoản NCC.
+5. Đồng bộ idempotent qua `purchase_order.service.sync_import_cost_payables` sau mỗi lần lưu bảng chi phí / đổi trạng thái đơn: sửa dòng thì khoản nợ đổi theo, bỏ NCC hoặc xóa dòng thì gỡ khoản chưa chi; **dòng đã chi thì cấm xóa** (400). Hủy đơn giữ khoản đã chi.
+6. Chi tiết và cách tạo YCTT từ các khoản này: [04-don-mua-hang.md §K.4](04-don-mua-hang.md).
 
 ---
 

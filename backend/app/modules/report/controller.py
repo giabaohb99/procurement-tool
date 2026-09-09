@@ -55,7 +55,8 @@ def daily(request: Request, db: Session = Depends(get_db), user=Depends(require(
         e["amount"] += t
         if p.source_type == "shipping":
             e["shipping"] += t
-        else:
+        elif p.source_type == "goods":
+            # bao-CR-319 P5: nợ chi phí nhập khẩu (import_cost) chỉ vào tổng, không đếm là hàng
             e["goods"] += t
     days = [{"date": k, "day": k[8:10], "goods": round(v["goods"], 2),
              "shipping": round(v["shipping"], 2), "amount": round(v["amount"], 2)}

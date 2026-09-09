@@ -1,4 +1,4 @@
-"""Tạo 2 đơn mua hàng NHẬP KHẨU mẫu để thử bao-CR-319 (chỉ dùng LOCAL).
+"""Tạo 3 đơn mua hàng NHẬP KHẨU mẫu để thử bao-CR-319 (chỉ dùng LOCAL).
 
 Đi qua đúng API thật (`POST /api/purchase-orders` → submit → approve) chứ không nhét
 thẳng vào DB, để dữ liệu mẫu chạy qua toàn bộ luật của backend: chuẩn hóa loại tiền
@@ -180,6 +180,64 @@ DEMO_ORDERS = [
         },
         "approve": False,
     },
+    {
+        # Đơn để THỬ PHÂN BỔ từ đầu (đại ca yêu cầu 09/09): đã duyệt nên bảng chi phí mở,
+        # mọi khoản để nguyên cách chia mặc định "theo giá trị", dòng hàng CHƯA nhập kg —
+        # đổi sang "theo khối lượng" mà chưa gõ kg thì panel phải báo "thiếu cơ sở".
+        "label": "Đơn USD — đã duyệt, chi phí CHƯA phân bổ (để thử chọn cách chia)",
+        "po": {
+            "company_id": 2,
+            "supplier_code": "Guangzhou Pack",
+            "supplier_name": "GUANGZHOU JIAXIN PACKAGING CO., LTD",
+            "department": "Thu mua",
+            "order_date": "2026-09-08",
+            "order_type": 2,
+            "currency": "USD",
+            "exchange_rate": 26150,
+            "payment_terms": "T/T đặt cọc 30%, trả nốt 70% trước khi giao hàng",
+            "note": "Lô thùng + nhãn nhập Quảng Châu, cont 20DC. Chi phí đã khai, chưa chọn cách phân bổ.",
+            "items": [
+                {"product_code": "THC0003", "item_group": "Thùng",
+                 "product_name": "Thùng DC Chai Pet Vuông 35 450ml-500ml - (47x38.5x19cm) - Trắng viền đen",
+                 "invoice_name": "Thùng carton 47x38.5x19cm",
+                 "unit": "Cái", "qty_request": 4000, "qty_order": 4000,
+                 "price": 0.68, "vat": 0,
+                 "required_date": "2026-11-10", "expected_date": "2026-11-03",
+                 "warehouse_code": "Agama", "dimension": "47x38.5x19 cm"},
+                {"product_code": "THC0004", "item_group": "Thùng",
+                 "product_name": "Thùng DC Chai Pet Tròn 43 450ml-500ml - 61.5x38.5x19 - Trắng",
+                 "invoice_name": "Thùng carton 61.5x38.5x19cm",
+                 "unit": "Cái", "qty_request": 2500, "qty_order": 2500,
+                 "price": 0.86, "vat": 0,
+                 "required_date": "2026-11-10", "expected_date": "2026-11-03",
+                 "warehouse_code": "Agama", "dimension": "61.5x38.5x19 cm"},
+                {"product_code": "NDT5089", "item_group": "Nhãn",
+                 "product_name": "[Nhãn Thùng] GC - V - 5089 - CTY KIM NGỌC - Sạch Sâu",
+                 "invoice_name": "Nhãn thùng 5089",
+                 "unit": "Cái", "qty_request": 30000, "qty_order": 30000,
+                 "price": 0.012, "vat": 0,
+                 "required_date": "2026-11-10", "expected_date": "2026-11-03",
+                 "warehouse_code": "Agama"},
+            ],
+        },
+        "approve": True,
+        "costs": [
+            {"cost_type": 1, "description": "Cước biển Thượng Hải – Cát Lái, 1x20DC",
+             "supplier_code": "SITC LINES", "supplier_name": "CONG TY TNHH SITC VIET NAM",
+             "currency": "USD", "amount": 780, "vat": 0, "allocation_method": 1,
+             "invoice_no": "SITC-26/1101", "invoice_date": "2026-11-02", "payment_due_date": "2026-11-17"},
+            {"cost_type": 2, "description": "Phí địa phương tại cảng (THC, D/O, nâng hạ)",
+             "supplier_code": "SITC LINES", "supplier_name": "CONG TY TNHH SITC VIET NAM",
+             "currency": "VND", "amount": 5_200_000, "vat": 8, "allocation_method": 1,
+             "invoice_no": "SITC-26/1102", "invoice_date": "2026-11-02", "payment_due_date": "2026-11-17"},
+            {"cost_type": 3, "description": "Phí dịch vụ khai thuê hải quan",
+             "supplier_code": "VINALOG", "supplier_name": "CONG TY CP GIAO NHAN VINALOG",
+             "currency": "VND", "amount": 3_000_000, "vat": 8, "allocation_method": 1},
+            {"cost_type": 10, "description": "Vận chuyển nội địa Cát Lái – kho Agama",
+             "supplier_code": "VINALOG", "supplier_name": "CONG TY CP GIAO NHAN VINALOG",
+             "currency": "VND", "amount": 4_100_000, "vat": 8, "allocation_method": 1},
+        ],
+    },
 ]
 
 
@@ -220,7 +278,7 @@ _ITEM_FIELDS_TO_RESEND = ("id", "product_code", "product_name", "invoice_name", 
 
 
 def cleanup_old_orders(tok):
-    """Xóa đơn mẫu của lần chạy trước để script chạy lại bao nhiêu lần cũng ra đúng 2 đơn.
+    """Xóa đơn mẫu của lần chạy trước để script chạy lại bao nhiêu lần cũng ra đúng 3 đơn.
 
     Cả hai nhịp đều đi thẳng vào tầng service chứ không qua API, vì luật nghiệp vụ
     THẬT chặn đúng chỗ này — và chặn là đúng: `unapprove_po` từ chối đơn đã nhận hàng
