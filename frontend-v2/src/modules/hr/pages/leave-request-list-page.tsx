@@ -17,7 +17,7 @@ import { LeaveSectionTabs } from '../components/leave-section-tabs'
 import { LeaveMyRequestsTab } from '../components/leave-my-requests-tab'
 import { LeaveToApproveTab } from '../components/leave-to-approve-tab'
 import { useLeaveToApprove } from '../hooks/use-leave'
-import { LEAVE_TABS_STICKY } from '../utils/leave-list-sticky'
+import { LIST_TABS_STICKY } from '../utils/list-sticky'
 
 const TAB_TO_APPROVE = 'to-approve'
 const TAB_MINE = 'mine'
@@ -47,7 +47,7 @@ export function LeaveRequestListPage() {
   const waitingCount = toApprove?.items.length ?? 0
 
   //  Dải ghim đầu trang đổ bóng khi có nội dung trôi bên dưới — xem
-  //  `leave-list-sticky.ts`. Đo ở `Tabs` vì nó nằm cùng khung cuộn với hai dải.
+  //  `list-sticky.ts`. Đo ở `Tabs` vì nó nằm cùng khung cuộn với hai dải.
   const tabsRef = useRef<HTMLDivElement>(null)
   const scrolled = useScrolled(tabsRef)
 
@@ -106,7 +106,7 @@ export function LeaveRequestListPage() {
       {/*  `group` + `data-scrolled` là đường dẫn tín hiệu «trang đã cuộn» xuống
            tới dải ghim nằm sâu bên trong (thanh công cụ do `DataTable` vẽ, tầng
            trang không với tới được bằng prop). Bóng đổ của dải đó đọc thuộc tính
-           này — xem `leave-list-sticky.ts`. */}
+           này — xem `list-sticky.ts`. */}
       <Tabs
         ref={tabsRef}
         value={tab || TAB_MINE}
@@ -115,12 +115,12 @@ export function LeaveRequestListPage() {
         className="group flex min-h-0 flex-1 flex-col"
       >
         {/*  Màn hẹp: dải tab trải hết hàng, chia đều ba phần, và GHIM đỉnh trang
-             khi cuộn (xem `LEAVE_TABS_STICKY`). `TabsList` mặc định `w-fit`, nên
+             khi cuộn (xem `LIST_TABS_STICKY`). `TabsList` mặc định `w-fit`, nên
              trên điện thoại ba tab bó vào mép trái và chừa một khoảng trống vô
              nghĩa bên phải — mà đây là chỗ chuyển qua lại nhiều nhất của cả màn,
              mỗi phần rộng thêm là mỗi lần bấm bớt trượt. `min-w-0` trên nút để
              nhãn dài không nong dải ra quá bề ngang. */}
-        <div className={LEAVE_TABS_STICKY}>
+        <div className={LIST_TABS_STICKY}>
         <TabsList className="w-full shrink-0 md:w-fit">
           <TabsTrigger value={TAB_TO_APPROVE} className="min-w-0 px-2 text-xs md:px-3 md:text-sm">
             Cần tôi duyệt

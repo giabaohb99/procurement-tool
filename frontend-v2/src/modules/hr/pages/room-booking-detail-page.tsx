@@ -12,7 +12,6 @@ import { Card, CardContent } from '@/shared/ui/card'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { ReasonConfirmDialog } from '@/shared/ui/reason-confirm-dialog'
-import { formatDateTime } from '@/shared/utils/format-date'
 import { RoomBookingForm } from '../components/room-booking-form'
 import { RoomBookingSidePanel } from '../components/room-booking-side-panel'
 import { RoomBookingStatusPanel } from '../components/room-booking-status-panel'
@@ -48,9 +47,11 @@ function describeStatus(booking?: RoomBooking): string {
   if (!booking) return 'Chọn phòng và khung giờ, lưu nháp rồi gửi duyệt.'
   switch (booking.status) {
     case ROOM_BOOKING_STATUS.PENDING:
-      return booking.submitted_at
-        ? `Đã gửi duyệt lúc ${formatDateTime(booking.submitted_at)} — phòng đang được giữ, chờ người duyệt.`
-        : 'Đang chờ duyệt — phòng đã được giữ.'
+      //  ⚠️ KHÔNG nhắc mốc «gửi duyệt lúc…» ở đây (bỏ 09/09/2026): thẻ «Tình
+      //  trạng phiếu» đã in đúng mốc đó, mà hai thứ nằm cách nhau chưa tới một
+      //  màn hình. Câu này có việc riêng — nói VIỆC TIẾP THEO — còn mốc thời
+      //  gian là việc của thẻ kia.
+      return 'Đang chờ duyệt — phòng đã được giữ.'
     case ROOM_BOOKING_STATUS.APPROVED:
       return 'Đã duyệt — phòng thuộc về phiếu này trong khung giờ đã đặt.'
     case ROOM_BOOKING_STATUS.REJECTED:
@@ -130,6 +131,7 @@ export function RoomBookingDetailPage() {
   const editable = isNew || (booking ? EDITABLE_ROOM_STATUSES.includes(booking.status) : false)
   const canWrite = can('room_booking', isNew ? 'create' : 'write')
   const missingFields = missingBeforeSubmit(form)
+  const statusLine = describeStatus(booking)
 
   const submitSave = () =>
     void once(async () => {
@@ -180,15 +182,33 @@ export function RoomBookingDetailPage() {
             <ArrowLeft className="size-4" />
           </Button>
         }
-        title={isNew ? 'Đặt phòng họp' : `Phiếu ${booking?.code}`}
+        //  Huy hiệu trạng thái đứng CẠNH TIÊU ĐỀ, không nằm trong cụm nút — đó
+        //  là chỗ `PageHeader.title` sinh ra để nhận. Để chung với nút thì ở khổ
+        //  hẹp nó chen vào giữa hàng nút đang chia đều, thành một viên nhỏ xíu
+        //  kẹp bên trái hai nút to; mà nó cũng không phải thứ bấm được.
+        title={
+          <span className="flex flex-wrap items-center gap-2">
+            {isNew ? 'Đặt phòng họp' : `Phiếu ${booking?.code}`}
+            {booking && <RoomStatusBadge status={booking.status} label={booking.status_label} />}
+          </span>
+        }
         //  Câu mô tả nói đúng việc phải làm TIẾP THEO ở trạng thái hiện tại.
         //  Bản đầu luôn ghi "Lưu nháp rồi gửi duyệt…" kể cả với phiếu đã chờ
         //  duyệt — đọc ra như thể người dùng chưa làm gì (khách chê 04/09/2026).
-        description={describeStatus(booking)}
+        //
+        //  ⚠️ Khổ hẹp thì câu này RỜI khỏi dải ghim, xuống nằm trong vùng cuộn
+        //  (bản `md:hidden` ngay dưới `PageHeader`). Ở 390px nó ngắt làm hai
+        //  dòng = 40px, mà dải ghim đứng đó suốt buổi nhập liệu: cả dải ăn 145px
+        //  trên 788px màn hình. Câu này đọc MỘT LẦN lúc mở phiếu, còn thứ đáng
+        //  ghim là nút bấm và tên phiếu — nên nó là thứ phải đi.
+        description={<span className="max-md:hidden">{statusLine}</span>}
+        //  Nút trải đều hết hàng ở khổ hẹp. `[&>button]` chứ không gắn class
+        //  vào từng nút: ba nút của `RoomDecisionActions` cũng là con trực tiếp
+        //  của cụm này, gắn tay thì phải xỏ thêm một prop xuyên qua nó.
+        //  `min-w-30` để cụm tự ngắt hàng thay vì bóp «Duyệt phiếu» thành hai dòng.
+        actionsClassName="max-md:[&>button]:min-w-30 max-md:[&>button]:flex-1"
         actions={
           <>
-            {booking && <RoomStatusBadge status={booking.status} label={booking.status_label} />}
-
             {editable && canWrite && (
               <>
                 {!isNew && can('room_booking', 'delete') && (
@@ -285,6 +305,9 @@ export function RoomBookingDetailPage() {
            Dấu vết nằm NGOÀI lưới hai cột, chạy hết bề ngang: nó là dòng thời
            gian, đọc theo chiều ngang mới thoải mái. */}
       <div className="mx-auto w-full max-w-[1600px] space-y-4">
+        {/*  Câu trạng thái ở khổ hẹp — xem ghi chú tại `description` bên trên. */}
+        <p className="text-sm text-muted-foreground md:hidden">{statusLine}</p>
+
         <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
           <div className="space-y-4">
             {editable && canWrite ? (
@@ -295,8 +318,12 @@ export function RoomBookingDetailPage() {
               />
             ) : (
               booking && (
-                <Card>
-                  <CardContent className="py-6">
+                //  ⚠️ KHÔNG thêm `py-*` cho `CardContent` ở đây: `Card` đã có
+                //  `py-6` của riêng nó, nên `py-6` chồng thêm thành 48px đệm
+                //  trên và 48px dưới — ở khổ 390px là gần 100px trắng trơn trong
+                //  một thẻ, đọc ra như thẻ bị lỗi dựng (khách chê 09/09/2026).
+                <Card className="max-md:py-4">
+                  <CardContent className="max-md:px-4">
                     <RoomBookingSummary booking={booking} />
                   </CardContent>
                 </Card>
@@ -308,9 +335,16 @@ export function RoomBookingDetailPage() {
           {/*  Cột phải đổi vai theo chế độ: đang SỬA thì soi lại thứ vừa nhập,
                còn CHỈ XEM thì «phiếu này đang ở đâu» — trạng thái, mốc thời
                gian, ý kiến người duyệt. Bỏ trống nửa phải là phí đúng chỗ mắt
-               người đọc tìm tới. */}
+               người đọc tìm tới.
+
+               ⚠️ Dưới `lg` chỉ ẩn thẻ CHẾ ĐỘ SỬA, không ẩn thẻ chỉ-xem. Lưới về
+               một cột nên "cột phải" thành một khối nằm DƯỚI form: thẻ soi lại
+               mất sạch lý do tồn tại — nó chép lại phòng, khung giờ, số người
+               vừa gõ, mà muốn đọc thì phải cuộn qua hết cái form đang chép. Thẻ
+               chỉ-xem thì ngược lại, nó mang ý kiến người duyệt và mốc thời
+               gian — những thứ KHÔNG có ở đâu khác trên trang. */}
           {editable && canWrite ? (
-            <RoomBookingSidePanel value={form} />
+            <RoomBookingSidePanel value={form} className="max-lg:hidden" />
           ) : (
             booking && <RoomBookingStatusPanel booking={booking} />
           )}

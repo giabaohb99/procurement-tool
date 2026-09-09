@@ -1,10 +1,15 @@
 /**
- * Hai dải GHIM ĐẦU TRANG của màn Đơn nghỉ phép ở khổ điện thoại.
+ * Các dải GHIM ĐẦU TRANG của những màn danh sách BA TAB trong phân hệ Nhân sự ở
+ * khổ điện thoại — Đơn nghỉ phép và Phiếu đặt phòng họp dùng chung.
+ *
+ * ⚠️ **Đừng chép mấy chuỗi này sang màn mới, hãy import.** Chúng là một hệ mốc
+ * `top` CỘNG DỒN (xem ghi chú ngay dưới): một bản chép sẽ chỉ sai vào ngày ai đó
+ * sửa chiều cao dải tab ở một chỗ, và sai kiểu chỉ lộ ra khi cuộn.
  *
  * Ở khổ hẹp trang bỏ chế độ `fill` (xem ghi chú trong `leave-request-list-page`)
  * nên CẢ TRANG cuộn — danh sách 20 thẻ dài hơn 3000px. Không ghim thì hai thứ
  * người ta cần nhất trong lúc đọc đều trôi mất ngay nhịp vuốt đầu tiên: **thanh
- * ba tab** (đang xem hàng đợi hay đơn của mình) và **ô tìm + bộ lọc**. Muốn lọc
+ * ba tab** (đang xem hàng đợi hay phiếu của mình) và **ô tìm + bộ lọc**. Muốn lọc
  * lại thì phải vuốt ngược lên đầu, lọc xong lại vuốt xuống.
  *
  * ⚠️ **Hai mốc `top` phải cộng dồn, và đó là lý do chúng khai chung một chỗ.**
@@ -38,23 +43,33 @@
  * `border-b` để dải có ranh giới rõ, không thì thẻ trượt vào như bị cắt ngang.
  */
 
-/** Dải BA TAB — ghim sát đỉnh khung cuộn. Bọc ngoài `<TabsList>`. */
-export const LEAVE_TABS_STICKY =
+/**
+ * Dải BA TAB — ghim sát đỉnh khung cuộn. Bọc ngoài `<TabsList>`.
+ *
+ * Dùng ở: Đơn nghỉ phép · Phiếu đặt phòng họp.
+ */
+export const LIST_TABS_STICKY =
   'max-md:sticky max-md:top-0 max-md:z-30 max-md:-mx-4 max-md:bg-canvas max-md:px-4 max-md:pb-2'
 
 /**
- * Dải TAB CHUYỂN MÀN của cụm Nghỉ phép (`LeaveSectionTabs sticky`) — ghim sát
- * đỉnh khung cuộn.
+ * Dải TAB CHUYỂN MÀN của một cụm màn (`LeaveSectionTabs sticky` ·
+ * `RoomSectionTabs sticky`) — ghim sát đỉnh khung cuộn.
  *
- * Dùng ở màn **không có hàng tab thứ hai** (Quỹ phép năm): ở đó dải này là hàng
- * điều hướng duy nhất nên nó phải là thứ ở lại. Màn Đơn nghỉ phép thì ngược lại
- * — hàng BA TAB bên trong mới ghim (`LEAVE_TABS_STICKY`), còn dải chuyển màn
- * cuộn đi; ghim cả hai là hai dải chồng nhau ăn 84px trên một màn 852px.
+ * Dùng ở màn **không có hàng tab thứ hai** (Quỹ phép năm · Danh mục phòng họp):
+ * ở đó dải này là hàng điều hướng duy nhất nên nó phải là thứ ở lại. Màn Đơn
+ * nghỉ phép và Phiếu đặt phòng thì ngược lại — hàng BA TAB bên trong mới ghim
+ * (`LIST_TABS_STICKY`), còn dải chuyển màn cuộn đi; ghim cả hai là hai dải chồng
+ * nhau ăn 84px trên một màn 852px.
  *
  * Cao **40px**: `pt-1` 4 + nhãn `py-1.5 text-xs` 28 + `pb-2` 8 — đó là mốc
- * `top-10` của `LEAVE_SECTION_TOOLBAR_STICKY`, sửa cái này thì sửa luôn cái kia.
+ * `top-10` của `LIST_SECTION_TOOLBAR_STICKY`, sửa cái này thì sửa luôn cái kia.
+ *
+ * ⚠️ `max-md:pb-2` ở đây **đè lên `pb-3`** mà cả hai component tự đặt (khác
+ * variant nên tailwind-merge giữ cả hai, media query quyết). Nhờ vậy hai dải
+ * khác cấu trúc — một cái `<div space-y-2>`, một cái `<nav>` — vẫn ra đúng cùng
+ * 40px, tức dùng chung được một mốc `top`.
  */
-export const LEAVE_SECTION_TABS_STICKY =
+export const LIST_SECTION_TABS_STICKY =
   'max-md:sticky max-md:top-0 max-md:z-30 max-md:-mx-4 max-md:bg-canvas max-md:px-4 max-md:pt-1 max-md:pb-2'
 
 /**
@@ -69,11 +84,17 @@ const TOOLBAR_STICKY_BASE =
 /**
  * Dải THANH CÔNG CỤ ghim dưới dải BA TAB (cao 44px). Truyền vào
  * `DataTableProps.toolbarClassName`.
+ *
+ * Dùng ở: Đơn nghỉ phép · Phiếu đặt phòng họp.
  */
-export const LEAVE_TOOLBAR_STICKY = `${TOOLBAR_STICKY_BASE} max-md:top-11`
+export const LIST_TOOLBAR_STICKY = `${TOOLBAR_STICKY_BASE} max-md:top-11`
 
-/** Dải THANH CÔNG CỤ ghim dưới dải TAB CHUYỂN MÀN (cao 40px). */
-export const LEAVE_SECTION_TOOLBAR_STICKY = `${TOOLBAR_STICKY_BASE} max-md:top-10`
+/**
+ * Dải THANH CÔNG CỤ ghim dưới dải TAB CHUYỂN MÀN (cao 40px).
+ *
+ * Dùng ở: Quỹ phép năm · Danh mục phòng họp.
+ */
+export const LIST_SECTION_TOOLBAR_STICKY = `${TOOLBAR_STICKY_BASE} max-md:top-10`
 
 /**
  * Dải THANH CÔNG CỤ của hai màn **Thiết lập** (Loại nghỉ · Lịch ngày lễ), nơi

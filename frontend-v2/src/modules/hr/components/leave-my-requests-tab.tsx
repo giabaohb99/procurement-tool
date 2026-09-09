@@ -26,7 +26,7 @@ import {
 import { LEAVE_REQUEST_FILTER_FIELDS } from '../config/leave-request-filter-fields'
 import { useLeaveRequests, useLeaveTypes } from '../hooks/use-leave'
 import { LEAVE_STATUS, LEAVE_STATUS_LABELS, type LeaveRequest } from '../types/leave'
-import { LEAVE_TOOLBAR_STICKY } from '../utils/leave-list-sticky'
+import { LIST_TOOLBAR_STICKY } from '../utils/list-sticky'
 import { LeaveRequestCard } from './leave-request-card'
 import {
   codeColumn,
@@ -168,7 +168,7 @@ function LeaveMyRequestsContent() {
       isLoading={isLoading}
       isError={isError}
       emptyMessage="Chưa có đơn nghỉ phép nào."
-      toolbarClassName={LEAVE_TOOLBAR_STICKY}
+      toolbarClassName={LIST_TOOLBAR_STICKY}
       storageKey="hr.leave-requests"
       onRowClick={(r) => navigate(appRoutes.hr.leaveRequestDetail(r.id))}
       //  Màn hẹp: thẻ thay bảng. Giữ huy hiệu trạng thái — đây là câu hỏi đầu
@@ -190,7 +190,10 @@ function LeaveMyRequestsContent() {
           <SearchField
             value={keyword}
             onChange={setKeyword}
-            placeholder="Tìm theo số đơn hoặc lý do…"
+            //  Ngắn để câu gợi ý ĐỌC HẾT được ở khổ hẹp: ô còn 142px sau khi
+            //  chia chỗ cho nút Bộ lọc và nút Tải lại, bản cũ cần 186px nên cụt
+            //  thành «Tìm theo số đơn hoặc l».
+            placeholder="Tìm số đơn, lý do…"
             className="md:min-w-56 md:max-w-xs"
           />
 

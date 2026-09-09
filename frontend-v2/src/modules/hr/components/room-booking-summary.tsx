@@ -1,6 +1,7 @@
 import { CalendarDays, Clock, DoorOpen, Users } from 'lucide-react'
 
 import { formatDate } from '@/shared/utils/format-date'
+import { cn } from '@/shared/utils/cn'
 import type { RoomBooking } from '../types/room'
 import { formatTimeRange, minutesBetween } from '../utils/room-time'
 
@@ -24,17 +25,23 @@ export function RoomBookingSummary({ booking }: { booking: RoomBooking }) {
   const restMinutes = minutes % 60
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 md:space-y-6">
       <div>
         <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
           Nội dung cuộc họp
         </p>
-        <p className="mt-1 text-xl font-semibold">{booking.title || '—'}</p>
+        <p className="mt-1 text-lg font-semibold md:text-xl">{booking.title || '—'}</p>
       </div>
 
       {/*  Dải ba con số quyết định. Người duyệt nhìn đúng ba thứ này trước khi
-           bấm: bao giờ · ở đâu · bao lâu. */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+           bấm: bao giờ · ở đâu · bao lâu.
+
+           ⚠️ Khổ hẹp xếp HAI CỘT, không phải một. Xếp dọc thì ba khung viền ăn
+           266px — hơn một phần ba màn 844px — để nói ba mẩu chữ ngắn, mà cả ba
+           đều thừa chỗ (đo 09/09/2026: khung 308px, chữ dài nhất «Phòng họp 302»
+           ~95px). Phòng họp chiếm trọn hàng dưới vì nó là ô duy nhất có dòng phụ
+           (mã phòng) và tên phòng dài nhất trong ba ô. */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <Stat icon={CalendarDays} label="Ngày họp" value={formatDate(booking.start_at)} />
         <Stat
           icon={Clock}
@@ -47,17 +54,18 @@ export function RoomBookingSummary({ booking }: { booking: RoomBooking }) {
           label="Phòng họp"
           value={booking.room_name || `#${booking.room_id}`}
           hint={booking.room_code}
+          className="max-sm:col-span-2"
         />
       </div>
 
-      <dl className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
+      <dl className="grid grid-cols-2 gap-x-4 gap-y-4 sm:gap-x-8">
         <Row label="Người đặt" value={booking.requester_name || '—'} />
         <Row
           label="Số người dự (dự kiến)"
           value={booking.attendee_count ? `${booking.attendee_count} người` : '—'}
         />
         {booking.purpose ? (
-          <div className="sm:col-span-2">
+          <div className="col-span-2">
             <Row label="Ghi chú / chuẩn bị" value={booking.purpose} multiline />
           </div>
         ) : null}
@@ -99,20 +107,22 @@ function Stat({
   label,
   value,
   hint,
+  className,
 }: {
   icon: typeof CalendarDays
   label: string
   value: string
   hint?: string
+  className?: string
 }) {
   return (
-    <div className="rounded-lg border bg-muted/30 p-3">
+    <div className={cn('rounded-lg border bg-muted/30 p-3', className)}>
       <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        <Icon className="size-3.5" />
+        <Icon className="size-3.5 shrink-0" />
         {label}
       </p>
       <p className="mt-1 truncate font-semibold">{value}</p>
-      {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
+      {hint ? <p className="truncate text-xs text-muted-foreground">{hint}</p> : null}
     </div>
   )
 }

@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { usePermission } from '@/core/authorization/use-permission'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { cn } from '@/shared/utils/cn'
-import { LEAVE_SECTION_TABS_STICKY } from '../utils/leave-list-sticky'
+import { LIST_SECTION_TABS_STICKY } from '../utils/list-sticky'
 
 /**
  * Thanh chuyển màn của cụm NGHỈ PHÉP.
@@ -86,7 +86,7 @@ interface LeaveSectionTabsProps {
    * Ghim dải tab lên đỉnh khung cuộn ở khổ điện thoại.
    *
    * ⚠️ Chỉ bật ở màn **không có hàng tab thứ hai** — xem
-   * `LEAVE_SECTION_TABS_STICKY`. Màn Đơn nghỉ phép ghim hàng ba tab bên trong
+   * `LIST_SECTION_TABS_STICKY`. Màn Đơn nghỉ phép ghim hàng ba tab bên trong
    * chứ không ghim dải này; ghim cả hai là hai dải chồng nhau ăn 84px chiều cao
    * trên một màn 852px.
    */
@@ -105,7 +105,7 @@ export function LeaveSectionTabs({ sticky = false }: LeaveSectionTabsProps) {
   if (tabs.length <= 1 && !inSettings) return null
 
   return (
-    <div className={cn('shrink-0 space-y-2 pb-3', sticky && LEAVE_SECTION_TABS_STICKY)}>
+    <div className={cn('shrink-0 space-y-2 pb-3', sticky && LIST_SECTION_TABS_STICKY)}>
       {/*  ⚠️ Màn hẹp: **thu nhỏ cho ĐỦ BỐN TAB LỌT MỘT HÀNG**, không xuống dòng
            và cũng không cuộn ngang.
 

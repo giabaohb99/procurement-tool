@@ -18,7 +18,7 @@ import {
   isFiltering,
   leaveTypesIn,
 } from '../utils/filter-leave-rows'
-import { LEAVE_TOOLBAR_STICKY } from '../utils/leave-list-sticky'
+import { LIST_TOOLBAR_STICKY } from '../utils/list-sticky'
 import { LeaveRequestCard } from './leave-request-card'
 import { LeaveRowsFilterBar } from './leave-rows-filter-bar'
 import {
@@ -95,7 +95,7 @@ function LeaveHandledContent() {
           ? 'Không có đơn nào khớp bộ lọc.'
           : 'Bạn chưa duyệt đơn nghỉ phép nào trong 30 ngày qua.'
       }
-      toolbarClassName={LEAVE_TOOLBAR_STICKY}
+      toolbarClassName={LIST_TOOLBAR_STICKY}
       storageKey="hr.leave-handled"
       onRowClick={(r) => navigate(appRoutes.hr.leaveRequestDetail(r.id))}
       //  Màn hẹp: thẻ thay bảng. Giữ huy hiệu trạng thái — ở tab này nó chính

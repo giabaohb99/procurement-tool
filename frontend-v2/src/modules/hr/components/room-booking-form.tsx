@@ -9,8 +9,11 @@ import { NumberInput } from '@/shared/ui/number-input'
 import { RequiredMark } from '@/shared/ui/required-mark'
 import { EmployeeMultiSelect } from '@/shared/ui/employee-multi-select'
 import { Textarea } from '@/shared/ui/textarea'
+import { cn } from '@/shared/utils/cn'
 import { useEmployees } from '../hooks/use-employees'
+import { useMeetingRooms } from '../hooks/use-room'
 import type { RoomBookingFormValues } from '../utils/room-form-values'
+import { RoomCapacityWarning } from './room-capacity-warning'
 import { RoomPickerField } from './room-picker-field'
 import { toApiTime } from '../utils/room-time'
 
@@ -47,6 +50,12 @@ export function RoomBookingForm({ value, onChange, lockedRoom }: RoomBookingForm
     { enabled: canPickEmployee },
   )
   const employees = employeeData?.items ?? []
+
+  //  Chỉ để canh sức chứa. Cùng khóa truy vấn với `RoomPickerField` nên TanStack
+  //  Query gộp làm một lượt gọi, không thêm request nào.
+  const { data: roomData } = useMeetingRooms()
+  const pickedRoom = roomData?.items.find((r) => r.id === value.roomId)
+  const isOverCapacity = Boolean(pickedRoom?.capacity && value.attendeeCount > pickedRoom.capacity)
 
   const set = <K extends keyof RoomBookingFormValues>(
     key: K,
@@ -124,7 +133,26 @@ export function RoomBookingForm({ value, onChange, lockedRoom }: RoomBookingForm
             decimals={false}
             onChange={(v) => set('attendeeCount', v)}
           />
-          <p className="text-xs text-muted-foreground">
+          {/*  Dưới `lg` cột phải bị ẩn (nó chỉ lặp lại thứ vừa nhập), nên cảnh
+               báo sức chứa mọc lại NGAY ĐÂY — cạnh ô duy nhất sửa được nó. Từ
+               `lg` trở lên thì cột phải dính khi cuộn đã lo phần đó, bày cả hai
+               là nói một câu hai lần trên cùng một màn hình.
+
+               Cảnh báo THAY CHỖ câu gợi ý chứ không đứng thêm vào: câu gợi ý nói
+               chuyện *sẽ* bị chặn, mà lúc này thì đã vượt rồi. */}
+          {isOverCapacity && pickedRoom && (
+            <RoomCapacityWarning
+              roomName={pickedRoom.name}
+              capacity={pickedRoom.capacity}
+              className="lg:hidden"
+            />
+          )}
+          <p
+            className={cn(
+              'text-xs text-muted-foreground',
+              isOverCapacity && pickedRoom && 'max-lg:hidden',
+            )}
+          >
             Ghi quá sức chứa của phòng thì phiếu bị chặn lúc lưu.
           </p>
         </div>

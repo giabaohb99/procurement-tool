@@ -27,7 +27,7 @@ import {
 import { cn } from '@/shared/utils/cn'
 import { LeaveBalanceCard } from '../components/leave-balance-card'
 import { LeaveSectionTabs } from '../components/leave-section-tabs'
-import { LEAVE_SECTION_TOOLBAR_STICKY } from '../utils/leave-list-sticky'
+import { LIST_SECTION_TOOLBAR_STICKY } from '../utils/list-sticky'
 import {
   useAllocateLeaveBalance,
   useCloseLeaveYear,
@@ -75,7 +75,7 @@ export function LeaveBalancePage() {
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
 
   //  Dải ghim đầu trang đổ bóng khi có nội dung trôi bên dưới — xem
-  //  `leave-list-sticky.ts`. Đo ở khối bọc vì nó nằm cùng khung cuộn với hai dải.
+  //  `list-sticky.ts`. Đo ở khối bọc vì nó nằm cùng khung cuộn với hai dải.
   const stickyRef = useRef<HTMLDivElement>(null)
   const scrolled = useScrolled(stickyRef)
 
@@ -344,7 +344,7 @@ export function LeaveBalancePage() {
       {/*  `group` + `data-scrolled` là đường dẫn tín hiệu «trang đã cuộn» xuống
            tới dải ghim nằm sâu bên trong (thanh công cụ do `DataTable` vẽ, tầng
            trang không với tới được bằng prop). Bóng đổ của dải đó đọc thuộc tính
-           này — xem `leave-list-sticky.ts`. */}
+           này — xem `list-sticky.ts`. */}
       <div
         ref={stickyRef}
         data-scrolled={scrolled ? '' : undefined}
@@ -366,7 +366,7 @@ export function LeaveBalancePage() {
               : `Chưa cấp quỹ phép năm ${year}. Bấm «Cấp quỹ năm ${year}» để tạo.`
           }
           storageKey="hr.leave-balances"
-          toolbarClassName={LEAVE_SECTION_TOOLBAR_STICKY}
+          toolbarClassName={LIST_SECTION_TOOLBAR_STICKY}
           onRowClick={(b) => navigate(appRoutes.hr.leaveBalanceDetail(b.id))}
           //  Khổ hẹp: thẻ thay bảng — bảng này mười một cột, trên máy 393px chỉ
           //  thấy hai cột đầu và cả mười con số nằm sau một thao tác cuộn ngang.
@@ -383,11 +383,15 @@ export function LeaveBalancePage() {
             <>
               {/*  ⚠️ Sàn `min-w-56` chỉ áp từ `md`: dưới ngưỡng đó ô tìm là
                    `flex-1` với `flex-basis: 0` nên nó không bao giờ ép nhóm nút
-                   bên phải xuống một hàng riêng. */}
+                   bên phải xuống một hàng riêng.
+
+                   Câu gợi ý ngắn để ĐỌC HẾT được ở khổ hẹp: ô còn 142px sau khi
+                   chia chỗ cho nút Bộ lọc và nút Tải lại, bản cũ cần 206px nên
+                   cụt thành «Tìm theo tên hoặc m». */}
               <SearchField
                 value={keyword}
                 onChange={setKeyword}
-                placeholder="Tìm theo tên hoặc mã nhân sự…"
+                placeholder="Tìm tên, mã nhân sự"
                 className="md:min-w-56 md:max-w-xs"
               />
 

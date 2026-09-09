@@ -116,7 +116,11 @@ describe('LeaveCalendarDayView', () => {
       request({ id: 1, code: 'NP015', employee_name: 'Phạm Thị Kế Toán', reason: 'Về quê' }),
       request({ id: 2, code: 'NP016', employee_name: 'Trần Trưởng Phòng', reason: 'Khám bệnh' }),
     ])
-    const box = screen.getByPlaceholderText(/Tìm theo tên/)
+    //  Tìm ô bằng NHÃN trợ năng, không bằng câu gợi ý: câu gợi ý là chữ hiển
+    //  thị và nó bị rút ngắn mỗi lần ai đó chỉnh cho vừa khổ điện thoại — bám
+    //  vào nó thì một lần sửa chữ làm đỏ những bài kiểm chẳng liên quan gì
+    //  (xảy ra 09/09/2026).
+    const box = screen.getByRole('textbox', { name: 'Tìm kiếm' })
 
     await nguoi.type(box, 'kế toán')
     expect(rowCount()).toBe(1)
@@ -137,7 +141,7 @@ describe('LeaveCalendarDayView', () => {
     const nguoi = userEvent.setup()
     renderDay([request()])
 
-    await nguoi.type(screen.getByPlaceholderText(/Tìm theo tên/), 'zzzkhongcoai')
+    await nguoi.type(screen.getByRole('textbox', { name: 'Tìm kiếm' }), 'zzzkhongcoai')
     expect(screen.getByText('Không có ai khớp bộ lọc.')).toBeInTheDocument()
     expect(screen.queryByText('Không ai nghỉ ngày này.')).not.toBeInTheDocument()
   })

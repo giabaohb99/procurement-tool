@@ -48,56 +48,77 @@ export function RoomPickerField({
   return (
     <>
       {room ? (
+        //  ⚠️ `flex-wrap` + `max-sm:basis-full`: dưới 640px nút «Đổi phòng» XUỐNG
+        //  HÀNG RIÊNG và trải hết bề ngang. Xếp một hàng ở khổ đó thì khối chữ
+        //  chỉ còn 160px — đo được 09/09/2026 — đủ hẹp để «Tầng 3 · 8 chỗ · TV
+        //  55 inch, bảng trắng» gãy làm hai dòng và tên phòng cụt.
         <div
           className={cn(
-            'flex items-center gap-3 rounded-lg border p-3',
+            'flex flex-wrap items-center gap-3 rounded-lg border p-3',
             isBusy ? 'border-amber-300 bg-amber-50/60 dark:bg-amber-950/30' : 'bg-muted/30',
           )}
         >
-          <DoorOpen className="size-5 shrink-0 text-muted-foreground" />
+          {/*  Biểu tượng nằm TRONG khối chữ, không đứng ngang hàng với nút: là
+               anh em của nút thì lúc xuống hàng nó ở lại một mình trên dòng
+               trước, còn khối chữ tụt xuống dòng sau. */}
+          <div className="flex min-w-0 flex-1 items-start gap-3 max-sm:basis-full">
+            <DoorOpen className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
 
-          <div className="min-w-0 flex-1">
-            <p className="flex items-center gap-2 truncate font-medium">
-              {room.name}
-              {/*  Nói ra VÌ SAO ô này đã điền sẵn. Không có dòng này thì người
-                   dùng mở form ra thấy một phòng tự nhiên nằm đó và không chắc
-                   mình có chọn nhầm hay không. */}
-              {lockedFromCalendar && (
-                <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[11px] font-normal text-primary">
-                  chọn từ lịch
-                </span>
-              )}
-            </p>
-            <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-              {room.location ? (
-                <span className="flex items-center gap-1">
-                  <MapPin className="size-3" />
-                  {room.location}
-                </span>
-              ) : null}
-              {room.capacity ? (
-                <span className="flex items-center gap-1">
-                  <Users className="size-3" />
-                  {room.capacity} chỗ
-                </span>
-              ) : null}
-              {room.equipment ? <span className="truncate">{room.equipment}</span> : null}
-            </div>
-
-            {isBusy && (
-              <p className="mt-1 flex items-center gap-1 text-xs text-amber-700 dark:text-amber-400">
-                <CircleSlash className="size-3.5" />
-                {info?.bookings[0]
-                  ? `Đã có phiếu ${info.bookings[0].code} giữ ${formatTimeRange(
-                      info.bookings[0].start_at,
-                      info.bookings[0].end_at,
-                    )} — gửi duyệt sẽ bị chặn.`
-                  : 'Phòng này đã có người giữ trong khung giờ đã chọn.'}
+            <div className="min-w-0 flex-1">
+              {/*  ⚠️ `truncate` phải đặt lên chính TÊN PHÒNG, đừng đặt lên hàng
+                   flex bọc ngoài: ở đó nó thành `overflow-hidden` cắt cụt cả huy
+                   hiệu bên cạnh — «chọn từ lịch» hiện ra đúng chữ «chọn từ»
+                   (khách báo 09/09/2026). */}
+              <p className="flex min-w-0 items-center gap-2 font-medium">
+                <span className="truncate">{room.name}</span>
+                {/*  Nói ra VÌ SAO ô này đã điền sẵn. Không có dòng này thì người
+                     dùng mở form ra thấy một phòng tự nhiên nằm đó và không chắc
+                     mình có chọn nhầm hay không. */}
+                {lockedFromCalendar && (
+                  <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[11px] font-normal text-primary">
+                    chọn từ lịch
+                  </span>
+                )}
               </p>
-            )}
+              <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                {room.location ? (
+                  <span className="flex items-center gap-1">
+                    <MapPin className="size-3" />
+                    {room.location}
+                  </span>
+                ) : null}
+                {room.capacity ? (
+                  <span className="flex items-center gap-1">
+                    <Users className="size-3" />
+                    {room.capacity} chỗ
+                  </span>
+                ) : null}
+                {room.equipment ? <span className="truncate">{room.equipment}</span> : null}
+              </div>
+
+              {isBusy && (
+                <p className="mt-1 flex items-start gap-1 text-xs text-amber-700 dark:text-amber-400">
+                  <CircleSlash className="mt-px size-3.5 shrink-0" />
+                  <span>
+                    {info?.bookings[0]
+                      ? `Đã có phiếu ${info.bookings[0].code} giữ ${formatTimeRange(
+                          info.bookings[0].start_at,
+                          info.bookings[0].end_at,
+                        )} — gửi duyệt sẽ bị chặn.`
+                      : 'Phòng này đã có người giữ trong khung giờ đã chọn.'}
+                  </span>
+                </p>
+              )}
+            </div>
           </div>
 
-          <Button type="button" variant="outline" size="sm" onClick={() => setOpen(true)}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="shrink-0 max-sm:w-full"
+            onClick={() => setOpen(true)}
+          >
             Đổi phòng
           </Button>
         </div>

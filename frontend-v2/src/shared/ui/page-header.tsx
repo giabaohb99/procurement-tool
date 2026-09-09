@@ -16,6 +16,18 @@ interface PageHeaderProps {
   /** Nút hành động bên phải (Thêm mới, Xuất Excel…). */
   actions?: ReactNode
   /**
+   * Lớp phụ cho CỤM NÚT — chỗ để trang tự quyết cách bày nút ở khổ hẹp.
+   *
+   * Có prop này vì `max-md:w-full` bên dưới chỉ mở đường: nó cho cụm nút chiếm
+   * trọn hàng, nhưng bản thân các nút vẫn co theo nội dung nên một nút lẻ đứng
+   * dán mép phải với một khoảng trống dài bên trái. Trang nào muốn nút trải đều
+   * thì truyền `max-md:[&>button]:flex-1` — xem `room-booking-detail-page`.
+   *
+   * Không đặt thẳng vào đây làm mặc định: `PageHeader` đang chạy ở 72 màn, mỗi
+   * màn một số nút khác nhau, đổi luật chung là đổi hết cả 72.
+   */
+  actionsClassName?: string
+  /**
    * Dính lên đầu khung khi cuộn.
    *
    * Cho trang dài mà nhóm nút nằm TRÊN ĐẦU (Lưu, Bãi bỏ, chuyển tab): cuộn
@@ -34,6 +46,7 @@ export function PageHeader({
   description,
   leading,
   actions,
+  actionsClassName,
   sticky = false,
 }: PageHeaderProps) {
   return (
@@ -80,7 +93,12 @@ export function PageHeader({
           không đổi gì với các trang khác: `justify-end` vẫn giữ nút bám mép
           phải, chỉ khác là mép phải của TRANG thay vì của cụm nút. */}
       {actions && (
-        <div className="flex min-w-0 flex-wrap items-center justify-end gap-2 max-md:w-full">
+        <div
+          className={cn(
+            'flex min-w-0 flex-wrap items-center justify-end gap-2 max-md:w-full',
+            actionsClassName,
+          )}
+        >
           {actions}
         </div>
       )}

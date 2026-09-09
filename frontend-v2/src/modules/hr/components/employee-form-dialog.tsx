@@ -191,9 +191,12 @@ export function EmployeeFormDialog({
 
             <div className="grid gap-4 sm:grid-cols-2">
               {/*  PHÁP NHÂN — hỏi NGAY ở form tạo (C2). Hồ sơ không gắn pháp
-                   nhân thì phạm vi dữ liệu của người đó rỗng ngay từ đầu, mà
-                   màn chi tiết CỐ Ý để ô này chỉ xem (đổi pháp nhân là đổi tập
-                   dữ liệu họ đọc được) — nên đây là chỗ duy nhất đặt được nó. */}
+                   nhân thì phạm vi dữ liệu của người đó rỗng ngay từ đầu.
+
+                   Màn chi tiết cũng sửa được ô này kể từ duoc-CR-342 (bản cũ để
+                   chỉ xem, và ghi chú ở đây từng nói đây là "chỗ duy nhất" —
+                   không còn đúng). Hai chỗ phải giữ CÙNG một luật dọn phòng ban
+                   khi đổi pháp nhân; ở đó luật nằm ở `handleCompanyChange`. */}
               <FormField
                 control={form.control}
                 name="company_id"

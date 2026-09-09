@@ -52,11 +52,15 @@ export const employeeSchema = z.object({
   //  `employee/constants.GENDER_OTHER` ở backend.
   gender: z.number().int().min(0).max(3),
 
-  //  PHÁP NHÂN. Có mặt để form TẠO NHANH hỏi được (C2) — hồ sơ không gắn pháp
-  //  nhân thì phạm vi dữ liệu của người đó rỗng ngay từ đầu. Màn CHI TIẾT vẫn
-  //  để ô này CHỈ XEM: đổi pháp nhân là đổi tập dữ liệu họ đọc được và phải kèm
-  //  luật "phòng ban đang gán có thuộc pháp nhân mới không", chưa có luật đó
-  //  thì chưa bày ô chọn ra.
+  //  PHÁP NHÂN. Hỏi ngay ở form TẠO NHANH (C2) — hồ sơ không gắn pháp nhân thì
+  //  phạm vi dữ liệu của người đó rỗng ngay từ đầu.
+  //
+  //  Màn CHI TIẾT **sửa được** kể từ duoc-CR-342. Trước đó ô này chỉ xem vì đổi
+  //  pháp nhân là đổi tập dữ liệu họ đọc được và phải kèm luật "phòng ban đang
+  //  gán có thuộc pháp nhân mới không"; luật đó nay nằm ở
+  //  `employee-tab-general.handleCompanyChange`. Đừng mở ô này ở một màn thứ ba
+  //  mà không mang theo luật đó — thiếu nó thì hồ sơ lưu xuống ở trạng thái công
+  //  ty A / phòng ban của công ty B.
   company_id: z.number().int().min(0),
 
   //  NGÀY SINH — thuộc nhóm NHẠY CẢM ở backend. Hỏi ngay từ form tạo nhanh vì

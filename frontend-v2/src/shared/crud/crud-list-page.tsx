@@ -43,7 +43,7 @@ interface CrudListPageProps<T> {
    *
    * ⚠️ Mốc `top` do TRANG khai, không phải khung này: nó bằng đúng chiều cao
    * của thứ đang ghim phía trên (`beforeContent`), mà chỉ trang mới biết mình
-   * dựng mấy hàng điều hướng. Xem `leave-list-sticky.ts`.
+   * dựng mấy hàng điều hướng. Xem `list-sticky.ts`.
    */
   toolbarClassName?: string
 }
@@ -213,6 +213,11 @@ function CrudListContent<T extends CrudRecord>({
     return Boolean(val) && val !== 'all'
   }).length
 
+  //  Bảng đang bị thu hẹp bởi bất kỳ đường nào — ô tìm, ô lọc nhanh, hay điều
+  //  kiện nâng cao. Quyết định câu nói khi bảng rỗng.
+  const isFiltering =
+    Boolean(debouncedValue) || activeQuickFilters > 0 || (filter?.activeCount ?? 0) > 0
+
   return (
     //  ⚠️ `fill` chỉ bật từ `md`: ở khổ hẹp màn nào khai `mobileCard` sẽ dựng một
     //  danh sách thẻ dài, mà `fill` nhét nó vào một khe vài trăm pixel và biến
@@ -220,7 +225,22 @@ function CrudListContent<T extends CrudRecord>({
     <PageContainer fill className="max-md:h-auto">
       <PageHeader
         title={config.title}
-        description={config.description}
+        //  ⚠️ Dòng mô tả ẨN ở khổ hẹp. Nó là câu GIỚI THIỆU màn — đọc một lần
+        //  rồi thôi — nhưng ngốn hai dòng (~60px) ở đầu MỌI lần mở màn, ngay
+        //  phía trên thứ người ta thật sự vào đây để xem. Trên màn rộng 60px đó
+        //  không lấy chỗ của ai nên vẫn giữ. Cùng cách hai màn viết tay
+        //  (Đơn nghỉ phép · Phiếu đặt phòng) đã làm.
+        //
+        //  ⚠️ Giữ `undefined` khi màn không khai mô tả — `description` là tùy
+        //  chọn và **phần lớn màn CRUD không khai**. Bọc vô điều kiện thì
+        //  `PageHeader` nhận một phần tử JSX (luôn truthy) rồi dựng khối mô tả
+        //  RỖNG kèm `mt-1`, tức mọi màn đó ăn thêm một khe thừa vì một câu
+        //  không tồn tại.
+        description={
+          config.description ? (
+            <span className="max-md:hidden">{config.description}</span>
+          ) : undefined
+        }
         actions={
           //  Khổ hẹp: cụm nút chiếm trọn hàng và nút «Thêm» giãn hết phần còn
           //  lại — hành động chính của màn phải là thứ dễ chạm nhất.
@@ -260,7 +280,15 @@ function CrudListContent<T extends CrudRecord>({
           getRowId={(row: T) => String(row[idKey])}
           isLoading={isLoading}
           isError={isError}
-          emptyMessage={`Không tìm thấy ${config.unitLabel} nào.`}
+          //  ⚠️ Câu «bảng rỗng» phải PHÂN BIỆT *rỗng vì bộ lọc* với *rỗng vì
+          //  chưa có gì*. Một câu chung cho cả hai thì người vừa gõ nhầm một
+          //  chữ đọc ra "chưa có dữ liệu" rồi tin là vậy — và ở màn danh mục,
+          //  điều đó dẫn thẳng tới việc họ đi khai lại một bản ghi đã tồn tại.
+          emptyMessage={
+            isFiltering
+              ? `Không có ${config.unitLabel} nào khớp bộ lọc.`
+              : `Chưa có ${config.unitLabel} nào. Bấm «Thêm ${config.unitLabel}» để tạo.`
+          }
           storageKey={config.storageKey}
           toolbarClassName={toolbarClassName}
           onRowClick={handleRowClick}
@@ -281,13 +309,20 @@ function CrudListContent<T extends CrudRecord>({
           toolbar={
             <>
               {/*  ⚠️ Bề rộng cứng `w-64` chỉ áp từ `md`. Dưới ngưỡng đó ô tìm là
-                   `flex-1` với `flex-basis: 0` — nó không bao giờ ép xuống dòng,
-                   nên nhóm nút bên phải chắc chắn ở lại cùng hàng. */}
+                   `flex-1` với `flex-basis: 0` nên nó co theo phần còn thừa.
+
+                   ⚠️ Nhưng phải có SÀN (`min-w-40`), nếu không nó co tới mức vô
+                   dụng đúng lúc cần nhất: hàng công cụ mọc thêm nút «Xóa lọc»
+                   NGAY KHI bắt đầu lọc, và bốn nút một hàng trên máy 390px bóp ô
+                   tìm còn **73px** — tức hễ lọc một phát là ô tìm hỏng, đúng lúc
+                   người ta hay muốn gõ thêm từ khóa để thu hẹp tiếp. Có sàn thì
+                   cụm nút rớt xuống hàng riêng, hai hàng nhưng cả hai dùng được.
+                   Chưa lọc gì (trạng thái thường ngày) vẫn đúng một hàng. */}
               <SearchField
                 value={keyword}
                 onChange={setKeyword}
                 placeholder={config.searchPlaceholder || `Tìm ${config.unitLabel}…`}
-                className="md:w-64 md:max-w-sm md:flex-none"
+                className="max-md:min-w-40 md:w-64 md:max-w-sm md:flex-none"
               />
 
               {/*  Khổ hẹp: mọi ô lọc dọn vào tờ trượt, hàng công cụ còn một dòng.

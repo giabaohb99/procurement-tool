@@ -1,7 +1,7 @@
 import { CrudListPage } from '@/shared/crud'
 import { HOLIDAY_CRUD_CONFIG } from '../config/holiday-crud'
 import { LeaveSectionTabs } from '../components/leave-section-tabs'
-import { LEAVE_SETTINGS_TOOLBAR_STICKY } from '../utils/leave-list-sticky'
+import { LEAVE_SETTINGS_TOOLBAR_STICKY } from '../utils/list-sticky'
 
 export function HolidayListPage() {
   return (
