@@ -6,6 +6,7 @@ from app.core.auth import (create_access_token, create_refresh_token,
                            decode_token, get_current_user, get_user_permissions,
                            hash_password, verify_password)
 from app.core.audit import record as audit_record
+from app.core.client_ip import get_client_ip
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.limiter import limiter
@@ -21,11 +22,10 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
 def _client_ip(request: Request) -> str:
-    """IP người gọi — ưu tiên X-Forwarded-For (đứng sau nginx/Cloudflare), fallback IP kết nối."""
-    xff = request.headers.get("x-forwarded-for", "") if request else ""
-    if xff:
-        return xff.split(",")[0].strip()[:60]
-    return (request.client.host if request and request.client else "")[:60]
+    """IP người gọi. bao-CR-313: bản cũ lấy phần tử ĐẦU của X-Forwarded-For — phần
+    client tự đặt được — nên dòng `login_failed` ghi IP giả. Nay dùng chung một hàm
+    với limiter (`core/client_ip.py`, ưu tiên `CF-Connecting-IP`)."""
+    return get_client_ip(request) if request else ""
 
 
 def _me_payload(db: Session, user) -> dict:
@@ -129,12 +129,24 @@ def logout(request: Request, user=Depends(get_current_user), db: Session = Depen
 
 
 @router.post("/refresh")
-def refresh(data: schema.RefreshInput, db: Session = Depends(get_db)):
-    user_id = decode_token(data.refresh_token, "refresh")
+def refresh(request: Request, data: schema.RefreshInput, db: Session = Depends(get_db)):
+    #  bao-CR-313 / BM-003: trước đây gia hạn KHÔNG ghi dấu vết và không lấy IP — refresh
+    #  token bị cắp tự gia hạn im lặng suốt 7 ngày, không dòng nào để mà thấy. Nay mỗi
+    #  lần gia hạn (thành công lẫn thất bại) là một dòng `auth` kèm IP, đọc cùng chỗ với
+    #  `login` / `login_failed`.
+    ip = _client_ip(request)
+    try:
+        user_id = decode_token(data.refresh_token, "refresh")
+    except HTTPException as e:
+        audit_record(db, 0, "auth", 0, "refresh_failed",
+                     f"Gia hạn phiên thất bại: {e.detail} (IP {ip})")
+        raise
     user = db.get(User, user_id)
     if not user or not user.is_active:
-        from fastapi import HTTPException
+        audit_record(db, user_id, "auth", user_id, "refresh_failed",
+                     f"Gia hạn phiên thất bại: tài khoản không tồn tại hoặc đã bị khóa (IP {ip})")
         raise HTTPException(401, "Tài khoản không hợp lệ")
+    audit_record(db, user.id, "auth", user.id, "refresh", f"Gia hạn phiên (IP {ip})")
     # Trả kèm hồ sơ + phân quyền mới nhất (CR-028): client đằng nào cũng gọi refresh
     # mỗi khi access token hết hạn, gửi kèm ở đây thì không tốn thêm request nào,
     # mà đổi tên/gắn nhân sự/sửa quyền vẫn có hiệu lực không cần đăng xuất.
