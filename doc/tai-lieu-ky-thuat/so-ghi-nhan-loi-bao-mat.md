@@ -1,6 +1,8 @@
 # SỔ GHI NHẬN LỖI BẢO MẬT
 
 **Bản 1.0 — 07/09/2026.** Mở sổ nhân ticket YCBG05092603.
+**Bản 1.1 — 09/09/2026.** bao-CR-313 đã deploy prod + dev: **BM-001 đóng**, **BM-004 đóng**,
+BM-003 vá một phần (còn phiên phía máy chủ ở P3). Bốn dòng còn lại chưa đổi.
 
 ---
 
@@ -50,10 +52,10 @@ nó là bằng chứng cho lần soát sau rằng chỗ này từng hở.
 
 | ID | Mức | Phát hiện | Trạng thái |
 |---|---|---|---|
-| BM-001 | **Cao** | `/api/audit-logs` chỉ gác bằng đăng nhập — mọi tài khoản đọc được nhật ký của mọi phân hệ | **Đang vá (bao-CR-313).** `erp-v2` đã gác từ 05/09 (d413481f). `main`: mã + 16 test xong local 08/09/2026, **chưa commit, prod vẫn hở** |
-| BM-002 | **Cao** | Không có phiên đăng nhập phía máy chủ — token lộ thì không thu hồi được | **Mở** |
-| BM-003 | Trung bình | Gia hạn token không để lại dấu vết nào | Đang vá (bao-CR-313) — mã xong local 08/09/2026, chưa commit |
-| BM-004 | Trung bình | Giới hạn tần suất đăng nhập dùng chung MỘT xô cho cả công ty | Đang vá (bao-CR-313) — mã xong local 08/09/2026, chưa commit; phải kiểm `CF-Connecting-IP` trên dev sau deploy |
+| BM-001 | **Cao** | `/api/audit-logs` chỉ gác bằng đăng nhập — mọi tài khoản đọc được nhật ký của mọi phân hệ | **Đã vá (09/09/2026, `main` f023c747 + 2de0b2d4 — đã deploy prod; `erp-v2` 682010c3 — đã deploy dev).** Đo lại trên prod: 230/233 tài khoản đang hoạt động ăn 403 ở `entity=auth` và ở lối duyệt toàn hệ, 3 tài khoản quản trị qua được |
+| BM-002 | **Cao** | Không có phiên đăng nhập phía máy chủ — token lộ thì không thu hồi được | **Mở** — chờ P3 của bao-CR-312 |
+| BM-003 | Trung bình | Gia hạn token không để lại dấu vết nào | **Vá một phần (09/09/2026, `main` f023c747 — đã deploy prod; `erp-v2` abff1298 — đã deploy dev).** `/api/auth/refresh` nay ghi `refresh` / `refresh_failed` kèm IP. Còn phần phiên phía máy chủ ở P3; **P3 sẽ bỏ chính dòng `refresh` thành công này** theo QĐ-A |
+| BM-004 | Trung bình | Giới hạn tần suất đăng nhập dùng chung MỘT xô cho cả công ty | **Đã vá (09/09/2026, `main` f023c747 — đã deploy prod; `erp-v2` abff1298 — đã deploy dev).** Đã kiểm trên hệ thật: dấu vết đăng nhập mang IP công cộng thật (118.71.139.127, 27.64.133.181), không phải `172.x` → `CF-Connecting-IP` tới được api. Kiểm trên dev với header giả `X-Forwarded-For: 6.6.6.6` + `X-Real-IP: 7.7.7.7`: dòng ghi vẫn là IP thật (180.93.2.176), header giả bị bỏ qua |
 | BM-005 | Trung bình | Nhật ký không lưu giá trị trước / sau — không chứng minh được đã đổi gì | Đang vá (bao-CR-312, mới ở mức đề xuất) |
 | BM-006 | Thấp | Dấu vết là tùy chọn theo từng lời gọi — quên gọi là mất | Vá một phần (bao-CR-311) |
 | BM-007 | Thấp | Dòng nhật ký không có IP / trình duyệt / mã lượt gọi | Đang vá (bao-CR-312, mới ở mức đề xuất) |
@@ -62,7 +64,9 @@ nó là bằng chứng cho lần soát sau rằng chỗ này từng hở.
 
 ### BM-001 — Nhật ký của cả hệ đọc được bằng bất kỳ tài khoản nào
 
-**Mức: Cao. Trạng thái: MỞ, đang chạy trên hệ thật.**
+**Mức: Cao. Trạng thái: ĐÃ VÁ 09/09/2026** — `main` `f023c747` + `2de0b2d4` (deploy prod),
+`erp-v2` `682010c3` (deploy dev). Phần mô tả dưới đây giữ nguyên ở thì hiện tại của lúc phát
+hiện; kết quả đo sau khi vá ghi ở cuối mục.
 
 `backend/app/modules/audit/controller.py:28` — toàn bộ phân hệ nhật ký là **một endpoint duy
 nhất**, và nó gác bằng đúng một thứ: `user=Depends(get_current_user)`. Không `require(entity,
@@ -109,6 +113,26 @@ tra `ENTITIES`, entity lạ thì 400. Riêng `auth` (và mọi entity không ph�
 vai trò quản trị. Cấm bỏ trống `entity_id` trừ khi có khóa cấp cao. Bước hai là chạy
 `apply_scope` trên chính bản ghi được hỏi, để người chỉ thấy phiếu phòng mình thì cũng chỉ đọc
 được nhật ký phiếu phòng mình.
+
+**Đã vá thế nào (09/09/2026).** Hàm `_guard` trong `audit/controller.py` cắt route làm hai chế
+độ, đúng hai chế độ giao diện đang dùng: **widget lịch sử** (luôn kèm `entity`) đòi khóa `read`
+của chính entity đó rồi soi phạm vi của chính bản ghi đó; **màn Nhật ký hệ thống** (không kèm
+`entity`) đòi khóa quản trị `setting` (`read` HOẶC `write`). Ba chỗ lệch so với hướng vá ban
+đầu, đều là chỗ vá thô sẽ hỏng việc thật:
+
+- entity lạ trả **403 chứ không 400** — 400 nói với người gọi rằng entity đó không tồn tại,
+  tức là biến endpoint thành máy dò danh sách entity;
+- **không cấm bỏ trống `entity_id`** mà lọc theo đúng tập id nằm trong phạm vi
+  (`AuditLog.entity_id.in_(...)`) — cấm là giết lối lọc theo loại chứng từ của quản trị. Đo
+  ngày 05/09/2026: tài khoản `TESTREQ` (phạm vi `own`) thấy 0 phiếu mua hàng trong danh sách,
+  mở thẳng một phiếu thì 403, mà vẫn đọc được nhật ký của **25** phiếu — chính là chỗ này;
+- **hai ngoại lệ hẹp**: hồ sơ của chính mình (`/me` dựng `AuditTimeline entity="user"` cho mọi
+  người, mà `user.read` là khóa quản trị tài khoản) và bí danh `faq` → `help_article`.
+
+Đo lại trên prod sau khi deploy: gọi `_guard` với **cả 233 tài khoản đang hoạt động** — 230 ăn
+403 ở `entity=auth` và ở lối duyệt toàn hệ, 3 tài khoản quản trị qua được. Vế đối chứng cũng
+đo: sáu Yêu cầu báo giá gần nhất vẫn trả 1–17 dòng lịch sử cho chính người tạo, tức là dòng
+thời gian của người dùng thường không chết.
 
 **Cập nhật 08/09/2026 — đã gõ mã trên `main`, chưa commit.** Khi bắt tay mới thấy `erp-v2`
 đã có `_guard` từ 05/09 (d413481f, minhduoc-tran) nên `main` chép lại + thêm ba chốt. Luật
@@ -157,7 +181,8 @@ Nhưng CR đó là một công trình 6 đợt; **phần khóa phiên nên tách
 
 ### BM-003 — Gia hạn token không để lại dấu vết
 
-**Mức: Trung bình. Trạng thái: MỞ.**
+**Mức: Trung bình. Trạng thái: VÁ MỘT PHẦN 09/09/2026** — `main` `f023c747` (deploy prod),
+`erp-v2` `abff1298` (deploy dev). Phần còn lại (phiên phía máy chủ) nằm ở P3 của bao-CR-312.
 
 `auth/controller.py:86` — `POST /api/auth/refresh` không gọi `audit_record`, cũng không đọc
 IP. Đăng nhập có ghi IP, đăng xuất có ghi IP, còn **suốt bảy ngày ở giữa thì không có dòng
@@ -171,14 +196,31 @@ gộp vào bao-CR-313.
 `auth`: `refresh` (thành công, `created_by` = người dùng) hoặc `refresh_failed` (token hỏng →
 `created_by = 0`; tài khoản bị khóa → `created_by` = id đó), đều kèm IP thật. Nhãn `Gia hạn
 phiên` / `Gia hạn phiên thất bại` thêm vào `ACTION_LABEL`. Ước lượng thêm ~8 dòng/người/ngày
-trên prod — chấp nhận được cho tới khi `tab_login_session` (CR-312 P1) thay thế.
+trên prod — chấp nhận được cho tới khi `tab_login_session` (CR-312 **P3**, không phải P1) thay thế.
 Test: `test/backend/test_client_ip_cr313.py` (3 ca refresh).
+
+**Cập nhật 09/09/2026 — đo thật, và hình vá cuối cùng đã chốt.** Đếm log nginx prod 24 giờ:
+**126 lượt `POST /api/auth/refresh` mỗi ngày**, chiếm **48%** tổng số lượt gọi không phải GET
+(265). Nghĩa là cách vá tạm ở trên **cộng thêm ~126 dòng audit/ngày, gấp đôi lượng audit hiện
+tại (124 dòng/ngày)** — giữ lâu thì nhật ký loãng đúng kiểu BM-005 đang than. Bản 2.4 của
+`nhat-ky-va-phien-dang-nhap.md` chốt **QĐ-A** làm hình vá cuối: gia hạn **thành công** chỉ dập
+`refreshed_at` / `refresh_count` / `last_seen_ip` trên `tab_login_session`, **không** đẻ dòng
+nhật ký; chỉ ghi khi **IP khác lần trước** (`refresh_ip_changed`) hoặc **gia hạn thất bại**.
+BM-003 vẫn đóng, vì thứ chứng minh token bị cắp là **phiên đổi IP giữa chừng**, không phải sự
+tồn tại của 126 dòng giống hệt nhau mỗi ngày. **Cách vá tạm của CR-313 giữ nguyên** cho tới khi
+P3 dựng xong bảng phiên — lúc đó phải quay lại `auth/controller.py` bỏ dòng `record(...)` ở
+nhánh thành công.
+
+**Deploy 09/09/2026 — đo trên hệ thật.** Sau khi deploy prod, hai dòng `refresh` đầu tiên rơi
+vào bảng trong vòng vài phút, mang IP công cộng thật (118.71.139.127 và 27.64.133.181) chứ
+không phải `172.x` — tức `CF-Connecting-IP` tới được api, đúng dấu hiệu đã đặt ra ở BM-004.
 
 ---
 
 ### BM-004 — Giới hạn tần suất đăng nhập dùng chung một xô
 
-**Mức: Trung bình. Trạng thái: MỞ.**
+**Mức: Trung bình. Trạng thái: ĐÃ VÁ 09/09/2026** — `main` `f023c747` (deploy prod),
+`erp-v2` `abff1298` (deploy dev).
 
 `core/limiter.py:5` khai `Limiter(key_func=get_remote_address)`. `get_remote_address` đọc
 `request.client.host` — tức **IP của kết nối TCP**, không phải của người dùng.
@@ -220,9 +262,15 @@ duy nhất client không đặt được. Chọn **không** bật `--proxy-heade
 viết `core/client_ip.py::get_client_ip` dùng chung cho limiter lẫn nhật ký đăng nhập, thứ
 tự tin cậy: `CF-Connecting-IP` → phần tử **CUỐI** của XFF (do nginx nối, không giả được) →
 `request.client.host`. Dấu hiệu hỏng nhìn thấy được: nếu sau deploy nhật ký đăng nhập hiện
-IP `172.x` thì `CF-Connecting-IP` không tới api. **Việc còn lại sau deploy dev:** curl từ
-VPS với `X-Forwarded-For: 9.9.9.9` + mật khẩu sai, dòng `login_failed` phải ghi IP công
-khai của VPS, không phải `9.9.9.9` hay `172.x`. Test: `test_client_ip_cr313.py` (5 ca IP).
+IP `172.x` thì `CF-Connecting-IP` không tới api. Test: `test_client_ip_cr313.py` (5 ca IP).
+
+**Cập nhật 09/09/2026 — đã deploy và đã kiểm bằng header giả.** Trên dev, curl từ VPS với
+`X-Forwarded-For: 6.6.6.6` + `X-Real-IP: 7.7.7.7` và mật khẩu sai: dòng `login_failed` ghi
+`IP 180.93.2.176` — IP công khai thật của VPS đi vòng qua Cloudflare — chứ không phải hai giá
+trị giả, cũng không phải `172.x`. Trên prod, dấu vết đăng nhập/gia hạn mang IP công cộng của
+người dùng thật (118.71.139.127, 27.64.133.181). Cả hai vế của hướng vá đều đứng: đọc được IP
+thật, và client không tự khai IP được. `default_limits` vẫn để nguyên trạng thái vô hiệu —
+`SlowAPIMiddleware` **không** được gắn thêm, đúng cảnh báo ở đoạn trên.
 
 ---
 
@@ -272,19 +320,22 @@ Vá: ba cột `session_id` / `request_id` / `ip` trên `tab_audit_log` —
 Thứ tự dưới đây xếp theo *"đang hở trên hệ thật"* trước, *"làm nền cho về sau"* sau. Nó **khác**
 thứ tự trong `nhat-ky-va-phien-dang-nhap.md` — tệp đó xếp theo thứ tự kỹ thuật.
 
-### Việc 1 — bao-CR-313: vá BM-001 + BM-003 + BM-004
+### Việc 1 — bao-CR-313: vá BM-001 + BM-003 + BM-004 — **XONG 09/09/2026**
 
 Ba lỗi nhỏ, cùng một vùng mã, làm chung một đợt. Đây là **việc gấp**: BM-001 đang mở trên hệ
 thật và không cần kỹ năng gì để khai thác — chỉ cần một tài khoản hợp lệ và thanh địa chỉ.
 
-| Việc | Tệp |
-|---|---|
-| Gác `/api/audit-logs` bằng khóa `read` của chính entity được hỏi; entity ngoài `ENTITIES` thì 400 | `modules/audit/controller.py` |
-| `auth` và các entity không phải chứng từ: chỉ vai trò quản trị | nt |
-| Cấm bỏ trống `entity_id` trừ khi có khóa cấp cao | nt |
-| Chạy `apply_scope` trên bản ghi được hỏi | nt |
-| Ghi dấu vết + IP cho `/api/auth/refresh` | `modules/auth/controller.py` |
-| Sửa `key_func` của limiter đọc đúng IP người dùng (hoặc bật `--proxy-headers`) | `core/limiter.py` / `start.prod.sh` |
+Đã deploy prod (`main` `f023c747` + `2de0b2d4`) và dev (`erp-v2` `682010c3`), không kèm
+migration nào — `alembic current` của prod vẫn là `c9d3e7a1f5b6 (head)`.
+
+| Việc | Tệp | Kết quả |
+|---|---|---|
+| Gác `/api/audit-logs` bằng khóa `read` của chính entity được hỏi; entity ngoài `ENTITIES` thì 403 | `modules/audit/controller.py` | Xong (403 chứ không 400 — xem BM-001) |
+| `auth` và các entity không phải chứng từ: chỉ vai trò quản trị | nt | Xong (khóa `setting`, nhận `read` HOẶC `write`) |
+| Cấm bỏ trống `entity_id` trừ khi có khóa cấp cao | nt | **Đổi cách làm:** không cấm, mà lọc theo tập id trong phạm vi |
+| Chạy `apply_scope` trên bản ghi được hỏi | nt | Xong (`scope_condition` tách từ `apply_scope`) |
+| Ghi dấu vết + IP cho `/api/auth/refresh` | `modules/auth/controller.py` | Xong |
+| Sửa `key_func` của limiter đọc đúng IP người dùng (hoặc bật `--proxy-headers`) | `core/limiter.py` / `start.prod.sh` | Xong bằng `core/client_ip.py`; **không** bật `--proxy-headers` |
 
 **Hai chỗ dễ vỡ, phải kiểm trước khi giao:**
 
@@ -298,6 +349,11 @@ thật và không cần kỹ năng gì để khai thác — chỉ cần một t�
 **Cần bao nhiêu test:** một tệp test cho phân quyền của `/api/audit-logs` (tài khoản không có
 khóa gọi vào phải 403, entity lạ phải 400, bỏ trống `entity_id` khi không đủ quyền phải bị
 chặn). Đây là chỗ vừa hở, để test canh.
+
+**Đã làm:** `main` có `test_va_nhat_ky_cr313.py` (8 ca) + `test_client_ip_cr313.py` (7 ca);
+`erp-v2` giữ `test_va_nhat_ky_thao_tac.py` (11 ca, có từ 05/09) và thêm
+`test_va_nhat_ky_cr313.py` (3 ca cho ba chốt chuyển ngược) + `test_client_ip_cr313.py`.
+Cả hai vế đều có test: vế chặn, và vế **không được chặn nhầm** người dùng thường.
 
 ### Việc 2 — tách khóa phiên ra khỏi bao-CR-312, làm trước
 
