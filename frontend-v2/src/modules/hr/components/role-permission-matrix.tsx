@@ -126,7 +126,7 @@ export function RolePermissionMatrix({
       )}
       {/* Bảng dài và rộng: cuộn TRONG khung này, giữ tiêu đề cột và cột "Chức năng"
           dính lại để không bị lạc ô khi cuộn. */}
-      <Table containerClassName="max-h-[62vh] overflow-auto" className="min-w-[880px]">
+      <Table containerClassName="max-h-[62dvh] overflow-auto" className="min-w-[880px]">
         {/* Nền phải nằm trên TỪNG ô `th`: Chrome không vẽ nền của `thead`/`tr`
             khi chúng sticky, để trên đó thì dòng đầu tiên chạy xuyên qua tiêu đề. */}
         <TableHeader className="sticky top-0 z-20">

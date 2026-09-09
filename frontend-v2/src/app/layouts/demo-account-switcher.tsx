@@ -92,7 +92,7 @@ export function DemoAccountSwitcher() {
       <DropdownMenuContent
         align="end"
         sideOffset={8}
-        className="max-h-[70vh] w-72 overflow-y-auto"
+        className="max-h-[70dvh] w-72 overflow-y-auto"
       >
         <DropdownMenuLabel className="flex items-center justify-between gap-2 font-normal">
           <span className="font-semibold">Đổi tài khoản nhanh</span>

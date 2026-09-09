@@ -67,6 +67,33 @@ interface ApprovalTrailCardProps {
   className?: string
 }
 
+/**
+ * DÒNG TIÊU ĐỀ của một mốc — «‹tên người› ‹đã làm gì›» kèm mốc giờ.
+ *
+ * ⚠️ **`break-words` không được bỏ.** Tên người vào đây từ `actor_name`, và
+ * không có gì bảo đảm nó là một cái tên có dấu cách: ô đó nhận cả email lẫn mã
+ * tài khoản dán vào. Chuỗi liền 53 ký tự đo được **422px nội dung trong khung
+ * 268px** — chữ chạy qua viền phải của thẻ rồi mất hẳn phần đuôi (dựng lại được
+ * trên giao diện thật 09/09/2026 ở khổ 390px). Đây đúng là lỗi đã vá cho dòng ý
+ * kiến ngay bên dưới hồi 03/09/2026, chỉ là lúc đó bỏ sót dòng tên.
+ */
+const TRAIL_TITLE_LINE = 'min-w-0 text-sm leading-5 break-words'
+
+/**
+ * MỐC GIỜ — xuống dòng riêng ở khổ hẹp, đi liền sau câu từ `sm` trở lên.
+ *
+ * ⚠️ Để nó trôi inline ở khổ hẹp thì nó dính vào đúng mảnh chữ cuối của câu vừa
+ * ngắt dòng, và đọc ra như một phần của câu: *«…đã cập nhật bước xử **lý
+ * 05/09/2026 14:48**»* (khách báo 09/09/2026). Tên người càng dài thì càng chắc
+ * rơi vào ca đó, nhưng tên NGẮN cũng dính — chỗ ngắt dòng là do bề rộng, không
+ * do độ dài tên.
+ *
+ * Từ `sm` thì giữ nguyên lối cũ: giờ đi liền sau câu chứ KHÔNG đẩy sang mép
+ * phải, xem ghi chú ở `TrailLine`.
+ */
+const TRAIL_TIME =
+  'mt-0.5 block text-xs font-normal text-muted-foreground tabular-nums sm:mt-0 sm:ml-2 sm:inline'
+
 interface ActionAppearance {
   icon: LucideIcon
   iconClassName: string
@@ -145,12 +172,17 @@ export function ApprovalTrailCard({
 
   return (
     <Card className={cn('gap-0 py-0 print:border-0 print:shadow-none', className)}>
-      <CardHeader className="flex min-h-16 flex-row items-center justify-between gap-4 border-b px-5 py-4">
-        <CardTitle className="flex min-w-0 items-center gap-2.5 text-base">
+      <CardHeader className="flex min-h-16 flex-row items-center justify-between gap-3 border-b px-4 py-4 sm:gap-4 sm:px-5">
+        {/*  ⚠️ Tiêu đề thẻ KHÔNG `truncate`. Ở khổ 390px cụm này còn ~230px cho
+             cả chữ lẫn huy hiệu trạng thái, nên `truncate` cắt ra
+             **«Lịch sử phê ...»** — một tiêu đề cụt giữa chừng trong khi ngay
+             dưới nó là cả một thẻ trống chỗ. Cho xuống dòng thì thẻ cao thêm
+             một dòng ở khổ hẹp, đổi lại tiêu đề đọc được. */}
+        <CardTitle className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1 text-base">
           <span className="grid size-8 shrink-0 place-items-center rounded-md border bg-muted/40">
             <ShieldCheck className="size-4 text-muted-foreground" />
           </span>
-          <span className="truncate">Lịch sử phê duyệt</span>
+          <span className="min-w-0">Lịch sử phê duyệt</span>
           {instance && <InstanceStatus status={instance.status} label={instance.status_label} />}
         </CardTitle>
 
@@ -341,13 +373,10 @@ function ApprovalEvent({ line, showRail }: { line: ApprovalAction; showRail: boo
              thẻ chạy hết bề ngang màn 24" nên mốc thời gian trôi ra tận đầu kia,
              rời hẳn khỏi dòng nó nói về, mắt phải bắc cầu qua một khoảng trống
              dài cả gang tay. */}
-        <p className="min-w-0 text-sm leading-5">
+        <p className={TRAIL_TITLE_LINE}>
           <span className="font-semibold text-foreground">{actorName}</span>{' '}
           <span className="font-semibold text-foreground">{actionPhrase(line)}</span>
-          <time
-            dateTime={line.created_at}
-            className="ml-2 text-xs font-normal text-muted-foreground tabular-nums"
-          >
+          <time dateTime={line.created_at} className={TRAIL_TIME}>
             {formatDateTime(line.created_at)}
           </time>
         </p>
@@ -379,7 +408,7 @@ function ApprovalEvent({ line, showRail }: { line: ApprovalAction; showRail: boo
         )}
 
         {line.on_behalf_of_name && (
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="mt-1 text-xs break-words text-muted-foreground">
             Thực hiện thay{' '}
             <span className="font-medium text-foreground">{line.on_behalf_of_name}</span>
             {line.delegation_id && ` · Theo ủy quyền #${line.delegation_id}`}
@@ -414,7 +443,7 @@ function ExtraEvent({ event, showRail }: { event: TrailExtraEvent; showRail: boo
       </span>
 
       <article className="min-w-0 flex-1 pt-1" aria-label={event.title}>
-        <p className="min-w-0 text-sm leading-5">
+        <p className={TRAIL_TITLE_LINE}>
           <span
             className={cn(
               'font-semibold',
@@ -424,10 +453,7 @@ function ExtraEvent({ event, showRail }: { event: TrailExtraEvent; showRail: boo
             {event.title}
           </span>
           {event.time && (
-            <time
-              dateTime={event.time}
-              className="ml-2 text-xs font-normal text-muted-foreground tabular-nums"
-            >
+            <time dateTime={event.time} className={TRAIL_TIME}>
               {formatDateTime(event.time)}
             </time>
           )}
@@ -464,7 +490,9 @@ function PendingEvent({ tasks, showRail }: { tasks: ApprovalTask[]; showRail: bo
         <h4 className="text-sm font-semibold">Đang chờ phản hồi</h4>
         <ul className="mt-1 max-w-3xl space-y-1.5">
           {tasks.map((task) => (
-            <li key={task.id} className="text-sm leading-5 text-muted-foreground">
+            //  `break-words` cùng lý do với `TRAIL_TITLE_LINE`: `assignee_name`
+            //  và `node_name` đều là chữ tự do, chuỗi liền là tràn thẻ.
+            <li key={task.id} className="text-sm leading-5 break-words text-muted-foreground">
               <span className="font-medium text-foreground">
                 {task.assignee_name || 'Chưa xác định người duyệt'}
               </span>

@@ -84,6 +84,17 @@ describe('LeaveRequestSummary', () => {
     expect(screen.getByText(dai)).toHaveClass('break-words')
   })
 
+  it('ô không ai khai hiện dấu gạch, không để trống trơn', () => {
+    //  Trước 09/09/2026 mỗi trường là một khung `ReadOnlyValue` cao 36px và
+    //  khung đó RỖNG khi không có giá trị — trên điện thoại nó đọc ra y hệt một
+    //  ô nhập chưa gõ gì, ở một trang không cho gõ. Người xem kết luận là màn
+    //  hình lỗi chứ không kết luận là người nộp không khai số điện thoại.
+    render(<LeaveRequestSummary request={request({ contact_phone: '', contact_address: '   ' })} />)
+
+    //  Hai ô rỗng (điện thoại + địa chỉ) → đúng hai dấu gạch.
+    expect(screen.getAllByText('—')).toHaveLength(2)
+  })
+
   it('buổi nghỉ chỉ nhắc khi KHÁC cả ngày', () => {
     //  Thêm "(Cả ngày)" vào mọi tờ đơn là bốn chữ thừa trên mọi dòng.
     const { rerender } = render(<LeaveRequestSummary request={request()} />)

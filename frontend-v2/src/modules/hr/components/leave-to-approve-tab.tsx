@@ -19,6 +19,8 @@ import {
   isFiltering,
   leaveTypesIn,
 } from '../utils/filter-leave-rows'
+import { LEAVE_TOOLBAR_STICKY } from '../utils/leave-list-sticky'
+import { LeaveRequestCard } from './leave-request-card'
 import { LeaveRowsFilterBar } from './leave-rows-filter-bar'
 import {
   codeColumn,
@@ -140,8 +142,14 @@ function LeaveToApproveContent() {
           ? 'Không có đơn nào khớp bộ lọc.'
           : 'Không có đơn nào đang chờ bạn duyệt.'
       }
+      toolbarClassName={LEAVE_TOOLBAR_STICKY}
       storageKey="hr.leave-to-approve"
       onRowClick={(r) => navigate(appRoutes.hr.leaveRequestDetail(r.id))}
+      //  Màn hẹp: thẻ thay bảng. Không bày trạng thái (mọi dòng ở đây đều là
+      //  «Chờ duyệt» — cùng lý do bảng không có cột đó), nhưng bày hạn xử lý.
+      mobileCard={(r) => (
+        <LeaveRequestCard request={r} showStatus={false} dueAt={r.task.due_at} />
+      )}
       toolbar={
         <LeaveRowsFilterBar
           keyword={keyword}
@@ -154,8 +162,15 @@ function LeaveToApproveContent() {
                duy nhất, mà một bảng không có nút nào thì không tự nói điều đó. */}
           <ConditionalFilter />
 
+          {/*  ⚠️ Cả cụm này ẨN dưới `sm`, không chỉ rút gọn. Ba lý do cộng lại:
+               câu hướng dẫn nói «bấm vào một DÒNG» mà khổ hẹp vẽ ra THẺ (và mỗi
+               thẻ đã có mũi tên tự nói nó bấm được); con số thì huy hiệu trên
+               tab «Cần tôi duyệt» ngay phía trên đang nói đúng cùng một số; còn
+               giữ lại thì 39px + khoảng cách đủ để đẩy nhóm nút bên phải rớt
+               xuống một hàng riêng. Vạch `border-l` cũng vì thế chỉ có từ `sm`
+               — một nét kẻ dọc mồ côi đầu dòng đọc ra như lỗi vẽ. */}
           {rows.length > 0 && (
-            <span className="border-l pl-3 text-xs text-muted-foreground">
+            <span className="text-xs text-muted-foreground max-md:hidden md:border-l md:pl-3">
               <span className="font-medium text-foreground">{rows.length} đơn</span> · bấm
               vào một dòng để xem và duyệt
             </span>

@@ -116,6 +116,20 @@ export interface CrudConfig<T> {
   quickFilters?: QuickFilterConfig[]
   /** Cấu hình các cột hiển thị trên DataTable. */
   columns: DataTableColumn<T>[]
+  /**
+   * Nội dung MỘT THẺ ở khổ điện thoại (< 768px) — khai nó là bật chế độ thẻ,
+   * xem `DataTableProps.mobileCard`.
+   *
+   * ⚠️ **Tự nguyện, không mặc định.** Khung CRUD này chạy cho hơn hai chục danh
+   * mục; bật thẻ cho tất cả bằng một dòng ở đây là hai chục màn đồng loạt đổi
+   * hình dạng mà không ai xem lại từng cái. Danh mục hai ba cột thì bảng cuộn
+   * ngang vẫn đọc được — chỉ những màn nhiều cột mới cần dời.
+   *
+   * ⚠️ Thẻ KHÔNG suy ra từ `columns`: cột khai bề rộng, thứ tự, ghim — toàn thứ
+   * chỉ có nghĩa trong lưới. Ở thẻ, người dựng tự chọn bày trường nào theo thứ
+   * bậc nào.
+   */
+  mobileCard?: (row: T) => ReactNode
   /** Cấu hình bộ lọc nâng cao (ConditionalFilter). */
   filterConfig?: {
     fields: FilterFieldDefinition[]

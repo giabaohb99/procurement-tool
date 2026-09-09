@@ -115,7 +115,14 @@ export function LeaveBalanceDetailPage() {
         sticky
         actions={
           canAdjust ? (
-            <Button onClick={adjustForm.submit} disabled={!adjustForm.canSave}>
+            //  Ở khổ hẹp nhóm nút chiếm trọn hàng (`PageHeader`), nên một nút co
+            //  theo chữ sẽ nép ở mép phải và trông như bị bỏ quên giữa hàng
+            //  trống. Đây lại là hành động DUY NHẤT của trang — trải hết hàng.
+            <Button
+              className="max-md:w-full"
+              onClick={adjustForm.submit}
+              disabled={!adjustForm.canSave}
+            >
               <Save className="size-4" />
               Lưu điều chỉnh
             </Button>

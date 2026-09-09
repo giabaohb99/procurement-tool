@@ -1,19 +1,27 @@
-import { Plus, Search } from 'lucide-react'
-import { useMemo, useState, type ReactNode } from 'react'
+import { Plus } from 'lucide-react'
+import { useMemo, useRef, useState, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import { PermissionGate } from '@/core/authorization/permission-gate'
 import { appConfig } from '@/core/config/app-config'
-import { ConditionalFilter, FilterProvider, useFilterQuery } from '@/shared/conditional-filter'
+import { AdvancedFilterSection } from '@/shared/ui/advanced-filter-section'
+import {
+  ConditionalFilter,
+  FilterProvider,
+  useFilterQuery,
+  useOptionalFilterContext,
+} from '@/shared/conditional-filter'
 import { DataTable } from '@/shared/data-table'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
+import { useScrolled } from '@/shared/hooks/use-scrolled'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import type { ListParams } from '@/shared/types/api'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
-import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
+import { QuickFilterField, QuickFilterSheet } from '@/shared/ui/quick-filter-sheet'
+import { SearchField } from '@/shared/ui/search-field'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { CrudFormDialog } from './crud-form-dialog'
 import type { CrudConfig, CrudRecord } from './types'
@@ -29,11 +37,21 @@ interface CrudListPageProps<T> {
    * tiêu đề, còn thanh tab phải chạy hết bề ngang và đứng thành một dải riêng.
    */
   beforeContent?: ReactNode
+  /**
+   * Class thêm cho DẢI thanh công cụ — dùng để GHIM nó lên đầu khung cuộn ở khổ
+   * điện thoại.
+   *
+   * ⚠️ Mốc `top` do TRANG khai, không phải khung này: nó bằng đúng chiều cao
+   * của thứ đang ghim phía trên (`beforeContent`), mà chỉ trang mới biết mình
+   * dựng mấy hàng điều hướng. Xem `leave-list-sticky.ts`.
+   */
+  toolbarClassName?: string
 }
 
 export function CrudListPage<T extends CrudRecord>({
   config,
   beforeContent,
+  toolbarClassName,
 }: CrudListPageProps<T>) {
   /**
    * Bấm "Áp dụng" ở bộ lọc nâng cao là VIẾT LẠI toàn bộ query string, chỉ chừa lại
@@ -56,17 +74,28 @@ export function CrudListPage<T extends CrudRecord>({
   if (filterConfig) {
     return (
       <FilterProvider config={filterConfig}>
-        <CrudListContent config={config} beforeContent={beforeContent} />
+        <CrudListContent
+          config={config}
+          beforeContent={beforeContent}
+          toolbarClassName={toolbarClassName}
+        />
       </FilterProvider>
     )
   }
 
-  return <CrudListContent config={config} beforeContent={beforeContent} />
+  return (
+    <CrudListContent
+      config={config}
+      beforeContent={beforeContent}
+      toolbarClassName={toolbarClassName}
+    />
+  )
 }
 
 function CrudListContent<T extends CrudRecord>({
   config,
   beforeContent,
+  toolbarClassName,
 }: CrudListPageProps<T>) {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -81,6 +110,15 @@ function CrudListContent<T extends CrudRecord>({
   // Trạng thái popup Thêm/Sửa: undefined = đóng · null = THÊM mới · bản ghi = SỬA.
   const [formItem, setFormItem] = useState<T | null | undefined>(undefined)
 
+  //  Dải ghim đầu trang đổ bóng khi có nội dung trôi bên dưới — xem
+  //  `toolbarClassName`. Đo ở khối bọc vì nó nằm cùng khung cuộn với dải ghim.
+  const stickyRef = useRef<HTMLDivElement>(null)
+  const scrolled = useScrolled(stickyRef)
+
+  //  `useOptionalFilterContext` chứ không bản bắt buộc: màn không khai
+  //  `filterConfig` thì không có `FilterProvider` bọc ngoài, và bản bắt buộc sẽ
+  //  ném lỗi làm trắng cả trang.
+  const filter = useOptionalFilterContext()
   const { queryParams, queryKey } = useFilterQuery()
   const [page, setPage] = usePageResetOnFilterChange([queryKey, debouncedValue, searchParams.toString()])
 
@@ -139,17 +177,59 @@ function CrudListContent<T extends CrudRecord>({
     setSearchParams(nextParams)
   }
 
+  //  Ô lọc nhanh dựng MỘT LẦN rồi đặt vào một trong hai chỗ tùy khổ màn: hàng
+  //  ngang (khổ rộng) hoặc tờ trượt «Bộ lọc» (khổ hẹp). Dựng hai bản rồi ẩn bớt
+  //  bằng `md:hidden` thì mỗi ô nằm hai lần trong cây DOM — trình đọc màn hình
+  //  đọc cả hai, và mọi bài kiểm tìm theo tên đều vớ phải hai kết quả.
+  const quickFilterSelects = (config.quickFilters ?? [])
+    .filter((qf) => qf.type === 'select' && qf.options)
+    .map((qf) => {
+      const val = searchParams.get(qf.key) || 'all'
+      return {
+        key: qf.key,
+        label: qf.label,
+        node: (
+          <Select value={val} onValueChange={(v) => handleQuickFilterChange(qf.key, v)}>
+            <SelectTrigger className="h-9 w-full text-xs md:w-40" aria-label={qf.label}>
+              <SelectValue placeholder={qf.label} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả {qf.label.toLowerCase()}</SelectItem>
+              {(qf.options ?? []).map((opt) => (
+                <SelectItem key={String(opt.value)} value={String(opt.value)}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ),
+      }
+    })
+
+  //  Đếm để gắn huy hiệu lên nút «Bộ lọc»: không có nó thì người dùng thấy nút
+  //  trơn mà danh sách vẫn đang bị thu hẹp, rồi đi tìm lỗi ở dữ liệu.
+  const activeQuickFilters = (config.quickFilters ?? []).filter((qf) => {
+    const val = searchParams.get(qf.key)
+    return Boolean(val) && val !== 'all'
+  }).length
+
   return (
-    <PageContainer fill>
+    //  ⚠️ `fill` chỉ bật từ `md`: ở khổ hẹp màn nào khai `mobileCard` sẽ dựng một
+    //  danh sách thẻ dài, mà `fill` nhét nó vào một khe vài trăm pixel và biến
+    //  thành cuộn LỒNG — vuốt trúng mép ngoài khe thì trang không nhúc nhích.
+    <PageContainer fill className="max-md:h-auto">
       <PageHeader
         title={config.title}
         description={config.description}
         actions={
-          <div className="flex items-center gap-2">
+          //  Khổ hẹp: cụm nút chiếm trọn hàng và nút «Thêm» giãn hết phần còn
+          //  lại — hành động chính của màn phải là thứ dễ chạm nhất.
+          <div className="flex items-center gap-2 max-md:w-full">
             {config.renderToolbarExtra?.()}
 
             <PermissionGate entity={config.entity} action="create">
               <Button
+                className="max-md:flex-1"
                 onClick={() =>
                   config.createRoute ? navigate(config.createRoute) : setFormItem(null)
                 }
@@ -161,9 +241,18 @@ function CrudListContent<T extends CrudRecord>({
         }
       />
 
-      {beforeContent}
+      {/*  `group` + `data-scrolled` là đường dẫn tín hiệu «đã cuộn» xuống tới
+           dải ghim nằm sâu bên trong (thanh công cụ do `DataTable` vẽ, tầng này
+           không với tới bằng prop). Bóng đổ của dải đó đọc thuộc tính này. Dựng
+           sẵn cho mọi màn CRUD — không ghim gì thì nó chỉ là một khối flex. */}
+      <div
+        ref={stickyRef}
+        data-scrolled={scrolled ? '' : undefined}
+        className="group flex min-h-0 flex-1 flex-col"
+      >
+        {beforeContent}
 
-      <Card className="flex min-h-0 flex-1 flex-col p-4">
+        <Card className="flex min-h-0 w-full min-w-0 flex-1 flex-col p-3 md:p-4">
         <DataTable
           fillHeight
           columns={config.columns}
@@ -173,7 +262,11 @@ function CrudListContent<T extends CrudRecord>({
           isError={isError}
           emptyMessage={`Không tìm thấy ${config.unitLabel} nào.`}
           storageKey={config.storageKey}
+          toolbarClassName={toolbarClassName}
           onRowClick={handleRowClick}
+          //  Chỉ những danh mục KHAI mới đổi sang thẻ ở khổ hẹp — xem
+          //  `CrudConfig.mobileCard`.
+          mobileCard={config.mobileCard}
           sortBy={sortBy}
           sortDir={sortDir}
           onSortChange={handleSortChange}
@@ -187,47 +280,49 @@ function CrudListContent<T extends CrudRecord>({
           }}
           toolbar={
             <>
-              <div className="relative w-64 max-w-sm">
-                <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder={config.searchPlaceholder || `Tìm ${config.unitLabel}…`}
-                  value={keyword}
-                  onChange={(e) => setKeyword(e.target.value)}
-                  className="pl-8 h-9 text-xs bg-background"
-                />
+              {/*  ⚠️ Bề rộng cứng `w-64` chỉ áp từ `md`. Dưới ngưỡng đó ô tìm là
+                   `flex-1` với `flex-basis: 0` — nó không bao giờ ép xuống dòng,
+                   nên nhóm nút bên phải chắc chắn ở lại cùng hàng. */}
+              <SearchField
+                value={keyword}
+                onChange={setKeyword}
+                placeholder={config.searchPlaceholder || `Tìm ${config.unitLabel}…`}
+                className="md:w-64 md:max-w-sm md:flex-none"
+              />
+
+              {/*  Khổ hẹp: mọi ô lọc dọn vào tờ trượt, hàng công cụ còn một dòng.
+                   Cùng khuôn với bốn màn Thu mua và cụm Nghỉ phép. */}
+              {(quickFilterSelects.length > 0 || config.filterConfig) && (
+                <QuickFilterSheet
+                  activeCount={activeQuickFilters + (filter?.activeCount ?? 0)}
+                  onClearAll={() => {
+                    for (const qf of config.quickFilters ?? []) handleQuickFilterChange(qf.key, '')
+                    filter?.reset()
+                  }}
+                  onApply={filter?.apply}
+                >
+                  {quickFilterSelects.map((qf) => (
+                    <QuickFilterField key={qf.key} label={qf.label}>
+                      {qf.node}
+                    </QuickFilterField>
+                  ))}
+                  {config.filterConfig && <AdvancedFilterSection />}
+                </QuickFilterSheet>
+              )}
+
+              {/*  Cùng những ô chọn ấy dựng lần thứ hai cho hàng ngang khổ rộng.
+                   State nằm trên URL nên hai bản luôn nói cùng một giá trị. */}
+              <div className="hidden items-center gap-3 md:flex">
+                {quickFilterSelects.map((qf) => (
+                  <span key={qf.key}>{qf.node}</span>
+                ))}
+                {config.filterConfig && <ConditionalFilter />}
               </div>
-
-              {config.quickFilters?.map((qf) => {
-                if (qf.type === 'select' && qf.options) {
-                  const val = searchParams.get(qf.key) || 'all'
-                  return (
-                    <Select
-                      key={qf.key}
-                      value={val}
-                      onValueChange={(v) => handleQuickFilterChange(qf.key, v)}
-                    >
-                      <SelectTrigger className="h-9 w-40 text-xs">
-                        <SelectValue placeholder={qf.label} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Tất cả {qf.label.toLowerCase()}</SelectItem>
-                        {qf.options.map((opt) => (
-                          <SelectItem key={String(opt.value)} value={String(opt.value)}>
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )
-                }
-                return null
-              })}
-
-              {config.filterConfig && <ConditionalFilter />}
             </>
           }
         />
-      </Card>
+        </Card>
+      </div>
 
       {/* Form riêng nếu config khai `FormDialog` (vd Tài xế), ngược lại dùng form generic.
           Chỉ dựng khi MỞ để hộp thoại nạp state sạch mỗi lần (khỏi cần effect reset).

@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { usePermission } from '@/core/authorization/use-permission'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { cn } from '@/shared/utils/cn'
+import { LEAVE_SECTION_TABS_STICKY } from '../utils/leave-list-sticky'
 
 /**
  * Thanh chuyển màn của cụm NGHỈ PHÉP.
@@ -80,7 +81,19 @@ function isTabActive(tab: SectionTab, pathname: string): boolean {
   )
 }
 
-export function LeaveSectionTabs() {
+interface LeaveSectionTabsProps {
+  /**
+   * Ghim dải tab lên đỉnh khung cuộn ở khổ điện thoại.
+   *
+   * ⚠️ Chỉ bật ở màn **không có hàng tab thứ hai** — xem
+   * `LEAVE_SECTION_TABS_STICKY`. Màn Đơn nghỉ phép ghim hàng ba tab bên trong
+   * chứ không ghim dải này; ghim cả hai là hai dải chồng nhau ăn 84px chiều cao
+   * trên một màn 852px.
+   */
+  sticky?: boolean
+}
+
+export function LeaveSectionTabs({ sticky = false }: LeaveSectionTabsProps) {
   const { can } = usePermission()
   const { pathname } = useLocation()
 
@@ -92,8 +105,24 @@ export function LeaveSectionTabs() {
   if (tabs.length <= 1 && !inSettings) return null
 
   return (
-    <div className="shrink-0 space-y-2 pb-3">
-      <nav className="flex flex-wrap items-center gap-1" aria-label="Các màn Nghỉ phép">
+    <div className={cn('shrink-0 space-y-2 pb-3', sticky && LEAVE_SECTION_TABS_STICKY)}>
+      {/*  ⚠️ Màn hẹp: **thu nhỏ cho ĐỦ BỐN TAB LỌT MỘT HÀNG**, không xuống dòng
+           và cũng không cuộn ngang.
+
+           Đã thử cả hai đường kia và cả hai đều hỏng: `flex-wrap` đẩy «Thiết
+           lập» xuống hàng riêng, thành hai hàng điều hướng chồng lên hàng tab
+           con — ~250px chiều cao trước dòng dữ liệu đầu tiên. Cuộn ngang thì gọn
+           hơn nhưng cắt nhãn cuối giữa chừng («Thiế…»), mà một chữ đứt đôi ở mép
+           màn đọc ra như lỗi vẽ chứ không ra "còn nữa, kéo sang phải" — người
+           dùng không biết là mình đang thiếu một tab.
+
+           Cỡ chữ nhỏ + đệm hẹp thì bốn nhãn cộng lại ~295px, lọt 361px lòng
+           trang. Vẫn giữ `overflow-x-auto` làm lưới đỡ: thêm tab thứ năm thì nó
+           cuộn chứ không vỡ hàng. */}
+      <nav
+        className="-mx-4 flex items-center gap-1 overflow-x-auto px-4 [scrollbar-width:none] md:mx-0 md:flex-wrap md:overflow-visible md:px-0 [&::-webkit-scrollbar]:hidden"
+        aria-label="Các màn Nghỉ phép"
+      >
         {tabs.map((tab) => (
           <TabLink key={tab.path} to={tab.path} active={isTabActive(tab, pathname)}>
             {tab.label}
@@ -140,7 +169,12 @@ function TabLink({
       to={to}
       aria-current={active ? 'page' : undefined}
       className={cn(
-        'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+        //  `whitespace-nowrap` + `shrink-0`: thiếu chúng thì flex bóp từng tab
+        //  lại cho vừa hàng và nhãn gãy làm đôi.
+        'shrink-0 rounded-md whitespace-nowrap transition-colors',
+        //  Cỡ chữ + đệm co lại dưới `md` để bốn tab lọt một hàng — xem ghi chú
+        //  ở `<nav>`.
+        'px-2.5 py-1.5 text-xs font-medium md:px-3 md:text-sm',
         active
           ? 'bg-primary text-primary-foreground'
           : 'text-muted-foreground hover:bg-accent hover:text-foreground',

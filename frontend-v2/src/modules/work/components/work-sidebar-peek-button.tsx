@@ -65,7 +65,7 @@ export function WorkSidebarPeekButton() {
         {/*  `p-0` vì `WorkSidebarTree` tự lo lề của nó; `w-auto` để thẻ lấy đúng
              bề rộng `w-64` của cây thay vì bề rộng mặc định của HoverCard. */}
         <HoverCardContent align="start" sideOffset={8} className="w-auto p-0">
-          <div className="h-[min(28rem,60vh)]">
+          <div className="h-[min(28rem,60dvh)]">
             <WorkSidebarTree
               peeking
               onToggleCollapse={() => {

@@ -25,7 +25,7 @@ export { getValidFilterRows, isValidFilterRow } from './helpers/validators'
 export { useFilterQuery } from './hooks/use-filter-query'
 export { useFilterContext, useOptionalFilterContext } from './provider/filter-context'
 export { FilterProvider } from './provider/filter-provider'
-export { ConditionalFilter } from './ui/filter-root'
+export { ConditionalFilter, ConditionalFilterBody } from './ui/filter-root'
 export type {
   FieldType,
   FilterConfig,

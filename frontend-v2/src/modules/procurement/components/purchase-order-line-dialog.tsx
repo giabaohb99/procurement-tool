@@ -134,7 +134,7 @@ export function PurchaseOrderLineDialog({
       {/* `max-w-*!`: `DialogContent` của shadcn có sẵn `max-w-[calc(100%-2rem)]`
           và `sm:max-w-lg` — không đánh important thì hộp thoại bị bóp lại theo
           luật gốc, bảng lần giao 22 cột không còn chỗ. */}
-      <DialogContent className="max-h-[92vh] w-[96vw] max-w-[1200px]! overflow-y-auto">
+      <DialogContent className="max-h-[92dvh] w-[96vw] max-w-[1200px]! overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             Dòng {lineNumber}: {item.product_name || item.product_code || 'Chưa chọn sản phẩm'}

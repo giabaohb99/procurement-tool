@@ -117,10 +117,24 @@ export function LeaveCalendarPage() {
   const holidays = holidayData?.items ?? []
 
   return (
-    <PageContainer fill>
+    //  ⚠️ `fill` (trang cao bằng khung, phần cuộn nằm BÊN TRONG) chỉ bật từ `md`
+    //  — `max-md:h-auto` gỡ `h-full` mà `fill` đặt. Ở khổ hẹp, dưới lưới tháng
+    //  còn cả một bản liệt kê dài (xem `LeaveCalendarMonthAgenda`), mà `fill`
+    //  nhét tất cả vào một khe ~300px và biến nó thành ô cuộn LỒNG: vuốt trúng
+    //  mép ngoài khe thì trang không nhúc nhích, người dùng đọc ra là màn hình
+    //  đơ. Bỏ `fill` thì CẢ TRANG cuộn, đúng nếp mọi ứng dụng điện thoại — cùng
+    //  bài học với `leave-request-list-page`.
+    <PageContainer fill className="max-md:h-auto">
       <PageHeader
         title="Lịch nghỉ"
-        description="Ai nghỉ ngày nào — chỉ hiện đơn đang chờ duyệt và đã duyệt."
+        //  ⚠️ Dòng mô tả ẨN trên máy hẹp: nó là câu giới thiệu, đọc một lần rồi
+        //  thôi, nhưng chiếm hai dòng (~48px) ở đầu MỌI lần mở màn — ngay phía
+        //  trên thứ người ta vào đây để xem.
+        description={
+          <span className="max-md:hidden">
+            Ai nghỉ ngày nào — chỉ hiện đơn đang chờ duyệt và đã duyệt.
+          </span>
+        }
       />
 
       <LeaveSectionTabs />
@@ -139,7 +153,10 @@ export function LeaveCalendarPage() {
 
         {/*  Chú thích màu: hai màu ở đây là thứ duy nhất phân biệt "chắc chắn
              nghỉ" với "có thể nghỉ", mà ô lịch chật quá không ghi chữ được. */}
-        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+        {/*  Khổ hẹp: cho phép xuống dòng và bóp khoảng hở — ba chú thích + chữ
+             "Đang tải…" vượt 361px lòng trang thì `flex` không wrap sẽ bóp từng
+             cụm lại và cắt chữ giữa chừng. */}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground md:gap-x-4">
           {/*  Ký hiệu ở đây phải TRÙNG với chip trong lịch (chấm tròn màu),
                không phải một hình khác cùng màu — chú thích mà vẽ khác thứ nó
                chú thích thì người đọc phải tự bắc cầu. */}
@@ -159,6 +176,13 @@ export function LeaveCalendarPage() {
         </div>
       </div>
 
+      {/*  ⚠️ Ở khổ hẹp lưới tháng CHỈ đếm đầu người, không kê tên (ô rộng 48px,
+           xem `LeaveCalendarMonthCellCompact`). Đã dựng thêm một bản liệt kê dọc
+           bên dưới lưới để bù phần tên, rồi BỎ ngày 09/09/2026: 21 lượt nghỉ ra
+           21 hàng ~2100px, mà nội dung của nó trùng gần hết với chế độ TUẦN vốn
+           đã kê tên sẵn theo từng ngày. Đường xem tên trên điện thoại là *đổi
+           sang Tuần* hoặc *chạm vào một ngày*, không phải một danh sách thứ hai
+           nối đuôi lưới. */}
       {calendarMode === 'month' && (
         <LeaveCalendarMonthGrid
           anchor={anchor}

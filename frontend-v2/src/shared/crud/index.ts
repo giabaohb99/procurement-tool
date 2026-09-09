@@ -1,6 +1,7 @@
 export { CrudListPage } from './crud-list-page'
 export { CrudDetailPage } from './crud-detail-page'
 export { CrudFormDialog } from './crud-form-dialog'
+export { CrudRecordCard } from './crud-record-card'
 export {
   buildFormDefaults,
   percentInputToRatio,

@@ -1,20 +1,22 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArchiveRestore, CalendarPlus, Search } from 'lucide-react'
+import { ArchiveRestore, CalendarPlus } from 'lucide-react'
 
 import { usePermission } from '@/core/authorization/use-permission'
 import { appConfig } from '@/core/config/app-config'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
+import { useScrolled } from '@/shared/hooks/use-scrolled'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import type { ListParams } from '@/shared/types/api'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { confirm } from '@/shared/ui/confirm-dialog'
-import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
+import { QuickFilterField, QuickFilterSheet } from '@/shared/ui/quick-filter-sheet'
+import { SearchField } from '@/shared/ui/search-field'
 import {
   Select,
   SelectContent,
@@ -23,7 +25,9 @@ import {
   SelectValue,
 } from '@/shared/ui/select'
 import { cn } from '@/shared/utils/cn'
+import { LeaveBalanceCard } from '../components/leave-balance-card'
 import { LeaveSectionTabs } from '../components/leave-section-tabs'
+import { LEAVE_SECTION_TOOLBAR_STICKY } from '../utils/leave-list-sticky'
 import {
   useAllocateLeaveBalance,
   useCloseLeaveYear,
@@ -31,6 +35,7 @@ import {
   useLeaveTypes,
 } from '../hooks/use-leave'
 import type { LeaveBalance } from '../types/leave'
+import { hasQuota } from '../utils/leave-balance-quota'
 
 const ALL = 'all'
 
@@ -68,6 +73,11 @@ export function LeaveBalancePage() {
   const [leaveTypeId, setLeaveTypeId] = useUrlParamState('leave_type_id', ALL)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
+
+  //  Dải ghim đầu trang đổ bóng khi có nội dung trôi bên dưới — xem
+  //  `leave-list-sticky.ts`. Đo ở khối bọc vì nó nằm cùng khung cuộn với hai dải.
+  const stickyRef = useRef<HTMLDivElement>(null)
+  const scrolled = useScrolled(stickyRef)
 
   const allocate = useAllocateLeaveBalance()
   const closeYear = useCloseLeaveYear()
@@ -210,13 +220,21 @@ export function LeaveBalancePage() {
         //  chính — nên con số đọc ra như một cái link bấm được. Đây là cột người
         //  ta quét mắt tìm, đậm hơn là đủ. Hết phép thì tô đỏ, vì đó là thứ Nhân
         //  sự cần thấy ngay giữa một bảng toàn số.
+        //
+        //  ⚠️ Nhưng chỉ đỏ khi CÓ QUỸ mà tiêu hết. Loại nghỉ không cấp hạn mức
+        //  (tang chế, cưới hỏi, nghỉ bù…) luôn còn 0 và chiếm phần lớn số dòng —
+        //  tô đỏ hết thì màu đỏ mất nghĩa đúng chỗ nó cần có nghĩa. Xem `hasQuota`.
         cell: (b) => (
           <DayCount
             value={b.remaining_days}
             alwaysShow
             className={cn(
               'font-semibold',
-              b.remaining_days <= 0 ? 'text-destructive' : 'text-foreground',
+              b.remaining_days > 0
+                ? 'text-foreground'
+                : hasQuota(b)
+                  ? 'text-destructive'
+                  : 'text-muted-foreground',
             )}
           />
         ),
@@ -228,38 +246,113 @@ export function LeaveBalancePage() {
     [],
   )
 
+  //  Hai ô chọn dựng MỘT LẦN rồi đặt vào một trong hai chỗ tùy khổ màn — xem
+  //  ghi chú ở thanh công cụ bên dưới.
+  const typeSelect = (
+    <Select value={leaveTypeId} onValueChange={setLeaveTypeId}>
+      <SelectTrigger className="w-full md:w-44" aria-label="Lọc theo loại nghỉ">
+        <SelectValue placeholder="Loại nghỉ" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={ALL}>Tất cả loại nghỉ</SelectItem>
+        {(typeData?.items ?? []).map((t) => (
+          <SelectItem key={t.id} value={String(t.id)}>
+            {t.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+
+  //  Ô CHỌN chứ không phải ô nhập số: ô số cho gõ "20226" hay "0" và bảng lập
+  //  tức rỗng không rõ vì sao, lại còn có mũi tên tăng giảm chạy từng năm một.
+  const yearSelect = (
+    <Select value={year} onValueChange={setYear}>
+      <SelectTrigger className="w-full md:w-32" aria-label="Chọn năm">
+        <SelectValue placeholder="Năm" />
+      </SelectTrigger>
+      <SelectContent>
+        {years.map((y) => (
+          <SelectItem key={y} value={y}>
+            Năm {y}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+
   return (
-    <PageContainer fill>
+    //  ⚠️ `fill` chỉ bật từ `md`: ở khổ hẹp bảng biến thành danh sách thẻ dài,
+    //  mà `fill` nhét nó vào một khe vài trăm pixel và biến thành cuộn LỒNG —
+    //  vuốt trúng mép ngoài khe thì trang không nhúc nhích. Cùng bài học với
+    //  `leave-request-list-page`.
+    <PageContainer fill className="max-md:h-auto">
       <PageHeader
         title="Quỹ phép năm"
-        description="Cấp phát, theo dõi và điều chỉnh số ngày phép của từng nhân sự."
+        //  Dòng mô tả ẩn trên máy hẹp: câu giới thiệu, đọc một lần rồi thôi,
+        //  nhưng chiếm hai dòng ở đầu MỌI lần mở màn.
+        description={
+          <span className="max-md:hidden">
+            Cấp phát, theo dõi và điều chỉnh số ngày phép của từng nhân sự.
+          </span>
+        }
         actions={
           <>
             {/*  Kết sổ đứng TRƯỚC và ở dạng nút phụ: nó chạy mỗi năm một lần,
                  còn Cấp quỹ là nút hằng ngày. Để hai nút cùng cỡ cùng màu thì
-                 người ta bấm nhầm, mà nhầm ở đây là dời phép của cả công ty. */}
+                 người ta bấm nhầm, mà nhầm ở đây là dời phép của cả công ty.
+
+                 ⚠️ Khổ hẹp: hai nút CHIA ĐÔI một hàng (`max-md:flex-1`) và rút
+                 nhãn còn «Kết sổ 2025» / «Cấp quỹ 2026». Nhãn đầy đủ làm mỗi nút
+                 chiếm trọn một hàng, tức 96px chỉ để bày hai việc mà phòng Nhân
+                 sự bấm vài lần một NĂM — trong khi thứ người ta mở màn này để
+                 xem bị đẩy xuống dưới nếp gấp.
+
+                 ⚠️ Nhãn rút gọn giữ tới tận `lg`, không phải chỉ dưới `md`. Ở
+                 dải 768–1024px (máy bảng, cửa sổ chia đôi màn) nhãn đầy đủ cộng
+                 tiêu đề vượt bề ngang, nên cụm nút rớt xuống một hàng riêng và —
+                 vì `PageHeader` canh phải — nó nằm nép mép phải chừa một khoảng
+                 trắng bằng nửa hàng. Nhãn ngắn thì cả cụm ở lại cùng hàng với
+                 tiêu đề. */}
             {canCloseYear && (
-              <Button variant="outline" onClick={closeYearNow} disabled={closeYear.isPending}>
+              <Button
+                variant="outline"
+                className="max-md:flex-1 max-md:px-2 max-md:text-xs"
+                onClick={closeYearNow}
+                disabled={closeYear.isPending}
+              >
                 <ArchiveRestore className="size-4" />
-                Kết sổ năm {Number(year) - 1}
+                <span className="lg:hidden">Kết sổ {Number(year) - 1}</span>
+                <span className="max-lg:hidden">Kết sổ năm {Number(year) - 1}</span>
               </Button>
             )}
             {canAllocate && (
               <Button
+                className="max-md:flex-1 max-md:px-2 max-md:text-xs"
                 onClick={() => allocate.mutate({ year: Number(year) })}
                 disabled={allocate.isPending}
               >
                 <CalendarPlus className="size-4" />
-                Cấp quỹ năm {year}
+                <span className="lg:hidden">Cấp quỹ {year}</span>
+                <span className="max-lg:hidden">Cấp quỹ năm {year}</span>
               </Button>
             )}
           </>
         }
       />
 
-      <LeaveSectionTabs />
+      {/*  `group` + `data-scrolled` là đường dẫn tín hiệu «trang đã cuộn» xuống
+           tới dải ghim nằm sâu bên trong (thanh công cụ do `DataTable` vẽ, tầng
+           trang không với tới được bằng prop). Bóng đổ của dải đó đọc thuộc tính
+           này — xem `leave-list-sticky.ts`. */}
+      <div
+        ref={stickyRef}
+        data-scrolled={scrolled ? '' : undefined}
+        className="group flex min-h-0 flex-1 flex-col"
+      >
+        <LeaveSectionTabs sticky />
 
-      <Card className="flex min-h-0 flex-1 flex-col p-4">
+        <Card className="flex min-h-0 w-full min-w-0 flex-1 flex-col p-3 md:p-4">
         <DataTable
           fillHeight
           columns={columns}
@@ -273,7 +366,11 @@ export function LeaveBalancePage() {
               : `Chưa cấp quỹ phép năm ${year}. Bấm «Cấp quỹ năm ${year}» để tạo.`
           }
           storageKey="hr.leave-balances"
+          toolbarClassName={LEAVE_SECTION_TOOLBAR_STICKY}
           onRowClick={(b) => navigate(appRoutes.hr.leaveBalanceDetail(b.id))}
+          //  Khổ hẹp: thẻ thay bảng — bảng này mười một cột, trên máy 393px chỉ
+          //  thấy hai cột đầu và cả mười con số nằm sau một thao tác cuộn ngang.
+          mobileCard={(b) => <LeaveBalanceCard balance={b} />}
           pagination={{
             page,
             pageSize,
@@ -284,50 +381,47 @@ export function LeaveBalancePage() {
           }}
           toolbar={
             <>
-              <div className="relative min-w-56 flex-1 md:max-w-xs">
-                <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  className="pl-9"
-                  placeholder="Tìm theo tên hoặc mã nhân sự…"
-                  value={keyword}
-                  onChange={(e) => setKeyword(e.target.value)}
-                />
+              {/*  ⚠️ Sàn `min-w-56` chỉ áp từ `md`: dưới ngưỡng đó ô tìm là
+                   `flex-1` với `flex-basis: 0` nên nó không bao giờ ép nhóm nút
+                   bên phải xuống một hàng riêng. */}
+              <SearchField
+                value={keyword}
+                onChange={setKeyword}
+                placeholder="Tìm theo tên hoặc mã nhân sự…"
+                className="md:min-w-56 md:max-w-xs"
+              />
+
+              {/*  ⚠️ Huy hiệu trên nút «Bộ lọc» đếm CẢ Ô NĂM khi nó khác năm hiện
+                   tại. Năm là thứ quyết định mọi con số trên bảng, mà ở khổ hẹp
+                   nó nằm khuất trong tờ trượt — không có dấu này thì người dùng
+                   xem quỹ 2024 và tưởng đang xem 2026, rồi đi hỏi vì sao ai cũng
+                   hết phép. */}
+              <QuickFilterSheet
+                activeCount={
+                  (leaveTypeId !== ALL ? 1 : 0) + (year !== String(currentYear) ? 1 : 0)
+                }
+                onClearAll={() => {
+                  setLeaveTypeId(ALL)
+                  setYear(String(currentYear))
+                }}
+              >
+                <QuickFilterField label="Loại nghỉ">{typeSelect}</QuickFilterField>
+                <QuickFilterField label="Năm">{yearSelect}</QuickFilterField>
+              </QuickFilterSheet>
+
+              {/*  Cùng hai ô chọn dựng hai lần (hàng ngang ở màn rộng · tờ trượt
+                   ở màn hẹp). State nằm ở màn cha nên hai bản luôn nói cùng một
+                   giá trị — khuôn của `survey-list-page`, không phải trùng lặp
+                   cần dọn. */}
+              <div className="hidden items-center gap-3 md:flex">
+                {typeSelect}
+                {yearSelect}
               </div>
-
-              <Select value={leaveTypeId} onValueChange={setLeaveTypeId}>
-                <SelectTrigger className="w-44">
-                  <SelectValue placeholder="Loại nghỉ" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALL}>Tất cả loại nghỉ</SelectItem>
-                  {(typeData?.items ?? []).map((t) => (
-                    <SelectItem key={t.id} value={String(t.id)}>
-                      {t.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              {/*  Ô CHỌN chứ không phải ô nhập số: ô số cho gõ "20226" hay "0"
-                   và bảng lập tức rỗng không rõ vì sao, lại còn có mũi tên tăng
-                   giảm chạy từng năm một. */}
-              <Select value={year} onValueChange={setYear}>
-                <SelectTrigger className="w-32">
-                  <SelectValue placeholder="Năm" />
-                </SelectTrigger>
-                <SelectContent>
-                  {years.map((y) => (
-                    <SelectItem key={y} value={y}>
-                      Năm {y}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </>
           }
         />
-      </Card>
-
+        </Card>
+      </div>
     </PageContainer>
   )
 }

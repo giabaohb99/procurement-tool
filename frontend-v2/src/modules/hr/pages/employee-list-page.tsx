@@ -275,6 +275,12 @@ function EmployeeListContent() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={ALL}>Tất cả phòng ban</SelectItem>
+                  {/*  `0` là GIÁ TRỊ THẬT của cột, không phải mã giả cho "tất
+                       cả" — hồ sơ chưa gán phòng lưu đúng số 0. Có mục này thì
+                       nhóm đó mới tìm ra được, mà nó lại chính là nhóm người
+                       ta cần tìm để đi gắn cho đủ; đây cũng là đích của dòng
+                       "Chưa gán phòng ban" ở trang Tổng quan. */}
+                  <SelectItem value="0">Chưa gán phòng ban</SelectItem>
                   {(departments?.items ?? []).map((department) => (
                     <SelectItem key={department.id} value={String(department.id)}>
                       {department.name}

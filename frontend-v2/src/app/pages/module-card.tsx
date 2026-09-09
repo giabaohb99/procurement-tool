@@ -18,24 +18,37 @@ interface ModuleCardProps {
 }
 
 /**
- * Thẻ phân hệ trên màn chọn phân hệ: icon lớn bên trái, tên + mô tả bên phải.
+ * Thẻ phân hệ trên màn chọn phân hệ.
+ *
+ * MỘT lưới 2 cột lo cả hai bề ngang màn hình, không dựng hai bố cục flex rồi
+ * bật/tắt theo breakpoint:
+ *  - điện thoại: icon NẰM NGANG HÀNG với tên (hàng 1), mô tả xuống hàng 2 chiếm
+ *    hết bề ngang. Hai cột thẻ trên màn 360px chỉ còn ~135px ruột — nhét mô tả
+ *    vào cột bên phải icon là mỗi dòng lọt 2-3 chữ.
+ *  - từ `sm`: icon trải cả hai hàng ở cột trái, tên + mô tả xếp ở cột phải —
+ *    đúng bố cục cũ.
  *
  * Gộp cả ba trạng thái vào MỘT component: ruột thẻ ba trạng thái giống hệt nhau,
  * tách ra thành ba là mỗi lần chỉnh khoảng cách/cỡ chữ phải sửa ba chỗ.
  */
 export function ModuleCard({ module, state }: ModuleCardProps) {
   const ready = state === "ready";
+  const hasCorner = state !== "ready" || Boolean(module.externalUrl);
   /**
-   * Lề phải chừa cho dấu hiệu ở góc: nhãn "Sắp có" rộng nên cần nhiều, còn icon
-   * khóa / mở-tab-mới chỉ cần một chút. Thẻ không có dấu hiệu thì giữ nguyên bề
-   * ngang — chừa thừa là tên phân hệ dài bị cắt oan.
+   * Chỗ chừa cho dấu hiệu ở góc phải trên. Nhãn "Sắp có" rộng nên cần nhiều hơn
+   * icon khóa / mở-tab-mới. Thẻ không có dấu hiệu thì không chừa gì — chừa thừa
+   * là tên phân hệ dài bị cắt oan.
+   *
+   * Hai chỗ chừa khác nhau vì dấu hiệu nằm cùng hàng với thứ khác nhau: trên
+   * điện thoại nó ngang hàng TÊN (nên chừa ở ô tên), từ `sm` nó ngang hàng cả
+   * tên lẫn mô tả (nên chừa ở cả thẻ).
    */
-  const cornerPadding =
+  const [titlePadding, cardPadding] =
     state === "coming-soon"
-      ? "pr-10"
+      ? ["pr-10 sm:pr-0", "sm:pr-10"]
       : state === "locked" || module.externalUrl
-        ? "pr-7"
-        : undefined;
+        ? ["pr-6 sm:pr-0", "sm:pr-7"]
+        : [undefined, undefined];
 
   const body = (
     <>
@@ -45,13 +58,13 @@ export function ModuleCard({ module, state }: ModuleCardProps) {
       */}
       {ready && module.externalUrl && (
         // Báo trước "bấm là rời khỏi app này" (Trung tâm Hướng dẫn sử dụng).
-        <ExternalLink className="absolute top-3.5 right-3.5 size-3.5 text-muted-foreground" />
+        <ExternalLink className="absolute top-2.5 right-2.5 size-3.5 text-muted-foreground sm:top-3.5 sm:right-3.5" />
       )}
       {state === "locked" && (
-        <Lock className="absolute top-3.5 right-3.5 size-3.5 text-muted-foreground" />
+        <Lock className="absolute top-2.5 right-2.5 size-3.5 text-muted-foreground sm:top-3.5 sm:right-3.5" />
       )}
       {state === "coming-soon" && (
-        <span className="absolute top-3.5 right-3.5 rounded bg-navy/[0.07] px-1.5 py-0.5 text-[10px] leading-none font-medium tracking-wide text-muted-foreground uppercase">
+        <span className="absolute top-2 right-2 rounded bg-navy/[0.07] px-1 py-0.5 text-[9px] leading-none font-medium tracking-wide text-muted-foreground uppercase sm:top-3.5 sm:right-3.5 sm:px-1.5 sm:text-[10px]">
           Sắp có
         </span>
       )}
@@ -62,42 +75,50 @@ export function ModuleCard({ module, state }: ModuleCardProps) {
       */}
       <span
         className={cn(
-          // `shrink-0` để cột icon của cả lưới thẳng hàng, không co lại khi tên
-          // hoặc mô tả dài.
-          "grid size-14 shrink-0 place-items-center rounded-xl",
+          // `row-span-2` từ `sm`: icon đứng cạnh CẢ tên lẫn mô tả như bố cục cũ.
+          "col-start-1 row-start-1 grid size-9 place-items-center rounded-lg sm:size-14 sm:row-span-2 sm:rounded-xl",
           ready ? module.accent : "bg-navy/[0.05] text-muted-foreground/70",
         )}
       >
-        <module.icon className="size-8" />
+        <module.icon className="size-5 sm:size-8" />
       </span>
 
-      {/* `min-w-0`: cho phép con bên trong cắt chữ bằng "…" thay vì phình thẻ. */}
-      <span className="min-w-0 flex-1">
-        <span
-          className={cn(
-            "block truncate text-base font-semibold",
-            ready ? "text-navy" : "text-muted-foreground",
-          )}
-        >
-          {module.title}
-        </span>
+      <span
+        className={cn(
+          "col-start-2 row-start-1 min-w-0",
+          // `line-clamp` chứ không `truncate`: ô hai cột trên điện thoại hẹp,
+          // tên dài ("Hướng dẫn sử dụng") cần xuống dòng thứ hai thay vì cụt.
+          // Từ `sm` bề ngang đã đủ nên ép về một dòng như cũ.
+          "line-clamp-2 text-[13px] leading-tight font-semibold sm:line-clamp-1 sm:text-base",
+          // Chỉ hàng TÊN né dấu hiệu ở góc (trên điện thoại nó nằm cùng hàng),
+          // không chừa lề cho cả thẻ — mô tả ở hàng dưới vẫn dùng hết bề ngang.
+          hasCorner && titlePadding,
+          ready ? "text-navy" : "text-muted-foreground",
+        )}
+      >
+        {module.title}
+      </span>
 
-        {/*
-          Mô tả gói trong 2 dòng: mô tả các phân hệ dài ngắn khác nhau, không
-          chặn thì thẻ trong cùng một hàng cao thấp so le.
-        */}
-        {/* KHÔNG kèm `block`: `line-clamp` cần `display: -webkit-box`, thêm
-            `block` là ghi đè mất và mô tả tràn ra 3-4 dòng. */}
-        <span className="mt-1 line-clamp-2 text-[13px] leading-snug text-muted-foreground">
-          {module.description}
-        </span>
+      {/*
+        Mô tả gói trong 2 dòng: mô tả các phân hệ dài ngắn khác nhau, không chặn
+        thì thẻ trong cùng một hàng cao thấp so le.
+
+        Chiếm cả 2 cột trên điện thoại, về đúng cột phải từ `sm`.
+      */}
+      {/* KHÔNG kèm `block`: `line-clamp` cần `display: -webkit-box`, thêm
+          `block` là ghi đè mất và mô tả tràn ra 3-4 dòng. */}
+      <span className="col-span-2 col-start-1 row-start-2 line-clamp-2 min-w-0 text-[11px] leading-snug text-muted-foreground sm:col-span-1 sm:col-start-2 sm:text-[13px]">
+        {module.description}
       </span>
     </>
   );
 
   const className = cn(
-    "relative flex items-start gap-3.5 rounded-xl border p-4 text-left",
-    cornerPadding,
+    // `items-center` để icon và tên thẳng hàng giữa trên điện thoại; từ `sm`
+    // icon cao 56px trải hai hàng nên canh theo mép trên.
+    "relative grid grid-cols-[auto_1fr] items-center gap-x-2.5 gap-y-1 rounded-xl border p-3 text-left",
+    "sm:items-start sm:gap-x-3.5 sm:p-4",
+    cardPadding,
     ready &&
       "border-border bg-background transition-colors hover:border-primary/40 hover:bg-accent/40",
     state === "locked" && "cursor-not-allowed border-border bg-background/60",

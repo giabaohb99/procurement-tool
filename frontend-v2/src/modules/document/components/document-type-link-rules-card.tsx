@@ -290,7 +290,7 @@ export function DocumentTypeLinkRulesCard({
           if (!open) setDangKhai(undefined)
         }}
       >
-        <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-2xl">
+        <DialogContent className="flex max-h-[85dvh] flex-col overflow-hidden sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>
               {typeof dangKhai === 'number' ? 'Sửa quy tắc quan hệ' : 'Thêm quy tắc quan hệ'}

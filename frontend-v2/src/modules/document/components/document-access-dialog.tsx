@@ -84,7 +84,7 @@ export function DocumentAccessDialog({
       {/* Khóa chiều cao hộp và chỉ cho THÂN cuộn: để cả hộp cuộn thì khai một
           cụm vài chục người là hàng nút Hủy / Thêm cụm / Xong trôi tuột xuống
           dưới, người dùng tưởng mất nút. Header và footer ghim tại chỗ. */}
-      <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-xl">
+      <DialogContent className="flex max-h-[85dvh] flex-col overflow-hidden sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>{initial ? 'Sửa quyền truy cập' : 'Chia quyền truy cập'}</DialogTitle>
           <DialogDescription>

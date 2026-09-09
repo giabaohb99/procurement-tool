@@ -79,7 +79,7 @@ function PreviewBody({ file }: { file: ChainAttachment }) {
   }, [file.link_id])
 
   return (
-    <div className="max-h-[70vh] min-h-64 overflow-auto rounded-md border bg-muted/30">
+    <div className="max-h-[70dvh] min-h-64 overflow-auto rounded-md border bg-muted/30">
       {error && (
         <p
           role="alert"
@@ -102,7 +102,7 @@ function PreviewBody({ file }: { file: ChainAttachment }) {
         ) : (
           // `<iframe>` chứ không `<embed>`: trình xem PDF của trình duyệt chạy
           // trong khung riêng, và backend đã gắn `Content-Security-Policy: sandbox`.
-          <iframe src={blobUrl} title={file.filename} className="h-[70vh] w-full" />
+          <iframe src={blobUrl} title={file.filename} className="h-[70dvh] w-full" />
         ))}
     </div>
   )

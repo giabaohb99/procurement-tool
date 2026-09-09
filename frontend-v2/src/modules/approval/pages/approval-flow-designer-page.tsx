@@ -121,7 +121,7 @@ export function ApprovalFlowDesignerPage() {
   }
 
   return (
-    <div className="relative flex h-[calc(100vh-3.5rem)] flex-col overflow-hidden bg-background">
+    <div className="relative flex h-[calc(100dvh-3.5rem)] flex-col overflow-hidden bg-background">
       {/* Top Navigation Bar */}
       <header className="flex h-14 shrink-0 items-center justify-between border-b border-border/80 bg-card/95 px-4 backdrop-blur-md z-10">
         <div className="flex items-center gap-3 min-w-0">

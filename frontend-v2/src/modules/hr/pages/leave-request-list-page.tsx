@@ -1,9 +1,10 @@
 import { Plus } from 'lucide-react'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { usePermission } from '@/core/authorization/use-permission'
 import { appRoutes } from '@/shared/constants/app-routes'
+import { useScrolled } from '@/shared/hooks/use-scrolled'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
@@ -16,6 +17,7 @@ import { LeaveSectionTabs } from '../components/leave-section-tabs'
 import { LeaveMyRequestsTab } from '../components/leave-my-requests-tab'
 import { LeaveToApproveTab } from '../components/leave-to-approve-tab'
 import { useLeaveToApprove } from '../hooks/use-leave'
+import { LEAVE_TABS_STICKY } from '../utils/leave-list-sticky'
 
 const TAB_TO_APPROVE = 'to-approve'
 const TAB_MINE = 'mine'
@@ -44,6 +46,11 @@ export function LeaveRequestListPage() {
   const { data: toApprove } = useLeaveToApprove()
   const waitingCount = toApprove?.items.length ?? 0
 
+  //  Dải ghim đầu trang đổ bóng khi có nội dung trôi bên dưới — xem
+  //  `leave-list-sticky.ts`. Đo ở `Tabs` vì nó nằm cùng khung cuộn với hai dải.
+  const tabsRef = useRef<HTMLDivElement>(null)
+  const scrolled = useScrolled(tabsRef)
+
   //  Tab mặc định: có việc thì mở thẳng hàng đợi, không thì về đơn của mình.
   //  Chờ dữ liệu về rồi mới chốt — chốt trước là luôn rơi vào «Đơn của tôi».
   useEffect(() => {
@@ -51,14 +58,42 @@ export function LeaveRequestListPage() {
     setTab(waitingCount > 0 ? TAB_TO_APPROVE : TAB_MINE)
   }, [tab, toApprove, waitingCount, setTab])
 
+  //  ⚠️ `fill` (trang cao bằng khung, phần cuộn nằm BÊN TRONG) chỉ bật từ `md`
+  //  trở lên — `max-md:h-auto` gỡ `h-full` mà `fill` đặt.
+  //
+  //  Vì sao: `fill` sinh ra một ô cuộn nằm TRONG trang. Trên màn rộng ô đó cao
+  //  gần hết màn hình nên không ai nhận ra, đổi lại thanh công cụ và phân trang
+  //  đứng yên. Trên máy 393px thì sau tiêu đề · nút · hai hàng tab · thanh lọc,
+  //  ô đó **chỉ còn 304px** — đo trên bản chạy: 3083px danh sách đọc qua một khe
+  //  304px, tức hai thẻ một lần. Tệ hơn, đó là cuộn LỒNG: vuốt trúng phần ngoài
+  //  khe thì trang không nhúc nhích và người dùng đọc ra là màn hình đơ.
+  //
+  //  Bỏ `fill` ở khổ hẹp thì danh sách dài tự nhiên và CẢ TRANG cuộn — đúng nếp
+  //  mọi ứng dụng điện thoại. Thanh công cụ trôi theo, chấp nhận được: lọc là
+  //  việc làm một lần rồi đọc, không phải việc làm liên tục.
   return (
-    <PageContainer fill>
+    <PageContainer fill className="max-md:h-auto">
       <PageHeader
         title="Đơn nghỉ phép"
-        description="Nộp đơn, duyệt đơn của người khác và theo dõi số ngày phép còn lại."
+        //  ⚠️ Dòng mô tả ẨN trên máy hẹp. Nó là câu GIỚI THIỆU, đọc một lần rồi
+        //  thôi — nhưng chiếm hai dòng (~60px) ở đầu MỌI lần mở màn, ngay phía
+        //  trên thứ người ta thật sự vào đây để xem. Trên màn rộng thì 60px đó
+        //  không lấy chỗ của ai nên vẫn giữ.
+        description={
+          <span className="max-md:hidden">
+            Nộp đơn, duyệt đơn của người khác và theo dõi số ngày phép còn lại.
+          </span>
+        }
         actions={
           can('leave_request', 'create') ? (
-            <Button onClick={() => navigate(appRoutes.hr.leaveRequestNew)}>
+            //  ⚠️ Màn hẹp thì nút chiếm TRỌN hàng — `w-full` chỉ ăn nhờ nhóm nút
+            //  của `PageHeader` cũng `max-md:w-full`. Không có vế đó thì nút là
+            //  con của một khối co theo nội dung, `width:100%` quy về đúng bề
+            //  rộng cũ và câu lệnh không làm gì cả.
+            <Button
+              className="w-full md:w-auto"
+              onClick={() => navigate(appRoutes.hr.leaveRequestNew)}
+            >
               <Plus className="size-4" />
               Nộp đơn nghỉ phép
             </Button>
@@ -68,13 +103,26 @@ export function LeaveRequestListPage() {
 
       <LeaveSectionTabs />
 
+      {/*  `group` + `data-scrolled` là đường dẫn tín hiệu «trang đã cuộn» xuống
+           tới dải ghim nằm sâu bên trong (thanh công cụ do `DataTable` vẽ, tầng
+           trang không với tới được bằng prop). Bóng đổ của dải đó đọc thuộc tính
+           này — xem `leave-list-sticky.ts`. */}
       <Tabs
+        ref={tabsRef}
         value={tab || TAB_MINE}
         onValueChange={setTab}
-        className="flex min-h-0 flex-1 flex-col"
+        data-scrolled={scrolled ? '' : undefined}
+        className="group flex min-h-0 flex-1 flex-col"
       >
-        <TabsList>
-          <TabsTrigger value={TAB_TO_APPROVE}>
+        {/*  Màn hẹp: dải tab trải hết hàng, chia đều ba phần, và GHIM đỉnh trang
+             khi cuộn (xem `LEAVE_TABS_STICKY`). `TabsList` mặc định `w-fit`, nên
+             trên điện thoại ba tab bó vào mép trái và chừa một khoảng trống vô
+             nghĩa bên phải — mà đây là chỗ chuyển qua lại nhiều nhất của cả màn,
+             mỗi phần rộng thêm là mỗi lần bấm bớt trượt. `min-w-0` trên nút để
+             nhãn dài không nong dải ra quá bề ngang. */}
+        <div className={LEAVE_TABS_STICKY}>
+        <TabsList className="w-full shrink-0 md:w-fit">
+          <TabsTrigger value={TAB_TO_APPROVE} className="min-w-0 px-2 text-xs md:px-3 md:text-sm">
             Cần tôi duyệt
             {/*  Con số chỉ hiện khi KHÁC 0: một huy hiệu «0» đứng cạnh nhãn đọc
                  ra như một cảnh báo, mà nó đang nói "không có gì cả". */}
@@ -84,9 +132,14 @@ export function LeaveRequestListPage() {
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value={TAB_MINE}>Đơn của tôi</TabsTrigger>
-          <TabsTrigger value={TAB_HANDLED}>Tôi đã duyệt</TabsTrigger>
+          <TabsTrigger value={TAB_MINE} className="min-w-0 px-2 text-xs md:px-3 md:text-sm">
+            Đơn của tôi
+          </TabsTrigger>
+          <TabsTrigger value={TAB_HANDLED} className="min-w-0 px-2 text-xs md:px-3 md:text-sm">
+            Tôi đã duyệt
+          </TabsTrigger>
         </TabsList>
+        </div>
 
         {/*  Mỗi tab một `Card` riêng chứ không bọc chung ngoài `Tabs`: bảng chạy
              `fillHeight` nên nó cần đúng một khung cha có chiều cao xác định.
@@ -100,19 +153,19 @@ export function LeaveRequestListPage() {
              báo 04/09/2026). Có `min-w-0` thì phần dôi ra quay về đúng chỗ của
              nó: thanh cuộn ngang bên trong bảng. */}
         <TabsContent value={TAB_TO_APPROVE} className="mt-3 flex min-h-0 flex-1">
-          <Card className="flex min-h-0 w-full min-w-0 flex-1 flex-col p-4">
+          <Card className="flex min-h-0 w-full min-w-0 flex-1 flex-col p-3 md:p-4">
             <LeaveToApproveTab />
           </Card>
         </TabsContent>
 
         <TabsContent value={TAB_MINE} className="mt-3 flex min-h-0 flex-1">
-          <Card className="flex min-h-0 w-full min-w-0 flex-1 flex-col p-4">
+          <Card className="flex min-h-0 w-full min-w-0 flex-1 flex-col p-3 md:p-4">
             <LeaveMyRequestsTab />
           </Card>
         </TabsContent>
 
         <TabsContent value={TAB_HANDLED} className="mt-3 flex min-h-0 flex-1">
-          <Card className="flex min-h-0 w-full min-w-0 flex-1 flex-col p-4">
+          <Card className="flex min-h-0 w-full min-w-0 flex-1 flex-col p-3 md:p-4">
             <LeaveHandledTab />
           </Card>
         </TabsContent>

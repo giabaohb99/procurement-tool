@@ -66,7 +66,7 @@ export function EditorOutlinePanel({
   return (
     <div className="relative hidden shrink-0 lg:block" style={{ width }}>
       {/*  Cao ĐÚNG BẰNG khung giấy bên cạnh — xem `maxHeight`. Giữ lại
-           `calc(100vh-16rem)` làm nhánh lùi cho nơi chưa truyền số đo (ô rich
+           `calc(100dvh-16rem)` làm nhánh lùi cho nơi chưa truyền số đo (ô rich
            text trong hộp thoại), nhưng trang soạn thảo luôn truyền. */}
       <EditorOutline
         editor={editor}
@@ -74,7 +74,7 @@ export function EditorOutlinePanel({
         className={
           maxHeight
             ? 'w-full overflow-y-auto border-r'
-            : 'max-h-[calc(100vh-16rem)] w-full overflow-y-auto border-r'
+            : 'max-h-[calc(100dvh-16rem)] w-full overflow-y-auto border-r'
         }
       />
 

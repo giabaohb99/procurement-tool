@@ -1,7 +1,7 @@
 import { CalendarDays, CircleCheck, CircleX, Repeat } from 'lucide-react'
 
 import { appRoutes } from '@/shared/constants/app-routes'
-import type { CrudConfig } from '@/shared/crud'
+import { CrudRecordCard, type CrudConfig } from '@/shared/crud'
 import { formatDate } from '@/shared/utils/format-date'
 import { Badge } from '@/shared/ui/badge'
 import type { Holiday } from '../types/leave'
@@ -17,6 +17,20 @@ import type { Holiday } from '../types/leave'
  *    30/4, 02/9). Tết Âm và Giỗ Tổ trôi theo lịch âm nên mỗi năm phải nhập lại
  *    — tick lặp cho chúng là năm sau nghỉ sai ngày.
  */
+/**
+ * Huy hiệu mô tả nhanh một ngày lễ — dùng chung cho thẻ danh tính ở trang chi
+ * tiết và thẻ ở khổ điện thoại, để hai màn không trôi khác nhau.
+ */
+const holidayChips = (h: Holiday) => [
+  { icon: CalendarDays, text: formatDate(h.date), tone: 'code' as const },
+  ...(h.is_recurring ? [{ icon: Repeat, text: 'Lặp hằng năm', tone: 'ok' as const }] : []),
+  {
+    icon: h.is_active ? CircleCheck : CircleX,
+    text: h.is_active ? 'Đang dùng' : 'Ngừng / Ẩn',
+    tone: h.is_active ? ('ok' as const) : ('muted' as const),
+  },
+]
+
 export const HOLIDAY_CRUD_CONFIG: CrudConfig<Holiday> = {
   entity: 'holiday',
   title: 'Lịch ngày lễ',
@@ -43,15 +57,17 @@ export const HOLIDAY_CRUD_CONFIG: CrudConfig<Holiday> = {
   ],
   getItemName: (h) => `${h.name} (${formatDate(h.date)})`,
   deleteWarning: 'Xóa ngày lễ sẽ làm các đơn nghỉ phép tính lại số ngày kể từ lần nhập sau.',
-  chips: (h) => [
-    { icon: CalendarDays, text: formatDate(h.date), tone: 'code' as const },
-    ...(h.is_recurring ? [{ icon: Repeat, text: 'Lặp hằng năm', tone: 'ok' as const }] : []),
-    {
-      icon: h.is_active ? CircleCheck : CircleX,
-      text: h.is_active ? 'Đang dùng' : 'Ngừng / Ẩn',
-      tone: h.is_active ? ('ok' as const) : ('muted' as const),
-    },
-  ],
+  chips: holidayChips,
+  //  Khổ hẹp: thẻ thay bảng. Cột «Pháp nhân» lên dòng phụ vì `0` KHÔNG phải
+  //  "chưa chọn" mà là *áp cho mọi pháp nhân* — giá trị của gần hết các dòng, và
+  //  cũng là thứ hay bị khai nhầm nhất.
+  mobileCard: (h) => (
+    <CrudRecordCard
+      title={h.name}
+      subtitle={h.company_id ? `Pháp nhân #${h.company_id}` : 'Mọi pháp nhân'}
+      chips={holidayChips(h)}
+    />
+  ),
   columns: [
     {
       key: 'date',

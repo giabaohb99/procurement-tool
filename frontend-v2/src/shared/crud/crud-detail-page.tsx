@@ -165,7 +165,9 @@ export function CrudDetailPage<T extends CrudRecord>({
           }
         }}
       >
-        <Card className="gap-4 p-5">
+        {/*  Lớp khung NGOÀI CÙNG của ba lớp lồng nhau — xem ghi chú ở
+             `crud-form-fields.tsx`. */}
+        <Card className="gap-4 p-3 sm:p-5">
           <CrudFormFields
             fields={config.formFields}
             register={register}
@@ -192,15 +194,25 @@ export function CrudDetailPage<T extends CrudRecord>({
 
   return (
     <PageContainer className={pageWidth}>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <Button variant="ghost" size="sm" asChild>
+      {/*  ⚠️ Hàng nút DÍNH khi cuộn. Form danh mục dài hơn một màn — riêng
+           *Loại nghỉ* đo được 1943px ở khổ 390px — nên nút Lưu đứng yên ở đầu
+           trang nghĩa là gõ xong ô cuối phải cuộn ngược hết chiều dài trang mới
+           lưu được, rồi cuộn xuống lại để kiểm. Cùng luật với `PageHeader.sticky`
+           mà hai màn chi tiết Nghỉ phép đang dùng; đây là màn duy nhất còn thiếu.
+
+           Lề âm để dải chạy hết bề ngang khung thay vì thụt vào theo phần đệm
+           của `PageContainer` — dính mà còn hai mép hở thì nhìn ra ngay là vá. */}
+      <div className="sticky top-0 z-20 -mx-4 -mt-4 mb-4 flex flex-wrap items-center justify-between gap-3 border-b bg-canvas px-4 py-3 lg:-mx-6 lg:-mt-6 lg:px-6">
+        {/*  `-ml-2` kéo chữ về sát mép: nút `ghost` có phần đệm ngang riêng nên
+             không có nó thì dòng «Danh sách …» thụt vào so với mọi thẻ bên dưới. */}
+        <Button variant="ghost" size="sm" className="-ml-2 min-w-0" asChild>
           <Link to={listUrl}>
             <ArrowLeft />
-            Danh sách {config.unitLabel}
+            <span className="truncate">Danh sách {config.unitLabel}</span>
           </Link>
         </Button>
 
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <PermissionGate entity={config.entity} action={isCreate ? 'create' : 'write'}>
             <Button
               type="submit"

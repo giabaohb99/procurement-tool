@@ -115,7 +115,7 @@ export function RoomPickerDialog({
 
         {/*  Danh sách cuộn TRONG hộp, cao cố định: 50 phòng thì hộp không được
              dài quá màn hình, còn 3 phòng thì không để lại khoảng trống. */}
-        <div className="max-h-[52vh] min-h-0 space-y-1.5 overflow-auto pr-1">
+        <div className="max-h-[52dvh] min-h-0 space-y-1.5 overflow-auto pr-1">
           {rooms.length === 0 && (
             <p className="py-8 text-center text-sm text-muted-foreground">
               {keyword
