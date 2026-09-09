@@ -8,6 +8,7 @@ import os
 
 from app.core.config import settings
 from app.core.limiter import limiter
+from app.core.request_middleware import RequestContextMiddleware
 from app.core.response import error
 from app.modules.attachment.controller import router as attachment_router
 from app.modules.audit.controller import router as audit_router
@@ -109,6 +110,13 @@ app = FastAPI(title="Procurement Tool API", version="0.1.0")
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+#  Starlette chèn middleware thêm sau vào ĐẦU danh sách, nên cái thêm SAU nằm
+#  NGOÀI. Xếp thế này thì CORS ở ngoài, ghi nhật ký ở trong — và đúng ở đây thứ
+#  tự KHÔNG quan trọng, ghi ra kẻo có người tưởng nó tinh vi: lượt duy nhất CORS
+#  nuốt trọn là preflight `OPTIONS`, mà `OPTIONS` vốn không thuộc diện ghi
+#  (§4.1); còn request thật thì CORS chỉ gắn thêm header rồi cho đi tiếp.
+app.add_middleware(RequestContextMiddleware)
 
 app.add_middleware(
     CORSMiddleware,

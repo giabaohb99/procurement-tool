@@ -1,6 +1,6 @@
 # THIẾT KẾ LẠI NHẬT KÝ (LOG) & PHIÊN ĐĂNG NHẬP
 
-**Bản:** 2.3 — 08/09/2026 · **CR:** bao-CR-312 · **Trạng thái: 12 CÂU HỎI §11 ĐÃ CHỐT 08/09/2026 (theo đề xuất, riêng Q2 khách đổi thành 16 tháng + gói theo năm). P0 tách thành bao-CR-313 đang làm; P1 trở đi chưa gõ mã.**
+**Bản:** 2.4 — 09/09/2026 · **CR:** bao-CR-312 · **Trạng thái: 12 CÂU HỎI §11 ĐÃ CHỐT 08/09/2026 (theo đề xuất, riêng Q2 khách đổi thành 16 tháng + gói theo năm). Bản 2.4 tính lại dung lượng bằng SỐ ĐO THẬT trên prod 09/09 và chốt thêm ba điều chỉnh (QĐ-A gia hạn phiên · QĐ-B khóa nối nhị phân · QĐ-C nhật ký ra khỏi sao lưu hằng đêm, đóng gói theo tháng). P0 tách thành bao-CR-313 (xong, deploy 09/09); **P1 xong mã 09/09 trên `erp-v2`, chưa commit** — middleware + `tab_request_log` + cột ngữ cảnh, QĐ-A và QĐ-B đúng ngay từ migration `f4d37c7600d0`; P2 trở đi chưa gõ mã.**
 
 Bản 1.0 (07/09) chỉ đề xuất *thêm* hai bảng bên cạnh nhật ký cũ. Bản 2.0 (08/09 sáng) thiết kế
 lại chính dòng nhật ký. Bản 2.1 bổ sung hai thứ bản 2.0 còn thiếu khi đối chiếu với câu hỏi
@@ -8,10 +8,17 @@ của khách: **gọi vào endpoint nào, input/output của lần gọi đó l�
 (chặn · đá · đăng xuất mọi thiết bị · bắt đăng nhập lại). Bản 2.2 trả lời câu *"sao tách nhiều
 bảng, vậy giao diện xem ở đâu, log hệ thống gom lại và debug thế nào"*: thêm §8 **một màn gom cả
 ba bảng**, cho việc nền và lỗi 500 (traceback) chảy vào cùng dòng, và ba chỗ hiện **phiên đăng
-nhập** (Quản trị · Trang cá nhân · hồ sơ Nhân sự).
+nhập** (Quản trị · Trang cá nhân · hồ sơ Nhân sự). Bản 2.4 (09/09) **đo lại nhịp thật trên prod
+thay cho các con số ước** ở §9, và vì phép đo lòi ra ba chỗ lãng phí nên chốt thêm ba điều
+chỉnh: **QĐ-A** gia hạn phiên thành công không đẻ dòng nhật ký (§4.1), **QĐ-B** khóa nối
+`request_id` lưu nhị phân (§4.5), và **QĐ-C** bốn bảng nhật ký ra khỏi bản sao lưu hằng đêm,
+đổi lại đóng gói lên R2 mỗi tháng thay vì mỗi năm (§9).
 
-Tệp này là bản thiết kế để bàn, không phải mô tả thứ đang chạy. Chưa có một dòng mã nào. Đọc
-kèm `so-ghi-nhan-loi-bao-mat.md` (BM-001…BM-007) và `change-log-bao.md` (bao-CR-311).
+Tệp này phần lớn vẫn là bản thiết kế để bàn. **Đã gõ mã: P0** (tách ra `bao-CR-313`, xong và
+deploy 09/09) và **P1** (xong mã trên `erp-v2` ngày 09/09, chưa commit) — hai đợt đó nay mô tả
+thứ chạy thật, và chỗ nào bản làm khác bản vẽ thì có dấu ⚠️ ngay tại mục đó (§4.1 có hai chỗ).
+P2 trở đi chưa có dòng mã nào. Đọc kèm `so-ghi-nhan-loi-bao-mat.md` (BM-001…BM-007) và
+`change-log-bao.md` (bao-CR-311).
 
 ---
 
@@ -43,6 +50,7 @@ Số đo trên bản đang chạy (08/09/2026), **4.201 dòng**:
 | → Dòng hiện **mã tiếng Anh trần** cho người dùng | **1.135 / 4.201 = 27%** | `item_progress_auto` 286 · `login` 262 · `assign` 197 · `document_status` 131 · `login_failed` 84 · … |
 | `created_by = 0` | **84** | đúng bằng số `login_failed` — chưa đăng nhập nên chưa có ai |
 | Cỡ bảng | 0,8 MB · ~112 dòng/ngày | dung lượng **không** phải vấn đề, thông tin mới là vấn đề |
+| *(đo lại 09/09/2026)* | **4.531 dòng · 0,88 MB** · **124 dòng/ngày** (30 ngày) · **214** (7 ngày) · đỉnh **409** | nhịp đang tăng, xem §9 |
 
 Sáu câu hỏi một nhật ký phải trả lời được, và hôm nay:
 
@@ -66,8 +74,8 @@ endpoint — nằm trong thì lượt bị 401/403 (chưa tới endpoint) không
 Trình duyệt / app
    │
    ▼
-Cloudflare tunnel → nginx → uvicorn  (PHẢI chạy --proxy-headers, xem BM-004 — nếu không mọi IP
-   │                                  ghi được đều là 172.20.0.x của container nginx)
+Cloudflare tunnel → nginx → uvicorn  (IP thật lấy bằng core/client_ip.get_client_ip, có từ
+   │                                  bao-CR-313 — KHÔNG bật --proxy-headers, xem BM-004)
    ▼
 ┌────────────────────────────────────────────────────────────────────────────────────┐
 │ [VÀO]  RequestContextMiddleware — chạy TRƯỚC mọi thứ của API                        │
@@ -145,7 +153,7 @@ lệch thật: prod 13 nhãn, `erp-v2` ~40.
 | Cột | Kiểu | Ghi chú |
 |---|---|---|
 | `id` | BIGINT | |
-| `request_id` | CHAR(36), unique | **Khóa nối** sang audit và change_log |
+| `request_id` | BINARY(16), unique | **Khóa nối** sang audit và change_log — nhị phân, xem QĐ-B §4.5 |
 | `source` | SMALLINT | `1` API · `2` Celery · `3` script — việc nền cũng là một dòng ở đây (bản 2.2), để màn §8 có một dòng chảy |
 | `created_at` | DATETIME | lúc nhận request (UTC) |
 | `user_id` | BIGINT, index | `0` nếu chưa đăng nhập (đăng nhập thất bại, token hỏng) |
@@ -155,13 +163,19 @@ lệch thật: prod 13 nhãn, `erp-v2` ~40.
 | `path` | VARCHAR(300) | đường dẫn thật: `/api/purchase-orders/129/items/4412` |
 | `route` | VARCHAR(200), index | **mẫu route**: `/api/purchase-orders/{id}/items/{item_id}` — để gom *"endpoint này ai gọi"* |
 | `query_string` | VARCHAR(1000) | `?...` nguyên văn |
-| `request_body` | JSON | body vào, **đã che** (§6), cắt **64 KB**; multipart chỉ ghi tên tệp + cỡ |
+| `request_body` | JSON | body vào, **đã che** (§6), cắt **64 KB**; multipart **không đọc** — xem ghi chú dưới bảng |
 | `http_status` | SMALLINT | `200` · `403` · `422` · `500`… — **đây là chỗ ghi lượt bị chặn** |
 | `response_body` | JSON | body ra — **chỉ giữ khi `http_status` không phải 2xx**; 2xx thì chỉ giữ `message` + `data.id` (Q9) |
 | `error_code` | VARCHAR(60) | mã lỗi trong phong bì `{success:false, error:{code}}` |
 | `error_detail` | TEXT | **chỉ khi 5xx hoặc task nền văng lỗi**: traceback Python, cắt 16 KB. Đây là "log hệ thống" theo nghĩa debug — hôm nay nó chỉ có trong `docker logs` và trôi mất sau vài ngày |
 | `duration_ms` | INT | thời gian xử lý |
 | `audit_count`, `change_count` | SMALLINT | đếm dòng con ở hai lớp kia — biết có gì để mở |
+
+⚠️ **Multipart: P1 KHÔNG đọc thân, kể cả để lấy tên tệp** (khác bản thiết kế, chốt 09/09/2026).
+Bóc tên tệp đòi phải đọc hết luồng tải lên rồi ráp lại cho endpoint — tức nuốt trọn một tệp
+20 MB vào RAM chỉ để ghi được một chuỗi tên, ở tầng chạy trước **mọi** request. Đổi lại chỉ ghi
+`{"content_type": ..., "size": ...}`. Tên tệp không mất: nó nằm ở `tab_file` và ở dòng audit của
+chính thao tác đính kèm, tra bằng cùng một `request_id`.
 
 **`request_id` in ra cả log của uvicorn.** Một `logging.Filter` đọc `ContextVar` và gắn
 `request_id` vào mọi dòng log ứng dụng phát ra trong lúc xử lý request đó. Cùng một mã nằm ở DB
@@ -172,6 +186,36 @@ ra. Log của nginx / Cloudflare (lượt chưa tới API) **vẫn ở ngoài**,
 bảng này phình hàng chục nghìn dòng/ngày toàn rác. Ngoại lệ ghi GET: **xuất dữ liệu**
 (`/export`, `/print`) và **xem tệp đính kèm** (`/attachments/{id}/view`) — đó là hai loại "xem"
 có giá trị truy vết (Q6).
+
+**QĐ-A (bản 2.4) — gia hạn phiên THÀNH CÔNG không ghi dòng nào.** Đo nginx prod ngày 09/09:
+**265 lượt không phải GET mỗi ngày, trong đó 126 lượt là `POST /api/auth/refresh` — gần một
+nửa**. Trình duyệt gọi lại chừng ba phút một lần, mỗi dòng chỉ nói *"vẫn người đó, vẫn đang mở
+máy"*. Ghi hết thì mỗi năm 46.000 dòng gần như trắng thông tin, mà thứ hỏng thật là **màn
+`/system/logs` bị loãng** chứ không phải mấy MB. Luật:
+
+| Trường hợp | request_log | audit_log | login_session |
+|---|---|---|---|
+| Gia hạn **thành công**, IP không đổi | **không ghi** | **không ghi** | cập nhật `refreshed_at`, `refresh_count += 1`, `last_seen_at` |
+| Gia hạn **thành công** nhưng **IP khác `last_seen_ip`** | ghi | ghi `refresh_ip_changed` | cập nhật thêm `last_seen_ip` |
+| Gia hạn **thất bại** (token hỏng · hết hạn · tài khoản bị khóa) | ghi (401) | ghi `refresh_failed` | — |
+
+Vẫn đóng đúng **BM-003**: thứ chứng minh refresh token bị cắp là **phiên đổi IP giữa chừng** và
+**lượt gia hạn hỏng**, chứ không phải sự tồn tại của 126 dòng giống hệt nhau mỗi ngày. Sau QĐ-A,
+dấu vết gia hạn nằm gọn trong một dòng phiên có đếm số lần, đọc dễ hơn phải cuộn qua 46.000 dòng.
+
+⚠️ **P1 mới làm được HAI trong ba dòng của bảng trên** (09/09/2026). Nhánh giữa — *gia hạn thành
+công nhưng đổi IP* — **hoãn sang P3**, vì muốn biết IP có đổi hay không thì phải có cái để so, mà
+`tab_login_session.last_seen_ip` chỉ ra đời ở P3. Tới lúc đó, sửa đúng một hàm:
+`should_skip_by_result()` trong `core/logging_policy.py` — nơi duy nhất cài QĐ-A — cho nó nhận
+thêm phiên hiện hành. Nghĩa là **từ nay tới P3, một refresh token bị cắp rồi dùng từ máy khác
+KHÔNG để lại dòng nào**; đó là lỗ đã biết và cố ý, không phải sót.
+
+**Việc phải làm ở P3, ghi ra đây kẻo quên:** `bao-CR-313` (đang làm, chưa commit) hiện ghi **mọi**
+lần gia hạn thành công thành một dòng `tab_audit_log` `action=refresh` — đúng cho lúc chưa có
+bảng phiên, nhưng nó **cộng thêm ~126 dòng audit/ngày, gấp đôi lượng audit hiện tại (124/ngày)**.
+Khi P3 dựng xong `tab_login_session`, phải quay lại `auth/controller.py` **bỏ dòng `record(...)`
+cho nhánh thành công** và chuyển sang cập nhật phiên theo bảng trên; hai nhánh `refresh_failed`
+giữ nguyên.
 
 ### 4.2. `tab_audit_log` — lớp kể chuyện (sửa lại)
 
@@ -185,7 +229,7 @@ gọi**. Phần còn lại thêm mới.
 | `actor_kind` | SMALLINT | **MỚI** | middleware | `1` người · `2` hệ thống (Celery/seed) · `3` script nhập liệu · `4` tích hợp. Hôm nay `0` vừa là "hệ thống" vừa là "không biết" |
 | `on_behalf_of` | BIGINT | **MỚI** | lời gọi | Làm hộ ai (hành chính lập đơn hộ) |
 | `session_id` | BIGINT, index | **MỚI** | middleware | Phiên nào → thiết bị |
-| `request_id` | CHAR(36), index | **MỚI** | middleware | Thuộc lần bấm nào → endpoint, input, output |
+| `request_id` | BINARY(16), index | **MỚI** | middleware | Thuộc lần bấm nào → endpoint, input, output (QĐ-B §4.5) |
 | `ip` | VARCHAR(45) | **MỚI** | middleware | Giữ riêng dù tra được qua request_id, vì việc nền và script **không có request** |
 | `entity` · `entity_id` | | có | lời gọi | Trên cái gì |
 | `doc_code` | VARCHAR(50) | **MỚI** | lời gọi | **Số phiếu tại thời điểm đó** — phiếu xóa rồi thì `entity_id` không tra ngược ra được |
@@ -209,7 +253,7 @@ với JSON là bới bằng hàm.
 | Cột | Kiểu | Ghi chú |
 |---|---|---|
 | `id` · `created_at` · `created_by` | | chuẩn `AuditMixin` |
-| `request_id` | CHAR(36), index | nối sang request_log + audit |
+| `request_id` | BINARY(16), index | nối sang request_log + audit (QĐ-B §4.5) |
 | `session_id` | BIGINT, index | |
 | `table_name` | VARCHAR(64), index | tên bảng thật, vd `tab_purchase_order_item` |
 | `row_id` | BIGINT, index | |
@@ -239,12 +283,34 @@ lại một lần bấm.
 | `last_seen_at` | DATETIME | dập mỗi lời gọi API, **tiết lưu 5 phút** |
 | `last_seen_ip` | VARCHAR(45) | IP gần nhất — phiên đổi IP giữa chừng là dấu hiệu đáng xem |
 | `refreshed_at` | DATETIME | lần `/refresh` gần nhất — hôm nay refresh **không ghi gì** (BM-003) |
+| `refresh_count` | INT | **MỚI bản 2.4** — đếm số lần gia hạn của phiên. Theo QĐ-A (§4.1) gia hạn thành công chỉ dập hai cột này thay vì đẻ dòng nhật ký; số đếm cộng `refreshed_at` đủ trả lời *"phiên này còn sống bao lâu, gia hạn bao nhiêu lần"* |
 | `expires_at` | DATETIME | = lúc đăng nhập + 7 ngày (hạn refresh) |
 | `revoked_at` · `revoked_by` · `revoke_reason` | DATETIME / BIGINT / SMALLINT | `1` tự đăng xuất · `2` quản trị đá · `3` đổi mật khẩu · `4` bắt đăng nhập lại · `5` tài khoản bị khóa |
 
 Đăng nhập **thất bại KHÔNG ghi vào bảng này** — nó đã có một dòng `tab_request_log`
 (`route=/api/auth/login`, `http_status=401`, `ip`) cộng một dòng `tab_audit_log`
 (`action=login_failed`). Dò *"IP nào thử nhiều tài khoản"* là một câu `GROUP BY ip` trên request_log.
+
+### 4.5. QĐ-B (bản 2.4) — `request_id` lưu nhị phân, không lưu chuỗi
+
+`request_id` là **cột duy nhất có mặt ở cả ba bảng và có chỉ mục ở cả ba** — mỗi dòng nhật ký,
+dù ở lớp nào, đều cõng nó hai lần (một lần dữ liệu, một lần chỉ mục). Khai `CHAR(36)` trên bảng
+`utf8mb4` thì khóa chỉ mục dài tới **144 byte** trong bộ nhớ, còn trên đĩa mỗi dòng mất chừng
+36 byte dữ liệu + 48 byte chỉ mục. Nhân với ~316.000 dòng/năm của cả ba bảng là **~26 MB/năm chỉ
+để lưu sợi dây nối**. Đổi sang `BINARY(16)` (UUID dạng 16 byte) còn **~14 MB/năm**, và quan
+trọng hơn: mỗi lần mở một dòng trên màn §8 là ba truy vấn `IN (request_id…)` đi qua đúng khóa này.
+
+| Việc | Cách làm |
+|---|---|
+| Kiểu cột | `BINARY(16)` ở cả `tab_request_log` (unique), `tab_audit_log` (index), `tab_change_log` (index) |
+| Sinh mã | `uuid.uuid4().bytes` trong middleware; ContextVar giữ **bản nhị phân**, đổi sang chuỗi lúc trả API |
+| API và giao diện | Vẫn là chuỗi 36 ký tự có gạch (`str(uuid.UUID(bytes=b))`) — người dùng copy mã đi tra không đổi gì |
+| Tra tay trong DB | `WHERE request_id = UUID_TO_BIN('3f1c9a2e-…')` và `SELECT BIN_TO_UUID(request_id)` — MySQL 8 có sẵn hai hàm này. **Ghi vào HDSD nội bộ**, vì gõ nhầm `WHERE request_id = '3f1c…'` sẽ ra rỗng chứ không báo lỗi, dễ tưởng mất dữ liệu |
+| Log uvicorn | In dạng chuỗi như cũ (§4.1) — chỗ đó là chữ cho người đọc, không phải khóa |
+
+**`token_id` của `tab_login_session` giữ nguyên `CHAR(36)`**: nó nằm trong claim `jti` của JWT nên
+buộc phải là chuỗi, mà bảng phiên chỉ khoảng **2.000 dòng/năm** (đo thật: 5,6 lượt đăng nhập/ngày)
+— đổi sang nhị phân không tiết kiệm được gì đáng kể mà thêm một chỗ phải chuyển đổi.
 
 ---
 
@@ -503,8 +569,10 @@ Thiết kế lại **tách bốn đường đọc, bốn cửa**:
 `entity = auth` **chỉ** ra ở đường 2 — khai thành danh sách cấm, đừng để lọt đường 1 bằng
 `entity=auth&entity_id=<id user>`.
 
-**Phân quyền.** `ENTITIES` hiện **53**, `SCOPE_FIELDS` 53/53 (test `test_pham_vi_khai_du_b07.py`
-canh). Thêm `audit`, `change_log`, `login_session` → **56**; `login_session` lọc theo `user_id`,
+**Phân quyền.** `ENTITIES` hiện **55** *(đếm lại 09/09/2026 — bản 2.3 ghi 53, số đó có trước
+`employee_sensitive` của duoc-CR-314 và `job_position` của duoc-CR-320)*, `SCOPE_FIELDS` khai đủ
+55/55 (test `test_pham_vi_khai_du_b07.py` canh — **nhớ sửa số đếm trong test**, kẻo tưởng mình gõ
+sai). Thêm `audit`, `change_log`, `login_session` → **58**; `login_session` lọc theo `user_id`,
 hai cái kia `PUBLIC` vì đã gác bằng khóa quản trị. Vai trò đang chạy **không tự có** khóa mới
 (D-018) — tick tay hoặc `SEED_FORCE_SYNC=true` một lần.
 
@@ -624,29 +692,80 @@ thẳng trong DB lúc truy sự cố là việc thường xuyên — giống ca 
 ràng bằng bộ mã đóng**. Mọi cột *mới* (`actor_kind`, `action_group`, `op`, `device_type`,
 `login_method`, `revoke_reason`) đều **SMALLINT + IntEnum** đúng R2.
 
-Dung lượng — hôm nay 112 dòng audit/ngày, 0,8 MB:
+### Dung lượng — tính lại bằng số đo thật (bản 2.4, đo prod 09/09/2026)
 
-| Bảng | Cỡ dòng | Dòng/ngày *(ước)* | Một năm | Giữ trong DB |
+Bản 2.3 tính trên các con số ước. Bản 2.4 đo thẳng trên hệ thật, **nhịp dùng khớp gần đúng, hai
+chỗ lệch đều lệch về phía an toàn**:
+
+| Chỉ số | Bản 2.3 ước | Đo thật 09/09/2026 |
+|---|---|---|
+| Dòng audit / ngày | 112 | **124** (trung bình 30 ngày) · **214** (7 ngày qua) · đỉnh **409** (07/09) |
+| Lượt không phải GET / ngày | ~300 | **265** (nginx prod, 24 giờ) |
+| Trong đó `POST /api/auth/refresh` | không tính riêng | **126 — chiếm 48%** → QĐ-A §4.1 |
+| Lượt đăng nhập / ngày | ~40 | **5,6** (169 dòng `login` trong 30 ngày) — người dùng đăng nhập một lần rồi ngồi cả ngày |
+| Số dòng trung bình một phiếu YCMH | không tính | **1,9** — phiếu ngắn, nên một lần sửa đẻ ~8 dòng change chứ không phải ~28 |
+| Cỡ thật một dòng audit trên đĩa | — | **203 B** (0,88 MB / 4.531 dòng, đã gồm chỉ mục) |
+| **Cỡ toàn bộ CSDL prod** | — | **18,7 MB** |
+
+Con số cuối là thứ đáng nhớ nhất: **bật nhật ký lên là CSDL phình gấp 7–12 lần so với hôm nay**,
+và toàn bộ phần phình đó là nhật ký chứ không phải dữ liệu nghiệp vụ.
+
+| Bảng | Cỡ dòng | Dòng/ngày *(đo)* | Một năm | Giữ trong DB |
 |---|---|---|---|---|
-| `tab_request_log` — chỉ non-GET, body ra chỉ khi lỗi | ~800 B | ~300 | **~90 MB** | **16 tháng** |
-| `tab_audit_log` sau khi thêm cột | ~450 B | 112 | ~18 MB | **16 tháng** |
-| `tab_change_log` — một dòng mỗi trường | ~130 B | ~1.350 | ~65 MB | **16 tháng** |
-| `tab_login_session` | ~700 B | ~40 | ~10 MB | **16 tháng** sau `revoked_at` |
+| `tab_request_log` — chỉ non-GET, trừ gia hạn (QĐ-A), body ra chỉ khi lỗi | ~800 B | ~140 | **~41 MB** | **16 tháng** |
+| `tab_audit_log` sau khi thêm cột | ~500 B | 124 | **~23 MB** | **16 tháng** |
+| `tab_change_log` — một dòng mỗi trường, cộng ảnh chụp lúc thêm/xóa | ~130 B | ~480 | **~25 MB** | **16 tháng** |
+| `tab_login_session` | ~700 B | ~6 | **~1,5 MB** | **16 tháng** sau `revoked_at` |
 
-Tổng ~**180 MB/năm**; giữ 16 tháng thì DB ổn định quanh **~240 MB**. Nếu giữ **cả body ra cho
-2xx** thì request_log lên ~**220 MB/năm** — đó là Q9. Con số giả định đã có chốt gộp nhập liệu
-hàng loạt (§6 bẫy 3); không có nó, một lần `import` nuốt trọn ngân sách cả năm.
+Cỡ dòng `request_log` tính theo **mix endpoint thật** chứ không phải một số trung bình chung: hai
+đường nặng nhất là `PATCH /api/purchase-requests/{id}` (35 lượt/ngày) và `PATCH
+/api/purchase-orders/{id}` (14 lượt/ngày), body chừng 600 B; phần còn lại (duyệt · nộp · gán ·
+đánh dấu đã đọc) chỉ vài chục byte.
 
-**Hạn giữ và gói theo năm (Q2, khách chốt 08/09/2026).** Một hạn chung **16 tháng** cho cả bốn
+Tổng **~90 MB/năm** ở nhịp hiện tại; giữ 16 tháng thì CSDL ổn định quanh **~120 MB**. Nếu nhịp
+dùng lên bằng tuần bận nhất đã đo (gấp 1,7 lần) thì **~150 MB/năm, ~200 MB ổn định** — vẫn nằm
+dưới khung 180 MB đã trình khách, **không phải đi xin duyệt lại**. Nếu giữ **cả body ra cho 2xx**
+thì request_log gấp đôi — đó là Q9. Con số giả định đã có chốt gộp nhập liệu hàng loạt (§6 bẫy 3);
+không có nó, một lần `import` nuốt trọn ngân sách cả năm.
+
+Ổ đĩa VPS còn **23 GB trống**, nên vài trăm MB **không phải vấn đề**. Vấn đề nằm ở chỗ khác:
+
+**Sao lưu hằng đêm — chỗ tốn thật, bản 2.3 chưa tính.** Hôm nay mỗi bản dump nén còn **1,09 MB**,
+giữ `BACKUP_KEEP = 30` bản (2 lần/ngày, ~15 ngày) → tổng trên R2 đúng **33 MB**. Thêm ~120 MB
+nhật ký vào CSDL, nén lại chừng 8–15 MB mỗi bản → **250–450 MB trên R2**, gấp gần chục lần hiện
+nay, và mỗi lượt dump dài thêm, ngày hai lần. Mà nhật ký **đã có đường lưu trữ riêng của nó**
+(bảng dưới), nên nằm trong bản sao lưu hằng đêm là **lưu hai lần cùng một thứ**.
+
+**QĐ-C (bản 2.4, chốt 09/09/2026) — bốn bảng nhật ký KHÔNG nằm trong bản sao lưu hằng đêm.**
+Nhật ký đi đường lưu trữ riêng của nó (bảng dưới), sao lưu hằng đêm quay về đúng việc của nó là
+giữ **dữ liệu nghiệp vụ**. Đánh đổi đã biết và chấp nhận: **phục hồi từ bản sao lưu sẽ ra một hệ
+thống trắng nhật ký**, muốn có lại phải nạp từ gói trên R2 — đúng tinh thần §12, nhật ký để truy
+trách nhiệm chứ không phải để khôi phục dữ liệu.
+
+| Việc | Cách làm |
+|---|---|
+| Dump hai lượt, nối lại | `modules/backup/service.py` chạy **hai** lượt `mysqldump` rồi nối thành một tệp `.sql`: lượt 1 dump cả CSDL kèm `--ignore-table=<db>.tab_request_log` (và ba bảng kia); lượt 2 `--no-data` **đúng bốn bảng đó**. **Không được** chỉ dùng `--ignore-table` một lượt: cờ đó bỏ luôn cả `CREATE TABLE`, phục hồi xong bảng **không tồn tại**, mà `alembic_version` lại đang ở head nên `alembic upgrade head` không dựng lại — hệ thống chạy lên rồi chết ở truy vấn đầu tiên chạm nhật ký |
+| Giữ nguyên phân vùng | Lượt `--no-data` giữ cả mệnh đề `PARTITION BY RANGE` nên bảng phục hồi ra đúng hình, chỉ rỗng ruột |
+| Khai một chỗ | Danh sách bốn bảng khai **một hằng** trong `backup/service.py`, dùng lại cho cả hai lượt và cho tác vụ đóng gói — ba nơi chép tay là ba nơi lệch nhau |
+| Kiểm lại sau khi bật | Phục hồi thử một bản vào CSDL rác, chạy `start.prod.sh`, mở một màn có dòng thời gian: phải lên **rỗng**, không phải lỗi 500 |
+
+**Kèm theo QĐ-C: đổi nhịp đóng gói từ MỖI NĂM sang MỖI THÁNG.** Gói theo năm là đúng cho lưu
+trữ dài hạn, nhưng nếu nhật ký không còn trong bản sao lưu hằng đêm nữa thì **từ tháng 1 tới
+tháng 12 sẽ có một khoảng trống**: mất CSDL giữa năm là mất trắng nhật ký của cả năm đang chạy,
+vì gói của năm đó chưa tồn tại. Nên tác vụ đóng gói chạy **đầu mỗi tháng cho tháng vừa xong**;
+mất nhiều nhất là nhật ký của tháng đang chạy. Cam kết với khách ở Q2 **không đổi** — vẫn 16
+tháng, vẫn lưu trữ riêng trên R2, chỉ là gói nhỏ hơn và dày hơn.
+
+**Hạn giữ và gói lưu trữ (Q2, khách chốt 08/09/2026).** Một hạn chung **16 tháng** cho cả bốn
 bảng — đủ để so cùng kỳ năm trước (12 tháng) cộng một quý đối chiếu. Nhật ký **không đi theo
 sao lưu**: sao lưu DB lên R2 chỉ giữ ngắn hạn, còn nhật ký phải giữ được lâu hơn thế, nên tách
-thành **gói lưu trữ theo năm**, mỗi năm một gói, để riêng:
+thành **gói lưu trữ riêng**, để riêng:
 
 | Việc | Cách làm |
 |---|---|
 | Chia bảng theo năm | Bốn bảng nhật ký **PARTITION BY RANGE (YEAR(created_at))**, mỗi năm một phân vùng. Dọn một năm cũ = `DROP PARTITION`, không `DELETE` từng dòng trên bảng vài triệu dòng |
-| Đóng gói một năm | Task Celery beat chạy **đầu tháng 1**: xuất trọn phân vùng năm trước của bốn bảng ra `log-<năm>.jsonl.gz` (kèm `.sha256`), đẩy lên R2 thư mục `log-archive/<năm>/`, **khác** thư mục sao lưu DB và **không** nằm trong luật xóa sao lưu cũ |
-| Xóa trong DB | Task Celery beat **hằng đêm** bỏ phân vùng nào **cả năm đó đã quá 16 tháng** *và* gói năm đó đã có trên R2 (kiểm `.sha256` trước) — chưa có gói thì **không xóa**, ghi cảnh báo |
+| Đóng gói một tháng | Task Celery beat chạy **đầu mỗi tháng** (QĐ-C, trên): xuất trọn tháng vừa xong của bốn bảng ra `log-<năm>-<tháng>.jsonl.gz` (kèm `.sha256`), đẩy lên R2 thư mục `log-archive/<năm>/`, **khác** thư mục sao lưu DB và **không** nằm trong luật xóa sao lưu cũ. Phân vùng vẫn theo năm — gói theo tháng chỉ là nhịp xuất, không phải cách chia bảng |
+| Xóa trong DB | Task Celery beat **hằng đêm** bỏ phân vùng nào **cả năm đó đã quá 16 tháng** *và* **đủ 12 gói tháng** của năm đó đã có trên R2 (kiểm `.sha256` từng gói) — thiếu dù một gói thì **không xóa**, ghi cảnh báo |
 | Đọc lại gói cũ | Không nạp lại vào bảng đang chạy. Nạp vào bảng `*_archive` riêng hoặc đọc thẳng tệp; màn §8 có ô *Năm* chỉ liệt kê năm còn trong DB, năm đã gói thì hiện đường dẫn gói |
 | Lịch sử cũ trước khi bật | 4.201 dòng audit hiện có nằm trong phân vùng năm của chúng, cùng luật |
 
@@ -659,13 +778,13 @@ và task xóa phải chạy **sau** task đóng gói ít nhất một ngày.
 
 | Đợt | Nội dung | Được gì ngay | Phụ thuộc |
 |---|---|---|---|
-| **P0** | **Gác cửa đọc** (BM-001) — tách đường đọc, chặn `entity=auth` | Bịt lỗ đang mở trên prod. Đã tách thành **bao-CR-313** | — |
-| **P1** | Middleware ngữ cảnh + `--proxy-headers` + **`tab_request_log`** + 6 cột ngữ cảnh trên audit | **Endpoint nào · input · output · IP · lượt bị chặn** — 213 lời gọi cũ không sửa | — |
+| **P0** | **Gác cửa đọc** (BM-001) — tách đường đọc, chặn `entity=auth` | Bịt lỗ đang mở trên prod. Đã tách thành **bao-CR-313**, xong 09/09/2026 | — |
+| **P1** | Middleware ngữ cảnh (IP lấy bằng `core/client_ip.get_client_ip` của bao-CR-313, không bật `--proxy-headers`) + **`tab_request_log`** + 6 cột ngữ cảnh trên audit. Kèm **QĐ-A** (bỏ qua gia hạn phiên thành công, §4.1) và **QĐ-B** (`request_id` là `BINARY(16)`, §4.5) — hai thứ này phải đúng **ngay từ migration đầu**, sửa sau là đổi kiểu cột trên bảng đã vài trăm nghìn dòng | **Endpoint nào · input · output · IP · lượt bị chặn** — 213 lời gọi cũ không sửa | — |
 | **P2** | `ACTION_CATALOG` + nhãn bắt buộc + test canh + `action_group` | 1.135 dòng đang hiện mã Anh đọc được ngay | — |
-| **P3** | `tab_login_session` + `jti` + `token_version` + 4 thao tác điều khiển phiên + ba chỗ hiện phiên (§8.5: Quản trị · Trang cá nhân · tab Nhân sự) | **Thiết bị gì · đá · đăng xuất mọi thiết bị · bắt đăng nhập lại** (BM-002) | P1 |
+| **P3** | `tab_login_session` + `jti` + `token_version` + 4 thao tác điều khiển phiên + ba chỗ hiện phiên (§8.5: Quản trị · Trang cá nhân · tab Nhân sự). **Kèm việc dọn:** bỏ dòng audit `refresh` cho nhánh gia hạn **thành công** mà bao-CR-313 đang ghi, chuyển sang dập `refreshed_at` / `refresh_count` / `last_seen_ip` theo QĐ-A | **Thiết bị gì · đá · đăng xuất mọi thiết bị · bắt đăng nhập lại** (BM-002) | P1 |
 | **P4** | `tab_change_log` + sự kiện ORM + che cột + chốt gộp nhập liệu | **Trước/sau** — nặng nhất, làm sau cùng trong nhóm nền | P1 |
 | **P5** | Màn `/system/logs` (§8.2–8.4): danh sách gộp theo `request_id`, ngăn 4 tab, theo dõi trực tiếp, biểu đồ; `/api/audit-logs` trả thêm `request_id` để *Xem chi tiết* từ dòng thời gian phiếu | **Gom một chỗ, debug trên giao diện** | P2, P4 (tab *Thay đổi* ẩn khi chưa có P4 — màn vẫn dùng được ngay sau P1) |
-| **P6** | Phân vùng theo năm + gói `log-<năm>` lên R2 + dọn 16 tháng (§9) + cảnh báo: đăng nhập IP lạ, phiên đổi IP giữa chừng, xóa hàng loạt trong một `request_id`, nhiều 403 liên tiếp | Nhật ký giữ được lâu hơn sao lưu mà DB không phình | P3, P4 |
+| **P6** | Phân vùng theo năm + gói `log-<năm>-<tháng>` lên R2 **đầu mỗi tháng** + dọn 16 tháng (§9) + **QĐ-C: tách bốn bảng nhật ký khỏi sao lưu hằng đêm bằng dump hai lượt** (§9) + cảnh báo: đăng nhập IP lạ, phiên đổi IP giữa chừng, xóa hàng loạt trong một `request_id`, nhiều 403 liên tiếp | Nhật ký giữ được lâu hơn sao lưu mà DB không phình | P3, P4 |
 
 **P1 là phần đáng làm nhất so với công bỏ ra**: một middleware trả lời được 4 trong 6 câu hỏi ở §1
 (endpoint, input/output, từ đâu, bị chặn) mà không đụng 213 lời gọi, không đụng ORM.
@@ -679,7 +798,7 @@ nhau thành một hạn 16 tháng + gói theo năm). Cột phải là **quyết 
 
 | | Câu hỏi | Chốt 08/09/2026 |
 |---|---|---|
-| **Q1** | Sửa thì ghi **một dòng mỗi trường** hay chụp **nguyên bản ghi**? | Một dòng mỗi trường (65 MB/năm, lọc được theo trường) |
+| **Q1** | Sửa thì ghi **một dòng mỗi trường** hay chụp **nguyên bản ghi**? | Một dòng mỗi trường (lọc được theo trường; đo lại bản 2.4 còn **~25 MB/năm**, không phải 65 MB như ước ban đầu — phiếu thật chỉ 1,9 dòng) |
 | **Q2** | Giữ bao lâu? | **16 tháng** cho cả bốn bảng; sau 16 tháng được xóa, nhưng **mỗi năm đóng một gói lưu trữ riêng** lên R2 trước khi xóa (§9). Khách nói rõ: sao lưu hệ thống không giữ lâu, riêng nhật ký thì giữ theo năm được |
 | **Q3** | Ai đọc **trước/sau** và **body vào**? | Khóa riêng `change_log`, chỉ quản trị — có thể chứa tên NCC |
 | **Q4** | Có làm **đá thiết bị / đăng xuất mọi thiết bị / bắt đăng nhập lại** không? | **Có**, cả bốn — thêm một cột `token_version` là xong phần nền |
@@ -691,6 +810,17 @@ nhau thành một hạn 16 tháng + gói theo năm). Cột phải là **quyết 
 | **Q10** | Người thường có được **tự đá thiết bị của mình** không? | **Có** — tab *Thiết bị của tôi* ở Trang cá nhân, phạm vi `own` |
 | **Q11** | Hồ sơ **Nhân sự** có tab *Tài khoản & thiết bị* không, và HR được làm gì? | **Có** — đọc phiên + lịch sử đăng nhập 90 ngày; một nút *Khóa + đăng xuất mọi thiết bị* cho nghỉ việc; **không** đá lẻ (§8.5) |
 | **Q12** | Lỗi 500 / task nền văng lỗi có lưu **traceback vào DB** không? | **Có**, `error_detail` cắt 16 KB, cùng hạn giữ 16 tháng — để debug trên màn, không phải vào container |
+
+### Chốt thêm ở bản 2.4 — quyết định kỹ thuật nội bộ, không phải hỏi khách
+
+Ba mục dưới đây sinh ra từ đợt đo lại prod ngày 09/09/2026, không đổi phạm vi cũng không đổi
+cam kết với khách, chỉ đổi cách làm bên trong:
+
+| | Việc | Chốt |
+|---|---|---|
+| **QĐ-A** | Gia hạn phiên có ghi nhật ký không? | **Thành công thì không ghi** (chỉ dập `refreshed_at` / `refresh_count`); **đổi IP hoặc thất bại thì ghi đủ**. Cắt 46.000 dòng rác/năm mà vẫn đóng BM-003 — §4.1 |
+| **QĐ-B** | `request_id` lưu kiểu gì? | **`BINARY(16)`** ở cả ba bảng, hiện ra ngoài vẫn là chuỗi 36 ký tự; `token_id` giữ `CHAR(36)` — §4.5 |
+| **QĐ-C** | Bốn bảng nhật ký có nằm trong bản sao lưu hằng đêm không? | **Không** — dump hai lượt (`--ignore-table` cho dữ liệu + `--no-data` để giữ cấu trúc); đánh đổi: phục hồi ra hệ thống trắng nhật ký. Kèm theo, nhịp đóng gói lên R2 đổi từ mỗi năm sang **mỗi tháng** để năm đang chạy không chỉ còn một bản. Làm ở P6 — §9 |
 
 ---
 
