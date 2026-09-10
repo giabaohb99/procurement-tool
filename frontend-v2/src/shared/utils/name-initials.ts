@@ -15,6 +15,12 @@ export function nameInitials(name: string): string {
     name
       .trim()
       .split(/\s+/)
+      //  ⚠️ Bỏ mẩu KHÔNG mở đầu bằng chữ cái. Hồ sơ hay mang đuôi chú thích
+      //  trong ngoặc ("Trưởng phòng Thu mua (Demo)"), mà hai từ cuối lúc đó là
+      //  ["mua", "(Demo)"] nên vòng tròn hiện ra «M(» — đọc như một lỗi hiển
+      //  thị chứ không như tên viết tắt. Cùng lý do `departmentInitials` chặn
+      //  tên mở đầu bằng "(".
+      .filter((part) => /^\p{L}/u.test(part))
       .slice(-2)
       .map((part) => part[0]?.toUpperCase())
       .join('') || '?'

@@ -26,6 +26,18 @@ describe('nameInitials', () => {
   it('viết hoa cả khi nguồn viết thường', () => {
     expect(nameInitials('lê minh đức')).toBe('MĐ')
   })
+
+  it('bỏ đuôi chú thích trong ngoặc — «(Demo)» từng cho ra chữ tắt «M(»', () => {
+    //  Lỗi thật thấy trên màn Chức vụ 10/09/2026: hồ sơ demo tên "Trưởng phòng
+    //  Thu mua (Demo)" ra vòng tròn ghi «M(», đọc như ảnh hỏng.
+    expect(nameInitials('Trưởng phòng Thu mua (Demo)')).toBe('TM')
+    expect(nameInitials('Manager (Demo)')).toBe('M')
+  })
+
+  it('tên toàn ký tự không phải chữ vẫn ra dấu hỏi, không ra vòng tròn trắng', () => {
+    expect(nameInitials('(Demo)')).toBe('?')
+    expect(nameInitials('---')).toBe('?')
+  })
 })
 
 describe('departmentInitials', () => {
