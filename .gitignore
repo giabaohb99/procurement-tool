@@ -47,6 +47,15 @@ db-export/*
 # giữ lâu dài thì chuyển vào `test/e2e/` chứ không để ở đây.
 .claude/chrome-devtools/
 
+# Dữ liệu thô đổ tạm ở GỐC repo lúc nạp dữ liệu bằng tay (bản dump MySQL, tệp
+# xuất từ Excel, câu UPDATE sinh ra từ tệp đó). Đã lỡ commit một đợt rồi xóa —
+# bản dùng thật nằm ở `backend/` cạnh script đọc nó, đừng để lại bản thứ hai ở
+# gốc. Chỉ chặn ở gốc (dấu `/` đầu dòng), không chặn `backend/datanhan.txt`.
+/dump.sql
+/datanhan.txt
+/dataphanloai.txt
+/update_invoice_name.sql
+
 # Tệp tạm Vite sinh ra cạnh vite.config.ts khi nạp config (frontend/, frontend-v2/,
 # help-center/). Bình thường Vite tự xóa sau khi nạp xong; còn sót lại là do lần chạy
 # trước bị ngắt giữa chừng — đã lỡ commit một lần trong e7dbd99.
