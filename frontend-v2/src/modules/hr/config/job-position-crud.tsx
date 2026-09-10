@@ -2,13 +2,39 @@ import { CircleCheck, CircleX, Hash } from 'lucide-react'
 
 import { appRoutes } from '@/shared/constants/app-routes'
 import type { CrudConfig } from '@/shared/crud'
+import { CrudRecordCard } from '@/shared/crud/crud-record-card'
 import { Badge } from '@/shared/ui/badge'
+import type { IdentityChip } from '@/shared/ui/record-identity-card'
 import {
   JobPositionDepartments,
   JobPositionHolderCount,
+  JobPositionHoldersLine,
 } from '../components/job-position-holders-cell'
 import { JobPositionHoldersPanel } from '../components/job-position-holders-panel'
 import type { JobPosition } from '../types/job-position'
+
+/**
+ * Huy hiệu mô tả nhanh một chức vụ — dùng CHUNG cho thẻ danh tính ở trang chi
+ * tiết và thẻ ở khổ điện thoại, để hai màn không trôi ra hai câu khác nhau.
+ *
+ * `quietWhenNormal` bỏ huy hiệu trạng thái khi chức vụ vẫn *Đang dùng* — xem
+ * ghi chú ở `mobileCard`.
+ */
+function jobPositionChips(r: JobPosition, quietWhenNormal = false): IdentityChip[] {
+  const normal = r.is_active && quietWhenNormal
+  return [
+    { icon: Hash, text: r.code, tone: 'code' },
+    ...(normal
+      ? []
+      : [
+          {
+            icon: r.is_active ? CircleCheck : CircleX,
+            text: r.is_active ? 'Đang dùng' : 'Ngừng / Ẩn',
+            tone: r.is_active ? ('ok' as const) : ('muted' as const),
+          },
+        ]),
+  ]
+}
 
 /**
  * DANH MỤC CHỨC VỤ — khai bằng dữ liệu, không viết trang riêng (duoc-CR-320).
@@ -76,14 +102,35 @@ export const JOB_POSITION_CRUD_CONFIG: CrudConfig<JobPosition> = {
   deleteWarning:
     'Chức vụ đang có người giữ thì không xóa được. Xóa rồi thì hồ sơ cũ mất chức danh. ' +
     'Muốn dẹp thì bỏ tick «Đang dùng»: chức vụ biến khỏi ô chọn nhưng hồ sơ cũ vẫn đọc được.',
-  chips: (r) => [
-    { icon: Hash, text: r.code, tone: 'code' as const },
-    {
-      icon: r.is_active ? CircleCheck : CircleX,
-      text: r.is_active ? 'Đang dùng' : 'Ngừng / Ẩn',
-      tone: r.is_active ? ('ok' as const) : ('muted' as const),
-    },
-  ],
+  chips: (r) => jobPositionChips(r),
+  //  Khổ hẹp: THẺ thay bảng. Bảng khai 6 cột, bề rộng tự nhiên ~1160px — trên
+  //  máy 390px chỉ thấy *Mã chức vụ* (còn bị cắt đuôi thành «truong-phong-…»)
+  //  và *Tên chức vụ*, tức người ta phải cuộn ngang mới biết chức vụ đó có ai
+  //  giữ hay không — mà đó chính là câu hỏi họ mở màn này ra để trả lời.
+  //
+  //  ⚠️ Thẻ chỉ nói cái BẤT THƯỜNG: huy hiệu trạng thái tắt đi khi *Đang dùng*
+  //  (13/13 dòng hiện tại đều vậy, in ra là mười ba dòng giống hệt nhau ăn mỗi
+  //  dòng một hàng của thẻ). Trang chi tiết thì ngược lại, vẫn bày đủ — ở đó
+  //  chỉ có MỘT bản ghi nên không có gì lặp, và người đang sửa cần đọc được cả
+  //  giá trị mặc định.
+  //
+  //  Hai cột đếm ngược gộp thành MỘT dòng chữ («3 người · Kế toán, Kinh doanh»)
+  //  thay vì hai cụm ảnh: trên thẻ không có tiêu đề cột nào để phân biệt cụm
+  //  nào là người, cụm nào là phòng ban.
+  mobileCard: (r) => (
+    <CrudRecordCard
+      title={r.name}
+      subtitle={
+        <>
+          <JobPositionHoldersLine positionId={r.id} />
+          {/*  Ghi chú là chữ tự do, không chặn độ dài ở tầng nhập — bó hai dòng,
+               nếu không một dòng khai dài đẩy cả chục chức vụ khác ra khỏi màn. */}
+          {r.note && <span className="line-clamp-2 block">{r.note}</span>}
+        </>
+      }
+      chips={jobPositionChips(r, true)}
+    />
+  ),
   columns: [
     {
       key: 'code',

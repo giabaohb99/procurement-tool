@@ -9,6 +9,7 @@ import { DataTable } from '@/shared/data-table'
 import { useDebouncedValue } from '@/shared/hooks/use-debounced-value'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
+import { Badge } from '@/shared/ui/badge'
 import { Card } from '@/shared/ui/card'
 import { Input } from '@/shared/ui/input'
 import {
@@ -26,6 +27,13 @@ import type { Employee } from '../types/employee'
 
 /** Không lọc phòng ban nào cả — xem chú thích ở `departmentId`. */
 const ALL_DEPARTMENTS = -1
+
+//  Mã tình trạng BÌNH THƯỜNG của một nhân sự đang làm việc. Thẻ ở khổ hẹp im
+//  lặng với mã này và chỉ lên tiếng ở ba mã còn lại — xem `mobileCard`.
+//  ⚠️ `official`, KHÔNG phải `active`: bộ mã ở `shared/constants/statuses.ts`
+//  (sinh từ backend) không hề có mã nào tên `active`, đoán tên là huy hiệu
+//  «Chính thức» hiện trên mọi thẻ.
+const STATUS_NORMAL = 'official'
 
 /**
  * Tab «Người đang giữ» của một chức vụ (duoc-CR-322) — đếm ngược từ hồ sơ.
@@ -157,6 +165,39 @@ export function JobPositionHoldersPanel({ positionId }: { positionId: number }) 
             cell: (row: Employee) => row.status_label || '—',
           },
         ]}
+        //  Khổ hẹp: THẺ thay bảng. Bốn cột cộng lại 780px, trên máy 390px chỉ
+        //  thấy *Mã NV* + *Họ tên* — tức mất đúng hai cột trả lời câu hỏi của
+        //  tab này (*họ ở phòng nào*, *còn làm việc không*).
+        //
+        //  Không dùng `CrudRecordCard` như màn danh sách: thẻ đó dựng cho một
+        //  bản ghi DANH MỤC (tên + huy hiệu), còn ở đây thứ nhận ra một người
+        //  là GƯƠNG MẶT, nên ảnh phải đứng đầu thẻ.
+        mobileCard={(row: Employee) => (
+          <div className="flex items-center gap-3">
+            <Avatar size="sm" className="shrink-0">
+              {row.avatar && <AvatarImage src={row.avatar} alt={row.full_name} />}
+              <AvatarFallback className="bg-primary/10 text-[10px] font-medium text-primary">
+                {nameInitials(row.full_name)}
+              </AvatarFallback>
+            </Avatar>
+
+            <div className="min-w-0 flex-1">
+              <span className="block truncate font-medium text-foreground">{row.full_name}</span>
+              <span className="block truncate text-xs text-muted-foreground">
+                {row.code} · {row.department_name || '(Chưa gắn phòng ban)'}
+              </span>
+            </div>
+
+            {/*  Tình trạng chỉ nói khi KHÁC «Đang làm việc»: cả trăm hồ sơ đều
+                 đang làm việc nên in ra là trăm dòng giống hệt nhau, còn người
+                 đã nghỉ mới là thứ người quản lý danh mục cần nhặt ra. */}
+            {row.status !== STATUS_NORMAL && row.status_label && (
+              <Badge variant="outline" className="shrink-0">
+                {row.status_label}
+              </Badge>
+            )}
+          </div>
+        )}
         rows={data?.items}
         getRowId={(row: Employee) => String(row.id)}
         isLoading={isLoading}

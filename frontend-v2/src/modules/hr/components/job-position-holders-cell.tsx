@@ -33,6 +33,9 @@ const FACES_IN_POSITION_CELL = 4
 //  Phòng ban thì hiện nhiều hơn một chút: vòng tròn chữ viết tắt của phòng luôn
 //  ĐỦ hai ký tự và không có ảnh thật chen vào, nên đọc rõ hơn cụm gương mặt.
 const DEPARTMENTS_IN_CELL = 5
+//  Thẻ ở khổ điện thoại xếp ít mặt hơn ô bảng: cụm ảnh ở đó đứng CÙNG DÒNG với
+//  câu «N người · phòng nào», nên mỗi vòng tròn thêm vào là một mẩu chữ bị cắt.
+const FACES_IN_CARD = 3
 
 /**
  * Cụm ảnh xếp chồng + «+N» cho phần không hiện hết.
@@ -101,6 +104,49 @@ export function JobPositionHolderCount({ positionId }: { positionId: number }) {
       limit={FACES_IN_POSITION_CELL}
       title={`${total} người đang giữ chức vụ này`}
     />
+  )
+}
+
+/**
+ * MỘT DÒNG gộp cả «ai giữ» lẫn «phòng nào» — dành cho thẻ ở khổ điện thoại.
+ *
+ * Thẻ không có tiêu đề cột nên hai cụm ảnh xếp cạnh nhau sẽ đọc thành một dãy
+ * vòng tròn vô nghĩa; ở đây gộp lại và **gọi tên phòng bằng CHỮ đầy đủ**, thứ
+ * mà ô bảng rộng 170px không chứa nổi nên mới phải viết tắt.
+ *
+ * ⚠️ Thiếu quyền `employee.read` thì trả về `null`, KHÔNG trả dấu «—» như ô
+ * bảng: trong bảng dấu gạch nằm dưới tiêu đề «Đang giữ» nên đọc ra *chưa có
+ * thông tin*, còn trên thẻ nó là một gạch ngang trơ trọi giữa hai dòng chữ,
+ * không nói được gì cả.
+ */
+export function JobPositionHoldersLine({ positionId }: { positionId: number }) {
+  const { can } = usePermission()
+  const allowed = can('employee', 'read')
+  const { data, isLoading } = useJobPositionStats(allowed)
+
+  if (!allowed || isLoading) return null
+
+  const stat = data?.get(positionId)
+  const total = stat?.total ?? 0
+  //  «Chưa ai giữ» là thứ ĐÁNG nhặt ra ở màn này (chức vụ khai rồi mà bỏ không),
+  //  nên vẫn nói thành lời chứ không im lặng như hai ca trên.
+  if (!total) return <span className="block">Chưa ai giữ</span>
+
+  const departments = stat?.departments ?? []
+
+  return (
+    <span className="flex items-center gap-1.5">
+      <HolderAvatarStack
+        faces={stat?.holders ?? []}
+        total={total}
+        limit={FACES_IN_CARD}
+        title={`${total} người đang giữ chức vụ này`}
+      />
+      <span className="truncate">
+        {total} người
+        {departments.length > 0 && ` · ${departments.map((d) => d.name).join(', ')}`}
+      </span>
+    </span>
   )
 }
 
