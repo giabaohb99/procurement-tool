@@ -19,6 +19,15 @@ export interface UserAccount {
   avatar?: string
   /** Chỉ có ở danh sách: hồ sơ nhân sự đã bị xóa -> tài khoản không còn hồ sơ. */
   is_orphan?: boolean
+  /**
+   * Tài khoản có nhận EMAIL thông báo không (bao-CR-349).
+   *
+   * ⚠️ Tùy chọn vì không phải cửa API nào cũng trả về nó; ba chỗ đọc đều so
+   * `=== false` chứ không `!account.notify_email` — `undefined` nghĩa là *chưa
+   * biết*, không phải *đã tắt*, và tô huy hiệu «đã tắt email» lên một tài khoản
+   * vẫn đang nhận thư là nói sai với người đi tra vì sao không nhận được.
+   */
+  notify_email?: boolean
 }
 
 /**
