@@ -514,3 +514,14 @@ khung cuộn đúng một lần; lượt render đầu của trang chi tiết l�
 thứ hai. Dải vẫn ghim, chỉ là bóng đổ không bao giờ hiện — và **chỉ sai khi gõ
 thẳng URL**, vào bằng đường trong app thì dữ liệu có sẵn trong cache nên nút DOM
 kịp lượt đầu. Nay truyền `nodeKey` để hook dò lại.
+
+**Tab nhớ ở URL** (duoc-CR-348, 10/09/2026). `CrudDetailPage` nay đồng bộ tab
+đang mở vào `?tab=`, cùng khuôn với màn Hồ sơ nhân sự. Lý do không phải để có
+link đẹp: bấm một dòng trong tab *«Người đang giữ»* là **rời trang** sang hồ sơ
+nhân sự, và trước đó bấm Lùi thì tab nhảy về *«Thông tin»* — xem mười hai người
+là mười hai lần mở lại tab, cuộn lại, lọc lại.
+
+⚠️ Ghi bằng `replace` chứ không `push`, và **phải chốt lại theo danh sách tab CÓ
+THẬT** (`resolveTabKey`): Radix nhận một `value` lạ mà không báo gì, nó chỉ không
+dựng tab nào cả và trang ra một khoảng trắng. Link cũ trỏ vào tab đã bỏ là đường
+tới đó, không phải chuyện hiếm.

@@ -17,9 +17,11 @@ import { Skeleton } from '@/shared/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { useScrolled } from '@/shared/hooks/use-scrolled'
 import { useSingleFlight } from '@/shared/hooks/use-single-flight'
+import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { cn } from '@/shared/utils/cn'
 import { CrudFormFields } from './crud-form-fields'
 import { buildFormDefaults, toApiPayload } from './field-values'
+import { TAB_INFO, resolveTabKey } from './resolve-tab-key'
 import type { CrudConfig, CrudRecord } from './types'
 import { useCrudDelete, useCrudDetail, useCrudSave } from './use-crud'
 
@@ -63,6 +65,18 @@ export function CrudDetailPage<T extends CrudRecord>({
   //  đúng một lần rồi bám vào `window` vĩnh viễn. Xem `use-scrolled.ts`.
   const stickyRef = useRef<HTMLDivElement>(null)
   const scrolled = useScrolled(stickyRef, { nodeKey: isCreate || Boolean(item) })
+
+  //  ⚠️ **TAB ĐANG MỞ NẰM Ở URL, không nằm trong state của Radix.** Bấm một
+  //  dòng trong tab con là RỜI TRANG (vd tab «Người đang giữ» của Chức vụ dẫn
+  //  sang hồ sơ nhân sự); bấm Lùi mà tab nhảy về «Thông tin» thì người dùng
+  //  phải mở lại tab, cuộn lại, lọc lại — mỗi lần xem một người là một vòng như
+  //  vậy. Cùng khuôn với màn Hồ sơ nhân sự (`?tab=`, duoc-CR-315), và kèm theo
+  //  thì gửi link thẳng vào một tab được.
+  //
+  //  `useUrlParamState` ghi bằng `replace` — đổi tab năm lần rồi bấm Lùi thì
+  //  người ta mong về TRANG TRƯỚC chứ không mong lùi qua từng lần bấm tab.
+  const [tabParam, setTab] = useUrlParamState('tab', TAB_INFO)
+  const activeTab = resolveTabKey(tabParam, config.tabs)
   //  Chặn bấm trùng trong cùng một nhịp — xem `useSingleFlight`.
   const once = useSingleFlight()
   const saveMutation = useCrudSave<T>(config.apiPath, config.title)
@@ -304,9 +318,9 @@ export function CrudDetailPage<T extends CrudRecord>({
         )}
 
         {item && config.tabs && config.tabs.length > 0 ? (
-          <Tabs defaultValue="info" className="space-y-4">
+          <Tabs value={activeTab} onValueChange={setTab} className="space-y-4">
             <TabsList className="mb-2">
-              <TabsTrigger value="info">Thông tin</TabsTrigger>
+              <TabsTrigger value={TAB_INFO}>Thông tin</TabsTrigger>
               {config.tabs.map((tab) => (
                 <TabsTrigger key={tab.key} value={tab.key}>
                   {tab.label}
@@ -314,7 +328,7 @@ export function CrudDetailPage<T extends CrudRecord>({
               ))}
             </TabsList>
 
-            <TabsContent value="info" className="space-y-6">
+            <TabsContent value={TAB_INFO} className="space-y-6">
               {infoPanel}
             </TabsContent>
 
