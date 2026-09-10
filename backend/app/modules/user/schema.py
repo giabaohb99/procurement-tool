@@ -22,6 +22,12 @@ class ActiveUpdate(BaseModel):
     is_active: bool
 
 
+class NotifyEmailUpdate(BaseModel):
+    """Bật/tắt email thông báo luồng duyệt của một tài khoản (bao-CR-349)."""
+
+    notify_email: bool
+
+
 class ScopeUpdate(BaseModel):
     """Phạm vi tổng theo user (Lớp B). Trống = không giới hạn chiều đó."""
 
@@ -38,5 +44,6 @@ class UserOut(BaseModel):
     email: str
     employee_id: int
     is_active: bool
+    notify_email: bool = True
     role_ids: list[int] = []
     model_config = {"from_attributes": True}

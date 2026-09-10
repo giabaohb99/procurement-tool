@@ -20,7 +20,8 @@ from app.modules.payment_request.model import PaymentRequest, PaymentRequestLine
 from app.modules.supplier.model import Supplier
 
 from .model import (ALLOCATION_METHOD_LABELS, AllocationMethod, DEFAULT_CURRENCY, IMPORT_COST_TYPE_LABELS,
-                    ImportCostType, OrderType, PODelivery, POImportCost, POItem, PurchaseOrder)
+                    ImportCostStatus, ImportCostType, OrderType, PODelivery, POImportCost, POItem,
+                    PurchaseOrder)
 from .schema import POCreate, POUpdate
 
 
@@ -311,6 +312,21 @@ def import_cost_base(row) -> float:
                  * rate_of(row), 2)
 
 
+def is_actual_cost(row) -> bool:
+    """Khoản chi phí này là số THỰC TẾ chứ không phải dự toán (bao-CR-347).
+
+    Dòng cũ (trước khi có cột) và mọi giá trị lạ đọc thành Thực tế — cột mặc định là
+    Thực tế, và đoán nhầm theo chiều đó chỉ làm khoản nợ hiện ra sớm, còn đoán nhầm
+    theo chiều kia thì khoản nợ có thật biến mất khỏi công nợ mà không báo gì.
+    """
+    return int(getattr(row, "cost_status", 0) or 0) != int(ImportCostStatus.ESTIMATED)
+
+
+def actual_costs(rows: list[dict]) -> list[dict]:
+    """Lọc lấy dòng chi phí THỰC TẾ từ danh sách đã tuần tự hóa (bao-CR-347)."""
+    return [r for r in rows if int(r.get("cost_status") or 0) != int(ImportCostStatus.ESTIMATED)]
+
+
 # ───────────────────────── Công nợ chi phí lô hàng (bao-CR-319 P5) ─────────────────────────
 # Mỗi dòng chi phí là MỘT khoản nợ riêng trên `tab_payable`: source_type = ref_type =
 # "import_cost", ref_id = id dòng chi phí. Đi chung bảng với goods/shipping để Yêu cầu
@@ -336,6 +352,10 @@ def sync_import_cost_payables(db: Session, po: PurchaseOrder, user_id: int,
     Đơn chưa duyệt / đã hủy: gỡ khoản nợ chưa chi đồng nào; khoản đã chi một phần thì giữ
     lại (tiền đã ra khỏi két, xóa dấu vết là mất đối chiếu — cùng cách đối xử với nợ hàng
     khi hủy đơn). Dòng chi phí 0 đồng hoặc chưa khai NCC thì không thành nợ.
+
+    bao-CR-347: dòng DỰ KIẾN cũng không thành nợ — đó là số dự toán để chốt giá bán, chưa
+    có hóa đơn nên chưa nợ ai cả. Đổi dòng sang Thực tế là nợ hiện ra ngay ở lần lưu kế
+    tiếp; đổi ngược lại thì nợ chưa chi bị gỡ, y như lúc bỏ NCC.
     """
     rows = import_costs_of(db, po.id)
     if not rows:
@@ -346,7 +366,7 @@ def sync_import_cost_payables(db: Session, po: PurchaseOrder, user_id: int,
     for row in rows:
         base_total = import_cost_base(row)
         has_supplier = bool((row.supplier_code or "").strip() or (row.supplier_name or "").strip())
-        if not active or base_total <= 0 or not has_supplier:
+        if not active or base_total <= 0 or not has_supplier or not is_actual_cost(row):
             old = existing.get(row.id)
             if old and float(old.paid_amount or 0) <= 0:
                 db.delete(old)
@@ -375,6 +395,9 @@ def block_complete_unpaid_import_costs(db: Session, po: PurchaseOrder) -> None:
     Hoàn thành xong là khóa sửa đơn, muốn khai thêm chi phí phải Mở lại. Dòng chi phí có tiền
     nhưng chưa thành công nợ (chưa chọn NCC) cũng chặn: khoản đó không có đường nào để trả.
     Đơn trong nước không đổi luật.
+
+    bao-CR-347: dòng DỰ KIẾN đứng ngoài chốt này. Đó là số dự toán, không sinh công nợ, nên
+    nếu xét thì đơn nào cũng kẹt ở "chưa thành công nợ" và không bao giờ Hoàn thành được.
     """
     if int(po.order_type or OrderType.DOMESTIC) != int(OrderType.IMPORT):
         return
@@ -384,7 +407,7 @@ def block_complete_unpaid_import_costs(db: Session, po: PurchaseOrder) -> None:
     pays = import_cost_payables_of(db, po.id)
     problems: list[str] = []
     for row in rows:
-        if import_cost_base(row) <= 0:
+        if import_cost_base(row) <= 0 or not is_actual_cost(row):
             continue
         try:
             cost_type = ImportCostType(int(row.cost_type or 0))

@@ -331,6 +331,11 @@ def _send_workflow_emails(db: Session, background_tasks, recipients: list, subje
     for r in recipients:
         if not r:
             continue
+        # bao-CR-349: người nhận tự tắt "Nhận email thông báo" thì bỏ qua — KHÔNG ghi
+        # EmailLog, vì có dòng log là có người đi tra "sao gửi rồi mà không tới". Chuông
+        # trong app và thông báo đẩy vẫn chạy: tắt email không phải tắt thông báo.
+        if not getattr(r, "notify_email", True):
+            continue
         target = _test_route_email(db, r)
         if not target:
             continue

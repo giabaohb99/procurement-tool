@@ -65,6 +65,7 @@ def _me_payload(db: Session, user) -> dict:
         "full_name": emp.full_name if emp else user.email,
         "avatar": getattr(user, 'avatar', ''),
         "signature": getattr(user, 'signature', ''),
+        "notify_email": bool(getattr(user, 'notify_email', True)),
         "phone": emp.phone if emp else "",
         #  CẢ id lẫn tên: màn Tạo văn bản tự điền ô «Phòng chủ trì» theo phòng
         #  của người đang đăng nhập, mà dò theo TÊN thì sai — một tên phòng có
@@ -173,6 +174,21 @@ def change_password(data: dict, user=Depends(get_current_user), db: Session = De
     user.password_hash = hash_password(new)
     db.commit()
     return success(None, "Đã đổi mật khẩu thành công")
+
+@router.put("/notify-email")
+def set_my_notify_email(data: schema.NotifyEmailInput, user=Depends(get_current_user),
+                        db: Session = Depends(get_db)):
+    """Người dùng tự bật/tắt email thông báo luồng duyệt của chính mình (bao-CR-349).
+
+    Tắt rồi thì mọi việc cần duyệt chỉ còn thấy ở chuông trong app và thông báo đẩy —
+    giao diện phải nói rõ điều đó trước khi người ta tắt."""
+    user.notify_email = data.notify_email
+    db.commit()
+    audit_record(db, user.id, "user", user.id, "write",
+                 "Tự bật email thông báo" if data.notify_email else "Tự tắt email thông báo")
+    return success({"notify_email": data.notify_email},
+                   "Đã bật email thông báo" if data.notify_email else "Đã tắt email thông báo")
+
 
 @router.post("/avatar")
 def update_avatar(file: UploadFile = File(...), user=Depends(get_current_user), db: Session = Depends(get_db)):

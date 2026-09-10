@@ -35,6 +35,7 @@ import ContractDetail from './pages/ContractDetail'
 import RolePermissions from './pages/RolePermissions'
 import UserPermissionDetail from './pages/UserPermissionDetail'
 import PrintPaymentRequest from './pages/PrintPaymentRequest'
+import PrintImportLandedCost from './pages/PrintImportLandedCost'
 import Settings from './pages/Settings'
 import SurveyRequestDetail from './pages/SurveyRequestDetail'
 import SurveyRequestProcess from './pages/SurveyRequestProcess'
@@ -66,6 +67,9 @@ export default function App() {
           <Route path="/print/purchase-order-mh/:id" element={<Protected><PrintPurchaseOrderMH /></Protected>} />
           <Route path="/print/purchase-order-import/:id" element={<Protected><PrintPurchaseOrderImport /></Protected>} />
           <Route path="/print/payment-request/:id" element={<Protected><PrintPaymentRequest /></Protected>} />
+          {/* bao-CR-347: bản in giá vốn lô hàng nhập khẩu — nhiều đơn một tờ nên lọc bằng query
+              string (codes / date_from / date_to / mode), không có `:id`. */}
+          <Route path="/print/import-landed-cost" element={<Protected><PrintImportLandedCost /></Protected>} />
           <Route path="/" element={<Protected><AppLayout /></Protected>}>
             <Route index element={<Dashboard />} />
             <Route path="purchase-requests/:id" element={<PurchaseRequestDetail />} />

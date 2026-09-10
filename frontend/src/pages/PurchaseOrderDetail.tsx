@@ -71,10 +71,17 @@ const IMPORT_COST_TYPE_OPTS: [number, string][] = [
   [1, 'Cước vận tải quốc tế'], [2, 'Phí địa phương tại cảng'], [3, 'Phí dịch vụ hải quan'],
   [4, 'Thuế nhập khẩu'], [5, 'Thuế GTGT hàng nhập khẩu'], [6, 'Thuế tiêu thụ đặc biệt'],
   [7, 'Thuế bảo vệ môi trường'], [8, 'Phí kiểm tra chuyên ngành'], [9, 'Bảo hiểm hàng hóa'],
-  [10, 'Vận chuyển nội địa'], [11, 'Lưu kho / lưu bãi'], [99, 'Chi phí khác'],
+  [10, 'Vận chuyển nội địa'], [11, 'Lưu kho / lưu bãi'],
+  // bao-CR-347 — ba loại theo mẫu báo cáo giá vốn khách đưa
+  [12, 'Dịch vụ hỗ trợ nhập khẩu, vận chuyển'], [13, 'Chi tiền hư container'],
+  [14, 'Lãi trả chậm'], [99, 'Chi phí khác'],
 ]
 const COST_TYPE_LABEL = (v: any) =>
   IMPORT_COST_TYPE_OPTS.find(([n]) => n === (Number(v) || 99))?.[1] || 'Chi phí khác'
+// bao-CR-347 — mọi khoản chi phí đều là số THỰC TẾ. Ô "Dự kiến / Thực tế" đã bỏ khỏi giao
+// diện (đại ca chốt 10/09/2026): thu mua chỉ gõ chi phí khi có số thật, nên đặt cứng giá trị
+// này khi tạo và khi lưu dòng. `ImportCostStatus.ACTUAL` ở backend.
+const COST_ACTUAL = 2
 // Khoản nộp cho nhà nước — chọn mấy loại này thì tự điền NCC "Ngân sách nhà nước"
 const IMPORT_COST_TAX_TYPES = [4, 5, 6, 7]
 const STATE_BUDGET_SUPPLIER_CODE = 'NSNN'
@@ -98,7 +105,7 @@ const PAY_TABS: [PayTab, string][] = [
 // Trạng thái đơn mà công nợ chi phí đã sinh (khớp IMPORT_COST_PAYABLE_STATUSES ở backend)
 const PO_PAYABLE_STATUSES = ['approved', 'partial', 'received', 'completed']
 const emptyImportCost = {
-  cost_type: 1, description: '', supplier_code: '', supplier_name: '',
+  cost_type: 1, cost_status: COST_ACTUAL, description: '', supplier_code: '', supplier_name: '',
   // Để trống đồng tiền / tỷ giá là cố ý: backend chép xuống từ đơn (xem _save_import_costs)
   currency: '', exchange_rate: 0, amount: 0, vat: 0,
   allocation_method: ALLOC_BY_VALUE, allocation_target: '', manual_allocation: {} as Record<string, number>,
@@ -187,7 +194,7 @@ export default function PurchaseOrderDetail() {
     supplier_name: '', department: '', nspt: '', order_date: new Date().toISOString().slice(0, 10),
     vat_rate: 0.08, payment_terms: '', is_urgent: false, note: '', status: 'draft', items: [],
     order_type: ORDER_TYPE_DOMESTIC, currency: DEFAULT_CURRENCY, exchange_rate: 1,
-    customs_decl_no: '', customs_decl_date: '',
+    customs_decl_no: '', customs_decl_date: '', etd_date: '',
     // bao-CR-321 — điều khoản in, chép từ NCC lúc chọn; 0 / rỗng = bản in dùng NCC rồi mặc định
     inspection_days: 0, return_days: 0, invoice_deadline: '',
   })
@@ -659,11 +666,14 @@ export default function PurchaseOrderDetail() {
       currency: (po.currency || '').trim() || DEFAULT_CURRENCY,
       exchange_rate: Number(po.exchange_rate) || 1,
       customs_decl_no: po.customs_decl_no || '', customs_decl_date: po.customs_decl_date || '',
+      etd_date: po.etd_date || '',   // bao-CR-347 — "Ngày gửi" trên báo cáo giá vốn
       // bao-CR-321 — điều khoản in
       inspection_days: Number(po.inspection_days) || 0, return_days: Number(po.return_days) || 0,
       invoice_deadline: (po.invoice_deadline || '').trim(),
       import_costs: importCosts.map((c: any) => ({
-        id: c.id, cost_type: Number(c.cost_type) || 99, description: c.description || '',
+        id: c.id, cost_type: Number(c.cost_type) || 99,
+        cost_status: Number(c.cost_status) || COST_ACTUAL,
+        description: c.description || '',
         supplier_code: c.supplier_code || '', supplier_name: c.supplier_name || '',
         currency: c.currency || '', exchange_rate: Number(c.exchange_rate) || 0,
         amount: Number(c.amount) || 0, vat: Number(c.vat) || 0,
@@ -864,6 +874,11 @@ export default function PurchaseOrderDetail() {
                   {isImport && (
                     <button className="btn ghost" style={{ display: 'flex', width: '100%', justifyContent: 'flex-start', border: 'none', borderRadius: 0 }} onClick={() => { window.open(`/print/purchase-order-import/${id}`, '_blank'); setPrintOpen(false) }}><i className="ti ti-ship" />In Đơn nhập khẩu</button>
                   )}
+                  {/* bao-CR-347: giá vốn của RIÊNG đơn này — bản in nhiều đơn nằm ở tab
+                      "Giá vốn nhập khẩu" trong Báo cáo mua hàng. */}
+                  {isImport && (
+                    <button className="btn ghost" style={{ display: 'flex', width: '100%', justifyContent: 'flex-start', border: 'none', borderRadius: 0 }} onClick={() => { window.open(`/print/import-landed-cost?codes=${encodeURIComponent(po.code || '')}`, '_blank'); setPrintOpen(false) }}><i className="ti ti-report-money" />In Báo cáo giá vốn</button>
+                  )}
                   {/* bao-CR-314: chỉ hiện khi đơn có gắn YCMH. Bản in chỉ gồm những dòng hàng
                       có trên đơn này — không cần quyền đọc YCMH vì cổng là quyền in ĐƠN. */}
                   {(po.pr_code || '').trim() && (
@@ -1015,6 +1030,14 @@ export default function PurchaseOrderDetail() {
                 <div className="form-row"><label>Ngày tờ khai</label>
                   <DateInput value={po.customs_decl_date || ''} disabled={!headerEditable && !afterApproveEditable}
                     onChange={(v) => setH('customs_decl_date', v)} />
+                </div>
+              )}
+              {/* bao-CR-347 — "Ngày gửi" trên báo cáo giá vốn. Sửa được cả sau khi duyệt như
+                  cụm tờ khai: lúc lập đơn thường chưa biết tàu chạy ngày nào. */}
+              {isImport && (
+                <div className="form-row"><label>Ngày hàng rời cảng xuất (ETD)</label>
+                  <DateInput value={po.etd_date || ''} disabled={!headerEditable && !afterApproveEditable}
+                    onChange={(v) => setH('etd_date', v)} />
                 </div>
               )}
               <div className="form-row"><label>NSPT phụ trách</label>

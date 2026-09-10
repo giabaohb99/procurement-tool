@@ -364,3 +364,13 @@ def set_active(db: Session, user_id: int, active: bool, actor_id: int) -> None:
     db.commit()
     record(db, actor_id, "user", user_id, "activate" if active else "deactivate",
            ("Mở khóa tài khoản " if active else "Khóa tài khoản ") + user_label(db, user_id))
+
+
+def set_notify_email(db: Session, user_id: int, on: bool, actor_id: int) -> None:
+    """Bật/tắt email thông báo luồng duyệt của một tài khoản (bao-CR-349)."""
+    user = db.get(User, user_id)
+    if not user:
+        raise HTTPException(404, "Không tìm thấy tài khoản")
+    user.notify_email = on
+    user.updated_by = actor_id
+    db.commit()

@@ -90,6 +90,11 @@ const SUP_TYPE = [
 // B-03: bộ mã dời sang `utils/statusLabels.ts`. Giữ tên cũ để phần dưới khỏi phải đổi.
 const EMPLOYEE_STATUS = EMPLOYEE_STATUSES
 
+// bao-CR-350 (nhánh `main`) thêm một bảng tra mã ngay tại đây vì bên đó chưa chạy B-03.
+// Nhánh này KHÔNG cần: `employeeStatusLabel` nhập từ `utils/statusLabels.ts` ở đầu tệp đã
+// là bản dùng chung, và `tab_employee.status` ở đây đã là mã tiếng Anh nên so thẳng với
+// 'official' là đủ. Giữ lại bản chép thứ hai chỉ tạo hai nguồn sự thật cho một bộ mã.
+
 const DEPT_ACTIVE = [{ value: 'true', label: 'Hoạt động' }, { value: 'false', label: 'Đã ẩn' }]
 
 const ACTIVE_OPTIONS = [
@@ -355,7 +360,7 @@ export const cruds: Record<string, CrudConfig> = {
       ...(row.code ? [{ icon: 'ti-id-badge-2', text: row.code, cls: 'code' }] : []),
       ...(row.position ? [{ icon: 'ti-briefcase', text: row.position }] : []),
       ...(row.department_name ? [{ icon: 'ti-building', text: row.department_name }] : []),
-      ...(row.status ? [{ icon: 'ti-user-check', text: row.status }] : []),
+      ...(row.status ? [{ icon: 'ti-user-check', text: row.status_label || employeeStatusLabel(row.status) }] : []),
     ],
     detailExtra: (row) => <EmployeeAccountCard employeeId={row.id} email={row.email} />,
     columns: [

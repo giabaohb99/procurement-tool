@@ -264,6 +264,48 @@ Bảng: `tab_notification`
 
 ---
 
+### G. Email thông báo luồng duyệt — công tắc theo từng người (bao-CR-349)
+
+Ngoài chuông và thông báo đẩy, `trigger_notification` còn gửi **email** cho từng người nhận
+(`_send_workflow_emails`). Đây là kênh ồn nhất: một người vừa là nhân viên vừa là quản lý duyệt
+có thể nhận hơn hai chục thư một ngày.
+
+**Ba tầng công tắc, xét theo đúng thứ tự này:**
+
+| Tầng | Chỗ đặt | Phạm vi | Ghi chú |
+|---|---|---|---|
+| 1. `EMAIL_WORKFLOW_ENABLED` | biến môi trường `.env` | **Toàn hệ** | `false` là không ai nhận thư luồng duyệt, kể cả người đang bật |
+| 2. `tab_user.notify_email` | Trang cá nhân · hồ sơ Nhân sự · màn Phân quyền | **Một tài khoản** | Mặc định `true`. Đây là tầng người dùng tự điều khiển |
+| 3. `EMAIL_HARD_OFF` / `email_enabled` | `.env` / Cấu hình hệ thống | Toàn hệ, tầng gửi SMTP | ⚠️ ô **"Bật gửi email"** trong Cấu hình hệ thống **không** chặn được thư luồng duyệt — luồng này gọi `send_smtp_email(..., force=True)` nên vượt qua nó. Muốn tắt toàn hệ phải sửa tầng 1 |
+
+**Người tắt thì bỏ qua hẳn, không ghi `EmailLog`.** Có dòng log "đã gửi" cho một người không nhận
+được thư là mồi cho một cuộc đi tra vô ích.
+
+**Tắt email KHÔNG phải tắt thông báo.** Chuông trong app (`tab_notification`) và thông báo đẩy chạy
+trước, độc lập với công tắc này — người tắt email vẫn thấy đủ việc cần duyệt khi mở app. Vì thế
+người **giữ vai trò duyệt** nên bật Web Push trước khi tắt email, kẻo không còn kênh nào chủ động
+báo tới họ.
+
+**Ba loại thư KHÔNG đi qua công tắc này:** đặt lại mật khẩu, cấp tài khoản mới, và thư của các
+chức năng ngoài luồng duyệt. Lý do: hai loại đầu là đường vào hệ thống — tắt chúng thì người dùng
+không tự lấy lại được tài khoản.
+
+**Bốn chỗ bật/tắt được, cùng một cột:**
+
+| Màn | Chỗ đặt | Ai dùng |
+|---|---|---|
+| Trang cá nhân → tab Thông tin | card **"Email thông báo"**, cột phải | Chính chủ tự tắt cho mình |
+| **Nhân sự → mở hồ sơ** | thẻ **"Tài khoản đăng nhập"** — dòng *Email TB* + nút bật/tắt | Nhân sự / quản trị. ⚠️ Đây là lối đi THẬT khi có người xin ngưng nhận thư: người xử lý mở hồ sơ nhân sự chứ không nhớ tài khoản số mấy |
+| Phân quyền → mở một tài khoản | card **"Email thông báo"** | Quản trị |
+| Phân quyền → danh sách | nhãn **"Tắt email"** (chỉ hiển thị, không bấm được) | Nhìn phát biết ai đang tắt |
+
+| Method | Đường dẫn | Ai gọi được | Mô tả |
+|---|---|---|---|
+| PUT | `/api/auth/notify-email` | Chính chủ (chỉ cần đăng nhập) | Body `{ notify_email: bool }`. Ghi audit `user:write` |
+| PUT | `/api/users/{user_id}/notify-email` | Quyền `user.write` | Quản trị tắt/bật hộ. Ghi audit `user:write` trên tài khoản đó. Dùng cho cả thẻ ở hồ sơ Nhân sự |
+
+---
+
 ## Phần I-B: Khối tài khoản góc phải header (CR-028)
 
 Nằm cạnh chuông thông báo, mở/đóng khi bấm.
@@ -361,9 +403,26 @@ Lưu ý: việc thu nhỏ nằm ở **client**, gọi API trực tiếp vẫn đ
 | POST | `/api/auth/signature` | Tải ảnh chữ ký (multipart `file`). Từ chối file không phải ảnh (400). Key lưu: `{env}/signature/{user_id}/{uuid}-{tên file}`. Trả `{ signature: url }`. Ghi audit `user:write` |
 | DELETE | `/api/auth/signature` | Gỡ chữ ký khỏi hồ sơ — chỉ xóa liên kết, **giữ file trên storage** (không phá phiếu đã in). Ghi audit `user:write` |
 
+#### Card "Email thông báo" (bao-CR-349)
+
+Card thứ ba ở cột phải (`frontend/src/pages/me/email-notification-card.tsx`) — người dùng **tự tắt
+thư luồng duyệt của chính mình**, không phải nhờ quản trị.
+
+| Trạng thái | Chấm | Nút |
+|---|---|---|
+| Đang bật | xanh | "Tắt email thông báo" (ghost) |
+| Đang tắt | xám | "Bật email thông báo" (primary) |
+
+Khác card "Thông báo đẩy" ngay bên dưới: cái này theo **tài khoản**, cái kia theo **thiết bị**.
+Card nói rõ hai điều dễ hiểu nhầm: tắt email thì chuông trong app vẫn chạy, và thư đặt lại mật khẩu
+không bị ảnh hưởng. Luật đầy đủ ở **Phần I mục G**.
+
+Phía quản trị: màn **Phân quyền → tab Người dùng** gắn nhãn *"Tắt email"* cho tài khoản đang tắt, và
+trang chi tiết `/users/{id}` có card **"Email thông báo"** để tắt/bật hộ.
+
 #### Card "Thông báo đẩy"
 
-Card thứ ba trong Tab Thông tin cá nhân — hiển thị trạng thái đăng ký Web Push của thiết bị hiện tại và nút bật/tắt:
+Card thứ tư trong Tab Thông tin cá nhân — hiển thị trạng thái đăng ký Web Push của thiết bị hiện tại và nút bật/tắt:
 
 | Trạng thái | Nút hiển thị |
 |---|---|
@@ -376,7 +435,7 @@ Mỗi thiết bị (trình duyệt) đăng ký độc lập — bật trên đi�
 #### API: `GET /api/auth/me`
 
 - Không nhận tham số.
-- Trả về: `id`, `email`, `employee_id`, `emp_code`, `company_id`, `full_name`, `avatar`, `signature`, `phone`, `department_name`, `role_name`, `position`, `permissions` (ma trận quyền đầy đủ của user).
+- Trả về: `id`, `email`, `employee_id`, `emp_code`, `company_id`, `full_name`, `avatar`, `signature`, `notify_email`, `phone`, `department_name`, `role_name`, `position`, `permissions` (ma trận quyền đầy đủ của user).
 
 ---
 

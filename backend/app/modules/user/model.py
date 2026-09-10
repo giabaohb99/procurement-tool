@@ -24,6 +24,11 @@ class User(Base, AuditMixin):
     # Ảnh chữ ký cá nhân (URL trên storage) — người dùng tự tải lên ở Trang cá nhân
     signature: Mapped[str] = mapped_column(String(500), default="")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # bao-CR-349: tự tắt email thông báo luồng duyệt cho RIÊNG tài khoản này. Chỉ chặn thư
+    # workflow — thư đặt lại mật khẩu / cấp tài khoản vẫn gửi, vì đó là thư người dùng tự
+    # yêu cầu và tắt nó đi thì họ mất đường vào hệ thống. Chuông trong app và thông báo đẩy
+    # không đi qua công tắc này.
+    notify_email: Mapped[bool] = mapped_column(Boolean, default=True)
 
     # viewonly + lazy="selectin": danh sách nhiều user nạp gộp file trong 1 truy vấn
     # IN, khỏi N+1 ở màn danh sách nhân sự/bình luận. Không có FK cứng nên phải

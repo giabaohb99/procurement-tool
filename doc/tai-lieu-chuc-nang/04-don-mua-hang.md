@@ -304,6 +304,15 @@ Backend chặn ở `block_edit_approved_order()` (`purchase_order/service.py`) �
 - Nguồn dữ liệu / liên kết: Mục 2 bản in "Thời gian nhận hóa đơn"
 - Người sửa / Logic: Như mục 23. Không phải hạn kế toán, không sinh nhắc việc hay ảnh hưởng `document_status`.
 
+### 26. Ngày hàng rời cảng xuất — ETD (`etd_date`) — bao-CR-347
+
+- Kiểu nhập: Chọn ngày, nằm trong cụm tờ khai hải quan, **chỉ hiện với đơn nhập khẩu**
+- Mặc định: trống = chưa khai
+- Bắt buộc: Không
+- Nguồn dữ liệu / liên kết: Là chỉ tiêu **"Ngày hàng rời cảng (ETD)"** trên báo cáo giá vốn lô hàng nhập khẩu (mục K.5) và bản in của báo cáo đó
+- Người sửa: NSPT/Người tạo (quyền `purchase_order:write`) khi đơn chưa khóa, **và cả sau khi duyệt** (như cụm tờ khai) — ngày tàu chạy thường chốt sau ngày duyệt đơn
+- Logic đặc biệt: Chỉ là ngày ghi nhận, **không** sinh nhắc việc, không tính hạn, không ảnh hưởng tiến độ giao hàng (tiến độ vẫn theo `required_date` và ngày nhận thực tế).
+
 ---
 
 ## B. Dòng hàng (`tab_po_item`)
@@ -1161,7 +1170,7 @@ hóa đơn cước, tờ khai thuế, phí lưu bãi đều về sau ngày duy�
 
 | Cột | Ý nghĩa / luật |
 |-----|----------------|
-| `cost_type` | SMALLINT + IntEnum `ImportCostType`: 1 Cước vận tải quốc tế · 2 Phí địa phương tại cảng · 3 Phí dịch vụ hải quan · 4 Thuế nhập khẩu · 5 Thuế GTGT hàng nhập · 6 Thuế TTĐB · 7 Thuế BVMT · 8 Kiểm tra chuyên ngành · 9 Bảo hiểm · 10 Vận chuyển nội địa · 11 Lưu kho/bãi · 99 Khác. Mã lạ đẩy về 99. Chọn nhóm thuế (4..7) thì giao diện tự điền NCC `NSNN` *Ngân sách nhà nước* (seed ở migration `ed610675320b`, `downgrade` cố ý giữ lại vì có thể đã gắn công nợ thật). **Loại chi phí ĐƯỢC TRÙNG trong một đơn** (cố ý, khách hỏi 09/09): một dòng = một hóa đơn của một NCC, nên hai hóa đơn cước của hai chặng, hay hai lần lưu bãi, là hai dòng cùng loại. |
+| `cost_type` | SMALLINT + IntEnum `ImportCostType`: 1 Cước vận tải quốc tế · 2 Phí địa phương tại cảng · 3 Phí dịch vụ hải quan · 4 Thuế nhập khẩu · 5 Thuế GTGT hàng nhập · 6 Thuế TTĐB · 7 Thuế BVMT · 8 Kiểm tra chuyên ngành · 9 Bảo hiểm · 10 Vận chuyển nội địa · 11 Lưu kho/bãi · **12 Dịch vụ hỗ trợ nhập khẩu, vận chuyển · 13 Chi tiền hư container · 14 Lãi trả chậm** (ba mã thêm ở bao-CR-347, đánh số tiếp chứ **không** đánh lại từ đầu vì mã cũ đã nằm trong dữ liệu prod) · 99 Khác. Mã lạ đẩy về 99. Chọn nhóm thuế (4..7) thì giao diện tự điền NCC `NSNN` *Ngân sách nhà nước* (seed ở migration `ed610675320b`, `downgrade` cố ý giữ lại vì có thể đã gắn công nợ thật). **Loại chi phí ĐƯỢC TRÙNG trong một đơn** (cố ý, khách hỏi 09/09): một dòng = một hóa đơn của một NCC, nên hai hóa đơn cước của hai chặng, hay hai lần lưu bãi, là hai dòng cùng loại. |
 | `description` | Diễn giải tự do. Ô trên bảng **xuống dòng và cao theo nội dung** (như Tên hàng), không cắt chữ; Ghi chú cũng vậy (09/09). |
 | `supplier_code` / `supplier_name` | NCC nhận tiền của khoản này. Trống thì dòng vẫn lưu nhưng **không sinh công nợ** (K.4). |
 | `currency` / `exchange_rate` | Cùng đồng tiền với đơn thì theo tỷ giá đơn; **khác đồng tiền thì tỷ giá = 1, không mượn tỷ giá đơn** (chi phí VNĐ trong đơn USD mà nhân 25.000 là phồng lên 25.000 lần). |
@@ -1173,6 +1182,7 @@ hóa đơn cước, tờ khai thuế, phí lưu bãi đều về sau ngày duy�
 | `manual_allocation` | TEXT JSON `{"<id dòng hàng>": số tiền VNĐ}`, chỉ dùng khi chọn cách 5 (cách khác lưu rỗng). Đây là cách chia **duy nhất phải lưu kết quả** vì con số do thu mua gõ để cân với chứng từ, không suy ra được từ dữ liệu khác. Khóa là **id dòng** (không phải mã hàng) vì gõ tay thì mỗi dòng một số kể cả trùng mã; khóa của dòng đã xóa bị bỏ khi lưu. Tổng các dòng phải bằng `base_amount` (dung sai 1 đ), lệch hoặc chưa gõ dòng nào thì **400** ngay lúc Lưu. Migration `b7e2c4d9a1f3`. |
 | `invoice_no` / `invoice_date` | Số và ngày hóa đơn của khoản chi phí → chép sang công nợ (`invoice_no`, `incur_date`). |
 | `payment_due_date` | Hạn thanh toán của khoản; có thì **ưu tiên** hơn hạn tính từ điều khoản NCC. |
+| `cost_status` | **bao-CR-347.** SMALLINT + IntEnum `ImportCostStatus`: `1` Dự kiến · `2` Thực tế (mặc định). **Giao diện KHÔNG còn ô này** — đại ca chốt 10/09/2026 bỏ hẳn khái niệm Dự kiến khỏi màn hình, thu mua chỉ gõ chi phí khi đã có số thật, nên mọi dòng tạo mới đều là `2`. Cột giữ lại làm **tấm lưới an toàn**: `is_actual_cost()` / `actual_costs()` vẫn lọc, để dòng dự kiến sót lại từ đợt thử nghiệm không sinh công nợ, không vào `cost_total`, không chia về dòng hàng và không chặn Hoàn thành đơn (K.4 mục 8). Dòng cũ chưa khai cột này (dữ liệu trước CR-347) đọc thành **Thực tế** nên prod không đổi số. |
 | `note` | Ghi chú. |
 
 Quy ước API: payload `PATCH` **không gửi** khóa `import_costs` (`None`) = *không đụng bảng*; gửi mảng
@@ -1281,3 +1291,20 @@ khoản nợ của từng dòng chi phí. Phiếu gõ tay chấp nhận `source_
 **Test:** `test_po_tien_te_cr319.py` (P1) · `test_po_chi_phi_nhap_khau_cr319.py` (P3) ·
 `test_po_phan_bo_chi_phi_cr319.py` (P4) · `test_po_cong_no_chi_phi_cr319.py` (P5). Dữ liệu thử local:
 `backend/scripts/seed_demo_import_po.py`.
+
+### K.5 Giá vốn lô hàng (bao-CR-347)
+
+Báo cáo giá vốn nằm ở **Báo cáo mua hàng → tab "Giá vốn nhập khẩu"** (`08-he-thong-bao-cao.md` mục 10),
+kèm bản in ngang A4 có ba ô ký tay và file Excel hai sheet. Đường vào nhanh cho một đơn: menu
+**In → In Báo cáo giá vốn** trên màn chi tiết ĐMH.
+
+Thẻ chi phí của ĐMH **không có ô "Dự kiến / Thực tế"** (đại ca chốt 10/09/2026): thu mua chỉ gõ chi phí
+khi đã có số thật, nên mọi dòng đều là **Thực tế** và cả bảng chi phí lẫn báo cáo đọc thẳng số đã gõ.
+Cột `cost_status` vẫn còn trong CSDL (K.1) như một tấm lưới — dòng dự kiến sót lại từ đợt thử nghiệm
+không lọt được vào công nợ.
+
+**Ranh giới giữ nguyên như K.2:** giá vốn **tính bay lúc xem/in, không lưu**, không đẩy vào kho, không đổi
+giá nhập. Báo cáo **không có ô "Lần nhận"** của mẫu giấy: chi phí gắn theo **cả đơn**, không tách theo lượt
+nhận (đại ca chốt 09/2026), nên ô đó luôn là 1 và chỉ tổ làm rối bảng.
+
+**Test:** `test_gia_von_nhap_khau_cr347.py`. Migration `a1c6f80b2d47` (`cost_status` + `etd_date`).

@@ -9,7 +9,8 @@ from sqlalchemy.orm import Session
 from app.core.auth import require, get_perm_profile
 from app.core.database import get_db
 from app.core.response import success
-from .excel import build_report_workbook
+from .excel import build_import_landed_cost_workbook, build_report_workbook
+from . import import_landed_cost
 from app.modules.inventory.model import Inventory
 from app.modules.payable.model import Payable
 from app.modules.payable.service import ST_PAID
@@ -221,7 +222,57 @@ def dept_range(request: Request, db: Session = Depends(get_db), user=Depends(req
     rows = report_service.compute_dept_range(db, date_from, date_to, company_id)
     return success(rows)
 
-PO_STATUSES = ["draft", "submitted", "approved", "partial", "received", "completed", "cancelled", "rejected"]
+
+def _id_list(raw: str) -> list[int]:
+    """Chuỗi "12,15,18" -> [12, 15, 18]. Bỏ qua phần không phải số thay vì báo lỗi 422:
+    tham số này do giao diện ghép từ danh sách đơn đã chọn, sót dấu phẩy là chuyện thường."""
+    out = []
+    for part in (raw or "").split(","):
+        part = part.strip()
+        if part.isdigit():
+            out.append(int(part))
+    return out
+
+
+def _import_landed_cost_data(request: Request, db: Session) -> dict:
+    qp = request.query_params
+    return import_landed_cost.compute(
+        db, po_ids=_id_list(qp.get("po_ids") or ""),
+        codes=[c.strip() for c in (qp.get("codes") or "").split(",") if c.strip()],
+        date_from=(qp.get("date_from") or "").strip(), date_to=(qp.get("date_to") or "").strip(),
+        company_id=qp.get("company_id"))
+
+
+@router.get("/import-landed-cost")
+def import_landed_cost_report(request: Request, db: Session = Depends(get_db),
+                              user=Depends(require("report", "read"))):
+    """Giá vốn lô hàng NHẬP KHẨU (bao-CR-347) — chọn theo mã đơn hoặc theo khoảng ngày đặt.
+
+    Tham số: po_ids / codes (ưu tiên), hoặc date_from + date_to; kèm company_id.
+    Một lần gọi trả CẢ HAI cách đọc — `orders` (theo lô) và `items` (theo dòng hàng) — vì
+    hai tab dùng chung một lần lọc, đổi tab không nên gọi lại API.
+
+    Số liệu dựa trên đơn giá và chi phí của NCC nên gác cùng mức với báo cáo NCC.
+    """
+    if not _can_see_ncc(db, user):
+        raise HTTPException(status_code=403, detail="Không có quyền xem giá vốn lô hàng nhập khẩu")
+    return success(_import_landed_cost_data(request, db))
+
+
+@router.get("/import-landed-cost/export")
+def import_landed_cost_export(request: Request, db: Session = Depends(get_db),
+                              user=Depends(require("report", "export"))):
+    """Xuất báo cáo giá vốn lô hàng nhập khẩu ra Excel — hai sheet, theo lô và theo dòng hàng."""
+    if not _can_see_ncc(db, user):
+        raise HTTPException(status_code=403, detail="Không có quyền xem giá vốn lô hàng nhập khẩu")
+    buf = build_import_landed_cost_workbook(_import_landed_cost_data(request, db))
+    return StreamingResponse(
+        buf, media_type=_XLSX_MIME,
+        headers={"Content-Disposition": 'attachment; filename="bao-cao-gia-von-nhap-khau.xlsx"'},
+    )
+
+
+PO_STATUSES =["draft", "submitted", "approved", "partial", "received", "completed", "cancelled", "rejected"]
 REAL_PO_STATUSES = {"approved", "partial", "received", "completed"}   # đơn hàng thật (bỏ nháp/chờ duyệt/hủy/từ chối)
 
 
