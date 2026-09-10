@@ -14,8 +14,9 @@ import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { RecordIdentityCard, type IdentityChip } from '@/shared/ui/record-identity-card'
 import { Skeleton } from '@/shared/ui/skeleton'
-import { TAB_LIST_UNDERLINE, TAB_TRIGGER_UNDERLINE } from '@/shared/ui/tab-underline'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
+import { ScrollableTabsList } from '@/shared/ui/scrollable-tabs-list'
+import { TAB_TRIGGER_UNDERLINE } from '@/shared/ui/tab-underline'
+import { Tabs, TabsContent, TabsTrigger } from '@/shared/ui/tabs'
 import { useScrolled } from '@/shared/hooks/use-scrolled'
 import { useSingleFlight } from '@/shared/hooks/use-single-flight'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
@@ -334,7 +335,12 @@ export function CrudDetailPage<T extends CrudRecord>({
             onValueChange={setTab}
             className="space-y-4 max-md:space-y-2"
           >
-            <TabsList className={cn('mb-2 max-md:mb-0', TAB_LIST_UNDERLINE)}>
+            {/*  ⚠️ Dải tab TỰ CUỘN NGANG: màn nhiều tab (Nhà cung cấp có 5)
+                 không vừa một hàng 390px, mà để nó tràn là kéo theo CẢ TRANG
+                 trôi ngang. `ScrollableTabsList` cũng lo việc kéo tab đang mở
+                 vào tầm nhìn — thiếu nhịp đó thì link sâu `?tab=…` mở ra một
+                 dải không tab nào sáng lên. */}
+            <ScrollableTabsList value={activeTab} className="mb-2 max-md:mb-0">
               <TabsTrigger value={TAB_INFO} className={TAB_TRIGGER_UNDERLINE}>
                 Thông tin
               </TabsTrigger>
@@ -343,7 +349,7 @@ export function CrudDetailPage<T extends CrudRecord>({
                   {tab.label}
                 </TabsTrigger>
               ))}
-            </TabsList>
+            </ScrollableTabsList>
 
             <TabsContent value={TAB_INFO} className="space-y-6">
               {infoPanel}
