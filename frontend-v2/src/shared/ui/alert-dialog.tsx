@@ -69,8 +69,16 @@ function AlertDialogFooter({ className, ...props }: React.ComponentProps<"div">)
   return (
     <div
       data-slot="alert-dialog-footer"
+      //  Hàng NGANG ở mọi bề ngang, kể cả điện thoại. Bản shadcn gốc xếp chồng
+      //  `flex-col-reverse` dưới 640px: hai nút to bằng cả bề ngang hộp, nút
+      //  «Xóa» đỏ nằm ngay trên nút «Hủy» — ngón cái bấm trượt một chút là trúng
+      //  thao tác không hoàn tác được. Hộp xác nhận toàn cục (`confirm-dialog`)
+      //  vốn đã là hàng ngang, nên xếp chồng còn làm hai loại hộp khác nhau.
+      //  `flex-wrap` để hộp 3 nút (cảnh báo "đã đặt đủ" ở chi tiết YCMH) xuống
+      //  dòng thay vì bóp chữ; `*:grow` cho các nút chia đều bề ngang trên khổ
+      //  hẹp, khổ desktop trở lại đúng bề rộng theo chữ.
       className={cn(
-        "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
+        "flex flex-row flex-wrap justify-end gap-2 *:grow sm:*:grow-0",
         className
       )}
       {...props}
