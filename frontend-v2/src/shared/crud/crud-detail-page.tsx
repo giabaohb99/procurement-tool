@@ -1,5 +1,5 @@
 import { ArrowLeft, CircleCheck, CircleX, Hash, Loader2, Save } from 'lucide-react'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
@@ -15,6 +15,7 @@ import { PageHeader } from '@/shared/ui/page-header'
 import { RecordIdentityCard, type IdentityChip } from '@/shared/ui/record-identity-card'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
+import { useScrolled } from '@/shared/hooks/use-scrolled'
 import { useSingleFlight } from '@/shared/hooks/use-single-flight'
 import { cn } from '@/shared/utils/cn'
 import { CrudFormFields } from './crud-form-fields'
@@ -51,6 +52,17 @@ export function CrudDetailPage<T extends CrudRecord>({
   const canSave = can(config.entity, isCreate ? 'create' : 'write')
 
   const { data: item, isLoading, isError } = useCrudDetail<T>(config.apiPath, id)
+
+  //  Tín hiệu «trang đã cuộn» cho các dải ghim nằm SÂU bên trong (thanh công cụ
+  //  của bảng trong tab — do `DataTable` vẽ, tầng này không với tới bằng prop).
+  //  Bóng đổ của chúng đọc `group-data-[scrolled]`; xem `list-sticky.ts`.
+  //
+  //  ⚠️ `nodeKey` là BẮT BUỘC ở đây, không phải trang trí: lượt render đầu của
+  //  trang này là **khung xương** (xem nhánh `isLoading` bên dưới) nên khối mang
+  //  `stickyRef` chưa có trong DOM, và không có `nodeKey` thì hook dò khung cuộn
+  //  đúng một lần rồi bám vào `window` vĩnh viễn. Xem `use-scrolled.ts`.
+  const stickyRef = useRef<HTMLDivElement>(null)
+  const scrolled = useScrolled(stickyRef, { nodeKey: isCreate || Boolean(item) })
   //  Chặn bấm trùng trong cùng một nhịp — xem `useSingleFlight`.
   const once = useSingleFlight()
   const saveMutation = useCrudSave<T>(config.apiPath, config.title)
@@ -262,7 +274,24 @@ export function CrudDetailPage<T extends CrudRecord>({
         </div>
       </div>
 
-      <div className="space-y-6">
+      {/*  `group` + `data-scrolled` là đường dẫn tín hiệu «đã cuộn» xuống dải
+           ghim bên trong tab. Dựng sẵn cho mọi trang chi tiết CRUD — tab nào
+           không ghim gì thì đây chỉ là một khối `space-y-6` như cũ.
+
+           ⚠️ `group` này KHÔNG ĐẶT TÊN, giống bên `CrudListPage`. Nghĩa là mọi
+           biến thể `group-*` không tên bên trong trang sẽ bắt vào NÓ chứ không
+           bắt vào khối `group` gần nhất — vd một `IconInput` thả vào tab nào đó
+           sẽ đổi màu icon mỗi khi bất kỳ ô nào trong trang được focus. Hiện
+           chưa component nào trong trang chi tiết dính (đã rà: `switch` và
+           `avatar` dùng group CÓ TÊN, `label` bắt `data-disabled` nên không
+           trùng `data-scrolled`). Thêm component mới thì rà lại, hoặc đặt tên
+           cho nhóm ở cả ba chỗ — `TOOLBAR_STICKY_BASE` dùng chung với màn danh
+           sách nên phải đổi cùng lúc. */}
+      <div
+        ref={stickyRef}
+        data-scrolled={scrolled ? '' : undefined}
+        className="group space-y-6"
+      >
         {/*  Chưa có bản ghi thì không dựng thẻ danh tính: nó sinh ra để trưng mã
              / trạng thái của MỘT bản ghi, để rỗng chỉ còn một cái khung. */}
         {item ? (

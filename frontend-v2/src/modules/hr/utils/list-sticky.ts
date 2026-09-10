@@ -126,3 +126,26 @@ export const LEAVE_SETTINGS_TOOLBAR_STICKY = `${TOOLBAR_STICKY_BASE} max-md:top-
  * chỉ cần một lần lúc mở màn, còn ô tìm thì cần suốt lúc đọc danh sách.
  */
 export const LIST_TOOLBAR_STICKY_TOP = `${TOOLBAR_STICKY_BASE} max-md:top-0`
+
+/**
+ * Dải THANH CÔNG CỤ của một bảng nằm trong TAB của trang chi tiết CRUD.
+ *
+ * Dùng ở: tab *«Người đang giữ»* của Chức vụ.
+ *
+ * ⚠️ Mốc `61px` là chiều cao **hàng nút Lưu/Xóa** mà `CrudDetailPage` đã ghim
+ * sẵn ở `top-0`: đệm `py-3` (12+12) + nút `h-9` (36) + `border-b` (1). Sửa cỡ
+ * nút hay đệm của hàng đó thì **phải đo lại bằng `getBoundingClientRect` và sửa
+ * luôn số này** — nhỏ hơn thì thanh công cụ chui lên dưới hàng nút, lớn hơn thì
+ * hở một khe cho thẻ nhân sự trôi qua giữa hai dải. Cả hai chỉ lộ ra khi cuộn.
+ *
+ * ⚠️ **Chỉ ghim thanh công cụ, KHÔNG ghim dải tab.** Ghim cả hai thì
+ * 61 (hàng nút) + 44 (dải tab) + 61 (thanh công cụ) = **166px trên 788px nhìn
+ * thấy được**, tức hơn một phần năm màn hình đứng yên vĩnh viễn. Dải tab đổi
+ * lấy chỗ đó không đáng: nó trả lời câu *«đang ở tab nào»*, mà giữa một danh
+ * sách gương mặt thì câu đó không ai phải hỏi.
+ *
+ * ⚠️ Bóng đổ đòi tổ tiên mang `group` + `data-scrolled` — `CrudDetailPage` dựng
+ * sẵn (xem `stickyRef` ở đó). Thiếu nó thì dải vẫn ghim, chỉ là không bao giờ
+ * đổ bóng, và lỗi đó im lặng.
+ */
+export const DETAIL_TOOLBAR_STICKY = `${TOOLBAR_STICKY_BASE} max-md:top-[61px]`

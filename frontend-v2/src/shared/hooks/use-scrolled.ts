@@ -19,6 +19,31 @@ function findScrollParent(element: HTMLElement | null): HTMLElement | Window {
   return window
 }
 
+export interface UseScrolledOptions {
+  /**
+   * Mốc `scrollTop` coi là "đã cuộn".
+   *
+   * ⚠️ Khác 0 là cố ý: cuộn đàn hồi trên iOS trả về `scrollTop` âm rồi nhích
+   * qua 0 vài lần trong một cú vuốt, để mốc 0 thì bóng nhấp nháy theo.
+   */
+  threshold?: number
+  /**
+   * Thứ buộc hook **dò lại khung cuộn**. Truyền vào cái quyết định nút DOM của
+   * `ref` đã có mặt hay chưa — ví dụ `Boolean(item)` ở trang chi tiết, nơi lượt
+   * render đầu tiên còn là khung xương chờ dữ liệu.
+   *
+   * ⚠️ **Không có nó là một cái bẫy im lặng.** Effect chỉ chạy một lần (deps
+   * `[ref, threshold]` không bao giờ đổi), nên nếu lượt render đầu chưa gắn nút
+   * DOM thì `ref.current` là `null`, `findScrollParent` trả về `window`, và
+   * hook bám vào `window` **vĩnh viễn** — mà `window` thì không bao giờ cuộn ở
+   * bố cục này. Không có gì đỏ lên: dải vẫn ghim đúng chỗ, chỉ là không bao giờ
+   * đổ bóng. Tệ hơn, lỗi **chỉ xuất hiện khi gõ thẳng URL**: vào bằng đường
+   * trong app thì dữ liệu đã nằm sẵn trong cache nên nút DOM có ngay lượt đầu
+   * và mọi thứ trông như chạy tốt (đúng cách nó lọt lưới tới 10/09/2026).
+   */
+  nodeKey?: unknown
+}
+
 /**
  * Khung chứa `ref` đã bị cuộn khỏi đỉnh chưa.
  *
@@ -26,11 +51,11 @@ function findScrollParent(element: HTMLElement | null): HTMLElement | Window {
  * chạy bên dưới nó. Đổ bóng sẵn từ lúc chưa cuộn thì dải trông như đang nổi lên
  * giữa một trang đứng yên — bóng là để nói "có thứ đang trôi phía dưới", nói
  * điều đó lúc chưa có gì trôi là nói sai.
- *
- * ⚠️ `threshold` khác 0: cuộn đàn hồi trên iOS trả về `scrollTop` âm rồi nhích
- * qua 0 vài lần trong một cú vuốt, để mốc 0 thì bóng nhấp nháy theo.
  */
-export function useScrolled(ref: RefObject<HTMLElement | null>, threshold = 4): boolean {
+export function useScrolled(
+  ref: RefObject<HTMLElement | null>,
+  { threshold = 4, nodeKey }: UseScrolledOptions = {},
+): boolean {
   const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
@@ -46,7 +71,7 @@ export function useScrolled(ref: RefObject<HTMLElement | null>, threshold = 4): 
     read()
     target.addEventListener('scroll', read, { passive: true })
     return () => target.removeEventListener('scroll', read)
-  }, [ref, threshold])
+  }, [ref, threshold, nodeKey])
 
   return scrolled
 }

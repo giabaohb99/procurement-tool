@@ -501,3 +501,16 @@ sách 80 dòng → còn một trang → ô chọn biến mất → không còn �
 Mốc đúng là *«có lựa chọn nào chia nổi danh sách này thành hai trang không»*, tức
 so với **cỡ trang nhỏ nhất** (10), không so với cỡ trang đang dùng. Danh sách dài
 hơn một trang thì phân trang y như cũ — 200 người / 20 dòng vẫn ra 10 trang.
+
+**Ghim thanh công cụ trong tab** (duoc-CR-347, 10/09/2026). Tab *«Người đang
+giữ»* dùng `DETAIL_TOOLBAR_STICKY`, mốc **`top-[61px]`** = chiều cao hàng nút
+*Lưu/Xóa* mà `CrudDetailPage` đã ghim sẵn ở `top-0`. Sửa cỡ nút hay đệm hàng đó
+thì phải đo lại số này. Cố ý **không ghim dải tab**: ghim cả hai là 166px trên
+788px nhìn thấy được.
+
+⚠️ **`useScrolled` từng bám vào `window` vĩnh viễn ở trang chi tiết.** Hook dò
+khung cuộn đúng một lần; lượt render đầu của trang chi tiết là khung xương nên
+`ref.current` còn `null` và `findScrollParent` rơi về `window`, không có lần dò
+thứ hai. Dải vẫn ghim, chỉ là bóng đổ không bao giờ hiện — và **chỉ sai khi gõ
+thẳng URL**, vào bằng đường trong app thì dữ liệu có sẵn trong cache nên nút DOM
+kịp lượt đầu. Nay truyền `nodeKey` để hook dò lại.

@@ -23,6 +23,7 @@ import {
 import { nameInitials } from '@/shared/utils/name-initials'
 import { useEmployees } from '../hooks/use-employees'
 import { useJobPositionStats } from '../hooks/use-job-positions'
+import { DETAIL_TOOLBAR_STICKY } from '../utils/list-sticky'
 import { EMPLOYEE_STATUS_OPTIONS } from '../types/employee'
 import type { Employee } from '../types/employee'
 
@@ -290,6 +291,12 @@ export function JobPositionHoldersPanel({ positionId }: { positionId: number }) 
             : 'Chưa có hồ sơ nào giữ chức vụ này.'
         }
         onRowClick={(row: Employee) => navigate(appRoutes.hr.employeeDetail(row.id))}
+        //  Khổ hẹp: chức vụ đông người thì danh sách thẻ dài hơn một màn (12
+        //  người ≈ 1160px), không ghim thì ô tìm + nút *Bộ lọc* trôi mất ngay
+        //  nhịp vuốt đầu và muốn lọc lại phải vuốt ngược lên đỉnh. Ghim dưới
+        //  hàng nút Lưu/Xóa mà `CrudDetailPage` đã ghim sẵn — xem mốc `61px`
+        //  trong `list-sticky.ts`.
+        toolbarClassName={DETAIL_TOOLBAR_STICKY}
         toolbar={
           showToolbar && (
             <>
