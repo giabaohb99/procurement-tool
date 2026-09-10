@@ -78,12 +78,32 @@ const SUP_TYPE = [
   { value: 'transport', label: 'Đơn vị vận chuyển' },
 ]
 
+// ⚠️ `value` ở đây CỐ Ý là chữ tiếng Việt và đừng đổi sang mã tiếng Anh. Nhánh này
+// (`main` — prod) chưa chạy B-03, `tab_employee.status` vẫn lưu tiếng Việt; ô lọc gửi
+// thẳng `value` này lên API nên đổi là lọc ra rỗng mà không báo lỗi gì.
 const EMPLOYEE_STATUS = [
   { value: 'Chính thức', label: 'Chính thức' },
   { value: 'Cộng tác viên', label: 'Cộng tác viên' },
   { value: 'Nghỉ thai sản', label: 'Nghỉ thai sản' },
   { value: 'Nghỉ việc', label: 'Nghỉ việc' },
 ]
+
+// Đợt B-03 (nhánh `erp-v2`) đổi `tab_employee.status` sang MÃ tiếng Anh. Prod của nhánh này
+// chưa đổi, nhưng bản dump lấy từ dev thì đã đổi — mở lên là màn Nhân sự hiện "OFFICIAL" tô
+// ĐỎ, vì so với chuỗi 'Chính thức' không khớp mà chẳng có lỗi nào nổ ra. Hai hàm dưới đọc
+// được CẢ HAI đời dữ liệu; mã lạ thì trả nguyên giá trị chứ không trả rỗng, thà hiện chữ cũ
+// còn hơn hiện ô trống làm người dùng tưởng mất dữ liệu.
+//
+// ⚠️ Chỉ vá tầng HIỂN THỊ. Ô chọn trong form vẫn là bộ tiếng Việt ở trên: đây là ô NHẬP,
+// cho chọn `official` ở nhánh này là ghi vào DB một giá trị backend `main` không biết.
+const EMPLOYEE_STATUS_BY_CODE: Record<string, string> = {
+  official: 'Chính thức',
+  collaborator: 'Cộng tác viên',
+  maternity_leave: 'Nghỉ thai sản',
+  resigned: 'Nghỉ việc',
+}
+const employeeStatusLabel = (v?: string | null) => (v ? EMPLOYEE_STATUS_BY_CODE[v] || v : '')
+const isEmployeeOfficial = (v?: string | null) => v === 'Chính thức' || v === 'official'
 
 const DEPT_ACTIVE = [{ value: 'true', label: 'Hoạt động' }, { value: 'false', label: 'Đã ẩn' }]
 
@@ -354,7 +374,7 @@ export const cruds: Record<string, CrudConfig> = {
       ...(row.code ? [{ icon: 'ti-id-badge-2', text: row.code, cls: 'code' }] : []),
       ...(row.position ? [{ icon: 'ti-briefcase', text: row.position }] : []),
       ...(row.department_name ? [{ icon: 'ti-building', text: row.department_name }] : []),
-      ...(row.status ? [{ icon: 'ti-user-check', text: row.status }] : []),
+      ...(row.status ? [{ icon: 'ti-user-check', text: row.status_label || employeeStatusLabel(row.status) }] : []),
     ],
     detailExtra: (row) => <EmployeeAccountCard employeeId={row.id} email={row.email} />,
     columns: [
@@ -372,7 +392,11 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'email', label: 'Email' },
       { key: 'department_name', label: 'Phòng ban' },
       { key: 'position', label: 'Vị trí' },
-      { key: 'status', label: 'Trạng thái', render: (r) => badge(r.status === 'Chính thức', r.status, r.status) },
+      // Nhãn ưu tiên `status_label` API gửi kèm (có từ B-03), không có thì tự tra bảng mã.
+      { key: 'status', label: 'Trạng thái', render: (r) => {
+        const nhan = r.status_label || employeeStatusLabel(r.status)
+        return badge(isEmployeeOfficial(r.status), nhan, nhan)
+      } },
       UPDATED_AT_COL,
     ],
     filters: [
