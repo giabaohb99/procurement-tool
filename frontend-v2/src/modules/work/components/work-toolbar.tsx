@@ -14,6 +14,7 @@ import {
 import { useState } from 'react'
 
 import { ConditionalFilter } from '@/shared/conditional-filter'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { Button } from '@/shared/ui/button'
 import {
   DropdownMenu,
@@ -96,6 +97,34 @@ export function WorkToolbar({
   //  chứa đúng cái nút bên cạnh đã làm là menu thừa.
   const hasMenu = Boolean(onNewMilestone || onAddSection)
 
+  const isMobile = useIsMobile()
+  const [searching, setSearching] = useState(false)
+  //  Còn từ khóa thì ô tìm phải ở nguyên đó dù đã rời ô — ô biến mất trong khi
+  //  bảng vẫn đang lọc thì người dùng nhìn bảng thiếu việc và không biết vì sao.
+  const searchOpen = searching || keyword !== ''
+
+  const searchField = (
+    <ToolbarSearch
+      keyword={keyword}
+      onChange={onKeywordChange}
+      open={searchOpen}
+      onOpenChange={setSearching}
+      fullWidth={isMobile && searchOpen}
+    />
+  )
+
+  //  ⚠️ Khổ hẹp, đang tìm: ô tìm chiếm TRỌN hàng và các nút kia tạm nhường chỗ.
+  //  Ô rộng cố định 224px không nhét vừa phần thừa của hàng (chỉ còn ~94px), nên
+  //  bản trước nó rơi xuống một hàng thứ hai — bấm cái kính lúp xong cả thanh
+  //  công cụ giật xuống, mà ô vừa hiện ra lại nằm chỗ khác với chỗ vừa bấm. Ép
+  //  nó co vào 94px cũng không xong: gõ được đâu chừng mười ký tự rồi chữ trôi.
+  //  Tìm kiếm là một CHẾ ĐỘ, không phải một nút thứ sáu — nhường cả hàng cho nó
+  //  thì hàng không đổi chiều cao, không đổi chỗ, và ô đủ rộng để đọc lại câu
+  //  mình vừa gõ. Rời ô lúc chưa gõ gì là mọi thứ trở về như cũ.
+  if (isMobile && searchOpen) {
+    return <div className="flex items-center gap-1">{searchField}</div>
+  }
+
   return (
     <div className="flex flex-wrap items-center gap-1">
       {canEdit && (
@@ -154,11 +183,20 @@ export function WorkToolbar({
       {canEdit && <span aria-hidden className="mx-1.5 h-5 w-px bg-border" />}
 
       {/*  Nút «Lọc» của bộ lọc điều kiện dùng chung. Lọc chạy tại trình duyệt
-          trên payload bảng đã tải — xem `applyTaskConditions`. */}
+          trên payload bảng đã tải — xem `applyTaskConditions`.
+
+          ⚠️ Khổ hẹp: ba nút này rút về CÒN BIỂU TƯỢNG. Đo ở 390px thì cả thanh
+          rộng ~550px trên 358px dùng được nên nó rớt xuống hai hàng, mà hàng
+          thứ hai ăn thêm 40px chiều cao của một màn vốn đã phải cuộn. Bỏ ba
+          nhãn («Bộ lọc» 83px · «Sắp xếp: …» 188px · «Tùy chỉnh» 106px) là vừa
+          một hàng. Giữ nhãn cho «Việc mới» vì đó là hành động chính, và giữ
+          huy hiệu đếm điều kiện vì nó là thứ nói bảng ĐANG BỊ LỌC — mất nó thì
+          người dùng nhìn bảng thiếu việc mà không hiểu vì sao. */}
       <ConditionalFilter
         variant="ghost"
         icon={Funnel}
-        className="text-muted-foreground hover:text-foreground"
+        labelClassName="max-md:hidden"
+        className="text-muted-foreground hover:text-foreground max-md:px-2"
       />
 
       <ToolbarMenu
@@ -172,9 +210,14 @@ export function WorkToolbar({
 
       <Popover>
         <PopoverTrigger asChild>
-          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-label="Tùy chỉnh trường hiện trên thẻ"
+            className="text-muted-foreground hover:text-foreground max-md:px-2"
+          >
             <SlidersHorizontal className="size-4" />
-            Tùy chỉnh
+            <span className="max-md:hidden">Tùy chỉnh</span>
           </Button>
         </PopoverTrigger>
         <PopoverContent align="start" className="w-80">
@@ -189,7 +232,7 @@ export function WorkToolbar({
         </PopoverContent>
       </Popover>
 
-      <ToolbarSearch keyword={keyword} onChange={onKeywordChange} />
+      {searchField}
     </div>
   )
 }
@@ -200,18 +243,31 @@ export function WorkToolbar({
  * Không để ô nhập mở sẵn: sáu nút kia đã chiếm 740px, thêm một ô 224px là thanh
  * công cụ tràn xuống hàng thứ hai ngay ở màn hình 1280 có mở menu trái.
  * Thu lại khi rời ô, nhưng CHỈ khi chưa gõ gì — còn từ khóa mà ô biến mất thì
- * người dùng nhìn bảng thiếu việc và không biết vì sao.
+ * người dùng nhìn bảng thiếu việc và không biết vì sao (chốt mở/đóng nằm ở
+ * `WorkToolbar`, xem `searchOpen`).
+ *
+ * ⚠️ **Ô phải CÓ VIỀN.** Bản trước khai `border-transparent bg-transparent
+ * shadow-none`, viền chỉ hiện khi rê chuột: trên nền canvas xam xám nó gần như
+ * tàng hình, và trên máy cảm ứng thì không có nhịp «rê chuột» nào cả — bấm kính
+ * lúp xong người dùng thấy con trỏ nháy giữa khoảng không, không rõ gõ vào đâu
+ * và vùng gõ rộng tới đâu. Ô nhập là chỗ NHẬN thao tác, nó phải tự nói ra mình
+ * ở đâu chứ không đợi được hỏi.
  */
 function ToolbarSearch({
   keyword,
   onChange,
+  open,
+  onOpenChange,
+  fullWidth,
 }: {
   keyword: string
   onChange: (value: string) => void
+  open: boolean
+  onOpenChange: (value: boolean) => void
+  /** Nở hết hàng — khổ hẹp, xem ghi chú «chế độ tìm» ở `WorkToolbar`. */
+  fullWidth?: boolean
 }) {
-  const [mo, setMo] = useState(false)
-
-  if (!mo && !keyword) {
+  if (!open) {
     return (
       <IconTooltip label="Tìm trong danh sách">
         <Button
@@ -219,7 +275,7 @@ function ToolbarSearch({
           size="icon-sm"
           aria-label="Tìm trong danh sách"
           className="ml-auto text-muted-foreground hover:text-foreground"
-          onClick={() => setMo(true)}
+          onClick={() => onOpenChange(true)}
         >
           <Search className="size-4" />
         </Button>
@@ -228,35 +284,41 @@ function ToolbarSearch({
   }
 
   return (
-    <div className="relative ml-auto">
+    <div className={cn('relative', fullWidth ? 'w-full' : 'ml-auto')}>
       <Search className="absolute top-1/2 left-2 size-4 -translate-y-1/2 text-muted-foreground" />
       <Input
         autoFocus
         value={keyword}
         onChange={(su) => onChange(su.target.value)}
-        onBlur={() => setMo(false)}
+        onBlur={() => onOpenChange(false)}
         placeholder="Tìm trong danh sách"
         aria-label="Tìm trong danh sách"
-        className="h-8 w-56 border-transparent bg-transparent pr-8 pl-8 shadow-none hover:border-input dark:bg-transparent"
+        className={cn('h-8 pr-8 pl-8', fullWidth ? 'w-full' : 'w-56')}
       />
-      {keyword && (
-        <IconTooltip label="Xóa từ khóa">
-          <button
-            type="button"
-            aria-label="Xóa từ khóa"
-            //  `onMouseDown` chứ không `onClick`: nút nằm trong ô đang có tiêu
-            //  điểm, `blur` chạy trước `click` nên ô thu lại và cú bấm rơi vào
-            //  chỗ trống.
-            onMouseDown={(su) => {
-              su.preventDefault()
-              onChange('')
-            }}
-            className="absolute top-1/2 right-1.5 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
-          >
-            <X className="size-3.5" />
-          </button>
-        </IconTooltip>
-      )}
+      {/*  ⚠️ Nút X LUÔN có, kể cả khi chưa gõ gì, và nó ĐÓNG ô chứ không chỉ xóa
+           chữ. Đường đóng duy nhất trước đây là rời ô — trên máy cảm ứng thì
+           «rời ô» nghĩa là chạm vào bảng phía dưới, mà mọi thứ dưới đó đều kéo
+           thả được: định thoát tìm kiếm thì nhấc nhầm một cái thẻ việc. Xóa
+           chữ và đóng ô gộp làm một vì tách ra là tự mâu thuẫn: còn từ khóa thì
+           ô lại mở ra ngay (xem `searchOpen`), mà đóng ô trong khi bảng vẫn
+           đang lọc thì người dùng nhìn bảng thiếu việc và không hiểu vì sao. */}
+      <IconTooltip label="Đóng ô tìm">
+        <button
+          type="button"
+          aria-label="Đóng ô tìm"
+          //  Chặn `blur` ở `onMouseDown` (nếu không thì ô đóng trước, cú bấm rơi
+          //  vào chỗ trống), nhưng việc thật làm ở `onClick` — bàn phím chỉ bắn
+          //  ra `click`, đặt hết vào `onMouseDown` là nút chết với phím Enter.
+          onMouseDown={(su) => su.preventDefault()}
+          onClick={() => {
+            onChange('')
+            onOpenChange(false)
+          }}
+          className="absolute top-1/2 right-1.5 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+        >
+          <X className="size-3.5" />
+        </button>
+      </IconTooltip>
     </div>
   )
 }
@@ -298,11 +360,16 @@ function ToolbarMenu<T extends string>({
           //  cho trình đọc màn hình phải kèm luôn tên trường — không thì nghe
           //  xong vẫn không biết đó là lát cắt hay bộ lọc nào.
           aria-label={`${srLabel}: ${current?.label ?? ''}`}
-          className="text-muted-foreground hover:text-foreground"
+          className="text-muted-foreground hover:text-foreground max-md:px-2"
         >
           <Icon className="size-4" />
-          {prefix}
-          {current?.label ?? ''}
+          {/*  Khổ hẹp giấu cả tiêu chí đang chọn — nó là nhãn dài nhất thanh
+               (188px). Giá trị không mất: mở menu ra là mục đang chọn có dấu
+               tích và tô màu nhấn. */}
+          <span className="max-md:hidden">
+            {prefix}
+            {current?.label ?? ''}
+          </span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-56">

@@ -4,15 +4,15 @@ import { useNavigate } from 'react-router-dom'
 
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { Button } from '@/shared/ui/button'
-import { Progress } from '@/shared/ui/progress'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { cn } from '@/shared/utils/cn'
 import { formatDate } from '@/shared/utils/format-date'
+import { ProjectCard } from '../components/project-card'
+import { MemberAvatar, MemberStack, ProgressCell } from '../components/project-cells'
 import { WorkCreateDialog } from '../components/work-create-dialog'
 import { WorkSidebarPeekButton } from '../components/work-sidebar-peek-button'
 import { useWorkProjects } from '../hooks/use-work-lists'
-import type { WorkList, WorkMember } from '../types/work'
-import { nameInitials } from '../utils/name-initials'
+import type { WorkList } from '../types/work'
 import { dotClass } from '../utils/work-colors'
 
 /**
@@ -23,6 +23,9 @@ import { dotClass } from '../utils/work-colors'
  * Một dự án CHÍNH LÀ một danh sách công việc (`WorkList`), nên đây chỉ là một
  * lối nhìn khác của đúng dữ liệu cây bên trái — bấm một dòng là vào thẳng bảng
  * kanban của dự án đó.
+ *
+ * Ở khổ hẹp bảng đổi thành danh sách THẺ (`ProjectCard`), và cây dự án rút vào
+ * tờ trượt của `WorkSidebarPeekButton` — xem ghi chú ở `work-layout-page.tsx`.
  */
 export function ProjectListPage() {
   const navigate = useNavigate()
@@ -65,7 +68,7 @@ export function ProjectListPage() {
         cell: (row) =>
           row.owner ? (
             <span className="flex items-center gap-2">
-              <Avatar member={row.owner} />
+              <MemberAvatar member={row.owner} />
               <span className="truncate">{row.owner.employee_name}</span>
             </span>
           ) : (
@@ -101,17 +104,22 @@ export function ProjectListPage() {
       <header className="flex flex-wrap items-start justify-between gap-3">
         {/*  Nút mở lại cây dự án đứng NGANG tiêu đề, chỉ hiện khi cây đang ẩn —
              phải có ở ĐÂY nữa, không chỉ ở trang chi tiết dự án: ẩn cây rồi bấm
-             về danh sách dự án mà trang này không có nút thì người dùng kẹt. */}
+             về danh sách dự án mà trang này không có nút thì người dùng kẹt.
+             Ở khổ hẹp nút luôn hiện: cây không đứng cạnh nội dung nữa nên đây là
+             đường DUY NHẤT tới nó. */}
         <div className="flex min-w-0 items-start gap-2">
           <WorkSidebarPeekButton />
           <div className="min-w-0">
             <h1 className="text-xl font-semibold tracking-tight text-navy">Dự án</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
+            {/*  Dòng mô tả ẩn ở khổ hẹp: câu giới thiệu màn, đọc một lần rồi thôi
+                 — mà ở đây nó ngốn ba hàng chữ ngay trên đầu danh sách. */}
+            <p className="mt-1 text-sm text-muted-foreground max-md:hidden">
               Mọi dự án bạn tham gia. Bấm một dòng để mở bảng công việc của dự án đó.
             </p>
           </div>
         </div>
-        <Button size="sm" onClick={() => setCreating(true)}>
+        {/*  Khổ hẹp: nút chiếm trọn hàng — hành động chính phải dễ chạm nhất. */}
+        <Button size="sm" className="max-md:w-full" onClick={() => setCreating(true)}>
           <Plus className="size-4" />
           Dự án mới
         </Button>
@@ -124,8 +132,16 @@ export function ProjectListPage() {
         getRowId={(row) => row.id}
         isLoading={isLoading}
         isError={isError}
-        emptyMessage="Bạn chưa tham gia dự án nào."
+        emptyMessage={
+          //  Nói rõ RỖNG VÌ BỘ LỌC hay rỗng vì chưa có gì: người vừa bật «Hiện
+          //  cả dự án lưu trữ» mà đọc câu chung sẽ tưởng nút đó làm hỏng danh sách.
+          showArchived
+            ? 'Bạn chưa tham gia dự án nào, kể cả dự án đã lưu trữ.'
+            : 'Bạn chưa tham gia dự án nào.'
+        }
         storageKey="work.projects"
+        //  Khổ hẹp: THẺ thay bảng — xem `ProjectCard`.
+        mobileCard={(row: WorkList) => <ProjectCard project={row} />}
         onRowClick={(row) => navigate(appRoutes.project.detail(row.id))}
         toolbar={
           <Button
@@ -145,56 +161,5 @@ export function ProjectListPage() {
         onClose={() => setCreating(false)}
       />
     </div>
-  )
-}
-
-/**
- * Thanh tiến độ của một dự án: việc đã xong / tổng số việc.
- *
- * Dự án CHƯA CÓ VIỆC NÀO hiện 0% chứ không phải 100%: `0/0` mà làm tròn thành
- * "xong hết" thì bảng báo một dự án trắng trơn là đã hoàn tất.
- */
-function ProgressCell({ done, total }: { done: number; total: number }) {
-  const percent = total > 0 ? Math.round((done / total) * 100) : 0
-  return (
-    <span className="flex items-center gap-2" title={`${done}/${total} việc`}>
-      <Progress value={percent} className="h-2 flex-1" />
-      <span className="w-10 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
-        {percent}%
-      </span>
-    </span>
-  )
-}
-
-/** Vòng tròn chữ tắt. Luật đặt chữ tắt ở `utils/name-initials.ts`, dùng chung
- *  với hộp Quản lý dự án — chép ra hai bản là hai màn hiện khác nhau cho cùng
- *  một người. */
-function Avatar({ member }: { member: WorkMember }) {
-  const initials = nameInitials(member.employee_name)
-  return (
-    <span
-      title={member.employee_name || `Nhân sự #${member.employee_id}`}
-      className="grid size-6 shrink-0 place-items-center rounded-full border bg-accent text-[10px] font-medium text-accent-foreground"
-    >
-      {initials}
-    </span>
-  )
-}
-
-/**
- * Tối đa 4 avatar rồi "+n" — dự án đông người mà xếp hết thì cột nong ra, mà
- * bảng chạy `table-fixed` nên phần thừa bị cắt cụt chứ không xuống dòng.
- */
-function MemberStack({ members }: { members: WorkMember[] }) {
-  if (members.length === 0) return <span className="text-muted-foreground">—</span>
-  return (
-    <span className="flex items-center -space-x-1.5">
-      {members.slice(0, 4).map((member) => (
-        <Avatar key={member.employee_id} member={member} />
-      ))}
-      {members.length > 4 && (
-        <span className="pl-2.5 text-xs text-muted-foreground">+{members.length - 4}</span>
-      )}
-    </span>
   )
 }

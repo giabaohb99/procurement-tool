@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Outlet, useMatch } from 'react-router-dom'
 
 import { appRoutes } from '@/shared/constants/app-routes'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { cn } from '@/shared/utils/cn'
 import { WorkCreateDialog } from '../components/work-create-dialog'
 import { WorkSidebarTree } from '../components/work-sidebar-tree'
@@ -29,12 +30,20 @@ export function WorkLayoutPage() {
   //  dự án cụ thể — đứng cạnh biểu đồ nó chỉ chiếm mất một phần tư màn hình.
   const isOverview = useMatch(appRoutes.project.root) !== null
 
+  //  ⚠️ Dưới 768px cây KHÔNG bao giờ đứng cạnh nội dung, bất kể `collapsed`.
+  //  Cây rộng cứng 256px; trên máy 390px nó nuốt hai phần ba bề ngang và chừa
+  //  cho bảng dự án một khe ~130px — đủ thấy chấm màu với hai chữ đầu của tên,
+  //  còn mọi thao tác đều nằm ngoài tầm mắt. Ở khổ ấy cây đi vào tờ trượt của
+  //  `WorkSidebarPeekButton`: mở ra thì nó chiếm trọn màn hình (đúng thứ nó
+  //  cần), đóng lại thì trả hết bề ngang cho nội dung.
+  const isMobile = useIsMobile()
+
   return (
     <div className="flex h-[calc(100dvh-4rem)] overflow-hidden">
       {/*  Ẩn cây thì ẩn HẲN, không chừa dải rìa nào — nút mở lại nằm ngang tiêu
            đề của từng trang con (`WorkSidebarPeekButton`), rê vào ra một thẻ
            nổi. Đã thử hai bản khác rồi bỏ, lý do ghi ở component ấy.  */}
-      {!isOverview && !collapsed && (
+      {!isOverview && !collapsed && !isMobile && (
         <WorkSidebarTree
           onToggleCollapse={toggleSidebar}
           onCreateGroup={() => {

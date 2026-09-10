@@ -213,7 +213,12 @@ function EditableText({
       title={title}
       aria-label={title}
       onClick={onOpen}
-      className="group -mx-1.5 flex min-w-0 items-center rounded-md px-1.5 py-0.5 text-left outline-none transition-colors hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50"
+      //  ⚠️ `max-w-full` là thứ giữ chữ trong khung. Chrome đo bề rộng của `button`
+      //  theo NỘI DUNG kể cả khi nó đã là `display:flex`, nên `min-w-0` bên trong
+      //  không cứu được: nút cứ nở theo tên dự án, và `truncate` ở thẻ con không
+      //  bao giờ có cớ cắt chữ. Đo ở 390px: tiêu đề chạy tới 478px, tức 88px chữ
+      //  nằm ngoài màn hình mà không có dấu «…» nào báo là còn nữa.
+      className="group -mx-1.5 flex min-w-0 max-w-full items-center rounded-md px-1.5 py-0.5 text-left outline-none transition-colors hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50"
     >
       <span className={cn('truncate', muted && 'italic')}>{children}</span>
     </button>
