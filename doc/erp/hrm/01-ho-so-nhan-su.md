@@ -481,3 +481,16 @@ tiêu đề cụt thành «…(Demo) (tru…» — phần bị hy sinh chính l�
 `CrudDetailPage` nay tách đôi: thẻ dùng tên trần, câu xác nhận Xóa giữ bản đầy đủ.
 `RecordIdentityCard` cũng đổi `truncate` → `line-clamp-2`: tên là thứ duy nhất
 nói người ta đang mở bản ghi nào, cắt nó ở một dòng là cắt nhầm chỗ.
+
+⚠️ **Thứ không điều khiển được gì thì đừng dựng** (duoc-CR-346, 10/09/2026 —
+luật chung, không riêng màn này). Chức vụ một người mở tab *«Người đang giữ»* ra
+là sáu ô điều khiển vây quanh một dòng nội dung: ô tìm · *Bộ lọc* · *Tải lại* ·
+ô «Hiển thị 20 dòng» · ba nút trang, trong đó hai nút xám và nút «1» bấm vào
+đứng nguyên chỗ cũ. Nay `DataTablePagination` **im hẳn khi bảng rỗng** và **chỉ
+giữ con số tổng khi vừa đúng một trang** (chạm chân bảng của MỌI màn danh sách);
+thanh công cụ của tab tự tắt khi chức vụ chỉ có một người, và ô chọn phòng ban
+đòi từ hai phòng trở lên.
+
+⚠️ Mốc so của thanh công cụ là `data.total` **lúc KHÔNG lọc**: hễ đang có bộ lọc
+đặt thì nó ở lại, kể cả khi lọc xong còn một người. Không có vế đó thì đường duy
+nhất để bỏ lọc cũng biến mất theo.

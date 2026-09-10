@@ -131,14 +131,30 @@ export function JobPositionHoldersPanel({ positionId }: { positionId: number }) 
 
   const grandTotal = departments.reduce((sum, dept) => sum + dept.count, 0)
 
+  const filtering = Boolean(search || status) || departmentId !== ALL_DEPARTMENTS
+
+  //  ⚠️ **CHỨC VỤ MỘT NGƯỜI THÌ KHÔNG CÓ GÌ ĐỂ TÌM.** Thanh công cụ mang ô tìm
+  //  + nút *Bộ lọc* + nút *Tải lại*, chân bảng mang thêm ô chọn số dòng và ba
+  //  nút trang: sáu ô điều khiển vây quanh **một dòng nội dung**, phần điều
+  //  khiển cao gấp ba phần đáng đọc (đo ở chức vụ *Trưởng bộ phận*, báo
+  //  10/09/2026). Cùng luật với `ColumnVisibilityMenu` — thứ không điều khiển
+  //  được gì thì đừng mời người ta bấm vào.
+  //
+  //  ⚠️ Mốc so là `data.total` LÚC KHÔNG LỌC nên không nhốt được ai: hễ đang có
+  //  bộ lọc là thanh công cụ ở lại, kể cả khi lọc xong còn đúng một người —
+  //  không thì đường duy nhất để bỏ lọc cũng biến mất theo.
+  const showToolbar = filtering || (data ? data.total > 1 : false)
+
   //  ⚠️ Hai ô chọn dựng MỘT LẦN rồi bày ở HAI chỗ: hàng ngang của thanh công cụ
   //  từ `md`, tờ trượt lọc ở dưới ngưỡng đó. State nằm ở component này nên hai
   //  bản luôn nói cùng một giá trị — khuôn của `leave-balance-page`, không phải
   //  bản chép cần dọn.
   //
-  //  ⚠️ Ô chọn phòng ban chỉ dựng khi CÓ người giữ: chức vụ chưa ai giữ thì danh
-  //  sách phòng rỗng, bày ra một ô chọn không có mục nào để chọn.
-  const departmentSelect = departments.length > 0 && (
+  //  ⚠️ Ô chọn phòng ban đòi **từ HAI phòng trở lên**, không phải "có phòng nào
+  //  thì bày": cả danh sách nằm gọn trong một phòng thì «Tất cả phòng ban (5)»
+  //  và «Phòng Kinh doanh (5)» trả về đúng cùng một kết quả — một ô chọn hỏi
+  //  người dùng một câu mà mọi câu trả lời đều như nhau.
+  const departmentSelect = departments.length > 1 && (
     <Select
       value={String(departmentId)}
       onValueChange={(value) => setDepartmentId(Number(value))}
@@ -275,42 +291,44 @@ export function JobPositionHoldersPanel({ positionId }: { positionId: number }) 
         }
         onRowClick={(row: Employee) => navigate(appRoutes.hr.employeeDetail(row.id))}
         toolbar={
-          <>
-            {/*  ⚠️ Câu gợi ý RÚT GỌN ở khổ hẹp — và phải đo theo lúc ĐANG LỌC,
-                 không phải lúc thảnh thơi. Nút *Bộ lọc* nở thêm 24px khi mọc
-                 huy hiệu số, nên phần gõ chữ tụt từ 141px xuống **117px**: bản
-                 «Tìm mã NV, họ tên…» (130px) vừa khít lúc chưa lọc rồi cụt đuôi
-                 ngay khi người dùng chọn một phòng ban. Bản này 110px, còn dư ở
-                 cả hai trạng thái.
-                 Rút bằng tay chứ không để trình duyệt cắt: chữ đứt giữa từ đọc
-                 ra như lỗi vẽ, còn «…» sau một cụm trọn nghĩa thì đọc ra là
-                 "còn tìm được thứ khác nữa". Bản đầy đủ giữ từ `md` — ở đó ô
-                 rộng 224px. */}
-            <SearchField
-              value={keyword}
-              onChange={setKeyword}
-              placeholder={isMobile ? 'Tìm tên, mã NV…' : 'Tìm mã NV, họ tên, email, SĐT…'}
-              className="md:min-w-56 md:max-w-xs"
-            />
+          showToolbar && (
+            <>
+              {/*  ⚠️ Câu gợi ý RÚT GỌN ở khổ hẹp — và phải đo theo lúc ĐANG LỌC,
+                   không phải lúc thảnh thơi. Nút *Bộ lọc* nở thêm 24px khi mọc
+                   huy hiệu số, nên phần gõ chữ tụt từ 141px xuống **117px**: bản
+                   «Tìm mã NV, họ tên…» (130px) vừa khít lúc chưa lọc rồi cụt đuôi
+                   ngay khi người dùng chọn một phòng ban. Bản này 110px, còn dư ở
+                   cả hai trạng thái.
+                   Rút bằng tay chứ không để trình duyệt cắt: chữ đứt giữa từ đọc
+                   ra như lỗi vẽ, còn «…» sau một cụm trọn nghĩa thì đọc ra là
+                   "còn tìm được thứ khác nữa". Bản đầy đủ giữ từ `md` — ở đó ô
+                   rộng 224px. */}
+              <SearchField
+                value={keyword}
+                onChange={setKeyword}
+                placeholder={isMobile ? 'Tìm tên, mã NV…' : 'Tìm mã NV, họ tên, email, SĐT…'}
+                className="md:min-w-56 md:max-w-xs"
+              />
 
-            <QuickFilterSheet
-              activeCount={(departmentId !== ALL_DEPARTMENTS ? 1 : 0) + (status ? 1 : 0)}
-              onClearAll={() => {
-                setDepartmentId(ALL_DEPARTMENTS)
-                setStatus('')
-              }}
-            >
-              {departmentSelect && (
-                <QuickFilterField label="Phòng ban">{departmentSelect}</QuickFilterField>
-              )}
-              <QuickFilterField label="Tình trạng">{statusSelect}</QuickFilterField>
-            </QuickFilterSheet>
+              <QuickFilterSheet
+                activeCount={(departmentId !== ALL_DEPARTMENTS ? 1 : 0) + (status ? 1 : 0)}
+                onClearAll={() => {
+                  setDepartmentId(ALL_DEPARTMENTS)
+                  setStatus('')
+                }}
+              >
+                {departmentSelect && (
+                  <QuickFilterField label="Phòng ban">{departmentSelect}</QuickFilterField>
+                )}
+                <QuickFilterField label="Tình trạng">{statusSelect}</QuickFilterField>
+              </QuickFilterSheet>
 
-            <div className="hidden items-center gap-3 md:flex">
-              {departmentSelect}
-              {statusSelect}
-            </div>
-          </>
+              <div className="hidden items-center gap-3 md:flex">
+                {departmentSelect}
+                {statusSelect}
+              </div>
+            </>
+          )
         }
         pagination={{
           page,

@@ -17,6 +17,10 @@ export const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const
 /**
  * Chân bảng: bên TRÁI chọn số dòng mỗi trang + tổng số bản ghi,
  * bên PHẢI là dãy nút số trang kèm lùi/tiến.
+ *
+ * ⚠️ **Hai cụm đó tự biến mất khi chúng không điều khiển được gì** — cùng luật
+ * với `ColumnVisibilityMenu` (bảng ở chế độ thẻ thì không có cột nào để ẩn/hiện
+ * nên menu không dựng). Xem hai chỗ kiểm tra ngay dưới.
  */
 export function DataTablePagination({
   page,
@@ -28,6 +32,26 @@ export function DataTablePagination({
 }: PaginationProps) {
   const pageCount = Math.max(1, Math.ceil(total / pageSize))
   const pageItems = getPageItems(page, pageCount)
+
+  //  ⚠️ Bảng RỖNG thì chân bảng IM HẲN. Câu «bảng trống» ngay phía trên đã nói
+  //  đủ — và nói rõ hơn, vì nó phân biệt được *rỗng vì bộ lọc* với *rỗng vì
+  //  chưa có gì*. Thêm dòng «Tổng 0 …» bên dưới chỉ là nói lại cùng điều bằng
+  //  giọng máy móc hơn, kèm ba nút bấm không đi đâu được.
+  if (total === 0) return null
+
+  //  ⚠️ **VỪA ĐÚNG MỘT TRANG = không có gì để phân trang.** Hai nút lùi/tiến
+  //  đều xám, nút «1» bấm vào vẫn đứng nguyên chỗ cũ, còn ô «Hiển thị 20 dòng»
+  //  không đổi được thứ gì vì cả danh sách đã nằm trên màn hình rồi. Đo ở tab
+  //  «Người đang giữ» của một chức vụ chỉ MỘT người (báo 10/09/2026): chân bảng
+  //  ăn ~100px trong khi phần đáng đọc cao 65px. Giữ lại đúng con số tổng — thứ
+  //  duy nhất ở đây là THÔNG TIN chứ không phải nút bấm.
+  if (pageCount <= 1) {
+    return (
+      <div className="mt-3 shrink-0 text-sm text-muted-foreground">
+        Tổng {total.toLocaleString('vi-VN')} {unitLabel}
+      </div>
+    )
+  }
 
   return (
     // Không kẻ `border-t`: bảng phía trên đã có khung viền riêng, thêm vạch nữa
