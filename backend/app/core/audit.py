@@ -1,13 +1,50 @@
 """Ghi & đọc nhật ký thao tác (audit log) dùng chung."""
 from sqlalchemy.orm import Session
 
+from app.core.logging_codes import ACTOR_KIND_SYSTEM, group_of_action
+from app.core.request_context import bump_audit_count, get_context
 
-def record(db: Session, user_id: int, entity: str, entity_id: int, action: str, message: str = ""):
+
+def record(db: Session, user_id: int, entity: str, entity_id: int, action: str, message: str = "",
+           doc_code: str = "", parent: tuple[str, int] | None = None, on_behalf_of: int = 0):
+    """Ghi một dòng nhật ký thao tác.
+
+    Sáu tham số đầu **giữ nguyên thứ tự và ý nghĩa** của bản cũ — 213 lời gọi
+    đang gọi theo vị trí, đụng vào là hỏng hết. Ba tham số cuối là tùy chọn,
+    bổ sung dần ở những chỗ có gì để nói thêm (bao-CR-312 P1):
+
+    - `doc_code`: số phiếu tại thời điểm đó, cho phiếu sau này bị xóa;
+    - `parent`: `("purchase_order", 129)` khi dấu vết ghi trên DÒNG chứ không
+      trên phiếu — dòng đứng một mình thì đọc ra mồ côi;
+    - `on_behalf_of`: hành chính bấm hộ ai.
+
+    Phần ngữ cảnh còn lại (`request_id`, `ip`, `session_id`, `actor_kind`) do
+    middleware đặt trong `ContextVar`, hàm này tự đọc — cố ý KHÔNG nhận qua
+    tham số, nếu không thì mỗi lời gọi lại phải nhớ truyền.
+
+    ⚠️ Vẫn `db.commit()` như bản cũ. Bẫy 1 ở §6 của tài liệu (gom bộ đệm, ghi
+    một lần cuối request) là việc của P4 — đổi ở P1 là đổi nhịp commit của 213
+    chỗ đang chạy thật mà chưa có gì bù lại.
+    """
     from app.modules.audit.model import AuditLog
 
-    db.add(AuditLog(entity=entity, entity_id=entity_id, action=action, message=message,
-                    created_by=user_id, updated_by=user_id))
+    ctx = get_context()
+    parent_entity, parent_id = (parent or ("", 0))
+    db.add(AuditLog(
+        entity=entity, entity_id=entity_id, action=action, message=message,
+        created_by=user_id, updated_by=user_id,
+        actor_kind=ctx.actor_kind if ctx else ACTOR_KIND_SYSTEM,
+        session_id=ctx.session_id if ctx else None,
+        request_id=ctx.request_id if ctx else None,
+        ip=(ctx.ip if ctx else "")[:45],
+        on_behalf_of=on_behalf_of,
+        doc_code=(doc_code or "")[:50],
+        parent_entity=(parent_entity or "")[:50],
+        parent_id=int(parent_id or 0),
+        action_group=group_of_action(action),
+    ))
     db.commit()
+    bump_audit_count()
 
 
 def resolve_actor(db: Session, user_id: int) -> str:
