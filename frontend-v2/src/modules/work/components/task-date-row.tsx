@@ -20,7 +20,7 @@ interface TaskDateRowProps {
 }
 
 /** Ô trong popover đang nhận ngày bấm trên lịch. */
-type MocThoiGian = 'start' | 'due'
+type DateSlotKind = 'start' | 'due'
 
 /**
  * Hàng THỜI GIAN, hai hình dạng:
@@ -36,22 +36,22 @@ type MocThoiGian = 'start' | 'due'
  */
 export function TaskDateRow({ startDate, dueDate, done, canEdit, onChange }: TaskDateRowProps) {
   const [open, setOpen] = useState(false)
-  const [moc, setMoc] = useState<MocThoiGian>('due')
+  const [slot, setSlot] = useState<DateSlotKind>('due')
 
-  const homNay = addDays(0)
-  const ngayMai = addDays(1)
-  const coNgay = Boolean(startDate || dueDate)
-  const dangSua = moc === 'due' ? dueDate : startDate
+  const today = addDays(0)
+  const tomorrow = addDays(1)
+  const hasDate = Boolean(startDate || dueDate)
+  const editingValue = slot === 'due' ? dueDate : startDate
 
-  function chon(date: Date | undefined) {
+  function pickDate(date: Date | undefined) {
     const value = date ? toDateInputValue(date) : ''
-    onChange(moc === 'due' ? { due_date: value } : { start_date: value })
+    onChange(slot === 'due' ? { due_date: value } : { start_date: value })
   }
 
   return (
     <TaskDetailRow icon={CalendarClock} srLabel="Thời gian">
       <Popover open={open} onOpenChange={setOpen}>
-        {coNgay ? (
+        {hasDate ? (
           <span className="flex items-center gap-0.5">
             <PopoverTrigger asChild>
               <button
@@ -66,7 +66,7 @@ export function TaskDateRow({ startDate, dueDate, done, canEdit, onChange }: Tas
                   canEdit ? 'hover:bg-accent' : 'cursor-default',
                 )}
               >
-                {moTaKhoang(startDate, dueDate)}
+                {describeRange(startDate, dueDate)}
                 {canEdit && <ChevronDown className="size-4 opacity-50" />}
               </button>
             </PopoverTrigger>
@@ -85,10 +85,10 @@ export function TaskDateRow({ startDate, dueDate, done, canEdit, onChange }: Tas
           </span>
         ) : (
           <>
-            <DateChip disabled={!canEdit} onClick={() => onChange({ due_date: homNay })}>
+            <DateChip disabled={!canEdit} onClick={() => onChange({ due_date: today })}>
               Hôm nay
             </DateChip>
-            <DateChip disabled={!canEdit} onClick={() => onChange({ due_date: ngayMai })}>
+            <DateChip disabled={!canEdit} onClick={() => onChange({ due_date: tomorrow })}>
               Ngày mai
             </DateChip>
             <PopoverTrigger asChild>
@@ -101,24 +101,24 @@ export function TaskDateRow({ startDate, dueDate, done, canEdit, onChange }: Tas
           <Calendar
             mode="single"
             autoFocus
-            selected={parseLocalDate(dangSua)}
-            defaultMonth={parseLocalDate(dangSua)}
-            onSelect={chon}
+            selected={parseLocalDate(editingValue)}
+            defaultMonth={parseLocalDate(editingValue)}
+            onSelect={pickDate}
           />
 
           <div className="space-y-1.5 border-t p-3">
             <DateSlot
               label="Ngày bắt đầu (tùy chọn)"
               value={startDate}
-              focused={moc === 'start'}
-              onFocus={() => setMoc('start')}
+              focused={slot === 'start'}
+              onFocus={() => setSlot('start')}
               onClear={() => onChange({ start_date: '' })}
             />
             <DateSlot
               label="Hạn chót"
               value={dueDate}
-              focused={moc === 'due'}
-              onFocus={() => setMoc('due')}
+              focused={slot === 'due'}
+              onFocus={() => setSlot('due')}
               onClear={() => onChange({ due_date: '' })}
             />
           </div>
@@ -143,7 +143,7 @@ export function TaskDateRow({ startDate, dueDate, done, canEdit, onChange }: Tas
  * Chữ của hàng khi đã có ngày. Có cả hai mốc thì rút gọn còn ngày/tháng —
  * `29/08/2026 → 01/09/2026` dài gấp đôi mà năm thì thường thừa.
  */
-function moTaKhoang(startDate: string, dueDate: string): string {
+function describeRange(startDate: string, dueDate: string): string {
   if (startDate && dueDate) return `${formatDueLabel(startDate)} → ${formatDueLabel(dueDate)}`
   if (dueDate) return formatDate(dueDate)
   return `từ ${formatDate(startDate)}`

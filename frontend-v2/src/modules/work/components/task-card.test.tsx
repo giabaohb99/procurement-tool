@@ -23,14 +23,14 @@ import {
  * đây là đo cái không có thật; phần TRÀN KHUNG phải soi bằng mắt trên trình duyệt.
  */
 
-const NGUOI: WorkAssignee = {
+const ASSIGNEE: WorkAssignee = {
   employee_id: 1,
   kind: WORK_ASSIGNEE_KIND.PIC,
   employee_name: 'Trần Minh Được',
   employee_code: 'DEGO0001',
 }
 
-function viec(over: Partial<WorkTask> = {}): WorkTask {
+function makeTask(over: Partial<WorkTask> = {}): WorkTask {
   return {
     id: 7,
     list_id: 1,
@@ -57,7 +57,7 @@ function viec(over: Partial<WorkTask> = {}): WorkTask {
   }
 }
 
-function truong(over: Partial<WorkLabelField> = {}): WorkLabelField {
+function makeLabelField(over: Partial<WorkLabelField> = {}): WorkLabelField {
   return {
     id: 3,
     list_id: 1,
@@ -71,7 +71,7 @@ function truong(over: Partial<WorkLabelField> = {}): WorkLabelField {
   }
 }
 
-function giaTri(over: Partial<WorkTaskLabelValue> = {}): WorkTaskLabelValue {
+function makeLabelValue(over: Partial<WorkTaskLabelValue> = {}): WorkTaskLabelValue {
   return {
     field_id: 3,
     option_id: null,
@@ -90,15 +90,15 @@ function giaTri(over: Partial<WorkTaskLabelValue> = {}): WorkTaskLabelValue {
  * Nhãn TÙY BIẾN phải khai bằng khóa `label:{id}` mới được vẽ — ở màn thật khóa
  * ấy do `mergeCardFields` nối vào, không nằm sẵn trong `DEFAULT_CARD_FIELDS`.
  */
-function chiBat(...keys: string[]): CardFields {
-  const dungSan = DEFAULT_CARD_FIELDS.map((f) => ({ ...f, visible: keys.includes(f.key) }))
-  const nhan = keys
+function onlyFields(...keys: string[]): CardFields {
+  const builtIns = DEFAULT_CARD_FIELDS.map((f) => ({ ...f, visible: keys.includes(f.key) }))
+  const labelKeys = keys
     .filter((k) => k.startsWith('label:'))
     .map((k) => ({ key: k as CardFields[number]['key'], visible: true }))
-  return [...dungSan, ...nhan]
+  return [...builtIns, ...labelKeys]
 }
 
-const oTick = () => screen.getByRole('checkbox')
+const checkbox = () => screen.getByRole('checkbox')
 
 // ── Ô tick «xong việc» ──────────────────────────────────────────────────────────
 
@@ -107,14 +107,14 @@ describe('TaskCardBody — ô tick xong việc', () => {
     const toggle = vi.fn()
     render(
       <TaskCardBody
-        task={viec()}
+        task={makeTask()}
         labelFields={[]}
-        fields={chiBat()}
+        fields={onlyFields()}
         canEdit
         onToggleDone={toggle}
       />,
     )
-    fireEvent.click(oTick())
+    fireEvent.click(checkbox())
     expect(toggle).toHaveBeenCalledWith(7, true)
   })
 
@@ -122,15 +122,15 @@ describe('TaskCardBody — ô tick xong việc', () => {
     const toggle = vi.fn()
     render(
       <TaskCardBody
-        task={viec({ status: WORK_TASK_STATUS.DONE })}
+        task={makeTask({ status: WORK_TASK_STATUS.DONE })}
         labelFields={[]}
-        fields={chiBat()}
+        fields={onlyFields()}
         canEdit
         onToggleDone={toggle}
       />,
     )
-    expect(oTick()).toBeChecked()
-    fireEvent.click(oTick())
+    expect(checkbox()).toBeChecked()
+    fireEvent.click(checkbox())
     expect(toggle).toHaveBeenCalledWith(7, false)
   })
 
@@ -139,61 +139,61 @@ describe('TaskCardBody — ô tick xong việc', () => {
     //  ô của việc đã hủy là báo cáo sai một việc chưa ai làm.
     render(
       <TaskCardBody
-        task={viec({ status: WORK_TASK_STATUS.CANCELLED })}
+        task={makeTask({ status: WORK_TASK_STATUS.CANCELLED })}
         labelFields={[]}
-        fields={chiBat()}
+        fields={onlyFields()}
         canEdit
         onToggleDone={vi.fn()}
       />,
     )
-    expect(oTick()).not.toBeChecked()
+    expect(checkbox()).not.toBeChecked()
   })
 
   it('thiếu quyền sửa thì ô tick chỉ để ĐỌC, bấm không gọi gì', () => {
     const toggle = vi.fn()
     render(
       <TaskCardBody
-        task={viec({ status: WORK_TASK_STATUS.DONE })}
+        task={makeTask({ status: WORK_TASK_STATUS.DONE })}
         labelFields={[]}
-        fields={chiBat()}
+        fields={onlyFields()}
         canEdit={false}
         onToggleDone={toggle}
       />,
     )
-    expect(oTick()).toBeDisabled()
+    expect(checkbox()).toBeDisabled()
     //  Vẫn phải THẤY được việc đã xong hay chưa — khách xem cũng cần biết.
-    expect(oTick()).toBeChecked()
-    fireEvent.click(oTick())
+    expect(checkbox()).toBeChecked()
+    fireEvent.click(checkbox())
     expect(toggle).not.toHaveBeenCalled()
   })
 
   it('lớp phủ lúc kéo (không truyền onToggleDone) thì ô tick chết hẳn', () => {
     //  `DragOverlay` vẽ lại chính thân thẻ này để bám con trỏ; nó không nhận
     //  thao tác nào, ô tick bấm được ở đó là bấm vào một bản sao.
-    render(<TaskCardBody task={viec()} labelFields={[]} fields={chiBat()} canEdit />)
-    expect(oTick()).toBeDisabled()
+    render(<TaskCardBody task={makeTask()} labelFields={[]} fields={onlyFields()} canEdit />)
+    expect(checkbox()).toBeDisabled()
   })
 
   it('bấm ô tick KHÔNG nổi lên thẻ, nên không mở panel chi tiết', () => {
     //  Thẻ ngoài là `role="button"` mở panel + là tay nắm kéo của dnd-kit. Thiếu
     //  `stopPropagation` thì mỗi lần tick xong là panel bung ra chắn hết bảng.
-    const moThe = vi.fn()
-    const batDauKeo = vi.fn()
+    const openCard = vi.fn()
+    const startDrag = vi.fn()
     render(
-      <div onClick={moThe} onPointerDown={batDauKeo}>
+      <div onClick={openCard} onPointerDown={startDrag}>
         <TaskCardBody
-          task={viec()}
+          task={makeTask()}
           labelFields={[]}
-          fields={chiBat()}
+          fields={onlyFields()}
           canEdit
           onToggleDone={vi.fn()}
         />
       </div>,
     )
-    fireEvent.pointerDown(oTick())
-    fireEvent.click(oTick())
-    expect(moThe).not.toHaveBeenCalled()
-    expect(batDauKeo).not.toHaveBeenCalled()
+    fireEvent.pointerDown(checkbox())
+    fireEvent.click(checkbox())
+    expect(openCard).not.toHaveBeenCalled()
+    expect(startDrag).not.toHaveBeenCalled()
   })
 
   it('vẫn đặt tên được cho ô tick khi việc CHƯA CÓ TÊN', () => {
@@ -201,14 +201,14 @@ describe('TaskCardBody — ô tick xong việc', () => {
     //  trình đọc màn hình ghép thẳng từ tên việc.
     render(
       <TaskCardBody
-        task={viec({ title: '' })}
+        task={makeTask({ title: '' })}
         labelFields={[]}
-        fields={chiBat()}
+        fields={onlyFields()}
         canEdit
         onToggleDone={vi.fn()}
       />,
     )
-    expect(oTick()).toHaveAccessibleName(/Đánh dấu hoàn thành/)
+    expect(checkbox()).toHaveAccessibleName(/Đánh dấu hoàn thành/)
   })
 })
 
@@ -219,17 +219,17 @@ describe('TaskCardBody — dữ liệu cực đoan', () => {
     //  Cắt bớt chữ ở tầng dữ liệu là mất hẳn nội dung khi copy hay khi trình đọc
     //  màn hình đọc. Việc thu gọn hai dòng là của CSS (`line-clamp-2`), phải soi
     //  bằng mắt — jsdom không dựng bố cục nên đo ở đây là đo cái không có thật.
-    const dai = 'Lên kế hoạch ngân sách quảng cáo tháng 9 '.repeat(20).trim()
-    render(<TaskCardBody task={viec({ title: dai })} labelFields={[]} fields={chiBat()} canEdit />)
-    expect(screen.getByText(dai)).toBeInTheDocument()
+    const longTitle = 'Lên kế hoạch ngân sách quảng cáo tháng 9 '.repeat(20).trim()
+    render(<TaskCardBody task={makeTask({ title: longTitle })} labelFields={[]} fields={onlyFields()} canEdit />)
+    expect(screen.getByText(longTitle)).toBeInTheDocument()
   })
 
   it('việc KHÔNG TÊN vẫn nói ra là chưa đặt tên, không để thẻ trắng trơn', () => {
     //  Lỗ ở API (`title: str` nhận cả chuỗi trắng) nay đã vá ở `task_service`,
     //  nhưng dòng cũ trong DB thì vẫn còn — thẻ trắng nhìn như giao diện hỏng.
-    for (const rong of ['', '   ']) {
+    for (const blank of ['', '   ']) {
       const { unmount } = render(
-        <TaskCardBody task={viec({ title: rong })} labelFields={[]} fields={chiBat()} canEdit />,
+        <TaskCardBody task={makeTask({ title: blank })} labelFields={[]} fields={onlyFields()} canEdit />,
       )
       expect(screen.getByText('(Chưa đặt tên)')).toBeInTheDocument()
       unmount()
@@ -239,9 +239,9 @@ describe('TaskCardBody — dữ liệu cực đoan', () => {
   it('tên chỉ toàn dấu cách Ở HAI ĐẦU thì vẫn là tên thật, không rơi vào chỗ dự phòng', () => {
     render(
       <TaskCardBody
-        task={viec({ title: '  Việc thật  ' })}
+        task={makeTask({ title: '  Việc thật  ' })}
         labelFields={[]}
-        fields={chiBat()}
+        fields={onlyFields()}
         canEdit
       />,
     )
@@ -252,22 +252,22 @@ describe('TaskCardBody — dữ liệu cực đoan', () => {
   it('một chuỗi 300 ký tự KHÔNG có dấu cách vẫn hiện nguyên', () => {
     //  Người dùng dán một đường link hay một mã lỗi dài — chuỗi liền mạch là
     //  ca làm vỡ khung cột kinh điển nhất.
-    const lien = 'a'.repeat(300)
-    render(<TaskCardBody task={viec({ title: lien })} labelFields={[]} fields={chiBat()} canEdit />)
-    expect(screen.getByText(lien)).toBeInTheDocument()
+    const unbrokenTitle = 'a'.repeat(300)
+    render(<TaskCardBody task={makeTask({ title: unbrokenTitle })} labelFields={[]} fields={onlyFields()} canEdit />)
+    expect(screen.getByText(unbrokenTitle)).toBeInTheDocument()
   })
 
   it('đông người phụ trách thì chỉ vẽ 3 avatar rồi «+n»', () => {
-    const dong = Array.from({ length: 12 }, (_, i) => ({
-      ...NGUOI,
+    const manyAssignees = Array.from({ length: 12 }, (_, i) => ({
+      ...ASSIGNEE,
       employee_id: i + 1,
       employee_name: `Nhân sự ${i + 1}`,
     }))
     render(
       <TaskCardBody
-        task={viec({ assignees: dong })}
+        task={makeTask({ assignees: manyAssignees })}
         labelFields={[]}
-        fields={chiBat('assignees')}
+        fields={onlyFields('assignees')}
         canEdit
       />,
     )
@@ -275,12 +275,12 @@ describe('TaskCardBody — dữ liệu cực đoan', () => {
   })
 
   it('đúng 3 người thì KHÔNG có «+0» thừa', () => {
-    const ba = Array.from({ length: 3 }, (_, i) => ({ ...NGUOI, employee_id: i + 1 }))
+    const threeAssignees = Array.from({ length: 3 }, (_, i) => ({ ...ASSIGNEE, employee_id: i + 1 }))
     render(
       <TaskCardBody
-        task={viec({ assignees: ba })}
+        task={makeTask({ assignees: threeAssignees })}
         labelFields={[]}
-        fields={chiBat('assignees')}
+        fields={onlyFields('assignees')}
         canEdit
       />,
     )
@@ -290,9 +290,9 @@ describe('TaskCardBody — dữ liệu cực đoan', () => {
   it('người THEO DÕI không bị đếm nhầm thành người phụ trách', () => {
     render(
       <TaskCardBody
-        task={viec({ assignees: [{ ...NGUOI, kind: WORK_ASSIGNEE_KIND.FOLLOWER }] })}
+        task={makeTask({ assignees: [{ ...ASSIGNEE, kind: WORK_ASSIGNEE_KIND.FOLLOWER }] })}
         labelFields={[]}
-        fields={chiBat('assignees')}
+        fields={onlyFields('assignees')}
         canEdit
       />,
     )
@@ -302,9 +302,9 @@ describe('TaskCardBody — dữ liệu cực đoan', () => {
   it('người phụ trách chưa có TÊN vẫn ra một avatar, không ra ô trống', () => {
     render(
       <TaskCardBody
-        task={viec({ assignees: [{ ...NGUOI, employee_name: '' }] })}
+        task={makeTask({ assignees: [{ ...ASSIGNEE, employee_name: '' }] })}
         labelFields={[]}
-        fields={chiBat('assignees')}
+        fields={onlyFields('assignees')}
         canEdit
       />,
     )
@@ -312,14 +312,14 @@ describe('TaskCardBody — dữ liệu cực đoan', () => {
   })
 
   it('trường BẬT nhưng việc chưa có gì thì bỏ hẳn dòng, không vẽ «Hạn chót —»', () => {
-    render(<TaskCardBody task={viec()} labelFields={[]} fields={DEFAULT_CARD_FIELDS} canEdit />)
-    for (const nhan of ['Phụ trách', 'Hạn chót', 'Ngày bắt đầu', 'Việc con', 'Bình luận']) {
-      expect(screen.queryByText(nhan)).not.toBeInTheDocument()
+    render(<TaskCardBody task={makeTask()} labelFields={[]} fields={DEFAULT_CARD_FIELDS} canEdit />)
+    for (const label of ['Phụ trách', 'Hạn chót', 'Ngày bắt đầu', 'Việc con', 'Bình luận']) {
+      expect(screen.queryByText(label)).not.toBeInTheDocument()
     }
   })
 
   it('trạng thái «Đang mở» KHÔNG vẽ dòng — mọi thẻ đều thế thì nói làm gì', () => {
-    render(<TaskCardBody task={viec()} labelFields={[]} fields={chiBat('status')} canEdit />)
+    render(<TaskCardBody task={makeTask()} labelFields={[]} fields={onlyFields('status')} canEdit />)
     expect(screen.queryByText('Trạng thái')).not.toBeInTheDocument()
   })
 
@@ -327,9 +327,9 @@ describe('TaskCardBody — dữ liệu cực đoan', () => {
     //  Quản trị xóa một giá trị khỏi bộ chọn nhưng thẻ cũ còn trỏ vào nó.
     render(
       <TaskCardBody
-        task={viec({ labels: [giaTri({ option_id: 999 })] })}
-        labelFields={[truong()]}
-        fields={chiBat('label:3')}
+        task={makeTask({ labels: [makeLabelValue({ option_id: 999 })] })}
+        labelFields={[makeLabelField()]}
+        fields={onlyFields('label:3')}
         canEdit
       />,
     )
@@ -339,9 +339,9 @@ describe('TaskCardBody — dữ liệu cực đoan', () => {
   it('nhãn của một trường ĐÃ BỊ XÓA khỏi dự án thì im lặng bỏ qua', () => {
     render(
       <TaskCardBody
-        task={viec({ labels: [giaTri({ field_id: 404, option_id: 30 })] })}
-        labelFields={[truong()]}
-        fields={chiBat('label:3')}
+        task={makeTask({ labels: [makeLabelValue({ field_id: 404, option_id: 30 })] })}
+        labelFields={[makeLabelField()]}
+        fields={onlyFields('label:3')}
         canEdit
       />,
     )
@@ -358,9 +358,9 @@ describe('TaskCardBody — dữ liệu cực đoan', () => {
     }))
     render(
       <TaskCardBody
-        task={viec({ labels: options.map((o) => giaTri({ option_id: o.id })) })}
-        labelFields={[truong({ field_type: WORK_FIELD_TYPE.MULTI, options })]}
-        fields={chiBat('label:3')}
+        task={makeTask({ labels: options.map((o) => makeLabelValue({ option_id: o.id })) })}
+        labelFields={[makeLabelField({ field_type: WORK_FIELD_TYPE.MULTI, options })]}
+        fields={onlyFields('label:3')}
         canEdit
       />,
     )
@@ -371,9 +371,9 @@ describe('TaskCardBody — dữ liệu cực đoan', () => {
   it('số 0 của trường SỐ vẫn hiện — 0 là một giá trị, không phải "chưa nhập"', () => {
     render(
       <TaskCardBody
-        task={viec({ labels: [giaTri({ value_number: '0.0000' })] })}
-        labelFields={[truong({ name: 'Chi phí', field_type: WORK_FIELD_TYPE.NUMBER })]}
-        fields={chiBat('label:3')}
+        task={makeTask({ labels: [makeLabelValue({ value_number: '0.0000' })] })}
+        labelFields={[makeLabelField({ name: 'Chi phí', field_type: WORK_FIELD_TYPE.NUMBER })]}
+        fields={onlyFields('label:3')}
         canEdit
       />,
     )
@@ -383,9 +383,9 @@ describe('TaskCardBody — dữ liệu cực đoan', () => {
   it('số âm và số rất lớn không bị cắt mất chữ số nào', () => {
     render(
       <TaskCardBody
-        task={viec({ labels: [giaTri({ value_number: '-1234567890123.5000' })] })}
-        labelFields={[truong({ name: 'Chi phí', field_type: WORK_FIELD_TYPE.NUMBER })]}
-        fields={chiBat('label:3')}
+        task={makeTask({ labels: [makeLabelValue({ value_number: '-1234567890123.5000' })] })}
+        labelFields={[makeLabelField({ name: 'Chi phí', field_type: WORK_FIELD_TYPE.NUMBER })]}
+        fields={onlyFields('label:3')}
         canEdit
       />,
     )
@@ -395,9 +395,9 @@ describe('TaskCardBody — dữ liệu cực đoan', () => {
   it('việc con 0/5 phải hiện, 0/0 thì không', () => {
     const { rerender } = render(
       <TaskCardBody
-        task={viec({ subtask_done: 0, subtask_total: 5 })}
+        task={makeTask({ subtask_done: 0, subtask_total: 5 })}
         labelFields={[]}
-        fields={chiBat('subtasks')}
+        fields={onlyFields('subtasks')}
         canEdit
       />,
     )
@@ -405,9 +405,9 @@ describe('TaskCardBody — dữ liệu cực đoan', () => {
 
     rerender(
       <TaskCardBody
-        task={viec({ subtask_done: 0, subtask_total: 0 })}
+        task={makeTask({ subtask_done: 0, subtask_total: 0 })}
         labelFields={[]}
-        fields={chiBat('subtasks')}
+        fields={onlyFields('subtasks')}
         canEdit
       />,
     )
@@ -415,21 +415,21 @@ describe('TaskCardBody — dữ liệu cực đoan', () => {
   })
 
   it('tên trường tùy biến dài ngoẵng vẫn ra đủ chữ', () => {
-    const ten = 'Kênh phân phối chính của chiến dịch quý 4 năm 2026'
+    const fieldName = 'Kênh phân phối chính của chiến dịch quý 4 năm 2026'
     render(
       <TaskCardBody
-        task={viec({ labels: [giaTri({ option_id: 30 })] })}
-        labelFields={[truong({ name: ten })]}
-        fields={chiBat('label:3')}
+        task={makeTask({ labels: [makeLabelValue({ option_id: 30 })] })}
+        labelFields={[makeLabelField({ name: fieldName })]}
+        fields={onlyFields('label:3')}
         canEdit
       />,
     )
-    expect(screen.getByText(ten)).toBeInTheDocument()
+    expect(screen.getByText(fieldName)).toBeInTheDocument()
   })
 
   it('thẻ KHÔNG có gì ngoài tên vẫn dựng được, không nổ', () => {
-    render(<TaskCardBody task={viec()} labelFields={[]} fields={[]} canEdit />)
+    render(<TaskCardBody task={makeTask()} labelFields={[]} fields={[]} canEdit />)
     expect(screen.getByText('Lên kế hoạch ngân sách quảng cáo tháng 9')).toBeInTheDocument()
-    expect(oTick()).toBeInTheDocument()
+    expect(checkbox()).toBeInTheDocument()
   })
 })

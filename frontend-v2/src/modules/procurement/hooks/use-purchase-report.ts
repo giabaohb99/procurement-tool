@@ -2,6 +2,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 
 import { queryKeys } from '@/shared/constants/query-keys'
 import { purchaseReportApi, type ReportScope } from '../api/purchase-report-api'
+import type { LandedCostParams } from '../types/import-landed-cost'
 import type { ReportMatrix } from '../types/purchase-report'
 
 /**
@@ -100,6 +101,21 @@ export function usePrLines(
   return useQuery({
     queryKey: queryKeys.procurement.reportPrLines(params),
     queryFn: () => purchaseReportApi.getPrLines(params),
+    placeholderData: keepPreviousData,
+    enabled,
+  })
+}
+
+/**
+ * Giá vốn lô hàng nhập khẩu (bao-CR-357).
+ *
+ * `params` là bộ lọc ĐÃ ÁP (bấm "Xem"), không phải ô người dùng đang gõ dở —
+ * gọi theo từng phím gõ trong ô mã đơn thì mỗi ký tự một lần quét DB.
+ */
+export function useImportLandedCost(params: LandedCostParams, enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.procurement.reportImportLandedCost(params),
+    queryFn: () => purchaseReportApi.getImportLandedCost(params),
     placeholderData: keepPreviousData,
     enabled,
   })

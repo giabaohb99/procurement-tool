@@ -60,7 +60,7 @@ export const queryKeys = {
       ['procurement', 'survey-report', params ?? {}] as const,
 
     /**
-     * Báo cáo mua hàng. Sáu đường API khác nhau nên sáu khóa riêng — chung một
+     * Báo cáo mua hàng. Bảy đường API khác nhau nên bảy khóa riêng — chung một
      * khóa thì đổi tab là ghi đè cache của tab trước, quay lại phải tải lại.
      */
     reportProcurement: (params?: Record<string, unknown>) =>
@@ -78,6 +78,8 @@ export const queryKeys = {
       ['procurement', 'purchase-report', 'daily', params ?? {}] as const,
     reportPrLines: (params?: Record<string, unknown>) =>
       ['procurement', 'purchase-report', 'pr-lines', params ?? {}] as const,
+    reportImportLandedCost: (params?: Record<string, unknown>) =>
+      ['procurement', 'purchase-report', 'import-landed-cost', params ?? {}] as const,
 
     /** Số liệu trang Tổng quan Thu mua (`/api/dashboard/overview`). */
     dashboard: () => ['procurement', 'dashboard'] as const,

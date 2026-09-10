@@ -47,7 +47,7 @@ export function findColumnColor(id?: string): ColumnColor | undefined {
  * ⚠️ Trước đây hàm này trả `backgroundColor: color-mix(màu, var(--muted))` cho ô
  * tiêu đề và `color-mix(màu, var(--card))` cho ô thân — tức tự đoán lấy nền phía
  * dưới. Đoán sai ở cả hai chỗ:
- * - Hàng tiêu đề nay chạy trên `--row-head`, không phải `--muted` (DEGO: #e6ebf2
+ * - Hàng tiêu đề nay chạy trên `--row-head`, không phải `--muted` (DEGO: #dbe6f5
  *   so với #f6f8fb). Cột được tô nằm trên một nền trắng hơn hẳn các cột bên
  *   cạnh, nên nhìn ra thành "hàng tiêu đề có hai màu" chứ không ra "cột này
  *   được đánh dấu" (lỗi thấy được 27/08/2026).

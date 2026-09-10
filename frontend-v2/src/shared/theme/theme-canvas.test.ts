@@ -22,7 +22,7 @@ function readVar(css: string, mode: 'light' | 'dark', name: string): string {
 const MODES = ['light', 'dark'] as const
 
 /** Bảng màu để TRỐNG `canvas` — tức nền trang do `build-theme-css.ts` suy ra. */
-const suyRa = themePresets.flatMap((preset) =>
+const derivedTokens = themePresets.flatMap((preset) =>
   MODES.filter((mode) => !preset[mode].canvas).map((mode) => [preset.id, mode] as const),
 )
 
@@ -34,15 +34,15 @@ function cssOf(id: string) {
 
 describe('nền trang', () => {
   it('có bảng màu để kiểm', () => {
-    expect(suyRa.length).toBeGreaterThan(0)
+    expect(derivedTokens.length).toBeGreaterThan(0)
   })
 
-  it.each(suyRa)('%s.%s — nền trang lấy đúng --background của bảng màu', (id, mode) => {
+  it.each(derivedTokens)('%s.%s — nền trang lấy đúng --background của bảng màu', (id, mode) => {
     const css = cssOf(id)
     expect(readVar(css, mode, 'canvas')).toBe('var(--background)')
   })
 
-  it.each(suyRa)('%s.%s — nền trang không trùng vằn hàng chẵn', (id, mode) => {
+  it.each(derivedTokens)('%s.%s — nền trang không trùng vằn hàng chẵn', (id, mode) => {
     //  Trùng thì cái thẻ chứa bảng danh sách tan vào nền trang. Cách suy ra cũ
     //  dính đúng lỗi này ở 15/86 tổ hợp: `--row-stripe` cũng là phép pha 95%,
     //  nên bảng màu nào để `card` = `background` là hai công thức ra cùng số.

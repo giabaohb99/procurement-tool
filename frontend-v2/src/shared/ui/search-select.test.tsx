@@ -159,9 +159,9 @@ describe('SearchSelect', () => {
         placeholder="Chọn loại"
       />,
     )
-    const oInput = screen.getByRole('combobox')
-    await nguoi.click(oInput)
-    await nguoi.type(oInput, 'nghi phep')
+    const combobox = screen.getByRole('combobox')
+    await nguoi.click(combobox)
+    await nguoi.type(combobox, 'nghi phep')
     //  Gõ ngay trên ô → lọc; chọn xong báo đúng value cho bên gọi.
     await nguoi.click(screen.getByText('Giấy nghỉ phép · GNP'))
     expect(onChange).toHaveBeenCalledWith('28')

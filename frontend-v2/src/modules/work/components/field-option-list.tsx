@@ -46,26 +46,26 @@ export function FieldOptionList({ options, onChange }: FieldOptionListProps) {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
 
-  function keoXep(su: DragEndEvent) {
-    const { active, over } = su
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
     if (!over || active.id === over.id) return
-    const tu = options.findIndex((o) => String(o.id) === active.id)
-    const den = options.findIndex((o) => String(o.id) === over.id)
-    if (tu === -1 || den === -1) return
-    const sau = [...options]
-    const [doi] = sau.splice(tu, 1)
-    sau.splice(den, 0, doi)
-    onChange(sau)
+    const from = options.findIndex((o) => String(o.id) === active.id)
+    const to = options.findIndex((o) => String(o.id) === over.id)
+    if (from === -1 || to === -1) return
+    const next = [...options]
+    const [moved] = next.splice(from, 1)
+    next.splice(to, 0, moved)
+    onChange(next)
   }
 
-  function sua(id: number, patch: Partial<DraftOption>) {
+  function updateOption(id: number, patch: Partial<DraftOption>) {
     onChange(options.map((o) => (o.id === id ? { ...o, ...patch } : o)))
   }
 
   return (
     <div className="space-y-1.5">
       <div className="max-h-72 space-y-1 overflow-y-auto pr-1">
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={keoXep}>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext
             items={options.map((o) => String(o.id))}
             strategy={verticalListSortingStrategy}
@@ -74,7 +74,7 @@ export function FieldOptionList({ options, onChange }: FieldOptionListProps) {
               <OptionRow
                 key={o.id}
                 option={o}
-                onChange={(patch) => sua(o.id, patch)}
+                onChange={(patch) => updateOption(o.id, patch)}
                 onRemove={() => onChange(options.filter((x) => x.id !== o.id))}
               />
             ))}
@@ -160,7 +160,7 @@ function OptionRow({
         aria-label="Tên giá trị"
         placeholder="Tên giá trị"
         className="h-8"
-        onChange={(su) => onChange({ name: su.target.value })}
+        onChange={(event) => onChange({ name: event.target.value })}
       />
 
       <IconTooltip label="Bỏ giá trị này">

@@ -81,62 +81,62 @@ interface SectionFormProps {
 }
 
 function SectionForm({ mode, listId, section, sections, onClose }: SectionFormProps) {
-  const [ten, setTen] = useState(section?.name ?? '')
-  const [mau, setMau] = useState<string>(section?.color || 'slate')
-  const [dichChuyen, setDichChuyen] = useState<string>('')
+  const [name, setName] = useState(section?.name ?? '')
+  const [color, setColor] = useState<string>(section?.color || 'slate')
+  const [moveToId, setMoveToId] = useState<string>('')
 
   const createSection = useCreateSection(listId)
   const updateSection = useUpdateSection(listId)
   const deleteSection = useDeleteSection(listId)
 
-  const conLai = sections.filter((s) => s.id !== section?.id)
+  const otherSections = sections.filter((s) => s.id !== section?.id)
 
-  function luu() {
-    const value = ten.trim()
+  function save() {
+    const value = name.trim()
     if (!value) return
     if (mode === 'create') {
       createSection.mutate(
-        { name: value, color: mau, sort_order: sections.length },
+        { name: value, color, sort_order: sections.length },
         { onSuccess: onClose },
       )
     } else if (section) {
       updateSection.mutate(
-        { id: section.id, values: { name: value, color: mau } },
+        { id: section.id, values: { name: value, color } },
         { onSuccess: onClose },
       )
     }
   }
 
-  function xoa() {
+  function remove() {
     if (!section) return
     deleteSection.mutate(
-      { id: section.id, moveTo: dichChuyen ? Number(dichChuyen) : undefined },
+      { id: section.id, moveTo: moveToId ? Number(moveToId) : undefined },
       { onSuccess: onClose },
     )
   }
 
-  const laXoa = mode === 'delete'
+  const isDelete = mode === 'delete'
 
   return (
     <>
         <DialogHeader>
           <DialogTitle>
-            {laXoa ? 'Xóa cột' : mode === 'create' ? 'Thêm cột' : 'Sửa cột'}
+            {isDelete ? 'Xóa cột' : mode === 'create' ? 'Thêm cột' : 'Sửa cột'}
           </DialogTitle>
         </DialogHeader>
 
-        {laXoa ? (
+        {isDelete ? (
           <div className="space-y-3">
             <p className="text-sm">
               Xóa cột <span className="font-medium">{section?.name}</span>. Việc đang nằm
               trong cột phải dồn sang cột khác — chọn cột nhận:
             </p>
-            <Select value={dichChuyen} onValueChange={setDichChuyen}>
+            <Select value={moveToId} onValueChange={setMoveToId}>
               <SelectTrigger>
                 <SelectValue placeholder="Chọn cột nhận (bỏ trống nếu cột đang rỗng)" />
               </SelectTrigger>
               <SelectContent>
-                {conLai.map((s) => (
+                {otherSections.map((s) => (
                   <SelectItem key={s.id} value={String(s.id)}>
                     {s.name}
                   </SelectItem>
@@ -151,9 +151,9 @@ function SectionForm({ mode, listId, section, sections, onClose }: SectionFormPr
               <Input
                 id="section-name"
                 autoFocus
-                value={ten}
-                onChange={(e) => setTen(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && luu()}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && save()}
               />
             </div>
             <div className="space-y-2">
@@ -166,11 +166,11 @@ function SectionForm({ mode, listId, section, sections, onClose }: SectionFormPr
                     key={c.value}
                     type="button"
                     title={c.label}
-                    onClick={() => setMau(c.value)}
+                    onClick={() => setColor(c.value)}
                     className={cn(
                       'size-6 rounded-full ring-offset-2 ring-offset-background',
                       dotClass(c.value),
-                      mau === c.value && 'ring-2 ring-primary',
+                      color === c.value && 'ring-2 ring-primary',
                     )}
                   />
                 ))}
@@ -183,12 +183,12 @@ function SectionForm({ mode, listId, section, sections, onClose }: SectionFormPr
           <Button variant="outline" onClick={onClose}>
             Hủy
           </Button>
-          {laXoa ? (
-            <Button variant="destructive" onClick={xoa}>
+          {isDelete ? (
+            <Button variant="destructive" onClick={remove}>
               Xóa cột
             </Button>
           ) : (
-            <Button onClick={luu} disabled={!ten.trim()}>
+            <Button onClick={save} disabled={!name.trim()}>
               Lưu
             </Button>
           )}

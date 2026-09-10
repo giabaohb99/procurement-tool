@@ -39,6 +39,20 @@ describe('numberToVietnameseWords', () => {
     )
   })
 
+  it('đọc đủ bốn bậc tỷ / triệu / nghìn / trăm trong một số', () => {
+    // Gộp về đây từ bản `doc-tien.ts` đã bỏ (bao-CR-322) — hai tệp cùng một
+    // thuật toán, giữ lại đúng mấy ca bản kia có mà bản này chưa có.
+    expect(numberToVietnameseWords(1_234_567_890)).toBe(
+      'Một tỷ hai trăm ba mươi bốn triệu năm trăm sáu mươi bảy nghìn tám trăm chín mươi đồng chẵn',
+    )
+  })
+
+  it('đọc "mốt" cả khi nó nằm ở nhóm bậc chứ không phải nhóm cuối', () => {
+    expect(numberToVietnameseWords(21_000_000)).toBe('Hai mươi mốt triệu đồng chẵn')
+    expect(numberToVietnameseWords(15_000)).toBe('Mười lăm nghìn đồng chẵn')
+    expect(numberToVietnameseWords(105_000)).toBe('Một trăm lẻ năm nghìn đồng chẵn')
+  })
+
   it('số không, số âm và giá trị hỏng đều ra "Không đồng"', () => {
     expect(numberToVietnameseWords(0)).toBe('Không đồng')
     expect(numberToVietnameseWords(-5_000)).toBe('Không đồng')

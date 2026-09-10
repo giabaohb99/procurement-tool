@@ -100,7 +100,16 @@ export function PurchaseOrderPrintGoodsForm({
               </td>
               <td className="text-right">{formatUnitPrice(item.price)}</td>
               <td className="text-right">{formatMoney(item.qty_order * item.price)}</td>
-              <td>{item.note}</td>
+              {/* bao-CR-322: ngày cần hàng in ĐẬM ở đầu ô ghi chú như bản v1 — kho đọc
+                  bản này để xếp thứ tự nhận hàng, không phải đọc để biết ghi chú. */}
+              <td>
+                {item.required_date || item.expected_date ? (
+                  <div className="font-semibold">
+                    Ngày cần hàng: {formatDate(item.required_date || item.expected_date)}
+                  </div>
+                ) : null}
+                {item.note ? <div>{item.note}</div> : null}
+              </td>
             </tr>
           ))}
           <tr>

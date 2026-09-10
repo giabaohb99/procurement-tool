@@ -49,6 +49,12 @@ export const appRoutes = {
     purchaseOrderDocuments: (id: number | string) =>
       `/procurement/purchase-orders/${id}/documents`,
     purchaseOrderPrint: (id: number | string) => `/print/purchase-order/${id}`,
+    /**
+     * bao-CR-322 — mẫu **Đơn mua hàng** (bản nội bộ / gửi kế toán). Cùng trang in với
+     * `purchaseOrderPrint`, chỉ khác mẫu mặc định lúc mở. Giữ nguyên đường dẫn của bản
+     * v1 (`/print/purchase-order-mh/:id`) để đường dẫn ai đã lưu lại vẫn mở đúng mẫu.
+     */
+    purchaseOrderGoodsPrint: (id: number | string) => `/print/purchase-order-mh/${id}`,
     /** bao-CR-319 — bản in riêng của đơn NHẬP KHẨU (nguyên tệ + quy đổi + chi phí lô hàng). */
     purchaseOrderImportPrint: (id: number | string) => `/print/purchase-order-import/${id}`,
     /**
@@ -67,8 +73,16 @@ export const appRoutes = {
     surveyProgress: '/procurement/survey-progress',
     /** Báo cáo khảo sát, cắt theo dòng khảo sát. */
     surveyReport: '/procurement/survey-report',
-    /** Báo cáo mua hàng — chín tab trên cùng một bộ lọc công ty / năm. */
+    /** Báo cáo mua hàng — mười tab trên cùng một bộ lọc công ty / năm. */
     purchaseReport: '/procurement/purchase-report',
+    /**
+     * bao-CR-357 — bản in Báo cáo giá vốn lô hàng nhập khẩu (khổ A4 NẰM NGANG).
+     *
+     * Là chuỗi thường chứ không phải hàm nhận id: báo cáo không gắn với một chứng
+     * từ nào, phạm vi đi kèm ở query string (`codes` / `date_from` / `date_to` /
+     * `company_id` / `view`).
+     */
+    importLandedCostPrint: '/print/import-landed-cost',
     /** Trang riêng của báo cáo Chi tiết YC mua hàng (bao-CR-296/299) — nội dung
         dùng chung với tab cùng tên trong Báo cáo mua hàng. */
     prLinesReport: '/procurement/pr-lines-report',

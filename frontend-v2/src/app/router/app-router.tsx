@@ -80,11 +80,33 @@ export const router = createBrowserRouter([
             errorElement: <RouteErrorPage />,
           },
           {
+            //  bao-CR-322 — cùng trang in với route trên, chỉ khác mẫu mở sẵn. Giữ đúng
+            //  đường dẫn của bản v1 để link ai đã lưu vẫn mở ra mẫu Đơn mua hàng.
+            path: appRoutes.procurement.purchaseOrderGoodsPrint(':id'),
+            lazy: async () => {
+              const { PurchaseOrderPrintPage } = await import(
+                '@/modules/procurement/pages/purchase-order-print-page'
+              )
+              return { Component: () => <PurchaseOrderPrintPage defaultMode="goods" /> }
+            },
+            errorElement: <RouteErrorPage />,
+          },
+          {
             path: appRoutes.procurement.purchaseOrderImportPrint(':id'),
             lazy: async () => ({
               Component: (
                 await import('@/modules/procurement/pages/purchase-order-import-print-page')
               ).PurchaseOrderImportPrintPage,
+            }),
+            errorElement: <RouteErrorPage />,
+          },
+          {
+            //  bao-CR-357 — bản in báo cáo giá vốn: phạm vi đi bằng query string,
+            //  nên đường dẫn KHÔNG có tham số `:id` như mấy bản in chứng từ.
+            path: appRoutes.procurement.importLandedCostPrint,
+            lazy: async () => ({
+              Component: (await import('@/modules/procurement/pages/import-landed-cost-print-page'))
+                .ImportLandedCostPrintPage,
             }),
             errorElement: <RouteErrorPage />,
           },

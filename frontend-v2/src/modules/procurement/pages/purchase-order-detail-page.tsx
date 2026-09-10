@@ -12,6 +12,7 @@ import {
   Plus,
   Printer,
   Receipt,
+  ReceiptText,
   RotateCcw,
   Save,
   Send,
@@ -383,7 +384,22 @@ export function PurchaseOrderDetailPage() {
                 rel="noreferrer"
               >
                 <Printer />
-                In đơn
+                In Đơn đặt hàng
+              </Link>
+            </Button>
+          )}
+
+          {/* bao-CR-322: mẫu nội bộ / gửi kế toán. Cùng trang in với nút trên, vào bằng
+              đường dẫn riêng nên mở ra là đã đúng mẫu, không phải bấm công tắc. */}
+          {!isNew && can('purchase_order', 'print') && (
+            <Button variant="outline" asChild>
+              <Link
+                to={appRoutes.procurement.purchaseOrderGoodsPrint(data.id)}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <ReceiptText />
+                In Đơn mua hàng
               </Link>
             </Button>
           )}
@@ -398,6 +414,21 @@ export function PurchaseOrderDetailPage() {
               >
                 <Printer />
                 In Đơn nhập khẩu
+              </Link>
+            </Button>
+          )}
+
+          {/* bao-CR-357: báo cáo giá vốn của RIÊNG lô hàng này — cùng trang in với tab
+              "Giá vốn nhập khẩu" trong Báo cáo mua hàng, lọc sẵn theo mã đơn. */}
+          {!isNew && can('purchase_order', 'print') && isImportOrder(data) && (
+            <Button variant="outline" asChild>
+              <Link
+                to={`${appRoutes.procurement.importLandedCostPrint}?codes=${encodeURIComponent(data.code || '')}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <Printer />
+                In Báo cáo giá vốn
               </Link>
             </Button>
           )}

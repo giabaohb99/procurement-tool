@@ -62,12 +62,18 @@
      tiêu đề lấy `--muted` của bảng màu (Starry Night là kem), vằn hàng và hover
      vẫn xanh slate/sky cố định. Lỗi thấy được 27/08/2026.
 
-     Giá trị dưới đây ghim ĐÚNG màu đang chạy hôm nay (hàng tiêu đề ghim màu đã
-     chồng sẵn: slate-200 phủ 80% lên `--muted`), nên bảng màu DEGO không đổi một
-     pixel nào; bảng màu nhập từ ngoài thì suy ra từ chính `--card` và `--primary`
-     của nó (xem `DERIVED_TOKENS` trong `shared/theme/build-theme-css.ts`). */
-  --row-head: #e6ebf2;
-  --row-head-foreground: #0f172a;
+     Bảng màu nhập từ ngoài thì suy ra từ chính `--card` và `--primary` của nó
+     (xem `DERIVED_TOKENS` trong `shared/theme/build-theme-css.ts`); riêng bảng
+     màu DEGO ghim tay ngay dưới đây.
+
+     10/09/2026: hàng tiêu đề trước là #e6ebf2 / #0f172a — xám gần đen chồng lên
+     xám xanh nhạt, khách đọc ra "màu xám" và đòi trả về xanh nước biển như bản
+     v1 (v1: chữ `--navy`, nền #f4f7fe). Không bê nguyên #f4f7fe được: nó SÁNG
+     hơn vằn hàng `--row-stripe` bên dưới, dán vào thì tiêu đề chìm hơn cả thân
+     bảng. Nên chọn nền đậm hơn `--row-stripe` mà vẫn ra xanh. Đây là mặc định
+     của bảng màu DEGO thôi; ai đổi giao diện thì token đi theo bảng màu đó. */
+  --row-head: #dbe6f5;
+  --row-head-foreground: #1b2559;
   /* 09/09/2026: #fafcff nhạt tới mức bảng nhiều dòng nhìn như không có vằn —
      khách đòi đậm thêm một xíu để dóng mắt theo hàng. */
   --row-stripe: #f0f4f9;

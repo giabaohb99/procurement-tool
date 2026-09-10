@@ -59,10 +59,10 @@ describe('taskEdges', () => {
   it('CỘT MỐC lấy hai đỉnh của hình thoi, không phải mép ô ngày', () => {
     //  Nối vào mép ô thì mũi tên chạm khoảng trống cạnh hình thoi, hở một quãng
     //  bằng nửa ô ngày.
-    const moc = task({ id: 3, kind: WORK_TASK_KIND.MILESTONE, due_date: '2026-09-10' })
-    const canh = taskEdges(moc, timeline)
-    expect(canh).not.toBeNull()
-    expect((canh as { right: number }).right - (canh as { left: number }).left).toBe(MILESTONE_SIZE)
+    const milestone = task({ id: 3, kind: WORK_TASK_KIND.MILESTONE, due_date: '2026-09-10' })
+    const edges = taskEdges(milestone, timeline)
+    expect(edges).not.toBeNull()
+    expect((edges as { right: number }).right - (edges as { left: number }).left).toBe(MILESTONE_SIZE)
   })
 
   it('việc chưa có ngày thì không có mép nào để nối', () => {
@@ -129,14 +129,14 @@ describe('linkAnchors', () => {
   })
 
   it('một đầu chưa có ngày thì KHÔNG vẽ mũi tên treo lơ lửng', () => {
-    const rong = { task: task({ id: 9 }), row: 2 }
-    expect(linkAnchors(WORK_LINK_TYPE.FS, before, rong, timeline)).toBeNull()
-    expect(linkAnchors(WORK_LINK_TYPE.FS, rong, after, timeline)).toBeNull()
+    const noDates = { task: task({ id: 9 }), row: 2 }
+    expect(linkAnchors(WORK_LINK_TYPE.FS, before, noDates, timeline)).toBeNull()
+    expect(linkAnchors(WORK_LINK_TYPE.FS, noDates, after, timeline)).toBeNull()
   })
 })
 
 /** Bóc `[fromX, c1X, toX, c2X]` khỏi chuỗi `d` của một cung bậc ba. */
-function doc(shape: { d: string }): [number, number, number, number] {
+function parseCubic(shape: { d: string }): [number, number, number, number] {
   const m = shape.d.match(
     /^M([\d.-]+) [\d.-]+ C([\d.-]+) [\d.-]+ ([\d.-]+) [\d.-]+ ([\d.-]+) [\d.-]+$/,
   )
@@ -158,11 +158,11 @@ describe('linkPath', () => {
   it('tay nắm vươn NGANG theo đúng chiều của từng đầu', () => {
     //  Nhờ vậy cung rời mép thanh theo phương ngang rồi mới uốn — vươn sai chiều
     //  là cung thúc ngược vào trong chính cái thanh nó vừa rời.
-    const [, c1x, , c2x] = doc(linkPath({ x: 100, y: 18, dir: 1 }, { x: 300, y: 90, dir: 1 }))
+    const [, c1x, , c2x] = parseCubic(linkPath({ x: 100, y: 18, dir: 1 }, { x: 300, y: 90, dir: 1 }))
     expect(c1x).toBeGreaterThan(100)
     expect(c2x).toBeLessThan(300)
 
-    const [, t1x, , t2x] = doc(linkPath({ x: 300, y: 18, dir: -1 }, { x: 100, y: 90, dir: -1 }))
+    const [, t1x, , t2x] = parseCubic(linkPath({ x: 300, y: 18, dir: -1 }, { x: 100, y: 90, dir: -1 }))
     expect(t1x).toBeLessThan(300)
     expect(t2x).toBeGreaterThan(100)
   })
@@ -170,14 +170,14 @@ describe('linkPath', () => {
   it('hai đầu gần nhau vẫn có cung, không tụt thành đoạn xiên', () => {
     //  `|Δx| / 2` của hai đầu sát nhau là vài pixel; không có sàn `MIN_CURVE` thì
     //  cung thành một gạch chéo cắt ngang các hàng.
-    const [fx, c1x] = doc(linkPath({ x: 100, y: 18, dir: 1 }, { x: 104, y: 90, dir: 1 }))
+    const [fx, c1x] = parseCubic(linkPath({ x: 100, y: 18, dir: 1 }, { x: 104, y: 90, dir: 1 }))
     expect(c1x - fx).toBeGreaterThanOrEqual(40)
   })
 
   it('việc sau nằm TRƯỚC việc trước thì cung VÒNG rộng ra, không cắt thẳng', () => {
     //  Hai tay nắm đẩy ngược chiều nhau tự đẻ ra cung vòng — bản gấp khúc phải
     //  luồn qua một "hành lang" riêng giữa hai hàng mới tránh được hai cái thanh.
-    const [fx, c1x, tx, c2x] = doc(linkPath({ x: 400, y: 18, dir: 1 }, { x: 100, y: 90, dir: 1 }))
+    const [fx, c1x, tx, c2x] = parseCubic(linkPath({ x: 400, y: 18, dir: 1 }, { x: 100, y: 90, dir: 1 }))
     expect(c1x).toBeGreaterThan(fx)
     expect(c2x).toBeLessThan(tx)
     //  Hai tay nắm vắt chéo qua nhau — đó chính là chỗ cung phình thành chữ S.
@@ -185,11 +185,11 @@ describe('linkPath', () => {
   })
 
   it('đầu nhọn quay đúng chiều mũi tên đang bay tới', () => {
-    const phai = linkPath({ x: 10, y: 18, dir: 1 }, { x: 200, y: 90, dir: 1 })
-    const trai = linkPath({ x: 200, y: 18, dir: -1 }, { x: 10, y: 90, dir: -1 })
+    const toRight = linkPath({ x: 10, y: 18, dir: 1 }, { x: 200, y: 90, dir: 1 })
+    const toLeft = linkPath({ x: 200, y: 18, dir: -1 }, { x: 10, y: 90, dir: -1 })
     //  Bay sang phải: hai đỉnh đuôi nằm BÊN TRÁI mũi nhọn, và ngược lại.
-    expect(phai.arrow).toContain('193,')
-    expect(trai.arrow).toContain('17,')
+    expect(toRight.arrow).toContain('193,')
+    expect(toLeft.arrow).toContain('17,')
   })
 
   it('điểm giữa nằm TRÊN đường, không phải giữa hai đầu mút', () => {
@@ -227,8 +227,8 @@ describe('visibleLinks', () => {
       [1, 0],
       [2, 1],
     ])
-    const conMotBen = new Map([[A.id, A]])
-    expect(visibleLinks([link()], rows, conMotBen, timeline)).toHaveLength(0)
+    const onlyOneSide = new Map([[A.id, A]])
+    expect(visibleLinks([link()], rows, onlyOneSide, timeline)).toHaveLength(0)
   })
 
   it('danh sách rỗng không nổ', () => {

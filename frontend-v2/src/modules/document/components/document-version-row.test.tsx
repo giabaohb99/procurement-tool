@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { VERSION_STATUS, type DocumentVersion } from '../types/document-record'
 import { DocumentVersionRow } from './document-version-row'
 
-function ban(overrides: Partial<DocumentVersion> = {}): DocumentVersion {
+function makeVersion(overrides: Partial<DocumentVersion> = {}): DocumentVersion {
   return {
     id: 9,
     document_id: 1,
@@ -38,7 +38,7 @@ function ban(overrides: Partial<DocumentVersion> = {}): DocumentVersion {
   }
 }
 
-function ve(version: DocumentVersion, onSelect = vi.fn()) {
+function renderRow(version: DocumentVersion, onSelect = vi.fn()) {
   render(
     <ul>
       <DocumentVersionRow version={version} viewing={false} onSelect={onSelect} endOfList />
@@ -49,23 +49,23 @@ function ve(version: DocumentVersion, onSelect = vi.fn()) {
 
 describe('DocumentVersionRow', () => {
   it('nói rõ mức sửa thay vì để người dùng đoán số bản nhảy kiểu gì', () => {
-    ve(ban({ change_kind: 1 }))
+    renderRow(makeVersion({ change_kind: 1 }))
     expect(screen.getByText('Sửa lớn')).toBeInTheDocument()
   })
 
   it('bản đầu tiên không gán mức sửa — chưa sửa gì thì không phải sửa lớn hay nhỏ', () => {
-    ve(ban({ change_kind: 0 }))
+    renderRow(makeVersion({ change_kind: 0 }))
     expect(screen.queryByText('Sửa lớn')).not.toBeInTheDocument()
     expect(screen.queryByText('Sửa nhỏ')).not.toBeInTheDocument()
   })
 
   it('trả lý do sửa ra màn hình — hộp thoại đã bắt khai thì phải đọc lại được', () => {
-    ve(ban({ change_reason: 'Theo kết luận họp ngày 10/8' }))
+    renderRow(makeVersion({ change_reason: 'Theo kết luận họp ngày 10/8' }))
     expect(screen.getByText(/Theo kết luận họp ngày 10\/8/)).toBeInTheDocument()
   })
 
   it('nói ra hệ quả nặng nhất của sửa lớn: người đã đọc bản cũ phải xác nhận lại', () => {
-    ve(ban({ requires_reconfirm: true }))
+    renderRow(makeVersion({ requires_reconfirm: true }))
     expect(screen.getByText(/xác nhận đọc lại/)).toBeInTheDocument()
   })
 
@@ -73,8 +73,8 @@ describe('DocumentVersionRow', () => {
   //  `is_locked = false`. Đọc theo cột đó thì dòng «Đang duyệt» ghi "Sửa được",
   //  mở ra gõ xong bấm lưu là ăn 409 của `chan_khi_dang_duyet`.
   it('bản đang trình duyệt vẫn là chỉ đọc, dù is_locked chưa bật', () => {
-    ve(
-      ban({
+    renderRow(
+      makeVersion({
         status: VERSION_STATUS.submitted,
         status_label: 'Đang duyệt',
         is_locked: false,
@@ -86,12 +86,12 @@ describe('DocumentVersionRow', () => {
   })
 
   it('bản nháp thì ghi sửa được', () => {
-    ve(ban({ status: VERSION_STATUS.draft, status_label: 'Nháp', is_locked: false, is_current: false }))
+    renderRow(makeVersion({ status: VERSION_STATUS.draft, status_label: 'Nháp', is_locked: false, is_current: false }))
     expect(screen.getByText('Sửa được')).toBeInTheDocument()
   })
 
   it('bấm vào dòng thì mở đúng phiên bản đó', async () => {
-    const onSelect = ve(ban())
+    const onSelect = renderRow(makeVersion())
     await userEvent.click(screen.getByRole('button', { name: /Mở phiên bản 2\.0/ }))
     expect(onSelect).toHaveBeenCalledOnce()
   })
@@ -99,7 +99,7 @@ describe('DocumentVersionRow', () => {
   //  Nút `?` nằm LỒNG trong vùng bấm của dòng. Bấm nó mà chạy luôn hành vi của
   //  dòng thì người dùng chỉ định đọc giải thích lại bị nhảy sang bản khác.
   it('bấm nút giải thích không kéo theo hành vi mở phiên bản', async () => {
-    const onSelect = ve(ban())
+    const onSelect = renderRow(makeVersion())
     await userEvent.click(screen.getByRole('button', { name: /«Đã duyệt» nghĩa là gì/ }))
     expect(onSelect).not.toHaveBeenCalled()
   })

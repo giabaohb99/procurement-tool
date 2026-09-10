@@ -5,7 +5,7 @@ import { apiGet, extractErrorMessage, fetchBlobUrl } from '@/core/api'
 import { useAuth } from '@/core/auth/use-auth'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
 import { formatDateTime } from '@/shared/utils/format-date'
-import { laAnh, viewAsHtml } from '../helpers/inline-viewable'
+import { isImage, viewAsHtml } from '../helpers/inline-viewable'
 
 /**
  * Bọc HTML đã chuyển từ Word thành một trang hoàn chỉnh cho `<iframe srcdoc>`.
@@ -171,7 +171,7 @@ function ViewerBody({
         )}
 
         {blobUrl &&
-          (laAnh(contentType) ? (
+          (isImage(contentType) ? (
             <img src={blobUrl} alt={filename} className="mx-auto block max-w-full" />
           ) : (
             //  `<iframe>` chứ không `<embed>`: trình xem PDF sẵn có của trình

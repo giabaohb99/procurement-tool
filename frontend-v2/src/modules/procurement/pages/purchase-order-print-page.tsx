@@ -19,6 +19,15 @@ const PRINT_MODES = [
 
 type PrintMode = (typeof PRINT_MODES)[number]['value']
 
+interface PurchaseOrderPrintPageProps {
+  /**
+   * Mẫu mở sẵn lúc vào trang. Bản v1 tách hai route nên hai nút ở chi tiết đơn mở ra
+   * hai mẫu khác nhau; ở đây một trang phục vụ cả hai, khác nhau đúng ở tham số này
+   * (bao-CR-322). Người dùng vẫn bấm công tắc đổi qua lại được.
+   */
+  defaultMode?: PrintMode
+}
+
 /** Bản gửi ra ngoài thường phải ký tươi + đóng dấu, nên phải bỏ được ảnh chữ ký số. */
 const SIGNATURE_MODES = [
   { value: true, label: 'Có chữ ký' },
@@ -31,12 +40,12 @@ const SIGNATURE_MODES = [
  *
  * Khổ giấy đổi theo mẫu: Đơn đặt hàng in NGANG (13 cột), Đơn mua hàng in DỌC.
  */
-export function PurchaseOrderPrintPage() {
+export function PurchaseOrderPrintPage({ defaultMode = 'order' }: PurchaseOrderPrintPageProps) {
   const { id } = useParams()
   const navigate = useNavigate()
   const purchaseOrderId = Number(id)
   const { data, isLoading, isError } = usePurchaseOrderPrintData(purchaseOrderId)
-  const [mode, setMode] = useState<PrintMode>('order')
+  const [mode, setMode] = useState<PrintMode>(defaultMode)
   const [showSignature, setShowSignature] = useState(true)
 
   useEffect(() => {

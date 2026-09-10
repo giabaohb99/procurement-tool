@@ -110,7 +110,7 @@ export interface ReportTab {
 }
 
 /**
- * Chín tab của báo cáo mua hàng.
+ * Mười tab của báo cáo mua hàng.
  *
  * Ba tab gắn `purchase_order` là dữ liệu phía THU MUA (NCC, nhân sự phụ trách,
  * chi phí vận chuyển): phòng ban yêu cầu không được xem. Tab "Bộ phận" thì ai
@@ -129,6 +129,10 @@ export const REPORT_TABS: ReportTab[] = [
   // bao-CR-295/299 (ticket 23): báo cáo theo DÒNG hàng của YCMH — soi mã nào
   // chưa được đặt để khỏi đặt sót đơn. Cũng có trang riêng (bao-CR-296).
   { key: 'pr_lines', label: 'Chi tiết YC mua hàng', need: 'purchase_request' },
+  // bao-CR-357 (bản v1 là bao-CR-347): giá vốn lô hàng nhập khẩu — tiền hàng cộng
+  // chi phí nhập khẩu, chia về từng dòng hàng. Gác bằng `report` vì đây là báo cáo
+  // tính realtime, không phải dữ liệu của một chứng từ.
+  { key: 'import_landed_cost', label: 'Giá vốn nhập khẩu', need: 'report' },
 ]
 
 export const SUPPLIER_METRICS: ReportMetric[] = [

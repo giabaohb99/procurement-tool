@@ -68,7 +68,7 @@ export function ApprovalNodeForm({
   //  Vai trò để chọn khi giao duyệt "theo vai trò" — chính danh sách vai trò
   //  tạo ở màn Phân quyền tài khoản (/hr/permissions).
   const { data: roles } = useRoles()
-  const [moNangCao, setMoNangCao] = useState(false)
+  const [advancedOpen, setAdvancedOpen] = useState(false)
 
   const [form, setForm] = useState<Partial<ApprovalNode>>(() => ({
     seq: node?.seq ?? suggestedSeq,
@@ -88,8 +88,8 @@ export function ApprovalNodeForm({
     fallback_employee_id: node?.fallback_employee_id ?? null,
   }))
 
-  function dat<K extends keyof ApprovalNode>(khoa: K, gia_tri: ApprovalNode[K]) {
-    setForm((truoc) => ({ ...truoc, [khoa]: gia_tri }))
+  function setField<K extends keyof ApprovalNode>(key: K, value: ApprovalNode[K]) {
+    setForm((prev) => ({ ...prev, [key]: value }))
   }
 
   const pickExplicit = form.approver_kind === APPROVER_KIND.employee
@@ -111,7 +111,7 @@ export function ApprovalNodeForm({
         <Input
           placeholder="VD: Trưởng bộ phận duyệt"
           value={form.name ?? ''}
-          onChange={(event) => dat('name', event.target.value)}
+          onChange={(event) => setField('name', event.target.value)}
         />
       </div>
 
@@ -122,8 +122,8 @@ export function ApprovalNodeForm({
           onValueChange={(value) => {
             //  Đổi cách chọn thì ô người duyệt phải xóa: mã nhân sự của cách cũ
             //  đọc thành mã vai trò của cách mới là bước giao cho nhầm người.
-            dat('approver_kind', Number(value) as never)
-            dat('approver_ref', '')
+            setField('approver_kind', Number(value) as never)
+            setField('approver_ref', '')
           }}
         >
           <SelectTrigger className="w-full">
@@ -141,7 +141,7 @@ export function ApprovalNodeForm({
         {pickExplicit && (
           <EmployeeMultiSelect
             value={danhSachId(form.approver_ref)}
-            onChange={(ids) => dat('approver_ref', ghepId(ids))}
+            onChange={(ids) => setField('approver_ref', ghepId(ids))}
             employees={employeePage?.items ?? []}
             placeholder="Chọn người duyệt…"
           />
@@ -151,7 +151,7 @@ export function ApprovalNodeForm({
           <>
             <DepartmentMultiSelect
               value={danhSachId(form.approver_ref)}
-              onChange={(ids) => dat('approver_ref', ghepId(ids))}
+              onChange={(ids) => setField('approver_ref', ghepId(ids))}
               departments={departmentPage?.items ?? []}
               placeholder="Chọn phòng ban…"
             />
@@ -166,7 +166,7 @@ export function ApprovalNodeForm({
           <>
             <MultiPicker<string>
               value={roleCodes}
-              onChange={(codes) => dat('approver_ref', codes.join(','))}
+              onChange={(codes) => setField('approver_ref', codes.join(','))}
               options={(roles ?? []).map((r) => ({ id: r.code, label: r.name, hint: r.code }))}
               placeholder="Chọn vai trò…"
             />
@@ -181,7 +181,7 @@ export function ApprovalNodeForm({
           <>
             <Input
               value={form.approver_ref ?? ''}
-              onChange={(event) => dat('approver_ref', event.target.value)}
+              onChange={(event) => setField('approver_ref', event.target.value)}
             />
             <p className="text-xs text-muted-foreground">{SUGGESTION_REF[form.approver_kind ?? 0]}</p>
           </>
@@ -195,7 +195,7 @@ export function ApprovalNodeForm({
           <Label>Nhiều người thì</Label>
           <Select
             value={String(form.multi_mode)}
-            onValueChange={(value) => dat('multi_mode', Number(value) as never)}
+            onValueChange={(value) => setField('multi_mode', Number(value) as never)}
           >
             <SelectTrigger className="w-full">
               <SelectValue />
@@ -215,7 +215,7 @@ export function ApprovalNodeForm({
               min={1}
               max={100}
               value={form.quorum_percent ?? 50}
-              onChange={(event) => dat('quorum_percent', Number(event.target.value))}
+              onChange={(event) => setField('quorum_percent', Number(event.target.value))}
             />
           )}
         </div>
@@ -226,22 +226,22 @@ export function ApprovalNodeForm({
         variant="ghost"
         size="sm"
         className="w-full justify-between px-2"
-        onClick={() => setMoNangCao(!moNangCao)}
+        onClick={() => setAdvancedOpen(!advancedOpen)}
       >
         <span className="flex items-center gap-2">
           <Settings2 className="size-4" />
           Tùy chỉnh thêm
         </span>
-        <ChevronDown className={cn('size-4 transition-transform', moNangCao && 'rotate-180')} />
+        <ChevronDown className={cn('size-4 transition-transform', advancedOpen && 'rotate-180')} />
       </Button>
 
-      {moNangCao && (
+      {advancedOpen && (
         <ApprovalNodeAdvanced
           form={form}
           options={options}
           employees={employeePage?.items ?? []}
           entity={entity}
-          onChange={dat}
+          onChange={setField}
         />
       )}
 

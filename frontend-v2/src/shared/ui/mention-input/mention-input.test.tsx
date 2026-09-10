@@ -33,9 +33,9 @@ beforeAll(() => {
   }
 })
 
-const khongTimAi = () => Promise.resolve([])
+const noCandidates = () => Promise.resolve([])
 
-function tep(name = 'anh.png', type = 'image/png'): File {
+function makeFile(name = 'anh.png', type = 'image/png'): File {
   return new File(['x'], name, { type, lastModified: 1 })
 }
 
@@ -45,7 +45,7 @@ function dungO(props: Partial<React.ComponentProps<typeof MentionInput>> = {}) {
     <MentionInput
       ref={ref}
       placeholder="Viết bình luận"
-      search={khongTimAi}
+      search={noCandidates}
       onSubmit={props.onSubmit ?? vi.fn()}
       {...props}
     />,
@@ -67,11 +67,11 @@ describe('MentionInput — nhận tệp', () => {
   it('DÁN ẢNH thì báo tệp ra ngoài và chặn hành vi mặc định', () => {
     const onFiles = vi.fn()
     const { box } = dungO({ onFiles })
-    const anh = tep()
+    const imageFile = makeFile()
 
-    const bịChặn = !fireEvent.paste(box, { clipboardData: duLieu([anh]) })
+    const bịChặn = !fireEvent.paste(box, { clipboardData: duLieu([imageFile]) })
 
-    expect(onFiles).toHaveBeenCalledWith([anh])
+    expect(onFiles).toHaveBeenCalledWith([imageFile])
     //  Không chặn thì trình duyệt tự nhét `<img>` base64 vào ô soạn, mà bộ đọc
     //  ngược chỉ lấy chữ — ảnh biến mất không dấu vết.
     expect(bịChặn).toBe(true)
@@ -88,7 +88,7 @@ describe('MentionInput — nhận tệp', () => {
   it('dán nhiều ảnh một lượt thì báo ra ĐỦ, không chỉ cái đầu', () => {
     const onFiles = vi.fn()
     const { box } = dungO({ onFiles })
-    const bo = [tep('a.png'), tep('b.png'), tep('c.png')]
+    const bo = [makeFile('a.png'), makeFile('b.png'), makeFile('c.png')]
     fireEvent.paste(box, { clipboardData: duLieu(bo) })
     expect(onFiles.mock.calls[0][0]).toHaveLength(3)
   })
@@ -96,12 +96,12 @@ describe('MentionInput — nhận tệp', () => {
   it('KHÔNG truyền onFiles thì dán tệp không nổ và không nuốt gì', () => {
     //  Diễn đàn và Thu mua đang dùng ô này mà không truyền `onFiles`.
     const { box } = dungO()
-    expect(() => fireEvent.paste(box, { clipboardData: duLieu([tep()]) })).not.toThrow()
+    expect(() => fireEvent.paste(box, { clipboardData: duLieu([makeFile()]) })).not.toThrow()
   })
 
   it('KÉO qua ô có tệp thì chặn mặc định, nếu không «thả» sẽ không bao giờ bắn', () => {
     const { box } = dungO({ onFiles: vi.fn() })
-    const bịChặn = !fireEvent.dragOver(box, { dataTransfer: duLieu([tep()]) })
+    const bịChặn = !fireEvent.dragOver(box, { dataTransfer: duLieu([makeFile()]) })
     expect(bịChặn).toBe(true)
   })
 
@@ -114,7 +114,7 @@ describe('MentionInput — nhận tệp', () => {
   it('THẢ tệp thì báo ra ngoài', () => {
     const onFiles = vi.fn()
     const { box } = dungO({ onFiles })
-    const t = tep('ke-hoach.xlsx', 'application/vnd.ms-excel')
+    const t = makeFile('ke-hoach.xlsx', 'application/vnd.ms-excel')
     fireEvent.drop(box, { dataTransfer: duLieu([t]) })
     expect(onFiles).toHaveBeenCalledWith([t])
   })
@@ -128,7 +128,7 @@ describe('MentionInput — nhận tệp', () => {
 
   it('không truyền onFiles thì THẢ tệp cũng không nổ', () => {
     const { box } = dungO()
-    expect(() => fireEvent.drop(box, { dataTransfer: duLieu([tep()]) })).not.toThrow()
+    expect(() => fireEvent.drop(box, { dataTransfer: duLieu([makeFile()]) })).not.toThrow()
   })
 })
 

@@ -34,7 +34,7 @@ function buildProps() {
 }
 
 /** jsdom chưa dựng `PointerEvent`; `MouseEvent` mang được `clientX` là đủ. */
-function chuot(type: string, clientX: number) {
+function pointerEvent(type: string, clientX: number) {
   return new MouseEvent(type, { clientX, bubbles: true })
 }
 
@@ -43,8 +43,8 @@ describe('EditorRuler', () => {
     const { onChange, onCommit, leftHand } = buildProps()
 
     fireEvent.pointerDown(leftHand, { clientX: 100 })
-    window.dispatchEvent(chuot('pointermove', 140))
-    window.dispatchEvent(chuot('pointermove', 180))
+    window.dispatchEvent(pointerEvent('pointermove', 140))
+    window.dispatchEvent(pointerEvent('pointermove', 180))
 
     expect(onChange).toHaveBeenCalled()
     expect(onCommit).not.toHaveBeenCalled()
@@ -54,9 +54,9 @@ describe('EditorRuler', () => {
     const { onCommit, leftHand } = buildProps()
 
     fireEvent.pointerDown(leftHand, { clientX: 100 })
-    window.dispatchEvent(chuot('pointermove', 140))
-    window.dispatchEvent(chuot('pointermove', 180))
-    window.dispatchEvent(chuot('pointerup', 180))
+    window.dispatchEvent(pointerEvent('pointermove', 140))
+    window.dispatchEvent(pointerEvent('pointermove', 180))
+    window.dispatchEvent(pointerEvent('pointerup', 180))
 
     expect(onCommit).toHaveBeenCalledTimes(1)
     //  Kéo sang phải 80px → lề trái rộng ra, không phải giữ nguyên giá trị đầu.
@@ -67,9 +67,9 @@ describe('EditorRuler', () => {
     const { onCommit, leftHand } = buildProps()
 
     fireEvent.pointerDown(leftHand, { clientX: 100 })
-    window.dispatchEvent(chuot('pointermove', 140))
-    window.dispatchEvent(chuot('pointerup', 140))
-    window.dispatchEvent(chuot('pointerup', 140))
+    window.dispatchEvent(pointerEvent('pointermove', 140))
+    window.dispatchEvent(pointerEvent('pointerup', 140))
+    window.dispatchEvent(pointerEvent('pointerup', 140))
 
     expect(onCommit).toHaveBeenCalledTimes(1)
   })

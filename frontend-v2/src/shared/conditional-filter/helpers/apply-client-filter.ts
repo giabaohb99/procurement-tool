@@ -48,14 +48,14 @@ function matchesRow<T>(item: T, row: FilterRow): boolean {
       return matchesNumber(Number(raw), row)
     case 'date':
     case 'datetime':
-      return matchesDate(ngayISO(raw), row)
+      return matchesDate(toDateOnly(raw), row)
     default:
       return matchesText(String(raw ?? '').toLowerCase(), row)
   }
 }
 
 /** Cắt còn `YYYY-MM-DD` để mốc ngày so được với cả giá trị có kèm giờ. */
-function ngayISO(value: unknown): string {
+function toDateOnly(value: unknown): string {
   return String(value ?? '').slice(0, 10)
 }
 
@@ -86,15 +86,15 @@ function matchesNumber(value: number, row: FilterRow): boolean {
   if (row.operator === 'between') {
     //  `isValidFilterRow` chấp nhận khoảng HỞ MỘT ĐẦU, nên đầu bỏ trống phải
     //  thành vô cực chứ không thành `NaN` — không thì "từ 5 trở lên" ra rỗng.
-    const [tu, den] = khoang(row.value)
-    return value >= (tu === '' ? -Infinity : Number(tu))
-      && value <= (den === '' ? Infinity : Number(den))
+    const [from, to] = toRange(row.value)
+    return value >= (from === '' ? -Infinity : Number(from))
+      && value <= (to === '' ? Infinity : Number(to))
   }
 
-  const moc = Number(row.value)
-  if (Number.isNaN(moc)) return false
+  const threshold = Number(row.value)
+  if (Number.isNaN(threshold)) return false
 
-  return compare(value, moc, row)
+  return compare(value, threshold, row)
 }
 
 function matchesDate(value: string, row: FilterRow): boolean {
@@ -105,39 +105,39 @@ function matchesDate(value: string, row: FilterRow): boolean {
   if (row.operator === 'between') {
     //  Hở một đầu là hợp lệ (xem `isValidFilterRow`): bỏ trống đầu nào thì
     //  không ràng buộc đầu đó.
-    const [tu, den] = khoang(row.value)
-    return (tu === '' || value >= ngayISO(tu)) && (den === '' || value <= ngayISO(den))
+    const [from, to] = toRange(row.value)
+    return (from === '' || value >= toDateOnly(from)) && (to === '' || value <= toDateOnly(to))
   }
 
   //  Ngày lưu dạng ISO nên so sánh chuỗi cũng là so đúng thứ tự thời gian.
-  return compare(value, ngayISO(row.value), row)
+  return compare(value, toDateOnly(row.value), row)
 }
 
 /** Phần so sánh có thứ tự, dùng chung cho số và ngày. */
-function compare<V extends number | string>(value: V, moc: V, row: FilterRow): boolean {
+function compare<V extends number | string>(value: V, threshold: V, row: FilterRow): boolean {
   switch (row.operator) {
     case 'is':
-      return value === moc
+      return value === threshold
     case 'is_not':
-      return value !== moc
+      return value !== threshold
     case 'gt':
-      return value > moc
+      return value > threshold
     case 'gte':
-      return value >= moc
+      return value >= threshold
     case 'lt':
-      return value < moc
+      return value < threshold
     case 'lte':
-      return value <= moc
+      return value <= threshold
     default:
       return NOT_RATED
   }
 }
 
 /** Hai đầu của khoảng, đầu bỏ trống trả về chuỗi rỗng. */
-function khoang(value: FilterRow['value']): [string, string] {
+function toRange(value: FilterRow['value']): [string, string] {
   if (!Array.isArray(value)) return ['', '']
-  const [tu, den] = value
-  return [tu ?? '', den ?? ''].map(String) as [string, string]
+  const [from, to] = value
+  return [from ?? '', to ?? ''].map(String) as [string, string]
 }
 
 function toLowerList(value: FilterRow['value']): string[] {

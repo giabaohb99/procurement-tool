@@ -35,8 +35,8 @@ export const KeepSelectionVisible = Extension.create({
           init: () => false,
           apply(tr, hasFocus) {
             //  `focus`/`blur` gửi cờ qua meta; giao dịch khác thì giữ nguyên.
-            const moi = tr.getMeta(keepSelectionVisibleKey)
-            return typeof moi === 'boolean' ? moi : hasFocus
+            const nextValue = tr.getMeta(keepSelectionVisibleKey)
+            return typeof nextValue === 'boolean' ? nextValue : hasFocus
           },
         },
 

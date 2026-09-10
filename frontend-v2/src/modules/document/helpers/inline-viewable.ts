@@ -20,14 +20,14 @@
  * Để ở tệp riêng vì bên cạnh nó là component: tệp vừa xuất component vừa xuất
  * hàm thì hỏng hot reload của Vite (`react-refresh/only-export-components`).
  */
-export const KIEU_ANH_XEM_DUOC = [
+export const VIEWABLE_IMAGE_TYPES = [
   'image/png',
   'image/jpeg',
   'image/gif',
   'image/webp',
   'image/bmp',
 ]
-export const KIEU_PDF = 'application/pdf'
+export const PDF_CONTENT_TYPE = 'application/pdf'
 
 /**
  * Đuôi tệp đọc bằng đường chuyển-sang-HTML.
@@ -38,29 +38,29 @@ export const KIEU_PDF = 'application/pdf'
  */
 const HTML_EXTENSION = ['docx', 'doc', 'md', 'markdown', 'html', 'htm']
 
-function chuanHoa(contentType: string | undefined): string {
+function normalizeContentType(contentType: string | undefined): string {
   return (contentType || '').split(';')[0].trim().toLowerCase()
 }
 
 function extensionOf(filename: string | undefined): string {
-  const ten = filename || ''
-  return ten.includes('.') ? ten.split('.').pop()!.toLowerCase() : ''
+  const name = filename || ''
+  return name.includes('.') ? name.split('.').pop()!.toLowerCase() : ''
 }
 
-export function laAnh(contentType: string | undefined): boolean {
-  return KIEU_ANH_XEM_DUOC.includes(chuanHoa(contentType))
+export function isImage(contentType: string | undefined): boolean {
+  return VIEWABLE_IMAGE_TYPES.includes(normalizeContentType(contentType))
 }
 
-export function laPdf(contentType: string | undefined, filename?: string): boolean {
-  return chuanHoa(contentType) === KIEU_PDF || extensionOf(filename) === 'pdf'
+export function isPdf(contentType: string | undefined, filename?: string): boolean {
+  return normalizeContentType(contentType) === PDF_CONTENT_TYPE || extensionOf(filename) === 'pdf'
 }
 
 /** Tệp phải ĐỔI SANG HTML mới xem được (Word, Markdown, HTML). */
 export function viewAsHtml(contentType: string | undefined, filename?: string): boolean {
-  if (laAnh(contentType) || laPdf(contentType, filename)) return false
+  if (isImage(contentType) || isPdf(contentType, filename)) return false
   return HTML_EXTENSION.includes(extensionOf(filename))
 }
 
 export function canPreviewInline(contentType: string | undefined, filename?: string): boolean {
-  return laAnh(contentType) || laPdf(contentType, filename) || viewAsHtml(contentType, filename)
+  return isImage(contentType) || isPdf(contentType, filename) || viewAsHtml(contentType, filename)
 }

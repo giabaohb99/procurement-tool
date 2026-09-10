@@ -80,34 +80,36 @@ describe('readRotation', () => {
 
 describe('clampOffset', () => {
   //  Tờ A4 rộng 794px; mốc neo đứng ở 100px tính từ mép trái; chữ ký rộng 180px.
-  const GIAY = 794
-  const NEO = 100
-  const RONG = 180
+  const PAGE_WIDTH_PX = 794
+  const ANCHOR_PX = 100
+  const SIGN_WIDTH_PX = 180
 
   it('trong tờ giấy thì để nguyên', () => {
-    expect(clampOffset(300, NEO, RONG, GIAY)).toBe(300)
+    expect(clampOffset(300, ANCHOR_PX, SIGN_WIDTH_PX, PAGE_WIDTH_PX)).toBe(300)
   })
 
   it('kéo quá mép TRÁI thì dừng ngay mép, không lọt ra ngoài', () => {
     //  Đúng lỗi phải vá: kéo sang trái là chữ ký trôi qua khung mục lục, in ra
     //  thì mất hẳn mà trên màn hình vẫn thấy.
-    expect(clampOffset(-500, NEO, RONG, GIAY)).toBe(-NEO)
+    expect(clampOffset(-500, ANCHOR_PX, SIGN_WIDTH_PX, PAGE_WIDTH_PX)).toBe(-ANCHOR_PX)
   })
 
   it('kéo quá mép PHẢI thì mép phải chữ ký dừng đúng mép giấy', () => {
-    const lech = clampOffset(9999, NEO, RONG, GIAY)
-    expect(NEO + lech + RONG).toBe(GIAY)
+    const offset = clampOffset(9999, ANCHOR_PX, SIGN_WIDTH_PX, PAGE_WIDTH_PX)
+    expect(ANCHOR_PX + offset + SIGN_WIDTH_PX).toBe(PAGE_WIDTH_PX)
   })
 
   it('sát mép vẫn được phép — không chừa lề thừa', () => {
-    expect(clampOffset(-NEO, NEO, RONG, GIAY)).toBe(-NEO)
-    expect(clampOffset(GIAY - NEO - RONG, NEO, RONG, GIAY)).toBe(GIAY - NEO - RONG)
+    expect(clampOffset(-ANCHOR_PX, ANCHOR_PX, SIGN_WIDTH_PX, PAGE_WIDTH_PX)).toBe(-ANCHOR_PX)
+    expect(clampOffset(PAGE_WIDTH_PX - ANCHOR_PX - SIGN_WIDTH_PX, ANCHOR_PX, SIGN_WIDTH_PX, PAGE_WIDTH_PX)).toBe(
+      PAGE_WIDTH_PX - ANCHOR_PX - SIGN_WIDTH_PX,
+    )
   })
 
   it('chữ ký to hơn cả tờ giấy thì dí về mép, không trả khoảng rỗng', () => {
     //  `max < min`: không có chỗ nào thoả cả hai mép. Không chốt nhánh này thì
     //  Math.min/max trả ngược và chữ ký nhảy ra ngoài phía đối diện.
-    expect(clampOffset(0, NEO, 2000, GIAY)).toBe(-NEO)
+    expect(clampOffset(0, ANCHOR_PX, 2000, PAGE_WIDTH_PX)).toBe(-ANCHOR_PX)
   })
 })
 

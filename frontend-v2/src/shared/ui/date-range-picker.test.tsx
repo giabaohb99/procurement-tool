@@ -21,20 +21,20 @@ function trigger(): HTMLElement {
   return el as HTMLElement
 }
 
-const apDung = () => screen.getByRole('button', { name: 'Áp dụng' })
+const applyButton = () => screen.getByRole('button', { name: 'Áp dụng' })
 
 /** Ô ngày trong lịch — `data-day` là `yyyy-mm-dd`, khỏi lo trùng số giữa hai tháng. */
-function ngay(value: string) {
+function dayCell(value: string) {
   const cell = document.querySelector(`[data-day="${value}"]`)
   if (!cell) throw new Error(`Lịch không có ngày ${value}`)
   return within(cell as HTMLElement).getByRole('button')
 }
 
-async function moLich(props: Partial<Parameters<typeof DateRangePicker>[0]> = {}) {
-  const nguoi = userEvent.setup()
+async function openCalendar(props: Partial<Parameters<typeof DateRangePicker>[0]> = {}) {
+  const user = userEvent.setup()
   build(props)
-  await nguoi.click(trigger())
-  return nguoi
+  await user.click(trigger())
+  return user
 }
 
 beforeEach(() => change.mockClear())
@@ -58,8 +58,8 @@ describe('DateRangePicker', () => {
     //  Đây là lỗi khách báo 26/08/2026 ("range date khó xài"): react-day-picker
     //  trả `{from: X, to: X}` ngay cú bấm đầu, bản cũ thấy đủ hai đầu là bắn
     //  `onChange` rồi đóng popover — không tài nào chọn nổi một khoảng thật.
-    const nguoi = await moLich(THANG_8)
-    await nguoi.click(ngay('2026-08-05'))
+    const user = await openCalendar(THANG_8)
+    await user.click(dayCell('2026-08-05'))
 
     expect(change).not.toHaveBeenCalled()
     const lich = within(screen.getByRole('dialog'))
@@ -68,37 +68,37 @@ describe('DateRangePicker', () => {
   })
 
   it('bấm đủ hai đầu rồi Áp dụng mới ra khoảng thật', async () => {
-    const nguoi = await moLich(THANG_8)
-    await nguoi.click(ngay('2026-08-05'))
-    await nguoi.click(ngay('2026-08-19'))
-    await nguoi.click(apDung())
+    const user = await openCalendar(THANG_8)
+    await user.click(dayCell('2026-08-05'))
+    await user.click(dayCell('2026-08-19'))
+    await user.click(applyButton())
 
     expect(change).toHaveBeenCalledTimes(1)
     expect(change).toHaveBeenCalledWith('2026-08-05', '2026-08-19')
   })
 
   it('Áp dụng bị khóa khi chưa có đủ hai đầu', async () => {
-    await moLich()
-    expect(apDung()).toBeDisabled()
+    await openCalendar()
+    expect(applyButton()).toBeDisabled()
   })
 
   it('chọn NGƯỢC (kết thúc trước bắt đầu) vẫn ra khoảng đúng chiều', async () => {
     //  react-day-picker tự đảo lại; nếu lỡ tự nối `from`/`to` theo thứ tự bấm
     //  thì backend nhận `from > to` và trả về rỗng, người dùng tưởng không có
     //  dữ liệu.
-    const nguoi = await moLich(THANG_8)
-    await nguoi.click(ngay('2026-08-19'))
-    await nguoi.click(ngay('2026-08-05'))
-    await nguoi.click(apDung())
+    const user = await openCalendar(THANG_8)
+    await user.click(dayCell('2026-08-19'))
+    await user.click(dayCell('2026-08-05'))
+    await user.click(applyButton())
 
     expect(change).toHaveBeenCalledWith('2026-08-05', '2026-08-19')
   })
 
   it('bấm hai lần vào CÙNG một ngày = khoảng một ngày', async () => {
-    const nguoi = await moLich(THANG_8)
-    await nguoi.click(ngay('2026-08-07'))
-    await nguoi.click(ngay('2026-08-07'))
-    await nguoi.click(apDung())
+    const user = await openCalendar(THANG_8)
+    await user.click(dayCell('2026-08-07'))
+    await user.click(dayCell('2026-08-07'))
+    await user.click(applyButton())
 
     expect(change).toHaveBeenCalledWith('2026-08-07', '2026-08-07')
   })
@@ -106,31 +106,31 @@ describe('DateRangePicker', () => {
   it('đang có khoảng cũ mà bấm tiếp thì chọn LẠI TỪ ĐẦU, không nong khoảng cũ ra', async () => {
     //  react-day-picker để nguyên sẽ NONG khoảng đang có: đang 10/08–20/08 mà
     //  bấm 28/08 thì ra 10/08–28/08, muốn chọn khoảng mới phải bấm ✕ xóa trước.
-    const nguoi = await moLich(THANG_8)
-    await nguoi.click(ngay('2026-08-28'))
+    const user = await openCalendar(THANG_8)
+    await user.click(dayCell('2026-08-28'))
 
-    expect(apDung()).toBeDisabled()   // mới có một đầu -> chưa chốt được
+    expect(applyButton()).toBeDisabled()   // mới có một đầu -> chưa chốt được
 
-    await nguoi.click(ngay('2026-08-30'))
-    await nguoi.click(apDung())
+    await user.click(dayCell('2026-08-30'))
+    await user.click(applyButton())
     expect(change).toHaveBeenCalledWith('2026-08-28', '2026-08-30')
   })
 
   // ── Hủy giữa chừng ─────────────────────────────────────────────────────────
   it('đóng lịch giữa chừng là HỦY, khoảng cũ còn nguyên', async () => {
-    const nguoi = await moLich(THANG_8)
-    await nguoi.click(ngay('2026-08-03'))
-    await nguoi.keyboard('{Escape}')
+    const user = await openCalendar(THANG_8)
+    await user.click(dayCell('2026-08-03'))
+    await user.keyboard('{Escape}')
 
     expect(change).not.toHaveBeenCalled()
     expect(trigger()).toHaveTextContent('10/08/2026 – 20/08/2026')
   })
 
   it('mở lại sau khi hủy thì thấy khoảng ĐANG áp dụng, không phải bản nháp dở', async () => {
-    const nguoi = await moLich(THANG_8)
-    await nguoi.click(ngay('2026-08-03'))
-    await nguoi.keyboard('{Escape}')
-    await nguoi.click(trigger())
+    const user = await openCalendar(THANG_8)
+    await user.click(dayCell('2026-08-03'))
+    await user.keyboard('{Escape}')
+    await user.click(trigger())
 
     const lich = within(screen.getByRole('dialog'))
     expect(lich.getByText('10/08/2026')).toBeInTheDocument()
@@ -139,8 +139,8 @@ describe('DateRangePicker', () => {
 
   // ── Chọn nhanh ─────────────────────────────────────────────────────────────
   it('chọn nhanh áp NGAY một cú bấm, không bắt bấm thêm Áp dụng', async () => {
-    const nguoi = await moLich()
-    await nguoi.click(screen.getByRole('button', { name: 'Hôm nay' }))
+    const user = await openCalendar()
+    await user.click(screen.getByRole('button', { name: 'Hôm nay' }))
 
     expect(change).toHaveBeenCalledTimes(1)
     const [from, to] = change.mock.calls[0]
@@ -149,15 +149,15 @@ describe('DateRangePicker', () => {
   })
 
   it('tắt được hàng chọn nhanh', async () => {
-    await moLich({ showPresets: false })
+    await openCalendar({ showPresets: false })
     expect(screen.queryByRole('button', { name: 'Hôm nay' })).not.toBeInTheDocument()
   })
 
   // ── Xóa ────────────────────────────────────────────────────────────────────
   it('nút ✕ trên ô chọn trả về hai chuỗi rỗng', async () => {
-    const nguoi = userEvent.setup()
+    const user = userEvent.setup()
     build(THANG_8)
-    await nguoi.click(screen.getByRole('button', { name: 'Xóa khoảng ngày' }))
+    await user.click(screen.getByRole('button', { name: 'Xóa khoảng ngày' }))
 
     expect(change).toHaveBeenCalledWith('', '')
   })
@@ -165,23 +165,23 @@ describe('DateRangePicker', () => {
   it('nút ✕ KHÔNG mở lịch kèm theo', async () => {
     //  Trigger của popover mở lịch ngay từ `pointerdown`, nên nút ✕ phải chặn ở
     //  đúng nhịp đó — chặn ở `click` là xóa xong lịch vẫn bung ra.
-    const nguoi = userEvent.setup()
+    const user = userEvent.setup()
     build(THANG_8)
-    await nguoi.click(screen.getByRole('button', { name: 'Xóa khoảng ngày' }))
+    await user.click(screen.getByRole('button', { name: 'Xóa khoảng ngày' }))
 
     expect(screen.queryByRole('button', { name: 'Áp dụng' })).not.toBeInTheDocument()
   })
 
   it('nút Xóa trong lịch cũng trả rỗng và đóng lịch', async () => {
-    const nguoi = await moLich(THANG_8)
-    await nguoi.click(screen.getByRole('button', { name: 'Xóa' }))
+    const user = await openCalendar(THANG_8)
+    await user.click(screen.getByRole('button', { name: 'Xóa' }))
 
     expect(change).toHaveBeenCalledWith('', '')
     expect(screen.queryByRole('button', { name: 'Áp dụng' })).not.toBeInTheDocument()
   })
 
   it('chưa chọn gì thì không có nút Xóa nào cả', async () => {
-    await moLich()
+    await openCalendar()
     expect(screen.queryByRole('button', { name: 'Xóa' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Xóa khoảng ngày' })).not.toBeInTheDocument()
   })
@@ -200,30 +200,30 @@ describe('DateRangePicker', () => {
   })
 
   it('khóa ô thì không mở được lịch', async () => {
-    const nguoi = userEvent.setup()
+    const user = userEvent.setup()
     build({ ...THANG_8, disabled: true })
-    await nguoi.click(trigger())
+    await user.click(trigger())
     expect(screen.queryByRole('button', { name: 'Áp dụng' })).not.toBeInTheDocument()
   })
 
   // ── Lịch ───────────────────────────────────────────────────────────────────
   it('mở đúng THÁNG của đầu khoảng đang chọn, không phải tháng hiện tại', async () => {
     //  Không thì mỗi lần mở lại phải bấm mũi tên lùi về mới thấy khoảng cũ.
-    await moLich({ from: '2024-02-05', to: '2024-02-09' })
+    await openCalendar({ from: '2024-02-05', to: '2024-02-09' })
     expect(document.querySelector('[data-day="2024-02-05"]')).not.toBeNull()
   })
 
   it('bày HAI tháng cạnh nhau — khoảng ngày hay vắt qua đầu tháng', async () => {
-    await moLich({ from: '2026-08-10', to: '2026-09-02' })
+    await openCalendar({ from: '2026-08-10', to: '2026-09-02' })
     expect(document.querySelector('[data-day="2026-08-10"]')).not.toBeNull()
     expect(document.querySelector('[data-day="2026-09-02"]')).not.toBeNull()
   })
 
   it('chọn được khoảng VẮT QUA hai tháng', async () => {
-    const nguoi = await moLich(THANG_8)
-    await nguoi.click(ngay('2026-08-28'))
-    await nguoi.click(ngay('2026-09-03'))
-    await nguoi.click(apDung())
+    const user = await openCalendar(THANG_8)
+    await user.click(dayCell('2026-08-28'))
+    await user.click(dayCell('2026-09-03'))
+    await user.click(applyButton())
 
     expect(change).toHaveBeenCalledWith('2026-08-28', '2026-09-03')
   })

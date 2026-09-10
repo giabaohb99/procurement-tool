@@ -106,8 +106,8 @@ describe('CrudField — ô chọn', () => {
     const saved = vi.fn()
     render(<Harness item={{ contract_type: 'Hợp đồng kinh tế', company_id: 1 }} onSubmit={saved} />)
 
-    const oLoai = await screen.findByRole('combobox', { name: 'Loại hợp đồng' })
-    await waitFor(() => expect(oLoai).toHaveTextContent('Hợp đồng kinh tế'))
+    const typeCombobox = await screen.findByRole('combobox', { name: 'Loại hợp đồng' })
+    await waitFor(() => expect(typeCombobox).toHaveTextContent('Hợp đồng kinh tế'))
 
     await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
     await waitFor(() => expect(saved).toHaveBeenCalled())

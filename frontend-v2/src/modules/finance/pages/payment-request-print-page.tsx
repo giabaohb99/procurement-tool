@@ -8,8 +8,8 @@ import { ErrorState } from '@/shared/ui/error-state'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { formatDate } from '@/shared/utils/format-date'
 import { formatMoney } from '@/shared/utils/format-money'
+import { numberToVietnameseWords } from '@/shared/utils/number-to-vietnamese-words'
 import { usePaymentRequestPrintData } from '../hooks/use-payment-requests'
-import { parseMoney } from '../utils/doc-tien'
 import { cn } from '@/shared/utils/cn'
 
 const DOTS = '............................'
@@ -66,7 +66,7 @@ function PrintCheckbox({ checked }: { checked: boolean }) {
  *
  * Route nằm NGOÀI layout để trang in không mang theo menu. Bố cục chép sát bản v1
  * (`frontend/src/pages/PrintPaymentRequest.tsx`) để kế toán đối chiếu với chứng từ
- * cũ không lệch; số đọc bằng chữ dùng chung `docTien`.
+ * cũ không lệch; số đọc bằng chữ dùng chung `numberToVietnameseWords`.
  */
 export function PaymentRequestPrintPage() {
   const { id } = useParams()
@@ -377,7 +377,7 @@ export function PaymentRequestPrintPage() {
           </div>
         </div>
         <div style={{ ...lbl, marginTop: 4 }}>
-          <b>Bằng chữ:</b> <i>{parseMoney(req.total)}</i>
+          <b>Bằng chữ:</b> <i>{numberToVietnameseWords(req.total)}</i>
         </div>
 
         {/* Hình thức thanh toán — trái (đơn vị + hình thức) / phải (thông tin chuyển khoản). */}

@@ -35,12 +35,12 @@ describe('DATE_RANGE_PRESETS', () => {
   })
 
   it('Tháng này ra đúng ngày cuối của tháng 31 / 30 / 28 / 29 ngày', () => {
-    const thangNay = preset('Tháng này')
-    expect(thangNay.resolve(new Date(2026, 0, 20))).toEqual(['2026-01-01', '2026-01-31'])
-    expect(thangNay.resolve(new Date(2026, 3, 20))).toEqual(['2026-04-01', '2026-04-30'])
-    expect(thangNay.resolve(new Date(2026, 1, 20))).toEqual(['2026-02-01', '2026-02-28'])
+    const thisMonth = preset('Tháng này')
+    expect(thisMonth.resolve(new Date(2026, 0, 20))).toEqual(['2026-01-01', '2026-01-31'])
+    expect(thisMonth.resolve(new Date(2026, 3, 20))).toEqual(['2026-04-01', '2026-04-30'])
+    expect(thisMonth.resolve(new Date(2026, 1, 20))).toEqual(['2026-02-01', '2026-02-28'])
     //  2028 nhuận — bảng cứng 28 ngày sẽ hụt mất ngày 29.
-    expect(thangNay.resolve(new Date(2028, 1, 20))).toEqual(['2028-02-01', '2028-02-29'])
+    expect(thisMonth.resolve(new Date(2028, 1, 20))).toEqual(['2028-02-01', '2028-02-29'])
   })
 
   it('Quý này ra đủ bốn quý, không lẫn sang quý bên cạnh', () => {

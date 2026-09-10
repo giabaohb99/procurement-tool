@@ -94,13 +94,13 @@ export const GanttTaskRow = memo(function GanttTaskRow({
   //  vùng thanh thành một tấm bảng ô vuông, mà mắt đang cần lần theo thanh nằm
   //  ngang chứ không cần đếm ô. Hàng vẫn khớp với lưới trái nhờ cùng
   //  `ROW_HEIGHT`, và dải nền của hàng NHÓM đủ để tách các cụm.
-  const nen = 'group/ganttrow relative flex items-center'
+  const rowClass = 'group/ganttrow relative flex items-center'
   //  Thanh việc con mảnh hơn và thụt vào theo chiều DỌC — nhìn là biết ngay nó
   //  thuộc về hàng ngay trên, khỏi phải dò sang lưới trái.
   const barPad = isSubtask ? BAR_PAD + 4 : BAR_PAD
   const barHeight = ROW_HEIGHT - barPad * 2
-  const xong = task.status === WORK_TASK_STATUS.DONE
-  const laDich = linkTargetId === task.id
+  const isDone = task.status === WORK_TASK_STATUS.DONE
+  const isLinkTarget = linkTargetId === task.id
 
   if (isMilestone(task)) {
     const center = milestoneCenter(task, timeline)
@@ -108,7 +108,7 @@ export const GanttTaskRow = memo(function GanttTaskRow({
     //  một đầu ngày, `GanttView` lo việc ghi xuống trường nào.
     if (center === null)
       return (
-        <div style={{ height: ROW_HEIGHT }} className={nen}>
+        <div style={{ height: ROW_HEIGHT }} className={rowClass}>
           {canEdit && (
             <GanttScheduleLayer
               timeline={timeline}
@@ -118,14 +118,14 @@ export const GanttTaskRow = memo(function GanttTaskRow({
         </div>
       )
     return (
-      <div style={{ height: ROW_HEIGHT }} className={nen}>
+      <div style={{ height: ROW_HEIGHT }} className={rowClass}>
         <OffscreenJump side={offscreen} task={task} onJump={onJumpToTask} />
         <GanttMilestone
           task={task}
           center={center}
-          xong={xong}
+          isDone={isDone}
           canEdit={canEdit}
-          laDich={laDich}
+          isLinkTarget={isLinkTarget}
           linking={linking}
           onOpenTask={onOpenTask}
           onStartLink={onStartLink}
@@ -140,7 +140,7 @@ export const GanttTaskRow = memo(function GanttTaskRow({
   //  vì chẳng có thanh nào để về.
   if (!bar)
     return (
-      <div style={{ height: ROW_HEIGHT }} className={nen}>
+      <div style={{ height: ROW_HEIGHT }} className={rowClass}>
         {canEdit && (
           <GanttScheduleLayer
             timeline={timeline}
@@ -149,10 +149,10 @@ export const GanttTaskRow = memo(function GanttTaskRow({
         )}
       </div>
     )
-  const nhanNgoai = bar.width < MIN_LABEL_WIDTH
+  const labelOutside = bar.width < MIN_LABEL_WIDTH
 
   return (
-    <div style={{ height: ROW_HEIGHT }} className={nen}>
+    <div style={{ height: ROW_HEIGHT }} className={rowClass}>
       <OffscreenJump side={offscreen} task={task} onJump={onJumpToTask} />
       <GanttBar
         task={task}
@@ -161,10 +161,10 @@ export const GanttTaskRow = memo(function GanttTaskRow({
         width={bar.width}
         top={barPad}
         height={barHeight}
-        xong={xong}
+        isDone={isDone}
         canEdit={canEdit}
-        laDich={laDich}
-        hienNhan={!nhanNgoai}
+        isLinkTarget={isLinkTarget}
+        showLabel={!labelOutside}
         onOpenTask={onOpenTask}
       />
 
@@ -201,16 +201,16 @@ export const GanttTaskRow = memo(function GanttTaskRow({
 
       {/*  Tên đặt ngoài thanh khi thanh quá ngắn. Không bắt sự kiện chuột để nó
           không che mất mép kéo của thanh bên cạnh. */}
-      {nhanNgoai && (
+      {labelOutside && (
         <span
           className={cn(
             'pointer-events-none absolute z-10 flex items-center gap-1.5 text-[11px] whitespace-nowrap',
-            xong ? 'text-muted-foreground line-through' : 'text-foreground/80',
+            isDone ? 'text-muted-foreground line-through' : 'text-foreground/80',
           )}
           style={{ left: bar.left + bar.width + LINK_DOT + 8, top: 10, maxWidth: 260 }}
         >
           <span className="truncate">{task.title}</span>
-          <SoNgay task={task} />
+          <DayCount task={task} />
         </span>
       )}
     </div>
@@ -330,10 +330,10 @@ interface GanttBarProps {
   width: number
   top: number
   height: number
-  xong: boolean
+  isDone: boolean
   canEdit: boolean
-  laDich: boolean
-  hienNhan: boolean
+  isLinkTarget: boolean
+  showLabel: boolean
   onOpenTask: (taskId: number) => void
 }
 
@@ -345,10 +345,10 @@ function GanttBar({
   width,
   top,
   height,
-  xong,
+  isDone,
   canEdit,
-  laDich,
-  hienNhan,
+  isLinkTarget,
+  showLabel,
   onOpenTask,
 }: GanttBarProps) {
   const { setNodeRef, listeners, attributes, isDragging } = useDraggable({
@@ -359,9 +359,9 @@ function GanttBar({
 
   //  Phần tô đậm trong thanh = tiến độ. Việc đã xong là 100%; còn lại lấy tỉ lệ
   //  việc con đã tick (thẻ kanban cũng hiện đúng con số này).
-  const tienDo = xong ? 1 : task.subtask_total ? task.subtask_done / task.subtask_total : 0
-  const dau = task.start_date || task.due_date
-  const cuoi = task.due_date || task.start_date
+  const progress = isDone ? 1 : task.subtask_total ? task.subtask_done / task.subtask_total : 0
+  const startDate = task.start_date || task.due_date
+  const endDate = task.due_date || task.start_date
 
   return (
     <div
@@ -378,24 +378,24 @@ function GanttBar({
         chipClass(barColor),
         'ring-1 ring-black/10 ring-inset',
         canEdit ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
-        xong && 'opacity-60',
+        isDone && 'opacity-60',
         isDragging && 'opacity-30',
-        laDich && 'ring-2 ring-primary',
+        isLinkTarget && 'ring-2 ring-primary',
       )}
-      title={`${task.title} · ${formatDueLabel(dau)} → ${formatDueLabel(cuoi)} · ${daysBetween(dau, cuoi) + 1} ngày`}
+      title={`${task.title} · ${formatDueLabel(startDate)} → ${formatDueLabel(endDate)} · ${daysBetween(startDate, endDate) + 1} ngày`}
     >
       {/* Dải tiến độ nằm DƯỚI chữ, không che tiêu đề. */}
-      {tienDo > 0 && (
+      {progress > 0 && (
         <span
           aria-hidden
           className="absolute inset-y-0 left-0 bg-current/20"
-          style={{ width: `${Math.min(100, tienDo * 100)}%` }}
+          style={{ width: `${Math.min(100, progress * 100)}%` }}
         />
       )}
-      {hienNhan && (
+      {showLabel && (
         <span className="relative flex min-w-0 items-center gap-1.5">
           <span className="truncate">{task.title}</span>
-          <SoNgay task={task} />
+          <DayCount task={task} />
         </span>
       )}
     </div>
@@ -413,13 +413,13 @@ function GanttBar({
  * phần đầu), chứ cắt con số thành «1 ng…» thì nó thành vô nghĩa. Không hiện với
  * việc chưa có ngày nào — chẳng có quãng nào để đếm.
  */
-function SoNgay({ task }: { task: WorkTask }) {
-  const dau = task.start_date || task.due_date
-  const cuoi = task.due_date || task.start_date
-  if (!dau || !cuoi) return null
+function DayCount({ task }: { task: WorkTask }) {
+  const startDate = task.start_date || task.due_date
+  const endDate = task.due_date || task.start_date
+  if (!startDate || !endDate) return null
 
   return (
-    <span className="shrink-0 tabular-nums opacity-70">{daysBetween(dau, cuoi) + 1} ngày</span>
+    <span className="shrink-0 tabular-nums opacity-70">{daysBetween(startDate, endDate) + 1} ngày</span>
   )
 }
 
@@ -432,18 +432,18 @@ function SoNgay({ task }: { task: WorkTask }) {
 function GanttMilestone({
   task,
   center,
-  xong,
+  isDone,
   canEdit,
-  laDich,
+  isLinkTarget,
   linking,
   onOpenTask,
   onStartLink,
 }: {
   task: WorkTask
   center: number
-  xong: boolean
+  isDone: boolean
   canEdit: boolean
-  laDich: boolean
+  isLinkTarget: boolean
   linking: boolean
   onOpenTask: (taskId: number) => void
   onStartLink: GanttLinkHandlers['onStartLink']
@@ -473,16 +473,16 @@ function GanttMilestone({
         className={cn(
           'absolute z-10 rotate-45 rounded-[2px] bg-primary ring-1 ring-black/10',
           canEdit ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
-          xong && 'opacity-60',
+          isDone && 'opacity-60',
           isDragging && 'opacity-30',
-          laDich && 'ring-2 ring-primary',
+          isLinkTarget && 'ring-2 ring-primary',
         )}
         title={`${task.title} · Cột mốc ${formatDueLabel(task.due_date || task.start_date)}`}
       />
       <span
         className={cn(
           'pointer-events-none absolute z-10 truncate text-[11px] font-medium whitespace-nowrap',
-          xong ? 'text-muted-foreground line-through' : 'text-foreground/80',
+          isDone ? 'text-muted-foreground line-through' : 'text-foreground/80',
         )}
         style={{ left: center + MILESTONE_SIZE, top: 10, maxWidth: 220 }}
       >

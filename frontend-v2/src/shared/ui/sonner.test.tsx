@@ -20,7 +20,7 @@ async function dungVoiMotBong(props: Parameters<typeof Toaster>[0] = {}) {
 
   const thanh = document.querySelector('[data-sonner-toaster]')
   if (!(thanh instanceof HTMLElement)) throw new Error('không dựng được thẻ toaster')
-  return { thanh, khung: text.closest('[data-sonner-toast]') }
+  return { thanh, toastBox: text.closest('[data-sonner-toast]') }
 }
 
 describe('Toaster', () => {
@@ -29,23 +29,23 @@ describe('Toaster', () => {
     //  lớp Tailwind ở `classNames.closeButton` (dễ đọc, khỏi đấu đặc tả với sonner).
     //  Nút X phải bám mép PHẢI (`right-2.5`), TRONG khung (không `left-0`) và canh
     //  giữa chiều cao (`top-1/2` + `translateY(-50%)`).
-    const { khung } = await dungVoiMotBong()
-    const nutX = khung?.querySelector('[data-close-button]')
-    expect(nutX).toBeTruthy()
+    const { toastBox } = await dungVoiMotBong()
+    const closeButton = toastBox?.querySelector('[data-close-button]')
+    expect(closeButton).toBeTruthy()
 
-    expect(nutX?.className).toMatch(/\bright-2\.5!/)
-    expect(nutX?.className).toMatch(/\btop-1\/2!/)
-    expect(nutX?.className).toMatch(/\bleft-auto!/)
-    expect(nutX?.className).not.toMatch(/\bleft-0!/)
+    expect(closeButton?.className).toMatch(/\bright-2\.5!/)
+    expect(closeButton?.className).toMatch(/\btop-1\/2!/)
+    expect(closeButton?.className).toMatch(/\bleft-auto!/)
+    expect(closeButton?.className).not.toMatch(/\bleft-0!/)
   })
 
   it('chừa lề phải cho nút đóng, kẻo chữ chạy xuống dưới nút', async () => {
-    const { khung } = await dungVoiMotBong()
+    const { toastBox } = await dungVoiMotBong()
     //  `!` (important) là cố ý, không phải thói quen xấu: luật gốc của sonner là
     //  `[data-sonner-toast][data-styled="true"]` — đặc tả 0,2,0, cao hơn một lớp
     //  Tailwind thường, mà lớp tiện ích lại còn nằm trong `@layer` nên thua cả
     //  luật không-lớp. Bỏ dấu `!` đi là lề biến mất và chữ chui xuống dưới nút X.
-    expect(khung?.className).toMatch(/\bpr-9!/)
+    expect(toastBox?.className).toMatch(/\bpr-9!/)
   })
 
   it('props của bên gọi vẫn thắng — `style` riêng không bị ba biến kia nuốt', async () => {

@@ -69,7 +69,7 @@ export function DocumentTypeLinkRulesCard({
   onPendingChange,
 }: DocumentTypeLinkRulesCardProps) {
   //  `undefined` = hộp thoại đóng.
-  const [dangKhai, setDangKhai] = useState<DeclaringState | undefined>(undefined)
+  const [declaring, setDeclaring] = useState<DeclaringState | undefined>(undefined)
 
   const { data, isLoading } = useDocumentLinkRules(docTypeId, Boolean(docTypeId))
   const { items: docTypes } = useDocumentTypes()
@@ -96,8 +96,8 @@ export function DocumentTypeLinkRulesCard({
   }
 
   /** Ghi kết quả hộp thoại: có id thì gọi API, chưa có thì xếp vào `pending`. */
-  function luu(newRows: DocTypeLinkRuleInput[]) {
-    const index = dangKhai
+  function saveRules(newRows: DocTypeLinkRuleInput[]) {
+    const index = declaring
 
     //  Dòng thêm mới xuống CUỐI, đánh số tiếp theo dòng cuối đang có. Dòng đang
     //  sửa giữ nguyên chỗ của nó.
@@ -111,7 +111,7 @@ export function DocumentTypeLinkRulesCard({
           ? pending.map((row, i) => (i === index ? withSource[0] : row))
           : [...pending, ...withSource],
       )
-      setDangKhai(undefined)
+      setDeclaring(undefined)
       return
     }
 
@@ -125,21 +125,21 @@ export function DocumentTypeLinkRulesCard({
         //  đóng đi là người dùng mất luôn phần đã tick và phải tick lại từ đầu
         //  để sửa đúng một dòng.
         onSuccess: ({ failed }) => {
-          if (failed.length === 0) setDangKhai(undefined)
+          if (failed.length === 0) setDeclaring(undefined)
         },
       },
     )
   }
 
-  function xoa(index: number) {
+  function removeRule(index: number) {
     const id = data?.items[index]?.id
     if (docTypeId && id) remove.mutate(id)
     else onPendingChange?.(pending.filter((_, i) => i !== index))
   }
 
-  /** Đổi chỗ một dòng với dòng liền kề. `huong` = -1 lên, +1 xuống. */
-  function swap(index: number, huong: -1 | 1) {
-    const target = index + huong
+  /** Đổi chỗ một dòng với dòng liền kề. `direction` = -1 lên, +1 xuống. */
+  function swap(index: number, direction: -1 | 1) {
+    const target = index + direction
     if (target < 0 || target >= rows.length) return
 
     const reordered = [...rows]
@@ -170,7 +170,7 @@ export function DocumentTypeLinkRulesCard({
             </p>
           </div>
 
-          <Button type="button" variant="outline" onClick={() => setDangKhai(null)}>
+          <Button type="button" variant="outline" onClick={() => setDeclaring(null)}>
             <Plus className="size-4" />
             Thêm quy tắc
           </Button>
@@ -255,7 +255,7 @@ export function DocumentTypeLinkRulesCard({
                     size="icon-sm"
                     title="Sửa quy tắc"
                     aria-label="Sửa quy tắc"
-                    onClick={() => setDangKhai(index)}
+                    onClick={() => setDeclaring(index)}
                   >
                     <Pencil />
                   </Button>
@@ -267,7 +267,7 @@ export function DocumentTypeLinkRulesCard({
                     confirmTitle="Xóa quy tắc quan hệ?"
                     confirmDescription="Từ nay văn bản thuộc loại này không khai thêm quan hệ đó được nữa. Các quan hệ đã khai trên văn bản cũ vẫn giữ nguyên."
                     confirmLabel="Xóa quy tắc"
-                    onConfirm={() => xoa(index)}
+                    onConfirm={() => removeRule(index)}
                   />
                 </div>
               </li>
@@ -285,15 +285,15 @@ export function DocumentTypeLinkRulesCard({
       </CardContent>
 
       <Dialog
-        open={dangKhai !== undefined}
+        open={declaring !== undefined}
         onOpenChange={(open) => {
-          if (!open) setDangKhai(undefined)
+          if (!open) setDeclaring(undefined)
         }}
       >
         <DialogContent className="flex max-h-[85dvh] flex-col overflow-hidden sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              {typeof dangKhai === 'number' ? 'Sửa quy tắc quan hệ' : 'Thêm quy tắc quan hệ'}
+              {typeof declaring === 'number' ? 'Sửa quy tắc quan hệ' : 'Thêm quy tắc quan hệ'}
             </DialogTitle>
             <DialogDescription>
               Quy định văn bản thuộc loại {docTypeName ? `«${docTypeName}»` : 'này'} phải gắn với
@@ -308,20 +308,20 @@ export function DocumentTypeLinkRulesCard({
             <DocumentLinkRuleForm
               //  `key` đổi theo dòng đang khai: form giữ state nội bộ, không có
               //  key thì mở dòng thứ hai vẫn thấy giá trị của dòng thứ nhất.
-              key={dangKhai ?? 'new'}
+              key={declaring ?? 'new'}
               formId={FORM_ID}
-              initial={typeof dangKhai === 'number' ? rows[dangKhai]?.values : undefined}
+              initial={typeof declaring === 'number' ? rows[declaring]?.values : undefined}
               lockedSourceTypeId={docTypeId}
               sourceTypeName={docTypeName}
               //  Thêm mới cho tick nhiều loại đích một lần — loại này phụ thuộc
               //  mấy loại cũng khai được trong một lượt. Sửa thì đúng dòng đó.
-              allowMultipleTargets={dangKhai === null}
-              onSubmit={luu}
+              allowMultipleTargets={declaring === null}
+              onSubmit={saveRules}
             />
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setDangKhai(undefined)}>
+            <Button type="button" variant="outline" onClick={() => setDeclaring(undefined)}>
               Hủy
             </Button>
             {/* Nút Lưu nằm ngoài form, nối vào bằng `form=` (xem `FORM_ID`). */}

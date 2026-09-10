@@ -1,4 +1,5 @@
 import { apiGet, downloadFile } from '@/core/api'
+import type { LandedCostParams, LandedCostReport } from '../types/import-landed-cost'
 import type {
   DailyReport,
   MatrixRow,
@@ -101,6 +102,20 @@ export const purchaseReportApi = {
   /** Chi phí theo NGÀY trong một tháng — mở khi bấm vào cột biểu đồ. */
   getDaily: (params: { month: string; company_id?: string }) =>
     apiGet<DailyReport>(`/api/reports/daily${toQuery({ ...params })}`),
+
+  /**
+   * Giá vốn lô hàng nhập khẩu (bao-CR-357). Một lần gọi trả CẢ hai cách nhìn —
+   * theo lô hàng và theo dòng hàng — nên đổi cách nhìn không phải tải lại.
+   */
+  getImportLandedCost: (params: LandedCostParams) =>
+    apiGet<LandedCostReport>(`/api/reports/import-landed-cost${toQuery({ ...params })}`),
+
+  /** Xuất Excel báo cáo giá vốn — cùng bộ lọc với `getImportLandedCost`. */
+  exportImportLandedCost: (params: LandedCostParams) =>
+    downloadFile(
+      `/api/reports/import-landed-cost/export${toQuery({ ...params })}`,
+      'bao-cao-gia-von-nhap-khau.xlsx',
+    ),
 
   /**
    * Xuất Excel. Luôn theo MỘT năm cụ thể: workbook có sẵn cột 12 tháng nên
