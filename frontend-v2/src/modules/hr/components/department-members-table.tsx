@@ -1,4 +1,4 @@
-import { Search, Users } from 'lucide-react'
+import { Users } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
@@ -6,11 +6,13 @@ import { appConfig } from '@/core/config/app-config'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { fromHere } from '@/shared/hooks/use-back-target'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { useDebouncedValue } from '@/shared/hooks/use-debounced-value'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { Badge } from '@/shared/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
-import { Input } from '@/shared/ui/input'
+import { QuickFilterField, QuickFilterSheet } from '@/shared/ui/quick-filter-sheet'
+import { SearchField } from '@/shared/ui/search-field'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { useEmployees } from '../hooks/use-employees'
 import type { ListParams } from '@/shared/types/api'
@@ -23,6 +25,10 @@ interface DepartmentMembersTableProps {
 }
 
 const ALL = 'all'
+//  Mã tình trạng BÌNH THƯỜNG — thẻ ở khổ hẹp im lặng với mã này và chỉ lên
+//  tiếng ở ba mã còn lại. ⚠️ `official`, KHÔNG phải `active`: bộ mã sinh từ
+//  backend không hề có mã nào tên `active`.
+const STATUS_NORMAL = 'official'
 /** Ô tìm gõ tay, không đẩy lên URL: đây là bảng con của trang chi tiết. */
 const SEARCH_DELAY_MS = 350
 
@@ -45,6 +51,7 @@ export function DepartmentMembersTable({
 }: DepartmentMembersTableProps) {
   const navigate = useNavigate()
   const location = useLocation()
+  const isMobile = useIsMobile()
 
   const [keyword, setKeyword] = useState('')
   const debouncedKeyword = useDebouncedValue(keyword, SEARCH_DELAY_MS)
@@ -87,16 +94,34 @@ export function DepartmentMembersTable({
     [managerId],
   )
 
+  //  Ô chọn dựng MỘT LẦN, bày ở hai chỗ (hàng ngang từ `md` · tờ trượt dưới
+  //  ngưỡng đó). State cục bộ nên hai bản luôn nói cùng một giá trị.
+  const statusSelect = (
+    <Select value={status} onValueChange={setStatus}>
+      <SelectTrigger className="w-full md:w-44" aria-label="Lọc theo tình trạng">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={ALL}>Tất cả tình trạng</SelectItem>
+        {EMPLOYEE_STATUS_OPTIONS.map((option) => (
+          <SelectItem key={option.value} value={option.value}>
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+
   return (
-    <Card>
-      <CardHeader>
+    <Card className="max-md:gap-4 max-md:py-4">
+      <CardHeader className="max-md:px-4">
         <CardTitle className="flex items-center gap-2 text-base">
           <Users className="size-4 text-muted-foreground" />
           Nhân sự thuộc phòng ({data?.total ?? 0})
         </CardTitle>
       </CardHeader>
 
-      <CardContent>
+      <CardContent className="max-md:px-4">
         <DataTable
           columns={columns}
           rows={data?.items}
@@ -130,31 +155,51 @@ export function DepartmentMembersTable({
             onPageSizeChange: setPageSize,
             unitLabel: 'nhân sự',
           }}
-          toolbar={
-            <>
-              <div className="relative min-w-56 flex-1 md:max-w-sm">
-                <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  className="pl-9"
-                  placeholder="Tìm theo họ tên…"
-                  value={keyword}
-                  onChange={(event) => setKeyword(event.target.value)}
-                />
+          //  Khổ hẹp: THẺ thay bảng. Sáu cột cộng lại ~1170px, trên máy 390px
+          //  chỉ thấy *Mã NV* và một mẩu *Họ tên* — mất đúng hai thứ trả lời
+          //  câu hỏi của bảng này (*ai là trưởng bộ phận*, *còn làm việc
+          //  không*). Huy hiệu tình trạng chỉ nói khi KHÁC «Chính thức».
+          mobileCard={(employee: Employee) => (
+            <div className="flex items-center gap-3">
+              <div className="min-w-0 flex-1">
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className="truncate font-medium text-foreground">
+                    {employee.full_name}
+                  </span>
+                  {employee.id === managerId && <Badge className="shrink-0">Trưởng BP</Badge>}
+                </span>
+                <span className="block truncate text-xs text-muted-foreground">
+                  {employee.code}
+                  {employee.position ? ` · ${employee.position}` : ''}
+                </span>
               </div>
 
-              <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger className="w-44">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALL}>Tất cả tình trạng</SelectItem>
-                  {EMPLOYEE_STATUS_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {employee.status !== STATUS_NORMAL && employee.status_label && (
+                <Badge variant="outline" className="shrink-0">
+                  {employee.status_label}
+                </Badge>
+              )}
+            </div>
+          )}
+          toolbar={
+            <>
+              <SearchField
+                value={keyword}
+                onChange={setKeyword}
+                placeholder={isMobile ? 'Tìm họ tên…' : 'Tìm theo họ tên…'}
+                className="md:min-w-56 md:max-w-xs"
+              />
+
+              {/*  Khổ hẹp: ô lọc dời vào tờ trượt — hai ô bề rộng cứng trong một
+                   thẻ 322px thì rớt thành hai hàng so le. */}
+              <QuickFilterSheet
+                activeCount={status !== ALL ? 1 : 0}
+                onClearAll={() => setStatus(ALL)}
+              >
+                <QuickFilterField label="Tình trạng">{statusSelect}</QuickFilterField>
+              </QuickFilterSheet>
+
+              <div className="hidden items-center gap-3 md:flex">{statusSelect}</div>
             </>
           }
         />

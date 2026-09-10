@@ -15,6 +15,11 @@ import {
 import { Checkbox } from '@/shared/ui/checkbox'
 import { Input } from '@/shared/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
+import {
+  DepartmentCompanyRowsMobile,
+  type DepartmentCompanyRowView,
+} from './department-company-rows-mobile'
 import { useCompanies } from '../hooks/use-companies'
 import { useDepartmentCompanies, useSaveDepartmentCompanies } from '../hooks/use-departments'
 import { useEmployees } from '../hooks/use-employees'
@@ -130,26 +135,127 @@ function DepartmentCompanyEditor({
     await save.mutateAsync(rows)
   }
 
+  //  ⚠️ Năm ô điều khiển của MỖI DÒNG dựng MỘT LẦN ở đây rồi giao cho một
+  //  trong hai bố cục bên dưới (bảng ở khổ rộng · khối xếp dọc ở khổ hẹp). Dựng
+  //  hai lần là hai bản chép của cùng một logic tính danh sách lựa chọn, và bản
+  //  quên sửa sẽ im lặng lệch đi.
+  const isMobile = useIsMobile()
+
+  const rowViews: DepartmentCompanyRowView[] = rows.map((row, index) => {
+    const isPrimary = row.company_id === primaryCompanyId
+    const companyOptions = (companies?.items ?? [])
+      .filter(
+        (company) =>
+          company.id === row.company_id ||
+          (company.is_active && !rows.some((item) => item.company_id === company.id)),
+      )
+      .map((company) => ({
+        id: company.id,
+        label: `${company.issue_code || company.code} — ${company.name}`,
+      }))
+    const managerOptions = (employees?.items ?? [])
+      .filter(
+        (employee) =>
+          employee.company_id === row.company_id &&
+          (employee.is_active || employee.id === row.manager_employee_id),
+      )
+      .map((employee) => ({
+        id: employee.id,
+        label: `${employee.code} — ${employee.full_name}`,
+      }))
+
+    return {
+      key: `${row.company_id}-${index}`,
+      isPrimary,
+      company: (
+        <div className="flex items-center gap-2">
+          <div className="min-w-0 flex-1">
+            <LookupSelect
+              value={row.company_id}
+              onChange={(companyId) =>
+                updateRow(index, { company_id: companyId, manager_employee_id: null })
+              }
+              items={companyOptions}
+              placeholder="Chọn pháp nhân"
+              disabled={!canWrite || isPrimary}
+            />
+          </div>
+          {isPrimary && <Badge variant="secondary">Gốc</Badge>}
+        </div>
+      ),
+      manager: (
+        <LookupSelect
+          value={row.manager_employee_id}
+          onChange={(employeeId) => updateRow(index, { manager_employee_id: employeeId || null })}
+          items={managerOptions}
+          placeholder="Chọn trưởng bộ phận"
+          emptyLabel="— Chưa chỉ định —"
+          fallbackLabel={savingFieldName.get(row.company_id)}
+          disabled={!canWrite}
+        />
+      ),
+      issueCode: (
+        <Input
+          value={row.issue_code_override}
+          onChange={(event) =>
+            updateRow(index, {
+              issue_code_override: event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''),
+            })
+          }
+          placeholder="Mặc định"
+          maxLength={20}
+          disabled={!canWrite}
+        />
+      ),
+      active: (
+        <Checkbox
+          checked={row.is_active}
+          onCheckedChange={(checked) => updateRow(index, { is_active: checked === true })}
+          aria-label="Pháp nhân đang áp dụng"
+          disabled={!canWrite || isPrimary}
+        />
+      ),
+      remove: canWrite ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          onClick={() => removeRow(index)}
+          disabled={isPrimary}
+          aria-label="Bỏ pháp nhân"
+        >
+          <Trash2 />
+        </Button>
+      ) : null,
+    }
+  })
+
   return (
-    <Card className="gap-4">
-      <CardHeader>
+    <Card className="gap-4 max-md:py-4">
+      <CardHeader className="max-md:px-4">
         <CardTitle>Pháp nhân áp dụng</CardTitle>
         <CardDescription>
           Khai phòng ban dùng chung ở pháp nhân nào, trưởng bộ phận tại từng nơi và mã phòng ban
           riêng nếu có.
         </CardDescription>
         {canWrite && (
-          <CardAction className="flex gap-2">
+          <CardAction className="flex gap-2 max-md:col-start-1 max-md:row-start-3 max-md:w-full">
             <Button
               type="button"
               variant="outline"
+              className="max-md:flex-1"
               onClick={addRow}
               disabled={!availableCompanyIds.length || save.isPending}
             >
               <Plus />
               Thêm pháp nhân
             </Button>
-            <Button type="button" onClick={handleSave} disabled={save.isPending}>
+            <Button
+              type="button"
+              className="max-md:flex-1"
+              onClick={handleSave}
+              disabled={save.isPending}
+            >
               {save.isPending ? <Loader2 className="animate-spin" /> : <Save />}
               Lưu cấu hình
             </Button>
@@ -157,138 +263,64 @@ function DepartmentCompanyEditor({
         )}
       </CardHeader>
 
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="min-w-64">Pháp nhân</TableHead>
-              <TableHead className="min-w-64">Trưởng bộ phận tại pháp nhân</TableHead>
-              <TableHead className="w-44">Mã phòng ban riêng</TableHead>
-              <TableHead className="w-28 text-center">Áp dụng</TableHead>
-              {canWrite && <TableHead className="w-14" />}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
+      <CardContent className="max-md:px-4">
+        {/*  ⚠️ Hai bố cục cho cùng một bộ ô: bảng ở khổ rộng, khối xếp dọc ở
+             khổ hẹp. Dựng ĐÚNG MỘT cái (`isMobile`) chứ không `hidden`/`md:hidden`
+             — mỗi dòng ở đây có ba ô chọn Radix, để cả hai bản trong DOM là
+             nhân đôi số ô đăng ký nghe sự kiện cho một thứ chỉ một bản nhìn
+             thấy được. Lý do phải đổi bố cục nằm ở `DepartmentCompanyRowsMobile`. */}
+        {isMobile ? (
+          isLoading ? (
+            <div className="py-8 text-center">
+              <Loader2 className="mx-auto animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <DepartmentCompanyRowsMobile
+              rows={rowViews}
+              emptyMessage="Chưa khai pháp nhân áp dụng."
+            />
+          )
+        ) : (
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={canWrite ? 5 : 4} className="py-8 text-center">
-                  <Loader2 className="mx-auto animate-spin text-muted-foreground" />
-                </TableCell>
+                <TableHead className="min-w-64">Pháp nhân</TableHead>
+                <TableHead className="min-w-64">Trưởng bộ phận tại pháp nhân</TableHead>
+                <TableHead className="w-44">Mã phòng ban riêng</TableHead>
+                <TableHead className="w-28 text-center">Áp dụng</TableHead>
+                {canWrite && <TableHead className="w-14" />}
               </TableRow>
-            ) : rows.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={canWrite ? 5 : 4}
-                  className="py-8 text-center text-muted-foreground"
-                >
-                  Chưa khai pháp nhân áp dụng.
-                </TableCell>
-              </TableRow>
-            ) : (
-              rows.map((row, index) => {
-                const isPrimary = row.company_id === primaryCompanyId
-                const companyOptions = (companies?.items ?? [])
-                  .filter(
-                    (company) =>
-                      company.id === row.company_id ||
-                      (company.is_active && !rows.some((item) => item.company_id === company.id)),
-                  )
-                  .map((company) => ({
-                    id: company.id,
-                    label: `${company.issue_code || company.code} — ${company.name}`,
-                  }))
-                const managerOptions = (employees?.items ?? [])
-                  .filter(
-                    (employee) =>
-                      employee.company_id === row.company_id &&
-                      (employee.is_active || employee.id === row.manager_employee_id),
-                  )
-                  .map((employee) => ({
-                    id: employee.id,
-                    label: `${employee.code} — ${employee.full_name}`,
-                  }))
-
-                return (
-                  <TableRow key={`${row.company_id}-${index}`}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className="min-w-0 flex-1">
-                          <LookupSelect
-                            value={row.company_id}
-                            onChange={(companyId) =>
-                              updateRow(index, {
-                                company_id: companyId,
-                                manager_employee_id: null,
-                              })
-                            }
-                            items={companyOptions}
-                            placeholder="Chọn pháp nhân"
-                            disabled={!canWrite || isPrimary}
-                          />
-                        </div>
-                        {isPrimary && <Badge variant="secondary">Gốc</Badge>}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <LookupSelect
-                        value={row.manager_employee_id}
-                        onChange={(employeeId) =>
-                          updateRow(index, {
-                            manager_employee_id: employeeId || null,
-                          })
-                        }
-                        items={managerOptions}
-                        placeholder="Chọn trưởng bộ phận"
-                        emptyLabel="— Chưa chỉ định —"
-                        fallbackLabel={savingFieldName.get(row.company_id)}
-                        disabled={!canWrite}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        value={row.issue_code_override}
-                        onChange={(event) =>
-                          updateRow(index, {
-                            issue_code_override: event.target.value
-                              .toUpperCase()
-                              .replace(/[^A-Z0-9]/g, ''),
-                          })
-                        }
-                        placeholder="Mặc định"
-                        maxLength={20}
-                        disabled={!canWrite}
-                      />
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Checkbox
-                        checked={row.is_active}
-                        onCheckedChange={(checked) =>
-                          updateRow(index, { is_active: checked === true })
-                        }
-                        aria-label="Pháp nhân đang áp dụng"
-                        disabled={!canWrite || isPrimary}
-                      />
-                    </TableCell>
-                    {canWrite && (
-                      <TableCell>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon-sm"
-                          onClick={() => removeRow(index)}
-                          disabled={isPrimary}
-                          aria-label="Bỏ pháp nhân"
-                        >
-                          <Trash2 />
-                        </Button>
-                      </TableCell>
-                    )}
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={canWrite ? 5 : 4} className="py-8 text-center">
+                    <Loader2 className="mx-auto animate-spin text-muted-foreground" />
+                  </TableCell>
+                </TableRow>
+              ) : rows.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={canWrite ? 5 : 4}
+                    className="py-8 text-center text-muted-foreground"
+                  >
+                    Chưa khai pháp nhân áp dụng.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                rowViews.map((view) => (
+                  <TableRow key={view.key}>
+                    <TableCell>{view.company}</TableCell>
+                    <TableCell>{view.manager}</TableCell>
+                    <TableCell>{view.issueCode}</TableCell>
+                    <TableCell className="text-center">{view.active}</TableCell>
+                    {canWrite && <TableCell>{view.remove}</TableCell>}
                   </TableRow>
-                )
-              })
-            )}
-          </TableBody>
-        </Table>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        )}
         <p className="mt-3 text-xs text-muted-foreground">
           Mã riêng để trống sẽ dùng mã phòng ban mặc định. Nhân sự chỉ hiện trong đúng pháp nhân
           đang chọn.

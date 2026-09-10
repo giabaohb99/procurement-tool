@@ -24,6 +24,7 @@ import {
 import { FormSection } from '@/shared/ui/form-section'
 import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
+import { ReadOnlyValue } from '@/shared/ui/read-only-value'
 import { RecordIdentityCard, type IdentityChip } from '@/shared/ui/record-identity-card'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { ActiveStatusSelect } from '../components/active-status-select'
@@ -118,15 +119,28 @@ export function DepartmentDetailPage() {
     <PageContainer>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <Button variant="ghost" size="sm" asChild>
+          {/*  ⚠️ Hàng nút DÍNH khi cuộn. Trang này dài hơn hẳn màn Công ty — dưới
+               biểu mẫu còn thẻ *Pháp nhân áp dụng* và bảng *Nhân sự thuộc phòng*
+               — nên nút Lưu đứng yên ở đầu trang nghĩa là gõ xong ô cuối phải
+               cuộn ngược hết chiều dài trang mới lưu được. Cùng luật với
+               `CrudDetailPage`; đây là màn viết tay nên nó không được hưởng theo.
+
+               Lề âm để dải chạy hết bề ngang khung thay vì thụt vào theo phần
+               đệm của `PageContainer`. */}
+          <div className="sticky top-0 z-20 -mx-4 -mt-4 mb-4 flex flex-wrap items-center justify-between gap-3 border-b bg-canvas px-4 py-3 lg:-mx-6 lg:-mt-6 lg:px-6">
+            {/*  ⚠️ Chữ «phòng ban» THÔI HIỆN ở khổ điện thoại: hàng này còn phải
+                 chứa nút Lưu và nút Xóa. `sr-only` chứ KHÔNG `hidden` — `hidden`
+                 là `display:none` nên trình đọc màn hình cũng mất luôn. */}
+            <Button variant="ghost" size="sm" className="-ml-2 min-w-0" asChild>
               <Link to={appRoutes.hr.departments}>
                 <ArrowLeft />
-                Danh sách phòng ban
+                <span className="truncate">
+                  Danh sách<span className="max-sm:sr-only"> phòng ban</span>
+                </span>
               </Link>
             </Button>
 
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-2">
               <PermissionGate entity="department" action="write">
                 <Button type="submit" disabled={saveDepartment.isPending}>
                   {saveDepartment.isPending ? <Loader2 className="animate-spin" /> : <Save />}
@@ -147,7 +161,10 @@ export function DepartmentDetailPage() {
 
           <RecordIdentityCard title={department.name} chips={identityChips(department)} />
 
-          <Card className="gap-4 p-5">
+          {/*  Lề trong hẹp lại ở khổ điện thoại: thẻ này lồng thêm một lớp
+               `FormSection`, hai lớp cộng lại thì câu chú thích của một ô chỉ
+               còn hơn nửa bề ngang màn hình. */}
+          <Card className="gap-4 p-3 sm:p-5">
             <FormSection title="Định danh">
               <FormField
                 control={form.control}
@@ -155,10 +172,15 @@ export function DepartmentDetailPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Mã phòng ban</FormLabel>
-                    <FormControl>
-                      {/* Mã dùng khắp hệ — đổi sau khi tạo sẽ vỡ tham chiếu. */}
-                      <Input disabled {...field} />
-                    </FormControl>
+                    {/*  ⚠️ `ReadOnlyValue`, KHÔNG phải `<Input disabled>` (luật ở
+                         `CLAUDE.md`). `disabled` gỡ khả năng nhận con trỏ nên
+                         **không bôi đen, không copy được**, lại bị làm mờ 50%
+                         nên «PB13» nhìn y như chữ gợi ý của ô chưa ai nhập.
+                         Vẫn bọc `FormField` để `code` ở lại trong payload. */}
+                    <ReadOnlyValue>{field.value}</ReadOnlyValue>
+                    <FormDescription>
+                      Mã dùng khắp hệ, không đổi được sau khi tạo.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
