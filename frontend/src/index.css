@@ -863,14 +863,20 @@ thead th {
   white-space: nowrap;   /* pill trạng thái luôn 1 dòng, không ngắt chữ trong cột hẹp */
 }
 
+/* bao-CR-363 (đợt 2): CẢ BỘ PILL TÔ ĐẶC, CHỮ TRẮNG.
+   Bản pastel (nền nhạt + chữ cùng tông) nhìn nhợt nhạt trên màn danh sách — chữ pill chỉ
+   10.5px in hoa nên nền nhạt gần như hòa vào nền bảng, phải nhìn kỹ mới ra màu. Nay mỗi mốc
+   là một mảng màu đặc, quét mắt một lượt là phân biệt được.
+   Mọi màu dưới đây đều chọn sao cho chữ TRẮNG đạt tương phản >= 4,5:1 (ngưỡng WCAG AA cho
+   chữ nhỏ) — vì vậy dùng bậc đậm (700) chứ không dùng bậc tươi (500/600) vốn chỉ được ~3:1. */
 .badge.ok {
-  background: #e6f8ec !important;
-  color: #16a34a !important;
+  background: #15803d !important;   /* xanh lá — đã mua hàng / đã nhận đủ */
+  color: #ffffff !important;
 }
 
 .badge.err {
-  background: #fdecea !important;
-  color: #d32f2f !important;
+  background: #b91c1c !important;   /* đỏ — mốc KHÓA phiếu (đã từ chối) */
+  color: #ffffff !important;
 }
 
 .err {
@@ -1594,20 +1600,21 @@ thead th {
 }
 
 /* ===== Badge thêm · Dashboard · Items editor ===== */
+/* bao-CR-363 (đợt 2): tô đặc, chữ trắng — xem giải thích ở `.badge.ok` phía trên. */
 .badge.warn {
-  background: var(--amber-bg);
-  color: var(--amber);
+  background: #b45309;   /* hổ phách — đang nằm chờ người khác nhận (chờ duyệt) */
+  color: #ffffff;
 }
 
 .badge.gray {
-  background: #eef1f4;
-  color: #5b6770;
+  background: #64748b;   /* xám — nháp, chưa vào luồng */
+  color: #ffffff;
 }
 
 /* CR-077: tông xanh dương cho mốc "đang chờ bên kia xử lý" (Đã trả kết quả / Đã tạo YCMH) */
 .badge.info {
-  background: #e6f6fd;
-  color: #0b7fac;
+  background: #0369a1;
+  color: #ffffff;
 }
 
 /* bao-CR-363: BỐN TÔNG MÀU CHO CỤM GIỮA của vòng đời chứng từ (YCMH · ĐMH · YCBG).
@@ -1618,37 +1625,35 @@ thead th {
    Bốn lớp dưới đây tách bốn mốc GIỮA ra bốn tông riêng, xếp xa nhau trên vòng màu để hai
    mốc LIỀN KỀ không bao giờ na ná: xanh dương (đã duyệt) → tím (đã điều phối) → hồng sen
    (đang xử lý) → xanh mòng (đang mua hàng) → xanh lá (đã mua hàng).
-   Giữ đúng công thức của các pill cũ: nền pastel + chữ đậm cùng tông.
+   Tô đặc + chữ trắng như cả bộ pill (xem `.badge.ok`).
    Bảng tra mốc → lớp màu ở `src/config/cruds.tsx` (PR_STATUS · PO_STATUS · SR_STATUS). */
 .badge.violet {
-  background: #ede9fe;
-  color: #6d28d9;
+  background: #7c3aed;
+  color: #ffffff;
 }
 
 .badge.pink {
-  background: #fce7f3;
-  color: #be185d;
+  background: #db2777;
+  color: #ffffff;
 }
 
 .badge.teal {
-  background: #ccfbf1;
-  color: #0f766e;
+  background: #0f766e;
+  color: #ffffff;
 }
 
 /* Cam — dành cho mốc BỊ TRẢ LẠI. Không dùng đỏ `err` vì đỏ đang là mốc khóa phiếu
    (Đã từ chối), mà trả lại thì sửa rồi gửi duyệt lại được. */
 .badge.back {
-  background: #ffedd5;
-  color: #c2410c;
+  background: #c2410c;
+  color: #ffffff;
 }
 
-/* Hoàn thành là mốc CUỐI, nên tô ĐẶC chứ không pastel: nhìn một lượt là thấy ngay phiếu nào
-   đã đóng, không phải phân biệt hai sắc xanh nhạt cạnh nhau.
-   Nền dùng xanh ĐẬM `#15803d` chứ không phải `#16a34a` của lớp `ok`: chữ pill là chữ TRẮNG
-   cỡ 10.5px in hoa, đặt trên `#16a34a` chỉ được tỷ lệ tương phản 3,3:1 — dưới ngưỡng 4,5:1,
-   đọc trên màn hình laptop ngoài sáng là nhòe. `#15803d` cho 5,0:1 mà vẫn rõ là màu xanh. */
+/* Hoàn thành là mốc CUỐI. Xanh lá ĐẬM HƠN `ok` một bậc: hai mốc này đứng liền nhau trong
+   vòng đời (Đã mua hàng → Hoàn thành) nên phải khác nhau, mà đổi sang hẳn màu khác thì mất
+   nghĩa "xong". Càng về cuối càng đậm là cách phân biệt đọc được ngay. */
 .badge.done {
-  background: #15803d;
+  background: #14532d;
   color: #ffffff;
 }
 
