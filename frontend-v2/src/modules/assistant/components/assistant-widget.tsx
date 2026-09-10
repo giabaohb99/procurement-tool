@@ -1,6 +1,6 @@
 import { Loader2, Maximize2, Sparkles, SquarePen, X } from 'lucide-react'
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 
 import { useQueryClient } from '@tanstack/react-query'
 
@@ -37,8 +37,16 @@ import { ReplyOffers } from './reply-offers'
  *
  * Widget giữ MỘT hội thoại đang mở trong state cục bộ; đóng/mở lại vẫn còn vì
  * nó sống trong khung phân hệ. Muốn xem lịch sử đầy đủ thì bấm "Mở toàn trang".
+ *
+ * ⚠️ **KHÔNG dựng khi đang ở chính trang Trợ lý.** Ở đó nó vừa thừa — bấm vào
+ * mở đúng cái trợ lý đang mở — vừa có hại: bong bóng `position: fixed` neo ở
+ * góc phải dưới, mà ở khổ điện thoại đúng góc ấy là **ô nhập câu hỏi và dòng
+ * hướng dẫn dưới nó**, nên nó che mất chỗ người dùng đang gõ (khách báo
+ * 10/09/2026). Chặn ở ĐÂY chứ không ở hai `Layout` gọi nó: luật này thuộc về
+ * chính widget, để ở tầng layout thì thêm một layout thứ ba là quên.
  */
 export function AssistantWidget() {
+  const { pathname } = useLocation()
   const queryClient = useQueryClient()
   const providersQuery = useProviders()
   const sendMessage = useSendMessage()
@@ -140,6 +148,10 @@ export function AssistantWidget() {
       setPendingFiles([])
     }
   }
+
+  //  Đang ở chính trang Trợ lý thì không dựng bong bóng — xem chú thích đầu
+  //  hàm. Đặt SAU mọi hook để không phá luật thứ tự hook của React.
+  if (pathname.startsWith(appRoutes.assistant.root)) return null
 
   // Đường dẫn "Mở toàn trang" giữ nguyên hội thoại đang xem.
   const fullPageHref =
