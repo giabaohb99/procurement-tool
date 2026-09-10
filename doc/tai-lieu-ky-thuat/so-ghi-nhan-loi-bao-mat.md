@@ -63,13 +63,19 @@ nó là bằng chứng cho lần soát sau rằng chỗ này từng hở.
 | BM-005 | Trung bình | Nhật ký không lưu giá trị trước / sau — không chứng minh được đã đổi gì | **Mở** — `tab_change_log` nằm ở P4 của bao-CR-312, chưa viết dòng mã nào |
 | BM-006 | Thấp | Dấu vết là tùy chọn theo từng lời gọi — quên gọi là mất | Vá một phần (bao-CR-311 + bao-CR-346) — xem BM-010 |
 | BM-007 | Thấp | Dòng nhật ký không có IP / trình duyệt / mã lượt gọi | **Vá phần lớn (P1 của bao-CR-312, `erp-v2` 2eba1274 — mới deploy dev).** `tab_request_log` ghi IP + `request_id` + tuyến gọi; `tab_audit_log` có `request_id` / `ip` / `actor_kind`. Còn dấu thiết bị ở bao-CR-346 |
-| BM-008 | Trung bình | Giá trị dữ liệu thật bị chép nguyên vào `error_detail` của dòng nhật ký khi câu SQL nổ | **Đã vá (bao-CR-346, 10/09/2026)** — `mask_error_detail`, xem chi tiết bên dưới |
-| BM-009 | Trung bình | Thao tác **ĐỌC** không để lại dấu vết nào — kể cả tải tệp đính kèm và cả lượt bị chặn 403 | **Đã vá (bao-CR-346, 10/09/2026)** — ghi hết mọi GET |
-| BM-010 | Trung bình | Đổi phân quyền và đổi tài khoản **không gọi `record()`** — vùng nhạy cảm nhất lại là vùng trắng | **Đã vá (bao-CR-346, 10/09/2026)** |
-| BM-011 | Trung bình | Nhật ký chỉ có MỘT bản, nằm trên đúng cái máy kẻ tấn công đang đứng | **Đã vá (bao-CR-346, 10/09/2026)** — đóng gói ra R2 hàng tháng |
+| BM-008 | Trung bình | Giá trị dữ liệu thật bị chép nguyên vào `error_detail` của dòng nhật ký khi câu SQL nổ | **Đã vá (bao-CR-346, 10/09/2026, `erp-v2` 337fa9bb — đã deploy dev; prod CHƯA, xem ghi chú)** — `mask_error_detail`, xem chi tiết bên dưới |
+| BM-009 | Trung bình | Thao tác **ĐỌC** không để lại dấu vết nào — kể cả tải tệp đính kèm và cả lượt bị chặn 403 | **Đã vá (bao-CR-346, 10/09/2026, `erp-v2` 337fa9bb — đã deploy dev; prod CHƯA, xem ghi chú)** — ghi hết mọi GET |
+| BM-010 | Trung bình | Đổi phân quyền và đổi tài khoản **không gọi `record()`** — vùng nhạy cảm nhất lại là vùng trắng | **Đã vá (bao-CR-346, 10/09/2026, `erp-v2` 337fa9bb — đã deploy dev; prod CHƯA, xem ghi chú)** |
+| BM-011 | Trung bình | Nhật ký chỉ có MỘT bản, nằm trên đúng cái máy kẻ tấn công đang đứng | **Đã vá (bao-CR-346, 10/09/2026, `erp-v2` 337fa9bb — đã deploy dev; prod CHƯA, xem ghi chú)** — đóng gói ra R2 hàng tháng |
 | BM-012 | Thấp | Token hết hạn thì dòng nhật ký ghi `user_id = 0` — không phân biệt được "khách vãng lai" với "người có tài khoản, token vừa hết hạn" | **Mở** |
 | BM-013 | Thấp | `record()` tự `commit()` — giao dịch nghiệp vụ bị rollback vẫn để lại dấu vết ma | **Mở** |
 | BM-014 | Trung bình | `CF-Connecting-IP` được tin **vô điều kiện** — ai gọi thẳng vào api là tự khai IP của mình | **Mở** |
+
+⚠️ **Bốn dòng BM-008…BM-011 mới đóng trên `erp-v2` (dev), CHƯA đóng trên prod.** Chúng vá lớp
+nhật ký của bao-CR-312 P1, mà **P1 chưa từng lên prod**: `main` không có bảng `tab_request_log`,
+cũng không có migration `f4d37c7600d0`. Nghĩa là trên hệ thật hôm nay, **thao tác đọc vẫn không
+để lại dấu vết** và `role/` + `user/` vẫn trắng audit. Đưa lên prod là đưa **cả P1 lẫn P1b** và
+phải **cherry-pick**, không merge (`quy-trinh-nhanh-va-deploy.md` §A.4) — chờ chốt.
 
 ---
 
@@ -332,7 +338,7 @@ Vá: ba cột `session_id` / `request_id` / `ip` trên `tab_audit_log` —
 
 ### BM-008 — Giá trị dữ liệu thật bị chép nguyên vào `error_detail`
 
-**Mức: Trung bình. Trạng thái: đã vá (bao-CR-346, 10/09/2026).**
+**Mức: Trung bình. Trạng thái: đã vá (bao-CR-346, 10/09/2026, `erp-v2` 337fa9bb — đã deploy dev, prod CHƯA).**
 
 Bảy dòng BM-001…BM-007 đều hỏi *"nhật ký có ghi đủ không"*. Bảy dòng tiếp theo, mở ngày
 10/09/2026, hỏi câu ngược lại — **chính lớp nhật ký có tự nó là một chỗ hở không** — và câu
@@ -361,7 +367,7 @@ và bằng test `test_che_vet_loi_khong_treo_khi_khong_co_moc_ket`.
 
 ### BM-009 — Thao tác ĐỌC không để lại dấu vết nào
 
-**Mức: Trung bình. Trạng thái: đã vá (bao-CR-346, 10/09/2026).**
+**Mức: Trung bình. Trạng thái: đã vá (bao-CR-346, 10/09/2026, `erp-v2` 337fa9bb — đã deploy dev, prod CHƯA).**
 
 Bản P1 cố ý bỏ GET để tiết kiệm dung lượng (QĐ-A). Hệ quả: **rò rỉ dữ liệu là loại sự cố duy
 nhất mà nhật ký không nói được gì cả.** Một tài khoản ngồi đọc lần lượt 3.000 hồ sơ nhân sự,
@@ -388,7 +394,7 @@ Ba cái giá phải trả và cách trả: dung lượng → dọn dòng GET qu�
 
 ### BM-010 — Đổi phân quyền và đổi tài khoản không gọi `record()`
 
-**Mức: Trung bình. Trạng thái: đã vá (bao-CR-346, 10/09/2026).**
+**Mức: Trung bình. Trạng thái: đã vá (bao-CR-346, 10/09/2026, `erp-v2` 337fa9bb — đã deploy dev, prod CHƯA).**
 
 Đây là ca cụ thể của BM-006, nhưng rơi đúng vào vùng tệ nhất: `modules/role/` và
 `modules/user/` **không có một lời gọi `record()` nào**. Tự nâng quyền cho mình, gán thêm vai
@@ -404,7 +410,7 @@ không đổi gì thì câu kể rỗng, không sinh dòng rác. Đi kèm là ha
 
 ### BM-011 — Nhật ký chỉ có một bản, trên chính máy bị tấn công
 
-**Mức: Trung bình. Trạng thái: đã vá (bao-CR-346, 10/09/2026).**
+**Mức: Trung bình. Trạng thái: đã vá (bao-CR-346, 10/09/2026, `erp-v2` 337fa9bb — đã deploy dev, prod CHƯA).**
 
 Toàn bộ bốn bảng nhật ký nằm trong MySQL trên VPS, và **bị loại khỏi bản sao lưu đêm** (QĐ-C,
 cố ý — nếu không thì bản sao phình gấp mấy lần phần dữ liệu nghiệp vụ). Ai vào được máy đó thì
