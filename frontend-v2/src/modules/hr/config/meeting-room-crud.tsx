@@ -118,10 +118,10 @@ export const MEETING_ROOM_CRUD_CONFIG: CrudConfig<MeetingRoom> = {
           {r.company_id > 0 && (
             <span className="block">Riêng pháp nhân #{r.company_id}</span>
           )}
-          {/*  Thiết bị là chữ tự do, không giới hạn độ dài ở tầng nhập — chặn
-               hai dòng, nếu không một phòng khai dài đẩy cả chục phòng còn lại
-               ra khỏi màn hình. */}
-          {r.equipment && <span className="line-clamp-2 block">{r.equipment}</span>}
+          {/*  Thiết bị là chữ tự do, không giới hạn độ dài ở tầng nhập — cắt
+               ĐÚNG MỘT dòng bằng «…» (luật chung của thẻ danh mục, khách chốt
+               10/09/2026). Đầy đủ thì đọc ở trang chi tiết. */}
+          {r.equipment && <span className="block truncate">{r.equipment}</span>}
         </>
       }
       chips={meetingRoomChips(r, true)}

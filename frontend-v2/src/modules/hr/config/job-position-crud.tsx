@@ -128,9 +128,10 @@ export const JOB_POSITION_CRUD_CONFIG: CrudConfig<JobPosition> = {
       subtitle={
         <>
           <JobPositionHoldersLine positionId={r.id} />
-          {/*  Ghi chú là chữ tự do, không chặn độ dài ở tầng nhập — bó hai dòng,
-               nếu không một dòng khai dài đẩy cả chục chức vụ khác ra khỏi màn. */}
-          {r.note && <span className="line-clamp-2 block">{r.note}</span>}
+          {/*  Ghi chú là chữ tự do, không chặn độ dài ở tầng nhập — cắt ĐÚNG MỘT
+               dòng bằng «…» (luật chung của thẻ danh mục, khách chốt
+               10/09/2026). Đầy đủ thì đọc ở trang chi tiết. */}
+          {r.note && <span className="block truncate">{r.note}</span>}
         </>
       }
       chips={jobPositionChips(r, true)}
