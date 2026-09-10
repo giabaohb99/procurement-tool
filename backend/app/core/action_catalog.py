@@ -182,6 +182,11 @@ _APPROVAL = (
     ActionCode("cancel", "Hủy", ACTION_GROUP_APPROVE),
     ActionCode("cancelled", "Hủy", ACTION_GROUP_APPROVE),
     ActionCode("line_approve", "Duyệt dòng", ACTION_GROUP_APPROVE),
+    #  Duyệt dấu — cổng 2 (Văn thư): đóng dấu / trả / từ chối. Vai trò "(Văn thư)"
+    #  gắn SAU TÊN người ở `audit/controller._CLERK_ROLE_ACTIONS`, không nhét vào nhãn.
+    ActionCode("seal_completed", "Hoàn thành (đóng dấu)", ACTION_GROUP_APPROVE),
+    ActionCode("seal_return_clerk", "Cập nhật", ACTION_GROUP_APPROVE),
+    ActionCode("seal_reject_clerk", "Từ chối", ACTION_GROUP_APPROVE),
     #  `unapprove_po` đưa đơn ĐÃ DUYỆT về Nháp để sửa (CR-108) rồi ghi dấu vết
     #  bằng chính trạng thái mới. Nhãn nói rõ "hủy duyệt" chứ không nói "nháp":
     #  người đọc nhật ký cần biết đơn vừa TỤT khỏi trạng thái đã duyệt.

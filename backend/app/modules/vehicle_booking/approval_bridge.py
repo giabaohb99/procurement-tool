@@ -112,12 +112,6 @@ def _actor(instance) -> SimpleNamespace:
     return SimpleNamespace(id=instance.updated_by or 0)
 
 
-def _append_note(booking: VehicleBooking, label: str, reason: str) -> None:
-    from .service import _append_note as append
-
-    append(booking, label, reason)
-
-
 def _on_approved(db: Session, booking_id: int, instance) -> None:
     """Ký hết các bước → phiếu Đã duyệt (chờ điều phối). Báo Điều phối viên + Người tạo."""
     from .notify import notify_approved
@@ -141,7 +135,7 @@ def _on_rejected(db: Session, booking_id: int, instance) -> None:
         return
     reason = _reason(instance, "Bị từ chối")
     booking.status = BK_REJECTED
-    _append_note(booking, "Từ chối", reason)
+    #  Lý do ở nhật ký + thông báo, không ghi vào Ghi chú.
     booking.updated_by = instance.updated_by or 0
     db.commit()
     _write_log(db, booking_id, instance, "cancel", reason)
@@ -157,7 +151,7 @@ def _on_returned(db: Session, booking_id: int, instance) -> None:
         return
     reason = _reason(instance, "Bị trả về")
     booking.status = BK_RETURNED
-    _append_note(booking, "Yêu cầu chỉnh sửa", reason)
+    #  Lý do ở nhật ký + thông báo, không ghi vào Ghi chú.
     booking.updated_by = instance.updated_by or 0
     db.commit()
     _write_log(db, booking_id, instance, "update", reason)

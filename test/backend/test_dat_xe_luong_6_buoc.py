@@ -88,7 +88,7 @@ def test_return_branch_then_resubmit(db):
     b = create_booking(db, _payload(), actor, submit=True)
     return_booking(db, b, ReasonIn(reason='Thiếu người tham gia'), actor)
     assert b.status == m.BK_RETURNED
-    assert 'Thiếu người tham gia' in b.note
+    assert 'Thiếu người tham gia' not in (b.note or '')  # lý do ở nhật ký, không ghi vào Ghi chú
 
 
 def test_reject_branch_locks(db):

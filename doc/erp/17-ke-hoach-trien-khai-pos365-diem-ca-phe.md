@@ -6,6 +6,7 @@
 | Đối tượng đọc | Người chủ trì · Đội phần mềm · Phòng Nhân sự · Quầy cà phê |
 | Trả lời câu hỏi | Đưa POS365 lên quản lý quầy cà phê, nhân viên order và **thanh toán bằng phương thức trừ điểm** trên tài khoản cá nhân, điểm **reset theo cấp nhân sự vào mốc định kỳ hằng tháng** — làm bằng cách nào, theo thứ tự nào |
 | Quan hệ với bản 09 | [`09-phuc-loi-diem-va-pos.md`](./09-phuc-loi-diem-va-pos.md) là bản **định hướng** (12/08). Bản này là bản **thực thi**: đã đọc được tài liệu API chính thức, và đề bài mới chốt thêm 2 quyết định nghiệp vụ làm thay đổi phương án được chọn (xem mục 1) |
+| Bộ tài liệu kỹ thuật | **[`diem-ca-phe/`](./diem-ca-phe/README.md)** (08/09/2026) — bản thiết kế thực thi chi tiết: tính năng có mã, bảng dữ liệu, thuật toán đồng bộ, phân quyền, giao diện, phase CP0→CP5. **Chỗ nào lệch bản này thì lấy bộ đó** |
 
 **Ba câu tóm tắt.** POS365 vẫn là màn hình duy nhất của quầy: thu ngân chọn khách hàng (là nhân viên đã ghép) và bấm phương thức thanh toán **"Trừ điểm"** — một *tài khoản thanh toán* dựng sẵn trong POS365, không cần POS365 biết gì về điểm. ERP là **sổ cái duy nhất**: kéo đơn hàng về theo lịch, đơn nào thanh toán bằng tài khoản "Trừ điểm" thì ghi một dòng **tiêu** vào sổ điểm của đúng nhân viên; đầu mỗi tháng một tác vụ hẹn giờ **reset và cấp lại điểm theo cấp nhân sự**. Vì chỉ còn MỘT nơi giữ số (ERP), bài toán "hai hệ cùng giữ một con số tiền" của bản 09 biến mất — đổi lại phải xử lý một điểm yếu duy nhất: POS365 không tự chặn người đã hết điểm (mục 5).
 
@@ -174,17 +175,25 @@ Nhân lực: 1 dev full-stack là đủ cho GĐ 0–2; GĐ 0 không chờ ai, l�
 
 ---
 
-## Phụ lục A — Kết quả POC (điền ở GĐ 0)
+## Phụ lục A — Kết quả POC (bắt đầu điền 08/09/2026, cửa hàng thật `degocode.pos365.vn`, tài khoản API riêng, chỉ lời gọi ĐỌC)
 
-| # | Câu | Đáp án | Bằng chứng (curl + response rút gọn) |
+| # | Câu | Đáp án | Bằng chứng (response rút gọn) |
 |---|---|---|---|
-| P1 | | *(chưa)* | |
-| P2 | | *(chưa)* | |
-| P3 | | *(chưa)* | |
-| P4 | | *(chưa)* | |
-| P5 | | *(chưa)* | |
-| P6 | | *(chưa)* | |
-| P7 | | *(chưa)* | |
+| K1 | Xác thực máy | **ĐẠT** — `GET /api/auth/credentials` trả `SessionId`, cookie `ss-id` dùng được cho mọi request sau | Login trả `{"SessionId": "jTGXSQ…"}` |
+| P1 | Đơn kéo về có mang phương thức thanh toán? | **ĐẠT (08/09, 3 đơn thử bán từ màn POS):** dòng DANH SÁCH mang cả `AccountId` top-level lẫn `MoreAttributes` = chuỗi JSON `{"PaymentMethods":[{"AccountId":…,"Value":…}]}` — đúng hình dạng spec §5.3, `extract_points_paid` chạy nguyên. Không cần đọc chi tiết từng đơn (không N+1). ⚠️ Hai điều kèm: (a) 36 đơn **dữ liệu mẫu** seed sẵn KHÔNG có hai trường này — đừng lấy làm chuẩn; (b) đơn qua cổng tích hợp còn treo (chưa xác nhận tiền) vẫn ghi đủ phương thức, chỉ `AmountReceived=0` | `HD080926-0003`: `AccountId=2014`, `MoreAttributes={"PaymentMethods":[{"AccountId":2014,"Value":30000}]…}`; `HD080926-0001` (tiền mặt): `PaymentMethods:[{"AccountId":null,"Value":30000}]` |
+| P2 | `AccountList` + AccountId "Trừ điểm" | **ĐẠT** — `GET /api/accounts` chạy, trả **MẢNG THÔ** (không bọc `results`); 8 tài khoản hệ thống (`RetailerId=0`). UI KHÔNG cho thêm tài khoản (cả Cài đặt lẫn nút ➕ ở màn thanh toán), nhưng **`AccountCreateOrUpdate` qua API thì ĐƯỢC**: `POST /api/accounts` body `{"Account":{"Id":0,"Name":"TRU DIEM CAFE"}}` → tạo thành công tài khoản riêng của cửa hàng. **`POS365_PAYMENT_ACCOUNT_ID = 46714`** — đã điền `.env` | `POST /api/accounts` → `{"Id":46714,"Name":"TRU DIEM CAFE","RetailerId":236910,...}` |
+| P3 | Thu ngân bấm được phương thức? | **ĐẠT** — sau khi tạo tài khoản qua API, ô TÀI KHOẢN ▾ trên màn thanh toán có "TRU DIEM CAFE"; bán đơn thử **ghi nhận ngay, KHÔNG treo dialog** (khác hẳn tài khoản cổng tích hợp PAYOO-POS/VNPAY-POS — mấy cái đó bật "Chờ thanh toán" đợi máy cà thẻ, không dùng làm nút trừ điểm được). Nút ➕ trên màn thanh toán và Cài đặt đều KHÔNG cho tự thêm tài khoản — cửa duy nhất là API | Đơn `HD080926-0006`: `AccountId=46714`, `Status=2` |
+| P3b | Gói POS365 có cho thêm tài khoản thanh toán tùy chỉnh ở phần Cài đặt? | **KHÔNG** — menu bánh răng không có mục tài khoản ngân hàng; "Thiết lập thanh toán QR-PAY" chỉ 4 mục cố định. Cửa duy nhất còn lại là nút ➕ trên màn thanh toán | Ảnh menu Cài đặt + màn QR-PAY 08/09 |
+| P4 | Lọc thời gian · đọc lẻ đơn · Status void | **ĐẠT:** `GET /api/orders/{id}` đọc lẻ được (trả thẳng object); tham số lọc `Id` trên danh sách bị BỎ QUA; `FromDate/ToDate` cũng bị BỎ QUA → mốc kéo tăng dần cắt ở client (đúng như code đang làm). `DELETE /api/orders/{id}/void` chạy được; **đơn void mang `Status = 3`** (đơn thường = 2) — khớp hằng `POS_STATUS_ACTIVE=2` trong service, không phải sửa | Void `HD080926-0002` → `{"Message":"Xóa dữ liệu thành công"}`; đọc lại: `Status=3` |
+| P5 | `PartnerSave` ghi được `Point`? | *(chưa — là lời gọi GHI, để sau khi P1 chốt)* | |
+| P6 | Giới hạn gọi / cỡ trang | *(chưa đo — các lời gọi `$top=5` đều <1s, không thấy chặn; đo kỹ khi kéo trang lớn)* | |
+| P7 | Trường `Password` của Partner | **AN TOÀN** — response `/api/partners` thô KHÔNG chứa khóa `Password` (khác ảnh Postman 2026 của cửa hàng khác); `strip_sensitive` vẫn giữ như lưới dự phòng | RAW check: `"Password" in text == False` |
+
+Ghi chú thêm ngoài bộ câu hỏi:
+
+- Dữ liệu cửa hàng đang là **dữ liệu mẫu** (36 đơn, khách `KH000001…5` tạo cùng một giây) + 6 đơn thử `HD080926-*` — trước CP4 bấm **"Xóa dữ liệu mẫu"** (menu bánh răng) và void nốt đơn thử để sổ sạch từ đầu. ⚠️ Kiểm xem xóa dữ liệu mẫu có xóa mất tài khoản `TRU DIEM CAFE` (46714) không — mất thì tạo lại qua API và cập nhật `.env`.
+- Màn bán hàng có sẵn ô **"CHIẾT KHẤU ĐIỂM THƯỞNG"** và `MoreAttributes` có trường `PointDiscount` — POS365 có cơ chế điểm thưởng NATIVE gắn `Partner.Point`. Bản 1 cố ý không dùng (đi đường tài khoản thanh toán như đã chốt), ghi lại làm ứng viên cho D-07/CP5.
+- **Chạy trọn đường ống 08/09/2026 trên dev với dữ liệu THẬT:** cấp kỳ 200.000 → `pull_orders` kéo 42 đơn, nhặt đúng 1 đơn `HD080926-0006` (AccountId 46714, bỏ qua tiền mặt/PAYOO/VNPAY/36 đơn mẫu) → vào hàng chờ (quầy không chọn khách) → gán tay → ví còn 170.000 với 2 dòng sổ. **GĐ 0 (POC) ĐÓNG — toàn bộ K1 + P1…P7 trả lời xong, trừ P5 (ghi `Point` — dời sang CP5 vì bản 1 không cần) và P6 (chưa thấy rate-limit ở tải thử).**
 
 ## Phụ lục B — Tra cứu nhanh API đã đọc được từ spec
 

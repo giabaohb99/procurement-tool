@@ -101,8 +101,9 @@ def test_full_flow_two_gates(db):
     assert req.status == m.SEAL_APPROVED
     complete_seal(db, req, CompleteSealIn(note="Đóng dấu 2 bản"), actor)  # cổng 2: Văn thư
     assert req.status == m.SEAL_COMPLETED
-    assert "Đã đóng dấu xong" in req.note
-    assert "Đóng dấu 2 bản" in req.note
+    #  Ô Ghi chú CHỈ giữ nội dung người tạo nhập — KHÔNG chèn "Đã đóng dấu xong"/lý do
+    #  (nay nằm ở nhật ký thao tác + thông báo). `_ready` tạo phiếu không ghi chú.
+    assert "Đã đóng dấu xong" not in (req.note or "")
 
 
 def test_return_then_resubmit(db):
@@ -111,7 +112,8 @@ def test_return_then_resubmit(db):
     submit_seal_request(db, req, actor)
     return_seal(db, req, ReasonIn(reason="Thiếu chữ ký trang 2"), actor)
     assert req.status == m.SEAL_RETURNED
-    assert "Thiếu chữ ký trang 2" in req.note
+    #  Lý do trả KHÔNG chèn vào Ghi chú (nay ở nhật ký + thông báo).
+    assert "Thiếu chữ ký trang 2" not in (req.note or "")
     submit_seal_request(db, req, actor)
     assert req.status == m.SEAL_PENDING
 

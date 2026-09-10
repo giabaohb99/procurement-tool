@@ -91,6 +91,30 @@ def resolve_doc(db: Session, user, entity: str, entity_id: int, mode: str = "rea
         #  của người khác, hoặc họ ghi được vào dự án chỉ được mời vào để xem.
         need = CAN_EDIT if mode == "write" else CAN_VIEW
         return get_task_or_403(db, actor, entity_id, need), label, route
+    #  Phân công văn thư (cấu hình Duyệt dấu): cha `seal_type` khai PUBLIC ở
+    #  SCOPE_FIELDS nên `apply_scope` KHÔNG lọc dòng — CỐ Ý: bản ghi là cấu hình pháp
+    #  nhân, không nhạy cảm theo từng dòng; ai có `seal_type.read` (mọi người) thì trao
+    #  đổi được. Nhánh riêng này khai rõ quyết định đó (luật C4), không phải bỏ sót.
+    if entity == "seal_clerk":
+        from app.modules.seal_clerk.model import SealClerk
+        if not user_has_permission(db, user, parent, "read"):
+            raise HTTPException(403, "Không có quyền xem phân công văn thư")
+        doc = db.query(SealClerk).filter(SealClerk.id == entity_id).first()
+        if not doc:
+            raise HTTPException(403, "Chứng từ không tồn tại hoặc ngoài phạm vi được phép xem")
+        return doc, label, route
+    #  Danh mục Xe / Tài xế (Đặt xe): entity cha là CHÍNH NÓ, khai PUBLIC ở
+    #  SCOPE_FIELDS — danh mục nền, ai có `vehicle`/`driver` read thì trao đổi được,
+    #  KHÔNG lọc theo từng dòng. Nhánh riêng khai rõ quyết định (luật C4), không để
+    #  rơi vào đường chung `apply_scope` (vốn không lọc gì cho entity PUBLIC).
+    if entity in ("vehicle", "driver"):
+        model = doc_model(entity)
+        if not user_has_permission(db, user, parent, "read"):
+            raise HTTPException(403, "Không có quyền xem danh mục này")
+        doc = db.query(model).filter(model.id == entity_id).first()
+        if not doc:
+            raise HTTPException(403, "Chứng từ không tồn tại hoặc ngoài phạm vi được phép xem")
+        return doc, label, route
     if not user_has_permission(db, user, parent, "read"):
         raise HTTPException(403, "Không có quyền xem chứng từ này")
     model = doc_model(entity)

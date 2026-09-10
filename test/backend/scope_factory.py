@@ -83,6 +83,10 @@ ENTITY_MODEL_PATHS = {
     "leave_request": ("app.modules.leave.request_model", "LeaveRequest"),
     "leave_balance": ("app.modules.leave.balance_model", "LeaveBalance"),
     "room_booking": ("app.modules.meeting_room.model", "RoomBooking"),
+    "coffee_policy": ("app.modules.coffee_point.model", "CoffeePolicy"),
+    "coffee_member": ("app.modules.coffee_point.model", "CoffeeMember"),
+    "coffee_ledger": ("app.modules.coffee_point.model", "CoffeeLedger"),
+    "pos_order": ("app.modules.coffee_point.model", "PosOrder"),
 }
 
 

@@ -117,6 +117,13 @@ export const ENTITIES = [
   //  Danh mục Chức vụ (duoc-CR-320) — nguồn của ô chọn «Vị trí / Chức vụ».
   //  MỌI vai trò được `read` (seed), quyền sửa dành cho `hr_profile`.
   'job_position',
+  //  Điểm cà phê × POS365 (doc/erp/diem-ca-phe/04). Bốn khóa để ba quyền của
+  //  PS12 tách được: xem sổ người khác · điều chỉnh tay · chạy đồng bộ.
+  //  Ví của tôi KHÔNG cần khóa nào — endpoint riêng chỉ đòi đăng nhập.
+  'coffee_policy',
+  'coffee_member',
+  'coffee_ledger',
+  'pos_order',
 ] as const
 
 export type PermissionEntity = (typeof ENTITIES)[number]

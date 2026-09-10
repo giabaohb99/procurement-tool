@@ -22,7 +22,7 @@ export function VehicleBookingFormPage() {
   const isEdit = Boolean(id)
   const fromId = Number(searchParams.get('from')) || null
 
-  const backToList = () => navigate(appRoutes.vehicleBooking.root)
+  const backToList = () => navigate(appRoutes.vehicleBooking.requests)
   //  SỬA thì back/hủy quay lại CHI TIẾT phiếu (`/:id`), không về danh sách.
   const backToDetail = () => navigate(appRoutes.vehicleBooking.detail(Number(id)))
   //  LƯU / GỬI DUYỆT (tạo mới / nhân bản): KHÔNG về danh sách — sang CHI TIẾT phiếu

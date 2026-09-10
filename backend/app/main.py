@@ -50,6 +50,8 @@ from app.modules.vehicle_booking.catalog_controller import (
     dispatch_router, driver_router, vehicle_router)
 from app.modules.seal_request.controller import router as seal_request_router
 from app.modules.seal_request.catalog_controller import seal_type_router
+from app.modules.seal_clerk.controller import router as seal_clerk_router
+from app.modules.coffee_point.controller import router as coffee_point_router
 from app.modules.product.controller import router as product_router
 from app.modules.purchase_history.controller import router as purchase_history_router
 from app.modules.role.controller import router as role_router
@@ -266,9 +268,12 @@ app.include_router(vehicle_booking_router)
 app.include_router(vehicle_router)
 app.include_router(driver_router)
 app.include_router(dispatch_router)
-#  Duyệt dấu (Yêu cầu đóng dấu) — phiếu + danh mục Loại con dấu.
+#  Duyệt dấu (Yêu cầu đóng dấu) — phiếu + danh mục Loại con dấu + phân công văn thư.
 app.include_router(seal_request_router)
 app.include_router(seal_type_router)
+app.include_router(seal_clerk_router)
+
+app.include_router(coffee_point_router)
 #  Bộ máy phê duyệt dùng chung — không thuộc phân hệ nào, mọi loại chứng từ
 #  đều chạy qua nó.
 app.include_router(approval_flow_router)

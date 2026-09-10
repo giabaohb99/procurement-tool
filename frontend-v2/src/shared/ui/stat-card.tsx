@@ -1,4 +1,5 @@
 import type { LucideIcon } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
@@ -12,6 +13,8 @@ interface StatCardProps {
   /** Tô màu dòng chú thích khi có việc cần làm. */
   tone?: 'warning' | 'danger'
   loading?: boolean
+  /** Có `to` thì cả thẻ thành liên kết — bấm vào mở danh sách đã lọc theo nội dung thẻ. */
+  to?: string
 }
 
 /**
@@ -28,12 +31,19 @@ export function StatCard({
   hint,
   tone,
   loading = false,
+  to,
 }: StatCardProps) {
-  return (
+  const card = (
     //  Đệm 16px và chữ nhỏ hơn một bậc so với thẻ shadcn mặc định: dải này
     //  thường xếp NĂM ô một hàng, mà năm ô rộng theo cỡ mặc định thì dưới
     //  1500px là nhãn nào cũng gãy đôi.
-    <Card className="gap-1.5 py-4">
+    <Card
+      className={cn(
+        'gap-1.5 py-4',
+        //  Có `to`: cho cảm giác bấm được (con trỏ + đổi nền/viền khi rê chuột).
+        to && 'cursor-pointer transition-colors hover:border-primary/50 hover:bg-accent/40',
+      )}
+    >
       {/*  `flex` chứ không chỉ `flex-row`: `CardHeader` gốc là `grid`, hai lớp khác
            nhóm nên `grid` vẫn thắng — thiếu chữ này thì biểu tượng và nhãn xếp
            CHỒNG lên nhau thay vì nằm cạnh (đo được 25/08/2026: y=229 vs y=269).
@@ -78,5 +88,16 @@ export function StatCard({
         )}
       </CardContent>
     </Card>
+  )
+
+  if (!to) return card
+  return (
+    <Link
+      to={to}
+      aria-label={`${label} — mở danh sách`}
+      className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      {card}
+    </Link>
   )
 }

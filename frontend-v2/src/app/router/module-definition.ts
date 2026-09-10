@@ -29,6 +29,14 @@ export interface ModuleNavItem {
   action?: PermissionAction
   /** Mục quản lý (danh mục, hệ thống): yêu cầu quyền quản lý (`write` | `create` | `delete`). */
   manage?: boolean
+  /**
+   * **Chỉ hiện với ĐIỀU PHỐI VIÊN hoặc TÀI XẾ.** Ngoài luật quyền thường (`entity`),
+   * mục còn đòi: có `approve` trên `entity` (điều phối viên) HOẶC là tài xế
+   * (`NavContext.isDriver`). Sinh ra cho *«Chuyến của tôi»* (Đặt xe): người đặt xe
+   * cũng có `vehicle_booking.write` (phạm vi `own`) nên chỉ gác bằng quyền là họ
+   * vẫn thấy mục vốn chỉ dành cho người nhận điều phối chuyến.
+   */
+  requireDispatchOrDriver?: boolean
   /** Chỉ sáng khi khớp CHÍNH XÁC path (dùng cho mục Tổng quan của module). */
   end?: boolean
   /**

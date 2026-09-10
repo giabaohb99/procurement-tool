@@ -1,5 +1,7 @@
 import {
   Download,
+  ExternalLink,
+  Eye,
   // Đổi tên: icon `File` của lucide trùng tên với kiểu `File` của trình duyệt —
   // ngay bên dưới có `selected: File[]` là tệp thật, để trùng tên đọc rất dễ nhầm.
   File as FileIcon,
@@ -47,6 +49,7 @@ import {
   OTHER_DOC_TYPE,
   withOtherType,
 } from '../utils/document-attachment-groups'
+import { AttachmentPreviewDialog } from './attachment-preview-dialog'
 import { DocumentStatusBadge } from './document-status-badge'
 import { DocumentUploadDialog } from './document-upload-dialog'
 
@@ -70,6 +73,16 @@ interface DocumentAttachmentsCardProps {
    * thì cùng một trường có hai chỗ bấm, người dùng không biết chỗ nào là thật.
    */
   documentStatus?: string
+  /**
+   * Mục (thư mục) chọn sẵn khi tải lên — mặc định "Khác". Duyệt dấu truyền
+   * `signed_doc` để thư mục mặc định là "Chứng từ đã ký".
+   */
+  defaultDocType?: string
+  /**
+   * Ẩn nút "Upload chứng từ" (hộp thoại tải nhiều loại). Dùng khi màn đã có ô kéo-thả
+   * kèm ô chọn mục ngay tại chỗ nên không cần thêm hộp thoại (vd. Duyệt dấu).
+   */
+  hideUploadButton?: boolean
 }
 
 /** Giá trị của chip "Tất cả": xem hết, không lọc theo mục nào. */
@@ -91,12 +104,16 @@ export function DocumentAttachmentsCard({
   canManage,
   maxSizeMb = 50,
   documentStatus = '',
+  defaultDocType = OTHER_DOC_TYPE,
+  hideUploadButton = false,
 }: DocumentAttachmentsCardProps) {
   const [openType, setOpenType] = useState(ALL)
-  const [uploadType, setUploadType] = useState(OTHER_DOC_TYPE)
+  const [uploadType, setUploadType] = useState(defaultDocType)
   const [zipping, setZipping] = useState(false)
   /** Hộp thoại tải theo loại; `docType` là mục điền sẵn cho mục đầu tiên. */
-  const [uploadDialog, setUploadDialog] = useState({ open: false, docType: OTHER_DOC_TYPE })
+  const [uploadDialog, setUploadDialog] = useState({ open: false, docType: defaultDocType })
+  //  Tệp đang xem trước trên popup (nút "Xem" của từng dòng).
+  const [previewFile, setPreviewFile] = useState<AttachmentFile | null>(null)
   const { data: files, isLoading, isError } = usePurchaseRequestAttachments(entity, entityId)
   const { data: documentTypes } = useDocumentTypes()
   const upload = useUploadPurchaseRequestAttachments(entity, entityId)
@@ -162,13 +179,13 @@ export function DocumentAttachmentsCard({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {canManage && !isNew && (
+          {canManage && !isNew && !hideUploadButton && (
             <Button
               type="button"
               variant="outline"
               size="sm"
               title="Tải nhiều loại chứng từ trong một lượt và xếp sẵn vào đúng mục"
-              onClick={() => setUploadDialog({ open: true, docType: OTHER_DOC_TYPE })}
+              onClick={() => setUploadDialog({ open: true, docType: defaultDocType })}
             >
               <Upload />
               Upload chứng từ
@@ -311,6 +328,7 @@ export function DocumentAttachmentsCard({
                               ? () => lightbox.openAt(imageFiles.indexOf(file))
                               : undefined
                           }
+                          onPreview={() => setPreviewFile(file)}
                         />
                       ))}
                     </div>
@@ -344,6 +362,12 @@ export function DocumentAttachmentsCard({
           {...lightbox.bind}
         />
       )}
+
+      <AttachmentPreviewDialog
+        file={previewFile}
+        open={previewFile !== null}
+        onOpenChange={(open) => !open && setPreviewFile(null)}
+      />
     </Card>
   )
 }
@@ -392,6 +416,7 @@ function AttachmentRow({
   pending,
   onDelete,
   onView,
+  onPreview,
 }: {
   file: AttachmentFile
   canDelete: boolean
@@ -399,6 +424,8 @@ function AttachmentRow({
   onDelete: () => void
   /** Có = tệp ảnh: bấm tên mở lightbox tại chỗ thay vì mở tab mới. */
   onView?: () => void
+  /** Mở popup XEM TRƯỚC tài liệu ngay tại trang (nút con mắt). */
+  onPreview?: () => void
 }) {
   // `attachmentIcon` chỉ TRA CỨU và trả về một trong các icon lucide khai báo sẵn ở
   // cấp module, không tạo component mới mỗi lần render -> không có chuyện remount.
@@ -448,6 +475,29 @@ function AttachmentRow({
         )}
         <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
       </div>
+      {onPreview && (
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          title="Xem trước tài liệu"
+          aria-label={`Xem trước ${file.filename}`}
+          onClick={onPreview}
+        >
+          <Eye />
+        </Button>
+      )}
+      {file.url && (
+        <Button
+          asChild
+          variant="ghost"
+          size="icon-sm"
+          title="Mở ở tab mới"
+        >
+          <a href={file.url} target="_blank" rel="noreferrer" aria-label={`Mở ${file.filename} ở tab mới`}>
+            <ExternalLink />
+          </a>
+        </Button>
+      )}
       <Button
         variant="ghost"
         size="icon-sm"

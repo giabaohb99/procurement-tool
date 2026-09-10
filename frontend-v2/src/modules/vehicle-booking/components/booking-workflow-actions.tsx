@@ -53,6 +53,10 @@ export function BookingWorkflowActions({ booking, onDispatch }: BookingWorkflowA
   const { can } = usePermission()
   const canApprove = can('vehicle_booking', 'approve')
   const canWrite = can('vehicle_booking', 'write')
+  //  Điều phối viên = có quyền `approve` (tài xế chỉ có `write` phạm vi `assigned`).
+  //  Các nút ĐIỀU PHỐI (Điều phối / Điều phối lại / trả / từ chối yêu cầu) chỉ cho
+  //  điều phối viên — nếu gác bằng `write` thì tài xế cũng thấy (họ có write assigned).
+  const canDispatch = canApprove
 
   const [reasonKind, setReasonKind] = useState<ReasonKind>(null)
   const [completeOpen, setCompleteOpen] = useState(false)
@@ -93,14 +97,14 @@ export function BookingWorkflowActions({ booking, onDispatch }: BookingWorkflowA
   return (
     <>
       {/* Điều phối (quyền write) */}
-      {canWrite && isApproved && (
+      {canDispatch && isApproved && (
         <Button onClick={onDispatch} disabled={busy}>
           <Route className="size-4" />
           Điều phối
         </Button>
       )}
       {/*  Đã điều phối (tài xế chưa nhận) hoặc tài xế từ chối → điều phối viên đổi xe/tài xế khác. */}
-      {canWrite &&
+      {canDispatch &&
         isDispatched &&
         (dstatus === DRIVER_STATUS.waiting || dstatus === DRIVER_STATUS.rejected) && (
           <Button onClick={onDispatch} disabled={busy}>
@@ -110,7 +114,7 @@ export function BookingWorkflowActions({ booking, onDispatch }: BookingWorkflowA
         )}
       {/*  Điều phối viên: ở khâu ĐÃ DUYỆT (chưa điều phối) hoặc Điều phối / Điều phối lại
           (tài xế chưa nhận) có thể TRẢ VỀ NGƯỜI TẠO chỉnh sửa hoặc TỪ CHỐI hẳn yêu cầu. */}
-      {canWrite &&
+      {canDispatch &&
         (isApproved ||
           (isDispatched &&
             (dstatus === DRIVER_STATUS.waiting || dstatus === DRIVER_STATUS.rejected))) && (

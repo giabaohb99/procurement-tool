@@ -33,7 +33,6 @@ type ReasonKind = 'return' | 'reject' | 'returnClerk' | 'rejectClerk' | null
 export function SealWorkflowActions({ request }: { request: SealRequest }) {
   const { can } = usePermission()
   const canApprove = can('seal_request', 'approve')
-  const canWrite = can('seal_request', 'write')
 
   const [reasonKind, setReasonKind] = useState<ReasonKind>(null)
   const [approveOpen, setApproveOpen] = useState(false)
@@ -60,7 +59,9 @@ export function SealWorkflowActions({ request }: { request: SealRequest }) {
   const isApproved = request.status === SEAL_STATUS.approved
   //  Đang chạy bộ máy duyệt nhiều bước thì ẩn cổng-1 (TBP); cổng-2 (Văn thư) giữ nguyên.
   const showApprove = canApprove && isPending && !request.approval_running
-  const showClerk = canWrite && isApproved
+  //  CỔNG-2 chỉ hiện với VĂN THƯ được phân công (backend trả `can_stamp`) — không
+  //  theo `write` chung, vì mọi nhân sự đều có write phạm vi own.
+  const showClerk = Boolean(request.can_stamp) && isApproved
 
   return (
     <>

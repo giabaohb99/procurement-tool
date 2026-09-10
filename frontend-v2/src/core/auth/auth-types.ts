@@ -26,6 +26,11 @@ export interface AuthUser {
   /** Tên các phòng ban KIÊM NHIỆM (phòng phụ, không tính phòng chính). */
   kiem_nhiem?: string[]
   /**
+   * Vị này có hồ sơ TÀI XẾ (`tab_driver.user_id`) không — để hiện mục "Chuyến của
+   * tôi" (Đặt xe) cho lái xe. Điều phối viên nhận ra qua quyền `vehicle_booking.approve`.
+   */
+  is_driver?: boolean
+  /**
    * Vai trò ĐANG GIỮ (id), không phải quyền — quyền nằm ở `permissions`.
    *
    * Màn Phân quyền dùng nó để khóa ma trận của chính vai trò mình đang giữ.

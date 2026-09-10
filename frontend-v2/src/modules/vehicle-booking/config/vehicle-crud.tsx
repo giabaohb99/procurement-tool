@@ -2,6 +2,7 @@ import { Building2, Hash, Wrench } from 'lucide-react'
 
 import { appRoutes } from '@/shared/constants/app-routes'
 import type { CrudConfig } from '@/shared/crud'
+import { CatalogExportButton } from '../components/catalog-export-button'
 import { AvailabilityBadge, SourceBadge } from '../components/status-pill'
 import { VehicleTypeIcon } from '../components/vehicle-type-icon'
 import { VEHICLE_STATUS_LABELS, type Vehicle } from '../types/vehicle'
@@ -26,6 +27,9 @@ export const VEHICLE_CRUD_CONFIG: CrudConfig<Vehicle> = {
   searchPlaceholder: 'Tìm theo biển số…',
   getItemName: (v) => `${v.license_plate}${v.model ? ` — ${v.model}` : ''}`,
   deleteWarning: 'Xe này có thể đang được phân cho phiếu đặt xe.',
+  renderToolbarExtra: () => (
+    <CatalogExportButton apiPath="/api/vehicles" searchParam="license_plate" filename="quan-ly-xe.xlsx" />
+  ),
   chips: (v) => [
     ...(v.license_plate ? [{ icon: Hash, text: v.license_plate, tone: 'code' as const }] : []),
     v.is_external
@@ -33,6 +37,13 @@ export const VEHICLE_CRUD_CONFIG: CrudConfig<Vehicle> = {
       : { icon: Wrench, text: VEHICLE_STATUS_LABELS[v.status] ?? v.status, tone: 'ok' as const },
   ],
   columns: [
+    {
+      key: 'id',
+      header: 'ID',
+      width: 80,
+      sortable: true,
+      cell: (v) => <span className="tabular-nums text-muted-foreground">{v.id}</span>,
+    },
     {
       key: 'type',
       header: 'Loại xe',

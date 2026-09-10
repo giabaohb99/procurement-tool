@@ -118,9 +118,15 @@ def test_du_55_entity():
     BỚT chức vụ là việc của Nhân sự. PUBLIC ở `SCOPE_FIELDS` — bảng có
     `department_id` nhưng `0` nghĩa là "dùng chung mọi phòng ban", nên lọc theo
     cột đó cắt mất đúng những dòng dùng chung (cùng bẫy của `meeting_room`).
+
+    55 → 59 ngày 08/09/2026: phân hệ Điểm cà phê × POS365 thêm bốn khóa —
+    `coffee_policy` · `coffee_member` · `coffee_ledger` · `pos_order`. Bốn chứ
+    không một: ba quyền của PS12 (xem sổ người khác · điều chỉnh tay · chạy đồng
+    bộ) phải tách được. Sổ và thành viên khai `self` theo `employee_id` — "nhân
+    viên chỉ thấy sổ của mình" là một phép áp scope (`doc/erp/diem-ca-phe/04`).
     """
-    assert len(ENTITIES) == 55
-    assert len(SCOPE_FIELDS) == 55
+    assert len(ENTITIES) == 59
+    assert len(SCOPE_FIELDS) == 59
 
 
 # ── 2. Không dựng nổi điều kiện thì chặn ────────────────────────────────────────

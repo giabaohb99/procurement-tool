@@ -475,6 +475,12 @@ export const queryKeys = {
     bookings: (params?: Record<string, unknown>) =>
       ['vehicle-booking', 'bookings', params ?? {}] as const,
     booking: (id: number) => ['vehicle-booking', 'bookings', id] as const,
+    /** Số liệu trang Tổng quan Đặt xe (`/api/vehicle-bookings/overview`). */
+    overview: (params?: Record<string, unknown>) =>
+      ['vehicle-booking', 'overview', params ?? {}] as const,
+    /** Chuyến xe theo dòng thời gian cho lịch Timeline (`/timeline`). */
+    timeline: (params?: Record<string, unknown>) =>
+      ['vehicle-booking', 'timeline', params ?? {}] as const,
   },
   /** Phân hệ Duyệt dấu — phiếu yêu cầu đóng dấu + danh mục Loại con dấu. */
   sealRequest: {
@@ -482,10 +488,33 @@ export const queryKeys = {
     list: (params?: Record<string, unknown>) =>
       ['seal-request', 'list', params ?? {}] as const,
     detail: (id: number) => ['seal-request', 'list', id] as const,
+    /** Số liệu trang Tổng quan Duyệt dấu (`/api/seal-requests/overview`). */
+    overview: (params?: Record<string, unknown>) =>
+      ['seal-request', 'overview', params ?? {}] as const,
   },
   sealType: {
     all: ['seal-type'] as const,
     list: (params?: Record<string, unknown>) => ['seal-type', 'list', params ?? {}] as const,
     detail: (id: number) => ['seal-type', 'list', id] as const,
+  },
+  /** Phân công văn thư theo công ty (Duyệt dấu). */
+  sealClerk: {
+    all: ['seal-clerk'] as const,
+    list: (params?: Record<string, unknown>) => ['seal-clerk', 'list', params ?? {}] as const,
+  },
+  /** Phân hệ Điểm cà phê × POS365 (doc/erp/diem-ca-phe/). */
+  coffee: {
+    all: ['coffee'] as const,
+    meta: () => ['coffee', 'meta'] as const,
+    myWallet: () => ['coffee', 'my-wallet'] as const,
+    policies: () => ['coffee', 'policies'] as const,
+    members: (params?: Record<string, unknown>) => ['coffee', 'members', params ?? {}] as const,
+    ledger: (params?: Record<string, unknown>) => ['coffee', 'ledger', params ?? {}] as const,
+    posOrders: (params?: Record<string, unknown>) =>
+      ['coffee', 'pos-orders', params ?? {}] as const,
+    syncRuns: () => ['coffee', 'sync-runs'] as const,
+    posDashboard: () => ['coffee', 'pos-dashboard'] as const,
+    menu: () => ['coffee', 'menu'] as const,
+    resetPreview: (period?: string) => ['coffee', 'reset-preview', period ?? ''] as const,
   },
 } as const

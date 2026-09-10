@@ -6,7 +6,7 @@ dung email lấy từ mẫu sửa được `tab_email_template` theo event; chu�
 
 Người nhận theo event:
   dd_submitted → Trưởng bộ phận (phòng của người tạo)
-  dd_approved  → Người tạo + Văn thư (vai trò seal_clerk, LỌC THEO công ty con dấu) + Giám đốc công ty
+  dd_approved  → Người tạo + Văn thư (theo bảng phân công; đa công ty → văn thư tổng) + Giám đốc công ty
   dd_returned  → Người tạo
   dd_rejected  → Người tạo
   dd_completed → Người tạo
@@ -21,8 +21,8 @@ from .model import SealRequest
 
 logger = logging.getLogger(__name__)
 
-#  Vai trò Văn thư đóng dấu (nhận phiếu đã duyệt để đóng dấu).
-_CLERK_ROLE_CODES = ["seal_clerk"]
+#  Văn thư nhận phiếu nay xác định theo BẢNG PHÂN CÔNG (`tab_seal_clerk`), xem
+#  `_clerks` — không còn theo vai trò + `employee.company_id` như trước.
 #  Vai trò "Giám đốc duyệt dấu" — CHỈ NHẬN THÔNG BÁO, không tham gia phê duyệt.
 #  Ai được gán vai trò này + đúng công ty thì nhận email/chuông khi phiếu được duyệt.
 _DIRECTOR_ROLE_CODES = ["seal_director"]
@@ -62,8 +62,30 @@ def _by_companies(db: Session, users: list, company_ids: set) -> list:
 
 
 def _clerks(db: Session, req: SealRequest) -> list:
-    from app.modules.notification.service import get_users_by_role_codes
-    return _by_companies(db, get_users_by_role_codes(db, _CLERK_ROLE_CODES), _company_ids(db, req))
+    """Văn thư NHẬN phiếu — theo BẢNG PHÂN CÔNG `tab_seal_clerk`, khớp với phạm vi
+    dữ liệu ở `core/scoping.py`: phiếu ĐA công ty → VĂN THƯ TỔNG (`is_head`); phiếu
+    MỘT công ty → văn thư được phân cho công ty đó. (Trước đây lọc theo
+    `employee.company_id` — nay theo bảng phân công.)"""
+    from app.modules.employee.model import Employee
+    from app.modules.seal_clerk.model import CLERK_ACTIVE, SealClerk
+    from app.modules.user.model import User
+
+    company_ids = _company_ids(db, req)
+    if not company_ids:
+        return []
+    #  Chỉ báo văn thư ĐANG HOẠT ĐỘNG — người bị Tạm dừng không nhận thông báo (khớp scoping).
+    if len(company_ids) > 1:
+        emp_q = db.query(SealClerk.employee_id).filter(
+            SealClerk.is_head.is_(True), SealClerk.status == CLERK_ACTIVE)
+    else:
+        emp_q = db.query(SealClerk.employee_id).filter(
+            SealClerk.company_id.in_(company_ids), SealClerk.is_head.is_(False),
+            SealClerk.status == CLERK_ACTIVE)
+    emp_ids = [row[0] for row in emp_q.all()]
+    if not emp_ids:
+        return []
+    return (db.query(User).join(Employee, User.employee_id == Employee.id)
+            .filter(Employee.id.in_(emp_ids), User.is_active.is_(True)).all())
 
 
 def _directors(db: Session, req: SealRequest) -> list:

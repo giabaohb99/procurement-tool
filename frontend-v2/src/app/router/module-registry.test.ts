@@ -111,6 +111,10 @@ describe('module-registry', () => {
       'document', // «Chờ tôi duyệt» dành cho người duyệt NGOÀI phân hệ (xem module-visibility.ts)
       'forum', // bảng tin toàn công ty — mọi người đều vào
       'appearance', // tùy chọn hiển thị của chính người đăng nhập
+      //  «Ví điểm của tôi» là phúc lợi của MỌI nhân viên — backend chỉ đòi đăng
+      //  nhập (`/api/coffee/my-wallet` tự lấy employee_id của người gọi), không
+      //  có entity nào để khai. Các màn quản trị trong phân hệ vẫn gác khóa đủ.
+      'dego-coffee',
     ])
     const missing: string[] = []
     for (const module of moduleRegistry) {

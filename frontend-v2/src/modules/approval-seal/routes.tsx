@@ -1,4 +1,4 @@
-import { ClipboardList, Stamp } from 'lucide-react'
+import { ClipboardList, LayoutDashboard, Stamp, UserCog } from 'lucide-react'
 
 import type { ErpModule } from '@/app/router/module-definition'
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -20,17 +20,37 @@ export const approvalSealModule: ErpModule = {
 
   nav: [
     {
-      label: 'Yêu cầu đóng dấu',
+      label: 'Tổng quan',
       path: appRoutes.approvalSeal.root,
-      icon: ClipboardList,
+      icon: LayoutDashboard,
       entity: 'seal_request',
       end: true,
+    },
+    {
+      label: 'Yêu cầu đóng dấu',
+      path: appRoutes.approvalSeal.requests,
+      icon: ClipboardList,
+      entity: 'seal_request',
+    },
+    {
+      //  Cấu hình văn thư — dùng chung khóa quyền `seal_type` (Quản trị con dấu).
+      label: 'Phân công văn thư',
+      path: appRoutes.approvalSeal.clerks,
+      icon: UserCog,
+      entity: 'seal_type',
+      group: 'Cài đặt',
     },
   ],
 
   routes: [
     {
       path: appRoutes.approvalSeal.root,
+      lazy: async () => ({
+        Component: (await import('./pages/seal-dashboard-page')).SealDashboardPage,
+      }),
+    },
+    {
+      path: appRoutes.approvalSeal.requests,
       lazy: async () => ({
         Component: (await import('./pages/seal-request-list-page')).SealRequestListPage,
       }),
@@ -57,6 +77,24 @@ export const approvalSealModule: ErpModule = {
       path: `${appRoutes.approvalSeal.sealTypes}/:id`,
       lazy: async () => ({
         Component: (await import('./pages/seal-type-detail-page')).SealTypeDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.approvalSeal.clerks,
+      lazy: async () => ({
+        Component: (await import('./pages/seal-clerk-list-page')).SealClerkListPage,
+      }),
+    },
+    {
+      path: appRoutes.approvalSeal.clerksNew,
+      lazy: async () => ({
+        Component: (await import('./pages/seal-clerk-form-page')).SealClerkFormPage,
+      }),
+    },
+    {
+      path: appRoutes.approvalSeal.clerkDetail(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/seal-clerk-detail-page')).SealClerkDetailPage,
       }),
     },
     {

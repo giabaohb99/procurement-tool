@@ -1,10 +1,12 @@
-import { Loader2, Paperclip, Send, X } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { Loader2, Paperclip, Send, Stamp, X } from 'lucide-react'
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 import { usePermission } from '@/core/authorization/use-permission'
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
 import { DocumentAttachmentsCard } from '@/modules/procurement/components/document-attachments-card'
+import { useDocumentTypes } from '@/modules/procurement/hooks/use-purchase-request-support'
+import { withOtherType } from '@/modules/procurement/utils/document-attachment-groups'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
@@ -39,6 +41,19 @@ interface SealRequestFormProps {
   onCancel: () => void
   /** Sau khi lưu/gửi duyệt thành công — page tự điều hướng theo id + đã gửi duyệt hay chưa. */
   onSaved: (result: SealRequest, submitted: boolean) => void
+  /**
+   * NHÚNG vào trang chi tiết: bỏ `SealPageHeader` (trang đã có thanh tiêu đề riêng).
+   */
+  embedded?: boolean
+  /** Ẩn hàng nút Lưu nháp / Gửi duyệt của form — khi trang cha tự bày chúng (qua `ref`). */
+  hideActions?: boolean
+  /** Báo trạng thái đang lưu ra ngoài để trang cha khóa nút Lưu nháp / Gửi duyệt của nó. */
+  onPendingChange?: (pending: boolean) => void
+}
+
+/** Điều khiển form từ trang cha (bấm Lưu nháp / Gửi duyệt đặt ở thanh công cụ trên). */
+export interface SealFormHandle {
+  save: (submit: boolean) => void
 }
 
 /**
@@ -49,7 +64,10 @@ interface SealRequestFormProps {
  * lưu xong (phiếu có id) mới tải lên rồi mới gửi duyệt — backend đòi ≥1 tệp
  * trước khi gửi duyệt. Khi SỬA, dùng thẻ đính kèm chuẩn của phân hệ Mua hàng.
  */
-export function SealRequestForm({ request, duplicateFrom, title, onCancel, onSaved }: SealRequestFormProps) {
+export const SealRequestForm = forwardRef<SealFormHandle, SealRequestFormProps>(function SealRequestForm(
+  { request, duplicateFrom, title, onCancel, onSaved, embedded = false, hideActions = false, onPendingChange },
+  ref,
+) {
   const isEdit = Boolean(request)
   //  Nguồn điền sẵn: SỬA thì từ chính phiếu, NHÂN BẢN thì từ phiếu nguồn.
   const source = request ?? duplicateFrom
@@ -73,6 +91,10 @@ export function SealRequestForm({ request, duplicateFrom, title, onCancel, onSav
   const [note, setNote] = useState(source?.note ?? '')
   //  Chứng từ đã ký chọn trên form TẠO mới — đệm lại, tải lên sau khi có id.
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
+  //  Thư mục (loại chứng từ) lưu các tệp đệm — MẶC ĐỊNH "Chứng từ đã ký" (`signed_doc`).
+  const [attachDocType, setAttachDocType] = useState('signed_doc')
+  const { data: docTypeData } = useDocumentTypes()
+  const docTypeOptions = useMemo(() => withOtherType(docTypeData ?? []), [docTypeData])
 
   const approverId = approverPick ?? approversResult?.default_id ?? 0
 
@@ -134,7 +156,12 @@ export function SealRequestForm({ request, duplicateFrom, title, onCancel, onSav
         onSaved(data, submit)
         return
       }
-      const data = await createMutation.mutateAsync({ payload: body, files: pendingFiles, submit })
+      const data = await createMutation.mutateAsync({
+        payload: body,
+        files: pendingFiles,
+        docType: attachDocType,
+        submit,
+      })
       onSaved(data, submit)
     } catch {
       //  Lỗi đã được http-client / mutation bắn toast; ở đây chỉ chặn điều hướng.
@@ -149,30 +176,53 @@ export function SealRequestForm({ request, duplicateFrom, title, onCancel, onSav
     setPendingFiles((current) => current.filter((_, i) => i !== index))
   }
 
+  //  Cho trang cha bấm Lưu nháp / Gửi duyệt từ thanh công cụ trên: giữ handler mới nhất
+  //  trong ref (cập nhật trong effect, không đọc/ghi ref lúc render) rồi lộ qua `ref`.
+  const submitRef = useRef<(submit: boolean) => void>(() => {})
+  useEffect(() => {
+    submitRef.current = (submit) => void handleSubmit(submit)
+  })
+  useImperativeHandle(ref, () => ({ save: (submit) => submitRef.current(submit) }), [])
+  //  Báo trạng thái "đang lưu" ra ngoài để trang cha khóa nút của nó.
+  useEffect(() => {
+    onPendingChange?.(pending)
+  }, [pending, onPendingChange])
+
+  //  Hàng nút Lưu nháp / Gửi duyệt — dùng cho cả bản NHÚNG lẫn `SealPageHeader`.
+  const actionButtons = (
+    <>
+      {!embedded && (
+        <Button variant="outline" onClick={onCancel} disabled={pending}>
+          Hủy
+        </Button>
+      )}
+      <Button variant="outline" onClick={() => void handleSubmit(false)} disabled={pending}>
+        Lưu nháp
+      </Button>
+      <Button onClick={() => void handleSubmit(true)} disabled={pending}>
+        {pending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+        Gửi duyệt
+      </Button>
+    </>
+  )
+
   return (
     <div className="flex w-full flex-col">
-      <SealPageHeader
-        title={title}
-        onBack={onCancel}
-        actions={
-          <>
-            <Button variant="outline" onClick={onCancel} disabled={pending}>
-              Hủy
-            </Button>
-            <Button variant="outline" onClick={() => void handleSubmit(false)} disabled={pending}>
-              Lưu nháp
-            </Button>
-            <Button onClick={() => void handleSubmit(true)} disabled={pending}>
-              {pending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
-              Gửi duyệt
-            </Button>
-          </>
-        }
-      />
+      {!embedded && <SealPageHeader title={title} onBack={onCancel} actions={actionButtons} />}
+      {/*  Nhúng: mặc định vẫn có hàng nút; `hideActions` khi trang cha bày nút ở thanh trên. */}
+      {embedded && !hideActions && (
+        <div className="mb-4 flex flex-wrap items-center justify-end gap-2">{actionButtons}</div>
+      )}
 
       <Card className="flex flex-col gap-5 p-5">
         <div className="flex flex-col gap-4">
-          <SectionHeading>Thông tin yêu cầu</SectionHeading>
+          {/*  C-03: tiêu đề block = icon + nhãn, gạch dưới KÉO HẾT bề ngang thẻ. */}
+          <div className="-mx-5 -mt-1 flex items-center justify-between border-b px-5 pb-3">
+            <span className="inline-flex items-center gap-2 font-medium">
+              <Stamp className="size-5 text-rose-600 dark:text-rose-400" />
+              Thông tin yêu cầu
+            </span>
+          </div>
 
           <Field label="Mục đích sử dụng" required>
             <Textarea
@@ -249,6 +299,8 @@ export function SealRequestForm({ request, duplicateFrom, title, onCancel, onSav
             entityId={request?.id ?? 0}
             canManage={canManageFiles}
             maxSizeMb={50}
+            defaultDocType="signed_doc"
+            hideUploadButton
           />
         ) : (
           <Card className="flex flex-col gap-3 p-5">
@@ -262,10 +314,23 @@ export function SealRequestForm({ request, duplicateFrom, title, onCancel, onSav
               </span>
             </div>
 
-            <FileDropzone
-              onFiles={addFiles}
-              hint="Kéo thả tệp vào đây hoặc bấm để chọn chứng từ đã ký"
-            />
+            {/*  Cùng FORMAT với ô kéo-thả ở trang sửa (DocumentAttachmentsCard): ô chọn
+                "Lưu vào mục" nằm NGAY TRONG khung kéo-thả (`data-dropzone-ignore`). */}
+            <FileDropzone onFiles={addFiles} hint="Kéo thả tệp vào đây hoặc bấm để chọn tệp">
+              <span className="text-xs text-muted-foreground">Lưu vào mục</span>
+              <Select value={attachDocType} onValueChange={setAttachDocType}>
+                <SelectTrigger size="sm" className="w-56 bg-background">
+                  <SelectValue placeholder="Chọn loại chứng từ" />
+                </SelectTrigger>
+                <SelectContent>
+                  {docTypeOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FileDropzone>
 
             {pendingFiles.length > 0 && (
               <ul className="divide-y rounded-lg border">
@@ -303,15 +368,8 @@ export function SealRequestForm({ request, duplicateFrom, title, onCancel, onSav
       </div>
     </div>
   )
-}
+})
 
-function SectionHeading({ children }: { children: React.ReactNode }) {
-  return (
-    <h3 className="border-b pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-      {children}
-    </h3>
-  )
-}
 
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (

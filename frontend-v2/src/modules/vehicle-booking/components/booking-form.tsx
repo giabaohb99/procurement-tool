@@ -1,4 +1,18 @@
-import { ArrowDown, ArrowUp, Loader2, MapPin, Plus, Send, Trash2 } from 'lucide-react'
+import {
+  ArrowDown,
+  ArrowUp,
+  IdCard,
+  Loader2,
+  MapPin,
+  Package,
+  Plus,
+  Route as RouteIcon,
+  Send,
+  Trash2,
+  UserRound,
+  Users,
+  type LucideIcon,
+} from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
@@ -249,7 +263,11 @@ export function BookingForm({
             onChange={(e) => setPurpose(e.target.value)}
             placeholder={title}
             aria-label="Mục đích (tiêu đề)"
-            className="w-[min(26rem,55vw)] min-w-0 rounded-md border border-dashed border-transparent bg-transparent px-1 text-xl font-semibold tracking-tight text-navy outline-none hover:border-input focus:border-primary dark:text-foreground"
+            //  `field-sizing-content`: ô co đúng bề rộng của chữ (hoặc gợi ý khi
+            //  trống) để badge trạng thái nằm SÁT tiêu đề, không bị đẩy ra xa vì
+            //  bề rộng cứng. Vẫn chặn trần `max-w` để tiêu đề dài không tràn, và
+            //  `min-w` để ô ngắn còn đủ chỗ bấm + thấy viền gạch khi rê chuột.
+            className="min-w-[7rem] max-w-[min(26rem,55vw)] field-sizing-content rounded-md border border-dashed border-transparent bg-transparent px-1 text-xl font-semibold tracking-tight text-navy outline-none hover:border-input focus:border-primary dark:text-foreground"
           />
         }
         onBack={onDone}
@@ -307,21 +325,24 @@ export function BookingForm({
           />
         </div>
 
-        {/* Người tạo — khóa cứng theo tài khoản đang đăng nhập (chỉ xem) */}
+        {/* Người tạo — khóa cứng theo tài khoản đang đăng nhập (chỉ xem) + Mục đích ngay dưới */}
         <div className="flex flex-col gap-4">
-          <SectionHeading>Người tạo</SectionHeading>
+          <BlockHeading icon={UserRound}>Thông tin người tạo</BlockHeading>
           <div className="grid gap-4 sm:grid-cols-2">
             <ReadOnlyField label="Họ tên">{user?.full_name || '—'}</ReadOnlyField>
             <ReadOnlyField label="Email">{user?.email || '—'}</ReadOnlyField>
             <ReadOnlyField label="Số điện thoại">{user?.phone || '—'}</ReadOnlyField>
             <ReadOnlyField label="Vai trò">{creatorRole || '—'}</ReadOnlyField>
           </div>
+          <Field label="Mục đích" required>
+            <Input value={purpose} onChange={(e) => setPurpose(e.target.value)} placeholder="VD: Đi thăm khách hàng quận 7" />
+          </Field>
         </div>
 
         {/* GPLX của người yêu cầu — chỉ khi TỰ LÁI (bắt buộc; tự điền nếu đã là tài xế) */}
         {selfDrive && (
           <div className="flex flex-col gap-4">
-            <SectionHeading>Thông tin tài xế</SectionHeading>
+            <BlockHeading icon={IdCard}>Thông tin tài xế</BlockHeading>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Số giấy phép lái xe" required>
                 <Input
@@ -348,13 +369,9 @@ export function BookingForm({
           </div>
         )}
 
-        {/* Thông tin chung */}
+        {/* Lộ trình */}
         <div className="flex flex-col gap-4">
-          <SectionHeading>Thông tin chung</SectionHeading>
-
-          <Field label="Mục đích" required>
-            <Input value={purpose} onChange={(e) => setPurpose(e.target.value)} placeholder="VD: Đi thăm khách hàng quận 7" />
-          </Field>
+          <BlockHeading icon={RouteIcon}>Lộ trình</BlockHeading>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label={L.start} required>
@@ -433,7 +450,7 @@ export function BookingForm({
         {/* Khối riêng theo loại */}
         {isDelivery ? (
           <div className="flex flex-col gap-4">
-            <SectionHeading>Thông tin giao hàng</SectionHeading>
+            <BlockHeading icon={Package}>Thông tin giao hàng</BlockHeading>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Tên hàng hóa" required>
                 <Input value={goodsName} onChange={(e) => setGoodsName(e.target.value)} />
@@ -457,7 +474,7 @@ export function BookingForm({
           </div>
         ) : (
           <div className="flex flex-col gap-4">
-            <SectionHeading>Thông tin chuyến đi</SectionHeading>
+            <BlockHeading icon={Users}>Thông tin chuyến đi</BlockHeading>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Số hành khách" required>
                 <Input type="number" min={1} value={passengerCount} onChange={(e) => setPassengerCount(Math.max(1, Number(e.target.value) || 1))} />
@@ -483,11 +500,15 @@ export function BookingForm({
   )
 }
 
-function SectionHeading({ children }: { children: React.ReactNode }) {
+/** Tiêu đề block C-03: icon (lucide) + nhãn, gạch dưới KÉO HẾT bề ngang thẻ. */
+function BlockHeading({ icon: Icon, children }: { icon: LucideIcon; children: React.ReactNode }) {
   return (
-    <h3 className="border-b pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-      {children}
-    </h3>
+    <div className="-mx-5 -mt-1 flex items-center justify-between border-b px-5 pb-3">
+      <span className="inline-flex items-center gap-2 font-medium">
+        <Icon className="size-5 text-sky-600 dark:text-sky-400" />
+        {children}
+      </span>
+    </div>
   )
 }
 

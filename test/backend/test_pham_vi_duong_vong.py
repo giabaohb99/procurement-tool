@@ -200,12 +200,29 @@ DB_GET_TRONG_CONTROLLER: dict[str, list[tuple[str, str]]] = {
         (OK_KHONG_CAN, "L22 `Employee` — tra tên NSTM chính"),
         (OK_KHONG_CAN, "L23 `Employee` — tra tên NSTM dự phòng"),
     ],
+    "seal_clerk/controller.py": [
+        (OK_KHONG_CAN, "L~ `Employee` — tra tên/mã văn thư để hiển thị; danh mục CẤU HÌNH, "
+                       "quyền quản dùng chung `seal_type`, không phải phạm vi đọc nhân sự"),
+        (OK_KHONG_CAN, "L~ `Company` — tra tên công ty phụ trách để hiển thị (không lọc phạm vi)"),
+    ],
     # ── Bình luận ────────────────────────────────────────────────────────────
     "comment/controller.py": [
         (OK_DA_KIEM, "L173 — L177 `resolve_doc` (quyền + `apply_scope` chứng từ cha)"),
         (OK_DA_KIEM, "L194 — L198 `resolve_doc`"),
         (OK_DA_KIEM, "L204 — L208 `resolve_doc`"),
         (OK_DA_KIEM, "L215 — L219 `resolve_doc` + L221 chỉ người viết"),
+    ],
+    "coffee_point/controller.py": [
+        (OK_KHONG_CAN, "L~ `Employee` (create_member) — chỉ tra HỒ SƠ để lấy tên/pháp "
+                       "nhân khi GÁN người vào chương trình; cổng thật là "
+                       "`require(coffee_member, create)` (việc của coffee_admin, phạm vi "
+                       "all), không phải phạm vi đọc nhân sự"),
+        (OK_KHONG_CAN, "L~ `Employee` (create_partner) — đọc tên/SĐT của thành viên ĐÃ "
+                       "qua `get_scoped(coffee_member)` ngay dòng trên để gửi sang "
+                       "POS365; hồ sơ nhân sự chỉ là dữ liệu kèm của bản ghi đã kiểm"),
+        (OK_KHONG_CAN, "L~ `Employee` (self_order) — chỉ lấy TÊN người đặt để ghi vào ghi "
+                       "chú đơn POS365; `emp_id` là chính người đăng nhập (đặt nước cho "
+                       "bản thân), không phải lối đọc hồ sơ nhân sự người khác"),
     ],
     "contract/controller.py": [
         (OK_DA_KIEM, "L74 — nằm TRONG `_in_scope`, chỉ để tách 404 (không có) khỏi 403 "
@@ -379,7 +396,13 @@ def test_a1_bang_65_lan_db_get_trong_controller_da_phan_loai_du():
         f"số lần gọi `db.get(` đã đổi ở {list(lech)} (thật, đã khai) = "
         f"{lech}. Phân loại lần gọi mới rồi cập nhật bảng."
     )
-    assert sum(that.values()) == 67, f"tổng phải là 67, đang là {sum(that.values())}"
+    #  67 (erp-v2) → 72 khi gộp nhánh pltgiang (08–09/09/2026):
+    #  · `coffee_point/controller.py` +3 — tra hồ sơ nhân sự khi gán thành viên /
+    #    tạo khách POS365 / ghi tên người đặt nước; cổng thật là quyền
+    #    `coffee_member` + `get_scoped`, hồ sơ chỉ để hiển thị.
+    #  · `seal_clerk/controller.py` (Phân công văn thư) +2 — tra tên NV + tên công
+    #    ty để hiển thị; danh mục cấu hình, không cần lọc phạm vi.
+    assert sum(that.values()) == 72, f"tổng phải là 72, đang là {sum(that.values())}"
 
 
 def test_a1b_moi_dong_deu_co_nhan_hop_le_va_ly_do_that():

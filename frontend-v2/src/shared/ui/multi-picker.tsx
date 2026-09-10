@@ -51,6 +51,11 @@ interface MultiPickerProps<Id extends MultiPickerId = MultiPickerId> {
    * bỏ dải chip bên dưới. Hợp với ô chọn ít mục, nhãn cần thấy ngay (vd công ty).
    */
   chipsInTrigger?: boolean
+  /**
+   * Ẩn HẲN dải chip (cả trong khung lẫn bên dưới) — khung chỉ còn là nút chọn "Đã
+   * chọn N". Dùng khi nơi gọi tự bày danh sách đã chọn theo cách riêng (vd thẻ công ty).
+   */
+  hideChips?: boolean
 }
 
 /** Số dòng tối đa trong danh sách thả xuống — dài hơn thì bắt gõ tìm. */
@@ -93,6 +98,7 @@ export function MultiPicker<Id extends MultiPickerId = MultiPickerId>({
   contentClassName,
   clearInTrigger = false,
   chipsInTrigger = false,
+  hideChips = false,
 }: MultiPickerProps<Id>) {
   const [open, setOpen] = useState(false)
   const [keyword, setKeyword] = useState('')
@@ -148,12 +154,12 @@ export function MultiPicker<Id extends MultiPickerId = MultiPickerId>({
             disabled={disabled}
             className={cn(
               'w-full justify-start font-normal',
-              chipsInTrigger && selected.length > 0 && 'h-auto min-h-9 flex-wrap gap-1 py-1.5',
+              chipsInTrigger && !hideChips && selected.length > 0 && 'h-auto min-h-9 flex-wrap gap-1 py-1.5',
               selected.length === 0 && 'text-muted-foreground',
             )}
           >
             <Search className="size-4 shrink-0 self-center" />
-            {chipsInTrigger && selected.length > 0 ? (
+            {chipsInTrigger && !hideChips && selected.length > 0 ? (
               //  Hiện thẳng các mục ĐÃ CHỌN (chip có X riêng) trong khung — không "Đã chọn N".
               selected.map((item) => (
                 <Badge key={item.id} variant="secondary" className="gap-1 font-normal">
@@ -266,8 +272,9 @@ export function MultiPicker<Id extends MultiPickerId = MultiPickerId>({
         </PopoverContent>
       </Popover>
 
-      {/*  Dải chip dưới ô — bỏ khi đã hiện chip NGAY TRONG khung chọn (`chipsInTrigger`). */}
-      {!chipsInTrigger && selected.length > 0 && (
+      {/*  Dải chip dưới ô — bỏ khi hiện chip trong khung (`chipsInTrigger`) hoặc khi
+           nơi gọi tự bày danh sách đã chọn (`hideChips`). */}
+      {!chipsInTrigger && !hideChips && selected.length > 0 && (
         <div className="space-y-1.5">
           {/*  Dải chip. Khi bung thì đóng khung + cho cuộn, không để nó đẩy phần
                dưới của form đi (xem `CAO_TOI_DA_KHI_BUNG`). */}

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 
 import { cn } from '@/shared/utils/cn'
+import { CLERK_STATUS, CLERK_STATUS_LABELS } from '../types/seal-clerk'
 import { SEAL_STATUS_BADGE, SEAL_STATUS_LABELS, type BadgeTone } from '../types/seal-request'
 
 /**
@@ -45,4 +46,15 @@ export function SealStatusBadge({ status, label }: { status: number; label?: str
       {label || SEAL_STATUS_LABELS[status] || '—'}
     </StatusPill>
   )
+}
+
+/**
+ * Badge trạng thái PHÂN CÔNG VĂN THƯ — cùng khuôn pill với badge trạng thái tài xế
+ * ở /vehicle-booking/drivers: Đang hoạt động = xanh lá, Nghỉ phép = hổ phách,
+ * Ngưng sử dụng = xám.
+ */
+export function ClerkStatusBadge({ status, label }: { status: number; label?: string }) {
+  const tone: BadgeTone =
+    status === CLERK_STATUS.active ? 'ok' : status === CLERK_STATUS.onLeave ? 'warn' : 'gray'
+  return <StatusPill tone={tone}>{label || CLERK_STATUS_LABELS[status] || '—'}</StatusPill>
 }

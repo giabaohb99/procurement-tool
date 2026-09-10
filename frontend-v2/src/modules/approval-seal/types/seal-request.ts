@@ -85,6 +85,9 @@ export interface SealRequest {
   created_at: string | null
   /** True khi phiếu đang chạy một phiên duyệt nhiều bước (bộ máy `ApprovalSwitch`). */
   approval_running: boolean
+  /** Người xem có được thao tác CỔNG-2 (đóng dấu / trả / từ chối) không — CHỈ Văn thư
+   *  được phân công (hoặc quản trị). Có ở phản hồi CHI TIẾT; danh sách không kèm. */
+  can_stamp?: boolean
 }
 
 /** Payload tạo/sửa phiếu — form gửi đúng bộ trường backend nhận. */

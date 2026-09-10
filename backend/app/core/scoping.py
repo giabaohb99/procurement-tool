@@ -13,7 +13,7 @@ nào cố ý không lọc thì khai thẳng là `PUBLIC`, kèm lý do — và en
 """
 import logging
 
-from sqlalchemy import and_, false, or_, select
+from sqlalchemy import and_, exists, false, func, or_, select
 
 from app.core.auth import get_perm_profile  # noqa: F401  (re-export tiện dùng)
 
@@ -209,6 +209,18 @@ SCOPE_FIELDS = {
     #  thiếu nó thì ô chọn chức vụ trên hồ sơ rỗng; ai được SỬA thì gác bằng
     #  `job_position.write`.
     "job_position":     PUBLIC,
+
+    # --- Điểm cà phê × POS365 (doc/erp/diem-ca-phe/04-phan-quyen.md) ---
+    #  Sổ điểm và thành viên khai `self` theo `employee_id` — "nhân viên chỉ thấy
+    #  sổ của mình" là một phép áp scope, không phải một câu hứa (nghiệm thu 4 của
+    #  `09` §11). KHÔNG khai `owner`: `created_by` của dòng sổ là người/task GHI hộ
+    #  (0 = tự động), lấy đó làm "của mình" thì mọi dòng task tự ghi thành ví chung.
+    "coffee_policy":    {"company": "company_id"},
+    "coffee_member":    {"company": "company_id", "self": "employee_id"},
+    "coffee_ledger":    {"company": "company_id", "self": "employee_id"},
+    #  Đơn POS365 là dữ liệu vận hành/đối soát — lọc theo pháp nhân của quán;
+    #  người thường không có grant nên không thấy gì (đúng ý).
+    "pos_order":        {"company": "company_id"},
 }
 
 
@@ -277,8 +289,13 @@ def _chan(entity, scope, user, reason):
     return false()
 
 
-def _role_scope_cond(model, entity, scope, user, profile):
-    """Điều kiện theo cấp bậc vai trò (own/dept/company/all). None = 'all' (không giới hạn)."""
+def _role_scope_cond(model, entity, scope, user, profile, perms=None):
+    """Điều kiện theo cấp bậc vai trò (own/dept/company/all). None = 'all' (không giới hạn).
+
+    `perms` = bộ quyền của CHÍNH grant đang xét ({action: bool, scope}). Cần cho Duyệt
+    dấu để tách Văn thư (grant company CÓ `write` → đóng dấu) khỏi Giám đốc (grant
+    company CHỈ `read` → xem phiếu đã duyệt). Đọc `perms_union` toàn cục là sai: ai
+    cũng có `write` phạm vi own (vai trò nền `employee`) nên Giám đốc bị nhận nhầm."""
     if scope == "all":
         return None
     # B-07: KHÔNG khai = CHẶN. Trước đây nhánh này trả `None` nên 27 entity vắng mặt trong
@@ -416,14 +433,41 @@ def _role_scope_cond(model, entity, scope, user, profile):
         #  `own`/`dept` KHÔNG chặn ở đây — nhánh chung phía trên đã đúng: `own` =
         #  người tạo ∨ người yêu cầu; `dept` = cùng công ty chính ∧ cùng phòng.
         if entity == "seal_request":
+            from app.modules.seal_request.model import (SEAL_APPROVED, SEAL_COMPLETED,
+                                                        SealRequestCompany as _SRC)
+            approved = model.status.in_([SEAL_APPROVED, SEAL_COMPLETED])
+            #  VĂN THƯ (có quyền `write`) — lọc theo BẢNG PHÂN CÔNG `tab_seal_clerk`,
+            #  KHÔNG theo `company_id` hồ sơ: chỉ thấy phiếu MỘT công ty của công ty
+            #  mình phụ trách; phiếu ĐA công ty chỉ về VĂN THƯ TỔNG (`is_head`).
+            #  Chỉ dùng điều kiện SQL (không cần `db`) nên chạy cả MySQL lẫn SQLite.
+            #  Văn thư = grant NÀY (phạm vi company) có `write`; Giám đốc = chỉ `read`.
+            has_write = bool(perms and perms.get("write"))
+            if has_write:
+                from app.modules.seal_clerk.model import CLERK_ACTIVE, SealClerk
+                emp_id = profile.get("employee_id") or 0
+                if not emp_id:
+                    return _chan(entity, scope, user, "van thu chua gan ho so nhan su")
+                single = (select(_SRC.seal_request_id)
+                          .group_by(_SRC.seal_request_id).having(func.count() == 1))
+                #  Chỉ dòng phân công ĐANG HOẠT ĐỘNG mới nhận phiếu — Tạm dừng thì bỏ qua.
+                my_companies = select(SealClerk.company_id).where(
+                    SealClerk.employee_id == emp_id, SealClerk.is_head.is_(False),
+                    SealClerk.company_id != 0, SealClerk.status == CLERK_ACTIVE)
+                mine = select(_SRC.seal_request_id).where(_SRC.company_id.in_(my_companies))
+                cond = and_(model.id.in_(single), model.id.in_(mine))
+                multi = (select(_SRC.seal_request_id)
+                         .group_by(_SRC.seal_request_id).having(func.count() > 1))
+                head = select(SealClerk.id).where(
+                    SealClerk.employee_id == emp_id, SealClerk.is_head.is_(True),
+                    SealClerk.status == CLERK_ACTIVE)
+                cond = or_(cond, and_(model.id.in_(multi), exists(head)))
+                return and_(cond, approved)
+            #  GIÁM ĐỐC (chỉ `read` phạm vi công ty) — giữ nguyên: thấy mọi phiếu đã
+            #  duyệt có công ty MÌNH (hồ sơ) trong bảng nối, để giám sát toàn công ty.
             if not company_id:
                 return _chan(entity, scope, user, "nguoi dung chua gan phap nhan (company_id=0)")
-            from app.modules.seal_request.model import (SEAL_APPROVED, SEAL_COMPLETED,
-                                                        SealRequestCompany)
-            sub = select(SealRequestCompany.seal_request_id).where(
-                SealRequestCompany.company_id == company_id)
-            return and_(model.id.in_(sub),
-                        model.status.in_([SEAL_APPROVED, SEAL_COMPLETED]))
+            sub = select(_SRC.seal_request_id).where(_SRC.company_id == company_id)
+            return and_(model.id.in_(sub), approved)
         if not f.get("company"):
             # Entity không có cột pháp nhân (vd. `survey`, `user`). Không có gì để lọc mà vẫn
             # trả None thì "company" hóa ra rộng bằng "all" — đúng lỗ N-14.
@@ -543,7 +587,7 @@ def scope_condition(model, entity: str, user, profile: dict, action: str = "read
         if not p or not p.get(action):
             continue
         scopeconf = g.get("scope") or {}
-        rc = _role_scope_cond(model, entity, p.get("scope", "all"), user, profile)
+        rc = _role_scope_cond(model, entity, p.get("scope", "all"), user, profile, perms=p)
         # 'Phòng ban được xem' = CỘNG THÊM vào phạm vi vai trò.
         # rc None (scope=all) → đã thấy hết, bỏ qua để không thu hẹp nhầm.
         dept_add = _dept_include_cond(model, entity, scopeconf)

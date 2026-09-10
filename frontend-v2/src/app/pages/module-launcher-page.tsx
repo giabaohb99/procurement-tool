@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { allModules } from '@/app/router/module-registry'
 import { useAuth } from '@/core/auth/use-auth'
 import { canOpenModule } from '@/app/router/module-visibility'
-import { usePermission } from '@/core/authorization/use-permission'
+import { useNavContext, usePermission } from '@/core/authorization/use-permission'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { Input } from '@/shared/ui/input'
 import { formatWeekdayDate } from '@/shared/utils/format-date'
@@ -33,6 +33,7 @@ export function ModuleLauncherPage() {
   const isMobile = useIsMobile()
   const [input, setInput] = useState('')
   const keyword = isMobile ? input.trim() : ''
+  const navCtx = useNavContext()
 
   const modules = allModules
     .map((module) => ({
@@ -41,7 +42,7 @@ export function ModuleLauncherPage() {
       //  quyền trên `module.entity` — xem `module-visibility.ts`.
       state: !module.enabled
         ? ('coming-soon' as const)
-        : canOpenModule(module, can)
+        : canOpenModule(module, can, navCtx)
           ? ('ready' as const)
           : ('locked' as const),
     }))

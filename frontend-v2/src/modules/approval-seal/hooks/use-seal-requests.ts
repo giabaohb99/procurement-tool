@@ -65,10 +65,13 @@ export function useCreateSealRequest() {
       payload,
       files,
       submit,
+      docType = SIGNED_DOC_TYPE,
     }: {
       payload: SealRequestPayload
       files: File[]
       submit: boolean
+      /** Thư mục (loại chứng từ) lưu tệp — mặc định "Chứng từ đã ký". */
+      docType?: string
     }) => {
       const created = await sealRequestApi.create(payload, false)
       if (files.length) {
@@ -76,7 +79,7 @@ export function useCreateSealRequest() {
           'seal_request',
           created.id,
           files,
-          SIGNED_DOC_TYPE,
+          docType,
         )
       }
       return submit ? sealRequestApi.submit(created.id) : created

@@ -45,6 +45,7 @@ celery_app.conf.update(
         "app.modules.audit.tasks",        # Đóng gói nhật ký ra R2 (hằng tháng, không xóa DB)
         "app.modules.request_log.tasks",  # Dọn dòng GET quá 90 ngày (mỗi ngày, sau khi đã có gói R2)
         "app.modules.assistant.rag.tasks",  # Nạp chỉ mục vector loại B (HDSD + FAQ) khi có hook / bấm nút
+        "app.modules.coffee_point.tasks",   # Điểm cà phê × POS365 — kéo đơn / reset kỳ / đối chiếu
         # "app.tasks.alerts",           # Phase 2 — cảnh báo theo lịch
         # "app.tasks.report_tasks",     # Phase 3 — refresh báo cáo
     ],
@@ -81,5 +82,26 @@ celery_app.conf.update(
             "task": "request_log.cleanup",
             "schedule": crontab(hour=3, minute=40),  # 03:40 VN, mỗi ngày
         },
+        # --- Điểm cà phê × POS365 (doc/erp/diem-ca-phe/03 §4). Cầu dao
+        # POS365_HARD_OFF nằm trong client: môi trường chưa bật thì các task này
+        # kết thúc ngay bằng dòng nhật ký SKIPPED, không một call nào ra ngoài.
+        "coffee-pull-orders": {
+            "task": "coffee.pull_orders",
+            "schedule": crontab(minute=f"*/{settings.POS365_PULL_MINUTES}"),
+        },
+        "coffee-check-voids": {
+            "task": "coffee.check_voids",
+            "schedule": crontab(minute=15),                          # mỗi giờ, phút 15
+        },
+        "coffee-monthly-reset": {
+            "task": "coffee.monthly_reset",
+            "schedule": crontab(day_of_month=1, hour=0, minute=5),   # 00:05 ngày 1 hằng tháng
+        },
+        "coffee-reconcile": {
+            "task": "coffee.reconcile",
+            "schedule": crontab(hour=6, minute=0),                   # 06:00 hằng ngày
+        },
+        # coffee.mirror_balance (D-07) CHƯA có lịch — bật sau khi POC P5 xác nhận
+        # PartnerSave ghi được Point.
     },
 )

@@ -127,6 +127,29 @@ def apply_sort_from_request(query, model, request: Request, default=None, allow:
     return apply_sort(query, model, sort_by, sort_dir, default=default)
 
 
+def apply_datetime_range(query, model, request: Request, field: str = "created_at"):
+    """Lọc khoảng cho cột DATETIME thật (khác `apply_range_filters` lọc cột chuỗi).
+
+    Đọc `<field>_from` / `<field>_to` (ngày `YYYY-MM-DD`); `_to` tính hết ngày.
+    Dùng cho `created_at` của Đặt xe / Duyệt dấu — bộ lọc "Ngày tạo" trên thanh lọc.
+    """
+    from datetime import datetime
+
+    col = getattr(model, field, None)
+    if col is None:
+        return query
+    v_from = (request.query_params.get(f"{field}_from") or "").strip()
+    v_to = (request.query_params.get(f"{field}_to") or "").strip()
+    try:
+        if v_from:
+            query = query.filter(col >= datetime.fromisoformat(v_from))
+        if v_to:
+            query = query.filter(col <= datetime.fromisoformat(f"{v_to}T23:59:59"))
+    except ValueError:
+        pass  # ngày rác thì bỏ qua, không chặn cả danh sách
+    return query
+
+
 def apply_range_filters(query, model, request: Request, fields: list[str]):
     """Lọc khoảng cho cột (ngày YYYY-MM-DD lưu dạng String, so sánh chuỗi vẫn đúng thứ tự).
     Mỗi field đọc 2 param: `<field>_from` (>=) và `<field>_to` (<=). Bỏ trống -> không lọc."""

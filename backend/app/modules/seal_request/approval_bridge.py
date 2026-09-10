@@ -90,12 +90,6 @@ def _actor(instance) -> SimpleNamespace:
     return SimpleNamespace(id=instance.updated_by or 0)
 
 
-def _append_note(req: SealRequest, label: str, reason: str) -> None:
-    from .service import _append_note as append
-
-    append(req, label, reason)
-
-
 def _on_approved(db: Session, req_id: int, instance) -> None:
     """Ký hết các bước cổng 1 → phiếu Đã duyệt (chờ Văn thư đóng dấu)."""
     from .notify import notify
@@ -118,7 +112,7 @@ def _on_rejected(db: Session, req_id: int, instance) -> None:
         return
     reason = _reason(instance, "Bị từ chối")
     req.status = SEAL_REJECTED
-    _append_note(req, "Từ chối", reason)
+    #  Lý do nằm ở nhật ký (`_write_log`) + thông báo, KHÔNG ghi vào ô Ghi chú.
     req.updated_by = instance.updated_by or 0
     db.commit()
     _write_log(db, req_id, instance, "cancel", reason)
@@ -133,7 +127,7 @@ def _on_returned(db: Session, req_id: int, instance) -> None:
         return
     reason = _reason(instance, "Bị trả về")
     req.status = SEAL_RETURNED
-    _append_note(req, "Yêu cầu chỉnh sửa", reason)
+    #  Lý do nằm ở nhật ký (`_write_log`) + thông báo, KHÔNG ghi vào ô Ghi chú.
     req.updated_by = instance.updated_by or 0
     db.commit()
     _write_log(db, req_id, instance, "update", reason)

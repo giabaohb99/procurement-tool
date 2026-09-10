@@ -1,19 +1,25 @@
-import { Copy, Plus, Search } from 'lucide-react'
+import { Copy, Download, Plus, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 
+import { downloadFile } from '@/core/api'
 import { usePermission } from '@/core/authorization/use-permission'
 import { appConfig } from '@/core/config/app-config'
+import { useCompanies } from '@/modules/hr/hooks/use-companies'
+import { ConditionalFilter, FilterProvider, useFilterQuery } from '@/shared/conditional-filter'
 import { appRoutes } from '@/shared/constants/app-routes'
+import { DataTable, type DataTableColumn } from '@/shared/data-table'
+import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
-import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import type { ListParams } from '@/shared/types/api'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
+import { DateRangePicker } from '@/shared/ui/date-range-picker'
 import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
+import { QuickFilterSheet } from '@/shared/ui/quick-filter-sheet'
 import {
   Select,
   SelectContent,
@@ -23,14 +29,29 @@ import {
 } from '@/shared/ui/select'
 import { CarBookingIcon, DeliveryBookingIcon } from '../components/booking-type-icons'
 import { BookingStatusBadge } from '../components/status-pill'
+import { VEHICLE_BOOKING_FILTER_FIELDS } from '../config/vehicle-booking-filter-fields'
 import { useVehicleBookings } from '../hooks/use-vehicle-bookings'
 import { BOOKING_STATUS_LABELS, REQUEST_TYPE, type VehicleBooking } from '../types/vehicle-booking'
 
 const ALL = 'all'
 
+const FILTER_CONFIG = {
+  fields: VEHICLE_BOOKING_FILTER_FIELDS,
+  allowConjunctionToggle: true,
+  preserveParams: [
+    'company_id',
+    'department_id',
+    'status',
+    'request_type',
+    'created_at_from',
+    'created_at_to',
+    'sort_by',
+    'sort_dir',
+  ],
+}
+
 function formatDateTime(value: string): string {
   if (!value) return ''
-  // Chuỗi ISO không kèm múi giờ (vd "2026-09-01T08:00") — cắt hiển thị gọn.
   const [date, time] = value.split('T')
   if (!date) return value
   const [y, m, d] = date.split('-')
@@ -39,31 +60,106 @@ function formatDateTime(value: string): string {
 }
 
 export function VehicleBookingListPage() {
+  //  Bỏ các trường lọc THAM CHIẾU khi thiếu quyền đọc danh mục — backend gác
+  //  `company/department/employee.read`, mở popup chọn mà không quyền là ăn 403.
+  const { can } = usePermission()
+  const config = useMemo(
+    () => ({
+      ...FILTER_CONFIG,
+      fields: VEHICLE_BOOKING_FILTER_FIELDS.filter((f) => {
+        if (f.name === 'company_id') return can('company', 'read')
+        if (f.name === 'department_id') return can('department', 'read')
+        if (f.name === 'requester_id') return can('employee', 'read')
+        return true
+      }),
+    }),
+    [can],
+  )
+  return (
+    <FilterProvider config={config}>
+      <VehicleBookingListContent />
+    </FilterProvider>
+  )
+}
+
+function VehicleBookingListContent() {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { can } = usePermission()
   const canCreate = can('vehicle_booking', 'create')
+  const canReadCompany = can('company', 'read')
+
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
+  const [companyId, setCompanyId] = useUrlParamState('company_id', ALL)
+  const [departmentId, setDepartmentId] = useUrlParamState('department_id', ALL)
   const [status, setStatus] = useUrlParamState('status', ALL)
   const [requestType, setRequestType] = useUrlParamState('request_type', ALL)
-  const [page, setPage] = useState(1)
+  const [createdFrom, setCreatedFrom] = useUrlParamState('created_at_from', '')
+  const [createdTo, setCreatedTo] = useUrlParamState('created_at_to', '')
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
-  // Sắp xếp phía server theo cột (backend whitelist cột thật, xem apply_sort_from_request).
-  const [sortBy, setSortBy] = useState('')
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
 
-  const params = useMemo<ListParams>(() => {
-    const p: ListParams = { page, page_size: pageSize }
-    if (debouncedValue) p.search = debouncedValue
-    if (status !== ALL) p.status = status
-    if (requestType !== ALL) p.request_type = requestType
-    if (sortBy) {
-      p.sort_by = sortBy
-      p.sort_dir = sortDir
-    }
-    return p
-  }, [page, pageSize, debouncedValue, status, requestType, sortBy, sortDir])
+  const sortBy = searchParams.get('sort_by') || ''
+  const sortDir = (searchParams.get('sort_dir') as 'asc' | 'desc') || 'asc'
+
+  const { data: companies } = useCompanies({ page_size: 500, is_active: true }, { enabled: canReadCompany })
+  const { queryParams, queryKey } = useFilterQuery()
+
+  const [page, setPage] = usePageResetOnFilterChange([
+    queryKey,
+    debouncedValue,
+    companyId,
+    departmentId,
+    status,
+    requestType,
+    createdFrom,
+    createdTo,
+    sortBy,
+    sortDir,
+  ])
+
+  const params: ListParams = { page, page_size: pageSize, ...queryParams }
+  if (debouncedValue) params.search = debouncedValue
+  if (companyId !== ALL) params.company_id = Number(companyId)
+  if (departmentId !== ALL) params.department_id = Number(departmentId)
+  if (status !== ALL) params.status = status
+  if (requestType !== ALL) params.request_type = requestType
+  if (createdFrom) params.created_at_from = createdFrom
+  if (createdTo) params.created_at_to = createdTo
+  if (sortBy) {
+    params.sort_by = sortBy
+    params.sort_dir = sortDir
+  }
 
   const { data, isLoading, isError } = useVehicleBookings(params)
+
+  const activeCount = [
+    companyId !== ALL,
+    departmentId !== ALL,
+    status !== ALL,
+    requestType !== ALL,
+    Boolean(createdFrom || createdTo),
+  ].filter(Boolean).length
+
+  const clearAllFilters = () => {
+    setCompanyId(ALL)
+    setDepartmentId(ALL)
+    setStatus(ALL)
+    setRequestType(ALL)
+    setCreatedFrom('')
+    setCreatedTo('')
+  }
+
+  const handleSortChange = (newSortBy: string, newSortDir: 'asc' | 'desc') => {
+    const next = new URLSearchParams(searchParams)
+    if (newSortBy) {
+      next.set('sort_by', newSortBy)
+      next.set('sort_dir', newSortDir)
+    } else {
+      next.delete('sort_by')
+      next.delete('sort_dir')
+    }
+    setSearchParams(next)
+  }
 
   const columns = useMemo<DataTableColumn<VehicleBooking>[]>(
     () => [
@@ -155,7 +251,6 @@ export function VehicleBookingListPage() {
               size="icon"
               aria-label={`Nhân bản ${r.code}`}
               title="Nhân bản"
-              // Ô hành động phải chặn nổi bọt, không thì bấm là mở luôn trang chi tiết.
               onClick={(e) => {
                 e.stopPropagation()
                 navigate(`${appRoutes.vehicleBooking.new}?from=${r.id}`)
@@ -169,18 +264,94 @@ export function VehicleBookingListPage() {
     [canCreate, navigate],
   )
 
+  const filterControls = (
+    <>
+      {canReadCompany && (
+        <Select value={companyId} onValueChange={setCompanyId}>
+          <SelectTrigger className="w-full md:w-40 text-xs h-9">
+            <SelectValue placeholder="Công ty" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL}>Tất cả công ty</SelectItem>
+            {(companies?.items ?? []).map((company) => (
+              <SelectItem key={company.id} value={String(company.id)}>
+                {company.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+
+
+      <Select value={requestType} onValueChange={setRequestType}>
+        <SelectTrigger className="w-full md:w-40 text-xs h-9">
+          <SelectValue placeholder="Loại yêu cầu" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={ALL}>Tất cả loại</SelectItem>
+          <SelectItem value={String(REQUEST_TYPE.car)}>Đặt xe công tác</SelectItem>
+          <SelectItem value={String(REQUEST_TYPE.delivery)}>Đặt xe giao hàng</SelectItem>
+        </SelectContent>
+      </Select>
+
+      <Select value={status} onValueChange={setStatus}>
+        <SelectTrigger className="w-full md:w-40 text-xs h-9">
+          <SelectValue placeholder="Trạng thái" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={ALL}>Mọi trạng thái</SelectItem>
+          {Object.entries(BOOKING_STATUS_LABELS).map(([value, label]) => (
+            <SelectItem key={value} value={value}>
+              {label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <DateRangePicker
+        from={createdFrom}
+        to={createdTo}
+        placeholder="Ngày tạo..."
+        className="w-full md:w-auto"
+        onChange={(f, t) => {
+          setCreatedFrom(f)
+          setCreatedTo(t)
+        }}
+      />
+    </>
+  )
+
+  //  Xuất Excel theo ĐÚNG bộ lọc đang hiển thị (khớp tập backend trả về).
+  const handleExport = async () => {
+    const q = new URLSearchParams()
+    if (debouncedValue) q.set('search', debouncedValue)
+    if (companyId !== ALL) q.set('company_id', companyId)
+    if (status !== ALL) q.set('status', status)
+    if (requestType !== ALL) q.set('request_type', requestType)
+    if (createdFrom) q.set('created_at_from', createdFrom)
+    if (createdTo) q.set('created_at_to', createdTo)
+    const qs = q.toString() ? `?${q.toString()}` : ''
+    await downloadFile(`/api/vehicle-bookings/export/xlsx${qs}`, 'yeu-cau-dat-xe.xlsx')
+  }
+
   return (
     <PageContainer fill>
       <PageHeader
         title="Đặt xe nội bộ"
         description="Tạo và theo dõi yêu cầu đặt xe công tác / giao hàng của bạn."
         actions={
-          can('vehicle_booking', 'create') ? (
-            <Button onClick={() => navigate(appRoutes.vehicleBooking.new)}>
-              <Plus className="size-4" />
-              Tạo yêu cầu
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => void handleExport()}>
+              <Download className="mr-1.5 size-4" />
+              Xuất Excel
             </Button>
-          ) : undefined
+            {canCreate && (
+              <Button onClick={() => navigate(appRoutes.vehicleBooking.new)}>
+                <Plus className="size-4" />
+                Tạo yêu cầu
+              </Button>
+            )}
+          </div>
         }
       />
 
@@ -197,11 +368,7 @@ export function VehicleBookingListPage() {
           storageKey="vehicle-booking.list"
           sortBy={sortBy}
           sortDir={sortDir}
-          onSortChange={(by, dir) => {
-            setSortBy(by)
-            setSortDir(dir)
-            setPage(1)
-          }}
+          onSortChange={handleSortChange}
           pagination={{
             page,
             pageSize,
@@ -215,35 +382,21 @@ export function VehicleBookingListPage() {
               <div className="relative min-w-56 flex-1 md:max-w-xs">
                 <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  className="pl-9"
+                  className="pl-9 h-9 text-xs"
                   placeholder="Tìm theo mã, mục đích, điểm đi/đến…"
                   value={keyword}
                   onChange={(e) => setKeyword(e.target.value)}
                 />
               </div>
-              <Select value={requestType} onValueChange={setRequestType}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Loại yêu cầu" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALL}>Tất cả loại</SelectItem>
-                  <SelectItem value={String(REQUEST_TYPE.car)}>Đặt xe công tác</SelectItem>
-                  <SelectItem value={String(REQUEST_TYPE.delivery)}>Đặt xe giao hàng</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Trạng thái" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALL}>Mọi trạng thái</SelectItem>
-                  {Object.entries(BOOKING_STATUS_LABELS).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+
+              <div className="hidden md:flex md:flex-wrap md:items-center md:gap-2">
+                {filterControls}
+                <ConditionalFilter />
+              </div>
+
+              <QuickFilterSheet activeCount={activeCount} onClearAll={clearAllFilters}>
+                <div className="space-y-3">{filterControls}</div>
+              </QuickFilterSheet>
             </>
           }
         />

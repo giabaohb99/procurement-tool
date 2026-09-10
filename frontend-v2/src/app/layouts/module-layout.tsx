@@ -3,7 +3,7 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom'
 
 import { canAccessRoute, canOpenModule } from '@/app/router/module-visibility'
 import { useActiveModule } from '@/app/router/use-active-module'
-import { usePermission } from '@/core/authorization/use-permission'
+import { useNavContext, usePermission } from '@/core/authorization/use-permission'
 import { AssistantWidget } from '@/modules/assistant/components/assistant-widget'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { ForbiddenPage } from '@/shared/ui/forbidden-page'
@@ -21,6 +21,7 @@ export function ModuleLayout() {
   const activeModule = useActiveModule()
   const { pathname } = useLocation()
   const { can } = usePermission()
+  const navCtx = useNavContext()
   const { width, setWidth } = useSidebarWidth()
 
   // URL không thuộc phân hệ nào (vd gõ tay đường dẫn sai) -> về màn chọn phân hệ.
@@ -28,11 +29,12 @@ export function ModuleLayout() {
 
   // Không có mục nào trong phân hệ này -> không cho vào khung (khỏi thấy menu trống).
   // Gõ thẳng URL một phân hệ ngoài quyền cũng bị đá về màn chọn phân hệ (NF-20).
-  if (!canOpenModule(activeModule, can)) return <Navigate to={appRoutes.launcher} replace />
+  if (!canOpenModule(activeModule, can, navCtx))
+    return <Navigate to={appRoutes.launcher} replace />
 
   // Vào được phân hệ nhưng màn cụ thể ngoài quyền -> giữ khung + menu, ruột là 403
   // để người dùng chọn màn khác mình có quyền.
-  const allowed = canAccessRoute(activeModule, pathname, can)
+  const allowed = canAccessRoute(activeModule, pathname, can, navCtx)
 
   return (
     // SidebarProvider lo trạng thái thu/mở, ngăn kéo mobile, phím tắt ⌘B và ghi

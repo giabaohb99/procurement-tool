@@ -25,10 +25,16 @@ PERMISSION_KEY_ALIAS = {"faq": "help_article"}
 #  ⚠️ BẢNG NHÃN TỪNG NẰM Ở ĐÂY (khoảng 50 dòng) — đã dời sang
 #  `core/action_catalog.py` (bao-CR-358 / NT-4). Ở đó mỗi mã khai một dòng gồm
 #  ĐỦ mã + nhãn + nhóm, thay vì nhãn ở tệp này còn nhóm ở `core/logging_codes`.
+#  Ba mã Duyệt dấu cổng 2 (seal_completed / seal_return_clerk / seal_reject_clerk)
+#  đã thêm vào catalog nhóm APPROVE khi gộp nhánh pltgiang.
 #
 #  Giữ tên cũ `ACTION_LABEL` vì `work/activity_service.py` và ba bài kiểm đang
 #  import theo tên đó.
 ACTION_LABEL = ACTION_LABELS
+
+#  Mã hành động do VĂN THƯ thực hiện (cổng 2) — hiện "Tên (Văn thư)" ở dòng nhật ký.
+#  `seal_completed` KHÔNG nằm đây: nhãn "Hoàn thành (đóng dấu)" đã ngụ ý văn thư.
+_CLERK_ROLE_ACTIONS = {"seal_return_clerk", "seal_reject_clerk"}
 
 
 def _guard(db: Session, user, entity: str | None, entity_id: int | None):
@@ -168,6 +174,11 @@ def list_logs(
     q = q.order_by(AuditLog.id.desc())
 
     def _format(l: AuditLog):
+        by = resolve_actor(db, l.created_by)
+        #  Chú thích VAI TRÒ sau tên: thao tác cổng-2 do Văn thư thực hiện thì hiện
+        #  "Tên (Văn thư)" — vai trò là chú thích của người, không nhét vào nội dung.
+        if l.action in _CLERK_ROLE_ACTIONS:
+            by = f"{by} (Văn thư)"
         return {
             "id": l.id,
             "entity": l.entity,
@@ -178,7 +189,7 @@ def list_logs(
             #  tra bảng phẳng luôn trượt.
             "action_label": label_of_action(l.action),
             "message": l.message,
-            "by": resolve_actor(db, l.created_by),
+            "by": by,
             "by_id": l.created_by,
             "at": l.created_at,
         }

@@ -206,6 +206,10 @@ _ALL_ACTIONS = ["read", "create", "write", "delete", "approve", "cancel", "print
 # Quản lý thu mua tự cấp cho mình thêm ngày phép được (`leave_balance` mở cột
 # điều chỉnh tay) và đọc được lý do nghỉ của cả công ty. Vòng `setdefault` phía
 # dưới vẫn cấp cho vai trò này quyền nộp đơn của chính mình — đúng phần cần.
+#  Bốn khóa Điểm cà phê cũng ở đây (08/09/2026): phúc lợi là việc của Nhân sự /
+#  quản trị quán, không phải của nghiệp vụ thu mua. Lọt vào _PUR_MANAGER_PERMS là
+#  Quản lý thu mua tự cộng điểm cho mình được (`coffee_ledger.write` mở điều chỉnh
+#  tay) — đúng cái mà PS12 bắt tách quyền.
 _SYS_ENTITIES = {"user", "role", "setting", "backup", "help_article", "mailbox",
                  "forum_post", "forum_board",
                  "leave_request", "leave_balance", "leave_type", "holiday",
@@ -215,7 +219,8 @@ _SYS_ENTITIES = {"user", "role", "setting", "backup", "help_article", "mailbox",
                  #  CCCD + tài khoản ngân hàng của toàn công ty — thứ chẳng liên
                  #  quan gì tới nghiệp vụ mua hàng. Cùng lý do đã loại
                  #  `leave_balance` ra khỏi đây.
-                 "employee_sensitive"}
+                 "employee_sensitive",
+                 "coffee_policy", "coffee_member", "coffee_ledger", "pos_order"}
 _PUR_MANAGER_PERMS = {e: (_ALL_ACTIONS, "all") for e in ENTITIES if e not in _SYS_ENTITIES}
 
 STD_ROLES = {
@@ -256,6 +261,12 @@ STD_ROLES = {
         "employee": (["read"], "dept"),
         "purchase_request": (["read", "approve", "export"], "dept"),
         "survey_request": (["read", "approve", "export"], "dept"),
+        #  TBP là người DUYỆT DẤU cổng 1 cho phòng mình (như PYC/khảo sát): cấp approve
+        #  seal_request cho vai trò trưởng phòng SẴN CÓ thay vì vai trò riêng `seal_approver`
+        #  (đúng "quyết định C" ghi ở STD_ROLES seal). CHỈ read+approve — tạo/sửa phiếu
+        #  CỦA MÌNH đã có qua vai trò nền `employee`; không cấp write để TBP KHÔNG đóng
+        #  dấu được phiếu phòng. Khai TRƯỚC vòng setdefault nên không bị đè về own.
+        "seal_request": (["read", "approve"], "dept"),
         "ticket": (["read", "create", "write"], "own"),
         "report": (["read"], "dept"),
     }},
@@ -264,6 +275,10 @@ STD_ROLES = {
         "employee": (["read"], "company"),
         "purchase_request": (["read", "export"], "company"),
         "purchase_order": (["read", "export"], "company"),
+        #  Giám đốc duyệt dấu: XEM yêu cầu đóng dấu ĐÃ DUYỆT của công ty mình (nhánh
+        #  company của scoping đã tự lọc còn Đã duyệt/Hoàn thành). CHỈ read — không
+        #  duyệt, không đóng dấu. (Vai trò riêng `seal_director` vẫn giữ để gán lẻ.)
+        "seal_request": (["read"], "company"),
         "ticket": (["read", "create", "write"], "own"),
         "report": (["read"], "company"),
         "assistant": (["read"], "all"),   # Trợ lý AI — vai trò lãnh đạo
@@ -393,6 +408,11 @@ STD_ROLES = {
         "vehicle": (["read"], "all"),
         "driver": (["read"], "all"),
     }},
+    #  Người ĐẶT XE thường: chỉ tạo & xem/sửa PHIẾU CỦA MÌNH (`own`) — không điều
+    #  phối, không lái. Cấp cho ai cần đặt xe mà không thuộc tổ điều phối/tài xế.
+    "booking_requester": {"name": "Người đặt xe", "perms": {
+        "vehicle_booking": (["read", "create", "write"], "own"),
+    }},
     # --- Duyệt dấu (Yêu cầu đóng dấu) ---
     # Văn thư: tiếp nhận phiếu ĐÃ DUYỆT của CÔNG TY MÌNH rồi đóng dấu ngoài thực tế
     # và bấm Hoàn thành (tính là `write`). Phạm vi 'company' = lọc theo company_id
@@ -470,6 +490,17 @@ for _role_info in STD_ROLES.values():
     #  vụ là việc của `hr_profile`.
     _role_info["perms"].setdefault("job_position", (["read"], "all"))
 
+#  ── Duyệt dấu (mở cho toàn nhân sự) ─────────────────────────────────────────
+#  Cùng lý lẽ Công việc / Nghỉ phép / Đặt phòng: **ai cũng phải trình được yêu cầu
+#  đóng dấu**. Phạm vi `own` (không phải `all`) — `seal_request` có chiều lọc thật
+#  (`SCOPE_FIELDS`), để `all` là mỗi người đọc phiếu đóng dấu của cả công ty.
+#  KHÔNG cấp `approve`/`write`-đóng-dấu ở đây: duyệt là của TBP (`seal_approver`),
+#  đóng dấu là của Văn thư (`seal_clerk`). `setdefault` nên KHÔNG đè các vai trò
+#  seal đã khai. `seal_type read` để form dựng được ô "Loại con dấu".
+for _role_info in STD_ROLES.values():
+    _role_info["perms"].setdefault("seal_request", (["read", "create", "write"], "own"))
+    _role_info["perms"].setdefault("seal_type", (["read"], "all"))
+
 #  Trưởng phòng duyệt đơn của phòng mình. Đặt SAU vòng `setdefault` ở trên nên
 #  phải gán ĐÈ, không `setdefault` — dòng `own` đã nằm sẵn ở đó rồi.
 #
@@ -510,6 +541,28 @@ STD_ROLES["hr_leave"] = {"name": "Nhân sự — Quản lý nghỉ phép", "perm
     #  chép vào đây thì người phòng Nhân sự không đặt nổi một phòng họp.
     "room_booking": (["read", "create", "write", "delete", "cancel"], "own"),
     "meeting_room": (["read"], "all"),
+}}
+
+#  ── Điểm cà phê × POS365 (doc/erp/diem-ca-phe/04-phan-quyen.md §3) ────────────
+#  Người dùng thường KHÔNG cần grant nào: Ví của tôi đi endpoint riêng
+#  `/api/coffee/my-wallet` chỉ đòi đăng nhập. Ba quyền của PS12 nằm ở ba ô khác
+#  nhau và KHÔNG gộp về một vai trò nào ngoài quản trị.
+STD_ROLES["coffee_admin"] = {"name": "Điểm cà phê — Quản trị", "perms": {
+    "coffee_policy": (["read", "create", "write"], "all"),
+    "coffee_member": (["read", "create", "write"], "all"),
+    #  `approve` = quyền CHỐT cấp phát kỳ (A-06 chốt 08/09/2026: từng kỳ phải có
+    #  người duyệt — beat chỉ nhắc, không tự cấp).
+    "coffee_ledger": (["read", "write", "approve"], "all"),
+    "pos_order": (["read", "write"], "all"),
+    #  Đọc kèm — thiếu là form Gán cấp rỗng sạch ô chọn người (bài học `vanthu_cty`).
+    "employee": (["read"], "all"),
+    "department": (["read"], "all"),
+    "company": (["read"], "all"),
+}}
+#  Tài khoản quầy: CHỈ tra cứu số dư (C-04). API `/api/coffee/lookup` tự cắt dữ
+#  liệu trả về còn {name, balance} nên quyền read này không kéo theo xem lịch sử.
+STD_ROLES["coffee_counter"] = {"name": "Điểm cà phê — Quầy (tra cứu)", "perms": {
+    "coffee_member": (["read"], "all"),
 }}
 
 

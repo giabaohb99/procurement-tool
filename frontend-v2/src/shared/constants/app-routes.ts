@@ -347,7 +347,10 @@ export const appRoutes = {
     meetingRoomDetail: (id: number | string) => `/hr/meeting-rooms/${id}`,
   },
   approvalSeal: {
+    //  Gốc = trang TỔNG QUAN (dashboard theo vai trò). Danh sách phiếu dời sang
+    //  `/requests` — mục menu con. Route tĩnh `/requests` xếp hạng cao hơn `/:id`.
     root: '/approval-seal',
+    requests: '/approval-seal/requests',
     //  Tạo/Sửa là TRANG riêng: chi tiết `/:id` = xem + thao tác; sửa ở `/:id/edit`;
     //  tạo mới ở `/new`. Cùng khuôn với phân hệ Đặt xe.
     new: '/approval-seal/new',
@@ -359,9 +362,16 @@ export const appRoutes = {
     sealTypes: '/approval-seal/seal-types',
     sealTypeNew: '/approval-seal/seal-types/new',
     sealTypeDetail: (id: number | string) => `/approval-seal/seal-types/${id}`,
+    /** Phân công văn thư theo công ty (+ văn thư tổng). */
+    clerks: '/approval-seal/clerks',
+    clerksNew: '/approval-seal/clerks/new',
+    clerkDetail: (id: number | string) => `/approval-seal/clerks/${id}`,
   },
   vehicleBooking: {
+    //  Gốc = trang TỔNG QUAN (dashboard theo vai trò). Danh sách yêu cầu dời sang
+    //  `/requests` — mục menu con. Route tĩnh `/requests` xếp hạng cao hơn `/:id`.
     root: '/vehicle-booking',
+    requests: '/vehicle-booking/requests',
     //  Tạo/Sửa đều là TRANG riêng (không còn popup). Chi tiết `/:id` = xem + thao
     //  tác; sửa ở `/:id/edit`; tạo mới ở `/new`.
     new: '/vehicle-booking/new',
@@ -369,6 +379,8 @@ export const appRoutes = {
     edit: (id: number | string) => `/vehicle-booking/${id}/edit`,
     /** Màn của TÀI XẾ — chỉ chuyến được phân cho chính mình. */
     myTrips: '/vehicle-booking/my-trips',
+    /** Lịch Timeline — các chuyến xe theo dòng thời gian. */
+    timeline: '/vehicle-booking/timeline',
     /** Bản in phiếu đặt xe (khổ A4). */
     print: (id: number | string) => `/print/vehicle-booking/${id}`,
     /** Danh mục Xe. */
@@ -382,6 +394,12 @@ export const appRoutes = {
   },
   degoCoffee: {
     root: '/dego-coffee',
+    policies: '/dego-coffee/policies',
+    members: '/dego-coffee/members',
+    ledger: '/dego-coffee/ledger',
+    lookup: '/dego-coffee/lookup',
+    pos: '/dego-coffee/pos',
+    order: '/dego-coffee/order',
   },
   /** Tuỳ chỉnh hiển thị của CHÍNH người đang đăng nhập — bảng màu, chế độ nền. */
   appearance: {
