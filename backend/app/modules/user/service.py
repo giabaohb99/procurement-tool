@@ -1,6 +1,7 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
+from app.core.audit import record
 from app.core.auth import hash_password, perm_cache_clear
 from app.modules.employee.model import Employee
 
@@ -16,6 +17,33 @@ DEFAULT_ROLE_CODE = "employee"
 # nhật ký giữ nguyên (lịch sử), còn thông báo/đăng ký push là của riêng tài khoản -> xóa theo.
 _SKIP_REF_TABLES = {"tab_audit_log", "tab_user", "tab_user_role", "tab_user_scope",
                     "tab_notification", "tab_push_subscription"}
+
+
+#  ⚠️ CẢ PHÂN HỆ NÀY TỪNG KHÔNG CÓ MỘT LỜI GỌI `record(...)` NÀO (bao-CR-346).
+#  Cấp tài khoản, đặt lại mật khẩu cho người khác, gán vai trò, nới phạm vi dữ
+#  liệu, khóa/mở tài khoản, xóa tài khoản — sáu thao tác nhạy cảm nhất hệ thống
+#  đi qua đây, và không thao tác nào để lại dòng nào ở lớp kể chuyện.
+def user_label(db: Session, user_id: int) -> str:
+    """Tên gọi được của một tài khoản, để câu nhật ký đọc ra người chứ ra số.
+
+    Ưu tiên họ tên nhân sự — `#12` thì không ai nhớ, mà email công ty lắm khi
+    trùng dạng viết tắt.
+    """
+    user = db.get(User, user_id)
+    if not user:
+        return f"#{user_id}"
+    emp = db.get(Employee, user.employee_id) if user.employee_id else None
+    return (emp.full_name if emp else "") or (user.email or "") or f"#{user_id}"
+
+
+def _role_names(db: Session, role_ids) -> list[str]:
+    from app.modules.role.model import Role
+    ids = [int(r) for r in role_ids]
+    if not ids:
+        return []
+    rows = db.query(Role.id, Role.name, Role.code).filter(Role.id.in_(ids)).all()
+    by_id = {rid: (name or code or f"#{rid}") for rid, name, code in rows}
+    return [by_id.get(rid, f"#{rid}") for rid in ids]
 
 
 def _role_ids(db: Session, user_id: int) -> list[int]:
@@ -93,6 +121,8 @@ def provision_user(db: Session, data: UserProvision, actor_id: int) -> User:
     db.add(user)
     db.commit()
     db.refresh(user)
+    record(db, actor_id, "user", user.id, "create",
+           f"Cấp tài khoản cho {emp.full_name or email or user.id}")
     # Không chọn vai trò nào -> mặc định 'Nhân sự' để tài khoản mới dùng được ngay
     assign_roles(db, user.id, RoleAssign(role_ids=data.role_ids or default_role_ids(db)), actor_id)
     return user
@@ -154,6 +184,9 @@ def delete_user(db: Session, user_id: int, actor_id: int) -> None:
     from app.modules.notification.model import Notification
     from app.modules.push.model import PushSubscription
 
+    #  Lấy nhãn TRƯỚC khi xóa — sau `commit` thì `user` hết hạn, mà đây lại đúng
+    #  là dòng nhật ký duy nhất còn nói được tài khoản đó là ai.
+    label = (user.email or "") or f"#{user_id}"
     db.query(UserRole).filter(UserRole.user_id == user_id).delete()
     db.query(UserScope).filter(UserScope.user_id == user_id).delete()
     db.query(Notification).filter(Notification.user_id == user_id).delete()
@@ -161,6 +194,7 @@ def delete_user(db: Session, user_id: int, actor_id: int) -> None:
     db.delete(user)
     db.commit()
     perm_cache_clear(user_id)
+    record(db, actor_id, "user", user_id, "delete", f"Xóa tài khoản {label}")
 
 
 def reset_password(db: Session, user_id: int, new_password: str, actor_id: int) -> None:
@@ -170,14 +204,30 @@ def reset_password(db: Session, user_id: int, new_password: str, actor_id: int) 
     user.password_hash = hash_password(new_password)
     user.updated_by = actor_id
     db.commit()
+    #  Chỉ ghi việc "đã đặt lại", TUYỆT ĐỐI không ghi mật khẩu mới dù đã băm —
+    #  cột `message` là chữ thường, `mask_payload` không soi vào đó.
+    record(db, actor_id, "user", user_id, "reset_password",
+           f"Đặt lại mật khẩu cho {user_label(db, user_id)}")
 
 
 def assign_roles(db: Session, user_id: int, data: RoleAssign, actor_id: int) -> None:
+    before = set(_role_ids(db, user_id))
     db.query(UserRole).filter(UserRole.user_id == user_id).delete()
     for rid in data.role_ids:
         db.add(UserRole(user_id=user_id, role_id=rid, created_by=actor_id, updated_by=actor_id))
     db.commit()
     perm_cache_clear(user_id)
+
+    after = set(data.role_ids)
+    added, removed = _role_names(db, sorted(after - before)), _role_names(db, sorted(before - after))
+    parts = []
+    if added:
+        parts.append("thêm " + ", ".join(added))
+    if removed:
+        parts.append("bỏ " + ", ".join(removed))
+    record(db, actor_id, "user", user_id, "assign_roles",
+           f"Gán vai trò cho {user_label(db, user_id)}"
+           + (": " + "; ".join(parts) if parts else " (không đổi)"))
 
 
 def get_user_scope(db: Session, user_id: int, role_id: int) -> dict:
@@ -215,6 +265,16 @@ def set_user_scope(db: Session, user_id: int, role_id: int, data: ScopeUpdate, a
         add("employee", e, True)
     db.commit()
     perm_cache_clear(user_id)
+    #  Đếm chứ không liệt kê: một phạm vi rộng có thể là hàng trăm mã phòng ban.
+    #  Con số cho biết ĐỘ RỘNG vừa đổi — chi tiết thì tra `tab_request_log` cùng
+    #  `request_id`, ở đó có nguyên thân request.
+    kept = len(data.companies) + len(data.departments) + len(data.employees)
+    excluded = (len(data.exclude_companies) + len(data.exclude_departments)
+                + len(data.exclude_employees))
+    role_name = (_role_names(db, [role_id]) or [f"#{role_id}"])[0]
+    record(db, actor_id, "user", user_id, "set_scope",
+           f"Đặt phạm vi dữ liệu cho {user_label(db, user_id)} ở vai trò {role_name}: "
+           f"{kept} mục được thấy, {excluded} mục loại trừ")
 
 
 def set_active(db: Session, user_id: int, active: bool, actor_id: int) -> None:
@@ -232,6 +292,8 @@ def set_active(db: Session, user_id: int, active: bool, actor_id: int) -> None:
     user.is_active = active
     user.updated_by = actor_id
     db.commit()
+    record(db, actor_id, "user", user_id, "activate" if active else "deactivate",
+           ("Mở khóa tài khoản " if active else "Khóa tài khoản ") + user_label(db, user_id))
 
 
 def set_notify_email(db: Session, user_id: int, on: bool, actor_id: int) -> None:

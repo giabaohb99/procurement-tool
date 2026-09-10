@@ -47,6 +47,17 @@ def _r2_ready() -> bool:
     return bool(endpoint and akey and pub)
 
 
+def is_remote_storage_ready() -> bool:
+    """Bản CÔNG KHAI của `_r2_ready`, cho nơi gọi cần BIẾT chứ không cần lưu.
+
+    `upload_fileobj` thiếu R2 thì tự lùi về ghi `uploads/<key>` — tiện cho tệp
+    đính kèm, nhưng `uploads/` phục vụ công khai qua `/api/uploads`, nên có thứ
+    tuyệt đối không được lùi (bản đóng gói nhật ký, sao lưu CSDL). Chỗ đó phải
+    hỏi trước rồi tự quyết dừng.
+    """
+    return _r2_ready()
+
+
 def _client():
     if not _r2_ready():
         return None
