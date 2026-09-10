@@ -34,7 +34,9 @@ import { PageContainer } from '@/shared/ui/page-container'
 import { RecordIdentityCard, type IdentityChip } from '@/shared/ui/record-identity-card'
 import { SectionHeading } from '@/shared/ui/section-heading'
 import { Skeleton } from '@/shared/ui/skeleton'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
+import { ScrollableTabsList } from '@/shared/ui/scrollable-tabs-list'
+import { TAB_TRIGGER_UNDERLINE } from '@/shared/ui/tab-underline'
+import { Tabs, TabsContent, TabsTrigger } from '@/shared/ui/tabs'
 import { EmployeeAccountCard } from '../components/employee-account-card'
 import { EmployeeDepartmentCard } from '../components/employee-department-card'
 import { EmployeeSignatureCard } from '../components/employee-signature-card'
@@ -254,28 +256,35 @@ export function EmployeeDetailPage() {
             chips={identityChips(employee)}
           />
 
+          {/*  ⚠️ Năm tab nhãn tiếng Việt dài KHÔNG vừa một hàng 390px — đo được
+               dải rộng 633px, và bản trước để nó tràn nên kéo theo CẢ TRANG trôi
+               ngang. Bóp cho vừa cũng không được: riêng phần chữ ở cỡ 12px đã
+               361px trên 358px dùng được. Nên dải tự cuộn ngang, và tab đang mở
+               tự được kéo vào tầm nhìn — xem `ScrollableTabsList`. */}
           <Tabs value={tab} onValueChange={setTab} className="mt-5">
-            <TabsList>
-              <TabsTrigger value="general">Chung</TabsTrigger>
-              <TabsTrigger value="contact">
+            <ScrollableTabsList value={tab}>
+              <TabsTrigger value="general" className={TAB_TRIGGER_UNDERLINE}>
+                Chung
+              </TabsTrigger>
+              <TabsTrigger value="contact" className={TAB_TRIGGER_UNDERLINE}>
                 <Phone className="size-4" />
                 Liên hệ &amp; Ngân hàng
               </TabsTrigger>
-              <TabsTrigger value="documents">
+              <TabsTrigger value="documents" className={TAB_TRIGGER_UNDERLINE}>
                 <IdCard className="size-4" />
                 Giấy tờ &amp; BHXH
               </TabsTrigger>
-              <TabsTrigger value="leave">
+              <TabsTrigger value="leave" className={TAB_TRIGGER_UNDERLINE}>
                 <CalendarDays className="size-4" />
                 Quỹ phép
               </TabsTrigger>
-              <TabsTrigger value="account">
+              <TabsTrigger value="account" className={TAB_TRIGGER_UNDERLINE}>
                 <UserCog className="size-4" />
                 Tài khoản
               </TabsTrigger>
-            </TabsList>
+            </ScrollableTabsList>
 
-            <TabsContent value="general" className="mt-5">
+            <TabsContent value="general" className="mt-5 max-md:mt-2">
               <EmployeeTabGeneral
                 employee={employee}
                 canWrite={canWrite}
@@ -287,9 +296,28 @@ export function EmployeeDetailPage() {
                   .filter((e) => e.id !== employeeId)
                   .map((e) => ({ id: e.id, label: `${e.full_name} (${e.code})` }))}
               />
+
+              {/*  Kiêm nhiệm dời từ tab «Tài khoản» sang đây (khách chốt
+                   10/09/2026): nó là thông tin CÔNG VIỆC — người này phụ trách
+                   thêm phòng nào — nên đứng cạnh Phòng ban · Chức vụ · Quản lý
+                   trực tiếp thì người khai tìm được mà không phải đoán.
+
+                   ⚠️ Lý do cũ để nó cạnh thẻ tài khoản KHÔNG sai và đừng quên:
+                   phòng kiêm nhiệm mở rộng **phạm vi dữ liệu** người này đọc
+                   được, tức nó cũng là một nửa của câu «người này thấy được
+                   gì». Đổi chỗ là chọn cách đọc thứ nhất; ai đổi lại thì đọc
+                   dòng này trước. */}
+              <EmployeeDepartmentCard
+                employeeId={employee.id}
+                companyId={employee.company_id}
+                primaryDepartmentId={employee.department_id}
+                canWrite={canWrite}
+                isSelf={currentUser?.employee_id === employee.id}
+                className="mt-5"
+              />
             </TabsContent>
 
-            <TabsContent value="contact" className="mt-5">
+            <TabsContent value="contact" className="mt-5 max-md:mt-2">
               <EmployeeTabContact
                 employeeId={employeeId}
                 canWrite={canWrite}
@@ -297,7 +325,7 @@ export function EmployeeDetailPage() {
               />
             </TabsContent>
 
-            <TabsContent value="documents" className="mt-5">
+            <TabsContent value="documents" className="mt-5 max-md:mt-2">
               <EmployeeTabDocuments
                 employee={employee}
                 canWrite={canWrite}
@@ -305,35 +333,28 @@ export function EmployeeDetailPage() {
               />
             </TabsContent>
 
-            <TabsContent value="leave" className="mt-5">
+            <TabsContent value="leave" className="mt-5 max-md:mt-2">
               <EmployeeTabLeave employee={employee} />
             </TabsContent>
 
-            <TabsContent value="account" className="mt-5">
-              {/* Kiêm nhiệm và tài khoản là hai nửa của câu «người này thấy được gì». */}
+            <TabsContent value="account" className="mt-5 max-md:mt-2">
+              {/*  Còn lại đúng hai thứ của TÀI KHOẢN ĐĂNG NHẬP: quyền vào hệ
+                   thống và chữ ký dùng trên chứng từ. Ghép đôi để ở màn rộng
+                   chúng không thành hai dải ngang rỗng nửa bên phải. */}
               <div className="grid items-stretch gap-5 lg:grid-cols-2">
-                <EmployeeDepartmentCard
-                  employeeId={employee.id}
-                  companyId={employee.company_id}
-                  primaryDepartmentId={employee.department_id}
-                  canWrite={canWrite}
-                  isSelf={currentUser?.employee_id === employee.id}
-                  className="h-full"
-                />
                 <EmployeeAccountCard
                   employeeId={employee.id}
                   email={employee.email}
                   className="h-full"
                 />
+                <EmployeeSignatureCard
+                  employeeId={employee.id}
+                  signature={employee.signature}
+                  canEdit={canWrite}
+                  hasAccount={employee.user_id > 0}
+                  className="h-full"
+                />
               </div>
-
-              <EmployeeSignatureCard
-                employeeId={employee.id}
-                signature={employee.signature}
-                canEdit={canWrite}
-                hasAccount={employee.user_id > 0}
-                className="mt-5"
-              />
             </TabsContent>
           </Tabs>
 

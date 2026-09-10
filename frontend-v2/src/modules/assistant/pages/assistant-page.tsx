@@ -16,6 +16,7 @@ import {
 import { assistantApi } from '../api/assistant-api'
 import { ChatComposer } from '../components/chat-composer'
 import { ChatEmptyState } from '../components/chat-empty-state'
+import { ConversationSheet } from '../components/conversation-sheet'
 import { ConversationSidebar } from '../components/conversation-sidebar'
 import { MessageThread } from '../components/message-thread'
 import { ReplyOffers } from '../components/reply-offers'
@@ -160,7 +161,14 @@ export function AssistantPage() {
     <PageContainer fill>
       <PageHeader
         title="Trợ lý AI"
-        description="Hỏi đáp trên nền gói tri thức nội bộ. Câu trả lời chỉ mang tính đề xuất."
+        //  Dòng mô tả ẩn ở khổ hẹp: câu giới thiệu, đọc một lần rồi thôi, mà
+        //  ở đây nó ăn hai dòng ngay phía trên khung chat — thứ vốn đã phải
+        //  tranh từng pixel với bàn phím ảo.
+        description={
+          <span className="max-md:hidden">
+            Hỏi đáp trên nền gói tri thức nội bộ. Câu trả lời chỉ mang tính đề xuất.
+          </span>
+        }
         actions={
           configuredProviders.length > 1 ? (
             <Select value={selectedProvider} onValueChange={setProvider}>
@@ -190,6 +198,21 @@ export function AssistantPage() {
         />
 
         <div className="flex min-w-0 flex-1 flex-col">
+          {/*  ⚠️ Hàng này CHỈ có ở khổ hẹp, và nó là đường DUY NHẤT tới danh
+               sách hội thoại ở đó — cột trái đã tắt (xem `ConversationSidebar`).
+               Không có nó thì hội thoại cũ không mở lại được và nút «Hội thoại
+               mới» cũng mất theo. */}
+          <div className="flex items-center border-b px-1 py-1 md:hidden">
+            <ConversationSheet
+              items={conversationsQuery.data ?? []}
+              activeId={activeId}
+              loading={conversationsQuery.isLoading}
+              onNew={() => setActive(0)}
+              onSelect={setActive}
+              onDelete={handleDelete}
+            />
+          </div>
+
           {noProvider ? (
             <div className="flex flex-1 items-center justify-center px-6 text-center text-sm text-muted-foreground">
               Chưa cấu hình khóa API cho nhà cung cấp nào. Khai khóa trong cấu hình máy chủ rồi

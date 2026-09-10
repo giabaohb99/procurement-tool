@@ -227,11 +227,30 @@ interface PeopleFieldProps<T> {
  * ô. Bảng này có 5 cột × N dòng nên lỗi nhân lên rất nhanh. `useId` cho mỗi ô
  * một id thật, kể cả khi cùng một cột xuất hiện ở nhiều dòng.
  */
+/**
+ * Bề rộng cột → lớp Tailwind, chỉ áp từ `md`.
+ *
+ * ⚠️ Phải là bảng tra cứu với chuỗi VIẾT SẴN, không ghép `md:col-span-${n}`:
+ * Tailwind quét mã nguồn bằng cách tìm chuỗi, lớp ghép lúc chạy không có trong
+ * tệp CSS xuất ra nên nó im lặng không có tác dụng gì.
+ */
+const COLUMN_SPAN: Record<number, string> = {
+  2: 'md:col-span-2',
+  3: 'md:col-span-3',
+  4: 'md:col-span-4',
+}
+
 function PeopleField<T>({ column, value, disabled, onChange }: PeopleFieldProps<T>) {
   const id = useId()
 
   return (
-    <div className="flex flex-col gap-1.5" style={{ gridColumn: `span ${column.span ?? 3}` }}>
+    //  ⚠️ Bề rộng cột chỉ áp từ `md`, và phải đi bằng LỚP chứ không bằng
+    //  `style` nội tuyến. Lưới dòng là `md:grid-cols-12` — dưới ngưỡng đó nó chỉ
+    //  MỘT cột, nhưng `style` thì không có điểm ngắt nên `grid-column: span 3`
+    //  vẫn ăn: trình duyệt tự đẻ ra 3 cột ngầm và ô co lại còn một phần ba bề
+    //  ngang, ô «Điện thoại» hẹp tới mức không đọc nổi số vừa gõ (khách báo
+    //  10/09/2026). Ở khổ hẹp mỗi ô phải chiếm trọn một dòng.
+    <div className={cn('flex flex-col gap-1.5', COLUMN_SPAN[column.span ?? 3])}>
       <label htmlFor={id} className="text-xs font-medium text-muted-foreground">
         {column.label}
       </label>

@@ -1,6 +1,6 @@
 import { Loader2, Maximize2, Sparkles, SquarePen, X } from 'lucide-react'
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 
 import { useQueryClient } from '@tanstack/react-query'
 
@@ -37,8 +37,16 @@ import { ReplyOffers } from './reply-offers'
  *
  * Widget giữ MỘT hội thoại đang mở trong state cục bộ; đóng/mở lại vẫn còn vì
  * nó sống trong khung phân hệ. Muốn xem lịch sử đầy đủ thì bấm "Mở toàn trang".
+ *
+ * ⚠️ **KHÔNG dựng khi đang ở chính trang Trợ lý.** Ở đó nó vừa thừa — bấm vào
+ * mở đúng cái trợ lý đang mở — vừa có hại: bong bóng `position: fixed` neo ở
+ * góc phải dưới, mà ở khổ điện thoại đúng góc ấy là **ô nhập câu hỏi và dòng
+ * hướng dẫn dưới nó**, nên nó che mất chỗ người dùng đang gõ (khách báo
+ * 10/09/2026). Chặn ở ĐÂY chứ không ở hai `Layout` gọi nó: luật này thuộc về
+ * chính widget, để ở tầng layout thì thêm một layout thứ ba là quên.
  */
 export function AssistantWidget() {
+  const { pathname } = useLocation()
   const queryClient = useQueryClient()
   const providersQuery = useProviders()
   const sendMessage = useSendMessage()
@@ -141,6 +149,10 @@ export function AssistantWidget() {
     }
   }
 
+  //  Đang ở chính trang Trợ lý thì không dựng bong bóng — xem chú thích đầu
+  //  hàm. Đặt SAU mọi hook để không phá luật thứ tự hook của React.
+  if (pathname.startsWith(appRoutes.assistant.root)) return null
+
   // Đường dẫn "Mở toàn trang" giữ nguyên hội thoại đang xem.
   const fullPageHref =
     conversationId > 0
@@ -161,7 +173,20 @@ export function AssistantWidget() {
       vào là bong bóng nằm ngay trên nó. Trên màn hình thường `lvh == dvh` nên
       biểu thức rút về đúng `1rem` / `1.5rem` như cũ.
     */
-    <div className="fixed right-4 bottom-[calc(100lvh-100dvh+1rem)] z-50 flex flex-col items-end gap-3 sm:right-6 sm:bottom-[calc(100lvh-100dvh+1.5rem)]">
+    <div
+      className={cn(
+        'fixed right-4 bottom-[calc(100lvh-100dvh+1rem)] z-50 flex flex-col items-end gap-3 sm:right-6 sm:bottom-[calc(100lvh-100dvh+1.5rem)]',
+        //  ⚠️ Khổ hẹp lúc ĐANG MỞ: tấm chat chiếm TRỌN màn hình.
+        //
+        //  Bản trước để nó nổi lửng như ở màn rộng — tấm 358×640 giữa một màn
+        //  390×844, chừa một dải trang ở trên và một dải ở dưới. Hai dải đó
+        //  không dùng được vào việc gì (chạm vào là chạm nhầm trang phía sau)
+        //  nhưng vẫn kéo mắt, và tấm chat thì mất 200px chiều cao — trong khi
+        //  chat là thứ càng cao càng đọc được nhiều lượt. Nửa vời: to quá để
+        //  gọi là ló ra, nhỏ quá để gọi là một trang.
+        open && 'max-md:top-0 max-md:right-0 max-md:bottom-0 max-md:left-0 max-md:gap-0',
+      )}
+    >
       {open && (
         <div
           className={cn(
@@ -169,6 +194,9 @@ export function AssistantWidget() {
             //  rộng 30rem từ sm và 34rem từ lg; máy nhỏ vẫn ăn theo bề rộng màn hình.
             'flex h-[40rem] max-h-[calc(100svh-6.5rem)] w-[calc(100vw-2rem)] sm:w-[30rem] lg:w-[34rem]',
             'flex-col overflow-hidden rounded-xl border bg-background shadow-2xl',
+            //  Khổ hẹp: trọn màn hình, bỏ bo góc và viền — xem ghi chú ở khung
+            //  ngoài. Phải đứng SAU hai dòng trên để tailwind-merge lấy nó.
+            'max-md:h-full max-md:max-h-none max-md:w-full max-md:rounded-none max-md:border-0',
           )}
         >
           <div className="flex items-center justify-between border-b px-3 py-2">
@@ -251,7 +279,10 @@ export function AssistantWidget() {
         type="button"
         size="icon"
         onClick={() => setOpen((v) => !v)}
-        className="size-12 rounded-full shadow-lg"
+        //  ⚠️ Khổ hẹp lúc đang mở: GIẤU nút nổi. Tấm chat đã chiếm trọn màn
+        //  hình nên nút chỉ còn là một chấm tròn đè lên ô nhập câu hỏi, mà việc
+        //  của nó — đóng lại — đã có nút X ở góc phải tiêu đề tấm chat.
+        className={cn('size-12 rounded-full shadow-lg', open && 'max-md:hidden')}
         title={open ? 'Thu gọn Trợ lý AI' : 'Mở Trợ lý AI'}
         aria-label={open ? 'Thu gọn Trợ lý AI' : 'Mở Trợ lý AI'}
       >

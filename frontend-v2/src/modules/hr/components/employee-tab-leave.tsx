@@ -30,7 +30,7 @@ export function EmployeeTabLeave({ employee }: EmployeeTabLeaveProps) {
   const canSeeBalance = can('leave_balance', 'read')
 
   return (
-    <Card className="gap-4 p-5">
+    <Card className="gap-4 p-3 sm:p-5">
       <SectionHeading>Quỹ phép</SectionHeading>
 
       {!employee.hire_date && (
@@ -43,14 +43,24 @@ export function EmployeeTabLeave({ employee }: EmployeeTabLeaveProps) {
         </div>
       )}
 
-      <dl className="grid gap-3 text-sm sm:grid-cols-2">
-        <div>
+      {/*  ⚠️ Khổ hẹp: hai mốc ngày gom vào MỘT khối có viền, mỗi mốc một hàng
+           «nhãn trái — giá trị phải». Bản cũ để lưới một cột nên nhãn và giá
+           trị xếp CHỒNG nhau không khung không vạch: bốn dòng chữ trôi nổi giữa
+           thẻ, mắt không biết dòng nào ăn với dòng nào, và khoảng hở giữa hai
+           cặp trông y như khoảng hở trong một cặp. Từ `sm` giữ lưới hai cột như
+           cũ — ở đó bề ngang đủ để hai cặp đứng cạnh nhau đã tự phân nhóm. */}
+      <dl className="grid gap-3 text-sm max-md:gap-0 max-md:divide-y max-md:rounded-md max-md:border sm:grid-cols-2">
+        <div className="max-md:flex max-md:items-center max-md:justify-between max-md:gap-3 max-md:px-3 max-md:py-2.5">
           <dt className="text-muted-foreground">Ngày vào làm</dt>
-          <dd className="font-medium">{formatDate(employee.hire_date) || '— Chưa khai —'}</dd>
+          <dd className="font-medium max-md:text-right">
+            {formatDate(employee.hire_date) || '— Chưa khai —'}
+          </dd>
         </div>
-        <div>
+        <div className="max-md:flex max-md:items-center max-md:justify-between max-md:gap-3 max-md:px-3 max-md:py-2.5">
           <dt className="text-muted-foreground">Ngày nghỉ việc</dt>
-          <dd className="font-medium">{formatDate(employee.resign_date) || '—'}</dd>
+          <dd className="font-medium max-md:text-right">
+            {formatDate(employee.resign_date) || '—'}
+          </dd>
         </div>
       </dl>
 
@@ -58,11 +68,14 @@ export function EmployeeTabLeave({ employee }: EmployeeTabLeaveProps) {
         Số phép còn lại được tính từ sổ quỹ, xem bên phân hệ Nghỉ phép.
       </p>
 
+      {/*  Khổ hẹp: hai lối đi CHIA ĐÔI một hàng — chúng cùng hạng với nhau, để
+           chúng co theo độ dài chữ thì nút này to nút kia bé mà chẳng vì lý do
+           gì. */}
       <div className="flex flex-wrap gap-2">
         {/*  Nút chỉ hiện khi có quyền: bấm vào rồi ăn màn 403 thì tệ hơn không
              thấy nút. Chốt thật vẫn ở backend. */}
         {canSeeBalance && (
-          <Button variant="outline" size="sm" asChild>
+          <Button variant="outline" size="sm" className="max-md:flex-1" asChild>
             <Link to={appRoutes.hr.leaveBalances}>
               <CalendarDays />
               Quỹ phép
@@ -70,7 +83,7 @@ export function EmployeeTabLeave({ employee }: EmployeeTabLeaveProps) {
             </Link>
           </Button>
         )}
-        <Button variant="outline" size="sm" asChild>
+        <Button variant="outline" size="sm" className="max-md:flex-1" asChild>
           <Link to={appRoutes.hr.leaveRequests}>
             Đơn nghỉ phép
             <ExternalLink className="size-3" />

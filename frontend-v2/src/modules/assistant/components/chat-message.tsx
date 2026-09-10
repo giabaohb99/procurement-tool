@@ -76,8 +76,16 @@ function AssistantTurn({ content, typing }: { content: string; typing: boolean }
   const { display, isRunning } = useTypewriter(content, typing)
 
   return (
-    <div className="group flex gap-3">
-      <AssistantAvatar />
+    //  ⚠️ Khổ hẹp BỎ dấu nhận của trợ lý (`max-md:hidden`, khách chốt theo mẫu
+    //  ứng dụng Claude 10/09/2026). Ô 28px + khe 12px = **40px trên 390px**, tức
+    //  hơn một phần mười bề ngang cột đọc bị lấy đi ở MỌI câu trả lời — mà câu
+    //  trả lời hay dài và có bảng. Lý do dựng nó (xem `assistant-avatar.tsx`)
+    //  vẫn đúng ở màn rộng; ở khổ hẹp thì bong bóng lệch phải của người dùng đã
+    //  đủ để phân biệt hai vai, không cần thêm mốc thứ hai.
+    <div className="group flex gap-3 max-md:gap-0">
+      <span className="max-md:hidden">
+        <AssistantAvatar />
+      </span>
 
       <div className="min-w-0 flex-1">
         <MarkdownMessage content={display} className="text-sm text-foreground" />
@@ -114,7 +122,12 @@ function CopyButton({ content }: { content: string }) {
       }}
       className={cn(
         'mt-2 inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground',
-        'opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100',
+        //  ⚠️ Ẩn-cho-tới-khi-rê-chuột chỉ áp TỪ `md`. Màn cảm ứng không có nhịp
+        //  «rê chuột», nên `opacity-0 group-hover` ở khổ hẹp nghĩa là nút chép
+        //  **không bao giờ bấm được** — nó vẫn chiếm chỗ, vẫn nhận chạm, chỉ là
+        //  trong suốt. Mà chép câu trả lời chính là việc người ta hay làm nhất
+        //  sau khi tra xong. Cùng bài học đã ghi ở `RoomBookingCard`.
+        'md:opacity-0 md:transition-opacity md:group-hover:opacity-100 md:focus-visible:opacity-100',
         'hover:bg-muted hover:text-foreground',
       )}
     >

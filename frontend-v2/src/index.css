@@ -332,6 +332,25 @@
   --color-sidebar-primary: var(--sidebar-primary);
 }
 
+/*
+ * Giấu thanh cuộn nhưng GIỮ khả năng cuộn.
+ *
+ * Dùng cho dải cuộn ngang trong giao diện — dải tab của trang chi tiết
+ * (`ScrollableTabsList`). Ở đó thanh cuộn không phải thông tin: nó vẽ một vệt
+ * xám dày ngay dưới hàng tab, đọc ra như một đường kẻ của thiết kế chứ không
+ * như một thanh cuộn, và trên máy cảm ứng thì nó vốn tự ẩn.
+ *
+ * ⚠️ Chỉ dùng khi CÒN dấu hiệu khác nói rằng chỗ này cuộn được — dải tab luôn
+ * để lộ một phần tab kế tiếp ở mép. Giấu thanh cuộn trên một khối không có dấu
+ * hiệu nào là giấu luôn phần nội dung nằm ngoài tầm nhìn.
+ */
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
