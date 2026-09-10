@@ -1,6 +1,6 @@
 # THIẾT KẾ LẠI NHẬT KÝ (LOG) & PHIÊN ĐĂNG NHẬP
 
-**Bản:** 2.4 — 09/09/2026 · **CR:** bao-CR-312 · **Trạng thái: 12 CÂU HỎI §11 ĐÃ CHỐT 08/09/2026 (theo đề xuất, riêng Q2 khách đổi thành 16 tháng + gói theo năm). Bản 2.4 tính lại dung lượng bằng SỐ ĐO THẬT trên prod 09/09 và chốt thêm ba điều chỉnh (QĐ-A gia hạn phiên · QĐ-B khóa nối nhị phân · QĐ-C nhật ký ra khỏi sao lưu hằng đêm, đóng gói theo tháng). P0 tách thành bao-CR-313 (xong, deploy 09/09); **P1 xong mã 09/09 trên `erp-v2`, chưa commit** — middleware + `tab_request_log` + cột ngữ cảnh, QĐ-A và QĐ-B đúng ngay từ migration `f4d37c7600d0`; P2 trở đi chưa gõ mã.**
+**Bản:** 2.4 — 09/09/2026 · **CR:** bao-CR-312 · **Trạng thái: 12 CÂU HỎI §11 ĐÃ CHỐT 08/09/2026 (theo đề xuất, riêng Q2 khách đổi thành 16 tháng + gói theo năm). Bản 2.4 tính lại dung lượng bằng SỐ ĐO THẬT trên prod 09/09 và chốt thêm ba điều chỉnh (QĐ-A gia hạn phiên · QĐ-B khóa nối nhị phân · QĐ-C nhật ký ra khỏi sao lưu hằng đêm, đóng gói theo tháng). P0 tách thành bao-CR-313 (xong, deploy 09/09). **Tình hình mã ngày 10/09/2026 (chiều): P0 + P1 + P1b đã deploy CẢ dev lẫn PROD; P2 + P3a xong mã trên `erp-v2` nhưng chưa push, chưa deploy đâu cả; P3b trở đi chưa gõ.**
 
 Bản 1.0 (07/09) chỉ đề xuất *thêm* hai bảng bên cạnh nhật ký cũ. Bản 2.0 (08/09 sáng) thiết kế
 lại chính dòng nhật ký. Bản 2.1 bổ sung hai thứ bản 2.0 còn thiếu khi đối chiếu với câu hỏi
@@ -15,7 +15,8 @@ chỉnh: **QĐ-A** gia hạn phiên thành công không đẻ dòng nhật ký (
 đổi lại đóng gói lên R2 mỗi tháng thay vì mỗi năm (§9).
 
 Tệp này phần lớn vẫn là bản thiết kế để bàn. **Đã gõ mã: P0** (tách ra `bao-CR-313`, xong và
-deploy 09/09), **P1 + P1b** (`bao-CR-346`, deploy dev 10/09) và **P2** (`bao-CR-358`, 10/09 —
+deploy 09/09), **P1 + P1b** (`bao-CR-346`, deploy dev 10/09 — **và deploy PROD chiều 10/09**,
+`main` `e21023d1`, đóng nợ N-010) và **P2** (`bao-CR-358`, 10/09 —
 xem §10.1) và **P3a** (`bao-CR-360`, 10/09 — phần lõi phiên đăng nhập, kèm **QĐ-D** ở §11 sửa
 lại chỗ đặt cửa chặn mà §5 bản cũ viết gộp) — mấy đợt đó nay mô tả thứ chạy thật, và chỗ nào
 bản làm khác bản vẽ thì có dấu ⚠️ ngay tại mục đó (§4.1 có hai chỗ). P3b (ba màn hình) trở đi
@@ -955,13 +956,23 @@ nhưng gói R2 lại xếp ở giai đoạn cuối. Khoảng giữa hai mốc đ
 bản, nằm trên chính cái máy** mà kẻ tấn công đang đứng — mà nhật ký chỉ có giá trị khi người
 bị nó ghi lại không xóa được nó. Hai quyết định đúng riêng lẻ, xếp sai thứ tự thành một lỗ.
 
-⚠️ **P1 và P1b mới chạy trên DEV. Prod chưa có gì của tài liệu này** — `main` không có bảng
-`tab_request_log`, cũng không có migration `f4d37c7600d0`. Ghi thành nợ kỹ thuật
-[**N-010**](change-log.md) ngày 10/09/2026 theo chốt của đại ca; ở đó có đủ hai sha cần
-cherry-pick (`2eba1274` rồi `337fa9bb`, đúng thứ tự vì migration khai `down_revision`), quy
-trình sao lưu trước khi chạy migration, và ba bẫy đã biết (xung đột `ACTION_LABEL`, phải build
-lại cả `celery-beat`, R2 phải cấu hình xong trước). **Đọc bảng trên đừng hiểu là hệ thật đã có
-những đợt này.**
+✅ **P1 và P1b ĐÃ LÊN PROD chiều 10/09/2026** — `main` `2daf6ffb` (P1) + `e21023d1` (P1b),
+alembic prod chạy tới head `94f0a2c4e43c`. Nợ kỹ thuật [**N-010**](change-log.md) trả xong.
+Cách làm: **cherry-pick** `2eba1274` rồi `337fa9bb` (đúng thứ tự vì migration khai
+`down_revision`), sáu chỗ đụng độ đều do `erp-v2` có sẵn thứ `main` chưa có — bốn thứ **cố ý
+không mang sang** vì ngoài phạm vi: task RAG của trợ lý, hai nhãn `option_add`/`option_remove`
+của bao-CR-310, chốt *"vai trò còn người giữ thì không xóa"* + `perm_cache_clear()` sau khi
+xóa vai trò, và hai hàm ảnh đại diện.
+
+⚠️ **Migration `f4d37c7600d0` giữ NGUYÊN mã revision ở cả hai nhánh, chỉ `down_revision` khác**
+(`main` trỏ `d2f45a8c9e10`, `erp-v2` trỏ `d7f2a9c4e1b8`). Giữ nguyên mã để hai nhánh không đẻ
+ra hai bảng `tab_request_log` khác id. Hệ quả: lần merge `main` → `erp-v2` tới **sẽ đụng độ
+đúng ở dòng đó — giữ bản của `erp-v2`**. Ba tệp tài liệu của CR-312 cũng nay có mặt ở cả hai
+nhánh, cùng cảnh.
+
+⚠️ **Prod hiện dừng ở hết P1b.** `main` **chưa có** P2 (`bao-CR-358`) và P3a (`bao-CR-360`) —
+hệ thật chưa có `ACTION_CATALOG` lẫn `tab_login_session`. Bảng trên đọc theo dev, đừng hiểu là
+prod đã có đủ mọi đợt.
 
 ### 10.1. P2 đã làm gì — và tìm ra gì
 

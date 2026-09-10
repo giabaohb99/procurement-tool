@@ -7,6 +7,9 @@ BM-003 vá một phần (còn phiên phía máy chủ ở P3). Bốn dòng còn 
 **bảy dòng BM-008 … BM-014**, trong đó bốn dòng bao-CR-346 vá luôn và ba dòng còn mở.
 Sửa hai chỗ hết hạn trong sổ: QĐ-A (bỏ dòng `refresh` thành công) **đã bị đảo**, và
 BM-005 / BM-007 nay đã có mã chạy thật chứ không còn "mới ở mức đề xuất".
+**Bản 1.3 — 10/09/2026 (chiều).** bao-CR-312 P1 + P1b **đã deploy PROD** (`main` `e21023d1`):
+**BM-008 … BM-011 đóng nốt phía prod**, nợ kỹ thuật N-010 trả xong. BM-002 vẫn mở trên prod
+vì P3a chưa lên `main`.
 
 ---
 
@@ -63,24 +66,29 @@ nó là bằng chứng cho lần soát sau rằng chỗ này từng hở.
 | BM-005 | Trung bình | Nhật ký không lưu giá trị trước / sau — không chứng minh được đã đổi gì | **Mở** — `tab_change_log` nằm ở P4 của bao-CR-312, chưa viết dòng mã nào |
 | BM-006 | Thấp | Dấu vết là tùy chọn theo từng lời gọi — quên gọi là mất | Vá một phần (bao-CR-311 + bao-CR-346) — xem BM-010 |
 | BM-007 | Thấp | Dòng nhật ký không có IP / trình duyệt / mã lượt gọi | **Vá phần lớn (P1 của bao-CR-312, `erp-v2` 2eba1274 — mới deploy dev).** `tab_request_log` ghi IP + `request_id` + tuyến gọi; `tab_audit_log` có `request_id` / `ip` / `actor_kind`. Còn dấu thiết bị ở bao-CR-346 |
-| BM-008 | Trung bình | Giá trị dữ liệu thật bị chép nguyên vào `error_detail` của dòng nhật ký khi câu SQL nổ | **Đã vá (bao-CR-346, 10/09/2026, `erp-v2` 337fa9bb — đã deploy dev; prod CHƯA, xem ghi chú)** — `mask_error_detail`, xem chi tiết bên dưới |
-| BM-009 | Trung bình | Thao tác **ĐỌC** không để lại dấu vết nào — kể cả tải tệp đính kèm và cả lượt bị chặn 403 | **Đã vá (bao-CR-346, 10/09/2026, `erp-v2` 337fa9bb — đã deploy dev; prod CHƯA, xem ghi chú)** — ghi hết mọi GET |
-| BM-010 | Trung bình | Đổi phân quyền và đổi tài khoản **không gọi `record()`** — vùng nhạy cảm nhất lại là vùng trắng | **Đã vá (bao-CR-346, 10/09/2026, `erp-v2` 337fa9bb — đã deploy dev; prod CHƯA, xem ghi chú)** |
-| BM-011 | Trung bình | Nhật ký chỉ có MỘT bản, nằm trên đúng cái máy kẻ tấn công đang đứng | **Đã vá (bao-CR-346, 10/09/2026, `erp-v2` 337fa9bb — đã deploy dev; prod CHƯA, xem ghi chú)** — đóng gói ra R2 hàng tháng |
+| BM-008 | Trung bình | Giá trị dữ liệu thật bị chép nguyên vào `error_detail` của dòng nhật ký khi câu SQL nổ | **Đã vá + ĐÃ ĐÓNG CẢ HAI PHÍA (bao-CR-346, 10/09/2026) — `erp-v2` 337fa9bb deploy dev; `main` e21023d1 deploy prod chiều 10/09** — `mask_error_detail`, xem chi tiết bên dưới |
+| BM-009 | Trung bình | Thao tác **ĐỌC** không để lại dấu vết nào — kể cả tải tệp đính kèm và cả lượt bị chặn 403 | **Đã vá + ĐÃ ĐÓNG CẢ HAI PHÍA (bao-CR-346, 10/09/2026) — `erp-v2` 337fa9bb deploy dev; `main` e21023d1 deploy prod chiều 10/09** — ghi hết mọi GET |
+| BM-010 | Trung bình | Đổi phân quyền và đổi tài khoản **không gọi `record()`** — vùng nhạy cảm nhất lại là vùng trắng | **Đã vá + ĐÃ ĐÓNG CẢ HAI PHÍA (bao-CR-346, 10/09/2026) — `erp-v2` 337fa9bb deploy dev; `main` e21023d1 deploy prod chiều 10/09** |
+| BM-011 | Trung bình | Nhật ký chỉ có MỘT bản, nằm trên đúng cái máy kẻ tấn công đang đứng | **Đã vá + ĐÃ ĐÓNG CẢ HAI PHÍA (bao-CR-346, 10/09/2026) — `erp-v2` 337fa9bb deploy dev; `main` e21023d1 deploy prod chiều 10/09** — đóng gói ra R2 hàng tháng |
 | BM-012 | Thấp | Token hết hạn thì dòng nhật ký ghi `user_id = 0` — không phân biệt được "khách vãng lai" với "người có tài khoản, token vừa hết hạn" | **Mở** |
 | BM-013 | Thấp | `record()` tự `commit()` — giao dịch nghiệp vụ bị rollback vẫn để lại dấu vết ma | **Mở** |
 | BM-014 | Trung bình | `CF-Connecting-IP` được tin **vô điều kiện** — ai gọi thẳng vào api là tự khai IP của mình | **Mở** |
 
-⚠️ **Bốn dòng BM-008…BM-011 mới đóng trên `erp-v2` (dev), CHƯA đóng trên prod.** Chúng vá lớp
-nhật ký của bao-CR-312 P1, mà **P1 chưa từng lên prod**: `main` không có bảng `tab_request_log`,
-cũng không có migration `f4d37c7600d0`. Nghĩa là trên hệ thật hôm nay, **thao tác đọc vẫn không
-để lại dấu vết** và `role/` + `user/` vẫn trắng audit. Đưa lên prod là đưa **cả P1 lẫn P1b** và
-phải **cherry-pick**, không merge (`quy-trinh-nhanh-va-deploy.md` §A.4).
+✅ **Bốn dòng BM-008…BM-011 nay đã đóng trên CẢ HAI phía** (cập nhật chiều 10/09/2026).
+Chúng vá lớp nhật ký của bao-CR-312 P1, và P1 vốn chưa từng lên prod — đó là lý do sổ này
+từng ghi *"prod CHƯA"*. Nợ kỹ thuật **N-010 đã trả**: `main` `2daf6ffb` (P1) + `e21023d1`
+(P1b) đã deploy prod, migration chạy tới head `94f0a2c4e43c`, `tab_request_log` có thật trên
+hệ thật.
 
-**Đại ca chốt ngày 10/09/2026: ghi thành NỢ KỸ THUẬT, làm sau.** Việc đó là
-[**N-010**](change-log.md) trong bảng *Việc còn nợ* — ở đó có đủ hai sha cần nhặt, thứ tự
-migration, và ba cái bẫy đã biết. Bốn dòng dưới đây vì vậy **vẫn tính là đang hở trên hệ
-thật**, đừng đọc trạng thái "Đã vá" mà tưởng đã yên.
+Cách trả nợ: **cherry-pick, không merge** (`quy-trinh-nhanh-va-deploy.md` §A.4), và migration
+`f4d37c7600d0` giữ **nguyên mã revision**, chỉ đổi `down_revision` sang head của `main`
+(`d2f45a8c9e10`) — giữ nguyên mã để hai nhánh không đẻ ra hai bảng `tab_request_log` khác id.
+Đánh đổi đã biết: tệp migration đó nay khác nhau ở hai nhánh, nên lần merge `main` → `erp-v2`
+tới sẽ đụng độ đúng ở dòng `down_revision` — **giữ bản của `erp-v2` (`d7f2a9c4e1b8`)**.
+
+⚠️ Vẫn còn hở trên prod: **P2 và P3a** (`bao-CR-358` + `bao-CR-360`) chưa lên `main`, nên
+`tab_login_session` và bộ mã hành động chưa có trên hệ thật. Riêng **BM-002 (đăng xuất không
+có hiệu lực)** vì vậy **vẫn mở trên prod**, dù đã có mã chạy trên `erp-v2`.
 
 ---
 
