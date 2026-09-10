@@ -494,3 +494,10 @@ thanh công cụ của tab tự tắt khi chức vụ chỉ có một người, 
 ⚠️ Mốc so của thanh công cụ là `data.total` **lúc KHÔNG lọc**: hễ đang có bộ lọc
 đặt thì nó ở lại, kể cả khi lọc xong còn một người. Không có vế đó thì đường duy
 nhất để bỏ lọc cũng biến mất theo.
+
+⚠️ **Cùng cái bẫy đó suýt dính lần hai, ở chính chân bảng.** Ô chọn số dòng chết
+theo điều kiện KHÁC dãy nút trang, gộp lại là: chọn *100 dòng/trang* trên danh
+sách 80 dòng → còn một trang → ô chọn biến mất → không còn đường về 20 dòng/trang.
+Mốc đúng là *«có lựa chọn nào chia nổi danh sách này thành hai trang không»*, tức
+so với **cỡ trang nhỏ nhất** (10), không so với cỡ trang đang dùng. Danh sách dài
+hơn một trang thì phân trang y như cũ — 200 người / 20 dòng vẫn ra 10 trang.
