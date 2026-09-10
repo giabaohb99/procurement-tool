@@ -120,22 +120,32 @@ export const contractExpiryBadge = (e: string) => {
 // Tô cả dòng HĐ sắp/hết hạn (cảnh báo trực quan)
 export const contractRowStyle = (r: any) => r.expiry === 'expired' ? { background: '#fdecea' } : r.expiry === 'expiring_soon' ? { background: '#fff7ed' } : undefined
 
+// bao-CR-363: MỖI MỐC MỘT MÀU. Trước CR này 8 mốc chỉ dùng 2 màu (xanh `ok` + hổ phách
+// `warn`), nên trên màn danh sách "Đã điều phối" và "Đã mua hàng" hiện ra y hệt nhau, và
+// "Chờ duyệt / Bị trả lại / Đang xử lý / Đang mua hàng" cũng vậy. Thứ tự màu đi theo đúng
+// thứ tự vòng đời, hai mốc liền kề luôn khác tông (bốn lớp mới khai ở `index.css`):
+//   xám → hổ phách → xanh dương → tím → hồng sen → xanh mòng → xanh lá → xanh lá ĐẶC.
+// ⚠️ Đổi `cls` ở đây thì phải kiểm cả `SR_STATUS` / `poBadge` bên dưới có dùng cùng mốc không
+// — mỗi bảng trạng thái là một bộ màu riêng, đừng để hai bảng nói cùng một mốc bằng hai màu.
 export const PR_STATUS: Record<string, { label: string; cls: string }> = {
   draft: { label: 'Nháp', cls: 'gray' },
   submitted: { label: 'Chờ duyệt', cls: 'warn' },
-  approved: { label: 'Đã duyệt', cls: 'ok' },
+  approved: { label: 'Đã duyệt', cls: 'info' },
   // CR-034: TP duyệt xong phiếu dừng ở 'Đã duyệt' (chưa có NSTM, chưa tạo được ĐMH);
   // thu mua bấm Điều phối mới sang 'Đã điều phối' — mốc bắt đầu làm việc thật.
-  dispatched: { label: 'Đã điều phối', cls: 'ok' },
-  rejected: { label: 'Bị trả lại', cls: 'warn' },   // Trả về — sửa & gửi duyệt lại được
+  dispatched: { label: 'Đã điều phối', cls: 'violet' },
+  rejected: { label: 'Bị trả lại', cls: 'back' },   // Trả về — sửa & gửi duyệt lại được
   // bao-CR-292 (ticket 22): "Đang xử lý" tách 3 mốc theo mã đơn MISA + độ phủ mã hàng
-  processing: { label: 'Đang xử lý', cls: 'warn' },      // đã có ĐMH, chưa đơn nào nhập MISA
-  purchasing: { label: 'Đang mua hàng', cls: 'warn' },   // có ĐMH nhập MISA, mới phủ một phần mã hàng
+  processing: { label: 'Đang xử lý', cls: 'pink' },      // đã có ĐMH, chưa đơn nào nhập MISA
+  purchasing: { label: 'Đang mua hàng', cls: 'teal' },   // có ĐMH nhập MISA, mới phủ một phần mã hàng
   purchased: { label: 'Đã mua hàng', cls: 'ok' },        // mọi mã hàng đều có ĐMH nhập MISA
-  survey_done: { label: 'Đã khảo sát', cls: 'ok' },
-  pr_created: { label: 'Đã tạo YCMH', cls: 'warn' },
-  done: { label: 'Hoàn thành', cls: 'ok' },
-  completed: { label: 'Hoàn thành', cls: 'ok' },
+  // Hai mốc dưới là của luồng KHẢO SÁT, backend không bao giờ đặt cho PYC (xem
+  // `purchase_request/service.py` — chỉ 8 mốc trên + cancelled). Giữ lại cho phiếu cũ,
+  // và giữ ĐÚNG màu như `SR_STATUS` để một mốc không mang hai màu ở hai màn.
+  survey_done: { label: 'Đã khảo sát', cls: 'teal' },
+  pr_created: { label: 'Đã tạo YCMH', cls: 'ok' },
+  done: { label: 'Hoàn thành', cls: 'done' },
+  completed: { label: 'Hoàn thành', cls: 'done' },
   cancelled: { label: 'Đã từ chối', cls: 'err' },   // Từ chối — khóa phiếu
 }
 export const prBadge = (st: string) => {
@@ -144,32 +154,39 @@ export const prBadge = (st: string) => {
 }
 
 // Yêu cầu khảo sát: 'rejected' = TRẢ ĐƠN (sửa lại được), 'cancelled' = TỪ CHỐI (khóa đơn)
+// bao-CR-363: cùng bệnh với `PR_STATUS` — 'Đã duyệt' và 'Đã khảo sát' trước đây chung màu
+// xanh, 'Chờ duyệt' / 'Bị trả lại' / 'Đang xử lý' / 'Đã tạo YCMH' chung màu hổ phách.
+// Mốc nào trùng tên với PYC thì dùng ĐÚNG màu của PYC.
 export const SR_STATUS: Record<string, { label: string; cls: string }> = {
   draft: { label: 'Nháp', cls: 'gray' },
   submitted: { label: 'Chờ duyệt', cls: 'warn' },
-  approved: { label: 'Đã duyệt', cls: 'ok' },
-  rejected: { label: 'Bị trả lại', cls: 'warn' },
+  approved: { label: 'Đã duyệt', cls: 'info' },
+  rejected: { label: 'Bị trả lại', cls: 'back' },
   cancelled: { label: 'Đã từ chối', cls: 'err' },
-  processing: { label: 'Đang xử lý', cls: 'warn' },
-  survey_done: { label: 'Đã khảo sát', cls: 'ok' },
-  pr_created: { label: 'Đã tạo YCMH', cls: 'warn' },
-  done: { label: 'Hoàn thành', cls: 'ok' },
+  processing: { label: 'Đang xử lý', cls: 'pink' },
+  survey_done: { label: 'Đã khảo sát', cls: 'teal' },
+  pr_created: { label: 'Đã tạo YCMH', cls: 'ok' },
+  done: { label: 'Hoàn thành', cls: 'done' },
 }
 export const srBadge = (st: string) => {
   const s = SR_STATUS[String(st || '').toLowerCase()] || { label: st, cls: 'gray' }
   return <span className={'badge ' + s.cls}>{s.label}</span>
 }
 
+// bao-CR-363: 'Đã duyệt' · 'Đã nhận đủ' · 'Hoàn thành' trước đây chung một màu xanh, mà
+// ba mốc đó là ba việc khác nhau hẳn (mới ký · hàng đã về · đã đóng đơn). Nay:
+// đã duyệt (xanh dương) → đang xử lý (hồng sen) → nhận một phần (xanh mòng) →
+// nhận đủ (xanh lá) → hoàn thành (xanh lá ĐẶC).
 export const PO_STATUS: Record<string, { label: string; cls: string }> = {
   draft: { label: 'Nháp', cls: 'gray' },
   submitted: { label: 'Chờ duyệt', cls: 'warn' },
-  approved: { label: 'Đã duyệt', cls: 'ok' },
-  partial: { label: 'Đã nhận một phần', cls: 'warn' },
+  approved: { label: 'Đã duyệt', cls: 'info' },
+  partial: { label: 'Đã nhận một phần', cls: 'teal' },
   received: { label: 'Đã nhận đủ', cls: 'ok' },
-  completed: { label: 'Hoàn thành', cls: 'ok' },
-  rejected: { label: 'Bị trả lại', cls: 'warn' },
+  completed: { label: 'Hoàn thành', cls: 'done' },
+  rejected: { label: 'Bị trả lại', cls: 'back' },
   cancelled: { label: 'Đã từ chối', cls: 'err' },
-  processing: { label: 'Đang xử lý', cls: 'warn' },
+  processing: { label: 'Đang xử lý', cls: 'pink' },
 }
 export const poBadge = (st: string) => {
   const s = PO_STATUS[String(st || '').toLowerCase()] || { label: st, cls: 'gray' }
