@@ -104,6 +104,20 @@ ACTION_GROUP_BY_ACTION = {
     "choose_option": ACTION_GROUP_EDIT,
     "unchoose_option": ACTION_GROUP_EDIT,
     "reply": ACTION_GROUP_EDIT,
+    #  Đóng phiếu hỗ trợ. Từng RƠI RA NGOÀI bảng này — 36 dòng trên prod mang
+    #  `action_group = 0`, tức lọc theo nhóm thì chúng biến mất khỏi mọi kết quả.
+    "closed": ACTION_GROUP_EDIT,
+    # -- phân quyền -------------------------------------------------------
+    #  ⚠️ `ACTION_GROUP_PERMISSION` ra đời ở P1 nhưng **không mã nào trỏ vào nó**,
+    #  vì `role/` và `user/` chưa từng gọi `record(...)`. Nghĩa là bộ lọc "Phân
+    #  quyền" của màn nhật ký chắc chắn trả về rỗng — trông y như "chưa ai đổi
+    #  quyền bao giờ". Sáu mã dưới đây (bao-CR-346) là thứ lấp chỗ đó.
+    "set_permissions": ACTION_GROUP_PERMISSION,
+    "assign_roles": ACTION_GROUP_PERMISSION,
+    "set_scope": ACTION_GROUP_PERMISSION,
+    "reset_password": ACTION_GROUP_PERMISSION,
+    "activate": ACTION_GROUP_PERMISSION,
+    "deactivate": ACTION_GROUP_PERMISSION,
     # -- bộ máy duyệt -----------------------------------------------------
     "submit": ACTION_GROUP_APPROVE,
     "submitted": ACTION_GROUP_APPROVE,

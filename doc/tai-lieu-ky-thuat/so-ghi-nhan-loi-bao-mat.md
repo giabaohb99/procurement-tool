@@ -3,6 +3,10 @@
 **Bản 1.0 — 07/09/2026.** Mở sổ nhân ticket YCBG05092603.
 **Bản 1.1 — 09/09/2026.** bao-CR-313 đã deploy prod + dev: **BM-001 đóng**, **BM-004 đóng**,
 BM-003 vá một phần (còn phiên phía máy chủ ở P3). Bốn dòng còn lại chưa đổi.
+**Bản 1.2 — 10/09/2026.** Soát lại chính lớp nhật ký trước khi đẩy bao-CR-346 lên: thêm
+**bảy dòng BM-008 … BM-014**, trong đó bốn dòng bao-CR-346 vá luôn và ba dòng còn mở.
+Sửa hai chỗ hết hạn trong sổ: QĐ-A (bỏ dòng `refresh` thành công) **đã bị đảo**, và
+BM-005 / BM-007 nay đã có mã chạy thật chứ không còn "mới ở mức đề xuất".
 
 ---
 
@@ -54,11 +58,18 @@ nó là bằng chứng cho lần soát sau rằng chỗ này từng hở.
 |---|---|---|---|
 | BM-001 | **Cao** | `/api/audit-logs` chỉ gác bằng đăng nhập — mọi tài khoản đọc được nhật ký của mọi phân hệ | **Đã vá (09/09/2026, `main` f023c747 + 2de0b2d4 — đã deploy prod; `erp-v2` 682010c3 — đã deploy dev).** Đo lại trên prod: 230/233 tài khoản đang hoạt động ăn 403 ở `entity=auth` và ở lối duyệt toàn hệ, 3 tài khoản quản trị qua được |
 | BM-002 | **Cao** | Không có phiên đăng nhập phía máy chủ — token lộ thì không thu hồi được | **Mở** — chờ P3 của bao-CR-312 |
-| BM-003 | Trung bình | Gia hạn token không để lại dấu vết nào | **Vá một phần (09/09/2026, `main` f023c747 — đã deploy prod; `erp-v2` abff1298 — đã deploy dev).** `/api/auth/refresh` nay ghi `refresh` / `refresh_failed` kèm IP. Còn phần phiên phía máy chủ ở P3; **P3 sẽ bỏ chính dòng `refresh` thành công này** theo QĐ-A |
+| BM-003 | Trung bình | Gia hạn token không để lại dấu vết nào | **Vá một phần (09/09/2026, `main` f023c747 — đã deploy prod; `erp-v2` abff1298 — đã deploy dev).** `/api/auth/refresh` nay ghi `refresh` / `refresh_failed` kèm IP. Còn phần phiên phía máy chủ ở P3. ~~P3 sẽ bỏ chính dòng `refresh` thành công này theo QĐ-A~~ — **QĐ-A đã bị đảo 10/09/2026**, dòng `refresh` thành công GIỮ LẠI, xem BM-009 |
 | BM-004 | Trung bình | Giới hạn tần suất đăng nhập dùng chung MỘT xô cho cả công ty | **Đã vá (09/09/2026, `main` f023c747 — đã deploy prod; `erp-v2` abff1298 — đã deploy dev).** Đã kiểm trên hệ thật: dấu vết đăng nhập mang IP công cộng thật (118.71.139.127, 27.64.133.181), không phải `172.x` → `CF-Connecting-IP` tới được api. Kiểm trên dev với header giả `X-Forwarded-For: 6.6.6.6` + `X-Real-IP: 7.7.7.7`: dòng ghi vẫn là IP thật (180.93.2.176), header giả bị bỏ qua |
-| BM-005 | Trung bình | Nhật ký không lưu giá trị trước / sau — không chứng minh được đã đổi gì | Đang vá (bao-CR-312, mới ở mức đề xuất) |
-| BM-006 | Thấp | Dấu vết là tùy chọn theo từng lời gọi — quên gọi là mất | Vá một phần (bao-CR-311) |
-| BM-007 | Thấp | Dòng nhật ký không có IP / trình duyệt / mã lượt gọi | Đang vá (bao-CR-312, mới ở mức đề xuất) |
+| BM-005 | Trung bình | Nhật ký không lưu giá trị trước / sau — không chứng minh được đã đổi gì | **Mở** — `tab_change_log` nằm ở P4 của bao-CR-312, chưa viết dòng mã nào |
+| BM-006 | Thấp | Dấu vết là tùy chọn theo từng lời gọi — quên gọi là mất | Vá một phần (bao-CR-311 + bao-CR-346) — xem BM-010 |
+| BM-007 | Thấp | Dòng nhật ký không có IP / trình duyệt / mã lượt gọi | **Vá phần lớn (P1 của bao-CR-312, `erp-v2` 2eba1274 — mới deploy dev).** `tab_request_log` ghi IP + `request_id` + tuyến gọi; `tab_audit_log` có `request_id` / `ip` / `actor_kind`. Còn dấu thiết bị ở bao-CR-346 |
+| BM-008 | Trung bình | Giá trị dữ liệu thật bị chép nguyên vào `error_detail` của dòng nhật ký khi câu SQL nổ | **Đã vá (bao-CR-346, 10/09/2026)** — `mask_error_detail`, xem chi tiết bên dưới |
+| BM-009 | Trung bình | Thao tác **ĐỌC** không để lại dấu vết nào — kể cả tải tệp đính kèm và cả lượt bị chặn 403 | **Đã vá (bao-CR-346, 10/09/2026)** — ghi hết mọi GET |
+| BM-010 | Trung bình | Đổi phân quyền và đổi tài khoản **không gọi `record()`** — vùng nhạy cảm nhất lại là vùng trắng | **Đã vá (bao-CR-346, 10/09/2026)** |
+| BM-011 | Trung bình | Nhật ký chỉ có MỘT bản, nằm trên đúng cái máy kẻ tấn công đang đứng | **Đã vá (bao-CR-346, 10/09/2026)** — đóng gói ra R2 hàng tháng |
+| BM-012 | Thấp | Token hết hạn thì dòng nhật ký ghi `user_id = 0` — không phân biệt được "khách vãng lai" với "người có tài khoản, token vừa hết hạn" | **Mở** |
+| BM-013 | Thấp | `record()` tự `commit()` — giao dịch nghiệp vụ bị rollback vẫn để lại dấu vết ma | **Mở** |
+| BM-014 | Trung bình | `CF-Connecting-IP` được tin **vô điều kiện** — ai gọi thẳng vào api là tự khai IP của mình | **Mở** |
 
 ---
 
@@ -276,7 +287,7 @@ thật, và client không tự khai IP được. `default_limits` vẫn để ng
 
 ### BM-005 — Nhật ký không lưu giá trị trước / sau
 
-**Mức: Trung bình. Trạng thái: đang vá (bao-CR-312, mới ở mức đề xuất).**
+**Mức: Trung bình. Trạng thái: mở — nằm ở P4 của bao-CR-312, chưa viết dòng mã nào.**
 
 `tab_audit_log` có đúng bốn cột nghiệp vụ: `entity`, `entity_id`, `action`, `message`. `message`
 là văn xuôi do người viết mã tự đặt. Không có chỗ nào lưu **giá trị cũ** và **giá trị mới**,
@@ -303,7 +314,11 @@ việc ghi xuống tầng ORM để không phụ thuộc trí nhớ người vi�
 
 ### BM-007 — Dòng nhật ký không có IP / trình duyệt / mã lượt gọi
 
-**Mức: Thấp. Trạng thái: đang vá (bao-CR-312, mới ở mức đề xuất).**
+**Mức: Thấp. Trạng thái: vá phần lớn (P1 của bao-CR-312, `erp-v2` 2eba1274 — mới deploy dev).**
+
+Mô tả dưới đây là hiện trạng LÚC MỞ DÒNG (07/09/2026). P1 đã dựng `tab_request_log` (một dòng
+một lượt gọi API, có IP + `request_id` + tuyến gọi) và thêm `request_id` / `ip` / `session_id` /
+`actor_kind` vào `tab_audit_log`. Phần trình duyệt / thiết bị nằm ở bao-CR-346 (`device_hash`).
 
 IP hiện chỉ được ghi ở đúng ba chỗ (`login`, `login_failed`, `logout`) và ghi **lẫn trong câu
 văn** `message`, nên lọc theo IP là đi so chuỗi. Mọi dòng nhật ký khác không có IP, không có
@@ -312,6 +327,143 @@ trình duyệt, không có mã lượt gọi để gom các thay đổi của c�
 Vá: ba cột `session_id` / `request_id` / `ip` trên `tab_audit_log` —
 [`nhat-ky-va-phien-dang-nhap.md`](nhat-ky-va-phien-dang-nhap.md) §3.3. **Dòng cũ để NULL, không
 đắp lại được.**
+
+---
+
+### BM-008 — Giá trị dữ liệu thật bị chép nguyên vào `error_detail`
+
+**Mức: Trung bình. Trạng thái: đã vá (bao-CR-346, 10/09/2026).**
+
+Bảy dòng BM-001…BM-007 đều hỏi *"nhật ký có ghi đủ không"*. Bảy dòng tiếp theo, mở ngày
+10/09/2026, hỏi câu ngược lại — **chính lớp nhật ký có tự nó là một chỗ hở không** — và câu
+trả lời đầu tiên là có.
+
+Middleware bắt ngoại lệ rồi lưu `str(exc)` vào cột `error_detail`. Với `IntegrityError` của
+SQLAlchemy, `str(exc)` **có sẵn khối `[parameters: ...]`** — tức toàn bộ giá trị của câu
+`INSERT`/`UPDATE` vừa nổ, nguyên văn. Một lần lưu hồ sơ nhân sự đụng ràng buộc trùng là số
+CCCD, số tài khoản ngân hàng, ngày sinh nằm thẳng trong bảng nhật ký, ở dạng chữ, **không đi
+qua lớp che trường nhạy cảm nào** — `modules/employee/sensitive.py` gác cửa serializer, mà
+đường này không đi qua serializer.
+
+Nặng thêm vì bảng nhật ký sinh ra để cho **nhiều người đọc hơn** dữ liệu gốc: người đi tra sự
+cố không nhất thiết có `employee_sensitive.read`.
+
+Vá: `mask_error_detail` ở `core/logging_policy.py` §4 — cắt từ mốc `[parameters:` /
+`[cached since` tới mốc nối lại gần nhất, thay bằng `[đã che]`. **Cố ý vẫn để lại chữ
+`[parameters:`** để người đọc vết lỗi biết chỗ đó bị che chứ không tưởng là câu lỗi cụt.
+
+⚠️ Bản vá đầu **treo vô hạn**: chuỗi thay vào chứa chính mốc đang tìm, nên `find` từ đầu gặp
+lại nó ở đúng vị trí cũ. Nó treo **trong middleware**, tức treo cả lượt gọi API rồi rút cạn
+pool kết nối — một lỗi 500 bình thường biến thành hệ thống đứng. Chốt bằng con trỏ `cursor`,
+và bằng test `test_che_vet_loi_khong_treo_khi_khong_co_moc_ket`.
+
+---
+
+### BM-009 — Thao tác ĐỌC không để lại dấu vết nào
+
+**Mức: Trung bình. Trạng thái: đã vá (bao-CR-346, 10/09/2026).**
+
+Bản P1 cố ý bỏ GET để tiết kiệm dung lượng (QĐ-A). Hệ quả: **rò rỉ dữ liệu là loại sự cố duy
+nhất mà nhật ký không nói được gì cả.** Một tài khoản ngồi đọc lần lượt 3.000 hồ sơ nhân sự,
+hoặc tải về toàn bộ tệp đính kèm của một chuỗi chứng từ, để lại đúng **không dòng nào**. Ba
+biểu hiện cụ thể:
+
+- `/api/attachments/{id}/view` có `record()` gọi tay, nhưng `/download`, `/preview` và
+  `/chain/zip` thì không — mà `/download` mới là đường lấy tệp về;
+- lượt bị chặn **403 cũng không ghi**, nên "ai đó đang dò quanh những cửa họ không có quyền"
+  là tín hiệu tấn công rõ nhất mà hệ thống lại mù hoàn toàn;
+- luật lọc cũ so `"/export"` bằng `in`, nên vô tình khớp cả `/api/exports`.
+
+Đại ca chốt **ghi hết mọi GET** (10/09/2026), chỉ trừ hai đường thăm dò `/api/notifications` +
+`/api/alerts` (59,5% tổng GET, không mang thông tin gì) và chính các đường đọc nhật ký (NT-5 —
+lớp nhật ký không ghi lại chính nó). **QĐ-A bị đảo cùng lúc**: dòng `refresh` thành công giữ
+lại, vì đó đúng là chỗ token bị cắp lộ ra (BM-003).
+
+Ba cái giá phải trả và cách trả: dung lượng → dọn dòng GET quá **90 ngày** (§4.1.1 của
+[`nhat-ky-va-phien-dang-nhap.md`](nhat-ky-va-phien-dang-nhap.md)); nhật ký loãng → GET
+**không chép thân trả về**, chỉ giữ mã trạng thái + tuyến gọi; ghi chậm → GET bỏ hẳn nhịp
+`await request.body()`.
+
+---
+
+### BM-010 — Đổi phân quyền và đổi tài khoản không gọi `record()`
+
+**Mức: Trung bình. Trạng thái: đã vá (bao-CR-346, 10/09/2026).**
+
+Đây là ca cụ thể của BM-006, nhưng rơi đúng vào vùng tệ nhất: `modules/role/` và
+`modules/user/` **không có một lời gọi `record()` nào**. Tự nâng quyền cho mình, gán thêm vai
+trò, mở rộng phạm vi dữ liệu, đổi mật khẩu người khác — không thao tác nào để lại dấu.
+
+Vá: thêm `record(...)` vào các đường ghi của hai module, và **`describe_permission_change` kể
+lại phần CHÊNH của ma trận quyền** thay vì chỉ ghi "đã cập nhật phân quyền" — bấm Lưu mà
+không đổi gì thì câu kể rỗng, không sinh dòng rác. Đi kèm là hai lỗi nhóm hành động:
+`ACTION_GROUP_PERMISSION` trước đó **không dòng nào rơi vào**, và mã đóng phiếu rơi nhầm vào
+`không rõ`.
+
+---
+
+### BM-011 — Nhật ký chỉ có một bản, trên chính máy bị tấn công
+
+**Mức: Trung bình. Trạng thái: đã vá (bao-CR-346, 10/09/2026).**
+
+Toàn bộ bốn bảng nhật ký nằm trong MySQL trên VPS, và **bị loại khỏi bản sao lưu đêm** (QĐ-C,
+cố ý — nếu không thì bản sao phình gấp mấy lần phần dữ liệu nghiệp vụ). Ai vào được máy đó thì
+xóa dấu vết của mình bằng một câu `DELETE`, và không có bản nào ở nơi khác để đối chiếu.
+
+Vá: kéo phần **đóng gói ra R2** từ P6 lên làm sớm — mỗi tháng gói các dòng cũ thành tệp đẩy
+lên kho ngoài. Việc dọn 90 ngày của BM-009 cũng đi qua đó.
+
+⚠️ Vá xong lại suýt mở một lỗ to hơn: `upload_fileobj` **tự lùi về ghi vào `uploads/` khi
+chưa cấu hình R2**, mà `main.py:130` mount thư mục đó ở `/api/uploads` bằng `StaticFiles`
+**không gác quyền**. Tức một môi trường quên cấu hình R2 sẽ **xuất bản cả kho nhật ký ra URL
+công khai đoán được**. Chốt: cả việc đóng gói lẫn việc dọn đều **từ chối chạy** khi R2 chưa
+sẵn sàng (`is_remote_storage_ready`) — thà không có bản sao còn hơn có bản sao ai cũng tải về
+được. Test canh: `test_khong_co_ban_sao_ngoai_may_thi_khong_xoa_gi`.
+
+---
+
+### BM-012 — Token hết hạn ghi thành `user_id = 0`
+
+**Mức: Thấp. Trạng thái: mở.**
+
+`_peek_user_id` (`core/request_middleware.py:57`) giải mã token **không tra DB**; token hỏng,
+hết hạn, hay sai chữ ký đều trả về `0`. Nên trong `tab_request_log`, "người lạ chưa đăng nhập"
+và "người có tài khoản, token vừa hết hạn" là **cùng một giá trị**.
+
+Chưa vá vì cửa quyền thật nằm ở `get_current_user`, đây chỉ là chỗ ghi. Cách vá khi làm P3:
+đọc `sub` **kể cả khi token hết hạn** (`options={"verify_exp": False}`) rồi ghi kèm một cờ
+`token_expired`, chứ đừng gộp vào `0`.
+
+---
+
+### BM-013 — `record()` tự commit, để lại dấu vết ma
+
+**Mức: Thấp. Trạng thái: mở.**
+
+`core/audit.py` kết bằng `db.commit()`. Nếu thao tác nghiệp vụ nổ **sau** lời gọi `record(...)`
+và giao dịch bị rollback, dòng dấu vết vẫn nằm lại — nhật ký khẳng định một việc chưa từng xảy
+ra. Ngược chiều với mọi dòng khác trong sổ này: ở đây nhật ký **thừa**, không thiếu.
+
+Cố ý chưa vá ở P1: đổi nhịp commit là đổi hành vi của **213 lời gọi đang chạy thật** mà chưa
+có gì bù lại. Vá cùng P4, khi việc ghi chuyển xuống tầng ORM và gom một lần cuối request.
+
+---
+
+### BM-014 — `CF-Connecting-IP` được tin vô điều kiện
+
+**Mức: Trung bình. Trạng thái: mở.**
+
+`get_client_ip` (`core/client_ip.py:31`) lấy `CF-Connecting-IP` đầu tiên, không kiểm tra người
+gọi có thật là Cloudflare không. Cả sự an toàn của nó dựa vào một giả định **nằm ngoài mã
+nguồn**: "mọi lượt vào đều phải qua Cloudflare vì tunnel không mở cổng công khai".
+
+Giả định đó đúng hôm nay. Ngày nào nó sai — ai đó vào được mạng nội bộ Docker, hoặc một lần
+deploy publish cổng 8000 ra ngoài — thì kẻ gọi **tự khai IP của mình**, và cả nhật ký lẫn
+xô giới hạn tần suất đăng nhập (`core/limiter.py` khóa theo đúng hàm này) đều nghe theo. Nghĩa
+là BM-004 mở lại kèm theo, ở dạng khó thấy hơn.
+
+Vá: chỉ tin `CF-Connecting-IP` khi peer TCP nằm trong dải IP Cloudflare, hoặc khi có một
+header bí mật do cloudflared đặt. Chưa làm vì cần đụng cấu hình hạ tầng, không chỉ mã nguồn.
 
 ---
 

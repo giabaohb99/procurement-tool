@@ -96,6 +96,16 @@ ACTION_LABEL = {
     "option_add": "Gắn phương án",
     "option_remove": "Gỡ phương án",
     "reply": "Phản hồi",
+    "closed": "Đóng phiếu",
+    #  bao-CR-346 — sáu thao tác PHÂN QUYỀN. Trước 10/09/2026 cả `role/` lẫn
+    #  `user/` không gọi `record(...)` lấy một lần, nên câu hỏi *"ai cấp cho tài
+    #  khoản này quyền duyệt đơn hàng, lúc nào"* không tra được bằng dữ liệu.
+    "set_permissions": "Sửa ma trận phân quyền",
+    "assign_roles": "Gán vai trò",
+    "set_scope": "Đặt phạm vi dữ liệu",
+    "reset_password": "Đặt lại mật khẩu",
+    "activate": "Mở khóa tài khoản",
+    "deactivate": "Khóa tài khoản",
 }
 
 

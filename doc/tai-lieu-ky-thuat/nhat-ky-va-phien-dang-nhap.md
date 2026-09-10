@@ -148,7 +148,12 @@ lệch thật: prod 13 nhãn, `erp-v2` ~40.
 
 ## 4. BẢNG THIẾT KẾ
 
-### 4.1. `tab_request_log` — mỗi lời gọi API (không phải GET) hoặc mỗi lần chạy nền một dòng — MỚI
+### 4.1. `tab_request_log` — mỗi lời gọi API hoặc mỗi lần chạy nền một dòng — MỚI
+
+> **Bản 2.5 (10/09/2026, `bao-CR-346`) đã ĐẢO luật lọc của mục này.** Trước đây chỉ ghi
+> lượt không phải GET cộng vài đuôi đường dẫn, và bỏ lượt gia hạn phiên thành công (QĐ-A).
+> Nay **ghi hết**, trừ hai đầu gọi máy dội và đường của chính nhật ký. Lý do và cái giá
+> phải trả nằm ngay dưới bảng cột.
 
 | Cột | Kiểu | Ghi chú |
 |---|---|---|
@@ -159,13 +164,15 @@ lệch thật: prod 13 nhãn, `erp-v2` ~40.
 | `user_id` | BIGINT, index | `0` nếu chưa đăng nhập (đăng nhập thất bại, token hỏng) |
 | `session_id` | BIGINT, index | trỏ `tab_login_session`; `NULL` nếu chưa có phiên |
 | `ip` | VARCHAR(45), index | |
-| `method` | VARCHAR(8) | `POST` · `PATCH` · `PUT` · `DELETE` |
+| `method` | VARCHAR(8) | `GET` · `POST` · `PATCH` · `PUT` · `DELETE` (bản 2.5 thêm `GET`) |
 | `path` | VARCHAR(300) | đường dẫn thật: `/api/purchase-orders/129/items/4412` |
 | `route` | VARCHAR(200), index | **mẫu route**: `/api/purchase-orders/{id}/items/{item_id}` — để gom *"endpoint này ai gọi"* |
-| `query_string` | VARCHAR(1000) | `?...` nguyên văn |
-| `request_body` | JSON | body vào, **đã che** (§6), cắt **64 KB**; multipart **không đọc** — xem ghi chú dưới bảng |
+| `query_string` | VARCHAR(1000) | `?...` nguyên văn — với GET thì đây chính là phần nội dung, *"ai tìm gì, lọc gì"* |
+| `device_hash` | BINARY(8), index, NULL | **MỚI 2.5** — dấu thiết bị đã chuẩn hóa, xem ghi chú "Dấu thiết bị" dưới bảng |
+| `referer` | VARCHAR(300) | **MỚI 2.5** — màn hình nào phát ra lượt gọi này |
+| `request_body` | JSON | body vào, **đã che** (§6), cắt **64 KB**; **GET không có thân nên bỏ qua hẳn**; multipart **không đọc** — xem ghi chú dưới bảng |
 | `http_status` | SMALLINT | `200` · `403` · `422` · `500`… — **đây là chỗ ghi lượt bị chặn** |
-| `response_body` | JSON | body ra — **chỉ giữ khi `http_status` không phải 2xx**; 2xx thì chỉ giữ `message` + `data.id` (Q9) |
+| `response_body` | JSON | body ra — **GET thành công: KHÔNG giữ gì** (bản 2.5); GET hỏng và mọi lượt ghi: giữ nguyên văn nếu không phải 2xx, còn 2xx thì tóm tắt `message` + khóa định danh (Q9) |
 | `error_code` | VARCHAR(60) | mã lỗi trong phong bì `{success:false, error:{code}}` |
 | `error_detail` | TEXT | **chỉ khi 5xx hoặc task nền văng lỗi**: traceback Python, cắt 16 KB. Đây là "log hệ thống" theo nghĩa debug — hôm nay nó chỉ có trong `docker logs` và trôi mất sau vài ngày |
 | `duration_ms` | INT | thời gian xử lý |
@@ -182,40 +189,118 @@ chính thao tác đính kèm, tra bằng cùng một `request_id`.
 lẫn `docker logs`, cần đào sâu hơn traceback (log debug, câu SQL) thì copy mã sang container là
 ra. Log của nginx / Cloudflare (lượt chưa tới API) **vẫn ở ngoài**, không kéo về DB.
 
-**Vì sao không ghi GET.** Giao diện gọi `/api/notifications` liên tục để đếm chuông; ghi hết thì
-bảng này phình hàng chục nghìn dòng/ngày toàn rác. Ngoại lệ ghi GET: **xuất dữ liệu**
-(`/export`, `/print`) và **xem tệp đính kèm** (`/attachments/{id}/view`) — đó là hai loại "xem"
-có giá trị truy vết (Q6).
+#### Luật lọc — bản 2.5 (10/09/2026, `bao-CR-346`)
 
-**QĐ-A (bản 2.4) — gia hạn phiên THÀNH CÔNG không ghi dòng nào.** Đo nginx prod ngày 09/09:
-**265 lượt không phải GET mỗi ngày, trong đó 126 lượt là `POST /api/auth/refresh` — gần một
-nửa**. Trình duyệt gọi lại chừng ba phút một lần, mỗi dòng chỉ nói *"vẫn người đó, vẫn đang mở
-máy"*. Ghi hết thì mỗi năm 46.000 dòng gần như trắng thông tin, mà thứ hỏng thật là **màn
-`/system/logs` bị loãng** chứ không phải mấy MB. Luật:
+**Ghi hết, kể cả GET.** Danh sách bỏ chỉ còn ba nhóm, khai ở `core/logging_policy.py`:
 
-| Trường hợp | request_log | audit_log | login_session |
-|---|---|---|---|
-| Gia hạn **thành công**, IP không đổi | **không ghi** | **không ghi** | cập nhật `refreshed_at`, `refresh_count += 1`, `last_seen_at` |
-| Gia hạn **thành công** nhưng **IP khác `last_seen_ip`** | ghi | ghi `refresh_ip_changed` | cập nhật thêm `last_seen_ip` |
-| Gia hạn **thất bại** (token hỏng · hết hạn · tài khoản bị khóa) | ghi (401) | ghi `refresh_failed` | — |
+| Nhóm | Đường dẫn | Vì sao bỏ |
+|---|---|---|
+| Máy dội máy (**chỉ bỏ GET**) | `/api/notifications` · `/api/alerts` | 4.427 trong 7.440 lượt GET một ngày trên prod — **59,5%** — chỉ để vẽ con số trên hình cái chuông. `PATCH /api/notifications/{id}` (bấm "đã đọc") **vẫn ghi**: đó là thao tác của người. |
+| Đường của chính nhật ký | `/api/system-logs` · `/api/audit-logs` | NT-5 — mở màn đọc nhật ký mà lại đẻ thêm dòng nhật ký để đọc |
+| Hạ tầng | `/api/health` · `/api/uploads` · `/docs` · `/redoc` · `/openapi.json` | không phải thao tác nghiệp vụ |
 
-Vẫn đóng đúng **BM-003**: thứ chứng minh refresh token bị cắp là **phiên đổi IP giữa chừng** và
-**lượt gia hạn hỏng**, chứ không phải sự tồn tại của 126 dòng giống hệt nhau mỗi ngày. Sau QĐ-A,
-dấu vết gia hạn nằm gọn trong một dòng phiên có đếm số lần, đọc dễ hơn phải cuộn qua 46.000 dòng.
+**Vì sao đảo luật cũ.** Ba lý do, lý do thứ hai mới là lý do nặng:
 
-⚠️ **P1 mới làm được HAI trong ba dòng của bảng trên** (09/09/2026). Nhánh giữa — *gia hạn thành
-công nhưng đổi IP* — **hoãn sang P3**, vì muốn biết IP có đổi hay không thì phải có cái để so, mà
-`tab_login_session.last_seen_ip` chỉ ra đời ở P3. Tới lúc đó, sửa đúng một hàm:
-`should_skip_by_result()` trong `core/logging_policy.py` — nơi duy nhất cài QĐ-A — cho nó nhận
-thêm phiên hiện hành. Nghĩa là **từ nay tới P3, một refresh token bị cắp rồi dùng từ máy khác
-KHÔNG để lại dòng nào**; đó là lỗ đã biết và cố ý, không phải sót.
+1. **Đọc trộm không để lại gì.** Cả phân hệ nhân sự, công nợ, hợp đồng đều là dữ liệu mà
+   thiệt hại nằm ở chỗ **bị xem**, không phải bị sửa. Một người tải toàn bộ danh sách
+   nhân sự kèm số tài khoản ngân hàng về máy, theo luật cũ, không để lại một dòng nào.
+2. **Lượt GET bị chặn cũng mất luôn.** `should_log_request()` quyết định **trước khi
+   endpoint chạy**, tức trước khi biết kết quả. Nên một cú dò `GET /api/employees/9` ăn
+   403 cũng bị bỏ y như một lượt xem hợp lệ — đúng cái lượt đáng nhìn nhất thì không ghi.
+3. **Danh sách đuôi đường dẫn luôn thiếu.** Luật cũ nhặt `/export`, `/print`, `/view`,
+   nhưng `/download`, `/preview`, `/chain/zip` cũng là tải dữ liệu ra ngoài mà không nằm
+   trong danh sách. Mỗi lần ai đó đặt một đuôi mới là danh sách hụt thêm một chỗ, trong
+   im lặng. *(Tiện thể: `"/export"` khớp cả `/api/exports`, một lỗi đã có sẵn.)*
 
-**Việc phải làm ở P3, ghi ra đây kẻo quên:** `bao-CR-313` (đang làm, chưa commit) hiện ghi **mọi**
-lần gia hạn thành công thành một dòng `tab_audit_log` `action=refresh` — đúng cho lúc chưa có
-bảng phiên, nhưng nó **cộng thêm ~126 dòng audit/ngày, gấp đôi lượng audit hiện tại (124/ngày)**.
-Khi P3 dựng xong `tab_login_session`, phải quay lại `auth/controller.py` **bỏ dòng `record(...)`
-cho nhánh thành công** và chuyển sang cập nhật phiên theo bảng trên; hai nhánh `refresh_failed`
-giữ nguyên.
+**Cái giá, và đã trả bằng gì.** Ghi hết là ~3.000 dòng/ngày thay vì ~265. Ba khoản trả:
+
+- **Dung lượng** → cơ chế dọn dòng GET quá **90 ngày** (§4.1.1 ngay dưới).
+- **Nhân đôi dữ liệu nhạy cảm** → GET thành công **không lưu `response_body`**. Chép thân
+  trả về của lượt đọc là sao nguyên phần dữ liệu đó sang một bảng **không có
+  `employee_sensitive` gác cửa**. Vẫn tra được *"ai xem gì"* qua `path` + `query_string`.
+- **Màn `/system/logs` bị loãng** → P5 phải mặc định lọc **chỉ hiện lượt GHI**, xem GET là
+  một ô tick bật thêm. Đây là việc của tầng ĐỌC, không phải lý do để không ghi.
+
+**QĐ-A (bản 2.4) đã BỎ.** Luật cũ không ghi lượt `POST /api/auth/refresh` thành công.
+Hai lẽ khiến nó sai: (a) 126 lượt/ngày là con số không đáng kể cạnh ~3.000 GET/ngày, tức
+lý lẽ "làm loãng" đã tự tan khi luật GET đảo; (b) `/auth/refresh` **chính là** nơi một
+refresh token bị cắp lộ mặt — nó thành công ở máy kẻ trộm, nên đúng cái ca bị bỏ mới là ca
+cần nhìn (**BM-003**). Hàm `should_skip_by_result()` **giữ lại nhưng luôn trả `False`**:
+đó là chỗ móc sẵn cho P3, khi có `tab_login_session.last_seen_ip` để so.
+
+**Dấu thiết bị (`device_hash`).** Đổi IP một mình là tín hiệu **yếu** (4G nhảy sang wifi,
+nhà mạng đổi IP động). Đổi **thiết bị** giữa cùng một phiên mới là tín hiệu mạnh. Nhưng
+băm thẳng `User-Agent` thô thì hỏng ngay tuần đầu: chuỗi đó mang số hiệu bản vá
+(`Chrome/126.0.6478.127`) mà Chrome tự cập nhật vài tuần một lần — sáng thứ Hai cả công ty
+đổi dấu cùng lúc, cảnh báo kêu trăm lần vào ngày không có gì xảy ra, và sau ba lần như thế
+thì không ai đọc cảnh báo nữa. Nên **chuẩn hóa trước khi băm**, chỉ giữ ba mảnh không đổi
+theo bản vá: `chrome|windows|desktop` (`core/device_fingerprint.py`).
+
+⚠️ **Cố ý KHÔNG có cột `user_agent`.** Miền giá trị sau chuẩn hóa là tập **đóng**, chưa tới
+hai trăm tổ hợp, nên `device_label()` dựng sẵn cả bảng và **tra ngược 8 byte ra chữ**. Lưu
+thêm chuỗi thô ~200 byte trên **mọi** dòng là vài trăm MB để chép đi chép lại vài chục giá
+trị giống hệt nhau. Chuỗi `User-Agent` nguyên văn thuộc về `tab_login_session` (P3) — nơi
+một lần đăng nhập chỉ có một dòng.
+
+Đánh đổi đã biết: hai máy Windows cùng chạy Chrome ra **cùng một dấu**. Cột này để **loại
+trừ** (*"dấu vẫn thế, khỏi xét"*), không phải để định danh máy.
+
+#### 4.1.1. Dọn dòng GET quá 90 ngày — điều kiện ĐI KÈM, không phải tối ưu
+
+`request_log.cleanup`, chạy **03:40 mỗi ngày** (`core/celery_app.py`).
+
+| | Hạn giữ | Vì sao |
+|---|---|---|
+| Dòng **GET** | **90 ngày** (`GET_RETENTION_DAYS`) | ~3.000 dòng/ngày. Giữ đủ 16 tháng là ~1,4 triệu dòng đọc nằm chen giữa vài chục nghìn dòng thao tác thật, và bảng chậm đúng ở màn dựng ra để tra nó. |
+| Dòng **GHI** (POST/PATCH/PUT/DELETE) | **16 tháng** (QĐ-C) | không bao giờ bị việc dọn này đụng tới |
+
+⚠️ **Chốt quan trọng nhất của việc dọn không phải chuyện dung lượng.** Nó chỉ xóa khi
+`is_remote_storage_ready()` đúng — tức khi đã có bản sao ngoài máy trên R2. Xóa bản **duy
+nhất** của một dòng nhật ký là **hủy chứng cứ**, và một việc chạy nền lúc 3 giờ sáng không
+phải chỗ để chuyện đó xảy ra vì lỡ thiếu một biến môi trường. Chưa cấu hình R2 thì việc dọn
+tự tắt (`status: skipped`), không phải lỗi.
+
+⚠️ **Xóa theo LÔ 2.000 dòng, không xóa một phát.** Một câu `DELETE` quét vài trăm nghìn
+dòng giữ khóa đủ lâu để **mọi lượt gọi API đứng chờ ghi nhật ký** — dọn rác mà thành sự cố
+toàn hệ. Chạm trần 500 lô thì ghi cảnh báo và để lần chạy sau, chứ không dừng im lặng.
+
+**Lịch 03:40 là cố ý, không phải số ngẫu nhiên**: phải chạy **sau** việc đóng gói tháng lúc
+03:00. Ngày 1 hằng tháng hai việc cùng thức dậy; đảo thứ tự thì có đêm dọn trước, đóng gói
+sau, và phần bị dọn không nằm trong gói nào.
+
+#### 4.1.2. Đóng gói ra R2 — kéo từ P6 lên sớm
+
+`audit.archive`, **03:00 ngày 1 hằng tháng**, key `{env}/log-archive/{YYYY-MM}/{bảng}.jsonl.gz`
+kèm tệp `.sha256`.
+
+**Vì sao không đợi P6.** QĐ-C đã loại bốn bảng nhật ký khỏi bản sao lưu hằng đêm — hợp lý,
+vì chúng phình nhanh và không cần khôi phục cùng dữ liệu nghiệp vụ. Nhưng gói R2 lại xếp ở
+P6, giai đoạn **cuối**. Khoảng giữa hai mốc đó, nhật ký tồn tại **đúng một bản, nằm trên
+chính cái máy** mà kẻ tấn công đang đứng. Nhật ký chỉ có giá trị khi người bị nó ghi lại
+không xóa được nó.
+
+Ba thứ đã sửa trong việc đóng gói (`modules/audit/tasks.py`):
+
+1. **Chép đủ cột** — bản cũ liệt kê tay 7 trường, trong khi `tab_audit_log` nay có 20 cột,
+   nghĩa là bản lưu trữ rụng sạch `request_id`, `ip`, `session_id`, `actor_kind`, `doc_code`,
+   đúng phần ngữ cảnh mà cả CR-312 dựng ra. Nay đọc cột từ mapper. Thêm cả `tab_request_log`.
+2. **Có `.sha256`** — không có nó thì "bản lưu trữ" chỉ là một tệp gz, không ai chứng minh
+   được nó chưa bị thay. `gzip(mtime=0)` để cùng dữ liệu luôn ra cùng byte, không thì mỗi
+   lần chạy một mã băm khác và mã băm hết nói lên điều gì.
+3. **Hỏng thì ném lỗi** — bản cũ nuốt mọi ngoại lệ rồi trả `{"status": "failed"}`, mà không
+   ai đọc giá trị trả về của một việc chạy nền.
+
+⚠️ **Chưa cấu hình R2 thì TỪ CHỐI chạy, không ghi tạm xuống `uploads/`.** `upload_fileobj`
+mặc định lùi về ghi tệp local, mà `uploads/` được `main.py` gắn ra `/api/uploads` bằng
+`StaticFiles` **không có lớp gác nào** — bản lưu trữ chứa nguyên nhật ký toàn hệ sẽ nằm ở
+một URL công khai đoán được. Thà không có bản lưu trữ còn hơn có một bản ai cũng tải được.
+
+**Việc phải làm ở P3, ghi ra đây kẻo quên:** `bao-CR-313` ghi **mọi** lần gia hạn thành công
+thành một dòng `tab_audit_log` `action=refresh` — đúng cho lúc chưa có bảng phiên, nhưng nó
+cộng ~126 dòng audit/ngày. Khi P3 dựng xong `tab_login_session`, quay lại
+`auth/controller.py` bỏ dòng `record(...)` cho nhánh thành công và chuyển sang cập nhật
+phiên; hai nhánh `refresh_failed` giữ nguyên. *(Dòng `request_log` thì **giữ** — đó là phần
+QĐ-A đã bỏ.)*
 
 ### 4.2. `tab_audit_log` — lớp kể chuyện (sửa lại)
 
@@ -383,11 +468,50 @@ cuối request  → ghi cả bộ đệm + changed_fields / change_count lên au
 
 | Chỗ | Luật |
 |---|---|
-| `tab_request_log.request_body` | Che theo **tên khóa**: `password`, `old_password`, `new_password`, `token`, `refresh_token`, `id_token`, `access_token`, `secret` → ghi `"***"`. Header `Authorization` **không bao giờ** ghi |
+| `tab_request_log.request_body` | Che theo **tên khóa**: trùng khít `password`, `old_password`, `new_password`, `token`, `refresh_token`, `id_token`, `access_token`, `secret`… **hoặc CHỨA** một trong `SENSITIVE_KEY_MARKERS` → ghi `"***"`. Header `Authorization` **không bao giờ** ghi |
+| `tab_request_log.response_body` | Cùng luật trên, **cộng thêm** một lớp thứ hai: `redact_raw_inputs()` bỏ giá trị của khóa `input` trong thân lỗi — xem ghi chú ⚠️ dưới bảng |
+| `tab_request_log.error_detail` | `mask_error_detail()` cắt khối `[parameters: {...}]` khỏi vết lỗi — xem ghi chú ⚠️ thứ ba dưới bảng |
 | `tab_change_log` | Che theo **tên cột**: `password_hash`, `google_sub`, `reset_token`, mọi cột tên có `token`/`secret`. Bảng `tab_user` mặc định **cấm hết trừ khi cho phép** |
 | `snapshot_json` | cùng danh sách cột |
 
 Ghi nhầm một lần là chuỗi băm mật khẩu nằm trong nhật ký vĩnh viễn — test canh phải có từ đợt đầu.
+
+⚠️ **Khớp CHÍNH XÁC tên khóa là không đủ, và bản P1 đầu tiên đã lọt vì thế** (rà soát
+10/09/2026). Màn *Cấu hình hệ thống* gửi `PUT /api/settings` với `smtp_password`,
+`r2_secret_access_key`, `r2_access_key_id` — **không cái nào trùng khít** danh sách, nên cả ba
+bí mật hạ tầng đi thẳng vào bảng chỉ-thêm dưới dạng nguyên văn. Nay `is_sensitive_key()` là
+**nơi duy nhất** trả lời câu *"khóa này có cấm ghi giá trị không"*, dùng chung cho cả thân
+request lẫn tên cột của P4, và nó khớp cả theo mảnh (`password` · `token` · `secret` ·
+`credential` · `api_key` · `access_key` · `private_key`). Cố ý **không** có mảnh `key` trần —
+nó nuốt luôn `keyword`, `product_key`.
+
+⚠️ **Thân lỗi 422 vác theo giá trị thô dưới một cái tên vô can.**
+`validation_exception_handler` trả `details=exc.errors()`, và Pydantic v2 gắn vào mỗi mục một
+khóa **`input`** = đúng thứ người dùng vừa gõ. Gõ mật khẩu sai kiểu là mật khẩu nguyên văn nằm
+trong `response_body`, **trong khi `request_body` của chính dòng đó đã che thành `***`** — che
+một đầu thì bằng không che. Nặng hơn nữa là lỗi `json_invalid`: `input` khi đó là **toàn bộ**
+chuỗi thân request. Luật: `redact_raw_inputs()` thay giá trị bằng dấu vết
+`{"_omitted": true, "type": "list", "size": 1}` — đủ để biết người ta gửi *cái gì*, không biết
+*là gì*. Bỏ hẳn chứ không che có điều kiện, vì `type` + `loc` + `msg` đã trả lời đủ câu "hỏng ô
+nào, vì sao", còn `input` là mảnh duy nhất **không có trần kích thước**.
+Người gọi vẫn nhận đủ thân thật; chỉ bản LƯU LẠI mới bị lược.
+
+⚠️ **Lỗ thứ ba, và là lỗ khó thấy nhất trong ba** (`bao-CR-346`). Hai luật trên đều đi trên
+**cấu trúc JSON**. Còn `error_detail` là `traceback.format_exc()` — một **chuỗi**, nên không
+lớp nào ở trên chạm tới nó. Mà SQLAlchemy nhét thẳng giá trị tham số vào chuỗi đó; vết thật
+lấy từ máy:
+
+```
+[SQL: INSERT INTO tab_user (username, password_hash) VALUES (%(u)s, %(p)s)]
+[parameters: {'u': 'admin', 'p': '$2b$12$...bam-mat-khau...', 'e': 'x@y.z'}]
+```
+
+Nghĩa là một cú 500 lúc tạo tài khoản chép nguyên chuỗi băm mật khẩu vào bảng chỉ-thêm —
+đúng thứ `SENSITIVE_BODY_KEYS` dựng ra để chặn, đi vòng qua cửa sau. Tệ hơn: nó nổ đúng lúc
+500, tức đúng lúc quản trị mở nhật ký ra đọc. `mask_error_detail()` cắt theo **mốc** chứ
+không đếm ngoặc (giá trị tham số có thể chứa `]`, có thể xuống dòng), và **giữ** `[SQL: ...]`
+vì trong đó chỉ có chỗ giữ tham số `%(u)s`, không có giá trị — mất nó thì đọc vết lỗi không
+biết câu nào hỏng.
 
 ### Bốn cái bẫy, xử từ đầu
 
@@ -710,9 +834,18 @@ chỗ lệch đều lệch về phía an toàn**:
 Con số cuối là thứ đáng nhớ nhất: **bật nhật ký lên là CSDL phình gấp 7–12 lần so với hôm nay**,
 và toàn bộ phần phình đó là nhật ký chứ không phải dữ liệu nghiệp vụ.
 
+> ⚠️ **Bảng dưới là số của bản 2.4 và dòng `tab_request_log` đã HẾT HẠN.** Bản 2.5 ghi cả
+> GET (§4.1), nên dòng đó thành: ~3.000 dòng/ngày, **~350 B/dòng** (GET không có `request_body`,
+> không giữ `response_body`) → **~380 MB/năm nếu giữ nguyên**. Đó đúng là lý do §4.1.1 tồn tại:
+> hạn **90 ngày** cho dòng GET kéo phần đọc về **~95 MB ổn định**, còn phần ghi giữ đủ 16 tháng
+> vẫn là ~41 MB. Tổng bốn bảng ổn định quanh **~215 MB** thay vì ~120 MB — vượt khung 180 MB đã
+> trình khách, nhưng ổ VPS còn 23 GB và bốn bảng này đã ra khỏi bản sao lưu hằng đêm (QĐ-C) nên
+> không kéo theo chi phí R2 tăng theo cấp số. Cần siết thêm thì hạ `GET_RETENTION_DAYS` — một
+> hằng, một chỗ.
+
 | Bảng | Cỡ dòng | Dòng/ngày *(đo)* | Một năm | Giữ trong DB |
 |---|---|---|---|---|
-| `tab_request_log` — chỉ non-GET, trừ gia hạn (QĐ-A), body ra chỉ khi lỗi | ~800 B | ~140 | **~41 MB** | **16 tháng** |
+| `tab_request_log` — *(số bản 2.4, xem cảnh báo trên)* | ~800 B | ~140 | **~41 MB** | **16 tháng** |
 | `tab_audit_log` sau khi thêm cột | ~500 B | 124 | **~23 MB** | **16 tháng** |
 | `tab_change_log` — một dòng mỗi trường, cộng ảnh chụp lúc thêm/xóa | ~130 B | ~480 | **~25 MB** | **16 tháng** |
 | `tab_login_session` | ~700 B | ~6 | **~1,5 MB** | **16 tháng** sau `revoked_at` |
@@ -784,10 +917,16 @@ và task xóa phải chạy **sau** task đóng gói ít nhất một ngày.
 | **P3** | `tab_login_session` + `jti` + `token_version` + 4 thao tác điều khiển phiên + ba chỗ hiện phiên (§8.5: Quản trị · Trang cá nhân · tab Nhân sự). **Kèm việc dọn:** bỏ dòng audit `refresh` cho nhánh gia hạn **thành công** mà bao-CR-313 đang ghi, chuyển sang dập `refreshed_at` / `refresh_count` / `last_seen_ip` theo QĐ-A | **Thiết bị gì · đá · đăng xuất mọi thiết bị · bắt đăng nhập lại** (BM-002) | P1 |
 | **P4** | `tab_change_log` + sự kiện ORM + che cột + chốt gộp nhập liệu | **Trước/sau** — nặng nhất, làm sau cùng trong nhóm nền | P1 |
 | **P5** | Màn `/system/logs` (§8.2–8.4): danh sách gộp theo `request_id`, ngăn 4 tab, theo dõi trực tiếp, biểu đồ; `/api/audit-logs` trả thêm `request_id` để *Xem chi tiết* từ dòng thời gian phiếu | **Gom một chỗ, debug trên giao diện** | P2, P4 (tab *Thay đổi* ẩn khi chưa có P4 — màn vẫn dùng được ngay sau P1) |
-| **P6** | Phân vùng theo năm + gói `log-<năm>-<tháng>` lên R2 **đầu mỗi tháng** + dọn 16 tháng (§9) + **QĐ-C: tách bốn bảng nhật ký khỏi sao lưu hằng đêm bằng dump hai lượt** (§9) + cảnh báo: đăng nhập IP lạ, phiên đổi IP giữa chừng, xóa hàng loạt trong một `request_id`, nhiều 403 liên tiếp | Nhật ký giữ được lâu hơn sao lưu mà DB không phình | P3, P4 |
+| **P1b** | **`bao-CR-346` (10/09/2026)** — đảo luật lọc thành *ghi hết GET* (§4.1), che vết lỗi SQL, `device_hash` + `referer`, `record(...)` cho `role/` + `user/`, và **kéo hai việc của P6 lên**: đóng gói R2 hằng tháng (§4.1.2) + dọn dòng GET 90 ngày (§4.1.1) | **Ai ĐỌC cái gì** — thứ P1 hoàn toàn không có. Và nhật ký có bản sao thứ hai ngoài máy | P1 |
+| **P6** | Phân vùng theo năm + dọn 16 tháng (§9) + **QĐ-C: tách bốn bảng nhật ký khỏi sao lưu hằng đêm bằng dump hai lượt** (§9) + cảnh báo: đăng nhập IP lạ, phiên đổi IP giữa chừng, xóa hàng loạt trong một `request_id`, nhiều 403 liên tiếp. *(Phần đóng gói R2 hằng tháng đã làm ở P1b.)* | Nhật ký giữ được lâu hơn sao lưu mà DB không phình | P3, P4 |
 
 **P1 là phần đáng làm nhất so với công bỏ ra**: một middleware trả lời được 4 trong 6 câu hỏi ở §1
 (endpoint, input/output, từ đâu, bị chặn) mà không đụng 213 lời gọi, không đụng ORM.
+
+⚠️ **Vì sao kéo gói R2 ra khỏi P6.** QĐ-C loại bốn bảng nhật ký khỏi bản sao lưu hằng đêm,
+nhưng gói R2 lại xếp ở giai đoạn cuối. Khoảng giữa hai mốc đó, nhật ký tồn tại **đúng một
+bản, nằm trên chính cái máy** mà kẻ tấn công đang đứng — mà nhật ký chỉ có giá trị khi người
+bị nó ghi lại không xóa được nó. Hai quyết định đúng riêng lẻ, xếp sai thứ tự thành một lỗ.
 
 ---
 

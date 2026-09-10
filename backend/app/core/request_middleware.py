@@ -29,10 +29,13 @@ from starlette.responses import Response
 
 from app.core.client_ip import get_client_ip
 from app.core.config import settings
+from app.core.device_fingerprint import MAX_USER_AGENT, device_hash
 from app.core.logging_codes import ACTOR_KIND_USER, SOURCE_API
 from app.core.logging_policy import (MAX_BODY_BYTES, MAX_ERROR_DETAIL_BYTES, MAX_PATH,
-                                     MAX_QUERY_STRING, MAX_ROUTE, mask_payload,
-                                     should_log_request, should_skip_by_result)
+                                     MAX_QUERY_STRING, MAX_REFERER, MAX_ROUTE,
+                                     mask_error_detail, mask_payload, redact_raw_inputs,
+                                     should_capture_response, should_log_request,
+                                     should_skip_by_result, summarize_success)
 from app.core.request_context import RequestContext, new_request_id, reset_context, set_context
 
 log = logging.getLogger("app.request_log")
@@ -40,7 +43,15 @@ log = logging.getLogger("app.request_log")
 #  Kiểu nội dung được phép đệm để đọc thân trả về. Ngoài danh sách này (tệp
 #  đính kèm, Excel, PDF, HTML bản in) thì response đi thẳng, không ai chạm vào.
 CAPTURABLE_CONTENT_TYPES = ("application/json",)
-MAX_CAPTURE_BYTES = 256 * 1024
+
+#  Bằng đúng `MAX_BODY_BYTES` — trước đây 256 KB, tức đệm gấp bốn lần thứ có thể
+#  ghi rồi vứt ba phần tư. Đệm nghĩa là nuốt vào RAM, và trần này nhân với số
+#  lượt gọi đồng thời chứ không phải với một.
+MAX_CAPTURE_BYTES = MAX_BODY_BYTES
+
+#  Phương thức có thân request. GET/HEAD/OPTIONS thì đừng gọi `await
+#  request.body()` — nay ghi cả GET nên đó là 3.000 lượt chờ vô ích mỗi ngày.
+METHODS_WITH_BODY = ("POST", "PUT", "PATCH", "DELETE")
 
 
 def _peek_user_id(request) -> int:
@@ -105,9 +116,15 @@ def _parse_body(raw: bytes, content_type: str) -> dict | None:
 def _summarize_response(raw: bytes, status_code: int) -> tuple[dict | None, str]:
     """Thân trả về + mã lỗi, theo Q9.
 
-    2xx chỉ giữ `message` và `data.id` — kết quả thành công đã nằm ở
-    `tab_change_log` (P4), giữ thêm là gấp đôi dung lượng để lưu thứ có sẵn.
-    Không phải 2xx thì giữ nguyên văn (đã cắt), vì đó mới là thứ cần đọc.
+    2xx giữ `message` + phần ĐỊNH DANH của `data` (`summarize_success`). Bản đầu
+    chỉ giữ `data.id` và hụt ở ba ca gặp hằng ngày — thân không có khóa `id`
+    (`/approve` trả cả phiếu), thân trả con số thay vì bản ghi (`/import` trả
+    `{"created": 120}`), thân trả DANH SÁCH (duyệt hàng loạt). Cả ba ghi ra rỗng,
+    tức dòng nhật ký nói "đã gọi" mà không nói "đụng vào cái gì".
+    Không phải 2xx thì giữ nguyên văn, vì đó mới là thứ cần đọc — nhưng phải đi
+    qua HAI lớp lọc, không phải một: `mask_payload` che theo tên khóa, rồi
+    `redact_raw_inputs` bỏ giá trị thô mà thân lỗi 422 vác theo dưới khóa
+    `input` (tên khóa đó chẳng nói gì nên lớp thứ nhất không bắt được).
     """
     if not raw:
         return None, ""
@@ -118,13 +135,13 @@ def _summarize_response(raw: bytes, status_code: int) -> tuple[dict | None, str]
     if not isinstance(parsed, dict):
         return None, ""
     if 200 <= status_code < 300:
-        data = parsed.get("data")
         brief: dict = {"message": parsed.get("message", "")}
-        if isinstance(data, dict) and "id" in data:
-            brief["data"] = {"id": data.get("id")}
+        data = summarize_success(parsed.get("data"))
+        if data is not None:
+            brief["data"] = data
         return brief, ""
     error = parsed.get("error") if isinstance(parsed.get("error"), dict) else {}
-    return mask_payload(parsed), str(error.get("code") or "")
+    return redact_raw_inputs(mask_payload(parsed)), str(error.get("code") or "")
 
 
 class RequestContextMiddleware(BaseHTTPMiddleware):
@@ -142,7 +159,7 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
         started = time.perf_counter()
         content_type = (request.headers.get("content-type") or "").lower()
         request_body = None
-        if wants_log:
+        if wants_log and method in METHODS_WITH_BODY:
             request_body = _read_request_body(request, content_type)
             if request_body is None:
                 #  Starlette đệm sẵn thân đã đọc và phát lại cho endpoint
@@ -160,15 +177,27 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
                 self._write(ctx, method=method, path=path, request=request,
                             request_body=request_body, status_code=500, response_body=None,
                             error_code="internal_error",
-                            error_detail=traceback.format_exc(),
+                            #  ⚠️ KHÔNG ghi thẳng `format_exc()`: SQLAlchemy dán
+                            #  giá trị tham số vào vết lỗi, kể cả chuỗi băm mật
+                            #  khẩu. Xem §4 của `logging_policy`.
+                            error_detail=mask_error_detail(traceback.format_exc()),
                             duration_ms=int((time.perf_counter() - started) * 1000))
             reset_context(token)
             raise exc
 
         try:
             if wants_log and not should_skip_by_result(path, response.status_code):
-                response, raw = await self._capture(response)
-                response_body, error_code = _summarize_response(raw, response.status_code)
+                response_body: dict | None = None
+                error_code = ""
+                if should_capture_response(method, response.status_code):
+                    response, raw, oversize = await self._capture(response)
+                    if oversize:
+                        #  Nói rõ "to quá nên không đọc" thay vì để trống — trống
+                        #  đọc ra như "endpoint này không trả gì".
+                        response_body = {"_too_large": True, "size": oversize}
+                    else:
+                        response_body, error_code = _summarize_response(raw,
+                                                                       response.status_code)
                 self._write(ctx, method=method, path=path, request=request,
                             request_body=request_body, status_code=response.status_code,
                             response_body=response_body, error_code=error_code,
@@ -178,17 +207,21 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
             reset_context(token)
         return response
 
-    async def _capture(self, response) -> tuple[Response, bytes]:
-        """Đọc thân trả về nếu là JSON; thứ khác trả nguyên response cũ."""
+    async def _capture(self, response) -> tuple[Response, bytes, int]:
+        """Đọc thân trả về nếu là JSON; thứ khác trả nguyên response cũ.
+
+        Số thứ ba là **cỡ thân bị bỏ qua vì quá trần** (0 nếu không bỏ qua) —
+        phân biệt "không đọc được" với "đọc rồi, rỗng".
+        """
         content_type = (response.headers.get("content-type") or "").lower()
         if not content_type.startswith(CAPTURABLE_CONTENT_TYPES):
-            return response, b""
+            return response, b"", 0
         try:
             length = int(response.headers.get("content-length") or 0)
         except ValueError:
             length = 0
         if length > MAX_CAPTURE_BYTES:
-            return response, b""
+            return response, b"", length
         chunks = [chunk async for chunk in response.body_iterator]
         raw = b"".join(chunks)
         rebuilt = Response(content=raw, status_code=response.status_code,
@@ -196,7 +229,12 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
         #  Giữ lại việc chạy sau khi trả lời (gửi mail, đẩy thông báo) — dựng
         #  response mới mà quên dòng này là chúng biến mất trong im lặng.
         rebuilt.background = response.background
-        return rebuilt, raw
+        #  `content-length` KHÔNG phải lúc nào cũng có (thân chảy theo luồng), nên
+        #  trần ở trên có thể trượt hẳn. Đo lại sau khi gom: tới đây thì đằng nào
+        #  cũng đã đọc xong, nhưng ít ra không đem vài MB đi phân tích rồi ghi.
+        if len(raw) > MAX_CAPTURE_BYTES:
+            return rebuilt, b"", len(raw)
+        return rebuilt, raw, 0
 
     def _write(self, ctx, *, method, path, request, request_body, status_code,
                response_body, error_code, error_detail, duration_ms):
@@ -217,6 +255,9 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
                 path=path[:MAX_PATH],
                 route=_route_pattern(path, request.scope.get("path_params") or {})[:MAX_ROUTE],
                 query_string=str(request.url.query or "")[:MAX_QUERY_STRING],
+                device_hash=device_hash(
+                    (request.headers.get("user-agent") or "")[:MAX_USER_AGENT]),
+                referer=(request.headers.get("referer") or "")[:MAX_REFERER],
                 request_body=request_body,
                 http_status=status_code,
                 response_body=response_body,

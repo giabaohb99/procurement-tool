@@ -44,6 +44,22 @@ class RequestLog(Base):
     route: Mapped[str] = mapped_column(String(200), default="", index=True)
     query_string: Mapped[str] = mapped_column(String(1000), default="")
 
+    #  Dấu thiết bị đã CHUẨN HÓA — 8 byte, xem `core/device_fingerprint.py`.
+    #  Có mặt ở mọi dòng vì nó chỉ đáng giá khi SO ĐƯỢC: một phiên đăng nhập từ
+    #  Chrome/Windows mà lượt gọi sau ra Safari/iPhone là dấu hiệu token đã bị
+    #  mang đi máy khác (BM-003). Ghi lẻ tẻ thì đúng lượt cần so lại là lượt trống.
+    #  ⚠️ CỐ Ý KHÔNG có cột `user_agent`. Chuỗi thô ~150 byte × 3.000 lượt/ngày ×
+    #  16 tháng ≈ 200 MB để lưu đi lưu lại vài chục giá trị giống hệt nhau. Mà
+    #  cũng không cần: dấu băm từ một tập ĐÓNG chừng trăm rưỡi tổ hợp, nên đọc
+    #  ngược ra chữ bằng `device_label(...)` — tra bảng, không phải phá mã. Chuỗi
+    #  `User-Agent` nguyên văn thì thuộc về `tab_login_session` (P3): mỗi lần đăng
+    #  nhập một dòng, đó mới là chỗ trả giá xứng đáng.
+    device_hash: Mapped[bytes | None] = mapped_column(BINARY(8), nullable=True, index=True)
+    #  Trang nào dẫn tới lượt gọi này. Với một cú GET bị chặn, đây là mảnh phân
+    #  biệt *"bấm nhầm từ trong màn hình"* với *"gõ thẳng URL vào thanh địa chỉ"*
+    #  — tức phân biệt lỗi phân quyền với người đang dò.
+    referer: Mapped[str] = mapped_column(String(300), default="")
+
     #  `none_as_null`: không có thân thì để NULL của SQL, đừng ghi chuỗi JSON
     #  `null` — nếu không thì `WHERE request_body IS NULL` không khớp gì cả và
     #  người đi tra tưởng mọi lượt đều có thân.
