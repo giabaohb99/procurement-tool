@@ -1643,9 +1643,12 @@ thead th {
 }
 
 /* Hoàn thành là mốc CUỐI, nên tô ĐẶC chứ không pastel: nhìn một lượt là thấy ngay phiếu nào
-   đã đóng, không phải phân biệt hai sắc xanh nhạt cạnh nhau. */
+   đã đóng, không phải phân biệt hai sắc xanh nhạt cạnh nhau.
+   Nền dùng xanh ĐẬM `#15803d` chứ không phải `#16a34a` của lớp `ok`: chữ pill là chữ TRẮNG
+   cỡ 10.5px in hoa, đặt trên `#16a34a` chỉ được tỷ lệ tương phản 3,3:1 — dưới ngưỡng 4,5:1,
+   đọc trên màn hình laptop ngoài sáng là nhòe. `#15803d` cho 5,0:1 mà vẫn rõ là màu xanh. */
 .badge.done {
-  background: #16a34a;
+  background: #15803d;
   color: #ffffff;
 }
 
