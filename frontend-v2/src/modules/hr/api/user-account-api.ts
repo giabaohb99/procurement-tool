@@ -40,6 +40,15 @@ export const userAccountApi = {
       is_active: isActive,
     }),
 
+  /**
+   * Quản trị bật/tắt hộ email thông báo cho một tài khoản (bao-CR-349).
+   * Backend đòi `user.write` và có ghi nhật ký thao tác.
+   */
+  setNotifyEmail: (userId: number, notifyEmail: boolean) =>
+    httpClient.put<SuccessEnvelope<null>>(`${BASE_URL}/${userId}/notify-email`, {
+      notify_email: notifyEmail,
+    }),
+
   remove: (userId: number) => apiDelete<null>(`${BASE_URL}/${userId}`),
 
   getScope: (userId: number, roleId: number) =>

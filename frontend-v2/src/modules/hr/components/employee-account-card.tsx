@@ -1,4 +1,4 @@
-import { AlertCircle, KeyRound, ShieldCheck } from 'lucide-react'
+import { AlertCircle, KeyRound, Mail, MailX, ShieldCheck } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -12,7 +12,7 @@ import { SectionHeading } from '@/shared/ui/section-heading'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { employeeApi } from '../api/employee-api'
 import { useRoles } from '../hooks/use-roles'
-import { useEmployeeAccount } from '../hooks/use-user-accounts'
+import { useEmployeeAccount, useSetUserNotifyEmail } from '../hooks/use-user-accounts'
 import { SetPasswordDialog } from './set-password-dialog'
 
 interface EmployeeAccountCardProps {
@@ -32,10 +32,13 @@ export function EmployeeAccountCard({ employeeId, email, className }: EmployeeAc
   const { can } = usePermission()
   const canReadUser = can('user', 'read')
   const canSetPassword = can('employee', 'write')
+  // Công tắc email gọi PUT /api/users/{id}/notify-email — backend đòi `user.write`.
+  const canEditUser = can('user', 'write')
 
   const [isPasswordOpen, setPasswordOpen] = useState(false)
 
   const { data: account, isLoading, refetch } = useEmployeeAccount(employeeId, canReadUser)
+  const setNotifyEmail = useSetUserNotifyEmail()
   // Chỉ để đổi id vai trò thành tên; thiếu quyền đọc vai trò thì bỏ qua, không chặn thẻ.
   const { data: roles } = useRoles()
 
@@ -45,6 +48,10 @@ export function EmployeeAccountCard({ employeeId, email, className }: EmployeeAc
   const roleNames = (account?.role_ids ?? [])
     .map((id) => roles?.find((role) => role.id === id)?.name)
     .filter(Boolean)
+
+  // Chưa có trường (hệ chưa chạy migration) thì coi như ĐANG NHẬN — đúng chiều
+  // mặc định của cột `tab_user.notify_email`.
+  const receivesEmail = account?.notify_email !== false
 
   async function handleSetPassword(password: string) {
     const message = await employeeApi.setPassword(employeeId, password)
@@ -93,6 +100,25 @@ export function EmployeeAccountCard({ employeeId, email, className }: EmployeeAc
                   </p>
                 </div>
               </div>
+
+              {/* bao-CR-349 — trả lời tại chỗ câu "sao người này không nhận được
+                  thư duyệt". Người đi xử lý yêu cầu "ngưng gửi mail" mở hồ sơ
+                  NHÂN SỰ chứ không nhớ tài khoản số mấy. */}
+              <div className="flex items-start gap-2 text-sm">
+                {receivesEmail ? (
+                  <Mail className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                ) : (
+                  <MailX className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                )}
+                <div>
+                  <p className="text-muted-foreground">Email thông báo</p>
+                  <p className="text-foreground">
+                    {receivesEmail
+                      ? 'Đang nhận email thông báo'
+                      : 'Đã tắt — chỉ còn chuông trong app'}
+                  </p>
+                </div>
+              </div>
             </div>
           )}
 
@@ -123,6 +149,26 @@ export function EmployeeAccountCard({ employeeId, email, className }: EmployeeAc
               >
                 <KeyRound />
                 {account ? 'Đặt lại mật khẩu' : 'Tạo tài khoản đăng nhập'}
+              </Button>
+            )}
+
+            {account && canEditUser && (
+              // `type="button"` vì lý do y hệt nút trên: thẻ này nằm TRONG
+              // `<form>` của trang chi tiết nhân sự.
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={setNotifyEmail.isPending}
+                onClick={() =>
+                  setNotifyEmail.mutate({
+                    userId: account.id,
+                    notifyEmail: !receivesEmail,
+                  })
+                }
+              >
+                {receivesEmail ? <MailX /> : <Mail />}
+                {receivesEmail ? 'Tắt email thông báo' : 'Bật email thông báo'}
               </Button>
             )}
 

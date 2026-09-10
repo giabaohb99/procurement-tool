@@ -120,6 +120,18 @@ export function UserAccountTable({ roles }: { roles: Role[] }) {
                 </Badge>
               )}
               {!account.is_active && <Badge variant="secondary">Đã khóa</Badge>}
+              {/* bao-CR-349 — trả lời ngay tại danh sách câu "sao người này
+                  không nhận được thư". Chỉ hiện vế ĐÃ TẮT: gần như mọi tài
+                  khoản đều đang nhận, gắn huy hiệu cho cả cột thì nó thành
+                  nhiễu chứ không thành tin. */}
+              {account.notify_email === false && (
+                <Badge
+                  variant="outline"
+                  title="Tài khoản này đã tắt email thông báo — vẫn nhận thông báo trong app"
+                >
+                  Tắt email
+                </Badge>
+              )}
             </div>
             <span className="block truncate text-xs text-muted-foreground">
               {account.email || '(chưa có email)'}

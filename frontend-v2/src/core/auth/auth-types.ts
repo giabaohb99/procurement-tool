@@ -12,6 +12,11 @@ export interface AuthUser {
   avatar?: string
   signature?: string
   phone?: string
+  /**
+   * Có nhận EMAIL thông báo luồng duyệt hay không (bao-CR-349). Đọc `!== false`:
+   * `undefined` = hệ chưa chạy migration `d2f45a8c9e10`, mà mặc định của cột là BẬT.
+   */
+  notify_email?: boolean
   department_id?: number
   department_name?: string
   /** Tên các vai trò thật (từ tab_user_role) — nối bằng dấu phẩy cũng có ở `role_name`. */

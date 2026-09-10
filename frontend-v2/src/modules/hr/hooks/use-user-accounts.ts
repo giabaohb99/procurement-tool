@@ -70,6 +70,27 @@ export function useSetUserActive() {
   })
 }
 
+/**
+ * Bật/tắt email thông báo luồng duyệt của một tài khoản (bao-CR-349).
+ *
+ * Dùng chung cho thẻ "Tài khoản đăng nhập" ở hồ sơ Nhân sự và thẻ cùng tên ở màn
+ * Phân quyền tài khoản — hai lối vào, một công tắc.
+ */
+export function useSetUserNotifyEmail() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ userId, notifyEmail }: { userId: number; notifyEmail: boolean }) =>
+      userAccountApi.setNotifyEmail(userId, notifyEmail),
+    onSuccess: (_data, variables) => {
+      toast.success(
+        variables.notifyEmail ? 'Đã bật email thông báo' : 'Đã tắt email thông báo',
+      )
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.all })
+    },
+  })
+}
+
 export function useDeleteUserAccount() {
   const queryClient = useQueryClient()
 

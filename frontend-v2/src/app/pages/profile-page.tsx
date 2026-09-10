@@ -3,6 +3,7 @@ import { Bell, CheckSquare, History, LifeBuoy, Palette, User } from 'lucide-reac
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
+import { EmailNotificationCard } from '@/app/components/profile/email-notification-card'
 import { ProfileIdentityCard } from '@/app/components/profile/profile-identity-card'
 import { ProfileInfoCard } from '@/app/components/profile/profile-info-card'
 import { ProfileNotificationsTab } from '@/app/components/profile/profile-notifications-tab'
@@ -156,7 +157,11 @@ export function ProfilePage() {
                         <ProfileInfoCard profile={profile} />
                       </div>
                       <div className="flex flex-col gap-4">
-                        <SignatureCard signature={profile.signature} className="h-full" />
+                        <SignatureCard signature={profile.signature} />
+                        {/* bao-CR-349 — công tắc email thông báo của chính mình.
+                            Xếp dưới Chữ ký để hai cột cân nhau; đây cũng là cửa
+                            người dùng TỰ tắt, ba cửa còn lại là của quản trị. */}
+                        <EmailNotificationCard value={profile.notify_email} />
                       </div>
                     </div>
 

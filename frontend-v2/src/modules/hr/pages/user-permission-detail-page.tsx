@@ -1,4 +1,4 @@
-import { ArrowLeft, Filter, Loader2, Save } from 'lucide-react'
+import { ArrowLeft, Filter, Loader2, Mail, MailX, Save } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
@@ -15,7 +15,11 @@ import { Skeleton } from '@/shared/ui/skeleton'
 import { cn } from '@/shared/utils/cn'
 import { UserScopeDialog } from '../components/user-scope-dialog'
 import { useRoles } from '../hooks/use-roles'
-import { useAssignRoles, useUserAccount } from '../hooks/use-user-accounts'
+import {
+  useAssignRoles,
+  useSetUserNotifyEmail,
+  useUserAccount,
+} from '../hooks/use-user-accounts'
 
 /**
  * Gán vai trò và phạm vi dữ liệu cho MỘT tài khoản.
@@ -39,6 +43,7 @@ export function UserPermissionDetailPage() {
   const { data: account, isLoading, isError } = useUserAccount(userId)
   const { data: roles } = useRoles()
   const assignRoles = useAssignRoles(userId)
+  const setNotifyEmail = useSetUserNotifyEmail()
 
   //  KHÔNG TỰ SỬA QUYỀN CỦA CHÍNH MÌNH — chốt hai người. Backend chặn ở
   //  `core/privilege_escalation.py`; ở đây khóa luôn giao diện để người dùng
@@ -100,6 +105,8 @@ export function UserPermissionDetailPage() {
     assignRoles.mutate(selectedRoleIds, { onSuccess: () => setDangTickDo(false) })
 
   const scopeRoleName = roles?.find((role) => role.id === scopeRoleId)?.name ?? ''
+  // `undefined` (hệ chưa chạy migration) = vẫn đang nhận — xem `UserAccount.notify_email`.
+  const receivesEmail = account.notify_email !== false
 
   return (
     <PageContainer>
@@ -197,6 +204,56 @@ export function UserPermissionDetailPage() {
           })}
         </CardContent>
       </Card>
+
+      {/*  bao-CR-349 — công tắc EMAIL, cố ý đặt cùng màn với vai trò.
+           Người đi tra câu "sao tài khoản này không nhận được thư duyệt" mở đúng
+           trang này, và câu trả lời phải nằm ngay đó chứ không nằm trong .env.
+           KHÔNG khóa theo `isSelf`: chốt hai người là luật của PHÂN QUYỀN, còn
+           đây là tuỳ chọn nhận thư — tự tắt cho mình không nâng quyền cho ai. */}
+      <PermissionGate entity="user" action="write">
+        <Card className="mt-5">
+          <CardHeader>
+            <CardTitle className="text-base">Email thông báo</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Thư báo mỗi khi có chứng từ cần duyệt, được duyệt hoặc bị trả lại. Tắt
+              email <b>không</b> tắt thông báo: chuông trong app vẫn chạy đủ, và thư đặt
+              lại mật khẩu / cấp tài khoản vẫn gửi bình thường.
+            </p>
+          </CardHeader>
+
+          <CardContent className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-sm">
+              <span
+                className={cn(
+                  'size-2 shrink-0 rounded-full',
+                  receivesEmail ? 'bg-emerald-500' : 'bg-muted-foreground/40',
+                )}
+              />
+              <span className="font-medium text-navy">
+                {receivesEmail ? 'Đang nhận email thông báo' : 'Đã tắt email thông báo'}
+              </span>
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={setNotifyEmail.isPending}
+              onClick={() =>
+                setNotifyEmail.mutate({ userId, notifyEmail: !receivesEmail })
+              }
+            >
+              {setNotifyEmail.isPending ? (
+                <Loader2 className="animate-spin" />
+              ) : receivesEmail ? (
+                <MailX />
+              ) : (
+                <Mail />
+              )}
+              {receivesEmail ? 'Tắt email thông báo' : 'Bật email thông báo'}
+            </Button>
+          </CardContent>
+        </Card>
+      </PermissionGate>
 
       <UserScopeDialog
         userId={userId}
