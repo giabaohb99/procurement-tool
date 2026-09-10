@@ -102,7 +102,13 @@ export function ConversationList({
                     {/*  Nút xóa chỉ hiện khi rê chuột — bày sẵn vài chục cái
                          thùng rác trong một cột hẹp thì rối, mà đây lại là thao
                          tác không hoàn tác được. */}
-                    <div className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                    {/*  ⚠️ Ẩn-cho-tới-khi-rê-chuột chỉ áp TỪ `md`: màn cảm ứng
+                         không có nhịp «rê chuột», nên ở khổ hẹp nút xóa **không
+                         bao giờ bấm được** — hội thoại cũ không có đường nào dọn
+                         đi. Ở màn rộng vẫn ẩn, vì bày sẵn vài chục thùng rác
+                         trong một cột hẹp thì rối, mà đây lại là thao tác không
+                         hoàn tác được. */}
+                    <div className="shrink-0 md:opacity-0 md:transition-opacity md:group-hover:opacity-100 md:focus-within:opacity-100">
                       <ConfirmIconButton
                         icon={Trash2}
                         title="Xóa hội thoại"

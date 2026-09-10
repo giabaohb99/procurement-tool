@@ -258,9 +258,17 @@ export function ChatComposer({ disabled, busy, onSend }: ChatComposerProps) {
           </div>
         </div>
 
+        {/*  ⚠️ Khổ hẹp chỉ giữ câu MIỄN TRỪ. Ba vế đầu nói về **bàn phím vật
+             lý** («Enter để gửi», «Shift+Enter xuống dòng») và thao tác **dán**
+             — trên điện thoại không vế nào dùng được, mà chúng lại kéo dòng
+             hướng dẫn thành hai hàng ngay sát ô nhập, đúng chỗ bàn phím ảo sắp
+             che. Câu «chỉ mang tính đề xuất» thì phải ở lại: đó là lời miễn trừ,
+             không phải mẹo dùng. */}
         <p className="mt-2 text-center text-xs text-muted-foreground">
-          Enter để gửi · Shift+Enter xuống dòng · Đính kèm ảnh/PDF hoặc dán ảnh · Câu trả lời
-          chỉ mang tính đề xuất
+          <span className="max-md:hidden">
+            Enter để gửi · Shift+Enter xuống dòng · Đính kèm ảnh/PDF hoặc dán ảnh ·{' '}
+          </span>
+          Câu trả lời chỉ mang tính đề xuất
         </p>
       </div>
     </div>
