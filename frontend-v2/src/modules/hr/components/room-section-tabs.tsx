@@ -76,7 +76,7 @@ export function RoomSectionTabs({ sticky = false }: RoomSectionTabsProps) {
     //
     //  ⚠️ Dải này giữ kiểu NÚT NỀN ĐẶC; hàng ba tab ngay bên dưới (`TabsList`
     //  của màn Phiếu đặt phòng) mới là hàng đổi sang gạch chân ở khổ hẹp — xem
-    //  `list-tab-underline.ts`. Hai hàng cùng kiểu thì thành sáu ô giống hệt
+    //  `shared/ui/tab-underline.ts`. Hai hàng cùng kiểu thì thành sáu ô giống hệt
     //  nhau thẳng cột, đọc ra như MỘT lưới 2×3 chứ không ra hai cấp điều hướng.
     //  Cấp trên là *đang ở màn nào* nên nó giữ phần nhấn mạnh.
     //

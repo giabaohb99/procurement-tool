@@ -39,8 +39,9 @@ import { RoomInboxTab } from '../components/room-inbox-tab'
 import { RoomSectionTabs } from '../components/room-section-tabs'
 import { useMeetingRooms, useRoomBookings, useRoomToApprove } from '../hooks/use-room'
 import { ROOM_BOOKING_STATUS, ROOM_BOOKING_STATUS_LABELS, type RoomBooking } from '../types/room'
-import { LIST_TAB_LIST, LIST_TAB_TRIGGER } from '../utils/list-tab-underline'
+
 import { LIST_TABS_STICKY, LIST_TOOLBAR_STICKY } from '../utils/list-sticky'
+import { TAB_LIST_UNDERLINE, TAB_TRIGGER_UNDERLINE } from '@/shared/ui/tab-underline'
 
 const ALL = 'all'
 const TAB_TO_APPROVE = 'to-approve'
@@ -196,15 +197,15 @@ export function RoomBookingListPage() {
       >
         {/*  Màn hẹp: dải tab trải hết hàng, chia đều ba phần, GHIM đỉnh trang
              khi cuộn, và đổi sang kiểu GẠCH CHÂN để không lẫn với hàng chuyển
-             màn ngay phía trên — xem `list-tab-underline.ts`. `TabsList` mặc
+             màn ngay phía trên — xem `shared/ui/tab-underline.ts`. `TabsList` mặc
              định `w-fit` nên trên điện thoại ba tab bó vào mép trái, chừa một
              khoảng trống vô nghĩa bên phải, mà đây là chỗ chuyển qua lại nhiều
              nhất của cả màn. */}
         <div className={LIST_TABS_STICKY}>
-        <TabsList className={cn('w-full shrink-0 md:w-fit', LIST_TAB_LIST)}>
+        <TabsList className={cn('w-full shrink-0 md:w-fit', TAB_LIST_UNDERLINE)}>
           <TabsTrigger
             value={TAB_TO_APPROVE}
-            className={cn('min-w-0 px-2 text-xs md:px-3 md:text-sm', LIST_TAB_TRIGGER)}
+            className={cn('min-w-0 px-2 text-xs md:px-3 md:text-sm', TAB_TRIGGER_UNDERLINE)}
           >
             Cần tôi duyệt
             {/*  Con số chỉ hiện khi KHÁC 0: một huy hiệu «0» cạnh nhãn đọc ra
@@ -217,13 +218,13 @@ export function RoomBookingListPage() {
           </TabsTrigger>
           <TabsTrigger
             value={TAB_MINE}
-            className={cn('min-w-0 px-2 text-xs md:px-3 md:text-sm', LIST_TAB_TRIGGER)}
+            className={cn('min-w-0 px-2 text-xs md:px-3 md:text-sm', TAB_TRIGGER_UNDERLINE)}
           >
             Phiếu của tôi
           </TabsTrigger>
           <TabsTrigger
             value={TAB_HANDLED}
-            className={cn('min-w-0 px-2 text-xs md:px-3 md:text-sm', LIST_TAB_TRIGGER)}
+            className={cn('min-w-0 px-2 text-xs md:px-3 md:text-sm', TAB_TRIGGER_UNDERLINE)}
           >
             Tôi đã duyệt
           </TabsTrigger>

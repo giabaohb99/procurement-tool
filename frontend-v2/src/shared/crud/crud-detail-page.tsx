@@ -14,6 +14,7 @@ import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { RecordIdentityCard, type IdentityChip } from '@/shared/ui/record-identity-card'
 import { Skeleton } from '@/shared/ui/skeleton'
+import { TAB_LIST_UNDERLINE, TAB_TRIGGER_UNDERLINE } from '@/shared/ui/tab-underline'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { useScrolled } from '@/shared/hooks/use-scrolled'
 import { useSingleFlight } from '@/shared/hooks/use-single-flight'
@@ -317,12 +318,28 @@ export function CrudDetailPage<T extends CrudRecord>({
           />
         )}
 
+        {/*  ⚠️ Khổ hẹp: dải tab đổi sang kiểu GẠCH CHÂN, và khe dưới nó khép lại
+             còn 8px. Rãnh xám của `TabsList` là `bg-muted`, mà `--muted` trong
+             bảng màu này **trùng đúng nền trang** — thứ lẽ ra gom các tab thành
+             MỘT bộ điều khiển thì vô hình, chỉ còn một viên trắng nổi cạnh một
+             dòng chữ xám, cách thẻ nội dung một khoảng rộng. Ba mảnh rời nhau,
+             không mảnh nào nói mảnh kia liên quan tới nó (khách báo *"nhìn nó
+             rời rạc quá"*, 10/09/2026). Đường kẻ chân trải hết bề ngang là cái
+             neo còn thiếu, và khe hẹp lại thì dải tab với thẻ bên dưới đọc ra
+             thành một khối. Màn rộng không đổi: ở đó dải co theo nội dung nên nó
+             vốn đã ra hình một bộ điều khiển. Xem `shared/ui/tab-underline.ts`. */}
         {item && config.tabs && config.tabs.length > 0 ? (
-          <Tabs value={activeTab} onValueChange={setTab} className="space-y-4">
-            <TabsList className="mb-2">
-              <TabsTrigger value={TAB_INFO}>Thông tin</TabsTrigger>
+          <Tabs
+            value={activeTab}
+            onValueChange={setTab}
+            className="space-y-4 max-md:space-y-2"
+          >
+            <TabsList className={cn('mb-2 max-md:mb-0', TAB_LIST_UNDERLINE)}>
+              <TabsTrigger value={TAB_INFO} className={TAB_TRIGGER_UNDERLINE}>
+                Thông tin
+              </TabsTrigger>
               {config.tabs.map((tab) => (
-                <TabsTrigger key={tab.key} value={tab.key}>
+                <TabsTrigger key={tab.key} value={tab.key} className={TAB_TRIGGER_UNDERLINE}>
                   {tab.label}
                 </TabsTrigger>
               ))}

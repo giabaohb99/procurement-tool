@@ -538,3 +538,12 @@ trỏ đúng chỗ cũ (kèm `?tab=`); gõ thẳng URL thì vẫn về danh sác
 URL là mời người ta sửa tay, và một nút lùi nhận đích từ URL thì thành cái mở
 chuyển hướng. Bên gửi dùng `fromHere(location)` — **phải kèm `search`**, vì chỗ
 đứng của người dùng nằm trong query.
+
+⚠️ **Dải tab trang chi tiết dùng kiểu GẠCH CHÂN ở khổ hẹp** (duoc-CR-350,
+10/09/2026). Rãnh xám của `TabsList` là `bg-muted`, mà `--muted` **trùng đúng
+nền trang** (`rgb(246 248 251)`) — thứ lẽ ra gom các tab thành một bộ điều khiển
+thì vô hình, chỉ còn một viên trắng nổi cạnh một dòng chữ xám. Không sửa được
+bằng cách chỉnh khoảng cách: cái thiếu là một cái NEO. Kiểu gạch chân lấy đường
+kẻ chân làm neo đó. Hằng dùng chung ở `shared/ui/tab-underline.ts` (dời từ
+`modules/hr/utils/list-tab-underline.ts` — `CrudDetailPage` ở `shared/` không
+được import ngược vào phân hệ).
