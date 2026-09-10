@@ -31,11 +31,18 @@ export function RecordIdentityCard({
   actions,
 }: RecordIdentityCardProps) {
   return (
-    <Card className="mb-5 flex-row flex-wrap items-center gap-4 p-5">
+    //  Lề trong hẹp lại ở khổ điện thoại: 8px lấy lại được là 8px cho tiêu đề,
+    //  thứ duy nhất trong thẻ này có thể dài quá một dòng.
+    <Card className="mb-5 flex-row flex-wrap items-center gap-4 p-4 sm:p-5">
       {media}
 
       <div className="min-w-0 flex-1">
-        <h1 className="truncate text-lg font-semibold text-navy">{title}</h1>
+        {/*  ⚠️ `line-clamp-2` chứ KHÔNG `truncate`. Cắt ở đúng một dòng thì trên
+             màn 390px một cái tên dài hai chữ cũng mất đuôi — «Trưởng phòng Thu
+             mua (Dem…» — mà tên chính là thứ duy nhất nói người ta đang mở bản
+             ghi nào. Hai dòng đủ cho mọi tên danh mục đang có, và vẫn có trần
+             nên một cái tên khai ẩu không đẩy được bộ nút xuống dưới nếp gấp. */}
+        <h1 className="line-clamp-2 text-lg font-semibold text-navy">{title}</h1>
 
         {chips.length > 0 && (
           <div className="mt-2 flex flex-wrap items-center gap-2">

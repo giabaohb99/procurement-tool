@@ -113,3 +113,16 @@ export const LIST_SECTION_TOOLBAR_STICKY = `${TOOLBAR_STICKY_BASE} max-md:top-10
  * mốc này sang.
  */
 export const LEAVE_SETTINGS_TOOLBAR_STICKY = `${TOOLBAR_STICKY_BASE} max-md:top-[78px]`
+
+/**
+ * Dải THANH CÔNG CỤ của màn danh mục **đứng một mình** — không có dải tab nào
+ * phía trên nên ghim thẳng lên đỉnh khung cuộn.
+ *
+ * Dùng ở: Danh mục chức vụ.
+ *
+ * Mốc `top-0` KHÔNG có nghĩa là "sát mép màn hình": khung cuộn ở khổ hẹp là
+ * vùng nội dung nằm dưới thanh trên cùng của app, nên dải này ghim ngay dưới
+ * thanh đó. Tiêu đề trang và nút *Thêm…* cuộn đi bên trên nó — cố ý: cả hai
+ * chỉ cần một lần lúc mở màn, còn ô tìm thì cần suốt lúc đọc danh sách.
+ */
+export const LIST_TOOLBAR_STICKY_TOP = `${TOOLBAR_STICKY_BASE} max-md:top-0`

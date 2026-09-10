@@ -86,7 +86,12 @@ export const JOB_POSITION_CRUD_CONFIG: CrudConfig<JobPosition> = {
   //  `max-w-5xl` thì bảng nằm giữa hai khoảng trắng rộng bằng chính nó.
   detailMaxWidth: 'max-w-none',
   searchParam: 'name',
-  searchPlaceholder: 'Tìm theo tên chức vụ…',
+  //  ⚠️ Câu gợi ý phải đo theo lúc ĐANG LỌC. Trên màn 390px ô tìm chia hàng với
+  //  nút *Bộ lọc* và nút *Tải lại* nên phần gõ chữ chỉ còn 142px — bản cũ «Tìm
+  //  theo tên chức vụ…» cần 148px, đã cụt sẵn 6px — rồi tụt tiếp còn 118px ngay
+  //  khi nút *Bộ lọc* mọc huy hiệu số. Bản này 91px, dư ở cả hai trạng thái.
+  //  Bỏ «theo tên» không mất nghĩa: ô này vốn chỉ lọc theo tên (`searchParam`).
+  searchPlaceholder: 'Tìm chức vụ…',
   quickFilters: [
     {
       key: 'is_active',

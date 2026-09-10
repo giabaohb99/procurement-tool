@@ -110,6 +110,17 @@ export function CrudDetailPage<T extends CrudRecord>({
       ? config.getItemName(item)
       : String(item.name || item.code || item[idKey] || config.title))
 
+  //  ⚠️ THẺ DANH TÍNH dùng tên TRẦN, không dùng `getItemName`. Hai chỗ hỏi hai
+  //  câu khác nhau, và `getItemName` khai ra để trả lời câu thứ hai: *«Xóa bản
+  //  ghi nào?»* — ở đó cái mã đính kèm là thứ phân biệt tuyệt đối, đáng có.
+  //  Thẻ danh tính thì đã bày chính cái mã ấy thành một huy hiệu ngay bên dưới
+  //  tiêu đề, nên in lần nữa trong ngoặc là nói hai lần cùng một điều. Trên màn
+  //  390px điều đó thành lỗi thấy được: tiêu đề bị cắt giữa chừng — «Trưởng
+  //  phòng Thu mua (Demo) (tru…» — tức phần bị hy sinh lại chính là phần trùng.
+  //  Thẻ ở khổ điện thoại (`mobileCard` của các config) vốn đã dùng tên trần;
+  //  đây là chỗ duy nhất còn lệch.
+  const cardTitle = item && String(item.name || item.title || itemName)
+
   const onSubmit = (values: Record<string, unknown>) =>
     once(async () => {
     const saved = await saveMutation.mutateAsync({
@@ -255,7 +266,7 @@ export function CrudDetailPage<T extends CrudRecord>({
         {/*  Chưa có bản ghi thì không dựng thẻ danh tính: nó sinh ra để trưng mã
              / trạng thái của MỘT bản ghi, để rỗng chỉ còn một cái khung. */}
         {item ? (
-          <RecordIdentityCard title={itemName as string} chips={chips} />
+          <RecordIdentityCard title={cardTitle as string} chips={chips} />
         ) : (
           <PageHeader
             title={`Thêm ${config.unitLabel}`}

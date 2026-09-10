@@ -450,3 +450,34 @@ Test: `test_danh_muc_chuc_vu.py` (**20 ca**) + sửa số đếm entity ở `tes
 
 ⚠️ Trợ lý đọc hồ sơ nhân sự **chỉ 5 trường** của chính người hỏi (`assistant/service.py`, hàm dựng chân dung: họ tên · mã NV · **chức vụ** · phòng ban · công ty) và `full_name` của người duyệt. Không trường nhạy cảm nào, nên đường này không cần `sensitive.mask` — nhưng **thêm trường vào chân dung người hỏi thì phải kiểm lại đúng chỗ đó**. Lưu ý ô «chức vụ» nó đọc là `emp.position`, tức **nhãn đã chép**, không phải khóa.
 
+
+### 7.8. Chức vụ ở khổ điện thoại (duoc-CR-344 + duoc-CR-345, 10/09/2026)
+
+Hai đợt bấm tay ở 390×844. Bốn điều đáng nhớ, **hai trong số đó không thuộc màn
+này** — chúng nằm ở tầng dùng chung nên chạm mọi trang chi tiết CRUD.
+
+**Danh sách + tab «Người đang giữ»: THẺ thay bảng, khai `mobileCard` HAI CHỖ.**
+Bảng danh sách đi qua khung CRUD (`CrudConfig.mobileCard`), còn tab người đang
+giữ là một `DataTable` **dựng tay** trong `job-position-holders-panel.tsx` nên
+khung CRUD không với tới. Sửa mỗi chỗ đầu thì trang chi tiết vẫn cuộn ngang y
+như cũ. Thanh công cụ màn danh sách ghim bằng `LIST_TOOLBAR_STICKY_TOP` (mốc
+`top-0` — màn danh mục đứng một mình, không có dải tab phía trên).
+
+⚠️ **Bề rộng CỨNG trên thanh công cụ là bậc thang chờ sẵn.** Ba ô lọc của tab
+người đang giữ từng khai `w-64 · w-56 · w-44` (256·224·176px) trong một thẻ rộng
+322px: mỗi ô rớt xuống một hàng riêng, ba hàng dài ngắn khác nhau, nút *Tải lại*
+đứng lẻ mép phải hàng ba. Khuôn đúng là khuôn của `leave-balance-page` — ô tìm
+`SearchField` (`flex-1`), ô chọn dời vào **`QuickFilterSheet`**, bề rộng cứng chỉ
+áp từ `md`; hai ô chọn **dựng một lần, bày hai chỗ**, state ở component cha.
+
+⚠️ **Câu gợi ý ô tìm phải đo theo lúc ĐANG LỌC.** Nút *Bộ lọc* nở thêm **24px**
+khi mọc huy hiệu số, nên ô tìm tụt 141→117px: bản vừa khít lúc chưa lọc sẽ cụt
+đuôi đúng lúc người dùng vừa chọn một bộ lọc — tức đúng lúc họ đang nhìn vào nó.
+
+⚠️ **`getItemName` KHÔNG phải tiêu đề thẻ danh tính** — nó khai ra để trả lời câu
+*«xóa bản ghi nào»*, nên nó đính kèm mã. Thẻ danh tính đã bày chính cái mã ấy
+thành huy hiệu ngay bên dưới, nên dùng lại nó là in hai lần một điều, và ở 390px
+tiêu đề cụt thành «…(Demo) (tru…» — phần bị hy sinh chính là phần trùng.
+`CrudDetailPage` nay tách đôi: thẻ dùng tên trần, câu xác nhận Xóa giữ bản đầy đủ.
+`RecordIdentityCard` cũng đổi `truncate` → `line-clamp-2`: tên là thứ duy nhất
+nói người ta đang mở bản ghi nào, cắt nó ở một dòng là cắt nhầm chỗ.

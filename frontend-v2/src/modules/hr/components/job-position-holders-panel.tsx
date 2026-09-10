@@ -1,4 +1,3 @@
-import { Search } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -7,11 +6,13 @@ import { appConfig } from '@/core/config/app-config'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable } from '@/shared/data-table'
 import { useDebouncedValue } from '@/shared/hooks/use-debounced-value'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Badge } from '@/shared/ui/badge'
 import { Card } from '@/shared/ui/card'
-import { Input } from '@/shared/ui/input'
+import { QuickFilterField, QuickFilterSheet } from '@/shared/ui/quick-filter-sheet'
+import { SearchField } from '@/shared/ui/search-field'
 import {
   Select,
   SelectContent,
@@ -61,11 +62,19 @@ const STATUS_NORMAL = 'official'
  * chỉ để nói con số mà chân bảng đã nói (*«Tổng 11 người»*), và dãy chip dài ra
  * theo số phòng ban — công ty mười phòng là nó tràn hai dòng, đẩy bảng xuống
  * dưới mép màn hình. Ô chọn thì cao bằng nhau bất kể bao nhiêu phòng.
+ *
+ * ⚠️ **Khổ hẹp: hai ô chọn dời vào TỜ TRƯỢT** (10/09/2026). Ba ô công cụ khai
+ * bề rộng CỨNG (256 · 224 · 176) trong một thẻ chỉ rộng 322px, nên mỗi ô rớt
+ * xuống một hàng riêng và ba hàng dài ngắn khác nhau xếp thành bậc thang, còn
+ * nút *Tải lại* thì đứng lẻ tận mép phải hàng thứ ba — 150px đầu tab không nói
+ * được gì ngoài "có ba cái ô". Bề rộng cứng nay chỉ áp từ `md` (`md:w-56`), dưới
+ * ngưỡng đó ô chọn trải hết bề ngang tờ trượt.
  */
 export function JobPositionHoldersPanel({ positionId }: { positionId: number }) {
   const navigate = useNavigate()
   const { can } = usePermission()
   const allowed = can('employee', 'read')
+  const isMobile = useIsMobile()
 
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
   //  ⚠️ Sentinel «mọi phòng ban» là `-1`, KHÔNG phải `0`. Nhóm giả «(Chưa gắn
@@ -122,8 +131,62 @@ export function JobPositionHoldersPanel({ positionId }: { positionId: number }) 
 
   const grandTotal = departments.reduce((sum, dept) => sum + dept.count, 0)
 
+  //  ⚠️ Hai ô chọn dựng MỘT LẦN rồi bày ở HAI chỗ: hàng ngang của thanh công cụ
+  //  từ `md`, tờ trượt lọc ở dưới ngưỡng đó. State nằm ở component này nên hai
+  //  bản luôn nói cùng một giá trị — khuôn của `leave-balance-page`, không phải
+  //  bản chép cần dọn.
+  //
+  //  ⚠️ Ô chọn phòng ban chỉ dựng khi CÓ người giữ: chức vụ chưa ai giữ thì danh
+  //  sách phòng rỗng, bày ra một ô chọn không có mục nào để chọn.
+  const departmentSelect = departments.length > 0 && (
+    <Select
+      value={String(departmentId)}
+      onValueChange={(value) => setDepartmentId(Number(value))}
+    >
+      <SelectTrigger className="h-9 w-full text-xs md:w-56" aria-label="Lọc theo phòng ban">
+        <SelectValue placeholder="Phòng ban" />
+      </SelectTrigger>
+      <SelectContent>
+        {/*  Kèm số ngay trong mục chọn: đó là thứ dãy chip cũ nói được mà một ô
+             chọn trần thì không. */}
+        <SelectItem value={String(ALL_DEPARTMENTS)}>
+          Tất cả phòng ban ({grandTotal})
+        </SelectItem>
+        {departments.map((dept) => (
+          <SelectItem key={dept.id} value={String(dept.id)}>
+            {dept.name} ({dept.count})
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+
+  const statusSelect = (
+    <Select
+      value={status || 'all'}
+      onValueChange={(value) => setStatus(value === 'all' ? '' : value)}
+    >
+      <SelectTrigger className="h-9 w-full text-xs md:w-44" aria-label="Lọc theo tình trạng">
+        <SelectValue placeholder="Tình trạng" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all">Tất cả tình trạng</SelectItem>
+        {/*  ⚠️ `value` phải là MÃ, không phải nhãn: cột `status` lưu mã chuỗi
+             (B-03). Gửi nhãn thì backend vẫn nhận câu lọc, chỉ là trả về 0 dòng
+             mà không báo lỗi gì — đúng bẫy CR-118. */}
+        {EMPLOYEE_STATUS_OPTIONS.map((option) => (
+          <SelectItem key={option.value} value={option.value}>
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+
   return (
-    <Card className="p-4">
+    //  Lề trong hẹp lại ở khổ điện thoại — 8px lấy lại được là 8px cho ô tìm,
+    //  thứ đang chật nhất trong hàng công cụ.
+    <Card className="p-3 md:p-4">
       <DataTable
         columns={[
           {
@@ -213,60 +276,40 @@ export function JobPositionHoldersPanel({ positionId }: { positionId: number }) 
         onRowClick={(row: Employee) => navigate(appRoutes.hr.employeeDetail(row.id))}
         toolbar={
           <>
-            <div className="relative w-64 max-w-sm">
-              <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Tìm mã NV, họ tên, email, SĐT…"
-                value={keyword}
-                onChange={(event) => setKeyword(event.target.value)}
-                className="h-9 bg-background pl-8 text-xs"
-              />
-            </div>
+            {/*  ⚠️ Câu gợi ý RÚT GỌN ở khổ hẹp — và phải đo theo lúc ĐANG LỌC,
+                 không phải lúc thảnh thơi. Nút *Bộ lọc* nở thêm 24px khi mọc
+                 huy hiệu số, nên phần gõ chữ tụt từ 141px xuống **117px**: bản
+                 «Tìm mã NV, họ tên…» (130px) vừa khít lúc chưa lọc rồi cụt đuôi
+                 ngay khi người dùng chọn một phòng ban. Bản này 110px, còn dư ở
+                 cả hai trạng thái.
+                 Rút bằng tay chứ không để trình duyệt cắt: chữ đứt giữa từ đọc
+                 ra như lỗi vẽ, còn «…» sau một cụm trọn nghĩa thì đọc ra là
+                 "còn tìm được thứ khác nữa". Bản đầy đủ giữ từ `md` — ở đó ô
+                 rộng 224px. */}
+            <SearchField
+              value={keyword}
+              onChange={setKeyword}
+              placeholder={isMobile ? 'Tìm tên, mã NV…' : 'Tìm mã NV, họ tên, email, SĐT…'}
+              className="md:min-w-56 md:max-w-xs"
+            />
 
-            {/*  Ô chọn phòng ban chỉ dựng khi CÓ người giữ: chức vụ chưa ai giữ
-                 thì danh sách phòng rỗng, bày ra một ô chọn không có mục nào. */}
-            {departments.length > 0 && (
-              <Select
-                value={String(departmentId)}
-                onValueChange={(value) => setDepartmentId(Number(value))}
-              >
-                <SelectTrigger className="h-9 w-56 text-xs">
-                  <SelectValue placeholder="Phòng ban" />
-                </SelectTrigger>
-                <SelectContent>
-                  {/*  Kèm số ngay trong mục chọn: đó là thứ dãy chip cũ nói được
-                       mà một ô chọn trần thì không. */}
-                  <SelectItem value={String(ALL_DEPARTMENTS)}>
-                    Tất cả phòng ban ({grandTotal})
-                  </SelectItem>
-                  {departments.map((dept) => (
-                    <SelectItem key={dept.id} value={String(dept.id)}>
-                      {dept.name} ({dept.count})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-
-            <Select
-              value={status || 'all'}
-              onValueChange={(value) => setStatus(value === 'all' ? '' : value)}
+            <QuickFilterSheet
+              activeCount={(departmentId !== ALL_DEPARTMENTS ? 1 : 0) + (status ? 1 : 0)}
+              onClearAll={() => {
+                setDepartmentId(ALL_DEPARTMENTS)
+                setStatus('')
+              }}
             >
-              <SelectTrigger className="h-9 w-44 text-xs">
-                <SelectValue placeholder="Tình trạng" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tất cả tình trạng</SelectItem>
-                {/*  ⚠️ `value` phải là MÃ, không phải nhãn: cột `status` lưu mã
-                     chuỗi (B-03). Gửi nhãn thì backend vẫn nhận câu lọc, chỉ là
-                     trả về 0 dòng mà không báo lỗi gì — đúng bẫy CR-118. */}
-                {EMPLOYEE_STATUS_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              {departmentSelect && (
+                <QuickFilterField label="Phòng ban">{departmentSelect}</QuickFilterField>
+              )}
+              <QuickFilterField label="Tình trạng">{statusSelect}</QuickFilterField>
+            </QuickFilterSheet>
+
+            <div className="hidden items-center gap-3 md:flex">
+              {departmentSelect}
+              {statusSelect}
+            </div>
           </>
         }
         pagination={{
