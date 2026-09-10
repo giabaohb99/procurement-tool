@@ -1610,6 +1610,45 @@ thead th {
   color: #0b7fac;
 }
 
+/* bao-CR-363: BỐN TÔNG MÀU CHO CỤM GIỮA của vòng đời chứng từ (YCMH · ĐMH · YCBG).
+   Trước CR này cả bộ pill chỉ có 5 lớp (ok · warn · err · gray · info), nên 4 mốc rất khác
+   nhau về nghiệp vụ — Đã duyệt · Đã điều phối · Đã mua hàng · Hoàn thành — dùng CHUNG một
+   màu xanh `ok`, còn Chờ duyệt · Bị trả lại · Đang xử lý · Đang mua hàng dùng chung một màu
+   hổ phách `warn`. Trên màn danh sách, hai phiếu ở hai mốc khác nhau nhìn ra y hệt nhau.
+   Bốn lớp dưới đây tách bốn mốc GIỮA ra bốn tông riêng, xếp xa nhau trên vòng màu để hai
+   mốc LIỀN KỀ không bao giờ na ná: xanh dương (đã duyệt) → tím (đã điều phối) → hồng sen
+   (đang xử lý) → xanh mòng (đang mua hàng) → xanh lá (đã mua hàng).
+   Giữ đúng công thức của các pill cũ: nền pastel + chữ đậm cùng tông.
+   Bảng tra mốc → lớp màu ở `src/config/cruds.tsx` (PR_STATUS · PO_STATUS · SR_STATUS). */
+.badge.violet {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.badge.pink {
+  background: #fce7f3;
+  color: #be185d;
+}
+
+.badge.teal {
+  background: #ccfbf1;
+  color: #0f766e;
+}
+
+/* Cam — dành cho mốc BỊ TRẢ LẠI. Không dùng đỏ `err` vì đỏ đang là mốc khóa phiếu
+   (Đã từ chối), mà trả lại thì sửa rồi gửi duyệt lại được. */
+.badge.back {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+/* Hoàn thành là mốc CUỐI, nên tô ĐẶC chứ không pastel: nhìn một lượt là thấy ngay phiếu nào
+   đã đóng, không phải phân biệt hai sắc xanh nhạt cạnh nhau. */
+.badge.done {
+  background: #16a34a;
+  color: #ffffff;
+}
+
 /* CR-078: pill mặc định là white-space:nowrap, nằm trong bảng tableLayout:fixed thì nhãn dài
    (vd "Chưa tạo đơn mua hàng") tràn ra ngoài ô, đè lên cột bên cạnh. Dùng thêm class `wrap`
    cho pill nằm trong ô bảng: hết chỗ thì xuống dòng, không bao giờ tràn. */
