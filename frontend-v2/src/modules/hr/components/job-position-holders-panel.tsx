@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 import { usePermission } from '@/core/authorization/use-permission'
 import { appConfig } from '@/core/config/app-config'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable } from '@/shared/data-table'
+import { fromHere } from '@/shared/hooks/use-back-target'
 import { useDebouncedValue } from '@/shared/hooks/use-debounced-value'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
@@ -73,6 +74,7 @@ const STATUS_NORMAL = 'official'
  */
 export function JobPositionHoldersPanel({ positionId }: { positionId: number }) {
   const navigate = useNavigate()
+  const location = useLocation()
   const { can } = usePermission()
   const allowed = can('employee', 'read')
   const isMobile = useIsMobile()
@@ -290,7 +292,13 @@ export function JobPositionHoldersPanel({ positionId }: { positionId: number }) 
             ? 'Không có hồ sơ nào khớp bộ lọc đang đặt.'
             : 'Chưa có hồ sơ nào giữ chức vụ này.'
         }
-        onRowClick={(row: Employee) => navigate(appRoutes.hr.employeeDetail(row.id))}
+        //  ⚠️ Gài đường quay lại vào `state`. Không có nó thì nút lùi trên hồ sơ
+        //  nhân sự ghi «Danh sách nhân sự» và bấm vào ném người dùng sang một
+        //  màn họ chưa từng đứng — mất luôn tab đang mở và bộ lọc. Xem
+        //  `use-back-target.ts`.
+        onRowClick={(row: Employee) =>
+          navigate(appRoutes.hr.employeeDetail(row.id), { state: fromHere(location) })
+        }
         //  Khổ hẹp: chức vụ đông người thì danh sách thẻ dài hơn một màn (12
         //  người ≈ 1160px), không ghim thì ô tìm + nút *Bộ lọc* trôi mất ngay
         //  nhịp vuốt đầu và muốn lọc lại phải vuốt ngược lên đỉnh. Ghim dưới

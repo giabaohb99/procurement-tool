@@ -525,3 +525,16 @@ là mười hai lần mở lại tab, cuộn lại, lọc lại.
 THẬT** (`resolveTabKey`): Radix nhận một `value` lạ mà không báo gì, nó chỉ không
 dựng tab nào cả và trang ra một khoảng trắng. Link cũ trỏ vào tab đã bỏ là đường
 tới đó, không phải chuyện hiếm.
+
+⚠️ **Nút lùi trong màn KHÁC nút Back của trình duyệt — kiểm phải bấm cả hai**
+(duoc-CR-349, 10/09/2026). CR trước sửa xong, đo bằng nút Back của trình duyệt
+và ra đúng; khách bấm nút **«← Danh sách nhân sự»** trong màn hình — thứ mà trên
+điện thoại là nút lùi duy nhất trong tầm mắt — và nó vẫn ném về danh sách nhân
+sự. Nay hồ sơ nhân sự dùng `useBackTarget`: đến từ tab *«Người đang giữ»* của
+một chức vụ hay bảng thành viên của một phòng ban thì nút ghi **«Quay lại»** và
+trỏ đúng chỗ cũ (kèm `?tab=`); gõ thẳng URL thì vẫn về danh sách.
+
+⚠️ Đường quay lại đi bằng **`state` của router, không bằng `?from=`**: đưa lên
+URL là mời người ta sửa tay, và một nút lùi nhận đích từ URL thì thành cái mở
+chuyển hướng. Bên gửi dùng `fromHere(location)` — **phải kèm `search`**, vì chỗ
+đứng của người dùng nằm trong query.

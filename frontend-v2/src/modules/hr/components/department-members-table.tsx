@@ -1,10 +1,11 @@
 import { Search, Users } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 import { appConfig } from '@/core/config/app-config'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
+import { fromHere } from '@/shared/hooks/use-back-target'
 import { useDebouncedValue } from '@/shared/hooks/use-debounced-value'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { Badge } from '@/shared/ui/badge'
@@ -43,6 +44,7 @@ export function DepartmentMembersTable({
   managerId,
 }: DepartmentMembersTableProps) {
   const navigate = useNavigate()
+  const location = useLocation()
 
   const [keyword, setKeyword] = useState('')
   const debouncedKeyword = useDebouncedValue(keyword, SEARCH_DELAY_MS)
@@ -114,7 +116,12 @@ export function DepartmentMembersTable({
             setKeyword('')
             setStatus(ALL)
           }}
-          onRowClick={(employee) => navigate(appRoutes.hr.employeeDetail(employee.id))}
+          //  ⚠️ Gài đường quay lại vào `state` — xem `use-back-target.ts`. Không
+          //  có nó thì nút lùi trên hồ sơ nhân sự ghi «Danh sách nhân sự» và
+          //  bấm vào ném người dùng ra khỏi phòng ban đang xem.
+          onRowClick={(employee) =>
+            navigate(appRoutes.hr.employeeDetail(employee.id), { state: fromHere(location) })
+          }
           pagination={{
             page,
             pageSize,

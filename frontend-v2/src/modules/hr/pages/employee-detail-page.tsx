@@ -22,6 +22,7 @@ import { PermissionGate } from '@/core/authorization/permission-gate'
 import { usePermission } from '@/core/authorization/use-permission'
 import { AuditTimeline } from '@/shared/audit'
 import { appRoutes } from '@/shared/constants/app-routes'
+import { useBackTarget } from '@/shared/hooks/use-back-target'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { AvatarUploader } from '@/shared/ui/avatar-uploader'
 import { Button } from '@/shared/ui/button'
@@ -88,6 +89,7 @@ export function EmployeeDetailPage() {
   const canReadSensitive = useCanReadSensitive(employeeId)
 
   const [tab, setTab] = useUrlParamState('tab', 'general')
+  const backTarget = useBackTarget(appRoutes.hr.employees)
 
   const { data: employee, isLoading, isError } = useEmployee(employeeId)
   const saveEmployee = useSaveEmployee()
@@ -201,10 +203,17 @@ export function EmployeeDetailPage() {
                một lời gọi API nào — nút Lưu đọc ra như bị hỏng. Dựng lại được
                trên trình duyệt thật 08/09/2026. */}
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            {/*  ⚠️ Đích của nút lùi phụ thuộc CHỖ ĐẾN. Hồ sơ này mở được từ tab
+                 «Người đang giữ» của một chức vụ hay bảng thành viên của một
+                 phòng ban; trỏ cứng về danh sách nhân sự là ném người dùng sang
+                 màn họ chưa từng đứng, mất luôn tab và bộ lọc đang đặt. Trên
+                 điện thoại đây là nút lùi DUY NHẤT trong tầm mắt.
+                 Nhãn đổi theo đích — «Danh sách nhân sự» mà bấm ra chức vụ thì
+                 nút nói dối. Xem `use-back-target.ts`. */}
             <Button variant="ghost" size="sm" asChild>
-              <Link to={appRoutes.hr.employees}>
+              <Link to={backTarget.url}>
                 <ArrowLeft />
-                Danh sách nhân sự
+                {backTarget.fromElsewhere ? 'Quay lại' : 'Danh sách nhân sự'}
               </Link>
             </Button>
 
