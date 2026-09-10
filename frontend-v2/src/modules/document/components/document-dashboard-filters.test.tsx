@@ -104,6 +104,68 @@ describe('DocumentDashboardFilters', () => {
     expect(screen.getByText(/Chọn khoảng ngày/)).toBeInTheDocument()
   })
 
+  //  ——— Khổ hẹp: tờ trượt lọc + dòng tóm tắt ———
+  //
+  //  Ba ô lọc dọn vào `QuickFilterSheet` dưới 768px, nên thứ NÓI cho người đọc
+  //  biết trang đang lọc gì chỉ còn hai chỗ: huy hiệu đếm trên nút và dòng tóm
+  //  tắt cạnh nó. Trang này là trang TỔNG QUAN — mọi con số và cả năm biểu đồ
+  //  đều là kết quả của ba ô ấy — nên hai chỗ đó sai là cả trang nói dối mà
+  //  không có gì báo.
+
+  it('chưa lọc gì thì nút không đeo huy hiệu và không có dòng tóm tắt', () => {
+    dung()
+
+    //  `rangeKey: 'all'` là MẶC ĐỊNH, không phải một lựa chọn — đếm nó là nút
+    //  lúc nào cũng báo «1 đang lọc» và huy hiệu mất sạch ý nghĩa.
+    expect(screen.getByRole('button', { name: 'Bộ lọc' })).toHaveTextContent(/^Bộ lọc$/)
+  })
+
+  it('đang lọc thì tóm tắt gọi ĐÚNG TÊN, không chỉ đếm số ô', () => {
+    dung({ companyId: 12, rangeKey: 'week' })
+
+    //  Huy hiệu nói CÓ BAO NHIÊU ô đang lọc…
+    expect(screen.getByRole('button', { name: 'Bộ lọc' })).toHaveTextContent('2')
+    //  …còn dòng tóm tắt nói lọc CÁI GÌ. Thiếu nó thì «20 văn bản» trên dải số
+    //  liệu không phân biệt được là của toàn công ty hay của một pháp nhân.
+    expect(screen.getByText('SAM · 7 ngày qua')).toBeInTheDocument()
+  })
+
+  it('tên pháp nhân chưa nạp xong thì BỎ QUA, không in ra số id', () => {
+    //  Ô chọn nạp bất đồng bộ. In «#77» ra màn hình còn tệ hơn im lặng: người
+    //  đọc không tra được số đó là đơn vị nào.
+    dung({ companyId: 77, rangeKey: 'week' })
+
+    //  `selector: 'p'` để nhắm ĐÚNG dòng tóm tắt: ô chọn thời gian cũng đang
+    //  hiện y hệt chuỗi này, tìm trần là trúng hai chỗ.
+    expect(screen.getByText('7 ngày qua', { selector: 'p' })).toBeInTheDocument()
+    expect(screen.queryByText(/77/)).not.toBeInTheDocument()
+  })
+
+  it('«Xóa lọc» trả CẢ BỐN giá trị về mặc định, kể cả khoảng ngày tự chọn', async () => {
+    //  Bỏ sót `fromDate`/`toDate` thì bấm Xóa lọc xong `rangeKey` về `all`
+    //  nhưng hai đầu ngày vẫn nằm đó — vô hại hôm nay, nhưng chọn lại «Khoảng
+    //  ngày…» là lịch bung ra với khoảng cũ của lần lọc trước.
+    const nguoi = userEvent.setup()
+    const onChange = dung({
+      companyId: 12,
+      departmentId: 4,
+      rangeKey: 'custom',
+      fromDate: '2026-09-11',
+      toDate: '2026-09-14',
+    })
+
+    await nguoi.click(screen.getByRole('button', { name: 'Bộ lọc' }))
+    await nguoi.click(screen.getByRole('button', { name: 'Xóa lọc' }))
+
+    expect(onChange).toHaveBeenCalledWith({
+      companyId: undefined,
+      departmentId: undefined,
+      rangeKey: 'all',
+      fromDate: undefined,
+      toDate: undefined,
+    })
+  })
+
   it('đã có khoảng thì hiện dd/mm/yyyy, không phải chuỗi ISO', () => {
     //  CÓ số 0 ở đầu. Bài này trước đây chốt `11/9/2026` — chính là đầu ra của
     //  `toLocaleDateString('vi-VN')` trần, lệch hẳn với `formatDate` mà cả hệ

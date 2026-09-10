@@ -42,7 +42,11 @@ export function DocumentPriorityMatrix({ data }: DocumentPriorityMatrixProps) {
     <div className="space-y-3">
       {/*  Lưới 3 cột: cột đầu là nhãn hàng, hai cột sau là hai ô số. Dùng lưới
            chứ không dùng `<table>` vì đây là bốn thẻ số, không phải dữ liệu
-           bảng — bảng thì trình đọc màn hình sẽ đọc thành "hàng 1, cột 2…". */}
+           bảng — bảng thì trình đọc màn hình sẽ đọc thành "hàng 1, cột 2…".
+
+           ⚠️ **Khổ hẹp: nhãn hàng XOAY DỌC** — xem `RowHeader`. Khuôn ba cột
+           giữ nguyên ở mọi khổ màn; thứ co lại là cột nhãn, không phải cấu
+           trúc. */}
       <div className="grid grid-cols-[auto_1fr_1fr] gap-2">
         <div />
         <ColumnHeader>Khẩn cấp</ColumnHeader>
@@ -71,10 +75,30 @@ function ColumnHeader({ children }: { children: React.ReactNode }) {
   )
 }
 
+/**
+ * Nhãn của một hàng — nằm ngang ở màn rộng, **XOAY DỌC** ở khổ hẹp.
+ *
+ * ⚠️ Cột nhãn khai `auto` nên nó rộng bằng nhãn dài nhất: «Không quan trọng» ≈
+ * 120px. Trên 358px dùng được, một phần ba bề ngang đi vào chỗ chữ, hai ô số
+ * còn ~111px mỗi cái — HẸP HƠN CHÍNH CHIỀU CAO của chúng, nên bốn con số đọc ra
+ * như bốn cột dựng đứng nép bên phải, chừa một khoảng trắng bên trái. Xoay chữ
+ * thì cột ấy còn ~20px và ô lấy lại gần hết chỗ, mà khuôn ma trận (nhãn trục
+ * bên trái, tiêu đề trục trên đầu) vẫn nguyên — đó chính là thứ nói lên rằng
+ * bốn ô này là hai trục cắt nhau chứ không phải bốn số rời.
+ *
+ * ⚠️ `vertical-rl` một mình cho chữ chạy TỪ TRÊN XUỐNG, đọc phải nghẹo cổ sang
+ * phải; thêm `rotate-180` mới thành từ dưới lên — chiều quy ước của nhãn trục
+ * tung, và là chiều mà nghẹo cổ sang trái (tự nhiên hơn) đọc được.
+ *
+ * ⚠️ Xoay nằm ở thẻ CON, không ở ô lưới: xoay cả ô thì `items-center` cũng quay
+ * theo và nhãn dạt về đáy hàng thay vì đứng giữa.
+ */
 function RowHeader({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-center pr-3 text-right text-sm font-medium text-muted-foreground">
-      {children}
+    <div className="flex items-center pr-3 text-right text-sm font-medium text-muted-foreground max-md:justify-center max-md:pr-1">
+      <span className="max-md:rotate-180 max-md:text-xs max-md:[writing-mode:vertical-rl]">
+        {children}
+      </span>
     </div>
   )
 }

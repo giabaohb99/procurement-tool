@@ -18,6 +18,15 @@ export interface ConditionalFilterProps {
    * tượng giống hệt nhau cạnh nhau thì không ai phân biệt được nút nào.
    */
   icon?: LucideIcon
+  /**
+   * Lớp CSS cho riêng chữ «Bộ lọc» trên nút — có để màn hẹp thu nút về còn biểu
+   * tượng (`max-md:hidden`) mà không mất huy hiệu đếm điều kiện bên cạnh.
+   *
+   * ⚠️ Ẩn chữ thì `aria-label` phải bù vào, nếu không nút chỉ còn một hình và
+   * trình đọc màn hình đọc ra khoảng lặng. Ở đây tên đọc được lấy thẳng từ
+   * `locale.filters` nên nút luôn có tên, kể cả khi chữ đã ẩn.
+   */
+  labelClassName?: string
 }
 
 /**
@@ -37,6 +46,7 @@ export function ConditionalFilter({
   variant = 'outline',
   className,
   icon: Icon = SlidersHorizontal,
+  labelClassName,
 }: ConditionalFilterProps = {}) {
   const { config, activeCount } = useFilterContext()
   const locale = config.locale ?? {}
@@ -44,9 +54,14 @@ export function ConditionalFilter({
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant={variant} size={variant === 'ghost' ? 'sm' : 'default'} className={className}>
+        <Button
+          variant={variant}
+          size={variant === 'ghost' ? 'sm' : 'default'}
+          aria-label={locale.filters}
+          className={className}
+        >
           <Icon />
-          {locale.filters}
+          <span className={labelClassName}>{locale.filters}</span>
           {activeCount > 0 && (
             <Badge variant="secondary" className="ml-1 rounded-full px-1.5">
               {activeCount}

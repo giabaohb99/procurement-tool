@@ -29,6 +29,12 @@ interface WorkSidebarTreeProps {
   peeking?: boolean
   /** Ẩn cây, hoặc ghim lại nếu đang hé ra. Trạng thái ở `WorkLayoutPage`. */
   onToggleCollapse: () => void
+  /**
+   * Vừa bấm vào một dự án. Chỉ khổ hẹp cần: ở đó cây nằm trong tờ trượt phủ gần
+   * trọn màn hình, phải tự đóng lại mới thấy được dự án vừa chọn. Bản cắm cứng
+   * bên trái không truyền — chuyển trang là cây đứng yên, đúng như mong đợi.
+   */
+  onNavigate?: () => void
 }
 
 /**
@@ -43,6 +49,7 @@ export function WorkSidebarTree({
   onCreateGroup,
   peeking = false,
   onToggleCollapse,
+  onNavigate,
 }: WorkSidebarTreeProps) {
   const { data, isLoading } = useWorkSidebar()
 
@@ -97,11 +104,17 @@ export function WorkSidebarTree({
           </p>
         )}
         {groups.map((g) => (
-          <GroupNode key={g.id} node={g} depth={0} onCreateList={onCreateList} />
+          <GroupNode
+            key={g.id}
+            node={g}
+            depth={0}
+            onCreateList={onCreateList}
+            onNavigate={onNavigate}
+          />
         ))}
         {/* List không thuộc nhóm nào đứng cuối cây — vẫn hợp lệ (A-08). */}
         {loose.map((l) => (
-          <ListLink key={l.id} item={l} depth={0} />
+          <ListLink key={l.id} item={l} depth={0} onNavigate={onNavigate} />
         ))}
       </div>
     </nav>
@@ -112,9 +125,10 @@ interface GroupNodeProps {
   node: WorkGroupNode
   depth: number
   onCreateList: (groupId: number | null) => void
+  onNavigate?: () => void
 }
 
-function GroupNode({ node, depth, onCreateList }: GroupNodeProps) {
+function GroupNode({ node, depth, onCreateList, onNavigate }: GroupNodeProps) {
   const [mo, setMo] = useState(true)
   const Icon = mo ? ChevronDown : ChevronRight
 
@@ -149,10 +163,16 @@ function GroupNode({ node, depth, onCreateList }: GroupNodeProps) {
       {mo && (
         <>
           {node.children.map((c) => (
-            <GroupNode key={c.id} node={c} depth={depth + 1} onCreateList={onCreateList} />
+            <GroupNode
+              key={c.id}
+              node={c}
+              depth={depth + 1}
+              onCreateList={onCreateList}
+              onNavigate={onNavigate}
+            />
           ))}
           {node.lists.map((l) => (
-            <ListLink key={l.id} item={l} depth={depth + 1} />
+            <ListLink key={l.id} item={l} depth={depth + 1} onNavigate={onNavigate} />
           ))}
         </>
       )}
@@ -160,10 +180,19 @@ function GroupNode({ node, depth, onCreateList }: GroupNodeProps) {
   )
 }
 
-function ListLink({ item, depth }: { item: WorkList; depth: number }) {
+function ListLink({
+  item,
+  depth,
+  onNavigate,
+}: {
+  item: WorkList
+  depth: number
+  onNavigate?: () => void
+}) {
   return (
     <NavLink
       to={appRoutes.project.detail(item.id)}
+      onClick={onNavigate}
       style={{ paddingLeft: depth * 12 + 26 }}
       className={({ isActive }) =>
         cn(

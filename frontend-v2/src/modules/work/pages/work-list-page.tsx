@@ -277,7 +277,13 @@ function WorkListContent({ listId }: { listId: number }) {
       <header className="flex flex-wrap items-start justify-between gap-3">
         {/*  Nút mở lại cây dự án đứng NGANG tiêu đề (chỉ hiện khi cây đang ẩn),
              chứ không phải một cột nút riêng bên trái — xem `WorkSidebarPeekButton`. */}
-        <div className="flex min-w-0 items-start gap-2">
+        {/*  ⚠️ `flex-1` (chứ không chỉ `min-w-0`) là thứ giữ nút «Quản lý dự án»
+             ở LẠI hàng tiêu đề. Trong một khung `flex-wrap`, chỗ xuống hàng
+             tính theo bề rộng NỘI DUNG của từng phần tử, mà cụm tên + mô tả thì
+             luôn dài hơn một màn điện thoại — nên nút bị đẩy xuống hàng riêng
+             dù bản thân nó chỉ rộng 32px. `flex-1` đặt bề rộng cơ sở về 0, cả
+             hai nằm chung một hàng rồi phần chữ mới co lại. */}
+        <div className="flex min-w-0 flex-1 items-start gap-2">
           <WorkSidebarPeekButton />
           {/*  Tên và mô tả sửa NGAY TẠI ĐÂY — bấm vào chữ là thành ô nhập. Hộp
                thoại «Sửa dự án» trong menu bên phải vẫn còn vì nó giữ thêm ô MÀU;
@@ -296,9 +302,19 @@ function WorkListContent({ listId }: { listId: number }) {
             không phải quyền quản trị (A-02), nên menu luôn có ít nhất một mục. */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm">
+            {/*  Khổ hẹp: còn mỗi biểu tượng. Nhãn đầy đủ chiếm 134px trên 358px
+                 dùng được, tức nó một mình đẩy tên dự án xuống hàng riêng — mà
+                 đây là nút mở RẤT THƯA (đổi thành viên, sửa trường), không đáng
+                 một phần ba hàng đầu. `aria-label` giữ nguyên nên trình đọc màn
+                 hình không mất gì. */}
+            <Button
+              variant="outline"
+              size="sm"
+              aria-label="Quản lý dự án"
+              className="max-md:size-8 max-md:px-0"
+            >
               <Settings2 className="size-4" />
-              Quản lý dự án
+              <span className="max-md:hidden">Quản lý dự án</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -326,7 +342,16 @@ function WorkListContent({ listId }: { listId: number }) {
               const Icon = VIEW_ICONS[v.value]
               return (
                 <TabsTrigger key={v.value} value={v.value}>
-                  <Icon className="size-4" />
+                  {/*  ⚠️ Khổ hẹp bỏ BIỂU TƯỢNG chứ không bỏ CHỮ, và cũng không
+                       cho dải cuộn ngang. Đo ở 390px: dải đủ bốn tab rộng 407px
+                       trên 358px dùng được — thừa 49px, đúng bằng chỗ mà bốn
+                       biểu tượng (mỗi cái 16px + 6px khe) chiếm. Bỏ chúng thì
+                       dải còn ~320px và CẢ BỐN tab nằm trong tầm mắt cùng lúc,
+                       hơn hẳn `ScrollableTabsList`: bên đó lúc nào cũng có một
+                       tab khuất sau mũi tên. Chữ thì không bỏ được — bốn biểu
+                       tượng bảng/danh sách/Gantt/đồng hồ không tự nói ra chúng
+                       là khung nhìn nào. */}
+                  <Icon className="size-4 max-md:hidden" />
                   {v.label}
                 </TabsTrigger>
               )

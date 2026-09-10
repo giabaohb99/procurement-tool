@@ -52,9 +52,19 @@ export function DocumentDashboardPage() {
 
   return (
     <PageContainer>
+      {/*  Dòng mô tả ẩn ở khổ điện thoại — cùng luật `ModuleDashboard` đã áp cho
+           mọi trang tổng quan phân hệ. Câu giới thiệu này đọc một lần rồi thôi,
+           nhưng ngốn hai dòng ở đầu MỌI lần mở màn, ngay trên thứ người ta vào
+           đây để xem. (Trang này dựng tay `PageContainer` + `PageHeader` chứ
+           không qua `ModuleDashboard` vì nó có bộ lọc và năm biểu đồ riêng, nên
+           luật kia không tự chạm tới.) */}
       <PageHeader
         title="Văn thư"
-        description="Công văn, quyết định, quy chế và biểu mẫu nội bộ."
+        description={
+          <span className="max-md:hidden">
+            Công văn, quyết định, quy chế và biểu mẫu nội bộ.
+          </span>
+        }
       />
 
       <DocumentDashboardFilters
@@ -74,8 +84,14 @@ export function DocumentDashboardPage() {
 
       {/*  Năm thẻ KPI: 2 → 3 → 5 cột. Thiếu mốc `lg` ở giữa thì khoảng
            1024–1279px (cửa sổ chia đôi màn 13") tụt thẳng về 2 cột, tức ba hàng
-           thẻ chiếm gần nửa màn hình trước khi thấy được biểu đồ nào. */}
-      <div className="mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+           thẻ chiếm gần nửa màn hình trước khi thấy được biểu đồ nào.
+
+           ⚠️ HAI Ô MỘT HÀNG ở khổ hẹp (`grid-cols-2`), không phải một. Bản cũ
+           để `sm:grid-cols-2` — dưới 640px mỗi ô chiếm trọn bề ngang, nên năm ô
+           xếp dọc thành **650px** chỉ để bày năm con số, và mọi biểu đồ nằm
+           ngoài tầm mắt. Hai ô một hàng còn ~330px, vừa đúng một màn. Cùng luật
+           đã áp cho Tổng quan Dự án. */}
+      <div className="mb-4 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-5">
         <StatCard
           icon={CheckCircle2}
           label="Đang có hiệu lực"
@@ -233,23 +249,51 @@ function TodoRow({ item }: { item: DocumentTodo }) {
   )
 }
 
+/**
+ * Một dòng của khối «Văn bản gần đây».
+ *
+ * ⚠️ **Khổ hẹp xếp HAI DÒNG, tiêu đề lên trước.** Bốn phần nhét trên một hàng
+ * 358px thì «chưa cấp số» — chuỗi dài nhất và ít giá trị nhất — chiếm gần một
+ * phần ba, còn tên văn bản (thứ duy nhất nói đó là văn bản gì) bị cắt còn dăm
+ * chữ. Ở màn rộng một hàng vẫn đúng: thẻ này trải 3/4 cột nên bốn phần đều đủ
+ * chỗ.
+ *
+ * ⚠️ `md:contents` là thứ giữ MỘT cây DOM cho cả hai bố cục: ở khổ rộng, khối
+ * bọc phần phụ tan ra và ba thẻ con trở thành con trực tiếp của hàng flex, rồi
+ * `md:order-*` xếp chúng về đúng thứ tự cũ (số hiệu · tên · trạng thái · ngày).
+ * Chép thành hai nhánh JSX thì sớm muộn hai khổ màn hiện hai thứ khác nhau.
+ */
 function RecentRow({ row }: { row: DocumentRecord }) {
   return (
     <li className="py-2.5 first:pt-0">
       <Link
         to={appRoutes.document.documentDetail(row.id)}
-        className="flex flex-wrap items-center gap-2 text-sm hover:underline"
+        className="flex flex-col gap-0.5 text-sm hover:underline md:flex-row md:flex-wrap md:items-center md:gap-2"
       >
-        <span className="font-mono text-xs text-muted-foreground">
-          {row.display_code || 'chưa cấp số'}
-        </span>
-        <span className="min-w-0 flex-1 truncate font-medium">{row.title}</span>
-        <span className="text-xs text-muted-foreground">{row.status_label}</span>
-        {row.effective_date && (
-          <span className="text-xs text-muted-foreground">
-            {formatDate(row.effective_date)}
+        <span className="min-w-0 truncate font-medium md:order-2 md:flex-1">{row.title}</span>
+
+        <span className="flex min-w-0 items-center gap-2 md:contents">
+          {/*  `font-mono` chỉ dành cho SỐ HIỆU thật. Câu «chưa cấp số» là lời
+               nói, không phải mã: bày bằng chữ đều nét thì các chữ cái dãn ra
+               như một dãy ký tự rời, đọc ra như lỗi hiển thị chứ không như một
+               câu. */}
+          <span
+            className={cn(
+              'shrink-0 text-xs text-muted-foreground md:order-1',
+              row.display_code ? 'font-mono' : 'italic',
+            )}
+          >
+            {row.display_code || 'chưa cấp số'}
           </span>
-        )}
+          <span className="truncate text-xs text-muted-foreground md:order-3">
+            {row.status_label}
+          </span>
+          {row.effective_date && (
+            <span className="shrink-0 text-xs text-muted-foreground md:order-4">
+              {formatDate(row.effective_date)}
+            </span>
+          )}
+        </span>
       </Link>
     </li>
   )

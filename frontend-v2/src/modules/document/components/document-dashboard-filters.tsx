@@ -6,6 +6,7 @@ import {
   useDepartmentsByCompanies,
 } from '@/modules/hr/hooks/use-departments'
 import { DateRangePicker } from '@/shared/ui/date-range-picker'
+import { QuickFilterField, QuickFilterSheet } from '@/shared/ui/quick-filter-sheet'
 import { cn } from '@/shared/utils/cn'
 import {
   Select,
@@ -90,8 +91,32 @@ export function DocumentDashboardFilters({
   //  nói gì thì người dùng tưởng hệ hỏng — nói thẳng ra là thiếu khai báo.
   const noDepartmentDeclared = Boolean(companyId) && departmentOptions.length === 0
 
-  return (
-    <div className="mb-4 flex flex-wrap items-center gap-2">
+  //  «Đang lọc» = KHÁC mặc định, chứ không phải «có giá trị»: mặc định của ô
+  //  thời gian là `all` (Tất cả) chứ không phải rỗng, đếm nó là ô nào cũng
+  //  luôn luôn đang lọc và huy hiệu mất hết ý nghĩa.
+  const activeCount =
+    (companyId ? 1 : 0) + (departmentId ? 1 : 0) + (rangeKey !== 'all' ? 1 : 0)
+
+  //  Tên pháp nhân có thể CHƯA về (ô chọn nạp bất đồng bộ) — bỏ qua phần chưa
+  //  biết còn hơn in ra «#12», thứ không nói được gì cho người đọc.
+  const summary = [
+    companies?.items.find((item) => item.id === companyId)?.name,
+    departmentOptions.find((item) => item.id === departmentId)?.name,
+    rangeKey === 'all' ? undefined : DATE_RANGES.find((item) => item.key === rangeKey)?.label,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+
+  /**
+   * Dựng ba ô chọn. Gọi HAI lần — một cho thanh ngang ở màn rộng, một cho tờ
+   * trượt ở khổ hẹp — vì hai chỗ chỉ khác nhau ở bề rộng: trên thanh thì ô ôm
+   * lấy nội dung (`min-w-*`), trong tờ trượt thì trải hết bề ngang màn hình.
+   * Khai một lần rồi tái dùng để hai khổ màn không lệch nhau dần: thêm một
+   * pháp nhân vào ô này mà quên ô kia là điện thoại và máy tính lọc ra hai con
+   * số khác nhau, không chỗ nào báo.
+   */
+  const buildFields = (inSheet: boolean) => ({
+    company: (
       <Select
         value={companyId ? String(companyId) : ALL}
         onValueChange={(next) =>
@@ -106,7 +131,7 @@ export function DocumentDashboardFilters({
           })
         }
       >
-        <SelectTrigger className={cn(O_LOC, 'min-w-52')}>
+        <SelectTrigger className={cn(O_LOC, inSheet ? 'w-full' : 'min-w-52')}>
           <Building2 className="size-4 text-muted-foreground" />
           <SelectValue />
         </SelectTrigger>
@@ -119,7 +144,9 @@ export function DocumentDashboardFilters({
           ))}
         </SelectContent>
       </Select>
+    ),
 
+    department: (
       <Select
         value={departmentId ? String(departmentId) : ALL}
         onValueChange={(next) =>
@@ -132,7 +159,7 @@ export function DocumentDashboardFilters({
           })
         }
       >
-        <SelectTrigger className={cn(O_LOC, 'min-w-52')}>
+        <SelectTrigger className={cn(O_LOC, inSheet ? 'w-full' : 'min-w-52')}>
           <Network className="size-4 text-muted-foreground" />
           <SelectValue />
         </SelectTrigger>
@@ -150,7 +177,9 @@ export function DocumentDashboardFilters({
           ))}
         </SelectContent>
       </Select>
+    ),
 
+    range: (
       <Select
         value={rangeKey}
         onValueChange={(next) =>
@@ -163,7 +192,7 @@ export function DocumentDashboardFilters({
           })
         }
       >
-        <SelectTrigger className={cn(O_LOC, 'min-w-40')}>
+        <SelectTrigger className={cn(O_LOC, inSheet ? 'w-full' : 'min-w-40')}>
           <CalendarRange className="size-4 text-muted-foreground" />
           <SelectValue />
         </SelectTrigger>
@@ -175,10 +204,12 @@ export function DocumentDashboardFilters({
           ))}
         </SelectContent>
       </Select>
+    ),
 
-      {/*  Chỉ hiện khi thật sự cần: bày sẵn một ô lịch cạnh ô mức thời gian là
-           hai thứ cùng trả lời một câu, người dùng phải đoán cái nào đang ăn. */}
-      {rangeKey === 'custom' && (
+    //  Chỉ hiện khi thật sự cần: bày sẵn một ô lịch cạnh ô mức thời gian là
+    //  hai thứ cùng trả lời một câu, người dùng phải đoán cái nào đang ăn.
+    dates:
+      rangeKey === 'custom' ? (
         <DateRangePicker
           from={fromDate}
           to={toDate}
@@ -186,7 +217,60 @@ export function DocumentDashboardFilters({
             onChange({ companyId, departmentId, rangeKey: 'custom', fromDate: from, toDate: to })
           }
         />
+      ) : null,
+  })
+
+  const bar = buildFields(false)
+  const sheet = buildFields(true)
+
+  return (
+    <div className="mb-4 flex flex-wrap items-center gap-2">
+      {/*  ⚠️ Khổ hẹp: ba ô dọn vào TỜ TRƯỢT. Ba ô bề rộng cứng (52+52+40 nấc
+           Tailwind ≈ 540px) trên 358px dùng được thì mỗi ô rớt xuống một hàng
+           riêng — đúng ba hàng bậc thang, cao 124px, nằm chắn ngay trên dải số
+           liệu là thứ người ta mở trang này để xem. Nút gọn còn 36px.
+
+           `QuickFilterSheet` tự mang `md:hidden`, còn thanh ngang bên dưới tự
+           `hidden md:flex` — không có nhánh JS nào chọn giữa hai bản, nên đổi
+           cỡ cửa sổ không cần dựng lại gì. */}
+      <QuickFilterSheet
+        activeCount={activeCount}
+        onClearAll={() =>
+          onChange({
+            companyId: undefined,
+            departmentId: undefined,
+            rangeKey: 'all',
+            fromDate: undefined,
+            toDate: undefined,
+          })
+        }
+      >
+        <QuickFilterField label="Pháp nhân">{sheet.company}</QuickFilterField>
+        <QuickFilterField label="Phòng ban">{sheet.department}</QuickFilterField>
+        <QuickFilterField label="Khoảng thời gian">{sheet.range}</QuickFilterField>
+        {sheet.dates && (
+          <QuickFilterField label="Từ ngày — đến ngày">{sheet.dates}</QuickFilterField>
+        )}
+      </QuickFilterSheet>
+
+      {/*  ⚠️ Tóm tắt phải bày RA NGOÀI tờ trượt. Đây là trang tổng quan: mọi con
+           số và cả năm biểu đồ đều là kết quả của ba ô kia, mà giấu hết vào sau
+           một cái nút thì người đọc không còn cách nào biết «20 văn bản» là của
+           toàn công ty hay của một phòng. Huy hiệu đếm của tờ trượt chỉ nói CÓ
+           BAO NHIÊU ô đang lọc, không nói lọc cái gì. Dòng này chỉ mọc ra khi
+           thật sự có lọc — chưa lọc gì thì nó là chữ thừa. */}
+      {summary && (
+        <p className="min-w-0 flex-1 truncate text-xs text-muted-foreground md:hidden">
+          {summary}
+        </p>
       )}
+
+      <div className="hidden flex-wrap items-center gap-2 md:flex">
+        {bar.company}
+        {bar.department}
+        {bar.range}
+        {bar.dates}
+      </div>
     </div>
   )
 }
