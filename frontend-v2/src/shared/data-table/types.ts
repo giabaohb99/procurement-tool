@@ -59,6 +59,12 @@ export interface DataTableColumn<T> {
 }
 
 /**
+ * Loại ô nhập mà một cột của `LinesTable` chứa — chỉ khai khi nó ÉP một sàn bề
+ * rộng. Sàn tương ứng và lý do của từng con số nằm ở `line-column-width.ts`.
+ */
+export type LinesTableControl = 'date'
+
+/**
  * Cột của `LinesTable` — bảng DÒNG CHỨNG TỪ (dòng hàng YCMH/ĐMH, dòng khảo sát,
  * các lần giao). Khác `DataTableColumn` ở chỗ KHÔNG khai `cell`: ô của bảng dòng
  * cần cả chỉ số dòng để sửa đúng phần tử, nên nội dung do một hàm `renderCell`
@@ -73,6 +79,14 @@ export interface LinesTableColumn {
   width?: number
   /** Chặn dưới khi kéo giãn. Mặc định 64px. */
   minWidth?: number
+  /**
+   * Cột chứa ô nhập có bề rộng TỐI THIỂU đo được — bảng tự nâng `width` và
+   * `minWidth` lên sàn của loại ô đó (`line-column-width.ts`).
+   *
+   * Khai cho MỌI cột có `DatePicker`, kể cả cột đang khai đủ rộng: sàn là thứ giữ
+   * cho lần sau ai đó chỉnh bề rộng xuống không âm thầm cắt mất ngày.
+   */
+  control?: LinesTableControl
   align?: 'left' | 'center' | 'right'
   /** `false` = cột luôn hiện, không cho tắt trong menu "Cột". */
   hideable?: boolean

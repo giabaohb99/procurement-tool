@@ -108,8 +108,10 @@ function buildColumns(): LinesTableColumn[] {
     // bao-CR-307: giá một đơn vị ĐÃ gồm VAT — kế toán đối chiếu giá chẵn trên hóa đơn
     {
       key: 'price_after_vat',
+      //  140 chứ không phải 130: riêng tiêu đề này đã cần 131px (chữ + `px-2.5`
+      //  hai bên), tức là cột hẹp hơn chính cái tên của nó.
       header: 'Đơn giá (Sau VAT)',
-      width: 130,
+      width: 140,
       minWidth: 80,
       align: 'right',
       compactHidden: true,

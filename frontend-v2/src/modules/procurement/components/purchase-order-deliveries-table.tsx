@@ -2,6 +2,7 @@ import { Plus, Trash2 } from 'lucide-react'
 import { useMemo } from 'react'
 
 import type { Supplier } from '@/modules/production/types/supplier'
+import { DATE_CONTROL_MIN_WIDTH } from '@/shared/data-table/line-column-width'
 import { LinesTable } from '@/shared/data-table/lines-table'
 import type { LinesTableColumn } from '@/shared/data-table/types'
 import { Badge } from '@/shared/ui/badge'
@@ -155,8 +156,8 @@ export function PurchaseOrderDeliveriesTable({
     {
       key: 'invoice_date',
       header: 'Ngày hóa đơn',
-      width: 150,
-      minWidth: 100,
+      control: 'date',
+      width: DATE_CONTROL_MIN_WIDTH,
       compactHidden: true,
     },
     {
@@ -175,8 +176,13 @@ export function PurchaseOrderDeliveriesTable({
       align: 'right',
       compactHidden: true,
     },
-    { key: 'promised_date', header: 'Cam kết giao', width: 150, minWidth: 100 },
-    { key: 'received_date', header: 'Ngày nhận', width: 150, minWidth: 100 },
+    {
+      key: 'promised_date',
+      header: 'Cam kết giao',
+      control: 'date',
+      width: DATE_CONTROL_MIN_WIDTH,
+    },
+    { key: 'received_date', header: 'Ngày nhận', control: 'date', width: DATE_CONTROL_MIN_WIDTH },
     {
       //  Đây là SỐ NGÀY quy định và người dùng nhập được — trước gắn nhãn "Ngày
       //  QĐ" nên bị đọc nhầm là cột ngày.

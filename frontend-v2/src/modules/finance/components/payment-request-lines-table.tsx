@@ -83,7 +83,7 @@ export function PaymentRequestLinesTable({
       // bao-CR-304 (ticket 26) — cột Mã MISA chỉ hiển thị, mã nhập/sửa trên ĐMH.
       { key: 'misa', header: 'Mã MISA', width: 140, minWidth: 90 },
       { key: 'invoice_no', header: 'Số hóa đơn', width: 160, minWidth: 100 },
-      { key: 'invoice_date', header: 'Ngày hóa đơn', width: 160, minWidth: 110 },
+      { key: 'invoice_date', header: 'Ngày hóa đơn', control: 'date', width: 160 },
       { key: 'due_date', header: 'Hạn trả', width: 120, minWidth: 90, align: 'center' },
       { key: 'payable_total', header: 'Tổng nợ', width: 140, minWidth: 90, align: 'right' },
       { key: 'payable_paid', header: 'Đã trả', width: 140, minWidth: 90, align: 'right' },

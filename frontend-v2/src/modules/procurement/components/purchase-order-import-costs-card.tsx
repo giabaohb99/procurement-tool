@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom'
 import { usePermission } from '@/core/authorization/use-permission'
 import type { Supplier } from '@/modules/production/types/supplier'
 import { appRoutes } from '@/shared/constants/app-routes'
+import { DATE_CONTROL_MIN_WIDTH } from '@/shared/data-table/line-column-width'
 import { LinesTable } from '@/shared/data-table/lines-table'
 import type { LinesTableColumn } from '@/shared/data-table/types'
 import { Badge } from '@/shared/ui/badge'
@@ -89,8 +90,13 @@ import {
  * cột mới (chọn, mã hàng chỉ định, đã chi, còn lại, ghi chú) bị dồn xuống cuối nên
  * bảng nhìn lộn xộn. Đổi khóa để thứ tự mặc định bên dưới có hiệu lực; đổi bộ cột
  * lần sau thì tăng số phiên bản tiếp.
+ *
+ * `-v3` (bao-CR-359): _Số hóa đơn_ thôi nằm trong nhóm cột phụ. `hiddenColumns`
+ * được CHỤP LẠI ngay lần đầu người dùng đụng vào bảng, nên bỏ `compactHidden`
+ * không thôi thì chỉ người chưa từng mở bảng này mới thấy cột đó — phải đổi khóa.
+ * Cái giá là bố cục đã chỉnh tay của riêng bảng này về mặc định một lần.
  */
-const TABLE_STORAGE_KEY = 'purchase-order-import-costs-v2'
+const TABLE_STORAGE_KEY = 'purchase-order-import-costs-v3'
 
 /** Giá trị ô chọn NCC khi khoản chưa gắn NCC nào (Radix Select không nhận chuỗi rỗng). */
 const SUPPLIER_EMPTY = '__none__'
@@ -130,9 +136,23 @@ const BASE_COLUMNS: LinesTableColumn[] = [
   { key: 'remaining', header: 'Còn lại', width: 120, minWidth: 90, align: 'right' },
   { key: 'allocation_method', header: 'Cách phân bổ', width: 160, minWidth: 120 },
   { key: 'allocation_target', header: 'Mã hàng chỉ định', width: 155, minWidth: 110, wrap: true },
-  { key: 'invoice_no', header: 'Số hóa đơn', width: 110, minWidth: 80, compactHidden: true },
-  { key: 'invoice_date', header: 'Ngày hóa đơn', width: 130, minWidth: 110, compactHidden: true },
-  { key: 'payment_due_date', header: 'Hạn thanh toán', width: 130, minWidth: 110, compactHidden: true },
+  //  CỐ Ý không có `compactHidden`: số hóa đơn là thứ người làm chi phí nhập khẩu
+  //  đối chiếu thường xuyên nhất, để trong nhóm cột phụ thì mặc định không thấy.
+  { key: 'invoice_no', header: 'Số hóa đơn', width: 140, minWidth: 80 },
+  {
+    key: 'invoice_date',
+    header: 'Ngày hóa đơn',
+    control: 'date',
+    width: DATE_CONTROL_MIN_WIDTH,
+    compactHidden: true,
+  },
+  {
+    key: 'payment_due_date',
+    header: 'Hạn thanh toán',
+    control: 'date',
+    width: DATE_CONTROL_MIN_WIDTH,
+    compactHidden: true,
+  },
   { key: 'note', header: 'Ghi chú', width: 150, minWidth: 100, wrap: true, compactHidden: true },
   { key: 'action', header: 'Hành động', width: 90, minWidth: 80, hideable: false, align: 'center' },
 ]
@@ -553,7 +573,10 @@ export function PurchaseOrderImportCostsCard({
         )
       case 'invoice_date':
         return editable ? (
+          //  `size="sm"` như mọi bảng dòng khác: cỡ mặc định là `h-9 px-4`, cần
+          //  tới ~189px mới đủ chỗ cho `dd/mm/yyyy` — rộng hơn sàn một cột ngày.
           <DatePicker
+            size="sm"
             value={cost.invoice_date || ''}
             onChange={(value) => updateCost(index, { invoice_date: value })}
           />
@@ -563,6 +586,7 @@ export function PurchaseOrderImportCostsCard({
       case 'payment_due_date':
         return editable ? (
           <DatePicker
+            size="sm"
             value={cost.payment_due_date || ''}
             onChange={(value) => updateCost(index, { payment_due_date: value })}
           />

@@ -188,8 +188,8 @@ export function PurchaseRequestItemsTable({
       // chế độ rút gọn vì đây là trường bắt buộc khi gửi duyệt.
       key: 'required',
       header: 'Ngày cần hàng *',
+      control: 'date',
       width: 170,
-      minWidth: 130,
       align: 'center',
     },
     { key: 'status', header: 'Trạng thái', width: 190, minWidth: 120, align: 'center' },
@@ -204,8 +204,8 @@ export function PurchaseRequestItemsTable({
     {
       key: 'expected',
       header: 'TG dự kiến',
+      control: 'date',
       width: 170,
-      minWidth: 130,
       align: 'center',
       compactHidden: true,
     },

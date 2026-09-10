@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { Copy, Pencil, Trash2 } from 'lucide-react'
 
+import { DATE_CONTROL_MIN_WIDTH } from '@/shared/data-table/line-column-width'
 import { LinesTable } from '@/shared/data-table/lines-table'
 import { cn } from '@/shared/utils/cn'
 import type { LinesTableColumn } from '@/shared/data-table/types'
@@ -144,8 +145,8 @@ export function SurveyRequestLinesTable({
     {
       key: 'result_due_date',
       header: 'Ngày YC trả KQ',
-      width: 140,
-      minWidth: 100,
+      control: 'date',
+      width: DATE_CONTROL_MIN_WIDTH,
       compactHidden: true,
     },
     { key: 'request_qty', header: 'SL dự kiến', width: 100, minWidth: 50, align: 'right' },

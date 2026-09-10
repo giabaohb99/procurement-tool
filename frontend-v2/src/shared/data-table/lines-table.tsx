@@ -1,4 +1,4 @@
-import { Columns3 } from 'lucide-react'
+import { Columns3, MoveHorizontal } from 'lucide-react'
 import { useCallback, useMemo, useRef, type ReactNode } from 'react'
 
 import { Button } from '@/shared/ui/button'
@@ -14,14 +14,13 @@ import { columnColorStyle } from './column-color-palette'
 import { ColumnDragOverlay } from './column-drag-overlay'
 import { ColumnHeaderCell } from './column-header-cell'
 import { ColumnVisibilityMenu } from './column-visibility-menu'
+import { LINE_COLUMN_MIN_WIDTH, lineColumnMinWidth, lineColumnWidth } from './line-column-width'
 import { measureColumnContentWidth } from './measure-column-width'
 import { columnLabel } from './required-header'
 import type { DataTableColumn, LinesTableColumn } from './types'
 import { useColumnDrag } from './use-column-drag'
 import { usePinnedOffsets } from './use-pinned-offsets'
 import { useTableLayout } from './use-table-layout'
-
-const DEFAULT_MIN_WIDTH = 40
 
 /**
  * ⚠️ Viền ô tiêu đề vẽ bằng `box-shadow`, KHÔNG dùng `border` — giống `DataTable`.
@@ -103,6 +102,10 @@ export function LinesTable<T>({
   /**
    * `useTableLayout` nhận cột của bảng danh sách; bảng dòng không khai `cell` nên
    * bù vào một hàm rỗng. Nội dung ô do `renderCell` vẽ.
+   *
+   * Bề rộng được CHUẨN HÓA ngay tại đây (`line-column-width.ts`) để phần còn lại
+   * của bảng chỉ còn đọc `column.width` / `column.minWidth` — sàn của cột chọn
+   * ngày vì thế áp cho cả ô tiêu đề, ô dữ liệu lẫn tay kéo giãn, không sót chỗ nào.
    */
   const layoutColumns = useMemo<DataTableColumn<T>[]>(
     () =>
@@ -110,6 +113,8 @@ export function LinesTable<T>({
         ...column,
         cell: () => null,
         defaultHidden: defaultCompact && column.compactHidden,
+        width: lineColumnWidth(column),
+        minWidth: lineColumnMinWidth(column),
       })),
     [columns, defaultCompact],
   )
@@ -166,14 +171,14 @@ export function LinesTable<T>({
     const widths: Record<string, number> = {}
     visibleColumns.forEach((column, index) => {
       widths[column.key] = measureColumnContentWidth(table, index, {
-        min: column.minWidth ?? DEFAULT_MIN_WIDTH,
+        min: column.minWidth ?? LINE_COLUMN_MIN_WIDTH,
       })
     })
     setColumnWidths(widths)
   }, [visibleColumns, setColumnWidths])
 
   const widthOf = (column: DataTableColumn<T>) =>
-    layout.columnWidths[column.key] ?? column.width
+    lineColumnWidth(column, layout.columnWidths[column.key])
 
   /**
    * Ô thuộc cột ghim: nền `bg-inherit` ăn theo hàng, tự vẽ vạch bằng `inset
@@ -210,6 +215,23 @@ export function LinesTable<T>({
             {isCompact ? 'Bảng đầy đủ' : 'Bảng rút gọn'}
           </Button>
 
+          {/*
+            Cùng một thao tác với mục "Vừa nội dung tất cả cột" trong menu "Cột",
+            nhưng bày thẳng ra ngoài. Đây là đường thoát cho MỌI cột bị cắt chữ mà
+            sàn khai sẵn không với tới (ô số tiền dài, tên NCC, ghi chú…): sàn chỉ
+            biết trước loại ô, còn nội dung thật thì chỉ đo tại chỗ mới ra.
+          */}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={autoFitAll}
+            title="Giãn từng cột vừa đúng nội dung đang hiện"
+          >
+            <MoveHorizontal />
+            Vừa nội dung
+          </Button>
+
           <ColumnVisibilityMenu
             columns={orderedColumns}
             hiddenColumns={layout.hiddenColumns}
@@ -242,7 +264,7 @@ export function LinesTable<T>({
                   key={column.key}
                   column={column}
                   width={widthOf(column)}
-                  minWidth={column.minWidth ?? DEFAULT_MIN_WIDTH}
+                  minWidth={column.minWidth ?? LINE_COLUMN_MIN_WIDTH}
                   className={cn(
                     HEAD_CELL,
                     alignClass(column.align),
