@@ -928,6 +928,14 @@ nhưng gói R2 lại xếp ở giai đoạn cuối. Khoảng giữa hai mốc đ
 bản, nằm trên chính cái máy** mà kẻ tấn công đang đứng — mà nhật ký chỉ có giá trị khi người
 bị nó ghi lại không xóa được nó. Hai quyết định đúng riêng lẻ, xếp sai thứ tự thành một lỗ.
 
+⚠️ **P1 và P1b mới chạy trên DEV. Prod chưa có gì của tài liệu này** — `main` không có bảng
+`tab_request_log`, cũng không có migration `f4d37c7600d0`. Ghi thành nợ kỹ thuật
+[**N-010**](change-log.md) ngày 10/09/2026 theo chốt của đại ca; ở đó có đủ hai sha cần
+cherry-pick (`2eba1274` rồi `337fa9bb`, đúng thứ tự vì migration khai `down_revision`), quy
+trình sao lưu trước khi chạy migration, và ba bẫy đã biết (xung đột `ACTION_LABEL`, phải build
+lại cả `celery-beat`, R2 phải cấu hình xong trước). **Đọc bảng trên đừng hiểu là hệ thật đã có
+những đợt này.**
+
 ---
 
 ## 11. Câu hỏi đã chốt

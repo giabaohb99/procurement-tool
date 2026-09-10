@@ -75,7 +75,12 @@ nó là bằng chứng cho lần soát sau rằng chỗ này từng hở.
 nhật ký của bao-CR-312 P1, mà **P1 chưa từng lên prod**: `main` không có bảng `tab_request_log`,
 cũng không có migration `f4d37c7600d0`. Nghĩa là trên hệ thật hôm nay, **thao tác đọc vẫn không
 để lại dấu vết** và `role/` + `user/` vẫn trắng audit. Đưa lên prod là đưa **cả P1 lẫn P1b** và
-phải **cherry-pick**, không merge (`quy-trinh-nhanh-va-deploy.md` §A.4) — chờ chốt.
+phải **cherry-pick**, không merge (`quy-trinh-nhanh-va-deploy.md` §A.4).
+
+**Đại ca chốt ngày 10/09/2026: ghi thành NỢ KỸ THUẬT, làm sau.** Việc đó là
+[**N-010**](change-log.md) trong bảng *Việc còn nợ* — ở đó có đủ hai sha cần nhặt, thứ tự
+migration, và ba cái bẫy đã biết. Bốn dòng dưới đây vì vậy **vẫn tính là đang hở trên hệ
+thật**, đừng đọc trạng thái "Đã vá" mà tưởng đã yên.
 
 ---
 
