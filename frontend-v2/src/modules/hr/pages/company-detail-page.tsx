@@ -34,6 +34,7 @@ import {
 import { FormSection } from '@/shared/ui/form-section'
 import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
+import { ReadOnlyValue } from '@/shared/ui/read-only-value'
 import { RecordIdentityCard, type IdentityChip } from '@/shared/ui/record-identity-card'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { Textarea } from '@/shared/ui/textarea'
@@ -128,15 +129,32 @@ export function CompanyDetailPage() {
     <PageContainer>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <Button variant="ghost" size="sm" asChild>
+          {/*  ⚠️ Hàng nút DÍNH khi cuộn. Form này đo được ~2000px ở khổ 390px,
+               nên nút Lưu đứng yên ở đầu trang nghĩa là gõ xong ô cuối phải
+               cuộn ngược hết chiều dài trang mới lưu được, rồi cuộn xuống lại
+               để kiểm. Cùng luật với `CrudDetailPage`; đây là màn viết tay nên
+               nó không được hưởng theo.
+
+               Lề âm để dải chạy hết bề ngang khung thay vì thụt vào theo phần
+               đệm của `PageContainer` — dính mà còn hai mép hở thì nhìn ra ngay
+               là vá. */}
+          <div className="sticky top-0 z-20 -mx-4 -mt-4 mb-4 flex flex-wrap items-center justify-between gap-3 border-b bg-canvas px-4 py-3 lg:-mx-6 lg:-mt-6 lg:px-6">
+            {/*  ⚠️ Chữ «công ty» THÔI HIỆN ở khổ điện thoại: hàng này còn phải
+                 chứa nút Lưu và nút Xóa, ba thứ đủ chữ thì rớt xuống hai hàng và
+                 dải ghim cao gấp đôi. `sr-only` chứ KHÔNG `hidden` — `hidden` là
+                 `display:none` nên trình đọc màn hình cũng mất luôn, người mù chỉ
+                 nghe được "Danh sách" mà không có mũi tên lẫn dòng chỉ mục để
+                 suy ra danh sách nào. */}
+            <Button variant="ghost" size="sm" className="-ml-2 min-w-0" asChild>
               <Link to={appRoutes.hr.companies}>
                 <ArrowLeft />
-                Danh sách công ty
+                <span className="truncate">
+                  Danh sách<span className="max-sm:sr-only"> công ty</span>
+                </span>
               </Link>
             </Button>
 
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-2">
               <PermissionGate entity="company" action="write">
                 <Button type="submit" disabled={saveCompany.isPending}>
                   {saveCompany.isPending ? <Loader2 className="animate-spin" /> : <Save />}
@@ -170,7 +188,10 @@ export function CompanyDetailPage() {
             chips={identityChips(company)}
           />
 
-          <Card className="gap-4 p-5">
+          {/*  Lề trong hẹp lại ở khổ điện thoại: thẻ này lồng thêm một lớp
+               `FormSection` bên trong, hai lớp cộng lại thì câu chú thích của
+               một ô chỉ còn hơn nửa bề ngang màn hình. */}
+          <Card className="gap-4 p-3 sm:p-5">
             <FormSection title="Định danh">
               <FormField
                 control={form.control}
@@ -178,10 +199,19 @@ export function CompanyDetailPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Mã</FormLabel>
-                    <FormControl>
-                      {/* Mã là định danh dùng khắp hệ — đổi sau khi tạo sẽ vỡ tham chiếu. */}
-                      <Input disabled {...field} />
-                    </FormControl>
+                    {/*  ⚠️ `ReadOnlyValue`, KHÔNG phải `<Input disabled>` (luật ở
+                         `CLAUDE.md`). `disabled` gỡ luôn khả năng nhận con trỏ
+                         nên **không bôi đen, không copy được** — mà mã pháp nhân
+                         chính là thứ người ta hay chép ra để dán vào tệp Excel
+                         hay nhắn cho nhau. Nó còn bị làm mờ 50% nên «NN ABA»
+                         nhìn y như chữ gợi ý của một ô chưa ai nhập.
+
+                         Vẫn bọc trong `FormField` để `code` ở lại trong payload
+                         lúc Lưu: bỏ đăng ký thì `handleSubmit` gửi thiếu ô này. */}
+                    <ReadOnlyValue>{field.value}</ReadOnlyValue>
+                    <FormDescription>
+                      Mã là định danh dùng khắp hệ, không đổi được sau khi tạo.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
