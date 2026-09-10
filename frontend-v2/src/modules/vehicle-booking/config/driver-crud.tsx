@@ -2,6 +2,7 @@ import { Building2, IdCard, Phone } from 'lucide-react'
 
 import { appRoutes } from '@/shared/constants/app-routes'
 import type { CrudConfig } from '@/shared/crud'
+import { CatalogExportButton } from '../components/catalog-export-button'
 import { AvailabilityBadge, SourceBadge } from '../components/status-pill'
 import { DRIVER_STATUS_LABELS, type Driver } from '../types/driver'
 
@@ -25,6 +26,9 @@ export const DRIVER_CRUD_CONFIG: CrudConfig<Driver> = {
   searchPlaceholder: 'Tìm theo tên tài xế…',
   getItemName: (d) => d.name,
   deleteWarning: 'Tài xế này có thể đang được phân cho phiếu đặt xe.',
+  renderToolbarExtra: () => (
+    <CatalogExportButton apiPath="/api/drivers" searchParam="name" filename="quan-ly-tai-xe.xlsx" />
+  ),
   chips: (d) => [
     ...(d.phone ? [{ icon: Phone, text: d.phone, tone: 'muted' as const }] : []),
     ...(d.license_number ? [{ icon: IdCard, text: d.license_number, tone: 'code' as const }] : []),
@@ -33,6 +37,13 @@ export const DRIVER_CRUD_CONFIG: CrudConfig<Driver> = {
       : []),
   ],
   columns: [
+    {
+      key: 'id',
+      header: 'ID',
+      width: 80,
+      sortable: true,
+      cell: (d) => <span className="tabular-nums text-muted-foreground">{d.id}</span>,
+    },
     {
       key: 'name',
       header: 'Tên tài xế',

@@ -97,9 +97,14 @@ def test_du_53_entity():
     51 → 53 ngày 04/09/2026: Đặt phòng họp (duoc-CR-279) thêm `room_booking` +
     `meeting_room`. Hai chứ không một: đặt phòng là việc của mọi người, khai
     danh mục phòng là việc quản trị — cho quyền sửa danh mục KHÁC cho quyền đặt.
+    53 → 57 ngày 08/09/2026: phân hệ Điểm cà phê × POS365 thêm bốn khóa —
+    `coffee_policy` · `coffee_member` · `coffee_ledger` · `pos_order`. Bốn chứ
+    không một: ba quyền của PS12 (xem sổ người khác · điều chỉnh tay · chạy đồng
+    bộ) phải tách được. Sổ và thành viên khai `self` theo `employee_id` — "nhân
+    viên chỉ thấy sổ của mình" là một phép áp scope (`doc/erp/diem-ca-phe/04`).
     """
-    assert len(ENTITIES) == 53
-    assert len(SCOPE_FIELDS) == 53
+    assert len(ENTITIES) == 57
+    assert len(SCOPE_FIELDS) == 57
 
 
 # ── 2. Không dựng nổi điều kiện thì chặn ────────────────────────────────────────

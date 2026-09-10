@@ -16,6 +16,13 @@ COMMENT_POLICY: dict[str, tuple[str, str, str]] = {
     #  Đặt xe & Duyệt dấu — trao đổi trên phiếu (route v2 để chuông dẫn đúng trang chi tiết).
     "vehicle_booking":  ("vehicle_booking",  "Yêu cầu đặt xe",   "/vehicle-booking"),
     "seal_request":     ("seal_request",     "Yêu cầu đóng dấu", "/approval-seal"),
+    #  Danh mục Xe / Tài xế — trao đổi ngay trên trang chi tiết danh mục. Entity cha
+    #  = chính nó (PUBLIC ở SCOPE_FIELDS), ai có `vehicle`/`driver` read thì trao đổi được.
+    "vehicle":          ("vehicle",           "Xe",               "/vehicle-booking/vehicles"),
+    "driver":           ("driver",            "Tài xế",           "/vehicle-booking/drivers"),
+    #  Phân công văn thư — cấu hình Duyệt dấu. Entity CHA = `seal_type` (PUBLIC,
+    #  ai có `seal_type.read` thì trao đổi được); `apply_scope` không lọc gì.
+    "seal_clerk":       ("seal_type",         "Phân công văn thư", "/approval-seal/clerks"),
     # Diễn đàn (F1): entity cha chỉ để ĐẶT TÊN — `resolve_doc` rẽ nhánh riêng kiểm
     # theo luật audience của bài, KHÔNG kiểm RBAC (người thường không có grant nào).
     # Route ghi THẲNG dạng v2 (khuôn Văn thư): diễn đàn chỉ có trên `frontend-v2`,
@@ -57,9 +64,18 @@ def doc_model(entity: str):
     if entity == "vehicle_booking":
         from app.modules.vehicle_booking.model import VehicleBooking
         return VehicleBooking
+    if entity == "vehicle":
+        from app.modules.vehicle_booking.model import Vehicle
+        return Vehicle
+    if entity == "driver":
+        from app.modules.vehicle_booking.model import Driver
+        return Driver
     if entity == "seal_request":
         from app.modules.seal_request.model import SealRequest
         return SealRequest
+    if entity == "seal_clerk":
+        from app.modules.seal_clerk.model import SealClerk
+        return SealClerk
     if entity == "forum_post":
         from app.modules.forum.model import ForumPost
         return ForumPost

@@ -129,6 +129,22 @@ class Settings(BaseSettings):
     # Phải khớp với size collection đã tạo — đổi số này cũng buộc dựng lại collection.
     AI_EMBED_DIM: int = 768
 
+    # --- Điểm cà phê × POS365 (doc/erp/diem-ca-phe/) ---
+    # Cầu dao an toàn A1: MẶC ĐỊNH BẬT — dev/UAT chạy cả ngày không một call nào ra
+    # quán thật. CHỈ prod đặt =false trong .env. Client kiểm cờ này TRƯỚC mọi request.
+    POS365_HARD_OFF: bool = True
+    # Cửa hàng: https://<tên-cửa-hàng>.pos365.vn — rỗng thì client coi như HARD_OFF.
+    POS365_BASE_URL: str = ""
+    # Tài khoản API RIÊNG (không dùng tài khoản của người — người đổi mật khẩu là
+    # tác vụ nền chết im lặng). Không vào mã nguồn, chỉ ở .env.
+    POS365_USERNAME: str = ""
+    POS365_PASSWORD: str = ""
+    # AccountId của tài khoản thanh toán "Trừ điểm" (N-04) — hằng số nhận diện của
+    # TOÀN BỘ tích hợp, đổi nó là đơn cũ hết lọc được. Đọc từ AccountList lúc POC.
+    POS365_PAYMENT_ACCOUNT_ID: int = 0
+    # Chu kỳ kéo đơn (phút) — siết sau POC P6 (giới hạn gọi của POS365).
+    POS365_PULL_MINUTES: int = 5
+
     # --- Celery / Redis ---
     # Broker + result backend dùng chung 1 Redis (đủ cho quy mô ~20-100 user).
     REDIS_URL: str = "redis://redis:6379/0"

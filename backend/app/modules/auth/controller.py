@@ -42,6 +42,12 @@ def _me_payload(db: Session, user) -> dict:
         role_names = [r[0] for r in db.query(Role.name)
                       .filter(Role.id.in_(role_ids)).order_by(Role.name).all()]
 
+    #  Vị này có hồ sơ TÀI XẾ (tab_driver.user_id) hay không — để mở đúng mục
+    #  "Chuyến của tôi" (Đặt xe) cho tài xế mà không phải join lại ở FE. Điều phối
+    #  viên nhận ra qua quyền `vehicle_booking.approve`, nên chỉ cần cờ này cho lái xe.
+    from app.modules.vehicle_booking.model import Driver
+    is_driver = db.query(Driver.id).filter(Driver.user_id == user.id).first() is not None
+
     #  Kiêm nhiệm = các phòng PHỤ (is_primary=False) của nhân sự — tái dùng
     #  tab_employee_department, hiển thị dưới Vị trí/Chức vụ ở Trang cá nhân.
     kiem_nhiem: list[str] = []
@@ -76,6 +82,8 @@ def _me_payload(db: Session, user) -> dict:
         "role_names": role_names,
         "position": emp.position if emp else "",
         "kiem_nhiem": kiem_nhiem,
+        #  Có hồ sơ tài xế không — FE dùng để hiện mục "Chuyến của tôi" cho lái xe.
+        "is_driver": is_driver,
         #  Vai trò ĐANG GIỮ, không phải quyền. Màn Phân quyền cần nó để khóa ma
         #  trận của chính vai trò mình đang giữ — backend đã chặn cửa đó
         #  (`privilege_escalation`), nhưng để người dùng tick thoải mái rồi mới

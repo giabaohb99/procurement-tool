@@ -43,12 +43,11 @@
 
   /* Nền ô CHỈ XEM — `shared/ui/read-only-value.tsx`.
 
-     Tách khỏi `--muted` vì `--muted` quá nhạt (#f6f8fb, gần như trắng): đặt cạnh
-     một ô nhập nền trắng thì mắt không phân biệt được ô nào khóa, ô nào gõ được
-     — khách báo đúng chỗ này ngày 31/08/2026. Ô khóa phải XÁM thấy rõ, còn chữ
-     bên trong vẫn là dữ liệu thật nên giữ đủ tương phản để đọc, đừng làm mờ. */
-  --locked: #e4eaf1;
-  --locked-foreground: #334155;
+     Format khóa thông tin (chốt 09/09/2026): nền rất nhạt `#f8fafc`, chữ NAVY đậm
+     `#1b2559` (= --foreground) + đậm 600 + con trỏ `not-allowed` + mờ nhẹ .9 — cái
+     khiến ô khóa khác ô nhập trắng nay là CHỮ (đậm, navy) và con trỏ, không phải nền. */
+  --locked: #f8fafc;
+  --locked-foreground: #1b2559;
 
   /* Nền các HÀNG của bảng danh sách (`DataTable`, `LinesTable`).
 

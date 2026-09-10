@@ -22,7 +22,7 @@ export function SealRequestFormPage() {
   const isEdit = Boolean(id)
   const fromId = Number(searchParams.get('from')) || null
 
-  const backToList = () => navigate(appRoutes.approvalSeal.root)
+  const backToList = () => navigate(appRoutes.approvalSeal.requests)
   const backToDetail = () => navigate(appRoutes.approvalSeal.detail(Number(id)))
 
   //  Sửa: nạp phiếu theo :id. Nhân bản: nạp phiếu nguồn theo ?from=.
@@ -36,10 +36,10 @@ export function SealRequestFormPage() {
       ? 'Nhân bản yêu cầu đóng dấu'
       : 'Tạo yêu cầu đóng dấu'
 
-  //  Sau khi lưu: đã gửi duyệt → về chi tiết; còn nháp → sang trang SỬA của phiếu
-  //  vừa lưu để người dùng đính kèm chứng từ đã ký rồi gửi duyệt.
-  const handleSaved = (result: SealRequest, submitted: boolean) => {
-    navigate(submitted ? appRoutes.approvalSeal.detail(result.id) : appRoutes.approvalSeal.edit(result.id))
+  //  Sau khi lưu (dù nháp hay đã gửi duyệt) đều về trang CHI TIẾT: trang này nay
+  //  sửa được ngay tại chỗ (đính kèm chứng từ + gửi duyệt), không cần trang /edit riêng.
+  const handleSaved = (result: SealRequest) => {
+    navigate(appRoutes.approvalSeal.detail(result.id))
   }
 
   return (

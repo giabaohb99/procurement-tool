@@ -45,6 +45,11 @@ ACTION_LABEL = {
     #  người thêm `record(..., "print")` là dòng đó hiện mã trần.
     "print": "In",
     "export": "Xuất dữ liệu",
+    #  Duyệt dấu — cổng 2 (Văn thư). Nhãn riêng cho "đóng dấu"; hai mã trả/từ chối giữ
+    #  nhãn quen thuộc, còn vai trò "(Văn thư)" gắn SAU TÊN người (xem `_CLERK_ROLE_ACTIONS`).
+    "seal_completed": "Hoàn thành (đóng dấu)",
+    "seal_return_clerk": "Cập nhật",
+    "seal_reject_clerk": "Từ chối",
     #  Bảng quyền gọi việc sửa là `write`, dấu vết cũ gọi là `update` — hai chữ
     #  cho một việc, và cả hai đều đang được ghi ở đâu đó.
     "write": "Cập nhật",
@@ -87,6 +92,10 @@ ACTION_LABEL = {
     "option_remove": "Gỡ phương án",
     "reply": "Phản hồi",
 }
+
+#  Mã hành động do VĂN THƯ thực hiện (cổng 2) — hiện "Tên (Văn thư)" ở dòng nhật ký.
+#  `seal_completed` KHÔNG nằm đây: nhãn "Hoàn thành (đóng dấu)" đã ngụ ý văn thư.
+_CLERK_ROLE_ACTIONS = {"seal_return_clerk", "seal_reject_clerk"}
 
 
 def _guard(db: Session, user, entity: str | None, entity_id: int | None):
@@ -209,6 +218,11 @@ def list_logs(
     q = q.order_by(AuditLog.id.desc())
 
     def _format(l: AuditLog):
+        by = resolve_actor(db, l.created_by)
+        #  Chú thích VAI TRÒ sau tên: thao tác cổng-2 do Văn thư thực hiện thì hiện
+        #  "Tên (Văn thư)" — vai trò là chú thích của người, không nhét vào nội dung.
+        if l.action in _CLERK_ROLE_ACTIONS:
+            by = f"{by} (Văn thư)"
         return {
             "id": l.id,
             "entity": l.entity,
@@ -216,7 +230,7 @@ def list_logs(
             "action": l.action,
             "action_label": ACTION_LABEL.get(l.action, l.action),
             "message": l.message,
-            "by": resolve_actor(db, l.created_by),
+            "by": by,
             "by_id": l.created_by,
             "at": l.created_at,
         }

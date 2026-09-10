@@ -1,89 +1,140 @@
-import { Inbox, MapPin } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Download, Inbox, MapPin, Search } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
+import { downloadFile } from '@/core/api'
 import { appRoutes } from '@/shared/constants/app-routes'
+import { Button } from '@/shared/ui/button'
+import { DateRangePicker } from '@/shared/ui/date-range-picker'
+import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { Skeleton } from '@/shared/ui/skeleton'
+import type { ListParams } from '@/shared/types/api'
 
 import { BookingWorkflowActions } from '../components/booking-workflow-actions'
 import { BookingStatusBadge, DriverStatusBadge } from '../components/status-pill'
 import { useVehicleBookings } from '../hooks/use-vehicle-bookings'
-import { BOOKING_STATUS, DRIVER_STATUS, type VehicleBooking } from '../types/vehicle-booking'
+import { BOOKING_STATUS, type VehicleBooking } from '../types/vehicle-booking'
 
-//  Ba nhóm theo bước của tài xế — chỉ những chuyến đang cần tài xế xử lý.
-const GROUPS: { key: number; title: string }[] = [
-  { key: DRIVER_STATUS.waiting, title: 'Chờ bạn nhận' },
-  { key: DRIVER_STATUS.accepted, title: 'Đã nhận — chờ khởi hành' },
-  { key: DRIVER_STATUS.ongoing, title: 'Đang đi' },
-]
+/** Ngày local → 'yyyy-mm-dd'. */
+function toYmd(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+/** Khoảng mặc định: 30 ngày gần nhất. */
+function defaultRange(): { from: string; to: string } {
+  const to = new Date()
+  const from = new Date()
+  from.setDate(to.getDate() - 29)
+  return { from: toYmd(from), to: toYmd(to) }
+}
 
 /**
- * "Chuyến của tôi" — màn gọn cho TÀI XẾ: chỉ chuyến ĐƯỢC PHÂN cho chính mình
- * (backend lọc bằng `?mine=1`), nhóm theo bước, thao tác Nhận / Bắt đầu / Hoàn tất
- * ngay trên thẻ. Người không phải tài xế mở ra sẽ thấy rỗng.
+ * "Chuyến của tôi" — chỉ chuyến ĐƯỢC PHÂN cho chính mình (backend lọc `?mine=1`).
+ * Thẻ xếp phẳng, MỚI NHẤT lên trên; có bộ lọc thời gian (30 ngày mặc định) + tìm
+ * kiếm; bấm vào thẻ mở trang chi tiết; thao tác Nhận / Bắt đầu / Hoàn tất trên thẻ.
  */
 export function MyTripsPage() {
-  const { data, isPending } = useVehicleBookings({
+  const navigate = useNavigate()
+  const [range, setRange] = useState(defaultRange)
+  const [search, setSearch] = useState('')
+
+  const params: ListParams = {
     mine: 1,
     status: BOOKING_STATUS.dispatched,
     page_size: 100,
-  })
-  const trips = (data?.items ?? []) as VehicleBooking[]
+  }
+  if (search.trim()) params.search = search.trim()
+  if (range.from) params.created_at_from = range.from
+  if (range.to) params.created_at_to = range.to
+
+  const { data, isPending } = useVehicleBookings(params)
+
+  //  Xuất Excel đúng bộ lọc đang xem (mine + đã điều phối + tìm kiếm + khoảng ngày).
+  const handleExport = async () => {
+    const q = new URLSearchParams({ mine: '1', status: String(BOOKING_STATUS.dispatched) })
+    if (search.trim()) q.set('search', search.trim())
+    if (range.from) q.set('created_at_from', range.from)
+    if (range.to) q.set('created_at_to', range.to)
+    await downloadFile(`/api/vehicle-bookings/export/xlsx?${q.toString()}`, 'chuyen-cua-toi.xlsx')
+  }
+  //  Mới nhất lên trên (id tăng theo thời gian tạo — chưa lộ `updated_at` ở API danh sách).
+  const trips = useMemo(
+    () => [...((data?.items ?? []) as VehicleBooking[])].sort((a, b) => b.id - a.id),
+    [data],
+  )
 
   return (
     <PageContainer className="w-full">
       <PageHeader
         title="Chuyến của tôi"
         description="Các chuyến xe được phân cho bạn — nhận, bắt đầu và hoàn tất tại đây."
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative min-w-56">
+              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                className="h-9 pl-9 text-xs"
+                placeholder="Tìm theo mã, mục đích, điểm đi/đến…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <DateRangePicker
+              from={range.from}
+              to={range.to}
+              placeholder="Khoảng thời gian…"
+              onChange={(from, to) => setRange({ from, to })}
+            />
+            <Button variant="outline" size="sm" onClick={() => void handleExport()}>
+              <Download className="mr-1.5 size-4" />
+              Xuất Excel
+            </Button>
+          </div>
+        }
       />
 
       {isPending ? (
-        <div className="flex flex-col gap-3">
-          <Skeleton className="h-28" />
-          <Skeleton className="h-28" />
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <Skeleton className="h-40" />
+          <Skeleton className="h-40" />
+          <Skeleton className="h-40" />
         </div>
       ) : trips.length === 0 ? (
         <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed py-14 text-muted-foreground">
           <Inbox className="size-8" />
-          <p className="text-sm">Bạn chưa có chuyến nào được phân.</p>
+          <p className="text-sm">Không có chuyến nào khớp bộ lọc.</p>
         </div>
       ) : (
-        <div className="flex flex-col gap-6">
-          {GROUPS.map((group) => {
-            const rows = trips.filter((t) => t.driver_status === group.key)
-            if (rows.length === 0) return null
-            return (
-              <section key={group.key} className="flex flex-col gap-3">
-                <h3 className="border-b pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  {group.title} ({rows.length})
-                </h3>
-                {/* Màn rộng: xếp thẻ chuyến thành lưới nhiều cột thay vì một cột dài. */}
-                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                  {rows.map((trip) => (
-                    <TripCard key={trip.id} trip={trip} />
-                  ))}
-                </div>
-              </section>
-            )
-          })}
+        <div className="grid items-start gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {trips.map((trip) => (
+            <TripCard key={trip.id} trip={trip} onOpen={() => navigate(appRoutes.vehicleBooking.detail(trip.id))} />
+          ))}
         </div>
       )}
     </PageContainer>
   )
 }
 
-function TripCard({ trip }: { trip: VehicleBooking }) {
+function TripCard({ trip, onOpen }: { trip: VehicleBooking; onOpen: () => void }) {
   return (
-    <div className="rounded-lg border bg-card p-4">
+    //  Bấm cả thẻ → chi tiết; cụm nút thao tác chặn nổi bọt để không mở trang.
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onOpen()
+        }
+      }}
+      className="cursor-pointer rounded-lg border bg-card p-4 transition-colors hover:border-primary/50 hover:bg-accent/40"
+    >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2">
-          <Link
-            to={appRoutes.vehicleBooking.detail(trip.id)}
-            className="font-semibold text-foreground hover:underline"
-          >
-            {trip.code}
-          </Link>
+          <span className="font-semibold text-foreground">{trip.code}</span>
           <BookingStatusBadge status={trip.status} driverStatus={trip.driver_status} />
           <DriverStatusBadge status={trip.driver_status} />
         </div>
@@ -105,8 +156,9 @@ function TripCard({ trip }: { trip: VehicleBooking }) {
       )}
       {trip.purpose && <div className="mt-1 text-sm">{trip.purpose}</div>}
 
-      <div className="mt-3">
-        {/* Tài xế không điều phối — truyền no-op cho nút điều phối (không hiện với tài xế). */}
+      {/*  Khoảng cách các nút ~16px theo chiều ngang (`gap-4`); chặn nổi bọt để bấm nút
+          không mở trang chi tiết. */}
+      <div className="mt-3 flex flex-wrap items-center gap-4" onClick={(e) => e.stopPropagation()}>
         <BookingWorkflowActions booking={trip} onDispatch={() => undefined} />
       </div>
     </div>

@@ -5,12 +5,14 @@ Cả hai là danh mục nền (entity `vehicle` / `driver`, khai PUBLIC ở scop
 kèm xuất/nhập CSV. Không có migration — model đã đủ trường (xem model.py).
 """
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
 from app.core.auth import require
+from app.core.base_controller import apply_filters, apply_sort_from_request
 from app.core.crud import make_crud_router
 from app.core.database import get_db
+from app.core.export_xlsx import Col, check_row_limit, xlsx_response
 from app.core.response import success
 
 from . import service
@@ -47,6 +49,49 @@ driver_router = make_crud_router(
         "license_number": "Số GPLX", "status": "Trạng thái",
     },
 )
+
+
+#  Xuất Excel theo ĐÚNG bộ lọc đang hiển thị (khớp danh sách CRUD). `/export/xlsx`
+#  không đụng `/{id}` (khác độ sâu đường dẫn) nên gắn thẳng vào router CRUD được.
+@vehicle_router.get("/export/xlsx")
+def export_vehicles_xlsx(request: Request, db: Session = Depends(get_db),
+                         user=Depends(require("vehicle", "read"))):
+    q = apply_filters(db.query(Vehicle), Vehicle, request, ["license_plate", "type", "status", "is_external"])
+    q = apply_sort_from_request(q, Vehicle, request, default=Vehicle.id.desc())
+    objs = q.all()
+    check_row_limit(len(objs))
+    rows = [VehicleResponse.model_validate(o).model_dump() for o in objs]
+    columns = [
+        Col("id", "ID", kind="int", width=8),
+        Col("license_plate", "Biển số", width=14),
+        Col("model", "Mẫu xe", width=18),
+        Col("type", "Loại xe", width=16),
+        Col("capacity", "Tải (người/tấn)", width=14),
+        Col("is_external", "Thuê ngoài", kind="bool", width=12),
+        Col("status", "Trạng thái", width=16),
+    ]
+    return xlsx_response("quan-ly-xe.xlsx", columns, rows, "Quản lý xe")
+
+
+@driver_router.get("/export/xlsx")
+def export_drivers_xlsx(request: Request, db: Session = Depends(get_db),
+                        user=Depends(require("driver", "read"))):
+    q = apply_filters(db.query(Driver), Driver, request, ["name", "phone", "status", "is_external"])
+    q = apply_sort_from_request(q, Driver, request, default=Driver.id.desc())
+    objs = q.all()
+    check_row_limit(len(objs))
+    rows = [DriverResponse.model_validate(o).model_dump() for o in objs]
+    columns = [
+        Col("id", "ID", kind="int", width=8),
+        Col("name", "Họ tên", width=20),
+        Col("phone", "Điện thoại", width=14),
+        Col("email", "Email", width=22),
+        Col("license_number", "Số GPLX", width=16),
+        Col("license_class", "Hạng GPLX", width=12),
+        Col("is_external", "Thuê ngoài", kind="bool", width=12),
+        Col("status", "Trạng thái", width=16),
+    ]
+    return xlsx_response("quan-ly-tai-xe.xlsx", columns, rows, "Quản lý tài xế")
 
 
 # Ô chọn tài xế khi ĐIỀU PHỐI — lọc theo vai trò (chỉ người thật sự là tài xế).

@@ -2,7 +2,7 @@ import { Link, NavLink, useLocation } from 'react-router-dom'
 
 import type { ErpModule, ModuleNavItem } from '@/app/router/module-definition'
 import { visibleNavItems } from '@/app/router/module-visibility'
-import { usePermission } from '@/core/authorization/use-permission'
+import { useNavContext, usePermission } from '@/core/authorization/use-permission'
 import { env } from '@/core/config/env'
 import { appRoutes } from '@/shared/constants/app-routes'
 import {
@@ -98,12 +98,13 @@ export function ModuleSidebar({
   onResizeWidth: (width: number) => void
 }) {
   const { can } = usePermission()
+  const navCtx = useNavContext()
   const { isMobile, setOpenMobile } = useSidebar()
 
   //  Cùng luật với màn chọn phân hệ — xem `module-visibility.ts`.
   //  ⚠️ `hidden` lọc ở ĐÂY thôi, không lọc trong `visibleNavItems`: mục ẩn vẫn
   //  phải giữ khóa quyền của nó cho `canAccessRoute`. Xem `ModuleNavItem.hidden`.
-  const visibleItems = visibleNavItems(module, can).filter((item) => !item.hidden)
+  const visibleItems = visibleNavItems(module, can, navCtx).filter((item) => !item.hidden)
   // Mục không khai `group` đứng đầu, không tiêu đề — thường là "Tổng quan".
   const ungrouped = visibleItems.filter((item) => !item.group)
   const groups = groupByLabel(visibleItems.filter((item) => item.group))

@@ -56,6 +56,13 @@ ENTITIES = [
     #  · `meeting_room` — khai danh mục phòng, việc quản trị. Cho quyền sửa danh
     #    mục KHÁC cho quyền đặt phòng, gộp một khóa là không tách được.
     "room_booking", "meeting_room",
+    # Phân hệ Điểm cà phê × POS365 (doc/erp/diem-ca-phe/04-phan-quyen.md). Bốn
+    # khóa vì ba quyền của PS12 phải TÁCH được: xem sổ người khác
+    # (`coffee_ledger.read` + scope rộng) · điều chỉnh tay (`coffee_ledger.write`)
+    # · chạy đồng bộ (`pos_order.write`). Ví của tôi KHÔNG cần grant — đi endpoint
+    # riêng `/api/coffee/my-wallet` chỉ đòi đăng nhập. Nhật ký đồng bộ đọc/ghi
+    # qua quyền của `pos_order` (cùng mối quan tâm vận hành, không thêm khóa thứ 5).
+    "coffee_policy", "coffee_member", "coffee_ledger", "pos_order",
 ]
 
 ACTIONS = ["read", "create", "write", "delete", "approve", "cancel", "print", "export"]
@@ -119,6 +126,10 @@ ENTITY_LABELS = {
     "holiday": "Nghỉ phép › Thiết lập › Lịch ngày lễ",
     "room_booking": "Phiếu đặt phòng họp",
     "meeting_room": "Phòng họp (danh mục)",
+    "coffee_policy": "Điểm cà phê › Chính sách cấp điểm",
+    "coffee_member": "Điểm cà phê › Thành viên & ghép POS365",
+    "coffee_ledger": "Điểm cà phê › Sổ điểm & điều chỉnh",
+    "pos_order": "Điểm cà phê › Đơn POS365 & đồng bộ",
 }
 
 ACTION_LABELS = {

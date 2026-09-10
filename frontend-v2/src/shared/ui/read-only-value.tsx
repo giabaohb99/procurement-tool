@@ -23,10 +23,10 @@ interface ReadOnlyValueProps {
  * `readOnly` cũng giữ được việc bôi đen, nhưng ô vẫn trông như đang mời gõ vào.
  * Ở đây phần lớn màn là XEM chứng từ, nên hiện thẳng dạng chữ đúng hơn.
  *
- * MÀU: nền `--locked` (xám thấy rõ) + viền `--input`, đối lại ô nhập được nay
- * ghim nền TRẮNG (`bg-background`). Hai nền phải khác nhau đủ để liếc một cái
- * là biết ô nào gõ được — nền `bg-muted/35` cũ nhạt tới mức lẫn với ô trắng
- * (khách báo 31/08/2026).
+ * FORMAT KHÓA THÔNG TIN (chốt 09/09/2026): nền rất nhạt `--locked` (#f8fafc), chữ
+ * NAVY đậm `--locked-foreground` (#1b2559) + `font-semibold` (600) + con trỏ
+ * `not-allowed` + mờ nhẹ `opacity-90`. Điểm phân biệt với ô nhập trắng nay là CHỮ
+ * (đậm, navy) và con trỏ chứ không phải nền — nên nền để rất nhạt vẫn nhận ra ngay.
  */
 export function ReadOnlyValue({ children, multiline = false, className }: ReadOnlyValueProps) {
   const isDash = typeof children === 'string' && (children === '—' || children === '-')
@@ -37,8 +37,9 @@ export function ReadOnlyValue({ children, multiline = false, className }: ReadOn
       className={cn(
         //  `min-w-0` + `break-words`: chuỗi dài KHÔNG khoảng trắng (email, URL, mã) phải
         //  xuống dòng trong ô thay vì đẩy tràn cả lưới ra ngoài màn hình (lỗi responsive).
-        //  Màu: nền `bg-locked` + viền `input` + chữ `locked-foreground` (giữ theo erp-v2).
-        'min-w-0 break-words rounded-lg border border-input bg-locked px-3 text-sm font-medium text-locked-foreground',
+        //  Format khóa: nền `bg-locked` + viền `input` + chữ `locked-foreground` đậm 600,
+        //  con trỏ `not-allowed`, mờ nhẹ `opacity-90`.
+        'min-w-0 cursor-not-allowed break-words rounded-lg border border-input bg-locked px-3 text-sm font-semibold text-locked-foreground opacity-90',
         multiline
           ? 'min-h-16 py-2.5 whitespace-pre-wrap'
           : 'flex min-h-9 items-center py-2',

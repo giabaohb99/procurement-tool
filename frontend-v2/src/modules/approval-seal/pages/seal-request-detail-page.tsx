@@ -1,4 +1,5 @@
-import { ArrowLeft, Copy, Pencil, Printer, Send } from 'lucide-react'
+import { ArrowLeft, Copy, Loader2, Printer, Send } from 'lucide-react'
+import { useCallback, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import { usePermission } from '@/core/authorization/use-permission'
@@ -11,13 +12,10 @@ import { DeleteConfirmButton } from '@/shared/ui/delete-confirm-button'
 import { PageContainer } from '@/shared/ui/page-container'
 import { SealApprovalPanel } from '../components/seal-approval-panel'
 import { SealDetailBody } from '../components/seal-detail-body'
+import { SealRequestForm, type SealFormHandle } from '../components/seal-request-form'
 import { SealStatusBadge } from '../components/status-pill'
 import { SealWorkflowActions } from '../components/seal-workflow-actions'
-import {
-  useDeleteSealRequest,
-  useSealRequest,
-  useSubmitSealRequest,
-} from '../hooks/use-seal-requests'
+import { useDeleteSealRequest, useSealRequest } from '../hooks/use-seal-requests'
 import { EDITABLE_SEAL_STATUSES } from '../types/seal-request'
 
 /**
@@ -31,13 +29,18 @@ export function SealRequestDetailPage() {
   const requestId = Number(id)
   const { data, isLoading, isError } = useSealRequest(Number.isFinite(requestId) ? requestId : null)
 
-  const submitMutation = useSubmitSealRequest()
   const deleteMutation = useDeleteSealRequest()
 
   const editable = Boolean(data) && EDITABLE_SEAL_STATUSES.has(data!.status)
   const canEdit = editable && can('seal_request', 'write')
   const canDelete = Boolean(data) && can('seal_request', 'delete')
   const canCreate = can('seal_request', 'create')
+
+  //  Nút Lưu nháp / Gửi duyệt nằm ở thanh công cụ trên (cạnh In phiếu) nhưng do FORM
+  //  bên dưới thực thi — điều khiển qua `ref`; `saving` để khóa nút khi đang lưu.
+  const formRef = useRef<SealFormHandle>(null)
+  const [saving, setSaving] = useState(false)
+  const onPendingChange = useCallback((p: boolean) => setSaving(p), [])
 
   return (
     <PageContainer className="w-full">
@@ -46,7 +49,7 @@ export function SealRequestDetailPage() {
           variant="outline"
           size="icon"
           aria-label="Về danh sách yêu cầu đóng dấu"
-          onClick={() => navigate(appRoutes.approvalSeal.root)}
+          onClick={() => navigate(appRoutes.approvalSeal.requests)}
         >
           <ArrowLeft className="size-4" />
         </Button>
@@ -64,20 +67,22 @@ export function SealRequestDetailPage() {
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
           {data && <SealWorkflowActions request={data} />}
+          {/*  Phiếu sửa được: Lưu nháp / Gửi duyệt nằm CHUNG hàng với In phiếu, BÊN TRÁI
+              Nhân bản; nút do FORM bên dưới thực thi qua `formRef`. */}
           {canEdit && data && (
-            <Button
-              onClick={() => submitMutation.mutate({ id: data.id })}
-              disabled={submitMutation.isPending}
-            >
-              <Send className="size-4" />
-              Gửi duyệt
-            </Button>
-          )}
-          {canEdit && data && (
-            <Button variant="outline" onClick={() => navigate(appRoutes.approvalSeal.edit(data.id))}>
-              <Pencil className="size-4" />
-              Sửa
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                onClick={() => formRef.current?.save(false)}
+                disabled={saving}
+              >
+                Lưu nháp
+              </Button>
+              <Button onClick={() => formRef.current?.save(true)} disabled={saving}>
+                {saving ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+                Gửi duyệt
+              </Button>
+            </>
           )}
           {canCreate && data && (
             <Button
@@ -100,7 +105,7 @@ export function SealRequestDetailPage() {
               pending={deleteMutation.isPending}
               onConfirm={async () => {
                 await deleteMutation.mutateAsync(data.id)
-                navigate(appRoutes.approvalSeal.root)
+                navigate(appRoutes.approvalSeal.requests)
               }}
               warning="Phiếu và chứng từ đính kèm sẽ bị gỡ."
             />
@@ -120,13 +125,31 @@ export function SealRequestDetailPage() {
         //  (đổi breakpoint lg + 360px cho khớp `/vehicle-booking/:id`).
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
           <div className="flex min-w-0 flex-col gap-5">
-            <SealDetailBody request={data} />
-            <DocumentAttachmentsCard
-              entity="seal_request"
-              entityId={data.id}
-              canManage={canEdit}
-              maxSizeMb={50}
-            />
+            {canEdit ? (
+              //  Sửa được thì cả trang là biểu mẫu (kèm đính kèm bên trong form);
+              //  lưu/gửi duyệt xong query tự nạp lại nên trang chuyển đúng trạng thái.
+              <SealRequestForm
+                ref={formRef}
+                request={data}
+                title=""
+                embedded
+                hideActions
+                onPendingChange={onPendingChange}
+                onSaved={() => {}}
+                onCancel={() => navigate(appRoutes.approvalSeal.requests)}
+              />
+            ) : (
+              <>
+                <SealDetailBody request={data} />
+                <DocumentAttachmentsCard
+                  entity="seal_request"
+                  entityId={data.id}
+                  canManage={false}
+                  maxSizeMb={50}
+                  defaultDocType="signed_doc"
+                />
+              </>
+            )}
           </div>
           <div className="flex flex-col gap-5">
             {/* Luồng duyệt nhiều bước — chỉ hiện khi phiếu đang chạy trong bộ máy

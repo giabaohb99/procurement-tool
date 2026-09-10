@@ -58,6 +58,7 @@ from app.modules.approval import flow_model as _approval_flow  # noqa: F401
 from app.modules.approval import instance_model as _approval_instance  # noqa: F401
 from app.modules.approval import delegation_model as _approval_delegation  # noqa: F401
 from app.modules.seal_request import model as _seal_request  # noqa: F401
+from app.modules.seal_clerk import model as _seal_clerk  # noqa: F401
 from app.modules.vehicle_booking import model as _vehicle_booking  # noqa: F401
 from app.modules.assistant import model as _assistant  # noqa: F401
 from app.modules.forum import model as _forum  # noqa: F401
@@ -74,3 +75,5 @@ from app.modules.leave import catalog_model as _leave_catalog  # noqa: F401
 from app.modules.leave import balance_model as _leave_balance  # noqa: F401
 from app.modules.leave import request_model as _leave_request  # noqa: F401
 from app.modules.meeting_room import model as _meeting_room  # noqa: F401
+# Phân hệ Điểm cà phê × POS365 (doc/erp/diem-ca-phe/, CP1)
+from app.modules.coffee_point import model as _coffee_point  # noqa: F401

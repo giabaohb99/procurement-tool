@@ -5,6 +5,18 @@ import type { PermissionAction, PermissionEntity } from '@/core/authorization/pe
 type CanFn = (entity: PermissionEntity, action: PermissionAction) => boolean
 
 /**
+ * Bối cảnh RUNTIME cho luật hiển thị mà quyền tĩnh không nói được.
+ *
+ * Hiện chỉ có `isDriver`: người đặt xe và tài xế đều có `vehicle_booking.write`,
+ * nên phân biệt "là tài xế" phải dựa vào hồ sơ (`AuthUser.is_driver`), không dựa
+ * vào ma trận quyền. Bỏ trống thì luật `requireDispatchOrDriver` chỉ còn xét
+ * quyền `approve` (điều phối viên) — an toàn cho các nơi gọi chưa truyền bối cảnh.
+ */
+export interface NavContext {
+  isDriver?: boolean
+}
+
+/**
  * Kiểm tra quyền quản lý danh mục / hệ thống (yêu cầu ít nhất 1 trong 3 quyền: tạo, sửa, xóa).
  * Quyền `read` thuần túy chỉ dùng để đổ dropdown trên form, không cho hiện menu quản lý danh mục.
  */
@@ -32,11 +44,11 @@ export function canManageEntity(entity: PermissionEntity, can: CanFn): boolean {
  * Dùng CHUNG một luật với `ModuleSidebar` — hai nơi tự tính riêng là sớm muộn
  * lại lệch nhau đúng kiểu trên.
  */
-export function visibleNavItems(module: ErpModule, can: CanFn) {
-  return module.nav.filter((item) => itemAllowed(item, can))
+export function visibleNavItems(module: ErpModule, can: CanFn, ctx: NavContext = {}) {
+  return module.nav.filter((item) => itemAllowed(item, can, ctx))
 }
 
-export function canOpenModule(module: ErpModule, can: CanFn) {
+export function canOpenModule(module: ErpModule, can: CanFn, ctx: NavContext = {}) {
   //  ⚠️ Phân hệ LINK RA NGOÀI luôn mở. Nó không có mục menu nào theo đúng bản
   //  chất (`nav: []` — màn hình nằm ở app khác), nên đo bằng "còn mục nào hiện
   //  không" là ra 0 với MỌI người và thẻ đeo ổ khóa vĩnh viễn — kể cả admin.
@@ -52,7 +64,7 @@ export function canOpenModule(module: ErpModule, can: CanFn) {
   //  khác, mở được nó không có nghĩa là có việc để làm ở phân hệ này. Đếm cả nó
   //  thì người chỉ có `payable.read` thấy thẻ Thu mua mở rồi vào trong trống
   //  trơn — đúng lỗi đã vá ngày 27/08/2026.
-  return visibleNavItems(module, can).filter((item) => !item.crossModule).length > 0
+  return visibleNavItems(module, can, ctx).filter((item) => !item.crossModule).length > 0
 }
 
 /** Quyền cho MỘT khóa theo `action` | `manage` | `read` của mục. */
@@ -63,12 +75,22 @@ function entityAllowed(item: ModuleNavItem, entity: PermissionEntity, can: CanFn
 }
 
 /** Áp đúng luật hiển thị của `visibleNavItems` cho MỘT mục — dùng lại cho cả menu lẫn route. */
-function itemAllowed(item: ModuleNavItem, can: CanFn): boolean {
-  if (item.entity) return entityAllowed(item, item.entity, can)
+function itemAllowed(item: ModuleNavItem, can: CanFn, ctx: NavContext = {}): boolean {
+  //  Luật quyền tĩnh trước.
+  let baseOk: boolean
+  if (item.entity) baseOk = entityAllowed(item, item.entity, can)
   //  Mục gom nhiều màn con: có quyền trên BẤT KỲ khóa nào là hiện, phần không
   //  được xem do chính trang tự ẩn. Xem `ModuleNavItem.entities`.
-  if (item.entities?.length) return item.entities.some((khoa) => entityAllowed(item, khoa, can))
+  else if (item.entities?.length) baseOk = item.entities.some((khoa) => entityAllowed(item, khoa, can))
   //  Không khai khóa nào = luôn hiện (chủ ý — xem chú thích ở visibleNavItems).
+  else baseOk = true
+  if (!baseOk) return false
+
+  //  Lọc RUNTIME thêm: chỉ điều phối viên (approve) hoặc tài xế (isDriver) mới thấy.
+  if (item.requireDispatchOrDriver) {
+    const isDispatcher = item.entity ? can(item.entity, 'approve') : false
+    return isDispatcher || Boolean(ctx.isDriver)
+  }
   return true
 }
 
@@ -82,9 +104,14 @@ function itemAllowed(item: ModuleNavItem, can: CanFn): boolean {
  * `/x/y`). Mục khai path cụ thể hơn mà KHÔNG có `entity` thì đó là chủ ý mở công
  * khai — tôn trọng, cho xem. Không mục nào khớp cũng cho xem (backend vẫn gác).
  */
-export function canAccessRoute(module: ErpModule, pathname: string, can: CanFn): boolean {
+export function canAccessRoute(
+  module: ErpModule,
+  pathname: string,
+  can: CanFn,
+  ctx: NavContext = {},
+): boolean {
   const item = [...module.nav]
     .filter((i) => pathname === i.path || pathname.startsWith(`${i.path}/`))
     .sort((a, b) => b.path.length - a.path.length)[0]
-  return item ? itemAllowed(item, can) : true
+  return item ? itemAllowed(item, can, ctx) : true
 }

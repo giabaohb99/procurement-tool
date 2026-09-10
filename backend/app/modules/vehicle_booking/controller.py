@@ -9,8 +9,13 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, R
 from sqlalchemy.orm import Session
 
 from app.core.audit import record as audit_record
-from app.core.auth import get_perm_profile, require
-from app.core.base_controller import apply_filters, apply_sort_from_request, pagination
+from app.core.auth import get_current_user, get_perm_profile, require
+from app.core.base_controller import (
+    apply_datetime_range,
+    apply_filters,
+    apply_sort_from_request,
+    pagination,
+)
 from app.core.database import get_db
 from app.core.response import success
 from app.core.scoping import apply_scope, get_scoped
@@ -60,6 +65,22 @@ def _changed_labels(before: dict, obj) -> list[str]:
     return [lbl for k, lbl in _EDIT_LABELS.items() if before.get(k) != str(getattr(obj, k, ""))]
 
 
+def _booking_query(request: Request, db: Session, user):
+    """Query danh sách phiếu theo ĐÚNG bộ lọc đang đặt (lọc + tìm + phạm vi + mine).
+
+    Dùng CHUNG cho danh sách và Xuất Excel — xuất ra phải khớp cái đang xem."""
+    query = db.query(VehicleBooking).filter(VehicleBooking.is_deleted == False)  # noqa: E712
+    query = apply_filters(query, VehicleBooking, request, service.FILTERABLE)
+    query = apply_datetime_range(query, VehicleBooking, request)  # bộ lọc "Ngày tạo"
+    query = service.apply_keyword_search(query, request.query_params.get("search"))
+    query = apply_scope(query, VehicleBooking, "vehicle_booking", user, get_perm_profile(db, user))
+    #  Màn "Chuyến của tôi" (tài xế): chỉ chuyến ĐƯỢC PHÂN cho chính người xem.
+    if request.query_params.get("mine"):
+        query = service.filter_my_trips(query, db, user)
+    return apply_sort_from_request(query, VehicleBooking, request,
+                                   default=VehicleBooking.id.desc())
+
+
 @router.get("")
 def list_bookings(
     request: Request,
@@ -68,21 +89,81 @@ def list_bookings(
     user=Depends(require("vehicle_booking", "read")),
 ):
     """Danh sách phiếu trong phạm vi người xem ("Yêu cầu của tôi" khi phạm vi = own)."""
-    query = db.query(VehicleBooking).filter(VehicleBooking.is_deleted == False)  # noqa: E712
-    query = apply_filters(query, VehicleBooking, request, service.FILTERABLE)
-    query = service.apply_keyword_search(query, request.query_params.get("search"))
-    query = apply_scope(query, VehicleBooking, "vehicle_booking", user, get_perm_profile(db, user))
-    #  Màn "Chuyến của tôi" (tài xế): chỉ chuyến ĐƯỢC PHÂN cho chính người xem.
-    if request.query_params.get("mine"):
-        query = service.filter_my_trips(query, db, user)
-    query = apply_sort_from_request(query, VehicleBooking, request,
-                                    default=VehicleBooking.id.desc())
+    query = _booking_query(request, db, user)
     total = query.count()
     items = query.offset(pg["offset"]).limit(pg["limit"]).all()
     return success({
         "total": total,
         "items": service.serialize_bookings(db, items),
     })
+
+
+@router.get("/export/xlsx")
+def export_bookings_xlsx(
+    request: Request,
+    db: Session = Depends(get_db),
+    user=Depends(require("vehicle_booking", "read")),
+):
+    """Xuất Excel danh sách phiếu theo ĐÚNG bộ lọc đang hiển thị (danh sách + Chuyến của tôi).
+
+    Khai TRƯỚC `/{bid}` để 'export' không bị bắt làm id phiếu."""
+    from app.core.export_xlsx import Col, check_row_limit, xlsx_response
+
+    objs = _booking_query(request, db, user).all()
+    check_row_limit(len(objs))
+    rows = service.serialize_bookings(db, objs)
+    columns = [
+        Col("code", "Mã phiếu", width=14),
+        Col("request_type_label", "Loại", width=18),
+        Col("status_label", "Trạng thái", width=16),
+        Col("driver_status_label", "Trạng thái tài xế", width=18),
+        Col("purpose", "Mục đích", width=30),
+        Col("start_location", "Điểm đi", width=22),
+        Col("end_location", "Điểm đến", width=22),
+        Col("start_time", "Thời gian đi", width=18),
+        Col("end_time", "Thời gian về", width=18),
+        Col("requester", "Người tạo", width=18),
+        Col("assigned_vehicle_label", "Xe", width=16),
+        Col("assigned_driver_label", "Tài xế", width=16),
+        Col("distance_km", "Số km", kind="qty", width=10),
+        Col("cost", "Chi phí", kind="money", width=14),
+    ]
+    return xlsx_response("yeu-cau-dat-xe.xlsx", columns, rows, "Yêu cầu đặt xe")
+
+
+@router.get("/overview")
+def booking_overview(
+    date_from: str = Query("", description="Lọc khối tổng hợp từ ngày tạo (yyyy-mm-dd)"),
+    date_to: str = Query("", description="Lọc khối tổng hợp đến ngày tạo (yyyy-mm-dd)"),
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """Tổng quan Đặt xe theo vai trò — gác từng khối bằng quyền, lọc theo phạm vi.
+
+    `date_from`/`date_to` lọc khối tổng hợp `company` (theo tháng/loại/trạng thái/bộ
+    phận); mặc định 30 ngày do giao diện truyền, bỏ trống = tất cả.
+
+    ⚠️ Phải khai TRƯỚC `/{bid}` để "overview" không bị bắt làm id phiếu.
+    """
+    from . import dashboard_service
+
+    return success(dashboard_service.build_overview(db, user, date_from or None, date_to or None))
+
+
+@router.get("/timeline")
+def booking_timeline(
+    date_from: str = Query("", description="Khoảng hiển thị của lịch (yyyy-mm-dd)"),
+    date_to: str = Query("", description="Khoảng hiển thị của lịch (yyyy-mm-dd)"),
+    db: Session = Depends(get_db),
+    user=Depends(require("vehicle_booking", "read")),
+):
+    """Các chuyến xe theo DÒNG THỜI GIAN cho trang Timeline (lịch tháng).
+
+    Trả các phiếu có ngày khởi hành nằm trong [date_from, date_to] (đã bó phạm vi
+    theo người xem). ⚠️ Khai TRƯỚC `/{bid}` để "timeline" không bị bắt làm id phiếu.
+    """
+    items = service.timeline_events(db, user, date_from or None, date_to or None)
+    return success({"items": items})
 
 
 @router.get("/{bid}")

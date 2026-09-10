@@ -49,7 +49,7 @@ export function VehicleBookingDetailPage() {
           booking={data}
           title={data.purpose || `Yêu cầu đặt xe ${data.code}`}
           badge={<BookingStatusBadge status={data.status} driverStatus={data.driver_status} />}
-          onDone={() => navigate(appRoutes.vehicleBooking.root)}
+          onDone={() => navigate(appRoutes.vehicleBooking.requests)}
           onSaved={() => undefined}
           aside={
             <>
@@ -70,7 +70,7 @@ export function VehicleBookingDetailPage() {
           variant="outline"
           size="icon"
           aria-label="Về danh sách yêu cầu đặt xe"
-          onClick={() => navigate(appRoutes.vehicleBooking.root)}
+          onClick={() => navigate(appRoutes.vehicleBooking.requests)}
         >
           <ArrowLeft className="size-4" />
         </Button>

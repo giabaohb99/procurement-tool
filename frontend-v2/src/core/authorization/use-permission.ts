@@ -24,3 +24,13 @@ export function usePermission() {
 
   return { can, canAccess }
 }
+
+/**
+ * Bối cảnh runtime cho luật hiển thị menu mà quyền tĩnh không nói được — hiện
+ * chỉ có `isDriver` (xem `NavContext` ở `module-visibility.ts`). Tách khỏi
+ * `usePermission` để nơi nào cần thì lấy riêng, khỏi kéo cả `can`.
+ */
+export function useNavContext(): { isDriver?: boolean } {
+  const isDriver = useAuthStore((s) => s.user?.is_driver)
+  return { isDriver }
+}

@@ -276,10 +276,11 @@ describe('B4 — thẻ phân hệ khi không có quyền nào', () => {
       'document', // «Chờ tôi duyệt» dành cho người duyệt NGOÀI phân hệ
       'forum', // bảng tin toàn công ty
       'appearance', // tùy chọn hiển thị của chính người đăng nhập
+      //  «Dego Coffee» từng công khai qua «Ví điểm của tôi», nhưng phân hệ nay TẮT
+      //  (`enabled: false`, phần Điểm cà phê còn dở) nên không nằm trong moduleRegistry.
     ])
-    //  Chỉ xét phân hệ ĐANG BẬT: phân hệ tắt (`sales`, `dego-coffee`,
-    //  `approval-seal`) mới có mỗi mục «Tổng quan» chưa khai khóa, nhưng chúng
-    //  không vào router nên không ai mở được.
+    //  Chỉ xét phân hệ ĐANG BẬT: phân hệ tắt (`sales`, `approval-seal`, `dego-coffee`)
+    //  mới có mỗi mục «Tổng quan»/công khai nhưng không vào router nên không ai mở được.
     const mo = moduleRegistry
       .filter((m) => !m.externalUrl && canOpenModule(m, DENY_ALL))
       .map((m) => m.id)

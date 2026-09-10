@@ -203,6 +203,9 @@ BB4_CONTROLLER_MIEN_TRU = {
     "product/controller.py": "product — PUBLIC (D-025)",
     "supplier/controller.py": "supplier — PUBLIC, giấu NCC bằng quyền supplier.read",
     "category_assignee/controller.py": "category_assignee — PUBLIC",
+    "seal_clerk/controller.py": "phân công VĂN THƯ theo công ty — danh mục cấu hình admin "
+                                "(quản bằng require(seal_type)); dữ liệu không thuộc pháp nhân "
+                                "người xem nên cố ý không lọc phạm vi, giống category_assignee",
     "doc_catalog/controller.py": "doc_type/security_level/external_party — PUBLIC",
     "doc_catalog/issue_code_controller.py": "cấp số hiệu, ràng buộc ở sổ — cụm 05",
     "doc_catalog/link_rule_controller.py": "doc_link_rule — PUBLIC (CR-157)",

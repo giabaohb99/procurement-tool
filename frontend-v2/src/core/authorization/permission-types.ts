@@ -103,6 +103,13 @@ export const ENTITIES = [
   //  khai danh mục phòng là việc quản trị.
   'room_booking',
   'meeting_room',
+  //  Điểm cà phê × POS365 (doc/erp/diem-ca-phe/04). Bốn khóa để ba quyền của
+  //  PS12 tách được: xem sổ người khác · điều chỉnh tay · chạy đồng bộ.
+  //  Ví của tôi KHÔNG cần khóa nào — endpoint riêng chỉ đòi đăng nhập.
+  'coffee_policy',
+  'coffee_member',
+  'coffee_ledger',
+  'pos_order',
 ] as const
 
 export type PermissionEntity = (typeof ENTITIES)[number]

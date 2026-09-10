@@ -1,7 +1,7 @@
 import { allModules } from '@/app/router/module-registry'
 import { useAuth } from '@/core/auth/use-auth'
 import { canOpenModule } from '@/app/router/module-visibility'
-import { usePermission } from '@/core/authorization/use-permission'
+import { useNavContext, usePermission } from '@/core/authorization/use-permission'
 import { formatWeekdayDate } from '@/shared/utils/format-date'
 import { ModuleCard } from './module-card'
 
@@ -20,6 +20,7 @@ const STATE_ORDER = { ready: 0, locked: 1, 'coming-soon': 2 } as const
 export function ModuleLauncherPage() {
   const { user } = useAuth()
   const { can } = usePermission()
+  const navCtx = useNavContext()
 
   const modules = allModules
     .map((module) => ({
@@ -28,7 +29,7 @@ export function ModuleLauncherPage() {
       //  quyền trên `module.entity` — xem `module-visibility.ts`.
       state: !module.enabled
         ? ('coming-soon' as const)
-        : canOpenModule(module, can)
+        : canOpenModule(module, can, navCtx)
           ? ('ready' as const)
           : ('locked' as const),
     }))

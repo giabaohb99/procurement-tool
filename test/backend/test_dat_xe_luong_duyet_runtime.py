@@ -77,12 +77,23 @@ def test_on_approved_marks_approved(db):
     assert b.status == m.BK_APPROVED
 
 
+
+def _last_log_message(db, booking_id: int) -> str:
+    from app.modules.audit.model import AuditLog
+
+    log = (db.query(AuditLog)
+           .filter(AuditLog.entity == "vehicle_booking", AuditLog.entity_id == booking_id)
+           .order_by(AuditLog.id.desc()).first())
+    return (log.message if log else "") or ""
+
+
 def test_on_rejected_marks_rejected_with_reason(db):
     b = _pending(db)
     bridge._on_rejected(db, b.id, SimpleNamespace(updated_by=5, finish_reason="Sai khung giờ"))
     db.refresh(b)
     assert b.status == m.BK_REJECTED
-    assert "Sai khung giờ" in b.note
+    assert "Sai khung giờ" in _last_log_message(db, b.id)
+    assert "Sai khung giờ" not in (b.note or "")
 
 
 def test_on_returned_marks_returned(db):
@@ -90,7 +101,8 @@ def test_on_returned_marks_returned(db):
     bridge._on_returned(db, b.id, SimpleNamespace(updated_by=5, finish_reason="Thiếu thông tin"))
     db.refresh(b)
     assert b.status == m.BK_RETURNED
-    assert "Thiếu thông tin" in b.note
+    assert "Thiếu thông tin" in _last_log_message(db, b.id)
+    assert "Thiếu thông tin" not in (b.note or "")
 
 
 def test_on_withdrawn_marks_draft(db):

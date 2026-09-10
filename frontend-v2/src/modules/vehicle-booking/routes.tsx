@@ -1,4 +1,4 @@
-import { ClipboardList, IdCard, Route } from 'lucide-react'
+import { CalendarClock, ClipboardList, IdCard, LayoutDashboard, Route } from 'lucide-react'
 
 import type { ErpModule } from '@/app/router/module-definition'
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -26,17 +26,34 @@ export const vehicleBookingModule: ErpModule = {
   // Xe/Tài xế dùng khung CRUD chung (bảng + chi tiết + popup).
   nav: [
     {
-      label: 'Yêu cầu đặt xe',
+      label: 'Tổng quan',
       path: appRoutes.vehicleBooking.root,
-      icon: ClipboardList,
+      icon: LayoutDashboard,
       entity: 'vehicle_booking',
       end: true,
+    },
+    {
+      label: 'Yêu cầu đặt xe',
+      path: appRoutes.vehicleBooking.requests,
+      icon: ClipboardList,
+      entity: 'vehicle_booking',
+    },
+    {
+      label: 'Lịch đặt xe',
+      path: appRoutes.vehicleBooking.timeline,
+      icon: CalendarClock,
+      //  Xem đặt xe (vehicle_booking.read) là thấy được lịch; dữ liệu vẫn bó theo
+      //  phạm vi người xem ở backend.
+      entity: 'vehicle_booking',
     },
     {
       label: 'Chuyến của tôi',
       path: appRoutes.vehicleBooking.myTrips,
       icon: Route,
       entity: 'vehicle_booking',
+      //  Chỉ điều phối viên (approve) và tài xế (có hồ sơ lái xe) — người đặt xe
+      //  cũng có write(own) nên không đủ để phân biệt, xem `requireDispatchOrDriver`.
+      requireDispatchOrDriver: true,
     },
     {
       label: 'Quản lý xe',
@@ -60,6 +77,12 @@ export const vehicleBookingModule: ErpModule = {
     {
       path: appRoutes.vehicleBooking.root,
       lazy: async () => ({
+        Component: (await import('./pages/vehicle-booking-dashboard-page')).VehicleBookingDashboardPage,
+      }),
+    },
+    {
+      path: appRoutes.vehicleBooking.requests,
+      lazy: async () => ({
         Component: (await import('./pages/vehicle-booking-list-page')).VehicleBookingListPage,
       }),
     },
@@ -67,6 +90,12 @@ export const vehicleBookingModule: ErpModule = {
       path: appRoutes.vehicleBooking.myTrips,
       lazy: async () => ({
         Component: (await import('./pages/my-trips-page')).MyTripsPage,
+      }),
+    },
+    {
+      path: appRoutes.vehicleBooking.timeline,
+      lazy: async () => ({
+        Component: (await import('./pages/timeline-page')).VehicleBookingTimelinePage,
       }),
     },
     {

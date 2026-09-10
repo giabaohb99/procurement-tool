@@ -2,6 +2,7 @@ import { Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
+import { DocumentComments } from '@/modules/procurement/components/document-comments'
 import { useCrudDelete, useCrudSave } from '@/shared/crud'
 import { AuditTimeline } from '@/shared/audit/audit-timeline'
 import { Button } from '@/shared/ui/button'
@@ -157,7 +158,15 @@ export function VehicleForm({ item, title, onDone }: VehicleFormProps) {
           </>
         }
       />
-      <div className="flex flex-col gap-5">
+      {/*  Khi SỬA: 2 cột như trang chi tiết phiếu (C-03) — biểu mẫu trái, Trao đổi
+          + Lịch sử thao tác dồn cột phải. Khi THÊM mới: một cột (chưa có gì để trao đổi). */}
+      <div
+        className={cn(
+          'grid gap-5',
+          isEdit && item && 'lg:grid-cols-[minmax(0,1fr)_360px]',
+        )}
+      >
+      <div className="flex min-w-0 flex-col gap-5">
       <Card className="flex flex-col gap-4 p-5">
         {/* Nút chọn nguồn: Nội bộ (xanh) | Thuê ngoài (hổ phách) — khóa khi SỬA. */}
         <div className="grid grid-cols-2 gap-2 sm:max-w-md">
@@ -243,9 +252,14 @@ export function VehicleForm({ item, title, onDone }: VehicleFormProps) {
         </div>
 
       </Card>
+      </div>
 
+      {/*  Cột phải chỉ khi SỬA: Trao đổi trên bản ghi + Lịch sử thao tác (như phiếu). */}
       {isEdit && item && (
-        <AuditTimeline entity="vehicle" entityId={item.id} dense showMessage />
+        <div className="flex flex-col gap-5">
+          <DocumentComments entity="vehicle" entityId={item.id} />
+          <AuditTimeline entity="vehicle" entityId={item.id} dense showMessage />
+        </div>
       )}
       </div>
     </div>

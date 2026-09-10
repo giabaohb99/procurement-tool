@@ -136,20 +136,34 @@ def _now() -> str:
     return datetime.now().isoformat(timespec="minutes")
 
 
-def _append_note(req: SealRequest, label: str, reason: str) -> None:
-    """Ghi thêm một dòng có nhãn vào ô ghi chú (giữ lịch sử trả/từ chối/đóng dấu)."""
-    reason = (reason or "").strip()
-    if not reason:
-        return
-    line = f"[{label}] {reason}"
-    req.note = f"{req.note}\n{line}".strip() if req.note else line
-
-
 def get_company_ids(db: Session, req_id: int) -> list[int]:
     """Danh sách công ty của phiếu (theo thứ tự thêm)."""
     return [c for (c,) in db.query(SealRequestCompany.company_id)
             .filter(SealRequestCompany.seal_request_id == req_id)
             .order_by(SealRequestCompany.id).all()]
+
+
+def is_assigned_clerk(db: Session, user, req: SealRequest) -> bool:
+    """Người dùng có phải VĂN THƯ đang hoạt động được phân công công ty của phiếu?
+
+    Khớp ĐÚNG luật định tuyến ở `core/scoping.py` và `notify._clerks`: phiếu ĐA công ty
+    → chỉ VĂN THƯ TỔNG (`is_head`); phiếu MỘT công ty → văn thư của công ty đó. Dùng để
+    khóa cổng-2 (đóng dấu / trả / từ chối) CHỈ cho văn thư — dù ai khác có `write`."""
+    from app.modules.seal_clerk.model import CLERK_ACTIVE, SealClerk
+
+    emp_id = getattr(user, "employee_id", 0) or 0
+    if not emp_id:
+        return False
+    company_ids = set(get_company_ids(db, req.id))
+    if not company_ids:
+        return False
+    q = db.query(SealClerk.id).filter(
+        SealClerk.employee_id == emp_id, SealClerk.status == CLERK_ACTIVE)
+    if len(company_ids) > 1:
+        q = q.filter(SealClerk.is_head.is_(True))
+    else:
+        q = q.filter(SealClerk.is_head.is_(False), SealClerk.company_id.in_(company_ids))
+    return db.query(q.exists()).scalar()
 
 
 def set_companies(db: Session, req_id: int, company_ids) -> list[int]:
@@ -298,7 +312,8 @@ def return_seal(db: Session, req: SealRequest, data: ReasonIn, user,
     if req.status not in (SEAL_PENDING, SEAL_APPROVED):
         raise HTTPException(400, "Chỉ yêu cầu chỉnh sửa khi phiếu Chờ duyệt hoặc Đã duyệt")
     req.status = SEAL_RETURNED
-    _append_note(req, "Yêu cầu chỉnh sửa", data.reason)
+    #  KHÔNG ghi lý do vào ô Ghi chú — Ghi chú chỉ giữ nội dung người tạo nhập. Lý do
+    #  trả/từ chối/đóng dấu nằm ở nhật ký thao tác (audit) + thông báo.
     req.updated_by = getattr(user, "id", 0)
     db.commit()
     db.refresh(req)
@@ -312,7 +327,6 @@ def reject_seal(db: Session, req: SealRequest, data: ReasonIn, user,
     if req.status not in (SEAL_PENDING, SEAL_APPROVED):
         raise HTTPException(400, "Chỉ từ chối khi phiếu Chờ duyệt hoặc Đã duyệt")
     req.status = SEAL_REJECTED
-    _append_note(req, "Từ chối", data.reason)
     req.updated_by = getattr(user, "id", 0)
     db.commit()
     db.refresh(req)
@@ -330,10 +344,7 @@ def complete_seal(db: Session, req: SealRequest, data: CompleteSealIn, user,
     req.status = SEAL_COMPLETED
     req.completed_at = datetime.now().isoformat(timespec="seconds")
     req.completed_by = getattr(user, "id", 0)   # tài khoản Văn thư đóng dấu
-    done_note = "Đã đóng dấu xong"
-    if (data.note or "").strip():
-        done_note += f" — {data.note.strip()}"
-    _append_note(req, "Đóng dấu", done_note)
+    #  KHÔNG ghi "Đã đóng dấu xong" vào Ghi chú — Ghi chú chỉ giữ nội dung người tạo.
     req.updated_by = getattr(user, "id", 0)
     db.commit()
     db.refresh(req)

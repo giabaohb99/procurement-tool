@@ -7,7 +7,7 @@ controller), xem chi tiết, sửa khi còn nháp / bị trả về. Điều ph�
 
 import json
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from fastapi import HTTPException
 from sqlalchemy import and_, or_
@@ -386,14 +386,6 @@ def _now() -> str:
     return datetime.now().isoformat(timespec="minutes")
 
 
-def _append_note(booking: VehicleBooking, label: str, reason: str) -> None:
-    """Ghi thêm một dòng lý do vào ô ghi chú, giữ lịch sử các lần trả/từ chối."""
-    reason = (reason or "").strip()
-    if not reason:
-        return
-    line = f"[{label}] {reason}"
-    booking.note = f"{booking.note}\n{line}".strip() if booking.note else line
-
 
 # --- Người duyệt (quyền `approve`) ---
 
@@ -438,7 +430,7 @@ def return_booking(db: Session, booking: VehicleBooking, data: ReasonIn, user,
     if booking.status == BK_DISPATCHED:
         _clear_dispatch(booking)
     booking.status = BK_RETURNED
-    _append_note(booking, "Yêu cầu chỉnh sửa", data.reason)
+    #  Lý do nằm ở nhật ký + thông báo, KHÔNG ghi vào ô Ghi chú (chỉ giữ ghi chú người tạo).
     booking.updated_by = getattr(user, "id", 0)
     db.commit()
     db.refresh(booking)
@@ -455,7 +447,7 @@ def reject_booking(db: Session, booking: VehicleBooking, data: ReasonIn, user,
     if booking.status == BK_DISPATCHED:
         _clear_dispatch(booking)
     booking.status = BK_REJECTED
-    _append_note(booking, "Từ chối", data.reason)
+    #  Lý do nằm ở nhật ký + thông báo, KHÔNG ghi vào ô Ghi chú (chỉ giữ ghi chú người tạo).
     booking.updated_by = getattr(user, "id", 0)
     db.commit()
     db.refresh(booking)
@@ -510,7 +502,7 @@ def driver_reject(db: Session, booking: VehicleBooking, data: ReasonIn, user,
     if booking.status != BK_DISPATCHED or booking.driver_status not in (DRV_WAITING, DRV_ACCEPTED):
         raise HTTPException(400, "Chuyến không ở trạng thái tài xế từ chối được")
     booking.driver_status = DRV_REJECTED
-    _append_note(booking, "Tài xế từ chối", data.reason)
+    #  Lý do nằm ở nhật ký + thông báo, KHÔNG ghi vào ô Ghi chú (chỉ giữ ghi chú người tạo).
     booking.updated_by = getattr(user, "id", 0)
     db.commit()
     db.refresh(booking)
@@ -653,3 +645,49 @@ def serialize_bookings(db: Session, objs: list[VehicleBooking]) -> list[dict]:
             out.assigned_driver_label = f"{o.requester} (tự lái)" if o.requester else "Tự lái"
         result.append(out.model_dump())
     return result
+
+
+def timeline_events(db: Session, user, date_from: str | None, date_to: str | None) -> list[dict]:
+    """Các chuyến xe trong khoảng ngày → sự kiện cho lịch Timeline (đã bó phạm vi).
+
+    Ngày sự kiện = ngày của `start_time` (thời điểm khởi hành); phiếu chưa có
+    `start_time` thì lùi về `created_at`. Lọc SQL theo khoảng trước (so sánh chuỗi
+    ISO `yyyy-mm-dd…` là đúng thứ tự) rồi mới gắn `event_date` cho từng phiếu.
+    """
+    from app.core.auth import get_perm_profile
+    from app.core.scoping import apply_scope
+
+    prof = get_perm_profile(db, user)
+    q = apply_scope(
+        db.query(VehicleBooking).filter(VehicleBooking.is_deleted == False),  # noqa: E712
+        VehicleBooking, "vehicle_booking", user, prof)
+
+    def _pd(v: str | None):
+        try:
+            return datetime.strptime(v[:10], "%Y-%m-%d") if v else None
+        except ValueError:
+            return None
+
+    d_from, d_to = _pd(date_from), _pd(date_to)
+    if d_from and d_to:
+        from_s = d_from.strftime("%Y-%m-%d")
+        next_s = (d_to + timedelta(days=1)).strftime("%Y-%m-%d")
+        end_dt = d_to + timedelta(days=1)
+        has_time = and_(VehicleBooking.start_time != "",
+                        VehicleBooking.start_time >= from_s,
+                        VehicleBooking.start_time < next_s)
+        no_time = and_(VehicleBooking.start_time == "",
+                       VehicleBooking.created_at >= d_from,
+                       VehicleBooking.created_at < end_dt)
+        q = q.filter(or_(has_time, no_time))
+
+    objs = q.order_by(VehicleBooking.start_time).all()
+    events = serialize_bookings(db, objs)
+    for ev, o in zip(events, objs):
+        if o.start_time:
+            ev["event_date"] = o.start_time[:10]
+        elif o.created_at:
+            ev["event_date"] = o.created_at.strftime("%Y-%m-%d")
+        else:
+            ev["event_date"] = ""
+    return events

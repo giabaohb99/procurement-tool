@@ -16,6 +16,8 @@ interface RecordIdentityCardProps {
   media?: ReactNode
   title: string
   chips?: IdentityChip[]
+  /** Nội dung đặt NGAY SAU các chip (badge trạng thái riêng dạng khác chip…). */
+  chipsSuffix?: ReactNode
   /** Nút hành động bên phải (Lưu, Xóa…). */
   actions?: ReactNode
 }
@@ -28,6 +30,7 @@ export function RecordIdentityCard({
   media,
   title,
   chips = [],
+  chipsSuffix,
   actions,
 }: RecordIdentityCardProps) {
   return (
@@ -37,7 +40,7 @@ export function RecordIdentityCard({
       <div className="min-w-0 flex-1">
         <h1 className="truncate text-lg font-semibold text-navy">{title}</h1>
 
-        {chips.length > 0 && (
+        {(chips.length > 0 || chipsSuffix) && (
           <div className="mt-2 flex flex-wrap items-center gap-2">
             {chips.map((chip) => (
               <Badge
@@ -49,6 +52,7 @@ export function RecordIdentityCard({
                 {chip.text}
               </Badge>
             ))}
+            {chipsSuffix}
           </div>
         )}
       </div>
