@@ -31,6 +31,13 @@ VN_OFFSET = timedelta(hours=7)
 #  toàn dự án một hai việc, không nói lên điều gì.
 TOP_PROJECTS = 8
 
+#  Số dòng của hai danh sách việc trên màn Tổng quan.
+#
+#  ⚠️ Đây là màn TỔNG QUAN, không phải màn danh sách — chốt 8 dòng để nó còn là
+#  một lời mời đi tiếp, không thành một bảng thứ hai. Số đầy đủ vẫn nằm ở thẻ
+#  đếm ngay trên đó, nên người đọc luôn biết mình đang thấy 8 trong bao nhiêu.
+TOP_TASKS = 8
+
 
 def _today() -> str:
     return (datetime.utcnow() + VN_OFFSET).strftime("%Y-%m-%d")
@@ -75,6 +82,27 @@ def overview(db: Session, actor: Actor) -> dict:
 
     by_priority = _count_by_priority(db, ids)
 
+    names = {lst.id: lst.name for lst in lists}
+    #  ⚠️ Hai danh sách này là ĐƯỜNG ĐI, không phải số liệu. Thẻ đếm nói "22 việc
+    #  quá hạn" mà không có chỗ nào bấm vào thì người đọc biết mình đang có vấn
+    #  đề nhưng không biết vấn đề nằm ở đâu — cảnh báo mà không có lối ra.
+    #
+    #  Quá hạn xếp theo hạn CŨ NHẤT trước: việc trễ lâu nhất là việc đáng hỏi
+    #  nhất. Việc của tôi cũng theo hạn tăng dần, nhưng việc CHƯA đặt hạn
+    #  (`due_date = ""`) phải xuống cuối chứ không lên đầu — chuỗi rỗng nhỏ hơn
+    #  mọi chuỗi ngày nên sắp thẳng là chúng chiếm sạch tám dòng.
+    overdue_rows = (open_only
+                    .filter(WorkTask.due_date != "", WorkTask.due_date < _today())
+                    .order_by(WorkTask.due_date.asc())
+                    .limit(TOP_TASKS).all())
+
+    mine_rows = (open_only
+                 .join(WorkTaskAssignee, WorkTaskAssignee.task_id == WorkTask.id)
+                 .filter(WorkTaskAssignee.employee_id == actor.employee_id,
+                         WorkTaskAssignee.kind == int(WorkAssigneeKind.PIC))
+                 .order_by((WorkTask.due_date == "").asc(), WorkTask.due_date.asc())
+                 .distinct().limit(TOP_TASKS).all())
+
     by_project = sorted(
         ({"list_id": lst.id, "name": lst.name, "open": open_by_list.get(lst.id, 0)}
          for lst in lists if not lst.is_archived),
@@ -90,6 +118,24 @@ def overview(db: Session, actor: Actor) -> dict:
         "task_mine": mine,
         "by_project": by_project,
         "by_priority": by_priority,
+        "overdue_tasks": [_task_row(t, names) for t in overdue_rows],
+        "my_tasks": [_task_row(t, names) for t in mine_rows],
+    }
+
+
+def _task_row(task: WorkTask, names: dict[int, str]) -> dict:
+    """Một dòng việc rút gọn cho màn Tổng quan.
+
+    Chỉ đủ để NHẬN RA và BẤM VÀO: tên việc, dự án chứa nó, hạn. Không kèm mô
+    tả, nhãn hay người phụ trách — đó là việc của thẻ chi tiết, mà kéo thêm
+    chúng về đây là thêm hai lượt join cho một màn vốn thuần đếm.
+    """
+    return {
+        "id": task.id,
+        "list_id": task.list_id,
+        "list_name": names.get(task.list_id, ""),
+        "title": task.title,
+        "due_date": task.due_date,
     }
 
 
@@ -128,4 +174,5 @@ def _empty() -> dict:
         "task_open": 0, "task_done": 0, "task_cancelled": 0,
         "task_overdue": 0, "task_mine": 0,
         "by_project": [], "by_priority": [],
+        "overdue_tasks": [], "my_tasks": [],
     }
