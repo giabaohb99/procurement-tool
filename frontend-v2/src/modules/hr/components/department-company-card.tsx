@@ -230,6 +230,32 @@ function DepartmentCompanyEditor({
     }
   })
 
+  //  Cụm nút dựng MỘT LẦN, đặt ở một trong hai chỗ tuỳ khổ màn — xem ghi chú
+  //  trong `CardHeader`.
+  const actionButtons = (
+    <>
+      <Button
+        type="button"
+        variant="outline"
+        className="max-md:flex-1"
+        onClick={addRow}
+        disabled={!availableCompanyIds.length || save.isPending}
+      >
+        <Plus />
+        Thêm pháp nhân
+      </Button>
+      <Button
+        type="button"
+        className="max-md:flex-1"
+        onClick={handleSave}
+        disabled={save.isPending}
+      >
+        {save.isPending ? <Loader2 className="animate-spin" /> : <Save />}
+        Lưu cấu hình
+      </Button>
+    </>
+  )
+
   return (
     <Card className="gap-4 max-md:py-4">
       <CardHeader className="max-md:px-4">
@@ -238,32 +264,22 @@ function DepartmentCompanyEditor({
           Khai phòng ban dùng chung ở pháp nhân nào, trưởng bộ phận tại từng nơi và mã phòng ban
           riêng nếu có.
         </CardDescription>
-        {canWrite && (
-          <CardAction className="flex gap-2 max-md:col-start-1 max-md:row-start-3 max-md:w-full">
-            <Button
-              type="button"
-              variant="outline"
-              className="max-md:flex-1"
-              onClick={addRow}
-              disabled={!availableCompanyIds.length || save.isPending}
-            >
-              <Plus />
-              Thêm pháp nhân
-            </Button>
-            <Button
-              type="button"
-              className="max-md:flex-1"
-              onClick={handleSave}
-              disabled={save.isPending}
-            >
-              {save.isPending ? <Loader2 className="animate-spin" /> : <Save />}
-              Lưu cấu hình
-            </Button>
-          </CardAction>
-        )}
+        {/*  ⚠️ Khổ hẹp: cụm nút đi XUỐNG DƯỚI, và phải đi bằng cách KHÔNG dựng
+             `CardAction` chứ không phải dời chỗ nó trong lưới.
+
+             `CardHeader` của shadcn tự đổi thành lưới HAI CỘT khi thấy một
+             `CardAction` (`has-data-[slot=card-action]:grid-cols-[1fr_auto]`),
+             và `CardAction` chiếm sẵn ô (hàng 1, cột 2). Kéo nó sang cột 1 bằng
+             `col-start` thì cột 2 trống ra, **câu mô tả tự trôi vào đó** — mà
+             cột đó rộng `auto` nên nó co lại còn một dải hẹp và chữ rớt xuống
+             MỖI DÒNG MỘT TỪ (đúng cảnh khách chụp). Không dựng `CardAction` thì
+             điều kiện `has-*` không khớp, tiêu đề giữ nguyên một cột. */}
+        {canWrite && !isMobile && <CardAction className="flex gap-2">{actionButtons}</CardAction>}
       </CardHeader>
 
       <CardContent className="max-md:px-4">
+        {canWrite && isMobile && <div className="mb-3 flex gap-2">{actionButtons}</div>}
+
         {/*  ⚠️ Hai bố cục cho cùng một bộ ô: bảng ở khổ rộng, khối xếp dọc ở
              khổ hẹp. Dựng ĐÚNG MỘT cái (`isMobile`) chứ không `hidden`/`md:hidden`
              — mỗi dòng ở đây có ba ô chọn Radix, để cả hai bản trong DOM là

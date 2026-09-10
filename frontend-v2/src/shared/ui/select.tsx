@@ -68,7 +68,17 @@ function SelectTrigger({
       className={cn(
         //  Nền TRẮNG chứ không `bg-transparent`: ô chọn được phải khác ô khóa
         //  (`read-only-value.tsx`, nền `--locked`) ở mọi mặt nền.
-        "flex w-fit items-center justify-between gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 data-[placeholder]:text-muted-foreground data-[size=default]:h-9 data-[size=sm]:h-8 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 dark:bg-input/30 dark:hover:bg-input/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-muted-foreground",
+        //
+        //  ⚠️ `min-w-0` là chốt CHỐNG TRÀN NGANG, đừng gỡ. Ô này `whitespace-nowrap`
+        //  nên bề rộng nội tại của nó bằng đúng độ dài nhãn đang chọn; mà phần tử
+        //  con của flex/grid mặc định `min-width: auto`, tức KHÔNG co xuống dưới
+        //  mức đó — `w-full` của người gọi thua. Một nhãn dài như
+        //  «DEMO_MANAGER_PURCHASE — Trưởng phòng Thu mua (Demo)» vì thế đẩy cả ô
+        //  vượt mép phải màn hình và kéo theo cả trang tràn ngang (khách báo
+        //  10/09/2026 ở chi tiết Phòng ban). Có `min-w-0` thì `line-clamp-1` sẵn
+        //  có ở dưới mới cắt được nhãn bằng «…». Không ảnh hưởng ô để `w-fit`:
+        //  chúng vẫn co giãn theo nội dung khi khung chứa còn đủ chỗ.
+        "flex w-fit min-w-0 items-center justify-between gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 data-[placeholder]:text-muted-foreground data-[size=default]:h-9 data-[size=sm]:h-8 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 dark:bg-input/30 dark:hover:bg-input/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-muted-foreground",
         className
       )}
       {...props}
