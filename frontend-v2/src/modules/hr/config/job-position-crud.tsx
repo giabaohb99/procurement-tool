@@ -74,9 +74,8 @@ export const JOB_POSITION_CRUD_CONFIG: CrudConfig<JobPosition> = {
   ],
   getItemName: (r) => `${r.name} (${r.code})`,
   deleteWarning:
-    'Chức vụ đang có người giữ thì backend chặn xóa — xóa là để lại hồ sơ trỏ vào một ' +
-    'chức vụ không còn tồn tại. Muốn dẹp thì bỏ tick «Đang dùng»: nó biến khỏi ô chọn ' +
-    'nhưng hồ sơ cũ vẫn đọc được.',
+    'Chức vụ đang có người giữ thì không xóa được. Xóa rồi thì hồ sơ cũ mất chức danh. ' +
+    'Muốn dẹp thì bỏ tick «Đang dùng»: chức vụ biến khỏi ô chọn nhưng hồ sơ cũ vẫn đọc được.',
   chips: (r) => [
     { icon: Hash, text: r.code, tone: 'code' as const },
     {

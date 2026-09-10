@@ -128,7 +128,7 @@ export const IMPORT_CATEGORY_LABELS: Record<string, string> = {
   delete_not_found: 'Xóa: không tìm thấy',
   missing_required: 'Thiếu trường bắt buộc',
   missing_code: 'Thiếu mã phiếu',
-  ref_not_found: 'Không thấy tham chiếu',
+  ref_not_found: 'Không tìm thấy mã liên quan',
   doc_created: 'Tạo phiếu',
   doc_exists: 'Phiếu đã tồn tại',
   doc_no_line: 'Phiếu không có dòng',

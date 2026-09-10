@@ -73,7 +73,7 @@ export const SUPPLIER_CRUD_CONFIG: CrudConfig<Supplier> = {
   ],
   getItemName: (s) => `${s.name} (${s.code})`,
   deleteWarning:
-    'Đơn mua hàng, hợp đồng, công nợ và phiếu khảo sát cũ tham chiếu tới mã nhà cung cấp này. Xóa sẽ làm mất liên kết; muốn ngừng giao dịch thì tắt "Đang giao dịch" thay vì xóa.',
+    'Đơn mua hàng, hợp đồng, công nợ và phiếu khảo sát cũ đang gắn với mã nhà cung cấp này. Xóa rồi thì các phiếu đó mất tên nhà cung cấp. Muốn ngừng làm ăn với họ thì tắt «Đang giao dịch» thay vì xóa.',
   chips: (s) => [
     ...(s.code ? [{ icon: Hash, text: s.code, tone: 'code' as const }] : []),
     {

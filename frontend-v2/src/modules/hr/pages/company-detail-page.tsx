@@ -149,7 +149,7 @@ export function CompanyDetailPage() {
                   recordName={company.name}
                   pending={deleteCompany.isPending}
                   onConfirm={handleDelete}
-                  warning="Chứng từ cũ gắn với pháp nhân này sẽ mất tham chiếu."
+                  warning="Chứng từ cũ gắn với pháp nhân này sẽ mất tên công ty."
                 />
               </PermissionGate>
             </div>

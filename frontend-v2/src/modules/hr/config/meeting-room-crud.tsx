@@ -86,9 +86,11 @@ export const MEETING_ROOM_CRUD_CONFIG: CrudConfig<MeetingRoom> = {
     },
   ],
   getItemName: (r) => `${r.name} (${r.code})`,
+  //  Câu này người dùng đọc, không phải lập trình viên: đừng nhắc «backend»,
+  //  «tham chiếu» hay tên bảng. Nói ĐIỀU GÌ XẢY RA và LÀM GÌ THAY THẾ.
   deleteWarning:
-    'Phòng đang có phiếu đặt thì backend chặn xóa — xóa là để lại phiếu trỏ vào một phòng ' +
-    'không còn tồn tại. Muốn dẹp phòng thì bỏ tick «Đang dùng».',
+    'Phòng đang có phiếu đặt thì không xóa được. Xóa rồi thì các phiếu cũ mất tên phòng. ' +
+    'Muốn dẹp phòng mà vẫn giữ lịch sử đặt thì bỏ tick «Đang dùng».',
   chips: meetingRoomChips,
   //  Khổ hẹp: thẻ thay bảng. Bảng khai 7 cột, bề rộng tự nhiên ~1210px — trên
   //  máy 390px chỉ thấy *Mã phòng* + *Tên phòng*, tức đúng hai cột KHÔNG dùng để

@@ -32,7 +32,7 @@ export const PRODUCT_CRUD_CONFIG: CrudConfig<Product> = {
   ],
   getItemName: (p) => `${p.name} (${p.code})`,
   deleteWarning:
-    'Mã sản phẩm này có thể đã được liên kết với đơn mua hàng và khảo sát. Xóa sẽ làm mất liên kết tham chiếu.',
+    'Mã sản phẩm này có thể đang nằm trong đơn mua hàng và phiếu khảo sát cũ. Xóa rồi thì các phiếu đó mất tên sản phẩm.',
   chips: (p) => [
     ...(p.code ? [{ icon: Hash, text: p.code, tone: 'code' as const }] : []),
     ...(p.item_group ? [{ icon: Tag, text: `Phân loại: ${p.item_group}` }] : []),

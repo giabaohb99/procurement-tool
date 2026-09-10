@@ -115,8 +115,8 @@ export const LEAVE_TYPE_CRUD_CONFIG: CrudConfig<LeaveType> = {
   ],
   getItemName: (t) => `${t.name} (${t.code})`,
   deleteWarning:
-    'Loại nghỉ đang có đơn hoặc đã cấp quỹ thì backend chặn xóa. Muốn ẩn khỏi ô chọn ' +
-    'mà giữ dữ liệu cũ thì bỏ tick «Đang dùng».',
+    'Loại nghỉ đã có đơn hoặc đã cấp quỹ phép thì không xóa được. Muốn ẩn khỏi ô chọn ' +
+    'mà vẫn giữ đơn cũ thì bỏ tick «Đang dùng».',
   chips: leaveTypeChips,
   //  Khổ hẹp: thẻ thay bảng — bảng này bảy cột, trên máy 393px chỉ thấy hai cột
   //  đầu (Mã · Tên) nên mọi LUẬT của loại nghỉ nằm sau một thao tác cuộn ngang.

@@ -98,7 +98,7 @@ export const UNIT_CRUD_CONFIG: CrudConfig<Unit> = {
       required: true,
       readonlyOnEdit: true,
       placeholder: 'VD: CAI, THUNG, KG, MET',
-      hint: 'Mã dùng khi import/export và khi tham chiếu ĐVT ở dòng hàng. Không thể sửa sau khi tạo.',
+      hint: 'Mã dùng khi nhập/xuất tệp và khi chọn ĐVT ở dòng hàng. Không sửa được sau khi tạo.',
     },
     {
       name: 'name',

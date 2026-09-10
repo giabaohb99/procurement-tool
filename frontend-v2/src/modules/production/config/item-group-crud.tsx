@@ -130,7 +130,7 @@ export const ITEM_GROUP_CRUD_CONFIG: CrudConfig<ItemGroup> = {
       required: true,
       readonlyOnEdit: true,
       placeholder: 'VD: Nhãn, Chai, Thùng, Can, Túi…',
-      hint: 'Tên phân loại vật tư / bao bì / nguyên liệu. Không sửa sau khi tạo để tránh vỡ tham chiếu.',
+      hint: 'Tên phân loại vật tư / bao bì / nguyên liệu. Không sửa được sau khi tạo — sản phẩm cũ đang gắn theo tên này.',
     },
     {
       name: 'std_days',
