@@ -34,7 +34,18 @@ export function ModuleDashboard({
 }: ModuleDashboardProps) {
   return (
     <PageContainer>
-      <PageHeader title={title} description={description} />
+      {/*  ⚠️ Dòng mô tả ẩn ở khổ điện thoại — cùng luật đã áp cho mọi màn danh
+           sách. Nó là câu GIỚI THIỆU phân hệ, đọc một lần rồi thôi, nhưng ngốn
+           hai dòng ở đầu MỌI lần mở màn, ngay phía trên dải số liệu — thứ người
+           ta vào đây để xem. Trên màn rộng hai dòng đó không lấy chỗ của ai nên
+           vẫn giữ.
+
+           Sửa ở ĐÂY nên chạm mọi trang tổng quan phân hệ (Nhân sự · Thu mua ·
+           Kho · Tài chính · Sản xuất · Văn thư · Dự án). */}
+      <PageHeader
+        title={title}
+        description={<span className="max-md:hidden">{description}</span>}
+      />
 
       {stats}
 

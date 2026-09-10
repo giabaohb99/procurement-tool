@@ -6,6 +6,21 @@ import { CHART_COLORS, type ChartDatum } from '@/shared/ui/chart'
 import type { DonutSlice } from '@/shared/ui/donut-chart'
 import { queryKeys } from '@/shared/constants/query-keys'
 
+/**
+ * Một dòng việc RÚT GỌN của màn Tổng quan — chỉ đủ để nhận ra và bấm vào.
+ *
+ * Không có mô tả, nhãn hay người phụ trách: đó là việc của thẻ chi tiết, kéo
+ * thêm về đây là thêm hai lượt join cho một màn vốn thuần đếm.
+ */
+export interface WorkOverviewTask {
+  id: number
+  list_id: number
+  list_name: string
+  title: string
+  /** `""` = chưa đặt hạn. */
+  due_date: string
+}
+
 /** Đúng khuôn `overview_service.overview` bên backend. */
 export interface WorkOverview {
   project_total: number
@@ -21,6 +36,10 @@ export interface WorkOverview {
    * một trường tùy biến của từng dự án nên không còn mã số chung nào để gộp.
    */
   by_priority: { name: string; color: string; open: number }[]
+  /** Tối đa 8 việc quá hạn, hạn CŨ NHẤT trước. */
+  overdue_tasks: WorkOverviewTask[]
+  /** Tối đa 8 việc tôi phụ trách, hạn gần nhất trước; chưa đặt hạn xuống cuối. */
+  my_tasks: WorkOverviewTask[]
 }
 
 /**

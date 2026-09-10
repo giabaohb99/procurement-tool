@@ -1,10 +1,12 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { CircleCheck, FolderKanban, ListTodo, TriangleAlert, UserRoundCheck } from 'lucide-react'
+
+import { WorkTaskShortlist } from '../components/work-task-shortlist'
+
 import { ChartCard } from '@/shared/ui/chart'
 import { DonutChart } from '@/shared/ui/donut-chart'
 import { HorizontalBarChart } from '@/shared/ui/horizontal-bar-chart'
 import { ModuleDashboard } from '@/shared/ui/module-dashboard'
-import { Skeleton } from '@/shared/ui/skeleton'
-import { cn } from '@/shared/utils/cn'
+import { StatCard } from '@/shared/ui/stat-card'
 import { useWorkOverview } from '../hooks/use-work-overview'
 
 /**
@@ -26,19 +28,50 @@ export function WorkOverviewPage() {
       description="Dự án, bảng kanban, giao việc và theo dõi tiến độ."
       stats={
         <div className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            <StatCard label="Dự án đang chạy" value={data?.project_total} loading={isLoading} />
-            <StatCard label="Việc chưa xong" value={data?.task_open} loading={isLoading} />
+          {/*  ⚠️ HAI Ô MỘT HÀNG ở khổ hẹp (`grid-cols-2`), không phải một.
+               Bản cũ để `sm:grid-cols-2` nên dưới 640px mỗi ô chiếm trọn bề
+               ngang: năm ô xếp dọc thành **hơn 540px chỉ để bày năm con số**,
+               tức phải vuốt hai lần mới thấy hết phần đầu trang, còn hai biểu
+               đồ — thứ đáng xem nhất — thì nằm ngoài tầm mắt. Con số ngắn, ô
+               không cần rộng. Cùng lưới với trang Tổng quan Nhân sự.
+
+               Năm ô chia hai cột thì ô cuối đứng một mình nửa hàng; cố ý xếp
+               «Đã hoàn thành» vào chỗ đó — nó là ô ÍT phải hành động nhất. */}
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-5">
             <StatCard
+              icon={FolderKanban}
+              label="Dự án đang chạy"
+              value={(data?.project_total ?? 0).toLocaleString('vi-VN')}
+              loading={isLoading}
+            />
+            <StatCard
+              icon={ListTodo}
+              label="Việc chưa xong"
+              value={(data?.task_open ?? 0).toLocaleString('vi-VN')}
+              loading={isLoading}
+            />
+            <StatCard
+              icon={TriangleAlert}
               label="Việc quá hạn"
-              value={data?.task_overdue}
+              value={(data?.task_overdue ?? 0).toLocaleString('vi-VN')}
               loading={isLoading}
               //  Quá hạn là con số phải đập vào mắt; 0 thì để màu thường, tô đỏ
               //  một số 0 là báo động giả.
+              hint={data?.task_overdue ? 'Cần xử lý ngay' : undefined}
               tone={data?.task_overdue ? 'danger' : undefined}
             />
-            <StatCard label="Việc của tôi" value={data?.task_mine} loading={isLoading} />
-            <StatCard label="Đã hoàn thành" value={data?.task_done} loading={isLoading} />
+            <StatCard
+              icon={UserRoundCheck}
+              label="Việc của tôi"
+              value={(data?.task_mine ?? 0).toLocaleString('vi-VN')}
+              loading={isLoading}
+            />
+            <StatCard
+              icon={CircleCheck}
+              label="Đã hoàn thành"
+              value={(data?.task_done ?? 0).toLocaleString('vi-VN')}
+              loading={isLoading}
+            />
           </div>
 
           {/* MỖI HÀNG một lưới riêng để thẻ trong hàng cao bằng nhau. Biểu đồ
@@ -63,42 +96,38 @@ export function WorkOverviewPage() {
               <DonutChart data={byPriority} centerLabel="việc" unit="việc" />
             </ChartCard>
           </div>
+
+          {/*  ⚠️ Hai khối này là phần BÙ cho dải thẻ đếm ở trên. Thẻ nói «22
+               việc quá hạn» rồi dừng — người đọc biết mình có vấn đề nhưng
+               không có chỗ nào bấm vào để xem vấn đề nằm ở đâu. Hai biểu đồ
+               cũng vậy: chúng nói *bao nhiêu* và *ở đâu*, không nói *việc nào*.
+
+               Quá hạn đứng TRƯỚC việc của tôi: nó là thứ cả đội đang chờ, còn
+               việc của tôi thì tôi vốn đã biết. */}
+          <div className="grid gap-4 lg:grid-cols-2">
+            <WorkTaskShortlist
+              icon={TriangleAlert}
+              overdue
+              title="Việc quá hạn"
+              description="Hạn cũ nhất lên đầu — việc trễ lâu nhất là việc đáng hỏi nhất."
+              tasks={data?.overdue_tasks ?? []}
+              total={data?.task_overdue ?? 0}
+              loading={isLoading}
+              emptyMessage="Không có việc nào quá hạn."
+            />
+
+            <WorkTaskShortlist
+              icon={UserRoundCheck}
+              title="Việc của tôi"
+              description="Việc tôi đang phụ trách, hạn gần nhất lên đầu."
+              tasks={data?.my_tasks ?? []}
+              total={data?.task_mine ?? 0}
+              loading={isLoading}
+              emptyMessage="Chưa có việc nào giao cho bạn."
+            />
+          </div>
         </div>
       }
     />
-  )
-}
-
-function StatCard({
-  label,
-  value,
-  loading,
-  tone,
-}: {
-  label: string
-  value?: number
-  loading: boolean
-  tone?: 'danger'
-}) {
-  return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {loading ? (
-          <Skeleton className="h-7 w-16" />
-        ) : (
-          <p
-            className={cn(
-              'text-2xl font-bold text-navy',
-              tone === 'danger' && 'text-destructive',
-            )}
-          >
-            {(value ?? 0).toLocaleString('vi-VN')}
-          </p>
-        )}
-      </CardContent>
-    </Card>
   )
 }
