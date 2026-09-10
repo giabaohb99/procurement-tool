@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
+from app.core.action_catalog import ACTION_LABELS, label_of_action
 from app.core.audit import resolve_actor
 from app.core.auth import get_current_user, get_perm_profile, user_has_permission
 from app.core.database import get_db
@@ -21,92 +22,13 @@ router = APIRouter(prefix="/api/audit-logs", tags=["audit"])
 #  "Lịch sử" của Help Center mất sạch phần FAQ sau khi gác.
 PERMISSION_KEY_ALIAS = {"faq": "help_article"}
 
-ACTION_LABEL = {
-    "create": "Tạo mới",
-    "update": "Cập nhật",
-    "delete": "Xóa",
-    "submitted": "Gửi duyệt",
-    "approved": "Duyệt",
-    "rejected": "Từ chối",
-    #  Hai kết cục của bộ máy duyệt nhiều bước — xem `document/approval_bridge`.
-    "returned": "Trả về",
-    "withdrawn": "Rút phiếu",
-    "dispatched": "Điều phối",
-    "paid": "Ghi nhận đã chi",
-    "cancelled": "Hủy",
-    #  ⚠️ Dạng NGUYÊN THỂ của cùng những hành động trên. Bảng quyền của hệ dùng
-    #  `approve` / `cancel` (xem `core/permissions.ACTIONS`), nên controller viết
-    #  sau quen tay ghi dấu vết bằng đúng chữ đó — Nghỉ phép và Đặt phòng đều
-    #  vậy. Thiếu mấy dòng này thì dòng dấu vết hiện mã Anh trần
-    #  («Dego Admin — approve: Duyệt phiếu PH004»), thấy được ngày 04/09/2026.
-    #  Nhận CẢ HAI dạng thay vì đi sửa lời gọi: dữ liệu đã ghi bằng dạng nguyên
-    #  thể vẫn nằm trong bảng, sửa mã nguồn không làm nó đọc được.
-    "submit": "Gửi duyệt",
-    "approve": "Duyệt",
-    "reject": "Từ chối",
-    "return": "Trả về",
-    "withdraw": "Rút phiếu",
-    "cancel": "Hủy",
-    #  Hai hành động còn lại của bảng quyền. Chưa chỗ nào ghi dấu vết bằng chúng,
-    #  nhưng `require(entity, "print")` là hợp lệ ở mọi endpoint nên chỉ cần một
-    #  người thêm `record(..., "print")` là dòng đó hiện mã trần.
-    "print": "In",
-    "export": "Xuất dữ liệu",
-    #  Bảng quyền gọi việc sửa là `write`, dấu vết cũ gọi là `update` — hai chữ
-    #  cho một việc, và cả hai đều đang được ghi ở đâu đó.
-    "write": "Cập nhật",
-    #  Mười mã dưới đây ĐANG có trong `tab_audit_log` mà thiếu nhãn — đếm trên
-    #  dữ liệu thật ngày 05/09/2026: 971 dòng hiện mã Anh trần cho người đọc
-    #  («Dego Admin — assign: Phân bổ NSTM»). Đúng thứ ghi chú ở khối trên đã
-    #  cảnh báo, chỉ là chưa ai đi soát bảng.
-    "login": "Đăng nhập",
-    "login_failed": "Đăng nhập thất bại",
-    "assign": "Phân bổ",
-    "processing": "Đang xử lý",
-    "completed": "Hoàn tất",
-    "item_progress": "Cập nhật tiến độ dòng",
-    "document_status": "Đổi trạng thái chứng từ",
-    "line_status": "Đổi trạng thái dòng",
-    "expected_date": "Đổi ngày dự kiến",
-    "view_file": "Xem tệp",
-    #  Chín mã CÓ trong mã nguồn nhưng chưa (hoặc hiếm khi) rơi vào bảng — quét
-    #  bằng `ast` chứ không bằng dữ liệu, để bắt NGUỒN thay vì triệu chứng.
-    "logout": "Đăng xuất",
-    #  bao-CR-313 / BM-003: gia hạn phiên bằng refresh token nay có dấu vết + IP.
-    "refresh": "Gia hạn phiên",
-    "refresh_failed": "Gia hạn phiên thất bại",
-    "adjust": "Điều chỉnh tồn",
-    "auto_done": "Tự động hoàn tất",
-    "fill_line": "Bổ sung dòng",
-    "line_approve": "Duyệt dòng",
-    "item_progress_auto": "Tự cập nhật tiến độ dòng",
-    "pr_created": "Sinh yêu cầu mua hàng",
-    "sync_options": "Đồng bộ phương án",
-    #  bao-CR-311 — thao tác phương án trên Yêu cầu báo giá. Trước 07/09/2026 cả ba
-    #  KHÔNG ghi dấu vết gì: gắn nhầm một phương án thì dấu duy nhất là cột
-    #  `created_by` nằm trên chính dòng option, mà không màn nào hiện nó ra.
-    "add_option": "Gắn phương án",
-    "del_option": "Gỡ phương án",
-    "choose_option": "Chốt phương án",
-    "unchoose_option": "Bỏ chốt phương án",
-    #  bao-CR-310 — gắn/gỡ PHƯƠNG ÁN lên dòng Yêu cầu MUA HÀNG (khác CR-311 ở trên
-    #  là trên Yêu cầu BÁO GIÁ, nên mã cũng khác: `option_add`/`option_remove`).
-    #  `purchase_request/option_service.py` ghi ba lời gọi này; thiếu nhãn thì dòng
-    #  dấu vết hiện mã Anh trần cho người đọc.
-    "option_add": "Gắn phương án",
-    "option_remove": "Gỡ phương án",
-    "reply": "Phản hồi",
-    "closed": "Đóng phiếu",
-    #  bao-CR-346 — sáu thao tác PHÂN QUYỀN. Trước 10/09/2026 cả `role/` lẫn
-    #  `user/` không gọi `record(...)` lấy một lần, nên câu hỏi *"ai cấp cho tài
-    #  khoản này quyền duyệt đơn hàng, lúc nào"* không tra được bằng dữ liệu.
-    "set_permissions": "Sửa ma trận phân quyền",
-    "assign_roles": "Gán vai trò",
-    "set_scope": "Đặt phạm vi dữ liệu",
-    "reset_password": "Đặt lại mật khẩu",
-    "activate": "Mở khóa tài khoản",
-    "deactivate": "Khóa tài khoản",
-}
+#  ⚠️ BẢNG NHÃN TỪNG NẰM Ở ĐÂY (khoảng 50 dòng) — đã dời sang
+#  `core/action_catalog.py` (bao-CR-358 / NT-4). Ở đó mỗi mã khai một dòng gồm
+#  ĐỦ mã + nhãn + nhóm, thay vì nhãn ở tệp này còn nhóm ở `core/logging_codes`.
+#
+#  Giữ tên cũ `ACTION_LABEL` vì `work/activity_service.py` và ba bài kiểm đang
+#  import theo tên đó.
+ACTION_LABEL = ACTION_LABELS
 
 
 def _guard(db: Session, user, entity: str | None, entity_id: int | None):
@@ -251,7 +173,10 @@ def list_logs(
             "entity": l.entity,
             "entity_id": l.entity_id,
             "action": l.action,
-            "action_label": ACTION_LABEL.get(l.action, l.action),
+            #  Qua hàm chứ không tra thẳng bảng: hàm còn nhận cả HỌ mã theo tiền
+            #  tố (`tool:list_pr` → «Trợ lý AI gọi công cụ ‹list_pr›»), thứ mà
+            #  tra bảng phẳng luôn trượt.
+            "action_label": label_of_action(l.action),
             "message": l.message,
             "by": resolve_actor(db, l.created_by),
             "by_id": l.created_by,

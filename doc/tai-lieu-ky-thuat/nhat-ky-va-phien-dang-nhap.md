@@ -15,10 +15,12 @@ chỉnh: **QĐ-A** gia hạn phiên thành công không đẻ dòng nhật ký (
 đổi lại đóng gói lên R2 mỗi tháng thay vì mỗi năm (§9).
 
 Tệp này phần lớn vẫn là bản thiết kế để bàn. **Đã gõ mã: P0** (tách ra `bao-CR-313`, xong và
-deploy 09/09) và **P1** (xong mã trên `erp-v2` ngày 09/09, chưa commit) — hai đợt đó nay mô tả
-thứ chạy thật, và chỗ nào bản làm khác bản vẽ thì có dấu ⚠️ ngay tại mục đó (§4.1 có hai chỗ).
-P2 trở đi chưa có dòng mã nào. Đọc kèm `so-ghi-nhan-loi-bao-mat.md` (BM-001…BM-007) và
-`change-log-bao.md` (bao-CR-311).
+deploy 09/09), **P1 + P1b** (`bao-CR-346`, deploy dev 10/09) và **P2** (`bao-CR-358`, 10/09 —
+xem §10.1) và **P3a** (`bao-CR-360`, 10/09 — phần lõi phiên đăng nhập, kèm **QĐ-D** ở §11 sửa
+lại chỗ đặt cửa chặn mà §5 bản cũ viết gộp) — mấy đợt đó nay mô tả thứ chạy thật, và chỗ nào
+bản làm khác bản vẽ thì có dấu ⚠️ ngay tại mục đó (§4.1 có hai chỗ). P3b (ba màn hình) trở đi
+chưa có dòng mã nào. Đọc kèm
+`so-ghi-nhan-loi-bao-mat.md` (BM-001…BM-014) và `change-log-bao.md` (bao-CR-311).
 
 ---
 
@@ -141,6 +143,9 @@ Hệ quả: **213 lời gọi hiện có không phải sửa một chữ.**
 **có nhãn tiếng Việt là điều kiện để tồn tại**, cộng một test quét mọi chuỗi `action` dùng trong
 mã. Bỏ hẳn cơ chế "nhớ cập nhật `dict` nhãn" — chính nó đẻ ra 27% dòng hiện mã Anh trần, và đã
 lệch thật: prod 13 nhãn, `erp-v2` ~40.
+✔ **Đã làm ở P2 / `bao-CR-358`** — `backend/app/core/action_catalog.py`, xem §10.1. Một điều
+chỉnh so với dòng trên: quét chuỗi `action` **không đủ**, vì 17 chỗ truyền `action` bằng biến;
+phải kèm sổ khai tay cho những chỗ đó, và chính chúng giấu 12 mã chưa ai khai bao giờ.
 
 **NT-5. Lớp tự động không được phép tự ghi chính nó** — danh sách bảng loại trừ khai một chỗ.
 
@@ -401,15 +406,36 @@ buộc phải là chuỗi, mà bảng phiên chỉ khoảng **2.000 dòng/năm**
 
 ## 5. ĐIỀU KHIỂN PHIÊN — chặn, đá, đăng xuất mọi thiết bị, bắt đăng nhập lại
 
-Có bảng phiên rồi thì **bốn thao tác này gần như miễn phí**. Cơ chế nằm ở `get_current_user`:
+Có bảng phiên rồi thì **bốn thao tác này gần như miễn phí**. Cơ chế chia làm hai nửa theo
+**QĐ-D** (§11) — cửa chặn ở `get_current_user`, dập dấu vết ở middleware:
 
 ```
+[dependency get_current_user]  — được phép ném 401
 giải mã JWT → (sub, jti, ver, type, exp)
   1. user = db.get(User, sub); không active         → 401 "tài khoản bị khóa"
-  2. ver != user.token_version                       → 401 "phiên hết hiệu lực, đăng nhập lại"
-  3. session = tra jti (đệm 60 giây); revoked_at có  → 401 "phiên đã bị đăng xuất"
-  4. dập last_seen_at nếu > 5 phút
+  2. vé không mang jti (vé phát trước bao-CR-360)    → 401 (*)
+  3. ver != user.token_version                       → 401 (*)
+  4. session = tra jti (đệm 60 giây); revoked_at có  → 401 (*)
+  5. ctx.session_id = session.id          ← nối sang nửa dưới bằng ContextVar
+
+[middleware, sau khi endpoint chạy xong]  — hỏng thì nuốt, không ảnh hưởng lượt gọi
+  6. có ctx.session_id → dập last_seen_at / last_seen_ip nếu đã quá 5 phút
+  7. ghi tab_request_log kèm cột session_id
 ```
+
+(*) **Ba lý do, MỘT câu trả lời** — `SESSION_EXPIRED_MESSAGE` = *"Phiên đăng nhập đã kết
+thúc, vui lòng đăng nhập lại"*. Cố ý không nói rõ hỏng ở bước nào: người cầm vé ăn cắp mà
+đọc được "phiên đã bị đăng xuất" thì biết chủ vé vừa làm gì, còn người dùng thật thì cả ba
+đều chỉ có một việc phải làm là đăng nhập lại. Muốn biết bước nào thì tra `tab_request_log`.
+
+⚠️ **`/refresh` KHÔNG đi qua cửa này** — nó là đường công khai, không khai
+`Depends(get_current_user)`. Endpoint đó tự gác lấy (tra phiên **thẳng xuống DB, không qua
+đệm 60 giây**, vì đây đúng là chốt chặn một refresh token bị đánh cắp) rồi tự điền
+`ctx.session_id`.
+
+⚠️ Bản 2.4 của tài liệu này viết gộp cả bảy bước vào `get_current_user`. Đó là chỗ **đã sửa
+ở QĐ-D**: bước 6–7 là việc GHI, phải nằm ở middleware; bước 1–5 là việc GÁC, phải nằm ở
+dependency. Lý do đầy đủ ở §11.
 
 Thêm **một cột** `tab_user.token_version SMALLINT DEFAULT 1`. Đây là điểm mấu chốt của "đăng
 xuất mọi thiết bị": **tăng `token_version` lên 1 là mọi token cũ của người đó chết ngay**, không
@@ -913,8 +939,9 @@ và task xóa phải chạy **sau** task đóng gói ít nhất một ngày.
 |---|---|---|---|
 | **P0** | **Gác cửa đọc** (BM-001) — tách đường đọc, chặn `entity=auth` | Bịt lỗ đang mở trên prod. Đã tách thành **bao-CR-313**, xong 09/09/2026 | — |
 | **P1** | Middleware ngữ cảnh (IP lấy bằng `core/client_ip.get_client_ip` của bao-CR-313, không bật `--proxy-headers`) + **`tab_request_log`** + 6 cột ngữ cảnh trên audit. Kèm **QĐ-A** (bỏ qua gia hạn phiên thành công, §4.1) và **QĐ-B** (`request_id` là `BINARY(16)`, §4.5) — hai thứ này phải đúng **ngay từ migration đầu**, sửa sau là đổi kiểu cột trên bảng đã vài trăm nghìn dòng | **Endpoint nào · input · output · IP · lượt bị chặn** — 213 lời gọi cũ không sửa | — |
-| **P2** | `ACTION_CATALOG` + nhãn bắt buộc + test canh + `action_group` | 1.135 dòng đang hiện mã Anh đọc được ngay | — |
-| **P3** | `tab_login_session` + `jti` + `token_version` + 4 thao tác điều khiển phiên + ba chỗ hiện phiên (§8.5: Quản trị · Trang cá nhân · tab Nhân sự). **Kèm việc dọn:** bỏ dòng audit `refresh` cho nhánh gia hạn **thành công** mà bao-CR-313 đang ghi, chuyển sang dập `refreshed_at` / `refresh_count` / `last_seen_ip` theo QĐ-A | **Thiết bị gì · đá · đăng xuất mọi thiết bị · bắt đăng nhập lại** (BM-002) | P1 |
+| **P2** | **`bao-CR-358` (10/09/2026, XONG trên `erp-v2`)** — `ACTION_CATALOG` + nhãn bắt buộc + test canh + `action_group`, xem §10.1 | 1.135 dòng đang hiện mã Anh đọc được ngay, **cộng 12 mã chưa ai từng khai** | — |
+| **P3a** | **`bao-CR-360` (10/09/2026)** — phần LÕI: `tab_login_session` + `jti` + `token_version` + cửa chặn ở `get_current_user` + dập dấu vết ở middleware (**QĐ-D**, §11) + 4 thao tác điều khiển phiên ở tầng service. **Kèm việc dọn:** bỏ dòng audit `refresh` cho nhánh gia hạn **thành công** mà bao-CR-313 đang ghi, chuyển sang dập `refreshed_at` / `refresh_count` / `last_seen_ip` theo QĐ-A. **Không màn hình nào.** | Đăng xuất **có hiệu lực thật**, đá được một phiên, bắt đăng nhập lại — tức đóng BM-002 ở phần cốt lõi | P1 |
+| **P3b** | Ba chỗ hiện phiên (§8.5: Quản trị · Trang cá nhân · tab Nhân sự) + khóa quyền `login_session` + 3 endpoint đọc/đá | Người dùng **nhìn thấy** thiết bị của mình và tự bấm được | P3a chạy êm vài ngày trên dev |
 | **P4** | `tab_change_log` + sự kiện ORM + che cột + chốt gộp nhập liệu | **Trước/sau** — nặng nhất, làm sau cùng trong nhóm nền | P1 |
 | **P5** | Màn `/system/logs` (§8.2–8.4): danh sách gộp theo `request_id`, ngăn 4 tab, theo dõi trực tiếp, biểu đồ; `/api/audit-logs` trả thêm `request_id` để *Xem chi tiết* từ dòng thời gian phiếu | **Gom một chỗ, debug trên giao diện** | P2, P4 (tab *Thay đổi* ẩn khi chưa có P4 — màn vẫn dùng được ngay sau P1) |
 | **P1b** | **`bao-CR-346` (10/09/2026)** — đảo luật lọc thành *ghi hết GET* (§4.1), che vết lỗi SQL, `device_hash` + `referer`, `record(...)` cho `role/` + `user/`, và **kéo hai việc của P6 lên**: đóng gói R2 hằng tháng (§4.1.2) + dọn dòng GET 90 ngày (§4.1.1) | **Ai ĐỌC cái gì** — thứ P1 hoàn toàn không có. Và nhật ký có bản sao thứ hai ngoài máy | P1 |
@@ -935,6 +962,63 @@ cherry-pick (`2eba1274` rồi `337fa9bb`, đúng thứ tự vì migration khai `
 trình sao lưu trước khi chạy migration, và ba bẫy đã biết (xung đột `ACTION_LABEL`, phải build
 lại cả `celery-beat`, R2 phải cấu hình xong trước). **Đọc bảng trên đừng hiểu là hệ thật đã có
 những đợt này.**
+
+### 10.1. P2 đã làm gì — và tìm ra gì
+
+`backend/app/core/action_catalog.py` nay là **nơi khai duy nhất**: một dòng cho một mã, gồm
+đủ **mã + nhãn tiếng Việt + nhóm**. Trước đó nhãn nằm ở `modules/audit/controller.py` còn
+nhóm nằm ở `core/logging_codes.py` — hai bảng không biết nhau, nên thêm một mã mà quên một
+bảng là chuyện bình thường, và không có gì đỏ lên. `_build()` ném **ngay lúc import** nếu
+nhãn rỗng, nhóm lạ, hoặc mã khai hai lần: nhãn tiếng Việt là **điều kiện để mã tồn tại**
+(NT-4), không phải việc làm thêm.
+
+⚠️ **Phần đáng nói của P2 không phải việc gộp bảng, mà là 12 mã tìm ra lúc gộp.** Bài kiểm
+cũ (`test_va_nhat_ky_thao_tac.py`) đã quét mã nguồn đòi mọi mã có nhãn và nó **xanh** — vì
+nó chỉ đọc được chuỗi HẰNG viết thẳng trong lời gọi `record(...)`, mà **17 chỗ truyền
+`action` là biến, f-string hoặc biểu thức điều kiện**. Mã sinh ra ở 17 chỗ đó vô hình với
+mọi bài kiểm, và đó đúng là chỗ 12 mã dưới đây ẩn mình:
+
+| Mã | Sinh ra ở đâu | Vì sao lọt |
+|---|---|---|
+| `option_choose` · `option_unchoose` | `purchase_request/option_service.py` | Bảng nhãn có `option_add`/`option_remove` (CR-310) và `choose_option`/`unchoose_option` (CR-311) — người khai đọc tên hàm rồi **suy ra tên mã, và suy sai**. Hai phân hệ đặt tên ngược nhau |
+| `download_file` · `file_alert` | `document/file_access_log.py` | Nằm trong `log_and_alert(..., action)`, mã do người gọi truyền vào |
+| `unassign` | `ticket/service.py::assign` | `"assign" if assignee_id else "unassign"` — nhánh gỡ người phụ trách |
+| `draft` | `purchase_order/service.py` | `unapprove_po` đưa đơn đã duyệt về Nháp rồi ghi bằng chính trạng thái mới |
+| `received` · `partial` | `purchase_order/service.py::_recalc_status` | Máy tự đặt lại theo số lượng đã nhận, không ai bấm |
+| `open` · `in_progress` · `answered` | `ticket/service.py::set_status` | Mọi giá trị `status` hợp lệ của phiếu **là** một mã hành động |
+| `done` · `survey_done` | `survey_request/service.py::set_status` | như trên |
+
+Nguồn mã ngầm lớn nhất là **sáu hàm `set_status(db, id, status, ...)`** (YCMH · YCBG · Phiếu
+khảo sát · ĐMH · YCTT · Phiếu hỗ trợ): cả sáu kết thúc bằng `record(..., status, ...)`, tức
+**mọi trạng thái hợp lệ của sáu phiếu đó là một mã hành động**, mà chuỗi thì nằm ở lời gọi
+`set_status(...)` bên controller, cách lời gọi `record(...)` vài tệp.
+
+Nên bài kiểm canh (`test/backend/test_bo_ma_hanh_dong_cr358.py`, 26 ca) đi **ba lối**:
+
+1. bản thân bảng khai — nhãn, nhóm, trùng lặp, hai dạng chữ của cùng một việc (`approve` và
+   `approved`) phải cùng nhãn cùng nhóm;
+2. chuỗi hằng trong `record(...)`, quét **cả `app/`** chứ không riêng `app/modules` (37 mã);
+3. **mã đi đường vòng** — chuỗi hằng truyền vào `set_status(...)` và `_write_log(...)` (15
+   mã), cộng một **sổ khai tay 17 chỗ động**. Sổ đó chốt cả *danh sách chỗ*: mọc thêm một
+   chỗ truyền `action` động mà không khai thì đỏ. Đây là chốt quan trọng nhất — chỗ động là
+   chỗ máy không đọc được giá trị, nên nếu không bắt buộc khai thì nó **nằm ngoài mọi bài
+   kiểm**, đúng cách `option_choose` sống sót tới hôm nay.
+
+Ba thứ tệp bộ mã **cố ý không làm**: không sửa mã sai thành mã đúng (nhật ký phải chép đúng
+thứ đã xảy ra, kể cả khi đó là lỗi lập trình — nó chỉ ghi cảnh báo vào `app.action_catalog`,
+một lần cho mỗi mã); **không ném ngoại lệ** (NT-5 — một lỗi hiển thị của nhật ký không được
+làm hỏng việc lưu đơn hàng, nên mã lạ trả về chính nó và rơi vào nhóm `0`); không đoán nhóm
+theo tên mã (đoán sai thì dòng đó nằm **nhầm** nhóm, tệ hơn nằm ở *Không rõ* — *Không rõ*
+thì người ta còn đi tra).
+
+⚠️ **`action` vẫn là `VARCHAR`, cố ý**, dù R2/QĐ-11 bắt cột phân loại mới phải là số. Lý do
+y hệt ngoại lệ QĐ-9 của Thu mua: 4.201 dòng đã ghi bằng chữ, và lúc có sự cố người ta đọc
+thẳng bảng bằng SQL — `WHERE action = 'delete'` đọc được, `WHERE action = 4` thì phải mở mã
+nguồn ra tra. **Tập đóng ở đây thay cho kiểu dữ liệu số.** Mọi cột phân loại khác của lớp
+nhật ký (`actor_kind`, `action_group`, `op`, `device_type`) vẫn là `SMALLINT`.
+
+Một mã giữ lại dù **chưa chỗ nào ghi**: `refresh_ip_changed` — chỗ đặt sẵn cho P3, lúc
+`tab_login_session` biết được IP của lần cấp token đầu để so.
 
 ---
 
@@ -968,6 +1052,50 @@ cam kết với khách, chỉ đổi cách làm bên trong:
 | **QĐ-A** | Gia hạn phiên có ghi nhật ký không? | **Thành công thì không ghi** (chỉ dập `refreshed_at` / `refresh_count`); **đổi IP hoặc thất bại thì ghi đủ**. Cắt 46.000 dòng rác/năm mà vẫn đóng BM-003 — §4.1 |
 | **QĐ-B** | `request_id` lưu kiểu gì? | **`BINARY(16)`** ở cả ba bảng, hiện ra ngoài vẫn là chuỗi 36 ký tự; `token_id` giữ `CHAR(36)` — §4.5 |
 | **QĐ-C** | Bốn bảng nhật ký có nằm trong bản sao lưu hằng đêm không? | **Không** — dump hai lượt (`--ignore-table` cho dữ liệu + `--no-data` để giữ cấu trúc); đánh đổi: phục hồi ra hệ thống trắng nhật ký. Kèm theo, nhịp đóng gói lên R2 đổi từ mỗi năm sang **mỗi tháng** để năm đang chạy không chỉ còn một bản. Làm ở P6 — §9 |
+
+### QĐ-D (10/09/2026) — cửa chặn ở `get_current_user`, dập dấu vết ở middleware
+
+Câu hỏi đặt ra lúc bắt tay P3: *phiên là chuyện của mọi lời gọi, sao lại chen vào
+`get_current_user` mà không đặt hẳn ở middleware?* Đọc lại mã nguồn thì hoá ra câu hỏi
+đúng **một nửa** — và nửa đúng đó chính là chỗ bản thiết kế cũ (§5) viết gộp làm một.
+
+**Tách đôi việc, mỗi nửa về đúng chỗ của nó:**
+
+| Nửa việc | Đặt ở đâu | Vì sao |
+|---|---|---|
+| **CỬA CHẶN** — `token_version`, `revoked_at`, ném 401 | `get_current_user` (dependency) | bốn lý do dưới |
+| **DẬP DẤU VẾT** — `last_seen_at`, `last_seen_ip` | `RequestContextMiddleware` | đúng chỗ đang có sẵn một session DB riêng và một nhịp ghi cuối request |
+| **ĐẾM GIA HẠN** — `refreshed_at`, `refresh_count`, `last_seen_ip` | ngay trong endpoint `/refresh` (`mark_refreshed`) | `/refresh` là đường **công khai**, không có `Depends(get_current_user)` nên chẳng ai điền `ctx.session_id` cho nó — middleware nhìn vào chỉ thấy ô rỗng. Chính endpoint đó tự tra phiên (tra thẳng, không qua bộ nhớ đệm 60s) nên nó biết dòng phiên, và nó dập luôn |
+
+Hai nửa nối nhau bằng **`RequestContext.session_id`** — ô đã khai sẵn từ P1
+(`core/request_context.py`, kèm ghi chú *"P3 mới có bảng phiên để mà điền"*). Dependency
+tra phiên xong thì điền `session_id` vào ContextVar; middleware đọc ra để dập dấu vết và
+để `tab_request_log` có cột phiên. Đúng khuôn `audit_count` / `bump_audit_count` đang chạy.
+
+**Bốn lý do cửa chặn KHÔNG đặt được ở middleware:**
+
+1. **Middleware không biết đường nào cần đăng nhập.** Nguồn sự thật duy nhất hôm nay là
+   `Depends(get_current_user)` khai trên từng route. Đặt cửa ở middleware thì phải nuôi
+   thêm một danh sách "đường được miễn" — mà `modules/auth/controller.py` có **năm** đường
+   công khai (`/login`, `/google`, `/refresh`, `/forgot-password`, `/reset-password`).
+   Danh sách đó chắc chắn lệch theo thời gian, và **lệch kiểu nào cũng hỏng**: thiếu một
+   dòng thì chặn luôn `/login` (khoá cứng, không ai vào sửa được), thừa một dòng thì miễn
+   trừ im lặng cho một endpoint đáng ra phải gác.
+2. **Middleware nhật ký cố ý KHÔNG được phép ném.** Luật số 1 ghi ngay trong
+   `request_middleware.py`: *"ghi nhật ký hỏng thì lượt gọi vẫn phải chạy"* — mọi lệnh ghi
+   đều bọc `try/except` nuốt lỗi (NT-5). Một cửa chặn mà **hỏng thì mở** thì không phải cửa
+   chặn. Muốn nó ném thì phải phá luật NT-5 ngay tại tệp đang giữ luật đó.
+3. **Đặt ở dependency thì kiểm `token_version` tốn 0 truy vấn.** `get_current_user` **đã**
+   chạy `db.get(User, user_id)` từ trước, mà `token_version` là cột của `User` — đọc kèm,
+   không thêm gì. Middleware thì dùng `SessionLocal()` riêng, nên đặt cửa ở đó là cộng
+   thêm một kết nối + một truy vấn cho **mọi** lời gọi, kể cả lượt không cần đăng nhập.
+4. **`get_current_user` vốn đã là cửa xác thực.** Nó đang giải mã token, tra người dùng và
+   chặn `is_active`. Kiểm phiên là **điều kiện thứ tư của cùng một câu hỏi** *"vé này còn
+   giá trị không"*, không phải một mối quan tâm mới đặt nhầm chỗ.
+
+Đổi lại, phần **dập dấu vết** thì đúng là không nên nằm trong dependency: nó là việc ghi,
+không phải việc gác; nó phải chạy **sau** khi endpoint xong (để biết `http_status`); và nó
+được phép hỏng mà không ảnh hưởng ai. Ba tính chất đó mô tả chính xác middleware.
 
 ---
 

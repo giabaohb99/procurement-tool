@@ -10,9 +10,9 @@ controller. Ba kiểu dưới đây có chung một đặc điểm khó chịu: 
     D. bộ lọc người dùng tự truyền chạy TRƯỚC `apply_scope`
 
 ────────────────────────────────────────────────────────────────────────────────
-A. BẢNG PHÂN LOẠI 65 LẦN GỌI `db.get(` TRONG TỆP CONTROLLER
+A. BẢNG PHÂN LOẠI 67 LẦN GỌI `db.get(` TRONG TỆP CONTROLLER
 ────────────────────────────────────────────────────────────────────────────────
-`DB_GET_TRONG_CONTROLLER` dưới đây phân loại **đủ 65 lần**, không dòng nào còn
+`DB_GET_TRONG_CONTROLLER` dưới đây phân loại **đủ 67 lần**, không dòng nào còn
 nhãn "chưa rà". Bài kiểm A1 đối chiếu bảng này với mã nguồn THẬT, nên thêm một
 lần `db.get` vào bất kỳ controller nào cũng làm đỏ và buộc người thêm phải phân
 loại nó.
@@ -24,7 +24,7 @@ Ba nhãn (đúng đặc tả phase-08):
                    hình, bản ghi của CHÍNH MÌNH, tra tên để hiển thị)
   `LỖ`           — chứng từ CÓ phạm vi mà không kiểm
 
-**Kết quả: 65/65 an toàn — KHÔNG còn dòng 🔴 nào.** Đó là con số sau khi ĐỌC MÃ
+**Kết quả: 67/67 an toàn — KHÔNG còn dòng 🔴 nào.** Đó là con số sau khi ĐỌC MÃ
 từng chỗ, không phải đếm grep: bốn module gác bằng hàm tự viết trong thân hàm
 (`attachment._check` → `core/attachment_scope.ensure_in_scope`,
 `comment.resolve_doc`, `document.ensure_can`, `export_log._guard_view`) nên grep
@@ -185,10 +185,12 @@ DB_GET_TRONG_CONTROLLER: dict[str, list[tuple[str, str]]] = {
     ],
     # ── Đăng nhập ────────────────────────────────────────────────────────────
     "auth/controller.py": [
-        (OK_KHONG_CAN, "L32 `Employee` của CHÍNH MÌNH (`/me`)"),
-        (OK_KHONG_CAN, "L134 `User` từ refresh token — chính chủ"),
-        (OK_KHONG_CAN, "L211 `Employee` trong quên-mật-khẩu, tra theo email đã nhập"),
-        (OK_KHONG_CAN, "L235 `User` từ reset token — chính chủ"),
+        (OK_KHONG_CAN, "L63 `Employee` của CHÍNH MÌNH (`/me`)"),
+        (OK_KHONG_CAN, "L170 `LoginSession` lúc đăng xuất — id lấy từ NGỮ CẢNH lượt gọi "
+                       "(`ctx.session_id`, do chính cửa chặn điền), không nhận từ người dùng"),
+        (OK_KHONG_CAN, "L191 `User` từ refresh token — chính chủ"),
+        (OK_KHONG_CAN, "L320 `Employee` trong quên-mật-khẩu, tra theo email đã nhập"),
+        (OK_KHONG_CAN, "L344 `User` từ reset token — chính chủ"),
     ],
     "backup/controller.py": [
         (OK_KHONG_CAN, "L47 `DbBackup` — `backup` khai PUBLIC, quyền HÀNH ĐỘNG toàn hệ"),
@@ -349,7 +351,7 @@ def test_a1_bang_65_lan_db_get_trong_controller_da_phan_loai_du():
     controller** — thêm là đỏ, và người thêm phải viết ra một trong ba nhãn kèm
     lý do đọc được.
 
-    Số hôm nay: **65** lần trên 27 tệp / 26 module (ba trong số đó là dòng
+    Số hôm nay: **67** lần trên 27 tệp / 26 module (ba trong số đó là dòng
     docstring, đã ghi rõ trong bảng). Đợt vá phạm vi 05/09/2026 làm con số nhích
     từ 64 lên 65 (07/09/2026): `leave/catalog_controller.py` tra loại nghỉ ĐÍCH
     của «quy đổi số dư cuối năm» — danh mục PUBLIC nên không cần lọc phạm vi.
@@ -377,7 +379,7 @@ def test_a1_bang_65_lan_db_get_trong_controller_da_phan_loai_du():
         f"số lần gọi `db.get(` đã đổi ở {list(lech)} (thật, đã khai) = "
         f"{lech}. Phân loại lần gọi mới rồi cập nhật bảng."
     )
-    assert sum(that.values()) == 66, f"tổng phải là 66, đang là {sum(that.values())}"
+    assert sum(that.values()) == 67, f"tổng phải là 67, đang là {sum(that.values())}"
 
 
 def test_a1b_moi_dong_deu_co_nhan_hop_le_va_ly_do_that():
@@ -962,10 +964,14 @@ def test_c3_khoa_tai_khoan_chan_ngay_khong_di_qua_cache(world):
     khác hẳn C2. Ghim để bản vá C2 không "tiện tay" dời chốt này vào trong cache.
     """
     from app.core.auth import create_access_token, get_current_user
+    from app.modules.login_session.service import start_session
 
     db = world.db
     a1 = world.actor("a1")
-    token = create_access_token(a1.user.id)
+    #  bao-CR-360: vé nay phải thuộc một PHIÊN có thật, không thì cửa chặn mới
+    #  đá nó vì thiếu `jti` và bài kiểm này xanh vì lý do sai.
+    session = start_session(db, a1.user, ip="10.0.0.5", user_agent="pytest")
+    token = create_access_token(a1.user.id, session.token_id, session.token_version)
     assert get_current_user(f"Bearer {token}", db).id == a1.user.id
 
     a1.user.is_active = False

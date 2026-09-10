@@ -2,16 +2,22 @@ from fastapi import APIRouter, Depends, Request, BackgroundTasks, UploadFile, Fi
 import uuid
 from sqlalchemy.orm import Session
 
-from app.core.auth import (create_access_token, create_refresh_token,
-                           decode_token, get_current_user, get_user_permissions,
-                           hash_password, verify_password)
+from app.core.auth import (SESSION_EXPIRED_MESSAGE, create_access_token, create_refresh_token,
+                           decode_token, decode_token_claims, get_current_user,
+                           get_user_permissions, hash_password, verify_password)
 from app.core.audit import record as audit_record
 from app.core.client_ip import get_client_ip
 from app.core.config import settings
 from app.core.database import get_db
+from app.core.device_fingerprint import MAX_USER_AGENT
 from app.core.limiter import limiter
+from app.core.request_context import get_context
 from app.core.response import success
 from app.modules.employee.model import Employee
+from app.modules.login_session.constants import LoginMethod, RevokeReason
+from app.modules.login_session.model import LoginSession
+from app.modules.login_session.service import (mark_refreshed, revoke_session,
+                                               revoke_user_sessions, start_session)
 from app.modules.user.model import User, UserRole
 from app.modules.user_preference.service import get_preferences
 
@@ -26,6 +32,31 @@ def _client_ip(request: Request) -> str:
     client tự đặt được — nên dòng `login_failed` ghi IP giả. Nay dùng chung một hàm
     với limiter (`core/client_ip.py`, ưu tiên `CF-Connecting-IP`)."""
     return get_client_ip(request) if request else ""
+
+
+def _user_agent(request: Request) -> str:
+    return (request.headers.get("user-agent") or "")[:MAX_USER_AGENT] if request else ""
+
+
+def _bind_session(session_id: int) -> None:
+    """Gắn phiên vừa mở/vừa tra vào ngữ cảnh lượt gọi (bao-CR-360).
+
+    Bốn đường trong tệp này (`/login`, `/google`, `/refresh`) là **đường công
+    khai** — không đi qua `get_current_user`, nên không ai điền `ctx.session_id`
+    hộ. Thiếu dòng này thì chính dấu vết `login` — dòng quan trọng nhất của cả
+    phiên — lại là dòng duy nhất không biết nó thuộc phiên nào.
+    """
+    ctx = get_context()
+    if ctx:
+        ctx.session_id = int(session_id)
+
+
+def _open_session(db: Session, request: Request, user, login_method: int) -> LoginSession:
+    """Mở phiên + gắn ngữ cảnh, dùng chung cho đăng nhập mật khẩu và Google."""
+    session = start_session(db, user, ip=_client_ip(request),
+                            user_agent=_user_agent(request), login_method=login_method)
+    _bind_session(session.id)
+    return session
 
 
 def _me_payload(db: Session, user) -> dict:
@@ -103,10 +134,12 @@ def login(request: Request, data: schema.LoginInput, db: Session = Depends(get_d
         audit_record(db, 0, "auth", 0, "login_failed",
                      f"Đăng nhập thất bại: tài khoản '{data.username}' — {e.detail} (IP {ip})")
         raise
-    audit_record(db, user.id, "auth", user.id, "login", f"Đăng nhập thành công (IP {ip})")
+    session = _open_session(db, request, user, LoginMethod.PASSWORD)
+    audit_record(db, user.id, "auth", user.id, "login",
+                 f"Đăng nhập thành công (IP {ip}) — {session.device_label}")
     return success({
-        "access_token": create_access_token(user.id),
-        "refresh_token": create_refresh_token(user.id),
+        "access_token": create_access_token(user.id, session.token_id, session.token_version),
+        "refresh_token": create_refresh_token(user.id, session.token_id, session.token_version),
         "user": _me_payload(db, user),
     }, "Đăng nhập thành công")
 
@@ -114,17 +147,29 @@ def login(request: Request, data: schema.LoginInput, db: Session = Depends(get_d
 @limiter.limit(settings.LOGIN_RATE_LIMIT)
 def login_google(request: Request, data: schema.GoogleLoginInput, db: Session = Depends(get_db)):
     user = service.google_login(db, data.credential)
-    audit_record(db, user.id, "auth", user.id, "login", f"Đăng nhập Google (IP {_client_ip(request)})")
+    session = _open_session(db, request, user, LoginMethod.GOOGLE)
+    audit_record(db, user.id, "auth", user.id, "login",
+                 f"Đăng nhập Google (IP {_client_ip(request)}) — {session.device_label}")
     return success({
-        "access_token": create_access_token(user.id),
-        "refresh_token": create_refresh_token(user.id),
+        "access_token": create_access_token(user.id, session.token_id, session.token_version),
+        "refresh_token": create_refresh_token(user.id, session.token_id, session.token_version),
         "user": _me_payload(db, user),
     }, "Đăng nhập Google thành công")
 
 
 @router.post("/logout")
 def logout(request: Request, user=Depends(get_current_user), db: Session = Depends(get_db)):
-    """Ghi log ĐĂNG XUẤT. JWT không có phiên phía server nên chỉ ghi nhận thao tác + xóa token ở client."""
+    """Đăng xuất — bao-CR-360 khiến việc này **có hiệu lực thật** (đóng BM-002).
+
+    Trước đây đây chỉ là một dòng nhật ký: JWT không có phiên phía máy chủ nên
+    vé vẫn sống tới lúc hết hạn, và người mượn máy người khác bấm *Đăng xuất*
+    rồi bỏ đi thực ra chưa đăng xuất. Nay phiên bị đánh dấu thu hồi, vé của
+    riêng thiết bị này chết ngay; các thiết bị khác không bị đụng tới.
+    """
+    ctx = get_context()
+    session = db.get(LoginSession, ctx.session_id) if (ctx and ctx.session_id) else None
+    if session:
+        revoke_session(db, session, RevokeReason.SELF_LOGOUT, user.id)
     audit_record(db, user.id, "auth", user.id, "logout", f"Đăng xuất (IP {_client_ip(request)})")
     return success(None, "Đã đăng xuất")
 
@@ -137,21 +182,47 @@ def refresh(request: Request, data: schema.RefreshInput, db: Session = Depends(g
     #  `login` / `login_failed`.
     ip = _client_ip(request)
     try:
-        user_id = decode_token(data.refresh_token, "refresh")
+        claims = decode_token_claims(data.refresh_token, "refresh")
     except HTTPException as e:
         audit_record(db, 0, "auth", 0, "refresh_failed",
                      f"Gia hạn phiên thất bại: {e.detail} (IP {ip})")
         raise
+    user_id = int(claims["sub"])
     user = db.get(User, user_id)
     if not user or not user.is_active:
         audit_record(db, user_id, "auth", user_id, "refresh_failed",
                      f"Gia hạn phiên thất bại: tài khoản không tồn tại hoặc đã bị khóa (IP {ip})")
         raise HTTPException(401, "Tài khoản không hợp lệ")
-    audit_record(db, user.id, "auth", user.id, "refresh", f"Gia hạn phiên (IP {ip})")
+
+    #  bao-CR-360: gia hạn cũng phải qua cửa phiên, không thì thu hồi vô nghĩa —
+    #  vé truy cập chết sau 30 phút nhưng refresh token vẫn tự đẻ vé mới suốt 7
+    #  ngày. Ở đây KHÔNG dùng `resolve_session`: hàm đó có đệm 60 giây, mà cửa
+    #  duy nhất giữ được refresh token bị cắp thì không nên có độ trễ nào.
+    token_id = str(claims.get("jti") or "")
+    session = (db.query(LoginSession).filter(LoginSession.token_id == token_id).first()
+               if token_id else None)
+    if (not session or session.revoked_at is not None or session.user_id != user.id
+            or int(claims.get("ver") or 0) != int(user.token_version or 1)):
+        audit_record(db, user.id, "auth", user.id, "refresh_failed",
+                     f"Gia hạn phiên thất bại: phiên đã kết thúc (IP {ip})")
+        raise HTTPException(401, SESSION_EXPIRED_MESSAGE)
+    _bind_session(session.id)
+
+    #  Đổi IP giữa phiên là dấu hiệu đáng xem — có thể chỉ là đổi wifi sang 4G,
+    #  cũng có thể là vé đã sang tay. Vẫn cho gia hạn (chặn thì người đi tàu
+    #  đăng nhập lại mười lần một ngày), nhưng để lại dòng đọc được.
+    if session.last_seen_ip and session.last_seen_ip != ip:
+        audit_record(db, user.id, "auth", user.id, "refresh_ip_changed",
+                     f"Phiên gia hạn từ IP khác: {session.last_seen_ip} -> {ip}")
+    #  QĐ-A: gia hạn THÀNH CÔNG không còn đẻ dòng nhật ký (46.000 dòng rác mỗi
+    #  năm, không dòng nào ai đọc). Thay bằng hai cột đếm trên chính dòng phiên;
+    #  thất bại và đổi IP thì vẫn ghi như cũ.
+    mark_refreshed(db, session.id, ip)
     # Trả kèm hồ sơ + phân quyền mới nhất (CR-028): client đằng nào cũng gọi refresh
     # mỗi khi access token hết hạn, gửi kèm ở đây thì không tốn thêm request nào,
     # mà đổi tên/gắn nhân sự/sửa quyền vẫn có hiệu lực không cần đăng xuất.
-    return success({"access_token": create_access_token(user.id),
+    return success({"access_token": create_access_token(user.id, session.token_id,
+                                                        session.token_version),
                     "user": _me_payload(db, user)})
 
 
@@ -173,6 +244,16 @@ def change_password(data: dict, user=Depends(get_current_user), db: Session = De
         raise HTTPException(400, "Mật khẩu mới không được trùng mật khẩu cũ")
     user.password_hash = hash_password(new)
     db.commit()
+    #  bao-CR-360: đổi mật khẩu thì cắt mọi thiết bị KHÁC — nếu ai đó đang mượn
+    #  phiên của mình thì đây chính là động tác người dùng làm để đuổi họ ra.
+    #
+    #  ⚠️ Cố ý KHÔNG tăng `token_version` (khác bản thiết kế §5 viết ban đầu):
+    #  tăng là giết cả vé đang cầm, tức bấm «Đổi mật khẩu» xong bị đá ra màn
+    #  đăng nhập. Giữ phiên hiện tại sống nên chấp nhận độ trễ tối đa 60 giây
+    #  của đệm tra phiên ở các tiến trình uvicorn khác.
+    ctx = get_context()
+    revoke_user_sessions(db, user.id, RevokeReason.PASSWORD_CHANGED, user.id,
+                         except_session_id=(ctx.session_id if ctx else 0) or 0)
     return success(None, "Đã đổi mật khẩu thành công")
 
 @router.put("/notify-email")
@@ -267,5 +348,12 @@ def reset_password(request: Request, data: schema.ResetPasswordInput, db: Sessio
         
     user.password_hash = hash_password(data.new_password)
     db.commit()
-    
+
+    #  bao-CR-360: khác đổi mật khẩu, ở đây KHÔNG chừa phiên nào — người đi
+    #  đường này thường là người vừa mất quyền kiểm soát tài khoản, và cái họ
+    #  cần chính là đá sạch mọi thiết bị đang đăng nhập. `force_relogin` tăng
+    #  `token_version` nên hiệu lực tức thì, không qua đệm.
+    from app.modules.login_session.service import force_relogin
+    force_relogin(db, user, RevokeReason.PASSWORD_CHANGED, user.id)
+
     return success(None, "Đặt lại mật khẩu thành công")

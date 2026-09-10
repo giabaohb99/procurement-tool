@@ -15,7 +15,7 @@ mới đọc được dòng hoạt động của nó (`04-phan-quyen.md` §2).
 from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Session
 
-from app.modules.audit.controller import ACTION_LABEL
+from app.core.action_catalog import label_of_action
 from app.modules.audit.model import AuditLog
 from app.modules.work.audit_entity import (ACTIVITY_KIND_BY_ENTITY, AUDIT_LIST,
                                            AUDIT_LIST_MEMBER, AUDIT_TASK,
@@ -123,7 +123,7 @@ def _activity_out(log: AuditLog, names: dict[int, str], titles: dict[int, str]) 
         "id": log.id,
         "kind": int(kind),
         "action": log.action,
-        "action_label": ACTION_LABEL.get(log.action, log.action),
+        "action_label": label_of_action(log.action),
         "message": log.message or "",
         "by": names.get(log.created_by) or "Hệ thống",
         "by_id": log.created_by,

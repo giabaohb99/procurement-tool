@@ -182,6 +182,7 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
                             #  khẩu. Xem §4 của `logging_policy`.
                             error_detail=mask_error_detail(traceback.format_exc()),
                             duration_ms=int((time.perf_counter() - started) * 1000))
+            self._touch(ctx)
             reset_context(token)
             raise exc
 
@@ -204,8 +205,44 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
                             error_detail=None,
                             duration_ms=int((time.perf_counter() - started) * 1000))
         finally:
+            #  ⚠️ Nằm trong `finally`, KHÔNG nằm trong `if wants_log`: dấu «lần
+            #  cuối thấy thiết bị này» phải đúng kể cả với những đường không ghi
+            #  nhật ký (`/api/notifications/unread-count` chẳng hạn). Ghi nhật ký
+            #  và ghi phiên là hai câu hỏi khác nhau.
+            self._touch(ctx)
             reset_context(token)
         return response
+
+    def _touch(self, ctx):
+        """Dập `last_seen_*` của phiên đang gọi (bao-CR-360, nửa dưới của QĐ-D).
+
+        `ctx.session_id` do `core/auth._check_session` điền — tức chỉ những lượt
+        gọi ĐÃ QUA cửa đăng nhập mới tới được đây. Lượt gọi công khai
+        (`/api/auth/login`, `/refresh`) không có phiên trong ngữ cảnh, và đó là
+        đúng: hai đường đó tự dập lấy, vì chỉ chúng mới biết `jti` nào.
+
+        Kiểm tiết lưu TRƯỚC khi mở `SessionLocal()` — 99% số lượt gọi rơi vào
+        trong khoảng 5 phút, mở kết nối rồi mới thấy chưa tới lúc là trả giá cho
+        một việc không làm. Hỏng thì nuốt, theo luật 1 ở đầu tệp.
+        """
+        from app.modules.login_session.service import touch_is_due, touch_session
+
+        if not ctx.session_id or not touch_is_due(ctx.session_id):
+            return
+        from app.core.database import SessionLocal
+
+        db = None
+        try:
+            db = SessionLocal()
+            touch_session(db, ctx.session_id, ctx.ip)
+            db.commit()
+        except Exception:  # noqa: BLE001
+            log.warning("Không dập được last_seen cho phiên %s", ctx.session_id, exc_info=True)
+            if db is not None:
+                db.rollback()
+        finally:
+            if db is not None:
+                db.close()
 
     async def _capture(self, response) -> tuple[Response, bytes, int]:
         """Đọc thân trả về nếu là JSON; thứ khác trả nguyên response cũ.

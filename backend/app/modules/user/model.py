@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import BigInteger, Boolean, String
+from sqlalchemy import BigInteger, Boolean, SmallInteger, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.base_model import Base, AuditMixin
@@ -29,6 +29,12 @@ class User(Base, AuditMixin):
     # yêu cầu và tắt nó đi thì họ mất đường vào hệ thống. Chuông trong app và thông báo đẩy
     # không đi qua công tắc này.
     notify_email: Mapped[bool] = mapped_column(Boolean, default=True)
+    # bao-CR-360: "đời" của vé đăng nhập. Mọi vé mang `ver` khác giá trị này đều bị
+    # chặn ở `core/auth._check_session`. Tăng số này = đăng xuất MỌI thiết bị, hiệu
+    # lực tức thì (đổi mật khẩu, khóa tài khoản, quản trị bắt đăng nhập lại) — khác
+    # với thu hồi từng phiên, thứ đi qua `tab_login_session.revoked_at` và có đệm
+    # tối đa 60 giây. Không bao giờ giảm, không bao giờ đặt lại về 1.
+    token_version: Mapped[int] = mapped_column(SmallInteger, default=1)
 
     # viewonly + lazy="selectin": danh sách nhiều user nạp gộp file trong 1 truy vấn
     # IN, khỏi N+1 ở màn danh sách nhân sự/bình luận. Không có FK cứng nên phải

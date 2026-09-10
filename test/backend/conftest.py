@@ -28,7 +28,7 @@ import app.main  # noqa: F401 — side-effect: đăng ký tất cả router + mo
 from app.core.base_model import Base
 
 
-# ── Cache quyền: xóa quanh MỌI test ─────────────────────────────────────────────
+# ── Cache quyền + cache phiên: xóa quanh MỌI test ───────────────────────────────
 @pytest.fixture(autouse=True)
 def _clear_perm_cache():
     """`_PERM_CACHE` sống 60 giây trong tiến trình pytest, không theo DB.
@@ -36,11 +36,21 @@ def _clear_perm_cache():
     Fixture `db` đã xóa một lần lúc dựng, nhưng test nào cấp thêm vai trò GIỮA
     chừng mà quên xóa thì ca sau đọc trúng hồ sơ quyền của ca trước — sai âm
     thầm và phụ thuộc thứ tự chạy. Xóa cả hai đầu, đừng trông vào việc nhớ gọi tay.
+
+    bao-CR-360 thêm hai bộ nhớ cùng dạng — đệm tra phiên và mốc tiết lưu
+    `last_seen` — nên xóa luôn ở đây. Cả hai đều là dict cấp module khóa theo id,
+    mà mỗi test dựng một DB mới với id đếm lại từ 1: đúng công thức để bài sau
+    tra trúng phiên của bài trước.
     """
     from app.core.auth import perm_cache_clear
+    from app.modules.login_session.service import session_cache_clear, touch_state_clear
     perm_cache_clear()
+    session_cache_clear()
+    touch_state_clear()
     yield
     perm_cache_clear()
+    session_cache_clear()
+    touch_state_clear()
 
 
 # ── Fixture db ──────────────────────────────────────────────────────────────────

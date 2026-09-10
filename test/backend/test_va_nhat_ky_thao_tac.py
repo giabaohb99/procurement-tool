@@ -202,37 +202,21 @@ def test_moi_hanh_dong_co_trong_bang_deu_phai_co_nhan_tieng_viet():
 
     Đếm trên dữ liệu thật ngày 05/09/2026: 10 mã (`login`, `assign`,
     `view_file`…) chiếm 971 dòng đang hiện «Dego Admin — assign: Phân bổ NSTM».
-    Bài kiểm này canh danh sách hằng số, không canh dữ liệu — nó đỏ khi ai thêm
-    một lời gọi `record(..., "<mã mới>")` mà quên khai nhãn, tức là bắt được
-    NGUỒN chứ không bắt triệu chứng.
-    """
-    import ast
-    import pathlib
 
+    ⚠️ **Phép quét đã dời sang `test_bo_ma_hanh_dong_cr358.py`** (bao-CR-358 /
+    CR-312 P2) và mạnh hơn hẳn bản từng nằm ở đây: bản cũ chỉ quét `app/modules`
+    và chỉ thấy chuỗi HẰNG trong chính lời gọi `record(...)`, nên nó bỏ lọt
+    **17 chỗ truyền `action` là biến** — đúng những chỗ chứa `option_choose`,
+    `download_file`, `unassign`. Giữ lại một bộ quét thứ hai ở đây thì hai bộ
+    sớm muộn cũng lệch nhau, mà bộ yếu hơn lại là bộ xanh trước.
+
+    Chỗ này nay chỉ canh phần bài kiểm kia không nói tới: mọi mã ĐÃ KHAI đều
+    phải tra ra nhãn qua đúng con đường mà controller dùng lúc chạy.
+    """
+    from app.core.action_catalog import ACTION_CATALOG, label_of_action
     from app.modules.audit.controller import ACTION_LABEL
 
-    #  Quét mọi lời gọi `record(...)` trong mã nguồn, lấy đối số `action`
-    #  (vị trí thứ 5 hoặc keyword) khi nó là hằng chuỗi.
-    import app.modules
-    root = pathlib.Path(app.modules.__file__).parent
-    dung = set()
-    for path in root.rglob("*.py"):
-        try:
-            cay = ast.parse(path.read_text(encoding="utf-8"))
-        except SyntaxError:
-            continue
-        for node in ast.walk(cay):
-            if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)):
-                continue
-            if node.func.id not in ("record", "audit_record"):
-                continue
-            arg = node.args[4] if len(node.args) > 4 else next(
-                (kw.value for kw in node.keywords if kw.arg == "action"), None)
-            if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
-                dung.add(arg.value)
-
-    thieu = sorted(dung - set(ACTION_LABEL))
-    assert thieu == [], (
-        f"{len(thieu)} mã hành động được ghi vào nhật ký mà không có nhãn tiếng Việt: "
-        f"{thieu}. Thêm vào `ACTION_LABEL` — thiếu thì dòng dấu vết hiện mã Anh trần."
-    )
+    assert ACTION_LABEL, "bảng nhãn rỗng — controller đang mất nguồn nhãn"
+    for action in ACTION_CATALOG:
+        nhan = label_of_action(action)
+        assert nhan and nhan != action, f"mã «{action}» tra ra chính nó, tức mất nhãn"

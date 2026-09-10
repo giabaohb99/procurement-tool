@@ -5,9 +5,14 @@ và so với hằng số ở đây; tiếng Việt chỉ sống trong các `*_LA
 
 ⚠️ Đừng nhầm với `action` của `tab_audit_log`: cột đó vẫn là **mã chuỗi**
 (`create`, `approve`, `login_failed`…) vì 213 lời gọi `record(...)` đang truyền
-chuỗi, đổi sang số là sửa hết 213 chỗ mà chẳng được gì. P2 sẽ ràng tập chuỗi đó
-bằng `ACTION_CATALOG` (NT-4). Cái ở đây là `action_group` — **nhóm** của hành
+chuỗi, đổi sang số là sửa hết 213 chỗ mà chẳng được gì. Tập chuỗi đó nay ràng
+bằng `ACTION_CATALOG` ở **`core/action_catalog.py`** (NT-4, bao-CR-358) — cùng
+với nhãn và nhóm của từng mã. Cái ở đây là `action_group` — **nhóm** của hành
 động, thứ dùng để lọc và để cảnh báo, và nó là số.
+
+⚠️ **Tệp này cố ý KHÔNG import `action_catalog`** (chiều import là
+`action_catalog` → `logging_codes`, một chiều). Cần `group_of_action` thì lấy ở
+`action_catalog`, đừng thêm re-export ở đây kẻo vòng import.
 
 Tài liệu gốc: `doc/tai-lieu-ky-thuat/nhat-ky-va-phien-dang-nhap.md` §4.
 """
@@ -70,84 +75,11 @@ ACTION_GROUP_LABELS = {
     ACTION_GROUP_PERMISSION: "Phân quyền",
 }
 
-#  Mã hành động -> nhóm. Danh sách mã lấy từ `ACTION_LABELS` của
-#  `modules/audit/controller.py` — nơi duy nhất đang liệt kê đủ tập mã đang dùng.
+#  ⚠️ BẢNG `ACTION_GROUP_BY_ACTION` TỪNG NẰM Ở ĐÂY — đã dời sang
+#  `core/action_catalog.py` (bao-CR-358 / NT-4). Lý do dời: nhóm và nhãn của
+#  cùng một mã hành động khai ở hai tệp không biết nhau, nên thêm mã mới thì
+#  quên một trong hai là chuyện thường — đã quên thật, `closed` mất nhóm ở 36
+#  dòng prod và 9 mã mất nhãn ở 971 dòng. Nay một dòng khai đủ ba thứ.
 #
-#  ⚠️ P2 dựng `ACTION_CATALOG` (mã + nhãn + nhóm, NT-4) thì bảng này **nhập vào
-#  đó**, đừng để hai chỗ cùng khai nhóm. Sở dĩ khai sớm ở P1: cột `action_group`
-#  ra đời cùng migration đầu, mà mỗi dòng ghi ra với `0` là một dòng phải đi
-#  backfill sau — rẻ hơn nhiều nếu điền đúng ngay từ dòng đầu tiên.
-ACTION_GROUP_BY_ACTION = {
-    # -- sửa dữ liệu ------------------------------------------------------
-    "create": ACTION_GROUP_EDIT,
-    "update": ACTION_GROUP_EDIT,
-    "write": ACTION_GROUP_EDIT,
-    "adjust": ACTION_GROUP_EDIT,
-    "assign": ACTION_GROUP_EDIT,
-    "dispatched": ACTION_GROUP_EDIT,
-    "paid": ACTION_GROUP_EDIT,
-    "processing": ACTION_GROUP_EDIT,
-    "completed": ACTION_GROUP_EDIT,
-    "auto_done": ACTION_GROUP_EDIT,
-    "fill_line": ACTION_GROUP_EDIT,
-    "item_progress": ACTION_GROUP_EDIT,
-    "item_progress_auto": ACTION_GROUP_EDIT,
-    "document_status": ACTION_GROUP_EDIT,
-    "line_status": ACTION_GROUP_EDIT,
-    "expected_date": ACTION_GROUP_EDIT,
-    "pr_created": ACTION_GROUP_EDIT,
-    "sync_options": ACTION_GROUP_EDIT,
-    "add_option": ACTION_GROUP_EDIT,
-    "del_option": ACTION_GROUP_EDIT,
-    "option_add": ACTION_GROUP_EDIT,
-    "option_remove": ACTION_GROUP_EDIT,
-    "choose_option": ACTION_GROUP_EDIT,
-    "unchoose_option": ACTION_GROUP_EDIT,
-    "reply": ACTION_GROUP_EDIT,
-    #  Đóng phiếu hỗ trợ. Từng RƠI RA NGOÀI bảng này — 36 dòng trên prod mang
-    #  `action_group = 0`, tức lọc theo nhóm thì chúng biến mất khỏi mọi kết quả.
-    "closed": ACTION_GROUP_EDIT,
-    # -- phân quyền -------------------------------------------------------
-    #  ⚠️ `ACTION_GROUP_PERMISSION` ra đời ở P1 nhưng **không mã nào trỏ vào nó**,
-    #  vì `role/` và `user/` chưa từng gọi `record(...)`. Nghĩa là bộ lọc "Phân
-    #  quyền" của màn nhật ký chắc chắn trả về rỗng — trông y như "chưa ai đổi
-    #  quyền bao giờ". Sáu mã dưới đây (bao-CR-346) là thứ lấp chỗ đó.
-    "set_permissions": ACTION_GROUP_PERMISSION,
-    "assign_roles": ACTION_GROUP_PERMISSION,
-    "set_scope": ACTION_GROUP_PERMISSION,
-    "reset_password": ACTION_GROUP_PERMISSION,
-    "activate": ACTION_GROUP_PERMISSION,
-    "deactivate": ACTION_GROUP_PERMISSION,
-    # -- bộ máy duyệt -----------------------------------------------------
-    "submit": ACTION_GROUP_APPROVE,
-    "submitted": ACTION_GROUP_APPROVE,
-    "approve": ACTION_GROUP_APPROVE,
-    "approved": ACTION_GROUP_APPROVE,
-    "reject": ACTION_GROUP_APPROVE,
-    "rejected": ACTION_GROUP_APPROVE,
-    "return": ACTION_GROUP_APPROVE,
-    "returned": ACTION_GROUP_APPROVE,
-    "withdraw": ACTION_GROUP_APPROVE,
-    "withdrawn": ACTION_GROUP_APPROVE,
-    "cancel": ACTION_GROUP_APPROVE,
-    "cancelled": ACTION_GROUP_APPROVE,
-    "line_approve": ACTION_GROUP_APPROVE,
-    # -- xóa --------------------------------------------------------------
-    "delete": ACTION_GROUP_DELETE,
-    # -- phiên ------------------------------------------------------------
-    "login": ACTION_GROUP_AUTH,
-    "login_failed": ACTION_GROUP_AUTH,
-    "logout": ACTION_GROUP_AUTH,
-    "refresh": ACTION_GROUP_AUTH,
-    "refresh_failed": ACTION_GROUP_AUTH,
-    "refresh_ip_changed": ACTION_GROUP_AUTH,
-    # -- xuất / xem -------------------------------------------------------
-    "export": ACTION_GROUP_EXPORT,
-    "print": ACTION_GROUP_EXPORT,
-    "view_file": ACTION_GROUP_VIEW,
-}
-
-
-def group_of_action(action: str) -> int:
-    """Nhóm của một mã hành động; `0` nếu chưa khai (không đoán bừa)."""
-    return ACTION_GROUP_BY_ACTION.get(action or "", ACTION_GROUP_UNKNOWN)
+#  Dùng `from app.core.action_catalog import group_of_action` — KHÔNG import
+#  ngược vào tệp này (xem chú thích đầu tệp).

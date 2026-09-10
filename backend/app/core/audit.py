@@ -1,7 +1,8 @@
 """Ghi & đọc nhật ký thao tác (audit log) dùng chung."""
 from sqlalchemy.orm import Session
 
-from app.core.logging_codes import ACTOR_KIND_SYSTEM, group_of_action
+from app.core.action_catalog import group_of_action
+from app.core.logging_codes import ACTOR_KIND_SYSTEM
 from app.core.request_context import bump_audit_count, get_context
 
 

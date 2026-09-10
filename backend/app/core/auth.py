@@ -23,34 +23,95 @@ def verify_password(raw: str, hashed: str) -> bool:
     return pwd_context.verify(raw, hashed)
 
 
-def _create_token(user_id: int, kind: str, minutes: int) -> str:
+def _create_token(user_id: int, kind: str, minutes: int,
+                  token_id: str = "", token_version: int = 0) -> str:
     payload = {
         "sub": str(user_id), "type": kind,
         "exp": datetime.now(timezone.utc) + timedelta(minutes=minutes),
     }
+    #  bao-CR-360: hai claim nối vé với PHIÊN phía máy chủ. Chỉ nhét khi người
+    #  gọi đưa `token_id` — vé đặt lại mật khẩu không thuộc phiên nào, mà gắn
+    #  bừa `jti` vào đó thì `get_current_user` sẽ đi tra một phiên không có thật.
+    if token_id:
+        payload["jti"] = token_id
+        payload["ver"] = int(token_version or 1)
     return jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALG)
 
 
-def create_access_token(user_id: int) -> str:
-    return _create_token(user_id, "access", settings.ACCESS_EXPIRE_MIN)
+def create_access_token(user_id: int, token_id: str = "", token_version: int = 0) -> str:
+    return _create_token(user_id, "access", settings.ACCESS_EXPIRE_MIN,
+                         token_id, token_version)
 
 
-def create_refresh_token(user_id: int) -> str:
-    return _create_token(user_id, "refresh", settings.REFRESH_EXPIRE_DAYS * 24 * 60)
+def create_refresh_token(user_id: int, token_id: str = "", token_version: int = 0) -> str:
+    return _create_token(user_id, "refresh", settings.REFRESH_EXPIRE_DAYS * 24 * 60,
+                         token_id, token_version)
 
 def create_reset_token(user_id: int) -> str:
     return _create_token(user_id, "reset_password", 24 * 60)
 
 
-def decode_token(token: str, expected_type: str) -> int:
-    """Giải mã token, kiểm tra đúng loại (access/refresh). Trả user_id."""
+def decode_token_claims(token: str, expected_type: str) -> dict:
+    """Giải mã token, kiểm tra đúng loại. Trả **nguyên bộ claim**.
+
+    `decode_token` cũ chỉ trả `user_id`, nên nơi gọi không thấy `jti` / `ver` —
+    hai thứ P3a cần để tra phiên. Giữ cả hai hàm: chỗ chỉ cần biết "vé này của
+    ai" (đặt lại mật khẩu) không phải đổi gì.
+    """
     try:
         payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALG])
         if payload.get("type") != expected_type:
             raise HTTPException(401, "Sai loại token")
-        return int(payload["sub"])
+        int(payload["sub"])   # thiếu `sub` / `sub` không phải số cũng là vé hỏng
+        return payload
     except (JWTError, KeyError, ValueError):
         raise HTTPException(401, "Token không hợp lệ hoặc đã hết hạn")
+
+
+def decode_token(token: str, expected_type: str) -> int:
+    """Giải mã token, kiểm tra đúng loại (access/refresh). Trả user_id."""
+    return int(decode_token_claims(token, expected_type)["sub"])
+
+
+#  Câu chặn cố ý CHUNG cho cả ba lý do (thiếu `jti`, sai `ver`, phiên đã thu
+#  hồi). Người dùng chỉ cần biết một việc — đăng nhập lại; còn phân biệt được ba
+#  ca này là thông tin cho kẻ đang cầm vé cắp được, không phải cho chủ tài khoản.
+#  Muốn biết ca nào thì đọc `tab_request_log` + `tab_audit_log`.
+SESSION_EXPIRED_MESSAGE = "Phiên đăng nhập đã kết thúc, vui lòng đăng nhập lại"
+
+
+def _check_session(db: Session, user, claims: dict) -> None:
+    """Cửa chặn của phiên đăng nhập (QĐ-D) — ném 401 nếu vé không còn hiệu lực.
+
+    Đặt ở đây chứ không ở middleware vì **chỉ chỗ này biết lượt gọi có cần đăng
+    nhập hay không**: `Depends(get_current_user)` là nguồn sự thật duy nhất của
+    điều đó. Middleware muốn chặn thì phải nuôi một danh sách «đường công khai»
+    song song, mà danh sách đó lệch theo hai chiều đều hỏng — lệch thiếu thì
+    khóa luôn `/login`, lệch thừa thì endpoint mới lặng lẽ không được gác.
+
+    Nửa GHI (`last_seen_*`) thì ngược lại, nằm ở middleware — xem `service.py`.
+    """
+    from app.core.request_context import get_context
+    from app.modules.login_session.service import resolve_session
+
+    token_id = str(claims.get("jti") or "")
+    #  Vé phát trước bao-CR-360 không có `jti`. Đó chính là lý do deploy P3a thì
+    #  MỌI NGƯỜI bị đăng xuất một lần — đã báo trước trong dòng change-log.
+    if not token_id:
+        raise HTTPException(401, SESSION_EXPIRED_MESSAGE)
+    #  So `ver` với `tab_user` — KHÔNG qua đệm nào, nên «đăng xuất mọi thiết bị»
+    #  và «khóa tài khoản» có hiệu lực ngay lượt gọi kế tiếp. Dòng `db.get` ở
+    #  `get_current_user` đằng nào cũng chạy, nên phép so này tốn 0 truy vấn.
+    if int(claims.get("ver") or 0) != int(getattr(user, "token_version", 1) or 1):
+        raise HTTPException(401, SESSION_EXPIRED_MESSAGE)
+    session_id = resolve_session(db, token_id, user.id)
+    if not session_id:
+        raise HTTPException(401, SESSION_EXPIRED_MESSAGE)
+    ctx = get_context()
+    if ctx:
+        #  Sợi chỉ nối hai nửa của QĐ-D: từ đây middleware biết dập dòng phiên
+        #  nào, và `core/audit.record` biết điền `session_id` cho dấu vết.
+        ctx.session_id = session_id
 
 
 def get_current_user(authorization: str = Header(None), db: Session = Depends(get_db)):
@@ -58,10 +119,11 @@ def get_current_user(authorization: str = Header(None), db: Session = Depends(ge
 
     if not authorization or not authorization.lower().startswith("bearer "):
         raise HTTPException(401, "Thiếu token đăng nhập")
-    user_id = decode_token(authorization.split(" ", 1)[1], "access")
-    user = db.get(User, user_id)
+    claims = decode_token_claims(authorization.split(" ", 1)[1], "access")
+    user = db.get(User, int(claims["sub"]))
     if not user or not user.is_active:
         raise HTTPException(401, "Tài khoản không tồn tại hoặc đã bị khóa")
+    _check_session(db, user, claims)
     return user
 
 

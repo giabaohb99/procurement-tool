@@ -31,9 +31,10 @@ from sqlalchemy.orm import sessionmaker
 
 from app.core.audit import record
 from app.core.device_fingerprint import device_hash, device_label, normalize_user_agent
+from app.core.action_catalog import group_of_action
 from app.core.logging_codes import (ACTION_GROUP_AUTH, ACTION_GROUP_DELETE, ACTION_GROUP_EDIT,
                                     ACTION_GROUP_PERMISSION, ACTOR_KIND_SYSTEM, ACTOR_KIND_USER,
-                                    SOURCE_API, group_of_action)
+                                    SOURCE_API)
 from app.core.logging_policy import (mask_error_detail, mask_payload, should_capture_response,
                                      should_log_request, should_skip_by_result, summarize_success)
 from app.core.request_context import open_context, request_id_text
