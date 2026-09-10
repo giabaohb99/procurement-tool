@@ -8,30 +8,47 @@ import {
 import { TONE_CLASS, type StatusTone as Tone } from '@/shared/ui/status-tone'
 import { cn } from '@/shared/utils/cn'
 
-/** Mã trạng thái -> tông màu. Mã của cả 4 loại chứng từ gom chung được vì không đụng nhau. */
+/**
+ * Mã trạng thái -> tông màu. Mã của cả 4 loại chứng từ gom chung được vì không đụng nhau.
+ *
+ * bao-CR-363 (10/09/2026) — MỖI MỐC MỘT MÀU, xếp theo đúng thứ tự vòng đời sao cho hai
+ * mốc LIỀN KỀ không bao giờ cùng tông:
+ *
+ *   Nháp (xám) → Chờ duyệt (hổ phách) → Đã duyệt (xanh dương) → Đã điều phối (tím)
+ *   → Đang xử lý (hồng sen) → Đang mua hàng / Đã nhận một phần (xanh mòng)
+ *   → Đã mua hàng / Đã nhận đủ (xanh lá nhạt) → Hoàn thành (xanh lá ĐẶC)
+ *
+ * Bảng cũ chép nguyên bản v1, mà chính bản v1 mới là chỗ có lỗi: cả bộ pill của nó chỉ
+ * có 5 lớp màu cho 11 mốc, nên `dispatched` · `purchased` · `received` · `completed` dồn
+ * hết vào `done` và `submitted` · `rejected` · `processing` · `purchasing` dồn hết vào
+ * `pending`. Khách chụp màn YCMH trên prod khoanh đỏ đúng ba dấu trùng màu (ticket 38).
+ * Bản v1 đã vá cùng ngày, nên "giữ nguyên cho người dùng cũ khỏi học lại" nay không còn
+ * lý do — hai bản dùng CÙNG một bảng màu mới.
+ */
 const STATUS_TONE: Record<string, Tone> = {
   draft: 'neutral',
   submitted: 'pending',
   approved: 'progress',
-  // Điều phối là mốc "đã chốt xong khâu duyệt" — bản v1 tô XANH LÁ, giữ nguyên
-  // để người dùng cũ không phải học lại bảng màu.
-  dispatched: 'done',
-  // "Đang xử lý" là đang chờ người khác làm tiếp → cùng tông chờ với v1, không
-  // phải tông "đã xong một bước".
-  processing: 'pending',
-  // bao-CR-292/297 (ticket 22): hai mốc tách từ "Đang xử lý". Màu theo bản v1:
-  // đang mua = vàng cảnh chờ ('warn' → pending), đã mua đủ = xanh xong ('ok' → done).
-  purchasing: 'pending',
+  // Điều phối là mốc "đã chốt duyệt, giao cho thu mua làm tiếp" — đúng nghĩa `handoff`.
+  dispatched: 'handoff',
+  // "Đang xử lý" = ĐÃ có người bắt tay làm (có ĐMH), khác hẳn `pending` là nằm chờ ai
+  // đó nhận. Trước CR này nó cùng tông với Chờ duyệt và Bị trả lại.
+  processing: 'active',
+  // bao-CR-292/297 (ticket 22): hai mốc tách từ "Đang xử lý" theo độ phủ mã hàng trên
+  // đơn MISA — mới phủ MỘT PHẦN thì `partial`, phủ ĐỦ thì `done`.
+  purchasing: 'partial',
   purchased: 'done',
-  partial: 'progress',
-  survey_done: 'progress',
-  pr_created: 'progress',
+  partial: 'partial',
+  survey_done: 'partial',
+  pr_created: 'done',
   received: 'done',
-  completed: 'done',
-  done: 'done',
-  // `rejected` = TRẢ VỀ (sửa rồi gửi duyệt lại được) nên là cảnh báo, không phải
-  // lỗi; chỉ `cancelled` (từ chối, khóa phiếu) mới tô đỏ. Giống bảng màu v1.
-  rejected: 'pending',
+  // Ba mã dưới là mốc CUỐI, phiếu đã đóng -> tô đặc, tách khỏi sắc xanh nhạt của
+  // Đã mua hàng / Đã nhận đủ đứng ngay trước nó.
+  completed: 'closed',
+  done: 'closed',
+  // `rejected` = TRẢ VỀ (sửa rồi gửi duyệt lại được) nên KHÔNG tô đỏ; nhưng cũng không
+  // để chung tông với Chờ duyệt như trước — cam là tông riêng của nó.
+  rejected: 'returned',
   cancelled: 'danger',
 }
 
@@ -86,14 +103,19 @@ export function DocumentStatusBadge({ status }: { status: string }) {
  * B-06: khóa là MÃ. Huy hiệu này dùng cho CẢ tiến độ dòng ĐMH lẫn trạng thái dòng
  * YCMH — hai bộ mã dùng chung năm mã giữa chuỗi với cùng một nghĩa, YCMH chỉ thêm
  * `no_po` ở đầu, nên gộp một bảng là đúng chứ không phải trùng lặp.
+ *
+ * ⚠️ bao-CR-363: bốn màu tự khai PHẢI tô đặc chữ trắng cho khớp `TONE_CLASS`. Năm mã
+ * còn lại tra thẳng `TONE_CLASS` — bảng đó đã đổi sang tô đặc, để bốn màu này ở nền mờ
+ * là một cột duy nhất có nửa ô đậm nửa ô nhạt, nhìn như lỗi hiển thị. Đổi `TONE_CLASS`
+ * thì rà lại đây.
  */
 const PROGRESS_CLASS: Record<string, string> = {
   no_po: TONE_CLASS.neutral,
   not_ordered: TONE_CLASS.neutral,
-  ordered: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
-  received: 'bg-cyan-500/10 text-cyan-700 dark:text-cyan-400',
-  doc_pending: 'bg-pink-500/10 text-pink-600 dark:text-pink-400',
-  doc_sent: 'bg-violet-500/10 text-violet-600 dark:text-violet-400',
+  ordered: 'bg-blue-700 text-white',
+  received: 'bg-cyan-700 text-white',
+  doc_pending: 'bg-pink-600 text-white',
+  doc_sent: 'bg-violet-600 text-white',
   completed: TONE_CLASS.done,
   paused: TONE_CLASS.pending,
   cancelled: TONE_CLASS.danger,

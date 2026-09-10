@@ -532,7 +532,7 @@ function StatusChip({
 
 /**
  * Chấm màu của chip. Lấy đúng nền của `TONE_CLASS` nhưng bỏ phần chữ — chấm
- * không có chữ nên chỉ cần một màu đục, không dùng nền `/10` mờ như huy hiệu.
+ * không có chữ nên chỉ cần một màu đục.
  */
 const TONE_DOT: Record<StatusTone, string> = {
   neutral: 'bg-muted-foreground',
@@ -540,6 +540,15 @@ const TONE_DOT: Record<StatusTone, string> = {
   progress: 'bg-info',
   done: 'bg-success',
   danger: 'bg-destructive',
+  // Năm tông thêm ở bao-CR-363. Chip của màn này mới dùng năm tông đầu, nhưng bảng
+  // phải khai ĐỦ: khai thiếu thì `tone` mới rơi vào `undefined` và chấm mất màu —
+  // không lỗi, không cảnh báo, chỉ là một chấm trong suốt. Lấy đúng nền của
+  // `TONE_CLASS` để chấm và huy hiệu cùng nói một màu.
+  handoff: 'bg-violet-600',
+  active: 'bg-pink-600',
+  partial: 'bg-teal-700',
+  returned: 'bg-orange-700',
+  closed: 'bg-green-900',
 }
 
 /**
