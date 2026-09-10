@@ -296,6 +296,25 @@ export function EmployeeDetailPage() {
                   .filter((e) => e.id !== employeeId)
                   .map((e) => ({ id: e.id, label: `${e.full_name} (${e.code})` }))}
               />
+
+              {/*  Kiêm nhiệm dời từ tab «Tài khoản» sang đây (khách chốt
+                   10/09/2026): nó là thông tin CÔNG VIỆC — người này phụ trách
+                   thêm phòng nào — nên đứng cạnh Phòng ban · Chức vụ · Quản lý
+                   trực tiếp thì người khai tìm được mà không phải đoán.
+
+                   ⚠️ Lý do cũ để nó cạnh thẻ tài khoản KHÔNG sai và đừng quên:
+                   phòng kiêm nhiệm mở rộng **phạm vi dữ liệu** người này đọc
+                   được, tức nó cũng là một nửa của câu «người này thấy được
+                   gì». Đổi chỗ là chọn cách đọc thứ nhất; ai đổi lại thì đọc
+                   dòng này trước. */}
+              <EmployeeDepartmentCard
+                employeeId={employee.id}
+                companyId={employee.company_id}
+                primaryDepartmentId={employee.department_id}
+                canWrite={canWrite}
+                isSelf={currentUser?.employee_id === employee.id}
+                className="mt-5"
+              />
             </TabsContent>
 
             <TabsContent value="contact" className="mt-5 max-md:mt-2">
@@ -319,30 +338,23 @@ export function EmployeeDetailPage() {
             </TabsContent>
 
             <TabsContent value="account" className="mt-5 max-md:mt-2">
-              {/* Kiêm nhiệm và tài khoản là hai nửa của câu «người này thấy được gì». */}
+              {/*  Còn lại đúng hai thứ của TÀI KHOẢN ĐĂNG NHẬP: quyền vào hệ
+                   thống và chữ ký dùng trên chứng từ. Ghép đôi để ở màn rộng
+                   chúng không thành hai dải ngang rỗng nửa bên phải. */}
               <div className="grid items-stretch gap-5 lg:grid-cols-2">
-                <EmployeeDepartmentCard
-                  employeeId={employee.id}
-                  companyId={employee.company_id}
-                  primaryDepartmentId={employee.department_id}
-                  canWrite={canWrite}
-                  isSelf={currentUser?.employee_id === employee.id}
-                  className="h-full"
-                />
                 <EmployeeAccountCard
                   employeeId={employee.id}
                   email={employee.email}
                   className="h-full"
                 />
+                <EmployeeSignatureCard
+                  employeeId={employee.id}
+                  signature={employee.signature}
+                  canEdit={canWrite}
+                  hasAccount={employee.user_id > 0}
+                  className="h-full"
+                />
               </div>
-
-              <EmployeeSignatureCard
-                employeeId={employee.id}
-                signature={employee.signature}
-                canEdit={canWrite}
-                hasAccount={employee.user_id > 0}
-                className="mt-5"
-              />
             </TabsContent>
           </Tabs>
 
