@@ -8,6 +8,8 @@ from openpyxl import Workbook
 
 from . import styles as S
 from .pivot import build_pivot_sheet
+from .sheet_import_landed_cost import (build_import_landed_cost_item_sheet,
+                                       build_import_landed_cost_sheet)
 from .sheet_shipping import build_shipping_sheet
 
 INT, PCT = S.FMT_INT, S.FMT_PCT
@@ -92,6 +94,23 @@ def build_report_workbook(data: dict, sheet: str) -> BytesIO:
         else:
             raise ValueError(f"sheet không hợp lệ: {sheet}")
 
+    buf = BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return buf
+
+
+def build_import_landed_cost_workbook(data: dict) -> BytesIO:
+    """Workbook báo cáo giá vốn lô hàng nhập khẩu (bao-CR-347) — hai sheet, hai cách đọc.
+
+    Tách khỏi `build_report_workbook` vì nguồn dữ liệu khác hẳn (không đi qua
+    `report_service.compute`) và bố cục xoay dọc, không dùng chung bộ spec pivot.
+    """
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "GIA VON THEO LO"
+    build_import_landed_cost_sheet(ws, data)
+    build_import_landed_cost_item_sheet(wb.create_sheet("THEO DONG HANG"), data)
     buf = BytesIO()
     wb.save(buf)
     buf.seek(0)

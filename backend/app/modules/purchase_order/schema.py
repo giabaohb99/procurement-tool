@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 
-from .model import AllocationMethod, DEFAULT_CURRENCY, ImportCostType, OrderType
+from .model import (AllocationMethod, DEFAULT_CURRENCY, ImportCostStatus, ImportCostType,
+                    OrderType)
 
 
 class DeliveryIn(BaseModel):
@@ -67,6 +68,9 @@ class POImportCostIn(BaseModel):
 
     id: int | None = None
     cost_type: int = int(ImportCostType.OTHER)
+    # bao-CR-347 — 1 dự kiến / 2 thực tế. Mặc định THỰC TẾ để mọi nơi gọi cũ (nhập CSV,
+    # test, phiếu chép lại) giữ nguyên hành vi sinh công nợ.
+    cost_status: int = Field(int(ImportCostStatus.ACTUAL), ge=1, le=2)
     description: str = ""
     supplier_code: str = ""
     supplier_name: str = ""
@@ -105,6 +109,7 @@ class POCreate(BaseModel):
     exchange_rate: float = Field(1, ge=0)
     customs_decl_no: str = ""
     customs_decl_date: str = ""
+    etd_date: str = ""                   # bao-CR-347 — ngày hàng rời cảng xuất
     # bao-CR-321 — điều khoản in theo NCC; 0 / rỗng = lùi về NCC rồi về mặc định
     inspection_days: int = Field(0, ge=0, le=365)
     return_days: int = Field(0, ge=0, le=365)
@@ -132,6 +137,7 @@ class POUpdate(BaseModel):
     exchange_rate: float | None = Field(None, ge=0)
     customs_decl_no: str | None = None
     customs_decl_date: str | None = None
+    etd_date: str | None = None
     inspection_days: int | None = Field(None, ge=0, le=365)
     return_days: int | None = Field(None, ge=0, le=365)
     invoice_deadline: str | None = Field(None, max_length=255)

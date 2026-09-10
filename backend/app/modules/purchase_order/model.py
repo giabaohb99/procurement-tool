@@ -40,6 +40,11 @@ class ImportCostType(IntEnum):
     INSURANCE = 9         # Bảo hiểm hàng hóa
     INLAND_FREIGHT = 10   # Vận chuyển nội địa từ cảng về kho
     STORAGE = 11          # Lưu kho / lưu bãi / lưu container
+    # bao-CR-347: ba loại khách liệt kê trên mẫu báo cáo giá vốn mà bộ mã cũ chưa có.
+    # THÊM mã mới chứ không sửa nghĩa mã cũ — số đã nằm trong dữ liệu prod.
+    IMPORT_SERVICE = 12   # Dịch vụ hỗ trợ nhập khẩu, vận chuyển (trọn gói)
+    CONTAINER_DAMAGE = 13 # Chi tiền hư container
+    LATE_INTEREST = 14    # Lãi trả chậm
     OTHER = 99            # Chi phí khác
 
 
@@ -55,7 +60,31 @@ IMPORT_COST_TYPE_LABELS = {
     ImportCostType.INSURANCE: "Bảo hiểm hàng hóa",
     ImportCostType.INLAND_FREIGHT: "Vận chuyển nội địa",
     ImportCostType.STORAGE: "Lưu kho / lưu bãi",
+    ImportCostType.IMPORT_SERVICE: "Dịch vụ hỗ trợ nhập khẩu, vận chuyển",
+    ImportCostType.CONTAINER_DAMAGE: "Chi tiền hư container",
+    ImportCostType.LATE_INTEREST: "Lãi trả chậm",
     ImportCostType.OTHER: "Chi phí khác",
+}
+
+
+class ImportCostStatus(IntEnum):
+    """Khoản chi phí đang là số DỰ KIẾN hay số THỰC TẾ (bao-CR-347).
+
+    Thu mua gõ trước một bộ chi phí dự toán lúc chưa có hóa đơn để chốt giá bán, rồi
+    thay dần bằng số thật khi chứng từ về. Hai loại phải sống CÙNG một dòng vì báo cáo
+    giá vốn cần bày cạnh nhau và tính chênh lệch.
+
+    Chỉ dòng THỰC TẾ mới sinh công nợ và mới bị xét khi Hoàn thành đơn — nếu không thì
+    Yêu cầu thanh toán đòi trả một khoản chưa có hóa đơn.
+    """
+
+    ESTIMATED = 1   # Dự kiến
+    ACTUAL = 2      # Thực tế
+
+
+IMPORT_COST_STATUS_LABELS = {
+    ImportCostStatus.ESTIMATED: "Dự kiến",
+    ImportCostStatus.ACTUAL: "Thực tế",
 }
 
 # Khoản nộp cho nhà nước — giao diện gợi ý sẵn NCC "Ngân sách nhà nước" cho mấy loại này.
@@ -125,6 +154,8 @@ class PurchaseOrder(Base, AuditMixin):
     exchange_rate: Mapped[float] = mapped_column(Numeric(18, 6), default=1)
     customs_decl_no: Mapped[str] = mapped_column(String(50), default="")     # số tờ khai hải quan
     customs_decl_date: Mapped[str] = mapped_column(String(10), default="")   # ngày tờ khai
+    # bao-CR-347: ngày hàng rời cảng xuất (ETD) — dòng "Ngày gửi" trên báo cáo giá vốn.
+    etd_date: Mapped[str] = mapped_column(String(10), default="")
     # --- bao-CR-321: điều khoản in trên đơn, chép từ NCC lúc chọn, sửa riêng từng đơn ---
     # 0 / rỗng = chưa khai -> bản in lùi về giá trị của NCC, rồi về mặc định (xem resolve_print_terms).
     inspection_days: Mapped[int] = mapped_column(SmallInteger, default=0)
@@ -192,6 +223,8 @@ class POImportCost(Base, AuditMixin):
 
     po_id: Mapped[int] = mapped_column(BigInteger, index=True)
     cost_type: Mapped[int] = mapped_column(SmallInteger, default=int(ImportCostType.OTHER), index=True)
+    # bao-CR-347. Dòng cũ đều là số thật (đã sinh công nợ) nên migration điền ACTUAL.
+    cost_status: Mapped[int] = mapped_column(SmallInteger, default=int(ImportCostStatus.ACTUAL), index=True)
     description: Mapped[str] = mapped_column(String(255), default="")
     supplier_code: Mapped[str] = mapped_column(String(50), default="", index=True)
     supplier_name: Mapped[str] = mapped_column(String(255), default="")

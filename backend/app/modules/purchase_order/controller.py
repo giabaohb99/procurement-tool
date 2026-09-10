@@ -15,7 +15,8 @@ from app.modules.notification.service import trigger_notification
 
 from . import service
 from .model import (ALLOCATION_METHOD_LABELS, AllocationMethod, DEFAULT_CURRENCY,
-                    IMPORT_COST_TYPE_LABELS, ImportCostType, ORDER_TYPE_LABELS, OrderType,
+                    IMPORT_COST_STATUS_LABELS, IMPORT_COST_TYPE_LABELS, ImportCostStatus,
+                    ImportCostType, ORDER_TYPE_LABELS, OrderType,
                     POItem, PODelivery, PurchaseOrder)
 from app.modules.payable.model import Payable
 from .schema import POCreate, POUpdate, RejectIn, ItemProgressIn, DocumentStatusIn
@@ -25,7 +26,7 @@ router = APIRouter(prefix="/api/purchase-orders", tags=["purchase_order"])
 HEADER = ["id", "code", "misa_code", "pr_code", "survey_code", "company_id", "supplier_code",
           "supplier_name", "department", "nspt", "order_date", "vat_rate", "payment_terms",
           "is_urgent", "status", "document_status", "note", "approve_note",
-          "order_type", "currency", "customs_decl_no", "customs_decl_date",
+          "order_type", "currency", "customs_decl_no", "customs_decl_date", "etd_date",
           "inspection_days", "return_days", "invoice_deadline"]
 
 
@@ -113,9 +114,14 @@ def _import_cost(c, pay: Payable | None = None) -> dict:
         alloc = AllocationMethod(int(c.allocation_method or 0))
     except ValueError:
         alloc = AllocationMethod.BY_VALUE
+    # bao-CR-347 — dòng cũ chưa có cột này đọc thành Thực tế, cùng chiều với `is_actual_cost`.
+    cost_status = (ImportCostStatus.ESTIMATED if not service.is_actual_cost(c)
+                   else ImportCostStatus.ACTUAL)
     base_amount = float(c.base_amount or 0) or service.import_cost_base(c)
     paid = float(pay.paid_amount or 0) if pay else 0.0
     return {"id": c.id, "cost_type": int(cost_type), "cost_type_label": IMPORT_COST_TYPE_LABELS.get(cost_type, ""),
+            "cost_status": int(cost_status),
+            "cost_status_label": IMPORT_COST_STATUS_LABELS.get(cost_status, ""),
             "payable_id": pay.id if pay else 0,
             "paid_amount": round(paid, 2),
             "remaining": round(float(pay.remaining or 0), 2) if pay else round(base_amount, 2),
@@ -139,12 +145,18 @@ def _import_cost_summary(rows: list[dict], goods_base: float) -> dict:
 
     Gom sẵn ở backend vì P5 sẽ tạo Yêu cầu thanh toán gom theo NCC từ đúng con số này;
     để giao diện tự cộng thì hai nơi dễ lệch nhau. Mọi số ở đây đã quy đổi về VNĐ.
+
+    bao-CR-347: mọi con số TỔNG ở đây chỉ đếm dòng THỰC TẾ. Giao diện KHÔNG còn chỗ đặt một
+    khoản thành Dự kiến (đại ca chốt 10/09/2026 bỏ hẳn khái niệm đó khỏi màn hình), nên trên
+    thực tế phép lọc này không loại dòng nào — giữ lại để dữ liệu lỡ có dòng dự kiến từ đợt
+    thử nghiệm cũng không lọt vào công nợ.
     """
-    cost_total = round(sum(r["base_amount"] for r in rows), 2)
-    paid_total = round(sum(r["paid_amount"] for r in rows), 2)
+    actual = [r for r in rows if int(r.get("cost_status") or 0) != int(ImportCostStatus.ESTIMATED)]
+    cost_total = round(sum(r["base_amount"] for r in actual), 2)
+    paid_total = round(sum(r["paid_amount"] for r in actual), 2)
     by_type: dict[int, dict] = {}
     by_supplier: dict[str, dict] = {}
-    for r in rows:
+    for r in actual:
         g = by_type.setdefault(r["cost_type"], {"cost_type": r["cost_type"],
                                                 "cost_type_label": r["cost_type_label"],
                                                 "base_amount": 0.0, "count": 0})
@@ -166,7 +178,7 @@ def _import_cost_summary(rows: list[dict], goods_base: float) -> dict:
             n["supplier_name"] = r["supplier_name"]
     return {
         "goods_base_total": round(goods_base, 2),          # tiền HÀNG đã quy đổi (theo SL đặt)
-        "cost_total": cost_total,                          # tổng chi phí đã quy đổi
+        "cost_total": cost_total,                          # tổng chi phí THỰC TẾ đã quy đổi
         "paid_total": paid_total,                          # đã chi cho chi phí (P5)
         "remaining_total": round(cost_total - paid_total, 2),  # còn phải chi (P5)
         "landed_total": round(goods_base + cost_total, 2),  # tổng giá vốn lô hàng về tới kho
@@ -220,7 +232,9 @@ def _out(db: Session, po: PurchaseOrder) -> dict:
     d["import_cost_summary"] = _import_cost_summary(costs, goods_base)
     # bao-CR-319 P4 — chi phí chia về từng dòng hàng, CHỈ ĐỂ XEM (không lưu, không vào kho).
     # Tính ở đây để màn hình, bản in và Yêu cầu thanh toán (P5) đọc cùng một con số.
-    d["import_cost_allocation"] = service.allocate_import_costs(items, costs)
+    # bao-CR-347: chỉ chia dòng THỰC TẾ — giá vốn dòng hàng phải là số thật, số dự toán có
+    # đường riêng ở báo cáo giá vốn.
+    d["import_cost_allocation"] = service.allocate_import_costs(items, service.actual_costs(costs))
     return d
 
 
