@@ -18,3 +18,9 @@ class ForgotPasswordInput(BaseModel):
 class ResetPasswordInput(BaseModel):
     token: str
     new_password: str
+
+
+class NotifyEmailInput(BaseModel):
+    """Người dùng tự bật/tắt email thông báo của chính mình (bao-CR-349)."""
+
+    notify_email: bool

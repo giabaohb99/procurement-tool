@@ -155,6 +155,12 @@ export default function RolePermissions() {
                     {u.full_name || u.email || `#${u.id}`}
                     {u.is_orphan && <span className="badge err" style={{ marginLeft: 6 }} title="Tài khoản không gắn với hồ sơ nhân sự nào">Mồ côi</span>}
                     {!u.is_active && <span className="badge gray" style={{ marginLeft: 6 }}>Đã khóa</span>}
+                    {/* bao-CR-349: bày ra đây để câu hỏi "sao người này không nhận được thư"
+                        trả lời được ngay trên danh sách, không phải mở từng tài khoản. */}
+                    {u.notify_email === false && (
+                      <span className="badge gray" style={{ marginLeft: 6 }}
+                        title="Tài khoản này đã tắt email thông báo — vẫn nhận thông báo trong app">Tắt email</span>
+                    )}
                     <div style={{ fontSize: 11, color: 'var(--muted)' }}>{u.email || '(chưa có email)'}</div>
                   </td>
                   <td>{u.department_name || '—'}</td>

@@ -39,6 +39,16 @@ export default function UserPermissionDetail() {
     try { await api.put(`/api/users/${id}/roles`, { role_ids: roleSel }); setMsg('Đã lưu vai trò'); load() }
     catch (e: any) { setErr(e?.response?.data?.error?.message || 'Lỗi khi lưu vai trò') }
   }
+  /** bao-CR-349: quản trị tắt hộ email thông báo cho người không muốn nhận thư. */
+  async function toggleNotifyEmail() {
+    setMsg(''); setErr('')
+    const next = !u?.notify_email
+    try {
+      await api.put(`/api/users/${id}/notify-email`, { notify_email: next })
+      setU((s: any) => ({ ...s, notify_email: next }))
+      setMsg(next ? 'Đã bật email thông báo' : 'Đã tắt email thông báo')
+    } catch (e: any) { setErr(e?.response?.data?.error?.message || 'Không đổi được cài đặt email') }
+  }
   async function openScope(rid: number) {
     setPopRole(rid); setEmpQ(''); setEmpExclQ(''); setErr('')
     try {
@@ -105,6 +115,26 @@ export default function UserPermissionDetail() {
               </div>
             )
           })}
+        </div>
+      </div>
+
+      <div className="hz-card" style={{ padding: 18, marginTop: 14 }}>
+        <h3 className="hz-title" style={{ marginBottom: 4 }}>Email thông báo</h3>
+        <div className="hz-sub" style={{ display: 'block', marginBottom: 14 }}>
+          Thư báo chứng từ cần duyệt / đã duyệt / bị trả lại gửi về hộp thư của người này.
+          Tắt đi thì họ vẫn nhận đủ thông báo trong app; thư đặt lại mật khẩu không bị ảnh hưởng.
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <span style={{ width: 8, height: 8, borderRadius: '50%', flex: 'none',
+            background: u?.notify_email === false ? '#cbd5e1' : 'var(--green)' }} />
+          <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--navy)' }}>
+            {u?.notify_email === false ? 'Đang tắt' : 'Đang bật'}
+          </span>
+          <span style={{ flex: 1 }} />
+          <button className={u?.notify_email === false ? 'btn' : 'btn ghost'} onClick={toggleNotifyEmail}>
+            <i className={'ti ' + (u?.notify_email === false ? 'ti-mail' : 'ti-mail-off')} />
+            {u?.notify_email === false ? 'Bật email thông báo' : 'Tắt email thông báo'}
+          </button>
         </div>
       </div>
 

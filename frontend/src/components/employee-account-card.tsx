@@ -4,7 +4,13 @@ import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import { toast } from './toast'
 
-type LinkedUser = { id: number; email: string; is_active: boolean; role_ids: number[] }
+type LinkedUser = {
+  id: number; email: string; is_active: boolean; role_ids: number[]
+  // bao-CR-349. Tài khoản cũ chưa chạy migration thì API không gửi trường này — coi như BẬT,
+  // đúng chiều mặc định của cột. Để `undefined` rơi vào nhánh "đã tắt" là bịa ra một người
+  // không nhận thư trong khi họ vẫn đang nhận.
+  notify_email?: boolean
+}
 
 /**
  * Thẻ "Tài khoản đăng nhập" trên trang chi tiết Nhân sự.
@@ -19,6 +25,8 @@ export default function EmployeeAccountCard({ employeeId, email }: { employeeId:
   const { can } = useAuth()
   const canReadUser = can('user', 'read')
   const canSetPassword = can('employee', 'write')
+  // Công tắc email thông báo gọi PUT /api/users/{id}/notify-email → backend đòi user.write.
+  const canEditUser = can('user', 'write')
 
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<LinkedUser | null>(null)
@@ -67,9 +75,30 @@ export default function EmployeeAccountCard({ employeeId, email }: { employeeId:
     } finally { setSaving(false) }
   }
 
+  /**
+   * Bật/tắt email thông báo luồng duyệt của tài khoản này (bao-CR-349).
+   *
+   * Cùng một công tắc với card ở Trang cá nhân và màn Phân quyền tài khoản — đặt thêm ở đây
+   * vì người đi xử lý yêu cầu "ngưng gửi mail" là Nhân sự/quản trị, và họ mở hồ sơ NHÂN SỰ
+   * chứ không nhớ tài khoản số mấy.
+   */
+  async function toggleNotifyEmail() {
+    if (!user) return
+    const next = user.notify_email === false
+    setSaving(true)
+    try {
+      await api.put(`/api/users/${user.id}/notify-email`, { notify_email: next })
+      setUser({ ...user, notify_email: next })
+      toast.success(next ? 'Đã bật email thông báo' : 'Đã tắt email thông báo')
+    } catch (e: any) {
+      toast.error(e?.response?.data?.error?.message || 'Không đổi được cài đặt email')
+    } finally { setSaving(false) }
+  }
+
   if (!canReadUser && !canSetPassword) return null
 
   const roles = (user?.role_ids || []).map((id) => roleNames[id]).filter(Boolean)
+  const nhanEmail = user?.notify_email !== false
 
   return (
     <div className="card" style={{ padding: 18 }}>
@@ -98,6 +127,14 @@ export default function EmployeeAccountCard({ employeeId, email }: { employeeId:
                   : 'Chưa gán vai trò — tài khoản chưa dùng được'}
             </div>
           </div>
+          {/* bao-CR-349 — trả lời tại chỗ câu "sao người này không nhận được thư duyệt". */}
+          <div className="me-field" style={{ gridTemplateColumns: '22px 96px minmax(0,1fr)' }}>
+            <i className={'ti ' + (nhanEmail ? 'ti-mail' : 'ti-mail-off')} />
+            <div className="me-field-label">Email TB</div>
+            <div className="me-field-value">
+              {nhanEmail ? 'Đang nhận email thông báo' : 'Đã tắt — chỉ còn chuông và thông báo đẩy'}
+            </div>
+          </div>
         </>
       ) : (
         <div className="me-note" style={{ marginTop: 0 }}>
@@ -115,6 +152,12 @@ export default function EmployeeAccountCard({ employeeId, email }: { employeeId:
         {canSetPassword && (user || email) && (
           <button className="btn ghost" onClick={() => setPwOpen((o) => !o)}>
             <i className="ti ti-key" />{user ? 'Đặt lại mật khẩu' : 'Tạo tài khoản đăng nhập'}
+          </button>
+        )}
+        {user && canEditUser && (
+          <button className="btn ghost" disabled={saving} onClick={toggleNotifyEmail}>
+            <i className={'ti ' + (nhanEmail ? 'ti-mail-off' : 'ti-mail')} />
+            {nhanEmail ? 'Tắt email thông báo' : 'Bật email thông báo'}
           </button>
         )}
         {user && can('user', 'read') && (

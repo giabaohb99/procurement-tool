@@ -7,7 +7,8 @@ from app.core.database import get_db
 from app.core.response import success
 
 from . import service
-from .schema import ActiveUpdate, PasswordReset, RoleAssign, ScopeUpdate, UserOut, UserProvision
+from .schema import (ActiveUpdate, NotifyEmailUpdate, PasswordReset, RoleAssign, ScopeUpdate,
+                     UserOut, UserProvision)
 
 router = APIRouter(prefix="/api/users", tags=["user"])
 
@@ -67,6 +68,20 @@ def set_active(
 ):
     service.set_active(db, user_id, data.is_active, user.id)
     return success(None, "Đã mở khóa tài khoản" if data.is_active else "Đã khóa tài khoản")
+
+
+@router.put("/{user_id}/notify-email")
+def set_notify_email(
+    user_id: int, data: NotifyEmailUpdate, db: Session = Depends(get_db),
+    user=Depends(require("user", "write")),
+):
+    """Quản trị bật/tắt hộ email thông báo cho một tài khoản (bao-CR-349).
+    Ghi nhật ký vì đây là lý do chính đáng nhất cho câu hỏi "sao tôi không nhận được thư"."""
+    from app.core.audit import record as audit_record
+    service.set_notify_email(db, user_id, data.notify_email, user.id)
+    audit_record(db, user.id, "user", user_id, "write",
+                 "Bật email thông báo" if data.notify_email else "Tắt email thông báo")
+    return success(None, "Đã bật email thông báo" if data.notify_email else "Đã tắt email thông báo")
 
 
 @router.delete("/{user_id}")

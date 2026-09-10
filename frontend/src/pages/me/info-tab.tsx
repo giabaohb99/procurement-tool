@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
 import { TICKET_ENABLED } from '../../config/features'
 import ChangePasswordCard from './change-password-card'
+import EmailNotificationCard from './email-notification-card'
 import PushNotificationCard from './push-notification-card'
 import SignatureCard from './signature-card'
 import type { MeProfile } from './profile-hero'
@@ -32,7 +33,7 @@ function Field({ label, icon, value }: { label: string; icon: string; value?: st
 /**
  * Tab "Thông tin cá nhân" — 2 cột cố định:
  *   trái  = dữ liệu hồ sơ (chỉ xem, do Nhân sự quản lý)
- *   phải  = những thứ TỰ đổi được (mật khẩu, thông báo đẩy)
+ *   phải  = những thứ TỰ đổi được (mật khẩu, email thông báo, thông báo đẩy)
  * Tách vậy để rõ cái nào bạn sửa được, cái nào phải nhờ Nhân sự.
  */
 export default function InfoTab({ me }: { me: MeProfile | null }) {
@@ -81,6 +82,9 @@ export default function InfoTab({ me }: { me: MeProfile | null }) {
       <div className="detail-col">
         <SignatureCard signature={me.signature} />
         <ChangePasswordCard />
+        {/* Email đứng TRƯỚC thông báo đẩy: ai vào đây để tắt thư thì thấy ngay, và đọc
+            được lời nhắc bật thông báo đẩy trước khi cắt đường thư của mình. */}
+        <EmailNotificationCard value={me.notify_email} />
         <PushNotificationCard />
       </div>
     </div>

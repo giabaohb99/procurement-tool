@@ -15,6 +15,7 @@ export type MeProfile = {
   role_name?: string
   avatar?: string
   signature?: string   // URL ảnh chữ ký cá nhân (đổi ở thẻ "Chữ ký cá nhân" tab Thông tin)
+  notify_email?: boolean  // còn nhận email thông báo luồng duyệt không (bao-CR-349)
 }
 
 /**
