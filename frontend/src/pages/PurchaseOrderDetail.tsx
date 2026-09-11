@@ -1334,7 +1334,10 @@ export default function PurchaseOrderDetail() {
                         </th>
                       )}
                       <th style={{ width: 36 }}>#</th>
-                      <th style={{ width: 185 }}>Loại chi phí</th>
+                      {/* bao-CR-381: 185px cắt cụt nhãn ("Cước vận tải quốc t…") — 260px vừa
+                          nhãn dài nhất "Dịch vụ hỗ trợ nhập khẩu, vận chuyển"; select gốc
+                          không xuống dòng được nên phải nới cột chứ không wrap */}
+                      <th style={{ width: 260 }}>Loại chi phí</th>
                       <th style={{ minWidth: 320 }}>Diễn giải</th>
                       {/* Cách chia đứng ngay sau diễn giải để khỏi phải cuộn ngang mới thấy */}
                       <th style={{ width: 160 }}>Cách phân bổ</th>
@@ -1367,6 +1370,7 @@ export default function PurchaseOrderDetail() {
                         <td>{i + 1}</td>
                         <td>
                           <select className="cell-input" value={String(Number(c.cost_type) || 99)} disabled={!costEditable}
+                            title={COST_TYPE_LABEL(c.cost_type)}
                             onChange={(e) => {
                               const v = Number(e.target.value) || 99
                               // Khoản nộp nhà nước thì điền sẵn NCC "Ngân sách nhà nước" —
@@ -1516,7 +1520,12 @@ export default function PurchaseOrderDetail() {
                               <td style={{ textAlign: 'center' }}>
                                 {ids.length > 0
                                   ? <button className="btn secondary" style={{ height: 28, fontSize: 12.5 }} onClick={() => goCreatePayment(ids)}><i className="ti ti-receipt" />Tạo YCTT</button>
-                                  : <span className="badge ok">Đã chi đủ</span>}
+                                  : (Number(r.remaining) || 0) > 0.01
+                                    // bao-CR-379: còn phải chi nhưng không có khoản nợ nào để lập phiếu
+                                    // (chưa chọn NCC / dòng chưa Lưu / số tiền 0) — trước đây rơi nhầm
+                                    // vào nhãn "Đã chi đủ" dù chưa chi đồng nào.
+                                    ? <span title="Các khoản này chưa thành công nợ (chưa chọn NCC, dòng chưa Lưu hoặc số tiền 0) nên chưa lập phiếu được" style={{ color: 'var(--muted)', fontSize: 12.5 }}>Chưa thành công nợ</span>
+                                    : <span className="badge ok">Đã chi đủ</span>}
                               </td>
                             </tr>
                           )
