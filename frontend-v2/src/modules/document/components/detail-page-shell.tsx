@@ -157,7 +157,10 @@ export function DetailPageShell({
                  nữa — nó theo nhóm phụ vào trong `⋯` (xem cuối khối này). */}
             {!isCreating && onDelete && !secondaryActions && (
               <ConfirmIconButton
-                className="max-md:order-last"
+                //  `max-md:size-9` cho nút này cao đúng 36px bằng Hủy/Lưu đứng
+                //  cạnh. Mặc định nó 32px — lệch 4px giữa ba nút trên cùng một
+                //  hàng, đủ để hàng nút đọc ra như xếp chưa thẳng.
+                className="max-md:order-last max-md:size-9"
                 icon={Trash2}
                 title="Xóa"
                 destructive
@@ -174,11 +177,31 @@ export function DetailPageShell({
               actions
             ) : (
               <>
-                <Button variant="outline" onClick={back}>
+                {/*  ⚠️ **`max-md:hidden` — nút Hủy BIẾN MẤT ở khổ hẹp, và đây là
+                     bỏ thứ THỪA chứ không phải giấu bớt cho gọn.** `onClick` của
+                     nó là `back`, đúng cùng một hàm với nút `←` nằm ngay cạnh
+                     tiêu đề phía trên — hai chỗ bấm cho cùng một việc, không
+                     chỗ nào cảnh báo mất dữ liệu, khác nhau đúng ở chỗ đứng.
+
+                     Trên màn rộng giữ lại vì đó là nếp quen của biểu mẫu và ở đó
+                     nó không lấy chỗ của ai. Khổ hẹp thì cụm nút luôn xuống hàng
+                     riêng (`max-md:w-full` của `PageHeader`), nên mỗi nút thừa
+                     là một mẩu cắt ngang đúng cái hàng vốn đã chật.
+
+                     ⚠️ **Vì sao phải bỏ hẳn chứ không chỉ dàn cho đều.** Bản
+                     trước cho Hủy và Lưu chia đôi hàng: hết khoảng trống thật,
+                     nhưng hàng thành BA khối rời cỡ khác nhau (160 · 150 · 36)
+                     mà khối cuối lại là một biểu tượng đỏ — mắt đọc ra ba mẩu
+                     cụt chứ không ra một cụm (khách báo 11/09/2026). Bỏ Hủy thì
+                     còn đúng hai thứ, mỗi thứ một việc rõ ràng: **Lưu** trải hết
+                     hàng (việc chính, vùng chạm rộng nhất) và **Xóa** giữ nguyên
+                     ô vuông ở mép phải. */}
+                <Button variant="outline" onClick={back} className="max-md:hidden">
                   Hủy
                 </Button>
-                {/* Nút Lưu đứng ngoài form, nối vào bằng `form=`. */}
-                <Button type="submit" form={formId}>
+                {/*  Nút Lưu đứng ngoài form, nối vào bằng `form=`.
+                     `max-md:flex-1`: chiếm trọn phần còn lại của hàng. */}
+                <Button type="submit" form={formId} className="max-md:flex-1">
                   <Save className="size-4" />
                   Lưu
                 </Button>
