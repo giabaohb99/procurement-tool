@@ -1,7 +1,11 @@
 import type { CSSProperties } from 'react'
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 
-import { canAccessRoute, canOpenModule } from '@/app/router/module-visibility'
+import {
+  canAccessRoute,
+  canOpenModule,
+  firstAccessibleNavPath,
+} from '@/app/router/module-visibility'
 import { useActiveModule } from '@/app/router/use-active-module'
 import { useNavContext, usePermission } from '@/core/authorization/use-permission'
 import { AssistantWidget } from '@/modules/assistant/components/assistant-widget'
@@ -35,6 +39,17 @@ export function ModuleLayout() {
   // Vào được phân hệ nhưng màn cụ thể ngoài quyền -> giữ khung + menu, ruột là 403
   // để người dùng chọn màn khác mình có quyền.
   const allowed = canAccessRoute(activeModule, pathname, can, navCtx)
+
+  //  Ngoại lệ ở TRANG GỐC của phân hệ: đây là nơi người ta ĐÁP XUỐNG khi bấm thẻ
+  //  phân hệ, không phải nơi họ tự gõ URL. Bày trang 403 ngay cửa vào thì người
+  //  dùng đọc ra "không có quyền vào phân hệ này" rồi quay đi — dù ngay bên dưới
+  //  vẫn có màn họ xem được (bao-CR-380). Đẩy thẳng tới màn đầu tiên xem được.
+  //  Các màn khác vẫn ăn 403 đàng hoàng: gõ tay một URL ngoài quyền mà bị lẳng
+  //  lặng ném sang trang khác thì còn khó hiểu hơn.
+  if (!allowed && pathname === activeModule.path) {
+    const fallback = firstAccessibleNavPath(activeModule, can, navCtx)
+    if (fallback) return <Navigate to={fallback} replace />
+  }
 
   return (
     // SidebarProvider lo trạng thái thu/mở, ngăn kéo mobile, phím tắt ⌘B và ghi

@@ -4,7 +4,12 @@ import { FileText } from 'lucide-react'
 
 import type { PermissionAction, PermissionEntity } from '@/core/authorization/permission-types'
 import type { ErpModule } from './module-definition'
-import { canAccessRoute, canOpenModule, visibleNavItems } from './module-visibility'
+import {
+  canAccessRoute,
+  canOpenModule,
+  firstAccessibleNavPath,
+  visibleNavItems,
+} from './module-visibility'
 import { allModules, moduleRegistry } from './module-registry'
 
 function module(nav: ErpModule['nav'], entity?: string): ErpModule {
@@ -159,6 +164,66 @@ describe('canAccessRoute', () => {
 
     expect(canAccessRoute(module(nav), '/x/dm', allowFullRow({ unit: ['read'] }))).toBe(false)
     expect(canAccessRoute(module(nav), '/x/dm', allowFullRow({ unit: ['write'] }))).toBe(true)
+  })
+})
+
+/**
+ * ─── Đáp xuống đâu khi KHÔNG xem được trang gốc (bao-CR-380) ───
+ *
+ * Lỗi khách báo 11/09/2026: tài khoản chỉ có `warehouse.read` bấm vào phân hệ
+ * Kho là rơi thẳng vào Tổng quan rồi ăn một ô đỏ, trong khi *Danh mục Kho* ngay
+ * bên dưới họ xem được. Người dùng đọc ra "không có quyền vào Kho" và dừng lại.
+ */
+describe('firstAccessibleNavPath', () => {
+  const navKho = [
+    { label: 'Tổng quan', path: '/x', entity: 'inventory', icon: FileText },
+    { label: 'Tồn kho', path: '/x/stock', entity: 'inventory', icon: FileText },
+    { label: 'Danh mục Kho', path: '/x/warehouses', entity: 'warehouse', icon: FileText },
+  ] as ErpModule['nav']
+
+  it('trả về màn đầu tiên xem được, KHÔNG trả về chính trang gốc', () => {
+    expect(firstAccessibleNavPath(module(navKho), allow('warehouse'))).toBe('/x/warehouses')
+  })
+
+  it('xem được trang gốc thì vẫn trả màn khác — nơi gọi tự quyết có dùng hay không', () => {
+    //  `ModuleLayout` chỉ hỏi hàm này khi trang gốc đã bị chặn, nên hàm không
+    //  cần tự biết điều đó. Giữ hợp đồng đơn giản: "màn đầu tiên KHÁC trang gốc".
+    expect(firstAccessibleNavPath(module(navKho), allow('inventory'))).toBe('/x/stock')
+  })
+
+  it('không còn màn nào xem được thì trả null, đừng đẩy người ta vào vòng lặp', () => {
+    expect(firstAccessibleNavPath(module(navKho), allow())).toBeNull()
+  })
+
+  it('BỎ QUA lối tắt sang phân hệ khác — đá người ta ra ngoài còn khó hiểu hơn', () => {
+    const nav = [
+      { label: 'Tổng quan', path: '/x', entity: 'inventory', icon: FileText },
+      { label: 'Công nợ', path: '/finance/payables', entity: 'payable', crossModule: true, icon: FileText },
+    ] as ErpModule['nav']
+
+    expect(firstAccessibleNavPath(module(nav), allow('payable'))).toBeNull()
+  })
+
+  it('BỎ QUA mục ẩn — đẩy tới đó thì menu trái không mục nào sáng', () => {
+    const nav = [
+      { label: 'Tổng quan', path: '/x', entity: 'inventory', icon: FileText },
+      { label: 'Loại nghỉ', path: '/x/leave-types', entity: 'leave_type', hidden: true, icon: FileText },
+    ] as ErpModule['nav']
+
+    expect(firstAccessibleNavPath(module(nav), allow('leave_type'))).toBeNull()
+  })
+
+  it('người chỉ giữ danh mục kho KHÔNG còn đáp xuống Tổng quan của phân hệ Kho', () => {
+    //  Chạy trên phân hệ THẬT: hai luật (mục menu và trang bên trong) từng lệch
+    //  nhau đúng ở đây — menu mời vào bằng `entities: [inventory, warehouse]`,
+    //  trang lại đòi `inventory.read`.
+    const kho = moduleRegistry.find((m) => m.id === 'inventory')
+    expect(kho).toBeDefined()
+    if (!kho) return
+
+    const chiCoDanhMuc = allow('warehouse')
+    expect(canAccessRoute(kho, kho.path, chiCoDanhMuc)).toBe(false)
+    expect(firstAccessibleNavPath(kho, chiCoDanhMuc)).toBe('/inventory/warehouses')
   })
 })
 

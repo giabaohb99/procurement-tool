@@ -90,6 +90,42 @@ describe('menu phân hệ Văn thư', () => {
     }
   })
 
+  /**
+   * LỖI KHÁCH BÁO 11/09/2026 (bao-CR-380): tài khoản TESTREQ — Nhân viên trơn —
+   * mở được màn *Thiết lập văn bản*.
+   *
+   * Bài đối chứng ngay trên dùng người KHÔNG có quyền nào nên không bắt được:
+   * seed cấp `read` sáu khóa danh mục Văn bản cho MỌI vai trò, kể cả `employee`,
+   * để các ô chọn trên form soạn văn bản đổ được dữ liệu. Gác bằng `read` nghĩa
+   * là cấp luôn cửa vào màn khai báo cho cả công ty.
+   */
+  const SAU_KHOA_DANH_MUC = [
+    'doc_type',
+    'doc_template',
+    'security_level',
+    'external_party',
+    'doc_numbering_rule',
+    'doc_link_rule',
+  ] as const
+
+  const chiDocDanhMuc = (entity: PermissionEntity, action: PermissionAction) =>
+    action === 'read' && (SAU_KHOA_DANH_MUC as readonly string[]).includes(entity)
+
+  it('read thuần trên danh mục KHÔNG mở được màn khai báo — read chỉ để đổ dropdown', () => {
+    const labels = visibleNavItems(documentModule, chiDocDanhMuc).map((item) => item.label)
+    for (const item of documentModule.nav.filter((nav) => nav.group === 'Danh mục')) {
+      expect(labels, item.label).not.toContain(item.label)
+      //  Ẩn mục menu là chưa đủ: gõ thẳng URL phải ăn trang 403.
+      expect(canAccessRoute(documentModule, item.path, chiDocDanhMuc), item.path).toBe(false)
+    }
+  })
+
+  it('mọi mục nhóm «Danh mục» đều khai `manage` — đừng thêm mục mới gác bằng read', () => {
+    const danhMuc = documentModule.nav.filter((item) => item.group === 'Danh mục')
+    expect(danhMuc.length).toBe(3)
+    for (const item of danhMuc) expect(item.manage, item.label).toBe(true)
+  })
+
   it('có quyền quản lý danh mục thì mục danh mục hiện lại', () => {
     const co = chiCo('doc_type.create', 'doc_type.write', 'doc_type.delete')
     const labels = visibleNavItems(documentModule, co).map((item) => item.label)

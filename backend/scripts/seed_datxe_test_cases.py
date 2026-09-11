@@ -16,19 +16,30 @@ from app.modules.vehicle_booking import model as m
 from app.modules.vehicle_booking import service
 from app.modules.vehicle_booking.schema import DispatchIn, VehicleBookingCreate
 
-NS1 = "duonghaiyen.idagroup@dego.com"
-TP1 = "ndquyen.idagroup@dego.com"
-NS2 = "hnqanh.idagroup@dego.com"
-TP2 = "nmtoan.idagroup@dego.com"
-DPV = "bhtthanh.idaglobal@dego.com"
-TX1 = "ltnhut.idagroup@dego.com"
-TX2 = "tqthai.idagroup@dego.com"
+#  MÃ NHÂN VIÊN, không phải email (bao-CR-380, 11/09/2026). Bản cũ tra người bằng
+#  email `@dego.com` do seed tài khoản dập vào — mà danh sách email ngày ấy lệch
+#  một mã, nên hai phiếu mẫu dựng ra mang tên nhầm người và không ai thấy sai ở
+#  đâu cả. Mã nhân viên là khóa thật của hồ sơ, không ai dập đè lên được.
+NS1 = "NSU204"  # Dương Hải Yến — Nhân sự
+TP1 = "NSU203"  # Nguyễn Đỗ Quyên — Trưởng bộ phận
+NS2 = "NSU172"  # Hồ Ngọc Quế Anh — Nhân sự
+TP2 = "NSU171"  # Nguyễn Minh Toàn — Trưởng bộ phận
+DPV = "NSU056"  # Bùi Huỳnh Trường Thành — Điều phối viên
+TX1 = "NSU060"  # Lê Tấn Nhựt — Tài xế
+TX2 = "NSU058"  # Trần Quốc Thái — Tài xế
 
 
-def _user(db, email):
-    u = db.query(User).filter(User.email == email).first()
+def _user(db, code):
+    emp = db.query(Employee).filter(Employee.code == code).first()
+    if emp is None:
+        raise SystemExit(f"Thiếu hồ sơ nhân sự {code} — kiểm lại dữ liệu nhân sự.")
+    #  Ưu tiên tài khoản đang hoạt động — cùng luật với `auth.authenticate`.
+    u = (
+        db.query(User).filter(User.employee_id == emp.id, User.is_active.is_(True)).first()
+        or db.query(User).filter(User.employee_id == emp.id).first()
+    )
     if u is None:
-        raise SystemExit(f"Thiếu tài khoản {email} — chạy scripts.seed_datxe_test_accounts trước.")
+        raise SystemExit(f"Thiếu tài khoản {code} — chạy scripts.seed_datxe_test_accounts trước.")
     return u
 
 
@@ -97,8 +108,8 @@ def _make_case(db, purpose, requester, approver, driver, vehicle, *, delivery=Fa
 def run():
     db = SessionLocal()
     try:
-        for email in (NS1, TP1, NS2, TP2, DPV, TX1, TX2):
-            perm_cache_clear(_user(db, email).id)
+        for code in (NS1, TP1, NS2, TP2, DPV, TX1, TX2):
+            perm_cache_clear(_user(db, code).id)
 
         drv1 = _driver_for(db, _user(db, TX1))
         drv2 = _driver_for(db, _user(db, TX2))

@@ -23,16 +23,28 @@ import { useInventoryItems } from '../hooks/use-inventory'
 
 /**
  * Tổng quan Kho: KPI giá trị tồn kho, hết hàng, bảng cảnh báo tồn kho thấp và lối tắt quản lý kho.
- * Kiểm tra phân quyền chặt chẽ: `inventory.read`.
+ *
+ * Khóa của trang là `inventory.read` — mục menu *Tổng quan* gác đúng khóa đó nên
+ * người thiếu nó không đi tới đây được (`ModuleLayout` đẩy sang màn đầu tiên họ
+ * xem được). Nhánh chặn dưới đây chỉ còn là lưới an toàn.
+ *
+ * Trong trang thì gác TỪNG KHỐI bằng `can(entity, 'read')` — cùng luật với Tổng
+ * quan Thu mua: thiếu khóa nào thì bỏ khối đó đi, không dựng ô đỏ đè cả trang.
  */
 export function InventoryDashboardPage() {
   const navigate = useNavigate()
   const { can } = usePermission()
   const canInventory = can('inventory', 'read')
+  const canWarehouse = can('warehouse', 'read')
   const canPR = can('purchase_request', 'create') || can('purchase_request', 'write')
 
   const { data: overview, isLoading: isOverviewLoading } = useProcurementDashboard()
-  const { data: stockData, isLoading: isStockLoading } = useInventoryItems({ page_size: 1 })
+  //  TẮT khi thiếu quyền: hook chạy trước nhánh `return` chặn quyền bên dưới,
+  //  không tắt thì người dùng ăn toast 403 rồi mới thấy câu giải thích.
+  const { data: stockData, isLoading: isStockLoading } = useInventoryItems(
+    { page_size: 1 },
+    { enabled: canInventory },
+  )
 
   const kpi = overview?.kpi
   const lowStock = overview?.low_stock ?? []
@@ -42,7 +54,8 @@ export function InventoryDashboardPage() {
       <PageContainer>
         <PageHeader title="Kho" description="Tồn kho, nhập xuất và luân chuyển kho." />
         <div className="rounded-lg border border-rose-200 bg-rose-50 p-6 text-center text-rose-800 dark:border-rose-900 dark:bg-rose-950 dark:text-rose-200">
-          Bạn không có quyền xem thông tin phân hệ Kho & Tồn kho.
+          Bạn không có quyền xem số liệu tồn kho.
+          {canWarehouse && ' Danh mục Kho ở menu bên trái vẫn mở với bạn.'}
         </div>
       </PageContainer>
     )
@@ -189,21 +202,25 @@ export function InventoryDashboardPage() {
               <ArrowRight className="size-4 text-slate-400" />
             </div>
 
-            <div
-              className="flex cursor-pointer items-center justify-between rounded-lg border p-3 transition-colors hover:bg-accent"
-              onClick={() => navigate(appRoutes.inventory.warehouses)}
-            >
-              <div className="flex items-center gap-3">
-                <div className="rounded-md bg-indigo-100 p-2 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
-                  <Warehouse className="size-5" />
+            {/* Lối tắt sang DANH MỤC KHO — khóa riêng (`warehouse`), người
+                không có nó bấm vào là ăn trang 403, nên bỏ hẳn khối. */}
+            {canWarehouse && (
+              <div
+                className="flex cursor-pointer items-center justify-between rounded-lg border p-3 transition-colors hover:bg-accent"
+                onClick={() => navigate(appRoutes.inventory.warehouses)}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="rounded-md bg-indigo-100 p-2 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
+                    <Warehouse className="size-5" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-sm">Danh mục Nhà kho</h4>
+                    <p className="text-xs text-muted-foreground">Quản lý mã kho, tên kho và vị trí</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="font-semibold text-sm">Danh mục Nhà kho</h4>
-                  <p className="text-xs text-muted-foreground">Quản lý mã kho, tên kho và vị trí</p>
-                </div>
+                <ArrowRight className="size-4 text-slate-400" />
               </div>
-              <ArrowRight className="size-4 text-slate-400" />
-            </div>
+            )}
           </div>
         </ChartCard>
       </div>

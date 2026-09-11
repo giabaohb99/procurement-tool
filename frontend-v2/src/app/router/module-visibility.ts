@@ -95,6 +95,31 @@ function itemAllowed(item: ModuleNavItem, can: CanFn, ctx: NavContext = {}): boo
 }
 
 /**
+ * Màn ĐẦU TIÊN trong phân hệ mà người này xem được — để thay cho trang Tổng quan
+ * khi họ không có quyền xem nó.
+ *
+ * Sinh ra 11/09/2026 (bao-CR-380): tài khoản chỉ có `warehouse.read` bấm vào
+ * phân hệ Kho là rơi thẳng vào Tổng quan rồi ăn một ô đỏ, trong khi *Danh mục
+ * Kho* ngay bên dưới họ xem được. Người dùng đọc ra "không có quyền vào Kho" và
+ * dừng lại ở đó. Luật chung cho MỌI phân hệ: vào phân hệ thì đáp xuống việc mình
+ * làm được, đừng đáp xuống cửa đóng.
+ *
+ * Bỏ qua ba loại mục: chính trang gốc (đó là trang vừa không vào được),
+ * `crossModule` (dẫn sang phân hệ khác — đá người ta ra ngoài còn khó hiểu hơn)
+ * và `hidden` (không vẽ trên menu, đẩy tới đó thì menu trái tối om).
+ */
+export function firstAccessibleNavPath(
+  module: ErpModule,
+  can: CanFn,
+  ctx: NavContext = {},
+): string | null {
+  const item = module.nav.find(
+    (i) => i.path !== module.path && !i.crossModule && !i.hidden && itemAllowed(i, can, ctx),
+  )
+  return item?.path ?? null
+}
+
+/**
  * Người dùng có được XEM màn ứng với `pathname` trong `module` không.
  *
  * Chốt chặn thật vẫn ở backend (`require`); đây chỉ để **gõ thẳng URL** một màn

@@ -95,10 +95,19 @@ export const documentModule: ErpModule = {
       //  nào là vào được) rồi để trang tự ẩn tab. Gác bằng một khóa duy nhất
       //  thì người chỉ giữ *Đơn vị gửi nhận* không vào nổi trang chứa đúng tab
       //  của mình (CR-157).
+      //
+      //  ⚠️ `manage: true` chứ không phải `read` (bao-CR-380, 11/09/2026). Sáu
+      //  khóa danh mục của Văn bản được seed cấp `read` cho MỌI vai trò — kể cả
+      //  `employee` — vì các ô chọn trên form soạn văn bản (loại văn bản, mẫu,
+      //  mức mật, đơn vị gửi nhận) phải đổ được dữ liệu. Gác bằng `read` nghĩa
+      //  là **mọi nhân viên đều mở được màn khai báo**: khách bắt đúng lỗi này
+      //  trên dev với tài khoản TESTREQ. Đây chính là luật đã viết ở
+      //  `module-visibility.ts`: read thuần chỉ để đổ dropdown.
       label: 'Thiết lập văn bản',
       path: appRoutes.document.settings,
       icon: SlidersHorizontal,
       entities: ['doc_type', 'doc_template', 'security_level', 'external_party'],
+      manage: true,
       group: 'Danh mục',
     },
     {
@@ -106,6 +115,7 @@ export const documentModule: ErpModule = {
       path: appRoutes.document.numberingRules,
       icon: Hash,
       entity: 'doc_numbering_rule',
+      manage: true,
       group: 'Danh mục',
     },
     {
@@ -113,6 +123,7 @@ export const documentModule: ErpModule = {
       path: appRoutes.document.linkRules,
       icon: Link2,
       entity: 'doc_link_rule',
+      manage: true,
       group: 'Danh mục',
     },
   ],

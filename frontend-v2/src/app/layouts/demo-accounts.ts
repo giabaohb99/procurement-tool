@@ -17,6 +17,11 @@
  * Đây là mật khẩu của CSDL seed dùng cho máy lập trình, không phải của hệ thật.
  */
 export interface DemoAccount {
+  /**
+   * Thứ gõ vào ô đăng nhập: **mã nhân viên hoặc tên đăng nhập**, không bao giờ là
+   * email — xem lý do ở khối chú thích của nhóm *TK Đặt xe* bên dưới. Đây cũng là
+   * thứ dòng phụ trên menu hiện ra, nên nó phải là cái người xem gõ lại được.
+   */
   username: string
   password: string
   /** Tên hiện trên menu — nói rõ VAI TRÒ vì đó là thứ người xem demo quan tâm. */
@@ -25,8 +30,6 @@ export interface DemoAccount {
   group: string
   /** Chú thích ngắn bên phải: pháp nhân hoặc phạm vi dữ liệu. */
   hint?: string
-  /** Mã nhân viên (hiện thay `username` ở dòng phụ khi có). */
-  code?: string
 }
 
 export const DEMO_ACCOUNTS: DemoAccount[] = [
@@ -34,17 +37,22 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
   { username: 'admin', password: 'admin', label: 'Quản trị viên (admin)', group: 'Quản trị', hint: 'toàn quyền' },
 
   // TK Đặt xe — 7 tài khoản test phân quyền phân hệ Đặt xe (mật khẩu: dego123).
-  //  TÊN + MÃ khớp tài khoản THẬT mà email đăng nhập vào (đối chiếu DB 07/09/2026, sau khi
-  //  gỡ email trùng do seed cũ lệch 1 mã). Vai trò lấy theo grant thật: `dept_head` → Trưởng
-  //  bộ phận (NSU203, NSU171); `booking_dispatcher` → Điều phối viên (NSU056); `booking_driver`
-  //  → Tài xế (NSU060, NSU058); còn lại là Nhân sự. Sửa dòng nào thì đối chiếu lại DB.
-  { username: 'duonghaiyen.idagroup@dego.com', password: 'dego123', code: 'NSU204', label: 'Dương Hải Yến (NS1)', group: 'TK Đặt xe', hint: 'Nhân sự — chỉ xem của mình' },
-  { username: 'ndquyen.idagroup@dego.com', password: 'dego123', code: 'NSU203', label: 'Nguyễn Đỗ Quyên (TP1)', group: 'TK Đặt xe', hint: 'Trưởng bộ phận — duyệt, xem phòng ban' },
-  { username: 'hnqanh.idagroup@dego.com', password: 'dego123', code: 'NSU172', label: 'Hồ Ngọc Quế Anh (NS2)', group: 'TK Đặt xe', hint: 'Nhân sự — chỉ xem của mình' },
-  { username: 'nmtoan.idagroup@dego.com', password: 'dego123', code: 'NSU171', label: 'Nguyễn Minh Toàn (TP2)', group: 'TK Đặt xe', hint: 'Trưởng bộ phận — duyệt, xem phòng ban' },
-  { username: 'bhtthanh.idaglobal@dego.com', password: 'dego123', code: 'NSU056', label: 'Bùi Huỳnh Trường Thành (ĐPV)', group: 'TK Đặt xe', hint: 'Điều phối viên — điều phối xe/tài xế' },
-  { username: 'ltnhut.idagroup@dego.com', password: 'dego123', code: 'NSU060', label: 'Lê Tấn Nhựt (TX1)', group: 'TK Đặt xe', hint: 'Tài xế — chỉ xem chuyến được giao' },
-  { username: 'tqthai.idagroup@dego.com', password: 'dego123', code: 'NSU058', label: 'Trần Quốc Thái (TX2)', group: 'TK Đặt xe', hint: 'Tài xế — chỉ xem chuyến được giao' },
+  //  ⚠️ ĐĂNG NHẬP BẰNG MÃ NHÂN VIÊN, đừng đổi lại thành email (bao-CR-380, 11/09/2026).
+  //  Bảy dòng này từng gõ email `@dego.com` mà bản seed dập lên hồ sơ, và danh sách seed
+  //  ngày ấy lệch một mã: bấm «Hồ Ngọc Quế Anh» thì đăng nhập ra Nguyễn Minh Toàn, dấu tick
+  //  đậu một nơi còn tên trên thanh tiêu đề một nẻo — khách bắt được trên dev. Mã nhân viên
+  //  là khóa thật của hồ sơ: `authenticate` tra `Employee.code` rồi lấy tài khoản đang hoạt
+  //  động của ĐÚNG người đó, không ai dập đè lên được, và `isCurrent` khớp thẳng `emp_code`.
+  //  Vai trò lấy theo grant thật: `dept_head` → Trưởng bộ phận (NSU203, NSU171);
+  //  `booking_dispatcher` → Điều phối viên (NSU056); `booking_driver` → Tài xế (NSU060,
+  //  NSU058); còn lại là Nhân sự. Sửa dòng nào thì đối chiếu lại DB.
+  { username: 'NSU204', password: 'dego123', label: 'Dương Hải Yến (NS1)', group: 'TK Đặt xe', hint: 'Nhân sự — chỉ xem của mình' },
+  { username: 'NSU203', password: 'dego123', label: 'Nguyễn Đỗ Quyên (TP1)', group: 'TK Đặt xe', hint: 'Trưởng bộ phận — duyệt, xem phòng ban' },
+  { username: 'NSU172', password: 'dego123', label: 'Hồ Ngọc Quế Anh (NS2)', group: 'TK Đặt xe', hint: 'Nhân sự — chỉ xem của mình' },
+  { username: 'NSU171', password: 'dego123', label: 'Nguyễn Minh Toàn (TP2)', group: 'TK Đặt xe', hint: 'Trưởng bộ phận — duyệt, xem phòng ban' },
+  { username: 'NSU056', password: 'dego123', label: 'Bùi Huỳnh Trường Thành (ĐPV)', group: 'TK Đặt xe', hint: 'Điều phối viên — điều phối xe/tài xế' },
+  { username: 'NSU060', password: 'dego123', label: 'Lê Tấn Nhựt (TX1)', group: 'TK Đặt xe', hint: 'Tài xế — chỉ xem chuyến được giao' },
+  { username: 'NSU058', password: 'dego123', label: 'Trần Quốc Thái (TX2)', group: 'TK Đặt xe', hint: 'Tài xế — chỉ xem chuyến được giao' },
 
   // Các tài khoản test chính có dữ liệu mẫu DB
   { username: 'TESTREQ', password: 'TESTREQ', label: 'TESTREQ', group: 'Tài khoản Test (Data)', hint: 'người tạo phiếu test' },

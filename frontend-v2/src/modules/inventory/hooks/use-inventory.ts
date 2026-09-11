@@ -7,8 +7,14 @@ import type { ListParams } from '@/shared/types/api'
 import { inventoryApi } from '../api/inventory-api'
 import type { InventoryItem } from '../types/inventory'
 
-/** Danh sách tồn hiện tại. Phân trang do server làm — bảng có thể tới vài nghìn dòng. */
-export function useInventoryItems(params: ListParams = {}) {
+/**
+ * Danh sách tồn hiện tại. Phân trang do server làm — bảng có thể tới vài nghìn dòng.
+ *
+ * `enabled` để nơi gọi TẮT hẳn khi thiếu `inventory.read`: hook chạy trước mọi
+ * nhánh `return` của component, nên trang nào gác quyền bằng cách trả về sớm vẫn
+ * kịp bắn request và người dùng ăn toast 403 trước khi thấy câu giải thích.
+ */
+export function useInventoryItems(params: ListParams = {}, options: { enabled?: boolean } = {}) {
   const query: ListParams = {
     page: 1,
     page_size: appConfig.defaultPageSize,
@@ -19,6 +25,7 @@ export function useInventoryItems(params: ListParams = {}) {
     queryKey: queryKeys.inventory.stock(query),
     queryFn: () => inventoryApi.list(query),
     placeholderData: keepPreviousData,
+    enabled: options.enabled ?? true,
   })
 }
 

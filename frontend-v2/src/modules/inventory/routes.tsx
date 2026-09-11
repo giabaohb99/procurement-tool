@@ -24,9 +24,15 @@ export const inventoryModule: ErpModule = {
       path: appRoutes.inventory.root,
       icon: LayoutDashboard,
       end: true,
-      // Không có quyền đọc khóa nào của phân hệ thì ẩn luôn Tổng quan —
-      // cùng luật với Thu mua, xem procurement/routes.tsx.
-      entities: ['inventory', 'warehouse'],
+      //  ⚠️ ĐÚNG MỘT KHÓA `inventory` (bao-CR-380, 11/09/2026). Trước đó mục này
+      //  khai `entities: ['inventory', 'warehouse']` — hiện khi có BẤT KỲ khóa
+      //  nào — trong khi trang Tổng quan bên trong lại đòi đúng `inventory.read`.
+      //  Hai luật lệch nhau nên người chỉ có `warehouse.read` được menu mời vào
+      //  rồi trang đóng cửa bằng một ô đỏ; khách bắt đúng ca này trên dev.
+      //  Trang nói về SỐ LIỆU TỒN KHO, nên khóa của nó là `inventory`. Người chỉ
+      //  giữ danh mục kho không mất gì: `ModuleLayout` đẩy họ thẳng tới *Danh mục
+      //  Kho* — xem `firstAccessibleNavPath`.
+      entity: 'inventory',
     },
     {
       label: 'Tồn kho',
