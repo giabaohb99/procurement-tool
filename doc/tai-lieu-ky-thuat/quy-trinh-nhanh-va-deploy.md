@@ -35,21 +35,46 @@ build lại code CŨ.
 | `backend/` | **`main`** | Prod đang chạy backend này. Sửa xong merge sang `erp-v2`. |
 | `frontend/` | **`main`** | Đây là giao diện **đang chạy thật** cho người dùng. Đã đóng băng: chỉ vá lỗi. |
 | `help-center/` | **`main`** | Đang chạy thật ở `help.degoholding.vn`. |
-| `frontend-v2/` | **`erp-v2`** | Giao diện ERP mới. **Không mang thêm sang `main`** (xem ghi chú dưới). |
+| `frontend-v2/` | **`erp-v2`** | Giao diện ERP mới. Prod chưa build thư mục này (xem ghi chú dưới). |
 | `doc/erp/`, `ke-hoach/` | **`erp-v2`** | Tài liệu của việc đang làm dở. |
 | `doc/tai-lieu-ky-thuat/` | theo commit đi kèm | change-log đi cùng commit sửa mã. |
 
 Tính năng mới của giao diện → `frontend-v2/` trên `erp-v2`.
 Vá lỗi màn đang chạy thật → `frontend/` trên `main`.
 
-> **Ghi chú về `frontend-v2/` trên `main`.** Thư mục này **đã có sẵn trên `main`** (khoảng 355 tệp,
-> vào từ commit `e5f9b4d` thời còn nhánh `bao`), nhưng là **bản CŨ và đứng yên** — `erp-v2` nay đã
-> 791 tệp. Đừng dùng nó, đừng sửa nó, và đừng "đồng bộ cho khớp": `docker-compose.production.yml`
-> **không có service `erp`** nên prod không hề build thư mục này; nó chỉ nằm đó chờ tới đợt Đ-15
-> mới chính thức lên prod. Nếu thấy một commit định merge `erp-v2` vào `main` "để cập nhật
-> frontend-v2" — đó chính là kịch bản sự cố ở mục A.4.
+> **Ghi chú về `frontend-v2/` trên `main`** _(viết lại 11/09/2026)_. Từ đợt phát hành tối
+> 11/09/2026, `main` và `erp-v2` đứng **cùng một commit**, nên `frontend-v2/` trên `main`
+> **không còn là bản cũ** — nó khớp y hệt `erp-v2`. Đoạn cũ ở đây ("355 tệp, bản CŨ và đứng
+> yên, đừng đồng bộ cho khớp") đã hết hạn, bỏ.
+>
+> Điều **vẫn đúng**: `docker-compose.production.yml` **không có service `erp`**, nên prod
+> **không build thư mục này**. Đợt vừa rồi đưa **backend v2** lên prod, chứ không đưa giao
+> diện v2 — `thumua.degoholding.vn` vẫn phục vụ `frontend/`. Muốn bật giao diện v2 ở prod là
+> một việc riêng (đợt **Đ-15**), phải thêm service `erp` vào compose prod, chưa làm.
+>
+> Vẫn giữ luật ở bảng A.1: **phát triển giao diện v2 làm trên `erp-v2`**, đừng sửa thẳng trên
+> `main`, để hai nhánh không tách ra vì một lý do vụn vặt.
 
-### A.2. Chiều merge — MỘT CHIỀU
+### A.2. Chiều merge — MỘT CHIỀU (luật này HẾT HIỆU LỰC từ 11/09/2026)
+
+> ⚠️ **ĐÃ XẢY RA CHIỀU NGƯỢC, CÓ CHỦ ĐÍCH.** Tối 11/09/2026, `erp-v2` được gộp vào `main`
+> và **backend v2 đã lên prod** (577 commit · 2.426 tệp · 115 migration · `alembic_version`
+> lên `bee157de2ec8` · 60 → 141 bảng). Đây **không phải** lần lỡ tay như mục A.4: có kịch
+> bản viết trước (`ke-hoach-phat-hanh-erp-v2-len-prod.md`), có diễn tập trọn vẹn trên một
+> bản sao prod, có sao lưu kiểm `gunzip -t` trước khi chạy. Chính bản diễn tập đó bắt được
+> **bao-CR-382** — thứ mà nếu bỏ qua thì prod mất 107 migration trong im lặng.
+>
+> Vì vậy **câu chữ bên dưới nay đã cũ**: lý do cấm ("kéo 34 migration chưa duyệt vào database
+> thật") không còn đúng, những migration ấy giờ đã nằm trên prod. Giữ nguyên đoạn này làm
+> **lịch sử**, đừng đọc nó như luật đang chạy.
+>
+> **Còn phải chốt (chưa có người quyết):** sau đợt phát hành, `main` và `erp-v2` đứng cùng
+> một commit. Từ nay hai nhánh còn tách ra làm gì, hay gộp hẳn về một nhánh? Cho tới khi có
+> câu trả lời, **vẫn giữ nếp cũ** — sửa lỗi prod làm ở `main` rồi gộp sang `erp-v2`; muốn đi
+> chiều ngược lần nữa thì **phải làm đủ ba bước của kịch bản phát hành** (diễn tập trên bản
+> sao · sao lưu có kiểm · ngưỡng quay đầu), không được gộp trực tiếp.
+
+Luật cũ, ghi lại nguyên văn:
 
 ```
 main  ──────►  erp-v2        ĐƯỢC (đưa bản vá prod sang dev)

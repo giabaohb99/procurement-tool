@@ -22,8 +22,14 @@ Stack: FastAPI 0.115 · SQLAlchemy 2.0 · Pydantic v2 · MySQL 8 · Alembic · R
 
 ⚠️ **Trước khi đụng vào nhánh `main` hoặc vào VPS, đọc `doc/tai-lieu-ky-thuat/quy-trinh-nhanh-va-deploy.md`.**
 Repo có **hai nhánh chạy song song**: `main` = prod (backend + `frontend/` + `help-center/`),
-`erp-v2` = dev (`frontend-v2/`). Merge **chỉ một chiều `main` → `erp-v2`**; đưa ngược lại là kéo
-34 migration chưa duyệt vào database thật. Deploy prod **bắt buộc** có `-f docker-compose.production.yml`.
+`erp-v2` = dev (`frontend-v2/`). Deploy prod **bắt buộc** có `-f docker-compose.production.yml`.
+
+⚠️ **Luật "merge chỉ một chiều `main` → `erp-v2`" đã HẾT HIỆU LỰC ngày 11/09/2026**: `erp-v2` được
+gộp vào `main` và **backend v2 đã lên prod** (115 migration, `alembic_version` = `bee157de2ec8`,
+60 → 141 bảng). Giao diện v2 thì **chưa** — compose prod không có service `erp`, `thumua` vẫn chạy
+`frontend/`. Nếp làm hằng ngày **giữ nguyên**: vá lỗi prod ở `main` rồi gộp sang `erp-v2`; muốn đi
+chiều ngược lần nữa thì phải chạy đủ kịch bản phát hành (diễn tập trên bản sao · sao lưu có kiểm ·
+ngưỡng quay đầu), xem §A.2 của `quy-trinh-nhanh-va-deploy.md`.
 
 ## Rules
 

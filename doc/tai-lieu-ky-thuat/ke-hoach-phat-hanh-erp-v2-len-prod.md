@@ -6,6 +6,17 @@ không chép lại từ tài liệu cũ. Đo lại trước giờ chạy vì d�
 Tài liệu này là **kịch bản chạy**, không phải bản thiết kế. Nền v2 mô tả ở
 `doc/erp/15-do-be-tong-nen-v2.md`; luật nhánh ở `doc/tai-lieu-ky-thuat/quy-trinh-nhanh-va-deploy.md`.
 
+> ✅ **ĐÃ CHẠY XONG tối 11/09/2026.** Số thật khác số dự trù bên dưới vì prod còn nhận thêm
+> vài đợt vá (bao-CR-367…) trong lúc soạn kịch bản. **Số chốt để trích dẫn:**
+> `main` **`fbeee8b0` → `ed2ad063`** · **115** migration chạy · `alembic_version`
+> **`94f0a2c4e43c` → `bee157de2ec8`** (1 head) · **60 → 141** bảng · sao lưu
+> `~/proc_backups/procurement_truoc_v2_20260911_1739.sql.gz`. Diễn tập bắt được một lỗi
+> đồ thị alembic, chữa ở **bao-CR-382** — không có nó thì prod mất 107 migration trong im
+> lặng. Nhật ký đầy đủ: `change-log-bao.md`, bảng phát hành.
+>
+> ⚠️ Mọi mã commit viết trong tài liệu này là **số dự trù lúc soạn** (`c417bf64` / `1f3c7685`),
+> đã cũ. Cần lùi thì dùng số chốt ở trên, đừng chép lại từ §5.
+
 ---
 
 ## 1. Việc này là gì
@@ -252,12 +263,13 @@ Ngưỡng quyết định: **quá 20 phút chưa xong bước 4.5, hoặc nghi�
 
 ```bash
 # 1) mã nguồn về đúng bản đang chạy sáng nay
-cd ~/procurement-tool && git reset --hard c417bf64
+#    SỐ THẬT của đợt 11/09/2026: fbeee8b0 (bản dự trù `c417bf64` đã cũ trước giờ chạy)
+cd ~/procurement-tool && git reset --hard fbeee8b0
 docker compose -f docker-compose.production.yml up -d --build api celery-worker celery-beat web
 
 # 2) dữ liệu về bản sao lưu ở bước 4.3
 set -a; . ~/procurement-db/.env; set +a
-gunzip -c ~/proc_backups/procurement_truoc_v2_<dấu_thời_gian>.sql.gz \
+gunzip -c ~/proc_backups/procurement_truoc_v2_20260911_1739.sql.gz \
   | docker exec -i procurement-mysql mysql -urootdegoHolding -p"$DB_ROOT_PASSWORD" procurement
 ```
 
@@ -271,9 +283,16 @@ bằng commit cũ là đủ, lần sau lên lại chỉ việc `reset --hard ori
 
 ## 6. Sau khi lên xong
 
-- [ ] Đánh dấu đợt này trong `change-log-bao.md`, ghi commit + giờ + tệp sao lưu.
-- [ ] Viết lại luật nhánh trong `quy-trinh-nhanh-va-deploy.md` (R-6): hai nhánh nay bằng nhau, quy
-      định tiếp theo là gì.
-- [ ] Nếu chọn cách A của R-1: mở một dòng nợ «siết lại phạm vi `pur_staff` khi bật đa pháp nhân».
-- [ ] Giữ bản sao lưu ít nhất **7 ngày**.
+- [x] Đánh dấu đợt này trong `change-log-bao.md`, ghi commit + giờ + tệp sao lưu.
+- [x] Viết lại luật nhánh trong `quy-trinh-nhanh-va-deploy.md` (R-6): §A.2 nay ghi rõ luật một
+      chiều đã hết hiệu lực, và ghi câu hỏi **còn phải chốt** — hai nhánh bằng nhau rồi thì còn
+      tách ra làm gì. `CLAUDE.md` sửa theo.
+- [x] Cách A của R-1 đã chọn → mở dòng nợ **N-019** trong `change-log.md`.
+- [ ] Giữ bản sao lưu ít nhất **7 ngày** — `~/proc_backups/procurement_truoc_v2_20260911_1739.sql.gz`,
+      giữ tới **18/09/2026**.
 - [ ] Bật từng phân hệ mới sau khi khách nghiệm thu, mỗi lần một cái, bằng cách tick khóa quyền.
+      Sau `seed_prod`, **cả 59 khóa đều có ít nhất một vai trò giữ**, nhưng các phân hệ mới chỉ nằm
+      ở `admin` + một vai trò chuyên trách **chưa gán cho ai**: `forum_admin` · `coffee_admin` ·
+      `hr_profile` · `help_admin` · `vanban_sua` · `pur_manager`. Chưa gán thì chưa ai thấy.
+- [ ] Gắn hồ sơ nhân sự cho **1 tài khoản `pur_staff` đang thiếu** (xem N-019), không thì màn
+      Nhân sự của người đó rỗng.
