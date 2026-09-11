@@ -1,15 +1,13 @@
-import { ArrowLeft, Save, Trash2 } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
-import { AuditTimeline } from '@/shared/audit'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
-import { ConfirmIconButton } from '@/shared/ui/confirm-icon-button'
 import { ErrorState } from '@/shared/ui/error-state'
 import { PageContainer } from '@/shared/ui/page-container'
-import { PageHeader } from '@/shared/ui/page-header'
 import { Skeleton } from '@/shared/ui/skeleton'
+import { DetailPageShell } from '../components/detail-page-shell'
 import { DocumentTypeForm } from '../components/document-type-form'
 import { DocumentTypeLinkRulesCard } from '../components/document-type-link-rules-card'
 import { useSaveDocumentLinkRules } from '../hooks/use-document-link-rules'
@@ -83,57 +81,51 @@ export function DocumentTypeDetailPage() {
   }
 
   return (
-    <PageContainer className="space-y-5">
-      <PageHeader
-        title={isCreating ? 'Thêm loại văn bản' : (documentType?.name ?? '')}
-        description={
-          isCreating
-            ? 'Khai báo một loại văn bản mới cho hệ thống.'
-            : `Mã loại ${documentType?.code} · số hiệu dạng ${
-                documentType
-                  ? documentCodeSample(documentType.code, documentType.id_scheme)
-                  : ''
-              }`
-        }
-        leading={
-          // Chỉ icon: đặt sát tiêu đề rồi thì mũi tên đã đủ nghĩa "lùi ra danh
-          // sách", thêm chữ chỉ đẩy tiêu đề đi xa.
-          <Button
-            variant="outline"
-            size="icon"
-            title="Về danh sách"
-            aria-label="Về danh sách"
-            onClick={backToList}
-          >
-            <ArrowLeft className="size-4" />
-          </Button>
-        }
-        actions={
-          <>
-            {!isCreating && documentType && (
-              <ConfirmIconButton
-                icon={Trash2}
-                title="Xóa"
-                destructive
-                confirmTitle={`Xóa loại "${documentType.name}"?`}
-                confirmDescription="Thao tác này không hoàn tác được. Văn bản đã tạo theo loại này vẫn giữ nguyên."
-                confirmLabel="Xóa"
-                onConfirm={() => remove.mutate(documentType.id, { onSuccess: backToList })}
-              />
-            )}
-
-            <Button variant="outline" onClick={backToList}>
-              Hủy
-            </Button>
-            {/* Nút Lưu đứng ngoài form, nối vào bằng `form=` (xem `FORM_ID`). */}
-            <Button type="submit" form={FORM_ID} disabled={save.isPending}>
-              <Save className="size-4" />
-              Lưu
-            </Button>
-          </>
-        }
-      />
-
+    //  ⚠️ **Dùng `DetailPageShell`, đừng dựng lại đầu trang bằng tay.** Trang này
+    //  từng tự ghép `PageContainer` + `PageHeader` + nút lùi + Xóa/Hủy/Lưu +
+    //  `AuditTimeline` — đúng từng thứ mà khung chung đã lo, chép lại khoảng 60
+    //  dòng. Cái giá trả ngay: mọi bản vá đầu trang ở khung chung (duoc-CR-373 —
+    //  bỏ nút Hủy thừa, cho Lưu trải hết hàng, ghim dải khi cuộn) **không tới
+    //  được trang này**, nên nó vẫn bày ba nút chen chúc trong khi năm trang anh
+    //  em đã gọn (khách bắt được 11/09/2026). Sáu trang chi tiết còn lại của phân
+    //  hệ đều đi qua khung chung — trang này là cái cuối cùng còn đứng ngoài.
+    //
+    //  `stickyHeader`: form ba khối, dưới còn thẻ quan hệ và nhật ký nên trang
+    //  rất dài, mà nút Lưu ở trên đầu.
+    <DetailPageShell
+      title={isCreating ? 'Thêm loại văn bản' : (documentType?.name ?? '')}
+      //  ⚠️ Dòng mô tả ẨN ở khổ hẹp — cùng lý do với chi tiết Sổ văn bản
+      //  (duoc-CR-372): ở trang đã có bản ghi nó chỉ nhắc lại *mã loại* (ô đầu
+      //  tiên của biểu mẫu) và *mẫu số hiệu* (hiện ngay trong thẻ «Số hiệu» bên
+      //  dưới), mà dải này GHIM nên mỗi dòng là chỗ đứng yên vĩnh viễn — riêng
+      //  câu này rớt hai hàng, đẩy dải từ 97px lên **145px = 18%** màn 796px.
+      //  Trang thêm mới thì giữ: ở đó chưa có ô nào điền.
+      description={
+        isCreating ? (
+          'Khai báo một loại văn bản mới cho hệ thống.'
+        ) : (
+          <span className="max-md:hidden">
+            {`Mã loại ${documentType?.code} · số hiệu dạng ${
+              documentType
+                ? documentCodeSample(documentType.code, documentType.id_scheme)
+                : ''
+            }`}
+          </span>
+        )
+      }
+      formId={FORM_ID}
+      isCreating={isCreating}
+      backTo={appRoutes.document.settingsTab('types')}
+      stickyHeader
+      audit={documentType ? { entity: 'doc_type', id: documentType.id } : undefined}
+      deleteConfirmTitle={documentType ? `Xóa loại "${documentType.name}"?` : undefined}
+      deleteConfirmDescription="Thao tác này không hoàn tác được. Văn bản đã tạo theo loại này vẫn giữ nguyên."
+      onDelete={
+        documentType
+          ? () => remove.mutate(documentType.id, { onSuccess: backToList })
+          : undefined
+      }
+    >
       <DocumentTypeForm
         formId={FORM_ID}
         documentType={documentType}
@@ -186,10 +178,7 @@ export function DocumentTypeDetailPage() {
         )
       )}
 
-      {/* Chỉ bản ghi đã tồn tại mới có nhật ký để xem. */}
-      {!isCreating && documentType && (
-        <AuditTimeline entity="doc_type" entityId={documentType.id} />
-      )}
-    </PageContainer>
+      {/* Nhật ký thao tác do `DetailPageShell` dựng ở cuối, theo `audit` ở trên. */}
+    </DetailPageShell>
   )
 }

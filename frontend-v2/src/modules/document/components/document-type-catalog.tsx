@@ -1,11 +1,7 @@
 import { useCallback, useMemo } from 'react'
 
-import {
-  applyClientFilter,
-  ConditionalFilter,
-  FilterProvider,
-  useFilterContext,
-} from '@/shared/conditional-filter'
+import { applyClientFilter, FilterProvider, useFilterContext } from '@/shared/conditional-filter'
+import { SCROLL_TABS_TOOLBAR_STICKY } from '@/modules/hr/utils/list-sticky'
 import { appRoutes } from '@/shared/constants/app-routes'
 import type { DataTableColumn } from '@/shared/data-table'
 import { Badge } from '@/shared/ui/badge'
@@ -20,6 +16,7 @@ import {
   type DocumentType,
 } from '../types/document-type'
 import { SECURITY_LEVEL_KIND_CONFIDENTIAL } from '../types/security-level'
+import { CatalogCard } from './catalog-card'
 import { CatalogTable } from './catalog-table'
 
 const FILTER_CONFIG = {
@@ -139,18 +136,43 @@ function DocumentTypeCatalogContent() {
   return (
     <CatalogTable
       storageKey="document.types"
+      //  Ghim thanh công cụ ở khổ hẹp — trang bỏ `fill` nên CẢ TRANG cuộn, không
+      //  ghim thì ô tìm trôi mất ngay nhịp vuốt đầu. Mốc 37px = chiều cao dải tab
+      //  cuộn ngang phía trên (xem `SCROLL_TABS_TOOLBAR_STICKY`).
+      toolbarClassName={SCROLL_TABS_TOOLBAR_STICKY}
       items={items}
       columns={columns}
       searchFields={(row) => [row.code, row.name]}
       searchPlaceholder="Tìm theo mã hoặc tên loại…"
+      searchPlaceholderShort="Tìm mã, tên loại…"
       detailPath={appRoutes.document.typeDetail}
+      //  Dòng phụ lấy MẪU SỐ HIỆU thật (`documentCodeSample`) chứ không lấy chữ
+      //  «mã bất biến / theo sổ» trơ trọi — cùng lý do với cột «Số hiệu» của
+      //  bảng: nhìn một mẫu số là hiểu ngay, đọc tên cách đánh số thì không.
+      mobileCard={(row) => (
+        <CatalogCard
+          title={row.name}
+          code={row.code}
+          meta={[
+            documentCodeSample(row.code, row.id_scheme),
+            DOC_GROUP_LABELS[row.group_code],
+          ]}
+          isActive={row.is_active}
+          note={row.description}
+        />
+      )}
       emptyMessage={
         isLoading
           ? 'Đang tải danh mục…'
           : 'Không có loại văn bản nào khớp điều kiện đang lọc.'
       }
       filterRows={filterRows}
-      extraToolbar={<ConditionalFilter />}
+      //  Bộ lọc nâng cao: màn rộng ra nút + popover, khổ hẹp nhúng vào tờ trượt
+      //  lọc chung với ô Trạng thái — xem `CatalogTableProps.advancedFilter`.
+      //  Trước đây truyền thẳng `<ConditionalFilter />` qua `extraToolbar`, nên ở
+      //  điện thoại thanh công cụ có TỚI HAI cửa lọc đứng cạnh nhau (cái phễu và
+      //  nút «Bộ lọc»), mà cái popover thì bung ra che gần hết màn.
+      advancedFilter
     />
   )
 }

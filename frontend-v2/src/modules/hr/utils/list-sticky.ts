@@ -128,6 +128,23 @@ export const LIST_SECTION_TOOLBAR_STICKY = `${TOOLBAR_STICKY_BASE} max-md:top-10
 export const LEAVE_SETTINGS_TOOLBAR_STICKY = `${TOOLBAR_STICKY_BASE} max-md:top-[78px]`
 
 /**
+ * Dải THANH CÔNG CỤ ghim dưới dải tab kiểu **GẠCH CHÂN CUỘN NGANG**
+ * (`ScrollableTabsList`) — cao **37px**.
+ *
+ * Dùng ở: *Thiết lập văn bản*.
+ *
+ * ⚠️ Mốc lẻ nên phải khai giá trị tùy ý, KHÔNG mượn `LIST_TOOLBAR_STICKY`
+ * (`top-11` = 44px). Dải của `ScrollableTabsList` không giống dải `TabsList` nền
+ * xám: nó là `TabsList` cao 36px (`TAB_LIST_UNDERLINE` ghim `max-md:h-9`) cộng
+ * đúng **1px đường kẻ chân** của khung cuộn, và **không có đệm dưới** — tổng 37px
+ * thay vì 36 + 8. Lấy nhầm mốc 44px thì hở **7px** ngay dưới dải tab, và thẻ
+ * danh mục chạy qua khe đó khi cuộn; lấy mốc nhỏ hơn thì thanh công cụ chui lên
+ * che mất gạch chân của tab đang mở — dấu hiệu duy nhất nói đang ở danh mục nào.
+ * Đo lại bằng `getBoundingClientRect` mỗi khi sửa `TAB_LIST_UNDERLINE`, đừng nhẩm.
+ */
+export const SCROLL_TABS_TOOLBAR_STICKY = `${TOOLBAR_STICKY_BASE} max-md:top-[37px]`
+
+/**
  * Dải THANH CÔNG CỤ của màn danh mục **đứng một mình** — không có dải tab nào
  * phía trên nên ghim thẳng lên đỉnh khung cuộn.
  *

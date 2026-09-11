@@ -1,8 +1,10 @@
 import { useMemo } from 'react'
 
+import { SCROLL_TABS_TOOLBAR_STICKY } from '@/modules/hr/utils/list-sticky'
 import { appRoutes } from '@/shared/constants/app-routes'
 import type { DataTableColumn } from '@/shared/data-table'
 import { Badge } from '@/shared/ui/badge'
+import { CatalogCard } from './catalog-card'
 import { CatalogTable } from './catalog-table'
 import { useSecurityLevels } from '../hooks/use-document-catalogs'
 import { SECURITY_LEVEL_KIND_LABELS, type SecurityLevel } from '../types/security-level'
@@ -72,11 +74,28 @@ export function SecurityLevelCatalog() {
   return (
     <CatalogTable
       storageKey="document.security-levels"
+      //  Ghim thanh công cụ ở khổ hẹp — trang bỏ `fill` nên CẢ TRANG cuộn, không
+      //  ghim thì ô tìm trôi mất ngay nhịp vuốt đầu. Mốc 37px = chiều cao dải tab
+      //  cuộn ngang phía trên (xem `SCROLL_TABS_TOOLBAR_STICKY`).
+      toolbarClassName={SCROLL_TABS_TOOLBAR_STICKY}
       items={items}
       columns={columns}
       searchFields={(row) => [row.code, row.name]}
       searchPlaceholder="Tìm theo mã hoặc tên bậc…"
+      searchPlaceholderShort="Tìm mã, tên bậc…"
       detailPath={appRoutes.document.securityLevelDetail}
+      //  ⚠️ `Bậc ${row.value}` là VALUE lưu trên văn bản, KHÔNG phải `row.id` —
+      //  xem cảnh báo đầu `types/security-level.ts`. Bảng bày cả hai (cột «ID»
+      //  ẩn mặc định); thẻ chỉ bày con số có nghĩa với người đọc.
+      mobileCard={(row) => (
+        <CatalogCard
+          title={row.name}
+          code={row.code}
+          meta={[SECURITY_LEVEL_KIND_LABELS[row.kind], `Bậc ${row.value}`]}
+          isActive={row.is_active}
+          note={row.description}
+        />
+      )}
       emptyMessage={
         isLoading ? 'Đang tải danh mục…' : 'Không có bậc nào khớp điều kiện đang lọc.'
       }

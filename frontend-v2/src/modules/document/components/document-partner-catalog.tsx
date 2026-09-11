@@ -1,8 +1,10 @@
 import { useMemo } from 'react'
 
+import { SCROLL_TABS_TOOLBAR_STICKY } from '@/modules/hr/utils/list-sticky'
 import { appRoutes } from '@/shared/constants/app-routes'
 import type { DataTableColumn } from '@/shared/data-table'
 import { Badge } from '@/shared/ui/badge'
+import { CatalogCard } from './catalog-card'
 import { CatalogTable } from './catalog-table'
 import { useDocumentPartners } from '../hooks/use-document-catalogs'
 import { PARTNER_KIND_LABELS, type DocumentPartner } from '../types/document-partner'
@@ -52,11 +54,25 @@ export function DocumentPartnerCatalog() {
   return (
     <CatalogTable
       storageKey="document.partners"
+      //  Ghim thanh công cụ ở khổ hẹp — trang bỏ `fill` nên CẢ TRANG cuộn, không
+      //  ghim thì ô tìm trôi mất ngay nhịp vuốt đầu. Mốc 37px = chiều cao dải tab
+      //  cuộn ngang phía trên (xem `SCROLL_TABS_TOOLBAR_STICKY`).
+      toolbarClassName={SCROLL_TABS_TOOLBAR_STICKY}
       items={items}
       columns={columns}
       searchFields={(row) => [row.code, row.name, row.contact_person, row.phone]}
       searchPlaceholder="Tìm theo mã, tên hoặc người liên hệ…"
+      searchPlaceholderShort="Tìm mã, tên đơn vị…"
       detailPath={appRoutes.document.partnerDetail}
+      //  Khổ hẹp: THẺ thay bảng — xem `CatalogCard`.
+      mobileCard={(row) => (
+        <CatalogCard
+          title={row.name}
+          code={row.code}
+          meta={[PARTNER_KIND_LABELS[row.kind], row.contact_person, row.phone]}
+          isActive={row.is_active}
+        />
+      )}
       emptyMessage={
         isLoading ? 'Đang tải danh mục…' : 'Chưa có đơn vị nào khớp điều kiện đang lọc.'
       }

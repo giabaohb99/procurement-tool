@@ -1,9 +1,11 @@
 import { Fragment, useMemo, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import { ConditionalFilter, useOptionalFilterContext } from '@/shared/conditional-filter'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
+import { AdvancedFilterSection } from '@/shared/ui/advanced-filter-section'
 import { Card } from '@/shared/ui/card'
 import { QuickFilterField, QuickFilterSheet } from '@/shared/ui/quick-filter-sheet'
 import { SearchField } from '@/shared/ui/search-field'
@@ -37,14 +39,17 @@ interface CatalogTableProps<T extends { id: number; is_active: boolean }> {
   /** Lọc thêm sau ô tìm kiếm và select trạng thái (vd bộ lọc nâng cao). */
   filterRows?: (rows: T[]) => T[]
   /**
-   * Ô lọc riêng của từng danh mục, chèn sau select trạng thái — **chỉ hiện từ
-   * `md` trở lên**.
+   * Bày BỘ LỌC NÂNG CAO (điều kiện tự ghép) cho danh mục này.
    *
-   * ⚠️ Dùng cho thứ KHÔNG phải một ô lọc có nhãn (hiện chỉ có `ConditionalFilter`,
-   * một nút mở popover). Ô lọc bình thường thì khai ở `filters` để nó tự có mặt
-   * trong tờ trượt ở khổ hẹp; nhét vào đây là ở điện thoại nó biến mất.
+   * Màn rộng: nút riêng + popover (`ConditionalFilter`). Khổ hẹp: nhúng thẳng
+   * phần ruột vào tờ trượt lọc (`AdvancedFilterSection`) — popover neo vào một
+   * nút trên thanh công cụ đã chật, bung ra ở 390px thì che gần hết màn mà vẫn
+   * không đủ ngang cho một hàng điều kiện.
+   *
+   * ⚠️ Đòi danh mục phải nằm trong một `FilterProvider`; không có thì
+   * `CatalogTable` tự bỏ qua chứ không nổ (đọc bằng `useOptionalFilterContext`).
    */
-  extraToolbar?: ReactNode
+  advancedFilter?: boolean
   /**
    * Ô lọc riêng CÓ NHÃN của từng danh mục.
    *
@@ -104,7 +109,7 @@ export function CatalogTable<T extends { id: number; is_active: boolean }>({
   detailPath,
   emptyMessage = 'Không có bản ghi nào khớp điều kiện đang lọc.',
   filterRows,
-  extraToolbar,
+  advancedFilter = false,
   filters,
   mobileCard,
   toolbarClassName,
@@ -113,6 +118,9 @@ export function CatalogTable<T extends { id: number; is_active: boolean }>({
   keepFilterParams,
 }: CatalogTableProps<T>) {
   const navigate = useNavigate()
+  //  `useOptional…` chứ không `useFilterContext`: bảy danh mục dùng chung khung
+  //  này, chỉ một cái bọc `FilterProvider`. Bản bắt buộc sẽ ném lỗi ở sáu cái kia.
+  const filter = useOptionalFilterContext()
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [status, setStatus] = useUrlParamState('status', ALL)
 
@@ -147,7 +155,11 @@ export function CatalogTable<T extends { id: number; is_active: boolean }>({
   //  Đếm ô lọc ĐANG KHÁC MẶC ĐỊNH để báo lên nút «Bộ lọc» ở khổ hẹp. Chỉ đếm
   //  được ô trạng thái vì nó là ô duy nhất `CatalogTable` tự giữ state; ô của
   //  `filters` do trang ngoài giữ nên không đọc được từ đây.
-  const quickFilterCount = showStatusFilter && status !== ALL ? 1 : 0
+  //  ⚠️ Cộng CẢ điều kiện nâng cao: dưới 768px hai tầng lọc nằm sau đúng một
+  //  nút, đếm thiếu một tầng thì người dùng thấy nút trơn mà danh sách vẫn
+  //  đang bị cắt bớt, rồi đi tìm lỗi ở dữ liệu.
+  const quickFilterCount =
+    (showStatusFilter && status !== ALL ? 1 : 0) + (advancedFilter ? (filter?.activeCount ?? 0) : 0)
 
   return (
     // Bọc `Card` giống mọi màn danh sách khác (Nhân sự, Thu mua) — bảng đặt
@@ -194,8 +206,16 @@ export function CatalogTable<T extends { id: number; is_active: boolean }>({
 
             {/*  Khổ hẹp: mọi ô lọc gom sau MỘT nút biểu tượng, để ô tìm và cụm
                  nút vừa một hàng. Nút tự ẩn từ `md` trở lên. */}
-            {(showStatusFilter || filters?.length) && (
-              <QuickFilterSheet iconOnly activeCount={quickFilterCount}>
+            {(showStatusFilter || filters?.length || advancedFilter) && (
+              <QuickFilterSheet
+                iconOnly
+                activeCount={quickFilterCount}
+                //  Bộ lọc nâng cao giữ điều kiện ở dạng NHÁP tới khi ai đó gọi
+                //  `apply()`. Không nối vào thì người dùng gõ xong ba điều kiện,
+                //  bấm nút duy nhất trong tầm mắt, tờ trượt đóng lại và danh
+                //  sách không đổi gì — nhìn ra y như hệ thống nuốt mất thao tác.
+                onApply={advancedFilter ? filter?.apply : undefined}
+              >
                 {showStatusFilter && (
                   <QuickFilterField label="Trạng thái">{statusSelect}</QuickFilterField>
                 )}
@@ -204,6 +224,7 @@ export function CatalogTable<T extends { id: number; is_active: boolean }>({
                     {item.node}
                   </QuickFilterField>
                 ))}
+                {advancedFilter && filter && <AdvancedFilterSection />}
               </QuickFilterSheet>
             )}
 
@@ -214,14 +235,8 @@ export function CatalogTable<T extends { id: number; is_active: boolean }>({
             <div className="hidden md:contents">
               {showStatusFilter && statusSelect}
               {filters?.map((item) => <Fragment key={item.label}>{item.node}</Fragment>)}
+              {advancedFilter && filter && <ConditionalFilter />}
             </div>
-
-            {/*  ⚠️ `extraToolbar` dựng ở MỌI khổ, y như trước — đừng gom nó vào
-                 khối `md:contents` ở trên. Nơi duy nhất còn dùng nó là danh mục
-                 Loại văn bản, và thứ nó truyền vào là `ConditionalFilter`; gom
-                 vào đó là **bỏ hẳn bộ lọc nâng cao trên điện thoại** của một màn
-                 không nằm trong đợt sửa này. Ô lọc mới thì khai ở `filters`. */}
-            {extraToolbar}
           </>
         }
       />
