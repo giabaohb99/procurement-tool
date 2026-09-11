@@ -16,7 +16,7 @@
 | Tên project compose | `procurement-tool` | `procurement-tool-dev` |
 | Database (MySQL 8.4 chung) | `procurement` | `procurement_dev` |
 | Giao diện Thu mua (bản cũ) | https://thumua.degoholding.vn | https://devthumua.degoholding.vn |
-| Giao diện ERP v2 | *(chưa có ở prod)* | https://deverp.degoholding.vn |
+| Giao diện ERP v2 | https://erp.degoholding.vn | https://deverp.degoholding.vn |
 | Trung tâm HDSD | https://help.degoholding.vn | https://devhelp.degoholding.vn |
 
 Cả hai thư mục trên VPS là **hai worktree của CÙNG một repo git**. Ở máy local cũng vậy.
@@ -47,10 +47,14 @@ Vá lỗi màn đang chạy thật → `frontend/` trên `main`.
 > **không còn là bản cũ** — nó khớp y hệt `erp-v2`. Đoạn cũ ở đây ("355 tệp, bản CŨ và đứng
 > yên, đừng đồng bộ cho khớp") đã hết hạn, bỏ.
 >
-> Điều **vẫn đúng**: `docker-compose.production.yml` **không có service `erp`**, nên prod
-> **không build thư mục này**. Đợt vừa rồi đưa **backend v2** lên prod, chứ không đưa giao
-> diện v2 — `thumua.degoholding.vn` vẫn phục vụ `frontend/`. Muốn bật giao diện v2 ở prod là
-> một việc riêng (đợt **Đ-15**), phải thêm service `erp` vào compose prod, chưa làm.
+> **Cập nhật cùng tối: giao diện v2 CŨNG đã lên prod** (bao-CR-383) — `docker-compose.production.yml`
+> nay **có service `erp`**, container `procurement-erp`, chạy ở **https://erp.degoholding.vn**.
+> Hai giao diện chạy **song song trên cùng một database**: `thumua.degoholding.vn` vẫn phục vụ
+> `frontend/` và **chưa tắt** — tắt nó là đợt **Đ-15** riêng, chưa làm.
+>
+> ⚠️ Service `erp` của compose prod **cố ý không khai `VITE_DEVELOPER_MODE`**, khác `web` và khác
+> bản dev: biến đó kéo `demo-accounts.ts` (**có mật khẩu dạng chữ**) vào gói JS. Đừng "cho đồng bộ
+> với service `web`".
 >
 > Vẫn giữ luật ở bảng A.1: **phát triển giao diện v2 làm trên `erp-v2`**, đừng sửa thẳng trên
 > `main`, để hai nhánh không tách ra vì một lý do vụn vặt.

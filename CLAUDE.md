@@ -26,8 +26,9 @@ Repo có **hai nhánh chạy song song**: `main` = prod (backend + `frontend/` +
 
 ⚠️ **Luật "merge chỉ một chiều `main` → `erp-v2`" đã HẾT HIỆU LỰC ngày 11/09/2026**: `erp-v2` được
 gộp vào `main` và **backend v2 đã lên prod** (115 migration, `alembic_version` = `bee157de2ec8`,
-60 → 141 bảng). Giao diện v2 thì **chưa** — compose prod không có service `erp`, `thumua` vẫn chạy
-`frontend/`. Nếp làm hằng ngày **giữ nguyên**: vá lỗi prod ở `main` rồi gộp sang `erp-v2`; muốn đi
+60 → 141 bảng). **Giao diện v2 cũng lên prod cùng tối** ở **`erp.degoholding.vn`** (service `erp`,
+container `procurement-erp`) — chạy **song song** với `thumua.degoholding.vn` trên **cùng một
+database**; tắt `frontend/` là đợt Đ-15 riêng, chưa làm. Nếp làm hằng ngày **giữ nguyên**: vá lỗi prod ở `main` rồi gộp sang `erp-v2`; muốn đi
 chiều ngược lần nữa thì phải chạy đủ kịch bản phát hành (diễn tập trên bản sao · sao lưu có kiểm ·
 ngưỡng quay đầu), xem §A.2 của `quy-trinh-nhanh-va-deploy.md`.
 
