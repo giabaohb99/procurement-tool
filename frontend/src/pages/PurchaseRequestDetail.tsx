@@ -23,7 +23,7 @@ import CompareLightbox from '../components/CompareLightbox'
 import CommentThread from '../components/CommentThread'
 import AuditTimeline from '../components/AuditTimeline'
 import { fmtSize, fileIcon } from '../utils/file-type'
-import { regulatedDate, stdDaysMap, stdDaysOf } from '../utils/lead-time'
+import { normGroup, regulatedDate, stdDaysMap, stdDaysOf } from '../utils/lead-time'
 import { newDupCodes } from '../utils/lines'
 
 const API = '/api/purchase-requests'
@@ -266,6 +266,19 @@ export default function PurchaseRequestDetail() {
   const stdMap = useMemo(() => stdDaysMap(itemGroups), [itemGroups])
   // Ngày QĐ có hàng của 1 dòng = Ngày tiếp nhận phiếu + số ngày QĐ của phân loại
   const qdDate = (itemGroup: string) => regulatedDate(stdMap, itemGroup || '', slaBase)
+  // CR-083 (đã làm ở Đơn mua hàng, YCMH thiếu): phân loại trên danh mục Sản phẩm là chuỗi tự do
+  // nên hay lệch hoa/thường so với Danh mục Phân loại -> hiện đúng cách viết của danh mục.
+  const canonGroup = (v: any) => groups.find((n) => normGroup(n) === normGroup(v)) || String(v || '').trim()
+  // Phân loại KHÔNG có trong danh mục vẫn phải thấy được. <select> chỉ hiện option khớp tuyệt đối,
+  // giá trị lạ bị nuốt thành "-- Phân loại --" trong khi popup Chi tiết dòng (SearchSelect) vẫn hiện
+  // chữ -> hai chỗ nói hai điều khác nhau, mà giá trị lạ đó vẫn được lưu xuống phiếu.
+  // groups rỗng = danh mục CHƯA tải xong, không phải "ngoài danh mục" — không chặn ở đây thì lần
+  // render đầu của mọi phiếu cũ đều gắn nhãn sai rồi mới tự sửa, người dùng kịp đọc.
+  const isGroupOutOfCatalog = (v: any) => { const cur = canonGroup(v); return groups.length > 0 && !!cur && !groups.includes(cur) }
+  const groupOptions = (v: any) => {
+    const cur = canonGroup(v)
+    return isGroupOutOfCatalog(v) ? [{ value: cur, label: `${cur} (ngoài danh mục)` }, ...groups] : groups
+  }
   // CR-082 — các dòng khiến phiếu thành Đơn gấp (rỗng = không dòng nào vi phạm).
   const urgentLines = useMemo(() => urgentLinesPR(pr.items || [], slaBase, stdMap),
     [pr.items, slaBase, stdMap])
@@ -389,7 +402,8 @@ export default function PurchaseRequestDetail() {
   const vatAmount = totalWithVat - subtotal
 
   const groupDesc = (name: string) => {
-    const g = itemGroups.find(x => x.name === name)
+    // Khớp KHÔNG phân biệt hoa/thường như stdDaysMap, kẻo "nl icare" ra mô tả rỗng dù danh mục có
+    const g = itemGroups.find(x => normGroup(x.name) === normGroup(name))
     if (!g) return ''
     const p: string[] = []
     if (g.std_days) p.push(`Hàng NCC có sẵn: ${g.std_days} ngày`)
@@ -1028,8 +1042,11 @@ export default function PurchaseRequestDetail() {
                       </td>
                       <td>
                         {editable ? (
-                          <select className="cell-input" value={it.item_group || ''} onChange={(e) => setGroup(i, e.target.value)} style={{ width: '100%' }}>
+                          <select className="cell-input" value={canonGroup(it.item_group)} onChange={(e) => setGroup(i, e.target.value)} style={{ width: '100%' }}>
                             <option value="">-- Phân loại --</option>
+                            {isGroupOutOfCatalog(it.item_group) && (
+                              <option value={canonGroup(it.item_group)}>{canonGroup(it.item_group)} (ngoài danh mục)</option>
+                            )}
                             {groups.map((g) => <option key={g} value={g}>{g}</option>)}
                           </select>
                         ) : <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }} title={it.item_group}>{it.item_group || ''}</span>}
@@ -1263,8 +1280,8 @@ export default function PurchaseRequestDetail() {
               </div>
               <div className="form-row">
                 <label>Phân loại</label>
-                <SearchSelect value={edit.item_group || ''} options={groups} disabled={!editable} placeholder="Chọn/tìm phân loại…"
-                  onChange={(v) => setGroup(editIdx, v)} />
+                <SearchSelect value={canonGroup(edit.item_group)} options={groupOptions(edit.item_group)} disabled={!editable}
+                  placeholder="Chọn/tìm phân loại…" onChange={(v) => setGroup(editIdx, v)} />
               </div>
               <div className="form-row">
                 <label>Mô tả phân loại</label>
