@@ -1517,7 +1517,12 @@ export default function PurchaseOrderDetail() {
                               <td style={{ textAlign: 'center' }}>
                                 {ids.length > 0
                                   ? <button className="btn secondary" style={{ height: 28, fontSize: 12.5 }} onClick={() => goCreatePayment(ids)}><i className="ti ti-receipt" />Tạo YCTT</button>
-                                  : <span className="badge ok">Đã chi đủ</span>}
+                                  : (Number(r.remaining) || 0) > 0.01
+                                    // bao-CR-379: còn phải chi nhưng không có khoản nợ nào để lập phiếu
+                                    // (chưa chọn NCC / dòng chưa Lưu / số tiền 0) — trước đây rơi nhầm
+                                    // vào nhãn "Đã chi đủ" dù chưa chi đồng nào.
+                                    ? <span title="Các khoản này chưa thành công nợ (chưa chọn NCC, dòng chưa Lưu hoặc số tiền 0) nên chưa lập phiếu được" style={{ color: 'var(--muted)', fontSize: 12.5 }}>Chưa thành công nợ</span>
+                                    : <span className="badge ok">Đã chi đủ</span>}
                               </td>
                             </tr>
                           )
