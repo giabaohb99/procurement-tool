@@ -19,8 +19,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
-import { Tabs, TabsList, TabsTrigger } from '@/shared/ui/tabs'
+import { ScrollableTabsList } from '@/shared/ui/scrollable-tabs-list'
+import { TAB_TRIGGER_UNDERLINE } from '@/shared/ui/tab-underline'
+import { Tabs, TabsTrigger } from '@/shared/ui/tabs'
 import { CatalogTable } from '../components/catalog-table'
+import { DocumentBookCard } from '../components/document-book-card'
 import { useDocumentBooks } from '../hooks/use-document-books'
 import { BOOK_KIND_LABELS, BOOK_KIND_OPTIONS, type DocumentBook } from '../types/document-book'
 
@@ -147,7 +150,16 @@ export function DocumentBookPage() {
           //  Người được chia sổ vào đây để TRA CỨU, họ không có `document_book.create`
           //  — bày nút ra là mời họ bấm rồi ăn 403 ở màn khai sổ.
           <PermissionGate entity="document_book" action="create">
-            <Button onClick={() => navigate(appRoutes.document.bookNew)}>
+            {/*  ⚠️ Khổ hẹp nút chiếm TRỌN hàng — `w-full` chỉ ăn nhờ nhóm nút của
+                 `PageHeader` cũng `max-md:w-full`. Không có vế đó thì nút là con
+                 của một khối co theo nội dung, `width:100%` quy về đúng bề rộng
+                 cũ và câu lệnh không làm gì cả. Đứng lửng bên phải trên một hàng
+                 trống thì nó vừa khó với tới bằng ngón cái, vừa đọc ra như bị
+                 bỏ quên ở đó. */}
+            <Button
+              className="w-full md:w-auto"
+              onClick={() => navigate(appRoutes.document.bookNew)}
+            >
               <Plus className="size-4" />
               Thêm mới
             </Button>
@@ -158,17 +170,29 @@ export function DocumentBookPage() {
       {/*  Số đếm trên từng tab: người được chia MỘT quyển sổ đi mà tab mặc định
            là «Văn bản đến» thì mở lên chỉ thấy trống trơn và kết luận là chia sổ
            không có tác dụng. Có số trên tab là thấy ngay sổ của mình nằm ở đâu. */}
+      {/*  ⚠️ **Dải này TỪNG là `TabsList` nền xám, và tab thứ ba KHÔNG BẤM ĐƯỢC.**
+           `TabsList` khai `w-fit` nên nó rộng theo nội dung và không cuộn: đo ở
+           393px, ba nhãn tiếng Việt cộng số đếm cần **486px**, mép phải tab «Sổ
+           văn bản nội bộ» nằm ở `right = 499`. Cả trang lẫn thẻ đều không cuộn
+           ngang (`documentElement.scrollWidth = 393`) nên tab đó bị cắt cụt và
+           **không có đường nào chạm tới** — tức một phần ba màn hình biến mất
+           trên điện thoại. `ScrollableTabsList` cho cuộn ngang kèm hai mũi tên ở
+           mép, giống chi tiết Văn bản (duoc-CR-366) và Trang cá nhân (CR-367). */}
       <Tabs value={kind} onValueChange={setKind} className="mb-4">
-        <TabsList>
+        <ScrollableTabsList value={kind}>
           {BOOK_KIND_OPTIONS.map((option) => (
-            <TabsTrigger key={option.value} value={String(option.value)}>
+            <TabsTrigger
+              key={option.value}
+              value={String(option.value)}
+              className={TAB_TRIGGER_UNDERLINE}
+            >
               {BOOK_KIND_LABELS[option.value]}
               <span className="ml-1.5 tabular-nums text-muted-foreground">
                 ({countByKind[option.value] ?? 0})
               </span>
             </TabsTrigger>
           ))}
-        </TabsList>
+        </ScrollableTabsList>
       </Tabs>
 
       <CatalogTable
@@ -182,43 +206,59 @@ export function DocumentBookPage() {
         columns={columns}
         searchFields={(row) => [row.code, row.name, row.company_name]}
         searchPlaceholder="Tìm theo mã sổ, tên sổ hoặc pháp nhân…"
+        searchPlaceholderShort="Tìm mã sổ, tên sổ…"
         detailPath={appRoutes.document.bookDetail}
         filterRows={filterRows}
+        //  Khổ hẹp: THẺ thay bảng — xem `DocumentBookCard`.
+        mobileCard={(row) => <DocumentBookCard book={row} year={year} />}
         emptyMessage={
           isLoading
             ? 'Đang tải danh sách sổ…'
             : `Chưa có ${BOOK_KIND_LABELS[Number(kind) as 1 | 2 | 3].toLowerCase()} nào khớp điều kiện đang lọc.`
         }
-        extraToolbar={
-          <>
-            <Select value={companyId} onValueChange={setCompanyId}>
-              <SelectTrigger className="w-56">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL_COMPANIES}>Tất cả pháp nhân</SelectItem>
-                {(companies?.items ?? []).map((company) => (
-                  <SelectItem key={company.id} value={String(company.id)}>
-                    {company.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={year} onValueChange={setYear}>
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {YEARS.map((option) => (
-                  <SelectItem key={option} value={String(option)}>
-                    Năm {option}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </>
-        }
+        //  ⚠️ Khai ở `filters` chứ KHÔNG ở `extraToolbar`: `filters` được
+        //  `CatalogTable` dựng ở hai chỗ — thẳng hàng trên thanh công cụ từ `md`,
+        //  và xếp dọc có nhãn trong tờ trượt ở khổ hẹp. Nhét vào `extraToolbar`
+        //  thì ở điện thoại hai ô này chiếm thêm hai hàng của một thanh đã chật.
+        //  `w-full md:w-*`: trong tờ trượt ô trải hết bề ngang, trên thanh công
+        //  cụ về lại bề rộng cũ.
+        filters={[
+          {
+            label: 'Pháp nhân',
+            node: (
+              <Select value={companyId} onValueChange={setCompanyId}>
+                <SelectTrigger className="w-full md:w-56" aria-label="Lọc theo pháp nhân">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL_COMPANIES}>Tất cả pháp nhân</SelectItem>
+                  {(companies?.items ?? []).map((company) => (
+                    <SelectItem key={company.id} value={String(company.id)}>
+                      {company.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ),
+          },
+          {
+            label: 'Năm',
+            node: (
+              <Select value={year} onValueChange={setYear}>
+                <SelectTrigger className="w-full md:w-32" aria-label="Lọc theo năm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {YEARS.map((option) => (
+                    <SelectItem key={option} value={String(option)}>
+                      Năm {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ),
+          },
+        ]}
       />
     </PageContainer>
   )
