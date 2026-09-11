@@ -18,7 +18,7 @@ phải có giá trị, và `actor_kind = 0` ("không rõ") là đúng với chú
 Tài liệu: `doc/tai-lieu-ky-thuat/nhat-ky-va-phien-dang-nhap.md` §4.1, §4.2, §4.5.
 
 Revision ID: f4d37c7600d0
-Revises: d7f2a9c4e1b8
+Revises: d2f45a8c9e10
 Create Date: 2026-09-09 10:18:04.644509
 """
 from typing import Sequence, Union
@@ -28,7 +28,17 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = 'f4d37c7600d0'
-down_revision: Union[str, None] = 'd7f2a9c4e1b8'
+#  ⚠️ CHA PHẢI LÀ `d2f45a8c9e10`, ĐỪNG TRỎ LẠI `d7f2a9c4e1b8` (11/09/2026).
+#  Bản `main` khai đúng dòng này là `d2f45a8c9e10`, và prod ĐÃ CHẠY theo thứ tự
+#  đó — `alembic_version` của prod đứng ở `94f0a2c4e43c` với nghĩa "96 migration
+#  của main đã chạy". Nhánh `erp-v2` từng trỏ cha sang nút gộp `d7f2a9c4e1b8`,
+#  tức xếp khúc đuôi của main NẰM SAU toàn bộ 201 migration của v2. Hậu quả khi
+#  đem mã v2 lên prod: alembic đọc `94f0a2c4e43c` rồi coi cả 201 migration kia là
+#  "đã chạy", **bỏ qua 107 migration prod chưa hề chạy** và chỉ chạy 10 cái cuối
+#  — lược đồ thiếu gần hết mà cờ vẫn nhảy lên head. Bản chạy thử bắt được vì
+#  `a1c6f80b2d47` nổ "Duplicate column name 'cost_status'"; không có nó thì hỏng
+#  âm thầm. Nhánh v2 nay nhập lại ở nút gộp `e4b7c2a1d905`.
+down_revision: Union[str, None] = 'd2f45a8c9e10'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
