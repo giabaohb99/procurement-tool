@@ -178,6 +178,10 @@ def import_employees_csv(
         raise HTTPException(400, "File CSV trống")
         
     created, updated, deleted = 0, 0, 0
+    # bao-CR-368: nhập CSV cũng là một cửa tạo nhân sự — phải chặn trùng email y như màn nhập tay,
+    # nếu không thì vá một cửa vẫn còn cửa kia. Dòng trùng bị BỎ QUA chứ không huỷ cả tệp, rồi báo
+    # số lượng ở câu kết để người nhập biết mà sửa lại.
+    bo_qua_trung_email: list[str] = []
     for row in reader:
         action = (row.get("Hành động") or "").strip().lower()
         is_active = action not in ["xóa", "delete", "ngừng"]
@@ -205,6 +209,16 @@ def import_employees_csv(
                 department_id = dept.id
 
         existing = db.query(Employee).filter(Employee.code == code).first() if code else None
+        if email and action not in ["xóa", "delete"]:
+            from sqlalchemy import func as sa_func
+            trung = (db.query(Employee)
+                     .filter(sa_func.lower(Employee.email) == email.lower(),
+                             Employee.id != (existing.id if existing else 0))
+                     .first())
+            if trung:
+                bo_qua_trung_email.append(f"{code or full_name} (email đã thuộc {trung.code})")
+                continue
+
         if existing:
             if action in ["xóa", "delete"]:
                 service.detach_users(db, existing.id, user.id)   # CR-023: khoá tài khoản kèm theo
@@ -234,4 +248,9 @@ def import_employees_csv(
             created += 1
             
     db.commit()
-    return success(None, f"Nhập file thành công. Thêm mới {created}, cập nhật {updated}, ẩn {deleted}.")
+    msg = f"Nhập file thành công. Thêm mới {created}, cập nhật {updated}, ẩn {deleted}."
+    if bo_qua_trung_email:
+        msg += (f" Bỏ qua {len(bo_qua_trung_email)} dòng trùng email: "
+                + ", ".join(bo_qua_trung_email[:5])
+                + ("…" if len(bo_qua_trung_email) > 5 else ""))
+    return success(None, msg)

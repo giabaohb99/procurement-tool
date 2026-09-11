@@ -1,4 +1,5 @@
 from fastapi import HTTPException
+from sqlalchemy import func
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.audit import record
@@ -35,11 +36,36 @@ def get_employee(db: Session, eid: int) -> Employee:
     return obj
 
 
+def ensure_email_unique(db: Session, email: str, exclude_id: int = 0) -> str:
+    """bao-CR-368: một email chỉ được thuộc về MỘT hồ sơ nhân sự.
+
+    Trước đây tạo nhân sự chỉ kiểm trùng `code`, email thì thả nổi — nên trên hệ thật đã có
+    hai hồ sơ "Danh Hoàng Nguyên" cùng `dhnguyen.icare@gmail.com` (NSU089 · Nhân sự và NSU238 ·
+    Thủ kho). Email chính là khoá đăng nhập: `authenticate` tìm `User.email`, còn `google_login`
+    tìm `Employee.email` rồi `.first()` — nên khi trùng, người dùng rơi vào hồ sơ nào là do thứ tự
+    bản ghi quyết định chứ không phải do ai chọn. Chặn ngay từ lúc nhập là cách duy nhất chắc chắn.
+
+    So sánh đã bỏ hoa/thường và khoảng trắng thừa ("A@X.com " và "a@x.com" là một). Email rỗng
+    không tính trùng — còn nhiều nhân sự chưa có email và họ đăng nhập bằng mã nhân viên.
+    Trả về email đã cắt khoảng trắng để lưu xuống.
+    """
+    clean = (email or "").strip()
+    if not clean:
+        return clean
+    dup = (db.query(Employee)
+           .filter(func.lower(Employee.email) == clean.lower(), Employee.id != exclude_id)
+           .first())
+    if dup:
+        raise HTTPException(400, f"Email này đã thuộc về nhân sự {dup.code} - {dup.full_name}")
+    return clean
+
+
 def create_employee(db: Session, data: EmployeeCreate, user_id: int) -> Employee:
     if not data.code:
         data.code = generate_code(db, Employee, "NSU")
     elif db.query(Employee).filter(Employee.code == data.code).first():
         raise HTTPException(400, "Mã nhân viên đã tồn tại")
+    data.email = ensure_email_unique(db, data.email)
     obj = Employee(**data.model_dump(), created_by=user_id, updated_by=user_id)
     db.add(obj)
     db.commit()
@@ -52,12 +78,11 @@ def update_employee(db: Session, eid: int, data: EmployeeUpdate, user_id: int) -
     obj = get_employee(db, eid)
     old_email = (obj.email or "").strip()
     fields = data.model_dump(exclude_unset=True)
+    if "email" in fields:
+        fields["email"] = ensure_email_unique(db, fields["email"] or "", exclude_id=obj.id)
     for key, value in fields.items():
         setattr(obj, key, value)
     obj.updated_by = user_id
-    db.commit()
-    db.refresh(obj)
-    record(db, user_id, ENTITY, obj.id, "update")
 
     # CR-022: hồ sơ nhân sự KHÔNG còn cấp quyền cho tài khoản đăng nhập. Ô ở màn Nhân sự nay là
     # "Vị trí / Chức vụ" (`position`) — chỉ là chữ để hiển thị/in phiếu. Quyền thật của tài khoản
@@ -70,7 +95,18 @@ def update_employee(db: Session, eid: int, data: EmployeeUpdate, user_id: int) -
     #       thêm email vào nhân sự — kể cả email đã nhập TRƯỚC bản vá, lần lưu sau tự khớp);
     #   (b) admin THỰC SỰ đổi field email trong lần lưu này (old != new) → đẩy email mới sang.
     email_changed = "email" in fields and (obj.email or "").strip() != old_email
-    _sync_user_email_from_employee(db, obj, email_changed)
+    # bao-CR-368: TRƯỚC ĐÂY chỗ này nằm SAU `db.commit()`. Khi email đụng tài khoản khác,
+    # hàm dưới ném lỗi 400 — nhưng hồ sơ nhân sự thì đã ghi xong rồi: người dùng thấy báo đỏ mà
+    # dữ liệu vẫn đổi, tức là "lỗi nhưng không hoàn tác". Nay gom lại MỘT giao dịch: kiểm hết,
+    # gán hết, rồi mới commit một lần; vướng chỗ nào là trả cả lần lưu về nguyên trạng.
+    try:
+        _sync_user_email_from_employee(db, obj, email_changed)
+    except Exception:
+        db.rollback()
+        raise
+    db.commit()
+    db.refresh(obj)
+    record(db, user_id, ENTITY, obj.id, "update")
     return obj
 
 
@@ -97,7 +133,8 @@ def _sync_user_email_from_employee(db: Session, emp: Employee, email_changed: bo
     if dup:
         raise HTTPException(400, "Email này đã được một tài khoản khác sử dụng")
     user.email = new_email
-    db.commit()
+    # bao-CR-368: KHÔNG commit ở đây nữa — `update_employee` commit một lần cho cả hồ sơ nhân sự
+    # lẫn email đăng nhập, để hai thứ này không bao giờ lệch nhau nửa chừng.
 
 
 def detach_users(db: Session, eid: int, actor_id: int) -> int:
