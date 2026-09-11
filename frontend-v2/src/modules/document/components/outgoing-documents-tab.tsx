@@ -19,6 +19,7 @@ import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-fil
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import { LIST_TOOLBAR_STICKY } from '@/modules/hr/utils/list-sticky'
+import { cn } from '@/shared/utils/cn'
 import { AdvancedFilterSection } from '@/shared/ui/advanced-filter-section'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
@@ -229,7 +230,11 @@ function OutgoingDocumentsContent() {
         getRowId={(row: DocumentRecord) => row.id}
         storageKey="document.records"
         fillHeight
-        toolbarClassName={LIST_TOOLBAR_STICKY}
+        //  ⚠️ `max-md:gap-2` — khe 12px của `DataTable` là cỡ cho hàng có
+        //  CHỮ; hàng này ở khổ hẹp là ô tìm cộng ba nút biểu tượng, mà cụm nút
+        //  biểu tượng thì 8px là khe quen thuộc. 4px × 3 khe = 12px, đúng phần
+        //  còn thiếu để câu gợi ý vừa trọn ô ở 360px.
+        toolbarClassName={cn(LIST_TOOLBAR_STICKY, 'max-md:gap-2')}
         //  Ô tìm chiếm trọn hàng đầu ở khổ hẹp, nên hàng nút còn lại dư chỗ và
         //  `ml-auto` mặc định xé nó thành hai mẩu cách nhau 162px. Dồn liền một
         //  cụm — xem `DataTableProps.toolbarActionsClassName`.
@@ -254,23 +259,25 @@ function OutgoingDocumentsContent() {
         )}
         toolbar={
           <>
-            {/*  ⚠️ **`max-md:basis-full` — ô tìm chiếm TRỌN hàng đầu ở khổ hẹp.**
-                 Thanh này có bốn khối (tìm · Bộ lọc · Export · Tải lại); nhét cả
-                 bốn vào một hàng 324px thì ô tìm chỉ còn **80px** trong khi câu
-                 gợi ý cần 171px — nó cụt thành «Tìm tên, số h» và lúc gõ thì
-                 người dùng thấy được đúng mười ký tự. Một ô tìm không nói nổi
-                 mình tìm được những gì thì người ta đoán, và thường đoán là chỉ
-                 tìm được số hiệu.
+            {/*  ⚠️ **MỘT HÀNG ở khổ hẹp** (khách chốt 11/09/2026) — trước đây ô
+                 tìm chiếm trọn hàng đầu và bốn khối (tìm · Bộ lọc · Export · Tải
+                 lại) rơi xuống hàng thứ hai. Đổi lại vì thanh này **ghim theo
+                 cuộn**: mỗi hàng thừa là 48px đứng yên vĩnh viễn trên màn 852px,
+                 trả đi trả lại suốt buổi đọc danh sách.
 
-                 Đã cân nhắc hai cách giữ MỘT hàng và bỏ cả hai: rút «Bộ lọc» còn
-                 cái phễu thì mất chữ mà `leave-rows-filter-bar` đã cố ý đánh đổi
-                 60px để giữ, còn ẩn Export ở khổ hẹp là bỏ hẳn một việc làm
-                 được. Xuống hàng tốn 44px nhưng không lấy đi thứ gì: thanh công
-                 cụ vẫn từ 180px còn ~84px, và ô tìm được trọn bề ngang. Thanh này
-                 KHÔNG ghim theo cuộn (nó nằm trong thẻ `fillHeight`, danh sách
-                 tự cuộn bên trong) nên 44px đó không nhân lên theo mỗi lần cuộn.
-
-                 Từ `md` trở lên `basis-full` tắt, ô về lại bề rộng cũ cạnh các nút. */}
+                 Số học của hàng đó rất sát, nên hai vế dưới đây đi kèm nhau chứ
+                 không phải làm đẹp thêm — đo ở 393px, bề ngang dùng được 335px:
+                 - **`iconOnly`** rút «Bộ lọc» từ 80px còn 36px. Không có vế này
+                   thì ô tìm chỉ còn 141px, tức 93px cho chữ — không đủ cho cả
+                   câu gợi ý ngắn nhất.
+                 - **`placeholderShort`** vì ngay cả khi đã rút nút, ô tìm được
+                   185px ≈ 137px chữ, mà câu đủ cần **171px**: trình duyệt sẽ xén
+                   thành «Tìm tên, số hiệu, từ k…» — mất đúng chữ *từ khóa*, thứ
+                   người dùng chưa đoán được. Câu ngắn 115px thì vừa, và ở 360px
+                   (ô còn 152px ≈ 104px chữ) vẫn vừa.
+                 Bỏ một trong hai là hàng lại vỡ. Từ `md` trở lên cả hai tắt: nút
+                 «Bộ lọc» ẩn hẳn (desktop dùng `ConditionalFilter`) và câu gợi ý
+                 về bản đủ. */}
             <SearchField
               value={keyword}
               onChange={(value) => {
@@ -278,7 +285,8 @@ function OutgoingDocumentsContent() {
                 setPage(1)
               }}
               placeholder="Tìm tên, số hiệu, từ khóa…"
-              className="max-md:basis-full md:min-w-56 md:max-w-xs"
+              placeholderShort="Tìm tên, số hiệu…"
+              className="md:min-w-56 md:max-w-xs"
             />
 
             {/*  ⚠️ `activeCount` cộng CẢ HAI tầng lọc — ô nhanh và điều kiện nâng
@@ -290,6 +298,7 @@ function OutgoingDocumentsContent() {
                  của hai ô là `all` chứ không rỗng, đếm kiểu kia thì nút lúc nào
                  cũng báo đang lọc (bài học duoc-CR-364). */}
             <QuickFilterSheet
+              iconOnly
               activeCount={
                 (typeId !== ALL ? 1 : 0) + (status !== ALL ? 1 : 0) + filter.activeCount
               }
@@ -338,7 +347,13 @@ function OutgoingDocumentsContent() {
                 onClick={() => void exportExcel()}
                 disabled={dangXuat}
                 aria-label="Export danh sách văn bản ra Excel"
-                className="shrink-0"
+                //  ⚠️ `max-md:size-9 max-md:p-0` — ở khổ hẹp nút này chỉ còn
+                //  BIỂU TƯỢNG, nên nó phải vuông 36px như hai nút biểu tượng
+                //  đứng cạnh (Bộ lọc · Tải lại). Để nguyên cỡ mặc định thì đệm
+                //  `px-4` vẫn còn và nút rộng **42px** — lệch 6px giữa ba nút
+                //  giống hệt nhau về hình, và 6px đó đúng bằng phần thiếu để câu
+                //  gợi ý của ô tìm vừa một hàng ở 360px.
+                className="shrink-0 max-md:size-9 max-md:p-0"
               >
                 {dangXuat ? (
                   <Loader2 className="size-4 animate-spin" />

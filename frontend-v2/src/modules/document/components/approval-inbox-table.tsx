@@ -208,23 +208,44 @@ function ApprovalInboxContent() {
           }
           toolbar={
             <>
-              {/*  `max-md:basis-full` — ô tìm chiếm TRỌN hàng đầu ở khổ hẹp. Câu
-                   gợi ý «Tìm số hiệu, tên, bước…» cần ~171px; chen nó cùng hàng
-                   với dãy lọc phạm vi (310px) thì không còn gì cho nó. Từ `md`
-                   trở lên `basis-full` tắt, ô về lại bề rộng cũ cạnh các nút. */}
+              {/*  MỘT HÀNG ở khổ hẹp — xem ghi chú dài ở `outgoing-documents-tab`.
+                   ⚠️ Ở màn này ô tìm **vẫn không đứng chung được với dãy lọc phạm
+                   vi** (310px cho ba mục): dãy đó xuống hàng riêng. Thứ gói chung
+                   một hàng là ô tìm + nút lọc + Tải lại, tức thanh công cụ từ ba
+                   hàng còn hai. */}
               <SearchField
                 value={keyword}
                 onChange={setKeyword}
                 placeholder="Tìm số hiệu, tên, bước…"
-                className="max-md:basis-full md:min-w-56 md:max-w-2xs"
+                placeholderShort="Tìm số hiệu, tên…"
+                className="md:min-w-56 md:max-w-2xs"
               />
 
+              {/*  ⚠️ **`max-md:order-last max-md:basis-full` — dãy này XUỐNG HÀNG
+                   RIÊNG, và phải ở CUỐI.** Ba mục đã rộng 302px nên nó không bao
+                   giờ đứng chung hàng với ô tìm được; thả nó vào hàng đầu thì nó
+                   giành chỗ của ô tìm rồi tự vỡ thành hai hàng con — đo ở 360px
+                   khi thiếu hai lớp này: thanh công cụ phình lên **193px**, tệ
+                   hơn cả bản chưa gộp hàng.
+
+                   `basis-full` chiếm trọn một hàng nên ô tìm + nút lọc + Tải lại
+                   gom đủ vào hàng trên; `order-last` để nó xuống DƯỚI cụm nút —
+                   thiếu vế này thì `basis-full` cắt hàng ngay tại chỗ nó đứng và
+                   đẩy nút Tải lại xuống hàng thứ ba. Kết quả: **hai hàng**
+                   (~98px) thay vì ba (134px).
+
+                   ⚠️ `order` chỉ đổi chỗ khi VẼ, không đổi thứ tự trong cây DOM —
+                   bấm Tab vẫn đi ô tìm → dãy phạm vi → nút lọc → Tải lại, tức
+                   dãy phạm vi được duyệt trước hai nút nằm phía trên nó. Lệch một
+                   nấc, chấp nhận được vì dãy vẫn nằm ngay sát dưới ô tìm; đừng nới
+                   `order` ra thêm phần tử nào nữa. */}
               <InboxScopeFilter
                 value={scope}
                 onChange={setScope}
                 pendingCount={pendingTasks.length}
                 overdueCount={overdueCount}
                 approvedCount={clicked.length}
+                className="max-md:order-last max-md:basis-full"
               />
 
               {/*  ⚠️ `activeCount` cộng CẢ HAI tầng — khoảng thời gian và điều
@@ -237,6 +258,7 @@ function ApprovalInboxContent() {
 
                    Nút tự ẩn từ `md` trở lên (`QuickFilterSheet` khai `md:hidden`). */}
               <QuickFilterSheet
+                iconOnly
                 activeCount={
                   (showRange && ngay !== DEFAULT_DATE ? 1 : 0) + filter.activeCount
                 }

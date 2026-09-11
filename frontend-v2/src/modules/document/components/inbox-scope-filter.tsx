@@ -7,6 +7,7 @@ interface InboxScopeFilterProps {
   pendingCount: number
   overdueCount: number
   approvedCount: number
+  className?: string
 }
 
 /**
@@ -29,6 +30,7 @@ export function InboxScopeFilter({
   pendingCount,
   overdueCount,
   approvedCount,
+  className,
 }: InboxScopeFilterProps) {
   const muc: { value: InboxScope; label: string; count: number; gap?: boolean }[] = [
     { value: INBOX_SCOPE.all, label: 'Tất cả', count: pendingCount + approvedCount },
@@ -55,7 +57,12 @@ export function InboxScopeFilter({
     //
     //  Ba mục (không có việc quá hạn) vẫn vừa MỘT hàng ở 390px — trường hợp
     //  thường ngày không đổi gì cả.
-    <div className="inline-flex min-h-9 flex-wrap items-center gap-0.5 rounded-md border bg-muted/40 p-0.5 md:h-9 md:flex-nowrap md:shrink-0">
+    <div
+      className={cn(
+        'inline-flex min-h-9 flex-wrap items-center gap-0.5 rounded-md border bg-muted/40 p-0.5 md:h-9 md:flex-nowrap md:shrink-0',
+        className,
+      )}
+    >
       {muc.map((item) => {
         const selection = value === item.value
         return (
@@ -67,7 +74,13 @@ export function InboxScopeFilter({
             aria-pressed={selection}
             onClick={() => onChange(item.value)}
             className={cn(
-              'flex h-8 items-center gap-1.5 rounded-sm px-2.5 text-sm whitespace-nowrap transition-colors',
+              //  ⚠️ `max-md:px-2 max-md:gap-1` — ở 360px dãy ba mục cần **308px**
+              //  mà hàng chỉ có 302px, hụt 6px nên nó vỡ thành hai hàng con và
+              //  thanh công cụ ghim phình thêm 38px. Bóp đệm ngang một nấc
+              //  (4px/nút) cùng khe huy hiệu (2px/nút) là đủ vừa, và mắt gần như
+              //  không thấy khác. Ba mục là cảnh THƯỜNG NGÀY; đủ bốn mục (có việc
+              //  quá hạn) thì vẫn xuống hai hàng, đó là chủ ý.
+              'flex h-8 items-center gap-1.5 rounded-sm px-2.5 text-sm whitespace-nowrap transition-colors max-md:gap-1 max-md:px-2',
               selection
                 ? 'bg-background font-medium text-foreground shadow-sm'
                 : 'text-muted-foreground hover:text-foreground',

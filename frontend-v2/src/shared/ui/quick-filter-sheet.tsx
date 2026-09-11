@@ -11,9 +11,16 @@ export interface QuickFilterSheetProps {
   onClearAll?: () => void
   children: ReactNode
   /**
-   * Nút bấm chỉ còn BIỂU TƯỢNG, nền chìm — dùng khi nút nằm LỒNG trong ô tìm
-   * kiếm (`SearchField.trailing`). Bản mặc định có viền và chữ «Bộ lọc», đặt
-   * vào trong một ô đã có viền là viền chồng viền.
+   * Nút bấm rút còn BIỂU TƯỢNG — dùng khi thanh công cụ phải gói ô tìm và mấy
+   * nút vào **một hàng** ở khổ điện thoại, chỗ mà 48px của chữ «Bộ lọc» là phần
+   * chênh giữa vừa và không vừa.
+   *
+   * ⚠️ Vẫn **giữ viền** (`variant="outline"`) chứ không để nền chìm: nó đứng
+   * cạnh mấy nút biểu tượng khác cũng có viền (Export, Tải lại), một nút trơn
+   * lọt giữa chúng đọc ra như đang bị tắt.
+   *
+   * ⚠️ **Mất chữ là mất thật** — người dùng phải đoán cái phễu làm gì. Chỉ đổi
+   * khi thật sự cần chỗ; hàng nào còn rộng thì để bản có chữ.
    */
   iconOnly?: boolean
   /**
@@ -56,15 +63,15 @@ export function QuickFilterSheet({
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button
-          variant={iconOnly ? 'ghost' : 'outline'}
-          size={iconOnly ? 'icon-sm' : 'sm'}
+          variant="outline"
+          size={iconOnly ? 'icon' : 'sm'}
           aria-label="Bộ lọc"
           className={cn('relative shrink-0 md:hidden', !iconOnly && 'h-9 gap-1.5 px-3 text-xs')}
         >
           <Filter className="size-4" />
           {!iconOnly && <span>Bộ lọc</span>}
 
-          {/*  Bản biểu tượng báo bằng CHẤM chứ không bằng số: nút chỉ rộng 32px,
+          {/*  Bản biểu tượng báo bằng CHẤM chứ không bằng số: nút chỉ rộng 36px,
                nhét một huy hiệu số vào là nó đè lên chính cái phễu. Con số đầy
                đủ vẫn có ở tiêu đề tờ trượt. */}
           {activeCount > 0 &&

@@ -1,11 +1,24 @@
 import { Search, X } from 'lucide-react'
 
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { cn } from '@/shared/utils/cn'
 
 export interface SearchFieldProps {
   value: string
   onChange: (value: string) => void
   placeholder?: string
+  /**
+   * Câu gợi ý RÚT GỌN dùng dưới 768px, nơi ô tìm phải chia hàng với mấy nút.
+   *
+   * ⚠️ Phải đổi bằng JS chứ không giấu bớt chữ bằng CSS được: `placeholder` là
+   * một thuộc tính, không phải một nút trong cây DOM — không có gì để gắn
+   * `max-md:hidden` vào. Cắt bằng bề rộng ô thì trình duyệt xén giữa chừng và ra
+   * «Tìm tên, số hiệu, từ k…», tức người đọc mất đúng phần cuối — mà phần cuối
+   * mới là thứ họ chưa đoán được (*từ khóa*, *loại*, *bước*).
+   *
+   * Bỏ trống thì dùng `placeholder` cho mọi khổ.
+   */
+  placeholderShort?: string
   className?: string
   'aria-label'?: string
 }
@@ -30,9 +43,13 @@ export function SearchField({
   value,
   onChange,
   placeholder,
+  placeholderShort,
   className,
   'aria-label': ariaLabel = 'Tìm kiếm',
 }: SearchFieldProps) {
+  const isMobile = useIsMobile()
+  const hint = isMobile && placeholderShort ? placeholderShort : placeholder
+
   return (
     <div
       className={cn(
@@ -48,7 +65,7 @@ export function SearchField({
         type="text"
         aria-label={ariaLabel}
         className="h-full min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-        placeholder={placeholder}
+        placeholder={hint}
         value={value}
         onChange={(e) => onChange(e.target.value)}
       />

@@ -12,6 +12,7 @@ import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import { LIST_TOOLBAR_STICKY } from '@/modules/hr/utils/list-sticky'
+import { cn } from '@/shared/utils/cn'
 import { AdvancedFilterSection } from '@/shared/ui/advanced-filter-section'
 import { Badge } from '@/shared/ui/badge'
 import { Card } from '@/shared/ui/card'
@@ -196,7 +197,11 @@ function IncomingDocumentsContent() {
         getRowId={(row) => row.id}
         storageKey="document.applies-to-me"
         fillHeight
-        toolbarClassName={LIST_TOOLBAR_STICKY}
+        //  ⚠️ `max-md:gap-2` — khe 12px của `DataTable` là cỡ cho hàng có
+        //  CHỮ; hàng này ở khổ hẹp là ô tìm cộng ba nút biểu tượng, mà cụm nút
+        //  biểu tượng thì 8px là khe quen thuộc. 4px × 3 khe = 12px, đúng phần
+        //  còn thiếu để câu gợi ý vừa trọn ô ở 360px.
+        toolbarClassName={cn(LIST_TOOLBAR_STICKY, 'max-md:gap-2')}
         //  Dồn nhóm nút liền cụm ở khổ hẹp — xem ghi chú cùng chỗ ở
         //  `outgoing-documents-tab`.
         toolbarActionsClassName="max-md:ml-0"
@@ -218,19 +223,23 @@ function IncomingDocumentsContent() {
         mobileCard={(row: DocumentRecord) => <DocumentCard doc={row} showReviewFlag />}
         toolbar={
           <>
-            {/*  `max-md:basis-full` — xem ghi chú dài ở `outgoing-documents-tab`:
-                 ô tìm chiếm trọn hàng đầu ở khổ hẹp để câu gợi ý đọc được hết. */}
+            {/*  MỘT HÀNG ở khổ hẹp — xem ghi chú dài ở `outgoing-documents-tab`.
+                 Tab này nhẹ hơn một khối (không có Export) nên ô tìm rộng hơn,
+                 nhưng câu gợi ý cũng dài hơn (**190px**, dài nhất trong hai tab)
+                 nên vẫn cần cả `iconOnly` lẫn `placeholderShort`. */}
             <SearchField
               value={keyword}
               onChange={setKeyword}
               placeholder="Tìm trích yếu, số hiệu, loại…"
-              className="max-md:basis-full md:min-w-56 md:max-w-xs"
+              placeholderShort="Tìm trích yếu, số hiệu…"
+              className="md:min-w-56 md:max-w-xs"
             />
 
             {/*  Khổ hẹp: ô lọc nhanh + bộ lọc nâng cao gom sau MỘT nút. Đếm cả
                  hai tầng, nếu không thì nút trông sạch trơn trong khi danh sách
                  vẫn đang bị lọc. */}
             <QuickFilterSheet
+              iconOnly
               activeCount={(review !== ALL ? 1 : 0) + activeCount}
               onClearAll={() => {
                 setReview(ALL)
