@@ -13,7 +13,8 @@ from app.modules.notification.service import trigger_notification
 from sqlalchemy import and_ as sa_and, func, or_ as sa_or, select
 from . import option_service, service
 from .constants import PR_OPTION_SOURCE_LABELS
-from .model import PurchaseRequest, PurchaseRequestItem
+from .model import (STATUS_AFTER_APPROVE, STATUS_AFTER_DISPATCH,
+                    PurchaseRequest, PurchaseRequestItem)
 from .schema import (ApproveIn, AssignIn, ItemStatusIn, PRCreate, PROptionManualIn,
                      PROptionSurveyIn, PROptionUpdateIn, PRUpdate, ReasonIn, RejectIn, UrgentIn)
 
@@ -160,8 +161,8 @@ def _notify_assigned(db: Session, pr, user, background_tasks: BackgroundTasks) -
 
 # Chữ ký 2 bước duyệt trên phiếu in chỉ có hiệu lực từ mốc trạng thái tương ứng trở đi.
 # Phiếu bị TRẢ VỀ (Nháp / Chờ duyệt) sẽ KHÔNG in lại chữ ký duyệt của lần trước.
-_AFTER_APPROVE = ("approved", "dispatched", "processing", "purchasing", "purchased", "completed", "done")
-_AFTER_DISPATCH = ("dispatched", "processing", "purchasing", "purchased", "completed", "done")
+_AFTER_APPROVE = STATUS_AFTER_APPROVE
+_AFTER_DISPATCH = STATUS_AFTER_DISPATCH
 
 
 def _approval_signers(db: Session, pr) -> dict:

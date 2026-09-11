@@ -320,7 +320,8 @@ def _role_scope_cond(model, entity, scope, user, profile, perms=None):
     # "Được giao": của mình HOẶC được phân bổ cho mình (áp cho PYC)
     if scope in ("assigned", "proc"):
         if entity == "purchase_request":
-            from app.modules.purchase_request.model import PurchaseRequestItem
+            from app.modules.purchase_request.model import (STATUS_AFTER_APPROVE,
+                                                            PurchaseRequestItem)
             conds = [model.created_by == user.id]
             if profile.get("employee_id"):
                 conds.append(model.requester_id == profile["employee_id"])   # phiếu mình là người yêu cầu
@@ -332,9 +333,13 @@ def _role_scope_cond(model, entity, scope, user, profile, perms=None):
             # công ty của người xem — nhưng CHỈ khi họ đã gắn `company_id`. Nhân sự chưa gắn
             # (dữ liệu prod hiện tại, company_id=0) giữ nguyên hành vi cũ để Thu mua không gián
             # đoạn; gắn company_id (bước bật đa pháp nhân) thì tự lọc đúng công ty.
+            # bao-CR-371: phải là CẢ vòng đời sau duyệt, không chỉ 2 mốc đầu. Liệt kê tay
+            # ["approved","dispatched"] nghĩa là phiếu vừa chạy sang 'processing' là BIẾN MẤT
+            # khỏi mắt chính người thu mua đang xử lý nó (mở link ra thì "Không tìm thấy"),
+            # trừ khi tình cờ họ là người tạo / người yêu cầu / người được gán.
             if scope == "proc":
                 conds.append(_proc_status_cond(model, f, company_id,
-                                                ["approved", "dispatched"]))
+                                                list(STATUS_AFTER_APPROVE)))
             if profile.get("employee_id"):
                 conds.append(model.assignee_id == profile["employee_id"])
             if profile.get("emp_code"):
@@ -362,7 +367,10 @@ def _role_scope_cond(model, entity, scope, user, profile, perms=None):
             # CR-087: khớp bằng `nspt_id`; tên chỉ còn là đường lùi cho đơn cũ (`nspt_id = 0`).
             conds = [model.created_by == user.id]
             if scope == "proc":
-                conds.append(_proc_status_cond(model, f, company_id, ["approved"]))
+                # bao-CR-371: cùng lỗi với YCMH — nhận hàng xong (`partial`/`received`/
+                # `completed`) thì đơn không được biến mất khỏi mắt người thu mua đang theo nó.
+                from app.modules.purchase_order.model import STATUS_AFTER_APPROVE as PO_AFTER_APPROVE
+                conds.append(_proc_status_cond(model, f, company_id, list(PO_AFTER_APPROVE)))
             ec = _emp_match(model, "nspt_id", "nspt",
                             profile.get("employee_id") or 0, profile.get("emp_name") or "")
             if ec is not None:
