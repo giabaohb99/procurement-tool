@@ -40,7 +40,20 @@
  * sẵn `mb-4` cho thanh công cụ; lề nằm NGOÀI hộp được tô nền, nên thẻ cuộn qua
  * hiện nguyên một vạch chữ cụt trong dải 16px ngay dưới ô tìm — trông đúng như
  * lỗi vẽ. Đổi thành `mb-0` + `pb-3` thì khoảng hở đó nằm trong phần được tô.
- * `border-b` để dải có ranh giới rõ, không thì thẻ trượt vào như bị cắt ngang.
+ *
+ * ⚠️ **VẠCH CHÂN CHỈ VẼ KHI ĐÃ CUỘN** (`border-transparent` →
+ * `group-data-[scrolled]:border-border`), và đây là sửa lỗi chứ không phải làm
+ * đẹp thêm. Ngay dưới dải này **luôn luôn** là một hộp có viền — `DataTable` bọc
+ * cả bảng lẫn danh sách thẻ trong `rounded-lg border` — mà `mb-0` thì hai đường
+ * ấy **chạm nhau, hở 0px**: một vạch chạy hết bề ngang thẻ (dải ghim, do `-mx-3`)
+ * dính liền một vạch bo góc thụt vào 12px (hộp danh sách). Ra đúng cái vẻ "quên
+ * chừa đệm", và nó đúng ở MỌI màn dùng hằng này chứ không riêng màn nào.
+ *
+ * Bỏ hẳn vạch thì mất ranh giới lúc thẻ trượt vào dưới dải. Nên giữ nguyên bề
+ * rộng 1px (khai `border-b` sẵn, chỉ đổi MÀU) — không có nhịp nhảy 1px lúc bắt
+ * đầu cuộn — và chỉ tô màu đúng lúc có nội dung chạy bên dưới, cùng nhịp với
+ * bóng đổ. Lúc đứng yên, khoảng hở 12px cộng với viền của chính hộp danh sách đã
+ * là ranh giới rõ ràng rồi.
  */
 
 /**
@@ -79,7 +92,7 @@ export const LIST_SECTION_TABS_STICKY =
  * Lề âm tính theo đệm `p-3` của `Card` ở khổ hẹp, không phải `p-4` của trang.
  */
 const TOOLBAR_STICKY_BASE =
-  'max-md:sticky max-md:z-20 max-md:-mx-3 max-md:-mt-3 max-md:mb-0 max-md:border-b max-md:bg-card max-md:px-3 max-md:pt-3 max-md:pb-3 max-md:transition-shadow max-md:duration-200 max-md:group-data-[scrolled]:shadow-[0_6px_12px_-8px_rgb(0_0_0/0.35)]'
+  'max-md:sticky max-md:z-20 max-md:-mx-3 max-md:-mt-3 max-md:mb-0 max-md:border-b max-md:border-transparent max-md:bg-card max-md:px-3 max-md:pt-3 max-md:pb-3 max-md:transition-[box-shadow,border-color] max-md:duration-200 max-md:group-data-[scrolled]:border-border max-md:group-data-[scrolled]:shadow-[0_6px_12px_-8px_rgb(0_0_0/0.35)]'
 
 /**
  * Dải THANH CÔNG CỤ ghim dưới dải BA TAB (cao 44px). Truyền vào
