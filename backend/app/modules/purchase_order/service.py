@@ -199,10 +199,9 @@ def _save_items(db: Session, po: PurchaseOrder, items, user_id: int):
     for raw in items:
         delivs = raw.deliveries or []
         data = raw.model_dump(exclude={"deliveries"})
-        # Ngày hóa đơn: có Số hóa đơn mà chưa có Ngày hóa đơn -> tự lấy ngày hôm nay.
-        # Sửa tay được: nếu payload đã có invoice_date thì giữ nguyên (không ghi đè).
-        if (data.get("invoice_no") or "").strip() and not (data.get("invoice_date") or "").strip():
-            data["invoice_date"] = date.today().isoformat()
+        # bao-CR-367: bỏ nhịp "có Số hóa đơn mà trống Ngày hóa đơn -> lấy ngày hôm nay".
+        # Cùng lý do với `_save_deliveries`: ngày hóa đơn là ngày in trên tờ giấy, đoán hộ
+        # bằng ngày nhập liệu là ghi một con số sai mà không ai phát hiện ra.
         # Dòng MỚI chưa có "Xuất xứ / TSKT / chất liệu" -> lấy Thông số kỹ thuật của SP.
         # Chỉ điền lúc TẠO dòng: dòng đang sửa mà người dùng cố ý xóa trắng thì giữ trắng.
         if not (data.get("spec") or "").strip() and not data.get("id"):
@@ -668,8 +667,11 @@ def _save_deliveries(db: Session, po: PurchaseOrder, item: POItem, delivs, user_
         data = raw.model_dump()
         inv_no = (data.get("invoice_no") or "").strip() or (item.invoice_no or "").strip()
         inv_date = (data.get("invoice_date") or "").strip() or (item.invoice_date or "").strip()
-        if inv_no and not inv_date:
-            inv_date = date.today().isoformat()
+        # bao-CR-367: KHÔNG tự gán ngày hôm nay khi có số hóa đơn mà trống ngày. Câu đó biến
+        # "thiếu dữ liệu" thành "dữ liệu sai" — trống thì người dùng còn nhìn ra mà điền, chứ
+        # điền bừa ngày hôm nay thì không ai biết đó là ngày bịa. Ghép với lỗi giao diện quên
+        # gửi `invoice_date` (PurchaseOrderDetail.tsx), nó đã dập ngày thật của 90/96 dòng
+        # giao hàng trên hệ thật. Đừng khôi phục lại.
         if inv_no:
             data["invoice_no"] = inv_no
         if inv_date:

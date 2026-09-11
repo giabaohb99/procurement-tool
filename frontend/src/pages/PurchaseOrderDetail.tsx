@@ -719,7 +719,12 @@ export default function PurchaseOrderDetail() {
           carrier_code: d.carrier_code, carrier_name: d.carrier_name, ship_qty: Number(d.ship_qty) || 0,
           ship_unit: d.ship_unit, received_qty: Number(d.received_qty) || 0, promised_date: d.promised_date,
           expected_date: d.expected_date, received_date: d.received_date, std_days: Number(d.std_days) || 0,
-          invoice_no: d.invoice_no, shipping_unit_price: Number(d.shipping_unit_price) || 0,
+          // bao-CR-367: `invoice_date` TỪNG BỊ QUÊN ở đây. Thiếu nó thì backend nhận ô rỗng,
+          // tưởng người dùng bỏ trống và dập ngày hôm nay đè lên — mỗi lần lưu đơn là mọi
+          // dòng giao hàng có số hóa đơn mất ngày thật. Thêm trường mới vào bảng này thì
+          // rà lại cả ba danh sách (chi phí · dòng hàng · giao hàng), đừng chỉ sửa một chỗ.
+          invoice_no: d.invoice_no, invoice_date: d.invoice_date || '',
+          shipping_unit_price: Number(d.shipping_unit_price) || 0,
           shipping_amount: Number(d.shipping_amount) || 0, qc_result: d.qc_result,
           extra_request: d.extra_request, progress_note: d.progress_note,
         })),
@@ -1971,7 +1976,10 @@ export default function PurchaseOrderDetail() {
                           <td style={{ textAlign: 'right', color: 'var(--muted)' }}>{fmtPrice(items[ii].price)}</td>
                           {!isImport && <td style={{ textAlign: 'center', color: 'var(--muted)' }}>{Number(items[ii].vat) || 0}%</td>}
                           <td style={{ textAlign: 'right', fontWeight: 600, background: '#fff8e6' }}>{fmtVND((Number(d.received_qty) || 0) * (Number(items[ii].price) || 0) * (1 + (Number(items[ii].vat) || 0) / 100))}</td>
-                          <td><input className="cell-input" style={{ width: 120 }} value={d.invoice_no || ''} placeholder="Số HĐ đợt này" disabled={dis} onChange={(e) => { const v = e.target.value; setDelivery(ii, di, { invoice_no: v, ...(v && !(d.invoice_date || '').trim() ? { invoice_date: new Date().toISOString().slice(0, 10) } : {}) }) }} /></td>
+                          {/* bao-CR-367: gõ số hóa đơn KHÔNG còn tự điền ngày hôm nay. Ngày hóa đơn
+                              là ngày in trên tờ hóa đơn giấy, thường lệch vài ngày so với ngày nhập —
+                              đoán hộ thì người dùng tưởng hệ thống đã biết và không sửa lại nữa. */}
+                          <td><input className="cell-input" style={{ width: 120 }} value={d.invoice_no || ''} placeholder="Số HĐ đợt này" disabled={dis} onChange={(e) => setDelivery(ii, di, { invoice_no: e.target.value })} /></td>
                           <td><DateInput className="cell-input" style={{ width: 110 }} value={d.invoice_date || ''} disabled={dis} onChange={(v) => setDelivery(ii, di, { invoice_date: v })} /></td>
                           <td style={{ textAlign: 'right', color: 'var(--green)', fontWeight: 600 }}>{d.id ? fmtVND(d.paid || 0) : '—'}</td>
                           <td style={{ textAlign: 'right', color: (Number(d.remaining) || 0) > 0 ? 'var(--red)' : 'var(--muted)', fontWeight: 600 }}>{d.id ? fmtVND(d.remaining || 0) : '—'}</td>
