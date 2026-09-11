@@ -10,7 +10,9 @@ import { Button } from '@/shared/ui/button'
 import { PageContainer } from '@/shared/ui/page-container'
 import { Skeleton } from '@/shared/ui/skeleton'
 import type { RichTextEditorHandle } from '@/shared/ui/rich-text-editor'
-import { Tabs, TabsList, TabsTrigger } from '@/shared/ui/tabs'
+import { ScrollableTabsList } from '@/shared/ui/scrollable-tabs-list'
+import { TAB_TRIGGER_UNDERLINE } from '@/shared/ui/tab-underline'
+import { Tabs, TabsTrigger } from '@/shared/ui/tabs'
 import { DetailPageShell } from '../components/detail-page-shell'
 import { DocumentTemplateForm } from '../components/document-template-form'
 import { DocumentImportButton } from '../components/document-import-button'
@@ -82,32 +84,72 @@ export function DocumentTemplateDetailPage() {
             : undefined
         }
         deleteConfirmDescription="Văn bản đã tạo từ mẫu này vẫn giữ nguyên nội dung. Thao tác xóa mẫu không hoàn tác được."
+        //  Khổ hẹp cụm nút dồn TRÁI. Mặc định `justify-end` đúng khi chỉ một hai
+        //  nút; ở đây cụm tràn nhiều hàng nên mỗi hàng lại bắt đầu ở một mốc khác
+        //  nhau — đọc ra như mấy nút rơi vãi chứ không ra một cụm.
+        actionsClassName="max-md:justify-start"
+        //  ⚠️ *Nhập tệp* vào nhóm PHỤ: khổ hẹp nó gom vào nút `⋯` cùng với Xóa,
+        //  nhường chỗ cho nút Lưu. Đây là lệnh dùng thưa (mỗi mẫu vài lần lúc
+        //  dựng), trong khi Lưu là việc lặp suốt buổi soạn.
+        //  Chỉ tab *Soạn mẫu* mới có nó — tab Thông tin không có gì để nhập vào.
+        secondaryActions={
+          tab === 'compose' ? (
+            <DocumentImportButton
+              hasContent={() => editorRef.current?.hasContent() ?? false}
+              onInsert={(html, mode) =>
+                editorRef.current?.insertContent(html, mode) ?? Promise.resolve(false)
+              }
+              onNavigateToTrace={(importId, page) =>
+                editorRef.current?.focusImportedPage(importId, page) ?? false
+              }
+            />
+          ) : undefined
+        }
         actions={
           <>
-            <TabsList>
-              <TabsTrigger value="compose">
+            {/*  ⚠️ **Dải tab phải là `ScrollableTabsList` và phải chiếm TRỌN một
+                 hàng** — bốn lớp dưới đây đi kèm nhau, bài học đã trả giá ở chi
+                 tiết Văn bản (duoc-CR-366), chép nguyên vì cùng một cấu trúc:
+                 - `basis-full` để dải không chen chung hàng với nút lệnh;
+                 - `min-w-0` vì ô flex mặc định `min-width:auto`, thiếu nó thì
+                   khung nở theo dải bên trong và `overflow-x-auto` **không có gì
+                   để cuộn**, `justify-end` lại đẩy cả khối sang toạ độ ÂM;
+                 - `grow` để nuốt đúng 32px mà lề âm `-mx-4` của
+                   `ScrollableTabsList` chừa ra, nếu không dải bắt đầu ở `x = 32`
+                   và mất phần chạm mép trái;
+                 - `order-first` vì dải tab là thứ ĐIỀU HƯỚNG, nó thuộc về ngay
+                   dưới tiêu đề chứ không kẹt giữa mấy nút lệnh.
+                 Từ `md` trở lên mọi lớp `max-md:*` tắt, dải về đúng `TabsList`
+                 nền xám cũ nằm cạnh tiêu đề — bố cục desktop không đổi. */}
+            <ScrollableTabsList
+              value={tab}
+              className="max-md:order-first max-md:min-w-0 max-md:grow max-md:basis-full"
+            >
+              <TabsTrigger value="compose" className={TAB_TRIGGER_UNDERLINE}>
                 <FileText className="size-4" />
                 Soạn mẫu
               </TabsTrigger>
-              <TabsTrigger value="info">
+              <TabsTrigger value="info" className={TAB_TRIGGER_UNDERLINE}>
                 <Info className="size-4" />
                 Thông tin
               </TabsTrigger>
-            </TabsList>
+            </ScrollableTabsList>
 
-            {tab === 'compose' && (
-              <DocumentImportButton
-                hasContent={() => editorRef.current?.hasContent() ?? false}
-                onInsert={(html, mode) =>
-                  editorRef.current?.insertContent(html, mode) ?? Promise.resolve(false)
-                }
-                onNavigateToTrace={(importId, page) =>
-                  editorRef.current?.focusImportedPage(importId, page) ?? false
-                }
-              />
-            )}
+            {/*  `max-md:flex-1` — Lưu là việc chính của trang, cho nó trải hết
+                 phần còn lại của hàng thay vì co theo chữ rồi chừa một khoảng
+                 trống dài bên cạnh nút `⋯`.
 
-            <Button type="submit" form={FORM_ID} disabled={save.isPending}>
+                 ⚠️ `md:order-last` để TRẢ LẠI thứ tự cũ trên màn rộng. Dời *Nhập
+                 tệp* sang `secondaryActions` cũng dời luôn chỗ nó được dựng: khung
+                 chung vẽ nhóm phụ SAU `actions`, nên không có lớp này thì desktop
+                 thành «… Lưu nội dung · Nhập tệp» — việc chính không còn đứng
+                 cuối, chỗ mắt quen tìm nút cần bấm. */}
+            <Button
+              type="submit"
+              form={FORM_ID}
+              disabled={save.isPending}
+              className="max-md:flex-1 md:order-last"
+            >
               {save.isPending ? (
                 <Loader2 className="size-4 animate-spin" />
               ) : (
