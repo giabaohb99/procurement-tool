@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import NotFound from '../components/NotFound'
 import { tenFileIn, usePrintTitle } from '../hooks/usePrintTitle'
+import { resolveTotalsCurrency } from '../utils/money'
 
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 // ĐƠN GIÁ in đủ 4 số lẻ; TIỀN in làm tròn về đồng (kế toán chỉ ghi nhận tới đồng)
@@ -63,6 +64,29 @@ export default function PrintPurchaseOrderMH() {
   const total = po.order_total || 0
   const tax = Math.round((total - subtotal) * 100) / 100
 
+  // bao-CR-364: tờ này từng ghi CỨNG "Loại tiền: VND" và đọc `total` thành "… đồng chẵn".
+  // Từ bao-CR-319 mỗi dòng hàng có tiền tệ + tỷ giá riêng, nên đơn USD in ra thành
+  // "sáu nghìn năm trăm đồng chẵn" cho một đơn 172 triệu — và tờ này thì gửi nhà cung cấp.
+  const items: any[] = po.items || []
+  const poCurrency = (po.currency || 'VND').trim() || 'VND'
+  const lineCurrency = (it: any) => (it?.currency || '').trim() || poCurrency
+  const lineRate = (it: any) => Number(it?.exchange_rate) || Number(po.exchange_rate) || 1
+  const { currency, mixed: mixedCurrency } =
+    resolveTotalsCurrency(items.map((it) => lineCurrency(it)), poCurrency)
+  const foreign = mixedCurrency || currency !== 'VND'
+  const rate = items.length && !mixedCurrency ? lineRate(items[0]) : 1
+  // Tổng QUY ĐỔI: nhân tỷ giá của TỪNG dòng rồi mới cộng — trộn USD với VND thì cộng ngang
+  // trước khi quy đổi là ra một con số không có nghĩa.
+  const totalBase = items.reduce(
+    (s: number, it: any) => s + (Number(it.order_total) || 0) * lineRate(it), 0)
+  // Số đọc thành chữ luôn phải là số ĐỒNG — câu đó kết thúc bằng "đồng chẵn".
+  const wordsAmount = foreign ? totalBase : total
+  const curSuffix = foreign ? ` (${mixedCurrency ? 'nguyên tệ' : currency})` : ''
+  // Trộn nhiều loại tiền thì cộng ngang cột nguyên tệ là cộng USD với VND — để gạch ngang,
+  // tổng thật nằm ở dòng quy đổi bên dưới.
+  const fmtSum = (n: number) => (mixedCurrency ? '—' : foreign ? fmtPrice(n) : fmtVND(n))
+  const totalsColSpan = mixedCurrency ? 10 : 9
+
   const cell = { border: '1px solid #555', padding: '4px 6px', fontSize: 11 } as const
   const head = { ...cell, background: '#eef2f6', fontWeight: 700, textAlign: 'center' as const }
 
@@ -109,7 +133,9 @@ export default function PrintPurchaseOrderMH() {
           <div style={{ width: 220, paddingLeft: 12 }}>
             <div><b>Ngày:</b> {dmy(po.order_date)}</div>
             <div><b>Số:</b> {docNo}</div>
-            <div><b>Loại tiền:</b> VND</div>
+            <div><b>Loại tiền:</b> {mixedCurrency
+              ? `nhiều loại (${Array.from(new Set(items.map((it) => lineCurrency(it)))).join(' · ')}) — tỷ giá xem theo từng dòng`
+              : `${currency}${currency !== 'VND' ? ` — tỷ giá ${fmtPrice(rate)}` : ''}`}</div>
           </div>
         </div>
 
@@ -119,8 +145,12 @@ export default function PrintPurchaseOrderMH() {
             <tr>
               <td style={head}>STT</td><td style={head}>Tên kho nhập</td><td style={head}>Mã hàng</td>
               <td style={head}>Tên hàng</td><td style={head}>Tên hàng xuất hóa đơn</td><td style={head}>ĐVT</td>
-              <td style={head}>SL yêu cầu</td><td style={head}>SL thực nhập</td><td style={head}>Đơn giá</td>
-              <td style={head}>Thành tiền</td><td style={head}>Ghi chú</td>
+              <td style={head}>SL yêu cầu</td><td style={head}>SL thực nhập</td>
+              {/* bao-CR-364: trộn nhiều loại tiền thì mọc thêm cột Tiền tệ — không thì hai cột
+                  nguyên tệ đứng cạnh nhau mà không nói được chúng đang là tiền gì. */}
+              {mixedCurrency && <td style={head}>Tiền tệ</td>}
+              <td style={head}>Đơn giá{curSuffix}</td>
+              <td style={head}>Thành tiền{curSuffix}</td><td style={head}>Ghi chú</td>
             </tr>
           </thead>
           <tbody>
@@ -134,8 +164,18 @@ export default function PrintPurchaseOrderMH() {
                 <td style={{ ...cell, textAlign: 'center' }}>{it.unit}</td>
                 <td style={{ ...cell, textAlign: 'right' }}>{fmt(it.qty_order)}</td>
                 <td style={{ ...cell, textAlign: 'right' }}>{it.qty_received ? fmt(it.qty_received) : '-'}</td>
+                {mixedCurrency && (
+                  <td style={{ ...cell, textAlign: 'center' }}>
+                    {lineCurrency(it)}
+                    <div style={{ fontSize: 9.5 }}>{fmtPrice(lineRate(it))}</div>
+                  </td>
+                )}
                 <td style={{ ...cell, textAlign: 'right' }}>{fmtPrice(it.price)}</td>
-                <td style={{ ...cell, textAlign: 'right' }}>{fmtVND(it.qty_order * it.price)}</td>
+                {/* Tiền ngoại tệ KHÔNG làm tròn về đơn vị: 7.530,45 USD mà cắt phần lẻ là lệch
+                    hơn 400 nghìn đồng sau khi quy đổi. */}
+                <td style={{ ...cell, textAlign: 'right' }}>
+                  {foreign ? fmtPrice(it.qty_order * it.price) : fmtVND(it.qty_order * it.price)}
+                </td>
                 <td style={cell}>
                   {(it.required_date || it.expected_date) ? (
                     <div style={{ fontWeight: 600 }}>Ngày cần hàng: {dmy(it.required_date || it.expected_date)}</div>
@@ -145,18 +185,29 @@ export default function PrintPurchaseOrderMH() {
               </tr>
             ))}
             <tr>
-              <td style={{ ...cell, fontWeight: 700 }} colSpan={9}>Tiền thuế GTGT:</td>
-              <td style={{ ...cell, textAlign: 'right', fontWeight: 700 }}>{fmtVND(tax)}</td>
+              <td style={{ ...cell, fontWeight: 700 }} colSpan={totalsColSpan}>Tiền thuế GTGT{curSuffix}:</td>
+              <td style={{ ...cell, textAlign: 'right', fontWeight: 700 }}>{fmtSum(tax)}</td>
               <td style={cell} />
             </tr>
             <tr>
-              <td style={{ ...cell, fontWeight: 700 }} colSpan={9}>Tổng tiền thanh toán:</td>
-              <td style={{ ...cell, textAlign: 'right', fontWeight: 700 }}>{fmtVND(total)}</td>
+              <td style={{ ...cell, fontWeight: 700 }} colSpan={totalsColSpan}>Tổng tiền thanh toán{curSuffix}:</td>
+              <td style={{ ...cell, textAlign: 'right', fontWeight: 700 }}>{fmtSum(total)}</td>
               <td style={cell} />
             </tr>
+            {/* bao-CR-364: đơn ngoại tệ phải nói rõ con số VNĐ — công nợ và yêu cầu thanh toán
+                đều chạy trên số quy đổi này, và câu "bằng chữ" bên dưới cũng đọc theo nó. */}
+            {foreign && (
+              <tr>
+                <td style={{ ...cell, fontWeight: 700 }} colSpan={totalsColSpan}>Tổng tiền thanh toán (quy đổi VNĐ):</td>
+                <td style={{ ...cell, textAlign: 'right', fontWeight: 700 }}>{fmtVND(totalBase)}</td>
+                <td style={cell} />
+              </tr>
+            )}
           </tbody>
         </table>
-        <div style={{ fontSize: 11.5, fontStyle: 'italic', marginTop: 4 }}><b>Số tiền viết bằng chữ:</b> {docTien(total)}.</div>
+        <div style={{ fontSize: 11.5, fontStyle: 'italic', marginTop: 4 }}>
+          <b>Số tiền viết bằng chữ{foreign ? ' (quy đổi VNĐ)' : ''}:</b> {docTien(wordsAmount)}.
+        </div>
 
         {/* Điều khoản */}
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, marginTop: 12 }}>

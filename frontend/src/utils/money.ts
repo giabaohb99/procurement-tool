@@ -16,3 +16,23 @@ export const fmtVND = (n: any) => Math.round(Number(n) || 0).toLocaleString('vi-
 
 export const fmtPrice = (n: any) =>
   Number(n || 0).toLocaleString('vi-VN', { maximumFractionDigits: PRICE_DECIMALS })
+
+/**
+ * bao-CR-364 — nhãn tiền tệ của một bảng TỔNG phải lấy từ các DÒNG, không lấy từ đầu phiếu.
+ *
+ * Từ `bao-CR-319` mỗi dòng hàng mang tiền tệ + tỷ giá riêng, còn đầu phiếu chỉ là giá trị
+ * mặc định cho dòng nào để trống. Đơn đầu phiếu ghi `VND` mà dòng ghi `USD` là chuyện bình
+ * thường — khi đó dán nhãn theo đầu phiếu ra ngay `6.500 VND` bên cạnh `Quy đổi 172.250.000 đ`.
+ *
+ * Trả về `mixed = true` khi các dòng KHÔNG cùng một loại tiền. Lúc đó cộng ngang các dòng là
+ * vô nghĩa (USD cộng VND), nên nơi gọi phải chuyển sang bày bản quy đổi chứ đừng dán đại một
+ * nhãn nào lên tổng đó.
+ */
+export function resolveTotalsCurrency(lineCurrencies: any[], fallback: string) {
+  const found: string[] = []
+  for (const raw of lineCurrencies || []) {
+    const cur = String(raw || '').trim() || fallback
+    if (cur && !found.includes(cur)) found.push(cur)
+  }
+  return { currency: found.length === 1 ? found[0] : fallback, mixed: found.length > 1 }
+}
