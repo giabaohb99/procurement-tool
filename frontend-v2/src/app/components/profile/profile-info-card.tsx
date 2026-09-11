@@ -50,12 +50,21 @@ function Row({ field, profile }: { field: ProfileField; profile: AuthUser }) {
   // kiem_nhiem/role_names là mảng — nối lại; còn lại là chuỗi.
   const text = Array.isArray(value) ? value.join(', ') : typeof value === 'string' ? value : ''
   return (
-    <div className="flex items-center gap-3 border-b border-dashed py-2 last:border-b-0">
-      <field.icon className="size-4 shrink-0 text-muted-foreground" />
-      <span className="w-40 shrink-0 text-[13px] text-muted-foreground">{field.label}</span>
+    //  ⚠️ Khổ hẹp XẾP CHỒNG nhãn trên / giá trị dưới. Một hàng ngang thì riêng
+    //  nhãn `w-40` đã chiếm 160px trong 358px dùng được, phần còn lại không đủ
+    //  cho một tên pháp nhân — «CÔNG TY TNHH DEGO HOLDING» bị cắt cụt đúng chỗ
+    //  phân biệt được các pháp nhân với nhau. Từ `sm` trở lên về lại một hàng.
+    <div className="flex flex-col gap-0.5 border-b border-dashed py-2 last:border-b-0 sm:flex-row sm:items-center sm:gap-3">
+      <div className="flex items-center gap-3 sm:shrink-0">
+        <field.icon className="size-4 shrink-0 text-muted-foreground" />
+        <span className="text-[13px] text-muted-foreground sm:w-40">{field.label}</span>
+      </div>
+      {/*  `pl-7` = bề ngang biểu tượng (16) + khe (12): giá trị thẳng cột với
+           nhãn ở trên. Khổ hẹp cho XUỐNG DÒNG thay vì cắt — đọc được cả tên dài
+           quan trọng hơn giữ mỗi dòng đúng một hàng. */}
       <span
         className={cn(
-          'min-w-0 flex-1 truncate text-sm',
+          'min-w-0 flex-1 pl-7 text-sm break-words sm:pl-0 sm:truncate',
           text ? 'font-medium text-navy dark:text-foreground' : 'text-muted-foreground italic',
         )}
       >

@@ -313,7 +313,11 @@ export function ProfileTasksTab({ onCountChange }: { onCountChange?: (count: num
             onClick={handleDismissAll}
           >
             <CheckCheck className="size-4" />
-            <span className="hidden sm:inline">Đánh dấu</span> làm hết
+            {/*  Khổ hẹp phải là một câu lệnh HOÀN CHỈNH. Bản cũ giấu riêng chữ
+                 «Đánh dấu» nên nút còn đúng hai chữ «làm hết» — một mẩu câu cụt
+                 đầu, đọc không ra là lệnh gì. */}
+            <span className="sm:hidden">Làm hết</span>
+            <span className="hidden sm:inline">Đánh dấu làm hết</span>
           </Button>
 
           {dismissedTotal > 0 && (
@@ -446,6 +450,15 @@ export function ProfileTasksTab({ onCountChange }: { onCountChange?: (count: num
                           Đã xong
                         </Badge>
                       )}
+                      {/*  Khổ hẹp ngày về ĐỨNG CẠNH MÃ, nhường chỗ cho tên việc.
+                           Ở cụm nút bên phải nó ăn ~90px trong 390px, đủ để tên
+                           bị cắt còn «Đơn nghỉ phép N…» — mà tên mới là thứ phân
+                           biệt việc này với việc kia. */}
+                      {item.date && (
+                        <span className="text-[10px] text-muted-foreground sm:hidden">
+                          {formatDate(item.date)}
+                        </span>
+                      )}
                     </div>
                     <p
                       className={cn(
@@ -465,7 +478,9 @@ export function ProfileTasksTab({ onCountChange }: { onCountChange?: (count: num
 
                 <div className="flex shrink-0 items-center gap-2">
                   {item.date && (
-                    <span className="text-xs text-muted-foreground">{formatDate(item.date)}</span>
+                    <span className="hidden text-xs text-muted-foreground sm:inline">
+                      {formatDate(item.date)}
+                    </span>
                   )}
 
                   <Button

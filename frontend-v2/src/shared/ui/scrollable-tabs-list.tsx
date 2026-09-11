@@ -17,6 +17,15 @@ interface ScrollableTabsListProps {
   value: string
   children: ReactNode
   className?: string
+  /**
+   * Lớp gắn thẳng vào `TabsList` bên trong (khác `className` — lớp đó gắn vào
+   * khung bọc ngoài cùng).
+   *
+   * Dùng khi màn cần chỉnh dáng dải tab **từ `md` trở lên**, nơi khung này hết
+   * cuộn và trả dải về `TabsList` nền xám: dải nào dài quá bề ngang khung ở
+   * đúng dải 768–805px thì tab cuối rơi ra ngoài mà không có cách nào kéo tới.
+   */
+  listClassName?: string
 }
 
 /**
@@ -52,7 +61,12 @@ interface ScrollableTabsListProps {
  * test dựng component này sẽ nổ. Chỉ kéo khi tab thật sự nằm ngoài — đã thấy
  * rồi mà vẫn căn giữa là dải nhảy một cái mỗi lần đổi tab.
  */
-export function ScrollableTabsList({ value, children, className }: ScrollableTabsListProps) {
+export function ScrollableTabsList({
+  value,
+  children,
+  className,
+  listClassName,
+}: ScrollableTabsListProps) {
   const scrollerRef = useRef<HTMLDivElement>(null)
   const [edges, setEdges] = useState({ left: false, right: false })
 
@@ -132,6 +146,7 @@ export function ScrollableTabsList({ value, children, className }: ScrollableTab
             TAB_LIST_UNDERLINE,
             //  Bỏ đường kẻ của DẢI — nó đã chuyển lên khung cuộn (xem trên).
             'max-md:w-max max-md:border-b-0 max-md:[&_[data-slot=tabs-trigger]]:flex-none',
+            listClassName,
           )}
         >
           {children}

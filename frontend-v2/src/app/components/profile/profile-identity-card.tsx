@@ -93,9 +93,14 @@ export function ProfileIdentityCard({ profile }: { profile: AuthUser | null }) {
       </div>
 
       {/* CR-215: thông báo nay là một tab ngay trong trang này — nút chỉ là
-          lối tắt nhảy sang tab đó thay vì rời trang. */}
-      <div className="flex shrink-0 flex-wrap gap-2">
-        <Button variant="outline" size="sm" asChild>
+          lối tắt nhảy sang tab đó thay vì rời trang.
+
+          ⚠️ Khổ hẹp đẩy nút XUỐNG HÀNG RIÊNG (`max-sm:w-full`). Đứng cùng hàng
+          với ảnh đại diện thì phần tên + chip chỉ còn ~150px, đủ để mỗi chip
+          chiếm trọn một dòng và khối tên trông như bị canh giữa — ba dòng chip
+          xếp dọc cạnh một nút, không đọc ra là một thẻ danh tính nữa. */}
+      <div className="flex shrink-0 flex-wrap gap-2 max-sm:w-full">
+        <Button variant="outline" size="sm" asChild className="max-sm:w-full">
           <Link to="/me?tab=notifications">
             <Bell className="size-4" />
             Thông báo

@@ -72,7 +72,11 @@ export function EmailNotificationCard({ value }: { value?: boolean }) {
         </span>
       </p>
 
-      <p className="flex gap-2 rounded-lg bg-accent px-3 py-2 text-xs text-muted-foreground">
+      {/*  `mt-2` khớp ô nhắc ở trên. `CardContent` của `FormCard` không khai
+           `space-y-*`, nên thiếu lề ở đây là hai ô cùng nền `bg-accent` dính
+           liền thành MỘT cục, chỉ cách nhau đúng một vạch bo góc — đọc ra như
+           một đoạn bị lỗi xuống dòng chứ không ra hai lời nhắc riêng. */}
+      <p className="mt-2 flex gap-2 rounded-lg bg-accent px-3 py-2 text-xs text-muted-foreground">
         <KeyRound className="mt-0.5 size-3.5 shrink-0" />
         <span>Thư đặt lại mật khẩu và thư cấp tài khoản vẫn gửi bình thường.</span>
       </p>

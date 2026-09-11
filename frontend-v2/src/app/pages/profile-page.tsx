@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Bell, CheckSquare, History, LifeBuoy, Palette, User } from 'lucide-react'
+import { Bell, CheckSquare, LifeBuoy, Palette, User } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
@@ -11,7 +11,6 @@ import { ProfileTasksTab } from '@/app/components/profile/profile-tasks-tab'
 import { ProfileTicketsTab } from '@/app/components/profile/profile-tickets-tab'
 import { SignatureCard } from '@/app/components/profile/signature-card'
 import { AuditTimeline } from '@/shared/audit'
-import { FormCard } from '@/shared/ui/form-card'
 import { authService } from '@/core/auth/auth-service'
 import { useAuth } from '@/core/auth/use-auth'
 import { usePermission } from '@/core/authorization/use-permission'
@@ -22,8 +21,11 @@ import { Badge } from '@/shared/ui/badge'
 import { ErrorState } from '@/shared/ui/error-state'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
+import { ScrollableTabsList } from '@/shared/ui/scrollable-tabs-list'
 import { Skeleton } from '@/shared/ui/skeleton'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
+import { TAB_TRIGGER_UNDERLINE } from '@/shared/ui/tab-underline'
+import { Tabs, TabsContent, TabsTrigger } from '@/shared/ui/tabs'
+import { cn } from '@/shared/utils/cn'
 
 /**
  * TRANG CÁ NHÂN — hồ sơ của chính người đang đăng nhập.
@@ -100,12 +102,33 @@ export function ProfilePage() {
           <ProfileIdentityCard profile={profile} />
 
           <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
-            <TabsList className="mb-2 flex-wrap">
-              <TabsTrigger value="info" className="gap-2">
+            {/*  ⚠️ Dải này TỪNG là `TabsList` nền xám khai thêm `flex-wrap`, và đó
+                 là một sự kết hợp hỏng: `TabsList` của shadcn ghim `h-9`, nên khi
+                 năm nhãn tiếng Việt xuống thành ba hàng (đo ở 390px: cần 90px,
+                 ô chỉ cao 36px) thì hai hàng dưới TRÀN RA NGOÀI ô và bị thẻ nội
+                 dung bên dưới che mất — tab «Thông báo» và «Giao diện» không bấm
+                 được. Cuộn ngang thay cho xuống hàng cũng là lối chung của các
+                 màn nhiều tab khác (chi tiết Văn thư, chi tiết CRUD). */}
+            {/*  ⚠️ `listClassName` xử lý dải 768–805px — chỗ `max-md:*` vừa tắt
+                 (dải về nền xám, hết cuộn ngang) mà khung vẫn chưa đủ rộng. Đo ở
+                 768px: năm nhãn cần 773px, khung chỉ có 736px, nên tab «Giao
+                 diện» rơi ra ngoài mép phải và KHÔNG có cách nào chạm tới — không
+                 cuộn, không mũi tên. Cho xuống hàng là xong, nhưng phải gỡ luôn
+                 `h-9` của `TabsList` và `h-[calc(100%-1px)]` của từng tab: giữ
+                 chúng thì hàng thứ hai tràn ra ngoài ô và bị che, đúng lỗi cũ. */}
+            <ScrollableTabsList
+              value={activeTab}
+              className="mb-2"
+              //  `md:justify-start`: `TabsList` canh giữa, nên hàng thứ hai chỉ
+              //  có một tab thì nó đứng chính giữa, rời hẳn khỏi hàng trên và
+              //  đọc ra như một nút lạc chứ không như tab tiếp theo.
+              listClassName="md:h-auto md:flex-wrap md:justify-start md:[&_[data-slot=tabs-trigger]]:h-8"
+            >
+              <TabsTrigger value="info" className={cn('gap-2', TAB_TRIGGER_UNDERLINE)}>
                 <User className="size-4" />
                 <span>Thông tin cá nhân</span>
               </TabsTrigger>
-              <TabsTrigger value="tasks" className="gap-2">
+              <TabsTrigger value="tasks" className={cn('gap-2', TAB_TRIGGER_UNDERLINE)}>
                 <CheckSquare className="size-4" />
                 <span>Việc cần làm</span>
                 {taskCount > 0 && (
@@ -114,7 +137,7 @@ export function ProfilePage() {
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="notifications" className="gap-2">
+              <TabsTrigger value="notifications" className={cn('gap-2', TAB_TRIGGER_UNDERLINE)}>
                 <Bell className="size-4" />
                 <span>Thông báo</span>
                 {unreadCount > 0 && (
@@ -124,7 +147,7 @@ export function ProfilePage() {
                 )}
               </TabsTrigger>
               {canReadTickets && (
-                <TabsTrigger value="tickets" className="gap-2">
+                <TabsTrigger value="tickets" className={cn('gap-2', TAB_TRIGGER_UNDERLINE)}>
                   <LifeBuoy className="size-4" />
                   <span>Yêu cầu hỗ trợ của tôi</span>
                   {ticketCount > 0 && (
@@ -134,11 +157,11 @@ export function ProfilePage() {
                   )}
                 </TabsTrigger>
               )}
-              <TabsTrigger value="appearance" className="gap-2">
+              <TabsTrigger value="appearance" className={cn('gap-2', TAB_TRIGGER_UNDERLINE)}>
                 <Palette className="size-4" />
                 <span>Giao diện</span>
               </TabsTrigger>
-            </TabsList>
+            </ScrollableTabsList>
 
             <TabsContent value="info" className="space-y-6">
               {isPending && !profile ? (
@@ -152,11 +175,19 @@ export function ProfilePage() {
                     {/* Hàng 1: 2 cột cao BẰNG NHAU (items-stretch). Cột 1 xếp
                         [Hồ sơ nhân sự] trên + [Tài khoản] dưới; cột 2 là [Chữ ký]
                         kéo cao đầy cột. */}
+                    {/*  ⚠️ `min-w-0` ở HAI Ô LƯỚI là bắt buộc, không phải dọn dẹp.
+                         Ô của lưới mặc định `min-width: auto`, tức KHÔNG co xuống
+                         dưới bề rộng nội dung tối thiểu — mà các dòng hồ sơ dùng
+                         `truncate` (= `white-space: nowrap`), nên bề rộng tối
+                         thiểu của chúng là TOÀN BỘ chuỗi chưa cắt. Đo ở 390px:
+                         dòng «Công ty / Pháp nhân» đòi 418px, kéo cả cột lên
+                         452px trong khi chỗ có là 358px — thẻ tràn khỏi màn và
+                         `truncate` không bao giờ có dịp cắt chữ. */}
                     <div className="grid items-stretch gap-4 lg:grid-cols-2">
-                      <div className="flex flex-col gap-4">
+                      <div className="flex min-w-0 flex-col gap-4">
                         <ProfileInfoCard profile={profile} />
                       </div>
-                      <div className="flex flex-col gap-4">
+                      <div className="flex min-w-0 flex-col gap-4">
                         <SignatureCard signature={profile.signature} />
                         {/* bao-CR-349 — công tắc email thông báo của chính mình.
                             Xếp dưới Chữ ký để hai cột cân nhau; đây cũng là cửa
@@ -165,13 +196,12 @@ export function ProfilePage() {
                       </div>
                     </div>
 
-                    <FormCard
-                      title="Lịch sử thao tác"
-                      icon={History}
-                      iconClassName="text-muted-foreground"
-                    >
-                      <AuditTimeline entity="user" entityId={profile.id} />
-                    </FormCard>
+                    {/*  ⚠️ Gọi TRẦN, đừng bọc `FormCard`. `AuditTimeline` tự dựng
+                         `Card` kèm tiêu đề «Lịch sử thao tác» của chính nó, nên
+                         bọc thêm là **thẻ trong thẻ, tiêu đề in hai lần** — hai
+                         khung viền lồng nhau còn ăn thêm hai lớp đệm, ở khổ điện
+                         thoại thì thấy rõ ngay. Mọi màn khác đều gọi trần. */}
+                    <AuditTimeline entity="user" entityId={profile.id} />
                   </>
                 )
               )}
