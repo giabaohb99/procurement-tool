@@ -1335,7 +1335,10 @@ export default function PurchaseOrderDetail() {
                         </th>
                       )}
                       <th style={{ width: 36 }}>#</th>
-                      <th style={{ width: 185 }}>Loại chi phí</th>
+                      {/* bao-CR-381: 185px cắt cụt nhãn ("Cước vận tải quốc t…") — 260px vừa
+                          nhãn dài nhất "Dịch vụ hỗ trợ nhập khẩu, vận chuyển"; select gốc
+                          không xuống dòng được nên phải nới cột chứ không wrap */}
+                      <th style={{ width: 260 }}>Loại chi phí</th>
                       <th style={{ minWidth: 320 }}>Diễn giải</th>
                       {/* Cách chia đứng ngay sau diễn giải để khỏi phải cuộn ngang mới thấy */}
                       <th style={{ width: 160 }}>Cách phân bổ</th>
@@ -1368,6 +1371,7 @@ export default function PurchaseOrderDetail() {
                         <td>{i + 1}</td>
                         <td>
                           <select className="cell-input" value={String(Number(c.cost_type) || 99)} disabled={!costEditable}
+                            title={COST_TYPE_LABEL(c.cost_type)}
                             onChange={(e) => {
                               const v = Number(e.target.value) || 99
                               // Khoản nộp nhà nước thì điền sẵn NCC "Ngân sách nhà nước" —
