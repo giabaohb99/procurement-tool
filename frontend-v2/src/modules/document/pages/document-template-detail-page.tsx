@@ -13,6 +13,7 @@ import type { RichTextEditorHandle } from '@/shared/ui/rich-text-editor'
 import { ScrollableTabsList } from '@/shared/ui/scrollable-tabs-list'
 import { TAB_TRIGGER_UNDERLINE } from '@/shared/ui/tab-underline'
 import { Tabs, TabsTrigger } from '@/shared/ui/tabs'
+import { cn } from '@/shared/utils/cn'
 import { DetailPageShell } from '../components/detail-page-shell'
 import { DocumentTemplateForm } from '../components/document-template-form'
 import { DocumentImportButton } from '../components/document-import-button'
@@ -53,11 +54,25 @@ export function DocumentTemplateDetailPage() {
     <Tabs value={tab} onValueChange={setTab}>
       <DetailPageShell
         title={isCreating ? 'Tạo văn bản mẫu' : (template?.name ?? '')}
+        //  ⚠️ Dòng mô tả ẩn ở khổ hẹp **CHỈ Ở TAB THÔNG TIN**, và cái điều kiện
+        //  đó không phải để cho chặt chẽ:
+        //  - tab *Thông tin* bày đúng hai thứ này thành ô nhập ngay bên dưới
+        //    (*Loại văn bản*, *Trạng thái sử dụng*), nên ở đây nó chỉ nói lại; mà
+        //    tab này lại là tab GHIM dải, nên mỗi dòng là chỗ đứng yên vĩnh viễn
+        //    — riêng nó ăn 22px, kéo dải từ 146px lên **172px = 22%** màn 796px;
+        //  - tab *Soạn mẫu* thì ngược lại: cả màn chỉ có trang giấy, **không chỗ
+        //    nào khác nói mẫu này thuộc loại gì và còn dùng hay không**. Ẩn ở đó
+        //    là xóa thông tin, không phải dọn chỗ.
         description={
           isCreating ? (
             'Soạn nội dung mẫu và bổ sung thông tin trước khi lưu.'
           ) : (
-            <>
+            <span
+              className={cn(
+                'flex flex-wrap items-center gap-x-2',
+                tab === 'info' && 'max-md:hidden',
+              )}
+            >
               <span>
                 {template?.doc_type_code} · {template?.doc_type_name}
               </span>
@@ -65,7 +80,7 @@ export function DocumentTemplateDetailPage() {
               <Badge variant={template?.is_active ? 'default' : 'secondary'}>
                 {template?.is_active ? 'Đang dùng' : 'Ngừng sử dụng'}
               </Badge>
-            </>
+            </span>
           )
         }
         formId={FORM_ID}
@@ -75,6 +90,14 @@ export function DocumentTemplateDetailPage() {
         missingTitle="Không tìm thấy văn bản mẫu"
         audit={template ? { entity: 'document_template', id: template.id } : undefined}
         showHistory={tab === 'info'}
+        //  ⚠️ **Chỉ tab Thông tin mới ghim dải tiêu đề**, giống chi tiết Văn bản
+        //  (duoc-CR-366). Hai tab cuộn bằng hai cơ chế khác nhau: tab *Thông tin*
+        //  là biểu mẫu cộng nhật ký nên CẢ TRANG cuộn, còn tab *Soạn mẫu* có
+        //  khung cuộn riêng bên trong trang giấy (`.doc-canvas`, đo được 1166px
+        //  nội dung trong khe 840px). Ghim ở tab soạn thì dải chỉ ăn mất chiều
+        //  cao của chính chỗ đang gõ mà không giữ lại được gì — nút Lưu ở đó
+        //  không trôi đi theo nhịp cuộn của trang giấy.
+        stickyHeader={tab === 'info'}
         onDelete={
           template
             ? () =>

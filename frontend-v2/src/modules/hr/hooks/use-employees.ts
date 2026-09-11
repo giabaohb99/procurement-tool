@@ -34,6 +34,19 @@ export function useEmployees(params: ListParams = {}, options: { enabled?: boole
 }
 
 /** Một hồ sơ nhân sự (bản chi tiết, có thêm `user_id`). */
+/**
+ * Hồ sơ nhân sự của CHÍNH người đang đăng nhập — xem `employeeApi.getMine`.
+ *
+ * Không cần `enabled`: cửa `/me` chỉ đòi đăng nhập nên mọi tài khoản gọi được,
+ * và tài khoản chưa gắn nhân sự nhận `null` chứ không nhận lỗi.
+ */
+export function useMyEmployee() {
+  return useQuery({
+    queryKey: queryKeys.hr.myEmployee(),
+    queryFn: () => employeeApi.getMine(),
+  })
+}
+
 export function useEmployee(id: number) {
   return useQuery({
     queryKey: queryKeys.hr.employee(id),

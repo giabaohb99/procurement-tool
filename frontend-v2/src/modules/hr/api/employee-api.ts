@@ -46,6 +46,20 @@ export const employeeApi = {
 
   getById: (id: number) => apiGet<EmployeeDetail>(`${BASE_URL}/${id}`),
 
+  /**
+   * Hồ sơ nhân sự của CHÍNH người đang đăng nhập — cho màn *Trang cá nhân*.
+   *
+   * ⚠️ Cửa RIÊNG, đừng thay bằng `getById(user.employee_id)`. Cửa `/{id}` gác
+   * bằng `employee.read` — khóa để xem hồ sơ NGƯỜI KHÁC — mà **9/19 vai trò
+   * seed không có** (Nhân sự, Tài xế, Người đặt xe, Văn thư duyệt dấu…). Đo trên
+   * bản chạy: `TESTREQ` gọi `/api/employees/92`, tức hồ sơ của chính họ, nhận
+   * đúng `403`. Cửa `/me` chỉ đòi đăng nhập và lấy id từ phiên.
+   *
+   * Trả `null` khi tài khoản chưa gắn hồ sơ nhân sự (admin, tài khoản hệ thống)
+   * — đó là trạng thái hợp lệ chứ không phải lỗi.
+   */
+  getMine: () => apiGet<EmployeeDetail | null>(`${BASE_URL}/me`),
+
   create: (payload: EmployeeFormValues) =>
     apiPost<Employee>(BASE_URL, toEmployeePayload(payload)),
 
