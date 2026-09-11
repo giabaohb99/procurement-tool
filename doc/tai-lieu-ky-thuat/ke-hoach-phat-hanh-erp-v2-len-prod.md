@@ -294,5 +294,6 @@ bằng commit cũ là đủ, lần sau lên lại chỉ việc `reset --hard ori
       Sau `seed_prod`, **cả 59 khóa đều có ít nhất một vai trò giữ**, nhưng các phân hệ mới chỉ nằm
       ở `admin` + một vai trò chuyên trách **chưa gán cho ai**: `forum_admin` · `coffee_admin` ·
       `hr_profile` · `help_admin` · `vanban_sua` · `pur_manager`. Chưa gán thì chưa ai thấy.
-- [ ] Gắn hồ sơ nhân sự cho **1 tài khoản `pur_staff` đang thiếu** (xem N-019), không thì màn
-      Nhân sự của người đó rỗng.
+- [x] ~~Gắn hồ sơ nhân sự cho 1 tài khoản `pur_staff` đang thiếu~~ — **rà lại: không cần làm.**
+      Tài khoản đó (`id=10`) đã bị khóa từ trước và là tài khoản **duy nhất trên cả prod** thiếu
+      hồ sơ, nên không ai bị chặn. Xem N-019.
