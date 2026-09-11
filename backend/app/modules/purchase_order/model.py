@@ -9,6 +9,13 @@ from app.core.base_model import Base, AuditMixin
 # một cách đọc số tiền — không có dòng nào "không loại tiền".
 DEFAULT_CURRENCY = "VND"
 
+# Vòng đời đơn: draft → submitted → approved → partial → received → completed
+#               (kèm rejected / cancelled rẽ ngang).
+# STATUS_AFTER_APPROVE = "từ mốc duyệt trở đi" — đơn đã có hiệu lực với nhà cung cấp.
+# Dùng cho phạm vi "proc" ở `core/scoping.py`: nhận hàng xong đơn KHÔNG được biến mất
+# khỏi mắt người thu mua đang theo nó (cùng lỗi với YCMH, xem bao-CR-371).
+STATUS_AFTER_APPROVE = ("approved", "partial", "received", "processing", "completed")
+
 
 class OrderType(IntEnum):
     """Loại đơn mua hàng (bao-CR-319). Cột mới nên lưu SỐ theo luật R2/QĐ-11."""

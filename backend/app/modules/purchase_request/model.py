@@ -3,6 +3,16 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base_model import Base, AuditMixin
 
+# Vòng đời phiếu: draft → submitted → approved → dispatched → processing → purchasing
+#                 → purchased → completed/done   (kèm rejected / cancelled rẽ ngang).
+# STATUS_AFTER_APPROVE = "từ mốc TP duyệt trở đi" — phiếu đã ra khỏi tay người lập và
+# đang nằm trong tay thu mua. Khai MỘT CHỖ vì có hai nơi dùng và hai nơi đó phải khớp:
+# chữ ký duyệt trên bản in (controller) và phạm vi "proc" của thu mua (core/scoping.py).
+STATUS_AFTER_APPROVE = ("approved", "dispatched", "processing", "purchasing",
+                        "purchased", "completed", "done")
+STATUS_AFTER_DISPATCH = ("dispatched", "processing", "purchasing",
+                         "purchased", "completed", "done")
+
 
 class PurchaseRequest(Base, AuditMixin):
     """Yêu cầu mua (PYC) — header."""

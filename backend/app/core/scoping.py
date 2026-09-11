@@ -36,15 +36,20 @@ def _role_scope_cond(model, entity, scope, user, profile):
     # "Được giao": của mình HOẶC được phân bổ cho mình (áp cho PYC)
     if scope in ("assigned", "proc"):
         if entity == "purchase_request":
-            from app.modules.purchase_request.model import PurchaseRequestItem
+            from app.modules.purchase_request.model import (STATUS_AFTER_APPROVE,
+                                                            PurchaseRequestItem)
             conds = [model.created_by == user.id]
             if profile.get("employee_id"):
                 conds.append(model.requester_id == profile["employee_id"])   # phiếu mình là người yêu cầu
             # "proc" (NV/Admin thu mua): thấy thêm MỌI phiếu đã duyệt để nhặt việc + phân bổ.
             # CR-034: gồm cả 'approved' (TP duyệt xong, ĐANG CHỜ ĐIỀU PHỐI) — thiếu trạng thái này
             # thì chính người phải điều phối lại không nhìn thấy phiếu.
+            # bao-CR-371: phải là CẢ vòng đời sau duyệt, không chỉ 2 mốc đầu. Liệt kê tay
+            # ["approved","dispatched"] nghĩa là phiếu vừa chạy sang 'processing' là BIẾN MẤT
+            # khỏi mắt chính người thu mua đang xử lý nó (mở link ra thì "Không tìm thấy"),
+            # trừ khi tình cờ họ là người tạo / người yêu cầu / người được gán.
             if scope == "proc":
-                conds.append(model.status.in_(["approved", "dispatched"]))
+                conds.append(model.status.in_(STATUS_AFTER_APPROVE))
             if profile.get("employee_id"):
                 conds.append(model.assignee_id == profile["employee_id"])
             if profile.get("emp_code"):
@@ -71,7 +76,8 @@ def _role_scope_cond(model, entity, scope, user, profile):
             # ĐMH: thấy đơn MÌNH tạo HOẶC đơn có NSPT phụ trách = mình (nspt lưu theo TÊN)
             conds = [model.created_by == user.id]
             if scope == "proc":
-                conds.append(model.status == "approved")
+                from app.modules.purchase_order.model import STATUS_AFTER_APPROVE as PO_AFTER_APPROVE
+                conds.append(model.status.in_(PO_AFTER_APPROVE))
             if profile.get("emp_name"):
                 conds.append(model.nspt == profile["emp_name"])
             return or_(*conds)
