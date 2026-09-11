@@ -544,6 +544,10 @@ def import_employees_csv(
     from app.core.status_codes import EMPLOYEE_STATUS
 
     created, updated, deleted = 0, 0, 0
+    # bao-CR-368: nhập CSV cũng là một cửa tạo nhân sự — phải chặn trùng email y như màn nhập tay,
+    # nếu không thì vá một cửa vẫn còn cửa kia. Dòng trùng bị BỎ QUA chứ không huỷ cả tệp, rồi báo
+    # số lượng ở câu kết để người nhập biết mà sửa lại.
+    skipped_duplicate_email: list[str] = []
     for line_no, row in enumerate(reader, start=2):   # 2 = dòng đầu tiên sau hàng tiêu đề
         action = (row.get("Hành động") or "").strip().lower()
         is_active = action not in ["xóa", "delete", "ngừng"]
@@ -589,6 +593,17 @@ def import_employees_csv(
             position = matched_position.name      # chuẩn hóa hoa thường theo danh mục
 
         existing = db.query(Employee).filter(Employee.code == code).first() if code else None
+        if email and action not in ["xóa", "delete"]:
+            from sqlalchemy import func as sa_func
+            duplicate = (db.query(Employee)
+                         .filter(sa_func.lower(Employee.email) == email.lower(),
+                                 Employee.id != (existing.id if existing else 0))
+                         .first())
+            if duplicate:
+                skipped_duplicate_email.append(
+                    f"{code or full_name} (email đã thuộc {duplicate.code})")
+                continue
+
         if existing:
             if action in ["xóa", "delete"]:
                 service.detach_users(db, existing.id, user.id)   # CR-023: khoá tài khoản kèm theo
@@ -620,4 +635,9 @@ def import_employees_csv(
             created += 1
             
     db.commit()
-    return success(None, f"Nhập file thành công. Thêm mới {created}, cập nhật {updated}, ẩn {deleted}.")
+    msg = f"Nhập file thành công. Thêm mới {created}, cập nhật {updated}, ẩn {deleted}."
+    if skipped_duplicate_email:
+        msg += (f" Bỏ qua {len(skipped_duplicate_email)} dòng trùng email: "
+                + ", ".join(skipped_duplicate_email[:5])
+                + ("…" if len(skipped_duplicate_email) > 5 else ""))
+    return success(None, msg)

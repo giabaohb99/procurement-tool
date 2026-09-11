@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.audit import record
@@ -184,6 +184,30 @@ def block_manager_cycle(db: Session, employee_id: int, manager_id: int) -> None:
              "cấp trước khi gán.")
 
 
+def ensure_email_unique(db: Session, email: str, exclude_id: int = 0) -> str:
+    """bao-CR-368: một email chỉ được thuộc về MỘT hồ sơ nhân sự.
+
+    Trước đây tạo nhân sự chỉ kiểm trùng `code`, email thì thả nổi — nên trên hệ thật đã có
+    hai hồ sơ "Danh Hoàng Nguyên" cùng `dhnguyen.icare@gmail.com` (NSU089 · Nhân sự và NSU238 ·
+    Thủ kho). Email chính là khoá đăng nhập: `authenticate` tìm `User.email`, còn `google_login`
+    tìm `Employee.email` rồi `.first()` — nên khi trùng, người dùng rơi vào hồ sơ nào là do thứ tự
+    bản ghi quyết định chứ không phải do ai chọn. Chặn ngay từ lúc nhập là cách duy nhất chắc chắn.
+
+    So sánh đã bỏ hoa/thường và khoảng trắng thừa ("A@X.com " và "a@x.com" là một). Email rỗng
+    không tính trùng — còn nhiều nhân sự chưa có email và họ đăng nhập bằng mã nhân viên.
+    Trả về email đã cắt khoảng trắng để lưu xuống.
+    """
+    clean = (email or "").strip()
+    if not clean:
+        return clean
+    dup = (db.query(Employee)
+           .filter(func.lower(Employee.email) == clean.lower(), Employee.id != exclude_id)
+           .first())
+    if dup:
+        raise HTTPException(400, f"Email này đã thuộc về nhân sự {dup.code} - {dup.full_name}")
+    return clean
+
+
 def create_employee(db: Session, data: EmployeeCreate, user_id: int) -> Employee:
     if not data.code:
         data.code = generate_code(db, Employee, "NSU")
@@ -192,6 +216,7 @@ def create_employee(db: Session, data: EmployeeCreate, user_id: int) -> Employee
     #  Hồ sơ chưa có id nên không thể tự trỏ vào chính mình; chỉ còn phải kiểm
     #  người quản lý có thật.
     block_manager_cycle(db, 0, data.manager_id)
+    data.email = ensure_email_unique(db, data.email)
     obj = Employee(**data.model_dump(), created_by=user_id, updated_by=user_id)
     #  Nhãn chức vụ chép từ danh mục — xem `position_service`.
     #
@@ -267,6 +292,8 @@ def update_employee(db: Session, eid: int, data: EmployeeUpdate, user_id: int) -
     fields = data.model_dump(exclude_unset=True)
     if "manager_id" in fields:
         block_manager_cycle(db, obj.id, fields["manager_id"])
+    if "email" in fields:
+        fields["email"] = ensure_email_unique(db, fields["email"] or "", exclude_id=obj.id)
     for key, value in fields.items():
         setattr(obj, key, value)
     position_service.sync_label(db, obj, fields, old_position_id)
@@ -283,17 +310,6 @@ def update_employee(db: Session, eid: int, data: EmployeeUpdate, user_id: int) -
 
     if "department_id" in fields:
         _sync_primary_department(db, obj, user_id)
-    db.commit()
-    db.refresh(obj)
-    #  Nói ra phòng nào bị gỡ. Gỡ âm thầm thì tháng sau không ai tra được vì sao
-    #  một người mất phòng ban.
-    note = (f"Đổi pháp nhân — gỡ khỏi phòng ban của pháp nhân cũ: "
-            f"{', '.join(dropped_departments)}") if dropped_departments else ""
-    record(db, user_id, ENTITY, obj.id, "update", note)
-    #  ⚠️ Sau `commit` chứ không trước: xóa cache rồi mới ghi thì một request khác
-    #  chen vào giữa sẽ dựng lại hồ sơ CŨ và cache thêm 60 giây nữa.
-    if (obj.company_id or 0, obj.department_id or 0) != old_scope:
-        clear_perm_cache_of(db, obj.id)
 
     # CR-022: hồ sơ nhân sự KHÔNG còn cấp quyền cho tài khoản đăng nhập. Ô ở màn Nhân sự nay là
     # "Vị trí / Chức vụ" (`position`) — chỉ là chữ để hiển thị/in phiếu. Quyền thật của tài khoản
@@ -306,7 +322,31 @@ def update_employee(db: Session, eid: int, data: EmployeeUpdate, user_id: int) -
     #       thêm email vào nhân sự — kể cả email đã nhập TRƯỚC bản vá, lần lưu sau tự khớp);
     #   (b) admin THỰC SỰ đổi field email trong lần lưu này (old != new) → đẩy email mới sang.
     email_changed = "email" in fields and (obj.email or "").strip() != old_email
-    _sync_user_email_from_employee(db, obj, email_changed)
+    # bao-CR-368: TRƯỚC ĐÂY chỗ này nằm SAU `db.commit()`. Khi email đụng tài khoản khác,
+    # hàm dưới ném lỗi 400 — nhưng hồ sơ nhân sự thì đã ghi xong rồi: người dùng thấy báo đỏ mà
+    # dữ liệu vẫn đổi, tức là "lỗi nhưng không hoàn tác". Nay gom lại MỘT giao dịch: kiểm hết,
+    # gán hết, rồi mới commit một lần; vướng chỗ nào là trả cả lần lưu về nguyên trạng.
+    #
+    # ⚠️ Trên nhánh v2 lần lưu này còn kéo theo hai việc nữa (gỡ phòng ban của pháp nhân cũ,
+    # đồng bộ phòng chính) — cả hai chỉ `flush`, không tự commit — nên chúng phải nằm TRÊN
+    # chốt này để cùng chung một giao dịch. Đẩy `commit` lên sớm là hồ sơ đổi phòng ban xong
+    # mà email vẫn báo lỗi, đúng kiểu hỏng mà bao-CR-368 sinh ra để dẹp.
+    try:
+        _sync_user_email_from_employee(db, obj, email_changed)
+    except Exception:
+        db.rollback()
+        raise
+    db.commit()
+    db.refresh(obj)
+    #  Nói ra phòng nào bị gỡ. Gỡ âm thầm thì tháng sau không ai tra được vì sao
+    #  một người mất phòng ban.
+    note = (f"Đổi pháp nhân — gỡ khỏi phòng ban của pháp nhân cũ: "
+            f"{', '.join(dropped_departments)}") if dropped_departments else ""
+    record(db, user_id, ENTITY, obj.id, "update", note)
+    #  ⚠️ Sau `commit` chứ không trước: xóa cache rồi mới ghi thì một request khác
+    #  chen vào giữa sẽ dựng lại hồ sơ CŨ và cache thêm 60 giây nữa.
+    if (obj.company_id or 0, obj.department_id or 0) != old_scope:
+        clear_perm_cache_of(db, obj.id)
     return obj
 
 
@@ -333,7 +373,8 @@ def _sync_user_email_from_employee(db: Session, emp: Employee, email_changed: bo
     if dup:
         raise HTTPException(400, "Email này đã được một tài khoản khác sử dụng")
     user.email = new_email
-    db.commit()
+    # bao-CR-368: KHÔNG commit ở đây nữa — `update_employee` commit một lần cho cả hồ sơ nhân sự
+    # lẫn email đăng nhập, để hai thứ này không bao giờ lệch nhau nửa chừng.
 
 
 def detach_users(db: Session, eid: int, actor_id: int) -> int:

@@ -351,7 +351,7 @@ Vá: ba cột `session_id` / `request_id` / `ip` trên `tab_audit_log` —
 
 ### BM-008 — Giá trị dữ liệu thật bị chép nguyên vào `error_detail`
 
-**Mức: Trung bình. Trạng thái: đã vá (bao-CR-346, 10/09/2026, `erp-v2` 337fa9bb — đã deploy dev, prod CHƯA).**
+**Mức: Trung bình. Trạng thái: ĐÃ ĐÓNG CẢ HAI PHÍA (bao-CR-346, 10/09/2026) — `erp-v2` 337fa9bb deploy dev; `main` `e21023d1` deploy prod cùng chiều hôm đó.**
 
 Bảy dòng BM-001…BM-007 đều hỏi *"nhật ký có ghi đủ không"*. Bảy dòng tiếp theo, mở ngày
 10/09/2026, hỏi câu ngược lại — **chính lớp nhật ký có tự nó là một chỗ hở không** — và câu
@@ -380,7 +380,7 @@ và bằng test `test_che_vet_loi_khong_treo_khi_khong_co_moc_ket`.
 
 ### BM-009 — Thao tác ĐỌC không để lại dấu vết nào
 
-**Mức: Trung bình. Trạng thái: đã vá (bao-CR-346, 10/09/2026, `erp-v2` 337fa9bb — đã deploy dev, prod CHƯA).**
+**Mức: Trung bình. Trạng thái: ĐÃ ĐÓNG CẢ HAI PHÍA (bao-CR-346, 10/09/2026) — `erp-v2` 337fa9bb deploy dev; `main` `e21023d1` deploy prod cùng chiều hôm đó.**
 
 Bản P1 cố ý bỏ GET để tiết kiệm dung lượng (QĐ-A). Hệ quả: **rò rỉ dữ liệu là loại sự cố duy
 nhất mà nhật ký không nói được gì cả.** Một tài khoản ngồi đọc lần lượt 3.000 hồ sơ nhân sự,
@@ -407,7 +407,7 @@ Ba cái giá phải trả và cách trả: dung lượng → dọn dòng GET qu�
 
 ### BM-010 — Đổi phân quyền và đổi tài khoản không gọi `record()`
 
-**Mức: Trung bình. Trạng thái: đã vá (bao-CR-346, 10/09/2026, `erp-v2` 337fa9bb — đã deploy dev, prod CHƯA).**
+**Mức: Trung bình. Trạng thái: ĐÃ ĐÓNG CẢ HAI PHÍA (bao-CR-346, 10/09/2026) — `erp-v2` 337fa9bb deploy dev; `main` `e21023d1` deploy prod cùng chiều hôm đó.**
 
 Đây là ca cụ thể của BM-006, nhưng rơi đúng vào vùng tệ nhất: `modules/role/` và
 `modules/user/` **không có một lời gọi `record()` nào**. Tự nâng quyền cho mình, gán thêm vai
@@ -423,7 +423,7 @@ không đổi gì thì câu kể rỗng, không sinh dòng rác. Đi kèm là ha
 
 ### BM-011 — Nhật ký chỉ có một bản, trên chính máy bị tấn công
 
-**Mức: Trung bình. Trạng thái: đã vá (bao-CR-346, 10/09/2026, `erp-v2` 337fa9bb — đã deploy dev, prod CHƯA).**
+**Mức: Trung bình. Trạng thái: ĐÃ ĐÓNG CẢ HAI PHÍA (bao-CR-346, 10/09/2026) — `erp-v2` 337fa9bb deploy dev; `main` `e21023d1` deploy prod cùng chiều hôm đó.**
 
 Toàn bộ bốn bảng nhật ký nằm trong MySQL trên VPS, và **bị loại khỏi bản sao lưu đêm** (QĐ-C,
 cố ý — nếu không thì bản sao phình gấp mấy lần phần dữ liệu nghiệp vụ). Ai vào được máy đó thì
