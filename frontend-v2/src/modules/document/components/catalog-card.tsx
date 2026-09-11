@@ -1,6 +1,7 @@
 import { ChevronRight } from 'lucide-react'
 
 import { Badge } from '@/shared/ui/badge'
+import { cn } from '@/shared/utils/cn'
 
 interface CatalogCardProps {
   /** Dòng đầu — thứ người dùng dò khi lướt danh sách. */
@@ -15,6 +16,13 @@ interface CatalogCardProps {
   isActive: boolean
   /** Dòng chữ dài ở cuối (mô tả). Cắt đúng một dòng. */
   note?: string
+  /**
+   * Tiêu đề dùng chữ ĐỀU NÉT — cho danh mục mà dòng đầu là một **mẫu chuỗi**
+   * chứ không phải một cái tên, ví dụ mẫu số hiệu `{STT}/{Nam}/VBĐ-{PhapNhan}`.
+   * Ở đó từng ký tự đều có nghĩa và các dấu `{}` `/` `-` phải thẳng cột thì mới
+   * đọc ra cấu trúc; chữ thường làm chúng dính vào nhau.
+   */
+  titleMono?: boolean
 }
 
 /**
@@ -37,7 +45,14 @@ interface CatalogCardProps {
  * `<button>`, lồng nút vào trong nút là HTML sai và trên máy cảm ứng thì hai
  * vùng chạm đè nhau.
  */
-export function CatalogCard({ title, code, meta, isActive, note }: CatalogCardProps) {
+export function CatalogCard({
+  title,
+  code,
+  meta,
+  isActive,
+  note,
+  titleMono = false,
+}: CatalogCardProps) {
   //  Lọc mẩu rỗng NGAY TẠI ĐÂY chứ không bắt bốn nơi gọi tự lo: trường như
   //  `contact_person`, `phone` của đơn vị gửi nhận thường để trống, mà nối thẳng
   //  thì ra chuỗi «· ·» — một dãy dấu chấm giữa không có chữ nào ở giữa.
@@ -46,7 +61,14 @@ export function CatalogCard({ title, code, meta, isActive, note }: CatalogCardPr
   return (
     <div className="flex items-start gap-3">
       <div className="min-w-0 flex-1 space-y-1.5">
-        <span className="block truncate font-medium text-foreground">{title}</span>
+        <span
+          className={cn(
+            'block truncate font-medium text-foreground',
+            titleMono && 'font-mono text-navy dark:text-foreground',
+          )}
+        >
+          {title}
+        </span>
 
         {(code || parts.length > 0) && (
           //  Dấu `·` nằm CÙNG span với vế đứng sau nó — tách thành phần tử riêng
