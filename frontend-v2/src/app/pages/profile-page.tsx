@@ -7,6 +7,7 @@ import { EmailNotificationCard } from '@/app/components/profile/email-notificati
 import { ProfileIdentityCard } from '@/app/components/profile/profile-identity-card'
 import { ProfileHrDetails } from '@/app/components/profile/profile-hr-details'
 import { ProfileInfoCard } from '@/app/components/profile/profile-info-card'
+import { ProfileLeaveCard } from '@/app/components/profile/profile-leave-card'
 import { ProfileNotificationsTab } from '@/app/components/profile/profile-notifications-tab'
 import { ProfileTasksTab } from '@/app/components/profile/profile-tasks-tab'
 import { ProfileTicketsTab } from '@/app/components/profile/profile-tickets-tab'
@@ -195,6 +196,19 @@ export function ProfilePage() {
                       </div>
                       <div className="flex min-w-0 flex-col gap-4">
                         <SignatureCard signature={profile.signature} />
+
+                        {/*  QUỸ PHÉP của chính mình (duoc-CR-379) — «còn bao
+                             nhiêu ngày phép» là câu hỏi hay gặp nhất về hồ sơ
+                             của bản thân. Thẻ tự tắt khi thiếu `leave_balance.read`
+                             hoặc tài khoản chưa gắn nhân sự; xem ghi chú trong
+                             `ProfileLeaveCard` về việc vì sao ở đây KHÔNG mở cửa
+                             `/me` riêng như hồ sơ nhân sự. */}
+                        {myEmployee && (
+                          <ProfileLeaveCard
+                            employeeId={myEmployee.id}
+                            hasHireDate={Boolean(myEmployee.hire_date)}
+                          />
+                        )}
                         {/* bao-CR-349 — công tắc email thông báo của chính mình.
                             Xếp dưới Chữ ký để hai cột cân nhau; đây cũng là cửa
                             người dùng TỰ tắt, ba cửa còn lại là của quản trị. */}
