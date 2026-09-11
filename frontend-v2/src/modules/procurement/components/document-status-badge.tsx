@@ -104,18 +104,18 @@ export function DocumentStatusBadge({ status }: { status: string }) {
  * YCMH — hai bộ mã dùng chung năm mã giữa chuỗi với cùng một nghĩa, YCMH chỉ thêm
  * `no_po` ở đầu, nên gộp một bảng là đúng chứ không phải trùng lặp.
  *
- * ⚠️ bao-CR-363: bốn màu tự khai PHẢI tô đặc chữ trắng cho khớp `TONE_CLASS`. Năm mã
- * còn lại tra thẳng `TONE_CLASS` — bảng đó đã đổi sang tô đặc, để bốn màu này ở nền mờ
- * là một cột duy nhất có nửa ô đậm nửa ô nhạt, nhìn như lỗi hiển thị. Đổi `TONE_CLASS`
+ * ⚠️ bao-CR-366: bốn màu tự khai phải ĐI CÙNG SẮC ĐỘ với `TONE_CLASS`. Năm mã còn lại
+ * tra thẳng bảng đó, nên hai bên lệch nhau là một cột duy nhất có nửa ô đậm nửa ô nhạt,
+ * nhìn như lỗi hiển thị — đúng thứ CR-363 đợt 2 gây ra rồi phải gỡ. Đổi `TONE_CLASS`
  * thì rà lại đây.
  */
 const PROGRESS_CLASS: Record<string, string> = {
   no_po: TONE_CLASS.neutral,
   not_ordered: TONE_CLASS.neutral,
-  ordered: 'bg-blue-700 text-white',
-  received: 'bg-cyan-700 text-white',
-  doc_pending: 'bg-pink-600 text-white',
-  doc_sent: 'bg-violet-600 text-white',
+  ordered: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+  received: 'bg-cyan-500/10 text-cyan-700 dark:text-cyan-400',
+  doc_pending: 'bg-pink-500/10 text-pink-600 dark:text-pink-400',
+  doc_sent: 'bg-violet-500/10 text-violet-600 dark:text-violet-400',
   completed: TONE_CLASS.done,
   paused: TONE_CLASS.pending,
   cancelled: TONE_CLASS.danger,

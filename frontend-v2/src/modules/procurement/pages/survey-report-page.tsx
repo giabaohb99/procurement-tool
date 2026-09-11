@@ -532,7 +532,7 @@ function StatusChip({
 
 /**
  * Chấm màu của chip. Lấy đúng nền của `TONE_CLASS` nhưng bỏ phần chữ — chấm
- * không có chữ nên chỉ cần một màu đục.
+ * không có chữ nên chỉ cần một màu đục, không dùng nền `/10` mờ như huy hiệu.
  */
 const TONE_DOT: Record<StatusTone, string> = {
   neutral: 'bg-muted-foreground',
