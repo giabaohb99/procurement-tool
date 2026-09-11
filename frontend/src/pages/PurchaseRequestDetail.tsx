@@ -109,6 +109,7 @@ export default function PurchaseRequestDetail() {
   const [units, setUnits] = useState<string[]>([])
   const [warehouses, setWarehouses] = useState<{ code: string; name: string }[]>([])
   const [employees, setEmployees] = useState<any[]>([])
+  const [empLoaded, setEmpLoaded] = useState(false)   // bao-CR-376: DS nhân sự đã trả lời xong (kể cả 403/lỗi)
   const [departments, setDepartments] = useState<any[]>([])
   const [logs, setLogs] = useState<any[]>([])
   const [files, setFiles] = useState<any[]>([])
@@ -134,7 +135,7 @@ export default function PurchaseRequestDetail() {
     api.get('/api/item-groups', { params: { page_size: 500 } }).then((r) => { setItemGroups(r.data.data.items); setGroups(r.data.data.items.map((x: any) => x.name)) }).catch(() => {})
     api.get('/api/units', { params: { page_size: 200 } }).then((r) => setUnits(r.data.data.items.map((x: any) => x.name))).catch(() => {})
     api.get('/api/warehouses', { params: { page_size: 200 } }).then((r) => setWarehouses(r.data.data.items.map((x: any) => ({ code: x.code, name: x.name })))).catch(() => {})
-    api.get('/api/employees', { params: { page_size: 1000 } }).then((r) => setEmployees(r.data.data.items)).catch(() => {})
+    api.get('/api/employees', { params: { page_size: 1000 } }).then((r) => setEmployees(r.data.data.items)).catch(() => {}).finally(() => setEmpLoaded(true))
     api.get('/api/departments', { params: { page_size: 500 } }).then((r) => setDepartments(r.data.data.items)).catch(() => {})
   }, [])
 
@@ -177,21 +178,22 @@ export default function PurchaseRequestDetail() {
       .catch(() => setOrderedMap({}))
   }, [isNew, pr.code])
 
+  // bao-CR-376: chờ DS nhân sự trả lời XONG rồi mới điền, và bỏ chốt `isStaff` ở nhánh
+  // tài khoản — người có quyền duyệt/xóa phiếu nhưng KHÔNG xem được DS nhân sự (DS rỗng)
+  // trước đây rơi vào khe giữa hai nhánh: không match được ai, nhánh tài khoản không chạy
+  // → phiếu tạo mới trống trơn, không tự điền gì cả.
   useEffect(() => {
-    if (!isNew || !user || pr.requester) return
-    if (employees.length > 0) {
-      const matchEmp = employees.find(e => e.email === user.email || e.full_name === user.full_name)
-      if (matchEmp) { handleRequesterChange(matchEmp.full_name, true); return }
-    }
-    // Không có quyền xem DS nhân sự → điền theo tài khoản đăng nhập
-    if (isStaff) {
-      setPr((s: any) => ({
-        ...s, requester: (user as any).full_name || '', requester_id: (user as any).employee_id || 0,
-        department: (user as any).department_name || s.department,
-        company_id: (user as any).company_id || s.company_id,
-      }))
-    }
-  }, [isNew, employees, user])
+    if (!isNew || !user || pr.requester || !empLoaded) return
+    const matchEmp = employees.find(e => e.email === user.email || e.full_name === user.full_name)
+    if (matchEmp) { handleRequesterChange(matchEmp.full_name, true); return }
+    // Không thấy trong DS (không có quyền xem, hoặc hồ sơ lệch tên/email) → điền theo tài khoản
+    setPr((s: any) => ({
+      ...s, requester: (user as any).full_name || '', requester_id: (user as any).employee_id || 0,
+      department: (user as any).department_name || s.department,
+      requester_position: (user as any).position || s.requester_position,
+      company_id: (user as any).company_id || s.company_id,
+    }))
+  }, [isNew, empLoaded, employees, user])
 
   // Tự điền Trưởng bộ phận theo phòng ban (người yêu cầu không xem được DS nhân sự → hỏi server)
   useEffect(() => {
