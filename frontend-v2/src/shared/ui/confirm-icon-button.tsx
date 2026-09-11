@@ -18,6 +18,16 @@ interface ConfirmIconButtonProps {
   icon: LucideIcon
   /** Tooltip của nút. */
   title: string
+  /**
+   * Hiện CHỮ cạnh biểu tượng. Bỏ trống = nút chỉ có biểu tượng như cũ.
+   *
+   * Có để dùng lại nút này trong một DANH SÁCH DỌC (tấm `⋯` ở đầu trang chi
+   * tiết): nằm trong hàng ngang thì mấy biểu tượng đọc theo cụm, còn xếp dọc thì
+   * mỗi dòng đứng một mình và một cột biểu tượng không chữ là bắt đoán từng cái.
+   * Vẫn giữ nguyên hộp xác nhận, nên không phải đổi sang `DeleteConfirmButton`
+   * (bản đó tự dựng câu hỏi từ tên bản ghi, không nhận câu riêng của màn).
+   */
+  label?: string
   confirmTitle: string
   confirmDescription?: string
   confirmLabel?: string
@@ -38,6 +48,7 @@ interface ConfirmIconButtonProps {
 export function ConfirmIconButton({
   icon: Icon,
   title,
+  label,
   confirmTitle,
   confirmDescription,
   confirmLabel = 'Đồng ý',
@@ -58,14 +69,17 @@ export function ConfirmIconButton({
       <Button
         type="button"
         variant="ghost"
-        size="icon-sm"
+        size={label ? 'sm' : 'icon-sm'}
         title={title}
-        aria-label={title}
+        //  Có chữ rồi thì thôi `aria-label`: nó ĐÈ lên nội dung nút, nên trình
+        //  đọc màn hình sẽ bỏ qua chữ vừa thêm và đọc lại đúng cái tooltip.
+        aria-label={label ? undefined : title}
         disabled={disabled}
         className={cn(destructive && 'text-destructive hover:text-destructive', className)}
         onClick={() => setOpen(true)}
       >
         <Icon />
+        {label}
       </Button>
 
       <AlertDialog open={open} onOpenChange={setOpen}>

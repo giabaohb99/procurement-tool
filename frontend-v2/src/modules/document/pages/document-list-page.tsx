@@ -1,9 +1,16 @@
 import { Inbox, Plus, Send } from 'lucide-react'
+import { useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import { PermissionGate } from '@/core/authorization/permission-gate'
 import { usePermission } from '@/core/authorization/use-permission'
+//  ⚠️ Mượn từ phân hệ Nhân sự, KHÔNG chép chuỗi sang đây: hai dải ghim dùng một
+//  hệ mốc `top` cộng dồn, bản chép sẽ lệch đúng vào ngày ai đó sửa chiều cao dải
+//  tab ở một chỗ — và lệch kiểu đó chỉ lộ ra khi cuộn. `shared/crud` cũng đang
+//  nhập từ đấy; chỗ đúng của tệp này là `shared/`, xem ghi chú ở cuối CR.
+import { LIST_TABS_STICKY } from '@/modules/hr/utils/list-sticky'
 import { appRoutes } from '@/shared/constants/app-routes'
+import { useScrolled } from '@/shared/hooks/use-scrolled'
 import { Button } from '@/shared/ui/button'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
@@ -58,12 +65,47 @@ export function DocumentListPage() {
     setSearchParams(next === DI ? {} : { tab: next }, { replace: true })
   }
 
+  //  Dải ghim đầu trang chỉ đổ bóng khi có nội dung trôi bên dưới — xem
+  //  `list-sticky.ts`. Đo ở `Tabs` vì nó nằm cùng khung cuộn với hai dải.
+  const tabsRef = useRef<HTMLDivElement>(null)
+  const scrolled = useScrolled(tabsRef)
+
+  //  ⚠️ `fill` (trang cao bằng khung, phần cuộn nằm BÊN TRONG) chỉ bật từ `md`
+  //  trở lên — `max-md:h-auto` gỡ `h-full` mà `fill` đặt.
+  //
+  //  Vì sao: `fill` sinh một ô cuộn nằm TRONG trang. Trên màn rộng ô đó cao gần
+  //  hết màn hình nên không ai nhận ra, đổi lại thanh công cụ và phân trang đứng
+  //  yên. Trên máy 390px thì sau tiêu đề · nút · dải tab · hai hàng lọc, ô đó
+  //  chỉ còn ~480px cho 20 thẻ cao 121px — tức đọc 2400px qua một khe bốn thẻ.
+  //  Tệ hơn, đó là cuộn LỒNG: vuốt trúng phần ngoài khe thì trang không nhúc
+  //  nhích và người dùng đọc ra là màn hình đơ.
+  //
+  //  Bỏ `fill` ở khổ hẹp thì danh sách dài tự nhiên và CẢ TRANG cuộn — đúng nếp
+  //  mọi ứng dụng điện thoại; dải tab và thanh công cụ ghim lại để bù.
   return (
-    <Tabs value={tab} onValueChange={changeTab} className="flex h-full min-h-0 flex-col">
-      <PageContainer fill>
+    <Tabs
+      ref={tabsRef}
+      value={tab}
+      onValueChange={changeTab}
+      data-scrolled={scrolled ? '' : undefined}
+      //  `group` + `data-scrolled` là đường dẫn tín hiệu «trang đã cuộn» xuống
+      //  dải ghim nằm sâu bên trong (thanh công cụ do `DataTable` vẽ, tầng trang
+      //  không với tới được bằng prop).
+      className="group flex h-full min-h-0 flex-col max-md:h-auto"
+    >
+      <PageContainer fill className="max-md:h-auto">
         <PageHeader
           title="Văn bản"
-          description={DESCRIPTIONS[tab]}
+          //  ⚠️ Dòng mô tả ẩn dưới 768px: hai câu này là chú thích nghiệp vụ đọc
+          //  một lần rồi thôi, mà ở 390px chúng ngắt thành hai dòng và đẩy cả
+          //  dải tab + thanh công cụ xuống thêm ~48px — chỗ đó là chỗ của danh
+          //  sách. Cùng luật với `ModuleDashboard` (nó tự làm; trang này dựng
+          //  tay `PageContainer` + `PageHeader` nên phải khai).
+          description={<span className="max-md:hidden">{DESCRIPTIONS[tab]}</span>}
+          //  Khổ hẹp: nút chính trải hết hàng. `PageHeader` chỉ mở đường bằng
+          //  `max-md:w-full` cho CỤM nút — bản thân nút vẫn co theo chữ nên nếu
+          //  không ép thì nó dán mép phải với một khoảng trống dài bên trái.
+          actionsClassName="max-md:[&>button]:flex-1"
           actions={
             //  «Tạo văn bản» đứng ở đầu trang cho cả hai tab: soạn một văn bản
             //  mới là việc bắt đầu từ đây bất kể đang đứng ở tab nào. Còn
@@ -80,18 +122,30 @@ export function DocumentListPage() {
 
         {/*  Chỉ dựng thanh tab khi có cả hai tab. Người chỉ xem được «Văn bản
              đến» thì một tab đơn độc trông như lỗi — bỏ hẳn, tiêu đề trang đã
-             nói rõ đang xem gì. */}
+             nói rõ đang xem gì.
+
+             ⚠️ Khổ hẹp: dải tab GHIM đỉnh khung cuộn (`LIST_TABS_STICKY`) và
+             trải hết hàng, chia đôi. `TabsList` mặc định `w-fit` nên hai tab bó
+             vào mép trái, chừa một khoảng trống vô nghĩa bên phải — mà đây là
+             chỗ chuyển qua lại nhiều nhất của cả màn.
+
+             ⚠️ `max-md:mb-0`: khoảng hở dưới dải ghim phải là ĐỆM của chính dải
+             (`pb-2` trong `LIST_TABS_STICKY`), không được là lề của `TabsList` —
+             lề nằm NGOÀI hộp được tô nền nên thẻ cuộn qua sẽ hiện một vạch chữ
+             cụt ngay dưới dải. Cùng bài học với `mb-0 + pb-3` của thanh công cụ. */}
         {canViewOutgoing && (
-          <TabsList className="mb-3 self-start">
-            <TabsTrigger value={DEN}>
-              <Inbox className="size-4" />
-              Văn bản đến
-            </TabsTrigger>
-            <TabsTrigger value={DI}>
-              <Send className="size-4" />
-              Văn bản đi
-            </TabsTrigger>
-          </TabsList>
+          <div className={LIST_TABS_STICKY}>
+            <TabsList className="mb-3 w-full shrink-0 max-md:mb-0 md:w-fit">
+              <TabsTrigger value={DEN} className="min-w-0">
+                <Inbox className="size-4" />
+                Văn bản đến
+              </TabsTrigger>
+              <TabsTrigger value={DI} className="min-w-0">
+                <Send className="size-4" />
+                Văn bản đi
+              </TabsTrigger>
+            </TabsList>
+          </div>
         )}
 
         {/*  `TabsContent` phải tự là cột flex co được, nếu không `Card flex-1`

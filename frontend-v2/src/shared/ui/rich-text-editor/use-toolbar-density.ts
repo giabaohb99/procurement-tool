@@ -25,6 +25,25 @@ const TIER_MIN_WIDTH: Record<ToolbarTier, number> = {
 }
 
 /**
+ * Dưới mốc này thanh đổi hẳn HÌNH DẠNG, không chỉ thu bớt nút: chỉ còn mục lục ·
+ * hoàn tác · làm lại · mức phóng, mọi lệnh định dạng dọn vào tấm `⋮` (xem
+ * `EditorFormatPopover`).
+ *
+ * ⚠️ **Thu bớt nút KHÔNG cứu được khổ điện thoại.** Hai bậc trên chỉ đụng tới 11
+ * lệnh khai ở `collapsible-toolbar-commands`; phần còn lại — bốn ô chọn (phóng ·
+ * kiểu đoạn · phông · cỡ) — **một mình đã ~440px** vì bề rộng của chúng bị ghim
+ * theo nhãn dài nhất (xem bảng số đo ở `toolbar-style-selects`). Trên thanh 358px
+ * thì có thu hết 11 lệnh kia vào menu «Thêm» vẫn còn tràn ba hàng. Nên mốc này
+ * không phải "bậc thứ ba", nó là một bố cục khác.
+ *
+ * **640px** chứ không phải 768px của `useIsMobile`: đây đo bề rộng THẬT của thanh
+ * chứ không phải của màn hình — cùng một máy, menu trái thu hay mở đã lệch ~256px.
+ * Máy tính hẹp nhất còn dùng thanh đầy đủ là ~900px thanh, nên 640 nằm giữa hai
+ * thế giới mà không chạm bên nào.
+ */
+const COMPACT_MAX_WIDTH = 640
+
+/**
  * Đo bề rộng thanh công cụ để quyết định lệnh nào đứng ngoài, lệnh nào thu vào
  * menu "Thêm".
  *
@@ -54,5 +73,10 @@ export function useToolbarDensity() {
 
   const fits = useCallback((tier: ToolbarTier) => width >= TIER_MIN_WIDTH[tier], [width])
 
-  return { ref, fits }
+  //  ⚠️ `width > 0` để KHÔNG rơi vào chế độ gọn ở lượt vẽ đầu. `useLayoutEffect`
+  //  đo sau lượt render đầu tiên, nên trước khi đo xong `width` là `0` — thiếu vế
+  //  này thì máy tính cũng nháy một nhịp thanh gọn rồi mới bung ra thanh đầy đủ.
+  const compact = width > 0 && width < COMPACT_MAX_WIDTH
+
+  return { ref, fits, compact }
 }

@@ -26,7 +26,12 @@ import { TableMenu } from './table-menu'
 import { setCellBackground } from './table-commands'
 import { ColorPalette } from './color-palette'
 import { LineSpacingMenu } from './line-spacing-menu'
-import { ToolbarStyleSelects } from './toolbar-style-selects'
+import {
+  ToolbarStyleSelects,
+  ToolbarTextStyleSelects,
+  ToolbarZoomSelect,
+} from './toolbar-style-selects'
+import { EditorFormatPopover } from './editor-format-popover'
 import { ToolbarOverflowMenu } from './toolbar-overflow-menu'
 import { ToolbarButton, ToolbarDivider, ToolbarMenu } from './toolbar-primitives'
 import { useToolbarDensity } from './use-toolbar-density'
@@ -68,15 +73,21 @@ export function EditorToolbar({
   onToggleAutoNumber,
 }: EditorToolbarProps) {
   const state = useToolbarState(editor)
-  const { ref, fits } = useToolbarDensity()
+  const { ref, fits, compact } = useToolbarDensity()
   const commands = collapsibleCommands(editor, state)
   // `focus()` trước mỗi lệnh để con trỏ quay lại đúng đoạn vừa chọn.
   const run = () => editor.chain().focus()
 
-  /** Vẽ lệnh co giãn ĐÚNG CHỖ của nó trong nhóm, hoặc không vẽ gì nếu hết chỗ. */
+  /**
+   * Vẽ lệnh co giãn ĐÚNG CHỖ của nó trong nhóm, hoặc không vẽ gì nếu hết chỗ.
+   *
+   * ⚠️ Ở chế độ GỌN thì luôn vẽ: cả cụm này nằm trong tấm `⋮`, nơi các nút được
+   * xuống dòng thoải mái. Thu chúng vào menu «Thêm» ở đó là bắt người dùng mở
+   * một menu LỒNG TRONG tấm vừa mở, chỉ để canh giữa một đoạn.
+   */
   const inline = (key: CollapsibleKey) => {
     const command = commands[key]
-    if (!fits(command.tier)) return null
+    if (!compact && !fits(command.tier)) return null
     return (
       <ToolbarButton
         icon={command.icon}
@@ -87,44 +98,22 @@ export function EditorToolbar({
     )
   }
 
-  const collapsed = COLLAPSIBLE_KEYS.map((key) => commands[key]).filter(
-    (command) => !fits(command.tier),
-  )
+  const collapsed = compact
+    ? []
+    : COLLAPSIBLE_KEYS.map((key) => commands[key]).filter((command) => !fits(command.tier))
 
-  return (
-    <div ref={ref} className="flex flex-wrap items-center gap-0.5 border-b bg-muted/40 px-2 py-1.5">
-      {/* Nút mục lục đứng đầu thanh, tách hẳn khỏi nhóm lệnh soạn thảo: nó đổi
-          cách BÀY MÀN HÌNH chứ không đụng gì tới nội dung văn bản. */}
-      {outlineOpen !== undefined && onToggleOutline && (
-        <>
-          <ToolbarButton
-            icon={ListTree}
-            label={outlineOpen ? 'Ẩn mục lục' : 'Hiện mục lục'}
-            active={outlineOpen}
-            onClick={onToggleOutline}
-          />
-          <ToolbarDivider />
-        </>
-      )}
-
-      <ToolbarButton
-        icon={Undo2}
-        label="Hoàn tác (Ctrl+Z)"
-        disabled={!state.canUndo}
-        onClick={() => run().undo().run()}
-      />
-      <ToolbarButton
-        icon={Redo2}
-        label="Làm lại (Ctrl+Y)"
-        disabled={!state.canRedo}
-        onClick={() => run().redo().run()}
-      />
-      <ToolbarDivider />
-
-      <ToolbarStyleSelects editor={editor} state={state} zoom={zoom} onZoomChange={onZoomChange} />
-      <ToolbarDivider />
-
-
+  /**
+   * MỌI lệnh định dạng — cùng một khối JSX cho cả hai bố cục.
+   *
+   * ⚠️ Dựng một lần rồi dùng lại, đừng chép sang tấm `⋮` một bản thứ hai: chép
+   * là sớm muộn có người thêm lệnh vào thanh ngang mà quên thêm cho điện thoại,
+   * và lỗi đó im lặng — không ai thấy thiếu cho tới lúc cần đúng lệnh ấy.
+   *
+   * Thanh ngang xếp nó thành một hàng; tấm `⋮` xếp thành lưới xuống dòng. Khác
+   * nhau ở KHUNG BỌC, không ở nội dung.
+   */
+  const formatControls = (
+    <>
       <ToolbarButton
         icon={Bold}
         label="In đậm (Ctrl+B)"
@@ -229,6 +218,88 @@ export function EditorToolbar({
 
       {/* Menu "Thêm" luôn đứng cuối thanh — chỗ mắt tìm khi thấy thiếu lệnh. */}
       <ToolbarOverflowMenu commands={collapsed} />
+    </>
+  )
+
+  /** Bốn thứ dùng theo NHỊP GÕ, luôn ở ngoài kể cả khổ hẹp nhất. */
+  const alwaysVisible = (
+    <>
+      {/* Nút mục lục đứng đầu thanh, tách hẳn khỏi nhóm lệnh soạn thảo: nó đổi
+          cách BÀY MÀN HÌNH chứ không đụng gì tới nội dung văn bản. */}
+      {outlineOpen !== undefined && onToggleOutline && (
+        <>
+          <ToolbarButton
+            icon={ListTree}
+            label={outlineOpen ? 'Ẩn mục lục' : 'Hiện mục lục'}
+            active={outlineOpen}
+            onClick={onToggleOutline}
+          />
+          <ToolbarDivider />
+        </>
+      )}
+
+      <ToolbarButton
+        icon={Undo2}
+        label="Hoàn tác (Ctrl+Z)"
+        disabled={!state.canUndo}
+        onClick={() => run().undo().run()}
+      />
+      <ToolbarButton
+        icon={Redo2}
+        label="Làm lại (Ctrl+Y)"
+        disabled={!state.canRedo}
+        onClick={() => run().redo().run()}
+      />
+      <ToolbarDivider />
+    </>
+  )
+
+  /**
+   * KHỔ HẸP — đúng hình dạng Google Docs trên trình duyệt điện thoại.
+   *
+   * Hàng LUÔN THẤY chỉ giữ những thứ dùng theo nhịp gõ: mục lục · hoàn tác ·
+   * làm lại · mức phóng, rồi nút `⋮` ở mép phải. Bấm `⋮` thì **mở thêm một hàng
+   * ngay bên dưới** chứa toàn bộ lệnh định dạng.
+   *
+   * ⚠️ **Hàng mở rộng ĐẨY trang giấy xuống, không phủ lên nó.** Bản Google là
+   * một tấm nổi đè lên mép trên trang giấy; ở đây đẩy xuống vì trang giấy của ta
+   * đã phải cuộn ngang sẵn, che thêm phần trên là người dùng mất luôn dòng vừa
+   * gõ — mà đó chính là dòng họ đang định dạng.
+   *
+   * ⚠️ Đã thử bản TỜ TRƯỢT TỪ ĐÁY (`Sheet`) và bỏ: nó là hộp thoại nên Radix
+   * bẫy tiêu điểm và gắn `aria-hidden` cho phần còn lại của trang — vùng soạn
+   * thảo nằm trong đó, nên `editor.chain().focus()` của mỗi lệnh bị kéo ngược
+   * lại. Phải mở `modal={false}` cộng hai lần `preventDefault` cho
+   * `onOpenAutoFocus`/`onCloseAutoFocus` mới chạy. Hàng mở rộng thường không
+   * dính gì tới tiêu điểm cả, nên nó vừa giống bản Google hơn vừa ít chỗ hỏng hơn.
+   */
+  if (compact) {
+    return (
+      <div ref={ref} className="flex items-center gap-0.5 border-b bg-muted/40 px-2 py-1.5">
+        {alwaysVisible}
+        <ToolbarZoomSelect zoom={zoom} onZoomChange={onZoomChange} className="h-8 w-20 text-xs" />
+
+        {/*  `ml-auto` đẩy `⋮` về mép phải — cùng phía ngón cái, và tách hẳn khỏi
+             cụm biểu tượng bên trái để không đọc nhầm thành một lệnh soạn thảo
+             nữa. */}
+        <div className="ml-auto">
+          <EditorFormatPopover
+            selects={<ToolbarTextStyleSelects editor={editor} state={state} />}
+            controls={formatControls}
+          />
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div ref={ref} className="flex flex-wrap items-center gap-0.5 border-b bg-muted/40 px-2 py-1.5">
+      {alwaysVisible}
+
+      <ToolbarStyleSelects editor={editor} state={state} zoom={zoom} onZoomChange={onZoomChange} />
+      <ToolbarDivider />
+
+      {formatControls}
     </div>
   )
 }

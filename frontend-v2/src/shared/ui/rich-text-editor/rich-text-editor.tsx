@@ -461,7 +461,15 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
           <div
             ref={pageFrameRef}
             style={{ height: pageHeight }}
-            className="min-h-80 min-w-0 flex-1 overflow-x-auto overflow-y-auto bg-muted px-6 py-5"
+            //  `doc-canvas`: mốc cho luật giữ ĐÚNG KHỔ A4 của trang giấy — xem
+            //  `.doc-canvas .doc-page` trong `index.css`. Khai bằng lớp riêng chứ
+            //  không sửa thẳng `.doc-page` vì phiếu IN (`document-print-sheet`)
+            //  cũng đeo lớp đó và nó không có khung cuộn ngang nào.
+            //  ⚠️ Khổ hẹp thu phần đệm quanh tờ giấy: `py-5 px-6` là khoảng thở
+            //  của màn rộng, nhưng trên 390px thì 40px chiều cao đó là 40px TỜ
+            //  GIẤY bị đẩy khuất — mà khung giấy vốn đã chỉ cao ~519px. Giữ lại
+            //  `p-3` để mép giấy không dính sát viền thẻ.
+            className="doc-canvas min-h-80 min-w-0 flex-1 overflow-x-auto overflow-y-auto bg-muted px-6 py-5 max-md:px-3 max-md:py-3"
           >
             {/* Phóng bằng `zoom` chứ không phải `transform: scale`: `zoom` co
               giãn luôn cả hộp bố cục nên thanh cuộn vẫn đúng tầm và con trỏ

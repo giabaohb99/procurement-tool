@@ -2,6 +2,7 @@ import { ArrowLeft, Save, Trash2 } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { Button } from '@/shared/ui/button'
 import { ConfirmIconButton } from '@/shared/ui/confirm-icon-button'
 import { ErrorState } from '@/shared/ui/error-state'
@@ -9,6 +10,7 @@ import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { AuditTimeline } from '@/shared/audit'
 import type { HistoryEntry } from '../store/local-collection'
+import { HeaderActionsPopover } from './header-actions-popover'
 import { RecordHistoryCard } from './record-history-card'
 
 interface DetailPageShellProps {
@@ -33,6 +35,24 @@ interface DetailPageShellProps {
    * "Lưu" chung trên đầu trang không còn rõ là đang lưu cái gì.
    */
   actions?: ReactNode
+  /**
+   * Class thêm cho CỤM NÚT trên đầu trang (`PageHeaderProps.actionsClassName`).
+   *
+   * Có để trang nhiều nút tự quyết cách bày ở khổ hẹp. Mặc định `PageHeader` căn
+   * `justify-end`: đúng khi cụm chỉ có một hai nút, nhưng trang nào tràn xuống
+   * ba hàng thì mỗi hàng lại bắt đầu ở một mốc khác nhau — đo ở màn Văn bản là
+   * các khe trái 310 · 21 · 89 · 228px, đọc ra như mấy nút rơi vãi chứ không ra
+   * một cụm. Trang đó truyền `max-md:justify-start` để mọi hàng thẳng một mép.
+   */
+  actionsClassName?: string
+  /**
+   * Lệnh PHỤ của đầu trang — khổ hẹp gom vào nút `⋯`, màn rộng bày thẳng ra
+   * hàng như cũ. Nút XÓA tự đi theo nhóm này, trang không phải tự lo.
+   *
+   * Chia theo dáng nút: `variant="default"` (việc người dùng đang định làm) để
+   * ở `actions`, mấy nút viền cho vào đây — xem `HeaderActionsPopover`.
+   */
+  secondaryActions?: ReactNode
   /**
    * Nhật ký của kho tạm phía trình duyệt. Chỉ còn các màn CHƯA nối API dùng —
    * màn đã có backend thì truyền `audit` để đọc `tab_audit_log` thật.
@@ -77,6 +97,8 @@ export function DetailPageShell({
   deleteConfirmTitle,
   deleteConfirmDescription,
   actions,
+  actionsClassName,
+  secondaryActions,
   history,
   audit,
   showHistory = true,
@@ -85,6 +107,7 @@ export function DetailPageShell({
 }: DetailPageShellProps) {
   const navigate = useNavigate()
   const back = () => navigate(backTo)
+  const isMobile = useIsMobile()
 
   if (isMissing) {
     return (
@@ -120,10 +143,21 @@ export function DetailPageShell({
             <ArrowLeft className="size-4" />
           </Button>
         }
+        actionsClassName={actionsClassName}
         actions={
           <>
-            {!isCreating && onDelete && (
+            {/*  ⚠️ `max-md:order-last` — ở khổ hẹp nút XÓA phải đứng CUỐI cụm.
+                 Nó khai trước trong mã vì trên màn rộng cụm nút căn phải, nên
+                 "đầu danh sách" hiện ra ở mép trái, xa nhất khỏi nút chính. Khổ
+                 hẹp thì cụm dồn trái và thứ tự đảo nghĩa: một nút XÓA (không
+                 hoàn tác được) nằm ngay đầu hàng, sát chỗ ngón cái quen bấm
+                 «Tệp» / «Lưu». Đẩy về cuối để nó ở xa nhịp thao tác thường ngày.
+
+                 Trang nào khai `secondaryActions` thì nút này KHÔNG đứng ở đây
+                 nữa — nó theo nhóm phụ vào trong `⋯` (xem cuối khối này). */}
+            {!isCreating && onDelete && !secondaryActions && (
               <ConfirmIconButton
+                className="max-md:order-last"
                 icon={Trash2}
                 title="Xóa"
                 destructive
@@ -150,6 +184,56 @@ export function DetailPageShell({
                 </Button>
               </>
             )}
+
+            {/*  Nhóm lệnh PHỤ. Dựng MỘT LẦN rồi để `useIsMobile` chọn khung bọc —
+                 KHÔNG dựng hai bản rồi ẩn một bằng CSS: mấy nút này mang hộp
+                 thoại và truy vấn riêng (menu *Tệp*, *Chữ ký*, *Sao chép*), bản
+                 ẩn vẫn gắn kết và vẫn gọi API, chỉ là không ai thấy. */}
+            {secondaryActions &&
+              (isMobile ? (
+                <HeaderActionsPopover>
+                  {secondaryActions}
+                  {!isCreating && onDelete && (
+                    <ConfirmIconButton
+                      icon={Trash2}
+                      title="Xóa"
+                      label="Xóa"
+                      destructive
+                      confirmTitle={deleteConfirmTitle ?? `Xóa "${title}"?`}
+                      confirmDescription={
+                        deleteConfirmDescription ?? 'Thao tác này không hoàn tác được.'
+                      }
+                      confirmLabel="Xóa"
+                      onConfirm={onDelete}
+                    />
+                  )}
+                </HeaderActionsPopover>
+              ) : (
+                <>
+                  {secondaryActions}
+                  {/*  `md:order-first` trả nút XÓA về đầu cụm như trước khi tách
+                       nhóm. Cụm nút của màn rộng căn PHẢI, nên "đầu cụm" hiện ra
+                       ở mép trái — xa nhất khỏi mấy nút hay bấm. Khai ở cuối mã
+                       (để nó đi theo nhóm phụ vào `⋯` ở khổ hẹp) mà không có lớp
+                       này thì trên desktop nó dạt sang phải, nằm ngay cạnh «Gửi
+                       duyệt»: một nút không hoàn tác được đứng sát nhịp thao tác
+                       thường ngày. */}
+                  {!isCreating && onDelete && (
+                    <ConfirmIconButton
+                      className="md:order-first"
+                      icon={Trash2}
+                      title="Xóa"
+                      destructive
+                      confirmTitle={deleteConfirmTitle ?? `Xóa "${title}"?`}
+                      confirmDescription={
+                        deleteConfirmDescription ?? 'Thao tác này không hoàn tác được.'
+                      }
+                      confirmLabel="Xóa"
+                      onConfirm={onDelete}
+                    />
+                  )}
+                </>
+              ))}
           </>
         }
       />

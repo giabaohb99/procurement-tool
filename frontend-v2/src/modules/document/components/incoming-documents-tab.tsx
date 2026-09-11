@@ -1,4 +1,3 @@
-import { Search } from 'lucide-react'
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -12,9 +11,12 @@ import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
+import { LIST_TOOLBAR_STICKY } from '@/modules/hr/utils/list-sticky'
+import { AdvancedFilterSection } from '@/shared/ui/advanced-filter-section'
 import { Badge } from '@/shared/ui/badge'
 import { Card } from '@/shared/ui/card'
-import { Input } from '@/shared/ui/input'
+import { QuickFilterField, QuickFilterSheet } from '@/shared/ui/quick-filter-sheet'
+import { SearchField } from '@/shared/ui/search-field'
 import {
   Select,
   SelectContent,
@@ -22,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
+import { DocumentCard } from './document-card'
 import { formatDate } from '@/shared/utils/format-date'
 import { DOCUMENT_APPLIED_FILTER_FIELDS } from '../config/document-applied-filter-fields'
 import { effectiveLabel } from '../helpers/document-status'
@@ -69,7 +72,9 @@ function IncomingDocumentsContent() {
   const navigate = useNavigate()
   const prefetchDocument = usePrefetchDocument()
   const { data, isLoading, isError } = useDocumentsAppliedToMe()
-  const { appliedState } = useFilterContext()
+  //  `activeCount`/`apply`/`reset` để dùng lại bộ lọc nâng cao trong tờ trượt ở
+  //  khổ hẹp — xem `AdvancedFilterSection`.
+  const { appliedState, activeCount, apply, reset } = useFilterContext()
   const secrecyLabel = useSecurityLevelLabel()
 
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
@@ -163,14 +168,38 @@ function IncomingDocumentsContent() {
     [secrecyLabel],
   )
 
+  //  Lọc nhanh "Cần rà lại" để sẵn ngoài thanh công cụ chứ không giấu trong bộ
+  //  lọc nâng cao: đó là lý do chính người ta mở tab này ra — văn bản mình phải
+  //  làm theo vừa bị đổi.
+  //
+  //  ⚠️ Dựng MỘT LẦN, dùng cho cả hàng ngang (màn rộng) lẫn tờ trượt (màn hẹp).
+  //  Chép hai bản là hai khổ màn lọc ra hai kết quả khác nhau.
+  const reviewSelect = (
+    <Select value={review} onValueChange={setReview}>
+      <SelectTrigger className="w-full md:w-44" aria-label="Lọc theo tình trạng rà soát">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={ALL}>Tất cả văn bản</SelectItem>
+        <SelectItem value="yes">Cần rà lại</SelectItem>
+        <SelectItem value="no">Không cần rà lại</SelectItem>
+      </SelectContent>
+    </Select>
+  )
+
   return (
-    <Card className="flex min-h-0 flex-1 flex-col p-4">
+    //  `p-3` ở khổ hẹp + `min-w-0` — xem ghi chú cùng chỗ ở `outgoing-documents-tab`.
+    <Card className="flex min-h-0 w-full min-w-0 flex-1 flex-col p-3 md:p-4">
       <DataTable
         columns={columns}
         rows={rows}
         getRowId={(row) => row.id}
         storageKey="document.applies-to-me"
         fillHeight
+        toolbarClassName={LIST_TOOLBAR_STICKY}
+        //  Dồn nhóm nút liền cụm ở khổ hẹp — xem ghi chú cùng chỗ ở
+        //  `outgoing-documents-tab`.
+        toolbarActionsClassName="max-md:ml-0"
         isLoading={isLoading}
         isError={isError}
         onRowClick={(row) => navigate(appRoutes.document.documentDetail(row.id))}
@@ -184,33 +213,40 @@ function IncomingDocumentsContent() {
             ? 'Không có văn bản nào khớp điều kiện đang lọc.'
             : 'Chưa có văn bản nào áp dụng cho bạn.'
         }
+        //  Khổ hẹp: THẺ thay bảng — xem `DocumentCard`. `showReviewFlag` vì
+        //  «Cần rà lại» là lý do chính người ta mở tab này.
+        mobileCard={(row: DocumentRecord) => <DocumentCard doc={row} showReviewFlag />}
         toolbar={
           <>
-            <div className="relative w-full max-w-xs">
-              <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                className="pl-9"
-                placeholder="Tìm theo trích yếu, số hiệu, loại, từ khóa…"
-                value={keyword}
-                onChange={(event) => setKeyword(event.target.value)}
-              />
+            {/*  `max-md:basis-full` — xem ghi chú dài ở `outgoing-documents-tab`:
+                 ô tìm chiếm trọn hàng đầu ở khổ hẹp để câu gợi ý đọc được hết. */}
+            <SearchField
+              value={keyword}
+              onChange={setKeyword}
+              placeholder="Tìm trích yếu, số hiệu, loại…"
+              className="max-md:basis-full md:min-w-56 md:max-w-xs"
+            />
+
+            {/*  Khổ hẹp: ô lọc nhanh + bộ lọc nâng cao gom sau MỘT nút. Đếm cả
+                 hai tầng, nếu không thì nút trông sạch trơn trong khi danh sách
+                 vẫn đang bị lọc. */}
+            <QuickFilterSheet
+              activeCount={(review !== ALL ? 1 : 0) + activeCount}
+              onClearAll={() => {
+                setReview(ALL)
+                reset()
+              }}
+              onApply={apply}
+            >
+              <QuickFilterField label="Rà soát">{reviewSelect}</QuickFilterField>
+              <AdvancedFilterSection />
+            </QuickFilterSheet>
+
+            {/*  `md:contents` — xem ghi chú cùng chỗ ở `outgoing-documents-tab`. */}
+            <div className="hidden md:contents">
+              {reviewSelect}
+              <ConditionalFilter />
             </div>
-
-            {/*  Lọc nhanh "Cần rà lại" để sẵn ngoài thanh công cụ chứ không
-                 giấu trong bộ lọc nâng cao: đó là lý do chính người ta mở tab
-                 này ra — văn bản mình phải làm theo vừa bị đổi. */}
-            <Select value={review} onValueChange={setReview}>
-              <SelectTrigger className="w-44">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL}>Tất cả văn bản</SelectItem>
-                <SelectItem value="yes">Cần rà lại</SelectItem>
-                <SelectItem value="no">Không cần rà lại</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <ConditionalFilter />
           </>
         }
       />

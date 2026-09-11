@@ -58,8 +58,20 @@ export function DocumentDraftHolderNotice({
         </p>
       </div>
 
+      {/*  ⚠️ `max-md:w-full` để nút XUỐNG HÀNG RIÊNG ở khổ hẹp. Khối chữ khai
+           `flex-1 min-w-0`, nghĩa là gặp chật nó CO LẠI chứ không đẩy nút xuống
+           — `flex-wrap` của khung ngoài vì thế không bao giờ có cớ ngắt hàng. Kết
+           quả ở 390px: nút giữ ~150px, câu báo còn ~250px và gãy thành TÁM dòng
+           hẹp. Cho nút `w-full` thì nó không thể nằm cạnh khối chữ nữa nên rơi
+           xuống hàng dưới, và câu báo được trọn bề ngang. */}
       {onOpenDraft && (
-        <Button type="button" variant="outline" size="sm" onClick={onOpenDraft}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="max-md:w-full"
+          onClick={onOpenDraft}
+        >
           Xem bản {draft.version_no}
           <ArrowRight className="size-4" />
         </Button>

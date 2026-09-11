@@ -41,12 +41,43 @@ interface ToolbarStyleSelectsProps {
  * Thanh công cụ chật thì các NÚT LỆNH tự thu vào menu "Thêm"
  * (`use-toolbar-density.ts`) — chỗ nhường là ở đó, không phải ở bốn ô này.
  */
-export function ToolbarStyleSelects({
-  editor,
-  state,
+/**
+ * Ô MỨC PHÓNG, tách riêng khỏi ba ô kia.
+ *
+ * Ở khổ hẹp nó là ô chọn DUY NHẤT còn đứng trên thanh (ba ô kiểu chữ dọn vào tờ
+ * trượt «Định dạng»). Không phải chọn bừa: trang giấy A4 rộng 794px không vừa
+ * màn 390px, nên mức phóng là thứ quyết định người ta có đọc được dòng mình vừa
+ * gõ hay không — nó thuộc về nhịp gõ, không thuộc về định dạng. Google Docs trên
+ * điện thoại cũng để đúng ô này ngoài thanh.
+ */
+export function ToolbarZoomSelect({
   zoom,
   onZoomChange,
-}: ToolbarStyleSelectsProps) {
+  className = 'w-22',
+}: {
+  zoom: number
+  onZoomChange: (zoom: number) => void
+  className?: string
+}) {
+  return (
+    <ToolbarSelect
+      label="Mức phóng"
+      className={className}
+      value={String(zoom)}
+      onValueChange={(value) => onZoomChange(Number(value))}
+      options={ZOOM_LEVELS.map((level) => ({
+        label: `${Math.round(Number(level) * 100)}%`,
+        value: level,
+      }))}
+    />
+  )
+}
+
+/** Ba ô KIỂU CHỮ: kiểu đoạn · phông · cỡ. Khổ hẹp thì cả ba vào tờ trượt. */
+export function ToolbarTextStyleSelects({
+  editor,
+  state,
+}: Pick<ToolbarStyleSelectsProps, 'editor' | 'state'>) {
   const run = () => editor.chain().focus()
 
   function setBlockStyle(value: string) {
@@ -56,16 +87,6 @@ export function ToolbarStyleSelects({
 
   return (
     <>
-      <ToolbarSelect
-        label="Mức phóng"
-        className="w-22"
-        value={String(zoom)}
-        onValueChange={(value) => onZoomChange(Number(value))}
-        options={ZOOM_LEVELS.map((level) => ({
-          label: `${Math.round(Number(level) * 100)}%`,
-          value: level,
-        }))}
-      />
       <ToolbarSelect
         label="Kiểu đoạn"
         className="w-32"
@@ -95,6 +116,21 @@ export function ToolbarStyleSelects({
           ...FONT_SIZES.map((size) => ({ label: size.replace('pt', ''), value: size })),
         ]}
       />
+    </>
+  )
+}
+
+/** Cả bốn ô trên MỘT hàng — bố cục của thanh công cụ ở màn rộng. */
+export function ToolbarStyleSelects({
+  editor,
+  state,
+  zoom,
+  onZoomChange,
+}: ToolbarStyleSelectsProps) {
+  return (
+    <>
+      <ToolbarZoomSelect zoom={zoom} onZoomChange={onZoomChange} />
+      <ToolbarTextStyleSelects editor={editor} state={state} />
     </>
   )
 }

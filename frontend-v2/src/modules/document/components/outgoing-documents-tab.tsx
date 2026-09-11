@@ -1,4 +1,4 @@
-import { Loader2, Search, Sheet } from 'lucide-react'
+import { Loader2, Sheet } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -7,16 +7,25 @@ import { downloadFile } from '@/core/api'
 import { PermissionGate } from '@/core/authorization/permission-gate'
 import { usePermission } from '@/core/authorization/use-permission'
 import { appConfig } from '@/core/config/app-config'
-import { ConditionalFilter, FilterProvider, useFilterQuery } from '@/shared/conditional-filter'
+import {
+  ConditionalFilter,
+  FilterProvider,
+  useFilterContext,
+  useFilterQuery,
+} from '@/shared/conditional-filter'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable } from '@/shared/data-table'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
+import { LIST_TOOLBAR_STICKY } from '@/modules/hr/utils/list-sticky'
+import { AdvancedFilterSection } from '@/shared/ui/advanced-filter-section'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
-import { Input } from '@/shared/ui/input'
+import { QuickFilterField, QuickFilterSheet } from '@/shared/ui/quick-filter-sheet'
+import { SearchField } from '@/shared/ui/search-field'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
+import { DocumentCard } from './document-card'
 import { DOCUMENT_LIST_FILTER_FIELDS } from '../config/document-list-filter-fields'
 import { useActiveDocumentTypes } from '../hooks/use-document-types'
 import { useDocuments } from '../hooks/use-documents'
@@ -82,6 +91,9 @@ function OutgoingDocumentsContent() {
   )
   //  Điều kiện của bộ lọc nâng cao, đã dịch sang query param cho backend.
   const { queryParams, queryKey } = useFilterQuery()
+  //  Cùng một bộ lọc nâng cao, ở khổ hẹp mở bằng tờ trượt thay vì popover — nên
+  //  màn này cần cả `apply`/`reset`/`activeCount` chứ không chỉ query param.
+  const filter = useFilterContext()
   //  Đổi bất kỳ điều kiện nào cũng phải về trang 1 — đang ở trang 5 mà lọc còn
   //  ba dòng thì màn hình trống trơn, người dùng tưởng không có kết quả.
   const [page, setPage] = usePageResetOnFilterChange([queryKey, debouncedValue, typeId, status])
@@ -152,14 +164,76 @@ function OutgoingDocumentsContent() {
     canCreate,
   })
 
+  //  ⚠️ Hai ô chọn dựng MỘT LẦN rồi dùng cho cả hai khổ (hàng ngang ở màn rộng ·
+  //  tờ trượt ở màn hẹp). Chép hai bản là hai khổ màn lọc ra hai kết quả khác
+  //  nhau mà không chỗ nào báo — đúng bài học `buildFields` của duoc-CR-364.
+  //  `w-full md:w-48`: trong tờ trượt ô trải hết bề ngang, trên thanh công cụ nó
+  //  về lại bề rộng cũ.
+  const typeSelect = (
+    <Select
+      value={typeId}
+      onValueChange={(value) => {
+        setTypeId(value)
+        setPage(1)
+      }}
+    >
+      <SelectTrigger className="w-full md:w-48" aria-label="Lọc theo loại văn bản">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={ALL}>Tất cả loại</SelectItem>
+        {documentTypes.map((type) => (
+          <SelectItem key={type.id} value={String(type.id)}>
+            {type.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+
+  const statusSelect = (
+    <Select
+      value={status}
+      onValueChange={(value) => {
+        setStatus(value)
+        setPage(1)
+      }}
+    >
+      <SelectTrigger className="w-full md:w-44" aria-label="Lọc theo trạng thái">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={ALL}>Tất cả trạng thái</SelectItem>
+        {Object.entries(STATUS_LABELS).map(([value, label]) => (
+          <SelectItem key={value} value={value}>
+            {label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+
   return (
-    <Card className="flex min-h-0 flex-1 flex-col p-4">
+    //  ⚠️ `p-3` ở khổ hẹp là BẮT BUỘC, không phải chuyện thẩm mỹ: lề âm của dải
+    //  thanh công cụ ghim (`-mx-3 -mt-3` trong `LIST_TOOLBAR_STICKY`) tính theo
+    //  đúng đệm này. Để `p-4` thì nền của dải hụt 4px mỗi bên và thẻ cuộn qua
+    //  lộ ra ở hai khe đó.
+    //
+    //  `min-w-0`: `TabsContent` là hộp flex, mà ô flex mặc định `min-width:auto`
+    //  nên thẻ không co xuống dưới bề rộng tự nhiên của bảng bên trong (~1934px).
+    //  Thiếu nó thì CẢ TRANG trượt ngang ở khổ hẹp.
+    <Card className="flex min-h-0 w-full min-w-0 flex-1 flex-col p-3 md:p-4">
       <DataTable
         columns={columns}
         rows={rows}
         getRowId={(row: DocumentRecord) => row.id}
         storageKey="document.records"
         fillHeight
+        toolbarClassName={LIST_TOOLBAR_STICKY}
+        //  Ô tìm chiếm trọn hàng đầu ở khổ hẹp, nên hàng nút còn lại dư chỗ và
+        //  `ml-auto` mặc định xé nó thành hai mẩu cách nhau 162px. Dồn liền một
+        //  cụm — xem `DataTableProps.toolbarActionsClassName`.
+        toolbarActionsClassName="max-md:ml-0"
         isLoading={isLoading}
         isError={isError}
         onRowClick={(row) => navigate(appRoutes.document.documentDetail(row.id))}
@@ -174,73 +248,104 @@ function OutgoingDocumentsContent() {
           onPageSizeChange: setPageSize,
           unitLabel: 'văn bản',
         }}
+        //  Khổ hẹp: THẺ thay bảng — xem `DocumentCard`.
+        mobileCard={(row: DocumentRecord) => (
+          <DocumentCard doc={row} awaitingMyApproval={awaitingMyApproval.has(row.id)} showOrigin />
+        )}
         toolbar={
           <>
-            <div className="relative w-full max-w-xs">
-              <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                className="pl-9"
-                placeholder="Tìm theo tên, số hiệu, số hiệu cũ, từ khóa…"
-                value={keyword}
-                onChange={(event) => {
-                  setKeyword(event.target.value)
-                  setPage(1)
-                }}
-              />
+            {/*  ⚠️ **`max-md:basis-full` — ô tìm chiếm TRỌN hàng đầu ở khổ hẹp.**
+                 Thanh này có bốn khối (tìm · Bộ lọc · Export · Tải lại); nhét cả
+                 bốn vào một hàng 324px thì ô tìm chỉ còn **80px** trong khi câu
+                 gợi ý cần 171px — nó cụt thành «Tìm tên, số h» và lúc gõ thì
+                 người dùng thấy được đúng mười ký tự. Một ô tìm không nói nổi
+                 mình tìm được những gì thì người ta đoán, và thường đoán là chỉ
+                 tìm được số hiệu.
+
+                 Đã cân nhắc hai cách giữ MỘT hàng và bỏ cả hai: rút «Bộ lọc» còn
+                 cái phễu thì mất chữ mà `leave-rows-filter-bar` đã cố ý đánh đổi
+                 60px để giữ, còn ẩn Export ở khổ hẹp là bỏ hẳn một việc làm
+                 được. Xuống hàng tốn 44px nhưng không lấy đi thứ gì: thanh công
+                 cụ vẫn từ 180px còn ~84px, và ô tìm được trọn bề ngang. Thanh này
+                 KHÔNG ghim theo cuộn (nó nằm trong thẻ `fillHeight`, danh sách
+                 tự cuộn bên trong) nên 44px đó không nhân lên theo mỗi lần cuộn.
+
+                 Từ `md` trở lên `basis-full` tắt, ô về lại bề rộng cũ cạnh các nút. */}
+            <SearchField
+              value={keyword}
+              onChange={(value) => {
+                setKeyword(value)
+                setPage(1)
+              }}
+              placeholder="Tìm tên, số hiệu, từ khóa…"
+              className="max-md:basis-full md:min-w-56 md:max-w-xs"
+            />
+
+            {/*  ⚠️ `activeCount` cộng CẢ HAI tầng lọc — ô nhanh và điều kiện nâng
+                 cao — vì dưới 768px cả hai nay nằm sau đúng một nút này. Đếm
+                 thiếu một tầng thì người dùng thấy nút không có dấu gì mà danh
+                 sách vẫn đang bị lọc, rồi đi tìm lỗi ở dữ liệu.
+
+                 «Đang lọc» = KHÁC mặc định chứ không phải «có giá trị»: mặc định
+                 của hai ô là `all` chứ không rỗng, đếm kiểu kia thì nút lúc nào
+                 cũng báo đang lọc (bài học duoc-CR-364). */}
+            <QuickFilterSheet
+              activeCount={
+                (typeId !== ALL ? 1 : 0) + (status !== ALL ? 1 : 0) + filter.activeCount
+              }
+              onClearAll={() => {
+                setTypeId(ALL)
+                setStatus(ALL)
+                setPage(1)
+                filter.reset()
+              }}
+              onApply={filter.apply}
+            >
+              <QuickFilterField label="Loại văn bản">{typeSelect}</QuickFilterField>
+              <QuickFilterField label="Trạng thái">{statusSelect}</QuickFilterField>
+              <AdvancedFilterSection />
+            </QuickFilterSheet>
+
+            {/*  ⚠️ `md:contents` chứ KHÔNG `md:flex`: bọc cụm lọc trong một thẻ
+                 flex riêng thì cả cụm là MỘT ô của thanh công cụ — không đủ chỗ
+                 là nó rớt nguyên khối xuống dòng dưới, để lại khoảng trống dài
+                 bên phải ô tìm. `display: contents` cho từng ô thành ô trực tiếp
+                 của thanh công cụ nên chúng xếp kín từng dòng.
+
+                 `ConditionalFilter` nằm TRONG đây vì popover của nó neo vào nút,
+                 mà ở 390px tấm `95vw` bung ra che gần hết màn và vẫn không đủ
+                 ngang cho một hàng điều kiện — khổ hẹp đi bằng `AdvancedFilterSection`
+                 trong tờ trượt ở trên. */}
+            <div className="hidden md:contents">
+              {typeSelect}
+              {statusSelect}
+              <ConditionalFilter />
             </div>
-
-            <Select
-              value={typeId}
-              onValueChange={(value) => {
-                setTypeId(value)
-                setPage(1)
-              }}
-            >
-              <SelectTrigger className="w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL}>Tất cả loại</SelectItem>
-                {documentTypes.map((type) => (
-                  <SelectItem key={type.id} value={String(type.id)}>
-                    {type.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select
-              value={status}
-              onValueChange={(value) => {
-                setStatus(value)
-                setPage(1)
-              }}
-            >
-              <SelectTrigger className="w-44">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL}>Tất cả trạng thái</SelectItem>
-                {Object.entries(STATUS_LABELS).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>
-                    {label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <ConditionalFilter />
 
             {/*  Nút xuất nằm ở THANH CÔNG CỤ chứ không ở đầu trang: file tải
                  về đúng bằng bộ điều kiện đang lọc, nên nó thuộc về hàng chứa
                  mấy ô lọc — mà đầu trang giờ là của cả hai tab.
                  Nhãn «Export» là chữ khách chọn (25/08/2026), không phải sót
                  dịch — đừng "sửa" về «Xuất Excel». Tên tệp tải về vẫn giữ
-                 tiếng Việt không dấu. */}
+                 tiếng Việt không dấu.
+
+                 Khổ hẹp rút còn biểu tượng: chữ «Export» ăn ~60px của một hàng
+                 chỉ vừa đúng ba khối. `aria-label` bù lại tên đọc được, nếu
+                 không trình đọc màn hình gặp một nút chỉ có hình. */}
             <PermissionGate entity="document" action="export">
-              <Button variant="outline" onClick={() => void exportExcel()} disabled={dangXuat}>
-                {dangXuat ? <Loader2 className="size-4 animate-spin" /> : <Sheet className="size-4" />}
-                Export
+              <Button
+                variant="outline"
+                onClick={() => void exportExcel()}
+                disabled={dangXuat}
+                aria-label="Export danh sách văn bản ra Excel"
+                className="shrink-0"
+              >
+                {dangXuat ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Sheet className="size-4" />
+                )}
+                <span className="max-md:hidden">Export</span>
               </Button>
             </PermissionGate>
           </>

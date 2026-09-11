@@ -159,6 +159,21 @@ export interface DataTableProps<T> {
    */
   toolbarClassName?: string
   /**
+   * Class thêm cho NHÓM NÚT BÊN PHẢI của thanh công cụ (Xóa lọc · Tải lại · Cột).
+   *
+   * Nhóm này mặc định `ml-auto` — nó nuốt mọi chỗ trống của hàng để bám mép
+   * phải. Đúng ở gần hết màn danh sách, nơi ô tìm kiếm `flex-1` đã ăn hết chỗ
+   * trống nên `ml-auto` không còn gì để nuốt.
+   *
+   * Sai ở màn nào cho ô tìm chiếm TRỌN hàng đầu (`max-md:basis-full`): hàng nút
+   * còn lại dư chỗ thật, và `ml-auto` xé nó thành hai mẩu cách nhau một hố —
+   * ở màn Văn bản là **162px** giữa nút *Export* và nút *Tải lại*, đọc ra như
+   * ba khối viền rời rạc chứ không ra một thanh công cụ (cùng lỗi duoc-CR-363
+   * đã gọi tên ở thanh công cụ Dự án). Màn đó truyền `max-md:ml-0` để cả hàng
+   * dồn về một cụm liền.
+   */
+  toolbarActionsClassName?: string
+  /**
    * Việc chạy khi bấm **Xóa lọc**. Bỏ trống = nút tự xóa mọi param lọc trên URL
    * (đúng cho mọi màn danh sách, vì state bộ lọc nằm trên URL). Chỉ truyền vào
    * khi bảng giữ bộ lọc bằng state cục bộ — bảng con trong trang chi tiết.
@@ -230,6 +245,7 @@ export function DataTable<T>({
   onRefresh,
   toolbar,
   toolbarClassName,
+  toolbarActionsClassName,
   onResetFilters,
   filtersActive,
   keepFilterParams,
@@ -416,7 +432,7 @@ export function DataTable<T>({
           className={cn('mb-4 flex shrink-0 flex-wrap items-center gap-3', toolbarClassName)}
         >
           {toolbar}
-          <div className="ml-auto flex items-center gap-2">
+          <div className={cn('ml-auto flex items-center gap-2', toolbarActionsClassName)}>
             {/*  Nút "Xóa lọc" do BẢNG vẽ, không bắt từng màn tự nhớ: quên một
                  màn là màn đó lọc xong không có đường lùi. Đứng sát mép phải
                  ngay trước nút Tải lại, và tự ẩn khi chưa lọc gì. */}

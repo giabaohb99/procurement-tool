@@ -23,21 +23,31 @@ import { cn } from '@/shared/utils/cn'
  * để mặc định thì bấm "In đậm" là trình duyệt gửi luôn cả form.
  */
 
-interface ToolbarButtonProps {
+/**
+ * ⚠️ **Kế thừa hết prop của `Button` và SPREAD chúng xuống — đừng quay lại kiểu
+ * liệt kê tay vài prop.**
+ *
+ * Nút này có lúc làm con của `PopoverTrigger asChild` (`EditorFormatPopover`).
+ * Lúc đó Radix nhét vào nút con cả `ref` lẫn `onClick`, `aria-expanded`,
+ * `data-state`. Bản cũ chỉ nhận đúng `icon/label/active/disabled/onClick` nên
+ * **nuốt sạch số còn lại**, và hậu quả im lặng: mất `ref` nghĩa là Radix không
+ * có mốc neo, Floating UI không chạy, tấm popover đứng nguyên ở trạng thái chưa
+ * định vị (`transform: translate(0,-200%)`) — tức mở ra **ngoài màn hình phía
+ * trên**, không lỗi, không cảnh báo, chỉ là bấm mà chẳng thấy gì.
+ */
+interface ToolbarButtonProps extends React.ComponentProps<typeof Button> {
   icon: LucideIcon
   label: string
   /** Đang bật (chữ đậm, canh giữa…) — tô nền cho thấy trạng thái. */
   active?: boolean
-  disabled?: boolean
-  onClick: () => void
 }
 
 export function ToolbarButton({
   icon: Icon,
   label,
   active,
-  disabled,
-  onClick,
+  className,
+  ...rest
 }: ToolbarButtonProps) {
   return (
     <Button
@@ -47,12 +57,11 @@ export function ToolbarButton({
       title={label}
       aria-label={label}
       aria-pressed={active}
-      disabled={disabled}
       // Giữ con trỏ trong vùng soạn thảo: mất focus là mất luôn đoạn đang chọn
       // nên lệnh sẽ áp vào chỗ khác.
       onMouseDown={(event) => event.preventDefault()}
-      onClick={onClick}
-      className={cn(active && 'bg-accent text-accent-foreground')}
+      className={cn(active && 'bg-accent text-accent-foreground', className)}
+      {...rest}
     >
       <Icon className="size-4" />
     </Button>

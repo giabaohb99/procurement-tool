@@ -44,7 +44,9 @@ import {
 import { ReasonConfirmDialog } from '@/shared/ui/reason-confirm-dialog'
 import { mmToPx, RichTextEditor, type RichTextEditorHandle } from '@/shared/ui/rich-text-editor'
 import { SignatureMenu } from '@/shared/ui/rich-text-editor/signature-menu'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
+import { ScrollableTabsList } from '@/shared/ui/scrollable-tabs-list'
+import { TAB_TRIGGER_UNDERLINE } from '@/shared/ui/tab-underline'
+import { Tabs, TabsContent, TabsTrigger } from '@/shared/ui/tabs'
 import { DetailPageShell } from '../components/detail-page-shell'
 import { DocumentAmendedBanner } from '../components/document-amended-banner'
 import { DocumentApprovalBanner } from '../components/document-approval-banner'
@@ -314,14 +316,31 @@ export function DocumentDetailPage() {
         description={
           record && (
             <>
-              <span>
+              {/*  ⚠️ Ẩn ở khổ hẹp — đây là phần TĨNH của dòng mô tả (số hiệu ·
+                   loại · sổ · bản), đọc một lần rồi thôi, mà ở 390px nó dài quá
+                   một hàng nên đẩy cả dòng thành HAI hàng. Trên trang soạn thảo
+                   mỗi hàng ở đầu trang là một hàng bị lấy khỏi trang giấy: khung
+                   giấy được `useFillViewportHeight` tính bằng CHỖ CÒN LẠI, nên
+                   cắt ở trên là cộng thẳng vào chiều cao giấy.
+
+                   Ba thứ ĐỘNG thì ở lại: huy hiệu trạng thái, nhãn «Chỉ đọc» và
+                   tình trạng tự lưu — chúng đổi theo lúc, giấu đi là người đang
+                   gõ mất tín hiệu «đã lưu hay chưa». Số hiệu và loại vẫn tra được
+                   ở tab *Thông tin*. */}
+              <span className="max-md:hidden">
                 {record.display_code || 'Chưa cấp số'} · {record.doc_type_name}
                 {record.book_number_display && ` · sổ ${record.book_number_display}`}
                 {version && ` · bản ${version.version_no}`}
               </span>
               {label && (
                 <>
-                  <span aria-hidden>·</span>
+                  {/*  Dấu ngăn ẩn CÙNG vế đứng trước nó. Vế trước là khối tĩnh ở
+                       trên, đã `max-md:hidden`; để dấu này ở lại thì khổ hẹp mở
+                       ra một dòng bắt đầu bằng «· Nháp» — một dấu chấm giữa mồ
+                       côi treo ở đầu dòng. */}
+                  <span aria-hidden className="max-md:hidden">
+                    ·
+                  </span>
                   <Badge variant={label.variant}>{label.text}</Badge>
                 </>
               )}
@@ -354,31 +373,134 @@ export function DocumentDetailPage() {
         //  Chỉ tab Thông tin mới dính tiêu đề: form dài, nút Lưu ở trên đầu.
         //  Tab Soạn thảo cuộn bên trong trang giấy, tab Phiên bản thì ngắn.
         stickyHeader={tab === 'info'}
+        //  Khổ hẹp cụm nút dồn TRÁI. Mặc định `justify-end` đúng khi chỉ một hai
+        //  nút; trang này có tới tám lệnh nên nó tràn ba hàng, mỗi hàng bắt đầu ở
+        //  một mốc khác nhau (đo được 310 · 21 · 89 · 228px) — đọc ra như mấy nút
+        //  rơi vãi chứ không ra một cụm.
+        actionsClassName="max-md:justify-start"
         actions={
           <>
-            <TabsList>
-              <TabsTrigger value="compose">
+            {/*  ⚠️ **Năm tab nhãn tiếng Việt KHÔNG vừa một hàng 390px.** Dải này
+                 rộng **561px**, mà nó lại nằm trong cụm nút `justify-end` của
+                 `PageHeader` — nên nó tràn sang TRÁI: hai tab *Soạn thảo* và
+                 *Thông tin* rơi ra toạ độ âm (−184 và −70), tức **không bấm được
+                 và không nhìn thấy**, kể cả khi đang đứng ở chính tab đó. Đây là
+                 lỗi CHẶN chứ không phải chuyện chật chội.
+
+                 Bóp cho vừa không cứu được — cùng phép đo đã ghi ở
+                 `ScrollableTabsList`: năm nhãn tiếng Việt bỏ hết biểu tượng và hạ
+                 xuống cỡ 12px thì riêng phần chữ đã 361px trên 358px dùng được.
+                 Nên dải tự cuộn ngang và tab đang mở tự được kéo vào tầm nhìn.
+
+                 ⚠️ `max-md:basis-full` để dải chiếm TRỌN một hàng của cụm nút;
+                 thiếu nó thì nó lại chen chung hàng với mấy nút lệnh và tràn y
+                 như cũ.
+
+                 ⚠️ **`max-md:min-w-0` là vế BẮT BUỘC đi kèm, không phải thêm cho
+                 chắc.** Dải này là một Ô FLEX của cụm nút, mà ô flex mặc định
+                 `min-width: auto` — nó KHÔNG co xuống dưới bề rộng nội dung. Nên
+                 `basis-full` một mình chẳng làm được gì: khung vẫn nở ra 459px
+                 theo dải tab bên trong, `overflow-x-auto` không có gì để cuộn
+                 (`scrollWidth == clientWidth`), và `justify-end` đẩy cả khối sang
+                 trái tới `x = −69` — y hệt lỗi cũ, chỉ khác là nay đổi kiểu gạch
+                 chân nên nhìn còn giống thiết kế hơn. Có `min-w-0` thì khung co
+                 về đúng 390px và phần dôi ra quay vào trong thanh cuộn của nó.
+
+                 Từ `md` trở lên mọi lớp `max-md:*` tắt hết, dải về đúng
+                 `TabsList` nền xám cũ nằm cạnh tiêu đề — bố cục desktop giữ
+                 nguyên, đúng ý ghi chú ở đầu `return` (trang soạn thảo cần từng
+                 dòng chiều cao, không để tab thành một hàng riêng). */}
+            {/*  ⚠️ `max-md:grow` là vế thứ ba, cũng bắt buộc. `ScrollableTabsList`
+                 khai lề âm `-mx-4` để dải chạm hai mép màn hình; lề âm làm KÍCH
+                 THƯỚC NGOÀI của ô nhỏ hơn `basis-full` đúng 32px, nên hàng còn dư
+                 32px và `justify-end` của cụm nút dồn hết chỗ đó sang TRÁI — dải
+                 bắt đầu ở `x = 32`, tức mất luôn phần bleed bên trái và tab đầu
+                 lại nép vào trong. `grow` cho ô nuốt đúng 32px đó: dải về `0 → 390`. */}
+            {/*  `max-md:order-first` — dải tab là thứ ĐIỀU HƯỚNG, nó phải nằm
+                 ngay dưới tiêu đề chứ không kẹt giữa nút Xóa và mấy nút lệnh
+                 (thứ tự khai trong mã, vốn hợp lý ở màn rộng vì cụm căn phải). */}
+            <ScrollableTabsList
+              value={tab}
+              className="max-md:order-first max-md:min-w-0 max-md:grow max-md:basis-full"
+            >
+              <TabsTrigger value="compose" className={TAB_TRIGGER_UNDERLINE}>
                 <FileText className="size-4" />
                 Soạn thảo
               </TabsTrigger>
-              <TabsTrigger value="info">
+              <TabsTrigger value="info" className={TAB_TRIGGER_UNDERLINE}>
                 <Info className="size-4" />
                 Thông tin
               </TabsTrigger>
-              <TabsTrigger value="versions">
+              <TabsTrigger value="versions" className={TAB_TRIGGER_UNDERLINE}>
                 <GitBranch className="size-4" />
                 Phiên bản
               </TabsTrigger>
-              <TabsTrigger value="links">
+              <TabsTrigger value="links" className={TAB_TRIGGER_UNDERLINE}>
                 <Link2 className="size-4" />
                 Quan hệ
               </TabsTrigger>
-              <TabsTrigger value="approval">
+              <TabsTrigger value="approval" className={TAB_TRIGGER_UNDERLINE}>
                 <ShieldCheck className="size-4" />
                 Phê duyệt
               </TabsTrigger>
-            </TabsList>
+            </ScrollableTabsList>
 
+            {/*  ⚠️ **NÚT CHÍNH của trạng thái hiện tại — luôn ở NGOÀI, kể cả khổ
+                 hẹp nhất.** Luật chia đúng bằng dáng nút: `variant="default"`
+                 (nền xanh) là việc mà người mở trang đang định làm, giấu nó sau
+                 `⋯` là bắt thêm một chạm cho đúng thao tác thường xuyên nhất.
+                 Mấy nút viền đi vào `secondaryActions` bên dưới. */}
+            {tab === 'compose' && canWrite && !isLocked && !viLocaleKey && (
+              <Button type="button" onClick={autosave.saveNow} disabled={autosave.saving}>
+                {autosave.saving ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Save className="size-4" />
+                )}
+                Lưu nội dung
+              </Button>
+            )}
+
+            {tab === 'info' && canWrite && !viLocaleKey && (
+              <Button type="submit" form={FORM_ID} disabled={save.isPending}>
+                <Save className="size-4" />
+                Lưu thông tin
+              </Button>
+            )}
+
+            {isSubmitted && !isMultiStepApproval && (
+              <PermissionGate entity="document" action="approve">
+                <Button
+                  type="button"
+                  onClick={() => setIssueOpen(true)}
+                  disabled={workflow.approve.isPending}
+                >
+                  <Check className="size-4" />
+                  Duyệt và ban hành
+                </Button>
+              </PermissionGate>
+            )}
+
+            {/*  CHỜ BAN HÀNH — ký đủ rồi, giờ tới lượt người soạn thảo phát
+                 hành và chọn địa chỉ gửi thông báo (26/08/2026). Không bọc
+                 `PermissionGate` quyền `approve`: nhịp này thuộc về người soạn,
+                 mà người soạn thường không có quyền duyệt. */}
+            {isPendingIssue && isDrafter && (
+              <Button
+                type="button"
+                onClick={() => setIssueOpen(true)}
+                disabled={workflow.approve.isPending}
+              >
+                <Check className="size-4" />
+                Ban hành
+              </Button>
+            )}
+          </>
+        }
+        //  Lệnh PHỤ — khổ hẹp gom vào nút `⋯`, màn rộng bày thẳng ra hàng như cũ.
+        //  Nút XÓA do `DetailPageShell` tự thêm vào cuối nhóm này.
+        secondaryActions={
+          <>
             {/*  MỘT MENU cho cả nhóm lệnh tệp thay vì bốn nút rời.
                  Trang này có tới tám lệnh; xếp hết ra ngoài thì cụm nút đẩy
                  rộng cả trang và sinh thanh cuộn ngang — đã gặp thật. Ở ngoài
@@ -471,22 +593,7 @@ export function DocumentDetailPage() {
                     editorRef.current?.focusImportedPage(importId, page) ?? false
                   }
                 />
-                <Button type="button" onClick={autosave.saveNow} disabled={autosave.saving}>
-                  {autosave.saving ? (
-                    <Loader2 className="size-4 animate-spin" />
-                  ) : (
-                    <Save className="size-4" />
-                  )}
-                  Lưu nội dung
-                </Button>
               </>
-            )}
-
-            {tab === 'info' && canWrite && !viLocaleKey && (
-              <Button type="submit" form={FORM_ID} disabled={save.isPending}>
-                <Save className="size-4" />
-                Lưu thông tin
-              </Button>
             )}
 
             {record?.allow_manual_number && canWrite && (
@@ -538,30 +645,7 @@ export function DocumentDetailPage() {
                   <Undo2 className="size-4" />
                   Trả lại
                 </Button>
-                <Button
-                  type="button"
-                  onClick={() => setIssueOpen(true)}
-                  disabled={workflow.approve.isPending}
-                >
-                  <Check className="size-4" />
-                  Duyệt và ban hành
-                </Button>
               </PermissionGate>
-            )}
-
-            {/*  CHỜ BAN HÀNH — ký đủ rồi, giờ tới lượt người soạn thảo phát
-                 hành và chọn địa chỉ gửi thông báo (26/08/2026). Không bọc
-                 `PermissionGate` quyền `approve`: nhịp này thuộc về người soạn,
-                 mà người soạn thường không có quyền duyệt. */}
-            {isPendingIssue && isDrafter && (
-              <Button
-                type="button"
-                onClick={() => setIssueOpen(true)}
-                disabled={workflow.approve.isPending}
-              >
-                <Check className="size-4" />
-                Ban hành
-              </Button>
             )}
           </>
         }

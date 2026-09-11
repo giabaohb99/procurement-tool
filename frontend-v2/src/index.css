@@ -516,6 +516,25 @@
 }
 
 /*
+ * TRONG KHUNG SOẠN THẢO, tờ giấy giữ ĐÚNG KHỔ A4 — phần dôi ra đi vào thanh
+ * cuộn ngang của `.doc-canvas`, không bóp tờ giấy lại.
+ *
+ * ⚠️ `max-width: 100%` ở `.doc-page` là đúng cho phiếu IN nhưng SAI cho chỗ
+ * soạn: trên màn 390px nó co tờ giấy còn **288px** trong khi THƯỚC KẺ ngay trên
+ * vẫn kẻ theo 794px — hai thứ nói hai số khác nhau, nên kéo lề trên thước không
+ * còn khớp chỗ chữ xuống dòng. Tệ hơn, đó là WYSIWYG nói dối: chữ ngắt dòng
+ * theo bề rộng 288px, còn bản in ra lại ngắt theo 794px.
+ *
+ * Khung `.doc-canvas` đã khai sẵn `overflow-x-auto`, nên bỏ trần là tờ giấy
+ * cuộn ngang được — đúng cách Google Docs làm trên trình duyệt điện thoại.
+ * Ở màn rộng luật này KHÔNG đổi gì: khung vốn đã rộng hơn 794px nên
+ * `max-width: 100%` chưa bao giờ chạm tới.
+ */
+.doc-canvas .doc-page {
+  max-width: none;
+}
+
+/*
  * Lề trái/phải của trang giấy do THƯỚC KẺ chỉnh (`editor-ruler.tsx`).
  *
  * Phải để `!important`: `tiptap-pagination-plus` ghi thẳng
