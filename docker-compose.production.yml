@@ -57,6 +57,31 @@ services:
       - procurement-internal
       - proxy-tier              # để cloudflare_tunnel (cùng net) gọi http://procurement-web:80
 
+  # Giao diện ERP v2 (frontend-v2/) — bản thật, chạy SONG SONG với `web` trên CÙNG một
+  # database. Cloudflare tunnel trỏ erp.degoholding.vn -> http://procurement-erp:80
+  #
+  # ⚠️ CỐ Ý KHÔNG khai `VITE_DEVELOPER_MODE` ở đây. Biến đó bật menu "Đổi tài khoản nhanh",
+  # mà danh sách tài khoản demo (`frontend-v2/src/app/layouts/demo-accounts.ts`) CHỨA MẬT KHẨU
+  # dạng chữ. Vite gập hằng số lúc build nên để rỗng thì Rollup cắt sạch cả mô-đun đó khỏi gói
+  # JS; khai `${VITE_DEVELOPER_MODE:-}` như service `web` thì một dòng lỡ tay trong `.env` của
+  # prod là đẩy nguyên bộ mật khẩu ra web công khai. Bên `erp` của compose dev CÓ khai — đúng,
+  # vì đó là tài khoản của CSDL dev.
+  erp:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.erp.prod
+      args:
+        VITE_API_URL: ""        # rỗng = gọi cùng origin, nginx trong container proxy /api -> api:8000
+        VITE_APP_NAME: "DEGO ERP"
+        VITE_HELP_URL: "https://help.degoholding.vn"
+    container_name: procurement-erp
+    restart: always
+    depends_on:
+      - api
+    networks:
+      - procurement-internal
+      - proxy-tier
+
   # Trung tâm Hướng dẫn sử dụng — app riêng, dùng chung backend + tài khoản.
   # Cloudflare tunnel trỏ help.degoholding.vn -> http://procurement-help:80
   help:
