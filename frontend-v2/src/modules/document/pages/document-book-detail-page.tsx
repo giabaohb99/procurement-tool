@@ -39,11 +39,26 @@ export function DocumentBookDetailPage() {
   return (
     <DetailPageShell
       title={isCreating ? 'Mở sổ văn bản' : (book?.name ?? '')}
+      //  ⚠️ Dòng mô tả ẨN ở khổ hẹp, vì hai lẽ đi cùng nhau. Một: ở trang đã có
+      //  sổ, nó chỉ nhắc lại *loại sổ · mã · pháp nhân* — đúng ba ô nằm ngay
+      //  dưới trong biểu mẫu, tức đọc hai lần cùng một thứ. Hai: dải tiêu đề nay
+      //  GHIM theo cuộn (xem `stickyHeader`), nên mỗi dòng ở đây là chỗ đứng yên
+      //  vĩnh viễn — riêng câu này rớt **hai hàng ≈ 48px** trên màn 796px.
+      //  Trang thêm mới thì giữ: ở đó chưa có ô nào điền nên câu dẫn còn việc.
       description={
-        isCreating
-          ? 'Mỗi sổ có bộ đếm số riêng — khai xong là dùng được ngay.'
-          : `${book ? BOOK_KIND_LABELS[book.kind] : ''} · mã ${book?.code} · ${book?.company_name}`
+        isCreating ? (
+          'Mỗi sổ có bộ đếm số riêng — khai xong là dùng được ngay.'
+        ) : (
+          <span className="max-md:hidden">
+            {`${book ? BOOK_KIND_LABELS[book.kind] : ''} · mã ${book?.code} · ${book?.company_name}`}
+          </span>
+        )
       }
+      //  Form dài (đo ở 393px: **1812px**, gấp hơn hai màn hình) mà nút Lưu nằm
+      //  trên đầu — không ghim thì sửa một ô ở giữa xong phải cuộn ngược lên tận
+      //  đỉnh mới lưu được, rồi cuộn xuống lại để sửa ô tiếp theo. Cùng lý do
+      //  với tab Thông tin của chi tiết Văn bản.
+      stickyHeader
       formId={FORM_ID}
       isCreating={isCreating}
       backTo={backTo}
