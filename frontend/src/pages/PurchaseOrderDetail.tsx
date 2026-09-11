@@ -22,6 +22,7 @@ import { fmtSize, fileIcon } from '../utils/file-type'
 import { newDupCodes } from '../utils/lines'
 import { normGroup, regulatedDate, stdDaysMap, stdDaysOf } from '../utils/lead-time'
 import { fmtDateStr } from '../utils/datetime'
+import { resolveTotalsCurrency } from '../utils/money'
 
 const API = '/api/purchase-orders'
 // Ô/cột ĐƠN GIÁ cho lẻ tới 4 chữ số thập phân — giá quy đổi hay lẻ tới phần nghìn đồng
@@ -394,6 +395,19 @@ export default function PurchaseOrderDetail() {
   const orderBaseTotal = items.reduce((s: number, it: any) => s + orderAmount(it) * lineRate(it), 0)
   // Tiền ngoại tệ KHÔNG làm tròn về đồng: 7.530,45 USD mà cắt phần lẻ là mất 400 nghìn đồng.
   const fmtAmt = (n: any) => (showCurrency ? fmtPrice(n) : fmtVND(n))
+
+  // ---- bao-CR-364: nhãn tiền tệ của bảng tổng lấy theo DÒNG, không theo đầu phiếu ----
+  // Số tiền ở ba dòng tổng dưới đây cộng từ các DÒNG hàng, nên nhãn cũng phải là tiền tệ của
+  // dòng. Dán `poCurrency` vào là ra cảnh "6.500 VND" ngay trên "Quy đổi 172.250.000 đ".
+  const { currency: totalsCurrency, mixed: mixedCurrency } =
+    resolveTotalsCurrency(items.map((it: any) => lineCurrency(it)), poCurrency)
+  // Đơn trộn nhiều loại tiền thì cộng ngang là vô nghĩa (USD cộng VND) — bày bản quy đổi,
+  // mỗi dòng nhân tỷ giá của chính nó rồi mới cộng.
+  const orderBeforeTaxBase = items.reduce(
+    (s: number, it: any) => s + (Number(it.qty_order) || 0) * (Number(it.price) || 0) * lineRate(it), 0)
+  const orderTaxBase = orderBaseTotal - orderBeforeTaxBase
+  const fmtTotal = (raw: number, base: number) =>
+    mixedCurrency ? `${fmtVND(base)} đ` : `${fmtAmt(raw)}${showCurrency ? ` ${totalsCurrency}` : ''}`
 
   // ---- bao-CR-319 P3: chi phí lô hàng nhập khẩu ----
   const importCosts: any[] = po.import_costs || []
@@ -1244,22 +1258,30 @@ export default function PurchaseOrderDetail() {
               <div style={{ minWidth: 320, fontSize: 13.5 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 24, padding: '3px 0' }}>
                   <span style={{ color: 'var(--muted)' }}>Giá trị đặt hàng (trước thuế)</span>
-                  <span style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{fmtAmt(orderBeforeTax)}{showCurrency ? ` ${poCurrency}` : ''}</span>
+                  <span style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{fmtTotal(orderBeforeTax, orderBeforeTaxBase)}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 24, padding: '3px 0' }}>
                   <span style={{ color: 'var(--muted)' }}>Tổng tiền thuế</span>
-                  <span style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{fmtAmt(orderTax)}{showCurrency ? ` ${poCurrency}` : ''}</span>
+                  <span style={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{fmtTotal(orderTax, orderTaxBase)}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 24, alignItems: 'baseline', borderTop: '1px solid var(--border)', marginTop: 6, paddingTop: 8, fontSize: 15.5, color: 'var(--navy)' }}>
                   <span style={{ fontWeight: 600 }}>Tổng cộng (sau thuế)</span>
-                  <span style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{fmtAmt(orderTotal)}{showCurrency ? ` ${poCurrency}` : ''}</span>
+                  <span style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{fmtTotal(orderTotal, orderBaseTotal)}</span>
                 </div>
                 {/* bao-CR-319: đơn ngoại tệ phải nói rõ con số VNĐ — công nợ, yêu cầu thanh
-                    toán và mọi báo cáo đều chạy trên số quy đổi này. */}
-                {showCurrency && (
+                    toán và mọi báo cáo đều chạy trên số quy đổi này.
+                    bao-CR-364: đơn trộn nhiều loại tiền thì BA dòng trên đã là bản quy đổi rồi,
+                    lặp thêm một dòng "Quy đổi" nữa là hai dòng giống hệt nhau. */}
+                {showCurrency && !mixedCurrency && (
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: 24, padding: '3px 0', color: 'var(--navy)' }}>
                     <span style={{ fontWeight: 600 }}>Quy đổi (VNĐ)</span>
                     <span style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{fmtVND(orderBaseTotal)} đ</span>
+                  </div>
+                )}
+                {mixedCurrency && (
+                  <div style={{ marginTop: 6, fontSize: 12, color: 'var(--muted)', lineHeight: 1.45 }}>
+                    Đơn có nhiều loại tiền ({items.map((it: any) => lineCurrency(it)).filter((c: string, i: number, a: string[]) => a.indexOf(c) === i).join(' · ')}),
+                    nên ba dòng trên đã quy đổi về VNĐ theo tỷ giá của từng dòng. Số nguyên tệ xem ở cột <b>Tiền tệ / Tỷ giá</b> của từng dòng hàng.
                   </div>
                 )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 24, marginTop: 8, fontSize: 13.5, color: 'var(--muted)' }}>

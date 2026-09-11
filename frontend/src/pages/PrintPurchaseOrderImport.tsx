@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import NotFound from '../components/NotFound'
 import { tenFileIn, usePrintTitle } from '../hooks/usePrintTitle'
+import { resolveTotalsCurrency } from '../utils/money'
 
 /**
  * bao-CR-319 P4 — Bản in ĐƠN MUA HÀNG NHẬP KHẨU, 4 khối:
@@ -42,8 +43,17 @@ export default function PrintPurchaseOrderImport() {
   const costs: any[] = po.import_costs || []
   const summary = po.import_cost_summary || { by_type: [], by_supplier: [], goods_base_total: 0, cost_total: 0, landed_total: 0 }
   const alloc = po.import_cost_allocation || { lines: [], warnings: [], goods_base_total: 0, cost_total: 0, landed_total: 0 }
-  const currency = (po.currency || 'VND').trim()
-  const rate = Number(po.exchange_rate) || 1
+  // bao-CR-364: cột "Đơn giá / Thành tiền" in số của DÒNG, nên nhãn tiền tệ cũng phải lấy từ
+  // dòng. Đầu phiếu chỉ là giá trị mặc định cho dòng để trống — đơn đầu phiếu ghi VND mà dòng
+  // ghi USD là chuyện bình thường, và tờ này thì đưa cho nhà cung cấp.
+  const poCurrency = (po.currency || 'VND').trim()
+  const lineCurrency = (it: any) => (it?.currency || '').trim() || poCurrency
+  const lineRate = (it: any) => Number(it?.exchange_rate) || Number(po.exchange_rate) || 1
+  const { currency, mixed: mixedCurrency } =
+    resolveTotalsCurrency(items.map((it) => lineCurrency(it)), poCurrency)
+  // Tỷ giá bày ở đầu tờ chỉ có nghĩa khi cả tờ chạy MỘT loại tiền; trộn nhiều loại thì tỷ giá
+  // nằm ở từng dòng, in một con số chung ra là nói sai.
+  const rate = (items.length && !mixedCurrency ? lineRate(items[0]) : Number(po.exchange_rate)) || 1
   // bao-CR-319 P5: tiền hàng đã trả = tổng "Đã trả theo dòng" (B.28), chi phí đã chi lấy từ summary
   const goodsPaid = items.reduce((s, it) => s + (Number(it.paid_total) || 0), 0)
   const goodsForeign = items.reduce((s, it) => s + (Number(it.order_total) || 0), 0)
@@ -101,7 +111,9 @@ export default function PrintPurchaseOrderImport() {
           <div style={{ width: 250, paddingLeft: 12 }}>
             <div><b>Ngày:</b> {dmy(po.order_date)}</div>
             <div><b>Số:</b> {po.misa_code || po.code}</div>
-            <div><b>Loại tiền:</b> {currency}{currency !== 'VND' ? ` — tỷ giá ${fmtPrice(rate)}` : ''}</div>
+            <div><b>Loại tiền:</b> {mixedCurrency
+              ? `nhiều loại (${Array.from(new Set(items.map((it) => lineCurrency(it)))).join(' · ')}) — tỷ giá xem theo từng dòng`
+              : `${currency}${currency !== 'VND' ? ` — tỷ giá ${fmtPrice(rate)}` : ''}`}</div>
             <div><b>Tờ khai hải quan:</b> {po.customs_decl_no || '..........'}{po.customs_decl_date ? ` ngày ${dmy(po.customs_decl_date)}` : ''}</div>
           </div>
         </div>
@@ -114,7 +126,11 @@ export default function PrintPurchaseOrderImport() {
               <tr>
                 <td style={head}>STT</td><td style={head}>Mã hàng</td><td style={head}>Tên hàng</td>
                 <td style={head}>ĐVT</td><td style={head}>SL đặt</td><td style={head}>KL (kg)</td>
-                <td style={head}>Đơn giá ({currency})</td><td style={head}>Thành tiền ({currency})</td>
+                {/* bao-CR-364: trộn nhiều loại tiền thì mọc thêm cột Tiền tệ — không thì hai
+                    cột nguyên tệ đứng cạnh nhau mà không nói được chúng đang là tiền gì. */}
+                {mixedCurrency && <td style={head}>Tiền tệ</td>}
+                <td style={head}>Đơn giá ({mixedCurrency ? 'nguyên tệ' : currency})</td>
+                <td style={head}>Thành tiền ({mixedCurrency ? 'nguyên tệ' : currency})</td>
                 <td style={head}>Quy đổi (VNĐ)</td>
               </tr>
             </thead>
@@ -127,14 +143,22 @@ export default function PrintPurchaseOrderImport() {
                   <td style={{ ...cell, textAlign: 'center' }}>{it.unit}</td>
                   <td style={right}>{fmtQty(it.qty_order)}</td>
                   <td style={right}>{it.weight_kg ? fmtQty(it.weight_kg) : '-'}</td>
+                  {mixedCurrency && (
+                    <td style={{ ...cell, textAlign: 'center' }}>
+                      {lineCurrency(it)}
+                      <div style={{ fontSize: 9.5 }}>{fmtPrice(lineRate(it))}</div>
+                    </td>
+                  )}
                   <td style={right}>{fmtPrice(it.price)}</td>
                   <td style={right}>{fmtPrice(it.order_total)}</td>
-                  <td style={right}>{fmtVND((Number(it.order_total) || 0) * (Number(it.exchange_rate) || rate))}</td>
+                  <td style={right}>{fmtVND((Number(it.order_total) || 0) * lineRate(it))}</td>
                 </tr>
               ))}
               <tr>
-                <td style={{ ...cell, ...bold }} colSpan={7}>Tổng tiền hàng (VAT dòng hàng = 0, thuế nhập khẩu / GTGT hàng nhập khai ở khối B):</td>
-                <td style={{ ...right, ...bold }}>{fmtPrice(goodsForeign)}</td>
+                <td style={{ ...cell, ...bold }} colSpan={mixedCurrency ? 8 : 7}>Tổng tiền hàng (VAT dòng hàng = 0, thuế nhập khẩu / GTGT hàng nhập khai ở khối B):</td>
+                {/* bao-CR-364: trộn nhiều loại tiền thì cộng ngang cột nguyên tệ là cộng USD với
+                    VND ra một con số không có nghĩa — để gạch ngang, tổng thật ở cột quy đổi. */}
+                <td style={{ ...right, ...bold }}>{mixedCurrency ? '—' : fmtPrice(goodsForeign)}</td>
                 <td style={{ ...right, ...bold }}>{fmtVND(summary.goods_base_total)}</td>
               </tr>
             </tbody>
@@ -200,7 +224,7 @@ export default function PrintPurchaseOrderImport() {
               <tr>
                 <td style={{ ...cell, textAlign: 'center' }}>1</td>
                 <td style={cell}>{sup.name || po.supplier_name || ''}</td>
-                <td style={cell}>Tiền hàng ({currency})</td>
+                <td style={cell}>Tiền hàng ({mixedCurrency ? 'nhiều loại tiền' : currency})</td>
                 <td style={{ ...cell, textAlign: 'center' }}>{items.length} dòng</td>
                 <td style={right}>{fmtVND(summary.goods_base_total)}</td>
                 <td style={right}>{fmtVND(goodsPaid)}</td>
