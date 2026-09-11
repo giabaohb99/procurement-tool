@@ -83,7 +83,13 @@ function Row({ field, profile }: { field: ProfileField; profile: AuthUser }) {
 export function ProfileInfoCard({ profile }: { profile: AuthUser }) {
   return (
     <>
-      <FormCard title="Thông tin cá nhân" icon={User} iconClassName="text-muted-foreground">
+      {/*  ⚠️ Tên thẻ là «Hồ sơ nhân sự», KHÔNG phải «Thông tin cá nhân» — thẻ
+           này bày mã NV, pháp nhân, phòng ban, vị trí, vai trò, tức căn cước
+           của người đó TRONG TỔ CHỨC. «Thông tin cá nhân» nay là tên thẻ nhân
+           thân (ngày sinh, dân tộc, hôn nhân…) ngay bên dưới, trùng đúng tên
+           `FormSection` mà phân hệ Nhân sự dùng cho cùng bộ trường. Để hai thẻ
+           cùng tên nằm sát nhau thì người đọc không biết vì sao phải có hai. */}
+      <FormCard title="Hồ sơ nhân sự" icon={User} iconClassName="text-muted-foreground">
         {HR_FIELDS.map((field) => (
           <Row key={field.key} field={field} profile={profile} />
         ))}

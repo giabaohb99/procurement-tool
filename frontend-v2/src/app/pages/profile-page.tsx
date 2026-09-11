@@ -5,6 +5,7 @@ import { useSearchParams } from 'react-router-dom'
 
 import { EmailNotificationCard } from '@/app/components/profile/email-notification-card'
 import { ProfileIdentityCard } from '@/app/components/profile/profile-identity-card'
+import { ProfileHrDetails } from '@/app/components/profile/profile-hr-details'
 import { ProfileInfoCard } from '@/app/components/profile/profile-info-card'
 import { ProfileNotificationsTab } from '@/app/components/profile/profile-notifications-tab'
 import { ProfileTasksTab } from '@/app/components/profile/profile-tasks-tab'
@@ -14,6 +15,7 @@ import { AuditTimeline } from '@/shared/audit'
 import { authService } from '@/core/auth/auth-service'
 import { useAuth } from '@/core/auth/use-auth'
 import { usePermission } from '@/core/authorization/use-permission'
+import { useMyEmployee } from '@/modules/hr/hooks/use-employees'
 import { queryKeys } from '@/shared/constants/query-keys'
 import { useNotifications } from '@/shared/notifications/use-notifications'
 import { ThemePresetPicker } from '@/shared/theme/theme-preset-picker'
@@ -76,6 +78,10 @@ export function ProfilePage() {
   }, [data, setUser])
 
   const profile = data ?? user
+
+  //  Hồ sơ nhân sự đầy đủ (hơn 30 trường) — `/api/auth/me` chỉ trả bộ rút
+  //  gọn đủ dựng menu và chữ ký, không có ngày sinh / ngân hàng / giấy tờ.
+  const { data: myEmployee } = useMyEmployee()
 
   return (
     <PageContainer className="mx-auto w-full max-w-5xl">
@@ -195,6 +201,21 @@ export function ProfilePage() {
                         <EmailNotificationCard value={profile.notify_email} />
                       </div>
                     </div>
+
+                    {/*  HỒ SƠ NHÂN SỰ ĐẦY ĐỦ (duoc-CR-378) — sáu khối chỉ xem,
+                         đọc từ `/api/employees/me`. Trước đó trang này chỉ có 7 ô
+                         lấy từ phiên đăng nhập, trong khi hồ sơ thật có hơn 30
+                         trường: người dùng muốn soát lại ngày sinh hay số tài
+                         khoản nhận lương của CHÍNH MÌNH thì không có chỗ nào xem.
+
+                         Đặt NGOÀI lưới phía trên và tự dựng lưới riêng — xem ghi
+                         chú trong `ProfileHrDetails`.
+
+                         `myEmployee` rỗng khi tài khoản chưa gắn hồ sơ nhân sự
+                         (admin, tài khoản hệ thống): không dựng khối nào, và thẻ
+                         «Hồ sơ nhân sự» phía trên đã có sẵn câu nhắc liên hệ bộ
+                         phận Nhân sự. */}
+                    {myEmployee && <ProfileHrDetails employee={myEmployee} />}
 
                     {/*  ⚠️ Gọi TRẦN, đừng bọc `FormCard`. `AuditTimeline` tự dựng
                          `Card` kèm tiêu đề «Lịch sử thao tác» của chính nó, nên

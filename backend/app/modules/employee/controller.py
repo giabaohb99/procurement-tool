@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.core.audit import record as audit_record
-from app.core.auth import get_perm_profile, hash_password, require
+from app.core.auth import get_current_user, get_perm_profile, hash_password, require
 from app.core.base_controller import apply_filters, apply_sort_from_request, pagination
 from app.core.database import get_db
 from app.core.response import success
@@ -39,6 +39,47 @@ def list_employees(
     })
 
 
+@router.get("/me")
+def get_my_employee(db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Hồ sơ nhân sự của CHÍNH người đang đăng nhập — cho màn *Trang cá nhân*.
+
+    ⚠️ **Chỉ đòi ĐĂNG NHẬP, cố ý không gác `require("employee", "read")`.** Đó là
+    khóa để xem hồ sơ NGƯỜI KHÁC, và **9 trong 19 vai trò seed không có nó**
+    (Nhân sự, Tài xế, Người đặt xe, Văn thư duyệt dấu, Hỗ trợ, Diễn đàn…). Bắt
+    trang cá nhân đi qua `/api/employees/{id}` thì đúng nhóm người đó mở hồ sơ
+    của chính mình lên và ăn 403 — không phải vì họ thiếu quyền gì thật, mà vì
+    dùng nhầm cái khóa.
+
+    ⚠️ **Không đi qua `get_scoped`, và đó KHÔNG phải lỗ hổng.** Id lấy thẳng từ
+    phiên đăng nhập (`user.employee_id`) chứ không nhận từ URL, nên không có
+    tham số nào để người dùng đổi — mọi lời gọi chỉ trả về đúng một hồ sơ của
+    chính họ. Chạy qua `apply_scope` thì tài khoản không có grant nào trên
+    `employee` sẽ bị chặn sạch (`false()` từ B-07), tức lại hỏng đúng nhóm trên.
+
+    Nhóm trường nhạy cảm vẫn đi qua `sensitive.mask` như mọi cửa khác; nhánh
+    `self` của `can_read_sensitive` cho chính chủ đọc đủ — chính là ca mà ghi chú
+    ở đó đã lường trước («chặn thì màn Trang cá nhân rỗng một nửa với chính chủ»).
+
+    Tài khoản chưa gắn nhân sự (admin, tài khoản hệ thống) trả `None` kèm câu
+    giải thích, KHÔNG phải 404: đó là trạng thái hợp lệ, không phải lỗi.
+    """
+    employee_id = int(getattr(user, "employee_id", 0) or 0)
+    if not employee_id:
+        return success(None, "Tài khoản này chưa gắn hồ sơ nhân sự")
+
+    obj = db.get(service.Employee, employee_id)
+    if not obj:
+        #  Hồ sơ bị xóa mà tài khoản còn trỏ tới — dữ liệu lệch, không phải lỗi
+        #  của người đang đăng nhập nên đừng ném 404 vào mặt họ.
+        return success(None, "Không tìm thấy hồ sơ nhân sự gắn với tài khoản này")
+
+    data = EmployeeDetailOut.model_validate(obj).model_dump()
+    profile = get_perm_profile(db, user)
+    return success(sensitive.mask(data, sensitive.can_read_sensitive(profile, obj.id)))
+
+
+#  ⚠️ `/me` phải khai TRƯỚC `/{eid}`: FastAPI dò route theo thứ tự khai, để sau
+#  thì «me» rơi vào `eid: int` và trả 422 thay vì chạy hàm trên.
 @router.get("/{eid}")
 def get_employee(eid: int, db: Session = Depends(get_db), user=Depends(require("employee", "read"))):
     obj = service.get_employee(db, eid)

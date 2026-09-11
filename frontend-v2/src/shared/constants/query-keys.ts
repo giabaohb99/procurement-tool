@@ -110,6 +110,8 @@ export const queryKeys = {
     all: ['hr'] as const,
     employees: (params?: Record<string, unknown>) => ['hr', 'employees', params ?? {}] as const,
     employee: (id: number) => ['hr', 'employees', id] as const,
+    /** Hồ sơ nhân sự của chính người đang đăng nhập (`/api/employees/me`). */
+    myEmployee: () => ['hr', 'employees', 'me'] as const,
     employeeDepartments: (id: number) => ['hr', 'employees', id, 'departments'] as const,
     //  Hai bảng con của hồ sơ (duoc-CR-314). Nằm DƯỚI khóa hồ sơ nên
     //  `invalidateQueries({ queryKey: hr.all })` quét luôn — không cần nhớ gọi
