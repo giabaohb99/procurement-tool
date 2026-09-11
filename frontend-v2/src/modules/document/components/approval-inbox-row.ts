@@ -56,7 +56,7 @@ export interface InboxRow {
  * bước 4. Đó là hai việc thật, không gộp — id khác nhau nên bảng vẫn đúng.
  */
 export function buildInboxRows(tasks: MyTask[], decisions: MyDecision[]): InboxRow[] {
-  const cho: InboxRow[] = tasks.map((row) => ({
+  const pendingRows: InboxRow[] = tasks.map((row) => ({
     id: `pending-${row.id}`,
     kind: 'pending',
     entityId: row.entity_id,
@@ -74,7 +74,7 @@ export function buildInboxRows(tasks: MyTask[], decisions: MyDecision[]): InboxR
     onBehalfOfName: row.on_behalf_of_name,
   }))
 
-  const xong: InboxRow[] = decisions.map((row) => ({
+  const doneRows: InboxRow[] = decisions.map((row) => ({
     id: `done-${row.id}`,
     kind: 'done',
     entityId: row.entity_id,
@@ -92,5 +92,5 @@ export function buildInboxRows(tasks: MyTask[], decisions: MyDecision[]): InboxR
     onBehalfOfName: row.on_behalf_of_name,
   }))
 
-  return [...cho, ...xong]
+  return [...pendingRows, ...doneRows]
 }

@@ -18,12 +18,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { IncomingDocumentsTab } from '../components/incoming-documents-tab'
 import { OutgoingDocumentsTab } from '../components/outgoing-documents-tab'
 
-const DEN = 'incoming'
-const DI = 'outgoing'
+const TAB_INCOMING = 'incoming'
+const TAB_OUTGOING = 'outgoing'
 
 const DESCRIPTIONS: Record<string, string> = {
-  [DEN]: 'Văn bản mà bạn nằm trong phạm vi áp dụng — không phải mọi văn bản bạn đọc được.',
-  [DI]: 'Số hiệu do hệ cấp khi văn bản được duyệt — không ai gõ tay.',
+  [TAB_INCOMING]: 'Văn bản mà bạn nằm trong phạm vi áp dụng — không phải mọi văn bản bạn đọc được.',
+  [TAB_OUTGOING]: 'Số hiệu do hệ cấp khi văn bản được duyệt — không ai gõ tay.',
 }
 
 /**
@@ -59,10 +59,10 @@ export function DocumentListPage() {
   //  thiếu quyền phải ẩn HẲN cả nút tab lẫn nội dung — Radix mount sẵn mọi
   //  `TabsContent`, để lại là component con vẫn gọi API và ăn 403.
   const canViewOutgoing = can('document', 'read')
-  const tab = !canViewOutgoing ? DEN : searchParams.get('tab') === DEN ? DEN : DI
+  const tab = !canViewOutgoing ? TAB_INCOMING : searchParams.get('tab') === TAB_INCOMING ? TAB_INCOMING : TAB_OUTGOING
 
   function changeTab(next: string) {
-    setSearchParams(next === DI ? {} : { tab: next }, { replace: true })
+    setSearchParams(next === TAB_OUTGOING ? {} : { tab: next }, { replace: true })
   }
 
   //  Dải ghim đầu trang chỉ đổ bóng khi có nội dung trôi bên dưới — xem
@@ -136,11 +136,11 @@ export function DocumentListPage() {
         {canViewOutgoing && (
           <div className={LIST_TABS_STICKY}>
             <TabsList className="mb-3 w-full shrink-0 max-md:mb-0 md:w-fit">
-              <TabsTrigger value={DEN} className="min-w-0">
+              <TabsTrigger value={TAB_INCOMING} className="min-w-0">
                 <Inbox className="size-4" />
                 Văn bản đến
               </TabsTrigger>
-              <TabsTrigger value={DI} className="min-w-0">
+              <TabsTrigger value={TAB_OUTGOING} className="min-w-0">
                 <Send className="size-4" />
                 Văn bản đi
               </TabsTrigger>
@@ -150,12 +150,12 @@ export function DocumentListPage() {
 
         {/*  `TabsContent` phải tự là cột flex co được, nếu không `Card flex-1`
              bên trong không có gì để bám và bảng tụt về chiều cao nội dung. */}
-        <TabsContent value={DEN} className="mt-0 flex min-h-0 flex-1 flex-col">
+        <TabsContent value={TAB_INCOMING} className="mt-0 flex min-h-0 flex-1 flex-col">
           <IncomingDocumentsTab />
         </TabsContent>
 
         {canViewOutgoing && (
-          <TabsContent value={DI} className="mt-0 flex min-h-0 flex-1 flex-col">
+          <TabsContent value={TAB_OUTGOING} className="mt-0 flex min-h-0 flex-1 flex-col">
             <OutgoingDocumentsTab />
           </TabsContent>
         )}

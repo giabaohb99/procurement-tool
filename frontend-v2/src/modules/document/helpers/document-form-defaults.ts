@@ -121,18 +121,18 @@ export function documentToForm(record: DocumentRecord): DocumentRecordFormValues
 
 /** Giá trị form → payload API. Ngày rỗng phải gửi `null`, không phải `""`.
  *
- * `laNghiPhep` quyết định có gửi khối nghỉ phép hay không. Gửi kèm cho loại khác
+ * `isLeaveForm` quyết định có gửi khối nghỉ phép hay không. Gửi kèm cho loại khác
  * cũng vô hại (backend loại bỏ metadata của loại chưa khai hình dạng), nhưng gửi
  * một cục dữ liệu rỗng lên mỗi lần lưu công văn thì đọc log ra không hiểu gì.
  */
-export function formToPayload(values: DocumentRecordFormValues, laNghiPhep = false) {
-  const { leave, ...chung } = values
+export function formToPayload(values: DocumentRecordFormValues, isLeaveForm = false) {
+  const { leave, ...base } = values
   return {
-    ...chung,
+    ...base,
     effective_date: values.effective_date || null,
     expire_date: values.expire_date || null,
     attachment_view_until: values.attachment_view_until || null,
-    metadata: laNghiPhep && leave
+    metadata: isLeaveForm && leave
       ? { ...leave, total_days: leave.total_days === '' ? undefined : leave.total_days }
       : undefined,
   }

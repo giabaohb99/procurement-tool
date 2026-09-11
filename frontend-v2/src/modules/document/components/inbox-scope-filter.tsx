@@ -32,7 +32,7 @@ export function InboxScopeFilter({
   approvedCount,
   className,
 }: InboxScopeFilterProps) {
-  const muc: { value: InboxScope; label: string; count: number; gap?: boolean }[] = [
+  const options: { value: InboxScope; label: string; count: number; gap?: boolean }[] = [
     { value: INBOX_SCOPE.all, label: 'Tất cả', count: pendingCount + approvedCount },
     { value: INBOX_SCOPE.pending, label: 'Cần duyệt', count: pendingCount },
     ...(overdueCount > 0
@@ -63,7 +63,7 @@ export function InboxScopeFilter({
         className,
       )}
     >
-      {muc.map((item) => {
+      {options.map((item) => {
         const selection = value === item.value
         return (
           <button

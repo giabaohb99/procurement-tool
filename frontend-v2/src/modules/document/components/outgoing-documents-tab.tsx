@@ -114,28 +114,28 @@ function OutgoingDocumentsContent() {
     page_size: pageSize,
   })
 
-  const [dangXuat, setDangXuat] = useState(false)
+  const [exporting, setExporting] = useState(false)
 
   async function exportExcel() {
-    setDangXuat(true)
+    setExporting(true)
     try {
       //  KHÔNG gửi `cols`: người dùng ẩn cột trên màn hình để nhìn cho gọn,
       //  còn file Excel thì gần như luôn muốn đủ cột để lọc lại trong Excel.
       const query = new URLSearchParams()
-      for (const [khoa, value] of Object.entries(filterParams)) {
+      for (const [key, value] of Object.entries(filterParams)) {
         if (value !== undefined && value !== null && value !== '') {
-          query.set(khoa, String(value))
+          query.set(key, String(value))
         }
       }
-      const homNay = new Date().toISOString().slice(0, 10)
+      const today = new Date().toISOString().slice(0, 10)
       await downloadFile(
         `/api/documents/export/xlsx?${query.toString()}`,
-        `danh-sach-van-ban-${homNay}.xlsx`,
+        `danh-sach-van-ban-${today}.xlsx`,
       )
     } catch {
       toast.error('Không xuất được danh sách. Thử lọc bớt rồi xuất lại.')
     } finally {
-      setDangXuat(false)
+      setExporting(false)
     }
   }
 
@@ -149,9 +149,9 @@ function OutgoingDocumentsContent() {
   const rows = useMemo(() => {
     const items = data?.items ?? []
     if (!expandedRow) return items
-    const con = (privateCopies?.items ?? []).filter((row) => row.source_document_id === expandedRow)
+    const clones = (privateCopies?.items ?? []).filter((row) => row.source_document_id === expandedRow)
 
-    return items.flatMap((row) => (row.id === expandedRow ? [row, ...con] : [row]))
+    return items.flatMap((row) => (row.id === expandedRow ? [row, ...clones] : [row]))
   }, [data?.items, privateCopies?.items, expandedRow])
 
   //  Bọc `useCallback` vì hook cột nhận nó vào mảng phụ thuộc của `useMemo`:
@@ -345,7 +345,7 @@ function OutgoingDocumentsContent() {
               <Button
                 variant="outline"
                 onClick={() => void exportExcel()}
-                disabled={dangXuat}
+                disabled={exporting}
                 aria-label="Export danh sách văn bản ra Excel"
                 //  ⚠️ `max-md:size-9 max-md:p-0` — ở khổ hẹp nút này chỉ còn
                 //  BIỂU TƯỢNG, nên nó phải vuông 36px như hai nút biểu tượng
@@ -355,7 +355,7 @@ function OutgoingDocumentsContent() {
                 //  gợi ý của ô tìm vừa một hàng ở 360px.
                 className="shrink-0 max-md:size-9 max-md:p-0"
               >
-                {dangXuat ? (
+                {exporting ? (
                   <Loader2 className="size-4 animate-spin" />
                 ) : (
                   <Sheet className="size-4" />

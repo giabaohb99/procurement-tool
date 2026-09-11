@@ -17,7 +17,7 @@ interface DocumentRecordFormProps {
   /** Văn bản đang sửa — bỏ chính nó ra khỏi khối gợi ý văn bản trùng. */
   documentId?: number
   /** Loại là Giấy nghỉ phép: mở thêm thẻ tám ô riêng, lưu vào `metadata`. */
-  laNghiPhep?: boolean
+  isLeaveForm?: boolean
   /**
    * Khóa BỘ TRƯỜNG CHUNG (đang trình duyệt). Chỉ khóa hai thẻ trường ở trên —
    * phạm vi áp dụng và chia quyền đọc nằm trong `children` và vẫn sửa được:
@@ -41,7 +41,7 @@ export function DocumentRecordForm({
   form,
   isNumbered,
   documentId,
-  laNghiPhep = false,
+  isLeaveForm = false,
   readOnly = false,
   onSubmit,
   children,
@@ -61,7 +61,7 @@ export function DocumentRecordForm({
           </FormCard>
 
           {/* Cùng chỗ, cùng biểu tượng với trang tạo mới. */}
-          {laNghiPhep && (
+          {isLeaveForm && (
             <FormCard
               title="Thông tin nghỉ phép"
               icon={CalendarDays}

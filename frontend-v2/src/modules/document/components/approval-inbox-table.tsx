@@ -36,7 +36,7 @@ import { buildInboxRows, INBOX_SCOPE } from './approval-inbox-row'
 import { InboxScopeFilter } from './inbox-scope-filter'
 
 /** Khoảng nhìn lại của phần ĐÃ DUYỆT. 30 ngày phủ một chu kỳ làm việc. */
-const KHOANG = [
+const DATE_RANGE_OPTIONS = [
   { value: '7', label: '7 ngày qua' },
   { value: '30', label: '30 ngày qua' },
   { value: '90', label: '90 ngày qua' },
@@ -97,20 +97,20 @@ function ApprovalInboxContent() {
   //  nhau vẫn ra đúng cái đang xem.
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [scope, setScope] = useUrlParamState('scope', INBOX_SCOPE.all)
-  const [ngay, setNgay] = useUrlParamState('days', DEFAULT_DATE)
+  const [rangeDays, setRangeDays] = useUrlParamState('days', DEFAULT_DATE)
 
   const { items: pendingTasks, isLoading: loadingPending } = useMyDocumentTasks()
-  const { items: clicked, isLoading: loadingClick } = useMyDocumentDecisions(Number(ngay))
+  const { items: clicked, isLoading: loadingClick } = useMyDocumentDecisions(Number(rangeDays))
 
   const all = useMemo(() => buildInboxRows(pendingTasks, clicked), [pendingTasks, clicked])
 
   const items = useMemo(() => {
-    const can = debouncedValue.trim().toLowerCase()
-    const loc = all.filter((row) => {
+    const needle = debouncedValue.trim().toLowerCase()
+    const filtered = all.filter((row) => {
       if (scope === INBOX_SCOPE.pending && row.kind !== 'pending') return false
       if (scope === INBOX_SCOPE.overdue && !row.isOverdue) return false
       if (scope === INBOX_SCOPE.done && row.kind !== 'done') return false
-      if (!can) return true
+      if (!needle) return true
       return [
         row.code,
         row.title,
@@ -118,9 +118,9 @@ function ApprovalInboxContent() {
         row.startedByName,
         row.actionLabel,
         row.comment,
-      ].some((o) => o.toLowerCase().includes(can))
+      ].some((field) => field.toLowerCase().includes(needle))
     })
-    return applyClientFilter(loc, appliedState)
+    return applyClientFilter(filtered, appliedState)
   }, [all, debouncedValue, scope, appliedState])
 
   const overdueCount = pendingTasks.filter((row) => row.is_overdue).length
@@ -134,13 +134,13 @@ function ApprovalInboxContent() {
   //  `w-full md:w-40`: trong tờ trượt ô trải hết bề ngang, trên thanh công cụ nó
   //  về lại bề rộng cũ.
   const rangeSelect = (
-    <Select value={ngay} onValueChange={setNgay}>
+    <Select value={rangeDays} onValueChange={setRangeDays}>
       <SelectTrigger className="w-full md:w-40" aria-label="Khoảng thời gian đã duyệt">
         <CalendarRange className="size-4 text-muted-foreground" />
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
-        {KHOANG.map((item) => (
+        {DATE_RANGE_OPTIONS.map((item) => (
           <SelectItem key={item.value} value={item.value}>
             {item.label}
           </SelectItem>
@@ -260,10 +260,10 @@ function ApprovalInboxContent() {
               <QuickFilterSheet
                 iconOnly
                 activeCount={
-                  (showRange && ngay !== DEFAULT_DATE ? 1 : 0) + filter.activeCount
+                  (showRange && rangeDays !== DEFAULT_DATE ? 1 : 0) + filter.activeCount
                 }
                 onClearAll={() => {
-                  setNgay(DEFAULT_DATE)
+                  setRangeDays(DEFAULT_DATE)
                   filter.reset()
                 }}
                 onApply={filter.apply}

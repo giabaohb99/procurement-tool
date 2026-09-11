@@ -388,7 +388,7 @@ export function DataTable<T>({
    */
   const pinClass = (key: string, head = false) => {
     if (pinnedKeys.includes(key)) {
-      const doBong = key === lastPinnedKey && scrolledX
+      const hasShadow = key === lastPinnedKey && scrolledX
       return cn(
         // MỌI ô ghim đều tắt `border-r` và tự vẽ vạch bằng `inset shadow`: ô dính
         // nằm đè lên ô kế bên, để cả hai cùng có đường kẻ thì thành vạch đôi.
@@ -396,7 +396,7 @@ export function DataTable<T>({
         // Vạch luôn MẢNH 1px như mọi cột khác — vạch dày ở cột ghim cuối trông
         // như bị kẻ viền chồng lên nhau. Ranh giới phần đứng yên / phần đang trôi
         // báo bằng bóng đổ, và chỉ khi bảng đã cuộn ngang.
-        doBong
+        hasShadow
           ? head
             ? PIN_LEFT_HEAD_DROP
             : PIN_LEFT_DROP

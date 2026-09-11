@@ -282,14 +282,14 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
     //
     //  Giữ hàm báo trong ref: trang cha hay truyền hàm dựng mới mỗi lần vẽ, để
     //  nó vào mảng phụ thuộc là báo đi báo lại vô tận.
-    const bao = useRef(onEditorReady)
+    const onReadyRef = useRef(onEditorReady)
     useEffect(() => {
-      bao.current = onEditorReady
+      onReadyRef.current = onEditorReady
     })
     useEffect(() => {
       if (!editor) return
-      bao.current?.(editor)
-      return () => bao.current?.(null)
+      onReadyRef.current?.(editor)
+      return () => onReadyRef.current?.(null)
     }, [editor])
 
     useImperativeHandle(

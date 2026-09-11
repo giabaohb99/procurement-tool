@@ -39,7 +39,7 @@ export function DocumentApprovalBanner({ instance, documentId }: DocumentApprova
   //  chứ không tự suy từ `instance.tasks`: chỉ hộp việc mới biết ai đang được
   //  ủy quyền bấm thay, mà bấm thay người khác là chuyện phải nói trước khi ký.
   const myTasks = useMyDocumentTask(documentId)
-  const [dangXuLy, setDangXuLy] = useState(false)
+  const [actionDialogOpen, setActionDialogOpen] = useState(false)
 
   if (!instance) return null
 
@@ -72,8 +72,8 @@ export function DocumentApprovalBanner({ instance, documentId }: DocumentApprova
   //  mở. Câu người ta cần là "bị trả vì sao, giờ làm gì", nên nó phải nằm ngay
   //  đây, trên mọi tab.
   const returned = instance.status === INSTANCE_STATUS.returned
-  const biTuChoi = instance.status === INSTANCE_STATUS.rejected
-  if (returned || biTuChoi) {
+  const isRejected = instance.status === INSTANCE_STATUS.rejected
+  if (returned || isRejected) {
     return (
       <div className="mb-3 flex gap-3 rounded-md border border-destructive/40 bg-destructive/5 px-4 py-3">
         <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" />
@@ -133,7 +133,7 @@ export function DocumentApprovalBanner({ instance, documentId }: DocumentApprova
                đẩy nút xuống, và `flex-wrap` của khung ngoài không bao giờ có cớ
                ngắt hàng. Câu bị bóp ở đây lại là câu dài nhất trong ba băng
                (tên bước · tên luồng · người trình · hạn · bấm thay). */}
-          <Button type="button" onClick={() => setDangXuLy(true)} className="max-sm:w-full">
+          <Button type="button" onClick={() => setActionDialogOpen(true)} className="max-sm:w-full">
             <ShieldCheck className="size-4" />
             Duyệt / Trả lại
           </Button>
@@ -142,8 +142,8 @@ export function DocumentApprovalBanner({ instance, documentId }: DocumentApprova
         {/*  Dựng hộp thoại KHI MỞ, không dựng sẵn rồi ẩn: nó cắm sẵn một
              mutation duyệt phiếu, mà băng này nằm trên mọi tab của trang chi
              tiết — treo sẵn ở đó cả buổi cho một cú bấm hiếm là thừa. */}
-        {dangXuLy && (
-          <ApprovalActionDialog task={myTasks} open onOpenChange={setDangXuLy} />
+        {actionDialogOpen && (
+          <ApprovalActionDialog task={myTasks} open onOpenChange={setActionDialogOpen} />
         )}
       </>
     )

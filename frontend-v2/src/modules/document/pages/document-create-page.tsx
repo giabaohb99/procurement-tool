@@ -156,7 +156,7 @@ export function DocumentCreatePage() {
   const docTypeId = Number(form.watch('doc_type_id')) || 0
   //  GIẤY NGHỈ PHÉP có thêm 8 ô riêng, lưu vào `metadata`. Nhận diện theo MÃ
   //  loại chứ không theo id: id khác nhau giữa các môi trường, mã thì không.
-  const laNghiPhep =
+  const isLeaveForm =
     documentTypes.find((item) => item.id === docTypeId)?.code?.toUpperCase() === 'GNP'
   //  Hỏi ngay khi chọn loại dù hộp cảnh báo chỉ hiện lúc bấm Tạo — hỏi đúng
   //  nhịp bấm thì người dùng phải chờ một vòng mạng ở đúng nhịp sốt ruột nhất.
@@ -180,7 +180,7 @@ export function DocumentCreatePage() {
   async function goNext() {
     //  Bước 1 có thêm ô của khối nghỉ phép — chỉ kiểm khi khối đó đang hiện.
     const cellToCheck =
-      step === 0 && laNghiPhep
+      step === 0 && isLeaveForm
         ? [...STEPS[step].fields, ...LEAVE_FIELDS]
         : [...STEPS[step].fields]
     const valid = await form.trigger(cellToCheck)
@@ -194,7 +194,7 @@ export function DocumentCreatePage() {
         const record = await save.mutateAsync({
           id: draftId ?? undefined,
           values: {
-            ...formToPayload(form.getValues(), laNghiPhep),
+            ...formToPayload(form.getValues(), isLeaveForm),
             //  Nội dung mẫu chỉ chép LÚC TẠO. Lần sửa sau mà gửi lại là đè lên
             //  phần người ta đã gõ ở tab Soạn thảo.
             ...(draftId ? {} : { content_html: selectedTemplate.data?.content_html ?? '' }),
@@ -329,7 +329,7 @@ export function DocumentCreatePage() {
         //  ra hai văn bản cho một lần lập.
         id: draftId ?? undefined,
         values: {
-          ...formToPayload(values, laNghiPhep),
+          ...formToPayload(values, isLeaveForm),
           ...(draftId ? {} : { content_html: selectedTemplate.data?.content_html ?? '' }),
         },
       },
@@ -386,7 +386,7 @@ export function DocumentCreatePage() {
                  cụm nghiệp vụ khác hẳn bộ trường chung, trộn vào là người dùng
                  phải dò xem ô nào thuộc về đâu. Chỉ hiện với loại Giấy nghỉ
                  phép — loại khác thì cụm này không có nghĩa gì. */}
-            {laNghiPhep && (
+            {isLeaveForm && (
               <FormCard
                 title="Thông tin nghỉ phép"
                 icon={CalendarDays}
