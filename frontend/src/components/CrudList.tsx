@@ -63,6 +63,9 @@ export default function CrudList() {
   const [serverPaged, setServerPaged] = useState(true)   // API trả mảng thô (vd /roles) -> sort client
   const [cloneMode, setCloneMode] = useState(false)   // bật/tắt cột "Thao tác" (nhân bản)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  // bao-CR-365 — đổi số này để dựng lại FilterBar cho các ô lọc trở về rỗng
+  const [filterResetToken, setFilterResetToken] = useState(0)
+  const syncedSlugRef = useRef<string | null>(null)
 
   const cloneEnabled = !!cfg?.cloneable && can(cfg.entity, 'create')
   const showClone = cloneEnabled && cloneMode   // cột "Thao tác" chỉ hiện khi bật chế độ nhân bản
@@ -306,6 +309,25 @@ export default function CrudList() {
     load(1, 20, urlFilters, null, 'asc', urlCondParams)
   }, [cfg?.slug])
 
+  // bao-CR-365 — URL là nguồn sự thật của thanh lọc cơ bản.
+  // Effect trên chỉ nghe `cfg?.slug`, nên bấm menu vào lại ĐÚNG màn đang đứng thì slug không đổi:
+  // không có gì chạy, `filters` và ô lọc trong `FilterBar` sống sót qua mọi lần điều hướng, người
+  // dùng đọc ra là bộ lọc "dính cứng". Ở đây bắt đúng cảnh đó — URL sạch khóa lọc mà state vẫn
+  // đang giữ giá trị — rồi trả bộ lọc về rỗng và nạp lại.
+  // Không cướp con trỏ lúc đang gõ: `FilterBar` chỉ gọi `onApply` sau khi hết debounce, mà mỗi lần
+  // áp bộ lọc đều ghi khóa lên URL, nên lúc gõ dở URL và state luôn khớp nhau.
+  useEffect(() => {
+    if (!cfg) return
+    const justChangedScreen = syncedSlugRef.current !== cfg.slug
+    syncedSlugRef.current = cfg.slug
+    if (justChangedScreen) return   // vừa đổi màn: effect theo slug ở trên đã nạp đúng bộ lọc
+    if (Object.keys(urlFilters).length || !Object.keys(filters).length) return
+    setFilters({})
+    setFilterResetToken((n) => n + 1)
+    setPage(1)
+    load(1, pageSize, {}, sortField, sortDir, condParams)
+  }, [cfg?.slug, urlFilters])
+
   if (!cfg) return <div>Không tìm thấy trang.</div>
 
   // Chứng từ giao dịch (txn: PYC/PO/khảo sát/YCTT): ai có 'read' là xem danh sách được
@@ -402,7 +424,7 @@ export default function CrudList() {
       {/* Nút mở bảng điều kiện nằm chung hàng với thanh lọc cơ bản (slot `extra`) */}
       {(() => {
         const bar = (
-          <FilterBar key={cfg.slug} fields={cfg.filters} initial={urlFilters} onApply={applyFilters}
+          <FilterBar key={`${cfg.slug}:${filterResetToken}`} fields={cfg.filters} initial={urlFilters} onApply={applyFilters}
             extra={cfg.condFilters ? <ConditionalFilterButton /> : undefined} />
         )
         if (!cfg.condFilters) return bar
