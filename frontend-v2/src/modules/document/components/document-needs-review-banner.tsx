@@ -91,7 +91,16 @@ export function DocumentNeedsReviewBanner({
         )}
       </div>
 
-      <div className="flex shrink-0 flex-wrap gap-2">
+      {/*  ⚠️ **`max-sm:w-full` — cụm nút xuống HÀNG RIÊNG ở khổ hẹp.** `flex-wrap`
+          của băng một mình không cứu được: ô chữ khai `min-w-0 flex-1` nên nó co
+          được xuống tận 0, tức hàng KHÔNG BAO GIỜ tràn và do đó không bao giờ
+          xuống dòng — chỗ thiếu bị lấy hết từ ô chữ. Đo ở 390px: hai nút giữ
+          nguyên 215px, ô chữ còn **69px** và câu «Văn bản này cần rà lại.» rơi
+          thành một chữ mỗi dòng, cao 200px. Cho cụm nút chiếm trọn bề ngang thì
+          nó buộc phải xuống hàng, và ô chữ lấy lại gần 300px.
+
+          Từ `sm` trở lên bỏ ràng buộc: ở đó chỗ đủ cho cả hai đứng chung hàng. */}
+      <div className="flex shrink-0 flex-wrap gap-2 max-sm:w-full">
         {/*  Mở TAB MỚI: người rà cần đặt hai bản cạnh nhau mà đọc, chuyển trang
             là mất chỗ đang đứng. */}
         {sourceDocumentId && (

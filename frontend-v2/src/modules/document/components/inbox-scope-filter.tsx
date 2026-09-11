@@ -40,7 +40,22 @@ export function InboxScopeFilter({
   ]
 
   return (
-    <div className="inline-flex h-9 shrink-0 items-center gap-0.5 rounded-md border bg-muted/40 p-0.5">
+    //  ⚠️ **Khổ hẹp phải CHO XUỐNG HÀNG, và đây là lỗi chặn chứ không phải
+    //  chuyện thẩm mỹ.** Đủ bốn mục (tức đúng lúc CÓ việc quá hạn) thì dãy này
+    //  rộng **411px** trong một thanh công cụ 324px; `shrink-0` giữ nó không co,
+    //  mà cả trang lẫn thẻ đều không cuộn ngang — nên mép phải nút «Đã duyệt»
+    //  nằm ở 441px trên màn 390px và **không có cách nào bấm tới**. Nút biến mất
+    //  đúng vào ngày người ta bận nhất.
+    //
+    //  ⚠️ Gỡ `shrink-0` là điều kiện để `flex-wrap` có tác dụng: ô flex không co
+    //  được thì nó tràn ra ngoài chứ không xuống hàng. Và `h-9` phải thành
+    //  `min-h-9` — chiều cao ghim cộng với xuống hàng là cặp hỏng kinh điển
+    //  (`TabsList` của Trang cá nhân, duoc-CR-367): hàng thứ hai tràn khỏi ô rồi
+    //  bị khối bên dưới che mất, y như chưa sửa gì.
+    //
+    //  Ba mục (không có việc quá hạn) vẫn vừa MỘT hàng ở 390px — trường hợp
+    //  thường ngày không đổi gì cả.
+    <div className="inline-flex min-h-9 flex-wrap items-center gap-0.5 rounded-md border bg-muted/40 p-0.5 md:h-9 md:flex-nowrap md:shrink-0">
       {muc.map((item) => {
         const selection = value === item.value
         return (

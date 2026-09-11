@@ -1,5 +1,5 @@
-import { AlertTriangle, CalendarRange, Search } from 'lucide-react'
-import { useMemo } from 'react'
+import { AlertTriangle, CalendarRange } from 'lucide-react'
+import { useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import {
@@ -8,12 +8,16 @@ import {
   FilterProvider,
   useFilterContext,
 } from '@/shared/conditional-filter'
+import { LIST_TOOLBAR_STICKY_TOP } from '@/modules/hr/utils/list-sticky'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable } from '@/shared/data-table'
+import { useScrolled } from '@/shared/hooks/use-scrolled'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
+import { AdvancedFilterSection } from '@/shared/ui/advanced-filter-section'
 import { Card } from '@/shared/ui/card'
-import { Input } from '@/shared/ui/input'
+import { QuickFilterField, QuickFilterSheet } from '@/shared/ui/quick-filter-sheet'
+import { SearchField } from '@/shared/ui/search-field'
 import {
   Select,
   SelectContent,
@@ -22,6 +26,7 @@ import {
   SelectValue,
 } from '@/shared/ui/select'
 import { APPROVAL_INBOX_FILTER_FIELDS } from '../config/approval-inbox-filter-fields'
+import { ApprovalInboxCard } from './approval-inbox-card'
 import {
   useMyDocumentDecisions,
   useMyDocumentTasks,
@@ -77,7 +82,16 @@ export function ApprovalInboxTable() {
  */
 function ApprovalInboxContent() {
   const navigate = useNavigate()
-  const { appliedState } = useFilterContext()
+  //  Cần cả `apply`/`reset`/`activeCount` chứ không chỉ `appliedState`: ở khổ
+  //  hẹp bộ lọc nâng cao mở bằng tờ trượt, và tờ trượt tự dựng nút áp dụng.
+  const filter = useFilterContext()
+  const { appliedState } = filter
+
+  //  Dải ghim đầu trang chỉ đổ bóng khi có nội dung trôi bên dưới — xem
+  //  `list-sticky.ts`. Khối gắn `ref` luôn được dựng (không chờ dữ liệu) nên
+  //  không cần `nodeKey` để bắt hook dò lại khung cuộn.
+  const scrollProbeRef = useRef<HTMLDivElement>(null)
+  const scrolled = useScrolled(scrollProbeRef)
 
   //  Ba ô lọc nhanh lấy URL làm nguồn sự thật: tải lại trang hay gửi link cho
   //  nhau vẫn ra đúng cái đang xem.
@@ -114,11 +128,41 @@ function ApprovalInboxContent() {
   //  nó không làm gì cả, để lại chỉ tổ khiến người dùng tưởng danh sách bị cắt.
   const showRange = scope !== INBOX_SCOPE.pending && scope !== INBOX_SCOPE.overdue
 
+  //  ⚠️ Dựng MỘT LẦN rồi dùng cho cả hai khổ (hàng ngang ở màn rộng · tờ trượt ở
+  //  màn hẹp). Chép hai bản là hai khổ màn lọc ra hai kết quả khác nhau mà không
+  //  chỗ nào báo — bài học `buildFields` của duoc-CR-364.
+  //  `w-full md:w-40`: trong tờ trượt ô trải hết bề ngang, trên thanh công cụ nó
+  //  về lại bề rộng cũ.
+  const rangeSelect = (
+    <Select value={ngay} onValueChange={setNgay}>
+      <SelectTrigger className="w-full md:w-40" aria-label="Khoảng thời gian đã duyệt">
+        <CalendarRange className="size-4 text-muted-foreground" />
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {KHOANG.map((item) => (
+          <SelectItem key={item.value} value={item.value}>
+            {item.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+
   return (
-    //  `contents` để hai con (băng cảnh báo + Card) nằm THẲNG trong lưới flex
-    //  của trang: bọc thêm một `div` là Card mất `flex-1` và bảng không cao bằng
-    //  khung nữa.
-    <div className="contents">
+    //  ⚠️ Khối này phải GIỮ NGUYÊN chuỗi `flex min-h-0 flex-1 flex-col` — nó là
+    //  mắt xích giữa `PageContainer fill` và `Card`, thiếu một vế là thẻ mất
+    //  `flex-1` và bảng không còn cao bằng khung.
+    //
+    //  `group` + `data-scrolled` là đường dẫn tín hiệu «đã cuộn» xuống tới dải
+    //  ghim nằm sâu bên trong (thanh công cụ do `DataTable` vẽ, tầng này không
+    //  với tới được bằng prop). Bóng đổ của dải đó đọc thuộc tính này — xem
+    //  `list-sticky.ts`.
+    <div
+      ref={scrollProbeRef}
+      data-scrolled={scrolled ? '' : undefined}
+      className="group flex min-h-0 flex-1 flex-col"
+    >
       {overdueCount > 0 && (
         <p className="mb-3 flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
           <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-700" />
@@ -130,11 +174,24 @@ function ApprovalInboxContent() {
 
       {/*  Bộ ba fit chiều cao: `PageContainer fill` → `Card flex min-h-0 flex-1
            flex-col` → `DataTable fillHeight` (xem `docs/ui/table.md` mục 2). */}
-      <Card className="flex min-h-0 flex-1 flex-col p-4">
+      {/*  `min-w-0`: thẻ là ô của một hộp flex, mà ô flex mặc định `min-width:auto`
+           nên nó không co xuống dưới bề rộng tự nhiên của bảng bên trong
+           (~1450px). Thiếu nó thì CẢ TRANG trượt ngang ở khổ hẹp. */}
+      <Card className="flex min-h-0 w-full min-w-0 flex-1 flex-col p-3 md:p-4">
         <DataTable
           columns={approvalInboxColumns}
           rows={items}
           getRowId={(row) => row.id}
+          //  Ô tìm chiếm trọn hàng đầu ở khổ hẹp, nên hàng còn lại dư chỗ và
+          //  `ml-auto` mặc định xé nó thành hai mẩu cách nhau. Dồn liền một cụm.
+          toolbarActionsClassName="max-md:ml-0"
+          //  ⚠️ Ghim thanh công cụ ở khổ hẹp — ở đó cả trang cuộn (trang gỡ
+          //  `fill`), nên không ghim thì ô tìm và dãy lọc phạm vi trôi mất ngay
+          //  nhịp vuốt đầu tiên; muốn đổi bộ lọc phải vuốt ngược lên đầu.
+          //  Mốc `top-0`: màn này không có dải tab nào phía trên thanh công cụ.
+          toolbarClassName={LIST_TOOLBAR_STICKY_TOP}
+          //  Khổ hẹp: THẺ thay bảng — xem `ApprovalInboxCard`.
+          mobileCard={(row) => <ApprovalInboxCard row={row} />}
           //  Đuôi `.v2`: thứ tự cột được nhớ trong localStorage, nên đổi thứ tự
           //  mặc định ở mã nguồn KHÔNG tới được máy đã từng mở bảng này. Đổi
           //  khóa là cách duy nhất để bố cục mới thật sự hiện ra.
@@ -151,15 +208,16 @@ function ApprovalInboxContent() {
           }
           toolbar={
             <>
-              <div className="relative w-full max-w-2xs">
-                <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  className="pl-9"
-                  placeholder="Tìm số hiệu, tên, bước…"
-                  value={keyword}
-                  onChange={(event) => setKeyword(event.target.value)}
-                />
-              </div>
+              {/*  `max-md:basis-full` — ô tìm chiếm TRỌN hàng đầu ở khổ hẹp. Câu
+                   gợi ý «Tìm số hiệu, tên, bước…» cần ~171px; chen nó cùng hàng
+                   với dãy lọc phạm vi (310px) thì không còn gì cho nó. Từ `md`
+                   trở lên `basis-full` tắt, ô về lại bề rộng cũ cạnh các nút. */}
+              <SearchField
+                value={keyword}
+                onChange={setKeyword}
+                placeholder="Tìm số hiệu, tên, bước…"
+                className="max-md:basis-full md:min-w-56 md:max-w-2xs"
+              />
 
               <InboxScopeFilter
                 value={scope}
@@ -169,26 +227,51 @@ function ApprovalInboxContent() {
                 approvedCount={clicked.length}
               />
 
-              {/*  Ô này KHÔNG phải bộ lọc mà là khoảng dữ liệu đi hỏi backend —
-                   để lẫn vào bộ lọc nâng cao thì lọc kiểu gì cũng không moi ra
-                   được văn bản đã duyệt từ bốn tháng trước. */}
-              {showRange && (
-                <Select value={ngay} onValueChange={setNgay}>
-                  <SelectTrigger className="w-40" aria-label="Khoảng thời gian đã duyệt">
-                    <CalendarRange className="size-4 text-muted-foreground" />
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {KHOANG.map((item) => (
-                      <SelectItem key={item.value} value={item.value}>
-                        {item.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
+              {/*  ⚠️ `activeCount` cộng CẢ HAI tầng — khoảng thời gian và điều
+                   kiện nâng cao — vì dưới 768px cả hai nay nằm sau đúng nút này.
+                   Đếm thiếu một tầng thì người dùng thấy nút trơn mà danh sách
+                   vẫn đang bị cắt bớt, rồi đi tìm lỗi ở dữ liệu.
 
-              <ConditionalFilter />
+                   «Đang lọc» = KHÁC mặc định chứ không phải «có giá trị»: mặc
+                   định của ô khoảng là `30` chứ không rỗng (bài học duoc-CR-364).
+
+                   Nút tự ẩn từ `md` trở lên (`QuickFilterSheet` khai `md:hidden`). */}
+              <QuickFilterSheet
+                activeCount={
+                  (showRange && ngay !== DEFAULT_DATE ? 1 : 0) + filter.activeCount
+                }
+                onClearAll={() => {
+                  setNgay(DEFAULT_DATE)
+                  filter.reset()
+                }}
+                onApply={filter.apply}
+              >
+                {showRange && (
+                  <QuickFilterField label="Khoảng thời gian đã duyệt">
+                    {rangeSelect}
+                  </QuickFilterField>
+                )}
+                <AdvancedFilterSection />
+              </QuickFilterSheet>
+
+              {/*  ⚠️ `md:contents` chứ KHÔNG `md:flex`: bọc cụm lọc trong một thẻ
+                   flex riêng thì cả cụm là MỘT ô của thanh công cụ — không đủ chỗ
+                   là nó rớt nguyên khối xuống dòng dưới, chừa một khoảng trống
+                   dài bên phải ô tìm. `display: contents` cho từng ô thành ô trực
+                   tiếp của thanh công cụ nên chúng xếp kín từng dòng.
+
+                   `ConditionalFilter` nằm TRONG đây vì popover của nó neo vào
+                   nút, mà ở 390px tấm `95vw` bung ra che gần hết màn và vẫn
+                   không đủ ngang cho một hàng điều kiện — khổ hẹp đi bằng
+                   `AdvancedFilterSection` trong tờ trượt ở trên.
+
+                   Ô khoảng thời gian KHÔNG phải bộ lọc mà là khoảng dữ liệu đi
+                   hỏi backend — để lẫn vào bộ lọc nâng cao thì lọc kiểu gì cũng
+                   không moi ra được văn bản đã duyệt từ bốn tháng trước. */}
+              <div className="hidden md:contents">
+                {showRange && rangeSelect}
+                <ConditionalFilter />
+              </div>
             </>
           }
         />

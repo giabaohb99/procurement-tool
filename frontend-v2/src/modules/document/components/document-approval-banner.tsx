@@ -127,7 +127,13 @@ export function DocumentApprovalBanner({ instance, documentId }: DocumentApprova
               {myTasks.on_behalf_of_name && ` · bạn bấm thay ${myTasks.on_behalf_of_name}`}
             </p>
           </div>
-          <Button type="button" onClick={() => setDangXuLy(true)}>
+          {/*  ⚠️ `max-sm:w-full` để nút XUỐNG HÀNG RIÊNG ở khổ hẹp — cùng bệnh
+               với `document-draft-holder-notice` và `document-version-banner`:
+               khối chữ khai `min-w-0 flex-1` nên gặp chật nó CO LẠI chứ không
+               đẩy nút xuống, và `flex-wrap` của khung ngoài không bao giờ có cớ
+               ngắt hàng. Câu bị bóp ở đây lại là câu dài nhất trong ba băng
+               (tên bước · tên luồng · người trình · hạn · bấm thay). */}
+          <Button type="button" onClick={() => setDangXuLy(true)} className="max-sm:w-full">
             <ShieldCheck className="size-4" />
             Duyệt / Trả lại
           </Button>

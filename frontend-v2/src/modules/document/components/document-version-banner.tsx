@@ -39,8 +39,24 @@ export function DocumentVersionBanner({
   return (
     <div className="mb-3 flex flex-wrap items-center gap-3 rounded-md border border-amber-300 bg-amber-50 px-4 py-3">
       <AlertTriangle className="size-4 shrink-0 text-amber-700" />
-      <p className="flex-1 text-sm text-amber-900">{label}</p>
-      <Button type="button" variant="outline" size="sm" onClick={onGoToCurrent}>
+      <p className="min-w-0 flex-1 text-sm text-amber-900">{label}</p>
+
+      {/*  ⚠️ **`max-sm:w-full` — nút xuống HÀNG RIÊNG ở khổ hẹp**, cùng bệnh với
+          `document-needs-review-banner`. `flex-wrap` không tự cứu được: ô chữ
+          `flex-1` nhường chỗ cho tới khi chỉ còn bằng từ dài nhất, nên hàng không
+          bao giờ tràn và nút không bao giờ bị đẩy xuống. Đo ở 390px: nút giữ
+          nguyên 185px, câu cảnh báo còn ~150px và rớt thành bốn dòng.
+
+          Câu này là thứ DUY NHẤT nói rằng bản đang đọc không có hiệu lực — bóp
+          nó lại để chừa chỗ cho cái nút dẫn đi nơi khác là đổi đúng phần quan
+          trọng lấy phần phụ. */}
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={onGoToCurrent}
+        className="max-sm:w-full"
+      >
         Sang bản đang dùng
         <ArrowRight className="size-4" />
       </Button>
