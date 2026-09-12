@@ -49,10 +49,25 @@ export function BarList({
 
         return (
           <li key={item.label} className="space-y-1">
-            <div className="flex items-center justify-between gap-2 text-xs">
+            {/*  `items-start` chứ không `items-center`: ở khổ hẹp nhãn được phép
+                 xuống hai dòng, canh giữa thì con số trôi xuống lưng chừng khối
+                 chữ thay vì thẳng hàng với dòng đầu. */}
+            <div className="flex items-start justify-between gap-2 text-xs">
               {/* Nhãn là chữ token, KHÔNG tô theo màu thanh: tông nhạt như vàng
-                  đọc không nổi trên nền trắng. */}
-              <span className="min-w-0 flex-1 truncate font-medium text-foreground" title={item.label}>
+                  đọc không nổi trên nền trắng.
+
+                  ⚠️ **Khổ điện thoại cho nhãn HAI DÒNG** (`line-clamp-2`), từ
+                  `md` mới cắt một dòng. Thẻ ở đây xếp bốn cột trên màn rộng nên
+                  cắt một dòng là đúng, nhưng ở khổ hẹp thẻ chiếm trọn bề ngang
+                  mà vẫn cắt thì tên nhà cung cấp Việt Nam — phần phân biệt nằm ở
+                  ĐUÔI, còn đầu là «CÔNG TY TNHH SẢN XUẤT THƯƠNG MẠI…» dùng chung
+                  — ra năm dòng giống hệt nhau (đo 12/09/2026 ở Top nhà cung cấp:
+                  3/5 nhãn cắt đúng tại chữ «BAO BÌ»). Hai dòng ×270px là đủ chỗ
+                  cho gần hết tên thật. */}
+              <span
+                className="min-w-0 flex-1 font-medium text-foreground line-clamp-2 md:line-clamp-none md:truncate"
+                title={item.label}
+              >
                 {item.label}
               </span>
               <span className="shrink-0 font-semibold tabular-nums">{formatValue(item.value)}</span>

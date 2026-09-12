@@ -41,17 +41,29 @@ const PO_STATUS_COLORS: Record<string, string> = {
  * Kiểm tra phân quyền chặt chẽ (can): chỉ hiển thị khối dữ liệu mà người dùng có quyền Xem.
  */
 /**
- * Số cột xl khớp ĐÚNG số thẻ KPI hiện ra: vai trò ít quyền (người yêu cầu) chỉ
- * có 2-3 thẻ, giữ cứng 5 cột thì hơn nửa hàng trống toang hoác. Tailwind cần
- * class tĩnh nên liệt kê đủ, không ghép chuỗi.
+ * Số cột khớp ĐÚNG số thẻ KPI hiện ra: vai trò ít quyền (người yêu cầu) chỉ có
+ * 2-3 thẻ, giữ cứng 5 cột thì hơn nửa hàng trống toang hoác. Tailwind cần class
+ * tĩnh nên liệt kê đủ, không ghép chuỗi.
+ *
+ * ⚠️ **Khổ điện thoại là HAI ô một hàng, không phải một** — cùng luật đã áp cho
+ * Tổng quan Văn thư và Dự án (CR-364). Một ô một hàng thì năm thẻ xếp dọc thành
+ * **650px** (đo 12/09/2026 ở 390px), tức người mở trang phải vuốt qua gần một
+ * màn hình chỉ để bày năm con số, trước khi thấy được biểu đồ nào. Ngoại lệ duy
+ * nhất là khi chỉ có ĐÚNG MỘT thẻ: nửa hàng trống bên cạnh còn khó coi hơn.
  */
 const KPI_GRID_COLS: Record<number, string> = {
-  1: 'xl:grid-cols-1',
-  2: 'xl:grid-cols-2',
-  3: 'xl:grid-cols-3',
-  4: 'xl:grid-cols-4',
-  5: 'xl:grid-cols-5',
+  1: 'grid-cols-1 xl:grid-cols-1',
+  2: 'grid-cols-2 xl:grid-cols-2',
+  3: 'grid-cols-2 xl:grid-cols-3',
+  4: 'grid-cols-2 xl:grid-cols-4',
+  5: 'grid-cols-2 xl:grid-cols-5',
 }
+
+/**
+ * Thẻ chiếm TRỌN hàng ở khổ điện thoại. Dùng cho ô có nội dung không vừa nửa
+ * hàng 390px: số tiền đầy đủ (`1.025.242.640 đ`) và cặp nút *Tạo phiếu mới*.
+ */
+const KPI_WIDE = 'max-sm:col-span-2'
 
 export function ProcurementDashboardPage() {
   const { can } = usePermission()
@@ -75,13 +87,27 @@ export function ProcurementDashboardPage() {
 
   return (
     <PageContainer>
+      {/*  Dòng mô tả ẩn ở khổ điện thoại — cùng luật `ModuleDashboard` đã áp cho
+           mọi trang tổng quan phân hệ. Câu giới thiệu này đọc một lần rồi thôi,
+           nhưng ngốn hai dòng ở đầu MỌI lần mở màn, ngay trên thứ người ta vào
+           đây để xem. (Trang này dựng tay `PageContainer` + `PageHeader` vì nó
+           có dải KPI và bảy biểu đồ riêng, nên luật kia không tự chạm tới.) */}
       <PageHeader
         title="Thu mua"
-        description="Tổng quan yêu cầu mua hàng, báo giá, tiến độ giao hàng và phân tích chi tiêu."
+        description={
+          <span className="max-md:hidden">
+            Tổng quan yêu cầu mua hàng, báo giá, tiến độ giao hàng và phân tích chi tiêu.
+          </span>
+        }
       />
 
       {/* KPI Cards */}
-      <div className={cn('mb-4 grid gap-4 sm:grid-cols-2', KPI_GRID_COLS[kpiCount] ?? 'xl:grid-cols-5')}>
+      <div
+        className={cn(
+          'mb-4 grid gap-3 sm:gap-4',
+          KPI_GRID_COLS[kpiCount] ?? 'grid-cols-2 xl:grid-cols-5',
+        )}
+      >
         {canPO && (
           <StatCard
             icon={Wallet}
@@ -89,6 +115,7 @@ export function ProcurementDashboardPage() {
             value={`${formatMoney(spentThisYear)} đ`}
             hint={`Giá trị nhận hàng năm ${data?.year ?? ''}`}
             loading={isLoading}
+            className={KPI_WIDE}
           />
         )}
         {canPR && (
@@ -126,7 +153,7 @@ export function ProcurementDashboardPage() {
           />
         )}
         {showQuickCreate && (
-          <Card className="gap-2">
+          <Card className={cn('gap-2', KPI_WIDE)}>
             <CardHeader className="flex flex-row items-center gap-2 pb-0">
               <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-accent text-accent-foreground">
                 <SquarePen className="size-4" />
@@ -199,13 +226,29 @@ export function ProcurementDashboardPage() {
 
         {/* Không có khối biểu đồ (vai trò ngoài thu mua) thì thẻ này đứng CẠNH
             "Yêu cầu mua gần đây" cho tròn hàng — trước đây nó một mình chiếm
-            nguyên hàng ngang với cái ruột rỗng. */}
+            nguyên hàng ngang với cái ruột rỗng.
+
+            ⚠️ `max-lg:-order-1` — ở khổ một cột, VIỆC CẦN LÀM đứng trước BIỂU
+            ĐỒ. Thứ tự cũ bắt người mở trang trên điện thoại vuốt qua trọn một
+            biểu đồ 398px (chi phí 12 tháng — thứ để ngồi phân tích, không phải
+            thứ để xử lý) rồi mới tới danh sách giao hàng trễ và công nợ quá
+            hạn. Trên màn rộng hai khối này nằm CẠNH nhau nên thứ tự không mang
+            nghĩa gì, giữ nguyên.
+
+            Chỉ đảo khi `canPO`: vai trò ngoài thu mua không có biểu đồ nào ở
+            trên để mà vượt qua, và với họ khối này thường RỖNG — kéo một thẻ
+            rỗng lên đầu là đẩy phần nội dung thật xuống. */}
         <ChartCard
+          className={cn(canPO && 'max-lg:-order-1')}
           title="Việc cần xử lý"
           description={`${data?.alert_total ?? 0} việc đang chờ`}
           loading={isLoading}
         >
-          <div className="max-h-[320px] overflow-y-auto pr-1">
+          {/*  ⚠️ Ô cuộn chỉ bật từ `md`. Ở khổ điện thoại một vùng cuộn lồng
+               trong trang cuộn là bẫy ngón tay: đặt tay vào đúng khối này thì
+               trang đứng im, đọc ra như màn hình bị treo. Khổ hẹp cắt bớt ngay
+               trong danh sách kèm nút *Xem thêm* — xem `ProcurementAlertList`. */}
+          <div className="md:max-h-[320px] md:overflow-y-auto md:pr-1">
             <ProcurementAlertList alerts={data?.alerts ?? []} />
           </div>
         </ChartCard>
@@ -214,7 +257,11 @@ export function ProcurementDashboardPage() {
           <ChartCard
             // Vai trò ngoài thu mua: bảng phiếu là nội dung chính -> dồn sang
             // TRÁI, nhường cột phải cho "Việc cần xử lý" (thường rỗng).
-            className={cn('lg:col-span-2', !canPO && 'lg:-order-1')}
+            //
+            // `-order-1` áp cho MỌI khổ chứ không chỉ `lg`: ở khổ một cột thứ
+            // tự trong cây DOM đặt thẻ "Việc cần xử lý" lên trước, tức vai trò
+            // đó mở trang trên điện thoại là gặp ngay một thẻ rỗng.
+            className={cn('lg:col-span-2', !canPO && '-order-1')}
             title="Yêu cầu mua gần đây"
             description={
               canApprovePR
@@ -261,8 +308,18 @@ export function ProcurementDashboardPage() {
           >
             {/* MỘT màu cho cả danh sách: độ dài thanh đã nói lên thứ hạng rồi,
                 tô mỗi hạng một màu là mã hóa hai lần cùng một thông tin. */}
+            {/*  `|| 'Không rõ NCC'`: dòng đơn mua có thể chưa gắn nhà cung cấp,
+                 và backend trả tên RỖNG chứ không bỏ dòng đó đi. Để nguyên thì
+                 trên biểu đồ hiện một thanh dài không nhãn (thấy 12/09/2026:
+                 «397 tr» treo giữa danh sách), đọc ra như lỗi hiển thị chứ không
+                 như một nhóm dữ liệu — mà nó lại đang là hạng nhì về chi tiêu.
+                 Kèm theo: `BarList` khóa `key` theo nhãn, hai dòng rỗng là trùng
+                 khóa React. */}
             <BarList
-              items={(data?.top_suppliers ?? []).map((s) => ({ label: s.name, value: s.value }))}
+              items={(data?.top_suppliers ?? []).map((s) => ({
+                label: s.name || 'Không rõ NCC',
+                value: s.value,
+              }))}
               formatValue={compactMoney}
             />
           </ChartCard>
