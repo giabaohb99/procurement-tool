@@ -487,8 +487,9 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
                     <div style={{ fontStyle: "italic", fontSize: 11 }}>
                       (Ký, ghi rõ họ tên)
                     </div>
-                    {/* Cụm chữ ký + họ tên căn GIỮA theo chiều dọc: dồn xuống đáy (flex-end)
-                        sẽ tách rời khỏi dòng "(Ký, ghi rõ họ tên)" trông như bị rớt xuống.
+                    {/* CÓ ảnh chữ ký: căn giữa cả cụm ảnh + tên. KHÔNG có ảnh (bản ký tay,
+                        hoặc người ký chưa lưu chữ ký): dồn họ tên xuống ĐÁY ô — căn giữa thì
+                        tên nổi sát dòng "(Ký, ghi rõ họ tên)", không còn chỗ ký tay lên trên.
                         Ô trống (Giám đốc) vẫn giữ nguyên chiều cao để ký tay. */}
                     <div
                       style={{
@@ -496,7 +497,7 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
                         display: "flex",
                         flexDirection: "column",
                         alignItems: "center",
-                        justifyContent: "center",
+                        justifyContent: sign ? "center" : "flex-end",
                         // Giãn khoảng cách chữ ký -> họ tên: in ra bản giấy thì tên dính sát
                         // nét ký, đọc rối.
                         gap: 10,
