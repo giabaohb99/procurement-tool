@@ -6,7 +6,6 @@ import {
   ClipboardCheck,
   ClipboardList,
   Copy,
-  ListChecks,
   CornerUpLeft,
   FileCheck,
   FilePlus,
@@ -168,10 +167,9 @@ export function SurveyRequestDetailPage() {
 
   const { data: serverData, isLoading, isError } = useSurveyRequest(surveyRequestId)
   const { data: result } = useSurveyRequestResult(surveyRequestId, serverData?.status ?? '')
-  // Khối Báo cáo thực hiện KHÔNG hiện mặc định — chỉ khi phiếu đã có báo cáo, hoặc
-  // NS Thu mua bấm "Thêm Báo cáo thực hiện". Query dùng chung key với card nên
-  // không tốn thêm một lượt tải.
-  const { data: report, isLoading: reportLoading } = useSurveyRequestReport(surveyRequestId)
+  // Query dùng chung key với card nên không tốn thêm một lượt tải — ở đây chỉ đọc
+  // để chặn đóng phiếu khi còn hồ sơ BẮT BUỘC chưa xong.
+  const { data: report } = useSurveyRequestReport(surveyRequestId)
   const restoreReport = useRestoreSurveyReport(surveyRequestId)
   const { data: companiesData } = useCompanies({ page_size: 500, is_active: true })
   const { data: employeesData } = useEmployees({ page_size: 1000, is_active: true })
@@ -194,8 +192,6 @@ export function SurveyRequestDetailPage() {
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
   const [resurveyLineId, setResurveyLineId] = useState<number | null>(null)
   const [showCreatedPrs, setShowCreatedPrs] = useState(false)
-  /** NS Thu mua đã bấm "Thêm Báo cáo thực hiện" trong phiên này (phiếu chưa có báo cáo). */
-  const [reportAdded, setReportAdded] = useState(false)
   /** Hình chọn cho dòng CHƯA lưu — xem `helpers/pending-line-files.ts`. */
   const [pendingFiles, setPendingFiles] = useState<PendingLineFiles>({})
   /** Ô còn thiếu sau lần Gửi duyệt bị chặn gần nhất — khoanh đỏ đúng chỗ (QA 29/08). */
@@ -327,17 +323,11 @@ export function SurveyRequestDetailPage() {
   const showNstmColumns = canViewNstm && !isNew
   const showStatus = !isNew
 
-  // Báo cáo thực hiện: hiện khi phiếu ĐÃ có báo cáo, hoặc NS Thu mua vừa bấm Thêm.
-  const reportHasData =
-    !!report && (report.phases.length > 0 || report.items.length > 0 || report.docs.length > 0)
-  const showReportBlock = !isNew && (reportHasData || reportAdded)
-  // Phiếu đã Hoàn thành/Hủy (`locked`): khối báo cáo CHỈ ĐỌC (backend cũng chặn ghi),
-  // và không cho thêm báo cáo mới.
+  // Báo cáo thực hiện LUÔN nằm dưới trang (phiếu đã lưu) — không còn nút "Thêm"
+  // ở thanh thao tác: khối tự gấp, và khối rỗng thì tự ẩn với người chỉ xem.
+  const showReportBlock = !isNew
+  // Phiếu đã Hoàn thành/Hủy (`locked`): khối báo cáo CHỈ ĐỌC (backend cũng chặn ghi).
   const canEditReport = canViewNstm && !locked
-  // Nút "Thêm Báo cáo thực hiện" chỉ cho NS Thu mua, phiếu chưa đóng, chưa có báo
-  // cáo và chưa bấm thêm trong phiên. Chờ tải xong mới quyết, khỏi nhấp nháy nút.
-  const canAddReport =
-    canViewNstm && !isNew && !locked && !reportLoading && !reportHasData && !reportAdded
   // Chặn đóng phiếu khi còn hồ sơ báo cáo BẮT BUỘC chưa hoàn tất (backend là chốt thật).
   const reportRequiredPending = (report?.docs ?? []).filter(
     (doc) => doc.required && doc.status !== REPORT_DOC_DONE,
@@ -500,15 +490,6 @@ export function SurveyRequestDetailPage() {
                 Gửi duyệt
               </Button>
             </>
-          )}
-
-          {/* Thêm khối Báo cáo thực hiện — mặc định phiếu không có, NS Thu mua bấm
-              nút này thì khối mới xuất hiện (trên khối Trao đổi). */}
-          {canAddReport && (
-            <Button variant="outline" onClick={() => setReportAdded(true)}>
-              <ListChecks />
-              Thêm Báo cáo thực hiện
-            </Button>
           )}
 
           {!isNew && status === 'submitted' && can('survey_request', 'approve') && (
@@ -734,14 +715,10 @@ export function SurveyRequestDetailPage() {
         )}
 
         {/* Khối BÁO CÁO THỰC HIỆN — NS Thu mua (quyền `process`) theo dõi tiến
-            trình thương vụ. MẶC ĐỊNH ẩn: chỉ hiện khi phiếu đã có báo cáo hoặc
-            NS Thu mua bấm "Thêm Báo cáo thực hiện". Nằm trên khối Trao đổi. */}
+            trình thương vụ. Luôn dựng trên phiếu đã lưu, gấp sẵn; người chỉ xem
+            mà phiếu chưa có báo cáo thì khối tự ẩn. Nằm trên khối Trao đổi. */}
         {showReportBlock && (
-          <SurveyReportCard
-            surveyRequestId={surveyRequestId}
-            canEdit={canEditReport}
-            onDeleted={() => setReportAdded(false)}
-          />
+          <SurveyReportCard surveyRequestId={surveyRequestId} canEdit={canEditReport} />
         )}
 
         {!isNew && (

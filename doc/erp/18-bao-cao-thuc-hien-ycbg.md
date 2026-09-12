@@ -51,8 +51,11 @@ hiệu. Phiếu **chưa có báo cáo thì khối tự ẩn** với họ — kh�
 Toàn quyền dựng và cập nhật báo cáo, ngay trên trang chi tiết phiếu:
 
 1. **Khởi tạo** — phiếu chưa có báo cáo: bấm «Khởi tạo báo cáo mẫu» (5 giai đoạn
-   nhập khẩu + một nút cho mỗi dòng hàng của phiếu, tên lấy từ mô tả dòng) rồi sửa
-   lại cho hợp, hoặc «Thêm giai đoạn» dựng tay từ đầu. Bấm lặp không nhân đôi.
+   nhập khẩu + **bộ hồ sơ chung của mẫu** + một nút cho mỗi dòng hàng của phiếu, tên
+   lấy từ mô tả dòng) rồi sửa lại cho hợp, hoặc «Thêm giai đoạn» dựng tay từ đầu.
+   Bấm lặp không nhân đôi. Đã có báo cáo rồi thì mỗi dòng hàng / mỗi giai đoạn có nút
+   **«Tạo mẫu»** để đổ thêm mẫu chung vào đúng chỗ đó (bao-CR-388, cộng thêm, bỏ qua
+   hồ sơ trùng).
 2. **Quản lý nút dòng hàng** — dấu `+` để thêm; bút chì **nằm chung khung** với tên
    nút để đổi tên/xóa. Xóa nút thì hồ sơ gắn nó chuyển về «Chung».
 3. **Quản lý giai đoạn** — thêm/sửa tên + diễn giải; giai đoạn còn hồ sơ thì hệ
@@ -77,7 +80,8 @@ Toàn quyền dựng và cập nhật báo cáo, ngay trên trang chi tiết phi
   gấp hiện tóm tắt `n hồ sơ · %`. Đang tìm kiếm/lọc trạng thái thì tự mở hết để
   kết quả không bị giấu.
 - **Mỗi hồ sơ MỘT dòng**: ✓ · tiêu đề · tag dòng hàng · «Bắt buộc» · mô tả (cắt bớt,
-  tooltip đọc đủ) · 🔒 · 📎 · pill trạng thái · ✎ (icon-only).
+  tooltip đọc đủ) · 🔒 · 📎 · pill trạng thái · ✎ · thùng rác (icon-only, chỉ người
+  thực hiện thấy; thùng rác xóa thẳng sau hộp xác nhận, bao-CR-388).
 - **Khung Tiến trình** (bên phải, ẩn dưới `lg`): mỗi giai đoạn một điểm từ trên
   xuống; chặng xong = xanh ✓; chặng hiện tại của mỗi track nhấp nháy (`animate-ping`);
   tiến độ tính theo **nút đang lọc**, cố ý không đổi theo từ khóa đang gõ.
@@ -110,4 +114,7 @@ Toàn quyền dựng và cập nhật báo cáo, ngay trên trang chi tiết phi
 - Trạng thái gấp/mở giai đoạn chưa nhớ theo người dùng (`localStorage`).
 - Điều kiện rẽ nhánh/thông báo (vd nhắc hạn hồ sơ, deadline từng hồ sơ) chưa có —
   artifact gốc cũng chưa khai ngày hạn cho hồ sơ.
+- **Quản lý mẫu** (nhiều mẫu, sửa trên giao diện, lưu báo cáo thành mẫu): cố ý để
+  sau. Mẫu chung hiện là `DEFAULT_TEMPLATE_DOCS` trong `report_constants.py`; danh sách
+  hồ sơ thật (~22 mục) của Phòng Thu mua chưa gửi, bộ 15 hồ sơ đang có là bản tạm.
 - Cấp số CR + ghi `change-log.md` + commit: chờ chốt prefix CR của người làm.

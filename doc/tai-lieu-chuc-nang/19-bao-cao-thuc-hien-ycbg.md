@@ -60,11 +60,26 @@ thuộc phiếu đã có báo cáo hay chưa:
 | **Chưa có báo cáo** (phiếu mới) | *Khối ẩn hẳn* | Lời mời + **hai nút**: «Khởi tạo báo cáo mẫu» và «Thêm giai đoạn» |
 | **Đã có báo cáo** | Danh sách hồ sơ theo giai đoạn (chỉ xem) | Đầy đủ thanh công cụ thao tác |
 
-- **Khởi tạo báo cáo mẫu** — dựng sẵn **5 giai đoạn nhập khẩu** (Pháp lý & Giấy
-  phép · Đặt hàng & Hợp đồng · Sản xuất & Vận chuyển · Kiểm tra & Thông quan · Nhận
-  hàng & Về kho) + **một nút dòng hàng cho mỗi dòng của phiếu** (tên lấy từ mô tả
-  dòng). Bấm lặp lại **không nhân đôi** khung (đã có giai đoạn/nút thì bỏ qua).
+- **Khởi tạo báo cáo mẫu** — dựng theo **MẪU CHUNG** (bao-CR-388): **5 giai đoạn
+  nhập khẩu** (Pháp lý & Giấy phép · Đặt hàng & Hợp đồng · Sản xuất & Vận chuyển ·
+  Kiểm tra & Thông quan · Nhận hàng & Về kho) + **bộ hồ sơ chung của mẫu** (15 hồ sơ
+  xếp đúng giai đoạn, có cờ bắt buộc và tiên quyết nối sẵn, gắn «Chung» nên hiện ở
+  mọi nút) + **một nút dòng hàng cho mỗi dòng của phiếu** (tên lấy từ mô tả dòng).
+  Bấm lặp lại **không nhân đôi** khung (đã có giai đoạn/nút thì bỏ qua). Trước
+  bao-CR-388 nút này chỉ dựng khung rỗng — "bấm xong không có gì hết".
 - **Thêm giai đoạn** — dựng tay từ đầu, không dùng khung mẫu.
+- **Tạo mẫu** (bao-CR-388) — sau khi đã có báo cáo, đổ **thêm** mẫu chung vào đúng
+  chỗ đang đứng, không phải làm lại từ đầu:
+  - dạng xem **Theo dòng hàng**: dải sổ của mỗi dòng có nút «Tạo mẫu cho "‹tên
+    dòng›"» (dòng Chung là «Tạo mẫu vào hồ sơ chung») → đổ **cả bộ mẫu** vào nút đó;
+    giai đoạn nào của mẫu chưa có trên phiếu thì tự dựng thêm;
+  - dạng xem **Xem tổng**: biểu tượng tia sáng ở đầu mỗi giai đoạn (và nút «Tạo theo
+    mẫu» khi giai đoạn rỗng) → đổ **riêng phần của giai đoạn đó** vào hồ sơ Chung.
+    Giai đoạn tự đặt tên (không có trong mẫu) thì báo lỗi kèm danh sách tên hợp lệ.
+  - Luôn **cộng thêm, bỏ qua hồ sơ trùng tiêu đề** trong cùng nút + giai đoạn, nên bấm
+    hai lần không nhân đôi; toast nói rõ «Đã tạo n hồ sơ» hay «Mẫu chung đã có đủ».
+  - Mẫu hiện **nằm trong mã nguồn** (`report_constants.py`), chưa có màn quản lý — xem
+    [Những thứ CHƯA có](#những-thứ-chưa-có-ngoài-phạm-vi-bản-10).
 
 ## Hai khung nhìn
 
@@ -94,7 +109,9 @@ Toàn quyền dựng và cập nhật báo cáo ngay trên trang chi tiết phi�
    đoạn **còn hồ sơ thì bị chặn xóa** (câu chặn nói rõ còn bao nhiêu hồ sơ).
 3. **Quản lý hồ sơ** — «Thêm hồ sơ» / bút chì từng dòng mở **hộp thoại** (theo case
    C-01: chỉ đóng bằng Hủy/X, form dở thì hỏi xác nhận). Nội dung hộp thoại: xem
-   [Trường của Hồ sơ](#c-trường-của-hồ-sơ).
+   [Trường của Hồ sơ](#c-trường-của-hồ-sơ). **Thùng rác cạnh bút chì** xóa thẳng
+   hồ sơ đó sau một hộp xác nhận (bao-CR-388) — mẫu chung đổ ra hàng chục dòng, dọn
+   bớt mà phải mở hộp sửa từng dòng thì không ai dọn; hộp sửa vẫn giữ nút Xóa.
 4. **Cập nhật nhanh** — nút ✓ đầu dòng gạt **Hoàn thành ↔ Đang làm** không cần mở
    hộp thoại; biểu tượng 📎 mở thẳng hộp sửa khi hồ sơ chưa có tệp. Hồ sơ đang **khóa**
    thì ✓ bị vô hiệu — phải xong tiên quyết trước (hoặc gỡ tiên quyết trong hộp sửa).
@@ -115,7 +132,8 @@ Toàn quyền dựng và cập nhật báo cáo ngay trên trang chi tiết phi�
   giai đoạn gấp hiện tóm tắt `n hồ sơ · %`. Đang tìm kiếm / lọc trạng thái thì tự
   mở hết để kết quả không bị giấu.
 - **Mỗi hồ sơ MỘT dòng**: ✓ · tiêu đề · tag dòng hàng · «Bắt buộc» · mô tả (cắt bớt,
-  rê chuột đọc đủ) · 🔒 · 📎 · pill trạng thái · ✎ (nút chỉ có icon).
+  rê chuột đọc đủ) · 🔒 · 📎 · pill trạng thái · ✎ · thùng rác (hai nút chỉ có icon,
+  chỉ người thực hiện thấy).
 - **Khung Tiến trình** (bên phải, ẩn dưới khổ `lg`): mỗi giai đoạn một điểm từ trên
   xuống; chặng xong = xanh ✓; chặng hiện tại của mỗi track **nhấp nháy**; tiến độ
   tính theo **nút đang lọc**, cố ý không đổi theo từ khóa đang gõ.
@@ -179,7 +197,8 @@ tiết YCBG.
 | Thao tác | Quyền yêu cầu | Ghi chú scope |
 |---|---|---|
 | Xem khối báo cáo | `survey_request:read` | Phạm vi qua `_in_scope` của phiếu cha — ngoài phạm vi là **404**, kể cả gõ thẳng id vào URL/API |
-| Khởi tạo báo cáo mẫu | `survey_request:process` | Idempotent — bấm lặp không nhân đôi |
+| Khởi tạo báo cáo mẫu | `survey_request:process` | Idempotent — bấm lặp không nhân đôi; dựng cả hồ sơ của mẫu chung |
+| Tạo mẫu vào nút / giai đoạn | `survey_request:process` | Cộng thêm, bỏ qua trùng; không thêm gì thì **không ghi** Lịch sử thao tác |
 | Thêm/sửa/xóa nút dòng hàng | `survey_request:process` | Xóa nút → hồ sơ về «Chung» |
 | Thêm/sửa/xóa giai đoạn | `survey_request:process` | Giai đoạn còn hồ sơ thì **chặn xóa** |
 | Thêm/sửa/xóa hồ sơ, đổi trạng thái ✓ | `survey_request:process` | — |
@@ -211,5 +230,11 @@ tiết YCBG.
 - **Tệp đính kèm thật**: ô 📎 hiện là chuỗi tự do (tên tệp hoặc link) — chưa nối kho
   `attachment` của hệ. Upload trực tiếp là việc đợt sau.
 - **Nhớ trạng thái gấp/mở** theo người dùng (`localStorage`) — hiện là state trong màn.
+- **Quản lý mẫu** (nhiều mẫu, sửa/thêm hồ sơ mẫu trên giao diện, lưu báo cáo đang có
+  thành mẫu) — cố ý **chưa làm** (bao-CR-388): mẫu chung là một danh sách trong mã
+  nguồn, đổi nội dung là sửa `DEFAULT_TEMPLATE_DOCS` rồi deploy. Khi có bảng mẫu thì
+  thay nguồn đọc trong `report_service.apply_template`, nút bấm và API giữ nguyên.
+  Danh sách ~22 hồ sơ thật của Phòng Thu mua **chưa gửi** — bộ 15 hồ sơ hiện tại là
+  bản tạm theo artifact nhập khẩu.
 - **Điều kiện rẽ nhánh theo trạng thái**, bộ máy duyệt — chưa có.
 - **Cấp số CR + ghi `change-log.md`** cho tính năng — chờ chốt.

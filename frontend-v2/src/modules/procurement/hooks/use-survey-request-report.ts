@@ -42,7 +42,20 @@ function useReportMutation<TVars>(
 /** Toàn bộ thao tác ghi của khối báo cáo — chỉ NS Thu mua (cờ `process`) gọi được. */
 export function useSurveyReportActions(id: number) {
   return {
-    init: useReportMutation<void>(id, () => surveyRequestReportApi.init(id), 'Đã khởi tạo báo cáo'),
+    init: useReportMutation<void>(
+      id,
+      () => surveyRequestReportApi.init(id),
+      'Đã khởi tạo báo cáo theo mẫu chung',
+    ),
+    /**
+     * «Tạo mẫu» vào một nút / một giai đoạn. Không toast ở đây: có thêm mấy hồ
+     * sơ (hay không thêm gì vì đã đủ) chỉ biết khi so khối trước/sau — chỗ gọi lo.
+     */
+    applyTemplate: useReportMutation(
+      id,
+      ({ itemId, phaseId }: { itemId: number; phaseId?: number }) =>
+        surveyRequestReportApi.applyTemplate(id, itemId, phaseId),
+    ),
 
     saveItem: useReportMutation(
       id,

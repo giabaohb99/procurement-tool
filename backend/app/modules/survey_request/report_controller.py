@@ -20,7 +20,9 @@ from app.core.response import success
 
 from . import report_service
 from .controller import _in_scope
-from .report_schema import ReportDocIn, ReportDocPatch, ReportItemIn, ReportPhaseIn
+from .report_model import SurveyReportItem, SurveyReportPhase
+from .report_schema import (ReportDocIn, ReportDocPatch, ReportItemIn, ReportPhaseIn,
+                            ReportTemplateApplyIn)
 
 report_router = APIRouter(prefix="/api/survey-requests/{sid}/report", tags=["survey_request_report"])
 
@@ -60,10 +62,30 @@ def _done(db: Session, sr, user, message: str):
 def init_report_(sid: int, db: Session = Depends(get_db),
                  user=Depends(require(ENTITY, "process"))):
     sr = _writable_sr(db, sid, user)
-    if not report_service.init_report(db, sid, user.id):
+    added = report_service.init_report(db, sid, user.id)
+    if added < 0:
         # Đã có khung rồi thì trả nguyên trạng — bấm hai lần không nhân đôi.
         return success(report_service.get_report_payload(db, sid))
-    return _done(db, sr, user, "Báo cáo: khởi tạo khung mặc định")
+    return _done(db, sr, user, f"Báo cáo: khởi tạo theo mẫu chung ({added} hồ sơ)")
+
+
+@report_router.post("/apply-template")
+def apply_template_(sid: int, data: ReportTemplateApplyIn, db: Session = Depends(get_db),
+                    user=Depends(require(ENTITY, "process"))):
+    """Nút «Tạo mẫu» trên một nút dòng hàng / một giai đoạn — đổ mẫu chung vào,
+    cộng thêm, bỏ qua hồ sơ đã có."""
+    sr = _writable_sr(db, sid, user)
+    added = report_service.apply_template(db, sid, data.item_id, data.phase_id, user.id)
+    target = "hồ sơ chung"
+    if data.item_id:
+        target = f"nút '{db.get(SurveyReportItem, data.item_id).name}'"
+    if data.phase_id is not None:
+        target += f", giai đoạn '{db.get(SurveyReportPhase, data.phase_id).name}'"
+    if added == 0:
+        # Mẫu đã có đủ ở đó — không ghi lịch sử cho một thao tác không đổi gì.
+        return success(report_service.get_report_payload(db, sid),
+                       f"Mẫu chung đã có đủ ở {target}")
+    return _done(db, sr, user, f"Báo cáo: tạo mẫu vào {target} (+{added} hồ sơ)")
 
 
 @report_router.delete("")

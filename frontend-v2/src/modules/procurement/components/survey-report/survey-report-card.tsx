@@ -2,17 +2,19 @@ import {
   CalendarClock,
   Check,
   ChevronDown,
-  ChevronsDownUp,
-  ChevronsUpDown,
+  ChevronRight,
+  LayoutList,
   ListPlus,
   Lock,
   Paperclip,
   Pencil,
   Plus,
+  Rows3,
   Sparkles,
   Trash2,
 } from 'lucide-react'
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
+import { toast } from 'sonner'
 
 import { useAuth } from '@/core/auth/use-auth'
 import { cn } from '@/shared/utils/cn'
@@ -30,6 +32,15 @@ import {
   SelectValue,
 } from '@/shared/ui/select'
 import { Skeleton } from '@/shared/ui/skeleton'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/shared/ui/table'
 import { useSurveyReportActions, useSurveyRequestReport } from '../../hooks/use-survey-request-report'
 import {
   REPORT_DOC_DOING,
@@ -38,11 +49,11 @@ import {
   type SurveyReportDoc,
   type SurveyReportItem,
   type SurveyReportPhase,
+  type SurveyRequestReport,
 } from '../../types/survey-request-report'
 import {
   REPORT_FILTER_ALL,
   REPORT_STATUS_FILTER_ALL,
-  filterReportDocs,
   isReportDocDone,
   isReportDocLocked,
   matchReportDoc,
@@ -56,13 +67,9 @@ import { SurveyReportItemDialog } from './survey-report-item-dialog'
 import { SurveyReportPhaseDialog } from './survey-report-phase-dialog'
 import { SurveyReportTracking } from './survey-report-tracking'
 
-/** Màu viền trái + pill theo mã trạng thái hồ sơ (0..3). */
-const STATUS_BORDER: Record<number, string> = {
-  0: 'border-l-muted-foreground/40',
-  1: 'border-l-warning',
-  2: 'border-l-primary',
-  3: 'border-l-success',
-}
+//  Màu pill theo mã trạng thái hồ sơ (0..3). Dải màu ở MÉP TRÁI mỗi dòng đã bỏ
+//  (12/09/2026): trạng thái đã nói bằng ô tick và bằng chữ trên pill, thêm một
+//  cột màu nữa chỉ là nhiễu — mắt đọc dải màu trước cả tiêu đề hồ sơ.
 const STATUS_PILL: Record<number, string> = {
   0: 'bg-muted text-muted-foreground',
   1: 'bg-warning/15 text-warning',
@@ -70,37 +77,88 @@ const STATUS_PILL: Record<number, string> = {
   3: 'bg-success/15 text-success',
 }
 
+/** Id của dòng «Chung» trong bảng — trùng `item_id = 0` của hồ sơ chung. */
+const COMMON_ROW_ID = 0
+/** Số cột của bảng dòng hàng — dùng cho `colSpan` của dải mở rộng và dòng tổng. */
+const ITEM_TABLE_COLUMNS = 6
+
+/**
+ * Hai cách đọc cùng một khối, người dùng chọn — không cách nào thay được cách kia:
+ * - `phase` (TỔNG): toàn bộ hồ sơ xếp theo giai đoạn, mỗi hồ sơ gắn tag dòng hàng.
+ *   Đọc theo TRÌNH TỰ thời gian của thương vụ — "giờ đang vướng khâu nào".
+ * - `item` (THEO DÒNG HÀNG): bảng mỗi dòng hàng một dòng, bấm sổ hồ sơ của nó.
+ *   Đọc theo MẶT HÀNG — "riêng KNO₃ còn thiếu giấy gì".
+ */
+type ReportViewMode = 'phase' | 'item'
+
+const VIEW_STORAGE_KEY = 'erp.survey-report.view'
+
+/** Dạng xem lần trước của người dùng. Hỏng/không có thì về «tổng». */
+function readViewMode(): ReportViewMode {
+  try {
+    return localStorage.getItem(VIEW_STORAGE_KEY) === 'item' ? 'item' : 'phase'
+  } catch {
+    //  Trình duyệt chặn localStorage (chế độ riêng tư) — mất trí nhớ chứ không vỡ màn.
+    return 'phase'
+  }
+}
+
+/** Một DÒNG của bảng: nút dòng hàng, hoặc dòng «Chung» gom hồ sơ `item_id = 0`. */
+interface ReportItemRow {
+  id: number
+  name: string
+  /** `null` với dòng «Chung» — nó không phải một bản ghi nút, không sửa/xóa được. */
+  item: SurveyReportItem | null
+  /** Hồ sơ của RIÊNG dòng này, chưa qua ô tìm / lọc trạng thái. */
+  docs: SurveyReportDoc[]
+}
+
 interface SurveyReportCardProps {
   surveyRequestId: number
   /** NS Thu mua (cờ `process`) mới sửa được — backend gác lại lần nữa. */
   canEdit: boolean
-  /** Gọi sau khi XÓA cả khối — để trang ẩn khối (bỏ cờ "vừa bấm Thêm"). */
-  onDeleted?: () => void
 }
 
 /**
- * Khối BÁO CÁO THỰC HIỆN trên chi tiết YCBG: hồ sơ chia theo giai đoạn, lọc
- * theo nút dòng hàng (thêm/sửa/xóa nút được), hồ sơ khóa khi tiên quyết chưa
- * xong. Người không có quyền sửa vẫn xem được; khối rỗng thì ẩn hẳn với họ.
+ * Khối BÁO CÁO THỰC HIỆN trên chi tiết YCBG.
+ *
+ * Hai lớp GẤP, cố ý:
+ * - Cả khối gấp sẵn, bấm tiêu đề mới sổ ra — nó nằm cuối trang chi tiết, dưới
+ *   khối kết quả khảo sát, và phần lớn lượt mở phiếu không đụng tới nó.
+ * - Trong khối, mỗi NÚT DÒNG HÀNG là một dòng bảng bấm để sổ hồ sơ của nó
+ *   (cùng khuôn với «Chi phí theo dòng hàng» của đơn mua hàng nhập khẩu).
+ *
+ * Người không có quyền sửa vẫn xem được; khối rỗng thì ẩn hẳn với họ.
  */
-export function SurveyReportCard({ surveyRequestId, canEdit, onDeleted }: SurveyReportCardProps) {
-  const { data: report, isLoading } = useSurveyRequestReport(surveyRequestId)
+export function SurveyReportCard({ surveyRequestId, canEdit }: SurveyReportCardProps) {
+  const { data: report, isLoading, isError } = useSurveyRequestReport(surveyRequestId)
   const actions = useSurveyReportActions(surveyRequestId)
   const { user } = useAuth()
   //  Hồ sơ mới điền sẵn người thực hiện = người đang đăng nhập (đổi được).
   const defaultAssigneeId = user?.employee_id ?? 0
 
-  const [filter, setFilter] = useState(REPORT_FILTER_ALL)
+  /** Cả khối đang sổ ra chưa — mặc định GẤP. */
+  const [cardOpen, setCardOpen] = useState(false)
+  const [viewMode, setViewMode] = useState<ReportViewMode>(readViewMode)
   const [statusFilter, setStatusFilter] = useState(REPORT_STATUS_FILTER_ALL)
   const [query, setQuery] = useState('')
-  /** Giai đoạn đang THU GỌN (ẩn hồ sơ con). Nút trên header gạt cả loạt. */
+  /** Các dòng hàng đang SỔ (hiện hồ sơ con). Nút trên header gạt cả loạt. */
+  const [openRows, setOpenRows] = useState<Set<number>>(new Set())
+  /** Giai đoạn đang THU GỌN ở dạng xem tổng — mặc định mọi giai đoạn đều mở. */
   const [collapsedPhases, setCollapsedPhases] = useState<Set<number>>(new Set())
-  const [docDialog, setDocDialog] = useState<{ doc: SurveyReportDoc | null } | null>(null)
+  //  `phaseId` bỏ trống = mở từ nút chung, hộp tự điền giai đoạn đầu tiên. Bấm
+  //  «+ hồ sơ» ngay trong một giai đoạn thì điền sẵn ĐÚNG giai đoạn đó.
+  const [docDialog, setDocDialog] = useState<{
+    doc: SurveyReportDoc | null
+    itemId: number
+    phaseId?: number
+  } | null>(null)
   const [itemDialog, setItemDialog] = useState<{ item: SurveyReportItem | null } | null>(null)
   const [phaseDialog, setPhaseDialog] = useState<{ phase: SurveyReportPhase | null } | null>(null)
 
   const busy =
     actions.init.isPending ||
+    actions.applyTemplate.isPending ||
     actions.saveItem.isPending ||
     actions.deleteItem.isPending ||
     actions.savePhase.isPending ||
@@ -122,7 +180,40 @@ export function SurveyReportCard({ surveyRequestId, canEdit, onDeleted }: Survey
     )
       return
     await actions.deleteReport.mutateAsync()
-    onDeleted?.()
+  }
+
+  //  Bấm ô tick trên một hồ sơ: xong thì mở lại về «Đang làm», chưa xong thì
+  //  đóng thành «Hoàn thành». Dùng chung cho cả hai dạng xem.
+  const handleToggleDoc = (doc: SurveyReportDoc) =>
+    actions.setDocStatus.mutate({
+      docId: doc.id,
+      status: isReportDocDone(doc) ? REPORT_DOC_DOING : REPORT_DOC_DONE,
+    })
+
+  //  Xóa MỘT hồ sơ ngay trên dòng, không phải mở hộp sửa: mẫu chung đổ ra
+  //  hàng chục dòng, dọn bớt mà mỗi dòng ba cú bấm thì không ai dọn. Vẫn hỏi
+  //  xác nhận vì xóa là mất, và nói rõ hồ sơ khác đang chờ nó sẽ được mở khóa.
+  const handleDeleteDoc = async (doc: SurveyReportDoc) => {
+    if (
+      !(await confirm({
+        message: `Xóa hồ sơ "${doc.title}"? Hồ sơ khác đang chờ nó sẽ được mở khóa.`,
+        confirmLabel: 'Xóa hồ sơ',
+      }))
+    )
+      return
+    await actions.deleteDoc.mutateAsync({ docId: doc.id })
+  }
+
+  //  «Tạo mẫu» vào một nút dòng hàng (hoặc chỉ một giai đoạn của nút Chung).
+  //  Backend CỘNG THÊM và bỏ qua hồ sơ trùng, nên không cần hỏi xác nhận; thứ
+  //  cần nói là ĐÃ THÊM MẤY — so số hồ sơ trước/sau, bằng nhau nghĩa là mẫu đã
+  //  có đủ ở đó (bấm hai lần không ra thêm gì, phải báo chứ đừng im).
+  const handleApplyTemplate = async (itemId: number, phaseId?: number) => {
+    const before = report?.docs.length ?? 0
+    const next = await actions.applyTemplate.mutateAsync({ itemId, phaseId })
+    const added = next.docs.length - before
+    if (added > 0) toast.success(`Đã tạo ${added} hồ sơ theo mẫu chung`)
+    else toast.info('Mẫu chung đã có đủ ở đây — không thêm hồ sơ nào')
   }
 
   if (isLoading) {
@@ -135,40 +226,98 @@ export function SurveyReportCard({ surveyRequestId, canEdit, onDeleted }: Survey
       </Card>
     )
   }
-  if (!report) return null
+  //  Gọi API HỎNG thì phải NÓI ra, đừng biến mất im lặng: người vừa bấm «Thêm
+  //  Báo cáo thực hiện» nhìn vào một khoảng trống và tưởng nút không ăn, trong
+  //  khi thật ra máy chủ trả lỗi (hay gặp nhất: DB chưa chạy migration của khối).
+  if (!report) {
+    if (!isError || !canEdit) return null
+    return (
+      <Card className="gap-4 py-4">
+        <CardContent className="px-4">
+          <p className="text-sm text-destructive">
+            Không tải được khối Báo cáo thực hiện. Tải lại trang; nếu vẫn lỗi thì báo quản trị
+            hệ thống.
+          </p>
+        </CardContent>
+      </Card>
+    )
+  }
 
   const isEmpty = report.phases.length === 0 && report.docs.length === 0 && report.items.length === 0
   //  Khối rỗng với người chỉ xem: ẩn hẳn, khỏi bày một thẻ trắng.
   if (isEmpty && !canEdit) return null
 
-  //  Nút đang lọc vừa bị xóa thì rơi về «Tất cả».
-  const activeFilter =
-    filter !== REPORT_FILTER_ALL && !report.items.some((item) => item.id === filter)
-      ? REPORT_FILTER_ALL
-      : filter
+  //  Khối rỗng thì không gấp — lời mời khởi tạo phải thấy ngay, gấp lại thì
+  //  người vừa bấm «Thêm Báo cáo thực hiện» phải bấm thêm lần nữa mới thấy gì.
+  const showBody = cardOpen || isEmpty
 
   const docsById = reportDocsById(report)
   const itemNameById = new Map(report.items.map((item) => [item.id, item.name]))
   const trimmedQuery = query.trim()
-  //  Ba tầng lọc chồng nhau: nút dòng hàng → trạng thái → từ khóa (soi mọi ô chữ).
-  const visibleDocs = filterReportDocs(report.docs, activeFilter).filter(
-    (doc) =>
-      (statusFilter === REPORT_STATUS_FILTER_ALL || doc.status === statusFilter) &&
-      matchReportDoc(doc, trimmedQuery, itemNameById.get(doc.item_id) ?? ''),
-  )
-  const hasDocFilter =
-    activeFilter !== REPORT_FILTER_ALL ||
-    statusFilter !== REPORT_STATUS_FILTER_ALL ||
-    trimmedQuery !== ''
+  const hasDocFilter = statusFilter !== REPORT_STATUS_FILTER_ALL || trimmedQuery !== ''
+  //  Hai tầng lọc chồng nhau: trạng thái → từ khóa (soi mọi ô chữ của hồ sơ).
+  //  Tầng «nút dòng hàng» không còn là bộ lọc — nó thành dòng bảng sổ được.
+  const matchesFilter = (doc: SurveyReportDoc) =>
+    (statusFilter === REPORT_STATUS_FILTER_ALL || doc.status === statusFilter) &&
+    matchReportDoc(doc, trimmedQuery, itemNameById.get(doc.item_id) ?? '')
+  const visibleDocs = report.docs.filter(matchesFilter)
   const doneCount = report.docs.filter(isReportDocDone).length
 
-  //  Đang tìm kiếm / lọc trạng thái thì MỞ hết bất kể trạng thái thu gọn —
-  //  không thì kết quả tìm được nằm sau một giai đoạn đang gấp, tưởng là không có.
-  const forceExpanded = trimmedQuery !== '' || statusFilter !== REPORT_STATUS_FILTER_ALL
-  const allCollapsed =
-    report.phases.length > 0 && report.phases.every((phase) => collapsedPhases.has(phase.id))
-  const toggleCollapseAll = () =>
-    setCollapsedPhases(allCollapsed ? new Set() : new Set(report.phases.map((phase) => phase.id)))
+  //  Hồ sơ CHUNG đứng riêng một dòng chứ không lặp lại dưới mọi nút dòng hàng:
+  //  bảng có dòng TỔNG, mà lặp thì một hồ sơ bị đếm nhiều lần. Ô chọn nút trong
+  //  hộp sửa hồ sơ vẫn giữ nghĩa cũ («Chung» = áp cho cả phiếu).
+  const commonDocs = report.docs.filter((doc) => doc.item_id === COMMON_ROW_ID)
+  const rows: ReportItemRow[] = [
+    ...(commonDocs.length > 0 || report.items.length === 0
+      ? [
+          {
+            id: COMMON_ROW_ID,
+            name: 'Chung (cả phiếu)',
+            item: null,
+            docs: commonDocs,
+          },
+        ]
+      : []),
+    ...report.items.map((item) => ({
+      id: item.id,
+      name: item.name,
+      item,
+      docs: report.docs.filter((doc) => doc.item_id === item.id),
+    })),
+  ]
+  //  Đang lọc thì dòng không còn hồ sơ nào khớp ẩn đi; không lọc gì vẫn bày
+  //  dòng rỗng để còn sửa/xóa nút đó.
+  const visibleRows = rows.filter((row) => !hasDocFilter || row.docs.some(matchesFilter))
+
+  //  Giai đoạn CHƯA CÓ hồ sơ nào không lọt vào dải sổ của dòng hàng nào cả —
+  //  bày riêng bên dưới, không thì nó thành bản ghi mồ côi không đường sửa/xóa.
+  const orphanPhases = report.phases.filter(
+    (phase) => !report.docs.some((doc) => doc.phase_id === phase.id),
+  )
+
+  //  Giai đoạn có hồ sơ khớp bộ lọc — dạng xem tổng chỉ bày những giai đoạn này
+  //  khi đang lọc, không thì kết quả tìm lọt thỏm giữa một loạt giai đoạn rỗng.
+  const visiblePhases = report.phases.filter(
+    (phase) => !hasDocFilter || visibleDocs.some((doc) => doc.phase_id === phase.id),
+  )
+
+  //  Đang tìm kiếm / lọc trạng thái thì SỔ hết bất kể trạng thái gấp — không thì
+  //  kết quả tìm được nằm sau một dòng đang gấp, tưởng là không có.
+  const forceOpen = hasDocFilter
+  const allRowsOpen = visibleRows.length > 0 && visibleRows.every((row) => openRows.has(row.id))
+  const toggleAllRows = () =>
+    setOpenRows(allRowsOpen ? new Set() : new Set(visibleRows.map((row) => row.id)))
+  const toggleRow = (rowId: number) =>
+    setOpenRows((current) => {
+      const next = new Set(current)
+      if (next.has(rowId)) next.delete(rowId)
+      else next.add(rowId)
+      return next
+    })
+  const allPhasesOpen =
+    visiblePhases.length > 0 && visiblePhases.every((phase) => !collapsedPhases.has(phase.id))
+  const toggleAllPhases = () =>
+    setCollapsedPhases(allPhasesOpen ? new Set(visiblePhases.map((phase) => phase.id)) : new Set())
   const togglePhaseCollapse = (phaseId: number) =>
     setCollapsedPhases((current) => {
       const next = new Set(current)
@@ -177,248 +326,235 @@ export function SurveyReportCard({ surveyRequestId, canEdit, onDeleted }: Survey
       return next
     })
 
+  //  Nút «Mở tất cả / Thu gọn» gạt ĐÚNG TRỤC đang xem: dạng tổng gạt giai đoạn,
+  //  dạng dòng hàng gạt dòng hàng. Một nút, hai nghĩa — vì chỉ một trục hiện ra.
+  const allOpen = viewMode === 'phase' ? allPhasesOpen : allRowsOpen
+  const toggleAll = viewMode === 'phase' ? toggleAllPhases : toggleAllRows
+
+  const changeViewMode = (mode: ReportViewMode) => {
+    setViewMode(mode)
+    try {
+      localStorage.setItem(VIEW_STORAGE_KEY, mode)
+    } catch {
+      //  Không ghi nhớ được thì thôi, đổi dạng xem vẫn phải ăn.
+    }
+  }
+
   return (
     <Card className="gap-4 py-4">
-      <CardHeader className="min-h-9 flex flex-row items-center justify-between gap-3 border-b px-4 pb-3!">
-        <CardTitle className="text-base text-navy dark:text-foreground">
-          Báo cáo thực hiện
-        </CardTitle>
-        <div className="flex flex-wrap items-center justify-end gap-2">
+      <CardHeader className="min-h-9 flex flex-row flex-wrap items-center justify-between gap-3 border-b px-4 pb-3!">
+        <button
+          type="button"
+          aria-expanded={showBody}
+          disabled={isEmpty}
+          title={showBody ? 'Thu gọn báo cáo thực hiện' : 'Mở báo cáo thực hiện'}
+          className="flex min-w-0 flex-1 items-center gap-2 text-left"
+          onClick={() => setCardOpen((current) => !current)}
+        >
+          <ChevronDown
+            className={cn(
+              'size-4 shrink-0 text-muted-foreground transition-transform',
+              !showBody && '-rotate-90',
+            )}
+          />
+          <CardTitle className="text-base text-navy dark:text-foreground">
+            Báo cáo thực hiện
+          </CardTitle>
           {report.docs.length > 0 && (
             <span className="text-xs whitespace-nowrap text-muted-foreground">
               {doneCount}/{report.docs.length} hồ sơ · {reportPercent(report.docs)}%
             </span>
           )}
-          {!isEmpty && (
-            <>
-              <SearchField
-                value={query}
-                onChange={setQuery}
-                placeholder="Tìm hồ sơ, mô tả, tệp..."
-                placeholderShort="Tìm hồ sơ..."
-                className="h-8 w-48 flex-none"
-                aria-label="Tìm hồ sơ trong báo cáo"
+        </button>
+        {showBody && !isEmpty && (
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {/* Nút gạt hai dạng xem. Tự dựng chứ không lấy `Tabs`: đây không phải
+                hai trang nội dung mà là một công tắc trong thanh công cụ, đứng
+                cạnh các nút khác — `shared/ui/` chưa có toggle-group. */}
+            <div className="flex items-center rounded-md border p-0.5">
+              <ViewModeButton
+                active={viewMode === 'phase'}
+                label="Xem tổng"
+                title="Xem tổng: hồ sơ xếp theo giai đoạn"
+                icon={<LayoutList className="size-3.5" />}
+                onClick={() => changeViewMode('phase')}
               />
-              <Select
-                value={String(statusFilter)}
-                onValueChange={(value) => setStatusFilter(Number(value))}
-              >
-                <SelectTrigger size="sm" aria-label="Lọc theo trạng thái hồ sơ">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={String(REPORT_STATUS_FILTER_ALL)}>Mọi trạng thái</SelectItem>
-                  {Object.entries(REPORT_DOC_STATUS_LABELS).map(([code, label]) => (
-                    <SelectItem key={code} value={code}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button
-                variant="outline"
-                size="sm"
-                className="px-2"
-                aria-label={allCollapsed ? 'Hiện tất cả hồ sơ con' : 'Thu gọn tất cả hồ sơ con'}
-                title={allCollapsed ? 'Hiện tất cả hồ sơ con' : 'Thu gọn tất cả hồ sơ con'}
-                onClick={toggleCollapseAll}
-              >
-                {allCollapsed ? <ChevronsUpDown /> : <ChevronsDownUp />}
-              </Button>
-            </>
-          )}
-          {canEdit && !isEmpty && (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={busy}
-                onClick={() => setPhaseDialog({ phase: null })}
-              >
-                <ListPlus />
-                Thêm giai đoạn
-              </Button>
-              <Button
-                size="sm"
-                disabled={busy || report.phases.length === 0}
-                title={report.phases.length === 0 ? 'Thêm giai đoạn trước' : ''}
-                onClick={() => setDocDialog({ doc: null })}
-              >
-                <Plus />
-                Thêm hồ sơ
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="px-2 text-destructive hover:text-destructive"
-                disabled={busy}
-                aria-label="Xóa báo cáo thực hiện"
-                title="Xóa toàn bộ báo cáo thực hiện (hoàn tác được ở Lịch sử thao tác)"
-                onClick={handleDeleteReport}
-              >
-                <Trash2 />
-              </Button>
-            </>
-          )}
-        </div>
+              <ViewModeButton
+                active={viewMode === 'item'}
+                label="Theo dòng hàng"
+                title="Xem theo dòng hàng: mỗi dòng hàng một dòng, bấm để sổ hồ sơ"
+                icon={<Rows3 className="size-3.5" />}
+                onClick={() => changeViewMode('item')}
+              />
+            </div>
+            <SearchField
+              value={query}
+              onChange={setQuery}
+              placeholder="Tìm hồ sơ, mô tả, tệp..."
+              placeholderShort="Tìm hồ sơ..."
+              className="h-8 w-48 flex-none"
+              aria-label="Tìm hồ sơ trong báo cáo"
+            />
+            <Select
+              value={String(statusFilter)}
+              onValueChange={(value) => setStatusFilter(Number(value))}
+            >
+              <SelectTrigger size="sm" aria-label="Lọc theo trạng thái hồ sơ">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={String(REPORT_STATUS_FILTER_ALL)}>Mọi trạng thái</SelectItem>
+                {Object.entries(REPORT_DOC_STATUS_LABELS).map(([code, label]) => (
+                  <SelectItem key={code} value={code}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="sm" onClick={toggleAll}>
+              {allOpen ? 'Thu gọn' : 'Mở tất cả'}
+            </Button>
+            {canEdit && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={busy}
+                  onClick={() => setPhaseDialog({ phase: null })}
+                >
+                  <ListPlus />
+                  Thêm giai đoạn
+                </Button>
+                <Button
+                  size="sm"
+                  disabled={busy || report.phases.length === 0}
+                  title={report.phases.length === 0 ? 'Thêm giai đoạn trước' : ''}
+                  onClick={() => setDocDialog({ doc: null, itemId: COMMON_ROW_ID })}
+                >
+                  <Plus />
+                  Thêm hồ sơ
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="px-2 text-destructive hover:text-destructive"
+                  disabled={busy}
+                  aria-label="Xóa báo cáo thực hiện"
+                  title="Xóa toàn bộ báo cáo thực hiện (hoàn tác được ở Lịch sử thao tác)"
+                  onClick={handleDeleteReport}
+                >
+                  <Trash2 />
+                </Button>
+              </>
+            )}
+          </div>
+        )}
       </CardHeader>
 
-      <CardContent className="space-y-4 px-4">
-        {isEmpty ? (
-          <div className="flex flex-col items-center gap-3 py-6 text-center">
-            <p className="text-sm text-muted-foreground">
-              Chưa có báo cáo cho phiếu này. Khởi tạo khung mẫu (5 giai đoạn + nút theo dòng
-              hàng) rồi chỉnh lại cho hợp, hoặc tự thêm giai đoạn từ đầu.
-            </p>
-            <div className="flex gap-2">
-              <Button disabled={busy} onClick={() => actions.init.mutate()}>
-                <Sparkles />
-                Khởi tạo báo cáo mẫu
-              </Button>
-              <Button
-                variant="outline"
-                disabled={busy}
-                onClick={() => setPhaseDialog({ phase: null })}
-              >
-                <ListPlus />
-                Thêm giai đoạn
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <>
-            {/* Bộ lọc theo nút dòng hàng + quản lý nút */}
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="inline-flex flex-wrap items-center gap-0.5 rounded-lg border bg-muted/50 p-0.5">
-                <FilterChip
-                  active={activeFilter === REPORT_FILTER_ALL}
-                  label="Tất cả"
-                  onClick={() => setFilter(REPORT_FILTER_ALL)}
-                />
-                {report.items.map((item) => (
-                  <FilterChip
-                    key={item.id}
-                    active={activeFilter === item.id}
-                    label={item.name}
-                    onClick={() => setFilter(item.id)}
-                    onEdit={canEdit ? () => setItemDialog({ item }) : undefined}
-                    editTitle={`Sửa nút "${item.name}"`}
-                  />
-                ))}
-                {canEdit && (
-                  <button
-                    type="button"
-                    className="rounded-md p-1.5 text-muted-foreground hover:text-foreground"
-                    title="Thêm nút dòng hàng"
-                    onClick={() => setItemDialog({ item: null })}
-                  >
-                    <Plus className="size-3.5" />
-                  </button>
-                )}
-              </div>
-              <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Lock className="size-3" />
-                hồ sơ khóa = chờ hồ sơ tiên quyết hoàn thành trước
-              </span>
-            </div>
-
-            {/* Câu «rỗng vì bộ lọc» phải khác «chưa có gì» — người gõ nhầm một
-                chữ không được đọc ra "chưa có dữ liệu" (bẫy duoc-CR-322). */}
-            {hasDocFilter && visibleDocs.length === 0 && (
+      {showBody && (
+        <CardContent className="space-y-4 px-4">
+          {isEmpty ? (
+            <div className="flex flex-col items-center gap-3 py-6 text-center">
               <p className="text-sm text-muted-foreground">
-                Không có hồ sơ nào khớp bộ lọc hiện tại
-                {report.docs.length > 0
-                  ? ` — phiếu đang có ${report.docs.length} hồ sơ, thử xóa từ khóa hoặc đổi trạng thái.`
-                  : '.'}
+                Chưa có báo cáo cho phiếu này. Khởi tạo theo mẫu chung (5 giai đoạn + bộ hồ sơ
+                chung + nút theo dòng hàng) rồi chỉnh lại cho hợp, hoặc tự thêm giai đoạn từ
+                đầu. Mỗi dòng hàng / giai đoạn có nút «Tạo mẫu» riêng để đổ thêm sau.
               </p>
-            )}
+              <div className="flex gap-2">
+                <Button disabled={busy} onClick={() => actions.init.mutate()}>
+                  <Sparkles />
+                  Khởi tạo báo cáo mẫu
+                </Button>
+                <Button
+                  variant="outline"
+                  disabled={busy}
+                  onClick={() => setPhaseDialog({ phase: null })}
+                >
+                  <ListPlus />
+                  Thêm giai đoạn
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Câu «rỗng vì bộ lọc» phải khác «chưa có gì» — người gõ nhầm một
+                  chữ không được đọc ra "chưa có dữ liệu" (bẫy duoc-CR-322). */}
+              {hasDocFilter && visibleDocs.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  Không có hồ sơ nào khớp bộ lọc hiện tại
+                  {report.docs.length > 0
+                    ? ` — phiếu đang có ${report.docs.length} hồ sơ, thử xóa từ khóa hoặc đổi trạng thái.`
+                    : '.'}
+                </p>
+              )}
 
-            {/* Báo cáo tổng thể của nút đang chọn — đếm theo PHẠM VI NÚT (bỏ
-                qua ô tìm + lọc trạng thái), giống khung tracking: số tổng thể
-                không đổi theo từ khóa đang gõ. */}
-            <ReportSummary docs={filterReportDocs(report.docs, activeFilter)} />
+              {/* Báo cáo tổng thể của CẢ phiếu — đếm bỏ qua ô tìm + lọc trạng
+                  thái, giống khung tracking: số tổng không đổi theo từ khóa đang gõ. */}
+              <ReportSummary docs={report.docs} />
 
-            {/* Cột trái: hồ sơ theo giai đoạn · cột phải: khung tracking */}
-            <div className="gap-5 lg:grid lg:grid-cols-[minmax(0,1fr)_215px]">
-              <div className="space-y-4">
-            {report.phases.map((phase, index) => {
-              const phaseDocs = visibleDocs.filter((doc) => doc.phase_id === phase.id)
-              //  Đang lọc (nút / trạng thái / từ khóa) thì giai đoạn không có hồ
-              //  sơ khớp ẩn đi; không lọc gì vẫn bày giai đoạn rỗng để sửa/xóa nó.
-              if (phaseDocs.length === 0 && hasDocFilter) return null
-              const isCollapsed = !forceExpanded && collapsedPhases.has(phase.id)
-              return (
-                <div key={phase.id} className="space-y-2">
-                  <div className="flex items-center gap-2.5">
-                    <button
-                      type="button"
-                      aria-expanded={!isCollapsed}
-                      aria-label={isCollapsed ? 'Hiện hồ sơ của giai đoạn' : 'Thu gọn giai đoạn'}
-                      title={isCollapsed ? 'Hiện hồ sơ của giai đoạn' : 'Thu gọn giai đoạn'}
-                      className="-mr-1 rounded-md p-0.5 text-muted-foreground hover:text-foreground"
-                      onClick={() => togglePhaseCollapse(phase.id)}
-                    >
-                      <ChevronDown
-                        className={cn('size-4 transition-transform', isCollapsed && '-rotate-90')}
-                      />
-                    </button>
-                    <span className="grid size-6 place-items-center rounded-md bg-navy text-xs font-semibold text-white dark:bg-muted dark:text-foreground">
-                      {index + 1}
-                    </span>
-                    <span className="text-sm font-semibold">{phase.name}</span>
-                    {phase.location && (
-                      <span className="text-xs text-muted-foreground">{phase.location}</span>
-                    )}
-                    <PhaseProgressBar docs={phaseDocs} className="ml-auto" />
-                    {canEdit && (
-                      <button
-                        type="button"
-                        className="rounded-md p-1 text-muted-foreground hover:text-foreground"
-                        title="Sửa giai đoạn"
-                        onClick={() => setPhaseDialog({ phase })}
-                      >
-                        <Pencil className="size-3.5" />
-                      </button>
-                    )}
-                  </div>
-
-                  {isCollapsed ? null : phaseDocs.length === 0 ? (
-                    <p className="pl-8 text-xs text-muted-foreground">Chưa có hồ sơ.</p>
+              {/* Cột trái: thân báo cáo (theo dạng xem) · cột phải: khung tracking */}
+              <div className="gap-5 lg:grid lg:grid-cols-[minmax(0,1fr)_215px]">
+                <div className="space-y-3">
+                  {viewMode === 'phase' ? (
+                    <ReportPhaseList
+                      phases={report.phases}
+                      docs={visibleDocs}
+                      docsById={docsById}
+                      itemNameById={itemNameById}
+                      hasDocFilter={hasDocFilter}
+                      forceOpen={forceOpen}
+                      collapsedPhases={collapsedPhases}
+                      canEdit={canEdit}
+                      busy={busy}
+                      onTogglePhase={togglePhaseCollapse}
+                      onEditPhase={(phase) => setPhaseDialog({ phase })}
+                      onAddDoc={(phaseId) =>
+                        setDocDialog({ doc: null, itemId: COMMON_ROW_ID, phaseId })
+                      }
+                      onApplyTemplate={(phaseId) => handleApplyTemplate(COMMON_ROW_ID, phaseId)}
+                      onEditDoc={(doc) => setDocDialog({ doc, itemId: doc.item_id })}
+                      onDeleteDoc={handleDeleteDoc}
+                      onToggleDoc={handleToggleDoc}
+                    />
                   ) : (
-                    <div className="space-y-1.5">
-                      {phaseDocs.map((doc) => (
-                        <ReportDocRow
-                          key={doc.id}
-                          doc={doc}
-                          report={report}
-                          docsById={docsById}
-                          canEdit={canEdit}
-                          busy={busy}
-                          onToggle={() =>
-                            actions.setDocStatus.mutate({
-                              docId: doc.id,
-                              status: isReportDocDone(doc) ? REPORT_DOC_DOING : REPORT_DOC_DONE,
-                            })
-                          }
-                          onEdit={() => setDocDialog({ doc })}
-                        />
-                      ))}
-                    </div>
+                    <ReportItemTable
+                      report={report}
+                      rows={visibleRows}
+                      docsById={docsById}
+                      matchesFilter={matchesFilter}
+                      openRows={openRows}
+                      forceOpen={forceOpen}
+                      orphanPhases={orphanPhases}
+                      canEdit={canEdit}
+                      busy={busy}
+                      onToggleRow={toggleRow}
+                      onAddItem={() => setItemDialog({ item: null })}
+                      onEditItem={(item) => setItemDialog({ item })}
+                      onAddDoc={(itemId) => setDocDialog({ doc: null, itemId })}
+                      onApplyTemplate={(itemId) => handleApplyTemplate(itemId)}
+                      onEditDoc={(doc) => setDocDialog({ doc, itemId: doc.item_id })}
+                      onDeleteDoc={handleDeleteDoc}
+                      onEditPhase={(phase) => setPhaseDialog({ phase })}
+                      onToggleDoc={handleToggleDoc}
+                    />
                   )}
 
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Lock className="size-3" />
+                    hồ sơ khóa = chờ hồ sơ tiên quyết hoàn thành trước
+                  </span>
                 </div>
-              )
-            })}
+
+                <SurveyReportTracking
+                  report={report}
+                  itemFilter={REPORT_FILTER_ALL}
+                  className="hidden lg:block"
+                />
               </div>
-              <SurveyReportTracking
-                report={report}
-                itemFilter={activeFilter}
-                className="hidden lg:block"
-              />
-            </div>
-          </>
-        )}
-      </CardContent>
+            </>
+          )}
+        </CardContent>
+      )}
 
       <SurveyReportDocDialog
         open={docDialog !== null}
@@ -427,8 +563,8 @@ export function SurveyReportCard({ surveyRequestId, canEdit, onDeleted }: Survey
         }}
         doc={docDialog?.doc ?? null}
         report={report}
-        defaultPhaseId={report.phases[0]?.id ?? 0}
-        defaultItemId={activeFilter === REPORT_FILTER_ALL ? 0 : activeFilter}
+        defaultPhaseId={docDialog?.phaseId ?? report.phases[0]?.id ?? 0}
+        defaultItemId={docDialog?.itemId ?? COMMON_ROW_ID}
         defaultAssigneeId={defaultAssigneeId}
         pending={actions.saveDoc.isPending || actions.deleteDoc.isPending}
         onSave={(docId, payload) => actions.saveDoc.mutateAsync({ docId, payload })}
@@ -465,55 +601,519 @@ export function SurveyReportCard({ surveyRequestId, canEdit, onDeleted }: Survey
   )
 }
 
-interface FilterChipProps {
+/** Một nửa của công tắc dạng xem — nút phẳng, nửa đang chọn nổi lên như tab. */
+function ViewModeButton({
+  active,
+  label,
+  title,
+  icon,
+  onClick,
+}: {
   active: boolean
   label: string
+  title: string
+  icon: React.ReactNode
   onClick: () => void
-  /** Có mặt = hiện bút chì sửa NGAY TRONG khung của nút (một khối liền). */
-  onEdit?: () => void
-  editTitle?: string
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      title={title}
+      className={cn(
+        'flex h-7 items-center gap-1.5 rounded-sm px-2 text-xs font-medium whitespace-nowrap transition-colors',
+        active
+          ? 'bg-accent text-accent-foreground'
+          : 'text-muted-foreground hover:text-foreground',
+      )}
+      onClick={onClick}
+    >
+      {icon}
+      {label}
+    </button>
+  )
+}
+
+interface ReportPhaseListProps {
+  /** TẤT CẢ giai đoạn — số thứ tự phải đếm theo đây chứ không theo danh sách đã lọc. */
+  phases: SurveyReportPhase[]
+  /** Hồ sơ ĐÃ qua ô tìm + lọc trạng thái. */
+  docs: SurveyReportDoc[]
+  docsById: Map<number, SurveyReportDoc>
+  itemNameById: Map<number, string>
+  hasDocFilter: boolean
+  forceOpen: boolean
+  collapsedPhases: Set<number>
+  canEdit: boolean
+  busy: boolean
+  onTogglePhase: (phaseId: number) => void
+  onEditPhase: (phase: SurveyReportPhase) => void
+  /** Thêm hồ sơ vào ĐÚNG giai đoạn vừa bấm. */
+  onAddDoc: (phaseId: number) => void
+  /** Đổ phần mẫu chung của giai đoạn vừa bấm vào hồ sơ Chung. */
+  onApplyTemplate: (phaseId: number) => void
+  onEditDoc: (doc: SurveyReportDoc) => void
+  onDeleteDoc: (doc: SurveyReportDoc) => void
+  onToggleDoc: (doc: SurveyReportDoc) => void
 }
 
 /**
- * Một nút lọc của dãy nút dòng hàng. Nhãn và bút chì sửa nằm CHUNG một khung —
- * hai nút HTML riêng (bấm nhãn để lọc, bấm bút chì để sửa) nhưng đọc ra một khối.
+ * DẠNG XEM TỔNG: toàn bộ hồ sơ của phiếu xếp theo giai đoạn, đọc được trình tự
+ * thương vụ từ trên xuống. Giai đoạn RỖNG vẫn bày (khi không lọc) — nó là lời
+ * nhắc "khâu này chưa ai khai hồ sơ", và cũng là đường vào để sửa giai đoạn đó.
  */
-function FilterChip({ active, label, onClick, onEdit, editTitle }: FilterChipProps) {
+function ReportPhaseList({
+  phases,
+  docs,
+  docsById,
+  itemNameById,
+  hasDocFilter,
+  forceOpen,
+  collapsedPhases,
+  canEdit,
+  busy,
+  onTogglePhase,
+  onEditPhase,
+  onAddDoc,
+  onApplyTemplate,
+  onEditDoc,
+  onDeleteDoc,
+  onToggleDoc,
+}: ReportPhaseListProps) {
   return (
-    <span
-      className={cn(
-        'inline-flex items-center rounded-md transition-colors',
-        active ? 'bg-primary shadow-sm' : 'hover:bg-background/60',
+    <div className="space-y-4">
+      {phases.map((phase, index) => {
+        const phaseDocs = docs.filter((doc) => doc.phase_id === phase.id)
+        //  Đang lọc mà giai đoạn không còn hồ sơ nào khớp thì giấu cả cụm —
+        //  không thì kết quả tìm lọt thỏm giữa một loạt tiêu đề rỗng.
+        if (phaseDocs.length === 0 && hasDocFilter) return null
+        const collapsed = !forceOpen && collapsedPhases.has(phase.id)
+        return (
+          <div key={phase.id} className="space-y-2">
+            <div className="flex items-center gap-2.5">
+              <button
+                type="button"
+                aria-expanded={!collapsed}
+                aria-label={collapsed ? 'Hiện hồ sơ của giai đoạn' : 'Thu gọn giai đoạn'}
+                className="-mr-1 rounded-md p-0.5 text-muted-foreground hover:text-foreground"
+                onClick={() => onTogglePhase(phase.id)}
+              >
+                <ChevronDown
+                  className={cn('size-4 transition-transform', collapsed && '-rotate-90')}
+                />
+              </button>
+              <span className="grid size-6 place-items-center rounded-md bg-navy text-xs font-semibold text-white dark:bg-muted dark:text-foreground">
+                {index + 1}
+              </span>
+              <span className="text-sm font-semibold">{phase.name}</span>
+              {phase.location && (
+                <span className="text-xs text-muted-foreground">{phase.location}</span>
+              )}
+              <PhaseProgressBar docs={phaseDocs} className="ml-auto" />
+              {canEdit && (
+                <>
+                  {/* Đường vào NGẮN NHẤT để khai hồ sơ: bấm ngay tại giai đoạn
+                      đang đọc, hộp điền sẵn giai đoạn đó — khỏi phải lên nút
+                      chung ở đầu khối rồi tự chọn lại trong ô. */}
+                  <button
+                    type="button"
+                    disabled={busy}
+                    title={`Thêm hồ sơ vào giai đoạn "${phase.name}"`}
+                    aria-label={`Thêm hồ sơ vào giai đoạn "${phase.name}"`}
+                    className="rounded-md p-1 text-muted-foreground hover:text-foreground"
+                    onClick={() => onAddDoc(phase.id)}
+                  >
+                    <Plus className="size-3.5" />
+                  </button>
+                  {/* «Tạo mẫu» ngay tại giai đoạn: đổ phần mẫu chung của khâu
+                      này vào hồ sơ Chung — cộng thêm, có rồi thì bỏ qua. Giai
+                      đoạn tự đặt tên (không có trong mẫu) thì backend trả 400
+                      kèm danh sách tên hợp lệ, toast lỗi tự hiện. */}
+                  <button
+                    type="button"
+                    disabled={busy}
+                    title={`Tạo hồ sơ mẫu vào giai đoạn "${phase.name}"`}
+                    aria-label={`Tạo hồ sơ mẫu vào giai đoạn "${phase.name}"`}
+                    className="rounded-md p-1 text-muted-foreground hover:text-foreground"
+                    onClick={() => onApplyTemplate(phase.id)}
+                  >
+                    <Sparkles className="size-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    title={`Sửa giai đoạn "${phase.name}"`}
+                    aria-label={`Sửa giai đoạn "${phase.name}"`}
+                    className="rounded-md p-1 text-muted-foreground hover:text-foreground"
+                    onClick={() => onEditPhase(phase)}
+                  >
+                    <Pencil className="size-3.5" />
+                  </button>
+                </>
+              )}
+            </div>
+            {collapsed ? null : phaseDocs.length === 0 ? (
+              <div className="flex items-center gap-2 pl-8">
+                <p className="text-xs text-muted-foreground">Chưa có hồ sơ.</p>
+                {canEdit && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs"
+                      disabled={busy}
+                      onClick={() => onAddDoc(phase.id)}
+                    >
+                      <Plus className="size-3" />
+                      Thêm hồ sơ
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs"
+                      disabled={busy}
+                      onClick={() => onApplyTemplate(phase.id)}
+                    >
+                      <Sparkles className="size-3" />
+                      Tạo theo mẫu
+                    </Button>
+                  </>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                {phaseDocs.map((doc) => (
+                  <ReportDocRow
+                    key={doc.id}
+                    doc={doc}
+                    docsById={docsById}
+                    canEdit={canEdit}
+                    busy={busy}
+                    //  Dạng xem này trộn hồ sơ của mọi dòng hàng nên mỗi dòng
+                    //  phải TỰ nói nó thuộc dòng hàng nào.
+                    itemName={itemNameById.get(doc.item_id) ?? ''}
+                    showItemTag
+                    onToggle={() => onToggleDoc(doc)}
+                    onEdit={() => onEditDoc(doc)}
+                    onDelete={() => onDeleteDoc(doc)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+interface ReportItemTableProps {
+  report: SurveyRequestReport
+  /** Các dòng ĐÃ lọc — dòng không còn hồ sơ nào khớp đã bị bỏ ở tầng trên. */
+  rows: ReportItemRow[]
+  docsById: Map<number, SurveyReportDoc>
+  matchesFilter: (doc: SurveyReportDoc) => boolean
+  openRows: Set<number>
+  forceOpen: boolean
+  orphanPhases: SurveyReportPhase[]
+  canEdit: boolean
+  busy: boolean
+  onToggleRow: (rowId: number) => void
+  onAddItem: () => void
+  onEditItem: (item: SurveyReportItem) => void
+  onAddDoc: (itemId: number) => void
+  /** Đổ CẢ mẫu chung (mọi giai đoạn) vào nút dòng hàng vừa bấm. */
+  onApplyTemplate: (itemId: number) => void
+  onEditDoc: (doc: SurveyReportDoc) => void
+  onDeleteDoc: (doc: SurveyReportDoc) => void
+  onEditPhase: (phase: SurveyReportPhase) => void
+  onToggleDoc: (doc: SurveyReportDoc) => void
+}
+
+/**
+ * DẠNG XEM THEO DÒNG HÀNG: mỗi dòng hàng một dòng bảng, bấm để sổ hồ sơ của
+ * riêng nó (cùng khuôn với «Chi phí theo dòng hàng» của đơn mua hàng nhập khẩu).
+ */
+function ReportItemTable({
+  report,
+  rows,
+  docsById,
+  matchesFilter,
+  openRows,
+  forceOpen,
+  orphanPhases,
+  canEdit,
+  busy,
+  onToggleRow,
+  onAddItem,
+  onEditItem,
+  onAddDoc,
+  onApplyTemplate,
+  onEditDoc,
+  onDeleteDoc,
+  onEditPhase,
+  onToggleDoc,
+}: ReportItemTableProps) {
+  const doneCount = report.docs.filter(isReportDocDone).length
+  return (
+    <>
+      <div className="overflow-x-auto rounded-lg border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-8" />
+              <TableHead>Dòng hàng</TableHead>
+              <TableHead className="w-20 text-center">Hồ sơ</TableHead>
+              <TableHead className="w-20 text-center">Đã xong</TableHead>
+              <TableHead className="w-40">Tiến độ</TableHead>
+              <TableHead className="w-32">Hạn gần nhất</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((row) => {
+              const open = forceOpen || openRows.has(row.id)
+              const rowDocs = row.docs.filter(matchesFilter)
+              return (
+                <Fragment key={row.id}>
+                  <TableRow className="cursor-pointer" onClick={() => onToggleRow(row.id)}>
+                    <TableCell className="text-muted-foreground">
+                      {open ? (
+                        <ChevronDown className="size-4" />
+                      ) : (
+                        <ChevronRight className="size-4" />
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <span className="flex items-center gap-1.5">
+                        <span className="font-medium">{row.name}</span>
+                        {row.item && canEdit && (
+                          <button
+                            type="button"
+                            title={`Sửa nút "${row.name}"`}
+                            aria-label={`Sửa nút "${row.name}"`}
+                            className="rounded-md p-1 text-muted-foreground hover:text-foreground"
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              if (row.item) onEditItem(row.item)
+                            }}
+                          >
+                            <Pencil className="size-3.5" />
+                          </button>
+                        )}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-center tabular-nums">{row.docs.length}</TableCell>
+                    <TableCell className="text-center tabular-nums">
+                      {row.docs.filter(isReportDocDone).length}
+                    </TableCell>
+                    <TableCell>
+                      <PhaseProgressBar docs={row.docs} className="w-full" />
+                    </TableCell>
+                    <TableCell>
+                      <ExpiryChip expiry={nearestExpiry(row.docs)} />
+                    </TableCell>
+                  </TableRow>
+                  {open && (
+                    <TableRow className="hover:bg-transparent">
+                      <TableCell colSpan={ITEM_TABLE_COLUMNS} className="bg-muted/40 p-3">
+                        <ReportRowDetail
+                          report={report}
+                          docs={rowDocs}
+                          docsById={docsById}
+                          canEdit={canEdit}
+                          busy={busy}
+                          addLabel={
+                            row.item ? `Thêm hồ sơ cho "${row.name}"` : 'Thêm hồ sơ chung'
+                          }
+                          templateLabel={
+                            row.item ? `Tạo mẫu cho "${row.name}"` : 'Tạo mẫu vào hồ sơ chung'
+                          }
+                          onAddDoc={() => onAddDoc(row.id)}
+                          onApplyTemplate={() => onApplyTemplate(row.id)}
+                          onEditDoc={onEditDoc}
+                          onDeleteDoc={onDeleteDoc}
+                          onEditPhase={onEditPhase}
+                          onToggleDoc={onToggleDoc}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </Fragment>
+              )
+            })}
+            {canEdit && (
+              <TableRow className="hover:bg-transparent">
+                <TableCell colSpan={ITEM_TABLE_COLUMNS} className="py-1.5">
+                  <Button variant="ghost" size="sm" disabled={busy} onClick={onAddItem}>
+                    <Plus />
+                    Thêm nút dòng hàng
+                  </Button>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+          <TableFooter>
+            <TableRow>
+              <TableCell colSpan={2} className="font-semibold">
+                Tổng cả phiếu
+              </TableCell>
+              <TableCell className="text-center font-semibold tabular-nums">
+                {report.docs.length}
+              </TableCell>
+              <TableCell className="text-center font-semibold tabular-nums">
+                {doneCount}
+              </TableCell>
+              <TableCell>
+                <PhaseProgressBar docs={report.docs} className="w-full" />
+              </TableCell>
+              <TableCell>
+                <ExpiryChip expiry={nearestExpiry(report.docs)} />
+              </TableCell>
+            </TableRow>
+          </TableFooter>
+        </Table>
+      </div>
+
+      {/* Giai đoạn CHƯA CÓ hồ sơ nào không lọt vào dải sổ của dòng hàng nào cả —
+          bày riêng, không thì nó thành bản ghi mồ côi không đường sửa/xóa. Dạng
+          xem tổng không cần cụm này: ở đó giai đoạn rỗng vẫn đứng đúng chỗ. */}
+      {orphanPhases.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          <span>Giai đoạn chưa có hồ sơ:</span>
+          {orphanPhases.map((phase) => (
+            <span
+              key={phase.id}
+              className="inline-flex items-center gap-1 rounded-md border bg-muted/40 py-0.5 pr-1 pl-2 font-medium"
+            >
+              {phase.name}
+              {canEdit && (
+                <button
+                  type="button"
+                  title={`Sửa giai đoạn "${phase.name}"`}
+                  aria-label={`Sửa giai đoạn "${phase.name}"`}
+                  className="rounded-md p-0.5 hover:text-foreground"
+                  onClick={() => onEditPhase(phase)}
+                >
+                  <Pencil className="size-3" />
+                </button>
+              )}
+            </span>
+          ))}
+        </div>
       )}
-    >
-      <button
-        type="button"
-        aria-pressed={active}
-        className={cn(
-          'rounded-md py-1 pl-3 text-xs font-medium transition-colors',
-          onEdit ? 'pr-1.5' : 'pr-3',
-          active ? 'text-primary-foreground' : 'text-muted-foreground hover:text-foreground',
-        )}
-        onClick={onClick}
-      >
-        {label}
-      </button>
-      {onEdit && (
-        <button
-          type="button"
-          title={editTitle}
-          className={cn(
-            'rounded-md py-1.5 pr-2 pl-0.5 transition-colors',
-            active
-              ? 'text-primary-foreground/80 hover:text-primary-foreground'
-              : 'text-muted-foreground hover:text-foreground',
-          )}
-          onClick={onEdit}
-        >
-          <Pencil className="size-3" />
-        </button>
+    </>
+  )
+}
+
+interface ReportRowDetailProps {
+  report: SurveyRequestReport
+  /** Hồ sơ của dòng hàng này, ĐÃ qua ô tìm + lọc trạng thái. */
+  docs: SurveyReportDoc[]
+  docsById: Map<number, SurveyReportDoc>
+  canEdit: boolean
+  busy: boolean
+  addLabel: string
+  templateLabel: string
+  onAddDoc: () => void
+  onApplyTemplate: () => void
+  onEditDoc: (doc: SurveyReportDoc) => void
+  onDeleteDoc: (doc: SurveyReportDoc) => void
+  onEditPhase: (phase: SurveyReportPhase) => void
+  onToggleDoc: (doc: SurveyReportDoc) => void
+}
+
+/**
+ * Dải sổ ra dưới một dòng hàng: hồ sơ của dòng đó, xếp theo GIAI ĐOẠN. Giai
+ * đoạn không có hồ sơ của dòng này thì bỏ qua — bày đủ 5 giai đoạn rỗng dưới
+ * từng dòng chỉ làm dải sổ dài ra mà không nói thêm điều gì.
+ */
+function ReportRowDetail({
+  report,
+  docs,
+  docsById,
+  canEdit,
+  busy,
+  addLabel,
+  templateLabel,
+  onAddDoc,
+  onApplyTemplate,
+  onEditDoc,
+  onDeleteDoc,
+  onEditPhase,
+  onToggleDoc,
+}: ReportRowDetailProps) {
+  return (
+    <div className="space-y-4">
+      {docs.length === 0 ? (
+        <p className="text-xs text-muted-foreground">Chưa có hồ sơ nào ở dòng hàng này.</p>
+      ) : (
+        report.phases.map((phase, index) => {
+          const phaseDocs = docs.filter((doc) => doc.phase_id === phase.id)
+          if (phaseDocs.length === 0) return null
+          return (
+            <div key={phase.id} className="space-y-2">
+              <div className="flex items-center gap-2.5">
+                <span className="grid size-6 place-items-center rounded-md bg-navy text-xs font-semibold text-white dark:bg-muted dark:text-foreground">
+                  {index + 1}
+                </span>
+                <span className="text-sm font-semibold">{phase.name}</span>
+                {phase.location && (
+                  <span className="text-xs text-muted-foreground">{phase.location}</span>
+                )}
+                <PhaseProgressBar docs={phaseDocs} className="ml-auto" />
+                {canEdit && (
+                  <button
+                    type="button"
+                    title="Sửa giai đoạn"
+                    aria-label="Sửa giai đoạn"
+                    className="rounded-md p-1 text-muted-foreground hover:text-foreground"
+                    onClick={() => onEditPhase(phase)}
+                  >
+                    <Pencil className="size-3.5" />
+                  </button>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                {phaseDocs.map((doc) => (
+                  <ReportDocRow
+                    key={doc.id}
+                    doc={doc}
+                    docsById={docsById}
+                    canEdit={canEdit}
+                    busy={busy}
+                    onToggle={() => onToggleDoc(doc)}
+                    onEdit={() => onEditDoc(doc)}
+                    onDelete={() => onDeleteDoc(doc)}
+                  />
+                ))}
+              </div>
+            </div>
+          )
+        })
       )}
-    </span>
+
+      {canEdit && (
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={busy || report.phases.length === 0}
+            title={report.phases.length === 0 ? 'Thêm giai đoạn trước' : ''}
+            onClick={onAddDoc}
+          >
+            <Plus />
+            {addLabel}
+          </Button>
+          {/* «Tạo mẫu» cho riêng dòng hàng này (yêu cầu "bấm ở dòng 3 lớp thì
+              cũng cho cái nút tạo mẫu"): đổ cả bộ mẫu chung vào nút, giai đoạn
+              nào của mẫu chưa có thì backend tự dựng — nên KHÔNG khóa khi chưa
+              có giai đoạn như nút bên cạnh. */}
+          <Button variant="outline" size="sm" disabled={busy} onClick={onApplyTemplate}>
+            <Sparkles />
+            {templateLabel}
+          </Button>
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -548,7 +1148,24 @@ const EXPIRY_TONE_CLASS: Record<ExpiryTone, string> = {
   normal: 'bg-muted text-muted-foreground',
 }
 
-/** Báo cáo TỔNG THỂ của nút đang chọn: tổng · đã xong · hết hiệu lực gần nhất. */
+/** Ô «Hạn gần nhất» của bảng dòng hàng — rỗng thì gạch ngang chứ không để trống. */
+function ExpiryChip({ expiry }: { expiry: string }) {
+  const meta = expiry ? expiryMeta(expiry) : null
+  if (!expiry || !meta) return <span className="text-muted-foreground">—</span>
+  return (
+    <span
+      title={`Hết hiệu lực ${formatDate(expiry)} · ${meta.note}`}
+      className={cn(
+        'inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium tabular-nums',
+        EXPIRY_TONE_CLASS[meta.tone],
+      )}
+    >
+      <CalendarClock className="size-3" />
+      {formatDate(expiry)}
+    </span>
+  )
+}
+
 /**
  * Thanh tiến độ: fill chạy theo %, TRÊN thanh in `hoàn tất/tổng · %`. Fill dùng
  * màu MỀM (tint) để chữ ở giữa đọc rõ trên cả phần đã tô lẫn phần trống, sáng
@@ -605,6 +1222,7 @@ function PhaseProgressBar({
   )
 }
 
+/** Báo cáo TỔNG THỂ của cả phiếu: tổng · đã xong · hết hiệu lực gần nhất. */
 function ReportSummary({ docs }: { docs: SurveyReportDoc[] }) {
   const total = docs.length
   const expiry = nearestExpiry(docs)
@@ -684,31 +1302,43 @@ function DocAssignee({ name }: { name: string }) {
 
 interface ReportDocRowProps {
   doc: SurveyReportDoc
-  report: { items: SurveyReportItem[] }
   docsById: Map<number, SurveyReportDoc>
   canEdit: boolean
   busy: boolean
+  /** Tên dòng hàng của hồ sơ — rỗng = hồ sơ CHUNG. Chỉ dùng khi `showItemTag`. */
+  itemName?: string
+  /** Bày thẻ tên dòng hàng không. Dạng xem theo dòng hàng thì KHÔNG: dòng bảng
+   *  bên trên đã nói rồi, lặp lại chỉ chiếm chỗ của mô tả. */
+  showItemTag?: boolean
   onToggle: () => void
   onEdit: () => void
+  onDelete: () => void
 }
 
-function ReportDocRow({ doc, report, docsById, canEdit, busy, onToggle, onEdit }: ReportDocRowProps) {
+function ReportDocRow({
+  doc,
+  docsById,
+  canEdit,
+  busy,
+  itemName = '',
+  showItemTag = false,
+  onToggle,
+  onEdit,
+  onDelete,
+}: ReportDocRowProps) {
   const done = isReportDocDone(doc)
   const locked = isReportDocLocked(doc, docsById)
   const waiting = pendingDepends(doc, docsById)
-  const itemName = doc.item_id
-    ? (report.items.find((item) => item.id === doc.item_id)?.name ?? '')
-    : ''
   const isLink = /^https?:\/\//i.test(doc.file_note)
 
-  //  MỘT DÒNG cho mỗi hồ sơ: tiêu đề + tag bên trái, mô tả co giãn ở giữa
-  //  (cắt bớt, rê chuột đọc đủ), khóa tiên quyết / đính kèm / trạng thái / sửa
-  //  dồn phải — đính kèm và sửa chỉ còn icon. Chi tiết đầy đủ nằm ở hộp Sửa.
+  //  MỘT DÒNG cho mỗi hồ sơ: tiêu đề bên trái, mô tả co giãn ở giữa (cắt bớt,
+  //  rê chuột đọc đủ), khóa tiên quyết / đính kèm / trạng thái / sửa dồn phải —
+  //  đính kèm và sửa chỉ còn icon. Chi tiết đầy đủ nằm ở hộp Sửa. Tên nút dòng
+  //  hàng KHÔNG lặp ở đây nữa: dòng bảng bên trên đã nói rồi.
   return (
     <div
       className={cn(
-        'flex items-center gap-2 rounded-lg border border-l-4 bg-card py-1.5 pr-1.5 pl-3',
-        STATUS_BORDER[doc.status] ?? STATUS_BORDER[0],
+        'flex items-center gap-2 rounded-lg border bg-card py-1.5 pr-1.5 pl-3',
         locked && 'opacity-70',
       )}
     >
@@ -729,17 +1359,20 @@ function ReportDocRow({ doc, report, docsById, canEdit, busy, onToggle, onEdit }
         <Check className="size-3.5" />
       </button>
 
+      {showItemTag && (
+        <span
+          title={itemName || 'Chung (cả phiếu)'}
+          className={cn(
+            'max-w-36 shrink-0 truncate rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase',
+            itemName ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground',
+          )}
+        >
+          {itemName || 'Chung'}
+        </span>
+      )}
+
       <span className="max-w-[45%] shrink-0 truncate text-sm font-medium" title={doc.title}>
         {doc.title}
-      </span>
-      <span
-        title={itemName || 'Chung'}
-        className={cn(
-          'max-w-36 shrink-0 truncate rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
-          doc.item_id ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground',
-        )}
-      >
-        {itemName || 'Chung'}
       </span>
       {doc.required && (
         <span className="shrink-0 rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-destructive">
@@ -806,16 +1439,29 @@ function ReportDocRow({ doc, report, docsById, canEdit, busy, onToggle, onEdit }
         {doc.status_label}
       </span>
       {canEdit && (
-        <Button
-          variant="outline"
-          size="icon"
-          className="size-7 shrink-0"
-          aria-label="Sửa hồ sơ"
-          title="Sửa hồ sơ"
-          onClick={onEdit}
-        >
-          <Pencil className="size-3.5" />
-        </Button>
+        <>
+          <Button
+            variant="outline"
+            size="icon"
+            className="size-7 shrink-0"
+            aria-label="Sửa hồ sơ"
+            title="Sửa hồ sơ"
+            onClick={onEdit}
+          >
+            <Pencil className="size-3.5" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            className="size-7 shrink-0 text-destructive hover:text-destructive"
+            aria-label="Xóa hồ sơ"
+            title="Xóa hồ sơ"
+            disabled={busy}
+            onClick={onDelete}
+          >
+            <Trash2 className="size-3.5" />
+          </Button>
+        </>
       )}
     </div>
   )
