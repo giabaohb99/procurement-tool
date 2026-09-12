@@ -3,13 +3,31 @@ import { TextAlign } from '@tiptap/extension-text-align'
 import { TextStyleKit } from '@tiptap/extension-text-style'
 import { TableKit } from '@tiptap/extension-table'
 import StarterKit from '@tiptap/starter-kit'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 
 import { ParagraphFormat } from './paragraph-format-extension'
 import { cssToWordLineSpacing } from './word-line-spacing'
 
+//  ⚠️ **Dựng `Editor` thì phải HỦY.** Mỗi bản Tiptap gắn một `EditorView` của
+//  ProseMirror, và `DOMObserver` của nó hẹn `setTimeout`. Bỏ mặc thì cái hẹn đó
+//  nổ SAU khi Vitest đã dọn jsdom của tệp: `ReferenceError: document is not
+//  defined`, ghi vào mục *Unhandled Errors* nên `npm run check` báo «1 error»
+//  trong khi mọi bài kiểm vẫn xanh — đúng kiểu lỗi không ai truy được nguồn.
+//  Hủy trong `afterEach` chứ đừng hủy ở cuối mỗi `it`: bài kiểm nào ngã giữa
+//  chừng thì dòng hủy đó không bao giờ chạy tới.
+const editors: Editor[] = []
+
+afterEach(() => {
+  for (const editor of editors.splice(0)) editor.destroy()
+})
+
+function track(editor: Editor) {
+  editors.push(editor)
+  return editor
+}
+
 function buildEditor(content: string) {
-  return new Editor({
+  return track(new Editor({
     extensions: [
       StarterKit,
       TextStyleKit,
@@ -17,7 +35,7 @@ function buildEditor(content: string) {
       ParagraphFormat,
     ],
     content,
-  })
+  }))
 }
 
 /**
@@ -108,7 +126,7 @@ describe('setLineHeight', () => {
 //  dựng lại đúng những thứ mà nội dung nhập từ Word hay chạm tới.
 describe('setLineHeight với bảng — mẫu hành chính nào cũng có bảng', () => {
   function buildEditorWithTable(content: string) {
-    return new Editor({
+    return track(new Editor({
       extensions: [
         StarterKit,
         TextStyleKit,
@@ -117,7 +135,7 @@ describe('setLineHeight với bảng — mẫu hành chính nào cũng có bản
         TableKit.configure({ table: { resizable: false } }),
       ],
       content,
-    })
+    }))
   }
 
   it('đổi được giãn dòng của đoạn nằm TRONG ô bảng', () => {

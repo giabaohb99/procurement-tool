@@ -2,15 +2,29 @@ import { Editor } from '@tiptap/core'
 import { TextAlign } from '@tiptap/extension-text-align'
 import { TextStyleKit } from '@tiptap/extension-text-style'
 import StarterKit from '@tiptap/starter-kit'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 
 import { ImageWithSize } from './image-size-extension'
 import { ImportTrace } from './import-trace-extension'
 import { ParagraphFormat } from './paragraph-format-extension'
 
+//  ⚠️ Hủy `Editor` sau mỗi bài kiểm — xem ghi chú ở
+//  `paragraph-format-extension.test.ts`: bỏ mặc thì `DOMObserver` của
+//  ProseMirror nổ `document is not defined` sau khi jsdom đã bị dọn.
+const editors: Editor[] = []
+
+afterEach(() => {
+  for (const editor of editors.splice(0)) editor.destroy()
+})
+
+function track(editor: Editor) {
+  editors.push(editor)
+  return editor
+}
+
 describe('định dạng nội dung nhập từ Word', () => {
   it('giữ định dạng đoạn, chữ, danh sách và kích thước ảnh sau khi Tiptap serialize', () => {
-    const editor = new Editor({
+    const editor = track(new Editor({
       extensions: [
         StarterKit,
         TextStyleKit,
@@ -29,7 +43,7 @@ describe('định dạng nội dung nhập từ Word', () => {
         </p>
         <ul><li><p>Mục thứ nhất</p></li><li><p>Mục thứ hai</p></li></ul>
       `,
-    })
+    }))
 
     const root = document.createElement('div')
     root.innerHTML = editor.getHTML()
@@ -89,14 +103,13 @@ describe('định dạng nội dung nhập từ Word', () => {
     expect(resized.querySelector('img')?.getAttribute('width')).toBe('249')
     expect(resized.querySelector('img')?.getAttribute('height')).toBe('60')
 
-    editor.destroy()
   })
 
   it('đọc ảnh HTML cũ không có figure mà không mất dữ liệu', () => {
-    const editor = new Editor({
+    const editor = track(new Editor({
       extensions: [StarterKit, ImageWithSize.configure({ allowBase64: true })],
       content: '<img src="https://example.com/anh.png" alt="Ảnh cũ" width="320" height="180">',
-    })
+    }))
 
     const html = editor.getHTML()
     expect(html).toContain('<figure')
@@ -104,6 +117,5 @@ describe('định dạng nội dung nhập từ Word', () => {
     expect(html).toContain('alt="Ảnh cũ"')
     expect(html).toContain('width="320"')
     expect(html).toContain('<figcaption></figcaption>')
-    editor.destroy()
   })
 })
