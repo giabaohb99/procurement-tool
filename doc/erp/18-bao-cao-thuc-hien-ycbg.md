@@ -1,7 +1,7 @@
 # Brief — Khối «Báo cáo thực hiện» trên chi tiết Yêu cầu báo giá (YCBG)
 
-> Bản mô tả yêu cầu, viết ngày 12/09/2026. Tính năng đã dựng xong trên nhánh làm việc
-> (backend + `frontend-v2`), tài liệu này ghi lại **yêu cầu và hai khung nhìn** để làm
+> Bản mô tả yêu cầu, viết ngày 12/09/2026. Tính năng đã chạy trên **dev + prod** từ
+> 12/09/2026 (backend + `frontend-v2` + màn cũ `frontend/`), tài liệu này ghi lại **yêu cầu và hai khung nhìn** để làm
 > căn cứ nghiệm thu và phát triển tiếp. Mẫu tham chiếu: artifact «Nhập khẩu K₂SO₄ & KNO₃»
 > của Phòng Thu mua (11/09/2026).
 
@@ -126,4 +126,6 @@ Toàn quyền dựng và cập nhật báo cáo, ngay trên trang chi tiết phi
   bao-CR-391 (12/09/2026) lấy 22 hồ sơ của mẫu «Nhập khẩu K₂SO₄ & KNO₃» (thay bộ 15
   hồ sơ tạm), rồi bao-CR-393 cùng ngày **gom về 19 hồ sơ CHUNG** theo ý khách: mỗi
   việc một dòng, không tách theo mặt hàng; hồ sơ riêng của một mặt hàng thêm tay.
-- Cấp số CR + ghi `change-log.md` + commit: chờ chốt prefix CR của người làm.
+- Đã lên **dev + prod** ngày 12/09/2026 (bao-CR-388 · 390 · 391 · 392 · 393, ghi ở
+  `doc/tai-lieu-ky-thuat/change-log-bao.md`); prod chạy 4 migration báo cáo từ
+  `bee157de2ec8` tới `c3e5a7b9d1f2`.
