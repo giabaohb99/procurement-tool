@@ -31,7 +31,7 @@ def record(db: Session, user_id: int, entity: str, entity_id: int, action: str, 
 
     ctx = get_context()
     parent_entity, parent_id = (parent or ("", 0))
-    db.add(AuditLog(
+    log = AuditLog(
         entity=entity, entity_id=entity_id, action=action, message=message,
         created_by=user_id, updated_by=user_id,
         actor_kind=ctx.actor_kind if ctx else ACTOR_KIND_SYSTEM,
@@ -43,9 +43,13 @@ def record(db: Session, user_id: int, entity: str, entity_id: int, action: str, 
         parent_entity=(parent_entity or "")[:50],
         parent_id=int(parent_id or 0),
         action_group=group_of_action(action),
-    ))
+    )
+    db.add(log)
     db.commit()
     bump_audit_count()
+    #  Trả về dòng vừa ghi để nơi gọi lấy `log.id` khi cần (vd nối một thao tác
+    #  hoàn tác vào đúng dòng lịch sử). 213 lời gọi cũ bỏ qua giá trị trả về.
+    return log
 
 
 def resolve_actor(db: Session, user_id: int) -> str:

@@ -15,6 +15,7 @@ Thư mục gom toàn bộ tài liệu mô tả kỹ thuật của hệ thống.
 | [change-log.md](change-log.md) | Change Log / CR | Nhật ký thay đổi + việc còn nợ (N-xxx) + Decision log (D-xxx) + deploy |
 | [change-log-bao.md](change-log-bao.md) | Change Log / CR — dải `bao` | Cùng sổ đó, phần `bao-CR-310` trở đi (tách 07/09/2026 để hết xung đột merge). **Tra CR hay cấp số mới đều phải xem CẢ HAI tệp** |
 | [tdd-redesign-kho.md](tdd-redesign-kho.md) | TDD (1 phân hệ) | Thiết kế redesign phân hệ Kho — CR-001 (DRAFT, chờ duyệt) |
+| [tdd-bao-cao-thuc-hien-ycbg.md](tdd-bao-cao-thuc-hien-ycbg.md) | TDD (1 tính năng) | Khối «Báo cáo thực hiện» trên chi tiết YCBG — 3 bảng con, API, phân quyền tái dùng `survey_request`, phần mở rộng hạn/nhân sự (§3a). Song đôi với tài liệu chức năng [19](../tai-lieu-chuc-nang/19-bao-cao-thuc-hien-ycbg.md) |
 
 ## Xuất PDF / PNG
 
