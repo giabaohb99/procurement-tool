@@ -95,6 +95,7 @@ Cả ba bảng kế thừa `AuditMixin` (id, created_at/by, updated_at/by). Đ�
 | depends | JSON | Danh sách id hồ sơ tiên quyết | Trần 30 phần tử; service lọc id chết khi trả ra |
 | start_date | DATE NULL | Ngày bắt đầu thực hiện | migration `a1c2e3d4f5b6` — xem §3a |
 | expires_at | DATE NULL | Ngày hết hiệu lực / hạn | migration `a1c2e3d4f5b6` — xem §3a |
+| planned_date | DATE NULL | Dự định hoàn tất (kế hoạch ban đầu) | migration `c3e5a7b9d1f2` (bao-CR-392) — xem §3a |
 | assignee_id | BIGINT | Nhân sự thực hiện; **`0` = chưa cử** | Không FK; tên resolve lúc đọc |
 | sort_order | SMALLINT | Thứ tự hiển thị | |
 
@@ -115,6 +116,7 @@ Phần mở rộng của hồ sơ (migration `a1c2e3d4f5b6`, revises `7816572fed
 |---|---|---|
 | `start_date` | DATE NULL | Ngày bắt đầu thực hiện. `NULL`/`''` = chưa đặt |
 | `expires_at` | DATE NULL | Ngày hết hiệu lực / hạn. Dùng để cảnh báo hồ sơ quá hạn |
+| `planned_date` | DATE NULL | Dự định hoàn tất — kế hoạch ban đầu (bao-CR-392, migration `c3e5a7b9d1f2` revises `b2d4f6a8c0e1`). FE suy «Trễ n ngày» = hôm nay − planned khi hồ sơ chưa Hoàn thành; **không lưu cờ trễ**. Thẻ tóm tắt lấy `max(planned_date)` của phạm vi đang xem |
 | `assignee_id` | BIGINT NOT NULL, server_default `0` | Nhân sự thực hiện (`tab_employee.id`); `0` = chưa cử |
 
 Quy ước & bẫy:
@@ -154,8 +156,9 @@ cáo mới** (`{items, phases, docs}`) để FE thay cache một lượt.
 | PATCH | `/docs/{doc_id}` | `process` | Sửa hồ sơ (gửi trường nào đổi trường đó; nút ✓ chỉ gửi `status`) |
 | DELETE | `/docs/{doc_id}` | `process` | Xóa hồ sơ (gỡ khỏi tiên quyết hồ sơ khác) |
 
-`POST/PATCH /docs` còn nhận `start_date`, `expires_at` (chuỗi `yyyy-mm-dd` | `''`),
-`assignee_id` (id nhân sự | `0`) — xem [§3a](#3a-hạn-hồ-sơ--nhân-sự-thực-hiện).
+`POST/PATCH /docs` còn nhận `start_date`, `expires_at`, `planned_date` (chuỗi
+`yyyy-mm-dd` | `''`), `assignee_id` (id nhân sự | `0`) — xem
+[§3a](#3a-hạn-hồ-sơ--nhân-sự-thực-hiện).
 
 **Ràng buộc schema** (`report_schema.py`) — `max_length` khớp **đúng** `String(n)` ở
 model để lỗi ra **422 chứ không 500** (duoc-CR-316): `title≤255` · `file_note≤500` ·
@@ -188,8 +191,9 @@ Mọi hàm ghi **không commit** (controller commit một lượt qua `record`).
 - `get_report_payload` — trả `{items, phases, docs}`; `depends` **lọc id chết** trước
   khi ra FE (id hồ sơ tiên quyết đã bị xóa mà lọt ra thì tầng hiển thị đếm nó là
   «chưa xong» → hồ sơ khóa vĩnh viễn); resolve `assignee_name` một lượt (xem §3a).
-- `create_doc` / `update_doc` — lưu cả `start_date`/`expires_at`/`assignee_id`; hai ô
-  ngày xử lý tách để phân biệt «xóa» (`''`) với «bỏ qua» (`None`) — xem §3a.
+- `create_doc` / `update_doc` — lưu cả `start_date`/`expires_at`/`planned_date`/
+  `assignee_id`; ba ô ngày xử lý tách để phân biệt «xóa» (`''`) với «bỏ qua» (`None`)
+  — xem §3a.
 - `init_report` — idempotent: đã có giai đoạn hoặc nút thì trả `-1`, không đụng; còn
   lại dựng 5 giai đoạn + nút rồi gọi `apply_template(item_id=0, phase_id=None)` và trả
   số hồ sơ đã tạo (bao-CR-388).
@@ -254,15 +258,17 @@ Mọi hàm ghi **không commit** (controller commit một lượt qua `record`).
 - `a1c2e3d4f5b6` (revises `7816572fed52`) thêm 3 cột `start_date` · `expires_at` ·
   `assignee_id` vào `tab_survey_request_report_doc` — cũng **viết tay** vì lý do drift
   trên. `assignee_id` NOT NULL + server_default `0` cho hồ sơ cũ.
+- `c3e5a7b9d1f2` (revises `b2d4f6a8c0e1`) thêm cột `planned_date` DATE NULL
+  (bao-CR-392) — viết tay, một `add_column`.
 - Trên hệ đang chạy: vai trò cũ **có sẵn** `process` của `survey_request` thì thao tác
   được ngay (không cần seed mới, vì không thêm entity).
 
 ## 10. Việc còn lại
 
-1. Hoàn thiện **ô nhập ngày + chọn nhân sự** trên hộp thoại hồ sơ và cách hiển thị
-   ngày/người thực hiện trên dòng (dữ liệu, API, migration của §3a đã sẵn).
-2. **Nhắc hạn** chủ động (thông báo) dựa trên `expires_at` — hiện chỉ có cảnh báo bị
-   động qua `nearestExpiry`.
+1. ~~Hoàn thiện ô nhập ngày + chọn nhân sự trên hộp thoại hồ sơ~~ — xong 12/09/2026
+   ở cả v2 lẫn v1 (bao-CR-390), thêm ô «Dự định hoàn tất» ở bao-CR-392.
+2. **Nhắc hạn** chủ động (thông báo) dựa trên `expires_at` / `planned_date` — hiện
+   chỉ có cảnh báo bị động qua `nearestExpiry` / `reportPlanLateDays`.
 3. Nối kho `attachment` thật cho ô tệp (thay chuỗi tự do bằng upload).
 4. Nhớ trạng thái gấp/mở giai đoạn theo người dùng (`localStorage`).
 5. Cấp số CR + ghi `change-log.md` + commit — chờ chốt prefix CR.

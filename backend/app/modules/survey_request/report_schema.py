@@ -75,6 +75,7 @@ class ReportDocIn(BaseModel):
     depends: list[int] = Field(default_factory=list, max_length=MAX_DEPENDS)
     start_date: str = Field(default="", max_length=10)      # 'yyyy-mm-dd' | ''
     expires_at: str = Field(default="", max_length=10)      # 'yyyy-mm-dd' | ''
+    planned_date: str = Field(default="", max_length=10)    # dự định hoàn tất, 'yyyy-mm-dd' | ''
     assignee_id: int = Field(default=0, ge=0)               # id tab_employee, 0 = chưa cử
 
     @field_validator("title")
@@ -92,7 +93,7 @@ class ReportDocIn(BaseModel):
             raise ValueError("Trạng thái hồ sơ không hợp lệ")
         return v
 
-    @field_validator("start_date", "expires_at")
+    @field_validator("start_date", "expires_at", "planned_date")
     @classmethod
     def valid_dates(cls, v: str) -> str:
         return _validate_iso_date(v) or ""
@@ -112,6 +113,7 @@ class ReportDocPatch(BaseModel):
     #  None = không gửi (bỏ qua); '' = XÓA ngày đã đặt. Hai nghĩa khác nhau.
     start_date: str | None = Field(default=None, max_length=10)
     expires_at: str | None = Field(default=None, max_length=10)
+    planned_date: str | None = Field(default=None, max_length=10)
     assignee_id: int | None = Field(default=None, ge=0)
 
     @field_validator("title")
@@ -131,7 +133,7 @@ class ReportDocPatch(BaseModel):
             raise ValueError("Trạng thái hồ sơ không hợp lệ")
         return v
 
-    @field_validator("start_date", "expires_at")
+    @field_validator("start_date", "expires_at", "planned_date")
     @classmethod
     def valid_dates(cls, v: str | None) -> str | None:
         return _validate_iso_date(v)

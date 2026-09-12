@@ -1,4 +1,5 @@
 import {
+  CalendarCheck,
   CalendarClock,
   Check,
   ChevronDown,
@@ -18,7 +19,7 @@ import { toast } from 'sonner'
 
 import { useAuth } from '@/core/auth/use-auth'
 import { cn } from '@/shared/utils/cn'
-import { formatDate, parseLocalDate } from '@/shared/utils/format-date'
+import { formatDate, parseLocalDate, toDateInputValue } from '@/shared/utils/format-date'
 import { nameInitials } from '@/shared/utils/name-initials'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
@@ -56,11 +57,14 @@ import {
   REPORT_STATUS_FILTER_ALL,
   isReportDocDone,
   isReportDocLocked,
+  latestPlannedDate,
   matchReportDoc,
   nearestExpiry,
   pendingDepends,
+  reportDocLateDays,
   reportDocsById,
   reportPercent,
+  reportPlanLateDays,
 } from '../../utils/survey-report-helpers'
 import { SurveyReportDocDialog } from './survey-report-doc-dialog'
 import { SurveyReportItemDialog } from './survey-report-item-dialog'
@@ -1142,6 +1146,23 @@ function expiryMeta(expiry: string): ExpiryMeta | null {
   return { tone: 'normal', note: `Còn ${days} ngày` }
 }
 
+/**
+ * Diễn giải mốc DỰ ĐỊNH HOÀN TẤT của cả khối (bao-CR-392): trễ n ngày / đến hạn
+ * hôm nay / còn n ngày; xong hết rồi thì không còn gì để trễ. `null` khi rỗng.
+ */
+function plannedMeta(planned: string, docs: SurveyReportDoc[]): ExpiryMeta | null {
+  const date = parseLocalDate(planned)
+  if (!date) return null
+  if (docs.length && docs.every(isReportDocDone)) return { tone: 'normal', note: 'Đã hoàn thành' }
+  const late = reportPlanLateDays(docs, toDateInputValue(new Date()))
+  if (late > 0) return { tone: 'overdue', note: `Trễ ${late} ngày` }
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const days = Math.round((date.getTime() - today.getTime()) / 86_400_000)
+  if (days === 0) return { tone: 'soon', note: 'Đến hạn hôm nay' }
+  return { tone: 'normal', note: `Còn ${days} ngày` }
+}
+
 const EXPIRY_TONE_CLASS: Record<ExpiryTone, string> = {
   overdue: 'bg-destructive/10 text-destructive',
   soon: 'bg-warning/15 text-warning',
@@ -1222,13 +1243,16 @@ function PhaseProgressBar({
   )
 }
 
-/** Báo cáo TỔNG THỂ của cả phiếu: tổng · đã xong · hết hiệu lực gần nhất. */
+/** Báo cáo TỔNG THỂ của cả phiếu: tổng · đã xong · hết hiệu lực gần nhất · dự định hoàn tất. */
 function ReportSummary({ docs }: { docs: SurveyReportDoc[] }) {
   const total = docs.length
   const expiry = nearestExpiry(docs)
   const meta = expiry ? expiryMeta(expiry) : null
+  //  Mốc kế hoạch = ngày dự định XA NHẤT trong khối (bao-CR-392).
+  const planned = latestPlannedDate(docs)
+  const plan = planned ? plannedMeta(planned, docs) : null
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
       <div className="rounded-lg border bg-muted/20 px-3 py-2.5">
         <p className="text-xs text-muted-foreground">Tổng hồ sơ</p>
         <p className="text-lg font-semibold tabular-nums">{total}</p>
@@ -1257,7 +1281,46 @@ function ReportSummary({ docs }: { docs: SurveyReportDoc[] }) {
           {meta && <span className="ml-1.5 text-xs font-medium">· {meta.note}</span>}
         </p>
       </div>
+      <div className="rounded-lg border bg-muted/20 px-3 py-2.5">
+        <p className="flex items-center gap-1 text-xs text-muted-foreground">
+          <CalendarCheck className="size-3" />
+          Dự định hoàn tất
+        </p>
+        <p
+          className={cn(
+            'text-lg font-semibold tabular-nums',
+            plan?.tone === 'overdue' && 'text-destructive',
+            plan?.tone === 'soon' && 'text-warning',
+          )}
+        >
+          {planned ? formatDate(planned) : '—'}
+          {plan && <span className="ml-1.5 text-xs font-medium">· {plan.note}</span>}
+        </p>
+      </div>
     </div>
+  )
+}
+
+/**
+ * Ô «Dự định hoàn tất» trên dòng hồ sơ (bao-CR-392): đỏ + «Trễ n ngày» khi hồ sơ
+ * chưa xong mà qua ngày dự định; đã xong hoặc chưa tới ngày thì xám. Rỗng thì không dựng.
+ */
+function DocPlannedChip({ doc }: { doc: SurveyReportDoc }) {
+  if (!doc.planned_date) return null
+  const late = reportDocLateDays(doc, toDateInputValue(new Date()))
+  const note = late > 0 ? `Trễ ${late} ngày` : isReportDocDone(doc) ? 'Đã hoàn thành' : ''
+  return (
+    <span
+      title={[`Dự định hoàn tất ${formatDate(doc.planned_date)}`, note].filter(Boolean).join(' · ')}
+      className={cn(
+        'flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium tabular-nums',
+        late > 0 ? EXPIRY_TONE_CLASS.overdue : 'bg-muted text-muted-foreground',
+      )}
+    >
+      <CalendarCheck className="size-3" />
+      {formatDate(doc.planned_date)}
+      {late > 0 && <span className="font-semibold">· Trễ {late} ngày</span>}
+    </span>
   )
 }
 
@@ -1427,6 +1490,7 @@ function ReportDocRow({
         </button>
       )}
 
+      <DocPlannedChip doc={doc} />
       <DocDateChip doc={doc} />
       <DocAssignee name={doc.assignee_name} />
 

@@ -117,9 +117,13 @@ Toàn quyền dựng và cập nhật báo cáo, ngay trên trang chi tiết phi
 - **Tệp đính kèm thật**: ô 📎 hiện là chữ tự do (tên tệp hoặc link Drive) — chưa nối
   kho `attachment` của hệ. Muốn upload trực tiếp thì làm đợt sau.
 - Trạng thái gấp/mở giai đoạn chưa nhớ theo người dùng (`localStorage`).
-- Điều kiện rẽ nhánh/thông báo (vd nhắc hạn hồ sơ, deadline từng hồ sơ) chưa có —
-  artifact gốc cũng chưa khai ngày hạn cho hồ sơ.
+- Deadline từng hồ sơ **đã có** từ bao-CR-392 (12/09/2026): ô «Dự định hoàn tất»
+  (`planned_date`), dòng chưa xong qua ngày đó hiện «Trễ n ngày», thẻ tóm tắt thứ 4
+  lấy mốc xa nhất. Còn thiếu **thông báo chủ động** (nhắc hạn qua chuông/email) và
+  điều kiện rẽ nhánh — artifact gốc cũng chưa khai.
 - **Quản lý mẫu** (nhiều mẫu, sửa trên giao diện, lưu báo cáo thành mẫu): cố ý để
-  sau. Mẫu chung hiện là `DEFAULT_TEMPLATE_DOCS` trong `report_constants.py`; danh sách
-  hồ sơ thật (~22 mục) của Phòng Thu mua chưa gửi, bộ 15 hồ sơ đang có là bản tạm.
+  sau. Mẫu chung hiện là `DEFAULT_TEMPLATE_DOCS` trong `report_constants.py` —
+  bao-CR-391 (12/09/2026) lấy 22 hồ sơ của mẫu «Nhập khẩu K₂SO₄ & KNO₃» (thay bộ 15
+  hồ sơ tạm), rồi bao-CR-393 cùng ngày **gom về 19 hồ sơ CHUNG** theo ý khách: mỗi
+  việc một dòng, không tách theo mặt hàng; hồ sơ riêng của một mặt hàng thêm tay.
 - Cấp số CR + ghi `change-log.md` + commit: chờ chốt prefix CR của người làm.

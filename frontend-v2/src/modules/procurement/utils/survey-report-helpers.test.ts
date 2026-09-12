@@ -6,10 +6,13 @@ import {
   currentReportPhaseId,
   filterReportDocs,
   isReportDocLocked,
+  latestPlannedDate,
   matchReportDoc,
   nearestExpiry,
   pendingDepends,
+  reportDocLateDays,
   reportPercent,
+  reportPlanLateDays,
   trackingMarkers,
 } from './survey-report-helpers'
 
@@ -27,6 +30,7 @@ function doc(overrides: Partial<SurveyReportDoc>): SurveyReportDoc {
     depends: [],
     start_date: '',
     expires_at: '',
+    planned_date: '',
     assignee_id: 0,
     assignee_name: '',
     sort_order: 0,
@@ -226,5 +230,90 @@ describe('nearestExpiry', () => {
     expect(nearestExpiry([])).toBe('')
     expect(nearestExpiry([doc({ id: 1, expires_at: '' })])).toBe('')
     expect(nearestExpiry([doc({ id: 1, status: 3, expires_at: '2026-09-30' })])).toBe('')
+  })
+})
+
+describe('latestPlannedDate', () => {
+  it('returns the farthest planned date — the plan milestone of the whole block', () => {
+    const docs = [
+      doc({ id: 1, planned_date: '2026-10-20' }),
+      doc({ id: 2, planned_date: '2026-12-01' }),
+      doc({ id: 3, planned_date: '2026-09-30' }),
+    ]
+    expect(latestPlannedDate(docs)).toBe('2026-12-01')
+  })
+
+  it('counts done docs too — a milestone met on time does not vanish', () => {
+    // Khác nearestExpiry: mốc kế hoạch của hồ sơ đã xong vẫn là mốc của cả khối.
+    const docs = [
+      doc({ id: 1, status: 3, planned_date: '2026-12-01' }),
+      doc({ id: 2, planned_date: '2026-09-30' }),
+    ]
+    expect(latestPlannedDate(docs)).toBe('2026-12-01')
+  })
+
+  it('returns empty string when no doc has a planned date', () => {
+    expect(latestPlannedDate([])).toBe('')
+    expect(latestPlannedDate([doc({ id: 1 }), doc({ id: 2, planned_date: '' })])).toBe('')
+  })
+})
+
+describe('reportDocLateDays', () => {
+  const today = '2026-09-12'
+
+  it('counts days past the planned date for an unfinished doc', () => {
+    expect(reportDocLateDays(doc({ planned_date: '2026-09-02' }), today)).toBe(10)
+  })
+
+  it('is 0 on the planned date itself and before it — due today is not late yet', () => {
+    expect(reportDocLateDays(doc({ planned_date: '2026-09-12' }), today)).toBe(0)
+    expect(reportDocLateDays(doc({ planned_date: '2026-09-30' }), today)).toBe(0)
+  })
+
+  it('is 0 for a done doc even when its planned date is long past', () => {
+    expect(reportDocLateDays(doc({ status: 3, planned_date: '2025-01-01' }), today)).toBe(0)
+  })
+
+  it('is 0 without a planned date or with a malformed one — never NaN', () => {
+    expect(reportDocLateDays(doc({ planned_date: '' }), today)).toBe(0)
+    expect(reportDocLateDays(doc({ planned_date: 'abc' }), today)).toBe(0)
+    expect(reportDocLateDays(doc({ planned_date: '2026-09-02' }), '')).toBe(0)
+  })
+
+  it('does not depend on the timezone — a one-day gap is exactly 1', () => {
+    // Bẫy parseLocalDate: chuỗi chỉ có ngày mà đọc lẫn UTC/địa phương là lệch một ngày.
+    expect(reportDocLateDays(doc({ planned_date: '2026-09-11' }), today)).toBe(1)
+  })
+})
+
+describe('reportPlanLateDays', () => {
+  const today = '2026-09-12'
+
+  it('measures lateness against the FARTHEST planned date while any doc is unfinished', () => {
+    const docs = [
+      doc({ id: 1, status: 3, planned_date: '2026-08-01' }),
+      doc({ id: 2, planned_date: '2026-09-05' }),
+    ]
+    expect(reportPlanLateDays(docs, today)).toBe(7)
+  })
+
+  it('is 0 when every doc is done — nothing left to be late', () => {
+    const docs = [
+      doc({ id: 1, status: 3, planned_date: '2026-08-01' }),
+      doc({ id: 2, status: 3, planned_date: '2026-09-05' }),
+    ]
+    expect(reportPlanLateDays(docs, today)).toBe(0)
+  })
+
+  it('is 0 before the milestone, with no milestone, or with no docs', () => {
+    expect(reportPlanLateDays([doc({ planned_date: '2026-12-01' })], today)).toBe(0)
+    expect(reportPlanLateDays([doc({ planned_date: '' })], today)).toBe(0)
+    expect(reportPlanLateDays([], today)).toBe(0)
+  })
+
+  it('an unfinished doc without its own planned date still makes the block late', () => {
+    // Mốc là của CẢ khối: hồ sơ không có ngày riêng vẫn nằm trong kế hoạch chung.
+    const docs = [doc({ id: 1, planned_date: '2026-09-01' }), doc({ id: 2 })]
+    expect(reportPlanLateDays(docs, today)).toBe(11)
   })
 })

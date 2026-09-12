@@ -104,22 +104,22 @@ def test_tao_mau_vao_mot_giai_doan_chi_do_phan_do_va_cat_tien_quyet_ngoai(db):
     s = _sr(db)
     # Khối tự dựng tay: giai đoạn trùng tên mẫu (khác hoa-thường, dư khoảng trắng)
     # + một giai đoạn tự đặt; mẫu KHÔNG được tạo thêm giai đoạn khi áp vào một GĐ.
-    ph = svc.create_phase(db, s.id, "  đặt hàng &  hợp đồng ", "", 1)
+    ph = svc.create_phase(db, s.id, "  sản xuất &  vận chuyển ", "", 1)
     own = svc.create_phase(db, s.id, "Giai đoạn riêng", "", 1)
     db.commit()
 
     added = svc.apply_template(db, s.id, item_id=0, phase_id=ph.id, user_id=1)
-    expected = [row for row in DEFAULT_TEMPLATE_DOCS if row[0] == 2]
+    expected = [row for row in DEFAULT_TEMPLATE_DOCS if row[0] == 3]
     assert added == len(expected) > 0
     payload = svc.get_report_payload(db, s.id)
     assert len(payload["phases"]) == 2
     docs = payload["docs"]
     assert all(d["phase_id"] == ph.id for d in docs)
-    # «Báo giá» của mẫu trỏ về GPKD (giai đoạn 1, không được đổ) → tiên quyết bị cắt.
+    # «NCC xuất hàng FOB» của mẫu trỏ về Hợp đồng NK (giai đoạn 2, không được đổ)
+    # → tiên quyết đó bị cắt; «Packing List» chờ Invoice cùng giai đoạn thì giữ.
     by_title = {d["title"]: d for d in docs}
-    assert by_title["Báo giá chính thức có ký, đóng dấu"]["depends"] == []
-    assert by_title["Hợp đồng mua bán / hợp đồng nguyên tắc"]["depends"] == [
-        by_title["Báo giá chính thức có ký, đóng dấu"]["id"]]
+    assert by_title["NCC xuất hàng FOB"]["depends"] == []
+    assert by_title["Packing List"]["depends"] == [by_title["Commercial Invoice"]["id"]]
 
     # Giai đoạn tự đặt tên không có trong mẫu → chặn rõ, không đoán.
     with pytest.raises(HTTPException) as e:
@@ -284,12 +284,13 @@ def test_tao_ho_so_luu_ngay_va_nhan_su_resolve_ten(db):
     s = _sr(db)
     ph = svc.create_phase(db, s.id, "GĐ1", "", 1)
     _doc(db, s.id, ph.id, title="Giấy phép", start_date="2026-09-01",
-         expires_at="2026-12-31", assignee_id=emp.id)
+         expires_at="2026-12-31", planned_date="2026-10-15", assignee_id=emp.id)
     db.commit()
 
     doc = svc.get_report_payload(db, s.id)["docs"][0]
     assert doc["start_date"] == "2026-09-01"
     assert doc["expires_at"] == "2026-12-31"
+    assert doc["planned_date"] == "2026-10-15"
     assert doc["assignee_id"] == emp.id
     assert doc["assignee_name"] == "Nguyễn Văn An"
 
@@ -308,14 +309,21 @@ def test_patch_chuoi_rong_xoa_ngay_khac_none_bo_qua(db):
     """'' = XÓA ngày (ghi None); không gửi = giữ nguyên. Hai nghĩa phải khác nhau."""
     s = _sr(db)
     ph = svc.create_phase(db, s.id, "GĐ1", "", 1)
-    doc = _doc(db, s.id, ph.id, title="X", start_date="2026-09-01", expires_at="2026-10-01")
+    doc = _doc(db, s.id, ph.id, title="X", start_date="2026-09-01", expires_at="2026-10-01",
+               planned_date="2026-09-20")
     db.commit()
 
-    # Không gửi expires_at -> giữ nguyên; gửi start_date='' -> xóa.
-    svc.update_doc(db, s.id, doc.id, ReportDocPatch(start_date=""), user_id=1)
+    # Không gửi expires_at -> giữ nguyên; gửi start_date='' -> xóa; đổi planned_date.
+    svc.update_doc(db, s.id, doc.id, ReportDocPatch(start_date="", planned_date="2026-09-25"),
+                   user_id=1)
     db.commit()
     row = db.get(SurveyReportDoc, doc.id)
     assert row.start_date is None and row.expires_at is not None
+    assert row.planned_date.isoformat() == "2026-09-25"
+    # planned_date='' cũng XÓA (bao-CR-392) — cùng luật với hai ô ngày cũ.
+    svc.update_doc(db, s.id, doc.id, ReportDocPatch(planned_date=""), user_id=1)
+    db.commit()
+    assert db.get(SurveyReportDoc, doc.id).planned_date is None
 
 
 def test_schema_chan_ngay_sai_dinh_dang(db):
@@ -324,8 +332,11 @@ def test_schema_chan_ngay_sai_dinh_dang(db):
         ReportDocIn(title="ok", phase_id=1, expires_at="31/12/2026")
     with pytest.raises(ValidationError):
         ReportDocIn(title="ok", phase_id=1, start_date="2026-13-99")
+    with pytest.raises(ValidationError):
+        ReportDocIn(title="ok", phase_id=1, planned_date="15-10-2026")
     # Rỗng là hợp lệ (chưa đặt).
     assert ReportDocIn(title="ok", phase_id=1, start_date="", expires_at="").expires_at == ""
+    assert ReportDocIn(title="ok", phase_id=1, planned_date="").planned_date == ""
 
 
 def test_tran_so_dong_moi_bang_con(db):
