@@ -41,6 +41,7 @@ import { ErrorState } from '@/shared/ui/error-state'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { PageContainer } from '@/shared/ui/page-container'
+import { PageHeader } from '@/shared/ui/page-header'
 import { ReadOnlyValue } from '@/shared/ui/read-only-value'
 import { ReasonConfirmDialog } from '@/shared/ui/reason-confirm-dialog'
 import { SearchSelect } from '@/shared/ui/search-select'
@@ -681,90 +682,131 @@ function PaymentRequestView({ paymentRequestId }: { paymentRequestId: number }) 
 
   return (
     <PageContainer className="bg-slate-50/70 lg:p-4">
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <Button variant="outline" size="icon" asChild aria-label="Về danh sách yêu cầu thanh toán">
-          <Link to={appRoutes.finance.paymentRequests}>
-            <ArrowLeft />
-          </Link>
-        </Button>
-        <h1 className="text-xl font-semibold tracking-tight text-navy dark:text-foreground">
-          Yêu cầu thanh toán {req.code || ''}
-        </h1>
-        <PaymentRequestStatusBadge status={req.status} />
-        {isPrepay && (
-          <Badge variant="secondary" className="border-0 bg-info/10 text-info">
-            Trả trước
-          </Badge>
-        )}
+      {/*  ⚠️ Dùng `PageHeader` như mọi màn chi tiết khác. Bản cũ tự dựng một
+           hàng `flex-wrap` ôm nút quay lại + tiêu đề + huy hiệu + khoảng đẩy +
+           cụm nút: ở 390px nó rơi thành **BỐN hàng** (tiêu đề · huy hiệu ·
+           ba nút · nút Xóa đứng trơ một mình dán mép phải), ~170px trước khi
+           thấy được ô nhập đầu tiên.
 
-        <div className="min-w-4 flex-1" />
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          {can('payment_request', 'print') && (
-            <Button variant="outline" asChild>
-              <Link
-                to={appRoutes.finance.paymentRequestPrint(req.id)}
-                target="_blank"
-                rel="noreferrer"
-              >
-                <Printer />
-                In phiếu
-              </Link>
-            </Button>
-          )}
-
-          {editable && (
-            <Button onClick={() => void handleSave()} disabled={update.isPending}>
-              {update.isPending ? <Loader2 className="animate-spin" /> : <Save />}
-              Lưu
-            </Button>
-          )}
-
-          {req.status === 'draft' && can('payment_request', 'write') && (
-            <Button variant="outline" onClick={() => runAction.mutate({ action: 'submit' })} disabled={runAction.isPending}>
-              <Send />
-              Gửi duyệt
-            </Button>
-          )}
-
-          {req.status === 'submitted' && can('payment_request', 'approve') && (
-            <>
-              <Button onClick={() => runAction.mutate({ action: 'approve' })} disabled={runAction.isPending}>
-                <Check />
-                Duyệt
-              </Button>
+           `sticky`: form này dài ~2600px ở 390px mà hai nút *Lưu* / *Gửi
+           duyệt* nằm trên đầu — đúng ca prop này sinh ra. */}
+      <PageHeader
+        sticky
+        //  ⚠️ Khổ hẹp cho cụm nút TRẢI ĐỀU hết hàng. Mặc định của `PageHeader`
+        //  là `justify-end`: bốn nút co theo chữ rồi dồn sang phải, chừa một
+        //  khoảng trống dài bên trái — hàng đó đọc ra như bị lệch chứ không ra
+        //  một thanh công cụ, mà đây lại là hàng nút DUY NHẤT của cả trang.
+        //  Trải đều thì mép trái/phải thẳng với thẻ bên dưới và mỗi vùng chạm
+        //  rộng thêm ~9px. Màn rộng giữ nguyên `justify-end`.
+        actionsClassName="max-md:[&>*]:flex-1"
+        leading={
+          <Button variant="outline" size="icon" asChild aria-label="Về danh sách yêu cầu thanh toán">
+            <Link to={appRoutes.finance.paymentRequests}>
+              <ArrowLeft />
+            </Link>
+          </Button>
+        }
+        title={
+          <span className="flex flex-wrap items-center gap-2">
+            {/*  Khổ hẹp chỉ in MÃ PHIẾU. Cụm chữ «Yêu cầu thanh toán» đã nằm
+                 sẵn trên thanh ứng dụng ngay phía trên — mà dải này được ghim,
+                 nên mỗi chữ thừa là một chữ đứng yên vĩnh viễn che mất form.
+                 Đủ chỗ thì in cả câu như cũ. */}
+            <span className="max-md:hidden">Yêu cầu thanh toán </span>
+            {req.code || ''}
+            <PaymentRequestStatusBadge status={req.status} />
+            {isPrepay && (
+              <Badge variant="secondary" className="border-0 bg-info/10 text-info">
+                Trả trước
+              </Badge>
+            )}
+          </span>
+        }
+        actions={
+          <>
+            {can('payment_request', 'print') && (
+              //  ⚠️ Chỉ nút NÀY bỏ chữ ở khổ hẹp, và con số quyết định là đo
+              //  được chứ không ước: bốn nút cộng lại 102+73+114+75 = 364px,
+              //  cộng ba khe là 388 — quá 358px nên tụt xuống hai hàng. Bỏ chữ
+              //  đúng nút *In phiếu* (nút phụ nhất, biểu tượng máy in là quy
+              //  ước quen) thì còn 322px, cả bốn đứng gọn MỘT hàng và không
+              //  phải đụng vào `DeleteConfirmButton` dùng chung.
               <Button
                 variant="outline"
-                className="text-destructive hover:text-destructive"
-                onClick={() => setRejectOpen(true)}
+                asChild
+                title="In phiếu"
+                aria-label="In phiếu"
+                //  `size-9` chỉ còn quyết định CHIỀU CAO ở đây: `flex-1` của
+                //  hàng cha là selector con (`… > *`) nên đè được `w-9`, nút
+                //  này giãn theo hàng như ba nút kia — chấp nhận, vùng chạm
+                //  rộng ra thì tốt hơn cho một nút mở tab mới.
+                className="max-md:size-9 max-md:px-0"
               >
-                <Ban />
-                Từ chối
+                <Link
+                  to={appRoutes.finance.paymentRequestPrint(req.id)}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <Printer />
+                  <span className="max-md:hidden">In phiếu</span>
+                </Link>
               </Button>
-            </>
-          )}
+            )}
 
-          {req.status === 'approved' && can('payment_request', 'write') && (
-            <Button onClick={() => setPayOpen(true)} disabled={runAction.isPending}>
-              <Banknote />
-              Ghi nhận đã chi
-            </Button>
-          )}
+            {editable && (
+              <Button onClick={() => void handleSave()} disabled={update.isPending}>
+                {update.isPending ? <Loader2 className="animate-spin" /> : <Save />}
+                Lưu
+              </Button>
+            )}
 
-          {/* bao-CR-304 (port bao-CR-303): xóa chỉ cần quyền `delete` + phiếu còn nháp —
-              không trói vào `editable` (đòi thêm `write`) kẻo người chỉ có quyền xóa không thấy nút. */}
-          {req.status === 'draft' && can('payment_request', 'delete') && (
-            <DeleteConfirmButton
-              recordName={req.code || `#${req.id}`}
-              pending={remove.isPending}
-              warning="Phiếu và các dòng khoản nợ kèm theo sẽ bị xóa."
-              onConfirm={async () => {
-                await remove.mutateAsync(req.id)
-                navigate(appRoutes.finance.paymentRequests)
-              }}
-            />
-          )}
-        </div>
-      </div>
+            {req.status === 'draft' && can('payment_request', 'write') && (
+              <Button variant="outline" onClick={() => runAction.mutate({ action: 'submit' })} disabled={runAction.isPending}>
+                <Send />
+                Gửi duyệt
+              </Button>
+            )}
+
+            {req.status === 'submitted' && can('payment_request', 'approve') && (
+              <>
+                <Button onClick={() => runAction.mutate({ action: 'approve' })} disabled={runAction.isPending}>
+                  <Check />
+                  Duyệt
+                </Button>
+                <Button
+                  variant="outline"
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => setRejectOpen(true)}
+                >
+                  <Ban />
+                  Từ chối
+                </Button>
+              </>
+            )}
+
+            {req.status === 'approved' && can('payment_request', 'write') && (
+              <Button onClick={() => setPayOpen(true)} disabled={runAction.isPending}>
+                <Banknote />
+                Ghi nhận đã chi
+              </Button>
+            )}
+
+            {/* bao-CR-304 (port bao-CR-303): xóa chỉ cần quyền `delete` + phiếu còn nháp —
+                không trói vào `editable` (đòi thêm `write`) kẻo người chỉ có quyền xóa không thấy nút. */}
+            {req.status === 'draft' && can('payment_request', 'delete') && (
+              <DeleteConfirmButton
+                recordName={req.code || `#${req.id}`}
+                pending={remove.isPending}
+                warning="Phiếu và các dòng khoản nợ kèm theo sẽ bị xóa."
+                onConfirm={async () => {
+                  await remove.mutateAsync(req.id)
+                  navigate(appRoutes.finance.paymentRequests)
+                }}
+              />
+            )}
+          </>
+        }
+      />
 
       {req.status === 'cancelled' && req.reject_reason && (
         <p className="mb-4 flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/8 px-3 py-2 text-sm text-destructive">

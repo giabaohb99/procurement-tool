@@ -161,9 +161,18 @@ export function DocumentAttachmentsCard({
         `[.border-b]:pb-6` — selector kép nên thắng class thường, không đánh dấu
         important thì mọi thẻ có gạch chân đều bị đệm 24px, cao thấp lệch nhau.
       */}
-      <CardHeader className="min-h-9 flex flex-row items-center justify-between gap-3 border-b px-4 pb-3!">
-        <div className="flex items-center gap-2">
-          <Paperclip className="size-4 text-primary" />
+      {/*
+        ⚠️ **Khổ điện thoại XẾP DỌC** (`max-md:flex-col`). Bản cũ khóa cứng
+        `flex-row` không cho xuống dòng: ở 356px không đủ chỗ nên flex bóp nhóm
+        bên trái xuống **min-content**, mà tiêu đề không có `min-w-0` nên nó tụt
+        thành MỘT TỪ MỖI DÒNG («Chứng / từ & Tài / liệu / đính / kèm»), trong
+        khi nút *Upload chứng từ* không co được nữa và **tràn hẳn ra ngoài mép
+        thẻ** (đo 12/09/2026: 374px trong khung 356px). Sửa ở đây là sửa cho cả
+        9 màn đang dùng thẻ này.
+      */}
+      <CardHeader className="min-h-9 flex flex-row items-center justify-between gap-3 border-b px-4 pb-3! max-md:flex-col max-md:items-start max-md:gap-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <Paperclip className="size-4 shrink-0 text-primary" />
           <CardTitle className="text-base text-navy dark:text-foreground">
             Chứng từ &amp; Tài liệu đính kèm
           </CardTitle>
@@ -178,7 +187,10 @@ export function DocumentAttachmentsCard({
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        {/*  `max-md:w-full`: cụm nút chiếm trọn hàng riêng ở khổ hẹp — nhóm này
+             có tới ba nút ở màn ĐMH, nhét chung hàng với tiêu đề là cả hai bên
+             cùng bị bóp. */}
+        <div className="flex flex-wrap items-center gap-2 max-md:w-full">
           {canManage && !isNew && !hideUploadButton && (
             <Button
               type="button"
