@@ -38,7 +38,7 @@
 
 ```
 backend/app/modules/survey_request/
-├── report_constants.py     # bộ mã trạng thái (số) + 5 giai đoạn mẫu + trần
+├── report_constants.py     # bộ mã trạng thái (số) + 5 giai đoạn mẫu + MẪU CHUNG hồ sơ + trần
 ├── report_model.py         # 3 bảng SQLAlchemy
 ├── report_schema.py        # Pydantic In/Patch, ràng buộc max_length khớp model
 ├── report_service.py       # nghiệp vụ (không xét quyền, không commit)
@@ -142,7 +142,8 @@ cáo mới** (`{items, phases, docs}`) để FE thay cache một lượt.
 | Method | Path | Quyền | Việc |
 |---|---|---|---|
 | GET | `` | `read` | Toàn khối của phiếu |
-| POST | `/init` | `process` | Khởi tạo khung mẫu (idempotent) |
+| POST | `/init` | `process` | Khởi tạo theo mẫu chung: 5 giai đoạn + nút theo dòng + hồ sơ Chung của mẫu (idempotent) |
+| POST | `/apply-template` | `process` | «Tạo mẫu»: body `{item_id (0 = Chung), phase_id?}` — đổ mẫu chung vào một nút, hoặc chỉ phần của một giai đoạn; cộng thêm, bỏ qua trùng (bao-CR-388) |
 | POST | `/items` | `process` | Thêm nút dòng hàng |
 | PATCH | `/items/{item_id}` | `process` | Đổi tên nút |
 | DELETE | `/items/{item_id}` | `process` | Xóa nút (hồ sơ về Chung) |
@@ -189,7 +190,19 @@ Mọi hàm ghi **không commit** (controller commit một lượt qua `record`).
   «chưa xong» → hồ sơ khóa vĩnh viễn); resolve `assignee_name` một lượt (xem §3a).
 - `create_doc` / `update_doc` — lưu cả `start_date`/`expires_at`/`assignee_id`; hai ô
   ngày xử lý tách để phân biệt «xóa» (`''`) với «bỏ qua» (`None`) — xem §3a.
-- `init_report` — idempotent: đã có giai đoạn hoặc nút thì trả `False`, không đụng.
+- `init_report` — idempotent: đã có giai đoạn hoặc nút thì trả `-1`, không đụng; còn
+  lại dựng 5 giai đoạn + nút rồi gọi `apply_template(item_id=0, phase_id=None)` và trả
+  số hồ sơ đã tạo (bao-CR-388).
+- `apply_template` — đổ **mẫu chung** `DEFAULT_TEMPLATE_DOCS` (trong `report_constants.py`,
+  mỗi dòng = số thứ tự giai đoạn trong `DEFAULT_PHASES` · tiêu đề · mô tả · bắt buộc ·
+  tiên quyết theo số thứ tự 1-based trong chính danh sách) vào một nút, tùy chọn chỉ một
+  giai đoạn. Giai đoạn khớp theo **tên đã chuẩn hóa** (`_norm_name`: gộp khoảng trắng,
+  bỏ hoa-thường); `phase_id=None` thì giai đoạn thiếu được **tự tạo** đúng thứ tự mẫu,
+  `phase_id` trỏ giai đoạn tự đặt tên thì `400` kèm danh sách tên hợp lệ. Hồ sơ trùng
+  `(phase_id, tiêu đề chuẩn hóa)` trong cùng nút thì **bỏ qua nhưng vẫn dùng làm tiên
+  quyết** cho hồ sơ mới; tiên quyết trỏ ra ngoài phần đang đổ (đổ một giai đoạn) thì cắt.
+  Trả số hồ sơ THÊM MỚI; controller không ghi audit khi số đó là 0. Cố ý **chưa có
+  bảng mẫu** — quản lý mẫu là việc sau, khi có thì đổi nguồn đọc ở đây, chỗ gọi giữ nguyên.
 - `delete_item` — chuyển hồ sơ đang gắn về `item_id = 0`.
 - `delete_phase` — `count` hồ sơ trong giai đoạn, còn thì `raise 400`.
 - `delete_doc` — gỡ `doc_id` khỏi `depends` của mọi hồ sơ khác.
@@ -221,10 +234,14 @@ Mọi hàm ghi **không commit** (controller commit một lượt qua `record`).
 
 ## 8. Kiểm thử
 
-- Backend: `test/backend/test_bao_cao_thuc_hien_ycbg.py` (10 ca) — init idempotent,
-  ba đường xóa dọn hậu quả, chặn vòng/chéo phiếu, lọc id chết, cô lập theo phiếu,
-  **ràng buộc ở tầng schema** (SQLite không ép `VARCHAR` nên phải kiểm `ValidationError`),
-  trần số dòng.
+- Backend: `test/backend/test_bao_cao_thuc_hien_ycbg.py` (23 ca) — init idempotent
+  và dựng đủ hồ sơ mẫu, ba đường xóa dọn hậu quả, chặn vòng/chéo phiếu, lọc id chết,
+  cô lập theo phiếu, **ràng buộc ở tầng schema** (SQLite không ép `VARCHAR` nên phải
+  kiểm `ValidationError`), trần số dòng; bao-CR-388 thêm 4 ca: tạo mẫu vào nút (cộng
+  thêm, không nhân đôi), tạo mẫu vào một giai đoạn (khớp tên không phân biệt hoa-thường/
+  khoảng trắng, cắt tiên quyết ngoài phần đổ, 400 cho giai đoạn lạ), tự dựng giai đoạn
+  thiếu + 404 nút của phiếu khác, và **tự kiểm tính nhất quán của mẫu chung** (số giai
+  đoạn 1..5, tiên quyết chỉ trỏ lùi, không trùng tiêu đề trong một giai đoạn).
 - Frontend: `utils/survey-report-helpers.test.ts` — lọc/khóa/tìm-không-dấu/tracking.
 - Cổng `docker compose exec erp npm run check` xanh (typecheck 0 lỗi · lint 0 lỗi ·
   test toàn bộ xanh).

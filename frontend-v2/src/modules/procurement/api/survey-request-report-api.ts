@@ -28,8 +28,18 @@ const base = (id: number) => `/api/survey-requests/${id}/report`
 export const surveyRequestReportApi = {
   get: (id: number) => apiGet<SurveyRequestReport>(base(id)),
 
-  /** Khởi tạo khung mặc định (5 giai đoạn mẫu + nút theo dòng hàng). Idempotent. */
+  /** Khởi tạo theo mẫu chung: 5 giai đoạn + hồ sơ chung của mẫu + nút theo dòng hàng. Idempotent. */
   init: (id: number) => apiPost<SurveyRequestReport>(`${base(id)}/init`, {}),
+  /**
+   * «Tạo mẫu»: đổ mẫu chung vào một nút dòng hàng (`0` = Chung), hoặc chỉ vào
+   * một giai đoạn. CỘNG THÊM — hồ sơ trùng tiêu đề đã có thì bỏ qua, nên bấm hai
+   * lần không nhân đôi; số hồ sơ không đổi nghĩa là mẫu đã có đủ ở đó.
+   */
+  applyTemplate: (id: number, itemId: number, phaseId?: number) =>
+    apiPost<SurveyRequestReport>(`${base(id)}/apply-template`, {
+      item_id: itemId,
+      phase_id: phaseId ?? null,
+    }),
 
   /** Xóa CẢ khối báo cáo — có thể hoàn tác từ Lịch sử thao tác. */
   deleteAll: (id: number) => apiDelete<SurveyRequestReport>(base(id)),

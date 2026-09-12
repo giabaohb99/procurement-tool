@@ -16,7 +16,8 @@ from pydantic import ValidationError
 from app.modules.employee.model import Employee
 from app.modules.survey_request import report_service as svc
 from app.modules.survey_request.model import SurveyRequest, SurveyRequestLine
-from app.modules.survey_request.report_constants import DEFAULT_PHASES, RD_DONE
+from app.modules.survey_request.report_constants import (DEFAULT_PHASES,
+                                                         DEFAULT_TEMPLATE_DOCS, RD_DONE)
 from app.modules.survey_request.report_model import (SurveyReportDoc,
                                                      SurveyReportItem,
                                                      SurveyReportPhase)
@@ -50,17 +51,113 @@ def test_khoi_tao_dung_khung_va_khong_nhan_doi(db):
     _line(db, s.id, requirement_detail="", item_group="Phân bón")
     _line(db, s.id)          # dòng trống hoàn toàn -> tên «Dòng 3»
 
-    assert svc.init_report(db, s.id, user_id=1) is True
+    assert svc.init_report(db, s.id, user_id=1) == len(DEFAULT_TEMPLATE_DOCS)
     payload = svc.get_report_payload(db, s.id)
     assert [p["name"] for p in payload["phases"]] == [n for n, _ in DEFAULT_PHASES]
     # Tên nút: mô tả yêu cầu (chỉ dòng đầu) > phân loại > «Dòng N».
     assert [i["name"] for i in payload["items"]] == [
         "K2SO4 tinh khiết 98%", "Phân bón", "Dòng 3"]
+    # Khởi tạo phải RA HỒ SƠ (bao-CR-388) — khung 5 giai đoạn rỗng thì bấm xong
+    # không thấy gì. Hồ sơ mẫu là hồ sơ CHUNG, nằm đúng giai đoạn, tiên quyết
+    # đã đổi từ số thứ tự trong mẫu sang id thật.
+    docs = payload["docs"]
+    assert len(docs) == len(DEFAULT_TEMPLATE_DOCS) and all(d["item_id"] == 0 for d in docs)
+    phase_ids = [p["id"] for p in payload["phases"]]
+    by_title = {d["title"]: d for d in docs}
+    for phase_no, title, _, required, depends in DEFAULT_TEMPLATE_DOCS:
+        doc = by_title[title]
+        assert doc["phase_id"] == phase_ids[phase_no - 1] and doc["required"] is required
+        assert doc["depends"] == [by_title[DEFAULT_TEMPLATE_DOCS[no - 1][1]]["id"]
+                                  for no in depends]
 
     # Bấm lần hai: không đụng gì.
-    assert svc.init_report(db, s.id, user_id=1) is False
+    assert svc.init_report(db, s.id, user_id=1) == -1
     again = svc.get_report_payload(db, s.id)
     assert len(again["phases"]) == 5 and len(again["items"]) == 3
+    assert len(again["docs"]) == len(DEFAULT_TEMPLATE_DOCS)
+
+
+# ── apply_template: nút «Tạo mẫu» trên nút dòng hàng / giai đoạn ────────────────
+def test_tao_mau_cho_nut_dong_hang_cong_them_va_khong_nhan_doi(db):
+    s = _sr(db)
+    svc.init_report(db, s.id, user_id=1)                 # đã có hồ sơ CHUNG của mẫu
+    item = svc.create_item(db, s.id, "Thùng carton 3 lớp", 1)
+    db.commit()
+
+    added = svc.apply_template(db, s.id, item_id=item.id, phase_id=None, user_id=1)
+    assert added == len(DEFAULT_TEMPLATE_DOCS)
+    payload = svc.get_report_payload(db, s.id)
+    # Hồ sơ Chung không bị đụng, hồ sơ của nút là bản riêng, tiên quyết nối trong nút.
+    mine = [d for d in payload["docs"] if d["item_id"] == item.id]
+    common = [d for d in payload["docs"] if d["item_id"] == 0]
+    assert len(mine) == len(common) == len(DEFAULT_TEMPLATE_DOCS)
+    mine_ids = {d["id"] for d in mine}
+    assert all(set(d["depends"]) <= mine_ids for d in mine)
+    assert len(payload["phases"]) == 5                    # giai đoạn trùng tên: dùng lại
+
+    # Bấm lần hai: không thêm gì.
+    assert svc.apply_template(db, s.id, item_id=item.id, phase_id=None, user_id=1) == 0
+    assert len(svc.get_report_payload(db, s.id)["docs"]) == 2 * len(DEFAULT_TEMPLATE_DOCS)
+
+
+def test_tao_mau_vao_mot_giai_doan_chi_do_phan_do_va_cat_tien_quyet_ngoai(db):
+    s = _sr(db)
+    # Khối tự dựng tay: giai đoạn trùng tên mẫu (khác hoa-thường, dư khoảng trắng)
+    # + một giai đoạn tự đặt; mẫu KHÔNG được tạo thêm giai đoạn khi áp vào một GĐ.
+    ph = svc.create_phase(db, s.id, "  đặt hàng &  hợp đồng ", "", 1)
+    own = svc.create_phase(db, s.id, "Giai đoạn riêng", "", 1)
+    db.commit()
+
+    added = svc.apply_template(db, s.id, item_id=0, phase_id=ph.id, user_id=1)
+    expected = [row for row in DEFAULT_TEMPLATE_DOCS if row[0] == 2]
+    assert added == len(expected) > 0
+    payload = svc.get_report_payload(db, s.id)
+    assert len(payload["phases"]) == 2
+    docs = payload["docs"]
+    assert all(d["phase_id"] == ph.id for d in docs)
+    # «Báo giá» của mẫu trỏ về GPKD (giai đoạn 1, không được đổ) → tiên quyết bị cắt.
+    by_title = {d["title"]: d for d in docs}
+    assert by_title["Báo giá chính thức có ký, đóng dấu"]["depends"] == []
+    assert by_title["Hợp đồng mua bán / hợp đồng nguyên tắc"]["depends"] == [
+        by_title["Báo giá chính thức có ký, đóng dấu"]["id"]]
+
+    # Giai đoạn tự đặt tên không có trong mẫu → chặn rõ, không đoán.
+    with pytest.raises(HTTPException) as e:
+        svc.apply_template(db, s.id, item_id=0, phase_id=own.id, user_id=1)
+    assert e.value.status_code == 400 and "Giai đoạn riêng" in e.value.detail
+
+
+def test_tao_mau_tu_tao_giai_doan_thieu_va_chan_nut_la(db):
+    s = _sr(db)
+    svc.create_phase(db, s.id, "Pháp lý & Giấy phép", "", 1)
+    db.commit()
+
+    added = svc.apply_template(db, s.id, item_id=0, phase_id=None, user_id=1)
+    assert added == len(DEFAULT_TEMPLATE_DOCS)
+    names = [p["name"] for p in svc.get_report_payload(db, s.id)["phases"]]
+    assert names == [n for n, _ in DEFAULT_PHASES]     # GĐ có sẵn dùng lại, 4 GĐ còn lại tạo mới
+
+    other = _sr(db, code="YCKS-BC2")
+    stranger = svc.create_item(db, other.id, "Nút phiếu khác", 1)
+    db.commit()
+    with pytest.raises(HTTPException) as e:
+        svc.apply_template(db, s.id, item_id=stranger.id, phase_id=None, user_id=1)
+    assert e.value.status_code == 404
+
+
+def test_mau_chung_tu_nhat_quan():
+    """Mẫu trong mã nguồn: giai đoạn 1..5, tiên quyết chỉ trỏ LÙI về dòng trước
+    (không vòng), tiêu đề không trùng trong cùng giai đoạn, vừa trần cột."""
+    seen: set[tuple[int, str]] = set()
+    for no, (phase_no, title, description, required, depends) in enumerate(
+            DEFAULT_TEMPLATE_DOCS, start=1):
+        assert 1 <= phase_no <= len(DEFAULT_PHASES)
+        assert 0 < len(title) <= 255 and len(description) <= 4000
+        assert isinstance(required, bool)
+        assert all(1 <= d < no for d in depends)
+        key = (phase_no, title.casefold())
+        assert key not in seen
+        seen.add(key)
 
 
 # ── xóa nút / hồ sơ / giai đoạn ─────────────────────────────────────────────────

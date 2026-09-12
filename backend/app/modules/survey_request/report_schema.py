@@ -55,6 +55,13 @@ class ReportPhaseIn(BaseModel):
         return v
 
 
+class ReportTemplateApplyIn(BaseModel):
+    """Đổ mẫu chung vào một nút dòng hàng (0 = Chung), tùy chọn chỉ một giai đoạn."""
+
+    item_id: int = Field(default=0, ge=0)
+    phase_id: int | None = Field(default=None, ge=1)
+
+
 class ReportDocIn(BaseModel):
     """Thêm một hồ sơ. `phase_id` bắt buộc trỏ vào giai đoạn của cùng phiếu."""
 

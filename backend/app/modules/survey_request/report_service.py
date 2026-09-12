@@ -12,8 +12,8 @@ from sqlalchemy.orm import Session
 from app.modules.employee.model import Employee
 
 from .model import SurveyRequestLine
-from .report_constants import (DEFAULT_PHASES, MAX_DEPENDS, RD_DONE,
-                               REPORT_DOC_STATUS_LABELS)
+from .report_constants import (DEFAULT_PHASES, DEFAULT_TEMPLATE_DOCS, MAX_DEPENDS,
+                               RD_DONE, REPORT_DOC_STATUS_LABELS)
 from .report_model import (SurveyReportDoc, SurveyReportItem,
                            SurveyReportPhase, SurveyReportTrash)
 
@@ -214,16 +214,18 @@ def _line_item_name(line: SurveyRequestLine, index: int) -> str:
     return f"Dòng {index + 1}"
 
 
-def init_report(db: Session, sr_id: int, user_id: int) -> bool:
-    """Khởi tạo bộ khung mặc định: 5 giai đoạn mẫu + một nút cho mỗi dòng hàng.
+def init_report(db: Session, sr_id: int, user_id: int) -> int:
+    """Khởi tạo báo cáo mẫu: 5 giai đoạn + một nút cho mỗi dòng hàng + bộ hồ sơ
+    CHUNG của mẫu (`apply_template`). Trả về số hồ sơ đã dựng.
 
-    Idempotent: khối đã có giai đoạn hoặc nút thì KHÔNG đụng gì (trả False) —
-    bấm hai lần không nhân đôi khung.
+    Idempotent: khối đã có giai đoạn hoặc nút thì KHÔNG đụng gì (trả -1) — bấm
+    hai lần không nhân đôi khung. Muốn thêm hồ sơ mẫu vào khối đang có thì đi
+    đường «Tạo mẫu» (`apply_template`), nó cộng thêm và bỏ qua trùng.
     """
     has_any = (db.query(SurveyReportPhase.id).filter_by(survey_request_id=sr_id).first()
                or db.query(SurveyReportItem.id).filter_by(survey_request_id=sr_id).first())
     if has_any:
-        return False
+        return -1
     for order, (name, location) in enumerate(DEFAULT_PHASES):
         db.add(SurveyReportPhase(survey_request_id=sr_id, name=name, location=location,
                                  sort_order=order, created_by=user_id, updated_by=user_id))
@@ -234,7 +236,77 @@ def init_report(db: Session, sr_id: int, user_id: int) -> bool:
         db.add(SurveyReportItem(survey_request_id=sr_id, name=_line_item_name(line, order),
                                 sort_order=order, created_by=user_id, updated_by=user_id))
     db.flush()
-    return True
+    return apply_template(db, sr_id, item_id=0, phase_id=None, user_id=user_id)
+
+
+def _norm_name(value: str | None) -> str:
+    """Khóa so khớp tên giai đoạn / tiêu đề hồ sơ: gộp khoảng trắng, bỏ hoa-thường."""
+    return " ".join((value or "").split()).casefold()
+
+
+def apply_template(db: Session, sr_id: int, item_id: int, phase_id: int | None,
+                   user_id: int) -> int:
+    """Đổ MẪU CHUNG (`DEFAULT_TEMPLATE_DOCS`) vào một nút dòng hàng, hoặc chỉ vào
+    một giai đoạn của nút đó. KHÔNG commit. Trả về số hồ sơ THÊM MỚI.
+
+    - `item_id` 0 = hồ sơ Chung; khác 0 phải là nút của phiếu.
+    - `phase_id` None = mọi giai đoạn của mẫu: giai đoạn TRÙNG TÊN thì dùng lại,
+      thiếu thì tạo. Có `phase_id` = chỉ phần mẫu của giai đoạn trùng tên với nó;
+      giai đoạn người dùng tự đặt tên không có trong mẫu → 400 (không đoán).
+    - CỘNG THÊM, không xóa gì: hồ sơ cùng (giai đoạn, nút, tiêu đề) đã có thì bỏ
+      qua nhưng vẫn được dùng làm mốc tiên quyết — bấm hai lần không nhân đôi.
+    - Tiên quyết trỏ ra ngoài phần được đổ (áp một giai đoạn) thì bỏ, không lỗi.
+
+    Mẫu đang nằm trong mã nguồn; có quản lý mẫu thì thay nguồn ở đây, chữ ký giữ.
+    """
+    _check_refs(db, sr_id, phase_id, item_id)
+    phases = _rows_of(db, SurveyReportPhase, sr_id)
+    phase_of_no: dict[int, SurveyReportPhase] = {}
+    if phase_id is not None:
+        target = next(p for p in phases if p.id == phase_id)
+        for no, (name, _) in enumerate(DEFAULT_PHASES, start=1):
+            if _norm_name(name) == _norm_name(target.name):
+                phase_of_no[no] = target
+                break
+        if not phase_of_no:
+            names = " · ".join(n for n, _ in DEFAULT_PHASES)
+            raise HTTPException(400, f"Giai đoạn '{target.name}' không có trong mẫu chung "
+                                     f"(mẫu chỉ có: {names})")
+    else:
+        by_name: dict[str, SurveyReportPhase] = {}
+        for p in phases:
+            by_name.setdefault(_norm_name(p.name), p)
+        for no, (name, location) in enumerate(DEFAULT_PHASES, start=1):
+            row = by_name.get(_norm_name(name))
+            if row is None:
+                row = create_phase(db, sr_id, name, location, user_id)
+            phase_of_no[no] = row
+
+    existing = {(d.phase_id, _norm_name(d.title)): d.id
+                for d in _rows_of(db, SurveyReportDoc, sr_id) if d.item_id == item_id}
+    id_of_no: dict[int, int] = {}                 # số thứ tự trong mẫu → id hồ sơ
+    created: list[tuple[SurveyReportDoc, list[int]]] = []
+    for no, (phase_no, title, description, required, depends) in enumerate(
+            DEFAULT_TEMPLATE_DOCS, start=1):
+        phase = phase_of_no.get(phase_no)
+        if phase is None:
+            continue
+        key = (phase.id, _norm_name(title))
+        if key in existing:
+            id_of_no[no] = existing[key]
+            continue
+        row = SurveyReportDoc(survey_request_id=sr_id, phase_id=phase.id, item_id=item_id,
+                              title=title, description=description, required=required,
+                              depends=[], sort_order=_next_order(db, SurveyReportDoc, sr_id),
+                              created_by=user_id, updated_by=user_id)
+        db.add(row)
+        db.flush()
+        id_of_no[no] = row.id
+        created.append((row, list(depends)))
+    for row, depends in created:                  # nối tiên quyết sau khi có đủ id
+        row.depends = [id_of_no[no] for no in depends if no in id_of_no]
+    db.flush()
+    return len(created)
 
 
 def _get_or_404(db: Session, model, sr_id: int, row_id: int):
