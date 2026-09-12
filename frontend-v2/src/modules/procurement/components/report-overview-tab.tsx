@@ -1,7 +1,8 @@
-import { AlertTriangle, Boxes, Info, ShoppingCart, Wallet, WalletCards } from 'lucide-react'
+import { AlertTriangle, Boxes, ShoppingCart, Wallet, WalletCards } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { ChartCard } from '@/shared/ui/chart'
+import { CollapsibleNote } from '@/shared/ui/collapsible-note'
 import { ColumnChart } from '@/shared/ui/column-chart'
 import { StatCard } from '@/shared/ui/stat-card'
 import { formatMoney } from '@/shared/utils/format-money'
@@ -57,24 +58,24 @@ export function ReportOverviewTab({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="rounded-lg border bg-muted/40 px-4 py-3 text-xs leading-relaxed text-muted-foreground print:hidden">
-        <p>
-          <Info className="mr-1 inline size-3.5 align-[-2px] text-primary" />
-          <b>Lưu ý cách đọc số:</b> "Giá trị đặt hàng" = tổng giá trị các đơn <b>ĐẶT</b> theo{' '}
-          <b>ngày đặt</b>. Biểu đồ "Chi phí mua theo tháng" = <b>công nợ phát sinh</b> (tiền hàng +
-          vận chuyển, gồm VAT, theo lượng thực nhận) theo <b>ngày nhận hàng</b>. Hai con số đo khác
-          nhau nên <b>không bằng nhau</b>. Mọi số liệu chỉ tính <b>đơn thật</b> (đã duyệt trở đi) —
-          đã loại trừ đơn nháp / chờ duyệt / hủy / từ chối.
-        </p>
+      <CollapsibleNote title="Lưu ý cách đọc số">
+        "Giá trị đặt hàng" = tổng giá trị các đơn <b>ĐẶT</b> theo <b>ngày đặt</b>. Biểu đồ "Chi phí
+        mua theo tháng" = <b>công nợ phát sinh</b> (tiền hàng + vận chuyển, gồm VAT, theo lượng thực
+        nhận) theo <b>ngày nhận hàng</b>. Hai con số đo khác nhau nên <b>không bằng nhau</b>. Mọi số
+        liệu chỉ tính <b>đơn thật</b> (đã duyệt trở đi) — đã loại trừ đơn nháp / chờ duyệt / hủy / từ
+        chối.
         {period !== ALL_PERIOD && (
           <p className="mt-1">
             Đang lọc theo <b>{periodLabel}</b>: các thẻ số và tình hình đơn / giao hàng tính theo
             tháng này; riêng biểu đồ "Chi phí mua theo tháng" vẫn hiển thị cả năm.
           </p>
         )}
-      </div>
+      </CollapsibleNote>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      {/*  Hai ô một hàng ở khổ hẹp — cùng luật đã áp cho Tổng quan Thu mua và
+           Văn thư. Bốn trong năm thẻ ở đây là SỐ TIỀN; chúng vừa nửa hàng nhờ
+           truy vấn `@container` trong `StatCard`, không phải nhờ rút gọn số. */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-5">
         <StatCard
           icon={ShoppingCart}
           label="Số đơn mua hàng"
@@ -177,3 +178,4 @@ export function ReportOverviewTab({
     </div>
   )
 }
+

@@ -8,13 +8,26 @@ import { AuditTimeline } from '@/shared/audit'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
+import { Label } from '@/shared/ui/label'
 import { MultiPicker } from '@/shared/ui/multi-picker'
+import { PageContainer } from '@/shared/ui/page-container'
+import { PageHeader } from '@/shared/ui/page-header'
 import { RequiredMark } from '@/shared/ui/required-mark'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/ui/select'
 
 interface Option {
   value: number
   label: string
 }
+
+/** Mục «chưa chọn ai» của ô chọn nhân sự — `SelectItem` không nhận value rỗng. */
+const NONE = 'none'
 
 export function CategoryAssigneeFormPage() {
   const navigate = useNavigate()
@@ -129,62 +142,83 @@ export function CategoryAssigneeFormPage() {
   }, [itemGroups])
 
   return (
-    <div className="space-y-6 p-6 max-w-5xl mx-auto">
-      {/* Top Header Toolbar */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b pb-4">
-        <div className="flex items-center gap-3">
+    //  ⚠️ Dùng `PageContainer` + `PageHeader` như mọi màn khác. Bản cũ tự dựng
+    //  `div.p-6` + một hàng `flex` ôm nút quay lại, khối tiêu đề và cụm nút —
+    //  ở khổ điện thoại tiêu đề gãy hai dòng cộng mô tả hai dòng nữa, nút quay
+    //  lại bị căn giữa theo khối bốn dòng đó nên trôi lửng lơ giữa khoảng
+    //  trắng, còn cụm Hủy/Lưu rơi xuống một hàng riêng dán mép trái.
+    //  `PageHeader` có sẵn khe `leading` đúng cho nút quay lại.
+    <PageContainer className="mx-auto max-w-5xl">
+      {/*  `sticky` — prop có sẵn của `PageHeader` cho «form dài, nút Lưu nằm
+           trên đầu»: cuộn xuống chỉnh xong rồi muốn lưu mà phải cuộn ngược lên
+           thì thao tác nào cũng mất hai lần cuộn.
+
+           ⚠️ Ghi lại số đo cho người sau khỏi tưởng đây là chỗ nó phát huy:
+           với bản ghi CHƯA có lịch sử, cả trang chỉ **869px trên khung 844px**
+           ở 390px — cuộn được đúng 25px, nên dải ghim 109px gần như không đổi
+           gì. Nó chỉ đáng khi thẻ *Lịch sử thao tác* dài ra (bản ghi bị sửa
+           nhiều lần). Khách chốt bật (12/09/2026). Muốn xét lại thì mở một bản
+           ghi có nhiều dòng nhật ký rồi đo, đừng đo bản ghi mới. */}
+      <PageHeader
+        sticky
+        leading={
           <Button
             variant="outline"
             size="icon"
             onClick={() => navigate(appRoutes.procurement.categoryAssignees)}
             title="Quay lại danh sách"
+            aria-label="Quay lại danh sách"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft />
           </Button>
-          <div>
-            <h1 className="text-xl font-bold tracking-tight">
-              {editCatLabel ? `Sửa phân công: ${editCatLabel}` : 'Gán phân công phụ trách'}
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Phân công Nhân sự thu mua chịu trách nhiệm xử lý các dòng YCMH theo phân loại.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={() => navigate(appRoutes.procurement.categoryAssignees)}
-          >
-            Hủy
-          </Button>
-          <Button onClick={handleSave} disabled={saving} className="shadow-sm">
-            <Save className="h-4 w-4 mr-2" />
-            {saving ? 'Đang lưu…' : 'Lưu phân công'}
-          </Button>
-        </div>
-      </div>
+        }
+        title={editCatLabel ? `Sửa phân công: ${editCatLabel}` : 'Gán phân công phụ trách'}
+        description={
+          //  Ẩn ở khổ hẹp: câu này mô tả việc của cả màn, đọc một lần rồi thôi,
+          //  nhưng ngốn hai dòng ngay trên ô nhập đầu tiên ở MỌI lần mở màn.
+          <span className="max-md:hidden">
+            Phân công Nhân sự thu mua chịu trách nhiệm xử lý các dòng YCMH theo phân loại.
+          </span>
+        }
+        //  Hai nút chia đôi hàng ở khổ hẹp — không có lớp này thì chúng co theo
+        //  chữ và dán mép phải sau một khoảng trống dài.
+        actionsClassName="max-md:[&>button]:flex-1"
+        actions={
+          <>
+            <Button
+              variant="outline"
+              onClick={() => navigate(appRoutes.procurement.categoryAssignees)}
+            >
+              Hủy
+            </Button>
+            <Button onClick={handleSave} disabled={saving} className="shadow-sm">
+              <Save />
+              {saving ? 'Đang lưu…' : 'Lưu phân công'}
+            </Button>
+          </>
+        }
+      />
 
       {/* Form Content */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-2 space-y-6">
-          <Card className="p-6 space-y-6">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <UserCheck className="h-5 w-5 text-primary" />
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="space-y-4 md:col-span-2">
+          <Card className="space-y-5 p-4">
+            <h2 className="flex items-center gap-2 text-base font-semibold text-navy dark:text-foreground">
+              <UserCheck className="size-4 text-primary" />
               Thông tin phân công NSTM
             </h2>
 
             {/* Item Groups Picker */}
             <div className="space-y-2">
-              <label className="text-sm font-medium leading-none flex items-center justify-between">
-                <span>
+              <div className="flex flex-wrap items-center justify-between gap-x-2">
+                <Label>
                   Phân loại VTBB
                   <RequiredMark />
-                </span>
-                <span className="text-xs text-muted-foreground font-normal">
+                </Label>
+                <span className="text-xs font-normal text-muted-foreground">
                   Đã chọn {selectedCatIds.length} phân loại
                 </span>
-              </label>
+              </div>
 
               <MultiPicker<number>
                 options={multiPickerOptions}
@@ -198,69 +232,104 @@ export function CategoryAssigneeFormPage() {
               </p>
             </div>
 
-            {/* Primary Employee */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium leading-none">
-                NSTM chính
-                <RequiredMark />
-              </label>
-              <select
-                value={String(primaryId || '')}
-                onChange={(e) => setPrimaryId(Number(e.target.value) || 0)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              >
-                <option value="">-- Chọn Nhân sự thu mua chính --</option>
-                {employees.map((e) => (
-                  <option key={e.value} value={String(e.value)}>
-                    {e.label}
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-muted-foreground">
-                Nhân viên này sẽ được hệ thống ưu tiên tự động gán xử lý các dòng thuộc phân loại
-                trên YCMH.
-              </p>
-            </div>
+            {/*  ⚠️ Hai ô này dùng `Select` dùng chung, bản cũ là `<select>` thô
+                 khai tay `h-10`: cao hơn 4px so với mọi ô nhập khác của hệ, mũi
+                 tên và cỡ chữ cũng khác — đứng cạnh `MultiPicker` ngay trên nó
+                 là thấy ngay ba kiểu ô trong cùng một thẻ. */}
+            <EmployeeSelect
+              label="NSTM chính"
+              required
+              value={primaryId}
+              onChange={setPrimaryId}
+              placeholder="Chọn Nhân sự thu mua chính"
+              employees={employees}
+              hint="Nhân viên này sẽ được hệ thống ưu tiên tự động gán xử lý các dòng thuộc phân loại trên YCMH."
+            />
 
-            {/* Backup Employee */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium leading-none">NSTM dự phòng (tùy chọn)</label>
-              <select
-                value={String(backupId || '')}
-                onChange={(e) => setBackupId(Number(e.target.value) || 0)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              >
-                <option value="">-- Không có dự phòng --</option>
-                {employees.map((e) => (
-                  <option key={e.value} value={String(e.value)}>
-                    {e.label}
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-muted-foreground">
-                Được gán xử lý khi NSTM chính vắng mặt hoặc được ủy quyền.
-              </p>
-            </div>
+            <EmployeeSelect
+              label="NSTM dự phòng (tùy chọn)"
+              value={backupId}
+              onChange={setBackupId}
+              placeholder="Không có dự phòng"
+              employees={employees}
+              hint="Được gán xử lý khi NSTM chính vắng mặt hoặc được ủy quyền."
+            />
           </Card>
         </div>
 
-        {/* Audit Timeline Sidebar */}
-        <div className="space-y-6">
-          <Card className="p-6 space-y-4">
-            <h3 className="text-md font-semibold flex items-center gap-2">
-              <Users className="h-4 w-4 text-muted-foreground" />
-              Lịch sử thao tác
-            </h3>
-            {editRowId ? (
-              <AuditTimeline entity="category_assignee" entityId={editRowId} />
-            ) : (
+        {/*  ⚠️ KHÔNG tự dựng tiêu đề «Lịch sử thao tác» ở đây — `AuditTimeline`
+             đã tự in đúng câu đó. Bản cũ có cả hai nên khi đã cuộn tới, màn
+             hình hiện **hai dòng tiêu đề giống hệt nhau chồng lên nhau**; ở bố
+             cục ba cột của màn rộng nó lọt lưới vì thẻ nằm ngoài tầm mắt, xuống
+             khổ điện thoại xếp dọc thì lộ ngay. */}
+        <Card className="p-4">
+          {editRowId ? (
+            <AuditTimeline entity="category_assignee" entityId={editRowId} />
+          ) : (
+            <div className="space-y-3">
+              <h3 className="flex items-center gap-2 text-base font-semibold text-navy dark:text-foreground">
+                <Users className="size-4 text-muted-foreground" />
+                Lịch sử thao tác
+              </h3>
               <p className="text-sm text-muted-foreground italic">
                 Lịch sử thay đổi sẽ hiển thị khi xem/sửa bản ghi phân công đã lưu.
               </p>
-            )}
-          </Card>
-        </div>
+            </div>
+          )}
+        </Card>
       </div>
+    </PageContainer>
+  )
+}
+
+/**
+ * Ô chọn MỘT nhân sự thu mua.
+ *
+ * ⚠️ `Select` của Radix không nhận `value=""`, mà "chưa chọn ai" là trạng thái
+ * hợp lệ ở đây (ô dự phòng để trống là bình thường). Nên dùng chuỗi sentinel
+ * `NONE` cho mục trống rồi quy về `0` khi bắn ra ngoài — đúng cách các màn khác
+ * làm với `all` / `none`.
+ */
+function EmployeeSelect({
+  label,
+  required,
+  value,
+  onChange,
+  placeholder,
+  employees,
+  hint,
+}: {
+  label: string
+  required?: boolean
+  value: number
+  onChange: (id: number) => void
+  placeholder: string
+  employees: Option[]
+  hint: string
+}) {
+  return (
+    <div className="space-y-2">
+      <Label>
+        {label}
+        {required && <RequiredMark />}
+      </Label>
+      <Select
+        value={value ? String(value) : NONE}
+        onValueChange={(next) => onChange(next === NONE ? 0 : Number(next))}
+      >
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={NONE}>{placeholder}</SelectItem>
+          {employees.map((employee) => (
+            <SelectItem key={employee.value} value={String(employee.value)}>
+              {employee.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <p className="text-xs text-muted-foreground">{hint}</p>
     </div>
   )
 }

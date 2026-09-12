@@ -36,6 +36,19 @@ interface PageHeaderProps {
    *
    * Lề âm để dải này chạy hết bề ngang khung, không thụt vào theo phần đệm của
    * `PageContainer` — dính mà vẫn còn hai mép hở thì nhìn ra ngay là vá víu.
+   *
+   * ⚠️ **Khoảng hở DƯỚI dải phải là ĐỆM, không phải LỀ** (`mb-0` + `pb-5`). Lề
+   * nằm NGOÀI vùng được tô nền: đo 12/09/2026 ở màn chi tiết YCTT, `mb-5` để
+   * lại một khe **20px** ngay dưới vạch chân, và nội dung cuộn qua hiện nguyên
+   * một vạch chữ cụt trong khe đó (bắt được `<p>` "Mỗi tệp tối đa 50 MB…" của
+   * thẻ đính kèm đang trôi ngang qua) — trông đúng như lỗi vẽ. Cùng bài học đã
+   * ghi ở `shared/ui/sticky-toolbar.ts`.
+   *
+   * ⚠️ Khổ điện thoại **bóp đệm dọc lại** (`max-md:pt-2 max-md:pb-3`) và cho
+   * hai hàng sát nhau hơn (`max-md:gap-2`). Dải này ghim, nên chiều cao của nó
+   * là phần màn hình mất VĨNH VIỄN: màn chi tiết có nút thì nó xuống hai hàng,
+   * để nguyên đệm của màn rộng là **117px trên tổng 844px** — một phần bảy màn
+   * hình chỉ để bày lại thứ người dùng vừa bấm vào.
    */
   sticky?: boolean
 }
@@ -54,7 +67,7 @@ export function PageHeader({
       className={cn(
         'mb-5 flex flex-wrap items-start justify-between gap-3',
         sticky &&
-          'sticky top-0 z-20 -mx-4 -mt-4 border-b bg-canvas px-4 py-3 lg:-mx-6 lg:-mt-6 lg:px-6',
+          'sticky top-0 z-20 -mx-4 -mt-4 mb-0 border-b bg-canvas px-4 pt-3 pb-5 max-md:gap-2 max-md:pt-2 max-md:pb-3 lg:-mx-6 lg:-mt-6 lg:px-6',
       )}
     >
       {/* `min-w-0`: khối tiêu đề phải CO ĐƯỢC, nếu không nó luôn đòi bề rộng của

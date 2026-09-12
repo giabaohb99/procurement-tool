@@ -1,6 +1,7 @@
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react'
 import { useMemo, type CSSProperties } from 'react'
 
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import {
   Table,
   TableBody,
@@ -68,6 +69,7 @@ export function ReportMetricTable({
   onSort,
   className,
 }: ReportMetricTableProps) {
+  const isMobile = useIsMobile()
   const sorted = useMemo(() => {
     if (!sort) return rows
     const direction = sort.dir === 'asc' ? 1 : -1
@@ -78,6 +80,22 @@ export function ReportMetricTable({
       return direction * (metricValue(a, sort.key, period) - metricValue(b, sort.key, period))
     })
   }, [rows, sort, period])
+
+  //  ⚠️ **Khổ điện thoại bày THẺ, không bày bảng thu nhỏ.** Ở chế độ «Dọc» màn
+  //  này dựng tới MƯỜI bảng (một tổng năm + chín tháng), mỗi bảng lặp lại đúng
+  //  hàng tiêu đề «# · Nhà cung cấp · Số lần giao dịch» và một thanh cuộn ngang
+  //  riêng, còn cột tên thì bị bóp tới mức ba dòng «CÔNG TY TNHH …» xếp chồng.
+  //  Đọc ra là một bức tường chữ lặp, mà vẫn phải kéo ngang mới thấy hai chỉ số
+  //  còn lại. Thẻ thì bày ĐỦ tên trên một dòng chảy và mọi chỉ số nằm ngay dưới
+  //  — hết cuộn ngang, hết cắt tên, hết chín hàng tiêu đề.
+  //
+  //  Sắp xếp không mất theo: `ReportMatrixTab` dựng MỘT dải nút sắp xếp cho cả
+  //  tab (xem `MobileSortBar`), thay cho chín hàng tiêu đề bấm được.
+  if (isMobile) {
+    return (
+      <MetricCardList rows={sorted} metrics={metrics} period={period} warnMetric={warnMetric} />
+    )
+  }
 
   return (
     <Table className={cn('min-w-[480px]', className)}>
@@ -132,6 +150,8 @@ export function ReportMetricTable({
               <TableCell className="sticky left-0 z-10 w-12 bg-inherit text-muted-foreground">
                 {index + 1}
               </TableCell>
+              {/*  Nhánh bảng này chỉ chạy từ `md` trở lên (dưới đó đã rẽ sang
+                   thẻ), nên cắt một dòng là đủ — cột rộng 160–260px ở đó. */}
               <TableCell
                 className="sticky left-12 z-10 truncate bg-inherit font-medium"
                 style={{ width: nameWidth, minWidth: nameWidth, maxWidth: nameWidth }}
@@ -159,6 +179,80 @@ export function ReportMetricTable({
         })}
       </TableBody>
     </Table>
+  )
+}
+
+/**
+ * Danh sách THẺ thay cho bảng ở khổ điện thoại — xem ghi chú ở
+ * `ReportMetricTable`.
+ *
+ * ⚠️ **Mọi dòng đều `px-2`, KHÔNG phải chỉ dòng cảnh báo, và tuyệt đối không
+ * bù bằng lề âm.** Nền cảnh báo cần chỗ thở hai bên, nhưng nếu chỉ dòng đó có
+ * đệm thì chữ của nó lệch 8px so với các dòng khác — nhìn ra ngay khi cuộn qua.
+ * Còn `-mx-2` để tràn ra mép thẻ thì đẩy `scrollWidth` của `<ul>` vượt
+ * `clientWidth` 8px, tức đẻ ra một vùng cuộn ngang tí hon ở mỗi khối tháng
+ * (đo 12/09/2026: 332 / 324). Cho tất cả cùng thụt vào là xong cả hai.
+ */
+function MetricCardList({
+  rows,
+  metrics,
+  period,
+  warnMetric,
+}: {
+  rows: MatrixRow[]
+  metrics: ReportMetric[]
+  period: string
+  warnMetric?: string
+}) {
+  if (rows.length === 0) {
+    return <p className="py-6 text-center text-sm text-muted-foreground">Không có dữ liệu</p>
+  }
+
+  return (
+    <ul className="divide-y">
+      {rows.map((row, index) => {
+        const warn = isWarnRow(row, period, warnMetric)
+        return (
+          <li
+            key={row.key || index}
+            className={cn('px-2 py-2.5 first:pt-0', warn && 'rounded-md')}
+            style={warn ? WARN_ROW_STYLE : undefined}
+          >
+            <div className="flex items-start gap-2">
+              <span className="w-5 shrink-0 pt-px text-xs tabular-nums text-muted-foreground">
+                {index + 1}
+              </span>
+
+              <div className="min-w-0 flex-1 space-y-1">
+                {/*  Tên KHÔNG cắt: đây là chỗ duy nhất nói dòng này là của ai,
+                     mà tên doanh nghiệp Việt Nam phân biệt nhau ở phần đuôi. */}
+                <span className="block text-sm font-medium text-foreground">{row.key}</span>
+
+                <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                  {metrics.map((metric) => {
+                    const value = metricValue(row, metric.key, period)
+                    const isWarnCell = warn && metric.key === warnMetric
+                    return (
+                      <span key={metric.key}>
+                        {metric.label}{' '}
+                        <b
+                          className={cn(
+                            'tabular-nums text-foreground',
+                            isWarnCell && 'text-destructive',
+                          )}
+                        >
+                          {metric.pct ? formatPercent(value) : formatMoney(value)}
+                        </b>
+                      </span>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          </li>
+        )
+      })}
+    </ul>
   )
 }
 

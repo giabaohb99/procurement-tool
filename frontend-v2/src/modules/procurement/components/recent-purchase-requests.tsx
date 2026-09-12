@@ -2,6 +2,7 @@ import { Check, CornerUpLeft } from 'lucide-react'
 import { useState } from 'react'
 
 import { usePermission } from '@/core/authorization/use-permission'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { Button } from '@/shared/ui/button'
 import { ConfirmIconButton } from '@/shared/ui/confirm-icon-button'
 import { ReasonConfirmDialog } from '@/shared/ui/reason-confirm-dialog'
@@ -36,12 +37,33 @@ interface RecentPurchaseRequestsProps {
 export function RecentPurchaseRequests({ rows }: RecentPurchaseRequestsProps) {
   const { can } = usePermission()
   const canApprove = can('purchase_request', 'approve')
+  const isMobile = useIsMobile()
 
   if (rows.length === 0) {
     return (
       <p className="py-8 text-center text-sm text-muted-foreground">
         Chưa có yêu cầu mua hàng nào.
       </p>
+    )
+  }
+
+  //  ⚠️ Ở khổ điện thoại dựng THẺ, không dựng bảng thu nhỏ. Bảng này rộng tự
+  //  nhiên **687px** trong khung 308px (đo 12/09/2026 ở 390px): phần nhìn thấy
+  //  chỉ tới giữa cột *Nội dung*, nên GIÁ TRỊ, TRẠNG THÁI và — nặng nhất — hai
+  //  nút *Duyệt / Trả lại* nằm ngoài mép phải. Tức chức năng chính của khối này
+  //  ("duyệt nhanh tại chỗ") biến mất trên điện thoại mà không có gì báo, người
+  //  dùng phải đoán ra là kéo ngang được.
+  //
+  //  Dựng ĐÚNG MỘT nhánh (`useIsMobile`) chứ không hai khối `md:hidden` —
+  //  `QuickActions` có hộp thoại xác nhận, để hai bản trong cây DOM là hai hộp
+  //  thoại cùng nhãn và trình đọc màn hình đọc mỗi phiếu hai lượt.
+  if (isMobile) {
+    return (
+      <ul className="divide-y">
+        {rows.map((row) => (
+          <RecentRequestCard key={row.id} row={row} canApprove={canApprove} />
+        ))}
+      </ul>
     )
   }
 
@@ -104,6 +126,62 @@ export function RecentPurchaseRequests({ rows }: RecentPurchaseRequestsProps) {
         </TableBody>
       </Table>
     </div>
+  )
+}
+
+/**
+ * Một yêu cầu mua ở khổ ĐIỆN THOẠI.
+ *
+ * ⚠️ **NỘI DUNG lên dòng đầu, mã phiếu tụt xuống dòng phụ** — cùng bài học với
+ * `DocumentCard` / `ApprovalInboxCard` (CR-364/365). Mã phiếu xếp dọc thành một
+ * cột `PYCDEMO0…` giống hệt nhau, không nói được phiếu nào là phiếu nào; thứ
+ * phân biệt chúng là câu nội dung ("Mua thùng bù tồn kho quý 2").
+ *
+ * ⚠️ **Giá trị KHÔNG rút gọn.** Người duyệt bấm *Duyệt* dựa trên đúng con số
+ * này, mà "1,2 tr" và "1.234.567 đ" là hai mức tin cậy khác nhau khi thứ theo
+ * sau là một chữ ký.
+ */
+function RecentRequestCard({
+  row,
+  canApprove,
+}: {
+  row: RecentPurchaseRequest
+  canApprove: boolean
+}) {
+  return (
+    <li className="space-y-1.5 py-3 first:pt-0">
+      <span className="line-clamp-2 font-medium text-foreground">{row.description || '—'}</span>
+
+      {/*  Dấu `·` nằm CÙNG span với vế đứng sau — tách ra thành phần tử riêng
+           thì lúc co chữ nó ở lại cuối dòng trên, thành một dấu chấm mồ côi. */}
+      <span className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
+        <span className="shrink-0 font-semibold text-sky-600 dark:text-sky-400">{row.code}</span>
+        <span className="truncate">
+          <span aria-hidden="true">· </span>
+          {row.requester}
+          {row.department && ` · ${row.department}`}
+        </span>
+      </span>
+
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+        <StatusBadge status={row.status} labels={PR_STATUS_LABELS} />
+        <span className="text-xs whitespace-nowrap text-muted-foreground">
+          {formatDate(row.date) || '—'}
+        </span>
+        <span className="text-xs font-semibold whitespace-nowrap tabular-nums text-foreground">
+          {formatMoney(row.total)} đ
+        </span>
+
+        {/*  Nút bám mép phải của CHÍNH hàng huy hiệu, không xuống một hàng
+             riêng: hàng riêng cho hai nút biểu tượng làm mỗi phiếu cao thêm
+             40px × 8 phiếu, mà chỗ trống bên phải huy hiệu thì đang bỏ không. */}
+        {canApprove && row.status === 'submitted' && (
+          <div className="ml-auto">
+            <QuickActions id={row.id} code={row.code} />
+          </div>
+        )}
+      </div>
+    </li>
   )
 }
 

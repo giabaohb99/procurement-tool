@@ -1,6 +1,7 @@
 import { X } from 'lucide-react'
 import { useMemo } from 'react'
 
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { LinesTable } from '@/shared/data-table/lines-table'
 import type { LinesTableColumn } from '@/shared/data-table/types'
 import { Button } from '@/shared/ui/button'
@@ -68,6 +69,7 @@ export function PaymentRequestLinesTable({
   onPatch,
   onRemove,
 }: PaymentRequestLinesTableProps) {
+  const isMobile = useIsMobile()
   const columns = useMemo<LinesTableColumn[]>(() => {
     const cols: LinesTableColumn[] = [
       { key: 'no', header: '#', width: 44, minWidth: 40, hideable: false, defaultPinned: true, align: 'center' },
@@ -78,15 +80,47 @@ export function PaymentRequestLinesTable({
         { key: 'source', header: 'Loại nợ', width: 120, minWidth: 90 },
       )
     }
+    //  ⚠️ **Nhóm cột PHỤ khai `compactHidden`** — bảng này 10 cột, bề rộng tự
+    //  nhiên **1270px**; trong khung 356px của điện thoại thì nhìn thấy đúng ba
+    //  cột đầu, còn ô *Đề nghị trả* — thứ duy nhất phải GÕ — nằm ngoài mép
+    //  phải. Xương sống của một dòng đề nghị chi là: *PO nào · hóa đơn nào ·
+    //  trả bao nhiêu*; bốn cột còn lại (mã MISA, ngày hóa đơn, hạn trả, tổng nợ
+    //  / đã trả) là số liệu ĐỐI CHIẾU — cần khi ngồi soát, không cần lúc lập
+    //  phiếu. Rút gọn xuống 5 cột / 570px.
+    //
+    //  Đây là cơ chế có sẵn của `LinesTable`, không phải khuôn mới: nút *Bảng
+    //  đầy đủ* bung lại đúng nhóm này. Và nó chỉ bật mặc định ở khổ hẹp — xem
+    //  `defaultCompact` bên dưới.
     cols.push(
       { key: 'po', header: 'PO', width: 150, minWidth: 90 },
       // bao-CR-304 (ticket 26) — cột Mã MISA chỉ hiển thị, mã nhập/sửa trên ĐMH.
-      { key: 'misa', header: 'Mã MISA', width: 140, minWidth: 90 },
+      { key: 'misa', header: 'Mã MISA', width: 140, minWidth: 90, compactHidden: true },
       { key: 'invoice_no', header: 'Số hóa đơn', width: 160, minWidth: 100 },
-      { key: 'invoice_date', header: 'Ngày hóa đơn', control: 'date', width: 160 },
-      { key: 'due_date', header: 'Hạn trả', width: 120, minWidth: 90, align: 'center' },
-      { key: 'payable_total', header: 'Tổng nợ', width: 140, minWidth: 90, align: 'right' },
-      { key: 'payable_paid', header: 'Đã trả', width: 140, minWidth: 90, align: 'right' },
+      { key: 'invoice_date', header: 'Ngày hóa đơn', control: 'date', width: 160, compactHidden: true },
+      {
+        key: 'due_date',
+        header: 'Hạn trả',
+        width: 120,
+        minWidth: 90,
+        align: 'center',
+        compactHidden: true,
+      },
+      {
+        key: 'payable_total',
+        header: 'Tổng nợ',
+        width: 140,
+        minWidth: 90,
+        align: 'right',
+        compactHidden: true,
+      },
+      {
+        key: 'payable_paid',
+        header: 'Đã trả',
+        width: 140,
+        minWidth: 90,
+        align: 'right',
+        compactHidden: true,
+      },
     )
     if (showOffsetColumn) {
       cols.push({ key: 'offset', header: 'Cấn trừ trả trước', width: 160, minWidth: 110, align: 'right' })
@@ -207,6 +241,16 @@ export function PaymentRequestLinesTable({
 
   return (
     <LinesTable
+      //  ⚠️ Rút gọn CHỈ ở khổ điện thoại, không áp cho màn rộng. Kế toán ngồi
+      //  máy tính cần đúng mấy cột đối chiếu (tổng nợ · đã trả · hạn trả) để
+      //  soát trước khi ký; bật mặc định cho họ là lấy đi thứ họ đang dùng, mà
+      //  bảng ở đó tuy có cuộn ngang thì vẫn đọc được. Trên điện thoại thì
+      //  ngược lại: 10 cột / 1270px trong khung 356px là không dùng nổi.
+      //
+      //  Chỉ là MẶC ĐỊNH lần đầu: ai đã tự chỉnh bố cục thì bản lưu trong
+      //  `localStorage` (`erp.table.<storageKey>`) vẫn thắng, nên sửa dòng này
+      //  mà màn hình không đổi thì xóa khóa đó rồi thử lại chứ không phải mã sai.
+      defaultCompact={isMobile}
       columns={columns}
       rows={rows}
       storageKey={storageKey}

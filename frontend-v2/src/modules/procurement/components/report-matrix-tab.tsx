@@ -1,12 +1,20 @@
 import { CalendarDays, Columns3, Rows3, Search, Sigma, X } from 'lucide-react'
-import { useMemo, useState, type CSSProperties, type ReactNode } from 'react'
+import { Fragment, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { Checkbox } from '@/shared/ui/checkbox'
 import { DatePicker } from '@/shared/ui/date-picker'
 import { Input } from '@/shared/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/ui/select'
 import {
   Table,
   TableBody,
@@ -23,6 +31,7 @@ import {
   ALL_PERIOD,
   isWarnRow,
   metricValue,
+  NAME_SORT_KEY,
   nextSort,
   RATE_METRIC,
   type MatrixRow,
@@ -114,7 +123,35 @@ export function ReportMatrixTab({
   nameWidth = 150,
   isLoading = false,
 }: ReportMatrixTabProps) {
-  const [view, setView] = useState<'ngang' | 'doc'>('ngang')
+  const isMobile = useIsMobile()
+
+  /**
+   * ⚠️ **Khổ điện thoại mở sẵn chế độ DỌC.** Bảng "Ngang" là pivot 12 tháng ×
+   * 5 chỉ số — đo ở 390px là **41 cột, rộng 2896px trong khung 324px**, tức
+   * nhìn thấy đúng cột tên cộng nửa cột số. Chế độ "Dọc" tách thành từng khối
+   * tháng rộng ~500px, vẫn phải kéo ngang nhưng là kéo trong một bảng đọc được.
+   * Ghi chú gốc của component đã nói Dọc *"hợp để in / đọc trên màn hẹp"* —
+   * đây chỉ là để nó tự chọn đúng thay vì bắt người dùng đi tìm.
+   *
+   * Khởi tạo một lần rồi thôi: đổi theo `isMobile` ở mỗi lần render thì người
+   * xoay ngang máy mất luôn chế độ họ vừa chọn tay.
+   */
+  const [view, setView] = useState<'ngang' | 'doc'>(() => (isMobile ? 'doc' : 'ngang'))
+
+  /**
+   * Cột tên phải hẹp lại ở khổ điện thoại. `nameWidth` khai theo màn rộng (tên
+   * NCC 260px); giữ nguyên thì cột tên nuốt **260/324px** khung nhìn và không
+   * còn chỗ cho lấy một cột số — người dùng kéo ngang mà không bao giờ thấy
+   * tên đi cùng con số.
+   *
+   * ⚠️ **140 đi CÙNG `line-clamp-3` ở `ReportMetricTable`, đừng tách đôi.** Đã
+   * thử bản «rộng hơn, ít dòng hơn» (170px × 2 dòng, cùng ~44 ký tự trên giấy):
+   * hỏng cả hai đầu — chữ ngắt theo TỪ nên mỗi dòng chỉ dùng hết ~16 ký tự, ba
+   * nhà cung cấp lại ra cùng một câu «CÔNG TY TNHH SẢN XUẤT BAO BÌ ĐÔNG…», mà
+   * cột *Số lần giao dịch* thì bị đẩy quá mép phải, «65» hiện thành «6». Hẹp +
+   * ba dòng vừa nhận ra tên vừa còn chỗ cho một cột số trọn vẹn.
+   */
+  const shownNameWidth = isMobile ? Math.min(nameWidth, 140) : nameWidth
   const [rangeFrom, setRangeFrom] = useState('')
   const [rangeTo, setRangeTo] = useState('')
   /** Khoảng ngày ĐÃ bấm "Xem". `null` = đang xem cả năm theo tháng. */
@@ -154,7 +191,43 @@ export function ReportMatrixTab({
 
   const defaultMonths = useMemo(() => defaultVisibleMonths(months), [months])
   const visible = visibleMonths ?? defaultMonths
-  const shownMonths = months.filter((month) => visible.has(month.key))
+  //  `useMemo` chứ không lọc thẳng: `filter` đẻ mảng mới mỗi lần render, mà
+  //  `monthBlocks` bên dưới nhận nó làm phụ thuộc — không bọc thì memo kia tính
+  //  lại ở mọi lượt render và coi như không có.
+  const shownMonths = useMemo(
+    () => months.filter((month) => visible.has(month.key)),
+    [months, visible],
+  )
+
+  /**
+   * Các khối tháng của chế độ "Dọc" — **tháng không phát sinh thì bỏ hẳn khối**.
+   *
+   * Trước đây tháng rỗng vẫn dựng đủ thẻ: viền màu, tiêu đề, hàng tiêu đề bảng
+   * và một ô «Không có dữ liệu» — **~180px cho một thông tin bằng không**, và
+   * ở khổ điện thoại (mở sẵn chế độ này) mấy tháng đầu năm thường rỗng nên
+   * người dùng vuốt qua ba bốn thẻ trống trước khi tới số thật. Danh sách tháng
+   * vẫn nguyên ở nút *Tháng: n/12*, nên không mất đường nào để kiểm chứng.
+   *
+   * Giữ `index` GỐC của tháng trong `shownMonths` để màu viền không đổi khi một
+   * tháng ở giữa biến mất — sáu tông xoay vòng theo vị trí, lọc trước rồi mới
+   * đánh số là cả dải màu trượt đi mỗi lần dữ liệu thay đổi.
+   */
+  const monthBlocks = useMemo(
+    () =>
+      shownMonths
+        .map((month, index) => ({
+          month,
+          index,
+          rows: shownRows.filter((row) => row.m?.[month.key]),
+        }))
+        .filter((block) => block.rows.length > 0),
+    [shownMonths, shownRows],
+  )
+
+  /** Tháng đang bật nhưng không có dòng nào — chỉ để nói thành lời, không dựng khối. */
+  const emptyMonths = shownMonths.filter(
+    (month) => !monthBlocks.some((block) => block.month.key === month.key),
+  )
 
   // Chỉ tô cảnh báo khi tab có khai ngưỡng — bảng đếm trạng thái yêu cầu không
   // có "tỷ lệ trễ" nào để mà vượt ngưỡng.
@@ -240,8 +313,11 @@ export function ReportMatrixTab({
           </Popover>
         )}
 
-        <div className="ml-auto flex flex-wrap items-center gap-2">
-          <div className="relative min-w-48">
+        <div className="ml-auto flex flex-wrap items-center gap-2 max-md:w-full">
+          {/*  Ô tìm chiếm TRỌN hàng ở khổ hẹp: `min-w-48` (192px) đằng nào cũng
+               không đứng chung được với hai ô ngày, nên để nó co theo nội dung
+               thì chỉ được một mẩu 192px và một khoảng trống dài bên phải. */}
+          <div className="relative min-w-48 max-md:w-full">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               className="pl-9"
@@ -251,13 +327,23 @@ export function ReportMatrixTab({
             />
           </div>
 
+          {/*  ⚠️ Hai ô ngày + nút *Xem* phải nằm CÙNG một hàng ở khổ hẹp. Bề
+               rộng cứng `w-40` (160px ×2 = 320px) vừa đúng khít 358px nên nút
+               *Xem* bị đẩy xuống hàng thứ ba — một nút đứng trơ một mình, và
+               tệ hơn là nó rời khỏi cặp ô mà nó dùng để làm gì. Cho hai ô co
+               (`flex-1`) thì cả ba đứng chung: 141 + 141 + 60. */}
           <DatePicker
             value={rangeFrom}
             onChange={setRangeFrom}
             placeholder="Từ ngày"
-            className="w-40"
+            className="w-40 max-md:w-auto max-md:flex-1"
           />
-          <DatePicker value={rangeTo} onChange={setRangeTo} placeholder="Đến ngày" className="w-40" />
+          <DatePicker
+            value={rangeTo}
+            onChange={setRangeTo}
+            placeholder="Đến ngày"
+            className="w-40 max-md:w-auto max-md:flex-1"
+          />
           <Button
             variant="secondary"
             disabled={!canApply}
@@ -274,6 +360,17 @@ export function ReportMatrixTab({
         </div>
       </div>
 
+      {/*  Dải sắp xếp chỉ mọc ở khổ điện thoại và chỉ khi có thẻ để mà sắp:
+           chế độ «Ngang» vẫn là bảng pivot, tiêu đề cột của nó bấm được như cũ. */}
+      {isMobile && (applied || view === 'doc') && (
+        <MobileSortSelect
+          metrics={metrics}
+          nameLabel={nameLabel}
+          sort={sort}
+          onChange={setSort}
+        />
+      )}
+
       {/* ==== Trên màn hình ==== */}
       <div className="print:hidden">
         {applied ? (
@@ -288,7 +385,7 @@ export function ReportMatrixTab({
                 period={ALL_PERIOD}
                 nameLabel={nameLabel}
                 warnMetric={warnMetric}
-                nameWidth={nameWidth}
+                nameWidth={shownNameWidth}
                 sort={sort}
                 onSort={handleSort}
               />
@@ -311,14 +408,14 @@ export function ReportMatrixTab({
                   period={ALL_PERIOD}
                   nameLabel={nameLabel}
                   warnMetric={warnMetric}
-                  nameWidth={nameWidth}
+                  nameWidth={shownNameWidth}
                   sort={sort}
                   onSort={handleSort}
                 />
               )}
             </Card>
 
-            {shownMonths.map((month, index) => (
+            {monthBlocks.map(({ month, index, rows: monthRows }) => (
               <Card
                 key={month.key}
                 className="gap-0 overflow-hidden p-0"
@@ -332,20 +429,29 @@ export function ReportMatrixTab({
                 </h3>
                 <div className="p-4">
                   <ReportMetricTable
-                    // Tháng nào đối tượng không phát sinh thì bỏ hẳn khỏi khối,
-                    // không liệt kê một loạt dòng toàn số 0.
-                    rows={shownRows.filter((row) => row.m?.[month.key])}
+                    rows={monthRows}
                     metrics={metrics}
                     period={month.key}
                     nameLabel={nameLabel}
                     warnMetric={warnMetric}
-                    nameWidth={nameWidth}
+                    nameWidth={shownNameWidth}
                     sort={sort}
                     onSort={handleSort}
                   />
                 </div>
               </Card>
             ))}
+
+            {/*  ⚠️ Nói ra tháng nào bị bỏ. Người dùng tự tick tháng ở nút
+                 *Tháng: n/12*; tick xong mà không thấy khối nào hiện ra, không
+                 có câu này thì đọc ra là màn hình lỗi chứ không phải là tháng
+                 đó chưa phát sinh gì. */}
+            {emptyMonths.length > 0 && (
+              <p className="px-1 text-xs text-muted-foreground">
+                Chưa phát sinh trong {emptyMonths.length} tháng:{' '}
+                {emptyMonths.map((month) => month.label).join(' · ')}.
+              </p>
+            )}
           </div>
         ) : (
           <Card className="p-4">
@@ -363,7 +469,7 @@ export function ReportMatrixTab({
                 months={shownMonths}
                 metrics={metrics}
                 nameLabel={nameLabel}
-                nameWidth={nameWidth}
+                nameWidth={shownNameWidth}
                 warnMetric={warnMetric}
               />
             )}
@@ -380,9 +486,79 @@ export function ReportMatrixTab({
           period={ALL_PERIOD}
           nameLabel={nameLabel}
           warnMetric={warnMetric}
-          nameWidth={nameWidth}
+          nameWidth={shownNameWidth}
         />
       </div>
+    </div>
+  )
+}
+
+/** Giá trị "chưa sắp xếp" của ô chọn — `SelectItem` không nhận value rỗng. */
+const SORT_NONE = 'none'
+
+/**
+ * Ô chọn SẮP XẾP cho khổ điện thoại.
+ *
+ * Ở đó `ReportMetricTable` bày thẻ chứ không bày bảng, nên không còn hàng tiêu
+ * đề để bấm. Đặt MỘT ô cho cả tab là đúng hơn bản cũ chứ không phải chữa cháy:
+ * trạng thái sắp xếp vốn dùng chung cho mọi khối tháng, nên chín hàng tiêu đề
+ * bấm được của chế độ «Dọc» thật ra là chín bản sao của cùng một cái công tắc.
+ *
+ * ⚠️ **MỘT ô chọn, không phải một dải nút tròn.** Bản đầu là bốn nút bo tròn và
+ * hỏng hai đường: chúng chiếm **hai hàng ~70px** chồng lên bốn hàng công cụ đã
+ * có, và — thấy rõ hơn — khi cuộn qua dải điều khiển đang ghim thì viền nút bị
+ * **cắt ngang chính giữa**, đọc ra như lỗi vẽ chứ không như nội dung đang trôi
+ * xuống dưới (khách báo 12/09/2026). Ô chọn thì trôi qua giống hệt hai ô *công
+ * ty · năm* ngay trên nó, mắt đã quen, và chỉ tốn một hàng 36px.
+ *
+ * Chiều sắp xếp nằm luôn trong từng mục thay vì phải bấm hai lần đoán chiều.
+ */
+function MobileSortSelect({
+  metrics,
+  nameLabel,
+  sort,
+  onChange,
+}: {
+  metrics: ReportMetric[]
+  nameLabel: string
+  sort: ReportSort | null
+  onChange: (next: ReportSort | null) => void
+}) {
+  const options = [{ key: NAME_SORT_KEY, label: nameLabel }, ...metrics]
+
+  return (
+    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+      <span className="shrink-0">Sắp xếp:</span>
+      <Select
+        value={sort ? `${sort.key}:${sort.dir}` : SORT_NONE}
+        onValueChange={(value) => {
+          if (value === SORT_NONE) return onChange(null)
+          const [key, dir] = value.split(':')
+          onChange({ key, dir: dir as ReportSort['dir'] })
+        }}
+      >
+        <SelectTrigger className="h-9 min-w-0 flex-1">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={SORT_NONE}>Mặc định</SelectItem>
+          {options.map((option) => {
+            //  Cột TÊN nói «A → Z», cột số nói «cao → thấp»: cùng là `asc` cả
+            //  nhưng đọc lên phải khác nhau, không thì người dùng phải tự dịch.
+            const isName = option.key === NAME_SORT_KEY
+            return (
+              <Fragment key={option.key}>
+                <SelectItem value={`${option.key}:desc`}>
+                  {option.label} — {isName ? 'Z → A' : 'cao → thấp'}
+                </SelectItem>
+                <SelectItem value={`${option.key}:asc`}>
+                  {option.label} — {isName ? 'A → Z' : 'thấp → cao'}
+                </SelectItem>
+              </Fragment>
+            )
+          })}
+        </SelectContent>
+      </Select>
     </div>
   )
 }
@@ -473,7 +649,7 @@ function PivotTable({
           return (
             <TableRow key={row.key}>
               <TableCell
-                className="sticky left-0 z-10 truncate font-medium"
+                className="sticky left-0 z-10 font-medium"
                 style={{
                   ...STICKY_CELL_STYLE,
                   width: nameWidth,
@@ -482,7 +658,11 @@ function PivotTable({
                 }}
                 title={row.key}
               >
-                {row.key}
+                {/*  Hai dòng ở khổ hẹp — cùng lý do và cùng cách làm với
+                     `ReportMetricTable`, xem ghi chú dài ở đó. */}
+                <span className="line-clamp-3 whitespace-normal md:line-clamp-none md:block md:truncate">
+                  {row.key}
+                </span>
               </TableCell>
 
               {months.map((month, index) => {
@@ -568,9 +748,17 @@ function SectionTitle({
   icon?: ReactNode
 }) {
   return (
-    <h3 className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-navy dark:text-foreground">
-      {icon}
-      {title}
+    //  ⚠️ Khổ hẹp XUỐNG DÒNG, chú thích nằm dưới tiêu đề. Một hàng ngang thì
+    //  hai vế chia nhau 324px, mà chú thích của bảng pivot dài gấp ba tiêu đề
+    //  («phân cụm theo tháng · cuộn ngang · cụm xám = tổng cả năm · đỏ = tỷ lệ
+    //  trễ > 30%») nên nó đẩy «Giao dịch nhà cung cấp — Năm 2026» xuống ba dòng
+    //  mỗi dòng hai chữ, trong khi phần chữ nhỏ màu mờ lại chiếm hai phần ba bề
+    //  ngang. Từ `md` thẻ đã rộng, một hàng như cũ.
+    <h3 className="mb-3 flex flex-wrap items-center gap-x-1.5 text-sm font-semibold text-navy max-md:flex-col max-md:items-start max-md:gap-y-0.5 dark:text-foreground">
+      <span className="flex items-center gap-1.5">
+        {icon}
+        {title}
+      </span>
       {hint && <span className="font-normal text-muted-foreground">({hint})</span>}
     </h3>
   )
