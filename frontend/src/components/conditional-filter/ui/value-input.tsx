@@ -63,7 +63,8 @@ export default function ValueInput({ row }: { row: FilterRow }) {
   if (field.type === 'boolean') {
     return (
       <div className="cf-value">
-        <SearchSelect value={single as string} options={BOOLEAN_OPTIONS} placeholder="Chọn…" onChange={set} />
+        <SearchSelect value={single as string} options={BOOLEAN_OPTIONS} placeholder="Chọn…"
+          autoSelectSingle={false} onChange={set} />
       </div>
     )
   }
@@ -81,7 +82,9 @@ export default function ValueInput({ row }: { row: FilterRow }) {
   if ((field.type === 'select' || field.type === 'multiselect') && options.length > 0) {
     return (
       <div className="cf-value">
-        <SearchSelect value={single as string} options={options} placeholder="Chọn…" onChange={set} />
+        {/* bao-CR-388: ô giá trị của bộ lọc không tự gán khi danh sách chỉ còn 1 option */}
+        <SearchSelect value={single as string} options={options} placeholder="Chọn…"
+          autoSelectSingle={false} onChange={set} />
       </div>
     )
   }
