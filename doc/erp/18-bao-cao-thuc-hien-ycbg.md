@@ -106,6 +106,11 @@ Toàn quyền dựng và cập nhật báo cáo, ngay trên trang chi tiết phi
   `frontend-v2/src/modules/procurement/components/survey-report/*`,
   logic thuần + test ở `utils/survey-report-helpers.ts`; test backend
   `test/backend/test_bao_cao_thuc_hien_ycbg.py`.
+- **Màn cũ `frontend/` cũng có khối này** (bao-CR-390, 12/09/2026 — ngoại lệ D-026 theo
+  yêu cầu của khách vì màn cũ vẫn dùng hằng ngày): `components/SurveyReportCard.tsx` +
+  `utils/surveyReportHelpers.ts` (bản chép của helper v2 — sửa luật ở một bên thì phải
+  sửa bên kia) + khối CSS `.srp-*` trong `index.css`. Cùng API, cùng hành vi; khác biệt
+  duy nhất là kiểu dáng theo CSS thuần của v1.
 
 ## 6. Ngoài phạm vi bản này / việc còn lại
 

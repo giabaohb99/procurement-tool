@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Bản | 1.0 — 12/09/2026 (dựng khối + nút thao tác trên chi tiết YCBG) |
-| Giao diện | **chỉ có trên `frontend-v2/`** (cổng 8083), trong trang chi tiết YCBG `/procurement/survey-requests/:id` |
+| Giao diện | **cả hai bản**: `frontend-v2/` (cổng 8083) tại `/procurement/survey-requests/:id`, và từ bao-CR-390 (12/09/2026) cả màn cũ `frontend/` (cổng 8080) tại `/survey-requests/:id` — cùng API, cùng hành vi; bản v1 là `components/SurveyReportCard.tsx` + `utils/surveyReportHelpers.ts` |
 | Khóa quyền | dùng lại **`survey_request`** — không thêm entity mới (luật «một khóa = một màn hình», CR-157) |
 | Brief nghiệp vụ | [`doc/erp/18-bao-cao-thuc-hien-ycbg.md`](../erp/18-bao-cao-thuc-hien-ycbg.md) |
 | Thiết kế kỹ thuật | [`doc/tai-lieu-ky-thuat/tdd-bao-cao-thuc-hien-ycbg.md`](../tai-lieu-ky-thuat/tdd-bao-cao-thuc-hien-ycbg.md) |

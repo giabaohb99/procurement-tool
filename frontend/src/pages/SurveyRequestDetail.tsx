@@ -14,6 +14,7 @@ import FileDropzone from '../components/FileDropzone'
 import Lightbox from '../components/Lightbox'
 import CommentThread from '../components/CommentThread'
 import AuditTimeline from '../components/AuditTimeline'
+import SurveyReportCard from '../components/SurveyReportCard'
 
 const API = '/api/survey-requests'
 
@@ -137,12 +138,16 @@ export default function SurveyRequestDetail() {
   }, [])
 
   // --- load document ---
+  // bao-CR-390: tách riêng để khối Báo cáo thực hiện gọi lại sau mỗi lần ghi
+  function reloadLogs() {
+    api.get('/api/audit-logs', { params: { entity: 'survey_request', entity_id: id } })
+      .then((x) => setLogs(x.data.data)).catch(() => {})
+  }
   async function loadAll() {
     try {
       const r = await api.get(`${API}/${id}`)
       setSv(r.data.data)
-      api.get('/api/audit-logs', { params: { entity: 'survey_request', entity_id: id } })
-        .then((x) => setLogs(x.data.data)).catch(() => {})
+      reloadLogs()
     } catch (ex: any) {
       const status = ex?.response?.status
       if (status === 403 || status === 404) { setNotFound(true); return }
@@ -1054,6 +1059,15 @@ export default function SurveyRequestDetail() {
                 </div>
               )}
             </div>
+          )}
+
+          {/* bao-CR-390: Báo cáo thực hiện — NS Thu mua (cờ process) dựng/cập nhật, người xem phiếu chỉ xem */}
+          {!isNew && (
+            <SurveyReportCard
+              surveyRequestId={Number(id)}
+              canEdit={can('survey_request', 'process')}
+              onChanged={reloadLogs}
+            />
           )}
 
           {/* CR-029: trao đổi trong phiếu — chỉ có khi phiếu đã lưu (cần id) */}
