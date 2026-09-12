@@ -15,6 +15,8 @@ export interface ReportDocPayload {
   start_date: string
   /** `yyyy-mm-dd` | `''`. */
   expires_at: string
+  /** Dự định hoàn tất — `yyyy-mm-dd` | `''`. */
+  planned_date: string
   /** Id `tab_employee`, `0` = chưa cử. */
   assignee_id: number
 }

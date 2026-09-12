@@ -70,6 +70,7 @@ function buildDraft(
         depends: [...doc.depends],
         start_date: doc.start_date,
         expires_at: doc.expires_at,
+        planned_date: doc.planned_date,
         assignee_id: doc.assignee_id,
       }
     : {
@@ -83,6 +84,7 @@ function buildDraft(
         depends: [],
         start_date: '',
         expires_at: '',
+        planned_date: '',
         assignee_id: defaultAssigneeId,
       }
 }
@@ -290,13 +292,21 @@ export function SurveyReportDocDialog({
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-1.5">
               <Label>Ngày bắt đầu thực hiện</Label>
               <DatePicker
                 value={draft.start_date}
                 onChange={(value) => patch({ start_date: value })}
                 placeholder="Chọn ngày bắt đầu"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Dự định hoàn tất</Label>
+              <DatePicker
+                value={draft.planned_date}
+                onChange={(value) => patch({ planned_date: value })}
+                placeholder="Chọn ngày dự định"
               />
             </div>
             <div className="space-y-1.5">

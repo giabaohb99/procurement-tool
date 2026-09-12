@@ -10,8 +10,8 @@ import {
   COMMON_ROW_ID, REPORT_DOC_DOING, REPORT_DOC_DONE, REPORT_DOC_IDLE, REPORT_DOC_STATUS_BADGE,
   REPORT_DOC_STATUS_LABELS, REPORT_FILTER_ALL, REPORT_STATUS_FILTER_ALL,
   currentReportPhaseId, expiryTone, filterReportDocs, isReportDocDone, isReportDocLocked,
-  matchReportDoc, nameInitials, nearestExpiry, pendingDepends, reportDocsById, reportPercent,
-  trackingMarkers,
+  latestPlannedDate, matchReportDoc, nameInitials, nearestExpiry, pendingDepends, reportDocLateDays,
+  reportDocsById, reportPercent, reportPlanLateDays, trackingMarkers,
   type SurveyReportDoc, type SurveyReportDocPayload, type SurveyReportItem, type SurveyReportPhase,
   type SurveyRequestReport,
 } from '../utils/surveyReportHelpers'
@@ -213,6 +213,11 @@ export default function SurveyReportCard({ surveyRequestId, canEdit, onChanged }
   const done = scopedDocs.filter(isReportDocDone).length
   const percent = reportPercent(scopedDocs)
   const expiry = nearestExpiry(scopedDocs)
+  //  bao-CR-392: mốc kế hoạch = ngày dự định XA NHẤT; trễ khi qua mốc mà còn hồ sơ chưa xong.
+  const planned = latestPlannedDate(scopedDocs)
+  const planLate = reportPlanLateDays(scopedDocs, today)
+  const planNote = !planned ? '' : planLate > 0 ? `Trễ ${planLate} ngày`
+    : done === total ? 'Đã hoàn thành' : planned === today ? 'Đến hạn hôm nay' : ''
 
   function togglePhase(id: number) {
     setCollapsedPhases((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n })
@@ -239,6 +244,8 @@ export default function SurveyReportCard({ surveyRequestId, canEdit, onChanged }
     const pending = pendingDepends(doc, docsById)
     const tone = expiryTone(doc.expires_at, today)
     const dateTitle = [doc.start_date && `Bắt đầu: ${fmtDateStr(doc.start_date)}`, doc.expires_at && `Hết hiệu lực: ${fmtDateStr(doc.expires_at)}`].filter(Boolean).join(' · ')
+    const lateDays = reportDocLateDays(doc, today)
+    const plannedTitle = [`Dự định hoàn tất: ${fmtDateStr(doc.planned_date)}`, lateDays > 0 ? `Trễ ${lateDays} ngày` : isDone ? 'Đã hoàn thành' : ''].filter(Boolean).join(' · ')
     return (
       <div key={doc.id} className={`srp-doc${isDone ? ' done' : ''}${locked ? ' locked' : ''}`}>
         <button
@@ -267,6 +274,11 @@ export default function SurveyReportCard({ surveyRequestId, canEdit, onChanged }
         ) : (
           <span className="srp-ibtn" title={doc.file_note} style={{ cursor: 'default' }}><i className="ti ti-paperclip" /></span>
         ))}
+        {doc.planned_date && (
+          <span className={`srp-date${lateDays > 0 ? ' overdue' : ''}`} title={plannedTitle}>
+            <i className="ti ti-calendar-check" /> {fmtDateStr(doc.planned_date)}{lateDays > 0 && ` · Trễ ${lateDays} ngày`}
+          </span>
+        )}
         {doc.expires_at && (
           <span className={`srp-date ${tone}`} title={dateTitle}>
             <i className="ti ti-calendar" /> {fmtDateStr(doc.expires_at)}
@@ -592,6 +604,15 @@ export default function SurveyReportCard({ surveyRequestId, canEdit, onChanged }
                     <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>{expiryTone(expiry, today) === 'overdue' ? 'Đã quá hạn' : `Trong ${EXPIRY_SOON_DAYS} ngày tới`}</div>
                   )}
                 </div>
+                <div className="srp-tile">
+                  <div className="lbl">Dự định hoàn tất</div>
+                  <div className="val" style={{ color: planLate > 0 ? 'var(--red)' : planned && planned === today && done < total ? 'var(--amber)' : undefined }}>
+                    {planned ? fmtDateStr(planned) : '—'}
+                  </div>
+                  {planNote && (
+                    <div style={{ fontSize: 11.5, color: planLate > 0 ? 'var(--red)' : 'var(--muted)', fontWeight: planLate > 0 ? 600 : undefined }}>{planNote}</div>
+                  )}
+                </div>
               </div>
 
               {viewMode === 'phase' ? renderPhaseView() : renderItemView()}
@@ -702,11 +723,12 @@ function DocDialog({ report, doc, defaults, defaultAssigneeId, busy, onSave, onD
   const initial: SurveyReportDocPayload = useMemo(() => doc ? {
     title: doc.title, description: doc.description, phase_id: doc.phase_id, item_id: doc.item_id,
     required: doc.required, status: doc.status, file_note: doc.file_note, depends: [...doc.depends],
-    start_date: doc.start_date || '', expires_at: doc.expires_at || '', assignee_id: doc.assignee_id || 0,
+    start_date: doc.start_date || '', expires_at: doc.expires_at || '', planned_date: doc.planned_date || '',
+    assignee_id: doc.assignee_id || 0,
   } : {
     title: '', description: '', phase_id: defaults?.phase_id ?? (report.phases[0]?.id ?? 0),
     item_id: defaults?.item_id ?? COMMON_ROW_ID, required: false, status: REPORT_DOC_IDLE, file_note: '',
-    depends: [], start_date: '', expires_at: '', assignee_id: defaultAssigneeId,
+    depends: [], start_date: '', expires_at: '', planned_date: '', assignee_id: defaultAssigneeId,
   }, [])
   const [form, setForm] = useState<SurveyReportDocPayload>(initial)
   const [employees, setEmployees] = useState<{ value: string; label: string }[]>([])
@@ -795,6 +817,10 @@ function DocDialog({ report, doc, defaults, defaultAssigneeId, busy, onSave, onD
         <div className="form-row">
           <label>Ngày bắt đầu</label>
           <DateInput value={form.start_date} onChange={(v) => set('start_date', v)} />
+        </div>
+        <div className="form-row">
+          <label>Dự định hoàn tất</label>
+          <DateInput value={form.planned_date} onChange={(v) => set('planned_date', v)} />
         </div>
         <div className="form-row">
           <label>Ngày hết hiệu lực</label>

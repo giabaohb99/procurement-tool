@@ -44,6 +44,8 @@ export interface SurveyReportDoc {
   start_date: string
   /** Ngày hết hiệu lực — `yyyy-mm-dd`, `''` = chưa đặt. */
   expires_at: string
+  /** Ngày DỰ ĐỊNH HOÀN TẤT (bao-CR-392) — `yyyy-mm-dd`, `''` = chưa đặt. Qua ngày mà chưa xong là TRỄ. */
+  planned_date: string
   /** Nhân sự thực hiện (id `tab_employee`), `0` = chưa cử. */
   assignee_id: number
   /** Tên nhân sự thực hiện — backend resolve, id chết ra `''`. Chỉ đọc. */
@@ -74,6 +76,7 @@ export interface SurveyReportDocPayload {
   depends: number[]
   start_date: string
   expires_at: string
+  planned_date: string
   assignee_id: number
 }
 
@@ -160,6 +163,35 @@ export function nearestExpiry(docs: SurveyReportDoc[]): string {
     .map((doc) => doc.expires_at)
   if (!dates.length) return ''
   return dates.reduce((min, current) => (current < min ? current : min))
+}
+
+/** Số ngày từ `from` tới `to` (`yyyy-mm-dd`, parse UTC cả hai nên không lệch múi giờ); sai dạng → 0. */
+function diffIsoDays(from: string, to: string): number {
+  const days = Math.round((Date.parse(to) - Date.parse(from)) / 86400000)
+  return Number.isFinite(days) ? days : 0
+}
+
+/**
+ * Ngày DỰ ĐỊNH HOÀN TẤT xa nhất của một nhóm hồ sơ — `''` nếu không có (bao-CR-392).
+ * Khác `nearestExpiry`: mốc KẾ HOẠCH của cả khối nên lấy MAX và tính cả hồ sơ đã xong.
+ */
+export function latestPlannedDate(docs: SurveyReportDoc[]): string {
+  const dates = docs.filter((doc) => doc.planned_date).map((doc) => doc.planned_date)
+  if (!dates.length) return ''
+  return dates.reduce((max, current) => (current > max ? current : max))
+}
+
+/** Số ngày hồ sơ TRỄ so với dự định tới `today`; 0 = chưa đặt / đã xong / chưa tới ngày. */
+export function reportDocLateDays(doc: SurveyReportDoc, today: string): number {
+  if (!doc.planned_date || isReportDocDone(doc)) return 0
+  return Math.max(0, diffIsoDays(doc.planned_date, today))
+}
+
+/** Số ngày CẢ KHỐI trễ so với mốc dự định xa nhất; 0 khi chưa qua mốc hoặc mọi hồ sơ đã xong. */
+export function reportPlanLateDays(docs: SurveyReportDoc[], today: string): number {
+  const planned = latestPlannedDate(docs)
+  if (!planned || docs.every(isReportDocDone)) return 0
+  return Math.max(0, diffIsoDays(planned, today))
 }
 
 export function reportDocsById(report: SurveyRequestReport): Map<number, SurveyReportDoc> {

@@ -62,9 +62,13 @@ thuộc phiếu đã có báo cáo hay chưa:
 
 - **Khởi tạo báo cáo mẫu** — dựng theo **MẪU CHUNG** (bao-CR-388): **5 giai đoạn
   nhập khẩu** (Pháp lý & Giấy phép · Đặt hàng & Hợp đồng · Sản xuất & Vận chuyển ·
-  Kiểm tra & Thông quan · Nhận hàng & Về kho) + **bộ hồ sơ chung của mẫu** (15 hồ sơ
-  xếp đúng giai đoạn, có cờ bắt buộc và tiên quyết nối sẵn, gắn «Chung» nên hiện ở
-  mọi nút) + **một nút dòng hàng cho mỗi dòng của phiếu** (tên lấy từ mô tả dòng).
+  Kiểm tra & Thông quan · Nhận hàng & Về kho) + **bộ hồ sơ chung của mẫu** (**19 hồ sơ**
+  rút từ mẫu «Nhập khẩu K₂SO₄ & KNO₃» của Phòng Thu mua — bao-CR-391 rồi gom về bản
+  chung ở bao-CR-393 — xếp đúng giai đoạn, có cờ bắt buộc và tiên quyết nối sẵn, gắn
+  «Chung» nên hiện ở mọi nút; **mỗi việc đúng một dòng, không tách theo mặt hàng** —
+  hồ sơ chỉ một mặt hàng mới cần (giấy phép tiền chất, sổ theo dõi tiền chất…) người
+  dùng thêm tay vào nút dòng hàng đó) + **một nút dòng hàng cho mỗi dòng của phiếu**
+  (tên lấy từ mô tả dòng).
   Bấm lặp lại **không nhân đôi** khung (đã có giai đoạn/nút thì bỏ qua). Trước
   bao-CR-388 nút này chỉ dựng khung rỗng — "bấm xong không có gì hết".
 - **Thêm giai đoạn** — dựng tay từ đầu, không dùng khung mẫu.
@@ -182,12 +186,19 @@ khóa ngược lại (dữ liệu cũ đánh dấu xong trước khi khai tiên 
 | Tệp đính kèm (`file_note`) | Nhập tay | Không | — | Tên tệp **hoặc** link (VD link Drive). Là chuỗi tự do — chưa nối kho đính kèm thật. Tối đa 500 ký tự. Nếu là `http(s)://…` thì biểu tượng 📎 thành link mở tab mới |
 | Tiên quyết (`depends`) | Checkbox nhiều dòng | Không | Các hồ sơ khác của phiếu | Tối đa 30 hồ sơ. Chọn thành **vòng lặp** (A chờ B, B chờ A) bị **chặn ngay lúc lưu** |
 | Ngày bắt đầu (`start_date`) | Chọn ngày | Không | — | Ngày bắt đầu thực hiện. Để trống = chưa đặt |
+| Dự định hoàn tất (`planned_date`) | Chọn ngày | Không | — | Kế hoạch ban đầu (bao-CR-392). Hồ sơ **chưa Hoàn thành** mà qua ngày này thì dòng hiện «Trễ n ngày» (đỏ); đã xong thì thôi tính trễ. Khác «hết hiệu lực»: đây là hạn *làm xong*, kia là hạn *giấy tờ còn giá trị*. Để trống = không theo dõi |
 | Ngày hết hiệu lực / hạn (`expires_at`) | Chọn ngày | Không | — | Dùng để cảnh báo hồ sơ **quá hạn** (hồ sơ chưa xong có hạn sớm nhất nổi lên đầu). Để trống = chưa đặt |
 | Nhân sự thực hiện (`assignee_id`) | Chọn | Không | Bảng Nhân viên (`tab_employee`) | Người phụ trách hồ sơ. Để trống = «Chưa cử». Xóa nhân sự không xóa hồ sơ |
 
-> Ba trường **Ngày bắt đầu · Ngày hết hiệu lực · Nhân sự thực hiện** là phần mở rộng
-> 12/09/2026: dữ liệu + API đã sẵn, **ô nhập trên hộp thoại và cách hiển thị trên
-> dòng** đang được bổ sung cùng đợt.
+> Bốn trường **Ngày bắt đầu · Dự định hoàn tất · Ngày hết hiệu lực · Nhân sự thực
+> hiện** là phần mở rộng 12/09/2026, đã đủ ô nhập trên hộp thoại và chip trên dòng ở
+> cả hai màn (v1 + v2).
+
+**Thanh tóm tắt** trên đầu khối có **4 ô**: *Tổng hồ sơ* · *Đã hoàn thành* · *Hết hiệu
+lực gần nhất* · **Dự định hoàn tất** (bao-CR-392). Ô cuối lấy ngày dự định **xa nhất**
+trong phạm vi đang xem (kể cả hồ sơ đã xong — đó là mốc của cả khối): đỏ + «Trễ n
+ngày» khi đã qua mốc mà còn hồ sơ chưa xong; «Đã hoàn thành» khi xong hết; «Đến hạn hôm
+nay» khi bằng hôm nay; không hồ sơ nào có ngày dự định thì hiện «—».
 
 ## Quyền thao tác (RBAC)
 
@@ -234,7 +245,9 @@ tiết YCBG.
   thành mẫu) — cố ý **chưa làm** (bao-CR-388): mẫu chung là một danh sách trong mã
   nguồn, đổi nội dung là sửa `DEFAULT_TEMPLATE_DOCS` rồi deploy. Khi có bảng mẫu thì
   thay nguồn đọc trong `report_service.apply_template`, nút bấm và API giữ nguyên.
-  Danh sách ~22 hồ sơ thật của Phòng Thu mua **chưa gửi** — bộ 15 hồ sơ hiện tại là
-  bản tạm theo artifact nhập khẩu.
+  Nội dung mẫu = 19 hồ sơ CHUNG cho một lô nhập khẩu (bao-CR-391 lấy 22 hồ sơ từ
+  mẫu Phòng Thu mua, bao-CR-393 gom về bản chung không tách mặt hàng); hồ sơ riêng
+  của một mặt hàng (giấy phép tiền chất, sổ theo dõi tiền chất…) thêm tay — khi có
+  quản lý mẫu thì mới tính chuyện mẫu theo mặt hàng.
 - **Điều kiện rẽ nhánh theo trạng thái**, bộ máy duyệt — chưa có.
 - **Cấp số CR + ghi `change-log.md`** cho tính năng — chờ chốt.

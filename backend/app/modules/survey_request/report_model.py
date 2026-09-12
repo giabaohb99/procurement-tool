@@ -70,6 +70,10 @@ class SurveyReportDoc(Base, AuditMixin):
     #  dễ lệch một ngày (xem `format-date` phía FE).
     start_date: Mapped[date | None] = mapped_column(Date, nullable=True, default=None)
     expires_at: Mapped[date | None] = mapped_column(Date, nullable=True, default=None)
+    #  Ngày DỰ ĐỊNH HOÀN TẤT (kế hoạch ban đầu, bao-CR-392) — khác `expires_at`
+    #  (hạn hiệu lực của giấy tờ). Hồ sơ chưa Hoàn thành mà qua ngày này là TRỄ
+    #  so với kế hoạch; FE suy nhãn «Trễ n ngày», không lưu cờ.
+    planned_date: Mapped[date | None] = mapped_column(Date, nullable=True, default=None)
     #  Nhân sự THỰC HIỆN (id `tab_employee`). 0 = chưa cử. Cố ý không FK: xóa
     #  nhân sự không xóa lây hồ sơ; tên hiển thị resolve lúc đọc, id chết ra
     #  chuỗi rỗng. FE điền sẵn nhân sự của người tạo, đổi được.

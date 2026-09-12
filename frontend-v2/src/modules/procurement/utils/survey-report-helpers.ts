@@ -69,6 +69,47 @@ export function nearestExpiry(docs: SurveyReportDoc[]): string {
   return dates.reduce((min, current) => (current < min ? current : min))
 }
 
+/**
+ * Số ngày từ `from` tới `to` (hai chuỗi `yyyy-mm-dd`). Cả hai đều parse theo UTC
+ * nên hiệu không lệch múi giờ; chuỗi sai dạng trả 0 chứ không NaN.
+ */
+function diffIsoDays(from: string, to: string): number {
+  const days = Math.round((Date.parse(to) - Date.parse(from)) / 86_400_000)
+  return Number.isFinite(days) ? days : 0
+}
+
+/**
+ * Ngày DỰ ĐỊNH HOÀN TẤT xa nhất (muộn nhất) của một nhóm hồ sơ — `''` nếu không có.
+ *
+ * Khác `nearestExpiry`: đây là mốc KẾ HOẠCH của cả khối nên lấy MAX và tính cả hồ
+ * sơ đã xong — hồ sơ cuối cùng xong đúng hẹn thì mốc vẫn là mốc, không biến mất.
+ */
+export function latestPlannedDate(docs: SurveyReportDoc[]): string {
+  const dates = docs.filter((doc) => doc.planned_date).map((doc) => doc.planned_date)
+  if (!dates.length) return ''
+  return dates.reduce((max, current) => (current > max ? current : max))
+}
+
+/**
+ * Số ngày một hồ sơ TRỄ so với dự định tính tới `today` (`yyyy-mm-dd`). 0 = không
+ * trễ: chưa đặt dự định, đã Hoàn thành, hoặc chưa tới ngày. Đúng ngày dự định
+ * chưa gọi là trễ.
+ */
+export function reportDocLateDays(doc: SurveyReportDoc, today: string): number {
+  if (!doc.planned_date || isReportDocDone(doc)) return 0
+  return Math.max(0, diffIsoDays(doc.planned_date, today))
+}
+
+/**
+ * Số ngày CẢ KHỐI trễ so với mốc dự định xa nhất — 0 khi chưa qua mốc, không có
+ * mốc, hoặc mọi hồ sơ đã xong (xong hết rồi thì không còn gì để trễ).
+ */
+export function reportPlanLateDays(docs: SurveyReportDoc[], today: string): number {
+  const planned = latestPlannedDate(docs)
+  if (!planned || docs.every(isReportDocDone)) return 0
+  return Math.max(0, diffIsoDays(planned, today))
+}
+
 export function reportDocsById(report: SurveyRequestReport): Map<number, SurveyReportDoc> {
   return new Map(report.docs.map((doc) => [doc.id, doc]))
 }

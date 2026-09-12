@@ -66,6 +66,7 @@ def get_report_payload(db: Session, sr_id: int) -> dict:
             "depends": [i for i in (d.depends or []) if i in alive_ids],
             "start_date": d.start_date.isoformat() if d.start_date else "",
             "expires_at": d.expires_at.isoformat() if d.expires_at else "",
+            "planned_date": d.planned_date.isoformat() if d.planned_date else "",
             "assignee_id": d.assignee_id,
             "assignee_name": names.get(d.assignee_id, ""),
             "sort_order": d.sort_order,
@@ -109,6 +110,7 @@ def snapshot_report(db: Session, sr_id: int) -> dict:
             "status": d.status, "file_note": d.file_note, "depends": list(d.depends or []),
             "start_date": d.start_date.isoformat() if d.start_date else "",
             "expires_at": d.expires_at.isoformat() if d.expires_at else "",
+            "planned_date": d.planned_date.isoformat() if d.planned_date else "",
             "assignee_id": d.assignee_id, "sort_order": d.sort_order,
         } for d in _rows_of(db, SurveyReportDoc, sr_id)],
     }
@@ -175,6 +177,7 @@ def restore_latest(db: Session, sr_id: int, user_id: int) -> SurveyReportTrash |
             required=d.get("required", True), status=d.get("status", 0),
             file_note=d.get("file_note", ""),
             start_date=_to_date(d.get("start_date")), expires_at=_to_date(d.get("expires_at")),
+            planned_date=_to_date(d.get("planned_date")),
             assignee_id=d.get("assignee_id", 0), sort_order=d.get("sort_order", 0),
             depends=[], created_by=user_id, updated_by=user_id)
         db.add(row)
@@ -458,6 +461,7 @@ def create_doc(db: Session, sr_id: int, data, user_id: int) -> SurveyReportDoc:
                           status=data.status, file_note=data.file_note,
                           start_date=_to_date(data.start_date),
                           expires_at=_to_date(data.expires_at),
+                          planned_date=_to_date(data.planned_date),
                           assignee_id=data.assignee_id,
                           sort_order=_next_order(db, SurveyReportDoc, sr_id),
                           created_by=user_id, updated_by=user_id)
@@ -475,7 +479,7 @@ def update_doc(db: Session, sr_id: int, doc_id: int, data, user_id: int) -> Surv
         changes["depends"] = check_depends(db, sr_id, doc_id, changes["depends"])
     #  Ngày tách riêng: '' nghĩa là XÓA ngày (ghi None), khác với không gửi. Vòng
     #  generic bên dưới bỏ qua mọi None nên không phân biệt được hai ca đó.
-    for key in ("start_date", "expires_at"):
+    for key in ("start_date", "expires_at", "planned_date"):
         if key in changes:
             setattr(row, key, _to_date(changes.pop(key)))
     for key, value in changes.items():

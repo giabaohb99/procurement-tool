@@ -41,6 +41,11 @@ export interface SurveyReportDoc {
   start_date: string
   /** Ngày hết hiệu lực — `yyyy-mm-dd`, `''` = chưa đặt. */
   expires_at: string
+  /**
+   * Ngày DỰ ĐỊNH HOÀN TẤT (kế hoạch ban đầu, bao-CR-392) — `yyyy-mm-dd`, `''` = chưa
+   * đặt. Khác `expires_at` (hạn giấy tờ): qua ngày này mà chưa xong là TRỄ kế hoạch.
+   */
+  planned_date: string
   /** Nhân sự thực hiện (id `tab_employee`), `0` = chưa cử. */
   assignee_id: number
   /** Tên nhân sự thực hiện — backend resolve, id chết ra `''`. Chỉ đọc. */
