@@ -131,9 +131,21 @@ Ngoài ra từ B-07/CR-131, entity nào quên khai phạm vi trong `SCOPE_FIELDS
 
 ---
 
-## 5. Bảng quyền của từng tool (34 tool, đối chiếu code 28/08/2026)
+## 5. Bảng quyền của từng tool (36 tool, đối chiếu code 12/09/2026)
 
 Cột "Điều kiện" là quyền của **người đang hỏi**; thiếu thì tool trả `denied` hoặc tự cắt cột.
+
+⚠️ **Bảng này phủ 36 tool.** T1-T34 đang chạy dev + prod; hai dòng cuối (**T35
+`my_leave_summary`** và **T45 `employee_lookup`**, bao-CR-386 ngày 12/09/2026) xong local,
+**chưa deploy**. Còn nợ **12 tool** cho các phân hệ mọc sau 28/08/2026 (T36-T44, T46-T48:
+Kho · Đặt phòng họp · Đặt xe · Công việc · Diễn đàn · Đóng dấu, cộng lịch nghỉ của phòng) —
+nằm ở mục *Đợt 3* của `02-danh-sach-api-tool.md`, **chưa code nên chưa có dòng ở đây**. Luật
+là điền vào bảng này **cùng lúc với code**, không để sau — đây là thứ duy nhất khách đọc khi
+hỏi "AI có lòi thông tin vượt quyền không".
+
+Tool còn nợ đáng soi kỹ nhất là **T36 `team_leave_calendar`**: nó trả tên người kèm ngày
+vắng mặt, phải đi đúng `apply_scope` của `leave_request` — entity duy nhất khai cả `owner`
+lẫn `self`, tự viết điều kiện là lọt đơn do hành chính lập hộ.
 
 ### Nhóm tra cứu thu mua (`catalog.py`)
 
@@ -170,7 +182,7 @@ Cột "Điều kiện" là quyền của **người đang hỏi**; thiếu thì 
 |------|------|-----------|
 | `draft_survey_request` | Soạn nháp Yêu cầu báo giá | `survey_request.create` — không có quyền tạo phiếu thì không soạn hộ |
 | `draft_purchase_request` | Soạn nháp Yêu cầu mua hàng | `purchase_request.create` |
-| `draft_leave_request` | Soạn nháp đơn nghỉ phép | `document.create` |
+| `draft_leave_request` | Soạn nháp đơn nghỉ phép (phân hệ **Nhân sự ▸ Nghỉ phép**) | `leave_request.create` — **đổi từ `document.create` ngày 12/09/2026 (bao-CR-387)**: bản cũ soạn văn bản «Giấy nghỉ phép» ở Văn thư, nên người có quyền văn thư mà không được nộp đơn vẫn soạn được một tờ đơn họ không lưu nổi, còn người chỉ có `leave_request.create` thì bị chặn oan. Bản nháp **không mang `employee_id`** để không mở đường nộp đơn hộ người khác |
 | `search_docs` | Tra cứu Hướng dẫn sử dụng (HDSD) | Chỉ cần đăng nhập — **cố ý**, vì kho HDSD vốn mở cho mọi người dùng đã đăng nhập |
 | `export_report_file` | Xuất báo cáo dạng văn bản (Word .docx) từ dữ liệu vừa tra | Chỉ đóng gói lại dữ liệu **đã qua lọc quyền** ở tool báo cáo phía trước — không mở thêm đường dữ liệu mới |
 | `export_excel_file` | Xuất bảng tính Excel (.xlsx) từ dữ liệu vừa tra — tối đa 5 sheet x 15 cột x 500 dòng (thêm 27/08/2026, CR-205) | Cùng luật với `export_report_file`: chỉ đóng gói dữ liệu **đã qua lọc quyền**, không mở thêm đường dữ liệu mới |
@@ -203,6 +215,8 @@ Xác nhận trên thẻ so sánh cũ/mới.
 | `payment_request_read` | Đọc chi tiết một YCTT theo mã: đầu phiếu, dòng (mã ĐMH / hóa đơn / số tiền), `print_texts` đã parse, `url` | `payment_request.read` + `apply_scope` (ngoài phạm vi = "không tìm thấy") |
 | `ticket_create` | Soạn NHÁP phiếu hỗ trợ (không ghi DB) — FE mở dialog tạo phiếu điền sẵn, người dùng tự bấm gửi; nhóm tiếp nhận / mức ưu tiên lạ do model bịa bị quy về mặc định của form | `ticket.create` |
 | `my_tickets` | Phiếu hỗ trợ CỦA CHÍNH người hỏi (mới nhất trước, kèm nhãn trạng thái + `url`) | `ticket.read`, rồi **ép lọc chính chủ** theo cả hai cột (`created_by` = tài khoản HOẶC `requester_id` = mã nhân sự — thấy cả phiếu người khác tạo hộ) kể cả khi scope là `all`; limit mặc định 10, trần 30 |
+| `my_leave_summary` *(12/09, chưa deploy)* | Quỹ phép của chính người hỏi theo **từng loại nghỉ** (tổng · đã dùng · đang giữ chỗ · chuyển sang · còn lại) + đơn nghỉ của chính họ kèm số + nhãn trạng thái, dòng loại nghỉ và `url`. Read-only: **không gọi `ensure_balance()`** (hàm đó cấp phát dòng quỹ mới), loại chưa cấp quỹ trả cờ `allocated: false` | `leave_request.read` — cùng lý lẽ với `GET /api/leave-requests/tools/my-balance`: đây là quỹ của CHÍNH người hỏi, đòi thêm `leave_balance.read` là chắc chắn có người quên cấp rồi số hiện 0 vĩnh viễn. Rồi **ép lọc `employee_id` = mã nhân sự người hỏi** kể cả khi scope là `all`; **cố ý KHÔNG lọc `created_by`** — ở phân hệ này `created_by` nghĩa là "tôi lập hộ NGƯỜI KHÁC", gộp vào là phát dữ liệu nghỉ phép của người ta. Tài khoản chưa gắn nhân sự (`employee_id = 0`) nhận lỗi mềm, không trả quỹ của "nhân sự số 0". Limit 10, trần 30 (chỉ kẹp danh sách đơn) |
+| `employee_lookup` *(12/09, chưa deploy)* | Danh bạ nhân sự: tra theo tên / mã NV / email / điện thoại / chức vụ, hoặc liệt kê theo phòng ban. **Trả đúng 12 trường danh bạ** (mã · họ tên · chức vụ · cấp bậc · phòng ban · công ty · email · điện thoại công việc · quản lý trực tiếp · nhãn tình trạng · còn làm việc) | `employee.read` + `apply_scope` — tool ĐẦU TIÊN đọc hồ sơ NGƯỜI KHÁC, trước nó trợ lý chỉ đọc 5 trường của chính người hỏi. Ba lớp: khóa quyền · `apply_scope` (người scope `own` chỉ thấy mình) · **danh sách trắng trường ra** (`_OUT_FIELDS`, dựng theo danh sách chứ không `model_dump()` rồi xóa bớt). Danh sách trắng đã loại sạch **15 trường nhạy cảm** nên tool **không đòi** `employee_sensitive.read`; vẫn chạy thêm một lượt `sensitive.mask_many` làm chốt dự phòng. Mặc định chỉ người đang làm việc; limit 10, trần 30 |
 
 ---
 
@@ -325,6 +339,17 @@ phạm vi `test/backend/`):
 - `test_assistant_export_tool.py` — thêm phần T30: thiếu sheets trả lời mềm, chuẩn hóa
   sheet lệch cột + đổi chuỗi số thành kiểu số Excel, tên sheet trùng không làm openpyxl
   nổ, file .xlsx hợp lệ và thuộc về đúng người hỏi.
+- `test_assistant_leave_tool.py` — nghỉ phép (bao-CR-386): denied khi thiếu
+  `leave_request.read`; quỹ tính THEO TỪNG LOẠI và có trừ ngày đang giữ chỗ; loại chưa cấp
+  quỹ vẫn hiện kèm cờ `allocated: false`; **đơn mình lập HỘ người khác không lọt ra** kể cả
+  khi scope là `all`; đơn trả cả số lẫn nhãn trạng thái + dòng loại nghỉ; tham số rác từ
+  model không làm nổ; tài khoản chưa gắn nhân sự nhận lỗi mềm.
+- `test_assistant_employee_tool.py` — danh bạ nhân sự (bao-CR-386): denied khi thiếu
+  `employee.read`; **khẳng định THEO TÊN TRƯỜNG rằng không một trường nhạy cảm nào lọt ra**
+  (ca test ghi số CCCD + số tài khoản ngân hàng thật vào hồ sơ rồi soát kết quả) — đếm số
+  cột thì thêm cột mới vẫn xanh, nên phải soát theo tên; tìm theo mã / email / chức vụ;
+  scope `own` chỉ ra chính mình; `department_id = 0` là nhóm CHƯA GẮN phòng chứ không phải
+  "tất cả"; người đã nghỉ ẩn mặc định và limit bị kẹp.
 - `test_pham_vi_khai_du_b07.py` — mọi entity phải khai phạm vi dữ liệu, quên khai là test đỏ
   (hàng rào "an toàn khi cấu hình thiếu").
 

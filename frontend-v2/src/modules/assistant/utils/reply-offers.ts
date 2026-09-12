@@ -22,7 +22,10 @@ export interface FileOffer {
 export const DRAFT_ROUTES: Record<DraftTarget, string> = {
   survey: appRoutes.procurement.surveyRequestNew,
   purchase: appRoutes.procurement.purchaseRequestNew,
-  leave: appRoutes.document.documentNew,
+  //  ⚠️ Từng trỏ vào `appRoutes.document.documentNew` (form tạo VĂN BẢN, giấy GNP ở Văn
+  //  thư) — sai phân hệ, sửa ở bao-CR-387. Giấy GNP do hệ tự sinh sau khi đơn được
+  //  duyệt; chỗ nộp đơn là phân hệ Nghỉ phép.
+  leave: appRoutes.hr.leaveRequestNew,
   payment: appRoutes.finance.paymentRequestNew,
   ticket: appRoutes.support.root,
 }

@@ -19,7 +19,9 @@ from .document_tool import (APPROVAL_FLOW_LOOKUP_SPEC, DOCUMENT_READ_SPEC,
                             DOCUMENT_SEARCH_SPEC, MY_DOCUMENTS_SPEC)
 from .draft_tool import (DRAFT_LEAVE_REQUEST_SPEC, DRAFT_PURCHASE_REQUEST_SPEC,
                          DRAFT_SURVEY_REQUEST_SPEC)
+from .employee_tool import EMPLOYEE_LOOKUP_SPEC
 from .export_tool import EXPORT_EXCEL_FILE_SPEC, EXPORT_REPORT_FILE_SPEC
+from .leave_tool import MY_LEAVE_SUMMARY_SPEC
 from .payable_tool import (DRAFT_PAYMENT_REQUEST_SPEC, PAYABLE_LOOKUP_SPEC,
                            PAYMENT_REQUEST_READ_SPEC)
 from .procurement_doc_tool import (MY_PROCUREMENT_REQUESTS_SPEC,
@@ -49,6 +51,7 @@ def _active_specs() -> list:
                            MY_PROCUREMENT_REQUESTS_SPEC,
                            PAYMENT_REQUEST_READ_SPEC,
                            TICKET_CREATE_SPEC, MY_TICKETS_SPEC,
+                           MY_LEAVE_SUMMARY_SPEC, EMPLOYEE_LOOKUP_SPEC,
                            PROPOSE_DOCUMENT_UPDATE_SPEC]
     if settings.AI_RAG_ENABLED:
         specs.append(SEARCH_DOCS_SPEC)

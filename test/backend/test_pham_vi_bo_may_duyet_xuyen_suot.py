@@ -1235,6 +1235,10 @@ E2_CUA_GAC_CUA_TUNG_TOOL = {
     "my_approval_tasks": "task_service.my_tasks(employee_id) — hộp việc của chính mình",
     "my_requests_status": "lọc theo started_by_employee_id — phiếu chính mình trình",
     "my_tickets": "lọc theo created_by/requester_id + ctx.can(ticket, read)",
+    "my_leave_summary": "ctx.can(leave_request) + khóa cứng employee_id của chính người hỏi",
+    # (b') danh bạ nội bộ: apply_scope trên `employee`, và 15 trường nhạy cảm
+    #      (CCCD · ngân hàng · BHXH…) đi qua đúng `employee_sensitive` như API
+    "employee_lookup": "ctx.can(employee) + apply_scope; trường nhạy cảm gác employee_sensitive",
     # (c) đường GHI mới, không đọc gì của người khác
     "ticket_create": "ctx.can(ticket, create)",
     "draft_survey_request": "ctx.can(survey_request, create) — chỉ soạn nháp",

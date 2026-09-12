@@ -16,6 +16,10 @@ import { LeaveDetailDecisionActions } from '../components/leave-detail-decision-
 import { LeaveStatusBadge } from '../components/leave-status-badge'
 import { LeaveRequestForm } from '../components/leave-request-form'
 import {
+  applyAssistantLeaveDraft,
+  parseAssistantLeaveDraft,
+} from '../utils/assistant-leave-draft'
+import {
   emptyLeaveForm,
   formValuesOf,
   toLeavePayload,
@@ -67,7 +71,21 @@ export function LeaveRequestDetailPage() {
   const remove = useDeleteLeaveRequest()
   const act = useLeaveRequestAction()
 
-  const [form, setForm] = useState<LeaveFormValues>(emptyLeaveForm)
+  //  Bản nháp do Trợ lý AI soạn (tool `draft_leave_request`) đi vào qua nút «Tạo đơn nghỉ
+  //  phép» ở trang chat, cùng khuôn `state.assistantDraft` với YCBG/YCMH. Chỉ là giá trị
+  //  MỞ SẴN: người dùng rà lại rồi tự bấm Lưu, không có gì tự sinh. State rác thì parse
+  //  trả `null` và form mở trắng như thường.
+  //
+  //  Đọc trong khởi tạo `useState` (chạy đúng một lần) chứ không trong effect: đặt lại
+  //  form sau khi commit là người dùng gõ dở rồi bị ghi đè nếu trang render lại.
+  const [form, setForm] = useState<LeaveFormValues>(() => {
+    const empty = emptyLeaveForm()
+    if (requestId !== 0) return empty
+    const draft = parseAssistantLeaveDraft(
+      (location.state as { assistantDraft?: unknown } | null)?.assistantDraft,
+    )
+    return draft ? applyAssistantLeaveDraft(empty, draft) : empty
+  })
 
   //  Việc nào GHI LÝ DO vào sổ thì phải hỏi lý do. Trước đây hai nút này gửi
   //  câu cứng ("Người nộp hủy"), nên dòng thời gian của mọi tờ đơn hủy đều nói

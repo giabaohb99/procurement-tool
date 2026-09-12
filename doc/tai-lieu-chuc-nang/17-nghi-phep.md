@@ -571,5 +571,6 @@ chặn trần — **người duyệt canh phần còn lại**.
 | Bộ mã CHUỖI của giấy GNP | `backend/app/core/leave_codes.py` |
 | Giao diện | `frontend-v2/src/modules/hr/` (`pages/leave-*`, `components/leave-*`) |
 | Gói tri thức Trợ lý AI | `backend/app/modules/assistant/packs/40-nghi-phep.md` |
+| Hai tool Trợ lý AI đọc/soạn nghỉ phép | `assistant/tools/leave_tool.py` (`my_leave_summary`, bao-CR-386) · `assistant/tools/draft_tool.py` → `_run_leave` (`draft_leave_request`, bao-CR-387). ⚠️ `draft_leave_request` **chỉ soạn nháp**, không ghi DB, và **không mang `employee_id`** để không mở đường nộp đơn hộ người khác qua chat. Nó gác `leave_request.create` — trước 12/09/2026 gác nhầm `document.create` vì bản đầu soạn **văn bản GNP ở Văn thư**, thứ mà `approval_bridge` vốn tự sinh sau khi duyệt |
 | HDSD cho người dùng (Help Center) | `backend/scripts/seed_help_nghi_phep.py` — **10 bài** (bản 2, 04/09/2026), chạy `docker compose exec -T api python scripts/seed_help_nghi_phep.py`. Nội dung nằm trong DB **từng môi trường**, chạy script ở môi trường đích thì mới có |
 | Bài kiểm | `test/backend/test_nghi_phep_*.py` · `frontend-v2/src/modules/hr/**/leave-*.test.*` |

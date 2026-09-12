@@ -31,9 +31,9 @@ Help Center và trợ lý tra bằng `search_docs` (RAG index `help_article` + F
 | `10-quy-trinh-thu-mua.md` | Thu mua | ~830 |
 | `20-van-thu-van-ban.md` | Văn thư | ~3 100 |
 | `30-du-an-cong-viec.md` | Dự án (quản lý công việc) | ~2 300 |
-| `40-nghi-phep.md` | Nghỉ phép (Nhân sự) | ~2 300 (07/09/2026: + kết sổ cuối năm, nghỉ vợ sinh con) |
+| `40-nghi-phep.md` | Nghỉ phép (Nhân sự) | ~3 360 (12/09/2026: + mục tool `my_leave_summary` và `draft_leave_request`) |
 | `50-dat-phong-hop.md` | Đặt phòng họp (Nhân sự) | ~1 900 |
-| `60-nhan-su-ho-so.md` | Hồ sơ nhân sự + danh mục Chức vụ | ~1 260 (08/09/2026) |
+| `60-nhan-su-ho-so.md` | Hồ sơ nhân sự + danh mục Chức vụ | ~1 670 (12/09/2026: + mục tool `employee_lookup`) |
 | `nhamay-tri-thuc-co-dong.md` | Nhà máy DEGO Organic | ~11 000 |
 
 ⚠️ **`60-nhan-su-ho-so.md` cố ý chỉ giữ LUẬT, không giữ các bước bấm nút** — đúng
@@ -44,17 +44,26 @@ hỏi (kể cả câu chẳng liên quan tới nhân sự), còn bài HDSD thì 
 liệu thật** — ví dụ "đổi tên một chức vụ là đổi luôn chức danh của mọi người đang
 giữ nó".
 
-⚠️ Trợ lý đọc hồ sơ nhân sự **chỉ 5 trường** của chính người hỏi (`service.py`
-`_asker_profile`: họ tên · mã NV · chức vụ · phòng ban · công ty) và `full_name`
-của người duyệt (`document_tool`). **Không** trường nào thuộc nhóm nhạy cảm
-(CCCD · ngân hàng · địa chỉ nhà — xem `employee/sensitive.py`), nên đường này
-không cần `sensitive.mask`. Thêm trường vào chân dung người hỏi thì phải kiểm
-lại đúng chỗ đó. Lưu ý `emp.position` là **nhãn đã chép**, không phải khóa —
-đúng một trong những lý do cột nhãn còn tồn tại.
+⚠️ **Hồ sơ nhân sự đi vào trợ lý bằng BA đường, đếm cho đủ** (cập nhật
+12/09/2026 — bản trước ghi "chỉ 5 trường của chính người hỏi", nay đã hết hạn):
 
-Tổng system prompt hiện ~**22,8k token/lượt** — 72 928 ký tự, đo lại 08/09/2026
+1. **Chân dung người hỏi** — 5 trường của **chính họ** (`service.py`
+   `_caller_context`: họ tên · mã NV · chức vụ · phòng ban · công ty).
+2. **`full_name` của người duyệt** (`document_tool`).
+3. **Tool `employee_lookup`** (T45, bao-CR-386) — đường đầu tiên đọc hồ sơ
+   **NGƯỜI KHÁC**: 12 trường danh bạ, gác bằng `employee.read` + `apply_scope`.
+
+Cả ba đường **không** chạm trường nào thuộc nhóm nhạy cảm (CCCD · ngân hàng ·
+địa chỉ nhà — xem `employee/sensitive.py`). Đường 3 giữ được điều đó bằng
+**danh sách trắng** `_OUT_FIELDS` chứ không bằng may mắn, và vẫn chạy thêm một
+lượt `sensitive.mask_many` làm chốt dự phòng. Thêm trường vào bất kỳ đường nào
+thì phải kiểm lại đúng chỗ đó. Lưu ý `emp.position` là **nhãn đã chép**, không
+phải khóa — đúng một trong những lý do cột nhãn còn tồn tại.
+
+Tổng system prompt hiện ~**23,5k token/lượt** — 75 130 ký tự, đo lại 12/09/2026
 bằng `knowledge.build_system()` (ước 3,2 ký tự/token cho tiếng Việt). Lần trước
-ghi ~21,8k, chênh là do gói Nghỉ phép bổ sung 07/09 và gói Nhân sự mới.
+ghi ~22,8k (72 928 ký tự), chênh là do hai mục hướng dẫn gọi tool thêm vào gói
+Nghỉ phép và gói Nhân sự (bao-CR-386).
 
 Viết gói phân hệ thì bám ba nguyên tắc:
 

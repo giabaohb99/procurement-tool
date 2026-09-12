@@ -219,6 +219,25 @@ Phụ thuộc: Phase 1-3.
 
 ---
 
+## Phase 5 - Phủ tool cho các phân hệ mọc sau 28/08/2026  [GHI NỢ 12/09/2026, CHƯA LÀM]
+
+Từ lúc chốt 34 tool tới nay hệ thống mọc thêm Nghỉ phép · Công việc · Đặt phòng họp · Đặt xe ·
+Hồ sơ nhân sự · Diễn đàn · Đóng dấu — **không phân hệ nào được cấp tool**. Hậu quả cụ thể:
+trợ lý soạn được đơn nghỉ phép (T22) nhưng không trả lời nổi "tôi còn mấy ngày phép".
+
+- **14 tool T35-T48** + bảy luật áp chung: mục *Đợt 3* của `02-danh-sach-api-tool.md`.
+- **Song song, phải bồi gói tri thức** (`assistant/packs/`): gói Thu mua vẫn tự ghi là bản
+  MẪU; Diễn đàn · Phiếu hỗ trợ · Kho · Đơn hàng nhập khẩu chưa có mảng nào. Có tool mà không
+  có gói thì model biết gọi nhưng không biết khi nào nên gọi.
+- Thứ tự đề nghị: Nghỉ phép → Công việc → Đặt phòng họp/xe → Kho và giao nhận → Diễn đàn →
+  Hồ sơ nhân sự → Đóng dấu.
+- Chưa cấp số CR. Khi làm thì re-grep `change-log.md` + `change-log-bao.md` lấy số kế tiếp.
+
+⚠️ Phase này **không phụ thuộc Phase 3 (RAG)**. Tool loại A đọc thẳng DB, không cần Qdrant —
+đó cũng là lý do trợ lý trên prod vẫn hoạt động dù `AI_RAG_ENABLED=false`.
+
+---
+
 ## Để sau (ngoài phạm vi đợt này) - AI-2 RAG toàn hệ
 
 RAG toàn hệ có lọc quyền per-record + backend Văn thư + adapter model mở tự nhúng docker

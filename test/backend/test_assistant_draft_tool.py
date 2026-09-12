@@ -278,24 +278,30 @@ def test_ycmh_cong_ty_khac_cung_khop_theo_ma(db, seed, monkeypatch):
     assert out["draft"]["company_id"] == cty.id
     assert out["draft"]["company_name"] == "Công ty TNHH DEGO Farm"
 
-# ── draft_leave_request (Giấy nghỉ phép) ────────────────────────────────────────────────
+# ── draft_leave_request (ĐƠN nghỉ phép ở phân hệ Nhân sự) ───────────────────────────────
+#
+#  ⚠️ Bộ test này viết lại ngày 12/09/2026 (bao-CR-387). Bản cũ kiểm việc tool soạn một
+#  *Giấy nghỉ phép* VĂN BẢN ở Văn thư (`DocType` mã GNP, gác `document.create`) — đúng thứ
+#  gói tri thức `40-nghi-phep.md` cấm, vì giấy đó hệ TỰ SINH sau khi đơn được duyệt. Đừng
+#  khôi phục các khẳng định `doc_type_id` / `draft["leave"]` của bản cũ.
 
-def _them_loai_gnp(db, is_active=True):
-    from app.modules.doc_catalog.model import DocType
+def _them_loai_nghi(db, code="ANNUAL", name="Phép năm", counts_balance=True,
+                    max_days_per_request=0.0, is_active=True):
+    from app.modules.leave.catalog_model import LeaveType
 
-    row = DocType(code="GNP", name="Giấy nghỉ phép", group_code="A", is_personal=True,
-                  needs_approval=True, is_active=is_active, created_by=1, updated_by=1)
+    row = LeaveType(code=code, name=name, counts_balance=counts_balance,
+                    max_days_per_request=max_days_per_request, is_active=is_active)
     db.add(row)
     db.commit()
     db.refresh(row)
     return row
 
 
-def test_nghi_phep_khong_quyen_thi_tu_choi(db, seed, monkeypatch):
+def test_leave_without_permission_is_denied(db, seed, monkeypatch):
     from app.modules.assistant.tools.draft_tool import _run_leave
     from app.modules.user.model import User
 
-    _them_loai_gnp(db)
+    _them_loai_nghi(db)
     ctx = _ctx(db, db.get(User, seed.u_req_id), allowed=False, monkeypatch=monkeypatch)
     out = _run_leave(ctx, {"from_date": "2026-09-01", "to_date": "2026-09-01",
                            "reason": "Việc gia đình"})
@@ -303,7 +309,8 @@ def test_nghi_phep_khong_quyen_thi_tu_choi(db, seed, monkeypatch):
     assert "total" not in out
 
 
-def test_nghi_phep_chua_khai_loai_gnp_bao_loi_mem(db, seed, monkeypatch):
+def test_leave_without_leave_type_catalog_returns_soft_error(db, seed, monkeypatch):
+    """Danh mục Loại nghỉ trống thì báo mềm, không nổ — và tuyệt đối không tự tạo loại."""
     from app.modules.assistant.tools.draft_tool import _run_leave
     from app.modules.user.model import User
 
@@ -314,11 +321,11 @@ def test_nghi_phep_chua_khai_loai_gnp_bao_loi_mem(db, seed, monkeypatch):
     assert "total" not in out
 
 
-def test_nghi_phep_thieu_hoac_sai_ngay_bao_loi_mem(db, seed, monkeypatch):
+def test_leave_with_bad_dates_returns_soft_error(db, seed, monkeypatch):
     from app.modules.assistant.tools.draft_tool import _run_leave
     from app.modules.user.model import User
 
-    _them_loai_gnp(db)
+    _them_loai_nghi(db)
     ctx = _ctx(db, db.get(User, seed.u_req_id), allowed=True, monkeypatch=monkeypatch)
 
     assert "error" in _run_leave(ctx, {"from_date": "mai", "to_date": "2026-09-01",
@@ -328,19 +335,25 @@ def test_nghi_phep_thieu_hoac_sai_ngay_bao_loi_mem(db, seed, monkeypatch):
     #  Đến ngày trước Từ ngày — phải hỏi lại chứ không lẳng lặng soạn đơn ngược.
     assert "error" in _run_leave(ctx, {"from_date": "2026-09-05", "to_date": "2026-09-01",
                                        "reason": "x"})
-    #  Chiều -> sáng cùng ngày là khoảng trống (cùng luật với type_metadata backend).
+    #  Chiều -> sáng cùng ngày là khoảng trống (cùng luật `request_service.check_date_range`).
     assert "error" in _run_leave(ctx, {"from_date": "2026-09-01", "to_date": "2026-09-01",
                                        "from_session": "afternoon", "to_session": "morning",
                                        "reason": "x"})
+    #  Model gõ nhầm năm -> khoảng nghỉ dài hơn một tờ đơn được phép, chặn ngay.
+    assert "error" in _run_leave(ctx, {"from_date": "2026-09-01", "to_date": "2029-09-01",
+                                       "reason": "x"})
 
 
-def test_nghi_phep_du_thong_tin_soan_du_ban_nhap(db, seed, monkeypatch):
-    """Happy path: điền doc_type_id thật của môi trường, tính số ngày gợi ý cùng công thức
-    với form, và tiêu đề mang tên người hỏi."""
+def test_leave_draft_is_ready_with_full_payload(db, seed, monkeypatch):
+    """Happy path: khớp loại nghỉ THẬT trong danh mục, số ngày tính bằng `workday_service`
+    (không phải công thức riêng), và bản nháp mang hình dạng form đơn nghỉ phép."""
     from app.modules.assistant.tools.draft_tool import _run_leave
+    from app.modules.leave.constants import SESSION_FULL
     from app.modules.user.model import User
 
-    gnp = _them_loai_gnp(db)
+    _them_loai_nghi(db)
+    khong_luong = _them_loai_nghi(db, code="UNPAID", name="Nghỉ không lương",
+                                  counts_balance=False)
     ctx = _ctx(db, db.get(User, seed.u_req_id), allowed=True, monkeypatch=monkeypatch)
     out = _run_leave(ctx, {"from_date": "2026-09-01", "to_date": "2026-09-03",
                            "reason": "Về quê có việc gia đình", "leave_type": "unpaid",
@@ -350,49 +363,150 @@ def test_nghi_phep_du_thong_tin_soan_du_ban_nhap(db, seed, monkeypatch):
     assert out["total"] == 1
     draft = out["draft"]
     assert draft["kind"] == "leave_request"
-    assert draft["doc_type_id"] == gnp.id
-    assert "Người YC" in draft["title"]
-    leave = draft["leave"]
-    assert leave["leave_type"] == "unpaid"
-    assert leave["total_days"] == 3          # 01 -> 03, cả ngày: 1 trọn vẹn + 2 đầu cuối
-    assert leave["reason"] == "Về quê có việc gia đình"
-    assert leave["contact_phone"] == "0900000001"
+    #  ⚠️ CỐ Ý không có `employee_id`: form mặc định người nghỉ là chính người lập đơn.
+    #  Có khóa đó là mở đường nộp đơn HỘ người khác qua chat.
+    assert "employee_id" not in draft
+    assert draft["lines"] == [{"leave_type_id": khong_luong.id,
+                               "leave_type": "Nghỉ không lương", "days": 3}]
+    assert draft["from_session"] == SESSION_FULL and draft["to_session"] == SESSION_FULL
+    assert draft["from_time"] == "" and draft["to_time"] == ""
+    assert draft["reason"] == "Về quê có việc gia đình"
+    assert draft["contact_phone"] == "0900000001"
+    #  Loại không trừ quỹ thì không đi hỏi số ngày còn lại.
+    assert out["remaining_days"] is None
+    assert out["warnings"] == []
     assert "CHƯA được tạo" in out["reminder"]
 
 
-def test_nghi_phep_gia_tri_ngoai_bo_ma_ve_mac_dinh(db, seed, monkeypatch):
-    """Model điền loại nghỉ / buổi bậy thì về mặc định (annual / full) chứ không nổ lỗi —
+def test_leave_falls_back_to_balance_type_for_unknown_code(db, seed, monkeypatch):
+    """Model gõ loại nghỉ ngoài danh mục / buổi bậy thì về mặc định chứ không nổ lỗi —
     các ô này trên form là ô chọn, người dùng rà lại được. Nửa ngày tính 0.5 công."""
     from app.modules.assistant.tools.draft_tool import _run_leave
+    from app.modules.leave.constants import SESSION_FULL
     from app.modules.user.model import User
 
-    _them_loai_gnp(db)
+    phep_nam = _them_loai_nghi(db)
+    _them_loai_nghi(db, code="UNPAID", name="Nghỉ không lương", counts_balance=False)
     ctx = _ctx(db, db.get(User, seed.u_req_id), allowed=True, monkeypatch=monkeypatch)
 
     out = _run_leave(ctx, {"from_date": "2026-09-01", "to_date": "2026-09-01",
                            "leave_type": "vacation", "from_session": "sáng",
                            "reason": "Khám bệnh"})
-    leave = out["draft"]["leave"]
-    assert leave["leave_type"] == "annual"
-    assert leave["from_session"] == "full"
+    #  Lùi về loại TRỪ QUỸ (phép năm), không lùi về dòng đầu danh mục cho xong chuyện.
+    assert out["draft"]["lines"][0]["leave_type_id"] == phep_nam.id
+    assert out["draft"]["from_session"] == SESSION_FULL
 
     nua_ngay = _run_leave(ctx, {"from_date": "2026-09-01", "to_date": "2026-09-01",
                                 "from_session": "morning", "to_session": "morning",
                                 "reason": "Khám bệnh"})
-    assert nua_ngay["draft"]["leave"]["total_days"] == 0.5
+    assert nua_ngay["draft"]["lines"][0]["days"] == 0.5
+
+
+def test_leave_matches_type_by_name_too(db, seed, monkeypatch):
+    """Người dùng nói "nghỉ không lương" nên model hay điền TÊN thay vì mã."""
+    from app.modules.assistant.tools.draft_tool import _run_leave
+    from app.modules.user.model import User
+
+    _them_loai_nghi(db)
+    khong_luong = _them_loai_nghi(db, code="UNPAID", name="Nghỉ không lương",
+                                  counts_balance=False)
+    ctx = _ctx(db, db.get(User, seed.u_req_id), allowed=True, monkeypatch=monkeypatch)
+    out = _run_leave(ctx, {"from_date": "2026-09-01", "to_date": "2026-09-01",
+                           "leave_type": "Nghỉ KHÔNG lương", "reason": "x"})
+    assert out["draft"]["lines"][0]["leave_type_id"] == khong_luong.id
+
+
+def test_leave_hourly_requires_both_times(db, seed, monkeypatch):
+    from app.modules.assistant.tools.draft_tool import _run_leave
+    from app.modules.leave.constants import SESSION_HOURLY
+    from app.modules.user.model import User
+
+    _them_loai_nghi(db)
+    ctx = _ctx(db, db.get(User, seed.u_req_id), allowed=True, monkeypatch=monkeypatch)
+
+    assert "error" in _run_leave(ctx, {"from_date": "2026-09-01", "to_date": "2026-09-01",
+                                       "from_session": "hourly", "to_session": "hourly",
+                                       "reason": "Khám bệnh"})
+    out = _run_leave(ctx, {"from_date": "2026-09-01", "to_date": "2026-09-01",
+                           "from_session": "hourly", "to_session": "full",
+                           "from_time": "08:00", "to_time": "10:00", "reason": "Khám bệnh"})
+    #  Khai theo giờ thì CẢ HAI ô buổi phải là «Theo giờ», nếu không backend chặn lúc lưu.
+    assert out["draft"]["from_session"] == SESSION_HOURLY
+    assert out["draft"]["to_session"] == SESSION_HOURLY
+    assert out["draft"]["from_time"] == "08:00" and out["draft"]["to_time"] == "10:00"
+
+
+def test_leave_warns_on_overlap_and_short_balance(db, seed, monkeypatch):
+    """Hai chốt backend sẽ CHẶN lúc lưu — nói trước ở đây để người dùng khỏi điền xong
+    form mới ăn câu chặn. Chỉ cảnh báo, KHÔNG tự sửa: quyết định là của họ."""
+    from datetime import date
+
+    from app.modules.assistant.tools.draft_tool import _run_leave
+    from app.modules.leave.constants import LR_PENDING
+    from app.modules.leave.request_model import LeaveRequest
+    from app.modules.user.model import User
+
+    phep_nam = _them_loai_nghi(db)
+    db.add(LeaveRequest(code="NP-2026-0009", company_id=seed.company_id,
+                        department_id=seed.dept_id, employee_id=seed.emp_req_id,
+                        leave_type_id=phep_nam.id, from_date=date(2026, 9, 2),
+                        to_date=date(2026, 9, 2), total_days=1, status=LR_PENDING,
+                        reason="Đơn cũ", created_by=seed.u_req_id))
+    db.commit()
+
+    ctx = _ctx(db, db.get(User, seed.u_req_id), allowed=True, monkeypatch=monkeypatch)
+    out = _run_leave(ctx, {"from_date": "2026-09-01", "to_date": "2026-09-03",
+                           "reason": "Về quê"})
+
+    assert out["status"] == "ready"          # cảnh báo KHÔNG chặn soạn nháp
+    assert out["remaining_days"] == 0.0      # chưa ai cấp quỹ năm 2026
+    assert any("NP-2026-0009" in w for w in out["warnings"])
+    assert any("CHƯA được cấp" in w for w in out["warnings"])
+
+
+def test_leave_warns_when_over_max_days_per_request(db, seed, monkeypatch):
+    from app.modules.assistant.tools.draft_tool import _run_leave
+    from app.modules.user.model import User
+
+    _them_loai_nghi(db, code="WEDDING", name="Nghỉ cưới", counts_balance=False,
+                    max_days_per_request=3)
+    ctx = _ctx(db, db.get(User, seed.u_req_id), allowed=True, monkeypatch=monkeypatch)
+    out = _run_leave(ctx, {"from_date": "2026-09-01", "to_date": "2026-09-07",
+                           "leave_type": "wedding", "reason": "Cưới"})
+    assert any("tối đa 3.0 ngày" in w for w in out["warnings"])
+
+
+def test_leave_without_employee_profile_returns_soft_error(db, seed, monkeypatch):
+    """Tài khoản chưa gắn hồ sơ nhân sự thì không nộp đơn được — báo mềm, đừng soạn một
+    tờ đơn họ không lưu nổi."""
+    from app.modules.assistant.tools.draft_tool import _run_leave
+    from app.modules.user.model import User
+
+    _them_loai_nghi(db)
+    user = db.get(User, seed.u_req_id)
+    user.employee_id = 0
+    db.commit()
+    ctx = _ctx(db, user, allowed=True, monkeypatch=monkeypatch)
+    out = _run_leave(ctx, {"from_date": "2026-09-01", "to_date": "2026-09-01",
+                           "reason": "Việc gia đình"})
+    assert "error" in out
+    assert "total" not in out
 
 
 # ── tool_defs(db): gắn enum danh mục thật vào khai báo tool ─────────────────────────────
 
 def test_tool_defs_gan_enum_danh_muc_that(db, seed):
-    """Có db thì khai báo 2 tool soạn nháp mang enum danh mục THẬT (phân loại + công ty)
-    để model thấy trước danh sách hợp lệ thay vì bịa; không db giữ khai báo tĩnh. Enum
-    tuyệt đối không được rò vào dict `_PARAMS` dùng chung (deepcopy) — rò là mọi request
-    sau dính danh mục của request trước."""
+    """Có db thì khai báo 3 tool soạn nháp mang enum danh mục THẬT (phân loại + công ty +
+    loại nghỉ) để model thấy trước danh sách hợp lệ thay vì bịa; không db giữ khai báo
+    tĩnh. Enum tuyệt đối không được rò vào dict `_PARAMS` dùng chung (deepcopy) — rò là
+    mọi request sau dính danh mục của request trước."""
     from app.modules.assistant import tools as tool_layer
-    from app.modules.assistant.tools.draft_tool import _PARAMS, _PR_PARAMS
+    from app.modules.assistant.tools.draft_tool import (_LEAVE_PARAMS, _PARAMS,
+                                                        _PR_PARAMS)
 
     _them_cong_ty(db, "DGF", "Công ty TNHH DEGO Farm")
+    _them_loai_nghi(db)
+    _them_loai_nghi(db, code="UNPAID", name="Nghỉ không lương", counts_balance=False)
 
     defs = {d.name: d for d in tool_layer.tool_defs(db)}
     ycbg = defs["draft_survey_request"].parameters
@@ -403,8 +517,14 @@ def test_tool_defs_gan_enum_danh_muc_that(db, seed):
     assert "Công ty TNHH DEGO Farm" in ycmh["properties"]["company"]["enum"]
     #  Dòng YCMH không có ô item_group (phân loại lấy theo danh mục sản phẩm) — không gắn.
     assert "item_group" not in ycmh["properties"]["lines"]["items"]["properties"]
+    #  Loại nghỉ gắn bằng MÃ, và TÊN đi kèm trong mô tả để model biết mã nào là gì.
+    nghi_phep = defs["draft_leave_request"].parameters["properties"]["leave_type"]
+    assert nghi_phep["enum"] == ["ANNUAL", "UNPAID"]
+    assert "Nghỉ không lương" in nghi_phep["description"]
 
     tinh = {d.name: d for d in tool_layer.tool_defs()}
     assert "enum" not in tinh["draft_survey_request"].parameters["properties"]["company"]
+    assert "enum" not in tinh["draft_leave_request"].parameters["properties"]["leave_type"]
     assert "enum" not in _PARAMS["properties"]["company"]
     assert "enum" not in _PR_PARAMS["properties"]["company"]
+    assert "enum" not in _LEAVE_PARAMS["properties"]["leave_type"]

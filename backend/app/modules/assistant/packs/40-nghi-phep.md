@@ -9,8 +9,10 @@ Phân hệ để nhân viên **nộp đơn nghỉ phép**, quản lý duyệt, v
   nhất trong cả hệ. Người dùng chỉ đọc được đơn trong phạm vi của họ; hệ trả
   **404 «Không tìm thấy»** chứ không trả 403, nên khi họ hỏi về một đơn không đọc
   được thì **đừng khẳng định đơn đó không tồn tại** — chỉ nói là không truy cập được.
-- **Đừng đoán số ngày phép còn lại.** Con số đó chỉ có trên màn hình (ô cạnh «Loại
-  nghỉ» và thẻ *Quỹ phép của tôi*). Bảo họ nhìn vào đó, đừng tự tính.
+- **Đừng đoán số ngày phép còn lại, và đừng tự cộng trừ.** Có tool
+  **`my_leave_summary`** đọc đúng con số hệ đang dùng — gọi nó. Nó chỉ trả quỹ và đơn
+  của **chính người đang hỏi**; ai hỏi phép của người khác thì bảo họ vào màn
+  *Nhân sự ▸ Nghỉ phép*, đừng tìm đường vòng.
 
 ## Bốn khái niệm, đừng lẫn
 
@@ -115,6 +117,59 @@ Ngoại lệ: loại nghỉ dài liên tục như **Thai sản** cố ý **khôn
 - **Nghỉ từ buổi chiều đến buổi sáng cùng ngày** là khoảng trống — hệ chặn.
 - Lập đơn **hộ người khác** được (hành chính, trợ lý). Cả người lập lẫn người nghỉ
   đều thấy tờ đơn đó.
+
+## Tool `my_leave_summary` — khi nào gọi, đọc kết quả thế nào
+
+Gọi khi người hỏi nói tới phép **của chính họ**: «tôi còn mấy ngày phép», «phép năm
+còn bao nhiêu», «đơn nghỉ tuần sau của tôi duyệt chưa», «năm ngoái tôi nghỉ mấy
+ngày» (truyền `year`). **Gọi nó TRƯỚC khi soạn đơn** bằng `draft_leave_request` —
+soạn xong mới biết không đủ phép là bắt người ta làm lại.
+
+Đọc kết quả:
+
+- `balances` là **một dòng cho MỖI loại nghỉ**, không phải một con số chung. Trả lời
+  «còn 7 ngày» mà không nói loại nào là câu trả lời sai.
+- `remaining_days` **đã trừ** `pending_days` (đơn đang chờ duyệt). Người hỏi thấy hụt
+  ngày mà chưa nghỉ hôm nào thì đó là lý do — nói rõ ra.
+- `allocated: false` nghĩa là **năm đó chưa ai cấp quỹ loại nghỉ này**, KHÔNG phải
+  «đã dùng hết». Bảo họ hỏi phòng Nhân sự, đừng nói họ hết phép.
+- Đơn khai **nhiều loại nghỉ** thì đọc theo `lines`; `total_days` đầu đơn là tổng
+  chung, gán cả tổng đó cho một loại là nói sai.
+
+Hai điều tool này **không** làm: không nộp đơn (đó là `draft_leave_request`, đừng
+lẫn hai cái), và không xem được phép của người khác.
+
+## Tool `draft_leave_request` — soạn nháp đơn nghỉ phép
+
+Gọi khi người hỏi muốn **xin nghỉ**: «tôi muốn nghỉ 3 ngày tuần sau», «làm giúp tôi
+đơn nghỉ phép ngày mai», «xin nghỉ nửa buổi sáng thứ Sáu».
+
+⚠️ **Đây là đơn ở phân hệ Nhân sự, KHÔNG phải văn bản «Giấy nghỉ phép» ở Văn thư.**
+Giấy GNP hệ tự sinh sau khi đơn được duyệt — đừng bao giờ dẫn người dùng sang màn
+tạo văn bản để «làm giấy nghỉ phép».
+
+Cần tối thiểu **ngày nghỉ từ–đến** và **lý do**. Ngày nói tương đối («mai», «thứ Hai
+tuần sau») thì tự quy ra `YYYY-MM-DD` theo hôm nay. Nghỉ **nửa ngày** thì hỏi buổi
+nào (`from_session`/`to_session` = `morning`/`afternoon`); nghỉ **vài tiếng** thì hỏi
+khung giờ (`hourly` + `from_time`/`to_time` dạng `HH:MM`).
+
+Đọc kết quả:
+
+- **`warnings` phải đọc nguyên cho người dùng, đừng nuốt.** Ba thứ có thể nằm trong
+  đó, và cả ba là thứ backend sẽ **chặn lúc lưu**: trùng đơn cũ · vượt trần một đơn
+  của loại nghỉ · không đủ quỹ phép. Nói trước thì họ sửa ngay; im thì họ điền xong
+  form mới ăn câu chặn.
+- `total_days` là **gợi ý** theo lịch làm việc (đã trừ Chủ nhật và ngày lễ) — người
+  dùng sửa được trên form. Đừng nói đó là con số chốt.
+- `remaining_days` chỉ có với loại nghỉ **trừ quỹ**; `null` nghĩa là loại này không
+  ăn vào quỹ nào (nghỉ không lương, nghỉ cưới hỏi…).
+- Tool **CHƯA tạo đơn và CHƯA gửi duyệt**. Tóm tắt bản đề xuất rồi mời họ bấm nút
+  *Tạo đơn nghỉ phép* dưới câu trả lời để mở form đã điền sẵn.
+
+Ba điều tool này **không** làm: không lập đơn **hộ người khác** (form luôn đặt người
+nghỉ là chính người đang lập — ai cần lập hộ thì vào màn Đơn nghỉ phép tự chọn),
+không khai **nhiều loại nghỉ** trong một đơn (bấm *Thêm loại nghỉ* ngay trên form),
+và không tự bấm Lưu thay người dùng.
 
 ## Bốn khóa quyền — đừng gộp
 
