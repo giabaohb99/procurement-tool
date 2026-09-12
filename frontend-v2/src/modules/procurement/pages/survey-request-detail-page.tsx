@@ -60,6 +60,7 @@ import { purchaseRequestSupportApi } from '../api/purchase-request-support-api'
 import { surveyRequestApi } from '../api/survey-request-api'
 import { StatusBadge } from '../components/document-status-badge'
 import { DocumentComments } from '../components/document-comments'
+import { SurveyReportCard } from '../components/survey-report/survey-report-card'
 import { SurveyRequestInfoCard } from '../components/survey-request-info-card'
 import { SurveyRequestLineDialog } from '../components/survey-request-line-dialog'
 import {
@@ -682,6 +683,13 @@ export function SurveyRequestDetailPage() {
             }
             onRequestResurvey={setResurveyLineId}
           />
+        )}
+
+        {/* Khối BÁO CÁO THỰC HIỆN — NS Thu mua (quyền `process`) theo dõi tiến
+            trình thương vụ: hồ sơ theo giai đoạn, lọc theo nút dòng hàng.
+            Người khác xem được; khối rỗng thì tự ẩn với họ. */}
+        {!isNew && (
+          <SurveyReportCard surveyRequestId={surveyRequestId} canEdit={canViewNstm} />
         )}
 
         {!isNew && (

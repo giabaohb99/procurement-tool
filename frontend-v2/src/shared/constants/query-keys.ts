@@ -45,6 +45,9 @@ export const queryKeys = {
      */
     surveyRequestProcess: (id: number) =>
       ['procurement', 'survey-requests', id, 'process'] as const,
+    /** Khối BÁO CÁO THỰC HIỆN của YCBG (`/{id}/report`) — nút · giai đoạn · hồ sơ. */
+    surveyRequestReport: (id: number) =>
+      ['procurement', 'survey-requests', id, 'report'] as const,
     /** Bảng "Kết quả khảo sát đã duyệt" chọn được cho MỘT dòng của khung xử lý. */
     surveyRequestAvailableLines: (id: number, lineId: number, params?: Record<string, unknown>) =>
       ['procurement', 'survey-requests', id, 'process', 'available', lineId, params ?? {}] as const,
