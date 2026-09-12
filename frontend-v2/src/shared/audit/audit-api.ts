@@ -2,6 +2,8 @@ import { apiGet } from '@/core/api'
 
 /** Một dòng nhật ký — khớp response của `GET /api/audit-logs`. */
 export interface AuditLogEntry {
+  /** Id dòng nhật ký — để gắn hành động (vd nút Hoàn tác) vào đúng dòng. */
+  id: number
   action: string
   /** Nhãn tiếng Việt do backend dựng sẵn ("Tạo mới", "Duyệt"…). */
   action_label: string

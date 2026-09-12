@@ -6,6 +6,7 @@ import {
   ClipboardCheck,
   ClipboardList,
   Copy,
+  ListChecks,
   CornerUpLeft,
   FileCheck,
   FilePlus,
@@ -13,6 +14,7 @@ import {
   Plus,
   Save,
   Send,
+  Undo2,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
@@ -60,6 +62,7 @@ import { purchaseRequestSupportApi } from '../api/purchase-request-support-api'
 import { surveyRequestApi } from '../api/survey-request-api'
 import { StatusBadge } from '../components/document-status-badge'
 import { DocumentComments } from '../components/document-comments'
+import { SurveyReportCard } from '../components/survey-report/survey-report-card'
 import { SurveyRequestInfoCard } from '../components/survey-request-info-card'
 import { SurveyRequestLineDialog } from '../components/survey-request-line-dialog'
 import {
@@ -84,6 +87,11 @@ import {
   useSurveyRequestAction,
   useSurveyRequestResult,
 } from '../hooks/use-survey-request'
+import {
+  useRestoreSurveyReport,
+  useSurveyRequestReport,
+} from '../hooks/use-survey-request-report'
+import { REPORT_DOC_DONE } from '../types/survey-request-report'
 import { SR_STATUS_LABELS } from '../types/purchase-document'
 import {
   LINE_STATUS_RESURVEY,
@@ -160,6 +168,11 @@ export function SurveyRequestDetailPage() {
 
   const { data: serverData, isLoading, isError } = useSurveyRequest(surveyRequestId)
   const { data: result } = useSurveyRequestResult(surveyRequestId, serverData?.status ?? '')
+  // Khối Báo cáo thực hiện KHÔNG hiện mặc định — chỉ khi phiếu đã có báo cáo, hoặc
+  // NS Thu mua bấm "Thêm Báo cáo thực hiện". Query dùng chung key với card nên
+  // không tốn thêm một lượt tải.
+  const { data: report, isLoading: reportLoading } = useSurveyRequestReport(surveyRequestId)
+  const restoreReport = useRestoreSurveyReport(surveyRequestId)
   const { data: companiesData } = useCompanies({ page_size: 500, is_active: true })
   const { data: employeesData } = useEmployees({ page_size: 1000, is_active: true })
   const { data: departmentsData } = useDepartments({ page_size: 500 })
@@ -181,6 +194,8 @@ export function SurveyRequestDetailPage() {
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
   const [resurveyLineId, setResurveyLineId] = useState<number | null>(null)
   const [showCreatedPrs, setShowCreatedPrs] = useState(false)
+  /** NS Thu mua đã bấm "Thêm Báo cáo thực hiện" trong phiên này (phiếu chưa có báo cáo). */
+  const [reportAdded, setReportAdded] = useState(false)
   /** Hình chọn cho dòng CHƯA lưu — xem `helpers/pending-line-files.ts`. */
   const [pendingFiles, setPendingFiles] = useState<PendingLineFiles>({})
   /** Ô còn thiếu sau lần Gửi duyệt bị chặn gần nhất — khoanh đỏ đúng chỗ (QA 29/08). */
@@ -311,6 +326,22 @@ export function SurveyRequestDetailPage() {
   const canAssignNstm = canViewNstm && !locked
   const showNstmColumns = canViewNstm && !isNew
   const showStatus = !isNew
+
+  // Báo cáo thực hiện: hiện khi phiếu ĐÃ có báo cáo, hoặc NS Thu mua vừa bấm Thêm.
+  const reportHasData =
+    !!report && (report.phases.length > 0 || report.items.length > 0 || report.docs.length > 0)
+  const showReportBlock = !isNew && (reportHasData || reportAdded)
+  // Phiếu đã Hoàn thành/Hủy (`locked`): khối báo cáo CHỈ ĐỌC (backend cũng chặn ghi),
+  // và không cho thêm báo cáo mới.
+  const canEditReport = canViewNstm && !locked
+  // Nút "Thêm Báo cáo thực hiện" chỉ cho NS Thu mua, phiếu chưa đóng, chưa có báo
+  // cáo và chưa bấm thêm trong phiên. Chờ tải xong mới quyết, khỏi nhấp nháy nút.
+  const canAddReport =
+    canViewNstm && !isNew && !locked && !reportLoading && !reportHasData && !reportAdded
+  // Chặn đóng phiếu khi còn hồ sơ báo cáo BẮT BUỘC chưa hoàn tất (backend là chốt thật).
+  const reportRequiredPending = (report?.docs ?? []).filter(
+    (doc) => doc.required && doc.status !== REPORT_DOC_DONE,
+  ).length
 
   const canFinalize =
     (can('survey_request', 'process') && can('survey_request', 'approve')) ||
@@ -471,6 +502,15 @@ export function SurveyRequestDetailPage() {
             </>
           )}
 
+          {/* Thêm khối Báo cáo thực hiện — mặc định phiếu không có, NS Thu mua bấm
+              nút này thì khối mới xuất hiện (trên khối Trao đổi). */}
+          {canAddReport && (
+            <Button variant="outline" onClick={() => setReportAdded(true)}>
+              <ListChecks />
+              Thêm Báo cáo thực hiện
+            </Button>
+          )}
+
           {!isNew && status === 'submitted' && can('survey_request', 'approve') && (
             <>
               <Button
@@ -553,7 +593,16 @@ export function SurveyRequestDetailPage() {
           )}
 
           {!isNew && ['survey_done', 'pr_created'].includes(status) && canFinalize && (
-            <Button variant="outline" onClick={() => setConfirmAction('finalize')}>
+            <Button
+              variant="outline"
+              disabled={reportRequiredPending > 0}
+              title={
+                reportRequiredPending > 0
+                  ? `Còn ${reportRequiredPending} hồ sơ báo cáo thực hiện bắt buộc chưa hoàn tất`
+                  : undefined
+              }
+              onClick={() => setConfirmAction('finalize')}
+            >
               <CheckCheck />
               Chuyển Hoàn thành
             </Button>
@@ -684,10 +733,45 @@ export function SurveyRequestDetailPage() {
           />
         )}
 
+        {/* Khối BÁO CÁO THỰC HIỆN — NS Thu mua (quyền `process`) theo dõi tiến
+            trình thương vụ. MẶC ĐỊNH ẩn: chỉ hiện khi phiếu đã có báo cáo hoặc
+            NS Thu mua bấm "Thêm Báo cáo thực hiện". Nằm trên khối Trao đổi. */}
+        {showReportBlock && (
+          <SurveyReportCard
+            surveyRequestId={surveyRequestId}
+            canEdit={canEditReport}
+            onDeleted={() => setReportAdded(false)}
+          />
+        )}
+
         {!isNew && (
           <>
             <DocumentComments entity="survey_request" entityId={surveyRequestId} />
-            <AuditTimeline entity="survey_request" entityId={surveyRequestId} showMessage dense />
+            <AuditTimeline
+              entity="survey_request"
+              entityId={surveyRequestId}
+              showMessage
+              dense
+              /* Hoàn tác lần xóa báo cáo — nút gắn đúng dòng lịch sử của lần xóa
+                 gần nhất chưa hoàn tác (khớp theo id), chỉ khi NS Thu mua + phiếu
+                 chưa đóng. */
+              renderEntryAction={(log) =>
+                canEditReport &&
+                report?.restorable &&
+                log.id === report.restorable_audit_id ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 gap-1 px-2 text-xs"
+                    disabled={restoreReport.isPending}
+                    onClick={() => void restoreReport.mutateAsync()}
+                  >
+                    <Undo2 className="size-3.5" />
+                    Hoàn tác
+                  </Button>
+                ) : null
+              }
+            />
           </>
         )}
       </div>

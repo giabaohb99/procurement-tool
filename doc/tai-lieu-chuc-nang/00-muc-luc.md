@@ -106,4 +106,5 @@ Mỗi dòng ghi trạng thái tài liệu và link tới file `.md` tương ứn
 - Mục 30 (**Nghỉ phép**) cũng chỉ có trên `frontend-v2/`, nằm TRONG phân hệ Nhân sự chứ không tách phân hệ riêng; menu lấy từ `frontend-v2/src/modules/hr/routes.tsx`.
 - Nghỉ phép dùng **bốn khóa phân quyền** (`leave_request` · `leave_balance` · `leave_type` · `holiday`). Tách bốn vì `leave_balance` ghi được nghĩa là **tặng thêm ngày phép cho bất kỳ ai**. Xem §9 của `17-nghi-phep.md`.
 - ⚠️ Bốn khóa đó **mới thêm 03/09/2026**; vai trò cũ trên hệ đang chạy KHÔNG tự có, phải tick thêm ở màn Phân quyền tài khoản.
+- Khối **Báo cáo thực hiện** không có mục menu riêng: là một thẻ nhúng trong chi tiết Yêu cầu báo giá (ERP v2). Tài liệu chức năng ở `19-bao-cao-thuc-hien-ycbg.md`, kỹ thuật ở `../tai-lieu-ky-thuat/tdd-bao-cao-thuc-hien-ycbg.md`.
 - Nguồn danh sách: `frontend/src/layouts/AppLayout.tsx` — mảng `NAV_GROUPS`.

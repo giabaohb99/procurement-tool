@@ -1,5 +1,5 @@
 import { ChevronsUp, History } from 'lucide-react'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
@@ -31,6 +31,11 @@ interface AuditTimelineProps {
   messageOnly?: boolean
   /** Bố cục gọn dành cho trang chứng từ xếp các khối full-width. */
   dense?: boolean
+  /**
+   * Tùy chọn: hành động gắn vào MỘT dòng nhật ký (vd nút «Hoàn tác»). Trả về
+   * `null` cho dòng không có hành động. Mặc định không có — timeline chỉ đọc.
+   */
+  renderEntryAction?: (log: AuditLogEntry) => ReactNode
 }
 
 /**
@@ -47,6 +52,7 @@ export function AuditTimeline({
   showMessage = false,
   messageOnly = false,
   dense = false,
+  renderEntryAction,
 }: AuditTimelineProps) {
   const [visible, setVisible] = useState(PAGE_STEP)
   const { data: logs, isLoading } = useAuditLogs(entity, entityId)
@@ -80,27 +86,31 @@ export function AuditTimeline({
         {!isLoading && total > 0 && (
           <>
             <ol className="space-y-3">
-              {logs?.slice(0, visible).map((log, index) => (
-                <li key={`${log.at}-${index}`} className="flex gap-3">
-                  <span
-                    className={cn(
-                      'mt-1.5 size-2 shrink-0 rounded-full',
-                      dotColor(log.action),
-                    )}
-                  />
-                  <div className="min-w-0">
-                    <p className="text-sm">
-                      <b>{log.by}</b> —{' '}
-                      {messageOnly
-                        ? log.message || log.action_label
-                        : `${log.action_label}${showMessage && log.message ? `: ${log.message}` : ''}`}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatDateTime(log.at)}
-                    </p>
-                  </div>
-                </li>
-              ))}
+              {logs?.slice(0, visible).map((log, index) => {
+                const action = renderEntryAction?.(log)
+                return (
+                  <li key={`${log.at}-${index}`} className="flex gap-3">
+                    <span
+                      className={cn(
+                        'mt-1.5 size-2 shrink-0 rounded-full',
+                        dotColor(log.action),
+                      )}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm">
+                        <b>{log.by}</b> —{' '}
+                        {messageOnly
+                          ? log.message || log.action_label
+                          : `${log.action_label}${showMessage && log.message ? `: ${log.message}` : ''}`}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDateTime(log.at)}
+                      </p>
+                    </div>
+                    {action && <div className="shrink-0">{action}</div>}
+                  </li>
+                )
+              })}
             </ol>
 
             {(remaining > 0 || visible > PAGE_STEP) && (
