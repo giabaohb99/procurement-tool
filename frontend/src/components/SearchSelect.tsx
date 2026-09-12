@@ -10,7 +10,7 @@ const rsComponents = (table: boolean) =>
   table ? { Input: NoAutofillInput, IndicatorSeparator: () => null } : { Input: NoAutofillInput }
 
 /** Select có tìm kiếm (gõ để lọc). Danh sách ngắn/dài đều dùng được.
- *  - Chỉ 1 lựa chọn duy nhất → tự gán.
+ *  - Chỉ 1 lựa chọn duy nhất → tự gán (ô BỘ LỌC tắt bằng `autoSelectSingle={false}`).
  *  - Trống → để rỗng (không hiện "—").
  *  - variant="table": gọn cho ô trong bảng (không nút X, viền trong suốt khi rảnh, gõ là sổ).
  *  - colorMap: {giá trị → mã màu} → hiển thị như badge có màu (dùng cho cột trạng thái).
@@ -19,6 +19,7 @@ const rsComponents = (table: boolean) =>
  */
 export default function SearchSelect({
   value, options, onChange, disabled, placeholder = '', width, variant = 'form', colorMap, wrap,
+  autoSelectSingle = true,
 }: {
   value?: string | number
   options: (string | Opt)[]
@@ -30,16 +31,21 @@ export default function SearchSelect({
   colorMap?: Record<string, string>
   /** Nhãn dài (tên NCC…) hiện đủ chữ thay vì bị cắt. Mặc định tắt để không đổi các ô cũ. */
   wrap?: boolean
+  /** bao-CR-388: ô BỘ LỌC phải đặt `false`. Luật "1 lựa chọn → tự gán" sinh ra cho FORM
+   *  (vd chỉ có một ĐVT), nhưng ở ô lọc thì rỗng nghĩa là "Tất cả": người bị scope thu hẹp
+   *  (danh sách NSTM chỉ còn chính họ) bị tự gán vào bộ lọc, bấm X xóa xong effect gán lại
+   *  ngay — không bỏ lọc được và danh sách rỗng vĩnh viễn. */
+  autoSelectSingle?: boolean
 }) {
   const opts: Opt[] = options.map((o) => (typeof o === 'string' ? { value: o, label: o } : o))
   const table = variant === 'table'
   const valStr = value !== undefined && value !== null ? String(value) : ''
   const color = colorMap && valStr ? colorMap[valStr] : undefined
 
-  // Chỉ có đúng 1 lựa chọn và chưa chọn gì → tự gán luôn
+  // Chỉ có đúng 1 lựa chọn và chưa chọn gì → tự gán luôn (trừ khi ô là bộ lọc, xem prop)
   useEffect(() => {
-    if (!disabled && !valStr && opts.length === 1) onChange(opts[0].value)
-  }, [opts.length, valStr, disabled])
+    if (autoSelectSingle && !disabled && !valStr && opts.length === 1) onChange(opts[0].value)
+  }, [opts.length, valStr, disabled, autoSelectSingle])
 
   // Nếu value không có trong options (vd NCC/ĐVT chưa được tải) → vẫn hiện value, không để trắng.
   // '0' là sentinel FK "chưa chọn" (phòng ban/công ty…) → để trống thay vì hiện số 0.
