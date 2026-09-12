@@ -4,12 +4,25 @@
 từ phiếu CHA (`_in_scope`) rồi cửa ghi gác bằng cờ `process` (NS Thu mua).
 Mọi hàm ghi KHÔNG commit; controller commit một lượt rồi ghi audit.
 """
+from datetime import date
+
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
+from app.modules.employee.model import Employee
+
 from .model import SurveyRequestLine
-from .report_constants import DEFAULT_PHASES, MAX_DEPENDS, REPORT_DOC_STATUS_LABELS
-from .report_model import SurveyReportDoc, SurveyReportItem, SurveyReportPhase
+from .report_constants import (DEFAULT_PHASES, MAX_DEPENDS, RD_DONE,
+                               REPORT_DOC_STATUS_LABELS)
+from .report_model import (SurveyReportDoc, SurveyReportItem,
+                           SurveyReportPhase, SurveyReportTrash)
+
+
+def _to_date(value: str | None) -> date | None:
+    """Chuỗi `yyyy-mm-dd` (đã được schema kiểm) → `date`; rỗng/None → None."""
+    if not value:
+        return None
+    return date.fromisoformat(value)
 
 
 def _rows_of(db: Session, model, sr_id: int) -> list:
@@ -27,6 +40,14 @@ def get_report_payload(db: Session, sr_id: int) -> dict:
     """
     docs = _rows_of(db, SurveyReportDoc, sr_id)
     alive_ids = {d.id for d in docs}
+    #  Tên nhân sự thực hiện resolve MỘT LƯỢT (tránh N+1) — id chết (nhân sự đã
+    #  xóa) ra chuỗi rỗng, FE hiện «Chưa cử». Không join vì chỉ cần tên.
+    assignee_ids = {d.assignee_id for d in docs if d.assignee_id}
+    names: dict[int, str] = {}
+    if assignee_ids:
+        names = {eid: full_name for eid, full_name in
+                 db.query(Employee.id, Employee.full_name)
+                 .filter(Employee.id.in_(assignee_ids)).all()}
     return {
         "items": [{"id": r.id, "name": r.name, "sort_order": r.sort_order}
                   for r in _rows_of(db, SurveyReportItem, sr_id)],
@@ -43,9 +64,144 @@ def get_report_payload(db: Session, sr_id: int) -> dict:
             "status_label": REPORT_DOC_STATUS_LABELS.get(d.status, ""),
             "file_note": d.file_note,
             "depends": [i for i in (d.depends or []) if i in alive_ids],
+            "start_date": d.start_date.isoformat() if d.start_date else "",
+            "expires_at": d.expires_at.isoformat() if d.expires_at else "",
+            "assignee_id": d.assignee_id,
+            "assignee_name": names.get(d.assignee_id, ""),
             "sort_order": d.sort_order,
         } for d in docs],
+        #  Có bản xóa gần nhất chưa hoàn tác không → FE hiện nút «Hoàn tác» đúng
+        #  dòng lịch sử (`restorable_audit_id`). Chỉ có nghĩa khi khối đang RỖNG.
+        **_restorable_fields(db, sr_id),
     }
+
+
+def _latest_trash(db: Session, sr_id: int) -> SurveyReportTrash | None:
+    return (db.query(SurveyReportTrash)
+            .filter(SurveyReportTrash.survey_request_id == sr_id,
+                    SurveyReportTrash.restored.is_(False))
+            .order_by(SurveyReportTrash.id.desc())
+            .first())
+
+
+def _restorable_fields(db: Session, sr_id: int) -> dict:
+    trash = _latest_trash(db, sr_id)
+    return {
+        "restorable": trash is not None,
+        "restorable_audit_id": trash.audit_id if trash else 0,
+    }
+
+
+def snapshot_report(db: Session, sr_id: int) -> dict:
+    """Ảnh chụp ĐẦY ĐỦ khối báo cáo để hoàn tác — giữ id CŨ để dựng lại `depends`.
+
+    Không dùng `get_report_payload` (nó lọc id chết, thêm nhãn dẫn xuất) — snapshot
+    cần dữ liệu THÔ và trung thực để khôi phục nguyên trạng.
+    """
+    return {
+        "items": [{"id": r.id, "name": r.name, "sort_order": r.sort_order}
+                  for r in _rows_of(db, SurveyReportItem, sr_id)],
+        "phases": [{"id": r.id, "name": r.name, "location": r.location, "sort_order": r.sort_order}
+                   for r in _rows_of(db, SurveyReportPhase, sr_id)],
+        "docs": [{
+            "id": d.id, "phase_id": d.phase_id, "item_id": d.item_id,
+            "title": d.title, "description": d.description, "required": d.required,
+            "status": d.status, "file_note": d.file_note, "depends": list(d.depends or []),
+            "start_date": d.start_date.isoformat() if d.start_date else "",
+            "expires_at": d.expires_at.isoformat() if d.expires_at else "",
+            "assignee_id": d.assignee_id, "sort_order": d.sort_order,
+        } for d in _rows_of(db, SurveyReportDoc, sr_id)],
+    }
+
+
+def delete_all(db: Session, sr_id: int, user_id: int) -> SurveyReportTrash:
+    """Xóa CẢ khối báo cáo, giữ ảnh chụp vào sọt rác để hoàn tác. KHÔNG commit.
+
+    `audit_id` để 0, nơi gọi (controller) gắn sau khi ghi dòng lịch sử để lấy id.
+    """
+    snap = snapshot_report(db, sr_id)
+    trash = SurveyReportTrash(survey_request_id=sr_id, snapshot=snap,
+                              doc_count=len(snap["docs"]),
+                              created_by=user_id, updated_by=user_id)
+    db.add(trash)
+    for model in (SurveyReportDoc, SurveyReportItem, SurveyReportPhase):
+        db.query(model).filter(model.survey_request_id == sr_id).delete(synchronize_session=False)
+    db.flush()
+    return trash
+
+
+def restore_latest(db: Session, sr_id: int, user_id: int) -> SurveyReportTrash | None:
+    """Dựng lại khối từ bản xóa gần nhất chưa hoàn tác. KHÔNG commit.
+
+    Id thay đổi khi tạo lại, nên phải ÁNH XẠ id cũ→mới cho cả `phase_id`,
+    `item_id` lẫn `depends`. Trả về trash đã khôi phục, hoặc None nếu không có.
+    Nếu khối hiện KHÔNG rỗng (đã dựng lại khác) thì bỏ qua để không nhân đôi.
+    """
+    trash = _latest_trash(db, sr_id)
+    if not trash:
+        return None
+    if db.query(SurveyReportDoc.id).filter_by(survey_request_id=sr_id).first() \
+            or db.query(SurveyReportPhase.id).filter_by(survey_request_id=sr_id).first() \
+            or db.query(SurveyReportItem.id).filter_by(survey_request_id=sr_id).first():
+        # Khối không rỗng — coi như đã có nội dung mới, chỉ đánh dấu đã hoàn tác.
+        trash.restored = True
+        trash.updated_by = user_id
+        return trash
+    snap = trash.snapshot or {}
+    phase_map: dict[int, int] = {}
+    for p in snap.get("phases", []):
+        row = SurveyReportPhase(survey_request_id=sr_id, name=p["name"],
+                                location=p.get("location", ""), sort_order=p.get("sort_order", 0),
+                                created_by=user_id, updated_by=user_id)
+        db.add(row)
+        db.flush()
+        phase_map[p["id"]] = row.id
+    item_map: dict[int, int] = {}
+    for it in snap.get("items", []):
+        row = SurveyReportItem(survey_request_id=sr_id, name=it["name"],
+                               sort_order=it.get("sort_order", 0),
+                               created_by=user_id, updated_by=user_id)
+        db.add(row)
+        db.flush()
+        item_map[it["id"]] = row.id
+    doc_map: dict[int, int] = {}
+    new_docs: list[tuple[SurveyReportDoc, list[int]]] = []
+    for d in snap.get("docs", []):
+        row = SurveyReportDoc(
+            survey_request_id=sr_id,
+            phase_id=phase_map.get(d.get("phase_id", 0), 0),
+            item_id=item_map.get(d.get("item_id", 0), 0) if d.get("item_id") else 0,
+            title=d["title"], description=d.get("description", ""),
+            required=d.get("required", True), status=d.get("status", 0),
+            file_note=d.get("file_note", ""),
+            start_date=_to_date(d.get("start_date")), expires_at=_to_date(d.get("expires_at")),
+            assignee_id=d.get("assignee_id", 0), sort_order=d.get("sort_order", 0),
+            depends=[], created_by=user_id, updated_by=user_id)
+        db.add(row)
+        db.flush()
+        doc_map[d["id"]] = row.id
+        new_docs.append((row, list(d.get("depends", []))))
+    for row, old_deps in new_docs:            # ánh xạ tiên quyết sau khi có đủ id mới
+        row.depends = [doc_map[o] for o in old_deps if o in doc_map]
+    trash.restored = True
+    trash.updated_by = user_id
+    db.flush()
+    return trash
+
+
+def required_docs_pending(db: Session, sr_id: int) -> list[SurveyReportDoc]:
+    """Hồ sơ BẮT BUỘC chưa Hoàn thành của khối báo cáo.
+
+    Rỗng = đủ điều kiện đóng phiếu (không có hồ sơ bắt buộc, hoặc mọi hồ sơ bắt
+    buộc đã Hoàn thành). Dùng để chặn `finalize` — báo cáo là tùy chọn, nhưng khi
+    đã khai hồ sơ bắt buộc thì phải hoàn tất trước khi đóng phiếu.
+    """
+    return (db.query(SurveyReportDoc)
+            .filter(SurveyReportDoc.survey_request_id == sr_id,
+                    SurveyReportDoc.required.is_(True),
+                    SurveyReportDoc.status != RD_DONE)
+            .order_by(SurveyReportDoc.sort_order, SurveyReportDoc.id)
+            .all())
 
 
 def _line_item_name(line: SurveyRequestLine, index: int) -> str:
@@ -228,6 +384,9 @@ def create_doc(db: Session, sr_id: int, data, user_id: int) -> SurveyReportDoc:
                           item_id=data.item_id, title=data.title,
                           description=data.description, required=data.required,
                           status=data.status, file_note=data.file_note,
+                          start_date=_to_date(data.start_date),
+                          expires_at=_to_date(data.expires_at),
+                          assignee_id=data.assignee_id,
                           sort_order=_next_order(db, SurveyReportDoc, sr_id),
                           created_by=user_id, updated_by=user_id)
     db.add(row)
@@ -242,6 +401,11 @@ def update_doc(db: Session, sr_id: int, doc_id: int, data, user_id: int) -> Surv
     _check_refs(db, sr_id, changes.get("phase_id"), changes.get("item_id"))
     if "depends" in changes and changes["depends"] is not None:
         changes["depends"] = check_depends(db, sr_id, doc_id, changes["depends"])
+    #  Ngày tách riêng: '' nghĩa là XÓA ngày (ghi None), khác với không gửi. Vòng
+    #  generic bên dưới bỏ qua mọi None nên không phân biệt được hai ca đó.
+    for key in ("start_date", "expires_at"):
+        if key in changes:
+            setattr(row, key, _to_date(changes.pop(key)))
     for key, value in changes.items():
         if value is not None:
             setattr(row, key, value)

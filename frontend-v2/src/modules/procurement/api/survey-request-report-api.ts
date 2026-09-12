@@ -11,6 +11,12 @@ export interface ReportDocPayload {
   status: number
   file_note: string
   depends: number[]
+  /** `yyyy-mm-dd` | `''`. */
+  start_date: string
+  /** `yyyy-mm-dd` | `''`. */
+  expires_at: string
+  /** Id `tab_employee`, `0` = chưa cử. */
+  assignee_id: number
 }
 
 const base = (id: number) => `/api/survey-requests/${id}/report`
@@ -24,6 +30,11 @@ export const surveyRequestReportApi = {
 
   /** Khởi tạo khung mặc định (5 giai đoạn mẫu + nút theo dòng hàng). Idempotent. */
   init: (id: number) => apiPost<SurveyRequestReport>(`${base(id)}/init`, {}),
+
+  /** Xóa CẢ khối báo cáo — có thể hoàn tác từ Lịch sử thao tác. */
+  deleteAll: (id: number) => apiDelete<SurveyRequestReport>(base(id)),
+  /** Hoàn tác lần xóa gần nhất — dựng lại khối từ ảnh chụp. */
+  restore: (id: number) => apiPost<SurveyRequestReport>(`${base(id)}/restore`, {}),
 
   createItem: (id: number, name: string) =>
     apiPost<SurveyRequestReport>(`${base(id)}/items`, { name }),

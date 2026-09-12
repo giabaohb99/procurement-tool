@@ -53,6 +53,22 @@ export function reportPercent(docs: SurveyReportDoc[]): number {
   return Math.round((docs.filter(isReportDocDone).length / docs.length) * 100)
 }
 
+/**
+ * Ngày HẾT HIỆU LỰC gần nhất (sớm nhất) của một nhóm hồ sơ — `''` nếu không có.
+ *
+ * Chỉ xét hồ sơ CHƯA hoàn thành: hạn của hồ sơ đã xong không còn là việc phải
+ * canh. Hồ sơ quá hạn mà chưa xong có ngày sớm nhất (thường trong quá khứ) nên
+ * nó nổi lên đầu — đúng thứ cần cảnh báo. So sánh chuỗi `yyyy-mm-dd` trực tiếp
+ * vì thứ tự bảng chữ cái trùng thứ tự thời gian (xem `docs/ui/date.md`).
+ */
+export function nearestExpiry(docs: SurveyReportDoc[]): string {
+  const dates = docs
+    .filter((doc) => doc.expires_at && !isReportDocDone(doc))
+    .map((doc) => doc.expires_at)
+  if (!dates.length) return ''
+  return dates.reduce((min, current) => (current < min ? current : min))
+}
+
 export function reportDocsById(report: SurveyRequestReport): Map<number, SurveyReportDoc> {
   return new Map(report.docs.map((doc) => [doc.id, doc]))
 }

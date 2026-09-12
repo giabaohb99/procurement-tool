@@ -1,4 +1,5 @@
 import {
+  CalendarClock,
   Check,
   ChevronDown,
   ChevronsDownUp,
@@ -9,12 +10,17 @@ import {
   Pencil,
   Plus,
   Sparkles,
+  Trash2,
 } from 'lucide-react'
 import { useState } from 'react'
 
+import { useAuth } from '@/core/auth/use-auth'
 import { cn } from '@/shared/utils/cn'
+import { formatDate, parseLocalDate } from '@/shared/utils/format-date'
+import { nameInitials } from '@/shared/utils/name-initials'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { confirm } from '@/shared/ui/confirm-dialog'
 import { SearchField } from '@/shared/ui/search-field'
 import {
   Select,
@@ -40,6 +46,7 @@ import {
   isReportDocDone,
   isReportDocLocked,
   matchReportDoc,
+  nearestExpiry,
   pendingDepends,
   reportDocsById,
   reportPercent,
@@ -67,6 +74,8 @@ interface SurveyReportCardProps {
   surveyRequestId: number
   /** NS Thu mua (cờ `process`) mới sửa được — backend gác lại lần nữa. */
   canEdit: boolean
+  /** Gọi sau khi XÓA cả khối — để trang ẩn khối (bỏ cờ "vừa bấm Thêm"). */
+  onDeleted?: () => void
 }
 
 /**
@@ -74,9 +83,12 @@ interface SurveyReportCardProps {
  * theo nút dòng hàng (thêm/sửa/xóa nút được), hồ sơ khóa khi tiên quyết chưa
  * xong. Người không có quyền sửa vẫn xem được; khối rỗng thì ẩn hẳn với họ.
  */
-export function SurveyReportCard({ surveyRequestId, canEdit }: SurveyReportCardProps) {
+export function SurveyReportCard({ surveyRequestId, canEdit, onDeleted }: SurveyReportCardProps) {
   const { data: report, isLoading } = useSurveyRequestReport(surveyRequestId)
   const actions = useSurveyReportActions(surveyRequestId)
+  const { user } = useAuth()
+  //  Hồ sơ mới điền sẵn người thực hiện = người đang đăng nhập (đổi được).
+  const defaultAssigneeId = user?.employee_id ?? 0
 
   const [filter, setFilter] = useState(REPORT_FILTER_ALL)
   const [statusFilter, setStatusFilter] = useState(REPORT_STATUS_FILTER_ALL)
@@ -95,7 +107,23 @@ export function SurveyReportCard({ surveyRequestId, canEdit }: SurveyReportCardP
     actions.deletePhase.isPending ||
     actions.saveDoc.isPending ||
     actions.setDocStatus.isPending ||
-    actions.deleteDoc.isPending
+    actions.deleteDoc.isPending ||
+    actions.deleteReport.isPending
+
+  //  Xóa CẢ khối — thao tác nặng nên hỏi xác nhận; hoàn tác được ở Lịch sử.
+  const handleDeleteReport = async () => {
+    const total = report?.docs.length ?? 0
+    if (
+      !(await confirm({
+        title: 'Xóa báo cáo thực hiện?',
+        message: `Xóa toàn bộ báo cáo thực hiện${total ? ` (${total} hồ sơ)` : ''}? Bạn có thể hoàn tác ngay sau đó ở khối Lịch sử thao tác.`,
+        confirmLabel: 'Xóa báo cáo',
+      }))
+    )
+      return
+    await actions.deleteReport.mutateAsync()
+    onDeleted?.()
+  }
 
   if (isLoading) {
     if (!canEdit) return null
@@ -219,6 +247,17 @@ export function SurveyReportCard({ surveyRequestId, canEdit }: SurveyReportCardP
                 <Plus />
                 Thêm hồ sơ
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="px-2 text-destructive hover:text-destructive"
+                disabled={busy}
+                aria-label="Xóa báo cáo thực hiện"
+                title="Xóa toàn bộ báo cáo thực hiện (hoàn tác được ở Lịch sử thao tác)"
+                onClick={handleDeleteReport}
+              >
+                <Trash2 />
+              </Button>
             </>
           )}
         </div>
@@ -294,6 +333,11 @@ export function SurveyReportCard({ surveyRequestId, canEdit }: SurveyReportCardP
               </p>
             )}
 
+            {/* Báo cáo tổng thể của nút đang chọn — đếm theo PHẠM VI NÚT (bỏ
+                qua ô tìm + lọc trạng thái), giống khung tracking: số tổng thể
+                không đổi theo từ khóa đang gõ. */}
+            <ReportSummary docs={filterReportDocs(report.docs, activeFilter)} />
+
             {/* Cột trái: hồ sơ theo giai đoạn · cột phải: khung tracking */}
             <div className="gap-5 lg:grid lg:grid-cols-[minmax(0,1fr)_215px]">
               <div className="space-y-4">
@@ -325,10 +369,7 @@ export function SurveyReportCard({ surveyRequestId, canEdit }: SurveyReportCardP
                     {phase.location && (
                       <span className="text-xs text-muted-foreground">{phase.location}</span>
                     )}
-                    <span className="ml-auto text-xs tabular-nums whitespace-nowrap text-muted-foreground">
-                      {isCollapsed && `${phaseDocs.length} hồ sơ · `}
-                      {reportPercent(phaseDocs)}%
-                    </span>
+                    <PhaseProgressBar docs={phaseDocs} className="ml-auto" />
                     {canEdit && (
                       <button
                         type="button"
@@ -388,6 +429,7 @@ export function SurveyReportCard({ surveyRequestId, canEdit }: SurveyReportCardP
         report={report}
         defaultPhaseId={report.phases[0]?.id ?? 0}
         defaultItemId={activeFilter === REPORT_FILTER_ALL ? 0 : activeFilter}
+        defaultAssigneeId={defaultAssigneeId}
         pending={actions.saveDoc.isPending || actions.deleteDoc.isPending}
         onSave={(docId, payload) => actions.saveDoc.mutateAsync({ docId, payload })}
         onDelete={(docId) => actions.deleteDoc.mutateAsync({ docId })}
@@ -441,7 +483,7 @@ function FilterChip({ active, label, onClick, onEdit, editTitle }: FilterChipPro
     <span
       className={cn(
         'inline-flex items-center rounded-md transition-colors',
-        active ? 'bg-background shadow-sm' : 'hover:bg-background/60',
+        active ? 'bg-primary shadow-sm' : 'hover:bg-background/60',
       )}
     >
       <button
@@ -450,7 +492,7 @@ function FilterChip({ active, label, onClick, onEdit, editTitle }: FilterChipPro
         className={cn(
           'rounded-md py-1 pl-3 text-xs font-medium transition-colors',
           onEdit ? 'pr-1.5' : 'pr-3',
-          active ? 'text-foreground' : 'text-muted-foreground hover:text-foreground',
+          active ? 'text-primary-foreground' : 'text-muted-foreground hover:text-foreground',
         )}
         onClick={onClick}
       >
@@ -462,13 +504,180 @@ function FilterChip({ active, label, onClick, onEdit, editTitle }: FilterChipPro
           title={editTitle}
           className={cn(
             'rounded-md py-1.5 pr-2 pl-0.5 transition-colors',
-            active ? 'text-foreground/70 hover:text-foreground' : 'text-muted-foreground hover:text-foreground',
+            active
+              ? 'text-primary-foreground/80 hover:text-primary-foreground'
+              : 'text-muted-foreground hover:text-foreground',
           )}
           onClick={onEdit}
         >
           <Pencil className="size-3" />
         </button>
       )}
+    </span>
+  )
+}
+
+/** Mức khẩn của một ngày hết hiệu lực, suy từ số ngày còn lại tới HÔM NAY. */
+type ExpiryTone = 'overdue' | 'soon' | 'normal'
+
+interface ExpiryMeta {
+  tone: ExpiryTone
+  note: string
+}
+
+/**
+ * Diễn giải ngày hết hiệu lực: quá hạn / sắp hết (≤7 ngày) / còn xa. `null` khi
+ * chuỗi rỗng hay sai định dạng. So theo NGÀY địa phương (đặt giờ về 0) — lệch
+ * múi giờ làm lệch một ngày, đúng bẫy của `parseLocalDate`.
+ */
+function expiryMeta(expiry: string): ExpiryMeta | null {
+  const date = parseLocalDate(expiry)
+  if (!date) return null
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const days = Math.round((date.getTime() - today.getTime()) / 86_400_000)
+  if (days < 0) return { tone: 'overdue', note: `Quá hạn ${-days} ngày` }
+  if (days === 0) return { tone: 'soon', note: 'Hết hạn hôm nay' }
+  if (days <= 7) return { tone: 'soon', note: `Còn ${days} ngày` }
+  return { tone: 'normal', note: `Còn ${days} ngày` }
+}
+
+const EXPIRY_TONE_CLASS: Record<ExpiryTone, string> = {
+  overdue: 'bg-destructive/10 text-destructive',
+  soon: 'bg-warning/15 text-warning',
+  normal: 'bg-muted text-muted-foreground',
+}
+
+/** Báo cáo TỔNG THỂ của nút đang chọn: tổng · đã xong · hết hiệu lực gần nhất. */
+/**
+ * Thanh tiến độ: fill chạy theo %, TRÊN thanh in `hoàn tất/tổng · %`. Fill dùng
+ * màu MỀM (tint) để chữ ở giữa đọc rõ trên cả phần đã tô lẫn phần trống, sáng
+ * lẫn tối — thay vì phủ chữ lên một mảng màu đặc rồi lệch tương phản một nửa thanh.
+ *
+ * `barClassName` / `labelClassName` để dùng lại ở ô tổng (thanh cao hơn, cả bề
+ * ngang) mà không đẻ thêm một component thanh thứ hai.
+ */
+function PhaseProgressBar({
+  docs,
+  className,
+  barClassName,
+  labelClassName,
+}: {
+  docs: SurveyReportDoc[]
+  className?: string
+  barClassName?: string
+  labelClassName?: string
+}) {
+  const total = docs.length
+  const done = docs.filter(isReportDocDone).length
+  const percent = reportPercent(docs)
+  const complete = total > 0 && done === total
+  return (
+    <div
+      role="progressbar"
+      aria-valuenow={percent}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-label={`${done}/${total} hồ sơ hoàn tất, ${percent}%`}
+      title={`${done}/${total} hồ sơ hoàn tất · ${percent}%`}
+      className={cn(
+        'relative h-5 w-32 shrink-0 overflow-hidden rounded-full border bg-muted/50',
+        className,
+        barClassName,
+      )}
+    >
+      <div
+        className={cn(
+          'absolute inset-y-0 left-0 rounded-full transition-[width] duration-500',
+          complete ? 'bg-success/35' : 'bg-primary/30',
+        )}
+        style={{ width: `${percent}%` }}
+      />
+      <span
+        className={cn(
+          'absolute inset-0 flex items-center justify-center gap-1 px-2 text-[10px] font-semibold tabular-nums text-foreground/85',
+          labelClassName,
+        )}
+      >
+        {done}/{total} · {percent}%
+      </span>
+    </div>
+  )
+}
+
+function ReportSummary({ docs }: { docs: SurveyReportDoc[] }) {
+  const total = docs.length
+  const expiry = nearestExpiry(docs)
+  const meta = expiry ? expiryMeta(expiry) : null
+  return (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="rounded-lg border bg-muted/20 px-3 py-2.5">
+        <p className="text-xs text-muted-foreground">Tổng hồ sơ</p>
+        <p className="text-lg font-semibold tabular-nums">{total}</p>
+      </div>
+      <div className="rounded-lg border bg-muted/20 px-3 py-2.5">
+        <p className="text-xs text-muted-foreground">Đã hoàn thành</p>
+        <PhaseProgressBar
+          docs={docs}
+          barClassName="mt-2 h-6 w-full"
+          labelClassName="text-xs text-foreground"
+        />
+      </div>
+      <div className="rounded-lg border bg-muted/20 px-3 py-2.5">
+        <p className="flex items-center gap-1 text-xs text-muted-foreground">
+          <CalendarClock className="size-3" />
+          Hết hiệu lực gần nhất
+        </p>
+        <p
+          className={cn(
+            'text-lg font-semibold tabular-nums',
+            meta?.tone === 'overdue' && 'text-destructive',
+            meta?.tone === 'soon' && 'text-warning',
+          )}
+        >
+          {expiry ? formatDate(expiry) : '—'}
+          {meta && <span className="ml-1.5 text-xs font-medium">· {meta.note}</span>}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+/** Ô ngày trên dòng hồ sơ: hiện hạn hết hiệu lực (tô màu theo độ khẩn), hoặc
+ *  ngày bắt đầu khi chưa đặt hạn. Rê chuột đọc cả hai mốc. Rỗng thì không dựng. */
+function DocDateChip({ doc }: { doc: SurveyReportDoc }) {
+  if (!doc.expires_at && !doc.start_date) return null
+  const meta = doc.expires_at ? expiryMeta(doc.expires_at) : null
+  const title = [
+    doc.start_date && `Bắt đầu ${formatDate(doc.start_date)}`,
+    doc.expires_at && `Hết hiệu lực ${formatDate(doc.expires_at)}`,
+    meta?.note,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+  return (
+    <span
+      title={title}
+      className={cn(
+        'flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium tabular-nums',
+        meta ? EXPIRY_TONE_CLASS[meta.tone] : 'bg-muted text-muted-foreground',
+      )}
+    >
+      <CalendarClock className="size-3" />
+      {doc.expires_at ? formatDate(doc.expires_at) : `Từ ${formatDate(doc.start_date)}`}
+    </span>
+  )
+}
+
+/** Vòng tròn chữ viết tắt của nhân sự thực hiện — rê chuột đọc tên đầy đủ. */
+function DocAssignee({ name }: { name: string }) {
+  if (!name) return null
+  return (
+    <span
+      title={`Người thực hiện: ${name}`}
+      className="grid size-6 shrink-0 place-items-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary"
+    >
+      {nameInitials(name)}
     </span>
   )
 }
@@ -584,6 +793,9 @@ function ReportDocRow({ doc, report, docsById, canEdit, busy, onToggle, onEdit }
           <Paperclip className="size-3.5" />
         </button>
       )}
+
+      <DocDateChip doc={doc} />
+      <DocAssignee name={doc.assignee_name} />
 
       <span
         className={cn(

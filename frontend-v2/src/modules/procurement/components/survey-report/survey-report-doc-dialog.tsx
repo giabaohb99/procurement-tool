@@ -2,11 +2,13 @@ import { Loader2, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
+import { useEmployees } from '@/modules/hr/hooks/use-employees'
 import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import { useSingleFlight } from '@/shared/hooks/use-single-flight'
 import { Button } from '@/shared/ui/button'
 import { Checkbox } from '@/shared/ui/checkbox'
 import { confirm } from '@/shared/ui/confirm-dialog'
+import { DatePicker } from '@/shared/ui/date-picker'
 import {
   Dialog,
   DialogContent,
@@ -17,6 +19,7 @@ import {
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { RequiredMark } from '@/shared/ui/required-mark'
+import { SearchSelect } from '@/shared/ui/search-select'
 import {
   Select,
   SelectContent,
@@ -42,6 +45,8 @@ interface SurveyReportDocDialogProps {
   /** Giai đoạn/nút đang lọc — điền sẵn cho hồ sơ mới. */
   defaultPhaseId: number
   defaultItemId: number
+  /** Nhân sự điền sẵn cho hồ sơ MỚI = người đang đăng nhập (đổi được). */
+  defaultAssigneeId: number
   pending: boolean
   onSave: (docId: number | undefined, payload: ReportDocPayload) => Promise<unknown>
   onDelete: (docId: number) => Promise<unknown>
@@ -51,6 +56,7 @@ function buildDraft(
   doc: SurveyReportDoc | null,
   defaultPhaseId: number,
   defaultItemId: number,
+  defaultAssigneeId: number,
 ): ReportDocPayload {
   return doc
     ? {
@@ -62,6 +68,9 @@ function buildDraft(
         status: doc.status,
         file_note: doc.file_note,
         depends: [...doc.depends],
+        start_date: doc.start_date,
+        expires_at: doc.expires_at,
+        assignee_id: doc.assignee_id,
       }
     : {
         title: '',
@@ -72,6 +81,9 @@ function buildDraft(
         status: REPORT_DOC_IDLE,
         file_note: '',
         depends: [],
+        start_date: '',
+        expires_at: '',
+        assignee_id: defaultAssigneeId,
       }
 }
 
@@ -87,14 +99,25 @@ export function SurveyReportDocDialog({
   report,
   defaultPhaseId,
   defaultItemId,
+  defaultAssigneeId,
   pending,
   onSave,
   onDelete,
 }: SurveyReportDocDialogProps) {
   const [draft, setDraft] = useState<ReportDocPayload>(() =>
-    buildDraft(doc, defaultPhaseId, defaultItemId),
+    buildDraft(doc, defaultPhaseId, defaultItemId, defaultAssigneeId),
   )
   const [initial, setInitial] = useState(draft)
+  //  Danh bạ nhân sự cho ô chọn người thực hiện — chỉ gọi khi hộp MỞ (người
+  //  thiếu `employee.read` thì tắt, khỏi ăn toast 403 lúc mở hộp).
+  const { data: employeePage } = useEmployees(
+    { page_size: 1000, is_active: true },
+    { enabled: open },
+  )
+  const assigneeOptions = (employeePage?.items ?? []).map((employee) => ({
+    value: String(employee.id),
+    label: employee.code ? `${employee.full_name} · ${employee.code}` : employee.full_name,
+  }))
   //  Chặn bấm trùng trong cùng một nhịp — `disabled={pending}` chỉ đúng ở lần
   //  render sau (bẫy duoc-CR-317).
   const once = useSingleFlight()
@@ -104,7 +127,7 @@ export function SurveyReportDocDialog({
   //  (mẫu `useHasChanged`), không qua effect — đỡ một khung hình dữ liệu cũ.
   const openChanged = useHasChanged(open)
   if (openChanged && open) {
-    const next = buildDraft(doc, defaultPhaseId, defaultItemId)
+    const next = buildDraft(doc, defaultPhaseId, defaultItemId, defaultAssigneeId)
     setDraft(next)
     setInitial(next)
   }
@@ -265,6 +288,38 @@ export function SurveyReportDocDialog({
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label>Ngày bắt đầu thực hiện</Label>
+              <DatePicker
+                value={draft.start_date}
+                onChange={(value) => patch({ start_date: value })}
+                placeholder="Chọn ngày bắt đầu"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Ngày hết hiệu lực</Label>
+              <DatePicker
+                value={draft.expires_at}
+                onChange={(value) => patch({ expires_at: value })}
+                placeholder="Chọn ngày hết hiệu lực"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Nhân sự thực hiện</Label>
+            <SearchSelect
+              value={draft.assignee_id ? String(draft.assignee_id) : ''}
+              onChange={(value) => patch({ assignee_id: Number(value) || 0 })}
+              options={assigneeOptions}
+              placeholder="Chọn nhân sự thực hiện"
+              searchPlaceholder="Tìm theo tên hoặc mã…"
+              emptyMessage="Không tìm thấy nhân sự nào."
+              clearable
+            />
           </div>
 
           <div className="space-y-1.5">

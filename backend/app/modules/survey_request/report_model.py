@@ -9,7 +9,9 @@ không có mã chứng từ, nên KHÔNG có khóa phân quyền riêng (luật 
 màn hình», CR-157). Chốt là hai lớp của phiếu cha: phạm vi qua `_in_scope`
 (controller YCBG) → 404 ngoài phạm vi, rồi cờ `process` (NS Thu mua) cho cửa GHI.
 """
-from sqlalchemy import JSON, BigInteger, Boolean, SmallInteger, String, Text
+from datetime import date
+
+from sqlalchemy import JSON, BigInteger, Boolean, Date, SmallInteger, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base_model import AuditMixin, Base
@@ -63,4 +65,37 @@ class SurveyReportDoc(Base, AuditMixin):
     #  quyết chưa Hoàn thành — cách khóa do tầng hiển thị + service suy, không
     #  lưu cờ. Trần số phần tử chặn ở schema (`MAX_DEPENDS`).
     depends: Mapped[list] = mapped_column(JSON, default=list)
+    #  Ngày BẮT ĐẦU thực hiện / ngày HẾT HIỆU LỰC — NULL = chưa đặt. Cột ngày
+    #  trần (không giờ, không múi): hạn hồ sơ đọc theo ngày, quy đổi múi giờ là
+    #  dễ lệch một ngày (xem `format-date` phía FE).
+    start_date: Mapped[date | None] = mapped_column(Date, nullable=True, default=None)
+    expires_at: Mapped[date | None] = mapped_column(Date, nullable=True, default=None)
+    #  Nhân sự THỰC HIỆN (id `tab_employee`). 0 = chưa cử. Cố ý không FK: xóa
+    #  nhân sự không xóa lây hồ sơ; tên hiển thị resolve lúc đọc, id chết ra
+    #  chuỗi rỗng. FE điền sẵn nhân sự của người tạo, đổi được.
+    assignee_id: Mapped[int] = mapped_column(BigInteger, default=0)
     sort_order: Mapped[int] = mapped_column(SmallInteger, default=0)
+
+
+class SurveyReportTrash(Base, AuditMixin):
+    """SỌT RÁC của khối báo cáo — cho phép HOÀN TÁC lần «Xóa báo cáo thực hiện».
+
+    Xóa cả khối là thao tác nặng (mất hàng chục hồ sơ nhập tay), nên trước khi
+    xóa, toàn bộ khối được chụp thành `snapshot` JSON và giữ ở đây. Người dùng
+    bấm «Hoàn tác» trên đúng dòng Lịch sử thao tác thì dựng lại từ ảnh chụp này.
+
+    Cùng khuôn với `tab_import_change.snapshot` của `import_tool` (revert theo
+    ảnh chụp). Không xóa vật lý dòng trash — giữ làm dấu vết; `restored` đánh dấu
+    đã khôi phục để không hoàn tác hai lần.
+    """
+
+    __tablename__ = "tab_survey_request_report_trash"
+
+    survey_request_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    #  Ảnh chụp {items, phases, docs} ĐẦY ĐỦ (kèm id cũ để dựng lại `depends`).
+    snapshot: Mapped[dict] = mapped_column(JSON, default=dict)
+    doc_count: Mapped[int] = mapped_column(SmallInteger, default=0)
+    #  Nối tới dòng Lịch sử thao tác của lần xóa — FE hiện nút «Hoàn tác» đúng
+    #  dòng đó (khớp theo id). 0 = chưa gắn.
+    audit_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
+    restored: Mapped[bool] = mapped_column(Boolean, default=False)

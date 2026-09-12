@@ -7,6 +7,7 @@ import {
   filterReportDocs,
   isReportDocLocked,
   matchReportDoc,
+  nearestExpiry,
   pendingDepends,
   reportPercent,
   trackingMarkers,
@@ -24,6 +25,10 @@ function doc(overrides: Partial<SurveyReportDoc>): SurveyReportDoc {
     status_label: 'Chưa bắt đầu',
     file_note: '',
     depends: [],
+    start_date: '',
+    expires_at: '',
+    assignee_id: 0,
+    assignee_name: '',
     sort_order: 0,
     ...overrides,
   }
@@ -101,7 +106,14 @@ describe('matchReportDoc', () => {
 })
 
 function report(overrides: Partial<SurveyRequestReport>): SurveyRequestReport {
-  return { items: [], phases: [], docs: [], ...overrides }
+  return {
+    items: [],
+    phases: [],
+    docs: [],
+    restorable: false,
+    restorable_audit_id: 0,
+    ...overrides,
+  }
 }
 
 const twoPhases = [
@@ -180,5 +192,39 @@ describe('reportPercent', () => {
   it('rounds the done ratio', () => {
     const docs = [doc({ id: 1, status: 3 }), doc({ id: 2 }), doc({ id: 3 })]
     expect(reportPercent(docs)).toBe(33)
+  })
+})
+
+describe('nearestExpiry', () => {
+  it('returns the earliest expiry among unfinished docs', () => {
+    const docs = [
+      doc({ id: 1, expires_at: '2026-10-20' }),
+      doc({ id: 2, expires_at: '2026-09-30' }),
+      doc({ id: 3, expires_at: '2026-12-01' }),
+    ]
+    expect(nearestExpiry(docs)).toBe('2026-09-30')
+  })
+
+  it('ignores docs that are already done — their deadline is no longer pending', () => {
+    // Hồ sơ xong có hạn sớm nhất nhưng không được tính: việc đã xong hết hạn là chuyện cũ.
+    const docs = [
+      doc({ id: 1, status: 3, expires_at: '2026-01-01' }),
+      doc({ id: 2, status: 0, expires_at: '2026-09-30' }),
+    ]
+    expect(nearestExpiry(docs)).toBe('2026-09-30')
+  })
+
+  it('surfaces an overdue (past) date over a later one — the critical deadline rises first', () => {
+    const docs = [
+      doc({ id: 1, expires_at: '2026-11-01' }),
+      doc({ id: 2, expires_at: '2025-01-15' }),
+    ]
+    expect(nearestExpiry(docs)).toBe('2025-01-15')
+  })
+
+  it('returns empty string when no unfinished doc has an expiry', () => {
+    expect(nearestExpiry([])).toBe('')
+    expect(nearestExpiry([doc({ id: 1, expires_at: '' })])).toBe('')
+    expect(nearestExpiry([doc({ id: 1, status: 3, expires_at: '2026-09-30' })])).toBe('')
   })
 })

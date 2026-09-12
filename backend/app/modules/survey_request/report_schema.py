@@ -4,9 +4,26 @@
 — thiếu là chuỗi dài đi thẳng xuống MySQL và trả 500 thay vì 422 (duoc-CR-316).
 Test khoá ở tầng schema vì test backend chạy SQLite, nơi VARCHAR không bị ép.
 """
+from datetime import date
+
 from pydantic import BaseModel, Field, field_validator
 
 from .report_constants import MAX_DEPENDS, REPORT_DOC_STATUS_LABELS
+
+
+def _validate_iso_date(v: str | None) -> str | None:
+    """Ô ngày đi bằng chuỗi `yyyy-mm-dd` (hoặc rỗng = chưa đặt) theo quy ước FE.
+
+    Kiểm ở tầng schema để chuỗi sai định dạng trả 422 chứ không đâm xuống MySQL
+    thành 500 (cùng họ bẫy duoc-CR-316). `None` = không gửi (patch bỏ qua).
+    """
+    if v is None or v == "":
+        return v
+    try:
+        date.fromisoformat(v)
+    except ValueError:
+        raise ValueError("Ngày phải theo định dạng yyyy-mm-dd")
+    return v
 
 
 class ReportItemIn(BaseModel):
@@ -49,6 +66,9 @@ class ReportDocIn(BaseModel):
     status: int = 0
     file_note: str = Field(default="", max_length=500)
     depends: list[int] = Field(default_factory=list, max_length=MAX_DEPENDS)
+    start_date: str = Field(default="", max_length=10)      # 'yyyy-mm-dd' | ''
+    expires_at: str = Field(default="", max_length=10)      # 'yyyy-mm-dd' | ''
+    assignee_id: int = Field(default=0, ge=0)               # id tab_employee, 0 = chưa cử
 
     @field_validator("title")
     @classmethod
@@ -65,6 +85,11 @@ class ReportDocIn(BaseModel):
             raise ValueError("Trạng thái hồ sơ không hợp lệ")
         return v
 
+    @field_validator("start_date", "expires_at")
+    @classmethod
+    def valid_dates(cls, v: str) -> str:
+        return _validate_iso_date(v) or ""
+
 
 class ReportDocPatch(BaseModel):
     """Sửa một hồ sơ — chỉ gửi trường muốn đổi (nút ✓ chỉ gửi mỗi `status`)."""
@@ -77,6 +102,10 @@ class ReportDocPatch(BaseModel):
     status: int | None = None
     file_note: str | None = Field(default=None, max_length=500)
     depends: list[int] | None = Field(default=None, max_length=MAX_DEPENDS)
+    #  None = không gửi (bỏ qua); '' = XÓA ngày đã đặt. Hai nghĩa khác nhau.
+    start_date: str | None = Field(default=None, max_length=10)
+    expires_at: str | None = Field(default=None, max_length=10)
+    assignee_id: int | None = Field(default=None, ge=0)
 
     @field_validator("title")
     @classmethod
@@ -94,3 +123,8 @@ class ReportDocPatch(BaseModel):
         if v is not None and v not in REPORT_DOC_STATUS_LABELS:
             raise ValueError("Trạng thái hồ sơ không hợp lệ")
         return v
+
+    @field_validator("start_date", "expires_at")
+    @classmethod
+    def valid_dates(cls, v: str | None) -> str | None:
+        return _validate_iso_date(v)

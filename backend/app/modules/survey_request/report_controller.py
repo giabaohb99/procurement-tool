@@ -10,7 +10,7 @@ luật «một khóa = một màn hình» — không đẻ entity mới):
 
 Mọi mutation trả về NGUYÊN khối báo cáo mới — FE thay cache một lượt, không vá tay.
 """
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
@@ -34,9 +34,19 @@ def get_report_(sid: int, db: Session = Depends(get_db),
     return success(report_service.get_report_payload(db, sid))
 
 
+#  Phiếu ĐÃ ĐÓNG (hoàn thành) hoặc ĐÃ HỦY: báo cáo chỉ đọc, cấm mọi thao tác ghi.
+_LOCKED_STATUSES = ("done", "cancelled")
+
+
 def _writable_sr(db: Session, sid: int, user):
-    """Phiếu cha cho một thao tác GHI của khối báo cáo — xem docstring đầu tệp."""
-    return _in_scope(db, sid, user, "read")
+    """Phiếu cha cho một thao tác GHI của khối báo cáo — xem docstring đầu tệp.
+
+    Chặn ghi khi phiếu đã Hoàn thành / đã Hủy: nội dung báo cáo đóng băng theo
+    phiếu (yêu cầu KH). `require(process)` đã gác ai được ghi; đây gác KHI nào."""
+    sr = _in_scope(db, sid, user, "read")
+    if sr.status in _LOCKED_STATUSES:
+        raise HTTPException(400, "Phiếu đã hoàn thành/đã hủy — không sửa được báo cáo thực hiện")
+    return sr
 
 
 def _done(db: Session, sr, user, message: str):
@@ -54,6 +64,39 @@ def init_report_(sid: int, db: Session = Depends(get_db),
         # Đã có khung rồi thì trả nguyên trạng — bấm hai lần không nhân đôi.
         return success(report_service.get_report_payload(db, sid))
     return _done(db, sr, user, "Báo cáo: khởi tạo khung mặc định")
+
+
+@report_router.delete("")
+def delete_report_(sid: int, db: Session = Depends(get_db),
+                   user=Depends(require(ENTITY, "process"))):
+    """Xóa CẢ khối báo cáo — có thể HOÀN TÁC từ Lịch sử thao tác.
+
+    Chụp ảnh khối vào sọt rác trước khi xóa, rồi gắn `audit_id` của dòng lịch sử
+    vào ảnh chụp để FE hiện nút «Hoàn tác» đúng dòng đó.
+    """
+    sr = _writable_sr(db, sid, user)
+    trash = report_service.delete_all(db, sid, user.id)
+    if trash.doc_count == 0 and not trash.snapshot.get("phases") and not trash.snapshot.get("items"):
+        # Khối vốn đã rỗng — không có gì để xóa.
+        raise HTTPException(400, "Chưa có báo cáo thực hiện để xóa")
+    log = record(db, user.id, ENTITY, sr.id, "delete",
+                 f"Xóa toàn bộ báo cáo thực hiện ({trash.doc_count} hồ sơ)", doc_code=sr.code)
+    trash.audit_id = log.id
+    db.commit()
+    return success(report_service.get_report_payload(db, sid), "Đã xóa báo cáo thực hiện")
+
+
+@report_router.post("/restore")
+def restore_report_(sid: int, db: Session = Depends(get_db),
+                    user=Depends(require(ENTITY, "process"))):
+    """Hoàn tác lần xóa gần nhất — dựng lại khối từ ảnh chụp trong sọt rác."""
+    sr = _writable_sr(db, sid, user)
+    trash = report_service.restore_latest(db, sid, user.id)
+    if not trash:
+        raise HTTPException(400, "Không có bản báo cáo nào để hoàn tác")
+    record(db, user.id, ENTITY, sr.id, "update",
+           f"Hoàn tác: khôi phục báo cáo thực hiện ({trash.doc_count} hồ sơ)", doc_code=sr.code)
+    return success(report_service.get_report_payload(db, sid), "Đã hoàn tác xóa báo cáo thực hiện")
 
 
 # ── Nút dòng hàng ───────────────────────────────────────────────────────────────

@@ -37,6 +37,14 @@ export interface SurveyReportDoc {
   file_note: string
   /** Id các hồ sơ TIÊN QUYẾT (backend đã lọc id chết). */
   depends: number[]
+  /** Ngày bắt đầu thực hiện — `yyyy-mm-dd`, `''` = chưa đặt. */
+  start_date: string
+  /** Ngày hết hiệu lực — `yyyy-mm-dd`, `''` = chưa đặt. */
+  expires_at: string
+  /** Nhân sự thực hiện (id `tab_employee`), `0` = chưa cử. */
+  assignee_id: number
+  /** Tên nhân sự thực hiện — backend resolve, id chết ra `''`. Chỉ đọc. */
+  assignee_name: string
   sort_order: number
 }
 
@@ -45,6 +53,10 @@ export interface SurveyRequestReport {
   items: SurveyReportItem[]
   phases: SurveyReportPhase[]
   docs: SurveyReportDoc[]
+  /** Có bản «đã xóa» chưa hoàn tác không — FE hiện nút Hoàn tác. */
+  restorable: boolean
+  /** Id dòng Lịch sử thao tác của lần xóa gần nhất (để gắn nút Hoàn tác đúng dòng). */
+  restorable_audit_id: number
 }
 
 //  Bộ mã SỐ gõ tay theo `backend/.../survey_request/report_constants.py` —

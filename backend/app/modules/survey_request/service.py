@@ -799,11 +799,28 @@ def create_prs(db: Session, sid: int, user_id: int):
     return created
 
 
+def _require_report_ready(db: Session, sid: int) -> None:
+    """Chặn đóng phiếu khi còn hồ sơ báo cáo thực hiện BẮT BUỘC chưa hoàn tất.
+
+    Báo cáo là tùy chọn — phiếu không khai báo cáo thì qua ngay. Nhưng đã khai hồ
+    sơ bắt buộc thì phải hoàn tất trước, đây là điều kiện đóng phiếu (yêu cầu KH).
+    """
+    from . import report_service
+    pending = report_service.required_docs_pending(db, sid)
+    if pending:
+        titles = ", ".join(d.title for d in pending[:3])
+        more = f" và {len(pending) - 3} hồ sơ khác" if len(pending) > 3 else ""
+        raise HTTPException(
+            400, f"Còn {len(pending)} hồ sơ báo cáo thực hiện bắt buộc chưa hoàn tất "
+                 f"({titles}{more}). Hoàn tất chúng trước khi chuyển Hoàn thành.")
+
+
 def finalize_sr(db: Session, sid: int, user_id: int) -> SurveyRequest:
     """Admin/QL chuyển Hoàn thành (dừng hẳn). Cho phép từ 'Đã khảo sát' hoặc 'Đã tạo YCMH'."""
     s = get_sr(db, sid)
     if s.status not in ("survey_done", "pr_created"):
         raise HTTPException(400, "Chỉ hoàn thành phiếu ở trạng thái Đã khảo sát hoặc Đã tạo Yêu cầu mua hàng")
+    _require_report_ready(db, sid)
     return set_status(db, sid, "done", user_id)
 
 
@@ -821,7 +838,11 @@ def auto_complete_from_pr(db: Session, pr_id: int, user_id: int = 0) -> None:
                   .filter(SurveyRequestPr.survey_request_id == sid).distinct().all()]
         prs = [db.get(PurchaseRequest, pid) for pid in pr_ids]
         prs = [p for p in prs if p]
-        if prs and all(p.status == "completed" for p in prs):
+        #  Còn hồ sơ báo cáo bắt buộc chưa hoàn tất thì KHÔNG tự đóng — bỏ qua im
+        #  lặng, để người dùng đóng tay sau khi hoàn tất báo cáo (đường finalize).
+        from . import report_service
+        if prs and all(p.status == "completed" for p in prs) \
+                and not report_service.required_docs_pending(db, sid):
             set_status(db, sid, "done", user_id or s.created_by or 0)
             record(db, user_id or s.created_by or 0, ENTITY, sid, "auto_done",
                    "Tự hoàn thành: mọi Yêu cầu mua hàng liên quan đã hoàn thành")

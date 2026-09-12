@@ -32,6 +32,9 @@ function useReportMutation<TVars>(
     onSuccess: (data) => {
       if (successMessage) toast.success(successMessage)
       queryClient.setQueryData(queryKeys.procurement.surveyRequestReport(id), data)
+      //  Mọi thao tác báo cáo đều ghi Lịch sử thao tác của phiếu — làm mới nó để
+      //  dòng mới hiện ngay (nhất là dòng «Xóa» có nút Hoàn tác).
+      void queryClient.invalidateQueries({ queryKey: ['audit-logs', 'survey_request', id] })
     },
   })
 }
@@ -88,7 +91,28 @@ export function useSurveyReportActions(id: number) {
       ({ docId }: { docId: number }) => surveyRequestReportApi.deleteDoc(id, docId),
       'Đã xóa hồ sơ',
     ),
+
+    /** Xóa CẢ khối — hoàn tác được từ Lịch sử thao tác. */
+    deleteReport: useReportMutation<void>(
+      id,
+      () => surveyRequestReportApi.deleteAll(id),
+      'Đã xóa báo cáo thực hiện — có thể hoàn tác ở Lịch sử thao tác',
+    ),
+    restoreReport: useReportMutation<void>(
+      id,
+      () => surveyRequestReportApi.restore(id),
+      'Đã hoàn tác — khôi phục báo cáo thực hiện',
+    ),
   }
 }
 
 export type SurveyReportActions = ReturnType<typeof useSurveyReportActions>
+
+/** Hoàn tác lần «Xóa báo cáo thực hiện» — dùng ở nút trên Lịch sử thao tác. */
+export function useRestoreSurveyReport(id: number) {
+  return useReportMutation<void>(
+    id,
+    () => surveyRequestReportApi.restore(id),
+    'Đã hoàn tác — khôi phục báo cáo thực hiện',
+  )
+}
