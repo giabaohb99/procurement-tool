@@ -64,7 +64,10 @@ export default function FilterBar({
     return (
       <FilterItem key={f.key} label={f.label} width={isRange ? 260 : undefined}>
         {(f.type === 'select' || f.source) ? (
-          <SearchSelect value={vals[f.key] || ''} options={opts || []} placeholder="Tất cả" onChange={(v) => set(f.key, v)} />
+          // bao-CR-388: autoSelectSingle={false} — ô lọc rỗng = "Tất cả"; người bị scope
+          // thu hẹp chỉ còn 1 option (chính họ) mà tự gán thì bộ lọc dính cứng, xóa không được
+          <SearchSelect value={vals[f.key] || ''} options={opts || []} placeholder="Tất cả"
+            autoSelectSingle={false} onChange={(v) => set(f.key, v)} />
         ) : isRange ? (
           <DateRangePicker block
             value={{ from: vals[f.key + '_from'] || '', to: vals[f.key + '_to'] || '' }}
