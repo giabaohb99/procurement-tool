@@ -60,3 +60,6 @@ db-export/*
 # help-center/). Bình thường Vite tự xóa sau khi nạp xong; còn sót lại là do lần chạy
 # trước bị ngắt giữa chừng — đã lỡ commit một lần trong e7dbd99.
 *.timestamp-*.mjs
+
+# Tài khoản chạy sync_task_journal.py (bao-CR-399) — mỗi máy tự điền, cấm commit.
+backend/scripts/.task_sync.env
