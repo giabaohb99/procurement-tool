@@ -1,11 +1,17 @@
 """NGỮ CẢNH CỦA MỘT LƯỢT GỌI — sợi dây nối ba lớp nhật ký (bao-CR-312, P1).
 
-Vì sao là `ContextVar` chứ không phải tham số hàm: hôm nay có **213 lời gọi
-`record(...)` nằm rải trong 54 tệp**. Truyền ngữ cảnh bằng tham số nghĩa là sửa
-đủ 213 chỗ ngay lần này, và mỗi lời gọi viết thêm sau này lại phải nhớ truyền —
+Vì sao là `ContextVar` chứ không phải tham số hàm: hôm nay có **273 lời gọi
+`record(...)` nằm rải trong 62 tệp**. Truyền ngữ cảnh bằng tham số nghĩa là sửa
+đủ 273 chỗ ngay lần này, và mỗi lời gọi viết thêm sau này lại phải nhớ truyền —
 quên một chỗ thì dòng nhật ký đó mất IP, mất `request_id`, và không ai biết cho
 tới lúc cần tra. Middleware đặt một lần ở đầu request, `record(...)` và tầng ORM
 (P4) tự đọc; thêm cột ngữ cảnh nào về sau cũng không ai phải sửa lời gọi.
+
+⚠️ **Đếm bằng cách grep chuỗi `record(` sẽ ra 213 và thiếu 87 chỗ.** 14 tệp
+import bí danh — `from app.core.audit import record as audit_record` — nên lời
+gọi mang tên `audit_record(...)`. Con số 213/54 tệp ghi trong các bản tài liệu
+trước đó chính là kết quả của phép đếm thiếu ấy; bản 273/62 đo lại bằng AST ở
+bao-CR-402. Rà toàn bộ lời gọi thì phải hỏi cả hai tên.
 
 `ContextVar` chạy đúng cho cả `async def` lẫn `def`: FastAPI đẩy hàm `def` sang
 threadpool bằng `anyio.to_thread`, thứ **chép ngữ cảnh** sang luồng con.
@@ -92,6 +98,13 @@ def open_context(source: int, user_id: int = 0, actor_kind: int = ACTOR_KIND_SYS
     try:
         yield ctx
     finally:
+        #  Việc nền và script không có middleware đứng ra ghi bộ đệm của lớp
+        #  ORM, nên chốt đóng ngữ cảnh phải tự làm — nếu không thì đúng những
+        #  chỗ sửa dữ liệu hàng loạt lại là chỗ không để lại dấu vết nào.
+        #  Import tại chỗ: `change_tracker` đọc ngược tệp này (vòng import).
+        from app.core.change_tracker import flush_changes
+
+        flush_changes(ctx)
         reset_context(token)
 
 

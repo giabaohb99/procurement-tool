@@ -2,7 +2,7 @@
 
 Đây là phần "đáng làm nhất so với công bỏ ra" của cả thiết kế: một tệp trả lời
 được bốn trong sáu câu hỏi ở §1 của tài liệu — **endpoint nào · gửi gì · nhận
-lại gì · lượt nào BỊ CHẶN** — mà không đụng vào 213 lời gọi `record(...)`, không
+lại gì · lượt nào BỊ CHẶN** — mà không đụng vào 273 lời gọi `record(...)`, không
 đụng tầng ORM.
 
 Ba luật cứng của tệp này:
@@ -27,6 +27,7 @@ from jose import ExpiredSignatureError, JWTError, jwt
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
+from app.core.change_tracker import flush_changes
 from app.core.client_ip import get_client_ip
 from app.core.config import settings
 from app.core.device_fingerprint import MAX_USER_AGENT, device_hash
@@ -189,6 +190,11 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
         try:
             response = await call_next(request)
         except Exception as exc:  # noqa: BLE001 — ghi vết rồi ném tiếp
+            #  Ghi bộ đệm TRƯỚC `_write`, vì `_write` đọc `ctx.change_count`.
+            #  Lượt gọi nổ giữa chừng vẫn có thể đã commit vài nhịp đầu — phần
+            #  đó là thay đổi thật, phải để lại dấu; phần chưa commit thì
+            #  `flush_changes` tự bỏ (luật 4 của `core/change_tracker`).
+            flush_changes(ctx)
             if wants_log:
                 self._write(ctx, method=method, path=path, request=request,
                             request_body=request_body, status_code=500, response_body=None,
@@ -201,6 +207,10 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
             self._touch(ctx)
             reset_context(token)
             raise exc
+
+        #  ⚠️ NGOÀI `if wants_log`: một lượt gọi không ghi `tab_request_log` vẫn
+        #  có thể đổi dữ liệu, và bộ đệm bỏ lại trong ngữ cảnh thì không ai dọn.
+        flush_changes(ctx)
 
         try:
             if wants_log and not should_skip_by_result(path, response.status_code):

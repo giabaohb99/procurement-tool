@@ -1,7 +1,7 @@
 """BỘ MÃ HÀNH ĐỘNG của nhật ký ba tầng — nơi khai DUY NHẤT (CR-312 P2 / NT-4).
 
 Cột `action` của `tab_audit_log` là một **tập mã ĐÓNG**. Trước tệp này nó chỉ
-đóng trên giấy: mã sinh ra ở 213 lời gọi `record(...)` rải khắp `app/`, còn hai
+đóng trên giấy: mã sinh ra ở 273 lời gọi `record(...)` rải khắp `app/`, còn hai
 thứ đi kèm mỗi mã thì nằm ở hai tệp khác nhau, chẳng cái nào biết cái nào —
 
 * **nhãn tiếng Việt** ở `ACTION_LABEL` của `modules/audit/controller.py`;

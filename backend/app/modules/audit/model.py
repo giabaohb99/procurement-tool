@@ -9,7 +9,7 @@ class AuditLog(Base, AuditMixin):
     """Nhật ký thao tác: ai (created_by) làm gì (action) trên đối tượng nào, lúc nào (created_at).
 
     Bốn cột `entity` · `entity_id` · `action` · `message` **giữ nguyên tên** —
-    213 lời gọi `record(...)` đang truyền đúng bốn thứ đó, đổi tên là sửa hết.
+    273 lời gọi `record(...)` đang truyền đúng bốn thứ đó, đổi tên là sửa hết.
     Phần còn lại là cột NGỮ CẢNH thêm ở bao-CR-312 (P1): máy tự điền từ
     `core/request_context`, lời gọi cũ không phải sửa dòng nào.
 

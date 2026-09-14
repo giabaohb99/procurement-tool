@@ -248,6 +248,9 @@ def test_dau_thiet_bi_khong_doi_khi_trinh_duyet_tu_cap_nhat():
     ("Mozilla/5.0 (Linux; Android 14; SM-S918B) Chrome/125.0.0.0 Mobile Safari/537.36",
      "chrome|android|mobile"),
     ("python-requests/2.31.0", "tool|unknown|desktop"),
+    #  Script đồng bộ sổ task (`scripts/sync_task_journal.py`) tự khai chuỗi này;
+    #  không xếp vào `tool` thì mỗi lần chạy hiện "Không rõ thiết bị" ở tab Tài khoản.
+    ("sync_task_journal/1.0 (python-urllib)", "tool|unknown|desktop"),
     #  Không khai `User-Agent` cũng là MỘT loại thiết bị ổn định: hôm nay unknown
     #  mai vẫn unknown, tức KHÔNG phải đổi máy. Trả None thì mất tính chất đó.
     ("", "unknown|unknown|desktop"),
