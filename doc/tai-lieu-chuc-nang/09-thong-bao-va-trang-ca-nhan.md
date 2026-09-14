@@ -345,7 +345,9 @@ Nghĩa là thay đổi trên hồ sơ nhân sự hoặc phân quyền có hiệu
 
 Cho phép người dùng xem thông tin tài khoản, đổi mật khẩu và theo dõi toàn bộ việc cần xử lý của mình (phân trang đầy đủ, không bị giới hạn 5 mục như khối Dashboard).
 
-Đường dẫn: `/me` (mặc định tab Thông tin cá nhân), `/me?tab=tasks` (tab Việc cần làm).
+Đường dẫn: `/me` (mặc định tab Thông tin cá nhân), `/me?tab=tasks` (tab Việc cần làm),
+`/me?tab=devices` (Thiết bị của tôi, bao-CR-395), `/me?tab=login-history` (Lịch sử đăng nhập,
+bao-CR-400) — hai tab sau chỉ có ở bản `frontend-v2`.
 
 ### Vai trò tham gia
 
@@ -561,6 +563,48 @@ Không có entity RBAC riêng cho trang `/me`. Quyền áp dụng gián tiếp:
 | Thấy loại việc `sr` | Có `survey_request:read` |
 | Thấy loại việc `po` và `late` | Có `purchase_order:read` |
 | Thấy loại việc `payable` | Có `payable:read` |
+| Tab Thiết bị của tôi · Lịch sử đăng nhập | Đã đăng nhập (không cần quyền riêng — cửa `/api/auth/sessions*` tự khóa vào chính mình) |
+
+---
+
+### E. Tab Thiết bị của tôi và tab Lịch sử đăng nhập (`frontend-v2`, bao-CR-395 + bao-CR-400)
+
+Hai tab trả lời ba câu về tài khoản của **chính mình**: máy nào đang giữ phiên, gần đây đăng
+nhập từ đâu, có ai gõ sai mật khẩu vào tài khoản mình không. Không cần khóa `login_session`
+(khóa đó chỉ gác màn Quản trị › Phiên đăng nhập); backend khóa cứng `user_id` = người gọi.
+
+#### Tab Thiết bị của tôi (`/me?tab=devices`)
+
+- Tiêu đề kèm **huy hiệu số phiên còn hiệu lực** (`alive_count` do backend đếm, không đếm số
+  dòng đang hiện).
+- Mỗi dòng: thiết bị (trình duyệt trên hệ điều hành), IP, hoạt động gần nhất, kết cục của
+  phiên; phiên đang bấm đánh dấu *Thiết bị này* và **không có nút đăng xuất** (thoát máy này
+  thì bấm Đăng xuất như thường).
+- Công tắc *Chỉ còn hiệu lực* (mặc định bật); nút *Đăng xuất* từng máy khác; nút *Đăng xuất
+  mọi thiết bị khác* (khóa khi không còn máy nào khác). Máy bị đá còn dùng được tối đa 1 phút.
+
+#### Tab Lịch sử đăng nhập (`/me?tab=login-history`)
+
+- Ba ô số: **Phiên đang mở** (có link sang tab Thiết bị) · **Lần đăng nhập** · **Lần thất
+  bại** trong khoảng đang xem; ô thất bại đổi màu cảnh báo kèm câu *"Có người gõ sai mật khẩu
+  vào tài khoản này. Không phải bạn thì hãy đổi mật khẩu."* khi > 0.
+- Chọn khoảng: **30 ngày · 90 ngày (mặc định) · 1 năm**; nút *Làm mới*.
+- Danh sách: mỗi dòng *Thành công* / *Thất bại* · lúc · thiết bị (thành công) hoặc câu lỗi
+  (thất bại, mặc định *Sai mật khẩu*) · IP · kết cục của phiên. Hiện 10 dòng đầu, bấm *Xem cả
+  n dòng* để mở hết.
+
+#### API (chỉ đòi đăng nhập)
+
+| Cửa | Trả về |
+|---|---|
+| `GET /api/auth/sessions?active_only=true` | `{ items, current_session_id, alive_count }` — `alive_count` đếm độc lập với bộ lọc |
+| `GET /api/auth/sessions/history?days=90` | `{ items, days, login_count, failed_count }` — `days` 1..365, tối đa 1000 dòng; phiên thành công hợp với dòng `login_failed` của audit |
+| `POST /api/auth/sessions/{id}/revoke` | Đá một phiên của chính mình (không đá được phiên đang bấm) |
+| `POST /api/auth/sessions/revoke-others` | Đá mọi phiên trừ phiên đang bấm |
+
+Liên quan: hồ sơ nhân sự chuyển *Nghỉ việc* thì tài khoản bị khóa và mọi phiên bị cắt ngay
+với lý do *Nghỉ việc* (bao-CR-400, BM-015) — người đó thấy dòng kết cục tương ứng nếu được mở
+khóa sau này.
 
 ---
 

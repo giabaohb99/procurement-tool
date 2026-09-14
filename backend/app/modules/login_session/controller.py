@@ -20,10 +20,9 @@ Hai đường cắt phiên KHÁC NHAU về hiệu lực, đừng gộp:
 * **Bắt đăng nhập lại** (`logout-all`) đi qua `token_version` → tức thì, vì
   `get_current_user` đọc `tab_user` ở mọi lượt gọi.
 """
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
@@ -33,49 +32,24 @@ from app.core.database import get_db
 from app.core.request_context import get_context
 from app.core.response import success
 from app.core.scoping import apply_scope, get_scoped, scope_condition
-from app.modules.audit.model import AuditLog
-from app.modules.employee.model import Employee
 from app.modules.login_session.constants import RevokeReason
+#  bao-CR-400: phần dựng lịch sử + tra tên dời sang `history.py` để cửa tự thân
+#  (`/api/auth/sessions/history`) dùng chung một bộ với cửa quản trị này.
+from app.modules.login_session.history import (HISTORY_DAYS_DEFAULT, HISTORY_DAYS_MAX,
+                                               build_login_history, resolve_user_names)
 from app.modules.login_session.model import LoginSession
-from app.modules.login_session.schema import (serialize_history_failed,
-                                              serialize_history_login, serialize_session)
+from app.modules.login_session.schema import serialize_session
 from app.modules.login_session.service import force_relogin, revoke_session
 from app.modules.user.model import User
 
 router = APIRouter(prefix="/api/login-sessions", tags=["login-session"])
 
 ENTITY = "login_session"
-#  Lịch sử đăng nhập mặc định 90 ngày (§8.5), trần 365 để câu hỏi «cả năm» vẫn
-#  trả lời được mà không ai kéo nổi toàn bảng.
-HISTORY_DAYS_DEFAULT = 90
-HISTORY_DAYS_MAX = 365
-HISTORY_ROWS_MAX = 1000
 
 
 def _current_session_id() -> int:
     ctx = get_context()
     return int(ctx.session_id or 0) if ctx else 0
-
-
-def resolve_user_names(db: Session, user_ids: set[int]) -> dict[int, str]:
-    """Tên hiển thị của nhiều tài khoản trong HAI truy vấn — cùng luật ưu tiên với
-    `core/audit.resolve_actor` (họ tên nhân sự › email › `User #id`), nhưng gom một
-    lượt thay vì gọi hàm đó trong vòng lặp (N+1 trên màn 200 dòng)."""
-    ids = {int(i) for i in user_ids if i}
-    names: dict[int, str] = {0: "Hệ thống"}
-    if not ids:
-        return names
-    users = db.query(User).filter(User.id.in_(ids)).all()
-    emp_ids = {u.employee_id for u in users if u.employee_id}
-    emp_names = {}
-    if emp_ids:
-        emp_names = {e.id: e.full_name for e in
-                     db.query(Employee).filter(Employee.id.in_(emp_ids)).all()}
-    for u in users:
-        names[u.id] = emp_names.get(u.employee_id) or u.email or f"User #{u.id}"
-    for i in ids - set(names):
-        names[i] = f"User #{i}"
-    return names
 
 
 def _assert_user_in_scope(db: Session, user, profile: dict, target_user_id: int,
@@ -176,42 +150,12 @@ def login_history(
     db: Session = Depends(get_db),
 ):
     """Lịch sử đăng nhập của MỘT người trong N ngày: mọi dòng phiên (kể cả đã thu
-    hồi) HỢP với các dòng `login_failed` của `tab_audit_log`.
-
-    ⚠️ Dòng thất bại ghi `entity_id = 0` (chưa xác định được ai) — nối về người
-    này bằng chuỗi `tài khoản '<email | mã NV>'` trong câu thông báo, vì đó là
-    thứ duy nhất dòng đó biết. Đổi câu ở `auth/controller.login` là mất khớp.
+    hồi) HỢP với các dòng `login_failed` của `tab_audit_log`. Cách nối dòng thất
+    bại xem `history.build_login_history` — bao-CR-400 dùng chung với cửa tự thân.
     """
     profile = get_perm_profile(db, user)
     target = db.get(User, user_id)
     if not target:
         raise HTTPException(404, "Không tìm thấy tài khoản")
     _assert_user_in_scope(db, user, profile, user_id, "read")
-
-    since = datetime.now() - timedelta(days=days)
-    sessions = (db.query(LoginSession)
-                .filter(LoginSession.user_id == user_id, LoginSession.created_at >= since)
-                .order_by(LoginSession.created_at.desc())
-                .limit(HISTORY_ROWS_MAX).all())
-
-    usernames = [target.email or ""]
-    emp = db.get(Employee, target.employee_id) if target.employee_id else None
-    if emp and emp.code:
-        usernames.append(emp.code)
-    patterns = [AuditLog.message.like(f"%tài khoản '{u}'%") for u in usernames if u]
-    failed = []
-    if patterns:
-        failed = (db.query(AuditLog)
-                  .filter(AuditLog.entity == "auth", AuditLog.action == "login_failed",
-                          AuditLog.created_at >= since, or_(*patterns))
-                  .order_by(AuditLog.created_at.desc())
-                  .limit(HISTORY_ROWS_MAX).all())
-
-    names = resolve_user_names(db, {s.revoked_by for s in sessions if s.revoked_at})
-    now = datetime.now()
-    items = [serialize_history_login(s, revoked_by_name=names.get(s.revoked_by, ""), now=now)
-             for s in sessions]
-    items += [serialize_history_failed(a) for a in failed]
-    items.sort(key=lambda it: it["at"] or datetime.min, reverse=True)
-    return success({"items": items[:HISTORY_ROWS_MAX], "days": days,
-                    "login_count": len(sessions), "failed_count": len(failed)})
+    return success(build_login_history(db, target, days))

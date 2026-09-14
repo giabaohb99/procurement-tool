@@ -210,11 +210,15 @@ def revoke_session(db: Session, session: LoginSession, reason: int,
 
 
 def revoke_user_sessions(db: Session, user_id: int, reason: int, revoked_by: int = 0,
-                         except_session_id: int = 0) -> int:
+                         except_session_id: int = 0, commit: bool = True) -> int:
     """Cắt mọi phiên còn sống của một người. Trả về số phiên đã cắt.
 
     `except_session_id` để giữ lại phiên đang thao tác — dùng cho *đổi mật khẩu*,
     nơi đá luôn chính người vừa bấm nút là hành vi khó hiểu.
+
+    `commit=False` (bao-CR-400): gọi từ GIỮA một giao dịch lớn hơn (lưu hồ sơ
+    nhân sự) — bên gọi tự commit. Đệm phiên vẫn xóa ngay: xóa sớm một nhịp chỉ
+    tốn một lần tra lại DB, còn quên xóa là đá hụt 60 giây.
     """
     query = db.query(LoginSession).filter(LoginSession.user_id == user_id,
                                           LoginSession.revoked_at.is_(None))
@@ -226,21 +230,26 @@ def revoke_user_sessions(db: Session, user_id: int, reason: int, revoked_by: int
         row.revoked_at = now
         row.revoked_by = int(revoked_by or 0)
         row.revoke_reason = int(reason)
-    db.commit()
+    if commit:
+        db.commit()
     for row in rows:
         session_cache_clear(row.token_id)
     return len(rows)
 
 
 def force_relogin(db: Session, user, reason: int = RevokeReason.FORCE_RELOGIN,
-                  revoked_by: int = 0) -> int:
+                  revoked_by: int = 0, commit: bool = True) -> int:
     """Đăng xuất MỌI thiết bị, hiệu lực **tức thì**.
 
     Tăng `tab_user.token_version` là điểm mấu chốt: mọi vé cũ mang `ver` của đời
     trước, mà `get_current_user` đọc `tab_user` ở từng lượt gọi nên không qua
     đệm nào cả. Việc đánh dấu `revoked_at` bên dưới chỉ để màn *Phiên đăng nhập*
     hiện đúng — nó KHÔNG phải cơ chế chặn, và đừng đảo thứ tự hai việc này.
+
+    `commit=False` để ghép vào giao dịch của bên gọi (xem `revoke_user_sessions`);
+    khi đó hiệu lực tức thì bắt đầu từ lúc BÊN GỌI commit.
     """
     user.token_version = int(getattr(user, "token_version", 1) or 1) + 1
-    db.commit()
-    return revoke_user_sessions(db, user.id, reason, revoked_by)
+    if commit:
+        db.commit()
+    return revoke_user_sessions(db, user.id, reason, revoked_by, commit=commit)

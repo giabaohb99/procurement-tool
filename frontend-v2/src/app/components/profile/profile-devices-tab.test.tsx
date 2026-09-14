@@ -76,8 +76,12 @@ function renderTab() {
   )
 }
 
-function mockSessions(items: LoginSessionItem[], currentId = 1) {
-  const result: MySessionsResult = { items, current_session_id: currentId }
+function mockSessions(items: LoginSessionItem[], currentId = 1, aliveCount?: number) {
+  const result: MySessionsResult = {
+    items,
+    current_session_id: currentId,
+    alive_count: aliveCount ?? items.filter((r) => r.is_alive).length,
+  }
   apiGet.mockResolvedValue(result)
 }
 
@@ -144,5 +148,13 @@ describe('ProfileDevicesTab', () => {
     mockSessions([], 0)
     renderTab()
     expect(await screen.findByText(/Không có thiết bị nào khác/)).toBeInTheDocument()
+  })
+
+  it('shows the alive count from the backend, not the number of visible rows', async () => {
+    // bao-CR-400 — một dòng hiện ra nhưng backend nói còn 4 phiên sống (trang bị cắt).
+    mockSessions([makeSession({ is_current: true })], 1, 4)
+    renderTab()
+    await screen.findByText('Thiết bị này')
+    expect(screen.getByTitle('Số phiên còn hiệu lực')).toHaveTextContent('4')
   })
 })

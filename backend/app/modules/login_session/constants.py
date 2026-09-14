@@ -55,6 +55,10 @@ class RevokeReason(IntEnum):
     PASSWORD_CHANGED = 3
     FORCE_RELOGIN = 4
     ACCOUNT_LOCKED = 5
+    #  bao-CR-400: hồ sơ nhân sự chuyển "Nghỉ việc" / tắt hoạt động / bị xóa.
+    #  Tách khỏi ACCOUNT_LOCKED để màn phiên đọc ra được "vì sao bị khóa" mà
+    #  không phải lần sang nhật ký nhân sự.
+    EMPLOYEE_RESIGNED = 6
 
 
 REVOKE_REASON_LABELS = {
@@ -63,6 +67,7 @@ REVOKE_REASON_LABELS = {
     RevokeReason.PASSWORD_CHANGED: "Đổi mật khẩu",
     RevokeReason.FORCE_RELOGIN: "Bắt đăng nhập lại",
     RevokeReason.ACCOUNT_LOCKED: "Tài khoản bị khóa",
+    RevokeReason.EMPLOYEE_RESIGNED: "Nghỉ việc",
 }
 
 #  Tiết lưu dập `last_seen_at` (§4.4). Không có trần này thì mỗi lượt gọi API là
