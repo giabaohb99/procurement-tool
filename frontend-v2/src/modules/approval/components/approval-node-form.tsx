@@ -66,7 +66,7 @@ export function ApprovalNodeForm({
   //  pháp nhân khác (Nhân sự tập đoàn duyệt phép cho công ty con chẳng hạn).
   const { data: departmentPage } = useDepartments({ page_size: 1000 })
   //  Vai trò để chọn khi giao duyệt "theo vai trò" — chính danh sách vai trò
-  //  tạo ở màn Phân quyền tài khoản (/hr/permissions).
+  //  tạo ở màn Phân quyền tài khoản (/system/permissions).
   const { data: roles } = useRoles()
   const [advancedOpen, setAdvancedOpen] = useState(false)
 

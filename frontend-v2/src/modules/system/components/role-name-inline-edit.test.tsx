@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { RoleNameInlineEdit } from './role-name-inline-edit'
-import type { Role } from '../types/role'
+import type { Role } from '@/modules/hr/types/role'
 
 const ROLES: Role = {
   id: 2,

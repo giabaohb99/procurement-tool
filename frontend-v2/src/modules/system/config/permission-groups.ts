@@ -1,5 +1,5 @@
 /**
- * Gom các entity phân quyền thành CÂY hai cấp cho màn /hr/permissions.
+ * Gom các entity phân quyền thành CÂY hai cấp cho màn /system/permissions.
  *
  * Cấp 1 = phân hệ (Đặt xe, Văn thư, Thu mua…). Cấp 2 = các entity con của phân hệ
  * đó (Yêu cầu đặt xe, Tài xế, Phương tiện…). Backend trả danh sách entity PHẲNG

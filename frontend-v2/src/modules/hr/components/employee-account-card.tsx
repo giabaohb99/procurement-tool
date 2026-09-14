@@ -174,7 +174,7 @@ export function EmployeeAccountCard({ employeeId, email, className }: EmployeeAc
 
             {account && canReadUser && (
               <Button variant="outline" size="sm" asChild>
-                <Link to={appRoutes.hr.userPermissionDetail(account.id)}>
+                <Link to={appRoutes.system.userPermissionDetail(account.id)}>
                   <ShieldCheck />
                   Phân quyền tài khoản
                 </Link>

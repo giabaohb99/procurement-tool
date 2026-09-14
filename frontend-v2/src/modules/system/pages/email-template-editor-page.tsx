@@ -1,11 +1,12 @@
 import { html as beautifyHtml } from 'js-beautify'
-import { ArrowLeft, Loader2, RotateCcw, Save, Send, WandSparkles } from 'lucide-react'
+import { ArrowLeft, Check, Loader2, RotateCcw, Save, Send, WandSparkles } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { extractErrorMessage } from '@/core/api'
 import { usePermission } from '@/core/authorization/use-permission'
+import { useDebouncedValue } from '@/shared/hooks/use-debounced-value'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
@@ -19,17 +20,25 @@ import { cn } from '@/shared/utils/cn'
 import { emailTemplateApi } from '../api/email-template-api'
 import {
   useEmailTemplate,
+  useEmailTemplatePreview,
   useResetEmailTemplate,
   useSaveEmailTemplate,
 } from '../hooks/use-email-templates'
-import type { EmailTemplate, EmailTemplatePreview } from '../types/email-template'
+import type { EmailTemplate } from '../types/email-template'
+
+/** Khung xem trước lúc thân mẫu còn rỗng — không để trắng trơn không lời giải thích. */
+const EMPTY_PREVIEW =
+  '<p style="font-family:sans-serif;color:#64748b;padding:16px">Chưa có nội dung để dựng bản xem trước.</p>'
 
 const BODY_TEXTAREA_ID = 'dx-email-body-editor'
 
 /**
- * TRANG CON sửa một mẫu email theo bước (`/system/settings/email/:event`).
+ * TRANG CON sửa một mẫu email theo bước (`/system/email-templates/:event`).
  * Trước là popup; tách thành trang riêng cho rộng rãi (soạn HTML + xem trước cạnh
  * nhau). Gác chung `setting.write` như trang Cấu hình.
+ *
+ * duoc-CR-397: cha của nó nay là trang *Mẫu email thông báo* riêng, không còn là
+ * một khối trong Cấu hình hệ thống — nên nút quay lại trỏ về danh sách mẫu.
  */
 export function EmailTemplateEditorPage() {
   const navigate = useNavigate()
@@ -42,9 +51,9 @@ export function EmailTemplateEditorPage() {
         title={template ? `Mẫu email — ${template.label}` : 'Sửa mẫu email'}
         description="Sửa tiêu đề và nội dung HTML của email cho bước này. Người nhận do hệ thống quyết định theo vai trò."
         actions={
-          <Button variant="ghost" onClick={() => navigate(appRoutes.system.settings)}>
+          <Button variant="ghost" onClick={() => navigate(appRoutes.system.emailTemplates)}>
             <ArrowLeft className="size-4" />
-            Về Cấu hình
+            Về danh sách mẫu
           </Button>
         }
       />
@@ -72,8 +81,25 @@ function EditorForm({ event, template }: { event: string; template: EmailTemplat
 
   const [subject, setSubject] = useState(template.subject)
   const [body, setBody] = useState(template.body_html)
-  const [preview, setPreview] = useState<EmailTemplatePreview | null>(null)
-  const [busy, setBusy] = useState<'' | 'preview' | 'test'>('')
+  const [busy, setBusy] = useState<'' | 'test'>('')
+
+  //  ⚠️ **Xem trước chạy TỰ ĐỘNG, không chờ bấm nút.** Bản cũ chỉ render sau khi
+  //  người dùng tìm ra nút «Cập nhật» cao 24px nép góc phải — mở trang ra là ô
+  //  *Kết quả hiển thị* trống trơn và ô *Tiêu đề* ghi "—", trong khi cột trái là
+  //  một khối HTML liền mạch không đọc nổi. Người soạn không có cách nào biết
+  //  mình vừa sửa ra cái gì (khách nêu 14/09/2026).
+  //
+  //  Hoãn 400ms rồi mới hỏi: mỗi ký tự một lượt gọi thì vừa nã backend vừa làm
+  //  khung xem trước giật liên tục.
+  const debouncedSubject = useDebouncedValue(subject, 400)
+  const debouncedBody = useDebouncedValue(body, 400)
+  const preview = useEmailTemplatePreview(event, debouncedSubject, debouncedBody)
+
+  //  Nội dung đã đổi nhưng bản render chưa theo kịp — hoặc đang trong 400ms chờ,
+  //  hoặc đang gọi. Nói ra để không ai đọc nhầm bản cũ thành kết quả của thứ vừa
+  //  gõ; chính vì vậy KHÔNG xóa trắng khung, chỉ làm mờ đi.
+  const previewStale =
+    debouncedSubject !== subject || debouncedBody !== body || preview.isFetching
 
   //  "Prettify HTML" kiểu Sublime (HTML-CSS-JS Prettify dùng chính js-beautify).
   //  Thụt 2 space, KHÔNG tự bẻ dòng theo độ dài (email nhiều style dài, bẻ ra dễ vỡ).
@@ -111,17 +137,6 @@ function EditorForm({ event, template }: { event: string; template: EmailTemplat
     })
   }
 
-  async function refreshPreview() {
-    setBusy('preview')
-    try {
-      setPreview(await emailTemplateApi.preview(event, { subject, body_html: body }))
-    } catch (error) {
-      toast.error(extractErrorMessage(error))
-    } finally {
-      setBusy('')
-    }
-  }
-
   async function doTestSend() {
     setBusy('test')
     try {
@@ -140,7 +155,7 @@ function EditorForm({ event, template }: { event: string; template: EmailTemplat
       {
         onSuccess: () => {
           toast.success('Đã lưu mẫu email')
-          navigate(appRoutes.system.settings)
+          navigate(appRoutes.system.emailTemplates)
         },
         onError: (error) => toast.error(extractErrorMessage(error)),
       },
@@ -151,7 +166,7 @@ function EditorForm({ event, template }: { event: string; template: EmailTemplat
     reset.mutate(event, {
       onSuccess: () => {
         toast.success('Đã khôi phục mẫu mặc định')
-        navigate(appRoutes.system.settings)
+        navigate(appRoutes.system.emailTemplates)
       },
       onError: (error) => toast.error(extractErrorMessage(error)),
     })
@@ -224,33 +239,56 @@ function EditorForm({ event, template }: { event: string; template: EmailTemplat
           <div className="grid gap-1.5">
             <div className="flex h-6 items-center justify-between">
               <Label>Xem trước (dữ liệu mẫu)</Label>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-6 px-2 text-xs"
-                onClick={() => void refreshPreview()}
-                disabled={busy === 'preview'}
-              >
-                {busy === 'preview' ? <Loader2 className="size-3.5 animate-spin" /> : null}
-                Cập nhật
-              </Button>
+              {/*  Chữ trạng thái thay cho nút «Cập nhật» đã bỏ: bản render nay tự
+                   chạy, nên chỗ này chỉ còn việc nói nó có đang theo kịp không. */}
+              <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                {previewStale ? (
+                  <>
+                    <Loader2 className="size-3.5 animate-spin" />
+                    Đang dựng lại…
+                  </>
+                ) : (
+                  <>
+                    <Check className="size-3.5 text-success" />
+                    Khớp nội dung đang soạn
+                  </>
+                )}
+              </span>
             </div>
+            {/*  Tiêu đề cũng là thứ phải xem trước: nó chứa `{{ code }}` nên nhìn
+                 ô nhập bên trái không biết thư gửi đi đề gì. */}
             <div className="flex h-9 items-center truncate rounded-md border bg-muted px-3 text-xs">
               <span className="text-muted-foreground">Tiêu đề:&nbsp;</span>
-              <span className="truncate">{preview?.subject ?? '—'}</span>
+              <span className="truncate">{preview.data?.subject ?? '—'}</span>
             </div>
           </div>
 
           <div className="flex flex-1 flex-col gap-1.5">
             <Label>Kết quả hiển thị</Label>
+            {/*  ⚠️ `sandbox=""` — KHÔNG cờ nào. Đây là HTML do người dùng gõ vào,
+                 render trong cùng gốc với ứng dụng thì một thẻ `<script>` trong
+                 mẫu đọc được token trong `localStorage`. Hộp cát rỗng vẫn dựng
+                 được toàn bộ chữ, ảnh, bảng và CSS nội tuyến của email — đúng
+                 phần cần xem — nhưng chặn script, form và điều hướng.
+                 Email thật cũng không chạy script, nên bản xem trước còn SÁT với
+                 thứ người nhận thấy hơn là để mở. */}
             <iframe
               title="Xem trước email"
-              srcDoc={
-                preview?.html ??
-                '<p style="font-family:sans-serif;color:#64748b;padding:16px">Bấm “Cập nhật” để xem bản render.</p>'
-              }
-              className="min-h-[360px] w-full flex-1 rounded-md border bg-white"
+              sandbox=""
+              srcDoc={preview.data?.html ?? EMPTY_PREVIEW}
+              className={cn(
+                'min-h-[360px] w-full flex-1 rounded-md border bg-white transition-opacity',
+                //  Mờ đi chứ KHÔNG xóa trắng: xóa thì mỗi nhịp gõ khung chớp một
+                //  cái, còn giữ bản cũ mà không báo gì thì người đọc tưởng nó là
+                //  kết quả của thứ vừa sửa.
+                previewStale && 'opacity-50',
+              )}
             />
+            {preview.isError && (
+              <p className="text-xs text-destructive">
+                Không dựng được bản xem trước — {extractErrorMessage(preview.error)}
+              </p>
+            )}
           </div>
         </div>
       </div>

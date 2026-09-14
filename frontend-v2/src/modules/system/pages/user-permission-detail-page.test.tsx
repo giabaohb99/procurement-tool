@@ -61,9 +61,9 @@ function build() {
 
   render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={['/hr/permissions/users/31']}>
+      <MemoryRouter initialEntries={['/system/permissions/users/31']}>
         <Routes>
-          <Route path="/hr/permissions/users/:userId" element={<UserPermissionDetailPage />} />
+          <Route path="/system/permissions/users/:userId" element={<UserPermissionDetailPage />} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,

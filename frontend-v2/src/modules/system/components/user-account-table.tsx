@@ -22,15 +22,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
-import { useDepartments } from '../hooks/use-departments'
+import { useDepartments } from '@/modules/hr/hooks/use-departments'
 import {
   useDeleteUserAccount,
   useSetUserActive,
   useUserAccounts,
-} from '../hooks/use-user-accounts'
-import { employeeInitials } from '../types/employee'
-import type { Role } from '../types/role'
-import type { UserAccount } from '../types/user-account'
+} from '@/modules/hr/hooks/use-user-accounts'
+import { employeeInitials } from '@/modules/hr/types/employee'
+import type { Role } from '@/modules/hr/types/role'
+import type { UserAccount } from '@/modules/hr/types/user-account'
 
 const ALL = 'all'
 
@@ -187,7 +187,7 @@ export function UserAccountTable({ roles }: { roles: Role[] }) {
               variant="ghost"
               size="icon-sm"
               title="Sửa phân quyền"
-              onClick={() => navigate(appRoutes.hr.userPermissionDetail(account.id))}
+              onClick={() => navigate(appRoutes.system.userPermissionDetail(account.id))}
             >
               <Pencil />
             </Button>
@@ -250,7 +250,7 @@ export function UserAccountTable({ roles }: { roles: Role[] }) {
       emptyMessage="Không có tài khoản nào khớp bộ lọc."
       storageKey="hr.user-accounts"
       onRowClick={(account) =>
-        navigate(appRoutes.hr.userPermissionDetail(account.id))
+        navigate(appRoutes.system.userPermissionDetail(account.id))
       }
       pagination={{
         page,

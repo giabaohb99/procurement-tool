@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { RoleSidePanel } from './role-side-panel'
-import type { Role } from '../types/role'
+import type { Role } from '@/modules/hr/types/role'
 
 const ROLES: Role[] = [
   { id: 1, code: 'admin', name: 'Quản trị hệ thống', description: '', sort_order: 1 },
@@ -23,7 +23,7 @@ vi.mock('@/core/authorization/permission-gate', () => ({
   PermissionGate: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }))
 
-vi.mock('../hooks/use-roles', () => ({
+vi.mock('@/modules/hr/hooks/use-roles', () => ({
   useCreateRole: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useSaveRoleOrder: () => ({ mutate: saveOrder, isPending: false }),
 }))
