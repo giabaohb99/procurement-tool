@@ -1,5 +1,10 @@
 # Plan cập nhật Thu mua — Đợt 2026-07
 
+> **TÀI LIỆU LỊCH SỬ — ĐÃ HẾT HIỆU LỰC (đánh dấu 14/09/2026).** Bản nháp v0.1 tháng 07/2026,
+> chưa từng được chốt; các hạng mục trong này hoặc đã làm theo CR riêng (xem `change-log.md`)
+> hoặc đã bị thay bằng kế hoạch mới. Giữ lại chỉ vì `change-log.md` và `TASKS.md` còn trỏ tới.
+> **Đừng xếp việc theo tệp này.**
+
 | Thuộc tính | Giá trị |
 |---|---|
 | Phiên bản | v0.1 (DRAFT) |

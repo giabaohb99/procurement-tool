@@ -1,5 +1,10 @@
 # 11 — ĐA PHÁP NHÂN VÀ CHUYỂN CHỨC NĂNG SANG ERP V2
 
+> **TÀI LIỆU LỊCH SỬ (đánh dấu 14/09/2026).** Đây là hồ sơ phân tích + hỏi đáp gốc ngày
+> 18/08/2026, giữ nguyên để tra cứu các quyết định Q1–Q8. Kế hoạch thi hành hiện hành nằm ở
+> `12-ke-hoach-erp-v2-da-phap-nhan.md`; số liệu và trạng thái trong tệp này **không cập nhật nữa**
+> — đừng lấy làm căn cứ xếp việc.
+
 **Bản 1.2 — 18/08/2026.** Ghi lại yêu cầu nghiệp vụ nhận ngày 18/08/2026, đối chiếu với mã nguồn
 đang chạy thật, và đề xuất thứ tự làm. Bản 1.1 thêm **mục 4.1 và 4.2 — câu trả lời cho cả tám câu
 Q1–Q8**, chốt trong cùng ngày. Chỗ nào mục 3 lệch với mục 4.2 thì **lấy mục 4.2**: đáng kể nhất là

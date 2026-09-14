@@ -651,6 +651,13 @@ một YCBG mới. Nay thu mua gắn thêm vài phương án ngay trên dòng đ�
 7. **Hàng rào dòng**: NSTM chỉ gắn được vào dòng có `assignee` là mình. Dòng của người khác 403.
 8. **Người yêu cầu không thấy tên NCC** — giữ đúng luật 2 cụm NCC (Task 4). Họ thấy
    *"Phương án 1 / 2 / 3"* kèm giá và thời gian giao, chốt theo giá chứ không theo NCC.
+9. **Đồng bộ mã hàng khi chốt** *(bổ sung 14/09/2026 theo chốt của khách)*: dòng **chưa có mã
+   hàng** (`product_code` rỗng) mà phương án chốt có `snap_internal_code` thì **chép mã đó lên
+   dòng** — ngoại lệ DUY NHẤT phương án được ghi vào nhóm trường nhu cầu (xem H.4). Nhờ vậy dòng
+   bắt đầu được đồng bộ tiến độ `qty_ordered`/`qty_received` (vốn nối theo chuỗi `product_code`
+   — tức đóng luôn N-004 cho các dòng này). Bỏ chốt **không xóa mã** đã chép: mã đã thành dữ
+   liệu của dòng. ⚠️ **Chưa có trong mã** — `option_service.choose` hiện không ghi
+   `item.product_code`; làm cùng đợt 2 hoặc sớm hơn.
 
 ### H.4 Dòng hàng và phương án không ghi đè nhau
 
@@ -658,7 +665,7 @@ một YCBG mới. Nay thu mua gắn thêm vài phương án ngay trên dòng đ�
 
 | Nhóm trường | Nguồn |
 |---|---|
-| Nhu cầu: mã hàng, tên hàng, số lượng, ĐVT, ngày cần, kho nhận | **Luôn** lấy từ dòng hàng. Phương án không đụng. |
+| Nhu cầu: mã hàng, tên hàng, số lượng, ĐVT, ngày cần, kho nhận | **Luôn** lấy từ dòng hàng. Phương án không đụng — trừ đúng một ngoại lệ H.3.9: dòng chưa có mã hàng thì lúc chốt chép `snap_internal_code` lên dòng. |
 | Thương mại: NCC, đơn giá, VAT, thời gian giao, nơi giao, phí vận chuyển, MOQ | Lấy từ **phương án đã chốt**; chưa chốt thì dùng giá đề xuất trên dòng. |
 
 **Chốt phương án KHÔNG ghi đè `price` / `vat_pct` của dòng hàng.** Ba lý do: giữ được dấu vết
@@ -738,10 +745,13 @@ Mỗi trang chính là **bản nháp của một đơn mua hàng sắp tạo**: 
 
 | Đợt | Nội dung | Tình trạng |
 |-----|----------|-----------|
-| P1 | Bảng dữ liệu + service + 6 endpoint (gắn từ khảo sát · gắn tay · sửa · gỡ · chốt · liệt kê) + 19 test | **Xong** (chưa commit) |
-| P2 | Chốt phương án → gom theo NCC → sinh N đơn mua hàng nháp | Chưa làm |
+| P1 | Bảng dữ liệu + service + 6 endpoint (gắn từ khảo sát · gắn tay · sửa · gỡ · chốt · liệt kê) + test | **Xong — đã commit**; bảng `tab_purchase_request_item_option` (migration `6835fb9cfecd`) đã có trên **cả dev lẫn prod** (theo lượt gộp 11/09) |
+| P2 | Chốt phương án → gom theo NCC → sinh N đơn mua hàng nháp + **đồng bộ mã hàng H.3.9** | Chưa làm |
 | P3 | Màn *Xử lý phương án* ở `frontend-v2` (`/procurement/purchase-requests/:id/process`) | Chưa làm |
-| P4 | Hai bản in ở H.6 + cập nhật HDSD | Chưa làm |
+| P4 | Hai bản in ở H.6 + gác N-17 + cập nhật HDSD | Chưa làm |
+
+Thứ tự làm tiếp đã chốt: **P3 trước P2** (màn *Xử lý phương án* là chỗ nghiệm thu bằng mắt,
+có nó rồi mới thấy dữ liệu để bấm sinh đơn), rồi P4 sau cùng vì bản B phụ thuộc N-17.
 
 ### H.9 Còn nợ
 

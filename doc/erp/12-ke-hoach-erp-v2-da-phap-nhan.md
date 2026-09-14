@@ -52,6 +52,10 @@ nhưng phải sửa cho đa pháp nhân · **Gộp** = nhập vào màn khác ·
 
 ### 2.1 Phân hệ Thu mua
 
+> **Lưu ý 14/09/2026:** các dòng gắn giai đoạn **P6** trong bảng này thuộc hướng gộp **đã khai
+> tử 07/09/2026** — xem đính chính ở đầu mục P6 (§4). Phần "phương án trên phiếu" nay làm theo
+> **bao-CR-310** (mục H `doc/tai-lieu-chuc-nang/03-yeu-cau-mua-hang.md`), giữ YCBG nguyên trạng.
+
 | Tính năng | Việc | Giai đoạn | Ghi chú |
 |---|---|---|---|
 | Tổng quan thu mua | Nâng cấp | P2 | Lọc theo pháp nhân đang làm việc |
@@ -265,6 +269,14 @@ vẫn khớp số như trước khi sửa; nhà cung cấp tạo ở công ty co
 khi được tick chia sẻ; tắt cờ lớp đọc gộp thì hệ trở về hành vi cũ hoàn toàn.
 
 ### P6 — Gộp Yêu cầu báo giá và Yêu cầu mua hàng *(12–16 ngày — nặng nhất)*
+
+> **ĐÍNH CHÍNH 14/09/2026 — P6 ĐÃ KHAI TỬ (07/09/2026), không phải "tạm dừng".** Hướng gộp
+> YCBG + YCMH bị bỏ hẳn, thay bằng **bao-CR-310 — Phương án trên dòng YCMH** (mục H của
+> `doc/tai-lieu-chuc-nang/03-yeu-cau-mua-hang.md`): YCBG giữ nguyên, YCMH thêm khối phương án
+> NCC trên từng dòng để người yêu cầu chốt rồi sinh thẳng ĐMH. Mã P6 đóng băng ở nhánh
+> `p6-hop-nhat-chung-tu` (`42bc0290`, cụm bao-CR-277..291 + 5 migration chưa từng áp) — **chỉ giữ
+> tham khảo, không merge lại**: `erp-v2` đã đi tiếp hàng trăm commit và CR-388..393 đụng đúng các
+> tệp survey_request đó. Toàn bộ mục P6 dưới đây giữ nguyên làm hồ sơ lịch sử.
 
 Theo Q4: **chứng từ sống sót là `tab_survey_request`** (luồng của Yêu cầu báo giá), đổi tên chức
 năng thành **Yêu cầu mua hàng**; `tab_purchase_request` đóng băng chỉ đọc. **Không chuyển đổi dữ

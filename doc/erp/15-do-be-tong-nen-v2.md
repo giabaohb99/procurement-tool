@@ -47,7 +47,7 @@ cũng không để lại hệ nửa vời.*
 | Gác quyền ở tầng **route** — thanh bên đã lọc, đường dẫn thì chưa | Nợ | `13` §3 Đ-11 *(cuối mục)* | Hở ra từ Đ-11 · chưa xếp đợt |
 | **Đ-13** — Quản lý Import | Màn hình | `13` §3 Đ-13 · `16` §9 | ~~Khách hoãn~~ **Xong 25/08/2026** *(CR-186)* — `/system/imports` (+ `/:id`) và `/system/exports`; phần dở còn lại là **mở rộng**, không chặn Đ-15 |
 | **Đ-15** — tắt bản cũ | Vận hành | `13` §3 Đ-15 | ~~Chờ Đ-13~~ — nay chỉ chờ khách quyết màn *Chứng từ* *(`13` §8)*; là đợt **duy nhất** còn lại |
-| Chi tiết *Yêu cầu báo giá* thiếu nút *Xử lý khảo sát* | Khuyết | `13` §1.8 | Tự hết khi P6 gộp phiếu, **không làm riêng** |
+| Chi tiết *Yêu cầu báo giá* thiếu nút *Xử lý khảo sát* | ~~Khuyết~~ **ĐÃ XONG** | `13` §1.8 | ~~Tự hết khi P6 gộp phiếu~~ — P6 gộp đã khai tử; nút làm riêng ở **CR-222 (29/08/2026)**, dẫn sang trang `/procurement/survey-requests/:id/process` |
 | **N-14** — `SCOPE_FIELDS` khai 12/38 entity, thiếu khai thì **không lọc** chứ không phải chặn | ~~Lỗ hổng~~ **ĐÃ VÁ** | `13` §6.7 · `06` H4 | **B-07 xong 24/08/2026** *(CR-131 — nay 39/39; ⚠️ trước khi lên prod phải gắn `company_id` cho 17 nhân sự)* |
 | **N-13** — `attachment/controller.py` `_check()` không lọc phạm vi | ~~Lỗ hổng~~ **ĐÃ VÁ** | `13` §6.7 · `06` H17 | **B-08 xong 24/08/2026** *(CR-130, dev/prod chờ deploy)* |
 | **N-15** — `tab_contract.party_type` + `.status` còn chữ tự do | ~~Nợ~~ **ĐÃ TRẢ** | `13` §6.7 | **B-02 xong 22/08/2026** *(dev/prod chờ deploy)* |

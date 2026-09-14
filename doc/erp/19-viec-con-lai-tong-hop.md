@@ -15,8 +15,8 @@
 
 | Ưu tiên | Việc | Trạng thái | Nguồn |
 | --- | --- | --- | --- |
-| 1 | Đóng BM-002 · BM-005 · BM-014 · BM-012 · BM-013 | **14/09:** BM-014 + BM-012 vá (bao-CR-394), BM-002 đóng trên dev (bao-CR-395) — cả hai local, chưa commit/deploy. Còn BM-005 + BM-013 (đều chờ P4) | `doc/tai-lieu-ky-thuat/so-ghi-nhan-loi-bao-mat.md` bản 1.4 |
-| 2 | bao-CR-312 P3b · P4 · P5 · P6 | P0–P3a đã lên prod (P2+P3a theo lượt gộp 11/09); **P3b xong mã + test local 14/09 (bao-CR-395), chưa commit** | `doc/tai-lieu-ky-thuat/nhat-ky-va-phien-dang-nhap.md` §10 |
+| 1 | Đóng BM-002 · BM-005 · BM-014 · BM-012 · BM-013 | **14/09:** BM-014 + BM-012 vá (bao-CR-394), BM-002 đóng (bao-CR-395) — đã commit `00b740b5` + deploy DEV 14/09, prod chờ gộp `erp-v2` → `main`. Còn BM-005 (đóng bằng P4 — **bao-CR-402 xong mã + test local 14/09, chờ commit**) + BM-013 (còn mở, xem mục 1) | `doc/tai-lieu-ky-thuat/so-ghi-nhan-loi-bao-mat.md` bản 1.4 |
+| 2 | bao-CR-312 P3b · P4 · P5 · P6 | P0–P3a đã lên prod (P2+P3a theo lượt gộp 11/09); **P3b commit `00b740b5` + deploy DEV 14/09** (prod chờ gộp); **P4 xong mã + test local 14/09 (bao-CR-402), chờ commit** | `doc/tai-lieu-ky-thuat/nhat-ky-va-phien-dang-nhap.md` §10 |
 | 3 | HRM: Hồ sơ nhân sự Đợt 3 + Đợt 4, Nghỉ phép mục mở | Đồng nghiệp làm | mục 3 dưới đây |
 | 4 | Mọi thứ khác | Chờ xếp | mục 4–12 |
 
@@ -26,11 +26,11 @@ Nguồn: `doc/tai-lieu-ky-thuat/so-ghi-nhan-loi-bao-mat.md`. BM-001/004/008..011
 
 | Mã | Mức | Nội dung | Đóng bằng |
 | --- | --- | --- | --- |
-| BM-002 | Cao | Không có phiên phía máy chủ, token lộ là không thu hồi được | CR-312 **P3b** (màn hiện phiên + đá phiên) — **xong local 14/09 (bao-CR-395)**, chờ commit + deploy |
-| BM-005 | Trung bình | Audit không lưu giá trị trước/sau từng trường | CR-312 **P4** (`tab_change_log`) — còn mở |
-| BM-014 | Trung bình | Tin `CF-Connecting-IP` tùy ý, chưa xác thực nguồn | **Vá xong local 14/09 (bao-CR-394)** — `TRUSTED_PROXY_CIDRS` |
-| BM-012 | Thấp | Token hết hạn ghi log với `user_id = 0` | **Vá xong local 14/09 (bao-CR-394)** — cờ `token_expired` |
-| BM-013 | Thấp | `record()` tự commit tạo dấu vết ma | Hoãn, gộp với P4 — còn mở |
+| BM-002 | Cao | Không có phiên phía máy chủ, token lộ là không thu hồi được | CR-312 **P3b** (màn hiện phiên + đá phiên) — **xong, commit `00b740b5` + deploy DEV 14/09 (bao-CR-395)**, prod chờ gộp |
+| BM-005 | Trung bình | Audit không lưu giá trị trước/sau từng trường | CR-312 **P4** (`tab_change_log`) — **bao-CR-402 xong mã + test local 14/09, chờ commit + deploy** |
+| BM-014 | Trung bình | Tin `CF-Connecting-IP` tùy ý, chưa xác thực nguồn | **Vá xong 14/09 (bao-CR-394, commit `00b740b5`, DEV đã deploy)** — `TRUSTED_PROXY_CIDRS` |
+| BM-012 | Thấp | Token hết hạn ghi log với `user_id = 0` | **Vá xong 14/09 (bao-CR-394, commit `00b740b5`, DEV đã deploy)** — cờ `token_expired` |
+| BM-013 | Thấp | `record()` tự commit tạo dấu vết ma | Đo ở bao-CR-402, quyết **giữ nguyên** `db.commit()` trong `record()` (gỡ là vỡ 2 chỗ ở `document/file_access_log.py`) — P4 đóng lỗ ở lớp thay đổi, BM-013 **còn mở** |
 | BM-003 · BM-006 | — | Đã vá một phần, chưa đóng hẳn | Rà lại khi làm P3b/P4 |
 
 ## 2. Nhật ký + phiên đăng nhập — bao-CR-312 (ưu tiên 2)
@@ -41,8 +41,8 @@ commit `b5787ccc` nằm trên `origin/main`). Dòng change-log-bao còn ghi "pro
 
 | Phase | Nội dung | Điều kiện |
 | --- | --- | --- |
-| **P3b** | Ba chỗ hiện phiên (Quản trị · Trang cá nhân · tab Nhân sự) + khóa quyền `login_session` + endpoint đọc/đá — **XONG local 14/09 (bao-CR-395), chỉ `frontend-v2`, 5 chỗ khác bản vẽ ở §8.5.1; chưa commit** | Chờ đại ca duyệt commit + deploy dev |
-| **P4** | `tab_change_log` + sự kiện ORM + che cột nhạy cảm + chốt gộp nhập liệu — **trước/sau từng trường**, nặng nhất | P1 — đã đủ |
+| **P3b** | Ba chỗ hiện phiên (Quản trị · Trang cá nhân · tab Nhân sự) + khóa quyền `login_session` + endpoint đọc/đá — **XONG: commit `00b740b5` + deploy DEV 14/09 (bao-CR-395)**, chỉ `frontend-v2`, 5 chỗ khác bản vẽ ở §8.5.1 | Prod chờ gộp `erp-v2` → `main` |
+| **P4** | `tab_change_log` + sự kiện ORM + che cột nhạy cảm + chốt gộp nhập liệu — **trước/sau từng trường**, nặng nhất | **XONG mã + test local 14/09 (bao-CR-402)** — chờ commit + deploy |
 | **P5** | Màn `/system/logs`: gộp theo `request_id`, 4 tab, theo dõi trực tiếp, biểu đồ; `/api/audit-logs` trả thêm `request_id` | P2, P4 (tab *Thay đổi* ẩn khi chưa có P4) |
 | **P6** | Phân vùng theo năm + dọn 16 tháng + tách 4 bảng nhật ký khỏi sao lưu đêm (dump hai lượt) + cảnh báo IP lạ / đổi IP giữa phiên / xóa hàng loạt / nhiều 403 | P3, P4 |
 
@@ -92,9 +92,15 @@ nhớ trạng thái gấp/mở, nhắc hạn qua chuông/email, quản lý mẫu
 
 ## 5. Nhập khẩu (`doc/erp/nhap-khau/01-danh-sach-tinh-nang.md`)
 
-59 tính năng, gần như chưa làm. Tài liệu ghi "tạm dừng chờ commit của đồng nghiệp" — bản đó
-**chính là khối Báo cáo thực hiện đã lên prod 12/09**. Việc kế tiếp: chạy checklist mục 14
-của tài liệu để rà lại danh sách theo mã thật rồi mới code.
+Hai khối khác nhau, đừng lẫn:
+
+- **Nền đơn hàng nhập khẩu ĐÃ CHẠY PROD**: `order_type = IMPORT` (bao-CR-319/347), điều khoản
+  in theo NCC (bao-CR-321), báo cáo giá vốn nhập khẩu, cụm Báo cáo thực hiện YCBG
+  (bao-CR-388..393, prod 12/09).
+- **Phân hệ "Hồ sơ & tiến độ nhập khẩu"** (59 tính năng, 5 bảng mới) **chưa có một dòng mã** —
+  đại ca chốt 14/09: **PENDING**, chưa xếp lịch. Điều kiện "tạm dừng chờ commit của đồng nghiệp"
+  trong tài liệu đã hết hiệu lực từ 12/09 (bản chờ đó chính là khối Báo cáo thực hiện ở trên).
+  Khi mở lại: chạy checklist mục 14 để rà danh sách theo mã thật rồi mới code.
 
 ## 6. Giao diện v2
 
@@ -116,8 +122,13 @@ Nguồn: `doc/erp/13-ke-hoach-man-con-lai-v2.md` §3, §6.8, §6.9; `doc/erp/14-
 
 - P2 nền pháp nhân: hoãn, chờ HRM chuẩn.
 - P3 port đợt 1 / P4-3 nhận hàng + lịch sử mua hàng: chưa xác nhận đóng.
-- **P6 gộp YCBG + YCMH**: tạm dừng 05/09, mã đóng băng ở nhánh `p6-hop-nhat-chung-tu` (42bc0290).
-- P7 · P8 · P9: phụ thuộc P2/P6.
+- **P6 gộp YCBG + YCMH: ĐÃ KHAI TỬ 07/09** (không phải tạm dừng) — thay bằng **bao-CR-310**
+  (mục H `doc/tai-lieu-chuc-nang/03-yeu-cau-mua-hang.md`): đợt 1 backend đã commit + lên prod
+  (bảng `tab_purchase_request_item_option`); còn **đợt 3** (màn *Xử lý phương án*
+  `/procurement/purchase-requests/:id/process`) → **đợt 2** (sinh ĐMH từ phương án chốt) →
+  **đợt 4** (2 bản in + nợ N-17 gác quyền in bằng `supplier:read`). Nhánh `p6-hop-nhat-chung-tu`
+  (42bc0290) chỉ giữ tham khảo, không merge lại.
+- P7 · P8 · P9: phụ thuộc P2; ràng buộc "chờ P6" cũ hết hiệu lực — xét lại phạm vi theo bao-CR-310.
 - Hai dòng đã lỗi thời trong doc 12/13, đừng tin: "compose prod chưa có service erp" và
   "CR-117/118 chưa bê sang main" — cả hai xong từ 11/09/2026.
 
