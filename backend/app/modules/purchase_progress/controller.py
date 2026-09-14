@@ -18,7 +18,7 @@ Bản 1: CHỈ dùng cột đã có trong DB. Các cột theo Mapping còn thi�
 `doc/yeu-cau/Mapping_Sheet06_TienDoMuaHang.md`.
 """
 from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user, get_perm_profile, user_has_permission
@@ -36,6 +36,26 @@ router = APIRouter(prefix="/api/purchase-progress", tags=["purchase_progress"])
 
 # Cột nhạy cảm — ẩn với người không có `supplier.read`
 _SUPPLIER_HIDDEN = ex.SUPPLIER_HIDDEN_KEYS
+
+
+def _search_columns():
+    """Các cột ô TÌM KIẾM (`q=`) quét qua — khai thành danh sách chứ không viết thẳng vào
+    câu lọc, để bài kiểm đối chiếu được với model thật.
+
+    bao-CR-404: bản cũ viết chuỗi `|` ngay trong `_build_query` và có lẫn `POItem.nspt` —
+    một cột KHÔNG tồn tại (NSPT chỉ nằm trên đơn). Mọi lượt gõ vào ô tìm kiếm ném
+    AttributeError -> 500, mà giao diện v1 không tự báo lỗi cho request GET nên màn hình
+    chỉ đứng im với bảng cũ. Lỗi sống lâu vì không có chỗ nào đối chiếu."""
+    return (
+        # Đơn mua hàng
+        PurchaseOrder.code, PurchaseOrder.misa_code, PurchaseOrder.pr_code,
+        PurchaseOrder.supplier_name, PurchaseOrder.supplier_code,
+        PurchaseOrder.department, PurchaseOrder.nspt,
+        # Dòng hàng
+        POItem.product_code, POItem.product_name, POItem.item_group,
+        # Lần giao
+        PODelivery.progress_note,
+    )
 
 
 def _sort_map():
@@ -158,18 +178,7 @@ def _build_query(request: Request, db: Session, user, prof: dict, po_scope: bool
     kw = (request.query_params.get("q") or "").strip()
     if kw:
         like = f"%{kw}%"
-        q = q.filter((PurchaseOrder.code.like(like))
-                     | (PurchaseOrder.misa_code.like(like))
-                     | (PurchaseOrder.pr_code.like(like))
-                     | (PurchaseOrder.supplier_name.like(like))
-                     | (PurchaseOrder.supplier_code.like(like))
-                     | (PurchaseOrder.department.like(like))
-                     | (PurchaseOrder.nspt.like(like))
-                     | (POItem.product_code.like(like))
-                     | (POItem.product_name.like(like))
-                     | (POItem.item_group.like(like))
-                     | (POItem.nspt.like(like))
-                     | (PODelivery.progress_note.like(like)))
+        q = q.filter(or_(*[c.like(like) for c in _search_columns()]))
 
     # ----- Bộ lọc điều kiện (CR-080) -----
     # Các ô lọc cố định phía trên chỉ còn Công ty / Tìm kiếm / Trạng thái tiến độ / Tình trạng
