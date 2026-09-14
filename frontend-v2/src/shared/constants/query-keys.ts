@@ -12,6 +12,8 @@ export const queryKeys = {
     me: () => ['auth', 'me'] as const,
     /** Tuỳ chọn hiển thị cá nhân (bảng màu giao diện). */
     preferences: () => ['auth', 'preferences'] as const,
+    /** Thiết bị đang đăng nhập của CHÍNH MÌNH (`/api/auth/sessions`, bao-CR-395). */
+    mySessions: (activeOnly: boolean) => ['auth', 'sessions', activeOnly] as const,
   },
   procurement: {
     all: ['procurement'] as const,
@@ -354,6 +356,12 @@ export const queryKeys = {
     settings: () => ['system', 'settings'] as const,
     backups: (params?: Record<string, unknown>) => ['system', 'backups', params ?? {}] as const,
     auditLogs: (params?: Record<string, unknown>) => ['system', 'audit-logs', params ?? {}] as const,
+    /** Phiên đăng nhập toàn hệ (bao-CR-395) — màn Quản trị + thẻ ở hồ sơ nhân sự. */
+    loginSessions: (params?: Record<string, unknown>) =>
+      ['system', 'login-sessions', params ?? {}] as const,
+    /** Lịch sử đăng nhập N ngày của MỘT tài khoản (phiên + lần thất bại). */
+    loginHistory: (userId: number, days: number) =>
+      ['system', 'login-sessions', 'history', userId, days] as const,
     /** Hộp thư gửi danh nghĩa địa chỉ khác (26/08/2026). */
     mailboxes: () => ['system', 'mailboxes'] as const,
     /** Mẫu email thông báo theo bước (Đặt xe) — sửa được trong Cấu hình. */

@@ -10,6 +10,13 @@ BM-005 / BM-007 nay đã có mã chạy thật chứ không còn "mới ở mứ
 **Bản 1.3 — 10/09/2026 (chiều).** bao-CR-312 P1 + P1b **đã deploy PROD** (`main` `e21023d1`):
 **BM-008 … BM-011 đóng nốt phía prod**, nợ kỹ thuật N-010 trả xong. BM-002 vẫn mở trên prod
 vì P3a chưa lên `main`.
+**Bản 1.4 — 14/09/2026.** bao-CR-394 vá **BM-014** (chỉ tin header IP khi peer TCP nằm trong
+dải proxy tin cậy) và **BM-012** (token hết hạn vẫn ghi `user_id` + cờ `token_expired`);
+bao-CR-395 = P3b của bao-CR-312 (màn hình phiên + khóa `login_session`), **BM-002 đóng trên
+dev**. Cả hai mới ở local `erp-v2`, **chưa commit, chưa deploy**. Đính chính: đoạn "P2 và P3a
+chưa lên `main`" ở bản 1.3 đã **hết hạn** — gộp `erp-v2` → `main` ngày 11/09 đã đưa cả P2 lẫn
+P3a lên prod (`b5787ccc` là tổ tiên của `main`), nên đăng xuất trên prod **đã có hiệu lực**;
+prod chỉ còn thiếu màn hình đá phiên của P3b. BM-013 **hoãn sang P4**, chưa vá.
 
 ---
 
@@ -60,7 +67,7 @@ nó là bằng chứng cho lần soát sau rằng chỗ này từng hở.
 | ID | Mức | Phát hiện | Trạng thái |
 |---|---|---|---|
 | BM-001 | **Cao** | `/api/audit-logs` chỉ gác bằng đăng nhập — mọi tài khoản đọc được nhật ký của mọi phân hệ | **Đã vá (09/09/2026, `main` f023c747 + 2de0b2d4 — đã deploy prod; `erp-v2` 682010c3 — đã deploy dev).** Đo lại trên prod: 230/233 tài khoản đang hoạt động ăn 403 ở `entity=auth` và ở lối duyệt toàn hệ, 3 tài khoản quản trị qua được |
-| BM-002 | **Cao** | Không có phiên đăng nhập phía máy chủ — token lộ thì không thu hồi được | **Mở** — chờ P3 của bao-CR-312 |
+| BM-002 | **Cao** | Không có phiên đăng nhập phía máy chủ — token lộ thì không thu hồi được | **Đã vá trên dev (P3a bao-CR-360 + P3b bao-CR-395, 14/09/2026, local `erp-v2` chưa commit).** Prod đã có P2 + P3a từ gộp 11/09 (`tab_login_session`, đăng xuất đóng phiên thật) — còn thiếu màn hình đá phiên / bắt đăng nhập lại của P3b; tới lúc đó quản trị vẫn cắt được máy lạ bằng cách khóa tài khoản |
 | BM-003 | Trung bình | Gia hạn token không để lại dấu vết nào | **Vá một phần (09/09/2026, `main` f023c747 — đã deploy prod; `erp-v2` abff1298 — đã deploy dev).** `/api/auth/refresh` nay ghi `refresh` / `refresh_failed` kèm IP. Còn phần phiên phía máy chủ ở P3. ~~P3 sẽ bỏ chính dòng `refresh` thành công này theo QĐ-A~~ — **QĐ-A đã bị đảo 10/09/2026**, dòng `refresh` thành công GIỮ LẠI, xem BM-009 |
 | BM-004 | Trung bình | Giới hạn tần suất đăng nhập dùng chung MỘT xô cho cả công ty | **Đã vá (09/09/2026, `main` f023c747 — đã deploy prod; `erp-v2` abff1298 — đã deploy dev).** Đã kiểm trên hệ thật: dấu vết đăng nhập mang IP công cộng thật (118.71.139.127, 27.64.133.181), không phải `172.x` → `CF-Connecting-IP` tới được api. Kiểm trên dev với header giả `X-Forwarded-For: 6.6.6.6` + `X-Real-IP: 7.7.7.7`: dòng ghi vẫn là IP thật (180.93.2.176), header giả bị bỏ qua |
 | BM-005 | Trung bình | Nhật ký không lưu giá trị trước / sau — không chứng minh được đã đổi gì | **Mở** — `tab_change_log` nằm ở P4 của bao-CR-312, chưa viết dòng mã nào |
@@ -70,9 +77,9 @@ nó là bằng chứng cho lần soát sau rằng chỗ này từng hở.
 | BM-009 | Trung bình | Thao tác **ĐỌC** không để lại dấu vết nào — kể cả tải tệp đính kèm và cả lượt bị chặn 403 | **Đã vá + ĐÃ ĐÓNG CẢ HAI PHÍA (bao-CR-346, 10/09/2026) — `erp-v2` 337fa9bb deploy dev; `main` e21023d1 deploy prod chiều 10/09** — ghi hết mọi GET |
 | BM-010 | Trung bình | Đổi phân quyền và đổi tài khoản **không gọi `record()`** — vùng nhạy cảm nhất lại là vùng trắng | **Đã vá + ĐÃ ĐÓNG CẢ HAI PHÍA (bao-CR-346, 10/09/2026) — `erp-v2` 337fa9bb deploy dev; `main` e21023d1 deploy prod chiều 10/09** |
 | BM-011 | Trung bình | Nhật ký chỉ có MỘT bản, nằm trên đúng cái máy kẻ tấn công đang đứng | **Đã vá + ĐÃ ĐÓNG CẢ HAI PHÍA (bao-CR-346, 10/09/2026) — `erp-v2` 337fa9bb deploy dev; `main` e21023d1 deploy prod chiều 10/09** — đóng gói ra R2 hàng tháng |
-| BM-012 | Thấp | Token hết hạn thì dòng nhật ký ghi `user_id = 0` — không phân biệt được "khách vãng lai" với "người có tài khoản, token vừa hết hạn" | **Mở** |
-| BM-013 | Thấp | `record()` tự `commit()` — giao dịch nghiệp vụ bị rollback vẫn để lại dấu vết ma | **Mở** |
-| BM-014 | Trung bình | `CF-Connecting-IP` được tin **vô điều kiện** — ai gọi thẳng vào api là tự khai IP của mình | **Mở** |
+| BM-012 | Thấp | Token hết hạn thì dòng nhật ký ghi `user_id = 0` — không phân biệt được "khách vãng lai" với "người có tài khoản, token vừa hết hạn" | **Đã vá (bao-CR-394, 14/09/2026, local `erp-v2` — chưa commit, chưa deploy).** `_peek_user_id` đọc `sub` kể cả khi hết hạn, `tab_request_log.error_code = token_expired` |
+| BM-013 | Thấp | `record()` tự `commit()` — giao dịch nghiệp vụ bị rollback vẫn để lại dấu vết ma | **Mở — hoãn sang P4** (đổi nhịp commit đụng 213 lời gọi, làm cùng lúc chuyển ghi xuống tầng ORM) |
+| BM-014 | Trung bình | `CF-Connecting-IP` được tin **vô điều kiện** — ai gọi thẳng vào api là tự khai IP của mình | **Đã vá (bao-CR-394, 14/09/2026, local `erp-v2` — chưa commit, chưa deploy).** Chỉ tin header khi peer TCP nằm trong `TRUSTED_PROXY_CIDRS` |
 
 ✅ **Bốn dòng BM-008…BM-011 nay đã đóng trên CẢ HAI phía** (cập nhật chiều 10/09/2026).
 Chúng vá lớp nhật ký của bao-CR-312 P1, và P1 vốn chưa từng lên prod — đó là lý do sổ này
@@ -86,9 +93,12 @@ Cách trả nợ: **cherry-pick, không merge** (`quy-trinh-nhanh-va-deploy.md` 
 Đánh đổi đã biết: tệp migration đó nay khác nhau ở hai nhánh, nên lần merge `main` → `erp-v2`
 tới sẽ đụng độ đúng ở dòng `down_revision` — **giữ bản của `erp-v2` (`d7f2a9c4e1b8`)**.
 
-⚠️ Vẫn còn hở trên prod: **P2 và P3a** (`bao-CR-358` + `bao-CR-360`) chưa lên `main`, nên
+~~⚠️ Vẫn còn hở trên prod: **P2 và P3a** (`bao-CR-358` + `bao-CR-360`) chưa lên `main`, nên
 `tab_login_session` và bộ mã hành động chưa có trên hệ thật. Riêng **BM-002 (đăng xuất không
-có hiệu lực)** vì vậy **vẫn mở trên prod**, dù đã có mã chạy trên `erp-v2`.
+có hiệu lực)** vì vậy **vẫn mở trên prod**, dù đã có mã chạy trên `erp-v2`.~~
+**Hết hạn từ 11/09/2026** (đính chính ở bản 1.4): gộp `erp-v2` → `main` hôm đó đã đưa P2 + P3a
+lên prod — `git merge-base --is-ancestor b5787ccc origin/main` trả về đúng. Đăng xuất trên prod
+đã đóng phiên thật. Thứ prod còn thiếu là P3b (màn hình phiên), xem BM-002.
 
 ---
 
@@ -184,7 +194,23 @@ Thêm: `faq` ghi dấu vết dưới tên riêng nhưng gác bằng khóa `help_
 
 ### BM-002 — Không có phiên đăng nhập phía máy chủ
 
-**Mức: Cao. Trạng thái: MỞ.**
+**Mức: Cao. Trạng thái: ĐÃ VÁ TRÊN DEV 14/09/2026** (P3a bao-CR-360 + P3b bao-CR-395, local
+`erp-v2` chưa commit). Prod có P2 + P3a từ 11/09 (đăng xuất đóng phiên thật, `jti` trong token,
+`get_current_user` kiểm phiên còn sống); màn hình quản trị phiên của P3b chưa lên prod. Mô tả
+dưới đây giữ ở thì hiện tại của lúc phát hiện.
+
+**Cái gì đã đóng từng hệ quả:**
+
+- *Đăng xuất không đăng xuất* → P3a: `logout` đặt `revoked_at`, `get_current_user` từ chối
+  phiên đã cắt (bộ đệm 60 giây trong tiến trình). Prod đã có.
+- *Không thu hồi được một phiên* → P3b: `POST /api/login-sessions/{id}/revoke` (đá một máy),
+  `POST /api/login-sessions/users/{user_id}/logout-all` (tăng `token_version`, ăn ngay), và
+  người dùng tự đá máy lạ của mình qua `/api/auth/sessions*`. Khóa mới `login_session`
+  (`read` · `delete`), `_SYS_ENTITIES`. Dev.
+- *"Tài khoản này đang đăng nhập ở đâu?"* → màn `/system/sessions` + thẻ *Phiên đăng nhập* ở
+  tab Tài khoản của hồ sơ nhân sự + tab *Thiết bị của tôi* ở `/me` (chỉ `frontend-v2`).
+- *Token lộ là mất tới 7 ngày* → vẫn đúng về thời hạn, nhưng nay **cắt được** thay vì chờ hết
+  hạn. Rút ngắn `REFRESH_EXPIRE_DAYS` là việc riêng, chưa quyết.
 
 `backend/app/core/auth.py:26` — token chứa đúng ba trường: `sub` (id người dùng), `type`,
 `exp`. Không có `jti`, không có bảng phiên nào phía máy chủ.
@@ -443,7 +469,7 @@ sẵn sàng (`is_remote_storage_ready`) — thà không có bản sao còn hơn 
 
 ### BM-012 — Token hết hạn ghi thành `user_id = 0`
 
-**Mức: Thấp. Trạng thái: mở.**
+**Mức: Thấp. Trạng thái: ĐÃ VÁ 14/09/2026** (bao-CR-394, local `erp-v2` — chưa commit).
 
 `_peek_user_id` (`core/request_middleware.py:57`) giải mã token **không tra DB**; token hỏng,
 hết hạn, hay sai chữ ký đều trả về `0`. Nên trong `tab_request_log`, "người lạ chưa đăng nhập"
@@ -453,11 +479,18 @@ Chưa vá vì cửa quyền thật nằm ở `get_current_user`, đây chỉ là
 đọc `sub` **kể cả khi token hết hạn** (`options={"verify_exp": False}`) rồi ghi kèm một cờ
 `token_expired`, chứ đừng gộp vào `0`.
 
+**Đã vá đúng cách đó.** `_peek_user_id` nay trả `(user_id, expired)`: gặp
+`ExpiredSignatureError` thì giải mã lại với `verify_exp=False` để giữ `sub`; token sai chữ ký
+vẫn về `0` (không tin `sub` của token giả). `RequestContext` thêm cờ `token_expired`; dòng
+`tab_request_log` có `status_code = 401` mà cờ bật thì `error_code = "token_expired"` — tra
+"ai bị văng vì hết hạn" là một câu `WHERE`. Không đổi schema. Test:
+`test_nhat_ky_lop_may_cr312.py` (thêm ca token hết hạn).
+
 ---
 
 ### BM-013 — `record()` tự commit, để lại dấu vết ma
 
-**Mức: Thấp. Trạng thái: mở.**
+**Mức: Thấp. Trạng thái: mở — hoãn sang P4 (quyết 14/09/2026, cùng đợt bao-CR-394).**
 
 `core/audit.py` kết bằng `db.commit()`. Nếu thao tác nghiệp vụ nổ **sau** lời gọi `record(...)`
 và giao dịch bị rollback, dòng dấu vết vẫn nằm lại — nhật ký khẳng định một việc chưa từng xảy
@@ -470,7 +503,7 @@ có gì bù lại. Vá cùng P4, khi việc ghi chuyển xuống tầng ORM và 
 
 ### BM-014 — `CF-Connecting-IP` được tin vô điều kiện
 
-**Mức: Trung bình. Trạng thái: mở.**
+**Mức: Trung bình. Trạng thái: ĐÃ VÁ 14/09/2026** (bao-CR-394, local `erp-v2` — chưa commit).
 
 `get_client_ip` (`core/client_ip.py:31`) lấy `CF-Connecting-IP` đầu tiên, không kiểm tra người
 gọi có thật là Cloudflare không. Cả sự an toàn của nó dựa vào một giả định **nằm ngoài mã
@@ -483,6 +516,18 @@ là BM-004 mở lại kèm theo, ở dạng khó thấy hơn.
 
 Vá: chỉ tin `CF-Connecting-IP` khi peer TCP nằm trong dải IP Cloudflare, hoặc khi có một
 header bí mật do cloudflared đặt. Chưa làm vì cần đụng cấu hình hạ tầng, không chỉ mã nguồn.
+
+**Đã vá — không cần đụng hạ tầng.** Trong stack của mình, peer TCP của api **không bao giờ**
+là Cloudflare: cloudflared chạy trong mạng Docker và nginx đứng giữa, nên mọi lượt hợp lệ tới
+api đều từ một IP **nội bộ** (`172.x` / `10.x`). Vì vậy dải tin cậy là dải mạng riêng, không
+phải dải Cloudflare: `settings.TRUSTED_PROXY_CIDRS` (mặc định
+`10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,127.0.0.0/8`, đổi được qua `.env`).
+`get_client_ip` chỉ đọc `CF-Connecting-IP` rồi tới hop cuối của `X-Forwarded-For` khi
+`request.client.host` nằm trong dải đó; ngoài dải thì **lấy đúng IP TCP**, header có gì cũng
+bỏ. CIDR gõ sai bị bỏ qua (có log), host không phải IP (như `testclient`) coi là không tin.
+Cái còn hở về lý thuyết: ai đã vào được mạng Docker nội bộ thì vẫn khai IP giả được — nhưng
+người đó đã đứng cạnh database rồi, IP giả là chuyện nhỏ nhất. Test:
+`test_client_ip_cr313.py` (thêm ca peer ngoài dải + CIDR hỏng).
 
 ---
 
@@ -526,7 +571,12 @@ chặn). Đây là chỗ vừa hở, để test canh.
 `test_va_nhat_ky_cr313.py` (3 ca cho ba chốt chuyển ngược) + `test_client_ip_cr313.py`.
 Cả hai vế đều có test: vế chặn, và vế **không được chặn nhầm** người dùng thường.
 
-### Việc 2 — tách khóa phiên ra khỏi bao-CR-312, làm trước
+### Việc 2 — tách khóa phiên ra khỏi bao-CR-312, làm trước — **XONG trên dev 14/09/2026**
+
+Đã làm đúng theo ý này, thành ba đợt nhỏ: P2 (bao-CR-358, bảng phiên) → P3a (bao-CR-360,
+`jti` + đăng xuất đóng phiên) → P3b (bao-CR-395, màn hình + khóa `login_session` + đá phiên /
+bắt đăng nhập lại). P2 + P3a đã lên prod 11/09; P3b mới ở local. Cùng đợt: bao-CR-394 vá
+BM-012 + BM-014. Đoạn dưới giữ nguyên làm bằng chứng cho lý do tách.
 
 BM-002 nặng, mà bao-CR-312 là công trình 6 đợt. Phần trả lời được BM-002 chỉ là một mẩu của
 đợt P1: bảng `tab_login_session`, `jti` trong token, `get_current_user` kiểm phiên còn sống,

@@ -85,6 +85,13 @@ ENTITIES = [
     # riêng `/api/coffee/my-wallet` chỉ đòi đăng nhập. Nhật ký đồng bộ đọc/ghi
     # qua quyền của `pos_order` (cùng mối quan tâm vận hành, không thêm khóa thứ 5).
     "coffee_policy", "coffee_member", "coffee_ledger", "pos_order",
+    # Phiên đăng nhập (bao-CR-395 / CR-312 P3b, doc nhat-ky-va-phien-dang-nhap §8.5).
+    # MỘT khóa cho cả ba màn: `/system/sessions` (admin, scope all + delete) ·
+    # tab «Tài khoản & thiết bị» trong hồ sơ nhân sự (HR, read all) · tab «Thiết bị
+    # của tôi» ở `/me`. ⚠️ Riêng «của tôi» đi endpoint `/api/auth/sessions` CHỈ đòi
+    # đăng nhập, KHÔNG đòi khóa này — hệ đang chạy thì vai trò cũ không tự có khóa
+    # mới (D-018), mà ai cũng phải đá được thiết bị lạ của chính mình.
+    "login_session",
 ]
 
 ACTIONS = ["read", "create", "write", "delete", "approve", "cancel", "print", "export"]
@@ -154,6 +161,7 @@ ENTITY_LABELS = {
     "coffee_member": "Điểm cà phê › Thành viên & ghép POS365",
     "coffee_ledger": "Điểm cà phê › Sổ điểm & điều chỉnh",
     "pos_order": "Điểm cà phê › Đơn POS365 & đồng bộ",
+    "login_session": "Phiên đăng nhập",
 }
 
 ACTION_LABELS = {

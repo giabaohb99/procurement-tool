@@ -268,6 +268,8 @@ export const appRoutes = {
     backups: '/system/backups',
     /** Nhật ký hệ thống (Audit Logs). */
     auditLogs: '/system/audit-logs',
+    /** Phiên đăng nhập đang mở toàn hệ — đá phiên / bắt đăng nhập lại (bao-CR-395). */
+    sessions: '/system/sessions',
     /** Hộp thư gửi danh nghĩa địa chỉ khác — dùng lúc ban hành văn bản. */
     mailboxes: '/system/mailboxes',
     /** Quản lý nhập dữ liệu — danh sách các lần nạp dữ liệu hàng loạt. */

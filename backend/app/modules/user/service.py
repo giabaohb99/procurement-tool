@@ -364,6 +364,14 @@ def set_active(db: Session, user_id: int, active: bool, actor_id: int) -> None:
     db.commit()
     record(db, actor_id, "user", user_id, "activate" if active else "deactivate",
            ("Mở khóa tài khoản " if active else "Khóa tài khoản ") + user_label(db, user_id))
+    if not active:
+        #  bao-CR-395: khóa tài khoản là cắt MỌI thiết bị đang đăng nhập, tức thì.
+        #  Trước đó `get_current_user` đã chặn người bị khóa ở mỗi lượt gọi, nên
+        #  đây không phải cơ chế chặn — nó để màn Phiên đăng nhập / tab hồ sơ nói
+        #  đúng là "bị khóa" chứ không hiện phiên vẫn "còn hiệu lực" suốt 7 ngày.
+        from app.modules.login_session.constants import RevokeReason
+        from app.modules.login_session.service import force_relogin
+        force_relogin(db, user, RevokeReason.ACCOUNT_LOCKED, actor_id)
 
 
 def set_notify_email(db: Session, user_id: int, on: bool, actor_id: int) -> None:

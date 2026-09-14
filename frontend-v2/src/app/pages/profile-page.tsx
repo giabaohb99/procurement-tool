@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
-import { Bell, CheckSquare, LifeBuoy, Palette, User } from 'lucide-react'
+import { Bell, CheckSquare, LifeBuoy, MonitorSmartphone, Palette, User } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
 import { EmailNotificationCard } from '@/app/components/profile/email-notification-card'
+import { ProfileDevicesTab } from '@/app/components/profile/profile-devices-tab'
 import { ProfileIdentityCard } from '@/app/components/profile/profile-identity-card'
 import { ProfileHrDetails } from '@/app/components/profile/profile-hr-details'
 import { ProfileInfoCard } from '@/app/components/profile/profile-info-card'
@@ -61,9 +62,11 @@ export function ProfilePage() {
         ? 'notifications'
         : rawTab === 'appearance'
           ? 'appearance'
-          : rawTab === 'tickets' && canReadTickets
-            ? 'tickets'
-            : 'info'
+          : rawTab === 'devices'
+            ? 'devices'
+            : rawTab === 'tickets' && canReadTickets
+              ? 'tickets'
+              : 'info'
 
   const handleTabChange = (val: string) => {
     setSearchParams(val === 'info' ? {} : { tab: val }, { replace: true })
@@ -164,6 +167,12 @@ export function ProfilePage() {
                   )}
                 </TabsTrigger>
               )}
+              {/* bao-CR-395 — máy nào đang giữ phiên của mình, tự đá máy lạ.
+                  Không gác quyền: cửa `/api/auth/sessions*` chỉ đòi đăng nhập. */}
+              <TabsTrigger value="devices" className={cn('gap-2', TAB_TRIGGER_UNDERLINE)}>
+                <MonitorSmartphone className="size-4" />
+                <span>Thiết bị của tôi</span>
+              </TabsTrigger>
               <TabsTrigger value="appearance" className={cn('gap-2', TAB_TRIGGER_UNDERLINE)}>
                 <Palette className="size-4" />
                 <span>Giao diện</span>
@@ -255,6 +264,10 @@ export function ProfilePage() {
                 <ProfileTicketsTab onCountChange={setTicketCount} />
               </TabsContent>
             )}
+
+            <TabsContent value="devices" className="space-y-4">
+              <ProfileDevicesTab />
+            </TabsContent>
 
             {/* Cùng một bộ chọn với phân hệ Giao diện — chỉ khác số cột, vì tab
                 này hẹp hơn (khung hồ sơ giới hạn `max-w-5xl`). */}

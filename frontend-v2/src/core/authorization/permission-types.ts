@@ -124,6 +124,11 @@ export const ENTITIES = [
   'coffee_member',
   'coffee_ledger',
   'pos_order',
+  //  Phiên đăng nhập (bao-CR-395, CR-312 P3b) — một khóa cho màn
+  //  `/system/sessions` + thẻ ở hồ sơ nhân sự. `read` = xem, `delete` = đá phiên /
+  //  bắt đăng nhập lại. «Thiết bị của tôi» ở /me KHÔNG cần khóa này (cửa
+  //  `/api/auth/sessions*` chỉ đòi đăng nhập).
+  'login_session',
 ] as const
 
 export type PermissionEntity = (typeof ENTITIES)[number]

@@ -220,7 +220,10 @@ _SYS_ENTITIES = {"user", "role", "setting", "backup", "help_article", "mailbox",
                  #  quan gì tới nghiệp vụ mua hàng. Cùng lý do đã loại
                  #  `leave_balance` ra khỏi đây.
                  "employee_sensitive",
-                 "coffee_policy", "coffee_member", "coffee_ledger", "pos_order"}
+                 "coffee_policy", "coffee_member", "coffee_ledger", "pos_order",
+                 #  Phiên đăng nhập (bao-CR-395): đá phiên / bắt đăng nhập lại là
+                 #  việc của quản trị hệ thống + Nhân sự, không phải của thu mua.
+                 "login_session"}
 _PUR_MANAGER_PERMS = {e: (_ALL_ACTIONS, "all") for e in ENTITIES if e not in _SYS_ENTITIES}
 
 STD_ROLES = {
@@ -255,6 +258,11 @@ STD_ROLES = {
         #  (duoc-CR-320). Vòng `setdefault` phía dưới chỉ cấp `read` cho mọi vai
         #  trò; quyền SỬA khai đích danh ở đây.
         "job_position": (["read", "create", "write", "delete"], "all"),
+        #  Tab «Tài khoản & thiết bị» trong hồ sơ (bao-CR-395): Nhân sự XEM phiên
+        #  đang mở + lịch sử đăng nhập 90 ngày của mọi người. KHÔNG cấp `delete`
+        #  (đá phiên là của admin); nút «Khóa tài khoản + đăng xuất mọi thiết bị»
+        #  đi qua `user.write`, khóa xong thì hook tự thu hồi phiên.
+        "login_session": (["read"], "all"),
     }},
     "dept_head": {"name": "Trưởng phòng (duyệt PYC)", "perms": {
         **_CATALOG_READ, **_CONTRACT_READ,

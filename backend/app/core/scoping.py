@@ -221,6 +221,14 @@ SCOPE_FIELDS = {
     #  Đơn POS365 là dữ liệu vận hành/đối soát — lọc theo pháp nhân của quán;
     #  người thường không có grant nên không thấy gì (đúng ý).
     "pos_order":        {"company": "company_id"},
+
+    # --- Phiên đăng nhập (bao-CR-395 / CR-312 P3b) ---
+    #  Bảng `tab_login_session` chỉ có `user_id` — không cột công ty/phòng ban, và
+    #  cố ý không nối sang nhân sự để lọc: một phiên thuộc về TÀI KHOẢN, không thuộc
+    #  về phòng. Nên chỉ hai mức có nghĩa: `all` (quản trị / Nhân sự) và `own`
+    #  (thiết bị của tôi). `dept` rơi về `own` theo nhánh chung của `_role_scope_cond`,
+    #  `company` không có cột thì bị chặn — đúng ý, đừng khai thêm chiều cho có.
+    "login_session":    {"owner": "user_id"},
 }
 
 

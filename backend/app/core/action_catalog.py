@@ -217,6 +217,13 @@ _AUTH = (
     #  chủ, BM-002), lúc `tab_login_session` biết được IP của lần cấp token đầu
     #  để so. Giữ trong bảng chứ không xóa: P3 thêm lời gọi là chạy ngay.
     ActionCode("refresh_ip_changed", "Gia hạn phiên từ IP khác", ACTION_GROUP_AUTH),
+    #  bao-CR-395 / CR-312 P3b — màn Phiên đăng nhập. `session_revoked` = cắt MỘT
+    #  thiết bị (admin đá, hoặc chính chủ đá từ tab «Thiết bị của tôi»);
+    #  `logout_all` = cắt MỌI thiết bị của một người (bắt đăng nhập lại / đăng
+    #  xuất mọi thiết bị khác). Cả hai ghi lên `entity=auth`, `entity_id=` người
+    #  BỊ cắt, `created_by=` người bấm — nên tra lịch sử một người là ra đủ.
+    ActionCode("session_revoked", "Đá phiên khỏi thiết bị", ACTION_GROUP_AUTH),
+    ActionCode("logout_all", "Đăng xuất mọi thiết bị", ACTION_GROUP_AUTH),
 )
 
 #  =====================================================================

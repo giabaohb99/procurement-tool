@@ -15,6 +15,10 @@
 2. Gia hạn phải đi qua **cửa phiên**: refresh token không mang `jti`, hoặc phiên
    đã bị thu hồi, đều là 401 — không thì đăng xuất chẳng có hiệu lực gì, vì vé
    gia hạn cứ thế đẻ vé truy cập mới suốt bảy ngày.
+
+⚠️ **Cập nhật bao-CR-394 (BM-014).** `get_client_ip` chỉ đọc hai header khi đầu TCP
+đối diện (`request.client.host`) nằm trong `TRUSTED_PROXY_CIDRS`; `_req()` mặc định
+`host="10.0.0.5"` nên các ca cũ vẫn đứng trong vùng tin cậy.
 """
 import json
 from types import SimpleNamespace
@@ -75,6 +79,42 @@ def test_ip_bi_cat_ngan_khong_tran_cot():
 def test_limiter_khoa_theo_ip_that():
     req = _req({"CF-Connecting-IP": "203.0.113.9", "X-Forwarded-For": "9.9.9.9, 172.18.0.4"})
     assert limiter._key_func(req) == "203.0.113.9"
+
+
+# ── bao-CR-394 / BM-014: header chỉ được tin khi đầu TCP đối diện là proxy của mình ──
+def test_goi_thang_cong_8000_tu_ngoai_thi_header_tu_khai_bi_bo():
+    """Cổng uvicorn `ports:` ra máy chủ; ai gọi thẳng thì `CF-Connecting-IP` là thứ
+    chính họ gõ — bản cũ tin ngay, tức đổi header mỗi lượt là né sạch rate-limit."""
+    req = _req({"CF-Connecting-IP": "203.0.113.9", "X-Forwarded-For": "9.9.9.9, 8.8.8.8"},
+               host="198.51.100.77")
+    assert get_client_ip(req) == "198.51.100.77"
+    assert limiter._key_func(req) == "198.51.100.77"
+
+
+def test_dau_doi_dien_khong_phai_ip_thi_khong_tin_header():
+    """TestClient của Starlette đặt `client.host = "testclient"` — không phải IP thì
+    không tin, chiều an toàn: hụt nhất là ghi IP container, không phải tin IP bịa."""
+    req = _req({"CF-Connecting-IP": "203.0.113.9"}, host="testclient")
+    assert get_client_ip(req) == "testclient"
+
+
+@pytest.mark.parametrize("host", ["172.18.0.4", "10.0.0.5", "192.168.1.20", "127.0.0.1"])
+def test_ba_dai_docker_va_loopback_deu_duoc_tin(host):
+    assert get_client_ip(_req({"CF-Connecting-IP": "203.0.113.9"}, host=host)) == "203.0.113.9"
+
+
+def test_dai_tin_cay_doc_tu_cau_hinh_va_bo_qua_dai_hong(monkeypatch):
+    from app.core import client_ip as mod
+
+    monkeypatch.setattr(mod.settings, "TRUSTED_PROXY_CIDRS", "rác, 203.0.113.0/24")
+    mod.load_trusted_networks.cache_clear()
+    try:
+        #  Dải hỏng bị bỏ qua chứ không làm sập; dải hợp lệ vẫn có hiệu lực.
+        assert mod.is_trusted_proxy("203.0.113.5") is True
+        assert mod.is_trusted_proxy("10.0.0.5") is False
+        assert mod.is_trusted_proxy("") is False
+    finally:
+        mod.load_trusted_networks.cache_clear()
 
 
 # ── refresh ─────────────────────────────────────────────────────────────────────

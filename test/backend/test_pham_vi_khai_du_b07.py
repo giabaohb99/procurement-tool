@@ -124,9 +124,15 @@ def test_du_55_entity():
     không một: ba quyền của PS12 (xem sổ người khác · điều chỉnh tay · chạy đồng
     bộ) phải tách được. Sổ và thành viên khai `self` theo `employee_id` — "nhân
     viên chỉ thấy sổ của mình" là một phép áp scope (`doc/erp/diem-ca-phe/04`).
+
+    59 → 60 ngày 14/09/2026 (bao-CR-395, CR-312 P3b): `login_session` — màn
+    Phiên đăng nhập. Khai `{"owner": "user_id"}`: bảng chỉ có tài khoản, không
+    có công ty/phòng ban, nên chỉ `all` (admin/Nhân sự) và `own` có nghĩa. Tab
+    «Thiết bị của tôi» KHÔNG đi qua khóa này (endpoint `/api/auth/sessions` chỉ
+    đòi đăng nhập) — vai trò cũ trên hệ đang chạy không tự có khóa mới.
     """
-    assert len(ENTITIES) == 59
-    assert len(SCOPE_FIELDS) == 59
+    assert len(ENTITIES) == 60
+    assert len(SCOPE_FIELDS) == 60
 
 
 # ── 2. Không dựng nổi điều kiện thì chặn ────────────────────────────────────────
