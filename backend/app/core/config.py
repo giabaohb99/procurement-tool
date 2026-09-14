@@ -17,6 +17,11 @@ class Settings(BaseSettings):
 
     CORS_ORIGINS: str = "http://localhost:8080,http://localhost:5173"
     LOGIN_RATE_LIMIT: str = "10/minute"  # chống brute-force đăng nhập
+    # bao-CR-394 / BM-014: chỉ tin `CF-Connecting-IP` / `X-Forwarded-For` khi đầu TCP đối
+    # diện (`request.client.host`) nằm trong các dải này — mặc định = mạng Docker + loopback,
+    # nơi nginx và cloudflared đứng. Gọi thẳng cổng 8000 từ ngoài thì header tự khai bị bỏ,
+    # lấy IP TCP thật. Ngăn cách bằng dấu phẩy; dải sai cú pháp bị bỏ qua (xem `core/client_ip`).
+    TRUSTED_PROXY_CIDRS: str = "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,127.0.0.0/8"
 
     ADMIN_CODE: str = "degoadmin"
     ADMIN_PASSWORD: str = "dego2026"

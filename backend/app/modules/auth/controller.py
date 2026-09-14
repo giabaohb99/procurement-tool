@@ -365,3 +365,55 @@ def reset_password(request: Request, data: schema.ResetPasswordInput, db: Sessio
     force_relogin(db, user, RevokeReason.PASSWORD_CHANGED, user.id)
 
     return success(None, "Đặt lại mật khẩu thành công")
+
+
+# ── Thiết bị của tôi (bao-CR-395 / CR-312 P3b) ──────────────────────────────────
+#  Ba endpoint dưới CHỈ đòi đăng nhập, không đòi khóa `login_session`. Bản thiết
+#  kế (§8.5) nói "`login_session` own mặc định cho mọi vai trò" — nhưng trên hệ
+#  đang chạy vai trò cũ không tự nhận khóa mới (D-018), và người dùng thường
+#  phải đá được thiết bị lạ của chính mình mà không chờ ai tick quyền. Cùng lẽ
+#  với `/api/coffee/my-wallet`. Mọi truy vấn khóa cứng `user_id == user.id`,
+#  không có tham số nào để nhìn sang người khác.
+
+@router.get("/sessions")
+def my_sessions(active_only: bool = True, user=Depends(get_current_user),
+                db: Session = Depends(get_db)):
+    """Phiên của CHÍNH MÌNH, mới nhất trước; phiên đang gọi được đánh dấu `is_current`."""
+    from app.modules.login_session.schema import serialize_session
+    query = db.query(LoginSession).filter(LoginSession.user_id == user.id)
+    if active_only:
+        query = query.filter(LoginSession.revoked_at.is_(None))
+    rows = query.order_by(LoginSession.created_at.desc(), LoginSession.id.desc()).limit(200).all()
+    ctx = get_context()
+    current_id = int(ctx.session_id or 0) if ctx else 0
+    return success({"items": [serialize_session(r, current_session_id=current_id) for r in rows],
+                    "current_session_id": current_id})
+
+
+@router.post("/sessions/{session_id}/revoke")
+def revoke_my_session(session_id: int, user=Depends(get_current_user),
+                      db: Session = Depends(get_db)):
+    """Đá MỘT thiết bị của mình. Phiên của người khác → 404 như không tồn tại."""
+    row = (db.query(LoginSession)
+           .filter(LoginSession.id == session_id, LoginSession.user_id == user.id).first())
+    if not row:
+        raise HTTPException(404, "Không tìm thấy phiên")
+    if row.revoked_at is not None:
+        raise HTTPException(400, "Phiên này đã kết thúc rồi")
+    revoke_session(db, row, RevokeReason.SELF_LOGOUT, user.id)
+    audit_record(db, user.id, "auth", user.id, "session_revoked",
+                 f"Tự đá phiên #{row.id} khỏi thiết bị {row.device_label or 'không rõ'} "
+                 f"(IP {row.ip or '?'})")
+    return success(None, "Đã đăng xuất thiết bị đó. Có hiệu lực trong vòng 1 phút.")
+
+
+@router.post("/sessions/revoke-others")
+def revoke_my_other_sessions(user=Depends(get_current_user), db: Session = Depends(get_db)):
+    """Đăng xuất mọi thiết bị KHÁC, giữ thiết bị đang bấm nút — cùng cơ chế với
+    đổi mật khẩu (không tăng `token_version`, nên trễ tối đa 60 giây)."""
+    ctx = get_context()
+    count = revoke_user_sessions(db, user.id, RevokeReason.SELF_LOGOUT, user.id,
+                                 except_session_id=(ctx.session_id if ctx else 0) or 0)
+    audit_record(db, user.id, "auth", user.id, "logout_all",
+                 f"Tự đăng xuất mọi thiết bị khác — cắt {count} phiên")
+    return success({"revoked": count}, f"Đã đăng xuất {count} thiết bị khác.")

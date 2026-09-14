@@ -13,6 +13,7 @@ from app.core.response import error
 from app.modules.attachment.controller import router as attachment_router
 from app.modules.audit.controller import router as audit_router
 from app.modules.auth.controller import router as auth_router
+from app.modules.login_session.controller import router as login_session_router
 from app.modules.doc_catalog.book_controller import router as document_book_router
 from app.modules.doc_catalog.issue_code_controller import router as issue_code_router
 from app.modules.doc_catalog.numbering_rule_controller import router as numbering_rule_router
@@ -188,6 +189,7 @@ app.include_router(product_router)
 app.include_router(role_router)
 app.include_router(user_router)
 app.include_router(audit_router)
+app.include_router(login_session_router)   # bao-CR-395: màn Phiên đăng nhập (P3b)
 app.include_router(dashboard_router)
 app.include_router(pr_router)
 app.include_router(attachment_router)

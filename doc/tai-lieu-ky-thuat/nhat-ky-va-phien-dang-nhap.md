@@ -1,6 +1,6 @@
 # THIẾT KẾ LẠI NHẬT KÝ (LOG) & PHIÊN ĐĂNG NHẬP
 
-**Bản:** 2.4 — 09/09/2026 · **CR:** bao-CR-312 · **Trạng thái: 12 CÂU HỎI §11 ĐÃ CHỐT 08/09/2026 (theo đề xuất, riêng Q2 khách đổi thành 16 tháng + gói theo năm). Bản 2.4 tính lại dung lượng bằng SỐ ĐO THẬT trên prod 09/09 và chốt thêm ba điều chỉnh (QĐ-A gia hạn phiên · QĐ-B khóa nối nhị phân · QĐ-C nhật ký ra khỏi sao lưu hằng đêm, đóng gói theo tháng). P0 tách thành bao-CR-313 (xong, deploy 09/09). **Tình hình mã ngày 10/09/2026 (chiều): P0 + P1 + P1b đã deploy CẢ dev lẫn PROD; P2 + P3a xong mã trên `erp-v2` nhưng chưa push, chưa deploy đâu cả; P3b trở đi chưa gõ.**
+**Bản:** 2.4 — 09/09/2026 · **CR:** bao-CR-312 · **Trạng thái: 12 CÂU HỎI §11 ĐÃ CHỐT 08/09/2026 (theo đề xuất, riêng Q2 khách đổi thành 16 tháng + gói theo năm). Bản 2.4 tính lại dung lượng bằng SỐ ĐO THẬT trên prod 09/09 và chốt thêm ba điều chỉnh (QĐ-A gia hạn phiên · QĐ-B khóa nối nhị phân · QĐ-C nhật ký ra khỏi sao lưu hằng đêm, đóng gói theo tháng). P0 tách thành bao-CR-313 (xong, deploy 09/09). **Tình hình mã ngày 14/09/2026: P0 + P1 + P1b + P2 + P3a đã lên CẢ dev lẫn PROD (P2/P3a theo gộp `erp-v2` → `main` 11/09); P3b (bao-CR-395) xong mã + test ở local `erp-v2`, CHƯA commit, chưa deploy; P4 trở đi chưa gõ.**
 
 Bản 1.0 (07/09) chỉ đề xuất *thêm* hai bảng bên cạnh nhật ký cũ. Bản 2.0 (08/09 sáng) thiết kế
 lại chính dòng nhật ký. Bản 2.1 bổ sung hai thứ bản 2.0 còn thiếu khi đối chiếu với câu hỏi
@@ -19,8 +19,9 @@ deploy 09/09), **P1 + P1b** (`bao-CR-346`, deploy dev 10/09 — **và deploy PRO
 `main` `e21023d1`, đóng nợ N-010) và **P2** (`bao-CR-358`, 10/09 —
 xem §10.1) và **P3a** (`bao-CR-360`, 10/09 — phần lõi phiên đăng nhập, kèm **QĐ-D** ở §11 sửa
 lại chỗ đặt cửa chặn mà §5 bản cũ viết gộp) — mấy đợt đó nay mô tả thứ chạy thật, và chỗ nào
-bản làm khác bản vẽ thì có dấu ⚠️ ngay tại mục đó (§4.1 có hai chỗ). P3b (ba màn hình) trở đi
-chưa có dòng mã nào. Đọc kèm
+bản làm khác bản vẽ thì có dấu ⚠️ ngay tại mục đó (§4.1 có hai chỗ). **P3b** (`bao-CR-395`,
+14/09 — ba màn hình + khóa `login_session` + endpoint đọc/đá; §8.5 có **năm chỗ làm khác bản
+vẽ**, đánh dấu ⚠️ ở đó). P4 trở đi chưa có dòng mã nào. Đọc kèm
 `so-ghi-nhan-loi-bao-mat.md` (BM-001…BM-014) và `change-log-bao.md` (bao-CR-311).
 
 ---
@@ -827,6 +828,31 @@ revoke) **hợp** với `tab_audit_log WHERE entity='auth' AND action='login_fai
 theo thời gian. Cột: lúc · kết quả · phương thức · thiết bị · IP · kết thúc thế nào
 (`revoke_reason`).
 
+#### 8.5.1. ⚠️ P3b làm khác bản vẽ ở NĂM chỗ (bao-CR-395, 14/09/2026)
+
+Mã chạy thật là `backend/app/modules/login_session/` (`schema.py` + `controller.py`) và
+`modules/auth/controller.py` (cửa tự phục vụ); giao diện ở `frontend-v2/src/modules/system/`
+(`pages/login-session-list-page.tsx`, `components/login-session-user-card.tsx`,
+`components/login-session-device.tsx`) + `app/components/profile/profile-devices-tab.tsx`.
+
+| # | Bản vẽ nói | Bản làm | Vì sao |
+|---|---|---|---|
+| 1 | Tab *Thiết bị của tôi* dùng khóa `login_session` phạm vi `own`, "cấp mặc định cho mọi vai trò" | Cửa riêng **`/api/auth/sessions*`** (`GET`, `POST .../{id}/revoke`, `POST .../revoke-others`) **chỉ đòi đăng nhập**, không đòi khóa nào; luôn lọc `user_id = người gọi`. Khóa `login_session` chỉ gác cửa quản trị `/api/login-sessions*` | Seed **không ghi đè** vai trò trên hệ đang chạy (D-018) — "cấp mặc định cho mọi vai trò" chỉ đúng với vai trò tạo mới. Gác bằng khóa thì trên prod **không ai** thấy tab của mình cho tới khi có người đi tick 20 vai trò. Cửa riêng không có lỗ mở rộng: nó không nhận `user_id` từ ngoài |
+| 2 | `POST /api/users/{id}/logout-all` | **`POST /api/login-sessions/users/{user_id}/logout-all`** | Gom về một router để một khóa (`login_session.delete`) gác trọn bộ thao tác phiên; `users/` router thuộc khóa `user`, đặt ở đó là HR có `user.write` tự nhiên bắt đăng nhập lại được |
+| 3 | Ba màn hình ở "giao diện" — không nói bản nào | **Chỉ `frontend-v2`.** `frontend/` (v1) không có gì | D-026: `frontend/` đóng băng, tính năng mới về v2. **Hệ quả:** prod v1 `thumua.degoholding.vn` sẽ **không** có màn phiên kể cả sau khi deploy; quản trị phải vào `erp.degoholding.vn`. Lệch với nếp *"v1 trước rồi mới port v2"* (08/09) — cố ý, vì đây là màn mới chứ không phải vá lỗi màn đang chạy |
+| 4 | Tab Nhân sự "**không** đá lẻ" (Q11) | Thẻ *Phiên đăng nhập* ở tab Tài khoản hồ sơ nhân sự **có** nút *Đá phiên* từng dòng — nhưng chỉ hiện khi người xem có `login_session.delete` | Thẻ là **một component dùng chung** với màn Quản trị (cùng khóa, cùng API); vai trò nhân sự seed **không** có `delete` nên HR vẫn không đá lẻ được như Q11 chốt. Nút chỉ hiện cho quản trị tình cờ mở hồ sơ từ phía Nhân sự. Muốn đúng chữ Q11 thì thêm một prop tắt nút — chưa làm, chờ khách xem thử |
+| 5 | Phân hệ tách bạch | Hồ sơ nhân sự (`hr`) import thẻ từ `modules/system/components/`, và thẻ đó import hook `useEmployeeAccount` / `useSetUserActive` của `hr` — **hai chiều** | Luật `components.md` nói import chéo là mùi; có tiền lệ (`mailbox-form-dialog.tsx` mượn `useEmployees`). Tách ra `shared/` là việc dọn riêng, không thuộc CR này |
+
+Ngoài năm chỗ đó, hai thứ **không** có trong bản vẽ nhưng cần biết khi vận hành:
+
+- **Hai cơ chế cắt phiên, hiệu lực khác nhau.** *Đá phiên* (một dòng) chỉ đặt `revoked_at`,
+  cửa `get_current_user` đọc qua bộ đệm 60 giây → máy bị đá **còn dùng được tới 1 phút**;
+  giao diện nói rõ "Có hiệu lực trong vòng 1 phút". *Bắt đăng nhập lại* / *Khóa tài khoản*
+  tăng `token_version` → **ăn ngay** ở lượt gọi kế. Cần cắt gấp thì dùng cái sau.
+- **Trên hệ đang chạy, khóa `login_session` chỉ tự tới tay `admin`** (`ensure_admin_role`).
+  Vai trò `hr_profile` hay bất kỳ vai trò nào khác phải **tick tay ở màn Phân quyền** — không
+  dùng `SEED_FORCE_SYNC`. Và người **đang đăng nhập giữ map quyền cũ** tới khi đăng nhập lại.
+
 ---
 
 ## 9. Dữ liệu cũ và dung lượng
@@ -942,7 +968,7 @@ và task xóa phải chạy **sau** task đóng gói ít nhất một ngày.
 | **P1** | Middleware ngữ cảnh (IP lấy bằng `core/client_ip.get_client_ip` của bao-CR-313, không bật `--proxy-headers`) + **`tab_request_log`** + 6 cột ngữ cảnh trên audit. Kèm **QĐ-A** (bỏ qua gia hạn phiên thành công, §4.1) và **QĐ-B** (`request_id` là `BINARY(16)`, §4.5) — hai thứ này phải đúng **ngay từ migration đầu**, sửa sau là đổi kiểu cột trên bảng đã vài trăm nghìn dòng | **Endpoint nào · input · output · IP · lượt bị chặn** — 213 lời gọi cũ không sửa | — |
 | **P2** | **`bao-CR-358` (10/09/2026, XONG trên `erp-v2`)** — `ACTION_CATALOG` + nhãn bắt buộc + test canh + `action_group`, xem §10.1 | 1.135 dòng đang hiện mã Anh đọc được ngay, **cộng 12 mã chưa ai từng khai** | — |
 | **P3a** | **`bao-CR-360` (10/09/2026)** — phần LÕI: `tab_login_session` + `jti` + `token_version` + cửa chặn ở `get_current_user` + dập dấu vết ở middleware (**QĐ-D**, §11) + 4 thao tác điều khiển phiên ở tầng service. **Kèm việc dọn:** bỏ dòng audit `refresh` cho nhánh gia hạn **thành công** mà bao-CR-313 đang ghi, chuyển sang dập `refreshed_at` / `refresh_count` / `last_seen_ip` theo QĐ-A. **Không màn hình nào.** | Đăng xuất **có hiệu lực thật**, đá được một phiên, bắt đăng nhập lại — tức đóng BM-002 ở phần cốt lõi | P1 |
-| **P3b** | Ba chỗ hiện phiên (§8.5: Quản trị · Trang cá nhân · tab Nhân sự) + khóa quyền `login_session` + 3 endpoint đọc/đá | Người dùng **nhìn thấy** thiết bị của mình và tự bấm được | P3a chạy êm vài ngày trên dev |
+| **P3b** | **`bao-CR-395` (14/09/2026, XONG mã + test ở local `erp-v2`, chưa commit)** — ba chỗ hiện phiên (§8.5: Quản trị · Trang cá nhân · tab Nhân sự, **chỉ `frontend-v2`**) + khóa quyền `login_session` (`_SYS_ENTITIES`, ENTITIES 59 → **60**, `test_pham_vi_khai_du_b07` 60/60) + 4 endpoint quản trị + 3 endpoint tự phục vụ; **năm chỗ khác bản vẽ ở §8.5.1**. Kèm `bao-CR-394` vá BM-012 + BM-014 | Người dùng **nhìn thấy** thiết bị của mình và tự bấm được; BM-002 đóng hẳn trên dev | P3a chạy êm vài ngày trên dev |
 | **P4** | `tab_change_log` + sự kiện ORM + che cột + chốt gộp nhập liệu | **Trước/sau** — nặng nhất, làm sau cùng trong nhóm nền | P1 |
 | **P5** | Màn `/system/logs` (§8.2–8.4): danh sách gộp theo `request_id`, ngăn 4 tab, theo dõi trực tiếp, biểu đồ; `/api/audit-logs` trả thêm `request_id` để *Xem chi tiết* từ dòng thời gian phiếu | **Gom một chỗ, debug trên giao diện** | P2, P4 (tab *Thay đổi* ẩn khi chưa có P4 — màn vẫn dùng được ngay sau P1) |
 | **P1b** | **`bao-CR-346` (10/09/2026)** — đảo luật lọc thành *ghi hết GET* (§4.1), che vết lỗi SQL, `device_hash` + `referer`, `record(...)` cho `role/` + `user/`, và **kéo hai việc của P6 lên**: đóng gói R2 hằng tháng (§4.1.2) + dọn dòng GET 90 ngày (§4.1.1) | **Ai ĐỌC cái gì** — thứ P1 hoàn toàn không có. Và nhật ký có bản sao thứ hai ngoài máy | P1 |
@@ -970,9 +996,10 @@ ra hai bảng `tab_request_log` khác id. Hệ quả: lần merge `main` → `er
 đúng ở dòng đó — giữ bản của `erp-v2`**. Ba tệp tài liệu của CR-312 cũng nay có mặt ở cả hai
 nhánh, cùng cảnh.
 
-⚠️ **Prod hiện dừng ở hết P1b.** `main` **chưa có** P2 (`bao-CR-358`) và P3a (`bao-CR-360`) —
-hệ thật chưa có `ACTION_CATALOG` lẫn `tab_login_session`. Bảng trên đọc theo dev, đừng hiểu là
-prod đã có đủ mọi đợt.
+~~⚠️ **Prod hiện dừng ở hết P1b.** `main` **chưa có** P2 (`bao-CR-358`) và P3a (`bao-CR-360`) —
+hệ thật chưa có `ACTION_CATALOG` lẫn `tab_login_session`.~~ **Hết hạn từ 11/09/2026:** gộp
+`erp-v2` → `main` hôm đó mang cả P2 lẫn P3a lên prod (`b5787ccc` là tổ tiên của `origin/main`).
+**Prod nay dừng ở hết P3a**; thứ chưa lên là P3b (màn hình phiên) và P4 trở đi.
 
 ### 10.1. P2 đã làm gì — và tìm ra gì
 
@@ -1050,7 +1077,7 @@ nhau thành một hạn 16 tháng + gói theo năm). Cột phải là **quyết 
 | **Q8** | Backfill IP từ `message` của 346 dòng đăng nhập cũ? | **Có** |
 | **Q9** | `response_body` giữ **luôn** hay **chỉ khi lỗi**? | **Chỉ khi lỗi**; 2xx giữ `message` + `data.id`. Kết quả thành công đã nằm ở change_log rồi, giữ thêm là gấp đôi dung lượng để lưu thứ có sẵn |
 | **Q10** | Người thường có được **tự đá thiết bị của mình** không? | **Có** — tab *Thiết bị của tôi* ở Trang cá nhân, phạm vi `own` |
-| **Q11** | Hồ sơ **Nhân sự** có tab *Tài khoản & thiết bị* không, và HR được làm gì? | **Có** — đọc phiên + lịch sử đăng nhập 90 ngày; một nút *Khóa + đăng xuất mọi thiết bị* cho nghỉ việc; **không** đá lẻ (§8.5) |
+| **Q11** | Hồ sơ **Nhân sự** có tab *Tài khoản & thiết bị* không, và HR được làm gì? | **Có** — đọc phiên + lịch sử đăng nhập 90 ngày; một nút *Khóa + đăng xuất mọi thiết bị* cho nghỉ việc; **không** đá lẻ (§8.5). ⚠️ Bản làm (P3b) đặt thẻ vào tab *Tài khoản* sẵn có thay vì tab mới, và nút đá lẻ **có trong mã** nhưng gác bằng `login_session.delete` — HR không có khóa đó nên vẫn đúng ý chốt; xem §8.5.1 dòng 4 |
 | **Q12** | Lỗi 500 / task nền văng lỗi có lưu **traceback vào DB** không? | **Có**, `error_detail` cắt 16 KB, cùng hạn giữ 16 tháng — để debug trên màn, không phải vào container |
 
 ### Chốt thêm ở bản 2.4 — quyết định kỹ thuật nội bộ, không phải hỏi khách

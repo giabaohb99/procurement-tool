@@ -33,6 +33,7 @@ import { Form } from '@/shared/ui/form'
 import { PageContainer } from '@/shared/ui/page-container'
 import { RecordIdentityCard, type IdentityChip } from '@/shared/ui/record-identity-card'
 import { SectionHeading } from '@/shared/ui/section-heading'
+import { LoginSessionUserCard } from '@/modules/system/components/login-session-user-card'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { ScrollableTabsList } from '@/shared/ui/scrollable-tabs-list'
 import { TAB_TRIGGER_UNDERLINE } from '@/shared/ui/tab-underline'
@@ -355,6 +356,15 @@ export function EmployeeDetailPage() {
                   className="h-full"
                 />
               </div>
+              {/*  bao-CR-395: phiên đang mở + lịch sử đăng nhập 90 ngày. Thẻ tự
+                   ẩn khi thiếu `login_session.read` hoặc nhân sự chưa có tài
+                   khoản — mọi hook bên trong đều gác `enabled`. */}
+              <LoginSessionUserCard
+                employeeId={employee.id}
+                userId={employee.user_id}
+                userName={employee.full_name}
+                className="mt-5"
+              />
             </TabsContent>
           </Tabs>
 

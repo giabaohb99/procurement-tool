@@ -36,6 +36,10 @@ class RequestContext:
     session_id: int | None = None  # P3 mới có bảng phiên để mà điền
     ip: str = ""
     actor_kind: int = ACTOR_KIND_USER
+    #  bao-CR-394 / BM-012: token có, đọc được `sub`, nhưng đã HẾT HẠN. Middleware
+    #  dùng nó để dòng 401 của `tab_request_log` mang `error_code = token_expired`
+    #  thay vì trông y hệt một lượt gọi vô danh — hai chuyện khác nhau khi đi tra.
+    token_expired: bool = False
     #  Hai số đếm dòng con, để `tab_request_log` biết có gì đáng mở ra xem.
     audit_count: int = 0
     change_count: int = 0

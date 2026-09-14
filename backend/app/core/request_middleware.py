@@ -23,7 +23,7 @@ import logging
 import time
 import traceback
 
-from jose import JWTError, jwt
+from jose import ExpiredSignatureError, JWTError, jwt
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
@@ -54,23 +54,38 @@ MAX_CAPTURE_BYTES = MAX_BODY_BYTES
 METHODS_WITH_BODY = ("POST", "PUT", "PATCH", "DELETE")
 
 
-def _peek_user_id(request) -> int:
-    """Đọc `sub` trong token — KHÔNG tra DB, không ném lỗi.
+TOKEN_EXPIRED_CODE = "token_expired"
+
+
+def _peek_user_id(request) -> tuple[int, bool]:
+    """Đọc `sub` trong token — KHÔNG tra DB, không ném lỗi. Trả `(user_id, đã hết hạn)`.
 
     Middleware chạy trước mọi dependency nên chưa có `get_current_user`. Token
-    hỏng / hết hạn thì trả `0`: đó chính là dòng nhật ký của một lượt gọi không
+    hỏng thì trả `(0, False)`: đó chính là dòng nhật ký của một lượt gọi không
     danh tính, thứ cần ghi lại chứ không phải thứ cần chặn (cửa quyền thật nằm
     ở `get_current_user`, không phải ở đây).
+
+    bao-CR-394 / BM-012: token HẾT HẠN là ca riêng. Bản cũ gộp nó với "hỏng" nên
+    dòng 401 ghi `user_id = 0` — người đi tra không phân biệt được "ai đó dùng
+    token cũ" với "một lượt gọi vô danh". Nay giải mã lại bỏ qua `exp` (chữ ký
+    vẫn phải đúng) để giữ `sub`, và cắm cờ cho `_write` ghi `error_code`.
     """
     header = request.headers.get("authorization") or ""
     if not header.lower().startswith("bearer "):
-        return 0
+        return 0, False
+    raw = header[7:].strip()
     try:
-        payload = jwt.decode(header[7:].strip(), settings.JWT_SECRET,
-                             algorithms=[settings.JWT_ALG])
-        return int(payload.get("sub") or 0)
+        payload = jwt.decode(raw, settings.JWT_SECRET, algorithms=[settings.JWT_ALG])
+        return int(payload.get("sub") or 0), False
+    except ExpiredSignatureError:
+        try:
+            payload = jwt.decode(raw, settings.JWT_SECRET, algorithms=[settings.JWT_ALG],
+                                 options={"verify_exp": False})
+            return int(payload.get("sub") or 0), True
+        except (JWTError, KeyError, ValueError, TypeError):
+            return 0, True
     except (JWTError, KeyError, ValueError, TypeError):
-        return 0
+        return 0, False
 
 
 def _route_pattern(path: str, path_params: dict) -> str:
@@ -152,9 +167,10 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
         method = request.method
         wants_log = should_log_request(method, path)
 
+        user_id, token_expired = _peek_user_id(request)
         ctx = RequestContext(request_id=new_request_id(), source=SOURCE_API,
-                             user_id=_peek_user_id(request), ip=get_client_ip(request),
-                             actor_kind=ACTOR_KIND_USER)
+                             user_id=user_id, token_expired=token_expired,
+                             ip=get_client_ip(request), actor_kind=ACTOR_KIND_USER)
         token = set_context(ctx)
         started = time.perf_counter()
         content_type = (request.headers.get("content-type") or "").lower()
@@ -278,6 +294,12 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
         """Ghi một dòng. Hỏng thì nuốt lỗi — xem luật 1 ở đầu tệp."""
         from app.core.database import SessionLocal
         from app.modules.request_log.model import RequestLog
+
+        #  BM-012: 401 vì token hết hạn thì nói rõ. `HTTPException` đi qua bộ xử
+        #  lỗi chung của `main.py` ra mã = số trạng thái ("401"), tức chưa nói gì
+        #  thêm — đè được. Endpoint tự đặt mã riêng thì giữ, nó cụ thể hơn.
+        if status_code == 401 and ctx.token_expired and error_code in ("", "401"):
+            error_code = TOKEN_EXPIRED_CODE
 
         db = None
         try:

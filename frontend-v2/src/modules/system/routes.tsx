@@ -1,4 +1,14 @@
-import { AtSign, Database, FileDown, FileUp, History, LayoutDashboard, Settings, SlidersHorizontal } from 'lucide-react'
+import {
+  AtSign,
+  Database,
+  FileDown,
+  FileUp,
+  History,
+  LayoutDashboard,
+  MonitorSmartphone,
+  Settings,
+  SlidersHorizontal,
+} from 'lucide-react'
 
 import type { ErpModule } from '@/app/router/module-definition'
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -58,6 +68,15 @@ export const systemModule: ErpModule = {
       manage: true,
     },
     {
+      // bao-CR-395: khóa riêng `login_session` — Quản lý thu mua KHÔNG tự có
+      // (nằm trong `_SYS_ENTITIES`), vai trò cũ trên hệ đang chạy phải được tick.
+      label: 'Phiên đăng nhập',
+      path: appRoutes.system.sessions,
+      icon: MonitorSmartphone,
+      entity: 'login_session',
+      manage: true,
+    },
+    {
       label: 'Nhập dữ liệu',
       path: appRoutes.system.imports,
       icon: FileUp,
@@ -108,6 +127,12 @@ export const systemModule: ErpModule = {
       path: appRoutes.system.auditLogs,
       lazy: async () => ({
         Component: (await import('./pages/audit-log-list-page')).AuditLogListPage,
+      }),
+    },
+    {
+      path: appRoutes.system.sessions,
+      lazy: async () => ({
+        Component: (await import('./pages/login-session-list-page')).LoginSessionListPage,
       }),
     },
     {

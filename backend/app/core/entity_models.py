@@ -45,6 +45,7 @@ ENTITY_MODEL_PATHS: dict[str, tuple[str, str]] = {
     "leave_request": ("app.modules.leave.request_model", "LeaveRequest"),
     "leave_balance": ("app.modules.leave.balance_model", "LeaveBalance"),
     "room_booking": ("app.modules.meeting_room.model", "RoomBooking"),
+    "login_session": ("app.modules.login_session.model", "LoginSession"),
 }
 
 

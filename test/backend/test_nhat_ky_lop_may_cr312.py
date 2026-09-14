@@ -416,7 +416,25 @@ def client(db, monkeypatch):
     def dang_nhap(data: DangNhapIn):
         return {"success": True, "message": "ok", "data": {"id": 1}}
 
+    @app.get("/api/auth/me")
+    def toi():
+        #  Đứng thay `get_current_user`: vé hết hạn thì cửa quyền ném 401.
+        raise HTTPException(401, "Token không hợp lệ hoặc đã hết hạn")
+
     return TestClient(app)
+
+
+def _make_token(user_id: int, minutes: int) -> str:
+    """Vé truy cập ký đúng khóa; `minutes` âm là vé ĐÃ hết hạn."""
+    from datetime import timezone
+
+    from jose import jwt
+
+    from app.core.config import settings
+
+    payload = {"sub": str(user_id), "type": "access",
+               "exp": datetime.now(timezone.utc) + timedelta(minutes=minutes)}
+    return jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALG)
 
 
 def _rows(db):
@@ -507,6 +525,40 @@ def test_get_bi_chan_403_van_giu_ly_do(client, db):
     dong = _rows(db)[-1]
     assert dong.http_status == 403
     assert dong.response_body["error"]["message"] == "Không có quyền: read employee_sensitive"
+
+
+def test_ve_het_han_van_ghi_user_id_va_ma_token_expired(client, db):
+    """bao-CR-394 / BM-012: trước đây vé hết hạn và vé hỏng cùng ra `user_id = 0`,
+    dòng 401 đọc y hệt một lượt gọi vô danh — không tra được AI đang dùng vé cũ."""
+    res = client.get("/api/auth/me", headers={"authorization": "Bearer " + _make_token(7, -5)})
+
+    assert res.status_code == 401
+    dong = _rows(db)[-1]
+    assert dong.user_id == 7
+    assert dong.error_code == "token_expired"
+
+
+def test_ve_hong_chu_ky_khong_duoc_coi_la_het_han(client, db):
+    """Bỏ qua `exp` KHÔNG có nghĩa là bỏ qua chữ ký: vé ký sai khóa vẫn là vô danh."""
+    from jose import jwt
+
+    gia = jwt.encode({"sub": "7", "type": "access",
+                      "exp": datetime.now() - timedelta(minutes=5)}, "khoa-khac", algorithm="HS256")
+    res = client.get("/api/auth/me", headers={"authorization": "Bearer " + gia})
+
+    assert res.status_code == 401
+    dong = _rows(db)[-1]
+    assert dong.user_id == 0
+    assert dong.error_code == "401"
+
+
+def test_ve_con_han_ma_401_thi_khong_gan_nham_ma_het_han(client, db):
+    res = client.get("/api/auth/me", headers={"authorization": "Bearer " + _make_token(7, 5)})
+
+    assert res.status_code == 401
+    dong = _rows(db)[-1]
+    assert dong.user_id == 7
+    assert dong.error_code == "401"
 
 
 def test_dau_thiet_bi_va_referer_duoc_ghi(client, db):
