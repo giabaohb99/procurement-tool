@@ -21,6 +21,23 @@ prod chỉ còn thiếu màn hình đá phiên của P3b. BM-013 **hoãn sang P4
 khoản đăng nhập **vẫn mở, phiên vẫn sống** — phát hiện khi đại ca hỏi *"nhân viên đổi trạng
 thái thì có khóa token lại không"*. Vá ngay trong bao-CR-400 (local `erp-v2`, chưa commit),
 kèm tab *Lịch sử đăng nhập* ở Trang cá nhân để người dùng tự thấy phiên lạ.
+**Bản 1.6 — 14/09/2026 (tối).** Hai việc. (1) Đính chính trạng thái: bao-CR-394 + bao-CR-395
+đã commit `erp-v2` `00b740b5` và bao-CR-400 đã commit `e89ab592`, **cả hai đã deploy DEV** —
+mọi chỗ ghi *"chưa commit, chưa deploy"* ở bản 1.4 và 1.5 nay hết hạn; prod vẫn chờ gộp.
+(2) **BM-005 đóng trên dev** bằng bao-CR-402 (P4 của bao-CR-312): `tab_change_log` + lớp sự
+kiện ORM ghi trước/sau từng cột. **BM-013 vẫn mở nhưng đã có quyết định có đo đạc** — gỡ
+`db.commit()` khỏi `record()` là **KHÔNG làm**, lỗ dấu-vết-ma đóng ở lớp thay đổi thay vì lớp
+kể chuyện; lý do và hai chỗ sẽ hỏng ghi ngay dưới dòng BM-013.
+**Bản 1.7 — 14/09/2026 (đêm).** Đợt rà **có phương pháp** đầu tiên, theo lệnh đại ca *"rà soát
+các vấn đề bảo mật của hệ thống"*: soát **11 lớp phòng thủ** thay vì soát quanh một ticket.
+Thêm **tám dòng BM-016 … BM-023**. Không dòng nào trùng vùng với 15 dòng cũ — chúng nằm ở
+**cấu hình** và **lớp mạng**, đúng hai chỗ mà §4 của sổ này vẫn ghi là *"chưa ai nhìn"*. Hai
+dòng đóng ngay bằng quyết định chứ không bằng mã: **BM-016** (chính sách mật khẩu) và
+**BM-017** (xác thực hai lớp) — đại ca **chấp nhận rủi ro**, lý do ghi tại dòng. Một dòng lòi
+ra trong lúc trả lời câu hỏi *"đổi `JWT_SECRET` có ảnh hưởng gì tới prod không"*: **BM-023** —
+bí mật nằm trong DB mà giải mã hỏng thì **không phát ra tiếng động nào**, và thứ chết trước
+tiên là **sao lưu**. Kèm theo: đính chính §4, thêm **Việc 5** ở §3, và thêm hẳn **§5 — kịch bản
+kiểm thử bảo mật**, vì một dòng BM không có bài kiểm canh thì lần sau nó hở lại trong im lặng.
 
 ---
 
@@ -71,20 +88,28 @@ nó là bằng chứng cho lần soát sau rằng chỗ này từng hở.
 | ID | Mức | Phát hiện | Trạng thái |
 |---|---|---|---|
 | BM-001 | **Cao** | `/api/audit-logs` chỉ gác bằng đăng nhập — mọi tài khoản đọc được nhật ký của mọi phân hệ | **Đã vá (09/09/2026, `main` f023c747 + 2de0b2d4 — đã deploy prod; `erp-v2` 682010c3 — đã deploy dev).** Đo lại trên prod: 230/233 tài khoản đang hoạt động ăn 403 ở `entity=auth` và ở lối duyệt toàn hệ, 3 tài khoản quản trị qua được |
-| BM-002 | **Cao** | Không có phiên đăng nhập phía máy chủ — token lộ thì không thu hồi được | **Đã vá trên dev (P3a bao-CR-360 + P3b bao-CR-395, 14/09/2026, local `erp-v2` chưa commit).** Prod đã có P2 + P3a từ gộp 11/09 (`tab_login_session`, đăng xuất đóng phiên thật) — còn thiếu màn hình đá phiên / bắt đăng nhập lại của P3b; tới lúc đó quản trị vẫn cắt được máy lạ bằng cách khóa tài khoản |
+| BM-002 | **Cao** | Không có phiên đăng nhập phía máy chủ — token lộ thì không thu hồi được | **Đã vá trên dev (P3a bao-CR-360 + P3b bao-CR-395, 14/09/2026, `erp-v2` `00b740b5` — đã deploy dev).** Prod đã có P2 + P3a từ gộp 11/09 (`tab_login_session`, đăng xuất đóng phiên thật) — còn thiếu màn hình đá phiên / bắt đăng nhập lại của P3b; tới lúc đó quản trị vẫn cắt được máy lạ bằng cách khóa tài khoản |
 | BM-003 | Trung bình | Gia hạn token không để lại dấu vết nào | **Vá một phần (09/09/2026, `main` f023c747 — đã deploy prod; `erp-v2` abff1298 — đã deploy dev).** `/api/auth/refresh` nay ghi `refresh` / `refresh_failed` kèm IP. Còn phần phiên phía máy chủ ở P3. ~~P3 sẽ bỏ chính dòng `refresh` thành công này theo QĐ-A~~ — **QĐ-A đã bị đảo 10/09/2026**, dòng `refresh` thành công GIỮ LẠI, xem BM-009 |
 | BM-004 | Trung bình | Giới hạn tần suất đăng nhập dùng chung MỘT xô cho cả công ty | **Đã vá (09/09/2026, `main` f023c747 — đã deploy prod; `erp-v2` abff1298 — đã deploy dev).** Đã kiểm trên hệ thật: dấu vết đăng nhập mang IP công cộng thật (118.71.139.127, 27.64.133.181), không phải `172.x` → `CF-Connecting-IP` tới được api. Kiểm trên dev với header giả `X-Forwarded-For: 6.6.6.6` + `X-Real-IP: 7.7.7.7`: dòng ghi vẫn là IP thật (180.93.2.176), header giả bị bỏ qua |
-| BM-005 | Trung bình | Nhật ký không lưu giá trị trước / sau — không chứng minh được đã đổi gì | **Mở** — `tab_change_log` nằm ở P4 của bao-CR-312, chưa viết dòng mã nào |
+| BM-005 | Trung bình | Nhật ký không lưu giá trị trước / sau — không chứng minh được đã đổi gì | **Đã vá trên dev (bao-CR-402 = P4 của bao-CR-312, 14/09/2026, local `erp-v2` — chưa commit).** `tab_change_log` (migration `d5f7a9c1b3e2`) + `core/change_tracker.py` bám sự kiện ORM, ghi trước/sau **từng cột** cho mọi bảng trừ `NO_LOG_TABLES`. Prod chưa có |
 | BM-006 | Thấp | Dấu vết là tùy chọn theo từng lời gọi — quên gọi là mất | Vá một phần (bao-CR-311 + bao-CR-346) — xem BM-010 |
 | BM-007 | Thấp | Dòng nhật ký không có IP / trình duyệt / mã lượt gọi | **Vá phần lớn (P1 của bao-CR-312, `erp-v2` 2eba1274 — mới deploy dev).** `tab_request_log` ghi IP + `request_id` + tuyến gọi; `tab_audit_log` có `request_id` / `ip` / `actor_kind`. Còn dấu thiết bị ở bao-CR-346 |
 | BM-008 | Trung bình | Giá trị dữ liệu thật bị chép nguyên vào `error_detail` của dòng nhật ký khi câu SQL nổ | **Đã vá + ĐÃ ĐÓNG CẢ HAI PHÍA (bao-CR-346, 10/09/2026) — `erp-v2` 337fa9bb deploy dev; `main` e21023d1 deploy prod chiều 10/09** — `mask_error_detail`, xem chi tiết bên dưới |
 | BM-009 | Trung bình | Thao tác **ĐỌC** không để lại dấu vết nào — kể cả tải tệp đính kèm và cả lượt bị chặn 403 | **Đã vá + ĐÃ ĐÓNG CẢ HAI PHÍA (bao-CR-346, 10/09/2026) — `erp-v2` 337fa9bb deploy dev; `main` e21023d1 deploy prod chiều 10/09** — ghi hết mọi GET |
 | BM-010 | Trung bình | Đổi phân quyền và đổi tài khoản **không gọi `record()`** — vùng nhạy cảm nhất lại là vùng trắng | **Đã vá + ĐÃ ĐÓNG CẢ HAI PHÍA (bao-CR-346, 10/09/2026) — `erp-v2` 337fa9bb deploy dev; `main` e21023d1 deploy prod chiều 10/09** |
 | BM-011 | Trung bình | Nhật ký chỉ có MỘT bản, nằm trên đúng cái máy kẻ tấn công đang đứng | **Đã vá + ĐÃ ĐÓNG CẢ HAI PHÍA (bao-CR-346, 10/09/2026) — `erp-v2` 337fa9bb deploy dev; `main` e21023d1 deploy prod chiều 10/09** — đóng gói ra R2 hàng tháng |
-| BM-012 | Thấp | Token hết hạn thì dòng nhật ký ghi `user_id = 0` — không phân biệt được "khách vãng lai" với "người có tài khoản, token vừa hết hạn" | **Đã vá (bao-CR-394, 14/09/2026, local `erp-v2` — chưa commit, chưa deploy).** `_peek_user_id` đọc `sub` kể cả khi hết hạn, `tab_request_log.error_code = token_expired` |
-| BM-013 | Thấp | `record()` tự `commit()` — giao dịch nghiệp vụ bị rollback vẫn để lại dấu vết ma | **Mở — hoãn sang P4** (đổi nhịp commit đụng 213 lời gọi, làm cùng lúc chuyển ghi xuống tầng ORM) |
-| BM-014 | Trung bình | `CF-Connecting-IP` được tin **vô điều kiện** — ai gọi thẳng vào api là tự khai IP của mình | **Đã vá (bao-CR-394, 14/09/2026, local `erp-v2` — chưa commit, chưa deploy).** Chỉ tin header khi peer TCP nằm trong `TRUSTED_PROXY_CIDRS` |
-| BM-015 | **Cao** | Hồ sơ nhân sự chuyển *Nghỉ việc* (hoặc tắt hoạt động) mà **tài khoản đăng nhập vẫn mở, phiên đang sống vẫn dùng tiếp** — HR tưởng đã "cho nghỉ" là xong | **Đã vá (bao-CR-400, 14/09/2026, local `erp-v2` — chưa commit, chưa deploy).** `update_employee` / `detach_users` khóa mọi tài khoản gắn kèm + `force_relogin` với lý do `EMPLOYEE_RESIGNED = 6`, cùng giao dịch với hồ sơ |
+| BM-012 | Thấp | Token hết hạn thì dòng nhật ký ghi `user_id = 0` — không phân biệt được "khách vãng lai" với "người có tài khoản, token vừa hết hạn" | **Đã vá (bao-CR-394, 14/09/2026, `erp-v2` `00b740b5` — đã deploy dev, prod chờ gộp).** `_peek_user_id` đọc `sub` kể cả khi hết hạn, `tab_request_log.error_code = token_expired` |
+| BM-013 | Thấp | `record()` tự `commit()` — giao dịch nghiệp vụ bị rollback vẫn để lại dấu vết ma | **Mở, đã chốt cách xử (bao-CR-402, 14/09/2026): KHÔNG gỡ `db.commit()`.** Lỗ đóng ở **lớp thay đổi** — `tab_change_log` chỉ ghi thứ đã commit thật. Lớp `core/audit.py` giữ nguyên nhịp cũ; đo 273 lời gọi ở 62 tệp tìm ra **hai chỗ hỏng ngay** nếu gỡ, xem dưới |
+| BM-014 | Trung bình | `CF-Connecting-IP` được tin **vô điều kiện** — ai gọi thẳng vào api là tự khai IP của mình | **Đã vá (bao-CR-394, 14/09/2026, `erp-v2` `00b740b5` — đã deploy dev, prod chờ gộp).** Chỉ tin header khi peer TCP nằm trong `TRUSTED_PROXY_CIDRS` |
+| BM-015 | **Cao** | Hồ sơ nhân sự chuyển *Nghỉ việc* (hoặc tắt hoạt động) mà **tài khoản đăng nhập vẫn mở, phiên đang sống vẫn dùng tiếp** — HR tưởng đã "cho nghỉ" là xong | **Đã vá (bao-CR-400, 14/09/2026, `erp-v2` `e89ab592` — đã deploy dev, prod chờ gộp).** `update_employee` / `detach_users` khóa mọi tài khoản gắn kèm + `force_relogin` với lý do `EMPLOYEE_RESIGNED = 6`, cùng giao dịch với hồ sơ |
+| BM-016 | Trung bình | **Không có bất kỳ chính sách mật khẩu nào** — `password: str` trần ở cả ba cửa (tạo tài khoản · quản trị đặt lại · quên mật khẩu). Đặt mật khẩu `1` là hệ thống nhận | **Chấp nhận rủi ro — đại ca chốt 14/09/2026.** Lý do: hệ nội bộ, tài khoản do quản trị cấp chứ không ai tự đăng ký, và `LOGIN_RATE_LIMIT` đã chặn dò tự động. Bằng chứng: `auth/schema.py:20`, `user/schema.py:9` + `:14` — không chỗ nào có `min_length` |
+| BM-017 | Thấp | Không có **xác thực hai lớp**, kể cả cho nhóm tài khoản quản trị đọc được nhật ký toàn hệ | **Chấp nhận rủi ro — đại ca chốt 14/09/2026.** Đây là lớp *tăng cường*, không phải lỗ đang hở; ghi vào sổ để lần rà sau không phải phát hiện lại |
+| BM-018 | **Cao** *(có điều kiện)* | `JWT_SECRET` có giá trị mặc định `change_me_please` và **không có chốt nào chặn app khởi động với nó**. Môi trường nào quên đặt thì bất kỳ ai cũng **tự ký được vé hợp lệ cho bất kỳ tài khoản nào** — mất sạch mọi lớp phòng thủ phía trên | **Mở.** Bằng chứng: `core/config.py:13`. ⚠️ **Điều kiện kích hoạt CHƯA ĐO trên prod/dev** — xem Việc 5. Vá = thêm chốt khởi động, **không phải xoay khóa** (xoay khóa kéo theo BM-023) |
+| BM-019 | Trung bình | Hai tệp nginx của prod **không đặt một header bảo mật nào** — trang ERP **nhúng iframe được** vào site bất kỳ (clickjacking), không HSTS, không `nosniff`, không `Referrer-Policy` | **Mở.** Bằng chứng: `docker/nginx.prod.conf` + `docker/nginx.erp.prod.conf` chỉ có `Cache-Control`. Nghịch lý đáng ghi: cửa **xem tệp đính kèm** làm rất kỹ (`attachment/controller.py:490` + `:493` — CSP `sandbox` + `nosniff`), còn cả ứng dụng thì trống |
+| BM-020 | Trung bình | Trần tần suất cho endpoint **nghiệp vụ** đã khai nhưng **chưa có hiệu lực** — một tài khoản hợp lệ rút sạch dữ liệu trong phạm vi của mình ở tốc độ tối đa, không lớp nào cản | **Mở.** Bằng chứng: `core/limiter.py:13-16` — `default_limits=["300/minute"]` kèm **chính comment trong mã ghi là CHƯA có hiệu lực**; `main.py:115` chỉ gắn `state.limiter` + handler. Toàn hệ chỉ **4 endpoint** của `auth` có `@limiter.limit` |
+| BM-021 | Thấp | `/api/uploads` được gắn bằng `StaticFiles`, **không kiểm quyền** — thứ gì rơi vào thư mục đó là công khai với mọi người | **Mở (rủi ro thấp trên prod).** Bằng chứng: `main.py:134`. Mã nguồn **tự cảnh báo ở ba chỗ**: `core/storage.py:53-54`, `core/file_registry.py:71`, `audit/tasks.py:123-131`. Prod dùng R2 nên đường lùi ghi-local không chạy — rủi ro là *ai đó ghi nhầm vào đó về sau* |
+| BM-022 | Trung bình | CORS bật `allow_credentials=True` với `allow_origins` đọc từ `.env` — **giá trị thật trên prod chưa ai xác minh** | **Mở, CHƯA ĐO.** Bằng chứng: `main.py:125-131`, `config.py:166`. Nếu giá trị prod là `*` thì dòng này lên mức **Cao**; đo trước rồi mới kết luận, xem Việc 5 |
+| BM-023 | Trung bình | Bí mật lưu trong DB (**mật khẩu SMTP, khóa R2**) giải mã hỏng thì **im lặng tuyệt đối**: `_decrypt` nuốt *mọi* lỗi trả chuỗi rỗng, `get()` lặng lẽ rơi về `.env`, `.env` trống thì trả rỗng. Hậu quả nặng nhất không phải mail chết mà là **sao lưu tự động lên R2 chết mà không ai biết** — phát hiện ra đúng vào lúc cần khôi phục | **Mở.** Bằng chứng: `core/app_settings.py:55-59` (`except (InvalidToken, Exception): return ""`) + `:95-100` (nhánh `if dec:` rơi về `.env`). Phát hiện khi trả lời câu hỏi về xoay `JWT_SECRET` |
 
 ✅ **Bốn dòng BM-008…BM-011 nay đã đóng trên CẢ HAI phía** (cập nhật chiều 10/09/2026).
 Chúng vá lớp nhật ký của bao-CR-312 P1, và P1 vốn chưa từng lên prod — đó là lý do sổ này
@@ -199,8 +224,8 @@ Thêm: `faq` ghi dấu vết dưới tên riêng nhưng gác bằng khóa `help_
 
 ### BM-002 — Không có phiên đăng nhập phía máy chủ
 
-**Mức: Cao. Trạng thái: ĐÃ VÁ TRÊN DEV 14/09/2026** (P3a bao-CR-360 + P3b bao-CR-395, local
-`erp-v2` chưa commit). Prod có P2 + P3a từ 11/09 (đăng xuất đóng phiên thật, `jti` trong token,
+**Mức: Cao. Trạng thái: ĐÃ VÁ TRÊN DEV 14/09/2026** (P3a bao-CR-360 + P3b bao-CR-395, `erp-v2`
+`00b740b5` — đã deploy dev). Prod có P2 + P3a từ 11/09 (đăng xuất đóng phiên thật, `jti` trong token,
 `get_current_user` kiểm phiên còn sống); màn hình quản trị phiên của P3b chưa lên prod. Mô tả
 dưới đây giữ ở thì hiện tại của lúc phát hiện.
 
@@ -337,7 +362,8 @@ thật, và client không tự khai IP được. `default_limits` vẫn để ng
 
 ### BM-005 — Nhật ký không lưu giá trị trước / sau
 
-**Mức: Trung bình. Trạng thái: mở — nằm ở P4 của bao-CR-312, chưa viết dòng mã nào.**
+**Mức: Trung bình. Trạng thái: ĐÃ VÁ TRÊN DEV (bao-CR-402 = P4 của bao-CR-312, 14/09/2026,
+local `erp-v2` — chưa commit). Prod chưa có.**
 
 `tab_audit_log` có đúng bốn cột nghiệp vụ: `entity`, `entity_id`, `action`, `message`. `message`
 là văn xuôi do người viết mã tự đặt. Không có chỗ nào lưu **giá trị cũ** và **giá trị mới**,
@@ -346,13 +372,40 @@ nên câu "dòng này trước đó ghi gì" không trả lời được — k�
 Đây là gốc rễ khiến ticket 07/09 phải mở database. Thiết kế vá: `tab_change_log` sinh tự động
 bằng sự kiện SQLAlchemy — [`nhat-ky-va-phien-dang-nhap.md`](nhat-ky-va-phien-dang-nhap.md) §3.2.
 
+**Bản vá (bao-CR-402).** Bảng `tab_change_log` (migration `d5f7a9c1b3e2`) + `core/change_tracker.py`
+bám ba sự kiện của `Session`: `before_flush` đọc `history` từng cột và **gom vào bộ đệm trong bộ
+nhớ**, `after_flush` điền khóa chính cho dòng vừa thêm, `after_commit` đóng dấu. Cuối mỗi lượt
+gọi, middleware ghi cả bộ đệm xuống bảng. Người viết mã **không phải gọi gì** — đó là điểm khác
+căn bản với `record(...)`, và là thứ BM-006 cũng đang chờ.
+
+Bốn luật cứng của lớp này, ghi ngay trong docstring của mô-đun:
+
+1. **Không bao giờ ghi DB bên trong flush** — làm vậy là gọi lại chính flush đó, đệ quy.
+2. **Không tự ghi nhật ký về bảng nhật ký** (`NO_LOG_TABLES`) — thiếu chốt này là vòng lặp vô hạn.
+3. **Nhập liệu hàng loạt phải GỘP** (`actor_kind = 3`, hoặc chạm trần 500 dòng chi tiết) — một dòng tổng thay
+   cho vài vạn dòng chi tiết.
+4. **Chỉ ghi thứ đã COMMIT.** Quay đầu là vứt bộ đệm. Đây chính là câu trả lời của P4 cho
+   **BM-013** ở lớp thay đổi.
+
+Cột nhạy cảm bị che bằng `is_sensitive_column()` dùng chung với hai lớp kia
+(`core/logging_policy.py`); `tab_user` là **cấm hết trừ danh sách được nêu tên**. 27 bài kiểm ở
+`test/backend/test_nhat_ky_lop_orm_cr402.py`.
+
+⚠️ **Một cái bẫy đáng nhớ, tìm ra lúc viết bài kiểm.** Giá trị cũ chỉ nằm sẵn trong `history`
+khi thuộc tính **đã được nạp**. Bản ghi vừa đi qua một `commit` trong cùng phiên thì mọi cột hết
+hạn, và lúc gán đè SQLAlchemy **không đọc lại** — nó ghi nhận giá trị cũ là *"không có"*, và
+`load_history()` cũng không cứu được vì dấu đã đóng. Dòng nhật ký khi đó chỉ còn nửa câu
+(*"đổi thành 15000"*, không nói đổi từ đâu) — đúng nửa mà BM-005 sinh ra để đóng. `_fetch_old_values`
+bù bằng một truy vấn thẳng xuống DB trong `before_flush`, hợp lệ vì câu `UPDATE` chưa được phát.
+
 ---
 
 ### BM-006 — Dấu vết là tùy chọn theo từng lời gọi
 
 **Mức: Thấp. Trạng thái: vá một phần (bao-CR-311).**
 
-Ghi nhật ký hôm nay là **213 lời gọi `record(db, ...)` rải trong 54 tệp**. Không có gì bắt buộc
+Ghi nhật ký hôm nay là **273 lời gọi `record(db, ...)` rải trong 62 tệp** *(số cũ trong sổ này
+ghi 213/54 — đếm thiếu, xem ghi chú ở BM-013)*. Không có gì bắt buộc
 chúng phải có mặt: viết một endpoint mới mà quên gọi thì thao tác đó lặng lẽ không để lại dấu.
 Đúng chuyện đã xảy ra với ba thao tác phương án của Yêu cầu báo giá — chạy từ ngày đầu, không
 ai để ý, tới khi cần truy thì không có gì để đọc.
@@ -474,7 +527,7 @@ sẵn sàng (`is_remote_storage_ready`) — thà không có bản sao còn hơn 
 
 ### BM-012 — Token hết hạn ghi thành `user_id = 0`
 
-**Mức: Thấp. Trạng thái: ĐÃ VÁ 14/09/2026** (bao-CR-394, local `erp-v2` — chưa commit).
+**Mức: Thấp. Trạng thái: ĐÃ VÁ 14/09/2026** (bao-CR-394, `erp-v2` `00b740b5` — đã deploy dev).
 
 `_peek_user_id` (`core/request_middleware.py:57`) giải mã token **không tra DB**; token hỏng,
 hết hạn, hay sai chữ ký đều trả về `0`. Nên trong `tab_request_log`, "người lạ chưa đăng nhập"
@@ -495,20 +548,50 @@ vẫn về `0` (không tin `sub` của token giả). `RequestContext` thêm cờ
 
 ### BM-013 — `record()` tự commit, để lại dấu vết ma
 
-**Mức: Thấp. Trạng thái: mở — hoãn sang P4 (quyết 14/09/2026, cùng đợt bao-CR-394).**
+**Mức: Thấp. Trạng thái: MỞ, nhưng đã chốt cách xử ở bao-CR-402 (14/09/2026) — `db.commit()`
+trong `record()` GIỮ NGUYÊN, cố ý. Lỗ đóng ở lớp thay đổi, không đóng ở lớp kể chuyện.**
 
 `core/audit.py` kết bằng `db.commit()`. Nếu thao tác nghiệp vụ nổ **sau** lời gọi `record(...)`
 và giao dịch bị rollback, dòng dấu vết vẫn nằm lại — nhật ký khẳng định một việc chưa từng xảy
 ra. Ngược chiều với mọi dòng khác trong sổ này: ở đây nhật ký **thừa**, không thiếu.
 
-Cố ý chưa vá ở P1: đổi nhịp commit là đổi hành vi của **213 lời gọi đang chạy thật** mà chưa
+Cố ý chưa vá ở P1: đổi nhịp commit là đổi hành vi của các lời gọi đang chạy thật mà chưa
 có gì bù lại. Vá cùng P4, khi việc ghi chuyển xuống tầng ORM và gom một lần cuối request.
+
+#### Đã đo, và quyết ngược lại (bao-CR-402)
+
+Trước khi gỡ dòng `db.commit()`, P4 đi đếm **toàn bộ lời gọi bằng AST** chứ không grep: **273
+lời gọi ở 62 tệp**.
+
+⚠️ **Con số 213/54 ghi khắp các bản tài liệu trước là đếm THIẾU 87 chỗ.** Nguyên nhân: 14 tệp
+import bí danh — `from app.core.audit import record as audit_record` — nên lời gọi mang tên
+`audit_record(...)` và mọi phép grep chuỗi `record(` trượt hết. Lần rà sau phải hỏi cả hai tên.
+
+Phân loại 273 chỗ đó tìm ra **hai chỗ hỏng ngay** nếu gỡ commit, cả hai ở
+`document/file_access_log.py`:
+
+* Hàm đó **đọc lại `tab_audit_log` trong cùng lượt gọi** — nó đếm số lần mở tệp (kể cả dòng vừa
+  ghi) để so ngưỡng cảnh báo, và tra dòng `file_alert` để khỏi báo trùng. Không commit là bộ
+  đếm lệch, ngưỡng cảnh báo sai theo.
+* `_raise_alert` của chính tệp đó `db.add(Notification(...))` rồi **trông vào `record(...)`
+  commit hộ**. Cả chuỗi hàm gọi nó không có `commit` nào, và lời gọi ngoài cùng nằm trong một
+  `except` nuốt lỗi. Gỡ ra là thư cảnh báo mất **trong im lặng** — hỏng đúng kiểu khó phát hiện
+  nhất.
+
+Thêm **96 lời gọi** không có `commit` nào trong cùng hàm; phần lớn nhờ hàm con commit trước,
+nhưng "phần lớn" không đủ để đổi một nhịp đang chạy thật trên prod.
+
+**Chốt:** P4 đóng lỗ dấu-vết-ma ở **lớp thay đổi** — `core/change_tracker.py` chỉ ghi thứ đã
+COMMIT, quay đầu là vứt bộ đệm. Câu hỏi *"việc này có thật sự xảy ra không"* nay trả lời được
+bằng `tab_change_log`. Lớp `core/audit.py` giữ nguyên; lý do viết thẳng vào docstring của
+`record()` để người sau không đi gỡ lại. Dòng BM-013 **để mở** vì lớp kể chuyện vẫn còn hở —
+đóng hẳn thì phải gỡ commit, và đó là một CR riêng có sửa hai chỗ nói trên.
 
 ---
 
 ### BM-014 — `CF-Connecting-IP` được tin vô điều kiện
 
-**Mức: Trung bình. Trạng thái: ĐÃ VÁ 14/09/2026** (bao-CR-394, local `erp-v2` — chưa commit).
+**Mức: Trung bình. Trạng thái: ĐÃ VÁ 14/09/2026** (bao-CR-394, `erp-v2` `00b740b5` — đã deploy dev).
 
 `get_client_ip` (`core/client_ip.py:31`) lấy `CF-Connecting-IP` đầu tiên, không kiểm tra người
 gọi có thật là Cloudflare không. Cả sự an toàn của nó dựa vào một giả định **nằm ngoài mã
@@ -538,7 +621,7 @@ người đó đã đứng cạnh database rồi, IP giả là chuyện nhỏ nh
 
 ### BM-015 — Nghỉ việc trên hồ sơ nhân sự không khóa tài khoản, không cắt phiên
 
-**Mức: Cao. Trạng thái: ĐÃ VÁ 14/09/2026** (bao-CR-400, local `erp-v2` — chưa commit).
+**Mức: Cao. Trạng thái: ĐÃ VÁ 14/09/2026** (bao-CR-400, `erp-v2` `e89ab592` — đã deploy dev).
 
 Hai bảng, hai công tắc, không nối nhau. `tab_employee.status = resigned` (hoặc
 `is_active = 0`) là điều HR bấm khi cho nghỉ việc; `tab_user.is_active` là thứ cửa
@@ -587,6 +670,157 @@ lịch sử khóa vào chính mình / hai cửa chung một bộ dựng).
 `admin`, tài khoản kỹ thuật) nằm ngoài đường này — nghỉ việc của họ vẫn phải khóa tay ở màn
 Người dùng. Và HR chuyển trạng thái qua **import CSV** đi đường `detach_users` cũ (khóa + gỡ
 liên kết) chứ không đi `has_left_company` — cùng kết quả khóa, nhưng gỡ liên kết luôn.
+
+### BM-016 — Không có chính sách mật khẩu — CHẤP NHẬN RỦI RO
+
+Ba cửa đặt mật khẩu, không cửa nào kiểm gì: `auth/schema.py:20` (`ResetPasswordInput`),
+`user/schema.py:9` (tạo tài khoản), `user/schema.py:14` (quản trị đặt lại). Cả ba khai
+`password: str` trần — không `min_length`, không kiểm độ mạnh, không cấm trùng tên đăng nhập.
+
+Hai điều kiện làm nó dễ khai thác hơn vẻ ngoài: tên đăng nhập là **mã nhân viên** (đoán được
+từ danh bạ), và tài khoản demo đặt mật khẩu **bằng đúng mã tài khoản**.
+
+**Quyết định 14/09/2026 (đại ca): chấp nhận rủi ro.** Lý do: hệ nội bộ, **không ai tự đăng
+ký** — tài khoản do quản trị cấp; và trần tần suất đăng nhập theo IP thật (BM-004 đã vá) đã
+chặn được dò tự động, tức là con đường khai thác chính đã đóng.
+
+**Điều kiện đảo lại quyết định** — ghi ra để lần sau khỏi phải cãi: hệ mở cho người ngoài công
+ty tự đăng nhập (nhà cung cấp), hoặc mở cổng tự đăng ký, hoặc có một lần rò mật khẩu thật.
+
+### BM-017 — Không có xác thực hai lớp — CHẤP NHẬN RỦI RO
+
+Rà toàn `backend/app`: không có `totp`, `mfa`, `two_factor`, `otp` ở bất kỳ đâu.
+
+**Quyết định 14/09/2026 (đại ca): chấp nhận rủi ro.** Đây là lớp **tăng cường**, không phải
+lỗ đang hở — nó không mở thêm đường vào nào, nó chỉ làm một token đã lộ khó dùng hơn. Mà câu
+*"token lộ thì sao"* trong hệ này đã có hai câu trả lời rồi: BM-002 (phiên phía máy chủ, thu
+hồi được từng vé) và BM-015 (nghỉ việc là đá phiên ngay).
+
+### BM-018 — `JWT_SECRET` mặc định, không có chốt khởi động
+
+`core/config.py:13` khai `JWT_SECRET: str = "change_me_please"`, và **không chỗ nào kiểm**.
+App khởi động bình thường với khóa đó.
+
+Nếu một môi trường đang chạy bằng khóa mặc định thì **mọi dòng khác trong sổ này thành vô
+nghĩa**: khóa đã nằm công khai trong mã nguồn, nên ai cũng tự ký được vé cho `admin`. Phân
+quyền hai trục, `apply_scope`, nhật ký ba tầng — tất cả đứng **sau** cửa xác thực, mà cửa đó
+mở toang.
+
+⚠️ **Chưa đo.** Đó là *điều kiện*, không phải sự thật đã xác minh. Sổ này cấm ghi phỏng đoán,
+nên mức **Cao** ở bảng là mức *nếu điều kiện đúng* — đo xong mới chốt. Xem Việc 5.
+
+#### Vá bằng chốt khởi động — KHÔNG phải bằng xoay khóa
+
+Cách vá là **một chốt lúc app khởi động**: môi trường không phải local mà `JWT_SECRET` còn là
+giá trị mặc định (hoặc ngắn hơn ngưỡng) thì **từ chối chạy**. Rủi ro bằng 0, và nó canh cho
+mọi lần deploy về sau chứ không chỉ hôm nay.
+
+**Xoay khóa là việc khác hẳn, và nó KHÔNG miễn phí.** `JWT_SECRET` trong hệ này mang **bốn**
+vai trò chứ không phải một:
+
+| Vai trò | Ở đâu | Xoay khóa thì sao |
+|---|---|---|
+| Ký vé access + refresh | `core/auth.py:38` + `:62`, `core/request_middleware.py:79` | Mọi người đang đăng nhập **bị đá ra**. Phiền một lần, chấp nhận được |
+| **Khóa Fernet mã hóa bí mật trong DB** — mật khẩu SMTP, khóa R2 | `core/app_settings.py:47` | **Giá trị trong `tab_setting` thành rác vĩnh viễn** |
+| Khóa Fernet mã hóa mật khẩu hộp thư | `notification/mailbox_model.py:16`, `mailbox_service.py:34` | Như trên |
+| Ký `confirm_token` của trợ lý AI | `assistant/tools/update_tool.py:119` | Token đang treo chết — tự hết hạn 15 phút, không sao |
+
+Và vì **BM-023**, hai dòng giữa hỏng **trong im lặng**: thứ chết đầu tiên là **sao lưu tự động
+lên R2**, tức đúng cái lưới đỡ mà người ta chỉ sờ tới khi đã ngã.
+
+Nếu có ngày phải xoay khóa thật, thứ tự bắt buộc:
+
+1. **Đo trước:** `tab_setting` có dòng `smtp_password` / `r2_access_key_id` /
+   `r2_secret_access_key` không, và `.env` của môi trường đó có đủ ba giá trị lùi không.
+2. Bí mật **chỉ** nằm trong DB → **giải mã bằng khóa cũ trước**, đổi khóa, rồi mã hóa lại bằng
+   khóa mới. Một script `rekey`, một giao dịch — đừng làm bằng tay từng dòng.
+3. Đổi vào **giờ thấp điểm**, vì nó đá sạch phiên.
+4. Sau khi đổi, **kiểm tay** rằng sao lưu lên R2 còn chạy. **Đừng tin vào việc không thấy lỗi**
+   — theo BM-023 thì không thấy lỗi chính là triệu chứng.
+
+### BM-019 — nginx của prod không đặt header bảo mật nào
+
+`docker/nginx.prod.conf` và `docker/nginx.erp.prod.conf` chỉ có `Cache-Control` và
+`client_max_body_size`. Thiếu cả bốn: `X-Frame-Options` (hoặc `frame-ancestors`) — nghĩa là
+**trang ERP nhúng vào iframe của site bất kỳ được**, đủ để dựng một trang dụ người dùng bấm
+nút thật mà không biết; `Strict-Transport-Security`; `X-Content-Type-Options: nosniff`;
+`Referrer-Policy`.
+
+Nghịch lý đáng ghi để không ai tưởng là đã làm rồi: **cửa xem tệp đính kèm làm rất kỹ** —
+`attachment/controller.py:490` + `:493` đặt `nosniff` và CSP `sandbox; default-src 'none'`,
+đúng chuẩn cho tệp người dùng tải lên. Chỉ là **cả ứng dụng** thì không ai đặt.
+
+### BM-020 — trần tần suất nghiệp vụ: khai rồi nhưng chưa bật
+
+`core/limiter.py:16` khai `Limiter(key_func=get_client_ip, default_limits=["300/minute"])`, và
+**chính comment ngay trên đó (`:13`) ghi rằng `default_limits` CHƯA có hiệu lực** —
+`main.py:115` chỉ gắn `app.state.limiter` + handler chứ không gắn middleware của slowapi.
+
+Toàn hệ vì thế chỉ có **4 endpoint** thực sự bị chặn, đều thuộc `auth`
+(`auth/controller.py:138`, `:158`, `:325`, `:346`). Mọi endpoint nghiệp vụ **không có trần
+nào**: một tài khoản hợp lệ rút sạch dữ liệu trong phạm vi của mình ở tốc độ tối đa. Phân
+quyền vẫn đúng — nó chặn *lấy cái gì*, không chặn *lấy nhanh tới đâu*.
+
+### BM-021 — `/api/uploads` phục vụ tĩnh, không kiểm quyền
+
+`main.py:134` gắn `StaticFiles(directory="uploads")` vào `/api/uploads`. Không đi qua
+`require()`, không qua `apply_scope` — thứ gì nằm trong thư mục đó là **công khai**.
+
+Điểm nhẹ: prod dùng R2 nên đường lùi ghi-local của `core/storage.py:53` không chạy, và
+`audit/tasks.py:123-131` đã có sẵn chốt chặn gói nhật ký rơi vào đó. Mã nguồn **tự cảnh báo ở
+ba chỗ** (`storage.py:53-54`, `file_registry.py:71`, `audit/tasks.py:123`) — tức là người viết
+đã biết. Rủi ro thật không phải hôm nay mà là **lần sau**: ai đó thêm một đường ghi mới vào
+`uploads/` và không đọc ba dòng cảnh báo đó.
+
+### BM-022 — CORS chưa xác minh trên prod
+
+`main.py:125-131` bật `allow_credentials=True` cùng `allow_methods=["*"]` và
+`allow_headers=["*"]`, với `allow_origins` đọc từ `.env` qua `config.py:166`.
+
+Cấu hình này **đúng hay sai hoàn toàn phụ thuộc giá trị `CORS_ORIGINS` thật trên prod**, mà
+chưa ai mở ra xem. Nếu ở đó là danh sách tên miền cụ thể thì không có vấn đề gì. Nếu là `*`
+thì dòng này lên mức **Cao** — trình duyệt sẽ cho site bất kỳ gọi API kèm cookie/chứng danh
+của người đang đăng nhập. Đo trước rồi mới kết luận; xem Việc 5.
+
+### BM-023 — giải mã bí mật hỏng thì im lặng tuyệt đối
+
+Phát hiện khi trả lời câu hỏi của đại ca *"đổi `JWT_SECRET` có ảnh hưởng gì tới prod không"*.
+
+`core/app_settings.py:55-59`:
+
+```python
+def _decrypt(s: str) -> str:
+    try:
+        return _fernet().decrypt(s.encode()).decode()
+    except (InvalidToken, Exception):      # nuốt MỌI lỗi
+        return ""
+```
+
+rồi `get()` ở `:95-100` nhận chuỗi rỗng đó và **lặng lẽ rơi về `.env`**:
+
+```python
+if raw not in (None, ""):
+    dec = _decrypt(raw)
+    if dec:                                 # rỗng thì bỏ qua, không ai biết
+        return dec
+return getattr(_env, SECRETS[key], "")      # .env trống thì trả ""
+```
+
+Ba trạng thái rất khác nhau — *"chưa ai cấu hình"*, *"đã cấu hình nhưng giải mã hỏng"*, và
+*"đã cấu hình, đọc tốt"* — bị ép về cùng một kết quả. Không một dòng log nào phân biệt.
+
+**Vì sao đáng lo hơn vẻ ngoài:** ba bí mật đi qua đường này là mật khẩu SMTP và **hai khóa
+R2** (`SECRETS` ở `:35-39`). Khóa R2 hỏng nghĩa là **sao lưu CSDL hai lần mỗi ngày im lặng
+thất bại**. Mail chết thì có người kêu ngay trong ngày; sao lưu chết thì **không ai kêu cả** —
+mình phát hiện đúng vào hôm cần khôi phục, là hôm tệ nhất có thể.
+
+Điều kiện kích hoạt không chỉ có xoay khóa: chép DB prod sang môi trường khác (đúng nếp
+`sync data dev→VPS` đang dùng) cũng làm mọi bí mật trong bản chép không giải mã được.
+
+**Hướng vá:** phân biệt ba trạng thái — bắt đúng `InvalidToken` thay vì `Exception`, ghi
+`log.error` khi giải mã hỏng, và thêm một chỉ báo ở màn Cấu hình hệ thống nói rõ *"đã cấu hình
+nhưng KHÔNG đọc được"*. Kèm một kiểm tra sức khỏe cho sao lưu: lần sao lưu thành công gần nhất
+quá N giờ thì báo.
 
 ---
 
@@ -665,13 +899,129 @@ Sổ này chỉ có giá trị nếu được mở ra. Ba việc nhỏ:
   phân hệ mới thường mở rộng số người có "một tài khoản hợp lệ", mà đó chính là điều kiện duy
   nhất mà BM-001 đòi hỏi.
 
+### Việc 5 — đợt BM-016…BM-023 (14/09/2026)
+
+Xếp theo **rẻ trước, và đo trước khi vá**.
+
+**5.0 — ĐO TRƯỚC, ngay hôm nay (0 dòng mã).** Hai dòng đang treo ở trạng thái *chưa đo* nên
+chưa kết luận được mức: **BM-018** (`JWT_SECRET` trên prod còn là `change_me_please` không) và
+**BM-022** (`CORS_ORIGINS` trên prod có phải `*` không). Cả hai nằm trong `.env` của VPS.
+⚠️ **Kiểm bằng cách chỉ in ra CÓ/KHÔNG, tuyệt đối không in giá trị** — bí mật in ra một lần là
+nó nằm lại trong lịch sử phiên, trong log, trong ảnh chụp màn hình. Đo xong thì sửa mức ở bảng
+§2 rồi mới xếp lại thứ tự dưới đây.
+
+**5.1 — Chốt khởi động cho `JWT_SECRET` (BM-018).** Môi trường không phải local mà khóa còn là
+mặc định (hoặc quá ngắn) thì app **từ chối chạy**. Vài dòng ở `core/config.py`, rủi ro bằng 0.
+⚠️ **KHÔNG xoay khóa** — đọc kỹ mục BM-018 ở §2 trước khi nghĩ tới chuyện đó.
+
+**5.2 — Nói thành lời khi giải mã bí mật hỏng (BM-023).** Bắt đúng `InvalidToken`, ghi
+`log.error`, và bày trạng thái *"đã cấu hình nhưng KHÔNG đọc được"* ở màn Cấu hình hệ thống.
+Kèm một chốt sức khỏe cho sao lưu: lần sao lưu R2 thành công gần nhất quá N giờ thì báo. Đây là
+việc **rẻ nhất mà cứu được nhiều nhất** — nó đổi một hỏng-hóc-im-lặng thành một hỏng-hóc-có-tiếng.
+
+**5.3 — Header bảo mật cho nginx (BM-019).** Bốn dòng `add_header` vào hai tệp
+`docker/nginx.prod.conf` và `docker/nginx.erp.prod.conf`. Rủi ro thấp, nhưng **phải thử trên
+dev trước** vì `frame-ancestors` đặt chặt tay có thể chặn luôn khung xem tệp đính kèm.
+
+**5.4 — Bật trần tần suất cho endpoint nghiệp vụ (BM-020).** Gắn middleware của slowapi trong
+`main.py` cho `default_limits` có hiệu lực, hoặc gắn `@limiter.limit` cho từng nhóm endpoint
+nặng. ⚠️ **Đặt trần quá tay là tự chặn người dùng thật** — nhìn số thật trong `tab_request_log`
+(P1 đã ghi từ 10/09) rồi lấy đỉnh thật nhân hệ số, đừng bốc một con số cho đẹp.
+
+**5.5 — Che `/api/uploads` (BM-021).** Việc nhỏ nhưng động tới đường phục vụ tệp, nên xếp cuối:
+gỡ `StaticFiles` và bắt mọi lối xem tệp đi qua `/api/attachments/{id}/view` (nơi đã có
+`require` + CSP). Trước khi gỡ phải rà **hết** những chỗ còn ghi vào `uploads/`.
+
+**5.6 — Deploy 5 bản vá đang nằm ở dev lên prod.** Việc này **không đẻ ra mã mới** nhưng đóng
+được nhiều lỗ nhất trong cả danh sách: BM-002, BM-005, BM-012, BM-014, **BM-015**. Nhắc lại cho
+rõ mức khẩn: **trên prod hôm nay, đánh dấu một người *Nghỉ việc* KHÔNG khóa tài khoản và KHÔNG
+đá phiên của họ.** Không dòng nào ở §2 nguy hơn dòng đó, và nó đã vá xong từ 14/09 — chỉ là vá
+chưa tới nơi cần vá.
+
 ---
 
 ## 4. Sổ này KHÔNG làm gì
 
-- **Không phải bản đánh giá an toàn đầy đủ.** Bảy dòng ở đây là những gì lòi ra khi soát quanh
-  MỘT ticket, không phải kết quả của một đợt rà có phương pháp. Chưa ai soi tải tệp lên, chưa
-  soi khâu nhập/xuất dữ liệu, chưa soi phần tích hợp ngoài, chưa soi lớp mạng và cấu hình VPS.
-  **Không có dòng nào ở đây không có nghĩa là chỗ đó sạch** — nghĩa là chưa ai nhìn.
+- **Không phải bản đánh giá an toàn đầy đủ.** Mười lăm dòng đầu (BM-001…BM-015) là những gì lòi
+  ra khi soát quanh **từng ticket**, không phải kết quả của một đợt rà có phương pháp. Ngày
+  **14/09/2026** mới có đợt rà đầu tiên đi theo **lớp phòng thủ** thay vì đi theo ticket — nó
+  đẻ ra BM-016…BM-023 và lấp đúng hai vùng mà bản cũ của mục này ghi là *"chưa ai nhìn"*:
+  **cấu hình** và **lớp mạng / VPS**. Ba vùng vẫn **chưa ai nhìn**, giữ nguyên cảnh báo: khâu
+  **tải tệp lên** (kiểu MIME, kích thước, tên tệp), khâu **nhập/xuất dữ liệu** (Excel/CSV), và
+  phần **tích hợp ngoài** (Cloudflare tunnel, R2, Brevo, webhook). **Không có dòng nào ở đây
+  không có nghĩa là chỗ đó sạch.**
 - **Không thay tài liệu thiết kế.** Cách vá nằm ở tệp của từng CR.
 - **Không dựng lại được quá khứ.** Mọi thứ trong sổ này chỉ vá được từ lúc vá trở đi.
+
+---
+
+## 5. Kịch bản kiểm thử bảo mật
+
+Viết ngày 14/09/2026, theo yêu cầu *"cần các kịch bản để test các phần bảo mật này"*.
+
+**Luật của mục này — một dòng BM chưa có kịch bản kiểm thì coi như CHƯA vá.** Vá bảo mật khác
+vá lỗi nghiệp vụ ở một chỗ: **lỗi nghiệp vụ tự kêu khi tái phát, lỗ bảo mật thì không**. Người
+dùng không gọi điện báo *"hôm nay tôi vào được dữ liệu phòng khác"* — họ không biết, hoặc họ
+không nói. Bài kiểm chính là cái miệng của lỗ hổng.
+
+Và **bài kiểm phải viết từ phía KẺ TẤN CÔNG**: khẳng định *"người không có quyền thì KHÔNG
+làm được"*, chứ không phải *"người có quyền thì làm được"*. Vế sau xanh ngay cả khi chốt chặn
+đã bị gỡ sạch.
+
+### 5.1 Bài kiểm tự động — `pytest`
+
+Đặt chung một tệp `test/backend/test_bao_mat_cau_hinh.py`. Chạy đúng tệp đó, đừng quét cả
+`test/backend`.
+
+| Dòng | Bài kiểm | Khẳng định |
+|---|---|---|
+| **BM-018** | `test_chot_khoi_dong_tu_choi_khoa_mac_dinh` | `ENV=production` + `JWT_SECRET="change_me_please"` → hàm chốt **ném lỗi**. Biến thể: khóa ngắn hơn ngưỡng cũng ném; khóa thật thì đi qua; `ENV=local` thì đi qua (đừng làm tắc máy anh em) |
+| **BM-023** | `test_giai_ma_hong_thi_bao_thanh_tieng` | Ghi vào `tab_setting` một chuỗi mã bằng khóa **A**, rồi đọc bằng khóa **B** → `get()` **không** trả im lặng chuỗi rỗng: phải có `log.error` (bắt bằng `caplog`) và trạng thái phải phân biệt được *chưa cấu hình* với *cấu hình mà đọc hỏng* |
+| **BM-023** | `test_ba_trang_thai_bi_mat_khac_nhau` | Ba ca: chưa có dòng · có dòng đọc tốt · có dòng đọc hỏng → **ba kết quả khác nhau**. Hôm nay cả ba ra `""` |
+| **BM-021** | `test_uploads_khong_lo_tep_cho_nguoi_la` | `client.get("/api/uploads/<tên tệp có thật>")` **không kèm token** → phải **401/403/404**, tuyệt đối không phải 200 kèm nội dung |
+| **BM-022** | `test_cors_tu_choi_origin_la` | Gửi `Origin: https://ke-xau.example` → phần hồi đáp **không** được có `Access-Control-Allow-Origin` khớp origin đó. Kèm ca ngược: origin thật trong `CORS_ORIGINS` thì được |
+| **BM-020** | `test_tran_tan_suat_co_hieu_luc` | Gọi một endpoint nghiệp vụ quá ngưỡng trong một phút → phải có **429**. Đây là bài duy nhất cần `TestClient` thật + đặt lại bộ đếm của limiter giữa các ca, nên tách riêng kẻo làm giòn cả tệp |
+
+⚠️ **Bẫy đã biết, đừng dẫm lại:** `test/backend` chạy **SQLite**, mà SQLite **không** ép độ dài
+`VARCHAR` và không có nhiều ràng buộc của MySQL — bài kiểm nào ghi xuống DB rồi khẳng định là
+**xanh giả**. Với BM-023 thì kiểm ở tầng **hàm** (`_decrypt` / `get`), đừng kiểm bằng cách tin
+vào DB.
+
+### 5.2 Kiểm tay trên hệ đã deploy
+
+Mấy thứ dưới đây **không** pytest nào thấy được, vì chúng sống ở nginx và ở `.env` của VPS.
+Chạy sau mỗi lần deploy prod.
+
+**BM-019 — header bảo mật.** Gọi thẳng trang chủ prod và đọc phần đầu hồi đáp. Phải thấy đủ
+`X-Frame-Options` (hoặc `Content-Security-Policy: frame-ancestors`), `X-Content-Type-Options`,
+`Strict-Transport-Security`, `Referrer-Policy`.
+Kiểm cái **thật sự đau**: dựng một tệp HTML tại chỗ, nhúng `<iframe src="https://thumua...">`,
+mở bằng trình duyệt — **trang phải KHÔNG hiện**. Vá xong mà iframe vẫn hiện thì header đặt sai
+chỗ (đặt ở `location` của API thay vì của trang), không phải "chưa kịp áp dụng".
+
+**BM-022 — CORS.** Gửi một request tiền kiểm (`OPTIONS`) kèm `Origin` của một tên miền bịa ra
+và đọc hồi đáp: **không được** có `Access-Control-Allow-Origin` phản chiếu lại origin đó, và
+**không được** có `Access-Control-Allow-Credentials: true` đi kèm. Origin thật thì có.
+
+**BM-018 / BM-022 — đọc `.env` của VPS.** ⚠️ **Chỉ in ra CÓ/KHÔNG.** Cần biết đúng hai điều:
+`JWT_SECRET` có **khác** `change_me_please` không, và `CORS_ORIGINS` có **khác** `*` không.
+Không in giá trị, không `cat` cả tệp, không dán kết quả vào chỗ nào lưu lại được.
+
+**BM-021 — `/api/uploads`.** Liệt kê xem thư mục `uploads` trên prod đang có gì (kỳ vọng: gần
+như rỗng vì prod dùng R2). Có tệp thì mở thử đường dẫn đó bằng **cửa sổ ẩn danh** — hiện ra
+được là lỗ thật, không phải lý thuyết.
+
+**BM-023 — sao lưu R2 còn sống không.** Đây là bài quan trọng nhất và **không ai nghĩ tới nó
+cho tới lúc cần khôi phục**: vào R2 xem **thời điểm tệp sao lưu mới nhất**. Quá 24 giờ là hỏng,
+bất kể log có sạch tới đâu. Làm sau **mỗi lần** đổi `JWT_SECRET`, đổi khóa R2, hoặc chép DB
+giữa các môi trường.
+
+### 5.3 Kiểm lại các dòng đã vá (hồi quy)
+
+Dòng đã đóng vẫn phải có người canh, vì thứ mở lại một lỗ cũ thường là một CR **không liên
+quan gì** tới nó. Ba tệp đang canh, giữ nguyên đừng gộp: `test_nghi_viec_da_phien_cr400.py`
+(BM-015) · bộ kiểm của bao-CR-402 (BM-005) · `test_pham_vi_khai_du_b07.py` (44/44 entity —
+thêm entity mà quên khai `SCOPE_FIELDS` là suite đỏ ngay, đúng thiết kế).
+
+Và một bài **chưa ai viết, nên viết**: với mỗi endpoint mới đụng dữ liệu nhiều người, một ca
+*"tài khoản quyền thấp gọi vào → 403"*. BM-001 tồn tại vì câu đó chưa từng được hỏi.
