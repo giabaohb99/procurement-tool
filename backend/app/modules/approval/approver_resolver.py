@@ -48,20 +48,59 @@ def resolve(db: Session, node, subject: dict, submitter_employee_id: int | None)
 
 
 def _only_active_employees(db: Session, ids: list[int]) -> list[int]:
-    """Bỏ người đã nghỉ và bỏ trùng, GIỮ NGUYÊN thứ tự khai.
+    """Bỏ người KHÔNG BẤM DUYỆT ĐƯỢC và bỏ trùng, GIỮ NGUYÊN thứ tự khai.
 
-    Giao việc cho người đã tắt trạng thái là phiếu nằm im vĩnh viễn: không ai
-    đăng nhập được vào tài khoản đó để bấm.
+    Giao việc cho người không đăng nhập được là phiếu nằm im vĩnh viễn — không
+    ai bấm được, mà cũng chẳng có gì đỏ lên để biết.
+
+    Hai cách một người rơi vào cảnh đó, và phải loại CẢ HAI:
+
+    1. **Hồ sơ nhân sự đã tắt** (`Employee.is_active`) — người đã nghỉ.
+    2. **Tài khoản bị khóa** (`User.is_active`) — bị đình chỉ, nghỉ dài, nghi lộ
+       mật khẩu… Đây là công dụng bình thường của nút *Khóa* ở màn Phân quyền và
+       nó KHÔNG đụng tới hồ sơ nhân sự.
+
+    ⚠️ **Vế 2 thiếu tới 14/09/2026 và đó là một lỗ IM LẶNG** (duoc-CR-398). Hàm
+    này lọc `Employee.is_active`, trong khi `task_notification._accounts` lại lọc
+    `User.is_active` — hai nơi dùng hai định nghĩa khác nhau cho cùng một câu hỏi
+    "người này còn dùng hệ thống không". Ghép lại thành ca tệ nhất: khóa tài
+    khoản mà hồ sơ vẫn "đang làm" thì việc VẪN giao cho họ, còn email thì KHÔNG
+    gửi cho ai. Đã đo bằng tay: `resolve` trả `[6]` trong khi `_accounts` trả
+    `[]`. Không chốt nào ở `task_service` / `instance_service` bắt lại.
+
+    ⚠️ **Người CHƯA ĐƯỢC CẤP tài khoản thì GIỮ NGUYÊN** (quyết 14/09/2026). Đúng
+    là họ cũng không bấm được, nhưng loại họ ở đây là âm thầm đổi định tuyến của
+    những luồng đang chạy trên hệ thật — nơi có thể còn hồ sơ chưa kịp cấp tài
+    khoản. Chỉ loại người ĐÃ CÓ tài khoản mà mọi tài khoản của họ đều đang khóa;
+    nghĩa là hàm này không bao giờ loại thêm ai chỉ vì dữ liệu tài khoản còn
+    thiếu.
     """
     if not ids:
         return []
+    from app.modules.user.model import User
+
     active = {
         row[0] for row in
         db.query(Employee.id).filter(Employee.id.in_(ids), Employee.is_active.is_(True)).all()
     }
+
+    #  Một người có thể mang NHIỀU tài khoản (xem `lock_linked_users` cũng duyệt
+    #  `.all()`), nên phải so hai tập: "có tài khoản" và "có tài khoản đang mở".
+    #  Chỉ loại phần hiệu — có tài khoản nhưng không cái nào mở.
+    has_account = {
+        row[0] for row in
+        db.query(User.employee_id).filter(User.employee_id.in_(ids)).all() if row[0]
+    }
+    has_open_account = {
+        row[0] for row in
+        db.query(User.employee_id)
+        .filter(User.employee_id.in_(ids), User.is_active.is_(True)).all() if row[0]
+    }
+    locked_out = has_account - has_open_account
+
     result: list[int] = []
     for employee_id in ids:
-        if employee_id in active and employee_id not in result:
+        if employee_id in active and employee_id not in locked_out and employee_id not in result:
             result.append(employee_id)
     return result
 
