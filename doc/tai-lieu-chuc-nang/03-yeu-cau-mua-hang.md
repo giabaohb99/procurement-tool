@@ -512,13 +512,20 @@ Khối cuối phiếu có 4 ô ký: **Giám đốc · TP/BP mua hàng · TP/BP �
 |---|---|---|
 | Người lập | Người yêu cầu trên phiếu | `requester_signature` + `requester` |
 | TP/BP đề xuất | Người bấm **Duyệt** (bước 1) | `approver_signature` + `approver_name` |
-| TP/BP mua hàng | Người bấm **Điều phối** (bước 2, CR-034) | `dispatcher_signature` + `dispatcher_name` |
+| TP/BP mua hàng | **Trưởng phòng** của phòng ban mà người bấm **Điều phối** (bước 2, CR-034) đang thuộc — `Department.manager_id` (bao-CR-397). Phòng chưa gán trưởng thì lùi về chính người điều phối | `purchasing_head_signature` + `purchasing_head_name` (cặp `dispatcher_*` = người bấm nút vẫn trả, giữ tương thích) |
 | Giám đốc | Không có bước duyệt tương ứng → **để trống, ký tay** | — |
 
 Chữ ký lấy từ ảnh người dùng tự tải lên ở Trang cá nhân (`tab_user.signature`, xem
-`09-thong-bao-va-trang-ca-nhan.md`). Ảnh in giới hạn 56×180px, cách dòng họ tên 10px
-(CR-036 — cỡ cũ 40×150px in ra giấy quá nhỏ, tên lại dính sát nét ký).
+`09-thong-bao-va-trang-ca-nhan.md`) — hoặc do **Nhân sự/quản trị đặt hộ** ở thẻ *Chữ ký cá nhân*
+trên hồ sơ nhân viên (bao-CR-398, có ở cả hai giao diện; backend `POST/DELETE
+/api/employees/{id}/signature`, quyền `employee.write`). Ảnh in giới hạn 56×180px, cách dòng họ
+tên 10px (CR-036 — cỡ cũ 40×150px in ra giấy quá nhỏ, tên lại dính sát nét ký).
 Ai chưa tải chữ ký thì ô đó chỉ có họ tên, ký tay như cũ.
+
+**Bố cục ô ký** (bao-CR-389 → bao-CR-398): cả 4 ô cao **130px**, họ tên luôn **dồn xuống đáy ô**
+để bốn cái tên thẳng hàng; ảnh chữ ký (nếu có) xếp ngay trên tên, ô không ảnh chừa ~100px trống
+để ký tay. Bản trước (bao-CR-389/397) cho ô CÓ ảnh 94px căn giữa nên tên người có chữ ký nổi cao
+hơn ba tên còn lại — khách chê lệch hàng trên phiếu PYC12092604.
 
 **Cách tra chữ ký Người lập** (`requester_signature`):
 
@@ -534,11 +541,21 @@ Ai chưa tải chữ ký thì ô đó chỉ có họ tên, ký tay như cũ.
 2. **Chỉ in từ mốc trạng thái tương ứng trở đi**: ô "TP/BP đề xuất" cần trạng thái ≥ Đã duyệt,
    ô "TP/BP mua hàng" cần ≥ Đã điều phối. Phiếu bị **trả về / từ chối** thì cả hai ô rỗng lại —
    không in chữ ký duyệt của lần trước.
-3. Công tắc `pr_dispatch_enabled` **tắt** (luồng 1 bước): một người làm cả 2 bước → hai ô cùng một
-   chữ ký, đúng thực tế.
+3. **Ô "TP/BP mua hàng" KHÔNG in người bấm Điều phối** (bao-CR-397, 14/09/2026). Trên prod người
+   bấm nút là **admin thu mua**, còn ô đó phải là chữ ký **trưởng phòng thu mua**. Hệ không có cờ
+   "phòng thu mua", nên `_purchasing_head()` đi: tài khoản người điều phối → nhân sự →
+   `department_id` → `Department.manager_id` (ô *Trưởng bộ phận* ở danh mục Phòng ban) → họ tên +
+   chữ ký **theo nhân sự trưởng phòng** (`resolve_signature_by_employee`, ảnh phải khớp tên đang in;
+   trưởng phòng chưa tải chữ ký thì ô chỉ có tên, **không mượn ảnh** của người điều phối).
+   Không suy ra được (tài khoản chưa gắn nhân sự · nhân sự chưa có phòng · phòng chưa gán trưởng ·
+   `manager_id` trỏ tới nhân sự đã xóa) → **lùi về người điều phối** như trước. Muốn ô này ra đúng
+   người thì phải **gán Trưởng bộ phận cho phòng thu mua** ở danh mục Phòng ban.
+4. Công tắc `pr_dispatch_enabled` **tắt** (luồng 1 bước): người duyệt bước 1 cũng ghi `dispatched`,
+   nên ô "TP/BP mua hàng" ra **trưởng phòng của người duyệt** (thường chính là họ) — chấp nhận, vì
+   luồng đó không có thu mua nào chạm vào phiếu.
 
 Helper dùng chung: `resolve_signature_by_employee()`, `resolve_signature()`, `resolve_actor()` trong
-`app/core/audit.py`.
+`app/core/audit.py`. Test: `test/backend/test_pyc_print_purchasing_head_cr397.py`.
 
 ### Khổ giấy và cách xuống trang (CR-036)
 

@@ -468,7 +468,9 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
                 // Mẫu thường: tự chèn ảnh chữ ký + họ tên cho 3 ô có dữ liệu trong hệ thống.
                 //   Người lập      = người yêu cầu trên phiếu
                 //   TP/BP đề xuất  = người bấm Duyệt (bước 1)
-                //   TP/BP mua hàng = người bấm Điều phối (bước 2, CR-034)
+                //   TP/BP mua hàng = TRƯỞNG PHÒNG của người bấm Điều phối (bao-CR-397) —
+                //                    backend tra Department.manager_id, phòng chưa gán trưởng
+                //                    thì lùi về chính người điều phối (bước 2, CR-034)
                 // Ô "Giám đốc" không có bước duyệt tương ứng -> để trống, ký tay.
                 // Mẫu thuế để trống toàn bộ như cũ.
                 const filled: Record<string, { sign?: string; name?: string }> = taxMode
@@ -476,7 +478,7 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
                   : {
                       "Người lập": { sign: pr.requester_signature, name: pr.requester },
                       "TP/BP đề xuất": { sign: pr.approver_signature, name: pr.approver_name },
-                      "TP/BP mua hàng": { sign: pr.dispatcher_signature, name: pr.dispatcher_name },
+                      "TP/BP mua hàng": { sign: pr.purchasing_head_signature, name: pr.purchasing_head_name },
                     };
                 // Chọn "Không chữ ký" -> bỏ ảnh, giữ họ tên để người ký tự ký tay lên trên.
                 const sign = showSign ? filled[r]?.sign || "" : "";
@@ -487,18 +489,18 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
                     <div style={{ fontStyle: "italic", fontSize: 11 }}>
                       (Ký, ghi rõ họ tên)
                     </div>
-                    {/* CÓ ảnh chữ ký: căn giữa cả cụm ảnh + tên trong ô 94px như cũ.
-                        KHÔNG có ảnh (bản ký tay, hoặc người ký chưa lưu chữ ký): dồn họ tên
-                        xuống ĐÁY một ô SÂU HƠN (130px) — căn giữa thì tên nổi sát dòng
-                        "(Ký, ghi rõ họ tên)" không còn chỗ ký, mà đáy ô 94px khách vẫn chê
-                        chật nên nới thêm. Ô trống (Giám đốc) cũng ăn 130px — thêm chỗ ký tay. */}
+                    {/* bao-CR-389 → bao-CR-398: MỌI ô đều cao 130px và dồn họ tên xuống ĐÁY,
+                        có ảnh chữ ký hay không; ảnh (nếu có) xếp ngay trên tên. Bản trước cho
+                        ô có ảnh 94px căn giữa nên tên người có chữ ký nổi cao hơn ba tên còn
+                        lại trên cùng một hàng — khách chê lệch. Ô không ảnh (ký tay, hoặc chưa
+                        lưu chữ ký) vẫn chừa ~100px trống phía trên để ký. */}
                     <div
                       style={{
-                        height: sign ? 94 : 130,
+                        height: 130,
                         display: "flex",
                         flexDirection: "column",
                         alignItems: "center",
-                        justifyContent: sign ? "center" : "flex-end",
+                        justifyContent: "flex-end",
                         // Giãn khoảng cách chữ ký -> họ tên: in ra bản giấy thì tên dính sát
                         // nét ký, đọc rối.
                         gap: 10,

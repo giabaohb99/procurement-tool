@@ -6,6 +6,7 @@ import ProductImages from '../components/ProductImages'
 import PurchaseHistoryTable from '../components/PurchaseHistoryTable'
 import EmployeeAccountCard from '../components/employee-account-card'
 import EmployeeAvatar from '../components/employee-avatar'
+import EmployeeSignatureCard from '../components/employee-signature-card'
 import WarehousePurchaseLines from '../components/warehouse-purchase-lines'
 import { CONTRACT_TYPES, contractTypeLabel } from '../utils/contractTypes'
 import {
@@ -379,7 +380,16 @@ export const cruds: Record<string, CrudConfig> = {
       ...(row.department_name ? [{ icon: 'ti-building', text: row.department_name }] : []),
       ...(row.status ? [{ icon: 'ti-user-check', text: row.status_label || employeeStatusLabel(row.status) }] : []),
     ],
-    detailExtra: (row) => <EmployeeAccountCard employeeId={row.id} email={row.email} />,
+    // bao-CR-398: thêm thẻ Chữ ký cá nhân để Nhân sự/admin đặt chữ ký THAY nhân viên (bản v2 có
+    // sẵn ở tab Tài khoản, bản cũ thiếu). `user_id` chỉ có ở API chi tiết; form chưa tải xong thì
+    // undefined → thẻ để backend tự chặn ca chưa có tài khoản.
+    detailExtra: (row) => (
+      <>
+        <EmployeeAccountCard employeeId={row.id} email={row.email} />
+        <EmployeeSignatureCard employeeId={row.id} signature={row.signature}
+                               hasAccount={row.user_id === undefined ? undefined : row.user_id > 0} />
+      </>
+    ),
     columns: [
       // Ảnh đại diện đi kèm luôn trong ô Họ tên (không tách cột riêng).
       // Ảnh lấy từ tài khoản đăng nhập; chưa có ảnh thì hiện chữ cái đầu của tên.

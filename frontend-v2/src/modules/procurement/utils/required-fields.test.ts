@@ -87,6 +87,8 @@ function prDoc(items: PurchaseRequestItem[]): PurchaseRequestDetail {
     approver_signature: '',
     dispatcher_name: '',
     dispatcher_signature: '',
+    purchasing_head_name: '',
+    purchasing_head_signature: '',
     items,
     subtotal: 0,
     vat: 0,
