@@ -4,8 +4,8 @@ Mọi cột mang nghĩa *nguồn · loại người làm · nhóm hành động*
 và so với hằng số ở đây; tiếng Việt chỉ sống trong các `*_LABELS` bên dưới.
 
 ⚠️ Đừng nhầm với `action` của `tab_audit_log`: cột đó vẫn là **mã chuỗi**
-(`create`, `approve`, `login_failed`…) vì 213 lời gọi `record(...)` đang truyền
-chuỗi, đổi sang số là sửa hết 213 chỗ mà chẳng được gì. Tập chuỗi đó nay ràng
+(`create`, `approve`, `login_failed`…) vì 273 lời gọi `record(...)` đang truyền
+chuỗi, đổi sang số là sửa hết 273 chỗ mà chẳng được gì. Tập chuỗi đó nay ràng
 bằng `ACTION_CATALOG` ở **`core/action_catalog.py`** (NT-4, bao-CR-358) — cùng
 với nhãn và nhóm của từng mã. Cái ở đây là `action_group` — **nhóm** của hành
 động, thứ dùng để lọc và để cảnh báo, và nó là số.
@@ -73,6 +73,23 @@ ACTION_GROUP_LABELS = {
     ACTION_GROUP_AUTH: "Đăng nhập",
     ACTION_GROUP_EXPORT: "Xuất dữ liệu",
     ACTION_GROUP_PERMISSION: "Phân quyền",
+}
+
+# --------------------------------------------------------------------------
+# Loại thao tác trên một dòng dữ liệu — `tab_change_log.op` (P4)
+# --------------------------------------------------------------------------
+#  Ba mã này nói về BẢN GHI, không phải về ý định của người dùng — đừng lẫn với
+#  `action_group` ở trên. Một cú "Duyệt phiếu" (`action_group = 3`) dưới tầng
+#  ORM có thể là một `op = 2` trên `tab_purchase_order` cộng vài `op = 1` trên
+#  bảng việc: cùng một lần bấm, hai cách kể.
+CHANGE_OP_ADD = 1
+CHANGE_OP_UPDATE = 2
+CHANGE_OP_DELETE = 3
+
+CHANGE_OP_LABELS = {
+    CHANGE_OP_ADD: "Thêm",
+    CHANGE_OP_UPDATE: "Sửa",
+    CHANGE_OP_DELETE: "Xóa",
 }
 
 #  ⚠️ BẢNG `ACTION_GROUP_BY_ACTION` TỪNG NẰM Ở ĐÂY — đã dời sang

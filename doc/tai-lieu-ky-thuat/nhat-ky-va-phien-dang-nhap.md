@@ -1,6 +1,6 @@
 # THIẾT KẾ LẠI NHẬT KÝ (LOG) & PHIÊN ĐĂNG NHẬP
 
-**Bản:** 2.4 — 09/09/2026 · **CR:** bao-CR-312 · **Trạng thái: 12 CÂU HỎI §11 ĐÃ CHỐT 08/09/2026 (theo đề xuất, riêng Q2 khách đổi thành 16 tháng + gói theo năm). Bản 2.4 tính lại dung lượng bằng SỐ ĐO THẬT trên prod 09/09 và chốt thêm ba điều chỉnh (QĐ-A gia hạn phiên · QĐ-B khóa nối nhị phân · QĐ-C nhật ký ra khỏi sao lưu hằng đêm, đóng gói theo tháng). P0 tách thành bao-CR-313 (xong, deploy 09/09). **Tình hình mã ngày 14/09/2026: P0 + P1 + P1b + P2 + P3a đã lên CẢ dev lẫn PROD (P2/P3a theo gộp `erp-v2` → `main` 11/09); P3b (bao-CR-395) xong mã + test ở local `erp-v2`, CHƯA commit, chưa deploy; P4 trở đi chưa gõ.**
+**Bản:** 2.4 — 09/09/2026 · **CR:** bao-CR-312 · **Trạng thái: 12 CÂU HỎI §11 ĐÃ CHỐT 08/09/2026 (theo đề xuất, riêng Q2 khách đổi thành 16 tháng + gói theo năm). Bản 2.4 tính lại dung lượng bằng SỐ ĐO THẬT trên prod 09/09 và chốt thêm ba điều chỉnh (QĐ-A gia hạn phiên · QĐ-B khóa nối nhị phân · QĐ-C nhật ký ra khỏi sao lưu hằng đêm, đóng gói theo tháng). P0 tách thành bao-CR-313 (xong, deploy 09/09). **Tình hình mã ngày 14/09/2026: P0 + P1 + P1b + P2 + P3a đã lên CẢ dev lẫn PROD (P2/P3a theo gộp `erp-v2` → `main` 11/09); P3b (bao-CR-395) đã commit `erp-v2` `00b740b5` và deploy DEV, prod chờ gộp; P4 (bao-CR-402) xong mã + test ở local `erp-v2`, chưa commit; P5 trở đi chưa gõ.**
 
 Bản 1.0 (07/09) chỉ đề xuất *thêm* hai bảng bên cạnh nhật ký cũ. Bản 2.0 (08/09 sáng) thiết kế
 lại chính dòng nhật ký. Bản 2.1 bổ sung hai thứ bản 2.0 còn thiếu khi đối chiếu với câu hỏi
@@ -21,7 +21,8 @@ xem §10.1) và **P3a** (`bao-CR-360`, 10/09 — phần lõi phiên đăng nhậ
 lại chỗ đặt cửa chặn mà §5 bản cũ viết gộp) — mấy đợt đó nay mô tả thứ chạy thật, và chỗ nào
 bản làm khác bản vẽ thì có dấu ⚠️ ngay tại mục đó (§4.1 có hai chỗ). **P3b** (`bao-CR-395`,
 14/09 — ba màn hình + khóa `login_session` + endpoint đọc/đá; §8.5 có **năm chỗ làm khác bản
-vẽ**, đánh dấu ⚠️ ở đó). P4 trở đi chưa có dòng mã nào. Đọc kèm
+vẽ**, đánh dấu ⚠️ ở đó) và **P4** (`bao-CR-402`, 14/09 — bảng `tab_change_log` + lớp sự kiện
+ORM, đóng BM-005; §4.3 có **ba chỗ làm khác bản vẽ**). P5 trở đi chưa có dòng mã nào. Đọc kèm
 `so-ghi-nhan-loi-bao-mat.md` (BM-001…BM-014) và `change-log-bao.md` (bao-CR-311).
 
 ---
@@ -60,7 +61,7 @@ Sáu câu hỏi một nhật ký phải trả lời được, và hôm nay:
 
 | Câu hỏi | Hôm nay |
 |---|---|
-| **Ai** đã làm? | Được — *nếu* chỗ đó có gọi `record(...)`. 213 lời gọi rải trong 54 tệp, quên chỗ nào thì im lặng vĩnh viễn (đúng ca YCBG05092603) |
+| **Ai** đã làm? | Được — *nếu* chỗ đó có gọi `record(...)`. 273 lời gọi rải trong 62 tệp, quên chỗ nào thì im lặng vĩnh viễn (đúng ca YCBG05092603) |
 | Gọi vào **endpoint nào**, gửi lên **cái gì**, nhận về **cái gì**? | **KHÔNG.** Không có tầng nào ghi request |
 | Đổi **từ giá trị nào sang giá trị nào**? | **KHÔNG.** Không chỗ nào lưu giá trị cũ |
 | **Từ đâu, thiết bị gì, phiên nào**? | **KHÔNG**, trừ đúng lúc đăng nhập, mà IP còn nhét trong câu chữ |
@@ -136,7 +137,7 @@ người đọc — **cấm để nó là nơi DUY NHẤT chứa một dữ ki�
 
 **NT-2. Ngữ cảnh do máy điền, không do người viết mã nhớ.** Ai · phiên · IP · lần bấm — bốn thứ
 này không xuất hiện trong tham số `record(...)`; middleware đặt `ContextVar`, mọi dòng tự đọc.
-Hệ quả: **213 lời gọi hiện có không phải sửa một chữ.**
+Hệ quả: **273 lời gọi hiện có không phải sửa một chữ.**
 
 **NT-3. Ba lớp nối bằng `request_id`, không gộp.** Nhồi input/output hay trước/sau vào
 `tab_audit_log` là hỏng cả ba: bảng kể chuyện phình lên, mà vẫn không lọc được.
@@ -358,6 +359,32 @@ với JSON là bới bằng hàm.
 Chỉ số ghép: `(table_name, row_id, id)` để dựng lịch sử một dòng dữ liệu; `(request_id)` để dựng
 lại một lần bấm.
 
+#### 4.3.1. Ba chỗ bản làm (bao-CR-402) khác bản vẽ
+
+**1. Bảng KHÔNG dùng `AuditMixin`, dù dòng đầu của bảng cột ở trên nói vậy.** Đây là bảng
+**chỉ-thêm**: không endpoint nào sửa, không endpoint nào xóa. `updated_at` / `updated_by` của
+mixin sẽ là hai cột chết nhân với vài triệu dòng, và tệ hơn là chúng gợi ý rằng có đường sửa.
+Model khai tay đúng ba cột `id` · `created_at` · `created_by`, theo đúng tiền lệ của
+`tab_request_log`.
+
+**2. Thêm cột ẩn nghĩa cho dòng GỘP.** Bản vẽ không nói dòng gộp trông thế nào. Bản làm để
+`field = ''`, `row_id = 0`, và `snapshot_json = {"_aggregated": true, "rows": N}` — màn đọc (P5)
+nhìn cờ đó để không bày một dòng gộp ra như một thay đổi lẻ. Gộp bật khi `actor_kind = 3`
+(script) hoặc khi một lượt gọi chạm **`MAX_DETAIL_CHANGES = 500`** dòng chi tiết; cầu chì thứ hai
+là cho người dùng thường, vì một cú duyệt hàng loạt cũng đủ chạm trần.
+
+**3. Giá trị cũ đôi khi phải đọc lại từ DB.** Bản vẽ nói giá trị trước/sau lấy từ
+`inspect(obj).attrs.<cột>.history`. Đúng, nhưng chỉ khi thuộc tính **đã được nạp**: bản ghi vừa
+đi qua một `commit` trong cùng phiên thì mọi cột hết hạn, và lúc gán đè SQLAlchemy ghi nhận giá
+trị cũ là *"không có"* — dòng nhật ký khi đó chỉ còn nửa câu, đúng nửa mà BM-005 phải đóng.
+`_fetch_old_values` bù bằng **một truy vấn cho cả bản ghi**, chạy trong `before_flush` nên dưới
+DB vẫn là giá trị cũ. Luồng thường (nạp → sửa → lưu) không chạm vào nhánh này.
+
+⚠️ **Khóa quyền `change_log` ở §7 hoãn sang P5.** P4 chỉ GHI; người đọc duy nhất của bảng này
+là màn `/system/logs`, mà màn đó là việc của P5. Thêm entity bây giờ là đụng `ENTITIES`,
+`SCOPE_FIELDS`, `_SYS_ENTITIES` trong seed và bài kiểm đếm entity — để canh một cánh cửa chưa
+có phòng nào ở sau.
+
 ### 4.4. `tab_login_session` — mỗi lần đăng nhập THÀNH CÔNG một dòng — MỚI
 
 | Cột | Kiểu | Ghi chú |
@@ -489,8 +516,14 @@ before_flush  → duyệt session.new / dirty / deleted
               → inspect(obj).attrs.<cot>.history → (cũ, mới)
               → gom vào bộ đệm theo request_id (KHÔNG ghi DB trong flush — đệ quy)
 after_flush   → điền row_id cho dòng vừa thêm
+after_commit  → đóng dấu "đã commit" cho phần bộ đệm vừa được ghi thật
+after_rollback→ vứt phần chưa đóng dấu (BM-013 ở lớp này)
 cuối request  → ghi cả bộ đệm + changed_fields / change_count lên audit cùng request_id
 ```
+
+Hai dòng giữa **thêm ở bao-CR-402**, bản vẽ đầu không có: thiếu chúng thì một giao dịch nghiệp
+vụ quay đầu vẫn để lại dòng thay đổi — đúng cái BM-013 đang than ở lớp kể chuyện, lặp lại ở lớp
+máy ghi.
 
 ### Che dữ liệu nhạy cảm — khai MỘT chỗ, dùng cho cả ba lớp
 
@@ -728,6 +761,13 @@ sai). Thêm `audit`, `change_log`, `login_session` → **58**; `login_session` l
 hai cái kia `PUBLIC` vì đã gác bằng khóa quản trị. Vai trò đang chạy **không tự có** khóa mới
 (D-018) — tick tay hoặc `SEED_FORCE_SYNC=true` một lần.
 
+⚠️ **Cập nhật 14/09/2026 — mới thêm được MỘT trong ba khóa.** `login_session` lên ở P3b
+(`bao-CR-395`), `ENTITIES` **59 → 60**. `change_log` **hoãn sang P5** dù bảng đã có từ P4: P4
+chỉ GHI, người đọc duy nhất là màn `/system/logs` của P5, nên thêm entity bây giờ là đụng
+`ENTITIES` + `SCOPE_FIELDS` + `_SYS_ENTITIES` + bài kiểm đếm entity để canh một cánh cửa chưa có
+phòng nào ở sau. `audit` cũng chưa thêm, cùng lý do. Số **58** ở đoạn trên là số của bản vẽ, đếm
+từ mốc 55 — đừng lấy nó làm số thật; số thật hôm nay là **60**.
+
 ---
 
 ## 8. GIAO DIỆN — một màn, ba bảng ở dưới
@@ -742,7 +782,7 @@ quỹ nhưng tra một màn. Ba lý do tách, mỗi lý do là một thứ mất
 | Một lần bấm sửa 3 trường = body vào phải lặp 3 lần, hoặc 3 trường nhét vào một JSON | **Không lọc được** *"ai từng sửa `unit_price`"* — phải bới JSON |
 | Body vào + giá trị cũ (có thể chứa tên NCC) nằm cùng dòng với câu *"Duyệt phiếu"* mà người yêu cầu được đọc | **Không tách quyền được** — cho xem lịch sử phiếu là lộ NCC (§7) |
 | Request 6 tháng, nhật ký nghiệp vụ 24 tháng chung một bảng | **Không dọn riêng được** — giữ theo cái dài nhất, bảng phình gấp 4 |
-| Celery / script không có body vào; 213 lời gọi `record()` cũ vẫn phải chạy | Bảng gộp phải chấp nhận **một nửa cột rỗng** tùy dòng — đọc rất khó |
+| Celery / script không có body vào; 273 lời gọi `record()` cũ vẫn phải chạy | Bảng gộp phải chấp nhận **một nửa cột rỗng** tùy dòng — đọc rất khó |
 
 Nhưng phía trên chỉ có **một màn**: một dòng trên màn = một `request_id`, backend gộp ba bảng
 lại, giao diện không biết có ba bảng.
@@ -995,17 +1035,21 @@ và task xóa phải chạy **sau** task đóng gói ít nhất một ngày.
 | Đợt | Nội dung | Được gì ngay | Phụ thuộc |
 |---|---|---|---|
 | **P0** | **Gác cửa đọc** (BM-001) — tách đường đọc, chặn `entity=auth` | Bịt lỗ đang mở trên prod. Đã tách thành **bao-CR-313**, xong 09/09/2026 | — |
-| **P1** | Middleware ngữ cảnh (IP lấy bằng `core/client_ip.get_client_ip` của bao-CR-313, không bật `--proxy-headers`) + **`tab_request_log`** + 6 cột ngữ cảnh trên audit. Kèm **QĐ-A** (bỏ qua gia hạn phiên thành công, §4.1) và **QĐ-B** (`request_id` là `BINARY(16)`, §4.5) — hai thứ này phải đúng **ngay từ migration đầu**, sửa sau là đổi kiểu cột trên bảng đã vài trăm nghìn dòng | **Endpoint nào · input · output · IP · lượt bị chặn** — 213 lời gọi cũ không sửa | — |
+| **P1** | Middleware ngữ cảnh (IP lấy bằng `core/client_ip.get_client_ip` của bao-CR-313, không bật `--proxy-headers`) + **`tab_request_log`** + 6 cột ngữ cảnh trên audit. Kèm **QĐ-A** (bỏ qua gia hạn phiên thành công, §4.1) và **QĐ-B** (`request_id` là `BINARY(16)`, §4.5) — hai thứ này phải đúng **ngay từ migration đầu**, sửa sau là đổi kiểu cột trên bảng đã vài trăm nghìn dòng | **Endpoint nào · input · output · IP · lượt bị chặn** — 273 lời gọi cũ không sửa | — |
 | **P2** | **`bao-CR-358` (10/09/2026, XONG trên `erp-v2`)** — `ACTION_CATALOG` + nhãn bắt buộc + test canh + `action_group`, xem §10.1 | 1.135 dòng đang hiện mã Anh đọc được ngay, **cộng 12 mã chưa ai từng khai** | — |
 | **P3a** | **`bao-CR-360` (10/09/2026)** — phần LÕI: `tab_login_session` + `jti` + `token_version` + cửa chặn ở `get_current_user` + dập dấu vết ở middleware (**QĐ-D**, §11) + 4 thao tác điều khiển phiên ở tầng service. **Kèm việc dọn:** bỏ dòng audit `refresh` cho nhánh gia hạn **thành công** mà bao-CR-313 đang ghi, chuyển sang dập `refreshed_at` / `refresh_count` / `last_seen_ip` theo QĐ-A. **Không màn hình nào.** | Đăng xuất **có hiệu lực thật**, đá được một phiên, bắt đăng nhập lại — tức đóng BM-002 ở phần cốt lõi | P1 |
-| **P3b** | **`bao-CR-395` (14/09/2026, XONG mã + test ở local `erp-v2`, chưa commit)** — ba chỗ hiện phiên (§8.5: Quản trị · Trang cá nhân · tab Nhân sự, **chỉ `frontend-v2`**) + khóa quyền `login_session` (`_SYS_ENTITIES`, ENTITIES 59 → **60**, `test_pham_vi_khai_du_b07` 60/60) + 4 endpoint quản trị + 3 endpoint tự phục vụ; **năm chỗ khác bản vẽ ở §8.5.1**. Kèm `bao-CR-394` vá BM-012 + BM-014 | Người dùng **nhìn thấy** thiết bị của mình và tự bấm được; BM-002 đóng hẳn trên dev | P3a chạy êm vài ngày trên dev |
-| **P4** | `tab_change_log` + sự kiện ORM + che cột + chốt gộp nhập liệu | **Trước/sau** — nặng nhất, làm sau cùng trong nhóm nền | P1 |
+| **P3b** | **`bao-CR-395` (14/09/2026, XONG — commit `erp-v2` `00b740b5`, đã deploy DEV, prod chờ gộp)** — ba chỗ hiện phiên (§8.5: Quản trị · Trang cá nhân · tab Nhân sự, **chỉ `frontend-v2`**) + khóa quyền `login_session` (`_SYS_ENTITIES`, ENTITIES 59 → **60**, `test_pham_vi_khai_du_b07` 60/60) + 4 endpoint quản trị + 3 endpoint tự phục vụ; **năm chỗ khác bản vẽ ở §8.5.1**. Kèm `bao-CR-394` vá BM-012 + BM-014 | Người dùng **nhìn thấy** thiết bị của mình và tự bấm được; BM-002 đóng hẳn trên dev | P3a chạy êm vài ngày trên dev |
+| **P4** | **`bao-CR-402` (14/09/2026, XONG mã + test ở local `erp-v2`, chưa commit)** — `tab_change_log` (migration `d5f7a9c1b3e2`) + lớp sự kiện ORM `core/change_tracker.py` + che cột dùng chung `logging_policy` + chốt gộp nhập liệu; **ba chỗ khác bản vẽ ở §4.3.1**; khóa quyền `change_log` **hoãn sang P5** (P4 chỉ ghi, chưa ai đọc) | **Trước/sau** — đóng **BM-005**. Lỗ dấu-vết-ma **BM-013** đóng ở lớp này (chỉ ghi thứ đã commit), `core/audit.py` cố ý không đụng, lý do đo đạc ở §4.3.1 và trong docstring `record()` | P1 |
 | **P5** | Màn `/system/logs` (§8.2–8.4): danh sách gộp theo `request_id`, ngăn 4 tab, theo dõi trực tiếp, biểu đồ; `/api/audit-logs` trả thêm `request_id` để *Xem chi tiết* từ dòng thời gian phiếu | **Gom một chỗ, debug trên giao diện** | P2, P4 (tab *Thay đổi* ẩn khi chưa có P4 — màn vẫn dùng được ngay sau P1) |
 | **P1b** | **`bao-CR-346` (10/09/2026)** — đảo luật lọc thành *ghi hết GET* (§4.1), che vết lỗi SQL, `device_hash` + `referer`, `record(...)` cho `role/` + `user/`, và **kéo hai việc của P6 lên**: đóng gói R2 hằng tháng (§4.1.2) + dọn dòng GET 90 ngày (§4.1.1) | **Ai ĐỌC cái gì** — thứ P1 hoàn toàn không có. Và nhật ký có bản sao thứ hai ngoài máy | P1 |
 | **P6** | Phân vùng theo năm + dọn 16 tháng (§9) + **QĐ-C: tách bốn bảng nhật ký khỏi sao lưu hằng đêm bằng dump hai lượt** (§9) + cảnh báo: đăng nhập IP lạ, phiên đổi IP giữa chừng, xóa hàng loạt trong một `request_id`, nhiều 403 liên tiếp. *(Phần đóng gói R2 hằng tháng đã làm ở P1b.)* | Nhật ký giữ được lâu hơn sao lưu mà DB không phình | P3, P4 |
 
 **P1 là phần đáng làm nhất so với công bỏ ra**: một middleware trả lời được 4 trong 6 câu hỏi ở §1
-(endpoint, input/output, từ đâu, bị chặn) mà không đụng 213 lời gọi, không đụng ORM.
+(endpoint, input/output, từ đâu, bị chặn) mà không đụng 273 lời gọi, không đụng ORM.
+
+⚠️ **Con số đó là 273, không phải 213.** Bản đo lại bằng AST ở bao-CR-402 ra **273 lời gọi ở 62
+tệp**. Cách đếm cũ grep chuỗi `record(` nên bỏ sót **87 chỗ**: 14 tệp import bí danh
+`from app.core.audit import record as audit_record`. Rà toàn bộ thì phải hỏi cả hai tên.
 
 ⚠️ **Vì sao kéo gói R2 ra khỏi P6.** QĐ-C loại bốn bảng nhật ký khỏi bản sao lưu hằng đêm,
 nhưng gói R2 lại xếp ở giai đoạn cuối. Khoảng giữa hai mốc đó, nhật ký tồn tại **đúng một
@@ -1033,7 +1077,13 @@ hệ thật chưa có `ACTION_CATALOG` lẫn `tab_login_session`.~~ **Hết hạ
 
 **Chen giữa P3b và P4 (14/09/2026 chiều): `bao-CR-400`** — nghỉ việc trên hồ sơ nhân sự khóa
 tài khoản + đá phiên (BM-015) và tab *Lịch sử đăng nhập* ở `/me`, xem §8.5.2. Không migration,
-không khóa quyền mới; local `erp-v2`, chưa commit. Backend đi kèm P3b lên `main` khi gộp.
+không khóa quyền mới; commit `erp-v2` `e89ab592`, **đã deploy DEV**. Backend đi kèm P3b lên
+`main` khi gộp.
+
+**P4 xong mã ngày 14/09/2026 (`bao-CR-402`)** — `tab_change_log` + `core/change_tracker.py`,
+migration `d5f7a9c1b3e2`, 27 bài kiểm mới ở `test/backend/test_nhat_ky_lop_orm_cr402.py`. Bảng
+mới **chưa có ai đọc**: màn `/system/logs` là P5, nên khóa quyền `change_log` ở §7 hoãn theo
+(xem §4.3.1). Còn ở local `erp-v2`, chưa commit.
 
 ### 10.1. P2 đã làm gì — và tìm ra gì
 
@@ -1177,7 +1227,7 @@ không phải việc gác; nó phải chạy **sau** khi endpoint xong (để bi
 - **Không thay được sao lưu.** Nhật ký để truy trách nhiệm, không phải để khôi phục dữ liệu.
 - **Không chặn thao tác sai** — chỉ ghi lại. Muốn chặn là việc ở từng nghiệp vụ.
 - **Không ghi GET thường** — ai *xem* phiếu nào không truy được, trừ xuất dữ liệu và tệp đính kèm (Q6).
-- **Không sửa 213 lời gọi `record(...)` cho hay hơn.** Ngữ cảnh tự giàu lên, còn `message` rỗng
+- **Không sửa 273 lời gọi `record(...)` cho hay hơn.** Ngữ cảnh tự giàu lên, còn `message` rỗng
   thì vẫn rỗng — muốn có câu chữ tử tế phải sửa từng chỗ, làm dần.
 - **Không thay `docker logs`.** Màn §8 chỉ có thứ đã vào tới middleware hoặc task nền: log nginx,
   Cloudflare, lỗi lúc uvicorn chưa khởi động xong vẫn phải xem ở container; `request_id` in vào

@@ -10,7 +10,7 @@ def record(db: Session, user_id: int, entity: str, entity_id: int, action: str, 
            doc_code: str = "", parent: tuple[str, int] | None = None, on_behalf_of: int = 0):
     """Ghi một dòng nhật ký thao tác.
 
-    Sáu tham số đầu **giữ nguyên thứ tự và ý nghĩa** của bản cũ — 213 lời gọi
+    Sáu tham số đầu **giữ nguyên thứ tự và ý nghĩa** của bản cũ — 273 lời gọi
     đang gọi theo vị trí, đụng vào là hỏng hết. Ba tham số cuối là tùy chọn,
     bổ sung dần ở những chỗ có gì để nói thêm (bao-CR-312 P1):
 
@@ -23,9 +23,23 @@ def record(db: Session, user_id: int, entity: str, entity_id: int, action: str, 
     middleware đặt trong `ContextVar`, hàm này tự đọc — cố ý KHÔNG nhận qua
     tham số, nếu không thì mỗi lời gọi lại phải nhớ truyền.
 
-    ⚠️ Vẫn `db.commit()` như bản cũ. Bẫy 1 ở §6 của tài liệu (gom bộ đệm, ghi
-    một lần cuối request) là việc của P4 — đổi ở P1 là đổi nhịp commit của 213
-    chỗ đang chạy thật mà chưa có gì bù lại.
+    ⚠️ **Vẫn `db.commit()` như bản cũ, và P4 cố ý KHÔNG gỡ** (BM-013). Bỏ dòng
+    đó là đổi nhịp commit của 273 lời gọi ở 62 tệp, và bản đo ở bao-CR-402 tìm
+    ra hai chỗ hỏng ngay:
+
+    * `document/file_access_log.py` **đọc lại `tab_audit_log` trong cùng lượt
+      gọi** — nó đếm số lần mở tệp (kể cả dòng vừa ghi) để so ngưỡng cảnh báo,
+      và tra dòng `file_alert` để khỏi báo trùng. Không commit là bộ đếm lệch.
+    * `_raise_alert` của chính tệp đó `db.add(Notification(...))` rồi trông vào
+      `record(...)` commit hộ — cả chuỗi hàm gọi nó không có `commit` nào, và
+      lời gọi ngoài cùng nằm trong một `except` nuốt lỗi. Gỡ ra là thư cảnh
+      báo mất **trong im lặng**.
+
+    96 lời gọi khác không có `commit` nào trong cùng hàm; phần lớn nhờ hàm con
+    commit trước, nhưng "phần lớn" không đủ để đổi một nhịp đang chạy thật.
+    P4 vì thế đóng lỗ dấu-vết-ma ở **lớp thay đổi** (`core/change_tracker.py`
+    chỉ ghi thứ đã commit) chứ không đụng lớp này. BM-013 còn mở, đường đi đã
+    ghi ở `doc/tai-lieu-ky-thuat/so-ghi-nhan-loi-bao-mat.md`.
     """
     from app.modules.audit.model import AuditLog
 
@@ -48,7 +62,8 @@ def record(db: Session, user_id: int, entity: str, entity_id: int, action: str, 
     db.commit()
     bump_audit_count()
     #  Trả về dòng vừa ghi để nơi gọi lấy `log.id` khi cần (vd nối một thao tác
-    #  hoàn tác vào đúng dòng lịch sử). 213 lời gọi cũ bỏ qua giá trị trả về.
+    #  hoàn tác vào đúng dòng lịch sử). Đúng MỘT lời gọi trong 273 chỗ dùng tới
+    #  nó (`survey_request/report_controller.py::delete_report_`), số còn lại bỏ.
     return log
 
 
