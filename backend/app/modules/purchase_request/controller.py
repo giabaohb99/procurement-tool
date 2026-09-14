@@ -165,18 +165,51 @@ _AFTER_APPROVE = STATUS_AFTER_APPROVE
 _AFTER_DISPATCH = STATUS_AFTER_DISPATCH
 
 
+def _purchasing_head(db: Session, dispatcher_uid: int) -> tuple[str, str]:
+    """bao-CR-397 — TRƯỞNG PHÒNG của phòng ban mà người bấm Điều phối đang thuộc.
+
+    Ô "TP/BP mua hàng" trên bản in là chữ ký của trưởng phòng thu mua, không phải của
+    người bấm nút: trên prod người điều phối thường là ADMIN thu mua (Châu Phúc Hậu) nên
+    tên admin in vào ô trưởng phòng. Hệ không có cờ "phòng thu mua", nên lấy phòng của
+    chính người điều phối (tài khoản -> nhân sự -> `department_id`) rồi đọc
+    `Department.manager_id` — cột trưởng bộ phận chọn cứng ở danh mục Phòng ban.
+
+    Trả `("", "")` khi không suy ra được (tài khoản chưa gắn nhân sự, nhân sự chưa có
+    phòng, phòng chưa gán trưởng) — chỗ gọi tự lùi về người điều phối như trước CR này.
+    Chữ ký tra theo NHÂN SỰ trưởng phòng (`resolve_signature_by_employee`) để ảnh khớp
+    đúng tên đang in.
+    """
+    from app.core.audit import resolve_signature_by_employee
+    from app.modules.department.model import Department
+    from app.modules.employee.model import Employee
+    from app.modules.user.model import User
+
+    user = db.get(User, dispatcher_uid) if dispatcher_uid else None
+    emp = db.get(Employee, user.employee_id) if (user and user.employee_id) else None
+    dept = db.get(Department, emp.department_id) if (emp and emp.department_id) else None
+    head = db.get(Employee, dept.manager_id) if (dept and dept.manager_id) else None
+    if not head or not (head.full_name or "").strip():
+        return "", ""
+    return head.full_name, resolve_signature_by_employee(db, head.id)
+
+
 def _approval_signers(db: Session, pr) -> dict:
     """Người ký 2 bước duyệt của phiếu — tra từ nhật ký thao tác (audit log).
 
     Bước 1 `approved`  (trưởng phòng duyệt)  -> ô "TP/BP đề xuất" trên phiếu in.
-    Bước 2 `dispatched` (thu mua điều phối)  -> ô "TP/BP mua hàng".
-    Công tắc `pr_dispatch_enabled` TẮT: một người làm cả 2 bước -> 2 ô cùng một chữ ký, đúng thực tế.
+    Bước 2 `dispatched` (thu mua điều phối)  -> `dispatcher_*` (người bấm nút, giữ cho
+    tương thích) và `purchasing_head_*` = TRƯỞNG PHÒNG của người đó (bao-CR-397) -> ô
+    "TP/BP mua hàng". Phòng chưa gán trưởng thì `purchasing_head_*` lùi về người điều phối.
+    Công tắc `pr_dispatch_enabled` TẮT: người duyệt bước 1 cũng ghi `dispatched`, nên ô
+    "TP/BP mua hàng" ra trưởng phòng của NGƯỜI DUYỆT — chấp nhận, vì luồng đó không có
+    thu mua nào chạm vào phiếu.
     """
     from app.core.audit import resolve_actor, resolve_signature
     from app.modules.audit.model import AuditLog
 
     out = {"approver_name": "", "approver_signature": "",
-           "dispatcher_name": "", "dispatcher_signature": ""}
+           "dispatcher_name": "", "dispatcher_signature": "",
+           "purchasing_head_name": "", "purchasing_head_signature": ""}
     want = ([("approved", "approver")] if pr.status in _AFTER_APPROVE else []) + \
            ([("dispatched", "dispatcher")] if pr.status in _AFTER_DISPATCH else [])
     if not want:
@@ -194,6 +227,11 @@ def _approval_signers(db: Session, pr) -> dict:
         if uid:
             out[f"{key}_name"] = resolve_actor(db, uid)
             out[f"{key}_signature"] = resolve_signature(db, uid)
+    dispatcher_uid = latest.get("dispatched")
+    if dispatcher_uid:
+        head_name, head_sign = _purchasing_head(db, dispatcher_uid)
+        out["purchasing_head_name"] = head_name or out["dispatcher_name"]
+        out["purchasing_head_signature"] = head_sign if head_name else out["dispatcher_signature"]
     return out
 
 

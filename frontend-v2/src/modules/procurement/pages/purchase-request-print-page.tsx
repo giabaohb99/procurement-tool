@@ -368,9 +368,12 @@ function SignatureSection({
           signature: purchaseRequest.approver_signature,
           name: purchaseRequest.approver_name,
         },
+        // bao-CR-397: ô này là TRƯỞNG PHÒNG của người bấm Điều phối (backend tra
+        // Department.manager_id), không phải người bấm nút — phòng chưa gán trưởng thì
+        // backend tự lùi về người điều phối.
         'TP/BP mua hàng': {
-          signature: purchaseRequest.dispatcher_signature,
-          name: purchaseRequest.dispatcher_name,
+          signature: purchaseRequest.purchasing_head_signature,
+          name: purchaseRequest.purchasing_head_name,
         },
       }
 
@@ -387,7 +390,15 @@ function SignatureSection({
             <div key={role} className="pr-print-signature-cell">
               <b>{role}</b>
               <p className="text-[11px] italic">(Ký, ghi rõ họ tên)</p>
-              <div className="mt-1 flex h-[94px] flex-col items-center justify-center gap-2.5 font-bold">
+              {/* bao-CR-389 (cổng sang v2 ở bao-CR-397): CÓ ảnh chữ ký thì căn giữa ô 94px;
+                  KHÔNG ảnh thì nới ô 130px và dồn tên xuống đáy — chừa ~100px trống phía
+                  trên để ký tay. Trước đó tên nổi giữa ô, người ký không chen bút vào được. */}
+              <div
+                className={cn(
+                  'mt-1 flex flex-col items-center gap-2.5 font-bold',
+                  signature ? 'h-[94px] justify-center' : 'h-[130px] justify-end',
+                )}
+              >
                 {signature && (
                   <img
                     src={signature}

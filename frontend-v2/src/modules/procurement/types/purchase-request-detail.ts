@@ -107,6 +107,13 @@ export interface PurchaseRequestDetail {
   approver_signature: string
   dispatcher_name: string
   dispatcher_signature: string
+  /**
+   * bao-CR-397: TRƯỞNG PHÒNG của người bấm Điều phối (Department.manager_id) — người ký
+   * ô "TP/BP mua hàng" trên bản in. Phòng chưa gán trưởng thì backend trả đúng
+   * `dispatcher_*`. Rỗng khi phiếu chưa tới bước điều phối.
+   */
+  purchasing_head_name: string
+  purchasing_head_signature: string
 
   items: PurchaseRequestItem[]
   /** Tiền hàng chưa VAT / tiền VAT / tổng cộng — backend cộng từ các dòng. */

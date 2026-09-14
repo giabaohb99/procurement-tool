@@ -468,7 +468,9 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
                 // Mẫu thường: tự chèn ảnh chữ ký + họ tên cho 3 ô có dữ liệu trong hệ thống.
                 //   Người lập      = người yêu cầu trên phiếu
                 //   TP/BP đề xuất  = người bấm Duyệt (bước 1)
-                //   TP/BP mua hàng = người bấm Điều phối (bước 2, CR-034)
+                //   TP/BP mua hàng = TRƯỞNG PHÒNG của người bấm Điều phối (bao-CR-397) —
+                //                    backend tra Department.manager_id, phòng chưa gán trưởng
+                //                    thì lùi về chính người điều phối (bước 2, CR-034)
                 // Ô "Giám đốc" không có bước duyệt tương ứng -> để trống, ký tay.
                 // Mẫu thuế để trống toàn bộ như cũ.
                 const filled: Record<string, { sign?: string; name?: string }> = taxMode
@@ -476,7 +478,7 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
                   : {
                       "Người lập": { sign: pr.requester_signature, name: pr.requester },
                       "TP/BP đề xuất": { sign: pr.approver_signature, name: pr.approver_name },
-                      "TP/BP mua hàng": { sign: pr.dispatcher_signature, name: pr.dispatcher_name },
+                      "TP/BP mua hàng": { sign: pr.purchasing_head_signature, name: pr.purchasing_head_name },
                     };
                 // Chọn "Không chữ ký" -> bỏ ảnh, giữ họ tên để người ký tự ký tay lên trên.
                 const sign = showSign ? filled[r]?.sign || "" : "";
