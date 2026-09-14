@@ -315,3 +315,113 @@ doc/erp/11 (giữ hồ sơ Q1-Q8) và doc/yeu-cau/Plan_CapNhat_ThuMua_2026_07.md
 ### bao-CR-403-commit | Commit
 - status: xong
 Đại ca duyệt 14/09, commit trên erp-v2. Chỉ tài liệu, không cần deploy.
+
+## ra-soat-bao-mat-1409 | Rà soát bảo mật toàn hệ thống (đợt có phương pháp đầu tiên)
+- status: dang-lam
+- date: 2026-09-14
+Đại ca: "rà soát về các vấn đề bảo mật của hệ thống, hiện tại có bao nhiêu bảo
+mật đã áp dụng, và nên có những cái nào". Soát theo 11 LỚP PHÒNG THỦ thay vì
+soát quanh một ticket — khác hẳn 15 dòng BM cũ. Ra 8 lỗ mới BM-016..BM-023.
+Sổ nguồn: doc/tai-lieu-ky-thuat/so-ghi-nhan-loi-bao-mat.md (bản 1.7).
+Chốt quan trọng nhất: việc gấp nhất KHÔNG phải viết mã mới mà là ĐƯA 5 BẢN VÁ
+ĐANG NẰM Ở DEV LÊN PROD (BM-002/005/012/014/015) — trên prod hôm nay đánh dấu
+một người Nghỉ việc vẫn không khóa tài khoản, không đá phiên.
+
+### ra-soat-bao-mat-1409-soat | Soát 11 lớp phòng thủ, ghi 8 lỗ mới vào sổ
+- status: xong
+Đã áp: không có SQL thô (ORM toàn bộ), bcrypt, phân quyền hai trục + test 44/44
+entity, nhật ký 3 tầng nối bằng request_id, che trường nhạy cảm ở tầng
+serializer, CSP sandbox + nosniff cho tệp đính kèm, IP thật qua proxy tin cậy,
+sao lưu R2 tự động 2 lần/ngày. Thiếu: BM-016..BM-023, đã ghi đủ bằng chứng
+tệp:dòng vào §2 của sổ.
+
+### ra-soat-bao-mat-1409-bo-qua | Chốt bỏ qua 2 lỗ: chính sách mật khẩu + 2FA
+- status: xong
+Đại ca chốt 14/09 CHẤP NHẬN RỦI RO cho BM-016 (không có chính sách mật khẩu) và
+BM-017 (không có xác thực hai lớp). Lý do + điều kiện đảo lại quyết định đã ghi
+tại dòng trong sổ. KHÔNG code hai phần này.
+
+### ra-soat-bao-mat-1409-jwt | Trả lời: đổi JWT_SECRET ảnh hưởng gì tới prod
+- status: xong
+JWT_SECRET có BỐN vai trò chứ không phải một: ký vé JWT; khóa Fernet mã hóa
+mật khẩu SMTP + 2 khóa R2 trong tab_setting (core/app_settings.py:47); mã hóa
+mật khẩu hộp thư; ký confirm_token của trợ lý AI. Xoay khóa làm bí mật trong DB
+thành rác VĨNH VIỄN, và hỏng TRONG IM LẶNG (BM-023) nên thứ chết trước tiên là
+sao lưu R2. Kết luận: vá BM-018 bằng CHỐT KHỞI ĐỘNG, không phải xoay khóa.
+
+### ra-soat-bao-mat-1409-kich-ban | Viết kịch bản kiểm thử bảo mật (§5 của sổ)
+- status: xong
+6 bài pytest (test/backend/test_bao_mat_cau_hinh.py) + 5 bài kiểm tay sau deploy
+(header nginx, CORS, .env VPS chỉ in CÓ/KHÔNG, /api/uploads, sao lưu R2 còn
+sống không). Luật: bài kiểm viết từ phía KẺ TẤN CÔNG, và dòng BM chưa có bài
+kiểm canh thì coi như chưa vá.
+
+### ra-soat-bao-mat-1409-do | Đo 2 giá trị trên prod trước khi xếp mức
+- status: dang-lam
+BM-018 (JWT_SECRET còn là change_me_please không) và BM-022 (CORS_ORIGINS có
+phải * không) đang ở trạng thái CHƯA ĐO nên chưa chốt được mức. Cần đọc .env
+trên VPS, chỉ in CÓ/KHÔNG, tuyệt đối không in giá trị. Chờ lệnh đại ca.
+
+### ra-soat-bao-mat-1409-va | Vá BM-018..BM-023 theo thứ tự Việc 5 của sổ
+- status: dang-lam
+Chưa bắt đầu, chưa cấp số CR. Thứ tự đã chốt: 5.0 đo → 5.1 chốt khởi động
+JWT_SECRET → 5.2 giải mã bí mật nói thành lời + chốt sức khỏe sao lưu → 5.3
+header nginx → 5.4 bật trần tần suất → 5.5 che /api/uploads → 5.6 deploy 5 bản
+vá dev lên prod.
+
+## bao-CR-310 | Xử lý báo giá (phương án) trên Yêu cầu mua hàng
+- status: dang-lam
+- date: 2026-09-07
+Thay hướng P6 gộp YCBG+YCMH (đã khai tử 07/09). YCBG giữ nguyên; trên YCMH,
+NSTM gắn phương án NCC lên từng dòng hàng, người yêu cầu chốt, rồi từ các dòng
+đã chốt sinh thẳng đơn mua hàng. Kế hoạch đầy đủ: mục H của
+doc/tai-lieu-chuc-nang/03-yeu-cau-mua-hang.md.
+
+CHI TIẾT KỸ THUẬT:
+- Bảng: tab_purchase_request_item_option (migration 6835fb9cfecd, 29 cột,
+  khóa về tab_purchase_request_item.id; cụm snap_* là bản chụp từ dòng khảo
+  sát — phiếu gốc sửa giá về sau thì phương án không đổi theo).
+- Luật chính (H.3): tối đa 5 phương án/dòng; 2 nguồn (kho khảo sát đã duyệt
+  line_approve="Đã duyệt", hoặc NSTM gõ tay); mỗi dòng chốt đúng 1, bấm lại là
+  bỏ chốt (toggle); "đã chốt" suy từ is_chosen, không thêm cột; cổng thời
+  điểm: phiếu ở dispatched/processing/purchasing/purchased; NSTM chỉ gắn vào
+  dòng mình được giao; người yêu cầu không thấy tên NCC (chỉ "Phương án 1/2/3").
+- Quyền chốt: là người yêu cầu (created_by/requester_id) HOẶC có
+  purchase_request:approve — không đẻ quyền mới.
+- H.3.9 (chốt 14/09, CHƯA có trong mã): dòng chưa có product_code thì lúc
+  chốt chép snap_internal_code của phương án lên dòng — ngoại lệ duy nhất
+  phương án được ghi vào nhóm trường nhu cầu; đóng luôn N-004 cho dòng đó.
+  Bỏ chốt không xóa mã. option_service.choose hiện chưa ghi item.product_code.
+- Chốt KHÔNG ghi đè price/vat_pct của dòng — giữ dấu vết giá đề xuất → giá
+  chốt; bản in có 2 cột song song + chênh lệch.
+- Sinh ĐMH: gom dòng đã chốt theo supplier_code → N đơn nháp; đơn giá
+  snap_price_by_volume, VAT snap_vat (trống rơi về vat_pct — CR-058).
+- 2 bản in: bản A cho người yêu cầu (mẫu mục F sẵn có, full dòng 1 bảng, điền
+  giá chốt, luật ẩn NCC theo supplier:read áp như cũ); bản B cho thu mua
+  (tick theo NCC → 1 file N trang, mỗi trang = nháp 1 ĐMH).
+- Nợ N-17: backend không kiểm quyền purchase_request:print — bản B lộ tên
+  NCC, trước khi bật phải gác bằng supplier:read.
+- Thứ tự: P3 (màn xử lý) trước P2 (sinh ĐMH), P4 in ấn sau cùng.
+
+### bao-CR-310-p1 | P1 — Bảng dữ liệu + service + 6 endpoint + test
+- status: xong
+Gắn từ khảo sát / gắn tay / sửa / gỡ / chốt / liệt kê; test
+test_ycmh_phuong_an_cr310.py 21 ca. Đã commit; bảng đã có trên cả dev lẫn
+prod (theo lượt gộp erp-v2 -> main 11/09). Demo script backend/scripts/
+demo_cr310.py (local, không commit).
+
+### bao-CR-310-p3 | P3 — Màn Xử lý phương án ở frontend-v2
+- status: dang-lam
+Route /procurement/purchase-requests/:id/process (đối xứng màn Xử lý khảo
+sát của YCBG — CR-222). Làm TRƯỚC P2 vì là chỗ nghiệm thu bằng mắt. Chưa
+bắt đầu code.
+
+### bao-CR-310-p2 | P2 — Sinh N đơn mua hàng nháp + đồng bộ mã hàng H.3.9
+- status: dang-lam
+Gom dòng chốt theo supplier_code, cùng khuôn survey_request.create_prs.
+Kèm luật H.3.9 chép mã hàng lên dòng chưa có mã. Chưa bắt đầu.
+
+### bao-CR-310-p4 | P4 — Hai bản in + gác N-17 + HDSD
+- status: dang-lam
+Bản A mẫu mục F điền giá chốt; bản B tick theo NCC ra 1 file N trang. Phải
+gác N-17 (supplier:read) trước khi bật bản B. Chưa bắt đầu.
