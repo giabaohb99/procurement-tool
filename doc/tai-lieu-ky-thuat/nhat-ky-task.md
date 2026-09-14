@@ -425,3 +425,37 @@ Kèm luật H.3.9 chép mã hàng lên dòng chưa có mã. Chưa bắt đầu.
 - status: dang-lam
 Bản A mẫu mục F điền giá chốt; bản B tick theo NCC ra 1 file N trang. Phải
 gác N-17 (supplier:read) trước khi bật bản B. Chưa bắt đầu.
+
+## bao-CR-404 | Ô tìm kiếm màn Tiến độ mua hàng chết vì lọc theo cột không tồn tại
+- status: xong
+- date: 2026-09-14
+Đại ca chụp màn Tiến độ mua hàng bản cũ: gõ gì vào ô tìm kiếm cũng không lọc.
+Gốc: `_build_query` ghép chuỗi `|` ngay trong thân hàm và có lẫn `POItem.nspt`
+— `POItem` KHÔNG có cột đó (NSPT chỉ nằm trên đơn), nên mọi từ khóa ném
+AttributeError -> 500; xuất Excel kèm từ khóa chết cùng đường vì dùng chung
+hàm. Lỗi sống lâu vì `frontend/src/api/client.ts` chỉ tự báo lỗi cho request
+không-phải-GET: màn hình nuốt 500 trong im lặng, giữ nguyên bảng cũ, người
+dùng đọc ra là "gõ vào không lọc". Ghi nợ mới N-020 cho cái gốc hệ thống đó.
+
+### bao-CR-404-va | Vá backend + bài kiểm
+- status: xong
+Tách danh sách cột ra hàm khai báo `_search_columns()` (11 cột) rồi dựng câu
+lọc bằng `or_(*...)` — cột ma nổ ở test thay vì nổ trên màn khách. Quét AST
+toàn `backend/app` đối chiếu mọi `<Model>.<thuộc tính>` với mapper thật:
+không còn chỗ nào khác cùng lỗi. `test_tim_kiem_tien_do_cr404.py` 4 ca (chạy
+kèm CR-080 · CR-088 · CR-068: 56 xanh).
+
+### bao-CR-404-deploy | Đẩy prod TÁCH RIÊNG khỏi cụm bảo mật đang đóng băng
+- status: xong
+Dựng nhánh từ chính `origin/main` để 6 commit bảo mật chờ lệnh không đi ké.
+Commit 1a73e127 + dòng trạng thái 9294ce02. Sao lưu
+`~/proc_backups/procurement_truoc_cr404_20260914.sql.gz`, không migration
+(`alembic current` vẫn c3e5a7b9d1f2). Đo trên dữ liệu prod thật: tổng 233
+dòng, `q=thung` ra 40, từ khóa không khớp ra 0 — trước đó mọi từ khóa 500.
+
+### bao-CR-404-gop-v2 | Gộp main -> erp-v2
+- status: xong
+- date: 2026-09-14
+Gộp trong một cây làm việc tạm để không đụng việc CR-310 đang dở ở
+`procurement-tool`. Đụng độ duy nhất ở `change-log-bao.md` (hai bên cùng thêm
+dòng đầu bảng), giữ cả hai. Dev VPS chưa dựng lại — lần deploy dev kế tiếp là có.
