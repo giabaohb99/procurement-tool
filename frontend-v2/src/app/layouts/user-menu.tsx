@@ -1,7 +1,9 @@
 import {
+  BookOpen,
   Building2,
   Camera,
   ChevronDown,
+  ExternalLink,
   Headphones,
   LoaderCircle,
   LogOut,
@@ -17,6 +19,7 @@ import { CreateTicketDialog } from '@/app/components/profile/create-ticket-dialo
 import { apiPost } from '@/core/api'
 import { useAuth } from '@/core/auth/use-auth'
 import { AvatarPostDialog } from '@/modules/forum/components/avatar-post-dialog'
+import { buildHelpCenterUrl } from '@/modules/help/routes'
 import { useTranslation } from '@/core/i18n/use-translation'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
@@ -176,6 +179,31 @@ export function UserMenu() {
             >
               <Palette className="size-4.5 text-navy dark:text-foreground" />
               Tuỳ chỉnh giao diện
+            </DropdownMenuItem>
+            {/*  Hướng dẫn sử dụng bỏ khỏi lưới chọn phân hệ và về đây (xem
+                 `ErpModule.hiddenFromLauncher`): lưới trả lời câu "hôm nay tôi
+                 vào đây làm việc gì", còn tài liệu tra cứu thì không phải một
+                 việc — và nó dẫn ra KHỎI app.
+
+                 ⚠️ Dựng bằng thẻ `<a>` qua `asChild`, không phải `onSelect` +
+                 `window.open`: chuột giữa, "Mở ở tab mới" và bàn phím chỉ chạy
+                 trên liên kết thật. Cùng lối với `ModuleCard`.
+
+                 ⚠️ `buildHelpCenterUrl()` gọi ở LÚC VẼ chứ không gọi sẵn một
+                 lần: địa chỉ có kèm token bàn giao phiên cho người có quyền ghi
+                 tài liệu, mà token thì đổi theo lần đăng nhập. Radix chỉ gắn
+                 phần nội dung khi popover mở nên nó luôn tính lại lúc mở. */}
+            <DropdownMenuItem
+              asChild
+              className="min-h-10 gap-3 px-2.5 font-medium text-navy dark:text-foreground"
+            >
+              <a href={buildHelpCenterUrl()} target="_blank" rel="noopener noreferrer">
+                <BookOpen className="size-4.5 text-navy dark:text-foreground" />
+                <span className="flex-1">Hướng dẫn sử dụng</span>
+                {/*  Báo trước "bấm là rời khỏi app này" — cùng dấu hiệu mà thẻ
+                     phân hệ link ngoài vẫn dùng. */}
+                <ExternalLink className="size-3.5 text-muted-foreground" />
+              </a>
             </DropdownMenuItem>
             <DropdownMenuItem
               className="min-h-10 gap-3 px-2.5 font-medium text-navy dark:text-foreground"

@@ -48,6 +48,18 @@ describe('module-registry', () => {
     }
   })
 
+  it('phân hệ giấu khỏi lưới nhưng CÓ màn hình thì route vẫn phải đăng ký', () => {
+    //  `hiddenFromLauncher` chỉ giấu cái THẺ; `enabled: false` mới là gỡ route.
+    //  Dùng nhầm thì mục *Tuỳ chỉnh giao diện* trong popover ảnh đại diện bấm
+    //  vào ra trang trắng — không có gì đỏ lên, vì lỗi nằm ở dữ liệu đăng ký chứ
+    //  không ở mã.
+    const hidden = allModules.filter((m) => m.hiddenFromLauncher)
+    expect(hidden.length).toBeGreaterThan(0) // Giao diện + Hướng dẫn sử dụng
+    for (const module of hidden.filter((m) => m.path)) {
+      expect(moduleRegistry, module.id).toContain(module)
+    }
+  })
+
   it('phân hệ đã đăng ký thì phải có đường dẫn tuyệt đối và ít nhất một route', () => {
     expect(moduleRegistry.length).toBeGreaterThan(0)
     for (const module of moduleRegistry) {

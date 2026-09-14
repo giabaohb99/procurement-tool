@@ -139,6 +139,20 @@ export interface ErpModule {
    */
   entity?: PermissionEntity
   /**
+   * KHÔNG dựng thẻ trên màn chọn phân hệ, nhưng vẫn đăng ký route như thường.
+   *
+   * Dành cho thứ không phải phân hệ NGHIỆP VỤ mà là tiện ích của chính người
+   * đang đăng nhập — *Giao diện*, *Hướng dẫn sử dụng*. Lối vào của chúng nằm
+   * trong popover ảnh đại diện (`app/layouts/user-menu.tsx`), đúng chỗ người ta
+   * đi tìm thiết lập cá nhân; để thêm một thẻ ngoài lưới là nói cùng một điều ở
+   * hai nơi, mà lưới thì dành cho "hôm nay tôi vào đây làm việc gì".
+   *
+   * ⚠️ **Khác `enabled: false`.** `enabled: false` gỡ luôn route (vào thẳng URL
+   * ra 404); cờ này CHỈ giấu cái thẻ. Dùng nhầm là mục *Tuỳ chỉnh giao diện*
+   * trong popover bấm vào ra trang trắng.
+   */
+  hiddenFromLauncher?: boolean
+  /**
    * Phân hệ nằm ở APP KHÁC (vd Trung tâm Hướng dẫn sử dụng chạy riêng cổng
    * 8082): ô trên màn chọn phân hệ mở tab mới thay vì điều hướng nội bộ.
    *

@@ -36,6 +36,13 @@ export function ModuleLauncherPage() {
   const navCtx = useNavContext()
 
   const modules = allModules
+    //  Tiện ích cá nhân (*Giao diện*, *Hướng dẫn sử dụng*) không đứng trong lưới
+    //  — lối vào của chúng nằm trong popover ảnh đại diện. Xem
+    //  `ErpModule.hiddenFromLauncher`.
+    //
+    //  Lọc TRƯỚC khi đếm: dòng "N phân hệ đang dùng" ở cuối trang phải khớp với
+    //  số thẻ người ta đếm được bằng mắt.
+    .filter((module) => !module.hiddenFromLauncher)
     .map((module) => ({
       module,
       //  Khóa khi KHÔNG THẤY ĐƯỢC MỤC NÀO bên trong, không phải khi thiếu

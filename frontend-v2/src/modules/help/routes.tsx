@@ -7,11 +7,17 @@ import { appConfig } from '@/core/config/app-config'
 
 /**
  * Trung tâm Hướng dẫn sử dụng — KHÔNG phải màn hình trong app này mà là một app
- * riêng (`help-center/`, cổng 8082) dùng chung backend + tài khoản. Ở đây chỉ là
- * một ô trên màn chọn phân hệ, bấm vào mở tab mới.
+ * riêng (`help-center/`, cổng 8082) dùng chung backend + tài khoản. Bấm vào mở
+ * tab mới.
  *
  * Vì vậy module này không khai `routes`/`nav`, và bị loại khỏi `moduleRegistry`
  * (xem `module-registry.ts`) để router không phải đăng ký gì.
+ *
+ * ⚠️ **Lối vào nằm trong popover ảnh đại diện, không phải một thẻ trên lưới
+ * chọn phân hệ** (`hiddenFromLauncher`). Lưới trả lời câu "hôm nay tôi vào đây
+ * làm việc gì" — tài liệu tra cứu không phải một việc, và nó còn dẫn ra khỏi
+ * app. Bản khai vẫn để ở đây vì `buildHelpCenterUrl` là phần khó, không phải cái
+ * thẻ.
  */
 export const helpCenterModule: ErpModule = {
   id: 'help-center',
@@ -22,6 +28,7 @@ export const helpCenterModule: ErpModule = {
   externalUrl: buildHelpCenterUrl,
   accent: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
   enabled: true,
+  hiddenFromLauncher: true,
   nav: [],
   routes: [],
 }
@@ -38,7 +45,7 @@ export const helpCenterModule: ErpModule = {
  * Không kèm token cho người dùng thường: khu công khai vốn không cần, đưa token
  * sang app khác chỉ để đó là thừa rủi ro.
  */
-function buildHelpCenterUrl(): string {
+export function buildHelpCenterUrl(): string {
   const base = appConfig.helpCenterUrl
   const permissions = useAuthStore.getState().user?.permissions
   if (!permissions?.help_article?.write) return base

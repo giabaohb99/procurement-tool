@@ -19,6 +19,10 @@ export const appearanceModule: ErpModule = {
   path: appRoutes.appearance.root,
   accent: 'bg-fuchsia-500/10 text-fuchsia-600 dark:text-fuchsia-400',
   enabled: true,
+  //  Không đứng trong lưới chọn phân hệ: popover ảnh đại diện đã có công tắc
+  //  Sáng·Tối lẫn mục *Tuỳ chỉnh giao diện* dẫn thẳng vào đây, tức lưới chỉ đang
+  //  nói lại lần thứ hai. Route VẪN đăng ký — chính mục đó điều hướng tới.
+  hiddenFromLauncher: true,
 
   nav: [
     {
