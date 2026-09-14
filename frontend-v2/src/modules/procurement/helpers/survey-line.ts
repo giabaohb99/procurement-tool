@@ -321,3 +321,34 @@ export function validateSurveySubmit(
 
   return { message: errors.join('. '), invalid }
 }
+
+/**
+ * Gom `invalid` (khóa `bảng-dòng-ô`, do `validateSurveySubmit` dựng) về mức
+ * DÒNG — trả chỉ số những dòng của `table` còn ô bắt buộc chưa điền.
+ *
+ * Cần vì ở khổ điện thoại bảng đổi sang THẺ, mà thẻ không có ô nào để tô đỏ.
+ * Không có nó thì người dùng bấm *Gửi duyệt*, bị chặn, và không cách nào biết
+ * dòng nào thiếu — câu lỗi chỉ nói "NCC #2" mà màn hình không đánh dấu gì.
+ *
+ * ⚠️ Cắt ở dấu `-` ĐẦU TIÊN sau tên bảng, KHÔNG `split('-')` rồi lấy phần tử
+ * thứ hai: khóa ô hiện đều dùng gạch dưới (`supplier_code`) nên `split` đang
+ * đúng, nhưng cột người dùng tự thêm không có gì bảo đảm vậy — và tách sai thì
+ * dấu cảnh báo chỉ lặng lẽ biến mất, không có gì đỏ lên.
+ */
+export function invalidRowIndexes(invalid: Set<string>, table: SurveyTable): Set<number> {
+  const rows = new Set<number>()
+  const prefix = `${table}-`
+
+  for (const entry of invalid) {
+    if (!entry.startsWith(prefix)) continue
+    const rest = entry.slice(prefix.length)
+    const dash = rest.indexOf('-')
+    if (dash <= 0) continue
+    const index = Number(rest.slice(0, dash))
+    //  `Number('')` ra 0 và `Number('1e2')` ra 100 — chốt bằng `Number.isInteger`
+    //  cộng điều kiện không âm để khóa méo không đẻ ra một chỉ số dòng có thật.
+    if (Number.isInteger(index) && index >= 0) rows.add(index)
+  }
+
+  return rows
+}

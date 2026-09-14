@@ -29,6 +29,7 @@ import { useEmployees } from '@/modules/hr/hooks/use-employees'
 import { useSuppliers } from '@/modules/production/hooks/use-suppliers'
 import { AuditTimeline } from '@/shared/audit'
 import { appRoutes } from '@/shared/constants/app-routes'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import { formatMoney } from '@/shared/utils/format-money'
 import { Badge } from '@/shared/ui/badge'
@@ -37,6 +38,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { confirm as confirmDialog } from '@/shared/ui/confirm-dialog'
 import { DeleteConfirmButton } from '@/shared/ui/delete-confirm-button'
 import { ErrorState } from '@/shared/ui/error-state'
+import { HeaderActionsPopover } from '@/shared/ui/header-actions-popover'
 import { PageContainer } from '@/shared/ui/page-container'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { DocumentAttachmentsCard } from '../components/document-attachments-card'
@@ -168,6 +170,12 @@ export function PurchaseOrderDetailPage() {
   /** Dòng đang mở hộp chi tiết (thông tin đầy đủ + các lần giao). */
   const [lineIndex, setLineIndex] = useState<number | null>(null)
   const [paymentOpen, setPaymentOpen] = useState(false)
+
+  //  Chọn khung bọc cho nhóm lệnh phụ của đầu trang — xem `HeaderActionsPopover`.
+  //
+  //  ⚠️ Khai TRÊN mọi `return` sớm (đang tải / lỗi / không thấy đơn). Hook gọi
+  //  sau một nhánh thoát là thứ tự hook đổi giữa các lượt vẽ.
+  const isMobile = useIsMobile()
   /**
    * Phiếu giao chọn cho lần giao CHƯA LƯU — giữ hộ tới khi bấm Lưu đơn. Không có
    * nó thì người nhập phải lưu đơn trước rồi mới quay lại đính từng phiếu.
@@ -356,112 +364,230 @@ export function PurchaseOrderDetailPage() {
     }
   }
 
+  /**
+   * Lệnh PHỤ của đầu trang — khổ rộng bày thẳng, khổ hẹp gom vào nút `⋯`.
+   *
+   * Dựng thành BIẾN chứ không viết thẳng hai lần: mỗi nút ở đây kéo theo state
+   * hoặc mutation riêng (hộp thanh toán, `DeleteConfirmButton`), chép ra hai bản
+   * là hai bộ state song song cho cùng một lệnh.
+   */
+  const secondaryActions = (
+    <>
+        {!isNew && can('purchase_order', 'print') && (
+          <Button variant="outline" asChild>
+            <Link
+              to={appRoutes.procurement.purchaseOrderPrint(data.id)}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <Printer />
+              In Đơn đặt hàng
+            </Link>
+          </Button>
+        )}
+
+        {/* bao-CR-322: mẫu nội bộ / gửi kế toán. Cùng trang in với nút trên, vào bằng
+            đường dẫn riêng nên mở ra là đã đúng mẫu, không phải bấm công tắc. */}
+        {!isNew && can('purchase_order', 'print') && (
+          <Button variant="outline" asChild>
+            <Link
+              to={appRoutes.procurement.purchaseOrderGoodsPrint(data.id)}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <ReceiptText />
+              In Đơn mua hàng
+            </Link>
+          </Button>
+        )}
+
+        {/* bao-CR-319: đơn nhập khẩu có bản in riêng — nguyên tệ + quy đổi + chi phí lô hàng. */}
+        {!isNew && can('purchase_order', 'print') && isImportOrder(data) && (
+          <Button variant="outline" asChild>
+            <Link
+              to={appRoutes.procurement.purchaseOrderImportPrint(data.id)}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <Printer />
+              In Đơn nhập khẩu
+            </Link>
+          </Button>
+        )}
+
+        {/* bao-CR-357: báo cáo giá vốn của RIÊNG lô hàng này — cùng trang in với tab
+            "Giá vốn nhập khẩu" trong Báo cáo mua hàng, lọc sẵn theo mã đơn. */}
+        {!isNew && can('purchase_order', 'print') && isImportOrder(data) && (
+          <Button variant="outline" asChild>
+            <Link
+              to={`${appRoutes.procurement.importLandedCostPrint}?codes=${encodeURIComponent(data.code || '')}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <Printer />
+              In Báo cáo giá vốn
+            </Link>
+          </Button>
+        )}
+
+        {/* bao-CR-314: chỉ hiện khi đơn có gắn YCMH. Bản in chỉ gồm những dòng hàng
+            có trên đơn này — không cần quyền đọc YCMH vì cổng là quyền in ĐƠN. */}
+        {!isNew && can('purchase_order', 'print') && (data.pr_code || '').trim() && (
+          <Button variant="outline" asChild>
+            <Link
+              to={appRoutes.procurement.purchaseRequestPrintFromPo(data.id)}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <FileText />
+              In Phiếu yêu cầu
+            </Link>
+          </Button>
+        )}
+
+        {/*
+          CỐ Ý không gác theo `unpaid_total > 0.01`: đơn chưa nhận hàng thì chưa
+          có công nợ, nhưng vẫn phải lập được phiếu THANH TOÁN TRƯỚC (CR-067) —
+          hộp thoại tự đổi sang luồng đó. Bản v1 cũng đã bỏ điều kiện này.
+        */}
+        {!isNew &&
+          ['approved', 'partial', 'received', 'completed'].includes(data.status) &&
+          can('payment_request', 'create') && (
+            <Button variant="outline" onClick={() => setPaymentOpen(true)}>
+              <Receipt />
+              Tạo yêu cầu thanh toán
+            </Button>
+          )}
+
+
+        {!isNew && data.status === 'submitted' && can('purchase_order', 'approve') && (
+          <>
+            <Button variant="outline" onClick={() => void handleAction('return')}>
+              <CornerUpLeft />
+              Trả về
+            </Button>
+            <Button
+              variant="outline"
+              className="text-destructive hover:text-destructive"
+              onClick={() => void handleAction('reject')}
+            >
+              <Ban />
+              Từ chối
+            </Button>
+          </>
+        )}
+
+        {canUnapprove && (
+          <Button variant="outline" onClick={() => void handleAction('unapprove')}>
+            <RotateCcw />
+            Hủy duyệt
+          </Button>
+        )}
+
+        {/* Chỉ hiện từ khi có hàng về. Đơn mới duyệt mà chưa nhận dòng nào thì
+            backend chặn `/complete` (400 "Còn N dòng chưa Hoàn thành/Hủy") —
+            để nút ở đó chỉ tổ mời người dùng bấm vào một lỗi. */}
+        {!isNew && ['partial', 'received'].includes(data.status) && canWrite && (
+          <Button variant="outline" onClick={() => void handleAction('complete')}>
+            <CircleCheck />
+            Hoàn thành
+          </Button>
+        )}
+
+        {!isNew && data.status === 'completed' && canWrite && (
+          <Button variant="outline" onClick={() => void handleAction('reopen')}>
+            <LockOpen />
+            Mở lại
+          </Button>
+        )}
+
+        {!isNew && isDeliveryStage(data.status) && can('purchase_order', 'cancel') && (
+          <Button
+            variant="outline"
+            className="text-destructive hover:text-destructive"
+            onClick={() => void handleAction('cancel')}
+          >
+            <Ban />
+            Hủy đơn
+          </Button>
+        )}
+
+        {!isNew && can('purchase_order', 'create') && (
+          <Button variant="outline" onClick={() => void handleAction('copy')}>
+            <Copy />
+            Nhân bản
+          </Button>
+        )}
+
+        {canDelete && can('purchase_order', 'delete') && (
+          <DeleteConfirmButton
+            recordName={data.code || `#${data.id}`}
+            pending={deletePurchaseOrder.isPending}
+            warning="Đơn và các dòng hàng kèm theo sẽ bị xóa."
+            onConfirm={async () => {
+              await deletePurchaseOrder.mutateAsync(data.id)
+              navigate(appRoutes.procurement.purchaseOrders)
+            }}
+          />
+        )}
+    </>
+  )
+
   return (
     <PageContainer className="bg-slate-50/70 lg:p-4">
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <Button variant="outline" size="icon" asChild aria-label="Về danh sách đơn mua hàng">
+      {/*  ⚠️ **Cụm nút ở LẠI hàng đầu, huy hiệu mới là thứ được phép xuống
+           dòng.** Bản trước để tiêu đề và huy hiệu nằm chung một hàng `flex-wrap`
+           với cụm nút, nên số huy hiệu quyết định nút rơi đi đâu: đơn một huy
+           hiệu thì nút ở hàng đầu, đơn vừa *Đã nhận một phần* vừa *Đơn gấp* (như
+           PO00143) thì đẩy nút xuống hàng hai. Vị trí nút Lưu đổi theo DỮ LIỆU
+           là thứ người dùng không đoán được — mở hai đơn liền nhau, quen tay bấm
+           một chỗ thì trúng chỗ khác.
+
+           Gom tiêu đề + huy hiệu vào MỘT ô `flex-1 min-w-0` tự xuống dòng bên
+           trong; cụm nút là anh em của ô đó nên luôn ở hàng đầu. `items-start`
+           để nó bám mép trên chứ không trôi xuống giữa khi huy hiệu xuống dòng. */}
+      <div className="mb-4 flex flex-wrap items-start gap-3">
+        <Button
+          variant="outline"
+          size="icon"
+          asChild
+          className="shrink-0"
+          aria-label="Về danh sách đơn mua hàng"
+        >
           <Link to={appRoutes.procurement.purchaseOrders}>
             <ArrowLeft />
           </Link>
         </Button>
-        <h1 className="text-xl font-semibold tracking-tight text-navy dark:text-foreground">
-          {isNew ? 'Tạo Đơn mua hàng mới' : data.code || 'Đơn nháp'}
-        </h1>
-        {!isNew && <StatusBadge status={data.status} labels={PO_STATUS_LABELS} />}
-        {data.is_urgent && (
-          <Badge variant="secondary" className="border-0 bg-warning/10 text-warning">
-            Đơn gấp
-          </Badge>
-        )}
 
-        <div className="min-w-4 flex-1" />
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          {!isNew && can('purchase_order', 'print') && (
-            <Button variant="outline" asChild>
-              <Link
-                to={appRoutes.procurement.purchaseOrderPrint(data.id)}
-                target="_blank"
-                rel="noreferrer"
-              >
-                <Printer />
-                In Đơn đặt hàng
-              </Link>
-            </Button>
+        {/*  ⚠️ KHÔNG `min-w-0` ở ô tiêu đề. `min-w-0` cho nó co về 0, nên khi
+             cụm nút rộng (nút chính *Tạo đơn mua hàng* ~210px) trình duyệt chọn
+             CO TIÊU ĐỀ thay vì đẩy cụm nút xuống hàng — mã phiếu bị cắt cụt
+             ngay giữa chữ. Để min-content của mã phiếu được tôn trọng thì lớp
+             ngoài `flex-wrap` mới có cớ xuống dòng, và mã phiếu luôn đọc đủ. */}
+        <div className="flex flex-1 flex-wrap items-center gap-x-3 gap-y-1.5">
+          <h1 className="text-xl font-semibold tracking-tight text-navy dark:text-foreground">
+            {isNew ? 'Tạo Đơn mua hàng mới' : data.code || 'Đơn nháp'}
+          </h1>
+          {!isNew && <StatusBadge status={data.status} labels={PO_STATUS_LABELS} />}
+          {data.is_urgent && (
+            <Badge variant="secondary" className="border-0 bg-warning/10 text-warning">
+              Đơn gấp
+            </Badge>
           )}
+        </div>
 
-          {/* bao-CR-322: mẫu nội bộ / gửi kế toán. Cùng trang in với nút trên, vào bằng
-              đường dẫn riêng nên mở ra là đã đúng mẫu, không phải bấm công tắc. */}
-          {!isNew && can('purchase_order', 'print') && (
-            <Button variant="outline" asChild>
-              <Link
-                to={appRoutes.procurement.purchaseOrderGoodsPrint(data.id)}
-                target="_blank"
-                rel="noreferrer"
-              >
-                <ReceiptText />
-                In Đơn mua hàng
-              </Link>
-            </Button>
-          )}
+        {/*  ⚠️ Nhóm phụ dựng MỘT LẦN, `useIsMobile` chỉ chọn khung BỌC — đừng
+             dựng hai bản rồi ẩn một bằng CSS. Mấy nút này mang hộp xác nhận và
+             mutation riêng (`DeleteConfirmButton`, hộp thanh toán): bản bị ẩn
+             vẫn gắn kết, vẫn giữ state, vẫn bắn được request. Cùng luật
+             `detail-page-shell` của phân hệ Văn bản.
 
-          {/* bao-CR-319: đơn nhập khẩu có bản in riêng — nguyên tệ + quy đổi + chi phí lô hàng. */}
-          {!isNew && can('purchase_order', 'print') && isImportOrder(data) && (
-            <Button variant="outline" asChild>
-              <Link
-                to={appRoutes.procurement.purchaseOrderImportPrint(data.id)}
-                target="_blank"
-                rel="noreferrer"
-              >
-                <Printer />
-                In Đơn nhập khẩu
-              </Link>
-            </Button>
-          )}
-
-          {/* bao-CR-357: báo cáo giá vốn của RIÊNG lô hàng này — cùng trang in với tab
-              "Giá vốn nhập khẩu" trong Báo cáo mua hàng, lọc sẵn theo mã đơn. */}
-          {!isNew && can('purchase_order', 'print') && isImportOrder(data) && (
-            <Button variant="outline" asChild>
-              <Link
-                to={`${appRoutes.procurement.importLandedCostPrint}?codes=${encodeURIComponent(data.code || '')}`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                <Printer />
-                In Báo cáo giá vốn
-              </Link>
-            </Button>
-          )}
-
-          {/* bao-CR-314: chỉ hiện khi đơn có gắn YCMH. Bản in chỉ gồm những dòng hàng
-              có trên đơn này — không cần quyền đọc YCMH vì cổng là quyền in ĐƠN. */}
-          {!isNew && can('purchase_order', 'print') && (data.pr_code || '').trim() && (
-            <Button variant="outline" asChild>
-              <Link
-                to={appRoutes.procurement.purchaseRequestPrintFromPo(data.id)}
-                target="_blank"
-                rel="noreferrer"
-              >
-                <FileText />
-                In Phiếu yêu cầu
-              </Link>
-            </Button>
-          )}
-
-          {/*
-            CỐ Ý không gác theo `unpaid_total > 0.01`: đơn chưa nhận hàng thì chưa
-            có công nợ, nhưng vẫn phải lập được phiếu THANH TOÁN TRƯỚC (CR-067) —
-            hộp thoại tự đổi sang luồng đó. Bản v1 cũng đã bỏ điều kiện này.
-          */}
-          {!isNew &&
-            ['approved', 'partial', 'received', 'completed'].includes(data.status) &&
-            can('payment_request', 'create') && (
-              <Button variant="outline" onClick={() => setPaymentOpen(true)}>
-                <Receipt />
-                Tạo yêu cầu thanh toán
-              </Button>
-            )}
-
+             Chia chính/phụ ĐÚNG THEO DÁNG NÚT: nút nền đặc là việc người mở
+             trang đang định làm — *Gửi duyệt* khi còn nháp, *Duyệt* khi đang
+             cầm đơn chờ duyệt, *Lưu* khi sửa được. Đầu trang này có tới ~15
+             lệnh; bày hết ra thì ở khổ hẹp chúng tràn BA hàng ngay dưới tiêu
+             đề. */}
+        <div className="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2">
           {!isNew && ['draft', 'rejected'].includes(data.status) && canWrite && (
             <Button onClick={() => void handleAction('submit')} disabled={runAction.isPending}>
               <Send />
@@ -470,78 +596,10 @@ export function PurchaseOrderDetailPage() {
           )}
 
           {!isNew && data.status === 'submitted' && can('purchase_order', 'approve') && (
-            <>
-              <Button onClick={() => void handleAction('approve')} disabled={runAction.isPending}>
-                <Check />
-                Duyệt
-              </Button>
-              <Button variant="outline" onClick={() => void handleAction('return')}>
-                <CornerUpLeft />
-                Trả về
-              </Button>
-              <Button
-                variant="outline"
-                className="text-destructive hover:text-destructive"
-                onClick={() => void handleAction('reject')}
-              >
-                <Ban />
-                Từ chối
-              </Button>
-            </>
-          )}
-
-          {canUnapprove && (
-            <Button variant="outline" onClick={() => void handleAction('unapprove')}>
-              <RotateCcw />
-              Hủy duyệt
+            <Button onClick={() => void handleAction('approve')} disabled={runAction.isPending}>
+              <Check />
+              Duyệt
             </Button>
-          )}
-
-          {/* Chỉ hiện từ khi có hàng về. Đơn mới duyệt mà chưa nhận dòng nào thì
-              backend chặn `/complete` (400 "Còn N dòng chưa Hoàn thành/Hủy") —
-              để nút ở đó chỉ tổ mời người dùng bấm vào một lỗi. */}
-          {!isNew && ['partial', 'received'].includes(data.status) && canWrite && (
-            <Button variant="outline" onClick={() => void handleAction('complete')}>
-              <CircleCheck />
-              Hoàn thành
-            </Button>
-          )}
-
-          {!isNew && data.status === 'completed' && canWrite && (
-            <Button variant="outline" onClick={() => void handleAction('reopen')}>
-              <LockOpen />
-              Mở lại
-            </Button>
-          )}
-
-          {!isNew && isDeliveryStage(data.status) && can('purchase_order', 'cancel') && (
-            <Button
-              variant="outline"
-              className="text-destructive hover:text-destructive"
-              onClick={() => void handleAction('cancel')}
-            >
-              <Ban />
-              Hủy đơn
-            </Button>
-          )}
-
-          {!isNew && can('purchase_order', 'create') && (
-            <Button variant="outline" onClick={() => void handleAction('copy')}>
-              <Copy />
-              Nhân bản
-            </Button>
-          )}
-
-          {canDelete && can('purchase_order', 'delete') && (
-            <DeleteConfirmButton
-              recordName={data.code || `#${data.id}`}
-              pending={deletePurchaseOrder.isPending}
-              warning="Đơn và các dòng hàng kèm theo sẽ bị xóa."
-              onConfirm={async () => {
-                await deletePurchaseOrder.mutateAsync(data.id)
-                navigate(appRoutes.procurement.purchaseOrders)
-              }}
-            />
           )}
 
           {/* Đơn đã duyệt vẫn cần nút Lưu: mấy ô mở sau khi duyệt nằm trong popup
@@ -551,6 +609,12 @@ export function PurchaseOrderDetailPage() {
               {savePurchaseOrder.isPending ? <Loader2 className="animate-spin" /> : <Save />}
               {isNew ? 'Tạo đơn' : 'Lưu'}
             </Button>
+          )}
+
+          {isMobile ? (
+            <HeaderActionsPopover>{secondaryActions}</HeaderActionsPopover>
+          ) : (
+            secondaryActions
           )}
         </div>
       </div>

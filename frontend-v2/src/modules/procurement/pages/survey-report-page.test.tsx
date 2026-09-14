@@ -206,8 +206,22 @@ function splitCsv(csv: string) {
   return csv.split('\n').map((row) => row.replace(/^"|"$/g, '').split('","'))
 }
 
+/**
+ * Nút **Bộ lọc** của khổ RỘNG (popover lọc phụ).
+ *
+ * ⚠️ Trang dựng HAI nút cùng tên: một của tờ trượt khổ hẹp (`QuickFilterSheet`,
+ * mang `md:hidden`) và một của popover khổ rộng (mang `max-md:hidden`). Trong
+ * jsdom KHÔNG có CSS nên cả hai cùng nằm trong cây và `findByRole` trúng hai
+ * chỗ. Bản khổ rộng dựng SAU trong JSX nên nó là nút cuối — đó là thứ bộ bài
+ * kiểm này viết ra để kiểm.
+ */
+async function findDesktopFilterTrigger() {
+  const triggers = await screen.findAllByRole('button', { name: /Bộ lọc/ })
+  return triggers[triggers.length - 1]
+}
+
 async function openFilterBox() {
-  await userEvent.click(await screen.findByRole('button', { name: /Bộ lọc/ }))
+  await userEvent.click(await findDesktopFilterTrigger())
   return within(await screen.findByRole('dialog'))
 }
 
@@ -435,7 +449,7 @@ describe('SurveyReportPage — hộp bộ lọc phụ', () => {
   it('counts the active extra filters on the trigger', async () => {
     build('/procurement/survey-report?supplier=NCCKS004&nspt=Nguy%E1%BB%85n')
 
-    const trigger = await screen.findByRole('button', { name: /Bộ lọc/ })
+    const trigger = await findDesktopFilterTrigger()
     expect(within(trigger).getByText('2')).toBeInTheDocument()
   })
 
@@ -444,7 +458,7 @@ describe('SurveyReportPage — hộp bộ lọc phụ', () => {
     //  nút không khớp với số ô đang có chữ bên trong.
     build('/procurement/survey-report?date_from=2026-08-01&date_to=2026-08-31')
 
-    const trigger = await screen.findByRole('button', { name: /Bộ lọc/ })
+    const trigger = await findDesktopFilterTrigger()
     expect(within(trigger).queryByText('2')).not.toBeInTheDocument()
   })
 

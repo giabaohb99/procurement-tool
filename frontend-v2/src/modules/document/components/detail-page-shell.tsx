@@ -7,10 +7,10 @@ import { Button } from '@/shared/ui/button'
 import { ConfirmIconButton } from '@/shared/ui/confirm-icon-button'
 import { ErrorState } from '@/shared/ui/error-state'
 import { PageContainer } from '@/shared/ui/page-container'
+import { HeaderActionsPopover } from '@/shared/ui/header-actions-popover'
 import { PageHeader } from '@/shared/ui/page-header'
 import { AuditTimeline } from '@/shared/audit'
 import type { HistoryEntry } from '../store/local-collection'
-import { HeaderActionsPopover } from './header-actions-popover'
 import { RecordHistoryCard } from './record-history-card'
 
 interface DetailPageShellProps {

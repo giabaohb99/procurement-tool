@@ -7,6 +7,7 @@ import { cn } from "@/shared/utils/cn"
 function Table({
   className,
   containerClassName,
+  containerRef,
   ...props
 }: React.ComponentProps<"table"> & {
   /**
@@ -14,9 +15,20 @@ function Table({
    * chứa và tự cuộn dọc — không có nó thì không với tới được div này.
    */
   containerClassName?: string
+  /**
+   * Ref tới khung CUỘN bao ngoài `<table>`, không phải tới chính `<table>`.
+   *
+   * Cần vì `scrollLeft` / `clientWidth` nằm ở div này chứ không nằm ở thẻ
+   * `<table>` (thẻ bảng rộng đúng bằng nội dung, nó không hề cuộn). Đo nhầm
+   * vào `<table>` thì `scrollWidth === clientWidth` ở mọi lúc và mọi phép dò
+   * tràn ngang đều trả về "không tràn" — sai im lặng. Xem
+   * `useHorizontalOverflow`.
+   */
+  containerRef?: React.Ref<HTMLDivElement>
 }) {
   return (
     <div
+      ref={containerRef}
       data-slot="table-container"
       className={cn("relative w-full overflow-x-auto", containerClassName)}
     >

@@ -7,10 +7,16 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
 /**
  * Nút `⋯` gom các lệnh PHỤ của đầu trang chi tiết ở khổ điện thoại.
  *
- * Trang chi tiết Văn bản có tới tám lệnh; bày hết ra thì cụm nút tràn **ba
- * hàng** ngay dưới tiêu đề, tức hơn 130px của màn 844px dành cho những thứ người
- * ta chạm tới vài lần một buổi — trong khi phần cần nhìn (trang giấy, biểu mẫu)
- * bị đẩy xuống dưới nếp gấp.
+ * Trang chi tiết Văn bản có tới tám lệnh, Phiếu khảo sát tới sáu; bày hết ra thì
+ * cụm nút tràn **hai đến ba hàng** ngay dưới tiêu đề, tức 110–130px của màn 844px
+ * dành cho những thứ người ta chạm tới vài lần một buổi — trong khi phần cần nhìn
+ * (trang giấy, biểu mẫu) bị đẩy xuống dưới nếp gấp. Dải đầu trang nào có ghim thì
+ * chỗ đó còn là chỗ mất VĨNH VIỄN.
+ *
+ * ⚠️ **Dựng nhóm phụ MỘT LẦN rồi để `useIsMobile` chọn khung bọc** — đừng dựng
+ * hai bản rồi ẩn một bằng CSS. Nút ở đây thường mang hộp thoại và truy vấn riêng
+ * (menu *Tệp*, *Chữ ký*, xác nhận *Xóa*): bản bị ẩn vẫn gắn kết và vẫn gọi API,
+ * chỉ là không ai thấy. Xem `detail-page-shell` hoặc `survey-detail-page`.
  *
  * ⚠️ **Chỉ lệnh PHỤ vào đây, nút CHÍNH của trạng thái hiện tại phải ở ngoài.**
  * Luật chia đúng bằng dáng nút: `variant="default"` (nền xanh) là việc mà người
@@ -48,11 +54,19 @@ export function HeaderActionsPopover({ children }: { children: ReactNode }) {
 
            Gỡ viền · nền · đổ bóng, cho cao bằng nhau, trải hết bề ngang và canh
            trái theo biểu tượng — đúng dáng một menu. Bộ chọn hậu duệ
-           (`.x button`, 0-1-1) đè được lớp của `buttonVariants` (0-1-0) nên không
-           phải sửa từng nút ở nơi khai. */}
+           (`.x :is(button,a)`, 0-1-1) đè được lớp của `buttonVariants` (0-1-0) nên
+           không phải sửa từng nút ở nơi khai.
+
+           ⚠️ **Phải bắt cả `a`, không chỉ `button`.** Lệnh nào mở một trang khác
+           thì khai bằng `<Button asChild><Link/></Button>` — Radix `Slot` nhả ra
+           thẻ `<a>`, nên bộ chọn chỉ nhắm `button` trượt sạch mấy nút đó. Bắt được
+           ngay ở đầu trang Đơn mua hàng: năm nút *In …* giữ nguyên viền trong khi
+           *Nhân bản* đã phẳng, tấm popover ra một chồng hộp lẫn với dòng menu.
+           Dùng `:is(button,a)` chứ đừng viết `[&_button,&_a]` — dấu phẩy trong
+           biến thể tùy ý là chỗ dễ vỡ khi đổi phiên bản Tailwind. */}
       <PopoverContent
         align="end"
-        className="flex w-56 flex-col gap-0.5 p-1 [&_button]:h-9 [&_button]:w-full [&_button]:justify-start [&_button]:gap-2 [&_button]:rounded-sm [&_button]:border-0 [&_button]:bg-transparent [&_button]:px-2 [&_button]:font-normal [&_button]:shadow-none [&_button:hover]:bg-accent"
+        className="flex w-56 flex-col gap-0.5 p-1 [&_:is(button,a)]:h-9 [&_:is(button,a)]:w-full [&_:is(button,a)]:justify-start [&_:is(button,a)]:gap-2 [&_:is(button,a)]:rounded-sm [&_:is(button,a)]:border-0 [&_:is(button,a)]:bg-transparent [&_:is(button,a)]:px-2 [&_:is(button,a)]:font-normal [&_:is(button,a)]:shadow-none [&_:is(button,a):hover]:bg-accent"
         //  ⚠️ Đừng kéo tiêu điểm vào mục đầu. Radix mặc định làm vậy, và trên
         //  máy cảm ứng nó vẽ một VÒNG SÁNG quanh dòng trên cùng — người dùng đọc
         //  ra là "mục này đang được chọn" chứ không phải "đây là danh sách, chọn

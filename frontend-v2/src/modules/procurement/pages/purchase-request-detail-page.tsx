@@ -39,6 +39,7 @@ import {
   AlertDialogTitle,
 } from '@/shared/ui/alert-dialog'
 import { useHasChanged } from '@/shared/hooks/use-has-changed'
+import { DetailPageHeader, ResponsiveLabel } from '@/shared/ui/detail-page-header'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
@@ -161,6 +162,7 @@ export function PurchaseRequestDetailPage() {
   const setUrgent = useSetUrgent(purchaseRequestId)
 
   const [editing, setEditing] = useState(isNew)
+
   const [draft, setDraft] = useState<PurchaseRequestDetail | null>(() =>
     isNew ? applyPurchaseAssistantDraft(createEmptyPurchaseRequest(user), assistantDraft) : null,
   )
@@ -484,177 +486,203 @@ export function PurchaseRequestDetailPage() {
     }
   }
 
+  /**
+   * Lệnh CHÍNH của đầu trang — nút nền đặc, luôn ở ngoài.
+   *
+   * Chia theo DÁNG NÚT, không theo cảm tính: nền đặc là việc người mở trang
+   * đang định làm (*Lưu* khi đang sửa, *Gửi duyệt* / *Duyệt* / *Duyệt điều
+   * phối* / *Tạo đơn mua hàng* theo từng chặng). Giấu chúng sau `⋯` là bắt
+   * thêm một chạm cho thao tác thường xuyên nhất.
+   */
+  const primaryActions = editing ? (
+    <>
+      <Button onClick={() => void handleSave()} disabled={savePurchaseRequest.isPending}>
+        {savePurchaseRequest.isPending ? <Loader2 className="animate-spin" /> : <Save />}
+        Lưu
+      </Button>
+    </>
+  ) : (
+    <>
+      {editable && (
+        <Button onClick={() => void handleAction('submit')} disabled={runAction.isPending}>
+          <Send />
+          Gửi duyệt
+        </Button>
+      )}
+      {data.status === 'submitted' && data.can_approve && (
+        <Button onClick={() => void handleAction('approve')} disabled={runAction.isPending}>
+          <Check />
+          Duyệt
+        </Button>
+      )}
+      {data.status === 'approved' && data.can_dispatch && (
+        <Button onClick={() => setConfirmAction('dispatch')} disabled={runAction.isPending}>
+          <Check />
+          Duyệt điều phối
+        </Button>
+      )}
+      {can('purchase_order', 'create') &&
+        workableStatuses.includes(data.status) &&
+        hasUnorderedItem && (
+          <Button onClick={handleCreatePurchaseOrder} disabled={runAction.isPending}>
+            <ShoppingCart />
+            {/*  Nhãn NGẮN ở khổ hẹp: bản đầy đủ rộng ~180px, đúng phần đẩy cụm
+                 nút rớt xuống hàng riêng trên máy 390px. "ĐMH" là từ viết tắt
+                 người dùng đang dùng hằng ngày. */}
+            <ResponsiveLabel short="Tạo ĐMH" long="Tạo đơn mua hàng" />
+          </Button>
+        )}
+    </>
+  )
+
+  /**
+   * Lệnh PHỤ — khổ rộng bày thẳng, khổ hẹp gom vào nút `⋯`.
+   *
+   * ⚠️ Dựng thành BIẾN chứ không viết hai lần: mỗi nút kéo theo state hoặc
+   * mutation riêng (`DeleteConfirmButton`, `RelatedPurchaseOrdersCard` có truy
+   * vấn của nó), chép ra hai bản là hai bộ state song song cho cùng một lệnh.
+   */
+  const secondaryActions = editing ? (
+    <>
+      {/* Phiếu sửa được nay mở thẳng chế độ sửa, nên đường gửi duyệt
+          phải có mặt ngay tại đây như v1 — bắt Lưu xong mới thấy nút
+          Gửi duyệt là giấu mất một bước (QA 29/08). */}
+      <Button
+        // KHÔNG dùng `secondary`: token `--secondary` gần như trắng
+        // và biến thể đó không có viền, nên nút chìm hẳn vào nền
+        // thanh công cụ. `outline` cho viền rõ mà vẫn nhường bậc
+        // nhấn mạnh cho nút Lưu.
+        variant="outline"
+        onClick={() => void handleSave(true)}
+        disabled={savePurchaseRequest.isPending}
+      >
+        <Send />
+        Lưu &amp; gửi duyệt
+      </Button>
+      <Button
+        variant="outline"
+        onClick={() => {
+          if (isNew) {
+            navigate(appRoutes.procurement.purchaseRequests)
+          } else {
+            setDraft(data)
+            setEditing(false)
+          }
+        }}
+      >
+        <X />
+        {isNew ? 'Hủy' : 'Hủy sửa'}
+      </Button>
+              
+    </>
+  ) : (
+    <>
+      <Button variant="outline" asChild>
+        <Link
+          to={appRoutes.procurement.purchaseRequestPrint(data.id)}
+          target="_blank"
+          rel="noreferrer"
+        >
+          <Printer />
+          In phiếu
+        </Link>
+      </Button>
+      {!isNew && <RelatedPurchaseOrdersCard purchaseRequestCode={data.code} />}
+      {editable && (
+        <Button variant="outline" onClick={() => setEditing(true)}>
+          <Pencil />
+          Sửa
+        </Button>
+      )}
+      {(data.can_approve || canManage) &&
+        !['draft', 'rejected', 'cancelled', 'completed', 'done'].includes(data.status) && (
+        <Button variant="outline" onClick={() => void handleAction('return')}>
+          <CornerUpLeft />
+          Trả về
+        </Button>
+      )}
+      {data.status === 'submitted' && (data.can_approve || canManage) && (
+        <Button
+          variant="outline"
+          className="text-destructive hover:text-destructive"
+          onClick={() => void handleAction('cancel')}
+        >
+          <Ban />
+          Từ chối
+        </Button>
+      )}
+      {canManage && workableStatuses.includes(data.status) && (
+        <Button
+          variant="outline"
+          // KHÔNG disable: nút mờ chỉ nói "không bấm được" chứ không
+          // nói vì sao. Cứ cho bấm rồi báo lý do bằng toast — giống v1.
+          onClick={() => {
+            if (!allItemsDone) {
+              // Đỏ chứ không vàng: cam trên nền vàng nhạt đọc rất mệt.
+              toast.error(
+                'Chưa hoàn thành được phiếu: còn dòng hàng chưa ở trạng thái Hoàn thành hoặc Hủy đơn.',
+              )
+              return
+            }
+            setConfirmAction('complete')
+          }}
+        >
+          <CheckCheck />
+          Hoàn thành
+        </Button>
+      )}
+      {canManage && !['draft', 'submitted', 'rejected', 'cancelled', 'completed', 'done'].includes(data.status) && (
+        <Button
+          variant="outline"
+          className="text-destructive hover:text-destructive"
+          onClick={() => void handleAction('cancel')}
+        >
+          <Ban />
+          Từ chối
+        </Button>
+      )}
+      <PermissionGate entity="purchase_request" action="create">
+        <Button variant="outline" onClick={() => void handleAction('copy')}>
+          <Copy />
+          Nhân bản
+        </Button>
+      </PermissionGate>
+      {['draft', 'rejected', 'cancelled'].includes(data.status) && (
+        <PermissionGate entity="purchase_request" action="delete">
+          <DeleteConfirmButton
+            recordName={data.code || `#${data.id}`}
+            pending={deletePurchaseRequest.isPending}
+            warning="Phiếu và các dòng hàng kèm theo sẽ bị xóa."
+            onConfirm={async () => {
+              await deletePurchaseRequest.mutateAsync(data.id)
+              navigate(appRoutes.procurement.purchaseRequests)
+            }}
+          />
+        </PermissionGate>
+      )}
+              
+    </>
+  )
+
   return (
     <PageContainer className="bg-slate-50/70 lg:p-4">
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <Button variant="outline" size="icon" asChild aria-label="Về danh sách yêu cầu mua hàng">
-          <Link to={appRoutes.procurement.purchaseRequests}>
-            <ArrowLeft />
-          </Link>
-        </Button>
-        <h1 className="text-xl font-semibold tracking-tight text-navy dark:text-foreground">
-          {isNew ? 'Tạo Yêu cầu mua hàng mới' : data.code || 'Phiếu nháp'}
-        </h1>
-        {!isNew && <StatusBadge status={data.status} labels={PR_STATUS_LABELS} />}
-        {loadedDraft.is_urgent && (
-          <Badge variant="secondary" className="border-0 bg-warning/10 text-warning">
-            Đơn gấp
-          </Badge>
-        )}
-
-        <div className="min-w-4 flex-1" />
-        <div className="flex flex-wrap items-center justify-end gap-2">
-            {editing ? (
-              <>
-                <Button onClick={() => void handleSave()} disabled={savePurchaseRequest.isPending}>
-                  {savePurchaseRequest.isPending ? <Loader2 className="animate-spin" /> : <Save />}
-                  Lưu
-                </Button>
-                {/* Phiếu sửa được nay mở thẳng chế độ sửa, nên đường gửi duyệt
-                    phải có mặt ngay tại đây như v1 — bắt Lưu xong mới thấy nút
-                    Gửi duyệt là giấu mất một bước (QA 29/08). */}
-                <Button
-                  // KHÔNG dùng `secondary`: token `--secondary` gần như trắng
-                  // và biến thể đó không có viền, nên nút chìm hẳn vào nền
-                  // thanh công cụ. `outline` cho viền rõ mà vẫn nhường bậc
-                  // nhấn mạnh cho nút Lưu.
-                  variant="outline"
-                  onClick={() => void handleSave(true)}
-                  disabled={savePurchaseRequest.isPending}
-                >
-                  <Send />
-                  Lưu &amp; gửi duyệt
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    if (isNew) {
-                      navigate(appRoutes.procurement.purchaseRequests)
-                    } else {
-                      setDraft(data)
-                      setEditing(false)
-                    }
-                  }}
-                >
-                  <X />
-                  {isNew ? 'Hủy' : 'Hủy sửa'}
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button variant="outline" asChild>
-                  <Link
-                    to={appRoutes.procurement.purchaseRequestPrint(data.id)}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    <Printer />
-                    In phiếu
-                  </Link>
-                </Button>
-                {!isNew && <RelatedPurchaseOrdersCard purchaseRequestCode={data.code} />}
-                {editable && (
-                  <Button variant="outline" onClick={() => setEditing(true)}>
-                    <Pencil />
-                    Sửa
-                  </Button>
-                )}
-                {editable && (
-                  <Button onClick={() => void handleAction('submit')} disabled={runAction.isPending}>
-                    <Send />
-                    Gửi duyệt
-                  </Button>
-                )}
-                {data.status === 'submitted' && data.can_approve && (
-                  <Button onClick={() => void handleAction('approve')} disabled={runAction.isPending}>
-                    <Check />
-                    Duyệt
-                  </Button>
-                )}
-                {(data.can_approve || canManage) &&
-                  !['draft', 'rejected', 'cancelled', 'completed', 'done'].includes(data.status) && (
-                  <Button variant="outline" onClick={() => void handleAction('return')}>
-                    <CornerUpLeft />
-                    Trả về
-                  </Button>
-                )}
-                {data.status === 'submitted' && (data.can_approve || canManage) && (
-                  <Button
-                    variant="outline"
-                    className="text-destructive hover:text-destructive"
-                    onClick={() => void handleAction('cancel')}
-                  >
-                    <Ban />
-                    Từ chối
-                  </Button>
-                )}
-                {data.status === 'approved' && data.can_dispatch && (
-                  <Button onClick={() => setConfirmAction('dispatch')} disabled={runAction.isPending}>
-                    <Check />
-                    Duyệt điều phối
-                  </Button>
-                )}
-                {can('purchase_order', 'create') &&
-                  workableStatuses.includes(data.status) &&
-                  hasUnorderedItem && (
-                    <Button onClick={handleCreatePurchaseOrder} disabled={runAction.isPending}>
-                      <ShoppingCart />
-                      Tạo đơn mua hàng
-                    </Button>
-                  )}
-                {canManage && workableStatuses.includes(data.status) && (
-                  <Button
-                    variant="outline"
-                    // KHÔNG disable: nút mờ chỉ nói "không bấm được" chứ không
-                    // nói vì sao. Cứ cho bấm rồi báo lý do bằng toast — giống v1.
-                    onClick={() => {
-                      if (!allItemsDone) {
-                        // Đỏ chứ không vàng: cam trên nền vàng nhạt đọc rất mệt.
-                        toast.error(
-                          'Chưa hoàn thành được phiếu: còn dòng hàng chưa ở trạng thái Hoàn thành hoặc Hủy đơn.',
-                        )
-                        return
-                      }
-                      setConfirmAction('complete')
-                    }}
-                  >
-                    <CheckCheck />
-                    Hoàn thành
-                  </Button>
-                )}
-                {canManage && !['draft', 'submitted', 'rejected', 'cancelled', 'completed', 'done'].includes(data.status) && (
-                  <Button
-                    variant="outline"
-                    className="text-destructive hover:text-destructive"
-                    onClick={() => void handleAction('cancel')}
-                  >
-                    <Ban />
-                    Từ chối
-                  </Button>
-                )}
-                <PermissionGate entity="purchase_request" action="create">
-                  <Button variant="outline" onClick={() => void handleAction('copy')}>
-                    <Copy />
-                    Nhân bản
-                  </Button>
-                </PermissionGate>
-                {['draft', 'rejected', 'cancelled'].includes(data.status) && (
-                  <PermissionGate entity="purchase_request" action="delete">
-                    <DeleteConfirmButton
-                      recordName={data.code || `#${data.id}`}
-                      pending={deletePurchaseRequest.isPending}
-                      warning="Phiếu và các dòng hàng kèm theo sẽ bị xóa."
-                      onConfirm={async () => {
-                        await deletePurchaseRequest.mutateAsync(data.id)
-                        navigate(appRoutes.procurement.purchaseRequests)
-                      }}
-                    />
-                  </PermissionGate>
-                )}
-              </>
+      <DetailPageHeader
+        backTo={appRoutes.procurement.purchaseRequests}
+        backLabel="Về danh sách yêu cầu mua hàng"
+        title={isNew ? 'Tạo Yêu cầu mua hàng mới' : data.code || 'Phiếu nháp'}
+        badges={
+          <>
+            {!isNew && <StatusBadge status={data.status} labels={PR_STATUS_LABELS} />}
+            {loadedDraft.is_urgent && (
+              <Badge variant="secondary" className="border-0 bg-warning/10 text-warning">
+                Đơn gấp
+              </Badge>
             )}
-        </div>
-      </div>
+          </>
+        }
+        primaryActions={primaryActions}
+        secondaryActions={secondaryActions}
+      />
 
       {data.status === 'approved' && data.dispatch_enabled !== false && (
         <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">

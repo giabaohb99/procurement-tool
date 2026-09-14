@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { PurchaseRequestItem } from '../types/purchase-request-detail'
@@ -87,5 +88,58 @@ describe('PurchaseRequestItemsTable', () => {
 
     renderTable({ editing: false })
     expect(screen.getByRole('button', { name: /Chép mã hàng/ })).toBeInTheDocument()
+  })
+})
+
+/**
+ * Khổ điện thoại — bảng đổi sang THẺ, xem `PurchaseRequestLineCard`.
+ *
+ * Khách báo 14/09/2026: bảng 15–16 cột rộng ~2000px nằm trong khung 322px, phần
+ * nhìn thấy được là *No. · Mã hàng* và một mẩu tên hàng — số lượng, thành tiền và
+ * trạng thái dòng đều ngoài mép phải, mà thanh cuộn ngang thì iOS ẩn sẵn. Người
+ * dùng đọc ra là "chữ bị lỗi" chứ không phải "vuốt sang đi".
+ *
+ * `setup.ts` cố định `matchMedia` ở khổ desktop cho cả bộ test, nên khổ hẹp phải
+ * nói rõ ra ngay tại đây.
+ */
+describe('PurchaseRequestItemsTable — khổ điện thoại', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: true,
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }))
+  })
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    localStorage.clear()
+  })
+
+  it('bày SỐ LƯỢNG và THÀNH TIỀN của dòng — hai cột nằm ngoài mép phải của bảng', () => {
+    renderTable()
+
+    // Số tiền của dòng: `amount` = 972.000 (phiếu đã lưu thì lấy cột backend).
+    expect(screen.getByText(/972\.000 đ/)).toBeInTheDocument()
+    // SL × đơn giá đứng cùng một mẩu chữ, nên khẳng định theo cả cụm.
+    expect(screen.getByText(/1\.000 Cái × 900/)).toBeInTheDocument()
+    // Dòng mẫu ở `line_status: 'no_po'` — nhãn tra từ `PR_LINE_STATUS`.
+    expect(screen.getByText(/Chưa tạo đơn mua hàng/)).toBeInTheDocument()
+  })
+
+  it('KHÔNG bày cụm điều khiển cột — ở chế độ thẻ chúng không điều khiển thứ gì', () => {
+    renderTable()
+
+    expect(screen.queryByRole('button', { name: /Cột/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Bảng rút gọn|Bảng đầy đủ/ })).toBeNull()
+  })
+
+  it('cả thẻ là một nút mở hộp chi tiết — mọi ô vẫn sửa được ở đó', async () => {
+    const onOpenDetail = vi.fn()
+    renderTable({ onOpenDetail })
+
+    await userEvent.click(screen.getByRole('button', { name: /Nắp nhựa phi 28/ }))
+    expect(onOpenDetail).toHaveBeenCalledWith(0)
   })
 })

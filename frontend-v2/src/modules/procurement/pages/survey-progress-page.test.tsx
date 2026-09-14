@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ListParams } from '@/shared/types/api'
 import { SurveyProgressPage } from './survey-progress-page'
@@ -47,6 +47,9 @@ const rows: SurveyProgressItem[] = [
     requirement_detail: 'Thùng carton 5 lớp, in 4 màu, kích thước 400x300x250mm, chịu tải 20kg',
     opt_supplier_name: 'Công ty TNHH Thương mại Dịch vụ Xuất nhập khẩu Phương Nam',
     opt_product_name: 'Thùng carton 5 lớp in offset',
+    //  Giá của phương án đã chốt — ở khổ hẹp nó đi cùng tên NCC thành MỘT mẩu
+    //  chữ, nên phải khác 0 thì mới kiểm được cả cụm.
+    opt_price: 9200,
   } as SurveyProgressItem,
 ]
 
@@ -198,5 +201,60 @@ describe('SurveyProgressPage — cột chữ đọc đủ', () => {
     // Cột ngày để nguyên `truncate`: cho xuống dòng thì hàng cao lệch nhau mà
     // chẳng đọc thêm được chữ nào.
     expect(cellOf('03/08/2026').querySelector('.truncate')).not.toBeNull()
+  })
+})
+
+/**
+ * Khổ điện thoại — bảng đổi sang THẺ, xem `SurveyProgressCard`.
+ *
+ * Bảng khai 45 cột, bề rộng tự nhiên ~5800px trong khung ~322px: phần nhìn thấy
+ * được là *Mã YCBG* cộng một mẩu *Công ty*, còn tiến độ dòng, số ngày trễ và giá
+ * đã chốt — cả ba lý do người ta mở màn này — đều nằm ngoài mép phải.
+ *
+ * `setup.ts` cố định `matchMedia` ở khổ desktop cho cả bộ test, nên khổ hẹp phải
+ * nói rõ ra ngay tại đây.
+ */
+describe('SurveyProgressPage — khổ điện thoại', () => {
+  beforeEach(() => {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: true,
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }))
+  })
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('bày TIẾN ĐỘ và GIÁ ĐÃ CHỐT — hai cột nằm ngoài mép phải của bảng', () => {
+    build()
+
+    expect(screen.getByText('Đã trả kết quả')).toBeInTheDocument()
+    //  NCC và đơn giá đứng cùng một mẩu chữ nên khẳng định theo cả cụm.
+    expect(
+      screen.getByText(/Công ty TNHH Thương mại Dịch vụ Xuất nhập khẩu Phương Nam — /),
+    ).toBeInTheDocument()
+  })
+
+  it('KHÔNG còn bảng nào — thẻ thay hẳn chứ không nằm cạnh', () => {
+    const { container } = build()
+
+    expect(container.querySelector('table')).toBeNull()
+  })
+
+  it('cả thẻ là một nút mở YCBG — ở chế độ thẻ mã YCBG không còn là liên kết', () => {
+    build()
+
+    //  Không có nhịp này thì từ một dòng tiến độ KHÔNG có đường nào về chứng từ
+    //  gốc: cột *Mã YCBG* là `<Link>`, mà cột thì không còn.
+    const card = screen.getByRole('button', { name: /Thùng carton 5 lớp, in 4 màu/ })
+    expect(card).toBeInTheDocument()
+  })
+
+  it('dùng câu gợi ý tìm kiếm RÚT GỌN — bản đầy đủ bị xén mất phần đuôi', () => {
+    build()
+
+    //  Chỉ HAI vế: ô tìm ở khổ hẹp chỉ còn ~134px sau khi chia hàng với nút
+    //  *Bộ lọc* và *Tải lại*, ba vế (~139px) vẫn bị xén — xem ghi chú ở trang.
+    expect(screen.getByPlaceholderText('Tìm YCBG, SP…')).toBeInTheDocument()
   })
 })

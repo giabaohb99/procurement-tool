@@ -298,7 +298,15 @@ export function DocumentAttachmentsCard({
                   </FileDropzone>
                 )}
 
-                {groups.length === 0 && (
+                {/*  ⚠️ Chỉ hiện khi KHÔNG có vùng kéo thả. Người quản lý được
+                     thì `FileDropzone` đã đứng ngay trên, cũng viền đứt, cũng
+                     nói "chưa có gì, thả tệp vào đi" — bày thêm hộp này là hai
+                     khung viền đứt chồng nhau, đọc ra như một control bị vỡ làm
+                     đôi chứ không ra hai khối khác nhau.
+
+                     Người CHỈ XEM thì không có vùng kéo thả, bỏ nốt câu này đi
+                     là cả mục còn lại một khoảng trắng không lời giải thích. */}
+                {groups.length === 0 && !canManage && (
                   <p className="rounded-lg border border-dashed bg-muted/20 py-5 text-center text-sm text-muted-foreground">
                     Chưa có tài liệu đính kèm.
                   </p>

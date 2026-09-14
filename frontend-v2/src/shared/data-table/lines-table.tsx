@@ -1,6 +1,7 @@
 import { Columns3, MoveHorizontal } from 'lucide-react'
 import { useCallback, useMemo, useRef, type ReactNode } from 'react'
 
+import { useHorizontalOverflow } from '@/shared/hooks/use-horizontal-overflow'
 import { Button } from '@/shared/ui/button'
 import {
   Table,
@@ -136,6 +137,11 @@ export function LinesTable<T>({
   const { drag, startDrag } = useColumnDrag(moveColumn)
   const tableRef = useRef<HTMLTableElement>(null)
 
+  //  Khung cuộn ngang của bảng — dùng để vẽ dải mờ báo "còn cột bên kia".
+  //  Xem `useHorizontalOverflow`.
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const overflow = useHorizontalOverflow(scrollRef)
+
   /** Cột ghim theo đúng thứ tự đang hiện — chúng luôn là dải đầu bảng. */
   const pinnedKeys = useMemo(() => {
     const keys: string[] = []
@@ -251,8 +257,49 @@ export function LinesTable<T>({
         `isolate` tạo ngữ cảnh xếp lớp riêng: `z-index` của cột ghim chỉ so với
         nhau, không trồi lên trên thanh tiêu đề của trang khi cuộn.
       */}
-      <div className="isolate overflow-hidden rounded-lg border">
-        <Table ref={tableRef} className="table-fixed">
+      {/*
+        `relative` để treo hai dải mờ ở mép; chúng nằm NGOÀI khung cuộn nên
+        đứng yên khi vuốt, thay vì trôi theo nội dung.
+      */}
+      <div className="relative isolate overflow-hidden rounded-lg border">
+        {/*
+          ⚠️ **Dải mờ mép bảng — đây là thứ DUY NHẤT nói rằng còn cột bên kia.**
+
+          Bảng dòng rộng 1350–3600px trong khung vài trăm pixel, mà thanh cuộn
+          ngang thì iOS/macOS mặc định ẩn tới khi có thao tác. Không có dải này
+          thì bảng chỉ hiện chữ cụt giữa chừng ở mép phải — người dùng đọc ra là
+          "chữ bị lỗi", không phải "vuốt sang đi" (khách báo 14/09/2026 ở bảng
+          dòng phiếu yêu cầu mua hàng).
+
+          `pointer-events-none` là bắt buộc: dải nằm ĐÈ lên mép bảng, không có
+          nó thì nó nuốt cú chạm vào ô dưới cùng bên phải — ô đó lại thường là ô
+          nhập. `z-30` để nổi trên cột ghim (`z-20`), nếu không cột ghim trái
+          che mất dải trái.
+        */}
+        {overflow.left && (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-y-0 left-0 z-30 w-6 bg-gradient-to-r from-background to-transparent"
+          />
+        )}
+        {overflow.right && (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-y-0 right-0 z-30 w-6 bg-gradient-to-l from-background to-transparent"
+          />
+        )}
+
+        {/*  `scrollbar-slim` (khai ở `index.css`): thanh cuộn ngang phải LUÔN
+             HIỆN. Thanh cuộn kiểu chồng của macOS/iOS tự mờ đi, nên trên máy
+             có chuột thì không còn đường nào cuộn ngang — mấy chục cột bên phải
+             thành KHÔNG VỚI TỚI ĐƯỢC, chứ không phải chỉ khó thấy. Dải mờ ở mép
+             nói "còn nữa", thanh cuộn này mới là chỗ để kéo. */}
+        <Table
+          ref={tableRef}
+          containerRef={scrollRef}
+          containerClassName="scrollbar-slim"
+          className="table-fixed"
+        >
           <TableHeader className="bg-row-head">
             {/*
               `hover:bg-row-head` không thừa: `TableRow` mặc định có `hover:bg-muted/50`

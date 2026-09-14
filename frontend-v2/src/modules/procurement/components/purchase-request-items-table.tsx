@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 
 import { LinesTable } from '@/shared/data-table/lines-table'
 import type { LinesTableColumn } from '@/shared/data-table/types'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { Button } from '@/shared/ui/button'
 import { CopyButton } from '@/shared/ui/copy-button'
 import { DatePicker } from '@/shared/ui/date-picker'
@@ -44,6 +45,7 @@ import {
 } from '../types/purchase-request-detail'
 import { ProgressStatusBadge } from './document-status-badge'
 import { PurchaseHistoryDialog } from './purchase-history-dialog'
+import { PurchaseRequestLineCard } from './purchase-request-line-card'
 import { PurchaseRequestProductPicker } from './purchase-request-product-picker'
 
 /** Mã giả cho mục "bỏ chọn NSTM" — xem chú thích ở ô chọn NSTM. */
@@ -128,6 +130,10 @@ export function PurchaseRequestItemsTable({
   const warehouses = usePurchaseRequestWarehouses(editing)
   const units = usePurchaseRequestUnits(editing)
   const itemGroups = usePurchaseRequestItemGroups(editing)
+
+  //  CÙNG một `useIsMobile` mà `DataTable` và bảng dòng khảo sát dùng để đổi
+  //  sang thẻ, nên hai lối bày dữ liệu của cả hệ luôn lật cùng một lúc.
+  const asCards = useIsMobile()
 
   const columns = useMemo<LinesTableColumn[]>(() => [
     {
@@ -578,43 +584,88 @@ export function PurchaseRequestItemsTable({
     }
   }
 
+  // Nút "Sửa dòng hàng" cũ đã bỏ (QA 29/08): phiếu còn sửa được thì trang mở
+  // thẳng chế độ sửa, bảng nhập trực tiếp như bản v1.
+  //
+  // ⚠️ Dựng thành BIẾN chứ không viết hai lần cho hai lối bày: hai bản chép là
+  // hai đường thêm dòng phải sửa song song mỗi lần luật đổi.
+  const addActions = editing && (
+    <>
+      <Button
+        type="button"
+        size="sm"
+        onClick={() => onChange([...items, { ...EMPTY_PURCHASE_REQUEST_ITEM }])}
+      >
+        <Plus /> Thêm dòng
+      </Button>
+      <Button type="button" size="sm" variant="outline" onClick={() => setBulkDialogOpen(true)}>
+        <PlusCircle /> Thêm nhiều
+      </Button>
+    </>
+  )
+
   return (
     <>
-      <LinesTable
-        columns={columns}
-        rows={items}
-        storageKey={TABLE_STORAGE_KEY}
-        rowKey={(item, index) => item.id ?? `new-${index}`}
-        renderCell={renderCell}
-        title={`Danh sách sản phẩm (${items.length} dòng)`}
-        emptyMessage="Chưa có sản phẩm nào."
-        rowClassName={(item) =>
-          item.line_status === 'cancelled' ? 'opacity-60' : undefined
-        }
-        // Nút "Sửa dòng hàng" cũ đã bỏ (QA 29/08): phiếu còn sửa được thì trang
-        // mở thẳng chế độ sửa, bảng nhập trực tiếp như bản v1.
-        actions={
-          editing && (
-            <>
-              <Button
-                type="button"
-                size="sm"
-                onClick={() => onChange([...items, { ...EMPTY_PURCHASE_REQUEST_ITEM }])}
-              >
-                <Plus /> Thêm dòng
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => setBulkDialogOpen(true)}
-              >
-                <PlusCircle /> Thêm nhiều
-              </Button>
-            </>
-          )
-        }
-      />
+      {asCards ? (
+        <div className="space-y-3">
+          {/*  Thanh đầu tự dựng lại chứ không mượn của `LinesTable`: ở chế độ thẻ
+               không còn cột nào để ẩn/hiện, ghim hay kéo giãn, nên ba nút *Bảng
+               đầy đủ · Vừa nội dung · Cột* là mời người dùng bấm vào một bảng
+               điều khiển không điều khiển thứ gì đang nhìn thấy — cùng luật đã áp
+               cho bảng dòng khảo sát. */}
+          {/*  Chỉ đếm dòng, KHÔNG lặp lại "Danh sách sản phẩm": thẻ bọc ngoài đã
+               có tiêu đề *Danh sách Sản phẩm Yêu cầu* ngay bên trên, ở khổ hẹp hai
+               dòng chữ gần giống nhau xếp chồng đọc như bị lặp. Khổ rộng thì tiêu
+               đề của `LinesTable` nằm cùng hàng với cụm nút nên không va nhau. */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium">{items.length} dòng</span>
+            {addActions}
+          </div>
+
+          <div className="overflow-hidden rounded-lg border">
+            {items.length === 0 ? (
+              <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+                Chưa có sản phẩm nào.
+              </p>
+            ) : (
+              <div className="divide-y">
+                {items.map((item, index) => (
+                  <PurchaseRequestLineCard
+                    key={item.id ?? `new-${index}`}
+                    item={item}
+                    index={index}
+                    editing={editing}
+                    amount={lineTotal(item)}
+                    ordered={orderedByCode?.[item.product_code] ?? item.qty_ordered}
+                    showAssignee={showAssignee}
+                    assigneeName={
+                      purchasers.find((purchaser) => purchaser.code === item.assignee)?.name ||
+                      item.assignee
+                    }
+                    onOpenDetail={() => onOpenDetail(index)}
+                    onOpenHistory={() => setHistoryIndex(index)}
+                    onRemove={() => onChange(items.filter((_, i) => i !== index))}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <LinesTable
+          columns={columns}
+          rows={items}
+          storageKey={TABLE_STORAGE_KEY}
+          rowKey={(item, index) => item.id ?? `new-${index}`}
+          renderCell={renderCell}
+          title={`Danh sách sản phẩm (${items.length} dòng)`}
+          emptyMessage="Chưa có sản phẩm nào."
+          rowClassName={(item) =>
+            item.line_status === 'cancelled' ? 'opacity-60' : undefined
+          }
+          actions={addActions}
+        />
+      )}
 
       <Dialog open={bulkDialogOpen} onOpenChange={setBulkDialogOpen}>
         <DialogContent className="sm:max-w-sm">

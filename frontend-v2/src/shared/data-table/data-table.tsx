@@ -522,7 +522,12 @@ export function DataTable<T>({
           ref={tableRef}
           className="table-fixed"
           style={{ minWidth: minTableWidth }}
-          containerClassName={cn(fillHeight && 'min-h-0 flex-1 overflow-auto')}
+          //  `scrollbar-slim` (khai ở `index.css`): thanh cuộn phải LUÔN HIỆN.
+          //  Bảng danh sách cũng rộng hơn khung ở khổ tablet, và thanh cuộn kiểu
+          //  chồng của macOS tự mờ đi — trên máy có chuột thì không còn đường nào
+          //  cuộn ngang, mấy cột bên phải thành không với tới được. Cùng lý do đã
+          //  ghi ở `lines-table`.
+          containerClassName={cn('scrollbar-slim', fillHeight && 'min-h-0 flex-1 overflow-auto')}
         >
           {/*
             Nền hàng tiêu đề phải ĐỤC (`bg-row-head`, không phải `/60`): vừa để

@@ -9,6 +9,7 @@ import {
 import {
   applyLineChange,
   calcAmount,
+  invalidRowIndexes,
   isSupplierFromCatalog,
   lineHasContent,
   rowAmount,
@@ -152,5 +153,51 @@ describe('kiểm tra trước khi gửi duyệt', () => {
     const result = validateSurveySubmit(header({ has_product_code: true }), [], [filledLine('product')])
     expect(result.message).toContain('Chưa chọn Mã hàng')
     expect(result.message).toContain('Số lượng yêu cầu')
+  })
+})
+
+describe('invalidRowIndexes', () => {
+  it('gom khóa `bảng-dòng-ô` về đúng chỉ số dòng của bảng được hỏi', () => {
+    const invalid = new Set(['supplier-0-contact_phone', 'supplier-2-note', 'product-1-origin'])
+
+    expect([...invalidRowIndexes(invalid, 'supplier')].sort()).toEqual([0, 2])
+    expect([...invalidRowIndexes(invalid, 'product')]).toEqual([1])
+  })
+
+  it('nhiều ô thiếu trên CÙNG một dòng vẫn chỉ ra một chỉ số', () => {
+    //  Thẻ chỉ có một dấu cảnh báo cho cả dòng; đếm trùng ở đây thì không sai
+    //  màn hình nhưng là dấu hiệu hàm đang gom nhầm mức.
+    const invalid = new Set(['product-3-origin', 'product-3-moq', 'product-3-quote_unit'])
+    expect([...invalidRowIndexes(invalid, 'product')]).toEqual([3])
+  })
+
+  it('KHÔNG lẫn bảng: tiền tố `product` không được khớp khi hỏi `supplier`', () => {
+    const invalid = new Set(['product-0-origin'])
+    expect(invalidRowIndexes(invalid, 'supplier').size).toBe(0)
+  })
+
+  it('tập rỗng trả về tập rỗng, không nổ', () => {
+    expect(invalidRowIndexes(new Set(), 'supplier').size).toBe(0)
+  })
+
+  it('khóa méo bị BỎ QUA thay vì đẻ ra một chỉ số dòng có thật', () => {
+    //  `Number('')` ra 0 và `Number('1e2')` ra 100 — hai ca này mà lọt thì thẻ
+    //  số 1 (hoặc 101) bị gắn cờ "thiếu ô" trong khi nó đầy đủ, và người dùng
+    //  đi tìm một chỗ trống không tồn tại.
+    const invalid = new Set([
+      'supplier--note', // thiếu hẳn số dòng
+      'supplier-abc-note', // số dòng không phải số
+      'supplier-1.5-note', // số lẻ
+      'supplier-0', // thiếu tên ô
+      'supplier', // trơ trọi
+    ])
+    expect(invalidRowIndexes(invalid, 'supplier').size).toBe(0)
+  })
+
+  it('ô có dấu GẠCH NGANG trong tên vẫn ra đúng dòng', () => {
+    //  Cột hiện đều dùng gạch dưới, nhưng cắt bằng `split('-')[1]` thì một cột
+    //  tên `giao-hang` sẽ làm hàm im lặng trả sai. Chốt lại hành vi đúng.
+    const invalid = new Set(['supplier-4-giao-hang-tan-noi'])
+    expect([...invalidRowIndexes(invalid, 'supplier')]).toEqual([4])
   })
 })

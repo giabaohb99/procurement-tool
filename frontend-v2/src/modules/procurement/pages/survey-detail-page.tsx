@@ -23,6 +23,7 @@ import { useSuppliers } from '@/modules/production/hooks/use-suppliers'
 import { AuditTimeline } from '@/shared/audit'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { SURVEY_APPROVE_STATUS, labelOf } from '@/shared/constants/statuses'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
@@ -37,6 +38,7 @@ import {
 } from '@/shared/ui/dialog'
 import { ErrorState } from '@/shared/ui/error-state'
 import { Input } from '@/shared/ui/input'
+import { HeaderActionsPopover } from '@/shared/ui/header-actions-popover'
 import { PageContainer } from '@/shared/ui/page-container'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { Textarea } from '@/shared/ui/textarea'
@@ -186,6 +188,13 @@ export function SurveyDetailPage() {
    */
   const dirtyRef = useRef(false)
   const [openLine, setOpenLine] = useState<OpenLine | null>(null)
+
+  //  Chọn khung bọc cho nhóm lệnh phụ của đầu trang — xem `HeaderActionsPopover`.
+  //
+  //  ⚠️ Phải khai Ở ĐÂY, trên mọi `return` sớm (đang tải / lỗi / không thấy
+  //  phiếu). Hook gọi sau một nhánh thoát là thứ tự hook đổi giữa các lượt
+  //  vẽ — `react-hooks/rules-of-hooks` chặn đúng chỗ đó.
+  const isMobile = useIsMobile()
   const [selected, setSelected] = useState<Record<SurveyTable, Set<number>>>({
     supplier: new Set(),
     product: new Set(),
@@ -504,9 +513,105 @@ export function SurveyDetailPage() {
   const isSaving = saveSurvey.isPending || runAction.isPending
   const canSubmit = !isNew && editable && loadedDraft.id > 0
 
+  /**
+   * Lệnh PHỤ của đầu trang — khổ rộng bày thẳng, khổ hẹp gom vào nút `⋯`.
+   *
+   * Dựng thành BIẾN chứ không viết thẳng hai lần: mỗi nút ở đây kéo theo state
+   * hoặc mutation riêng (hộp nhập lý do, `DeleteConfirmButton`), chép ra hai
+   * bản là hai bộ state song song cho cùng một lệnh.
+   */
+  const secondaryActions = (
+    <>
+      {canSubmit && (
+        <Button variant="outline" onClick={() => void handleSave(true)} disabled={isSaving}>
+          <Send />
+          Gửi duyệt
+        </Button>
+      )}
+
+      {liveApprove && (
+        <Button
+          variant="outline"
+          title="Ghi lại toàn bộ ô duyệt của hai bảng"
+          disabled={saveLineApprove.isPending}
+          onClick={() => void handleSaveAllApprove()}
+        >
+          <CheckCheck />
+          Lưu duyệt dòng
+        </Button>
+      )}
+
+      {!isNew && status === 'submitted' && canApprove && (
+        <>
+          <Button
+            variant="outline"
+            className="text-warning hover:text-warning"
+            title="Trả về để người khảo sát sửa và gửi lại"
+            onClick={() => {
+              setReason('')
+              setReasonFor('reject')
+            }}
+          >
+            <CornerUpLeft />
+            Trả về
+          </Button>
+          <Button
+            variant="outline"
+            className="text-destructive hover:text-destructive"
+            title="Khóa phiếu hẳn — không sửa được, phải lập phiếu mới"
+            onClick={() => {
+              setReason('')
+              setReasonFor('cancel')
+            }}
+          >
+            <Ban />
+            Từ chối
+          </Button>
+        </>
+      )}
+
+      {!isNew && isSurveyDeletable(status) && (
+        <PermissionGate entity="survey" action="delete">
+          <DeleteConfirmButton
+            recordName={data.code || `#${data.id}`}
+            pending={deleteSurvey.isPending}
+            warning="Phiếu và toàn bộ dòng khảo sát NCC / sản phẩm kèm theo sẽ bị xóa."
+            onConfirm={async () => {
+              await deleteSurvey.mutateAsync(data.id)
+              navigate(appRoutes.procurement.surveys)
+            }}
+          />
+        </PermissionGate>
+      )}
+    </>
+  )
+
   return (
     <PageContainer className="bg-slate-50/70 lg:p-4">
-      <div className="mb-4 flex flex-wrap items-center gap-3">
+      {/*
+        Dải tiêu đề + nút GHIM lên đầu khung cuộn.
+
+        Trang này dài ~2600px ở khổ điện thoại và nhóm nút (Lưu · Gửi duyệt ·
+        Duyệt · Xóa) nằm trên cùng: điền xong bảng Khảo sát sản phẩm ở tận đáy
+        rồi muốn lưu thì phải cuộn ngược hết lên, mỗi thao tác mất hai lần cuộn.
+
+        Công thức lớp lấy nguyên của `PageHeader` prop `sticky` — ba luật ở đó
+        đều là lỗi đã trả giá, đừng rút gọn:
+
+        - **Nền ĐỤC** (`bg-canvas`), KHÔNG dùng lại `bg-slate-50/70` của
+          `PageContainer`: nền có alpha thì chữ của phần đang cuộn hiện xuyên
+          qua chữ trên dải. Hai màu lệch nhau ~1% nên mắt không thấy đường nối.
+        - **Lề âm + đệm bù** (`-mx-4 px-4`) để dải chạy hết bề ngang khung —
+          `PageContainer` ở màn này là `p-4` ở MỌI khổ (`lg:p-4` đè mặc định
+          `lg:p-6`), nên vế `lg` cũng là 4 chứ không phải 6.
+        - **Khoảng hở dưới dải là ĐỆM, không phải LỀ** (`mb-0` + `pb-4`): lề
+          nằm NGOÀI vùng được tô nền, nên nội dung cuộn qua sẽ hiện một vạch
+          chữ cụt trong khe đó, trông đúng như lỗi vẽ.
+
+        Khổ hẹp bóp đệm dọc lại: dải xuống hai hàng ở đó, để nguyên đệm của màn
+        rộng là mất ~117px trên tổng 844px vĩnh viễn.
+      */}
+      <div className="sticky top-0 z-20 -mx-4 -mt-4 mb-0 flex flex-wrap items-center gap-3 border-b bg-canvas px-4 pt-4 pb-4 max-md:gap-2 max-md:pt-2 max-md:pb-3">
         <Button variant="outline" size="icon" asChild aria-label="Về danh sách phiếu khảo sát">
           <Link to={appRoutes.procurement.surveys}>
             <ArrowLeft />
@@ -518,6 +623,18 @@ export function SurveyDetailPage() {
         {!isNew && <StatusBadge status={status} labels={SURVEY_STATUS_LABELS} />}
 
         <div className="min-w-4 flex-1" />
+
+        {/*  ⚠️ Nhóm phụ dựng MỘT LẦN, `useIsMobile` chỉ chọn khung BỌC — đừng
+             dựng hai bản rồi ẩn một bằng CSS. Mấy nút này mang hộp xác nhận và
+             mutation riêng (`DeleteConfirmButton`, hộp nhập lý do): bản bị ẩn
+             vẫn gắn kết, vẫn giữ state, vẫn bắn được request. Cùng luật
+             `detail-page-shell` của phân hệ Văn bản.
+
+             Chia chính/phụ ĐÚNG THEO DÁNG NÚT, không theo cảm tính: nút nền đặc
+             (`variant` mặc định) là việc người mở trang đang định làm — *Lưu*
+             khi còn sửa được, *Duyệt* khi đang cầm phiếu chờ duyệt — giấu nó
+             sau `⋯` là bắt thêm một chạm cho thao tác thường xuyên nhất. Nút
+             viền thì ngược lại. */}
         <div className="flex flex-wrap items-center justify-end gap-2">
           {editable && (
             <Button onClick={() => void handleSave()} disabled={isSaving}>
@@ -525,77 +642,25 @@ export function SurveyDetailPage() {
               Lưu
             </Button>
           )}
-          {canSubmit && (
-            <Button variant="outline" onClick={() => void handleSave(true)} disabled={isSaving}>
-              <Send />
-              Gửi duyệt
-            </Button>
-          )}
-
-          {liveApprove && (
-            <Button
-              variant="outline"
-              title="Ghi lại toàn bộ ô duyệt của hai bảng"
-              disabled={saveLineApprove.isPending}
-              onClick={() => void handleSaveAllApprove()}
-            >
-              <CheckCheck />
-              Lưu duyệt dòng
-            </Button>
-          )}
 
           {!isNew && status === 'submitted' && canApprove && (
-            <>
-              <Button
-                onClick={() =>
-                  void runAction.mutateAsync({ action: 'approve' }).then(() => {
-                    dirtyRef.current = false
-                  })
-                }
-                disabled={runAction.isPending}
-              >
-                <Check />
-                Duyệt
-              </Button>
-              <Button
-                variant="outline"
-                className="text-warning hover:text-warning"
-                title="Trả về để người khảo sát sửa và gửi lại"
-                onClick={() => {
-                  setReason('')
-                  setReasonFor('reject')
-                }}
-              >
-                <CornerUpLeft />
-                Trả về
-              </Button>
-              <Button
-                variant="outline"
-                className="text-destructive hover:text-destructive"
-                title="Khóa phiếu hẳn — không sửa được, phải lập phiếu mới"
-                onClick={() => {
-                  setReason('')
-                  setReasonFor('cancel')
-                }}
-              >
-                <Ban />
-                Từ chối
-              </Button>
-            </>
+            <Button
+              onClick={() =>
+                void runAction.mutateAsync({ action: 'approve' }).then(() => {
+                  dirtyRef.current = false
+                })
+              }
+              disabled={runAction.isPending}
+            >
+              <Check />
+              Duyệt
+            </Button>
           )}
 
-          {!isNew && isSurveyDeletable(status) && (
-            <PermissionGate entity="survey" action="delete">
-              <DeleteConfirmButton
-                recordName={data.code || `#${data.id}`}
-                pending={deleteSurvey.isPending}
-                warning="Phiếu và toàn bộ dòng khảo sát NCC / sản phẩm kèm theo sẽ bị xóa."
-                onConfirm={async () => {
-                  await deleteSurvey.mutateAsync(data.id)
-                  navigate(appRoutes.procurement.surveys)
-                }}
-              />
-            </PermissionGate>
+          {isMobile ? (
+            <HeaderActionsPopover>{secondaryActions}</HeaderActionsPopover>
+          ) : (
+            secondaryActions
           )}
         </div>
       </div>

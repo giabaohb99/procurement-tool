@@ -1,26 +1,32 @@
-import { Download, Search } from 'lucide-react'
-import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Download } from 'lucide-react'
+import { useMemo, useRef, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 
 import { appConfig } from '@/core/config/app-config'
 import { usePermission } from '@/core/authorization/use-permission'
 import {
   ConditionalFilter,
   FilterProvider,
+  useFilterContext,
   useFilterQuery,
 } from '@/shared/conditional-filter'
+import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
+import { useScrolled } from '@/shared/hooks/use-scrolled'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlRangeParam } from '@/shared/hooks/use-url-range-param'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import type { ListParams } from '@/shared/types/api'
+import { AdvancedFilterSection } from '@/shared/ui/advanced-filter-section'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { DateRangePicker } from '@/shared/ui/date-range-picker'
-import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
+import { QuickFilterField, QuickFilterSheet } from '@/shared/ui/quick-filter-sheet'
+import { SearchField } from '@/shared/ui/search-field'
 import {
   Select,
   SelectContent,
@@ -28,39 +34,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
+import { STICKY_TOOLBAR_TOP } from '@/shared/ui/sticky-toolbar'
 import { formatDate } from '@/shared/utils/format-date'
 import { formatMoney, formatQuantity, formatUnitPrice } from '@/shared/utils/format-money'
 import { downloadFile } from '@/core/api/download-file'
+import { SurveyProgressCard } from '../components/survey-progress-card'
+import {
+  SURVEY_PROGRESS_COLORS,
+  SurveyProgressStateBadge,
+} from '../components/survey-progress-state-badge'
 import { SURVEY_PROGRESS_FILTER_FIELDS } from '../config/procurement-filter-fields'
 import { useSurveyProgress } from '../hooks/use-purchase-documents'
 import type { SurveyProgressItem } from '../types/survey-progress-types'
 
 const ALL = 'all'
-
-const PROGRESS_COLORS: Record<string, string> = {
-  'Chưa tiếp nhận': '#94a3b8',
-  'Đã tiếp nhận': '#64748b',
-  'Đang khảo sát': '#d97706',
-  'Đã trả kết quả': '#00AEEF',
-  'Chốt rỗng': '#a855f7',
-  'Đã chọn phương án': '#0d9488',
-  'Cần khảo sát lại': '#dc2626',
-  'Đã tạo YCMH': '#7c3aed',
-  'Hoàn thành': '#16a34a',
-}
-
-function ProgressStateBadge({ state }: { state: string }) {
-  if (!state) return null
-  const color = PROGRESS_COLORS[state] || '#64748b'
-  return (
-    <span
-      className="inline-block whitespace-nowrap rounded px-2 py-0.5 text-xs font-medium"
-      style={{ backgroundColor: `${color}22`, color }}
-    >
-      {state}
-    </span>
-  )
-}
 
 /**
  * Khoảng ngày lọc theo MỐC nào. Ba mốc của một dòng khảo sát lệch nhau cả tuần:
@@ -114,6 +101,21 @@ function SurveyProgressContent() {
   const [dateFrom, dateTo, setDateRange] = useUrlRangeParam('date_from', 'date_to')
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
   const { queryParams, queryKey } = useFilterQuery()
+
+  const navigate = useNavigate()
+
+  //  Bộ lọc nâng cao: khổ rộng mở bằng nút riêng + popover, khổ hẹp nhúng thẳng
+  //  phần ruột vào tờ trượt. Cần `apply`/`reset`/`activeCount` nên phải lấy
+  //  context, không chỉ query.
+  const filter = useFilterContext()
+
+  //  CÙNG một `useIsMobile` mà `DataTable` dùng để đổi sang thẻ, nên hai bên
+  //  không thể lệch nhau: hễ đang bày thẻ thì chạm-để-mở cũng đang bật.
+  const isMobile = useIsMobile()
+
+  //  Mốc bóng đổ cho thanh công cụ ghim ở khổ hẹp — xem `STICKY_TOOLBAR_BASE`.
+  const stickyRef = useRef<HTMLDivElement>(null)
+  const scrolled = useScrolled(stickyRef)
 
   const [page, setPage] = usePageResetOnFilterChange([
     queryKey,
@@ -200,7 +202,7 @@ function SurveyProgressContent() {
         cell: (r) => (r.days_late && r.days_late > 0 ? <span className="font-semibold text-destructive">{r.days_late}</span> : ''),
       },
       { key: 'handling_days', header: 'Số ngày xử lý', width: 110, align: 'right', cell: (r) => r.handling_days ?? '' },
-      { key: 'progress_state', header: 'Tiến độ dòng', width: 160, cell: (r) => <ProgressStateBadge state={r.progress_state} /> },
+      { key: 'progress_state', header: 'Tiến độ dòng', width: 160, cell: (r) => <SurveyProgressStateBadge state={r.progress_state} /> },
       { key: 'line_status', header: 'TT dòng', width: 130, defaultHidden: true, wrap: true, cell: (r) => r.line_status || '' },
       { key: 'option_count', header: 'Số PA', width: 80, align: 'right', cell: (r) => r.option_count ?? 0 },
       { key: 'opt_label', header: 'Phương án chốt', width: 130, defaultHidden: true, wrap: true, cell: (r) => r.opt_label || '' },
@@ -227,22 +229,120 @@ function SurveyProgressContent() {
     return allCols.filter((col) => !col.supplierOnly || showSupplier)
   }, [showSupplier])
 
+  //  Cùng một ô chọn dựng HAI lần (hàng ngang ở khổ rộng · tờ trượt ở khổ hẹp).
+  //  State nằm ở đây nên hai bản luôn nói cùng một giá trị — khuôn của
+  //  `purchase-progress-page`, không phải trùng lặp cần dọn.
+  //
+  //  `max-md:w-full`: trong tờ trượt mỗi ô có trọn bề ngang màn hình; giữ bề
+  //  rộng cứng `w-48` thì ô nép trái và chừa một khoảng trống dài bên phải.
+  const stateSelect = (
+    <Select value={progressState} onValueChange={setProgressState}>
+      <SelectTrigger className="w-48 max-md:w-full" aria-label="Lọc theo tiến độ dòng">
+        <SelectValue placeholder="Tiến độ dòng" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={ALL}>Tất cả tiến độ</SelectItem>
+        {Object.keys(SURVEY_PROGRESS_COLORS).map((st) => (
+          <SelectItem key={st} value={st}>
+            {st}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+
+  const lateSelect = (
+    <Select value={late} onValueChange={setLate}>
+      <SelectTrigger className="w-36 max-md:w-full" aria-label="Lọc theo trễ hạn">
+        <SelectValue placeholder="Trễ hạn" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={ALL}>Tất cả</SelectItem>
+        <SelectItem value="1">Trễ hạn</SelectItem>
+        <SelectItem value="0">Đúng hạn</SelectItem>
+      </SelectContent>
+    </Select>
+  )
+
+  //  Chọn MỐC trước, rồi tới khoảng ngày — đọc xuôi thành một câu "theo hạn trả
+  //  KQ, từ … tới …". Hai ô đứng liền nhau để không ai lọc nhầm mốc mà không để
+  //  ý; trong tờ trượt cũng phải giữ đúng thứ tự đó.
+  const dateFieldSelect = (
+    <Select value={dateField} onValueChange={setDateField}>
+      <SelectTrigger className="w-48 max-md:w-full" aria-label="Lọc theo mốc ngày">
+        <SelectValue placeholder="Mốc ngày" />
+      </SelectTrigger>
+      <SelectContent>
+        {DATE_FIELDS.map((field) => (
+          <SelectItem key={field.value} value={field.value}>
+            {field.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+
+  const dateRangeInput = (
+    <DateRangePicker
+      from={dateFrom}
+      to={dateTo}
+      onChange={setDateRange}
+      placeholder="Từ ngày – tới ngày"
+      className="max-md:w-full"
+    />
+  )
+
+  //  Huy hiệu trên nút «Bộ lọc» của khổ hẹp đếm CẢ HAI tầng — ô lọc nhanh và
+  //  điều kiện nâng cao — vì cả hai nay nằm sau đúng một nút đó. Đếm thiếu một
+  //  tầng thì người dùng thấy nút không dấu gì mà danh sách vẫn đang bị lọc.
+  const activeFilterCount =
+    [progressState !== ALL, late !== ALL, Boolean(dateFrom || dateTo)].filter(Boolean).length +
+    filter.activeCount
+
   return (
-    <PageContainer fill>
+    //  ⚠️ `fill` chỉ bật từ `md`: ở khổ hẹp bảng đổi sang danh sách THẺ dài, mà
+    //  `fill` nhét nó vào một khe vài trăm pixel và biến thành cuộn LỒNG — vuốt
+    //  trúng mép ngoài khe thì trang không nhúc nhích. Cùng luật
+    //  `purchase-progress-page` và `CrudListPage`.
+    <PageContainer fill className="max-md:h-auto">
       <PageHeader
         title="Tiến độ báo giá"
-        description="Theo dõi tiến độ xử lý từng dòng yêu cầu báo giá."
+        description={
+          //  Ẩn ở khổ hẹp: câu giới thiệu màn, đọc một lần rồi thôi, nhưng ngốn
+          //  hai dòng ở đầu MỌI lần mở màn — ngay trên thứ người ta vào đây để
+          //  xem.
+          <span className="max-md:hidden">
+            Theo dõi tiến độ xử lý từng dòng yêu cầu báo giá.
+          </span>
+        }
+        //  Nút trải hết hàng ở khổ hẹp — cụm nút bọc thêm một lớp `div` nên phải
+        //  nhắm `[&>div]`, `[&>button]` không chạm tới.
+        actionsClassName="max-md:[&>div]:w-full"
         actions={
           canExport ? (
-            <Button variant="outline" size="sm" onClick={handleExportExcel}>
-              <Download className="mr-1.5 size-4" />
-              Xuất Excel
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 max-md:flex-1"
+                onClick={handleExportExcel}
+              >
+                <Download className="mr-1.5 size-4" />
+                Xuất Excel
+              </Button>
+            </div>
           ) : undefined
         }
       />
 
-      <Card className="flex min-h-0 flex-1 flex-col p-4">
+      {/*  `group` + `data-scrolled`: mốc để thanh công cụ ghim biết đã có nội
+           dung trôi bên dưới chưa (bóng đổ). Thiếu thì dải vẫn ghim, chỉ là
+           không bao giờ đổ bóng — và lỗi đó im lặng. */}
+      <Card
+        ref={stickyRef}
+        className="group flex min-h-0 flex-1 flex-col p-4"
+        data-scrolled={scrolled ? '' : undefined}
+      >
         <DataTable
           fillHeight
           columns={columns}
@@ -251,6 +351,29 @@ function SurveyProgressContent() {
           isLoading={isLoading}
           isError={isError}
           emptyMessage="Không tìm thấy dữ liệu tiến độ báo giá."
+          //  Khổ hẹp: THẺ thay bảng — xem `SurveyProgressCard`.
+          mobileCard={(row) => <SurveyProgressCard row={row} />}
+          //  ⚠️ Chạm-để-mở CHỈ bật ở khổ hẹp, và chỉ khi đọc được YCBG.
+          //
+          //  Ở chế độ thẻ cột *Mã YCBG* không còn là liên kết, nên nếu không có
+          //  nhịp này thì từ một dòng tiến độ KHÔNG có đường nào về chứng từ
+          //  gốc. Khổ rộng thì ngược lại, bật vào là hỏng: đây là báo cáo 45 cột
+          //  để ĐỐI CHIẾU, người ta bôi đen ô để chép số — mà thả chuột sau khi
+          //  bôi đen vẫn tính là một cú bấm, tức mỗi lần chép là một lần bị
+          //  quăng sang trang khác.
+          //
+          //  Thiếu quyền đọc YCBG thì bỏ hẳn, kẻo bấm xong rơi vào màn báo thiếu
+          //  quyền — cùng luật `purchase-progress-page`.
+          onRowClick={
+            isMobile && can('survey_request', 'read')
+              ? (row) => {
+                  if (row.sr_id > 0) {
+                    navigate(appRoutes.procurement.surveyRequestDetail(row.sr_id))
+                  }
+                }
+              : undefined
+          }
+          toolbarClassName={STICKY_TOOLBAR_TOP}
           storageKey="procurement.survey-progress"
           pagination={{
             page,
@@ -261,66 +384,65 @@ function SurveyProgressContent() {
             unitLabel: 'dòng',
           }}
           toolbar={
+            //  ⚠️ **Khổ điện thoại: bốn ô lọc dọn vào TỜ TRƯỢT**, thanh công cụ
+            //  còn một hàng. Bốn ô khai bề rộng cứng (`w-48`…`w-36`) cộng ô
+            //  khoảng ngày, nên ở 390px mỗi ô rơi xuống một hàng riêng: **năm
+            //  hàng ≈ 600px** chắn trên đầu danh sách, tức dòng đầu tiên bắt đầu
+            //  dưới mép màn hình.
             <>
-              <div className="relative min-w-56 flex-1 md:max-w-xs">
-                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  className="pl-9 h-9 text-xs"
-                  placeholder="Tìm mã YCBG, SP, NCC, NSTM…"
-                  value={keyword}
-                  onChange={(e) => setKeyword(e.target.value)}
-                />
-              </div>
+              {/*  Câu gợi ý RÚT GỌN ở khổ hẹp: bản đầy đủ liệt kê bốn thứ tìm
+                   được nên bị xén giữa chừng, mất đúng phần đuôi — thứ người
+                   đọc chưa đoán được.
 
-              <Select value={progressState} onValueChange={setProgressState}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Tiến độ dòng" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALL}>Tất cả tiến độ</SelectItem>
-                  {Object.keys(PROGRESS_COLORS).map((st) => (
-                    <SelectItem key={st} value={st}>
-                      {st}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={late} onValueChange={setLate}>
-                <SelectTrigger className="w-36">
-                  <SelectValue placeholder="Trễ hạn" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALL}>Tất cả</SelectItem>
-                  <SelectItem value="1">Trễ hạn</SelectItem>
-                  <SelectItem value="0">Đúng hạn</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {/*  Chọn MỐC trước, rồi tới khoảng ngày — đọc xuôi thành một câu
-                   "theo hạn trả KQ, từ … tới …". Hai ô đứng liền nhau để không ai
-                   lọc nhầm mốc mà không để ý. */}
-              <Select value={dateField} onValueChange={setDateField}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Mốc ngày" />
-                </SelectTrigger>
-                <SelectContent>
-                  {DATE_FIELDS.map((field) => (
-                    <SelectItem key={field.value} value={field.value}>
-                      {field.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <DateRangePicker
-                from={dateFrom}
-                to={dateTo}
-                onChange={setDateRange}
-                placeholder="Từ ngày – tới ngày"
+                   ⚠️ **Đo rồi hãy viết.** Ô tìm ở khổ hẹp chia hàng với nút *Bộ
+                   lọc* và nút *Tải lại*, nên chỉ còn **~134px** — đo ngày
+                   14/09/2026 trên máy 390px. Hai vế (~100px) là vừa; ba vế
+                   (~139px) vẫn bị xén, tức bản "rút gọn" không giải quyết được
+                   gì so với bản đầy đủ. */}
+              <SearchField
+                value={keyword}
+                onChange={setKeyword}
+                placeholder="Tìm mã YCBG, SP, NCC, NSTM…"
+                placeholderShort="Tìm YCBG, SP…"
+                aria-label="Tìm dòng tiến độ báo giá"
+                className="md:min-w-56 md:max-w-xs"
               />
 
-              <ConditionalFilter />
+              {/*  `md:contents` chứ KHÔNG phải `md:flex`: bọc cụm lọc trong một
+                   thẻ flex riêng thì với thanh công cụ nó là MỘT ô, không đủ chỗ
+                   là rớt nguyên khối xuống dòng dưới và chừa khoảng trống dài
+                   bên phải ô tìm kiếm. */}
+              <div className="max-md:hidden md:contents">
+                {stateSelect}
+                {lateSelect}
+                {dateFieldSelect}
+                {dateRangeInput}
+                <ConditionalFilter />
+              </div>
+
+              {/*  ⚠️ Ô trong tờ trượt phải có NHÃN. Trên thanh công cụ, ô chọn tự
+                   giải nghĩa bằng giá trị đang chọn («Tất cả tiến độ»); xếp dọc
+                   mấy ô như vậy trong một tờ trắng thì thành danh sách chữ trôi
+                   nổi, người đọc không biết ô nào lọc cái gì cho tới khi bấm
+                   thử. Riêng ô «Trễ hạn» thì nhãn là BẮT BUỘC: giá trị mặc định
+                   của nó đọc trơ trọi là «Tất cả», không nói được tất cả cái gì. */}
+              <QuickFilterSheet
+                activeCount={activeFilterCount}
+                onClearAll={() => {
+                  setProgressState(ALL)
+                  setLate(ALL)
+                  setDateField(DEFAULT_DATE_FIELD)
+                  setDateRange('', '')
+                  filter.reset()
+                }}
+                onApply={filter.apply}
+              >
+                <QuickFilterField label="Tiến độ dòng">{stateSelect}</QuickFilterField>
+                <QuickFilterField label="Trễ hạn">{lateSelect}</QuickFilterField>
+                <QuickFilterField label="Mốc ngày">{dateFieldSelect}</QuickFilterField>
+                <QuickFilterField label="Khoảng ngày">{dateRangeInput}</QuickFilterField>
+                <AdvancedFilterSection />
+              </QuickFilterSheet>
             </>
           }
         />

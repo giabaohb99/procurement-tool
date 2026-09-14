@@ -1,5 +1,5 @@
-import { Copy, Download, Plus, Search } from 'lucide-react'
-import { useCallback, useMemo, useState } from 'react'
+import { Copy, Download, Plus } from 'lucide-react'
+import { useCallback, useMemo, useState, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
@@ -14,22 +14,26 @@ import { useSuppliers } from '@/modules/production/hooks/use-suppliers'
 import {
   ConditionalFilter,
   FilterProvider,
+  useFilterContext,
   useFilterQuery,
 } from '@/shared/conditional-filter'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
+import { useScrolled } from '@/shared/hooks/use-scrolled'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import type { ListParams } from '@/shared/types/api'
+import { AdvancedFilterSection } from '@/shared/ui/advanced-filter-section'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { DateRangePicker } from '@/shared/ui/date-range-picker'
-import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
-import { QuickFilterSheet } from '@/shared/ui/quick-filter-sheet'
+import { STICKY_TOOLBAR_TOP } from '@/shared/ui/sticky-toolbar'
+import { QuickFilterField, QuickFilterSheet } from '@/shared/ui/quick-filter-sheet'
+import { SearchField } from '@/shared/ui/search-field'
 import {
   Select,
   SelectContent,
@@ -40,6 +44,7 @@ import {
 import { PO_DOCUMENT_STATUS } from '@/shared/constants/statuses'
 import { formatDateTime } from '@/shared/utils/format-date'
 import { formatMoney } from '@/shared/utils/format-money'
+import { PurchaseOrderCard } from '../components/purchase-order-card'
 import { DocumentStatusBadge, StatusBadge } from '../components/document-status-badge'
 import { PURCHASE_ORDER_FILTER_FIELDS } from '../config/procurement-filter-fields'
 import { usePurchaseOrders } from '../hooks/use-purchase-documents'
@@ -127,6 +132,14 @@ function PurchaseOrderListContent() {
   const { data: suppliers } = useSuppliers({ page_size: 500, is_active: true })
   const { data: employees } = useEmployees({ page_size: 500, is_active: true })
   const { queryParams, queryKey } = useFilterQuery()
+
+  //  Bộ lọc nâng cao: khổ rộng mở bằng nút riêng + popover, khổ hẹp nhúng
+  //  thẳng phần ruột vào tờ trượt. Cần `apply`/`reset`/`activeCount`.
+  const filter = useFilterContext()
+
+  //  Mốc bóng đổ cho thanh công cụ ghim ở khổ hẹp — xem `STICKY_TOOLBAR_BASE`.
+  const stickyRef = useRef<HTMLDivElement>(null)
+  const scrolled = useScrolled(stickyRef)
 
   const [page, setPage] = usePageResetOnFilterChange([
     queryKey,
@@ -360,120 +373,151 @@ function PurchaseOrderListContent() {
     [canCreate, handleClone],
   )
 
-  const filterControls = (
-    <>
-      <Select value={companyId} onValueChange={setCompanyId}>
-        <SelectTrigger className="w-full md:w-44 text-xs h-9">
-          <SelectValue placeholder="Công ty" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value={ALL}>Tất cả công ty</SelectItem>
-          {(companies?.items ?? []).map((company) => (
-            <SelectItem key={company.id} value={String(company.id)}>
-              {company.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+  //  Cùng một ô dựng HAI lần (hàng ngang ở khổ rộng · tờ trượt ở khổ hẹp).
+  //  State nằm ở đây nên hai bản luôn nói cùng một giá trị — khuôn của
+  //  `payment-request-list-page`, không phải trùng lặp cần dọn.
 
-      <Select value={supplierCode} onValueChange={setSupplierCode}>
-        <SelectTrigger className="w-full md:w-48 text-xs h-9">
-          <SelectValue placeholder="Nhà cung cấp" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value={ALL}>Tất cả nhà cung cấp</SelectItem>
-          {(suppliers?.items ?? []).map((sup) => (
-            <SelectItem key={sup.code} value={sup.code}>
-              {sup.name} ({sup.code})
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <Select value={nsptId} onValueChange={setNsptId}>
-        <SelectTrigger className="w-full md:w-40 text-xs h-9">
-          <SelectValue placeholder="NSPT" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value={ALL}>Tất cả NSPT</SelectItem>
-          {(employees?.items ?? []).map((emp) => (
-            <SelectItem key={emp.id} value={String(emp.id)}>
-              {emp.full_name} ({emp.code})
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <Select value={docStatus} onValueChange={setDocStatus}>
-        <SelectTrigger className="w-full md:w-40 text-xs h-9">
-          <SelectValue placeholder="Hồ sơ" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value={ALL}>Tất cả hồ sơ</SelectItem>
-          {PO_DOCUMENT_STATUS.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
-              {option.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <Select value={status} onValueChange={setStatus}>
-        <SelectTrigger className="w-full md:w-40 text-xs h-9">
-          <SelectValue placeholder="Trạng thái" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value={ALL}>Tất cả trạng thái</SelectItem>
-          {statusOptions(PO_STATUS_LABELS).map((option) => (
-            <SelectItem key={option.value} value={option.value}>
-              {option.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <Select value={orderType} onValueChange={setOrderType}>
-        <SelectTrigger className="w-full md:w-36 text-xs h-9">
-          <SelectValue placeholder="Loại đơn" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value={ALL}>Tất cả loại đơn</SelectItem>
-          {ORDER_TYPE_OPTIONS.map((option) => (
-            <SelectItem key={option.value} value={String(option.value)}>
-              {option.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <DateRangePicker
-        from={orderDateFrom}
-        to={orderDateTo}
-        placeholder="Ngày đặt..."
-        className="w-full md:w-auto"
-        onChange={(f, t) => {
-          setOrderDateFrom(f)
-          setOrderDateTo(t)
-        }}
-      />
-    </>
+  const companySelect = (
+    <Select value={companyId} onValueChange={setCompanyId}>
+      <SelectTrigger className="w-full md:w-44 text-xs h-9">
+        <SelectValue placeholder="Công ty" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={ALL}>Tất cả công ty</SelectItem>
+        {(companies?.items ?? []).map((company) => (
+          <SelectItem key={company.id} value={String(company.id)}>
+            {company.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   )
 
+  const supplierSelect = (
+    <Select value={supplierCode} onValueChange={setSupplierCode}>
+      <SelectTrigger className="w-full md:w-48 text-xs h-9">
+        <SelectValue placeholder="Nhà cung cấp" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={ALL}>Tất cả nhà cung cấp</SelectItem>
+        {(suppliers?.items ?? []).map((sup) => (
+          <SelectItem key={sup.code} value={sup.code}>
+            {sup.name} ({sup.code})
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+
+  const nsptSelect = (
+    <Select value={nsptId} onValueChange={setNsptId}>
+      <SelectTrigger className="w-full md:w-40 text-xs h-9">
+        <SelectValue placeholder="NSPT" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={ALL}>Tất cả NSPT</SelectItem>
+        {(employees?.items ?? []).map((emp) => (
+          <SelectItem key={emp.id} value={String(emp.id)}>
+            {emp.full_name} ({emp.code})
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+
+  const docStatusSelect = (
+    <Select value={docStatus} onValueChange={setDocStatus}>
+      <SelectTrigger className="w-full md:w-40 text-xs h-9">
+        <SelectValue placeholder="Hồ sơ" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={ALL}>Tất cả hồ sơ</SelectItem>
+        {PO_DOCUMENT_STATUS.map((option) => (
+          <SelectItem key={option.value} value={option.value}>
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+
+  const statusSelect = (
+    <Select value={status} onValueChange={setStatus}>
+      <SelectTrigger className="w-full md:w-40 text-xs h-9">
+        <SelectValue placeholder="Trạng thái" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={ALL}>Tất cả trạng thái</SelectItem>
+        {statusOptions(PO_STATUS_LABELS).map((option) => (
+          <SelectItem key={option.value} value={option.value}>
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+
+  const orderTypeSelect = (
+    <Select value={orderType} onValueChange={setOrderType}>
+      <SelectTrigger className="w-full md:w-36 text-xs h-9">
+        <SelectValue placeholder="Loại đơn" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={ALL}>Tất cả loại đơn</SelectItem>
+        {ORDER_TYPE_OPTIONS.map((option) => (
+          <SelectItem key={option.value} value={String(option.value)}>
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+
+  const dateRangeInput = (
+    <DateRangePicker
+      from={orderDateFrom}
+      to={orderDateTo}
+      placeholder="Ngày đặt..."
+      className="w-full md:w-auto"
+      onChange={(f, t) => {
+        setOrderDateFrom(f)
+        setOrderDateTo(t)
+      }}
+    />
+  )
+
+
   return (
-    <PageContainer fill>
+    //  ⚠️ `fill` chỉ bật từ `md`: ở khổ hẹp bảng đổi sang danh sách THẺ dài, mà
+    //  `fill` nhét nó vào một khe vài trăm pixel và biến thành cuộn LỒNG — vuốt
+    //  trúng mép ngoài khe thì trang không nhúc nhích. Cùng luật
+    //  `payment-request-list-page` và `CrudListPage`.
+    <PageContainer fill className="max-md:h-auto">
       <PageHeader
         title="Đơn mua hàng"
-        description="Đơn mua hàng (PO) gửi nhà cung cấp."
+        description={
+          //  Ẩn ở khổ hẹp: câu giới thiệu màn, đọc một lần rồi thôi, nhưng ngốn
+          //  một dòng ở đầu MỌI lần mở màn — ngay trên thứ người ta vào đây để
+          //  xem.
+          <span className="max-md:hidden">Đơn mua hàng (PO) gửi nhà cung cấp.</span>
+        }
+        //  Hai nút chia đôi hàng ở khổ hẹp — không có lớp này thì chúng co theo
+        //  chữ và dán mép phải sau một khoảng trống dài. Nhắm `[&>div]` vì cụm
+        //  nút bọc thêm một lớp `div`.
+        actionsClassName="max-md:[&>div]:w-full"
         actions={
           <div className="flex items-center gap-2">
             {canExport && (
-              <Button variant="outline" onClick={handleExportExcel}>
+              <Button variant="outline" className="max-md:flex-1" onClick={handleExportExcel}>
                 <Download className="mr-1.5 size-4" />
                 Xuất Excel
               </Button>
             )}
             <PermissionGate entity="purchase_order" action="create">
-              <Button onClick={() => navigate(appRoutes.procurement.purchaseOrderNew)}>
+              <Button
+                className="max-md:flex-1"
+                onClick={() => navigate(appRoutes.procurement.purchaseOrderNew)}
+              >
                 <Plus className="mr-1.5 size-4" />
                 Thêm mới
               </Button>
@@ -482,7 +526,14 @@ function PurchaseOrderListContent() {
         }
       />
 
-      <Card className="flex min-h-0 flex-1 flex-col p-4">
+      {/*  `group` + `data-scrolled`: mốc để thanh công cụ ghim biết đã có nội
+           dung trôi bên dưới chưa (bóng đổ). Thiếu thì dải vẫn ghim, chỉ là
+           không bao giờ đổ bóng — và lỗi đó im lặng. */}
+      <Card
+        ref={stickyRef}
+        className="group flex min-h-0 flex-1 flex-col p-4"
+        data-scrolled={scrolled ? '' : undefined}
+      >
         <DataTable
           fillHeight
           columns={columns}
@@ -491,6 +542,9 @@ function PurchaseOrderListContent() {
           isLoading={isLoading}
           isError={isError}
           emptyMessage="Không tìm thấy đơn mua hàng nào."
+          //  Khổ hẹp: THẺ thay bảng — xem `PurchaseOrderCard`.
+          mobileCard={(po) => <PurchaseOrderCard row={po} />}
+          toolbarClassName={STICKY_TOOLBAR_TOP}
           storageKey="procurement.purchase-orders"
           onVisibleColumnsChange={setVisibleColumnKeys}
           onRowClick={(po) => navigate(appRoutes.procurement.purchaseOrderDetail(po.id))}
@@ -507,22 +561,36 @@ function PurchaseOrderListContent() {
           }}
           toolbar={
             <>
-              {/* 1. Ô Tìm Kiếm Nhanh luôn ở ngoài cùng bên trái */}
-              <div className="relative min-w-56 flex-1 max-w-xs">
-                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  className="pl-9 h-9 text-xs"
-                  placeholder="Tìm mã ĐMH, MISA, PYC, NCC, mã/tên sản phẩm…"
-                  value={keyword}
-                  onChange={(e) => setKeyword(e.target.value)}
-                />
-              </div>
+              {/*  Câu gợi ý RÚT GỌN ở khổ hẹp: bản đầy đủ liệt kê năm thứ tìm
+                   được nên bị xén mất đúng phần đuôi — thứ người đọc chưa đoán
+                   được.
 
-              {/* 2. Chip Gấp */}
+                   ⚠️ **Đo rồi hãy viết.** Màn này có thêm chip *Gấp* trên thanh
+                   công cụ, nên ô tìm chỉ còn **73px** — đo ngày 14/09/2026 trên
+                   máy 390px, tức hiện đúng "Tìm ĐMH, ᴎ" rồi cụt. Rút chữ thôi
+                   KHÔNG cứu được: hai vế ngắn nhất cũng đã 90px. Phải trả lại
+                   chỗ cho ô — xem `iconOnly` ở `QuickFilterSheet` bên dưới.
+
+                   ⚠️ **Mốc đo là 375px, không phải 390px.** Sau khi rút nút lọc,
+                   ô rộng 117px ở máy 390px nhưng chỉ **102px** ở iPhone SE/mini
+                   (375px) — "Tìm ĐMH, NCC…" tốn 110px nên vừa ở máy này mà cụt ở
+                   máy kia. Lấy ~100px làm trần cho mọi câu gợi ý rút gọn. */}
+              <SearchField
+                value={keyword}
+                onChange={setKeyword}
+                placeholder="Tìm mã ĐMH, MISA, PYC, NCC, mã/tên sản phẩm…"
+                placeholderShort="Tìm ĐMH, SP…"
+                aria-label="Tìm đơn mua hàng"
+                className="md:min-w-56 md:max-w-xs"
+              />
+
+              {/*  Chip *Gấp* ở LẠI thanh công cụ, không vào tờ trượt: đây là bộ
+                   lọc một chạm dùng nhiều nhất của màn này, nhét vào sau hai lớp
+                   (mở tờ trượt → bấm → đóng) là đổi một chạm thành ba. */}
               <Button
                 variant={isUrgent === 'true' ? 'default' : 'outline'}
                 size="sm"
-                className="h-9 text-xs shrink-0"
+                className="h-9 shrink-0 text-xs"
                 onClick={() => setIsUrgent(isUrgent === 'true' ? ALL : 'true')}
               >
                 Gấp
@@ -536,15 +604,42 @@ function PurchaseOrderListContent() {
                    vượt ngưỡng đó. `display: contents` cho các ô lọc thành ô trực
                    tiếp của thanh công cụ nên chúng xếp kín từng dòng. */}
               <div className="hidden md:contents">
-                {filterControls}
+                {companySelect}
+                {supplierSelect}
+                {nsptSelect}
+                {docStatusSelect}
+                {statusSelect}
+                {orderTypeSelect}
+                {dateRangeInput}
                 <ConditionalFilter />
               </div>
 
-              {/* Mobile Filter Sheet (< 768px) */}
-              <QuickFilterSheet activeCount={activeCount} onClearAll={clearAllFilters}>
-                <div className="space-y-3">
-                  {filterControls}
-                </div>
+              {/*  ⚠️ Ô trong tờ trượt phải có NHÃN. Trên thanh công cụ, ô chọn tự
+                   giải nghĩa bằng giá trị đang chọn («Tất cả công ty»); xếp dọc
+                   BẢY ô như vậy trong một tờ trắng thì thành một danh sách chữ
+                   trôi nổi, người đọc không biết ô nào lọc cái gì cho tới khi
+                   bấm thử. */}
+              {/*  ⚠️ `iconOnly`: thanh công cụ khổ hẹp của màn này phải gói ô
+                   tìm + chip *Gấp* + nút lọc + nút tải lại vào MỘT hàng, và 48px
+                   chữ «Bộ lọc» đúng là phần chênh giữa ô tìm đọc được và ô tìm
+                   cụt ở chữ thứ tám (73px → 121px). Giữ chữ thì phải bỏ chip
+                   *Gấp* — mà đó là bộ lọc một chạm dùng nhiều nhất của màn này,
+                   đổi nó thành ba chạm còn tệ hơn. Cái phễu vẫn có huy hiệu chấm
+                   khi đang lọc, và tiêu đề tờ trượt vẫn ghi «Bộ lọc». */}
+              <QuickFilterSheet
+                iconOnly
+                activeCount={activeCount}
+                onClearAll={clearAllFilters}
+                onApply={filter.apply}
+              >
+                <QuickFilterField label="Công ty">{companySelect}</QuickFilterField>
+                <QuickFilterField label="Nhà cung cấp">{supplierSelect}</QuickFilterField>
+                <QuickFilterField label="NSPT">{nsptSelect}</QuickFilterField>
+                <QuickFilterField label="Hồ sơ chứng từ">{docStatusSelect}</QuickFilterField>
+                <QuickFilterField label="Trạng thái">{statusSelect}</QuickFilterField>
+                <QuickFilterField label="Loại đơn">{orderTypeSelect}</QuickFilterField>
+                <QuickFilterField label="Ngày đặt">{dateRangeInput}</QuickFilterField>
+                <AdvancedFilterSection />
               </QuickFilterSheet>
             </>
           }

@@ -1,5 +1,5 @@
-import { Copy, Plus, Search } from 'lucide-react'
-import { useCallback, useMemo, useState } from 'react'
+import { Copy, Plus } from 'lucide-react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
@@ -10,21 +10,24 @@ import { httpClient } from '@/core/api/http-client'
 import {
   ConditionalFilter,
   FilterProvider,
+  useFilterContext,
   useFilterQuery,
 } from '@/shared/conditional-filter'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
+import { useScrolled } from '@/shared/hooks/use-scrolled'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import type { ListParams } from '@/shared/types/api'
+import { AdvancedFilterSection } from '@/shared/ui/advanced-filter-section'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
-import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
-import { QuickFilterSheet } from '@/shared/ui/quick-filter-sheet'
+import { QuickFilterField, QuickFilterSheet } from '@/shared/ui/quick-filter-sheet'
+import { SearchField } from '@/shared/ui/search-field'
 import {
   Select,
   SelectContent,
@@ -32,8 +35,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
+import { STICKY_TOOLBAR_TOP } from '@/shared/ui/sticky-toolbar'
 import { formatDateTime } from '@/shared/utils/format-date'
 import { StatusBadge } from '../components/document-status-badge'
+import { SurveyCard } from '../components/survey-card'
 import { SURVEY_FILTER_FIELDS } from '../config/procurement-filter-fields'
 import { useSurveys } from '../hooks/use-purchase-documents'
 import {
@@ -75,6 +80,15 @@ function SurveyListContent() {
 
   const { queryParams, queryKey } = useFilterQuery()
 
+  //  Bộ lọc nâng cao: khổ rộng mở bằng nút riêng + popover, khổ hẹp nhúng
+  //  thẳng phần ruột vào tờ trượt. Cần `apply`/`reset`/`activeCount` nên phải
+  //  lấy context, không chỉ query.
+  const filter = useFilterContext()
+
+  //  Mốc bóng đổ cho thanh công cụ ghim ở khổ hẹp — xem `STICKY_TOOLBAR_BASE`.
+  const stickyRef = useRef<HTMLDivElement>(null)
+  const scrolled = useScrolled(stickyRef)
+
   const [page, setPage] = usePageResetOnFilterChange([queryKey, debouncedValue, status, surveyType, sortBy, sortDir])
 
   const params: ListParams = { page, page_size: pageSize, ...queryParams }
@@ -106,11 +120,16 @@ function SurveyListContent() {
     [navigate],
   )
 
-  const activeCount = [status !== ALL, surveyType !== ALL].filter(Boolean).length
+  //  Huy hiệu trên nút «Bộ lọc» của khổ hẹp đếm CẢ HAI tầng — ô lọc nhanh và
+  //  điều kiện nâng cao — vì cả hai nay nằm sau đúng một nút đó. Đếm thiếu một
+  //  tầng thì người dùng thấy nút không dấu gì mà danh sách vẫn đang bị lọc.
+  const activeCount =
+    [status !== ALL, surveyType !== ALL].filter(Boolean).length + filter.activeCount
 
   const clearAllFilters = () => {
     setStatus(ALL)
     setSurveyType(ALL)
+    filter.reset()
   }
 
   const handleSortChange = (newSortBy: string, newSortDir: 'asc' | 'desc') => {
@@ -215,47 +234,67 @@ function SurveyListContent() {
     [canCreate, handleClone],
   )
 
-  const filterControls = (
-    <>
-      <Select value={surveyType} onValueChange={setSurveyType}>
-        <SelectTrigger className="w-full md:w-44 text-xs h-9">
-          <SelectValue placeholder="Loại khảo sát" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value={ALL}>Tất cả loại</SelectItem>
-          {Object.entries(SURVEY_TYPE_LABELS).map(([k, v]) => (
-            <SelectItem key={k} value={k}>
-              {v}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+  //  Cùng một ô chọn dựng HAI lần (hàng ngang ở khổ rộng · tờ trượt ở khổ hẹp).
+  //  State nằm ở đây nên hai bản luôn nói cùng một giá trị — khuôn của
+  //  `payment-request-list-page`, không phải trùng lặp cần dọn.
+  const typeSelect = (
+    <Select value={surveyType} onValueChange={setSurveyType}>
+      <SelectTrigger className="h-9 w-full text-xs md:w-44" aria-label="Lọc theo loại khảo sát">
+        <SelectValue placeholder="Loại khảo sát" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={ALL}>Tất cả loại</SelectItem>
+        {Object.entries(SURVEY_TYPE_LABELS).map(([k, v]) => (
+          <SelectItem key={k} value={k}>
+            {v}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
 
-      <Select value={status} onValueChange={setStatus}>
-        <SelectTrigger className="w-full md:w-40 text-xs h-9">
-          <SelectValue placeholder="Trạng thái" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value={ALL}>Tất cả trạng thái</SelectItem>
-          {statusOptions(SURVEY_STATUS_LABELS).map((option) => (
-            <SelectItem key={option.value} value={option.value}>
-              {option.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </>
+  const statusSelect = (
+    <Select value={status} onValueChange={setStatus}>
+      <SelectTrigger className="h-9 w-full text-xs md:w-40" aria-label="Lọc theo trạng thái">
+        <SelectValue placeholder="Trạng thái" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={ALL}>Tất cả trạng thái</SelectItem>
+        {statusOptions(SURVEY_STATUS_LABELS).map((option) => (
+          <SelectItem key={option.value} value={option.value}>
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   )
 
   return (
-    <PageContainer fill>
+    //  ⚠️ `fill` chỉ bật từ `md`: ở khổ hẹp bảng đổi sang danh sách THẺ dài, mà
+    //  `fill` nhét nó vào một khe vài trăm pixel và biến thành cuộn LỒNG — vuốt
+    //  trúng mép ngoài khe thì trang không nhúc nhích. Cùng luật
+    //  `payment-request-list-page` và `CrudListPage`.
+    <PageContainer fill className="max-md:h-auto">
       <PageHeader
         title="Phiếu khảo sát"
-        description="Khảo sát nhà cung cấp và sản phẩm phục vụ so sánh giá."
+        description={
+          //  Ẩn ở khổ hẹp: câu giới thiệu màn, đọc một lần rồi thôi, nhưng ngốn
+          //  hai dòng ở đầu MỌI lần mở màn — ngay trên thứ người ta vào đây để
+          //  xem.
+          <span className="max-md:hidden">
+            Khảo sát nhà cung cấp và sản phẩm phục vụ so sánh giá.
+          </span>
+        }
+        //  Nút trải hết hàng ở khổ hẹp — cụm nút bọc thêm một lớp `div` nên phải
+        //  nhắm `[&>div]`, `[&>button]` không chạm tới.
+        actionsClassName="max-md:[&>div]:w-full"
         actions={
           <div className="flex items-center gap-2">
             <PermissionGate entity="survey" action="create">
-              <Button onClick={() => navigate(appRoutes.procurement.surveyNew)}>
+              <Button
+                className="max-md:flex-1"
+                onClick={() => navigate(appRoutes.procurement.surveyNew)}
+              >
                 <Plus className="mr-1.5 size-4" />
                 Thêm mới
               </Button>
@@ -264,7 +303,14 @@ function SurveyListContent() {
         }
       />
 
-      <Card className="flex min-h-0 flex-1 flex-col p-4">
+      {/*  `group` + `data-scrolled`: mốc để thanh công cụ ghim biết đã có nội
+           dung trôi bên dưới chưa (bóng đổ). Thiếu thì dải vẫn ghim, chỉ là
+           không bao giờ đổ bóng — và lỗi đó im lặng. */}
+      <Card
+        ref={stickyRef}
+        className="group flex min-h-0 flex-1 flex-col p-4"
+        data-scrolled={scrolled ? '' : undefined}
+      >
         <DataTable
           fillHeight
           columns={columns}
@@ -274,6 +320,13 @@ function SurveyListContent() {
           isLoading={isLoading}
           isError={isError}
           emptyMessage="Không tìm thấy phiếu khảo sát nào."
+          //  Khổ hẹp: THẺ thay bảng — xem `SurveyCard`.
+          //
+          //  ⚠️ Nút *Nhân bản* của cột thao tác KHÔNG theo sang thẻ: bảng khai
+          //  `onRowClick` nên thẻ bị bọc trong một `<button>`, lồng nút vào là
+          //  HTML sai. Nhân bản là việc hiếm và vẫn làm được ở khổ rộng.
+          mobileCard={(survey) => <SurveyCard row={survey} />}
+          toolbarClassName={STICKY_TOOLBAR_TOP}
           storageKey="procurement.surveys"
           sortBy={sortBy}
           sortDir={sortDir}
@@ -288,16 +341,24 @@ function SurveyListContent() {
           }}
           toolbar={
             <>
-              {/* 1. Ô Tìm Kiếm Nhanh ở ngoài cùng bên trái */}
-              <div className="relative min-w-56 flex-1 max-w-xs">
-                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  className="pl-9 h-9 text-xs"
-                  placeholder="Tìm mã phiếu, mã SP, tên SP, mã NCC…"
-                  value={keyword}
-                  onChange={(e) => setKeyword(e.target.value)}
-                />
-              </div>
+              {/*  Câu gợi ý RÚT GỌN ở khổ hẹp: bản đầy đủ liệt kê bốn thứ tìm
+                   được nên bị xén giữa chừng, mất đúng phần đuôi — thứ người
+                   đọc chưa đoán được.
+
+                   ⚠️ **Đo rồi hãy viết.** Ô tìm ở khổ hẹp chia hàng với nút *Bộ
+                   lọc* và nút *Tải lại*, nên chỉ còn **134px** — đo ngày
+                   14/09/2026 trên máy 390px. Hai vế (~99px) là vừa; ba vế
+                   (~137px) vẫn bị xén, tức bản "rút gọn" không giải quyết được
+                   gì so với bản đầy đủ. Câu đủ vẫn còn ở khổ rộng và ở
+                   `aria-label`. */}
+              <SearchField
+                value={keyword}
+                onChange={setKeyword}
+                placeholder="Tìm mã phiếu, mã SP, tên SP, mã NCC…"
+                placeholderShort="Tìm phiếu, SP…"
+                aria-label="Tìm phiếu khảo sát"
+                className="md:min-w-56 md:max-w-xs"
+              />
 
               {/*  `md:contents` chứ KHÔNG phải `md:flex`: bọc cụm lọc trong một thẻ
                    flex riêng thì với thanh công cụ nó là MỘT ô, không đủ chỗ là
@@ -305,14 +366,23 @@ function SurveyListContent() {
                    phải ô tìm kiếm. Màn Đơn mua hàng đã vỡ đúng kiểu đó khi thêm
                    ô lọc thứ sáu (bao-CR-319). */}
               <div className="hidden md:contents">
-                {filterControls}
+                {typeSelect}
+                {statusSelect}
                 <ConditionalFilter />
               </div>
 
-              <QuickFilterSheet activeCount={activeCount} onClearAll={clearAllFilters}>
-                <div className="space-y-3">
-                  {filterControls}
-                </div>
+              {/*  ⚠️ Ô trong tờ trượt phải có NHÃN. Trên thanh công cụ, ô chọn tự
+                   giải nghĩa bằng giá trị đang chọn («Tất cả loại»); xếp dọc mấy
+                   ô như vậy trong một tờ trắng thì thành danh sách chữ trôi nổi,
+                   người đọc không biết ô nào lọc cái gì cho tới khi bấm thử. */}
+              <QuickFilterSheet
+                activeCount={activeCount}
+                onClearAll={clearAllFilters}
+                onApply={filter.apply}
+              >
+                <QuickFilterField label="Loại khảo sát">{typeSelect}</QuickFilterField>
+                <QuickFilterField label="Trạng thái">{statusSelect}</QuickFilterField>
+                <AdvancedFilterSection />
               </QuickFilterSheet>
             </>
           }

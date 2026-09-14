@@ -3,6 +3,7 @@ import { Copy, Pencil, Trash2 } from 'lucide-react'
 
 import { DATE_CONTROL_MIN_WIDTH } from '@/shared/data-table/line-column-width'
 import { LinesTable } from '@/shared/data-table/lines-table'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { cn } from '@/shared/utils/cn'
 import type { LinesTableColumn } from '@/shared/data-table/types'
 import { Button } from '@/shared/ui/button'
@@ -24,6 +25,7 @@ import {
 } from '../hooks/use-purchase-request-support'
 import type { SurveyRequestLine } from '../types/survey-request-detail'
 import { SurveyLineStateBadge } from './document-status-badge'
+import { SurveyRequestLineCard } from './survey-request-line-card'
 
 /** Dòng trống khi bấm "Thêm dòng". */
 export const EMPTY_SURVEY_REQUEST_LINE: SurveyRequestLine = {
@@ -106,6 +108,10 @@ export function SurveyRequestLinesTable({
 }: SurveyRequestLinesTableProps) {
   const units = usePurchaseRequestUnits(editing)
   const itemGroups = usePurchaseRequestItemGroups(editing)
+
+  //  CÙNG một `useIsMobile` mà `DataTable` và mấy bảng dòng khác dùng để đổi
+  //  sang thẻ, nên hai lối bày dữ liệu của cả hệ luôn lật cùng một lúc.
+  const asCards = useIsMobile()
 
   const columns = useMemo<LinesTableColumn[]>(() => [
     {
@@ -404,6 +410,47 @@ export function SurveyRequestLinesTable({
       default:
         return null
     }
+  }
+
+  if (asCards) {
+    return (
+      <div className="space-y-3">
+        {/*  Thanh đầu tự dựng lại chứ không mượn của `LinesTable`: ở chế độ thẻ
+             không còn cột nào để ẩn/hiện, ghim hay kéo giãn, nên ba nút *Bảng đầy
+             đủ · Vừa nội dung · Cột* là mời người dùng bấm vào một bảng điều khiển
+             không điều khiển thứ gì đang nhìn thấy.
+
+             Chỉ đếm dòng, KHÔNG lặp lại "Danh sách sản phẩm cần khảo sát": thẻ bọc
+             ngoài đã có đúng tiêu đề đó ngay bên trên, ở khổ hẹp hai dòng chữ
+             giống nhau xếp chồng đọc như bị lặp. */}
+        <span className="block text-sm font-medium">{lines.length} dòng</span>
+
+        <div className="overflow-hidden rounded-lg border">
+          {lines.length === 0 ? (
+            <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+              Chưa có dòng nào — nhấn "Thêm dòng" để bắt đầu
+            </p>
+          ) : (
+            <div className="divide-y">
+              {lines.map((line, index) => (
+                <SurveyRequestLineCard
+                  key={line.id || `new-${index}`}
+                  line={line}
+                  index={index}
+                  editing={editing}
+                  showNstmColumns={showNstmColumns}
+                  showStatus={showStatus}
+                  hasInvalid={invalid?.has(`line-${index}-item_group`) ?? false}
+                  onOpenDetail={() => onOpenDetail(index)}
+                  onDuplicate={() => duplicate(index)}
+                  onRemove={() => remove(index)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    )
   }
 
   return (

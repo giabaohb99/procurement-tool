@@ -1,11 +1,15 @@
-import { Download, Filter, Search, X } from 'lucide-react'
-import { useCallback, useMemo, useState, type ReactNode } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Download, Filter, X } from 'lucide-react'
+import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 
 import { usePermission } from '@/core/authorization/use-permission'
 import { appConfig } from '@/core/config/app-config'
+import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
+import { useHasChanged } from '@/shared/hooks/use-has-changed'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
+import { useScrolled } from '@/shared/hooks/use-scrolled'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlRangeParam } from '@/shared/hooks/use-url-range-param'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
@@ -19,6 +23,8 @@ import { Label } from '@/shared/ui/label'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
+import { QuickFilterField, QuickFilterSheet } from '@/shared/ui/quick-filter-sheet'
+import { SearchField } from '@/shared/ui/search-field'
 import {
   Select,
   SelectContent,
@@ -27,6 +33,7 @@ import {
   SelectValue,
 } from '@/shared/ui/select'
 import type { StatusTone } from '@/shared/ui/status-tone'
+import { STICKY_TOOLBAR_TOP } from '@/shared/ui/sticky-toolbar'
 import { cn } from '@/shared/utils/cn'
 import { formatDate } from '@/shared/utils/format-date'
 import {
@@ -37,6 +44,7 @@ import {
 } from '@/shared/utils/format-money'
 import { purchaseDocumentApi } from '../api/purchase-document-api'
 import { LineApproveBadge, StatusBadge } from '../components/document-status-badge'
+import { SurveyReportCard } from '../components/survey-report-card'
 import { useSurveyReport } from '../hooks/use-purchase-documents'
 import { usePurchaseRequestItemGroups } from '../hooks/use-purchase-request-support'
 import { SURVEY_STATUS_LABELS, SURVEY_TYPE_LABELS } from '../types/purchase-document'
@@ -320,6 +328,29 @@ export function SurveyReportPage() {
 
   const extraCount = EXTRA_PARAMS.filter((param) => extra[param]).length
 
+  //  Mốc bóng đổ cho thanh công cụ ghim ở khổ hẹp — xem `STICKY_TOOLBAR_BASE`.
+  const stickyRef = useRef<HTMLDivElement>(null)
+  const scrolled = useScrolled(stickyRef)
+
+  //  CÙNG một `useIsMobile` mà `DataTable` dùng để quyết định đổi sang thẻ, nên
+  //  hai bên không thể lệch nhau: hễ đang bày thẻ thì chạm-để-mở cũng đang bật.
+  const isMobile = useIsMobile()
+  const navigate = useNavigate()
+
+  //  Bản NHÁP của bộ lọc phụ ở khổ hẹp. Khổ rộng giữ nháp bên trong
+  //  `ExtraFilterPopover`; tờ trượt thì không có chỗ nào để giữ, vì nút «Áp
+  //  dụng» của nó nằm ở `QuickFilterSheet` chứ không nằm trong bộ ô.
+  //
+  //  ⚠️ Vẫn phải là NHÁP chứ không ghi thẳng: năm ô kia là ô NHẬP CHỮ, ghi ngay
+  //  lúc gõ thì mỗi ký tự một lượt gọi API cho một báo cáo quét cả nghìn dòng.
+  const [extraDraft, setExtraDraft] = useState<ExtraFilters>(extra)
+
+  //  Đồng bộ nháp khi bộ lọc thật đổi từ NƠI KHÁC (popover khổ rộng, nút xóa
+  //  lọc, hoặc người dùng sửa thẳng thanh địa chỉ). Thiếu nhịp này thì mở tờ
+  //  trượt ra vẫn thấy giá trị cũ và bấm «Áp dụng» là lặng lẽ ghi đè ngược.
+  const extraChanged = useHasChanged(JSON.stringify(extra))
+  if (extraChanged) setExtraDraft(extra)
+
   const [page, setPage] = usePageResetOnFilterChange([
     debouncedValue,
     kind,
@@ -394,11 +425,54 @@ export function SurveyReportPage() {
     [],
   )
 
+  //  Cùng một ô dựng HAI lần (hàng ngang ở khổ rộng · tờ trượt ở khổ hẹp).
+  //  State nằm ở đây nên hai bản luôn nói cùng một giá trị — đây là khuôn của
+  //  `payment-request-list-page`, không phải trùng lặp cần dọn.
+  //
+  //  `max-md:w-full`: trong tờ trượt mỗi ô có trọn bề ngang màn hình; giữ bề
+  //  rộng cứng `w-40` thì ô nép trái và chừa một khoảng trống dài bên phải.
+  const kindSelect = (
+    <Select value={kind} onValueChange={setKind}>
+      <SelectTrigger className="w-40 max-md:w-full" aria-label="Lọc theo loại dòng">
+        <SelectValue placeholder="Loại dòng" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={ALL}>Tất cả loại</SelectItem>
+        <SelectItem value="supplier">Dòng nhà cung cấp</SelectItem>
+        <SelectItem value="product">Dòng sản phẩm</SelectItem>
+      </SelectContent>
+    </Select>
+  )
+
+  const dateRangeInput = (
+    <DateRangePicker
+      from={dateFrom}
+      to={dateTo}
+      onChange={setDateRange}
+      placeholder="Khoảng ngày khảo sát"
+      className="max-md:w-full"
+    />
+  )
+
   return (
-    <PageContainer fill>
+    //  ⚠️ `fill` chỉ bật từ `md`: ở khổ hẹp bảng đổi sang danh sách THẺ dài, mà
+    //  `fill` nhét nó vào một khe vài trăm pixel và biến thành cuộn LỒNG — vuốt
+    //  trúng mép ngoài khe thì trang không nhúc nhích. Cùng luật
+    //  `payment-request-list-page` và `CrudListPage`.
+    <PageContainer fill className="max-md:h-auto">
       <PageHeader
         title="Báo cáo khảo sát"
-        description="Tổng hợp tiến độ và kết quả duyệt từng dòng khảo sát nhà cung cấp & sản phẩm."
+        description={
+          //  Ẩn ở khổ hẹp: câu giới thiệu màn, đọc một lần rồi thôi, nhưng ngốn
+          //  hai dòng ở đầu MỌI lần mở màn — ngay trên thứ người ta vào đây để
+          //  xem.
+          <span className="max-md:hidden">
+            Tổng hợp tiến độ và kết quả duyệt từng dòng khảo sát nhà cung cấp &amp; sản phẩm.
+          </span>
+        }
+        //  Nút trải hết hàng ở khổ hẹp — không có lớp này thì nó co theo chữ và
+        //  dán mép phải sau một khoảng trống dài.
+        actionsClassName="max-md:[&>button]:flex-1"
         actions={
           <Button
             variant="outline"
@@ -412,9 +486,21 @@ export function SurveyReportPage() {
         }
       />
 
-      <Card className="flex min-h-0 flex-1 flex-col p-4">
+      {/*  `group` + `data-scrolled`: mốc để thanh công cụ ghim biết đã có nội
+           dung trôi bên dưới chưa (bóng đổ). Thiếu thì dải vẫn ghim, chỉ là
+           không bao giờ đổ bóng — và lỗi đó im lặng. */}
+      <Card
+        ref={stickyRef}
+        className="group flex min-h-0 flex-1 flex-col p-4"
+        data-scrolled={scrolled ? '' : undefined}
+      >
         {summary && (
-          <div className="mb-3 flex flex-wrap items-center gap-2">
+          //  ⚠️ Vẫn XUỐNG HÀNG chứ không cuộn ngang ở khổ hẹp. Năm chip này vừa
+          //  là bộ lọc vừa là bảng TỔNG — giấu hai cái cuối sau mép màn hình thì
+          //  số «Không duyệt» và «Thiếu thông tin», hai con số người ta mở báo
+          //  cáo để tìm, chỉ thấy được nếu tình cờ vuốt ngang. Bù lại bóp chữ và
+          //  đệm ở khổ hẹp để năm chip nằm gọn trong HAI hàng thay vì ba.
+          <div className="mb-3 flex flex-wrap items-center gap-1.5 sm:gap-2">
             <StatusChip
               label="Tất cả"
               value={summaryTotal}
@@ -445,6 +531,22 @@ export function SurveyReportPage() {
           isLoading={isLoading}
           isError={isError}
           emptyMessage="Không tìm thấy dòng khảo sát nào."
+          //  Khổ hẹp: THẺ thay bảng — xem `SurveyReportCard`.
+          mobileCard={(row) => <SurveyReportCard row={row} />}
+          //  ⚠️ Chạm-để-mở CHỈ bật ở khổ hẹp, và đó là chủ ý.
+          //
+          //  Ở chế độ thẻ, mã phiếu là chữ thường (không lồng liên kết vào
+          //  trong nút bọc thẻ được) nên nếu không có nhịp này thì khổ hẹp
+          //  KHÔNG còn đường nào mở phiếu.
+          //
+          //  Ở khổ rộng thì ngược lại, bật vào là hỏng: đây là báo cáo ~40 cột
+          //  để ĐỐI CHIẾU, người ta bôi đen ô để chép số — mà thả chuột sau khi
+          //  bôi đen vẫn tính là một cú bấm, tức mỗi lần chép là một lần bị
+          //  quăng sang trang khác. Cột *Mã phiếu* đã là liên kết, đủ rồi.
+          onRowClick={
+            isMobile ? (row) => navigate(appRoutes.procurement.surveyDetail(row.survey_id)) : undefined
+          }
+          toolbarClassName={STICKY_TOOLBAR_TOP}
           storageKey="procurement.survey-report"
           pagination={{
             page,
@@ -455,41 +557,82 @@ export function SurveyReportPage() {
             unitLabel: 'dòng',
           }}
           toolbar={
+            //  ⚠️ **Khổ điện thoại: ô lọc dọn vào TỜ TRƯỢT**, thanh công cụ còn
+            //  một hàng. Ô loại dòng và ô khoảng ngày khai bề rộng cứng nên ở
+            //  390px mỗi ô rơi xuống một hàng riêng; cộng hộp lọc phụ (một
+            //  popover `w-80` không mở nổi ở khổ này) thì thành **bốn hàng
+            //  ≈ 190px** chắn trên đầu danh sách, mà thanh này còn được GHIM.
             <>
-              <div className="relative min-w-56 flex-1 md:max-w-xs">
-                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  className="h-9 pl-9 text-xs"
-                  placeholder="Tìm mã phiếu, mã YCBG/PYC, mã SP, tên SP, mã NCC, MST…"
-                  value={keyword}
-                  onChange={(e) => setKeyword(e.target.value)}
+              {/*  Câu gợi ý RÚT GỌN ở khổ hẹp: bản đầy đủ liệt kê sáu thứ tìm
+                   được, dài 330px, nên bị xén thành «Tìm mã phiếu, mã YCBG/PYC,
+                   mã» — mất đúng phần đuôi, thứ người đọc chưa đoán được.
+
+                   ⚠️ Phải vừa cả khi ĐANG LỌC: lúc đó bảng mọc thêm nút *Xóa
+                   lọc* trên cùng hàng, ô tìm hụt thêm ~40px và bản ba vế
+                   («…SP, NCC») lại cụt giữa chừng thành «Tìm phiếu,». */}
+              <SearchField
+                value={keyword}
+                onChange={setKeyword}
+                placeholder="Tìm mã phiếu, mã YCBG/PYC, mã SP, tên SP, mã NCC, MST…"
+                placeholderShort="Tìm phiếu, SP…"
+                aria-label="Tìm dòng khảo sát"
+                className="md:min-w-56 md:max-w-xs"
+              />
+
+              {/*  `QuickFilterSheet` tự mang `md:hidden`, khối bên dưới tự mang
+                   `hidden md:flex` — hai vế loại trừ nhau nên không bao giờ có
+                   hai bản ô lọc cùng lúc trong cây DOM. */}
+              <QuickFilterSheet
+                activeCount={
+                  (kind !== ALL ? 1 : 0) + (dateFrom || dateTo ? 1 : 0) + extraCount
+                }
+                onClearAll={() => {
+                  setKind(ALL)
+                  setDateRange('', '')
+                  applyExtra(EMPTY_EXTRA)
+                }}
+                onApply={() => applyExtra(extraDraft)}
+              >
+                <QuickFilterField label="Loại dòng">{kindSelect}</QuickFilterField>
+                <QuickFilterField label="Khoảng ngày khảo sát">
+                  {dateRangeInput}
+                </QuickFilterField>
+                <div className="space-y-3 border-t pt-4">
+                  {/*  `block`: `space-y-*` chỉ chừa lề giữa các con dạng KHỐI,
+                       nên nhãn để `span` inline thì ô đứng ngay dưới nó dính
+                       sát, đọc ra như nhãn của chính ô đó chứ không ra tiêu đề
+                       của cả mục. */}
+                  <span className="block text-xs font-medium text-muted-foreground">
+                    Lọc nâng cao
+                  </span>
+                  <ExtraFilterFields
+                    draft={extraDraft}
+                    onChange={setExtraDraft}
+                    canReadItemGroups={can('item_group', 'read')}
+                    //  Luôn `true`: tờ trượt chỉ dựng con khi đã mở, nên tới
+                    //  được đây nghĩa là đang mở. Truyền `false` thì ô chọn
+                    //  nhóm hàng rỗng vĩnh viễn.
+                    active
+                    onSubmit={() => applyExtra(extraDraft)}
+                  />
+                </div>
+              </QuickFilterSheet>
+
+              {/*  `md:contents` chứ không `md:flex`: thanh công cụ của
+                   `DataTable` vốn là một hàng `flex-wrap gap-3`, bọc mấy ô vào
+                   một `div` thì cả cụm thành MỘT phần tử flex và xuống hàng
+                   nguyên khối, đẩy nhóm nút *Tải lại · Cột* xuống một hàng
+                   trống. `display: contents` gỡ lớp bọc khỏi bố cục. */}
+              <div className="max-md:hidden md:contents">
+                {kindSelect}
+                {dateRangeInput}
+                <ExtraFilterPopover
+                  value={extra}
+                  count={extraCount}
+                  canReadItemGroups={can('item_group', 'read')}
+                  onApply={applyExtra}
                 />
               </div>
-
-              <Select value={kind} onValueChange={setKind}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Loại dòng" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALL}>Tất cả loại</SelectItem>
-                  <SelectItem value="supplier">Dòng nhà cung cấp</SelectItem>
-                  <SelectItem value="product">Dòng sản phẩm</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <DateRangePicker
-                from={dateFrom}
-                to={dateTo}
-                onChange={setDateRange}
-                placeholder="Khoảng ngày khảo sát"
-              />
-
-              <ExtraFilterPopover
-                value={extra}
-                count={extraCount}
-                canReadItemGroups={can('item_group', 'read')}
-                onApply={applyExtra}
-              />
             </>
           }
         />
@@ -518,7 +661,20 @@ function StatusChip({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors',
+        //  Khổ hẹp bóp chữ + đệm lại: năm chip ở cỡ `text-sm px-3` cần ba hàng
+        //  trên máy 390px, mà dải này đứng NGAY TRÊN danh sách nên mỗi hàng là
+        //  một hàng đẩy dòng đầu tiên xuống dưới.
+        //
+        //  ⚠️ `max-md:grow` — năm chip có bề rộng rất lệch nhau («Tất cả 13» so
+        //  với «Thiếu thông tin 3»), nên khi xuống hai hàng thì hàng dưới chỉ
+        //  chứa hai chip và hụt ~120px bên phải: cả dải đọc ra so le, nhìn như
+        //  vẽ lỗi. Cho chúng GIÃN lấp đầy hàng thì hai mép thẳng.
+        //
+        //  `grow` chứ KHÔNG `flex-1`: `flex-1` ép `flex-basis: 0` nên năm chip
+        //  bị kéo về bằng nhau tăm tắp và chữ dài nhất xuống dòng bên trong
+        //  chip. `grow` giữ bề rộng tự nhiên làm mốc, chỉ chia phần dư.
+        'flex items-center justify-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors',
+        'max-md:grow sm:gap-2 sm:px-3 sm:py-1.5 sm:text-sm',
         'hover:border-primary/50 hover:bg-accent/40',
         active ? 'border-primary bg-accent font-medium' : 'border-border bg-card',
       )}
@@ -573,11 +729,6 @@ function ExtraFilterPopover({
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState<ExtraFilters>(value)
 
-  //  Danh mục nhóm hàng nằm ở endpoint có `require("item_group","read")` riêng.
-  //  Thiếu quyền mà vẫn gọi là ăn một toast 403 ngay lúc mở hộp lọc, nên chỉ
-  //  hỏi khi mở hộp VÀ có quyền.
-  const { data: itemGroups } = usePurchaseRequestItemGroups(open && canReadItemGroups)
-
   const openChange = (next: boolean) => {
     //  Mở lại thì lấy bộ lọc đang chạy làm bản nháp — bấm ra ngoài rồi mở lại
     //  mà vẫn thấy chữ đã gõ dở nhưng bảng chưa lọc thì không ai hiểu chuyện gì.
@@ -593,7 +744,10 @@ function ExtraFilterPopover({
   return (
     <Popover open={open} onOpenChange={openChange}>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="h-9 gap-1.5">
+        {/*  Ẩn ở khổ hẹp: popover neo vào nút, mà nút này nằm trong thanh công
+             cụ đã bị ghim sát đỉnh — tấm `w-80` bung ra che gần hết màn. Khổ
+             hẹp dùng cùng bộ ô đó trong tờ trượt, xem `ExtraFilterFields`. */}
+        <Button variant="outline" size="sm" className="h-9 gap-1.5 max-md:hidden">
           <Filter className="size-3.5" />
           Bộ lọc
           {count > 0 && (
@@ -604,47 +758,13 @@ function ExtraFilterPopover({
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 space-y-3">
-        {canReadItemGroups && (
-          <div className="space-y-1.5">
-            <Label className="text-xs">Nhóm hàng</Label>
-            <Select
-              value={draft.item_group || ALL}
-              onValueChange={(next) =>
-                setDraft((current) => ({ ...current, item_group: next === ALL ? '' : next }))
-              }
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Tất cả nhóm hàng" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL}>Tất cả nhóm hàng</SelectItem>
-                {(itemGroups?.items ?? []).map((group) => (
-                  <SelectItem key={group.id} value={group.name}>
-                    {group.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-
-        {TEXT_FILTERS.map((item) => (
-          <div key={item.param} className="space-y-1.5">
-            <Label className="text-xs" htmlFor={`filter-${item.param}`}>
-              {item.label}
-            </Label>
-            <Input
-              id={`filter-${item.param}`}
-              className="h-9 text-xs"
-              placeholder={item.placeholder}
-              value={draft[item.param]}
-              onChange={(e) => setDraft((current) => ({ ...current, [item.param]: e.target.value }))}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') apply(draft)
-              }}
-            />
-          </div>
-        ))}
+        <ExtraFilterFields
+          draft={draft}
+          onChange={setDraft}
+          canReadItemGroups={canReadItemGroups}
+          active={open}
+          onSubmit={() => apply(draft)}
+        />
 
         <div className="flex justify-end gap-2 border-t pt-3">
           <Button variant="ghost" size="sm" onClick={() => apply(EMPTY_EXTRA)}>
@@ -657,6 +777,85 @@ function ExtraFilterPopover({
         </div>
       </PopoverContent>
     </Popover>
+  )
+}
+
+/**
+ * RUỘT của hộp lọc phụ: ô chọn nhóm hàng + năm ô nhập chữ.
+ *
+ * Tách khỏi `ExtraFilterPopover` để cùng một bộ ô dùng được ở hai chỗ mở khác
+ * hẳn nhau — popover ở khổ rộng, tờ trượt từ đáy ở khổ hẹp — mà không phải chép
+ * lại phần ruột. Chép ra hai bản là sớm muộn hai khổ màn lọc ra hai kết quả
+ * khác nhau cho cùng một điều kiện (cùng lý do `ConditionalFilterBody` tồn tại).
+ *
+ * ⚠️ **Không tự dựng nút «Áp dụng».** Cả hai khung chứa đều đã có nút chính của
+ * riêng nó; thêm nút thứ hai là bắt người dùng đoán cái nào ăn — đoán sai thì
+ * mất trắng mấy ô vừa gõ.
+ */
+function ExtraFilterFields({
+  draft,
+  onChange,
+  canReadItemGroups,
+  active,
+  onSubmit,
+}: {
+  draft: ExtraFilters
+  onChange: (next: ExtraFilters) => void
+  canReadItemGroups: boolean
+  /** Khung chứa đang mở — chỉ lúc đó mới đi hỏi danh mục nhóm hàng. */
+  active: boolean
+  /** Nhấn Enter trong ô nhập. */
+  onSubmit: () => void
+}) {
+  //  Danh mục nhóm hàng nằm ở endpoint có `require("item_group","read")` riêng.
+  //  Thiếu quyền mà vẫn gọi là ăn một toast 403 ngay lúc mở hộp lọc, nên chỉ
+  //  hỏi khi mở hộp VÀ có quyền.
+  const { data: itemGroups } = usePurchaseRequestItemGroups(active && canReadItemGroups)
+
+  return (
+    <>
+      {canReadItemGroups && (
+        <div className="space-y-1.5">
+          <Label className="text-xs">Nhóm hàng</Label>
+          <Select
+            value={draft.item_group || ALL}
+            onValueChange={(next) =>
+              onChange({ ...draft, item_group: next === ALL ? '' : next })
+            }
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Tất cả nhóm hàng" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL}>Tất cả nhóm hàng</SelectItem>
+              {(itemGroups?.items ?? []).map((group) => (
+                <SelectItem key={group.id} value={group.name}>
+                  {group.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+      {TEXT_FILTERS.map((item) => (
+        <div key={item.param} className="space-y-1.5">
+          <Label className="text-xs" htmlFor={`filter-${item.param}`}>
+            {item.label}
+          </Label>
+          <Input
+            id={`filter-${item.param}`}
+            className="h-9 text-xs"
+            placeholder={item.placeholder}
+            value={draft[item.param]}
+            onChange={(e) => onChange({ ...draft, [item.param]: e.target.value })}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') onSubmit()
+            }}
+          />
+        </div>
+      ))}
+    </>
   )
 }
 

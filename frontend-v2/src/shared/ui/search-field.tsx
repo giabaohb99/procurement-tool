@@ -16,6 +16,16 @@ export interface SearchFieldProps {
    * «Tìm tên, số hiệu, từ k…», tức người đọc mất đúng phần cuối — mà phần cuối
    * mới là thứ họ chưa đoán được (*từ khóa*, *loại*, *bước*).
    *
+   * ⚠️ **TRẦN ~100px, tức khoảng HAI vế.** Đây là chỗ dễ viết hụt nhất: câu
+   * "rút gọn" ba vế tốn 134–156px, mà ô tìm ở khổ hẹp chỉ còn **134px** (390px)
+   * hoặc **102px** (iPhone SE/mini 375px) sau khi chia hàng với nút *Bộ lọc* và
+   * *Tải lại* — màn nào có thêm chip trên thanh công cụ thì còn **73px**. Viết
+   * dài thì bản rút gọn bị xén y như bản đầy đủ, tức nó chẳng giải quyết được
+   * gì. Đo ngày 14/09/2026; sáu màn Thu mua đều phải rút lại một lượt.
+   *
+   * ⚠️ **Ô hẹp dưới ~100px thì rút chữ KHÔNG cứu được** — phải trả lại chỗ cho
+   * ô: xem `QuickFilterSheetProps.iconOnly`.
+   *
    * Bỏ trống thì dùng `placeholder` cho mọi khổ.
    */
   placeholderShort?: string

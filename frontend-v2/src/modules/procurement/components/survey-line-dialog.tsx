@@ -85,8 +85,34 @@ export function SurveyLineDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[92dvh] overflow-y-auto sm:max-w-4xl">
-        <DialogHeader>
+      {/*
+        Hộp CAO: 27–30 ô chia 5–6 mục, cuộn vài màn hình mới hết.
+
+        `flex flex-col overflow-hidden` + vùng cuộn ở GIỮA — khuôn sẵn có của
+        `document-access-dialog` / `purchase-history-dialog`. Ba thứ được lợi:
+
+        - **Tiêu đề ghim**, nên lúc nào cũng biết đang sửa dòng mấy của bảng nào.
+        - **Dấu `X` ghim**: nó là `absolute top-4 right-4` so với `DialogContent`,
+          nên hễ `DialogContent` thôi làm khung cuộn là nó đứng yên luôn.
+        - **Hàng nút chân ghim** — trước đây *Đóng · Lưu bổ sung · Lưu duyệt dòng*
+          trôi tuột xuống đáy, cuộn hết 30 ô mới bấm được.
+
+        ⚠️ Bỏ `overflow-y-auto` khỏi `DialogContent` KHÔNG phải dọn dẹp cho gọn:
+        `DialogOverlay` vốn đã là khung cuộn (xem ghi chú ở `shared/ui/dialog.tsx`),
+        nên để nguyên là hai khung cuộn LỒNG nhau — đúng thứ làm con lăn chuột
+        chết ở hộp Quản lý dự án 03/09/2026. Nay chỉ còn đúng một khung cuộn, và
+        nó nằm bên trong hộp.
+      */}
+      <DialogContent className="flex max-h-[92dvh] flex-col overflow-hidden sm:max-w-4xl">
+        {/*  `text-left`: mặc định của `DialogHeader` là `text-center sm:text-left`,
+             nên dưới 640px tiêu đề và câu mô tả bị dồn vào giữa — câu mô tả dài
+             ngắt làm ba dòng so le, đọc như một đoạn trích dẫn chứ không ra
+             tiêu đề của một biểu mẫu. Mọi ô bên dưới đều canh trái, dải đầu
+             canh giữa là gãy trục đọc ngay dòng đầu tiên.
+
+             `pr-8` chừa chỗ cho dấu `X` (`absolute top-4 right-4`): canh trái
+             rồi thì tiêu đề dài chạy thẳng vào gầm nút đóng. */}
+        <DialogHeader className="shrink-0 pr-8 text-left">
           <DialogTitle>
             {SURVEY_TABLE_LABELS[table]} — dòng {lineNumber}
           </DialogTitle>
@@ -97,7 +123,13 @@ export function SurveyLineDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        {/*  `min-h-0` là bắt buộc: con của flex mặc định `min-height: auto`, tức
+             nó KHÔNG chịu co nhỏ hơn nội dung — thiếu vế này thì `flex-1` vô
+             hiệu, hộp cao bằng cả 30 ô và `max-h` bị tràn ra ngoài.
+
+             `-mx-6 px-6` để thanh cuộn chạy sát mép hộp thay vì thụt vào giữa
+             phần đệm, và để đường kẻ của các mục không bị hụt hai bên. */}
+        <div className="-mx-6 min-h-0 flex-1 space-y-4 overflow-y-auto px-6">
           {sectionsOf(table).map((section) => (
             <section key={section.title} className="rounded-lg border p-3">
               <h4 className="mb-3 text-sm font-semibold text-navy dark:text-foreground">
@@ -158,7 +190,14 @@ export function SurveyLineDialog({
           />
         </div>
 
-        <DialogFooter>
+        {/*  KHÔNG `border-t`. Nó thừa: vùng cuộn và hàng nút là hai con của
+             cùng một `flex-col`, nên nội dung bị CẮT ở mép trên hàng nút chứ
+             không bao giờ trôi xuống gầm nó — không có gì để ngăn cách, mà nét
+             kẻ nằm đó chỉ chia đôi hộp thành hai mảnh rời.
+
+             `pt-4` thì giữ: hết nét kẻ nhưng vẫn cần khoảng thở, kẻo ô cuối
+             cùng dính sát nút Đóng. */}
+        <DialogFooter className="shrink-0 pt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Đóng
           </Button>

@@ -3,11 +3,13 @@ import { Copy, FilePlus2, Pencil, Trash2 } from 'lucide-react'
 
 import { LinesTable } from '@/shared/data-table/lines-table'
 import type { LinesTableColumn } from '@/shared/data-table/types'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { Button } from '@/shared/ui/button'
 import { Checkbox } from '@/shared/ui/checkbox'
 import { formatMoney } from '@/shared/utils/format-money'
+import { SurveyLineCard } from './survey-line-card'
 import type { SurveyCatalog } from '../helpers/survey-catalog'
-import { rowAmount } from '../helpers/survey-line'
+import { invalidRowIndexes, rowAmount } from '../helpers/survey-line'
 import {
   LINE_APPROVE_NEED_MORE,
   columnsOf,
@@ -144,6 +146,14 @@ export function SurveyLinesTable({
 
   const allChecked = lines.length > 0 && selected.size === lines.length
 
+  //  CÙNG một `useIsMobile` mà `DataTable` dùng để đổi sang thẻ, nên hai lối
+  //  bày dữ liệu của cả hệ luôn lật cùng một lúc.
+  const asCards = useIsMobile()
+
+  //  Dòng nào còn ô bắt buộc chưa điền — chế độ thẻ không có ô để tô đỏ nên
+  //  phải đánh dấu ở mức DÒNG. Xem `invalidRowIndexes`.
+  const invalidRows = useMemo(() => invalidRowIndexes(invalid, table), [invalid, table])
+
   function toggleRow(index: number) {
     const next = new Set(selected)
     if (next.has(index)) next.delete(index)
@@ -231,40 +241,84 @@ export function SurveyLinesTable({
     )
   }
 
-  return (
-    <div className="space-y-3">
-      <LinesTable
-        columns={columns}
-        rows={lines}
-        storageKey={STORAGE_KEY[table]}
-        rowKey={(line, index) => line.id ?? `new-${index}`}
-        renderCell={renderCell}
-        defaultCompact
-        title={`${lines.length} dòng`}
-        actions={
-          <>
-            {editable && lines.length > 0 && (
-              <label className="flex cursor-pointer items-center gap-1.5 text-xs font-normal text-muted-foreground">
-                <Checkbox
-                  checked={allChecked}
-                  aria-label="Chọn tất cả dòng"
-                  onCheckedChange={(next) =>
-                    onSelectedChange(
-                      next === true ? new Set(lines.map((_, index) => index)) : new Set(),
-                    )
-                  }
-                />
-                Chọn tất cả
-              </label>
-            )}
-            {actions}
-          </>
-        }
-        emptyMessage="Chưa có dòng nào."
-        cellClassName={(key) =>
-          key === SELECT_KEY || key === NO_KEY ? 'align-top pt-3' : 'align-top'
+  const selectAllLabel = editable && lines.length > 0 && (
+    <label className="flex cursor-pointer items-center gap-1.5 text-xs font-normal text-muted-foreground">
+      <Checkbox
+        checked={allChecked}
+        aria-label="Chọn tất cả dòng"
+        onCheckedChange={(next) =>
+          onSelectedChange(next === true ? new Set(lines.map((_, index) => index)) : new Set())
         }
       />
+      Chọn tất cả
+    </label>
+  )
+
+  return (
+    <div className="space-y-3">
+      {asCards ? (
+        <div className="space-y-3">
+          {/*  Thanh đầu tự dựng lại chứ không mượn của `LinesTable`: ở chế độ
+               thẻ không còn cột nào để ẩn/hiện, ghim hay kéo giãn, nên ba nút
+               *Bảng đầy đủ · Vừa nội dung · Cột* là mời người dùng bấm vào một
+               bảng điều khiển không điều khiển thứ gì đang nhìn thấy — cùng
+               luật `DataTable` đã áp cho menu «Cột». */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium">{lines.length} dòng</span>
+            {selectAllLabel}
+            {actions}
+          </div>
+
+          <div className="overflow-hidden rounded-lg border">
+            {lines.length === 0 ? (
+              <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+                Chưa có dòng nào.
+              </p>
+            ) : (
+              <div className="divide-y">
+                {lines.map((line, index) => (
+                  <SurveyLineCard
+                    key={line.id ?? `new-${index}`}
+                    table={table}
+                    line={line}
+                    index={index}
+                    editable={editable}
+                    hasInvalid={invalidRows.has(index)}
+                    selected={selected.has(index)}
+                    fillable={
+                      !editable && canFill && line.line_approve === LINE_APPROVE_NEED_MORE
+                    }
+                    onToggle={() => toggleRow(index)}
+                    onOpen={(mode) => onOpenLine(index, mode)}
+                    onDuplicate={() => onDuplicate(index)}
+                    onRemove={() => onRemove(index)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <LinesTable
+          columns={columns}
+          rows={lines}
+          storageKey={STORAGE_KEY[table]}
+          rowKey={(line, index) => line.id ?? `new-${index}`}
+          renderCell={renderCell}
+          defaultCompact
+          title={`${lines.length} dòng`}
+          actions={
+            <>
+              {selectAllLabel}
+              {actions}
+            </>
+          }
+          emptyMessage="Chưa có dòng nào."
+          cellClassName={(key) =>
+            key === SELECT_KEY || key === NO_KEY ? 'align-top pt-3' : 'align-top'
+          }
+        />
+      )}
 
       {/* `LinesTable` không có `<tfoot>` (cột ẩn/hiện được thì `colSpan` vô
           nghĩa) — tổng tiền đưa xuống dưới bảng, đọc vẫn đúng chỗ. */}

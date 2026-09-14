@@ -351,6 +351,54 @@
   }
 }
 
+/**
+ * Thanh cuộn MẢNH và LUÔN HIỆN — ngược hẳn với `scrollbar-none` ở trên.
+ *
+ * ⚠️ **Vì sao cần khai riêng thay vì để mặc định.** macOS và iOS dùng thanh cuộn
+ * KIỂU CHỒNG (overlay): nó chỉ hiện trong lúc đang cuộn rồi tự mờ đi. Với một
+ * khối cuộn DỌC thì không sao — nội dung bị cắt ngang ở mép dưới đã là dấu hiệu
+ * đủ rõ. Nhưng với khối cuộn NGANG thì thành ra không còn dấu hiệu nào cả: bảng
+ * chỉ hiện chữ cụt ở mép phải, và trên máy tính có CHUỘT thì không có cách nào
+ * cuộn ngang (lăn chuột đi xuống, không đi ngang) — tức nội dung nằm ngoài tầm
+ * nhìn trở nên KHÔNG THỂ VỚI TỚI, không phải chỉ là khó thấy. Khách báo đúng
+ * câu "không scroll được gì luôn, chỉ thấy 2 cột" ngày 14/09/2026 ở bảng dòng
+ * phiếu yêu cầu mua hàng.
+ *
+ * ⚠️ **`::-webkit-scrollbar` và `scrollbar-width` KHÔNG ĐƯỢC khai cùng nhau.**
+ * Từ Chrome 121, hễ thấy `scrollbar-width` (hoặc `scrollbar-color`) là nó chuyển
+ * sang bộ thanh cuộn CHUẨN và **bỏ qua sạch** mấy lớp `::-webkit-scrollbar` —
+ * mà bộ chuẩn trên macOS lại vẫn là kiểu chồng, tức thanh cuộn vẫn tự mờ và vẫn
+ * không chiếm chỗ. Viết cả hai cho "chắc" chính là thứ làm bản vá đầu tiên
+ * không có tác dụng gì (đo `offsetHeight - clientHeight` ra đúng 0).
+ *
+ * Nên: WebKit/Blink đi bằng pseudo-element, Firefox đi bằng thuộc tính chuẩn,
+ * và tách nhau bằng `@supports` để không bao giờ cùng có hiệu lực.
+ *
+ * Màu lấy từ token nên tự đổi theo nền sáng/tối; đừng gắn mã màu cứng ở đây.
+ */
+@utility scrollbar-slim {
+  &::-webkit-scrollbar {
+    height: 8px;
+    width: 8px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 9999px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: var(--muted-foreground);
+  }
+
+  /*  Firefox không có `::-webkit-scrollbar` nên nhánh này mới chạy ở đó. */
+  @supports not selector(::-webkit-scrollbar) {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
