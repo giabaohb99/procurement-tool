@@ -280,9 +280,55 @@ def clear_perm_cache_of(db: Session, employee_id: int) -> None:
         perm_cache_clear(row[0])
 
 
+#  bao-CR-400: mã trạng thái "Nghỉ việc" của cột chuỗi `Employee.status` (B-03,
+#  xem `core/status_codes.EMPLOYEE_STATUS`). Chuyển SANG mã này, hoặc tắt
+#  `is_active`, là hai cách HR nói "người này không còn làm ở đây".
+STATUS_RESIGNED = "resigned"
+
+
+def has_left_company(fields: dict, obj: Employee, old_status: str, old_active: bool) -> bool:
+    """Lần lưu này có vừa đưa hồ sơ từ ĐANG LÀM sang NGHỈ VIỆC không.
+
+    Chỉ bắt lúc CHUYỂN (cũ khác mới) — lưu lại y nguyên một hồ sơ đã nghỉ thì
+    không khóa gì thêm, kẻo mỗi lần HR sửa ghi chú trên hồ sơ cũ lại bắn thêm
+    một dòng "khóa tài khoản" vào nhật ký của người đã đi từ lâu.
+    """
+    resigned_now = ("status" in fields and (obj.status or "") == STATUS_RESIGNED
+                    and (old_status or "") != STATUS_RESIGNED)
+    deactivated_now = "is_active" in fields and not obj.is_active and old_active
+    return resigned_now or deactivated_now
+
+
+def lock_linked_users(db: Session, eid: int, actor_id: int, reason: int) -> list:
+    """Khóa + đá phiên mọi tài khoản gắn với hồ sơ `eid`. KHÔNG commit — bên gọi
+    gom vào giao dịch của mình. Trả về danh sách tài khoản đã đụng (kể cả tài
+    khoản vốn đã khóa: phiên cũ của nó vẫn phải cắt cho chắc).
+
+    Vì sao phải đá phiên chứ không chỉ `is_active = False` (bao-CR-400, BM-015):
+    `get_current_user` có chặn tài khoản khóa ở mọi lượt gọi, nhưng khóa mà không
+    tăng `token_version` thì màn *Phiên đăng nhập* vẫn hiện người đó "còn hiệu
+    lực", và bảng phiên không có lý do kết thúc để tra sau này.
+    """
+    from app.core.auth import perm_cache_clear
+    from app.modules.login_session.service import force_relogin
+    from app.modules.user.model import User
+
+    users = db.query(User).filter(User.employee_id == eid).all()
+    for u in users:
+        u.is_active = False
+        u.updated_by = actor_id
+        force_relogin(db, u, reason, actor_id, commit=False)
+        perm_cache_clear(u.id)
+    return users
+
+
 def update_employee(db: Session, eid: int, data: EmployeeUpdate, user_id: int) -> Employee:
     obj = get_employee(db, eid)
     old_email = (obj.email or "").strip()
+    #  bao-CR-400: chụp hai ô "còn làm không" để biết lần lưu này có phải là lúc
+    #  người ta nghỉ việc — xem `has_left_company`.
+    old_status = obj.status or ""
+    old_active = bool(obj.is_active)
     #  Hai cột QUYẾT ĐỊNH PHẠM VI DỮ LIỆU — chụp lại trước khi ghi đè để biết có
     #  phải xóa cache quyền không (xem `clear_perm_cache_of`).
     old_scope = (obj.company_id or 0, obj.department_id or 0)
@@ -331,8 +377,19 @@ def update_employee(db: Session, eid: int, data: EmployeeUpdate, user_id: int) -
     # đồng bộ phòng chính) — cả hai chỉ `flush`, không tự commit — nên chúng phải nằm TRÊN
     # chốt này để cùng chung một giao dịch. Đẩy `commit` lên sớm là hồ sơ đổi phòng ban xong
     # mà email vẫn báo lỗi, đúng kiểu hỏng mà bao-CR-368 sinh ra để dẹp.
+    #
+    #  bao-CR-400: nghỉ việc thì KHÓA tài khoản + đá phiên ngay trong CÙNG giao dịch
+    #  này. Nằm trong `try` để email lỗi thì việc khóa cũng hoàn tác theo, không
+    #  có cảnh hồ sơ chưa lưu mà người ta đã bị văng ra. KHÔNG có chiều ngược:
+    #  mở lại hồ sơ không tự mở tài khoản — HR mở tay ở màn Tài khoản, vì "quay
+    #  lại làm" là một quyết định, còn "bấm nhầm trạng thái" thì không được phép
+    #  âm thầm trả lại quyền vào hệ thống.
+    locked_users = []
     try:
         _sync_user_email_from_employee(db, obj, email_changed)
+        if has_left_company(fields, obj, old_status, old_active):
+            from app.modules.login_session.constants import RevokeReason
+            locked_users = lock_linked_users(db, obj.id, user_id, RevokeReason.EMPLOYEE_RESIGNED)
     except Exception:
         db.rollback()
         raise
@@ -340,9 +397,19 @@ def update_employee(db: Session, eid: int, data: EmployeeUpdate, user_id: int) -
     db.refresh(obj)
     #  Nói ra phòng nào bị gỡ. Gỡ âm thầm thì tháng sau không ai tra được vì sao
     #  một người mất phòng ban.
-    note = (f"Đổi pháp nhân — gỡ khỏi phòng ban của pháp nhân cũ: "
-            f"{', '.join(dropped_departments)}") if dropped_departments else ""
-    record(db, user_id, ENTITY, obj.id, "update", note)
+    notes = []
+    if dropped_departments:
+        notes.append("Đổi pháp nhân — gỡ khỏi phòng ban của pháp nhân cũ: "
+                     + ", ".join(dropped_departments))
+    if locked_users:
+        notes.append(f"Nghỉ việc — khóa {len(locked_users)} tài khoản đăng nhập kèm theo "
+                     f"và đăng xuất mọi thiết bị")
+    record(db, user_id, ENTITY, obj.id, "update", "; ".join(notes))
+    #  Mỗi tài khoản một dòng riêng trên entity `user` — cùng khuôn với
+    #  `user/service.set_active`, để màn Tài khoản tra được "ai khóa, khi nào".
+    for u in locked_users:
+        record(db, user_id, "user", u.id, "deactivate",
+               f"Khóa tài khoản {u.email or u.id} vì hồ sơ nhân sự {obj.code} nghỉ việc")
     #  ⚠️ Sau `commit` chứ không trước: xóa cache rồi mới ghi thì một request khác
     #  chen vào giữa sẽ dựng lại hồ sơ CŨ và cache thêm 60 giây nữa.
     if (obj.company_id or 0, obj.department_id or 0) != old_scope:
@@ -386,16 +453,16 @@ def detach_users(db: Session, eid: int, actor_id: int) -> int:
 
     Không xoá tài khoản (giữ lại để truy vết ai đã làm gì), chỉ `is_active = 0` + `employee_id = 0`.
     Trả về số tài khoản đã khoá. KHÔNG commit — để chung transaction với thao tác xoá nhân sự.
-    """
-    from app.core.auth import perm_cache_clear
-    from app.modules.user.model import User
 
-    users = db.query(User).filter(User.employee_id == eid).all()
+    bao-CR-400: khóa đi kèm ĐÁ PHIÊN (`lock_linked_users`), lý do "Nghỉ việc" —
+    trước đây chỉ tắt `is_active`, người bị xóa hồ sơ vẫn hiện "còn hiệu lực"
+    trên màn phiên cho tới khi vé hết hạn.
+    """
+    from app.modules.login_session.constants import RevokeReason
+
+    users = lock_linked_users(db, eid, actor_id, RevokeReason.EMPLOYEE_RESIGNED)
     for u in users:
-        u.is_active = False
         u.employee_id = 0
-        u.updated_by = actor_id
-        perm_cache_clear(u.id)
     return len(users)
 
 

@@ -17,6 +17,10 @@ dev**. Cả hai mới ở local `erp-v2`, **chưa commit, chưa deploy**. Đính
 chưa lên `main`" ở bản 1.3 đã **hết hạn** — gộp `erp-v2` → `main` ngày 11/09 đã đưa cả P2 lẫn
 P3a lên prod (`b5787ccc` là tổ tiên của `main`), nên đăng xuất trên prod **đã có hiệu lực**;
 prod chỉ còn thiếu màn hình đá phiên của P3b. BM-013 **hoãn sang P4**, chưa vá.
+**Bản 1.5 — 14/09/2026 (chiều).** Thêm **BM-015**: hồ sơ nhân sự chuyển *Nghỉ việc* mà tài
+khoản đăng nhập **vẫn mở, phiên vẫn sống** — phát hiện khi đại ca hỏi *"nhân viên đổi trạng
+thái thì có khóa token lại không"*. Vá ngay trong bao-CR-400 (local `erp-v2`, chưa commit),
+kèm tab *Lịch sử đăng nhập* ở Trang cá nhân để người dùng tự thấy phiên lạ.
 
 ---
 
@@ -80,6 +84,7 @@ nó là bằng chứng cho lần soát sau rằng chỗ này từng hở.
 | BM-012 | Thấp | Token hết hạn thì dòng nhật ký ghi `user_id = 0` — không phân biệt được "khách vãng lai" với "người có tài khoản, token vừa hết hạn" | **Đã vá (bao-CR-394, 14/09/2026, local `erp-v2` — chưa commit, chưa deploy).** `_peek_user_id` đọc `sub` kể cả khi hết hạn, `tab_request_log.error_code = token_expired` |
 | BM-013 | Thấp | `record()` tự `commit()` — giao dịch nghiệp vụ bị rollback vẫn để lại dấu vết ma | **Mở — hoãn sang P4** (đổi nhịp commit đụng 213 lời gọi, làm cùng lúc chuyển ghi xuống tầng ORM) |
 | BM-014 | Trung bình | `CF-Connecting-IP` được tin **vô điều kiện** — ai gọi thẳng vào api là tự khai IP của mình | **Đã vá (bao-CR-394, 14/09/2026, local `erp-v2` — chưa commit, chưa deploy).** Chỉ tin header khi peer TCP nằm trong `TRUSTED_PROXY_CIDRS` |
+| BM-015 | **Cao** | Hồ sơ nhân sự chuyển *Nghỉ việc* (hoặc tắt hoạt động) mà **tài khoản đăng nhập vẫn mở, phiên đang sống vẫn dùng tiếp** — HR tưởng đã "cho nghỉ" là xong | **Đã vá (bao-CR-400, 14/09/2026, local `erp-v2` — chưa commit, chưa deploy).** `update_employee` / `detach_users` khóa mọi tài khoản gắn kèm + `force_relogin` với lý do `EMPLOYEE_RESIGNED = 6`, cùng giao dịch với hồ sơ |
 
 ✅ **Bốn dòng BM-008…BM-011 nay đã đóng trên CẢ HAI phía** (cập nhật chiều 10/09/2026).
 Chúng vá lớp nhật ký của bao-CR-312 P1, và P1 vốn chưa từng lên prod — đó là lý do sổ này
@@ -528,6 +533,60 @@ bỏ. CIDR gõ sai bị bỏ qua (có log), host không phải IP (như `testcli
 Cái còn hở về lý thuyết: ai đã vào được mạng Docker nội bộ thì vẫn khai IP giả được — nhưng
 người đó đã đứng cạnh database rồi, IP giả là chuyện nhỏ nhất. Test:
 `test_client_ip_cr313.py` (thêm ca peer ngoài dải + CIDR hỏng).
+
+---
+
+### BM-015 — Nghỉ việc trên hồ sơ nhân sự không khóa tài khoản, không cắt phiên
+
+**Mức: Cao. Trạng thái: ĐÃ VÁ 14/09/2026** (bao-CR-400, local `erp-v2` — chưa commit).
+
+Hai bảng, hai công tắc, không nối nhau. `tab_employee.status = resigned` (hoặc
+`is_active = 0`) là điều HR bấm khi cho nghỉ việc; `tab_user.is_active` là thứ cửa
+`get_current_user` thật sự kiểm. Trước bao-CR-400, `update_employee` chỉ ghi cột hồ sơ — tài
+khoản gắn kèm vẫn `is_active = 1`, `token_version` không đổi, mọi phiên đang mở trên máy
+người đó **dùng tiếp tới khi token tự hết hạn**, và người đó **đăng nhập lại được** ngày mai.
+Chỉ có đường **xóa** hồ sơ (`detach_users`, CR-023) là khóa tài khoản, mà HR không xóa hồ sơ
+người nghỉ việc — phải giữ để tính lương, bảo hiểm.
+
+Vì sao xếp **Cao**: đây đúng là kịch bản mà cả bộ máy phiên (P3a/P3b) được dựng để trả lời —
+*"nghỉ việc rồi mà còn phiên nào sống không"* (§8.5 của
+[`nhat-ky-va-phien-dang-nhap.md`](nhat-ky-va-phien-dang-nhap.md)) — và câu trả lời đang là
+*"còn, và HR không biết"*. Không cần kỹ năng gì để khai thác: người nghỉ việc mở lại tab đã
+đăng nhập trên máy nhà.
+
+**Đã vá — trong cùng giao dịch với hồ sơ, không tự mở lại.**
+
+- `employee/service.py`: `has_left_company()` bắt đúng lúc **chuyển** (cũ ≠ mới) sang
+  `resigned` hoặc tắt `is_active`; lưu lại y nguyên một hồ sơ đã nghỉ thì không khóa lại
+  (không đẻ dấu vết trùng). `lock_linked_users()` khóa mọi `tab_user.employee_id = eid` và gọi
+  `force_relogin(..., RevokeReason.EMPLOYEE_RESIGNED, commit=False)` — tăng `token_version`
+  nên **ăn ngay ở lượt gọi kế**, không đợi bộ đệm 60 giây như đá phiên lẻ. Khóa nằm **trong**
+  `try` của `update_employee`, trước `commit()` duy nhất: email trùng làm hồ sơ rollback thì
+  khóa cũng rollback (có test).
+- `detach_users()` (xóa hồ sơ / import CSV) đổi lý do từ `ACCOUNT_LOCKED` sang
+  `EMPLOYEE_RESIGNED` để bảng phiên nói đúng vì sao.
+- `RevokeReason.EMPLOYEE_RESIGNED = 6` (nhãn *Nghỉ việc*), khai ở `login_session/constants.py`
+  và bản TypeScript `REVOKE_REASON` của `login-session-api.ts`.
+- **Cố ý KHÔNG tự mở lại tài khoản** khi hồ sơ quay về *Đang làm*: mở khóa là quyết định của
+  HR/quản trị (nút *Mở khóa* ở tab Tài khoản), vì hồ sơ mở lại thường là sửa tay nhầm chứ
+  không phải người đó quay lại làm.
+- Dấu vết: hai dòng audit — `employee` (`update`, ghi chú "khóa n tài khoản") và `user`
+  (`lock`, lý do nghỉ việc) — để tra được từ cả hai phía.
+
+Phía người dùng, cùng CR: tab **Lịch sử đăng nhập** ở `/me` (`GET /api/auth/sessions/history`,
+khóa cứng vào `user.id` người gọi, 90 ngày mặc định / trần 365 / 1000 dòng) + số **phiên đang
+mở** (`alive_count` trên `GET /api/auth/sessions`, đếm độc lập với bộ lọc). Người thường tự
+thấy máy lạ và lần gõ sai mật khẩu vào tài khoản mình mà không cần HR — cùng bộ dựng
+`build_login_history` với cửa quản trị, một bản vẽ hai chỗ vẽ.
+
+Test: `test_nghi_viec_da_phien_cr400.py` (12 ca: chuyển trạng thái / tắt hoạt động / lưu lại
+không khóa đôi / mở lại không mở khóa / rollback theo hồ sơ / xóa hồ sơ / `alive_count` /
+lịch sử khóa vào chính mình / hai cửa chung một bộ dựng).
+
+**Còn hở, ghi để biết:** tài khoản **không gắn hồ sơ nhân sự** (`employee_id = 0`, như
+`admin`, tài khoản kỹ thuật) nằm ngoài đường này — nghỉ việc của họ vẫn phải khóa tay ở màn
+Người dùng. Và HR chuyển trạng thái qua **import CSV** đi đường `detach_users` cũ (khóa + gỡ
+liên kết) chứ không đi `has_left_company` — cùng kết quả khóa, nhưng gỡ liên kết luôn.
 
 ---
 

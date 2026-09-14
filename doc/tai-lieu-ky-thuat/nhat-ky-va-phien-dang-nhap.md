@@ -853,6 +853,36 @@ Ngoài năm chỗ đó, hai thứ **không** có trong bản vẽ nhưng cần b
   Vai trò `hr_profile` hay bất kỳ vai trò nào khác phải **tick tay ở màn Phân quyền** — không
   dùng `SEED_FORCE_SYNC`. Và người **đang đăng nhập giữ map quyền cũ** tới khi đăng nhập lại.
 
+#### 8.5.2. Nghỉ việc đá phiên + tab «Lịch sử đăng nhập» ở Trang cá nhân (bao-CR-400, 14/09/2026)
+
+Bảng §8.5 nói tab Nhân sự có nút *"Khóa tài khoản + đăng xuất mọi thiết bị — nút của quy trình
+nghỉ việc"*. P3b làm nút đó, nhưng HR **không bấm nó** khi cho nghỉ việc: họ đổi ô *Trạng
+thái* của hồ sơ sang *Nghỉ việc* và tin là xong. Hai công tắc không nối nhau → **BM-015**
+trong [`so-ghi-nhan-loi-bao-mat.md`](so-ghi-nhan-loi-bao-mat.md). Bao-CR-400 nối lại:
+
+- **Hồ sơ chuyển `resigned` hoặc tắt `is_active`** (`employee/service.py::has_left_company`,
+  chỉ bắt lúc *chuyển*) → `lock_linked_users` khóa mọi tài khoản gắn hồ sơ + `force_relogin`
+  với lý do mới **`RevokeReason.EMPLOYEE_RESIGNED = 6`** (*Nghỉ việc*), `commit=False` để nằm
+  trong giao dịch của hồ sơ. `detach_users` (xóa hồ sơ) cũng đổi sang lý do này. Hồ sơ mở
+  lại **không** tự mở khóa — HR bấm *Mở khóa* ở tab Tài khoản.
+- **Trang cá nhân có tab thứ hai về phiên**: `/me?tab=login-history` — ba ô số (*Phiên đang
+  mở* · *Lần đăng nhập* · *Lần thất bại*, ô thất bại đổi màu và nhắc đổi mật khẩu khi > 0),
+  nút chọn khoảng 30 / 90 ngày / 1 năm, rồi danh sách lịch sử. Tab *Thiết bị của tôi* thêm
+  huy hiệu số phiên còn hiệu lực cạnh tiêu đề.
+- **API tự phục vụ thêm một cửa + một trường** (`modules/auth/controller.py`, chỉ đòi đăng
+  nhập): `GET /api/auth/sessions/history?days` (mặc định 90, trần 365, tối đa 1000 dòng, khóa
+  cứng `user_id = người gọi`) và `alive_count` trên `GET /api/auth/sessions` — đếm phiên sống
+  **độc lập với `active_only`**, để tắt bộ lọc xem cả phiên chết mà con số vẫn đúng.
+- **Một bộ dựng cho hai cửa**: `login_session/history.py::build_login_history` (+
+  `count_alive_sessions`, `resolve_user_names`) — cửa quản trị `/api/login-sessions/history`
+  và cửa tự thân trả **cùng hình** `{items, days, login_count, failed_count}`. Giao diện
+  cũng một bản vẽ: `modules/system/components/login-history-list.tsx` dùng chung cho thẻ
+  *Phiên đăng nhập* ở hồ sơ nhân sự và tab ở `/me`.
+
+Vẫn **chỉ `frontend-v2`** (chỗ #3 của §8.5.1). Test: `test_nghi_viec_da_phien_cr400.py` (12)
++ 4 tệp vitest (`login-history-list`, `profile-login-history-tab`, `profile-devices-tab`,
+`login-session-user-card`).
+
 ---
 
 ## 9. Dữ liệu cũ và dung lượng
@@ -1000,6 +1030,10 @@ nhánh, cùng cảnh.
 hệ thật chưa có `ACTION_CATALOG` lẫn `tab_login_session`.~~ **Hết hạn từ 11/09/2026:** gộp
 `erp-v2` → `main` hôm đó mang cả P2 lẫn P3a lên prod (`b5787ccc` là tổ tiên của `origin/main`).
 **Prod nay dừng ở hết P3a**; thứ chưa lên là P3b (màn hình phiên) và P4 trở đi.
+
+**Chen giữa P3b và P4 (14/09/2026 chiều): `bao-CR-400`** — nghỉ việc trên hồ sơ nhân sự khóa
+tài khoản + đá phiên (BM-015) và tab *Lịch sử đăng nhập* ở `/me`, xem §8.5.2. Không migration,
+không khóa quyền mới; local `erp-v2`, chưa commit. Backend đi kèm P3b lên `main` khi gộp.
 
 ### 10.1. P2 đã làm gì — và tìm ra gì
 

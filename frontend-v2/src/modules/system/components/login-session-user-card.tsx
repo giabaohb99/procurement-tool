@@ -1,5 +1,4 @@
-import { Lock, LogOut, ShieldAlert, ShieldCheck, UserX } from 'lucide-react'
-import { useState } from 'react'
+import { Lock, LogOut, ShieldCheck, UserX } from 'lucide-react'
 
 import { usePermission } from '@/core/authorization/use-permission'
 import { useEmployeeAccount, useSetUserActive } from '@/modules/hr/hooks/use-user-accounts'
@@ -9,10 +8,9 @@ import { Card, CardContent, CardHeader } from '@/shared/ui/card'
 import { confirm } from '@/shared/ui/confirm-dialog'
 import { SectionHeading } from '@/shared/ui/section-heading'
 import { Skeleton } from '@/shared/ui/skeleton'
-import { cn } from '@/shared/utils/cn'
 import { formatDateTime, formatRelativeTime } from '@/shared/utils/format-date'
 
-import type { LoginHistoryItem, LoginSessionItem } from '../api/login-session-api'
+import type { LoginSessionItem } from '../api/login-session-api'
 import {
   LOGIN_HISTORY_DAYS,
   useLoginHistory,
@@ -20,6 +18,7 @@ import {
   useLogoutAllSessions,
   useRevokeLoginSession,
 } from '../hooks/use-login-sessions'
+import { LoginHistoryList } from './login-history-list'
 import { LoginSessionDevice } from './login-session-device'
 
 interface LoginSessionUserCardProps {
@@ -30,9 +29,6 @@ interface LoginSessionUserCardProps {
   userName: string
   className?: string
 }
-
-/** Tối đa bao nhiêu dòng lịch sử vẽ ra trước khi bấm «Xem thêm». */
-const HISTORY_PREVIEW_ROWS = 10
 
 /**
  * Thẻ PHIÊN ĐĂNG NHẬP của một nhân sự (bao-CR-395) — đặt ở tab «Tài khoản»
@@ -55,7 +51,6 @@ export function LoginSessionUserCard({
   const canRevoke = can('login_session', 'delete')
   const canLock = can('user', 'write')
   const canReadUser = can('user', 'read')
-  const [showAllHistory, setShowAllHistory] = useState(false)
 
   const enabled = canRead && userId > 0
   const sessions = useLoginSessions(
@@ -73,9 +68,6 @@ export function LoginSessionUserCard({
   if (!canRead || userId <= 0) return null
 
   const openSessions = sessions.data?.items ?? []
-  const historyRows = history.data?.items ?? []
-  const visibleHistory = showAllHistory ? historyRows : historyRows.slice(0, HISTORY_PREVIEW_ROWS)
-  const failedCount = history.data?.failed_count ?? 0
 
   async function handleRevoke(row: LoginSessionItem) {
     const ok = await confirm({
@@ -183,72 +175,13 @@ export function LoginSessionUserCard({
           )}
         </section>
 
-        <section className="space-y-2">
-          <div className="flex flex-wrap items-center gap-2 text-sm font-medium">
-            <ShieldAlert
-              className={cn('size-4', failedCount > 0 ? 'text-amber-600' : 'text-muted-foreground')}
-            />
-            Lịch sử {LOGIN_HISTORY_DAYS} ngày
-            <span className="text-xs font-normal text-muted-foreground">
-              {history.data
-                ? `${history.data.login_count} lần đăng nhập · ${failedCount} lần thất bại`
-                : ''}
-            </span>
-          </div>
-          {history.isLoading && <Skeleton className="h-16 w-full" />}
-          {!history.isLoading && historyRows.length === 0 && (
-            <p className="text-sm text-muted-foreground">
-              Chưa ghi nhận lần đăng nhập nào trong {LOGIN_HISTORY_DAYS} ngày qua.
-            </p>
-          )}
-          {visibleHistory.length > 0 && (
-            <ul className="divide-y rounded-md border text-sm">
-              {visibleHistory.map((row) => (
-                <LoginHistoryRow key={`${row.kind}-${row.session_id}-${row.at}`} row={row} />
-              ))}
-            </ul>
-          )}
-          {historyRows.length > HISTORY_PREVIEW_ROWS && (
-            <Button
-              type="button"
-              variant="link"
-              size="sm"
-              className="h-auto p-0"
-              onClick={() => setShowAllHistory((v) => !v)}
-            >
-              {showAllHistory ? 'Thu gọn' : `Xem cả ${historyRows.length} dòng`}
-            </Button>
-          )}
-        </section>
+        {/* bao-CR-400 — cùng một bản vẽ với tab «Lịch sử đăng nhập» ở /me. */}
+        <LoginHistoryList
+          data={history.data}
+          isLoading={history.isLoading}
+          days={LOGIN_HISTORY_DAYS}
+        />
       </CardContent>
     </Card>
-  )
-}
-
-function LoginHistoryRow({ row }: { row: LoginHistoryItem }) {
-  return (
-    <li className="flex items-center gap-3 px-3 py-2">
-      <Badge
-        variant="outline"
-        className={cn(
-          'w-20 shrink-0 justify-center',
-          row.ok
-            ? 'border-emerald-500 text-emerald-600'
-            : 'border-rose-500 text-rose-600 bg-rose-50 dark:bg-rose-950/40',
-        )}
-      >
-        {row.ok ? 'Thành công' : 'Thất bại'}
-      </Badge>
-      <span className="w-32 shrink-0 text-xs text-muted-foreground">{formatDateTime(row.at)}</span>
-      <span className="min-w-0 flex-1 truncate" title={row.message || undefined}>
-        {row.ok ? row.device_label || row.login_method_label || '—' : row.message || 'Sai mật khẩu'}
-      </span>
-      <span className="font-mono text-xs text-muted-foreground">{row.ip || '—'}</span>
-      {row.ok && row.ending && (
-        <span className="hidden w-36 shrink-0 truncate text-right text-xs text-muted-foreground sm:inline">
-          {row.ending}
-        </span>
-      )}
-    </li>
   )
 }

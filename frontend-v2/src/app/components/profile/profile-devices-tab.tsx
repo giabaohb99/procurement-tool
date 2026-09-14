@@ -8,6 +8,7 @@ import {
   useRevokeMySession,
 } from '@/modules/system/hooks/use-login-sessions'
 import type { LoginSessionItem } from '@/modules/system/api/login-session-api'
+import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader } from '@/shared/ui/card'
 import { confirm } from '@/shared/ui/confirm-dialog'
@@ -33,6 +34,9 @@ export function ProfileDevicesTab() {
 
   const rows = data?.items ?? []
   const otherAlive = rows.filter((r) => r.is_alive && !r.is_current)
+  //  bao-CR-400 — số phiên còn hiệu lực do backend đếm, không đếm `rows`: tắt
+  //  «Chỉ còn hiệu lực» thì `rows` gồm cả phiên đã chết mà con số vẫn phải đúng.
+  const aliveCount = data?.alive_count ?? 0
 
   async function handleRevoke(row: LoginSessionItem) {
     const ok = await confirm({
@@ -56,7 +60,12 @@ export function ProfileDevicesTab() {
     <Card>
       <CardHeader>
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <SectionHeading>Thiết bị đang đăng nhập</SectionHeading>
+          <SectionHeading className="flex items-center gap-2">
+            Thiết bị đang đăng nhập
+            <Badge variant="secondary" title="Số phiên còn hiệu lực" className="tracking-normal">
+              {aliveCount}
+            </Badge>
+          </SectionHeading>
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2">
               <Switch id="my-sessions-active-only" checked={activeOnly} onCheckedChange={setActiveOnly} />

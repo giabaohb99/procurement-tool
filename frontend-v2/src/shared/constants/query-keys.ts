@@ -14,6 +14,8 @@ export const queryKeys = {
     preferences: () => ['auth', 'preferences'] as const,
     /** Thiết bị đang đăng nhập của CHÍNH MÌNH (`/api/auth/sessions`, bao-CR-395). */
     mySessions: (activeOnly: boolean) => ['auth', 'sessions', activeOnly] as const,
+    /** Lịch sử đăng nhập của CHÍNH MÌNH (`/api/auth/sessions/history`, bao-CR-400). */
+    myLoginHistory: (days: number) => ['auth', 'sessions', 'history', days] as const,
   },
   procurement: {
     all: ['procurement'] as const,

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Bell, CheckSquare, LifeBuoy, MonitorSmartphone, Palette, User } from 'lucide-react'
+import { Bell, CheckSquare, History, LifeBuoy, MonitorSmartphone, Palette, User } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
@@ -9,6 +9,7 @@ import { ProfileIdentityCard } from '@/app/components/profile/profile-identity-c
 import { ProfileHrDetails } from '@/app/components/profile/profile-hr-details'
 import { ProfileInfoCard } from '@/app/components/profile/profile-info-card'
 import { ProfileLeaveCard } from '@/app/components/profile/profile-leave-card'
+import { ProfileLoginHistoryTab } from '@/app/components/profile/profile-login-history-tab'
 import { ProfileNotificationsTab } from '@/app/components/profile/profile-notifications-tab'
 import { ProfileTasksTab } from '@/app/components/profile/profile-tasks-tab'
 import { ProfileTicketsTab } from '@/app/components/profile/profile-tickets-tab'
@@ -40,6 +41,8 @@ import { cn } from '@/shared/utils/cn'
  *   giao trễ, công nợ) — CR-215 gom luôn "Chờ tôi duyệt" vào đây.
  * - Tab "Thông báo": Bản đầy đủ của chuông thông báo (thay trang /notifications cũ).
  * - Tab "Yêu cầu hỗ trợ của tôi": Các phiếu hỗ trợ người dùng đã gửi hệ thống.
+ * - Tab "Thiết bị của tôi" (bao-CR-395) và "Lịch sử đăng nhập" (bao-CR-400): máy
+ *   nào đang giữ phiên, số phiên đang mở, các lần đăng nhập / gõ sai mật khẩu.
  */
 export function ProfilePage() {
   const { user, setUser } = useAuth()
@@ -64,9 +67,11 @@ export function ProfilePage() {
           ? 'appearance'
           : rawTab === 'devices'
             ? 'devices'
-            : rawTab === 'tickets' && canReadTickets
-              ? 'tickets'
-              : 'info'
+            : rawTab === 'login-history'
+              ? 'login-history'
+              : rawTab === 'tickets' && canReadTickets
+                ? 'tickets'
+                : 'info'
 
   const handleTabChange = (val: string) => {
     setSearchParams(val === 'info' ? {} : { tab: val }, { replace: true })
@@ -173,6 +178,11 @@ export function ProfilePage() {
                 <MonitorSmartphone className="size-4" />
                 <span>Thiết bị của tôi</span>
               </TabsTrigger>
+              {/* bao-CR-400 — các lần đăng nhập / gõ sai mật khẩu + số phiên đang mở. */}
+              <TabsTrigger value="login-history" className={cn('gap-2', TAB_TRIGGER_UNDERLINE)}>
+                <History className="size-4" />
+                <span>Lịch sử đăng nhập</span>
+              </TabsTrigger>
               <TabsTrigger value="appearance" className={cn('gap-2', TAB_TRIGGER_UNDERLINE)}>
                 <Palette className="size-4" />
                 <span>Giao diện</span>
@@ -267,6 +277,10 @@ export function ProfilePage() {
 
             <TabsContent value="devices" className="space-y-4">
               <ProfileDevicesTab />
+            </TabsContent>
+
+            <TabsContent value="login-history" className="space-y-4">
+              <ProfileLoginHistoryTab />
             </TabsContent>
 
             {/* Cùng một bộ chọn với phân hệ Giao diện — chỉ khác số cột, vì tab

@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, Request, BackgroundTasks, UploadFile, File, HTTPException
+from fastapi import (APIRouter, Depends, Request, BackgroundTasks, UploadFile, File,
+                     HTTPException, Query)
 import uuid
 from sqlalchemy.orm import Session
 
@@ -15,6 +16,8 @@ from app.core.request_context import get_context
 from app.core.response import success
 from app.modules.employee.model import Employee
 from app.modules.login_session.constants import LoginMethod, RevokeReason
+from app.modules.login_session.history import (HISTORY_DAYS_DEFAULT, HISTORY_DAYS_MAX,
+                                               build_login_history, count_alive_sessions)
 from app.modules.login_session.model import LoginSession
 from app.modules.login_session.service import (mark_refreshed, revoke_session,
                                                revoke_user_sessions, start_session)
@@ -378,7 +381,12 @@ def reset_password(request: Request, data: schema.ResetPasswordInput, db: Sessio
 @router.get("/sessions")
 def my_sessions(active_only: bool = True, user=Depends(get_current_user),
                 db: Session = Depends(get_db)):
-    """Phiên của CHÍNH MÌNH, mới nhất trước; phiên đang gọi được đánh dấu `is_current`."""
+    """Phiên của CHÍNH MÌNH, mới nhất trước; phiên đang gọi được đánh dấu `is_current`.
+
+    `alive_count` (bao-CR-400) = số phiên còn hiệu lực, đếm ĐỘC LẬP với
+    `active_only` — tab Thiết bị hiện con số này ngay trên tiêu đề, kể cả khi
+    người dùng đang xem cả phiên đã kết thúc.
+    """
     from app.modules.login_session.schema import serialize_session
     query = db.query(LoginSession).filter(LoginSession.user_id == user.id)
     if active_only:
@@ -387,7 +395,18 @@ def my_sessions(active_only: bool = True, user=Depends(get_current_user),
     ctx = get_context()
     current_id = int(ctx.session_id or 0) if ctx else 0
     return success({"items": [serialize_session(r, current_session_id=current_id) for r in rows],
-                    "current_session_id": current_id})
+                    "current_session_id": current_id,
+                    "alive_count": count_alive_sessions(db, user.id)})
+
+
+@router.get("/sessions/history")
+def my_login_history(days: int = Query(HISTORY_DAYS_DEFAULT, ge=1, le=HISTORY_DAYS_MAX),
+                     user=Depends(get_current_user), db: Session = Depends(get_db)):
+    """Lịch sử đăng nhập của CHÍNH MÌNH trong N ngày (bao-CR-400): mọi lần vào
+    (kể cả phiên đã kết thúc) hợp với các lần thất bại nối được về tài khoản này.
+    Cùng bộ dựng với cửa quản trị (`login_session/history.py`), chỉ khác là khóa
+    cứng `user.id` — không có tham số nào để nhìn sang người khác."""
+    return success(build_login_history(db, user, days))
 
 
 @router.post("/sessions/{session_id}/revoke")

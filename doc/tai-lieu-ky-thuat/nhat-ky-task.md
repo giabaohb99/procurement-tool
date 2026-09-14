@@ -196,6 +196,25 @@ employee.write; khóa nút khi user_id = 0.
 Commit main 7beea39b + push, prod deploy 14/09 11:21 xong, kiểm bundle web/erp có mã mới.
 Merge main -> erp-v2 e916debc + deploy dev 14/09 chiều.
 
+## bao-CR-400 | Nghỉ việc đá phiên + tab Lịch sử đăng nhập ở /me
+- status: dang-lam
+- date: 2026-09-14
+Hồ sơ nhân sự chuyển "Nghỉ việc" hoặc tắt hoạt động thì khóa tài khoản gắn kèm và bắt
+đăng nhập lại ngay (RevokeReason 6 "Nghỉ việc"); detach_users cũng đá phiên. /me thêm tab
+Lịch sử đăng nhập 90 ngày + số phiên đang mở. Mở BM-015 trong sổ bảo mật.
+
+### bao-CR-400-backend | Backend: khóa + đá phiên khi nghỉ việc, endpoint lịch sử tự thân
+- status: dang-lam
+
+### bao-CR-400-frontend | frontend-v2: tab Lịch sử đăng nhập + đếm phiên ở /me
+- status: dang-lam
+
+### bao-CR-400-tai-lieu | Sổ bảo mật BM-015 + nhật ký phiên §8.5.2 + change-log
+- status: dang-lam
+
+### bao-CR-400-commit | Commit + deploy dev
+- status: dang-lam
+
 ## lark-import | Đồng bộ task từ Lark sang phân hệ Dự án (dev)
 - status: dang-lam
 - date: 2026-09-14

@@ -24,6 +24,8 @@ export const REVOKE_REASON = {
   PASSWORD_CHANGED: 3,
   FORCE_RELOGIN: 4,
   ACCOUNT_LOCKED: 5,
+  /** bao-CR-400 — hồ sơ nhân sự chuyển «Nghỉ việc» hoặc bị xóa. */
+  EMPLOYEE_RESIGNED: 6,
 } as const
 
 /** Khớp `serialize_session` ở `login_session/schema.py`. */
@@ -98,6 +100,9 @@ export interface LoginHistoryResult {
 export interface MySessionsResult {
   items: LoginSessionItem[]
   current_session_id: number
+  /** Số phiên CÒN HIỆU LỰC của chính mình — backend đếm riêng, không phụ thuộc
+   *  `active_only`, nên tắt bộ lọc để xem phiên cũ thì con số vẫn đúng (bao-CR-400). */
+  alive_count: number
 }
 
 export interface LoginSessionListParams extends ListParams {
@@ -133,4 +138,9 @@ export const loginSessionApi = {
 
   /** Đăng xuất mọi thiết bị KHÁC — chừa phiên đang bấm. */
   revokeMyOthers: () => apiPost<{ revoked: number }>('/api/auth/sessions/revoke-others', {}),
+
+  /** Lịch sử đăng nhập của CHÍNH MÌNH — cùng bộ dựng với `history` (bao-CR-400),
+   *  backend khóa cứng `user.id` nên không nhận `user_id`. */
+  myHistory: (days: number) =>
+    apiGet<LoginHistoryResult>('/api/auth/sessions/history', { params: { days } }),
 }
