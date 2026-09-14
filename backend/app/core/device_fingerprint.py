@@ -42,7 +42,11 @@ _BROWSER_RULES = (
     ("safari", r"\bsafari/"),
     #  Không phải trình duyệt: script, công cụ dòng lệnh, con bọ dò. Gộp về một
     #  dòng vì với ta chúng chỉ khác nhau ở chỗ "không phải người ngồi bấm".
-    ("tool", r"\bcurl/|\bwget/|python-requests|\bhttpie/|\bpostman|\bokhttp/|\baxios/"),
+    #  `python-urllib` là dấu của script nội bộ (`scripts/sync_task_journal.py`):
+    #  thiếu nó thì mỗi lần đồng bộ sổ task hiện lên tab Tài khoản như một
+    #  "Không rõ thiết bị" từ IP của chính người chạy.
+    ("tool", r"\bcurl/|\bwget/|python-requests|python-urllib|\bhttpie/|\bpostman"
+             r"|\bokhttp/|\baxios/"),
     ("bot", r"\bbot\b|\bspider\b|\bcrawler\b|\bheadless"),
 )
 

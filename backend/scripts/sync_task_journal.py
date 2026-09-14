@@ -164,7 +164,10 @@ class WorkApi:
         req = urllib.request.Request(self.base_url + path, method=method)
         req.add_header("Content-Type", "application/json")
         #  Cloudflare trước deverp/erp chặn UA mặc định của urllib (lỗi 1010).
-        req.add_header("User-Agent", "Mozilla/5.0 (sync_task_journal)")
+        #  Chuỗi phải có `python-urllib` để `core/device_fingerprint.py` xếp vào
+        #  họ `tool` → tab Tài khoản hiện "Công cụ dòng lệnh" thay vì "Không rõ
+        #  thiết bị".
+        req.add_header("User-Agent", "sync_task_journal/1.0 (python-urllib)")
         if self.token:
             req.add_header("Authorization", f"Bearer {self.token}")
         body = json.dumps(payload).encode("utf-8") if payload is not None else None
@@ -184,6 +187,19 @@ class WorkApi:
         data = self.call("POST", "/api/auth/login",
                          {"username": username, "password": password})
         self.token = data["access_token"]
+
+    def logout(self) -> None:
+        """Đóng phiên vừa mở. Mỗi lần đăng nhập là một dòng `tab_login_session`
+        sống tới khi vé refresh hết hạn — không gọi thì chạy 30 lần là người
+        chạy thấy 30 "thiết bị đang đăng nhập" ở tab Tài khoản."""
+        if not self.token:
+            return
+        try:
+            self.call("POST", "/api/auth/logout")
+        except SystemExit as e:
+            #  Đăng xuất hỏng không được che kết quả đồng bộ đã in ở trên.
+            print(f"(không đăng xuất được: {e})")
+        self.token = ""
 
 
 def ensure_list(api: WorkApi, name: str, dry: bool) -> int:
@@ -369,14 +385,18 @@ def main() -> None:
 
     api = WorkApi(base_url)
     api.login(username, password)
-    for name, group_entries in by_list.items():
-        print(f"-- list '{name}' ({len(group_entries)} mục)")
-        list_id = ensure_list(api, name, args.dry_run)
-        if not list_id and args.dry_run:
-            for e in group_entries:
-                print(f"[dry-run] sẽ tạo task [{e.key}] '{e.display_title}'")
-            continue
-        sync(api, list_id, group_entries, args.dry_run)
+    try:
+        for name, group_entries in by_list.items():
+            print(f"-- list '{name}' ({len(group_entries)} mục)")
+            list_id = ensure_list(api, name, args.dry_run)
+            if not list_id and args.dry_run:
+                for e in group_entries:
+                    print(f"[dry-run] sẽ tạo task [{e.key}] '{e.display_title}'")
+                continue
+            sync(api, list_id, group_entries, args.dry_run)
+    finally:
+        #  Kể cả dry-run hay lỗi giữa chừng: phiên mở ra thì phải đóng lại.
+        api.logout()
     print("Xong.")
 
 
