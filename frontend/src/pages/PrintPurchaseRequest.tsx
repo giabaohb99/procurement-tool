@@ -489,18 +489,18 @@ export default function PrintPurchaseRequest({ fromPo = false }: { fromPo?: bool
                     <div style={{ fontStyle: "italic", fontSize: 11 }}>
                       (Ký, ghi rõ họ tên)
                     </div>
-                    {/* CÓ ảnh chữ ký: căn giữa cả cụm ảnh + tên trong ô 94px như cũ.
-                        KHÔNG có ảnh (bản ký tay, hoặc người ký chưa lưu chữ ký): dồn họ tên
-                        xuống ĐÁY một ô SÂU HƠN (130px) — căn giữa thì tên nổi sát dòng
-                        "(Ký, ghi rõ họ tên)" không còn chỗ ký, mà đáy ô 94px khách vẫn chê
-                        chật nên nới thêm. Ô trống (Giám đốc) cũng ăn 130px — thêm chỗ ký tay. */}
+                    {/* bao-CR-389 → bao-CR-398: MỌI ô đều cao 130px và dồn họ tên xuống ĐÁY,
+                        có ảnh chữ ký hay không; ảnh (nếu có) xếp ngay trên tên. Bản trước cho
+                        ô có ảnh 94px căn giữa nên tên người có chữ ký nổi cao hơn ba tên còn
+                        lại trên cùng một hàng — khách chê lệch. Ô không ảnh (ký tay, hoặc chưa
+                        lưu chữ ký) vẫn chừa ~100px trống phía trên để ký. */}
                     <div
                       style={{
-                        height: sign ? 94 : 130,
+                        height: 130,
                         display: "flex",
                         flexDirection: "column",
                         alignItems: "center",
-                        justifyContent: sign ? "center" : "flex-end",
+                        justifyContent: "flex-end",
                         // Giãn khoảng cách chữ ký -> họ tên: in ra bản giấy thì tên dính sát
                         // nét ký, đọc rối.
                         gap: 10,

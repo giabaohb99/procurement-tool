@@ -402,6 +402,7 @@ Lưu ý: việc thu nhỏ nằm ở **client**, gọi API trực tiếp vẫn đ
 |---|---|---|
 | POST | `/api/auth/signature` | Tải ảnh chữ ký (multipart `file`). Từ chối file không phải ảnh (400). Key lưu: `{env}/signature/{user_id}/{uuid}-{tên file}`. Trả `{ signature: url }`. Ghi audit `user:write` |
 | DELETE | `/api/auth/signature` | Gỡ chữ ký khỏi hồ sơ — chỉ xóa liên kết, **giữ file trên storage** (không phá phiếu đã in). Ghi audit `user:write` |
+| POST / DELETE | `/api/employees/{id}/signature` | **Nhân sự / quản trị đặt hộ** chữ ký cho một nhân viên (quyền `employee.write`) — cùng cột `tab_user.signature` của tài khoản gắn với nhân sự đó. Nhân sự chưa có tài khoản → 400 "hãy tạo tài khoản trước". Giao diện: thẻ **"Chữ ký cá nhân"** trên hồ sơ nhân viên — v2 ở tab *Tài khoản* (`hr/components/employee-signature-card.tsx`), bản cũ ngay dưới thẻ *Tài khoản đăng nhập* (`frontend/src/components/employee-signature-card.tsx`, thêm ở bao-CR-398 vì trước đó admin không có chỗ nào để sửa chữ ký người khác) |
 
 #### Card "Email thông báo" (bao-CR-349)
 

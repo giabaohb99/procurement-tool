@@ -516,9 +516,16 @@ Khối cuối phiếu có 4 ô ký: **Giám đốc · TP/BP mua hàng · TP/BP �
 | Giám đốc | Không có bước duyệt tương ứng → **để trống, ký tay** | — |
 
 Chữ ký lấy từ ảnh người dùng tự tải lên ở Trang cá nhân (`tab_user.signature`, xem
-`09-thong-bao-va-trang-ca-nhan.md`). Ảnh in giới hạn 56×180px, cách dòng họ tên 10px
-(CR-036 — cỡ cũ 40×150px in ra giấy quá nhỏ, tên lại dính sát nét ký).
+`09-thong-bao-va-trang-ca-nhan.md`) — hoặc do **Nhân sự/quản trị đặt hộ** ở thẻ *Chữ ký cá nhân*
+trên hồ sơ nhân viên (bao-CR-398, có ở cả hai giao diện; backend `POST/DELETE
+/api/employees/{id}/signature`, quyền `employee.write`). Ảnh in giới hạn 56×180px, cách dòng họ
+tên 10px (CR-036 — cỡ cũ 40×150px in ra giấy quá nhỏ, tên lại dính sát nét ký).
 Ai chưa tải chữ ký thì ô đó chỉ có họ tên, ký tay như cũ.
+
+**Bố cục ô ký** (bao-CR-389 → bao-CR-398): cả 4 ô cao **130px**, họ tên luôn **dồn xuống đáy ô**
+để bốn cái tên thẳng hàng; ảnh chữ ký (nếu có) xếp ngay trên tên, ô không ảnh chừa ~100px trống
+để ký tay. Bản trước (bao-CR-389/397) cho ô CÓ ảnh 94px căn giữa nên tên người có chữ ký nổi cao
+hơn ba tên còn lại — khách chê lệch hàng trên phiếu PYC12092604.
 
 **Cách tra chữ ký Người lập** (`requester_signature`):
 
