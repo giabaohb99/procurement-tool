@@ -13,10 +13,8 @@ import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
-import {
-  RolePermissionMatrix,
-  toPermissionPayload,
-} from '../components/role-permission-matrix'
+import { RolePermissionMatrix } from '../components/role-permission-matrix'
+import { toPermissionPayload } from '../utils/permission-matrix-cells'
 import { RoleNameInlineEdit } from '../components/role-name-inline-edit'
 import { RoleSidePanel } from '../components/role-side-panel'
 import { UserAccountTable } from '../components/user-account-table'
