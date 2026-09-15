@@ -1,7 +1,9 @@
 # Trợ lý AI — Bảo mật và vận hành (bản ghi nhận hiện trạng)
 
-- Ngày lập: 27/08/2026 — cập nhật 28/08/2026 (bổ sung mục 7: đính kèm chat CR-204 + xuất Excel CR-205)
-- Trạng thái: **ĐÃ CODE và đang chạy trên môi trường dev** (deverp.degoholding.vn), nhánh `erp-v2`
+- Ngày lập: 27/08/2026 — cập nhật **15/09/2026** (đồng bộ số tool về **36**; mốc trước: 28/08/2026
+  bổ sung mục 7 đính kèm chat CR-204 + xuất Excel CR-205, 12/09/2026 bảng quyền mục 5 lên 36 dòng)
+- Trạng thái: **ĐÃ CODE, đang chạy dev + prod**, nhánh `erp-v2`
+- Chức năng và phân quyền tổng thể: `01-kien-truc-tro-ly-ai.md` (bản 15/09/2026)
 - Đối tượng đọc: Ban điều hành / cấp quản lý cần đánh giá rủi ro bảo mật, và người kỹ thuật tiếp quản
 - Quan hệ với các tài liệu khác: tài liệu `01-kien-truc-tro-ly-ai.md` và `02-danh-sach-api-tool.md`
   là bản **thiết kế** (đầu trang còn ghi "chưa code" — dòng đó đã cũ, phần loại A trong đó nay đã
@@ -19,10 +21,10 @@ Trả lời theo đúng hiện trạng mã nguồn:
 
 1. **AI không nối thẳng vào database.** Model ngôn ngữ (Claude / Gemini) không có kết nối SQL,
    không đọc được bảng nào cả. Nó chỉ được phép **xin** dữ liệu qua một danh sách tool đóng
-   (30 tool, liệt kê ở mục 5) do backend của mình viết và kiểm soát. Tool không có trong danh
+   (36 tool, liệt kê ở mục 5) do backend của mình viết và kiểm soát. Tool không có trong danh
    sách thì gọi cũng bị từ chối ngay ở backend (`run_tool` kiểm tra allowlist trước khi chạy).
 
-2. **Về tồn kho: hiện KHÔNG tồn tại tool nào đọc tồn kho.** Trong 30 tool không có tool nào
+2. **Về tồn kho: hiện KHÔNG tồn tại tool nào đọc tồn kho.** Trong 36 tool không có tool nào
    truy vấn bảng kho / tồn kho. Nghĩa là kể cả model "muốn" trả lời số tồn kho, nó không có
    đường nào lấy được số thật — cùng lắm nó nói "tôi không tra được", hoặc nếu bịa thì là số
    không có nguồn (đã có luật trong system prompt cấm bịa số liệu, và mọi con số đều phải đến
@@ -66,7 +68,7 @@ service.ask() dựng system prompt gồm:
   - Khối "NGƯỜI HỎI": họ tên, mã NV, chức vụ, phòng ban, công ty của người đang hỏi
     (backend tự tra từ hồ sơ nhân sự — model không được tự đoán các thông tin này)
   ▼
-Gửi lên nhà cung cấp model (Claude hoặc Gemini) kèm danh sách 30 tool
+Gửi lên nhà cung cấp model (Claude hoặc Gemini) kèm danh sách 36 tool
   (tin nhắn có thể kèm tệp người dùng tự tải lên - ảnh/PDF, xem mục 7)
   ▼
 Model muốn dữ liệu thì phát yêu cầu gọi tool → backend run_tool() thực thi:
@@ -294,9 +296,22 @@ Không có hệ nào an toàn tuyệt đối; đây là những điểm cần bi
    thể xảy ra. Vì vậy mọi thao tác chốt (tạo phiếu) đều bắt người dùng tự rà và tự bấm.
 3. **Kho HDSD mở cho mọi người đăng nhập là chủ đích** — không để tài liệu nhạy cảm vào Trung
    tâm HDSD.
-4. **Tool mới phải tự giác đi qua checklist quyền.** Hiện chưa có test tự động ép "mọi tool đọc
-   chứng từ phải gọi `apply_scope`" — đang dựa vào quy ước code review. Đề xuất bổ sung một
-   guard test tương tự bài học B-07 (đã nêu với nhóm phát triển, chưa làm).
+4. **Tool mới phải tự giác đi qua checklist quyền — nay đã có hàng rào cho MỘT NỬA.**
+   Từ 15/09/2026, `test/backend/test_assistant_chi_co_quyen_xem.py` canh **trục GHI**: mọi tool
+   "có mùi ghi" phải khai ở bảng `TOOL_GHI`, và chạy dưới tài khoản chỉ có `read` thì đều phải
+   `denied` — thêm `draft_xyz` mà quên khai là đỏ ngay (bài học B-07). Đã kiểm ngược bằng cách
+   phá chốt để chắc không phải xanh giả.
+   **Nửa còn lại cũng đã có** (cùng ngày): `test_assistant_pham_vi_doc.py` bắt mọi tool phải
+   được phân loại vào đúng một trong bốn bảng (ghi · đọc chứng từ · danh mục dùng chung · cố ý
+   không lọc, kèm lý do) rồi chạy ca rò rỉ thật với hai chủ sở hữu. Quét mã tĩnh đã thử và BỎ —
+   nhiều tool gọi `ctx.can(entity)` bằng biến và lọc phạm vi nằm dưới helper ở tệp khác, quét
+   nguồn handler cho kết luận ngược hẳn sự thật.
+   **Phủ kín 14/14 tool đọc chứng từ**: 8 ca tại chỗ + 6 ca trỏ sang test riêng của từng tool,
+   kèm bài canh cho con trỏ khỏi mục. Mỗi ca đã KIỂM NGƯỢC (gỡ `apply_scope` / chốt per-record
+   của Văn bản thì ca tương ứng đỏ), nên không phải xanh giả.
+   Rủi ro nền vẫn còn nguyên và hàng rào chỉ làm nó ồn lên chứ không xóa được: một tool tóm tắt
+   viết vội bằng `db.get` trần là moi được chứng từ của phòng khác qua miệng trợ lý
+   (xem `01-…md` §6.8b).
 5. **Tồn kho chưa có tool** — nếu tương lai bổ sung, bắt buộc lặp lại đúng khuôn:
    `ctx.can` + `apply_scope` + ẩn cột nhạy cảm, và cập nhật bảng ở mục 5 tài liệu này.
    (Công nợ đã lên sóng 27/08/2026 theo đúng khuôn đó — xem nhóm cuối của mục 5.)

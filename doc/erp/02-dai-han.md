@@ -151,7 +151,7 @@ Phạm vi bản 1 chốt sau khảo sát, theo bộ câu hỏi [`03`](./03-cau-h
 | Quản lý dự án (Project-M) | Đã có, app riêng |
 | Phiếu hỗ trợ | Đã có |
 | Sao lưu và phục hồi | Đã có |
-| **Trợ lý AI (2 nhánh: gói tri thức + RAG toàn hệ)** | **Kế hoạch — xem 3.7; nhánh gói tri thức ưu tiên sớm** |
+| **Trợ lý AI (2 nhánh: gói tri thức + RAG toàn hệ)** | **AI-1 ĐÃ CHẠY dev + prod** (36 tool, gói tri thức, kho vector HDSD/FAQ) — bộ tài liệu `tai-lieu-ai/`, chức năng + phân quyền ở `tai-lieu-ai/01`. AI-2 (RAG toàn hệ có lọc quyền per-record) **vẫn là kế hoạch**, xem 3.7 |
 
 ### 3.7 Trợ lý AI — HAI sản phẩm tách riêng (ghi 24–25/08/2026)
 
