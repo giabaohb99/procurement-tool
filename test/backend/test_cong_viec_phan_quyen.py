@@ -60,7 +60,7 @@ def test_nguoi_ngoai_khong_thay_list_va_khong_doc_duoc_task_theo_id(db, chu, ngu
     lst = _tao_list(db, chu)
     task = _tao_task(db, chu, lst["id"])
 
-    assert visible_list_ids(db, nguoi_ngoai.employee_id, COMPANY) == set()
+    assert visible_list_ids(db, nguoi_ngoai.employee_id) == set()
     assert list_service.get_lists(db, nguoi_ngoai) == []
 
     with pytest.raises(HTTPException) as e1:
@@ -72,22 +72,47 @@ def test_nguoi_ngoai_khong_thay_list_va_khong_doc_duoc_task_theo_id(db, chu, ngu
     assert e2.value.status_code == 403
 
 
-def test_list_cua_phap_nhan_khac_khong_lot_qua_du_co_dong_thanh_vien(db, chu):
-    """Mời chéo pháp nhân cũng không mở được cửa — `visible_list_ids` lọc `company_id`.
+def test_moi_cheo_phap_nhan_van_thay_du_an_vi_ranh_gioi_la_tu_cach_thanh_vien(db):
+    """Dựng lại đúng lỗi gặp trên dev 15/09/2026 — dự án «ERP v2».
 
-    Trường hợp này sinh ra từ dữ liệu bẩn (nhập tay, đổi pháp nhân của nhân sự),
-    không phải từ thao tác bình thường; nhưng nếu lọt thì lọt im lặng.
+    Chủ dự án CHƯA GẮN pháp nhân (`company_id = 0`), người được mời thuộc pháp
+    nhân `16`. Bản cũ chốt thêm `WorkList.company_id == <pháp nhân người xem>`,
+    nên dòng thành viên có thật, vai trò đúng, mà danh sách trả về RỖNG — im
+    lặng tuyệt đối: người mời thấy toast "đã mời", người được mời không thấy gì,
+    không chỗ nào báo lỗi.
+
+    Cột `company_id` không gánh nổi vai trò ranh giới: 237/253 nhân sự để `0`, và
+    `tab_company` có hai dòng trùng tên (id `1` mã `DEGO` · id `16` mã
+    `DEGO HOLDING`) nên hai người cùng một công ty thật vẫn mang hai số khác
+    nhau. Đổi bài này thành "không thấy" là tái phát đúng lỗi cũ.
+    """
+    chu_chua_gan_phap_nhan = _nguoi(1, 231, company_id=0)
+    lst = _tao_list(db, chu_chua_gan_phap_nhan, name="ERP v2")
+
+    duoc = _nguoi(2, 294, company_id=16)
+    list_service.add_member(db, chu_chua_gan_phap_nhan, lst["id"],
+                            schema.MemberIn(employee_id=duoc.employee_id,
+                                            role=int(WorkMemberRole.MEMBER)))
+
+    assert visible_list_ids(db, duoc.employee_id) == {lst["id"]}
+    assert [r["id"] for r in list_service.get_lists(db, duoc)] == [lst["id"]]
+    assert get_list_or_403(db, duoc, lst["id"]).id == lst["id"]
+
+
+def test_bo_loc_phap_nhan_khong_noi_cua_cho_nguoi_ngoai_list(db, chu):
+    """Vế đối chứng bắt buộc của bài trên.
+
+    Bỏ lọc pháp nhân KHÔNG được biến thành "mở toang": cùng pháp nhân với chủ
+    dự án mà không có dòng thành viên nào thì vẫn rỗng, và gõ thẳng id vào URL
+    vẫn 403. Thiếu bài này thì lần sửa trên đọc như một lần nới quyền.
     """
     lst = _tao_list(db, chu)
-    nguoi_cty_khac = _nguoi(3, 33, company_id=99)
-    db.add(WorkListMember(company_id=COMPANY, list_id=lst["id"],
-                          employee_id=nguoi_cty_khac.employee_id,
-                          role=int(WorkMemberRole.MEMBER)))
-    db.commit()
+    nguoi_la = _nguoi(9, 99, company_id=chu.company_id)
 
-    assert visible_list_ids(db, 33, 99) == set()
-    with pytest.raises(HTTPException):
-        get_list_or_403(db, nguoi_cty_khac, lst["id"])
+    assert visible_list_ids(db, nguoi_la.employee_id) == set()
+    with pytest.raises(HTTPException) as loi:
+        get_list_or_403(db, nguoi_la, lst["id"])
+    assert loi.value.status_code == 403
 
 
 # ── 2. Kế thừa từ nhóm ──────────────────────────────────────────────────────────
@@ -101,7 +126,7 @@ def test_thanh_vien_nhom_thay_list_tao_sau_do_trong_nhom(db, chu):
                                              role=int(WorkMemberRole.MEMBER)))
     lst = _tao_list(db, chu, group_id=nhom["id"])
 
-    assert lst["id"] in visible_list_ids(db, ban.employee_id, COMPANY)
+    assert lst["id"] in visible_list_ids(db, ban.employee_id)
     assert effective_role(db, ban.employee_id, lst["id"]) == int(WorkMemberRole.MEMBER)
 
 
@@ -136,7 +161,7 @@ def test_ke_thua_chay_qua_hai_cap_nhom(db, chu):
                                              role=int(WorkMemberRole.MEMBER)))
     lst = _tao_list(db, chu, group_id=con["id"])
 
-    assert lst["id"] in visible_list_ids(db, ban.employee_id, COMPANY)
+    assert lst["id"] in visible_list_ids(db, ban.employee_id)
 
 
 # ── 3. Bất biến MỘT chủ sở hữu ─────────────────────────────────────────────────

@@ -64,13 +64,26 @@ def _covered_group_ids(db: Session, employee_id: int) -> set[int]:
     return direct | children
 
 
-def visible_list_ids(db: Session, employee_id: int, company_id: int) -> set[int]:
+def visible_list_ids(db: Session, employee_id: int) -> set[int]:
     """Tập `list_id` người này được thấy.
 
         mời riêng ở list  ∪  list nằm trong nhóm (hoặc nhóm con) mình là thành viên
 
-    Lọc luôn theo pháp nhân: người của công ty A không thấy list của công ty B,
-    kể cả khi có ai đó lỡ mời chéo.
+    ⚠️ **Cố ý KHÔNG lọc thêm theo pháp nhân** (sửa 15/09/2026). Bản cũ chốt thêm
+    `WorkList.company_id == <pháp nhân người đang xem>`, và chốt đó chặn nhầm
+    người thật chứ không chặn kẻ lạ: dự án «ERP v2» trên dev do người **chưa gắn
+    pháp nhân** (`company_id = 0`) tạo, mời một người thuộc pháp nhân `16` — dòng
+    thành viên có thật, vai trò đúng, nhưng danh sách trả về RỖNG và không chỗ
+    nào báo lỗi. Người được mời tưởng mình chưa được gán, người mời tưởng đã xong.
+
+    Cột `company_id` không gánh nổi vai trò ranh giới bảo mật ở đây: 237/253 nhân
+    sự để `0`, và `tab_company` có **hai dòng trùng tên** (id `1` mã `DEGO` · id
+    `16` mã `DEGO HOLDING`, cùng là "CÔNG TY TNHH DEGO HOLDING") nên hai người
+    cùng một công ty thật vẫn mang hai số khác nhau. Thêm nữa DEGO là holding —
+    đội dự án xuyên pháp nhân là việc bình thường, không phải dữ liệu bẩn.
+
+    Ranh giới đúng là **TƯ CÁCH THÀNH VIÊN**, khớp với việc `work_task` khai
+    `PUBLIC` ở `SCOPE_FIELDS`. Muốn chặn ai thì gỡ họ khỏi list/nhóm.
     """
     if not employee_id:
         return set()
@@ -83,11 +96,7 @@ def visible_list_ids(db: Session, employee_id: int, company_id: int) -> set[int]
         from_groups = {i for (i,) in db.query(WorkList.id)
                        .filter(WorkList.group_id.in_(gids)).all()}
 
-    ids = direct | from_groups
-    if not ids:
-        return set()
-    return {i for (i,) in db.query(WorkList.id)
-            .filter(WorkList.id.in_(ids), WorkList.company_id == company_id).all()}
+    return direct | from_groups
 
 
 def effective_role(db: Session, employee_id: int, list_id: int) -> int | None:
@@ -151,7 +160,7 @@ def get_list_or_403(db: Session, actor: Actor, list_id: int, need: int = CAN_VIE
     chính là lỗ `get_scoped` kinh điển mà §5.1 của tài liệu phân quyền bắt khóa.
     """
     lst = db.get(WorkList, list_id)
-    if not lst or lst.company_id != actor.company_id:
+    if not lst:
         raise HTTPException(403, "Không có quyền trên danh sách công việc này")
     role = effective_role(db, actor.employee_id, list_id)
     if role is None or role > need:

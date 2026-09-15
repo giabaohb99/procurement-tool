@@ -66,7 +66,7 @@ def get_lists(db: Session, actor: Actor, include_archived: bool = False,
     `with_people` mới nạp chủ sở hữu + thành viên: hai thứ đó tốn thêm hai query
     và chỉ màn liệt kê dùng, ô chọn thì không.
     """
-    ids = visible_list_ids(db, actor.employee_id, actor.company_id)
+    ids = visible_list_ids(db, actor.employee_id)
     if not ids:
         return []
     q = db.query(WorkList).filter(WorkList.id.in_(ids))

@@ -256,7 +256,9 @@ nhãn có khuôn — B-08); tên bảng `tab_task` trần đụng vùng approval
   thường, mà theo TƯ CÁCH THÀNH VIÊN: chỉ thấy list mình được mời vào. Nghĩa là entity này
   vào `SCOPE_FIELDS` theo dạng đặc thù (lọc qua bảng thành viên), viết rõ ở tài liệu thiết
   kế bảng — làm ẩu chỗ này là dính đúng lỗ B-07 từng vá.
-- Mọi bảng có `company_id` theo luật chung; người thuộc pháp nhân nào thấy list pháp nhân đó.
+- Mọi bảng có `company_id` theo luật chung, nhưng ⚠️ **cột đó KHÔNG lọc quyền đọc**
+  (bỏ 15/09/2026 — xem `04-phan-quyen.md` §1). Ai thấy dự án nào **chỉ** do bảng thành
+  viên quyết; đội dự án xuyên pháp nhân là việc bình thường ở một holding.
 
 ### 5.2 Tầng trong từng list (membership)
 

@@ -20,7 +20,7 @@ def _get_group_or_403(db: Session, actor: Actor, group_id: int, need: int) -> Wo
     """Lấy nhóm theo id kèm kiểm quyền. 403 cả khi không tồn tại — xem ghi chú
     ở `membership_service.get_list_or_403` về việc không để lộ id có thật."""
     grp = db.get(WorkGroup, group_id)
-    if not grp or grp.company_id != actor.company_id:
+    if not grp:
         raise HTTPException(403, "Không có quyền trên nhóm này")
     role = group_role(db, actor.employee_id, group_id)
     if role is None or role > need:
@@ -144,7 +144,7 @@ def sidebar(db: Session, actor: Actor, include_archived: bool = False) -> dict:
     hiện khi bản thân là thành viên hoặc có ít nhất một list thấy được bên trong
     — nhóm rỗng của người khác không việc gì phải lộ tên ra.
     """
-    ids = visible_list_ids(db, actor.employee_id, actor.company_id)
+    ids = visible_list_ids(db, actor.employee_id)
     q = db.query(WorkList).filter(WorkList.id.in_(ids)) if ids else None
     lists = q.order_by(WorkList.sort_order, WorkList.id).all() if q is not None else []
     if not include_archived:

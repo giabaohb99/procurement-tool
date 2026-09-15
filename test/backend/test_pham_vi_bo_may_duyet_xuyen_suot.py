@@ -973,8 +973,8 @@ def test_d2_nguoi_ngoai_list_khong_doc_khong_ghi_khong_thay_trong_danh_sach(db, 
     trong = make_actor_of(db, world, "a1")
     ngoai = make_actor_of(db, world, "a2")
 
-    assert visible_list_ids(db, trong.employee_id, trong.company_id) == {du_an.id}
-    assert visible_list_ids(db, ngoai.employee_id, ngoai.company_id) == set()
+    assert visible_list_ids(db, trong.employee_id) == {du_an.id}
+    assert visible_list_ids(db, ngoai.employee_id) == set()
 
     assert {row["id"] for row in list_service.get_lists(db, trong)} == {du_an.id}
     assert list_service.get_lists(db, ngoai) == []
@@ -988,11 +988,18 @@ def test_d2_nguoi_ngoai_list_khong_doc_khong_ghi_khong_thay_trong_danh_sach(db, 
         assert loi.value.status_code == 403
 
 
-def test_d2_moi_cheo_phap_nhan_van_khong_lot(db, world):
-    """`visible_list_ids` lọc thêm một lớp theo pháp nhân.
+def test_d2_moi_cheo_phap_nhan_thi_thay_that_chu_khong_im_lang_rong(db, world):
+    """`visible_list_ids` KHÔNG lọc theo pháp nhân — ranh giới là tư cách thành viên.
 
-    Mời nhầm người của pháp nhân khác vào list là chuyện có thật (ô chọn nhân sự
-    không phải lúc nào cũng lọc). Dòng thành viên đó tồn tại nhưng phải vô hiệu.
+    Đảo chiều ngày 15/09/2026. Bản cũ khẳng định dòng mời chéo pháp nhân "tồn
+    tại nhưng vô hiệu", và chính điều đó là lỗi gặp trên dev: chủ dự án chưa gắn
+    pháp nhân (`company_id = 0`) mời một người ở pháp nhân `16`, dòng thành viên
+    có thật, người được mời đăng nhập vào thấy RỖNG, không lời giải thích nào.
+
+    Cột đó không phân định nổi pháp nhân thật: 237/253 nhân sự để `0` và
+    `tab_company` có hai dòng trùng tên (id `1` · id `16` cùng là DEGO HOLDING).
+    DEGO lại là holding — đội dự án xuyên pháp nhân là việc bình thường. Muốn
+    chặn ai thì gỡ họ khỏi list, đừng trông vào một cột dữ liệu để trống.
     """
     from app.modules.work.membership_service import visible_list_ids
     from app.modules.work.model import WorkListMember
@@ -1003,7 +1010,12 @@ def test_d2_moi_cheo_phap_nhan_van_khong_lot(db, world):
 
     assert db.query(WorkListMember).count() == 1, "dòng mời chéo phải có thật trong bảng"
     b1 = make_actor_of(db, world, "b1")
-    assert visible_list_ids(db, b1.employee_id, b1.company_id) == set()
+    assert visible_list_ids(db, b1.employee_id) == {du_an.id}
+
+    #  Vế đối chứng: bỏ lọc pháp nhân không được biến thành mở toang — người
+    #  CÙNG pháp nhân với dự án mà không được mời thì vẫn rỗng.
+    a3 = make_actor_of(db, world, "a3")
+    assert visible_list_ids(db, a3.employee_id) == set()
 
 
 def test_d3_bon_o_pham_vi_khong_co_tac_dung_len_cong_viec(db, world):
@@ -1036,12 +1048,12 @@ def test_d3_bon_o_pham_vi_khong_co_tac_dung_len_cong_viec(db, world):
 
     #  Chiều 2: phạm vi khai RỘNG hết mức cũng không mở được gì ở tầng thành viên.
     a1 = make_actor_of(db, world, "a1")
-    assert visible_list_ids(db, a1.employee_id, a1.company_id) == set()
+    assert visible_list_ids(db, a1.employee_id) == set()
 
     #  Và người KHÔNG có grant nào nhưng LÀ thành viên thì vẫn thấy dự án đó.
     a2 = make_actor_of(db, world, "a2")
     assert world.actor("a2").profile()["grants"] == []
-    assert visible_list_ids(db, a2.employee_id, a2.company_id) == {du_an_a.id}
+    assert visible_list_ids(db, a2.employee_id) == {du_an_a.id}
 
 
 def test_d4_bai_dien_dan_cua_phap_nhan_khac_khong_lot_vao_feed(db, world):

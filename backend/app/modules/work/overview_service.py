@@ -45,7 +45,7 @@ def _today() -> str:
 
 def overview(db: Session, actor: Actor) -> dict:
     """Thẻ số liệu + dữ liệu hai biểu đồ của màn Tổng quan."""
-    ids = visible_list_ids(db, actor.employee_id, actor.company_id)
+    ids = visible_list_ids(db, actor.employee_id)
     if not ids:
         return _empty()
 

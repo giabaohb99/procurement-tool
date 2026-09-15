@@ -36,12 +36,22 @@ mình không phải thành viên.
   tư cách thành viên", không diễn đạt được bằng cột phòng ban/công ty của khuôn
   `apply_scope`. Đổi lại, **MỌI query trong service PHẢI tự lọc thành viên** (§2) — khai
   `PUBLIC` mà quên lọc là lộ toàn bộ, nên có test khóa riêng (§5).
-- `company_id` vẫn lọc cứng ở service theo pháp nhân của người dùng, như mọi module.
+- ⚠️ **`company_id` KHÔNG lọc — bỏ ngày 15/09/2026.** Các bảng vẫn có cột đó và vẫn ghi
+  (báo cáo, đối soát), nhưng nó **không còn là điều kiện đọc**. Lý do: chốt cũ
+  `WorkList.company_id == <pháp nhân người xem>` chặn nhầm người thật và chặn **im
+  lặng** — dự án «ERP v2» trên dev do người chưa gắn pháp nhân (`company_id = 0`) tạo,
+  mời một người ở pháp nhân `16`; dòng thành viên có thật, vai trò đúng, danh sách trả
+  về rỗng, không chỗ nào báo lỗi. Cột đó không phân định nổi pháp nhân thật: **237/253
+  nhân sự để `0`** và `tab_company` có **hai dòng trùng tên** (id `1` mã `DEGO` · id `16`
+  mã `DEGO HOLDING`). Thêm nữa DEGO là holding — đội dự án xuyên pháp nhân là việc bình
+  thường. Ranh giới **chỉ** là tư cách thành viên (§2); muốn chặn ai thì gỡ khỏi
+  list/nhóm. Test khóa: `test_cong_viec_phan_quyen.py::test_moi_cheo_phap_nhan_van_thay…`
+  và `test_pham_vi_bo_may_duyet_xuyen_suot.py::test_d2_moi_cheo_phap_nhan_thi_thay_that…`
 
 ## 2. Tầng 2 — thành viên: luật lọc BẮT BUỘC
 
-Mọi đường đọc/ghi dữ liệu của phân hệ đi qua đúng một hàm service (đề xuất
-`visible_list_ids(db, employee_id, company_id)`), trả về tập `list_id` người đó thấy:
+Mọi đường đọc/ghi dữ liệu của phân hệ đi qua đúng một hàm service
+`visible_list_ids(db, employee_id)`, trả về tập `list_id` người đó thấy:
 
 ```
 list mình có dòng tab_work_list_member
