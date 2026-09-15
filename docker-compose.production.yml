@@ -74,6 +74,7 @@ services:
         VITE_API_URL: ""        # rỗng = gọi cùng origin, nginx trong container proxy /api -> api:8000
         VITE_APP_NAME: "DEGO ERP"
         VITE_HELP_URL: "https://help.degoholding.vn"
+        VITE_GOOGLE_CLIENT_ID: "${VITE_GOOGLE_CLIENT_ID:-}"   # Client ID đăng nhập Google (baked lúc build erp), dùng chung với `web`
     container_name: procurement-erp
     restart: always
     depends_on:

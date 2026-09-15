@@ -4,13 +4,15 @@ import { queryClient, tokenStorage } from '@/core/api'
 import { appConfig } from '@/core/config/app-config'
 import { logger } from '@/core/telemetry/logger'
 import { authService } from './auth-service'
-import type { AuthUser, LoginCredentials } from './auth-types'
+import type { AuthUser, LoginCredentials, LoginResponse } from './auth-types'
 
 interface AuthState {
   user: AuthUser | null
   /** Đang xử lý login — dùng để khóa nút submit. */
   isLoggingIn: boolean
   login: (credentials: LoginCredentials) => Promise<void>
+  /** Đăng nhập bằng JWT của Google Identity Services (bao-CR-406). */
+  loginGoogle: (credential: string) => Promise<void>
   logout: () => void
   /** Ghi đè hồ sơ (dùng khi refresh token trả về profile mới, hoặc user tự sửa). */
   setUser: (user: AuthUser | null) => void
@@ -28,6 +30,15 @@ function readStoredUser(): AuthUser | null {
 }
 
 /**
+ * Ghi phiên xuống máy. Tách ra vì hai cửa đăng nhập (mật khẩu và Google) phải mở
+ * phiên y hệt nhau — chép hai bản thì sau này thêm một bước là quên mất một cửa.
+ */
+function persistSession({ access_token, refresh_token, user }: LoginResponse) {
+  tokenStorage.setTokens(access_token, refresh_token)
+  localStorage.setItem(appConfig.storageKeys.user, JSON.stringify(user))
+}
+
+/**
  * Không dùng middleware `persist`: token phải ghi trước cả khi store khởi tạo
  * (http-client đọc token ở interceptor), nên ghi tay qua `tokenStorage` cho rõ thứ tự.
  */
@@ -38,10 +49,20 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: async (credentials) => {
     set({ isLoggingIn: true })
     try {
-      const { access_token, refresh_token, user } = await authService.login(credentials)
-      tokenStorage.setTokens(access_token, refresh_token)
-      localStorage.setItem(appConfig.storageKeys.user, JSON.stringify(user))
-      set({ user })
+      const session = await authService.login(credentials)
+      persistSession(session)
+      set({ user: session.user })
+    } finally {
+      set({ isLoggingIn: false })
+    }
+  },
+
+  loginGoogle: async (credential) => {
+    set({ isLoggingIn: true })
+    try {
+      const session = await authService.loginGoogle(credential)
+      persistSession(session)
+      set({ user: session.user })
     } finally {
       set({ isLoggingIn: false })
     }
