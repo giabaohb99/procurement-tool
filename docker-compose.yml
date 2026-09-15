@@ -139,6 +139,10 @@ services:
       NODE_OPTIONS: "--max-old-space-size=2048"
       VITE_API_PROXY_TARGET: http://api:8000
       VITE_HELP_URL: ${VITE_HELP_URL:-http://localhost:8082}
+      # Client ID đăng nhập Google, dùng chung một dòng .env với `web`. Ở đây đặt lúc CHẠY
+      # (không phải build arg) vì bản dev là Vite dev server — đọc env lúc khởi động.
+      # Đổi giá trị thì `docker compose restart erp`.
+      VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
     volumes:
       - ./frontend-v2:/app # mount code -> HMR
       - /app/node_modules # giữ node_modules trong container

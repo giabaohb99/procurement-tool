@@ -5,8 +5,9 @@ export function useAuth() {
   const user = useAuthStore((s) => s.user)
   const isLoggingIn = useAuthStore((s) => s.isLoggingIn)
   const login = useAuthStore((s) => s.login)
+  const loginGoogle = useAuthStore((s) => s.loginGoogle)
   const logout = useAuthStore((s) => s.logout)
   const setUser = useAuthStore((s) => s.setUser)
 
-  return { user, isAuthenticated: !!user, isLoggingIn, login, logout, setUser }
+  return { user, isAuthenticated: !!user, isLoggingIn, login, loginGoogle, logout, setUser }
 }

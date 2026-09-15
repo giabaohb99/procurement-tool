@@ -1,9 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod'
+import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google'
 import { CircleAlert, IdCard, Loader2, LockKeyhole, LogIn } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import { extractErrorMessage } from '@/core/api'
+import { env } from '@/core/config/env'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/shared/ui/form'
@@ -17,7 +19,7 @@ import { useAuth } from '../use-auth'
  * tại chỗ nhập. Bố cục/thẩm mỹ giữ đúng bản `frontend/` hiện hành.
  */
 export function LoginPage() {
-  const { login, isLoggingIn } = useAuth()
+  const { login, loginGoogle, isLoggingIn } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -26,12 +28,26 @@ export function LoginPage() {
     defaultValues: { username: '', password: '' },
   })
 
+  function goAfterLogin() {
+    // Quay lại đúng trang người dùng định vào trước khi bị chặn.
+    const from = (location.state as { from?: Location } | null)?.from?.pathname
+    navigate(from ?? appRoutes.launcher, { replace: true })
+  }
+
   async function onSubmit(values: LoginFormValues) {
     try {
       await login(values)
-      // Quay lại đúng trang người dùng định vào trước khi bị chặn.
-      const from = (location.state as { from?: Location } | null)?.from?.pathname
-      navigate(from ?? appRoutes.launcher, { replace: true })
+      goAfterLogin()
+    } catch (error) {
+      form.setError('root', { message: extractErrorMessage(error) })
+    }
+  }
+
+  async function onGoogleCredential(credential: string) {
+    form.clearErrors('root')
+    try {
+      await loginGoogle(credential)
+      goAfterLogin()
     } catch (error) {
       form.setError('root', { message: extractErrorMessage(error) })
     }
@@ -116,6 +132,36 @@ export function LoginPage() {
           </Button>
         </form>
       </Form>
+
+      {/*
+        Máy nào chưa khai VITE_GOOGLE_CLIENT_ID thì ẩn hẳn cụm này — dựng nút rỗng
+        sẽ khiến Google Identity Services báo "Missing required parameter: client_id"
+        liên tục và One Tap quay vòng. Đặt provider ngay trong màn đăng nhập (chứ
+        không ở gốc app) để phần còn lại của ERP khỏi phải tải script bên thứ ba.
+      */}
+      {env.googleClientId && (
+        <GoogleOAuthProvider clientId={env.googleClientId}>
+          <div className="my-5 flex items-center gap-3">
+            <span className="h-px flex-1 bg-border" />
+            <span className="text-[12px] font-medium tracking-wide text-muted-foreground">
+              HOẶC
+            </span>
+            <span className="h-px flex-1 bg-border" />
+          </div>
+
+          <div className="flex justify-center">
+            <GoogleLogin
+              onSuccess={(response) => {
+                if (response.credential) void onGoogleCredential(response.credential)
+              }}
+              onError={() =>
+                form.setError('root', { message: 'Đăng nhập Google bị lỗi hoặc bị hủy' })
+              }
+              useOneTap
+            />
+          </div>
+        </GoogleOAuthProvider>
+      )}
     </>
   )
 }
