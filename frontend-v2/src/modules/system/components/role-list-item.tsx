@@ -3,7 +3,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { GripVertical } from 'lucide-react'
 
 import { cn } from '@/shared/utils/cn'
-import type { Role } from '../types/role'
+import type { Role } from '@/modules/hr/types/role'
 
 interface RoleListItemProps {
   role: Role

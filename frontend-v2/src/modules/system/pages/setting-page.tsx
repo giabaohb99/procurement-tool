@@ -16,27 +16,72 @@ import { toast } from 'sonner'
 
 import { extractErrorMessage } from '@/core/api'
 import { usePermission } from '@/core/authorization/use-permission'
+import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { Button } from '@/shared/ui/button'
+import { Card } from '@/shared/ui/card'
 import { ErrorState } from '@/shared/ui/error-state'
 import { FormCard } from '@/shared/ui/form-card'
 import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
+import { ScrollableTabsList } from '@/shared/ui/scrollable-tabs-list'
 import { Skeleton } from '@/shared/ui/skeleton'
+import { TAB_TRIGGER_UNDERLINE } from '@/shared/ui/tab-underline'
+import { Tabs, TabsContent, TabsTrigger } from '@/shared/ui/tabs'
 
 import { settingApi } from '../api/setting-api'
 import { EmailExclusionPanel } from '../components/email-exclusion-panel'
-import { EmailTemplatePanel } from '../components/email-template-panel'
 import { SettingFieldRow } from '../components/setting-field-row'
 import { SettingSecretRow } from '../components/setting-secret-row'
 import { useSaveSettings, useSettings } from '../hooks/use-settings'
-import type { SettingField, SettingGroup } from '../types/setting'
+import type { SettingField, SettingGroup, SettingSecret } from '../types/setting'
 import { buildSettingValues } from '../utils/build-setting-values'
 
-const GROUPS: { key: SettingGroup; title: string; icon: typeof Mail }[] = [
-  { key: 'workflow', title: 'Quy trình duyệt', icon: GitBranch },
-  { key: 'email', title: 'Email (SMTP)', icon: Mail },
-  { key: 'storage', title: 'Lưu trữ (R2 / S3)', icon: HardDrive },
+/**
+ * Bốn TAB của trang Cấu hình. Ba tab đầu bám đúng `SettingGroup` backend trả về;
+ * tab *Trợ lý AI* không có ô nhập nào, chỉ một nút chạy việc nền.
+ *
+ * ⚠️ **Tách tab ngày 14/09/2026** (duoc-CR-397). Trước đó sáu khối xếp dọc một
+ * mạch, cuộn hơn ba màn hình: đổi một ô SMTP phải lăn qua cả khối lưu trữ và
+ * bảng mẫu email. Khối *Mẫu email thông báo* đã ra TRANG RIÊNG
+ * (`/system/email-templates`) chứ không thành tab — nó là nội dung soạn thảo,
+ * không phải thông số, và tự lưu lấy chứ không dùng nút *Lưu cấu hình* chung.
+ */
+const TABS: {
+  value: string
+  label: string
+  icon: typeof Mail
+  /** Nhóm ô nhập backend trả về; tab không có ô nhập nào thì bỏ trống. */
+  group?: SettingGroup
+  description: string
+}[] = [
+  {
+    value: 'workflow',
+    label: 'Quy trình duyệt',
+    icon: GitBranch,
+    group: 'workflow',
+    description: 'Công tắc bật/tắt các bước duyệt dùng chung của hệ thống.',
+  },
+  {
+    value: 'email',
+    label: 'Email (SMTP)',
+    icon: Mail,
+    group: 'email',
+    description: 'Máy chủ gửi email đi, địa chỉ người gửi và danh sách loại trừ.',
+  },
+  {
+    value: 'storage',
+    label: 'Lưu trữ (R2 / S3)',
+    icon: HardDrive,
+    group: 'storage',
+    description: 'Kho lưu tệp đính kèm: endpoint, bucket và khóa truy cập.',
+  },
+  {
+    value: 'assistant',
+    label: 'Trợ lý AI',
+    icon: Sparkles,
+    description: 'Chỉ mục tìm kiếm tài liệu HDSD + FAQ dùng cho Trợ lý AI.',
+  },
 ]
 
 /**
@@ -68,6 +113,7 @@ export function SettingPage() {
   const [testTo, setTestTo] = useState('')
   const [testing, setTesting] = useState<'' | 'email' | 'storage'>('')
   const [reindexing, setReindexing] = useState(false)
+  const [tab, setTab] = useUrlParamState('tab', TABS[0].value)
 
   const draft: SettingField[] = (data?.fields ?? []).map((field) =>
     field.key in edited ? { ...field, value: edited[field.key] } : field,
@@ -136,21 +182,41 @@ export function SettingPage() {
     )
   }
 
+  //  Tab đang xem ghi lên URL (`?tab=`) nên gửi link cho người khác vẫn ra đúng
+  //  chỗ, và quay lại từ trang con không rơi về tab đầu.
+  //  Tab *Trợ lý AI* chỉ hiện với người nạp lại chỉ mục được — nó không có ô
+  //  nhập nào, bày ra cho người không bấm được là một tab rỗng.
+  const visibleTabs = TABS.filter((item) => item.value !== 'assistant' || canReindex)
+  const current = visibleTabs.find((item) => item.value === tab) ?? visibleTabs[0]
+
+  //  Số ô đã sửa mà CHƯA lưu. Bắt buộc phải bày ra từ khi chia tab: sửa ở tab
+  //  Email rồi chuyển sang tab Lưu trữ thì thay đổi kia biến mất khỏi tầm mắt,
+  //  mà nút Lưu lại là nút CHUNG cho cả bốn tab — không có con số này thì người
+  //  dùng hoặc quên bấm Lưu, hoặc bấm Lưu mà không biết mình đang lưu những gì.
+  const dirtyCount = Object.keys(edited).length + Object.keys(secretInputs).length
+
   return (
     <PageContainer className="w-full">
       <PageHeader
         title="Cấu hình hệ thống"
-        description="Thông số chạy nóng: quy trình duyệt, email gửi đi và kho lưu trữ tệp"
+        description={current?.description ?? 'Thông số chạy nóng của hệ thống.'}
         actions={
           canWrite && (
-            <Button onClick={() => void save()} disabled={saveSettings.isPending || isPending}>
-              {saveSettings.isPending ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Save className="size-4" />
+            <div className="flex items-center gap-2.5">
+              {dirtyCount > 0 && (
+                <span className="text-xs whitespace-nowrap text-warning">
+                  {dirtyCount} thay đổi chưa lưu
+                </span>
               )}
-              Lưu cấu hình
-            </Button>
+              <Button onClick={() => void save()} disabled={saveSettings.isPending || isPending}>
+                {saveSettings.isPending ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Save className="size-4" />
+                )}
+                Lưu cấu hình
+              </Button>
+            </div>
           )
         }
       />
@@ -173,140 +239,190 @@ export function SettingPage() {
 
       {isPending ? (
         <div className="flex flex-col gap-4">
-          <Skeleton className="h-40" />
+          <Skeleton className="h-10" />
           <Skeleton className="h-64" />
-          <Skeleton className="h-56" />
         </div>
       ) : (
-        <div className="flex flex-col gap-4">
-          {GROUPS.map((group) => {
-            const fields = draft.filter((f) => f.group === group.key)
-            const secrets = (data?.secrets ?? []).filter((s) => s.group === group.key)
-            if (fields.length === 0 && secrets.length === 0) return null
+        <Tabs value={current?.value} onValueChange={setTab}>
+          {/*  Dải tab cuộn ngang được ở khổ hẹp và tự kéo tab đang chọn vào tầm
+               nhìn — xem `ScrollableTabsList`. */}
+          <ScrollableTabsList value={current?.value ?? ''}>
+            {visibleTabs.map((item) => (
+              <TabsTrigger key={item.value} value={item.value} className={TAB_TRIGGER_UNDERLINE}>
+                <item.icon className="size-4" />
+                {item.label}
+              </TabsTrigger>
+            ))}
+          </ScrollableTabsList>
 
-            return (
-              <FormCard
-                key={group.key}
-                title={group.title}
-                icon={group.icon}
-                iconClassName="text-muted-foreground"
-              >
-                <div className="grid gap-x-5 sm:grid-cols-2">
-                  {fields.map((field) => (
-                    <SettingFieldRow
-                      key={field.key}
-                      field={field}
-                      disabled={!canWrite}
-                      onChange={setFieldValue}
-                    />
-                  ))}
-                </div>
+          {visibleTabs.map((item) => (
+            <TabsContent key={item.value} value={item.value} className="mt-4 flex flex-col gap-4">
+              {item.group && (
+                <SettingGroupCard
+                  group={item.group}
+                  fields={draft.filter((f) => f.group === item.group)}
+                  secrets={(data?.secrets ?? []).filter((s) => s.group === item.group)}
+                  canWrite={canWrite}
+                  onFieldChange={setFieldValue}
+                  secretInputs={secretInputs}
+                  onSecretChange={(key, value) =>
+                    setSecretInputs((prev) => ({ ...prev, [key]: value }))
+                  }
+                  testing={testing}
+                  testTo={testTo}
+                  onTestToChange={setTestTo}
+                  onTest={runTest}
+                />
+              )}
 
-                {secrets.length > 0 && (
-                  <div className="mt-3 border-t border-dashed pt-3">
-                    <p className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <KeyRound className="size-3.5" />
-                      Khóa bí mật — mã hóa khi lưu và không hiển thị lại. Để trống nếu
-                      không đổi.
-                    </p>
-                    <div className="grid gap-x-5 sm:grid-cols-2">
-                      {secrets.map((secret) => (
-                        <SettingSecretRow
-                          key={secret.key}
-                          secret={secret}
-                          value={secretInputs[secret.key] ?? ''}
-                          disabled={!canWrite}
-                          onChange={(key, value) =>
-                            setSecretInputs((prev) => ({ ...prev, [key]: value }))
-                          }
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
+              {/*  Loại trừ email đi CÙNG tab Email: nó là "ai KHÔNG nhận", đọc
+                   liền mạch ngay dưới phần khai máy chủ gửi. */}
+              {item.value === 'email' && <EmailExclusionPanel canWrite={canWrite} />}
 
-                {canWrite && group.key === 'email' && (
-                  <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-dashed pt-3">
-                    <Input
-                      className="max-w-64"
-                      placeholder="Email nhận thử…"
-                      value={testTo}
-                      onChange={(event) => setTestTo(event.target.value)}
-                    />
+              {item.value === 'assistant' && (
+                <FormCard title="Trợ lý AI" icon={Sparkles} iconClassName="text-muted-foreground">
+                  <div className="flex flex-wrap items-center gap-2">
                     <Button
                       variant="outline"
-                      disabled={testing === 'email'}
-                      onClick={() => void runTest('email')}
+                      disabled={reindexing}
+                      onClick={() => void runReindex()}
                     >
-                      {testing === 'email' ? (
+                      {reindexing ? (
                         <Loader2 className="size-4 animate-spin" />
                       ) : (
-                        <Send className="size-4" />
+                        <RefreshCw className="size-4" />
                       )}
-                      Gửi email thử
-                    </Button>
-                    {/* Thử bằng cấu hình ĐANG LƯU, không phải bằng ô vừa gõ — nói
-                        rõ để không ai tưởng đã thử được thông số mới. */}
-                    <span className="text-xs text-muted-foreground">
-                      Dùng cấu hình đã lưu — hãy bấm Lưu trước khi thử.
-                    </span>
-                  </div>
-                )}
-
-                {canWrite && group.key === 'storage' && (
-                  <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-dashed pt-3">
-                    <Button
-                      variant="outline"
-                      disabled={testing === 'storage'}
-                      onClick={() => void runTest('storage')}
-                    >
-                      {testing === 'storage' ? (
-                        <Loader2 className="size-4 animate-spin" />
-                      ) : (
-                        <CloudCheck className="size-4" />
-                      )}
-                      Kiểm tra kết nối lưu trữ
+                      Nạp lại chỉ mục tài liệu
                     </Button>
                     <span className="text-xs text-muted-foreground">
-                      Ghi rồi xóa một tệp thử trong bucket — dùng cấu hình đã lưu.
+                      Dựng lại kho tìm kiếm HDSD + FAQ cho Trợ lý AI. Chạy nền, có thể mất vài
+                      phút. Dùng khi mới bật tìm kiếm tài liệu hoặc nghi chỉ mục lệch.
                     </span>
                   </div>
-                )}
-              </FormCard>
-            )
-          })}
-
-          {/* Mẫu email theo bước (Đặt xe) — cùng gác `setting.write` như cả trang. */}
-          <EmailTemplatePanel canWrite={canWrite} />
-          {/* Loại trừ email theo cá nhân / phòng ban / công ty. */}
-          <EmailExclusionPanel canWrite={canWrite} />
-        </div>
-      )}
-
-      {canReindex && (
-        <div className="mt-4">
-          <FormCard
-            title="Trợ lý AI"
-            icon={Sparkles}
-            iconClassName="text-muted-foreground"
-          >
-            <div className="flex flex-wrap items-center gap-2">
-              <Button variant="outline" disabled={reindexing} onClick={() => void runReindex()}>
-                {reindexing ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="size-4" />
-                )}
-                Nạp lại chỉ mục tài liệu
-              </Button>
-              <span className="text-xs text-muted-foreground">
-                Dựng lại kho tìm kiếm HDSD + FAQ cho Trợ lý AI. Chạy nền, có thể mất vài
-                phút. Dùng khi mới bật tìm kiếm tài liệu hoặc nghi chỉ mục lệch.
-              </span>
-            </div>
-          </FormCard>
-        </div>
+                </FormCard>
+              )}
+            </TabsContent>
+          ))}
+        </Tabs>
       )}
     </PageContainer>
+  )
+}
+
+interface SettingGroupCardProps {
+  group: SettingGroup
+  fields: SettingField[]
+  secrets: SettingSecret[]
+  canWrite: boolean
+  onFieldChange: (key: string, value: unknown) => void
+  secretInputs: Record<string, string>
+  onSecretChange: (key: string, value: string) => void
+  testing: '' | 'email' | 'storage'
+  testTo: string
+  onTestToChange: (value: string) => void
+  onTest: (kind: 'email' | 'storage') => void
+}
+
+/**
+ * Một NHÓM ô cấu hình: ô thường + ô bí mật + nút thử kết nối của nhóm đó.
+ *
+ * Tách khỏi `SettingPage` khi chia tab (duoc-CR-397) — thân trang có bốn tab, để
+ * nguyên khối này ở giữa thì đọc không ra đâu là khung tab đâu là ruột nhóm.
+ */
+function SettingGroupCard({
+  group,
+  fields,
+  secrets,
+  canWrite,
+  onFieldChange,
+  secretInputs,
+  onSecretChange,
+  testing,
+  testTo,
+  onTestToChange,
+  onTest,
+}: SettingGroupCardProps) {
+  //  Nhóm rỗng thì không dựng thẻ — backend có thể chưa khai ô nào cho nhóm đó.
+  if (fields.length === 0 && secrets.length === 0) return null
+
+  //  `Card` trần chứ không `FormCard`: `FormCard` bắt buộc có tiêu đề, mà tiêu
+  //  đề đó lặp đúng chữ trên tab đang chọn ngay phía trên.
+  return (
+    <Card className="p-4">
+      <div className="grid gap-x-5 sm:grid-cols-2">
+        {fields.map((field) => (
+          <SettingFieldRow
+            key={field.key}
+            field={field}
+            disabled={!canWrite}
+            onChange={onFieldChange}
+          />
+        ))}
+      </div>
+
+      {secrets.length > 0 && (
+        <div className="mt-3 border-t border-dashed pt-3">
+          <p className="flex items-center gap-2 text-xs text-muted-foreground">
+            <KeyRound className="size-3.5" />
+            Khóa bí mật — mã hóa khi lưu và không hiển thị lại. Để trống nếu không đổi.
+          </p>
+          <div className="grid gap-x-5 sm:grid-cols-2">
+            {secrets.map((secret) => (
+              <SettingSecretRow
+                key={secret.key}
+                secret={secret}
+                value={secretInputs[secret.key] ?? ''}
+                disabled={!canWrite}
+                onChange={onSecretChange}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {canWrite && group === 'email' && (
+        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-dashed pt-3">
+          <Input
+            className="max-w-64"
+            placeholder="Email nhận thử…"
+            value={testTo}
+            onChange={(event) => onTestToChange(event.target.value)}
+          />
+          <Button variant="outline" disabled={testing === 'email'} onClick={() => onTest('email')}>
+            {testing === 'email' ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Send className="size-4" />
+            )}
+            Gửi email thử
+          </Button>
+          {/* Thử bằng cấu hình ĐANG LƯU, không phải bằng ô vừa gõ — nói rõ để
+              không ai tưởng đã thử được thông số mới. */}
+          <span className="text-xs text-muted-foreground">
+            Dùng cấu hình đã lưu — hãy bấm Lưu trước khi thử.
+          </span>
+        </div>
+      )}
+
+      {canWrite && group === 'storage' && (
+        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-dashed pt-3">
+          <Button
+            variant="outline"
+            disabled={testing === 'storage'}
+            onClick={() => onTest('storage')}
+          >
+            {testing === 'storage' ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <CloudCheck className="size-4" />
+            )}
+            Kiểm tra kết nối lưu trữ
+          </Button>
+          <span className="text-xs text-muted-foreground">
+            Ghi rồi xóa một tệp thử trong bucket — dùng cấu hình đã lưu.
+          </span>
+        </div>
+      )}
+    </Card>
   )
 }

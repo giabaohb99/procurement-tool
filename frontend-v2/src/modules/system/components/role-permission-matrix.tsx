@@ -19,8 +19,8 @@ import {
   TableRow,
 } from '@/shared/ui/table'
 import { buildPermissionTree, type MetaEntity } from '../config/permission-groups'
-import type { PermissionMeta, RolePermissionRow } from '../types/role'
-import { permissionField } from '../types/role'
+import type { PermissionMeta, RolePermissionRow } from '@/modules/hr/types/role'
+import { permissionField } from '@/modules/hr/types/role'
 
 interface RolePermissionMatrixProps {
   meta: PermissionMeta

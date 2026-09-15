@@ -5,8 +5,10 @@ import {
   FileUp,
   History,
   LayoutDashboard,
+  MailCheck,
   MonitorSmartphone,
   Settings,
+  ShieldCheck,
   SlidersHorizontal,
 } from 'lucide-react'
 
@@ -16,8 +18,12 @@ import { appRoutes } from '@/shared/constants/app-routes'
 /**
  * Phân hệ QUẢN TRỊ HỆ THỐNG.
  *
- * Quản lý cấu hình hệ thống, sao lưu CSDL, nhật ký hệ thống và các tác vụ quản trị.
- * Phân quyền tài khoản KHÔNG nằm ở đây mà ở phân hệ Nhân sự.
+ * Quản lý cấu hình hệ thống, sao lưu CSDL, nhật ký hệ thống, phân quyền tài khoản
+ * và các tác vụ quản trị.
+ *
+ * ⚠️ **Phân quyền tài khoản nằm ở ĐÂY từ 14/09/2026** (duoc-CR-396). Trước đó nó
+ * ở phân hệ Nhân sự, và docstring này từng ghi đúng câu ngược lại — sửa chỗ này
+ * thì nhớ soát luôn `hr/routes.tsx`.
  */
 export const systemModule: ErpModule = {
   id: 'system',
@@ -45,6 +51,18 @@ export const systemModule: ErpModule = {
       icon: SlidersHorizontal,
       entity: 'setting',
       manage: true,
+    },
+    {
+      //  duoc-CR-397: tách khỏi Cấu hình hệ thống. Là NỘI DUNG soạn thảo (tiêu
+      //  đề + HTML từng bước), sửa đi sửa lại và mỗi mẫu mở tiếp một trang con —
+      //  khác hẳn mấy ô thông số gõ một lần của Cấu hình.
+      label: 'Mẫu email thông báo',
+      path: appRoutes.system.emailTemplates,
+      icon: MailCheck,
+      entity: 'setting',
+      manage: true,
+      //  Trang con sửa nội dung nằm dưới đường dẫn này nên tự khớp, khai
+      //  `matchPaths` là thừa.
     },
     {
       label: 'Sao lưu CSDL',
@@ -77,6 +95,21 @@ export const systemModule: ErpModule = {
       manage: true,
     },
     {
+      //  duoc-CR-396: dời từ phân hệ Nhân sự sang đây. Khai ai được làm gì là
+      //  việc QUẢN TRỊ HỆ THỐNG — màn này gác cả 55 khóa quyền của mọi phân hệ
+      //  chứ không riêng hồ sơ nhân viên, nên nó đứng cạnh *Cấu hình hệ thống*
+      //  và *Phiên đăng nhập* chứ không cạnh *Phòng ban* / *Chức vụ*.
+      //
+      //  `manage: true`: quyền `read` thuần trên `role` chỉ để đổ ô chọn vai trò
+      //  ở nơi khác; vào được màn này thì phải sửa được, kẻo mở ra chỉ để nhìn
+      //  một ma trận xám.
+      label: 'Phân quyền tài khoản',
+      path: appRoutes.system.permissions,
+      icon: ShieldCheck,
+      entity: 'role',
+      manage: true,
+    },
+    {
       label: 'Nhập dữ liệu',
       path: appRoutes.system.imports,
       icon: FileUp,
@@ -103,6 +136,12 @@ export const systemModule: ErpModule = {
       path: appRoutes.system.settings,
       lazy: async () => ({
         Component: (await import('./pages/setting-page')).SettingPage,
+      }),
+    },
+    {
+      path: appRoutes.system.emailTemplates,
+      lazy: async () => ({
+        Component: (await import('./pages/email-template-list-page')).EmailTemplateListPage,
       }),
     },
     {
@@ -157,6 +196,20 @@ export const systemModule: ErpModule = {
       path: appRoutes.system.exportDetail(':id'),
       lazy: async () => ({
         Component: (await import('./pages/export-detail-page')).ExportDetailPage,
+      }),
+    },
+    //  ── Phân quyền tài khoản (duoc-CR-396, dời từ phân hệ Nhân sự) ────────
+    {
+      path: appRoutes.system.permissions,
+      lazy: async () => ({
+        Component: (await import('./pages/role-permission-page')).RolePermissionPage,
+      }),
+    },
+    {
+      path: appRoutes.system.userPermissionDetail(':userId'),
+      lazy: async () => ({
+        Component: (await import('./pages/user-permission-detail-page'))
+          .UserPermissionDetailPage,
       }),
     },
   ],

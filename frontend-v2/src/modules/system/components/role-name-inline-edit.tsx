@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
-import type { Role } from '../types/role'
+import type { Role } from '@/modules/hr/types/role'
 
 /** Trần độ dài khớp cột `tab_role.name` — backend chặn ở 100 (CR-173). */
 const MAX_LENGTH = 100

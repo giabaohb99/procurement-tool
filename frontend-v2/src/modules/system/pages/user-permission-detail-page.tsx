@@ -14,12 +14,12 @@ import { PageContainer } from '@/shared/ui/page-container'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { cn } from '@/shared/utils/cn'
 import { UserScopeDialog } from '../components/user-scope-dialog'
-import { useRoles } from '../hooks/use-roles'
+import { useRoles } from '@/modules/hr/hooks/use-roles'
 import {
   useAssignRoles,
   useSetUserNotifyEmail,
   useUserAccount,
-} from '../hooks/use-user-accounts'
+} from '@/modules/hr/hooks/use-user-accounts'
 
 /**
  * Gán vai trò và phạm vi dữ liệu cho MỘT tài khoản.
@@ -28,7 +28,7 @@ import {
  * (tài khoản × vai trò), vai trò chưa tồn tại trong DB thì chưa có chỗ gắn.
  */
 export function UserPermissionDetailPage() {
-  // Tham số route là `:userId` (xem `appRoutes.hr.userPermissionDetail`), đọc
+  // Tham số route là `:userId` (xem `appRoutes.system.userPermissionDetail`), đọc
   // nhầm tên khác sẽ ra NaN -> query bị tắt -> màn hình báo "không tìm thấy".
   const { userId: userIdParam } = useParams()
   const navigate = useNavigate()
@@ -82,7 +82,7 @@ export function UserPermissionDetailPage() {
         title="Không tìm thấy tài khoản"
         description="Tài khoản có thể đã bị xóa, hoặc bạn không có quyền xem."
       >
-        <Button variant="outline" onClick={() => navigate(appRoutes.hr.permissions)}>
+        <Button variant="outline" onClick={() => navigate(appRoutes.system.permissions)}>
           <ArrowLeft />
           Về danh sách
         </Button>
@@ -112,7 +112,7 @@ export function UserPermissionDetailPage() {
     <PageContainer>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <Button variant="ghost" size="sm" asChild>
-          <Link to={appRoutes.hr.permissions}>
+          <Link to={appRoutes.system.permissions}>
             <ArrowLeft />
             Phân quyền tài khoản
           </Link>

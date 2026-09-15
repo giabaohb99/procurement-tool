@@ -265,8 +265,17 @@ export const appRoutes = {
     root: '/system',
     /** Cấu hình chạy nóng (email, lưu trữ, công tắc quy trình) — lưu ở DB, không phải `.env`. */
     settings: '/system/settings',
+    /**
+     * Mẫu email thông báo theo bước — TRANG RIÊNG, không còn là một khối trong
+     * Cấu hình hệ thống (duoc-CR-397).
+     *
+     * Nó không cùng họ với mấy ô còn lại của Cấu hình: những ô kia là thông số
+     * kỹ thuật gõ một lần rồi thôi (SMTP host, bucket), còn đây là NỘI DUNG soạn
+     * thảo, sửa đi sửa lại, và mỗi mẫu lại mở tiếp một trang con.
+     */
+    emailTemplates: '/system/email-templates',
     /** Trang con sửa nội dung một mẫu email theo bước. */
-    emailTemplate: (event: string) => `/system/settings/email/${event}`,
+    emailTemplate: (event: string) => `/system/email-templates/${event}`,
     /** Quản lý sao lưu CSDL hệ thống. */
     backups: '/system/backups',
     /** Nhật ký hệ thống (Audit Logs). */
@@ -281,6 +290,18 @@ export const appRoutes = {
     /** Quản lý xuất dữ liệu — nhật ký các lần xuất dữ liệu. */
     exports: '/system/exports',
     exportDetail: (id: number | string) => `/system/exports/${id}`,
+    /**
+     * Ma trận vai trò × quyền + danh sách tài khoản.
+     *
+     * ⚠️ Trước 14/09/2026 nằm ở `/hr/permissions` (duoc-CR-396 dời sang đây):
+     * khai ai được làm gì là việc QUẢN TRỊ HỆ THỐNG, không phải nghiệp vụ nhân
+     * sự — nó gác cả 55 khóa quyền của mọi phân hệ chứ không riêng hồ sơ nhân
+     * viên. Đường cũ còn một route chuyển tiếp trong `hr/routes.tsx` cho người
+     * đã lưu dấu trang.
+     */
+    permissions: '/system/permissions',
+    /** Gán vai trò và phạm vi dữ liệu cho MỘT tài khoản. */
+    userPermissionDetail: (userId: number | string) => `/system/permissions/users/${userId}`,
   },
   production: {
     root: '/production',
@@ -313,10 +334,14 @@ export const appRoutes = {
     /** Thêm chức vụ mở TRANG RIÊNG, không phải hộp thoại — xem `CrudConfig.createRoute`. */
     jobPositionNew: '/hr/job-positions/new',
     jobPositionDetail: (id: number | string) => `/hr/job-positions/${id}`,
-    /** Ma trận vai trò × quyền + danh sách tài khoản. */
-    permissions: '/hr/permissions',
-    /** Gán vai trò và phạm vi dữ liệu cho MỘT tài khoản. */
-    userPermissionDetail: (userId: number | string) => `/hr/permissions/users/${userId}`,
+    /**
+     * Đường CŨ của màn Phân quyền tài khoản — nay chỉ còn route chuyển tiếp sang
+     * `system.permissions` (duoc-CR-396). **Đừng dùng để dựng liên kết mới**;
+     * chúng chỉ ở đây để `hr/routes.tsx` khai chỗ đón người có dấu trang cũ.
+     */
+    permissionsLegacy: '/hr/permissions',
+    userPermissionDetailLegacy: (userId: number | string) =>
+      `/hr/permissions/users/${userId}`,
 
     //  ── Nghỉ phép (CR-259) ────────────────────────────────────────────────
     //  Nằm trong phân hệ Nhân sự chứ không tách phân hệ riêng: người dùng đi

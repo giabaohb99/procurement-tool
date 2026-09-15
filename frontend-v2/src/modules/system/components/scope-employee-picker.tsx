@@ -2,7 +2,7 @@ import { useState } from 'react'
 
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
-import type { Employee } from '../types/employee'
+import type { Employee } from '@/modules/hr/types/employee'
 import { ScopeChip } from './scope-chip'
 
 interface ScopeEmployeePickerProps {

@@ -8,13 +8,15 @@ import {
   CalendarRange,
   IdCard,
   LayoutDashboard,
-  ShieldCheck,
   Users,
   Wallet,
 } from 'lucide-react'
 
+import { Navigate } from 'react-router-dom'
+
 import type { ErpModule } from '@/app/router/module-definition'
 import { appRoutes } from '@/shared/constants/app-routes'
+import { LegacyUserPermissionRedirect } from './pages/legacy-permission-redirect'
 
 /** Phân hệ NHÂN SỰ — nhân viên, phòng ban, pháp nhân, phân quyền tài khoản. */
 export const hrModule: ErpModule = {
@@ -86,6 +88,11 @@ export const hrModule: ErpModule = {
       path: appRoutes.hr.leaveRequests,
       icon: CalendarOff,
       entity: 'leave_request',
+      //  ⚠️ Phải khai `group`, kẻo mục rơi vào rổ KHÔNG NHÓM — rổ đó đứng trên
+      //  cùng, không tiêu đề, và vốn chỉ dành cho «Tổng quan». Hai mục nghỉ phép
+      //  / phòng họp nằm lửng ở đó đọc như phần đuôi của Tổng quan chứ không ra
+      //  mục riêng (khách nêu 14/09/2026).
+      group: 'Danh mục',
       matchPaths: [
         appRoutes.hr.leaveCalendar,
         appRoutes.hr.leaveBalances,
@@ -134,6 +141,8 @@ export const hrModule: ErpModule = {
       path: appRoutes.hr.roomCalendar,
       icon: DoorOpen,
       entity: 'room_booking',
+      //  Cùng lý do với «Nghỉ phép» ngay trên — xem ghi chú ở đó.
+      group: 'Danh mục',
       matchPaths: [appRoutes.hr.roomBookings, appRoutes.hr.meetingRooms],
     },
     {
@@ -153,14 +162,9 @@ export const hrModule: ErpModule = {
       manage: true,
       hidden: true,
     },
-    {
-      label: 'Phân quyền tài khoản',
-      path: appRoutes.hr.permissions,
-      icon: ShieldCheck,
-      entity: 'role',
-      manage: true,
-      group: 'Quản trị',
-    },
+    //  «Phân quyền tài khoản» đã dời sang phân hệ QUẢN TRỊ (duoc-CR-396) — khai
+    //  ai được làm gì là việc quản trị hệ thống, không phải nghiệp vụ nhân sự.
+    //  Vì vậy menu Nhân sự không còn nhóm «Quản trị» nào.
   ],
 
   routes: [
@@ -206,18 +210,21 @@ export const hrModule: ErpModule = {
         Component: (await import('./pages/company-detail-page')).CompanyDetailPage,
       }),
     },
+    //  ── Đường CŨ của Phân quyền tài khoản (duoc-CR-396) ───────────────────
+    //  Màn đã dời sang `/system/permissions`. Giữ hai route chuyển tiếp vì
+    //  `/hr/permissions` sống hơn một năm: người dùng lưu dấu trang, và địa chỉ
+    //  đó còn nằm trong mấy chục thư thông báo đã gửi đi. Không có nó thì bấm
+    //  vào là trang 404, không gợi ý được gì.
     {
-      path: appRoutes.hr.permissions,
-      lazy: async () => ({
-        Component: (await import('./pages/role-permission-page')).RolePermissionPage,
-      }),
+      path: appRoutes.hr.permissionsLegacy,
+      element: <Navigate to={appRoutes.system.permissions} replace />,
     },
     {
-      path: appRoutes.hr.userPermissionDetail(':userId'),
-      lazy: async () => ({
-        Component: (await import('./pages/user-permission-detail-page'))
-          .UserPermissionDetailPage,
-      }),
+      //  ⚠️ Giữ nguyên `:userId` sang đường mới chứ đừng đá hết về trang danh
+      //  sách: liên kết trong thư "đã cấp quyền cho bạn" trỏ thẳng vào MỘT tài
+      //  khoản, quăng về danh sách là bắt người ta đi tìm lại.
+      path: appRoutes.hr.userPermissionDetailLegacy(':userId'),
+      element: <LegacyUserPermissionRedirect />,
     },
 
     //  ── Nghỉ phép (CR-259) ────────────────────────────────────────────────

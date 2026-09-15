@@ -21,8 +21,8 @@ import { usePermission } from '@/core/authorization/use-permission'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { Input } from '@/shared/ui/input'
-import { useCreateRole, useSaveRoleOrder } from '../hooks/use-roles'
-import type { Role } from '../types/role'
+import { useCreateRole, useSaveRoleOrder } from '@/modules/hr/hooks/use-roles'
+import type { Role } from '@/modules/hr/types/role'
 import { RoleListItem } from './role-list-item'
 
 interface RoleSidePanelProps {

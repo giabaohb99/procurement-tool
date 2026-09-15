@@ -27,8 +27,8 @@ import {
   useRoles,
   useSaveRolePermissions,
   useUpdateRole,
-} from '../hooks/use-roles'
-import type { RolePermissionRow } from '../types/role'
+} from '@/modules/hr/hooks/use-roles'
+import type { RolePermissionRow } from '@/modules/hr/types/role'
 
 /**
  * Màn Phân quyền tài khoản — hai tab của hệ phân quyền hai trục:

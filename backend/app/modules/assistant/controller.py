@@ -138,10 +138,15 @@ def my_usage(user=Depends(require("assistant", "read")),
 @router.get("/usage")
 def usage_summary(days: int = 30, user=Depends(require("assistant", "export")),
                   db: Session = Depends(get_db)):
-    """Tổng hợp token/số câu theo ngày & theo người — soi chi phí. Chỉ admin.
+    """Tổng hợp token/số câu theo ngày & theo người — soi chi phí.
 
-    `assistant.export` chỉ admin có (ensure_admin_role tự cấp mọi action), nên
-    endpoint này thực chất là cổng ADMIN — người khác ăn 403.
+    ⚠️ KHÔNG phải cổng admin thuần, dù ý định ban đầu là vậy. Admin có
+    `assistant.export` qua `ensure_admin_role`, NHƯNG **Quản lý thu mua cũng có**:
+    `assistant` không nằm trong `_SYS_ENTITIES` của `seed.py`, mà
+    `_PUR_MANAGER_PERMS` quét cả `ENTITIES` trừ tập đó rồi cấp đủ 8 action. Nghĩa
+    là vai trò ấy mở được bảng chi phí của MỌI người. Muốn đóng thì thêm
+    "assistant" vào `_SYS_ENTITIES` rồi cấp lại tường minh cho đúng vai trò —
+    xem `doc/erp/tai-lieu-ai/01-kien-truc-tro-ly-ai.md` §6.2.
     """
     _guard()
     return success(usage_layer.summary(db, days=days))
