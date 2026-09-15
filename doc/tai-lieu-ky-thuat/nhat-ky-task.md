@@ -801,3 +801,61 @@ Lọc xong mới ra con số thật (0/1/1/1 khối).
 Tầng dùng chung `frontend-v2/src/shared/` của đợt này chỉ THÊM: 455 dòng thêm, 3 dòng
 xóa và cả ba là dòng tô kiểu nội bộ; `DataTable` không đổi giao diện công khai nên
 8 tệp mới của CR-310 P3b không gãy.
+
+
+## bao-CR-406 | Đồng bộ đăng nhập Google sang ERP v2
+- status: xong
+- date: 2026-09-15
+Màn đăng nhập của `frontend-v2` thiếu hẳn cửa Google trong khi `erp.degoholding.vn`
+đã chạy thật trên prod. Đo đủ ba tầng trước khi gõ: backend XONG từ lâu
+(`POST /api/auth/google` → `service.google_login` → `_open_session(..., LoginMethod.GOOGLE)`,
+cột `User.google_sub`, `GOOGLE_CLIENT_ID` trong `config.py`), bản v1 nối đủ, riêng
+`frontend-v2` không có gì — không `@react-oauth/google`, không provider, không nút,
+không cả hàm `loginGoogle`.
+
+Chỗ đáng lưu: `auth-store` **tách `persistSession()`** chứ không chép hai bản cho
+hai cửa. Chép hai bản thì sau này thêm một bước là quên mất một cửa, mà triệu chứng
+(mất `refresh_token` → phiên Google chết giữa chừng) thì im lặng. `GoogleOAuthProvider`
+đặt NGAY TRONG trang đăng nhập chứ không ở gốc app như bản v1: máy chưa khai client ID
+thì script Google Identity Services không tải về chút nào (v1 chỉ ẩn nút, script vẫn
+nạp và spam "Missing required parameter: client_id").
+
+`VITE_GOOGLE_CLIENT_ID` nối vào 4 chỗ: `docker/Dockerfile.erp.prod` (ARG/ENV, nạp lúc
+BUILD), args của `erp` trong `docker-compose.production.yml` + `docker-compose.dev.yml`,
+và khối `environment:` của `erp` trong `docker-compose.yml` (local là Vite dev server,
+restart là đủ). Dùng chung tên biến với bản v1 để một dòng `.env` bắt được cả hai app.
+
+Không migration, không đổi API, không đổi khóa quyền. Commit `main`: `b04094e3`
+(nhật ký deploy prod 14/09) + `389acdfc` (CR-406). Cổng `npm run check`: 258 tệp /
+2931 test xanh. Test mới ở `frontend-v2/src/core/auth/auth-store.test.ts` — 3 ca:
+hai cửa mở phiên giống hệt nhau, JWT truyền nguyên vẹn không cắt gọt, lỗi Google vẫn
+mở khóa nút submit.
+
+⚠️ Việc TAY trước khi deploy prod: thêm `https://erp.degoholding.vn` vào *Authorized
+JavaScript origins* của Google OAuth Client ID trong Google Cloud Console, và `.env`
+của prod phải có `VITE_GOOGLE_CLIENT_ID` TRƯỚC khi build service `erp`.
+
+### bao-CR-406-gop-erp-v2 | Gộp main -> erp-v2 sau CR-405 + CR-310 P3b
+- status: xong
+- date: 2026-09-15
+Commit hết hai bên rồi mới gộp (đại ca chốt cách này). Bốn commit lên `erp-v2` trước:
+`1f7f2210` bao-CR-405 · `60d3f4ad` bao-CR-310 P3b · `996beff3` (sổ ghi chép) ·
+`ff949e34` (script demo Báo cáo thực hiện, CHỈ CHẠY LOCAL). Gộp ra commit `b41ed67d`.
+
+Đụng độ đúng **4 tệp tài liệu, 0 tệp mã nguồn** — đo trước bằng
+`git merge-tree --write-tree --name-only erp-v2 main`, số khớp y hệt lúc gộp thật.
+
+Cách xử, và nó KHÔNG giống nhau giữa các tệp:
+- `so-ghi-nhan-loi-bao-mat.md` (16 khối), `nhat-ky-task.md` (10 khối),
+  `doc/erp/19-viec-con-lai-tong-hop.md` (5 khối): đọc từng khối thì bên HEAD (erp-v2)
+  là bản MỚI HƠN ở mọi khối (đã đo BM-018/BM-022, đã vá BM-016, có BM-024..031, có
+  tiến độ P3b/P4), bên `main` còn nguyên câu "chưa đo / chấp nhận rủi ro / chưa commit".
+  Giữ HEAD.
+- `change-log-bao.md` thì NGƯỢC: hai bên **bổ sung nhau**. `main` giữ SHA cherry-pick
+  đã lên prod, `erp-v2` giữ SHA gốc + trạng thái dev. Phải gộp theo TỪNG DÒNG bảng,
+  nối thêm "mã gốc trên `erp-v2` `<sha>`" vào 5 dòng CR-402/401/400/395/394.
+
+⚠️ Bài học công cụ: **đừng `git checkout --ours`** để giữ bên HEAD — lệnh đó vứt luôn
+những khối `main` đã tự gộp sạch. Dùng bộ lọc awk chỉ cắt phần giữa `=======` và
+`>>>>>>>`, phần auto-merge còn nguyên. Và Python của Windows KHÔNG đọc được `/tmp/...`
+của MSYS — tệp nháp phải để ở `%TEMP%`, hoặc làm hết bằng awk/sed.
