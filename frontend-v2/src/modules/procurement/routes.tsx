@@ -198,6 +198,14 @@ export const procurementModule: ErpModule = {
       }),
     },
     {
+      // bao-CR-310 — màn Xử lý phương án của YCMH, tách trang như màn xử lý YCBG.
+      path: appRoutes.procurement.purchaseRequestProcess(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/purchase-request-process-page'))
+          .PurchaseRequestProcessPage,
+      }),
+    },
+    {
       path: appRoutes.procurement.purchaseOrders,
       lazy: async () => ({
         Component: (await import('./pages/purchase-order-list-page')).PurchaseOrderListPage,

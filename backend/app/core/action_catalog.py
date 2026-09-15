@@ -155,6 +155,10 @@ _OPTION = (
     ActionCode("option_remove", "Gỡ phương án", ACTION_GROUP_EDIT),
     ActionCode("option_choose", "Chốt phương án", ACTION_GROUP_EDIT),
     ActionCode("option_unchoose", "Bỏ chốt phương án", ACTION_GROUP_EDIT),
+    # bao-CR-310 đợt 3b + đợt 2 (H.10) — vẫn phân hệ Yêu cầu MUA HÀNG:
+    ActionCode("options_complete", "Chốt hoàn thành xử lý phương án", ACTION_GROUP_EDIT),
+    ActionCode("options_reopen", "Mở lại xử lý phương án", ACTION_GROUP_EDIT),
+    ActionCode("option_supplier_set", "Áp nhà cung cấp vào phương án", ACTION_GROUP_EDIT),
 )
 
 #  =====================================================================

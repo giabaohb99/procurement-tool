@@ -3,6 +3,7 @@ import type {
   PurchaseRequestDetail,
   PurchaseRequestItem,
 } from '../types/purchase-request-detail'
+import type { PurchaseRequestOption } from '../types/purchase-request-options'
 import type {
   PurchaseOrderDetail,
   PurchaseOrderImportCost,
@@ -213,6 +214,18 @@ export function buildPurchaseOrderLines(
 }
 
 function toOrderLine(item: PurchaseRequestItem, qty: number): PurchaseOrderItem {
+  // H.10.6 — dòng đã CHỌN phương án thì đường tạo ĐMH tay cũng điền sẵn theo
+  // phương án đó (giá / VAT / đơn vị báo giá + cam kết giao vào ghi chú), cùng
+  // luật với nút gom tự động. Phương án 0 chụp đúng giá trị dòng nên dòng chưa
+  // ai đụng tới vẫn ra kết quả y như trước.
+  const chosen = item.chosen_option ?? null
+  // CR-058: VAT của phương án bỏ trống (0) thì rơi về VAT của dòng YCMH.
+  const vat = chosen
+    ? Number(chosen.snap_vat) || Number(item.vat_pct) || 0
+    : Number(item.vat_pct) || 0
+  const noteParts = [item.note || '']
+  if (chosen?.snap_delivery_time) noteParts.push(`Cam kết giao: ${chosen.snap_delivery_time}`)
+  if (chosen?.snap_delivery_place) noteParts.push(`Nơi giao: ${chosen.snap_delivery_place}`)
   return {
     product_code: item.product_code,
     product_name: item.product_name,
@@ -230,14 +243,14 @@ function toOrderLine(item: PurchaseRequestItem, qty: number): PurchaseOrderItem 
     // TG dự kiến có hàng ở YCMH → Ngày dự kiến có hàng ở ĐMH. Rỗng thì backend
     // tự tính theo thời gian chuẩn của phân loại.
     expected_date: item.expected_date || '',
-    unit: item.unit,
+    unit: chosen?.snap_quote_unit || item.unit,
     qty_request: qty,
     qty_order: qty,
-    price: Number(item.price) || 0,
+    price: chosen ? Number(chosen.snap_price_by_volume) || 0 : Number(item.price) || 0,
     // VAT theo TỪNG DÒNG của YCMH, không lấy mức chung của đơn.
-    vat: Number(item.vat_pct) || 0,
+    vat,
     warehouse_code: '',
-    note: item.note || '',
+    note: noteParts.filter(Boolean).join('; '),
     currency: '',
     exchange_rate: 0,
     weight_kg: 0,
@@ -246,19 +259,45 @@ function toOrderLine(item: PurchaseRequestItem, qty: number): PurchaseOrderItem 
   }
 }
 
+/**
+ * H.10.6 — NCC điền sẵn lên ĐẦU ĐƠN khi mọi dòng còn mua của phiếu đã chọn
+ * phương án và các phương án đó cùng trỏ về ĐÚNG MỘT NCC. Lệch nhau một dòng là
+ * trả rỗng — điền đại NCC của dòng đầu lên cả đơn còn tệ hơn bắt người dùng tự
+ * chọn. NCC bị che vì thiếu `supplier:read` trả chuỗi rỗng nên tự rơi về rỗng.
+ */
+function agreedSupplier(items: PurchaseRequestItem[]): { code: string; name: string } | null {
+  const active = items.filter((item) => item.product_name && item.line_status !== 'cancelled')
+  const chosen = active
+    .map((item) => item.chosen_option)
+    .filter((option): option is PurchaseRequestOption => !!option)
+  if (active.length === 0 || chosen.length !== active.length) return null
+  const first = chosen[0]
+  if (!first.supplier_code && !first.supplier_name) return null
+  const allSame = chosen.every(
+    (option) =>
+      option.supplier_code === first.supplier_code &&
+      option.supplier_name === first.supplier_name,
+  )
+  return allSame ? { code: first.supplier_code, name: first.supplier_name } : null
+}
+
 /** Gói dữ liệu điền sẵn để điều hướng sang màn tạo ĐMH. */
 export function toDraftFromRequest(
   request: PurchaseRequestDetail,
   items: PurchaseOrderItem[],
 ): PurchaseOrderDraftFromRequest {
+  const supplier = agreedSupplier(request.items)
   return {
     pr_code: request.code,
     company_id: request.company_id,
     department: request.department,
     // NSPT = người phụ trách dòng ở YCMH; để trống thì backend tự lấy người tạo.
     nspt: request.items.find((item) => item.assignee)?.assignee ?? '',
-    supplier_code: '',
-    supplier_name: request.supplier_pur?.name || request.suggested_supplier || '',
+    supplier_code: supplier?.code ?? '',
+    // Có NCC thống nhất thì tên đi cùng bộ với mã — không trộn tên gợi ý cũ vào.
+    supplier_name: supplier
+      ? supplier.name
+      : request.supplier_pur?.name || request.suggested_supplier || '',
     vat_rate: Number(request.vat_rate) || 0.08,
     is_urgent: !!request.is_urgent,
     note: request.note || '',

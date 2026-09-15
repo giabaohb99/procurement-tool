@@ -16,10 +16,14 @@ sống trong các `*_LABELS` và ở tầng hiển thị. Cùng khuôn `leave/co
 #  thì truy ngược được về phiếu gốc (`product_survey_line_id`) — giá có nguồn.
 #  Phương án NSTM gõ tay thì KHÔNG truy được, nên phải đánh dấu để sau này lọc
 #  ra mà soát, và để báo cáo không trộn hai loại làm một.
-PR_OPT_SURVEY = 1   # chọn từ kho khảo sát sản phẩm đã duyệt (tab_survey_product_line)
-PR_OPT_MANUAL = 2   # NSTM gõ thẳng NCC + giá, không đi qua phiếu khảo sát
+PR_OPT_SURVEY = 1    # chọn từ kho khảo sát sản phẩm đã duyệt (tab_survey_product_line)
+PR_OPT_MANUAL = 2    # NSTM gõ thẳng NCC + giá, không đi qua phiếu khảo sát
+# "Phương án 0" — hệ thống tự sinh từ CHÍNH DÒNG YÊU CẦU khi phiếu được điều phối
+# (H.10 doc 03): chưa có NCC, sửa được như nhập tay, không xóa được, đứng ngoài trần 5.
+PR_OPT_ORIGINAL = 3
 
 PR_OPTION_SOURCE_LABELS = {
     PR_OPT_SURVEY: "Từ khảo sát",
     PR_OPT_MANUAL: "Nhập tay",
+    PR_OPT_ORIGINAL: "Yêu cầu gốc",
 }

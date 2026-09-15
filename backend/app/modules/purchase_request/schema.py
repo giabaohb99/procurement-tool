@@ -168,3 +168,31 @@ class PROptionUpdateIn(BaseModel):
     snap_delivery_time: str | None = None
     snap_delivery_place: str | None = None
     snap_shipping_cost: float | None = Field(None, ge=0)
+
+
+class PROptionSupplierIn(BaseModel):
+    """H.10.4 — điền/sửa NCC trên PHƯƠNG ÁN 0 / phương án nhập tay, kèm sửa giá nếu
+    cần. Tách khỏi `PROptionUpdateIn` vì NCC cố ý không nằm trong bộ trường sửa thường."""
+    supplier_code: str = ""
+    supplier_name: str = ""
+    snap_price_by_volume: float | None = Field(None, ge=0)
+
+
+class PRAssignSupplierLineIn(BaseModel):
+    """Một dòng trong lệnh "áp 1 NCC cho nhiều dòng" — giá sửa kèm là TÙY CHỌN theo dòng."""
+    item_id: int
+    snap_price_by_volume: float | None = Field(None, ge=0)
+
+
+class PRAssignSupplierIn(BaseModel):
+    """H.10.5 — "Áp 1 NCC cho nhiều dòng" ngay trên màn chọn: NCC áp vào PHƯƠNG ÁN
+    ĐANG CHỌN của từng dòng tick."""
+    supplier_code: str = ""
+    supplier_name: str = ""
+    items: list[PRAssignSupplierLineIn] = []
+
+
+class PROptionCompleteIn(BaseModel):
+    """Chốt hoàn thành xử lý phương án (bao-CR-310 đợt 3b, khuôn YCBG `complete_sr`):
+    `empty_item_ids` là các dòng NSTM tick "chốt rỗng" — không có NCC phù hợp."""
+    empty_item_ids: list[int] = []

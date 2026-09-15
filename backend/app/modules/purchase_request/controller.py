@@ -15,8 +15,10 @@ from . import option_service, service
 from .constants import PR_OPTION_SOURCE_LABELS
 from .model import (STATUS_AFTER_APPROVE, STATUS_AFTER_DISPATCH,
                     PurchaseRequest, PurchaseRequestItem)
-from .schema import (ApproveIn, AssignIn, ItemStatusIn, PRCreate, PROptionManualIn,
-                     PROptionSurveyIn, PROptionUpdateIn, PRUpdate, ReasonIn, RejectIn, UrgentIn)
+from .schema import (ApproveIn, AssignIn, ItemStatusIn, PRAssignSupplierIn, PRCreate,
+                     PROptionCompleteIn, PROptionManualIn, PROptionSupplierIn,
+                     PROptionSurveyIn, PROptionUpdateIn, PRUpdate,
+                     ReasonIn, RejectIn, UrgentIn)
 
 router = APIRouter(prefix="/api/purchase-requests", tags=["purchase_request"])
 
@@ -356,6 +358,10 @@ def _out(db: Session, pr, user=None) -> dict:
              .order_by(FileLink.entity_id, FileLink.sort_order.asc(), FileLink.id.desc()))
         for eid, url in q:
             thumb_by_pid.setdefault(eid, url)      # ảnh sort_order nhỏ nhất mỗi SP
+    # H.10.1 — SINH BÙ phương án 0 cho phiếu điều phối từ trước khi có tính năng
+    # (idempotent; phiếu ngoài giai đoạn mở thì hàm tự bỏ qua). Đặt TRƯỚC hai truy
+    # vấn tóm tắt để option_count/chosen_option của lần đọc này đã thấy nó.
+    option_service.ensure_option_zero(db, pr, items)
     # bao-CR-310: tóm tắt phương án cho từng dòng — 2 truy vấn cho cả phiếu, không N+1.
     item_ids = [i.id for i in items]
     opt_counts = option_service.count_map(db, item_ids)
@@ -381,7 +387,9 @@ def _out(db: Session, pr, user=None) -> dict:
              # bao-CR-310 — "đã chốt phương án chưa" SUY từ bảng phương án, dòng YCMH
              # không có cột nào lưu việc đó (một nguồn sự thật).
              "option_count": opt_counts.get(i.id, 0),
-             "chosen_option": _out_option(db, chosen, can_sup_read) if chosen else None}
+             "chosen_option": _out_option(db, chosen, can_sup_read) if chosen else None,
+             # Đợt 3b — cờ "NSTM đã chốt hoàn thành xử lý" + chốt rỗng của dòng
+             "options_done": bool(i.options_done), "no_option": bool(i.no_option)}
         )
     # Task 4: PYC tính VAT lại theo dòng — tiền hàng (chưa VAT) · VAT · tổng cộng (gồm VAT)
     subtotal = round(sum(x["qty"] * x["price"] for x in d["items"]), 2)   # chưa VAT
@@ -885,6 +893,7 @@ def list_options(pid: int, item_id: int, db: Session = Depends(get_db),
     option_service.ensure_own_line(item, profile.get("emp_code") or "",
                                    _see_all_items(profile, pr, user))
     can_sup_read = user_has_permission(db, user, "supplier", "read")
+    option_service.ensure_option_zero(db, pr, [item])   # sinh bù H.10.1, xem `_out`
     rows = option_service.options_of(db, item.id)
     return success({"items": [_out_option(db, o, can_sup_read) for o in rows]})
 
@@ -941,6 +950,7 @@ def add_option_from_survey(pid: int, item_id: int, data: PROptionSurveyIn,
                            db: Session = Depends(get_db),
                            user=Depends(require("purchase_request", "write"))):
     pr, item = _open_line(db, pid, item_id, user, "write")
+    option_service.ensure_line_not_done(item)
     o = option_service.create_from_survey(db, pr, item, data.product_survey_line_id, user.id)
     return success(_out_option(db, o, user_has_permission(db, user, "supplier", "read")),
                    "Đã gắn phương án từ khảo sát", 201)
@@ -961,8 +971,40 @@ def add_option_manual(pid: int, item_id: int, data: PROptionManualIn,
     if not user_has_permission(db, user, "supplier", "read"):
         raise HTTPException(403, "Cần quyền xem nhà cung cấp để nhập tay phương án")
     pr, item = _open_line(db, pid, item_id, user, "write")
+    option_service.ensure_line_not_done(item)
     o = option_service.create_manual(db, pr, item, data, user.id)
     return success(_out_option(db, o, True), "Đã thêm phương án nhập tay", 201)
+
+
+@router.patch("/{pid}/items/{item_id}/options/{oid}/supplier")
+def set_option_supplier(pid: int, item_id: int, oid: int, data: PROptionSupplierIn,
+                        db: Session = Depends(get_db),
+                        user=Depends(require("purchase_request", "write"))):
+    """H.10.4 — điền/sửa NCC trên PHƯƠNG ÁN 0 / nhập tay, dùng được cả SAU khi dòng đã
+    chốt hoàn thành (đúng một khe nới, cố ý KHÔNG gọi `ensure_line_not_done`). Cổng
+    `supplier.read` cùng lý lẽ với nhập tay phương án: `pur_staff` chỉ có read."""
+    if not user_has_permission(db, user, "supplier", "read"):
+        raise HTTPException(403, "Cần quyền xem nhà cung cấp để áp NCC vào phương án")
+    pr, item = _open_line(db, pid, item_id, user, "write")
+    o = option_service.set_option_supplier(db, pr, item, oid, data, user.id)
+    return success(_out_option(db, o, True), "Đã áp nhà cung cấp vào phương án")
+
+
+@router.post("/{pid}/options/assign-supplier")
+def assign_supplier_bulk(pid: int, data: PRAssignSupplierIn, db: Session = Depends(get_db),
+                         user=Depends(require("purchase_request", "write"))):
+    """H.10.5 — "Áp 1 NCC cho nhiều dòng" trên màn chọn: tick các dòng đang thiếu NCC,
+    chọn một NCC, áp một phát vào PHƯƠNG ÁN ĐANG CHỌN của từng dòng (giá sửa kèm theo
+    dòng nếu cần). Cũng là khe H.10.4 nên không chặn theo `options_done`."""
+    if not user_has_permission(db, user, "supplier", "read"):
+        raise HTTPException(403, "Cần quyền xem nhà cung cấp để áp NCC vào phương án")
+    pr = _in_scope(db, pid, user, "write")
+    option_service.ensure_stage(pr)
+    profile = get_perm_profile(db, user)
+    n = option_service.assign_supplier_bulk(db, pr, data, user.id,
+                                            profile.get("emp_code") or "",
+                                            _see_all_items(profile, pr, user))
+    return success({"updated": n}, f"Đã áp nhà cung cấp cho {n} dòng")
 
 
 @router.patch("/{pid}/items/{item_id}/options/{oid}")
@@ -970,7 +1012,16 @@ def update_option(pid: int, item_id: int, oid: int, data: PROptionUpdateIn,
                   db: Session = Depends(get_db),
                   user=Depends(require("purchase_request", "write"))):
     pr, item = _open_line(db, pid, item_id, user, "write")
-    o = option_service.update_option(db, item.id, oid, data, user.id)
+    if item.options_done:
+        # H.10.4 — khe nới duy nhất sau chốt: sửa GIÁ của mọi phương án, dành cho
+        # người có write + supplier.read (tầng thu mua của màn chọn). Trường khác
+        # vẫn khóa — service từ chối cả gói nếu gửi kèm.
+        if not user_has_permission(db, user, "supplier", "read"):
+            raise HTTPException(403, "Dòng đã chốt hoàn thành — chỉ thu mua (có quyền "
+                                     "xem NCC) mới sửa được giá sau chốt")
+        o = option_service.update_option(db, item.id, oid, data, user.id, price_only=True)
+    else:
+        o = option_service.update_option(db, item.id, oid, data, user.id)
     return success(_out_option(db, o, user_has_permission(db, user, "supplier", "read")),
                    "Đã cập nhật phương án")
 
@@ -979,6 +1030,7 @@ def update_option(pid: int, item_id: int, oid: int, data: PROptionUpdateIn,
 def delete_option(pid: int, item_id: int, oid: int, db: Session = Depends(get_db),
                   user=Depends(require("purchase_request", "write"))):
     pr, item = _open_line(db, pid, item_id, user, "write")
+    option_service.ensure_line_not_done(item)
     option_service.delete_option(db, pr, item.id, oid, user.id)
     return success(None, "Đã gỡ phương án")
 
@@ -995,6 +1047,58 @@ def choose_option(pid: int, item_id: int, oid: int, db: Session = Depends(get_db
     pr, item = _open_line(db, pid, item_id, user, "read")
     option_service.ensure_can_choose(
         pr, user, user_has_permission(db, user, "purchase_request", "approve"))
+    # Đợt 3b: chỉ chọn trên dòng NSTM ĐÃ chốt hoàn thành — chưa chốt thì danh sách
+    # phương án còn đang gắn dở, chọn lúc đó là chọn trên dữ liệu chưa xong.
+    option_service.ensure_line_done(item)
     o = option_service.choose_option(db, pr, item, oid, user.id)
     msg = "Đã chốt phương án" if o.is_chosen else "Đã bỏ chốt phương án"
     return success(_out_option(db, o, user_has_permission(db, user, "supplier", "read")), msg)
+
+
+@router.post("/{pid}/options/complete")
+def complete_options(pid: int, data: PROptionCompleteIn, db: Session = Depends(get_db),
+                     user=Depends(require("purchase_request", "write"))):
+    """NSTM "Chốt hoàn thành xử lý" phần của mình trên phiếu (đợt 3b, khuôn YCBG
+    `complete_sr`): mọi dòng mình phụ trách phải có phương án hoặc được tick chốt
+    rỗng. Chốt theo NGƯỜI GỌI — phiếu nhiều NSTM thì mỗi người chốt phần mình."""
+    pr = _in_scope(db, pid, user, "write")
+    option_service.ensure_stage(pr)
+    profile = get_perm_profile(db, user)
+    done, empty, all_done = option_service.complete_options(
+        db, pr, user, profile.get("emp_code") or "",
+        _see_all_items(profile, pr, user), data.empty_item_ids)
+    msg = "Đã chốt hoàn thành xử lý phương án"
+    if all_done:
+        msg += " — cả phiếu đã xử lý xong"
+    return success({"done": done, "empty": empty, "all_done": all_done}, msg)
+
+
+@router.post("/{pid}/items/{item_id}/options/reopen")
+def reopen_options_line(pid: int, item_id: int, db: Session = Depends(get_db),
+                        user=Depends(require("purchase_request", "read"))):
+    """Người yêu cầu / quản lý MỞ LẠI một dòng đã chốt hoàn thành để NSTM sửa tiếp
+    (khuôn "Cần khảo sát lại" của YCBG). Đòi `read` cùng lý do với `choose`: người
+    yêu cầu thường chỉ còn quyền đọc sau khi phiếu duyệt; ai được bấm do
+    `ensure_can_choose` quyết — mở lại là mặt trái của quyền chọn."""
+    pr, item = _open_line(db, pid, item_id, user, "read")
+    option_service.ensure_can_choose(
+        pr, user, user_has_permission(db, user, "purchase_request", "approve"))
+    option_service.reopen_line(db, pr, item, user)
+    return success({"item_id": item.id, "options_done": False, "no_option": False},
+                   "Đã mở lại dòng cho NSTM xử lý tiếp")
+
+
+@router.post("/{pid}/options/generate-orders")
+def generate_orders_from_options(pid: int, db: Session = Depends(get_db),
+                                 user=Depends(require("purchase_order", "create"))):
+    """H.10.6 — "Tạo đơn mua hàng theo phương án": gom phương án ĐANG CHỌN của từng
+    dòng theo NCC thành các ĐMH NHÁP một lượt; dòng thiếu NCC gom vào một đơn riêng.
+
+    Cổng theo `purchase_order:create` chứ không theo quyền phiếu — nút này LẬP ĐƠN,
+    ai lập được đơn tay thì bấm được nút gom. Vẫn phải THẤY phiếu: `_in_scope` đọc
+    theo phạm vi `purchase_request.read` của người gọi (ngoài phạm vi -> 404)."""
+    pr = _in_scope(db, pid, user, "read")
+    option_service.ensure_stage(pr)
+    out = option_service.generate_purchase_orders(db, pr, user.id)
+    n = len(out["orders"])
+    return success(out, f"Đã tạo {n} đơn mua hàng nháp theo phương án")

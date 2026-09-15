@@ -1,3 +1,5 @@
+import type { PurchaseRequestOption } from './purchase-request-options'
+
 /** Một dòng hàng của phiếu YCMH — khớp `items[]` của `GET /api/purchase-requests/{id}`. */
 export interface PurchaseRequestItem {
   /** 0 / thiếu = dòng mới chưa lưu. GIỮ id khi sửa, nếu không ảnh đối chiếu sẽ mồ côi. */
@@ -28,6 +30,19 @@ export interface PurchaseRequestItem {
   qty_received: number
   product_id: number
   product_thumbnail_url: string
+  /**
+   * bao-CR-310 — số PHƯƠNG ÁN đã gắn + phương án ĐÃ CHỐT của dòng. TÙY CHỌN vì
+   * dòng nháp dựng ở màn sửa (spread EMPTY_PURCHASE_REQUEST_ITEM) không có chúng.
+   */
+  option_count?: number
+  chosen_option?: PurchaseRequestOption | null
+  /**
+   * bao-CR-310 đợt 3b — NSTM đã "chốt hoàn thành xử lý" dòng chưa (khuôn YCBG):
+   * chốt rồi NSTM hết sửa phương án, người yêu cầu mới bắt đầu chọn ở màn chi tiết.
+   * `no_option` = chốt rỗng: xử lý rồi nhưng không có NCC phù hợp.
+   */
+  options_done?: boolean
+  no_option?: boolean
 }
 
 /** Nhà cung cấp đề xuất — phiếu có HAI cụm: bộ phận yêu cầu và thu mua. */

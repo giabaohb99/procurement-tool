@@ -96,6 +96,12 @@ class PurchaseRequestItem(Base, AuditMixin):
     qty_received: Mapped[float] = mapped_column(Numeric(18, 3), default=0)  # tổng SL đã nhận (đồng bộ từ ĐMH liên kết)
     progress_note: Mapped[str] = mapped_column(Text, default="")           # chi tiết tiến độ
     note: Mapped[str] = mapped_column(String(255), default="")
+    # bao-CR-310 đợt 3b — NSTM "chốt hoàn thành" phần phương án của dòng (khuôn YCBG
+    # complete_sr): xong rồi NSTM hết sửa phương án, người yêu cầu mới bắt đầu chọn.
+    # KHÁC is_chosen: options_done là cột NSTM tuyên bố "đã xử lý xong dòng này",
+    # còn "chốt phương án nào" vẫn suy từ tab_purchase_request_item_option.is_chosen.
+    options_done: Mapped[bool] = mapped_column(Boolean, default=False)
+    no_option: Mapped[bool] = mapped_column(Boolean, default=False)        # chốt rỗng: xử lý rồi nhưng không có NCC phù hợp
 
 
 class PurchaseRequestItemOption(Base, AuditMixin):

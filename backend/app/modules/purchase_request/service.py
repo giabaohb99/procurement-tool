@@ -679,6 +679,11 @@ def dispatch_pr(db: Session, pid: int, user_id: int) -> tuple[PurchaseRequest, i
     pr.received_date = new_base
     pr.updated_by = user_id
     db.commit()
+    # H.10.1 — mọi dòng luôn có ít nhất một phương án: sinh PHƯƠNG ÁN 0 (chụp từ chính
+    # dòng yêu cầu, chọn sẵn) ngay lúc thu mua tiếp nhận. Cả đường công tắc điều phối
+    # TẮT (duyệt phát là điều phối luôn) cũng đi qua đây nên không cần móc chỗ khác.
+    from . import option_service
+    option_service.ensure_option_zero(db, pr)
     record(db, user_id, ENTITY, pid, "dispatched",
            f"Điều phối — tự động phân bổ {n} dòng" + (f", còn {blank_count} dòng chưa có người" if blank_count else "")
            + (f" · Ngày tiếp nhận {old_base or '(trống)'} -> {new_base}" if old_base != new_base else ""))

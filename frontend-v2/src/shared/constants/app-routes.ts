@@ -40,6 +40,9 @@ export const appRoutes = {
     purchaseRequests: '/procurement/purchase-requests',
     purchaseRequestNew: '/procurement/purchase-requests/new',
     purchaseRequestDetail: (id: number | string) => `/procurement/purchase-requests/${id}`,
+    /** bao-CR-310 — màn XỬ LÝ PHƯƠNG ÁN của YCMH: NSTM gắn báo giá, người yêu cầu chốt. */
+    purchaseRequestProcess: (id: number | string) =>
+      `/procurement/purchase-requests/${id}/process`,
     purchaseRequestPrint: (id: number | string) => `/print/purchase-request/${id}`,
     /** Đơn mua hàng (ĐMH). */
     purchaseOrders: '/procurement/purchase-orders',

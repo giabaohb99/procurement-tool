@@ -34,6 +34,24 @@ export const queryKeys = {
     /** Những người được phép duyệt bước 1 của một phiếu YCMH (CR-071). */
     purchaseRequestDeptHeads: (id: number) =>
       ['procurement', 'purchase-requests', id, 'dept-head-candidates'] as const,
+    /** bao-CR-310 — danh sách PHƯƠNG ÁN (báo giá) đã gắn vào MỘT dòng hàng của YCMH. */
+    purchaseRequestItemOptions: (id: number, itemId: number) =>
+      ['procurement', 'purchase-requests', id, 'items', itemId, 'options'] as const,
+    /** Bảng "kho khảo sát đã duyệt" chọn được cho MỘT dòng hàng của YCMH (bao-CR-310). */
+    purchaseRequestAvailableSurveyLines: (
+      id: number,
+      itemId: number,
+      params?: Record<string, unknown>,
+    ) =>
+      [
+        'procurement',
+        'purchase-requests',
+        id,
+        'items',
+        itemId,
+        'available-survey-lines',
+        params ?? {},
+      ] as const,
     surveyRequests: (params?: Record<string, unknown>) =>
       ['procurement', 'survey-requests', params ?? {}] as const,
     surveyRequest: (id: number) => ['procurement', 'survey-requests', id] as const,

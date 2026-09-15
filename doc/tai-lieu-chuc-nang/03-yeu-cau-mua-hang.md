@@ -638,7 +638,8 @@ một YCBG mới. Nay thu mua gắn thêm vài phương án ngay trên dòng đ�
 
 ### H.3 Quy tắc
 
-1. Mỗi dòng gắn **tối đa 5 phương án** (`option_service.MAX_OPTIONS_PER_LINE`).
+1. Mỗi dòng gắn **tối đa 5 phương án** (`option_service.MAX_OPTIONS_PER_LINE`). *Phương án 0
+   (H.10) đứng NGOÀI trần này.*
 2. Hai nguồn phương án: **chọn từ kho khảo sát đã duyệt** (`line_approve = "Đã duyệt"`), hoặc
    **NSTM gõ tay**. Gõ tay dành cho trường hợp giá biến động liên tục, NSTM cần đưa ra một mức
    hợp lý cho người yêu cầu chốt — không phải để lách kho khảo sát.
@@ -656,8 +657,8 @@ một YCBG mới. Nay thu mua gắn thêm vài phương án ngay trên dòng đ�
    dòng** — ngoại lệ DUY NHẤT phương án được ghi vào nhóm trường nhu cầu (xem H.4). Nhờ vậy dòng
    bắt đầu được đồng bộ tiến độ `qty_ordered`/`qty_received` (vốn nối theo chuỗi `product_code`
    — tức đóng luôn N-004 cho các dòng này). Bỏ chốt **không xóa mã** đã chép: mã đã thành dữ
-   liệu của dòng. ⚠️ **Chưa có trong mã** — `option_service.choose` hiện không ghi
-   `item.product_code`; làm cùng đợt 2 hoặc sớm hơn.
+   liệu của dòng. *Đã có trong mã từ 15/09/2026 (`option_service.choose_option`); mã trùng
+   với dòng khác trên phiếu thì KHÔNG chép — giữ luật CR-047 mỗi mã một dòng.*
 
 ### H.4 Dòng hàng và phương án không ghi đè nhau
 
@@ -692,6 +693,9 @@ Nút *Tạo đơn mua hàng theo phương án* gom các dòng đã chốt **theo
 
 Cùng khuôn với `survey_request.create_prs` (gom option đã chọn theo NCC ra nhiều YCMH nháp) —
 chỉ khác là áp xuống một tầng.
+
+*Mở rộng 14/09/2026 (H.10.6): các dòng mà phương án chọn CHƯA có NCC gom thành **một đơn nháp
+riêng không NCC** — không chặn sinh đơn.*
 
 ### H.6 Hai bản in
 
@@ -746,15 +750,104 @@ Mỗi trang chính là **bản nháp của một đơn mua hàng sắp tạo**: 
 | Đợt | Nội dung | Tình trạng |
 |-----|----------|-----------|
 | P1 | Bảng dữ liệu + service + 6 endpoint (gắn từ khảo sát · gắn tay · sửa · gỡ · chốt · liệt kê) + test | **Xong — đã commit**; bảng `tab_purchase_request_item_option` (migration `6835fb9cfecd`) đã có trên **cả dev lẫn prod** (theo lượt gộp 11/09) |
-| P2 | Chốt phương án → gom theo NCC → sinh N đơn mua hàng nháp + **đồng bộ mã hàng H.3.9** | Chưa làm |
-| P3 | Màn *Xử lý phương án* ở `frontend-v2` (`/procurement/purchase-requests/:id/process`) | Chưa làm |
+| P2 | **MỞ RỘNG 14/09 — xem H.10**: nền phương án 0 + nới khóa sau chốt + áp 1 NCC cho nhiều dòng, rồi gom theo NCC → sinh N đơn nháp + 1 đơn riêng không NCC + **đồng bộ mã hàng H.3.9** | **Xong local 15/09 cả ba chặng (a)(b)(c) — chưa commit** |
+| P3 | Màn *Xử lý phương án* ở `frontend-v2` (`/procurement/purchase-requests/:id/process`) + **P3b**: chốt hoàn thành xử lý + thẻ chọn phương án ở màn chi tiết | **Xong local 14/09, chưa commit** |
 | P4 | Hai bản in ở H.6 + gác N-17 + cập nhật HDSD | Chưa làm |
 
 Thứ tự làm tiếp đã chốt: **P3 trước P2** (màn *Xử lý phương án* là chỗ nghiệm thu bằng mắt,
 có nó rồi mới thấy dữ liệu để bấm sinh đơn), rồi P4 sau cùng vì bản B phụ thuộc N-17.
+P3 + P3b đã xong; bên trong P2 đi theo thứ tự H.10.8.
 
 ### H.9 Còn nợ
 
 - **N-17**: quyền `print` của `purchase_request` **backend không kiểm ở đâu cả** — ai mở được chi
   tiết phiếu (`read`) là in được. Bản B lộ tên NCC, nên trước khi bật bản B phải gác lại bằng
   `supplier:read`.
+
+### H.10 Mở rộng đợt 2 — "Phương án 0" (chốt thiết kế 14/09/2026; cả ba chặng (a)(b)(c) viết xong local 15/09)
+
+Câu hỏi gốc của khách: *người yêu cầu không chọn phương án, hoặc khảo sát không ra NCC, thì có
+mua hàng được không?* Thay vì chặn hoặc đẻ thêm luật ngoại lệ, chốt hướng: **mọi dòng luôn có
+ít nhất một phương án** — chính dòng yêu cầu tự làm phương án cho nó.
+
+#### H.10.1 Phương án 0 là gì
+
+Hệ thống **tự sinh** cho mọi dòng khi phiếu được điều phối (phiếu đang chạy dở thì sinh bù),
+ruột chụp từ chính dòng yêu cầu: tên hàng, quy cách, ĐVT, giá đề xuất của người yêu cầu —
+**chưa có NCC**. Bản chất kỹ thuật: một **phương án nhập tay do hệ thống tạo** (nguồn hiển thị
+*"Yêu cầu gốc"*), sửa được như phương án nhập tay, nhưng **không xóa được** và **không chiếm
+chỗ trong trần 5** của H.3.1 — mỗi dòng tối đa 5 phương án NSTM gắn + phương án 0 đứng ngoài.
+
+#### H.10.2 Chọn sẵn
+
+Phương án 0 được **tick chọn từ đầu** (chỉ khi dòng chưa chọn gì khác). Người yêu cầu im lặng
+= mua theo đúng yêu cầu gốc. Chọn phương án khảo sát thì phương án 0 tự bỏ chọn — luật
+một-dòng-một-phương-án H.3.4 giữ nguyên.
+
+#### H.10.3 Chốt rỗng đổi nghĩa
+
+"Chốt rỗng" nay = **không có phương án NSTM nào** (phương án 0 không tính) — trở thành lời
+khai *"khảo sát không ra NCC"* thuần túy. Dòng chốt rỗng **vẫn chọn được phương án 0** → vẫn
+mua được, thu mua tự tìm NCC ở nhịp sau.
+
+#### H.10.4 Nới khóa sau chốt — đúng một khe
+
+Luật P3b khóa dòng sau khi NSTM *chốt hoàn thành xử lý*; nhưng màn chọn chỉ hiện dòng đã
+chốt, mà khách muốn chỉnh ngay trên đó, nên nới: sau chốt vẫn **sửa được GIÁ của mọi phương
+án** và **điền/sửa NCC trên phương án 0 + phương án nhập tay** (người có
+`purchase_request:write` + `supplier:read`). **Gắn thêm / gỡ phương án vẫn khóa** — muốn thì
+bấm *Mở lại cho NSTM xử lý*. Phương án từ khảo sát **không đổi NCC được** — đổi NCC nghĩa là
+một phương án khác, không phải sửa phương án cũ.
+
+#### H.10.5 Màn chọn hai tầng người dùng
+
+Người yêu cầu: bấm chọn thẻ như P3b, không thấy NCC (H.3.8 giữ nguyên). Thu mua
+(`purchase_request:write` + `supplier:read`): thấy thêm nút sửa giá/NCC trên từng thẻ + khu
+**"Áp 1 NCC cho nhiều dòng"** ngay trên màn chọn — tick các dòng đang thiếu NCC → chọn một
+NCC → áp một phát, sửa giá kèm nếu cần.
+
+#### H.10.6 Sinh đơn — bổ sung cho H.5
+
+Gom dòng đã chọn theo NCC → N đơn nháp (H.5 giữ nguyên); **các dòng mà phương án chọn CHƯA có
+NCC gom thành MỘT đơn nháp riêng không NCC** — không chặn sinh đơn, thu mua vào đơn điền NCC
+sau; cổng gửi duyệt ĐMH sẵn có (CR-095, `REQUIRED_LINE_FIELDS`) chặn tới khi điền đủ. Kèm
+H.3.9 chép mã hàng lúc chọn. **Đường tạo ĐMH tay giữ nguyên, luôn hoạt động** — và được nâng
+cấp tự điền NCC/giá/mã từ phương án đã chọn của dòng.
+
+#### H.10.7 Chọn thay
+
+Admin / Quản lý thu mua (`purchase_request:approve`) chọn giúp người yêu cầu — đã có sẵn từ
+P3b, không phải làm gì thêm.
+
+#### H.10.8 Thứ tự thi công
+
+(a) backend phương án 0 + nới khóa H.10.4 + endpoint áp NCC hàng loạt → (b) màn chọn nâng cấp
+H.10.5 → (c) sinh đơn H.10.6. Xong (c) là hết đợt 2; hai bản in vẫn nằm ở đợt 4.
+**Cả ba chặng đã xong local 15/09.** (b) nằm trọn trong
+`purchase-request-choose-card.tsx`: hộp sửa giá/NCC trên từng thẻ (đường
+`PATCH .../supplier` khi có NCC, PATCH giá thường khi không), khu "Áp 1 NCC cho nhiều
+dòng" (chỉ nhận dòng mình phụ trách đang chọn phương án thiếu NCC, không phải khảo
+sát), và dòng chốt rỗng hiện thẻ Phương án 0 chọn được thay vì tắt hẳn lưới.
+
+(c) gồm hai đường:
+
+- **Nút gom** — `POST /{pid}/options/generate-orders`
+  (`option_service.generate_purchase_orders`): gom dòng đã chọn phương án theo NCC (mã, hoặc
+  tên với NCC gõ tay ngoài danh mục), mỗi nhóm một đơn NHÁP đi qua đúng
+  `purchase_order.service.create_po` để hưởng trọn tác dụng phụ của đường tạo tay (sinh mã
+  `PO{id:05d}`, NSPT mặc định, chép ngày dự kiến, `_sync_pr` CR-074, `recompute_effects`,
+  nhật ký); nhóm không NCC đứng CUỐI thành một đơn riêng, ghi chú đơn nhắc bổ sung NCC trước
+  khi gửi duyệt. Giá dòng = `snap_price_by_volume`, VAT = `snap_vat` (trống rơi về `vat_pct`
+  của dòng, CR-058), ĐVT = ĐVT báo giá nếu có, cam kết giao/nơi giao chép vào ghi chú dòng.
+  **Chống sinh trùng bằng `line_status`**: dòng đã nằm trên một ĐMH (kể cả nháp — CR-074 đã
+  lật `not_ordered`) bị bỏ qua, hết dòng thì 400 — và cố ý KHÔNG bỏ chọn phương án, vì phương
+  án đã chọn là quyết định của người yêu cầu (khác YCBG). Dòng bị người yêu cầu bỏ chọn hết
+  (kể cả phương án 0) = "khoan mua dòng này" — bỏ qua, đếm vào `skipped.no_chosen`. Cổng:
+  `purchase_order:create` (nút này LẬP ĐƠN) + phạm vi đọc `purchase_request` (`_in_scope`,
+  ngoài phạm vi 404) + giai đoạn mở. Nút đặt trên thẻ chọn phương án của màn chi tiết, có hộp
+  xác nhận, toast kể tên các đơn vừa sinh.
+- **Đường tạo ĐMH tay nâng cấp** (`utils/purchase-order-draft.ts`): dòng đã chọn phương án
+  thì `buildPurchaseOrderLines` điền sẵn giá/VAT/ĐVT + cam kết giao theo phương án đó;
+  `toDraftFromRequest` điền NCC lên đầu đơn khi **mọi dòng còn mua đều chọn phương án cùng
+  MỘT NCC** (lệch một dòng là để trống như cũ). Phương án 0 chụp đúng giá trị dòng nên phiếu
+  chưa ai đụng phương án cho kết quả y như trước.

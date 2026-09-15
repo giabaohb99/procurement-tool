@@ -5,6 +5,7 @@ import {
   CheckCheck,
   Copy,
   CornerUpLeft,
+  ListChecks,
   Loader2,
   Pencil,
   Plus,
@@ -66,6 +67,7 @@ import {
   PurchaseRequestItemsTable,
 } from '../components/purchase-request-items-table'
 import { PurchaseRequestLineDetailDialog } from '../components/purchase-request-line-detail-dialog'
+import { PurchaseRequestChooseCard } from '../components/purchase-request-choose-card'
 import { PurchaseRequestSupplierCard } from '../components/purchase-request-supplier-card'
 import { DocumentMoneyTotals } from '../components/document-money-totals'
 import { RelatedPurchaseOrdersCard } from '../components/related-purchase-orders-card'
@@ -95,6 +97,7 @@ import {
 import { purchaseRequestApi } from '../api/purchase-request-api'
 import {
   isClosed,
+  isDispatched,
   isEditable,
   type PurchaseRequestDetail,
   type PurchaseRequestItem,
@@ -588,6 +591,18 @@ export function PurchaseRequestDetailPage() {
         </Link>
       </Button>
       {!isNew && <RelatedPurchaseOrdersCard purchaseRequestCode={data.code} />}
+      {/* bao-CR-310: mở từ lúc thu mua tiếp nhận phiếu; phiếu đóng vẫn
+          vào được để XEM lại phương án đã chốt. Đợt 3b: màn đó là bàn
+          làm việc của NSTM nên đòi thêm quyền ghi — người yêu cầu
+          thường xem/chọn phương án ngay tại thẻ Phương án bên dưới. */}
+      {!isNew && isDispatched(data.status) && can('purchase_request', 'write') && (
+        <Button variant="outline" asChild>
+          <Link to={appRoutes.procurement.purchaseRequestProcess(data.id)}>
+            <ListChecks />
+            Xử lý phương án
+          </Link>
+        </Button>
+      )}
       {editable && (
         <Button variant="outline" onClick={() => setEditing(true)}>
           <Pencil />
@@ -752,6 +767,10 @@ export function PurchaseRequestDetailPage() {
           </Card>
 
           <PurchaseRequestSupplierCard data={loadedDraft} editing={editing} onChange={patch} />
+
+          {/* bao-CR-310 đợt 3b: dòng nào NSTM đã "chốt hoàn thành xử lý" thì hiện
+              ở đây cho người yêu cầu chọn phương án; thẻ tự ẩn khi chưa có dòng nào. */}
+          {!isNew && !editing && <PurchaseRequestChooseCard purchaseRequest={data} />}
 
           <DocumentAttachmentsCard
             entity="purchase_request"
