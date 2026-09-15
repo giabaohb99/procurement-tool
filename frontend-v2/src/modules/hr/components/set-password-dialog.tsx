@@ -2,6 +2,7 @@ import { Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
+import { PASSWORD_HINT, newPasswordField } from '@/core/auth/password-rules'
 import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import { Button } from '@/shared/ui/button'
 import {
@@ -46,8 +47,12 @@ export function SetPasswordDialog({
   }
 
   async function handleSubmit() {
-    if (password.length < 4) {
-      toast.error('Mật khẩu tối thiểu 4 ký tự')
+    //  bao-CR-405 (BM-016): chép đúng luật của `core/password_policy.py`. Luật cấm-trùng
+    //  (mật khẩu chứa mã nhân viên / email) chỉ máy chủ kiểm được — lỗi đó về dưới dạng
+    //  400 kèm câu tiếng Việt và `onSubmit` đã hiện sẵn.
+    const check = newPasswordField().safeParse(password)
+    if (!check.success) {
+      toast.error(check.error.issues[0]?.message ?? 'Mật khẩu không hợp lệ')
       return
     }
     if (password !== confirmation) {
@@ -72,7 +77,7 @@ export function SetPasswordDialog({
             {hasAccount ? 'Đặt lại mật khẩu' : 'Tạo tài khoản & đặt mật khẩu'}
           </DialogTitle>
           <DialogDescription>
-            Mật khẩu tối thiểu 4 ký tự. Nhân sự dùng email để đăng nhập.
+            {PASSWORD_HINT} Không được trùng mã nhân viên hoặc email. Nhân sự dùng email để đăng nhập.
             {!hasAccount && ' Tài khoản mới nhận vai trò mặc định "Nhân sự".'}
           </DialogDescription>
         </DialogHeader>

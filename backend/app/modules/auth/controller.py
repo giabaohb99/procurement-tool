@@ -12,6 +12,7 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.core.device_fingerprint import MAX_USER_AGENT
 from app.core.limiter import limiter
+from app.core.password_policy import validate_password
 from app.core.request_context import get_context
 from app.core.response import success
 from app.modules.employee.model import Employee
@@ -243,14 +244,18 @@ def me(user=Depends(get_current_user), db: Session = Depends(get_db)):
 
 
 @router.post("/change-password")
-def change_password(data: dict, user=Depends(get_current_user), db: Session = Depends(get_db)):
+def change_password(data: schema.ChangePasswordInput, user=Depends(get_current_user),
+                    db: Session = Depends(get_db)):
     """Người dùng tự đổi mật khẩu (đang đăng nhập). Body: {old_password, new_password}."""
-    old = (data.get("old_password") or "").strip()
-    new = (data.get("new_password") or "").strip()
+    old = (data.old_password or "").strip()
+    #  bao-CR-405: KHÔNG `.strip()` mật khẩu mới nữa — `validate_password` từ chối thẳng
+    #  khoảng trắng đầu/cuối, còn cắt âm thầm thì người dùng nhận một mật khẩu khác cái
+    #  họ vừa gõ và lần sau dán lại y hệt là sai.
+    new = data.new_password or ""
     if not verify_password(old, user.password_hash):
         raise HTTPException(400, "Mật khẩu hiện tại không đúng")
-    if len(new) < 6:
-        raise HTTPException(400, "Mật khẩu mới phải từ 6 ký tự trở lên")
+    emp = db.get(Employee, user.employee_id) if user.employee_id else None
+    validate_password(new, username=(emp.code if emp else ""), email=user.email or "")
     if verify_password(new, user.password_hash):
         raise HTTPException(400, "Mật khẩu mới không được trùng mật khẩu cũ")
     user.password_hash = hash_password(new)
@@ -356,7 +361,12 @@ def reset_password(request: Request, data: schema.ResetPasswordInput, db: Sessio
     if not user or not user.is_active:
         from fastapi import HTTPException
         raise HTTPException(400, "Tài khoản không tồn tại hoặc đã bị khóa")
-        
+
+    #  bao-CR-405 (BM-016): cửa này trước KHÔNG kiểm gì cả — vé còn hạn là đặt được
+    #  mật khẩu `1`. Kiểm SAU khi đã xác thực vé để không biến thông báo lỗi thành
+    #  chỗ dò xem vé có hợp lệ hay không.
+    emp = db.get(Employee, user.employee_id) if user.employee_id else None
+    validate_password(data.new_password, username=(emp.code if emp else ""), email=user.email or "")
     user.password_hash = hash_password(data.new_password)
     db.commit()
 

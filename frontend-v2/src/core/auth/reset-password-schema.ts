@@ -1,15 +1,18 @@
 import { z } from 'zod'
 
+import { newPasswordField } from './password-rules'
+
 /**
  * Schema form đặt lại mật khẩu (mở từ đường dẫn trong email khôi phục).
  *
- * Ngưỡng 6 ký tự lấy đúng theo backend (`/api/auth/reset-password` và
- * `/api/auth/change-password` đều chặn ở 6) — để giao diện báo trước thay vì
- * bắt người dùng bấm gửi rồi mới nhận lỗi 400.
+ * Luật lấy đúng theo backend (`core/password_policy.py`, bao-CR-405) — để giao diện
+ * báo trước thay vì bắt người dùng bấm gửi rồi mới nhận lỗi 400. Trước bao-CR-405
+ * cửa `/api/auth/reset-password` **không kiểm gì cả**, ngưỡng 6 ký tự ghi ở đây chỉ
+ * là chú thích sai chép từ cửa đổi mật khẩu.
  */
 export const resetPasswordSchema = z
   .object({
-    password: z.string().min(6, 'Mật khẩu mới phải từ 6 ký tự trở lên'),
+    password: newPasswordField(),
     confirmPassword: z.string().min(1, 'Nhập lại mật khẩu mới'),
   })
   // Gắn lỗi vào Ô NHẬP LẠI chứ không vào cả form: người dùng thấy dòng đỏ ngay

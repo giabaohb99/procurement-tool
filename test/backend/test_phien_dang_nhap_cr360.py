@@ -24,6 +24,7 @@ from app.core.auth import create_access_token, get_current_user
 from app.core.logging_codes import SOURCE_API
 from app.core.request_context import open_context
 from app.modules.auth.controller import change_password, logout
+from app.modules.auth.schema import ChangePasswordInput
 from app.modules.login_session.constants import DeviceType, LoginMethod, RevokeReason
 from app.modules.login_session.model import LoginSession
 from app.modules.login_session.service import (describe_device, force_relogin, resolve_session,
@@ -167,7 +168,9 @@ def test_doi_mat_khau_cat_may_khac_nhung_giu_may_dang_thao_tac(db, seed):
 
     with open_context(SOURCE_API):
         get_current_user(f"Bearer {here_token}", db)
-        change_password({"old_password": "matkhaucu1", "new_password": "matkhaumoi9"},
+        #  bao-CR-405: cửa này nay nhận lược đồ `ChangePasswordInput` thay cho `dict` trần,
+        #  và mật khẩu mới phải đạt chính sách của `core/password_policy`.
+        change_password(ChangePasswordInput(old_password="matkhaucu1", new_password="matkhaumoi9"),
                         user=user, db=db)
 
     db.refresh(here)

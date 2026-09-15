@@ -1063,7 +1063,7 @@ def test_c8_dat_mat_khau_qua_cua_nhan_su_phai_theo_pham_vi(world):
 
     with pytest.raises(HTTPException) as loi:
         employee_controller.set_password(world.emp["b1"],
-                                         employee_controller.SetPasswordIn(password="doi-trom"),
+                                         employee_controller.SetPasswordIn(password="doi-trom2026"),
                                          world.db, a1.user)
     assert loi.value.status_code == 404, "người ngoài phạm vi phải 404 như id không tồn tại"
     assert world.db.get(User, nan_nhan.id).password_hash == mat_khau_cu
@@ -1071,7 +1071,7 @@ def test_c8_dat_mat_khau_qua_cua_nhan_su_phai_theo_pham_vi(world):
     #  Vế đối chứng: phạm vi `own` vẫn đặt được mật khẩu của CHÍNH MÌNH.
     cua_minh = a1.user.password_hash
     employee_controller.set_password(world.emp["a1"],
-                                     employee_controller.SetPasswordIn(password="cua-toi"),
+                                     employee_controller.SetPasswordIn(password="cua-toi2026"),
                                      world.db, a1.user)
     assert world.db.get(User, a1.user.id).password_hash != cua_minh
 
@@ -1091,7 +1091,7 @@ def test_c8b_hanh_chinh_pham_vi_phap_nhan_van_dat_duoc_mat_khau_trong_cong_ty(wo
     mat_khau_cu = dong_nghiep.password_hash
 
     employee_controller.set_password(world.emp["a2"],
-                                     employee_controller.SetPasswordIn(password="ho-tro"),
+                                     employee_controller.SetPasswordIn(password="ho-tro2026"),
                                      world.db, hanh_chinh.user)
     assert world.db.get(User, dong_nghiep.id).password_hash != mat_khau_cu
 
@@ -1099,7 +1099,7 @@ def test_c8b_hanh_chinh_pham_vi_phap_nhan_van_dat_duoc_mat_khau_trong_cong_ty(wo
     from fastapi import HTTPException
     with pytest.raises(HTTPException) as loi:
         employee_controller.set_password(world.emp["b1"],
-                                         employee_controller.SetPasswordIn(password="khong-duoc"),
+                                         employee_controller.SetPasswordIn(password="khong-duoc26"),
                                          world.db, hanh_chinh.user)
     assert loi.value.status_code == 404
 
@@ -1352,7 +1352,7 @@ def test_d5_khong_tu_gan_them_vai_tro_cho_chinh_minh_qua_man_nhan_su(world):
 
     a1 = world.grant("a1", "employee", scope="all", actions=("read", "write"))
     employee_controller.set_password(khongtk.id,
-                                     employee_controller.SetPasswordIn(password="1234"),
+                                     employee_controller.SetPasswordIn(password="matkhau1234"),
                                      db, a1.user)
 
     tai_khoan_moi = db.query(User).filter(User.employee_id == khongtk.id).first()

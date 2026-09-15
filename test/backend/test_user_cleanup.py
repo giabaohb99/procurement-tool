@@ -53,7 +53,7 @@ class TestVaiTroMacDinh:
         db.commit()
 
         u = user_service.provision_user(
-            db, UserProvision(employee_id=emp.id, password="123456", role_ids=[]), 1)
+            db, UserProvision(employee_id=emp.id, password="matkhau2026", role_ids=[]), 1)
 
         assert user_service._role_ids(db, u.id) == [role_nv.id]
 
@@ -65,7 +65,7 @@ class TestVaiTroMacDinh:
         db.commit()
 
         u = user_service.provision_user(
-            db, UserProvision(employee_id=emp.id, password="123456", role_ids=[other.id]), 1)
+            db, UserProvision(employee_id=emp.id, password="matkhau2026", role_ids=[other.id]), 1)
 
         assert user_service._role_ids(db, u.id) == [other.id]
 

@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.core.audit import record as audit_record
 from app.core.auth import get_current_user, get_perm_profile, hash_password, require
+from app.core.password_policy import validate_password
 from app.core.base_controller import apply_filters, apply_sort_from_request, pagination
 from app.core.database import get_db
 from app.core.response import success
@@ -228,19 +229,21 @@ def set_password(eid: int, data: SetPasswordIn, db: Session = Depends(get_db),
     """Đặt mật khẩu tài khoản của nhân sự. Nếu nhân sự CHƯA có tài khoản đăng nhập
     thì TỰ TẠO tài khoản (email + vai trò của nhân sự) rồi đặt luôn mật khẩu này."""
     from app.modules.user.model import User
-    if not (data.password or "").strip() or len(data.password) < 4:
-        raise HTTPException(400, "Mật khẩu tối thiểu 4 ký tự")
     _block_set_password_out_of_scope(db, eid, user)
+    #  bao-CR-405 (BM-016): trước chỉ đòi 4 ký tự. Nạp hồ sơ NGAY từ đây (bản cũ chỉ nạp ở
+    #  nhánh tạo mới) để luật cấm-trùng có `emp.code` — chính mã nhân viên là tên đăng nhập.
+    emp = db.get(service.Employee, eid)
+    if not emp:
+        raise HTTPException(404, "Không tìm thấy nhân sự")
     u = db.query(User).filter(User.employee_id == eid).first()
+    validate_password(data.password, username=emp.code,
+                      email=((u.email if u else "") or emp.email or ""))
     if u:
         u.password_hash = hash_password(data.password)
         db.commit()
         return success(None, "Đã đặt lại mật khẩu")
 
     # Chưa có tài khoản → tự tạo từ nhân sự rồi đặt mật khẩu
-    emp = db.get(service.Employee, eid)
-    if not emp:
-        raise HTTPException(404, "Không tìm thấy nhân sự")
     if not (emp.email or "").strip():
         raise HTTPException(400, "Nhân sự chưa có email — hãy nhập email trước để tạo tài khoản đăng nhập")
     if db.query(User).filter(User.email == emp.email).first():

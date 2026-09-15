@@ -461,7 +461,7 @@ def test_a2_dat_lai_mat_khau_nhan_su_ngoai_pham_vi_bi_chan(world):
 
     cu = db.query(User).filter(User.employee_id == b1_emp).first().password_hash
     with pytest.raises(HTTPException) as e:
-        emp_ctl.set_password(b1_emp, SetPasswordIn(password="chiem-doat"), db, a1.user)
+        emp_ctl.set_password(b1_emp, SetPasswordIn(password="chiem-doat2026"), db, a1.user)
     assert e.value.status_code == 404
 
     moi = db.query(User).filter(User.employee_id == b1_emp).first().password_hash
@@ -469,9 +469,11 @@ def test_a2_dat_lai_mat_khau_nhan_su_ngoai_pham_vi_bi_chan(world):
 
     #  Vế đối chứng: trong phạm vi thì cửa vẫn phải chạy, kẻo bản vá hóa ra là
     #  khóa luôn một việc có thật của hành chính.
-    emp_ctl.set_password(world.emp["a2"], SetPasswordIn(password="dat-lai"), db, a1.user)
+    #  bao-CR-405: mật khẩu mẫu phải đạt chính sách (>= 8 ký tự, có cả chữ và số),
+    #  không thì ca đối chứng đỏ vì lý do chẳng liên quan gì tới phạm vi.
+    emp_ctl.set_password(world.emp["a2"], SetPasswordIn(password="dat-lai2026"), db, a1.user)
     a2_hash = db.query(User).filter(User.employee_id == world.emp["a2"]).first().password_hash
-    assert verify_password("dat-lai", a2_hash) is True
+    assert verify_password("dat-lai2026", a2_hash) is True
 
 
 def test_a3_tu_tao_tai_khoan_cho_nhan_su_ngoai_pham_vi_bi_chan(world):
@@ -498,7 +500,7 @@ def test_a3_tu_tao_tai_khoan_cho_nhan_su_ngoai_pham_vi_bi_chan(world):
     assert ngoai.id not in a1.sees(model_of("employee"))
 
     with pytest.raises(HTTPException) as e:
-        emp_ctl.set_password(ngoai.id, SetPasswordIn(password="dung-ho"), db, a1.user)
+        emp_ctl.set_password(ngoai.id, SetPasswordIn(password="dung-ho2026"), db, a1.user)
     assert e.value.status_code == 404
     assert db.query(User).filter(User.employee_id == ngoai.id).first() is None, (
         "không được dựng tài khoản đăng nhập cho hồ sơ nhân sự ngoài phạm vi")

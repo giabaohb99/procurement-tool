@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.core.audit import record
 from app.core.auth import hash_password, perm_cache_clear
+from app.core.password_policy import validate_password
 from app.modules.employee.model import Employee
 
 from .model import User, UserRole, UserScope
@@ -167,6 +168,9 @@ def provision_user(db: Session, data: UserProvision, actor_id: int) -> User:
     # được chọn trước). Chặn ngay từ lúc tạo. Tài khoản đã khoá thì không tính.
     if email and db.query(User).filter(User.email == email, User.is_active.is_(True)).first():
         raise HTTPException(400, f"Email {email} đã được một tài khoản khác sử dụng")
+    #  bao-CR-405 (BM-016): kiểm TRƯỚC khi dựng `User` — tên đăng nhập của tài khoản này
+    #  chính là `emp.code`, nên đây là chỗ duy nhất biết đủ ngữ cảnh để cấm trùng.
+    validate_password(data.password, username=emp.code, email=email)
     user = User(
         email=email,
         employee_id=data.employee_id,
@@ -257,6 +261,10 @@ def reset_password(db: Session, user_id: int, new_password: str, actor_id: int) 
     user = db.get(User, user_id)
     if not user:
         raise HTTPException(404, "Không tìm thấy tài khoản")
+    #  bao-CR-405 (BM-016): mã nhân viên lấy từ hồ sơ gắn với tài khoản — tài khoản mồ côi
+    #  (không còn `employee_id`) thì chỉ còn luật email, các luật khác vẫn nguyên.
+    emp = db.get(Employee, user.employee_id) if user.employee_id else None
+    validate_password(new_password, username=(emp.code if emp else ""), email=user.email or "")
     user.password_hash = hash_password(new_password)
     user.updated_by = actor_id
     db.commit()

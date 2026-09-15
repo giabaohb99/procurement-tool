@@ -62,7 +62,11 @@ export default function EmployeeAccountCard({ employeeId, email }: { employeeId:
   }, [user?.id])
 
   async function submitPassword() {
-    if (pw1.length < 4) { toast.error('Mật khẩu tối thiểu 4 ký tự'); return }
+    // bao-CR-405 (BM-016): chép đúng luật của `backend/app/core/password_policy.py`.
+    // Luật cấm-trùng (mật khẩu chứa mã nhân viên / email) chỉ máy chủ kiểm được.
+    if (pw1.length < 8 || !/[a-zA-Z]/.test(pw1) || !/\d/.test(pw1)) {
+      toast.error('Mật khẩu tối thiểu 8 ký tự và phải có cả chữ lẫn số'); return
+    }
     if (pw1 !== pw2) { toast.error('Hai mật khẩu không khớp'); return }
     setSaving(true)
     try {
@@ -189,7 +193,8 @@ export default function EmployeeAccountCard({ employeeId, email }: { employeeId:
             <button className="btn ghost" onClick={() => { setPwOpen(false); setPw1(''); setPw2('') }}>Hủy</button>
           </div>
           <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 10 }}>
-            Mật khẩu tối thiểu 4 ký tự. Nhân sự dùng email để đăng nhập.
+            Mật khẩu tối thiểu 8 ký tự, phải có cả chữ và số, không được trùng mã nhân viên
+            hoặc email. Nhân sự dùng email để đăng nhập.
           </div>
         </div>
       )}
