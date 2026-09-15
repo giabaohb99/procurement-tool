@@ -33,11 +33,52 @@ các vấn đề bảo mật của hệ thống"*: soát **11 lớp phòng thủ
 Thêm **tám dòng BM-016 … BM-023**. Không dòng nào trùng vùng với 15 dòng cũ — chúng nằm ở
 **cấu hình** và **lớp mạng**, đúng hai chỗ mà §4 của sổ này vẫn ghi là *"chưa ai nhìn"*. Hai
 dòng đóng ngay bằng quyết định chứ không bằng mã: **BM-016** (chính sách mật khẩu) và
-**BM-017** (xác thực hai lớp) — đại ca **chấp nhận rủi ro**, lý do ghi tại dòng. Một dòng lòi
+**BM-017** (xác thực hai lớp) — đại ca **chấp nhận rủi ro**, lý do ghi tại dòng.
+*(Đính chính của bản 1.8: **BM-016 đã bị đảo lại ngay trong ngày** và nay đóng bằng mã —
+xem dưới. Chỉ còn **BM-017** là đóng bằng quyết định.)* Một dòng lòi
 ra trong lúc trả lời câu hỏi *"đổi `JWT_SECRET` có ảnh hưởng gì tới prod không"*: **BM-023** —
 bí mật nằm trong DB mà giải mã hỏng thì **không phát ra tiếng động nào**, và thứ chết trước
 tiên là **sao lưu**. Kèm theo: đính chính §4, thêm **Việc 5** ở §3, và thêm hẳn **§5 — kịch bản
 kiểm thử bảo mật**, vì một dòng BM không có bài kiểm canh thì lần sau nó hở lại trong im lặng.
+**Bản 1.8 — 14/09/2026 (khuya).** **BM-016 ĐẢO LẠI**: từ *"chấp nhận rủi ro"* thành **đã vá**
+bằng `bao-CR-405`. Lý do đảo nằm ngay dưới dòng BM-016 và không xóa quyết định cũ — hai điều
+mới biết sau khi đếm lại mã nguồn: (1) hệ có **năm** cửa đặt mật khẩu chứ không phải ba như
+bản 1.7 ghi, trong đó cửa *đặt lại bằng liên kết* **không kiểm gì cả**; (2) tên đăng nhập
+chính là **mã nhân viên**, nên mật khẩu đặt trùng mã nhân viên chỉ cần **một lần đoán** —
+`LOGIN_RATE_LIMIT` của BM-004 không đỡ được thứ chỉ cần một lần. Chính sách gom về một chỗ
+(`app/core/password_policy.py`) và có **bài kiểm cấu trúc** quét AST: hàm nào gọi
+`hash_password` mà không gọi `validate_password` là test đỏ — cửa thứ sáu sẽ lộ ra ở CI chứ
+không lộ trên màn hình khách. ⚠️ **Mật khẩu yếu đã tồn tại thì KHÔNG bị đụng tới** — chính
+sách chỉ gác lúc ĐẶT.
+**Bản 1.9 — 14/09/2026 (khuya).** **Đo BM-018 + BM-022 trên VPS** theo lệnh đại ca — chỉ in
+CÓ/KHÔNG, không in giá trị. **Cả hai SẠCH trên prod**: khóa không phải giá trị mặc định và dài
+≥ 32 ký tự; `CORS_ORIGINS` đúng một tên miền thật có TLS, không có `*`. Hai dòng vì thế hạ
+xuống mức **Thấp**, BM-022 **đóng bằng đo** (không cần mã), BM-018 chỉ còn phần chốt khởi
+động. Đo **hai lớp** — tệp `.env` *và* tiến trình đang chạy — vì hai thứ đó trôi khỏi nhau là
+chuyện thường. Nhân lần đo lòi ra dòng mới **BM-024**: **prod và dev dùng CHUNG một
+`JWT_SECRET`**. Vế *ký vé giả* thì **không hở** — chốt phiên `_check_session` của bao-CR-360
+P3a (xác nhận trên chính container prod đang chạy) đòi `jti` phải là một phiên còn sống trong
+CSDL prod, nên vé ký từ dev chết ở đó. Vế hở thật là **vai trò Fernet**: cùng khóa đó mã hóa
+mật khẩu SMTP + hai khóa R2 trong `tab_setting`, mà prod với dev **chung một máy chủ MySQL** —
+vào được dev là đọc được bí mật của prod. Hướng vá: **đổi khóa của DEV** (việc 5.7), tuyệt đối
+không đụng khóa prod.
+**Bản 2.0 — 14/09/2026 (khuya).** **BM-024 ĐÃ VÁ ngay trong ngày phát hiện** — dev nay có khóa
+riêng. Ba bí mật trong `tab_setting` của dev mã hóa lại bằng khóa mới, **3/3 khớp bản gốc**;
+đo lại: *prod và dev dùng chung khóa: **KHÔNG***; **prod không restart, không deploy, không
+đụng một dòng nào** và vẫn đọc được bí mật của prod. Không có mã nguồn nào đổi — việc hạ tầng,
+không cần CR. Hai bẫy ghi lại ở mục BM-024 để lần sau khỏi dẫm: **mã hóa lại TRƯỚC, đổi `.env`
+SAU** (ngược lại là mất khóa cũ, và vì BM-023 thì mất **trong im lặng**), và **`docker compose
+restart` không nạp lại biến môi trường** — biến nạp lúc *tạo* container, phải `up -d`.
+**Bản 2.1 — 14/09/2026 (khuya).** Đợt rà thứ hai, theo lệnh đại ca *"tiếp tục rà bảo mật phần
+tải tệp lên"*: soát **khâu tải tệp lên** — đúng một trong ba vùng mà §4 vẫn ghi là *"chưa ai
+nhìn"*. Thêm **bảy dòng BM-025 … BM-031**. Dòng nặng nhất là **BM-025**: `/api/attachments/register`
+**không hề kiểm tệp đó của ai** — đã chứng minh bằng bài chạy thật, một tài khoản chỉ có
+`purchase_request` phạm vi `own` gắn được tệp mật của người khác vào phiếu của mình rồi **tải
+về**. Bài học của đợt này: **lỗ không nằm ở module `attachment`** — nó làm khá kỹ (danh sách
+trắng kiểu xem trong khung, `nosniff`, CSP `sandbox`, `safe_name` cho khóa lưu trữ) — mà nằm ở
+**bốn cửa tải lên đi vòng qua nó**: ảnh đại diện, chữ ký, ảnh bài HDSD. Rà một module rồi kết
+luận "khâu tải tệp đã sạch" là cách bỏ sót cả bốn cửa đó; census **12 tệp có `UploadFile`** mới
+là cách đúng. Vùng *tải tệp lên* ở §4 nay **đã có người nhìn**, còn hai vùng.
 
 ---
 
@@ -88,28 +129,36 @@ nó là bằng chứng cho lần soát sau rằng chỗ này từng hở.
 | ID | Mức | Phát hiện | Trạng thái |
 |---|---|---|---|
 | BM-001 | **Cao** | `/api/audit-logs` chỉ gác bằng đăng nhập — mọi tài khoản đọc được nhật ký của mọi phân hệ | **Đã vá (09/09/2026, `main` f023c747 + 2de0b2d4 — đã deploy prod; `erp-v2` 682010c3 — đã deploy dev).** Đo lại trên prod: 230/233 tài khoản đang hoạt động ăn 403 ở `entity=auth` và ở lối duyệt toàn hệ, 3 tài khoản quản trị qua được |
-| BM-002 | **Cao** | Không có phiên đăng nhập phía máy chủ — token lộ thì không thu hồi được | **Đã vá trên dev (P3a bao-CR-360 + P3b bao-CR-395, 14/09/2026, `erp-v2` `00b740b5` — đã deploy dev).** Prod đã có P2 + P3a từ gộp 11/09 (`tab_login_session`, đăng xuất đóng phiên thật) — còn thiếu màn hình đá phiên / bắt đăng nhập lại của P3b; tới lúc đó quản trị vẫn cắt được máy lạ bằng cách khóa tài khoản |
+| BM-002 | **Cao** | Không có phiên đăng nhập phía máy chủ — token lộ thì không thu hồi được | **ĐÃ ĐÓNG — vá đủ cả dev lẫn PROD (P3a bao-CR-360 + P3b bao-CR-395).** Dev 14/09/2026 (`erp-v2` `00b740b5`), **prod 14/09/2026** (`main` `ea405aa0`, đẩy trong đợt `5abd5dc3`): màn phiên đăng nhập + đá phiên + bắt đăng nhập lại nay đã có trên prod |
 | BM-003 | Trung bình | Gia hạn token không để lại dấu vết nào | **Vá một phần (09/09/2026, `main` f023c747 — đã deploy prod; `erp-v2` abff1298 — đã deploy dev).** `/api/auth/refresh` nay ghi `refresh` / `refresh_failed` kèm IP. Còn phần phiên phía máy chủ ở P3. ~~P3 sẽ bỏ chính dòng `refresh` thành công này theo QĐ-A~~ — **QĐ-A đã bị đảo 10/09/2026**, dòng `refresh` thành công GIỮ LẠI, xem BM-009 |
 | BM-004 | Trung bình | Giới hạn tần suất đăng nhập dùng chung MỘT xô cho cả công ty | **Đã vá (09/09/2026, `main` f023c747 — đã deploy prod; `erp-v2` abff1298 — đã deploy dev).** Đã kiểm trên hệ thật: dấu vết đăng nhập mang IP công cộng thật (118.71.139.127, 27.64.133.181), không phải `172.x` → `CF-Connecting-IP` tới được api. Kiểm trên dev với header giả `X-Forwarded-For: 6.6.6.6` + `X-Real-IP: 7.7.7.7`: dòng ghi vẫn là IP thật (180.93.2.176), header giả bị bỏ qua |
-| BM-005 | Trung bình | Nhật ký không lưu giá trị trước / sau — không chứng minh được đã đổi gì | **Đã vá trên dev (bao-CR-402 = P4 của bao-CR-312, 14/09/2026, local `erp-v2` — chưa commit).** `tab_change_log` (migration `d5f7a9c1b3e2`) + `core/change_tracker.py` bám sự kiện ORM, ghi trước/sau **từng cột** cho mọi bảng trừ `NO_LOG_TABLES`. Prod chưa có |
+| BM-005 | Trung bình | Nhật ký không lưu giá trị trước / sau — không chứng minh được đã đổi gì | **ĐÃ ĐÓNG TRÊN PROD (bao-CR-402 = P4 của bao-CR-312, 14/09/2026, `main` `68733348` trong đợt `5abd5dc3`; migration đã chạy, head prod = `d5f7a9c1b3e2`). Commit `erp-v2` `4b51b545` nhưng DEV CHƯA DEPLOY** — dev còn ở `e89ab592`, head alembic `c3e5a7b9d1f2`. `tab_change_log` (migration `d5f7a9c1b3e2`) + `core/change_tracker.py` bám sự kiện ORM, ghi trước/sau **từng cột** cho mọi bảng trừ `NO_LOG_TABLES`. Prod chưa có |
 | BM-006 | Thấp | Dấu vết là tùy chọn theo từng lời gọi — quên gọi là mất | Vá một phần (bao-CR-311 + bao-CR-346) — xem BM-010 |
 | BM-007 | Thấp | Dòng nhật ký không có IP / trình duyệt / mã lượt gọi | **Vá phần lớn (P1 của bao-CR-312, `erp-v2` 2eba1274 — mới deploy dev).** `tab_request_log` ghi IP + `request_id` + tuyến gọi; `tab_audit_log` có `request_id` / `ip` / `actor_kind`. Còn dấu thiết bị ở bao-CR-346 |
 | BM-008 | Trung bình | Giá trị dữ liệu thật bị chép nguyên vào `error_detail` của dòng nhật ký khi câu SQL nổ | **Đã vá + ĐÃ ĐÓNG CẢ HAI PHÍA (bao-CR-346, 10/09/2026) — `erp-v2` 337fa9bb deploy dev; `main` e21023d1 deploy prod chiều 10/09** — `mask_error_detail`, xem chi tiết bên dưới |
 | BM-009 | Trung bình | Thao tác **ĐỌC** không để lại dấu vết nào — kể cả tải tệp đính kèm và cả lượt bị chặn 403 | **Đã vá + ĐÃ ĐÓNG CẢ HAI PHÍA (bao-CR-346, 10/09/2026) — `erp-v2` 337fa9bb deploy dev; `main` e21023d1 deploy prod chiều 10/09** — ghi hết mọi GET |
 | BM-010 | Trung bình | Đổi phân quyền và đổi tài khoản **không gọi `record()`** — vùng nhạy cảm nhất lại là vùng trắng | **Đã vá + ĐÃ ĐÓNG CẢ HAI PHÍA (bao-CR-346, 10/09/2026) — `erp-v2` 337fa9bb deploy dev; `main` e21023d1 deploy prod chiều 10/09** |
 | BM-011 | Trung bình | Nhật ký chỉ có MỘT bản, nằm trên đúng cái máy kẻ tấn công đang đứng | **Đã vá + ĐÃ ĐÓNG CẢ HAI PHÍA (bao-CR-346, 10/09/2026) — `erp-v2` 337fa9bb deploy dev; `main` e21023d1 deploy prod chiều 10/09** — đóng gói ra R2 hàng tháng |
-| BM-012 | Thấp | Token hết hạn thì dòng nhật ký ghi `user_id = 0` — không phân biệt được "khách vãng lai" với "người có tài khoản, token vừa hết hạn" | **Đã vá (bao-CR-394, 14/09/2026, `erp-v2` `00b740b5` — đã deploy dev, prod chờ gộp).** `_peek_user_id` đọc `sub` kể cả khi hết hạn, `tab_request_log.error_code = token_expired` |
+| BM-012 | Thấp | Token hết hạn thì dòng nhật ký ghi `user_id = 0` — không phân biệt được "khách vãng lai" với "người có tài khoản, token vừa hết hạn" | **ĐÃ ĐÓNG — dev + PROD (bao-CR-394, dev `erp-v2` `00b740b5`, prod `main` `ea405aa0` đẩy trong đợt `5abd5dc3` ngày 14/09/2026).** `_peek_user_id` đọc `sub` kể cả khi hết hạn, `tab_request_log.error_code = token_expired` |
 | BM-013 | Thấp | `record()` tự `commit()` — giao dịch nghiệp vụ bị rollback vẫn để lại dấu vết ma | **Mở, đã chốt cách xử (bao-CR-402, 14/09/2026): KHÔNG gỡ `db.commit()`.** Lỗ đóng ở **lớp thay đổi** — `tab_change_log` chỉ ghi thứ đã commit thật. Lớp `core/audit.py` giữ nguyên nhịp cũ; đo 273 lời gọi ở 62 tệp tìm ra **hai chỗ hỏng ngay** nếu gỡ, xem dưới |
-| BM-014 | Trung bình | `CF-Connecting-IP` được tin **vô điều kiện** — ai gọi thẳng vào api là tự khai IP của mình | **Đã vá (bao-CR-394, 14/09/2026, `erp-v2` `00b740b5` — đã deploy dev, prod chờ gộp).** Chỉ tin header khi peer TCP nằm trong `TRUSTED_PROXY_CIDRS` |
-| BM-015 | **Cao** | Hồ sơ nhân sự chuyển *Nghỉ việc* (hoặc tắt hoạt động) mà **tài khoản đăng nhập vẫn mở, phiên đang sống vẫn dùng tiếp** — HR tưởng đã "cho nghỉ" là xong | **Đã vá (bao-CR-400, 14/09/2026, `erp-v2` `e89ab592` — đã deploy dev, prod chờ gộp).** `update_employee` / `detach_users` khóa mọi tài khoản gắn kèm + `force_relogin` với lý do `EMPLOYEE_RESIGNED = 6`, cùng giao dịch với hồ sơ |
-| BM-016 | Trung bình | **Không có bất kỳ chính sách mật khẩu nào** — `password: str` trần ở cả ba cửa (tạo tài khoản · quản trị đặt lại · quên mật khẩu). Đặt mật khẩu `1` là hệ thống nhận | **Chấp nhận rủi ro — đại ca chốt 14/09/2026.** Lý do: hệ nội bộ, tài khoản do quản trị cấp chứ không ai tự đăng ký, và `LOGIN_RATE_LIMIT` đã chặn dò tự động. Bằng chứng: `auth/schema.py:20`, `user/schema.py:9` + `:14` — không chỗ nào có `min_length` |
+| BM-014 | Trung bình | `CF-Connecting-IP` được tin **vô điều kiện** — ai gọi thẳng vào api là tự khai IP của mình | **ĐÃ ĐÓNG — dev + PROD (bao-CR-394, dev `erp-v2` `00b740b5`, prod `main` `ea405aa0` đẩy trong đợt `5abd5dc3` ngày 14/09/2026).** Chỉ tin header khi peer TCP nằm trong `TRUSTED_PROXY_CIDRS` |
+| BM-015 | **Cao** | Hồ sơ nhân sự chuyển *Nghỉ việc* (hoặc tắt hoạt động) mà **tài khoản đăng nhập vẫn mở, phiên đang sống vẫn dùng tiếp** — HR tưởng đã "cho nghỉ" là xong | **ĐÃ ĐÓNG — dev + PROD (bao-CR-400, dev `erp-v2` `e89ab592`, prod `main` `39176d8c` đẩy trong đợt `5abd5dc3` ngày 14/09/2026).** `update_employee` / `detach_users` khóa mọi tài khoản gắn kèm + `force_relogin` với lý do `EMPLOYEE_RESIGNED = 6`, cùng giao dịch với hồ sơ |
+| BM-016 | Trung bình | **Không có bất kỳ chính sách mật khẩu nào** — `password: str` trần ở cả ba cửa (tạo tài khoản · quản trị đặt lại · quên mật khẩu), cửa tự đổi đòi 6 ký tự, cửa hồ sơ nhân sự đòi 4. Đặt mật khẩu `1` là hệ thống nhận | **Đã vá (bao-CR-405, 14/09/2026) — ĐẢO LẠI quyết định "chấp nhận rủi ro" của chính ngày 14/09.** Lý do đảo: rà tới nơi thì thấy census có **NĂM** cửa chứ không phải ba, và lỗ thật không phải "mật khẩu ngắn" mà là **mật khẩu đặt bằng đúng mã nhân viên = tên đăng nhập** — thứ `LOGIN_RATE_LIMIT` không đỡ vì kẻ đoán chỉ cần **một** lần thử. Vá: `core/password_policy.validate_password` gọi ở cả năm cửa. Bằng chứng cũ: `auth/schema.py:20`, `user/schema.py:9` + `:14` |
 | BM-017 | Thấp | Không có **xác thực hai lớp**, kể cả cho nhóm tài khoản quản trị đọc được nhật ký toàn hệ | **Chấp nhận rủi ro — đại ca chốt 14/09/2026.** Đây là lớp *tăng cường*, không phải lỗ đang hở; ghi vào sổ để lần rà sau không phải phát hiện lại |
-| BM-018 | **Cao** *(có điều kiện)* | `JWT_SECRET` có giá trị mặc định `change_me_please` và **không có chốt nào chặn app khởi động với nó**. Môi trường nào quên đặt thì bất kỳ ai cũng **tự ký được vé hợp lệ cho bất kỳ tài khoản nào** — mất sạch mọi lớp phòng thủ phía trên | **Mở.** Bằng chứng: `core/config.py:13`. ⚠️ **Điều kiện kích hoạt CHƯA ĐO trên prod/dev** — xem Việc 5. Vá = thêm chốt khởi động, **không phải xoay khóa** (xoay khóa kéo theo BM-023) |
+| BM-018 | Thấp *(hạ mức sau khi đo)* | `JWT_SECRET` có giá trị mặc định `change_me_please` và **không có chốt nào chặn app khởi động với nó**. Môi trường nào quên đặt thì bất kỳ ai cũng **tự ký được vé hợp lệ cho bất kỳ tài khoản nào** — mất sạch mọi lớp phòng thủ phía trên | **ĐÃ ĐO 14/09/2026 trên VPS — prod SẠCH:** không phải giá trị mặc định, dài ≥ 32 ký tự, đo cả ở `.env` lẫn trong tiến trình đang chạy; dev cũng không phải mặc định. Điều kiện kích hoạt **không đúng**, nên mức hạ từ *Cao (có điều kiện)* xuống **Thấp**. **Vẫn còn mở phần chốt khởi động** (`core/config.py:13`) — canh cho những lần deploy sau. **KHÔNG xoay khóa** (kéo theo BM-023). ⚠️ Lần đo này lòi ra **BM-024** |
 | BM-019 | Trung bình | Hai tệp nginx của prod **không đặt một header bảo mật nào** — trang ERP **nhúng iframe được** vào site bất kỳ (clickjacking), không HSTS, không `nosniff`, không `Referrer-Policy` | **Mở.** Bằng chứng: `docker/nginx.prod.conf` + `docker/nginx.erp.prod.conf` chỉ có `Cache-Control`. Nghịch lý đáng ghi: cửa **xem tệp đính kèm** làm rất kỹ (`attachment/controller.py:490` + `:493` — CSP `sandbox` + `nosniff`), còn cả ứng dụng thì trống |
 | BM-020 | Trung bình | Trần tần suất cho endpoint **nghiệp vụ** đã khai nhưng **chưa có hiệu lực** — một tài khoản hợp lệ rút sạch dữ liệu trong phạm vi của mình ở tốc độ tối đa, không lớp nào cản | **Mở.** Bằng chứng: `core/limiter.py:13-16` — `default_limits=["300/minute"]` kèm **chính comment trong mã ghi là CHƯA có hiệu lực**; `main.py:115` chỉ gắn `state.limiter` + handler. Toàn hệ chỉ **4 endpoint** của `auth` có `@limiter.limit` |
 | BM-021 | Thấp | `/api/uploads` được gắn bằng `StaticFiles`, **không kiểm quyền** — thứ gì rơi vào thư mục đó là công khai với mọi người | **Mở (rủi ro thấp trên prod).** Bằng chứng: `main.py:134`. Mã nguồn **tự cảnh báo ở ba chỗ**: `core/storage.py:53-54`, `core/file_registry.py:71`, `audit/tasks.py:123-131`. Prod dùng R2 nên đường lùi ghi-local không chạy — rủi ro là *ai đó ghi nhầm vào đó về sau* |
-| BM-022 | Trung bình | CORS bật `allow_credentials=True` với `allow_origins` đọc từ `.env` — **giá trị thật trên prod chưa ai xác minh** | **Mở, CHƯA ĐO.** Bằng chứng: `main.py:125-131`, `config.py:166`. Nếu giá trị prod là `*` thì dòng này lên mức **Cao**; đo trước rồi mới kết luận, xem Việc 5 |
+| BM-022 | Thấp *(hạ mức sau khi đo)* | CORS bật `allow_credentials=True` với `allow_origins` đọc từ `.env` — **giá trị thật trên prod chưa ai xác minh** | **ĐÃ ĐO 14/09/2026 trên VPS — prod SẠCH, đóng dòng này.** Không phải `*`, không chứa `*` ở bất kỳ đâu, đúng **1 origin** là tên miền thật, không có `localhost`, không có `http://` trần. Đo cả trong tiến trình đang chạy. Dev cũng không phải `*` |
 | BM-023 | Trung bình | Bí mật lưu trong DB (**mật khẩu SMTP, khóa R2**) giải mã hỏng thì **im lặng tuyệt đối**: `_decrypt` nuốt *mọi* lỗi trả chuỗi rỗng, `get()` lặng lẽ rơi về `.env`, `.env` trống thì trả rỗng. Hậu quả nặng nhất không phải mail chết mà là **sao lưu tự động lên R2 chết mà không ai biết** — phát hiện ra đúng vào lúc cần khôi phục | **Mở.** Bằng chứng: `core/app_settings.py:55-59` (`except (InvalidToken, Exception): return ""`) + `:95-100` (nhánh `if dec:` rơi về `.env`). Phát hiện khi trả lời câu hỏi về xoay `JWT_SECRET` |
+| BM-024 | Trung bình | **prod và dev dùng CHUNG một `JWT_SECRET`.** Khóa này là **khóa Fernet** mã hóa mật khẩu SMTP + hai khóa R2 trong `tab_setting` và mật khẩu hộp thư — mà prod với dev lại nằm **trên cùng một máy chủ MySQL**. Ai vào được dev thì giải mã được bí mật của prod, dù không mở nổi một phiên đăng nhập nào của prod | **ĐÃ VÁ 14/09/2026 — đổi khóa của DEV, prod không đụng tới.** Đã đo lại sau khi đổi: *prod và dev dùng chung khóa: **KHÔNG***. Ba bí mật trong `tab_setting` của dev đã mã hóa lại bằng khóa mới và **khớp bản gốc**; tiến trình dev đang chạy đọc được cả ba; prod vẫn đọc được bí mật của prod và **không hề restart**. Vế **ký vé giả** vốn đã bị chốt phiên `_check_session` (bao-CR-360 P3a) chặn — xác nhận trên chính container prod đang chạy. **Không có mã nguồn nào đổi** — đây là việc hạ tầng |
+| BM-025 | **Cao** | `POST /api/attachments/register` **không kiểm tệp đó của ai.** Nó chỉ kiểm quyền trên **phiếu đích**, rồi gắn thẳng bất kỳ `file_id` nào được gửi lên. `file_id` là số nguyên tăng dần nên dò cạn được. Ai có `create` trên một entity đính kèm bất kỳ — tức gần như **mọi tài khoản**, vì ai cũng lập được yêu cầu mua hàng — thì gắn tệp của người khác vào phiếu nháp của mình rồi tải về: **đọc được mọi tệp trong hệ**, kể cả đính kèm riêng tư của `document_version` | **Mở.** Bằng chứng: `attachment/controller.py::register_files` — vòng `for fid in data.file_ids` chỉ `db.get(StoredFile, fid)` rồi `db.add(FileLink(...))`, không một câu hỏi nào về chủ sở hữu. **ĐÃ CHỨNG MINH BẰNG BÀI CHẠY THẬT** (14/09/2026): tài khoản chỉ có `purchase_request` phạm vi `own` gắn được tệp `document_version` của người khác rồi đi qua `_get_file_with_permission(..., "download")` trót lọt |
+| BM-026 | **Cao** | `/api/auth/avatar` và `/api/employees/{id}/avatar` **không kiểm gì cả** — không đuôi tệp, không kích thước, không nội dung. Bất kỳ tài khoản đăng nhập nào tải lên **bất kỳ thứ gì** tới trần 100MB của nginx và nhận về một URL công khai. Hệ thống thành nơi chứa tệp miễn phí, và nội dung độc hại được phát từ tên miền của công ty | **Mở.** Bằng chứng: `auth/controller.py:289-296` + `employee/controller.py:93-118` — gọi thẳng `set_user_avatar(db, user, fileobj=file.file, filename=..., content_type=file.content_type or "")`. Đối chiếu: đường `attachment` có `_store_one` kiểm cả đuôi lẫn dung lượng theo `FILE_POLICY` |
+| BM-027 | Trung bình | Ba cửa ảnh chỉ tin **`content_type` do máy khách tự khai**: `/api/auth/signature`, `/api/employees/{id}/signature` kiểm `startswith("image/")` (nên `image/svg+xml` lọt), còn `/api/help/upload-image` **khai thẳng `svg` trong danh sách trắng**. **SVG là tài liệu chạy được JavaScript.** Hôm nay tệp đáp xuống `storage.degoholding.vn` nên chưa lấy được token (token nằm trong `localStorage`, khóa theo origin) — nhưng **ghép với BM-023** thì khóa R2 hỏng trong im lặng, `upload_fileobj` lặng lẽ rơi về `uploads/` và cùng tệp đó được phát từ `/api/uploads/...` — **cùng origin với ứng dụng**, thành XSS lưu trữ đọc sạch token | **Mở.** Bằng chứng: `auth/controller.py:302-316`, `employee/controller.py:120-140`, `help_center/controller.py:20` (`IMAGE_EXTS` có `"svg"`) + `:140-158`. Đã đo: prod `r2_public_url = https://storage.degoholding.vn` (tên miền anh em của `thumua`/`erp`), R2 đang sẵn sàng; `grep set_cookie` toàn backend **không ra dòng nào** |
+| BM-028 | Thấp | `content_type` do máy khách khai được **lưu nguyên** vào `tab_file.content_type`, đặt làm `ContentType` của đối tượng trên R2, rồi dùng lại làm `media_type` của hồi đáp `/view` và `/download`. Không đối chiếu với đuôi tệp, không đọc mấy byte đầu. Một tệp `.png` khai `text/html` được phục vụ như HTML | **Mở.** Bằng chứng: `attachment/controller.py::_store_one` (`content_type=f.content_type or ""`) + `view_one`. Đối chiếu **đúng cách đã có sẵn trong nhà**: `/api/assistant/uploads` đọc **byte đầu** để nhận dạng thay vì tin lời khai. Giảm nhẹ: `/view` có `nosniff` + CSP `sandbox` và danh sách trắng `INLINE_VIEW_TYPES` cố ý **loại SVG** |
+| BM-029 | Thấp | **Zip-slip**: `/api/attachments/chain/zip` dựng đường dẫn trong tệp nén bằng **tên tệp thô của máy khách** — `f"{src}/{doc_type}/{f.filename}"`. Tên chứa `../` thì bộ giải nén nào không tự chống sẽ ghi ra ngoài thư mục đích, trên **máy người dùng** | **Mở.** Bằng chứng: `attachment/controller.py::chain_zip`. Đã chứng minh tên tệp thô sống sót: gửi `'../../../../evil.pdf'` thì `UploadFile.filename` giữ nguyên cả chuỗi; `safe_name()` chỉ làm sạch **khóa lưu trữ**, không đụng tới `tab_file.filename` |
+| BM-030 | Thấp | Cụm **độ bền đầu vào** của khâu tải lên, ba thứ: (1) tên tệp dài hơn **255** ký tự rơi thẳng xuống MySQL → **500 chứ không phải 422** (đúng họ `duoc-CR-316`; `tab_file.filename` là `String(255)` mà đường tải lên **không có schema Pydantic nào**); (2) `files: list[UploadFile]` **không có trần số lượng** — một request gửi mấy nghìn tệp; (3) chốt dung lượng chạy **sau khi đã nhận hết thân request**, nên lớp chặn thật duy nhất là `client_max_body_size 100m` của nginx | **Mở.** Bằng chứng: `attachment/model.py` (`filename: String(255)`), `attachment/controller.py::_store_one` (`f.file.seek(0, 2)` — đo sau khi nhận xong), `docker/nginx.prod.conf` + `nginx.erp.prod.conf` (`100m`), `nginx.help.prod.conf` (`35m`). Đã chứng minh: tên tệp **304 ký tự** đi qua `UploadFile` không ai cản |
+| BM-031 | Thấp | `POST /api/attachments/upload-file` với `entity=comment` hoặc `entity=forum_post` **không kiểm quyền một chút nào** — `_check` gặp `parent == "__self__"` là trả về sớm trước khi hỏi `user_has_permission`. Thêm nữa, tệp tải lên mà không bao giờ được gắn vào đâu (`/register` không gọi) thì **nằm lại vĩnh viễn**: `_delete_file_if_orphan` chỉ chạy khi có ai xóa một liên kết | **Mở.** Bằng chứng: `attachment/controller.py::_check` (nhánh `if parent == "__self__": return exts, max_mb`), `core/file_registry.py` (`"comment"` và `"forum_post"` đều khai cha là `__self__`). Giảm nhẹ: `__self__` là **cố ý** — hai entity đó có chốt riêng `_check_comment` / `_check_forum` ở cửa **gắn**; chỗ thủng là cửa **tải lên trần** |
 
 ✅ **Bốn dòng BM-008…BM-011 nay đã đóng trên CẢ HAI phía** (cập nhật chiều 10/09/2026).
 Chúng vá lớp nhật ký của bao-CR-312 P1, và P1 vốn chưa từng lên prod — đó là lý do sổ này
@@ -671,7 +720,7 @@ lịch sử khóa vào chính mình / hai cửa chung một bộ dựng).
 Người dùng. Và HR chuyển trạng thái qua **import CSV** đi đường `detach_users` cũ (khóa + gỡ
 liên kết) chứ không đi `has_left_company` — cùng kết quả khóa, nhưng gỡ liên kết luôn.
 
-### BM-016 — Không có chính sách mật khẩu — CHẤP NHẬN RỦI RO
+### BM-016 — Không có chính sách mật khẩu — ĐÃ VÁ (bao-CR-405)
 
 Ba cửa đặt mật khẩu, không cửa nào kiểm gì: `auth/schema.py:20` (`ResetPasswordInput`),
 `user/schema.py:9` (tạo tài khoản), `user/schema.py:14` (quản trị đặt lại). Cả ba khai
@@ -680,12 +729,43 @@ Ba cửa đặt mật khẩu, không cửa nào kiểm gì: `auth/schema.py:20` 
 Hai điều kiện làm nó dễ khai thác hơn vẻ ngoài: tên đăng nhập là **mã nhân viên** (đoán được
 từ danh bạ), và tài khoản demo đặt mật khẩu **bằng đúng mã tài khoản**.
 
-**Quyết định 14/09/2026 (đại ca): chấp nhận rủi ro.** Lý do: hệ nội bộ, **không ai tự đăng
-ký** — tài khoản do quản trị cấp; và trần tần suất đăng nhập theo IP thật (BM-004 đã vá) đã
-chặn được dò tự động, tức là con đường khai thác chính đã đóng.
+**Quyết định 14/09/2026 (đại ca) — lần 1: chấp nhận rủi ro.** Lý do: hệ nội bộ, **không ai tự
+đăng ký** — tài khoản do quản trị cấp; và trần tần suất đăng nhập theo IP thật (BM-004 đã vá)
+đã chặn được dò tự động, tức là con đường khai thác chính đã đóng.
 
 **Điều kiện đảo lại quyết định** — ghi ra để lần sau khỏi phải cãi: hệ mở cho người ngoài công
 ty tự đăng nhập (nhà cung cấp), hoặc mở cổng tự đăng ký, hoặc có một lần rò mật khẩu thật.
+
+#### Vì sao ĐẢO LẠI ngay trong ngày (bao-CR-405, 14/09/2026)
+
+Giữ nguyên hai dòng trên chứ **không xóa** — quyết định cũ có lý của nó, và lý do đảo mới là
+thứ đáng đọc. Rà để vá thì lộ ra hai điều mà lần ghi sổ đầu chưa thấy:
+
+1. **Năm cửa, không phải ba.** Census `hash_password` toàn `app/modules` ra thêm
+   `auth/controller.py:246` (`/auth/change-password` — **nhận `dict` trần, không có lược đồ
+   Pydantic nào**, chỉ đếm đủ 6 ký tự) và `employee/controller.py:236`
+   (`/employees/{id}/set-password` — đòi **4** ký tự). Hai cửa này không nằm trong ba cửa đã
+   ghi, nên phần "chấp nhận" hôm sáng chấp nhận một bức tranh nhỏ hơn sự thật.
+2. **Trần tần suất không đỡ được lỗ thật.** Lý do "đã chặn dò tự động" chỉ đúng với kẻ **thử
+   nhiều lần**. Lỗ thật ở đây là mật khẩu đặt **bằng đúng mã nhân viên**, mà mã nhân viên
+   chính là tên đăng nhập: kẻ đoán chỉ cần **một** lần thử, `LOGIN_RATE_LIMIT` không bao giờ
+   chạm tới. Điều kiện đảo số 3 ("có một lần rò mật khẩu thật") vì thế không cần đợi — nó
+   tương đương một lần mở danh bạ.
+
+**Cách vá.** `backend/app/core/password_policy.py` — một hàm `validate_password(raw, *,
+username, email)` gọi ở **cả năm** cửa. Luật: ≥ 8 ký tự · có cả chữ lẫn số · ≤ 72 **byte**
+(bcrypt cắt âm thầm phần dư, hai mật khẩu khác nhau sẽ đăng nhập được vào nhau) · không
+khoảng trắng đầu/cuối · không nằm trong danh sách phổ biến · **không chứa mã nhân viên hoặc
+email của chính tài khoản đó** (bỏ dấu + không phân biệt hoa thường).
+
+Luật cố ý **không** đặt trong Pydantic schema: luật mạnh nhất cần biết mã nhân viên + email
+của tài khoản đang đặt, mà schema không nhìn thấy hai thứ đó. Và cố ý **không** gọi trong
+`hash_password`: các script seed đặt mật khẩu demo bằng mã tài khoản để dựng dữ liệu thử,
+siết ở tầng băm là chết seed mà không thêm an toàn nào cho hệ thật.
+
+⚠️ **Tài khoản CŨ không bị động tới.** Mật khẩu yếu đã đặt trước 14/09 vẫn đăng nhập được —
+chính sách chỉ gác lúc ĐẶT. Muốn quét sạch thì phải bắt đổi mật khẩu ở lần đăng nhập kế
+tiếp, đó là việc riêng, chưa làm.
 
 ### BM-017 — Không có xác thực hai lớp — CHẤP NHẬN RỦI RO
 
@@ -706,8 +786,26 @@ nghĩa**: khóa đã nằm công khai trong mã nguồn, nên ai cũng tự ký 
 quyền hai trục, `apply_scope`, nhật ký ba tầng — tất cả đứng **sau** cửa xác thực, mà cửa đó
 mở toang.
 
-⚠️ **Chưa đo.** Đó là *điều kiện*, không phải sự thật đã xác minh. Sổ này cấm ghi phỏng đoán,
-nên mức **Cao** ở bảng là mức *nếu điều kiện đúng* — đo xong mới chốt. Xem Việc 5.
+⚠️ **ĐÃ ĐO — điều kiện KHÔNG đúng.** Ngày 14/09/2026, theo lệnh của đại ca, em vào VPS đo, chỉ
+in CÓ/KHÔNG:
+
+```
+BM-018 | co dong JWT_SECRET trong .env       : CO
+BM-018 | JWT_SECRET dang la change_me_please : KHONG
+BM-018 | do dai >= 32 ky tu                  : CO
+```
+
+Đo **hai lớp**: trong `.env` và trong **tiến trình đang chạy** (`docker exec <api> python -c
+"from app.core.config import settings; ..."`). Phải đo cả hai vì `.env` trôi khỏi thứ container
+đã nạp là chuyện thường — container khởi động từ một bản `.env` cũ thì tệp trên đĩa nói một
+đằng, hệ thật chạy một nẻo. Cả hai lớp đều trả cùng kết quả. Dev cũng không phải giá trị mặc
+định.
+
+Nên mức ở bảng hạ từ **Cao** *(có điều kiện)* xuống **Thấp**. Phần **còn mở** là chốt khởi
+động ở mục dưới — nó không vá hôm nay, nó canh cho những lần deploy sau.
+
+⚠️ Nhưng lần đo này lòi ra một thứ khác, xem **BM-024**: prod và dev đang dùng **chung một**
+khóa.
 
 #### Vá bằng chốt khởi động — KHÔNG phải bằng xoay khóa
 
@@ -772,15 +870,37 @@ ba chỗ** (`storage.py:53-54`, `file_registry.py:71`, `audit/tasks.py:123`) —
 đã biết. Rủi ro thật không phải hôm nay mà là **lần sau**: ai đó thêm một đường ghi mới vào
 `uploads/` và không đọc ba dòng cảnh báo đó.
 
-### BM-022 — CORS chưa xác minh trên prod
+### BM-022 — CORS trên prod — ĐÃ ĐO, SẠCH
 
 `main.py:125-131` bật `allow_credentials=True` cùng `allow_methods=["*"]` và
 `allow_headers=["*"]`, với `allow_origins` đọc từ `.env` qua `config.py:166`.
 
-Cấu hình này **đúng hay sai hoàn toàn phụ thuộc giá trị `CORS_ORIGINS` thật trên prod**, mà
-chưa ai mở ra xem. Nếu ở đó là danh sách tên miền cụ thể thì không có vấn đề gì. Nếu là `*`
-thì dòng này lên mức **Cao** — trình duyệt sẽ cho site bất kỳ gọi API kèm cookie/chứng danh
-của người đang đăng nhập. Đo trước rồi mới kết luận; xem Việc 5.
+Cấu hình này **đúng hay sai hoàn toàn phụ thuộc giá trị `CORS_ORIGINS` thật trên prod**. Nếu ở
+đó là danh sách tên miền cụ thể thì không có vấn đề gì. Nếu là `*` thì dòng này lên mức **Cao**
+— trình duyệt sẽ cho site bất kỳ gọi API kèm cookie/chứng danh của người đang đăng nhập.
+
+**Đo ngày 14/09/2026 trên VPS — prod sạch:**
+
+```
+BM-022 | CORS_ORIGINS dung dau sao '*'                   : KHONG
+BM-022 | co chua ky tu '*' o bat ky dau                  : KHONG
+BM-022 | so origin duoc khai bao                         : 1
+BM-022 | tien trinh dang chay: allow_credentials         : CO
+  co origin cho thumua.degoholding.vn : CO
+  co origin cho erp.degoholding.vn    : KHONG
+  co origin tro ve localhost          : KHONG
+  co origin dung http:// (khong TLS)  : KHONG
+```
+
+Đúng một origin, là tên miền thật, có TLS. Dev cũng không phải `*`.
+
+⚠️ **Chỗ trông như lỗ mà không phải lỗ:** danh sách chỉ có `thumua.degoholding.vn`, không có
+`erp.degoholding.vn` — tức giao diện v2 *không* nằm trong danh sách cho phép. Nó vẫn chạy được
+vì **cả hai giao diện gọi API cùng nguồn (same-origin) qua nginx**, mà same-origin thì trình
+duyệt không hỏi CORS. Nghĩa là dòng khai này chỉ ảnh hưởng tới lời gọi từ nguồn khác — và ở đó
+nó đang **chặt hơn** mức cần, chứ không lỏng hơn. Để nguyên.
+
+Dòng này **đóng bằng đo**, không cần mã.
 
 ### BM-023 — giải mã bí mật hỏng thì im lặng tuyệt đối
 
@@ -821,6 +941,296 @@ mình phát hiện đúng vào hôm cần khôi phục, là hôm tệ nhất có
 `log.error` khi giải mã hỏng, và thêm một chỉ báo ở màn Cấu hình hệ thống nói rõ *"đã cấu hình
 nhưng KHÔNG đọc được"*. Kèm một kiểm tra sức khỏe cho sao lưu: lần sao lưu thành công gần nhất
 quá N giờ thì báo.
+
+### BM-024 — prod và dev dùng CHUNG một `JWT_SECRET`
+
+Phát hiện 14/09/2026, **nhân tiện khi đo BM-018** — không phải thứ đi tìm. Cách đo: tính
+`sha256` của khóa ở mỗi bên **ngay trên VPS**, so sánh **tại chỗ**, rồi chỉ mang về một chữ:
+
+```
+BM-024 | PROD va DEV dung CHUNG mot JWT_SECRET : CO
+```
+
+⚠️ Bản băm cũng **không được in ra** và không được mang về máy. Băm không phải là che: cả hai
+bên đều là *một* giá trị, nên một bản băm lọt ra ngoài là một mục tiêu để dò.
+
+#### Vế KHÔNG hở: ký vé giả
+
+Điều đầu tiên phải hỏi là *"vậy lấy khóa của dev ký một cái vé `admin` rồi gõ vào prod thì
+sao?"*. Câu trả lời là **không vào được**, và lý do là chốt phiên của bao-CR-360 P3a. Em xác
+nhận **trên chính container prod đang chạy**, không phải đọc mã nguồn ở máy:
+
+```
+=== PROD dang chay co chot phien khong ===
+  co ham _check_session                       : CO
+  get_current_user co goi _check_session      : CO
+  endpoint refresh co goi resolve_session/... : CO
+```
+
+`_check_session` đòi **ba** điều cùng lúc: vé phải mang `jti`; `ver` phải khớp
+`tab_user.token_version` của prod; và `resolve_session(db, token_id, user.id)` phải tìm thấy
+**một dòng phiên còn sống trong CSDL prod**. Vé ký từ dev có chữ ký đúng — nhưng `jti` của nó
+là một số chưa từng tồn tại trong `tab_login_session` của prod, nên nó chết ở điều thứ ba.
+Đường `refresh` cũng đi qua chốt đó, không có lối vòng.
+
+Đây đúng là thứ đã trả công cho CR-360: nó biến *"khóa ký là đủ"* thành *"khóa ký chưa đủ"*.
+
+#### Vế HỞ THẬT: vai trò Fernet
+
+Khóa này không chỉ ký vé. Nó còn **mã hóa bí mật nằm trong CSDL** (xem bảng bốn vai trò ở
+BM-018): mật khẩu SMTP, **hai khóa R2**, mật khẩu hộp thư. Và prod với dev **ở chung một máy
+chủ MySQL**.
+
+Ghép hai điều đó lại: ai cầm được khóa ở phía dev thì **giải mã được bí mật của prod**, mà
+không cần mở nổi một phiên đăng nhập nào của prod. Trong đó có khóa R2 — tức là **chỗ để sao
+lưu CSDL**.
+
+Dev là nơi dễ vào hơn prod theo đúng thiết kế: nó có dữ liệu đầy đủ để thử nghiệm, nhiều người
+đụng vào, và không ai canh nó như canh prod. Dùng chung khóa nghĩa là **mức bảo vệ của bí mật
+prod bị kéo xuống bằng mức bảo vệ của dev**.
+
+#### ĐÃ VÁ 14/09/2026 — đổi khóa của DEV, không đụng khóa prod
+
+⚠️ **Tuyệt đối không xoay khóa prod** — bốn vai trò, hỏng trong im lặng, thứ chết đầu tiên là
+sao lưu (BM-018 + BM-023). Việc làm nằm **hoàn toàn ở phía dev**; prod không restart, không
+deploy, không đụng một dòng nào.
+
+**Thứ tự đã chạy** (thứ tự này là bắt buộc, xem lý do ở dưới):
+
+1. **Khảo sát trước** — dev có đúng **3** bí mật trong `tab_setting` (`smtp_password`,
+   `r2_access_key_id`, `r2_secret_access_key`), cả ba giải mã tốt bằng khóa cũ; `tab_mailbox`
+   **rỗng** nên không có mật khẩu hộp thư nào phải lo.
+2. **Sao lưu** `.env.dev` và hai bảng `tab_setting` + `tab_mailbox` của `procurement_dev` vào
+   `~/proc_backups/` (`env.dev_truoc_doi_khoa_*.bak` và `dev_setting_mailbox_truoc_doi_khoa_*.sql.gz`,
+   quyền `600`).
+3. **Mã hóa lại TRƯỚC, đổi `.env` SAU.** Một kịch bản chạy trong container dev *đang còn giữ
+   khóa cũ*: giải mã từng bí mật bằng khóa cũ → mã lại bằng khóa mới → ghi xuống. Kịch bản
+   **dừng lại** nếu có dòng nào không giải mã được, và tự kiểm lại sau khi ghi: giải mã bằng
+   khóa mới phải ra **đúng bản gốc**. Kết quả: `3/3` khớp.
+4. **Ghi khóa mới vào `.env.dev`** — bằng một đoạn Python đọc-sửa-ghi, và nó **dừng nếu số dòng
+   `JWT_SECRET=` khác 1** (sửa nhầm hai dòng, hoặc không sửa dòng nào, đều là hỏng im lặng).
+5. **Dựng lại** `api` + `celery-worker` + `celery-beat` của dev bằng
+   `docker compose -f docker-compose.dev.yml --env-file .env.dev up -d`.
+6. **Nghiệm thu** — chỉ in CÓ/KHÔNG: tiến trình dev đọc được cả 3 bí mật · *prod và dev dùng
+   chung khóa: **KHÔNG*** · khóa dev không phải mặc định và ≥ 32 ký tự · **prod vẫn đọc được bí
+   mật của prod** và container prod không hề restart. Log `api` + `celery-worker` dev không một
+   dòng lỗi; `/docs` trả 200.
+7. **Dọn** tệp khóa tạm (`shred`) và kịch bản, cả trên host lẫn trong container. Giữ lại hai
+   bản sao lưu.
+
+⚠️ **Vì sao thứ tự bước 3 trước bước 4 là bắt buộc:** đổi `.env` trước thì khóa cũ mất, mà bí
+mật trong DB vẫn đang mã bằng khóa cũ — không còn gì giải mã được chúng nữa. Và vì **BM-023**,
+hỏng kiểu đó **không kêu một tiếng nào**: `_decrypt` trả chuỗi rỗng, `get()` lặng lẽ rơi về
+`.env`, mọi thứ trông như bình thường cho tới lần cần sao lưu R2.
+
+⚠️ **`docker compose restart` KHÔNG đủ** — biến môi trường được nạp lúc **tạo** container, nên
+`restart` chạy lại đúng container cũ với đúng khóa cũ. Phải `up -d` để dựng lại.
+
+**Hệ quả đã biết, chấp nhận:** mọi phiên đăng nhập trên dev bị đá ra (vé cũ ký bằng khóa cũ).
+Ở dev thì phiền một lần, không sao.
+
+**Không có mã nguồn nào đổi** — đây là việc hạ tầng, không cần CR, không cần deploy.
+
+---
+
+## 2b. Đợt rà khâu TẢI TỆP LÊN (14/09/2026) — BM-025 … BM-031
+
+Đợt này soát **một khâu**, không soát một module. Phân biệt đó là điều quan trọng nhất rút ra
+được: module `attachment` — chỗ ai cũng nghĩ tới đầu tiên — hóa ra là chỗ **làm kỹ nhất**, còn
+lỗ nặng lại nằm ở những cửa tải lên **đi vòng qua nó**.
+
+**Cách rà:** đếm census `UploadFile` trên toàn backend ra **12 tệp**, rồi soát từng cửa theo
+sáu câu hỏi cố định — *ai gọi được · tệp gì được nhận · to bao nhiêu được nhận · tên tệp đi về
+đâu · tệp đáp xuống origin nào · ai đọc lại được nó*. Ba trong sáu câu đó là những câu mà một
+lần rà "đọc mã module `attachment`" không bao giờ đặt ra.
+
+### Kiến trúc đính kèm, nói cho gọn
+
+`tab_file` (**StoredFile** — vật thể thật trên kho) ↔ `tab_file_link` (**FileLink** — dây buộc
+tệp vào `entity` + `entity_id`). Một tệp mang nhiều dây; xóa dây chỉ xóa tệp khi nó thành mồ
+côi (`_delete_file_if_orphan`). Quyền gác ở **hai lớp** trong `_check`: (1) `user_has_permission`
+trên entity cha, (2) `ensure_in_scope` trên **đúng bản ghi cha đó**. `entity_id = None` — đường
+tải lên tạm — **bỏ qua lớp 2**.
+
+`FILE_POLICY` ở `core/file_registry.py` khai `entity → (cha, đuôi cho phép, trần MB)`. Entity
+không có trong bảng đó thì bị từ chối. **`PRIVATE_ENTITIES = {"document_version"}`** — API trả
+`url: ""`, muốn xem phải đi qua `GET /api/attachments/{link_id}/download`.
+
+### Những chốt ĐANG LÀM ĐÚNG — ghi lại để đừng ai "dọn" mất
+
+Bốn thứ dưới đây không phải may mà có; ai refactor khu này mà gỡ chúng là mở lại lỗ:
+
+- **`INLINE_VIEW_TYPES` + ba header ở `/view`** — danh sách trắng kiểu tệp xem-trong-khung
+  (**cố ý loại SVG**), kèm `X-Content-Type-Options: nosniff`, `Content-Security-Policy: sandbox;
+  default-src 'none'; img-src 'self' data:`, `Cache-Control: no-store`. Đây là chốt tốt nhất
+  trong cả khu. Nghịch lý đã ghi ở BM-019: cửa xem một tệp đính kèm gác kỹ hơn cả ứng dụng.
+- **`safe_name()` cho khóa lưu trữ** — bỏ đường dẫn, bỏ CR/LF/tab, đổi khoảng trắng. Nó bảo vệ
+  **khóa**, và chỉ khóa; `tab_file.filename` vẫn giữ tên thô của máy khách (đó là BM-029/030).
+- **Hai lớp của `_check`** — quyền trên entity *và* phạm vi trên đúng bản ghi. Khuôn này đúng,
+  vấn đề là `/register` **không đi qua nó đủ xa** (BM-025).
+- **Trợ lý AI đọc byte đầu để nhận dạng tệp** thay vì tin `content_type` — cách đúng đã có sẵn
+  trong nhà, chỉ là các cửa khác chưa dùng (BM-028).
+
+### BM-025 — `/register` gắn tệp mà không hỏi tệp của ai
+
+**Mức: Cao. Trạng thái: Mở.** Dòng nặng nhất của đợt.
+
+```python
+@router.post("/register")
+def register_files(data: RegisterIn, db=..., user=...):
+    _deny_comment(data.entity)
+    _check(db, user, data.entity, "manage", data.entity_id)   # quyền trên PHIẾU ĐÍCH
+    ...
+    for fid in data.file_ids:
+        f = db.get(StoredFile, fid)                            # ← không hỏi tệp của ai
+        if not f:
+            continue
+        lk = FileLink(file_id=fid, entity=data.entity, entity_id=data.entity_id, ...)
+```
+
+Mọi câu hỏi về quyền ở đây đều hỏi về **phiếu đích** — thứ kẻ tấn công **tự lập ra**, nên đương
+nhiên họ có đủ quyền trên nó. Không câu nào hỏi về **tệp**. `file_id` là số nguyên tự tăng, dò
+từ 1 là cạn.
+
+Đường khai thác đủ ba bước, không cần quyền đặc biệt nào:
+
+1. Lập một yêu cầu mua hàng nháp của chính mình (ai cũng có `purchase_request.create`).
+2. `POST /api/attachments/register` với `entity=purchase_request`, `entity_id=<phiếu của mình>`,
+   `file_ids=[1,2,3,…]`.
+3. `GET /api/attachments/{link_id}/download` — vì dây buộc nay trỏ vào **phiếu của mình**, lớp
+   kiểm quyền lúc tải về nhìn vào phiếu đó và **cho qua**.
+
+⚠️ **`PRIVATE_ENTITIES` không cứu được gì ở đây.** Nó khóa đường `url` của `document_version`,
+nhưng đường `download` thì kiểm theo **dây mới** chứ không theo dây cũ — tệp riêng tư vừa mọc
+thêm một dây công khai.
+
+**Đã chứng minh bằng bài chạy thật** (pytest, 14/09/2026, tệp đo đã xóa sau khi đo xong): dựng
+một `StoredFile` gắn `document_version`, cấp cho kẻ tấn công **đúng** `purchase_request` phạm vi
+`own`, gọi `register_files` → trả về *"Đã gắn file"*, rồi `_get_file_with_permission(..., "download")`
+trả về đúng tệp đó. Không phải suy luận từ mã nguồn.
+
+**Hướng vá (chưa làm, chờ lệnh):** trước khi gắn, đòi tệp phải **của chính người gọi**
+(`StoredFile.created_by == user.id`) **và chưa có dây nào** — tức chỉ gắn được tệp vừa tải lên ở
+đường tạm. Muốn nới cho ca dùng lại tệp cũ thì phải kiểm quyền trên **dây hiện có**, đừng nới
+bằng cách bỏ chốt. ⚠️ Vá kiểu này **đụng luồng đang chạy**: phải rà những chỗ hệ thống tự gắn
+tệp hộ người dùng (sao chép phiếu, chuyển chứng từ) kẻo chặn nhầm.
+
+### BM-026 — hai cửa ảnh đại diện không kiểm một thứ gì
+
+**Mức: Cao. Trạng thái: Mở.**
+
+```python
+@router.post("/avatar")
+def update_avatar(file: UploadFile = File(...), user=..., db=...):
+    url = set_user_avatar(db, user, fileobj=file.file, filename=file.filename or "avatar",
+                          content_type=file.content_type or "", actor_id=user.id)
+```
+
+Không đuôi, không dung lượng, không nội dung. Cửa nhân sự (`/api/employees/{id}/avatar`) là bản
+chép của đúng đường này. Đặt cạnh `_store_one` — nơi kiểm cả đuôi lẫn trần MB theo `FILE_POLICY`
+— thì thấy rõ đây không phải quyết định thiết kế mà là **cửa mọc ra ngoài bảng chính sách**:
+`FILE_POLICY` không có dòng nào cho ảnh đại diện, vì đường này không đi qua `attachment`.
+
+Hệ quả gần: bất kỳ tài khoản nào biến hệ thống thành kho chứa tệp tới trần 100MB/lượt, không có
+chốt số lượt. Hệ quả xa: nội dung bất kỳ được phát từ tên miền của công ty.
+
+**Hướng vá:** đưa hai cửa này về **cùng một chính sách** với `attachment` — thêm entity
+`avatar` vào `FILE_POLICY` (`_IMG`, trần vài MB) và gọi chung một hàm kiểm. Đừng chép luật kiểm
+vào từng controller: cửa thứ ba sẽ mọc ra và lại quên.
+
+### BM-027 — `image/*` do máy khách tự khai, và SVG chạy được JavaScript
+
+**Mức: Trung bình. Trạng thái: Mở.**
+
+```python
+if not (file.content_type or "").startswith("image/"):
+    raise HTTPException(400, "Chữ ký phải là file ảnh (PNG, JPG…).")
+```
+
+Câu này kiểm **lời khai của máy khách**, không kiểm tệp. `image/svg+xml` bắt đầu bằng `image/`
+nên đi qua, và một tệp SVG là một tài liệu XML **chạy được `<script>`**. Trung tâm HDSD còn
+thẳng thắn hơn: `IMAGE_EXTS` ở `help_center/controller.py:20` **khai `svg` trong danh sách
+trắng**.
+
+**Đã đo hai thứ quyết định mức độ, không đoán:**
+
+- Prod `r2_public_url = https://storage.degoholding.vn`, R2 đang sẵn sàng — tệp đáp xuống một
+  **tên miền anh em** của `thumua` / `erp`, không phải cùng origin.
+- **Toàn backend không đặt một cookie nào** (`grep set_cookie` không ra dòng nào); token nằm
+  trong `localStorage` (`frontend-v2/src/core/auth/auth-store.ts`), mà `localStorage` **khóa
+  theo origin**.
+
+Nên hôm nay đây là chỗ **phát tán nội dung độc hại từ tên miền công ty** (lừa đảo, tệp độc),
+chưa phải trộm token. Mức **Trung bình**.
+
+⚠️ **Nhưng nó ghép với BM-023 thành một thứ khác hẳn.** `upload_fileobj` chỉ dùng R2 khi
+`_r2_ready()` — cần đủ endpoint + khóa + `public_url`; **thiếu một cái là nó lặng lẽ ghi vào
+`uploads/`** và trả về `/api/uploads/<key>`, đường được phục vụ bởi `app.mount("/api/uploads",
+StaticFiles(...))` ở `main.py:134` — **cùng origin với ứng dụng, không kiểm quyền** (đó chính là
+BM-021). Mà BM-023 nói rằng khóa R2 giải mã hỏng thì `r2_access_key_id` thành `""` **trong im
+lặng**. Ghép lại: một lần hỏng khóa không ai biết → cùng tệp SVG đó chuyển từ tên miền anh em
+sang **cùng origin** → XSS lưu trữ đọc sạch `localStorage`. Ba dòng BM-021, BM-023, BM-027 mỗi
+dòng đứng riêng đều "Thấp/Trung bình"; đứng cùng nhau thì không.
+
+**Hướng vá:** bỏ `svg` khỏi mọi danh sách trắng ảnh, và kiểm bằng **đuôi tệp + byte đầu** thay
+vì `content_type`. Nếu nghiệp vụ thật sự cần SVG (logo) thì phải đi qua bộ làm sạch — hệ đã có
+`sanitize_html` cho Trung tâm HDSD, nhưng SVG cần bộ riêng.
+
+### BM-028 — `content_type` là lời khai, không phải sự thật
+
+**Mức: Thấp. Trạng thái: Mở.** Chuỗi máy khách gửi lên được lưu nguyên vào `tab_file.content_type`,
+đặt làm `ContentType` của đối tượng R2, rồi dùng lại làm `media_type` của hồi đáp `/view` và
+`/download`. Không có chỗ nào đối chiếu nó với đuôi tệp, và không có chỗ nào đọc mấy byte đầu.
+
+Mức Thấp **nhờ** hai chốt của `/view` (danh sách trắng + `nosniff` + CSP `sandbox`) đứng chặn ở
+cửa nguy hiểm nhất. Nó là **nợ có lãi**: ai nới danh sách trắng đó, hoặc thêm một cửa xem tệp
+mới mà quên chép ba header, là dòng này nhảy mức ngay.
+
+### BM-029 — zip-slip ở `/chain/zip`
+
+**Mức: Thấp. Trạng thái: Mở.** Đường dẫn của mỗi mục trong tệp nén dựng từ **tên thô**:
+
+```python
+path = f"{src}/{lk.doc_type or 'khac'}/{f.filename}"
+zf.writestr(path, download_bytes(f.file_key))
+```
+
+Đã chứng minh tên thô sống sót qua `UploadFile`: gửi `'../../../../evil.pdf'` thì
+`UploadFile.filename` giữ nguyên cả chuỗi (chỉ **khóa lưu trữ** được `safe_name()` làm sạch, còn
+`tab_file.filename` giữ bản gốc). Nạn nhân là **máy người dùng** mở tệp nén, không phải máy chủ
+— và bộ giải nén hiện đại phần lớn tự chống. Vá: chạy `safe_name()` thêm một lần khi dựng đường
+dẫn trong tệp nén.
+
+### BM-030 — cụm độ bền đầu vào
+
+**Mức: Thấp. Trạng thái: Mở.** Ba thứ cùng họ:
+
+- **Tên tệp > 255 ký tự → 500, không phải 422.** Đúng họ `duoc-CR-316`. Nặng hơn ca nhân sự ở
+  một điểm: đường tải lên **không có schema Pydantic nào cả**, `UploadFile` đi thẳng từ HTTP
+  xuống `StoredFile.filename` là `String(255)`. Đã chứng minh tên **304 ký tự** đi qua không ai
+  cản. ⚠️ `test/backend` chạy SQLite nên bài kiểm nào ghi xuống DB rồi khẳng định là **xanh
+  giả** — kiểm ở tầng chặn, đừng tin DB.
+- **Không có trần số tệp mỗi lượt.** `files: list[UploadFile]` nhận bao nhiêu cũng được.
+- **Chốt dung lượng chạy sau khi đã nhận hết thân request** (`f.file.seek(0, 2)` rồi mới so với
+  `max_mb`). Nghĩa là trần `max_mb` bảo vệ **ổ đĩa**, không bảo vệ **băng thông và RAM**; lớp
+  chặn thật duy nhất là `client_max_body_size` của nginx (`100m`, riêng Help Center `35m`).
+
+### BM-031 — `__self__` trả về sớm, và tệp mồ côi không ai dọn
+
+**Mức: Thấp. Trạng thái: Mở.** `_check` gặp entity khai cha là `__self__` (`comment`,
+`forum_post`) thì **trả về trước khi hỏi quyền**:
+
+```python
+if parent == "__self__":
+    return exts, max_mb
+```
+
+Đây là **cố ý** — hai entity đó có chốt riêng `_check_comment` / `_check_forum` ở cửa **gắn**
+tệp. Chỗ thủng là cửa **tải lên trần**: `POST /api/attachments/upload-file` với `entity=comment`
+không đi qua chốt riêng nào cả, nên bất kỳ tài khoản đăng nhập nào cũng tải lên được. Ghép thêm:
+tệp tải lên mà không bao giờ được `/register` gắn vào đâu thì **nằm lại vĩnh viễn** —
+`_delete_file_if_orphan` chỉ chạy khi có ai **xóa một dây**, nên tệp chưa từng có dây thì không
+có nhịp nào chạm tới nó.
 
 ---
 
@@ -899,16 +1309,24 @@ Sổ này chỉ có giá trị nếu được mở ra. Ba việc nhỏ:
   phân hệ mới thường mở rộng số người có "một tài khoản hợp lệ", mà đó chính là điều kiện duy
   nhất mà BM-001 đòi hỏi.
 
-### Việc 5 — đợt BM-016…BM-023 (14/09/2026)
+### Việc 5 — đợt BM-016…BM-024 (14/09/2026)
 
 Xếp theo **rẻ trước, và đo trước khi vá**.
 
-**5.0 — ĐO TRƯỚC, ngay hôm nay (0 dòng mã).** Hai dòng đang treo ở trạng thái *chưa đo* nên
-chưa kết luận được mức: **BM-018** (`JWT_SECRET` trên prod còn là `change_me_please` không) và
-**BM-022** (`CORS_ORIGINS` trên prod có phải `*` không). Cả hai nằm trong `.env` của VPS.
-⚠️ **Kiểm bằng cách chỉ in ra CÓ/KHÔNG, tuyệt đối không in giá trị** — bí mật in ra một lần là
-nó nằm lại trong lịch sử phiên, trong log, trong ảnh chụp màn hình. Đo xong thì sửa mức ở bảng
-§2 rồi mới xếp lại thứ tự dưới đây.
+**5.0 — ĐO TRƯỚC (0 dòng mã) — XONG 14/09/2026.** Hai dòng treo ở trạng thái *chưa đo* nay đã
+đo trên VPS theo lệnh của đại ca, chỉ in CÓ/KHÔNG, không in giá trị:
+
+- **BM-018** — prod **không** dùng khóa mặc định, dài ≥ 32 ký tự, đúng ở cả `.env` lẫn tiến
+  trình đang chạy → hạ mức xuống **Thấp**, phần còn mở chỉ là chốt khởi động (5.1).
+- **BM-022** — prod **không** phải `*`, đúng 1 origin là tên miền thật có TLS → hạ mức xuống
+  **Thấp**, **đóng dòng, không cần mã**.
+- ⚠️ Lòi ra **BM-024**: prod và dev dùng **chung một** `JWT_SECRET` → việc mới, mục **5.7**.
+
+⚠️ Giữ nguyên luật đo cho những lần sau: **chỉ in CÓ/KHÔNG, tuyệt đối không in giá trị, và
+không in cả bản băm** — bí mật in ra một lần là nó nằm lại trong lịch sử phiên, trong log,
+trong ảnh chụp màn hình. So sánh hai bí mật thì băm **trên chính máy đó**, so **tại đó**, chỉ
+mang về một chữ CÓ/KHÔNG. Và luôn đo **hai lớp**: tệp `.env` *và* tiến trình đang chạy — hai
+thứ đó trôi khỏi nhau là chuyện thường.
 
 **5.1 — Chốt khởi động cho `JWT_SECRET` (BM-018).** Môi trường không phải local mà khóa còn là
 mặc định (hoặc quá ngắn) thì app **từ chối chạy**. Vài dòng ở `core/config.py`, rủi ro bằng 0.
@@ -938,6 +1356,45 @@ rõ mức khẩn: **trên prod hôm nay, đánh dấu một người *Nghỉ vi�
 đá phiên của họ.** Không dòng nào ở §2 nguy hơn dòng đó, và nó đã vá xong từ 14/09 — chỉ là vá
 chưa tới nơi cần vá.
 
+**5.7 — Cho DEV một `JWT_SECRET` riêng (BM-024) — XONG 14/09/2026.** Làm **hoàn toàn ở phía
+dev**, prod không đụng tới. Ba bí mật trong `tab_setting` của dev đã mã hóa lại bằng khóa mới
+(3/3 khớp bản gốc), `.env.dev` đã đổi, ba container dev đã dựng lại, đo lại xác nhận **prod và
+dev không còn dùng chung khóa** và **prod vẫn đọc được bí mật của prod**. Không đổi một dòng mã
+nào. Chi tiết từng bước + hai bẫy (thứ tự bắt buộc, và `restart` không nạp lại biến môi trường)
+ghi ở mục **BM-024** trong §2.
+
+### Việc 6 — đợt BM-025…BM-031, khâu tải tệp lên (14/09/2026)
+
+Chưa viết một dòng mã nào — đợt này mới là **rà**, đại ca chưa ra lệnh vá. Xếp sẵn theo
+*"đang hở rộng nhất"* trước.
+
+**6.1 — Chốt chủ sở hữu cho `/register` (BM-025).** Việc gấp nhất của cả đợt, vì nó là **đọc
+được mọi tệp trong hệ bằng một tài khoản thường**. Vá: đòi `StoredFile.created_by == user.id`
+**và** tệp chưa có dây nào, trước khi tạo `FileLink`. ⚠️ **Phải rà luồng đang chạy trước khi
+siết** — chỗ nào hệ thống tự gắn tệp hộ người dùng (sao chép phiếu, chuyển chứng từ) mà bị chặn
+nhầm thì người dùng mất đính kèm và không ai biết tại sao.
+
+**6.2 — Đưa hai cửa ảnh đại diện về chung chính sách (BM-026).** Thêm entity cho ảnh đại diện /
+chữ ký vào `FILE_POLICY` và bắt cả bốn cửa (auth avatar · employee avatar · auth signature ·
+employee signature) gọi **cùng một hàm kiểm**. Đừng chép luật kiểm vào từng controller — cửa
+thứ năm sẽ mọc ra và lại quên đúng như bốn cửa này đã quên.
+
+**6.3 — Đuổi SVG và kiểm bằng byte đầu (BM-027 + BM-028).** Bỏ `svg` khỏi `IMAGE_EXTS` của Trung
+tâm HDSD, đổi `startswith("image/")` thành kiểm **đuôi + byte đầu**. Mượn thẳng cách của
+`/api/assistant/uploads` — nó đã làm đúng, không phải viết mới.
+
+**6.4 — Ba chốt rẻ (BM-029 + BM-030).** `safe_name()` khi dựng đường dẫn trong tệp nén · trần độ
+dài tên tệp trả **422** · trần số tệp mỗi lượt. Mỗi thứ vài dòng.
+
+**6.5 — Dọn tệp mồ côi + gác cửa `upload-file` (BM-031).** Một việc định kỳ xóa `tab_file`
+không dây quá N ngày, và đòi quyền tối thiểu ở cửa tải lên trần.
+
+⚠️ **Nhắc lại chỗ ghép nguy hiểm nhất của đợt này:** BM-027 hôm nay chỉ là *"phát tán nội dung
+độc từ tên miền công ty"* **vì** R2 đang chạy. Ngày nào BM-023 kích hoạt (khóa R2 giải mã hỏng,
+im lặng) thì `upload_fileobj` rơi về `uploads/`, tệp đáp xuống **cùng origin**, và nó thành XSS
+lưu trữ. Nghĩa là **6.3 rẻ hơn nhiều so với việc chờ 5.2 và 5.5 làm xong** — vá nguồn trước,
+đừng trông vào việc hai dòng kia được vá đúng lúc.
+
 ---
 
 ## 4. Sổ này KHÔNG làm gì
@@ -946,10 +1403,13 @@ chưa tới nơi cần vá.
   ra khi soát quanh **từng ticket**, không phải kết quả của một đợt rà có phương pháp. Ngày
   **14/09/2026** mới có đợt rà đầu tiên đi theo **lớp phòng thủ** thay vì đi theo ticket — nó
   đẻ ra BM-016…BM-023 và lấp đúng hai vùng mà bản cũ của mục này ghi là *"chưa ai nhìn"*:
-  **cấu hình** và **lớp mạng / VPS**. Ba vùng vẫn **chưa ai nhìn**, giữ nguyên cảnh báo: khâu
-  **tải tệp lên** (kiểu MIME, kích thước, tên tệp), khâu **nhập/xuất dữ liệu** (Excel/CSV), và
-  phần **tích hợp ngoài** (Cloudflare tunnel, R2, Brevo, webhook). **Không có dòng nào ở đây
-  không có nghĩa là chỗ đó sạch.**
+  **cấu hình** và **lớp mạng / VPS**. **Khâu tải tệp lên đã rà ngày 14/09/2026** (đợt thứ hai,
+  BM-025…BM-031, §2b) — kiểu MIME, kích thước, tên tệp, và cả câu mà lần rà nào cũng quên hỏi:
+  *ai đọc lại được tệp đó*. Còn **hai vùng chưa ai nhìn**: khâu **nhập/xuất dữ liệu**
+  (Excel/CSV) và phần **tích hợp ngoài** (Cloudflare tunnel, R2, Brevo, webhook). **Không có
+  dòng nào ở đây không có nghĩa là chỗ đó sạch.**
+- ⚠️ **Và "đã rà" không bằng "đã vá"** — bảy dòng của đợt tải tệp lên đều đang ở trạng thái
+  **Mở**. Việc vá xếp ở **Việc 6** của §3.
 - **Không thay tài liệu thiết kế.** Cách vá nằm ở tệp của từng CR.
 - **Không dựng lại được quá khứ.** Mọi thứ trong sổ này chỉ vá được từ lúc vá trở đi.
 
@@ -981,6 +1441,21 @@ làm được"*, chứ không phải *"người có quyền thì làm được"*
 | **BM-021** | `test_uploads_khong_lo_tep_cho_nguoi_la` | `client.get("/api/uploads/<tên tệp có thật>")` **không kèm token** → phải **401/403/404**, tuyệt đối không phải 200 kèm nội dung |
 | **BM-022** | `test_cors_tu_choi_origin_la` | Gửi `Origin: https://ke-xau.example` → phần hồi đáp **không** được có `Access-Control-Allow-Origin` khớp origin đó. Kèm ca ngược: origin thật trong `CORS_ORIGINS` thì được |
 | **BM-020** | `test_tran_tan_suat_co_hieu_luc` | Gọi một endpoint nghiệp vụ quá ngưỡng trong một phút → phải có **429**. Đây là bài duy nhất cần `TestClient` thật + đặt lại bộ đếm của limiter giữa các ca, nên tách riêng kẻo làm giòn cả tệp |
+| **BM-024** | `test_ve_ky_dung_khoa_nhung_khong_co_phien_thi_tu_choi` | Tự ký một vé **đúng khóa, đúng `ver`**, `jti` là một chuỗi **không có** trong `tab_login_session` → `get_current_user` phải **401**. Đây là bài canh cho chốt duy nhất chặn được vế ký vé giả khi hai môi trường dùng chung khóa; ai gỡ `_check_session` ra khỏi đường xác thực là test đỏ. Kèm ca ngược: có phiên còn sống thì đi qua |
+
+Đợt tải tệp lên đặt riêng một tệp `test/backend/test_bao_mat_tai_tep.py`:
+
+| Dòng | Bài kiểm | Khẳng định |
+|---|---|---|
+| **BM-025** | `test_register_tu_choi_tep_cua_nguoi_khac` | Dựng tệp của người A, cấp cho người B **đúng** `purchase_request` phạm vi `own`, B gọi `/register` gắn tệp đó vào phiếu của B → phải **403/404**, và **không** có `FileLink` nào mọc thêm. Kèm ca ngược: tệp của chính B thì gắn được. ⚠️ Bài này đã chạy **xanh theo chiều tấn công** ngày 14/09 (tức lỗ có thật) — viết xong phải thấy nó **đỏ trước khi vá** |
+| **BM-025** | `test_khong_tai_duoc_dinh_kem_rieng_tu_qua_day_moi` | Sau khi vá, lặp lại đúng đường ba bước ở §2b rồi khẳng định `_get_file_with_permission(..., "download")` ném lỗi. Đây là bài canh **hậu quả**, không canh **cách vá** — người sau đổi cách vá vẫn phải giữ nó xanh |
+| **BM-026** | `test_avatar_tu_choi_duoi_va_kich_thuoc` | Tải `.exe` (hoặc `.html`) lên `/api/auth/avatar` → **400**; tải ảnh vượt trần → **400**; ảnh hợp lệ → qua. Lặp cho `/api/employees/{id}/avatar` |
+| **BM-027** | `test_chu_ky_tu_choi_svg_du_khai_image` | Gửi tệp SVG kèm `content_type="image/svg+xml"` → **400**. Đây là bài canh đúng chỗ thủng: khai đúng `image/` mà vẫn phải bị chặn |
+| **BM-027** | `test_danh_sach_trang_anh_khong_chua_svg` | Khẳng định cấu trúc: `"svg" not in IMAGE_EXTS` và `"svg"` không nằm trong bộ đuôi ảnh của `FILE_POLICY`. Bài rẻ nhất trong bảng, và là bài duy nhất bắt được người sau thêm lại `svg` cho "tiện" |
+| **BM-028** | `test_content_type_lay_tu_noi_dung_khong_lay_tu_loi_khai` | Tải một tệp PNG thật nhưng khai `text/html` → `tab_file.content_type` **không** được là `text/html` |
+| **BM-029** | `test_zip_khong_co_duong_dan_di_len` | Dựng `StoredFile.filename = "../../evil.pdf"`, gọi `/chain/zip`, đọc `namelist()` của tệp nén → **không mục nào** chứa `..` |
+| **BM-030** | `test_ten_tep_qua_dai_tra_422` | Tên **300 ký tự** → **422**, không phải 500. ⚠️ Kiểm ở **tầng chặn**, đừng ghi xuống DB rồi khẳng định — SQLite không ép `VARCHAR`, xem bẫy ngay dưới |
+| **BM-031** | `test_upload_file_doi_quyen_voi_comment` | Tài khoản không quyền gì gọi `/upload-file` với `entity=comment` → phải bị chặn |
 
 ⚠️ **Bẫy đã biết, đừng dẫm lại:** `test/backend` chạy **SQLite**, mà SQLite **không** ép độ dài
 `VARCHAR` và không có nhiều ràng buộc của MySQL — bài kiểm nào ghi xuống DB rồi khẳng định là
@@ -1003,9 +1478,19 @@ chỗ (đặt ở `location` của API thay vì của trang), không phải "ch�
 và đọc hồi đáp: **không được** có `Access-Control-Allow-Origin` phản chiếu lại origin đó, và
 **không được** có `Access-Control-Allow-Credentials: true` đi kèm. Origin thật thì có.
 
-**BM-018 / BM-022 — đọc `.env` của VPS.** ⚠️ **Chỉ in ra CÓ/KHÔNG.** Cần biết đúng hai điều:
-`JWT_SECRET` có **khác** `change_me_please` không, và `CORS_ORIGINS` có **khác** `*` không.
-Không in giá trị, không `cat` cả tệp, không dán kết quả vào chỗ nào lưu lại được.
+**BM-018 / BM-022 — đọc `.env` của VPS — ĐÃ LÀM 14/09/2026, cả hai sạch.** ⚠️ **Chỉ in ra
+CÓ/KHÔNG.** Không in giá trị, không `cat` cả tệp, không dán kết quả vào chỗ nào lưu lại được.
+Ba điều rút ra từ lần làm thật, áp cho mọi lần sau:
+
+- **Đo hai lớp.** Tệp `.env` nói một đằng, container đã nạp một bản `.env` cũ chạy một nẻo.
+  Lớp có thẩm quyền là tiến trình: `docker exec <api> python -c "from app.core.config import
+  settings; ..."`.
+- **So sánh hai bí mật thì băm ngay tại chỗ.** Tính `sha256` của mỗi bên **trên máy đó**, so
+  **tại đó**, mang về đúng một chữ CÓ/KHÔNG. **Bản băm cũng không được in** — cả hai bên là
+  một giá trị, nên bản băm lọt ra là một mục tiêu để dò. Đây chính là cách tìm ra BM-024.
+- ⚠️ **`docker exec -i` nuốt mất phần còn lại của kịch bản** khi chạy trong một heredoc
+  `ssh ... 'bash -s'` — stdin đã là kịch bản rồi. Bỏ `-i` khi exec không tương tác, không thì
+  lệnh chạy xong mà **không ra một dòng nào** và trông y hệt như đo hỏng.
 
 **BM-021 — `/api/uploads`.** Liệt kê xem thư mục `uploads` trên prod đang có gì (kỳ vọng: gần
 như rỗng vì prod dùng R2). Có tệp thì mở thử đường dẫn đó bằng **cửa sổ ẩn danh** — hiện ra

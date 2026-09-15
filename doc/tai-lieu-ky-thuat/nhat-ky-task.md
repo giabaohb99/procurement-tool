@@ -89,12 +89,15 @@ Commit trên erp-v2 ngày 14/09 (sổ + script + dòng CR + .gitignore chặn
 .task_sync.env). Số 399 vì 397/398 đã bị phiên khác lấy.
 
 ### sync-task-tool-dang-xuat | Script đăng xuất sau khi sync + nhãn thiết bị (bao-CR-401)
-- status: dang-lam
+- status: xong
 - date: 2026-09-14
 Đại ca thấy tab Tài khoản NSU209 có 30 "Không rõ thiết bị": mỗi lần chạy script
 là một phiên login không đóng, UA tự đặt không khớp luật nào. Vá: gọi
 /api/auth/logout trong finally; UA `sync_task_journal/1.0 (python-urllib)` + họ
-`tool` nhận `python-urllib` → "Công cụ dòng lệnh". Chờ lệnh commit + deploy dev.
+`tool` nhận `python-urllib` → "Công cụ dòng lệnh". Commit `erp-v2` `3ac6e353`,
+cherry-pick sang main `ed8d26e5`, ĐÃ LÊN PROD 14/09 tối trong đợt `5abd5dc3`
+(không migration). Dev VPS deploy để mai. Còn việc tay: đại ca bấm *Đăng xuất
+tất cả thiết bị khác* để dọn 30 phiên treo cũ.
 
 ## bao-CR-394 | Bảo mật BM-014 proxy tin cậy + BM-012 token hết hạn
 - status: xong
@@ -145,8 +148,10 @@ change-log-bao.md, doc/erp/19-viec-con-lai-tong-hop.md.
 
 ### bao-CR-395-commit | Commit + deploy dev + tick khóa login_session
 - status: dang-lam
-Commit 00b740b5 + deploy dev xong 14/09. Còn tick login_session cho vai trò ngoài admin
-ở màn Phân quyền dev (không dùng SEED_FORCE_SYNC) — việc tay của đại ca.
+Commit 00b740b5 + deploy dev xong 14/09. Cherry-pick sang main `ea405aa0`, ĐÃ LÊN
+PROD 14/09 tối trong đợt `5abd5dc3` — đóng BM-002/012/014 trên prod. Còn tick
+login_session cho vai trò ngoài admin ở màn Phân quyền (không dùng
+SEED_FORCE_SYNC) — việc tay của đại ca, làm cả dev lẫn prod.
 
 ## bao-CR-397 | Bản in PYC: ô TP/BP mua hàng in trưởng phòng thu mua + cổng ô ký 130px sang v2
 - status: xong
@@ -226,12 +231,14 @@ Prod chưa có — backend đi cùng đợt cherry-pick CR-394/395 sang main.
 - status: xong
 
 ## bao-CR-402 | CR-312 P4 — Nhật ký trước/sau (tab_change_log)
-- status: dang-lam
+- status: xong
 - date: 2026-09-14
 Đợt 4 của bao-CR-312: bảng tab_change_log ghi giá trị trước/sau từng cột bằng sự
 kiện ORM (before_flush / after_flush / after_commit), che cột nhạy cảm, gom bộ đệm
-ghi một lần cuối lượt gọi, chốt gộp nhập liệu hàng loạt. Đóng BM-005. Mã + test
-xong ở local erp-v2, chưa commit. Thiết kế: nhat-ky-va-phien-dang-nhap.md mục 4.3
+ghi một lần cuối lượt gọi, chốt gộp nhập liệu hàng loạt. Đóng BM-005 trên prod.
+Commit `erp-v2` `4b51b545`, cherry-pick `68733348`, ĐÃ CHẠY PROD 14/09 tối
+(migration `c3e5a7b9d1f2` → `d5f7a9c1b3e2`). Dev VPS deploy để mai.
+Thiết kế: nhat-ky-va-phien-dang-nhap.md mục 4.3
 (ba chỗ khác bản vẽ ở 4.3.1) + mục 6 Nguồn 3.
 
 ### bao-CR-402-mo-hinh | Model + migration tab_change_log
@@ -271,10 +278,12 @@ ghi-nặng 75 xanh vì nghe sự kiện gắn vào Session toàn cục.
 Đóng BM-005 trên dev, ghi quyết định BM-013 kèm số đo, sửa số 213/54 thành 273/62
 ở 6 tệp mã nguồn và trong sổ.
 
-### bao-CR-402-commit | Commit + deploy dev
+### bao-CR-402-commit | Commit + deploy prod (dev để mai)
 - status: dang-lam
-Chờ lệnh của đại ca. Có migration nên deploy dev phải rebuild api + celery-worker
-+ celery-beat. Prod đi cùng đợt cherry-pick CR-394/395/400 sang main.
+Commit `erp-v2` `4b51b545` + cherry-pick main `68733348`; ĐÃ DEPLOY PROD 14/09
+tối trong đợt `5abd5dc3`, migration đã chạy trên prod. CÒN LẠI: deploy dev — đại
+ca chốt để mai (15/09). Có migration nên deploy dev phải rebuild api +
+celery-worker + celery-beat.
 
 ## lark-import | Đồng bộ task từ Lark sang phân hệ Dự án (dev)
 - status: dang-lam
@@ -326,6 +335,9 @@ Sổ nguồn: doc/tai-lieu-ky-thuat/so-ghi-nhan-loi-bao-mat.md (bản 1.7).
 Chốt quan trọng nhất: việc gấp nhất KHÔNG phải viết mã mới mà là ĐƯA 5 BẢN VÁ
 ĐANG NẰM Ở DEV LÊN PROD (BM-002/005/012/014/015) — trên prod hôm nay đánh dấu
 một người Nghỉ việc vẫn không khóa tài khoản, không đá phiên.
+Cập nhật 14/09 tối: 5 bản vá ĐÃ LÊN PROD, năm BM đó đã đóng (xem
+deploy-prod-1409-cum-bao-mat). Việc còn mở của đợt rà: BM-018/019/020/021/023 và
+cụm tải tệp BM-025..031, chưa cấp số CR.
 
 ### ra-soat-bao-mat-1409-soat | Soát 11 lớp phòng thủ, ghi 8 lỗ mới vào sổ
 - status: xong
@@ -340,6 +352,10 @@ tệp:dòng vào §2 của sổ.
 Đại ca chốt 14/09 CHẤP NHẬN RỦI RO cho BM-016 (không có chính sách mật khẩu) và
 BM-017 (không có xác thực hai lớp). Lý do + điều kiện đảo lại quyết định đã ghi
 tại dòng trong sổ. KHÔNG code hai phần này.
+ĐÍNH CHÍNH cùng ngày: BM-016 ĐÃ ĐẢO LẠI và vá bằng bao-CR-405 — đếm lại mã
+nguồn thì có NĂM cửa đặt mật khẩu chứ không phải ba, và mật khẩu trùng mã nhân
+viên mở được tài khoản bằng MỘT lần đoán nên trần tần suất của BM-004 không đỡ.
+Chỉ còn BM-017 giữ nguyên quyết định chấp nhận rủi ro.
 
 ### ra-soat-bao-mat-1409-jwt | Trả lời: đổi JWT_SECRET ảnh hưởng gì tới prod
 - status: xong
@@ -357,17 +373,137 @@ sống không). Luật: bài kiểm viết từ phía KẺ TẤN CÔNG, và dòn
 kiểm canh thì coi như chưa vá.
 
 ### ra-soat-bao-mat-1409-do | Đo 2 giá trị trên prod trước khi xếp mức
-- status: dang-lam
-BM-018 (JWT_SECRET còn là change_me_please không) và BM-022 (CORS_ORIGINS có
-phải * không) đang ở trạng thái CHƯA ĐO nên chưa chốt được mức. Cần đọc .env
-trên VPS, chỉ in CÓ/KHÔNG, tuyệt đối không in giá trị. Chờ lệnh đại ca.
+- status: xong
+- date: 2026-09-14
+Đã đo trên VPS theo lệnh đại ca, chỉ in CÓ/KHÔNG, không in giá trị. CẢ HAI SẠCH
+trên prod: JWT_SECRET không phải change_me_please và dài >= 32 ký tự;
+CORS_ORIGINS đúng 1 origin là tên miền thật có TLS, không có dấu sao. Đo hai lớp
+(tệp .env và tiến trình đang chạy) vì hai thứ đó trôi khỏi nhau là chuyện
+thường. Kết quả: BM-018 và BM-022 cùng hạ xuống mức Thấp, BM-022 đóng bằng đo
+không cần mã, BM-018 chỉ còn phần chốt khởi động.
+Nhân lần đo lòi ra dòng MỚI BM-024: prod và dev dùng CHUNG một JWT_SECRET (so
+sánh sha256 ngay trên VPS, không in cả bản băm). Vế ký vé giả KHÔNG hở vì chốt
+phiên _check_session của bao-CR-360 P3a đòi jti phải là phiên còn sống trong CSDL
+prod - đã xác nhận trên chính container prod đang chạy. Vế hở thật là vai trò
+Fernet: cùng khóa đó mã hóa mật khẩu SMTP + 2 khóa R2 trong tab_setting, mà prod
+với dev chung một máy chủ MySQL.
+
+### ra-soat-bao-mat-1409-doi-khoa-dev | Cho DEV một JWT_SECRET riêng (BM-024)
+- status: xong
+- date: 2026-09-14
+Vá BM-024 ngay trong ngày phát hiện. Làm hoàn toàn ở phía dev trên VPS, KHONG
+đụng prod: prod không restart, không deploy, không đổi một dòng mã nào. Không
+cần CR vì không có mã nguồn nào đổi - đây là việc hạ tầng.
+Các bước đã chạy: (1) khảo sát - dev có đúng 3 bí mật trong tab_setting
+(smtp_password, r2_access_key_id, r2_secret_access_key), tab_mailbox rỗng;
+(2) sao lưu .env.dev + 2 bảng vào ~/proc_backups/ quyền 600; (3) mã hóa lại 3 bí
+mật bằng khóa mới NGAY TRONG container còn giữ khóa cũ, tự kiểm lại -> 3/3 khớp
+bản gốc; (4) ghi khóa mới vào .env.dev, có chốt dừng nếu số dòng JWT_SECRET
+khác 1; (5) dựng lại api + celery-worker + celery-beat bằng
+docker compose -f docker-compose.dev.yml --env-file .env.dev up -d;
+(6) nghiệm thu chỉ in CÓ/KHÔNG - dev đọc được cả 3 bí mật, prod+dev dùng chung
+khóa: KHÔNG, khóa dev không mặc định và >= 32 ký tự, prod vẫn đọc được bí mật
+prod, log không lỗi, /docs trả 200; (7) dọn tệp tạm bằng shred, giữ 2 bản sao
+lưu.
+HAI BẪY ghi lại kẻo lần sau dẫm: (a) phải mã hóa lại TRƯỚC rồi mới đổi .env -
+ngược lại là mất khóa cũ và bí mật thành rác, mà vì BM-023 thì rác TRONG IM
+LẶNG; (b) docker compose restart KHÔNG nạp lại biến môi trường (biến nạp lúc
+TẠO container) - phải up -d để dựng lại.
+Hệ quả chấp nhận: mọi phiên đăng nhập trên dev bị đá ra.
 
 ### ra-soat-bao-mat-1409-va | Vá BM-018..BM-023 theo thứ tự Việc 5 của sổ
 - status: dang-lam
-Chưa bắt đầu, chưa cấp số CR. Thứ tự đã chốt: 5.0 đo → 5.1 chốt khởi động
-JWT_SECRET → 5.2 giải mã bí mật nói thành lời + chốt sức khỏe sao lưu → 5.3
-header nginx → 5.4 bật trần tần suất → 5.5 che /api/uploads → 5.6 deploy 5 bản
-vá dev lên prod.
+Chưa bắt đầu, chưa cấp số CR. Thứ tự đã chốt: 5.0 đo (XONG 14/09) → 5.1 chốt
+khởi động JWT_SECRET → 5.2 giải mã bí mật nói thành lời + chốt sức khỏe sao lưu
+→ 5.3 header nginx → 5.4 bật trần tần suất → 5.5 che /api/uploads → 5.6 deploy 5
+bản vá dev lên prod → 5.7 cho DEV một JWT_SECRET riêng (XONG 14/09, xem task
+con ra-soat-bao-mat-1409-doi-khoa-dev).
+
+### ra-soat-bao-mat-1409-tai-tep | Rà khâu TẢI TỆP LÊN, ra 7 lỗ BM-025..BM-031
+- status: xong
+- date: 2026-09-14
+Đại ca: "tiếp tục rà bảo mật phần tải tệp lên". Đợt rà thứ hai, lấp 1 trong 3
+vùng mà §4 của sổ ghi là chưa ai nhìn. Sổ lên bản 2.1, thêm mục §2b + Việc 6 ở
+§3 + 9 bài kiểm ở §5.1 (tệp test/backend/test_bao_mat_tai_tep.py, chưa viết).
+CÁCH RÀ: census UploadFile ra 12 tệp rồi soát từng cửa theo 6 câu hỏi cố định
+(ai gọi được · tệp gì được nhận · to bao nhiêu · tên tệp đi về đâu · đáp xuống
+origin nào · ai đọc lại được). Bài học: module attachment là chỗ LÀM KỸ NHẤT
+(danh sách trắng xem trong khung + nosniff + CSP sandbox + safe_name cho khóa
+lưu trữ + _check hai lớp), lỗ nặng nằm ở 4 cửa ĐI VÒNG QUA NÓ (avatar x2, chữ
+ký x2) cộng ảnh bài HDSD. Rà một module rồi kết luận cả khâu đã sạch là bỏ sót
+đúng chỗ thủng.
+BM-025 (Cao) /api/attachments/register không kiểm tệp của ai — chỉ kiểm quyền
+trên PHIẾU ĐÍCH mà phiếu đích là thứ kẻ tấn công tự lập. file_id là số nguyên
+tăng dần nên dò cạn. CHỨNG MINH BẰNG BÀI CHẠY THẬT: tài khoản chỉ có
+purchase_request phạm vi own gắn được tệp document_version của người khác rồi
+tải về trót lọt. PRIVATE_ENTITIES không cứu vì download kiểm theo DÂY MỚI.
+BM-026 (Cao) /api/auth/avatar + /api/employees/{id}/avatar không kiểm đuôi,
+không kiểm dung lượng, không kiểm nội dung — bất kỳ tệp gì tới trần 100m của
+nginx. Hai cửa này mọc NGOÀI bảng FILE_POLICY.
+BM-027 (TB) chữ ký chỉ kiểm content_type.startswith("image/") nên svg+xml lọt;
+help_center khai thẳng svg trong IMAGE_EXTS. Đã ĐO 2 thứ quyết định mức: prod
+r2_public_url = storage.degoholding.vn (tên miền anh em, không cùng origin) và
+toàn backend KHÔNG đặt cookie nào (token trong localStorage, khóa theo origin)
+→ hôm nay chỉ là phát tán nội dung độc từ tên miền công ty. NHƯNG ghép BM-023:
+khóa R2 giải mã hỏng trong im lặng → upload_fileobj rơi về uploads/ → cùng tệp
+đó phát từ /api/uploads (cùng origin, BM-021) → XSS lưu trữ đọc sạch token.
+BM-028/029/030/031 (Thấp): content_type là lời khai được lưu nguyên rồi dùng
+làm media_type · zip-slip ở /chain/zip vì dựng đường dẫn bằng tên tệp thô (đã
+chứng minh '../../../../evil.pdf' sống sót qua UploadFile; safe_name chỉ làm
+sạch KHÓA) · tên tệp > 255 ra 500 chứ không 422 (họ duoc-CR-316, đường tải lên
+không có schema Pydantic nào, đã chứng minh tên 304 ký tự đi lọt) + không trần
+số tệp mỗi lượt + chốt dung lượng chạy SAU khi nhận hết thân request · nhánh
+__self__ của _check trả về trước khi hỏi quyền + tệp mồ côi không ai dọn.
+CHƯA VÁ GÌ, chưa cấp số CR — đợt này là RÀ. Thứ tự vá xếp ở Việc 6 của sổ, gấp
+nhất là 6.1 (chốt chủ sở hữu cho /register) và 6.3 (đuổi svg) vì 6.3 rẻ hơn
+nhiều so với việc chờ BM-021 + BM-023 được vá đúng lúc.
+Đồ nghề đo đã xóa sạch sau khi đo (test tạm + kịch bản trong container).
+
+## bao-CR-405 | Chính sách mật khẩu dùng chung (đảo lại BM-016)
+- status: dang-lam
+- date: 2026-09-14
+Đảo lại quyết định "chấp nhận rủi ro" của chính ngày 14/09. Hai điều mới biết
+sau khi đếm lại mã nguồn: (1) hệ có NĂM cửa đặt mật khẩu chứ không phải ba như
+sổ ghi, trong đó cửa đặt lại bằng liên kết KHÔNG kiểm gì cả; (2) tên đăng nhập
+chính là mã nhân viên, nên mật khẩu đặt trùng mã nhân viên chỉ cần MỘT lần đoán
+— LOGIN_RATE_LIMIT của BM-004 chỉ chặn đoán nhiều lần. Luật gom vào một hàm
+core/password_policy.validate_password(); xong mã + test ở local erp-v2, chưa
+commit, chưa deploy.
+
+### bao-CR-405-chinh-sach | Viết core/password_policy.py và gắn vào 5 cửa
+- status: xong
+Luật: không rỗng · không khoảng trắng đầu/cuối · >= 8 ký tự · <= 72 byte UTF-8
+(bcrypt cắt im lặng ở byte 72) · có cả chữ lẫn số · không nằm trong danh sách
+phổ biến · không chứa mã nhân viên / email / phần trước @ (bỏ dấu, không phân
+biệt hoa thường). Ném HTTPException 400 kèm câu tiếng Việt. Ba chỗ cố ý làm
+khác: luật ở tầng HÀM chứ không ở Pydantic (schema không thấy mã nhân viên của
+tài khoản đó), KHÔNG nhét vào hash_password (12 đường seed sẽ chết), và cửa đặt
+lại bằng liên kết kiểm SAU khi giải mã token để câu lỗi không dò được token.
+
+### bao-CR-405-giao-dien | Gộp luật ô mật khẩu mới ở v2 + vá 3 chỗ ở v1
+- status: xong
+frontend-v2: core/auth/password-rules.ts mới, newPasswordField() dùng chung cho
+đổi mật khẩu · đặt lại mật khẩu · hộp đặt mật khẩu ở Nhân sự. Cố ý KHÔNG chép
+luật "không trùng mã nhân viên" xuống máy khách — máy khách không biết mã đó.
+frontend (đóng băng, sửa lỗi): 3 chỗ còn kiểm 6/4 ký tự đã nâng lên 8 + chữ và
+số, kèm câu gợi ý. Cổng npm run check của v2 xanh; typecheck v1 đúng 4 lỗi cũ.
+
+### bao-CR-405-test | 18 ca + bài kiểm cấu trúc quét AST canh cửa thứ sáu
+- status: xong
+test/backend/test_chinh_sach_mat_khau_cr405.py: thuần chính sách, một ca cho
+TỪNG cửa trong năm cửa, và một bài quét AST — hàm nào trong app/modules gọi
+hash_password mà không gọi validate_password là đỏ. Cửa thứ sáu sẽ lộ ở CI chứ
+không lộ trên màn hình khách. Chạy kèm 7 tệp hàng xóm: 187 xanh. 8 ca phải làm
+mạnh chuỗi mật khẩu MẪU (giữ nguyên ý định của bài kiểm).
+
+### bao-CR-405-no | Nợ để lại: mật khẩu yếu cũ + 1 bài kiểm đỏ có sẵn
+- status: dang-lam
+(1) Mật khẩu yếu ĐANG TỒN TẠI không bị đụng tới — chính sách chỉ gác lúc ĐẶT;
+muốn quét sạch phải ép đổi, là việc khác, chưa cấp số CR. (2) Phát hiện một bài
+kiểm ĐỎ SẴN, không do CR này gây ra: test_pham_vi_duong_vong.py::
+test_a1_bang_65_lan_db_get_trong_controller_da_phan_loai_du — bảng kiểm kê
+DB_GET_TRONG_CONTROLLER thiếu login_session/controller.py và
+survey_request/report_controller.py, nợ từ bao-CR-394/395. Chờ lệnh xử.
 
 ## bao-CR-310 | Xử lý báo giá (phương án) trên Yêu cầu mua hàng
 - status: dang-lam
@@ -411,20 +547,193 @@ prod (theo lượt gộp erp-v2 -> main 11/09). Demo script backend/scripts/
 demo_cr310.py (local, không commit).
 
 ### bao-CR-310-p3 | P3 — Màn Xử lý phương án ở frontend-v2
-- status: dang-lam
+- status: xong
 Route /procurement/purchase-requests/:id/process (đối xứng màn Xử lý khảo
-sát của YCBG — CR-222). Làm TRƯỚC P2 vì là chỗ nghiệm thu bằng mắt. Chưa
-bắt đầu code.
+sát của YCBG — CR-222), vào từ nút "Xử lý phương án" trên màn chi tiết YCMH
+khi phiếu đã điều phối. Xong local 14/09, CHƯA commit. 12 tệp: types
+(isPrOptionStageOpen + MAX_OPTIONS_PER_LINE=5) · API 7 hàm/6 endpoint ·
+hooks 2 query + 5 mutation · purchase-request-process-card.tsx (bảng
+phương án theo dòng + picker kho khảo sát kiểu CR-222 + dialog nhập tay) ·
+trang + route lazy + nút vào. Quyền UI khớp backend: ghi = write + cổng mở
++ đúng dòng mình (hoặc approve); chốt = người yêu cầu hoặc approve, không
+cần quyền ghi; cột NCC/picker/nhập tay cần supplier:read (thiếu thì nói lý
+do); người yêu cầu chỉ thấy "Phương án N"; đủ 5 thì báo trần. Xem read-only
+mọi trạng thái sau điều phối, ghi chỉ khi cổng mở. Test 12 ca; typecheck 0
+lỗi + lint 0 lỗi + vitest đích danh 2 tệp mới xanh. Bẫy: DataTable tự gọi
+useQueryClient nên test phải bọc QueryClientProvider; header kèm tay nắm
+resize nên khẳng định cột bằng /^NCC/.
 
-### bao-CR-310-p2 | P2 — Sinh N đơn mua hàng nháp + đồng bộ mã hàng H.3.9
-- status: dang-lam
-Gom dòng chốt theo supplier_code, cùng khuôn survey_request.create_prs.
-Kèm luật H.3.9 chép mã hàng lên dòng chưa có mã. Chưa bắt đầu.
+### bao-CR-310-p3b | P3b — Chốt hoàn thành xử lý + thẻ chọn phương án ở màn chi tiết
+- status: xong
+Làm lại luồng theo đúng khuôn YCBG (CR-222) sau khi đại ca duyệt màn P3: NSTM
+xử lý xong phải CHỐT, người yêu cầu chọn ở màn CHI TIẾT chứ không ở màn xử lý.
+Xong local 14/09, CHƯA commit. Backend: 2 cột options_done + no_option trên
+tab_purchase_request_item (migration a3e8c1f6d924 — CHÚ Ý down_revision là
+d5f7a9c1b3e2 của bao-CR-402 chưa commit, phải commit CR-402 trước hoặc cùng
+lượt); complete_options nhân khuôn complete_sr (chốt phần người gọi theo
+assignee/see_all, idempotent, dòng trống phải tick chốt rỗng không thì 400 kèm
+số dòng, dòng có phương án tick rỗng thì phương án thắng); reopen_line gác
+ensure_can_choose, giữ phương án đã chọn; ensure_line_not_done chặn 4 đường ghi
+sau chốt, ensure_line_done chặn chọn trước chốt (đặt SAU ensure_can_choose để
+NSTM ăn 403); 2 endpoint /options/complete + /items/{iid}/options/reopen;
+serializer thêm 2 cờ; audit options_complete/options_reopen (nhãn chưa vào
+action_catalog — tệp đang trong phiên CR-402, nợ). Frontend: process card
+thành bàn NSTM (bỏ nút Chốt → cột Trạng thái read-only, nút "Chốt hoàn thành
+xử lý" + dialog chốt rỗng đòi tick đủ, badge dòng đã chốt/chốt rỗng); thẻ mới
+purchase-request-choose-card.tsx trên màn chi tiết — LƯỚI THẺ bấm chọn kiểu
+radio y khuôn khu Kết quả khảo sát YCBG, không dùng bảng ngang (bản bảng đầu
+bị đại ca chê không giống YCBG, làm lại 14/09; trường NCC trên thẻ gác
+supplier:read) — chỉ dòng options_done, tự ẩn khi rỗng, chốt rỗng hiện thông
+báo và tắt query bằng itemId=0, người yêu cầu/approve chọn + "Mở lại cho NSTM
+xử lý"; nút "Xử lý phương án" đòi thêm
+purchase_request.write. Test: pytest 29 ca (21→29) + vitest 15 ca (9 process
++ 6 choose) + typecheck 0 lỗi + lint 0 lỗi.
+
+### bao-CR-310-p2 | P2 — Phương án 0 + sinh N đơn mua hàng nháp + áp NCC hàng loạt
+- status: xong
+- date: 2026-09-15
+15/09 (tiếp 2): CHẶNG (c) SINH ĐƠN XONG LOCAL (chưa commit) — HẾT ĐỢT 2. Backend:
+option_service.generate_purchase_orders + POST /{pid}/options/generate-orders —
+gom dòng đã chọn phương án theo NCC (mã, hoặc name: với NCC gõ tay), mỗi nhóm
+một đơn NHÁP đi qua đúng purchase_order.service.create_po (hưởng trọn mã PO,
+NSPT mặc định, chép expected_date, _sync_pr CR-074, recompute_effects, audit);
+nhóm không NCC xếp cuối thành một đơn riêng ghi chú nhắc bổ sung NCC (CR-095
+chặn ở cửa gửi duyệt, không chặn tạo). Giá = snap_price_by_volume, VAT dòng =
+snap_vat trống rơi về vat_pct (CR-058), ĐVT = snap_quote_unit nếu có, cam kết
+giao chép vào ghi chú dòng. Chống sinh trùng bằng line_status != no_po (không
+bỏ chọn phương án — đó là quyết định của người yêu cầu); dòng bỏ chọn hết =
+"khoan mua" bị bỏ qua; hết dòng thì 400. Cổng: purchase_order:create +
+_in_scope đọc phiếu (404 ngoài phạm vi) + ensure_stage. Frontend: nút "Tạo đơn
+mua hàng theo phương án" trên thẻ chọn (confirmDialog + ref chặn bấm đúp,
+toast kể tên đơn); đường tạo ĐMH tay nâng cấp purchase-order-draft.ts — dòng
+điền theo chosen_option, NCC đầu đơn khi mọi dòng còn mua thống nhất MỘT NCC.
+Test: pytest 43 -> 48/48 xanh; vitest choose card 11 -> 13 +
+purchase-order-draft.test.ts 11 ca mới; typecheck + eslint targeted sạch.
+Còn lại của CR-310: đợt 4 (hai bản in + N-17 + HDSD).
+15/09 (tiếp): CHẶNG (b) MÀN CHỌN NÂNG CẤP XONG LOCAL (chưa commit) — viết lại
+purchase-request-choose-card.tsx theo H.10.5 hai tầng: người yêu cầu giữ nguyên
+lối chọn thẻ P3b; tầng thu mua (write + supplier:read, đúng dòng mình phụ trách
+hoặc approve) có nút sửa trên từng thẻ mở hộp sửa giá/NCC (có NCC thì đi
+PATCH .../supplier, chỉ đổi giá thì PATCH thường price-only nên chạy cả sau
+chốt; phương án khảo sát chỉ bày ô giá) + khu "Áp 1 NCC cho nhiều dòng" tính
+từ chosen_option trong payload chi tiết, không thêm query; dòng chốt rỗng nay
+hiện thẻ Phương án 0 chọn được (bỏ chiêu tắt query itemId=0). Types/API/hooks
+thêm setSupplier + assignSupplierBulk + 3 hằng PR_OPTION_SOURCE_*. Vitest
+choose card 6 -> 11 ca xanh, typecheck + eslint targeted sạch.
+Còn: (c) sinh đơn.
+15/09: CHẶNG (a) BACKEND XONG LOCAL (chưa commit) — nguồn PR_OPT_ORIGINAL "Yêu cầu
+gốc"; sinh phương án 0 ở dispatch_pr + sinh bù idempotent ở đường đọc (chi tiết
+phiếu, list options); chọn sẵn khi dòng chưa chọn gì; ngoài trần 5 + count_map chỉ
+đếm phương án NSTM (chốt rỗng đổi nghĩa tự khớp); cấm xóa phương án 0; nới khóa
+H.10.4 (sau chốt sửa GIÁ mọi phương án — cần supplier:read, trường khác chặn);
+endpoint PATCH .../options/{oid}/supplier (áp NCC phương án 0/nhập tay, cả sau
+chốt) + POST /{pid}/options/assign-supplier (áp 1 NCC nhiều dòng, soát trước ghi
+sau); H.3.9 chép mã hàng lúc chốt (mã trùng dòng khác thì không chép — CR-047);
+khai nhãn options_complete/options_reopen/option_supplier_set vào action_catalog
+(trả nợ P3b). Test test_ycmh_phuong_an_cr310.py 29 -> 43 ca, 43/43 xanh.
+14/09: ĐÃ TÌM XONG HƯỚNG PHÁT TRIỂN — chốt thiết kế với đại ca qua nhiều vòng
+hỏi đáp, chưa viết mã (hẹn 15/09 bắt đầu code). Thiết kế đầy đủ: mục H.10 của
+doc/tai-lieu-chuc-nang/03-yeu-cau-mua-hang.md. Tóm tắt:
+- PHƯƠNG ÁN 0: hệ thống tự sinh cho mọi dòng khi phiếu được điều phối (phiếu
+  đang chạy dở sinh bù), chụp từ chính dòng yêu cầu (tên hàng, quy cách, ĐVT,
+  giá đề xuất), CHƯA có NCC; bản chất là phương án nhập tay do hệ thống tạo
+  (nguồn "Yêu cầu gốc"), sửa được, không xóa được, KHÔNG tính vào trần 5.
+- CHỌN SẴN: phương án 0 tick chọn từ đầu khi dòng chưa chọn gì khác — người
+  yêu cầu im lặng = mua theo yêu cầu gốc; chọn phương án khác thì tự bỏ chọn.
+- Chốt rỗng đổi nghĩa: = không có phương án NSTM nào (phương án 0 không
+  tính); dòng chốt rỗng vẫn chọn được phương án 0 nên vẫn mua được.
+- Nới khóa sau chốt đúng một khe: sửa GIÁ mọi phương án + điền/sửa NCC trên
+  phương án 0/nhập tay (quyền purchase_request:write + supplier:read); gắn
+  thêm/gỡ vẫn khóa, muốn thì "Mở lại cho NSTM xử lý"; phương án từ khảo sát
+  không đổi NCC được.
+- Màn chọn nâng cấp: thu mua có nút sửa giá/NCC trên từng thẻ + khu "Áp 1
+  NCC cho nhiều dòng" ngay trên màn chọn.
+- Sinh ĐMH: gom dòng đã chọn theo NCC → N đơn nháp (khuôn
+  survey_request.create_prs); dòng phương án chưa có NCC gom thành 1 đơn
+  nháp riêng KHÔNG NCC (cổng gửi duyệt CR-095 chặn tới khi điền đủ). Kèm
+  H.3.9 chép mã hàng lên dòng chưa có mã lúc chọn.
+- Đường tạo ĐMH tay giữ nguyên, luôn hoạt động, nâng cấp tự điền NCC/giá/mã
+  từ phương án đã chọn của dòng.
+Thứ tự thi công: (a) backend phương án 0 + nới khóa + endpoint áp NCC hàng
+loạt → (b) màn chọn nâng cấp → (c) sinh ĐMH. Bản in dồn về đợt 4.
 
 ### bao-CR-310-p4 | P4 — Hai bản in + gác N-17 + HDSD
 - status: dang-lam
 Bản A mẫu mục F điền giá chốt; bản B tick theo NCC ra 1 file N trang. Phải
 gác N-17 (supplier:read) trước khi bật bản B. Chưa bắt đầu.
+
+## deploy-prod-1409-cum-bao-mat | Đẩy cụm 6 commit bảo mật lên prod (đóng BM-002/005/012/014/015)
+- status: xong
+- date: 2026-09-14
+Đại ca mở băng cụm commit đang đóng ("giờ vàng"). Đẩy 6 commit trên `main`
+từ `cc1b9cd2` tới `5abd5dc3`: bao-CR-399 (sổ task + script sync) ·
+bao-CR-394 + bao-CR-395 (BM-014 proxy tin cậy, BM-012 token hết hạn, phiên
+đăng nhập P3b — đóng BM-002) · bao-CR-400 (nghỉ việc khóa tài khoản + đá
+phiên, BM-015) · bao-CR-401 (script sync tự đăng xuất) · bao-CR-402 (CR-312
+P4 `tab_change_log` — đóng BM-005). Tổng 62 tệp, +6041/-96.
+
+### deploy-prod-1409-do-truoc | Đo trước khi đẩy, không đoán
+- status: xong
+- date: 2026-09-14
+Đo phạm vi thật chứ không tin cảm giác: chỉ MỘT migration mới
+`d5f7a9c1b3e2` (`down_revision = c3e5a7b9d1f2`) — kiểm head prod đúng bằng
+`c3e5a7b9d1f2` nên chuỗi nối sạch, không có nhánh đôi. Không đổi
+`requirements.txt`, không đụng `frontend/`, `help-center/`, `docker/`. Nhưng
+`frontend-v2` đổi 19 tệp, mà prod chạy v2 làm service `erp` ở
+erp.degoholding.vn, nên phải rebuild cả `erp` chứ không chỉ backend.
+
+### deploy-prod-1409-chay | Sao lưu, đẩy, build, chạy migration
+- status: xong
+- date: 2026-09-14
+Sao lưu prod trước: `~/proc_backups/procurement_truoc_cr394_402_20260914.sql.gz`
+(2.4M). Push `main` qua SSH (`9294ce02..5abd5dc3`). Trên VPS `git fetch` +
+`git reset --hard origin/main`, rồi
+`docker compose -f docker-compose.production.yml up -d --build api
+celery-worker celery-beat erp`. `start.prod.sh` tự chạy alembic:
+`c3e5a7b9d1f2 -> d5f7a9c1b3e2`, seed prod xong, uvicorn lên.
+
+### deploy-prod-1409-kiem | Kiểm sau khi lên
+- status: xong
+- date: 2026-09-14
+`alembic current` = `d5f7a9c1b3e2 (head)`. `tab_change_log` và
+`tab_login_session` đều có mặt trong DB `procurement`. Bốn container
+api/celery-worker/celery-beat/erp đều Up. thumua.degoholding.vn và
+erp.degoholding.vn trả 200; `/api/auth/me` không kèm vé trả 401 ở cả hai tên
+miền (API sống, cửa vẫn gác). Log api sau khởi động không có Traceback/ERROR.
+
+### deploy-prod-1409-lech-dev | PHÁT HIỆN: dev đang đứng SAU prod
+- status: xong
+- date: 2026-09-14
+Lần đầu prod đi trước dev. Dev VPS (`~/procurement-tool-dev`) còn ở
+`e89ab592` (bao-CR-400), head alembic vẫn `c3e5a7b9d1f2` — tức dev THIẾU
+bao-CR-401 và bao-CR-402, dù cả hai đã commit trên `erp-v2` local
+(`3ac6e353`, `4b51b545`) và đã chạy thật trên prod. Việc cần làm tiếp: đẩy
+`erp-v2` lên origin rồi deploy dev cho hai nhánh khớp nhau, kẻo lần sau đo
+dev lại tưởng tính năng chưa có.
+
+## deploy-dev-1509-dua-dev-bang-prod | Đẩy dev cho bằng prod (bao-CR-401 + bao-CR-402)
+- status: dang-lam
+- date: 2026-09-14
+Đại ca chốt tối 14/09: "mai mình đẩy dev sau". Dev VPS đang đứng SAU prod, thiếu
+hai commit `erp-v2` `3ac6e353` (CR-401) và `4b51b545` (CR-402).
+
+**ĐÍNH CHÍNH 15/09 — KHÔNG phải đẩy `erp-v2` lên origin.** Đo lại thì origin ĐÃ
+có sẵn cả CR-401 lẫn CR-402, và còn đi TRƯỚC máy local 6 commit (`701ee1db` là tổ
+tiên thuần của `d9968b3c`). Bản local mới là bên phải kéo về, đã gộp xong 15/09
+sáng — xem `gop-origin-erp-v2-1509`. Nghĩa là dev chỉ cần kéo từ origin, không
+cần ai push gì trước.
+
+Các bước: ở `~/procurement-tool-dev` chạy `git fetch` + `git reset --hard
+origin/erp-v2` → `docker compose -f docker-compose.dev.yml --env-file .env.dev
+up -d --build api celery-worker celery-beat erp` (không kèm `-p procurement-dev`).
+Có migration `d5f7a9c1b3e2` nên phải rebuild cả ba container backend; sau khi lên,
+`alembic current` phải ra `d5f7a9c1b3e2 (head)` và DB `procurement_dev` phải có
+bảng `tab_change_log`.
+
+Lưu ý mặt giao diện: đợt này dev còn nhận thêm `duoc-CR-394` (cụm Thu mua ở khổ
+điện thoại đổi từ bảng sang thẻ) và `duoc-CR-395` (bỏ thẻ Giao diện + HDSD khỏi
+lưới chọn phân hệ) của đồng nghiệp — màn Thu mua trên dev sẽ khác hẳn hôm nay,
+đó không phải lỗi.
 
 ## bao-CR-404 | Ô tìm kiếm màn Tiến độ mua hàng chết vì lọc theo cột không tồn tại
 - status: xong
@@ -459,3 +768,36 @@ dòng, `q=thung` ra 40, từ khóa không khớp ra 0 — trước đó mọi t�
 Gộp trong một cây làm việc tạm để không đụng việc CR-310 đang dở ở
 `procurement-tool`. Đụng độ duy nhất ở `change-log-bao.md` (hai bên cùng thêm
 dòng đầu bảng), giữ cả hai. Dev VPS chưa dựng lại — lần deploy dev kế tiếp là có.
+
+
+## gop-origin-erp-v2-1509 | Kéo origin/erp-v2 về máy local rồi gộp
+- status: xong
+- date: 2026-09-15
+Trước khi đẩy dev, đo lại thì máy local đứng SAU origin 6 commit chứ không phải
+trước: `701ee1db` là tổ tiên thuần của `d9968b3c` (`git merge-base` ra đúng
+`701ee1db`), nên kế hoạch ghi hôm qua "đẩy `erp-v2` lên origin" là sai — đã đính
+chính ở mục `deploy-dev-1509-dua-dev-bang-prod`. Sáu commit về: `232c60f8` (seed
+demo Khảo sát + YCBG) · `8168a712` duoc-CR-394 · `1a73e127` bao-CR-404 ·
+`8b682eb0` duoc-CR-395 · `9294ce02` (doc CR-404) · `d9968b3c` (gộp main vào erp-v2).
+
+Cách làm an toàn khi cây đang bẩn: cắt việc dở thành commit tạm `984da950`, gộp,
+xử đụng độ, rồi `git reset --mixed d9968b3c` để HEAD nằm đúng origin còn CR-405 +
+CR-310 P3b trở lại dạng chưa commit. Chừa `backend/scripts/demo_bao_cao_thuc_hien.py`
+ngoài commit tạm (tệp chỉ chạy local).
+
+Đụng độ thật: ba tệp. `change-log-bao.md` và `nhat-ky-task.md` kiểu "giữ cả hai".
+Tệp đáng làm là `purchase-request-detail-page.tsx`: đồng nghiệp đổi thanh lệnh đầu
+trang thành `DetailPageHeader` + hai biến `primaryActions` / `secondaryActions`,
+còn bản em thêm nút *Xử lý phương án* vào thanh cũ. Cách xử: lấy nguyên cấu trúc
+của họ, bê nút của em vào nhánh không-sửa của `secondaryActions`; thẻ
+`PurchaseRequestChooseCard` ở thân trang tự gộp sạch. Diff cuối vẫn đúng 19 dòng
+THÊM, 0 dòng xóa — không mất gì của bên nào. `npm run check` xanh cả ba cổng
+(0 lỗi typecheck, 0 lỗi lint, 3030 test).
+
+Bài học đo đạc: cây làm việc lưu CRLF còn `git show` trả LF, nên diễn tập gộp bằng
+`git merge-file` mà không lọc `tr -d ''` thì tệp nào cũng báo đụng độ nguyên tệp.
+Lọc xong mới ra con số thật (0/1/1/1 khối).
+
+Tầng dùng chung `frontend-v2/src/shared/` của đợt này chỉ THÊM: 455 dòng thêm, 3 dòng
+xóa và cả ba là dòng tô kiểu nội bộ; `DataTable` không đổi giao diện công khai nên
+8 tệp mới của CR-310 P3b không gãy.
