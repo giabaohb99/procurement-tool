@@ -1,4 +1,4 @@
-import { ArrowLeft, Printer } from 'lucide-react'
+import { Printer } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
@@ -10,6 +10,7 @@ import { Button } from '@/shared/ui/button'
 import { PageContainer } from '@/shared/ui/page-container'
 import { BookingApprovalPanel } from '../components/booking-approval-panel'
 import { BookingDetailBody } from '../components/booking-detail-body'
+import { BookingDetailHeader } from '../components/booking-detail-header'
 import { BookingForm } from '../components/booking-form'
 import { BookingDispatchDialog } from '../components/booking-dispatch-dialog'
 import { BookingStatusBadge } from '../components/status-pill'
@@ -64,32 +65,29 @@ export function VehicleBookingDetailPage() {
 
   return (
     <PageContainer className="w-full">
-      {/* Tiêu đề: nút back bên trái · tên phiếu · badge trạng thái · cụm thao tác dồn phải. */}
-      <div className="mb-3 flex flex-wrap items-center gap-3">
-        <Button
-          variant="outline"
-          size="icon"
-          aria-label="Về danh sách yêu cầu đặt xe"
-          onClick={() => navigate(appRoutes.vehicleBooking.requests)}
-        >
-          <ArrowLeft className="size-4" />
-        </Button>
-        <h1 className="text-xl font-semibold tracking-tight text-navy dark:text-foreground">
-          {data ? data.purpose || `Yêu cầu đặt xe ${data.code}` : 'Chi tiết yêu cầu đặt xe'}
-        </h1>
-        {data && <BookingStatusBadge status={data.status} driverStatus={data.driver_status} />}
-        <div className="min-w-4 flex-1" />
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          {data && <BookingWorkflowActions booking={data} onDispatch={() => setDispatchOpen(true)} />}
-          {/*  Không có nút "Sửa": phiếu sửa được đã mở thẳng vào biểu mẫu ở trên. */}
-          {data && (
-            <Button variant="outline" onClick={() => navigate(appRoutes.vehicleBooking.print(data.id))}>
-              <Printer className="size-4" />
-              In phiếu
-            </Button>
-          )}
-        </div>
-      </div>
+      {/*  Tiêu đề chỉ dựng khi ĐÃ CÓ dữ liệu: nó sống bằng mã phiếu + tóm tắt chuyến,
+          dựng sớm thì ra một khối khung rỗng rồi nhảy nội dung vào. Lúc đang tải /
+          lỗi thì hai câu bên dưới nói thay. */}
+      {data && (
+        <BookingDetailHeader
+          booking={data}
+          onBack={() => navigate(appRoutes.vehicleBooking.requests)}
+          actions={
+            <>
+              <BookingWorkflowActions booking={data} layout="menu" onDispatch={() => setDispatchOpen(true)} />
+              {/*  Không có nút "Sửa": phiếu sửa được đã mở thẳng vào biểu mẫu ở trên.
+                  `outline` cho KHỚP nút `⋯` ngay bên trái — hai nút này cùng cấp
+                  (đều là việc phụ), để một cái có viền một cái không thì dải nút
+                  đọc ra ba kiểu khác nhau. Thứ bậc đã nằm ở chỗ khác: chỉ nút
+                  quyết định (Duyệt · Chấp nhận) được tô đặc. */}
+              <Button variant="outline" onClick={() => navigate(appRoutes.vehicleBooking.print(data.id))}>
+                <Printer className="size-4" />
+                In phiếu
+              </Button>
+            </>
+          }
+        />
+      )}
       {isLoading && <p className="text-sm text-muted-foreground">Đang tải…</p>}
       {isError && (
         <p className="text-sm text-destructive">

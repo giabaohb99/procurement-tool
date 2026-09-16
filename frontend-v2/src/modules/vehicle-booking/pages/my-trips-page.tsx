@@ -1,9 +1,7 @@
-import { Download, Inbox, MapPin, Search } from 'lucide-react'
+import { Download, Inbox, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 
 import { downloadFile } from '@/core/api'
-import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
 import { DateRangePicker } from '@/shared/ui/date-range-picker'
 import { Input } from '@/shared/ui/input'
@@ -12,8 +10,7 @@ import { PageHeader } from '@/shared/ui/page-header'
 import { Skeleton } from '@/shared/ui/skeleton'
 import type { ListParams } from '@/shared/types/api'
 
-import { BookingWorkflowActions } from '../components/booking-workflow-actions'
-import { BookingStatusBadge, DriverStatusBadge } from '../components/status-pill'
+import { MyTripCard } from '../components/my-trip-card'
 import { useVehicleBookings } from '../hooks/use-vehicle-bookings'
 import { BOOKING_STATUS, type VehicleBooking } from '../types/vehicle-booking'
 
@@ -36,7 +33,6 @@ function defaultRange(): { from: string; to: string } {
  * kiếm; bấm vào thẻ mở trang chi tiết; thao tác Nhận / Bắt đầu / Hoàn tất trên thẻ.
  */
 export function MyTripsPage() {
-  const navigate = useNavigate()
   const [range, setRange] = useState(defaultRange)
   const [search, setSearch] = useState('')
 
@@ -96,7 +92,7 @@ export function MyTripsPage() {
       />
 
       {isPending ? (
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
           <Skeleton className="h-40" />
           <Skeleton className="h-40" />
           <Skeleton className="h-40" />
@@ -107,60 +103,20 @@ export function MyTripsPage() {
           <p className="text-sm">Không có chuyến nào khớp bộ lọc.</p>
         </div>
       ) : (
-        <div className="grid items-start gap-3 md:grid-cols-2 xl:grid-cols-3">
+        //  `items-stretch` (mặc định của grid) chứ KHÔNG `items-start`: thẻ tự kéo
+        //  cao bằng nhau nên cụm nút của cả hàng nằm trên một đường, mắt quét một
+        //  lượt là xong. `items-start` cho mỗi thẻ cao theo nội dung — hàng nút
+        //  nhấp nhô theo độ dài mục đích chuyến.
+        //  `grid-cols-1` phải khai TƯỜNG MINH: thiếu nó thì ở khổ hẹp lưới chạy
+        //  một cột `auto` — cột giãn theo nội dung dài nhất, `truncate` mất tác
+        //  dụng và cả trang sinh thanh cuộn ngang. `grid-cols-1` là
+        //  `minmax(0, 1fr)`, tức cột ĐƯỢC PHÉP co nhỏ hơn nội dung.
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
           {trips.map((trip) => (
-            <TripCard key={trip.id} trip={trip} onOpen={() => navigate(appRoutes.vehicleBooking.detail(trip.id))} />
+            <MyTripCard key={trip.id} trip={trip} />
           ))}
         </div>
       )}
     </PageContainer>
-  )
-}
-
-function TripCard({ trip, onOpen }: { trip: VehicleBooking; onOpen: () => void }) {
-  return (
-    //  Bấm cả thẻ → chi tiết; cụm nút thao tác chặn nổi bọt để không mở trang.
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={onOpen}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault()
-          onOpen()
-        }
-      }}
-      className="cursor-pointer rounded-lg border bg-card p-4 transition-colors hover:border-primary/50 hover:bg-accent/40"
-    >
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="font-semibold text-foreground">{trip.code}</span>
-          <BookingStatusBadge status={trip.status} driverStatus={trip.driver_status} />
-          <DriverStatusBadge status={trip.driver_status} />
-        </div>
-        <span className="text-xs text-muted-foreground">{trip.request_type_label}</span>
-      </div>
-
-      <div className="mt-2 flex items-start gap-1.5 text-sm">
-        <MapPin className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-        <span>
-          {trip.start_location || '—'} <span className="text-muted-foreground">→</span>{' '}
-          {trip.end_location || '—'}
-        </span>
-      </div>
-      <div className="mt-1 text-xs text-muted-foreground">
-        {trip.start_time || '—'} → {trip.end_time || '—'}
-      </div>
-      {trip.assigned_vehicle_label && (
-        <div className="mt-1 text-xs text-muted-foreground">Xe: {trip.assigned_vehicle_label}</div>
-      )}
-      {trip.purpose && <div className="mt-1 text-sm">{trip.purpose}</div>}
-
-      {/*  Khoảng cách các nút ~16px theo chiều ngang (`gap-4`); chặn nổi bọt để bấm nút
-          không mở trang chi tiết. */}
-      <div className="mt-3 flex flex-wrap items-center gap-4" onClick={(e) => e.stopPropagation()}>
-        <BookingWorkflowActions booking={trip} onDispatch={() => undefined} />
-      </div>
-    </div>
   )
 }

@@ -1,8 +1,15 @@
-import { Ban, Check, CircleCheck, Flag, PlayCircle, Route, Undo2 } from 'lucide-react'
+import { Ban, Check, CircleCheck, Flag, MoreHorizontal, PlayCircle, Route, Undo2 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { useState } from 'react'
 
 import { usePermission } from '@/core/authorization/use-permission'
 import { Button } from '@/shared/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/shared/ui/dropdown-menu'
 import {
   useApproveBooking,
   useDispatchRejectBooking,
@@ -22,6 +29,40 @@ interface BookingWorkflowActionsProps {
   booking: VehicleBooking
   /** Mở popup điều phối (page quản lý popup này). */
   onDispatch: () => void
+  /**
+   * `driver` = CHỈ dựng nhóm nút của tài xế (chấp nhận · bắt đầu · hoàn thành ·
+   * từ chối chuyến), bỏ nhóm duyệt và nhóm điều phối.
+   *
+   * Dùng ở màn «Chuyến của tôi»: màn đó nói rõ "nhận, bắt đầu và hoàn tất tại
+   * đây", nhưng ai có quyền `approve` (điều phối viên, admin) mở ra lại thấy
+   * thêm _Điều phối lại_ · _Yêu cầu chỉnh sửa_ · _Từ chối yêu cầu_ — ba việc
+   * của NGƯỜI KHÁC, và chúng đứng TRƯỚC nút mà họ thật sự cần bấm.
+   */
+  scope?: 'all' | 'driver'
+  /**
+   * `inline` = bày hết ra thành nút. `menu` = giữ ĐÚNG MỘT nút chính, phần còn
+   * lại gom vào nút `⋯`.
+   *
+   * Dùng `menu` ở tiêu đề trang chi tiết: ở đó một người vừa có quyền điều phối
+   * vừa thao tác thay tài xế nhìn thấy SÁU nút cùng cỡ, hai trong số đó cùng tô
+   * đặc — không có nút nào là "nút cần bấm", và dải nút ăn hết bề ngang khiến
+   * phần tóm tắt phiếu bị ép xuống ba dòng.
+   */
+  layout?: 'inline' | 'menu'
+}
+
+/** Một hành động trong cụm — dựng thành danh sách rồi mới render, để phân thứ bậc. */
+interface WorkflowAction {
+  key: string
+  label: string
+  icon: LucideIcon
+  run: () => void
+  /**
+   * `forward` = bước TIẾN TỚI của phiếu (duyệt · điều phối · nhận · bắt đầu ·
+   * hoàn thành). Chỉ hành động `forward` ĐẦU TIÊN được tô đặc; phần còn lại —
+   * kể cả _Điều phối lại_, vốn là đường vòng — để nhạt.
+   */
+  kind?: 'forward' | 'danger'
 }
 
 /**
@@ -49,9 +90,15 @@ type ReasonKind =
  *
  * Backend mới là chốt chặn thật (`require` + đúng tài xế được phân); ở đây chỉ ẩn/hiện.
  */
-export function BookingWorkflowActions({ booking, onDispatch }: BookingWorkflowActionsProps) {
+export function BookingWorkflowActions({
+  booking,
+  onDispatch,
+  scope = 'all',
+  layout = 'inline',
+}: BookingWorkflowActionsProps) {
   const { can } = usePermission()
-  const canApprove = can('vehicle_booking', 'approve')
+  const driverOnly = scope === 'driver'
+  const canApprove = can('vehicle_booking', 'approve') && !driverOnly
   const canWrite = can('vehicle_booking', 'write')
   //  Điều phối viên = có quyền `approve` (tài xế chỉ có `write` phạm vi `assigned`).
   //  Các nút ĐIỀU PHỐI (Điều phối / Điều phối lại / trả / từ chối yêu cầu) chỉ cho
@@ -94,86 +141,109 @@ export function BookingWorkflowActions({ booking, onDispatch }: BookingWorkflowA
   const driverStage = isDispatched && (booking.is_assigned_driver || canWrite)
   const dstatus = booking.driver_status
 
+  //  --- Danh sách hành động, XẾP THEO THỨ TỰ ƯU TIÊN ---
+  //  Thứ tự ở đây quyết định nút nào được tô đặc: `forward` đầu tiên thắng. Nên
+  //  nhóm của tài xế đứng TRƯỚC _Điều phối lại_ — cùng lúc phiếu "đã điều phối,
+  //  chờ tài xế" thì việc cần làm là tài xế bấm nhận, còn phân lại xe là ngoại lệ.
+  const actions: WorkflowAction[] = []
+
+  if (showApprove) {
+    actions.push({ key: 'approve', label: 'Duyệt', icon: Check, kind: 'forward',
+                   run: () => approve.mutate({ id }) })
+  }
+  if (canDispatch && isApproved) {
+    actions.push({ key: 'dispatch', label: 'Điều phối', icon: Route, kind: 'forward',
+                   run: onDispatch })
+  }
+  if (driverStage && (dstatus === DRIVER_STATUS.waiting || dstatus === DRIVER_STATUS.rejected)) {
+    actions.push({ key: 'accept', label: 'Chấp nhận', icon: CircleCheck, kind: 'forward',
+                   run: () => driverAccept.mutate({ id }) })
+  }
+  if (driverStage && dstatus === DRIVER_STATUS.accepted) {
+    actions.push({ key: 'start', label: 'Bắt đầu', icon: PlayCircle, kind: 'forward',
+                   run: () => driverStart.mutate({ id }) })
+  }
+  if (driverStage && dstatus === DRIVER_STATUS.ongoing) {
+    actions.push({ key: 'complete', label: 'Hoàn thành', icon: Flag, kind: 'forward',
+                   run: () => setCompleteOpen(true) })
+  }
+  //  Đã điều phối (tài xế chưa nhận) hoặc tài xế từ chối → điều phối viên đổi xe/tài xế khác.
+  const dispatchAgain =
+    isDispatched && (dstatus === DRIVER_STATUS.waiting || dstatus === DRIVER_STATUS.rejected)
+  if (canDispatch && dispatchAgain) {
+    actions.push({ key: 'redispatch', label: 'Điều phối lại', icon: Route, run: onDispatch })
+  }
+  //  Người duyệt: trả về người tạo sửa, hoặc từ chối hẳn.
+  if (showApprove) {
+    actions.push({ key: 'return', label: 'Yêu cầu chỉnh sửa', icon: Undo2,
+                   run: () => setReasonKind('return') })
+    actions.push({ key: 'reject', label: 'Từ chối', icon: Ban, kind: 'danger',
+                   run: () => setReasonKind('reject') })
+  }
+  //  Điều phối viên: ở khâu ĐÃ DUYỆT (chưa điều phối) hoặc khi tài xế chưa nhận.
+  if (canDispatch && (isApproved || dispatchAgain)) {
+    actions.push({ key: 'dispatchReturn', label: 'Yêu cầu chỉnh sửa', icon: Undo2,
+                   run: () => setReasonKind('dispatchReturn') })
+    actions.push({ key: 'dispatchReject', label: 'Từ chối yêu cầu', icon: Ban, kind: 'danger',
+                   run: () => setReasonKind('dispatchReject') })
+  }
+  if (driverStage && (dstatus === DRIVER_STATUS.waiting || dstatus === DRIVER_STATUS.accepted)) {
+    actions.push({ key: 'driverReject', label: 'Từ chối chuyến', icon: Ban, kind: 'danger',
+                   run: () => setReasonKind('driverReject') })
+  }
+
+  //  Nút chính = hành động TIẾN TỚI đầu tiên. Không có cái nào (vd chỉ còn mấy
+  //  việc chặn/lùi) thì không tô đặc nút nào cả — đừng ép một nút "Từ chối" thành
+  //  nút nổi bật nhất trang.
+  const primary = actions.find((a) => a.kind === 'forward')
+  const rest = actions.filter((a) => a !== primary)
+
   return (
     <>
-      {/* Điều phối (quyền write) */}
-      {canDispatch && isApproved && (
-        <Button onClick={onDispatch} disabled={busy}>
-          <Route className="size-4" />
-          Điều phối
+      {primary && (
+        <Button onClick={primary.run} disabled={busy}>
+          <primary.icon className="size-4" />
+          {primary.label}
         </Button>
-      )}
-      {/*  Đã điều phối (tài xế chưa nhận) hoặc tài xế từ chối → điều phối viên đổi xe/tài xế khác. */}
-      {canDispatch &&
-        isDispatched &&
-        (dstatus === DRIVER_STATUS.waiting || dstatus === DRIVER_STATUS.rejected) && (
-          <Button onClick={onDispatch} disabled={busy}>
-            <Route className="size-4" />
-            Điều phối lại
-          </Button>
-        )}
-      {/*  Điều phối viên: ở khâu ĐÃ DUYỆT (chưa điều phối) hoặc Điều phối / Điều phối lại
-          (tài xế chưa nhận) có thể TRẢ VỀ NGƯỜI TẠO chỉnh sửa hoặc TỪ CHỐI hẳn yêu cầu. */}
-      {canDispatch &&
-        (isApproved ||
-          (isDispatched &&
-            (dstatus === DRIVER_STATUS.waiting || dstatus === DRIVER_STATUS.rejected))) && (
-          <>
-            <Button variant="outline" onClick={() => setReasonKind('dispatchReturn')} disabled={busy}>
-              <Undo2 className="size-4" />
-              Yêu cầu chỉnh sửa
-            </Button>
-            <Button variant="destructive" onClick={() => setReasonKind('dispatchReject')} disabled={busy}>
-              <Ban className="size-4" />
-              Từ chối yêu cầu
-            </Button>
-          </>
-        )}
-
-      {/* Người duyệt */}
-      {showApprove && (
-        <>
-          <Button onClick={() => approve.mutate({ id })} disabled={busy}>
-            <Check className="size-4" />
-            Duyệt
-          </Button>
-          <Button variant="outline" onClick={() => setReasonKind('return')} disabled={busy}>
-            <Undo2 className="size-4" />
-            Yêu cầu chỉnh sửa
-          </Button>
-          <Button variant="destructive" onClick={() => setReasonKind('reject')} disabled={busy}>
-            <Ban className="size-4" />
-            Từ chối
-          </Button>
-        </>
       )}
 
-      {/* Tài xế được phân */}
-      {driverStage && (dstatus === DRIVER_STATUS.waiting || dstatus === DRIVER_STATUS.rejected) && (
-        <Button onClick={() => driverAccept.mutate({ id })} disabled={busy}>
-          <CircleCheck className="size-4" />
-          Chấp nhận
-        </Button>
-      )}
-      {driverStage && dstatus === DRIVER_STATUS.accepted && (
-        <Button onClick={() => driverStart.mutate({ id })} disabled={busy}>
-          <PlayCircle className="size-4" />
-          Bắt đầu
-        </Button>
-      )}
-      {driverStage && dstatus === DRIVER_STATUS.ongoing && (
-        <Button onClick={() => setCompleteOpen(true)} disabled={busy}>
-          <Flag className="size-4" />
-          Hoàn thành
-        </Button>
-      )}
-      {driverStage &&
-        (dstatus === DRIVER_STATUS.waiting || dstatus === DRIVER_STATUS.accepted) && (
-          <Button variant="outline" onClick={() => setReasonKind('driverReject')} disabled={busy}>
-            <Ban className="size-4" />
-            Từ chối chuyến
-          </Button>
-        )}
+      {layout === 'menu'
+        ? rest.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" disabled={busy} aria-label="Thao tác khác">
+                  <MoreHorizontal className="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                {rest.map((a) => (
+                  <DropdownMenuItem
+                    key={a.key}
+                    variant={a.kind === 'danger' ? 'destructive' : 'default'}
+                    onSelect={a.run}
+                  >
+                    <a.icon className="size-4" />
+                    {a.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )
+        : rest.map((a) => (
+            <Button
+              key={a.key}
+              variant="outline"
+              //  Hành động chặn/lùi để CHỮ đỏ trên nền trắng, không tô nền đỏ đặc:
+              //  nền đặc hút mắt mạnh hơn cả nút chính, nên dải nút đọc ra là
+              //  "Từ chối" trước rồi mới tới việc cần làm.
+              className={a.kind === 'danger' ? 'text-destructive hover:text-destructive' : undefined}
+              onClick={a.run}
+              disabled={busy}
+            >
+              <a.icon className="size-4" />
+              {a.label}
+            </Button>
+          ))}
 
       {/* --- Dialog lý do (dùng chung 3 hành động lùi/chặn) --- */}
       {reasonKind === 'return' && (
