@@ -58,6 +58,17 @@ def _search_columns():
     )
 
 
+def build_warehouse_code_col():
+    """Cột Kho của MỘT HÀNG trên bảng — giống hệt luật lùi ở `export.row_values`.
+
+    bao-CR-411: ô Kho hiện kho của lần giao, thiếu thì lùi về kho mặc định của dòng hàng.
+    Sắp xếp và lọc điều kiện phải chạy trên CÙNG biểu thức đó; trỏ thẳng vào
+    `PODelivery.warehouse_code` thì 78 hàng chưa có lần giao bày ra mã kho nhưng lọc theo
+    mã đó lại không ra chúng — lệch âm thầm, không chỗ nào báo lỗi.
+    """
+    return func.coalesce(func.nullif(PODelivery.warehouse_code, ""), POItem.warehouse_code, "")
+
+
 def _sort_map():
     """Key cột (FE) -> cột DB thật để sort tại server. Các cột tính toán
     (STT, thành tiền, tên công ty) không có ở đây -> bỏ qua, dùng thứ tự mặc định."""
@@ -77,8 +88,13 @@ def _sort_map():
         "expected_date": POItem.expected_date,
         "qty_request": POItem.qty_request, "qty_order": POItem.qty_order,
         "price": POItem.price, "vat": POItem.vat, "progress_status": POItem.progress_status,
+        # bao-CR-409 (ticket prod 51): ngày giao chứng từ cho kế toán — dữ liệu vốn đã trả về
+        # trong hàng nhưng không nằm ở đây nên không sắp xếp cũng không lọc điều kiện được
+        "document_delivery_date": POItem.document_delivery_date,
         # Lần giao
-        "delivery_no": PODelivery.delivery_no, "warehouse_code": PODelivery.warehouse_code,
+        "delivery_no": PODelivery.delivery_no,
+        # bao-CR-411: KHÔNG phải cột thuần của lần giao nữa — xem `build_warehouse_code_col`
+        "warehouse_code": build_warehouse_code_col(),
         "carrier_code": PODelivery.carrier_code, "carrier_name": PODelivery.carrier_name,
         "ship_qty": PODelivery.ship_qty, "received_qty": PODelivery.received_qty,
         "promised_date": PODelivery.promised_date,
@@ -86,6 +102,7 @@ def _sort_map():
         "regulated_date": PODelivery.regulated_date, "diff_promise": PODelivery.diff_promise,
         "diff_regulated": PODelivery.diff_regulated, "diff_required": PODelivery.diff_required,
         "delivery_invoice_no": PODelivery.invoice_no,
+        "delivery_invoice_date": PODelivery.invoice_date,
         "shipping_unit_price": PODelivery.shipping_unit_price,
         "shipping_amount": PODelivery.shipping_amount, "qc_result": PODelivery.qc_result,
         "delivery_status": PODelivery.status,

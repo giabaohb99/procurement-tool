@@ -210,6 +210,13 @@ export function PurchaseProgressPage() {
         cell: (r) => <span className="tabular-nums">{formatQuantity(r.received_qty) || 0}</span>,
       },
       { key: 'received_date', header: 'Ngày nhận', width: 120, cell: (r) => formatDate(r.received_date) || '' },
+      // bao-CR-409 (ticket prod 51): hóa đơn được ghi ở LẦN GIAO, không phải ở dòng đơn hàng
+      {
+        key: 'delivery_invoice_date',
+        header: 'Ngày HĐ',
+        width: 120,
+        cell: (r) => formatDate(r.delivery_invoice_date) || '',
+      },
       {
         key: 'diff_regulated',
         header: 'CL quy định',
@@ -227,6 +234,14 @@ export function PurchaseProgressPage() {
         cell: (r) => (
           <span className="font-medium tabular-nums">{formatMoney(r.amount) || 0}</span>
         ),
+      },
+      // Ngày giao chứng từ cho kế toán thuộc DÒNG HÀNG — đặt cạnh "Hồ sơ CT" vì có ngày này thì
+      // dòng chuyển sang "Đã gửi ĐMH cho KT", tách xa nhau thì hai cột không giải thích cho nhau
+      {
+        key: 'document_delivery_date',
+        header: 'Ngày giao CT cho KT',
+        width: 150,
+        cell: (r) => formatDate(r.document_delivery_date) || '',
       },
       {
         key: 'document_status',

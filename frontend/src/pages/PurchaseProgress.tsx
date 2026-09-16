@@ -136,11 +136,18 @@ const COLS: Col[] = [
   // Chỉ còn MỘT cột "Số HĐ" — lấy số ghi ở LẦN GIAO, vì cột số HĐ của dòng ĐMH (`invoice_no`)
   // không ai nhập nên luôn trống. Đừng thêm lại cột kia mà không hỏi phòng thu mua.
   { key: 'delivery_invoice_no', hide: true, label: 'Số HĐ', w: 160, sort: 'delivery_invoice_no', td: NOWRAP, cell: (r) => r.delivery_invoice_no },
+  // bao-CR-409 (ticket prod 51): ngày hóa đơn cũng ghi ở LẦN GIAO, đi liền cột số HĐ bên trên
+  // Ticket 51 xin bày ra để lập báo cáo nên hai cột mới KHÔNG đánh `hide` — người đã chỉnh bảng
+  // cũng thấy ngay, vì localStorage chỉ lưu danh sách cột ĐANG ẨN, key mới không nằm trong đó.
+  { key: 'delivery_invoice_date', label: 'Ngày HĐ', w: 100, sort: 'delivery_invoice_date', td: NOWRAP, cell: (r) => fmtDate(r.delivery_invoice_date) },
   { key: 'shipping_unit_price', hide: true, label: 'Đơn giá VC', w: 96, sort: 'shipping_unit_price', sup: true, td: R, cell: (r) => fmtPrice(r.shipping_unit_price) },
   { key: 'shipping_amount', hide: true, label: 'Tiền VC', w: 108, sort: 'shipping_amount', sup: true, td: R, cell: (r) => fmtVND(r.shipping_amount) },
   { key: 'qc_result', hide: true, label: 'QC', w: 64, sort: 'qc_result', cell: (r) => r.qc_result },
   { key: 'delivery_status', hide: true, label: 'TT giao', w: 108, sort: 'delivery_status', cell: (r) => poDeliveryStatusLabel(r.delivery_status) },
   { key: 'amount', label: 'Thành tiền nhận', w: 128, td: { ...R, fontWeight: 600 }, cell: (r) => fmtVND(r.amount) },
+  // bao-CR-409: ngày giao chứng từ cho kế toán — thuộc DÒNG HÀNG, đặt cạnh "Hồ sơ CT" vì có ngày
+  // này thì dòng chuyển sang "Đã gửi ĐMH cho KT"; đọc rời hai cột thì không hiểu nhau
+  { key: 'document_delivery_date', label: 'Ngày giao CT cho KT', w: 130, sort: 'document_delivery_date', td: NOWRAP, cell: (r) => fmtDate(r.document_delivery_date) },
   { key: 'document_status', label: 'Hồ sơ CT', w: 150, sort: 'document_status', cell: (r) => poDocumentStatusLabel(r.document_status) },
 ]
 

@@ -81,11 +81,16 @@ COLS = [
     Col("diff_regulated", "CL quy định", "int", 11),
     Col("diff_required", "CL vs YC", "int", 10),
     Col("delivery_invoice_no", "Số HĐ (giao)", width=16),
+    # bao-CR-409: ngày hóa đơn ghi ở LẦN GIAO — đi kèm số HĐ ngay bên trái, đừng tách ra xa
+    Col("delivery_invoice_date", "Ngày HĐ (giao)", "date", 13),
     Col("shipping_unit_price", "Đơn giá VC", "price", 13),
     Col("shipping_amount", "Tiền VC", "money", 14),
     Col("qc_result", "QC", width=10),
     Col("delivery_status", "TT giao", width=14),
     Col("amount", "Thành tiền nhận", "money", 16),
+    # bao-CR-409: xếp cạnh "Hồ sơ CT" vì cùng nói về chứng từ của DÒNG HÀNG — có ngày này thì
+    # dòng chuyển sang "Đã gửi ĐMH cho KT", nên hai cột đọc liền nhau mới hiểu được nhau
+    Col("document_delivery_date", "Ngày giao chứng từ KT", "date", 18),
     Col("document_status", "Hồ sơ CT", width=18),
 ]
 
@@ -98,7 +103,11 @@ SUPPLIER_ONLY = {"supplier_code", "supplier_name", "carrier_code", "carrier_name
 # Thực tế người dùng chỉ nhập ở lần giao, cột kia luôn trống mà vẫn chiếm chỗ, nên bảng Tiến độ
 # bỏ hẳn cột dòng và để cột lần giao mang đúng nhãn "Số HĐ".
 PROGRESS_SKIP = {"invoice_no"}
-PROGRESS_RENAME = {"delivery_invoice_no": Col("delivery_invoice_no", "Số HĐ", width=16)}
+PROGRESS_RENAME = {
+    "delivery_invoice_no": Col("delivery_invoice_no", "Số HĐ", width=16),
+    # bao-CR-409: cùng lý do — màn Tiến độ chỉ có MỘT nguồn hóa đơn nên khỏi chú "(giao)"
+    "delivery_invoice_date": Col("delivery_invoice_date", "Ngày HĐ", "date", 13),
+}
 
 SHEET_TITLE = "Tien do mua hang"
 FILE_NAME = "tien-do-mua-hang"
@@ -150,7 +159,11 @@ def row_values(po: PurchaseOrder, it: POItem, dl: PODelivery | None, show_suppli
         # ----- Lần giao -----
         "delivery_id": dl.id if dl else None,
         "delivery_no": dl.delivery_no if dl else None,
-        "warehouse_code": dl.warehouse_code if dl else "",
+        # bao-CR-411 (ticket prod 50): kho nhận LÙI VỀ kho mặc định của dòng hàng khi lần giao
+        # chưa có (hoặc chưa ai chọn kho cho lần giao đó). Trên dữ liệu thật: 240/240 dòng hàng
+        # đều đã khai «Kho nhận mặc định», nhưng 78 hàng chưa phát sinh lần giao nào -> ô Kho
+        # trống trơn, người theo đơn không biết hàng sẽ về đâu để đi kiểm.
+        "warehouse_code": (dl.warehouse_code if dl else "") or it.warehouse_code or "",
         "carrier_code": dl.carrier_code if dl else "",
         "carrier_name": dl.carrier_name if dl else "",
         "ship_qty": float(dl.ship_qty or 0) if dl else 0.0,
@@ -164,6 +177,7 @@ def row_values(po: PurchaseOrder, it: POItem, dl: PODelivery | None, show_suppli
         "diff_regulated": dl.diff_regulated if dl else 0,
         "diff_required": dl.diff_required if dl else 0,
         "delivery_invoice_no": dl.invoice_no if dl else "",
+        "delivery_invoice_date": dl.invoice_date if dl else "",
         "shipping_unit_price": float(dl.shipping_unit_price or 0) if dl else 0.0,
         "shipping_amount": float(dl.shipping_amount or 0) if dl else 0.0,
         "qc_result": dl.qc_result if dl else "",

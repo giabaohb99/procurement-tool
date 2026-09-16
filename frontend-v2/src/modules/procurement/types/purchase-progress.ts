@@ -49,10 +49,14 @@ export interface PurchaseProgressRow {
   diff_required: number
   shipping_unit_price: number
   shipping_amount: number
+  /** Ngày hóa đơn của LẦN GIAO (bao-CR-409) — hóa đơn thực tế ghi ở đây, không ghi ở dòng hàng. */
+  delivery_invoice_date: string
   qc_result: string
   delivery_status: string
   /** Thành tiền theo số đã nhận. */
   amount: number
+  /** Ngày giao chứng từ cho kế toán — thuộc DÒNG HÀNG (bao-CR-409). */
+  document_delivery_date: string
   document_status: string
 }
 
