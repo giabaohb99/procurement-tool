@@ -14,15 +14,17 @@ from app.core.auth import (get_current_user, get_perm_profile,
 from app.core.database import get_db
 from app.core.document_types import (DOC_TYPE_LABEL, DOC_TYPE_VALUES,
                                       DOCUMENT_TYPES)
-from app.core.file_registry import ext_of, is_private, policy
+from app.core.file_registry import is_private, policy
 from app.core.response import success
 from app.core.scoping import apply_scope
-from app.core.storage import (dated_key, delete_key, download_bytes,
+from app.core.storage import (dated_key, delete_key, download_bytes, safe_name,
                               upload_fileobj)
+from app.core.upload_guard import ensure_batch_ok, guard_upload
 from app.modules.document.file_access_log import ACTION_DOWNLOAD, ACTION_VIEW
 
 from .model import FileLink, StoredFile
-from .service import _delete_file_if_orphan, attach_thumb, make_thumb_for
+from .service import (_delete_file_if_orphan, attach_thumb, ensure_orphan_quota,
+                      linked_file_ids, make_thumb_for, own_file_ids)
 
 router = APIRouter(prefix="/api/attachments", tags=["attachment"])
 
@@ -75,6 +77,15 @@ def _check(db: Session, user, entity: str, mode: str, entity_id: int | None = No
     """
     parent, exts, max_mb = _policy_or_400(entity)
     if parent == "__self__":
+        #  `comment` / `forum_post` cố ý không có entity cha để hỏi quyền: chốt thật
+        #  của chúng là `_check_comment` / `_check_forum` ở cửa GẮN tệp. Nhưng cửa TẢI
+        #  LÊN TRẦN thì không đi qua chốt nào, nên trước bao-CR-408 bất kỳ tài khoản
+        #  đăng nhập nào cũng bơm được tệp vào storage không giới hạn, và tệp không
+        #  bao giờ được gắn thì nằm lại vĩnh viễn (BM-031). Trần tệp-chưa-gắn là chỗ
+        #  gác duy nhất hợp lý ở đây — đòi một quyền RBAC nào đó thì sai bản chất:
+        #  bình luận và đăng bài diễn đàn vốn là việc ai cũng làm được.
+        if mode != "read":
+            ensure_orphan_quota(db, user.id)
         return exts, max_mb
     if mode == "read":
         ok = user_has_permission(db, user, parent, "read")
@@ -177,24 +188,26 @@ def _sha256_of(fileobj) -> str:
 
 
 def _store_one(db: Session, f: UploadFile, exts: set, max_mb: int, user_id: int) -> StoredFile:
-    """Upload 1 file lên storage + tạo dòng tab_file. Chưa gắn link."""
-    ext = ext_of(f.filename or "")
-    if ext not in exts:
-        raise HTTPException(400, f"Định dạng .{ext or '?'} không được phép (cho phép: {', '.join(sorted(exts))})")
-    f.file.seek(0, 2); size = f.file.tell(); f.file.seek(0)
-    if size > max_mb * 1024 * 1024:
-        raise HTTPException(400, f"File '{f.filename}' vượt {max_mb}MB")
+    """Upload 1 file lên storage + tạo dòng tab_file. Chưa gắn link.
+
+    Toàn bộ luật kiểm nằm ở `upload_guard.guard_upload` — đuôi, dung lượng, độ dài
+    tên, và **byte đầu phải khớp đuôi** (BM-027). `content_type` lấy từ đuôi tệp chứ
+    KHÔNG lấy `f.content_type` máy khách khai (BM-028): chuỗi đó về sau thành
+    `media_type` của `/view`, để người gửi tự đặt là mở lại đúng lỗ vừa bịt.
+    """
+    content_type, size = guard_upload(filename=f.filename or "", fileobj=f.file,
+                                      exts=exts, max_mb=max_mb)
     digest = _sha256_of(f.file)
     # Tạo bản ghi trước (flush lấy id) để đặt key theo cấu trúc {env}/attachment/{năm}/{tháng}/{id}-tên.
     sf = StoredFile(filename=f.filename, file_key="", url="",
-                    content_type=f.content_type or "", size=size, sha256=digest,
+                    content_type=content_type, size=size, sha256=digest,
                     created_by=user_id, updated_by=user_id)
     db.add(sf); db.flush()
     key = dated_key("attachment", f.filename or "file", sf.id)
     # Thumb phải sinh TRƯỚC upload bản gốc — boto3 đóng f.file khi đẩy xong.
     thumb = make_thumb_for(f.filename or "", f.file)
     try:
-        url = upload_fileobj(f.file, key, f.content_type or "")
+        url = upload_fileobj(f.file, key, content_type)
     except RuntimeError as e:
         db.rollback()
         raise HTTPException(400, str(e))
@@ -251,6 +264,7 @@ def upload(
 ):
     """Upload + gắn luôn (record đã có id) — tương thích FE cũ."""
     _deny_comment(entity)
+    ensure_batch_ok(files)
     exts, max_mb = _check(db, user, entity, "manage", entity_id)
     _block_version_in_approval(db, entity, entity_id)
     _valid_doc_type(doc_type)
@@ -272,6 +286,7 @@ def upload_file_only(
     db: Session = Depends(get_db), user=Depends(get_current_user),
 ):
     """Upload file NGAY → tạo tab_file (chưa gắn link) → trả file_id để gắn khi Lưu record."""
+    ensure_batch_ok(files)
     exts, max_mb = _check(db, user, entity, "manage")
     out = [_file_out(_store_one(db, f, exts, max_mb, user.id)) for f in files]
     return success(out, "Đã tải lên", 201)
@@ -292,10 +307,21 @@ def register_files(data: RegisterIn, db: Session = Depends(get_db), user=Depends
     _check(db, user, data.entity, "manage", data.entity_id)
     _block_version_in_approval(db, data.entity, data.entity_id)
     _valid_doc_type(data.doc_type)
+
+    #  BM-025 — cửa này từng chỉ hỏi "có dòng tab_file nào mang id ấy không", không hỏi
+    #  tệp của ai. Đoán id tệp người khác, gắn vào phiếu của mình, mở ra đọc: đọc được
+    #  MỌI tệp trong hệ thống bằng một tài khoản thường. Nay id nào không phải tệp mình
+    #  tải lên là chặn cả lượt — im lặng bỏ qua thì người gắn tưởng đã gắn xong.
+    owned = own_file_ids(db, data.file_ids, user.id)
+    if any(int(fid) not in owned for fid in data.file_ids):
+        raise HTTPException(403, "Không tìm thấy tệp cần gắn (tệp không tồn tại hoặc không phải tệp bạn tải lên)")
+    #  Tệp đã có dây thì bỏ qua chứ không báo lỗi: bấm Lưu hai lần không được đẻ ra dây trùng.
+    already = linked_file_ids(db, data.file_ids)
+
     out = []
     for fid in data.file_ids:
         f = db.get(StoredFile, fid)
-        if not f:
+        if not f or int(fid) in already:
             continue
         lk = FileLink(file_id=fid, entity=data.entity, entity_id=data.entity_id,
                       purchase_order_id=data.purchase_order_id, doc_type=data.doc_type,
@@ -418,6 +444,20 @@ def chain(entity: str = Query(...), entity_id: int = Query(...),
     return success(out)
 
 
+def zip_entry_name(filename: str) -> str:
+    """Tên MỘT mục trong tệp nén, đã làm sạch đường dẫn (BM-029 — zip-slip).
+
+    `tab_file.filename` giữ TÊN THÔ người dùng gửi lên — chỉ khóa lưu trữ mới được
+    `safe_name()` làm sạch lúc upload — nên một cái tên `'../../../../evil.pdf'` sống
+    sót nguyên vẹn tới đây. Ghép thẳng vào đường dẫn trong tệp nén là trao cho bộ giải
+    nén trên MÁY NGƯỜI DÙNG một đường đi lên khỏi thư mục giải nén.
+    """
+    entry = safe_name(filename or "file")
+    if entry in (".", ".."):   # `safe_name` giữ nguyên hai chuỗi này vì chúng không có dấu /
+        entry = "file"
+    return entry
+
+
 @router.get("/chain/zip")
 def chain_zip(entity: str = Query(...), entity_id: int = Query(...),
               db: Session = Depends(get_db), user=Depends(get_current_user)):
@@ -432,12 +472,13 @@ def chain_zip(entity: str = Query(...), entity_id: int = Query(...),
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
         for lk, f, src, scode in rows:
             folder = f"{src}/{lk.doc_type or 'khac'}"
-            path = f"{folder}/{f.filename}"
+            entry = zip_entry_name(f.filename)
+            path = f"{folder}/{entry}"
             # chống trùng tên trong cùng thư mục
             n = 1
             while path in seen:
-                stem, dot, ext = f.filename.rpartition(".")
-                base = stem if dot else f.filename
+                stem, dot, ext = entry.rpartition(".")
+                base = stem if dot else entry
                 suffix = f".{ext}" if dot else ""
                 path = f"{folder}/{base}_{n}{suffix}"
                 n += 1

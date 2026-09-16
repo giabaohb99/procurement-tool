@@ -292,8 +292,13 @@ def update_avatar(file: UploadFile = File(...), user=Depends(get_current_user), 
     from app.modules.user.service import set_user_avatar
     try:
         url = set_user_avatar(db, user, fileobj=file.file, filename=file.filename or "avatar",
-                              content_type=file.content_type or "", actor_id=user.id)
+                              actor_id=user.id)
         return success({"avatar": url}, "Đã cập nhật ảnh đại diện")
+    except HTTPException:
+        #  Phải để nguyên: chốt kiểm ảnh ném 400/422 có thông điệp nói rõ sai gì
+        #  ("nội dung không phải PNG thật", "tên tệp quá dài"). Gói lại thành
+        #  "Lỗi tải ảnh: 400: ..." là nuốt mất câu người dùng cần đọc.
+        raise
     except Exception as e:
         raise HTTPException(400, f"Lỗi tải ảnh: {str(e)}")
 
@@ -301,12 +306,20 @@ def update_avatar(file: UploadFile = File(...), user=Depends(get_current_user), 
 @router.post("/signature")
 def update_signature(file: UploadFile = File(...), user=Depends(get_current_user), db: Session = Depends(get_db)):
     """Tải ảnh chữ ký cá nhân (PNG nền trong là đẹp nhất). Mỗi lần tải ghi đè URL cũ."""
+    from app.core.file_registry import direct_policy
     from app.core.storage import env_prefix, safe_name, upload_fileobj
-    if not (file.content_type or "").startswith("image/"):
-        raise HTTPException(400, "Chữ ký phải là file ảnh (PNG, JPG…).")
+    from app.core.upload_guard import guard_upload
+
+    #  TRƯỚC bao-CR-408 chỗ này chỉ hỏi `content_type.startswith("image/")` — tức là
+    #  tin lời khai của máy khách, mà `image/svg+xml` cũng bắt đầu bằng `image/`, và
+    #  một tệp SVG là tài liệu XML chạy được `<script>` (BM-027). Nay đuôi phải nằm
+    #  trong chính sách và BYTE ĐẦU phải đúng là ảnh thật.
+    exts, max_mb = direct_policy("signature")
+    content_type, _ = guard_upload(filename=file.filename or "signature", fileobj=file.file,
+                                   exts=exts, max_mb=max_mb)
     try:
         key = f"{env_prefix()}/signature/{user.id}/{uuid.uuid4().hex[:12]}-{safe_name(file.filename or 'signature')}"
-        url = upload_fileobj(file.file, key, file.content_type or "")
+        url = upload_fileobj(file.file, key, content_type)
         user.signature = url
         db.commit()
         audit_record(db, user.id, "user", user.id, "write", "Cập nhật ảnh chữ ký cá nhân")

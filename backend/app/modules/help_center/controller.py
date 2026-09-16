@@ -5,9 +5,10 @@ from sqlalchemy.orm import Session
 
 from app.core.auth import require
 from app.core.database import get_db
-from app.core.file_registry import ext_of
+from app.core.file_registry import direct_policy
 from app.core.response import success
 from app.core.storage import dated_key, upload_fileobj
+from app.core.upload_guard import guard_upload
 
 from . import home_service, import_service, service
 from .home_schema import HelpHomeItemCreate, HelpHomeItemUpdate, HelpHomeSectionUpdate
@@ -17,8 +18,9 @@ from .schema import (HelpArticleCreate, HelpArticleOut, HelpArticleSlideCreate,
 
 router = APIRouter(prefix="/api/v1/help-center", tags=["help_center"])
 
-IMAGE_EXTS = {"jpg", "jpeg", "png", "gif", "webp", "svg"}
-MAX_IMAGE_SIZE = 10 * 1024 * 1024
+#  Danh sách trắng ảnh + trần dung lượng đã chuyển sang `DIRECT_FILE_POLICY["help_image"]`
+#  (`core/file_registry.py`) từ bao-CR-408 — một bảng chung cho mọi cửa nhận ảnh, thay
+#  vì mỗi module tự khai một bộ rồi lệch nhau (bộ ở đây từng có cả `svg`).
 
 
 # ---------- Đọc: CÔNG KHAI (không cần đăng nhập) ----------
@@ -141,18 +143,16 @@ def parse_import_file(
 def upload_image(file: UploadFile = File(...), db: Session = Depends(get_db),
                  user=Depends(require("help_article", "write"))):
     """Upload ảnh (chèn vào trình soạn thảo hoặc làm slide) và trả về URL."""
-    if ext_of(file.filename or "") not in IMAGE_EXTS:
-        raise HTTPException(400, "Chỉ cho phép upload hình ảnh (jpg, png, gif, webp, svg)")
-
-    file.file.seek(0, 2)
-    size = file.file.tell()
-    file.file.seek(0)
-    if size > MAX_IMAGE_SIZE:
-        raise HTTPException(400, "Kích thước ảnh tối đa 10MB")
+    #  Đuôi + dung lượng + BYTE ĐẦU, cùng một chốt với ảnh đại diện / chữ ký
+    #  (bao-CR-408). `svg` đã bị đuổi khỏi danh sách trắng: bài HDSD hiển thị cho mọi
+    #  nhân viên, mà SVG là tài liệu XML chạy được `<script>` (BM-027).
+    exts, max_mb = direct_policy("help_image")
+    content_type, _ = guard_upload(filename=file.filename or "image", fileobj=file.file,
+                                   exts=exts, max_mb=max_mb)
 
     key = dated_key("help_center", file.filename or "image", uuid.uuid4().hex[:12])
     try:
-        url = upload_fileobj(file.file, key, file.content_type or "")
+        url = upload_fileobj(file.file, key, content_type)
     except Exception as e:
         raise HTTPException(400, f"Lỗi tải ảnh: {e}")
     return success({"url": url}, "Tải ảnh thành công")

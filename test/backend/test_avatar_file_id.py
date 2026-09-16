@@ -59,14 +59,12 @@ def test_doi_anh_xoa_file_cu(db, monkeypatch):
     db.add(u)
     db.flush()
 
-    set_user_avatar(db, u, fileobj=_png_bytes(), filename="cu.png",
-                    content_type="image/png", actor_id=u.id)
+    set_user_avatar(db, u, fileobj=_png_bytes(), filename="cu.png", actor_id=u.id)
     file_cu = u.avatar_file_id
     assert file_cu != 0
     assert db.get(StoredFile, file_cu) is not None
 
-    set_user_avatar(db, u, fileobj=_png_bytes(), filename="moi.png",
-                    content_type="image/png", actor_id=u.id)
+    set_user_avatar(db, u, fileobj=_png_bytes(), filename="moi.png", actor_id=u.id)
     file_moi = u.avatar_file_id
     assert file_moi != file_cu
     assert db.get(StoredFile, file_cu) is None, "file cũ phải bị xóa, không để mồ côi"

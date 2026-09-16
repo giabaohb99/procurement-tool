@@ -64,6 +64,33 @@ FILE_POLICY: dict[str, tuple[str, set[str], int]] = {
     "work_task":              ("work_task", _DOC | _IMG, 50),
 }
 
+#  CỬA NHẬN TỆP KHÔNG ĐI QUA `FileLink` — ảnh đại diện, ảnh chữ ký, ảnh chèn bài HDSD.
+#  `FILE_POLICY` ở trên chỉ nói về đính kèm có dây; mấy cửa này lưu thẳng vào
+#  `tab_user.avatar_file_id` / `tab_user.signature` / nội dung bài viết nên trước
+#  bao-CR-408 chúng nằm NGOÀI mọi bảng chính sách: không kiểm đuôi, không kiểm dung
+#  lượng, chỉ hỏi `content_type.startswith("image/")` — mà chuỗi đó là lời khai của
+#  máy khách, `image/svg+xml` đi qua tuốt (BM-026 · BM-027).
+#
+#  Bảng này là nơi DUY NHẤT khai luật cho chúng. Cửa thứ năm mọc ra thì thêm một
+#  dòng ở đây rồi gọi `upload_guard.guard_upload`, đừng chép luật vào controller.
+_IMG_WEB = _IMG | {"gif"}   # ảnh chèn bài HDSD: thêm GIF ảnh động minh họa thao tác
+
+DIRECT_FILE_POLICY: dict[str, tuple[set[str], int]] = {
+    "avatar":     (_IMG, 5),
+    "signature":  (_IMG, 5),
+    "help_image": (_IMG_WEB, 10),
+    "id_image":   (_IMG, 10),   # ảnh CCCD hai mặt — điện thoại chụp nên trần rộng hơn avatar
+}
+
+
+def direct_policy(kind: str) -> tuple[set[str], int]:
+    """(tập đuôi cho phép, trần MB) của một cửa tải tệp trực tiếp. Khóa lạ → lỗi lập trình."""
+    pol = DIRECT_FILE_POLICY.get(kind)
+    if not pol:
+        raise ValueError(f"Chưa khai chính sách tệp cho cửa '{kind}' trong DIRECT_FILE_POLICY")
+    return pol
+
+
 #  ENTITY RIÊNG TƯ — API **không trả `url` công khai** cho những entity này, chỉ
 #  trả đường tải có kiểm quyền `GET /api/attachments/{link_id}/download`.
 #

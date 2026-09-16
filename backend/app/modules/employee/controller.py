@@ -104,7 +104,9 @@ def update_employee_avatar(eid: int, file: UploadFile = File(...), db: Session =
         raise HTTPException(400, "Nhân sự chưa có tài khoản đăng nhập — hãy tạo tài khoản trước khi đặt ảnh đại diện")
     try:
         url = set_user_avatar(db, u, fileobj=file.file, filename=file.filename or "avatar",
-                              content_type=file.content_type or "", actor_id=user.id)
+                              actor_id=user.id)
+    except HTTPException:
+        raise    # chốt kiểm ảnh ném 400/422 có thông điệp riêng — đừng gói lại (xem auth/controller)
     except Exception as e:
         raise HTTPException(400, f"Lỗi tải ảnh: {str(e)}")
     audit_record(db, user.id, "employee", eid, "update", f"Đổi ảnh đại diện nhân sự {emp.code}")
@@ -118,18 +120,23 @@ def update_employee_signature(eid: int, file: UploadFile = File(...), db: Sessio
     sự (tab_user.signature) — cùng chỗ với chữ ký người dùng tự đặt ở Trang cá nhân.
     Nhân sự chưa có tài khoản thì chưa có chỗ lưu → yêu cầu tạo tài khoản trước."""
     import uuid
+
+    from app.core.file_registry import direct_policy
     from app.core.storage import env_prefix, safe_name, upload_fileobj
+    from app.core.upload_guard import guard_upload
     from app.modules.user.model import User
 
     emp = service.get_employee(db, eid)
     u = db.query(User).filter(User.employee_id == eid).first()
     if not u:
         raise HTTPException(400, "Nhân sự chưa có tài khoản đăng nhập — hãy tạo tài khoản trước khi đặt chữ ký")
-    if not (file.content_type or "").startswith("image/"):
-        raise HTTPException(400, "Chữ ký phải là file ảnh (PNG, JPG…).")
+    # Cùng một chốt với cửa chữ ký ở Trang cá nhân — đuôi + byte đầu, không tin content_type.
+    exts, max_mb = direct_policy("signature")
+    content_type, _ = guard_upload(filename=file.filename or "signature", fileobj=file.file,
+                                   exts=exts, max_mb=max_mb)
     try:
         key = f"{env_prefix()}/signature/{u.id}/{uuid.uuid4().hex[:12]}-{safe_name(file.filename or 'signature')}"
-        url = upload_fileobj(file.file, key, file.content_type or "")
+        url = upload_fileobj(file.file, key, content_type)
         u.signature = url
         db.commit()
     except HTTPException:
@@ -454,7 +461,9 @@ def upload_id_image(
     """Tải ảnh CCCD mặt trước / mặt sau. `side` = `front` | `back`."""
     import uuid
 
+    from app.core.file_registry import direct_policy
     from app.core.storage import env_prefix, safe_name, upload_fileobj
+    from app.core.upload_guard import guard_upload
 
     col = _ID_IMAGE_SIDES.get((side or "").lower())
     if not col:
@@ -465,12 +474,14 @@ def upload_id_image(
     #  ĐỌC: ghi đè được ảnh CCCD của người khác là thay giấy tờ tùy thân của họ
     #  trong hồ sơ mà người đọc hồ sơ không có cách nào biết.
     _block_sensitive(db, user, emp.id)
-    if not (file.content_type or "").startswith("image/"):
-        raise HTTPException(400, "Ảnh CCCD phải là file ảnh (PNG, JPG…).")
+    # Cùng chốt với ảnh đại diện / chữ ký (bao-CR-408): đuôi + byte đầu, không tin lời khai.
+    exts, max_mb = direct_policy("id_image")
+    content_type, _ = guard_upload(filename=file.filename or "cccd", fileobj=file.file,
+                                   exts=exts, max_mb=max_mb)
     try:
         key = (f"{env_prefix()}/employee-id/{emp.id}/{side}-"
                f"{uuid.uuid4().hex[:12]}-{safe_name(file.filename or 'cccd')}")
-        url = upload_fileobj(file.file, key, file.content_type or "")
+        url = upload_fileobj(file.file, key, content_type)
         setattr(emp, col, url)
         emp.updated_by = user.id
         db.commit()

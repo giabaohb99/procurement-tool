@@ -747,18 +747,14 @@ def attach_images(db: Session, post: ForumPost, file_ids: list[int], user_id: in
     người này tải và CHƯA gắn vào đâu — không thì đoán `file_id` của chứng từ
     mật rồi gắn vào bài public là phát tán được file kín.
     """
-    from app.modules.attachment.model import FileLink, StoredFile
+    from app.modules.attachment.model import FileLink
+    from app.modules.attachment.service import select_attachable_ids
 
     if not file_ids:
         return 0
-    valid = {f.id for f in db.query(StoredFile.id)
-              .filter(StoredFile.id.in_(file_ids), StoredFile.created_by == user_id).all()}
-    attached = {fid for (fid,) in db.query(FileLink.file_id)
-              .filter(FileLink.file_id.in_(file_ids)).all()}
+    # Luật "của mình + chưa gắn" dùng chung với bình luận — xem `select_attachable_ids`.
     n = 0
-    for fid in file_ids:                      # giữ đúng thứ tự người dùng chọn
-        if fid not in valid or fid in attached:
-            continue
+    for fid in select_attachable_ids(db, file_ids, user_id):   # giữ đúng thứ tự người dùng chọn
         db.add(FileLink(file_id=fid, entity="forum_post", entity_id=post.id, sort_order=n,
                         created_by=user_id, updated_by=user_id))
         n += 1

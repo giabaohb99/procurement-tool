@@ -79,6 +79,18 @@ trắng kiểu xem trong khung, `nosniff`, CSP `sandbox`, `safe_name` cho khóa 
 **bốn cửa tải lên đi vòng qua nó**: ảnh đại diện, chữ ký, ảnh bài HDSD. Rà một module rồi kết
 luận "khâu tải tệp đã sạch" là cách bỏ sót cả bốn cửa đó; census **12 tệp có `UploadFile`** mới
 là cách đúng. Vùng *tải tệp lên* ở §4 nay **đã có người nhìn**, còn hai vùng.
+**Bản 2.2 — 15/09/2026.** **Cả bảy dòng BM-025 … BM-031 đã vá** trong một CR duy nhất
+(`bao-CR-408`) — chưa commit, chưa deploy. Chốt kiến trúc của đợt vá: **một tệp
+`core/upload_guard.py`** làm cả ba việc mà trước đó không cửa nào làm (đọc byte đầu · suy
+`content_type` từ nội dung · chặn tên tệp quá dài), cộng **một bảng `DIRECT_FILE_POLICY`** trong
+`core/file_registry.py` khai luật cho những cửa **không đi qua `FileLink`**. Hai thứ đợt rà
+14/09 chưa thấy, lòi ra lúc vá:
+- **Cửa ảnh thứ SÁU** — `employee/controller.py::upload_id_image` (ảnh CCCD hai mặt) mang đúng
+  lỗ `startswith("image/")` của BM-027. Sổ ghi *"bốn cửa"*, con số thật là **sáu**. Cách tìm ra
+  vẫn là census `UploadFile = File(...)` chứ không phải đọc lại sổ.
+- **Cửa gắn tệp thứ HAI** — `ticket/service._register_files` gắn `file_id` vào `FileLink` mà
+  không hỏi chủ sở hữu, y hệt BM-025 nhưng ở một module khác. `comment` và `forum` thì có kiểm
+  nhưng mỗi nơi chép một bản; cả ba nay dùng chung `attachment/service.select_attachable_ids`.
 
 ---
 
@@ -152,13 +164,13 @@ nó là bằng chứng cho lần soát sau rằng chỗ này từng hở.
 | BM-022 | Thấp *(hạ mức sau khi đo)* | CORS bật `allow_credentials=True` với `allow_origins` đọc từ `.env` — **giá trị thật trên prod chưa ai xác minh** | **ĐÃ ĐO 14/09/2026 trên VPS — prod SẠCH, đóng dòng này.** Không phải `*`, không chứa `*` ở bất kỳ đâu, đúng **1 origin** là tên miền thật, không có `localhost`, không có `http://` trần. Đo cả trong tiến trình đang chạy. Dev cũng không phải `*` |
 | BM-023 | Trung bình | Bí mật lưu trong DB (**mật khẩu SMTP, khóa R2**) giải mã hỏng thì **im lặng tuyệt đối**: `_decrypt` nuốt *mọi* lỗi trả chuỗi rỗng, `get()` lặng lẽ rơi về `.env`, `.env` trống thì trả rỗng. Hậu quả nặng nhất không phải mail chết mà là **sao lưu tự động lên R2 chết mà không ai biết** — phát hiện ra đúng vào lúc cần khôi phục | **Mở.** Bằng chứng: `core/app_settings.py:55-59` (`except (InvalidToken, Exception): return ""`) + `:95-100` (nhánh `if dec:` rơi về `.env`). Phát hiện khi trả lời câu hỏi về xoay `JWT_SECRET` |
 | BM-024 | Trung bình | **prod và dev dùng CHUNG một `JWT_SECRET`.** Khóa này là **khóa Fernet** mã hóa mật khẩu SMTP + hai khóa R2 trong `tab_setting` và mật khẩu hộp thư — mà prod với dev lại nằm **trên cùng một máy chủ MySQL**. Ai vào được dev thì giải mã được bí mật của prod, dù không mở nổi một phiên đăng nhập nào của prod | **ĐÃ VÁ 14/09/2026 — đổi khóa của DEV, prod không đụng tới.** Đã đo lại sau khi đổi: *prod và dev dùng chung khóa: **KHÔNG***. Ba bí mật trong `tab_setting` của dev đã mã hóa lại bằng khóa mới và **khớp bản gốc**; tiến trình dev đang chạy đọc được cả ba; prod vẫn đọc được bí mật của prod và **không hề restart**. Vế **ký vé giả** vốn đã bị chốt phiên `_check_session` (bao-CR-360 P3a) chặn — xác nhận trên chính container prod đang chạy. **Không có mã nguồn nào đổi** — đây là việc hạ tầng |
-| BM-025 | **Cao** | `POST /api/attachments/register` **không kiểm tệp đó của ai.** Nó chỉ kiểm quyền trên **phiếu đích**, rồi gắn thẳng bất kỳ `file_id` nào được gửi lên. `file_id` là số nguyên tăng dần nên dò cạn được. Ai có `create` trên một entity đính kèm bất kỳ — tức gần như **mọi tài khoản**, vì ai cũng lập được yêu cầu mua hàng — thì gắn tệp của người khác vào phiếu nháp của mình rồi tải về: **đọc được mọi tệp trong hệ**, kể cả đính kèm riêng tư của `document_version` | **Mở.** Bằng chứng: `attachment/controller.py::register_files` — vòng `for fid in data.file_ids` chỉ `db.get(StoredFile, fid)` rồi `db.add(FileLink(...))`, không một câu hỏi nào về chủ sở hữu. **ĐÃ CHỨNG MINH BẰNG BÀI CHẠY THẬT** (14/09/2026): tài khoản chỉ có `purchase_request` phạm vi `own` gắn được tệp `document_version` của người khác rồi đi qua `_get_file_with_permission(..., "download")` trót lọt |
-| BM-026 | **Cao** | `/api/auth/avatar` và `/api/employees/{id}/avatar` **không kiểm gì cả** — không đuôi tệp, không kích thước, không nội dung. Bất kỳ tài khoản đăng nhập nào tải lên **bất kỳ thứ gì** tới trần 100MB của nginx và nhận về một URL công khai. Hệ thống thành nơi chứa tệp miễn phí, và nội dung độc hại được phát từ tên miền của công ty | **Mở.** Bằng chứng: `auth/controller.py:289-296` + `employee/controller.py:93-118` — gọi thẳng `set_user_avatar(db, user, fileobj=file.file, filename=..., content_type=file.content_type or "")`. Đối chiếu: đường `attachment` có `_store_one` kiểm cả đuôi lẫn dung lượng theo `FILE_POLICY` |
-| BM-027 | Trung bình | Ba cửa ảnh chỉ tin **`content_type` do máy khách tự khai**: `/api/auth/signature`, `/api/employees/{id}/signature` kiểm `startswith("image/")` (nên `image/svg+xml` lọt), còn `/api/help/upload-image` **khai thẳng `svg` trong danh sách trắng**. **SVG là tài liệu chạy được JavaScript.** Hôm nay tệp đáp xuống `storage.degoholding.vn` nên chưa lấy được token (token nằm trong `localStorage`, khóa theo origin) — nhưng **ghép với BM-023** thì khóa R2 hỏng trong im lặng, `upload_fileobj` lặng lẽ rơi về `uploads/` và cùng tệp đó được phát từ `/api/uploads/...` — **cùng origin với ứng dụng**, thành XSS lưu trữ đọc sạch token | **Mở.** Bằng chứng: `auth/controller.py:302-316`, `employee/controller.py:120-140`, `help_center/controller.py:20` (`IMAGE_EXTS` có `"svg"`) + `:140-158`. Đã đo: prod `r2_public_url = https://storage.degoholding.vn` (tên miền anh em của `thumua`/`erp`), R2 đang sẵn sàng; `grep set_cookie` toàn backend **không ra dòng nào** |
-| BM-028 | Thấp | `content_type` do máy khách khai được **lưu nguyên** vào `tab_file.content_type`, đặt làm `ContentType` của đối tượng trên R2, rồi dùng lại làm `media_type` của hồi đáp `/view` và `/download`. Không đối chiếu với đuôi tệp, không đọc mấy byte đầu. Một tệp `.png` khai `text/html` được phục vụ như HTML | **Mở.** Bằng chứng: `attachment/controller.py::_store_one` (`content_type=f.content_type or ""`) + `view_one`. Đối chiếu **đúng cách đã có sẵn trong nhà**: `/api/assistant/uploads` đọc **byte đầu** để nhận dạng thay vì tin lời khai. Giảm nhẹ: `/view` có `nosniff` + CSP `sandbox` và danh sách trắng `INLINE_VIEW_TYPES` cố ý **loại SVG** |
-| BM-029 | Thấp | **Zip-slip**: `/api/attachments/chain/zip` dựng đường dẫn trong tệp nén bằng **tên tệp thô của máy khách** — `f"{src}/{doc_type}/{f.filename}"`. Tên chứa `../` thì bộ giải nén nào không tự chống sẽ ghi ra ngoài thư mục đích, trên **máy người dùng** | **Mở.** Bằng chứng: `attachment/controller.py::chain_zip`. Đã chứng minh tên tệp thô sống sót: gửi `'../../../../evil.pdf'` thì `UploadFile.filename` giữ nguyên cả chuỗi; `safe_name()` chỉ làm sạch **khóa lưu trữ**, không đụng tới `tab_file.filename` |
-| BM-030 | Thấp | Cụm **độ bền đầu vào** của khâu tải lên, ba thứ: (1) tên tệp dài hơn **255** ký tự rơi thẳng xuống MySQL → **500 chứ không phải 422** (đúng họ `duoc-CR-316`; `tab_file.filename` là `String(255)` mà đường tải lên **không có schema Pydantic nào**); (2) `files: list[UploadFile]` **không có trần số lượng** — một request gửi mấy nghìn tệp; (3) chốt dung lượng chạy **sau khi đã nhận hết thân request**, nên lớp chặn thật duy nhất là `client_max_body_size 100m` của nginx | **Mở.** Bằng chứng: `attachment/model.py` (`filename: String(255)`), `attachment/controller.py::_store_one` (`f.file.seek(0, 2)` — đo sau khi nhận xong), `docker/nginx.prod.conf` + `nginx.erp.prod.conf` (`100m`), `nginx.help.prod.conf` (`35m`). Đã chứng minh: tên tệp **304 ký tự** đi qua `UploadFile` không ai cản |
-| BM-031 | Thấp | `POST /api/attachments/upload-file` với `entity=comment` hoặc `entity=forum_post` **không kiểm quyền một chút nào** — `_check` gặp `parent == "__self__"` là trả về sớm trước khi hỏi `user_has_permission`. Thêm nữa, tệp tải lên mà không bao giờ được gắn vào đâu (`/register` không gọi) thì **nằm lại vĩnh viễn**: `_delete_file_if_orphan` chỉ chạy khi có ai xóa một liên kết | **Mở.** Bằng chứng: `attachment/controller.py::_check` (nhánh `if parent == "__self__": return exts, max_mb`), `core/file_registry.py` (`"comment"` và `"forum_post"` đều khai cha là `__self__`). Giảm nhẹ: `__self__` là **cố ý** — hai entity đó có chốt riêng `_check_comment` / `_check_forum` ở cửa **gắn**; chỗ thủng là cửa **tải lên trần** |
+| BM-025 | **Cao** | `POST /api/attachments/register` **không kiểm tệp đó của ai.** Nó chỉ kiểm quyền trên **phiếu đích**, rồi gắn thẳng bất kỳ `file_id` nào được gửi lên. `file_id` là số nguyên tăng dần nên dò cạn được. Ai có `create` trên một entity đính kèm bất kỳ — tức gần như **mọi tài khoản**, vì ai cũng lập được yêu cầu mua hàng — thì gắn tệp của người khác vào phiếu nháp của mình rồi tải về: **đọc được mọi tệp trong hệ**, kể cả đính kèm riêng tư của `document_version` | **ĐÃ VÁ (bao-CR-408, 15/09/2026) — chưa commit, chưa deploy.** `register_files` hỏi chủ sở hữu trước: id nào không phải tệp mình tải lên thì **403 cả lượt**, id đã có dây thì bỏ qua im lặng (bấm Lưu hai lần không thành lỗi cứng). Lòi ra **cửa gắn thứ hai cùng lỗ**: `ticket/service._register_files`. Cả ba nơi gắn tệp (`ticket` · `comment` · `forum`) nay gọi chung `attachment/service.select_attachable_ids`. Bằng chứng cũ: vòng `for fid in data.file_ids` chỉ `db.get(StoredFile, fid)` rồi `db.add(FileLink(...))`. **ĐÃ CHỨNG MINH BẰNG BÀI CHẠY THẬT** (14/09/2026): tài khoản chỉ có `purchase_request` phạm vi `own` gắn được tệp `document_version` của người khác rồi đi qua `_get_file_with_permission(..., "download")` trót lọt |
+| BM-026 | **Cao** | `/api/auth/avatar` và `/api/employees/{id}/avatar` **không kiểm gì cả** — không đuôi tệp, không kích thước, không nội dung. Bất kỳ tài khoản đăng nhập nào tải lên **bất kỳ thứ gì** tới trần 100MB của nginx và nhận về một URL công khai. Hệ thống thành nơi chứa tệp miễn phí, và nội dung độc hại được phát từ tên miền của công ty | **ĐÃ VÁ (bao-CR-408, 15/09/2026) — chưa commit, chưa deploy.** Bảng `DIRECT_FILE_POLICY` trong `core/file_registry.py` khai luật cho mọi cửa **không đi qua `FileLink`**; `create_stored_file` gọi `upload_guard.guard_upload` nên đuôi + dung lượng + byte đầu đều bị hỏi. Tham số `content_type` đã **bỏ khỏi chữ ký** của `create_stored_file` / `set_user_avatar` — không còn đường nào truyền lời khai vào. Bằng chứng cũ: `auth/controller.py:289-296` + `employee/controller.py:93-118` |
+| BM-027 | Trung bình | Ba cửa ảnh chỉ tin **`content_type` do máy khách tự khai**: `/api/auth/signature`, `/api/employees/{id}/signature` kiểm `startswith("image/")` (nên `image/svg+xml` lọt), còn `/api/help/upload-image` **khai thẳng `svg` trong danh sách trắng**. **SVG là tài liệu chạy được JavaScript.** Hôm nay tệp đáp xuống `storage.degoholding.vn` nên chưa lấy được token (token nằm trong `localStorage`, khóa theo origin) — nhưng **ghép với BM-023** thì khóa R2 hỏng trong im lặng, `upload_fileobj` lặng lẽ rơi về `uploads/` và cùng tệp đó được phát từ `/api/uploads/...` — **cùng origin với ứng dụng**, thành XSS lưu trữ đọc sạch token | **ĐÃ VÁ (bao-CR-408, 15/09/2026) — chưa commit, chưa deploy.** `svg` không còn trong bảng chính sách nào (có bài kiểm quét **cả hai** bảng), và đổi đuôi thành `.png` cũng không lọt vì `guard_upload` đọc **byte đầu**. ⚠️ Sổ ghi *"ba cửa"* là **thiếu**: census `UploadFile` ra **cửa thứ sáu** — `employee/controller.py::upload_id_image` (ảnh CCCD) mang đúng lỗ đó, nay dùng `direct_policy("id_image")`. Bằng chứng cũ: `auth/controller.py:302-316`, `employee/controller.py:120-140`, `help_center/controller.py:20` (`IMAGE_EXTS` có `"svg"`) + `:140-158`. Đã đo: prod `r2_public_url = https://storage.degoholding.vn` (tên miền anh em của `thumua`/`erp`), R2 đang sẵn sàng; `grep set_cookie` toàn backend **không ra dòng nào** |
+| BM-028 | Thấp | `content_type` do máy khách khai được **lưu nguyên** vào `tab_file.content_type`, đặt làm `ContentType` của đối tượng trên R2, rồi dùng lại làm `media_type` của hồi đáp `/view` và `/download`. Không đối chiếu với đuôi tệp, không đọc mấy byte đầu. Một tệp `.png` khai `text/html` được phục vụ như HTML | **ĐÃ VÁ (bao-CR-408, 15/09/2026) — chưa commit, chưa deploy.** `tab_file.content_type` nay suy từ **đuôi tệp** (`upload_guard.content_type_of`), và đuôi chỉ đứng vững sau khi byte đầu đã khớp. Lời khai của máy khách **không còn được đọc ở bất kỳ cửa nào**. ⚠️ Cố ý chỉ soi byte với **ảnh · PDF · video**: `.doc`/`.xls` đời thật thường là RTF/HTML bên trong, mà chúng không bao giờ hiện trong khung (`INLINE_VIEW_TYPES`). Bằng chứng cũ: `attachment/controller.py::_store_one` (`content_type=f.content_type or ""`) + `view_one`. Giảm nhẹ vẫn giữ: `/view` có `nosniff` + CSP `sandbox` + `INLINE_VIEW_TYPES` cố ý **loại SVG** |
+| BM-029 | Thấp | **Zip-slip**: `/api/attachments/chain/zip` dựng đường dẫn trong tệp nén bằng **tên tệp thô của máy khách** — `f"{src}/{doc_type}/{f.filename}"`. Tên chứa `../` thì bộ giải nén nào không tự chống sẽ ghi ra ngoài thư mục đích, trên **máy người dùng** | **ĐÃ VÁ (bao-CR-408, 15/09/2026) — chưa commit, chưa deploy.** `zip_entry_name()` (hàm mức module, để bài kiểm gọi thẳng được) chạy `safe_name()` rồi quy `.`/`..`/rỗng về `"file"`; vòng khử trùng tên cũng tách trên tên **đã sạch**. Bằng chứng cũ: `attachment/controller.py::chain_zip`. Đã chứng minh tên tệp thô sống sót: gửi `'../../../../evil.pdf'` thì `UploadFile.filename` giữ nguyên cả chuỗi; `safe_name()` chỉ làm sạch **khóa lưu trữ**, không đụng tới `tab_file.filename` |
+| BM-030 | Thấp | Cụm **độ bền đầu vào** của khâu tải lên, ba thứ: (1) tên tệp dài hơn **255** ký tự rơi thẳng xuống MySQL → **500 chứ không phải 422** (đúng họ `duoc-CR-316`; `tab_file.filename` là `String(255)` mà đường tải lên **không có schema Pydantic nào**); (2) `files: list[UploadFile]` **không có trần số lượng** — một request gửi mấy nghìn tệp; (3) chốt dung lượng chạy **sau khi đã nhận hết thân request**, nên lớp chặn thật duy nhất là `client_max_body_size 100m` của nginx | **VÁ 2/3 (bao-CR-408, 15/09/2026) — chưa commit, chưa deploy.** (1) `ensure_filename_ok` → **422** khi tên rỗng hoặc quá `MAX_FILENAME_LEN = 255`; (2) `ensure_batch_ok` → **422** khi quá `MAX_FILES_PER_REQUEST = 20`. (3) **CÒN MỞ:** chốt dung lượng vẫn chạy sau khi đã nhận hết thân request — chặn trước phải làm ở tầng ASGI/nginx, ngoài phạm vi CR này. Bằng chứng cũ: `attachment/model.py` (`filename: String(255)`), `docker/nginx.prod.conf` + `nginx.erp.prod.conf` (`100m`), `nginx.help.prod.conf` (`35m`). Đã chứng minh: tên tệp **304 ký tự** đi qua `UploadFile` không ai cản |
+| BM-031 | Thấp | `POST /api/attachments/upload-file` với `entity=comment` hoặc `entity=forum_post` **không kiểm quyền một chút nào** — `_check` gặp `parent == "__self__"` là trả về sớm trước khi hỏi `user_has_permission`. Thêm nữa, tệp tải lên mà không bao giờ được gắn vào đâu (`/register` không gọi) thì **nằm lại vĩnh viễn**: `_delete_file_if_orphan` chỉ chạy khi có ai xóa một liên kết | **ĐÃ VÁ (bao-CR-408, 15/09/2026) — chưa commit, chưa deploy.** Chốt **không** phải một khóa RBAC: `comment` không có trong `ENTITIES`, còn khóa `forum_post` là quyền **kiểm duyệt** — đòi nó thì người dùng thường hết bình luận được. Chốt thật là **trần tệp-chưa-gắn**: `ensure_orphan_quota` → **429** khi quá `MAX_PENDING_ORPHANS = 50`, cộng việc định kỳ `attachment.purge_orphans` (4h10 hằng ngày) xóa tệp mồ côi quá `ORPHAN_KEEP_DAYS = 7`. ⚠️ Việc dọn lọc theo `file_key LIKE '%/attachment/%'` — ảnh đại diện, tệp trợ lý AI, tệp xuất, ảnh HDSD **vốn không có dây theo thiết kế**, quét cả là xóa nhầm; có bài kiểm canh đúng chỗ đó. Bằng chứng cũ: `attachment/controller.py::_check`, `core/file_registry.py` |
 
 ✅ **Bốn dòng BM-008…BM-011 nay đã đóng trên CẢ HAI phía** (cập nhật chiều 10/09/2026).
 Chúng vá lớp nhật ký của bao-CR-312 P1, và P1 vốn chưa từng lên prod — đó là lý do sổ này
@@ -1035,6 +1047,14 @@ hỏng kiểu đó **không kêu một tiếng nào**: `_decrypt` trả chuỗi 
 
 ## 2b. Đợt rà khâu TẢI TỆP LÊN (14/09/2026) — BM-025 … BM-031
 
+> ⚠️ **ĐÃ VÁ NGÀY 15/09/2026 — `bao-CR-408`** (chưa commit, chưa deploy). Bảy mục con dưới đây
+> giữ nguyên câu chữ **lúc phát hiện**, kể cả chữ *"Trạng thái: Mở"* — đó là bản ghi hiện
+> trường, đừng sửa lại cho khớp hiện tại. Trạng thái hôm nay đọc ở **bảng §2**, cách vá đọc ở
+> **Việc 6**. Ba chỗ bản vá đi **khác** với hướng ghi trong §2b, đã giải thích ở Việc 6:
+> (1) chính sách cho cửa tải trực tiếp nằm ở bảng **riêng** `DIRECT_FILE_POLICY`, không thêm
+> dòng vào `FILE_POLICY`; (2) chốt của BM-031 là **trần tệp-chưa-gắn 429**, không phải một
+> khóa RBAC; (3) vế "đo dung lượng trước khi nhận hết thân request" của BM-030 **vẫn còn mở**.
+
 Đợt này soát **một khâu**, không soát một module. Phân biệt đó là điều quan trọng nhất rút ra
 được: module `attachment` — chỗ ai cũng nghĩ tới đầu tiên — hóa ra là chỗ **làm kỹ nhất**, còn
 lỗ nặng lại nằm ở những cửa tải lên **đi vòng qua nó**.
@@ -1363,10 +1383,23 @@ dev không còn dùng chung khóa** và **prod vẫn đọc được bí mật c
 nào. Chi tiết từng bước + hai bẫy (thứ tự bắt buộc, và `restart` không nạp lại biến môi trường)
 ghi ở mục **BM-024** trong §2.
 
-### Việc 6 — đợt BM-025…BM-031, khâu tải tệp lên (14/09/2026)
+### Việc 6 — đợt BM-025…BM-031, khâu tải tệp lên — **XONG 15/09/2026 (`bao-CR-408`)**
 
-Chưa viết một dòng mã nào — đợt này mới là **rà**, đại ca chưa ra lệnh vá. Xếp sẵn theo
-*"đang hở rộng nhất"* trước.
+Gộp cả bảy dòng vào **một CR** theo lệnh đại ca, chia năm commit. **Mã đã viết xong và xanh;
+chưa commit, chưa deploy.** Sáu mục 6.0–6.5 dưới đây giữ nguyên kế hoạch lúc rà, mỗi mục ghi
+thêm **bản vá thật đã làm gì** — ba chỗ đi khác kế hoạch, và lý do khác nằm ngay dưới chỗ đó.
+
+**6.0 — Nền: một chốt dùng chung.** Tệp mới `backend/app/core/upload_guard.py` là nơi **duy
+nhất** biết luật kiểm một tệp: `guard_upload(filename, fileobj, exts, max_mb)` trả
+`(content_type, size)` sau khi đã hỏi đủ đuôi · rỗng · trần MB · **byte đầu**; kèm
+`ensure_filename_ok` (422) và `ensure_batch_ok` (422). Mọi cửa gọi nó, không cửa nào tự kiểm.
+Bảng luật cho những cửa **không đi qua `FileLink`** là `DIRECT_FILE_POLICY` +
+`direct_policy(kind)` trong `core/file_registry.py`.
+
+⚠️ **Vì sao KHÔNG thêm dòng vào `FILE_POLICY` như 6.2 dự tính:** `_policy_or_400` đọc thẳng
+bảng đó để quyết định `entity` nào được nhận ở `/upload-file`. Thêm `avatar` vào đấy là mở
+thêm một cửa mới (`entity=avatar` tải được tệp qua đường đính kèm), tức vá một lỗ đẻ một lỗ.
+Hai bảng nói hai chuyện khác nhau thì phải là hai bảng.
 
 **6.1 — Chốt chủ sở hữu cho `/register` (BM-025).** Việc gấp nhất của cả đợt, vì nó là **đọc
 được mọi tệp trong hệ bằng một tài khoản thường**. Vá: đòi `StoredFile.created_by == user.id`
@@ -1374,20 +1407,60 @@ Chưa viết một dòng mã nào — đợt này mới là **rà**, đại ca c
 siết** — chỗ nào hệ thống tự gắn tệp hộ người dùng (sao chép phiếu, chuyển chứng từ) mà bị chặn
 nhầm thì người dùng mất đính kèm và không ai biết tại sao.
 
+> **Đã làm:** `own_file_ids` · `linked_file_ids` · `select_attachable_ids` ở
+> `attachment/service.py`. `/register` **403 cả lượt** khi có id không phải của mình, nhưng
+> **bỏ qua im lặng** id đã có dây — bấm Lưu hai lần là chuyện thường ngày, biến nó thành lỗi
+> cứng thì người dùng mất phiếu. Rà luồng tự-gắn-hộ như cảnh báo ở trên thì lòi ra **cửa gắn
+> thứ hai cùng lỗ**: `ticket/service._register_files`. `comment` và `forum` có kiểm nhưng mỗi
+> nơi một bản chép; cả ba nay gọi chung `select_attachable_ids`.
+
 **6.2 — Đưa hai cửa ảnh đại diện về chung chính sách (BM-026).** Thêm entity cho ảnh đại diện /
 chữ ký vào `FILE_POLICY` và bắt cả bốn cửa (auth avatar · employee avatar · auth signature ·
 employee signature) gọi **cùng một hàm kiểm**. Đừng chép luật kiểm vào từng controller — cửa
 thứ năm sẽ mọc ra và lại quên đúng như bốn cửa này đã quên.
 
+> **Đã làm:** `create_stored_file` **bỏ hẳn tham số `content_type`** — không còn đường truyền
+> lời khai vào — và tự gọi `direct_policy(kind)` + `guard_upload`. Sáu cửa nay dùng chung:
+> `auth` avatar/signature · `employee` avatar/signature · `help_center` ảnh bài ·
+> `employee` **ảnh CCCD**. Câu cảnh báo ngay trên đã ứng nghiệm **trong chính đợt vá**: census
+> `UploadFile = File(...)` ra **cửa thứ sáu** (`upload_id_image`) mà cả đợt rà 14/09 không thấy,
+> vì nó không tên là avatar cũng không tên là signature. Đếm cửa bằng census, đừng đếm bằng trí nhớ.
+> ⚠️ `sync_google_avatar` cũng đi qua chốt: ảnh tải từ Google được **nhận dạng bằng byte đầu**
+> rồi mới đặt đuôi — trước đó nó tin `Content-Type` của một máy chủ bên ngoài.
+
 **6.3 — Đuổi SVG và kiểm bằng byte đầu (BM-027 + BM-028).** Bỏ `svg` khỏi `IMAGE_EXTS` của Trung
 tâm HDSD, đổi `startswith("image/")` thành kiểm **đuôi + byte đầu**. Mượn thẳng cách của
 `/api/assistant/uploads` — nó đã làm đúng, không phải viết mới.
 
+> **Đã làm:** `svg` không còn trong bảng nào (bài kiểm quét **cả hai** bảng, để người sau thêm
+> lại "cho tiện" thì đỏ ngay). `sniff_family()` mượn đúng bảng byte của
+> `assistant/attachments.detect_type`, nối thêm gif · bmp · mp4 · webm.
+> ⚠️ **Cố ý chỉ soi byte với ảnh · PDF · video.** `.doc`/`.xls` đời thật rất hay là RTF hoặc
+> HTML bên trong — bắt chúng khớp byte là **chặn tệp thật của người dùng** để đổi lấy gần như
+> không gì, vì chúng không bao giờ hiện trong khung (`INLINE_VIEW_TYPES`). Rủi ro thật nằm ở
+> nhóm **được trình duyệt dựng**, và nhóm đó đã bị soi đủ.
+
 **6.4 — Ba chốt rẻ (BM-029 + BM-030).** `safe_name()` khi dựng đường dẫn trong tệp nén · trần độ
 dài tên tệp trả **422** · trần số tệp mỗi lượt. Mỗi thứ vài dòng.
 
+> **Đã làm:** `zip_entry_name()` (tách thành hàm mức module để bài kiểm gọi thẳng, không phải
+> dựng cả tệp nén) · `MAX_FILENAME_LEN = 255` · `MAX_FILES_PER_REQUEST = 20`.
+> **Vế thứ ba của BM-030 vẫn MỞ**: dung lượng vẫn đo sau khi đã nhận hết thân request. Chặn
+> thật phải ở tầng ASGI hoặc nginx, không phải việc của CR này.
+
 **6.5 — Dọn tệp mồ côi + gác cửa `upload-file` (BM-031).** Một việc định kỳ xóa `tab_file`
 không dây quá N ngày, và đòi quyền tối thiểu ở cửa tải lên trần.
+
+> **Đã làm:** việc định kỳ `attachment.purge_orphans` (Celery beat, 4h10 hằng ngày) xóa tệp mồ
+> côi quá `ORPHAN_KEEP_DAYS = 7`, cộng `ensure_orphan_quota` → **429** ở
+> `MAX_PENDING_ORPHANS = 50`.
+> ⚠️ **"Đòi quyền tối thiểu" là hướng SAI, đã bỏ.** `comment` không có trong `ENTITIES` nên
+> không có khóa nào để đòi; khóa `forum_post` là quyền **kiểm duyệt**, mà bình luận và đăng bài
+> là việc mọi người đăng nhập đều làm chính đáng. Đòi một khóa RBAC ở đây là đổi một lỗ nhỏ
+> lấy một tính năng chết. Trần tệp-chưa-gắn nói đúng thứ đang lo: **dùng hệ thống làm kho chứa**.
+> ⚠️ Việc dọn lọc theo `file_key LIKE '%/attachment/%'`. Ảnh đại diện · tệp trợ lý AI · tệp
+> xuất · ảnh HDSD **không có `FileLink` theo đúng thiết kế**, quét cả là xóa mất ảnh đại diện
+> của cả công ty sau bảy ngày. Có bài kiểm canh riêng đúng chỗ đó.
 
 ⚠️ **Nhắc lại chỗ ghép nguy hiểm nhất của đợt này:** BM-027 hôm nay chỉ là *"phát tán nội dung
 độc từ tên miền công ty"* **vì** R2 đang chạy. Ngày nào BM-023 kích hoạt (khóa R2 giải mã hỏng,
@@ -1443,7 +1516,13 @@ làm được"*, chứ không phải *"người có quyền thì làm được"*
 | **BM-020** | `test_tran_tan_suat_co_hieu_luc` | Gọi một endpoint nghiệp vụ quá ngưỡng trong một phút → phải có **429**. Đây là bài duy nhất cần `TestClient` thật + đặt lại bộ đếm của limiter giữa các ca, nên tách riêng kẻo làm giòn cả tệp |
 | **BM-024** | `test_ve_ky_dung_khoa_nhung_khong_co_phien_thi_tu_choi` | Tự ký một vé **đúng khóa, đúng `ver`**, `jti` là một chuỗi **không có** trong `tab_login_session` → `get_current_user` phải **401**. Đây là bài canh cho chốt duy nhất chặn được vế ký vé giả khi hai môi trường dùng chung khóa; ai gỡ `_check_session` ra khỏi đường xác thực là test đỏ. Kèm ca ngược: có phiên còn sống thì đi qua |
 
-Đợt tải tệp lên đặt riêng một tệp `test/backend/test_bao_mat_tai_tep.py`:
+Đợt tải tệp lên đặt riêng một tệp `test/backend/test_bao_mat_tai_tep.py` — **đã viết xong, 11
+bài, xanh** (`bao-CR-408`, 15/09/2026). Chín dòng dự tính dưới đây đều có mặt, cộng hai bài mọc
+thêm lúc vá: `test_tran_so_tep_moi_luot` (BM-030) và `test_don_tep_mo_coi_khong_dung_anh_dai_dien`
+(BM-031 — canh đúng chỗ việc dọn định kỳ có thể xóa nhầm). Hai chỗ bài kiểm **khác** mô tả dự
+tính, cố ý: bài BM-026/027 khẳng định ở **tầng chốt** `guard_upload` chứ không dựng `TestClient`
+(cùng một câu khẳng định, rẻ hơn và không giòn), và bài BM-027 quét **cả hai** bảng chính sách
+chứ không riêng `IMAGE_EXTS` — hằng số đó đã bị xóa, luật nay nằm ở `DIRECT_FILE_POLICY`.
 
 | Dòng | Bài kiểm | Khẳng định |
 |---|---|---|

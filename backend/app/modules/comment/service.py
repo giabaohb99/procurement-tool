@@ -387,18 +387,16 @@ def attach_files(db: Session, c: Comment, file_ids: list[int], user_id: int) -> 
     đoán `file_id` của chứng từ mật rồi gắn vào bình luận của mình là lộ file cho mọi người
     xem được phiếu — link mới sẽ mang quyền của phiếu này chứ không phải của file gốc.
     """
-    from app.modules.attachment.model import FileLink, StoredFile
+    from app.modules.attachment.model import FileLink
+    from app.modules.attachment.service import select_attachable_ids
 
     if not file_ids:
         return 0
-    valid = {f.id for f in db.query(StoredFile.id)
-              .filter(StoredFile.id.in_(file_ids), StoredFile.created_by == user_id).all()}
-    attached = {fid for (fid,) in db.query(FileLink.file_id)
-              .filter(FileLink.file_id.in_(file_ids)).all()}
+    #  Luật "của mình + chưa gắn" nay nằm ở `attachment/service.select_attachable_ids`
+    #  (bao-CR-408): hàm này và `forum.attach_files` làm đúng từ đầu, còn `/register`
+    #  với `ticket._register_files` thì quên — gom về một chỗ để đừng quên lần nữa.
     n = 0
-    for fid in file_ids:                      # giữ đúng thứ tự người dùng chọn
-        if fid not in valid or fid in attached:
-            continue
+    for fid in select_attachable_ids(db, file_ids, user_id):   # giữ đúng thứ tự người dùng chọn
         db.add(FileLink(file_id=fid, entity="comment", entity_id=c.id, sort_order=n,
                         created_by=user_id, updated_by=user_id))
         n += 1

@@ -44,6 +44,7 @@ celery_app.conf.update(
         "app.modules.notification.tasks", # Dọn thông báo cũ (mỗi ngày)
         "app.modules.audit.tasks",        # Đóng gói nhật ký ra R2 (hằng tháng, không xóa DB)
         "app.modules.request_log.tasks",  # Dọn dòng GET quá 90 ngày (mỗi ngày, sau khi đã có gói R2)
+        "app.modules.attachment.tasks",   # Dọn tệp đính kèm mồ côi quá 7 ngày (mỗi ngày)
         "app.modules.assistant.rag.tasks",  # Nạp chỉ mục vector loại B (HDSD + FAQ) khi có hook / bấm nút
         "app.modules.coffee_point.tasks",   # Điểm cà phê × POS365 — kéo đơn / reset kỳ / đối chiếu
         # "app.tasks.alerts",           # Phase 2 — cảnh báo theo lịch
@@ -81,6 +82,12 @@ celery_app.conf.update(
         "cleanup-get-logs": {
             "task": "request_log.cleanup",
             "schedule": crontab(hour=3, minute=40),  # 03:40 VN, mỗi ngày
+        },
+        #  Tệp tải lên mà không bao giờ được gắn vào phiếu nào (người dùng bỏ dở form)
+        #  — trước bao-CR-408 chúng nằm lại vĩnh viễn trên storage. Xem attachment/tasks.py.
+        "purge-orphan-attachments": {
+            "task": "attachment.purge_orphans",
+            "schedule": crontab(hour=4, minute=10),  # 04:10 VN, mỗi ngày
         },
         # --- Điểm cà phê × POS365 (doc/erp/diem-ca-phe/03 §4). Cầu dao
         # POS365_HARD_OFF nằm trong client: môi trường chưa bật thì các task này

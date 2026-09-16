@@ -20,15 +20,17 @@ _SKIP_REF_TABLES = {"tab_audit_log", "tab_user", "tab_user_role", "tab_user_scop
                     "tab_notification", "tab_push_subscription"}
 
 
-def set_user_avatar(db: Session, user: User, *, fileobj, filename: str,
-                    content_type: str, actor_id: int) -> str:
+def set_user_avatar(db: Session, user: User, *, fileobj, filename: str, actor_id: int) -> str:
     """Đổi ảnh đại diện: tải file mới lên storage, trỏ avatar_file_id sang nó, rồi XÓA
-    file cũ (hết ảnh mồ côi). Trả về URL để phản hồi cho client. Commit tại đây."""
+    file cũ (hết ảnh mồ côi). Trả về URL để phản hồi cho client. Commit tại đây.
+
+    Không còn nhận `content_type` từ bên gọi: `create_stored_file` suy nó từ nội dung
+    tệp và từ chối tệp không phải ảnh thật (bao-CR-408 — BM-026/027/028)."""
     from app.modules.attachment.service import create_stored_file, delete_stored_file
     old = user.avatar_file_id
     # Avatar vẽ tối đa 144px (retina ~288) — thumb 320 là dư nét, nhẹ hơn cả trăm lần.
     sf = create_stored_file(db, fileobj=fileobj, filename=filename,
-                            content_type=content_type, category="avatar", actor_id=actor_id,
+                            kind="avatar", category="avatar", actor_id=actor_id,
                             thumb_max_edge=320)
     user.avatar_file_id = sf.id
     db.flush()
@@ -49,15 +51,21 @@ def sync_google_avatar(db: Session, user: User, picture_url: str):
 
         import requests as _http
 
+        from app.core.upload_guard import sniff_family
         from app.modules.attachment.service import create_stored_file
         r = _http.get(picture_url, timeout=5)
         if r.status_code != 200 or not r.content:
             return
-        ct = (r.headers.get("content-type") or "image/jpeg").split(";")[0].strip()
-        ext = "png" if "png" in ct else "jpg"
+        #  Đuôi suy từ BYTE ĐẦU chứ không từ header `content-type` của Google: chốt
+        #  kiểm trong `create_stored_file` đối chiếu đuôi với nội dung, khai lệch một
+        #  cái là ảnh bị từ chối và người dùng mất avatar mà không ai biết vì sao.
+        fam = sniff_family(r.content[:32])
+        if fam not in ("jpeg", "png", "webp"):
+            return
+        ext = {"jpeg": "jpg", "png": "png", "webp": "webp"}[fam]
         sf = create_stored_file(db, fileobj=BytesIO(r.content),
                                 filename=f"google-{user.id}.{ext}",
-                                content_type=ct, category="avatar", actor_id=user.id)
+                                kind="avatar", category="avatar", actor_id=user.id)
         user.avatar_file_id = sf.id
         db.flush()
     except Exception:

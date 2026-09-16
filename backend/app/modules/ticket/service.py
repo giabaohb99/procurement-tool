@@ -44,13 +44,18 @@ def _gen_code(db: Session) -> str:
 
 
 def _register_files(db: Session, entity: str, entity_id: int, file_ids, user_id: int):
-    """Gắn các file đã upload trước (file_id) vào entity — tái dùng bảng đính kèm chung."""
+    """Gắn các file đã upload trước (file_id) vào entity — tái dùng bảng đính kèm chung.
+
+    Chỉ nhận tệp do CHÍNH người này tải lên và chưa gắn vào đâu (bao-CR-408 — BM-025).
+    Trước đó hàm này chỉ hỏi "có dòng tab_file nào mang id ấy không", y hệt lỗ của
+    `/api/attachments/register`: đoán id tệp của người khác rồi gắn vào phiếu hỗ trợ
+    của mình là đọc được tệp ấy.
+    """
     if not file_ids:
         return
-    from app.modules.attachment.model import FileLink, StoredFile
-    for fid in file_ids:
-        if not db.get(StoredFile, fid):
-            continue
+    from app.modules.attachment.model import FileLink
+    from app.modules.attachment.service import select_attachable_ids
+    for fid in select_attachable_ids(db, file_ids, user_id):
         db.add(FileLink(file_id=fid, entity=entity, entity_id=entity_id,
                         created_by=user_id, updated_by=user_id))
     db.commit()
