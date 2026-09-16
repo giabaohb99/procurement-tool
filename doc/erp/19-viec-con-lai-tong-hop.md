@@ -118,9 +118,14 @@ Nguồn: `doc/erp/13-ke-hoach-man-con-lai-v2.md` §3, §6.8, §6.9; `doc/erp/14-
   NF-15 API key · NF-16 custom field · NF-17 màn error log/job nền · NF-18 digest email ·
   NF-19 tùy biến mẫu in.
 
-## 7. Nền đa pháp nhân (`doc/erp/12-ke-hoach-erp-v2-da-phap-nhan.md` §4–5)
+## 7. Nền phạm vi — trước gọi là "nền đa pháp nhân" (`doc/erp/12-ke-hoach-erp-v2-da-phap-nhan.md` §3–5)
 
-- P2 nền pháp nhân: hoãn, chờ HRM chuẩn.
+> Doc 12 đã viết gọn lại ngày 16/09 (bản 2.0): **tầng đa pháp nhân bỏ hẳn**, kế hoạch còn lại
+> là sửa logic và siết ràng buộc theo **phạm vi / phòng ban**. Mục 7.1 dưới đây là phần đang
+> làm; các gạch đầu dòng ngay sau đây chỉ để tra cứu hướng cũ.
+
+- P2 nền pháp nhân: **BỎ** (16/09) — thay bằng trục phòng ban ở §5.1. Trước đó là "hoãn, chờ
+  HRM chuẩn".
 - P3 port đợt 1 / P4-3 nhận hàng + lịch sử mua hàng: chưa xác nhận đóng.
 - **P6 gộp YCBG + YCMH: ĐÃ KHAI TỬ 07/09** (không phải tạm dừng) — thay bằng **bao-CR-310**
   (mục H `doc/tai-lieu-chuc-nang/03-yeu-cau-mua-hang.md`): đợt 1 backend đã commit + lên prod
@@ -128,9 +133,35 @@ Nguồn: `doc/erp/13-ke-hoach-man-con-lai-v2.md` §3, §6.8, §6.9; `doc/erp/14-
   `/procurement/purchase-requests/:id/process`) → **đợt 2** (sinh ĐMH từ phương án chốt) →
   **đợt 4** (2 bản in + nợ N-17 gác quyền in bằng `supplier:read`). Nhánh `p6-hop-nhat-chung-tu`
   (42bc0290) chỉ giữ tham khảo, không merge lại.
-- P7 · P8 · P9: phụ thuộc P2; ràng buộc "chờ P6" cũ hết hiệu lực — xét lại phạm vi theo bao-CR-310.
-- Hai dòng đã lỗi thời trong doc 12/13, đừng tin: "compose prod chưa có service erp" và
-  "CR-117/118 chưa bê sang main" — cả hai xong từ 11/09/2026.
+- P7: **đổi hẳn** — định tuyến theo phòng ban người lập phiếu, không theo phân loại hàng
+  (xem 7.1). P8: còn phần chặn trộn phòng trong YCTT và giới hạn cấn trừ tiền treo cấp NCC,
+  phần sổ tiền treo đầy đủ chưa xếp lịch. P9: chưa xếp lịch.
+- Một dòng đã lỗi thời trong doc 13, đừng tin: "CR-117/118 chưa bê sang main" — xong từ
+  11/09/2026.
+
+### 7.1 Phòng ban TỰ MUA HÀNG — bao-CR-414 (thiết kế xong 16/09/2026, chờ lệnh khởi công)
+
+Thay thế vế pháp nhân của P2-2b và P7: định tuyến phiếu theo **phòng ban**, không theo pháp
+nhân. Thiết kế đầy đủ ở `doc/erp/12-ke-hoach-erp-v2-da-phap-nhan.md` §5.1 – §5.1.8.
+
+**Luật nền:** phạm vi là công tắc, **không có cờ bật/tắt tính năng** — chưa gán bậc phạm vi
+mới thì mọi màn hành xử y như trước.
+
+| GĐ | Nội dung | Trạng thái |
+|---|---|---|
+| 1 | Cột `handler_dept_id` (YCMH · YCBG · ĐMH chép sẵn) · ô tick "Phòng tự mua hàng" · hai vai trò mới (Quản lý thu mua phòng cấp `purchase_order` approve + cancel — luật chung: ai có quyền duyệt trên phòng đó thì duyệt được, thực tế quản lý thu mua của phòng tự duyệt) · bậc phạm vi "Thu mua trong phòng mình". **Chuông giữ nguyên, không sửa** (chốt: ai có quyền thì cứ gửi; bấm vào ăn 403 là chấp nhận, ghi HDSD) | Chưa bắt đầu |
+| 2 | `tab_category_assignee` thêm cột phòng, khóa duy nhất (phòng, phân loại) — ⚠️ migration phải điền lùi toàn bộ dòng cũ = phòng Thu mua chung, quên là mọi phiếu mất người phụ trách tự động | Chưa bắt đầu |
+| 3 | Ô tick "Nhờ phòng khác xử lý" trên form phiếu | Chưa bắt đầu |
+| 4 | Công nợ hai con số (Tổng nợ NCC / Phần của tôi) · **cột ẩn `department_id` CHÉP SẴN trên cả `tab_payable` lẫn `tab_payment_request`, lọc đọc thẳng cột đó** (chốt 16/09: không lọc vòng qua đơn), bản in KHÔNG hiện phòng ban, chặn trộn đơn hai phòng trong một YCTT · chặn cấn trừ tiền treo cấp NCC theo phòng · **rà bộ tool Trợ lý AI cho khớp phạm vi mới** (tool công nợ trả hai con số, tool YCTT lọc theo cột mới, tool chứng từ đọc `handler_dept_id`) | Chưa bắt đầu |
+| 5 | **Nút chuyển phòng xử lý ở màn chi tiết + nút Trả về** — khách chốt để **giai đoạn cuối**; điều kiện bật nút đã chốt ở kế hoạch `12` mục 5.1.7 (YCMH: mọi dòng còn "Chưa tạo đơn mua hàng"; YCBG: chưa hoàn thành dòng nào, chưa chốt phương án, chưa sinh YCMH) | Chưa bắt đầu |
+
+**Để đợt sau, ngoài CR này** (ba chỗ vẫn nhìn ra nguyên liệu dù đã chia phạm vi phiếu):
+`modules/purchase_history` không gọi `apply_scope` lần nào · `modules/report/service.compute`
+không nhận `user` · `SCOPE_FIELDS["survey"]` chỉ có `owner` · **hợp đồng nhà cung cấp**
+(`SCOPE_FIELDS["contract"]` chỉ `company` + `owner`, vai trò thu mua giữ phạm vi `company` nên
+không chạy — hợp đồng có giá và điều khoản, cùng loại rò với lịch sử giá mua).
+
+**Việc dữ liệu chờ khách:** danh sách người của phòng Dego Organic sẽ giữ vai trò thu mua.
 
 ## 8. Import / Export (`doc/erp/16-quan-ly-import-export-v2.md` §9)
 
@@ -171,6 +202,14 @@ Nguồn: `doc/erp/13-ke-hoach-man-con-lai-v2.md` §3, §6.8, §6.9; `doc/erp/14-
 - **Duyệt dấu** (`doc/duyet-dau/TIEN-DO.md`): Pha 5 `SealApprovalPanel` + E2E; 3 quyết định A/B/C chờ khách.
 - **Đặt xe** (`doc/dat-xe-duyet-dau/TIEN-DO.md`): E2E 6 bước; cùng 3 quyết định A/B/C.
 - **TASKS.md cũ**: Google OAuth · đơn vị quy đổi · duyệt PO theo ngưỡng · Phase 5 (mẫu in, audit UI, sao lưu).
+- **Menu `manage: true` mở bằng hành động backend KHÔNG gác** (thấy 16/09/2026, ĐANG ĐỎ):
+  `test_dong_bo_giao_dien_v2.py::test_muc_menu_manage_khong_mo_bang_hanh_dong_ma` báo ba cặp —
+  `coffee_member.delete`, `login_session.create`, `login_session.write`. Nghĩa là cấp ba hành
+  động đó cho ai thì người đó **thấy mục menu rồi vào trong ăn 403 im lặng**, vì không endpoint
+  nào gác đúng cặp ấy. Chữa một trong hai đường: bỏ `manage: true` ở mục menu (đổi sang
+  `action:` đúng hành động backend thật sự gác), hoặc thêm cặp vào `_LECH_DA_BIET` của tệp test
+  **kèm lý do**. Lỗi CÓ SẴN, không do sổ đồng bộ — **ai làm tới Điểm cà phê / phiên đăng nhập
+  thì dọn luôn**.
 - **Nợ kỹ thuật**: N-008 báo cáo mua hàng gom theo TÊN phòng ban · N-015 `tab_contract` còn 2 cột
   chữ tiếng Việt · phân quyền hợp đồng trên prod chưa đổi (6 vai trò còn `contract = all`) ·
   «Tên trên hóa đơn» ĐMH backend chưa ghi lúc lưu.

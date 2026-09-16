@@ -906,8 +906,9 @@ khối — tùy tài khoản thấy khác nhau đúng như mong đợi.
 
 ## 9. Liên quan
 
-- [`12` Kế hoạch chuyển Thu mua sang ERP v2](./12-ke-hoach-erp-v2-da-phap-nhan.md) — §2.7 hai màn đã
-  quyết bỏ, §3 mười giai đoạn của phần backend.
+- [`12` Kế hoạch ERP v2: sửa logic và ràng buộc theo phạm vi](./12-ke-hoach-erp-v2-da-phap-nhan.md)
+  — §2.7 hai màn từng quyết bỏ (nay **đã dựng lại cả hai**), §3 mười giai đoạn P0–P9 còn lại gì,
+  §5.1 phần đang làm (phòng ban tự mua hàng).
 - [`11` Đa pháp nhân và chuyển chức năng sang ERP v2](./11-da-phap-nhan-va-erp-v2.md).
 - `frontend-v2/docs/ui/table.md` — hợp đồng bắt buộc cho mọi màn danh sách, đọc trước Đ-01.
 - `doc/tai-lieu-ky-thuat/mo-hinh-du-lieu-san-pham.md` — đọc trước Đ-03.
