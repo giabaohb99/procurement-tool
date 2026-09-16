@@ -460,6 +460,19 @@ export const appRoutes = {
     pos: '/dego-coffee/pos',
     order: '/dego-coffee/order',
   },
+  /**
+   * Phân hệ HỒ SƠ — mới dựng KHUNG GIAO DIỆN, dữ liệu còn là mẫu (chưa có
+   * backend). Loại hồ sơ cụ thể (lưu trữ / dự án / đối tác…) chưa chốt, xem
+   * `modules/dossier/routes.tsx`.
+   */
+  dossier: {
+    root: '/dossier',
+    /** Danh mục Loại hồ sơ — danh sách, thêm mới và chi tiết đều là TRANG riêng. */
+    types: '/dossier/types',
+    /** ⚠️ Route tĩnh, phải đăng ký TRƯỚC `:id` kẻo «new» bị khớp thành id. */
+    typeNew: '/dossier/types/new',
+    typeDetail: (id: number | string) => `/dossier/types/${id}`,
+  },
   /** Tuỳ chỉnh hiển thị của CHÍNH người đang đăng nhập — bảng màu, chế độ nền. */
   appearance: {
     root: '/appearance',
