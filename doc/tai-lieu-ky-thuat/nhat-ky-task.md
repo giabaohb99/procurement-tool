@@ -1530,6 +1530,52 @@ nào dùng email đó — lỗi thuần của ERP, cùng loại với 38/201, đ
 CHƯA LÀM: 14 ca tên trùng email khác, nạp 1313 phiếu, chỗ đổ 5095 dòng lịch sử duyệt,
 `tab_sync_log`, `notes` cho `StopItem`. Chưa commit gì.
 
+### dong-bo-datxe-p0-gom-tai-khoan-trung | P0 — đóng nốt 14 ca tên trùng và gom tài khoản trùng về id nhỏ nhất
+- status: xong
+- date: 2026-09-16
+Đại ca chốt ba việc trong một tin: 14 người tên trùng thì **dùng hồ sơ ERP**; lịch sử duyệt
+**đổ vào log duyệt sẵn có của ERP**; và **tài khoản trùng thì luôn lấy id nhỏ nhất**. Sau phiên:
+**134/136 đóng dấu + 2 bỏ**, không còn ai chờ; **3 cụm tài khoản trùng của ERP đã gom xong**.
+CÁCH LÀM:
+(a) Luật "giữ id nhỏ nhất" viết thành SCRIPT CHẠY LẠI ĐƯỢC (`scripts/dedupe_accounts.py`), không
+sửa tay ba cụm. Đại ca nói "luôn", tức đây là luật của hệ chứ không phải ba ca lẻ — lần sau có
+cụm thứ tư thì chỉ việc chạy lại. Script để ở `scripts/` chứ không `scripts/legacy_sync/` vì nó
+không đọc bản kết xuất Firebase, nó là việc vệ sinh của chính ERP.
+(b) Đi qua `employee_service.update_employee` chứ không `setattr` thẳng, để dây bao-CR-400 chạy
+đủ: khóa mọi tài khoản gắn hồ sơ · `force_relogin` · xóa cache quyền · ghi nhật ký cả hai entity.
+(c) KIỂM BẰNG CÁCH TRA ĐÚNG HAI BƯỚC CỦA `authenticate`, không chỉ nhìn cờ `is_active`. Ra: email
+trùng nay chỉ tra ra một tài khoản, mã `NSU179` tra ra tài khoản đã khóa và bị chặn đúng chỗ, còn
+`admin` vẫn về tài khoản 2 (không đụng).
+BA THỨ ĐO ĐƯỢC MÀ SUY ĐOÁN SẼ SAI:
+1. **Tắt hoạt động KHÔNG nhả email ra.** `ensure_email_unique` (bao-CR-368) hỏi cả hồ sơ đã tắt,
+   nên bỏ bước xóa trống email thì người được giữ lại mở hồ sơ sửa một ô bất kỳ rồi bấm Lưu là ăn
+   "Email này đã thuộc về nhân sự NSUxxx" — lỗi nổ ở màn khác, nhiều tuần sau, không ai nối lại
+   được với việc hôm nay. `_sync_user_email_from_employee` bỏ qua email rỗng nên xóa trống bên hồ
+   sơ KHÔNG xóa email đăng nhập.
+2. **KHÔNG đặt `status = "resigned"`.** Người đó vẫn đang đi làm; thứ bị bỏ là tờ hồ sơ thừa.
+3. **Nghi ngờ ban đầu về cụm admin là SAI, đo xong mới biết.** Em tưởng hồ sơ 253/tài khoản 3 do
+   `seed.py` dựng nên xóa là bị dựng lại — thật ra seed dựng `DEGO0001` = **hồ sơ 2/tài khoản 2**
+   (email `admin`), còn 253/3 là người tạo tay. Thứ chốt được việc là số đếm: tài khoản 1 đứng tên
+   **15 929** chỗ trong DB, tài khoản 3 chỉ **4** — tức 3 gần như chưa từng được dùng.
+CHỖ `legacy_id` KHÔNG DIỄN ĐẠT ĐƯỢC: *Phạm Lê Triết Giang* có **ba** UID app cũ trỏ về một hồ sơ
+ERP, mà `legacy_id` là MỘT cột. Hai UID thừa cho vào `USER_SKIPPED` và ghi cảnh báo ngay tại chỗ:
+**bộ nạp phiếu phải tra `USER_MANUAL_MAP` TRƯỚC rồi mới tới `legacy_id`**, không thì phiếu của hai
+UID đó mất người tạo — một lỗi im lặng, chỉ lòi ra khi có người đi tìm phiếu cũ của mình.
+ĐO XONG LỊCH SỬ DUYỆT, THIẾT KẾ Ở §P1.1 CỦA `TIEN-DO.md`: 5 095 dòng `history` KHÔNG phải 5 095
+lượt duyệt — **3 534** là lượt duyệt thật, **1 350** là mốc điều phối chuyến (`dispatched` ·
+`driver_accepted` · `trip_started` · `trip_completed` · `re-dispatched`) và **211** là `edited`.
+Đổ cả mảng vào `tab_approval_action` là gọn nhất và là **nói sai vào đúng cái bảng cả hệ dùng để
+tra "ai đã ký"** — tài xế bấm *Bắt đầu chuyến* không phải người duyệt. ERP đã có chỗ đúng cho
+nhóm giữa: `dispatched_by`/`dispatched_at`/`driver_status`/`actual_start_time`/`actual_end_time`
+ngay trên `tab_vehicle_booking`. Kèm theo: `flow_id = 0` (phiếu cũ không chạy luồng ERP nào),
+`flow_snapshot` dựng lại từ `workflowSnapshot` của app cũ nhưng phải **dịch sang khuôn
+`{"nodes":[...]}`** kẻo `steps_service` đếm ra một chặng, và **KHÔNG gọi `instance_service.start`**
+vì hàm đó mở việc chờ THẬT — chạy cho 1 313 phiếu cũ là ném hơn nghìn việc đã xử xong vào hàng
+chờ người thật.
+CHƯA LÀM: nạp 1 313 phiếu (phải xong trước, vì `ApprovalInstance.entity_id` trỏ tới phiếu ERP),
+rồi mới nạp lịch sử duyệt; 34 phiếu còn chờ duyệt để P2 quyết; `tab_sync_log`; `notes` cho
+`StopItem`. Chưa commit gì, chưa lên dev.
+
 ## deploy-dev-1509-cr405-406 | Đẩy dev đợt 15/09 (CR-405 mật khẩu + CR-406 Google v2)
 - status: xong
 - date: 2026-09-15
@@ -1709,3 +1755,35 @@ trong container `api` lẫn trong gói tĩnh đã dựng của `web` và `erp`.
 
 Còn lại trên `erp-v2` chưa lên prod: bao-CR-407 (màn Nhật ký hệ thống), bao-CR-408 (siết tải
 tệp — **đây là lỗ bảo mật đang mở trên prod**, BM-025…031), và bao-CR-310 đợt 4.
+
+## deploy-dev-1609-gop-dat-xe | Gộp code cuối ngày 16/09 đẩy lên dev (cụm lịch đặt xe)
+- status: xong
+- date: 2026-09-16
+Sau đợt prod buổi trưa, đại ca bảo gom hết code lại đẩy dev, và nhắc "có các commit của phần
+yêu cầu mua hàng mới nữa". **Đo lại thì phần YCMH đã nằm sẵn trên dev từ sáng** — commit
+`0dce69fa` (hai bản in phiếu YCMH, bao-CR-310 đợt 4) là tổ tiên của bản dev đang chạy, không
+có gì mới về YCMH ở đợt này. Ghi ra đây để lần sau không đi tìm lại.
+
+Dev đi từ `8df4e35c` lên **`1a6019b7`**, sáu lần commit: hai của em (`fc6383bd` + `a0ecbe19`,
+ghi sổ) và bốn của đồng nghiệp — `d014f62b` lịch đặt xe thêm khung Ngày/Tuần kiểu Google
+Calendar · `657a385c` thẻ "Chuyến của tôi" + tiêu đề màn chi tiết phiếu đặt xe · `66ae3d2f`
+script nạp dữ liệu đặt xe hệ cũ từ hai tệp Excel · `1a6019b7` script dựng dữ liệu demo
+"Chuyến của tôi" (CHỈ CHẠY LOCAL).
+
+⚠️ **Cây làm việc đang bẩn vì cụm P0 đồng bộ đặt xe chưa commit**, nên trước khi gộp phải đối
+chiếu danh sách tệp của sáu commit kia với danh sách tệp đang bẩn — không giao nhau mới gộp,
+và gộp bằng `merge --ff-only` chứ không `pull`. Gộp xong soát lại `git status` đủ 16 mục bẩn
+như cũ. Tuyệt đối không `git stash` ở tình huống này.
+
+⚠️ **`package.json` có đổi** (thêm `@fullcalendar/interaction` và `@fullcalendar/timegrid`
+6.1.21) nên phải `npm install` trong container `erp` + `restart erp` **trước** khi chạy cổng
+kiểm — đây đúng cái bẫy đã ghi ở đợt 15/09: gộp xong quên `npm install` thì Vite chặn CẢ APP
+chứ không riêng màn mới. Cổng `frontend-v2`: **277 tệp / 3169 bài xanh** (2 bài đỏ cố hữu),
+typecheck 0 lỗi, lint 0 lỗi.
+
+Deploy dev: `git fetch` + `git reset --hard origin/erp-v2` ở `~/procurement-tool-dev` rồi dựng
+lại bốn dịch vụ `erp api celery-worker celery-beat` với `-f docker-compose.dev.yml --env-file
+.env.dev`. Kiểm sau deploy: 8 dịch vụ chạy, log api sạch ("Seed prod done" + "Application
+startup complete", không Traceback), **alembic dev giữ nguyên `a3e8c1f6d924`** (đúng — đợt này
+không có migration), `deverp` và `devthumua` đều 200, và mã mới có mặt trong gói tĩnh đã dựng
+(`timeGrid` trong `timeline-page-*.js`, "Chuyến của tôi" trong `my-trips-page-*.js`).
