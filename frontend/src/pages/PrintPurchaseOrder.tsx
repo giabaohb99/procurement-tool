@@ -106,7 +106,9 @@ export default function PrintPurchaseOrder() {
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
-              <td style={head}>STT</td><td style={head}>Mã</td><td style={head}>Tên hàng hóa</td>
+              {/* bao-CR-410: cột Phân loại đứng giữa Mã và Tên hàng, đúng thứ tự bảng dòng
+                  trong màn chi tiết ĐMH — NCC đọc phiếu in mà không phải dò ngược sang màn hình. */}
+              <td style={head}>STT</td><td style={head}>Mã</td><td style={head}>Phân loại</td><td style={head}>Tên hàng hóa</td>
               <td style={head}>Xuất xứ/ TSKT/<br />chất liệu</td><td style={head}>ĐVT</td><td style={head}>SL</td>
               {/* bao-CR-364: trộn nhiều loại tiền thì mọc thêm cột Tiền tệ */}
               {mixedCurrency && <td style={head}>Tiền tệ</td>}
@@ -121,6 +123,7 @@ export default function PrintPurchaseOrder() {
                 <tr key={i}>
                   <td style={{ ...cell, textAlign: 'center' }}>{i + 1}</td>
                   <td style={cell}>{it.product_code}</td>
+                  <td style={cell}>{it.item_group}</td>
                   <td style={cell}>{it.product_name}</td>
                   <td style={cell}>{it.spec}</td>
                   <td style={{ ...cell, textAlign: 'center' }}>{it.unit}</td>
@@ -150,7 +153,8 @@ export default function PrintPurchaseOrder() {
               )
             })}
             <tr>
-              <td style={{ ...cell, fontWeight: 700, textAlign: 'center' }} colSpan={mixedCurrency ? 10 : 9}>TỔNG CỘNG{curSuffix}</td>
+              {/* bao-CR-410: thêm cột Phân loại nên số ô gộp của dòng TỔNG CỘNG tăng 1 */}
+              <td style={{ ...cell, fontWeight: 700, textAlign: 'center' }} colSpan={mixedCurrency ? 11 : 10}>TỔNG CỘNG{curSuffix}</td>
               {/* bao-CR-364: trộn nhiều loại tiền thì cộng ngang là cộng USD với VND — để gạch
                   ngang, tổng thật nằm ở dòng quy đổi bên dưới. */}
               <td style={{ ...cell, textAlign: 'right', fontWeight: 700 }}>
@@ -160,7 +164,7 @@ export default function PrintPurchaseOrder() {
             </tr>
             {foreign && (
               <tr>
-                <td style={{ ...cell, fontWeight: 700, textAlign: 'center' }} colSpan={mixedCurrency ? 10 : 9}>TỔNG CỘNG (quy đổi VNĐ)</td>
+                <td style={{ ...cell, fontWeight: 700, textAlign: 'center' }} colSpan={mixedCurrency ? 11 : 10}>TỔNG CỘNG (quy đổi VNĐ)</td>
                 <td style={{ ...cell, textAlign: 'right', fontWeight: 700 }}>{fmtVND(totalBase)}</td>
                 <td style={cell} colSpan={3} />
               </tr>
