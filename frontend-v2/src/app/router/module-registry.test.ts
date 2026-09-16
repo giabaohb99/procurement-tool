@@ -127,11 +127,12 @@ describe('module-registry', () => {
       //  nhập (`/api/coffee/my-wallet` tự lấy employee_id của người gọi), không
       //  có entity nào để khai. Các màn quản trị trong phân hệ vẫn gác khóa đủ.
       'dego-coffee',
-      //  ⚠️ **MÓN NỢ, không phải chủ ý.** Phân hệ Hồ sơ mới dựng khung giao diện
-      //  trên dữ liệu mẫu; khóa `dossier` chưa có trong `core/permissions.py` nên
-      //  chưa khai `entity` được. Có khóa thật rồi thì gắn `entity` cho mục menu
-      //  và **xóa dòng này** — xem ghi chú đầu `modules/dossier/routes.tsx`.
-      'dossier',
+      //  ⚠️ **Hồ sơ (`dossier`) CỐ Ý không nằm ở đây.** Màn *Danh sách hồ sơ* chạy
+      //  trên dữ liệu mẫu và khóa `dossier` chưa có ở backend, nên thay vì khai nó
+      //  công khai, màn đó **không đăng ký route** — phân hệ chỉ còn danh mục *Loại
+      //  hồ sơ*, gác đủ bằng `dossier_type`. Thêm `dossier` vào danh sách này để
+      //  bật lại màn mẫu là mở hồ sơ công ty cho mọi người đăng nhập; đọc ghi chú
+      //  đầu `modules/dossier/routes.tsx` trước khi động vào.
     ])
     const missing: string[] = []
     for (const module of moduleRegistry) {

@@ -341,12 +341,9 @@ describe('B4 — thẻ phân hệ khi không có quyền nào', () => {
       'document', // «Chờ tôi duyệt» dành cho người duyệt NGOÀI phân hệ
       'forum', // bảng tin toàn công ty
       'appearance', // tùy chọn hiển thị của chính người đăng nhập
-      //  ⚠️ **MÓN NỢ, không phải chủ ý** — cùng lý do đã ghi ở
-      //  `module-registry.test.ts`: phân hệ Hồ sơ còn là bản mẫu chạy trên dữ
-      //  liệu giả, khóa `dossier` chưa có ở backend nên mục menu chưa khai
-      //  `entity` được, và thẻ vì thế mở cho mọi người. Có khóa thật thì xóa
-      //  dòng này ở CẢ HAI tệp test.
-      'dossier',
+      //  ⚠️ **Hồ sơ (`dossier`) CỐ Ý không nằm ở đây** — xem ghi chú song song ở
+      //  `module-registry.test.ts`. Phân hệ chỉ còn danh mục *Loại hồ sơ*, gác đủ
+      //  bằng `dossier_type`, nên thẻ của nó đóng với người không quản danh mục.
       //  «Dego Coffee» từng công khai qua «Ví điểm của tôi», nhưng phân hệ nay TẮT
       //  (`enabled: false`, phần Điểm cà phê còn dở) nên không nằm trong moduleRegistry.
     ])

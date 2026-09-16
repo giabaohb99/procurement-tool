@@ -38,12 +38,18 @@ const DEPARTMENTS = listDossierDepartments()
 const STATUS_OPTIONS = Object.entries(DOSSIER_STATUS_LABEL)
 
 /**
- * Danh sách hồ sơ — **màn MẪU** của phân hệ Hồ sơ.
+ * Danh sách hồ sơ — **màn MẪU, CHƯA ĐĂNG KÝ ROUTE**.
  *
- * Dữ liệu lấy từ `dossier-api.ts` (mock trong trình duyệt). Toàn bộ khung đã
- * theo đúng quy ước màn danh sách của dự án — `docs/ui/table.md`: state bộ lọc
- * nằm trên URL, phân trang đứng ngoài URL, `DataTable` tự lo nút *Xóa lọc* /
- * *Tải lại* / *Cột*. Nối backend là đổi ruột `fetchDossiers`, trang giữ nguyên.
+ * ⚠️ Không chỗ nào gọi tới tệp này, và đó là chủ ý về BẢO MẬT: khóa quyền
+ * `dossier` chưa có ở backend, mà mục menu không khai `entity` thì hiện với
+ * **mọi người đăng nhập** — hôm nay lộ dữ liệu giả, ngày nối API thật thì lộ hồ
+ * sơ pháp lý của công ty. Lý do đầy đủ và bốn việc phải làm để bật lại nằm ở
+ * `modules/dossier/routes.tsx`. **Đừng thêm nó vào `routes` nếu chưa làm đủ.**
+ *
+ * Khuôn màn giữ nguyên vì đã theo đúng quy ước danh sách của dự án
+ * (`docs/ui/table.md`): state bộ lọc trên URL, phân trang ngoài URL, `DataTable`
+ * tự lo nút *Xóa lọc* / *Tải lại* / *Cột*. Nối backend là đổi ruột
+ * `fetchDossiers`, trang không phải sửa.
  */
 export function DossierListPage() {
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()

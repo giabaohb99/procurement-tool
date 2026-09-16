@@ -461,11 +461,13 @@ export const appRoutes = {
     order: '/dego-coffee/order',
   },
   /**
-   * Phân hệ HỒ SƠ — mới dựng KHUNG GIAO DIỆN, dữ liệu còn là mẫu (chưa có
-   * backend). Loại hồ sơ cụ thể (lưu trữ / dự án / đối tác…) chưa chốt, xem
-   * `modules/dossier/routes.tsx`.
+   * Phân hệ HỒ SƠ — hiện **chỉ có danh mục Loại hồ sơ**, chạy trên bảng
+   * `tab_dossier_type` thật. Màn *Danh sách hồ sơ* đã dựng khuôn nhưng CỐ Ý chưa
+   * đăng ký route vì khóa quyền `dossier` chưa có ở backend — lý do đầy đủ ở
+   * `modules/dossier/routes.tsx`, đọc trước khi thêm đường dẫn mới vào đây.
    */
   dossier: {
+    /** Không có màn riêng — chuyển hướng sang `types`. */
     root: '/dossier',
     /** Danh mục Loại hồ sơ — danh sách, thêm mới và chi tiết đều là TRANG riêng. */
     types: '/dossier/types',
