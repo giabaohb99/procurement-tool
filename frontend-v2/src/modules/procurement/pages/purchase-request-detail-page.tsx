@@ -3,6 +3,7 @@ import {
   Ban,
   Check,
   CheckCheck,
+  ChevronDown,
   Copy,
   CornerUpLeft,
   ListChecks,
@@ -15,7 +16,7 @@ import {
   ShoppingCart,
   X,
 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -44,6 +45,7 @@ import { DetailPageHeader, ResponsiveLabel } from '@/shared/ui/detail-page-heade
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { confirm as confirmDialog } from '@/shared/ui/confirm-dialog'
 import { DeleteConfirmButton } from '@/shared/ui/delete-confirm-button'
 import {
   Dialog,
@@ -53,6 +55,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/shared/ui/dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/shared/ui/dropdown-menu'
 import { ErrorState } from '@/shared/ui/error-state'
 import { PageContainer } from '@/shared/ui/page-container'
 import { Skeleton } from '@/shared/ui/skeleton'
@@ -83,6 +91,8 @@ import {
   useUpdateItemStatus,
   type PurchaseRequestAction,
 } from '../hooks/use-purchase-request'
+import { useGeneratePrOrders } from '../hooks/use-purchase-request-options'
+import { isPrOptionStageOpen } from '../types/purchase-request-options'
 import { PR_STATUS_LABELS } from '../types/purchase-document'
 import type { PurchaseOrderItem } from '../types/purchase-order-detail'
 import {
@@ -163,6 +173,11 @@ export function PurchaseRequestDetailPage() {
   const assignPurchaser = useAssignPurchaser(purchaseRequestId)
   const updateItemStatus = useUpdateItemStatus(purchaseRequestId)
   const setUrgent = useSetUrgent(purchaseRequestId)
+  // bao-CR-310 đợt 4 (rà lại): nút gom theo phương án dời từ thẻ Phương án lên
+  // đầu trang, nhập chung một nút "Tạo đơn mua hàng" sổ xuống — 2 nút tạo đơn
+  // còn 1. Chặn bấm đúp bằng ref (state React trễ một nhịp, luật duoc-CR-317).
+  const generateOrders = useGeneratePrOrders(purchaseRequestId)
+  const generatingRef = useRef(false)
 
   const [editing, setEditing] = useState(isNew)
 
@@ -289,6 +304,33 @@ export function PurchaseRequestDetailPage() {
       item.line_status !== 'cancelled' &&
       (item.qty || 0) - (progress?.ordered?.[item.product_code] ?? 0) > 0,
   )
+  /** Dòng NSTM đã chốt hoàn thành xử lý phương án — nguồn của gom đơn + bản in theo NCC. */
+  const hasDoneLine = data.items.some((item) => !!item.id && !!item.options_done)
+  /** Đường LẬP TAY: sang màn tạo ĐMH với dòng còn phải mua điền sẵn. */
+  const canCreateManual =
+    can('purchase_order', 'create') && workableStatuses.includes(data.status) && hasUnorderedItem
+  // Dòng nút gom còn tạo được đơn: chưa hủy, CHƯA nằm trên ĐMH nào (kể cả
+  // nháp — CR-074 rời `no_po` ngay lúc lập) và còn phương án đang chọn — soi
+  // gương đúng luật bỏ qua của backend `generate_orders`.
+  const hasLineToGenerate = data.items.some(
+    (item) =>
+      !!item.id &&
+      item.line_status !== 'cancelled' &&
+      (item.line_status || 'no_po') === 'no_po' &&
+      !!item.chosen_option,
+  )
+  // Đường GOM THEO PHƯƠNG ÁN — cùng cổng với backend `generate_orders`
+  // (H.10.6): ai lập được đơn tay thì gom được, phiếu còn trong giai đoạn mở.
+  // Hết dòng gom được thì ẨN mục này thay vì để bấm ra lỗi 400 "Không còn dòng
+  // nào tạo được đơn" — khách từng tưởng lỗi trong khi đơn đã tạo rồi (15/09).
+  const canGenerateFromOptions =
+    isPrOptionStageOpen(data.status) &&
+    can('purchase_order', 'create') &&
+    hasDoneLine &&
+    hasLineToGenerate
+  // Bản in theo NCC (H.6 bản B) — gác N-17: chỉ người có quyền xem NCC; trang in
+  // tự gác lại lần nữa. Phiếu đã đóng vẫn in được để lưu hồ sơ.
+  const canPrintBySupplier = !isNew && can('supplier', 'read') && hasDoneLine
   const canManageAttachments =
     editable && (can('purchase_request', 'write') || can('purchase_request', 'create'))
   const canManageLineAttachments =
@@ -412,6 +454,41 @@ export function PurchaseRequestDetailPage() {
   }
 
   /**
+   * Gom dòng đã chọn phương án thành các đơn nháp theo NCC (bao-CR-310 H.10.6).
+   * Dời từ thẻ Phương án lên đây khi nhập nút — hành vi giữ nguyên.
+   */
+  async function handleGenerateOrders() {
+    if (generatingRef.current) return
+    const ok = await confirmDialog({
+      title: 'Tạo đơn mua hàng theo phương án',
+      message:
+        'Hệ thống sẽ gom các dòng đã chọn phương án theo nhà cung cấp thành các đơn mua hàng NHÁP; ' +
+        'dòng chưa có nhà cung cấp gom vào một đơn riêng để bổ sung sau. ' +
+        'Dòng đã nằm trên đơn mua hàng sẽ được bỏ qua. Tiếp tục?',
+      confirmLabel: 'Tạo đơn nháp',
+      tone: 'default',
+    })
+    if (!ok) return
+    generatingRef.current = true
+    generateOrders.mutate(undefined, {
+      // Rà lại vòng 3 (bao-CR-310): tạo nháp xong đưa người dùng sang thẳng danh
+      // sách ĐMH, mồi ô tìm kiếm bằng mã phiếu — ô đó tìm cả cột `pr_code` nên
+      // danh sách hiện đúng các đơn của phiếu này, khỏi tự đi lọc lại.
+      onSuccess: () => {
+        const code = (loadedDraft.code || '').trim()
+        navigate(
+          code
+            ? `${appRoutes.procurement.purchaseOrders}?q=${encodeURIComponent(code)}`
+            : appRoutes.procurement.purchaseOrders,
+        )
+      },
+      onSettled: () => {
+        generatingRef.current = false
+      },
+    })
+  }
+
+  /**
    * Đổi NSTM ngay trên bảng. Phiếu còn ở chế độ SỬA (nháp) thì chỉ đổi nháp và
    * chờ nút Lưu; phiếu đã lưu thì ghi ngay để người phụ trách nhận việc liền.
    */
@@ -524,17 +601,43 @@ export function PurchaseRequestDetailPage() {
           Duyệt điều phối
         </Button>
       )}
-      {can('purchase_order', 'create') &&
-        workableStatuses.includes(data.status) &&
-        hasUnorderedItem && (
-          <Button onClick={handleCreatePurchaseOrder} disabled={runAction.isPending}>
-            <ShoppingCart />
-            {/*  Nhãn NGẮN ở khổ hẹp: bản đầy đủ rộng ~180px, đúng phần đẩy cụm
-                 nút rớt xuống hàng riêng trên máy 390px. "ĐMH" là từ viết tắt
-                 người dùng đang dùng hằng ngày. */}
-            <ResponsiveLabel short="Tạo ĐMH" long="Tạo đơn mua hàng" />
-          </Button>
-        )}
+      {/* bao-CR-310 đợt 4 (rà lại): MỘT nút "Tạo đơn mua hàng" cho cả hai đường
+          lập tay / gom theo phương án — đủ cả hai thì sổ xuống chọn, chỉ còn một
+          đường thì bấm thẳng (sổ xuống một mục là bắt thêm một chạm vô nghĩa).
+          Nhãn NGẮN ở khổ hẹp: bản đầy đủ rộng ~180px, đúng phần đẩy cụm nút rớt
+          xuống hàng riêng trên máy 390px; "ĐMH" là từ viết tắt dùng hằng ngày. */}
+      {canCreateManual && canGenerateFromOptions ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button disabled={runAction.isPending || generateOrders.isPending}>
+              {generateOrders.isPending ? <Loader2 className="animate-spin" /> : <ShoppingCart />}
+              <ResponsiveLabel short="Tạo ĐMH" long="Tạo đơn mua hàng" />
+              <ChevronDown />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={() => handleCreatePurchaseOrder()}>
+              Lập tay — chọn dòng còn phải mua
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => void handleGenerateOrders()}>
+              Theo phương án đã chọn — gom theo NCC
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : canCreateManual ? (
+        <Button onClick={handleCreatePurchaseOrder} disabled={runAction.isPending}>
+          <ShoppingCart />
+          <ResponsiveLabel short="Tạo ĐMH" long="Tạo đơn mua hàng" />
+        </Button>
+      ) : canGenerateFromOptions ? (
+        <Button
+          disabled={generateOrders.isPending}
+          onClick={() => void handleGenerateOrders()}
+        >
+          {generateOrders.isPending ? <Loader2 className="animate-spin" /> : <ShoppingCart />}
+          <ResponsiveLabel short="Tạo ĐMH" long="Tạo đơn theo phương án" />
+        </Button>
+      ) : null}
     </>
   )
 
@@ -580,16 +683,51 @@ export function PurchaseRequestDetailPage() {
     </>
   ) : (
     <>
-      <Button variant="outline" asChild>
-        <Link
-          to={appRoutes.procurement.purchaseRequestPrint(data.id)}
-          target="_blank"
-          rel="noreferrer"
-        >
-          <Printer />
-          In phiếu
-        </Link>
-      </Button>
+      {/* bao-CR-310 đợt 4 (rà lại): hai bản in nhập chung MỘT nút "In" sổ
+          xuống theo góp ý của khách — chưa có bản in theo NCC (chưa dòng nào
+          chốt phương án, hoặc thiếu quyền xem NCC) thì giữ nút bấm thẳng. */}
+      {canPrintBySupplier ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline">
+              <Printer />
+              In phiếu
+              <ChevronDown />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem asChild>
+              <Link
+                to={appRoutes.procurement.purchaseRequestPrint(data.id)}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Phiếu yêu cầu mua hàng
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link
+                to={appRoutes.procurement.purchaseRequestSupplierPrint(data.id)}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Phiếu yêu cầu tách theo nhà cung cấp
+              </Link>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : (
+        <Button variant="outline" asChild>
+          <Link
+            to={appRoutes.procurement.purchaseRequestPrint(data.id)}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <Printer />
+            In phiếu
+          </Link>
+        </Button>
+      )}
       {!isNew && <RelatedPurchaseOrdersCard purchaseRequestCode={data.code} />}
       {/* bao-CR-310: mở từ lúc thu mua tiếp nhận phiếu; phiếu đóng vẫn
           vào được để XEM lại phương án đã chốt. Đợt 3b: màn đó là bàn

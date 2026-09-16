@@ -159,6 +159,8 @@ _OPTION = (
     ActionCode("options_complete", "Chốt hoàn thành xử lý phương án", ACTION_GROUP_EDIT),
     ActionCode("options_reopen", "Mở lại xử lý phương án", ACTION_GROUP_EDIT),
     ActionCode("option_supplier_set", "Áp nhà cung cấp vào phương án", ACTION_GROUP_EDIT),
+    #  Tên rút gọn dưới 20 ký tự cho vừa cột action String(20) — xem option_service.
+    ActionCode("options_gen_orders", "Tạo đơn mua hàng nháp theo phương án", ACTION_GROUP_EDIT),
 )
 
 #  =====================================================================

@@ -44,6 +44,12 @@ export const appRoutes = {
     purchaseRequestProcess: (id: number | string) =>
       `/procurement/purchase-requests/${id}/process`,
     purchaseRequestPrint: (id: number | string) => `/print/purchase-request/${id}`,
+    /**
+     * bao-CR-310 đợt 4 — bản in THEO NHÀ CUNG CẤP của YCMH: mỗi NCC một trang, khớp
+     * 1-1 với các đơn nháp mà nút gom sẽ tạo. Cần quyền supplier:read (gác N-17).
+     */
+    purchaseRequestSupplierPrint: (id: number | string) =>
+      `/print/purchase-request-suppliers/${id}`,
     /** Đơn mua hàng (ĐMH). */
     purchaseOrders: '/procurement/purchase-orders',
     purchaseOrderNew: '/procurement/purchase-orders/new',

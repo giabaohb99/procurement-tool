@@ -1,4 +1,4 @@
-import { Ban, ListChecks, Loader2, PenLine, ShoppingCart, Undo2 } from 'lucide-react'
+import { Ban, ListChecks, Loader2, PenLine, Undo2 } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -8,7 +8,6 @@ import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Checkbox } from '@/shared/ui/checkbox'
-import { confirm as confirmDialog } from '@/shared/ui/confirm-dialog'
 import {
   Dialog,
   DialogContent,
@@ -25,7 +24,6 @@ import { useSuppliers } from '@/modules/production/hooks/use-suppliers'
 import {
   useAssignPrSupplierBulk,
   useChooseOption,
-  useGeneratePrOrders,
   usePurchaseRequestItemOptions,
   useReopenPrOptionsLine,
   useSetPrOptionSupplier,
@@ -97,13 +95,6 @@ export function PurchaseRequestChooseCard({ purchaseRequest }: PurchaseRequestCh
   )
   const suppliers: SupplierOption[] = suppliersQuery.data?.items ?? []
 
-  // H.10.6 — nút gom cùng cổng với backend: ai LẬP được đơn tay thì bấm được.
-  const canGenerateOrders = stageOpen && can('purchase_order', 'create')
-  const generateOrders = useGeneratePrOrders(purchaseRequest.id)
-  // `disabled={isPending}` không chặn được bấm đúp (state React trễ một nhịp) —
-  // chốt bằng ref đổi ngay trong tick, cùng bài các nút lưu khác của màn này.
-  const generatingRef = useRef(false)
-
   const doneLines = purchaseRequest.items.filter(
     (item): item is PurchaseRequestItem & { id: number } => !!item.id && !!item.options_done,
   )
@@ -127,49 +118,16 @@ export function PurchaseRequestChooseCard({ purchaseRequest }: PurchaseRequestCh
       )
     : []
 
-  const handleGenerateOrders = async () => {
-    if (generatingRef.current) return
-    const ok = await confirmDialog({
-      title: 'Tạo đơn mua hàng theo phương án',
-      message:
-        'Hệ thống sẽ gom các dòng đã chọn phương án theo nhà cung cấp thành các đơn mua hàng NHÁP; ' +
-        'dòng chưa có nhà cung cấp gom vào một đơn riêng để bổ sung sau. ' +
-        'Dòng đã nằm trên đơn mua hàng sẽ được bỏ qua. Tiếp tục?',
-      confirmLabel: 'Tạo đơn nháp',
-      tone: 'default',
-    })
-    if (!ok) return
-    generatingRef.current = true
-    generateOrders.mutate(undefined, {
-      onSettled: () => {
-        generatingRef.current = false
-      },
-    })
-  }
-
   return (
     <Card className="gap-4 py-4">
+      {/* bao-CR-310 đợt 4 (rà lại): nút GOM và nút IN THEO NCC dời lên đầu
+          trang chi tiết, nhập vào nút "Tạo đơn mua hàng" / "In phiếu" sổ xuống
+          — khách góp ý 4 nút rời là quá nhiều. Thẻ này chỉ còn phần chọn. */}
       <CardHeader className="min-h-9 flex flex-row items-center gap-3 border-b px-4 pb-3!">
         <CardTitle className="flex items-center gap-2 text-base text-navy dark:text-foreground">
           <ListChecks className="size-4 text-primary" />
           Phương án — NSTM đã xử lý xong, chọn phương án mua
         </CardTitle>
-        {canGenerateOrders && (
-          <Button
-            type="button"
-            size="sm"
-            className="ml-auto"
-            disabled={generateOrders.isPending}
-            onClick={() => void handleGenerateOrders()}
-          >
-            {generateOrders.isPending ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <ShoppingCart className="size-4" />
-            )}
-            Tạo đơn mua hàng theo phương án
-          </Button>
-        )}
       </CardHeader>
 
       <CardContent className="space-y-6 px-4">

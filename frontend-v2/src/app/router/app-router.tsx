@@ -60,6 +60,17 @@ export const router = createBrowserRouter([
             errorElement: <RouteErrorPage />,
           },
           {
+            //  bao-CR-310 đợt 4 — bản in theo NCC của YCMH (mỗi NCC một trang); trang
+            //  tự gác quyền supplier:read (N-17).
+            path: appRoutes.procurement.purchaseRequestSupplierPrint(':id'),
+            lazy: async () => ({
+              Component: (
+                await import('@/modules/procurement/pages/purchase-request-supplier-print-page')
+              ).PurchaseRequestSupplierPrintPage,
+            }),
+            errorElement: <RouteErrorPage />,
+          },
+          {
             //  bao-CR-314 — cùng trang in, nhưng `:id` là id ĐƠN MUA HÀNG và bản in chỉ
             //  gồm dòng hàng của đơn đó. Cổng quyền là quyền in ĐƠN (gác ở backend).
             path: appRoutes.procurement.purchaseRequestPrintFromPo(':id'),

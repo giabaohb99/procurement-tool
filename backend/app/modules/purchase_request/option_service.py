@@ -661,7 +661,10 @@ def generate_purchase_orders(db: Session, pr: PurchaseRequest, user_id: int) -> 
         created.append({"id": po.id, "code": po.code, "supplier_code": po.supplier_code,
                         "supplier_name": po.supplier_name, "line_count": len(po_items)})
 
-    record(db, user_id, ENTITY, pr.id, "options_generate_orders",
+    #  "options_gen_orders" chứ không phải "options_generate_orders": cột
+    #  tab_audit_log.action là String(20), tên đầy đủ 23 ký tự làm MySQL nổ 1406
+    #  ngay lúc bấm nút (SQLite của pytest không ép độ dài nên test không bắt được).
+    record(db, user_id, ENTITY, pr.id, "options_gen_orders",
            f"Tạo {len(created)} đơn mua hàng nháp theo phương án: "
            + ", ".join(c["code"] for c in created))
     return {"orders": created, "skipped": skipped}

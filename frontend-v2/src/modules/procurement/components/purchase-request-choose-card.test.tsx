@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -37,13 +37,6 @@ const reopenMutate = vi.fn()
 const setSupplierMutate = vi.fn()
 const updateOptionMutate = vi.fn()
 const assignBulkMutate = vi.fn()
-const generateOrdersMutate = vi.fn()
-const confirmMock = vi.fn()
-
-vi.mock('@/shared/ui/confirm-dialog', () => ({
-  confirm: (options: unknown) => confirmMock(options) as Promise<boolean>,
-}))
-
 vi.mock('../hooks/use-purchase-request-options', () => ({
   usePurchaseRequestItemOptions: (_prId: number, itemId: number) => ({
     // Khớp `enabled: itemId > 0` của hook thật. Đợt 2 mở rộng bỏ chiêu tắt
@@ -57,7 +50,6 @@ vi.mock('../hooks/use-purchase-request-options', () => ({
   useSetPrOptionSupplier: () => ({ mutate: setSupplierMutate, isPending: false }),
   useUpdateOption: () => ({ mutate: updateOptionMutate, isPending: false }),
   useAssignPrSupplierBulk: () => ({ mutate: assignBulkMutate, isPending: false }),
-  useGeneratePrOrders: () => ({ mutate: generateOrdersMutate, isPending: false }),
 }))
 
 vi.mock('@/modules/production/hooks/use-suppliers', () => ({
@@ -210,9 +202,6 @@ beforeEach(() => {
   setSupplierMutate.mockClear()
   updateOptionMutate.mockClear()
   assignBulkMutate.mockClear()
-  generateOrdersMutate.mockClear()
-  confirmMock.mockReset()
-  confirmMock.mockResolvedValue(true)
   window.localStorage.clear()
 })
 
@@ -439,39 +428,11 @@ describe('PurchaseRequestChooseCard', () => {
     expect(screen.queryByText('Áp 1 NCC cho nhiều dòng')).toBeNull()
   })
 
-  it('generates draft orders from the header button after the user confirms (H.10.6)', async () => {
-    // Nút gom ăn theo quyền LẬP ĐƠN (purchase_order:create), không theo quyền
-    // phiếu — ai lập được đơn tay thì bấm được nút gom, đúng cổng backend.
-    mockUser = { employee_id: 44, emp_code: 'REQ01' }
-    grantedPermissions = ['purchase_request:read', 'purchase_order:create']
-
-    renderCard(buildPurchaseRequest())
-
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Tạo đơn mua hàng theo phương án' }),
-    )
-    await waitFor(() => expect(generateOrdersMutate).toHaveBeenCalledTimes(1))
-    expect(confirmMock).toHaveBeenCalledTimes(1)
-  })
-
-  it('hides the generate button without purchase_order:create and skips the call on cancel', async () => {
-    mockUser = { employee_id: 44, emp_code: 'REQ01' }
-    grantedPermissions = ['purchase_request:read']
-    renderCard(buildPurchaseRequest())
-    expect(
-      screen.queryByRole('button', { name: 'Tạo đơn mua hàng theo phương án' }),
-    ).toBeNull()
-
-    // Có quyền nhưng bấm Hủy ở hộp xác nhận thì không request nào được bắn đi.
-    grantedPermissions = ['purchase_request:read', 'purchase_order:create']
-    confirmMock.mockResolvedValue(false)
-    renderCard(buildPurchaseRequest())
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Tạo đơn mua hàng theo phương án' }),
-    )
-    await waitFor(() => expect(confirmMock).toHaveBeenCalledTimes(1))
-    expect(generateOrdersMutate).not.toHaveBeenCalled()
-  })
+  // Hai bài "gom đơn theo phương án (H.10.6)" từng đứng ở đây đã BỎ: bao-CR-310 đợt 4
+  // dời nút đó lên đầu trang chi tiết, nhập vào nút "Tạo đơn mua hàng" sổ xuống, nên
+  // thẻ này không còn dựng nút nào tên như vậy. Cổng quyền `purchase_order:create` vẫn
+  // y nguyên, nay nằm ở `canGenerateFromOptions` của `purchase-request-detail-page.tsx`
+  // — chỗ đó CHƯA có bài kiểm nào, đây là khoảng trống đã biết.
 
   it('turns fully read-only once the request is closed', () => {
     // Phiếu đóng: xem lại phương án đã chọn được, nhưng chốt / mở lại / sửa giá

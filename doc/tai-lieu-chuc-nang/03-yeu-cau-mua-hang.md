@@ -704,7 +704,7 @@ in toàn bộ dòng của phiếu, không tick chọn gì. Phương án chỉ **
 
 | Ô trên bản in | Lấy từ đâu |
 |---|---|
-| Nhà cung cấp (khối `supplier_pur`, mục A.14) | NCC của **phương án đã chốt** — tức NCC tối ưu nhất. Chưa chốt dòng nào thì rơi về **NCC do chính người yêu cầu ghi** (`supplier_req`, mục A.14). |
+| Nhà cung cấp (khối `supplier_pur`, mục A.14) | **Chỉ in thứ nhập trên phiếu** (rà lại vòng 3): cụm `supplier_pur` do thu mua ghi, trống thì rơi về cụm `supplier_req` của người yêu cầu; cả hai đều trống thì ô tên in chữ mặc định *"Nhà cung cấp tối ưu nhất"*. KHÔNG tự đổ NCC theo phương án vào đây nữa. |
 | Đơn giá / %VAT trên từng dòng | Phương án đã chốt của dòng đó; dòng chưa chốt thì giữ **giá đề xuất** (`price` / `vat_pct`). |
 | Thành tiền, tổng cộng | Tính lại theo giá đang in. |
 
@@ -715,14 +715,23 @@ NCC nay là con số đã chốt chứ không còn là ước lượng lúc lậ
 theo dòng. Người yêu cầu vốn không thấy NCC, nên chuyện phiếu này mua ở mấy nơi là việc của thu
 mua, không phải thứ cần đưa vào tờ trình của họ. Việc tách theo NCC chỉ xảy ra ở **bản B**.
 
-Ô NCC chung vì vậy luôn ghi **đúng một** cái tên: NCC của phương án chốt **chiếm giá trị lớn nhất
-trong phiếu** (hiểu là "NCC tối ưu nhất"); chưa chốt dòng nào thì rơi về NCC người yêu cầu tự ghi.
+Ô NCC chung **không dính gì tới phương án** (đính chính ở rà lại vòng 3 — bản đợt 4 từng tự đổ
+NCC của phương án chiếm giá trị lớn nhất vào đây và bị khách bắt lỗi "đâu có nhập gì đâu mà ra
+1 NCC"): mục này tên là *NCC DO BỘ PHẬN ĐỀ XUẤT* nên chỉ in thứ nhập trên phiếu; NCC theo
+phương án xem ở **bản B**.
 
 **Luật ẩn NCC vẫn áp** (H.3.8): người không có `supplier:read` thì ô NCC của cụm `pur` hiện
 *"Phương án 2"* thay cho tên thật — đây là hành vi **đã có sẵn** của bản in hiện tại, không phải
 luật mới. Riêng cụm `supplier_req` là do chính người yêu cầu gõ vào nên họ luôn thấy.
 
-**Bản B — cho thu mua.** Bảng gom theo NCC, mỗi NCC một dòng có ô tick:
+**Bản B — cho thu mua: CHÍNH TỜ PHIẾU ĐỀ XUẤT, TÁCH THEO NCC.** Không có bố cục riêng nào cả
+(chốt ở rà lại vòng 4) — mỗi trang là **một tờ phiếu y mẫu 003/BM/PKT giống hệt bản A**, chỉ
+khác đúng hai chỗ: bảng hàng chỉ còn dòng đã chốt phương án của NCC đó, và ô *NHÀ CUNG CẤP DO
+BỘ PHẬN ĐỀ XUẤT* điền sẵn tên NCC đó. Mọi thứ còn lại — bảng phiên bản, tiêu đề, THÔNG TIN
+CHUNG, MỤC ĐÍCH & NỘI DUNG, 9 cột bảng hàng, khối tổng ba dòng, PHẦN DÀNH CHO BỘ PHẬN MUA HÀNG,
+cụm XÉT DUYỆT 4 ô, dòng chữ chân trang — là **cùng một component** với bản A.
+
+Chọn NCC nào in bằng hàng ô tick ngay dưới thanh công cụ, mỗi NCC một ô:
 
 ```
 [x] NCC A    3 dòng    12.400.000 đ
@@ -730,15 +739,134 @@ luật mới. Riêng cụm `supplier_req` là do chính người yêu cầu gõ 
 [ ] NCC C    2 dòng     8.750.000 đ
 ```
 
-Tick 2 NCC rồi bấm In → **1 file 2 trang**, mỗi trang một NCC: đầu trang thông tin NCC + số YCMH,
-giữa là các dòng đã chốt cho NCC đó, cuối trang tổng tiền + ô ký.
+Tick 2 NCC rồi bấm In → **1 file 2 trang**, mỗi trang một tờ phiếu hoàn chỉnh của một NCC.
+Thanh công cụ có đủ hai nút gạt của bản A: *Có/Không chữ ký* và *Mẫu thường/Mẫu thuế*.
 
-`STT | Mã hàng | Tên hàng | ĐVT | SL | Đơn giá | VAT | Thành tiền | Thời gian giao | Nơi giao`
+Mỗi trang chính là **bản nháp của một đơn mua hàng**: in ra ký trước, ký xong bấm *Tạo đơn
+mua hàng* thì ra đúng N đơn khớp với N trang vừa ký. Và vì phương án đã chọn không đổi sau
+khi lên đơn, bản in vẫn khớp các đơn ĐÃ tạo — nên tạo đơn xong **vẫn in lại được** (đây là
+bản lưu/ký hồ sơ, không phải lệnh tạo đơn; xem rà lại vòng 2 bên dưới).
 
-Mỗi trang chính là **bản nháp của một đơn mua hàng sắp tạo**: in ra ký trước, ký xong bấm *Tạo
-đơn mua hàng* thì ra đúng N đơn khớp 1-1 với N trang vừa ký, không lệch một dòng nào.
+**Ghi chú thi công (P4, 15/09/2026).** Cả hai bản in không cần backend mới — chi tiết YCMH đã
+nhúng `chosen_option` từng dòng (kèm luật che NCC). Phần tính nằm chung một tệp thuần
+`frontend-v2/src/modules/procurement/utils/purchase-request-print-options.ts` (có test cạnh
+tệp): bản A dùng `printLineValues` / `printedTotals` đắp vào trang in cũ (hàm
+`dominantChosenSupplier` từng đổ NCC phương án vào ô NCC chung đã GỠ ở rà lại vòng 3); bản B là trang mới `/print/purchase-request-suppliers/:id`
+(`purchase-request-supplier-print-page.tsx`) dùng `buildSupplierPrintPlan` — hàm này gom
+theo NCC **cùng cách gom** với nút tạo đơn backend (`generate_orders`) nhưng chỉ bỏ qua
+**hai** loại dòng: dòng hủy · dòng không chọn phương án. Dòng đã lên ĐMH (kể cả đơn nháp —
+CR-074 rời `no_po` ngay lúc lập) **vẫn in** — bản in là bản lưu/ký, không phải lệnh tạo đơn;
+bản đầu soi gương cả luật đó nên khách vừa tạo đơn xong là bản in ra 0 trang (sửa ở rà lại
+vòng 2 bên dưới). Số dòng bị bỏ qua nói thành lời trên thanh công cụ, không in ra giấy. Ô tick NCC nằm ngay
+dưới thanh công cụ của trang in (mặc định tick hết, nhóm *Chưa có NCC* cũng là một trang
+tick được). Lưu ý H.4 về ĐVT đã áp cho cả hai bản: ĐVT báo giá lệch thì in kèm chú
+*(báo giá: …)* — "lệch" so KHÔNG phân biệt hoa thường ("Cái" của báo giá và "cái" của dòng là
+một đơn vị, rà lại vòng 2). Lưu ý còn lại của H.4 (tên NCC gọi mặt hàng in nhỏ dưới tên nội
+bộ) **đã bỏ ở rà lại vòng 4** vì mẫu 003/BM/PKT không có ô cho nó.
 
-### H.7 Bảng dữ liệu
+**Rà lại theo góp ý khách (15/09/2026).** Ba chỉnh sau khi khách xem bản đầu:
+
+1. **Bản B đổ lại theo đúng khuôn mẫu 003/BM/PKT** của phiếu đề xuất (bản đầu tự chế bố cục
+   riêng, khách chê "không giống form in yêu cầu của mình"): bảng phiên bản góc phải, tiêu đề
+   giữa *BẢNG HÀNG THEO NHÀ CUNG CẤP* + dòng *Kèm phiếu đề xuất số* + ngày kiểu văn thư,
+   mục **NHÀ CUNG CẤP** theo thanh mục của khuôn, khối tổng ba dòng (Tổng cộng · Tiền VAT ·
+   Tổng cộng thanh toán) và mục **XÉT DUYỆT** hai ô ký (*TP/BP mua hàng* · *Người lập* —
+   bản nháp làm việc của thu mua nên không đổ chữ ký số; **cách rút gọn này bị khách chê tiếp
+   ở vòng 3, đã đổi lại thành cụm 4 ô + chữ ký số y mẫu chung** — xem rà lại vòng 3 bên dưới).
+   Ba mảnh khuôn
+   (`DocumentVersionTable` / `PrintSection` / `PrintLine`) export từ trang bản A dùng lại,
+   không chép mã.
+   **Đính chính — cả mục 1 này đã HẾT HIỆU LỰC ở rà lại vòng 4**: bố cục *BẢNG HÀNG THEO NHÀ CUNG CẤP*
+   bỏ hẳn, bản B nay in lại nguyên tờ phiếu đề xuất. Giữ đoạn này để thấy đường đi, đừng thi
+   công theo.
+2. **Nút vào dồn về header trang chi tiết** — thẻ chọn phương án không còn nút nào. Khách chê
+   4 nút (2 tạo đơn + 2 in) là rối, gợi ý nút in sổ xuống: nay *In phiếu* là **dropdown 2 mục**
+   (*Phiếu yêu cầu mua hàng* · *Bảng hàng theo nhà cung cấp* — mục sau vẫn cần `supplier:read`
+   và có dòng đã chốt), *Tạo đơn mua hàng* cũng là **dropdown 2 mục** (*Lập tay* · *Theo
+   phương án đã chọn — gom theo NCC*). Chỉ đủ điều kiện MỘT biến thể thì nút về dạng thường,
+   không sổ (dropdown một mục là bắt bấm hai lần vô cớ).
+3. **Nút gom hết lỗi 500** (mã sự cố 515E39D6): mã nhật ký cũ `options_generate_orders`
+   22 ký tự, tràn cột `tab_audit_log.action` `VARCHAR(20)` → MySQL 1406. Đổi thành
+   `options_gen_orders` (18 ký tự) + đăng nhãn ở `action_catalog.py`. Lưu ý: `create_po`
+   commit theo TỪNG đơn nên lần bấm dính 500 vẫn đã tạo đủ đơn — lỗi chỉ nổ ở khâu ghi
+   nhật ký sau đó; pytest SQLite không ép độ dài VARCHAR nên test cũ xanh giả, đã kiểm
+   lại end-to-end trên MySQL thật.
+
+**Rà lại vòng 2 (cũng 15/09/2026).** Khách thử tiếp bản sau rework và gửi ba góp ý nữa;
+cả ba chỉ đụng frontend-v2, backend giữ nguyên:
+
+1. **Ô ĐVT hết gãy dòng vì chú "(báo giá: …)" thừa**: dòng ĐVT `cái` chọn báo giá ĐVT
+   `Cái` là in "cái (báo giá: Cái)" — hai chuỗi chỉ khác hoa thường mà bị coi là hai đơn
+   vị. `printLineValues` nay so trim + không phân biệt hoa thường; đơn vị khác thật
+   (m vs cuộn) vẫn in kèm chú vì giá là giá theo đơn vị báo giá (H.4).
+2. **Bản B in ra "0 trang" sau khi tạo đơn**: bản đầu soi gương cả luật "bỏ dòng đã rời
+   `no_po`" của nút gom, mà CR-074 rời `no_po` ngay khi lên đơn NHÁP — khách bấm tạo đơn
+   xong quay lại in là trống trơn. Chốt lại ngữ nghĩa: **bản B là bản lưu/ký hồ sơ, không
+   phải lệnh tạo đơn** — dòng đã lên ĐMH vẫn in (phương án chọn không đổi sau khi lên đơn
+   nên trang in vẫn khớp đơn đã tạo); chặn tạo trùng là việc riêng của nút gom.
+   `SupplierPrintPlan.skipped` chỉ còn `noChosen` + `cancelled`.
+3. **Bấm gom lần hai ra toast đỏ 400 "Không còn dòng nào tạo được đơn..."** — không phải
+   lỗi: đó là chốt chống tạo trùng của backend nói đúng sự thật (2 đơn nháp đã tạo ở lần
+   bấm trước), nhưng toast đỏ đọc ra như hệ thống hỏng. Nay trang chi tiết tự ẩn mục gom
+   khi không còn dòng đủ điều kiện (`hasLineToGenerate` soi gương đúng luật bỏ qua của
+   `generate_orders`: chưa hủy · còn `no_po` · còn phương án đang chọn); đường *Lập tay*
+   vẫn mở nên nút "Tạo đơn mua hàng" rơi về dạng thường không sổ xuống.
+
+**Rà lại vòng 3 (cũng 15/09/2026).** Khách xem tiếp bản sau vòng 2 và gửi ba góp ý;
+cả ba chỉ đụng frontend-v2:
+
+1. **Ô NCC chung của bản A THÔI tự đổ NCC theo phương án** — khách hỏi đúng chỗ hở:
+   *"NCC đâu có nhập gì đâu mà ra 1 NCC"*. Mục đó tên là *NCC DO BỘ PHẬN ĐỀ XUẤT* nên chỉ
+   được in thứ nhập trên phiếu: `supplier_pur` trước, trống thì `supplier_req`, cả hai trống
+   thì ô tên in chữ mặc định *"Nhà cung cấp tối ưu nhất"* (đúng hành vi trước đợt 4). Hàm
+   `dominantChosenSupplier` gỡ hẳn khỏi `purchase-request-print-options.ts` (kèm 6 test).
+   Giá / %VAT theo phương án trên từng dòng GIỮ NGUYÊN — chỉ ô NCC chung đổi.
+2. **Gom xong nhảy thẳng sang danh sách ĐMH đã lọc theo phiếu**: `onSuccess` của nút gom
+   (trang chi tiết YCMH) điều hướng tới `/procurement/purchase-orders?q=<mã YCMH>` — ô tìm
+   kiếm nhanh của danh sách ĐMH vốn LIKE cả cột `pr_code` (backend `_list_query`) nên danh
+   sách hiện đúng các đơn của phiếu, mã phiếu nằm sẵn trong ô tìm kiếm cho người dùng tự xóa.
+   Toast "Đã tạo N đơn..." của hook vẫn nổ; không thêm param backend nào.
+3. **Cụm XÉT DUYỆT của bản B đổ lại y mẫu chung**: bản 2 ô ký tay tự chế ở vòng 1 vẫn bị chê
+   *"không theo mẫu chung"* — nay dùng lại nguyên `SignatureSection` (4 ô *Giám đốc ·
+   TP/BP mua hàng · TP/BP đề xuất · Người lập* + chữ ký số) và `PrintToggle` *Có/Không chữ ký*
+   export từ trang bản A; 3 class `pr-print-signature*` khai lại trong PRINT_STYLES cục bộ vì
+   stylesheet hai trang không dùng chung. Nút *Mẫu thuế* KHÔNG thêm vào bản B — đó là biến thể
+   thuế của tờ phiếu, không phải của bảng hàng theo NCC. Phần THÔNG TIN CHUNG / MỤC ĐÍCH cũng
+   không lặp lại ở bản B vì là nội dung phiếu đã có ở bản A.
+   **Đính chính — ba câu cuối của mục 3 này hết hiệu lực ở vòng 4**: bản B nay LÀ tờ phiếu, nên có đủ
+   THÔNG TIN CHUNG / MỤC ĐÍCH và có cả nút *Mẫu thuế*; stylesheet cũng không còn khai lại
+   class nào — hai trang nạp chung `PURCHASE_REQUEST_PRINT_STYLES`.
+
+**Rà lại vòng 4 (cũng 15/09/2026) — BỎ HẲN BỐ CỤC RIÊNG CỦA BẢN B.** Khách xem bản sau vòng 3
+và bác lần thứ ba: *"bỏ bản này, phải là bản phiếu yêu cầu, nhưng có điền thông tin NCC vào là
+oke"*. Ba vòng trước đều là sửa vụn một bố cục tự chế, vòng nào cũng còn chỗ lệch mẫu chung.
+Chốt lại: **đừng thiết kế biến thể của tờ phiếu, chỉ đổi DỮ LIỆU đổ vào tờ phiếu.**
+
+1. **Tách `PurchaseRequestPrintSheet`** khỏi trang bản A — một tờ phiếu 003/BM/PKT nhận
+   `items` (dòng nào in) + `supplier` (ô NCC in gì) + `taxMode` / `showSignature`. Bản A gọi
+   nó một lần với cả phiếu; bản B gọi mỗi NCC một lần. `PurchaseRequestPrintItems` đổi sang
+   nhận **danh sách dòng** thay vì cả phiếu, nên `printedTotals` tự cộng đúng phần đang in.
+   `PRINT_STYLES` đổi tên thành `PURCHASE_REQUEST_PRINT_STYLES` và export — bản B nạp nguyên
+   tệp CSS đó, thôi khai lại class nào.
+2. **Ô NCC của bản B điền theo phương án** (khách duyệt rõ chỗ này, ngược với mục 1 của vòng
+   3 vốn chỉ nói về bản A): tên lấy từ NCC của nhóm. Mã số thuế / liên hệ **chỉ điền khi tên
+   trùng** một trong hai cụm NCC nhập trên phiếu (`supplier_pur` → `supplier_req`) — phương án
+   khảo sát chỉ chụp mã + tên NCC, không chụp MST; đoán bừa là in sai hồ sơ ký tay. Nhóm *Chưa
+   có NCC* để tên rỗng nên tờ đó in chữ mặc định *"Nhà cung cấp tối ưu nhất"* y bản A.
+3. **Ba thứ của bố cục cũ KHÔNG chuyển sang** vì mẫu 003/BM/PKT không có ô: *Mã NCC*, *Thời
+   gian giao* và *Nơi giao* **theo cam kết NCC**, *tên NCC gọi mặt hàng*. Lưu ý cột *Nơi giao*
+   trên bảng hàng của mẫu chung là **kho nhận** của dòng, không phải nơi NCC cam kết giao —
+   hai khái niệm khác nhau, đừng dồn vào một cột. Cần in mấy thứ đó thì phải sửa mẫu chung,
+   không lách bằng một bản in riêng. `SupplierPrintLine` gỡ theo 4 trường đã chết
+   (`quoteUnit` · `supplierProductName` · `deliveryTime` · `deliveryPlace`), chỉ còn `item` +
+   phần tính tiền để cộng tổng cho ô tick.
+4. **Xếp nhiều tờ trong một trang in** cần thêm đúng một stylesheet nhỏ (`MULTI_SHEET_STYLES`):
+   chừa khoảng cách giữa các tờ trên màn hình · mỗi tờ ăn trọn một trang giấy, tờ cuối không
+   đẻ trang trắng · **dòng chữ chân trang trả về `position: absolute`** — bản A để `fixed` khi
+   in (đúng cho một tờ), nhiều tờ thì trình duyệt lặp nó lên MỌI trang và chồng N dòng lên nhau.
+5. **Nhãn đổi theo**: mục dropdown *In phiếu* nay là *Phiếu yêu cầu tách theo nhà cung cấp*
+   (cũ: *Bảng hàng theo nhà cung cấp*), tiêu đề tab trình duyệt là
+   `<mã phiếu> - Phiếu đề xuất theo nhà cung cấp`.
 
 `tab_purchase_request_item_option` (migration `6835fb9cfecd`) — 29 cột, khóa về
 `tab_purchase_request_item.id`. Cụm `snap_*` là bản chụp từ dòng khảo sát; `supplier_code` /
@@ -750,9 +878,9 @@ Mỗi trang chính là **bản nháp của một đơn mua hàng sắp tạo**: 
 | Đợt | Nội dung | Tình trạng |
 |-----|----------|-----------|
 | P1 | Bảng dữ liệu + service + 6 endpoint (gắn từ khảo sát · gắn tay · sửa · gỡ · chốt · liệt kê) + test | **Xong — đã commit**; bảng `tab_purchase_request_item_option` (migration `6835fb9cfecd`) đã có trên **cả dev lẫn prod** (theo lượt gộp 11/09) |
-| P2 | **MỞ RỘNG 14/09 — xem H.10**: nền phương án 0 + nới khóa sau chốt + áp 1 NCC cho nhiều dòng, rồi gom theo NCC → sinh N đơn nháp + 1 đơn riêng không NCC + **đồng bộ mã hàng H.3.9** | **Xong local 15/09 cả ba chặng (a)(b)(c) — chưa commit** |
-| P3 | Màn *Xử lý phương án* ở `frontend-v2` (`/procurement/purchase-requests/:id/process`) + **P3b**: chốt hoàn thành xử lý + thẻ chọn phương án ở màn chi tiết | **Xong local 14/09, chưa commit** |
-| P4 | Hai bản in ở H.6 + gác N-17 + cập nhật HDSD | Chưa làm |
+| P2 | **MỞ RỘNG 14/09 — xem H.10**: nền phương án 0 + nới khóa sau chốt + áp 1 NCC cho nhiều dòng, rồi gom theo NCC → sinh N đơn nháp + 1 đơn riêng không NCC + **đồng bộ mã hàng H.3.9** | **Xong — nằm trong commit `60d3f4ad`, đã push + deploy dev 15/09** |
+| P3 | Màn *Xử lý phương án* ở `frontend-v2` (`/procurement/purchase-requests/:id/process`) + **P3b**: chốt hoàn thành xử lý + thẻ chọn phương án ở màn chi tiết | **Xong — commit `60d3f4ad`, đã push + deploy dev 15/09** |
+| P4 | Hai bản in ở H.6 + gác N-17 + cập nhật HDSD | **Xong local 15/09** — bản A đắp giá phương án vào trang in cũ; bản B trang mới `/print/purchase-request-suppliers/:id` (util chung `purchase-request-print-options.ts` + test); **rà lại 4 vòng cùng ngày theo góp ý khách** (vòng 1: bản B theo khuôn 003/BM/PKT · gom nút về 2 dropdown · vá 500 nút gom; vòng 2: ĐVT hết chú thừa · bản B in được sau khi tạo đơn · ẩn mục gom hết dòng; vòng 3: ô NCC chung chỉ in thứ nhập trên phiếu · gom xong nhảy sang danh sách ĐMH lọc theo phiếu · cụm XÉT DUYỆT bản B y mẫu chung; vòng 4: **bỏ hẳn bố cục riêng của bản B** — mỗi trang là chính tờ phiếu đề xuất, lọc dòng theo NCC và điền tên NCC vào ô NCC — xem cuối H.6); HDSD chờ nhịp deploy (bài viết nằm trong DB) |
 
 Thứ tự làm tiếp đã chốt: **P3 trước P2** (màn *Xử lý phương án* là chỗ nghiệm thu bằng mắt,
 có nó rồi mới thấy dữ liệu để bấm sinh đơn), rồi P4 sau cùng vì bản B phụ thuộc N-17.
@@ -760,11 +888,19 @@ P3 + P3b đã xong; bên trong P2 đi theo thứ tự H.10.8.
 
 ### H.9 Còn nợ
 
-- **N-17**: quyền `print` của `purchase_request` **backend không kiểm ở đâu cả** — ai mở được chi
-  tiết phiếu (`read`) là in được. Bản B lộ tên NCC, nên trước khi bật bản B phải gác lại bằng
-  `supplier:read`.
+- **N-17 — ĐÃ ĐÓNG 15/09/2026 (P4)**: quyền `print` của `purchase_request` backend không kiểm
+  ở đâu cả — ai mở được chi tiết phiếu (`read`) là in được. Cách đóng gồm hai lớp:
+  - **Lớp dữ liệu (đã có sẵn từ P1, có test)**: serializer `_out` của chi tiết YCMH che sạch
+    NCC khi thiếu `supplier:read` — cụm `supplier_pur` rỗng, `suggested_supplier*` rỗng, và 4
+    trường NCC trên từng phương án (`supplier_code` / `supplier_name` / `supplier_survey_id` /
+    `snap_internal_code`) trả chuỗi rỗng (`test_ycmh_phuong_an_cr310.py`). Nghĩa là kể cả ai
+    đó gõ thẳng URL bản in, dữ liệu NCC cũng không có mà lộ.
+  - **Lớp giao diện (P4)**: trang bản B tự chặn cả trang khi thiếu `supplier:read` (ErrorState
+    nói rõ cần quyền gì), và mục *Phiếu yêu cầu tách theo nhà cung cấp* trong dropdown **In phiếu** ở
+    header trang chi tiết chỉ hiện khi có quyền (rà lại 15/09 — nút vào cũ trên thẻ chọn
+    phương án đã bỏ). Bản A không cần gác — nó vốn không in tên NCC ngoài ô đề xuất cũ.
 
-### H.10 Mở rộng đợt 2 — "Phương án 0" (chốt thiết kế 14/09/2026; cả ba chặng (a)(b)(c) viết xong local 15/09)
+### H.10 Mở rộng đợt 2 — "Phương án 0" (chốt thiết kế 14/09/2026; cả ba chặng (a)(b)(c) xong, commit `60d3f4ad` đã push + deploy dev 15/09)
 
 Câu hỏi gốc của khách: *người yêu cầu không chọn phương án, hoặc khảo sát không ra NCC, thì có
 mua hàng được không?* Thay vì chặn hoặc đẻ thêm luật ngoại lệ, chốt hướng: **mọi dòng luôn có

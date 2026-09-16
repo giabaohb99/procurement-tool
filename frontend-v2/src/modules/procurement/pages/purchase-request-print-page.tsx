@@ -12,7 +12,16 @@ import {
   usePurchaseRequestOfPurchaseOrder,
 } from '../hooks/use-purchase-request'
 import { usePurchaseRequestPrintWarehouses } from '../hooks/use-purchase-request-support'
-import type { PurchaseRequestDetail, PurchaseRequestItem } from '../types/purchase-request-detail'
+import type {
+  PurchaseRequestDetail,
+  PurchaseRequestItem,
+  SupplierCluster,
+} from '../types/purchase-request-detail'
+import {
+  formatVietnameseLongDate,
+  printLineValues,
+  printedTotals,
+} from '../utils/purchase-request-print-options'
 import { cn } from '@/shared/utils/cn'
 
 /**
@@ -87,13 +96,19 @@ export function PurchaseRequestPrintPage({ fromPo = false }: { fromPo?: boolean 
     window.close()
   }
 
+  // Rà lại vòng 3 (bao-CR-310): ô NCC chung chỉ in thông tin NHẬP TRÊN PHIẾU
+  // (pur -> req); không ai nhập thì ô name để trống và PrintLine in chữ mặc định
+  // "Nhà cung cấp tối ưu nhất". Bản đợt 4 từng tự đổ NCC của phương án chiếm giá
+  // trị lớn nhất vào đây — người đọc thắc mắc "đâu có nhập gì đâu mà ra 1 NCC"
+  // vì mục này tên là NCC DO BỘ PHẬN ĐỀ XUẤT; NCC theo phương án đã có ở bản in
+  // theo NCC (bản B), không lặp lại ở đây nữa.
   const supplier = hasSupplierData(purchaseRequest.supplier_pur)
     ? purchaseRequest.supplier_pur
     : purchaseRequest.supplier_req
 
   return (
     <main className="pr-print-root min-h-[100dvh] bg-slate-200 p-5 text-slate-950">
-      <style>{PRINT_STYLES}</style>
+      <style>{PURCHASE_REQUEST_PRINT_STYLES}</style>
 
       <div className="pr-print-toolbar">
         <div className="pr-print-toolbar-actions">
@@ -138,95 +153,132 @@ export function PurchaseRequestPrintPage({ fromPo = false }: { fromPo?: boolean 
         </div>
       </div>
 
-      <article className="pr-print-doc">
-        <header className="pr-print-document-header">
-          <p className="text-[13px]">
-            <b>Đơn vị:</b> {purchaseRequest.company_name || '...'}
-          </p>
-          <DocumentVersionTable />
-        </header>
-
-        <h1 className="pr-print-document-title">
-          PHIẾU ĐỀ XUẤT MUA HÀNG HÓA/DỊCH VỤ
-        </h1>
-        <p className="pr-print-document-code">Số: {purchaseRequest.code}</p>
-        <p className="pr-print-document-date">
-          {formatVietnameseLongDate(purchaseRequest.request_date)}
-        </p>
-
-        <PrintSection title="THÔNG TIN CHUNG">
-          <PrintLine label="Người đề xuất" value={taxMode ? '' : purchaseRequest.requester} />
-          <PrintLine
-            label="Chức vụ"
-            value={taxMode ? '' : purchaseRequest.requester_position || '............'}
-          />
-          <PrintLine
-            label="Hiện công tác tại bộ phận"
-            value={taxMode ? '' : purchaseRequest.department || '............'}
-          />
-          <PrintLine
-            label="Trưởng phòng ban/bộ phận"
-            value={taxMode ? '' : purchaseRequest.head_of_dept || '............'}
-          />
-        </PrintSection>
-
-        <PrintSection title="MỤC ĐÍCH & NỘI DUNG ĐỀ XUẤT">
-          <PrintLine
-            label="Mục đích mua hàng/dịch vụ"
-            value={`${purchaseRequest.is_urgent ? '[Gấp] ' : ''}${purchaseRequest.purpose || ''}`}
-          />
-          <PrintLine
-            label="Thời gian cần hàng/dịch vụ"
-            value={
-              getClosestNeedDate(purchaseRequest.items) ||
-              formatShortDate(purchaseRequest.need_date) ||
-              '...'
-            }
-          />
-          <PrintLine label="Nội dung" value={purchaseRequest.note} />
-        </PrintSection>
-
-        <PurchaseRequestPrintItems
-          purchaseRequest={purchaseRequest}
-          warehouseCode={(name) => warehouseCodes.get(name) || name}
-        />
-
-        <PrintSection title="NHÀ CUNG CẤP DO BỘ PHẬN ĐỀ XUẤT">
-          <PrintLine label="Tên nhà cung cấp" value={supplier.name || 'Nhà cung cấp tối ưu nhất'} />
-          <PrintLine label="Mã số thuế" value={supplier.tax_code} />
-          <PrintLine label="Liên hệ" value={supplier.contact} />
-          <PrintLine
-            label="Báo giá đính kèm"
-            // bao-CR-317: tệp đính kèm mới nằm ở tab_file, `quote_file_url` chỉ là cột cũ —
-            // backend gộp hai nguồn thành `has_quote_file`; backend cũ chưa có thì lùi về cột cũ.
-            value={
-              (purchaseRequest.has_quote_file ?? Boolean(purchaseRequest.quote_file_url))
-                ? '☑ Có     ☐ Không'
-                : '☐ Có     ☑ Không'
-            }
-          />
-        </PrintSection>
-
-        <PrintSection title="PHẦN DÀNH CHO BỘ PHẬN MUA HÀNG">
-          <PrintLine label="Thời gian cần hàng/dịch vụ" value="............................." />
-          <PrintLine label="Yêu cầu khác (nếu có)" value="............................." />
-        </PrintSection>
-
-        <SignatureSection
-          purchaseRequest={purchaseRequest}
-          taxMode={taxMode}
-          showSignature={showSignature}
-        />
-
-        <p className="pr-print-note">
-          Phiếu đề xuất này được in từ hệ thống thu mua
-        </p>
-      </article>
+      <PurchaseRequestPrintSheet
+        purchaseRequest={purchaseRequest}
+        items={purchaseRequest.items}
+        supplier={supplier}
+        warehouseCode={(name) => warehouseCodes.get(name) || name}
+        taxMode={taxMode}
+        showSignature={showSignature}
+      />
     </main>
   )
 }
 
-function DocumentVersionTable() {
+/**
+ * MỘT TỜ phiếu đề xuất theo mẫu 003/BM/PKT.
+ *
+ * Tách ra khỏi trang để bản in theo NCC (bản B) in lại ĐÚNG tờ phiếu này, mỗi NCC một
+ * tờ — khách chốt 15/09/2026: bản B không được là một bố cục riêng, nó phải là phiếu
+ * yêu cầu có điền sẵn thông tin NCC. Hai chỗ khác nhau duy nhất giữa hai bản in nằm ở
+ * tham số: `items` (bản B lọc còn dòng của NCC đó) và `supplier` (bản B đổ NCC theo
+ * phương án đã chọn thay vì cụm NCC nhập trên phiếu).
+ */
+export function PurchaseRequestPrintSheet({
+  purchaseRequest,
+  items,
+  supplier,
+  supplierNameFallback = 'Nhà cung cấp tối ưu nhất',
+  warehouseCode,
+  taxMode,
+  showSignature,
+}: {
+  purchaseRequest: PurchaseRequestDetail
+  items: PurchaseRequestItem[]
+  supplier: SupplierCluster
+  supplierNameFallback?: string
+  warehouseCode: (name: string) => string
+  taxMode: boolean
+  showSignature: boolean
+}) {
+  return (
+    <article className="pr-print-doc">
+      <header className="pr-print-document-header">
+        <p className="text-[13px]">
+          <b>Đơn vị:</b> {purchaseRequest.company_name || '...'}
+        </p>
+        <DocumentVersionTable />
+      </header>
+
+      <h1 className="pr-print-document-title">
+        PHIẾU ĐỀ XUẤT MUA HÀNG HÓA/DỊCH VỤ
+      </h1>
+      <p className="pr-print-document-code">Số: {purchaseRequest.code}</p>
+      <p className="pr-print-document-date">
+        {formatVietnameseLongDate(purchaseRequest.request_date)}
+      </p>
+
+      <PrintSection title="THÔNG TIN CHUNG">
+        <PrintLine label="Người đề xuất" value={taxMode ? '' : purchaseRequest.requester} />
+        <PrintLine
+          label="Chức vụ"
+          value={taxMode ? '' : purchaseRequest.requester_position || '............'}
+        />
+        <PrintLine
+          label="Hiện công tác tại bộ phận"
+          value={taxMode ? '' : purchaseRequest.department || '............'}
+        />
+        <PrintLine
+          label="Trưởng phòng ban/bộ phận"
+          value={taxMode ? '' : purchaseRequest.head_of_dept || '............'}
+        />
+      </PrintSection>
+
+      <PrintSection title="MỤC ĐÍCH & NỘI DUNG ĐỀ XUẤT">
+        <PrintLine
+          label="Mục đích mua hàng/dịch vụ"
+          value={`${purchaseRequest.is_urgent ? '[Gấp] ' : ''}${purchaseRequest.purpose || ''}`}
+        />
+        <PrintLine
+          label="Thời gian cần hàng/dịch vụ"
+          value={getClosestNeedDate(items) || formatShortDate(purchaseRequest.need_date) || '...'}
+        />
+        <PrintLine label="Nội dung" value={purchaseRequest.note} />
+      </PrintSection>
+
+      <PurchaseRequestPrintItems items={items} warehouseCode={warehouseCode} />
+
+      <PrintSection title="NHÀ CUNG CẤP DO BỘ PHẬN ĐỀ XUẤT">
+        <PrintLine label="Tên nhà cung cấp" value={supplier.name || supplierNameFallback} />
+        <PrintLine label="Mã số thuế" value={supplier.tax_code} />
+        <PrintLine label="Liên hệ" value={supplier.contact} />
+        <PrintLine
+          label="Báo giá đính kèm"
+          // bao-CR-317: tệp đính kèm mới nằm ở tab_file, `quote_file_url` chỉ là cột cũ —
+          // backend gộp hai nguồn thành `has_quote_file`; backend cũ chưa có thì lùi về cột cũ.
+          value={
+            (purchaseRequest.has_quote_file ?? Boolean(purchaseRequest.quote_file_url))
+              ? '☑ Có     ☐ Không'
+              : '☐ Có     ☑ Không'
+          }
+        />
+      </PrintSection>
+
+      <PrintSection title="PHẦN DÀNH CHO BỘ PHẬN MUA HÀNG">
+        <PrintLine label="Thời gian cần hàng/dịch vụ" value="............................." />
+        <PrintLine label="Yêu cầu khác (nếu có)" value="............................." />
+      </PrintSection>
+
+      <SignatureSection
+        purchaseRequest={purchaseRequest}
+        taxMode={taxMode}
+        showSignature={showSignature}
+      />
+
+      <p className="pr-print-note">
+        Phiếu đề xuất này được in từ hệ thống thu mua
+      </p>
+    </article>
+  )
+}
+
+/*  Ba mảnh khuôn mẫu 003/BM/PKT (bảng phiên bản, thanh tiêu đề mục, dòng
+    "Nhãn: giá trị") EXPORT cho bản in theo NCC dùng lại — khách yêu cầu mọi
+    bản in cùng một khuôn, chép hai bản là hai khuôn trôi dần khỏi nhau.
+    (Ngày tháng chữ `formatVietnameseLongDate` nằm ở utils vì không phải
+    component.) Lưu ý: PrintSection dùng class `pr-print-section-title/
+    -content`, trang nào import thì stylesheet trang đó phải khai hai class này. */
+export function DocumentVersionTable() {
   return (
     <table className="w-[126px] border-collapse text-left text-[7.5px] leading-tight">
       <tbody>
@@ -248,7 +300,7 @@ function DocumentVersionTable() {
   )
 }
 
-function PrintSection({ title, children }: { title: string; children: React.ReactNode }) {
+export function PrintSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
       <h2 className="pr-print-section-title">
@@ -259,7 +311,7 @@ function PrintSection({ title, children }: { title: string; children: React.Reac
   )
 }
 
-function PrintLine({ label, value }: { label: string; value?: React.ReactNode }) {
+export function PrintLine({ label, value }: { label: string; value?: React.ReactNode }) {
   return (
     <p>
       <b>{label}:</b> {value || ''}
@@ -267,13 +319,16 @@ function PrintLine({ label, value }: { label: string; value?: React.ReactNode })
   )
 }
 
+/* Nhận thẳng DANH SÁCH DÒNG chứ không nhận cả phiếu: bản in theo NCC đưa vào bộ dòng
+   đã lọc, và tổng tiền phải tính trên đúng những dòng đang in. */
 function PurchaseRequestPrintItems({
-  purchaseRequest,
+  items,
   warehouseCode,
 }: {
-  purchaseRequest: PurchaseRequestDetail
+  items: PurchaseRequestItem[]
   warehouseCode: (name: string) => string
 }) {
+  const totals = printedTotals(items)
   return (
     <table className="pr-print-items">
       <colgroup>
@@ -301,27 +356,40 @@ function PurchaseRequestPrintItems({
         </tr>
       </thead>
       <tbody>
-        {purchaseRequest.items.map((item, index) => (
-          <tr key={item.id ?? `${item.product_code}-${index}`}>
-            <td className="text-center">{index + 1}</td>
-            <td>{item.product_name}</td>
-            <td>{item.product_code}</td>
-            <td>{item.unit}</td>
-            <td className="text-right tabular-nums">{formatQuantity(item.qty)}</td>
-            <td className="text-right tabular-nums">{formatUnitPrice(item.price)}</td>
-            <td className="text-right tabular-nums">
-              {formatMoney(item.qty * item.price)}
-            </td>
-            <td>{warehouseCode(item.warehouse)}</td>
-            <td>{item.note}</td>
-          </tr>
-        ))}
+        {/* bao-CR-310 đợt 4 (H.6 bản A): giá / VAT theo phương án ĐÃ CHỌN của từng
+            dòng, dòng chưa chọn giữ giá đề xuất; tổng tiền tính lại theo giá đang in.
+            Phương án 0 chụp đúng giá dòng gốc nên phiếu chưa ai đụng in y như cũ. */}
+        {items.map((item, index) => {
+          const line = printLineValues(item)
+          return (
+            <tr key={item.id ?? `${item.product_code}-${index}`}>
+              <td className="text-center">{index + 1}</td>
+              <td>{item.product_name}</td>
+              <td>{item.product_code}</td>
+              <td>
+                {item.unit}
+                {/* H.4: đơn vị báo giá lệch đơn vị dòng thì in cả hai, không tự quy đổi. */}
+                {line.quoteUnit && (
+                  <span className="text-[9px]"> (báo giá: {line.quoteUnit})</span>
+                )}
+              </td>
+              <td className="text-right tabular-nums">{formatQuantity(item.qty)}</td>
+              <td className="text-right tabular-nums">{formatUnitPrice(line.price)}</td>
+              <td className="text-right tabular-nums">
+                {formatMoney(item.qty * line.price)}
+              </td>
+              <td>{warehouseCode(item.warehouse)}</td>
+              <td>{item.note}</td>
+            </tr>
+          )
+        })}
         <tr>
           <td className="font-bold" colSpan={6}>
             Tổng cộng
           </td>
-          <td className="text-right font-bold tabular-nums">
-            {formatMoney(purchaseRequest.subtotal)}
+          {/* Ô kế bên trống nên cho tràn thay vì gãy số tiền làm hai dòng (>= 100 triệu). */}
+          <td className="whitespace-nowrap text-right font-bold tabular-nums">
+            {formatMoney(totals.subtotal)}
           </td>
           <td colSpan={2} />
         </tr>
@@ -329,8 +397,8 @@ function PurchaseRequestPrintItems({
           <td className="pt-2 text-right text-[13px]" colSpan={6}>
             Tiền VAT:
           </td>
-          <td className="pt-2 text-right text-[13px] font-bold tabular-nums">
-            {formatMoney(purchaseRequest.vat)}
+          <td className="whitespace-nowrap pt-2 text-right text-[13px] font-bold tabular-nums">
+            {formatMoney(totals.vat)}
           </td>
           <td colSpan={2} />
         </tr>
@@ -338,8 +406,8 @@ function PurchaseRequestPrintItems({
           <td className="pb-2 pt-1 text-right text-[13px]" colSpan={6}>
             Tổng cộng thanh toán (gồm VAT):
           </td>
-          <td className="pb-2 pt-1 text-right text-[13px] font-bold tabular-nums">
-            {formatMoney(purchaseRequest.total)}
+          <td className="whitespace-nowrap pb-2 pt-1 text-right text-[13px] font-bold tabular-nums">
+            {formatMoney(totals.total)}
           </td>
           <td colSpan={2} />
         </tr>
@@ -348,7 +416,9 @@ function PurchaseRequestPrintItems({
   )
 }
 
-function SignatureSection({
+// Xuất cho bản in theo NCC (bản B) dùng lại nguyên cụm XÉT DUYỆT của khuôn
+// 003/BM/PKT — rà lại vòng 3: hai bản in phải cùng một cụm ký 4 ô.
+export function SignatureSection({
   purchaseRequest,
   taxMode,
   showSignature,
@@ -412,7 +482,7 @@ function SignatureSection({
   )
 }
 
-function PrintToggle({
+export function PrintToggle({
   options,
   value,
   onChange,
@@ -446,13 +516,6 @@ function hasSupplierData(value: PurchaseRequestDetail['supplier_pur']): boolean 
   return Boolean(value?.name || value?.tax_code || value?.contact)
 }
 
-function formatVietnameseLongDate(value: string): string {
-  if (!value) return 'Ngày ........ tháng ........ năm ........'
-  const [year, month, day] = value.split('-')
-  if (!year || !month || !day) return value
-  return `Ngày ${day} tháng ${month} năm ${year}`
-}
-
 function formatShortDate(value: string): string {
   if (!value) return ''
   const [year, month, day] = value.split('-')
@@ -481,7 +544,10 @@ function parseLocalDate(value: string): Date {
   return new Date(year, month - 1, day)
 }
 
-const PRINT_STYLES = `
+/* Khuôn CSS của mẫu 003/BM/PKT — bản in theo NCC nạp lại NGUYÊN tệp này (khối
+   <style> của Vite chỉ có tác dụng trong trang khai nó, chép tay là hai khuôn trôi
+   dần khỏi nhau). */
+export const PURCHASE_REQUEST_PRINT_STYLES = `
   .pr-print-root {
     min-height: 100dvh;
     overflow-x: auto;
