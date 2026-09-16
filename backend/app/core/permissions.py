@@ -78,6 +78,14 @@ ENTITIES = [
     # BỚT chức vụ là việc của Nhân sự — gộp vào `employee.write` thì hành chính
     # sửa số điện thoại một hồ sơ cũng dựng thêm được chức vụ mới.
     "job_position",
+    # Danh mục LOẠI HỒ SƠ (phân hệ Hồ sơ, 16/09/2026) — nguồn của ô chọn «Loại
+    # hồ sơ» và là chỗ khai hạn hiệu lực mặc định của từng loại giấy tờ.
+    #
+    # Khóa riêng theo luật «một khóa = một màn hình» (CR-157): nó có màn quản lý
+    # riêng `/dossier/types`. Đừng gộp với khóa `dossier` của bảng hồ sơ (chưa
+    # dựng) — đọc hồ sơ là việc hằng ngày của nhiều người, còn thêm bớt LOẠI là
+    # đổi luật phân loại cho cả công ty.
+    "dossier_type",
     # Phân hệ Điểm cà phê × POS365 (doc/erp/diem-ca-phe/04-phan-quyen.md). Bốn
     # khóa vì ba quyền của PS12 phải TÁCH được: xem sổ người khác
     # (`coffee_ledger.read` + scope rộng) · điều chỉnh tay (`coffee_ledger.write`)
@@ -114,6 +122,7 @@ ENTITY_LABELS = {
     "employee": "Nhân viên",
     "employee_sensitive": "Nhân viên — thông tin nhạy cảm (CCCD, ngân hàng, địa chỉ)",
     "job_position": "Danh mục Chức vụ",
+    "dossier_type": "Danh mục Loại hồ sơ",
     "user": "Tài khoản",
     "role": "Vai trò & phân quyền",
     "warehouse": "Kho",

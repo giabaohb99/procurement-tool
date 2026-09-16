@@ -137,9 +137,17 @@ def test_du_55_entity():
     nhà cung cấp) là chuyện khác. Cả hai khai `PUBLIC`: cắt nhật ký theo phạm vi
     của người tra thì đúng lượt gọi cần nhìn nhất — 403 của người ngoài phạm vi,
     script chạy dưới `user_id = 0` — biến mất; chốt nằm ở việc CẤP khóa.
+
+    62 → 63 ngày 16/09/2026: danh mục LOẠI HỒ SƠ (`dossier_type`, phân hệ Hồ sơ)
+    — nguồn của ô chọn «Loại hồ sơ» và chỗ khai hạn hiệu lực mặc định của từng
+    loại giấy tờ. Khóa riêng theo luật «một khóa = một màn hình» (`/dossier/types`);
+    đừng gộp với khóa `dossier` của bảng hồ sơ (CHƯA dựng) — đọc hồ sơ là việc
+    hằng ngày của nhiều người, thêm bớt LOẠI là đổi luật phân loại cho cả công ty.
+    PUBLIC ở `SCOPE_FIELDS`: một loại giấy tờ là một loại giấy tờ với cả công ty,
+    không có chiều pháp nhân hay phòng ban nào để lọc.
     """
-    assert len(ENTITIES) == 62
-    assert len(SCOPE_FIELDS) == 62
+    assert len(ENTITIES) == 63
+    assert len(SCOPE_FIELDS) == 63
 
 
 # ── 2. Không dựng nổi điều kiện thì chặn ────────────────────────────────────────

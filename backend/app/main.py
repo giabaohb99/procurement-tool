@@ -47,6 +47,7 @@ from app.modules.company.controller import router as company_router
 from app.modules.department.controller import router as department_router
 from app.modules.employee.controller import router as employee_router
 from app.modules.employee.position_controller import router as job_position_router
+from app.modules.dossier.type_controller import router as dossier_type_router
 from app.modules.vehicle_booking.controller import router as vehicle_booking_router
 from app.modules.vehicle_booking.catalog_controller import (
     dispatch_router, driver_router, vehicle_router)
@@ -185,6 +186,7 @@ app.include_router(company_router)
 app.include_router(department_router)
 app.include_router(employee_router)
 app.include_router(job_position_router)
+app.include_router(dossier_type_router)
 app.include_router(supplier_router)
 app.include_router(product_router)
 app.include_router(role_router)

@@ -138,6 +138,10 @@ BB3_PUBLIC_CO_LY_DO = {
                     "trên hồ sơ; department_id = 0 nghĩa là 'dùng chung mọi phòng ban' "
                     "nên lọc theo cột đó cắt mất đúng những dòng ấy. Ai SỬA gác bằng "
                     "job_position.write",
+    "dossier_type": "danh mục loại hồ sơ dùng chung — một loại giấy tờ là một loại "
+                    "giấy tờ với cả công ty, bảng không có cột pháp nhân hay phòng "
+                    "ban nào để lọc. MỌI vai trò cần đọc để đổ ô chọn «Loại hồ sơ»; "
+                    "ai SỬA gác bằng dossier_type.write",
 }
 
 

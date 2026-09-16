@@ -228,6 +228,12 @@ _SYS_ENTITIES = {"user", "role", "setting", "backup", "help_article", "mailbox",
                  #  là `change_log` — giá trị TRƯỚC/SAU của mọi ô. Lọt vào
                  #  _PUR_MANAGER_PERMS là Quản lý thu mua đọc được giá cũ, thân
                  #  yêu cầu và tên nhà cung cấp của mọi phân hệ khác.
+                 #  Danh mục Loại hồ sơ (16/09/2026): phân loại giấy tờ pháp lý
+                 #  của công ty, chẳng liên quan gì tới nghiệp vụ mua hàng. Lọt
+                 #  vào _PUR_MANAGER_PERMS là Quản lý thu mua tự nhiên xóa được
+                 #  loại hồ sơ của phòng Hành chính. Vòng `setdefault` phía dưới
+                 #  vẫn cấp `read` cho họ như mọi vai trò khác.
+                 "dossier_type",
                  "audit", "change_log"}
 _PUR_MANAGER_PERMS = {e: (_ALL_ACTIONS, "all") for e in ENTITIES if e not in _SYS_ENTITIES}
 
@@ -450,6 +456,13 @@ STD_ROLES = {
     "seal_director": {"name": "Giám đốc duyệt dấu (Duyệt dấu)", "perms": {
         "seal_request": (["read"], "company"),
     }},
+    #  Phân hệ Hồ sơ (16/09/2026) — mới có DANH MỤC Loại hồ sơ, bảng hồ sơ chưa
+    #  dựng. Vai trò mẫu để giao cho Hành chính mà không phải cấp quyền quản trị
+    #  hệ thống; `admin` vẫn tự có đủ (vòng cấp quyền cuối `seed.py` quét
+    #  `ENTITIES`). Thêm khóa `dossier` vào đây khi bảng hồ sơ ra đời.
+    "dossier_admin": {"name": "Hồ sơ — Quản trị danh mục", "perms": {
+        "dossier_type": (["read", "create", "write", "delete", "export"], "all"),
+    }},
 }
 
 
@@ -577,6 +590,22 @@ STD_ROLES["coffee_admin"] = {"name": "Điểm cà phê — Quản trị", "perms
 STD_ROLES["coffee_counter"] = {"name": "Điểm cà phê — Quầy (tra cứu)", "perms": {
     "coffee_member": (["read"], "all"),
 }}
+
+
+#  ── Danh mục Loại hồ sơ (16/09/2026) ────────────────────────────────────────
+#  Cùng lý lẽ với danh mục Chức vụ: **mọi vai trò phải ĐỌC được**, vì nó là
+#  nguồn của ô chọn «Loại hồ sơ» trên màn hồ sơ. Thiếu `read` thì ô chọn rỗng
+#  sạch và người dùng đọc ra "công ty chưa khai loại nào", trong khi thứ họ gặp
+#  là một lỗi 403 bị nuốt (403 trên GET không bật toast). Chỉ `read` — thêm bớt
+#  loại là việc của `dossier_admin`.
+#
+#  ⚠️ **Vòng này phải đứng Ở ĐÂY, sau MỌI dòng khai vai trò.** Ba vai trò
+#  `hr_leave` · `coffee_admin` · `coffee_counter` được gán vào `STD_ROLES` bằng
+#  phép gán rời phía trên, tức là SAU các vòng `setdefault` ở giữa tệp — vòng
+#  nào đứng trước chúng thì không với tới. (Hệ quả: ba vai trò đó hiện KHÔNG có
+#  `job_position.read`, một lỗ có sẵn từ duoc-CR-320; chưa sửa ở đợt này.)
+for _role_info in STD_ROLES.values():
+    _role_info["perms"].setdefault("dossier_type", (["read"], "all"))
 
 
 def seed_standard_roles(db):

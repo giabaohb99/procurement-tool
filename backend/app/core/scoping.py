@@ -210,6 +210,13 @@ SCOPE_FIELDS = {
     #  `job_position.write`.
     "job_position":     PUBLIC,
 
+    #  Danh mục LOẠI HỒ SƠ (16/09/2026). Không có chiều pháp nhân / phòng ban
+    #  nào — một loại giấy tờ là một loại giấy tờ với cả công ty. Ai đọc cũng
+    #  được, vì thiếu nó thì ô chọn loại trên màn hồ sơ rỗng sạch và người dùng
+    #  đọc ra "công ty chưa khai loại nào" trong khi thứ họ gặp là 403 bị nuốt;
+    #  ai được SỬA thì gác bằng `dossier_type.write`.
+    "dossier_type":     PUBLIC,
+
     # --- Điểm cà phê × POS365 (doc/erp/diem-ca-phe/04-phan-quyen.md) ---
     #  Sổ điểm và thành viên khai `self` theo `employee_id` — "nhân viên chỉ thấy
     #  sổ của mình" là một phép áp scope, không phải một câu hứa (nghiệm thu 4 của
