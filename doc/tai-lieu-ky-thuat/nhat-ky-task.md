@@ -460,7 +460,7 @@ nhiều so với việc chờ BM-021 + BM-023 được vá đúng lúc.
 Đồ nghề đo đã xóa sạch sau khi đo (test tạm + kịch bản trong container).
 
 ## bao-CR-405 | Chính sách mật khẩu dùng chung (đảo lại BM-016)
-- status: dang-lam
+- status: xong
 - date: 2026-09-14
 Đảo lại quyết định "chấp nhận rủi ro" của chính ngày 14/09. Hai điều mới biết
 sau khi đếm lại mã nguồn: (1) hệ có NĂM cửa đặt mật khẩu chứ không phải ba như
@@ -469,6 +469,8 @@ chính là mã nhân viên, nên mật khẩu đặt trùng mã nhân viên ch�
 — LOGIN_RATE_LIMIT của BM-004 chỉ chặn đoán nhiều lần. Luật gom vào một hàm
 core/password_policy.validate_password(); xong mã + test ở local erp-v2, chưa
 commit, chưa deploy.
+CẬP NHẬT 15/09: đã commit `erp-v2` `1f7f2210` và ĐÃ LÊN DEV cùng đợt đẩy
+`b03c76c4` (xem mục deploy-dev-1509-cr405-406). Prod hoãn theo lệnh đại ca.
 
 ### bao-CR-405-chinh-sach | Viết core/password_policy.py và gắn vào 5 cửa
 - status: xong
@@ -658,9 +660,11 @@ Thứ tự thi công: (a) backend phương án 0 + nới khóa + endpoint áp NC
 loạt → (b) màn chọn nâng cấp → (c) sinh ĐMH. Bản in dồn về đợt 4.
 
 ### bao-CR-310-p4 | P4 — Hai bản in + gác N-17 + HDSD
-- status: dang-lam
-Bản A mẫu mục F điền giá chốt; bản B tick theo NCC ra 1 file N trang. Phải
-gác N-17 (supplier:read) trước khi bật bản B. Chưa bắt đầu.
+- status: xong local, chưa commit
+- date: 2026-09-15
+Bản A mẫu mục F điền giá chốt; bản B tick theo NCC ra 1 file N trang. Đã làm
+xong + rà lại theo góp ý khách cùng ngày — xem `bao-CR-310-dot-4` và
+`bao-CR-310-dot-4-ra-lai` bên dưới. HDSD vẫn chờ nhịp deploy.
 
 ## deploy-prod-1409-cum-bao-mat | Đẩy cụm 6 commit bảo mật lên prod (đóng BM-002/005/012/014/015)
 - status: xong
@@ -795,7 +799,8 @@ THÊM, 0 dòng xóa — không mất gì của bên nào. `npm run check` xanh c
 (0 lỗi typecheck, 0 lỗi lint, 3030 test).
 
 Bài học đo đạc: cây làm việc lưu CRLF còn `git show` trả LF, nên diễn tập gộp bằng
-`git merge-file` mà không lọc `tr -d ''` thì tệp nào cũng báo đụng độ nguyên tệp.
+`git merge-file` mà không lọc `tr -d '
+'` thì tệp nào cũng báo đụng độ nguyên tệp.
 Lọc xong mới ra con số thật (0/1/1/1 khối).
 
 Tầng dùng chung `frontend-v2/src/shared/` của đợt này chỉ THÊM: 455 dòng thêm, 3 dòng
@@ -859,3 +864,766 @@ Cách xử, và nó KHÔNG giống nhau giữa các tệp:
 những khối `main` đã tự gộp sạch. Dùng bộ lọc awk chỉ cắt phần giữa `=======` và
 `>>>>>>>`, phần auto-merge còn nguyên. Và Python của Windows KHÔNG đọc được `/tmp/...`
 của MSYS — tệp nháp phải để ở `%TEMP%`, hoặc làm hết bằng awk/sed.
+
+## bao-CR-310-dot-4 | Hai bản in theo phương án của YCMH + đóng N-17
+- status: xong local, chưa commit
+- date: 2026-09-15
+Đợt 4 của bao-CR-310, thiết kế chốt ở doc 03 §H.6 + H.9. Không một dòng backend nào:
+payload chi tiết YCMH đã nhúng `chosen_option` từng dòng, và lớp che NCC (N-17 tầng
+dữ liệu) nằm sẵn ở serializer từ đợt 1 có test canh.
+
+**Bản A** — đắp giá phương án đã chọn vào trang in phiếu đề xuất cũ
+(`purchase-request-print-page.tsx`): giá/VAT/ĐVT từng dòng theo `printLineValues`,
+tổng tiền tính lại theo phương án, ô NCC đầu phiếu = NCC trội nhất theo giá trị
+(`dominantChosenSupplier`). In chung một bảng, không cột NCC theo dòng, nên KHÔNG cần
+gác quyền — người thiếu `supplier:read` nhận payload đã che thì ô NCC tự trống. Vá kèm:
+ba ô tổng thêm `whitespace-nowrap` vì số >= 100 triệu gãy làm hai dòng trong cột hẹp.
+
+**Bản B** — trang mới `/print/purchase-request-suppliers/:id`
+(`purchase-request-supplier-print-page.tsx`): mỗi NCC một trang A4, khớp **1-1 với các
+đơn nháp mà nút gom sẽ tạo**. Chỗ đáng tiền là util chung
+`utils/purchase-request-print-options.ts` nhân đúng ba luật bỏ qua của
+`generate_orders` (dòng hủy · `line_status != no_po` — CR-074 lật cả với đơn nháp ·
+không chọn phương án), nhóm không NCC xếp cuối thành trang riêng, VAT rơi bậc CR-058.
+Toolbar tick chọn NCC in — lưu tập BỎ-tick thay vì tick, để mặc định "tick hết" không
+cần effect đồng bộ khi dữ liệu về. Áp hai luật H.4: ĐVT lệch in cả hai đơn vị kèm
+"(báo giá: X)" chứ không quy đổi; tên NCC gọi in nhỏ chỉ khi khác tên nội bộ.
+
+**N-17 đóng** hai tầng: dữ liệu = serializer che sẵn có; UI = trang bản B tự chặn toàn
+màn khi thiếu `supplier:read` (query tắt luôn bằng id=0, chặn trước khi gọi API) + nút
+vào chỉ hiện khi có quyền (bản đầu là "In theo NCC" trên thẻ chọn; rà lại 15/09 dời
+thành mục trong dropdown In phiếu trên header — xem entry rà lại bên dưới).
+
+Kiểm: vitest 34 ca liên quan xanh (23 ca mới `purchase-request-print-options.test.ts`,
+fixture chép khuôn `purchase-order-draft.test.ts`) + typecheck 0 + eslint 0 trên 7 tệp
+đụng. Smoke browser trên phiếu DEMO-CR310-02 (2 NCC): tổng bản A 127.980.000 = đúng
+tổng 2 trang bản B (kiểm chéo util chung), tick/bỏ tick đổi số trang đúng, DEMO_STAFF
+bị chặn đúng. Bẫy phiên này: tài khoản demo local mật khẩu là `demo123` chứ không phải
+mã tài khoản (chỉ họ TESTREQ mới dùng mã làm mật khẩu — seed.py).
+
+HDSD hoãn theo nhịp deploy — bài viết nằm trong DB Trung tâm HDSD, không đi cùng
+commit mã. Doc 03 (H.6 ghi chú thi công, H.8 bảng đợt, H.9 N-17, H.10) +
+change-log-bao.md đã cập nhật cùng lượt.
+
+## bao-CR-310-dot-4-ra-lai | Rà lại đợt 4 theo góp ý khách: 500 nút gom + khuôn bản B + gom 4 nút
+- status: xong local, chưa commit
+- date: 2026-09-15
+Khách xem bản đầu đợt 4 và chỉ ra ba việc; cả ba xong local + kiểm browser cùng ngày.
+
+**(1) Vá 500 nút gom** (mã sự cố 515E39D6): mã nhật ký `options_generate_orders`
+22 ký tự tràn cột `tab_audit_log.action` VARCHAR(20) — MySQL 1406. Đổi
+`options_gen_orders` (18 ký tự) + đăng nhãn ở `action_catalog.py` (nhóm
+ACTION_GROUP_EDIT, bảng nhãn ACTION_LABELS — KHÔNG có ACTION_GROUP_CREATE/ACTION_LABEL,
+đoán mò là NameError). Hai bài học: pytest chạy SQLite KHÔNG ép độ dài VARCHAR nên test
+ghi-DB xanh giả (cùng họ duoc-CR-316 — kiểm độ dài phải ở tầng schema); và
+`create_po` commit theo TỪNG đơn nên lần bấm dính 500 vẫn ĐÃ tạo đủ đơn nháp — lỗi chỉ
+nổ ở khâu ghi nhật ký SAU cùng, hiện trường có 2 đơn nháp sinh nhầm (PO00363/364), dọn
+bằng cách xóa qua UI để CR-074 tự trả dòng YCMH về `no_po`, KHÔNG sửa tay DB.
+
+**(2) Bản B đổ lại theo đúng khuôn 003/BM/PKT** (khách: "cái bảng in nó đâu có giống
+cái form in yêu cầu của mình"): export ba mảnh khuôn `DocumentVersionTable` /
+`PrintSection` / `PrintLine` từ trang bản A dùng chung — PrintSection dùng class
+`pr-print-section-title/-content` nên stylesheet bản B phải khai lại đúng tên đúng giá
+trị (style trang in là chuỗi `<style>` cục bộ theo trang); `formatVietnameseLongDate`
+dời về `utils/purchase-request-print-options.ts` vì export hàm thường từ tệp component
+là thêm cảnh báo `react-refresh/only-export-components` mới (cấm thêm cảnh báo). Bố cục
+mới: bảng phiên bản góc phải · tiêu đề giữa + "Kèm phiếu đề xuất số" + ngày văn thư ·
+mục NHÀ CUNG CẤP · khối tổng ba dòng kiểu bản A · XÉT DUYỆT 2 ô ký (TP/BP mua hàng ·
+Người lập — bản nháp làm việc của thu mua, không đổ chữ ký số).
+
+**(3) Gom 4 nút thành 2 dropdown trên header trang chi tiết** (khách gợi ý nút in sổ
+xuống): "Tạo đơn mua hàng" = Lập tay · Theo phương án đã chọn — gom theo NCC (logic
+gom + hộp xác nhận + ref guard chống bấm đúp dời NGUYÊN từ choose card sang trang;
+thẻ chọn phương án về thuần chọn, không còn nút nào); "In phiếu" = Phiếu yêu cầu mua
+hàng · Bảng hàng theo NCC. Luật: chỉ đủ điều kiện MỘT biến thể thì render nút thường,
+không sổ — dropdown một mục là bắt bấm hai lần vô cớ. Cờ gate đặt trên trang:
+`hasDoneLine` / `canCreateManual` / `canGenerateFromOptions` / `canPrintBySupplier`
+(phiếu đóng vẫn in được — nhu cầu lưu trữ).
+
+Kiểm 15/09: typecheck 0 · eslint 5 tệp sạch · vitest util 23/23 · pytest CR-310 48/48.
+Browser trên DEMO-CR310-02 (đăng nhập DEMO_MANAGER_PURCHASE/demo123): 2 dropdown đúng
+mục; bản B 2 trang đúng khuôn, ngắt trang theo NCC, toolbar tick còn chạy; tổng bản A
+145.800.000 = 32.400.000 + 113.400.000 của 2 trang bản B (số cũ 127.980.000 trong entry
+trên là dữ liệu demo thời điểm đó, đã đổi do khách bấm thử); bấm gom THẬT ra
+PO00365/PO00366, toast xanh, nhật ký `options_gen_orders` ghi sạch trên MySQL — hết 500.
+
+### bao-CR-310-dot-4-ra-lai-vong-2 | Vòng 2 cùng ngày: ĐVT thừa chú, bản B "0 trang", 400 gom lần hai
+- status: xong local, chưa commit
+- date: 2026-09-15
+Khách thử tiếp bản sau vòng 1 và gửi ba góp ý nữa; cả ba chỉ đụng frontend-v2.
+
+**(1) Ô ĐVT gãy dòng** vì in "cái (báo giá: Cái)": so đơn vị báo giá với đơn vị dòng
+từng phân biệt hoa thường. `printLineValues` nay so trim + `toLowerCase()`; đơn vị khác
+thật (m vs cuộn) vẫn in chú H.4 vì giá là giá theo đơn vị báo giá — bỏ hẳn chú là gây
+hiểu nhầm giá.
+
+**(2) Bản B in "0 trang" ngay sau khi tạo đơn** — bài học thiết kế đáng nhớ nhất: bản
+đầu cho bản B soi gương CẢ luật "bỏ dòng đã rời `no_po`" của nút gom, mà CR-074 rời
+`no_po` ngay khi lên đơn NHÁP, nên khách bấm tạo đơn xong quay lại in là trống trơn.
+Chốt ngữ nghĩa: **bản in là BẢN LƯU/KÝ, nút gom mới là chỗ chống tạo trùng** — hai thứ
+mượn chung cách gom nhưng KHÔNG mượn chung luật bỏ dòng. Dòng đã lên ĐMH vẫn in (phương
+án chọn không đổi sau khi lên đơn nên trang vẫn khớp đơn đã tạo);
+`SupplierPrintPlan.skipped` chỉ còn `noChosen` + `cancelled`.
+
+**(3) Bấm gom lần hai ăn toast đỏ 400** "Không còn dòng nào tạo được đơn từ phương án
+đã chọn": backend nói ĐÚNG (2 đơn nháp đã tạo ở lần bấm trước — khách thấy chúng ở "ĐMH
+liên quan (2)"), nhưng toast đỏ đọc như hệ hỏng. Sửa ở tầng gate: thêm
+`hasLineToGenerate` (chưa hủy · còn `no_po` · còn phương án đang chọn — soi gương đúng
+luật bỏ qua của `generate_orders`) AND vào `canGenerateFromOptions`; hết dòng gom được
+thì mục gom TỰ ẨN, đường Lập tay vẫn mở nên nút rơi về dạng thường. Lưu ý ngữ nghĩa:
+phương án 0 được tick sẵn từ lúc điều phối (`ensure_option_zero`) nên vế "còn phương án
+đang chọn" gần như luôn đúng — cái quyết định mục gom hiện/ẩn trên thực tế là vế
+"còn `no_po`" (+ `hasDoneLine` sẵn có).
+
+Kiểm 15/09: typecheck 0 · vitest util 24/24 (thêm test hoa thường + test "dòng đã lên
+đơn nháp vẫn in") · eslint 4 tệp sạch. Browser cả HAI trạng thái trên DEMO-CR310-02:
+(đang có 2 đơn nháp) bản B vẫn "In / Lưu PDF (2 trang)" 32.400.000 + 113.400.000, ĐVT
+chỉ "cái", nút tạo đơn về dạng thường bấm ra `/purchase-orders/new`; rồi XÓA PO00365/366
+qua UI (không đụng DB) trả fixture về sạch cho khách tự thử cả luồng — dropdown đủ 2 mục
+lại, bản B vẫn 2 trang. Bài học browser: ref của dialog "ĐMH liên quan" cũ nhanh, click
+theo ref cũ rơi ra ngoài dialog làm nó đóng — đi đường danh sách ĐMH mà bấm link mã đơn.
+
+### bao-CR-310-dot-4-ra-lai-vong-3 | Vòng 3 cùng ngày: ô NCC chung, nhảy sang danh sách ĐMH, cụm ký bản B
+- status: xong local, chưa commit
+- date: 2026-09-15
+Khách xem tiếp bản sau vòng 2 và gửi ba góp ý; cả ba chỉ đụng frontend-v2.
+
+**(1) Ô NCC chung của bản A thôi tự đổ NCC theo phương án.** Khách hỏi đúng chỗ hở:
+"NCC đâu có nhập gì đâu mà ra 1 NCC" — mục đó tên là *NCC DO BỘ PHẬN ĐỀ XUẤT*, tự đổ
+`dominantChosenSupplier` (NCC trội theo giá trị) vào là hệ thống nói thay người nhập.
+Trả về hành vi trước đợt 4: `supplier_pur` → `supplier_req`, cả hai trống thì ô tên in
+chữ mặc định "Nhà cung cấp tối ưu nhất". GỠ HẲN `dominantChosenSupplier` + 6 test của
+nó (vitest util còn 18); giá/VAT theo phương án trên từng dòng GIỮ NGUYÊN. NCC theo
+phương án vẫn xem được ở bản B — không mất thông tin, chỉ trả về đúng ô.
+
+**(2) Gom xong nhảy thẳng sang danh sách ĐMH đã lọc theo phiếu.** `onSuccess` truyền
+vào `mutate` ở trang chi tiết điều hướng `/procurement/purchase-orders?q=<mã YCMH>`;
+KHÔNG cần param backend mới vì ô tìm kiếm nhanh `q` của danh sách ĐMH vốn LIKE cả cột
+`pr_code` (`_list_query` của purchase_order). Mã phiếu nằm sẵn trong ô tìm kiếm nên
+người dùng thấy vì sao danh sách đang lọc và tự xóa được. Toast "Đã tạo N đơn..." của
+hook vẫn nổ (options của mutate không đè onSuccess của hook); `onSettled` giữ nguyên
+ref guard chống bấm đúp (duoc-CR-317).
+
+**(3) Cụm XÉT DUYỆT bản B đổ lại y mẫu chung.** Bản 2 ô ký tay tự chế ở vòng 1 (cắt
+gọn vì coi bản B là bản nháp làm việc của thu mua) vẫn bị chê "không theo mẫu chung".
+Export thêm `SignatureSection` (4 ô Giám đốc · TP/BP mua hàng · TP/BP đề xuất · Người
+lập, chữ ký số CR-389..398) + `PrintToggle` từ trang bản A; bản B thêm nút *Có/Không
+chữ ký*. Ba class `pr-print-signature*` phải khai lại Y GIÁ TRỊ trong PRINT_STYLES cục
+bộ của bản B — stylesheet hai trang Vite không dùng chung (cùng bẫy `pr-print-section-*`
+vòng 1). Nút *Mẫu thuế* cố ý KHÔNG thêm: đó là biến thể thuế của TỜ PHIẾU, không phải
+của bảng hàng theo NCC.
+
+Kiểm 15/09: typecheck 0 · vitest util 18/18 · eslint 5 tệp sạch. E2E browser trên
+DEMO-CR310-02: bản A ô NCC ra chữ mặc định, bản B 4 ô ký + ảnh chữ ký + toggle chạy,
+bấm gom thật ra PO00369/370 và tự đáp `?q=DEMO-CR310-02` hiện đúng "Tổng 2 đơn". Dọn
+fixture qua UI: xóa PO00367/368 (khách tự gom thử 16:50) + PO00369/370 của lượt kiểm —
+phiếu về sạch, 2 dòng lại "Chưa tạo đơn mua hàng" cho khách tự thử cả luồng.
+
+### bao-CR-310-dot-4-ra-lai-vong-4 | Vòng 4: bỏ hẳn bố cục riêng của bản B, in lại chính tờ phiếu yêu cầu
+- status: xong local, chưa commit
+- date: 2026-09-15
+Khách xem bản sau vòng 3 và bác bố cục bản B LẦN THỨ BA: "bỏ bản này, phải là bản phiếu
+yêu cầu, nhưng có điền thông tin ncc vào là oke". Ba vòng trước em đều đi sửa vụn một bố
+cục TỰ CHẾ ("BẢNG HÀNG THEO NHÀ CUNG CẤP") — vòng nào cũng còn một chỗ lệch mẫu chung để
+khách chỉ ra. Bài học ghi lại cho lần sau: **đừng thiết kế biến thể của tờ phiếu, chỉ đổi
+DỮ LIỆU đổ vào tờ phiếu.**
+
+**Cách làm.** Tách `PurchaseRequestPrintSheet({purchaseRequest, items, supplier,
+supplierNameFallback, warehouseCode, taxMode, showSignature})` ra khỏi
+`purchase-request-print-page.tsx` — một tờ 003/BM/PKT trọn vẹn. Bản A gọi một lần với cả
+phiếu; bản B gọi mỗi NCC một lần. `PurchaseRequestPrintItems` đổi sang nhận
+`items: PurchaseRequestItem[]` thay vì cả phiếu, nhờ đó `printedTotals` cộng đúng những
+dòng đang in. `PRINT_STYLES` đổi tên + export thành `PURCHASE_REQUEST_PRINT_STYLES`; bản
+B nạp nguyên tệp CSS đó nên thôi khai lại class nào (gỡ được cái bẫy "stylesheet Vite hai
+trang không dùng chung" đã cắn ở vòng 1 và vòng 3). `purchase-request-supplier-print-page.tsx`
+viết lại từ đầu: xóa `SupplierPrintSheet` + toàn bộ class `prs-print-*` cũ, thêm
+`usePurchaseRequestPrintWarehouses` (cột *Nơi giao* in mã kho như bản A) và nút
+*Mẫu thường/Mẫu thuế* cho đủ bộ gạt.
+
+**Ô NCC điền gì.** Tên lấy từ NCC của nhóm. Mã số thuế / liên hệ CHỈ mượn khi tên trùng
+`supplier_pur` hoặc `supplier_req` — phương án khảo sát chỉ chụp mã + tên NCC, không chụp
+MST; đoán bừa là in sai một tờ hồ sơ sắp đem ký tay. Nhóm chưa có NCC để tên rỗng, tờ đó
+tự in chữ mặc định "Nhà cung cấp tối ưu nhất" y bản A.
+
+**Bẫy nhiều tờ trong một file in** (gom ở `MULTI_SHEET_STYLES`): chừa khoảng cách giữa
+các tờ trên màn hình · `page-break-after: always` trừ `:last-of-type` (không thì đẻ trang
+trắng cuối) · `min-height: 297mm !important` để mỗi tờ ăn trọn trang giấy ·
+**`.pr-print-note` trả về `position: absolute`** — bản A để `fixed` khi in, đúng cho MỘT
+tờ, nhưng nhiều tờ thì trình duyệt lặp phần tử fixed lên MỌI trang và chồng N dòng chân
+trang lên nhau.
+
+**Gỡ theo:** `SupplierPrintLine` bỏ 4 trường đã chết (`quoteUnit` · `supplierProductName`
+· `deliveryTime` · `deliveryPlace`), còn `item` + phần tính tiền để cộng tổng cho ô tick;
+test util đổi theo, vẫn 18. Nhãn dropdown thành *Phiếu yêu cầu tách theo nhà cung cấp*,
+`document.title` thành `<mã> - Phiếu đề xuất theo nhà cung cấp`.
+
+**Ba thứ CỐ Ý không chuyển sang** vì mẫu 003/BM/PKT không có ô: mã NCC · thời gian/nơi
+giao THEO CAM KẾT NCC (cột *Nơi giao* của mẫu chung là KHO NHẬN của dòng, khác khái niệm,
+đừng dồn chung) · tên NCC gọi mặt hàng. Cần in thì phải sửa mẫu chung, không lách bằng
+một bản in riêng nữa.
+
+Kiểm 15/09: typecheck 0 · vitest util 18/18 · eslint 5 tệp sạch. E2E browser trên
+DEMO-CR310-02: ra 2 tờ phiếu đủ khuôn (PHƯƠNG NAM 1 dòng NAP0185 tổng 32.400.000 ·
+NATURALS SHOP 1 dòng VT0175 tổng 113.400.000), bỏ tick còn "1 trang", *Mẫu thuế* xóa
+trắng THÔNG TIN CHUNG và ẩn nút chữ ký y bản A, dropdown chi tiết ra nhãn mới. Fixture
+giữ sạch, không tạo đơn nào.
+
+## dong-bo-datxe-plan | Nối app đặt xe cũ (Firebase) với ERP — khảo sát và soạn kế hoạch
+- status: dang-lam
+- date: 2026-09-15
+- list: Duyệt dấu, Đặt xe
+Đại ca: "tôi có source app đặt xe là app cũ, giờ tôi có hệ thống ERP... làm cách nào
+đồng bộ db về trên app hiện tại" — có đủ mã nguồn app cũ + tài khoản admin Firebase nên
+sửa được cả hai đầu. Chốt phạm vi: đồng bộ HAI CHIỀU, 4 nhóm dữ liệu (xe + tài xế,
+phiếu đặt xe/giao hàng, phiếu đóng dấu, tệp đính kèm trên R2). **Chưa viết dòng mã nào.**
+
+CÁCH LÀM (để lần sau lặp lại được):
+1. Đọc mã nguồn app cũ ở `app đặt xe/my-firebase-api/src/` — `types/db.types.ts` lấy
+   sơ đồ dữ liệu, `services/*.service.ts` lấy luồng nghiệp vụ thật (đừng tin tài liệu).
+2. Đọc `backend/app/modules/vehicle_booking/model.py` và `seal_request/model.py` của ERP
+   lấy bộ hằng số trạng thái.
+3. Đặt HAI bảng cạnh nhau theo TỪNG TRƯỜNG, mỗi dòng ghi rõ "mất gì nếu bỏ" — chỗ nào
+   một bên có mà bên kia không có thì đó là quyết định, không phải chi tiết.
+4. Mỗi thứ không suy ra được từ mã nguồn thì ghi thành câu hỏi H-xx chờ đại ca, chứ
+   không tự đoán rồi viết tiếp.
+5. Kết quả vào bộ 5 tệp `doc/dong-bo-dat-xe-duyet-dau/`: README (tóm yêu cầu + quyết
+   định) · mo-ta-ky-thuat.md (14 mục) · doi-chieu-truong.md (bảng trường + trạng thái) ·
+   danh-sach-phase.md (P0–P8) · TIEN-DO.md (bảng tick + nhật ký).
+
+CHỐT KIẾN TRÚC: app cũ vẫn là cửa nhập liệu, ERP duyệt/điều phối/báo cáo · chia quyền sở
+hữu THEO TỪNG TRƯỜNG chứ không theo bảng (app cũ sở hữu nội dung lúc tạo, ERP sở hữu
+trạng thái + duyệt + điều xe + km/chi phí) · sổ đồng bộ `tab_sync_log` ở CẢ HAI đầu ghi
+id, loại, trạng thái, mess thô, JSON thô · tài khoản nhân sự KHÔNG đồng bộ, khớp bằng
+email rồi đọc quyền của ERP · tệp chỉ lưu LIÊN KẾT qua `tab_file` + `tab_file_link`,
+không chép nội dung · app cũ phải thêm `updatedAt`.
+
+### dong-bo-datxe-plan-phat-hien | Bốn phát hiện chặn kiến trúc, không suy ra được từ tài liệu
+- status: xong
+(1) App cũ KHÔNG có `updatedAt` và không có `.indexOn` ở đâu cả, khóa Realtime Database
+lại là `nanoid` ngẫu nhiên (không xếp theo thời gian) → không hỏi được "có gì đổi từ hôm
+qua" → **hook là bắt buộc**, không phải tùy chọn, và trường `updatedAt` đại ca đề xuất
+chính là thứ mở đường cho đối soát đêm.
+(2) Định nghĩa kiểu của app cũ KHÔNG đầy đủ (`itemWeight` có trong bộ kiểm tra hợp lệ mà
+không có trong `db.types.ts`) → phải kết xuất dữ liệu THẬT ra soi trước khi viết mã dịch.
+(3) Luồng đóng dấu bên cũ có HAI nấc văn thư: `sealed` (đã đóng dấu, hồ sơ còn trên bàn
+văn thư) và `delivered_to_staff` (đã trao lại hồ sơ cho nhân viên — nấc cuối thật). ERP
+thiếu nấc sau.
+(4) Bảng thống kê app cũ đếm "hoàn thành" SAI — `admin.service.ts:54` dùng
+`DELIVERED_TO_STAFF`, `:76` dùng `COMPLETED` (phiếu dấu không bao giờ vào trạng thái đó
+nên số luôn bằng 0). Đừng lấy số đó làm chuẩn lúc đối soát.
+
+### dong-bo-datxe-plan-phap-nhan | QĐ-G: phiếu luôn có pháp nhân, tra ba nấc, cấm company_id = 0
+- status: xong
+Đại ca: "trên đơn sẽ có thuộc công ty nào phòng ban nào thì mới gửi tới giám đốc của công
+ty đó, nên chắc chắn không có company_id = 0". Cách tra: nấc 1 hồ sơ nhân sự người tạo
+(`tab_employee.company_id`) → nấc 2 phòng ban (`tab_department.company_id`) → nấc 3 mặc
+định **id 1**. Ghi kèm `company_source` 1/2/3 vào sổ đồng bộ để biết số nào là đoán.
+Phải tra PHÒNG BAN TRƯỚC rồi mới ra công ty (phiếu dấu có `details.departmentId`, phiếu
+xe lấy theo phòng ban người tạo).
+Hai vấn đề dữ liệu thật phát hiện lúc soạn: `tab_company` có HAI dòng cùng tên "CÔNG TY
+TNHH DEGO HOLDING" (`id 1` mã DEGO và `id 16` mã DEGO HOLDING) — tạm dùng `id 1`, dọn
+sau, trong lúc đó phải có hằng `COMPANY_ALIASES` coi 1 và 16 là một; và **237/262 nhân sự
+đang để `company_id = 0`** nên nấc 1 gần như luôn trượt (đây là dữ liệu chưa điền, không
+phải lỗi kỹ thuật).
+
+### dong-bo-datxe-plan-do-du-lieu | Đo dữ liệu thật trên dev, lật lại một giả định sai của chính tài liệu
+- status: xong
+Cách làm: gọi API dev (`/api/employees`, `/api/departments`, `/api/companies`,
+`/api/departments/{id}/companies`) bằng lớp `WorkApi` sẵn có của
+`backend/scripts/sync_task_journal.py` — không đụng DB, không cần SSH. Lưu ý phải PHÂN
+TRANG: `limit=500` bị chặn về 20, đọc thiếu là ra kết luận sai.
+Số đo: 262 nhân sự (255 chính thức) · 18 phòng ban · 14 pháp nhân.
+- nhân sự có `company_id` khác 0: **25/262** (90% trống);
+- nhân sự có `department_id` khác 0: **241/262** (**92% đã điền**);
+- phòng ban có `company_id` khác 0: **0/18**, và `tab_department_company` **rỗng hoàn toàn**.
+LẬT LẠI GIẢ ĐỊNH: tài liệu đang viết "nấc 2 đỡ được vì phòng ban điền tốt hơn" — SAI.
+Hôm nay cả hai nấc đều trượt, **100% phiếu rơi xuống công ty mặc định**, đúng thứ QĐ-G
+muốn tránh. Đã sửa lại mục 8.3 của mô tả kỹ thuật (thêm 8.3.1 ghi số đo).
+ĐỔI ĐỀ XUẤT H-07: chỗ cần điền là **18 dòng phòng ban**, không phải 237 hồ sơ nhân sự —
+rẻ hơn 13 lần, hứng được 241/262 người, và người mới vào không phải nhớ điền lại.
+Hai thứ nhặt thêm: (a) 1 nhân sự mang `company_id = 15` mà công ty `id 15` KHÔNG TỒN TẠI
+(API trả 404) → luật tra pháp nhân phải kiểm "có tồn tại thật và đang hoạt động", không
+chỉ kiểm khác 0; (b) `tab_company` thiếu cả `id 4` lẫn `id 15`.
+
+### dong-bo-datxe-plan-trang-thai | QĐ-H: ERP thêm SEAL_DELIVERED = 8 cho khớp một-một
+- status: xong
+Đại ca chốt "trạng thái của phiếu, có thể đồng bộ thêm ở ERP". Thêm `SEAL_DELIVERED = 8`
+("Đã trả hồ sơ") để nấc `delivered_to_staff` bên cũ có chỗ đáp, thay vì gộp hai nấc văn
+thư làm một (bản đầu em đề xuất gộp, đã đảo lại). Bên cũ có hai nút riêng:
+`POST /v1/admin/requests/:id/seal` (`admin.service.ts:413`) và `.../deliver` (`:451`).
+Việc kéo theo, ghi ở P7: rà hết chỗ đang coi `SEAL_COMPLETED` là trạng thái cuối.
+Bảng trạng thái phiếu xe và trạng thái tài xế thì khớp một-một sẵn, không mất gì.
+
+### dong-bo-datxe-plan-thuong-hieu | Soi "thương hiệu" bên app cũ là pháp nhân hay phòng ban (H-05)
+- status: xong
+Đại ca: "thương hiệu có thể coi nó là phòng ban, bên mình check xem có điểm chung gì
+không". Soi mã nguồn thì bằng chứng nghiêng hẳn về **PHÁP NHÂN**, không phải phòng ban:
+`CONDITIONAL_BRAND_LEGAL` (`approval.service.ts:56-68`) lấy người ký chặng 3 từ
+`brands/<id>.legalBrandUids` — tức thương hiệu quyết định AI KÝ VỀ MẶT PHÁP LÝ; `brandId`
+là MẢNG, khớp bảng nhiều-nhiều `tab_seal_request_company` của ERP (phòng ban là trường
+đơn, phiếu hai thương hiệu sẽ không có chỗ chứa); `brandManagerUid` ứng với
+`Company.legal_representative_id`; và app cũ ĐÃ CÓ sẵn nhánh `departments` riêng, phiếu
+dấu mang `details.departmentId` — nên thương hiệu mà là phòng ban thì thừa.
+Chưa chốt được bằng mã nguồn, cần DỮ LIỆU THẬT. Phép thử (một buổi): kết xuất nhánh
+`brands` (id, name) → lấy `tab_company` (id, name, short_name) + `tab_department` (id,
+name) → so tên xem khớp bên nào nhiều hơn → đọc `legalBrandUids` vài thương hiệu xem
+những người đó bên ERP thuộc pháp nhân nào. Nếu khớp `tab_company` thì phiếu dấu có thêm
+**nấc 0** (lấy pháp nhân thẳng từ `brandId`) — chính xác hơn cả ba nấc hiện tại.
+CẬP NHẬT 15/09 — đã lấy xong nửa ERP: **đại ca đoán "là phòng ban" KHÔNG SAI**, vì bên ERP
+phòng ban và pháp nhân đang trùng tên nhau. Sáu tên vừa là phòng ban vừa là pháp nhân:
+N2SBIO · ABA Chemical · Icare · IDA Global · Bamboo · Dr.Xanh. Hai tên chỉ có ở phòng ban:
+Dego Organic · Dego Lab (nhiều khả năng là thương hiệu của Dego Holding). Còn lại là phòng
+chức năng thuần (Kế toán, Nhân sự, Hành chính, Thiết kế, Điều phối...).
+→ Cách xử đúng là đổ `brandId` về **CẢ HAI** (`company_id` để chạy đúng giám đốc,
+`department_id` để nằm đúng nhóm), qua một BẢNG TRA dữ liệu chứ không mã cứng. Vẫn chờ
+danh sách `brands` thật. Đã ghi vào `doi-chieu-truong.md` mục 10.4.
+CHỐT 15/09 (xem việc con "Đọc ba ảnh màn quản trị"): **thương hiệu CHÍNH LÀ pháp nhân**,
+11/11 khớp `tab_company`. H-05 ĐÓNG.
+
+### dong-bo-datxe-plan-anh-quan-tri | Đọc ba ảnh màn quản trị app cũ — đóng H-05 và H-07 cùng lúc
+- status: xong
+Đại ca gửi ảnh chụp ba màn quản trị của **app cũ**: Quản lý Phòng ban (22 dòng) · Quản lý
+Luồng duyệt V2 (4 luồng đều ACTIVE) · **Quản lý Công ty (11 dòng)**.
+CÁCH LÀM (mẹo dùng lại được): ảnh chỉ là chữ, muốn biết nó là bảng nào thì đối chiếu với
+mã nguồn chứ đừng tin tiêu đề màn. Ở đây `grep -rn "companies" app đặt xe/` **không ra
+collection `companies` nào** — app cũ chỉ có `brands`, `departments`, `requests`, `users`.
+Suy ra màn tiêu đề "Quản lý Công ty" **chính là nhánh `brands`**. Tên thương hiệu lại nhúng
+sẵn mã số thuế nên so được thẳng với `tab_company.tax_code`: **khớp 11/11** (9 dòng khớp
+bằng MST, 2 dòng Dr.Xanh khớp bằng tên).
+HỆ QUẢ DÂY CHUYỀN:
+(1) Đọc lại `db.types.ts` thì **CẢ BA loại phiếu đều mang `brandId`** (`RequestDetailsCarBooking`
+:240, `RequestDetailsDelivery`:264, `RequestDetailsSeal`:277) — em nói trước đó "nấc 0 chỉ
+dành cho phiếu dấu" là SAI. Nên **nấc 0** (lấy pháp nhân thẳng từ `brandId`) áp cho mọi phiếu
+và là nguồn chính xác nhất: chính người lập phiếu khai ra, không phải hệ thống suy.
+(2) Vì vậy **H-07 tự đóng** — không cần điền pháp nhân cho 18 phòng ban trước khi nạp nữa.
+(3) `brandId` là MẢNG → phiếu dấu tỏa ra `tab_seal_request_company`, phiếu xe/giao hàng lấy
+phần tử [0] và ghi cảnh báo `multi_brand` vào sổ đồng bộ. `brandId` là tùy chọn → vẫn giữ
+ba nấc dự phòng cho tới khi đếm được tỷ lệ phiếu thật có điền.
+(4) Bằng chứng cứng cho H-08: ERP `id 1` và `id 16` **cùng mã số thuế `1801722464`** — đúng
+là một pháp nhân bị nhập hai lần, không phải hai công ty.
+BA CÂU HỎI MỚI MỞ RA: H-09 hai dòng Dr.Xanh có MST lệch nhau giữa hai hệ (dữ liệu pháp lý,
+phải hỏi người) · H-10 phòng ban lệch (cũ 22 / ERP 18, khớp ~14; 8 phòng chỉ có bên cũ:
+Agricare, N2AGRO, N2AGRO-KT, Mua Hàng, Dego Agrochem, Pháp Lý, Dego Holding, R&D) · H-11
+app cũ đang chạy THẬT luồng duyệt "Mua hàng" 2 chặng, nằm ngoài 4 nhóm đã chốt phạm vi.
+Ảnh luồng duyệt cũng xác nhận H-01: bên cũ có 4 luồng ACTIVE, nên câu "ký ở đâu sau khi
+nối" là câu hỏi thật, không phải giả thuyết.
+
+### dong-bo-datxe-plan-qd-i | QĐ-I: hai bộ máy duyệt giữ nguyên, đồng bộ KẾT CỤC chứ không đồng bộ tiến trình
+- status: xong
+Em đề xuất "một nguồn sự thật, hai cửa bấm" (app cũ giữ nút Duyệt nhưng bấm là gọi API ERP)
+— **đại ca BÁC**: "2 app vẫn hoạt động, nhưng có đường đồng bộ qua lại thôi, không thay đổi
+gì ở luồng được, cứ cái đang hoạt động bình thường kiểu đổi thì ai đâu mà đổi liền được."
+Lý do đúng: app cũ đang chạy thật với người dùng thật, đổi luồng duyệt không phải việc làm
+liền được. BÀI HỌC: đừng đề xuất phương án đòi sửa hành vi của hệ ĐANG CHẠY khi chưa hỏi
+xem đổi nó tốn gì — kiến trúc sạch hơn không thắng được chi phí chuyển đổi của người dùng.
+CÁCH THIẾT KẾ TRONG RÀNG BUỘC ĐÓ (mục 15 mô tả kỹ thuật):
+- Chìa khóa: **đồng bộ KẾT CỤC, không đồng bộ TIẾN TRÌNH**. Hai bên cấu trúc luồng giống
+  nhau đến bất ngờ (`workflowSnapshot`↔`flow_snapshot`, `currentLevel`↔`current_seq`,
+  `history[]`↔`tab_approval_action`, `pendingApproverUids`↔`tab_approval_task`) nhưng số
+  chặng và người ký ĐƯỢC PHÉP khác nhau — nên chặng 1→2 là chuyện nội bộ, không đẩy. Chỉ
+  đẩy khi ra một trong bốn kết cục cả hai đều hiểu: duyệt / từ chối / trả về / hủy.
+- Bên nhận **đóng phiên bằng MỘT hành động hệ thống ghi rõ nguồn**, `node_seq = 0`,
+  `finish_reason` = "Duyệt trên app đặt xe bởi <tên> lúc <giờ>"; task còn treo thì hủy KÈM
+  LÝ DO (biến mất im lặng là lỗi). **CẤM tạo một `ApprovalAction` cho mỗi chặng** — ghi
+  khống chữ ký trên phiếu đóng dấu là chuyện pháp lý.
+- Hai người bấm hai bên cùng lúc: **cú bấm sớm hơn thắng**, so theo dấu thời gian của BÊN
+  BẤM (không phải lúc webhook tới, webhook lệch thứ tự là thường). Cú thua không đảo ngược,
+  chỉ báo "phiếu vừa được xử lý bên kia". Trùng khít → app cũ thắng (chọn cố định để luật
+  không phụ thuộc may rủi). Lệch đồng hồ > 60s → ghi cảnh báo `clock_skew`, vẫn xử theo luật.
+- ⚠️ **Cấm chữa kẹt bằng cách chạy lại trên trạng thái mới** — `approval/concurrency.py` đã
+  ghi bài học 24/08: chạy lại thì cú "Trả lại" của bước 1 ăn ở bước 2, người ta ký một thứ
+  chưa mở ra xem. Ở đây độ trễ là giây-đến-phút nên bẫy còn rộng hơn.
+- Ca nguy nhất: `needs_correction` bên cũ cho sửa nội dung rồi gửi lại, mà ERP đã duyệt xong
+  → ERP đã duyệt một nội dung không còn tồn tại. Luật: đã có kết cục thì bên kia KHÔNG tự mở
+  lại, đẩy vào sổ trạng thái `cần người xử`. Chỗ DUY NHẤT cả bộ tài liệu để máy không tự quyết.
+- Bốn giới hạn ghi thẳng ra chứ không giấu: báo cáo "ai ký chặng mấy" chỉ đúng ở bên thực
+  bấm · có cửa sổ vài giây-vài phút hai bên hiện khác nhau · phiếu giữa chừng bên kia chỉ
+  thấy "chờ duyệt" · người có quyền duyệt bên cũ mà bên ERP không có vẫn duyệt qua cửa cũ.
+- Sửa cả mục 5 README cho trung thực: sau QĐ-I thì dòng trạng thái duyệt **có HAI ông chủ**,
+  phá luật "mỗi ô một chủ" của chính tài liệu. Ghi rõ đó là đánh đổi cố ý, không phải sơ suất.
+
+### dong-bo-datxe-plan-qd-j | QĐ-J: có đích đến — dùng app cũ trước, sau chuyển hẳn sang ERP
+- status: xong
+Đại ca: "chắc chắn không có chuyện 2 người bấm cùng lúc, tại plan trước sẽ là sử dụng app
+cũ nhưng có đồng bộ qua erp, và sau 1 thời gian thì họ sẽ qua erp và thao tác như ở app cũ
+... còn có lỡ ghi trùng thì thằng nào sau thì ghi đè, lấy thằng đó."
+Đây KHÔNG phải hai app song song vĩnh viễn như tài liệu đang giả định. Giai đoạn 1 người
+dùng ở app cũ (ERP nhận dữ liệu), giai đoạn 2 người dùng chuyển sang ERP, app cũ lùi về
+chỉ đọc rồi tắt. Chưa định mốc.
+ĐƠN GIẢN HÓA: **xóa bộ luật giành quyền 4 điều** em vừa viết (ai thắng / cú thua báo gì /
+trùng khít / lệch đồng hồ). Không có hai người thao tác song song thì đó là bộ máy canh
+một chuyện không tới, mà mỗi nhánh của nó lại là một chỗ để sai. Thay bằng **cú sau ghi đè**.
+GIỮ LẠI ĐÚNG MỘT ĐIỀU KIỆN, vì không có nó thì "cú sau" ra sai người: **"sau" là theo GIỜ
+BẤM ở bên bấm, không phải giờ tín hiệu tới**. Webhook có hàng đợi và có lần thử lại nên
+tới lệch thứ tự là thường; lấy cú tới sau mà đè thì một tín hiệu chậm 30 giây sẽ đè lên
+kết quả mới hơn, và đối soát đêm chỉ thấy hai bên "đã khớp" ở giá trị CŨ. Tín hiệu mang
+theo dấu thời gian bấm, bên nhận thấy cũ hơn cái đang có thì bỏ qua + ghi sổ `stale_skipped`.
+Giới hạn ở 15.4 rút từ 4 xuống 3 (nhóm giới hạn kia sinh ra từ giả định song song).
+HỆ QUẢ LỚN HƠN CẢ LUẬT ĐỤNG ĐỘ — biết đích đến thì ba chỗ trong tài liệu đổi mức:
+(1) P8 (chép tệp thật sang kho ERP + tắt app cũ) từ "nếu sau này muốn" thành **chắc chắn
+phải làm**. Khác nhau thật: việc "có thể không bao giờ làm" thì được phép thiết kế cẩu thả.
+(2) **H-11** (luồng Mua hàng của app cũ) hết né được — "để nguyên rồi tắt" nay nghĩa là xóa
+sổ một luồng đang chạy thật.
+(3) **H-10** (8 phòng ban chỉ có bên cũ) từ "không chặn P0/P1" thành điều kiện chuyển giai đoạn.
+Thêm bảng "điều kiện để chuyển sang giai đoạn 2" vào README mục 8, và sửa mục 2 — bản đầu
+viết "ERP là nơi duyệt" đã sai từ lúc có QĐ-I, nay sửa hẳn.
+BÀI HỌC: hỏi ĐÍCH ĐẾN trước khi thiết kế cơ chế. Em thiết kế cho "song song vĩnh viễn" nên
+đẻ ra luật giành quyền; biết là "chuyển đổi có giai đoạn" thì luật đó thừa, mà mấy việc
+tài liệu đang coi là tùy chọn mới là thứ bắt buộc.
+
+### dong-bo-datxe-plan-cau-hoi | Mười một câu H-01..H-11 — ĐÓNG HẾT
+- status: xong
+CHỐT 16/09: không còn câu hỏi nào chờ đại ca. Danh sách đóng theo thứ tự thời gian:
+H-01 thành QĐ-I (ký được cả hai bên) · H-02 nạp lịch sử KHÔNG bắn thông báo · H-03 nạp thử
+dev trước, ổn mới lên prod · H-04 thành QĐ-G · H-05 thương hiệu = pháp nhân, khớp 11/11 ·
+H-06/H-08 công ty mặc định `id 1`, dòng trùng `id 16` đã có bằng chứng cùng MST · H-07 khỏi
+điền pháp nhân cho phòng ban vì đã có nấc 0 · H-09/H-10/H-11 thành QĐ-K/L/M (việc con riêng).
+CÒN LẠI KHÔNG PHẢI CÂU HỎI, MÀ LÀ VIỆC PHẢI ĐI ĐO. Phân biệt hai thứ này cho rõ kẻo tưởng
+còn kẹt người khác: ba quyết định kỹ thuật em tự chốt được (`legacy_id` nullable+unique hay
+index thường · có thêm `notes` vào `StopItem` không · tài xế `on_leave` ánh xạ sang gì), và
+bốn số liệu phải kết xuất Firebase mới có — gộp thành MỘT lượt chạy, xem việc con QĐ-K/L/M.
+
+### dong-bo-datxe-plan-qd-klm | QĐ-K/L/M: đóng nốt H-09, H-10, H-11 trong một lượt
+- status: xong
+Đại ca trả lời gọn cả ba câu cuối. Ra ba quyết định:
+QĐ-K — mã số thuế lấy theo ERP: "mình tin hệ thống erp nhé, cái kia data bị miss". Hai dòng
+Dr.Xanh chốt `578010406` (NPP) và `578005750` (HKD); hai chuỗi trong tên thương hiệu app cũ
+là dữ liệu hỏng.
+QĐ-L — phòng ban: tạo thêm 8 dòng bên ERP cho đủ với app cũ (18 -> 26), "cứ tạo như phòng ban
+trên app cũ, ví dụ như N2AGRO-KT thì để nguyên như vậy". Không gộp, không sửa tên.
+QĐ-M — luồng "Mua hàng" bỏ khỏi phạm vi ("mình chỉ đồng bộ đặt xe, duyệt dấu, giao hàng
+thôi... luồng mua hàng trên app cũ ít sử dụng lắm"), nhưng phải kết xuất bản tổng hợp phiếu
+đang có giao lại đại ca trước ngày tắt app.
+CÁCH LÀM — với mỗi câu, rút hệ quả rồi mới ghi, đừng chỉ sửa đúng ô được hỏi:
+(1) QĐ-K hỏi "MST nào đúng", nhưng thứ đáng giữ hơn là **tên bên app cũ đã được CHỨNG MINH
+là có thể sai**. Nên đổi khóa của bảng tra thương hiệu -> pháp nhân sang **`id`**, cấm khớp
+bằng tên và cấm khớp bằng MST. Ba lý do, cái thứ ba là cứng nhất: tên sai thì có ngày ai đó
+sửa cho đúng, sửa xong mọi phép so tên trượt SẠCH và IM LẶNG, phiếu rơi hết xuống công ty
+mặc định `id 1` · MST nằm chìm trong chuỗi tên nên phải cắt chuỗi mới lấy được · ERP đang có
+hai dòng cùng MST `1801722464` nên tra bằng MST ra hai kết quả.
+(2) QĐ-L: sau đợt này `tab_department` sẽ có **MƯỜI** cái tên vừa là phòng ban vừa là pháp
+nhân (6 cũ + 4 mới: Agricare, N2AGRO, Dego Agrochem, Dego Holding). Khớp tới 10 chỗ thì rất
+dễ có người viết hàm "tra pháp nhân theo tên phòng ban" — ghi CẢNH BÁO CẤM ngay cạnh bảng.
+Pháp nhân lấy ở nấc 0 từ `brandId`; trùng tên là trùng tên, không phải quan hệ.
+Tự quyết hai chi tiết, ghi ra để đại ca bác nếu sai: `company_id = 0` cho 8 dòng mới (giống
+18 dòng sẵn có, nấc 0 đã lo pháp nhân — điền vào là dựng nguồn sự thật thứ hai cho cùng một
+câu hỏi) · mỗi dòng mang `legacy_id` để phiếu cũ trỏ đúng kể cả khi sau này có người đổi tên.
+Tạo bằng script chỉ-THÊM chứ không gõ tay: gõ sai một ký tự là hỏng đúng cái luật "chép
+nguyên văn" vừa đặt, mà còn phải chạy hai lần (dev rồi prod, H-03).
+(3) QĐ-M: "bỏ luồng đó ra" là câu dễ ghi thành một dòng gạch đi. Nhưng QĐ-J đã chốt sẽ TẮT
+app cũ, nên sau khi bỏ, luồng Mua hàng thành **thứ duy nhất trong app cũ không có bản sao ở
+đâu cả**. Vì vậy thêm bước 6 vào P8 và thêm một dòng vào bảng điều kiện chuyển giai đoạn —
+việc nhỏ nhưng KHÔNG CÓ ĐƯỜNG LÀM LẠI, app tắt rồi thì không kết xuất được nữa.
+GỘP VIỆC: bốn thứ còn thiếu (id thương hiệu · id phòng ban · tỷ lệ phiếu có `brandId` · số
+phiếu luồng Mua hàng) trước nay nằm rải rác ba chỗ như ba việc khác nhau, thực ra cùng lấy
+được trong MỘT lượt kết xuất Firebase. Gộp lại thành một dòng chặn P0.
+Sửa: README (3 quyết định + mục 6 phạm vi + bảng điều kiện mục 8 + đóng mục 9 + bảng "bốn
+thứ thiếu dữ liệu") · doi-chieu-truong (mục 10.5 đổi khóa bảng tra, thêm mục 10.7 phòng ban)
+· danh-sach-phase (P8 bước 6, việc trước P0) · TIEN-DO.
+
+### dong-bo-datxe-plan-do-firebase | Đo trên bản kết xuất Firebase thật — 5 phát hiện, đẻ ra H-12
+- status: xong
+Đại ca kết xuất TOÀN BỘ `api-degoholding-com` thành một tệp 9,82 MB (13 nhánh gốc) thay vì hai
+nhánh lẻ như kế hoạch. Mọi con số dưới đây đo trên dữ liệu thật, không phải ước lượng.
+Quy mô: `requests` 1313 · `notifications` 12856 (bỏ qua) · `files` 1571 · `users` 136 (131 còn
+hoạt động) · `departments` 22 · `brands` 11 · `drivers` 13 · `vehicles` 13 · `approval_workflows` 4.
+CÁCH LÀM — không đọc tệp 9,82 MB vào ngữ cảnh, mà chạy script Python đếm rồi chỉ lấy số ra.
+Bốn lượt: (a) liệt kê nhánh gốc + số bản ghi để biết cái gì to cái gì nhỏ · (b) in một bản ghi
+mẫu của mỗi nhánh để biết hình dạng trước khi viết vòng đếm · (c) đếm phân bố và đối chiếu
+tham chiếu chéo · (d) kiểm mấy giả định cụ thể đang nằm trong tài liệu. Chính lượt (b) cứu:
+vòng đếm đầu tiên nổ `AttributeError: 'list' object has no attribute 'strip'` — `brandId` là
+MẢNG chứ không phải chuỗi. Nếu viết vòng đếm theo trí nhớ về kiểu dữ liệu thì con số vẫn ra,
+chỉ là ra sai và không có gì báo.
+NĂM PHÁT HIỆN:
+(1) KHÔNG CÓ MỘT PHIẾU MUA HÀNG NÀO. 1313 phiếu chia đúng ba loại: SEAL_REQUEST 946 ·
+CAR_BOOKING 321 · DELIVERY 46. Luồng `wf_purchase_01` có khai trong `approval_workflows` nhưng
+chưa ai từng nộp phiếu qua nó. Nghĩa vụ "kết xuất bản tổng hợp" của QĐ-M TỰ TIÊU — bước 6 của
+P8 bỏ, điều kiện chuyển giai đoạn 2 tương ứng bỏ. Ba loại trong phạm vi CHÍNH LÀ toàn bộ dữ liệu.
+(2) `brandId` LÀ MẢNG, không phải một giá trị. Phân bố: 1 thương hiệu 1190 phiếu · 2 -> 66 ·
+3 -> 25 · 4 -> 5 · 5 -> 6 · 6 -> 9 · 7 -> 7 · 8 -> 4 · 9 -> 1. Tức 123 phiếu (9,4%) thuộc từ
+hai pháp nhân trở lên, gần hết là phiếu dấu (121) — hợp lý, một lượt đóng dấu có thể đóng cho
+giấy của nhiều công ty. Nhưng ERP lưu pháp nhân bằng MỘT cột `company_id` và `apply_scope` lọc
+theo đúng cột đó. Đây là chỗ mô hình dữ liệu hai bên không khớp, không phải chỗ ai làm sai.
+Em mở H-12 và gọi nó là CHẶN P0, rồi dựng ba phương án Đ-1/Đ-2/Đ-3 định hỏi đại ca — SAI, và
+tự bắt được trước khi gửi đi. ERP ĐÃ CÓ SẴN bảng nối `tab_seal_request_company` (nhiều-nhiều,
+`company_id` chỉ là "công ty chính"), và `core/scoping.py` nhánh `scope == "company"` cho entity
+`seal_request` lọc theo BẢNG NỐI chứ không theo cột — tức nỗi lo "tám pháp nhân còn lại không
+thấy phiếu" KHÔNG xảy ra. Mục 5 của `doi-chieu-truong` và mục 15 của `mo-ta-ky-thuat` đã ghi
+cách xử từ lâu. Đối chiếu lại với số đo: phiếu dấu 121/123 ca — không mất gì; phiếu đặt xe
+0/321 ca — không tồn tại vấn đề; phiếu giao hàng 2/46 ca — chỗ duy nhất còn hụt, xử theo cách
+đã chốt (lấy phần tử đầu + cờ `multi_brand` kèm danh sách đầy đủ vào sổ). Số đo làm cách cũ
+TỐT HƠN chứ không xấu đi: đúng HAI phiếu dính cờ, rà tay được.
+BÀI HỌC: số đo mới phải ĐỐI CHIẾU VỚI THIẾT KẾ CŨ trước khi kết luận là nó phá thiết kế. Một
+tỷ lệ 9,4% trông đủ lớn để thành câu hỏi chặn, nhưng lời giải nằm sẵn ở mục 5 của chính tệp
+em đang viết. Suýt đẩy cho đại ca một quyết định mà đại ca không cần phải ra.
+(3) PHIẾU ĐẶT XE VÀ GIAO HÀNG KHÔNG CÓ PHÒNG BAN. `departmentId` chỉ tồn tại trong `details`
+của SEAL_REQUEST (946/946); CAR_BOOKING 0/321, DELIVERY 0/46. QĐ-G bắt phiếu phải có phòng ban
+nên 367 phiếu này phải suy ra. Suy được 367/367 qua `createdBy` -> `users[uid].departmentId`,
+vì cả 136 người dùng đều có `departmentId` hợp lệ và 1313/1313 phiếu có `createdBy` tra ra
+người thật. Không phiếu nào rơi xuống giá trị mặc định.
+(4) DỮ LIỆU THAM CHIẾU SẠCH TUYỆT ĐỐI: 0 phiếu thiếu `brandId` · 0 tham chiếu thương hiệu chết
+· 0 `departmentId` rỗng hoặc chết · 0 `createdBy` mồ côi. Hệ quả cho tài liệu: nấc 0 của QĐ-G
+phủ 100%, nên ba nấc tra dự phòng TỤT XUỐNG vai trò lưới an toàn cho phiếu MỚI, không còn là
+đường chạy chính của đợt nạp lịch sử. Vẫn giữ, nhưng hạ kỳ vọng xuống đúng vai trò đó.
+(5) HAI CÂU KỸ THUẬT TỰ ĐÓNG BẰNG SỐ ĐO, không cần suy luận nữa: `StopItem` PHẢI CÓ `notes` —
+44 phiếu có điểm dừng giữa đường, tổng 59 điểm, 25 điểm có ghi chú thật ("Rước sale"), bỏ
+trường là mất 25 mẩu tin không tái tạo được; `driver.status` chỉ có ĐÚNG MỘT giá trị
+`available` (13/13) nên ánh xạ kiểu gì cũng không mất dữ liệu — đừng dựng bảng ánh xạ cho tập
+một phần tử.
+BẰNG CHỨNG PHỤ CHO `legacy_id`: ba phòng ban có khóa gõ tay (`dept_ke_toan`, `dept_kinh_doanh`,
+`dept_ky_thuat`), và khóa `dept_kinh_doanh` nay mang tên "Pháp Lý". Tức tên phòng ban ĐÃ TỪNG
+bị đổi thật. Luật "khớp bằng khóa, không khớp bằng tên" ở mục 10.5 nay có bằng chứng chạy được
+chứ không còn là lo xa.
+AN TOÀN: tệp kết xuất nằm ở `D:\New folder\thuthapykien\`, NGOÀI kho mã nguồn — nó chứa họ tên,
+email, số điện thoại của 136 người. Tạo thêm `_ketxuat\DOC-FILE-NAY.md` ghi luật: để ngoài kho,
+đặt tên kèm ngày, xong việc thì xóa. Không commit tệp nào trong đó.
+Sửa: doi-chieu-truong (thêm mục 10.8 số đo + bảng tra 11 thương hiệu + 22 khóa phòng ban, thêm
+mục 10.9 — bản đầu dựng H-12 như câu hỏi chặn, đã viết lại thành ghi nhận đã-có-lời-giải) · README (mục 10 hướng dẫn kết xuất + đánh dấu đã xong, thay bảng "bốn thứ
+thiếu dữ liệu" bằng kết quả đo, bỏ dòng điều kiện Mua hàng ở mục 8, đính chính câu "không còn
+câu hỏi nào chờ đại ca" vì nay có H-12) · danh-sach-phase (bỏ P8 bước 6, sửa ô rủi ro, đánh dấu
+việc kết xuất xong) · TIEN-DO (đóng 4 dòng, thêm 2 dòng việc mới, 2 dòng nhật ký).
+
+### dong-bo-datxe-p0-danh-muc | P0 chạy thật dưới local — cột legacy_id + khớp xong công ty và phòng ban
+- status: xong
+- date: 2026-09-16
+Đại ca bảo "thử đồng bộ dưới local trước". Chưa có một dòng mã đồng bộ nào, nên "thử" ở đây
+nghĩa là BẮT ĐẦU P0 — và P0 chỉ chạy được sau khi hai bảng danh mục khớp nhau, vì mọi phiếu
+nạp về sau đều phải tra ra công ty và phòng ban bên ERP.
+CÁCH LÀM — bốn nhịp, nhịp sau chỉ chạy khi nhịp trước đã có SỐ ĐO chứ không phải suy đoán.
+(a) Khảo sát nền trước khi gõ phím: `docker compose ps` · liệt kê phân hệ · đọc thẳng model
+`tab_vehicle_booking`, `tab_department`, `tab_company` · `grep legacy_id` toàn backend.
+(b) Đo trạng thái local: đếm hàng từng bảng, in cả 14 công ty và 18 phòng ban ra màn hình.
+(c) Dựng bảng tra rồi ĐỂ NGƯỜI SOÁT, không để script tự khớp theo tên.
+(d) Script chạy hai lần: `--apply` lần đầu, rồi chạy lại y hệt để chứng minh lần hai không
+đẻ thêm gì. Không có bước (d) thì không được gọi là idempotent, chỉ là hy vọng nó idempotent.
+Bản kết xuất KHÔNG chép vào kho mã: `docker compose cp` thẳng vào `/tmp` của container api,
+script nhận `--export` trỏ vào đó. Container dựng lại là mất, không có bản sao nào nằm trên đĩa
+trong thư mục kho.
+ĐÍNH CHÍNH KHẢO SÁT CỦA CHÍNH EM: em ghi "không có phân hệ delivery nên 46 phiếu giao hàng chưa
+có chỗ" — SAI. `tab_vehicle_booking` đã có sẵn `request_type` với `TYPE_DELIVERY` và đủ cụm
+trường giao hàng (`goods_name`, `sender_*`, `receiver_*`, `special_instructions`). Đọc model
+trước, đừng suy ra kết luận từ danh sách thư mục. `StopItem` cũng đã có `location`/`contact_name`
+/`contact_phone`, chỉ còn thiếu đúng một trường `notes`.
+LÀM ĐƯỢC:
+(1) `LegacyIdMixin` trong `core/base_model.py` + migration `b7c2e4a91f30` thêm `legacy_id`
+(String 64, index, KHÔNG unique) cho 7 bảng: company · department · employee · vehicle · driver
+· vehicle_booking · seal_request. Cố ý không UNIQUE vì MySQL coi mỗi chuỗi rỗng là một giá trị
+thật, ràng buộc sẽ chặn ngay bản ghi ERP thứ hai; chống trùng làm ở tầng mã.
+(2) `scripts/legacy_sync/` — `mapping.py` (bảng tra người soát) + `sync_master_data.py`
+(mặc định chỉ xem trước, phải thêm `--apply` mới ghi).
+(3) Chạy thật trên local: 11 công ty đóng dấu · 10 phòng ban đóng dấu · 12 phòng ban tạo mới.
+Sau khi chạy: 22/22 khóa phòng ban app cũ đều tra ra phòng ban ERP, 0 khóa trùng.
+(4) Chạy lại lần hai: 33 dòng "DA CO/DA TAO", 0 thay đổi.
+BA CHỖ SỐ ĐO KHÁC TÀI LIỆU:
+- Tài liệu ghi "8 phòng ban tạo mới", đo ra 12. Bốn cái chênh là GẦN TRÙNG chứ không mới thật:
+  "Sản Xuất" ~ ERP "Sản xuất -Thu mua" (226 phiếu) · "Kế Toán Thuế" ~ "Kế toán" (134) ·
+  "Bamboovietnam" ~ "Bamboo" (12) · "Nhà Máy Dego Organic" ~ "Dego Organic" (6). Tổng 378/1313
+  phiếu, 29% — không phải chuyện nhỏ. Theo H-10 ("cứ tạo như phòng ban trên app cũ") thì TẠO
+  MỚI giữ nguyên tên, và ghi cả bốn vào hằng `DEPARTMENT_NEAR_DUPLICATE` để nếu đại ca chốt gộp
+  thì chỉ việc chuyển khóa xuống bảng kia rồi chạy lại. Tạo rồi gộp thì sửa được; không tạo thì
+  378 phiếu rơi xuống `department_id = 0`, hỏng nặng hơn.
+- Suy phòng ban KHÔNG phải 367/367 mà là 1313/1313 — cả phiếu dấu cũng tra được qua người tạo,
+  nên không cần hai đường suy khác nhau cho hai loại phiếu.
+- `tab_company` có HAI hàng cùng mã số thuế 1801722464 (id 1 "DEGO", id 16 "DEGO HOLDING").
+  Không bản ghi nào trỏ vào id 16 (nhân sự dùng id 1, 10 người), nên bảng tra chọn id 1.
+  Thêm nữa: hai dòng Dr.Xanh có MST LỆCH HẲN giữa hai hệ (ERP 578010406 / app cũ 8549195602 và
+  ERP 578005750 / app cũ 8507408344-001). Luật "không khớp theo mã số thuế" nay có bằng chứng
+  chạy được, giống như "Pháp Lý" là bằng chứng cho "không khớp theo tên".
+HAI CÁI BẪY MẤT THỜI GIAN, ghi để lần sau khỏi dẫm:
+- Em đặt migration vào `backend/alembic/versions/` theo trí nhớ. Thư mục THẬT là
+  `backend/migrations/versions/` (`script_location = migrations` trong alembic.ini) — Write tự
+  tạo cây thư mục mới nên không có lỗi nào báo, alembic chỉ lặng lẽ không thấy tệp. Đọc
+  alembic.ini trước, đừng đoán đường dẫn.
+- Model đã có `legacy_id` mà DB chưa có cột thì api SẬP LÚC KHỞI ĐỘNG (seed đọc `tab_company`),
+  nên không `exec` vào được để chạy alembic. Gỡ bằng `docker compose run --rm --no-deps api
+  alembic upgrade head` — container một lần, không chạy seed.
+- Script dùng ORM ngoài tiến trình app phải `import app.core.all_models` trước, không thì
+  SQLAlchemy không dựng nổi quan hệ `Company.legal_rep` và nổ khi truy vấn.
+KIỂM: `DepartmentOut` và `CompanyOut` vẫn tuần tự hóa được, `legacy_id` KHÔNG lộ ra API.
+CHƯA LÀM: nạp phiếu (946 dấu + 321 đặt xe + 46 giao hàng), khớp 136 người dùng, thêm `notes`
+vào `StopItem`, `tab_sync_log`. Local mới xong phần danh mục. Chưa commit gì.
+HẾT HẠN NGAY TRONG NGÀY: đại ca chốt "gần trùng thì dùng của ERP" nên bốn phòng gần trùng đã
+gộp, con số "12 phòng ban tạo mới" ở trên thành 8. Xem `dong-bo-datxe-p0-gop-nguoi-xe`.
+
+### dong-bo-datxe-p0-gop-nguoi-xe | P0 phần còn lại — gộp phòng ban trùng, khớp người, khớp xe và tài xế
+- status: xong
+- date: 2026-09-16
+Đại ca chốt hai việc trong một câu: "gần trùng thì dùng của ERP" và "đồng bộ thử dưới local".
+Nên phiên này đảo quyết định H-10 cho đúng bốn phòng gần trùng, rồi chạy tiếp ba lớp danh mục
+còn lại. Sau phiên: 11 công ty · 22 phòng ban · 95 nhân sự · 13 xe · 13 tài xế đã có `legacy_id`.
+CÁCH LÀM — luật xuyên suốt: **chỉ tự động hóa phần 1-1 tuyệt đối, phần còn lại xếp ra báo cáo
+cho người chốt.** Máy đoán sai thì không ai phát hiện ra, vì kết quả trông y hệt lúc đúng.
+(a) Trước khi xóa bất cứ hàng nào: đếm tham chiếu. `DEPARTMENT_REFERENCE_COLUMNS` liệt kê 18
+cặp (bảng, cột) trỏ vào phòng ban; `clean_merged_duplicates` CHỈ xóa khi cả 18 đều bằng 0, còn
+lại thì in "GIU LAI ... con tro vao" và để nguyên.
+(b) Thứ tự trong `main()` là thứ tự bắt buộc, không phải sở thích: dọn bản trùng TRƯỚC khi đóng
+dấu, vì bản trùng đang giữ đúng cái khóa sắp gắn cho phòng ban ERP — để sau thì một khóa nằm
+trên hai hàng.
+(c) Mỗi script chạy ba lượt: xem trước → `--apply` → xem trước lần nữa phải ra 0 thay đổi.
+LÀM ĐƯỢC:
+(1) GỘP PHÒNG BAN: bốn khóa chuyển từ "tạo mới" xuống `DEPARTMENT_TO_ERP_ID`; hằng
+`DEPARTMENT_NEAR_DUPLICATE` đổi tên thành `DEPARTMENT_MERGED_INTO_ERP` và giữ lại làm hồ sơ của
+một quyết định do NGƯỜI ra. Chạy thật: xóa 4 hàng tự tạo (id 22/24/29/31, cả bốn 0 tham chiếu),
+đóng dấu 4 phòng ERP (id 5 Dego Organic · 13 Bamboo · 15 Kế toán · 20 Sản xuất -Thu mua).
+Local còn 26 phòng ban, 22 mang `legacy_id`.
+(2) KHỚP NGƯỜI — `sync_users.py`. Khớp bằng EMAIL (nhận cả `email` lẫn `personal_email`), chỉ
+nhận ca 1-1: 95/136 đóng dấu, gánh 1137/1313 phiếu (87%). 41 người còn lại xếp ra bốn nhóm có
+đếm phiếu kèm theo, chờ đại ca chốt rồi ghi vào `USER_MANUAL_MAP` / `USER_SKIPPED`.
+(3) KHỚP XE + TÀI XẾ — `sync_fleet.py`, 13/13 và 13/13, không còn dư bên nào. Ở đây bảng tra
+`VEHICLE_TO_ERP_ID` / `DRIVER_TO_ERP_ID` là hằng soát tay chứ không dò lúc chạy, và script tự
+soi lệch: khóa lạ trong bản kết xuất · khóa chết trong bảng tra · hai khóa trỏ chung một hàng.
+VÌ SAO KHÔNG KHỚP THEO TÊN, đo được chứ không phải nguyên tắc suông:
+- 14 ca "tên trùng mà email khác" có cả `assistant.n2sbiovn@gmail.com` — hộp thư DÙNG CHUNG đang
+  mang tên một nhân viên thật. Khớp theo tên là gán 12 phiếu cho nhầm người.
+- "Phạm Lê Triết Giang" có BA tài khoản app cũ (hai trong đó dùng chung `pltgiang@live.com`) cùng
+  trỏ về một hồ sơ ERP. `legacy_id` là MỘT cột nên quan hệ nhiều-một không lưu nổi; phải người
+  chọn khóa nào là chính, khóa còn lại khai `USER_SKIPPED` kèm lý do.
+- Ba xe thuê ngoài mang biển số rác bên app cũ ("xe thuê", "xe thê", "XE THUÊ NGOÀI") trong khi
+  ERP lưu chính tên loại xe vào ô biển số. Khớp biển số thì ba xe này rơi hết.
+- Hai tài xế app cũ dùng CHUNG số 0971445134 ("Tài xế thuê ngoài" và "Tự lái"), ERP cũng có đúng
+  hai hồ sơ ấy cùng số đó. Khớp theo số điện thoại là hòa, phải nhìn tên mới tách.
+HAI LỖ HỎNG DỮ LIỆU CỦA CHÍNH ERP, lòi ra nhờ bước khớp:
+- `tab_employee` id 38 và id 201 là cùng một người "Nguyễn Thị Kiều Trang": trùng tên, trùng
+  email, cùng `official`, khác mỗi phòng ban (5 với 15). 24 phiếu đang treo vào đó.
+- 26 người app cũ (73 phiếu) không có hồ sơ nào bên ERP, kể cả khớp theo tên.
+CHƯA LÀM: nạp 1313 phiếu, `tab_sync_log`, thêm `notes` vào `StopItem`. Chưa commit gì.
+
+## deploy-dev-1509-cr405-406 | Đẩy dev đợt 15/09 (CR-405 mật khẩu + CR-406 Google v2)
+- status: xong
+- date: 2026-09-15
+Gộp `origin/erp-v2` về local (local đang đứng SAU origin 6 commit — kế hoạch "push erp-v2"
+ban đầu là sai hướng), rồi push `b03c76c4` và dựng lại dev. Trong đợt này có: `duoc-CR-394..398`
+của đồng nghiệp + `bao-CR-405` (chính sách mật khẩu) + `bao-CR-406` (đăng nhập Google cho v2).
+Alembic dev sau đợt: `a3e8c1f6d924`. Đã thử tay trên `deverp.degoholding.vn`: nút Google sống.
+Bài học gộp: cây làm việc đang bẩn thì gộp bằng **commit tạm + reset --mixed**, KHÔNG dùng
+`git stash`; và CRLF làm `git merge-file` báo đụng độ nguyên tệp trong khi thực chất không đụng.
+Prod vẫn hoãn theo lệnh đại ca.
+
+## bao-CR-407 | CR-312 P5 — màn Nhật ký hệ thống (/system/logs)
+- status: dang-lam
+- date: 2026-09-15
+Ba bảng nhật ký (`tab_request_log` · `tab_audit_log` · `tab_change_log`) đã ghi đủ từ P3/P4
+nhưng **chưa ai đọc được**: không có cửa API nào gộp chúng, cũng không có màn hình. P5 dựng
+một dòng trên màn = một `request_id`, ngăn chi tiết bốn tab (Tổng quan · Request · Thay đổi ·
+Phiên), theo dõi trực tiếp và biểu đồ theo giờ (biểu đồ **mặc định ẩn** — đại ca chốt).
+Backend: mô-đun mới `app/modules/system_log/`, ba cửa `/api/system-logs*`, `/api/audit-logs`
+trả thêm `request_id`. Thêm **hai** khóa quyền (ENTITIES 60 → 62): `audit` mở màn tra toàn hệ,
+`change_log` mở thêm giá trị trước/sau + thân yêu cầu. Tách hai vì giá trị cũ có thể chứa
+**tên nhà cung cấp** — thứ mà cơ chế phương án dựng ra để giấu với người yêu cầu; gộp một khóa
+là thủng cửa sau.
+Lỗi thật phát hiện lúc chạy: `Data too long for column 'action'` — cột `action` của
+`tab_audit_log` là `VARCHAR(50)` mà mã sinh chuỗi dài hơn. Đã sửa nguồn sinh chuỗi; bài kiểm
+độ dài mã hành động thì đại ca cho để sau.
+Trạng thái: mã xong, test xanh, **CHƯA commit, chưa deploy**.
+
+### bao-CR-407-vi-du-doc-log | Ví dụ một ca đọc log xuyên suốt
+- status: xong
+Đại ca hỏi "ví dụ cho tôi 1 case, nó liên kết nhau như thế nào để tôi vào log đọc ra được
+đầy đủ thông tin nhất". Sợi chỉ xuyên suốt là `request_id`: một lần bấm nút trên màn hình
+sinh MỘT `request_id`, `tab_request_log` giữ đầu vào (ai · đường dẫn · mã trả về · thời gian),
+`tab_audit_log` giữ "đã làm gì lên chứng từ nào", `tab_change_log` giữ **giá trị trước/sau**
+của từng cột. Vào màn, bấm một dòng là ra đủ ba lớp của cùng một thao tác.
+
+## bao-CR-408 | Siết khâu tải tệp lên — đóng cả cụm BM-025…BM-031
+- status: dang-lam
+- date: 2026-09-15
+Đại ca chốt "gộp một CR đi bạn" cho cả bảy lỗ, vì **bốn trên bảy nằm trong CÙNG một hàm**
+(`attachment/controller.py::_store_one`, 28 dòng) — tách bảy CR thì phải mở lại hàm đó bốn lượt
+và lượt sau viết đè test lượt trước.
+Nền của cả CR là một tệp mới **`core/upload_guard.py`** — nơi DUY NHẤT biết luật kiểm một tệp:
+hỏi đuôi · rỗng · trần MB · **byte đầu (magic bytes)**, rồi trả `content_type` **suy từ nội dung**
+thay vì tin lời khai của máy khách; kèm `ensure_filename_ok` (tên tệp ≤ 255) và `ensure_batch_ok`
+(≤ 20 tệp/lượt). Luật cho những cửa **không đi qua `FileLink`** khai ở bảng mới
+`DIRECT_FILE_POLICY`. Cố ý KHÔNG thêm dòng vào `FILE_POLICY`: `_policy_or_400` đọc thẳng bảng đó
+để quyết `entity` nào được nhận ở `/upload-file`, thêm `avatar` vào đấy là vá một lỗ đẻ một lỗ.
+Rà thì lòi ra hai chỗ sổ bảo mật KHÔNG có: **cửa ảnh thứ SÁU** (`employee.upload_id_image` —
+ảnh CCCD) và **cửa gắn tệp thứ HAI** (`ticket/service._register_files`).
+Còn mở có chủ ý: vế "đo dung lượng TRƯỚC khi nhận hết thân yêu cầu" của BM-030 — việc đó thuộc
+tầng ASGI/nginx, không thuộc mã nghiệp vụ.
+Test: `test/backend/test_bao_mat_tai_tep.py` 11 ca mới; chạy kèm hàng xóm **171 xanh**.
+Không có migration; deploy phải dựng lại `api` + `celery-worker` + `celery-beat` (có việc dọn
+tệp mồ côi chạy 4h10 mỗi ngày).
+Trạng thái: mã xong, xanh, **CHƯA commit, chưa deploy** (dự kiến tách 5 commit).
+
+### bao-CR-408-tai-lieu | Cập nhật sổ ghi nhận lỗi bảo mật sau khi vá
+- status: xong
+Bảy ô trạng thái ở §2 đổi sang "ĐÃ VÁ (bao-CR-408)" — riêng BM-030 ghi "VÁ 2/3". §2b giữ
+NGUYÊN văn lúc phát hiện (kể cả dòng "Trạng thái: Mở") làm **bản ghi hiện trường**, chỉ thêm
+một băng cảnh báo lên đầu chỉ chỗ đọc trạng thái hiện tại — để người đọc sau không tưởng lời
+cũ là sự thật hôm nay. Việc 6 ghi rõ ba chỗ mã nguồn CỐ Ý làm khác bản vẽ trong sổ, kẻo có
+người "sửa mã cho khớp tài liệu".
+
+## bao-CR-409 | Tiến độ mua hàng: thêm hai cột ngày chứng từ (ticket prod 51)
+- status: dang-lam
+- date: 2026-09-16
+Ticket 51 (TK16092601 — Phạm Lê Triết Giang) xin bày ra màn Tiến độ hai thứ vốn chỉ có trong
+chi tiết ĐMH: **Ngày giao chứng từ cho KT** và **Ngày hóa đơn**. Truy prod thì dữ liệu **đã có
+sẵn** (PO00162 / NHG5218), nên đây thuần là khe hiển thị, không migration.
+Hai khe khác nhau, phải vá hai kiểu:
+- `document_delivery_date` **đã nằm trong hàng trả về** từ lâu nhưng không cột nào vẽ, lại
+  không khai trong `_sort_map()` nên cũng không sắp xếp và không lọc điều kiện được.
+- `invoice_date` của LẦN GIAO thì backend **chưa trả về** — chỉ trả về *số* hóa đơn.
+Chốt một cột Ngày HĐ lấy từ LẦN GIAO: ô hóa đơn trên dòng hàng đời thật luôn trống, đúng lý do
+`invoice_no` của dòng hàng đã nằm trong `PROGRESS_SKIP`. Hai cột mới **không đánh `hide`** vì
+`useTableColumns` chỉ lưu danh sách cột ĐANG ẨN — khóa mới luôn hiện với người đã từng chỉnh bảng.
+Ảnh hưởng kéo theo đã được đại ca duyệt: file Excel màn ĐMH cũng mọc thêm hai cột, do
+`purchase_order/export.py::LINE_COLS` dùng chung `progress_ex.COLS`.
+Test: `test/backend/test_tien_do_ngay_chung_tu_cr409.py` 6 bài; chạy kèm hàng xóm 10 + 44 xanh.
+Cổng `frontend-v2` xanh (typecheck 0, lint 0 lỗi), typecheck `frontend/` giữ đúng 4 lỗi cũ.
+Trạng thái: mã xong, xanh, **CHƯA commit, chưa deploy**.
+
+### bao-CR-409-don-test-cu | Dọn hai bài kiểm đã hết hạn của bao-CR-310 đợt 4
+- status: xong
+Chạy cổng v2 thì đỏ 2 bài ở `purchase-request-choose-card.test.tsx` — **không phải của CR-409**:
+bao-CR-310 đợt 4 (đang nằm trong cây, chưa commit) đã dời nút "Tạo đơn mua hàng theo phương án"
+lên đầu trang chi tiết mà quên sửa bài kiểm, nên chúng còn đi tìm một nút không còn tồn tại.
+Đã bỏ hai bài đó kèm comment chỉ chỗ. **Khoảng trống còn lại**: cổng quyền
+`purchase_order:create` của đường gom đơn nay nằm ở `canGenerateFromOptions` trong
+`purchase-request-detail-page.tsx`, trang đó chưa có tệp kiểm nào.
+
+## bao-CR-410 | Phiếu in Đơn đặt hàng: thêm cột Phân loại (ticket prod 52)
+- status: dang-lam
+- date: 2026-09-16
+Phiếu ĐƠN ĐẶT HÀNG in ra gửi nhà cung cấp không nói hàng thuộc nhóm nào. Dữ liệu đã có sẵn
+trong gói bản in (`item_group` ở `purchase_order/controller.py::_item`) nên **không đụng
+backend, không migration** — chỉ là khe hiển thị.
+Cột đặt **giữa «Mã» và «Tên hàng hóa»**, đúng thứ tự bảng dòng của màn chi tiết ĐMH.
+Bẫy phải nhớ: thêm một cột thì **`colSpan` của dòng TỔNG CỘNG phải tăng theo** (v1 9→10,
+và 10→11 ở đơn trộn nhiều loại tiền; v2 9→10) — quên thì không chỗ nào đỏ lên, chỉ có số
+tiền tổng in lệch sang cột khác trên tờ giấy đưa cho NCC. Đã viết hẳn một bài kiểm canh chỗ đó.
+Chỉ sửa phiếu ĐƠN ĐẶT HÀNG; phiếu nội bộ và phiếu nhập khẩu giữ nguyên vì ticket không xin.
+Test: 3 bài mới trong `purchase-order-print-page.test.tsx`, cả tệp 9 bài xanh.
+Cổng v2 typecheck 0 lỗi / lint 0 lỗi; typecheck `frontend/` giữ đúng 4 lỗi cũ.
+Trạng thái: mã xong, xanh, **CHƯA commit, chưa deploy**.
+
+## bao-CR-411 | Tiến độ mua hàng: kho nhận hiện cả khi chưa nhận hàng (ticket prod 50)
+- status: dang-lam
+- date: 2026-09-16
+Đại ca yêu cầu **rà kỹ rồi đề xuất trước, chưa được viết mã**. Đã đo trên prod: cả 240 dòng
+hàng đều đã có «Kho nhận mặc định» ở dòng, nhưng màn Tiến độ chỉ đọc kho của LẦN GIAO
+(`purchase_progress/export.py` — `"warehouse_code": dl.warehouse_code if dl else ""`), nên
+**78 dòng chưa giao lần nào** hiện ô Kho trống. Hai khe phụ: cột đang bày **MÃ kho** chứ không
+bày **TÊN kho** như ticket xin, và cột Kho **ẩn mặc định** ở cả v1 lẫn v2.
+
+Đại ca đã chốt: **gộp chung vào cột «Kho» sẵn có, cứ để mã kho**. Đo thêm `tab_warehouse` trên
+prod thì `code` chính là tên ngắn đọc được (Kho B18, An Nông, Kho Dr. Xanh…) còn `name` là tên
+pháp nhân đầy đủ, nên đề xuất đổi sang tên đã rút lại. Đã làm: `row_values` lùi về
+`POItem.warehouse_code` khi lần giao chưa có hoặc bỏ trống ô kho; sắp xếp và lọc điều kiện
+chuyển sang cùng biểu thức lùi đó (`build_warehouse_code_col`) để giá trị đang bày và giá trị
+lọc được không lệch nhau. Không migration, không đụng frontend. Test:
+`test/backend/test_tien_do_kho_nhan_cr411.py` 8 bài; chạy kèm hàng xóm 26 xanh + 31 xanh.
+Còn treo chờ đại ca quyết: cột Kho vẫn ẩn mặc định ở cả hai bản.
+Trạng thái: mã xong, xanh, **CHƯA commit, chưa deploy**.
+
+## bao-CR-412 | Danh mục Kho tách ba trường: mã, tên viết tắt, tên đầy đủ
+- status: open
+- date: 2026-09-16
+Đại ca nêu: lấy tên viết tắt làm khóa là không chuẩn, phải có mã riêng, tên viết tắt riêng,
+tên đầy đủ riêng. Đúng — `tab_warehouse` hiện chỉ có `code` (khóa, đang chứa chữ người đọc
+được) và `name` (tên pháp nhân đầy đủ). Đo prod 16/09/2026: 928 dòng ở 5 bảng mang mã kho
+(`tab_po_item` 240, `tab_po_delivery` 178, `tab_goods_receipt` 177, `tab_inventory` 156,
+`tab_inventory_move` 177) và **không dòng nào mồ côi**. Đề xuất chia hai bước: bước 1 thêm
+`short_name` + chuyển mọi chỗ hiển thị sang nó, giữ nguyên giá trị `code` làm khóa bất biến
+(rẻ, không đụng dữ liệu cũ); bước 2 mới đổi giá trị `code` sang mã máy, phải sửa 5 bảng trong
+một migration cộng JSON lịch sử mua hàng và mẫu nhập Excel, bắt buộc sao lưu + diễn tập.
+**Đại ca chốt 16/09/2026: ghi sổ để làm sau, chưa làm bây giờ.**
