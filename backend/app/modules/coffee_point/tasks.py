@@ -1,24 +1,31 @@
 """Task Celery của Điểm cà phê — 5 vòng đồng bộ, mỗi lần chạy một dòng nhật ký.
 
 Lịch beat khai ở `core/celery_app.py`. Mọi task đều:
-  1. mở dòng `tab_pos_sync_run` (RUNNING) — "quán kêu thiếu điểm là tra ra trong
-     một phút" (D-05);
+  1. mở một dòng LƯỢT CHẠY trong quyển sổ chung `tab_sync_log` (nguồn `pos365`,
+     `grain = RUN`, trạng thái *đang chạy*) — "quán kêu thiếu điểm là tra ra
+     trong một phút" (D-05);
   2. chạy nghiệp vụ ở `service.py` (client mock được ở test);
-  3. đóng dòng: SUCCESS / FAILED / SKIPPED. `Pos365Disabled` (cầu dao HARD_OFF) là
-     SKIPPED — chủ ý, không phải sự cố, KHÔNG tính vào chuỗi cảnh báo D-06.
+  3. đóng dòng: thành công / lỗi / bỏ qua. `Pos365Disabled` (cầu dao HARD_OFF) là
+     *bỏ qua* — chủ ý, không phải sự cố, KHÔNG tính vào chuỗi cảnh báo D-06.
 
-Cảnh báo D-06: một loại task FAILED 3 lần LIÊN TIẾP → chuông cho vai trò
+⚠️ Bảng riêng `tab_pos_sync_run` đã bỏ; mọi thứ nay đi qua
+`modules/sync_log/service.py`. Ai thêm hệ ngoài mới cũng dùng đúng ba hàm
+`open_run` / `finish_run` / `recent_runs` này, đừng đẻ bảng nhật ký mới.
+
+Cảnh báo D-06: một loại task lỗi 3 lần LIÊN TIẾP → chuông cho vai trò
 `coffee_admin`. Không có lần đồng bộ nào chết im lặng.
 """
-import json
 import logging
 
 import app.core.all_models  # noqa: F401 — đăng ký toàn bộ mapper
 from app.core.celery_app import celery_app
 from app.core.database import SessionLocal
+from app.modules.sync_log.constants import SyncStatus
+from app.modules.sync_log.registry import SOURCE_POS365
+from app.modules.sync_log.service import finish_run, open_run, recent_runs
 
 from . import service
-from .model import PosSyncKind, PosSyncRun, PosSyncStatus
+from .model import ENUM_LABELS, SYNC_JOB_BY_KIND, PosSyncKind
 from .pos365_client import Pos365Disabled, get_client
 
 log = logging.getLogger("app.coffee_point.tasks")
@@ -26,21 +33,17 @@ log = logging.getLogger("app.coffee_point.tasks")
 FAIL_ALERT_STREAK = 3
 
 
-def _alert_failures(db, kind: int):
-    """Chuỗi FAILED liên tiếp của một loại task chạm ngưỡng → chuông `coffee_admin`."""
-    recent = (db.query(PosSyncRun)
-              .filter(PosSyncRun.kind == kind,
-                      PosSyncRun.status.in_([int(PosSyncStatus.SUCCESS),
-                                             int(PosSyncStatus.FAILED)]))
-              .order_by(PosSyncRun.id.desc()).limit(FAIL_ALERT_STREAK).all())
+def _alert_failures(db, job: str, label: str):
+    """Chuỗi lỗi liên tiếp của một loại task chạm ngưỡng → chuông `coffee_admin`."""
+    recent = recent_runs(db, SOURCE_POS365, job, FAIL_ALERT_STREAK,
+                         statuses=(SyncStatus.SUCCESS, SyncStatus.FAILED))
     if len(recent) < FAIL_ALERT_STREAK:
         return
-    if any(r.status != int(PosSyncStatus.FAILED) for r in recent):
+    if any(r.status != int(SyncStatus.FAILED) for r in recent):
         return
     try:
         from app.modules.notification.model import Notification
         from app.modules.notification.service import get_users_by_role_codes
-        label = recent[0].kind_label
         for u in get_users_by_role_codes(db, ["coffee_admin"]):
             db.add(Notification(
                 user_id=u.id,
@@ -57,41 +60,39 @@ def _alert_failures(db, kind: int):
 def _run_logged(kind: PosSyncKind, fn, actor_id: int = 0) -> dict:
     """Khung chung: mở nhật ký → chạy → đóng nhật ký. `fn(db)` trả dict stats;
     các khóa `fetched/written/skipped/cursor_*` (nếu có) chép vào dòng nhật ký,
-    phần còn lại vào `detail` (JSON) cho màn đối soát đọc."""
+    phần còn lại vào `payload` (JSON) cho màn đối soát đọc."""
+    job = SYNC_JOB_BY_KIND[kind]
+    label = ENUM_LABELS["pos_sync_kind"].get(kind, job)
     db = SessionLocal()
-    run = PosSyncRun(kind=int(kind), status=int(PosSyncStatus.RUNNING),
-                     started_at=service.now_str(), created_by=actor_id,
-                     updated_by=actor_id)
-    db.add(run)
-    db.commit()
+    run = open_run(db, SOURCE_POS365, job, entity="pos_order", user_id=actor_id)
+    status, message, stats = SyncStatus.SUCCESS, "", {}
     try:
         stats = fn(db) or {}
-        run.fetched = int(stats.pop("fetched", 0))
-        run.written = int(stats.pop("written", 0))
-        run.skipped = int(stats.pop("skipped", 0))
-        run.cursor_from = str(stats.pop("cursor_from", ""))
-        run.cursor_to = str(stats.pop("cursor_to", ""))
-        if stats:
-            run.detail = json.dumps(stats, ensure_ascii=False)[:20000]
-        run.status = int(PosSyncStatus.SUCCESS)
         return {"status": "success", "run_id": run.id}
     except Pos365Disabled as e:
         db.rollback()
-        run.status = int(PosSyncStatus.SKIPPED)
-        run.error = str(e)
+        status, message = SyncStatus.SKIPPED, f"Cầu dao HARD_OFF đang bật: {e}"
         return {"status": "skipped", "run_id": run.id}
-    except Exception as e:  # noqa: BLE001 — mọi lỗi phải thành dòng nhật ký FAILED
+    except Exception as e:  # noqa: BLE001 — mọi lỗi phải thành một dòng sổ trạng thái lỗi
         db.rollback()
-        run.status = int(PosSyncStatus.FAILED)
-        run.error = str(e)[:2000]
+        status, message = SyncStatus.FAILED, str(e)[:2000]
         log.exception("Đồng bộ POS365 lỗi (%s)", kind.name)
         return {"status": "failed", "run_id": run.id, "error": str(e)[:200]}
     finally:
-        run.finished_at = service.now_str()
-        db.add(run)
-        db.commit()
-        if run.status == int(PosSyncStatus.FAILED):
-            _alert_failures(db, int(kind))
+        #  `stats` là dict do nghiệp vụ trả; bóc ra năm khóa có cột riêng, phần
+        #  còn lại giữ nguyên trong `payload`.
+        detail = dict(stats)
+        finish_run(
+            db, run, status, message=message,
+            fetched=int(detail.pop("fetched", 0) or 0),
+            written=int(detail.pop("written", 0) or 0),
+            skipped=int(detail.pop("skipped", 0) or 0),
+            cursor_from=str(detail.pop("cursor_from", "") or ""),
+            cursor_to=str(detail.pop("cursor_to", "") or ""),
+            detail=detail or None,
+        )
+        if status == SyncStatus.FAILED:
+            _alert_failures(db, job, label)
         db.close()
 
 

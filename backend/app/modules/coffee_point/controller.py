@@ -16,11 +16,14 @@ from app.core.database import get_db
 from app.core.response import success
 from app.core.scoping import apply_scope, get_scoped
 from app.modules.employee.model import Employee
+from app.modules.sync_log.constants import SyncGrain
+from app.modules.sync_log.model import SyncLog
+from app.modules.sync_log.registry import SOURCE_POS365
 
 from . import service
 from .model import (ENUM_LABELS, CoffeeLedger, CoffeeLedgerType, CoffeeLevel,
                     CoffeeMember, CoffeeMemberStatus, CoffeePolicy, PosOrder,
-                    PosOrderMatchStatus, PosSyncKind, PosSyncRun)
+                    PosOrderMatchStatus, PosSyncKind)
 from .pos365_client import Pos365Disabled, Pos365Error, get_client
 from .schema import (AdjustIn, CreatePartnerIn, MatchIn, MemberCreate,
                      MemberUpdate, PolicyIn, ResetExecuteIn, ResolveIn,
@@ -564,7 +567,14 @@ def run_sync(data: SyncRunIn, db: Session = Depends(get_db),
 @router.get("/sync/runs")
 def list_sync_runs(pg: dict = Depends(pagination), db: Session = Depends(get_db),
                    user=Depends(require("pos_order", "read"))):
-    query = db.query(PosSyncRun).order_by(PosSyncRun.id.desc())
+    """Nhật ký đồng bộ RIÊNG của POS365 — cùng dữ liệu với màn Sổ đồng bộ chung,
+    chỉ lọc sẵn nguồn `pos365` và hạt LƯỢT CHẠY để người coi quán khỏi phải lọc
+    tay giữa cả trăm nguồn khác. Quyền vẫn là `pos_order.read`, không đòi
+    `sync_log.read`: đây là việc thường ngày của quản trị quán."""
+    query = (db.query(SyncLog)
+             .filter(SyncLog.source == SOURCE_POS365,
+                     SyncLog.grain == int(SyncGrain.RUN))
+             .order_by(SyncLog.id.desc()))
     total = query.count()
     rows = query.offset(pg["offset"]).limit(pg["limit"]).all()
     return success({"total": total, "items": [service.serialize_sync_run(r) for r in rows]})

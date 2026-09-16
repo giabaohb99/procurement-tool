@@ -81,6 +81,10 @@ class PosOrderMatchStatus(IntEnum):
 
 
 class PosSyncKind(IntEnum):
+    """Năm vòng chạy nền. Đây là con số giao diện gửi lên khi bấm «Chạy ngay»;
+    xuống sổ thì lưu thành MÃ CHỮ ở cột `tab_sync_log.job` — xem `SYNC_JOB_BY_KIND`.
+    """
+
     PULL_ORDERS = 1
     CHECK_VOIDS = 2
     MONTHLY_RESET = 3
@@ -88,14 +92,22 @@ class PosSyncKind(IntEnum):
     MIRROR = 5
 
 
-class PosSyncStatus(IntEnum):
-    """`SKIPPED` = cầu dao `POS365_HARD_OFF` đang bật — là CHỦ Ý, không phải sự cố,
-    nên không tính vào chuỗi FAILED của cảnh báo D-06."""
+#  Nhật ký đồng bộ KHÔNG còn bảng riêng. `tab_pos_sync_run` đã gộp vào quyển sổ
+#  chung `tab_sync_log` (nguồn `pos365`, `grain = RUN`) — một bảng cho mọi hệ
+#  ngoài, xem `modules/sync_log/model.py`. Trạng thái dùng luôn `SyncStatus` của
+#  sổ chung, nên bộ `PosSyncStatus` cũ (RUNNING=1, SUCCESS=2...) đã bỏ: giữ hai
+#  bộ mã lệch nhau cho cùng một khái niệm là nguồn lỗi, không phải sự linh hoạt.
+SYNC_JOB_BY_KIND: dict[int, str] = {
+    PosSyncKind.PULL_ORDERS: "pull_orders",
+    PosSyncKind.CHECK_VOIDS: "check_voids",
+    PosSyncKind.MONTHLY_RESET: "monthly_reset",
+    PosSyncKind.RECONCILE: "reconcile",
+    PosSyncKind.MIRROR: "mirror",
+}
 
-    RUNNING = 1
-    SUCCESS = 2
-    FAILED = 3
-    SKIPPED = 4
+#  Chiều ngược: đọc một dòng sổ (chỉ có mã chữ) rồi trả về đúng con số mà màn
+#  «Nhật ký đồng bộ» của Điểm cà phê vẫn dùng để tô màu và lọc.
+KIND_BY_SYNC_JOB: dict[str, int] = {job: int(kind) for kind, job in SYNC_JOB_BY_KIND.items()}
 
 
 #  Nhãn tiếng Việt — giao diện đọc qua API, KHÔNG gõ lại bên TypeScript (luật R2:
@@ -132,12 +144,6 @@ ENUM_LABELS: dict[str, dict[int, str]] = {
         PosSyncKind.MONTHLY_RESET: "Reset kỳ tháng",
         PosSyncKind.RECONCILE: "Đối chiếu",
         PosSyncKind.MIRROR: "Soi gương số dư",
-    },
-    "pos_sync_status": {
-        PosSyncStatus.RUNNING: "Đang chạy",
-        PosSyncStatus.SUCCESS: "Thành công",
-        PosSyncStatus.FAILED: "Lỗi",
-        PosSyncStatus.SKIPPED: "Bỏ qua (HARD_OFF)",
     },
 }
 
@@ -261,32 +267,8 @@ class PosOrder(Base, AuditMixin):
         return ENUM_LABELS["pos_order_match_status"].get(self.match_status, "")
 
 
-class PosSyncRun(Base, AuditMixin):
-    """Nhật ký mỗi lần đồng bộ (D-05) — "quán kêu thiếu điểm là tra ra trong một phút".
-
-    `created_by` (AuditMixin) = ai bấm chạy tay; `0` = beat tự động.
-    `detail` = JSON kết quả (vd bảng lệch của RECONCILE) để màn đối soát đọc.
-    """
-
-    __tablename__ = "tab_pos_sync_run"
-
-    kind: Mapped[int] = mapped_column(SmallInteger, index=True)    # PosSyncKind
-    status: Mapped[int] = mapped_column(
-        SmallInteger, default=int(PosSyncStatus.RUNNING), index=True)
-    started_at: Mapped[str] = mapped_column(String(19), default="")
-    finished_at: Mapped[str] = mapped_column(String(19), default="")
-    cursor_from: Mapped[str] = mapped_column(String(30), default="")
-    cursor_to: Mapped[str] = mapped_column(String(30), default="")
-    fetched: Mapped[int] = mapped_column(Integer, default=0)
-    written: Mapped[int] = mapped_column(Integer, default=0)
-    skipped: Mapped[int] = mapped_column(Integer, default=0)
-    error: Mapped[str] = mapped_column(Text, default="")
-    detail: Mapped[str] = mapped_column(Text, default="")
-
-    @property
-    def kind_label(self) -> str:
-        return ENUM_LABELS["pos_sync_kind"].get(self.kind, "")
-
-    @property
-    def status_label(self) -> str:
-        return ENUM_LABELS["pos_sync_status"].get(self.status, "")
+#  Bảng `tab_pos_sync_run` ĐÃ BỎ — nhật ký đồng bộ nay là dòng `grain = RUN`
+#  trong `tab_sync_log` (nguồn `pos365`). Dữ liệu cũ đã chuyển sang trong chính
+#  migration bỏ bảng. Muốn "quán kêu thiếu điểm là tra ra trong một phút" (D-05)
+#  thì mở màn Sổ đồng bộ, lọc nguồn POS365 — và nay bấm được từ một lượt chạy
+#  sang đúng những đơn hàng nó đã ghi, thứ bảng cũ không làm được.

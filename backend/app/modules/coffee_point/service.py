@@ -16,10 +16,13 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.modules.employee.model import Employee
+from app.modules.sync_log.model import SyncLog
+from app.modules.sync_log.registry import SOURCE_POS365
+from app.modules.sync_log.service import last_successful_run
 
-from .model import (CoffeeLedger, CoffeeLedgerType, CoffeeMember,
-                    CoffeeMemberStatus, CoffeePolicy, PosOrder,
-                    PosOrderMatchStatus, PosSyncKind, PosSyncRun, PosSyncStatus)
+from .model import (ENUM_LABELS, KIND_BY_SYNC_JOB, SYNC_JOB_BY_KIND, CoffeeLedger,
+                    CoffeeLedgerType, CoffeeMember, CoffeeMemberStatus, CoffeePolicy,
+                    PosOrder, PosOrderMatchStatus, PosSyncKind)
 
 log = logging.getLogger("app.coffee_point")
 
@@ -351,11 +354,7 @@ def _pull_cutoff(db: Session) -> str:
     """Mốc kéo tăng dần: `cursor_to` của lần PULL SUCCESS gần nhất, lùi 10 phút đè
     mép; không có thì đầu ngày hôm qua. Cursor chỉ tiến khi SUCCESS — POS365 sập
     thì chu kỳ sau tự kéo bù."""
-    last = (db.query(PosSyncRun)
-            .filter(PosSyncRun.kind == int(PosSyncKind.PULL_ORDERS),
-                    PosSyncRun.status == int(PosSyncStatus.SUCCESS),
-                    PosSyncRun.cursor_to != "")
-            .order_by(PosSyncRun.id.desc()).first())
+    last = last_successful_run(db, SOURCE_POS365, SYNC_JOB_BY_KIND[PosSyncKind.PULL_ORDERS])
     if last:
         try:
             dt = datetime.strptime(last.cursor_to, "%Y-%m-%d %H:%M:%S")
@@ -645,12 +644,22 @@ def serialize_pos_order(db: Session, row: PosOrder) -> dict:
     }
 
 
-def serialize_sync_run(r: PosSyncRun) -> dict:
+def serialize_sync_run(r: SyncLog) -> dict:
+    """Một LƯỢT CHẠY của POS365, đọc từ quyển sổ chung `tab_sync_log`.
+
+    Giữ nguyên hình dạng cũ của `/api/coffee/sync/runs` (màn Nhật ký đồng bộ trong
+    Sổ điểm & đối soát đang đọc đúng mấy khóa này) dù dưới DB đã đổi bảng:
+    `kind` ← `job`, `started_at` ← `last_tried_at`, `error` ← `message`,
+    `detail` ← `payload`. Riêng `status` nay là mã của `SyncStatus` — bộ mã cũ
+    `PosSyncStatus` đã bỏ, giao diện phải đổi bảng màu theo.
+    """
+    kind = KIND_BY_SYNC_JOB.get(r.job or "", 0)
     return {
-        "id": r.id, "kind": r.kind, "kind_label": r.kind_label,
+        "id": r.id, "kind": kind,
+        "kind_label": ENUM_LABELS["pos_sync_kind"].get(kind, r.job_label),
         "status": r.status, "status_label": r.status_label,
-        "started_at": r.started_at, "finished_at": r.finished_at,
-        "cursor_from": r.cursor_from, "cursor_to": r.cursor_to,
-        "fetched": r.fetched, "written": r.written, "skipped": r.skipped,
-        "error": r.error, "detail": r.detail, "created_by": r.created_by,
+        "started_at": r.last_tried_at or "", "finished_at": r.finished_at or "",
+        "cursor_from": r.cursor_from or "", "cursor_to": r.cursor_to or "",
+        "fetched": r.fetched or 0, "written": r.written or 0, "skipped": r.skipped or 0,
+        "error": r.message or "", "detail": r.payload or "", "created_by": r.created_by,
     }

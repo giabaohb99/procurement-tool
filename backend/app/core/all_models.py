@@ -84,3 +84,6 @@ from app.modules.leave import request_model as _leave_request  # noqa: F401
 from app.modules.meeting_room import model as _meeting_room  # noqa: F401
 # Phân hệ Điểm cà phê × POS365 (doc/erp/diem-ca-phe/, CP1)
 from app.modules.coffee_point import model as _coffee_point  # noqa: F401
+# Sổ đồng bộ dùng chung cho MỌI hệ ngoài (app đặt xe, POS365, đơn hàng...) —
+# `tab_pos_sync_run` cũ đã gộp vào đây, xem `modules/sync_log/model.py`.
+from app.modules.sync_log import model as _sync_log  # noqa: F401

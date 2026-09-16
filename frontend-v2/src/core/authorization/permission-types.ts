@@ -137,6 +137,10 @@ export const ENTITIES = [
   //  API — giao diện chỉ việc đọc cờ `can_read_changes`, đừng tự giấu bằng CSS.
   'audit',
   'change_log',
+  //  Sổ đồng bộ với hệ ngoài (P0 đặt xe) — màn `/system/sync-logs`. MỘT khóa cho
+  //  mọi nguồn (app đặt xe, POS365, đơn hàng...). `write` KHÔNG phải sửa dòng sổ
+  //  — sổ không sửa được — mà là nút «Chạy lại», tức gọi ngược sang hệ ngoài.
+  'sync_log',
 ] as const
 
 export type PermissionEntity = (typeof ENTITIES)[number]

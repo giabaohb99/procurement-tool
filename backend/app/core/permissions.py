@@ -111,6 +111,13 @@ ENTITIES = [
     # ⚠️ Xem dòng thời gian của CHÍNH một phiếu thì vẫn đi bằng quyền `read` của
     # phiếu đó, không đòi hai khóa này (D-018: hệ đang chạy, vai trò cũ không tự có).
     "audit", "change_log",
+    # Sổ đồng bộ với hệ ngoài (P0 đồng bộ app đặt xe, doc dong-bo-dat-xe-duyet-dau §3.3).
+    # MỘT khóa cho MỌI nguồn (app đặt xe, POS365, đơn hàng...) vì chỉ có một màn:
+    # `/system/sync-logs`. `write` KHÔNG phải quyền sửa dòng sổ — sổ không sửa được —
+    # mà là nút «Chạy lại», tức gọi lại sang hệ ngoài.
+    # ⚠️ Nhật ký đồng bộ RIÊNG của POS365 (`/api/coffee/sync/runs`) vẫn đi bằng
+    # `pos_order.read` như cũ dù nay đọc chung một bảng.
+    "sync_log",
 ]
 
 ACTIONS = ["read", "create", "write", "delete", "approve", "cancel", "print", "export"]
@@ -184,6 +191,7 @@ ENTITY_LABELS = {
     "login_session": "Phiên đăng nhập",
     "audit": "Nhật ký hệ thống (tra toàn hệ)",
     "change_log": "Nhật ký hệ thống › Giá trị trước/sau",
+    "sync_log": "Sổ đồng bộ với hệ ngoài",
 }
 
 ACTION_LABELS = {

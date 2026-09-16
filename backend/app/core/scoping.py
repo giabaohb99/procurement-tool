@@ -246,6 +246,14 @@ SCOPE_FIELDS = {
     #  `read` của phiếu đó và đã bị `apply_scope` lọc sẵn ở đó rồi.
     "audit":            PUBLIC,
     "change_log":       PUBLIC,
+
+    # --- Sổ đồng bộ với hệ ngoài (P0 đặt xe) ---
+    #  PUBLIC cùng một lý do với nhật ký hệ thống, và còn dứt khoát hơn: một dòng
+    #  sổ đồng bộ nói về BẢN GHI CỦA BÊN KIA (`legacy_id`), lúc nó hỏng thì phía
+    #  ERP thường CHƯA có bản ghi nào để mà xét công ty/phòng ban. Cắt theo phạm vi
+    #  ở đây nghĩa là đúng những dòng lỗi nặng nhất thì không ai nhìn thấy.
+    #  Chốt là ở cửa: khóa `sync_log` chỉ cấp cho quản trị hệ thống.
+    "sync_log":         PUBLIC,
 }
 
 

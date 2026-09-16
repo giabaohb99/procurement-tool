@@ -234,6 +234,10 @@ _SYS_ENTITIES = {"user", "role", "setting", "backup", "help_article", "mailbox",
                  #  loại hồ sơ của phòng Hành chính. Vòng `setdefault` phía dưới
                  #  vẫn cấp `read` cho họ như mọi vai trò khác.
                  "dossier_type",
+                 #  Sổ đồng bộ với hệ ngoài (P0 đặt xe): `write` là nút «Chạy
+                 #  lại», tức bấm một phát là ERP gọi ngược sang app cũ / POS365.
+                 #  Việc của quản trị hệ thống, không phải của thu mua.
+                 "sync_log",
                  "audit", "change_log"}
 _PUR_MANAGER_PERMS = {e: (_ALL_ACTIONS, "all") for e in ENTITIES if e not in _SYS_ENTITIES}
 

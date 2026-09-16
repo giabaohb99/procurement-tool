@@ -216,3 +216,19 @@ Hai vấn đề CÓ SẴN của nhánh/DB dev, KHÔNG do phân hệ này, ghi l�
    sửa migration đó thành idempotent) rồi `alembic upgrade head` là bảng tự vào.
 2. **Một test Thu mua đỏ sẵn:** `test_pr_line_no_po_cr074.py::test_moi_lap_don_nhap_thi_phieu_van_o_da_dieu_phoi`
    (sync trạng thái YCMH) — đỏ từ trước khi thêm phân hệ này, không liên quan.
+
+## Nợ phải dọn khi quay lại phân hệ này (ghi 16/09/2026)
+
+**`coffee_member.delete` mở menu mà backend không gác.** Mục menu khai `manage: true`,
+tức nó đòi đủ bộ `create · write · delete`, nhưng không endpoint nào của Điểm cà phê gác
+`delete` trên `coffee_member` — cấp hành động đó cho ai là người đó **thấy menu rồi vào
+trong ăn 403 im lặng**. Đang làm `test_dong_bo_giao_dien_v2.py::test_muc_menu_manage_khong_mo_bang_hanh_dong_ma`
+đỏ (cùng lô với `login_session.create/write`, lỗi của phân hệ khác).
+
+Chữa một trong hai đường, đừng sửa test cho nó xanh:
+
+- Nếu **thật sự chưa có** cửa xóa thành viên: bỏ `manage: true` ở mục menu, đổi sang
+  `action:` đúng hành động backend đang gác.
+- Nếu **đáng lẽ phải có**: viết endpoint xóa và gác `require("coffee_member", "delete")`.
+
+Chỉ thêm vào `_LECH_DA_BIET` của tệp test khi lệch là CỐ Ý, và phải kèm lý do.

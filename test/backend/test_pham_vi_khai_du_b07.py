@@ -145,9 +145,16 @@ def test_du_55_entity():
     hằng ngày của nhiều người, thêm bớt LOẠI là đổi luật phân loại cho cả công ty.
     PUBLIC ở `SCOPE_FIELDS`: một loại giấy tờ là một loại giấy tờ với cả công ty,
     không có chiều pháp nhân hay phòng ban nào để lọc.
+
+    63 → 64 ngày 16/09/2026 (P0 đồng bộ app đặt xe): `sync_log` — Sổ đồng bộ với
+    hệ ngoài. MỘT khóa cho MỌI nguồn (app đặt xe, POS365, đơn hàng...) vì chỉ có
+    một màn; thêm nguồn là thêm một adapter ở `sync_log/registry.py`, không thêm
+    khóa. Khai `PUBLIC` cùng lý do với nhật ký, còn dứt khoát hơn: dòng sổ nói về
+    bản ghi CỦA BÊN KIA, lúc nó hỏng thì phía ERP thường chưa có bản ghi nào để
+    xét công ty/phòng ban — cắt phạm vi là giấu đúng dòng lỗi nặng nhất.
     """
-    assert len(ENTITIES) == 63
-    assert len(SCOPE_FIELDS) == 63
+    assert len(ENTITIES) == 64
+    assert len(SCOPE_FIELDS) == 64
 
 
 # ── 2. Không dựng nổi điều kiện thì chặn ────────────────────────────────────────

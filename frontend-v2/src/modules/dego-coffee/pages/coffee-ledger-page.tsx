@@ -38,11 +38,15 @@ interface ReconcileDetail {
 }
 
 const RECONCILE_KIND = 4
+//  Mã của `SyncStatus` (sổ đồng bộ chung `tab_sync_log`), KHÔNG phải bộ
+//  `PosSyncStatus` cũ — bộ đó đánh RUNNING=1 nên mọi mã ở đây đã lùi một bậc kể
+//  từ 16/09/2026. Nhãn do backend gửi kèm (`status_label`), đây chỉ chọn màu.
 const SYNC_STATUS_VARIANT: Record<number, 'default' | 'outline' | 'destructive'> = {
-  1: 'outline', // đang chạy
-  2: 'default', // thành công
-  3: 'destructive', // lỗi
-  4: 'outline', // bỏ qua (HARD_OFF)
+  1: 'outline', // chờ
+  2: 'outline', // đang chạy
+  3: 'default', // thành công
+  4: 'destructive', // lỗi
+  5: 'outline', // bỏ qua (HARD_OFF)
 }
 
 /** Sổ điểm & đối soát — 4 tab: Sổ cái · Đơn chưa khớp · Đối chiếu · Nhật ký đồng bộ. */
