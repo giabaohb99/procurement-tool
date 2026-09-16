@@ -92,6 +92,17 @@ ENTITIES = [
     # đăng nhập, KHÔNG đòi khóa này — hệ đang chạy thì vai trò cũ không tự có khóa
     # mới (D-018), mà ai cũng phải đá được thiết bị lạ của chính mình.
     "login_session",
+    # Nhật ký hệ thống (bao-CR-407 / CR-312 P5, doc nhat-ky-va-phien-dang-nhap §7).
+    # HAI khóa chứ không một, vì đó là hai câu hỏi khác hẳn nhau về mức nhạy cảm:
+    #   `audit`      = tra TOÀN HỆ ai làm gì lúc nào (màn `/system/logs`, dòng
+    #                  thời gian gộp) — vẫn chỉ là câu tiếng Việt tóm tắt.
+    #   `change_log` = xem GIÁ TRỊ TRƯỚC/SAU của từng ô, thân yêu cầu, chi tiết
+    #                  lỗi. Giá trị cũ có thể chứa TÊN NHÀ CUNG CẤP — đúng thứ cả
+    #                  cơ chế phương án dựng ra để giấu với người yêu cầu. Gộp
+    #                  chung một khóa là ai tra được nhật ký cũng đọc được nó.
+    # ⚠️ Xem dòng thời gian của CHÍNH một phiếu thì vẫn đi bằng quyền `read` của
+    # phiếu đó, không đòi hai khóa này (D-018: hệ đang chạy, vai trò cũ không tự có).
+    "audit", "change_log",
 ]
 
 ACTIONS = ["read", "create", "write", "delete", "approve", "cancel", "print", "export"]
@@ -162,6 +173,8 @@ ENTITY_LABELS = {
     "coffee_ledger": "Điểm cà phê › Sổ điểm & điều chỉnh",
     "pos_order": "Điểm cà phê › Đơn POS365 & đồng bộ",
     "login_session": "Phiên đăng nhập",
+    "audit": "Nhật ký hệ thống (tra toàn hệ)",
+    "change_log": "Nhật ký hệ thống › Giá trị trước/sau",
 }
 
 ACTION_LABELS = {

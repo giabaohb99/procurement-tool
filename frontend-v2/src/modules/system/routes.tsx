@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   MailCheck,
   MonitorSmartphone,
+  ScrollText,
   Settings,
   ShieldCheck,
   SlidersHorizontal,
@@ -79,11 +80,24 @@ export const systemModule: ErpModule = {
       manage: true,
     },
     {
-      label: 'Nhật ký hệ thống',
+      //  bao-CR-407: đổi tên từ «Nhật ký hệ thống». Màn này đọc `tab_audit_log`
+      //  — dấu vết NGHIỆP VỤ theo từng chứng từ. Tên cũ giành mất chỗ của màn
+      //  *Nhật ký hệ thống* thật (bên dưới), thứ lấy lượt gọi API làm xương sống.
+      label: 'Nhật ký nghiệp vụ',
       path: appRoutes.system.auditLogs,
       icon: History,
       entity: 'setting',
       manage: true,
+    },
+    {
+      //  bao-CR-407 (CR-312 P5). Hai khóa, KHÔNG `manage`: backend chỉ đòi
+      //  `audit.read` HOẶC `setting.read` để mở màn (`_can_read_logs`), còn
+      //  `change_log.read` quyết định có thấy giá trị trước/sau hay không —
+      //  không có cửa ghi nào ở đây, nhật ký là thứ chỉ đọc.
+      label: 'Nhật ký hệ thống',
+      path: appRoutes.system.logs,
+      icon: ScrollText,
+      entities: ['audit', 'setting'],
     },
     {
       // bao-CR-395: khóa riêng `login_session` — Quản lý thu mua KHÔNG tự có
@@ -166,6 +180,12 @@ export const systemModule: ErpModule = {
       path: appRoutes.system.auditLogs,
       lazy: async () => ({
         Component: (await import('./pages/audit-log-list-page')).AuditLogListPage,
+      }),
+    },
+    {
+      path: appRoutes.system.logs,
+      lazy: async () => ({
+        Component: (await import('./pages/system-log-list-page')).SystemLogListPage,
       }),
     },
     {

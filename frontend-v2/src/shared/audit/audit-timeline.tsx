@@ -1,6 +1,9 @@
-import { ChevronsUp, History } from 'lucide-react'
+import { ChevronsUp, History, ScrollText } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 
+import { usePermission } from '@/core/authorization/use-permission'
+import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
@@ -56,6 +59,12 @@ export function AuditTimeline({
 }: AuditTimelineProps) {
   const [visible, setVisible] = useState(PAGE_STEP)
   const { data: logs, isLoading } = useAuditLogs(entity, entityId)
+  const { can } = usePermission()
+
+  //  Gác đúng luật của `_can_read_logs` bên backend: `audit` HOẶC `setting`. Hiện
+  //  nút cho người không mở được màn đó thì cú bấm rơi thẳng vào trang 403, mà từ
+  //  đây họ không đoán ra vì sao — dòng thời gian này thì ai cũng đọc được.
+  const canReadSystemLogs = can('audit', 'read') || can('setting', 'read')
 
   const total = logs?.length ?? 0
   const remaining = total - visible
@@ -103,8 +112,32 @@ export function AuditTimeline({
                           ? log.message || log.action_label
                           : `${log.action_label}${showMessage && log.message ? `: ${log.message}` : ''}`}
                       </p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatDateTime(log.at)}
+                      <p className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
+                        <span>{formatDateTime(log.at)}</span>
+                        {canReadSystemLogs && log.request_id && (
+                          <>
+                            <span aria-hidden>·</span>
+                            {/*
+                              Dòng này chỉ kể «ai làm gì»; lượt gọi bên kia mới có
+                              giá trị TRƯỚC/SAU, thân yêu cầu, IP và thiết bị. Nối
+                              bằng `request_id` chứ không bằng thời điểm — hai
+                              thao tác trong cùng một giây là chuyện thường.
+                            */}
+                            <Link
+                              to={appRoutes.system.logDetail(log.request_id)}
+                              className="inline-flex items-center gap-1 hover:text-foreground hover:underline"
+                              title={
+                                log.changed_fields
+                                  ? `Trường đã đổi: ${log.changed_fields}`
+                                  : 'Xem lượt gọi API đã sinh ra dòng này'
+                              }
+                            >
+                              <ScrollText className="size-3" />
+                              Xem lượt gọi
+                              {Boolean(log.change_count) && ` (${log.change_count} trường)`}
+                            </Link>
+                          </>
+                        )}
                       </p>
                     </div>
                     {action && <div className="shrink-0">{action}</div>}

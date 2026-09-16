@@ -9,6 +9,7 @@ from app.core.auth import get_current_user, get_perm_profile, user_has_permissio
 from app.core.database import get_db
 from app.core.entity_models import model_of
 from app.core.permissions import ENTITIES
+from app.core.request_context import request_id_text
 from app.core.response import success
 from app.core.scoping import scope_condition
 
@@ -67,7 +68,14 @@ def _guard(db: Session, user, entity: str | None, entity_id: int | None):
     #  LỌC theo `entity=auth` ngay trên màn Nhật ký hệ thống lại ăn 403, vì `auth`
     #  không phải khóa quyền nên `user_has_permission` luôn trả False — tức là lọc
     #  khắt khe hơn không lọc, đúng cái màn nhật ký đăng nhập cần dùng nhất.
-    is_system_admin = (user_has_permission(db, user, "setting", "read")
+    #  ⚠️ `audit` HOẶC `setting` — cố ý nhận cả hai (bao-CR-407). Khóa `audit` mới
+    #  ra đời ở P5, mà seed KHÔNG ghi đè vai trò trên hệ đang chạy (D-018): đổi
+    #  hẳn sang khóa mới là mọi quản trị hiện tại mất màn Nhật ký ngay lúc deploy,
+    #  và họ chỉ biết khi đi tra một sự cố. Giữ `setting` làm đường cũ, `audit` là
+    #  đường đúng để cấp cho người mới. Bỏ `setting` đi được sau khi đã tick tay
+    #  `audit` cho các vai trò — khi đó xóa nửa vế sau.
+    is_system_admin = (user_has_permission(db, user, "audit", "read")
+                       or user_has_permission(db, user, "setting", "read")
                        or user_has_permission(db, user, "setting", "write"))
     if not entity:
         if not is_system_admin:
@@ -192,6 +200,13 @@ def list_logs(
             "by": by,
             "by_id": l.created_by,
             "at": l.created_at,
+            #  bao-CR-407: ba ô để dòng thời gian của từng phiếu nối được sang màn
+            #  `/system/logs`. `request_id` RỖNG với dòng ghi trước P1 — giao diện
+            #  phải tự ẩn nút «Xem chi tiết» khi rỗng, đừng dựng đường dẫn tới
+            #  chuỗi trống. Hai ô còn lại cho biết lượt đó có gì để xem không.
+            "request_id": request_id_text(l.request_id),
+            "changed_fields": l.changed_fields,
+            "change_count": l.change_count,
         }
 
     # Nếu truyền `page`: trả về dạng phân trang cho màn hình Nhật ký hệ thống

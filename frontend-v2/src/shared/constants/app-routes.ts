@@ -284,8 +284,31 @@ export const appRoutes = {
     emailTemplate: (event: string) => `/system/email-templates/${event}`,
     /** Quản lý sao lưu CSDL hệ thống. */
     backups: '/system/backups',
-    /** Nhật ký hệ thống (Audit Logs). */
+    /**
+     * Nhật ký NGHIỆP VỤ — dòng thời gian «ai làm gì» đọc thẳng `tab_audit_log`.
+     *
+     * ⚠️ Đừng lẫn với `system.logs` bên dưới. Màn này chỉ có LỚP KỂ CHUYỆN: lượt
+     * gọi bị 403 hay chết 500 trước khi vào service không đẻ dòng audit nào nên
+     * không bao giờ hiện ở đây — mà đó đúng là hai thứ người ta đi tìm lúc có sự
+     * cố. Nhãn menu vì vậy đổi thành «Nhật ký nghiệp vụ» (bao-CR-407).
+     */
     auditLogs: '/system/audit-logs',
+    /**
+     * Nhật ký HỆ THỐNG — một dòng = một lượt gọi (`request_id`), gộp cả ba bảng
+     * `tab_request_log` · `tab_audit_log` · `tab_change_log` (bao-CR-407, CR-312 P5).
+     *
+     * Nhận `?request_id=` để mở thẳng ngăn chi tiết — đó là đường nút *Xem chi
+     * tiết* của `AuditTimeline` đi sang.
+     */
+    logs: '/system/logs',
+    /**
+     * Mở thẳng ngăn chi tiết của MỘT lượt gọi.
+     *
+     * Qua `encodeURIComponent` vì `request_id` là chuỗi do backend dựng, không
+     * phải số — dán thẳng vào query là để ngỏ cho một ký tự lạ cắt mất tham số.
+     */
+    logDetail: (requestId: string) =>
+      `/system/logs?request_id=${encodeURIComponent(requestId)}`,
     /** Phiên đăng nhập đang mở toàn hệ — đá phiên / bắt đăng nhập lại (bao-CR-395). */
     sessions: '/system/sessions',
     /** Hộp thư gửi danh nghĩa địa chỉ khác — dùng lúc ban hành văn bản. */

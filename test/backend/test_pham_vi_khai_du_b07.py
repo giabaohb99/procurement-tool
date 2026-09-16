@@ -130,9 +130,16 @@ def test_du_55_entity():
     có công ty/phòng ban, nên chỉ `all` (admin/Nhân sự) và `own` có nghĩa. Tab
     «Thiết bị của tôi» KHÔNG đi qua khóa này (endpoint `/api/auth/sessions` chỉ
     đòi đăng nhập) — vai trò cũ trên hệ đang chạy không tự có khóa mới.
+
+    60 → 62 ngày 15/09/2026 (bao-CR-407, CR-312 P5): `audit` + `change_log` —
+    màn Nhật ký hệ thống. HAI khóa vì đó là hai mức nhạy cảm khác hẳn nhau: tra
+    «ai làm gì» là một chuyện, đọc GIÁ TRỊ TRƯỚC/SAU của từng ô (có thể chứa tên
+    nhà cung cấp) là chuyện khác. Cả hai khai `PUBLIC`: cắt nhật ký theo phạm vi
+    của người tra thì đúng lượt gọi cần nhìn nhất — 403 của người ngoài phạm vi,
+    script chạy dưới `user_id = 0` — biến mất; chốt nằm ở việc CẤP khóa.
     """
-    assert len(ENTITIES) == 60
-    assert len(SCOPE_FIELDS) == 60
+    assert len(ENTITIES) == 62
+    assert len(SCOPE_FIELDS) == 62
 
 
 # ── 2. Không dựng nổi điều kiện thì chặn ────────────────────────────────────────

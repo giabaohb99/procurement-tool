@@ -47,6 +47,13 @@ describe('SYSTEM_DASHBOARD_SHORTCUTS', () => {
       if (item.entity !== shortcut.entity) {
         lech.push(`${shortcut.label}: entity ${shortcut.entity} ≠ ${item.entity}`)
       }
+      //  Màn khai NHIỀU khóa cũng phải khớp từng khóa và ĐÚNG thứ tự: thiếu một
+      //  khóa bên này là thẻ biến mất với đúng nhóm người backend đã mở cửa cho.
+      if ((item.entities ?? []).join(',') !== (shortcut.entities ?? []).join(',')) {
+        lech.push(
+          `${shortcut.label}: entities [${shortcut.entities ?? []}] ≠ [${item.entities ?? []}]`,
+        )
+      }
       if (Boolean(item.manage) !== Boolean(shortcut.manage)) {
         lech.push(`${shortcut.label}: manage ${Boolean(shortcut.manage)} ≠ ${Boolean(item.manage)}`)
       }
@@ -55,9 +62,10 @@ describe('SYSTEM_DASHBOARD_SHORTCUTS', () => {
     expect(lech).toEqual([])
   })
 
-  it('đủ chín lối tắt — hai hàng bốn cột lấp kín, không để thẻ trơ trọi hàng hai', () => {
+  it('đủ mười lối tắt — không để thẻ nào bị bỏ quên sau mỗi lần thêm màn', () => {
     //  Không phải con số thiêng: nó chốt rằng bốn màn bổ sung 14/09/2026 còn đó
-    //  (ba màn sót + Mẫu email thông báo tách ra ở duoc-CR-397).
-    expect(SYSTEM_DASHBOARD_SHORTCUTS).toHaveLength(9)
+    //  (ba màn sót + Mẫu email thông báo tách ra ở duoc-CR-397), cộng *Nhật ký
+    //  hệ thống* thêm ở bao-CR-407.
+    expect(SYSTEM_DASHBOARD_SHORTCUTS).toHaveLength(10)
   })
 })

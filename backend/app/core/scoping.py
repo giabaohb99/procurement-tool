@@ -229,6 +229,16 @@ SCOPE_FIELDS = {
     #  (thiết bị của tôi). `dept` rơi về `own` theo nhánh chung của `_role_scope_cond`,
     #  `company` không có cột thì bị chặn — đúng ý, đừng khai thêm chiều cho có.
     "login_session":    {"owner": "user_id"},
+
+    # --- Nhật ký hệ thống (bao-CR-407 / CR-312 P5) ---
+    #  PUBLIC, và đó là một quyết định chứ không phải chỗ khai cho đủ. Nhật ký là
+    #  thứ dùng để ĐI TRA SỰ CỐ: cắt nó theo phòng ban của người tra thì cú gọi
+    #  cần nhìn nhất — lượt 403 của người ngoài phạm vi, lượt script chạy dưới
+    #  `user_id = 0` — biến mất đúng lúc cần. Chốt là ở cửa: hai khóa này CHỈ cấp
+    #  cho quản trị, còn ai muốn xem dòng thời gian của phiếu mình thì đi bằng
+    #  `read` của phiếu đó và đã bị `apply_scope` lọc sẵn ở đó rồi.
+    "audit":            PUBLIC,
+    "change_log":       PUBLIC,
 }
 
 

@@ -12,6 +12,18 @@ export interface AuditLogEntry {
   /** Tên người thao tác, backend đã tra sẵn. */
   by: string
   at: string
+  /**
+   * Lượt gọi API đã sinh ra dòng này (bao-CR-407) — chìa khóa sang `/system/logs`.
+   *
+   * ⚠️ **RỖNG với mọi dòng ghi trước CR-312 P1.** Hồi đó chưa có `tab_request_log`
+   * nên không có gì để nối; đừng dựng đường dẫn tới chuỗi trống, và đừng đọc chuỗi
+   * rỗng thành «lượt gọi đã bị xóa».
+   */
+  request_id?: string
+  /** Tên các trường đã đổi, backend nối sẵn bằng dấu phẩy. Rỗng khi không đổi gì. */
+  changed_fields?: string
+  /** Số trường đã đổi trong lượt gọi đó — `0` nghĩa là thao tác không sửa dữ liệu. */
+  change_count?: number
 }
 
 /**

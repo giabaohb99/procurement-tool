@@ -21,8 +21,16 @@ export function SystemDashboardPage() {
   //  Trước 14/09/2026 trang này bày đủ 5 thẻ cho mọi người: ai không có quyền
   //  `backup` vẫn thấy thẻ *Sao lưu CSDL*, bấm vào ăn 403. Thẻ mời gọi một việc
   //  không làm được thì tệ hơn là không có thẻ.
+  //  Khóa nào cũng theo luật của chính mục menu: `manage` thì hỏi ba quyền sửa,
+  //  còn lại hỏi `read`. Màn khai NHIỀU khóa thì có một khóa là đủ — giống hệt
+  //  `itemAllowed` của menu trái, vì backend cũng gác bằng «hoặc».
+  const allowEntity = (entity: (typeof SYSTEM_DASHBOARD_SHORTCUTS)[number]['entity'], manage?: boolean) =>
+    entity ? (manage ? canManageEntity(entity, can) : can(entity, 'read')) : false
+
   const shortcuts = SYSTEM_DASHBOARD_SHORTCUTS.filter((item) =>
-    item.manage ? canManageEntity(item.entity, can) : can(item.entity, 'read'),
+    item.entities?.length
+      ? item.entities.some((entity) => allowEntity(entity, item.manage))
+      : allowEntity(item.entity, item.manage),
   )
 
   if (!canSetting && !canBackup) {

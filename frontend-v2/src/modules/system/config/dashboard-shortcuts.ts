@@ -6,6 +6,7 @@ import {
   History,
   MailCheck,
   MonitorSmartphone,
+  ScrollText,
   ShieldCheck,
   SlidersHorizontal,
   type LucideIcon,
@@ -20,7 +21,13 @@ export interface SystemShortcut {
   path: string
   icon: LucideIcon
   /** Khóa quyền của màn — cùng khóa mà mục menu trái đang dùng. */
-  entity: PermissionEntity
+  entity?: PermissionEntity
+  /**
+   * Màn mở được bằng BẤT KỲ khóa nào trong danh sách — khai y hệt `entities` của
+   * mục menu tương ứng. Dùng khi backend gác bằng «khóa A hoặc khóa B» chứ không
+   * bằng một khóa duy nhất (vd nhật ký hệ thống: `audit` hoặc `setting`).
+   */
+  entities?: PermissionEntity[]
   /**
    * Đòi quyền SỬA (`create|write|delete`) thay vì `read`. Phải khai y hệt mục
    * menu tương ứng trong `system/routes.tsx` — lệch một cái là thẻ hiện ra rồi
@@ -80,12 +87,21 @@ export const SYSTEM_DASHBOARD_SHORTCUTS: SystemShortcut[] = [
     manage: true,
   },
   {
-    label: 'Nhật ký hệ thống',
+    //  bao-CR-407: đổi tên cho khỏi giẫm lên màn *Nhật ký hệ thống* thật.
+    label: 'Nhật ký nghiệp vụ',
     description: 'Lịch sử ghi nhận toàn bộ thao tác (thêm, sửa, xóa, duyệt...) của người dùng.',
     path: appRoutes.system.auditLogs,
     icon: History,
     entity: 'setting',
     manage: true,
+  },
+  {
+    //  bao-CR-407 (CR-312 P5) — gộp ba bảng nhật ký theo `request_id`.
+    label: 'Nhật ký hệ thống',
+    description: 'Từng lượt gọi API, kèm lượt bị chặn và lượt hỏng — thứ không để lại dấu vết nghiệp vụ.',
+    path: appRoutes.system.logs,
+    icon: ScrollText,
+    entities: ['audit', 'setting'],
   },
   {
     label: 'Phiên đăng nhập',

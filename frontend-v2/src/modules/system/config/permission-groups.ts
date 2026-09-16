@@ -66,7 +66,14 @@ export const PERMISSION_GROUPS: PermissionGroupDef[] = [
   { id: 'report', title: 'Báo cáo', entities: ['report'] },
   { id: 'support', title: 'Hỗ trợ & Trợ giúp', entities: ['ticket', 'help_article'] },
   { id: 'assistant', title: 'Trợ lý AI', entities: ['assistant'] },
-  { id: 'system', title: 'Hệ thống', entities: ['setting', 'backup', 'mailbox', 'import'] },
+  {
+    id: 'system',
+    title: 'Hệ thống',
+    entities: ['setting', 'backup', 'mailbox', 'import',
+      //  Nhật ký & phiên đăng nhập (CR-312). `login_session` trước nay rơi vào
+      //  nhóm «Khác» — cùng một mối quan tâm với hai khóa nhật ký, xếp chung.
+      'login_session', 'audit', 'change_log'],
+  },
 ]
 
 export interface MetaEntity {

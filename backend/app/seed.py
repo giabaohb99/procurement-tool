@@ -223,7 +223,12 @@ _SYS_ENTITIES = {"user", "role", "setting", "backup", "help_article", "mailbox",
                  "coffee_policy", "coffee_member", "coffee_ledger", "pos_order",
                  #  Phiên đăng nhập (bao-CR-395): đá phiên / bắt đăng nhập lại là
                  #  việc của quản trị hệ thống + Nhân sự, không phải của thu mua.
-                 "login_session"}
+                 "login_session",
+                 #  Nhật ký hệ thống (bao-CR-407): tra toàn hệ ai làm gì, và nhất
+                 #  là `change_log` — giá trị TRƯỚC/SAU của mọi ô. Lọt vào
+                 #  _PUR_MANAGER_PERMS là Quản lý thu mua đọc được giá cũ, thân
+                 #  yêu cầu và tên nhà cung cấp của mọi phân hệ khác.
+                 "audit", "change_log"}
 _PUR_MANAGER_PERMS = {e: (_ALL_ACTIONS, "all") for e in ENTITIES if e not in _SYS_ENTITIES}
 
 STD_ROLES = {

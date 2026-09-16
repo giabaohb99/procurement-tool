@@ -376,6 +376,17 @@ export const queryKeys = {
     settings: () => ['system', 'settings'] as const,
     backups: (params?: Record<string, unknown>) => ['system', 'backups', params ?? {}] as const,
     auditLogs: (params?: Record<string, unknown>) => ['system', 'audit-logs', params ?? {}] as const,
+    /**
+     * Nhật ký hệ thống gộp theo `request_id` (bao-CR-407) — KHÁC `auditLogs`:
+     * khóa kia đọc `tab_audit_log`, khóa này đọc `tab_request_log` làm xương sống.
+     */
+    systemLogs: (params?: Record<string, unknown>) =>
+      ['system', 'system-logs', params ?? {}] as const,
+    /** Số liệu ba biểu đồ — CÙNG bộ lọc với danh sách, nên tham số cũng vào khóa. */
+    systemLogSummary: (params?: Record<string, unknown>) =>
+      ['system', 'system-logs', 'summary', params ?? {}] as const,
+    systemLogDetail: (requestId: string) =>
+      ['system', 'system-logs', 'detail', requestId] as const,
     /** Phiên đăng nhập toàn hệ (bao-CR-395) — màn Quản trị + thẻ ở hồ sơ nhân sự. */
     loginSessions: (params?: Record<string, unknown>) =>
       ['system', 'login-sessions', params ?? {}] as const,

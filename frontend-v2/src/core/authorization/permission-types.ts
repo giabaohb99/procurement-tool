@@ -129,6 +129,13 @@ export const ENTITIES = [
   //  bắt đăng nhập lại. «Thiết bị của tôi» ở /me KHÔNG cần khóa này (cửa
   //  `/api/auth/sessions*` chỉ đòi đăng nhập).
   'login_session',
+  //  Nhật ký hệ thống (bao-CR-407, CR-312 P5) — màn `/system/logs`.
+  //  `audit` = tra toàn hệ ai làm gì lúc nào. `change_log` = xem thêm GIÁ TRỊ
+  //  TRƯỚC/SAU của từng ô + thân yêu cầu; tách khóa vì giá trị cũ có thể chứa
+  //  tên nhà cung cấp. Thiếu `change_log` thì backend LƯỢC dữ liệu đó ở tầng
+  //  API — giao diện chỉ việc đọc cờ `can_read_changes`, đừng tự giấu bằng CSS.
+  'audit',
+  'change_log',
 ] as const
 
 export type PermissionEntity = (typeof ENTITIES)[number]
