@@ -1500,7 +1500,7 @@ Bài học gộp: cây làm việc đang bẩn thì gộp bằng **commit tạm 
 Prod vẫn hoãn theo lệnh đại ca.
 
 ## bao-CR-407 | CR-312 P5 — màn Nhật ký hệ thống (/system/logs)
-- status: dang-lam
+- status: xong
 - date: 2026-09-15
 Ba bảng nhật ký (`tab_request_log` · `tab_audit_log` · `tab_change_log`) đã ghi đủ từ P3/P4
 nhưng **chưa ai đọc được**: không có cửa API nào gộp chúng, cũng không có màn hình. P5 dựng
@@ -1514,7 +1514,9 @@ là thủng cửa sau.
 Lỗi thật phát hiện lúc chạy: `Data too long for column 'action'` — cột `action` của
 `tab_audit_log` là `VARCHAR(50)` mà mã sinh chuỗi dài hơn. Đã sửa nguồn sinh chuỗi; bài kiểm
 độ dài mã hành động thì đại ca cho để sau.
-Trạng thái: mã xong, test xanh, **CHƯA commit, chưa deploy**.
+Trạng thái: **commit `erp-v2` `a499ed14`, đã deploy DEV 16/09/2026**; prod chờ lệnh đại ca.
+Sau khi lên dev còn phải tick tay hai khóa `audit` và `change_log` cho các vai trò ngoài admin
+(seed không ghi đè phân quyền đang chạy).
 
 ### bao-CR-407-vi-du-doc-log | Ví dụ một ca đọc log xuyên suốt
 - status: xong
@@ -1525,7 +1527,7 @@ sinh MỘT `request_id`, `tab_request_log` giữ đầu vào (ai · đường d�
 của từng cột. Vào màn, bấm một dòng là ra đủ ba lớp của cùng một thao tác.
 
 ## bao-CR-408 | Siết khâu tải tệp lên — đóng cả cụm BM-025…BM-031
-- status: dang-lam
+- status: xong
 - date: 2026-09-15
 Đại ca chốt "gộp một CR đi bạn" cho cả bảy lỗ, vì **bốn trên bảy nằm trong CÙNG một hàm**
 (`attachment/controller.py::_store_one`, 28 dòng) — tách bảy CR thì phải mở lại hàm đó bốn lượt
@@ -1543,7 +1545,9 @@ tầng ASGI/nginx, không thuộc mã nghiệp vụ.
 Test: `test/backend/test_bao_mat_tai_tep.py` 11 ca mới; chạy kèm hàng xóm **171 xanh**.
 Không có migration; deploy phải dựng lại `api` + `celery-worker` + `celery-beat` (có việc dọn
 tệp mồ côi chạy 4h10 mỗi ngày).
-Trạng thái: mã xong, xanh, **CHƯA commit, chưa deploy** (dự kiến tách 5 commit).
+Trạng thái: **commit `erp-v2` `7086a4d0`, đã deploy DEV 16/09/2026**; prod chờ lệnh đại ca.
+Dự kiến ban đầu tách 5 commit nhưng cuối cùng đi MỘT commit: bảy lỗ chung một nền
+(`core/upload_guard.py`), tách ra thì commit nào cũng dở dang không chạy được một mình.
 
 ### bao-CR-408-tai-lieu | Cập nhật sổ ghi nhận lỗi bảo mật sau khi vá
 - status: xong
@@ -1554,7 +1558,7 @@ cũ là sự thật hôm nay. Việc 6 ghi rõ ba chỗ mã nguồn CỐ Ý làm
 người "sửa mã cho khớp tài liệu".
 
 ## bao-CR-409 | Tiến độ mua hàng: thêm hai cột ngày chứng từ (ticket prod 51)
-- status: dang-lam
+- status: xong
 - date: 2026-09-16
 Ticket 51 (TK16092601 — Phạm Lê Triết Giang) xin bày ra màn Tiến độ hai thứ vốn chỉ có trong
 chi tiết ĐMH: **Ngày giao chứng từ cho KT** và **Ngày hóa đơn**. Truy prod thì dữ liệu **đã có
@@ -1570,7 +1574,8 @@ Chốt một cột Ngày HĐ lấy từ LẦN GIAO: ô hóa đơn trên dòng h�
 `purchase_order/export.py::LINE_COLS` dùng chung `progress_ex.COLS`.
 Test: `test/backend/test_tien_do_ngay_chung_tu_cr409.py` 6 bài; chạy kèm hàng xóm 10 + 44 xanh.
 Cổng `frontend-v2` xanh (typecheck 0, lint 0 lỗi), typecheck `frontend/` giữ đúng 4 lỗi cũ.
-Trạng thái: mã xong, xanh, **CHƯA commit, chưa deploy**.
+Trạng thái: **commit `erp-v2` `a098da70` (đi chung commit với CR-411 vì chung bộ tệp), đã
+deploy DEV 16/09/2026**; prod chờ lệnh đại ca.
 
 ### bao-CR-409-don-test-cu | Dọn hai bài kiểm đã hết hạn của bao-CR-310 đợt 4
 - status: xong
@@ -1582,7 +1587,7 @@ lên đầu trang chi tiết mà quên sửa bài kiểm, nên chúng còn đi t
 `purchase-request-detail-page.tsx`, trang đó chưa có tệp kiểm nào.
 
 ## bao-CR-410 | Phiếu in Đơn đặt hàng: thêm cột Phân loại (ticket prod 52)
-- status: dang-lam
+- status: xong
 - date: 2026-09-16
 Phiếu ĐƠN ĐẶT HÀNG in ra gửi nhà cung cấp không nói hàng thuộc nhóm nào. Dữ liệu đã có sẵn
 trong gói bản in (`item_group` ở `purchase_order/controller.py::_item`) nên **không đụng
@@ -1594,10 +1599,10 @@ tiền tổng in lệch sang cột khác trên tờ giấy đưa cho NCC. Đã v
 Chỉ sửa phiếu ĐƠN ĐẶT HÀNG; phiếu nội bộ và phiếu nhập khẩu giữ nguyên vì ticket không xin.
 Test: 3 bài mới trong `purchase-order-print-page.test.tsx`, cả tệp 9 bài xanh.
 Cổng v2 typecheck 0 lỗi / lint 0 lỗi; typecheck `frontend/` giữ đúng 4 lỗi cũ.
-Trạng thái: mã xong, xanh, **CHƯA commit, chưa deploy**.
+Trạng thái: **commit `erp-v2` `b4e73807`, đã deploy DEV 16/09/2026**; prod chờ lệnh đại ca.
 
 ## bao-CR-411 | Tiến độ mua hàng: kho nhận hiện cả khi chưa nhận hàng (ticket prod 50)
-- status: dang-lam
+- status: xong
 - date: 2026-09-16
 Đại ca yêu cầu **rà kỹ rồi đề xuất trước, chưa được viết mã**. Đã đo trên prod: cả 240 dòng
 hàng đều đã có «Kho nhận mặc định» ở dòng, nhưng màn Tiến độ chỉ đọc kho của LẦN GIAO
@@ -1613,7 +1618,8 @@ chuyển sang cùng biểu thức lùi đó (`build_warehouse_code_col`) để g
 lọc được không lệch nhau. Không migration, không đụng frontend. Test:
 `test/backend/test_tien_do_kho_nhan_cr411.py` 8 bài; chạy kèm hàng xóm 26 xanh + 31 xanh.
 Còn treo chờ đại ca quyết: cột Kho vẫn ẩn mặc định ở cả hai bản.
-Trạng thái: mã xong, xanh, **CHƯA commit, chưa deploy**.
+Trạng thái: **commit `erp-v2` `a098da70` (đi chung với CR-409 vì chung bộ tệp), đã deploy DEV
+16/09/2026**; prod chờ lệnh đại ca.
 
 ## bao-CR-412 | Danh mục Kho tách ba trường: mã, tên viết tắt, tên đầy đủ
 - status: open
