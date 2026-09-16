@@ -6,11 +6,7 @@ import { CrudRecordCard } from '@/shared/crud/crud-record-card'
 import { Badge } from '@/shared/ui/badge'
 import type { IdentityChip } from '@/shared/ui/record-identity-card'
 import type { DossierType } from '../types/dossier-type'
-
-/** Câu mô tả hạn hiệu lực — dùng chung cho cột, thẻ và thẻ danh tính. */
-function validityText(months: number): string {
-  return months > 0 ? `${months} tháng` : 'Vô thời hạn'
-}
+import { VALIDITY_OPTIONS, formatValidity } from '../utils/validity-text'
 
 /**
  * Huy hiệu mô tả nhanh một loại hồ sơ — dùng CHUNG cho thẻ danh tính ở trang chi
@@ -24,7 +20,7 @@ function dossierTypeChips(r: DossierType, quietWhenNormal = false): IdentityChip
   const normal = r.is_active && quietWhenNormal
   return [
     { icon: Hash, text: r.code, tone: 'code' },
-    { icon: CalendarClock, text: validityText(r.default_valid_months), tone: 'muted' },
+    { icon: CalendarClock, text: formatValidity(r.default_valid_months), tone: 'muted' },
     ...(normal
       ? []
       : [
@@ -142,10 +138,11 @@ export const DOSSIER_TYPE_CRUD_CONFIG: CrudConfig<DossierType> = {
       width: 150,
       sortable: true,
       //  `0` là một lựa chọn THẬT (vô thời hạn), không phải ô chưa nhập — nói
-      //  thành lời, đừng hiện số 0 trần để người đọc tự đoán.
+      //  thành lời, đừng hiện số 0 trần để người đọc tự đoán. Câu chữ lấy từ
+      //  `formatValidity` để khớp từng chữ với ô chọn trên biểu mẫu.
       cell: (r) =>
         r.default_valid_months > 0 ? (
-          validityText(r.default_valid_months)
+          formatValidity(r.default_valid_months)
         ) : (
           <span className="text-muted-foreground">Vô thời hạn</span>
         ),
@@ -211,11 +208,14 @@ export const DOSSIER_TYPE_CRUD_CONFIG: CrudConfig<DossierType> = {
       hint: 'Luôn lưu thành CHỮ HOA. Tệp Excel nhập/xuất trỏ vào dòng này bằng mã, nên KHÔNG đổi được sau khi tạo.',
     },
     {
+      //  Ô CHỌN, không phải ô gõ số: «Vô thời hạn» là một dòng bấm được nên không
+      //  còn gì phải giải nghĩa bằng chú thích, và trần 1200 tháng của backend
+      //  không cách nào vượt. Mốc + nhãn khai ở `utils/validity-text.ts`.
       name: 'default_valid_months',
-      label: 'Hạn hiệu lực mặc định (tháng)',
-      type: 'number',
+      label: 'Hạn hiệu lực mặc định',
+      type: 'select',
+      options: VALIDITY_OPTIONS,
       defaultValue: 0,
-      hint: 'Để 0 nếu loại này vô thời hạn — đó là một lựa chọn thật, không phải bỏ trống. Tối đa 1200 tháng (100 năm).',
     },
     {
       name: 'is_active',
