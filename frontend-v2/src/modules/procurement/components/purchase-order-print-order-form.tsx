@@ -46,6 +46,9 @@ export function PurchaseOrderPrintOrderForm({
           <tr>
             <th>STT</th>
             <th>Mã</th>
+            {/* bao-CR-410: cột Phân loại đứng giữa Mã và Tên hàng, đúng thứ tự bảng dòng
+                trong màn chi tiết ĐMH — NCC đọc phiếu in mà không phải dò ngược sang màn hình. */}
+            <th>Phân loại</th>
             <th>Tên hàng hóa</th>
             <th>
               Xuất xứ / TSKT /<br />
@@ -69,6 +72,7 @@ export function PurchaseOrderPrintOrderForm({
               <tr key={item.id ?? index}>
                 <td className="text-center">{index + 1}</td>
                 <td>{item.product_code}</td>
+                <td>{item.item_group}</td>
                 <td>{item.product_name}</td>
                 <td>{item.spec}</td>
                 <td className="text-center">{item.unit}</td>
@@ -84,7 +88,8 @@ export function PurchaseOrderPrintOrderForm({
             )
           })}
           <tr>
-            <td className="text-center font-bold" colSpan={9}>
+            {/* bao-CR-410: thêm cột Phân loại nên số ô gộp của dòng TỔNG CỘNG tăng 1 */}
+            <td className="text-center font-bold" colSpan={10}>
               TỔNG CỘNG
             </td>
             <td className="text-right font-bold">{formatMoney(data.order_total)}</td>

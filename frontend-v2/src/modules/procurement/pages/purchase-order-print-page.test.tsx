@@ -125,3 +125,59 @@ describe('PurchaseOrderPrintPage — công tắc chữ ký', () => {
     expect(screen.getByText('Người lập')).toBeInTheDocument()
   })
 })
+
+// bao-CR-410 (ticket prod 52) — phiếu ĐƠN ĐẶT HÀNG phải bày phân loại hàng hóa.
+describe('PurchaseOrderPrintPage — cột Phân loại của phiếu Đơn đặt hàng', () => {
+  function makeLine(item_group: string) {
+    return makeData({
+      items: [
+        {
+          id: 1,
+          product_code: 'NHG5218',
+          product_name: 'Nhãn giấy',
+          item_group,
+          spec: '',
+          unit: 'Cái',
+          qty_order: 100,
+          price: 1000,
+          vat: 8,
+          warehouse_code: 'KHO01',
+          invoice_name: '',
+          note: '',
+        },
+      ],
+    } as Partial<PurchaseOrderPrintData>)
+  }
+
+  it('prints the item group between the code and the product name', () => {
+    renderPage(makeLine('Bao bì'))
+
+    const headers = screen.getAllByRole('columnheader').map((th) => th.textContent)
+    expect(headers.slice(0, 4)).toEqual(['STT', 'Mã', 'Phân loại', 'Tên hàng hóa'])
+    expect(screen.getByRole('cell', { name: 'Bao bì' })).toBeInTheDocument()
+  })
+
+  it('keeps the TỔNG CỘNG row aligned with the header after the new column', () => {
+    // Thêm cột mà quên sửa `colSpan` thì số tổng tụt sang ô khác — bảng vẫn dựng được,
+    // không lỗi nào đỏ lên, chỉ có con số nằm dưới sai tiêu đề trên bản in đưa cho NCC.
+    renderPage(makeLine('Bao bì'))
+
+    const headerCount = screen.getAllByRole('columnheader').length
+    const totalCell = screen.getByRole('cell', { name: 'TỔNG CỘNG' })
+    const totalRow = totalCell.closest('tr')
+    const span = (cell: Element) => Number(cell.getAttribute('colspan') ?? 1)
+    const spanned = Array.from(totalRow?.children ?? []).reduce((sum, c) => sum + span(c), 0)
+
+    expect(spanned).toBe(headerCount)
+    // Ô tiền đứng ngay sau khối gộp, tức đúng cột "Thành tiền" (cột thứ 11).
+    expect(span(totalCell)).toBe(headerCount - 4)
+  })
+
+  it('leaves the cell blank for a line with no item group instead of printing undefined', () => {
+    renderPage(makeLine(''))
+
+    const headers = screen.getAllByRole('columnheader').map((th) => th.textContent)
+    expect(headers).toContain('Phân loại')
+    expect(screen.queryByText('undefined')).not.toBeInTheDocument()
+  })
+})
