@@ -96,6 +96,7 @@ export const purchaseProgressCondFilters = (showSupplier: boolean): FilterFieldD
   condNumber('qty_request', 'SL yêu cầu'), condNumber('qty_order', 'SL đặt'),
   condNumber('price', 'Đơn giá'), condNumber('vat', 'VAT %'),
   condSelect('progress_status', 'Tiến độ dòng', PO_PROGRESS_STATUSES),
+  condDate('document_delivery_date', 'Ngày giao chứng từ cho KT'),
   // Lần giao
   condNumber('delivery_no', 'Lần giao'),
   condSource('warehouse_code', 'Kho', { url: '/api/warehouses', value: 'code', label: 'name' }),
@@ -104,7 +105,8 @@ export const purchaseProgressCondFilters = (showSupplier: boolean): FilterFieldD
   condDate('regulated_date', 'Ngày quy định'), condNumber('std_days', 'Ngày QĐ (số ngày)'),
   condNumber('diff_promise', 'CL cam kết'), condNumber('diff_regulated', 'CL quy định'),
   condNumber('diff_required', 'CL vs yêu cầu'),
-  condText('delivery_invoice_no', 'Số hóa đơn'), condText('qc_result', 'Kết quả QC'),
+  condText('delivery_invoice_no', 'Số hóa đơn'), condDate('delivery_invoice_date', 'Ngày hóa đơn'),
+  condText('qc_result', 'Kết quả QC'),
   // B-06: cột lưu MÃ nên ô CHỮ hết dùng được (gõ "Đã nhận" không khớp `received`) — đổi hẳn
   // sang ô CHỌN, người dùng cũng bớt phải nhớ dấu tiếng Việt.
   condSelect('delivery_status', 'Trạng thái giao', PO_DELIVERY_STATUSES),
