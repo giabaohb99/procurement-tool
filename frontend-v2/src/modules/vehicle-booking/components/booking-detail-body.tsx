@@ -146,6 +146,7 @@ export function BookingDetailBody({ booking }: { booking: VehicleBooking }) {
                       {[stop.contact_name, stop.contact_phone].filter(Boolean).join(' · ')}
                     </span>
                   )}
+                  {stop.notes && <span className="text-xs text-muted-foreground">{stop.notes}</span>}
                 </div>
               </div>
             ))}

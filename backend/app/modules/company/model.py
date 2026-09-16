@@ -1,10 +1,10 @@
 from sqlalchemy import BigInteger, Boolean, SmallInteger, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.core.base_model import Base, AuditMixin
+from app.core.base_model import Base, AuditMixin, LegacyIdMixin
 
 
-class Company(Base, AuditMixin):
+class Company(Base, AuditMixin, LegacyIdMixin):
     """Pháp nhân nhận hóa đơn (có phân cấp qua `parent`)."""
 
     __tablename__ = "tab_company"

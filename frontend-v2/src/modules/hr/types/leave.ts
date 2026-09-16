@@ -288,6 +288,14 @@ export const APPROVAL_STEP_STATE = {
   REJECTED: 'rejected',
   RETURNED: 'returned',
   CANCELLED: 'cancelled',
+  /**
+   * Chặng KHÔNG CHẠY trên một phiếu đã duyệt xong — bước tùy chọn không cần
+   * tới, nhánh rẽ không đi vào, hoặc luồng nhảy cóc qua nó. Khác hẳn
+   * `CANCELLED`: chỗ kia nói phiếu chết, chỗ này nói phiếu đi đường ngắn hơn
+   * và vẫn duyệt xong. Vẽ chung một màu là người xem đọc một phiếu hoàn chỉnh
+   * thành phiếu bị rút.
+   */
+  SKIPPED: 'skipped',
 } as const
 
 export type ApprovalStepState =

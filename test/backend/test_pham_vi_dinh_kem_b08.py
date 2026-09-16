@@ -290,7 +290,9 @@ def test_duong_lui_khong_ap_cho_hop_dong(data, nguoi_dung):
 
 def test_tai_mot_tep_hop_dong_ngoai_pham_vi_van_403_du_co_duong_lui(data, nguoi_dung, monkeypatch):
     """Đường lùi gắn vào `download_one` không được nuốt mất nhánh chặn."""
-    monkeypatch.setattr(ac, "download_bytes", lambda key: b"x")
+    #  `read_file_bytes` chứ không phải `download_bytes`: từ đợt nạp app cũ,
+    #  `download_one` rẽ kho theo cột `source` (xem `core/legacy_files.py`).
+    monkeypatch.setattr(ac, "read_file_bytes", lambda f: b"x")
     user = nguoi_dung(_profile(["contract", "purchase_order"], scope="company", company_id=CTY_A))
     f = StoredFile(filename="a.pdf", file_key="k", url="u", content_type="application/pdf",
                    size=1, sha256="s")
@@ -307,7 +309,7 @@ def test_tai_mot_tep_hop_dong_ngoai_pham_vi_van_403_du_co_duong_lui(data, nguoi_
 
 
 def test_tai_mot_tep_trong_pham_vi_van_chay(data, nguoi_dung, monkeypatch):
-    monkeypatch.setattr(ac, "download_bytes", lambda key: b"noi dung")
+    monkeypatch.setattr(ac, "read_file_bytes", lambda f: b"noi dung")
     user = nguoi_dung(_profile(["contract"], scope="company", company_id=CTY_A))
     f = StoredFile(filename="a.pdf", file_key="k", url="u", content_type="application/pdf",
                    size=1, sha256="s")

@@ -41,6 +41,15 @@ class Settings(BaseSettings):
     # prod = "prod", dev đặt STORAGE_PREFIX=dev trong .env.dev → file/backup không lẫn nhau.
     STORAGE_PREFIX: str = "prod"
 
+    # Kho R2 của APP CŨ (đặt xe / duyệt dấu). 1488 tệp đính kèm nạp về 16/09/2026 mới có
+    # MÔ TẢ, byte vẫn nằm nguyên bucket bên đó — xem `core/legacy_files.py`. Cùng một tài
+    # khoản Cloudflare với kho ERP, chỉ khác bucket, nên chỉ cần một khóa CHỈ-ĐỌC.
+    # CỐ Ý không đi qua `tab_setting`: đây là khóa bí mật, không phải tùy chọn trên UI.
+    LEGACY_R2_ENDPOINT: str = ""
+    LEGACY_R2_BUCKET: str = ""
+    LEGACY_R2_ACCESS_KEY_ID: str = ""
+    LEGACY_R2_SECRET_ACCESS_KEY: str = ""
+
     SMTP_HOST: str = "smtp.gmail.com"
     SMTP_PORT: int = 587
     SMTP_USER: str = ""
@@ -149,6 +158,20 @@ class Settings(BaseSettings):
     POS365_PAYMENT_ACCOUNT_ID: int = 0
     # Chu kỳ kéo đơn (phút) — siết sau POC P6 (giới hạn gọi của POS365).
     POS365_PULL_MINUTES: int = 5
+
+    # --- Đồng bộ với app đặt xe / duyệt dấu CŨ (Firebase) ---
+    # Mặc định TẮT: bật là mở một đường máy-gọi-máy ra ngoài, phải cố ý bật ở .env.
+    SYNC_DATXE_ENABLED: bool = False
+    # Khóa ký chung hai bên (mục 6 của mo-ta-ky-thuat.md). KHÔNG commit, KHÁC NHAU
+    # giữa dev và prod. Rỗng = coi như chưa cấu hình, mọi lời gọi sang app cũ dừng.
+    SYNC_SHARED_SECRET: str = ""
+    # Gốc API của app cũ, vd https://api.degoholding.vn (không có dấu / cuối).
+    SYNC_LEGACY_API_BASE: str = ""
+    # Công ty mặc định cho bản ghi nhập từ app cũ khi không suy ra được.
+    SYNC_DEFAULT_COMPANY_ID: int = 1
+    # Có bắn chuông/email khi nạp dữ liệu từ app cũ không. Mặc định TẮT — đợt nạp
+    # lịch sử 1313 phiếu mà bật là hàng chục nghìn thông báo cho việc của năm ngoái.
+    SYNC_NOTIFY_ON_IMPORT: bool = False
 
     # --- Celery / Redis ---
     # Broker + result backend dùng chung 1 Redis (đủ cho quy mô ~20-100 user).

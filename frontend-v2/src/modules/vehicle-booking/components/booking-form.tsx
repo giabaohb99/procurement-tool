@@ -178,6 +178,7 @@ export function BookingForm({
         location: s.location.trim(),
         contact_name: s.contact_name.trim(),
         contact_phone: s.contact_phone.trim(),
+        notes: (s.notes ?? '').trim(),
       }))
       .filter((s) => s.location)
     const base: VehicleBookingPayload = {
@@ -410,6 +411,7 @@ export function BookingForm({
                 <div className="mt-2 grid gap-2 pl-6 sm:grid-cols-2">
                   <Input value={stop.contact_name} onChange={(e) => setStopField(index, 'contact_name', e.target.value)} placeholder="Tên người liên hệ" />
                   <Input value={stop.contact_phone} onChange={(e) => setStopField(index, 'contact_phone', e.target.value)} placeholder="Số điện thoại" />
+                  <Input className="sm:col-span-2" value={stop.notes ?? ''} onChange={(e) => setStopField(index, 'notes', e.target.value)} placeholder="Ghi chú — dừng ở đây để làm gì" />
                 </div>
               </div>
             ))}

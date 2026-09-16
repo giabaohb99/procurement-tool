@@ -8,6 +8,11 @@ class StopItem(BaseModel):
     location: str = Field("", max_length=255)
     contact_name: str = Field("", max_length=255)
     contact_phone: str = Field("", max_length=30)
+    #  Ghi chú riêng của điểm dừng ("Đón Mr Hãi trên đường đi", "Rước sale"). Thêm
+    #  16/09/2026 khi nạp phiếu app đặt xe cũ: 25/59 điểm dừng bên đó có ghi chú
+    #  thật, và đó là thứ nói cho tài xế biết dừng ở đấy để LÀM GÌ — không có ô
+    #  này thì bộ nạp im lặng vứt đi. Cột `stops` là JSON nên không cần migration.
+    notes: str = Field("", max_length=255)
 
 
 def _normalize_stops(v):

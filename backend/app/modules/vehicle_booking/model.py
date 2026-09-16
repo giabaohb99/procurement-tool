@@ -1,7 +1,7 @@
 from sqlalchemy import BigInteger, Boolean, Float, Index, Integer, SmallInteger, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.base_model import Base, AuditMixin
+from app.core.base_model import Base, AuditMixin, LegacyIdMixin
 
 # ---------------------------------------------------------------------------
 # Bộ mã (R2/QĐ-11): cột nghĩa loại / trạng thái lưu SMALLINT + hằng số nguyên;
@@ -66,7 +66,7 @@ SUPPLIER_TYPE_LABELS = {
 }
 
 
-class Vehicle(Base, AuditMixin):
+class Vehicle(Base, AuditMixin, LegacyIdMixin):
     """Quản lý xe."""
     __tablename__ = "tab_vehicle"
 
@@ -89,7 +89,7 @@ class Vehicle(Base, AuditMixin):
         return SUPPLIER_TYPE_LABELS.get(self.supplier_type, "")
 
 
-class Driver(Base, AuditMixin):
+class Driver(Base, AuditMixin, LegacyIdMixin):
     """Quản lý tài xế."""
     __tablename__ = "tab_driver"
 
@@ -115,7 +115,7 @@ class Driver(Base, AuditMixin):
         return SUPPLIER_TYPE_LABELS.get(self.supplier_type, "")
 
 
-class VehicleBooking(Base, AuditMixin):
+class VehicleBooking(Base, AuditMixin, LegacyIdMixin):
     """Yêu cầu đặt xe."""
     __tablename__ = "tab_vehicle_booking"
 

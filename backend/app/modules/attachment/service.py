@@ -84,6 +84,13 @@ def delete_stored_file(db: Session, file_id: int):
 
 def _delete_storage_of(f: StoredFile):
     """Xóa tệp gốc + bản thumbnail (nếu có) trên storage."""
+    #  Tệp còn nằm ở hệ thống KHÁC (`source` khác rỗng — vd tệp nhập từ app đặt
+    #  xe cũ) thì `file_key` không phải khóa của kho ERP. Gọi xóa lên kho ERP hôm
+    #  nay chỉ là một lời gọi trượt, nhưng ngày nào khóa R2 với sang được kho kia
+    #  thì đúng lời gọi này xóa tệp gốc của app cũ — thứ ERP không sở hữu. Bỏ
+    #  dòng trong `tab_file` thì được, đụng vào byte bên đó thì không.
+    if (f.source or "").strip():
+        return
     for key in (f.file_key, f.thumb_key):
         if not key:
             continue

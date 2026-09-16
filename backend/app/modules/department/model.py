@@ -2,10 +2,10 @@ from sqlalchemy import (BigInteger, Boolean, ForeignKey, SmallInteger, String,
                         UniqueConstraint)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.core.base_model import Base, AuditMixin
+from app.core.base_model import Base, AuditMixin, LegacyIdMixin
 
 
-class Department(Base, AuditMixin):
+class Department(Base, AuditMixin, LegacyIdMixin):
     """Phòng ban (thuộc công ty, có phân cấp qua `parent`)."""
 
     __tablename__ = "tab_department"

@@ -120,11 +120,13 @@ export interface Stop {
   location: string
   contact_name: string
   contact_phone: string
+  /** Dừng ở đây để LÀM GÌ ("Rước sale", "Đón Mr Hãi trên đường đi"). */
+  notes: string
 }
 
 /** Điểm dừng rỗng để thêm dòng mới trên form. */
 export function emptyStop(): Stop {
-  return { location: '', contact_name: '', contact_phone: '' }
+  return { location: '', contact_name: '', contact_phone: '', notes: '' }
 }
 
 // --- Bản ghi phiếu (khớp VehicleBookingResponse) --------------------------

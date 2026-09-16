@@ -3,14 +3,14 @@ from datetime import date
 from sqlalchemy import JSON, BigInteger, Boolean, Date, SmallInteger, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.core.base_model import Base, AuditMixin
+from app.core.base_model import Base, AuditMixin, LegacyIdMixin
 from app.core.status_codes import EMPLOYEE_STATUS
 
 from .constants import (EDUCATION_LEVEL_LABELS, EMPLOYMENT_TYPE_LABELS,
                         JOB_LEVEL_LABELS, MARITAL_STATUS_LABELS, label_of)
 
 
-class Employee(Base, AuditMixin):
+class Employee(Base, AuditMixin, LegacyIdMixin):
     """Nhân viên — thuộc công ty & phòng ban; gắn với tài khoản qua tab_user.employee_id."""
 
     __tablename__ = "tab_employee"

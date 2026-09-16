@@ -125,3 +125,61 @@ def delete_key(key: str):
                 os.remove(local_path)
             except Exception:
                 pass
+
+
+# ---------------------------------------------------------------------------
+# Kho R2 của APP CŨ — CHỈ ĐỌC
+# ---------------------------------------------------------------------------
+#  Cùng một tài khoản Cloudflare với kho ERP, khác bucket. Khóa dùng ở đây là
+#  token "Object Read only" giới hạn đúng bucket đó, nên KHÔNG có hàm ghi/xóa
+#  nào trong cụm này — và đừng thêm: bucket ấy app cũ đang chạy thật trên đó.
+#
+#  Đọc `settings` thẳng chứ không qua `_eff()`: đây là khóa bí mật của .env,
+#  không phải tùy chọn cho người dùng sửa trên màn Cấu hình hệ thống.
+
+
+def legacy_bucket_ready() -> bool:
+    """Đã đủ cấu hình để đọc kho của app cũ chưa."""
+    return bool(
+        (settings.LEGACY_R2_ENDPOINT or "").strip()
+        and (settings.LEGACY_R2_BUCKET or "").strip()
+        and (settings.LEGACY_R2_ACCESS_KEY_ID or "").strip()
+        and (settings.LEGACY_R2_SECRET_ACCESS_KEY or "").strip()
+    )
+
+
+def _legacy_client():
+    if not legacy_bucket_ready():
+        return None
+    return boto3.client(
+        "s3",
+        endpoint_url=(settings.LEGACY_R2_ENDPOINT or "").strip(),
+        aws_access_key_id=(settings.LEGACY_R2_ACCESS_KEY_ID or "").strip(),
+        aws_secret_access_key=(settings.LEGACY_R2_SECRET_ACCESS_KEY or "").strip(),
+        region_name="auto",
+    )
+
+
+def download_legacy_bytes(key: str) -> bytes:
+    """Đọc nội dung một khóa trong kho app cũ.
+
+    KHÔNG có nhánh lùi về đọc đĩa như `download_bytes`: khóa `uploads/...` của
+    app cũ mà tra trong thư mục `uploads/` của ERP thì sẽ trúng một tệp KHÁC
+    hoàn toàn (hai hệ trùng tên thư mục, không trùng nội dung).
+    """
+    s3 = _legacy_client()
+    if s3 is None:
+        raise RuntimeError("Chưa cấu hình kho R2 của app cũ (LEGACY_R2_*)")
+    obj = s3.get_object(Bucket=(settings.LEGACY_R2_BUCKET or "").strip(), Key=key)
+    return obj["Body"].read()
+
+
+#  CỐ Ý KHÔNG CÓ `legacy_presigned_url`. Nghe thì hợp lý — tệp nặng nhất là
+#  102 MB, cho trình duyệt tải thẳng từ R2 thì byte khỏi đi vòng qua RAM của máy
+#  chủ. Nhưng chỗ duy nhất muốn gọi nó là `/attachments/{id}/view`, mà endpoint
+#  đó đang gánh ba lớp chắn dựng riêng cho tệp người ngoài gửi vào: danh sách
+#  trắng kiểu tệp · `X-Content-Type-Options: nosniff` · `Content-Security-Policy:
+#  sandbox`. Đổi sang chuyển hướng ra `*.r2.cloudflarestorage.com` là **rụng cả
+#  ba**, thêm nữa đường dẫn ký sẵn không hỏi quyền — ai cầm được liên kết là đọc
+#  được trong suốt thời gian còn hạn. Muốn nhẹ RAM thì đi đường phát theo luồng
+#  (`StreamingResponse`) chứ đừng đi đường này.

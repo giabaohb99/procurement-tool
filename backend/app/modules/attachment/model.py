@@ -28,6 +28,16 @@ class StoredFile(Base, AuditMixin):
     #  → bên đọc fallback về `url`.
     thumb_key: Mapped[str] = mapped_column(String(500), default="", server_default="")
     thumb_url: Mapped[str] = mapped_column(String(1000), default="", server_default="")
+    #  NGUỒN của byte tệp. Rỗng = tệp của chính ERP, `file_key` trỏ vào kho R2 của
+    #  ERP, đọc thẳng bằng `core/storage.download_bytes`. Khác rỗng = tệp còn nằm ở
+    #  hệ thống khác và `file_key` là khóa của KHO ĐÓ — gọi `download_bytes` lên nó
+    #  thì R2 của ERP trả 404, tức người dùng nhận "mã sự cố" cho một tệp vẫn còn
+    #  sống. Mọi đường đọc byte phải rẽ theo cột này trước (`core/legacy_files.py`).
+    #  Giá trị đang dùng: `"datxe"` — tệp đính kèm nhập từ app đặt xe / duyệt dấu cũ.
+    source: Mapped[str] = mapped_column(String(20), default="", server_default="")
+    #  Khóa của tệp BÊN NGUỒN KIA (với `datxe` là khóa nhánh `files` của Firebase).
+    #  Cùng `source` làm nên cặp nhận dạng để nạp lại không sinh bản trùng.
+    external_id: Mapped[str] = mapped_column(String(64), default="", server_default="", index=True)
 
 
 class FileLink(Base, AuditMixin):

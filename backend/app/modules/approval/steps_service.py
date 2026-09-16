@@ -41,6 +41,12 @@ STEP_TODO = "todo"          # chưa tới lượt
 STEP_REJECTED = "rejected"  # phiếu dừng hẳn tại đây
 STEP_RETURNED = "returned"  # bị trả về người nộp từ chặng này
 STEP_CANCELLED = "cancelled"  # phiếu bị rút nên chặng không còn nghĩa
+#  Chặng KHÔNG CHẠY trên một phiếu đã duyệt xong — bước tùy chọn không cần tới,
+#  nhánh rẽ không đi vào, hoặc luồng nhảy cóc qua nó. Tách khỏi «đã hủy» vì hai
+#  chuyện ngược nhau: «đã hủy» nói phiếu chết, «không chạy» nói phiếu đi đường
+#  ngắn hơn và vẫn duyệt xong. Vẽ chung một màu là người xem đọc một phiếu
+#  hoàn chỉnh thành phiếu bị rút.
+STEP_SKIPPED = "skipped"
 
 
 def steps_of_entities(db: Session, entity: str, entity_ids: list[int]) -> dict[int, dict]:
@@ -168,7 +174,15 @@ def _one_step(seq: int, group: list[ApprovalTask], planned_name: str | None,
     if not group:
         #  Chặng chưa mở. Phiếu còn chạy thì nó là việc SẮP tới; phiếu đã dừng
         #  thì nó là chặng KHÔNG BAO GIỜ tới — vẽ nó "đang chờ" là sai hẳn.
-        state = STEP_TODO if instance.status in _OPEN_STATUSES else STEP_CANCELLED
+        #  Nhưng phiếu DUYỆT XONG mà chặng này không có việc nào thì nó không
+        #  chết theo phiếu, nó chỉ không cần chạy: bước tùy chọn, nhánh rẽ không
+        #  đi vào, hoặc luồng nhảy cóc. Đó là STEP_SKIPPED.
+        if instance.status in _OPEN_STATUSES:
+            state = STEP_TODO
+        elif instance.status == INSTANCE_APPROVED:
+            state = STEP_SKIPPED
+        else:
+            state = STEP_CANCELLED
     elif TASK_REJECTED in statuses:
         state = STEP_REJECTED
     elif TASK_PENDING in statuses:

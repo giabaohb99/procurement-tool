@@ -108,6 +108,7 @@ def _dump_stops(stops) -> str:
             "location": location,
             "contact_name": (s.contact_name or "").strip(),
             "contact_phone": (s.contact_phone or "").strip(),
+            "notes": (s.notes or "").strip(),
         })
     return json.dumps(out, ensure_ascii=False)
 

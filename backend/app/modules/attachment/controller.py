@@ -17,8 +17,11 @@ from app.core.document_types import (DOC_TYPE_LABEL, DOC_TYPE_VALUES,
 from app.core.file_registry import is_private, policy
 from app.core.response import success
 from app.core.scoping import apply_scope
-from app.core.storage import (dated_key, delete_key, download_bytes, safe_name,
-                              upload_fileobj)
+#  ⚠️ Đọc byte của tệp đính kèm đi qua `read_file_bytes(f)`, KHÔNG gọi thẳng
+#  `download_bytes(f.file_key)`: một phần `tab_file` là tệp nhập từ app đặt xe
+#  cũ, khóa của chúng thuộc kho R2 KHÁC (xem `core/legacy_files.py`).
+from app.core.legacy_files import read_file_bytes
+from app.core.storage import dated_key, delete_key, safe_name, upload_fileobj
 from app.core.upload_guard import ensure_batch_ok, guard_upload
 from app.modules.document.file_access_log import ACTION_DOWNLOAD, ACTION_VIEW
 
@@ -484,7 +487,7 @@ def chain_zip(entity: str = Query(...), entity_id: int = Query(...),
                 n += 1
             seen.add(path)
             try:
-                zf.writestr(path, download_bytes(f.file_key))
+                zf.writestr(path, read_file_bytes(f))
             except Exception:
                 # 1 file lỗi không làm hỏng cả gói — bỏ qua file đó
                 continue
@@ -522,7 +525,7 @@ def view_one(link_id: int, db: Session = Depends(get_db), user=Depends(get_curre
         raise HTTPException(415, "Kiểu tệp này không xem tại chỗ được — tải về để mở.")
 
     return Response(
-        content=download_bytes(f.file_key),
+        content=read_file_bytes(f),
         media_type=mime_type,
         headers={
             "Content-Disposition": f"inline; filename*=UTF-8''{quote(f.filename)}",
@@ -559,7 +562,7 @@ def preview_one(link_id: int, db: Session = Depends(get_db), user=Depends(get_cu
     from app.modules.document.import_service import parse_document_file
 
     try:
-        result = parse_document_file(f.filename, download_bytes(f.file_key))
+        result = parse_document_file(f.filename, read_file_bytes(f))
     except ValueError as error:
         #  415 = "hiểu yêu cầu nhưng không xử được kiểu tệp này". Câu của
         #  `parse_document_file` đã nói rõ vì sao (sai đuôi, tệp rỗng, quá lớn).
@@ -572,7 +575,7 @@ def preview_one(link_id: int, db: Session = Depends(get_db), user=Depends(get_cu
 def download_one(link_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Tải 1 file (ép attachment, đúng tên gốc). Quyền theo entity cha của link."""
     lk, f = _get_file_with_permission(db, user, link_id, ACTION_DOWNLOAD)
-    data = download_bytes(f.file_key)
+    data = read_file_bytes(f)
     return Response(content=data, media_type=f.content_type or "application/octet-stream",
                     headers={"Content-Disposition": _content_disposition(f.filename)})
 

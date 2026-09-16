@@ -123,8 +123,13 @@ export function DocumentAttachmentsCard({
   const options = useMemo(() => withOtherType(documentTypes ?? []), [documentTypes])
   const groups = useMemo(() => groupAttachmentsByType(files ?? [], options), [files, options])
   // Bấm ảnh mở lightbox tại chỗ, lật qua lại trong TẤT CẢ ảnh của chứng từ.
+  //
+  // ⚠️ Chỉ ảnh CÓ `url` mới vào được lightbox: nó nhúng thẳng `url` vào thẻ ảnh,
+  // nên ảnh không có đường công khai (tệp nhập từ app đặt xe cũ — byte còn nằm ở
+  // kho khác, backend cố ý để `url` rỗng) sẽ hiện ra một khung vỡ. Ảnh đó rơi
+  // xuống nút XEM TRƯỚC, nơi đi qua `/view` có kiểm quyền và lấy được byte thật.
   const imageFiles = useMemo(
-    () => (files ?? []).filter((f) => f.content_type?.startsWith('image/')),
+    () => (files ?? []).filter((f) => f.content_type?.startsWith('image/') && f.url),
     [files],
   )
   const lightbox = useImageLightbox()
@@ -344,7 +349,7 @@ export function DocumentAttachmentsCard({
                           pending={remove.isPending}
                           onDelete={() => void remove.mutateAsync(file.id)}
                           onView={
-                            file.content_type?.startsWith('image/')
+                            imageFiles.includes(file)
                               ? () => lightbox.openAt(imageFiles.indexOf(file))
                               : undefined
                           }
@@ -468,16 +473,22 @@ function AttachmentRow({
     }
   }
 
+  //  Bấm vào TÊN tệp thì mở cái gì. Ảnh có `url` → lightbox. Tệp KHÔNG có `url`
+  //  (tệp nhập từ app đặt xe cũ, byte còn ở kho khác) → popup xem trước, vì thẻ
+  //  `<a href="">` không dẫn đi đâu cả: bấm vào là NẠP LẠI chính trang đang mở,
+  //  đọc y như một lỗi không rõ nguyên nhân. Còn lại giữ nguyên thẻ liên kết cũ.
+  const openByName = onView ?? (file.url ? undefined : onPreview)
+
   return (
     <div className="flex min-h-12 items-center gap-3 px-3 py-2">
       {/* eslint-disable-next-line react-hooks/static-components */}
       <Icon className="size-5 shrink-0 text-primary" />
       <div className="min-w-0 flex-1">
-        {onView ? (
+        {openByName ? (
           <button
             type="button"
             className="block max-w-full truncate text-left text-sm font-medium text-navy transition-colors hover:text-primary hover:underline dark:text-foreground"
-            onClick={onView}
+            onClick={openByName}
             title={file.filename}
           >
             {file.filename}

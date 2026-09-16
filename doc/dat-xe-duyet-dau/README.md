@@ -22,6 +22,7 @@ Nhánh làm việc: **`pltgiang`** (frontend-v2 + backend). Phân hệ chạy �
 | [phase-6-con-lai.md](phase-6-con-lai.md) | ✅ **Nâng cấp — đã làm & kiểm** (runtime duyệt + panel duyệt · Chuyến của tôi · chống trùng giờ · lọc tài xế · thông báo & email + trang cài đặt/template HTML · bản in · test 6 bước); còn E2E trình duyệt (host-run) |
 | [test-phan-quyen.md](test-phan-quyen.md) | **Kịch bản kiểm tra phân quyền tay** — 7 tài khoản test (NS/TP/ĐPV/Tài xế) + các ca xem/quyền, dùng nút Đổi tài khoản nhanh |
 | [../tai-lieu-chuc-nang/16-dat-xe.md](../tai-lieu-chuc-nang/16-dat-xe.md) | **Tài liệu chức năng** (đặc tả trường, vòng đời trạng thái, phân quyền) cho người dùng/BA |
+| [../dong-bo-dat-xe-duyet-dau/](../dong-bo-dat-xe-duyet-dau/README.md) | **Kế hoạch nối với app đặt xe cũ** (Firebase) — đồng bộ hai chiều, sổ đồng bộ, đối chiếu trường, 9 pha. Bộ tài liệu riêng, chưa viết mã |
 
 > Mỗi phase một file chi tiết theo khung 7 mục — giống bộ [ke-hoach-celery](../ke-hoach-celery/) /
 > [ke-hoach-import](../ke-hoach-import/). PHA 0→5 là **hồi cứu** (đã xong, ghi lại thiết kế + cái đã

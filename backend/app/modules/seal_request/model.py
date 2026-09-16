@@ -1,7 +1,7 @@
 from sqlalchemy import BigInteger, Boolean, Index, SmallInteger, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.base_model import Base, AuditMixin
+from app.core.base_model import Base, AuditMixin, LegacyIdMixin
 
 # ---------------------------------------------------------------------------
 # Bộ mã (R2/QĐ-11): cột nghĩa trạng thái lưu SMALLINT + hằng số nguyên; tiếng
@@ -39,7 +39,7 @@ class SealType(Base, AuditMixin):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
 
-class SealRequest(Base, AuditMixin):
+class SealRequest(Base, AuditMixin, LegacyIdMixin):
     """Yêu cầu đóng dấu (Duyệt dấu)."""
     __tablename__ = "tab_seal_request"
 

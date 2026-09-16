@@ -19,7 +19,8 @@ import pytest
 from app.modules.approval import action_service, instance_service, steps_service
 from app.modules.approval.flow_model import (APPROVER_EMPLOYEE, ApprovalFlow,
                                              ApprovalNode, ApprovalSwitch)
-from app.modules.approval.instance_model import ApprovalAction, TASK_PENDING
+from app.modules.approval.instance_model import (INSTANCE_APPROVED, TASK_PENDING,
+                                                 ApprovalAction, ApprovalTask)
 from app.modules.employee.model import Employee
 from app.modules.leave import approval_bridge, request_service
 from app.modules.leave.catalog_model import LeaveType
@@ -209,6 +210,35 @@ def test_bi_tu_choi_thi_chi_ra_DUNG_chang_phieu_chet(db, flow_2_buoc, leave_type
     assert flow["steps"][0]["state"] == steps_service.STEP_DONE
     assert flow["steps"][1]["state"] == steps_service.STEP_REJECTED
     assert flow["summary"] == "Dừng ở chặng 2/2 · bị từ chối"
+
+
+def test_chang_KHONG_CHAY_tren_phieu_da_duyet_khong_doc_thanh_da_huy(
+        db, flow_2_buoc, leave_type, submitter, approver1, approver2):
+    """Phiếu duyệt xong mà một chặng không có việc nào = chặng đó KHÔNG CHẠY.
+
+    Bước tùy chọn không cần tới, nhánh rẽ không đi vào, luồng nhảy cóc — ba
+    đường đều để lại một chặng trắng trên một phiếu hoàn chỉnh. Gộp nó vào «đã
+    hủy» thì người xem đọc phiếu duyệt xong thành phiếu bị rút. Đo thật: 1313
+    phiếu nhập từ app đặt xe cũ đều dính, riêng luồng dấu có hẳn một chặng tên
+    «(Tùy chọn)» chạy 0/946 lần.
+
+    Ngược lại, phiếu KHÔNG duyệt xong thì chặng trắng đúng là chết theo phiếu —
+    vẫn «đã hủy», xem `test_tra_ve_KHAC_bi_rut`.
+    """
+    obj = _submit(db, leave_type, submitter)
+    instance = _instance(db, obj)
+    action_service.approve(db, instance, approver1.id, ACTOR, {})
+    #  Xóa sạch việc của chặng 2 rồi đóng phiên: dựng lại đúng hình dạng một
+    #  chặng chưa từng mở trên phiếu đã duyệt.
+    db.query(ApprovalTask).filter(ApprovalTask.instance_id == instance.id,
+                                  ApprovalTask.node_seq == 2).delete()
+    instance.status = INSTANCE_APPROVED
+    db.flush()
+
+    flow = _steps(db, obj)
+    assert flow["steps"][0]["state"] == steps_service.STEP_DONE
+    assert flow["steps"][1]["state"] == steps_service.STEP_SKIPPED
+    assert flow["summary"] == "Đã duyệt đủ 2/2 chặng"
 
 
 def test_tra_ve_KHAC_bi_rut(db, flow_2_buoc, leave_type, submitter, approver1):
