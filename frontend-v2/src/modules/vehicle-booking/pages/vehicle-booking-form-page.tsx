@@ -21,6 +21,9 @@ export function VehicleBookingFormPage() {
   const [searchParams] = useSearchParams()
   const isEdit = Boolean(id)
   const fromId = Number(searchParams.get('from')) || null
+  //  `?start=<ISO tới phút>` — Lịch đặt xe truyền vào khi người dùng bấm một ô
+  //  ngày / khung giờ, để form mở ra đã có sẵn giờ khởi hành họ vừa chỉ.
+  const defaultStartTime = searchParams.get('start') || undefined
 
   const backToList = () => navigate(appRoutes.vehicleBooking.requests)
   //  SỬA thì back/hủy quay lại CHI TIẾT phiếu (`/:id`), không về danh sách.
@@ -44,7 +47,12 @@ export function VehicleBookingFormPage() {
   return (
     <PageContainer className="w-full">
       {!needsLoad ? (
-        <BookingForm title={title} onDone={backToList} onSaved={toSavedDetail} />
+        <BookingForm
+          title={title}
+          onDone={backToList}
+          onSaved={toSavedDetail}
+          defaultStartTime={defaultStartTime}
+        />
       ) : isLoading ? (
         <>
           <BookingPageHeader title={title} onBack={backToList} />

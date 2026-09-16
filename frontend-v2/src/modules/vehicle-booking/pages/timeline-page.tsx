@@ -1,42 +1,37 @@
 import viLocale from '@fullcalendar/core/locales/vi'
 import dayGridPlugin from '@fullcalendar/daygrid'
+import interactionPlugin from '@fullcalendar/interaction'
+import timeGridPlugin from '@fullcalendar/timegrid'
 import FullCalendar from '@fullcalendar/react'
-import { MapPin, User, UserCog } from 'lucide-react'
-import { useMemo, useState, type CSSProperties } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 
+import { usePermission } from '@/core/authorization/use-permission'
 import { appRoutes } from '@/shared/constants/app-routes'
+import { useSetUrlParams } from '@/shared/hooks/use-url-param-state'
 import { Card } from '@/shared/ui/card'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
-import { cn } from '@/shared/utils/cn'
-import { CarBookingIcon, DeliveryBookingIcon } from '../components/booking-type-icons'
+import { parseLocalDate } from '@/shared/utils/format-date'
+import { BookingCalendarChip } from '../components/booking-calendar-chip'
+import { BookingCalendarDayHeader } from '../components/booking-calendar-day-header'
+import { BookingCalendarToolbar } from '../components/booking-calendar-toolbar'
+import { CALENDAR_GRID_CLASSES, FC_THEME_VARS } from '../utils/calendar-theme'
+import {
+  isTimeGridView,
+  modeFromView,
+  viewFromMode,
+  type CalendarViewType,
+} from '../utils/calendar-views'
+import { timeOf } from '../utils/booking-time-format'
 import type { TimelineEvent } from '../api/vehicle-booking-timeline-api'
 import { useVehicleBookingTimeline } from '../hooks/use-vehicle-booking-timeline'
 import {
   BOOKING_STATUS_LABELS,
-  BOOKING_STATUS_TONE,
   REQUEST_TYPE,
   REQUEST_TYPE_LABELS,
 } from '../types/vehicle-booking'
-
-type Tone = 'neutral' | 'info' | 'success' | 'warning' | 'danger'
-
-/** Lớp màu thẻ sự kiện theo trạng thái phiếu — viền trái + nền mờ (sáng & tối). */
-const TONE_CLASSES: Record<Tone, string> = {
-  neutral: 'border-l-muted-foreground/50 bg-muted/60 text-foreground',
-  info: 'border-l-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300',
-  success: 'border-l-green-500 bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-300',
-  warning: 'border-l-amber-500 bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300',
-  danger: 'border-l-red-500 bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300',
-}
-
-/** '2026-09-10T05:00' -> '05:00'; không có giờ -> ''. */
-function timeOf(startTime: string): string {
-  const i = startTime.indexOf('T')
-  return i >= 0 ? startTime.slice(i + 1, i + 6) : ''
-}
 
 /** Ngày local (theo múi trình duyệt) -> 'yyyy-mm-dd'. */
 function toYmd(d: Date): string {
@@ -48,60 +43,23 @@ function dateOf(iso: string): string {
   return iso ? iso.slice(0, 10) : ''
 }
 
+/**
+ * Date -> 'yyyy-MM-ddTHH:mm' theo giờ ĐỊA PHƯƠNG, đúng khuôn `start_time` backend.
+ *
+ * KHÔNG dùng `toISOString()`: hàm đó đổi sang UTC, nên 08:00 giờ Việt Nam ra
+ * '01:00Z' — phiếu mở ra lệch 7 tiếng.
+ */
+function toLocalIsoMinute(d: Date): string {
+  const hh = String(d.getHours()).padStart(2, '0')
+  const mm = String(d.getMinutes()).padStart(2, '0')
+  return `${toYmd(d)}T${hh}:${mm}`
+}
+
 /** 'yyyy-mm-dd' + 1 ngày — mốc `end` của FullCalendar (all-day) là LOẠI TRỪ. */
 function nextDay(ymd: string): string {
   const d = new Date(`${ymd}T00:00:00`)
   d.setDate(d.getDate() + 1)
   return toYmd(d)
-}
-
-/** Thẻ một chuyến xe trên lịch — icon loại, giờ, mục đích, người tạo, tài xế/xe, điểm đến. */
-function EventCard({ ev }: { ev: TimelineEvent }) {
-  const tone = BOOKING_STATUS_TONE[ev.status] ?? 'neutral'
-  const isDelivery = ev.request_type === REQUEST_TYPE.delivery
-  const time = timeOf(ev.start_time)
-  const title = ev.purpose || ev.request_type_label
-  const dispatchLabel =
-    [ev.assigned_driver_label, ev.assigned_vehicle_label].filter(Boolean).join(' · ') || 'Chưa điều phối'
-  const location = ev.end_location || ev.start_location || ''
-
-  return (
-    <div
-      className={cn(
-        'flex h-full w-full flex-col overflow-hidden rounded border-l-[3px] px-1.5 py-1 transition-all',
-        'hover:-translate-y-px hover:shadow-md',
-        TONE_CLASSES[tone],
-      )}
-    >
-      <div className="flex items-center gap-1 truncate text-xs font-medium">
-        {isDelivery ? (
-          <DeliveryBookingIcon className="size-3.5 shrink-0" />
-        ) : (
-          <CarBookingIcon className="size-3.5 shrink-0" />
-        )}
-        {time && <span className="shrink-0 font-semibold tabular-nums">{time}</span>}
-        <span className="truncate">{title}</span>
-      </div>
-      <div className="mt-0.5 flex flex-col gap-0.5 text-[10px] leading-tight opacity-90">
-        {ev.requester && (
-          <span className="flex items-center gap-1 truncate">
-            <User className="size-3 shrink-0" />
-            <span className="truncate">{ev.requester}</span>
-          </span>
-        )}
-        <span className="flex items-center gap-1 truncate">
-          <UserCog className="size-3 shrink-0" />
-          <span className="truncate">{dispatchLabel}</span>
-        </span>
-        {location && (
-          <span className="flex items-center gap-1 truncate opacity-80">
-            <MapPin className="size-3 shrink-0" />
-            <span className="truncate">{location}</span>
-          </span>
-        )}
-      </div>
-    </div>
-  )
 }
 
 /**
@@ -116,6 +74,51 @@ export function VehicleBookingTimelinePage() {
   //  Bộ lọc trên hàng tiêu đề (lọc phía client trên dữ liệu đã tải của lịch).
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  //  Thanh tiêu đề tự dựng nên phải tự giữ nhãn tháng + tự gọi API của lịch.
+  const calendarRef = useRef<FullCalendar>(null)
+  const [viewTitle, setViewTitle] = useState('')
+
+  //  --- Chỗ đang xem nằm trong URL (`?mode=week&date=2026-08-23`) ---
+  //  Để F5 / mở lại từ lịch sử trình duyệt / gửi link đều rơi đúng chỗ cũ.
+  const [searchParams] = useSearchParams()
+  const setUrlParams = useSetUrlParams()
+
+  //  Đọc URL ĐÚNG MỘT LẦN lúc dựng màn: `initialView`/`initialDate` chỉ được
+  //  FullCalendar ngó tới ở lần vẽ đầu, đổi về sau phải gọi API của lịch. Dùng
+  //  `useState` có hàm khởi tạo chứ không tính thẳng trong thân component —
+  //  tính thẳng thì mỗi lần vẽ lại ra một giá trị mới và React so ra prop đổi.
+  const [initial] = useState(() => ({
+    view: viewFromMode(searchParams.get('mode')),
+    //  Sai dạng / ngày không có thật → `undefined` = FC tự mở ở hôm nay.
+    date: parseLocalDate(searchParams.get('date')),
+  }))
+  const [view, setView] = useState<CalendarViewType>(initial.view)
+
+  //  Chiều ngược: URL đổi mà không do lịch → kéo lịch theo.
+  //
+  //  Cần vì `initialView`/`initialDate` chỉ đọc một lần: bấm lại chính mục menu
+  //  "Lịch đặt xe" lúc đang ở `?mode=day` sẽ về URL trống nhưng lịch VẪN nằm ở
+  //  khám Ngày — URL nói một đằng, màn hình một nẻo, và cú F5 kế tiếp nhảy sang
+  //  chỗ khác. Chạy nhánh này thì bấm lại menu = trở về mặc định (tháng này),
+  //  và nút Back/Forward của trình duyệt cũng đi đúng.
+  //
+  //  Không sợ lặp vô tận: `changeView` làm `datesSet` chạy → ghi lại URL đúng
+  //  bằng giá trị vừa đọc → lượt sau `isShowing` đúng nên không gọi gì nữa.
+  useEffect(() => {
+    const api = calendarRef.current?.getApi()
+    if (!api) return
+    const wantView = viewFromMode(searchParams.get('mode'))
+    //  Thiếu `date` nghĩa là "hôm nay", không phải "giữ nguyên chỗ cũ".
+    const wantDate = parseLocalDate(searchParams.get('date')) ?? new Date()
+    const isShowing =
+      api.view.type === wantView &&
+      wantDate >= api.view.currentStart &&
+      wantDate < api.view.currentEnd
+    if (!isShowing) api.changeView(wantView, wantDate)
+  }, [searchParams])
+
+  const { can } = usePermission()
+  const canCreate = can('vehicle_booking', 'create')
 
   const { data, isFetching } = useVehicleBookingTimeline(range)
 
@@ -126,16 +129,35 @@ export function VehicleBookingTimelinePage() {
       return true
     })
     return items.map((ev) => {
-      //  Chuyến kéo dài NHIỀU ngày (giờ kết thúc sang ngày khác) → một thẻ liên tiếp
-      //  trải hết quá trình. `end` all-day là mốc LOẠI TRỪ nên +1 ngày để phủ ngày cuối.
+      //  Chuyến TRONG MỘT NGÀY → sự kiện CÓ GIỜ, để khám Ngày/Tuần xếp nó lên
+      //  trục giờ (`start_time`/`end_time` là chuỗi ISO tới phút, đúng dạng FC cần).
+      //
+      //  Chuyến SANG NGÀY KHÁC → sự kiện "cả ngày", nằm ở dải *Cả ngày* trên đỉnh.
+      //  Để nó lên trục giờ thì một chuyến 4 ngày thành cột màu cao vô tận chạy
+      //  quá đáy khung, mà 40% dữ liệu là loại này nên cả khám Tuần bị chúng lấn.
+      //  Google Calendar cũng dồn sự kiện nhiều ngày lên dải đó.
+      //  `end` của sự kiện cả ngày là mốc LOẠI TRỪ → phải +1 ngày mới phủ hết ngày
+      //  cuối; sự kiện có giờ thì `end` là mốc thật, KHÔNG cộng thêm.
+      const startDate = dateOf(ev.start_time) || ev.event_date
       const endDate = dateOf(ev.end_time)
-      const multiDay = Boolean(endDate) && endDate > ev.event_date
+      const spansDays = Boolean(endDate) && endDate > startDate
+      if (!ev.start_time || spansDays) {
+        return {
+          id: String(ev.id),
+          title: ev.purpose || ev.request_type_label,
+          start: startDate,
+          end: spansDays ? nextDay(endDate) : undefined,
+          allDay: true,
+          extendedProps: { ev, order: timeOf(ev.start_time) },
+        }
+      }
       return {
         id: String(ev.id),
         title: ev.purpose || ev.request_type_label,
-        start: ev.event_date,
-        end: multiDay ? nextDay(endDate) : undefined,
-        allDay: true,
+        start: ev.start_time,
+        //  Thiếu giờ về thì để FC tự lấy thời lượng mặc định, đừng dựng `end` giả.
+        end: ev.end_time || undefined,
+        allDay: false,
         //  Sắp trong ngày theo giờ khởi hành (chuỗi 'HH:mm', rỗng đứng trước) —
         //  `eventOrder="order"` đọc khóa này trong extendedProps.
         extendedProps: { ev, order: timeOf(ev.start_time) },
@@ -143,23 +165,11 @@ export function VehicleBookingTimelinePage() {
     })
   }, [data, typeFilter, statusFilter])
 
-  //  Biến FullCalendar theo token giao diện (v6 tự nhúng CSS, chỉ cần đặt biến).
-  const fcTheme = {
-    '--fc-border-color': 'var(--border)',
-    '--fc-page-bg-color': 'transparent',
-    '--fc-neutral-bg-color': 'var(--muted)',
-    '--fc-today-bg-color': 'color-mix(in oklab, var(--primary) 8%, transparent)',
-    '--fc-button-bg-color': 'var(--primary)',
-    '--fc-button-border-color': 'var(--primary)',
-    '--fc-button-text-color': 'var(--primary-foreground)',
-    '--fc-button-hover-bg-color': 'color-mix(in oklab, var(--primary) 88%, black)',
-    '--fc-button-hover-border-color': 'color-mix(in oklab, var(--primary) 88%, black)',
-    '--fc-button-active-bg-color': 'color-mix(in oklab, var(--primary) 80%, black)',
-    '--fc-button-active-border-color': 'color-mix(in oklab, var(--primary) 80%, black)',
-  } as CSSProperties
-
   return (
-    <PageContainer>
+    //  `fill` — trang chiếm trọn chiều cao khung, lịch tự giãn lấp phần còn lại.
+    //  Lề ngoài thu lại so với mặc định `p-4 lg:p-6`: chỗ tiết kiệm được dồn hết
+    //  vào ô ngày, thứ duy nhất trên trang này cần diện tích.
+    <PageContainer fill className="gap-3 p-3 lg:p-4">
       <PageHeader
         title="Lịch đặt xe"
         description="Lịch các chuyến xe theo dòng thời gian — bấm vào một chuyến để xem chi tiết."
@@ -196,31 +206,168 @@ export function VehicleBookingTimelinePage() {
       />
 
       <Card
-        className="p-2 sm:p-4 [&_.fc-col-header-cell-cushion]:text-muted-foreground [&_.fc-daygrid-day-number]:text-muted-foreground [&_.fc-toolbar-title]:text-lg [&_.fc-toolbar-title]:font-semibold [&_.fc-toolbar-title]:first-letter:uppercase [&_.fc_a]:!text-inherit"
-        style={fcTheme}
+        className={CALENDAR_GRID_CLASSES}
+        style={FC_THEME_VARS}
         aria-busy={isFetching}
       >
+        <BookingCalendarToolbar
+          title={viewTitle}
+          view={view}
+          onViewChange={(next) => {
+            //  Đổi khám qua API của lịch; `datesSet` sẽ tự cập nhật `view` +
+            //  nhãn + khoảng nạp dữ liệu, nên không setState trùng ở đây.
+            calendarRef.current?.getApi().changeView(next)
+          }}
+          onPrev={() => calendarRef.current?.getApi().prev()}
+          onNext={() => calendarRef.current?.getApi().next()}
+          onToday={() => calendarRef.current?.getApi().today()}
+        />
         <FullCalendar
-          plugins={[dayGridPlugin]}
-          initialView="dayGridMonth"
+          ref={calendarRef}
+          //  `interactionPlugin` là điều kiện để có `dateClick` — thiếu nó thì prop đó
+          //  không tồn tại và TypeScript báo ngay ở chỗ khai.
+          plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+          initialView={initial.view}
+          initialDate={initial.date}
           locale={viLocale}
-          height="auto"
-          headerToolbar={{ left: 'title', center: '', right: 'prev,next today' }}
-          buttonText={{ today: 'Hôm nay' }}
+          //  Lấp trọn chiều cao thẻ → 6 hàng tuần CHIA ĐỀU nhau, không còn cảnh
+          //  tuần nhiều chuyến cao gấp bốn tuần rỗng, và hết khoảng trắng dưới lịch.
+          height="100%"
+          //  Thanh tiêu đề dựng tay ở `BookingCalendarToolbar` — xem lý do trong
+          //  chú thích của component đó.
+          headerToolbar={false}
           firstDay={0}
-          dayMaxEvents={4}
+          //  `true` = tự tính số chip vừa chiều cao ô thật rồi gom phần dôi vào
+          //  "+N chuyến nữa" — đúng cách Google Calendar làm. Đặt số cứng thì màn
+          //  cao vẫn chừa chỗ trống, màn thấp lại tràn. Chỉ có tác dụng ở khám Tháng.
+          dayMaxEvents={true}
+          //  --- Khám Ngày · Tuần (có trục giờ) ---
+          //  Không ghim 0-24h: đội xe chạy sớm nhất ~04:00, muộn nhất ~23:00, mở
+          //  trọn 24h thì hai đầu toàn khoảng trắng và phần giữa bị nén lại.
+          slotMinTime="04:00:00"
+          slotMaxTime="24:00:00"
+          slotDuration="01:00:00"
+          slotLabelFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
+          //  Giờ trên chip do chip tự vẽ rồi — tắt phần giờ mặc định của FC.
+          displayEventTime={false}
+          allDayText="Cả ngày"
+          nowIndicator
+          //  Cuộn tới đầu dải giờ khi mở màn. Mặc định của FC là `06:00`, mà lưới
+          //  này bắt đầu từ `04:00` — để mặc định thì vừa mở đã mất hai tiếng đầu
+          //  mà không có gì báo là đang bị cuộn.
+          scrollTime="04:00:00"
+          //  Chuyến ngắn (1 tiếng) ra khối ~18px, không đủ chỗ cho một dòng chữ
+          //  nên giờ + mục đích bị cắt ngang. Ghim sàn 28px = đúng chiều cao chip
+          //  ở khám Tháng, đọc được; đổi lại khối hơi cao hơn thời lượng thật.
+          eventMinHeight={28}
+          //  Mặc định vi của FC là "+ thêm 1" — nói rõ đơn vị cho đúng nghiệp vụ.
+          moreLinkText={(n) => `+${n} chuyến nữa`}
           fixedWeekCount={false}
           eventOrder="order"
+          //  Tiêu đề cột: khám Tháng giữ mặc định của locale ("CN · T2 · …").
+          //  Hai khám có trục giờ chỉ lấy TÊN THỨ ở đây, con số ngày do
+          //  `dayHeaderContent` dựng thành dòng thứ hai bên dưới.
+          //
+          //  `expandRows` KHAI RIÊNG TỪNG KHÁM, không khai chung:
+          //  · Tháng — BẬT, để 6 hàng tuần chia đều hết chiều cao thẻ. Tắt là hàng
+          //    co về chiều cao tự nhiên và chừa một mảng trắng dưới lịch.
+          //  · Ngày/Tuần — TẮT, để mỗi giờ giữ đúng chiều cao ghim (xem
+          //    `CALENDAR_GRID_CLASSES`) và phần dôi ra thì CUỘN. Bật thì 20 hàng
+          //    giờ bị kéo/nén theo chiều cao cửa sổ: màn thấp ra hàng ~28px, chuyến
+          //    một tiếng mỏng như sợi chỉ, mà cùng tệp đó mở trên màn cao lại khác.
+          views={{
+            dayGridMonth: { expandRows: true },
+            timeGridDay: { dayHeaderFormat: { weekday: 'long' }, expandRows: false },
+            timeGridWeek: { dayHeaderFormat: { weekday: 'short' }, expandRows: false },
+          }}
+          dayHeaderContent={(arg) =>
+            //  Khám Tháng trả lại ĐÚNG CHỮ mặc định. KHÔNG trả `undefined` để
+            //  "nhờ FC dựng mặc định": FC nhận đó là nội dung rỗng và hàng tiêu
+            //  đề tháng mất sạch CN · T2 · … (đã dính lỗi này 16/09/2026).
+            isTimeGridView(arg.view.type) ? (
+              <BookingCalendarDayHeader
+                weekday={arg.text}
+                dayOfMonth={arg.date.getDate()}
+                isToday={arg.isToday}
+              />
+            ) : (
+              arg.text
+            )
+          }
           events={events}
-          //  Bỏ nền/viền mặc định của FC, để `EventCard` tự tô — giống mẫu tham khảo.
+          //  Bỏ nền/viền mặc định của FC, để chip tự tô.
           eventClassNames="!border-none !bg-transparent !shadow-none !p-0 cursor-pointer"
-          eventContent={(arg) => <EventCard ev={arg.event.extendedProps.ev as TimelineEvent} />}
+          eventContent={(arg) => (
+            <BookingCalendarChip
+              ev={arg.event.extendedProps.ev as TimelineEvent}
+              //  Chip cao hết ô ở khám có trục giờ; dải "Cả ngày" trên đỉnh thì
+              //  vẫn là chip cao cố định như khám Tháng.
+              fillHeight={isTimeGridView(arg.view.type) && !arg.event.allDay}
+            />
+          )}
           eventClick={(arg) => navigate(appRoutes.vehicleBooking.detail(Number(arg.event.id)))}
+          //  Gợi ý TẠO PHIẾU: chèn một dấu + vào ĐÁY ô ngày, chỉ sáng khi trỏ vào
+          //  chỗ trống. Phải là PHẦN TỬ THẬT chứ không phải `::after` — Tailwind
+          //  không sinh nổi glyph qua `content` ở đây (thử cả `content-['+']` lẫn
+          //  `[content:'+']`, `getComputedStyle` đều trả `content: ""`).
+          dayCellDidMount={(arg) => {
+            if (!canCreate) return
+            //  CHỈ khám Tháng. Khám Ngày/Tuần cũng có ô `daygrid` — đó là dải
+            //  "Cả ngày" cao 26px — nên dấu + 20px chèn vào đó gần như lấp kín
+            //  dải, mà chỗ tạo phiếu ở hai khám đó là khung giờ bên dưới.
+            if (isTimeGridView(arg.view.type)) return
+            const frame = arg.el.querySelector('.fc-daygrid-day-frame')
+            if (!frame || frame.querySelector('[data-create-hint]')) return
+            const hint = document.createElement('div')
+            hint.dataset.createHint = ''
+            hint.textContent = '+'
+            //  Dấu trang trí — không có nó thì cây trợ năng mọc thêm 35 nút "+"
+            //  và trình đọc màn hình đọc "cộng" 35 lần khi rà qua lịch.
+            hint.setAttribute('aria-hidden', 'true')
+            //  CỐ Ý không gán className ở đây: Tailwind quét MÃ NGUỒN, và lớp nằm
+            //  trong chuỗi ghép bằng `+` của tệp này thì nó bỏ qua (đã kiểm: không
+            //  sinh luật nào cho `group-hover:`). Toàn bộ dáng của dấu + khai ở
+            //  `CALENDAR_GRID_CLASSES` dưới dạng `[&_[data-create-hint]]:…`.
+            frame.appendChild(hint)
+          }}
+          //  Bấm SỐ NGÀY → mở đúng ngày đó ở khám Ngày (kiểu Google Calendar).
+          //  `navLinks` biến số ngày thành liên kết; không khai `navLinkDayClick`
+          //  thì FC nhảy sang `dayGridDay` (không trục giờ), nên chỉ định tay.
+          navLinks
+          navLinkDayClick={(date) => {
+            calendarRef.current?.getApi().changeView('timeGridDay', date)
+          }}
+          //  Bấm vào Ô NGÀY (hoặc khung giờ) → mở form tạo phiếu, điền sẵn giờ vừa
+          //  chỉ. Khám Tháng chỉ cho ra ngày (`allDay`) nên mặc định 08:00 — đầu
+          //  giờ làm; khám Ngày/Tuần thì lấy đúng khung giờ người dùng bấm.
+          dateClick={(arg) => {
+            if (!canCreate) return
+            const start = arg.allDay ? `${arg.dateStr.slice(0, 10)}T08:00` : toLocalIsoMinute(arg.date)
+            navigate(`${appRoutes.vehicleBooking.new}?start=${encodeURIComponent(start)}`)
+          }}
           datesSet={(arg) => {
             //  arg.start/end phủ trọn lưới tháng (kể cả ngày tràn) — dùng đúng khoảng đó.
             const to = new Date(arg.end)
             to.setDate(to.getDate() - 1) // `end` là mốc loại trừ
             setRange({ date_from: toYmd(arg.start), date_to: toYmd(to) })
+            setViewTitle(arg.view.title)
+            setView(arg.view.type as CalendarViewType)
+
+            //  Ghi chỗ đang xem vào URL. `datesSet` chạy sau MỌI lần đổi khám /
+            //  bấm ‹ › / bấm số ngày, nên đây là chỗ duy nhất phải ghi.
+            //
+            //  Mốc ngày lấy `view.currentStart` (đầu kỳ THẬT), KHÔNG lấy
+            //  `arg.start`: lưới tháng 9 bắt đầu từ 30/08 nên ghi `arg.start` là
+            //  F5 xong nhảy về tháng 8.
+            const mode = modeFromView(arg.view.type)
+            const date = toYmd(arg.view.currentStart)
+            //  Chỉ ghi khi KHÁC — `setSearchParams` mỗi lần vẽ là một vòng lặp
+            //  render vô ích (URL đổi → vẽ lại → FC báo `datesSet` → …).
+            if (searchParams.get('mode') !== mode || searchParams.get('date') !== date) {
+              //  Một lượt cho cả hai param: gọi hai setter liên tiếp thì lần sau
+              //  đọc URL cũ và ghi đè lần trước — xem `useSetUrlParams`.
+              setUrlParams({ mode, date })
+            }
           }}
         />
       </Card>

@@ -75,6 +75,12 @@ interface BookingFormProps {
    * định (không truyền) = `onDone`.
    */
   onSaved?: (saved: VehicleBooking, submitted: boolean) => void
+  /**
+   * Giờ khởi hành gợi sẵn cho phiếu MỚI (chuỗi ISO tới phút). Dùng khi người dùng
+   * mở form bằng cách bấm vào một ô ngày/khung giờ trên Lịch đặt xe — họ đã chỉ
+   * đúng lúc muốn đi, bắt nhập lại là thừa. Bị `booking`/`duplicateFrom` ghi đè.
+   */
+  defaultStartTime?: string
   /** Badge cạnh tiêu đề (vd trạng thái phiếu khi đang sửa). */
   badge?: React.ReactNode
   /** Khối phụ (Trao đổi + Lịch sử) — có thì xếp bên phải body theo lưới 2 cột. */
@@ -91,6 +97,7 @@ export function BookingForm({
   title,
   onDone,
   onSaved,
+  defaultStartTime,
   badge,
   aside,
 }: BookingFormProps) {
@@ -135,7 +142,7 @@ export function BookingForm({
   const [startLocation, setStartLocation] = useState(source?.start_location ?? 'Văn phòng Degoholding')
   const [endLocation, setEndLocation] = useState(source?.end_location ?? '')
   const [stops, setStops] = useState<Stop[]>(source?.stops ?? [])
-  const [startTime, setStartTime] = useState(source?.start_time ?? '')
+  const [startTime, setStartTime] = useState(source?.start_time ?? defaultStartTime ?? '')
   const [endTime, setEndTime] = useState(source?.end_time ?? '')
   const [note, setNote] = useState(source?.note ?? '')
 
