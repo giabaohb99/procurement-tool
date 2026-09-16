@@ -111,6 +111,21 @@ export interface CrudConfig<T> {
   idKey?: keyof T
   /** Trường tìm kiếm nhanh trên thanh công cụ (mặc định 'name', hoặc 'q'). */
   searchParam?: string
+  /**
+   * Thứ tự sắp xếp khi người dùng CHƯA bấm tiêu đề cột nào. Bỏ trống = để
+   * backend sắp theo mặc định của nó (`id desc` — bản ghi mới lên đầu), đúng
+   * như mọi danh mục vẫn chạy từ trước; đây là thêm mới thuần túy.
+   *
+   * Khai nó khi thứ tự của danh mục **mang nghĩa nghiệp vụ** chứ không phải
+   * "mới nhất trước". Sinh ra cho *Loại hồ sơ* (16/09/2026): năm dòng của nó là
+   * năm GIAI ĐOẠN của một lô nhập hàng (Pháp lý → Đặt hàng → Sản xuất → Kiểm
+   * tra → Nhận hàng), bày ngược lại là đọc sai cả quy trình.
+   *
+   * ⚠️ `by` phải là tên CỘT THẬT của model — `apply_sort` ở backend lọc theo
+   * whitelist cột, tên lạ bị bỏ qua trong im lặng và danh sách về lại `id desc`
+   * mà không có gì báo.
+   */
+  defaultSort?: { by: string; dir: 'asc' | 'desc' }
   searchPlaceholder?: string
   /** Cấu hình thanh lọc nhanh ngoài bảng. */
   quickFilters?: QuickFilterConfig[]

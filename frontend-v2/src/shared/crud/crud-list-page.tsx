@@ -24,6 +24,7 @@ import { QuickFilterField, QuickFilterSheet } from '@/shared/ui/quick-filter-she
 import { SearchField } from '@/shared/ui/search-field'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { CrudFormDialog } from './crud-form-dialog'
+import { resolveSort } from './resolve-sort'
 import type { CrudConfig, CrudRecord } from './types'
 import { useCrudList } from './use-crud'
 
@@ -102,8 +103,9 @@ function CrudListContent<T extends CrudRecord>({
   const idKey = (config.idKey as string) || 'id'
   const searchParamName = config.searchParam || 'name'
 
-  const sortBy = searchParams.get('sort_by') || ''
-  const sortDir = (searchParams.get('sort_dir') as 'asc' | 'desc') || 'asc'
+  //  URL thắng; chưa ai bấm tiêu đề cột thì rơi về `defaultSort` của danh mục.
+  //  Luật đầy đủ + bốn cái bẫy nằm ở `resolve-sort.ts`.
+  const { by: sortBy, dir: sortDir } = resolveSort(searchParams, config)
 
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
