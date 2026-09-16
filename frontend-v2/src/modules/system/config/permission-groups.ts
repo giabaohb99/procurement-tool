@@ -1,3 +1,5 @@
+import { matchesVietnamese } from '@/shared/utils/vn-text'
+
 /**
  * Gom các entity phân quyền thành CÂY hai cấp cho màn /system/permissions.
  *
@@ -120,4 +122,41 @@ export function buildPermissionTree(metaEntities: MetaEntity[]): PermissionGroup
   }
 
   return groups
+}
+
+/**
+ * Lọc cây theo từ khóa — ô tìm của ma trận phân quyền.
+ *
+ * Luật:
+ * - Từ khóa rỗng → trả NGUYÊN cây (cùng tham chiếu, không dựng lại).
+ * - Khớp TÊN PHÂN HỆ → giữ cả nhóm với đủ mục con. Gõ "thu mua" là muốn xem cả
+ *   phân hệ Thu mua, chứ không phải chỉ những mục có chữ "thu mua" trong tên.
+ * - Không khớp tên nhóm → chỉ giữ mục con khớp; hết mục thì bỏ nhóm.
+ *
+ * So khớp bỏ qua DẤU và hoa thường (`matchesVietnamese`): người Việt gõ ô tìm
+ * thường không bỏ dấu, so thô thì "don mua hang" không ra "Đơn mua hàng" và
+ * người dùng kết luận là màn không có mục đó.
+ *
+ * Tìm cả theo **mã entity** (`purchase_order`) chứ không chỉ nhãn: mã là thứ
+ * nằm trong tài liệu phân quyền và trong thông báo lỗi 403, nên người đi tra
+ * một khóa quyền có mã trong tay chứ chưa chắc biết nhãn tiếng Việt của nó.
+ */
+export function filterPermissionTree(
+  groups: PermissionGroup[],
+  keyword: string,
+): PermissionGroup[] {
+  if (!keyword.trim()) return groups
+
+  const result: PermissionGroup[] = []
+  for (const group of groups) {
+    if (matchesVietnamese(group.title, keyword)) {
+      result.push(group)
+      continue
+    }
+    const entities = group.entities.filter((entity) =>
+      matchesVietnamese([entity.label, entity.key], keyword),
+    )
+    if (entities.length > 0) result.push({ ...group, entities })
+  }
+  return result
 }
