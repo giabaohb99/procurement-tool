@@ -142,6 +142,15 @@ BB3_PUBLIC_CO_LY_DO = {
                     "giấy tờ với cả công ty, bảng không có cột pháp nhân hay phòng "
                     "ban nào để lọc. MỌI vai trò cần đọc để đổ ô chọn «Loại hồ sơ»; "
                     "ai SỬA gác bằng dossier_type.write",
+    "audit": "nhật ký hệ thống — cắt theo phạm vi của NGƯỜI TRA thì đúng lượt gọi "
+             "cần soi nhất biến mất (403 của người ngoài phạm vi, script chạy dưới "
+             "user_id = 0). Chốt nằm ở việc CẤP khóa, không ở việc lọc dòng",
+    "change_log": "cùng lý do `audit`; tách khóa vì đọc GIÁ TRỊ TRƯỚC/SAU của từng "
+                  "ô là mức nhạy cảm khác hẳn việc tra «ai làm gì»",
+    "sync_log": "sổ đồng bộ với hệ ngoài — một dòng sổ nói về BẢN GHI CỦA BÊN KIA "
+                "(`legacy_id`), lúc nó hỏng thì phía ERP thường CHƯA có bản ghi nào "
+                "để xét công ty/phòng ban; lọc ở đây là giấu đúng dòng lỗi nặng nhất. "
+                "Khóa chỉ cấp cho quản trị hệ thống",
 }
 
 
@@ -195,6 +204,10 @@ BB4_CONTROLLER_MIEN_TRU = {
     "work/controller.py": "work_task PUBLIC + NGHĨA VỤ tự lọc `visible_list_ids` — cụm 07 D1",
     "work/task_controller.py": "cùng `visible_list_ids` — cụm 07 D1",
     "forum/controller.py": "luật audience riêng trong WHERE của feed — cụm 07 D4",
+    "system_log/controller.py": "gác bằng `_guard` → `_can_read_logs` / `_can_read_changes` "
+                               "(hai mức nhạy cảm tách riêng); `audit`+`change_log` khai "
+                               "PUBLIC vì lọc nhật ký theo phạm vi người tra là giấu đúng "
+                               "lượt gọi cần soi nhất",
     # -- không có dữ liệu theo dòng để lọc --
     "auth/controller.py": "đăng nhập/đổi mật khẩu — chưa có phiên quyền để lọc",
     "meta/controller.py": "hằng số + danh mục mã trạng thái, không đọc bảng nghiệp vụ",

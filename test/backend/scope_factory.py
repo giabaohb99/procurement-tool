@@ -87,6 +87,7 @@ ENTITY_MODEL_PATHS = {
     "coffee_member": ("app.modules.coffee_point.model", "CoffeeMember"),
     "coffee_ledger": ("app.modules.coffee_point.model", "CoffeeLedger"),
     "pos_order": ("app.modules.coffee_point.model", "PosOrder"),
+    "login_session": ("app.modules.login_session.model", "LoginSession"),
 }
 
 
