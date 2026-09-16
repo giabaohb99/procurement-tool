@@ -1488,6 +1488,48 @@ HAI LỖ HỎNG DỮ LIỆU CỦA CHÍNH ERP, lòi ra nhờ bước khớp:
 - 26 người app cũ (73 phiếu) không có hồ sơ nào bên ERP, kể cả khớp theo tên.
 CHƯA LÀM: nạp 1313 phiếu, `tab_sync_log`, thêm `notes` vào `StopItem`. Chưa commit gì.
 
+### dong-bo-datxe-p0-tao-ho-so | P0 — chốt hồ sơ trùng và tạo hồ sơ cho 26 người chưa có
+- status: xong
+- date: 2026-09-16
+Đại ca chốt hai việc: "id bị trùng thì lấy id nhỏ nhất, nhưng note lại, để xem id lớn hơn có
+đính với đơn hàng hay yêu cầu gì không để mình update lại" và "26 người không có hồ sơ nào bên
+ERP thì tạo người dùng + employee". Sau phiên: **122/136** tài khoản app cũ đã có `legacy_id`,
+chỉ còn 14 ca "tên trùng mà email khác" (103 phiếu) chờ đại ca chốt.
+CÁCH LÀM:
+(a) Câu "id lớn có đính gì không" là câu ĐO ĐƯỢC, không trả lời bằng suy đoán. Quét
+`information_schema.columns` lấy mọi cột bigint tên `%employee_id%` · `%assignee_id%` ·
+`%requester_id%` · `manager_id` — ra **64 cột** — rồi đếm số hàng trỏ vào 38 và vào 201. Cả hai
+ra đúng 2 (một dòng `tab_employee_department`, một tài khoản), tức **id 201 không dính chứng từ
+nào**: chọn 38 là xong, không phải cập nhật lại gì. Ghi cả phép đo vào comment của
+`USER_MANUAL_MAP` để lần sau khỏi phải đo lại.
+(b) Hồ sơ mới đi qua TẦNG DỊCH VỤ (`employee_service.create_employee` +
+`user_service.provision_user`), không `db.add` thẳng — để được sinh mã `NSU`, kiểm trùng email,
+dựng `tab_employee_department` và ghi nhật ký y như người bấm trên giao diện.
+(c) Trước khi ghi: dò trước xem 26 email đó có đụng tài khoản/hồ sơ nào sẵn có không (0 ca).
+Không dò thì `provision_user` nổ giữa chừng ở người thứ n, để lại một nửa danh sách đã tạo.
+(d) Kiểm bằng cách ĐĂNG NHẬP THẬT một tài khoản mới, bằng cả email lẫn mã `NSU` — "đã tạo bản
+ghi" không chứng minh được là người ta vào được.
+LÀM ĐƯỢC:
+(1) `USER_MANUAL_MAP` khai ca 38/201 kèm phép đo. Chạy lại `sync_users.py --apply`: 122/136.
+(2) `create_missing_employees.py` — lấy đúng nhóm `khong_thay` của `classify_users`, tạo 26 hồ
+sơ `NSU231…NSU256` (id 294…319) và 22 tài khoản, tất cả vai trò `employee`. Chạy lại được:
+người đã có `legacy_id` thì bỏ qua.
+HAI CHỖ CỐ Ý KHÔNG ĐOÁN, viết thẳng vào docstring:
+- `status` để `official` cho cả 26. App cũ chỉ có bật/tắt tài khoản, không có khái niệm tình
+  trạng làm việc — suy ra "đã nghỉ" là bịa ra dữ liệu nhân sự.
+- Bốn người app cũ đã KHÓA (Võ Thị Lan Anh · Trần Thị Kim Ngoan · Huỳnh Thị Đẹp · Huỳnh Thị Ngọc
+  Thoa) được tạo hồ sơ TẮT và **không cấp tài khoản**. Mở đường đăng nhập cho người mà chính app
+  cũ đã khóa là việc phải có người quyết, không phải mặc định của một script nạp dữ liệu.
+MẬT KHẨU: sinh ngẫu nhiên từng người bằng `secrets`, ghi ra tệp do `--password-out` chỉ định,
+từ chối ghi đè tệp đã có, và tệp đó nằm NGOÀI kho mã (cùng luật với bản kết xuất Firebase).
+Đăng nhập Google tra theo email nên phần lớn không cần tới nó.
+LÒI RA THÊM MỘT LỖI ERP CHƯA AI BIẾT, từ cùng lượt quét ở (a): nhân sự **176/196** "Nguyễn Thị
+Ngọc Hân" trùng nhau với hai tài khoản **185/205**, và hai tài khoản **1/3** cùng
+`hgbao.idagroup@gmail.com`. Cả hai KHÔNG hiện trong báo cáo đồng bộ vì không tài khoản app cũ
+nào dùng email đó — lỗi thuần của ERP, cùng loại với 38/201, đang chờ đại ca chốt.
+CHƯA LÀM: 14 ca tên trùng email khác, nạp 1313 phiếu, chỗ đổ 5095 dòng lịch sử duyệt,
+`tab_sync_log`, `notes` cho `StopItem`. Chưa commit gì.
+
 ## deploy-dev-1509-cr405-406 | Đẩy dev đợt 15/09 (CR-405 mật khẩu + CR-406 Google v2)
 - status: xong
 - date: 2026-09-15
@@ -1575,7 +1617,7 @@ Chốt một cột Ngày HĐ lấy từ LẦN GIAO: ô hóa đơn trên dòng h�
 Test: `test/backend/test_tien_do_ngay_chung_tu_cr409.py` 6 bài; chạy kèm hàng xóm 10 + 44 xanh.
 Cổng `frontend-v2` xanh (typecheck 0, lint 0 lỗi), typecheck `frontend/` giữ đúng 4 lỗi cũ.
 Trạng thái: **commit `erp-v2` `a098da70` (đi chung commit với CR-411 vì chung bộ tệp), đã
-deploy DEV 16/09/2026**; prod chờ lệnh đại ca.
+deploy DEV 16/09/2026, ĐÃ LÊN PROD 16/09/2026** — cherry-pick sang `main` thành `38fd2c6e`.
 
 ### bao-CR-409-don-test-cu | Dọn hai bài kiểm đã hết hạn của bao-CR-310 đợt 4
 - status: xong
@@ -1599,7 +1641,8 @@ tiền tổng in lệch sang cột khác trên tờ giấy đưa cho NCC. Đã v
 Chỉ sửa phiếu ĐƠN ĐẶT HÀNG; phiếu nội bộ và phiếu nhập khẩu giữ nguyên vì ticket không xin.
 Test: 3 bài mới trong `purchase-order-print-page.test.tsx`, cả tệp 9 bài xanh.
 Cổng v2 typecheck 0 lỗi / lint 0 lỗi; typecheck `frontend/` giữ đúng 4 lỗi cũ.
-Trạng thái: **commit `erp-v2` `b4e73807`, đã deploy DEV 16/09/2026**; prod chờ lệnh đại ca.
+Trạng thái: **commit `erp-v2` `b4e73807`, đã deploy DEV 16/09/2026, ĐÃ LÊN PROD 16/09/2026** —
+cherry-pick sang `main` thành `853136a3`.
 
 ## bao-CR-411 | Tiến độ mua hàng: kho nhận hiện cả khi chưa nhận hàng (ticket prod 50)
 - status: xong
@@ -1619,7 +1662,7 @@ lọc được không lệch nhau. Không migration, không đụng frontend. Te
 `test/backend/test_tien_do_kho_nhan_cr411.py` 8 bài; chạy kèm hàng xóm 26 xanh + 31 xanh.
 Còn treo chờ đại ca quyết: cột Kho vẫn ẩn mặc định ở cả hai bản.
 Trạng thái: **commit `erp-v2` `a098da70` (đi chung với CR-409 vì chung bộ tệp), đã deploy DEV
-16/09/2026**; prod chờ lệnh đại ca.
+16/09/2026, ĐÃ LÊN PROD 16/09/2026** — cherry-pick sang `main` thành `38fd2c6e`.
 
 ## bao-CR-412 | Danh mục Kho tách ba trường: mã, tên viết tắt, tên đầy đủ
 - status: open
@@ -1633,3 +1676,36 @@ tên đầy đủ riêng. Đúng — `tab_warehouse` hiện chỉ có `code` (kh
 (rẻ, không đụng dữ liệu cũ); bước 2 mới đổi giá trị `code` sang mã máy, phải sửa 5 bảng trong
 một migration cộng JSON lịch sử mua hàng và mẫu nhập Excel, bắt buộc sao lưu + diễn tập.
 **Đại ca chốt 16/09/2026: ghi sổ để làm sau, chưa làm bây giờ.**
+
+## bao-CR-413 | Deploy prod 16/09/2026: tách RIÊNG ba ticket ra khỏi cụm chưa xong
+- status: xong
+- date: 2026-09-16
+Đại ca muốn prod nhận **đúng ba ticket** (50 · 51 · 52) và **không** dính bao-CR-310 đợt 4
+(cụm phương án của YCMH) vì cụm đó chưa thử xong. Tách được, và tách sạch — lý do duy nhất:
+**mỗi CR đi một lần commit riêng**, nên nhặt được từng cái bằng cherry-pick. Nếu hôm đó gộp
+tất cả vào một commit cho nhanh thì hôm nay không có cách nào ngắt ngoài việc sửa tay.
+
+Cách làm: dựng một worktree tạm đứng ở `origin/main`, cherry-pick `a098da70` rồi `b4e73807`,
+**không** đụng cây làm việc chính (cây đó đang bẩn vì cụm P0 đồng bộ đặt xe). Cả hai lần đều
+tự hòa, không đụng độ.
+
+Chốt phải kiểm TRƯỚC khi đẩy — mã chạy được ở nhánh dev **không** đủ để kết luận nó chạy được
+ở nhánh prod, vì lúc này `main` đứng sau `erp-v2` **58 lần commit**. Nên chạy lại toàn bộ cổng
+**trên nền `main`**, bằng cách `docker run` tạm với ảnh sẵn có và trỏ mount vào worktree tạm
+(`backend` vào `/app`, `test` vào `/app/test` — sai bố cục này thì pytest báo
+`No module named 'app'` chứ không báo gì rõ hơn). Kết quả: backend 18 xanh · typecheck `frontend/`
+đúng 4 lỗi cũ · typecheck `frontend-v2` 0 lỗi · 17 bài của hai màn liên quan xanh.
+Kiểm thêm bằng tay: 6/7 tệp sau cherry-pick giống hệt bản `erp-v2`; tệp thứ 7
+(`purchase-progress-page.tsx`) lệch 348 dòng nhưng **truy ra là của `duoc-CR-394`** (giao diện
+điện thoại, chưa lên prod), không phải phần bị hụt.
+
+Deploy: sao lưu `~/proc_backups/procurement_truoc_cr409_411_20260916_1143.sql.gz` (3.0M) →
+`git fetch` + `git reset --hard origin/main` ở `~/procurement-tool` → dựng lại **năm** dịch vụ
+(`api` · `celery-worker` · `celery-beat` vì backend đổi, `web` + `erp` vì cả hai bản giao diện
+đều đổi) với `-f docker-compose.production.yml`. Không có migration nên alembic prod giữ nguyên
+`d5f7a9c1b3e2`. Kiểm sau deploy: log khởi động sạch ("Seed prod done" + "Application startup
+complete", không Traceback), hai tên miền `thumua` và `erp` đều 200, và trường mới có mặt cả
+trong container `api` lẫn trong gói tĩnh đã dựng của `web` và `erp`.
+
+Còn lại trên `erp-v2` chưa lên prod: bao-CR-407 (màn Nhật ký hệ thống), bao-CR-408 (siết tải
+tệp — **đây là lỗ bảo mật đang mở trên prod**, BM-025…031), và bao-CR-310 đợt 4.
