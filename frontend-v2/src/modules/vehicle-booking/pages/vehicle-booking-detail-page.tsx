@@ -101,7 +101,19 @@ export function VehicleBookingDetailPage() {
           <div className="flex min-w-0 flex-col gap-5">
             <BookingDetailBody booking={data} />
           </div>
-          <div className="flex flex-col gap-5">
+          {/*  Cột phụ DÍNH dưới tiêu đề khi cuộn. Thân phiếu dài gấp mấy lần cột này,
+              nên cuộn xuống giữa phiếu là khung Trao đổi trôi mất — muốn ghi một câu
+              về chỗ vừa đọc thì phải cuộn ngược lên.
+
+              Ba mảnh phải khớp nhau:
+              · `self-start` — ô lưới mặc định kéo cao bằng cả hàng, mà `sticky` chỉ
+                có tác dụng khi phần tử THẤP HƠN vùng cuộn của nó.
+              · `top-[var(--booking-header-h)]` — tiêu đề tự đo rồi ghi biến này ra
+                thẻ cha; thiếu nó thì cột phụ trượt lên và chui xuống dưới tiêu đề.
+              · `max-h` + `overflow-y-auto` — Trao đổi dài ra theo số bình luận; không
+                chặn thì phần đuôi bị ghim ra ngoài màn và KHÔNG cuộn tới được.
+                `3.5rem` là thanh trên của khung (nằm ngoài vùng cuộn). */}
+          <div className="flex flex-col gap-5 lg:sticky lg:top-[calc(var(--booking-header-h,0px)+0.75rem)] lg:max-h-[calc(100dvh-3.5rem-var(--booking-header-h,0px)-2rem)] lg:self-start lg:overflow-y-auto">
             {/* Luồng duyệt nhiều bước — chỉ hiện khi phiếu đang chạy trong bộ máy
                 (bật ApprovalSwitch); 3 nút duyệt một bước ở đầu trang đã tự ẩn. */}
             {data.approval_running && <BookingApprovalPanel bookingId={data.id} />}

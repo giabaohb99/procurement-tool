@@ -1,4 +1,5 @@
 import { ArrowLeft, Clock, MapPin, User } from 'lucide-react'
+import { useEffect, useRef } from 'react'
 import type { ReactNode } from 'react'
 
 import { Button } from '@/shared/ui/button'
@@ -37,6 +38,24 @@ export function BookingDetailHeader({
     booking.request_type === REQUEST_TYPE.delivery ? DeliveryBookingIcon : CarBookingIcon
   const route = [booking.start_location, booking.end_location].filter(Boolean).join(' → ')
 
+  //  Báo CHIỀU CAO THẬT của tiêu đề ra ngoài, dưới dạng biến CSS trên thẻ cha, để
+  //  cột phụ bên phải dính được ngay DƯỚI nó (`top: var(--booking-header-h)`).
+  //
+  //  Phải đo chứ không viết số cứng: tiêu đề cao 104px khi mục đích chuyến gói
+  //  một dòng, 144px khi hai dòng, 176px ở khổ hẹp — ghim một con số thì nửa số
+  //  phiếu sẽ có cột phụ chui xuống dưới tiêu đề hoặc hở một khoảng trắng.
+  const ref = useRef<HTMLElement>(null)
+  useEffect(() => {
+    const el = ref.current
+    const host = el?.parentElement
+    if (!el || !host) return
+    const observer = new ResizeObserver(() =>
+      host.style.setProperty('--booking-header-h', `${el.offsetHeight}px`),
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
   return (
     //  LƯỚI 2 cột chứ không phải flex lồng nhau:
     //
@@ -49,7 +68,32 @@ export function BookingDetailHeader({
     //
     //  Lưới cũng làm tiêu đề thụt vào ĐÚNG bằng bề ngang nút + khe, tự tính; viết
     //  tay một `pl-12` thì đổi cỡ nút là lệch mà không ai nhận ra.
-    <header className="mb-5 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 border-b pb-4">
+    //  DÍNH ĐỈNH khi cuộn. Phiếu đặt xe dài (thân phiếu + lộ trình + giao hàng +
+    //  ghi chú), mà cụm nút quyết định lại nằm ở tiêu đề — không dính thì đọc tới
+    //  cuối phiếu rồi phải cuộn ngược lên mới bấm được, và lúc đó mã phiếu cũng
+    //  đã khuất nên không còn gì xác nhận đang đứng ở phiếu nào.
+    //
+    //  KHÔNG kẻ viền dưới: nội dung bên dưới là các thẻ nền TRẮNG trên nền canvas
+    //  xám nhạt, tự nó đã tách khỏi tiêu đề. Thêm viền thì ngay dưới nó là mép
+    //  trên của thẻ đầu tiên — hai đường kẻ cách nhau một khoảng hẹp.
+    //
+    //  Ba thứ phải đi kèm `sticky`, thiếu cái nào cũng lòi nội dung ra sau:
+    //  · `bg-canvas` — nền ĐẶC, khớp nền của `<main>`; để trong suốt thì chữ bên
+    //    dưới chạy xuyên qua tiêu đề.
+    //  · `-mx-4 px-4` (và bản `lg:`) — kéo nền ra sát mép, bù đúng lề `p-4 lg:p-6`
+    //    của `PageContainer`; không bù thì hai dải lề trái/phải vẫn hở.
+    //  · `-mt-4 pt-4` — nuốt lề trên của container vào trong tiêu đề, nếu không
+    //    thì khoảng lề đó cuộn qua phía sau và chữ dính sát mép trên.
+    //
+    //  CHỈ dính từ `lg` trở lên. Đo thật: khổ rộng tiêu đề cao ~100px (11% chiều
+    //  cao vùng cuộn), nhưng khổ hẹp thì tiêu đề xuống hai dòng, cụm nút tụt
+    //  xuống hàng riêng và dải tóm tắt gãy làm bốn — thành 176px, tức **18–21%
+    //  màn hình** bị khoá vĩnh viễn. Trên điện thoại đó là cái giá quá đắt cho
+    //  một dải nút; ở đó cuộn bình thường.
+    <header
+      ref={ref}
+      className="static top-0 z-20 -mx-4 -mt-4 mb-4 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 bg-canvas px-4 pt-4 pb-3 lg:sticky lg:-mx-6 lg:-mt-6 lg:px-6 lg:pt-6"
+    >
       <Button
         variant="outline"
         size="icon"
