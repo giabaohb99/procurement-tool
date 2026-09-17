@@ -180,26 +180,6 @@ export function buildDossierCrudConfig(types: DossierType[]): CrudConfig<Dossier
         sortable: true,
         cell: (r) => <DossierStatusBadge status={r.status as DossierStatus} />,
       },
-      {
-        key: 'owner_name',
-        header: 'Người phụ trách',
-        width: 160,
-        cell: (r) => r.owner_name || <span className="text-muted-foreground">Chưa gắn</span>,
-      },
-      {
-        key: 'department_name',
-        header: 'Bộ phận giữ',
-        width: 160,
-        defaultHidden: true,
-        cell: (r) => r.department_name || '—',
-      },
-      {
-        key: 'storage_location',
-        header: 'Nơi lưu bản gốc',
-        width: 200,
-        defaultHidden: true,
-        cell: (r) => r.storage_location || '—',
-      },
     ],
     //  ⚠️ Mọi `name` ở đây phải nằm trong `filterable=[...]` của
     //  `backend/app/modules/dossier/controller.py`. Tên ngoài danh sách đó bị
@@ -208,7 +188,6 @@ export function buildDossierCrudConfig(types: DossierType[]): CrudConfig<Dossier
       fields: [
         { name: 'name', label: 'Tên hồ sơ', type: 'text' },
         { name: 'code', label: 'Mã hồ sơ', type: 'text' },
-        { name: 'storage_location', label: 'Nơi lưu bản gốc', type: 'text' },
         {
           name: 'status',
           label: 'Tình trạng',
@@ -244,7 +223,7 @@ export function buildDossierCrudConfig(types: DossierType[]): CrudConfig<Dossier
         'Các ô riêng của loại hồ sơ đang chọn, khai ở màn Loại hồ sơ. Đổi loại thì cụm này đổi theo.',
     },
     formFields: (values: CrudRecord) =>
-      buildDossierFormFields(types, STATUS_OPTIONS, values, {
+      buildDossierFormFields(types, values, {
         renderCustomFields: ({ control, name, disabled, typeKeys }) => (
           <DossierCustomFieldsEditor
             control={control}

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { buildFormDefaults, toApiPayload, type CrudOption } from '@/shared/crud'
-import { DOSSIER_STATUS_LABEL, extraFieldName } from '../types/dossier'
+import { buildFormDefaults, toApiPayload } from '@/shared/crud'
+import { extraFieldName } from '../types/dossier'
 import type { DossierFieldDef } from '../types/dossier-field'
 import type { DossierType } from '../types/dossier-type'
 import {
@@ -19,10 +19,6 @@ import {
  * phía lệch nhau thì người dùng khai ô xong bấm Lưu và ăn 422 nói về một tên
  * trường họ chưa từng gõ.
  */
-
-const STATUS_OPTIONS: CrudOption[] = Object.entries(DOSSIER_STATUS_LABEL).map(
-  ([value, label]) => ({ value: Number(value), label }),
-)
 
 function def(over: Partial<DossierFieldDef> = {}): DossierFieldDef {
   return { key: 'so_gp', label: 'Số giấy phép', type: 'text', required: false,
@@ -109,7 +105,7 @@ describe('buildDossierFormFields', () => {
   ]
 
   const names = (values: Record<string, unknown>) =>
-    buildDossierFormFields(types, STATUS_OPTIONS, values).map((f) => f.name)
+    buildDossierFormFields(types, values).map((f) => f.name)
 
   it('chưa chọn loại thì chỉ có phần KHUNG', () => {
     expect(names({})).not.toContain('extra_fields.so_gp')
@@ -134,7 +130,7 @@ describe('buildDossierFormFields', () => {
     //  hệt ô chưa nhập — người dùng chọn đại một loại khác và phân loại thật bị
     //  ghi đè. Cùng bài học với `withCurrentValue` ở khung CRUD.
     const optionsOf = (values: Record<string, unknown>) =>
-      buildDossierFormFields(types, STATUS_OPTIONS, values)
+      buildDossierFormFields(types, values)
         .find((f) => f.name === 'dossier_type_id')
         ?.options?.map((o) => o.value)
 
@@ -143,31 +139,22 @@ describe('buildDossierFormFields', () => {
   })
 
   it('ô «Loại hồ sơ» là BẮT BUỘC', () => {
-    const field = buildDossierFormFields(types, STATUS_OPTIONS, {}).find(
+    const field = buildDossierFormFields(types, {}).find(
       (f) => f.name === 'dossier_type_id',
     )
     expect(field?.required).toBe(true)
   })
 
-  it('ba ô quyết định phạm vi dữ liệu đều có mặt', () => {
-    //  Chúng không phải trường bày cho đẹp — `SCOPE_FIELDS["dossier"]` lọc theo
-    //  đúng ba cột này. Bỏ một ô là người dùng không gắn được, và hồ sơ rơi vào
-    //  nhóm "chưa gắn" mà chỉ người phạm vi `all` nhìn thấy.
-    expect(names({})).toEqual(
-      expect.arrayContaining(['owner_employee_id', 'department_id', 'company_id']),
-    )
-  })
-
   it('không ô nào trùng tên', () => {
     //  Hai ô cùng `name` thì chúng ghi đè nhau trong form: người dùng gõ hai giá
     //  trị, chỉ một cái sống sót. Ca thật: một trường tùy biến khai `key` trùng
-    //  tên một cột khung (vd `note`) — tiền tố `extra_fields.` là thứ chặn nó.
-    const risky = [type({ id: 9, field_schema: [def({ key: 'note', label: 'Ghi chú riêng' })] })]
-    const all = buildDossierFormFields(risky, STATUS_OPTIONS, { dossier_type_id: 9 })
+    //  tên một cột khung (vd `name`) — tiền tố `extra_fields.` là thứ chặn nó.
+    const risky = [type({ id: 9, field_schema: [def({ key: 'name', label: 'Tên riêng' })] })]
+    const all = buildDossierFormFields(risky, { dossier_type_id: 9 })
     const list = all.map((f) => f.name)
     expect(new Set(list).size).toBe(list.length)
-    expect(list).toContain('note')
-    expect(list).toContain('extra_fields.note')
+    expect(list).toContain('name')
+    expect(list).toContain('extra_fields.name')
   })
 })
 
@@ -179,7 +166,7 @@ describe('vòng ĐỌC ↔ GHI của ô tùy biến', () => {
     //  `toApiPayload`. Lệch một mắt xích thì mỗi hàm riêng vẫn xanh, còn người
     //  dùng thì mở hồ sơ ra thấy ô trống (hoặc bấm Lưu xong mất dữ liệu).
     const item = { dossier_type_id: 1, extra_fields: { so_gp: 'GP-01', gt: 5000 } }
-    const fields = buildDossierFormFields(types, STATUS_OPTIONS, item)
+    const fields = buildDossierFormFields(types, item)
 
     const defaults = buildFormDefaults(fields, item)
     expect(defaults.extra_fields).toEqual({ so_gp: 'GP-01', gt: 5000 })
@@ -190,7 +177,7 @@ describe('vòng ĐỌC ↔ GHI của ô tùy biến', () => {
 
   it('hồ sơ CŨ chưa có ô nào (`extra_fields` rỗng) vẫn dựng được form', () => {
     const item = { dossier_type_id: 1, extra_fields: {} }
-    const fields = buildDossierFormFields(types, STATUS_OPTIONS, item)
+    const fields = buildDossierFormFields(types, item)
     const defaults = buildFormDefaults(fields, item)
 
     //  Ô chưa nhập về RỖNG, không phải `undefined` và cũng không phải `0` —
@@ -199,55 +186,82 @@ describe('vòng ĐỌC ↔ GHI của ô tùy biến', () => {
   })
 
   it('ô số gõ tay thành CHUỖI được quy về số khi gửi', () => {
-    const fields = buildDossierFormFields(types, STATUS_OPTIONS, { dossier_type_id: 1 })
+    const fields = buildDossierFormFields(types, { dossier_type_id: 1 })
     const payload = toApiPayload(fields, { extra_fields: { so_gp: 'x', gt: '4200' } })
     expect((payload.extra_fields as Record<string, unknown>).gt).toBe(4200)
   })
 })
 
-describe('ô để trống — backend khai kiểu CHẶT nên chuỗi rỗng là 422', () => {
-  //  ⚠️ Cả cụm này là hai lỗi TÌM RA BẰNG CÁCH BẤM TAY trên trình duyệt
-  //  (16/09/2026), không bài kiểm nào bắt được trước đó. Triệu chứng giống hệt
-  //  nhau và im lặng như nhau: điền đủ, bấm «Tạo hồ sơ», **không có gì xảy ra**.
+describe('BỘ Ô KHUNG chỉ còn BA — khách chốt 17/09/2026', () => {
+  it('đúng ba ô, đúng thứ tự: Tên · Loại · Hạn hiệu lực', () => {
+    //  Bộ ô cố định trước đó có 11 cái và phần lớn là khuôn dựng sẵn không ai
+    //  dùng. Thứ gì vài loại cần thì khai ở bộ trường của LOẠI; thứ chỉ một tờ
+    //  cần thì khai ở TRƯỜNG RIÊNG. Bài này chốt lại quyết định đó.
+    const fields = buildDossierFormFields([type()], {})
+    expect(fields.map((f) => f.name)).toEqual([
+      'name',
+      'dossier_type_id',
+      'expiry_date',
+    ])
+  })
 
-  it('ô CHỌN tham chiếu mặc định là 0, KHÔNG phải chuỗi rỗng', () => {
+  it('tám ô đã gỡ KHÔNG được lặng lẽ quay lại', () => {
+    const names = buildDossierFormFields([type()], {}).map((f) => f.name)
+    for (const removed of [
+      'code', 'status', 'issued_date', 'owner_employee_id',
+      'department_id', 'company_id', 'storage_location', 'note',
+    ]) {
+      expect(names, `ô «${removed}» đã gỡ khỏi biểu mẫu`).not.toContain(removed)
+    }
+  })
+
+  it('⚠️ HỆ QUẢ: biểu mẫu không còn đặt được ba cột PHẠM VI DỮ LIỆU', () => {
+    //  `SCOPE_FIELDS["dossier"]` lọc theo `company_id` · `department_id` ·
+    //  `created_by` · `owner_employee_id`. Gỡ ba ô nhập nghĩa là hồ sơ lập từ
+    //  màn này mang `0` cả ba, nên chỉ hai bậc phạm vi còn chạy:
+    //      `own` — vẫn thấy (nhánh này hợp thêm `created_by`)
+    //      `all` — thấy hết
+    //  còn `dept` và `company` KHÔNG ra hồ sơ nào.
+    //
+    //  Bài này không phải để chặn — nó để người sau đọc ra được hệ quả đó từ
+    //  chính bộ test, thay vì phát hiện lúc người dùng báo «tôi không thấy hồ
+    //  sơ nào». Cột vẫn còn dưới DB và API vẫn nhận; bật lại chỉ là thêm ô.
+    const names = buildDossierFormFields([type()], {}).map((f) => f.name)
+    const scopeFields = ['owner_employee_id', 'department_id', 'company_id']
+    expect(scopeFields.filter((f) => names.includes(f))).toEqual([])
+  })
+
+  it('ô CHỌN «Loại hồ sơ» mặc định 0, KHÔNG phải chuỗi rỗng', () => {
     //  `''` gửi lên ô khai `int` thì backend trả 422 «unable to parse string as
-    //  an integer» cho một ô người dùng CỐ Ý bỏ trống. `0` là đúng cách backend
-    //  nói «chưa gắn».
-    const fields = buildDossierFormFields([type()], STATUS_OPTIONS, {})
-    for (const name of ['dossier_type_id', 'owner_employee_id', 'department_id', 'company_id']) {
-      expect(fields.find((f) => f.name === name)?.defaultValue, `ô ${name}`).toBe(0)
-    }
-
-    const payload = toApiPayload(fields, buildFormDefaults(fields, null))
-    for (const name of ['owner_employee_id', 'department_id', 'company_id']) {
-      expect(payload[name], `ô ${name} gửi lên`).toBe(0)
-    }
+    //  an integer». `0` là đúng cách backend nói «chưa gắn».
+    const fields = buildDossierFormFields([type()], {})
+    expect(fields.find((f) => f.name === 'dossier_type_id')?.defaultValue).toBe(0)
   })
 
   it('ô NGÀY để trống gửi null, KHÔNG gửi chuỗi rỗng', () => {
     //  `DatePicker` không có cách nào khác để nói "chưa chọn" — nó luôn giữ
     //  `''`. Mà `''` không phải một ngày: schema `date | None` trả 422 kèm câu
     //  «input is too short». Vá nằm ở `toApiPayload` của khung chung.
-    const fields = buildDossierFormFields([type()], STATUS_OPTIONS, {})
-    const payload = toApiPayload(fields, buildFormDefaults(fields, null))
-
-    expect(payload.issued_date).toBeNull()
-    expect(payload.expiry_date).toBeNull()
+    const fields = buildDossierFormFields([type()], {})
+    expect(toApiPayload(fields, buildFormDefaults(fields, null)).expiry_date).toBeNull()
   })
 
-  it('hai ô ngày phải KHAI RÕ `nullWhenEmpty`, không trông vào mặc định', () => {
+  it('ô hạn hiệu lực phải KHAI RÕ `nullWhenEmpty`, không trông vào mặc định', () => {
     //  ⚠️ Khung chung CỐ Ý không tự áp `null` cho mọi ô `type: 'date'` — làm vậy
     //  là vỡ màn *Hợp đồng* và *Phân loại VTBB* (backend hai màn đó khai ngày là
-    //  `str = ""` nên 422 khi nhận `null`). Bài này chốt rằng hồ sơ tự khai lấy.
-    const fields = buildDossierFormFields([type()], STATUS_OPTIONS, {})
-    for (const name of ['issued_date', 'expiry_date']) {
-      expect(fields.find((f) => f.name === name)?.nullWhenEmpty, `ô ${name}`).toBe(true)
-    }
+    //  `str = ""` nên 422 khi nhận `null`).
+    const fields = buildDossierFormFields([type()], {})
+    expect(fields.find((f) => f.name === 'expiry_date')?.nullWhenEmpty).toBe(true)
   })
 
-  it('tình trạng mặc định là NHÁP, không phải ô trống', () => {
-    const fields = buildDossierFormFields([type()], STATUS_OPTIONS, {})
-    expect(toApiPayload(fields, buildFormDefaults(fields, null)).status).toBe(1)
+  it('mã hồ sơ và tình trạng do BACKEND lo, biểu mẫu không gửi gì', () => {
+    //  Không gửi `code` thì `code_prefix="HS"` cấp `HS0001`; không gửi `status`
+    //  thì schema mặc định *Nháp*. Gửi chuỗi rỗng cho `status` mới là 422.
+    const payload = toApiPayload(
+      buildDossierFormFields([type()], {}),
+      buildFormDefaults(buildDossierFormFields([type()], {}), null),
+    )
+    expect(payload).not.toHaveProperty('code')
+    expect(payload).not.toHaveProperty('status')
   })
 })

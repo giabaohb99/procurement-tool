@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import type { Control } from 'react-hook-form'
 
 import type { CrudFormField, CrudOption, CrudRecord } from '@/shared/crud'
-import { DOSSIER_STATUS, extraFieldName, type DossierFieldValue } from '../types/dossier'
+import { extraFieldName, type DossierFieldValue } from '../types/dossier'
 import { toCustomRows } from '../types/dossier-custom-row'
 import type { DossierFieldDef } from '../types/dossier-field'
 import type { DossierType } from '../types/dossier-type'
@@ -78,10 +78,11 @@ export function fieldsOfType(types: DossierType[], typeId: number): DossierField
 }
 
 /**
- * Toàn bộ ô của biểu mẫu hồ sơ = phần KHUNG cố định + phần RIÊNG của loại.
+ * Toàn bộ ô của biểu mẫu hồ sơ = **ba ô khung** + ô của LOẠI + trường RIÊNG.
  *
- * `statusOptions` truyền vào thay vì dựng tại chỗ để bộ mã sống ở một nơi
- * (`types/dossier.ts`) — tệp này chỉ lo hình dạng biểu mẫu.
+ * ⚠️ Không nhận `statusOptions` nữa: ô «Tình trạng» đã gỡ khỏi biểu mẫu
+ * (17/09/2026), nên hồ sơ mới luôn ở mức mặc định *Nháp* — xem ghi chú trong
+ * thân hàm. Bộ mã vẫn sống ở `types/dossier.ts` và cột danh sách vẫn đọc nó.
  */
 interface BuildOptions {
   /** Vẽ khối «Trường riêng của hồ sơ này» — truyền từ config để tệp này khỏi nhập JSX. */
@@ -95,7 +96,6 @@ interface BuildOptions {
 
 export function buildDossierFormFields(
   types: DossierType[],
-  statusOptions: CrudOption[],
   values: CrudRecord,
   options?: BuildOptions,
 ): CrudFormField[] {
@@ -103,112 +103,52 @@ export function buildDossierFormFields(
   //  hai kiểu, tùy người dùng đã đụng vào chưa. Ép về số ở đúng một chỗ này.
   const typeId = Number(values.dossier_type_id) || 0
 
+  //  ⚠️ **BA Ô, cố ý.** Khách chốt 17/09/2026: bộ ô cố định trước đó có 11 cái
+  //  và phần lớn là khuôn dựng sẵn không ai dùng tới. Thứ gì chỉ vài loại hồ sơ
+  //  cần thì khai ở **bộ trường của loại**, thứ chỉ một tờ cần thì khai ở
+  //  **trường riêng** ngay dưới — hai chỗ đó mới là nơi biểu mẫu này nở ra.
+  //
+  //  ⚠️ **Hệ quả phải biết: `owner_employee_id` · `department_id` ·
+  //  `company_id` không còn ô nhập nào.** Ba cột đó là thứ
+  //  `SCOPE_FIELDS["dossier"]` lọc, nên hồ sơ lập từ màn này mang `0` cả ba và
+  //  chỉ hai bậc phạm vi còn chạy:
+  //     `own` — vẫn thấy, vì nhánh này hợp thêm `created_by`;
+  //     `all` — thấy hết.
+  //  Còn `dept` và `company` sẽ **không ra hồ sơ nào**. Cột vẫn còn dưới DB và
+  //  API vẫn nhận, nên bật lại chỉ là thêm ba ô vào danh sách dưới đây.
+  //  Canh ở `test_ho_so_pham_vi.py` + `dossier-form-fields.test.ts`.
+  //
+  //  Không chia nhóm: `formSections` sinh ra cho biểu mẫu 8–10 ô; ba ô mà bọc
+  //  ba cái tiêu đề là ba cái khung rỗng.
   const base: CrudFormField[] = [
-    //  TÊN đứng trước MÃ: tên là thứ người lập hồ sơ đang nghĩ tới, còn mã thì
-    //  máy cấp được.
     {
       name: 'name',
       label: 'Tên hồ sơ',
       required: true,
       placeholder: 'VD: Giấy phép kinh doanh 2026',
-      section: 'Thông tin chung',
     },
     {
-      name: 'code',
-      label: 'Mã hồ sơ',
-      readonlyOnEdit: true,
-      placeholder: 'Bỏ trống để máy cấp',
-      hint: 'Bỏ trống thì hệ cấp HS0001, HS0002… Không sửa được sau khi tạo.',
-      section: 'Thông tin chung',
-    },
-    {
-      //  ⚠️ Ô QUYẾT ĐỊNH CẢ BIỂU MẪU — đổi loại là phần dưới mọc ra bộ ô khác.
-      //  Vì thế nó đứng ở nhóm đầu, ngay dưới tên: chọn sau cùng thì người dùng
-      //  điền xong mới thấy còn một cụm ô nữa vừa hiện ra.
+      //  ⚠️ Ô QUYẾT ĐỊNH CẢ BIỂU MẪU — đổi loại là cụm dưới mọc ra bộ ô khác.
       name: 'dossier_type_id',
       label: 'Loại hồ sơ',
       type: 'select',
       required: true,
       options: typeOptions(types, typeId),
       hint: 'Loại quyết định biểu mẫu bên dưới có những ô nào.',
-      section: 'Thông tin chung',
-      //  ⚠️ `0` chứ không để `buildFormDefaults` tự điền chuỗi rỗng. Backend
-      //  khai mấy ô này là SỐ, và `''` không phải số — gửi lên là **422** kèm
-      //  câu «unable to parse string as an integer», tức người dùng bấm Lưu mà
-      //  không lưu được vì một ô họ cố ý bỏ trống. `0` là đúng cách backend nói
-      //  «chưa gắn», và `withCurrentValue` coi `'0'` là rỗng nên ô vẫn hiện chữ
-      //  gợi ý chứ không hiện một mục tên là "0".
+      //  `0` chứ không để `buildFormDefaults` điền chuỗi rỗng: backend khai ô
+      //  này là SỐ, và `''` không phải số — gửi lên là 422.
       defaultValue: 0,
-    },
-    {
-      name: 'status',
-      label: 'Tình trạng',
-      type: 'select',
-      options: statusOptions,
-      section: 'Thông tin chung',
-      //  Hồ sơ mới mặc định là NHÁP — người lập tự chuyển sang «Đang lưu» khi
-      //  đã nộp bản gốc vào kho.
-      defaultValue: DOSSIER_STATUS.DRAFT,
-    },
-    {
-      name: 'issued_date',
-      label: 'Ngày cấp',
-      type: 'date',
-      hint: 'Ngày ký / ngày cấp ghi trên chính tờ giấy.',
-      section: 'Hiệu lực',
-      //  Backend khai `date | None` (kiểu THẬT, có kiểm dải năm) chứ không phải
-      //  `str = ""` như mấy danh mục cũ — nên ô trống phải gửi `null`, gửi chuỗi
-      //  rỗng là 422 «input is too short».
-      nullWhenEmpty: true,
     },
     {
       name: 'expiry_date',
       label: 'Hạn hiệu lực',
       type: 'date',
-      //  `0`/rỗng ở đây là một câu trả lời THẬT, không phải ô bỏ quên — nói
-      //  thành lời, kẻo người dùng đi tìm một ngày không tồn tại. Cùng luật với
-      //  «Vô thời hạn» của danh mục Loại hồ sơ.
+      //  Rỗng ở đây là một câu trả lời THẬT, không phải ô bỏ quên — nói thành
+      //  lời, kẻo người dùng đi tìm một ngày không tồn tại.
       hint: 'Bỏ trống = hồ sơ vô thời hạn. Còn dưới 30 ngày thì danh sách tự cảnh báo.',
-      section: 'Hiệu lực',
+      //  Backend khai `date | None` (kiểu THẬT) chứ không phải `str = ""` như
+      //  mấy danh mục cũ — ô trống phải gửi `null`, gửi chuỗi rỗng là 422.
       nullWhenEmpty: true,
-    },
-    {
-      name: 'owner_employee_id',
-      label: 'Người phụ trách',
-      type: 'select',
-      source: { url: '/api/employees', valueKey: 'id', labelKey: 'full_name' },
-      hint: 'Người theo dõi hồ sơ này. Họ luôn xem được nó, kể cả khi phạm vi quyền chỉ là «của tôi».',
-      section: 'Nơi giữ & phụ trách',
-      defaultValue: 0,
-    },
-    {
-      name: 'department_id',
-      label: 'Bộ phận giữ',
-      type: 'select',
-      source: { url: '/api/departments' },
-      section: 'Nơi giữ & phụ trách',
-      defaultValue: 0,
-    },
-    {
-      name: 'company_id',
-      label: 'Pháp nhân',
-      type: 'select',
-      source: { url: '/api/companies' },
-      section: 'Nơi giữ & phụ trách',
-      defaultValue: 0,
-    },
-    {
-      name: 'storage_location',
-      label: 'Nơi lưu bản gốc',
-      placeholder: 'VD: Tủ A2 · P. Hành chính',
-      section: 'Nơi giữ & phụ trách',
-    },
-    {
-      name: 'note',
-      label: 'Ghi chú',
-      type: 'textarea',
-      fullWidth: true,
-      section: 'Nơi giữ & phụ trách',
     },
   ]
 
