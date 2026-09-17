@@ -15,6 +15,11 @@ class Payable(Base, AuditMixin):
     __tablename__ = "tab_payable"
 
     company_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
+    # bao-CR-414 GĐ4 — phòng ĐANG XỬ LÝ đơn hàng lúc khoản nợ sinh ra (phòng được nhờ nếu
+    # có, không thì phòng lập đơn). 0 = khoản nợ cũ / thu mua chung. Cột ẩn: không hiện,
+    # không lọc trên màn; chỉ để phạm vi `dept_proc` / `dept` / loại trừ phòng bắt được
+    # công nợ của phòng mình. KHÔNG backfill dữ liệu cũ.
+    department_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
     supplier_code: Mapped[str] = mapped_column(String(50), default="", index=True)
     supplier_name: Mapped[str] = mapped_column(String(255), default="")
     source_type: Mapped[str] = mapped_column(String(20), default="goods", index=True)

@@ -226,8 +226,19 @@ export default function Payables() {
         </div>
       </div>
 
+      {/* bao-CR-414 GĐ4: người chỉ thấy MỘT PHẦN công nợ (phạm vi theo phòng) được xem
+          thêm "Tổng nợ NCC" — con số KHÔNG gác phạm vi, cùng bộ lọc màn hình — để biết
+          công ty còn nợ nhà cung cấp bao nhiêu dù phòng nào mua. Ba ô còn lại vẫn là phần
+          của tôi. Người phạm vi toàn bộ (`partial` = false) thấy y hệt bốn ô cũ. */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
-        <Card label="Tổng nợ" val={sum.total} />
+        {sum.partial ? (
+          <>
+            <Card label="Tổng nợ NCC (mọi phòng)" val={sum.all?.total} />
+            <Card label="Phần của tôi" val={sum.total} />
+          </>
+        ) : (
+          <Card label="Tổng nợ" val={sum.total} />
+        )}
         <Card label="Đã trả" val={sum.paid} color="var(--green)" />
         <Card label="Còn phải trả" val={sum.remaining} color="var(--teal)" />
         <Card label="Quá hạn" val={sum.overdue} color="var(--red)" />

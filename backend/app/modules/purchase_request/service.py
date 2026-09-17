@@ -607,6 +607,82 @@ def return_pr(db: Session, pid: int, reason: str, user_id: int) -> PurchaseReque
     return pr
 
 
+# ───────────── bao-CR-414 GĐ5: chuyển phòng xử lý / trả về phòng lập ─────────────
+
+TRANSFERABLE_STATUSES = ("approved", "dispatched")
+
+
+def dept_name_of(db: Session, dept_id: int, requesting_name: str = "") -> str:
+    """Tên phòng để ghi nhật ký. `dept_id` = 0 là phòng lập phiếu."""
+    from app.modules.department.model import Department
+    if not dept_id:
+        return requesting_name or "phòng lập phiếu"
+    dep = db.get(Department, dept_id)
+    return dep.name if dep else f"#{dept_id}"
+
+
+def can_transfer_dept(db: Session, pr: PurchaseRequest) -> bool:
+    """Việc mua CHƯA thật sự bắt đầu ngoài đời: phiếu mới duyệt/điều phối và mọi dòng (trừ
+    dòng đã Hủy tay) còn ở `no_po` — chưa dòng nào có ĐMH, kể cả ĐMH nháp/chờ duyệt.
+    Dòng đã Hủy bỏ qua; ĐMH đã hủy không tính vì dòng của nó đã lùi về `no_po`."""
+    if pr.status not in TRANSFERABLE_STATUSES:
+        return False
+    for it in items_of(db, pr.id):
+        st = it.line_status or LINE_STATUS_NO_PO
+        if st == LINE_STATUS_CANCELLED:
+            continue
+        if st != LINE_STATUS_NO_PO:
+            return False
+    return True
+
+
+def validate_transfer_target(db: Session, ticket, handler_dept_id: int, reason: str) -> None:
+    """Chốt chung cho YCMH và YCBG: lý do bắt buộc; phòng đích phải có thật, đang hoạt động
+    và khác phòng đang xử lý; trả về (đích = 0) chỉ khi phiếu đang được nhờ."""
+    from app.modules.department.model import Department
+    if not (reason or "").strip():
+        raise HTTPException(400, "Phải nêu lý do chuyển phòng / trả về")
+    current = int(getattr(ticket, "handler_dept_id", 0) or 0)
+    target = int(handler_dept_id or 0)
+    if target == 0:
+        if current == 0:
+            raise HTTPException(400, "Phiếu đang ở phòng lập, không có gì để trả về")
+        return
+    if target == current or (current == 0 and target == int(ticket.department_id or 0)):
+        raise HTTPException(400, "Phòng đích trùng phòng đang xử lý")
+    dep = db.get(Department, target)
+    if not dep or not dep.is_active:
+        raise HTTPException(400, "Phòng đích không tồn tại hoặc đã ngừng hoạt động")
+
+
+def transfer_handler_dept(db: Session, pid: int, handler_dept_id: int, reason: str,
+                          user_id: int) -> PurchaseRequest:
+    """Đẩy YCMH sang phòng xử lý khác (hoặc trả về phòng lập khi `handler_dept_id` = 0).
+
+    Gỡ NSTM khỏi mọi dòng, đổi phòng, đưa phiếu về «Đã duyệt (chưa điều phối)» để phòng
+    nhận điều phối lại. GIỮ `line_status` (đã kiểm là `no_po`/`cancelled`) và GIỮ cụm NCC.
+    Không chuyển một phần dòng."""
+    pr = get_pr(db, pid)
+    if not can_transfer_dept(db, pr):
+        raise HTTPException(400, "Chỉ chuyển được khi phiếu vừa duyệt/điều phối và chưa dòng nào có ĐMH")
+    validate_transfer_target(db, pr, handler_dept_id, reason)
+    old_id = int(pr.handler_dept_id or 0)
+    new_id = int(handler_dept_id or 0)
+    for it in items_of(db, pid):
+        it.assignee = ""
+    pr.assignee_id = 0
+    pr.handler_dept_id = new_id
+    pr.status = "approved"
+    pr.updated_by = user_id
+    db.commit()
+    action = "return_dept" if new_id == 0 else "transfer_dept"
+    old_name = dept_name_of(db, old_id, pr.department)
+    new_name = dept_name_of(db, new_id, pr.department)
+    record(db, user_id, ENTITY, pid, action, f"{reason.strip()} · {old_name} -> {new_name}")
+    db.refresh(pr)
+    return pr
+
+
 def complete_pr(db: Session, pid: int, user_id: int) -> PurchaseRequest:
     pr = get_pr(db, pid)
     # Chỉ hoàn thành phiếu khi MỌI dòng đã ở điểm cuối (`completed`/`cancelled`) —
@@ -645,7 +721,8 @@ def dispatch_enabled() -> bool:
     return bool(app_settings.get("pr_dispatch_enabled"))
 
 
-def dispatch_pr(db: Session, pid: int, user_id: int) -> tuple[PurchaseRequest, int, int]:
+def dispatch_pr(db: Session, pid: int, user_id: int,
+                allow_global_assignee: bool = True) -> tuple[PurchaseRequest, int, int]:
     """CR-034 — ĐIỀU PHỐI (duyệt lần 2, phía thu mua).
 
     Trưởng phòng duyệt xong phiếu chỉ dừng ở 'approved' và CHƯA có nhân sự phụ trách.
@@ -653,13 +730,18 @@ def dispatch_pr(db: Session, pid: int, user_id: int) -> tuple[PurchaseRequest, i
     phân loại (logic cũ giữ nguyên, chỉ dời thời điểm) và phiếu chuyển sang 'dispatched' —
     mốc duy nhất cho phép tạo Đơn mua hàng.
 
+    bao-CR-414 (GĐ2): bảng phân công tra theo PHÒNG ĐANG XỬ LÝ phiếu (phòng được nhờ, không
+    thì phòng lập phiếu); phân loại phòng chưa khai riêng thì rơi về bộ "Thu mua chung".
+    `allow_global_assignee=False` khi người điều phối chỉ có bậc `dept_proc` (quản lý thu mua
+    của phòng tự mua): chỉ dùng bộ riêng của phòng, không đẩy việc sang tay thu mua chung.
+
     Trả về (phiếu, số dòng vừa gán tự động, số dòng vẫn chưa có người)."""
     pr = get_pr(db, pid)
     if pr.status != "approved":
         raise HTTPException(400, "Chỉ điều phối được phiếu ở trạng thái Đã duyệt "
                                  "(trưởng phòng duyệt xong, chưa điều phối).")
     from app.modules.category_assignee.service import auto_assign_by_category
-    n = auto_assign_by_category(db, pr)
+    n = auto_assign_by_category(db, pr, allow_global=allow_global_assignee)
     blank_count = sum(1 for it in items_of(db, pid) if not (it.assignee or "").strip())
     pr.status = "dispatched"
     # bao-CR-293 (ticket 20): Ngày tiếp nhận = ngày thu mua duyệt điều phối, KHÔNG phải ngày lập
@@ -857,6 +939,7 @@ def copy_pr(db: Session, pid: int, user_id: int) -> PurchaseRequest:
         requester_id=_requester_id,
         requester_position=_requester_position, department=_department,
         department_id=_department_id,
+        handler_dept_id=src.handler_dept_id or 0,   # bao-CR-414: bản sao giữ phòng được nhờ
         head_of_dept=_head_of_dept, head_of_dept_id=_head_of_dept_id,
         purpose=src.purpose, request_date=src.request_date,
         need_date=src.need_date, is_urgent=src.is_urgent, note=src.note,
@@ -912,6 +995,7 @@ def create_pr(db: Session, data: PRCreate, user_id: int, can_write_pur: bool = F
         requester_id=data.requester_id,
         requester_position=data.requester_position, department=data.department,
         department_id=data.department_id,
+        handler_dept_id=data.handler_dept_id or 0,   # bao-CR-414
         head_of_dept=data.head_of_dept, head_of_dept_id=data.head_of_dept_id,
         purpose=data.purpose, request_date=data.request_date,
         need_date=data.need_date, is_urgent=data.is_urgent, vat_rate=data.vat_rate,

@@ -18,6 +18,8 @@ export interface PurchaseRequestPayload {
   head_of_dept: string
   /** CR-071 — id nhân sự TBP đứng tên trên phiếu (0 = theo mặc định phòng). */
   head_of_dept_id: number
+  /** bao-CR-414 — id phòng ban được NHỜ xử lý phiếu (0 = không nhờ). */
+  handler_dept_id: number
   purpose: string
   request_date: string
   need_date: string
@@ -74,6 +76,16 @@ export const purchaseRequestApi = {
     apiPost<PurchaseRequestDetail>(`${BASE_URL}/${id}/reject`, { reason }),
   cancel: (id: number, reason: string) =>
     apiPost<PurchaseRequestDetail>(`${BASE_URL}/${id}/cancel`, { reason }),
+
+  /** bao-CR-414 GĐ5: đẩy CẢ phiếu sang phòng khác xử lý (gỡ người phụ trách, về `approved`). */
+  transferDept: (id: number, handlerDeptId: number, reason: string) =>
+    apiPost<PurchaseRequestDetail>(`${BASE_URL}/${id}/transfer-dept`, {
+      handler_dept_id: handlerDeptId,
+      reason,
+    }),
+  /** bao-CR-414 GĐ5: trả cả phiếu về phòng lập tự xử lý (`handler_dept_id` = 0). */
+  returnDept: (id: number, reason: string) =>
+    apiPost<PurchaseRequestDetail>(`${BASE_URL}/${id}/return-dept`, { reason }),
   /** Trả phiếu ĐÃ DUYỆT về cho người yêu cầu sửa lại. */
   returnToRequester: (id: number, reason: string) =>
     apiPost<PurchaseRequestDetail>(`${BASE_URL}/${id}/return`, { reason }),

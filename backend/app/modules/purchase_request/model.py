@@ -31,6 +31,10 @@ class PurchaseRequest(Base, AuditMixin):
     # cột `department` bên dưới hạ xuống làm BẢN CHỤP TÊN lúc lập phiếu — chỉ để in và để đối chiếu
     # phiếu cũ, KHÔNG được khớp nghiệp vụ bằng nó nữa. 0 = phiếu cũ chưa điền lùi được (xem N-006).
     department_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
+    # bao-CR-414: phòng ĐƯỢC NHỜ xử lý (phòng tự mua nhờ thu mua chung, hoặc ngược lại). 0 = không
+    # nhờ. Chỉ để tính PHẠM VI (xem `core/scoping._dept_match`), không đổi luồng duyệt; chép sang
+    # ĐMH khi lập từ phiếu này.
+    handler_dept_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
     department: Mapped[str] = mapped_column(String(255), default="")       # BẢN CHỤP tên phòng ban (sẽ xóa — N-008)
     head_of_dept: Mapped[str] = mapped_column(String(255), default="")     # trưởng bộ phận (TÊN — dùng để in)
     # CR-071: TBP trên phiếu CHỌN được (phòng có phó phòng / quyền trưởng phòng cùng ký), neo

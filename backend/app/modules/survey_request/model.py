@@ -24,6 +24,9 @@ class SurveyRequest(Base, AuditMixin):
     # CR-086: phòng ban neo bằng ID (xem PurchaseRequest.department_id). Cột `department` bên dưới
     # hạ xuống làm BẢN CHỤP TÊN — chỉ để in/đối chiếu, không khớp nghiệp vụ bằng nó nữa.
     department_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
+    # bao-CR-414: phòng ĐƯỢC NHỜ xử lý (xem PurchaseRequest.handler_dept_id). 0 = không nhờ.
+    # Chép sang YCMH sinh ra từ phiếu này.
+    handler_dept_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
     department: Mapped[str] = mapped_column(String(255), default="", index=True)  # BẢN CHỤP tên (sẽ xóa — N-008)
     # CR-087: trưởng bộ phận neo bằng id nhân sự, đối xứng YCMH (`PurchaseRequest.head_of_dept_id`
     # có từ CR-071). Ô TÊN bên dưới là BẢN CHỤP để in (sẽ xóa — N-008).

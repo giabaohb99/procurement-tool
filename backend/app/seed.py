@@ -321,6 +321,22 @@ STD_ROLES = {
     }},
     # Quản lý thu mua: toàn quyền nghiệp vụ (như admin, trừ quản trị hệ thống user/role/setting)
     "pur_manager": {"name": "Quản lý thu mua", "perms": _PUR_MANAGER_PERMS},
+    # bao-CR-414 — Quản lý thu mua CỦA MỘT PHÒNG tự mua hàng (nhà máy). Y như quản lý thu mua
+    # trên ba chứng từ, NHƯNG phạm vi `dept_proc` = chỉ phiếu đã duyệt mà phòng lập phiếu hoặc
+    # phòng được nhờ là phòng mình. Nhân viên thu mua của phòng dùng lại `pur_staff`.
+    "pur_dept_manager": {"name": "Quản lý thu mua phòng", "perms": {
+        **_CATALOG_READ, **_CONTRACT_READ,
+        "employee": (["read"], "dept"),
+        "purchase_request": (_ALL_ACTIONS, "dept_proc"),
+        "survey_request": (_ALL_ACTIONS, "dept_proc"),
+        "purchase_order": (_ALL_ACTIONS, "dept_proc"),
+        "ticket": (["read", "create", "write"], "own"),
+        "survey": (["read", "create", "write", "approve"], "all"),
+        "inventory": (["read"], "company"),
+        "payable": (["read"], "company"),
+        "payment_request": (["read", "create", "write", "print"], "company"),
+        "report": (["read"], "dept"),
+    }},
     # Admin thu mua: CRUD toàn bộ danh mục; nghiệp vụ CHỈ ĐỌC.
     # PYC/YCKS phạm vi 'proc' (chỉ thấy chứng từ đã duyệt); ĐMH phạm vi 'all'
     # (thấy + IN MỌI đơn của phòng kể cả nháp/chờ duyệt — KHÔNG duyệt).
@@ -1320,6 +1336,13 @@ def run():
             n_test = seed_test_accounts(db, company.id)
             if n_test:
                 print(f"Tạo {n_test} tài khoản test (TESTREQ, DEMONV, DEMOTP…).")
+
+            # bao-CR-414: hai bộ tài khoản «Nhà máy» / «Thu mua chung» cho phòng tự mua hàng.
+            from app.seed_tai_khoan_cr414 import seed_cr414_accounts
+
+            n_cr414 = seed_cr414_accounts(db, company.id)
+            if n_cr414:
+                print(f"Tạo {n_cr414} tài khoản test CR-414 (NM_YC, NM_MUA, TM_AD…).")
 
         # Phân công NSTM mẫu — CHẠY SAU seed_demo_accounts vì tham chiếu mã nhân sự demo
         n_assign = seed_category_assignees(db)

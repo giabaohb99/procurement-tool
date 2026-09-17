@@ -19,9 +19,14 @@ type Row = {
   id: number; item_group_id: number; item_group_name: string
   primary_employee_id: number; primary_name: string; primary_code: string
   backup_employee_id: number; backup_name: string; backup_code: string
+  // bao-CR-414 GĐ2: 0 = bộ "Thu mua chung" (áp cho mọi phòng chưa có dòng riêng)
+  department_id: number; department_name: string | null
 }
 
-type SortField = 'item_group_name' | 'primary_name' | 'backup_name'
+type SortField = 'item_group_name' | 'primary_name' | 'backup_name' | 'department_name'
+
+/** Nhãn hiển thị cho dòng phân công chung (department_id = 0) */
+const SHARED_DEPT_LABEL = 'Thu mua chung'
 
 export default function CategoryAssignees() {
   const { can } = useAuth()
@@ -31,12 +36,15 @@ export default function CategoryAssignees() {
 
   const [rows, setRows] = useState<Row[]>([])
   const [cats, setCats] = useState<{ id: number; name: string }[]>([])
-  // Bộ lọc lưu trên URL (?cat=&name=&code=) → F5 / gửi link giữ nguyên bộ lọc
-  const [f, setF] = useUrlFilters({ cat: '', name: '', code: '' })
-  const { cat: fCat, name: fName, code: fCode } = f
+  const [depts, setDepts] = useState<{ id: number; name: string }[]>([])
+  // Bộ lọc lưu trên URL (?cat=&name=&code=&dept=) → F5 / gửi link giữ nguyên bộ lọc
+  // dept: '' = tất cả, '0' = chỉ bộ Thu mua chung, '<id>' = một phòng
+  const [f, setF] = useUrlFilters({ cat: '', name: '', code: '', dept: '' })
+  const { cat: fCat, name: fName, code: fCode, dept: fDept } = f
   const setFCat = (v: string) => setF((s) => ({ ...s, cat: v }))
   const setFName = (v: string) => setF((s) => ({ ...s, name: v }))
   const setFCode = (v: string) => setF((s) => ({ ...s, code: v }))
+  const setFDept = (v: string) => setF((s) => ({ ...s, dept: v }))
 
   const [sortField, setSortField] = useState<SortField>('item_group_name')  // mặc định: Phân loại A→Z
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
@@ -44,13 +52,19 @@ export default function CategoryAssignees() {
   const [pageSize, setPageSize] = useState(20)
 
   const COLS = useMemo<TableColumn<Row>[]>(() => [
-    { key: 'item_group_name', label: 'Phân loại', sort: 'item_group_name', width: '32%', cell: (r) => <b>{r.item_group_name || '—'}</b> },
+    { key: 'item_group_name', label: 'Phân loại', sort: 'item_group_name', width: '26%', cell: (r) => <b>{r.item_group_name || '—'}</b> },
     {
-      key: 'primary_name', label: 'NSTM chính', sort: 'primary_name', width: '30%',
+      key: 'department_name', label: 'Phòng', sort: 'department_name', width: '18%',
+      cell: (r) => (r.department_id
+        ? <>{r.department_name || `#${r.department_id}`}</>
+        : <span style={{ color: '#64748b' }}>{SHARED_DEPT_LABEL}</span>),
+    },
+    {
+      key: 'primary_name', label: 'NSTM chính', sort: 'primary_name', width: '24%',
       cell: (r) => <>{r.primary_name || '—'}{r.primary_code ? <span style={{ color: '#94a3b8', fontSize: 12 }}> · {r.primary_code}</span> : ''}</>,
     },
     {
-      key: 'backup_name', label: 'NSTM dự phòng', sort: 'backup_name', width: '30%',
+      key: 'backup_name', label: 'NSTM dự phòng', sort: 'backup_name', width: '24%',
       cell: (r) => (r.backup_name
         ? <>{r.backup_name}{r.backup_code ? <span style={{ color: '#94a3b8', fontSize: 12 }}> · {r.backup_code}</span> : ''}</>
         : <span style={{ color: '#94a3b8' }}>—</span>),
@@ -60,7 +74,7 @@ export default function CategoryAssignees() {
       cell: (r) => (
         <>
           {canCreate && <button className="btn ghost" style={{ height: 30, padding: '0 8px', marginRight: 6 }} title="Sửa phân công"
-            onClick={() => navigate(`/category-assignees/new?cats=${r.item_group_id}&primary=${r.primary_employee_id}&backup=${r.backup_employee_id}`)}><i className="ti ti-pencil" />Sửa</button>}
+            onClick={() => navigate(`/category-assignees/new?cats=${r.item_group_id}&primary=${r.primary_employee_id}&backup=${r.backup_employee_id}&dept=${r.department_id || 0}`)}><i className="ti ti-pencil" />Sửa</button>}
           {canDelete && <button className="btn err" style={{ height: 30, padding: '0 8px' }} onClick={() => del(r.id)}><i className="ti ti-trash" /></button>}
         </>
       ),
@@ -78,6 +92,9 @@ export default function CategoryAssignees() {
   }
   useEffect(() => {
     api.get('/api/item-groups', { params: { page_size: 1000 } }).then(r => setCats(r.data.data.items || []))
+    // Ô lọc Phòng: người không có quyền đọc phòng ban chỉ thấy lựa chọn "Thu mua chung"
+    api.get('/api/departments', { params: { page_size: 500 }, _silent: true } as any)
+      .then(r => setDepts(r.data.data.items || [])).catch(() => setDepts([]))
   }, [])
   useEffect(() => { load(condParams); setPage(1) }, [condParams])
 
@@ -94,15 +111,21 @@ export default function CategoryAssignees() {
 
   const filtered = useMemo(() => rows.filter(r =>
     (!fCat || String(r.item_group_id) === fCat) &&
+    (fDept === '' || String(r.department_id || 0) === fDept) &&
     (!fName || `${r.primary_name || ''} ${r.backup_name || ''}`.toLowerCase().includes(fName.trim().toLowerCase())) &&
     (!fCode || `${r.primary_code || ''} ${r.backup_code || ''}`.toLowerCase().includes(fCode.trim().toLowerCase()))
-  ), [rows, fCat, fName, fCode])
+  ), [rows, fCat, fDept, fName, fCode])
+
+  // Giá trị dùng để sort: cột Phòng lấy nhãn hiển thị để "Thu mua chung" xếp cùng các phòng
+  const sortValue = (r: Row): string => sortField === 'department_name'
+    ? (r.department_id ? (r.department_name || '') : SHARED_DEPT_LABEL)
+    : (r[sortField] || '').toString()
 
   const sorted = useMemo(() => {
     const arr = [...filtered]
     arr.sort((a, b) => {
-      const va = (a[sortField] || '').toString()
-      const vb = (b[sortField] || '').toString()
+      const va = sortValue(a)
+      const vb = sortValue(b)
       if (!va) return 1        // trống xuống cuối
       if (!vb) return -1
       return sortDir === 'asc' ? va.localeCompare(vb, 'vi') : vb.localeCompare(va, 'vi')
@@ -115,7 +138,7 @@ export default function CategoryAssignees() {
   useEffect(() => { if (page > totalPages) setPage(1) }, [page, totalPages])
   const paged = sorted.slice((page - 1) * pageSize, page * pageSize)
 
-  function resetFilters() { setF({ cat: '', name: '', code: '' }); setPage(1) }
+  function resetFilters() { setF({ cat: '', name: '', code: '', dept: '' }); setPage(1) }
 
   return (
     <div>
@@ -125,12 +148,19 @@ export default function CategoryAssignees() {
       </div>
 
       <ConditionalFilter fields={CATEGORY_ASSIGNEE_COND_FILTERS} onChange={setCondParams}>
-      <FilterPanel onClear={resetFilters} canClear={!!(fCat || fName || fCode)}
+      <FilterPanel onClear={resetFilters} canClear={!!(fCat || fName || fCode || fDept !== '')}
                    extra={<ConditionalFilterButton />}>
         <FilterItem label="Phân loại" width={240}>
           <select value={fCat} onChange={e => { setFCat(e.target.value); setPage(1) }}>
             <option value="">Tất cả</option>
             {cats.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        </FilterItem>
+        <FilterItem label="Phòng" width={200}>
+          <select value={fDept} onChange={e => { setFDept(e.target.value); setPage(1) }}>
+            <option value="">Tất cả</option>
+            <option value="0">{SHARED_DEPT_LABEL}</option>
+            {depts.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
           </select>
         </FilterItem>
         <FilterItem label="Tên NSTM" grow>

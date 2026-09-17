@@ -19,22 +19,30 @@ chạy được trên TS 7. Đừng nâng lên 7 nếu chưa kiểm tra ESLint c
 Mọi thứ chạy trong Docker service `erp`:
 
 ```bash
-docker compose exec erp npm run check        # typecheck + lint + test (chạy hết trước khi báo xong việc)
-docker compose exec erp npm run test         # vitest run
-docker compose exec erp npm run test:watch   # vitest ở chế độ theo dõi
-docker compose exec erp npm run lint         # eslint .
-docker compose exec erp npm run lint:fix     # eslint . --fix
-docker compose exec erp npm run typecheck    # tsc --noEmit
-docker compose exec erp npm run format       # prettier --write . (đọc ghi chú bên dưới)
+docker compose exec -T erp npm run typecheck                      # tsc --noEmit — cả cây
+docker compose exec -T erp npm run lint                           # eslint . — cả cây
+docker compose exec -T erp npx vitest run src/modules/<phân hệ>   # CHỈ thư mục vừa sửa
+docker compose exec -T erp npx vitest run src/shared/<khu>        # đụng lớp dùng chung thì thêm khu đó
+docker compose exec erp npm run lint:fix                          # eslint . --fix
+docker compose exec erp npm run test:watch                        # vitest ở chế độ theo dõi
+docker compose exec erp npm run format                            # prettier --write . (đọc ghi chú bên dưới)
+# npm run check / npm run test = quét hết ~3200 bài: chỉ khi được bảo rõ, hoặc ngay trước deploy
 ```
 
 Ba cổng, cả ba phải xanh:
 
-| Cổng        | Ngưỡng                                             |
-| ----------- | -------------------------------------------------- |
-| `typecheck` | **0 lỗi**                                          |
-| `lint`      | **0 lỗi**. Cảnh báo còn vài chỗ cũ — đừng thêm mới |
-| `test`      | **toàn bộ xanh**                                   |
+| Cổng        | Ngưỡng                                                                              |
+| ----------- | ----------------------------------------------------------------------------------- |
+| `typecheck` | **0 lỗi**                                                                           |
+| `lint`      | **0 lỗi**. Cảnh báo còn vài chỗ cũ — đừng thêm mới                                  |
+| `test`      | **xanh trong thư mục vừa sửa** (`npx vitest run <thư mục>`), không quét cả cây      |
+
+**Cổng `test` chạy theo THƯ MỤC, không chạy full** (chốt 17/09/2026 khi bộ test vượt 3200
+bài, `npm run check` mất 5-6 phút và ăn trọn 2 CPU của container). Sửa gì thì chạy vitest
+đúng thư mục đó: phân hệ → `src/modules/<tên>`; lớp dùng chung → `src/shared/<khu>` hoặc
+`src/core/<khu>`; đụng nhiều chỗ thì liệt kê nhiều đường dẫn trong cùng một lệnh. `typecheck`
+đã bắt được lỗi lan sang phân hệ khác (đổi kiểu, đổi tên hàm), nên không cần test cả cây để
+"cho chắc". Full suite chỉ khi được bảo rõ, hoặc ngay trước khi deploy.
 
 **`format:check` CHƯA nằm trong `check`** và hiện đỏ ở ~381 tệp: Prettier mới được
 thêm vào, chưa ai chạy `format --write` cho toàn bộ mã. Đừng tự ý chạy

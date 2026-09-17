@@ -172,3 +172,28 @@ export function useCreatePurchaseRequestsFromSurvey(id: number) {
     },
   })
 }
+
+/** Tham số của hộp Chuyển phòng xử lý: `handlerDeptId = 0` nghĩa là TRẢ VỀ phòng lập. */
+export interface TransferSurveyDeptInput {
+  handlerDeptId: number
+  reason: string
+}
+
+/**
+ * bao-CR-414 GĐ5 — chuyển cả phiếu YCBG sang phòng khác xử lý, hoặc trả về phòng lập.
+ * Backend gỡ NSTM phụ trách + ngày nhận ở mọi dòng, giữ nguyên trạng thái phiếu.
+ */
+export function useTransferSurveyRequestDept(id: number) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ handlerDeptId, reason }: TransferSurveyDeptInput) =>
+      handlerDeptId === 0
+        ? surveyRequestApi.returnDept(id, reason)
+        : surveyRequestApi.transferDept(id, handlerDeptId, reason),
+    onSuccess: (_data, { handlerDeptId }) => {
+      toast.success(handlerDeptId === 0 ? 'Đã trả phiếu về phòng lập' : 'Đã chuyển phòng xử lý')
+      void queryClient.invalidateQueries({ queryKey: queryKeys.procurement.all })
+    },
+  })
+}

@@ -139,7 +139,7 @@ Nguồn: `doc/erp/13-ke-hoach-man-con-lai-v2.md` §3, §6.8, §6.9; `doc/erp/14-
 - Một dòng đã lỗi thời trong doc 13, đừng tin: "CR-117/118 chưa bê sang main" — xong từ
   11/09/2026.
 
-### 7.1 Phòng ban TỰ MUA HÀNG — bao-CR-414 (thiết kế xong 16/09/2026, chờ lệnh khởi công)
+### 7.1 Phòng ban TỰ MUA HÀNG — bao-CR-414 (thiết kế xong 16/09/2026, gọn lại + làm trọn năm giai đoạn dưới local ngày 17/09/2026 — chưa commit, chưa lên dev)
 
 Thay thế vế pháp nhân của P2-2b và P7: định tuyến phiếu theo **phòng ban**, không theo pháp
 nhân. Thiết kế đầy đủ ở `doc/erp/12-ke-hoach-erp-v2-da-phap-nhan.md` §5.1 – §5.1.8.
@@ -147,13 +147,20 @@ nhân. Thiết kế đầy đủ ở `doc/erp/12-ke-hoach-erp-v2-da-phap-nhan.md
 **Luật nền:** phạm vi là công tắc, **không có cờ bật/tắt tính năng** — chưa gán bậc phạm vi
 mới thì mọi màn hành xử y như trước.
 
+**Gọn lại 17/09/2026 — cả bài toán gói trong BA BỘ PHẠM VI**, không cần ô tick trên danh mục
+phòng ban, không cần dòng cấu hình "phòng thu mua chung", không cần migration điền lùi:
+*(1)* Thu mua full = `pur_manager` như hiện tại; *(2)* Nhà máy = bậc phạm vi mới `dept_proc`
+"Thu mua trong phòng mình" qua vai trò mới `pur_dept_manager`, nhân viên dùng lại `pur_staff`;
+*(3)* Thu mua trừ nhà máy = bậc `proc` sẵn có + ô "Loại trừ phòng ban" = Dego Organic, nhưng
+phiếu nhà máy **nhờ** sang (cột `handler_dept_id` = phòng mình) vẫn thấy được dù đã loại trừ.
+
 | GĐ | Nội dung | Trạng thái |
 |---|---|---|
-| 1 | Cột `handler_dept_id` (YCMH · YCBG · ĐMH chép sẵn) · ô tick "Phòng tự mua hàng" · hai vai trò mới (Quản lý thu mua phòng cấp `purchase_order` approve + cancel — luật chung: ai có quyền duyệt trên phòng đó thì duyệt được, thực tế quản lý thu mua của phòng tự duyệt) · bậc phạm vi "Thu mua trong phòng mình". **Chuông giữ nguyên, không sửa** (chốt: ai có quyền thì cứ gửi; bấm vào ăn 403 là chấp nhận, ghi HDSD) | Chưa bắt đầu |
-| 2 | `tab_category_assignee` thêm cột phòng, khóa duy nhất (phòng, phân loại) — ⚠️ migration phải điền lùi toàn bộ dòng cũ = phòng Thu mua chung, quên là mọi phiếu mất người phụ trách tự động | Chưa bắt đầu |
-| 3 | Ô tick "Nhờ phòng khác xử lý" trên form phiếu | Chưa bắt đầu |
-| 4 | Công nợ hai con số (Tổng nợ NCC / Phần của tôi) · **cột ẩn `department_id` CHÉP SẴN trên cả `tab_payable` lẫn `tab_payment_request`, lọc đọc thẳng cột đó** (chốt 16/09: không lọc vòng qua đơn), bản in KHÔNG hiện phòng ban, chặn trộn đơn hai phòng trong một YCTT · chặn cấn trừ tiền treo cấp NCC theo phòng · **rà bộ tool Trợ lý AI cho khớp phạm vi mới** (tool công nợ trả hai con số, tool YCTT lọc theo cột mới, tool chứng từ đọc `handler_dept_id`) | Chưa bắt đầu |
-| 5 | **Nút chuyển phòng xử lý ở màn chi tiết + nút Trả về** — khách chốt để **giai đoạn cuối**; điều kiện bật nút đã chốt ở kế hoạch `12` mục 5.1.7 (YCMH: mọi dòng còn "Chưa tạo đơn mua hàng"; YCBG: chưa hoàn thành dòng nào, chưa chốt phương án, chưa sinh YCMH) | Chưa bắt đầu |
+| 1 | Bậc phạm vi `dept_proc` · vai trò `pur_dept_manager` "Quản lý thu mua phòng" (YCMH · YCBG · ĐMH đủ hành động, danh mục đọc) · cột `handler_dept_id` mặc định 0 trên YCMH/YCBG/ĐMH, chép sang chứng từ con, không điền lùi · `_dept_match` HỢP hai cột phòng · loại trừ phòng thua "phòng nhờ" · người điều phối/duyệt ở bậc mới thì bỏ tự gán theo phân loại (chọn tay) · ô "Nhờ phòng" trên form YCMH (v1 trước, v2 sau) · hai bộ tài khoản test trong ô đổi nhanh của bản dev. **Chuông giữ nguyên, không sửa** (ai có quyền thì cứ gửi; bấm vào ăn 403 là chấp nhận, ghi HDSD) | Xong local 17/09 (chưa commit/dev) |
+| 2 | `tab_category_assignee` thêm cột phòng, khóa duy nhất (phòng, phân loại); tự gán theo (phòng xử lý, phân loại) thay vì chọn tay như GĐ1 | Xong local 17/09 (chưa commit/dev) |
+| 3 | Ô "Nhờ phòng" trên form YCBG (cùng khuôn với YCMH ở GĐ1) | Xong local 17/09 (chưa commit/dev) |
+| 4 | Công nợ hai con số (Tổng nợ NCC / Phần của tôi) · **cột ẩn `department_id` CHÉP SẴN trên cả `tab_payable` lẫn `tab_payment_request`, lọc đọc thẳng cột đó** (chốt 16/09: không lọc vòng qua đơn), bản in KHÔNG hiện phòng ban, chặn trộn đơn hai phòng trong một YCTT · chặn cấn trừ tiền treo cấp NCC theo phòng · **rà bộ tool Trợ lý AI cho khớp phạm vi mới** (tool công nợ trả hai con số, tool YCTT lọc theo cột mới, tool chứng từ đọc `handler_dept_id`) | Xong local 17/09 (chưa commit/dev) |
+| 5 | **Nút chuyển phòng xử lý ở màn chi tiết + nút Trả về** — khách chốt để **giai đoạn cuối**; điều kiện bật nút đã chốt ở kế hoạch `12` mục 5.1.7 (YCMH: mọi dòng còn "Chưa tạo đơn mua hàng"; YCBG: chưa hoàn thành dòng nào, chưa chốt phương án, chưa sinh YCMH) | Xong local 17/09 (chưa commit/dev) |
 
 **Để đợt sau, ngoài CR này** (ba chỗ vẫn nhìn ra nguyên liệu dù đã chia phạm vi phiếu):
 `modules/purchase_history` không gọi `apply_scope` lần nào · `modules/report/service.compute`

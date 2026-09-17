@@ -119,6 +119,18 @@ def _fetch_scoped(ctx: ToolContext, model, entity: str, code: str, doc_id):
     return q.first()
 
 
+def _handler_dept_fields(ctx: ToolContext, doc) -> dict:
+    """bao-CR-414 — phòng ĐƯỢC NHỜ xử lý (khác phòng lập phiếu). `handler_dept_id = 0` là
+    phiếu thu mua chung xử lý như trước; trả kèm tên phòng để trợ lý nói bằng lời."""
+    dept_id = int(getattr(doc, "handler_dept_id", 0) or 0)
+    if not dept_id:
+        return {"handler_dept_id": 0, "handler_dept": ""}
+    from app.modules.department.model import Department
+
+    dept = ctx.db.get(Department, dept_id)
+    return {"handler_dept_id": dept_id, "handler_dept": (dept.name if dept else "") or ""}
+
+
 def _not_found(entity: str, code: str, doc_id) -> dict:
     name = code or (f"id {doc_id}" if doc_id else "")
     return {"error": (f"Không tìm thấy {_ENTITY_LABELS[entity]} '{name}' trong phạm vi dữ "
@@ -144,6 +156,7 @@ def _read_po(ctx: ToolContext, code: str, doc_id) -> dict:
                                                              po.document_status),
         "buyer": po.nspt,               # NSPT phụ trách mua
         "department": po.department,
+        **_handler_dept_fields(ctx, po),
         "is_urgent": bool(po.is_urgent),
         "note": _cat(po.note),
         "approve_note": _cat(po.approve_note),
@@ -226,6 +239,7 @@ def _read_pr(ctx: ToolContext, code: str, doc_id) -> dict:
         "requester": pr.requester,
         "requester_position": pr.requester_position,
         "department": pr.department,
+        **_handler_dept_fields(ctx, pr),
         "purpose": pr.purpose,
         "request_date": pr.request_date,
         "need_date": pr.need_date,
@@ -283,6 +297,7 @@ def _read_sr(ctx: ToolContext, code: str, doc_id) -> dict:
         "code": sr.code,
         "requester": sr.requester,
         "department": sr.department,
+        **_handler_dept_fields(ctx, sr),
         "purpose": sr.purpose,
         "request_date": sr.request_date,
         "status": sr.status,

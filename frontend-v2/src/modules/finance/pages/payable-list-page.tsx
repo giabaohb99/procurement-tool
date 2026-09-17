@@ -714,8 +714,28 @@ function PayableListContent() {
            nhất người ta mở màn này để xem, bắt đầu từ dưới mép màn hình. Bốn số
            này đều ngắn (đã `formatMoney` làm tròn tới đồng) nên 2×2 vừa thoải
            mái. */}
-      <div className="mb-4 grid shrink-0 grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
-        <SummaryCard label="Tổng nợ" value={summary?.total} loading={isSummaryLoading} />
+      {/*  bao-CR-414 GĐ4: người chỉ thấy MỘT PHẦN công nợ (phạm vi theo phòng) có
+           thêm ô "Tổng nợ NCC" — con số KHÔNG gác phạm vi, cùng bộ lọc màn hình — để
+           biết công ty còn nợ nhà cung cấp bao nhiêu dù phòng nào mua. Người phạm vi
+           toàn bộ (`partial` sai) thấy y hệt bốn ô cũ; năm ô thì lưới lg thành 5 cột. */}
+      <div
+        className={cn(
+          'mb-4 grid shrink-0 grid-cols-2 gap-2 sm:gap-3',
+          summary?.partial ? 'lg:grid-cols-5' : 'lg:grid-cols-4',
+        )}
+      >
+        {summary?.partial ? (
+          <>
+            <SummaryCard
+              label="Tổng nợ NCC (mọi phòng)"
+              value={summary.all?.total}
+              loading={isSummaryLoading}
+            />
+            <SummaryCard label="Phần của tôi" value={summary.total} loading={isSummaryLoading} />
+          </>
+        ) : (
+          <SummaryCard label="Tổng nợ" value={summary?.total} loading={isSummaryLoading} />
+        )}
         <SummaryCard
           label="Đã trả"
           value={summary?.paid}

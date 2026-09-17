@@ -19,6 +19,9 @@ router = APIRouter(prefix="/api/payables", tags=["payable"])
 def _out(db: Session, p: Payable, misa_by_po: dict[int, str] | None = None) -> dict:
     return {
         "id": p.id, "company_id": p.company_id, "supplier_code": p.supplier_code,
+        # bao-CR-414 GĐ4 — phòng xử lý đơn lúc nợ sinh ra (0 = nợ cũ / thu mua chung).
+        # Cột ẩn: giao diện không hiện, chỉ để kiểm tra / gỡ lỗi phạm vi.
+        "department_id": int(p.department_id or 0),
         "supplier_name": p.supplier_name, "source_type": p.source_type,
         "po_id": p.po_id, "po_code": p.po_code, "invoice_no": p.invoice_no,
         "misa_code": (misa_by_po or {}).get(p.po_id, ""),
@@ -37,10 +40,15 @@ def _today():
     return datetime.now().date()
 
 
-def _filtered(db: Session, request: Request, user):
-    """Lọc ở DB (không nạp toàn bộ). Mặc định theo năm hiện tại để giới hạn dữ liệu."""
+def _filtered(db: Session, request: Request, user, scoped: bool = True):
+    """Lọc ở DB (không nạp toàn bộ). Mặc định theo năm hiện tại để giới hạn dữ liệu.
+
+    `scoped=False` (bao-CR-414 GĐ4): giữ nguyên mọi bộ lọc trên màn nhưng KHÔNG gác phạm
+    vi — chỉ dùng cho con số "Tổng nợ NCC" của thẻ tổng hợp (kế toán cần biết tổng nợ với
+    nhà cung cấp dù nợ đó do phòng nào mua). Danh sách + xuất Excel luôn đi đường gác."""
     q = apply_filters(db.query(Payable), Payable, request, service.FILTERABLE)
-    q = apply_scope(q, Payable, "payable", user, get_perm_profile(db, user))
+    if scoped:
+        q = apply_scope(q, Payable, "payable", user, get_perm_profile(db, user))
     company_id = request.query_params.get("company_id")
     if company_id:
         q = q.filter(Payable.company_id == int(company_id))
@@ -124,10 +132,8 @@ def list_payables(request: Request, pg: dict = Depends(pagination), db: Session 
     return success({"total": total, "items": [_out(db, p, misa) for p in rows]})
 
 
-@router.get("/summary")
-def summary(request: Request, db: Session = Depends(get_db), user=Depends(require("payable", "read"))):
-    today = _today().strftime("%Y-%m-%d")
-    q = _filtered(db, request, user)
+def _sum_row(q, today: str) -> dict:
+    """Bốn con số tổng hợp (tổng nợ / đã trả / còn lại / quá hạn) trên một query công nợ."""
     overdue_case = case(
         (((Payable.status != service.ST_PAID) & (Payable.due_date != "") & (Payable.due_date < today)), Payable.remaining),
         else_=0,
@@ -138,8 +144,23 @@ def summary(request: Request, db: Session = Depends(get_db), user=Depends(requir
         func.coalesce(func.sum(Payable.remaining), 0),
         func.coalesce(func.sum(overdue_case), 0),
     ).one()
-    return success({"total": float(row[0]), "paid": float(row[1]),
-                    "remaining": float(row[2]), "overdue": float(row[3])})
+    return {"total": float(row[0]), "paid": float(row[1]),
+            "remaining": float(row[2]), "overdue": float(row[3])}
+
+
+@router.get("/summary")
+def summary(request: Request, db: Session = Depends(get_db), user=Depends(require("payable", "read"))):
+    """Thẻ tổng hợp công nợ.
+
+    bao-CR-414 GĐ4 — trả HAI bộ số: bốn khóa gốc (`total/paid/remaining/overdue`) là
+    "PHẦN CỦA TÔI" (đúng phạm vi người xem, như trước); `all` là "TỔNG NỢ NCC" tính trên
+    cùng bộ lọc màn hình nhưng KHÔNG gác phạm vi; `partial` = hai bộ lệch nhau (người xem
+    chỉ thấy một phần). Người phạm vi toàn bộ thì hai bộ bằng nhau, màn hình chỉ hiện một."""
+    today = _today().strftime("%Y-%m-%d")
+    mine = _sum_row(_filtered(db, request, user), today)
+    everything = _sum_row(_filtered(db, request, user, scoped=False), today)
+    partial = any(abs(mine[k] - everything[k]) > 0.005 for k in mine)
+    return success({**mine, "all": everything, "partial": partial})
 
 
 @router.post("/{pid}/offset-prepay")

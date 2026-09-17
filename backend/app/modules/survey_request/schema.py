@@ -22,6 +22,7 @@ class _Header(BaseModel):
     requester_id: int = 0
     requester_position: str = ""
     department_id: int = 0        # CR-086: phòng ban neo bằng id; bỏ trống thì tra từ `department`
+    handler_dept_id: int = 0      # bao-CR-414: phòng ĐƯỢC NHỜ xử lý (0 = không nhờ)
     department: str = ""
     head_of_dept_id: int = 0      # CR-087: TBP neo bằng id nhân sự; bỏ trống thì lấy theo phòng
     head_of_dept: str = ""
@@ -41,6 +42,7 @@ class SurveyRequestUpdate(BaseModel):
     requester_id: int | None = None
     requester_position: str | None = None
     department_id: int | None = None      # CR-086
+    handler_dept_id: int | None = None    # bao-CR-414
     department: str | None = None
     head_of_dept_id: int | None = None    # CR-087
     head_of_dept: str | None = None
@@ -51,6 +53,13 @@ class SurveyRequestUpdate(BaseModel):
 
 
 class RejectIn(BaseModel):
+    reason: str = ""
+
+
+class TransferDeptIn(BaseModel):
+    """bao-CR-414 GĐ5 — chuyển phiếu sang phòng xử lý khác / trả về phòng lập.
+    `handler_dept_id` = 0 nghĩa là trả về phòng lập; lý do BẮT BUỘC (ghi vào nhật ký)."""
+    handler_dept_id: int = 0
     reason: str = ""
 
 

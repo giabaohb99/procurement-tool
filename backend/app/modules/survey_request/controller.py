@@ -10,13 +10,15 @@ from app.core.base_controller import apply_filters, apply_range_filters, apply_e
 from app.core.ref_filter import apply_ref_filters
 from app.core.database import get_db
 from app.core.response import success
-from app.core.scoping import apply_scope, scope_condition
+from app.core.scoping import (apply_scope, approves_only_in_dept_proc, holds_handling_dept,
+                              scope_condition)
 
 from . import service
 from . import line_state
 from .model import (LS_RESURVEY, SurveyRequest, SurveyRequestLine,
                     SurveyRequestOption)
-from .schema import LineStatusIn, RejectIn, SurveyRequestCreate, SurveyRequestUpdate
+from .schema import (LineStatusIn, RejectIn, SurveyRequestCreate, SurveyRequestUpdate,
+                     TransferDeptIn)
 
 router = APIRouter(prefix="/api/survey-requests", tags=["survey_request"])
 
@@ -107,6 +109,15 @@ def _out(db: Session, s: SurveyRequest, user=None, profile=None) -> dict:
         d["progress_tone"] = line_state.STATE_TONE.get(d["progress_state"], "gray")
         out_lines.append(d)
     base["lines"] = out_lines
+    # bao-CR-414 GĐ5: nút "Chuyển phòng xử lý" / "Trả về phòng lập" — chỉ quản lý thu mua của
+    # phòng ĐANG CẦM phiếu (hoặc toàn hệ) và khi việc khảo sát chưa thật sự bắt đầu.
+    can_transfer = False
+    if user is not None:
+        prof = profile if profile is not None else get_perm_profile(db, user)
+        can_transfer = bool(service.can_transfer_dept(db, s)
+                            and holds_handling_dept(prof, "survey_request", s))
+    base["can_transfer_dept"] = can_transfer
+    base["can_return_dept"] = bool(can_transfer and (s.handler_dept_id or 0))
     return base
 
 
@@ -417,7 +428,10 @@ def submit_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(g
 def approve_(sid: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user=Depends(require("survey_request", "approve"))):
     _in_scope(db, sid, user, "approve")
     s = service.set_status(db, sid, "approved", user.id)
-    service.auto_assign(db, s)                       # tự gán NSTM theo phân loại (Task 4)
+    # bao-CR-414: tự gán NSTM theo phân loại (Task 4) — tra theo phòng đang xử lý phiếu; người
+    # duyệt chỉ có bậc `dept_proc` (quản lý thu mua CỦA PHÒNG) thì không rơi về bộ "Thu mua chung".
+    dept_only = approves_only_in_dept_proc(get_perm_profile(db, user), "survey_request")
+    service.auto_assign(db, s, allow_global_assignee=not dept_only)
     s = service.set_status(db, sid, "processing", user.id)   # duyệt xong -> chuyển sang Đang xử lý
     from app.modules.notification.service import get_users_by_role_codes, get_user_display_name
     from app.modules.user.model import User
@@ -473,6 +487,44 @@ def cancel_(sid: int, data: RejectIn, background_tasks: BackgroundTasks, db: Ses
             f"Yêu cầu báo giá {s.code} của bạn bị TỪ CHỐI (khóa đơn). Lý do: {data.reason or '(không nêu)'}",
             f"/survey-requests/{s.id}", s.created_by or user.id, background_tasks, doc_code=s.code)
     return success(_out(db, s), "Đã từ chối (khóa đơn)")
+
+
+def _transfer_dept(db: Session, sid: int, data: TransferDeptIn, background_tasks: BackgroundTasks,
+                   user, *, target: int, message: str):
+    s = _in_scope(db, sid, user, "approve")
+    if not holds_handling_dept(get_perm_profile(db, user), "survey_request", s):
+        raise HTTPException(403, "Chỉ quản lý thu mua của phòng đang xử lý mới chuyển được phiếu này")
+    old_assignees = [ln.assignee for ln in service.lines_of(db, sid) if ln.assignee]
+    s = service.transfer_handler_dept(db, sid, target, data.reason, user.id)
+    from app.modules.user.model import User
+    creator = db.query(User).filter(User.id == (s.created_by or user.id)).all()
+    where = "phòng lập" if target == 0 else "phòng xử lý khác"
+    _notify(db, creator, f"{s.code} — Chuyển {where}",
+            f"Yêu cầu báo giá {s.code} được chuyển sang {where}. Lý do: {data.reason.strip()}",
+            f"/survey-requests/{s.id}", user.id, background_tasks, doc_code=s.code)
+    if old_assignees:                                  # NSTM bị gỡ khỏi dòng cũng cần biết
+        _notify(db, _users_of_codes(db, sorted(set(old_assignees))),
+                f"{s.code} — Gỡ phân công khảo sát",
+                f"Phiếu {s.code} đã chuyển {where}, phần khảo sát của bạn được gỡ. Lý do: {data.reason.strip()}",
+                f"/survey-requests/{s.id}", user.id, background_tasks, doc_code=s.code)
+    return success(_out(db, s, user), message)
+
+
+@router.post("/{sid}/transfer-dept")
+def transfer_dept_(sid: int, data: TransferDeptIn, background_tasks: BackgroundTasks,
+                   db: Session = Depends(get_db), user=Depends(require("survey_request", "approve"))):
+    """bao-CR-414 GĐ5 — CHUYỂN PHÒNG XỬ LÝ: gỡ NSTM + ngày tiếp nhận mọi dòng, đổi phòng;
+    trạng thái giữ nguyên (YCBG không có bước điều phối riêng). Lý do bắt buộc, ghi nhật ký."""
+    return _transfer_dept(db, sid, data, background_tasks, user,
+                          target=data.handler_dept_id, message="Đã chuyển phòng xử lý")
+
+
+@router.post("/{sid}/return-dept")
+def return_dept_(sid: int, data: TransferDeptIn, background_tasks: BackgroundTasks,
+                 db: Session = Depends(get_db), user=Depends(require("survey_request", "approve"))):
+    """bao-CR-414 GĐ5 — TRẢ VỀ PHÒNG LẬP: cùng điều kiện, đích là phòng lập (`handler_dept_id` = 0)."""
+    return _transfer_dept(db, sid, data, background_tasks, user, target=0,
+                          message="Đã trả phiếu về phòng lập")
 
 
 @router.patch("/{sid}/lines/{line_id}/assignee")

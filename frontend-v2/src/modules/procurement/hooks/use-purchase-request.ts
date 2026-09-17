@@ -174,3 +174,28 @@ export function useSetUrgent(id: number) {
     },
   })
 }
+
+/** Tham số của hộp Chuyển phòng xử lý: `handlerDeptId = 0` nghĩa là TRẢ VỀ phòng lập. */
+export interface TransferDeptInput {
+  handlerDeptId: number
+  reason: string
+}
+
+/**
+ * bao-CR-414 GĐ5 — chuyển cả phiếu YCMH sang phòng khác xử lý, hoặc trả về phòng lập.
+ * Backend gỡ người phụ trách mọi dòng và ghi lý do vào nhật ký phiếu.
+ */
+export function useTransferPurchaseRequestDept(id: number) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ handlerDeptId, reason }: TransferDeptInput) =>
+      handlerDeptId === 0
+        ? purchaseRequestApi.returnDept(id, reason)
+        : purchaseRequestApi.transferDept(id, handlerDeptId, reason),
+    onSuccess: (_data, { handlerDeptId }) => {
+      toast.success(handlerDeptId === 0 ? 'Đã trả phiếu về phòng lập' : 'Đã chuyển phòng xử lý')
+      void queryClient.invalidateQueries({ queryKey: queryKeys.procurement.all })
+    },
+  })
+}

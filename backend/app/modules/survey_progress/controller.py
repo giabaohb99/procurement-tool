@@ -161,7 +161,9 @@ def _sees_every_line(profile: dict) -> bool:
         if p.get("read") and p.get("scope") in ("dept", "company", "all"):
             return True
         # Admin thu mua = đọc-chỉ phạm vi 'proc' (không có 'write') -> giám sát, thấy hết dòng
-        if p.get("read") and p.get("scope") == "proc" and not p.get("write"):
+        # bao-CR-414: `dept_proc` (quản lý thu mua của phòng) thấy hết dòng trong phạm vi mình
+        if p.get("read") and (p.get("scope") == "dept_proc"
+                              or (p.get("scope") == "proc" and not p.get("write"))):
             return True
     return False
 

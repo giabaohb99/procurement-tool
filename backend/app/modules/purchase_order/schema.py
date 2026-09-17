@@ -98,6 +98,7 @@ class POCreate(BaseModel):
     supplier_code: str = ""
     supplier_name: str = ""
     department_id: int = 0        # CR-086: phòng ban neo bằng id; bỏ trống thì tra từ `department`
+    handler_dept_id: int = 0      # bao-CR-414: phòng ĐƯỢC NHỜ xử lý; 0 = chép từ YCMH nếu có
     department: str = ""
     nspt_id: int = 0              # CR-087: NSPT neo bằng id; bỏ trống thì tra từ `nspt`
     nspt: str = ""
@@ -129,6 +130,7 @@ class POUpdate(BaseModel):
     supplier_code: str | None = None
     supplier_name: str | None = None
     department_id: int | None = None      # CR-086
+    handler_dept_id: int | None = None    # bao-CR-414
     department: str | None = None
     nspt_id: int | None = None            # CR-087
     nspt: str | None = None

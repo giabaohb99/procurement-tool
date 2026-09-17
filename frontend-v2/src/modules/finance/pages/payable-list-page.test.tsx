@@ -6,12 +6,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ListParams } from '@/shared/types/api'
 import { PayableListPage } from './payable-list-page'
-import type { Payable } from '../types/payable'
+import type { Payable, PayableSummary } from '../types/payable'
 
 //  Chặn ở tầng HOOK dữ liệu chứ không ở `@/core/api`: màn này còn phải bắt được
 //  BỘ THAM SỐ nó gửi đi (`due_from` / `incur_from` / `year`), mà tham số đó chỉ
 //  hiện nguyên vẹn ở đầu vào của hook.
 const listCalls: ListParams[] = []
+
+// bao-CR-414 GĐ4: thẻ tổng hợp có hai bộ số (phần của tôi + tổng nợ NCC không gác phạm
+// vi). Mặc định là người phạm vi toàn bộ — backend gửi `partial: false`.
+let summaryData: PayableSummary = { total: 0, paid: 0, remaining: 0, overdue: 0, partial: false }
 
 // bao-CR-275: bắt tham số nút "Xuất Excel" gửi xuống — ids tick chọn + cols theo
 // cột đang hiện. `vi.hoisted` vì vi.mock được kéo lên trên mọi khai báo const.
@@ -24,10 +28,7 @@ vi.mock('../hooks/use-payables', () => ({
     listCalls.push(params)
     return { data: { total: rows.length, items: rows }, isLoading: false, isError: false }
   },
-  usePayableSummary: () => ({
-    data: { total: 0, paid: 0, remaining: 0, overdue: 0 },
-    isLoading: false,
-  }),
+  usePayableSummary: () => ({ data: summaryData, isLoading: false }),
   // CR-268: dialog cấn trừ tiền trả trước mount sẵn (đóng) trên trang — thiếu
   // export này là cả trang nổ ngay lúc render, 10 test không liên quan đỏ theo.
   useOffsetPrepay: () => ({ mutateAsync: vi.fn(), isPending: false }),
@@ -119,6 +120,54 @@ beforeEach(() => {
   canExportPayable = true
   downloadFileMock.mockClear()
   localStorage.clear()
+  summaryData = { total: 0, paid: 0, remaining: 0, overdue: 0, partial: false }
+})
+
+describe('PayableListPage — thẻ tổng hợp theo phạm vi (bao-CR-414 GĐ4)', () => {
+  it('shows only the four original cards when the viewer sees everything', () => {
+    summaryData = {
+      total: 1700,
+      paid: 0,
+      remaining: 1700,
+      overdue: 0,
+      all: { total: 1700, paid: 0, remaining: 1700, overdue: 0 },
+      partial: false,
+    }
+    build()
+
+    expect(screen.getByText('Tổng nợ', { selector: 'p' })).toBeInTheDocument()
+    expect(screen.queryByText(/Phần của tôi/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Tổng nợ NCC/)).not.toBeInTheDocument()
+  })
+
+  it('splits the first card into supplier total and my share when the viewer sees a part', () => {
+    summaryData = {
+      total: 1000,
+      paid: 0,
+      remaining: 1000,
+      overdue: 0,
+      all: { total: 1700, paid: 0, remaining: 1700, overdue: 0 },
+      partial: true,
+    }
+    build()
+
+    //  Hai con số phải là HAI ô khác nhau: 1.700 là nợ của công ty với NCC, 1.000 là
+    //  phần phòng tôi mua. Gộp làm một là người xem tưởng công ty chỉ nợ 1.000.
+    //  Bảng bên dưới cũng có cột "Tổng nợ" nên chỉ soi các nhãn `<p>` của thẻ tổng hợp.
+    expect(screen.getByText(/Tổng nợ NCC/, { selector: 'p' })).toBeInTheDocument()
+    expect(screen.getByText('1.700', { selector: 'p' })).toBeInTheDocument()
+    expect(screen.getByText('Phần của tôi', { selector: 'p' })).toBeInTheDocument()
+    expect(screen.getAllByText('1.000', { selector: 'p' }).length).toBeGreaterThanOrEqual(1)
+    expect(screen.queryByText('Tổng nợ', { selector: 'p' })).not.toBeInTheDocument()
+  })
+
+  it('does not split the cards when the old backend omits the partial flag', () => {
+    summaryData = { total: 5, paid: 0, remaining: 5, overdue: 0 }
+    build()
+
+    expect(screen.getByText('Tổng nợ', { selector: 'p' })).toBeInTheDocument()
+    expect(screen.queryByText('Phần của tôi')).not.toBeInTheDocument()
+  })
 })
 
 describe('PayableListPage — chọn hết trong trang', () => {

@@ -43,12 +43,16 @@ def _match_company(db, raw: str):
     return hit, sorted(c.name for c in rows if c.name)
 
 
-def _scoped_payables(ctx: ToolContext, args: dict):
+def _scoped_payables(ctx: ToolContext, args: dict, scoped: bool = True):
     """Query khoản nợ đã gác phạm vi + các bộ lọc chung của cả hai tool.
 
     Trả (query, company_hit, loi) — `loi` khác None nghĩa là tham số sai, trả thẳng cho model.
+    `scoped=False` (bao-CR-414 GĐ4): cùng bộ lọc nhưng KHÔNG gác phạm vi — chỉ để tính con
+    số "Tổng nợ NCC" đối chiếu, không bao giờ dùng để liệt kê từng khoản.
     """
-    q = apply_scope(ctx.db.query(Payable), Payable, "payable", ctx.user, ctx.profile)
+    q = ctx.db.query(Payable)
+    if scoped:
+        q = apply_scope(q, Payable, "payable", ctx.user, ctx.profile)
 
     company = _clean_text(args.get("company"), 255)
     company_hit = None
@@ -183,10 +187,15 @@ def _run_lookup(ctx: ToolContext, args: dict) -> dict:
         return error
 
     status = _clean_text(args.get("status"), 20) or "outstanding"
-    if status == "outstanding":
-        q = q.filter(Payable.status != ST_PAID)
-    elif status == "paid":
-        q = q.filter(Payable.status == ST_PAID)
+
+    def _status_filter(query):
+        if status == "outstanding":
+            return query.filter(Payable.status != ST_PAID)
+        if status == "paid":
+            return query.filter(Payable.status == ST_PAID)
+        return query
+
+    q = _status_filter(q)
 
     # Tổng hợp trên TOÀN BỘ kết quả lọc (không chỉ trang liệt kê) — câu "còn lại bao nhiêu"
     # trả lời bằng con số này. Quá hạn = còn nợ mà hạn trả đã qua (cùng công thức /summary).
@@ -196,19 +205,43 @@ def _run_lookup(ctx: ToolContext, args: dict) -> dict:
          Payable.remaining),
         else_=0,
     )
-    total = q.with_entities(
-        func.count(Payable.id),
-        func.coalesce(func.sum(Payable.total), 0),
-        func.coalesce(func.sum(Payable.paid_amount), 0),
-        func.coalesce(func.sum(Payable.remaining), 0),
-        func.coalesce(func.sum(overdue), 0),
-    ).one()
+
+    def _totals(query):
+        return query.with_entities(
+            func.count(Payable.id),
+            func.coalesce(func.sum(Payable.total), 0),
+            func.coalesce(func.sum(Payable.paid_amount), 0),
+            func.coalesce(func.sum(Payable.remaining), 0),
+            func.coalesce(func.sum(overdue), 0),
+        ).one()
+
+    total = _totals(q)
+
+    # bao-CR-414 GĐ4 — người xem phạm vi theo PHÒNG (quản lý thu mua của Nhà máy, thu mua
+    # chung bị loại trừ một phòng) chỉ thấy một phần nợ của NCC. Tính thêm bộ số KHÔNG gác
+    # phạm vi trên cùng bộ lọc để trợ lý nói được cả hai: "phần của bạn" và "tổng nợ NCC".
+    # Chỉ là bốn con số, không liệt kê khoản nào ngoài phạm vi.
+    q_all, _, _ = _scoped_payables(ctx, args, scoped=False)
+    total_all = _totals(_status_filter(q_all))
+    summary_all = None
+    if any(abs(float(a) - float(b)) > 0.005 for a, b in zip(total[1:], total_all[1:])):
+        summary_all = {"count": int(total_all[0]), "total": float(total_all[1]),
+                       "paid": float(total_all[2]), "remaining": float(total_all[3]),
+                       "overdue": float(total_all[4])}
+
+    def _attach_all(out: dict) -> dict:
+        if summary_all is not None:
+            out["summary_all"] = summary_all
+            out["scope_note"] = ("summary là PHẦN CỦA NGƯỜI HỎI (đúng phạm vi phòng họ được "
+                                 "xem); summary_all là TỔNG NỢ NCC toàn hệ trên cùng bộ lọc. "
+                                 "Nói rõ hai con số, đừng gộp làm một.")
+        return out
 
     group_by = _clean_text(args.get("group_by"), 20)
     if group_by:
         if group_by not in ("supplier", "company"):
             return {"error": "group_by chỉ nhận supplier | company."}
-        return _grouped_out(ctx, q, overdue, total, group_by)
+        return _attach_all(_grouped_out(ctx, q, overdue, total, group_by))
 
     limit = args.get("limit")
     limit = max(1, min(int(limit), MAX_ROWS)) if isinstance(limit, (int, float)) else 20
@@ -251,7 +284,7 @@ def _run_lookup(ctx: ToolContext, args: dict) -> dict:
                          "nhận hàng, không cần thao tác. Nghiệp vụ đầy đủ: "
                          "doc/tai-lieu-chuc-nang/05-yeu-cau-thanh-toan.md mục F."),
             }
-    return out
+    return _attach_all(out)
 
 
 PAYABLE_LOOKUP_SPEC = ToolSpec(

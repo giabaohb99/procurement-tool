@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from app.core.audit import record
 from app.core.status_codes import PO_DELIVERY_STATUS, PO_DOCUMENT_STATUS, PO_PROGRESS_STATUS
 from app.modules.catalog import lead_time
+from app.modules.category_assignee.service import handling_dept_of
 from app.modules.department.service import sync_department_ref
 from app.modules.employee.service import sync_employee_ref
 from app.modules.goods_receipt import service as gr_service
@@ -376,7 +377,8 @@ def sync_import_cost_payables(db: Session, po: PurchaseOrder, user_id: int,
         sup = suppliers.get((row.supplier_code or "").strip())
         pay_service.upsert(
             db, source_type=IMPORT_COST_SOURCE, ref_type=IMPORT_COST_SOURCE, ref_id=row.id,
-            company_id=po.company_id, supplier_code=(row.supplier_code or "").strip(),
+            company_id=po.company_id, department_id=handling_dept_of(po),
+            supplier_code=(row.supplier_code or "").strip(),
             supplier_name=(row.supplier_name or "").strip() or (sup.name if sup else ""),
             po_id=po.id, po_code=po.code, invoice_no=(row.invoice_no or "").strip(),
             incur_date=(row.invoice_date or "").strip() or po.order_date or "",
@@ -772,6 +774,7 @@ def recompute_effects(db: Session, po: PurchaseOrder, user_id: int):
                 amt = recv * base_price
                 pay_service.upsert(
                     db, source_type="goods", ref_id=d.id, company_id=po.company_id,
+                    department_id=handling_dept_of(po),
                     supplier_code=po.supplier_code, supplier_name=po.supplier_name,
                     po_id=po.id, po_code=po.code, invoice_no=(d.invoice_no or it.invoice_no or "").strip(),
                     incur_date=d.received_date or po.order_date, amount=amt, vat=amt * vat / 100,
@@ -785,6 +788,7 @@ def recompute_effects(db: Session, po: PurchaseOrder, user_id: int):
                     ship_inv = f"{po.misa_code}-{it.product_code}".strip("-")
                     pay_service.upsert(
                         db, source_type="shipping", ref_id=d.id, company_id=po.company_id,
+                        department_id=handling_dept_of(po),
                         supplier_code=d.carrier_code,
                         supplier_name=d.carrier_name or (carrier.name if carrier else ""),
                         po_id=po.id, po_code=po.code, invoice_no=ship_inv,
@@ -867,6 +871,7 @@ def copy_po(db: Session, pid: int, user_id: int) -> PurchaseOrder:
         code="", misa_code="", pr_code=src.pr_code, survey_code=src.survey_code,
         company_id=src.company_id, supplier_code=src.supplier_code, supplier_name=src.supplier_name,
         department=src.department, department_id=src.department_id,
+        handler_dept_id=src.handler_dept_id or 0,   # bao-CR-414: bản sao giữ phòng được nhờ
         nspt=src.nspt, nspt_id=src.nspt_id, order_date=src.order_date, vat_rate=src.vat_rate,
         payment_terms=src.payment_terms, is_urgent=src.is_urgent, note=src.note,
         status="draft", created_by=user_id, updated_by=user_id,
@@ -955,16 +960,28 @@ def _ensure_pr_dispatched(db: Session, pr_code: str) -> None:
         raise HTTPException(400, f"YCMH {pr_code} đã bị từ chối — không tạo được đơn mua hàng.")
 
 
+def _handler_dept_of_pr(db: Session, pr_code: str) -> int:
+    """bao-CR-414: phòng được nhờ trên YCMH nguồn (0 nếu không có / mã không khớp phiếu nào)."""
+    if not pr_code:
+        return 0
+    from app.modules.purchase_request.model import PurchaseRequest
+    pr = db.query(PurchaseRequest).filter(PurchaseRequest.code == pr_code,
+                                          PurchaseRequest.is_deleted == False).first()
+    return (pr.handler_dept_id or 0) if pr else 0
+
+
 def create_po(db: Session, data: POCreate, user_id: int) -> PurchaseOrder:
     _ensure_pr_dispatched(db, (data.pr_code or "").strip())
     nspt, nspt_id = (data.nspt or "").strip(), data.nspt_id
     if not nspt and not nspt_id:
         nspt, nspt_id = _default_nspt(db, data, user_id)
+    # bao-CR-414: đơn lập từ YCMH thừa kế phòng được nhờ, trừ khi form gửi rõ.
+    handler_dept_id = data.handler_dept_id or _handler_dept_of_pr(db, (data.pr_code or "").strip())
     po = PurchaseOrder(
         code=data.code or "", misa_code=data.misa_code, pr_code=data.pr_code,
         survey_code=data.survey_code, company_id=data.company_id, supplier_code=data.supplier_code,
         supplier_name=data.supplier_name, department=data.department,
-        department_id=data.department_id, nspt=nspt, nspt_id=nspt_id,
+        department_id=data.department_id, handler_dept_id=handler_dept_id, nspt=nspt, nspt_id=nspt_id,
         order_date=data.order_date, vat_rate=data.vat_rate, payment_terms=data.payment_terms,
         is_urgent=data.is_urgent, note=data.note, status="draft", created_by=user_id, updated_by=user_id,
         order_type=data.order_type or int(OrderType.DOMESTIC),

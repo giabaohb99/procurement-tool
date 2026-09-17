@@ -151,4 +151,6 @@ export const CATEGORY_ASSIGNEE_COND_FILTERS: FilterFieldDefinition[] = [
   condSource('item_group_id', 'Phân loại', { url: '/api/item-groups', value: 'id', label: 'name' }),
   condSource('primary_employee_id', 'NSTM chính', { url: '/api/employees', value: 'id', label: 'full_name' }),
   condSource('backup_employee_id', 'NSTM dự phòng', { url: '/api/employees', value: 'id', label: 'full_name' }),
+  // bao-CR-414 GĐ2: dòng chung có department_id = 0 — lọc "= 0" ra đúng bộ Thu mua chung
+  condSource('department_id', 'Phòng (0 = Thu mua chung)', { url: '/api/departments', value: 'id', label: 'name' }),
 ]

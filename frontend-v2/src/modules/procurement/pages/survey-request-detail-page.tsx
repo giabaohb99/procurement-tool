@@ -1,5 +1,6 @@
 import {
   ArrowLeft,
+  ArrowRightLeft,
   Ban,
   Check,
   CheckCheck,
@@ -70,6 +71,7 @@ import {
   SurveyRequestLinesTable,
 } from '../components/survey-request-lines-table'
 import { SurveyRequestResultCard } from '../components/survey-request-result-card'
+import { TransferDeptDialog, type TransferDeptMode } from '../components/transfer-dept-dialog'
 import {
   shiftPendingAfterInsert,
   shiftPendingAfterRemove,
@@ -86,6 +88,7 @@ import {
   useSurveyRequest,
   useSurveyRequestAction,
   useSurveyRequestResult,
+  useTransferSurveyRequestDept,
 } from '../hooks/use-survey-request'
 import {
   useRestoreSurveyReport,
@@ -183,6 +186,9 @@ export function SurveyRequestDetailPage() {
   const setLineStatus = useSetSurveyLineStatus(surveyRequestId)
   const chooseOption = useChooseSurveyOption(surveyRequestId)
   const createPurchaseRequests = useCreatePurchaseRequestsFromSurvey(surveyRequestId)
+  // bao-CR-414 GĐ5: đẩy cả phiếu sang phòng khác xử lý / trả về phòng lập.
+  const transferDept = useTransferSurveyRequestDept(surveyRequestId)
+  const [transferMode, setTransferMode] = useState<TransferDeptMode | null>(null)
 
   const [draft, setDraft] = useState<SurveyRequestDetail | null>(() =>
     isNew ? applyAssistantDraft(createEmptySurveyRequest(user), assistantDraft) : null,
@@ -428,6 +434,7 @@ export function SurveyRequestDetailPage() {
         department: loadedDraft.department,
         head_of_dept_id: loadedDraft.head_of_dept_id,
         head_of_dept: loadedDraft.head_of_dept,
+        handler_dept_id: loadedDraft.handler_dept_id || 0,
         purpose: loadedDraft.purpose,
         request_date: loadedDraft.request_date,
         note: loadedDraft.note,
@@ -565,6 +572,32 @@ export function SurveyRequestDetailPage() {
             <ClipboardList />
             Xử lý khảo sát
           </Link>
+        </Button>
+      )}
+
+      {/* bao-CR-414 GĐ5: backend đã tính sẵn hai cờ theo trạng thái phiếu, dòng
+          chưa hoàn tất / chưa chọn phương án và vai trò người xem — giao diện chỉ bày nút. */}
+      {!isNew && data.can_transfer_dept && (
+        <Button
+          type="button"
+          variant="outline"
+          title="Đẩy cả phiếu sang phòng khác xử lý"
+          onClick={() => setTransferMode('transfer')}
+        >
+          <ArrowRightLeft />
+          Chuyển phòng xử lý
+        </Button>
+      )}
+      {!isNew && data.can_return_dept && (
+        <Button
+          type="button"
+          variant="outline"
+          className="text-amber-700 hover:text-amber-700"
+          title="Trả cả phiếu về phòng lập tự xử lý"
+          onClick={() => setTransferMode('return')}
+        >
+          <CornerUpLeft />
+          Trả về phòng lập
         </Button>
       )}
 
@@ -875,6 +908,22 @@ export function SurveyRequestDetailPage() {
         </AlertDialogContent>
       </AlertDialog>
 
+      <TransferDeptDialog
+        open={transferMode !== null}
+        mode={transferMode ?? 'transfer'}
+        docLabel="yêu cầu báo giá"
+        departments={departmentsData?.items ?? []}
+        currentDeptId={data.handler_dept_id || 0}
+        requestingDeptId={data.department_id || 0}
+        pending={transferDept.isPending}
+        onOpenChange={(open) => !open && setTransferMode(null)}
+        onConfirm={async (handlerDeptId, transferReason) => {
+          await transferDept.mutateAsync({ handlerDeptId, reason: transferReason })
+          dirtyRef.current = false
+          setTransferMode(null)
+        }}
+      />
+
       <AlertDialog
         open={resurveyLineId !== null}
         onOpenChange={(open) => !open && setResurveyLineId(null)}
@@ -954,6 +1003,7 @@ function createEmptySurveyRequest(user?: AuthUser | null): SurveyRequestDetail {
     // Trưởng bộ phận do backend điền theo `Department.manager_id` lúc lưu.
     head_of_dept_id: 0,
     head_of_dept: '',
+    handler_dept_id: 0,
     purpose: '',
     request_date: new Date().toISOString().slice(0, 10),
     status: 'draft',

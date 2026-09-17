@@ -232,10 +232,11 @@ def get_perm_profile(db: Session, user) -> dict:
                     u[a] = True
 
     # Cờ tổng hợp cho FE: "process" = là nhân sự thu mua (được xem/xử lý khảo sát, thấy NCC).
-    # = có grant survey_request read với scope proc|all (người YC own / trưởng BP dept → False).
+    # = có grant survey_request read với scope proc|dept_proc|all (người YC own / trưởng BP dept → False).
+    # bao-CR-414: `dept_proc` = thu mua của phòng tự mua, cũng là người thu mua.
     is_purchaser = any(
         g["perms"].get("survey_request", {}).get("read") and
-        g["perms"].get("survey_request", {}).get("scope") in ("proc", "all")
+        g["perms"].get("survey_request", {}).get("scope") in ("proc", "dept_proc", "all")
         for g in grants
     )
     if is_purchaser:

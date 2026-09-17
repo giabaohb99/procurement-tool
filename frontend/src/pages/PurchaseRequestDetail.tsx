@@ -15,6 +15,7 @@ import DateInput from '../components/DateInput'
 import TextAreaAuto from '../components/TextAreaAuto'
 import ConfirmModal from '../components/ConfirmModal'
 import PromptModal from '../components/PromptModal'
+import TransferDeptModal from '../components/TransferDeptModal'
 import NotFound from '../components/NotFound'
 import DocumentUploadModal from '../components/DocumentUploadModal'
 import DocumentAttachmentSection from '../components/DocumentAttachmentSection'
@@ -94,6 +95,7 @@ export default function PurchaseRequestDetail() {
 
   const [pr, setPr] = useState<any>({
     code: '', requester: '', requester_position: '', department: '', head_of_dept: '', head_of_dept_id: 0,
+    handler_dept_id: 0,   // bao-CR-414: phòng được NHỜ xử lý phiếu (0 = tự mua / thu mua chung)
     purpose: '', company_id: 0, request_date: new Date().toISOString().slice(0, 10),
     need_date: '', is_urgent: false, note: '', status: 'draft', items: [],
     show_code_on_print: true, suggested_supplier: '', suggested_supplier_tax_code: '', suggested_supplier_contact: '',
@@ -123,6 +125,7 @@ export default function PurchaseRequestDetail() {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [promptAction, setPromptAction] = useState<{type: 'reject'|'return'|'cancel', title: string, message: string, placeholder?: string} | null>(null)
   const [confirmAction, setConfirmAction] = useState<{type: 'complete'|'cancel_draft'|'copy'|'dispatch', title: string, message: string, confirmText?: string} | null>(null)
+  const [transferMode, setTransferMode] = useState<'transfer' | 'return' | null>(null)   // bao-CR-414 GĐ5: hộp chuyển phòng / trả về phòng lập
   const [notFound, setNotFound] = useState(false)
   const [pos, setPos] = useState<any[] | null>(null)   // ĐMH tạo từ phiếu này (cùng mã PYC); null = chưa tải/không quyền → ẩn khối
   const [orderedMap, setOrderedMap] = useState<Record<string, number>>({})   // SL đã đặt theo mã hàng (gộp mọi ĐMH cùng PYC)
@@ -261,6 +264,11 @@ export default function PurchaseRequestDetail() {
     .map(e => ({ value: e.code, label: e.full_name }))
   const empName = (code: string) => employees.find(e => e.code === code)?.full_name || code
   const companyOptions = companies.map(c => ({ value: String(c.id), label: c.name }))
+  // bao-CR-414: ô "Nhờ phòng xử lý" — mọi phòng đang hoạt động (phòng đã tắt nhưng phiếu cũ còn
+  // trỏ tới thì vẫn giữ lại để không mất nhãn).
+  const handlerDeptOptions = departments
+    .filter(d => d.is_active !== false || d.id === Number(pr.handler_dept_id))
+    .map(d => ({ value: String(d.id), label: d.name }))
   const employeeOptions = employees.map(e => ({ value: e.full_name, label: e.full_name }))
   const warehouseOptions = warehouses.map(w => ({ value: w.name, label: `${w.code} - ${w.name}` }))
   // Nhãn hiển thị "MÃ - Tên" cho kho đã lưu (giá trị lưu vẫn là name); fallback name nếu không tìm thấy
@@ -554,6 +562,7 @@ export default function PurchaseRequestDetail() {
       company_id: Number(pr.company_id) || 0, requester: pr.requester, requester_id: Number(pr.requester_id) || 0, requester_position: pr.requester_position,
       department: pr.department, head_of_dept: pr.head_of_dept,
       head_of_dept_id: Number(pr.head_of_dept_id) || 0, purpose: pr.purpose,
+      handler_dept_id: Number(pr.handler_dept_id) || 0,
       request_date: pr.request_date, need_date: earliestNeedDate || pr.need_date || '', is_urgent: pr.is_urgent, note: pr.note,
       show_code_on_print: pr.show_code_on_print,
       quote_filename: pr.quote_filename, quote_file_url: pr.quote_file_url,
@@ -755,6 +764,15 @@ export default function PurchaseRequestDetail() {
         {!isNew && pr.can_dispatch && (
           <button className="btn" onClick={() => setConfirmAction({ type: 'dispatch', title: 'Duyệt điều phối', message: 'Duyệt và điều phối phiếu này? Hệ thống sẽ tự động phân bổ nhân sự thu mua phụ trách theo phân loại hàng, sau đó mới tạo được đơn mua hàng.', confirmText: 'Duyệt' })}><i className="ti ti-check" />Duyệt</button>
         )}
+        {/* bao-CR-414 GĐ5: chuyển phòng xử lý (đường 2) / trả về phòng lập. Hai cờ do server tính:
+            chỉ khi việc mua chưa thật sự bắt đầu (chưa dòng nào có ĐMH) và người bấm là quản lý
+            thu mua của phòng ĐANG cầm phiếu (hoặc thu mua toàn quyền). */}
+        {!isNew && pr.can_transfer_dept && (
+          <button className="btn ghost" title="Đẩy cả phiếu sang phòng khác xử lý" onClick={() => setTransferMode('transfer')}><i className="ti ti-transfer" />Chuyển phòng xử lý</button>
+        )}
+        {!isNew && pr.can_return_dept && (
+          <button className="btn ghost" style={{ color: '#d97706', borderColor: '#fcd34d' }} title="Trả cả phiếu về phòng lập tự xử lý" onClick={() => setTransferMode('return')}><i className="ti ti-corner-up-left" />Trả về phòng lập</button>
+        )}
         {!isNew && canCreatePO && workableStatuses.includes(pr.status) && hasUnorderedItem && (
           <button className="btn" onClick={createPO}><i className="ti ti-shopping-cart" />Tạo đơn mua hàng</button>
         )}
@@ -798,6 +816,22 @@ export default function PurchaseRequestDetail() {
           setPromptAction(null)
         }}
         onCancel={() => setPromptAction(null)}
+      />
+
+      <TransferDeptModal
+        open={!!transferMode}
+        mode={transferMode || 'transfer'}
+        docLabel="yêu cầu mua hàng"
+        options={handlerDeptOptions}
+        currentDeptId={Number(pr.handler_dept_id) || 0}
+        requestingDeptId={Number(pr.department_id) || 0}
+        onConfirm={(deptId, reason) => {
+          const mode = transferMode
+          setTransferMode(null)
+          if (mode === 'return') action('return-dept', { reason })
+          else action('transfer-dept', { handler_dept_id: deptId, reason })
+        }}
+        onCancel={() => setTransferMode(null)}
       />
 
       <ConfirmModal
@@ -903,6 +937,16 @@ export default function PurchaseRequestDetail() {
               <div className="form-row">
                 <label>Bộ phận YC <span className="req">*</span></label>
                 <input value={pr.department || ''} placeholder="Tự động theo Nhân sự" disabled />
+              </div>
+              <div className="form-row">
+                <label>Nhờ phòng xử lý <span style={{ color: '#94a3b8', fontWeight: 400, fontSize: 12 }}>(để trống nếu không nhờ)</span></label>
+                {/* bao-CR-414: phòng tự mua hàng vẫn có thể NHỜ thu mua chung (hoặc ngược lại)
+                    xử lý một phiếu. Chọn phòng ở đây thì quản lý thu mua của phòng đó thấy và
+                    điều phối được phiếu; phòng lập phiếu vẫn thấy như cũ. */}
+                <SearchSelect value={pr.handler_dept_id ? String(pr.handler_dept_id) : ''}
+                  onChange={(v) => setH('handler_dept_id', Number(v) || 0)}
+                  options={handlerDeptOptions}
+                  disabled={!editable} placeholder="Không nhờ — thu mua chung xử lý" autoSelectSingle={false} />
               </div>
               <div className="form-row">
                 <label>Chức vụ (Nếu có)</label>

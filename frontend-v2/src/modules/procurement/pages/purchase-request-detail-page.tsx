@@ -1,5 +1,6 @@
 import {
   ArrowLeft,
+  ArrowRightLeft,
   Ban,
   Check,
   CheckCheck,
@@ -26,6 +27,7 @@ import type { AuthUser } from '@/core/auth/auth-types'
 import { PermissionGate } from '@/core/authorization/permission-gate'
 import { usePermission } from '@/core/authorization/use-permission'
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
+import { useDepartments } from '@/modules/hr/hooks/use-departments'
 import { useEmployees } from '@/modules/hr/hooks/use-employees'
 import { AuditTimeline } from '@/shared/audit'
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -79,6 +81,7 @@ import { PurchaseRequestChooseCard } from '../components/purchase-request-choose
 import { PurchaseRequestSupplierCard } from '../components/purchase-request-supplier-card'
 import { DocumentMoneyTotals } from '../components/document-money-totals'
 import { RelatedPurchaseOrdersCard } from '../components/related-purchase-orders-card'
+import { TransferDeptDialog, type TransferDeptMode } from '../components/transfer-dept-dialog'
 import {
   useAssignPurchaser,
   useDeletePurchaseRequest,
@@ -88,6 +91,7 @@ import {
   usePurchaseRequestAction,
   useSavePurchaseRequest,
   useSetUrgent,
+  useTransferPurchaseRequestDept,
   useUpdateItemStatus,
   type PurchaseRequestAction,
 } from '../hooks/use-purchase-request'
@@ -167,12 +171,21 @@ export function PurchaseRequestDetailPage() {
   const { data: progress } = useOrderProgress(purchaseRequestId)
   const { data: companiesData } = useCompanies({ page_size: 500, is_active: true })
   const { data: employeesData } = useEmployees({ page_size: 1000, is_active: true })
+  // bao-CR-414: danh mục phòng ban cho ô «Nhờ phòng xử lý». Mọi vai trò seed đều đọc được
+  // `department`, nhưng vẫn gác bằng quyền để người bị cắt quyền không ăn 403 lúc mở phiếu.
+  const { data: departmentsData } = useDepartments(
+    { page_size: 500 },
+    { enabled: can('department', 'read') },
+  )
   const savePurchaseRequest = useSavePurchaseRequest()
   const runAction = usePurchaseRequestAction(purchaseRequestId)
   const deletePurchaseRequest = useDeletePurchaseRequest()
   const assignPurchaser = useAssignPurchaser(purchaseRequestId)
   const updateItemStatus = useUpdateItemStatus(purchaseRequestId)
   const setUrgent = useSetUrgent(purchaseRequestId)
+  // bao-CR-414 GĐ5: đẩy cả phiếu sang phòng khác xử lý / trả về phòng lập.
+  const transferDept = useTransferPurchaseRequestDept(purchaseRequestId)
+  const [transferMode, setTransferMode] = useState<TransferDeptMode | null>(null)
   // bao-CR-310 đợt 4 (rà lại): nút gom theo phương án dời từ thẻ Phương án lên
   // đầu trang, nhập chung một nút "Tạo đơn mua hàng" sổ xuống — 2 nút tạo đơn
   // còn 1. Chặn bấm đúp bằng ref (state React trễ một nhịp, luật duoc-CR-317).
@@ -368,6 +381,7 @@ export function PurchaseRequestDetailPage() {
         department: loadedDraft.department,
         head_of_dept: loadedDraft.head_of_dept,
         head_of_dept_id: loadedDraft.head_of_dept_id,
+        handler_dept_id: loadedDraft.handler_dept_id,
         purpose: loadedDraft.purpose,
         request_date: loadedDraft.request_date,
         need_date: loadedDraft.need_date,
@@ -754,6 +768,31 @@ export function PurchaseRequestDetailPage() {
           Trả về
         </Button>
       )}
+      {/* bao-CR-414 GĐ5: backend đã tính sẵn hai cờ theo trạng thái phiếu, dòng
+          chưa lên ĐMH và vai trò của người đang xem — giao diện chỉ bày nút. */}
+      {!isNew && data.can_transfer_dept && (
+        <Button
+          type="button"
+          variant="outline"
+          title="Đẩy cả phiếu sang phòng khác xử lý"
+          onClick={() => setTransferMode('transfer')}
+        >
+          <ArrowRightLeft />
+          Chuyển phòng xử lý
+        </Button>
+      )}
+      {!isNew && data.can_return_dept && (
+        <Button
+          type="button"
+          variant="outline"
+          className="text-amber-700 hover:text-amber-700"
+          title="Trả cả phiếu về phòng lập tự xử lý"
+          onClick={() => setTransferMode('return')}
+        >
+          <CornerUpLeft />
+          Trả về phòng lập
+        </Button>
+      )}
       {data.status === 'submitted' && (data.can_approve || canManage) && (
         <Button
           variant="outline"
@@ -852,6 +891,7 @@ export function PurchaseRequestDetailPage() {
             editing={editing}
             companies={companiesData?.items}
             employees={employeesData?.items}
+            departments={departmentsData?.items}
             deptHeadCandidates={deptHeadData?.items}
             urgentEditable={!closed && !editing && can('purchase_request', 'write')}
             onUrgentChange={(value) => void setUrgent.mutateAsync(value)}
@@ -1048,6 +1088,21 @@ export function PurchaseRequestDetailPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <TransferDeptDialog
+        open={transferMode !== null}
+        mode={transferMode ?? 'transfer'}
+        docLabel="yêu cầu mua hàng"
+        departments={departmentsData?.items ?? []}
+        currentDeptId={data.handler_dept_id || 0}
+        requestingDeptId={data.department_id ?? 0}
+        pending={transferDept.isPending}
+        onOpenChange={(open) => !open && setTransferMode(null)}
+        onConfirm={async (handlerDeptId, transferReason) => {
+          await transferDept.mutateAsync({ handlerDeptId, reason: transferReason })
+          setTransferMode(null)
+        }}
+      />
     </PageContainer>
   )
 }
@@ -1066,6 +1121,8 @@ function createEmptyPurchaseRequest(user?: AuthUser | null): PurchaseRequestDeta
     // Phiếu mới chưa chỉ định ai — backend tự điền theo Trưởng phòng của bộ phận
     // lúc tạo, lưu xong mới đổi người duyệt được (CR-071).
     head_of_dept_id: 0,
+    // bao-CR-414: phiếu mới mặc định KHÔNG nhờ phòng nào — người lập chọn tay khi cần.
+    handler_dept_id: 0,
     purpose: '',
     request_date: new Date().toISOString().slice(0, 10),
     // bao-CR-316: phiếu mới thì thu mua CHƯA tiếp nhận — để rỗng, backend điền lúc điều phối.

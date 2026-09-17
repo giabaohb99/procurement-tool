@@ -4,6 +4,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { httpClient } from '@/core/api/http-client'
+import { usePermission } from '@/core/authorization/use-permission'
+import { useDepartments } from '@/modules/hr/hooks/use-departments'
 import { AuditTimeline } from '@/shared/audit'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
@@ -20,6 +22,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
+import type { CategoryAssignee, CategoryAssigneeBulkPayload } from '../types/category-assignee'
+import { SHARED_DEPARTMENT_LABEL } from '../types/category-assignee'
 
 interface Option {
   value: number
@@ -29,19 +33,49 @@ interface Option {
 /** Mục «chưa chọn ai» của ô chọn nhân sự — `SelectItem` không nhận value rỗng. */
 const NONE = 'none'
 
+/** Mục «Thu mua chung» (department_id = 0) của ô chọn phòng — cùng lý do sentinel như `NONE`. */
+const SHARED = 'shared'
+
 export function CategoryAssigneeFormPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  const { can } = usePermission()
 
   const [itemGroups, setItemGroups] = useState<Option[]>([])
   const [employees, setEmployees] = useState<Option[]>([])
-  const [rowByCat, setRowByCat] = useState<Record<number, number>>({})
+  //  Toàn bộ dòng phân công của MỌI phòng: cùng một phân loại có thể có một dòng
+  //  chung và một dòng riêng cho từng phòng, nên map «phân loại → id dòng» phải
+  //  tính theo phòng đang chọn chứ không gộp cả bảng.
+  const [rows, setRows] = useState<CategoryAssignee[]>([])
 
   const [selectedCatIds, setSelectedCatIds] = useState<number[]>([])
   const [primaryId, setPrimaryId] = useState<number | 0>(0)
   const [backupId, setBackupId] = useState<number | 0>(0)
+  //  bao-CR-414 GĐ2: phòng áp dụng, 0 = Thu mua chung. Đọc từ `?dept=` khi Sửa.
+  const [departmentId, setDepartmentId] = useState<number>(0)
 
   const [saving, setSaving] = useState(false)
+
+  //  Danh mục phòng ban cho ô chọn; thiếu quyền thì ô chỉ còn «Thu mua chung»
+  //  và màn cư xử y hệt trước GĐ2.
+  const { data: departmentsData } = useDepartments(
+    { page_size: 500 },
+    { enabled: can('department', 'read') },
+  )
+  const departments = useMemo<Option[]>(
+    () => (departmentsData?.items ?? []).map((d) => ({ value: d.id, label: d.name })),
+    [departmentsData],
+  )
+
+  const rowByCat = useMemo<Record<number, number>>(() => {
+    const map: Record<number, number> = {}
+    rows
+      .filter((x) => (x.department_id || 0) === departmentId)
+      .forEach((x) => {
+        map[x.item_group_id] = x.id
+      })
+    return map
+  }, [rows, departmentId])
 
   const editCatId = Number(searchParams.get('cats')) || 0
   const editRowId = editCatId ? rowByCat[editCatId] : undefined
@@ -49,15 +83,10 @@ export function CategoryAssigneeFormPage() {
   // Load assignees map to resolve item_group_id -> row id (for audit log)
   const loadAssignees = async () => {
     try {
-      const res = await httpClient.get<{ items: any[] }>('/api/category-assignees', {
+      const res = await httpClient.get<{ items: CategoryAssignee[] }>('/api/category-assignees', {
         params: { page_size: 1000 },
       })
-      const items = res.data?.items || (res.data as any)?.data?.items || []
-      const map: Record<number, number> = {}
-      items.forEach((x: any) => {
-        map[x.item_group_id] = x.id
-      })
-      setRowByCat(map)
+      setRows(res.data?.items || (res.data as any)?.data?.items || [])
     } catch {
       // ignore
     }
@@ -96,10 +125,12 @@ export function CategoryAssigneeFormPage() {
     const p = Number(searchParams.get('primary')) || 0
     const b = Number(searchParams.get('backup')) || 0
     const c = Number(searchParams.get('cats')) || 0
+    const d = Number(searchParams.get('dept')) || 0
 
     if (p) setPrimaryId(p)
     if (b) setBackupId(b)
     if (c) setSelectedCatIds([c])
+    if (d) setDepartmentId(d)
   }, [searchParams])
 
   const handleSave = async () => {
@@ -114,11 +145,13 @@ export function CategoryAssigneeFormPage() {
 
     setSaving(true)
     try {
-      await httpClient.post('/api/category-assignees/bulk', {
+      const payload: CategoryAssigneeBulkPayload = {
         item_group_ids: selectedCatIds,
         primary_employee_id: primaryId,
         backup_employee_id: backupId || 0,
-      })
+        department_id: departmentId,
+      }
+      await httpClient.post('/api/category-assignees/bulk', payload)
       toast.success(`Đã lưu phân công cho ${selectedCatIds.length} phân loại`)
       await loadAssignees()
 
@@ -140,6 +173,11 @@ export function CategoryAssigneeFormPage() {
   const multiPickerOptions = useMemo(() => {
     return itemGroups.map((g) => ({ id: g.value, label: g.label }))
   }, [itemGroups])
+
+  const departmentLabel = useMemo(() => {
+    if (!departmentId) return SHARED_DEPARTMENT_LABEL
+    return departments.find((d) => d.value === departmentId)?.label || `#${departmentId}`
+  }, [departmentId, departments])
 
   return (
     //  ⚠️ Dùng `PageContainer` + `PageHeader` như mọi màn khác. Bản cũ tự dựng
@@ -172,7 +210,11 @@ export function CategoryAssigneeFormPage() {
             <ArrowLeft />
           </Button>
         }
-        title={editCatLabel ? `Sửa phân công: ${editCatLabel}` : 'Gán phân công phụ trách'}
+        title={
+          editCatLabel
+            ? `Sửa phân công: ${editCatLabel} · ${departmentLabel}`
+            : 'Gán phân công phụ trách'
+        }
         description={
           //  Ẩn ở khổ hẹp: câu này mô tả việc của cả màn, đọc một lần rồi thôi,
           //  nhưng ngốn hai dòng ngay trên ô nhập đầu tiên ở MỌI lần mở màn.
@@ -207,6 +249,34 @@ export function CategoryAssigneeFormPage() {
               <UserCheck className="size-4 text-primary" />
               Thông tin phân công NSTM
             </h2>
+
+            {/*  Phòng áp dụng đứng TRÊN ô phân loại: đổi phòng là đổi bộ dòng
+                 «đã có» bên dưới, chọn xuôi từ trên xuống thì người dùng không
+                 phải quay lên sửa lại. */}
+            <div className="space-y-2">
+              <Label>Phòng áp dụng</Label>
+              <Select
+                value={departmentId ? String(departmentId) : SHARED}
+                onValueChange={(next) => setDepartmentId(next === SHARED ? 0 : Number(next))}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={SHARED_DEPARTMENT_LABEL} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={SHARED}>{SHARED_DEPARTMENT_LABEL}</SelectItem>
+                  {departments.map((d) => (
+                    <SelectItem key={d.value} value={String(d.value)}>
+                      {d.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                «{SHARED_DEPARTMENT_LABEL}» áp cho mọi phiếu chưa có dòng riêng của phòng. Chọn một
+                phòng thì cặp NSTM bên dưới chỉ nhận phiếu do phòng đó xử lý, kể cả phiếu phòng
+                khác nhờ phòng này xử lý.
+              </p>
+            </div>
 
             {/* Item Groups Picker */}
             <div className="space-y-2">

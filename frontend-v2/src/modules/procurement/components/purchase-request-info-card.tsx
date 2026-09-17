@@ -19,6 +19,7 @@ import {
 import { Textarea } from '@/shared/ui/textarea'
 import { formatDate, formatDateTime } from '@/shared/utils/format-date'
 import type { Company } from '@/modules/hr/types/company'
+import type { Department } from '@/modules/hr/types/department'
 import type { Employee } from '@/modules/hr/types/employee'
 import type {
   DeptHeadCandidate,
@@ -33,6 +34,8 @@ interface InfoCardProps {
   onUrgentChange?: (checked: boolean) => void
   companies?: Company[]
   employees?: Employee[]
+  /** bao-CR-414 — danh mục phòng ban cho ô «Nhờ phòng xử lý»; rỗng thì ô chỉ hiện chữ. */
+  departments?: Department[]
   /** CR-071 — ứng viên đứng tên TBP trên phiếu; rỗng thì ô về dạng chữ như cũ. */
   deptHeadCandidates?: DeptHeadCandidate[]
   onChange: (changes: Partial<PurchaseRequestDetail>) => void
@@ -55,10 +58,18 @@ export function PurchaseRequestInfoCard({
   onUrgentChange,
   companies = [],
   employees = [],
+  departments = [],
   deptHeadCandidates = [],
   onChange,
 }: InfoCardProps) {
   const { can } = usePermission()
+  // bao-CR-414: chỉ bày phòng đang hoạt động, nhưng phòng đã tắt mà phiếu cũ còn trỏ tới
+  // thì giữ lại để không mất nhãn khi mở phiếu.
+  const handlerDepartments = departments.filter(
+    (department) => department.is_active || department.id === data.handler_dept_id,
+  )
+  const handlerDepartmentName =
+    departments.find((department) => department.id === data.handler_dept_id)?.name ?? ''
   // bao-CR-318: đường về YCBG nguồn — chỉ thành link khi người xem đọc được YCBG,
   // không thì hiện mã dạng chữ (bấm vào chỉ ăn 403).
   const surveyRequestLinkable = Boolean(data.survey_request_id) && can('survey_request', 'read')
@@ -188,6 +199,38 @@ export function PurchaseRequestInfoCard({
         <Field label="Bộ phận YC" required>
           {data.department}
         </Field>
+
+        {/*
+          bao-CR-414 — phòng tự mua hàng vẫn có thể NHỜ thu mua chung (hoặc ngược lại) xử lý
+          một phiếu. Chọn phòng ở đây thì quản lý thu mua của phòng đó thấy + điều phối được
+          phiếu; phòng lập phiếu vẫn thấy như cũ. Radix Select không nhận giá trị rỗng nên
+          «không nhờ» đi bằng mục `0`, đúng với cách backend lưu.
+        */}
+        <div className="space-y-1.5">
+          <Label>Nhờ phòng xử lý</Label>
+          {editing && handlerDepartments.length ? (
+            <Select
+              value={String(data.handler_dept_id || 0)}
+              onValueChange={(value) => onChange({ handler_dept_id: Number(value) || 0 })}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Không nhờ — thu mua chung xử lý" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0">Không nhờ — thu mua chung xử lý</SelectItem>
+                {handlerDepartments.map((department) => (
+                  <SelectItem key={department.id} value={String(department.id)}>
+                    {department.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <ReadOnlyValue>
+              {handlerDepartmentName || (data.handler_dept_id ? `Phòng #${data.handler_dept_id}` : 'Không nhờ')}
+            </ReadOnlyValue>
+          )}
+        </div>
 
         <div className="space-y-1.5">
           <Label>Chức vụ (Nếu có)</Label>

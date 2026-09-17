@@ -57,12 +57,23 @@ export interface Payable {
   aging: string
 }
 
-/** Bốn số tổng của `/api/payables/summary`, lấy theo ĐÚNG bộ lọc đang áp. */
-export interface PayableSummary {
+/** Bốn số tổng công nợ (tổng nợ / đã trả / còn lại / quá hạn). */
+export interface PayableSummaryFigures {
   total: number
   paid: number
   remaining: number
   overdue: number
+}
+
+/**
+ * Bốn số tổng của `/api/payables/summary`, lấy theo ĐÚNG bộ lọc đang áp và đúng PHẠM VI
+ * người xem. bao-CR-414 GĐ4: thêm `all` = cùng bộ lọc nhưng KHÔNG gác phạm vi ("Tổng nợ
+ * NCC") và `partial` = người xem chỉ thấy một phần (hai bộ số lệch nhau). Hai khóa để tùy
+ * chọn vì backend cũ chưa gửi — màn hình chỉ vẽ ô "Phần của tôi" khi `partial` đúng.
+ */
+export interface PayableSummary extends PayableSummaryFigures {
+  all?: PayableSummaryFigures
+  partial?: boolean
 }
 
 /**

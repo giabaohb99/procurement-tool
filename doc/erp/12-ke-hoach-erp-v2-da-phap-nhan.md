@@ -135,12 +135,14 @@ quyền chính.** Hai cái đầu đã vá:
 
 ---
 
-## 5.1 Chốt 16/09/2026 — rút gọn lần hai: bỏ hẳn pháp nhân, định tuyến theo PHÒNG BAN
+## 5.1 Chốt 16/09/2026, gọn lại 17/09/2026 — bỏ hẳn pháp nhân, chia bằng PHẠM VI của tài khoản
 
 Khách hỏi lại tình trạng "phân quyền cho nhà máy riêng và thu mua riêng", rồi chốt luôn:
 **không chia theo pháp nhân nữa, chỉ chia bằng phòng ban và phạm vi của tài khoản.**
 Đây là bước rút gọn thứ hai, đứng sau bản 18/08 ở mục 5 — lần đó bỏ P5, lần này bỏ nốt vế
-pháp nhân trong P2 và P7.
+pháp nhân trong P2 và P7. Sáng 17/09 khách gọt thêm một lần nữa (xem "Chốt 17/09" bên dưới):
+bản 16/09 còn ô tick trên Phòng ban, dòng cấu hình phòng Thu mua chung, migration điền lùi và
+hai vai trò mới — **bỏ hết**, chỉ giữ một bậc phạm vi mới, một vai trò mới và một cột "phòng nhờ".
 
 **Bài toán thật không phải "nhà máy".** Nhà máy chỉ là ca đầu tiên của một luật chung:
 **có những phòng ban tự đi mua, không qua phòng Thu mua.** Khách nêu ba ví dụ cùng loại —
@@ -174,46 +176,43 @@ trọn phiếu của mình.
 - 17/17 phòng ban chưa gắn pháp nhân và 234/236 nhân sự chưa gắn công ty — không còn là vấn
   đề sau khi bỏ vế pháp nhân, nhưng ghi lại để khỏi đi đo lại.
 
-**Ba việc phải làm:**
+**Chốt 17/09/2026 — cả bài toán gói trong BA BỘ PHẠM VI, không cờ, không ô cấu hình.**
 
-1. **Bậc phạm vi mới "Thu mua trong phòng mình"** — cần sửa mã. Người mang bậc này thấy
-   phiếu **đã duyệt của chính phòng ban mình**, thay vì mọi phiếu đã duyệt như bậc `proc`.
-   Đây chính là bậc **"đơn vị mình xử lý" (P2-2b)** bỏ vế pháp nhân, chỉ còn vế phòng ban.
-   ⚠️ **Không dùng lại được ô "Phòng ban được xem"** để làm việc này: ô đó đi qua
-   `_dept_include_cond` và được **OR** vào phạm vi vai trò (`core/scoping.py`, `scope_condition`),
-   tức là **cộng thêm chứ không giới hạn**. Đặt nó cho thu mua nhà máy thì phạm vi nở ra chứ
-   không hẹp lại.
-2. **Ô tick "Phòng tự mua hàng" trên danh mục Phòng ban** — cần sửa mã. Tick vào thì phiếu
-   của phòng đó không chảy vào hàng chờ chung nữa. ⚠️ Không dùng danh sách **loại trừ** khai
-   tay cho phòng Thu mua chung: loại trừ chạy đúng về mặt kỹ thuật (`_explicit_cond` AND vào
-   phạm vi vai trò) nhưng phải bảo trì bằng tay, và **thêm một phòng tự mua mà quên khai là
-   lủng im lặng** — đúng loại lỗi B-07 đã dọn một lần.
-3. **Khai dữ liệu**: cấp vai trò thu mua cho người của Dego Organic, tick "phòng tự mua"
-   cho Dego Organic, hạ phạm vi vai trò thu mua chung từ `all` xuống đúng bậc.
+Sáng 17/09 khách nói lại cho gọn: *"nó nằm ở phần phạm vi thôi — bộ tài khoản thu mua hiện
+tại là full phạm vi, hai bộ nữa là phạm vi riêng phòng nhà máy, và phòng thu mua thì có hết
+nhưng không có quyền trên nhà máy."* Mọi thứ bản 16/09 dự tính ngoài phạm vi (ô tick "Phòng
+tự mua hàng" trên Phòng ban, dòng cấu hình "phòng Thu mua chung", migration điền lùi, vai trò
+"Nhân viên thu mua phòng") đều **bỏ**. Còn lại đúng ba bộ:
 
-**Việc 1 và 2 là mã dùng chung cho mọi phòng tự mua**, không có một dòng nào nói riêng về
-nhà máy. Việc 3 lặp lại cho từng phòng khi khách mở thêm.
+| Bộ | Ai | Phạm vi | Phải làm gì |
+|---|---|---|---|
+| **Full** | Quản lý thu mua chung (`pur_manager`) | bậc `all` như hiện tại | Không đổi gì |
+| **Nhà máy** | Người của Dego Organic được cấp vai trò mới **Quản lý thu mua phòng**; nhân viên thu mua của nhà máy dùng lại `pur_staff` (bậc `assigned`, chỉ thấy dòng được gán) | bậc MỚI **"Thu mua trong phòng mình"** (`dept_proc`) = điều kiện `proc` **VÀ** (phòng yêu cầu thuộc phòng tôi **HOẶC** phòng nhờ thuộc phòng tôi) | Một bậc phạm vi mới + một vai trò mới |
+| **Thu mua trừ nhà máy** | Admin / nhân viên thu mua chung | bậc `proc` sẵn có + ô **"Loại trừ phòng ban" = Dego Organic**, khai tay trên màn Phân quyền (ô đã có sẵn) | Một ngoại lệ trong mã: phiếu **nhờ sang phòng tôi** vẫn hiện dù phòng yêu cầu nằm trong danh sách loại trừ |
 
-**Ba chốt bổ sung 16/09/2026** (trả lời ba câu chặn trước khi khởi công):
+Chiều **công ty** giữ full như hiện tại, không đụng.
 
-| Câu | Chốt |
-| --- | --- |
-| Làm giao diện ở bản nào trước | **`frontend/` (v1) trước**, chạy thật trên prod rồi mới port sang `frontend-v2` — đúng nếp đã chốt 08/09/2026. |
-| Máy nhận ra "phòng Thu mua chung" bằng gì | **Mặc định phòng "Sản xuất -Thu mua"**, id để trong một dòng Cấu hình hệ thống (sửa được, không phải sửa mã). Migration điền lùi `handler_dept_id` của mọi phiếu cũ về id đó. |
-| Người thu mua ngồi ở phòng khác thì sao | **Không đụng hồ sơ nhân sự.** Cấp thêm cho họ ô **"Phòng ban được xem"** = phòng Thu mua chung (và phòng nào họ phụ trách). Ô này đã có sẵn, là điều kiện **CỘNG THÊM (OR)** vào phạm vi vai trò (`_dept_include_cond` trong `core/scoping.py`) — khai bằng tay trên màn Phân quyền, không cần mã mới. |
+Bản 16/09 từng gạt cách "loại trừ khai tay" vì sợ quên khai là lủng im lặng (kiểu B-07).
+Khách chấp nhận rủi ro đó để đổi lấy không có ô cấu hình nào phải sửa mã: **mở thêm một phòng
+tự mua = cấp vai trò mới cho người phòng đó + thêm phòng đó vào ô loại trừ của những người thu
+mua chung.** Ghi thành bước trong HDSD phân quyền, và ghi ở bảng rủi ro mục 6.
 
-⚠️ **Hệ quả kỹ thuật của chốt thứ ba**: `_dept_include_cond` và nhánh `dept` của
-`_role_scope_cond` đều so phòng qua `SCOPE_FIELDS[entity]["dept_id"]`, hiện là `department_id`
-(**phòng yêu cầu**). CR-414 phải sửa **một chỗ duy nhất** là hàm so phòng để nó khớp **HỢP
-(OR) hai cột**: `department_id` (phòng yêu cầu) **hoặc** `handler_dept_id` (phòng xử lý). Sửa
-đúng chỗ đó thì mọi màn đang lọc theo phòng tự hiểu khái niệm "phòng được điều chuyển tới",
-không phải đi vá từng màn.
+⚠️ **Vì sao là bậc mới chứ không dùng lại bậc `dept` hay ô "Phòng ban được xem".** Nhân viên
+thu mua hiện ở bậc `proc` = "thấy mọi phiếu ĐÃ DUYỆT của toàn hệ". Hạ thẳng xuống `dept` thì họ
+thấy **cả phiếu còn nháp, chưa ai duyệt** của phòng — rộng hơn hiện tại ở đúng chỗ nhạy cảm.
+Còn ô "Phòng ban được xem" đi qua `_dept_include_cond` và được **OR** vào phạm vi vai trò, tức
+là **cộng thêm chứ không giới hạn**. Bậc mới = `proc` **AND** thêm chiều phòng, đúng khuôn
+CR-164 đã ghép chiều công ty vào `_proc_status_cond`. Là một điều kiện, không phải màn mới hay
+bảng mới. Đây chính là bậc **"đơn vị mình xử lý" (P2-2b)** bỏ vế pháp nhân, chỉ còn vế phòng.
 
-⚠️ **Nhưng vẫn cần bậc phạm vi mới, không dùng lại bậc `dept` có sẵn.** Nhân viên thu mua
-hiện ở bậc `proc` = "thấy mọi phiếu ĐÃ DUYỆT của toàn hệ". Hạ thẳng xuống `dept` thì họ thấy
-**cả phiếu còn nháp, chưa ai duyệt** của các phòng khác gửi sang — rộng hơn hiện tại ở đúng
-chỗ nhạy cảm. Bậc mới = `proc` **AND** thêm chiều phòng, đúng khuôn CR-164 đã ghép chiều công
-ty vào `_proc_status_cond`. Là một điều kiện, không phải màn mới hay bảng mới.
+⚠️ **Vì sao KHÔNG cấp `pur_manager` / `pur_staff` phạm vi rộng cho người nhà máy.** Một người
+nhiều vai trò thì phạm vi **HỢP** lại (`scope_condition` OR các grant), và **chỉ cần một grant
+đặt `all` là hàm trả `None` — thấy tất, mọi grant hẹp còn lại vô nghĩa**. Nên người nhà máy
+phải mang vai trò riêng ở bậc mới; `pur_staff` thì dùng lại được vì bậc `assigned` vốn chỉ
+thấy dòng gán cho mình.
+
+**Giao diện làm ở `frontend/` (v1) trước**, chạy thật trên prod rồi mới port sang `frontend-v2`
+— đúng nếp đã chốt 08/09/2026.
 
 ### 5.1.1 Nhờ ngược lại phòng Thu mua chung — cột "phòng xử lý"
 
@@ -224,45 +223,56 @@ thùng, chưa tìm được nguồn) thì có **đẩy sang phòng Thu mua chung
 Được, và phải thiết kế ngay từ đầu — nếu chỉ định tuyến cứng theo phòng của người lập
 phiếu thì phòng tự mua bị **nhốt**, không có đường ra.
 
-**Cơ chế: tách "phòng yêu cầu" khỏi "phòng xử lý".**
+**Cơ chế: tách "phòng yêu cầu" khỏi "phòng nhờ".**
 
 | Cột | Nghĩa | Ai sửa |
 |---|---|---|
 | `department_id` (đã có) | **Phòng yêu cầu** — ai xin, tiền tính vào ngân sách phòng nào | Không ai sửa sau khi lập. Mọi báo cáo chi tiêu bám cột này |
-| `handler_dept_id` (**MỚI**) | **Phòng xử lý** — ai đi mua, hàng chờ của ai, phạm vi xem bám cột này | Đổi được bằng một nút bấm |
+| `handler_dept_id` (**MỚI**, mặc định 0) | **Phòng nhờ** — phòng được nhờ mua giúp. **Rỗng = phòng yêu cầu tự lo** (hoặc rơi vào hàng chờ thu mua chung như trước). Điền = phòng đó thấy phiếu | Người yêu cầu chọn trên form khi phiếu còn Nháp / Bị trả lại; giai đoạn cuối mới có nút chuyển rời |
 
-Lúc lập phiếu hệ thống tự điền `handler_dept_id`: phòng người lập có tick **"Phòng tự mua
-hàng"** thì điền chính phòng đó, không thì điền **phòng Thu mua chung**. Nhờ ngược lại =
-**đổi đúng một cột**, không đụng một dòng dữ liệu nghiệp vụ nào; nhận lại cũng vậy.
+Chốt 17/09: **không tự điền gì lúc lập phiếu** — cột để 0. Mọi phiếu cũ trên prod đều 0 nên
+**không cần migration điền lùi**, và bậc phạm vi cũ không đọc cột này nên chưa ai điền thì
+không đổi gì. Nhờ = **điền đúng một cột**, không đụng một dòng dữ liệu nghiệp vụ nào; nhận
+lại cũng vậy. Cột được **chép sang phiếu con**: YCBG sinh YCMH, YCMH sinh ĐMH, nhân bản ĐMH.
 
 ⚠️ **Tuyệt đối không định tuyến bằng `department_id`.** Sửa cột đó để chuyển việc là làm
 hỏng số chi tiêu của cả hai phòng và không có đường lần ngược.
 
-**Bậc phạm vi mới ở việc 1 đọc `handler_dept_id`, không đọc `department_id`** — nếu đọc
-nhầm thì phiếu đã nhờ sang thu mua chung vẫn nằm trong tầm nhìn nhà máy mà thu mua chung
-không thấy, tức là nhờ xong không ai làm.
+**Ai đọc cột "phòng nhờ" — sửa một chỗ duy nhất.** Hàm so phòng `_dept_match` trong
+`core/scoping.py` khớp **HỢP (OR) hai cột**: `department_id` **hoặc** `handler_dept_id` nằm
+trong phòng của tôi. Nhánh `dept`, ô "Phòng ban được xem" và bậc mới đều đi qua hàm này nên
+tự hiểu khái niệm "phòng được nhờ", không phải vá từng màn. Ba hệ quả cụ thể:
+
+- **Nhà máy** (bậc mới) thấy phiếu phòng mình lập, kể cả phiếu đã nhờ đi — họ vẫn là phòng
+  yêu cầu, cần theo dõi. Phiếu phòng khác nhờ vào nhà máy cũng hiện.
+- **Thu mua trừ nhà máy** (`proc` + loại trừ Dego Organic): phiếu nhà máy nhờ sang phòng
+  Sản xuất -Thu mua **vẫn hiện** dù phòng yêu cầu bị loại trừ — luật "phòng nhờ thắng loại
+  trừ", nằm ở `_explicit_cond`. Không có ngoại lệ này thì nhờ xong không ai làm.
+- **Trưởng phòng** (bậc `dept`) thấy phiếu phòng khác nhờ sang phòng mình. Không sao: phiếu
+  chỉ nhờ được sau khi trưởng phòng gốc duyệt, và trước giờ chưa ai điền cột nên không đổi gì.
 
 **Trọn phiếu, không nửa phiếu.** Kỹ thuật thì chuyển từng dòng làm được (nhánh `proc` đã
 có sẵn truy vấn con "thấy phiếu vì có dòng gán cho tôi"), nhưng **cho thu mua chung thấy
 phiếu là thấy TOÀN BỘ dòng của phiếu đó** — đúng cái công thức mà cả thiết kế này sinh ra
 để giấu. Nên phòng tự mua muốn nhờ món nào thì **lập phiếu riêng cho món đó**.
 
-**Phân công (`dispatch_pr`) sau khi chuyển.** Thuật toán không đổi: phiếu vẫn phải ở trạng
-thái "Đã duyệt", vẫn Quản lý/Admin thu mua bấm điều phối, vẫn tự gán NSTM theo phân loại
-rồi chuyển "Đã điều phối". Chỉ khác **ai nhìn thấy và ai bấm được** — người của phòng đang
-giữ `handler_dept_id`.
+**Phân công (`dispatch_pr`) sau khi nhờ.** Thuật toán không đổi: phiếu vẫn phải ở trạng
+thái "Đã duyệt", vẫn người có quyền điều phối bấm, rồi chuyển "Đã điều phối". Chỉ khác **ai
+nhìn thấy và ai bấm được** — phạm vi tự lo.
 
-⚠️ **Chỗ thật sự phải sửa nằm ở bảng phân công, không nằm ở thuật toán.**
-`tab_category_assignee` hiện là **bảng dùng chung toàn hệ**: mỗi phân loại đúng **một**
-người chính + một dự phòng (`item_group_id` là khóa **duy nhất**). Hai phòng cùng tự mua
-thì tranh nhau một ô — nhà máy khai người của mình vào phân loại "Nguyên liệu" là đè luôn
-cấu hình của thu mua chung. Phải thêm **cột phòng** vào bảng này và đổi khóa duy nhất
-thành **(phòng xử lý, phân loại)**; `auto_assign_by_category` tra bảng theo
-`handler_dept_id` của phiếu, không tra bảng phẳng như bây giờ.
+⚠️ **Bảng phân công là bảng dùng chung toàn hệ.** `tab_category_assignee` mỗi phân loại đúng
+**một** người chính + một dự phòng (`item_group_id` là khóa **duy nhất**), toàn bộ là người
+của thu mua chung. Nếu để nguyên mà nhà máy bấm điều phối thì máy gán người thu mua chung vào
+phiếu nhà máy — đúng cái đang muốn tránh. Chốt GĐ1: **người bấm điều phối mang bậc phạm vi
+mới thì KHÔNG tự gán, để trống cho quản lý phòng gán tay** (chức năng gán NSTM theo dòng có
+sẵn). Cùng luật ở YCBG: trưởng phòng duyệt YCBG thì `survey_request.service.auto_assign`
+cũng bỏ qua nếu phiếu là của phòng tự mua và người duyệt ở bậc mới. Thêm **cột phòng** vào
+bảng phân công để mỗi phòng có bộ riêng là việc GĐ2.
 
-**Chuyển lúc nào.** Sạch nhất là khi phiếu **chưa điều phối**. Đã điều phối rồi mà vẫn
-muốn nhờ thì phải **xóa NSTM đã gán** trên các dòng trước khi đổi phòng xử lý, kẻo phiếu
-sang phòng mới nhưng người phụ trách vẫn là người phòng cũ.
+**Nhờ lúc nào.** Sạch nhất là khi phiếu **còn Nháp / Bị trả lại** (đường 1, ô chọn trên
+form). Đã điều phối rồi mà vẫn muốn nhờ thì phải **xóa NSTM đã gán** trên các dòng trước khi
+đổi phòng nhờ, kẻo phiếu sang phòng mới nhưng người phụ trách vẫn là người phòng cũ — đó là
+việc của nút chuyển rời ở giai đoạn cuối.
 
 **Hai câu đã chốt (16/09):**
 
@@ -285,39 +295,36 @@ người phụ trách đã gán** trên các dòng rồi mới đổi phòng x�
 
 **Chốt thêm trong cùng buổi 16/09:**
 
-- **Giao diện**: một ô tick "Nhờ phòng khác xử lý", tick rồi mới bung ô chọn phòng. Danh
-  sách chọn **chỉ gồm phòng Thu mua chung và các phòng đã tick "Phòng tự mua hàng"** —
-  nhờ sang phòng không có nhân sự thu mua là phiếu rơi vào chỗ không ai điều phối được.
+- **Giao diện** (gọn lại 17/09): một ô chọn **"Nhờ phòng"** trên form phiếu, để trống là
+  không nhờ. Danh sách là toàn bộ phòng ban đang hoạt động — không còn ô tick để lọc. Nhờ
+  nhầm sang phòng không có người thu mua thì phiếu chỉ mình phòng yêu cầu thấy; sửa lại được
+  khi phiếu còn Nháp / Bị trả lại. Ghi vào HDSD.
 - **Chuyển giao CHỈ có ở Yêu cầu báo giá và Yêu cầu mua hàng.** Đơn mua hàng không có nút
   này và không hiện cho phòng người yêu cầu — giữ đúng hiện trạng. (Đo lại mã nguồn: vai
   trò `requester` và `dept_head` **không có quyền `purchase_order` nào cả**, nên "giữ
   nguyên" ở đây là không phải làm gì.)
-- **Phòng chưa khai bảng phân công cho phân loại đó** → để trống, quản lý phòng chọn tay.
-  Không rơi về bộ mặc định của Thu mua chung, vì như vậy là tự động gán người ngoài vào
-  phiếu của phòng tự mua.
-- **Đơn mua hàng vẫn phải mang "phòng xử lý"**, dù không có nút chuyển: lúc tạo đơn thì
-  **chép ô phòng xử lý từ phiếu gốc** rồi đông cứng. ⚠️ Nếu để phạm vi Đơn mua hàng lọc
-  theo `department_id` (phòng yêu cầu) thì đơn **thu mua chung làm hộ phòng tự mua** sẽ
-  mang phòng ban của phòng yêu cầu — chính người làm ra đơn lại không thấy đơn của mình.
+- **Phòng tự mua bấm điều phối** → không tự gán, quản lý phòng chọn tay (xem đoạn phân công
+  ở trên). Không rơi về bộ mặc định của Thu mua chung, vì như vậy là tự động gán người ngoài
+  vào phiếu của phòng tự mua.
+- **Đơn mua hàng vẫn phải mang "phòng nhờ"**, dù không có nút chuyển: lúc tạo đơn thì
+  **chép ô phòng nhờ từ phiếu gốc** rồi đông cứng. ⚠️ Nếu để phạm vi Đơn mua hàng chỉ lọc
+  theo `department_id` (phòng yêu cầu) thì đơn **thu mua chung làm hộ nhà máy** sẽ mang
+  phòng Dego Organic — đúng phòng đang bị loại trừ, chính người làm ra đơn lại không thấy
+  đơn của mình.
 
 ### 5.1.2 Vai trò: CỘNG vai trò, nhưng phải là vai trò MỚI
 
 Khách chốt: vai trò phía người yêu cầu **giữ nguyên hết**; trưởng phòng của phòng tự mua
-chỉ **được cấp thêm** vai trò thu mua của phòng mình.
+chỉ **được cấp thêm** vai trò thu mua của phòng mình. Lý do không cấp `pur_manager` sẵn có
+(một grant `all` là thấy tất) đã ghi ở đầu mục 5.1.
 
-⚠️ **Không cấp được vai trò `pur_manager` / `pur_staff` đang có.** Một người nhiều vai trò
-thì phạm vi **HỢP** lại (`scope_condition` OR các grant), và **chỉ cần một grant đặt
-`all` là hàm trả `None` — thấy tất, mọi grant hẹp còn lại vô nghĩa**. Vai trò Quản lý thu
-mua hiện đang full phạm vi, cấp thêm cho trưởng phòng tự mua là họ nhìn thấy toàn công ty,
-đúng cái đang muốn tránh.
+Gọn lại 17/09: chỉ **một** vai trò mới dùng chung cho mọi phòng tự mua, phạm vi đặt ở bậc
+"Thu mua trong phòng mình" (`dept_proc`):
 
-Nên phải **lập vai trò mới** dùng chung cho mọi phòng tự mua, phạm vi đặt ở bậc "Thu mua
-trong phòng mình":
-
-| Vai trò mới | Thay cho | Ghi chú |
-|---|---|---|
-| Quản lý thu mua phòng | `pur_manager` | Có quyền duyệt điều phối |
-| Nhân viên thu mua phòng | `pur_staff` | Không duyệt điều phối |
+| Vai trò | Mã | Phạm vi | Ghi chú |
+|---|---|---|---|
+| **Quản lý thu mua phòng** (MỚI) | `pur_dept_manager` | `dept_proc` trên YCMH · YCBG · ĐMH (đọc, tạo, sửa, duyệt, hủy, in, xuất); danh mục chỉ đọc; tiến độ, phương án khảo sát như `pur_staff` | Có quyền điều phối YCMH và duyệt ĐMH của phòng mình (5.1.8 A1) |
+| Nhân viên thu mua của phòng | dùng lại `pur_staff` | `assigned` | Chỉ thấy dòng được gán, không rò gì thêm nên không cần vai trò riêng |
 
 Tên đặt theo "phòng", **không đặt theo "nhà máy"** — xem đoạn đầu mục 5.1.
 
@@ -400,20 +407,14 @@ Nghĩa là **không thêm cờ bật/tắt tính năng** — bậc phạm vi ch�
 cho ai thì không ai thấy gì khác. Đây cũng là tiêu chí nghiệm thu: **chưa gán bậc mới mà
 màn hình đổi hành vi là làm sai.**
 
-Bốn phần tự nhiên thỏa luật này: hai vai trò mới (không gán thì không tồn tại), ô tick
-"Phòng tự mua hàng" (mặc định không tick), cột `handler_dept_id` (bậc phạm vi **cũ** không
-được phép đọc cột này), và nút nhờ (chưa phòng nào tick tự mua thì danh sách chọn rỗng →
-**ẩn hẳn nút**, không hiện ra rồi bấm không được).
+Bốn phần tự nhiên thỏa luật này: vai trò mới và bậc mới (không gán thì không tồn tại), ô
+loại trừ phòng ban (không khai thì `proc` y như cũ), cột `handler_dept_id` (mặc định 0, mọi
+phiếu cũ đều 0 nên hàm so phòng cho ra đúng kết quả cũ), và việc bỏ tự gán (chỉ khi người
+bấm điều phối mang bậc mới).
 
-⚠️ **Hai phần KHÔNG tự nhiên thỏa, phải chăm tay:**
-
-1. **Bảng phân công theo phân loại thêm cột phòng.** Dữ liệu cũ không có phòng. Migration
-   phải **điền toàn bộ dòng cũ = phòng Thu mua chung**; phiếu nào có phòng xử lý là Thu
-   mua chung thì tra đúng bộ đó và gán y như trước. Quên bước điền lùi này là **mọi phiếu
-   đang chạy mất người phụ trách tự động** ngay sau khi deploy.
-2. **Màn Công nợ hai con số.** Cột "Phần của tôi" đổi giao diện cho cả người chưa dùng
-   phạm vi mới. Chỉ **hiện cột đó khi nó khác số tổng**, còn bằng nhau thì giữ nguyên màn
-   như cũ.
+⚠️ **Một phần KHÔNG tự nhiên thỏa, phải chăm tay (GĐ4):** **màn Công nợ hai con số.** Cột
+"Phần của tôi" đổi giao diện cho cả người chưa dùng phạm vi mới. Chỉ **hiện cột đó khi nó
+khác số tổng**, còn bằng nhau thì giữ nguyên màn như cũ.
 
 Đi kèm: viết test "**chưa gán bậc phạm vi mới thì mọi màn hành xử y như trước**" — kiểu
 bài kiểm B-07 đã dùng, để lần deploy sau không ai phá luật này mà không biết.
@@ -424,11 +425,11 @@ Khách chốt: nút chuyển ở màn chi tiết (đường 2) **để giai đo�
 
 | GĐ | Nội dung | Ghi chú |
 |---|---|---|
-| 1 | Cột `handler_dept_id` cho YCMH + YCBG, ĐMH chép sẵn lúc tạo · ô tick "Phòng tự mua hàng" trên Phòng ban · hai vai trò mới (**Quản lý thu mua phòng cấp `purchase_order` approve + cancel**, xem 5.1.8 A1) · bậc phạm vi "Thu mua trong phòng mình" | Migration điền lùi toàn bộ = phòng Thu mua chung. Chưa gán ai thì **không đổi hành vi**. Chuông **giữ nguyên**, không sửa (5.1.8 A2) |
-| 2 | Bảng phân công thêm cột phòng, khóa duy nhất (phòng, phân loại); tra theo phòng xử lý | ⚠️ Chạm **cả YCMH và YCBG** vì hai bên dùng chung `category_assignee.resolve_for_group` |
-| 3 | Ô tick "Nhờ phòng khác xử lý" trên **form** phiếu (đường 1) | Chưa phòng nào tick tự mua → danh sách rỗng → ẩn nút |
-| 4 | Công nợ hai con số (Tổng nợ NCC / Phần của tôi) · **cột ẩn `department_id` chép sẵn trên CẢ `tab_payable` lẫn `tab_payment_request`, lọc đọc thẳng cột đó — mục 5.1.8 A3** · chặn cấn trừ tiền treo cấp NCC theo phòng · **rà bộ tool Trợ lý AI cho khớp phạm vi mới (5.1.8 D)** | Chỉ hiện cột "Phần của tôi" khi khác số tổng. Bản in YCTT **không** hiện phòng ban. Migration điền lùi 221 dòng nợ + toàn bộ YCTT cũ = Thu mua chung |
-| **5 (cuối)** | **Nút chuyển phòng xử lý ở màn chi tiết (đường 2)** + nút Trả về + ô lý do vào nhật ký | Khách chốt để sau cùng. Điều kiện bật nút ở mục **5.1.7** |
+| 1 (**xong local 17/09**) | Bậc phạm vi `dept_proc` "Thu mua trong phòng mình" · vai trò **Quản lý thu mua phòng** (`pur_dept_manager`, có `purchase_order` approve + cancel, xem 5.1.8 A1) · cột `handler_dept_id` trên YCMH + YCBG + ĐMH, chép sang phiếu con · hàm so phòng đọc cả hai cột · luật "phòng nhờ thắng loại trừ" · bỏ tự gán khi người điều phối ở bậc mới · ô chọn "Nhờ phòng" trên form **YCMH** (v1 rồi v2) · hai bộ tài khoản test + menu đổi nhanh trên dev | Không migration điền lùi (cột mặc định 0). Chưa gán ai thì **không đổi hành vi**. Chuông **giữ nguyên**, không sửa (5.1.8 A2). Khai dữ liệu thật: cấp vai trò mới cho người Dego Organic, thêm Dego Organic vào ô loại trừ của thu mua chung |
+| 2 (**xong local 17/09**) | Bảng phân công thêm cột phòng, khóa duy nhất (phòng, phân loại); tra theo phòng nhờ / phòng yêu cầu; bỏ luật "không tự gán" tạm của GĐ1 | ⚠️ Chạm **cả YCMH và YCBG** vì hai bên dùng chung `category_assignee.resolve_for_group` |
+| 3 (**xong local 17/09**) | Ô chọn "Nhờ phòng" trên form **YCBG** (đường 1, phiếu thứ hai) | Cùng khuôn ô của YCMH ở GĐ1 |
+| 4 (**xong local 17/09**) | Công nợ hai con số (Tổng nợ NCC / Phần của tôi) · **cột ẩn `department_id` chép sẵn trên CẢ `tab_payable` lẫn `tab_payment_request`, lọc đọc thẳng cột đó — mục 5.1.8 A3** · chặn cấn trừ tiền treo cấp NCC theo phòng · **rà bộ tool Trợ lý AI cho khớp phạm vi mới (5.1.8 D)** | Chỉ hiện cột "Phần của tôi" khi khác số tổng. Bản in YCTT **không** hiện phòng ban. Cách điền lùi 221 dòng nợ + YCTT cũ bàn lại khi làm GĐ4 (không còn dòng cấu hình "phòng Thu mua chung" để trỏ tới) |
+| **5 (cuối, xong local 17/09)** | **Nút chuyển phòng xử lý ở màn chi tiết (đường 2)** + nút Trả về + ô lý do vào nhật ký | Khách chốt để sau cùng. Điều kiện bật nút ở mục **5.1.7** |
 | Đợt sau, ngoài CR này | Lịch sử giá mua · Báo cáo tổng hợp · Phương án khảo sát (mục 5.1.3) | |
 
 **Đường 1 và đường 2 áp cho CẢ Yêu cầu báo giá lẫn Yêu cầu mua hàng**, nhưng hai phiếu
@@ -485,7 +486,7 @@ gán tay qua màn gán NSTM theo dòng sẵn có.
 
 **Chuyển một phần: không có.** Mua được nửa phiếu rồi mới muốn nhờ thì tách các dòng chưa
 mua sang một phiếu mới rồi chuyển phiếu mới đó. Phải ghi rõ trong HDSD kẻo người dùng tưởng
-hệ thống hỏng.
+hệ thống hỏng. _(Thực tế 17/09: câu «Không chuyển một phần dòng» đã in ngay trong phần mô tả của hộp thoại chuyển phòng ở cả hai bản; bài HDSD trên Trung tâm HDSD chưa viết, làm lúc lên dev.)_
 
 **Nút Trả về của phòng nhận dùng đúng bộ điều kiện này**, chỉ khác một chỗ: phòng xử lý
 quay về phòng đã nhờ, và lý do trả về là bắt buộc.
@@ -546,7 +547,7 @@ và migration điền lùi toàn bộ dòng nợ cũ = **phòng Thu mua chung** 
 
 | # | Tình huống | Đề xuất |
 |---|---|---|
-| B1 | **Bỏ tick "Phòng tự mua hàng" giữa chừng** | Phiếu đang chạy **giữ nguyên phòng xử lý** — tự đẩy về thu mua chung là mất dấu hàng loạt. Chỉ phiếu mới đổi. Và **chặn bỏ tick khi phòng còn phiếu chưa hoàn thành**, kèm câu báo "còn N phiếu đang xử lý" |
+| B1 | **Gỡ vai trò thu mua phòng / gỡ loại trừ giữa chừng** (17/09: không còn ô tick) | Phiếu đang chạy **không đổi cột nào** — phiếu bám phòng, gỡ quyền chỉ đổi ai thấy. Gỡ loại trừ thì thu mua chung thấy lại phiếu nhà máy ngay, đó là chủ ý của người khai |
 | B2 | **Người thu mua của phòng nghỉ / chuyển phòng** | Phiếu bám PHÒNG chứ không bám người nên không mất; người phụ trách trên dòng vẫn là người cũ, quản lý phòng gán lại tay bằng chức năng sẵn có. **Không đẻ thêm gì** |
 | B3 | **Cụm NCC đề xuất trên dòng YCMH** (hai cụm req/pur) khi chuyển phòng | **Giữ nguyên**, không xóa: đó là thông tin có ích cho phòng nhận ("chỗ này tôi hỏi rồi"), và điều kiện bật nút ở 5.1.7 đã bảo đảm chưa ai chốt giá hay lập đơn |
 | B4 | **Bản in ghi phòng nào** | In **phòng yêu cầu** (`department_id`) — đúng nghĩa ai xin, ngân sách phòng nào. Phòng xử lý chỉ để lọc trong hệ, **không đưa lên bản in** |
@@ -587,10 +588,11 @@ giá trị lịch sử. Bốn rủi ro thật của kế hoạch đang chạy:
 
 | Rủi ro | Dấu hiệu sớm | Đường lui |
 |---|---|---|
-| **Migration quên điền lùi cột phòng** — `handler_dept_id`, `tab_category_assignee`, `tab_payable`, `tab_payment_request` | Ngay sau deploy: phiếu đang chạy mất người phụ trách tự động, hoặc biến khỏi danh sách của chính người đang làm nó | Điền lùi **toàn bộ dòng cũ = phòng Thu mua chung**; trước khi bật, chạy bài đếm "số dòng phòng rỗng = 0" |
+| **Quên khai loại trừ cho người thu mua chung mới** (17/09: loại trừ khai tay, không có ô cấu hình) | Người thu mua chung mới cấp quyền thấy được phiếu nhà máy | Bước bắt buộc trong HDSD phân quyền: cấp `proc` cho thu mua chung thì khai luôn loại trừ Dego Organic; kiểm định kỳ bằng màn Phân quyền |
+| **Migration quên điền lùi cột phòng ở GĐ4** — `tab_payable`, `tab_payment_request` | Ngay sau deploy GĐ4: dòng nợ biến khỏi danh sách của chính người đang làm nó | Trước khi bật, chạy bài đếm "số dòng phòng rỗng = 0". GĐ1 không có rủi ro này vì `handler_dept_id` mặc định 0 = "không nhờ" |
 | **Đổi hành vi khi chưa gán bậc phạm vi mới** — phá luật nền ở 5.1.5 | Người dùng cũ thấy màn hình khác đi mà không ai được cấp quyền gì thêm | Bài test "chưa gán bậc mới thì mọi màn y như trước", kiểu B-07 đã dùng |
 | **Lọc theo phòng nhưng để lọt đường vòng** — lịch sử giá mua, báo cáo tổng hợp, phương án khảo sát, hợp đồng, bộ tool Trợ lý AI | Hỏi trợ lý ra số khác màn hình; mở lịch sử giá thấy mã hàng của phòng khác | Bốn chỗ đầu **đã chốt làm đợt sau** (5.1.3, 5.1.8 C); bộ tool Trợ lý AI **phải rà trong cùng đợt** (5.1.8 D) |
-| **Bỏ tick "Phòng tự mua hàng" giữa chừng** | Phiếu đang chạy của phòng đó mất dấu hàng loạt | Chặn bỏ tick khi phòng còn phiếu chưa hoàn thành (5.1.8 B1) |
+| **Nhờ nhầm phòng không có người thu mua** (danh sách "Nhờ phòng" không lọc) | Phiếu nhờ xong không ai điều phối | Người yêu cầu sửa lại khi phiếu còn Nháp / Bị trả lại; ghi HDSD (5.1.1) |
 
 ---
 

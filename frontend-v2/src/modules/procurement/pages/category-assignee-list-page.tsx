@@ -16,11 +16,24 @@ import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { STICKY_TOOLBAR_TOP } from '@/shared/ui/sticky-toolbar'
+import { useDepartments } from '@/modules/hr/hooks/use-departments'
 import type { CategoryAssignee } from '../types/category-assignee'
+import { SHARED_DEPARTMENT_LABEL } from '../types/category-assignee'
 
 interface ItemGroupOption {
   id: number
   name: string
+}
+
+/** Nhãn cột Phòng: dòng chung (department_id = 0) in «Thu mua chung». */
+function departmentLabel(row: CategoryAssignee): string {
+  if (!row.department_id) return SHARED_DEPARTMENT_LABEL
+  return row.department_name || `#${row.department_id}`
+}
+
+/** Đường sửa một dòng — mang theo phòng để form mở đúng bộ (chung hay riêng phòng). */
+function editUrl(row: CategoryAssignee): string {
+  return `${appRoutes.procurement.categoryAssigneeNew}?cats=${row.item_group_id}&primary=${row.primary_employee_id}&backup=${row.backup_employee_id}&dept=${row.department_id || 0}`
 }
 
 export function CategoryAssigneeListPage() {
@@ -40,6 +53,15 @@ export function CategoryAssigneeListPage() {
 
   const search = searchParams.get('search') || ''
   const catFilter = searchParams.get('cat') || 'all'
+  //  Lọc theo phòng: 'all' = mọi dòng, '0' = chỉ bộ Thu mua chung, '<id>' = một phòng.
+  //  ⚠️ `0` là giá trị THẬT (dòng chung), không lấy làm mốc «tất cả» — xem bẫy duoc-CR-322.
+  const deptFilter = searchParams.get('dept') || 'all'
+  //  Danh mục phòng ban chỉ để dựng ô lọc; thiếu quyền thì ô còn mỗi «Thu mua chung».
+  const { data: departmentsData } = useDepartments(
+    { page_size: 500 },
+    { enabled: can('department', 'read') },
+  )
+  const departments = departmentsData?.items ?? []
   const page = Math.max(1, Number(searchParams.get('page')) || 1)
   const pageSize = Number(searchParams.get('pageSize')) || 20
 
@@ -92,6 +114,9 @@ export function CategoryAssigneeListPage() {
       if (catFilter !== 'all' && String(row.item_group_id) !== catFilter) {
         return false
       }
+      if (deptFilter !== 'all' && String(row.department_id || 0) !== deptFilter) {
+        return false
+      }
       if (!search.trim()) return true
       const q = search.trim().toLowerCase()
       const igName = (row.item_group_name || '').toLowerCase()
@@ -99,16 +124,18 @@ export function CategoryAssigneeListPage() {
       const pCode = (row.primary_code || '').toLowerCase()
       const bName = (row.backup_name || '').toLowerCase()
       const bCode = (row.backup_code || '').toLowerCase()
+      const dName = departmentLabel(row).toLowerCase()
 
       return (
         igName.includes(q) ||
         pName.includes(q) ||
         pCode.includes(q) ||
         bName.includes(q) ||
-        bCode.includes(q)
+        bCode.includes(q) ||
+        dName.includes(q)
       )
     })
-  }, [items, search, catFilter])
+  }, [items, search, catFilter, deptFilter])
 
   // Phân trang client
   const paginatedItems = useMemo(() => {
@@ -130,6 +157,21 @@ export function CategoryAssigneeListPage() {
             </Badge>
           </div>
         ),
+      },
+      {
+        key: 'department_name',
+        header: 'Phòng',
+        width: 200,
+        sortable: true,
+        //  Dòng chung in nhạt hơn để mắt tách được «áp cho mọi phòng» với «riêng một phòng».
+        cell: (r) =>
+          r.department_id ? (
+            <span className="font-medium text-slate-800 dark:text-slate-200">
+              {departmentLabel(r)}
+            </span>
+          ) : (
+            <span className="text-muted-foreground">{SHARED_DEPARTMENT_LABEL}</span>
+          ),
       },
       {
         key: 'primary_name',
@@ -182,11 +224,7 @@ export function CategoryAssigneeListPage() {
                 size="sm"
                 className="h-8 px-2 text-muted-foreground hover:text-primary"
                 title="Chỉnh sửa phân công"
-                onClick={() =>
-                  navigate(
-                    `${appRoutes.procurement.categoryAssigneeNew}?cats=${r.item_group_id}&primary=${r.primary_employee_id}&backup=${r.backup_employee_id}`,
-                  )
-                }
+                onClick={() => navigate(editUrl(r))}
               >
                 <Pencil className="h-4 w-4 mr-1" />
                 Sửa
@@ -296,11 +334,7 @@ export function CategoryAssigneeListPage() {
               row={row}
               canEdit={canCreate}
               canDelete={canDelete}
-              onEdit={() =>
-                navigate(
-                  `${appRoutes.procurement.categoryAssigneeNew}?cats=${row.item_group_id}&primary=${row.primary_employee_id}&backup=${row.backup_employee_id}`,
-                )
-              }
+              onEdit={() => navigate(editUrl(row))}
               onDelete={() => handleDelete(row)}
             />
           )}
@@ -331,6 +365,20 @@ export function CategoryAssigneeListPage() {
                 {itemGroups.map((g) => (
                   <option key={g.id} value={String(g.id)}>
                     {g.name}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={deptFilter}
+                onChange={(e) => updateParam('dept', e.target.value)}
+                className="h-9 w-full sm:w-48 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring max-md:w-auto max-md:min-w-0 max-md:flex-1"
+              >
+                <option value="all">Tất cả phòng</option>
+                <option value="0">{SHARED_DEPARTMENT_LABEL}</option>
+                {departments.map((d) => (
+                  <option key={d.id} value={String(d.id)}>
+                    {d.name}
                   </option>
                 ))}
               </select>
@@ -373,9 +421,14 @@ function CategoryAssigneeCard({
 }) {
   return (
     <div className="space-y-2">
-      <Badge variant="outline" className="border-sky-200 bg-sky-50 text-sky-700">
-        {row.item_group_name || 'Chưa phân loại'}
-      </Badge>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <Badge variant="outline" className="border-sky-200 bg-sky-50 text-sky-700">
+          {row.item_group_name || 'Chưa phân loại'}
+        </Badge>
+        {/*  Phòng đứng cạnh phân loại: cùng một phân loại có thể có dòng chung và
+             dòng riêng của từng phòng, thẻ thiếu nhãn này thì hai thẻ trông y hệt. */}
+        <Badge variant={row.department_id ? 'secondary' : 'outline'}>{departmentLabel(row)}</Badge>
+      </div>
 
       <div className="space-y-1 text-xs text-muted-foreground">
         <AssigneeLine label="NSTM chính" name={row.primary_name} code={row.primary_code} />

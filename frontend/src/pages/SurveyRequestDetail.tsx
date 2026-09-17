@@ -10,6 +10,7 @@ import SearchSelect from '../components/SearchSelect'
 import DateInput from '../components/DateInput'
 import { toast } from '../components/toast'
 import NotFound from '../components/NotFound'
+import TransferDeptModal from '../components/TransferDeptModal'
 import FileDropzone from '../components/FileDropzone'
 import Lightbox from '../components/Lightbox'
 import CommentThread from '../components/CommentThread'
@@ -109,8 +110,10 @@ export default function SurveyRequestDetail() {
     department: '', head_of_dept: '', purpose: '',
     request_date: new Date().toISOString().slice(0, 10),
     note: '', status: 'draft', reject_reason: '', lines: [],
+    handler_dept_id: 0,                         // bao-CR-414: phòng ĐƯỢC NHỜ xử lý (0 = không nhờ)
     ...(fromPr ? {
       company_id: fromPr.company_id || 0,
+      handler_dept_id: fromPr.handler_dept_id || 0,
       requester: fromPr.requester || '', requester_id: fromPr.requester_id || 0,
       requester_position: fromPr.requester_position || '',
       department: fromPr.department || '', head_of_dept: fromPr.head_of_dept || '',
@@ -198,6 +201,11 @@ export default function SurveyRequestDetail() {
   const companyOptions  = companies.map((c) => ({ value: c.id, label: c.name }))
   const employeeOptions = employees.map((e) => ({ value: e.full_name, label: e.full_name }))
   const deptOptions     = departments.map((d) => ({ value: d.name, label: d.name }))
+  // bao-CR-414: ô "Nhờ phòng xử lý" — chỉ bày phòng đang hoạt động, nhưng phòng đã tắt mà phiếu cũ
+  // còn trỏ tới thì giữ lại để không mất nhãn khi mở phiếu (cùng luật với YCMH).
+  const handlerDeptOptions = departments
+    .filter((d) => d.is_active !== false || d.id === Number(sv.handler_dept_id))
+    .map((d) => ({ value: String(d.id), label: d.name }))
   // NSTM phụ trách: value = MÃ NV (khớp cột assignee), label = tên.
   // Bổ sung NSTM đã gán ở các dòng (dù không nằm trong ds nhân viên tải về do scope) → luôn hiện đúng tên.
   const purchaserOptions = (() => {
@@ -243,6 +251,7 @@ export default function SurveyRequestDetail() {
   }
   const [ycmhPopup, setYcmhPopup] = useState<{ label: string; prs: { code: string; id: number; date?: string; status?: string }[] } | null>(null)
   const [showPrModal, setShowPrModal] = useState(false)         // popup DS phiếu YCMH đã sinh
+  const [transferMode, setTransferMode] = useState<'transfer' | 'return' | null>(null)   // bao-CR-414 GĐ5
 
   // Esc để đóng popup DS phiếu YCMH
   useEffect(() => {
@@ -474,6 +483,7 @@ export default function SurveyRequestDetail() {
       purpose:            sv.purpose,
       request_date:       sv.request_date,
       note:               sv.note,
+      handler_dept_id:    Number(sv.handler_dept_id) || 0,   // bao-CR-414
       lines:              lines,
     }
     try {
@@ -577,6 +587,20 @@ export default function SurveyRequestDetail() {
           </button>
         )}
 
+        {/* bao-CR-414 GĐ5: chuyển phòng xử lý / trả về phòng lập — cờ do server tính (chưa dòng nào
+            hoàn thành, chưa chọn phương án, chưa sinh YCMH; người bấm là quản lý thu mua của phòng
+            đang cầm phiếu hoặc thu mua toàn quyền). Trạng thái phiếu giữ nguyên, chỉ gỡ NSTM. */}
+        {!isNew && sv.can_transfer_dept && (
+          <button className="btn ghost" title="Đẩy cả phiếu sang phòng khác xử lý" onClick={() => setTransferMode('transfer')}>
+            <i className="ti ti-transfer" />Chuyển phòng xử lý
+          </button>
+        )}
+        {!isNew && sv.can_return_dept && (
+          <button className="btn ghost" style={{ color: '#d97706', borderColor: '#fcd34d' }} title="Trả cả phiếu về phòng lập tự xử lý" onClick={() => setTransferMode('return')}>
+            <i className="ti ti-corner-up-left" />Trả về phòng lập
+          </button>
+        )}
+
         {/* Tạo phiếu khảo sát trống đã gắn sẵn YCKS (chỉ khi đang xử lý) */}
         {!isNew && sv.status === 'processing' && can('survey_request', 'process') && (
           <button className="btn secondary" onClick={() => navigate(`/surveys/new?sr=${id}&sr_code=${encodeURIComponent(sv.code || '')}`)}>
@@ -618,6 +642,22 @@ export default function SurveyRequestDetail() {
           </button>
         )}
       </div>
+
+      <TransferDeptModal
+        open={!!transferMode}
+        mode={transferMode || 'transfer'}
+        docLabel="yêu cầu báo giá"
+        options={handlerDeptOptions}
+        currentDeptId={Number(sv.handler_dept_id) || 0}
+        requestingDeptId={Number(sv.department_id) || 0}
+        onConfirm={(deptId, reason) => {
+          const mode = transferMode
+          setTransferMode(null)
+          if (mode === 'return') action('return-dept', { reason })
+          else action('transfer-dept', { handler_dept_id: deptId, reason })
+        }}
+        onCancel={() => setTransferMode(null)}
+      />
 
       {/* Popup PYC đã sinh — mở từ nút "Đã tạo N phiếu YCMH" trên header */}
       {showPrModal && createdPrs.length > 0 && (
@@ -741,6 +781,21 @@ export default function SurveyRequestDetail() {
                 ) : (
                   <input value={sv.department || ''} disabled />
                 )}
+              </div>
+
+              {/* bao-CR-414: phòng tự mua hàng vẫn có thể NHỜ thu mua chung (hoặc ngược lại) xử lý
+                  một phiếu. Chọn phòng ở đây thì quản lý thu mua của phòng đó thấy + điều phối được
+                  phiếu; phòng lập phiếu vẫn thấy như cũ. */}
+              <div className="form-row">
+                <label>Nhờ phòng xử lý <span style={{ color: '#94a3b8', fontWeight: 400, fontSize: 12 }}>(để trống nếu không nhờ)</span></label>
+                <SearchSelect
+                  value={sv.handler_dept_id ? String(sv.handler_dept_id) : ''}
+                  onChange={(v) => setH('handler_dept_id', Number(v) || 0)}
+                  options={handlerDeptOptions}
+                  disabled={!editable}
+                  placeholder="Không nhờ — thu mua chung xử lý"
+                  autoSelectSingle={false}
+                />
               </div>
 
               <div className="form-row">

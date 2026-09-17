@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import Select from 'react-select'
 import { api } from '../api/client'
@@ -6,6 +6,9 @@ import { toast } from '../components/toast'
 import AuditTimeline from '../components/AuditTimeline'
 
 type Opt = { value: number; label: string }
+type AssigneeRow = { id: number; item_group_id: number; department_id?: number }
+/** Lựa chọn "Thu mua chung" (department_id = 0): áp cho mọi phòng chưa có dòng riêng — bao-CR-414 GĐ2 */
+const SHARED_DEPT: Opt = { value: 0, label: 'Thu mua chung' }
 const selStyle = {
   control: (b: any) => ({ ...b, minHeight: 40, borderRadius: 12, borderColor: '#E9EDF7' }),
   menuPortal: (b: any) => ({ ...b, zIndex: 9999 }),
@@ -18,27 +21,43 @@ export default function CategoryAssigneeNew() {
 
   const [cats, setCats] = useState<Opt[]>([])
   const [emps, setEmps] = useState<Opt[]>([])
-  const [configured, setConfigured] = useState<Set<number>>(new Set())
-  const [rowByCat, setRowByCat] = useState<Record<number, number>>({})   // item_group_id → id dòng phân công
+  const [depts, setDepts] = useState<Opt[]>([])
+  const [rows, setRows] = useState<AssigneeRow[]>([])   // toàn bộ dòng phân công (mọi phòng)
   const [selCats, setSelCats] = useState<Opt[]>([])
   const [primary, setPrimary] = useState<Opt | null>(null)
   const [backup, setBackup] = useState<Opt | null>(null)
+  // Phòng áp dụng: mặc định lấy từ URL (?dept=), 0 = Thu mua chung
+  const [dept, setDept] = useState<Opt>(() => ({ ...SHARED_DEPT, value: Number(sp.get('dept')) || 0 }))
   const [logs, setLogs] = useState<any[]>([])
   const [err, setErr] = useState(''); const [saving, setSaving] = useState(false)
 
-  // Tải danh sách phân công → cập nhật set "đã cấu hình" + map item_group_id→id dòng
+  // Tải danh sách phân công của MỌI phòng; set "đã cấu hình" + map item_group_id→id dòng
+  // tính theo phòng đang chọn (cùng phân loại có thể có một dòng chung và một dòng riêng từng phòng)
   async function loadAssignees() {
     const r = await api.get('/api/category-assignees', { params: { page_size: 1000 } })
-    const items = r.data.data.items || []
-    setConfigured(new Set(items.map((x: any) => x.item_group_id)))
-    setRowByCat(Object.fromEntries(items.map((x: any) => [x.item_group_id, x.id])))
+    setRows(r.data.data.items || [])
   }
+  const deptRows = useMemo(() => rows.filter(x => (x.department_id || 0) === dept.value), [rows, dept.value])
+  const configured = useMemo(() => new Set(deptRows.map(x => x.item_group_id)), [deptRows])
+  const rowByCat = useMemo<Record<number, number>>(
+    () => Object.fromEntries(deptRows.map(x => [x.item_group_id, x.id])), [deptRows])
 
   useEffect(() => {
     api.get('/api/item-groups', { params: { page_size: 1000 } }).then(r => setCats((r.data.data.items || []).map((x: any) => ({ value: x.id, label: x.name }))))
     api.get('/api/employees', { params: { page_size: 1000 } }).then(r => setEmps((r.data.data.items || []).map((x: any) => ({ value: x.id, label: x.full_name + (x.code ? ` · ${x.code}` : '') }))))
+    // Không có quyền đọc phòng ban thì chỉ còn lựa chọn "Thu mua chung" (giữ y hệt trước GĐ2)
+    api.get('/api/departments', { params: { page_size: 500 }, _silent: true } as any)
+      .then(r => setDepts((r.data.data.items || []).map((x: any) => ({ value: x.id, label: x.name }))))
+      .catch(() => setDepts([]))
     loadAssignees()
   }, [])
+  const deptOptions = useMemo(() => [SHARED_DEPT, ...depts], [depts])
+  // Có danh sách phòng rồi thì gắn đúng tên phòng cho giá trị đọc từ URL
+  useEffect(() => {
+    if (!dept.value) return
+    const found = depts.find(d => d.value === dept.value)
+    if (found && found.label !== dept.label) setDept(found)
+  }, [depts])
 
   // Sửa 1 phân loại đã cấu hình (?cats=) → tải lịch sử thao tác của dòng phân công đó
   const editCat = Number(sp.get('cats'))
@@ -75,6 +94,7 @@ export default function CategoryAssigneeNew() {
         item_group_ids: selCats.map(c => c.value),
         primary_employee_id: primary.value,
         backup_employee_id: backup?.value || 0,
+        department_id: dept.value,
       })
       toast.success('Đã lưu phân công')
       await loadAssignees()   // ở lại trang, cập nhật map (phân loại mới tạo có id)
@@ -114,6 +134,9 @@ export default function CategoryAssigneeNew() {
             {/* Tên phân loại đã làm tiêu đề nên chip chỉ mô tả phần còn lại: ai đang phụ trách */}
             {editCatLabel ? (
               <div className="hero-chips">
+                <span className="hero-chip">
+                  <i className="ti ti-building" />Phòng: {dept.label}
+                </span>
                 <span className="hero-chip code">
                   <i className="ti ti-user-star" />NSTM chính: {primary ? primary.label : 'chưa có'}
                 </span>
@@ -133,6 +156,17 @@ export default function CategoryAssigneeNew() {
       <div className="detail-grid">
         <div className="card" style={{ padding: 18 }}>
           <div className="form-grid">
+            <div className="form-group-title">Phạm vi áp dụng</div>
+            <div className="form-row" style={{ gridColumn: '1 / -1' }}>
+              <label>Phòng</label>
+              <Select classNamePrefix="rs" value={dept} options={deptOptions} onChange={(v: any) => setDept(v || SHARED_DEPT)}
+                placeholder="Chọn phòng…" styles={selStyle} menuPortalTarget={portal} menuPosition="fixed" />
+              <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4, fontWeight: 'normal' }}>
+                <b>Thu mua chung</b> áp cho mọi phiếu chưa có dòng riêng của phòng. Chọn một phòng thì cặp NSTM bên dưới
+                chỉ nhận phiếu do phòng đó xử lý (kể cả phiếu phòng khác nhờ phòng này xử lý).
+              </div>
+            </div>
+
             <div className="form-group-title">Phân loại</div>
             {/* Ô chọn nhiều cần trọn chiều ngang, không bó trong 1 nửa lưới 2 cột */}
             <div className="form-row" style={{ gridColumn: '1 / -1' }}>

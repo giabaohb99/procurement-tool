@@ -201,7 +201,7 @@ def block_edit_own_department(db: Session, employee_id: int, actor) -> None:
 
 
 #  Bậc phạm vi từ hẹp tới rộng — dùng để lấy bậc RỘNG NHẤT trong các vai trò.
-_SCOPE_RANK = {"own": 0, "assigned": 1, "proc": 2, "dept": 3, "company": 4, "all": 5}
+_SCOPE_RANK = {"own": 0, "assigned": 1, "proc": 2, "dept_proc": 2, "dept": 3, "company": 4, "all": 5}
 
 
 def _widest_scope(profile: dict, entity: str, action: str) -> str | None:

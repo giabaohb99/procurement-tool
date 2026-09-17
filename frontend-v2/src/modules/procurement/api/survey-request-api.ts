@@ -23,6 +23,8 @@ export interface SurveyRequestPayload {
   department: string
   head_of_dept_id: number
   head_of_dept: string
+  /** bao-CR-414: phòng được nhờ xử lý, 0 = không nhờ. */
+  handler_dept_id: number
   purpose: string
   request_date: string
   note: string
@@ -69,6 +71,16 @@ export const surveyRequestApi = {
   /** Từ chối hẳn — phiếu về `cancelled` và khóa, phải lập phiếu mới. */
   cancel: (id: number, reason: string) =>
     apiPost<SurveyRequestDetail>(`${BASE_URL}/${id}/cancel`, { reason }),
+
+  /** bao-CR-414 GĐ5: đẩy CẢ phiếu sang phòng khác xử lý (gỡ NSTM phụ trách các dòng). */
+  transferDept: (id: number, handlerDeptId: number, reason: string) =>
+    apiPost<SurveyRequestDetail>(`${BASE_URL}/${id}/transfer-dept`, {
+      handler_dept_id: handlerDeptId,
+      reason,
+    }),
+  /** bao-CR-414 GĐ5: trả cả phiếu về phòng lập tự xử lý (`handler_dept_id` = 0). */
+  returnDept: (id: number, reason: string) =>
+    apiPost<SurveyRequestDetail>(`${BASE_URL}/${id}/return-dept`, { reason }),
 
   /** Chuyển phiếu sang Hoàn thành. */
   finalize: (id: number) => apiPost<SurveyRequestDetail>(`${BASE_URL}/${id}/finalize`, {}),

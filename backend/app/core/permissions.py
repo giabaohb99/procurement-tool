@@ -201,9 +201,13 @@ ACTION_LABELS = {
 
 # Phạm vi theo cấp bậc (tương đối với công ty/phòng ban của chính user)
 # "assigned" (Được giao) = của mình HOẶC được phân bổ cho mình — dùng cho nhân viên thu mua trên PYC.
-SCOPES = ["own", "assigned", "proc", "dept", "company", "all"]
+# "dept_proc" (bao-CR-414, phòng ban tự mua hàng) = `proc` NHƯNG chỉ trong phòng mình: phiếu đã
+# duyệt mà phòng lập phiếu HOẶC phòng được nhờ xử lý (`handler_dept_id`) là một trong các phòng
+# của người xem. Dùng cho người quản lý thu mua của một phòng tự mua (nhà máy).
+SCOPES = ["own", "assigned", "proc", "dept_proc", "dept", "company", "all"]
 SCOPE_LABELS = {
     "own": "Của mình", "assigned": "Được giao", "proc": "Thu mua (được giao + đã duyệt)",
+    "dept_proc": "Thu mua trong phòng mình",
     "dept": "Phòng ban", "company": "Công ty", "all": "Tất cả",
 }
-SCOPE_RANK = {"own": 0, "assigned": 1, "proc": 1, "dept": 2, "company": 3, "all": 4}
+SCOPE_RANK = {"own": 0, "assigned": 1, "proc": 1, "dept_proc": 1, "dept": 2, "company": 3, "all": 4}

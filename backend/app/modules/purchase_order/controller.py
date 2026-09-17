@@ -27,7 +27,8 @@ from .schema import POCreate, POUpdate, RejectIn, ItemProgressIn, DocumentStatus
 router = APIRouter(prefix="/api/purchase-orders", tags=["purchase_order"])
 
 HEADER = ["id", "code", "misa_code", "pr_code", "survey_code", "company_id", "supplier_code",
-          "supplier_name", "department_id", "department", "nspt_id", "nspt", "order_date", "vat_rate", "payment_terms",
+          "supplier_name", "department_id", "handler_dept_id", "department", "nspt_id", "nspt",
+          "order_date", "vat_rate", "payment_terms",
           "is_urgent", "status", "document_status", "note", "approve_note",
           "order_type", "currency", "customs_decl_no", "customs_decl_date", "etd_date",
           "inspection_days", "return_days", "invoice_deadline"]

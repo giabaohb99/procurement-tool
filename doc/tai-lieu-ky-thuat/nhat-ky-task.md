@@ -2615,12 +2615,20 @@ Còn thiếu một thứ để chạy thử: danh sách người của Dego Orga
 Đại ca chốt 16/09 là không chờ — em dựng một BỘ DỮ LIỆU TEST RIÊNG chỉ chạy dưới máy
 em để thử, người thật khai sau.
 
-Giai đoạn 1 đã được duyệt cho làm, nhưng chưa khởi công. Lúc nhận việc thì cây làm việc
-còn hai tệp đang dở của phiên khác (`backend/app/seed.py` và bài kiểm khai đủ phạm vi) —
-đúng hai tệp mà đợt này phải sửa, nên phải chờ. Đến chiều 17/09 phiên kia đã ghi nhận
-xong nên chỗ nghẽn đó hết, giờ chỉ còn chờ tới lượt làm.
-Tham chiếu: dòng `bao-CR-414-phong-tu-mua-hang` trong `change-log-bao.md`; bản dữ liệu
-test sẽ nằm ở `backend/scripts/demo_cr414.py` (CHỈ CHẠY LOCAL).
+Ngày 17/09 đại ca gọn lại lần nữa: cả bài toán chỉ nằm ở phần phạm vi của tài khoản, gói
+trong BA BỘ. Bộ thu mua hiện tại giữ full. Bộ nhà máy dùng một bậc phạm vi mới "Thu mua
+trong phòng mình" qua một vai trò mới "Quản lý thu mua phòng", nhân viên dùng lại vai trò
+nhân viên thu mua sẵn có. Bộ thu mua trừ nhà máy dùng bậc thu mua sẵn có cộng ô loại trừ
+phòng Dego Organic, nhưng phiếu nhà máy nhờ sang thì vẫn thấy. Cột "phòng nhờ" giữ lại,
+mặc định rỗng, chép sang chứng từ con, không tự điền lúc lập, không điền lùi. Bỏ hẳn ô
+tick trên danh mục phòng ban, dòng cấu hình phòng thu mua chung, migration điền lùi và
+vai trò nhân viên thu mua phòng.
+
+Giai đoạn 1 khởi công chiều 17/09 sau khi cập nhật tài liệu xong. Đại ca chốt làm hết
+bốn giai đoạn còn lại một mạch, chỉ kiểm dưới máy em, báo cáo một lần: cả năm giai đoạn
+xong dưới local tối 17/09, chưa commit, chưa lên dev.
+Tham chiếu: dòng `bao-CR-414-phong-tu-mua-hang` trong `change-log-bao.md`; hai bộ tài
+khoản test do `backend/app/seed_tai_khoan_cr414.py` dựng (chạy được cả local lẫn dev).
 
 ### bao-CR-414-ke-hoach-12 | Viết lại bản kế hoạch ERP v2 theo phạm vi thay vì theo pháp nhân
 - status: xong
@@ -2629,6 +2637,122 @@ theo phòng ban cộng phạm vi tài khoản, và ghi luôn ba mốc đổi hư
 đọc lại rồi làm theo bản cũ. Tên tệp giữ nguyên để mọi đường dẫn đang trỏ tới nó không
 chết.
 Tham chiếu: `doc/erp/12-ke-hoach-erp-v2-da-phap-nhan.md` (bản 2.0, 16/09/2026).
+
+### bao-CR-414-gon-lai-17-09 | Gọn thiết kế về ba bộ phạm vi, cập nhật bốn tài liệu
+- status: xong
+- date: 2026-09-17
+Đại ca chốt bài toán chỉ nằm ở phạm vi tài khoản nên em viết lại mục 5.1 của bản kế
+hoạch theo ba bộ phạm vi, sửa bảng giai đoạn ở sổ kiểm kê, ghi thêm đoạn gọn lại vào
+dòng nhật ký thay đổi, và nối bậc phạm vi mới vào danh sách bậc ở hai tệp hướng dẫn
+cho trợ lý. Bậc mới giữ được luật nền: chưa cấp cho ai thì mọi màn y như cũ.
+Tham chiếu: `doc/erp/12-ke-hoach-erp-v2-da-phap-nhan.md` §5.1, `doc/erp/19-viec-con-lai-tong-hop.md` §7.1, `CLAUDE.md`, `AGENTS.md`.
+
+### bao-CR-414-gd1 | Giai đoạn 1: bậc phạm vi mới, cột phòng nhờ, vai trò mới, hai bộ tài khoản test, ô Nhờ phòng
+- status: xong
+- date: 2026-09-17
+Thêm bậc phạm vi "Thu mua trong phòng mình" và vai trò "Quản lý thu mua phòng". Thêm cột
+phòng nhờ trên ba chứng từ thu mua, chép sang chứng từ con. Hàm so phòng hợp hai cột nên
+bậc phòng ban, ô phòng ban được xem và bậc mới đều thấy phiếu được nhờ tới; ô loại trừ
+phòng thua phòng nhờ. Người điều phối hoặc duyệt ở bậc mới thì bỏ tự gán theo phân loại.
+Dựng hai bộ tài khoản test (chín tài khoản, mật khẩu bằng mã) và đưa vào ô đổi nhanh tài
+khoản của bản dev thành hai nhóm "CR-414 · Nhà máy" và "CR-414 · Thu mua".
+
+Ô chọn "Nhờ phòng xử lý" đặt ngay dưới ô Bộ phận yêu cầu trên form yêu cầu mua hàng, làm
+bản cũ trước rồi bê sang bản mới. Bày mọi phòng đang hoạt động, mặc định không nhờ; phòng
+đã tắt mà phiếu cũ còn trỏ tới thì vẫn giữ nhãn. Bản mới gác việc tải danh mục phòng ban
+bằng quyền đọc phòng ban để người bị cắt quyền không ăn lỗi 403 lúc mở phiếu.
+
+Kiểm: mười hai bài kiểm phạm vi mới xanh cùng ba bài cũ của CR-371; migration và seed chạy
+sạch dưới local; bản cũ giữ đúng bốn lỗi kiểu có sẵn; cổng kiểm bản mới xanh (280 tệp,
+3189 bài, hai bài đỏ có sẵn). Chưa commit, chưa lên dev.
+Mã nguồn: `backend/app/core/permissions.py`, `backend/app/core/scoping.py`, `backend/app/core/auth.py`, `backend/app/modules/purchase_request/`, `backend/app/modules/survey_request/`, `backend/app/modules/purchase_order/service.py`, `backend/migrations/versions/a7d414c0b1e2_phong_duoc_nho_xu_ly_cr414.py`, `backend/app/seed.py`, `backend/app/seed_tai_khoan_cr414.py`, `test/backend/test_pham_vi_phong_tu_mua.py`, `frontend/src/pages/PurchaseRequestDetail.tsx`, `frontend-v2/src/app/layouts/demo-accounts.ts`, `frontend-v2/src/modules/procurement/components/purchase-request-info-card.tsx`, `frontend-v2/src/modules/procurement/pages/purchase-request-detail-page.tsx`, `frontend-v2/src/modules/procurement/types/purchase-request-detail.ts`, `frontend-v2/src/modules/procurement/api/purchase-request-api.ts`.
+
+### bao-CR-414-gd2 | Giai đoạn 2: bảng phân công theo phân loại có thêm cột phòng
+- status: xong
+- date: 2026-09-17
+Bảng phân công người thu mua theo phân loại hàng có thêm cột phòng ban, khóa duy nhất là
+cặp (phòng, phân loại); dòng không ghi phòng là bộ chung như trước. Khi duyệt hay điều phối
+phiếu, hệ thống tra bảng theo phòng đang xử lý (phòng nhờ, không có thì phòng lập); phòng
+đó không có dòng nào thì mới rơi về bộ chung, và chỉ rơi khi người bấm không ở bậc "Thu mua
+trong phòng mình" — nhờ vậy luật "không tự gán" tạm của giai đoạn 1 được bỏ. Chạm cả yêu cầu
+mua hàng lẫn yêu cầu báo giá vì hai bên dùng chung một hàm tra. Màn danh sách và form phân
+công ở cả bản cũ lẫn bản mới có thêm ô chọn phòng ban và cột lọc theo phòng.
+
+Kiểm: tám bài kiểm mới cùng mười hai bài giai đoạn 1 xanh (hai mươi bài); migration chạy sạch
+dưới local.
+Mã nguồn: `backend/app/modules/category_assignee/`, `backend/migrations/versions/b8e5f2a1c7d3_phan_cong_theo_phong_cr414.py`, `backend/app/modules/purchase_request/service.py`, `backend/app/modules/survey_request/service.py`, `frontend/src/pages/CategoryAssignees.tsx`, `frontend/src/pages/CategoryAssigneeNew.tsx`, `frontend/src/config/conditional-filters.ts`, `frontend-v2/src/modules/procurement/pages/category-assignee-list-page.tsx`, `frontend-v2/src/modules/procurement/pages/category-assignee-form-page.tsx`, `frontend-v2/src/modules/procurement/types/category-assignee.ts`, `test/backend/test_pham_vi_phong_tu_mua.py`.
+
+### bao-CR-414-gd3 | Giai đoạn 3: ô "Nhờ phòng xử lý" trên form yêu cầu báo giá
+- status: xong
+- date: 2026-09-17
+Form yêu cầu báo giá có thêm ô chọn "Nhờ phòng xử lý" đặt cùng chỗ và cùng khuôn với ô
+của yêu cầu mua hàng ở giai đoạn 1: bày mọi phòng đang hoạt động, mặc định không nhờ, phòng
+đã tắt mà phiếu cũ còn trỏ tới thì vẫn giữ nhãn. Làm bản cũ trước rồi bê sang bản mới.
+Backend đã nhận cột này từ giai đoạn 1 nên chỉ sửa giao diện và bản kiểm kiểu dữ liệu.
+Mã nguồn: `frontend/src/pages/SurveyRequestDetail.tsx`, `frontend-v2/src/modules/procurement/components/survey-request-info-card.tsx`, `frontend-v2/src/modules/procurement/types/survey-request-detail.ts`, `backend/app/modules/survey_request/schema.py`.
+
+### bao-CR-414-gd4 | Giai đoạn 4: công nợ hai con số, cột phòng chép sẵn trên nợ và yêu cầu thanh toán
+- status: xong
+- date: 2026-09-17
+Dòng công nợ và yêu cầu thanh toán có thêm cột phòng ban chép sẵn lúc tạo (lấy từ phòng xử
+lý của đơn mua hàng), mặc định 0 và không điền lùi; phạm vi đọc lọc thẳng trên cột đó chứ
+không vòng qua đơn. Màn Công nợ bày hai con số khi chúng khác nhau: tổng nợ nhà cung cấp và
+phần của phòng tôi. Chặn trộn đơn của hai phòng vào cùng một yêu cầu thanh toán, chặn cấn
+trừ tiền treo cấp nhà cung cấp sang nợ của phòng khác. Bản in yêu cầu thanh toán không hiện
+phòng ban. Hai công cụ của Trợ lý AI đọc công nợ và chứng từ mua hàng được rà lại cho khớp
+phạm vi mới. Giao diện làm bản cũ trước rồi bản mới.
+
+Kiểm: mười bảy bài kiểm backend xanh; bài kiểm màn Công nợ bản mới mười bảy trên mười bảy
+xanh; migration chạy sạch dưới local, một đầu duy nhất.
+Mã nguồn: `backend/app/modules/payable/`, `backend/app/modules/payment_request/`, `backend/app/modules/purchase_order/service.py`, `backend/app/core/scoping.py`, `backend/app/modules/assistant/tools/payable_tool.py`, `backend/app/modules/assistant/tools/procurement_doc_tool.py`, `backend/migrations/versions/c9f4a2b7d1e5_cong_no_theo_phong_cr414.py`, `frontend/src/pages/Payables.tsx`, `frontend-v2/src/modules/finance/pages/payable-list-page.tsx`, `frontend-v2/src/modules/finance/types/payable.ts`, `test/backend/test_cong_no_theo_phong_cr414.py`.
+
+### bao-CR-414-gd5 | Giai đoạn 5: nút Chuyển phòng xử lý và Trả về phòng lập ở màn chi tiết
+- status: xong
+- date: 2026-09-17
+Màn chi tiết yêu cầu mua hàng và yêu cầu báo giá có thêm hai nút: "Chuyển phòng xử lý"
+đẩy cả phiếu sang phòng khác, và "Trả về phòng lập" trả phiếu về phòng đã nhờ; cả hai bắt
+buộc nêu lý do, lý do ghi vào nhật ký phiếu. Luật chung: chỉ chuyển được khi việc mua chưa
+thật sự bắt đầu. Yêu cầu mua hàng: phiếu đang Đã duyệt hoặc Đã điều phối, mọi dòng chưa hủy
+còn ở mức chưa tạo đơn; khi chuyển thì gỡ người phụ trách, đổi phòng, phiếu về Đã duyệt để
+phòng nhận điều phối lại. Yêu cầu báo giá: phiếu Đã duyệt hoặc Đang khảo sát, chưa dòng nào
+hoàn thành, chưa chốt phương án, chưa sinh yêu cầu mua hàng; khi chuyển thì gỡ người phụ
+trách và ngày nhận ở các dòng, giữ nguyên trạng thái phiếu. Người bấm phải là quản lý thu
+mua của phòng đang giữ phiếu hoặc người có phạm vi tổng. Backend tính sẵn hai cờ bật nút
+để giao diện chỉ bày. Không có chuyển một phần dòng, hộp thoại nói rõ điều đó. Đơn mua hàng
+không có nút. Thông báo chuyển phòng của yêu cầu mua hàng ghi thẳng bảng thông báo vì tệp
+dịch vụ thông báo đang thuộc phiên CR-419.
+
+Giao diện: bản cũ dùng một hộp thoại chung cho hai phiếu, bản mới cũng dựng một hộp chung
+(ô chọn phòng tự bỏ phòng đang xử lý và phòng đã tắt, ô lý do bắt buộc, nút mờ tới khi đủ)
+kèm năm bài kiểm.
+
+Kiểm: mười chín bài kiểm backend xanh, ba mươi bảy bài hồi quy của các giai đoạn trước vẫn
+xanh; bản cũ giữ đúng bốn lỗi kiểu có sẵn; cổng kiểm bản mới xanh (281 tệp, 3197 bài, hai
+bài đỏ cố ý có sẵn). Chưa commit, chưa lên dev.
+Mã nguồn: `backend/app/modules/purchase_request/controller.py`, `backend/app/modules/purchase_request/service.py`, `backend/app/modules/purchase_request/schema.py`, `backend/app/modules/survey_request/controller.py`, `backend/app/modules/survey_request/service.py`, `backend/app/modules/survey_request/schema.py`, `frontend/src/components/TransferDeptModal.tsx`, `frontend/src/pages/PurchaseRequestDetail.tsx`, `frontend/src/pages/SurveyRequestDetail.tsx`, `frontend-v2/src/modules/procurement/components/transfer-dept-dialog.tsx`, `frontend-v2/src/modules/procurement/api/purchase-request-api.ts`, `frontend-v2/src/modules/procurement/api/survey-request-api.ts`, `frontend-v2/src/modules/procurement/hooks/use-purchase-request.ts`, `frontend-v2/src/modules/procurement/hooks/use-survey-request.ts`, `frontend-v2/src/modules/procurement/pages/purchase-request-detail-page.tsx`, `frontend-v2/src/modules/procurement/pages/survey-request-detail-page.tsx`, `test/backend/test_chuyen_phong_xu_ly_cr414.py`.
+
+### bao-CR-414-demo-local | Dựng bộ phiếu demo của nhà máy để đại ca bấm thử tay dưới máy local
+- status: xong
+- date: 2026-09-17
+Đại ca muốn tự đăng nhập bằng hai bộ tài khoản nhà máy và thu mua để xem thao tác có mượt
+không, nên viết một script dựng sẵn dữ liệu: sáu yêu cầu mua hàng (bốn của nhà máy ở bốn
+tình huống: đã duyệt chưa giao ai, đã tiếp nhận và có đơn, chờ duyệt, nhờ phòng thu mua
+chung; hai của phòng Hành chính: một nhờ nhà máy, một phiếu thường), một yêu cầu báo giá
+của nhà máy, hai đơn mua hàng cùng một nhà cung cấp (một của nhà máy, một của Hành chính)
+kèm hai khoản nợ để nhìn thấy màn công nợ hai con số, và ba dòng phân công theo phân loại
+riêng của nhà máy. Script chạy lại được: xóa hết phiếu có mã bắt đầu bằng DEMO-CR414- rồi
+dựng lại. Chạy xong đã kiểm bằng chính bộ lọc phạm vi của backend: quản lý thu mua nhà máy
+thấy đúng 4 yêu cầu (3 của phòng + 1 phòng khác nhờ), không thấy phiếu thường của Hành
+chính; admin thu mua bị loại trừ nhà máy thấy đúng 3 (2 của Hành chính + 1 nhà máy nhờ thu
+mua chung), không thấy phiếu nào khác của nhà máy. Chỉ dùng ở máy local, không chạy trên dev
+hay prod. Cùng phiên, đại ca chốt cổng kiểm bản mới không chạy full hơn 3200 bài nữa mà chạy
+theo thư mục vừa sửa; đã sửa hai chỗ ghi luật. Đại ca hỏi thêm sao không có tài khoản quản lý
+thu mua trừ nhà máy: đúng là bộ thu mua mới có admin bị loại trừ, nên thêm tài khoản TM_QL cùng
+vai trò quản lý thu mua đầy đủ nhưng bị loại trừ Dego Organic; kiểm lại bằng bộ lọc phạm vi
+thấy đúng 3 yêu cầu, 1 đơn và 1 khoản nợ của phòng khác, không thấy phiếu nào của nhà máy.
+Sửa luôn lỗi chạy lẻ script tạo tài khoản (chưa nạp đủ model nên vấp quan hệ phòng ban).
+Mã nguồn: `backend/scripts/demo_cr414.py`, `backend/app/seed_tai_khoan_cr414.py`,
+`frontend-v2/src/app/layouts/demo-accounts.ts`, `CLAUDE.md`, `frontend-v2/.claude/rules/testing.md`.
 
 ## bao-CR-418 | Sổ nhật ký task: viết lại mô tả cho đọc được, bù cụm thiếu, gán hết cho đại ca
 - status: xong

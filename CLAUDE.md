@@ -87,11 +87,13 @@ docker compose exec web npm install <pkg> && docker compose restart web   # fron
 docker compose exec erp npm install <pkg> && docker compose restart erp   # frontend-v2
 docker compose up --build api                                             # backend (edit requirements.txt)
 
-# Cổng kiểm tra frontend-v2 — chạy hết trước khi báo xong việc (typecheck + lint + test)
-docker compose exec erp npm run check
-docker compose exec erp npm run test          # vitest run
-docker compose exec erp npm run lint          # eslint . — phải 0 lỗi
-docker compose exec erp npm run typecheck     # tsc --noEmit — phải 0 lỗi
+# Cổng kiểm tra frontend-v2 — typecheck + lint chạy CẢ CÂY, vitest chỉ chạy THEO THƯ MỤC vừa sửa
+docker compose exec -T erp npm run typecheck                          # tsc --noEmit — phải 0 lỗi
+docker compose exec -T erp npm run lint                               # eslint . — phải 0 lỗi
+docker compose exec -T erp npx vitest run src/modules/<phân hệ>       # chỉ phân hệ vừa đụng
+docker compose exec -T erp npx vitest run src/shared/<khu>            # đụng lớp dùng chung thì thêm khu đó
+# `npm run check` / `npm run test` = quét hết ~3200 bài (5-6 phút, ăn trọn 2 CPU của container).
+# Đại ca chốt 17/09/2026: KHÔNG chạy full nữa; chỉ chạy khi đại ca bảo hoặc ngay trước deploy.
 # Prettier có sẵn nhưng CHƯA nằm trong cổng: `format:check` đang đỏ ~381 tệp vì chưa
 # ai chạy `format --write` lần nào. Muốn dọn thì chạy riêng thành một commit độc lập.
 ```
@@ -109,7 +111,7 @@ docker compose exec erp npm run typecheck     # tsc --noEmit — phải 0 lỗi
 **Two-axis permission system** (this is the core concept — spans `core/permissions.py`, `core/auth.py`, `core/scoping.py`):
 
 1. **Actions belong to ROLES** — a `(entity × action)` matrix. Guard endpoints with the dependency `require(entity, action)` from `core/auth.py`. `ACTIONS = read·create·write·delete·approve·cancel·print·export`. `ENTITIES` are the canonical list in `core/permissions.py`.
-2. **Data scope belongs to USERS** — each `(user × role)` grant carries its own scope (`own·assigned·proc·dept·company·all`) plus explicit include/exclude by company/department/employee. `apply_scope(query, Model, entity, user, profile)` filters a query as the **OR (union)** of every grant that has `action` on that entity. Which columns a scope filters on per entity is defined in `SCOPE_FIELDS` in `scoping.py`. **Every entity in `ENTITIES` must be declared there** (B-07/CR-131, branch `erp-v2`): either with real columns, or with the `PUBLIC` sentinel when it is deliberately unfiltered. An entity that is missing, or a scope that cannot be turned into a condition, now **blocks everything** (`false()`) and logs a warning to `app.scoping` — it no longer falls through to "see all". A test asserts 44/44 (`test_pham_vi_khai_du_b07.py`), so adding an entity without declaring it turns the suite red. Fetching a single row by id must go through `get_scoped(...)`, not `db.get(...)`, or the list filter is trivially bypassed by typing an id into the URL.
+2. **Data scope belongs to USERS** — each `(user × role)` grant carries its own scope (`own·assigned·proc·dept_proc·dept·company·all`; `dept_proc` = `proc` AND the ticket's department or handler department is one of mine, bao-CR-414) plus explicit include/exclude by company/department/employee. `apply_scope(query, Model, entity, user, profile)` filters a query as the **OR (union)** of every grant that has `action` on that entity. Which columns a scope filters on per entity is defined in `SCOPE_FIELDS` in `scoping.py`. **Every entity in `ENTITIES` must be declared there** (B-07/CR-131, branch `erp-v2`): either with real columns, or with the `PUBLIC` sentinel when it is deliberately unfiltered. An entity that is missing, or a scope that cannot be turned into a condition, now **blocks everything** (`false()`) and logs a warning to `app.scoping` — it no longer falls through to "see all". A test asserts 44/44 (`test_pham_vi_khai_du_b07.py`), so adding an entity without declaring it turns the suite red. Fetching a single row by id must go through `get_scoped(...)`, not `db.get(...)`, or the list filter is trivially bypassed by typing an id into the URL.
 
 A typical list endpoint composes both: `require(...)` as the route dependency, then `apply_scope(apply_filters(query, ...), ...)`. See `modules/purchase_request/controller.py` for the canonical example.
 
@@ -233,7 +235,10 @@ Docker; code bind-mount nên HMR chạy. Gọi API bằng đường **tương đ
   (router đăng ký đủ trong `main.py`, dữ liệu trong MySQL qua Alembic); frontend-v2 gọi API thật qua
   `modules/document/api/*` + hook TanStack Query. `store/local-collection.ts` chỉ còn là di tích:
   duy nhất kiểu `HistoryEntry` còn được import, `hooks/use-collection.ts` không ai dùng nữa.
-- **Kiểm tra trước khi giao: `docker compose exec erp npm run check`** — gộp ba cổng:
+- **Kiểm tra trước khi giao — ba cổng, nhưng cổng `test` chạy THEO THƯ MỤC** (đại ca chốt
+  17/09/2026, bộ test đã hơn 3200 bài): `npm run typecheck` + `npm run lint` cả cây, rồi
+  `npx vitest run src/modules/<phân hệ vừa sửa>` (đụng `src/shared/*` hay `src/core/*` thì chạy
+  thêm đúng khu đó). `npm run check` gộp full test — **chỉ chạy khi đại ca bảo hoặc trước deploy**:
   - `typecheck` (`tsc --noEmit`) phải **0 lỗi** (khác `frontend/`, bên đó baseline là đúng 4 lỗi cũ);
   - `lint` (**ESLint 10** flat config, `eslint.config.js`) phải **0 lỗi**. Cảnh báo hiện còn **23**
     (đều NGOÀI lớp CRUD — `react-refresh/only-export-components` + vài chỗ tích lũy từ các CR văn

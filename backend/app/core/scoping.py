@@ -35,20 +35,31 @@ PUBLIC = _Public()
 # CR-086 — chiều phòng ban: `dept_id` là NGUỒN SỰ THẬT. `dept_name` chỉ còn là ĐƯỜNG LÙI cho
 # phiếu cũ chưa điền lùi được id (`department_id = 0`), xem `_dept_match`. Entity nào khai cả
 # hai thì bỏ `dept_name` đi là xong phần lùi — làm cùng lúc với việc xóa cột text (N-008).
+#
+# bao-CR-414 — chiều `handler_dept`: cột "phòng được nhờ xử lý" (`handler_dept_id`, 0 = chưa
+# nhờ). Khai chiều này thì `_dept_match` coi phiếu thuộc phòng mình khi phòng lập phiếu HOẶC
+# phòng được nhờ là phòng mình — cùng một chỗ, nên bậc `dept`, ô "Phòng ban được xem" và bậc
+# `dept_proc` đều tự thấy phiếu được nhờ.
 SCOPE_FIELDS = {
     "purchase_request": {"company": "company_id", "dept_id": "department_id",
-                         "dept_name": "department", "owner": "created_by"},
+                         "dept_name": "department", "handler_dept": "handler_dept_id",
+                         "owner": "created_by"},
     "survey_request":   {"company": "company_id", "dept_id": "department_id",
-                         "dept_name": "department", "owner": "created_by"},
+                         "dept_name": "department", "handler_dept": "handler_dept_id",
+                         "owner": "created_by"},
     "purchase_order":   {"company": "company_id", "dept_id": "department_id",
-                         "dept_name": "department", "owner": "created_by"},
-    "payable":          {"company": "company_id", "owner": "created_by"},
+                         "dept_name": "department", "handler_dept": "handler_dept_id",
+                         "owner": "created_by"},
+    # bao-CR-414 GĐ4: công nợ + YCTT mang cột phòng ẩn (`department_id` = phòng xử lý đơn
+    # lúc nợ sinh ra). Khai `dept_id` là đủ để `dept_proc` / `dept` / loại trừ phòng lọc được;
+    # nợ cũ department_id = 0 nên người có bậc phòng KHÔNG thấy nợ cũ — cố ý, không backfill.
+    "payable":          {"company": "company_id", "dept_id": "department_id", "owner": "created_by"},
     # Hợp đồng: neo theo PHÁP NHÂN ĐỨNG TÊN (`company_id`). Trước đây entity này không có
     # trong bảng nên `_role_scope_cond` trả None — ai có `contract.read` là đọc hợp đồng của
     # MỌI công ty, kể cả khi phạm vi vai trò đặt là `company`/`own`. KHÔNG có chiều phòng ban:
     # hợp đồng thuộc pháp nhân chứ không thuộc phòng nào.
     "contract":         {"company": "company_id", "owner": "created_by"},
-    "payment_request":  {"company": "company_id", "owner": "created_by"},
+    "payment_request":  {"company": "company_id", "dept_id": "department_id", "owner": "created_by"},
     "inventory":        {"company": "company_id"},
     "survey":           {"owner": "created_by"},
     "employee":         {"company": "company_id", "dept_id": "department_id", "self": "id"},
@@ -271,9 +282,64 @@ def _dept_match(model, f, dept_ids, dept_names):
     if col_name and dept_names:
         legacy = getattr(model, col_name).in_(list(dept_names))
         cs.append(and_(getattr(model, col_id) == 0, legacy) if col_id else legacy)
+    # bao-CR-414: phiếu ĐƯỢC NHỜ cho phòng mình cũng là "phiếu thuộc phòng mình".
+    col_handler = f.get("handler_dept")
+    if col_handler and dept_ids:
+        cs.append(getattr(model, col_handler).in_(list(dept_ids)))
     if not cs:
         return None
     return or_(*cs) if len(cs) > 1 else cs[0]
+
+
+def _handler_dept_cond(model, f, dept_ids):
+    """Điều kiện "phiếu được NHỜ cho một trong các phòng này" — bao-CR-414. None = không có."""
+    col_handler = f.get("handler_dept")
+    if not col_handler or not dept_ids:
+        return None
+    return getattr(model, col_handler).in_(list(dept_ids))
+
+
+def approves_only_in_dept_proc(profile: dict, entity: str) -> bool:
+    """Người này duyệt/điều phối `entity` CHỈ bằng bậc `dept_proc` (phòng tự mua) — bao-CR-414.
+
+    Dùng để quyết định tự gán theo nhóm hàng có được RƠI VỀ bộ "Thu mua chung" (phòng 0 của
+    `category_assignee`) hay không: quản lý thu mua của phòng chỉ dùng bộ riêng của phòng mình,
+    rơi về bộ chung là đẩy việc của phòng nhà máy sang tay thu mua chung. Có thêm một grant
+    `proc`/`all` có `approve` thì tra cả bộ chung như cũ.
+    """
+    seen_dept_proc = False
+    for grant in profile.get("grants", []):
+        perms = grant["perms"].get(entity)
+        if not perms or not perms.get("approve"):
+            continue
+        if perms.get("scope", "all") == "dept_proc":
+            seen_dept_proc = True
+        else:
+            return False
+    return seen_dept_proc
+
+
+def holds_handling_dept(profile: dict, entity: str, ticket) -> bool:
+    """Người này có đang là quản lý thu mua của PHÒNG ĐANG XỬ LÝ phiếu không — bao-CR-414 GĐ5.
+
+    Dùng cho nút "Chuyển phòng xử lý" / "Trả về phòng lập": chỉ phòng đang cầm phiếu (hoặc
+    người có phạm vi toàn hệ) mới được đẩy đi. Grant `approve` bậc `proc`/`all` = toàn hệ;
+    bậc `dept_proc` = phải trùng phòng đang xử lý (`handler_dept_id`, không thì phòng lập).
+    Bậc `dept` (trưởng phòng duyệt bước 1) và grant không có `approve` KHÔNG tính.
+    """
+    from app.modules.category_assignee.service import handling_dept_of
+    dept_ids = set(int(x) for x in (profile.get("dept_ids") or []) if x)
+    current = int(handling_dept_of(ticket) or 0)
+    for grant in profile.get("grants", []):
+        perms = grant["perms"].get(entity)
+        if not perms or not perms.get("approve"):
+            continue
+        scope = perms.get("scope", "all")
+        if scope in ("proc", "all"):
+            return True
+        if scope == "dept_proc" and current and current in dept_ids:
+            return True
+    return False
 
 
 def _emp_match(model, col_id: str, col_name: str, emp_id: int, emp_name: str):
@@ -351,7 +417,21 @@ def _role_scope_cond(model, entity, scope, user, profile, perms=None):
         or ([profile["dept_name"]] if profile.get("dept_name") else [])
 
     # "Được giao": của mình HOẶC được phân bổ cho mình (áp cho PYC)
-    if scope in ("assigned", "proc"):
+    # bao-CR-414 — "dept_proc" = đúng nhánh `proc` NHƯNG AND thêm "phiếu thuộc phòng mình"
+    # (phòng lập phiếu hoặc phòng được nhờ, xem `_dept_match`). Người chưa gắn phòng thì CHẶN,
+    # cùng luật với bậc `dept`.
+    if scope in ("assigned", "proc", "dept_proc"):
+        in_dept_proc = scope == "dept_proc"
+        is_proc = scope in ("proc", "dept_proc")
+
+        def _narrow_to_dept(cond):
+            if not in_dept_proc:
+                return cond
+            dm = _dept_match(model, f, dept_ids, dept_names)
+            if dm is None:
+                return _chan(entity, scope, user, "bac dept_proc nhung nhan su chua gan phong ban")
+            return and_(cond, dm)
+
         if entity == "purchase_request":
             from app.modules.purchase_request.model import (STATUS_AFTER_APPROVE,
                                                             PurchaseRequestItem)
@@ -370,7 +450,7 @@ def _role_scope_cond(model, entity, scope, user, profile, perms=None):
             # ["approved","dispatched"] nghĩa là phiếu vừa chạy sang 'processing' là BIẾN MẤT
             # khỏi mắt chính người thu mua đang xử lý nó (mở link ra thì "Không tìm thấy"),
             # trừ khi tình cờ họ là người tạo / người yêu cầu / người được gán.
-            if scope == "proc":
+            if is_proc:
                 conds.append(_proc_status_cond(model, f, company_id,
                                                 list(STATUS_AFTER_APPROVE)))
             if profile.get("employee_id"):
@@ -378,7 +458,7 @@ def _role_scope_cond(model, entity, scope, user, profile, perms=None):
             if profile.get("emp_code"):
                 sub = select(PurchaseRequestItem.pr_id).where(PurchaseRequestItem.assignee == profile["emp_code"])
                 conds.append(model.id.in_(sub))
-            return or_(*conds)
+            return _narrow_to_dept(or_(*conds))
         if entity == "survey_request":
             from app.modules.survey_request.model import SurveyRequestLine
             conds = [model.created_by == user.id]   # phiếu MÌNH tạo → thấy mọi trạng thái
@@ -394,12 +474,18 @@ def _role_scope_cond(model, entity, scope, user, profile, perms=None):
                             .where(SurveyRequestLine.assignee == profile["emp_code"]))
                 conds.append(and_(model.status.notin_(["draft", "submitted", "rejected"]),
                                   model.id.in_(code_sub)))
-            return or_(*conds)
+            if in_dept_proc:
+                # bao-CR-414: quản lý thu mua CỦA PHÒNG phải thấy mọi YCBG của phòng mình từ lúc
+                # gửi duyệt trở đi để duyệt + gán NSTM (bậc `proc` giữ nguyên: chỉ dòng gán mình,
+                # vì thu mua chung có `pur_manager` bậc `all` lo phần duyệt). AND phòng ở dưới
+                # khoanh lại đúng phòng mình.
+                conds.append(model.status != "draft")
+            return _narrow_to_dept(or_(*conds))
         if entity == "purchase_order":
             # ĐMH: thấy đơn MÌNH tạo HOẶC đơn có NSPT phụ trách = mình.
             # CR-087: khớp bằng `nspt_id`; tên chỉ còn là đường lùi cho đơn cũ (`nspt_id = 0`).
             conds = [model.created_by == user.id]
-            if scope == "proc":
+            if is_proc:
                 # bao-CR-371: cùng lỗi với YCMH — nhận hàng xong (`partial`/`received`/
                 # `completed`) thì đơn không được biến mất khỏi mắt người thu mua đang theo nó.
                 from app.modules.purchase_order.model import STATUS_AFTER_APPROVE as PO_AFTER_APPROVE
@@ -408,7 +494,7 @@ def _role_scope_cond(model, entity, scope, user, profile, perms=None):
                             profile.get("employee_id") or 0, profile.get("emp_name") or "")
             if ec is not None:
                 conds.append(ec)
-            return or_(*conds)
+            return _narrow_to_dept(or_(*conds))
         if entity == "vehicle_booking":
             # Tài xế thấy phiếu ĐƯỢC PHÂN cho mình (nối qua Driver.user_id) + phiếu mình
             # tạo. Nhờ vậy nút Chấp nhận/Bắt đầu/Hoàn tất mới tới được đúng tài xế.
@@ -417,6 +503,13 @@ def _role_scope_cond(model, entity, scope, user, profile, perms=None):
             drv_sub = select(Driver.id).where(Driver.user_id == user.id)
             conds.append(model.assigned_driver_id.in_(drv_sub))
             return or_(*conds)
+        if in_dept_proc:
+            # bao-CR-414: entity không phải chứng từ thu mua → `dept_proc` rơi về bậc `dept`
+            # (thấy trong phòng mình), không rơi về `own` như `assigned`/`proc`.
+            dm = _dept_match(model, f, dept_ids, dept_names)
+            if dm is None:
+                return _chan(entity, scope, user, "bac dept_proc nhung nhan su chua gan phong ban")
+            return dm
         scope = "own"   # entity khác chưa có phân bổ → coi như của mình
 
     if scope == "own":
@@ -547,9 +640,13 @@ def _parse_int_values(entity, dim, box, values):
     return good
 
 
-def _explicit_cond(model, entity, scopeconf):
+def _explicit_cond(model, entity, scopeconf, profile=None):
     """Điều kiện THU HẸP: include công ty/nhân sự + MỌI loại trừ (AND).
-    Riêng 'Phòng ban được xem' (department include) = CỘNG THÊM → xử lý ở apply_scope."""
+    Riêng 'Phòng ban được xem' (department include) = CỘNG THÊM → xử lý ở apply_scope.
+
+    bao-CR-414: ô "Loại trừ phòng ban" KHÔNG chặn phiếu mà phòng đó NHỜ phòng mình xử lý
+    (`handler_dept_id` là phòng của người xem) — thu mua chung loại trừ nhà máy nhưng nhà máy
+    nhờ thì vẫn thấy. Cần `profile` để biết phòng mình; không có thì loại trừ như cũ."""
     f = SCOPE_FIELDS.get(entity) or {}
     cs = []
     for dim, col in (("company", f.get("company")), ("employee", f.get("owner"))):
@@ -572,10 +669,16 @@ def _explicit_cond(model, entity, scopeconf):
         if exc:
             cs.append(~column.in_(exc))
     # Phòng ban: include là CỘNG THÊM (xem `_dept_include_cond`), ở đây chỉ còn loại trừ.
-    dc = _dept_match(model, f, (scopeconf.get("exc") or {}).get("department") or [],
+    # Loại trừ CHỈ so cột phòng lập phiếu (không so cột phòng được nhờ): nhờ phòng mình
+    # thì phải thấy, nhờ phòng khác thì phiếu vẫn là của phòng bị loại trừ.
+    f_no_handler = {k: v for k, v in f.items() if k != "handler_dept"}
+    dc = _dept_match(model, f_no_handler, (scopeconf.get("exc") or {}).get("department") or [],
                      (scopeconf.get("exc") or {}).get("department_name") or [])
     if dc is not None:
-        cs.append(~dc)
+        my_dept_ids = [x for x in ((profile or {}).get("dept_ids") or []) if x] \
+            or ([profile["dept_id"]] if (profile or {}).get("dept_id") else [])
+        handed_to_me = _handler_dept_cond(model, f, my_dept_ids)
+        cs.append(or_(~dc, handed_to_me) if handed_to_me is not None else ~dc)
     return and_(*cs) if cs else None
 
 
@@ -633,7 +736,7 @@ def scope_condition(model, entity: str, user, profile: dict, action: str = "read
         # rc None (scope=all) → đã thấy hết, bỏ qua để không thu hẹp nhầm.
         dept_add = _dept_include_cond(model, entity, scopeconf)
         base = or_(rc, dept_add) if (rc is not None and dept_add is not None) else rc
-        ec = _explicit_cond(model, entity, scopeconf)   # thu hẹp: company include + mọi loại trừ
+        ec = _explicit_cond(model, entity, scopeconf, profile)   # thu hẹp: company include + mọi loại trừ
         parts = [c for c in (base, ec) if c is not None]
         if not parts:
             return None           # grant này thấy tất cả → không lọc

@@ -117,6 +117,14 @@ export function SurveyRequestInfoCard({
     void fillDeptHead(department.id, department.name)
   }
 
+  // bao-CR-414: ô "Nhờ phòng xử lý" — chỉ bày phòng đang hoạt động, nhưng phòng đã tắt mà
+  // phiếu cũ còn trỏ tới thì giữ lại để không mất nhãn khi mở phiếu (cùng luật với YCMH).
+  const handlerDepartments = departments.filter(
+    (department) => department.is_active || department.id === data.handler_dept_id,
+  )
+  const handlerDepartmentName =
+    departments.find((department) => department.id === data.handler_dept_id)?.name ?? ''
+
   return (
     <Card className="gap-4 py-4">
       {/* Cùng khuôn với các thẻ khác của phân hệ — `pb-3!` là bắt buộc vì
@@ -233,6 +241,39 @@ export function SurveyRequestInfoCard({
             </Select>
           ) : (
             <ReadOnlyValue>{data.department || '—'}</ReadOnlyValue>
+          )}
+        </div>
+
+        {/*
+          bao-CR-414 — phòng tự mua hàng vẫn có thể NHỜ thu mua chung (hoặc ngược lại) xử lý
+          một phiếu. Chọn phòng ở đây thì quản lý thu mua của phòng đó thấy + điều phối được
+          phiếu; phòng lập phiếu vẫn thấy như cũ. Radix Select không nhận giá trị rỗng nên
+          «không nhờ» đi bằng mục `0`, đúng với cách backend lưu.
+        */}
+        <div className="space-y-1.5">
+          <Label>Nhờ phòng xử lý</Label>
+          {editing && handlerDepartments.length ? (
+            <Select
+              value={String(data.handler_dept_id || 0)}
+              onValueChange={(value) => onChange({ handler_dept_id: Number(value) || 0 })}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Không nhờ — thu mua chung xử lý" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0">Không nhờ — thu mua chung xử lý</SelectItem>
+                {handlerDepartments.map((department) => (
+                  <SelectItem key={department.id} value={String(department.id)}>
+                    {department.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <ReadOnlyValue>
+              {handlerDepartmentName ||
+                (data.handler_dept_id ? `Phòng #${data.handler_dept_id}` : 'Không nhờ')}
+            </ReadOnlyValue>
           )}
         </div>
 

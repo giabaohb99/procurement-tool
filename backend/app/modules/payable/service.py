@@ -123,13 +123,15 @@ def status_label(v: str) -> str:
 def upsert(db: Session, *, source_type: str, ref_id: int, company_id: int, supplier_code: str,
            supplier_name: str, po_id: int, po_code: str, invoice_no: str, incur_date: str,
            amount: float, vat: float, due_days: int, user_id: int,
-           ref_type: str = "delivery", due_date: str = ""):
+           ref_type: str = "delivery", due_date: str = "", department_id: int = 0):
     """Tạo/cập nhật 1 khoản nợ (idempotent theo source_type + ref_type + ref_id).
 
     `ref_type = "delivery"` (mặc định): `ref_id` là id lần giao — hai luồng goods/shipping.
     `ref_type = "import_cost"` (bao-CR-319 P5): `ref_id` là id dòng chi phí lô hàng nhập khẩu.
     `due_date` có giá trị thì dùng thẳng (dòng chi phí có ô *Hạn thanh toán* riêng),
     rỗng thì tính từ ngày phát sinh + số ngày công nợ của NCC như trước.
+    `department_id` (bao-CR-414 GĐ4): phòng đang xử lý đơn — người gọi tính sẵn bằng
+    `handling_dept_of(po)`; cập nhật lại mỗi lần lưu đơn để đổi phòng xử lý là nợ đi theo.
     """
     p = db.query(Payable).filter(
         Payable.source_type == source_type, Payable.ref_type == ref_type, Payable.ref_id == ref_id
@@ -138,6 +140,7 @@ def upsert(db: Session, *, source_type: str, ref_id: int, company_id: int, suppl
         p = Payable(source_type=source_type, ref_type=ref_type, ref_id=ref_id, created_by=user_id)
         db.add(p)
     p.company_id = company_id
+    p.department_id = int(department_id or 0)
     p.supplier_code = supplier_code
     p.supplier_name = supplier_name
     p.po_id = po_id

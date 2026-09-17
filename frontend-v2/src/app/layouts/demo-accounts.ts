@@ -71,6 +71,24 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
   { username: 'DEMO_MANAGER_PURCHASE', password: 'demo123', label: 'Trưởng phòng Thu mua', group: 'Thu mua' },
   { username: 'DEMO_PURCHASER', password: 'demo123', label: 'Nhân viên Thu mua', group: 'Thu mua' },
 
+  // Phòng ban tự mua hàng (bao-CR-414) — do `seed_tai_khoan_cr414.py` tạo, mật khẩu = mã.
+  //  Bộ NHÀ MÁY ở phòng «Dego Organic»: NM_MUA mang vai trò `pur_dept_manager` bậc `dept_proc`
+  //  (chỉ thấy phiếu đã duyệt của phòng mình + phiếu được nhờ cho phòng mình).
+  //  Bộ THU MUA ở phòng «Sản xuất -Thu mua»: TM_FULL toàn quyền như cũ; TM_QL cùng vai trò
+  //  quản lý nhưng có «Loại trừ phòng ban» = Dego Organic (không thấy nhà máy, trừ phiếu nhà
+  //  máy nhờ mình); TM_AD là admin thu mua bậc `proc` + cùng ô loại trừ.
+  //  MKT_YC / MKT_TP ở phòng «Hành chính» để đối chiếu phiếu phòng thường vẫn y như cũ.
+  { username: 'NM_YC', password: 'NM_YC', label: 'Nhân sự nhà máy (NM_YC)', group: 'CR-414 · Nhà máy', hint: 'lập YCMH, chỉ xem của mình' },
+  { username: 'NM_TP', password: 'NM_TP', label: 'Trưởng phòng nhà máy (NM_TP)', group: 'CR-414 · Nhà máy', hint: 'duyệt bước 1, xem phòng ban' },
+  { username: 'NM_MUA', password: 'NM_MUA', label: 'Quản lý thu mua nhà máy (NM_MUA)', group: 'CR-414 · Nhà máy', hint: 'điều phối trong phòng mình' },
+  { username: 'NM_NV', password: 'NM_NV', label: 'Nhân viên thu mua nhà máy (NM_NV)', group: 'CR-414 · Nhà máy', hint: 'chỉ phiếu được giao' },
+  { username: 'TM_FULL', password: 'TM_FULL', label: 'Quản lý thu mua chung (TM_FULL)', group: 'CR-414 · Thu mua', hint: 'toàn quyền, không đổi' },
+  { username: 'TM_QL', password: 'TM_QL', label: 'Quản lý thu mua trừ nhà máy (TM_QL)', group: 'CR-414 · Thu mua', hint: 'đủ quyền quản lý, loại trừ Dego Organic' },
+  { username: 'TM_AD', password: 'TM_AD', label: 'Admin thu mua trừ nhà máy (TM_AD)', group: 'CR-414 · Thu mua', hint: 'chỉ đọc + điều phối, loại trừ Dego Organic' },
+  { username: 'TM_NV', password: 'TM_NV', label: 'Nhân viên thu mua chung (TM_NV)', group: 'CR-414 · Thu mua', hint: 'chỉ phiếu được giao' },
+  { username: 'MKT_YC', password: 'MKT_YC', label: 'Nhân sự phòng thường (MKT_YC)', group: 'CR-414 · Thu mua', hint: 'phòng Hành chính' },
+  { username: 'MKT_TP', password: 'MKT_TP', label: 'Trưởng phòng thường (MKT_TP)', group: 'CR-414 · Thu mua', hint: 'phòng Hành chính' },
+
   // Văn thư ở TỪNG pháp nhân con — do `seed_van_thu_phap_nhan_con.py` tạo
   { username: 'VTAGRIPLANT', password: 'VTAGRIPLANT', label: 'Văn thư AGRIPLANT', group: 'Pháp nhân con' },
   { username: 'VTSAM', password: 'VTSAM', label: 'Văn thư SAM', group: 'Pháp nhân con' },

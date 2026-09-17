@@ -13,6 +13,10 @@ class PaymentRequest(Base, AuditMixin):
     supplier_code: Mapped[str] = mapped_column(String(50), default="", index=True)
     supplier_name: Mapped[str] = mapped_column(String(255), default="")
     company_id: Mapped[int] = mapped_column(BigInteger, default=0)
+    # bao-CR-414 GĐ4 — phòng của phiếu: lấy theo phòng xử lý của các khoản nợ gắn vào
+    # (một phiếu KHÔNG được trộn nợ của hai phòng), phiếu gõ tay không gắn nợ thì lấy
+    # phòng người lập. 0 = phiếu cũ / thu mua chung. Cột ẩn, bản in không đổi.
+    department_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
     source_type: Mapped[str] = mapped_column(String(20), default="goods")  # goods | shipping
     request_date: Mapped[str] = mapped_column(String(10), default="")
     # CR-035 — hình thức thanh toán do người lập phiếu chọn; quyết định bản in có in

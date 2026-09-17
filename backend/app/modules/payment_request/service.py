@@ -199,6 +199,18 @@ def _line_rows(db: Session, data_lines, supplier_code: str, fill_from_payable: b
     return list(groups.values())
 
 
+def resolve_creator_dept_id(db: Session, user_id: int) -> int:
+    """Phòng ban của người lập phiếu (tài khoản -> nhân sự -> phòng), 0 nếu chưa gắn.
+
+    bao-CR-414 GĐ4: dùng cho phiếu gõ tay / phiếu gom toàn nợ cũ chưa gắn phòng."""
+    from app.modules.employee.model import Employee
+    from app.modules.user.model import User
+
+    user = db.get(User, user_id) if user_id else None
+    emp = db.get(Employee, user.employee_id) if (user and user.employee_id) else None
+    return int(emp.department_id or 0) if emp else 0
+
+
 def create_requests(db: Session, data: PRequestCreate, user_id: int) -> list[PaymentRequest]:
     """Tạo phiếu; các khoản nợ thuộc nhiều NCC hoặc nhiều CÔNG TY nhận hóa đơn -> tách
     mỗi cặp (NCC, công ty) 1 phiếu (bao-CR-274 — trước đây chỉ tách theo NCC, company_id
@@ -214,6 +226,10 @@ def create_requests(db: Session, data: PRequestCreate, user_id: int) -> list[Pay
     # lấy theo phần đầu phiếu
     groups: dict[tuple, list] = {}
     heads: dict[tuple, str] = {}     # key -> supplier_name
+    # bao-CR-414 GĐ4 — phòng xử lý của các khoản nợ trong từng phiếu. Một phiếu KHÔNG được
+    # trộn nợ của hai phòng (phòng nào tự mua thì phòng đó theo dõi thanh toán của mình);
+    # nợ cũ department_id = 0 coi như "chưa gắn", đi chung với phòng nào cũng được.
+    depts: dict[tuple, set[int]] = {}
     manual: list = []
     for ln in data.lines:
         p = db.get(Payable, ln.payable_id) if ln.payable_id else None
@@ -223,6 +239,13 @@ def create_requests(db: Session, data: PRequestCreate, user_id: int) -> list[Pay
         key = (p.supplier_code, p.source_type, p.company_id or 0)
         groups.setdefault(key, []).append(ln)
         heads.setdefault(key, p.supplier_name)
+        if int(p.department_id or 0):
+            depts.setdefault(key, set()).add(int(p.department_id))
+    for key, ids in depts.items():
+        if len(ids) > 1:
+            raise HTTPException(400, "Các khoản nợ chọn thuộc HAI phòng xử lý khác nhau — "
+                                     "mỗi phiếu chỉ gom nợ của một phòng, hãy tách phiếu")
+    creator_dept_id = resolve_creator_dept_id(db, user_id)
 
     if manual:
         supplier_code = (data.supplier_code or "").strip()
@@ -245,9 +268,13 @@ def create_requests(db: Session, data: PRequestCreate, user_id: int) -> list[Pay
         if not rows:
             continue
         supplier_name = heads[(supplier_code, source_type, company_id)]
+        group_depts = depts.get((supplier_code, source_type, company_id)) or set()
         req = PaymentRequest(
             supplier_code=supplier_code, supplier_name=supplier_name,
             company_id=company_id, source_type=source_type,
+            # phòng của phiếu = phòng xử lý của nợ gắn vào; không có (gõ tay / nợ cũ) thì
+            # là phòng của người lập
+            department_id=next(iter(group_depts)) if group_depts else creator_dept_id,
             request_date=data.request_date, note=data.note, status="draft",
             payment_method=norm_method(data.payment_method),
             prepay=1 if data.prepay else 0,
@@ -483,11 +510,16 @@ def line_hanging(ln: PaymentRequestLine) -> float:
 
 
 def get_hanging_lines(db: Session, supplier_code: str, source_type: str = "goods",
-                      po_code: str | None = None) -> list[tuple[PaymentRequest, PaymentRequestLine]]:
+                      po_code: str | None = None,
+                      department_id: int = 0) -> list[tuple[PaymentRequest, PaymentRequestLine]]:
     """Các dòng còn TIỀN TREO của 1 NCC: dòng thuộc phiếu prepay=1 ĐÃ CHI, chưa trừ hết.
 
     po_code=None -> mọi dòng; po_code="" -> chỉ treo CẤP NCC (không gắn đơn);
-    po_code="POxxxxx" -> chỉ treo gắn đúng đơn đó. Trả về theo phiếu CŨ trước (FIFO)."""
+    po_code="POxxxxx" -> chỉ treo gắn đúng đơn đó. Trả về theo phiếu CŨ trước (FIFO).
+
+    department_id (bao-CR-414 GĐ4): khác 0 thì chỉ lấy treo của phiếu trả trước do ĐÚNG
+    phòng đó lập (hoặc phiếu cũ chưa gắn phòng) — tiền ứng của Nhà máy không được đem
+    cấn vào nợ của phòng khác. 0 = không lọc theo phòng (hành vi cũ)."""
     if not supplier_code:
         return []
     q = (db.query(PaymentRequest, PaymentRequestLine)
@@ -498,6 +530,8 @@ def get_hanging_lines(db: Session, supplier_code: str, source_type: str = "goods
                  PaymentRequest.source_type == source_type))
     if po_code is not None:
         q = q.filter(PaymentRequestLine.po_code == (po_code or ""))
+    if int(department_id or 0):
+        q = q.filter(PaymentRequest.department_id.in_([0, int(department_id)]))
     rows = q.order_by(PaymentRequest.id.asc(), PaymentRequestLine.id.asc()).all()
     return [(req, ln) for req, ln in rows if line_hanging(ln) > 0.01]
 
@@ -569,7 +603,8 @@ def offset_supplier_hanging(db: Session, payable: Payable, amount: float, user_i
     p_rem = _remaining(payable)
     if p_rem <= 0.01:
         raise HTTPException(400, "Khoản công nợ này đã tất toán, không còn gì để cấn trừ")
-    treo = get_hanging_lines(db, payable.supplier_code, payable.source_type, "")
+    treo = get_hanging_lines(db, payable.supplier_code, payable.source_type, "",
+                             department_id=int(payable.department_id or 0))
     available = round(sum(line_hanging(ln) for _r, ln in treo), 2)
     if available <= 0.01:
         raise HTTPException(400, "NCC này không còn tiền treo (không gắn đơn) để cấn trừ")

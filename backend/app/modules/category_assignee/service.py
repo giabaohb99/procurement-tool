@@ -8,13 +8,20 @@ from .schema import CategoryAssigneeCreate, CategoryAssigneeUpdate
 
 ENTITY = "category_assignee"
 
+GLOBAL_DEPT_ID = 0   # bao-CR-414: bộ phân công "Thu mua chung" (dùng cho mọi phòng chưa có bộ riêng)
 
-def _log_message(db: Session, primary_id: int, backup_id: int) -> str:
-    """Tóm tắt cặp NSTM cho dòng audit: 'Chính: X · Dự phòng: Y'."""
+
+def _log_message(db: Session, primary_id: int, backup_id: int, department_id: int = 0) -> str:
+    """Tóm tắt cặp NSTM cho dòng audit: 'Chính: X · Dự phòng: Y' (+ tên phòng nếu là bộ riêng)."""
     from app.modules.employee.model import Employee
     p = db.get(Employee, primary_id) if primary_id else None
     b = db.get(Employee, backup_id) if backup_id else None
-    return f"Chính: {p.full_name if p else '—'} · Dự phòng: {b.full_name if b else '—'}"
+    msg = f"Chính: {p.full_name if p else '—'} · Dự phòng: {b.full_name if b else '—'}"
+    if department_id:
+        from app.modules.department.model import Department
+        d = db.get(Department, department_id)
+        msg += f" · Phòng: {d.name if d else department_id}"
+    return msg
 
 
 def list_all(db: Session):
@@ -28,25 +35,41 @@ def get(db: Session, cid: int) -> CategoryAssignee:
     return obj
 
 
+def _find_pair(db: Session, department_id: int, item_group_id: int):
+    return (db.query(CategoryAssignee)
+            .filter(CategoryAssignee.department_id == (department_id or 0),
+                    CategoryAssignee.item_group_id == item_group_id)
+            .first())
+
+
 def create(db: Session, data: CategoryAssigneeCreate, user_id: int) -> CategoryAssignee:
-    if db.query(CategoryAssignee).filter(CategoryAssignee.item_group_id == data.item_group_id).first():
-        raise HTTPException(400, "Phân loại này đã được cấu hình phụ trách")
+    if _find_pair(db, data.department_id, data.item_group_id):
+        raise HTTPException(400, "Phân loại này đã được cấu hình phụ trách cho phòng đó")
     obj = CategoryAssignee(**data.model_dump(), created_by=user_id, updated_by=user_id)
     db.add(obj)
     db.commit()
     db.refresh(obj)
-    record(db, user_id, ENTITY, obj.id, "create", _log_message(db, obj.primary_employee_id, obj.backup_employee_id))
+    record(db, user_id, ENTITY, obj.id, "create",
+           _log_message(db, obj.primary_employee_id, obj.backup_employee_id, obj.department_id))
     return obj
 
 
 def update(db: Session, cid: int, data: CategoryAssigneeUpdate, user_id: int) -> CategoryAssignee:
     obj = get(db, cid)
-    for k, v in data.model_dump(exclude_unset=True).items():
+    changes = data.model_dump(exclude_unset=True)
+    new_dept = changes.get("department_id", obj.department_id)
+    new_group = changes.get("item_group_id", obj.item_group_id)
+    if (new_dept, new_group) != (obj.department_id, obj.item_group_id):
+        dup = _find_pair(db, new_dept, new_group)
+        if dup and dup.id != obj.id:
+            raise HTTPException(400, "Phân loại này đã được cấu hình phụ trách cho phòng đó")
+    for k, v in changes.items():
         setattr(obj, k, v)
     obj.updated_by = user_id
     db.commit()
     db.refresh(obj)
-    record(db, user_id, ENTITY, obj.id, "update", _log_message(db, obj.primary_employee_id, obj.backup_employee_id))
+    record(db, user_id, ENTITY, obj.id, "update",
+           _log_message(db, obj.primary_employee_id, obj.backup_employee_id, obj.department_id))
     return obj
 
 
@@ -58,23 +81,27 @@ def delete(db: Session, cid: int, user_id: int) -> None:
     record(db, user_id, ENTITY, oid, "delete", "Đã xóa phân công")
 
 
-def bulk_upsert(db: Session, item_group_ids: list[int], primary_id: int, backup_id: int, user_id: int) -> int:
-    """Gán 1 cặp NSTM (chính + dự phòng) cho NHIỀU phân loại cùng lúc (upsert theo phân loại)."""
+def bulk_upsert(db: Session, item_group_ids: list[int], primary_id: int, backup_id: int,
+                user_id: int, department_id: int = GLOBAL_DEPT_ID) -> int:
+    """Gán 1 cặp NSTM (chính + dự phòng) cho NHIỀU phân loại cùng lúc — có rồi thì cập nhật,
+    chưa có thì tạo, khóa theo cặp (phòng, phân loại). `department_id` = 0 là bộ chung."""
+    department_id = department_id or 0
     n = 0
-    msg = _log_message(db, primary_id, backup_id)
+    msg = _log_message(db, primary_id, backup_id, department_id)
     logs: list[tuple[int, str]] = []   # (row_id, action) — ghi audit sau khi commit
     for gid in item_group_ids:
         if not gid:
             continue
-        row = db.query(CategoryAssignee).filter(CategoryAssignee.item_group_id == gid).first()
+        row = _find_pair(db, department_id, gid)
         if row:
             row.primary_employee_id = primary_id
             row.backup_employee_id = backup_id
             row.updated_by = user_id
             action = "update"
         else:
-            row = CategoryAssignee(item_group_id=gid, primary_employee_id=primary_id,
-                                   backup_employee_id=backup_id, created_by=user_id, updated_by=user_id)
+            row = CategoryAssignee(department_id=department_id, item_group_id=gid,
+                                   primary_employee_id=primary_id, backup_employee_id=backup_id,
+                                   created_by=user_id, updated_by=user_id)
             db.add(row)
             action = "create"
         db.flush()   # lấy id cho dòng mới
@@ -86,47 +113,86 @@ def bulk_upsert(db: Session, item_group_ids: list[int], primary_id: int, backup_
     return n
 
 
-def resolve_for_group(db: Session, item_group_name: str):
-    """Trả về nhân sự NSTM phụ trách 1 phân loại (chính; chính nghỉ → dự phòng). None nếu chưa cấu hình."""
+# ── Tra cứu người phụ trách theo PHÒNG XỬ LÝ (bao-CR-414 GĐ2) ────────────────────────────
+
+def handling_dept_of(ticket) -> int:
+    """Phòng đang XỬ LÝ một phiếu: phòng được nhờ (`handler_dept_id`) nếu có, không thì phòng lập
+    phiếu (`department_id`). Dùng chung cho YCMH lẫn YCBG."""
+    return int(getattr(ticket, "handler_dept_id", 0) or 0) or int(getattr(ticket, "department_id", 0) or 0)
+
+
+def load_configs(db: Session, department_id: int, allow_global: bool = True) -> dict[int, CategoryAssignee]:
+    """Bộ phân công áp cho một phòng: dòng riêng của phòng đó trước, phân loại nào phòng chưa
+    khai thì rơi về bộ chung (phòng 0) — CHỈ khi `allow_global`.
+
+    `allow_global=False` dành cho người duyệt/điều phối chỉ có bậc `dept_proc` (quản lý thu mua
+    của phòng tự mua): bộ chung là người của thu mua chung, tự gán là đẩy việc của phòng ra ngoài.
+    Trả dict item_group_id -> dòng cấu hình."""
+    department_id = department_id or 0
+    dept_ids = {department_id}
+    if allow_global:
+        dept_ids.add(GLOBAL_DEPT_ID)
+    rows = db.query(CategoryAssignee).filter(CategoryAssignee.department_id.in_(dept_ids)).all()
+    configs: dict[int, CategoryAssignee] = {}
+    for row in rows:                                         # bộ chung điền trước, bộ riêng đè lên
+        if row.department_id == GLOBAL_DEPT_ID:
+            configs.setdefault(row.item_group_id, row)
+    for row in rows:
+        if row.department_id == department_id:
+            configs[row.item_group_id] = row
+    return configs
+
+
+def pick_active_employee(db: Session, cfg: CategoryAssignee, emp_cache: dict | None = None):
+    """Người CHÍNH nếu còn làm việc, không thì DỰ PHÒNG (có thể None)."""
+    from app.modules.employee.model import Employee
+    cache = emp_cache if emp_cache is not None else {}
+
+    def emp(eid):
+        if not eid:
+            return None
+        if eid not in cache:
+            cache[eid] = db.get(Employee, eid)
+        return cache[eid]
+
+    primary = emp(cfg.primary_employee_id)
+    if primary and primary.is_active:
+        return primary
+    return emp(cfg.backup_employee_id)
+
+
+def resolve_for_group(db: Session, item_group_name: str, department_id: int = GLOBAL_DEPT_ID,
+                      allow_global: bool = True):
+    """Trả về nhân sự NSTM phụ trách 1 phân loại cho phòng `department_id` (chính; chính nghỉ →
+    dự phòng). Không có bộ riêng thì rơi về bộ chung khi `allow_global`. None nếu chưa cấu hình."""
     if not item_group_name:
         return None
     from app.modules.catalog.model import ItemGroup
-    from app.modules.employee.model import Employee
     g = db.query(ItemGroup).filter(ItemGroup.name == item_group_name).first()
     if not g:
         return None
-    cfg = db.query(CategoryAssignee).filter(CategoryAssignee.item_group_id == g.id).first()
+    cfg = load_configs(db, department_id, allow_global).get(g.id)
     if not cfg:
         return None
-    primary = db.get(Employee, cfg.primary_employee_id) if cfg.primary_employee_id else None
-    if primary and primary.is_active:
-        return primary
-    return db.get(Employee, cfg.backup_employee_id) if cfg.backup_employee_id else None
+    return pick_active_employee(db, cfg)
 
 
-def auto_assign_by_category(db: Session, pr) -> int:
-    """Sau khi TRƯỞNG PHÒNG duyệt PYC: điền `assignee` (mã NV) cho các dòng CHƯA có người,
-    theo phân loại của dòng. Ưu tiên người CHÍNH; người chính nghỉ (is_active=false) → DỰ PHÒNG.
-    Tôn trọng gán tay: dòng đã có assignee thì bỏ qua. Trả số dòng được gán."""
+def auto_assign_by_category(db: Session, pr, allow_global: bool = True) -> int:
+    """Sau khi duyệt/điều phối PYC: điền `assignee` (mã NV) cho các dòng CHƯA có người, theo phân
+    loại của dòng và theo PHÒNG ĐANG XỬ LÝ phiếu (`handling_dept_of`). Ưu tiên người CHÍNH; người
+    chính nghỉ (is_active=false) → DỰ PHÒNG. Tôn trọng gán tay: dòng đã có assignee thì bỏ qua.
+    `allow_global=False` → chỉ dùng bộ riêng của phòng, không rơi về bộ chung. Trả số dòng được gán."""
     from app.modules.catalog.model import ItemGroup
-    from app.modules.employee.model import Employee
     from app.modules.purchase_request.model import PurchaseRequestItem
 
     lines = db.query(PurchaseRequestItem).filter(PurchaseRequestItem.pr_id == pr.id).all()
     if not lines:
         return 0
-    configs = {c.item_group_id: c for c in db.query(CategoryAssignee).all()}
+    configs = load_configs(db, handling_dept_of(pr), allow_global)
     if not configs:
         return 0
     group_id_by_name = {g.name: g.id for g in db.query(ItemGroup).all()}
     emp_cache: dict = {}
-
-    def emp(eid):
-        if not eid:
-            return None
-        if eid not in emp_cache:
-            emp_cache[eid] = db.get(Employee, eid)
-        return emp_cache[eid]
 
     assigned = 0
     for ln in lines:
@@ -136,8 +202,7 @@ def auto_assign_by_category(db: Session, pr) -> int:
         cfg = configs.get(gid) if gid else None
         if not cfg:
             continue
-        primary = emp(cfg.primary_employee_id)
-        chosen = primary if (primary and primary.is_active) else emp(cfg.backup_employee_id)
+        chosen = pick_active_employee(db, cfg, emp_cache)
         if chosen and chosen.code:
             ln.assignee = chosen.code
             assigned += 1

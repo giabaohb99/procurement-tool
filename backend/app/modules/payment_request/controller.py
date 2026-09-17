@@ -19,8 +19,9 @@ from .schema import PRequestCreate, PRequestUpdate
 
 router = APIRouter(prefix="/api/payment-requests", tags=["payment_request"])
 
-HEADER = ["id", "code", "supplier_code", "supplier_name", "company_id", "source_type",
-          "request_date", "payment_method", "prepay", "total", "note", "reject_reason", "status"]
+HEADER = ["id", "code", "supplier_code", "supplier_name", "company_id", "department_id",
+          "source_type", "request_date", "payment_method", "prepay", "total", "note",
+          "reject_reason", "status"]   # department_id: cột ẩn bao-CR-414 GĐ4, bản in không đọc
 
 
 def _line(db, ln, misa_by_po: dict | None = None) -> dict:

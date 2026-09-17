@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, BackgroundTasks
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_perm_profile, require, user_has_permission
-from app.core.scoping import apply_scope
+from app.core.scoping import apply_scope, approves_only_in_dept_proc, holds_handling_dept
 from app.core.base_controller import apply_filters, apply_range_filters, apply_equals, apply_sort_from_request, pagination
 from app.core.ref_filter import apply_ref_filters
 from app.core.database import get_db
@@ -18,12 +18,12 @@ from .model import (STATUS_AFTER_APPROVE, STATUS_AFTER_DISPATCH,
 from .schema import (ApproveIn, AssignIn, ItemStatusIn, PRAssignSupplierIn, PRCreate,
                      PROptionCompleteIn, PROptionManualIn, PROptionSupplierIn,
                      PROptionSurveyIn, PROptionUpdateIn, PRUpdate,
-                     ReasonIn, RejectIn, UrgentIn)
+                     ReasonIn, RejectIn, TransferDeptIn, UrgentIn)
 
 router = APIRouter(prefix="/api/purchase-requests", tags=["purchase_request"])
 
 HEADER_COLS = ["id", "code", "company_id", "requester", "requester_id", "requester_position",
-               "department_id", "department", "head_of_dept", "head_of_dept_id",
+               "department_id", "handler_dept_id", "department", "head_of_dept", "head_of_dept_id",
                # bao-CR-316: `received_date` CHỈ có ở đây (đọc ra), cố ý KHÔNG nằm trong
                # PRCreate/PRUpdate — Ngày tiếp nhận do `dispatch_pr` điền, không ai sửa tay.
                "purpose", "request_date", "received_date", "need_date",
@@ -84,9 +84,11 @@ def _can_dispatch(profile: dict) -> bool:
     """CR-034 — ai được ĐIỀU PHỐI (duyệt lần 2). Điều kiện: có quyền `approve` trên YCMH VỚI
     phạm vi thu mua/toàn bộ ('proc'/'all'). Trưởng phòng có approve nhưng phạm vi 'dept' →
     chỉ duyệt lần 1, không điều phối. Cùng lối đọc grant với `_see_all_items`."""
+    # bao-CR-414: quản lý thu mua CỦA PHÒNG (bậc `dept_proc`) cũng điều phối được — phạm vi
+    # đã khoanh phiếu về đúng phòng mình ở `_in_scope`.
     for g in profile.get("grants", []):
         p = g["perms"].get("purchase_request")
-        if p and p.get("approve") and p.get("scope") in ("proc", "all"):
+        if p and p.get("approve") and p.get("scope") in ("proc", "dept_proc", "all"):
             return True
     return False
 
@@ -307,6 +309,11 @@ def _out(db: Session, pr, user=None) -> dict:
     d["dispatch_enabled"] = service.dispatch_enabled()
     d["can_dispatch"] = bool(user is not None and pr.status == "approved" and d["dispatch_enabled"]
                              and _can_dispatch(get_perm_profile(db, user)))
+    # bao-CR-414 GĐ5: nút "Chuyển phòng xử lý" / "Trả về phòng lập" — chỉ quản lý thu mua của
+    # phòng ĐANG CẦM phiếu (hoặc toàn hệ) và khi việc mua chưa thật sự bắt đầu.
+    d["can_transfer_dept"] = bool(user is not None and service.can_transfer_dept(db, pr)
+                                  and holds_handling_dept(get_perm_profile(db, user), "purchase_request", pr))
+    d["can_return_dept"] = bool(d["can_transfer_dept"] and (pr.handler_dept_id or 0))
     # Duyệt bước 1: cũng phải tính ở server vì có quyền `approve` chưa chắc đúng PHẠM VI —
     # Admin thu mua (phạm vi 'proc') có approve để duyệt điều phối nhưng không duyệt bước 1.
     # CR-071: ô TBP (`head_of_dept_id`) CHỈ để lưu + in, KHÔNG khóa quyền duyệt — chọn ai
@@ -532,7 +539,7 @@ def _see_all_items(profile: dict, pr, user) -> bool:
             continue
         if p.get("approve"):
             return True
-        if p.get("read") and p.get("scope") in ("proc", "dept", "company", "all"):
+        if p.get("read") and p.get("scope") in ("proc", "dept_proc", "dept", "company", "all"):
             return True
     return False
 
@@ -703,6 +710,82 @@ def return_pr(pid: int, data: ReasonIn, background_tasks: BackgroundTasks, db: S
     return success(_out(db, pr, user), "Đã trả phiếu về (Bị trả lại)")
 
 
+def _ensure_holds_handling_dept(db: Session, user, pr) -> None:
+    """bao-CR-414 GĐ5: chỉ quản lý thu mua của phòng ĐANG CẦM phiếu (hoặc toàn hệ) mới đẩy được."""
+    if not holds_handling_dept(get_perm_profile(db, user), "purchase_request", pr):
+        raise HTTPException(403, "Chỉ quản lý thu mua của phòng đang xử lý mới chuyển được phiếu này")
+
+
+def _notify_users(db: Session, user_ids: list[int], title: str, body: str, link: str,
+                  creator_id: int, background_tasks: BackgroundTasks | None) -> None:
+    """Chuông trong app + Web Push (best-effort) cho một nhóm tài khoản — dùng cho sự kiện
+    chuyển phòng (bao-CR-414 GĐ5), thứ chưa có mẫu câu trong `trigger_notification`."""
+    from app.modules.notification.model import Notification
+    uids = sorted({int(u) for u in user_ids if u})
+    if not uids:
+        return
+    for uid in uids:
+        db.add(Notification(user_id=uid, title=title, body=body, link=link, created_by=creator_id))
+    db.commit()
+    try:
+        from app.modules.push import service as push_service
+        from app.core.database import SessionLocal
+        if background_tasks is not None:
+            background_tasks.add_task(push_service.send_to_users, SessionLocal, uids, title, body, link)
+        else:
+            push_service.send_to_users(SessionLocal, uids, title, body, link)
+    except Exception:
+        pass
+
+
+def _user_ids_of_employee_codes(db: Session, codes: list[str]) -> list[int]:
+    from app.modules.employee.model import Employee
+    from app.modules.user.model import User
+    codes = [c for c in codes if c]
+    if not codes:
+        return []
+    emp_ids = [e.id for e in db.query(Employee).filter(Employee.code.in_(codes)).all()]
+    return [u.id for u in db.query(User).filter(User.employee_id.in_(emp_ids)).all()] if emp_ids else []
+
+
+def _transfer_dept(db: Session, pid: int, data: TransferDeptIn, background_tasks: BackgroundTasks,
+                   user, *, target: int, message: str):
+    pr = _in_scope(db, pid, user, "approve")
+    _ensure_holds_handling_dept(db, user, pr)
+    old_assignees = [it.assignee for it in service.items_of(db, pid) if (it.assignee or "").strip()]
+    pr = service.transfer_handler_dept(db, pid, target, data.reason, user.id)
+    where = "phòng lập" if target == 0 else "phòng xử lý khác"
+    link = f"/purchase-requests/{pr.id}"
+    reason = data.reason.strip()
+    _notify_users(db, [pr.created_by or user.id], f"{pr.code} — Chuyển {where}",
+                  f"Yêu cầu mua hàng {pr.code} được chuyển sang {where}. Lý do: {reason}",
+                  link, user.id, background_tasks)
+    if old_assignees:                                  # NSTM bị gỡ khỏi dòng cũng cần biết
+        _notify_users(db, _user_ids_of_employee_codes(db, old_assignees),
+                      f"{pr.code} — Gỡ phân công mua hàng",
+                      f"Phiếu {pr.code} đã chuyển {where}, phần phụ trách của bạn được gỡ. Lý do: {reason}",
+                      link, user.id, background_tasks)
+    return success(_out(db, pr, user), message)
+
+
+@router.post("/{pid}/transfer-dept")
+def transfer_dept_(pid: int, data: TransferDeptIn, background_tasks: BackgroundTasks,
+                   db: Session = Depends(get_db), user=Depends(require("purchase_request", "approve"))):
+    """bao-CR-414 GĐ5 — CHUYỂN PHÒNG XỬ LÝ (đường 2): gỡ NSTM mọi dòng, đổi phòng, phiếu về
+    «Đã duyệt (chưa điều phối)» để phòng nhận điều phối lại. Lý do bắt buộc, ghi nhật ký."""
+    return _transfer_dept(db, pid, data, background_tasks, user, target=data.handler_dept_id,
+                          message="Đã chuyển phòng xử lý")
+
+
+@router.post("/{pid}/return-dept")
+def return_dept_(pid: int, data: TransferDeptIn, background_tasks: BackgroundTasks,
+                 db: Session = Depends(get_db), user=Depends(require("purchase_request", "approve"))):
+    """bao-CR-414 GĐ5 — TRẢ VỀ PHÒNG LẬP: cùng điều kiện với chuyển phòng, đích là phòng lập
+    (`handler_dept_id` = 0). Khác «Trả về (Bị trả lại)»: phiếu KHÔNG mất trạng thái đã duyệt."""
+    return _transfer_dept(db, pid, data, background_tasks, user, target=0,
+                          message="Đã trả phiếu về phòng lập")
+
+
 @router.post("/{pid}/complete")
 def complete_pr(pid: int, db: Session = Depends(get_db), user=Depends(require("purchase_request", "cancel"))):
     _in_scope(db, pid, user, "cancel")
@@ -800,7 +883,10 @@ def approve_pr(pid: int, data: ApproveIn, background_tasks: BackgroundTasks, db:
     # điều phối ngay tại đây (luồng cũ: duyệt phát là có nhân sự phụ trách).
     n = blank_count = 0
     if not service.dispatch_enabled():
-        pr, n, blank_count = service.dispatch_pr(db, pid, user.id)
+        # bao-CR-414: người duyệt chỉ có bậc `dept_proc` (quản lý thu mua CỦA PHÒNG) → chỉ dùng bộ
+        # phân công riêng của phòng, không rơi về bộ "Thu mua chung".
+        dept_only = approves_only_in_dept_proc(get_perm_profile(db, user), "purchase_request")
+        pr, n, blank_count = service.dispatch_pr(db, pid, user.id, allow_global_assignee=not dept_only)
         _notify_assigned(db, pr, user, background_tasks)
     trigger_notification(
         db=db,
@@ -830,10 +916,14 @@ def dispatch_pr(pid: int, background_tasks: BackgroundTasks, db: Session = Depen
                                  "ngay khi trưởng bộ phận duyệt.")
     # Cổng VAI TRÒ trước, cổng PHẠM VI sau: trưởng phòng không điều phối được thì câu trả
     # lời đúng là "không phải việc của bạn" (403), không phải "không có phiếu nào" (404).
-    if not _can_dispatch(get_perm_profile(db, user)):
+    profile = get_perm_profile(db, user)
+    if not _can_dispatch(profile):
         raise HTTPException(403, "Chỉ Quản lý / Admin thu mua mới duyệt điều phối được phiếu")
     _in_scope(db, pid, user, "approve")
-    pr, n, blank_count = service.dispatch_pr(db, pid, user.id)
+    # bao-CR-414: quản lý thu mua CỦA PHÒNG (chỉ bậc `dept_proc`) điều phối thì chỉ tra bộ phân
+    # công riêng của phòng, không rơi về bộ "Thu mua chung" — thiếu thì họ chọn tay người trong phòng.
+    dept_only = approves_only_in_dept_proc(profile, "purchase_request")
+    pr, n, blank_count = service.dispatch_pr(db, pid, user.id, allow_global_assignee=not dept_only)
     # Thông báo "được phân công phụ trách" cho NSTM vừa được gán (trước CR-034 nằm ở bước duyệt)
     _notify_assigned(db, pr, user, background_tasks)
     msg = f"Đã duyệt điều phối — tự động phân bổ {n} dòng"

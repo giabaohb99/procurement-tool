@@ -7,6 +7,7 @@ class CategoryAssigneeBase(BaseModel):
     item_group_id: int
     primary_employee_id: int = 0
     backup_employee_id: int = 0
+    department_id: int = 0   # bao-CR-414: 0 = bộ phân công "Thu mua chung"
 
 
 class CategoryAssigneeCreate(CategoryAssigneeBase):
@@ -17,12 +18,14 @@ class CategoryAssigneeUpdate(BaseModel):
     item_group_id: int | None = None
     primary_employee_id: int | None = None
     backup_employee_id: int | None = None
+    department_id: int | None = None
 
 
 class CategoryAssigneeBulk(BaseModel):
     item_group_ids: list[int] = []
     primary_employee_id: int = 0
     backup_employee_id: int = 0
+    department_id: int = 0
 
 
 class CategoryAssigneeOut(CategoryAssigneeBase):
@@ -30,5 +33,6 @@ class CategoryAssigneeOut(CategoryAssigneeBase):
     item_group_name: str | None = None
     primary_name: str | None = None
     backup_name: str | None = None
+    department_name: str | None = None   # bao-CR-414: None khi là bộ chung
     updated_at: datetime | None = None   # bao-CR-294 — cột "Ngày cập nhật" ở màn danh sách
     model_config = {"from_attributes": True}

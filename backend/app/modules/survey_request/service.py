@@ -15,7 +15,7 @@ FILTERABLE = ["code", "status", "requester", "department", "request_date",
               "department_id", "head_of_dept_id", "requester_id", "company_id", "purpose"]
 MAX_OPTIONS_PER_LINE = 5   # mỗi sản phẩm (dòng YCKS) tối đa 5 phương án khảo sát
 HEADER_FIELDS = ["company_id", "requester", "requester_id", "requester_position",
-                 "department_id", "department",
+                 "department_id", "handler_dept_id", "department",
                  "head_of_dept_id", "head_of_dept", "purpose", "request_date", "note"]
 
 
@@ -300,6 +300,61 @@ def set_status(db: Session, sid: int, status: str, user_id: int, reason: str = "
     return s
 
 
+# ───────────── bao-CR-414 GĐ5: chuyển phòng xử lý / trả về phòng lập ─────────────
+
+TRANSFERABLE_STATUSES = ("approved", "processing")
+
+
+def can_transfer_dept(db: Session, s: SurveyRequest) -> bool:
+    """Việc khảo sát CHƯA thật sự bắt đầu: phiếu đang duyệt/xử lý (chưa `survey_done`), chưa
+    dòng nào Hoàn thành, chưa phương án nào được CHỌN, chưa sinh YCMH nào từ phiếu này.
+    Phương án đã nhập nhưng chưa chọn không chặn (giữ nguyên); dòng «khảo sát lại» vẫn cho."""
+    if s.status not in TRANSFERABLE_STATUSES:
+        return False
+    lines = lines_of(db, s.id)
+    line_ids = [ln.id for ln in lines]
+    for ln in lines:
+        if ln.is_completed or ln.line_status == LS_COMPLETED:
+            return False
+    if line_ids and db.query(SurveyRequestOption.id).filter(
+            SurveyRequestOption.survey_request_line_id.in_(line_ids),
+            SurveyRequestOption.is_chosen == True).first():  # noqa: E712
+        return False
+    if db.query(SurveyRequestPr.id).filter(SurveyRequestPr.survey_request_id == s.id).first():
+        return False
+    return True
+
+
+def transfer_handler_dept(db: Session, sid: int, handler_dept_id: int, reason: str,
+                          user_id: int) -> SurveyRequest:
+    """Đẩy YCBG sang phòng xử lý khác (hoặc trả về phòng lập khi `handler_dept_id` = 0).
+
+    YCBG không có bước điều phối riêng (duyệt là tự gán rồi sang `processing`), nên ở đây chỉ
+    gỡ NSTM + ngày tiếp nhận của mọi dòng và đổi phòng; trạng thái giữ nguyên. Phòng nhận
+    gán lại bằng tay ở từng dòng (hoặc bấm tự gán). Không chuyển một phần dòng."""
+    from app.modules.purchase_request.service import dept_name_of, validate_transfer_target
+    s = get_sr(db, sid)
+    if not can_transfer_dept(db, s):
+        raise HTTPException(400, "Chỉ chuyển được khi phiếu đang xử lý, chưa dòng nào hoàn thành, "
+                                 "chưa chọn phương án và chưa sinh YCMH")
+    validate_transfer_target(db, s, handler_dept_id, reason)
+    old_id = int(s.handler_dept_id or 0)
+    new_id = int(handler_dept_id or 0)
+    for ln in lines_of(db, sid):
+        ln.assignee = ""
+        ln.received_date = ""
+        ln.updated_by = user_id
+    s.handler_dept_id = new_id
+    s.updated_by = user_id
+    db.commit()
+    action = "return_dept" if new_id == 0 else "transfer_dept"
+    old_name = dept_name_of(db, old_id, s.department)
+    new_name = dept_name_of(db, new_id, s.department)
+    record(db, user_id, ENTITY, sid, action, f"{reason.strip()} · {old_name} -> {new_name}")
+    db.refresh(s)
+    return s
+
+
 # ───────────────────────── Phase 5B: xử lý khảo sát (NSTM) ─────────────────────────
 
 def get_line(db: Session, sid: int, line_id: int) -> SurveyRequestLine:
@@ -357,11 +412,12 @@ def resolve_supplier_name(db: Session, code: str) -> str:
 
 
 def is_purchaser(profile: dict) -> bool:
-    """NSTM/Quản lý/Admin TM = có grant survey_request read với scope proc|all.
-    Người YC (own) & trưởng BP (dept) KHÔNG phải purchaser → không xem được màn xử lý (ẩn NCC)."""
+    """NSTM/Quản lý/Admin TM = có grant survey_request read với scope proc|dept_proc|all.
+    Người YC (own) & trưởng BP (dept) KHÔNG phải purchaser → không xem được màn xử lý (ẩn NCC).
+    bao-CR-414: `dept_proc` (thu mua của phòng tự mua) cũng là purchaser."""
     for g in profile.get("grants", []):
         p = g["perms"].get("survey_request")
-        if p and p.get("read") and p.get("scope") in ("proc", "all"):
+        if p and p.get("read") and p.get("scope") in ("proc", "dept_proc", "all"):
             return True
     return False
 
@@ -415,7 +471,9 @@ def _see_all_lines(profile: dict, s, user) -> bool:
             return True
         # Admin thu mua = đọc-chỉ phạm vi 'proc' (KHÔNG có 'write') -> giám sát toàn quá trình,
         # thấy HẾT dòng. NSTM (có 'write', 'proc') vẫn chỉ thấy dòng được giao để xử lý.
-        if p.get("read") and p.get("scope") == "proc" and not p.get("write"):
+        # bao-CR-414: `dept_proc` (quản lý thu mua của phòng) thấy hết dòng để phân bổ trong phòng.
+        if p.get("read") and (p.get("scope") == "dept_proc"
+                              or (p.get("scope") == "proc" and not p.get("write"))):
             return True
     return False
 
@@ -736,6 +794,7 @@ def create_prs(db: Session, sid: int, user_id: int):
             requester_id=s.requester_id,
             requester_position=s.requester_position, department=s.department,
             department_id=s.department_id,      # CR-086: PYC sinh ra thừa kế id phòng của YCBG
+            handler_dept_id=s.handler_dept_id or 0,   # bao-CR-414: phòng được nhờ đi theo phiếu con
             head_of_dept=s.head_of_dept or find_dept_head(db, s.department or "", s.department_id),
             # CR-087: YCBG nay đã có id TBP → thừa kế thẳng, chỉ suy lại từ phòng khi phiếu
             # nguồn chưa có (phiếu cũ). 0 = không chỉ định ai, chạy theo luật duyệt cũ.
@@ -892,15 +951,20 @@ def complete_sr(db: Session, sid: int, user, profile: dict = None, empty_line_id
     return s, False, resurveyed   # phần của mình xong, còn dòng NSTM khác
 
 
-def auto_assign(db: Session, s: SurveyRequest) -> int:
+def auto_assign(db: Session, s: SurveyRequest, allow_global_assignee: bool = True) -> int:
     """Sau khi trưởng phòng duyệt: tự gán NSTM cho TỪNG DÒNG theo phân loại (tái dùng Task 4).
-    KHÔNG ghi NSTM ở đầu phiếu — một phiếu có thể do nhiều NSTM khảo sát, việc thuộc về dòng."""
-    from app.modules.category_assignee.service import resolve_for_group
+    KHÔNG ghi NSTM ở đầu phiếu — một phiếu có thể do nhiều NSTM khảo sát, việc thuộc về dòng.
+
+    bao-CR-414 (GĐ2): tra bảng phân công theo PHÒNG ĐANG XỬ LÝ phiếu (phòng được nhờ, không thì
+    phòng lập phiếu); `allow_global_assignee=False` (người duyệt chỉ có bậc `dept_proc`) thì
+    không rơi về bộ "Thu mua chung"."""
+    from app.modules.category_assignee.service import handling_dept_of, resolve_for_group
+    dept_id = handling_dept_of(s)
     assigned = 0
     for ln in lines_of(db, s.id):
         if ln.assignee:
             continue
-        emp = resolve_for_group(db, ln.item_group)
+        emp = resolve_for_group(db, ln.item_group, dept_id, allow_global_assignee)
         if emp and emp.code:
             ln.assignee = emp.code
             if not ln.received_date:                          # Ngày tiếp nhận = ngày NSTM được gán

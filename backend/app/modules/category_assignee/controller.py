@@ -16,20 +16,24 @@ router = APIRouter(prefix="/api/category-assignees", tags=["category_assignee"])
 
 def _out(db: Session, obj) -> dict:
     from app.modules.catalog.model import ItemGroup
+    from app.modules.department.model import Department
     from app.modules.employee.model import Employee
     d = CategoryAssigneeOut.model_validate(obj).model_dump()
     g = db.get(ItemGroup, obj.item_group_id) if obj.item_group_id else None
     p = db.get(Employee, obj.primary_employee_id) if obj.primary_employee_id else None
     b = db.get(Employee, obj.backup_employee_id) if obj.backup_employee_id else None
+    dept = db.get(Department, obj.department_id) if obj.department_id else None
     d["item_group_name"] = g.name if g else None
     d["primary_name"] = p.full_name if p else None
     d["primary_code"] = p.code if p else None
     d["backup_name"] = b.full_name if b else None
     d["backup_code"] = b.code if b else None
+    d["department_name"] = dept.name if dept else None   # bao-CR-414: None = bộ "Thu mua chung"
     return d
 
 
-FILTERABLE = ["item_group_id", "primary_employee_id", "backup_employee_id"]
+# bao-CR-414: lọc thêm theo phòng (`department_id__eq=0` = bộ chung)
+FILTERABLE = ["item_group_id", "primary_employee_id", "backup_employee_id", "department_id"]
 
 
 @router.get("")
@@ -50,6 +54,7 @@ def list_(
     if sort_dir:
         order = sort_dir
     from app.modules.catalog.model import ItemGroup
+    from app.modules.department.model import Department
     from app.modules.employee.model import Employee
 
     Pr = aliased(Employee)   # NSTM chính
@@ -60,12 +65,14 @@ def list_(
             ItemGroup.name.label("item_group_name"),
             Pr.full_name.label("primary_name"), Pr.code.label("primary_code"),
             Bk.full_name.label("backup_name"), Bk.code.label("backup_code"),
+            Department.name.label("department_name"),
         )
         .outerjoin(ItemGroup, ItemGroup.id == CategoryAssignee.item_group_id)
         .outerjoin(Pr, Pr.id == CategoryAssignee.primary_employee_id)
         .outerjoin(Bk, Bk.id == CategoryAssignee.backup_employee_id)
+        .outerjoin(Department, Department.id == CategoryAssignee.department_id)
     )
-    # Bộ lọc điều kiện theo phân loại / NSTM chính / NSTM dự phòng (xem core/filter_operators.py)
+    # Bộ lọc điều kiện theo phân loại / NSTM chính / NSTM dự phòng / phòng (xem core/filter_operators.py)
     q = apply_operator_filters(q, CategoryAssignee, request, FILTERABLE)
 
     sort_map = {
@@ -73,21 +80,29 @@ def list_(
         "item_group_name": ItemGroup.name,
         "primary_name": Pr.full_name,
         "backup_name": Bk.full_name,
+        "department_name": Department.name,
     }
     col = sort_map.get(sort, ItemGroup.name)
-    q = q.order_by(col.desc() if order == "desc" else col.asc())
+    if sort == "department_name":
+        # Bộ chung (phòng 0, tên NULL) đứng trước rồi mới tới các phòng theo tên
+        q = q.order_by(CategoryAssignee.department_id.desc() if order == "desc"
+                       else CategoryAssignee.department_id.asc(),
+                       col.desc() if order == "desc" else col.asc(), ItemGroup.name.asc())
+    else:
+        q = q.order_by(col.desc() if order == "desc" else col.asc(), CategoryAssignee.department_id.asc())
 
     total = q.count()
     rows = q.offset(pg["offset"]).limit(pg["limit"]).all()
 
     items = []
-    for obj, ig_name, p_name, p_code, b_name, b_code in rows:
+    for obj, ig_name, p_name, p_code, b_name, b_code, dept_name in rows:
         d = CategoryAssigneeOut.model_validate(obj).model_dump()
         d["item_group_name"] = ig_name
         d["primary_name"] = p_name
         d["primary_code"] = p_code
         d["backup_name"] = b_name
         d["backup_code"] = b_code
+        d["department_name"] = dept_name
         items.append(d)
     return success({"total": total, "items": items})
 
@@ -106,7 +121,8 @@ def create_(data: CategoryAssigneeCreate, db: Session = Depends(get_db),
 @router.post("/bulk")
 def bulk_(data: CategoryAssigneeBulk, db: Session = Depends(get_db),
           user=Depends(require("category_assignee", "create"))):
-    n = service.bulk_upsert(db, data.item_group_ids, data.primary_employee_id, data.backup_employee_id, user.id)
+    n = service.bulk_upsert(db, data.item_group_ids, data.primary_employee_id, data.backup_employee_id,
+                            user.id, department_id=data.department_id)
     return success({"count": n}, f"Đã gán cho {n} phân loại")
 
 
