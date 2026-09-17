@@ -9,6 +9,8 @@ export {
   toApiPayload,
   withCurrentValue,
 } from './field-values'
+export { getPath, setPath } from './field-path'
+export { resolveFormFields } from './resolve-form-fields'
 export {
   getCrudQueryKey,
   getCrudDetailKey,
@@ -23,6 +25,8 @@ export type {
   CrudConfig,
   CrudFormDialogProps,
   CrudFormField,
+  CrudFormFieldsSpec,
   CrudOption,
+  CrudRecord,
   CrudTab,
 } from './types'

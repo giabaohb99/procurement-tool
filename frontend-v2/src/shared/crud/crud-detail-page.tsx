@@ -23,6 +23,7 @@ import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { cn } from '@/shared/utils/cn'
 import { CrudFormFields } from './crud-form-fields'
 import { buildFormDefaults, toApiPayload } from './field-values'
+import { resolveFormFields } from './resolve-form-fields'
 import { TAB_INFO, resolveTabKey } from './resolve-tab-key'
 import type { CrudConfig, CrudRecord } from './types'
 import { useCrudDelete, useCrudDetail, useCrudSave } from './use-crud'
@@ -99,13 +100,17 @@ export function CrudDetailPage<T extends CrudRecord>({
     watch,
     formState: { errors },
   } = useForm<Record<string, unknown>>({
-    defaultValues: buildFormDefaults(config.formFields, item),
+    //  ⚠️ Bộ ô dựng theo **bản ghi**, không theo giá trị đang gõ: chỗ này chạy
+    //  TRƯỚC khi có form nên chưa có gì để `watch`. Đúng thứ cần — giá trị khởi
+    //  tạo phải khớp bản ghi vừa tải. Ô mọc thêm về sau (người dùng đổi loại hồ
+    //  sơ) tự đăng ký lúc `CrudFormFields` dựng chúng ra.
+    defaultValues: buildFormDefaults(resolveFormFields(config.formFields, item ?? {}), item),
   })
 
   // Bản ghi về sau khi gọi API (hoặc sau khi lưu) thì nạp lại vào form.
   useEffect(() => {
     if (item) {
-      reset(buildFormDefaults(config.formFields, item))
+      reset(buildFormDefaults(resolveFormFields(config.formFields, item), item))
     }
   }, [item, config.formFields, reset])
 
@@ -151,9 +156,13 @@ export function CrudDetailPage<T extends CrudRecord>({
 
   const onSubmit = (values: Record<string, unknown>) =>
     once(async () => {
+    //  Dựng bộ ô theo GIÁ TRỊ VỪA GỬI — người dùng có thể vừa đổi loại hồ sơ
+    //  trong chính lần sửa này, nên lấy bộ ô của bản ghi cũ là quy đổi nhầm.
+    const fields = resolveFormFields(config.formFields, values)
+    const payload = toApiPayload(fields, values)
     const saved = await saveMutation.mutateAsync({
       id: item ? (item[idKey] as string | number) : undefined,
-      values: toApiPayload(config.formFields, values),
+      values: config.buildPayload ? config.buildPayload(payload, item) : payload,
     })
 
     //  Tạo xong thì đi tiếp sang chính bản ghi vừa tạo, KHÔNG ở lại form rỗng:

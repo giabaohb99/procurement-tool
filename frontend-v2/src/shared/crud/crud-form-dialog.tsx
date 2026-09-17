@@ -14,6 +14,7 @@ import {
 import { confirm } from '@/shared/ui/confirm-dialog'
 import { CrudFormFields } from './crud-form-fields'
 import { buildFormDefaults, toApiPayload } from './field-values'
+import { resolveFormFields } from './resolve-form-fields'
 import type { CrudConfig, CrudRecord } from './types'
 import { useCrudSave } from './use-crud'
 
@@ -43,7 +44,7 @@ export function CrudFormDialog<T extends CrudRecord>({
     watch,
     formState: { errors, isSubmitting, isDirty },
   } = useForm<Record<string, unknown>>({
-    defaultValues: buildFormDefaults(config.formFields, item),
+    defaultValues: buildFormDefaults(resolveFormFields(config.formFields, item ?? {}), item),
   })
 
   const pending = isSubmitting || saveMutation.isPending
@@ -59,7 +60,7 @@ export function CrudFormDialog<T extends CrudRecord>({
   // cả "Thêm" lẫn "Sửa", không reset thì lần mở sau còn nguyên số của lần trước.
   useEffect(() => {
     if (open) {
-      reset(buildFormDefaults(config.formFields, item))
+      reset(buildFormDefaults(resolveFormFields(config.formFields, item ?? {}), item))
     }
   }, [open, item, config.formFields, reset])
 
@@ -68,7 +69,12 @@ export function CrudFormDialog<T extends CrudRecord>({
       const idKey = (config.idKey as string) || 'id'
       const id = item ? (item[idKey] as string | number) : undefined
 
-      await saveMutation.mutateAsync({ id, values: toApiPayload(config.formFields, values) })
+      const fields = resolveFormFields(config.formFields, values)
+      const payload = toApiPayload(fields, values)
+      await saveMutation.mutateAsync({
+        id,
+        values: config.buildPayload ? config.buildPayload(payload, item) : payload,
+      })
       onOpenChange(false)
     })
 

@@ -15,6 +15,7 @@ import { Switch } from '@/shared/ui/switch'
 import { Textarea } from '@/shared/ui/textarea'
 import { cn } from '@/shared/utils/cn'
 import { formatDate } from '@/shared/utils/format-date'
+import { getPath } from './field-path'
 import { withCurrentValue } from './field-values'
 import type { CrudFormField } from './types'
 import { useCrudSourceOptions } from './use-crud'
@@ -38,7 +39,14 @@ interface CrudFieldProps {
  */
 export function CrudField({ field, register, control, errors, isReadonly }: CrudFieldProps) {
   const isFullWidth = field.fullWidth || field.type === 'textarea'
-  const errorMessage = errors[field.name]?.message as string | undefined
+  //  ⚠️ `getPath`, không phải `errors[field.name]`. react-hook-form dựng cây
+  //  lỗi LỒNG theo dấu chấm, nên ô `'extra_fields.so_gp'` có lỗi thì nó nằm ở
+  //  `errors.extra_fields.so_gp` — tra bằng khóa trần luôn ra `undefined`. Hậu
+  //  quả là im lặng tuyệt đối: react-hook-form chặn submit vì ô sai, mà không
+  //  câu báo lỗi nào hiện ra, nên bấm Lưu thì **không có gì xảy ra** (đúng bẫy
+  //  thứ nhất của duoc-CR-317).
+  const errorMessage = (getPath(errors, field.name) as { message?: string } | undefined)
+    ?.message
   //  Ô SỐ hẹp lại: bề ngang của ô là lời hứa về lượng chữ phải gõ. Kéo ô nhập
   //  «Tối đa mỗi lần nghỉ (ngày)» dài nửa màn hình cho một con số hai chữ số thì
   //  nó đọc như một ô ghi chú bỏ trống. Chỉ ô nhập bị chặn, còn nhãn và chú thích

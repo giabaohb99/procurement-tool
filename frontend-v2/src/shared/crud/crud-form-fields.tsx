@@ -1,10 +1,12 @@
 import type { Control, FieldErrors, UseFormRegister, UseFormWatch } from 'react-hook-form'
 
 import { CrudField } from './crud-field'
-import type { CrudFormField, CrudRecord } from './types'
+import { resolveFormFields } from './resolve-form-fields'
+import type { CrudFormField, CrudFormFieldsSpec, CrudRecord } from './types'
 
 interface CrudFormFieldsProps {
-  fields: CrudFormField[]
+  /** Mảng ô, hoặc HÀM của giá trị đang nhập — xem `CrudFormFieldsSpec`. */
+  fields: CrudFormFieldsSpec
   register: UseFormRegister<CrudRecord>
   control: Control<CrudRecord>
   errors: FieldErrors<CrudRecord>
@@ -34,6 +36,13 @@ interface CrudFormFieldsProps {
  *    nên không còn hàng nào so le.
  * 3. **Ẩn ô theo `field.showWhen`** — ô chỉ có nghĩa ở một nhánh cấu hình thì
  *    nhánh khác không dựng. Theo dõi bằng `watch()` nên ẩn/hiện ngay lúc gõ.
+ * 4. **Dựng ô theo giá trị đang nhập** (`fields` khai bằng hàm) — biểu mẫu mà
+ *    bộ ô chưa biết trước lúc viết config, xem `resolveFormFields`.
+ *
+ * ⚠️ Việc thứ 4 cố ý làm Ở ĐÂY chứ không ở hai màn gọi tới. Component này vốn
+ * đã gọi `watch()` cho `showWhen`, nên dựng ô ở đây không thêm một lượt vẽ nào;
+ * làm ở `CrudDetailPage` thì cả trang — kể cả tab, dòng thời gian, thẻ danh
+ * tính — vẽ lại sau MỖI phím gõ.
  *
  * ⚠️ Thứ tự khai trong `formFields` được giữ **trong từng rổ**; hai rổ (ô nhập /
  * công tắc) thì **rổ nào lên trước do ô ĐẦU TIÊN của nhóm quyết định** — xem
@@ -52,7 +61,8 @@ export function CrudFormFields({
   //  Theo dõi TOÀN BỘ form: `showWhen` là hàm của người khai config, không khai
   //  trước nó đọc ô nào. Form danh mục cỡ chục ô nên chi phí vẽ lại không đáng kể.
   const values = watch()
-  const visible = fields.filter((field) => !field.showWhen || field.showWhen(values))
+  const resolved = resolveFormFields(fields, values)
+  const visible = resolved.filter((field) => !field.showWhen || field.showWhen(values))
 
   //  Gom theo DẢI LIÊN TIẾP, không gom theo tên nhóm. Gom theo tên thì ô không
   //  khai nhóm nằm ở CUỐI form bị kéo ngược lên đầu — nhập chung với cụm không

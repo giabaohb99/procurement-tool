@@ -74,6 +74,17 @@ export interface CrudFormField {
   defaultValue?: unknown
 }
 
+/**
+ * Khai báo bộ ô của biểu mẫu: một MẢNG tĩnh, hoặc một HÀM của giá trị đang nhập.
+ *
+ * Hàm dành cho biểu mẫu mà bộ ô chưa biết trước lúc viết config — xem
+ * `resolveFormFields`. Ô lồng nhau khai bằng đường dẫn có dấu chấm
+ * (`'extra_fields.so_giay_phep'`), react-hook-form hiểu sẵn.
+ */
+export type CrudFormFieldsSpec =
+  | CrudFormField[]
+  | ((values: CrudRecord) => CrudFormField[])
+
 export interface CrudTab<T> {
   key: string
   label: string
@@ -151,8 +162,13 @@ export interface CrudConfig<T> {
     preserveParams?: string[]
     allowConjunctionToggle?: boolean
   }
-  /** Cấu hình các trường trong Form thêm / sửa. */
-  formFields: CrudFormField[]
+  /**
+   * Cấu hình các trường trong Form thêm / sửa.
+   *
+   * Khai bằng HÀM khi bộ ô phụ thuộc vào giá trị đang nhập — xem
+   * `CrudFormFieldsSpec` và `resolveFormFields`.
+   */
+  formFields: CrudFormFieldsSpec
   /**
    * Câu mô tả của từng NHÓM ô (khóa = `field.section`). Tùy chọn — nhóm nào
    * không khai thì chỉ hiện tiêu đề. Dùng để nói bằng tiếng người cái mà tên
@@ -187,6 +203,21 @@ export interface CrudConfig<T> {
   renderExtra?: (row: T) => ReactNode
   /** Hàm lấy tên bản ghi để hiển thị trong câu hỏi xác nhận Xóa. */
   getItemName?: (row: T) => string
+  /**
+   * Chỉnh payload LẦN CUỐI trước khi gửi backend. Nhận cả bản ghi đang sửa
+   * (`undefined` khi tạo mới).
+   *
+   * Sinh ra cho ô JSON tùy biến của phân hệ Hồ sơ (16/09/2026), và lý do là một
+   * bài học đáng nhớ: biểu mẫu chỉ dựng ô cho những trường LOẠI ĐANG KHAI, nên
+   * `extra_fields` gửi lên chỉ chứa chúng. Người quản trị bỏ một ô khỏi loại
+   * thì giá trị cũ của ô đó vẫn nằm dưới DB — và lần bấm Lưu kế tiếp của bất kỳ
+   * ai sẽ **xóa sạch nó mà không báo gì**. Backend cố ý giữ lại khóa không còn
+   * khai (`field_values.py`), nhưng nó chỉ giữ được thứ nó nhận được.
+   *
+   * ⚠️ Chỉ dùng cho việc GHÉP / GIỮ dữ liệu. Đừng đặt luật nghiệp vụ ở đây —
+   * người gọi thẳng API đi đường khác, luật phải nằm ở backend.
+   */
+  buildPayload?: (payload: CrudRecord, item?: T | null) => CrudRecord
   /** Chiều rộng tối đa của hộp thoại thêm mới (mặc định 'sm:max-w-lg'). */
   dialogMaxWidth?: string
   /**

@@ -1,3 +1,4 @@
+import { getPath, setPath } from './field-path'
 import type { CrudFormField, CrudOption } from './types'
 
 /**
@@ -46,20 +47,32 @@ export function buildFormDefaults(
   fields: CrudFormField[],
   item?: Record<string, unknown> | null,
 ): Record<string, unknown> {
-  const values: Record<string, unknown> = {}
+  let values: Record<string, unknown> = {}
 
   for (const field of fields) {
-    const stored = item ? item[field.name] : undefined
+    //  ⚠️ `getPath`, không phải `item[field.name]`: ô lồng nhau khai tên có dấu
+    //  chấm (`'extra_fields.so_gp'`) và react-hook-form hiểu đó là đường dẫn.
+    //  Tra bằng khóa trần thì luôn ra `undefined` — giá trị ĐÃ LƯU không đổ vào
+    //  ô, người dùng mở hồ sơ ra thấy trống và tin là chưa ai nhập.
+    const stored = item ? getPath(item, field.name) : undefined
     const source = stored !== undefined ? stored : field.defaultValue
 
+    //  ⚠️ `setPath`, không phải `values[field.name] = …`. Với ô lồng nhau,
+    //  react-hook-form tra `defaultValues` bằng cách TÁCH tên theo dấu chấm —
+    //  ghi một khóa trần `'extra_fields.so_gp'` thì nó không bao giờ tìm thấy,
+    //  và ô hiện trống dù dữ liệu có sẵn ngay trong đối tượng này.
     if (source !== undefined) {
-      values[field.name] = field.type === 'percent' ? ratioToPercentInput(source) : source
+      values = setPath(
+        values,
+        field.name,
+        field.type === 'percent' ? ratioToPercentInput(source) : source,
+      )
     } else if (field.type === 'switch') {
-      values[field.name] = true
+      values = setPath(values, field.name, true)
     } else if (field.type === 'number' || field.type === 'percent') {
-      values[field.name] = 0
+      values = setPath(values, field.name, 0)
     } else {
-      values[field.name] = ''
+      values = setPath(values, field.name, '')
     }
   }
 
@@ -93,18 +106,30 @@ export function toApiPayload(
   fields: CrudFormField[],
   values: Record<string, unknown>,
 ): Record<string, unknown> {
-  const payload: Record<string, unknown> = { ...values }
+  let payload: Record<string, unknown> = { ...values }
 
   for (const field of fields) {
-    const raw = payload[field.name]
+    const raw = getPath(payload, field.name)
     if (raw === undefined) continue
 
     if (field.type === 'percent') {
       // Ô trống nghĩa là 0%, không phải "bỏ trường này đi": backend khai `vat`
       // là số bắt buộc nên gửi chuỗi rỗng sẽ 422.
-      payload[field.name] = percentInputToRatio(raw === '' ? 0 : raw)
+      payload = setPath(payload, field.name, percentInputToRatio(raw === '' ? 0 : raw))
     } else if (field.type === 'number' && raw !== '') {
-      payload[field.name] = Number(raw)
+      payload = setPath(payload, field.name, Number(raw))
+    } else if (field.type === 'date' && raw === '') {
+      //  ⚠️ Ô NGÀY để trống phải gửi `null`, KHÔNG gửi chuỗi rỗng.
+      //
+      //  `DatePicker` không có cách nào khác để nói "chưa chọn" — nó luôn giữ
+      //  `''`. Mà `''` thì không phải một ngày: schema nào khai `date | None`
+      //  đều trả **422** kèm câu *«input is too short»*, và người dùng chỉ thấy
+      //  bấm Lưu mà không lưu được, cho một ô họ CỐ Ý bỏ trống.
+      //
+      //  Các danh mục cũ né lỗ này bằng cách khai ngày là `str = ""` ở backend —
+      //  tức là không kiểm gì cả, đúng thứ duoc-CR-316 dựng ra để chặn. Vá ở
+      //  đây thì màn nào khai ngày cho tử tế cũng chạy được ngay.
+      payload = setPath(payload, field.name, null)
     }
   }
 
