@@ -5,37 +5,30 @@ import type { ErpModule } from '@/app/router/module-definition'
 import { appRoutes } from '@/shared/constants/app-routes'
 
 /**
- * Phân hệ HỒ SƠ — hiện **chỉ có danh mục Loại hồ sơ** (`/dossier/types`), chạy
- * trên dữ liệu thật: bảng `tab_dossier_type`, API `/api/dossier-types`, khóa
- * quyền `dossier_type`. `/dossier` chỉ là đường chuyển hướng vào đó.
+ * Phân hệ HỒ SƠ — kho giấy tờ công ty. Hai màn, **hai khóa quyền riêng**:
  *
- * ⚠️ **Màn *Danh sách hồ sơ* CỐ Ý KHÔNG đăng ký route** (16/09/2026). Khuôn màn
- * đã dựng xong và còn nguyên trên đĩa — `pages/dossier-list-page.tsx` chạy trên
- * `api/dossier-mock-data.ts` — nhưng **không chỗ nào gọi tới**, và đó là chủ ý
- * về BẢO MẬT, không phải việc làm dở:
+ *   `/dossier/list`   → bảng `tab_dossier`,      khóa `dossier`
+ *   `/dossier/types`  → bảng `tab_dossier_type`, khóa `dossier_type`
  *
- * Khóa quyền `dossier` chưa tồn tại ở backend, nên mục menu không khai được
- * `entity`. Mà `itemAllowed` coi **mục không khai `entity` là luôn hiện**, và
- * `canAccessRoute` trả `true` khi **không mục nào khớp đường dẫn**
- * (`module-visibility.ts:141`) — nghĩa là đăng ký route đó là mở nó cho **mọi
- * người đăng nhập**, ở cả hai lối vào. Hôm nay chỉ lộ dữ liệu giả; ngày ai đó
- * thay ruột `fetchDossiers` bằng `apiGet` thì **hồ sơ pháp lý của công ty lộ cho
- * toàn bộ nhân viên**, im lặng, không cần sửa dòng nào ở tệp này.
+ * Tách hai theo luật «một khóa = một màn hình» (CR-157), và vì hai việc do hai
+ * nhóm người làm: lập hồ sơ là việc hằng ngày của hành chính mỗi phòng, còn sửa
+ * LOẠI thì đổi luôn **khuôn biểu mẫu** (`field_schema`) cho cả công ty — gộp
+ * một khóa là ai lập được một tờ giấy phép cũng xóa được ô «Số giấy phép» khỏi
+ * mọi hồ sơ cùng loại.
  *
- * ⚠️ Cũng vì vậy **đừng khai `SCOPE_FIELDS["dossier"] = PUBLIC` cho xong**: chưa
- * có model thì `ENTITY_MODEL_PATHS` không nhận cột thật (BB-2), nên PUBLIC là
- * lựa chọn duy nhất — và PUBLIC nghĩa là `apply_scope` **không lọc gì cả**. Đó
- * là đổi một món nợ nhìn thấy được lấy một món nợ vô hình.
+ * ⚠️ **MỌI mục menu ở đây BẮT BUỘC khai `entity`.** Khung điều hướng của
+ * `frontend-v2` mặc định MỞ ở hai chỗ, cả hai im lặng: `itemAllowed` coi mục
+ * không khai `entity` là luôn hiện, và `canAccessRoute` trả `true` khi **không
+ * mục nào khớp đường dẫn** (`module-visibility.ts:141`). Nghĩa là đăng ký một
+ * route mà không có mục menu gác nó = mở cho **mọi người đăng nhập**, ở cả hai
+ * lối vào. Màn *Danh sách hồ sơ* từng nằm đúng trong tình trạng đó (16/09/2026)
+ * và phải gỡ khỏi routing cho tới khi backend có khóa `dossier` thật.
  *
- * Bật lại màn này thì làm ĐỦ BỐN việc, theo đúng thứ tự:
- * 1. **Chốt bộ trường hồ sơ** — `types/dossier.ts` đang là khuôn chung.
- * 2. **Backend**: bảng `tab_dossier` + Alembic + controller. Nối loại bằng
- *    `dossier_type_id` **và** giữ một cột nhãn chép sẵn (bản in với tệp Excel đọc
- *    thẳng cột chữ — bài học duoc-CR-320).
- * 3. **Khóa quyền `dossier`** ở `core/permissions.py`, khai `SCOPE_FIELDS` bằng
- *    **cột thật** (chủ hồ sơ / bộ phận giữ) và thêm vào `ENTITY_MODEL_PATHS`.
- * 4. Mới đăng ký lại route + mục menu, **có `entity: 'dossier'`**, rồi thay ruột
- *    `fetchDossiers` bằng `apiGet` và xóa `api/dossier-mock-data.ts`.
+ * Nay nó đã có: `dossier` nằm trong `ENTITIES`, khai **cột thật** ở
+ * `SCOPE_FIELDS` (pháp nhân · phòng · người lập · người phụ trách) — KHÔNG phải
+ * `PUBLIC` — và có mặt trong `ENTITY_MODEL_PATHS`. Phạm vi kiểm bằng
+ * `test/backend/test_ho_so_pham_vi.py`; luật gác của tệp này kiểm bằng
+ * `routes.test.ts` ngay bên cạnh.
  */
 export const dossierModule: ErpModule = {
   id: 'dossier',
@@ -47,6 +40,12 @@ export const dossierModule: ErpModule = {
   enabled: true,
 
   nav: [
+    {
+      label: 'Danh sách hồ sơ',
+      path: appRoutes.dossier.list,
+      icon: FolderOpen,
+      entity: 'dossier',
+    },
     {
       label: 'Loại hồ sơ',
       path: appRoutes.dossier.types,
@@ -62,11 +61,31 @@ export const dossierModule: ErpModule = {
 
   routes: [
     {
-      //  Gốc phân hệ không có màn riêng — đẩy thẳng vào danh mục. `ModuleLayout`
-      //  đã chặn người thiếu quyền từ trước đó (`canOpenModule`), nên đường này
-      //  chỉ chạy cho người vào được `/dossier/types`.
+      //  Gốc phân hệ không có màn riêng — đẩy vào danh sách hồ sơ. `ModuleLayout`
+      //  đã chặn người thiếu quyền từ trước đó (`canOpenModule`).
       path: appRoutes.dossier.root,
-      element: <Navigate to={appRoutes.dossier.types} replace />,
+      element: <Navigate to={appRoutes.dossier.list} replace />,
+    },
+    {
+      path: appRoutes.dossier.list,
+      lazy: async () => ({
+        Component: (await import('./pages/dossier-list-page')).DossierListPage,
+      }),
+    },
+    {
+      //  ⚠️ Phải đứng TRƯỚC `:id` — cùng khuôn với `/hr/job-positions/new`.
+      //  Đứng sau thì «new» khớp vào `:id`, khung CRUD gọi API chi tiết với một
+      //  id không phải số và trang chỉ hiện lỗi tải.
+      path: appRoutes.dossier.newDossier,
+      lazy: async () => ({
+        Component: (await import('./pages/dossier-detail-page')).DossierDetailPage,
+      }),
+    },
+    {
+      path: appRoutes.dossier.detail(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/dossier-detail-page')).DossierDetailPage,
+      }),
     },
     {
       path: appRoutes.dossier.types,
@@ -75,9 +94,6 @@ export const dossierModule: ErpModule = {
       }),
     },
     {
-      //  ⚠️ Phải đứng TRƯỚC `:id` — cùng khuôn với `/hr/job-positions/new`.
-      //  Đứng sau thì «new» khớp vào `:id`, khung CRUD gọi API chi tiết với một
-      //  id không phải số và trang chỉ hiện lỗi tải.
       path: appRoutes.dossier.typeNew,
       lazy: async () => ({
         Component: (await import('./pages/dossier-type-detail-page')).DossierTypeDetailPage,

@@ -1,10 +1,11 @@
-import { CalendarClock, CircleCheck, CircleX, Hash } from 'lucide-react'
+import { CalendarClock, CircleCheck, CircleX, Hash, ListChecks } from 'lucide-react'
 
 import { appRoutes } from '@/shared/constants/app-routes'
 import type { CrudConfig } from '@/shared/crud'
 import { CrudRecordCard } from '@/shared/crud/crud-record-card'
 import { Badge } from '@/shared/ui/badge'
 import type { IdentityChip } from '@/shared/ui/record-identity-card'
+import { DossierFieldSchemaEditor } from '../components/dossier-field-schema-editor'
 import type { DossierType } from '../types/dossier-type'
 import { VALIDITY_OPTIONS, formatValidity } from '../utils/validity-text'
 
@@ -21,6 +22,11 @@ function dossierTypeChips(r: DossierType, quietWhenNormal = false): IdentityChip
   return [
     { icon: Hash, text: r.code, tone: 'code' },
     { icon: CalendarClock, text: formatValidity(r.default_valid_months), tone: 'muted' },
+    {
+      icon: ListChecks,
+      text: r.field_count ? `${r.field_count} ô riêng` : 'Không có ô riêng',
+      tone: 'muted',
+    },
     ...(normal
       ? []
       : [
@@ -148,6 +154,21 @@ export const DOSSIER_TYPE_CRUD_CONFIG: CrudConfig<DossierType> = {
         ),
     },
     {
+      //  Nhìn danh sách là biết loại nào đã khai khuôn biểu mẫu, loại nào còn
+      //  trống. Số do backend đếm (`field_count`), không đo ở đây — đo ở
+      //  serializer từng dòng thì đúng, nhưng đo ở TypeScript thì cột này phải
+      //  tải cả bộ trường của mọi loại chỉ để hiện một con số.
+      key: 'field_count',
+      header: 'Ô riêng',
+      width: 110,
+      cell: (r) =>
+        r.field_count ? (
+          `${r.field_count} ô`
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        ),
+    },
+    {
       key: 'is_active',
       header: 'Tình trạng',
       width: 130,
@@ -159,6 +180,11 @@ export const DOSSIER_TYPE_CRUD_CONFIG: CrudConfig<DossierType> = {
       ),
     },
   ],
+  //  ⚠️ Trình khai bộ trường dựng NGOÀI biểu mẫu chung, có nút Lưu và cửa API
+  //  riêng — xem `DossierFieldSchemaEditor`. Khung CRUD chỉ dựng `renderExtra`
+  //  khi bản ghi ĐÃ tồn tại, nên ở màn «Thêm loại» nó không hiện: chưa có id thì
+  //  không PATCH vào đâu được. Tạo loại xong mới khai ô, đúng thứ tự.
+  renderExtra: (r) => <DossierFieldSchemaEditor type={r} />,
   //  ⚠️ Mọi `name` ở đây phải nằm trong `filterable=[...]` của
   //  `backend/app/modules/dossier/type_controller.py`. Tên ngoài danh sách đó bị
   //  `apply_filters` **bỏ qua trong im lặng** — người dùng đặt điều kiện, bấm Áp

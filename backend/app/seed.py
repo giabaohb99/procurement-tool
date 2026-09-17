@@ -238,6 +238,13 @@ _SYS_ENTITIES = {"user", "role", "setting", "backup", "help_article", "mailbox",
                  #  lại», tức bấm một phát là ERP gọi ngược sang app cũ / POS365.
                  #  Việc của quản trị hệ thống, không phải của thu mua.
                  "sync_log",
+                 #  Hồ sơ (16/09/2026): giấy phép con, hợp đồng nguyên tắc,
+                 #  chứng nhận kiểm định của công ty — giấy tờ pháp lý của phòng
+                 #  Hành chính, không phải nghiệp vụ mua hàng. Lọt vào
+                 #  _PUR_MANAGER_PERMS là Quản lý thu mua đọc (và XÓA) được toàn
+                 #  bộ hồ sơ pháp lý của mọi pháp nhân, kèm bản scan đính kèm.
+                 #  Ai cần thì gán thêm vai trò `dossier_admin`.
+                 "dossier",
                  "audit", "change_log"}
 _PUR_MANAGER_PERMS = {e: (_ALL_ACTIONS, "all") for e in ENTITIES if e not in _SYS_ENTITIES}
 
@@ -476,12 +483,16 @@ STD_ROLES = {
     "seal_director": {"name": "Giám đốc duyệt dấu (Duyệt dấu)", "perms": {
         "seal_request": (["read"], "company"),
     }},
-    #  Phân hệ Hồ sơ (16/09/2026) — mới có DANH MỤC Loại hồ sơ, bảng hồ sơ chưa
-    #  dựng. Vai trò mẫu để giao cho Hành chính mà không phải cấp quyền quản trị
-    #  hệ thống; `admin` vẫn tự có đủ (vòng cấp quyền cuối `seed.py` quét
-    #  `ENTITIES`). Thêm khóa `dossier` vào đây khi bảng hồ sơ ra đời.
+    #  Phân hệ Hồ sơ (16/09/2026). Vai trò mẫu để giao cho Hành chính mà không
+    #  phải cấp quyền quản trị hệ thống; `admin` vẫn tự có đủ (vòng cấp quyền
+    #  cuối `seed.py` quét `ENTITIES`).
+    #
+    #  ⚠️ Phạm vi `all` trên `dossier` là CỐ Ý cho vai trò QUẢN TRỊ này — người
+    #  giữ kho hồ sơ công ty phải thấy hết. Vai trò cho hành chính TỪNG PHÒNG
+    #  thì tự tạo trên màn Phân quyền với phạm vi `dept`, đừng nới dòng này.
     "dossier_admin": {"name": "Hồ sơ — Quản trị danh mục", "perms": {
         "dossier_type": (["read", "create", "write", "delete", "export"], "all"),
+        "dossier": (["read", "create", "write", "delete", "export"], "all"),
     }},
 }
 

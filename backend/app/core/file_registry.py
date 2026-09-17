@@ -35,6 +35,11 @@ FILE_POLICY: dict[str, tuple[str, set[str], int]] = {
     # (`comment/service.resolve_doc`: quyền đọc + phạm vi dữ liệu của chính chứng từ đó).
     # `__self__` ở đây chỉ mở bước TẢI FILE TẠM (chưa gắn vào đâu);
     # còn gắn/đọc/xóa link đều đi qua nhánh riêng trong `attachment/controller.py`.
+    # Bản scan của hồ sơ công ty (giấy phép con, hợp đồng nguyên tắc, chứng nhận
+    # kiểm định). Trần 50MB vì bản scan màu nhiều trang của một bộ hồ sơ pháp lý
+    # dễ vượt 20MB. Quyền kiểm trên entity cha `dossier` — tức là qua CẢ
+    # `require` LẪN `apply_scope`, không phải chỉ đăng nhập.
+    "dossier":                ("dossier", _DOC, 50),
     "comment":                ("__self__", _DOC, 50),
     # Bài viết diễn đàn: ảnh + video (D-Q3 chốt 27/08/2026 — video quay điện thoại
     # đăng thẳng, mp4/webm là hai định dạng <video> mọi trình duyệt phát được).
@@ -104,7 +109,12 @@ def direct_policy(kind: str) -> tuple[set[str], int]:
 #  private + đổi mọi phân hệ sang link tạm (P0-N02/N03), là việc hạ tầng đụng cả
 #  `frontend/` đang đóng băng. Cho tới lúc đó: **không đưa văn bản Tuyệt mật thật
 #  vào hệ thống**.
-PRIVATE_ENTITIES: set[str] = {"document_version"}
+#
+#  `dossier` vào đây ngay từ đầu (16/09/2026): đính kèm của hồ sơ là bản scan
+#  giấy phép, hợp đồng và chứng nhận — đúng nhóm giấy tờ mà một URL đọc thẳng
+#  bucket bị chuyền tay là hỏng. Phân hệ mới thì không có nợ tương thích nào để
+#  phải cân nhắc, cứ riêng tư từ đầu.
+PRIVATE_ENTITIES: set[str] = {"document_version", "dossier"}
 
 
 def is_private(entity: str) -> bool:

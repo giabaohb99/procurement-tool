@@ -118,6 +118,14 @@ export const ENTITIES = [
   //  MỌI vai trò được `read` (seed), quyền sửa dành cho `hr_profile`.
   'job_position',
   'dossier_type',
+  //  HỒ SƠ (`tab_dossier`, 16/09/2026) — màn `/dossier/list`. Tách khỏi
+  //  `dossier_type` theo luật «một khóa = một màn hình» (CR-157), và vì hai việc
+  //  do hai người làm: lập hồ sơ là việc hằng ngày của hành chính mỗi phòng,
+  //  còn sửa LOẠI thì đổi luôn KHUÔN BIỂU MẪU (`field_schema`) cho cả công ty.
+  //  ⚠️ Khác `dossier_type` ở chỗ backend lọc PHẠM VI DỮ LIỆU thật trên khóa
+  //  này (pháp nhân · phòng · người lập · người phụ trách) — `can('dossier')`
+  //  chỉ nói được «có vào màn này không», không nói được thấy hồ sơ nào.
+  'dossier',
   //  Điểm cà phê × POS365 (doc/erp/diem-ca-phe/04). Bốn khóa để ba quyền của
   //  PS12 tách được: xem sổ người khác · điều chỉnh tay · chạy đồng bộ.
   //  Ví của tôi KHÔNG cần khóa nào — endpoint riêng chỉ đòi đăng nhập.

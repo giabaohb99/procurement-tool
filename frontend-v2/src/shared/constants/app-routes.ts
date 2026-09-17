@@ -461,14 +461,23 @@ export const appRoutes = {
     order: '/dego-coffee/order',
   },
   /**
-   * Phân hệ HỒ SƠ — hiện **chỉ có danh mục Loại hồ sơ**, chạy trên bảng
-   * `tab_dossier_type` thật. Màn *Danh sách hồ sơ* đã dựng khuôn nhưng CỐ Ý chưa
-   * đăng ký route vì khóa quyền `dossier` chưa có ở backend — lý do đầy đủ ở
-   * `modules/dossier/routes.tsx`, đọc trước khi thêm đường dẫn mới vào đây.
+   * Phân hệ HỒ SƠ — kho giấy tờ công ty. Hai màn, hai khóa quyền riêng theo
+   * luật «một khóa = một màn hình» (CR-157):
+   *
+   *   `/dossier/list`   → bảng `tab_dossier`,      khóa `dossier`
+   *   `/dossier/types`  → bảng `tab_dossier_type`, khóa `dossier_type`
+   *
+   * ⚠️ Loại hồ sơ không chỉ để phân nhóm — nó là **khuôn biểu mẫu** của hồ sơ
+   * (`field_schema`), nên quyền sửa danh mục nặng hơn hẳn quyền lập hồ sơ.
    */
   dossier: {
-    /** Không có màn riêng — chuyển hướng sang `types`. */
+    /** Không có màn riêng — chuyển hướng sang `list`. */
     root: '/dossier',
+    /** Danh sách hồ sơ. Thêm mới và chi tiết đều là TRANG riêng. */
+    list: '/dossier/list',
+    /** ⚠️ Route tĩnh, phải đăng ký TRƯỚC `:id` kẻo «new» bị khớp thành id. */
+    newDossier: '/dossier/list/new',
+    detail: (id: number | string) => `/dossier/list/${id}`,
     /** Danh mục Loại hồ sơ — danh sách, thêm mới và chi tiết đều là TRANG riêng. */
     types: '/dossier/types',
     /** ⚠️ Route tĩnh, phải đăng ký TRƯỚC `:id` kẻo «new» bị khớp thành id. */

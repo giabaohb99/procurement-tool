@@ -7,6 +7,8 @@
  * Loại quyết định hai thứ ở màn hồ sơ: nhóm để lọc, và **hạn hiệu lực mặc định**
  * gợi ý khi lập hồ sơ mới.
  */
+import type { DossierFieldDef } from './dossier-field'
+
 //  ⚠️ `type` chứ KHÔNG `interface`: khung CRUD khai báo ràng `T extends
 //  CrudRecord` (`Record<string, unknown>`), mà TypeScript chỉ cấp "chỉ mục
 //  ngầm" cho type alias — một `interface` y hệt sẽ báo không gán được. Cùng lý
@@ -36,9 +38,18 @@ export type DossierType = {
    * mục tự đổi chỗ mỗi lần thêm một dòng.
    */
   sort_order: number
+  /**
+   * BỘ TRƯỜNG TÙY BIẾN — khuôn biểu mẫu của loại này (xem `dossier-field.ts`).
+   *
+   * Đây là thứ làm màn lập hồ sơ đổi hình dạng theo loại đang chọn. Rỗng là hợp
+   * lệ: nhiều loại giấy tờ chỉ cần mã, tên, hạn.
+   */
+  field_schema: DossierFieldDef[]
+  /** Số ô tùy biến — backend đếm sẵn để bảng danh mục khỏi tự đo. */
+  field_count: number
   /** Bộ sinh CRUD gắn thêm cho mọi danh mục (bao-CR-294). */
   updated_at?: string | null
 }
 
 /** Dữ liệu người dùng nhập ở hộp thoại Thêm / Sửa. */
-export type DossierTypeInput = Omit<DossierType, 'id' | 'updated_at'>
+export type DossierTypeInput = Omit<DossierType, 'id' | 'updated_at' | 'field_count'>

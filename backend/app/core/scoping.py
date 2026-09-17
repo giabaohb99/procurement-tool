@@ -228,6 +228,21 @@ SCOPE_FIELDS = {
     #  ai được SỬA thì gác bằng `dossier_type.write`.
     "dossier_type":     PUBLIC,
 
+    #  HỒ SƠ (16/09/2026) — **cột thật, KHÔNG PUBLIC**. Đây là chỗ khác căn bản
+    #  với danh mục loại ngay trên: một loại giấy tờ là chuyện chung cả công ty,
+    #  còn một bộ hồ sơ thì thuộc về một pháp nhân, một phòng và một người.
+    #
+    #  Khai cả `owner` LẪN `self` (khuôn của `leave_request`, CR-259): một bộ hồ
+    #  sơ có HAI người dính tới nó — người LẬP (`created_by`, hành chính nhập
+    #  hộ) và người PHỤ TRÁCH theo dõi (`owner_employee_id`). Cả hai đều phải
+    #  thấy nó ở phạm vi «của mình», nếu không thì người được giao theo dõi hồ
+    #  sơ lại không mở được chính hồ sơ ấy. Nhánh `own` của `_role_scope_cond`
+    #  đã HỢP hai cột và tự chặn khi `employee_id = 0` — thiếu chốt đó thì
+    #  `owner_employee_id == 0` trúng mọi hồ sơ CHƯA GẮN người phụ trách, tức là
+    #  mở rộng phạm vi thay vì thu hẹp.
+    "dossier":          {"company": "company_id", "dept_id": "department_id",
+                         "owner": "created_by", "self": "owner_employee_id"},
+
     # --- Điểm cà phê × POS365 (doc/erp/diem-ca-phe/04-phan-quyen.md) ---
     #  Sổ điểm và thành viên khai `self` theo `employee_id` — "nhân viên chỉ thấy
     #  sổ của mình" là một phép áp scope, không phải một câu hứa (nghiệm thu 4 của

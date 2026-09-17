@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { ENTITIES } from '@/core/authorization/permission-types'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { dossierModule } from './routes'
 
@@ -14,10 +15,13 @@ import { dossierModule } from './routes'
  *   (`module-visibility.ts:141`).
  *
  * Nghĩa là một route không có mục menu gác thì mở cho **mọi người đăng nhập**, ở
- * cả hai lối vào, mà không dòng nào đỏ lên. Màn *Danh sách hồ sơ* đã dựng xong
- * khuôn nhưng chạy trên dữ liệu mẫu và khóa `dossier` chưa có ở backend — nối
- * `fetchDossiers` vào API thật trong tình trạng đó là lộ hồ sơ pháp lý của công
- * ty cho toàn bộ nhân viên. Xem ghi chú đầu `routes.tsx`.
+ * cả hai lối vào, mà không dòng nào đỏ lên. Màn *Danh sách hồ sơ* đã từng nằm
+ * đúng trong tình trạng đó và phải gỡ khỏi routing; nay nó quay lại vì khóa
+ * `dossier` đã có thật ở backend, khai **cột thật** trong `SCOPE_FIELDS`.
+ *
+ * ⚠️ Đây là chốt của GIAO DIỆN, và giao diện không bao giờ là bảo mật. Chốt thật
+ * nằm ở `require()` + `apply_scope()` của backend — kiểm ở
+ * `test/backend/test_ho_so_pham_vi.py`.
  */
 describe('phân hệ Hồ sơ — chốt phân quyền đường dẫn', () => {
   /** Mục menu thật sự gác được: có `entity` hoặc `entities` không rỗng. */
@@ -33,6 +37,18 @@ describe('phân hệ Hồ sơ — chốt phân quyền đường dẫn', () => {
       .filter((item) => !item.entity && !item.entities?.length)
       .map((item) => item.label)
     expect(ungated).toEqual([])
+  })
+
+  it('khóa quyền của mọi mục menu đều CÓ THẬT ở backend', () => {
+    //  Gõ sai tên khóa (`dossiers`, `dossier_list`…) thì `can()` trả false với
+    //  MỌI người và mục menu biến mất im lặng — đọc ra như "chưa ai được cấp
+    //  quyền", nên người đi sửa sẽ vào màn Phân quyền tìm một ô tick không tồn tại.
+    const entities: string[] = ENTITIES as unknown as string[]
+    for (const item of dossierModule.nav) {
+      for (const key of [item.entity, ...(item.entities ?? [])].filter(Boolean)) {
+        expect(entities, `mục «${item.label}» khai khóa lạ: ${key}`).toContain(key)
+      }
+    }
   })
 
   it('mọi route đều nằm sau một mục menu có khóa quyền', () => {
@@ -51,8 +67,8 @@ describe('phân hệ Hồ sơ — chốt phân quyền đường dẫn', () => {
 
   it('gốc /dossier chỉ được CHUYỂN HƯỚNG, không được gắn màn nào', () => {
     //  Bài trên miễn trừ đường gốc, nên nếu không chốt thêm ở đây thì đổi phần
-    //  `element` của nó từ `<Navigate>` sang màn danh sách hồ sơ là lách qua được
-    //  cả hai bài mà vẫn mở màn đó cho toàn công ty.
+    //  `element` của nó từ `<Navigate>` sang một màn bất kỳ là lách qua được cả
+    //  hai bài mà vẫn mở màn đó cho toàn công ty.
     const root = dossierModule.routes.find((route) => route.path === appRoutes.dossier.root)
 
     expect(root, 'thiếu route gốc /dossier').toBeDefined()
@@ -62,17 +78,39 @@ describe('phân hệ Hồ sơ — chốt phân quyền đường dẫn', () => {
     ).toBeUndefined()
   })
 
-  it('màn Danh sách hồ sơ (dữ liệu mẫu) CHƯA được đăng ký route', () => {
-    //  Khuôn màn còn nguyên trên đĩa (`pages/dossier-list-page.tsx`) nhưng không
-    //  chỗ nào gọi tới. Bật lại phải làm đủ bốn việc ở ghi chú đầu `routes.tsx` —
-    //  việc thứ ba là khai khóa `dossier` kèm CỘT THẬT ở `SCOPE_FIELDS`, đừng khai
-    //  `PUBLIC` cho xong vì `PUBLIC` nghĩa là `apply_scope` không lọc gì cả.
+  it('hai màn nằm sau HAI khóa khác nhau, không dùng chung một khóa', () => {
+    //  Luật «một khóa = một màn hình» (CR-157) ở đây không phải chuyện gọn gàng:
+    //  loại hồ sơ là KHUÔN BIỂU MẪU của hồ sơ (`field_schema`), nên gộp chung
+    //  một khóa là ai lập được một tờ giấy phép cũng xóa được ô «Số giấy phép»
+    //  khỏi mọi hồ sơ cùng loại.
+    const byPath = new Map(dossierModule.nav.map((item) => [item.path, item.entity]))
+    expect(byPath.get(appRoutes.dossier.list)).toBe('dossier')
+    expect(byPath.get(appRoutes.dossier.types)).toBe('dossier_type')
+  })
+
+  it('route đăng ký đúng bộ đường dẫn mong đợi, và `/new` đứng TRƯỚC `/:id`', () => {
     const paths = dossierModule.routes.map((route) => route.path)
     expect(paths).toEqual([
       appRoutes.dossier.root,
+      appRoutes.dossier.list,
+      appRoutes.dossier.newDossier,
+      appRoutes.dossier.detail(':id'),
       appRoutes.dossier.types,
       appRoutes.dossier.typeNew,
       appRoutes.dossier.typeDetail(':id'),
     ])
+
+    //  ⚠️ Thứ tự là luật, không phải thẩm mỹ: react-router khớp theo thứ tự đăng
+    //  ký, nên `/:id` đứng trước thì «new» bị nuốt thành một id — khung CRUD gọi
+    //  API chi tiết với `id = "new"` và người dùng chỉ thấy màn báo lỗi tải.
+    for (const [staticPath, dynamicPath] of [
+      [appRoutes.dossier.newDossier, appRoutes.dossier.detail(':id')],
+      [appRoutes.dossier.typeNew, appRoutes.dossier.typeDetail(':id')],
+    ]) {
+      expect(
+        paths.indexOf(staticPath),
+        `${staticPath} phải đăng ký trước ${dynamicPath}`,
+      ).toBeLessThan(paths.indexOf(dynamicPath))
+    }
   })
 })

@@ -86,6 +86,17 @@ ENTITIES = [
     # dựng) — đọc hồ sơ là việc hằng ngày của nhiều người, còn thêm bớt LOẠI là
     # đổi luật phân loại cho cả công ty.
     "dossier_type",
+    # HỒ SƠ (`tab_dossier`, 16/09/2026) — bộ giấy tờ công ty đang giữ.
+    #
+    # Tách khỏi `dossier_type` theo luật «một khóa = một màn hình» (CR-157), và
+    # vì hai việc do hai người làm: lập hồ sơ là việc hằng ngày của hành chính
+    # mỗi phòng, còn thêm bớt LOẠI là đổi luật phân loại — và đổi luôn KHUÔN
+    # BIỂU MẪU (`field_schema`) cho cả công ty. Gộp một khóa thì ai lập được một
+    # tờ giấy phép cũng xóa được ô «Số giấy phép» khỏi mọi hồ sơ cùng loại.
+    #
+    # ⚠️ Khai CỘT THẬT ở `SCOPE_FIELDS`, không PUBLIC: hồ sơ thuộc về một phòng
+    # và một người, khác hẳn danh mục loại.
+    "dossier",
     # Phân hệ Điểm cà phê × POS365 (doc/erp/diem-ca-phe/04-phan-quyen.md). Bốn
     # khóa vì ba quyền của PS12 phải TÁCH được: xem sổ người khác
     # (`coffee_ledger.read` + scope rộng) · điều chỉnh tay (`coffee_ledger.write`)
@@ -130,6 +141,7 @@ ENTITY_LABELS = {
     "employee_sensitive": "Nhân viên — thông tin nhạy cảm (CCCD, ngân hàng, địa chỉ)",
     "job_position": "Danh mục Chức vụ",
     "dossier_type": "Danh mục Loại hồ sơ",
+    "dossier": "Hồ sơ (giấy tờ công ty)",
     "user": "Tài khoản",
     "role": "Vai trò & phân quyền",
     "warehouse": "Kho",

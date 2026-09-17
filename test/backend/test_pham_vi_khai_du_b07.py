@@ -152,9 +152,19 @@ def test_du_55_entity():
     khóa. Khai `PUBLIC` cùng lý do với nhật ký, còn dứt khoát hơn: dòng sổ nói về
     bản ghi CỦA BÊN KIA, lúc nó hỏng thì phía ERP thường chưa có bản ghi nào để
     xét công ty/phòng ban — cắt phạm vi là giấu đúng dòng lỗi nặng nhất.
+
+    64 → 65 ngày 16/09/2026: bảng HỒ SƠ (`dossier`, `tab_dossier`) — bộ giấy tờ
+    công ty đang giữ, kèm bộ trường tùy biến khai theo từng loại. Tách khỏi
+    `dossier_type` theo luật «một khóa = một màn hình»: lập hồ sơ là việc hằng
+    ngày của hành chính mỗi phòng, còn thêm bớt LOẠI thì đổi luôn KHUÔN BIỂU MẪU
+    cho cả công ty — gộp một khóa là ai lập được một tờ giấy phép cũng xóa được
+    ô «Số giấy phép» khỏi mọi hồ sơ cùng loại.
+    ⚠️ Khai **CỘT THẬT** ở `SCOPE_FIELDS` (`company_id` · `department_id` ·
+    `created_by` · `owner_employee_id`), KHÔNG PUBLIC — hồ sơ thuộc về một pháp
+    nhân, một phòng và một người. Bốn chiều kiểm ở `test_ho_so_pham_vi.py`.
     """
-    assert len(ENTITIES) == 64
-    assert len(SCOPE_FIELDS) == 64
+    assert len(ENTITIES) == 65
+    assert len(SCOPE_FIELDS) == 65
 
 
 # ── 2. Không dựng nổi điều kiện thì chặn ────────────────────────────────────────
