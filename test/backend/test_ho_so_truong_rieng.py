@@ -168,3 +168,124 @@ def test_cot_NULL_doc_ra_danh_sach_rong(db, loai):
     assert row.custom_fields is None
     assert row.custom_field_defs == []
     assert DossierResponse.model_validate(row).custom_fields == []
+
+
+# ── Ô «Chọn từ danh mục» (`reference`) ──────────────────────────────────────
+def test_reference_phai_khai_danh_muc(db):
+    """Không khai danh mục thì ô giá trị không bấm được gì — chặn ngay ở schema."""
+    from app.modules.dossier.field_schema import validate_field_schema
+
+    with pytest.raises(ValueError, match="danh mục"):
+        validate_field_schema([_def("ns", "Nhân sự", type="reference")])
+
+
+def test_reference_chi_nhan_danh_muc_trong_DANH_SACH_TRANG(db):
+    """⚠️ Chốt CHỐNG DÒ ENDPOINT, không phải chuyện gõ đúng chính tả.
+
+    Nếu ô này nhận URL (hay một khóa tùy ý) từ máy khách thì bất kỳ ai sửa được
+    bộ trường đều bắt giao diện đi đọc một đường dẫn bất kỳ của hệ — biến ô chọn
+    thành cửa dò. Danh sách trắng theo KHÓA là thứ chặn việc đó.
+    """
+    from app.modules.dossier.field_schema import validate_field_schema
+
+    validate_field_schema([_def("ns", "Nhân sự", type="reference", source="employee")])
+
+    for bad in ("/api/users", "user", "role", "setting"):
+        with pytest.raises(ValueError, match="không có thật"):
+            validate_field_schema([_def("x", "X", type="reference", source=bad)])
+
+
+@pytest.mark.parametrize("raw,expected", [
+    (42, 42), ("42", 42), ("", ""), (None, ""), (0, ""), ("0", ""),
+])
+def test_reference_luu_ID_chu_khong_luu_ten(raw, expected):
+    """Khách chốt lưu ID (17/09/2026) — tên luôn đọc theo danh mục.
+
+    Đổi tên nhân sự thì mọi hồ sơ đổi theo; lưu tên thì không làm được điều đó.
+    """
+    from app.modules.dossier.field_schema import DossierFieldDef
+    from app.modules.dossier.field_values import validate_extra_values
+
+    d = DossierFieldDef.model_validate(
+        _def("ns", "Nhân sự", type="reference", source="employee"))
+    assert validate_extra_values([d], {"ns": raw}) == {"ns": expected}
+
+
+@pytest.mark.parametrize("bad", ["Nguyễn Văn A", "abc", -5])
+def test_reference_khong_nhan_rac(bad):
+    from app.modules.dossier.field_schema import DossierFieldDef
+    from app.modules.dossier.field_values import validate_extra_values
+
+    d = DossierFieldDef.model_validate(
+        _def("ns", "Nhân sự", type="reference", source="employee"))
+    with pytest.raises(ValueError, match="Nhân sự"):
+        validate_extra_values([d], {"ns": bad})
+
+
+def test_reference_ID_khong_co_that_bi_CHAN(db, loai, world):
+    """⚠️ Bài kiểm quan trọng nhất của kiểu này.
+
+    ID trỏ vào hư không thì màn hình hiện **trống trơn** — nhìn y hệt ô chưa ai
+    nhập. Không lỗi, không cảnh báo, và hồ sơ mất dữ liệu mà không ai biết. Một
+    câu 422 lúc lưu rẻ hơn nhiều so với việc đó.
+    """
+    values = {
+        "dossier_type_id": loai.id,
+        "custom_fields": [_def("ns", "Nhân sự", type="reference", source="employee")],
+        "extra_fields": {"ns": 999999},
+    }
+    with pytest.raises(HTTPException, match="không còn tồn tại"):
+        service.apply_extra_fields(db, values)
+
+    #  ID có thật thì lọt.
+    values["extra_fields"] = {"ns": world.emp["a1"]}
+    service.apply_extra_fields(db, values)
+    assert values["extra_fields"]["ns"] == world.emp["a1"]
+
+
+def test_hai_danh_sach_trang_KHOP_nhau_giua_hai_dau():
+    """Khóa ở backend và ở TypeScript phải khớp từng chữ.
+
+    Lệch một khóa thì người dùng khai được một danh mục mà backend chặn khi bấm
+    Lưu — hoặc ngược lại, một danh mục backend nhận mà giao diện không bày ra.
+    Không dòng nào đỏ lên nếu không có bài kiểm này.
+    """
+    import re
+    from pathlib import Path
+
+    from app.modules.dossier.reference_sources import REFERENCE_MODELS
+
+    #  `./frontend-v2/src` được mount sẵn vào `/app/fe-src` (xem `docker-compose.yml`)
+    #  đúng cho loại bài kiểm chéo hai đầu này. Đường lùi là cây mã nguồn thật,
+    #  cho ai chạy pytest ngoài container.
+    ts = next(
+        (p for p in (
+            Path("/app/fe-src/modules/dossier/types/dossier-reference-sources.ts"),
+            Path(__file__).resolve().parents[2]
+            / "frontend-v2/src/modules/dossier/types/dossier-reference-sources.ts",
+        ) if p.exists()),
+        None,
+    )
+    #  ⚠️ KHÔNG `skip` khi thiếu tệp: bài kiểm lặng lẽ skip là mất luôn cái nó
+    #  canh, đúng lúc CI cần nó nhất (bài học `_modules_dir` ở
+    #  `test_pham_vi_luat_bat_bien.py`). Thiếu thì đỏ, và đi sửa chỗ mount.
+    assert ts is not None, (
+        "không thấy `dossier-reference-sources.ts` — kiểm lại mount "
+        "`./frontend-v2/src:/app/fe-src` trong docker-compose.yml"
+    )
+
+    #  ⚠️ Cắt từ dòng KHAI BÁO tới dấu `}` đầu tiên đứng một mình ở cột 0. Bản
+    #  đầu cắt bằng `split("REFERENCE_SOURCES")[-1]` và rơi vào khúc SAU hàm
+    #  `referenceSource()` cuối tệp — khúc đó không có khóa nào, nên bài kiểm
+    #  đọc ra danh sách RỖNG.
+    text = ts.read_text(encoding="utf-8")
+    block = text[text.index("export const REFERENCE_SOURCES") :].split("\n}\n", 1)[0]
+    keys = set(re.findall(r"^  (\w+): \{", block, re.M))
+    #  Bắt được 0 khóa nghĩa là cách đọc tệp đã hỏng (đổi thụt lề, Prettier ngắt
+    #  dòng khác…), không phải frontend xóa hết danh mục. Nói thẳng ra, đừng để
+    #  người sau đi tìm khóa bị mất ở một chỗ không có lỗi nào.
+    assert keys, f"không đọc được khóa nào trong `REFERENCE_SOURCES` — kiểm lại cách cắt khối ở {ts}"
+    assert keys == set(REFERENCE_MODELS), (
+        f"danh sách trắng lệch nhau — chỉ backend: {sorted(set(REFERENCE_MODELS) - keys)}, "
+        f"chỉ frontend: {sorted(keys - set(REFERENCE_MODELS))}"
+    )

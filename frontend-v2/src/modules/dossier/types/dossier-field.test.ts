@@ -90,8 +90,12 @@ describe('emptyDossierField', () => {
   it('ô mới rỗng hoàn toàn và KHÔNG bắt buộc', () => {
     //  Bật «bắt buộc» sẵn là mọi hồ sơ cũ của loại đó lập tức không lưu nổi cho
     //  tới khi ai đó đi điền ô vừa mới sinh ra.
+    //  `source` rỗng = chưa trỏ tới danh mục nào. Khai sẵn chứ không để thiếu
+    //  khóa: ô nhập không kiểm soát (`value={undefined}`) rồi có giá trị là
+    //  React đổi nó sang có kiểm soát giữa chừng và cảnh báo ngay trên console.
     expect(emptyDossierField()).toEqual({
-      key: '', label: '', type: 'text', required: false, options: [], hint: '',
+      key: '', label: '', type: 'text', required: false, options: [],
+      source: '', hint: '',
     })
   })
 

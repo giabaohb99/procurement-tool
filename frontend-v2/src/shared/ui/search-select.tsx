@@ -35,6 +35,27 @@ interface SearchSelectProps {
    * Mặc định tắt để giữ nguyên hành vi cũ ở mọi nơi đang dùng.
    */
   searchInTrigger?: boolean
+  /**
+   * Báo ra từ khóa người dùng vừa gõ.
+   *
+   * Khai nó khi danh sách được TRA PHÍA SERVER: component này vốn lọc trên
+   * `options` đang cầm, mà có danh mục không nạp hết được (Sản phẩm 6803 dòng,
+   * quá trần phân trang 5000) — nơi gọi phải tự đi hỏi rồi đổ `options` mới vào.
+   *
+   * ⚠️ Lọc tại chỗ VẪN chạy trên những gì đang cầm. Cố ý: nơi gọi hoãn vài trăm
+   * mili giây mới gọi mạng, và trong khoảng đó danh sách cũ vẫn thu hẹp theo
+   * từng phím — không có nó thì ô đứng im một nhịp rồi mới nhảy, đọc ra như treo.
+   */
+  onSearchChange?: (keyword: string) => void
+  /**
+   * Gắn lên chính ô chọn để `<Label htmlFor>` trỏ tới được.
+   *
+   * ⚠️ Không có nó thì nơi gọi hay với sang `aria-labelledby` — mà thuộc tính
+   * CÓ GẠCH NGANG được TypeScript miễn kiểm tra thừa trên JSX, nên nó lọt
+   * `tsc` sạch sẽ rồi bị component này bỏ rơi (không spread prop thừa). Kết quả:
+   * `typecheck` xanh, ô chọn không có tên, nhãn bên trên trỏ vào hư không.
+   */
+  id?: string
   className?: string
 }
 
@@ -64,10 +85,19 @@ export function SearchSelect({
   wrap,
   size = 'default',
   searchInTrigger,
+  onSearchChange,
+  id,
   className,
 }: SearchSelectProps) {
   const [open, setOpen] = useState(false)
   const [keyword, setKeyword] = useState('')
+
+  //  Một chỗ đổi từ khóa cho cả hai kiểu ô tìm, để không phải nhớ gọi `onSearchChange`
+  //  ở từng chỗ `setKeyword`.
+  const changeKeyword = (next: string) => {
+    setKeyword(next)
+    onSearchChange?.(next)
+  }
   const inputRef = useRef<HTMLInputElement>(null)
 
   const selectedLabel = useMemo(
@@ -88,7 +118,7 @@ export function SearchSelect({
   function pick(optionValue: string) {
     onChange(optionValue)
     setOpen(false)
-    setKeyword('')
+    changeKeyword('')
   }
 
   //  Danh sách kết quả — dùng chung cho cả hai kiểu (ô tìm riêng / gõ ngay trên ô).
@@ -130,13 +160,14 @@ export function SearchSelect({
         open={open}
         onOpenChange={(next) => {
           setOpen(next)
-          if (!next) setKeyword('')
+          if (!next) changeKeyword('')
         }}
       >
         <PopoverAnchor asChild>
           <div className={cn('relative w-full', className)}>
             <input
               ref={inputRef}
+              id={id}
               type="text"
               role="combobox"
               aria-expanded={open}
@@ -147,11 +178,11 @@ export function SearchSelect({
               placeholder={open ? selectedLabel || searchPlaceholder : placeholder}
               onFocus={() => {
                 setOpen(true)
-                setKeyword('')
+                changeKeyword('')
               }}
               onClick={() => setOpen(true)}
               onChange={(event) => {
-                setKeyword(event.target.value)
+                changeKeyword(event.target.value)
                 setOpen(true)
               }}
               className={cn(
@@ -198,12 +229,13 @@ export function SearchSelect({
       open={open}
       onOpenChange={(next) => {
         setOpen(next)
-        if (!next) setKeyword('')
+        if (!next) changeKeyword('')
       }}
     >
       <PopoverTrigger asChild>
         <Button
           type="button"
+          id={id}
           variant="outline"
           role="combobox"
           aria-expanded={open}
@@ -253,7 +285,7 @@ export function SearchSelect({
             autoFocus
             placeholder={searchPlaceholder}
             value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
+            onChange={(event) => changeKeyword(event.target.value)}
           />
         </div>
         {optionList}

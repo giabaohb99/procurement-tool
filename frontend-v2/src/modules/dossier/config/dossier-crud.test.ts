@@ -14,7 +14,7 @@ import type { DossierType } from '../types/dossier-type'
 
 function def(over: Partial<DossierFieldDef> = {}): DossierFieldDef {
   return { key: 'so_gp', label: 'Số giấy phép', type: 'text', required: false,
-           options: [], hint: '', ...over }
+           options: [], source: '', hint: '', ...over }
 }
 
 function type(over: Partial<DossierType> = {}): DossierType {
@@ -92,9 +92,9 @@ describe('buildPayload — ô mà LOẠI KHÔNG CÒN KHAI', () => {
 describe('buildPayload — TRƯỜNG RIÊNG của hồ sơ', () => {
   const rows = [
     { key: 'so_qd', label: 'Số quyết định', type: 'text' as const, required: true,
-      options: [], hint: '', value: '1234/QĐ' },
+      options: [], source: '', hint: '', value: '1234/QĐ' },
     { key: 'ngay_hop', label: 'Ngày họp', type: 'date' as const, required: false,
-      options: [], hint: '', value: '2026-03-01' },
+      options: [], source: '', hint: '', value: '2026-03-01' },
   ]
 
   it('tách MỘT hàng thành khai báo + giá trị, đúng hai chỗ backend nhận', () => {

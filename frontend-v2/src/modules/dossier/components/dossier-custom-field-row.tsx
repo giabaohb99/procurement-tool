@@ -14,6 +14,8 @@ import {
 import { Switch } from '@/shared/ui/switch'
 import { Textarea } from '@/shared/ui/textarea'
 import { cn } from '@/shared/utils/cn'
+import { REFERENCE_SOURCES } from '../types/dossier-reference-sources'
+import { DossierReferenceValue } from './dossier-reference-value'
 import type { DossierCustomRow } from '../types/dossier-custom-row'
 import {
   DOSSIER_FIELD_TYPES,
@@ -70,7 +72,8 @@ export function DossierCustomFieldRow({
     if (next === row.type) return
     //  Giữ `options` khi đổi kiểu: người dùng gõ nhầm kiểu rồi đổi lại thì mục
     //  đã khai còn nguyên, khỏi gõ lại.
-    set({ type: next, value: next === 'switch' ? false : '', options: row.options })
+    set({ type: next, value: next === 'switch' ? false : '',
+          options: row.options, source: row.source })
   }
 
   //  ⚠️ Sửa danh sách mục mà giá trị đang chọn RỚT khỏi danh sách thì xóa nó đi.
@@ -162,6 +165,33 @@ export function DossierCustomFieldRow({
            mà danh sách mục thì dài hơn mọi ô còn lại cộng lại. Ẩn hẳn với kiểu
            khác thay vì làm mờ — ô mờ vẫn chiếm chỗ và vẫn bắt người đọc dừng
            lại xem nó là gì. */}
+      {row.type === 'reference' && (
+        <div className="space-y-1 @2xl:col-span-5">
+          <Label htmlFor={`cf-src-${index}`} className="text-xs">
+            Danh mục
+          </Label>
+          <Select
+            value={row.source}
+            disabled={disabled}
+            onValueChange={(v) => set({ source: v, value: '' })}
+          >
+            <SelectTrigger id={`cf-src-${index}`} className="w-full">
+              <SelectValue placeholder="Chọn danh mục lấy dữ liệu" />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.entries(REFERENCE_SOURCES).map(([key, src]) => (
+                <SelectItem key={key} value={key}>
+                  {src.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">
+            Hồ sơ lưu mã của mục đã chọn, nên đổi tên trong danh mục là mọi hồ sơ đổi theo.
+          </p>
+        </div>
+      )}
+
       {row.type === 'select' && (
         <div className="space-y-1 @2xl:col-span-5">
           <Label htmlFor={`cf-opts-${index}`} className="text-xs">
@@ -218,6 +248,18 @@ function CustomValueInput({
     return (
       <DatePicker
         value={String(row.value ?? '')}
+        onChange={(v) => onChange({ value: v })}
+      />
+    )
+  }
+
+  if (row.type === 'reference') {
+    return (
+      <DossierReferenceValue
+        id={id}
+        source={row.source}
+        value={String(row.value ?? '')}
+        disabled={disabled}
         onChange={(v) => onChange({ value: v })}
       />
     )

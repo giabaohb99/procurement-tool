@@ -16,7 +16,7 @@ import { buildDossierFormFields, fieldsOfType } from './dossier-form-fields'
 
 function def(over: Partial<DossierFieldDef> = {}): DossierFieldDef {
   return { key: 'so_gp', label: 'Số giấy phép', type: 'text', required: false,
-           options: [], hint: '', ...over }
+           options: [], source: '', hint: '', ...over }
 }
 
 function type(over: Partial<DossierType> = {}): DossierType {

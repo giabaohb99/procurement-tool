@@ -13,6 +13,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from .field_schema import parse_field_defs
+from .reference_sources import exists as reference_exists
 from .field_values import validate_extra_values
 from .model import Dossier
 from .type_model import DossierType
@@ -87,13 +88,42 @@ def apply_extra_fields(db: Session, values: dict, current: Dossier | None = None
     #  ⚠️ Khai báo lấy từ payload NẾU lần lưu này có gửi, không thì từ bản ghi
     #  cũ. Lấy danh sách rỗng là mọi ô riêng bỗng thành «không còn khai báo» —
     #  mất luôn chốt bắt buộc của chúng.
-    raw_custom = values["custom_fields"] if "custom_fields" in values         else (current.custom_field_defs if current else [])
+    if "custom_fields" in values:
+        raw_custom = values["custom_fields"]
+    else:
+        raw_custom = current.custom_field_defs if current else []
 
+    defs = parse_field_defs(raw_custom)
     try:
-        values["extra_fields"] = validate_extra_values(
-            parse_field_defs(raw_custom), values.get("extra_fields"))
+        values["extra_fields"] = validate_extra_values(defs, values.get("extra_fields"))
     except ValueError as exc:
         raise HTTPException(422, str(exc))
+
+    _check_references(db, defs, values["extra_fields"])
+
+
+def _check_references(db: Session, defs, extra: dict) -> None:
+    """Ô «Chọn từ danh mục» phải trỏ vào một dòng CÓ THẬT.
+
+    ⚠️ Không kiểm thì một id trỏ vào hư không hiện ra **trống trơn** trên màn
+    hình — nhìn y hệt ô chưa ai nhập. Không lỗi, không cảnh báo, và hồ sơ mất
+    dữ liệu mà không ai biết. Một câu 422 lúc lưu rẻ hơn nhiều.
+
+    ⚠️ Làm ở ĐÂY chứ không trong `field_values.py`: tệp đó cố ý thuần, không
+    chạm cơ sở dữ liệu, nên bộ kiểm của nó chạy được mà không cần dựng DB.
+    """
+    for d in defs:
+        if d.type != "reference":
+            continue
+        row_id = extra.get(d.key)
+        if not row_id:
+            continue
+        if not reference_exists(db, d.source, int(row_id)):
+            raise HTTPException(
+                422,
+                f"«{d.label}» trỏ tới một mục không còn tồn tại trong danh mục. "
+                "Chọn lại từ danh sách.",
+            )
 
 
 def propagate_type_rename(db: Session, type_id: int, new_name: str) -> int:

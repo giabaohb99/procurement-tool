@@ -17,7 +17,7 @@ import type { DossierCustomRow } from '../types/dossier-custom-row'
 
 function row(over: Partial<DossierCustomRow> = {}): DossierCustomRow {
   return { key: 'so_qd', label: 'Số quyết định', type: 'text', required: false,
-           options: [], hint: '', value: '', ...over }
+           options: [], source: '', hint: '', value: '', ...over }
 }
 
 describe('problemOf', () => {
@@ -50,6 +50,16 @@ describe('problemOf', () => {
 
   it('ô CHỌN đã khai mục thì thôi', () => {
     const r = row({ type: 'select', options: ['A', 'B'] })
+    expect(problemOf(r, 0, [r])).toBeUndefined()
+  })
+
+  it('ô CHỌN TỪ DANH MỤC chưa chọn danh mục thì chặn', () => {
+    const r = row({ type: 'reference', source: '' })
+    expect(problemOf(r, 0, [r])).toContain('chưa chọn danh mục')
+  })
+
+  it('ô CHỌN TỪ DANH MỤC đã chọn danh mục thì thôi', () => {
+    const r = row({ type: 'reference', source: 'employee' })
     expect(problemOf(r, 0, [r])).toBeUndefined()
   })
 

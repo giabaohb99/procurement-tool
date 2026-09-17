@@ -14,6 +14,11 @@
 /**
  * Kiểu ô nhập mà biểu mẫu hồ sơ dựng được.
  *
+ * `select` và `reference` KHÁC nhau, giữ cả hai là cố ý: `reference` trỏ vào một
+ * DANH MỤC có thật (nhân sự, nhà cung cấp…) và lưu ID, còn `select` dành cho mấy
+ * tập hai-ba giá trị đặc thù («Bắt buộc / Không bắt buộc») vốn không có danh mục
+ * nào để mà trỏ tới.
+ *
  * ⚠️ Tập ĐÓNG, và cố ý là **tập con** của `CrudFormField['type']`: mỗi mục ở đây
  * phải có một ô tương ứng mà khung CRUD biết vẽ. Thêm một kiểu chỉ có ở một
  * phía là người dùng khai được ô mà màn hình không hiện, hoặc ngược lại.
@@ -28,6 +33,7 @@ export const DOSSIER_FIELD_TYPES = [
   'number',
   'date',
   'select',
+  'reference',
   'switch',
 ] as const
 
@@ -40,6 +46,7 @@ export const DOSSIER_FIELD_TYPE_LABEL: Record<DossierFieldType, string> = {
   number: 'Số',
   date: 'Ngày',
   select: 'Chọn từ danh sách',
+  reference: 'Chọn từ danh mục',
   switch: 'Có / Không',
 }
 
@@ -58,6 +65,14 @@ export interface DossierFieldDef {
   required: boolean
   /** Chỉ có nghĩa với `type: 'select'`. */
   options: string[]
+  /**
+   * Chỉ có nghĩa với `type: 'reference'` — KHÓA của một danh mục trong
+   * `REFERENCE_SOURCES`, **không phải URL**.
+   *
+   * ⚠️ Nhận URL từ biểu mẫu là biến ô chọn thành cửa dò mọi endpoint của hệ.
+   * Backend cũng chỉ nhận khóa, và chặn khóa lạ.
+   */
+  source: string
   hint: string
 }
 
@@ -67,7 +82,7 @@ export const MAX_DOSSIER_FIELD_OPTIONS = 30
 
 /** Một ô mới toanh cho trình khai bộ trường. */
 export function emptyDossierField(): DossierFieldDef {
-  return { key: '', label: '', type: 'text', required: false, options: [], hint: '' }
+  return { key: '', label: '', type: 'text', required: false, options: [], source: '', hint: '' }
 }
 
 /**

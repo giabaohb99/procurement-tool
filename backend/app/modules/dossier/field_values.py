@@ -63,6 +63,20 @@ def _coerce(d: DossierFieldDef, raw):
         #  là một năm.
         return int(num) if num == int(num) else num
 
+    if d.type == "reference":
+        #  Lưu **ID**, không lưu tên (khách chốt 17/09/2026). Tên luôn đọc theo
+        #  danh mục nên đổi tên nhân sự là mọi hồ sơ đổi theo — thứ mà lưu tên
+        #  không làm được.
+        if raw in (None, "", 0, "0"):
+            return ""
+        try:
+            row_id = int(raw)
+        except (TypeError, ValueError):
+            raise ValueError(f"«{d.label}» phải là một mục chọn từ danh mục")
+        if row_id <= 0:
+            raise ValueError(f"«{d.label}» phải là một mục chọn từ danh mục")
+        return row_id
+
     if d.type == "date":
         if raw in (None, ""):
             return ""

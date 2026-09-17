@@ -29,6 +29,11 @@ export function problemOf(
   if (row.type === 'select' && row.options.length === 0) {
     return `«${row.label || row.key}» là ô chọn nhưng chưa khai mục nào.`
   }
+  //  Backend chặn khóa danh mục rỗng / lạ. Bắt trước vì ô giá trị lúc đó không
+  //  bấm được gì — người dùng không tự hiểu là còn thiếu chỗ nào.
+  if (row.type === 'reference' && !row.source) {
+    return `«${row.label || row.key}» chưa chọn danh mục để lấy dữ liệu.`
+  }
   return undefined
 }
 

@@ -23,7 +23,7 @@ import type { DossierFieldDef } from './dossier-field'
 
 function def(over: Partial<DossierFieldDef> = {}): DossierFieldDef {
   return { key: 'so_qd', label: 'Số quyết định', type: 'text', required: false,
-           options: [], hint: '', ...over }
+           options: [], source: '', hint: '', ...over }
 }
 
 describe('toCustomRows — bản ghi thành hàng biểu mẫu', () => {

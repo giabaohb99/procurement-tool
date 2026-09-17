@@ -20,6 +20,8 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, StringConstraints, field_validator
 
+from .reference_sources import REFERENCE_LABELS, is_known
+
 #  Kiểu ô nhập mà biểu mẫu hồ sơ dựng được. Cố ý là một tập ĐÓNG và khớp đúng
 #  `CrudFormField['type']` của `frontend-v2/src/shared/crud/types.ts` — kiểu lạ
 #  lọt xuống thì giao diện không biết vẽ ô gì và người dùng mất trắng ô đó.
@@ -28,8 +30,12 @@ from pydantic import BaseModel, Field, StringConstraints, field_validator
 #  (`field-values.ts`), mà quy đổi ấy chỉ đúng khi nơi nhận biết trường nào là
 #  phần trăm — ô JSON thì không ai biết. Cần tỷ lệ thì khai `number` và ghi đơn
 #  vị vào nhãn.
-FIELD_TYPES = ("text", "textarea", "number", "date", "select", "switch")
-FieldType = Literal["text", "textarea", "number", "date", "select", "switch"]
+#  `reference` = chọn từ DANH MỤC có sẵn (nhân sự, nhà cung cấp…) và lưu **ID**,
+#  khác `select` vốn chọn từ danh sách chữ người dùng tự gõ. Giữ cả hai: danh
+#  mục thì có `reference`, còn mấy tập hai-ba giá trị đặc thù («Bắt buộc /
+#  Không bắt buộc») thì không có danh mục nào để mà trỏ tới.
+FIELD_TYPES = ("text", "textarea", "number", "date", "select", "reference", "switch")
+FieldType = Literal["text", "textarea", "number", "date", "select", "reference", "switch"]
 
 #  Số ô tùy biến tối đa của MỘT loại hồ sơ. Hai mươi ô đã là một biểu mẫu dài
 #  hơn màn hình; quá đó thì thứ người ta cần là một phân hệ riêng, không phải
@@ -64,6 +70,10 @@ class DossierFieldDef(BaseModel):
     #  người dùng đổi kiểu qua lại trên giao diện và xóa sạch mục đã gõ mỗi lần
     #  đổi là mất công gõ lại.
     options: list[str] = []
+    #  Chỉ có nghĩa với `type="reference"` — KHÓA của một danh mục trong
+    #  `reference_sources.REFERENCE_MODELS`, KHÔNG phải một URL. Xem ghi chú dài
+    #  ở tệp đó: nhận URL từ máy khách là biến ô chọn thành cửa dò endpoint.
+    source: Key40 = ""
     hint: Hint200 = ""
 
     @field_validator("key")
@@ -136,6 +146,14 @@ def validate_field_schema(value: list | None) -> list[dict]:
     for d in defs:
         if d.type == "select" and not d.options:
             raise ValueError(f"Ô chọn «{d.label}» phải khai ít nhất một mục")
+        if d.type == "reference":
+            if not d.source:
+                raise ValueError(f"Ô «{d.label}» phải chọn một danh mục để lấy dữ liệu")
+            if not is_known(d.source):
+                raise ValueError(
+                    f"Ô «{d.label}» trỏ tới danh mục không có thật: «{d.source}». "
+                    f"Nhận: {', '.join(sorted(REFERENCE_LABELS))}."
+                )
 
     out = [d.model_dump() for d in defs]
     size = len(json.dumps(out, ensure_ascii=False).encode())
