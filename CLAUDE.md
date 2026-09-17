@@ -544,4 +544,10 @@ phải mã sai.
 
 Requirements, permission design, and naming conventions live in `doc/` (Vietnamese) — index at `doc/README.md`. Permission design detail: `doc/phan-quyen/Thiet_Ke_Phan_Quyen.md`. Progress checklist: `TASKS.md`.
 
+### Nhật ký task — `doc/tai-lieu-ky-thuat/nhat-ky-task.md`
+
+Mỗi phiên làm việc phải ghi một mục vào sổ này; `backend/scripts/sync_task_journal.py` đẩy sổ lên phân hệ **Dự án** (`modules/work`) và **sổ SỞ HỮU phần mô tả** — đừng sửa mô tả task bằng tay trên ERP. Mặc định người phụ trách là `NSU209` (đại ca), khai bằng `- pic:` hoặc biến `WORK_SYNC_PIC`; sổ ghi **mã** nhân sự chứ không ghi số id vì id local/dev/prod khác nhau.
+
+⚠️ **Luật viết mô tả (đại ca chốt 17/09/2026): mô tả phải là câu tiếng Việt trọn vẹn.** Nói việc trước, tên tệp sau — tên hàm/tên bảng/mã commit gom xuống dòng cuối mở đầu bằng `Mã nguồn:` / `Commit:` / `Deploy:`. Dòng chỉ gồm tên tệp nối nhau là SAI. Từ tiếng Anh chỉ giữ khi công ty vẫn gọi bằng từ đó (commit, deploy, migration, script, API); còn lại dịch (*upsert* → có rồi thì cập nhật chưa có thì tạo, *endpoint* → đường API, *test* → bài kiểm). Bản đầy đủ của luật nằm ở đầu chính tệp sổ — đọc trước khi ghi mục mới.
+
 ⚠️ **Trước khi đụng vào cấu trúc Sản phẩm, đọc `doc/tai-lieu-ky-thuat/mo-hinh-du-lieu-san-pham.md`.** `tab_product` **là bảng VARIANT (SKU)**, không phải sản phẩm cha — cố ý như vậy. Không có FK nào trỏ vào nó; 7 bảng (YCMH, ĐMH, nhận hàng, tồn kho, luân chuyển kho, lịch sử mua hàng, option khảo sát) nối nhau bằng **chuỗi `product_code`**, nên đó là hạt dữ liệu của cả hệ. Muốn gom nhóm thì thêm tầng cha Ở TRÊN; **cấm** thêm `tab_product_variant` ở dưới, cấm đổi/tái dùng `product_code`, cấm đặt cột giá lên sản phẩm. Xem D-025 trong `change-log.md`.

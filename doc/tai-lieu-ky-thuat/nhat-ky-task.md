@@ -38,7 +38,11 @@ trong panel chi tiết của task cha dạng checklist n/m.
 
 ---
 
-## Luật viết mô tả (bắt buộc — áp cho cả người và mọi trợ lý AI)
+#### Luật viết mô tả (bắt buộc — áp cho cả người và mọi trợ lý AI)
+
+<!-- Mục này cố ý dùng #### chứ không dùng ## : script đọc mọi dòng `## ` là một task
+     của sổ, nên đặt `## ` ở đây là đẩy phần hướng dẫn này lên ERP thành một task rác.
+     Đừng nâng nó lại thành ##. -->
 
 Đại ca chốt 17/09/2026 sau khi đọc sổ: *"các task chỗ mô tả nó không thuần
 tiếng Việt lắm, kiểu đọc hơi khó hiểu"*. Người đọc mô tả này là người đi
@@ -83,6 +87,76 @@ Vòng một em chỉ dồn tên xuống đáy ô 94 điểm, khách vẫn nói c
 ### bao-CR-389-deploy | Đưa lên prod, gộp sang nhánh bản mới rồi đưa lên dev
 - status: xong
 Cả prod (thumua) và dev (devthumua) đều lên trong ngày 12/09.
+
+## bao-CR-390-393 | Khối Báo cáo thực hiện của yêu cầu báo giá: lên màn cũ, mẫu chung, và mốc dự định hoàn tất
+- status: xong
+- date: 2026-09-12
+Mục này ghi bù cho bốn việc ngày 12/09 mà sổ nhật ký còn thiếu; sổ thay đổi đã có đủ từ
+hôm đó. Bốn việc đi liền nhau trong một ngày trên cùng một khối chức năng nên gom về một
+mục cha, mỗi việc con một việc.
+Bối cảnh chung: khối "Báo cáo thực hiện" gắn trong chi tiết phiếu yêu cầu báo giá, dùng để
+theo dõi từng hồ sơ giấy tờ của một lô hàng qua năm giai đoạn.
+Deploy: cả bốn việc đã lên máy chủ thử và máy chủ thật ngày 12/09/2026.
+Tham chiếu: bốn mã việc trong sổ thay đổi là bao-CR-390 đến bao-CR-393; nền của khối này là
+bao-CR-388 cùng ngày.
+
+### bao-CR-390 | Bê khối Báo cáo thực hiện sang màn hình cũ
+- status: xong
+Khách vẫn dùng màn hình cũ hằng ngày, nên đại ca yêu cầu khối này phải có ở đó. Phần lõi
+dùng chung nên chỉ phải dựng lại giao diện: một thẻ gấp mở được, ba ô tóm tắt, hai dạng xem
+là xem tổng và xem theo dòng hàng (dạng xem đang chọn được nhớ lại cho lần sau), dải nút
+theo dòng hàng, ô tìm bỏ dấu theo từng từ, lọc theo trạng thái, và ba hộp thoại sửa hồ sơ,
+sửa nút dòng hàng, sửa giai đoạn. Phần luật tính toán chép thuần từ bản giao diện mới. Người
+chỉ có quyền xem mà phiếu chưa có báo cáo thì khối tự ẩn đi.
+Đây là một ngoại lệ có phép của luật đóng băng giao diện cũ, do đại ca yêu cầu rõ.
+Mã nguồn: `frontend/src/components/SurveyReportCard.tsx` và
+`frontend/src/utils/surveyReportHelpers.ts` là hai tệp mới, gắn vào
+`frontend/src/pages/SurveyRequestDetail.tsx`, khối định dạng `.srp-*` trong `index.css`;
+quyền mở sửa là `survey_request:process`.
+Commit: đã lên máy chủ thử với a33882ee, nhặt sang main thành 7edfb3e3.
+Tham chiếu: luật đóng băng giao diện cũ là nợ D-026.
+
+### bao-CR-391 | Mẫu chung đổi từ 15 hồ sơ tạm sang đúng 22 hồ sơ theo mẫu giấy của Thu mua
+- status: xong
+Đại ca gửi ảnh chụp mẫu giấy của Phòng Thu mua và nói mẫu trong hệ thống đang thiếu. Đổi
+mẫu chung sang đúng 22 hồ sơ chia năm giai đoạn, kèm diễn giải nơi thực hiện của từng giai
+đoạn và chuỗi điều kiện tiên quyết dựng lại theo dấu khóa trên ảnh mẫu. Chỉ sửa dữ liệu
+mẫu, không đổi cửa gọi hay luật đổ mẫu.
+Có hai chỗ em phải suy đoán vì ảnh chụp bị cắt mép, là tên và mô tả của hai hồ sơ cuối; đã
+ghi rõ để đại ca sửa lại nếu mẫu gốc ghi khác.
+Mã nguồn: `DEFAULT_PHASES` và `DEFAULT_TEMPLATE_DOCS` trong `report_constants.py`.
+
+### bao-CR-392 | Thêm mốc dự định hoàn tất để biết hồ sơ có trễ so với kế hoạch
+- status: xong
+Đại ca xin thêm một thông tin nữa là thời gian dự định hoàn tất, để nhìn ra dòng nào bị trễ
+so với kế hoạch ban đầu; và xin thêm một thẻ tóm tắt đứng cạnh thẻ hết hiệu lực gần nhất,
+lấy mốc xa nhất.
+Đây là mốc kế hoạch, khác với hạn hiệu lực của tờ giấy. Hồ sơ chưa hoàn thành mà qua ngày
+dự định thì dòng hiện dấu đỏ kèm số ngày trễ; đã xong rồi thì dấu chuyển xám và thôi tính
+trễ. Thẻ tóm tắt thứ tư lấy ngày dự định xa nhất trong phạm vi đang xem, kể cả hồ sơ đã
+xong, vì đó là mốc của cả khối; thẻ đỏ kèm số ngày trễ khi đã qua mốc mà còn hồ sơ chưa
+xong, ghi đã hoàn thành khi xong hết, và ghi đến hạn hôm nay khi trùng ngày.
+Số ngày trễ suy ra ngay ở giao diện từ ngày dự định và ngày hôm nay, không lưu cờ nào trong
+cơ sở dữ liệu.
+Mã nguồn: cột mới `planned_date` kiểu DATE cho phép trống trên
+`tab_survey_request_report_doc`; `ReportDocIn` và `ReportDocPatch` nhận `planned_date` theo
+đúng luật hai ô ngày cũ (chuỗi ngày là đặt, chuỗi rỗng là xóa, không truyền là bỏ qua); các
+hàm thuần `latestPlannedDate`, `reportDocLateDays`, `reportPlanLateDays`, `diffIsoDays`.
+Commit: bước nâng cấu trúc dữ liệu viết tay, mã c3e5a7b9d1f2, nối sau b2d4f6a8c0e1.
+
+### bao-CR-393 | Gom mẫu chung từ 22 hồ sơ tách theo mặt hàng về 19 hồ sơ chung cho cả lô
+- status: xong
+Đại ca đọc mẫu 22 hồ sơ rồi nói gom lại, đừng tách riêng từng mặt hàng, vì người dùng có
+thể tự thêm tay sau. Nay mỗi việc đúng một dòng: gộp hai dòng hợp đồng nhập khẩu của hai mặt
+hàng thành một, gộp hai dòng giấy chứng nhận lưu hành thành một, đổi hai dòng chỉ áp cho một
+mặt hàng thành dòng chung và không bắt buộc, và bỏ hẳn một dòng là nghĩa vụ riêng của mặt
+hàng tiền chất.
+Một quyết định nhỏ đáng ghi: dòng giấy phép nhập khẩu chuyên ngành nay là dòng không bắt
+buộc, nên điều kiện tiên quyết của dòng hợp đồng nhập khẩu không ràng cứng vào nó nữa — ràng
+cứng thì lô hàng nào không cần giấy phép sẽ bị khóa luôn dòng hợp đồng. Thay vào đó ghi nhắc
+trong mô tả là chỉ ký hợp đồng sau khi có giấy phép.
+Mẫu sau khi gom là 19 hồ sơ chia năm giai đoạn: hai, ba, sáu, năm và ba hồ sơ.
+Mã nguồn: `DEFAULT_TEMPLATE_DOCS` trong `report_constants.py`.
 
 ## danh-gia-du-an | Đánh giá phân hệ Dự án làm nơi ghi nhận task
 - status: xong
@@ -1383,6 +1457,8 @@ Tham chiếu: biểu mẫu chung 003/BM/PKT.
 - status: dang-lam
 - date: 2026-09-15
 - list: Duyệt dấu, Đặt xe
+Tham chiếu: phần nạp dữ liệu của cụm này ghi trong sổ thay đổi dưới mã bao-CR-415; khóa task
+ở sổ nhật ký giữ nguyên để không đẻ thêm task mới trên phân hệ Dự án.
 Đại ca: "tôi có source app đặt xe là app cũ, giờ tôi có hệ thống ERP... làm cách nào
 đồng bộ db về trên app hiện tại" — có đủ mã nguồn app cũ + tài khoản admin Firebase nên
 sửa được cả hai đầu. Chốt phạm vi: đồng bộ HAI CHIỀU, 4 nhóm dữ liệu (xe + tài xế,
@@ -2077,149 +2153,208 @@ hai bỏ qua đủ 1 313 phiếu, không sinh dòng nào.
 ## deploy-dev-1509-cr405-406 | Đẩy dev đợt 15/09 (CR-405 mật khẩu + CR-406 Google v2)
 - status: xong
 - date: 2026-09-15
-Gộp `origin/erp-v2` về local (local đang đứng SAU origin 6 commit — kế hoạch "push erp-v2"
-ban đầu là sai hướng), rồi push `b03c76c4` và dựng lại dev. Trong đợt này có: `duoc-CR-394..398`
-của đồng nghiệp + `bao-CR-405` (chính sách mật khẩu) + `bao-CR-406` (đăng nhập Google cho v2).
-Alembic dev sau đợt: `a3e8c1f6d924`. Đã thử tay trên `deverp.degoholding.vn`: nút Google sống.
-Bài học gộp: cây làm việc đang bẩn thì gộp bằng **commit tạm + reset --mixed**, KHÔNG dùng
-`git stash`; và CRLF làm `git merge-file` báo đụng độ nguyên tệp trong khi thực chất không đụng.
-Prod vẫn hoãn theo lệnh đại ca.
+Gộp mã trên máy chủ mã nguồn về máy em rồi đẩy lên và dựng lại máy chủ thử. Hóa ra máy em
+đang đứng sau máy chủ mã nguồn sáu lần ghi nhận, nên kế hoạch ban đầu là đẩy lên trước đã
+sai hướng.
+Đợt này gồm năm việc của đồng nghiệp, cộng chính sách mật khẩu và đăng nhập bằng Google cho
+giao diện mới. Đã thử tay trên máy chủ thử: nút đăng nhập Google sống.
+Hai bài học khi gộp: cây làm việc đang còn sửa dở thì gộp bằng cách ghi nhận tạm một lần rồi
+tháo lại phần ghi nhận, tuyệt đối không dùng lệnh gác tạm; và kiểu ký tự xuống dòng của
+Windows làm lệnh thử gộp báo đụng độ cả tệp trong khi thực chất không đụng gì.
+Chưa lên máy chủ thật, vẫn hoãn theo lệnh đại ca.
+Commit: erp-v2 b03c76c4.
+Deploy: đã dựng lại máy chủ thử, bậc dữ liệu sau đợt là a3e8c1f6d924; máy chủ thật hoãn.
+Tham chiếu: năm việc của đồng nghiệp là duoc-CR-394 đến duoc-CR-398; chính sách mật khẩu là
+bao-CR-405; đăng nhập Google cho giao diện mới là bao-CR-406; cách gộp khi cây bẩn ghi ở
+gop-origin-erp-v2-1509.
 
-## bao-CR-407 | CR-312 P5 — màn Nhật ký hệ thống (/system/logs)
+## bao-CR-407 | Đợt năm của việc nhật ký hệ thống: dựng màn hình để người ta đọc được nhật ký
 - status: xong
 - date: 2026-09-15
-Ba bảng nhật ký (`tab_request_log` · `tab_audit_log` · `tab_change_log`) đã ghi đủ từ P3/P4
-nhưng **chưa ai đọc được**: không có cửa API nào gộp chúng, cũng không có màn hình. P5 dựng
-một dòng trên màn = một `request_id`, ngăn chi tiết bốn tab (Tổng quan · Request · Thay đổi ·
-Phiên), theo dõi trực tiếp và biểu đồ theo giờ (biểu đồ **mặc định ẩn** — đại ca chốt).
-Backend: mô-đun mới `app/modules/system_log/`, ba cửa `/api/system-logs*`, `/api/audit-logs`
-trả thêm `request_id`. Thêm **hai** khóa quyền (ENTITIES 60 → 62): `audit` mở màn tra toàn hệ,
-`change_log` mở thêm giá trị trước/sau + thân yêu cầu. Tách hai vì giá trị cũ có thể chứa
-**tên nhà cung cấp** — thứ mà cơ chế phương án dựng ra để giấu với người yêu cầu; gộp một khóa
-là thủng cửa sau.
-Lỗi thật phát hiện lúc chạy: `Data too long for column 'action'` — cột `action` của
-`tab_audit_log` là `VARCHAR(50)` mà mã sinh chuỗi dài hơn. Đã sửa nguồn sinh chuỗi; bài kiểm
-độ dài mã hành động thì đại ca cho để sau.
-Trạng thái: **commit `erp-v2` `a499ed14`, đã deploy DEV 16/09/2026**; prod chờ lệnh đại ca.
-Sau khi lên dev còn phải tick tay hai khóa `audit` và `change_log` cho các vai trò ngoài admin
-(seed không ghi đè phân quyền đang chạy).
+Ba quyển sổ nhật ký đã ghi đủ từ hai đợt trước, nhưng chưa ai đọc được: không có cửa gọi nào
+gộp chúng lại, cũng không có màn hình nào. Đợt này dựng màn hình đó.
+Cách trình bày: một dòng trên màn là một lần bấm nút, mở ra ngăn chi tiết bốn thẻ — tổng
+quan, lượt gọi, thay đổi, và phiên đăng nhập. Có thêm chế độ theo dõi trực tiếp và biểu đồ
+theo giờ; biểu đồ mặc định ẩn theo chốt của đại ca.
+Phần lõi: thêm một nhóm chức năng mới, ba cửa gọi, và cửa gọi nhật ký thao tác cũ trả thêm
+mã lượt gọi.
+Thêm hai khóa quyền, nâng số nhóm quyền của hệ thống từ 60 lên 62. Khóa thứ nhất mở màn tra
+toàn hệ; khóa thứ hai mở thêm giá trị trước và sau cùng nội dung yêu cầu gửi lên. Cố ý tách
+làm hai, vì giá trị cũ có thể chứa tên nhà cung cấp — đúng thứ mà cơ chế phương án dựng ra
+để giấu với người yêu cầu; gộp về một khóa là mở một cửa sau.
+Một lỗi thật phát hiện lúc chạy: cơ sở dữ liệu báo dữ liệu quá dài cho cột mã việc, vì cột
+đó chỉ chứa 50 ký tự mà mã sinh ra dài hơn. Đã sửa ở nguồn sinh mã; bài kiểm canh độ dài mã
+việc thì đại ca cho để sau.
+Sau khi lên máy chủ thử còn phải tích tay hai khóa quyền mới cho các vai trò ngoài quản trị,
+vì phần nạp dữ liệu nền không ghi đè phân quyền đang chạy.
+Mã nguồn: ba bảng `tab_request_log`, `tab_audit_log`, `tab_change_log`; nhóm chức năng mới
+`app/modules/system_log/`; ba cửa `/api/system-logs*`; cửa `/api/audit-logs` trả thêm
+`request_id`; hai khóa quyền `audit` và `change_log`; màn hình `/system/logs`; lỗi
+`Data too long for column 'action'` trên cột `VARCHAR(50)`.
+Commit: erp-v2 a499ed14.
+Deploy: đã lên máy chủ thử 16/09/2026; máy chủ thật chờ lệnh đại ca.
+Tham chiếu: cả việc nhật ký hệ thống nằm dưới bao-CR-312, đợt bốn là bao-CR-402.
 
-### bao-CR-407-vi-du-doc-log | Ví dụ một ca đọc log xuyên suốt
+### bao-CR-407-vi-du-doc-log | Ví dụ một ca đọc nhật ký xuyên suốt
 - status: xong
-Đại ca hỏi "ví dụ cho tôi 1 case, nó liên kết nhau như thế nào để tôi vào log đọc ra được
-đầy đủ thông tin nhất". Sợi chỉ xuyên suốt là `request_id`: một lần bấm nút trên màn hình
-sinh MỘT `request_id`, `tab_request_log` giữ đầu vào (ai · đường dẫn · mã trả về · thời gian),
-`tab_audit_log` giữ "đã làm gì lên chứng từ nào", `tab_change_log` giữ **giá trị trước/sau**
-của từng cột. Vào màn, bấm một dòng là ra đủ ba lớp của cùng một thao tác.
+Đại ca hỏi cho một ví dụ cụ thể, ba quyển sổ liên kết với nhau thế nào để vào đọc là ra đủ
+thông tin. Sợi chỉ xuyên suốt là mã lượt gọi: một lần bấm nút trên màn hình sinh ra đúng một
+mã. Quyển sổ lượt gọi giữ đầu vào — ai bấm, bấm vào đâu, hệ thống trả mã gì, lúc nào. Quyển
+sổ thao tác giữ "đã làm việc gì lên chứng từ nào". Quyển sổ thay đổi giữ giá trị trước và
+sau của từng cột. Vào màn hình, bấm một dòng là ra đủ cả ba lớp của cùng một thao tác.
+Mã nguồn: `request_id`, `tab_request_log`, `tab_audit_log`, `tab_change_log`.
 
-## bao-CR-408 | Siết khâu tải tệp lên — đóng cả cụm BM-025…BM-031
+## bao-CR-408 | Siết khâu tải tệp lên, đóng một lượt cả bảy lỗ bảo mật của khâu này
 - status: xong
 - date: 2026-09-15
-Đại ca chốt "gộp một CR đi bạn" cho cả bảy lỗ, vì **bốn trên bảy nằm trong CÙNG một hàm**
-(`attachment/controller.py::_store_one`, 28 dòng) — tách bảy CR thì phải mở lại hàm đó bốn lượt
-và lượt sau viết đè test lượt trước.
-Nền của cả CR là một tệp mới **`core/upload_guard.py`** — nơi DUY NHẤT biết luật kiểm một tệp:
-hỏi đuôi · rỗng · trần MB · **byte đầu (magic bytes)**, rồi trả `content_type` **suy từ nội dung**
-thay vì tin lời khai của máy khách; kèm `ensure_filename_ok` (tên tệp ≤ 255) và `ensure_batch_ok`
-(≤ 20 tệp/lượt). Luật cho những cửa **không đi qua `FileLink`** khai ở bảng mới
-`DIRECT_FILE_POLICY`. Cố ý KHÔNG thêm dòng vào `FILE_POLICY`: `_policy_or_400` đọc thẳng bảng đó
-để quyết `entity` nào được nhận ở `/upload-file`, thêm `avatar` vào đấy là vá một lỗ đẻ một lỗ.
-Rà thì lòi ra hai chỗ sổ bảo mật KHÔNG có: **cửa ảnh thứ SÁU** (`employee.upload_id_image` —
-ảnh CCCD) và **cửa gắn tệp thứ HAI** (`ticket/service._register_files`).
-Còn mở có chủ ý: vế "đo dung lượng TRƯỚC khi nhận hết thân yêu cầu" của BM-030 — việc đó thuộc
-tầng ASGI/nginx, không thuộc mã nghiệp vụ.
-Test: `test/backend/test_bao_mat_tai_tep.py` 11 ca mới; chạy kèm hàng xóm **171 xanh**.
-Không có migration; deploy phải dựng lại `api` + `celery-worker` + `celery-beat` (có việc dọn
-tệp mồ côi chạy 4h10 mỗi ngày).
-Trạng thái: **commit `erp-v2` `7086a4d0`, đã deploy DEV 16/09/2026**; prod chờ lệnh đại ca.
-Dự kiến ban đầu tách 5 commit nhưng cuối cùng đi MỘT commit: bảy lỗ chung một nền
-(`core/upload_guard.py`), tách ra thì commit nào cũng dở dang không chạy được một mình.
+Đại ca chốt gộp cả bảy lỗ vào một việc, vì bốn trên bảy nằm trong cùng một hàm dài 28 dòng.
+Tách thành bảy việc thì phải mở lại hàm đó bốn lượt, và lượt sau lại viết đè bài kiểm của
+lượt trước.
+Nền của cả việc là một tệp mới, nơi duy nhất biết luật kiểm một tệp: hỏi đuôi tệp, tệp rỗng,
+trần dung lượng, và mấy byte đầu tệp để biết đó thực sự là tệp gì; rồi trả về loại nội dung
+suy từ chính nội dung tệp thay vì tin lời khai của máy người dùng. Kèm theo là hai hàm kiểm
+tên tệp không dài quá 255 ký tự và mỗi lượt không quá 20 tệp.
+Luật cho những cửa không đi qua bảng liên kết tệp thì khai ở một bảng luật riêng. Cố ý không
+thêm dòng nào vào bảng luật cũ, vì chỗ kiểm đầu vào đọc thẳng bảng cũ để quyết nhóm chứng từ
+nào được nhận tệp ở cửa tải lên chung; thêm ảnh đại diện vào đấy là vá một lỗ rồi đẻ ra một
+lỗ khác.
+Lúc rà thì lòi ra hai chỗ mà sổ ghi nhận lỗi bảo mật không hề có: cửa tải ảnh thứ sáu, là
+ảnh căn cước của hồ sơ nhân sự; và cửa gắn tệp thứ hai, nằm trong phiếu hỗ trợ.
+Còn mở có chủ ý: vế "đo dung lượng trước khi nhận hết nội dung yêu cầu" của lỗ thứ sáu, vì
+việc đó thuộc tầng máy phục vụ web chứ không thuộc mã nghiệp vụ.
+Kiểm: 11 ca mới, chạy kèm các tệp kiểm hàng xóm thì 171 ca xanh.
+Không có bước nâng cấu trúc dữ liệu. Khi lên máy chủ phải dựng lại cả ba máy ảo phần lõi, vì
+có một việc chạy nền dọn tệp mồ côi lúc 4 giờ 10 mỗi ngày.
+Dự kiến ban đầu tách năm lần ghi nhận nhưng cuối cùng đi một lần, vì bảy lỗ chung một nền;
+tách ra thì lần nào cũng dở dang, không chạy được một mình.
+Mã nguồn: hàm `attachment/controller.py::_store_one`; tệp nền mới `core/upload_guard.py` với
+`ensure_filename_ok` và `ensure_batch_ok`; bảng luật mới `DIRECT_FILE_POLICY`, bảng luật cũ
+`FILE_POLICY` đọc bởi `_policy_or_400` ở cửa `/upload-file`; hai chỗ mới phát hiện là
+`employee.upload_id_image` và `ticket/service._register_files`; bài kiểm
+`test/backend/test_bao_mat_tai_tep.py`; ba máy ảo `api`, `celery-worker`, `celery-beat`.
+Commit: erp-v2 7086a4d0.
+Deploy: đã lên máy chủ thử 16/09/2026; máy chủ thật chờ lệnh đại ca.
+Tham chiếu: bảy lỗ là BM-025 đến BM-031 trong `doc/tai-lieu-ky-thuat/so-ghi-nhan-loi-bao-mat.md`;
+lỗ còn mở một phần là BM-030.
 
 ### bao-CR-408-tai-lieu | Cập nhật sổ ghi nhận lỗi bảo mật sau khi vá
 - status: xong
-Bảy ô trạng thái ở §2 đổi sang "ĐÃ VÁ (bao-CR-408)" — riêng BM-030 ghi "VÁ 2/3". §2b giữ
-NGUYÊN văn lúc phát hiện (kể cả dòng "Trạng thái: Mở") làm **bản ghi hiện trường**, chỉ thêm
-một băng cảnh báo lên đầu chỉ chỗ đọc trạng thái hiện tại — để người đọc sau không tưởng lời
-cũ là sự thật hôm nay. Việc 6 ghi rõ ba chỗ mã nguồn CỐ Ý làm khác bản vẽ trong sổ, kẻo có
-người "sửa mã cho khớp tài liệu".
+Bảy ô trạng thái ở phần bảng tổng đổi sang đã vá, riêng một lỗ ghi rõ là vá hai trong ba vế.
+Phần mô tả chi tiết thì giữ nguyên văn lúc phát hiện, kể cả dòng ghi trạng thái còn mở, để
+làm bản ghi hiện trường; chỉ thêm một băng cảnh báo lên đầu chỉ chỗ đọc trạng thái hiện tại,
+để người đọc sau không tưởng lời cũ là sự thật hôm nay.
+Việc thứ sáu ghi rõ ba chỗ mã nguồn cố ý làm khác bản vẽ trong sổ, kẻo có người đi sửa mã cho
+khớp tài liệu.
+Tham chiếu: `doc/tai-lieu-ky-thuat/so-ghi-nhan-loi-bao-mat.md` mục 2 và 2b; lỗ vá hai trong ba
+vế là BM-030.
 
-## bao-CR-409 | Tiến độ mua hàng: thêm hai cột ngày chứng từ (ticket prod 51)
+## bao-CR-409 | Màn Tiến độ mua hàng: thêm hai cột ngày chứng từ
 - status: xong
 - date: 2026-09-16
-Ticket 51 (TK16092601 — Phạm Lê Triết Giang) xin bày ra màn Tiến độ hai thứ vốn chỉ có trong
-chi tiết ĐMH: **Ngày giao chứng từ cho KT** và **Ngày hóa đơn**. Truy prod thì dữ liệu **đã có
-sẵn** (PO00162 / NHG5218), nên đây thuần là khe hiển thị, không migration.
-Hai khe khác nhau, phải vá hai kiểu:
-- `document_delivery_date` **đã nằm trong hàng trả về** từ lâu nhưng không cột nào vẽ, lại
-  không khai trong `_sort_map()` nên cũng không sắp xếp và không lọc điều kiện được.
-- `invoice_date` của LẦN GIAO thì backend **chưa trả về** — chỉ trả về *số* hóa đơn.
-Chốt một cột Ngày HĐ lấy từ LẦN GIAO: ô hóa đơn trên dòng hàng đời thật luôn trống, đúng lý do
-`invoice_no` của dòng hàng đã nằm trong `PROGRESS_SKIP`. Hai cột mới **không đánh `hide`** vì
-`useTableColumns` chỉ lưu danh sách cột ĐANG ẨN — khóa mới luôn hiện với người đã từng chỉnh bảng.
-Ảnh hưởng kéo theo đã được đại ca duyệt: file Excel màn ĐMH cũng mọc thêm hai cột, do
-`purchase_order/export.py::LINE_COLS` dùng chung `progress_ex.COLS`.
-Test: `test/backend/test_tien_do_ngay_chung_tu_cr409.py` 6 bài; chạy kèm hàng xóm 10 + 44 xanh.
-Cổng `frontend-v2` xanh (typecheck 0, lint 0 lỗi), typecheck `frontend/` giữ đúng 4 lỗi cũ.
-Trạng thái: **commit `erp-v2` `a098da70` (đi chung commit với CR-411 vì chung bộ tệp), đã
-deploy DEV 16/09/2026, ĐÃ LÊN PROD 16/09/2026** — cherry-pick sang `main` thành `38fd2c6e`.
+Một phiếu hỗ trợ từ máy chủ thật xin bày ra màn Tiến độ hai thứ vốn chỉ xem được trong chi
+tiết đơn mua hàng: ngày giao chứng từ cho kế toán, và ngày hóa đơn. Truy trên máy chủ thật thì
+dữ liệu đã có sẵn, nên đây thuần là khe hiển thị, không phải nâng cấu trúc dữ liệu.
+Hai khe khác nhau nên phải vá hai kiểu. Ngày giao chứng từ thì đã nằm trong hàng dữ liệu trả
+về từ lâu, chỉ là không cột nào vẽ ra, và cũng không khai trong bảng cột được sắp xếp nên
+không sắp xếp và không lọc điều kiện được. Còn ngày hóa đơn của lần giao thì phần lõi chưa trả
+về, chỉ trả về số hóa đơn.
+Chốt làm một cột ngày hóa đơn lấy theo lần giao, vì ô hóa đơn trên dòng hàng ngoài đời luôn
+trống — cũng đúng lý do vì sao số hóa đơn của dòng hàng đã nằm trong danh sách cột bỏ qua từ
+trước.
+Hai cột mới cố ý không đánh dấu ẩn mặc định, vì phần ghi nhớ cột chỉ lưu danh sách cột đang
+ẩn; khóa cột mới sẽ luôn hiện với người đã từng chỉnh bảng.
+Một ảnh hưởng kéo theo đã được đại ca duyệt: tệp Excel của màn đơn mua hàng cũng mọc thêm hai
+cột, vì nó dùng chung bảng khai cột với màn Tiến độ.
+Kiểm: 6 bài mới; chạy kèm hàng xóm thì 10 và 44 ca xanh. Cổng kiểm của giao diện mới sạch cả
+kiểu dữ liệu và soát mã; cổng kiểm kiểu dữ liệu của giao diện cũ giữ đúng 4 lỗi cũ.
+Mã nguồn: cột `document_delivery_date` thiếu khai trong `_sort_map()`; cột `invoice_date` của
+lần giao; `invoice_no` của dòng hàng nằm trong `PROGRESS_SKIP`; phần ghi nhớ cột
+`useTableColumns`; `purchase_order/export.py::LINE_COLS` dùng chung `progress_ex.COLS`; bài
+kiểm `test/backend/test_tien_do_ngay_chung_tu_cr409.py`; dữ liệu đối chiếu trên máy chủ thật là
+PO00162 và NHG5218.
+Commit: erp-v2 a098da70, đi chung một lần ghi nhận với bao-CR-411 vì chung bộ tệp; nhặt sang
+main thành 38fd2c6e.
+Deploy: đã lên máy chủ thử và máy chủ thật 16/09/2026.
+Tham chiếu: phiếu hỗ trợ số 51 trên máy chủ thật, mã TK16092601.
 
-### bao-CR-409-don-test-cu | Dọn hai bài kiểm đã hết hạn của bao-CR-310 đợt 4
+### bao-CR-409-don-test-cu | Dọn hai bài kiểm đã hết hạn của đợt bốn việc phương án
 - status: xong
-Chạy cổng v2 thì đỏ 2 bài ở `purchase-request-choose-card.test.tsx` — **không phải của CR-409**:
-bao-CR-310 đợt 4 (đang nằm trong cây, chưa commit) đã dời nút "Tạo đơn mua hàng theo phương án"
-lên đầu trang chi tiết mà quên sửa bài kiểm, nên chúng còn đi tìm một nút không còn tồn tại.
-Đã bỏ hai bài đó kèm comment chỉ chỗ. **Khoảng trống còn lại**: cổng quyền
-`purchase_order:create` của đường gom đơn nay nằm ở `canGenerateFromOptions` trong
-`purchase-request-detail-page.tsx`, trang đó chưa có tệp kiểm nào.
+Chạy cổng kiểm của giao diện mới thì đỏ hai bài, mà không phải lỗi của việc này: đợt bốn của
+việc phương án — đang nằm trong cây làm việc, chưa ghi nhận — đã dời nút tạo đơn theo phương án
+lên đầu trang chi tiết mà quên sửa bài kiểm, nên hai bài đó còn đi tìm một cái nút không còn
+tồn tại. Đã bỏ hai bài kèm ghi chú chỉ chỗ.
+Khoảng trống còn lại: cổng quyền tạo đơn mua hàng của đường gom đơn nay nằm trên trang chi
+tiết, mà trang đó chưa có tệp kiểm nào.
+Mã nguồn: `purchase-request-choose-card.test.tsx`; quyền `purchase_order:create` kiểm ở cờ
+`canGenerateFromOptions` trong `purchase-request-detail-page.tsx`.
+Tham chiếu: đợt bốn là bao-CR-310-dot-4.
 
-## bao-CR-410 | Phiếu in Đơn đặt hàng: thêm cột Phân loại (ticket prod 52)
-- status: xong
-- date: 2026-09-16
-Phiếu ĐƠN ĐẶT HÀNG in ra gửi nhà cung cấp không nói hàng thuộc nhóm nào. Dữ liệu đã có sẵn
-trong gói bản in (`item_group` ở `purchase_order/controller.py::_item`) nên **không đụng
-backend, không migration** — chỉ là khe hiển thị.
-Cột đặt **giữa «Mã» và «Tên hàng hóa»**, đúng thứ tự bảng dòng của màn chi tiết ĐMH.
-Bẫy phải nhớ: thêm một cột thì **`colSpan` của dòng TỔNG CỘNG phải tăng theo** (v1 9→10,
-và 10→11 ở đơn trộn nhiều loại tiền; v2 9→10) — quên thì không chỗ nào đỏ lên, chỉ có số
-tiền tổng in lệch sang cột khác trên tờ giấy đưa cho NCC. Đã viết hẳn một bài kiểm canh chỗ đó.
-Chỉ sửa phiếu ĐƠN ĐẶT HÀNG; phiếu nội bộ và phiếu nhập khẩu giữ nguyên vì ticket không xin.
-Test: 3 bài mới trong `purchase-order-print-page.test.tsx`, cả tệp 9 bài xanh.
-Cổng v2 typecheck 0 lỗi / lint 0 lỗi; typecheck `frontend/` giữ đúng 4 lỗi cũ.
-Trạng thái: **commit `erp-v2` `b4e73807`, đã deploy DEV 16/09/2026, ĐÃ LÊN PROD 16/09/2026** —
-cherry-pick sang `main` thành `853136a3`.
-
-## bao-CR-411 | Tiến độ mua hàng: kho nhận hiện cả khi chưa nhận hàng (ticket prod 50)
+## bao-CR-410 | Phiếu in Đơn đặt hàng: thêm cột Phân loại
 - status: xong
 - date: 2026-09-16
-Đại ca yêu cầu **rà kỹ rồi đề xuất trước, chưa được viết mã**. Đã đo trên prod: cả 240 dòng
-hàng đều đã có «Kho nhận mặc định» ở dòng, nhưng màn Tiến độ chỉ đọc kho của LẦN GIAO
-(`purchase_progress/export.py` — `"warehouse_code": dl.warehouse_code if dl else ""`), nên
-**78 dòng chưa giao lần nào** hiện ô Kho trống. Hai khe phụ: cột đang bày **MÃ kho** chứ không
-bày **TÊN kho** như ticket xin, và cột Kho **ẩn mặc định** ở cả v1 lẫn v2.
+Phiếu đơn đặt hàng in ra gửi nhà cung cấp không nói hàng thuộc nhóm nào. Dữ liệu đã có sẵn
+trong gói dữ liệu của bản in, nên không đụng phần lõi, không nâng cấu trúc dữ liệu — chỉ là
+khe hiển thị.
+Cột mới đặt giữa cột mã và cột tên hàng hóa, đúng thứ tự bảng dòng của màn chi tiết đơn mua
+hàng.
+Một cái bẫy phải nhớ: thêm một cột thì số cột gộp của dòng tổng cộng phải tăng theo — giao diện
+cũ tăng từ 9 lên 10, và từ 10 lên 11 ở đơn trộn nhiều loại tiền; giao diện mới tăng từ 9 lên
+10. Quên thì không chỗ nào báo đỏ, chỉ có số tiền tổng in lệch sang cột khác trên tờ giấy đưa
+cho nhà cung cấp. Đã viết hẳn một bài kiểm canh chỗ đó.
+Chỉ sửa phiếu đơn đặt hàng; phiếu nội bộ và phiếu nhập khẩu giữ nguyên vì phiếu hỗ trợ không
+xin tới.
+Kiểm: 3 bài mới, cả tệp 9 bài xanh. Cổng kiểm giao diện mới sạch cả kiểu dữ liệu và soát mã;
+cổng kiểm kiểu dữ liệu của giao diện cũ giữ đúng 4 lỗi cũ.
+Mã nguồn: dữ liệu `item_group` sẵn có ở `purchase_order/controller.py::_item`; thuộc tính
+`colSpan` của dòng tổng cộng; bài kiểm `purchase-order-print-page.test.tsx`.
+Commit: erp-v2 b4e73807, nhặt sang main thành 853136a3.
+Deploy: đã lên máy chủ thử và máy chủ thật 16/09/2026.
+Tham chiếu: phiếu hỗ trợ số 52 trên máy chủ thật.
 
-Đại ca đã chốt: **gộp chung vào cột «Kho» sẵn có, cứ để mã kho**. Đo thêm `tab_warehouse` trên
-prod thì `code` chính là tên ngắn đọc được (Kho B18, An Nông, Kho Dr. Xanh…) còn `name` là tên
-pháp nhân đầy đủ, nên đề xuất đổi sang tên đã rút lại. Đã làm: `row_values` lùi về
-`POItem.warehouse_code` khi lần giao chưa có hoặc bỏ trống ô kho; sắp xếp và lọc điều kiện
-chuyển sang cùng biểu thức lùi đó (`build_warehouse_code_col`) để giá trị đang bày và giá trị
-lọc được không lệch nhau. Không migration, không đụng frontend. Test:
-`test/backend/test_tien_do_kho_nhan_cr411.py` 8 bài; chạy kèm hàng xóm 26 xanh + 31 xanh.
-Còn treo chờ đại ca quyết: cột Kho vẫn ẩn mặc định ở cả hai bản.
-Trạng thái: **commit `erp-v2` `a098da70` (đi chung với CR-409 vì chung bộ tệp), đã deploy DEV
-16/09/2026, ĐÃ LÊN PROD 16/09/2026** — cherry-pick sang `main` thành `38fd2c6e`.
-
-## bao-CR-412 | Danh mục Kho tách ba trường: mã, tên viết tắt, tên đầy đủ
-- status: open
+## bao-CR-411 | Màn Tiến độ mua hàng: hiện kho nhận cả khi chưa nhận hàng
+- status: xong
 - date: 2026-09-16
-Đại ca nêu: lấy tên viết tắt làm khóa là không chuẩn, phải có mã riêng, tên viết tắt riêng,
-tên đầy đủ riêng. Đúng — `tab_warehouse` hiện chỉ có `code` (khóa, đang chứa chữ người đọc
-được) và `name` (tên pháp nhân đầy đủ). Đo prod 16/09/2026: 928 dòng ở 5 bảng mang mã kho
-(`tab_po_item` 240, `tab_po_delivery` 178, `tab_goods_receipt` 177, `tab_inventory` 156,
-`tab_inventory_move` 177) và **không dòng nào mồ côi**. Đề xuất chia hai bước: bước 1 thêm
-`short_name` + chuyển mọi chỗ hiển thị sang nó, giữ nguyên giá trị `code` làm khóa bất biến
-(rẻ, không đụng dữ liệu cũ); bước 2 mới đổi giá trị `code` sang mã máy, phải sửa 5 bảng trong
-một migration cộng JSON lịch sử mua hàng và mẫu nhập Excel, bắt buộc sao lưu + diễn tập.
-**Đại ca chốt 16/09/2026: ghi sổ để làm sau, chưa làm bây giờ.**
+Đại ca yêu cầu rà kỹ rồi đề xuất trước, chưa được viết mã.
+Đo trên máy chủ thật: cả 240 dòng hàng đều đã có kho nhận mặc định ghi ngay trên dòng, nhưng
+màn Tiến độ chỉ đọc kho của lần giao, nên 78 dòng chưa giao lần nào hiện ô kho trống. Rà ra
+thêm hai khe phụ: cột đang bày mã kho chứ không bày tên kho như phiếu hỗ trợ xin, và cột kho
+mặc định ẩn ở cả hai bản giao diện.
+Đại ca chốt: gộp chung vào cột kho sẵn có, và cứ để mã kho. Đo thêm danh mục kho trên máy chủ
+thật thì thấy cột mã chính là tên ngắn người đọc được, còn cột tên là tên pháp nhân đầy đủ,
+nên em có đề xuất đổi sang tên rút gọn — đại ca đã chốt như trên.
+Đã làm: chỗ dựng hàng dữ liệu lùi về đọc kho nhận trên dòng hàng khi lần giao chưa có hoặc để
+trống ô kho; phần sắp xếp và lọc điều kiện chuyển sang dùng đúng cùng một biểu thức lùi đó, để
+giá trị đang bày và giá trị lọc được không lệch nhau. Không nâng cấu trúc dữ liệu, không đụng
+giao diện.
+Kiểm: 8 bài; chạy kèm hàng xóm thì 26 và 31 ca xanh.
+Còn treo chờ đại ca quyết: cột kho vẫn ẩn mặc định ở cả hai bản giao diện.
+Mã nguồn: `purchase_progress/export.py`, biểu thức cũ
+`"warehouse_code": dl.warehouse_code if dl else ""`, chỗ dựng hàng `row_values` lùi về
+`POItem.warehouse_code`, biểu thức dùng chung `build_warehouse_code_col`; bảng `tab_warehouse`
+với `code` và `name`; bài kiểm `test/backend/test_tien_do_kho_nhan_cr411.py`.
+Commit: erp-v2 a098da70, đi chung một lần ghi nhận với bao-CR-409 vì chung bộ tệp; nhặt sang
+main thành 38fd2c6e.
+Deploy: đã lên máy chủ thử và máy chủ thật 16/09/2026.
+Tham chiếu: phiếu hỗ trợ số 50 trên máy chủ thật; việc tách ba trường của danh mục kho ghi ở
+bao-CR-412.
+
+## bao-CR-412 | Danh mục Kho tách làm ba trường: mã, tên viết tắt, tên đầy đủ
+- status: dang-lam
+- date: 2026-09-16
+Đại ca nêu: lấy tên viết tắt làm khóa là không chuẩn, phải có mã riêng, tên viết tắt riêng, tên
+đầy đủ riêng. Đúng vậy — danh mục kho hiện chỉ có hai cột, một cột khóa đang chứa chữ người đọc
+được, và một cột tên pháp nhân đầy đủ.
+Đo trên máy chủ thật ngày 16/09/2026: 928 dòng ở năm bảng đang mang mã kho, và không dòng nào
+mồ côi.
+Đề xuất chia hai bước. Bước một thêm một cột tên viết tắt rồi chuyển mọi chỗ hiển thị sang cột
+đó, giữ nguyên giá trị cột khóa làm khóa bất biến — cách này rẻ và không đụng dữ liệu cũ. Bước
+hai mới đổi giá trị cột khóa sang mã máy, phải sửa cả năm bảng trong một lần nâng cấu trúc dữ
+liệu, cộng thêm dữ liệu lịch sử mua hàng lưu dạng JSON và mẫu nhập Excel; bắt buộc sao lưu và
+diễn tập trước.
+Đại ca chốt ngày 16/09/2026: ghi sổ để làm sau, chưa làm bây giờ.
+Mã nguồn: bảng `tab_warehouse` với `code` và `name`, cột đề xuất thêm là `short_name`; năm bảng
+mang mã kho là `tab_po_item` 240 dòng, `tab_po_delivery` 178, `tab_goods_receipt` 177,
+`tab_inventory` 156, `tab_inventory_move` 177.
 
 ## bao-CR-413 | Deploy prod 16/09/2026: tách RIÊNG ba ticket ra khỏi cụm chưa xong
 - status: xong
@@ -2254,43 +2389,51 @@ trong container `api` lẫn trong gói tĩnh đã dựng của `web` và `erp`.
 Còn lại trên `erp-v2` chưa lên prod: bao-CR-407 (màn Nhật ký hệ thống), bao-CR-408 (siết tải
 tệp — **đây là lỗ bảo mật đang mở trên prod**, BM-025…031), và bao-CR-310 đợt 4.
 
-## deploy-dev-1609-gop-dat-xe | Gộp code cuối ngày 16/09 đẩy lên dev (cụm lịch đặt xe)
+## deploy-dev-1609-gop-dat-xe | Gộp mã cuối ngày 16/09 rồi đẩy lên máy chủ thử (cụm lịch đặt xe)
 - status: xong
 - date: 2026-09-16
-Sau đợt prod buổi trưa, đại ca bảo gom hết code lại đẩy dev, và nhắc "có các commit của phần
-yêu cầu mua hàng mới nữa". **Đo lại thì phần YCMH đã nằm sẵn trên dev từ sáng** — commit
-`0dce69fa` (hai bản in phiếu YCMH, bao-CR-310 đợt 4) là tổ tiên của bản dev đang chạy, không
-có gì mới về YCMH ở đợt này. Ghi ra đây để lần sau không đi tìm lại.
+Sau đợt lên máy chủ thật buổi trưa, đại ca bảo gom hết mã lại đẩy lên máy chủ thử, và nhắc là
+còn mấy lần ghi nhận của phần yêu cầu mua hàng nữa. Đo lại thì phần yêu cầu mua hàng đã nằm sẵn
+trên máy chủ thử từ sáng: lần ghi nhận hai bản in phiếu của đợt bốn là tổ tiên của bản đang
+chạy, đợt này không có gì mới về yêu cầu mua hàng. Ghi ra đây để lần sau không đi tìm lại.
+Máy chủ thử nhận thêm sáu lần ghi nhận: hai của em là ghi sổ, và bốn của đồng nghiệp — lịch đặt
+xe thêm khung xem theo Ngày và theo Tuần kiểu lịch Google; thẻ "Chuyến của tôi" cùng tiêu đề màn
+chi tiết phiếu đặt xe; một đoạn chạy tay nạp dữ liệu đặt xe của hệ cũ từ hai tệp Excel; và một
+đoạn chạy tay dựng dữ liệu mẫu cho thẻ "Chuyến của tôi", đoạn này chỉ chạy dưới máy em.
 
-Dev đi từ `8df4e35c` lên **`1a6019b7`**, sáu lần commit: hai của em (`fc6383bd` + `a0ecbe19`,
-ghi sổ) và bốn của đồng nghiệp — `d014f62b` lịch đặt xe thêm khung Ngày/Tuần kiểu Google
-Calendar · `657a385c` thẻ "Chuyến của tôi" + tiêu đề màn chi tiết phiếu đặt xe · `66ae3d2f`
-script nạp dữ liệu đặt xe hệ cũ từ hai tệp Excel · `1a6019b7` script dựng dữ liệu demo
-"Chuyến của tôi" (CHỈ CHẠY LOCAL).
+Lưu ý một: cây làm việc đang còn sửa dở vì cụm đồng bộ đặt xe chưa ghi nhận, nên trước khi gộp
+phải đối chiếu danh sách tệp của sáu lần ghi nhận kia với danh sách tệp đang sửa dở — không
+giao nhau mới gộp, và gộp bằng lệnh chỉ cho tiến thẳng chứ không dùng lệnh lấy về kèm gộp. Gộp
+xong soát lại thấy đủ 16 mục đang sửa dở như cũ. Tuyệt đối không dùng lệnh gác tạm ở tình huống
+này.
 
-⚠️ **Cây làm việc đang bẩn vì cụm P0 đồng bộ đặt xe chưa commit**, nên trước khi gộp phải đối
-chiếu danh sách tệp của sáu commit kia với danh sách tệp đang bẩn — không giao nhau mới gộp,
-và gộp bằng `merge --ff-only` chứ không `pull`. Gộp xong soát lại `git status` đủ 16 mục bẩn
-như cũ. Tuyệt đối không `git stash` ở tình huống này.
-
-⚠️ **`package.json` có đổi** (thêm `@fullcalendar/interaction` và `@fullcalendar/timegrid`
-6.1.21) nên phải `npm install` trong container `erp` + `restart erp` **trước** khi chạy cổng
-kiểm — đây đúng cái bẫy đã ghi ở đợt 15/09: gộp xong quên `npm install` thì Vite chặn CẢ APP
-chứ không riêng màn mới. Cổng `frontend-v2`: **277 tệp / 3169 bài xanh** (2 bài đỏ cố hữu),
-typecheck 0 lỗi, lint 0 lỗi.
-
-Deploy dev: `git fetch` + `git reset --hard origin/erp-v2` ở `~/procurement-tool-dev` rồi dựng
-lại bốn dịch vụ `erp api celery-worker celery-beat` với `-f docker-compose.dev.yml --env-file
-.env.dev`. Kiểm sau deploy: 8 dịch vụ chạy, log api sạch ("Seed prod done" + "Application
-startup complete", không Traceback), **alembic dev giữ nguyên `a3e8c1f6d924`** (đúng — đợt này
-không có migration), `deverp` và `devthumua` đều 200, và mã mới có mặt trong gói tĩnh đã dựng
-(`timeGrid` trong `timeline-page-*.js`, "Chuyến của tôi" trong `my-trips-page-*.js`).
+Lưu ý hai: tệp khai thư viện của giao diện có đổi, thêm hai thư viện lịch. Nên phải nạp lại thư
+viện trong máy ảo giao diện rồi khởi động lại nó trước khi chạy cổng kiểm. Đây đúng cái bẫy đã
+ghi ở đợt 15/09: gộp xong mà quên nạp lại thư viện thì bộ dựng giao diện chặn cả ứng dụng, chứ
+không riêng màn mới.
+Kiểm: cổng kiểm giao diện mới chạy 277 tệp với 3169 bài xanh (còn 2 bài đỏ cố hữu), cổng kiểm
+kiểu dữ liệu sạch, cổng soát mã sạch.
+Kiểm sau khi lên máy chủ thử: 8 dịch vụ chạy, bản ghi khởi động của phần lõi sạch, không có vết
+lỗi; bậc dữ liệu giữ nguyên, đúng vì đợt này không có bước nâng cấu trúc; hai tên miền thử đều
+trả về bình thường; và mã mới có mặt trong gói giao diện đã dựng.
+Mã nguồn: lần ghi nhận hai bản in phiếu là 0dce69fa; hai thư viện thêm vào `package.json` là
+`@fullcalendar/interaction` và `@fullcalendar/timegrid` 6.1.21; dấu kiểm trong gói dựng là
+`timeGrid` ở `timeline-page-*.js` và "Chuyến của tôi" ở `my-trips-page-*.js`.
+Commit: máy chủ thử đi từ 8df4e35c lên 1a6019b7; hai lần ghi sổ của em là fc6383bd và a0ecbe19;
+bốn lần của đồng nghiệp là d014f62b, 657a385c, 66ae3d2f, 1a6019b7.
+Deploy: `git fetch` rồi `git reset --hard origin/erp-v2` ở `~/procurement-tool-dev`, dựng lại
+bốn dịch vụ `erp api celery-worker celery-beat` với `-f docker-compose.dev.yml --env-file
+.env.dev`; bậc dữ liệu giữ nguyên a3e8c1f6d924.
+Tham chiếu: đợt bốn của việc phương án là bao-CR-310-dot-4; bẫy quên nạp lại thư viện ghi ở
+gop-origin-erp-v2-1509; cụm đồng bộ đặt xe ghi ở dong-bo-datxe-plan.
 
 
 ## dong-bo-so-p0 | Sổ đồng bộ dùng chung `tab_sync_log` — đóng P0 phía ERP
 - status: xong
 - date: 2026-09-16
 - list: Duyệt dấu, Đặt xe
+Tham chiếu: việc này ghi trong sổ thay đổi dưới mã bao-CR-416; khóa task ở sổ nhật ký giữ
+nguyên để không đẻ thêm task mới trên phân hệ Dự án.
 Đại ca đặt ba điều kiện khi giao việc: "viết module này linh động xíu nhé có thể sau
 này sử dụng cho hệ thống khác nữa" (đồng bộ đơn hàng, POS365) · "tab_pos_sync_run,
 nếu cái này tào lao quá bỏ luôn, viết chung 1 cái đi" · "mọi thứ phải gọn chứ cái gì
@@ -2390,6 +2533,8 @@ Mã nguồn: `backend/scripts/legacy_sync/link_driver_accounts.py`
 - status: xong
 - date: 2026-09-17
 - list: Duyệt dấu, Đặt xe
+Tham chiếu: việc này thuộc mã bao-CR-415 trong sổ thay đổi (phần tệp đính kèm); khóa task ở sổ
+nhật ký giữ nguyên để không đẻ thêm task mới trên phân hệ Dự án.
 Đợt nạp 16/09 đưa về 1488 dòng `tab_file` mới có MÔ TẢ, byte vẫn nằm bên app cũ. Bản
 thiết kế chốt đường chính là "app cũ dựng `GET /api/v1/sync/files/{id}/url` ký hộ
 URL". Nay byte đã về, và không cần app cũ làm gì cả.
@@ -2470,9 +2615,10 @@ Còn thiếu một thứ để chạy thử: danh sách người của Dego Orga
 Đại ca chốt 16/09 là không chờ — em dựng một BỘ DỮ LIỆU TEST RIÊNG chỉ chạy dưới máy
 em để thử, người thật khai sau.
 
-Giai đoạn 1 đã được duyệt cho làm, nhưng CHƯA khởi công vì cây làm việc còn hai tệp
-đang dở của phiên khác (`backend/app/seed.py` và bài kiểm khai đủ phạm vi) — đúng hai
-tệp mà đợt này phải sửa, nên chờ dọn xong mới viết mã.
+Giai đoạn 1 đã được duyệt cho làm, nhưng chưa khởi công. Lúc nhận việc thì cây làm việc
+còn hai tệp đang dở của phiên khác (`backend/app/seed.py` và bài kiểm khai đủ phạm vi) —
+đúng hai tệp mà đợt này phải sửa, nên phải chờ. Đến chiều 17/09 phiên kia đã ghi nhận
+xong nên chỗ nghẽn đó hết, giờ chỉ còn chờ tới lượt làm.
 Tham chiếu: dòng `bao-CR-414-phong-tu-mua-hang` trong `change-log-bao.md`; bản dữ liệu
 test sẽ nằm ở `backend/scripts/demo_cr414.py` (CHỈ CHẠY LOCAL).
 
@@ -2483,3 +2629,42 @@ theo phòng ban cộng phạm vi tài khoản, và ghi luôn ba mốc đổi hư
 đọc lại rồi làm theo bản cũ. Tên tệp giữ nguyên để mọi đường dẫn đang trỏ tới nó không
 chết.
 Tham chiếu: `doc/erp/12-ke-hoach-erp-v2-da-phap-nhan.md` (bản 2.0, 16/09/2026).
+
+## bao-CR-418 | Sổ nhật ký task: viết lại mô tả cho đọc được, bù cụm thiếu, gán hết cho đại ca
+- status: xong
+- date: 2026-09-17
+Đại ca đọc task trên phân hệ Dự án và nói mô tả "không thuần tiếng Việt lắm, kiểu đọc hơi
+khó hiểu", nên đợt này làm ba việc cho cái sổ này.
+
+Việc thứ nhất là rà xem sổ thiếu gì. Cách rà: lấy danh sách mã CR trong nhật ký thay đổi
+rồi đối chiếu với các mục đang có trong sổ, sau đó xem tay từng mã còn nghi ngờ. Kết quả
+chỉ thiếu thật đúng một cụm là CR-390 đến CR-393 — khối Báo cáo thực hiện của yêu cầu báo
+giá, làm ngày 12/09 — nay đã ghi thành một mục cha với bốn việc con. Hai mã CR-399 và
+CR-401 trông như thiếu nhưng thực ra đã nằm lồng trong mục khác, không phải lỗ.
+
+Việc thứ hai là viết lại toàn bộ vùng CR-389 đến CR-416. Mỗi mô tả giờ là câu tiếng Việt
+trọn vẹn, trả lời ba câu hỏi theo thứ tự: sửa gì, vì sao phải sửa, và việc đang nằm ở
+đâu. Tên hàm, tên bảng, mã lần ghi nhận thì gom hết xuống các dòng cuối mục để ai cần
+tra thì tra, còn người đọc để nắm việc thì không phải lội qua. Luật viết mô tả được ghi
+thẳng vào đầu tệp sổ và nhắc lại trong hai tệp hướng dẫn trợ lý AI, để bot khác cũng viết
+đúng kiểu chứ không phải mỗi phiên mỗi giọng. Riêng phần luật đó cố ý đặt tiêu đề bốn dấu
+thăng: script đọc MỌI dòng hai dấu thăng là một task, nên để hai dấu thăng là đẩy nguyên
+phần hướng dẫn lên phân hệ Dự án thành một task rác. Chỗ này đã dính thật một lần, may là
+lộ ra lúc chạy thử nên chưa lên tới ERP.
+
+Việc thứ ba là gán người phụ trách. Script nay đọc thêm khai báo người phụ trách trong
+sổ; mục nào không khai thì nhận người mặc định truyền lúc chạy, việc con thừa hưởng của
+việc cha. Sổ khai bằng MÃ NHÂN SỰ chứ không phải số id, vì số id ở máy thử và máy thật
+khác nhau nên ghi số vào sổ là sai ở một trong hai chỗ; script tự tra mã ra hồ sơ nhân sự
+lúc chạy. Cũng lưu ý người phụ trách task là hồ sơ nhân sự, không phải tài khoản đăng
+nhập, và lệnh cập nhật thì THAY cả danh sách chứ không thêm dồn.
+
+Đã chạy thật lên máy chủ thử: sổ có 36 mục chia hai danh sách task, tất cả đều đứng tên
+đại ca, chạy lại lần nữa thì không còn gì phải cập nhật. Một lần chạy bị lỗi 502 giữa
+đường vì đúng lúc đó phiên khác đang deploy lại máy chủ thử, chờ khoảng bốn mươi giây rồi
+chạy lại là xong.
+Mã nguồn: `backend/scripts/sync_task_journal.py` (thêm khai báo `- pic:`, tra mã nhân sự,
+và tham số `--pic` / `WORK_SYNC_PIC`); luật viết mô tả nằm ở đầu
+`doc/tai-lieu-ky-thuat/nhat-ky-task.md`, nhắc lại trong `CLAUDE.md` và `AGENTS.md`.
+Tham chiếu: dòng `bao-CR-418-so-task-thuan-tieng-viet` trong `change-log-bao.md`; đợt
+dựng sổ và script ban đầu là `bao-CR-399`.

@@ -92,3 +92,9 @@ A typical list endpoint composes both: `require(...)` as the route dependency, t
 ## Docs
 
 Requirements, permission design, and naming conventions live in `doc/` (Vietnamese) — index at `doc/README.md`. Permission design detail: `doc/phan-quyen/Thiet_Ke_Phan_Quyen.md`. Progress checklist: `TASKS.md`.
+
+### Nhật ký task — `doc/tai-lieu-ky-thuat/nhat-ky-task.md`
+
+Ghi một mục vào sổ này cho mỗi phiên làm việc; `backend/scripts/sync_task_journal.py` đẩy sổ lên phân hệ **Dự án** và **sổ sở hữu phần mô tả** (đừng sửa mô tả task bằng tay trên ERP). Người phụ trách mặc định `NSU209`, khai bằng `- pic:`.
+
+⚠️ **Luật viết mô tả (chốt 17/09/2026): mô tả phải là câu tiếng Việt trọn vẹn** — nói việc trước, tên tệp sau; tên hàm/tên bảng/mã commit gom xuống dòng cuối (`Mã nguồn:` / `Commit:` / `Deploy:`); từ tiếng Anh chỉ giữ khi công ty vẫn gọi bằng từ đó. Luật đầy đủ nằm ở đầu tệp sổ.

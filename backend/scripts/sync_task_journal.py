@@ -18,6 +18,10 @@ backend/scripts/.task_sync.env, dạng KEY=VALUE, KHÔNG commit tệp này):
     WORK_SYNC_USER=TESTREQ
     WORK_SYNC_PASS=...
     WORK_SYNC_LIST=Nhật ký task
+    WORK_SYNC_PIC=NSU209
+
+`WORK_SYNC_PIC` là mã nhân sự nhận mọi task của sổ (mục nào khai `- pic:` riêng
+thì theo mục đó). Để trống thì script không đụng tới người phụ trách.
 """
 from __future__ import annotations
 
@@ -27,6 +31,7 @@ import os
 import re
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -65,6 +70,9 @@ class JournalEntry:
     children: list["JournalEntry"] = field(default_factory=list)
     #  Task list đích của mục (`- list:`). Rỗng = list mặc định trong config.
     list_name: str = ""
+    #  Mã nhân sự của người phụ trách (`- pic:`, nhiều mã cách nhau bằng dấu
+    #  phẩy). Rỗng = lấy theo cấu hình `WORK_SYNC_PIC`; việc con theo cha.
+    pic_codes: list[str] = field(default_factory=list)
 
     @property
     def display_title(self) -> str:
@@ -93,8 +101,8 @@ def _split_heading(head: str) -> tuple[str, str]:
 
 def parse_journal(path: Path) -> list[JournalEntry]:
     """Bóc các mục `## key | tiêu đề` (và việc con `### key | tiêu đề` ngay
-    dưới) — dòng `- status:`/`- date:` là metadata, mọi dòng khác trong thân
-    là mô tả giữ nguyên văn."""
+    dưới) — dòng `- status:`/`- date:`/`- list:`/`- pic:` là khai báo, mọi dòng
+    khác trong thân là mô tả giữ nguyên văn."""
     entries: list[JournalEntry] = []
     parent: JournalEntry | None = None   # mục `##` gần nhất
     current: JournalEntry | None = None  # mục đang nhận metadata/mô tả (cha hoặc con)
@@ -142,6 +150,11 @@ def parse_journal(path: Path) -> list[JournalEntry]:
                 raise SystemExit(f"[{current.key}] việc con đi theo list của cha — "
                                  "đừng khai `- list:` trong mục ###")
             current.list_name = m.group(2).strip()
+            continue
+        m = re.match(r"^-\s*(pic|nguoi-phu-trach)\s*:\s*(.+)", raw, re.IGNORECASE)
+        if m:
+            current.pic_codes = [c.strip().upper()
+                                 for c in re.split(r"[,;]", m.group(2)) if c.strip()]
             continue
         if raw.strip():
             current.desc_lines.append(raw.rstrip())
@@ -202,6 +215,73 @@ class WorkApi:
         self.token = ""
 
 
+class PeopleDirectory:
+    """Tra mã nhân sự (ví dụ `NSU209`) ra id hồ sơ nhân sự.
+
+    Người phụ trách task lưu bằng **id hồ sơ nhân sự**, không phải id tài
+    khoản — nên sổ khai mã nhân sự (bất biến, đọc được) rồi script tự tra, chứ
+    đừng ghi số id vào sổ: id ở local, dev và prod khác nhau.
+    """
+
+    def __init__(self, api: WorkApi):
+        self.api = api
+        self._by_code: dict[str, int] = {}
+        self._me: dict | None = None
+
+    def me(self) -> dict:
+        if self._me is None:
+            self._me = self.api.call("GET", "/api/auth/me") or {}
+        return self._me
+
+    def id_of(self, code: str) -> int:
+        code = code.strip().upper()
+        if not code:
+            return 0
+        if code not in self._by_code:
+            self._by_code[code] = self._find(code)
+        return self._by_code[code]
+
+    def _find(self, code: str) -> int:
+        #  Tra chính tài khoản đang chạy script TRƯỚC: ca hay gặp nhất là gán
+        #  cho chính mình, và đường này không đòi quyền đọc hồ sơ nhân sự.
+        me = self.me()
+        if str(me.get("emp_code") or "").upper() == code:
+            return int(me.get("employee_id") or 0)
+        query = urllib.parse.urlencode({"search": code, "page_size": 50})
+        data = self.api.call("GET", f"/api/employees?{query}") or {}
+        for row in data.get("items") or []:
+            if str(row.get("code") or "").upper() == code:
+                return int(row.get("id") or 0)
+        raise SystemExit(
+            f"Không tra ra nhân sự mã '{code}'. Kiểm lại mã trong sổ (hoặc "
+            "WORK_SYNC_PIC), và kiểm tài khoản chạy script có quyền đọc hồ sơ "
+            "nhân sự không.")
+
+
+def sync_pic(api: WorkApi, task: dict, entry: JournalEntry,
+             people: PeopleDirectory, dry: bool, indent: str = "") -> None:
+    """Gán người phụ trách cho một task theo `- pic:` của mục.
+
+    Mục không khai người nào thì KHÔNG đụng tới danh sách đang có trên ERP —
+    sổ chỉ sở hữu những gì sổ nói ra.
+    """
+    if not entry.pic_codes:
+        return
+    want = sorted({people.id_of(c) for c in entry.pic_codes} - {0})
+    have = sorted({int(a.get("employee_id") or 0)
+                   for a in (task.get("assignees") or [])
+                   if int(a.get("kind") or 1) == 1} - {0})
+    if want == have:
+        return
+    if dry:
+        print(f"[dry-run] {indent}sẽ gán [{entry.key}] cho "
+              + ", ".join(entry.pic_codes))
+        return
+    api.call("PUT", f"/api/work/tasks/{task['id']}/assignees",
+             {"pic_ids": want, "follower_ids": []})
+    print(f"{indent}@ [{entry.key}] giao cho " + ", ".join(entry.pic_codes))
+
+
 def ensure_list(api: WorkApi, name: str, dry: bool) -> int:
     lists = api.call("GET", "/api/work/lists") or []
     for row in lists:
@@ -237,7 +317,8 @@ def _key_of(title: str) -> str:
     return title.split(" — ", 1)[0] if " — " in title else title
 
 
-def sync_children(api: WorkApi, parent_id: int, parent: JournalEntry, dry: bool) -> None:
+def sync_children(api: WorkApi, parent_id: int, parent: JournalEntry,
+                  people: PeopleDirectory, dry: bool) -> None:
     """Upsert việc con của một mục `##`. Việc con không có cột kanban (C-05),
     nên chỉ so tiêu đề / mô tả / trạng thái / ngày bắt đầu."""
     if not parent.children:
@@ -262,6 +343,7 @@ def sync_children(api: WorkApi, parent_id: int, parent: JournalEntry, dry: bool)
                 api.call("PATCH", f"/api/work/tasks/{created['id']}",
                          {"status": c.task_status})
             print(f"  + con [{c.key}] của [{parent.key}]")
+            sync_pic(api, created, c, people, dry, indent="  ")
             continue
         patch: dict = {}
         if old.get("title") != c.display_title:
@@ -274,15 +356,16 @@ def sync_children(api: WorkApi, parent_id: int, parent: JournalEntry, dry: bool)
             patch["start_date"] = c.start_date
         if not patch:
             print(f"  = con [{c.key}] không đổi")
-            continue
-        if dry:
+        elif dry:
             print(f"[dry-run]   sẽ cập nhật việc con [{c.key}]: {', '.join(patch)}")
-            continue
-        api.call("PATCH", f"/api/work/tasks/{old['id']}", patch)
-        print(f"  ~ con [{c.key}]: {', '.join(patch)}")
+        else:
+            api.call("PATCH", f"/api/work/tasks/{old['id']}", patch)
+            print(f"  ~ con [{c.key}]: {', '.join(patch)}")
+        sync_pic(api, old, c, people, dry, indent="  ")
 
 
-def sync(api: WorkApi, list_id: int, entries: list[JournalEntry], dry: bool) -> None:
+def sync(api: WorkApi, list_id: int, entries: list[JournalEntry],
+         people: PeopleDirectory, dry: bool) -> None:
     sections = ensure_sections(api, list_id, {e.section_name for e in entries}, dry)
     board = api.call("GET", f"/api/work/lists/{list_id}/board") if list_id else {"tasks": []}
     #  Khớp theo tiền tố "key — " để đổi TIÊU ĐỀ trong sổ không đẻ task mới.
@@ -310,7 +393,8 @@ def sync(api: WorkApi, list_id: int, entries: list[JournalEntry], dry: bool) -> 
                 api.call("PATCH", f"/api/work/tasks/{created['id']}",
                          {"status": e.task_status})
             print(f"+ tạo [{e.key}] ({e.section_name})")
-            sync_children(api, int(created["id"]), e, dry)
+            sync_pic(api, created, e, people, dry)
+            sync_children(api, int(created["id"]), e, people, dry)
             continue
 
         patch: dict = {}
@@ -331,7 +415,8 @@ def sync(api: WorkApi, list_id: int, entries: list[JournalEntry], dry: bool) -> 
         else:
             api.call("PATCH", f"/api/work/tasks/{old['id']}", patch)
             print(f"~ cập nhật [{e.key}]: {', '.join(patch)}")
-        sync_children(api, int(old["id"]), e, dry)
+        sync_pic(api, old, e, people, dry)
+        sync_children(api, int(old["id"]), e, people, dry)
 
 
 def load_env_file(path: Path) -> dict[str, str]:
@@ -355,6 +440,7 @@ def main() -> None:
     ap.add_argument("--username")
     ap.add_argument("--password")
     ap.add_argument("--list-name")
+    ap.add_argument("--pic", help="Mã nhân sự nhận mọi task chưa khai `- pic:`")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
@@ -364,6 +450,8 @@ def main() -> None:
     username = args.username or env.get("WORK_SYNC_USER", "")
     password = args.password or env.get("WORK_SYNC_PASS", "")
     list_name = args.list_name or env.get("WORK_SYNC_LIST", DEFAULT_LIST_NAME)
+    default_pics = [c.strip().upper() for c in re.split(
+        r"[,;]", args.pic or env.get("WORK_SYNC_PIC", "")) if c.strip()]
     if not username or not password:
         raise SystemExit("Thiếu tài khoản: đặt WORK_SYNC_USER/WORK_SYNC_PASS "
                          f"(trong {args.env_file}) hoặc --username/--password")
@@ -376,6 +464,13 @@ def main() -> None:
         print("Sổ chưa có mục nào — không có gì để đồng bộ.")
         return
 
+    #  Người phụ trách: mục nào không khai `- pic:` thì lấy người mặc định,
+    #  và việc con đi theo mục cha của nó.
+    for e in entries:
+        e.pic_codes = e.pic_codes or default_pics
+        for c in e.children:
+            c.pic_codes = c.pic_codes or e.pic_codes
+
     #  Gom mục theo task list đích (`- list:`; rỗng = list mặc định) —
     #  giữ thứ tự xuất hiện trong sổ.
     by_list: dict[str, list[JournalEntry]] = {}
@@ -385,7 +480,10 @@ def main() -> None:
 
     api = WorkApi(base_url)
     api.login(username, password)
+    people = PeopleDirectory(api)
     try:
+        if default_pics:
+            print("Người phụ trách mặc định: " + ", ".join(default_pics))
         for name, group_entries in by_list.items():
             print(f"-- list '{name}' ({len(group_entries)} mục)")
             list_id = ensure_list(api, name, args.dry_run)
@@ -393,7 +491,7 @@ def main() -> None:
                 for e in group_entries:
                     print(f"[dry-run] sẽ tạo task [{e.key}] '{e.display_title}'")
                 continue
-            sync(api, list_id, group_entries, args.dry_run)
+            sync(api, list_id, group_entries, people, args.dry_run)
     finally:
         #  Kể cả dry-run hay lỗi giữa chừng: phiên mở ra thì phải đóng lại.
         api.logout()
