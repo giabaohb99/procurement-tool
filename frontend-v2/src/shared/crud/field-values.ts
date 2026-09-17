@@ -69,6 +69,11 @@ export function buildFormDefaults(
       )
     } else if (field.type === 'switch') {
       values = setPath(values, field.name, true)
+    } else if (field.type === 'custom') {
+      //  Ô tự vẽ hầu như luôn giữ một DANH SÁCH (bảng con, trình khai động). Để
+      //  nó rơi vào nhánh chuỗi rỗng bên dưới thì component nhận `''` và
+      //  `.map()` nổ ngay lượt vẽ đầu.
+      values = setPath(values, field.name, [])
     } else if (field.type === 'number' || field.type === 'percent') {
       values = setPath(values, field.name, 0)
     } else {

@@ -89,6 +89,47 @@ describe('buildPayload — ô mà LOẠI KHÔNG CÒN KHAI', () => {
   })
 })
 
+describe('buildPayload — TRƯỜNG RIÊNG của hồ sơ', () => {
+  const rows = [
+    { key: 'so_qd', label: 'Số quyết định', type: 'text' as const, required: true,
+      options: [], hint: '', value: '1234/QĐ' },
+    { key: 'ngay_hop', label: 'Ngày họp', type: 'date' as const, required: false,
+      options: [], hint: '', value: '2026-03-01' },
+  ]
+
+  it('tách MỘT hàng thành khai báo + giá trị, đúng hai chỗ backend nhận', () => {
+    const out = build({ dossier_type_id: 1, extra_fields: {}, custom_rows: rows }, null)
+
+    expect(out.custom_fields).toEqual(rows.map(({ value, ...def }) => def))
+    expect(extra(out)).toEqual({ so_qd: '1234/QĐ', ngay_hop: '2026-03-01' })
+  })
+
+  it('KHÔNG gửi ô `custom_rows` lên backend', () => {
+    //  Nó chỉ sống trên biểu mẫu. Gửi lên là 422 «Extra inputs are not
+    //  permitted» — schema của hồ sơ đóng.
+    const out = build({ dossier_type_id: 1, custom_rows: rows }, null)
+    expect(out).not.toHaveProperty('custom_rows')
+  })
+
+  it('giá trị trường riêng đi CHUNG kho với ô của loại', () => {
+    //  Hai nguồn khai, một kho — nên cả hai phải cùng nằm trong `extra_fields`.
+    const out = build(
+      { dossier_type_id: 1, extra_fields: { so_gp: 'GP-01' }, custom_rows: rows },
+      null,
+    )
+    expect(extra(out)).toEqual({
+      so_gp: 'GP-01', so_qd: '1234/QĐ', ngay_hop: '2026-03-01',
+    })
+  })
+
+  it('không khai trường riêng nào thì gửi danh sách rỗng, không phải thiếu khóa', () => {
+    //  Thiếu khóa thì `PATCH` không xóa được trường riêng cuối cùng: backend
+    //  thấy payload không nhắc tới `custom_fields` nên giữ nguyên bản cũ.
+    const out = build({ dossier_type_id: 1, extra_fields: {} }, null)
+    expect(out.custom_fields).toEqual([])
+  })
+})
+
 describe('buildPayload — phần ngoài ô tùy biến', () => {
   it('không đụng tới các cột khung', () => {
     const out = build(

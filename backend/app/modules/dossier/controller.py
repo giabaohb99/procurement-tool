@@ -30,7 +30,8 @@ def _before_create(db, data: DossierCreate) -> None:
     mặt trong `DossierCreate` chỉ vì `Model(**data.model_dump())` không nhìn thấy
     trường nào nằm ngoài schema — chứ không phải để ai đó khai tay.
     """
-    values = {"dossier_type_id": data.dossier_type_id, "extra_fields": data.extra_fields}
+    values = {"dossier_type_id": data.dossier_type_id, "extra_fields": data.extra_fields,
+              "custom_fields": data.custom_fields}
     #  Chuyền loại vừa đọc sang chốt thứ hai — cả lần lưu chỉ tra danh mục MỘT lượt.
     dossier_type = sync_type_label(db, values)
     apply_extra_fields(db, values, dossier_type=dossier_type)

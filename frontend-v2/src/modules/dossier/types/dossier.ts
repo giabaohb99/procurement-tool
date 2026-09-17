@@ -7,7 +7,7 @@
  * giữ · hạn hiệu lực) là CỘT THẬT; phần riêng của từng loại nằm trong
  * `extra_fields`, khai ở `DossierType.field_schema` — xem `dossier-field.ts`.
  */
-import type { DossierFieldType } from './dossier-field'
+import type { DossierFieldDef, DossierFieldType } from './dossier-field'
 
 /**
  * Tình trạng hồ sơ — mã **SỐ** theo luật R2 (QĐ-11): kho lưu số, tiếng Việt chỉ
@@ -104,8 +104,20 @@ export type Dossier = {
   /** Nơi giữ bản giấy — vd `Tủ A2 · P. Hành chính`. */
   storage_location: string
   note: string
-  /** Giá trị của bộ trường tùy biến, khóa lấy từ `field_schema` của loại. */
+  /**
+   * Giá trị của bộ trường tùy biến — khóa lấy từ `field_schema` của LOẠI **và**
+   * từ `custom_fields` của chính hồ sơ này. Hai nguồn khai, MỘT kho giá trị.
+   */
   extra_fields: Record<string, DossierFieldValue>
+  /**
+   * TRƯỜNG RIÊNG của hồ sơ này — người lập tự khai tại chỗ, không đụng khuôn
+   * của loại. Cùng cấu trúc với `DossierType.field_schema`.
+   *
+   * ⚠️ Khóa không được trùng với ô của loại (backend chặn ở
+   * `service.apply_extra_fields`): chung kho `extra_fields` nên trùng là hai ô
+   * cùng ghi vào một chỗ.
+   */
+  custom_fields: DossierFieldDef[]
   /** Bộ sinh CRUD gắn thêm cho mọi bản ghi (bao-CR-294). */
   updated_at?: string | null
 }

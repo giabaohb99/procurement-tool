@@ -73,7 +73,23 @@ class Dossier(Base, AuditMixin):
     storage_location: Mapped[str] = mapped_column(String(200), default="")
     note: Mapped[str] = mapped_column(String(1000), default="")
 
-    #  Giá trị của BỘ TRƯỜNG TÙY BIẾN, khóa lấy từ `field_schema` của loại.
+    #  TRƯỜNG RIÊNG CỦA HỒ SƠ NÀY — người lập tự khai tại chỗ, không đụng khuôn
+    #  của loại. Cùng cấu trúc với `tab_dossier_type.field_schema`
+    #  (`field_schema.py`), và GIÁ TRỊ của chúng nằm chung trong `extra_fields`
+    #  với giá trị của bộ trường thừa kế từ loại.
+    #
+    #  ⚠️ **Hai nguồn khai, MỘT kho giá trị** — nên khóa không được trùng nhau.
+    #  Trùng thì hai ô cùng ghi vào một chỗ, biểu mẫu hiện đủ hai mà chỉ một giá
+    #  trị sống sót. `service.apply_extra_fields` chặn ca đó.
+    #
+    #  ⚠️ Đây là chỗ đổi lấy, và nó ĐẮT hơn bộ trường của loại: khai ở loại thì
+    #  mọi hồ sơ cùng loại chung một bộ ô, còn khai ở đây thì mỗi hồ sơ một kiểu.
+    #  Nhu cầu nào LẶP LẠI thì kéo lên khai ở loại — không thì «Số QĐ» ·
+    #  «So QD» · «SQD» thành ba trường khác nhau và không lọc ra được gì.
+    custom_fields: Mapped[list | None] = mapped_column(JSON, nullable=True)
+
+    #  Giá trị của BỘ TRƯỜNG TÙY BIẾN, khóa lấy từ `field_schema` của loại
+    #  **và** từ `custom_fields` ngay trên.
     #  `NULL` đọc ra `{}` (xem `extra_fields_map`) — hồ sơ lập trước khi loại có
     #  ô nào đều mang `NULL`, trả `None` ra API thì mọi chỗ dùng phải tự `or {}`
     #  và chỗ nào quên thì nổ `NoneType` đúng lúc mở một hồ sơ cũ.
@@ -108,6 +124,15 @@ class Dossier(Base, AuditMixin):
     def extra_fields_map(self) -> dict:
         """`extra_fields` luôn đọc ra một dict, kể cả khi cột đang `NULL`."""
         return self.extra_fields if isinstance(self.extra_fields, dict) else {}
+
+    @property
+    def custom_field_defs(self) -> list:
+        """`custom_fields` luôn đọc ra một danh sách, kể cả khi cột đang `NULL`.
+
+        Hồ sơ lập trước khi có cột này đều mang `NULL`; trả `None` ra API thì mọi
+        chỗ dùng phải tự `?? []`, và chỗ quên thì nổ đúng lúc ai đó mở một hồ sơ cũ.
+        """
+        return self.custom_fields if isinstance(self.custom_fields, list) else []
 
     @property
     def owner_name(self) -> str:

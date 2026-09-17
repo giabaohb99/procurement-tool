@@ -1,4 +1,5 @@
 import type { ComponentType, ReactNode } from 'react'
+import type { Control } from 'react-hook-form'
 
 import type { PermissionEntity } from '@/core/authorization/permission-types'
 import type { FilterFieldDefinition } from '@/shared/conditional-filter'
@@ -28,7 +29,22 @@ export interface CrudFormField {
    * `percent`: người dùng nhập PHẦN TRĂM (8) còn backend lưu TỈ LỆ (0.08) —
    * quy đổi do `field-values.ts` lo, config chỉ khai kiểu.
    */
-  type?: 'text' | 'number' | 'textarea' | 'select' | 'switch' | 'date' | 'percent'
+  type?:
+    | 'text'
+    | 'number'
+    | 'textarea'
+    | 'select'
+    | 'switch'
+    | 'date'
+    | 'percent'
+    /**
+     * Ô TỰ VẼ — config đưa hẳn một component vào lưới, xem `render`.
+     *
+     * Dành cho thứ không diễn đạt nổi bằng một ô nhập: bảng con, trình khai
+     * động… Đổi lại thì nó nằm ngoài mọi tiện ích của lớp CRUD (nhãn, dấu sao,
+     * câu báo lỗi, chế độ chỉ xem) — component tự lo hết.
+     */
+    | 'custom'
   /** Bắt buộc nhập. */
   required?: boolean
   /** Chỉ đọc khi sửa (vd `code` không cho đổi sau khi tạo). */
@@ -87,6 +103,23 @@ export interface CrudFormField {
    * thật (thử được ngày 17/09/2026).
    */
   nullWhenEmpty?: boolean
+  /**
+   * Nội dung của ô `type: 'custom'`.
+   *
+   * Nhận `control` của react-hook-form để component tự nối vào ĐÚNG form đang
+   * mở — quan trọng ở màn THÊM MỚI, nơi chưa có bản ghi nên không thể tách ra
+   * một khối lưu riêng (`renderExtra` chỉ dựng khi đã có bản ghi).
+   *
+   * ⚠️ Component phải tự đăng ký giá trị qua `useController`/`Controller` với
+   * chính `field.name`. Đừng giữ state riêng rồi đồng bộ lại — hai nguồn sự
+   * thật cho một ô là cách chắc chắn nhất để chúng lệch nhau.
+   */
+  render?: (ctx: {
+    control: Control<CrudRecord>
+    name: string
+    /** Người dùng không sửa được (thiếu quyền, hoặc `readonlyOnEdit`). */
+    disabled: boolean
+  }) => ReactNode
 }
 
 /**

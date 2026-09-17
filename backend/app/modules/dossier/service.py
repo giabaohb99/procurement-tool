@@ -76,10 +76,14 @@ def apply_extra_fields(db: Session, values: dict, current: Dossier | None = None
                   or (current.dossier_type_id if current else 0) or 0)
     if not type_id:
         return
-    #  `PATCH` không đụng tới ô tùy biến thì giữ nguyên thứ đang lưu — nếu kiểm
-    #  luôn ở đây thì thêm một ô bắt buộc vào loại là chặn mọi lần sửa ô khác
-    #  qua API, kể cả lần sửa không liên quan gì tới ô mới.
-    if "extra_fields" not in values:
+    #  `PATCH` không đụng tới CẢ HAI thì giữ nguyên thứ đang lưu — kiểm luôn ở
+    #  đây thì thêm một ô bắt buộc vào loại là chặn mọi lần sửa ô khác qua API,
+    #  kể cả lần sửa không liên quan gì tới ô mới.
+    #
+    #  ⚠️ Nhưng gửi RIÊNG `custom_fields` (khai thêm trường, chưa điền giá trị)
+    #  thì VẪN phải chạy tiếp: chốt trùng khóa nằm ở dưới, bỏ qua là mở đúng
+    #  đường lách — khai một trường riêng trùng tên ô của loại mà không ai chặn.
+    if "extra_fields" not in values and "custom_fields" not in values:
         return
 
     #  ⚠️ Chỉ dùng lại bản đã đọc khi nó ĐÚNG là loại sắp lưu. `sync_type_label`
@@ -87,9 +91,33 @@ def apply_extra_fields(db: Session, values: dict, current: Dossier | None = None
     #  ghi cũ — xài nhầm bản khác là kiểm ô theo sai bộ trường.
     obj = dossier_type if (dossier_type is not None and dossier_type.id == type_id) \
         else _load_type(db, type_id)
-    defs = parse_field_defs(obj.field_schema)
+
+    type_defs = parse_field_defs(obj.field_schema)
+    #  ⚠️ Trường riêng lấy từ payload NẾU lần lưu này có gửi, không thì từ bản
+    #  ghi cũ. `PATCH` chỉ đổi một giá trị mà lấy danh sách rỗng là mọi ô riêng
+    #  bỗng thành «không còn khai báo» — mất luôn chốt bắt buộc của chúng.
+    raw_custom = values["custom_fields"] if "custom_fields" in values \
+        else (current.custom_field_defs if current else [])
+    custom_defs = parse_field_defs(raw_custom)
+
+    #  Hai nguồn khai, MỘT kho giá trị (`extra_fields`) — trùng khóa thì hai ô
+    #  cùng ghi vào một chỗ: biểu mẫu hiện đủ hai, người dùng gõ hai giá trị, và
+    #  chỉ một cái sống sót. Không lỗi, không cảnh báo. Chặn thẳng ở đây.
+    type_keys = {d.key for d in type_defs}
+    clashed = sorted({d.key for d in custom_defs if d.key in type_keys})
+    if clashed:
+        raise HTTPException(
+            422,
+            f"Trường riêng trùng tên với ô sẵn có của loại «{obj.name}»: "
+            f"{', '.join(clashed)}. Đổi mã trường, hoặc điền thẳng vào ô của loại.",
+        )
+
+    #  Chỉ kiểm GIÁ TRỊ khi lần lưu này có gửi chúng — xem ghi chú ở đầu hàm.
+    if "extra_fields" not in values:
+        return
     try:
-        values["extra_fields"] = validate_extra_values(defs, values.get("extra_fields"))
+        values["extra_fields"] = validate_extra_values(
+            type_defs + custom_defs, values.get("extra_fields"))
     except ValueError as exc:
         raise HTTPException(422, str(exc))
 

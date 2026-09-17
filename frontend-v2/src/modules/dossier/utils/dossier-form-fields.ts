@@ -1,7 +1,22 @@
+import type { ReactNode } from 'react'
+import type { Control } from 'react-hook-form'
+
 import type { CrudFormField, CrudOption, CrudRecord } from '@/shared/crud'
-import { DOSSIER_STATUS, extraFieldName } from '../types/dossier'
+import { DOSSIER_STATUS, extraFieldName, type DossierFieldValue } from '../types/dossier'
+import { toCustomRows } from '../types/dossier-custom-row'
 import type { DossierFieldDef } from '../types/dossier-field'
 import type { DossierType } from '../types/dossier-type'
+
+/**
+ * Tên ô GIỮ CÁC HÀNG «trường riêng» trên biểu mẫu.
+ *
+ * ⚠️ Cố ý KHÁC `custom_fields` (tên cột dưới DB). Nếu trùng tên thì
+ * `buildFormDefaults` thấy bản ghi đã có khóa đó và lấy thẳng giá trị đã lưu —
+ * tức là danh sách khai báo TRẦN, chưa ghép giá trị — nên `defaultValue` mà ta
+ * dựng công phu ở dưới sẽ không bao giờ được dùng, và mọi ô «Giá trị» hiện
+ * trống dù dữ liệu có sẵn. Khác tên thì nó rơi đúng vào nhánh `defaultValue`.
+ */
+export const CUSTOM_ROWS_FIELD = 'custom_rows'
 
 /**
  * Dựng BIỂU MẪU HỒ SƠ theo loại đang chọn — trái tim của phần «metadata».
@@ -68,10 +83,21 @@ export function fieldsOfType(types: DossierType[], typeId: number): DossierField
  * `statusOptions` truyền vào thay vì dựng tại chỗ để bộ mã sống ở một nơi
  * (`types/dossier.ts`) — tệp này chỉ lo hình dạng biểu mẫu.
  */
+interface BuildOptions {
+  /** Vẽ khối «Trường riêng của hồ sơ này» — truyền từ config để tệp này khỏi nhập JSX. */
+  renderCustomFields: (ctx: {
+    control: Control<CrudRecord>
+    name: string
+    disabled: boolean
+    typeKeys: Set<string>
+  }) => ReactNode
+}
+
 export function buildDossierFormFields(
   types: DossierType[],
   statusOptions: CrudOption[],
   values: CrudRecord,
+  options?: BuildOptions,
 ): CrudFormField[] {
   //  Ô chọn của Radix trả về CHUỖI, còn bản ghi từ API trả về SỐ — cùng một ô,
   //  hai kiểu, tùy người dùng đã đụng vào chưa. Ép về số ở đúng một chỗ này.
@@ -186,5 +212,30 @@ export function buildDossierFormFields(
     },
   ]
 
-  return [...base, ...fieldsOfType(types, typeId).map(toCrudField)]
+  const typeDefs = fieldsOfType(types, typeId)
+  const fields = [...base, ...typeDefs.map(toCrudField)]
+
+  if (!options) return fields
+
+  //  ⚠️ `defaultValue` dựng từ `values`, và lúc NẠP thì `values` chính là bản
+  //  ghi (`resolveFormFields(config.formFields, item)`). Nhờ vậy mới ghép được
+  //  khai báo (`custom_fields`) với giá trị (`extra_fields`) thành từng hàng —
+  //  hai thứ nằm ở hai cột khác nhau dưới DB.
+  const typeKeys = new Set(typeDefs.map((d) => d.key))
+  const rows = toCustomRows(
+    values.custom_fields as DossierFieldDef[] | undefined,
+    values.extra_fields as Record<string, DossierFieldValue> | undefined,
+  )
+
+  fields.push({
+    name: CUSTOM_ROWS_FIELD,
+    label: 'Trường riêng của hồ sơ này',
+    type: 'custom',
+    fullWidth: true,
+    defaultValue: rows,
+    render: ({ control, name, disabled }) =>
+      options.renderCustomFields({ control, name, disabled, typeKeys }),
+  })
+
+  return fields
 }

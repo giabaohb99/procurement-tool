@@ -101,7 +101,11 @@ def validate_extra_values(defs: list[DossierFieldDef], value: dict | None) -> di
         #  `False` của ô công tắc là một câu trả lời, không phải ô bỏ trống —
         #  nên so với chuỗi rỗng chứ đừng dùng `if not coerced`.
         if d.required and coerced in ("", None):
-            raise ValueError(f"«{d.label}» là ô bắt buộc của loại hồ sơ này")
+            #  ⚠️ KHÔNG nói «của loại hồ sơ này»: hàm này nhận CHUNG hai nguồn
+            #  khai — ô của loại và trường riêng người lập tự thêm. Câu cũ nói
+            #  sai nguồn với nhóm thứ hai, và người dùng sẽ đi mở màn Loại hồ sơ
+            #  tìm một ô không có ở đó.
+            raise ValueError(f"«{d.label}» là ô bắt buộc, chưa có giá trị")
         out[d.key] = coerced
 
     #  Khóa không còn khai: giữ nguyên (luật 1 ở đầu tệp), nhưng vẫn phải qua

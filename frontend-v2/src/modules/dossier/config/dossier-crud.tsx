@@ -14,7 +14,10 @@ import {
   type DossierStatus,
 } from '../types/dossier'
 import type { DossierType } from '../types/dossier-type'
+import { DossierCustomFieldsEditor } from '../components/dossier-custom-fields-editor'
+import { fromCustomRows, type DossierCustomRow } from '../types/dossier-custom-row'
 import {
+  CUSTOM_ROWS_FIELD,
   TYPE_FIELDS_SECTION,
   buildDossierFormFields,
   fieldsOfType,
@@ -240,7 +243,17 @@ export function buildDossierCrudConfig(types: DossierType[]): CrudConfig<Dossier
       [TYPE_FIELDS_SECTION]:
         'Các ô riêng của loại hồ sơ đang chọn, khai ở màn Loại hồ sơ. Đổi loại thì cụm này đổi theo.',
     },
-    formFields: (values: CrudRecord) => buildDossierFormFields(types, STATUS_OPTIONS, values),
+    formFields: (values: CrudRecord) =>
+      buildDossierFormFields(types, STATUS_OPTIONS, values, {
+        renderCustomFields: ({ control, name, disabled, typeKeys }) => (
+          <DossierCustomFieldsEditor
+            control={control}
+            name={name}
+            disabled={disabled}
+            typeKeys={typeKeys}
+          />
+        ),
+      }),
     //  Chỉnh `extra_fields` lần cuối — hai việc NGƯỢC nhau, và thiếu việc nào
     //  cũng hỏng theo một kiểu riêng:
     //
@@ -264,9 +277,28 @@ export function buildDossierCrudConfig(types: DossierType[]): CrudConfig<Dossier
       const submitted = (payload.extra_fields as Record<string, unknown>) ?? {}
       const fromForm = Object.entries(submitted).filter(([key]) => declared.has(key))
 
+      //  ③ **TÁCH các hàng «trường riêng» thành hai phần.** Trên biểu mẫu chúng
+      //  đứng chung một hàng (tên · kiểu · bắt buộc · giá trị) vì người dùng
+      //  nghĩ về chúng như một; dưới DB thì khai báo ở `custom_fields` còn giá
+      //  trị đi chung kho `extra_fields` với ô của loại. Phép tách nằm gọn ở
+      //  `fromCustomRows`, đừng rải ra chỗ khác.
+      const { defs, values } = fromCustomRows(
+        payload[CUSTOM_ROWS_FIELD] as DossierCustomRow[] | undefined,
+      )
+
+      //  Ô giữ các hàng chỉ sống trên biểu mẫu — gửi lên là backend trả 422
+      //  «Extra inputs are not permitted».
+      const rest = { ...payload }
+      delete rest[CUSTOM_ROWS_FIELD]
+
       return {
-        ...payload,
-        extra_fields: { ...(item?.extra_fields ?? {}), ...Object.fromEntries(fromForm) },
+        ...rest,
+        custom_fields: defs,
+        extra_fields: {
+          ...(item?.extra_fields ?? {}),
+          ...Object.fromEntries(fromForm),
+          ...values,
+        },
       }
     },
   }

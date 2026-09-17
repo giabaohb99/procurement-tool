@@ -58,6 +58,17 @@ export function CrudField({ field, register, control, errors, isReadonly }: Crud
     return <CrudSwitchRow field={field} control={control} isReadonly={isReadonly} />
   }
 
+  //  Ô TỰ VẼ — trả thẳng component của config, KHÔNG bọc nhãn/dấu sao/câu lỗi.
+  //  Thứ dựng ở đây là bảng con hoặc trình khai động, tự có tiêu đề và luật báo
+  //  lỗi riêng; thêm một cái nhãn bên trên là nói hai lần cùng một điều.
+  if (field.type === 'custom') {
+    return (
+      <div className="col-span-full">
+        {field.render?.({ control, name: field.name, disabled: Boolean(isReadonly) })}
+      </div>
+    )
+  }
+
   return (
     //  `col-span-full`, KHÔNG phải `sm:col-span-2`: lưới bao ngoài đếm cột theo
     //  bề rộng CHỖ CHỨA (`@md:`), còn `sm:` đếm theo bề rộng MÀN HÌNH — hai

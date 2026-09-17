@@ -17,6 +17,7 @@ from pydantic import (BaseModel, Field, StringConstraints, field_validator,
 
 from .constants import (DOSSIER_DRAFT, DOSSIER_STATUS_LABELS,
                         DOSSIER_STATUS_VALUES)
+from .field_schema import validate_field_schema
 
 Str30 = Annotated[str, StringConstraints(max_length=30)]
 Str100 = Annotated[str, StringConstraints(max_length=100)]
@@ -85,6 +86,14 @@ class DossierCreate(BaseModel):
     storage_location: Str200 = ""
     note: Str1000 = ""
     extra_fields: dict = {}
+    #  TRƯỜNG RIÊNG của hồ sơ này — người lập tự khai tại chỗ. Cùng cấu trúc với
+    #  `field_schema` của loại; giá trị đi chung vào `extra_fields`.
+    custom_fields: list = []
+
+    @field_validator("custom_fields")
+    @classmethod
+    def _check_custom(cls, v: list) -> list:
+        return validate_field_schema(v)
 
     @field_validator("name")
     @classmethod
@@ -137,6 +146,12 @@ class DossierUpdate(BaseModel):
     storage_location: Str200 | None = None
     note: Str1000 | None = None
     extra_fields: dict | None = None
+    custom_fields: list | None = None
+
+    @field_validator("custom_fields")
+    @classmethod
+    def _check_custom(cls, v: list | None) -> list | None:
+        return None if v is None else validate_field_schema(v)
 
     @field_validator("name")
     @classmethod
@@ -185,6 +200,9 @@ class DossierResponse(BaseModel):
     storage_location: str = ""
     note: str = ""
     extra_fields: dict = {}
+    #  Đọc qua thuộc tính `custom_field_defs` của model, KHÔNG đọc thẳng cột:
+    #  cột có thể đang `NULL` với hồ sơ lập trước khi có nó.
+    custom_fields: list = Field(default_factory=list, validation_alias="custom_field_defs")
 
     @field_validator("extra_fields", mode="before")
     @classmethod
@@ -206,4 +224,4 @@ class DossierResponse(BaseModel):
     #  ra «hết hạn hôm nay»).
     expiry_days: int | None = None
 
-    model_config = {"from_attributes": True}
+    model_config = {"from_attributes": True, "populate_by_name": True}
