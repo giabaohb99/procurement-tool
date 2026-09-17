@@ -96,8 +96,11 @@ export function buildDossierCrudConfig(types: DossierType[]): CrudConfig<Dossier
     //  HẠN GẦN NHẤT LÊN TRƯỚC — thứ tự này chính là câu trả lời cho việc người
     //  ta mở màn hình này ra: «còn tờ nào sắp hết hạn không?». Sắp theo *mới
     //  nhất trước* thì phải cuộn cả danh sách mới thấy.
-    //  ⚠️ Hồ sơ vô thời hạn (`expiry_date` NULL) rơi xuống cuối trên MySQL —
-    //  đúng ý, chúng không cần ai để mắt tới.
+    //  ⚠️ Hồ sơ vô thời hạn (`expiry_date` NULL) xuống CUỐI — nhưng **không tự
+    //  nhiên như vậy**: MySQL xếp `NULL` LÊN ĐẦU khi sắp tăng dần. Backend phải
+    //  khai `sort_nulls_last=("expiry_date", …)` ở `dossier/controller.py`, gỡ
+    //  dòng đó là trang đầu đầy hồ sơ không hạn và mất sạch tác dụng của thứ tự
+    //  này. Canh ở `test_ho_so_sap_xep.py`.
     defaultSort: { by: 'expiry_date', dir: 'asc' },
     quickFilters: [
       { key: 'status', label: 'Tình trạng', type: 'select', options: STATUS_FILTER_OPTIONS },

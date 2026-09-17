@@ -6,6 +6,7 @@ import { CrudRecordCard } from '@/shared/crud/crud-record-card'
 import { Badge } from '@/shared/ui/badge'
 import type { IdentityChip } from '@/shared/ui/record-identity-card'
 import { DossierFieldSchemaEditor } from '../components/dossier-field-schema-editor'
+import { DossierTypeUsageCount } from '../components/dossier-type-usage-count'
 import type { DossierType } from '../types/dossier-type'
 import { VALIDITY_OPTIONS, formatValidity } from '../utils/validity-text'
 
@@ -61,11 +62,15 @@ function dossierTypeChips(r: DossierType, quietWhenNormal = false): IdentityChip
  * (bài học duoc-CR-321). Đổi thứ tự thì sửa `seed_ho_so.py`; chèn giai đoạn mới
  * thì đánh số xen kẽ (15, 25…), đừng đánh lại cả dãy.
  *
- * ⚠️ **Chưa có cột «Hồ sơ đang dùng»** — bảng `tab_dossier` chưa tồn tại nên
- * không có gì để đếm, mà bày một cột toàn số 0 thì người đọc tin là chưa hồ sơ
- * nào dùng loại nào. Dựng bảng hồ sơ rồi thì thêm cột đọc từ endpoint `/stats`
- * (KHÔNG đếm trong serializer — một truy vấn mỗi dòng, duoc-CR-322), và thêm
- * chốt `before_delete` ở backend cùng lúc.
+ * ⚠️ Cột **«Hồ sơ đang dùng»** đọc từ endpoint riêng `/api/dossier-types/stats`,
+ * KHÔNG đếm trong serializer — serializer chạy cho từng dòng nên đếm ở đó là một
+ * truy vấn mỗi dòng (duoc-CR-322), và nó chạy cả ở chỗ chỉ cần tên loại để đổ ô
+ * chọn. Thiếu quyền `dossier.read` thì cột TẮT HẲN chứ không hiện `0`, vì
+ * backend trả rỗng chứ không ném 403 — xem `DossierTypeUsageCount`.
+ *
+ * ⚠️ Loại đang có hồ sơ dùng thì **không xóa được** (`before_delete` ở
+ * `backend/.../dossier/type_controller.py`). Câu chặn đếm TOÀN CÔNG TY nên con
+ * số trong đó có thể lớn hơn số ở cột này — hai luật ngược nhau, cố ý.
  */
 export const DOSSIER_TYPE_CRUD_CONFIG: CrudConfig<DossierType> = {
   entity: 'dossier_type',
@@ -167,6 +172,16 @@ export const DOSSIER_TYPE_CRUD_CONFIG: CrudConfig<DossierType> = {
         ) : (
           <span className="text-muted-foreground">—</span>
         ),
+    },
+    {
+      //  ⚠️ KHÔNG `sortable`: con số này do một endpoint KHÁC đếm, không phải
+      //  cột của `tab_dossier_type`. Bấm tiêu đề sẽ gửi `sort_by=dossier_count`,
+      //  mà `apply_sort` lọc theo whitelist cột thật nên **bỏ qua trong im lặng**
+      //  — người dùng bấm, mũi tên đổi chiều, danh sách đứng yên.
+      key: 'dossier_count',
+      header: 'Hồ sơ đang dùng',
+      width: 150,
+      cell: (r) => <DossierTypeUsageCount typeId={r.id} />,
     },
     {
       key: 'is_active',

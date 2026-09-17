@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { Loader2, Plus, Save } from 'lucide-react'
 import { useState } from 'react'
 
@@ -13,6 +14,7 @@ import {
   emptyDossierField,
   type DossierFieldDef,
 } from '../types/dossier-field'
+import { DOSSIER_TYPES_FOR_FORM_KEY } from '../hooks/use-dossier-types'
 import type { DossierType } from '../types/dossier-type'
 
 /**
@@ -47,6 +49,14 @@ export function DossierFieldSchemaEditor({ type }: { type: DossierType }) {
   //  So theo THAM CHIẾU của `type.field_schema` chứ không theo `type`: khung
   //  CRUD làm mới cả bản ghi mỗi lần lưu bất kỳ ô nào của loại hồ sơ, và nạp
   //  lại lúc đó là xóa sạch những ô người dùng đang gõ dở ở đây.
+  //
+  //  ⚠️ **Phép so này chạy được là nhờ `structuralSharing` của TanStack Query**
+  //  (mặc định BẬT): tải lại mà nội dung không đổi thì nó giữ NGUYÊN tham chiếu
+  //  mảng cũ, nên `!==` không kích hoạt. Tắt cờ đó ở `query-client.ts` — hoặc
+  //  đổi sang một nguồn dữ liệu không có nó — là người dùng gõ dở bộ trường,
+  //  bấm Lưu ở biểu mẫu phía trên, và mất trắng phần vừa gõ mà không báo gì.
+  //  Đã kiểm tay ngày 17/09/2026; nếu phải bỏ structural sharing thì đổi phép so
+  //  sang đối chiếu NỘI DUNG (vd `JSON.stringify`), đừng bỏ chốt này đi.
   const [loadedFrom, setLoadedFrom] = useState(type.field_schema)
   if (loadedFrom !== type.field_schema) {
     setLoadedFrom(type.field_schema)
@@ -84,9 +94,16 @@ export function DossierFieldSchemaEditor({ type }: { type: DossierType }) {
     if (ok) setFields((prev) => prev.filter((_, i) => i !== index))
   }
 
+  const queryClient = useQueryClient()
+
   const save = () =>
     once(async () => {
       await saveMutation.mutateAsync({ id: type.id, values: { field_schema: fields } })
+      //  ⚠️ Dọn thêm cache của DANH MỤC DỰNG BIỂU MẪU. `useCrudSave` chỉ dọn
+      //  khóa của lớp CRUD, mà màn lập hồ sơ đọc qua một khóa khác — thiếu dòng
+      //  này thì quản trị sửa xong bộ trường, mở màn lập hồ sơ và vẫn thấy bộ ô
+      //  CŨ suốt 5 phút, không hiểu vì sao thứ vừa lưu chưa hiện ra.
+      void queryClient.invalidateQueries({ queryKey: DOSSIER_TYPES_FOR_FORM_KEY })
     })
 
   return (

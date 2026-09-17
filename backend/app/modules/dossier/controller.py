@@ -31,8 +31,9 @@ def _before_create(db, data: DossierCreate) -> None:
     trường nào nằm ngoài schema — chứ không phải để ai đó khai tay.
     """
     values = {"dossier_type_id": data.dossier_type_id, "extra_fields": data.extra_fields}
-    sync_type_label(db, values)
-    apply_extra_fields(db, values)
+    #  Chuyền loại vừa đọc sang chốt thứ hai — cả lần lưu chỉ tra danh mục MỘT lượt.
+    dossier_type = sync_type_label(db, values)
+    apply_extra_fields(db, values, dossier_type=dossier_type)
     data.dossier_type_name = values["dossier_type_name"]
     data.extra_fields = values["extra_fields"]
 
@@ -43,8 +44,8 @@ def _before_update(db, obj: Dossier, values: dict) -> None:
     `obj` còn mang dữ liệu CŨ ở đây, nên `sync_type_label` đối chiếu được «loại
     này có phải loại đang giữ không» để nới cho hồ sơ mang loại đã ngừng dùng.
     """
-    sync_type_label(db, values, obj)
-    apply_extra_fields(db, values, obj)
+    dossier_type = sync_type_label(db, values, obj)
+    apply_extra_fields(db, values, obj, dossier_type=dossier_type)
 
 
 router = make_crud_router(
@@ -64,11 +65,29 @@ router = make_crud_router(
     #  hằng ngày, bắt nghĩ ra mã trước khi lưu được là dựng rào ngay cửa vào.
     code_prefix="HS",
     unique_field="code",
+    #  ⚠️ Hồ sơ VÔ THỜI HẠN (`expiry_date` NULL) phải xuống CUỐI, không lên đầu.
+    #  MySQL xếp `NULL` lên đầu khi sắp tăng dần, mà thứ tự mặc định của màn danh
+    #  sách là `expiry_date asc` — sinh ra để trả lời «tờ nào sắp hết hạn?».
+    #  Không đẩy xuống thì toàn bộ hồ sơ vô thời hạn (phần lớn danh mục hiện tại
+    #  mặc định như vậy) chiếm sạch trang đầu và dìm đúng những tờ cần để mắt.
+    sort_nulls_last=("expiry_date", "issued_date"),
     csv_headers={"code": "Mã hồ sơ", "name": "Tên hồ sơ",
                  "dossier_type_name": "Loại hồ sơ", "status_label": "Tình trạng",
                  "issued_date": "Ngày cấp", "expiry_date": "Hạn hiệu lực",
                  "owner_name": "Người phụ trách", "department_name": "Bộ phận giữ",
                  "company_name": "Pháp nhân", "storage_location": "Nơi lưu trữ"},
+    #  ⚠️ **CHỈ XUẤT, KHÔNG NHẬP.** Bảng cột trên là bảng bày ra tệp Excel nên
+    #  quá nửa là trường SUY RA (`status_label`, `owner_name`, `department_name`,
+    #  `company_name` — `@property`, không phải cột). Đường nhập của bộ sinh
+    #  `setattr` thẳng từng khóa lên bản ghi, gặp `@property` không setter là
+    #  **500**; và nó KHÔNG gọi `_before_create`/`_before_update` nên chép nhãn
+    #  loại, kiểm ô tùy biến, chặn loại đã ngừng dùng đều bị đi vòng qua hết —
+    #  lọt thì đẻ ra hồ sơ `dossier_type_id = 0`, thứ schema cấm thẳng.
+    #
+    #  Muốn mở lại đường nhập thì phải khai một bảng cột RIÊNG chỉ gồm cột thật,
+    #  và dạy bộ sinh gọi hai chốt trước khi gán. Chưa ai cần: giao diện v2
+    #  không có nút nhập CSV nào.
+    csv_import=False,
     before_create=_before_create,
     before_update=_before_update,
 )

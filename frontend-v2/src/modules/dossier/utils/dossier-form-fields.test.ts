@@ -236,6 +236,16 @@ describe('ô để trống — backend khai kiểu CHẶT nên chuỗi rỗng l�
     expect(payload.expiry_date).toBeNull()
   })
 
+  it('hai ô ngày phải KHAI RÕ `nullWhenEmpty`, không trông vào mặc định', () => {
+    //  ⚠️ Khung chung CỐ Ý không tự áp `null` cho mọi ô `type: 'date'` — làm vậy
+    //  là vỡ màn *Hợp đồng* và *Phân loại VTBB* (backend hai màn đó khai ngày là
+    //  `str = ""` nên 422 khi nhận `null`). Bài này chốt rằng hồ sơ tự khai lấy.
+    const fields = buildDossierFormFields([type()], STATUS_OPTIONS, {})
+    for (const name of ['issued_date', 'expiry_date']) {
+      expect(fields.find((f) => f.name === name)?.nullWhenEmpty, `ô ${name}`).toBe(true)
+    }
+  })
+
   it('tình trạng mặc định là NHÁP, không phải ô trống', () => {
     const fields = buildDossierFormFields([type()], STATUS_OPTIONS, {})
     expect(toApiPayload(fields, buildFormDefaults(fields, null)).status).toBe(1)

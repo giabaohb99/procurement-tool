@@ -34,7 +34,8 @@ def commit_or_conflict(db: Session, message: str) -> None:
 
 def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchema,
                      filterable, unique_field="code", code_prefix=None, csv_headers=None,
-                     before_create=None, before_update=None, before_delete=None):
+                     before_create=None, before_update=None, before_delete=None,
+                     sort_nulls_last=(), csv_import=True):
     """Ba chốt chặn riêng của từng danh mục, đều tùy chọn.
 
     - `before_create(db, data)` — gọi trước khi dựng bản ghi. Dùng cho ràng buộc
@@ -71,7 +72,9 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
         q = apply_filters(db.query(Model), Model, request, filterable)
         q = apply_scope(q, Model, entity, user, get_perm_profile(db, user))
         total = q.count()   # đếm SAU khi lọc phạm vi, kẻo phân trang lệch số
-        q = apply_sort(q, Model, sort_by, sort_dir)   # whitelist cột; mặc định id desc
+        #  whitelist cột; mặc định id desc. `sort_nulls_last` đẩy dòng NULL xuống
+        #  cuối cho những cột mà NULL nghĩa là "không áp dụng" — xem `apply_sort`.
+        q = apply_sort(q, Model, sort_by, sort_dir, nulls_last=sort_nulls_last)
         items = q.offset(pg["offset"]).limit(pg["limit"]).all()
         return success({"total": total, "items": [out(i) for i in items]})
 
@@ -154,6 +157,19 @@ def make_crud_router(prefix, entity, Model, CreateSchema, UpdateSchema, OutSchem
             items = q.order_by(Model.id.desc()).all()
             return export_csv_response(items, csv_headers, entity)
 
+    #  ⚠️ XUẤT và NHẬP tách nhau được, và có danh mục CHỈ xuất được.
+    #
+    #  `csv_headers` là bảng «cột nào bày ra tệp», nên nó hay chứa trường SUY RA
+    #  — nhãn tình trạng, tên người phụ trách đọc qua quan hệ… Đường NHẬP thì
+    #  `setattr` thẳng từng khóa của bảng đó lên bản ghi, nên gặp một `@property`
+    #  không có setter là **500**. Nó cũng KHÔNG gọi `before_create`/
+    #  `before_update`, tức mọi chốt riêng của danh mục (chép nhãn, kiểm ô tùy
+    #  biến, chặn loại đã ngừng dùng) bị đi vòng qua hết.
+    #
+    #  Phân hệ Hồ sơ trúng cả hai (17/09/2026): nhập một dòng CSV bất kỳ đều ra
+    #  «mã sự cố», và nếu lọt thì đẻ ra hồ sơ `dossier_type_id = 0` — thứ mà
+    #  schema cấm thẳng. Nên nó khai `csv_import=False`.
+    if csv_headers and csv_import:
         @router.post("/import/csv")
         def import_csv(
             file: UploadFile = File(...),

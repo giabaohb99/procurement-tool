@@ -130,6 +130,10 @@ export function buildDossierFormFields(
       type: 'date',
       hint: 'Ngày ký / ngày cấp ghi trên chính tờ giấy.',
       section: 'Hiệu lực',
+      //  Backend khai `date | None` (kiểu THẬT, có kiểm dải năm) chứ không phải
+      //  `str = ""` như mấy danh mục cũ — nên ô trống phải gửi `null`, gửi chuỗi
+      //  rỗng là 422 «input is too short».
+      nullWhenEmpty: true,
     },
     {
       name: 'expiry_date',
@@ -140,6 +144,7 @@ export function buildDossierFormFields(
       //  «Vô thời hạn» của danh mục Loại hồ sơ.
       hint: 'Bỏ trống = hồ sơ vô thời hạn. Còn dưới 30 ngày thì danh sách tự cảnh báo.',
       section: 'Hiệu lực',
+      nullWhenEmpty: true,
     },
     {
       name: 'owner_employee_id',

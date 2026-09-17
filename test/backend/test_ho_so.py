@@ -250,6 +250,51 @@ def test_o_tuy_bien_kiem_theo_loai_moi_chu_khong_phai_loai_cu(db, loai):
         service.apply_extra_fields(db, values, cur)
 
 
+def _dem_truy_van(db):
+    """Bộ đếm câu lệnh SQL — trả về (dict đếm, hàm gỡ)."""
+    import sqlalchemy
+
+    seen = {"n": 0}
+    engine = db.get_bind()
+
+    def _on(conn, cursor, statement, params, context, executemany):
+        seen["n"] += 1
+
+    sqlalchemy.event.listen(engine, "before_cursor_execute", _on)
+    return seen, lambda: sqlalchemy.event.remove(engine, "before_cursor_execute", _on)
+
+
+def test_luu_ho_so_chi_tra_danh_muc_MOT_luot(db, loai):
+    """Hai chốt `before_*` cùng cần loại hồ sơ — đọc một lần, chuyền cho nhau.
+
+    ⚠️ Không phải tinh chỉnh vặt: đo được **2 truy vấn** cho một lần tạo trước
+    khi `sync_type_label` trả về loại vừa đọc. `Session.get` có bộ nhớ danh tính
+    nhưng không phải lúc nào cũng che được lần hai, nên trông cậy vào nó là đoán
+    chứ không phải biết.
+
+    Bài này đếm câu lệnh THẬT, không đọc mã — sửa lại thành hai lượt là đỏ.
+    """
+    from app.modules.dossier.controller import _before_create
+    from app.modules.dossier.schema import DossierCreate
+
+    loai.field_schema = [{"key": "so_gp", "label": "Số GP"}]
+    db.flush()
+
+    data = DossierCreate(name="x", dossier_type_id=loai.id,
+                         extra_fields={"so_gp": "GP-01"})
+    seen, unhook = _dem_truy_van(db)
+    try:
+        _before_create(db, data)
+    finally:
+        unhook()
+
+    assert seen["n"] <= 1, (
+        f"lưu một hồ sơ bắn {seen['n']} truy vấn vào danh mục loại — "
+        "chuyền loại đã đọc từ `sync_type_label` sang `apply_extra_fields`"
+    )
+    assert data.dossier_type_name == loai.name
+
+
 def test_patch_khong_gui_o_tuy_bien_thi_khong_kiem(db, loai):
     """Thêm một ô bắt buộc vào loại KHÔNG được chặn mọi lần sửa ô khác qua API.
 
@@ -330,6 +375,41 @@ def test_quan_ly_thu_mua_khong_tu_nhien_co_khoa_ho_so():
     assert scope == "all"
 
 
+def test_ho_so_CHI_XUAT_csv_khong_mo_cua_NHAP():
+    """⚠️ Bài này chốt một lỗi ĐÃ XẢY RA — nhập CSV hồ sơ từng trả 500.
+
+    `csv_headers` là bảng «cột nào bày ra tệp Excel», nên quá nửa là trường SUY
+    RA (`status_label`, `owner_name`, `department_name`, `company_name` —
+    `@property`, không phải cột). Nhưng bộ sinh CRUD bật CẢ HAI cửa từ một tham
+    số ấy, và đường NHẬP thì `setattr` thẳng từng khóa lên bản ghi → gặp
+    `@property` không setter là nổ.
+
+    Nặng hơn cái 500: đường nhập **không gọi** `_before_create`/`_before_update`,
+    nên chép nhãn loại · kiểm ô tùy biến · chặn loại đã ngừng dùng đều bị đi vòng
+    qua. Dòng nào lọt sẽ đẻ ra hồ sơ `dossier_type_id = 0` — thứ mà chính schema
+    của nó cấm thẳng.
+
+    Mở lại cửa nhập thì phải khai một bảng cột RIÊNG chỉ gồm cột thật VÀ dạy bộ
+    sinh gọi hai chốt trước khi gán; đừng chỉ xóa dòng `csv_import=False`.
+    """
+    from app.modules.dossier.controller import router
+
+    paths = {getattr(r, "path", "") for r in router.routes}
+    assert "/api/dossiers/export/csv" in paths, "xuất Excel phải còn"
+    assert "/api/dossiers/import/csv" not in paths, (
+        "cửa nhập CSV của hồ sơ phải ĐÓNG — bảng cột là bảng bày ra tệp, "
+        "nhập bằng nó là 500 và đi vòng qua mọi chốt của module"
+    )
+
+    #  Danh mục Loại hồ sơ thì NGƯỢC LẠI — cột của nó đều là cột thật nên nhập
+    #  được, và đây là chốt chéo cho thấy `csv_import` là lựa chọn TỪNG DANH MỤC
+    #  chứ không phải một phép tắt toàn hệ.
+    from app.modules.dossier.type_controller import router as type_router
+
+    type_paths = {getattr(r, "path", "") for r in type_router.routes}
+    assert "/api/dossier-types/import/csv" in type_paths
+
+
 def test_dinh_kem_ho_so_la_rieng_tu():
     """Bản scan giấy phép/hợp đồng không được có URL đọc thẳng bucket.
 
@@ -384,6 +464,41 @@ def test_phong_bi_tra_ve_khong_co_o_nao_ra_none(db, loai):
     assert out.expiry_state_label == "Vô thời hạn"
     assert out.expiry_days is None
     assert out.owner_name == "" and out.department_name == "" and out.company_name == ""
+
+
+def test_ba_cai_ten_doc_qua_quan_he_phai_ra_ten_that(db, world, loai):
+    """⚠️ Bài này bắt một lỗi ĐÃ XẢY RA, đừng xóa.
+
+    `Dossier.owner_name` từng viết `self.owner.name`, mà `tab_employee` KHÔNG có
+    cột `name` (nó là `full_name`). Hỏng theo kiểu tệ nhất: `AttributeError` bị
+    Pydantic NUỐT — `DossierResponse.owner_name` có giá trị mặc định nên phong bì
+    trả về chuỗi rỗng — và cột «Người phụ trách» rỗng vĩnh viễn, không lỗi, không
+    cảnh báo, không dòng log nào. Tệp Excel xuất ra cũng rỗng theo.
+
+    ⚠️ Bài `test_phong_bi_tra_ve_khong_co_o_nao_ra_none` KHÔNG bắt được nó: ở đó
+    hồ sơ chưa gắn ai nên `owner_name` rỗng là ĐÚNG. Phải có một hồ sơ **đã gắn
+    đủ ba thứ** mới lộ ra.
+    """
+    from app.modules.dossier.schema import DossierResponse
+
+    row = Dossier(code="HS0001", name="x", dossier_type_id=loai.id,
+                  owner_employee_id=world.emp["a1"],
+                  department_id=world.dept["A.kt"],
+                  company_id=world.co["A"])
+    db.add(row)
+    db.flush()
+    db.refresh(row)
+
+    #  Đọc thẳng trên ORM — đường mà xuất CSV đi.
+    assert row.owner_name == "Nhân sự a1"
+    assert row.department_name == "Phòng Kế toán"
+    assert row.company_name == "Công ty A"
+
+    #  Và qua phong bì API — đường mà màn hình đi.
+    out = DossierResponse.model_validate(row)
+    assert out.owner_name == "Nhân sự a1"
+    assert out.department_name == "Phòng Kế toán"
+    assert out.company_name == "Công ty A"
 
 
 def test_nhan_doc_duoc_tren_CHINH_doi_tuong_orm(db, loai):

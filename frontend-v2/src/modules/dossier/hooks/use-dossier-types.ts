@@ -15,6 +15,16 @@ const dossierTypeKeys = {
 }
 
 /**
+ * Khóa để nơi khác LÀM MỚI danh mục sau khi sửa bộ trường.
+ *
+ * ⚠️ Cần vì trình khai bộ trường lưu qua `useCrudSave`, mà hook đó chỉ dọn cache
+ * của LỚP CRUD (`['crud', '/api/dossier-types']`) — khác hẳn khóa ở đây. Không
+ * gọi tới thì quản trị sửa xong bộ trường, mở màn lập hồ sơ và vẫn thấy bộ ô
+ * CŨ suốt `staleTime` (5 phút), không hiểu vì sao thứ mình vừa lưu chưa hiện.
+ */
+export const DOSSIER_TYPES_FOR_FORM_KEY = dossierTypeKeys.forForm
+
+/**
  * Danh mục LOẠI HỒ SƠ kèm **bộ trường tùy biến** — nguồn dựng biểu mẫu hồ sơ.
  *
  * Nạp một lần cho cả màn: ô chọn «Loại hồ sơ» cần danh sách, và biểu mẫu cần

@@ -93,19 +93,35 @@ def apply_filters(query, model, request: Request, filterable: list[str],
                                   filterable if operator_filterable is None else operator_filterable)
 
 
-def apply_sort(query, model, sort_by: str | None, sort_dir: str = "asc", default=None):
+def apply_sort(query, model, sort_by: str | None, sort_dir: str = "asc", default=None,
+               nulls_last: tuple[str, ...] = ()):
     """Sắp xếp phía server theo cột — CHỈ nhận cột thật của bảng (whitelist chống SQL injection).
 
     - sort_by: tên cột (khớp cột model). Không hợp lệ -> bỏ qua, dùng `default`.
     - sort_dir: 'asc' / 'desc' (mặc định asc).
     - default: mệnh đề order_by mặc định (vd Model.id.desc()); None -> id desc.
+    - nulls_last: tên các cột mà dòng `NULL` phải xuống CUỐI, bất kể chiều sắp.
+
+    ⚠️ **`nulls_last` không phải chuyện thẩm mỹ.** MySQL xếp `NULL` LÊN ĐẦU khi
+    sắp tăng dần, và với cột mà `NULL` mang nghĩa *"không có hạn / không áp
+    dụng"* thì đó đúng là nhóm KHÔNG cần ai để mắt tới — đẩy chúng lên đầu là
+    dìm mất đúng những dòng mà cả cái sắp xếp sinh ra để lôi lên (phân hệ Hồ sơ,
+    17/09/2026: `expiry_date` rỗng = vô thời hạn, mà phần lớn hồ sơ là vậy).
+
+    ⚠️ Dùng mẹo `col IS NULL` chứ KHÔNG dùng `sqlalchemy.nullslast()`: hàm đó
+    phát ra cú pháp `NULLS LAST` mà **MySQL 8 không hiểu**, nên nó chạy trên
+    SQLite của bộ test rồi nổ trên chạy thật — đúng kiểu lỗi chỉ lộ ra ở prod.
+    `IS NULL` cho `0`/`1`, sắp tăng dần là dòng có giá trị lên trước.
     """
     col = getattr(model, sort_by, None) if sort_by else None
     # chỉ cho phép cột vật lý trong bảng, tránh sort theo relationship/hybrid/method
     valid = col is not None and sort_by in model.__table__.columns.keys()
     if valid:
         is_desc = str(sort_dir).lower() == "desc"
-        return query.order_by(col.desc() if is_desc else col.asc())
+        order = col.desc() if is_desc else col.asc()
+        if sort_by in nulls_last:
+            return query.order_by(col.is_(None).asc(), order)
+        return query.order_by(order)
     if default is not None:
         return query.order_by(default)
     return query.order_by(model.id.desc())

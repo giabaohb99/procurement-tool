@@ -25,11 +25,15 @@ def _load_type(db: Session, type_id: int) -> DossierType:
     return obj
 
 
-def sync_type_label(db: Session, values: dict, current: Dossier | None = None) -> None:
+def sync_type_label(db: Session, values: dict,
+                    current: Dossier | None = None) -> DossierType | None:
     """Chép tên loại vào `dossier_type_name`, và chặn gán loại đã ngừng dùng.
 
     Sửa TẠI CHỖ trên `values` — nơi gọi là hai chốt `before_create` /
     `before_update` của bộ sinh CRUD, cả hai đều cầm một dict sắp đem gán.
+
+    **Trả về chính loại vừa đọc** (hoặc `None` khi payload không đụng tới loại)
+    để `apply_extra_fields` dùng lại, khỏi tra bảng lần hai — xem ghi chú ở đó.
 
     ⚠️ **Loại đã ngừng dùng thì chặn gán MỚI, nhưng hồ sơ ĐANG giữ nó vẫn lưu
     được** (bài học duoc-CR-320). Màn chi tiết gửi lại mọi ô mỗi lần bấm Lưu,
@@ -38,7 +42,7 @@ def sync_type_label(db: Session, values: dict, current: Dossier | None = None) -
     đó cho cả công ty.
     """
     if "dossier_type_id" not in values:
-        return
+        return None
     type_id = int(values.get("dossier_type_id") or 0)
     if not type_id:
         raise HTTPException(400, "Hồ sơ phải thuộc một loại hồ sơ")
@@ -52,14 +56,21 @@ def sync_type_label(db: Session, values: dict, current: Dossier | None = None) -
             "Bật lại «Còn dùng» ở danh mục Loại hồ sơ nếu vẫn cần.",
         )
     values["dossier_type_name"] = obj.name
+    return obj
 
 
-def apply_extra_fields(db: Session, values: dict, current: Dossier | None = None) -> None:
+def apply_extra_fields(db: Session, values: dict, current: Dossier | None = None,
+                       dossier_type: DossierType | None = None) -> None:
     """Kiểm `extra_fields` theo bộ trường của loại hồ sơ, sửa tại chỗ.
 
     ⚠️ Loại dùng để kiểm là loại SẮP LƯU, không phải loại đang lưu: người dùng
     đổi loại và điền bộ ô mới trong cùng một lần bấm Lưu. Lấy loại cũ thì mọi ô
     vừa điền đều bị coi là «không còn khai báo».
+
+    `dossier_type` là loại mà `sync_type_label` VỪA đọc ở ngay trên. Truyền vào
+    thì cả lần lưu chỉ tra bảng danh mục MỘT lượt — `Session.get` không phải lúc
+    nào cũng che được lần hai (đo được 2 truy vấn cho một lần tạo trước khi thêm
+    tham số này). Bỏ trống vẫn chạy đúng, chỉ tốn thêm một lượt đọc.
     """
     type_id = int(values.get("dossier_type_id")
                   or (current.dossier_type_id if current else 0) or 0)
@@ -71,7 +82,12 @@ def apply_extra_fields(db: Session, values: dict, current: Dossier | None = None
     if "extra_fields" not in values:
         return
 
-    defs = parse_field_defs(_load_type(db, type_id).field_schema)
+    #  ⚠️ Chỉ dùng lại bản đã đọc khi nó ĐÚNG là loại sắp lưu. `sync_type_label`
+    #  trả `None` ở đường `PATCH` không gửi loại, và khi đó `type_id` lấy từ bản
+    #  ghi cũ — xài nhầm bản khác là kiểm ô theo sai bộ trường.
+    obj = dossier_type if (dossier_type is not None and dossier_type.id == type_id) \
+        else _load_type(db, type_id)
+    defs = parse_field_defs(obj.field_schema)
     try:
         values["extra_fields"] = validate_extra_values(defs, values.get("extra_fields"))
     except ValueError as exc:

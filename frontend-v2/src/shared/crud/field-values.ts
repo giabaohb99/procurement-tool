@@ -118,17 +118,19 @@ export function toApiPayload(
       payload = setPath(payload, field.name, percentInputToRatio(raw === '' ? 0 : raw))
     } else if (field.type === 'number' && raw !== '') {
       payload = setPath(payload, field.name, Number(raw))
-    } else if (field.type === 'date' && raw === '') {
-      //  ⚠️ Ô NGÀY để trống phải gửi `null`, KHÔNG gửi chuỗi rỗng.
+    } else if (field.nullWhenEmpty && raw === '') {
+      //  ⚠️ Ô để trống gửi `null` thay vì chuỗi rỗng — **chỉ khi ô KHAI xin**.
       //
-      //  `DatePicker` không có cách nào khác để nói "chưa chọn" — nó luôn giữ
-      //  `''`. Mà `''` thì không phải một ngày: schema nào khai `date | None`
-      //  đều trả **422** kèm câu *«input is too short»*, và người dùng chỉ thấy
-      //  bấm Lưu mà không lưu được, cho một ô họ CỐ Ý bỏ trống.
+      //  `DatePicker` không có cách nào khác để nói "chưa chọn": nó luôn giữ
+      //  `''`. Mà `''` không phải một ngày, nên schema nào khai `date | None`
+      //  đều trả **422** kèm câu *«input is too short»* — người dùng bấm Lưu mà
+      //  không lưu được, cho một ô họ CỐ Ý bỏ trống.
       //
-      //  Các danh mục cũ né lỗ này bằng cách khai ngày là `str = ""` ở backend —
-      //  tức là không kiểm gì cả, đúng thứ duoc-CR-316 dựng ra để chặn. Vá ở
-      //  đây thì màn nào khai ngày cho tử tế cũng chạy được ngay.
+      //  ⚠️ **KHÔNG áp cho mọi ô ngày.** Thử rồi: các danh mục cũ khai ngày là
+      //  `str = ""` ở backend (tức không kiểm gì cả, đúng thứ duoc-CR-316 dựng
+      //  ra để chặn), và chúng trả 422 «Input should be a valid string» khi nhận
+      //  `null` — đổi mặc định là làm vỡ màn *Hợp đồng* với *Phân loại VTBB*
+      //  đang chạy thật. Nên cờ này phải do từng ô tự khai.
       payload = setPath(payload, field.name, null)
     }
   }

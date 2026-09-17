@@ -111,7 +111,13 @@ class Dossier(Base, AuditMixin):
 
     @property
     def owner_name(self) -> str:
-        return self.owner.name if self.owner else ""
+        #  ⚠️ `full_name`, KHÔNG phải `name` — `tab_employee` không có cột `name`.
+        #  Gõ nhầm ở đây hỏng theo kiểu tệ nhất: `AttributeError` bị Pydantic nuốt
+        #  vì `DossierResponse.owner_name` có giá trị mặc định, nên cột «Người phụ
+        #  trách» rỗng VĨNH VIỄN mà không lỗi, không cảnh báo, không dòng log nào.
+        #  Cột đó trong tệp Excel xuất ra cũng rỗng theo. Canh ở
+        #  `test_ho_so.py::test_ba_cai_ten_doc_qua_quan_he_phai_ra_ten_that`.
+        return self.owner.full_name if self.owner else ""
 
     @property
     def department_name(self) -> str:

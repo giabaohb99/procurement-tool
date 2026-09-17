@@ -1,6 +1,43 @@
 import { describe, expect, it } from 'vitest'
 
 import { getPath, setPath } from './field-path'
+import { toApiPayload } from './field-values'
+import type { CrudFormField } from './types'
+
+describe('nullWhenEmpty — ô trống gửi null thay vì chuỗi rỗng', () => {
+  const ngay = (over: Partial<CrudFormField> = {}): CrudFormField[] => [
+    { name: 'd', label: 'Ngày', type: 'date', ...over },
+  ]
+
+  it('ô KHAI cờ thì trống gửi `null`', () => {
+    //  Backend khai `date | None` trả 422 «input is too short» khi nhận `''`,
+    //  cho một ô người dùng CỐ Ý bỏ trống — và họ chỉ thấy bấm Lưu mà không có
+    //  gì xảy ra.
+    expect(toApiPayload(ngay({ nullWhenEmpty: true }), { d: '' }).d).toBeNull()
+  })
+
+  it('ô KHÔNG khai cờ thì giữ nguyên chuỗi rỗng', () => {
+    //  ⚠️ LỖI ĐÃ TRÁNH (17/09/2026): bản đầu áp `null` cho MỌI ô `type: 'date'`.
+    //  Các danh mục cũ khai ngày là `str = ""` ở backend, và chúng trả 422
+    //  «Input should be a valid string» khi nhận `null` — tức là màn *Hợp đồng*
+    //  và *Phân loại VTBB* đang chạy thật mất luôn khả năng tạo mới khi để
+    //  trống ngày. Thử được bằng cách bắn thẳng vào API.
+    expect(toApiPayload(ngay(), { d: '' }).d).toBe('')
+  })
+
+  it('có giá trị thì cờ không đụng tới', () => {
+    const fields = ngay({ nullWhenEmpty: true })
+    expect(toApiPayload(fields, { d: '2026-09-17' }).d).toBe('2026-09-17')
+  })
+
+  it('cờ áp được cho cả ô lồng nhau', () => {
+    const fields: CrudFormField[] = [
+      { name: 'extra_fields.ngay', label: 'Ngày', type: 'date', nullWhenEmpty: true },
+    ]
+    const out = toApiPayload(fields, { extra_fields: { ngay: '' } })
+    expect((out.extra_fields as Record<string, unknown>).ngay).toBeNull()
+  })
+})
 
 /**
  * Đường dẫn có dấu chấm — nền của ô nhập LỒNG NHAU (`extra_fields.so_gp`).

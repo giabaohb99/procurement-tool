@@ -72,6 +72,21 @@ export interface CrudFormField {
    * khai `0.08`, không khai `8`).
    */
   defaultValue?: unknown
+  /**
+   * Ô để trống thì gửi `null` thay vì chuỗi rỗng.
+   *
+   * Khai nó khi backend khai trường đó là **kiểu thật** (`date | None`,
+   * `int | None`) chứ không phải `str = ""`. `DatePicker` không có cách nào khác
+   * để nói "chưa chọn" — nó luôn giữ `''` — mà `''` thì không phải một ngày, nên
+   * schema chặt sẽ trả 422 «input is too short» cho một ô người dùng CỐ Ý bỏ
+   * trống, và họ chỉ thấy bấm Lưu mà không có gì xảy ra.
+   *
+   * ⚠️ **Phải khai từng ô, cố ý không làm mặc định cho `type: 'date'`.** Các
+   * danh mục cũ khai ngày là `str = ""` ở backend và chúng trả 422 khi nhận
+   * `null` — bật đại trà là làm vỡ *Hợp đồng* với *Phân loại VTBB* đang chạy
+   * thật (thử được ngày 17/09/2026).
+   */
+  nullWhenEmpty?: boolean
 }
 
 /**
