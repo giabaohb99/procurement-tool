@@ -400,6 +400,21 @@ def trigger_notification(
         body = (f"Nhân sự thu mua vừa điều chỉnh thời gian dự kiến có hàng trên yêu cầu mua hàng {doc_code}:\n"
                 f"{reason}\n"
                 f"Mở phiếu để xem chi tiết.")
+    elif event == "pr_options_ready":
+        # bao-CR-419 — NSTM đã chốt hoàn thành xử lý phương án TOÀN BỘ dòng của phiếu.
+        # Bắn một lần cho cả phiếu, người nhận là NGƯỜI YÊU CẦU: tới lượt họ chọn.
+        subject = f"{doc_code} — Phương án đã sẵn sàng để chọn"
+        body = (f"Nhân sự thu mua đã xử lý xong phương án cho toàn bộ dòng hàng của yêu cầu "
+                f"mua hàng {doc_code}.\n"
+                f"Mở phiếu để chọn phương án cho từng dòng, chọn xong nhớ bấm "
+                f"\"Chốt xong lựa chọn\" để thu mua biết mà lập đơn.")
+    elif event == "pr_options_chosen":
+        # bao-CR-419 — chiều ngược lại: người yêu cầu đã chốt xong lựa chọn cả phiếu.
+        # Người nhận là NSTM phụ trách TỪNG DÒNG của phiếu đó.
+        subject = f"{doc_code} — Đã chốt xong lựa chọn phương án"
+        body = (f"Người yêu cầu đã chốt xong lựa chọn phương án trên yêu cầu mua hàng "
+                f"{doc_code}.\n"
+                f"Mở phiếu để tạo đơn mua hàng theo phương án đã chọn.")
     elif event == "pr_submitted":
         subject = f"{doc_code} — Yêu cầu phê duyệt PYC"
         body = f"Có một yêu cầu mua hàng mới (Mã số: {doc_code}) cần bạn phê duyệt."

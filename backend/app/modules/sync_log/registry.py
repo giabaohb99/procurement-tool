@@ -9,8 +9,9 @@ báo riêng. Thêm hệ mới = thêm một adapter, KHÔNG đụng model/servic
 là dùng được nguyên bộ sổ, màn hình và cửa "Chạy lại".
 
 Một nguồn KHÔNG phải khai đủ mọi thứ: `pos365` chỉ có `jobs` (năm vòng chạy nền,
-ghi dòng `grain = RUN`), `datxe` chỉ có `entities` (từng bản ghi đi qua,
-`grain = RECORD`). Nguồn nào cần cả hai thì khai cả hai — sổ không phân biệt.
+ghi dòng `grain = RUN`), còn `datxe` khai CẢ HAI — từng phiếu đi qua cửa nhận ghi
+dòng `grain = RECORD`, hai vòng chạy nền của nó ghi dòng `grain = RUN` ôm lấy
+đám dòng đó. Nguồn nào cần cả hai thì khai cả hai — sổ không phân biệt.
 """
 from dataclasses import dataclass, field
 
@@ -154,9 +155,25 @@ register_source(
             "driver": "Tài xế",
             "file": "Tệp đính kèm",
         },
+        jobs={
+            "pull_updated": "Kéo phiếu đã sửa",
+            "retry_pending": "Chạy lại phiếu lỗi",
+        },
         extra_warnings={
             "no_plate": "Xe không có biển số, đã đặt mã tạm",
             "title_generated": "Tiêu đề phiếu dấu sinh từ mục đích",
+            #  Ba cờ của bộ tra danh mục ba nấc (`legacy_datxe/resolver.py`).
+            #  `auto_created` chính là HÀNG ĐỢI SOÁT: `tab_vehicle`/`tab_driver`
+            #  không có cột "chờ duyệt" nào, nên lọc "chỉ dòng có cảnh báo" trên
+            #  màn sổ này là chỗ duy nhất thấy được hàng do máy đẻ ra.
+            "auto_created": "Tự tạo xe / tài xế từ app cũ — cần người soát lại",
+            "stamped_by_name": "Ghép theo đặc điểm tự nhiên (biển số / điện thoại / tên)",
+            "unresolved_catalog": "Tra danh mục không ra, ô để trống",
+            #  Bốn cờ của lượt nhận phiếu (`legacy_datxe/service.py`).
+            "closed_locked": "Phiếu đã chốt bên ERP, chỉ nhận đổi trạng thái",
+            "blank_kept": "App cũ trả rỗng, giữ nguyên giá trị ERP đang có",
+            "driver_deleted": "Tài xế được điều phối đã bị xóa bên app cũ",
+            "truncated": "Nội dung quá dài, đã cắt và chép xuống ghi chú",
         },
     )
 )

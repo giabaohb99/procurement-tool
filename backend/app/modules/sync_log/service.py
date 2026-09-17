@@ -364,8 +364,11 @@ def finish_failed(db: Session, entry: SyncLog, message: str,
 
 
 def finish_skipped(db: Session, entry: SyncLog, message: str = "Không có gì thay đổi",
-                   warnings=None) -> SyncLog:
-    return _finish(db, entry, SyncStatus.SKIPPED, message, None, warnings)
+                   local_id: int | None = None, warnings=None) -> SyncLog:
+    """Bỏ qua. **Vẫn nên truyền `local_id` khi hàng bên ERP đã tồn tại**: cửa nhận
+    trả ô đó về cho hệ nguồn ghi ngược, mà "không có gì phải làm" không có nghĩa
+    là "chưa có hàng nào" — trả `0` là bảo bên kia xóa trắng mối nối vừa có."""
+    return _finish(db, entry, SyncStatus.SKIPPED, message, local_id, warnings)
 
 
 def clone_for_retry(db: Session, entry: SyncLog, user_id: int = 0) -> SyncLog:

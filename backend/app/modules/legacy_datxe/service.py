@@ -1,0 +1,338 @@
+"""CỬA DUY NHẤT nhận một phiếu từ app đặt xe cũ về ERP.
+
+Cái móc bên app cũ (§5.1) và vòng quét lưới an toàn (§11) đều gọi đúng hàm
+`apply_legacy_record` này. Hai đường vào, một phép xử — nếu mỗi đường tự viết
+lấy một bản thì hôm nay giống nhau, mai ai đó vá một bên, và từ đó phiếu về qua
+cái móc khác phiếu về qua vòng quét ở vài ô. Không lỗi, không cảnh báo, chỉ là
+số liệu lệch.
+
+MỘT LƯỢT ĐI QUA ĐÂY, THEO THỨ TỰ:
+
+1. Băm phần nghiệp vụ. Lần trước đã xử THÀNH CÔNG đúng nội dung này thì thôi,
+   không ghi thêm dòng sổ nào — vòng quét chạy mỗi vài phút trên 480 phiếu, ghi
+   hết thì sổ ngập và chẳng ai đọc nổi.
+2. Ghi dòng sổ *chờ* rồi mới làm (luật §3.2). `event_id` đã nhận rồi thì dừng.
+3. Bọc toàn bộ phần ghi trong `suppress_outbound()` — chống hai bên đá qua đá
+   lại vô tận.
+4. Chưa có `legacy_id` thì tạo mới, sinh mã `DD{id:06d}` / `DX{id:06d}`.
+5. Có rồi thì `copy_legacy_fields`: ghi đè hết, trừ ghi rỗng đè lên đang có.
+6. Phiếu ĐÃ CHỐT bên ERP (Hoàn thành / Từ chối / Đã hủy) thì không nhận nội
+   dung nữa, chỉ nhận đổi trạng thái (§9 mục 5).
+
+Hỏng ở bất cứ đâu thì `rollback` và dòng sổ ghi *lỗi* kèm nguyên văn câu lỗi;
+vòng quét sau sẽ gặp lại phiếu đó. Cố ý KHÔNG nuốt lỗi thành *thành công*: sổ mà
+nói dối thì không còn dùng để tra sự cố được nữa.
+"""
+import collections
+import logging
+
+from sqlalchemy import select
+
+from app.modules.seal_request.model import (
+    SEAL_CANCELLED,
+    SEAL_COMPLETED,
+    SEAL_REJECTED,
+    SealRequest,
+    SealRequestCompany,
+    SealType,
+)
+from app.modules.sync_log.constants import SyncAction
+from app.modules.sync_log.model import SyncLog
+from app.modules.sync_log.registry import SOURCE_DATXE
+from app.modules.sync_log.service import (
+    compute_hash,
+    finish_failed,
+    finish_ok,
+    finish_skipped,
+    is_unchanged,
+    mark_running,
+    open_entry,
+    suppress_outbound,
+)
+from app.modules.vehicle_booking.model import (
+    BK_CANCELLED,
+    BK_COMPLETED,
+    BK_REJECTED,
+    VehicleBooking,
+)
+
+from .builder import (
+    LEGACY_SEAL_TYPE_NAME,
+    SYSTEM_ACTOR_ID,
+    PeopleResolver,
+    build_booking,
+    build_seal,
+    copy_legacy_fields,
+    ensure_seal_type,
+    fit_to_columns,
+)
+from .resolver import LegacyCatalog
+
+LOGGER = logging.getLogger(__name__)
+
+ENTITY_SEAL = "seal_request"
+ENTITY_BOOKING = "vehicle_booking"
+
+#: Loại phiếu bên app cũ -> đối tượng đồng bộ bên ERP.
+ENTITY_FROM_LEGACY_TYPE = {
+    "SEAL_REQUEST": ENTITY_SEAL,
+    "CAR_BOOKING": ENTITY_BOOKING,
+    "DELIVERY": ENTITY_BOOKING,
+}
+
+#: Tiền tố mã phiếu, sáu chữ số. Dạng này không bao giờ đụng dạng ba chữ số ERP
+#: tự sinh (`DD001`), nên nhìn bảng là phân biệt được phiếu nhập từ app cũ.
+CODE_PREFIX = {ENTITY_SEAL: "DD", ENTITY_BOOKING: "DX"}
+
+#: Trạng thái ĐÃ CHỐT — phiếu tới đây thì nội dung đóng băng.
+CLOSED_STATUSES = {
+    ENTITY_SEAL: {SEAL_COMPLETED, SEAL_REJECTED, SEAL_CANCELLED},
+    ENTITY_BOOKING: {BK_COMPLETED, BK_REJECTED, BK_CANCELLED},
+}
+
+MODEL = {ENTITY_SEAL: SealRequest, ENTITY_BOOKING: VehicleBooking}
+
+#: Cờ sổ đồng bộ riêng của lượt nhận phiếu. Nhãn khai ở `sync_log/registry.py`.
+WARN_CLOSED_LOCKED = "closed_locked"
+WARN_BLANK_KEPT = "blank_kept"
+WARN_DRIVER_DELETED = "driver_deleted"
+WARN_TRUNCATED = "truncated"
+
+#: Tiền tố khóa đếm của bộ dựng -> cờ tương ứng. Bộ dựng đếm bằng câu tiếng Việt
+#: không dấu (nó vốn viết cho kịch bản nạp một lần, in thẳng ra màn hình); ở đây
+#: phải đổi thành cờ để màn sổ còn lọc lại được.
+WARN_FROM_STATS = (
+    ("giu nguyen vi app cu khong tra ra", WARN_BLANK_KEPT),
+    ("o qua dai", WARN_TRUNCATED),
+    ("tai xe da bi xoa ben app cu", WARN_DRIVER_DELETED),
+)
+
+
+def entity_of(node: dict) -> str:
+    """Phiếu này bên ERP là loại gì. Rỗng = loại lạ, người gọi tự xử."""
+    return ENTITY_FROM_LEGACY_TYPE.get((node or {}).get("type") or "", "")
+
+
+def get_seal_type_id(db) -> int:
+    """Id loại con dấu gom chung, tạo nếu chưa có.
+
+    Hỏi thẳng DB trước rồi mới nhờ `ensure_seal_type`: hàm bên bộ dựng CÓ IN ra
+    màn hình (nó viết cho kịch bản nạp một lần), gọi nó cho từng phiếu thì mỗi
+    phiếu về là một dòng rác trong log ứng dụng.
+    """
+    found = db.execute(
+        select(SealType.id)
+        .where(SealType.name == LEGACY_SEAL_TYPE_NAME)).scalar_one_or_none()
+    return found or ensure_seal_type(db, apply=True)
+
+
+def collect_warnings(catalog_flags, stats) -> list[str]:
+    """Gộp cờ của bộ tra danh mục với cờ suy từ bộ đếm của bộ dựng."""
+    flags = list(catalog_flags)
+    for name in stats:
+        for prefix, flag in WARN_FROM_STATS:
+            if name.startswith(prefix) and flag not in flags:
+                flags.append(flag)
+    return flags
+
+
+def sync_seal_companies(db, seal: SealRequest, company_ids: list[int]) -> bool:
+    """Bảng nối công ty của phiếu dấu. Trả về có đụng gì không.
+
+    Chỉ phiếu dấu mới có nhiều pháp nhân, và danh sách này là nguồn của phạm vi
+    dữ liệu (`core/scoping.py` nhánh `seal_request`) — sai ở đây là sai người
+    được thấy phiếu, nên phải theo sát bên app cũ cả chiều thêm lẫn chiều bớt.
+    """
+    current = {row.company_id: row for row in db.execute(
+        select(SealRequestCompany)
+        .where(SealRequestCompany.seal_request_id == seal.id)).scalars()}
+    touched = False
+    for cid in company_ids:
+        if cid not in current:
+            db.add(SealRequestCompany(seal_request_id=seal.id, company_id=cid,
+                                      created_by=SYSTEM_ACTOR_ID,
+                                      updated_by=SYSTEM_ACTOR_ID))
+            touched = True
+    for cid, row in current.items():
+        if cid not in company_ids:
+            db.delete(row)
+            touched = True
+    return touched
+
+
+def find_local_id(db, entity: str, legacy_id: str) -> int:
+    """Id hàng bên ERP đang mang khóa app cũ này, `0` nếu chưa có.
+
+    Cửa nhận cần nó cho nhánh *không sinh dòng sổ nào* (trùng `event_id`, hoặc
+    nội dung y hệt lần trước): bên kia vẫn chờ `erp_id` để ghi ngược, trả `0`
+    là bảo nó xóa trắng mối nối đang có.
+    """
+    model = MODEL.get(entity)
+    if model is None or not legacy_id:
+        return 0
+    row = db.execute(
+        select(model.id).where(model.legacy_id == legacy_id)).scalar_one_or_none()
+    return int(row or 0)
+
+
+def apply_legacy_record(
+    db,
+    *,
+    node: dict,
+    legacy_id: str,
+    entity: str = "",
+    event_id: str = "",
+    run_id: int = 0,
+    people: PeopleResolver | None = None,
+    catalog: LegacyCatalog | None = None,
+    seal_type_id: int = 0,
+    user_id: int = 0,
+) -> SyncLog | None:
+    """Nhận MỘT phiếu từ app cũ. Trả dòng sổ đã đóng, hoặc `None`.
+
+    `None` nghĩa là lượt này không sinh dòng sổ nào: nội dung y hệt lần trước đã
+    xử thành công, hoặc `event_id` đã nhận rồi. Cả hai đều là chuyện thường của
+    một vòng quét, không phải lỗi.
+
+    `people` / `catalog` / `seal_type_id` truyền vào được để một vòng quét nhiều
+    phiếu chỉ dựng chúng một lần — hàm dựng của hai cái đầu đều nạp sẵn cả bảng.
+    """
+    entity = entity or entity_of(node)
+    if entity not in MODEL:
+        raise ValueError(f"Loại phiếu app cũ không nhận ra: {(node or {}).get('type')!r}")
+    if not legacy_id:
+        raise ValueError("Thiếu khóa app cũ (legacy_id)")
+
+    content_hash = compute_hash(node)
+    if is_unchanged(db, SOURCE_DATXE, entity, legacy_id, content_hash):
+        return None
+
+    entry = open_entry(db, source=SOURCE_DATXE, entity=entity, legacy_id=legacy_id,
+                       event_id=event_id, payload=node, content_hash=content_hash,
+                       run_id=run_id, user_id=user_id,
+                       action=int(SyncAction.UPDATE))
+    if entry is None:
+        return None
+
+    return run_entry(db, entry, node=node, entity=entity, legacy_id=legacy_id,
+                     content_hash=content_hash, people=people, catalog=catalog,
+                     seal_type_id=seal_type_id, user_id=user_id)
+
+
+def run_entry(
+    db,
+    entry: SyncLog,
+    *,
+    node: dict,
+    entity: str = "",
+    legacy_id: str = "",
+    content_hash: str = "",
+    people: PeopleResolver | None = None,
+    catalog: LegacyCatalog | None = None,
+    seal_type_id: int = 0,
+    user_id: int = 0,
+) -> SyncLog:
+    """Chạy MỘT dòng sổ đang mở. Luôn trả về dòng đó, đã đóng.
+
+    Tách khỏi `apply_legacy_record` vì có hai đường tới đây: dòng vừa mở của một
+    phiếu mới về, và dòng *chờ* do nút "Chạy lại" sinh ra (`clone_for_retry`) —
+    dòng thứ hai đã nằm sẵn trong sổ, mở thêm dòng nữa là ghi đôi một sự việc.
+    """
+    entity = entity or entry.entity
+    legacy_id = legacy_id or entry.legacy_id
+    content_hash = content_hash or entry.content_hash or compute_hash(node)
+    mark_running(db, entry)
+
+    try:
+        with suppress_outbound():
+            return _write(db, entry, entity=entity, legacy_id=legacy_id, node=node,
+                          people=people, catalog=catalog, seal_type_id=seal_type_id,
+                          content_hash=content_hash, user_id=user_id)
+    except Exception as exc:  # noqa: BLE001 — câu lỗi nào cũng phải vào sổ
+        db.rollback()
+        LOGGER.exception("Nhận phiếu %s %r từ app cũ hỏng", entity, legacy_id)
+        return finish_failed(db, entry, f"{type(exc).__name__}: {exc}")
+
+
+def _write(db, entry: SyncLog, *, entity: str, legacy_id: str, node: dict,
+           people: PeopleResolver | None, catalog: LegacyCatalog | None,
+           seal_type_id: int, content_hash: str, user_id: int) -> SyncLog:
+    stats: collections.Counter = collections.Counter()
+    people = people or PeopleResolver(db)
+    catalog = catalog or LegacyCatalog(db, actor_id=user_id)
+    model = MODEL[entity]
+    actor = user_id or SYSTEM_ACTOR_ID
+
+    #  Bộ tra danh mục sống suốt cả vòng quét nên `warnings` của nó là sổ CỘNG
+    #  DỒN. Lấy mốc trước khi dựng để dòng sổ của phiếu này chỉ mang cờ của
+    #  chính nó — không thì phiếu thứ hai trở đi thừa hưởng cảnh báo của phiếu
+    #  đầu, và cả trăm dòng cùng đỏ lên vì một ca duy nhất.
+    warn_mark = len(catalog.warnings)
+
+    existing = db.execute(
+        select(model).where(model.legacy_id == legacy_id)).scalar_one_or_none()
+
+    if entity == ENTITY_SEAL:
+        if not seal_type_id:
+            seal_type_id = get_seal_type_id(db)
+        fresh, company_ids = build_seal(db, legacy_id, node, people, seal_type_id,
+                                        catalog.companies, catalog.departments, stats)
+    else:
+        fresh = build_booking(db, legacy_id, node, people, catalog.companies,
+                              catalog.vehicles, catalog.drivers, stats)
+        company_ids = []
+    fit_to_columns(fresh, stats)
+
+    def flags() -> list[str]:
+        return collect_warnings(catalog.warnings[warn_mark:], stats)
+
+    # --- chưa có: tạo mới -------------------------------------------------
+    if existing is None:
+        db.add(fresh)
+        db.flush()
+        #  Mã sinh SAU `flush()` vì tới lúc đó mới có id.
+        fresh.code = f"{CODE_PREFIX[entity]}{fresh.id:06d}"
+        if entity == ENTITY_SEAL:
+            sync_seal_companies(db, fresh, company_ids)
+        db.commit()
+        entry.action = int(SyncAction.CREATE)
+        return finish_ok(db, entry, f"Đã tạo phiếu {fresh.code}", local_id=fresh.id,
+                         warnings=flags(), content_hash=content_hash)
+
+    # --- đã chốt: đóng băng nội dung, chỉ nhận đổi trạng thái --------------
+    #  KHÔNG `rollback` ở nhánh này: bộ tra danh mục có thể vừa đóng dấu
+    #  `legacy_id` lên một hàng có sẵn, và dấu đó đúng bất kể phiếu này có được
+    #  ghi hay không. `finish_*` tự `commit` nên phần đó đi theo.
+    if existing.status in CLOSED_STATUSES[entity]:
+        if fresh.status and fresh.status != existing.status:
+            old = existing.status
+            existing.status = fresh.status
+            existing.updated_by = actor
+            entry.action = int(SyncAction.STATUS_CHANGE)
+            return finish_ok(db, entry,
+                             f"Phiếu đã chốt — chỉ nhận đổi trạng thái {old} -> "
+                             f"{fresh.status}", local_id=existing.id,
+                             warnings=flags() + [WARN_CLOSED_LOCKED],
+                             content_hash=content_hash)
+        return finish_skipped(db, entry, "Phiếu đã chốt bên ERP, không nhận cập nhật",
+                              local_id=existing.id,
+                              warnings=flags() + [WARN_CLOSED_LOCKED])
+
+    # --- đang mở: ghi đè hết, trừ ghi rỗng đè lên đang có ------------------
+    changed = copy_legacy_fields(existing, fresh, stats)
+    touched = sync_seal_companies(db, existing, company_ids) if entity == ENTITY_SEAL else False
+    if not changed and not touched:
+        #  Cố ý KHÔNG chốt `content_hash` vào dòng *bỏ qua*: chỉ dòng THÀNH CÔNG
+        #  mới chặn được lượt sau (`is_unchanged`). Phiếu đổi ở ô mà ERP không
+        #  giữ thì mỗi lượt quét lại ghi một dòng bỏ qua — đó là giá của việc
+        #  không nói dối trong sổ.
+        return finish_skipped(db, entry, "Không có gì thay đổi", local_id=existing.id,
+                              warnings=flags())
+
+    existing.updated_by = actor
+    db.commit()
+    return finish_ok(db, entry,
+                     f"Đã cập nhật {len(changed)} ô: "
+                     f"{', '.join(changed) or '(bảng nối công ty)'}",
+                     local_id=existing.id, warnings=flags(),
+                     content_hash=content_hash)

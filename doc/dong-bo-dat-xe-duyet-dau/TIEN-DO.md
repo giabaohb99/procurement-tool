@@ -66,15 +66,15 @@ kèm đã thông 17/09** — đọc thẳng bucket app cũ bằng khóa chỉ-đ
 | [x] | **Luật chung: tài khoản trùng thì luôn giữ id nhỏ nhất** (đại ca chốt 16/09). Script `scripts/dedupe_accounts.py`, chạy LOCAL 16/09 — **3 cụm, xong cả 3**: `ntktrang.idagroup@gmail.com` (giữ tk 47/hồ sơ 38, bỏ 210/201) · `ntnhan.idaglobal@gmail.com` (giữ 185/176, bỏ 205/196) · `hgbao.idagroup@gmail.com` (giữ tk 1, bỏ tk 3/hồ sơ 253). Không xóa gì, chỉ **xóa trống email + tắt hoạt động** hồ sơ thừa qua `employee_service.update_employee` để dây bao-CR-400 chạy đủ (khóa tài khoản · đá phiên · nhật ký). Chạy lại: 0 cụm | ERP |
 | [x] | Cột `source`, `external_id` cho `tab_file` — rỗng = byte nằm ở kho R2 của ERP, khác rỗng = `file_key` là khóa của KHO KHÁC. Mọi đường đọc byte phải rẽ theo cột này trước (`core/legacy_files.py`), không thì R2 của ERP trả 404 cho một tệp vẫn còn sống | ERP |
 | [x] | Cột `warnings` + bộ cờ cảnh báo trong `tab_sync_log` — cờ chung ở `constants.COMMON_WARNINGS`, cờ riêng của từng nguồn khai trong adapter. Ghi cờ có khử trùng và cắt an toàn theo trần cột | ERP |
-| [~] | Hàm tra pháp nhân ba nấc (QĐ-G), cấm trả về `0` — **bản của đợt NẠP LỊCH SỬ đã có** (`_companies_of` trong `import_tickets.py`, chạy thật 1 313/1 313 phiếu). Bản dùng chung cho **chiều nhận về ở P2** thì chưa tách ra | ERP |
+| [x] | Hàm tra pháp nhân ba nấc (QĐ-G), cấm trả về `0` — **bản của đợt NẠP LỊCH SỬ** là `_companies_of` trong `import_tickets.py` (chạy thật 1 313/1 313 phiếu); **bản của chiều nhận về** nay là `legacy_datxe/resolver.py` (`PeopleResolver` + `LegacyCatalog`), tra theo `legacy_id` → khóa tự nhiên (đóng dấu `legacy_id` lại) → tạo mới, mà **chỉ xe và tài xế** mới được tạo và còn phải bật `SYNC_DATXE_AUTO_CREATE` | ERP |
 | [x] | Khai entity `sync_log` ở `ENTITIES` + `SCOPE_FIELDS` + rà `_SYS_ENTITIES` — **MỘT khóa cho mọi nguồn** (`write` = nút *Chạy lại*). `SCOPE_FIELDS` để `PUBLIC` có chủ ý: một dòng sổ mô tả bản ghi của HỆ BÊN KIA, lúc nó hỏng thì thường ERP chưa có hàng nào để mà lọc phạm vi — lọc là giấu đi đúng những ca hỏng nặng nhất. Đã thêm vào `_SYS_ENTITIES` của `seed.py` để không rơi vào `_PUR_MANAGER_PERMS`, và thêm vào `ENTITIES` bên `frontend-v2` (62 → **63**) | ERP |
 | [x] | Migration Alembic, kiểm `alembic heads` ra một head — `b7c2e4a91f30` (cột `legacy_id`) · `c1d4f8a37b62` · **`e5a1b9c73d04`** (dựng `tab_sync_log`, dời dữ liệu POS365 vào, xóa `tab_pos_sync_run`). `upgrade head` chạy sạch trên local; dò lệch bằng `--autogenerate` ra **0 thay đổi** cho bảng mới | ERP |
 | [x] | Biến môi trường, công tắc để tắt — `SYNC_DATXE_ENABLED` · `SYNC_SHARED_SECRET` · `SYNC_LEGACY_API_BASE`. ⚠️ Cờ của POS365 là **cầu dao NGẮT** (`POS365_HARD_OFF`, bật = TẮT), ngược chiều — adapter khai `enabled_inverted` thay vì đổi tên biến đang chạy thật ở prod | ERP |
 | [x] | Hàm ký / kiểm chữ ký + bài kiểm — `core/sync_signature.py` (phía ERP). Khóa theo TỪNG NGUỒN, lệch giờ quá 5 phút thì từ chối. ⚠️ **Bài kiểm lôi ra một lỗ thật**: `hmac.compare_digest` ném `TypeError` khi chuỗi có ký tự ngoài ASCII, tức một header chữ ký có dấu là đổ **500** thay vì bị từ chối gọn — nay so bằng **bytes** | ERP |
 | [ ] | Hàm ký / kiểm chữ ký phía app cũ | App cũ |
-| [ ] | Ba trường `updatedAt`, `erpId`, `syncStatus` | App cũ |
-| [ ] | Mọi đường ghi đều cập nhật `updatedAt` | App cũ |
-| [ ] | Khai `.indexOn: ["updatedAt"]` trong Rules | App cũ |
+| [~] | Ba trường `updatedAt`, `erpId`, `syncStatus` — **khai kiểu xong** ở `src/types/db.types.ts` (cả ba đều KHÔNG bắt buộc: phiếu có trước ngày nối ERP không mang ô nào). `updatedAt` đã ghi thật; `erpId` và `syncStatus` chờ chiều bắn sự kiện | App cũ |
+| [x] | Mọi đường ghi đều cập nhật `updatedAt` — `stampUpdatedAt` ở `src/utils/db.helpers.ts`, cắm vào **cả ba** đường ghi: `createRequestInDb` (PUT) · `updateRequestInDb` (PATCH) · `patchRequest` của `driver.service.ts`. Đường thứ ba là đường **dễ sót nhất** — nó không đi qua tầng `db/`, mà bốn nhịp của tài xế đều chạy qua đó | App cũ |
+| [x] | Khai `.indexOn: ["updatedAt"]` trong Rules — **đại ca tự thêm 17/09, cả dev lẫn prod**. Em kiểm lại dự án dev bằng khóa đọc của ERP: `requests` đã có. Hai nhánh `vehicles`/`drivers` **cố ý không khai** — vòng quét chỉ hỏi nhánh `requests` (`NODE_REQUESTS` ở `tasks.py`), xe và tài xế đi bằng đường tra theo id | App cũ |
 | [ ] | Nhánh `sync_logs` + màn hình xem sổ | App cũ |
 | [ ] | Biến bí mật `SYNC_ENABLED`, `SYNC_SHARED_SECRET` | App cũ |
 
@@ -244,11 +244,11 @@ chiều, để lại P2.
 
 | | Việc | Bên |
 |---|---|---|
-| [ ] | Đường nhận `POST /api/sync/datxe/events` | ERP |
-| [ ] | Kiểm chữ ký, chặn gói cũ gửi lại | ERP |
-| [ ] | Chặn xử trùng theo `event_id` và `legacy_id` | ERP |
-| [ ] | Hằng số "trường app cũ làm chủ", dùng một chỗ | ERP |
-| [ ] | Bài kiểm: nhận cập nhật **không** đụng trạng thái và điều phối | ERP |
+| [x] | Đường nhận `POST /api/sync/datxe/events` | ERP |
+| [x] | Kiểm chữ ký, chặn gói cũ gửi lại | ERP |
+| [x] | Chặn xử trùng theo `event_id` và `legacy_id` | ERP |
+| [x] | Hằng số "trường app cũ làm chủ", dùng một chỗ | ERP |
+| [x] | ~~Bài kiểm: nhận cập nhật **không** đụng trạng thái và điều phối~~ → **§9.4 đảo luật ngày 17/09**: ERP đang chỉ là bản sao nên **ghi đè hết, trừ ghi rỗng đè lên đang có**. Bài kiểm nay canh luật mới, kèm ca xóa trắng ô xe của chuyến đã hoàn thành | ERP |
 | [ ] | Bài kiểm: khai trần độ dài ở tầng schema | ERP |
 | [ ] | Bắn chuông sau khi ghi `requests` | App cũ |
 | [ ] | Gọi hỏng không làm hỏng việc người dùng | App cũ |
@@ -297,13 +297,17 @@ chiều, để lại P2.
 
 | | Việc |
 |---|---|
-| [ ] | Quét theo `updatedAt`, so nội dung, vá chỗ lệch |
+| [x] | Quét theo `updatedAt`, so nội dung, vá chỗ lệch — `legacy_datxe/tasks.py::pull_updated`, 17/09 |
 | [ ] | Đếm đối chiếu hai bên theo tháng và trạng thái |
-| [ ] | Gọi lại việc hỏng, giãn dần, dừng sau 10 lần |
-| [ ] | Dòng tổng kết mỗi đêm |
-| [ ] | Cắm vào Celery beat lúc 01:00 |
+| [x] | Gọi lại việc hỏng — `retry_pending`, **trần 3 lần thay vì thang giãn 10 lần** (lý do ở §11.1) |
+| [x] | Dòng tổng kết mỗi lượt — dòng `grain = RUN` trong sổ chung, có bộ đếm |
+| [x] | Cắm vào Celery beat — **mỗi `SYNC_DATXE_PULL_MINUTES` phút thay vì 01:00** (lưới an toàn của đường chuông, không phải mẻ đêm) |
 
 **Tiêu chí xong:** tắt chuông, tạo ba phiếu, chạy tay đối soát → ba phiếu xuất hiện, sổ ghi rõ "vá bởi đối soát".
+
+**Cần làm trước khi bật thật:** thêm `".indexOn": ["updatedAt"]` vào Rules của **cả hai**
+dự án Firebase, nếu không Firebase trả HTTP 400 và vòng quét im lặng báo "kéo được 0 phiếu".
+Bốn chỗ bản đã dựng khác bản vẽ ban đầu ghi ở **§11.1 của `mo-ta-ky-thuat.md`**.
 
 ---
 
@@ -463,5 +467,10 @@ là cách phân biệt "nhập từ app cũ" với thao tác thật bên ERP khi
 | 17/09/2026 | **Byte của 1 488 tệp đính kèm đã thông — và việc bắt app cũ dựng endpoint là công thừa** | Bản thiết kế chốt hai đường lấy byte, đường chính là *app cũ dựng `GET /api/v1/sync/files/{id}/url` ký hộ URL*. Mở bảng R2 trên Cloudflare ra thì lộ chuyện: bucket `degoholding-app-cdn` của app cũ **nằm chung một tài khoản** với `dego-thumua` của ERP. Lần thử hôm 16/09 trả 404 / AccessDenied **không phải vì kho của người khác**, mà vì khóa API của ERP bị giới hạn đúng bucket của nó. Thêm một token *Object Read only* trỏ bucket cũ, bốn biến `LEGACY_R2_*`, một nhánh rẽ trong `read_file_bytes` — xong, bên app cũ không viết dòng mã nào. Bài học: **đọc lỗi quyền đừng vội kết luận về ranh giới hệ thống**; 404/AccessDenied là câu trả lời của *khóa này không mở được*, không phải của *kho này không phải của bạn* |
 | 17/09/2026 | **Đảo lại quyết định "chép một lần" của chính hôm trước** | Hôm 16/09 em khuyên chép 5.89 GB sang kho ERP, lập luận là *ngày tắt app cũ thì 1 488 tệp chết theo*. Lập luận đó dựng trên giả định sai vừa nói ở trên. Bucket cũ là của chính công ty, tắt app cũ là tắt cái **Worker** chứ không xóa bucket; chép chỉ nhân đôi dung lượng và đẩy tài khoản từ 7.61 GB qua mức miễn phí 10 GB. Giữ nguyên tại chỗ, ERP đọc thẳng. Việc duy nhất còn lại ở P8 là **đừng xóa bucket và đừng thu hồi token** vào ngày dọn app cũ |
 | 17/09/2026 | **Kiểm đủ 1 488 dòng chứ không kiểm mẫu, và so cả dung lượng** | `verify_legacy_bucket.py` chạy `head_object` cho **toàn bộ** 1 488 khóa (rẻ, không kéo byte): 0 thiếu · 0 lệch cỡ · 0 lỗi. Phép so dung lượng là cố ý — *"khóa có tồn tại"* không bắt được ca khóa trúng **nhầm** một tệp khác. Chặng hai kéo nguyên byte 12 tệp **chọn theo điểm "tên xấu"** (đếm ký tự ngoài ASCII, khoảng trắng, dấu ngoặc, và cờ chuẩn hóa NFD) cộng ba tệp nặng nhất — vì khóa thật trông như `...-Biên bảng điều chỉnh hoá đơn ĐL Trung Liễu (4803-4804).pdf`, đúng loại làm hỏng chữ ký S3. Lấy 10 dòng đầu thì cả hai rủi ro đó đều lọt. Tệp 102 MB đọc về nguyên vẹn |
+| 17/09/2026 | **Đại ca đảo luật ghi đè, và luật mới ÍT nhánh hơn luật cũ** | Bản vẽ ban đầu giữ một danh sách "trường app cũ làm chủ", mọi thứ ngoài danh sách thì ERP giữ. Đại ca chốt ngược: *"ghi đè full thông tin phiếu"*, chỉ chừa nhật ký · tệp · dấu vết phê duyệt. Viết thành §9.4 với **đúng một** ngoại lệ: **ghi rỗng không được đè lên ô đang có chữ** — vì app cũ không phân biệt *"người ta xóa trắng ô này"* với *"gói tin này không mang ô đó"*. Hai chỗ phải nói rõ vì trông như rỗng mà không phải: `False` là một giá trị thật, còn `0` trên cột số thì tính là rỗng. Phiếu đã đóng thì đóng băng — cú sửa muộn của app cũ không được lật lại chuyến đã hoàn thành |
+| 17/09/2026 | **Bộ tra người / xe / tài xế ba nấc, và nấc ba chỉ mở cho HAI thứ** | Đại ca gợi ý đúng khuôn: *"có 1 hàm kiểm tra tài xế, nếu có thì trả ra còn ngược lại thì tạo xong cũng trả ra"*. `resolver.py` làm vậy — tra `legacy_id`, không thấy thì tra khóa tự nhiên (**và đóng dấu `legacy_id` lại ngay**, nên lần sau chỉ còn một truy vấn), không thấy nữa thì tạo. Nhưng **nấc ba chỉ mở cho xe và tài xế**, lại còn nằm sau công tắc `SYNC_DATXE_AUTO_CREATE` mặc định TẮT: tự đẻ hồ sơ nhân sự là tự cấp danh tính cho người thật, còn một chiếc xe thuê ngoài thì chỉ là một dòng danh mục. Mỗi hàng đẻ ra đóng cờ `auto_created` lên dòng sổ, và bộ lọc *"chỉ dòng có cảnh báo"* của sổ **chính là hàng đợi soát** — `tab_vehicle`/`tab_driver` không có cột `is_active` nên không có chỗ nào khác để treo |
+| 17/09/2026 | **Hai vòng chạy nền của P5 — và bốn chỗ cố ý làm khác bản vẽ** | Đường chính vẫn là cái chuông bên app cũ gọi thẳng vào ERP; `legacy_datxe/tasks.py` là **lưới an toàn**. (1) Con trỏ **bao gồm** chính mốc lần trước chứ không cộng 1 mili-giây — cộng vào thì hai phiếu sửa trùng mili-giây mất một, còn đọc lại một phiếu thì `is_unchanged` chặn, không tốn dòng sổ nào. (2) Lượt đầu chỉ nhìn lại **24 giờ**, không thì tick đầu tiên dội cả 1 313 phiếu đã nạp vào sổ. (3) Con trỏ **vẫn tiến dù vài phiếu hỏng** — mỗi phiếu hỏng đã có dòng sổ riêng và vòng chạy lại nhặt nó; ghim con trỏ lại là kéo nguyên mẻ đó mỗi 5 phút, mãi mãi. (4) Chạy lại **TẠI CHỖ** (tăng `attempt_count`, trần 3 lần) thay vì thang giãn 10 nấc, để giữ luật *một sự kiện một dòng*; riêng nút *Chạy lại* của người thì vẫn nhân bản dòng vì đó là một quyết định mới. **Việc hai của P5 — đếm đối chiếu hai bên — chưa dựng.** ⚠️ Thiếu `".indexOn": ["updatedAt"]` trong Rules thì Firebase trả 400 và vòng quét báo "kéo được 0 phiếu" **không kèm lỗi nào** |
+| 17/09/2026 | **Gọi tay một phát vào cửa nhận, lòi ra lỗi mà 33 bài kiểm không canh** | Viết `send_test_event.sh` để đại ca tự bắn một phiếu vào ERP (script tự ký, khóa đọc từ `.env`). Gọi lần hai thì ERP trả `erp_id = 0` kèm "Không có gì thay đổi" — mà ô đó chính là thứ app cũ ghi ngược vào `erpId`, tức **một cú bỏ qua sẽ xóa mối nối của chính phiếu vừa nhận xong**, rồi lần sau nhìn vào tưởng chưa đồng bộ bao giờ. Ba nhánh *bỏ qua* (trùng `event_id` · nội dung không đổi ô nào · phiếu đã chốt) nay đều trả id thật; `finish_skipped` nhận thêm `local_id`, và cửa nhận có `find_local_id` cho nhánh không sinh dòng sổ. Bài học: **bộ kiểm canh cái nó được viết ra để canh** — 33 bài đều soi chốt chặn và nội dung ghi xuống, không bài nào soi *câu trả lời gửi ngược về*, vì hồi đó chưa có ai ở đầu kia để mà đọc nó |
 | 17/09/2026 | **Viết ra một hàm rồi xóa đi vì chỗ gọi nó sẽ phá lớp chắn** | `legacy_presigned_url` nghe rất hợp lý: tệp 102 MB cho trình duyệt tải thẳng từ R2 thì byte khỏi đi vòng qua RAM máy chủ. Nhưng chỗ duy nhất muốn gọi là `/attachments/{id}/view`, mà endpoint đó gánh ba lớp chắn dựng riêng cho tệp người ngoài gửi vào (**danh sách trắng kiểu tệp · `nosniff` · `sandbox`**) — chuyển hướng ra `*.r2.cloudflarestorage.com` là rụng cả ba, thêm nữa URL ký sẵn **không hỏi quyền**. Xóa hàm, thay bằng một khối chú thích nói rõ vì sao nó cố ý không tồn tại: mã chết thì người sau xóa, còn **lời giải thích thì giữ người sau khỏi viết lại nó** |
 
+| 17/09/2026 | **Đóng dấu `updatedAt` bên app cũ — mảnh cuối để vòng quét thôi chạy không** | Đại ca tự khai `".indexOn": ["updatedAt"]` cho nhánh `requests` ở cả hai dự án Firebase. Đo lại bản kết xuất prod thì `createdAt` có **15 763** chỗ còn `updatedAt` có **0** — chỉ mục đã mở nhưng chưa phiếu nào mang trường đó, nên vòng quét bên ERP dù chạy đúng vẫn kéo về rỗng vĩnh viễn. Vá bằng `stampUpdatedAt` cắm vào **cả ba** đường ghi của nhánh `requests`; đường thứ ba (`patchRequest` trong `driver.service.ts`) không đi qua tầng `db/` nên rất dễ sót, mà bốn nhịp của tài xế đều chạy qua nó. Trước khi gõ có đọc Rules thật bằng khóa đọc của ERP để chắc một điều: `.validate` của `$requestId` dùng `hasChildren([...])`, tức **đòi có mấy khóa bắt buộc chứ không cấm khóa lạ** — nếu nó cấm thì thêm `updatedAt` vào cùng cú ghi sẽ làm hỏng luôn thao tác của người dùng. Hai nhánh `vehicles`/`drivers` **không khai chỉ mục**, đúng ý: vòng quét chỉ hỏi `requests`. ⚠️ Bộ chạy test của app cũ **hỏng sẵn từ trước** (`No such module "cloudflare:test-internal"`, lệch phiên bản `vitest` ↔ `@cloudflare/vitest-pool-workers`) — cất hết thay đổi đi chạy lại vẫn hỏng y hệt; phải chạy vòng qua bằng một cấu hình Node tạm mới kiểm được, **40/40 xanh** trên 6 tệp phủ mọi service ghi vào `requests` |

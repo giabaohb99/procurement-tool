@@ -9,6 +9,14 @@ Hai bằng chứng cho luật này, đo trên bản kết xuất ngày 16/09/202
 
 Bảng này do người soát rồi mới ghi vào đây. Script không được tự đoán thêm cặp
 nào ngoài bảng — thấy khóa lạ thì báo và dừng, đừng khớp mò theo tên.
+
+VÌ SAO NẰM TRONG `app/` CHỨ KHÔNG Ở `scripts/`. Bảng khai tay này ban đầu chỉ
+phục vụ đợt nạp một lần, nên đặt cạnh mấy script nạp là hợp. Nhưng đồng bộ chạy
+thường trực cũng phải tra đúng bảng ấy: cái móc bên app cũ đẩy sang một phiếu
+mới thì `PeopleResolver` vẫn cần `USER_MANUAL_MAP` để biết UID Firebase là ai.
+Tầng API không import được `scripts/`, nên để nguyên chỗ cũ thì buộc phải chép
+bảng ra lần hai — và hai bản chép sẽ lệch nhau lúc nào không ai hay. Một bảng,
+một chỗ; mấy script nạp giờ import ngược về đây.
 """
 
 #  Khóa `brands` bên app cũ -> id `tab_company`. Số phiếu đo ngày 16/09/2026 ghi

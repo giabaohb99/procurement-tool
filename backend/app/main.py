@@ -56,6 +56,7 @@ from app.modules.seal_request.catalog_controller import seal_type_router
 from app.modules.seal_clerk.controller import router as seal_clerk_router
 from app.modules.coffee_point.controller import router as coffee_point_router
 from app.modules.sync_log.controller import router as sync_log_router
+from app.modules.legacy_datxe.controller import router as legacy_datxe_router
 from app.modules.product.controller import router as product_router
 from app.modules.purchase_history.controller import router as purchase_history_router
 from app.modules.role.controller import router as role_router
@@ -285,6 +286,9 @@ app.include_router(seal_clerk_router)
 app.include_router(coffee_point_router)
 #  Sổ đồng bộ dùng chung — không thuộc phân hệ nào, mọi hệ ngoài ghi vào đây.
 app.include_router(sync_log_router)
+#  Cửa nhận của app đặt xe cũ. KHÔNG có phân quyền người dùng — gác bằng chữ ký
+#  HMAC chung khóa (`app/core/sync_signature.py`), xem đầu tệp controller.
+app.include_router(legacy_datxe_router)
 #  Bộ máy phê duyệt dùng chung — không thuộc phân hệ nào, mọi loại chứng từ
 #  đều chạy qua nó.
 app.include_router(approval_flow_router)

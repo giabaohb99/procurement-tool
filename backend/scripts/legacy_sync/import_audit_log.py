@@ -69,7 +69,7 @@ from app.core.logging_codes import ACTOR_KIND_SCRIPT
 from app.modules.audit.model import AuditLog
 from app.modules.seal_request.model import SealRequest
 from app.modules.vehicle_booking.model import VehicleBooking
-from scripts.legacy_sync.import_tickets import (
+from app.modules.legacy_datxe.builder import (
     PeopleResolver,
     _utc_dt,
     legacy_index,

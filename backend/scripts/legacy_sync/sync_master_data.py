@@ -26,10 +26,10 @@ import app.core.all_models  # noqa: F401  nạp đủ model để SQLAlchemy d�
 from app.core.database import SessionLocal
 from app.modules.company.model import Company
 from app.modules.department.model import Department
-from scripts.legacy_sync.mapping import (BRAND_TO_COMPANY_ID,
-                                         DEPARTMENT_MERGED_INTO_ERP,
-                                         DEPARTMENT_REFERENCE_COLUMNS,
-                                         DEPARTMENT_TO_ERP_ID)
+from app.modules.legacy_datxe.mapping import (BRAND_TO_COMPANY_ID,
+                                              DEPARTMENT_MERGED_INTO_ERP,
+                                              DEPARTMENT_REFERENCE_COLUMNS,
+                                              DEPARTMENT_TO_ERP_ID)
 
 
 def _load_export(path: str) -> dict:

@@ -50,7 +50,7 @@ from app.modules.attachment.model import FileLink, StoredFile
 from app.modules.audit.model import AuditLog
 from app.modules.seal_request.model import SealRequest
 from app.modules.vehicle_booking.model import VehicleBooking
-from scripts.legacy_sync.import_tickets import legacy_index
+from app.modules.legacy_datxe.builder import legacy_index
 
 SEAL_ENTITY = "seal_request"
 BOOKING_ENTITY = "vehicle_booking"

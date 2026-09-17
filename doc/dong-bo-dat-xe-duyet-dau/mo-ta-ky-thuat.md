@@ -189,6 +189,12 @@ Trả về, theo đúng phong bì chuẩn của ERP (`{success, message, data}`)
 
 App cũ nhận `erp_id` thì ghi ngược vào bản ghi của mình và đóng dòng sổ.
 
+⚠️ **`erp_id` luôn là id THẬT, kể cả khi `status` là `skipped`** (vá 17/09, tìm ra bằng
+một cú gọi tay). Ba nhánh bỏ qua — trùng `event_id` · nội dung không đổi ô nào của ERP ·
+phiếu đã chốt bên ERP — đều nói "không có gì phải làm", **không** nói "chưa có hàng nào
+bên ERP". Trả `0` ở đó là bảo app cũ xóa trắng `erpId` của đúng phiếu vừa nhận xong.
+Bên app cũ vẫn nên tự thủ thêm một lớp: **chỉ ghi `erpId` khi giá trị nhận về lớn hơn 0.**
+
 ### 5.2. Chiều ERP → app cũ
 
 ```
@@ -354,10 +360,43 @@ Khi ERP nhận một phiếu từ app cũ:
 1. Tra `legacy_id`. Chưa có → tạo mới. Có rồi → sang bước 4.
 2. Tạo mới: sinh mã phiếu theo đúng bộ sinh mã sẵn có (`DX001`, `DX002`... cho đặt xe). **Không tự đặt định dạng mã khác** — bộ sinh mã hiện tại quét các mã dạng `DX<số>` để lấy số lớn nhất, chen mã lạ vào là nó tính sai.
 3. Ghi `legacy_id`, ghi các trường nội dung, tính `content_hash`, lưu.
-4. Cập nhật: **chỉ ghi đè những ô mà app cũ làm chủ** (xem bảng ở README mục 5). Tuyệt đối không đụng `status`, `assigned_vehicle_id`, `assigned_driver_id`, `driver_status`, `distance_km`, `cost` — đó là phần ERP làm chủ, ghi đè là xóa mất việc điều phối viên vừa làm.
+4. Cập nhật: **ghi đè hết, trừ ghi rỗng đè lên đang có** (đại ca chốt 17/09/2026, xem khung dưới).
 5. Phiếu ở trạng thái đã chốt (Hoàn thành, Từ chối, Đã hủy) thì **không nhận cập nhật nội dung nữa**, ghi sổ trạng thái *bỏ qua* kèm lý do.
 
 Điểm 4 và 5 là chỗ dễ sai nhất trong toàn bộ thiết kế. Nên viết thành một danh sách trường tường minh trong mã nguồn, một chỗ duy nhất, chứ đừng để mỗi hàm tự nhớ.
+
+### 9.4 bis — vì sao đổi từ "cấm sáu ô" sang "ghi đè hết"
+
+Bản đầu mục 4 viết: *tuyệt đối không đụng `status`, `assigned_vehicle_id`, `assigned_driver_id`, `driver_status`, `distance_km`, `cost`*. Câu đó **giả định điều phối viên bấm gán xe bên ERP**. Giai đoạn này chưa đúng: chiều ERP → app cũ chưa làm, người ta vẫn gán xe bên app cũ, ERP mới chỉ là cái gương. Cấm ghi đè lúc này thì gương đứng hình ngay lần đầu, phiếu mãi mãi không có xe.
+
+Luật thay thế, một câu: **ghi đè hết, trừ ghi rỗng đè lên đang có.** Ô nào bộ dựng trả ra `""` / `0` / `None` mà dưới ERP đang có dữ liệu thì giữ nguyên và đếm vào sổ đồng bộ.
+
+Vế "trừ" không phải phòng xa. `assigned_vehicle_id` không chép thẳng — nó là `vehicle_index.get(khóa, 0)`. Hôm nào đội xe mua xe mới, app cũ gán liền, ERP chưa kịp đóng dấu `legacy_id` cho xe đó thì bộ dựng trả 0, ghi đè thẳng là **xóa xe khỏi một chuyến đã chạy xong** — mất dữ liệu vì tra không ra, không phải vì ai bỏ, và không một dòng lỗi nào. Đo trên kho Firebase dev ngày 17/09 thì 0/9 thương hiệu, 0/3 tài xế, 3/37 người khớp dấu `legacy_id`, nên bật đồng bộ dev mà thiếu luật này là mất sạch xe với tài xế ngay nhịp đầu.
+
+Riêng `False` **không** tính là rỗng: bỏ tick "khứ hồi" là một ý định thật, khác hẳn "không biết".
+
+Bảy ô không bao giờ mở, gom ở hằng số `LEGACY_READONLY_FIELDS` trong `app/modules/legacy_datxe/builder.py`: `id`, `code`, `legacy_id`, `created_at`, `created_by` (đổi `code` là mọi bản in và email đã gửi trỏ sai; `created_at` là mốc đối soát; hai dấu kia là dây nối giữa hai hệ) cộng `updated_at`, `updated_by` — hai ô này không phải cấm, mà do người gọi tự đóng dấu.
+
+**Ngày nào điều phối chuyển hẳn sang ERP thì thêm sáu tên ở đoạn đầu mục này vào đúng hằng số đó.** Một chỗ duy nhất, không phải đi lục lại mã. Bài kiểm canh luật nằm ở `test/backend/test_dong_bo_datxe_ghi_de.py`.
+
+### 9.6 — tra danh mục ba nấc, và cái gì được phép tự tạo
+
+Hệ quả của 9.4 bis: ô trống thì giữ được dữ liệu cũ, nhưng **phiếu mới** vẫn thiếu. Nên bộ tra danh mục (xe, tài xế, phòng ban, con người) đi ba nấc, gom trong một hàm, không rải mỗi chỗ một kiểu:
+
+1. Tra dấu `legacy_id`. Ra thì trả về. Nấc này ăn 100% ca hiện có — 1313 phiếu đã nạp không trượt ca nào.
+2. Không ra thì tra theo **đặc điểm tự nhiên**: xe theo biển số, tài xế theo số điện thoại rồi tới tên, phòng ban theo tên đã chuẩn hóa, con người theo **email** (đúng QĐ-D: hai bên nối nhau bằng email). Khớp thì **đóng dấu `legacy_id` vào hàng có sẵn** rồi trả về, lần sau nấc 1 ăn luôn.
+3. Vẫn không ra mới tính tạo — và **không tạo đồng đều mọi loại**:
+
+| Loại | Tự tạo? | Vì sao |
+|---|---|---|
+| Xe, tài xế | **Có** nhưng mặc định TẮT (`SYNC_DATXE_AUTO_CREATE`), và mỗi hàng đẻ ra đóng cờ `auto_created` lên dòng sổ đồng bộ | Danh mục vận hành, trùng thì gộp lại được, không dính tiền hay quyền |
+| Phòng ban | **Không** | Dính phân quyền theo phạm vi — đẻ phòng mới là đẻ một vùng dữ liệu không ai được gán vào |
+| Công ty | **Không** | Pháp nhân có mã số thuế, dính hợp đồng, công nợ, báo cáo. Một công ty rác là báo cáo lệch |
+| Nhân sự, tài khoản, phân quyền | **Tuyệt đối không** | Đây là cửa máy-gọi-máy từ ngoài vào. Cho app cũ tự đẻ tài khoản ERP là mở đường leo thang quyền. Không khớp email thì phiếu vẫn nhận, `requester_id = 0`, tên và email người tạo vẫn chụp vào phiếu nên bản in không mất chữ nào — ba phiếu đang ở tình trạng đó, chạy bình thường |
+
+**Hàng đợi soát nằm ở đâu (đính chính 17/09/2026).** Bản đầu của mục này viết là hàng tự tạo sẽ mang `is_active = False`; **`tab_vehicle` và `tab_driver` không có cột đó**, mà mượn `Vehicle.status` thì hỏng nghĩa — cột ấy nói tình trạng vận hành của xe, không nói "ERP chưa soát dòng này". Chốt lại: dấu hiệu duy nhất là **cờ `auto_created` trên dòng sổ đồng bộ**, và bộ lọc *chỉ dòng có cảnh báo* của màn Nhật ký đồng bộ **chính là** hàng đợi soát. Hai cờ anh em đi cùng nó: `stamped_by_name` (ghép theo đặc điểm tự nhiên, nấc 2) và `unresolved_catalog` (tra không ra, ô để trống).
+
+Vì sao không cho tự tạo tất: bảng khai tay tồn tại chính vì mấy cặp ghép cần **người** quyết. `"Tự lái"` bên app cũ là một hồ sơ tài xế còn bên ERP là cờ `is_self_drive`; bốn phòng ban được gộp tay; ba UID Firebase cùng một con người. Bộ tự tạo không sai về kỹ thuật — nó chỉ không biết **cái gì đã tồn tại dưới một cái tên khác**.
 
 ---
 
@@ -401,6 +440,30 @@ Một việc chạy nền lúc 01:00 (Celery beat), làm ba việc:
 
 Kết quả mỗi đêm ghi thành một dòng tổng kết: quét bao nhiêu, vá bao nhiêu, còn lệch bao nhiêu.
 
+### 11.1 — bản đã dựng (17/09/2026)
+
+Hai việc chạy nền ở `backend/app/modules/legacy_datxe/tasks.py`, lịch khai trong `core/celery_app.py`. Việc **hai** (đếm đối chiếu) **chưa làm** — để lại cho đợt sau, vì nó cần đếm được bên app cũ chứ không chỉ đọc từng nhánh.
+
+| Task | Lịch | Làm gì |
+|---|---|---|
+| `datxe.pull_updated` | mỗi `SYNC_DATXE_PULL_MINUTES` phút | Hỏi Firebase phiếu có `updatedAt` từ con trỏ trở đi, đẩy qua đúng `apply_legacy_record` mà cái móc đang dùng |
+| `datxe.retry_pending` | phút 3, 13, 23… mỗi giờ | Chạy lại dòng sổ đang *chờ* hoặc *lỗi*, tối đa **3 lần thử** một dòng |
+
+Bốn điều chốt khác bản vẽ ban đầu, đều có lý do:
+
+- **Con trỏ là mốc BAO GỒM**, lưu ở `cursor_to` của dòng lượt chạy thành công gần nhất. Cộng thêm một mili-giây thì hai phiếu sửa trong cùng một mili-giây sẽ mất một; nhìn lại phiếu ở ranh giới thì `is_unchanged` chặn ngay, không tốn dòng sổ nào.
+- **Lượt đầu tiên chỉ nhìn lại 24 giờ.** Sổ chưa có con trỏ mà quét cả nhánh thì 1313 phiếu cũ — vốn đã nạp một lần hồi P1 — đổ vào sổ ngay lần chạy đầu.
+- **Con trỏ vẫn tiến kể cả khi vài phiếu hỏng.** Mỗi phiếu hỏng đã có dòng sổ *lỗi* của riêng nó và `datxe.retry_pending` nhặt lại; neo con trỏ vì một phiếu hỏng vĩnh viễn thì cứ năm phút lại kéo nguyên đám đó về, mãi mãi.
+- **Chạy lại tự động là chạy TẠI CHỖ** (tăng `attempt_count`), không đẻ dòng mới — cùng `event_id`, cùng `payload`, vẫn là một sự kiện. Nút **Chạy lại** của người dùng thì khác: đó là một quyết định mới nên `clone_for_retry` sinh hẳn dòng riêng, và dòng đó rơi vào vòng này ở lần thử đầu. Trần **3 lần** thay cho thang giãn 1 phút → 12 giờ của bản vẽ: lỗi dữ liệu thì thử mấy cũng hỏng, và mỗi lần thử đều thấy được trong sổ.
+
+⚠️ **Firebase Rules phải khai chỉ mục** cho nhánh `requests` ở **cả hai dự án** (dev và prod):
+
+```json
+"requests": { ".indexOn": ["updatedAt"] }
+```
+
+Thiếu chỉ mục thì Firebase trả 400, `read_node` nuốt lỗi thành `None`, và triệu chứng là "vòng quét chẳng kéo được phiếu nào" chứ không có gì đỏ lên.
+
 ---
 
 ## 12. Màn hình sổ đồng bộ
@@ -428,6 +491,20 @@ Dựng bằng khung CRUD khai báo sẵn có của `frontend-v2` (`shared/crud`)
 | `SYNC_LEGACY_API_BASE` | `https://api.degoholding.vn` hoặc bản dev |
 | `SYNC_DEFAULT_COMPANY_ID` | Công ty mặc định khi không tra ra (mục 8.3). **Chốt `1`** — Dego Holding, mã `DEGO` |
 | `SYNC_NOTIFY_ON_IMPORT` | Có bắn thông báo khi nhận phiếu không. Lúc nạp lịch sử phải để **tắt** |
+| `LEGACY_FIREBASE_DB_URL` | Kho Firebase app cũ, chỉ vòng quét lưới an toàn dùng (mục 6) |
+| `LEGACY_FIREBASE_SECRET` | Khóa đọc kho trên. **Theo từng dự án**, đổi URL là phải đổi luôn |
+| `SYNC_DATXE_PULL_MINUTES` | Nhịp quét, phút |
+
+**HAI DỰ ÁN FIREBASE RIÊNG, ĐỪNG LẪN** (đại ca xác nhận 17/09/2026):
+
+| | Tên kho | Dùng cho |
+|---|---|---|
+| Dev | `api-degoholding-default-rtdb` | worker `my-firebase-api-dev`, tên miền `dev-api.degoholding.vn` |
+| Prod | `api-degoholding-com-default-rtdb` | worker `my-firebase-api`, tên miền `api.degoholding.vn` — đây là kho đã sinh ra 1313 phiếu nạp ở P1 |
+
+Dữ liệu hai kho **không trùng nhau**: đối chiếu 17/09 thấy 0/9 thương hiệu, 0/3 tài xế, 3/37 người và 0/480 phiếu bên dev có mặt trong dấu `legacy_id` dưới ERP. Hệ quả cần nhớ khi test: phiếu đẩy từ bản dev sẽ **thiếu công ty, thiếu người tạo, thiếu xe** — đó là do hai kho khác dữ liệu, KHÔNG phải lỗi bảng tra. Test trên dev chỉ chứng minh được đường ống (chữ ký, cửa nhận, sổ đồng bộ, luật ô được phép ghi đè); phép tra danh mục đã được 1313 phiếu prod chứng minh rồi.
+
+Cũng vì thế **không nên** chạy `sync_master_data` / `sync_users` / `sync_fleet` trên bản kết xuất dev để "cho khớp": cột `legacy_id` chỉ đeo được MỘT khóa, nên làm vậy sẽ đẻ ra bản sao thứ hai của từng công ty, phòng ban, xe, người.
 
 **Phía app cũ** (`wrangler secret`):
 

@@ -34,7 +34,7 @@ from sqlalchemy import select
 import app.core.all_models  # noqa: F401  nạp đủ model để SQLAlchemy dựng xong quan hệ
 from app.core.database import SessionLocal
 from app.modules.employee.model import Employee
-from scripts.legacy_sync.mapping import USER_MANUAL_MAP, USER_SKIPPED
+from app.modules.legacy_datxe.mapping import USER_MANUAL_MAP, USER_SKIPPED
 
 
 def _load_export(path: str) -> dict:

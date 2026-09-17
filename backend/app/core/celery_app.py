@@ -47,6 +47,7 @@ celery_app.conf.update(
         "app.modules.attachment.tasks",   # Dọn tệp đính kèm mồ côi quá 7 ngày (mỗi ngày)
         "app.modules.assistant.rag.tasks",  # Nạp chỉ mục vector loại B (HDSD + FAQ) khi có hook / bấm nút
         "app.modules.coffee_point.tasks",   # Điểm cà phê × POS365 — kéo đơn / reset kỳ / đối chiếu
+        "app.modules.legacy_datxe.tasks",   # App đặt xe / duyệt dấu cũ — lưới an toàn + chạy lại
         # "app.tasks.alerts",           # Phase 2 — cảnh báo theo lịch
         # "app.tasks.report_tasks",     # Phase 3 — refresh báo cáo
     ],
@@ -110,5 +111,19 @@ celery_app.conf.update(
         },
         # coffee.mirror_balance (D-07) CHƯA có lịch — bật sau khi POC P5 xác nhận
         # PartnerSave ghi được Point.
+        # --- App đặt xe / duyệt dấu cũ (doc/dong-bo-dat-xe-duyet-dau/ §11).
+        # Đường chính là cái móc bên app cũ gọi thẳng vào ERP; hai vòng này là
+        # lưới an toàn. Chưa bật SYNC_DATXE_ENABLED hoặc chưa khai khóa đọc
+        # Firebase thì chúng kết thúc ngay bằng một dòng sổ SKIPPED.
+        "datxe-pull-updated": {
+            "task": "datxe.pull_updated",
+            "schedule": crontab(minute=f"*/{settings.SYNC_DATXE_PULL_MINUTES}"),
+        },
+        #  Lệch nhịp với vòng kéo (phút lẻ 3, 13, 23…): hai vòng cùng thức dậy
+        #  thì chúng tranh nhau chính những dòng sổ vừa hỏng.
+        "datxe-retry-pending": {
+            "task": "datxe.retry_pending",
+            "schedule": crontab(minute="3,13,23,33,43,53"),
+        },
     },
 )

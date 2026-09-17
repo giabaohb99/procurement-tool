@@ -113,7 +113,7 @@ from app.modules.vehicle_booking.model import (
     DRV_ONGOING,
     VehicleBooking,
 )
-from scripts.legacy_sync.import_tickets import (
+from app.modules.legacy_datxe.builder import (
     SYSTEM_ACTOR_ID,
     PeopleResolver,
     _utc_dt,

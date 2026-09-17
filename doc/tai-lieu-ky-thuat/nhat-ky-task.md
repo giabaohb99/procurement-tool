@@ -2792,3 +2792,352 @@ và tham số `--pic` / `WORK_SYNC_PIC`); luật viết mô tả nằm ở đầ
 `doc/tai-lieu-ky-thuat/nhat-ky-task.md`, nhắc lại trong `CLAUDE.md` và `AGENTS.md`.
 Tham chiếu: dòng `bao-CR-418-so-task-thuan-tieng-viet` trong `change-log-bao.md`; đợt
 dựng sổ và script ban đầu là `bao-CR-399`.
+
+## bao-CR-421 | Hỏi trước khi gom thêm đơn mua hàng cho phiếu đã có đơn
+- status: xong
+- date: 2026-09-17
+Sau khi bỏ danh sách sổ xuống ở nút tạo đơn mua hàng, đại ca yêu cầu thêm một hộp hỏi: phiếu
+này có đơn hàng rồi, có muốn tạo thêm theo phương án không, người bấm đồng ý thì mới tạo. Em
+làm đúng vậy cho đường gom theo phương án.
+
+Chỗ này vốn đã có hộp xác nhận nhưng hộp đó chỉ tả việc sắp làm chứ không cho biết phiếu đang
+ở tình trạng nào. Mà nút thì nằm ngay đầu trang và bấm một cái là ra đơn nháp, nên người thu
+mua mở lại một phiếu cũ rất dễ bấm thêm lần nữa vì không nhớ hôm trước đã gom rồi. Hệ thống
+không sinh đơn trùng, vì máy chủ vẫn bỏ qua dòng đã nằm trên đơn, nhưng tạo thêm có khi đúng
+ý người ta như đặt bổ sung hay đổi nhà cung cấp, có khi chỉ là bấm nhầm, nên việc của giao
+diện là hỏi chứ không phải đoán hộ.
+
+Nay phiếu nào đã có đơn thì hộp đổi hẳn lời: tiêu đề nói phiếu này đã có đơn mua hàng, thân
+hộp nêu số đơn đang có cùng ba mã đầu tiên và đếm gộp phần còn lại, nói rõ hệ thống chỉ gom
+thêm những dòng chưa nằm trên đơn nào nên đơn đang có không bị đụng tới, rồi mới hỏi có tạo
+thêm không; nút đồng ý ghi rõ là tạo thêm đơn nháp. Phiếu chưa có đơn nào thì giữ nguyên lời
+cũ. Danh sách đơn lấy từ đúng truy vấn mà thẻ đơn mua hàng liên quan trên cùng trang đang
+dùng nên không tốn thêm lượt gọi máy chủ, và nếu truy vấn chưa về kịp thì hộp rơi về lời cũ
+chứ không chặn nút. Đường lập đơn tay em không đụng tới vì đường đó đã có cảnh báo riêng cho
+dòng đã đặt đủ hoặc vượt số yêu cầu.
+
+Đã chạy đủ bài kiểm của phần vừa sửa: cổng kiểu dữ liệu và cổng kiểm lỗi cú pháp đều sạch,
+mười bốn bài kiểm giao diện của khu phương án vẫn xanh. Mới xong dưới máy em, chưa lên máy
+chủ thử.
+Mã nguồn: `frontend-v2/src/modules/procurement/pages/purchase-request-detail-page.tsx`
+(`handleGenerateOrders` đổi lời hộp xác nhận, hàm mới `describeExistingOrders` kể tên đơn, gọi
+lại `useRelatedPurchaseOrders` để biết phiếu đã có đơn nào). Không thêm khóa phân quyền, không
+thêm đường API, không đổi hành vi của `generate_orders` bên máy chủ.
+Tham chiếu: dòng `bao-CR-421-hoi-truoc-khi-gom-them-don` trong `change-log-bao.md`; bảng hai
+lời của hộp xác nhận ở mục H.10.6 của `doc/tai-lieu-chuc-nang/03-yeu-cau-mua-hang.md`. Đợt
+liền trước là `bao-CR-420`.
+
+## bao-CR-420 | Một nút tạo đơn mua hàng và một nút in, chọn sẵn theo vai trò người bấm
+- status: xong
+- date: 2026-09-17
+Đại ca nói thẳng chỗ vướng khi đang thử màn chi tiết yêu cầu mua hàng: nút tạo đơn mua hàng
+và nút in đều bắt bấm một cái để sổ danh sách xuống rồi mới bấm tiếp cái thứ hai mới chạy,
+mà đây là việc làm hằng ngày nên hai lần bấm cho một việc là quá phiền. Đại ca chốt mỗi nút
+chỉ còn đúng một đường, và để hệ thống tự chọn đường theo vai trò người đang bấm. Em bỏ cả
+hai danh sách sổ xuống đó, thay bằng hai nút thường.
+
+Nút tạo đơn mua hàng nay xét theo thứ tự ưu tiên chứ không phải chọn bừa. Phiếu nào đã có
+phương án được chốt và còn dòng chưa lên đơn thì nút chạy đường gom theo phương án, vì lập
+tay lúc đó là ném bỏ đúng phần việc người thu mua vừa làm — đơn ra sẽ thiếu nhà cung cấp và
+thiếu giá đã khảo sát. Phiếu chưa có đường phương án, hoặc phiếu cũ, thì lập tay là đường
+duy nhất nên nút giữ nguyên đường đó; ẩn nốt thì người thu mua không lập nổi đơn từ màn này.
+Người nào không có quyền tạo đơn mua hàng thì không thấy nút, nên người yêu cầu nhìn màn
+hình vẫn sạch như trước.
+
+Nút in cũng một đường: người thu mua, tức người có quyền đọc nhà cung cấp và phiếu đã có
+dòng chốt xong phương án, bấm là mở thẳng bản in tách theo từng nhà cung cấp; người còn lại
+mở tờ phiếu gốc. Chỗ này có một rủi ro em phải xử thêm chứ không bỏ qua: màn chi tiết vốn
+là lối vào duy nhất của cả hai bản in, nên cắt theo vai trò xong thì người thu mua mất luôn
+đường tới tờ phiếu gốc. Vì vậy em bắc thêm nút qua lại ngay trên thanh công cụ của hai trang
+in — đứng ở bản tách theo nhà cung cấp thì có nút xem tờ phiếu gốc, đứng ở tờ phiếu gốc thì
+có nút xem bản tách, và nút sau chỉ hiện cho người có quyền đọc nhà cung cấp. Riêng trường
+hợp mở tờ phiếu gốc từ đơn mua hàng thì phải giấu nút bắc cầu, vì lúc đó số trên đường dẫn
+là số của đơn mua hàng chứ không phải số của phiếu yêu cầu, bấm vào sẽ ra nhầm phiếu.
+
+Xem bản đầu xong đại ca chốt tiếp một việc về chữ trên nút: hai nhãn dài là tạo đơn theo
+phương án và in phiếu theo nhà cung cấp phải rút lại còn tạo đơn và in phiếu. Đại ca nói
+đúng chỗ em làm chưa tới. Nhãn dài là đang tả cách chạy bên trong, mà đường nào chạy thì
+chính hệ thống quyết chứ người bấm không chọn được, nên nói ra cũng không giúp họ làm gì.
+Nặng hơn là nhãn đổi theo vai trò người đăng nhập: hai người ngồi cạnh nhau mô tả cùng một
+nút bằng hai cái tên khác nhau, gọi điện chỉ việc cho nhau thì không ai hiểu ai. Nay cả hai
+nhánh của nút tạo đơn cùng ghi tạo đơn, cả hai bản in cùng ghi in phiếu; việc sắp làm đã có
+hộp xác nhận nói giúp, bản in nào mở ra thì chính trang in nói. Chữ ngắn lại rồi nên em bỏ
+luôn phần tự đổi nhãn theo bề ngang màn hình ở cả ba nút.
+
+Đã chạy đủ bài kiểm của phần vừa sửa: cổng kiểu dữ liệu và cổng kiểm lỗi cú pháp đều sạch,
+mười bốn bài kiểm giao diện của khu phương án vẫn xanh. Mới xong dưới máy em, chưa lên máy
+chủ thử.
+Mã nguồn: `frontend-v2/src/modules/procurement/pages/purchase-request-detail-page.tsx`
+(thêm biến `orderMode` quyết định đường tạo đơn, bỏ hai cụm `DropdownMenu`, bỏ `ResponsiveLabel`) ·
+`purchase-request-print-page.tsx` và `purchase-request-supplier-print-page.tsx` (hai nút bắc
+qua lại, dùng `appRoutes.procurement.purchaseRequestPrint` và
+`appRoutes.procurement.purchaseRequestSupplierPrint`) · hai khóa quyền dùng lại là
+`purchase_order:create` và `supplier:read`, không thêm khóa mới.
+Tham chiếu: dòng `bao-CR-420-mot-nut-tao-don-va-in` trong `change-log-bao.md`; mô tả giao
+diện ở mục H.6.1 và H.10.6 của `doc/tai-lieu-chuc-nang/03-yeu-cau-mua-hang.md`, kèm đính
+chính cho phần sổ xuống của `bao-CR-310` đợt 4.
+
+## bao-CR-419 | Chuông cho luồng phương án yêu cầu mua hàng và mốc chốt xong lựa chọn
+- status: xong
+- date: 2026-09-17
+Đại ca hỏi phần yêu cầu mua hàng mới còn thiếu gì so với bản kế hoạch. Em rà lại từng mục
+của bản kế hoạch rồi đối chiếu với mã nguồn thì thấy không mục nào bị bỏ sót, nhưng lòi ra
+một khoảng trống mà bản kế hoạch chưa bao giờ nói tới: luồng phương án đổi tay hai lần mà
+không lần nào có chuông báo. Người thu mua gắn xong phương án thì người yêu cầu không biết
+đã tới lượt mình vào chọn; người yêu cầu chọn xong thì người thu mua không biết để vào lập
+đơn mua hàng. Hai bên phải hẹn nhau ngoài hệ thống, còn phiếu thì nằm im không ai thấy.
+
+Đại ca chốt hai luật cho chuông. Một là đợi xong cả phiếu mới báo chứ không báo theo từng
+dòng, nên phiếu có nhiều người thu mua thì chỉ người chốt cuối cùng mới làm nổ chuông, và
+cả phiếu chỉ reo đúng một lần. Hai là người nhận chuông báo đã chọn xong phải là người thu
+mua phụ trách từng dòng chứ không phải người đứng tên cả phiếu, vì lập đơn là việc của
+người ôm dòng đó. Một người ôm hai dòng vẫn chỉ nhận một chuông, và người vừa bấm thì
+không tự dội chuông về chính mình.
+
+Chuông thứ hai kéo theo một việc phải làm trước: hệ thống không có cách nào biết người yêu
+cầu đã chọn xong hay chưa. Lý do là mỗi dòng đều được hệ thống tự tick sẵn một phương án
+mua đúng theo yêu cầu gốc ngay từ lúc điều phối, nên dòng nào cũng đang có phương án được
+chọn, và hai trường hợp im lặng vì đồng ý với chưa hề mở phiếu ra xem cho ra cùng một dữ
+liệu. Bắn chuông theo mỗi lần bấm chọn thì người thu mua ăn một tràng chuông cho một phiếu,
+còn suy ra từ cờ đã chọn thì chuông reo ngay lúc vừa điều phối xong. Vì vậy em thêm nút
+chốt xong lựa chọn cho người yêu cầu bấm một cái rõ ràng, và ghi lại thời điểm cùng người
+bấm lên đầu phiếu. Nút chỉ bấm được khi mọi dòng đã được người thu mua chốt hoàn thành xử
+lý, bấm hai lần thì bị chặn, và chỉ người yêu cầu hoặc người giữ quyền duyệt bấm được, đúng
+ranh giới của nút chọn phương án. Mở lại một dòng cho người thu mua sửa tiếp thì mốc đó bị
+xóa, vì mở lại một dòng là mở lại cả vòng thương lượng, để nguyên dấu cũ thì người thu mua
+nhìn vào tưởng phiếu đã yên trong khi bên kia đang sửa dở.
+
+Đợt rà này còn ghi nhận ba món nợ khác của luồng phương án, đều là thứ bản kế hoạch chưa
+nói tới nên chưa làm: chưa có lối vào việc từ màn danh sách hay Trang chủ, tệp Excel xuất
+danh sách chưa có cột nào của phương án, và chưa có bài hướng dẫn sử dụng nào cho luồng
+này. Riêng chuyện đồng bộ trạng thái thì em chốt là không thêm bậc mới vào chuỗi trạng thái
+của phiếu, vì chuỗi đó đang được đọc bởi ngưỡng tính trạng thái, phù hiệu màu, bộ lọc, tệp
+Excel, bản in và các công cụ của trợ lý AI; hướng đúng là dựng một dải chặng phương án
+riêng suy ra từ dữ liệu đã có.
+
+Làm xong rồi thì đại ca chốt cho hai cái chuông nghỉ, coi như tính năng đã có sẵn nhưng để
+dành mở sau. Lý do là người nhận chuông thứ nhất chính là người yêu cầu, mà người yêu cầu
+phần lớn vẫn đang dùng giao diện cũ, trong khi màn chi tiết phiếu bên giao diện cũ không hề
+có khu phương án, nên họ sẽ nhận một lời mời vào chọn rồi bấm vào mà không thấy chỗ nào để
+chọn. Em tắt bằng một công tắc đặt ngay đầu cụm chuông chứ không xóa hay bỏ trống lời gọi,
+để ngày mở lại chỉ phải đổi đúng một dòng. Phần còn lại của đợt này vẫn chạy bình thường,
+gồm nút chốt xong lựa chọn, mốc ghi trên đầu phiếu và luật mở lại dòng thì xóa mốc. Thời
+điểm mở lại là khi luồng yêu cầu mua hàng ngừng dùng giao diện cũ, hoặc khi màn chi tiết
+bên giao diện cũ có lối dẫn sang khu phương án của giao diện mới.
+
+Đại ca hỏi cái nút chốt lựa chọn là gì, nghe em giải nghĩa xong thì chốt bỏ hẳn nó đi, chỉ
+cần người yêu cầu chọn là được, còn chỗ cho họ chốt mua thì sau này sẽ làm riêng. Đại ca nói
+đúng. Điều kiện bấm được của nút là mọi dòng đã được người thu mua chốt hoàn thành xử lý,
+tức là tới lúc bấm được thì người yêu cầu vừa chọn xong ngay bên trên, nên cái nút không hỏi
+thêm điều gì mà họ chưa trả lời, nó chỉ bắt xác nhận lại một việc vừa làm. Cái giá thì có
+thật: quên bấm là phiếu nằm im, mà người quên cũng không có cách nào biết mình quên vì màn
+hình của họ không khác gì lúc đã bấm. Thứ thật sự đáng phải bấm một cái rõ ràng là chốt mua,
+tức đồng ý xuống tiền, và đó là việc khác. Em bỏ nút chứ không bỏ cái mốc: hai cột trên đầu
+phiếu, migration, đường API, mã việc và mười bài kiểm phía máy chủ đều giữ nguyên để chỗ
+chốt mua sắp làm ghi vào đúng chỗ đó. Bên giao diện thì bỏ nút, bỏ dòng chữ đã chốt xong lựa
+chọn, bỏ ba bài kiểm của nút và thay bằng một bài canh cho nút khỏi bị dựng lại theo quán
+tính. Không phiếu nào kẹt vì việc này, vì sinh đơn mua hàng chỉ đọc cờ đã chọn của từng
+dòng, cái mốc kia chưa bao giờ là điều kiện chặn.
+
+Đã chạy đủ bài kiểm của phần vừa sửa: mười bài kiểm cho cụm chuông, trong đó có một bài
+canh chiều ngược lại là để mặc định thì không sinh ra dòng thông báo nào, năm mươi lăm bài
+kiểm cũ của luồng phương án vẫn xanh, cùng mười hai bài kiểm giao diện của thẻ chọn phương
+án sau khi bỏ nút. Migration đã chạy dưới máy em, chưa lên máy chủ thử.
+Mã nguồn: `option_service.mark_choice_done` · `notify_options_ready` · `notify_options_chosen`
+· công tắc `option_service.OPTION_BELLS_ENABLED` (đang đặt là tắt) · đường API `POST /api/purchase-requests/{id}/options/choice-complete` (giữ lại, hiện không lối bấm nào gọi tới) · hai cột
+`options_chosen_at` và `options_chosen_by` của bảng `tab_purchase_request` (migration
+`f1c3a7b52d48`) · mã việc `options_choice_done` · hai sự kiện thông báo `pr_options_ready`
+và `pr_options_chosen` · `frontend-v2/src/modules/procurement/components/purchase-request-choose-card.tsx`
+(bỏ khối nút) · `use-purchase-request-options.ts` (hook `useCompletePrOptionChoice` giữ lại kèm ghi chú)
+· bài kiểm `test/backend/test_chuong_phuong_an_cr419.py`.
+Tham chiếu: dòng `bao-CR-419-chuong-phuong-an-ycmh` trong `change-log-bao.md`; thiết kế ở
+mục H.11, H.11.1 (quyết định bỏ nút) và H.12 của `doc/tai-lieu-chuc-nang/03-yeu-cau-mua-hang.md`.
+
+
+## dong-bo-datxe-cua-nhan | Cửa nhận phiếu app đặt xe cũ, luật ghi đè, bộ tra người xe tài xế và hai vòng quét nền
+- status: xong
+- date: 2026-09-17
+- list: Duyệt dấu, Đặt xe
+Tham chiếu: đây là các chặng P2 và P5 của bộ tài liệu `doc/dong-bo-dat-xe-duyet-dau/`; bốn chỗ
+bản đã dựng khác bản vẽ ban đầu ghi ở mục 11.1 của `mo-ta-ky-thuat.md`.
+
+Phiên này nối xong nửa phía ERP của đường đồng bộ một chiều từ app đặt xe cũ về ERP. Trước
+phiên này ERP mới chỉ có sổ đồng bộ và hàm kiểm chữ ký; nay đã có cửa nhận phiếu, luật ghi
+đè nội dung, bộ tra người và xe, cùng hai vòng chạy nền làm lưới an toàn cho cái chuông mà
+app cũ sẽ bắn sang.
+
+CÁCH LÀM:
+1. Cửa nhận là một đường API duy nhất cho mọi loại phiếu của app cũ. Gói tin phải mang đủ
+   ba thứ trên đầu thư là tên nguồn, mốc giờ và chữ ký; lệch giờ quá năm phút thì từ chối,
+   và mỗi sự kiện chỉ được xử đúng một lần nhờ khóa duy nhất trên cột mã sự kiện của sổ.
+   Cửa này luôn ghi dòng sổ TRƯỚC khi làm việc, nên một cú gọi làm đổ máy chủ vẫn để lại
+   dấu vết chứ không biến mất.
+2. Đại ca chốt đảo luật ghi đè: ERP hiện chỉ là bản sao nên gói tin về thì ghi đè toàn bộ
+   thông tin phiếu, chừa nhật ký, tệp đính kèm và dấu vết phê duyệt. Em giữ đúng một ngoại
+   lệ là không cho phép ghi rỗng đè lên ô đang có chữ, vì app cũ không phân biệt được "người
+   ta vừa xóa trắng ô này" với "gói tin này không mang ô đó". Hai chỗ dễ đọc nhầm phải nói
+   thẳng ra: giá trị sai là một giá trị thật chứ không phải rỗng, còn số không trên cột số
+   thì tính là rỗng. Phiếu đã đóng thì đóng băng, một cú sửa muộn bên app cũ không được lật
+   lại chuyến đã hoàn thành.
+3. Bộ tra người, xe và tài xế làm theo đúng khuôn đại ca gợi ý là hỏi một câu và luôn có
+   câu trả lời: tra theo khóa app cũ trước, không thấy thì tra theo khóa tự nhiên rồi đóng
+   dấu khóa app cũ lại ngay để lần sau chỉ còn một truy vấn, không thấy nữa thì tạo mới.
+   Nhưng nấc tạo mới chỉ mở cho xe và tài xế, lại còn nằm sau một công tắc mặc định tắt: tự
+   đẻ hồ sơ nhân sự là tự cấp danh tính cho một người thật, còn một chiếc xe thuê ngoài thì
+   chỉ là một dòng danh mục. Hàng nào máy tự đẻ ra thì đóng cờ cảnh báo lên dòng sổ, và bộ
+   lọc "chỉ dòng có cảnh báo" của sổ chính là hàng đợi cho người soát lại.
+4. Hai vòng chạy nền là lưới an toàn cho đường chuông chứ không phải đường chính. Vòng thứ
+   nhất quét các phiếu có mốc sửa mới hơn con trỏ lần trước rồi cho đi qua đúng cửa nhận;
+   vòng thứ hai nhặt những dòng sổ đang lỗi hoặc đang chờ mà chạy lại bằng chính nội dung
+   đã lưu, không hỏi lại app cũ. Bốn chỗ em cố ý làm khác bản vẽ: con trỏ lấy luôn cả mốc
+   lần trước chứ không cộng thêm một phần nghìn giây, vì cộng vào thì hai phiếu sửa trùng
+   mili-giây sẽ mất một, còn đọc lại một phiếu thì phép so nội dung chặn ngay, không tốn
+   dòng sổ nào; lượt chạy đầu tiên chỉ nhìn lại hai mươi bốn giờ để tick đầu không dội cả
+   một nghìn ba trăm mười ba phiếu lịch sử vào sổ; con trỏ vẫn tiến kể cả khi vài phiếu
+   hỏng, vì mỗi phiếu hỏng đã có dòng sổ riêng và vòng chạy lại sẽ nhặt, còn ghim con trỏ
+   lại là kéo nguyên mẻ đó mỗi năm phút mãi mãi; và việc chạy lại tự động làm ngay trên dòng
+   cũ, chỉ tăng số lần thử với trần ba lần, để giữ luật một sự việc một dòng sổ, riêng nút
+   Chạy lại cho người bấm thì vẫn nhân bản dòng vì đó là một quyết định mới của con người.
+5. Hai vòng này cắm vào lịch chạy nền, lệch nhịp nhau để không tranh nhau đúng những dòng
+   vừa hỏng. Chưa bật công tắc nguồn hoặc chưa khai khóa đọc dữ liệu app cũ thì cả hai kết
+   thúc ngay bằng một dòng sổ bỏ qua, không một lời gọi nào đi ra ngoài.
+
+6. Gọi thử bằng tay vào cửa nhận dưới máy em thì lòi ra một lỗi mà bài kiểm chưa canh: cú
+   gọi bị bỏ qua vẫn trả về số không ở ô id bên ERP. Ô đó chính là thứ app cũ sẽ ghi ngược
+   vào phiếu của nó để biết phiếu đã sang được bên này, nên trả số không là bảo app cũ xóa
+   mất mối nối của chính phiếu vừa nhận xong, và lần sau nhìn vào tưởng chưa đồng bộ bao
+   giờ. Sửa cả ba nhánh bỏ qua để chúng trả id thật, và viết thêm một bài kiểm canh đúng
+   chuyện đó. Em viết sẵn một script gọi thử để đại ca tự bắn một phiếu vào ERP mà không
+   phải chờ app cũ gắn móc; script tự đọc khóa chung từ tệp cấu hình nên không phải dán
+   khóa vào dòng lệnh.
+
+VIỆC CÒN LẠI: phần đếm đối chiếu hai bên theo tháng và trạng thái chưa dựng. Trước khi bật
+thật còn phải khai chỉ mục theo mốc sửa trong phần Rules của cả hai dự án Firebase, nếu
+thiếu thì Firebase trả lỗi 400 và vòng quét báo "kéo được 0 phiếu" mà không kèm lỗi nào.
+
+Đã chạy bài kiểm của đúng phần vừa sửa: mười lăm bài mới cho hai vòng chạy nền, và bảy mươi
+tư bài cũ của cụm đồng bộ đặt xe cùng sổ đồng bộ vẫn xanh sau khi tách hàm. Đã kiểm trong
+container rằng hai việc nền hiện đúng tên trong lịch chạy và trong danh sách việc.
+Mã nguồn: `app/modules/legacy_datxe/controller.py` · `service.py` (thêm `run_entry` và
+`find_local_id`) ·
+`builder.py` · `resolver.py` · `firebase.py` (thêm `query_node`) · `tasks.py` (`pull_updated`,
+`retry_pending`, `run_logged`) · `app/modules/sync_log/registry.py` (khai hai việc nền của
+nguồn `datxe`) · `app/modules/sync_log/service.py` (`finish_skipped` nhận thêm `local_id`) ·
+`app/core/celery_app.py` · script gọi thử `backend/scripts/legacy_sync/send_test_event.sh` · bài kiểm `test/backend/test_dong_bo_datxe_cua_nhan.py`,
+`test_dong_bo_datxe_ghi_de.py`, `test_dong_bo_datxe_nhan_phieu.py`, `test_dong_bo_datxe_vong_quet.py`.
+
+## bao-CR-422 | Chứng từ liên quan trên phiếu yêu cầu mua hàng: đủ yêu cầu báo giá nguồn và danh sách đơn mua hàng
+- status: xong
+- date: 2026-09-17
+Đại ca báo rằng mở một phiếu yêu cầu mua hàng trên giao diện mới thì không thấy yêu cầu báo
+giá đã sinh ra nó, trong khi giao diện cũ có, và cũng không có chỗ nào xem được danh sách đơn
+mua hàng đã lập từ phiếu. Em rà lại thì thấy cả hai đường liên kết đều đã có sẵn trong cơ sở
+dữ liệu, chỉ là màn hình gần như không bày ra. Đường về yêu cầu báo giá nằm lẫn thành một dòng
+chữ giữa thẻ thông tin chung, còn danh sách đơn mua hàng thì nấp sau một nút trên thanh lệnh,
+mà nút ấy tự ẩn khi phiếu chưa có đơn nào. Đúng lúc người dùng muốn biết phiếu này đã lập đơn
+hay chưa thì màn hình im lặng, nên đại ca tìm không ra là phải.
+
+Rà sâu thêm thì lòi ra một chỗ sai nặng hơn nằm ở máy chủ chứ không phải ở giao diện. Hàm dựng
+đường quay về yêu cầu báo giá đọc bảng liên kết rồi cắt lấy đúng một dòng. Trong khi đó một
+yêu cầu mua hàng gom được nhiều dòng đã chốt phương án, mà những dòng ấy có thể nằm ở các yêu
+cầu báo giá khác nhau, nên phiếu gom từ hai nguồn trở lên luôn mất nguồn thứ hai trở đi, ở cả
+giao diện cũ lẫn giao diện mới. Em đổi hàm thành trả về danh sách: đọc bảng liên kết theo đúng
+thứ tự liên kết được ghi, khử trùng để một yêu cầu báo giá có nhiều dòng cùng đổ vào một phiếu
+vẫn chỉ tính là một nguồn, chỉ lùi về dấu vết đời cũ trên dòng yêu cầu báo giá khi bảng liên
+kết rỗng chứ không cộng dồn hai đường, và bỏ qua phiếu nguồn đã bị xóa mà vẫn giữ nguyên các
+nguồn còn sống. Hai khóa cũ chỉ mã và số hiệu của phiếu nguồn giữ nguyên tên và nguyên nghĩa
+là phiếu nguồn đầu tiên, vì giao diện cũ và hai bản in đang đọc thẳng chúng, nên bên đó không
+phải sửa gì. Số lượt truy vấn cũng không tăng so với bản cũ.
+
+Phía giao diện mới em dựng một thẻ chứng từ liên quan đứng cố định ngay dưới thẻ phương án, gom
+cả hai chiều vào một chỗ. Khu trên liệt kê mọi yêu cầu báo giá nguồn với mã bấm được, ngày yêu
+cầu, người yêu cầu và trạng thái. Khu dưới liệt kê mọi đơn mua hàng đã lập với mã bấm sang chi
+tiết đơn, ngày đặt, nhà cung cấp, tổng tiền và trạng thái. Thẻ không tự ẩn khi rỗng, vì chưa có
+đơn nào cũng chính là câu trả lời mà người dùng đang đi tìm. Nút cũ trên thanh lệnh bỏ đi cùng
+lúc để không có hai lối vào cho một việc. Người xem không có quyền đọc yêu cầu báo giá thì thấy
+mã dạng chữ chứ không phải một liên kết bấm vào chỉ ăn lỗi từ chối quyền, và người không có
+quyền đọc đơn mua hàng thì khu đơn hàng ẩn hẳn, hệ thống cũng không gọi máy chủ để hỏi. Ô từ
+yêu cầu báo giá trong thẻ thông tin chung em giữ lại cho quen mắt nhưng thêm chú thích còn bao
+nhiêu phiếu nữa khi phiếu có nhiều nguồn.
+
+Đã chạy đủ bài kiểm của phần vừa sửa: mười chín bài kiểm máy chủ của cụm liên kết phiếu, trong
+đó sáu bài mới canh đúng các tình huống nhiều nguồn, trùng nguồn, nguồn bị xóa và đường lùi đời
+cũ; bảy bài kiểm giao diện mới cho thẻ chứng từ liên quan; cổng kiểu dữ liệu và cổng kiểm lỗi
+cú pháp đều sạch, bốn trăm mười bốn bài kiểm của phân hệ thu mua vẫn xanh. Mới xong dưới máy
+em, chưa lên máy chủ thử.
+Mã nguồn: `backend/app/modules/purchase_request/controller.py` (`_source_survey_request` đổi
+thành `_linked_survey_requests`, `_out` trả thêm khóa `survey_requests`) ·
+`frontend-v2/src/modules/procurement/components/purchase-request-linked-documents-card.tsx`
+(thẻ mới) · `purchase-request-info-card.tsx` (chú thích số nguồn còn lại) ·
+`pages/purchase-request-detail-page.tsx` (gắn thẻ mới, bỏ nút cũ) ·
+`types/purchase-request-detail.ts` (kiểu `LinkedSurveyRequest`) · tệp
+`components/related-purchase-orders-card.tsx` đã bỏ · bài kiểm
+`test/backend/test_lien_ket_ycmh_cr317_318.py` và
+`purchase-request-linked-documents-card.test.tsx`.
+Tham chiếu: dòng `bao-CR-422-chung-tu-lien-quan-tren-ycmh` trong `change-log-bao.md`; mô tả
+chức năng ở mục I của `doc/tai-lieu-chuc-nang/03-yeu-cau-mua-hang.md`.
+
+## bao-CR-423 | Ô lọc trạng thái và công ty ở hai màn Tiến độ (giao diện cũ) chọn được nhiều giá trị
+- status: dang-lam
+- date: 2026-09-17
+Đại ca gửi ảnh ô Trạng thái tiến độ của màn Tiến độ mua hàng bản cũ và bảo làm trên nhánh
+chính trước: người dùng muốn tick chọn nhiều trạng thái một lượt, ô Công ty cũng vậy, và màn
+Tiến độ báo giá làm y hệt. Trước đây máy chủ chỉ đọc một giá trị cho mỗi ô, nên ai muốn xem
+cả đơn đã đặt lẫn đơn đã nhận phải lọc hai lượt rồi tự ghép trong đầu.
+
+Việc này em làm ở cây làm việc riêng của nhánh chính, không đụng cây erp-v2. Lúc đặt chỗ em
+lấy số 422 nhưng phiên làm việc kia đã dùng số đó cho việc chứng từ liên quan, nên đổi sang
+423 cho khỏi trùng trong cùng một sổ.
+
+### bao-CR-423-backend | Máy chủ đọc nhiều giá trị cho ba ô lọc
+- status: xong
+Em thêm một hàm đọc tham số nhiều giá trị dùng chung, nhận cả kiểu lặp khóa lẫn kiểu nối bằng
+dấu phẩy, bỏ ô rỗng, khử trùng và giữ nguyên thứ tự. Màn Tiến độ mua hàng lọc công ty và tiến
+độ dòng bằng phép nằm trong danh sách; một giá trị thì vẫn so bằng như cũ nên đường dẫn đã lưu
+của người dùng không đổi nết. Màn Tiến độ báo giá thì ô Tiến độ dòng là cột tính chứ không lưu
+trong bảng, nên em ghép từng điều kiện của mỗi nhãn lại bằng phép hoặc; nhãn lạ bị bỏ qua chứ
+không làm rỗng bảng. Xuất Excel đi theo mà không phải sửa vì dùng chung câu truy vấn với danh
+sách. Mười bài kiểm mới, chạy kèm ba tệp bài kiểm cũ của hai màn này thì năm mươi bốn bài
+xanh.
+Mã nguồn: `backend/app/core/base_controller.py` (`read_multi_param`) ·
+`backend/app/modules/purchase_progress/controller.py` · `backend/app/modules/survey_progress/controller.py`
+· bài kiểm `test/backend/test_loc_nhieu_trang_thai_cr423.py`.
+
+### bao-CR-423-frontend | Ô chọn nhiều bằng ô tick cho giao diện cũ
+- status: xong
+Em dựng một ô chọn mới cho bộ lọc: danh sách sổ ra là các dòng có ô tick, tick xong danh sách
+không tự đóng để tick tiếp, trong ô ghi tóm tắt kiểu nhãn đầu cộng số còn lại thay vì bày từng
+viên vì ô lọc chỉ cao bốn mươi điểm, nút X xóa hết một lượt. Cố ý không có luật tự gán khi chỉ
+còn một lựa chọn, đúng bài học ô lọc tự gán hồi CR-388. Hai màn nối ô mới vào bộ lọc trên
+đường dẫn bằng chuỗi nối dấu phẩy nên đường dẫn chia sẻ được và gửi thẳng lên máy chủ. Ô Bộ
+phận vẫn chọn một. Cổng kiểm kiểu của giao diện cũ giữ đúng bốn lỗi nền cũ, không thêm.
+Mã nguồn: `frontend/src/components/MultiCheckSelect.tsx` (mới) ·
+`frontend/src/pages/PurchaseProgress.tsx` · `frontend/src/pages/SurveyProgress.tsx`.
+
+### bao-CR-423-thu-tay | Thử dưới máy rồi đưa lên prod
+- status: xong
+Em dựng một máy chủ tạm cho giao diện cũ của nhánh chính ở cổng 8090 dưới máy. Đại ca tick hai
+trạng thái thì bảng trống trơn, mà đó lại là hai trạng thái nhiều dòng nhất. Lý do không nằm ở
+mã vừa sửa: máy chủ tạm đó chuyển tiếp lời gọi sang thùng chứa api của cây erp-v2, tức là bản
+máy chủ CHƯA có hàm đọc nhiều giá trị, nên nó chỉ lấy giá trị cuối và ra rỗng. Em dựng thêm một
+máy chủ tạm chạy mã của nhánh chính, đặt bí danh trùng tên trên một mạng riêng, rồi đếm thẳng
+trên cơ sở dữ liệu thật dưới máy: chưa đặt hàng hai mươi bốn dòng, đã đặt hàng năm dòng, tick
+cả hai ra hai mươi chín dòng đúng bằng tổng; công ty một ba mươi mốt dòng, công ty hai mười tám
+dòng, tick cả hai ra bốn mươi chín dòng. Thêm một ô nữa thì thu hẹp lại đúng như mong đợi, tức
+là trong cùng một ô là hoặc, giữa hai ô khác nhau là và.
+
+Đại ca ra lệnh đưa thẳng lên prod để tự kiểm trên đó. Em sao lưu cơ sở dữ liệu prod trước, cập
+nhật mã bằng cách nạp lại theo nhánh trên máy chủ nguồn, rồi dựng lại bốn dịch vụ. Kiểm sau khi
+lên: trang chủ và đường kiểm tra sức khỏe đều trả hai trăm, hàm đọc nhiều giá trị có mặt trong
+thùng chứa api, gói giao diện đang phục vụ đúng gói vừa dựng. Bản ghi cơ sở dữ liệu không đổi
+vì việc này không có migration. Hai thùng chứa tạm dưới máy đã gỡ.
+Commit: `d2b71f78` trên nhánh chính.
+Deploy: prod 17/09/2026; sao lưu `~/proc_backups/procurement_truoc_cr423_20260917.sql.gz`;
+dựng lại `api` · `celery-worker` · `celery-beat` · `web`.
+
+### bao-CR-423-port-v2 | Bê sang giao diện mới rồi gộp nhánh chính vào erp-v2
+- status: dang-lam
+Màn Tiến độ mua hàng và Tiến độ báo giá ở giao diện mới chưa đụng; làm sau khi bản cũ lên
+prod ổn.
+Mã nguồn: `frontend-v2/src/modules/procurement/pages/purchase-progress-page.tsx` và màn Tiến
+độ báo giá v2.

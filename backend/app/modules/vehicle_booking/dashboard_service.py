@@ -41,7 +41,7 @@ RECENT_LIMIT = 8
 
 #  Hạng phạm vi — CHỈ để quyết định có hiện khối tổng hợp "toàn phạm vi" (Giám đốc)
 #  hay không. Không lộ scope ra giao diện; việc lọc dữ liệu vẫn do `apply_scope` lo.
-_SCOPE_RANK = {"own": 0, "assigned": 0, "proc": 1, "dept": 2, "company": 3, "all": 4}
+_SCOPE_RANK = {"own": 0, "assigned": 0, "proc": 1, "dept_proc": 1, "dept": 2, "company": 3, "all": 4}
 
 
 def _top_scope_rank(prof: dict, entity: str) -> int:

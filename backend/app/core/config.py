@@ -172,6 +172,22 @@ class Settings(BaseSettings):
     # Có bắn chuông/email khi nạp dữ liệu từ app cũ không. Mặc định TẮT — đợt nạp
     # lịch sử 1313 phiếu mà bật là hàng chục nghìn thông báo cho việc của năm ngoái.
     SYNC_NOTIFY_ON_IMPORT: bool = False
+    # Realtime Database của app cũ — ERP ĐỌC trực tiếp để tra danh mục (xe, tài xế)
+    # và để vòng quét lưới an toàn kéo phiếu đã sửa. Chỉ đọc, không bao giờ ghi:
+    # chiều ghi ngược phải đi qua API của Worker (§5.3).
+    # ⚠️ HAI DỰ ÁN FIREBASE RIÊNG BIỆT, ĐỪNG LẪN:
+    #   dev  = api-degoholding-default-rtdb.asia-southeast1.firebasedatabase.app
+    #   prod = api-degoholding-com-default-rtdb...  (nguồn của 1313 phiếu đã nạp)
+    # Dev KHÔNG phải bản sao của prod, và KHÓA ĐỌC KHÁC NHAU theo từng dự án.
+    LEGACY_FIREBASE_DB_URL: str = ""
+    LEGACY_FIREBASE_SECRET: str = ""
+    # Chu kỳ vòng quét lưới an toàn (phút): kéo phiếu có `updatedAt` mới hơn con trỏ
+    # lần trước. Cái móc bên app cũ mới là đường chính; vòng này chỉ vá lúc móc trượt.
+    SYNC_DATXE_PULL_MINUTES: int = 5
+    # Nấc 3 của bộ tra danh mục: tra trượt thì có được TỰ TẠO xe / tài xế không.
+    # Mặc định TẮT — bật là để một hệ ngoài đẻ hàng vào danh mục ERP. Chỉ xe và
+    # tài xế, không bao giờ phòng ban / công ty / nhân sự / tài khoản (§9.6).
+    SYNC_DATXE_AUTO_CREATE: bool = False
 
     # --- Celery / Redis ---
     # Broker + result backend dùng chung 1 Redis (đủ cho quy mô ~20-100 user).

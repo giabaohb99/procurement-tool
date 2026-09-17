@@ -58,7 +58,7 @@ from app.core.database import SessionLocal
 from app.core.legacy_files import SOURCE_DATXE
 from app.modules.attachment.model import FileLink, StoredFile
 from app.modules.seal_request.model import SealRequest
-from scripts.legacy_sync.import_tickets import (
+from app.modules.legacy_datxe.builder import (
     PeopleResolver,
     _utc_dt,
     legacy_index,
