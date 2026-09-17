@@ -109,6 +109,20 @@ def parent_records(db: Session, entity: str, entity_id: int):
         from app.modules.ticket.model import Ticket, TicketMessage
         return _fk(TicketMessage.ticket_id, Ticket, TicketMessage.id)
 
+    if entity == "dossier":
+        #  Bản scan treo thẳng vào hồ sơ (`entity_id` = id hồ sơ). Phạm vi ăn
+        #  theo chính `dossier` — bốn chiều đã khai ở `SCOPE_FIELDS` (pháp nhân ·
+        #  phòng · người lập · người phụ trách), nên người chỉ thấy hồ sơ phòng
+        #  mình cũng chỉ tải được bản scan của phòng mình.
+        #
+        #  ⚠️ Đây là NỬA CÒN LẠI của việc gác đính kèm, và thiếu nó thì im lặng:
+        #  `FILE_POLICY` chỉ nói bản scan ăn theo QUYỀN VAI TRÒ của `dossier`,
+        #  nên ai có `dossier.read` phạm vi hẹp vẫn tải được scan giấy phép của
+        #  pháp nhân khác miễn đoán đúng id. Đúng lỗ N-13 mà cả tệp này sinh ra
+        #  để bịt — `test_pham_vi_dinh_kem_b08.py` canh từng dòng `FILE_POLICY`.
+        from app.modules.dossier.model import Dossier
+        return Dossier, [entity_id]
+
     #  Ba loại dưới đây chưa có mặt trong `SCOPE_FIELDS` nên `apply_scope` không
     #  sinh mệnh đề nào — vẫn khai ở đây để ngày B-07 khai thêm là đính kèm siết
     #  theo, không phải mở lại tệp này.

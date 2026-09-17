@@ -49,7 +49,7 @@ import {
   OTHER_DOC_TYPE,
   withOtherType,
 } from '../utils/document-attachment-groups'
-import { AttachmentPreviewDialog } from './attachment-preview-dialog'
+import { AttachmentPreviewDialog } from '@/shared/attachments/attachment-preview-dialog'
 import { DocumentStatusBadge } from './document-status-badge'
 import { DocumentUploadDialog } from './document-upload-dialog'
 

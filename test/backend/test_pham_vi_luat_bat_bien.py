@@ -239,14 +239,6 @@ BB4_CONTROLLER_MIEN_TRU = {
     "seal_request/catalog_controller.py": "seal_type — PUBLIC (danh mục loại con dấu dùng chung)",
     "help_center/controller.py": "help_article — PUBLIC, bài hướng dẫn ai cũng đọc",
     "faq/controller.py": "câu hỏi thường gặp, nội dung công khai",
-    # -- lọc phạm vi nằm TRONG bộ sinh, grep tệp controller không thấy --
-    #  ⚠️ Đây KHÔNG phải "entity này không cần lọc" — `dossier` khai cột thật ở
-    #  SCOPE_FIELDS và phải lọc. Tệp chỉ có đúng một lời gọi `make_crud_router`,
-    #  mà bộ sinh (`core/crud.py`) gọi `apply_scope` ở list + export CSV,
-    #  `get_scoped` ở get/patch/delete, `scope_condition` ở import CSV — cả 7
-    #  cửa đều qua phạm vi. Kiểm lại bằng `test_ho_so_pham_vi.py`, đừng tin
-    #  mỗi dòng này.
-    "dossier/controller.py": "chỉ gọi make_crud_router — bộ sinh lọc phạm vi ở cả 7 cửa",
 }
 
 _SCOPE_CALLS = ("apply_scope", "get_scoped", "scope_condition")

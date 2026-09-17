@@ -10,7 +10,28 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/shared/ui/dialog'
-import type { AttachmentFile } from '../api/purchase-request-support-api'
+/**
+ * Phần TỐI THIỂU của một đính kèm mà khung xem trước cần.
+ *
+ * Cố ý KHÔNG nhận kiểu đầy đủ của một phân hệ nào (`AttachmentFile` của Thu mua,
+ * `DossierAttachment` của Hồ sơ…): chúng khai thêm `sha256`, `doc_type`,
+ * `entity`… toàn thứ khung này không đọc tới. Khai đúng phần cần thì mọi kiểu
+ * đính kèm của mọi phân hệ đều vừa, không phải ai cũng đi ép kiểu.
+ *
+ * ⚠️ `url` là đường đọc THẲNG kho lưu trữ, **không qua kiểm quyền**, và backend
+ * để RỖNG với entity riêng tư (`document_version`, `dossier`). Ở đây nó chỉ là
+ * đường lùi cho nút «Mở tab mới»; mọi việc đọc nội dung đều đi
+ * `/api/attachments/{id}/view` qua `httpClient`.
+ */
+export interface PreviewableAttachment {
+  /** ID của LIÊN KẾT đính kèm, không phải của tệp. */
+  id: number
+  filename: string
+  content_type: string
+  url?: string
+}
+
+type AttachmentFile = PreviewableAttachment
 
 /** Ảnh và PDF xem NHÚNG THẲNG được (khớp `INLINE_VIEW_TYPES` ở backend). */
 function isInlineViewable(file: AttachmentFile): boolean {

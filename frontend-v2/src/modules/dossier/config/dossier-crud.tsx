@@ -5,6 +5,7 @@ import type { CrudConfig, CrudOption, CrudRecord } from '@/shared/crud'
 import { CrudRecordCard } from '@/shared/crud/crud-record-card'
 import type { IdentityChip } from '@/shared/ui/record-identity-card'
 import { formatDate } from '@/shared/utils/format-date'
+import { DossierAttachmentsCard } from '../components/dossier-attachments-card'
 import { DossierExpiryBadge, DossierStatusBadge } from '../components/dossier-status-badge'
 import {
   DOSSIER_STATUS_LABEL,
@@ -216,6 +217,18 @@ export function buildDossierCrudConfig(types: DossierType[]): CrudConfig<Dossier
         },
       ],
     },
+    //  ⚠️ Đính kèm là TAB, không phải một khối dưới biểu mẫu (`renderExtra`).
+    //  Một hồ sơ có thể mang cả chục bản scan; xếp chúng dưới một biểu mẫu đã
+    //  dài sẵn thì người vào chỉ để xem tệp phải cuộn qua toàn bộ phần khai báo.
+    //  Khác trình khai bộ trường bên màn Loại hồ sơ — cái đó là một phần của
+    //  chính việc khai loại nên đứng liền dưới biểu mẫu là đúng.
+    tabs: [
+      {
+        key: 'files',
+        label: 'Tệp đính kèm',
+        render: (row) => <DossierAttachmentsCard dossierId={Number(row.id)} />,
+      },
+    ],
     formSections: {
       'Thông tin chung': 'Loại hồ sơ quyết định cụm ô ở cuối biểu mẫu.',
       'Hiệu lực': 'Bỏ trống hạn hiệu lực nghĩa là hồ sơ vô thời hạn.',
