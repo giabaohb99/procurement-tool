@@ -18,7 +18,6 @@ import { DossierCustomFieldsEditor } from '../components/dossier-custom-fields-e
 import { fromCustomRows, type DossierCustomRow } from '../types/dossier-custom-row'
 import {
   CUSTOM_ROWS_FIELD,
-  TYPE_FIELDS_SECTION,
   buildDossierFormFields,
   fieldsOfType,
 } from '../utils/dossier-form-fields'
@@ -214,22 +213,20 @@ export function buildDossierCrudConfig(types: DossierType[]): CrudConfig<Dossier
         render: (row) => <DossierAttachmentsCard dossierId={Number(row.id)} />,
       },
     ],
-    formSections: {
-      'Thông tin chung': 'Loại hồ sơ quyết định cụm ô ở cuối biểu mẫu.',
-      'Hiệu lực': 'Bỏ trống hạn hiệu lực nghĩa là hồ sơ vô thời hạn.',
-      'Nơi giữ & phụ trách':
-        'Ba ô đầu quyết định AI XEM ĐƯỢC hồ sơ này, không chỉ để hiển thị.',
-      [TYPE_FIELDS_SECTION]:
-        'Các ô riêng của loại hồ sơ đang chọn, khai ở màn Loại hồ sơ. Đổi loại thì cụm này đổi theo.',
-    },
+    //  Không khai `formSections`: biểu mẫu còn ba ô khung, mà `formSections`
+    //  sinh ra cho biểu mẫu 8–10 ô. Ba ô mà bọc một tiêu đề là một cái khung
+    //  rỗng. Khối «Trường riêng» tự mang tiêu đề của nó.
     formFields: (values: CrudRecord) =>
       buildDossierFormFields(types, values, {
-        renderCustomFields: ({ control, name, disabled, typeKeys }) => (
+        renderCustomFields: ({ control, name, disabled, typeId }) => (
           <DossierCustomFieldsEditor
             control={control}
             name={name}
             disabled={disabled}
-            typeKeys={typeKeys}
+            typeId={typeId}
+            //  Tra được cả loại VỪA BỎ chọn — `reseedFromType` cần bộ trường cũ
+            //  để biết dòng nào là của khuôn cũ mà gỡ đi.
+            defsOfType={(id) => fieldsOfType(types, id)}
           />
         ),
       }),

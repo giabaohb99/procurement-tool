@@ -1,15 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
 import { buildFormDefaults, toApiPayload } from '@/shared/crud'
-import { extraFieldName } from '../types/dossier'
 import type { DossierFieldDef } from '../types/dossier-field'
 import type { DossierType } from '../types/dossier-type'
-import {
-  TYPE_FIELDS_SECTION,
-  buildDossierFormFields,
-  fieldsOfType,
-  toCrudField,
-} from './dossier-form-fields'
+import { buildDossierFormFields, fieldsOfType } from './dossier-form-fields'
 
 /**
  * BIỂU MẪU ĐỔI THEO LOẠI HỒ SƠ — phần «metadata» của phân hệ.
@@ -32,54 +26,6 @@ function type(over: Partial<DossierType> = {}): DossierType {
     field_schema: [], field_count: 0, ...over,
   }
 }
-
-describe('toCrudField', () => {
-  it('khai tên ô có DẤU CHẤM để react-hook-form dựng đúng ô lồng nhau', () => {
-    //  ⚠️ Đây là mấu chốt của cả cơ chế. Đổi sang tiền tố phẳng (`ef__so_gp`) là
-    //  phải ghép/tách tay ở hai đầu, và hai phép biến đổi đó sẽ lệch nhau.
-    expect(toCrudField(def()).name).toBe('extra_fields.so_gp')
-    expect(toCrudField(def()).name).toBe(extraFieldName('so_gp'))
-  })
-
-  it('công tắc mặc định TẮT, không phải bật', () => {
-    //  `buildFormDefaults` để mặc định công tắc là BẬT — hợp lý cho ô «Còn dùng»
-    //  của danh mục, nhưng ở đây ô do người dùng tự đặt tên: bật sẵn «Đã thông
-    //  quan» là hệ thống tự trả lời hộ họ.
-    expect(toCrudField(def({ type: 'switch' })).defaultValue).toBe(false)
-  })
-
-  it('ô số mặc định RỖNG, không phải 0', () => {
-    //  `0` và *chưa nhập* là hai chuyện khác nhau; để mặc định `0` thì chúng
-    //  không phân biệt được nữa, và một ô số bắt buộc coi như đã điền.
-    expect(toCrudField(def({ type: 'number' })).defaultValue).toBe('')
-  })
-
-  it('ô chọn đổi danh sách chữ thành mục bấm được', () => {
-    const field = toCrudField(def({ type: 'select', options: ['Đường biển', 'Đường bộ'] }))
-    expect(field.options).toEqual([
-      { value: 'Đường biển', label: 'Đường biển' },
-      { value: 'Đường bộ', label: 'Đường bộ' },
-    ])
-  })
-
-  it('kiểu khác ô chọn thì KHÔNG mang theo danh sách mục', () => {
-    //  Người dùng đổi kiểu qua lại trên trình khai; mục đã gõ được giữ trong dữ
-    //  liệu (khỏi gõ lại) nhưng không được rò sang ô nhập chữ.
-    expect(toCrudField(def({ type: 'text', options: ['a'] })).options).toBeUndefined()
-  })
-
-  it('ô nhiều dòng chiếm trọn bề ngang', () => {
-    expect(toCrudField(def({ type: 'textarea' })).fullWidth).toBe(true)
-  })
-
-  it('mọi ô tùy biến đều vào CÙNG một nhóm, tách khỏi phần khung', () => {
-    expect(toCrudField(def()).section).toBe(TYPE_FIELDS_SECTION)
-  })
-
-  it('chú thích rỗng thì bỏ hẳn, không dựng dòng trống dưới ô', () => {
-    expect(toCrudField(def({ hint: '' })).hint).toBeUndefined()
-  })
-})
 
 describe('fieldsOfType', () => {
   const types = [type({ id: 1, field_schema: [def()] }), type({ id: 2 })]
@@ -104,27 +50,6 @@ describe('buildDossierFormFields', () => {
     type({ id: 3, name: 'Loại cũ', is_active: false }),
   ]
 
-  const names = (values: Record<string, unknown>) =>
-    buildDossierFormFields(types, values).map((f) => f.name)
-
-  it('chưa chọn loại thì chỉ có phần KHUNG', () => {
-    expect(names({})).not.toContain('extra_fields.so_gp')
-    expect(names({})).toContain('dossier_type_id')
-  })
-
-  it('đổi loại là đổi luôn cụm ô bên dưới', () => {
-    expect(names({ dossier_type_id: 1 })).toContain('extra_fields.so_gp')
-    expect(names({ dossier_type_id: 2 })).not.toContain('extra_fields.so_gp')
-    expect(names({ dossier_type_id: 2 })).toContain('extra_fields.so_hd')
-  })
-
-  it('nhận id dạng CHUỖI — ô chọn của Radix trả về chuỗi', () => {
-    //  ⚠️ Lỗi đã tránh: bản ghi từ API cho `dossier_type_id` là SỐ, còn ngay sau
-    //  khi người dùng bấm ô chọn thì nó là CHUỖI. So thẳng `===` là cụm ô riêng
-    //  biến mất đúng lúc vừa chọn loại.
-    expect(names({ dossier_type_id: '1' })).toContain('extra_fields.so_gp')
-  })
-
   it('loại ĐÃ NGỪNG DÙNG không có trong ô chọn — trừ khi hồ sơ đang mang nó', () => {
     //  ⚠️ Bỏ hẳn thì ô chọn không khớp mục nào và Radix rơi về chữ gợi ý, nhìn y
     //  hệt ô chưa nhập — người dùng chọn đại một loại khác và phân loại thật bị
@@ -145,50 +70,50 @@ describe('buildDossierFormFields', () => {
     expect(field?.required).toBe(true)
   })
 
-  it('không ô nào trùng tên', () => {
-    //  Hai ô cùng `name` thì chúng ghi đè nhau trong form: người dùng gõ hai giá
-    //  trị, chỉ một cái sống sót. Ca thật: một trường tùy biến khai `key` trùng
-    //  tên một cột khung (vd `name`) — tiền tố `extra_fields.` là thứ chặn nó.
-    const risky = [type({ id: 9, field_schema: [def({ key: 'name', label: 'Tên riêng' })] })]
-    const all = buildDossierFormFields(risky, { dossier_type_id: 9 })
-    const list = all.map((f) => f.name)
-    expect(new Set(list).size).toBe(list.length)
-    expect(list).toContain('name')
-    expect(list).toContain('extra_fields.name')
-  })
 })
 
-describe('vòng ĐỌC ↔ GHI của ô tùy biến', () => {
+describe('ô TỰ VẼ giữ các hàng «trường riêng»', () => {
   const types = [type({ id: 1, field_schema: [def(), def({ key: 'gt', label: 'Giá trị', type: 'number' })] })]
+  const withEditor = (values: Record<string, unknown>) =>
+    buildDossierFormFields(types, values, { renderCustomFields: () => null })
 
-  it('giá trị đã lưu đổ ĐÚNG vào ô, và gửi lại ĐÚNG hình dạng backend nhận', () => {
-    //  ⚠️ Chốt CHÉO cả chuỗi: `buildDossierFormFields` → `buildFormDefaults` →
-    //  `toApiPayload`. Lệch một mắt xích thì mỗi hàm riêng vẫn xanh, còn người
-    //  dùng thì mở hồ sơ ra thấy ô trống (hoặc bấm Lưu xong mất dữ liệu).
-    const item = { dossier_type_id: 1, extra_fields: { so_gp: 'GP-01', gt: 5000 } }
-    const fields = buildDossierFormFields(types, item)
-
-    const defaults = buildFormDefaults(fields, item)
-    expect(defaults.extra_fields).toEqual({ so_gp: 'GP-01', gt: 5000 })
-
-    const payload = toApiPayload(fields, defaults)
-    expect(payload.extra_fields).toEqual({ so_gp: 'GP-01', gt: 5000 })
+  it('chỉ dựng ô đó khi nơi gọi có truyền hàm vẽ', () => {
+    //  Bộ test gọi hàm này rất nhiều chỉ để soi ba ô khung; bắt chúng truyền một
+    //  hàm vẽ giả là thêm nhiễu vào mọi bài.
+    expect(buildDossierFormFields(types, {}).map((f) => f.name)).not.toContain('custom_rows')
+    expect(withEditor({}).map((f) => f.name)).toContain('custom_rows')
   })
 
-  it('hồ sơ CŨ chưa có ô nào (`extra_fields` rỗng) vẫn dựng được form', () => {
-    const item = { dossier_type_id: 1, extra_fields: {} }
-    const fields = buildDossierFormFields(types, item)
-    const defaults = buildFormDefaults(fields, item)
-
-    //  Ô chưa nhập về RỖNG, không phải `undefined` và cũng không phải `0` —
-    //  backend phân biệt "" với một con số.
-    expect(defaults.extra_fields).toEqual({ so_gp: '', gt: '' })
+  it('tên ô KHÁC tên cột `custom_fields`, và đó là chuyện sống còn', () => {
+    //  ⚠️ Trùng tên thì `buildFormDefaults` thấy bản ghi đã có khóa đó và lấy
+    //  thẳng giá trị đã lưu — tức danh sách khai báo TRẦN, chưa ghép giá trị —
+    //  nên `defaultValue` dựng công phu ở dưới không bao giờ được dùng, và mọi ô
+    //  «Giá trị» hiện trống dù dữ liệu có sẵn.
+    const field = withEditor({}).find((f) => f.name === 'custom_rows')
+    expect(field).toBeDefined()
+    expect(withEditor({}).map((f) => f.name)).not.toContain('custom_fields')
   })
 
-  it('ô số gõ tay thành CHUỖI được quy về số khi gửi', () => {
-    const fields = buildDossierFormFields(types, { dossier_type_id: 1 })
-    const payload = toApiPayload(fields, { extra_fields: { so_gp: 'x', gt: '4200' } })
-    expect((payload.extra_fields as Record<string, unknown>).gt).toBe(4200)
+  it('GHÉP khai báo với giá trị đã lưu thành từng hàng', () => {
+    //  Lúc NẠP, `values` chính là bản ghi (`resolveFormFields(formFields, item)`)
+    //  — nhờ vậy mới ghép được hai cột rời nhau dưới DB thành một hàng.
+    const item = {
+      dossier_type_id: 1,
+      custom_fields: [def(), def({ key: 'gt', label: 'Giá trị', type: 'number' })],
+      extra_fields: { so_gp: 'GP-01', gt: 5000 },
+    }
+    const field = withEditor(item).find((f) => f.name === 'custom_rows')
+    expect(field?.defaultValue).toEqual([
+      { ...def(), value: 'GP-01' },
+      { ...def({ key: 'gt', label: 'Giá trị', type: 'number' }), value: 5000 },
+    ])
+  })
+
+  it('hồ sơ CŨ chưa khai trường riêng nào thì ra danh sách rỗng, KHÔNG nổ', () => {
+    //  Cột `custom_fields` là `NULL` với hồ sơ lập trước khi có nó.
+    const field = withEditor({ dossier_type_id: 1, extra_fields: {} })
+      .find((f) => f.name === 'custom_rows')
+    expect(field?.defaultValue).toEqual([])
   })
 })
 

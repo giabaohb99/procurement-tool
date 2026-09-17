@@ -23,6 +23,46 @@ export function emptyCustomRow(): DossierCustomRow {
 }
 
 /**
+ * ĐỔ KHUÔN của loại vào bảng khi người dùng chọn một loại khác.
+ *
+ * Luật (khách chốt 17/09/2026): loại hồ sơ là **khuôn**, không phải luật. Chọn
+ * loại thì các ô của nó hiện thành dòng trong bảng; người lập sửa/xóa tự do, và
+ * xóa dòng nào thì TỜ NÀY không có ô đó — loại vẫn nguyên, hồ sơ khác cùng loại
+ * vẫn có.
+ *
+ * Ba thứ phải giữ khi đổ, và mỗi thứ chữa một cách mất dữ liệu:
+ *
+ * 1. **Hàng người dùng TỰ THÊM ở lại.** Họ khai «Số quyết định» rồi mới chọn
+ *    loại — cuốn phăng đi là mất công gõ.
+ * 2. **Giá trị ĐÃ ĐIỀN ở lại** nếu khuôn mới cũng có khóa đó. Hai loại cùng
+ *    dùng `so_giay_phep` thì đổi qua lại không được xóa thứ vừa gõ.
+ * 3. **Hàng của khuôn CŨ bị gỡ** — chúng thuộc về loại vừa bỏ chọn. Giữ lại thì
+ *    đổi loại vài lần là bảng phình ra toàn ô của những loại không còn chọn.
+ *
+ * `oldDefs` rỗng (lần đầu chọn loại) thì không có gì để gỡ — mọi hàng hiện có
+ * đều là của người dùng.
+ */
+export function reseedFromType(
+  rows: DossierCustomRow[],
+  oldDefs: DossierFieldDef[],
+  newDefs: DossierFieldDef[],
+): DossierCustomRow[] {
+  const oldKeys = new Set(oldDefs.map((d) => d.key))
+  const byKey = new Map(rows.map((r) => [r.key, r]))
+
+  //  Khuôn mới lên trước, giữ đúng thứ tự đã khai ở màn Loại hồ sơ.
+  const seeded = newDefs.map((def) => ({
+    ...def,
+    value: byKey.get(def.key)?.value ?? (def.type === 'switch' ? false : ''),
+  }))
+
+  const seededKeys = new Set(newDefs.map((d) => d.key))
+  const kept = rows.filter((r) => !seededKeys.has(r.key) && !oldKeys.has(r.key))
+
+  return [...seeded, ...kept]
+}
+
+/**
  * BẢN GHI → DÒNG BIỂU MẪU: ghép khai báo với giá trị tương ứng.
  *
  * Dùng lúc dựng giá trị khởi tạo cho form (`defaultValue` của ô tự vẽ). Giá trị

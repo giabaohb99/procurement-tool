@@ -1,21 +1,26 @@
 import { Plus } from 'lucide-react'
+import { useState } from 'react'
 import { useController, type Control } from 'react-hook-form'
 
 import type { CrudRecord } from '@/shared/crud'
 import { Button } from '@/shared/ui/button'
-import { MAX_DOSSIER_FIELDS } from '../types/dossier-field'
+import { MAX_DOSSIER_FIELDS, type DossierFieldDef } from '../types/dossier-field'
 import {
   emptyCustomRow,
+  reseedFromType,
   type DossierCustomRow,
 } from '../types/dossier-custom-row'
 import { DossierCustomFieldRow } from './dossier-custom-field-row'
+import { firstProblem, problemOf } from './dossier-custom-fields-problem'
 
 interface DossierCustomFieldsEditorProps {
   control: Control<CrudRecord>
   name: string
   disabled?: boolean
-  /** Mã ô do LOẠI hồ sơ khai — trường riêng không được trùng vào đó. */
-  typeKeys: Set<string>
+  /** Loại đang chọn — đổi số này là đổ lại khuôn. `0` = chưa chọn. */
+  typeId: number
+  /** Bộ trường KHUÔN của một loại. Tra được cả loại VỪA BỎ chọn, xem `reseedFromType`. */
+  defsOfType: (typeId: number) => DossierFieldDef[]
 }
 
 /**
@@ -40,26 +45,40 @@ export function DossierCustomFieldsEditor({
   control,
   name,
   disabled,
-  typeKeys,
+  typeId,
+  defsOfType,
 }: DossierCustomFieldsEditorProps) {
-  const { field } = useController({ control, name })
+  //  ⚠️ **CHẶN SUBMIT, không chỉ tô đỏ.** Cảnh báo suông thì người dùng vẫn bấm
+  //  được «Tạo hồ sơ» và nhận một câu 422 của backend — cùng nội dung nhưng ở
+  //  dạng toast, rời khỏi đúng cái hàng đang sai. Gắn luật vào `useController`
+  //  thì react-hook-form giữ form lại và câu nhắc nằm ngay dưới hàng đó.
+  const { field, fieldState } = useController({
+    control,
+    name,
+    rules: {
+      validate: (value) => firstProblem(Array.isArray(value) ? value : []) ?? true,
+    },
+  })
   const rows: DossierCustomRow[] = Array.isArray(field.value) ? field.value : []
 
   const setRows = (next: DossierCustomRow[]) => field.onChange(next)
 
-  //  Hai kiểu đụng khóa, hai câu khác nhau — nói chung một câu thì người dùng
-  //  không biết phải đi sửa ở đâu.
-  const keys = rows.map((r) => r.key)
-  const clashOf = (row: DossierCustomRow, index: number): string | undefined => {
-    if (!row.key) return undefined
-    if (typeKeys.has(row.key)) {
-      return `«${row.key}» đã là ô sẵn có của loại hồ sơ — điền thẳng vào ô đó ở trên, hoặc đổi tên trường này.`
-    }
-    if (keys.indexOf(row.key) !== index) {
-      return `«${row.key}» trùng với một trường riêng khác. Hai ô cùng mã thì chỉ một giá trị được lưu.`
-    }
-    return undefined
+  //  ⚠️ **ĐỔ KHUÔN khi đổi loại** — chỉnh state NGAY TRONG LƯỢT VẼ, không dùng
+  //  `useEffect`. Effect chạy sau khi commit nên bảng vẽ một lượt với khuôn CŨ
+  //  rồi mới đổi: người dùng thấy các dòng nhấp nháy thay nhau. ESLint
+  //  (`react-hooks/set-state-in-effect`) cũng chặn đúng khuôn đó.
+  //
+  //  ⚠️ `seededFor` khởi tạo bằng CHÍNH `typeId` hiện tại, không phải `0`. Lúc
+  //  MỞ MỘT HỒ SƠ CŨ, `typeId` đã có sẵn từ bản ghi — khởi tạo `0` thì lượt vẽ
+  //  đầu tưởng người dùng vừa đổi loại và **đổ khuôn đè lên bộ trường đã lưu**,
+  //  xóa sạch những dòng mà tờ đó đã cố tình sửa khác khuôn.
+  const [seededFor, setSeededFor] = useState(typeId)
+  if (seededFor !== typeId) {
+    setSeededFor(typeId)
+    setRows(reseedFromType(rows, defsOfType(seededFor), defsOfType(typeId)))
   }
+
+  const clashOf = (row: DossierCustomRow, index: number) => problemOf(row, index, rows)
 
   return (
     <section className="@container rounded-lg border bg-card">
@@ -121,6 +140,16 @@ export function DossierCustomFieldsEditor({
             <span className="text-xs text-muted-foreground">
               {rows.length}/{MAX_DOSSIER_FIELDS} trường
             </span>
+            {/*  ⚠️ Nói LÝ DO không lưu được, ngay cạnh nút. Không có dòng này
+                 thì bấm «Tạo hồ sơ» là **không có gì xảy ra** — react-hook-form
+                 chặn submit trong im lặng tuyệt đối (bẫy thứ nhất của
+                 duoc-CR-317), và câu nhắc của từng hàng thì có thể đang nằm
+                 ngoài tầm mắt nếu danh sách dài. */}
+            {fieldState.error?.message && (
+              <span className="text-xs text-destructive">
+                {fieldState.error.message}
+              </span>
+            )}
           </div>
         )}
       </div>

@@ -18,6 +18,7 @@ import type { DossierCustomRow } from '../types/dossier-custom-row'
 import {
   DOSSIER_FIELD_TYPES,
   DOSSIER_FIELD_TYPE_LABEL,
+  MAX_DOSSIER_FIELD_OPTIONS,
   slugifyFieldKey,
   type DossierFieldType,
 } from '../types/dossier-field'
@@ -67,7 +68,19 @@ export function DossierCustomFieldRow({
   //  tự bật lên.
   const handleType = (next: DossierFieldType) => {
     if (next === row.type) return
+    //  Giữ `options` khi đổi kiểu: người dùng gõ nhầm kiểu rồi đổi lại thì mục
+    //  đã khai còn nguyên, khỏi gõ lại.
     set({ type: next, value: next === 'switch' ? false : '', options: row.options })
+  }
+
+  //  ⚠️ Sửa danh sách mục mà giá trị đang chọn RỚT khỏi danh sách thì xóa nó đi.
+  //  Giữ lại thì Radix không khớp mục nào và rơi về chữ gợi ý — nhìn y hệt ô
+  //  chưa chọn, nhưng giá trị cũ vẫn nằm trong form và bấm Lưu là backend trả
+  //  422 «nhận một trong các mục: …» cho một thứ không hiện trên màn hình.
+  const handleOptions = (raw: string) => {
+    const options = raw.split(',').map((o) => o.trim()).filter(Boolean)
+    const stillThere = options.includes(String(row.value ?? ''))
+    set({ options, value: stillThere ? row.value : '' })
   }
 
   return (
@@ -103,7 +116,7 @@ export function DossierCustomFieldRow({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {DOSSIER_FIELD_TYPES.filter((t) => t !== 'select').map((t) => (
+            {DOSSIER_FIELD_TYPES.map((t) => (
               <SelectItem key={t} value={t}>
                 {DOSSIER_FIELD_TYPE_LABEL[t]}
               </SelectItem>
@@ -143,6 +156,29 @@ export function DossierCustomFieldRow({
       >
         <Trash2 className="size-4" />
       </Button>
+
+      {/*  DÒNG PHỤ chỉ của ô CHỌN — khai các mục bấm được.
+           ⚠️ Nằm dưới cả hàng chứ không chen vào một cột: bốn cột trên đã chật,
+           mà danh sách mục thì dài hơn mọi ô còn lại cộng lại. Ẩn hẳn với kiểu
+           khác thay vì làm mờ — ô mờ vẫn chiếm chỗ và vẫn bắt người đọc dừng
+           lại xem nó là gì. */}
+      {row.type === 'select' && (
+        <div className="space-y-1 @2xl:col-span-5">
+          <Label htmlFor={`cf-opts-${index}`} className="text-xs">
+            Các mục chọn
+          </Label>
+          <Input
+            id={`cf-opts-${index}`}
+            value={row.options.join(', ')}
+            placeholder="Đường biển, Đường hàng không, Đường bộ"
+            disabled={disabled}
+            onChange={(e) => handleOptions(e.target.value)}
+          />
+          <p className="text-xs text-muted-foreground">
+            Ngăn cách bằng dấu phẩy. Tối đa {MAX_DOSSIER_FIELD_OPTIONS} mục.
+          </p>
+        </div>
+      )}
 
       {clashWith && (
         <p className="text-xs text-destructive @2xl:col-span-5">{clashWith}</p>
@@ -184,6 +220,44 @@ function CustomValueInput({
         value={String(row.value ?? '')}
         onChange={(v) => onChange({ value: v })}
       />
+    )
+  }
+
+  if (row.type === 'select') {
+    //  ⚠️ Chưa khai mục nào thì ô chọn là một danh sách RỖNG — bấm vào mở ra
+    //  khoảng trắng, người dùng tưởng hỏng. Nói thẳng việc phải làm trước.
+    if (row.options.length === 0) {
+      return (
+        <div className="flex h-9 items-center text-xs text-muted-foreground">
+          Khai «Các mục chọn» bên dưới trước
+        </div>
+      )
+    }
+    return (
+      <Select
+        value={String(row.value ?? '')}
+        disabled={disabled}
+        onValueChange={(v) => {
+          //  ⚠️ BỎ QUA chuỗi rỗng — không phải người dùng chọn. Radix giữ một
+          //  `<select>` ẩn và đồng bộ bằng cách gán thẳng `value`; trình duyệt
+          //  ép giá trị chưa có `<option>` tương ứng về rỗng rồi bắn `change`,
+          //  Radix gọi ngược `onValueChange('')` và xóa trắng giá trị thật.
+          //  Cùng bẫy đã ghi ở `CrudSelectField` của khung CRUD.
+          if (v === '') return
+          onChange({ value: v })
+        }}
+      >
+        <SelectTrigger id={id} className="w-full">
+          <SelectValue placeholder="Chọn giá trị" />
+        </SelectTrigger>
+        <SelectContent>
+          {row.options.map((opt) => (
+            <SelectItem key={opt} value={opt}>
+              {opt}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     )
   }
 

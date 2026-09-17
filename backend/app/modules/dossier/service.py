@@ -59,65 +59,39 @@ def sync_type_label(db: Session, values: dict,
     return obj
 
 
-def apply_extra_fields(db: Session, values: dict, current: Dossier | None = None,
-                       dossier_type: DossierType | None = None) -> None:
-    """Kiểm `extra_fields` theo bộ trường của loại hồ sơ, sửa tại chỗ.
+def apply_extra_fields(db: Session, values: dict, current: Dossier | None = None) -> None:
+    """Kiểm `extra_fields` theo bộ trường CỦA CHÍNH HỒ SƠ, sửa tại chỗ.
 
-    ⚠️ Loại dùng để kiểm là loại SẮP LƯU, không phải loại đang lưu: người dùng
-    đổi loại và điền bộ ô mới trong cùng một lần bấm Lưu. Lấy loại cũ thì mọi ô
-    vừa điền đều bị coi là «không còn khai báo».
+    ⚠️ **`tab_dossier_type.field_schema` KHÔNG còn là luật ở đây** (đổi
+    17/09/2026). Nó tụt xuống thành **KHUÔN**: màn lập hồ sơ đổ nó vào bảng
+    «Trường riêng» khi người dùng chọn loại, rồi họ sửa/xóa tự do — xóa dòng nào
+    thì TỜ NÀY không có ô đó, loại vẫn nguyên và hồ sơ khác cùng loại vẫn có.
 
-    `dossier_type` là loại mà `sync_type_label` VỪA đọc ở ngay trên. Truyền vào
-    thì cả lần lưu chỉ tra bảng danh mục MỘT lượt — `Session.get` không phải lúc
-    nào cũng che được lần hai (đo được 2 truy vấn cho một lần tạo trước khi thêm
-    tham số này). Bỏ trống vẫn chạy đúng, chỉ tốn thêm một lượt đọc.
+    Nên nguồn khai duy nhất là `tab_dossier.custom_fields`. Giữ cả hai như trước
+    thì mọi dòng vừa đổ từ khuôn ra đều trùng khóa với chính cái khuôn đẻ ra nó,
+    và không hồ sơ nào lưu nổi.
+
+    ⚠️ Vì thế hàm này KHÔNG còn đọc bảng danh mục — cả lần lưu chỉ `sync_type_label`
+    tra một lượt (để chép nhãn). Tham số `dossier_type` cũ đã bỏ.
+
+    ⚠️ Hệ quả phải biết: **ô `required` khai ở LOẠI không còn tự áp cho hồ sơ**.
+    Nó chỉ có hiệu lực nếu dòng tương ứng còn nằm trong `custom_fields` của tờ
+    đó — tức là đúng như người lập đã chốt trên màn hình. Muốn ép cứng cả công ty
+    thì phải là một CỘT THẬT, không phải một dòng trong khuôn.
     """
-    type_id = int(values.get("dossier_type_id")
-                  or (current.dossier_type_id if current else 0) or 0)
-    if not type_id:
-        return
     #  `PATCH` không đụng tới CẢ HAI thì giữ nguyên thứ đang lưu — kiểm luôn ở
-    #  đây thì thêm một ô bắt buộc vào loại là chặn mọi lần sửa ô khác qua API,
-    #  kể cả lần sửa không liên quan gì tới ô mới.
-    #
-    #  ⚠️ Nhưng gửi RIÊNG `custom_fields` (khai thêm trường, chưa điền giá trị)
-    #  thì VẪN phải chạy tiếp: chốt trùng khóa nằm ở dưới, bỏ qua là mở đúng
-    #  đường lách — khai một trường riêng trùng tên ô của loại mà không ai chặn.
-    if "extra_fields" not in values and "custom_fields" not in values:
-        return
-
-    #  ⚠️ Chỉ dùng lại bản đã đọc khi nó ĐÚNG là loại sắp lưu. `sync_type_label`
-    #  trả `None` ở đường `PATCH` không gửi loại, và khi đó `type_id` lấy từ bản
-    #  ghi cũ — xài nhầm bản khác là kiểm ô theo sai bộ trường.
-    obj = dossier_type if (dossier_type is not None and dossier_type.id == type_id) \
-        else _load_type(db, type_id)
-
-    type_defs = parse_field_defs(obj.field_schema)
-    #  ⚠️ Trường riêng lấy từ payload NẾU lần lưu này có gửi, không thì từ bản
-    #  ghi cũ. `PATCH` chỉ đổi một giá trị mà lấy danh sách rỗng là mọi ô riêng
-    #  bỗng thành «không còn khai báo» — mất luôn chốt bắt buộc của chúng.
-    raw_custom = values["custom_fields"] if "custom_fields" in values \
-        else (current.custom_field_defs if current else [])
-    custom_defs = parse_field_defs(raw_custom)
-
-    #  Hai nguồn khai, MỘT kho giá trị (`extra_fields`) — trùng khóa thì hai ô
-    #  cùng ghi vào một chỗ: biểu mẫu hiện đủ hai, người dùng gõ hai giá trị, và
-    #  chỉ một cái sống sót. Không lỗi, không cảnh báo. Chặn thẳng ở đây.
-    type_keys = {d.key for d in type_defs}
-    clashed = sorted({d.key for d in custom_defs if d.key in type_keys})
-    if clashed:
-        raise HTTPException(
-            422,
-            f"Trường riêng trùng tên với ô sẵn có của loại «{obj.name}»: "
-            f"{', '.join(clashed)}. Đổi mã trường, hoặc điền thẳng vào ô của loại.",
-        )
-
-    #  Chỉ kiểm GIÁ TRỊ khi lần lưu này có gửi chúng — xem ghi chú ở đầu hàm.
+    #  đây thì thêm một ô bắt buộc là chặn cả những lần sửa không liên quan.
     if "extra_fields" not in values:
         return
+
+    #  ⚠️ Khai báo lấy từ payload NẾU lần lưu này có gửi, không thì từ bản ghi
+    #  cũ. Lấy danh sách rỗng là mọi ô riêng bỗng thành «không còn khai báo» —
+    #  mất luôn chốt bắt buộc của chúng.
+    raw_custom = values["custom_fields"] if "custom_fields" in values         else (current.custom_field_defs if current else [])
+
     try:
         values["extra_fields"] = validate_extra_values(
-            type_defs + custom_defs, values.get("extra_fields"))
+            parse_field_defs(raw_custom), values.get("extra_fields"))
     except ValueError as exc:
         raise HTTPException(422, str(exc))
 

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   emptyCustomRow,
   fromCustomRows,
+  reseedFromType,
   toCustomRows,
   type DossierCustomRow,
 } from './dossier-custom-row'
@@ -96,6 +97,57 @@ describe('fromCustomRows — hàng biểu mẫu thành bản ghi', () => {
       row({ key: 'so', type: 'number', value: 0 }),
     ])
     expect(values).toEqual({ co: false, so: 0 })
+  })
+})
+
+describe('reseedFromType — đổi loại thì đổ lại khuôn', () => {
+  //  ⚠️ `def()` mặc định khóa `so_qd` — trùng với hàng «tự thêm» ở dưới, nên
+  //  khuôn phải khai khóa RIÊNG, không thì bài kiểm đo nhầm chính nó.
+  const gp = def({ key: 'so_gp', label: 'Số giấy phép' })
+  const cq = def({ key: 'co_quan', label: 'Cơ quan cấp' })
+  const hd = def({ key: 'so_hd', label: 'Số hợp đồng' })
+  const rieng: DossierCustomRow = { ...def({ key: 'so_qd', label: 'Số QĐ' }), value: '777' }
+
+  it('lần ĐẦU chọn loại: đổ khuôn vào, giữ nguyên hàng người dùng tự thêm', () => {
+    //  Họ khai «Số QĐ» rồi mới chọn loại — cuốn phăng đi là mất công gõ.
+    const out = reseedFromType([rieng], [], [gp, cq])
+    //  Khuôn lên TRƯỚC, giữ đúng thứ tự đã khai ở màn Loại hồ sơ.
+    expect(out.map((r) => r.key)).toEqual(['so_gp', 'co_quan', 'so_qd'])
+  })
+
+  it('ĐỔI sang loại khác: gỡ hàng của khuôn CŨ, giữ hàng tự thêm', () => {
+    //  ⚠️ Không gỡ thì đổi loại vài lần là bảng phình ra toàn ô của những loại
+    //  không còn chọn nữa.
+    const rows = reseedFromType([rieng], [], [gp, cq])
+    const out = reseedFromType(rows, [gp, cq], [hd])
+    expect(out.map((r) => r.key)).toEqual(['so_hd', 'so_qd'])
+  })
+
+  it('GIÁ TRỊ đã điền ở lại nếu khuôn mới cũng có khóa đó', () => {
+    //  Hai loại cùng dùng `so_gp` thì đổi qua lại không được xóa thứ vừa gõ.
+    const rows = [{ ...gp, value: 'GP-999' }]
+    const out = reseedFromType(rows, [gp], [gp, hd])
+    expect(out.find((r) => r.key === 'so_gp')?.value).toBe('GP-999')
+    expect(out.find((r) => r.key === 'so_hd')?.value).toBe('')
+  })
+
+  it('ô CÓ/KHÔNG của khuôn mới về `false`, không phải chuỗi rỗng', () => {
+    const co = def({ key: 'da_ky', label: 'Đã ký', type: 'switch' })
+    expect(reseedFromType([], [], [co])[0].value).toBe(false)
+  })
+
+  it('BỎ chọn loại (về 0, khuôn rỗng) thì chỉ còn hàng tự thêm', () => {
+    const rows = reseedFromType([rieng], [], [gp])
+    expect(reseedFromType(rows, [gp], []).map((r) => r.key)).toEqual(['so_qd'])
+  })
+
+  it('người dùng SỬA một hàng của khuôn thì bản sửa vẫn bị khuôn mới đè', () => {
+    //  Hệ quả có chủ ý: đổi loại nghĩa là đổi bộ ô. Muốn giữ thì đừng đổi loại.
+    //  Ghi ra đây để người sau không tưởng là lỗi.
+    const daSua = { ...gp, label: 'Số GP (tôi sửa)', required: false, value: 'x' }
+    const out = reseedFromType([daSua], [], [gp])
+    expect(out[0].label).toBe(gp.label)
+    expect(out[0].value).toBe('x')
   })
 })
 

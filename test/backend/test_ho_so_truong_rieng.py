@@ -3,15 +3,14 @@
 Người lập hồ sơ khai thêm ô ngay tại chỗ (tên · kiểu · bắt buộc · giá trị) mà
 không đụng vào khuôn của loại.
 
-⚠️ **HAI NGUỒN KHAI, MỘT KHO GIÁ TRỊ.** Khai báo nằm ở hai chỗ —
-`tab_dossier_type.field_schema` (dùng chung mọi hồ sơ cùng loại) và
-`tab_dossier.custom_fields` (riêng tờ này) — nhưng giá trị thì cùng đổ vào
-`tab_dossier.extra_fields`. Đó là chỗ dễ thủng nhất của cả tính năng:
+⚠️ **MỘT NGUỒN KHAI DUY NHẤT: `tab_dossier.custom_fields`.** Bộ trường của LOẠI
+(`tab_dossier_type.field_schema`) tụt xuống thành **KHUÔN** (17/09/2026) — màn
+lập hồ sơ đổ nó vào bảng trường riêng khi chọn loại, rồi người lập sửa/xóa tự
+do. Giữ cả hai như trước thì mọi dòng vừa đổ ra đều trùng khóa với chính cái
+khuôn đẻ ra nó, và không hồ sơ nào lưu nổi.
 
-  * trùng khóa giữa hai nguồn = hai ô cùng ghi một chỗ, biểu mẫu hiện đủ hai mà
-    chỉ một giá trị sống sót — im lặng tuyệt đối;
-  * `PATCH` không gửi `custom_fields` mà lấy danh sách rỗng = mọi ô riêng bỗng
-    thành «không còn khai báo», mất luôn chốt bắt buộc của chúng.
+Chỗ dễ thủng còn lại: **`PATCH` không gửi `custom_fields`** mà lấy danh sách
+rỗng = mọi ô riêng bỗng thành «không còn khai báo», mất luôn chốt bắt buộc.
 
 Bộ kiểm giá trị (`field_values.py`) đã có tệp riêng; ở đây chỉ soi phần GỘP.
 """
@@ -61,16 +60,12 @@ def test_khong_khai_gi_van_hop_le(db):
 
 
 # ── Gộp hai nguồn ───────────────────────────────────────────────────────────
-def test_gia_tri_cua_CA_HAI_nguon_deu_duoc_kiem(db, loai):
-    """Ô của loại và trường riêng cùng đi qua một bộ kiểm.
-
-    Thiếu vế sau thì trường riêng khai `type: number` mà nhận chữ vẫn lọt xuống
-    DB — khai kiểu để đó cho vui.
-    """
+def test_kieu_cua_truong_rieng_duoc_kiem_that(db, loai):
+    """Khai `type: number` mà nhận chữ thì phải chặn — không thì khai kiểu cho vui."""
     values = {
         "dossier_type_id": loai.id,
         "custom_fields": [_def("gia_tri", "Giá trị", type="number")],
-        "extra_fields": {"so_giay_phep": "GP-01", "gia_tri": "không phải số"},
+        "extra_fields": {"gia_tri": "không phải số"},
     }
     with pytest.raises(HTTPException, match="Giá trị"):
         service.apply_extra_fields(db, values)
@@ -90,33 +85,38 @@ def test_o_bat_buoc_cua_TRUONG_RIENG_cung_bi_doi(db, loai):
     assert "Số quyết định" in str(exc.value.detail)
 
 
-def test_TRUNG_KHOA_voi_o_cua_loai_bi_chan(db, loai):
-    """⚠️ Bài kiểm CỐT LÕI — ca hỏng im lặng nhất của cả tính năng.
+def test_bo_truong_cua_LOAI_khong_con_tu_ap_cho_ho_so(db, loai):
+    """⚠️ Luật đổi 17/09/2026 — loại tụt xuống thành **KHUÔN**, không còn là luật.
 
-    Hai nguồn khai cùng đổ vào `extra_fields`, nên trùng khóa là hai ô cùng ghi
-    một chỗ: biểu mẫu hiện đủ hai, người dùng gõ hai giá trị khác nhau, và chỉ
-    một cái sống sót. Không lỗi, không cảnh báo, không cách nào biết.
+    Trước đó `apply_extra_fields` gộp `field_schema` của loại với
+    `custom_fields` của hồ sơ. Nay màn lập hồ sơ ĐỔ khuôn vào chính bảng trường
+    riêng, nên giữ cả hai nguồn là mọi dòng vừa đổ ra đều trùng khóa với chính
+    cái khuôn đẻ ra nó — và không hồ sơ nào lưu nổi.
+
+    Hệ quả phải biết: ô `required` khai ở LOẠI **không tự áp** cho hồ sơ nữa. Nó
+    chỉ có hiệu lực nếu dòng tương ứng còn nằm trong `custom_fields` của tờ đó,
+    tức đúng như người lập đã chốt trên màn hình. Muốn ép cứng cả công ty thì
+    phải là một CỘT THẬT.
+    """
+    #  Loại khai `so_giay_phep` BẮT BUỘC, nhưng hồ sơ không khai dòng nào.
+    values = {"dossier_type_id": loai.id, "custom_fields": [], "extra_fields": {}}
+    service.apply_extra_fields(db, values)      # không ném
+    assert values["extra_fields"] == {}
+
+
+def test_khoa_trung_ten_o_cua_loai_KHONG_con_bi_chan(db, loai):
+    """Không còn hai nguồn thì không có gì để mà trùng.
+
+    Chốt cũ («Trường riêng trùng tên với ô sẵn có của loại») đã gỡ — giữ lại là
+    chặn đúng cái việc mà khuôn sinh ra để làm.
     """
     values = {
         "dossier_type_id": loai.id,
-        "custom_fields": [_def("so_giay_phep", "Số GP riêng")],
+        "custom_fields": [_def("so_giay_phep", "Số giấy phép", required=True)],
         "extra_fields": {"so_giay_phep": "GP-01"},
     }
-    with pytest.raises(HTTPException, match="so_giay_phep"):
-        service.apply_extra_fields(db, values)
-
-
-def test_chot_trung_khoa_chay_ca_khi_KHONG_gui_gia_tri(db, loai):
-    """Gửi riêng `custom_fields` là đường lách hiển nhiên — phải bịt.
-
-    Chốt trùng khóa nằm sau nhánh «không gửi gì thì thôi»; đặt nhánh đó chặn cả
-    `custom_fields` là khai được một trường riêng trùng tên ô của loại mà không
-    ai kiểm, rồi lần lưu sau mới lộ ra.
-    """
-    values = {"dossier_type_id": loai.id,
-              "custom_fields": [_def("co_quan_cap", "Cơ quan")]}
-    with pytest.raises(HTTPException, match="co_quan_cap"):
-        service.apply_extra_fields(db, values)
+    service.apply_extra_fields(db, values)      # không ném
+    assert values["extra_fields"] == {"so_giay_phep": "GP-01"}
 
 
 def test_PATCH_khong_gui_khai_bao_thi_lay_cua_ban_ghi_cu(db, loai):

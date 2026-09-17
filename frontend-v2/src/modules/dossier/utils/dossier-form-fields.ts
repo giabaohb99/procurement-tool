@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import type { Control } from 'react-hook-form'
 
 import type { CrudFormField, CrudOption, CrudRecord } from '@/shared/crud'
-import { extraFieldName, type DossierFieldValue } from '../types/dossier'
+import type { DossierFieldValue } from '../types/dossier'
 import { toCustomRows } from '../types/dossier-custom-row'
 import type { DossierFieldDef } from '../types/dossier-field'
 import type { DossierType } from '../types/dossier-type'
@@ -31,35 +31,6 @@ export const CUSTOM_ROWS_FIELD = 'custom_rows'
  * chỗ ĐỌC (đổ giá trị đã lưu vào ô) phải tách ngược lại, và hai phép biến đổi
  * đó sẽ lệch nhau.
  */
-
-/** Tiêu đề nhóm ô riêng của loại. CỐ ĐỊNH, không chèn tên loại vào. */
-export const TYPE_FIELDS_SECTION = 'Thông tin theo loại hồ sơ'
-
-/**
- * Đổi MỘT khai báo trường tùy biến thành một ô của khung CRUD.
- *
- * ⚠️ `defaultValue` phải khai rõ ở đây, không để `buildFormDefaults` tự đoán.
- * Mặc định của nó là *công tắc = bật* và *số = 0* — hợp lý cho danh mục (ô
- * «Còn dùng» bật sẵn), nhưng sai hẳn ở đây: một ô do người dùng tự đặt tên như
- * «Đã thông quan» mà bật sẵn là hệ thống tự trả lời hộ họ, còn ô số thì `0` với
- * *chưa nhập* là hai chuyện khác nhau và không phân biệt được nữa.
- */
-export function toCrudField(def: DossierFieldDef): CrudFormField {
-  const options: CrudOption[] | undefined =
-    def.type === 'select' ? def.options.map((o) => ({ value: o, label: o })) : undefined
-
-  return {
-    name: extraFieldName(def.key),
-    label: def.label,
-    type: def.type,
-    required: def.required,
-    hint: def.hint || undefined,
-    options,
-    section: TYPE_FIELDS_SECTION,
-    fullWidth: def.type === 'textarea',
-    defaultValue: def.type === 'switch' ? false : '',
-  }
-}
 
 /** Ô chọn «Loại hồ sơ»: loại ngừng dùng bị loại, TRỪ loại hồ sơ đang mang. */
 function typeOptions(types: DossierType[], currentId: number): CrudOption[] {
@@ -90,7 +61,7 @@ interface BuildOptions {
     control: Control<CrudRecord>
     name: string
     disabled: boolean
-    typeKeys: Set<string>
+    typeId: number
   }) => ReactNode
 }
 
@@ -152,30 +123,35 @@ export function buildDossierFormFields(
     },
   ]
 
-  const typeDefs = fieldsOfType(types, typeId)
-  const fields = [...base, ...typeDefs.map(toCrudField)]
+  if (!options) return base
 
-  if (!options) return fields
-
-  //  ⚠️ `defaultValue` dựng từ `values`, và lúc NẠP thì `values` chính là bản
-  //  ghi (`resolveFormFields(config.formFields, item)`). Nhờ vậy mới ghép được
-  //  khai báo (`custom_fields`) với giá trị (`extra_fields`) thành từng hàng —
-  //  hai thứ nằm ở hai cột khác nhau dưới DB.
-  const typeKeys = new Set(typeDefs.map((d) => d.key))
+  //  ⚠️ **KHÔNG dựng ô cho bộ trường của LOẠI nữa** (đổi 17/09/2026). Loại tụt
+  //  xuống thành KHUÔN: `DossierCustomFieldsEditor` đổ nó vào bảng «Trường
+  //  riêng» khi người dùng chọn loại, rồi họ sửa/xóa tự do. Một bảng duy nhất
+  //  thay vì một khối chỉ-xem cộng một bảng sửa được.
+  //
+  //  ⚠️ Backend đi theo cùng luật: `service.apply_extra_fields` chỉ kiểm theo
+  //  `tab_dossier.custom_fields`. Giữ cả hai nguồn thì mọi dòng vừa đổ từ khuôn
+  //  ra đều trùng khóa với chính cái khuôn đẻ ra nó, và không hồ sơ nào lưu nổi.
+  //
+  //  `defaultValue` dựng từ `values`, mà lúc NẠP thì `values` chính là bản ghi
+  //  (`resolveFormFields(config.formFields, item)`) — nhờ vậy mới ghép được khai
+  //  báo (`custom_fields`) với giá trị (`extra_fields`) thành từng hàng.
   const rows = toCustomRows(
     values.custom_fields as DossierFieldDef[] | undefined,
     values.extra_fields as Record<string, DossierFieldValue> | undefined,
   )
 
-  fields.push({
-    name: CUSTOM_ROWS_FIELD,
-    label: 'Trường riêng của hồ sơ này',
-    type: 'custom',
-    fullWidth: true,
-    defaultValue: rows,
-    render: ({ control, name, disabled }) =>
-      options.renderCustomFields({ control, name, disabled, typeKeys }),
-  })
-
-  return fields
+  return [
+    ...base,
+    {
+      name: CUSTOM_ROWS_FIELD,
+      label: 'Trường riêng của hồ sơ này',
+      type: 'custom',
+      fullWidth: true,
+      defaultValue: rows,
+      render: ({ control, name, disabled }) =>
+        options.renderCustomFields({ control, name, disabled, typeId }),
+    },
+  ]
 }

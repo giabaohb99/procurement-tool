@@ -230,11 +230,17 @@ def test_doi_ten_loai_thi_chep_sang_moi_ho_so(db, loai):
 
 
 # ── 4. Ô tùy biến kiểm theo loại SẮP LƯU ───────────────────────────────────
-def test_o_tuy_bien_kiem_theo_loai_moi_chu_khong_phai_loai_cu(db, loai):
-    """Người dùng đổi loại và điền bộ ô mới trong CÙNG một lần bấm Lưu.
+def test_o_tuy_bien_kiem_theo_KHAI_BAO_cua_ho_so_chu_khong_theo_loai(db, loai):
+    """⚠️ Luật đổi 17/09/2026 — loại tụt xuống thành KHUÔN.
 
-    Lấy loại đang lưu để kiểm thì mọi ô vừa điền đều bị coi là «không còn khai
-    báo» — và ô bắt buộc của loại mới thì không ai đòi.
+    Trước đó `apply_extra_fields` gộp `field_schema` của loại vào phép kiểm, nên
+    đổi sang một loại có ô bắt buộc là hồ sơ bị đòi điền ô đó. Nay màn lập hồ sơ
+    ĐỔ khuôn vào bảng «Trường riêng» rồi người lập chốt lấy, nên nguồn khai duy
+    nhất là `tab_dossier.custom_fields`.
+
+    Giữ cả hai nguồn thì mọi dòng vừa đổ từ khuôn ra đều trùng khóa với chính
+    cái khuôn đẻ ra nó — và không hồ sơ nào lưu nổi. Xem
+    `test_ho_so_truong_rieng.py`.
     """
     khac = DossierType(code="DHHD", name="Đặt hàng",
                        field_schema=[{"key": "so_hd", "label": "Số hợp đồng",
@@ -245,7 +251,14 @@ def test_o_tuy_bien_kiem_theo_loai_moi_chu_khong_phai_loai_cu(db, loai):
     db.add(cur)
     db.flush()
 
-    values = {"dossier_type_id": khac.id, "extra_fields": {}}
+    #  Đổi sang loại có ô BẮT BUỘC, nhưng hồ sơ không khai dòng nào -> KHÔNG đòi.
+    values = {"dossier_type_id": khac.id, "custom_fields": [], "extra_fields": {}}
+    service.apply_extra_fields(db, values, cur)
+
+    #  Khai dòng đó vào hồ sơ thì mới đòi.
+    values = {"dossier_type_id": khac.id,
+              "custom_fields": [{"key": "so_hd", "label": "Số hợp đồng", "required": True}],
+              "extra_fields": {}}
     with pytest.raises(HTTPException, match="Số hợp đồng"):
         service.apply_extra_fields(db, values, cur)
 

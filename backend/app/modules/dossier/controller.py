@@ -32,9 +32,8 @@ def _before_create(db, data: DossierCreate) -> None:
     """
     values = {"dossier_type_id": data.dossier_type_id, "extra_fields": data.extra_fields,
               "custom_fields": data.custom_fields}
-    #  Chuyền loại vừa đọc sang chốt thứ hai — cả lần lưu chỉ tra danh mục MỘT lượt.
-    dossier_type = sync_type_label(db, values)
-    apply_extra_fields(db, values, dossier_type=dossier_type)
+    sync_type_label(db, values)
+    apply_extra_fields(db, values)
     data.dossier_type_name = values["dossier_type_name"]
     data.extra_fields = values["extra_fields"]
 
@@ -45,8 +44,8 @@ def _before_update(db, obj: Dossier, values: dict) -> None:
     `obj` còn mang dữ liệu CŨ ở đây, nên `sync_type_label` đối chiếu được «loại
     này có phải loại đang giữ không» để nới cho hồ sơ mang loại đã ngừng dùng.
     """
-    dossier_type = sync_type_label(db, values, obj)
-    apply_extra_fields(db, values, obj, dossier_type=dossier_type)
+    sync_type_label(db, values, obj)
+    apply_extra_fields(db, values, obj)
 
 
 router = make_crud_router(
