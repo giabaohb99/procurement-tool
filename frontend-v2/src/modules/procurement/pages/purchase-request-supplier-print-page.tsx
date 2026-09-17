@@ -1,6 +1,6 @@
-import { ArrowLeft, Printer, X } from 'lucide-react'
+import { ArrowLeft, FileText, Printer, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 
 import { usePermission } from '@/core/authorization/use-permission'
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -45,11 +45,12 @@ import {
  */
 export function PurchaseRequestSupplierPrintPage() {
   const { id } = useParams()
+  const routeId = Number(id)
   const navigate = useNavigate()
   const { can } = usePermission()
   const canSeeSupplier = can('supplier', 'read')
   const { data: purchaseRequest, isLoading, isError } = usePurchaseRequest(
-    canSeeSupplier ? Number(id) : 0,
+    canSeeSupplier ? routeId : 0,
   )
   const { data: warehouses } = usePurchaseRequestPrintWarehouses()
   // Tick mặc định TẤT CẢ các NCC; lưu tập BỎ tick để không phải chờ dữ liệu về.
@@ -141,6 +142,16 @@ export function PurchaseRequestSupplierPrintPage() {
           <Button onClick={() => window.print()} disabled={printedGroups.length === 0}>
             <Printer />
             In / Lưu PDF ({printedGroups.length} trang)
+          </Button>
+          {/* bao-CR-420: màn chi tiết phiếu nay chỉ còn MỘT nút in, và thu mua
+              được đưa thẳng sang bản tách theo NCC này. Lối bắc sang tờ phiếu
+              gốc phải nằm ở đây, không thì bản A biến mất khỏi giao diện của
+              chính người hay cần in nó nhất. */}
+          <Button variant="outline" asChild>
+            <Link to={appRoutes.procurement.purchaseRequestPrint(routeId)}>
+              <FileText />
+              Xem tờ phiếu gốc
+            </Link>
           </Button>
           <Button variant="outline" onClick={() => window.close()}>
             <X />

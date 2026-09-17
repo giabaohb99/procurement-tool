@@ -170,6 +170,14 @@ export function PurchaseRequestChooseCard({ purchaseRequest }: PurchaseRequestCh
             suppliers={suppliers}
           />
         ))}
+
+        {/* bao-CR-419 — KHÔNG có nút "Chốt xong lựa chọn" ở đây nữa (đại ca chốt
+            17/09/2026). Người yêu cầu chọn phương án là đủ; bắt họ bấm thêm một
+            nút xác nhận chỉ để đánh dấu "tôi đã xem" là dựng thêm một cửa ải cho
+            một việc họ vừa làm xong ngay bên trên. Việc CHỐT MUA sẽ có chỗ riêng
+            sau, nên mốc dưới DB (`options_chosen_at` / `options_chosen_by`) cùng
+            đường API `/choice-done` vẫn giữ nguyên — chỉ là hiện chưa có lối bấm
+            nào gọi tới. Không chỗ nào chặn việc lập đơn theo mốc này. */}
       </CardContent>
     </Card>
   )

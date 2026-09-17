@@ -97,6 +97,19 @@ export const purchaseRequestOptionApi = {
     ),
 
   /**
+   * bao-CR-419 — người yêu cầu "Chốt xong lựa chọn" cho CẢ PHIẾU: mặt đối xứng
+   * của `complete`. Bắt buộc phải có nút này vì H.10.2 tick sẵn phương án 0 —
+   * dòng nào cũng đang có phương án được chọn ngay từ lúc điều phối, nên
+   * "im lặng vì đồng ý" và "chưa mở phiếu ra xem" cho ra cùng một dữ liệu.
+   * Backend trả 400 khi còn dòng NSTM chưa chốt hoặc phiếu đã chốt rồi.
+   */
+  completeChoice: (id: number) =>
+    apiPost<{ options_chosen_at: string; lines: number }>(
+      `${BASE_URL}/${id}/options/choice-complete`,
+      {},
+    ),
+
+  /**
    * H.10.6 — "Tạo đơn mua hàng theo phương án": gom dòng đã chọn phương án theo
    * NCC thành N đơn NHÁP một lượt; dòng chưa có NCC vào một đơn riêng. Backend
    * gác `purchase_order:create` + phạm vi đọc phiếu; bấm lại không sinh trùng

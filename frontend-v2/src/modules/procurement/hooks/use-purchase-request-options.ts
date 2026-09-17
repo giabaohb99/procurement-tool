@@ -177,6 +177,27 @@ export function useCompletePrOptions(prId: number) {
 }
 
 /**
+ * bao-CR-419 — ghi mốc "chốt xong lựa chọn" cho cả phiếu.
+ *
+ * HIỆN KHÔNG MÀN NÀO GỌI, cố ý giữ lại: nút "Chốt xong lựa chọn" trong thẻ
+ * Phương án đã bỏ ngày 17/09/2026 (đại ca chốt — người yêu cầu chọn phương án
+ * là đủ), nhưng chỗ CHỐT MUA riêng sẽ dựng sau và sẽ gọi đúng đường này. Đường
+ * API, cột `options_chosen_at` / `options_chosen_by` và bài kiểm backend vẫn
+ * nguyên. Chuông báo NSTM của từng dòng đã viết nhưng ĐANG TẮT
+ * (`option_service.OPTION_BELLS_ENABLED`), nên câu toast không hứa là đã báo ai.
+ */
+export function useCompletePrOptionChoice(prId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => purchaseRequestOptionApi.completeChoice(prId),
+    onSuccess: (data) => {
+      toast.success(`Đã chốt xong lựa chọn cho ${data.lines} dòng`)
+      void queryClient.invalidateQueries({ queryKey: queryKeys.procurement.all })
+    },
+  })
+}
+
+/**
  * H.10.6 — nút "Tạo đơn mua hàng theo phương án": gom dòng đã chọn theo NCC
  * thành N đơn nháp một lượt. Toast kể tên các đơn vừa sinh để người bấm lần
  * theo được ngay; invalidate cả nhánh procurement vì trạng thái dòng YCMH và

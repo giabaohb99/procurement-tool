@@ -747,6 +747,30 @@ mua hàng* thì ra đúng N đơn khớp với N trang vừa ký. Và vì phươ
 khi lên đơn, bản in vẫn khớp các đơn ĐÃ tạo — nên tạo đơn xong **vẫn in lại được** (đây là
 bản lưu/ký hồ sơ, không phải lệnh tạo đơn; xem rà lại vòng 2 bên dưới).
 
+#### H.6.1 Lối vào hai bản in — MỘT nút, chọn theo vai trò (bao-CR-420, 17/09/2026)
+
+Màn chi tiết phiếu chỉ còn **một nút in**, không sổ xuống. Bản nào mở ra là do quyền của
+người bấm quyết định:
+
+| Người bấm | Bản in mở ra |
+|---|---|
+| Có `supplier:read` và phiếu đã có dòng chốt hoàn thành xử lý phương án (thu mua) | **Bản B** — tách theo nhà cung cấp |
+| Còn lại (người yêu cầu, hoặc phiếu chưa dòng nào chốt) | **Bản A** — tờ phiếu gốc |
+
+Chia như vậy vì hai vai trò cần hai tờ khác nhau hằng ngày: thu mua in bản B để gửi từng nơi,
+người yêu cầu in bản A để trình ký. Bắt cả hai đi qua một menu là bắt cả hai bấm thừa một lần.
+
+**Nhãn nút là *In phiếu*, một chữ cho cả hai bản** (đại ca chốt 17/09/2026). Bản đầu của
+bao-CR-420 đổi nhãn theo vai trò — thu mua thấy *In phiếu theo nhà cung cấp*, người yêu cầu
+thấy *In phiếu* — nhưng như vậy hai người ngồi cạnh nhau lại mô tả cùng một nút bằng hai cái
+tên, gọi điện chỉ việc cho nhau không ai hiểu ai. Bản in nào mở ra thì chính trang in nói, đó
+không phải việc của cái nút.
+
+**Không bản in nào mất lối vào.** Thanh công cụ của mỗi trang in có nút bắc sang trang kia:
+bản A có *Xem bản tách theo nhà cung cấp* (chỉ hiện khi có `supplier:read`), bản B có *Xem tờ
+phiếu gốc*. Nút ở bản A **ẩn khi trang mở từ đơn mua hàng** (bao-CR-314) — lúc đó số trên
+đường dẫn là số của ĐƠN chứ không phải của phiếu, bắc sang sẽ ra nhầm phiếu.
+
 **Ghi chú thi công (P4, 15/09/2026).** Cả hai bản in không cần backend mới — chi tiết YCMH đã
 nhúng `chosen_option` từng dòng (kèm luật che NCC). Phần tính nằm chung một tệp thuần
 `frontend-v2/src/modules/procurement/utils/purchase-request-print-options.ts` (có test cạnh
@@ -785,6 +809,9 @@ bộ) **đã bỏ ở rà lại vòng 4** vì mẫu 003/BM/PKT không có ô cho
    và có dòng đã chốt), *Tạo đơn mua hàng* cũng là **dropdown 2 mục** (*Lập tay* · *Theo
    phương án đã chọn — gom theo NCC*). Chỉ đủ điều kiện MỘT biến thể thì nút về dạng thường,
    không sổ (dropdown một mục là bắt bấm hai lần vô cớ).
+   **Đính chính — phần sổ xuống đã HẾT HIỆU LỰC từ bao-CR-420 (17/09/2026):** đại ca chốt bỏ
+   cả hai menu vì việc làm hằng ngày mà phải bấm hai lần là phiền. Nay mỗi nút một hành động
+   duy nhất, chọn sẵn theo vai trò người bấm — xem §H.6.1 và §H.10.6.
 3. **Nút gom hết lỗi 500** (mã sự cố 515E39D6): mã nhật ký cũ `options_generate_orders`
    22 ký tự, tràn cột `tab_audit_log.action` `VARCHAR(20)` → MySQL 1406. Đổi thành
    `options_gen_orders` (18 ký tự) + đăng nhãn ở `action_catalog.py`. Lưu ý: `create_po`
@@ -888,6 +915,27 @@ P3 + P3b đã xong; bên trong P2 đi theo thứ tự H.10.8.
 
 ### H.9 Còn nợ
 
+Rà lại ngày **17/09/2026** theo câu hỏi của đại ca *"còn thiếu chức năng hay chưa làm cái gì so
+với plan không"*: **không có mục nào trong bản kế hoạch bị bỏ sót** — H.3.9, H.10.4, H.10.5,
+H.10.6 đều đã có trong mã và có bài kiểm canh. Ba món nợ dưới đây là thứ **bản kế hoạch chưa
+bao giờ nói tới**, lòi ra khi đối chiếu luồng phương án với các luồng khác của hệ thống. (Món
+thứ tư — không có chuông nào cho hai lần đổi tay — đã đóng ngày 17/09 bằng bao-CR-419, xem H.11.)
+
+- **N-18 — luồng phương án không có lối vào từ màn danh sách hay Trang chủ.** Người phụ trách
+  chỉ biết mình còn phiếu phải xử lý phương án nếu tự mở từng phiếu ra xem. Cờ *đã chốt hoàn
+  thành xử lý* và *chốt rỗng* nằm ở mức DÒNG, mà bộ lọc của màn danh sách chỉ lọc được cột đầu
+  phiếu, nên không lọc tới được; Trang chủ cũng chỉ đếm phiếu đang chờ duyệt. Muốn đóng thì
+  phải tính một cờ ở mức đầu phiếu (suy từ các dòng) rồi mới có thứ để lọc và để đếm.
+  **BỎ — đại ca chốt ngày 17/09/2026:** không bày chặng phương án ra màn danh sách, không cần
+  thiết. Ghi lại để sau này ai hỏi "sao danh sách không thấy chặng phương án" thì biết là cố ý.
+- **N-19 — tệp Excel xuất danh sách yêu cầu mua hàng chưa có cột nào của phương án.** Bảng
+  xuất hiện có 8 cột đầu phiếu + 17 cột dòng hàng, không cột nào nói phương án nào được chọn,
+  nhà cung cấp nào, giá bao nhiêu. Người làm báo cáo vì thế vẫn phải mở từng phiếu.
+- **N-20 — chưa có bài hướng dẫn sử dụng nào cho luồng phương án.** Đã tra kho hướng dẫn đang
+  chạy: 12 bài về mua hàng, bài mới nhất sửa ngày 28/08/2026, không bài nào nhắc tới phương án.
+  Người dùng mới nhận phiếu sẽ không biết chọn phương án xong thì còn phải làm gì nữa không, và
+  nút *Chốt hoàn thành xử lý* của thu mua khác nút chọn phương án của họ chỗ nào.
+
 - **N-17 — ĐÃ ĐÓNG 15/09/2026 (P4)**: quyền `print` của `purchase_request` backend không kiểm
   ở đâu cả — ai mở được chi tiết phiếu (`read`) là in được. Cách đóng gồm hai lớp:
   - **Lớp dữ liệu (đã có sẵn từ P1, có test)**: serializer `_out` của chi tiết YCMH che sạch
@@ -950,6 +998,40 @@ sau; cổng gửi duyệt ĐMH sẵn có (CR-095, `REQUIRED_LINE_FIELDS`) chặn
 H.3.9 chép mã hàng lúc chọn. **Đường tạo ĐMH tay giữ nguyên, luôn hoạt động** — và được nâng
 cấp tự điền NCC/giá/mã từ phương án đã chọn của dòng.
 
+**Lối vào: MỘT nút, hệ thống tự chọn đường (bao-CR-420, 17/09/2026).** Màn chi tiết phiếu chỉ
+còn một nút *Tạo đơn*, không sổ xuống. Đường chạy chọn theo thứ tự:
+
+1. Còn dòng gom được theo phương án (đã chốt hoàn thành xử lý · chưa hủy · còn `no_po` · còn
+   phương án đang chọn) → chạy **đường gom theo NCC**.
+2. Không có đường đó nhưng còn dòng chưa đặt đủ → chạy **đường lập tay**.
+3. Không có cả hai → ẩn nút.
+
+Thứ tự này không tùy ý. Khi phương án đã chốt mà lại lập tay thì đơn sinh ra bỏ qua đúng phần
+việc NSTM vừa làm — thiếu cả NCC lẫn giá đã khảo sát. Ngược lại, ẩn hẳn đường lập tay thì phiếu
+chưa ai chốt phương án (phiếu cũ, hoặc đang giữa chừng) sẽ không lập nổi đơn nào từ màn này.
+Cả hai đường đều đòi `purchase_order:create`, nên người yêu cầu không thấy nút.
+
+**Nhãn nút là *Tạo đơn* cho cả hai đường** (đại ca chốt 17/09/2026). Bản đầu ghi *Tạo đơn theo
+phương án* / *Tạo đơn mua hàng* tùy đường — tức là tả cách chạy bên trong, thứ người bấm không
+chọn được và cũng không cần biết, vì đường nào chạy đã do trạng thái phiếu quyết định. Việc sắp
+làm nói ở hộp xác nhận ngay bên dưới, chỗ có đủ chỗ để nói cho tử tế.
+
+**Hỏi trước khi gom THÊM (bao-CR-421, 17/09/2026).** Đường gom theo phương án luôn mở một hộp
+xác nhận, và hộp đó đổi lời tùy tình trạng phiếu:
+
+| Tình trạng phiếu | Tiêu đề hộp | Nội dung | Nút đồng ý |
+|---|---|---|---|
+| Chưa có ĐMH nào | *Tạo đơn mua hàng theo phương án* | Tả việc sắp làm: gom dòng đã chọn phương án theo NCC thành đơn NHÁP, dòng chưa có NCC gom vào một đơn riêng | *Tạo đơn nháp* |
+| Đã có ĐMH | *Phiếu này đã có đơn mua hàng* | Nêu số đơn đang có và ba mã đầu (nhiều hơn thì *và n đơn khác*), nói rõ chỉ gom thêm dòng CHƯA nằm trên đơn nào nên đơn cũ không bị đụng và không dòng nào bị đặt trùng | *Tạo thêm đơn nháp* |
+
+Lý do tách hai lời: nút nằm ngay đầu trang và bấm một cái là ra đơn nháp, nên người thu mua mở
+lại phiếu cũ rất dễ bấm thêm lần nữa mà không nhớ hôm trước đã gom rồi. Backend vốn đã bỏ qua
+dòng đã nằm trên đơn nên không sinh ra đơn trùng, nhưng *tạo thêm* có khi đúng ý (đặt bổ sung,
+đổi NCC) mà có khi là bấm nhầm — việc của giao diện là hỏi, không phải đoán hộ.
+
+Danh sách đơn đang có lấy từ đúng truy vấn của thẻ *ĐMH liên quan* (`/api/purchase-orders?pr_code=`)
+nên không tốn thêm lượt gọi; truy vấn chưa về thì hộp rơi về lời cũ chứ **không** chặn nút.
+
 #### H.10.7 Chọn thay
 
 Admin / Quản lý thu mua (`purchase_request:approve`) chọn giúp người yêu cầu — đã có sẵn từ
@@ -987,3 +1069,175 @@ sát), và dòng chốt rỗng hiện thẻ Phương án 0 chọn được thay 
   `toDraftFromRequest` điền NCC lên đầu đơn khi **mọi dòng còn mua đều chọn phương án cùng
   MỘT NCC** (lệch một dòng là để trống như cũ). Phương án 0 chụp đúng giá trị dòng nên phiếu
   chưa ai đụng phương án cho kết quả y như trước.
+
+### H.11 Chuông cho hai lần đổi tay + mốc "chốt xong lựa chọn" (bao-CR-419, 17/09/2026)
+
+> **Đọc trước:** cái nút mô tả trong mục này **đã bị bỏ ngay trong ngày** — xem H.11.1 ở cuối mục.
+> Phần bên dưới giữ nguyên để giải nghĩa vì sao cái mốc dưới cơ sở dữ liệu vẫn còn nằm đó.
+
+**Bài toán.** Luồng phương án đổi tay hai lần, và trước đợt này **không lần nào có chuông**:
+nhân sự thu mua gắn xong phương án rồi bấm *Chốt hoàn thành xử lý* thì người yêu cầu không biết
+đã tới lượt mình; người yêu cầu chọn xong thì thu mua không biết để vào lập đơn. Hai bên phải
+nhắn cho nhau ngoài hệ thống, và phiếu nằm im không ai thấy.
+
+**Hai luật đại ca chốt.**
+
+1. **Đợi xong CẢ PHIẾU mới báo, không báo theo từng dòng.** Phiếu có nhiều người phụ trách thì
+   người chốt CUỐI CÙNG mới làm nổ chuông — báo sớm hơn nghĩa là mời người yêu cầu vào chọn
+   trên một phiếu mới xong một nửa.
+2. **Người nhận chuông "đã chọn xong" là nhân sự thu mua phụ trách TỪNG DÒNG**, không phải
+   người đứng tên cả phiếu — vì lập đơn là việc của người ôm dòng đó. Một người ôm hai dòng
+   vẫn chỉ nhận một chuông; người vừa bấm không tự nhận chuông của chính mình.
+
+**Vì sao phải đẻ thêm nút "Chốt xong lựa chọn".** Chuông thứ hai cần biết *thời điểm người yêu
+cầu chọn xong*, mà dữ liệu hiện có không nói được điều đó: H.10.2 tick sẵn **phương án 0** cho
+mọi dòng ngay từ lúc điều phối, nên dòng nào cũng đang có một phương án được chọn — *"im lặng vì
+đồng ý mua theo yêu cầu gốc"* và *"chưa hề mở phiếu ra xem"* cho ra **cùng một dữ liệu**. Bắn
+chuông theo mỗi lần bấm chọn thì thu mua ăn một tràng chuông cho một phiếu; suy ra từ cờ *đã
+chọn* thì chuông reo ngay lúc điều phối xong. Chốt là để người yêu cầu **bấm một cái rõ ràng**,
+và ghi lại mốc đó trên đầu phiếu (`options_chosen_at` + `options_chosen_by`).
+
+Mốc này **không phải bản sao thứ hai của cờ "đã chọn"** — nó ghi một SỰ KIỆN (ai, lúc nào), cùng
+loại với cờ *đã chốt hoàn thành xử lý* của từng dòng. Phương án nào được chọn thì vẫn chỉ đọc ở
+một chỗ duy nhất là cờ trên bảng phương án.
+
+**Luật của nút.**
+
+| Điều | Luật |
+|------|------|
+| Ai bấm được | Người yêu cầu, hoặc người giữ quyền duyệt yêu cầu mua hàng — đúng ranh giới của nút chọn phương án (thu mua bấm là 403) |
+| Bấm được khi nào | Mọi dòng của phiếu đã được chốt hoàn thành xử lý; còn dòng dở thì báo rõ còn mấy dòng |
+| Bấm hai lần | Lần thứ hai bị chặn — phiếu đã chốt rồi |
+| Mở lại một dòng | Mốc bị **xóa** (cả thời điểm lẫn người bấm): mở lại một dòng là mở lại cả vòng thương lượng, để nguyên dấu cũ thì thu mua nhìn vào tưởng phiếu đã yên trong khi người kia đang sửa dở |
+| Trạng thái phiếu | **Không đổi** — mốc này không tham gia vào chuỗi trạng thái (xem H.12) |
+
+**Đường API và chỗ bấm.** `POST /api/purchase-requests/{id}/options/choice-complete`; nút nằm
+cuối thẻ *Phương án* của màn chi tiết, bấm xong nút biến thành dòng *"Đã chốt xong lựa chọn lúc
+… — <người bấm>"*. Kèm 10 bài kiểm backend (`test/backend/test_chuong_phuong_an_cr419.py`) và 3
+bài kiểm giao diện trong bộ test sẵn có của thẻ chọn.
+
+**Chuông đang TẮT — đại ca chốt ngày 17/09/2026.** Hai cái chuông đã viết xong và đã có bài kiểm,
+nhưng để ở trạng thái **ngủ**: công tắc `OPTION_BELLS_ENABLED` trong `option_service.py` đặt là
+*tắt*, hai lời gọi vẫn nằm nguyên chỗ cũ. Lý do: người nhận chuông thứ nhất là **người yêu cầu**,
+mà người yêu cầu phần lớn còn dùng **giao diện cũ** — màn chi tiết phiếu bên đó không có khu
+phương án, nên họ sẽ nhận một lời mời vào chọn rồi bấm vào mà không thấy chỗ nào để chọn. Phần
+còn lại của đợt này **vẫn chạy bình thường**: nút *Chốt xong lựa chọn*, mốc trên đầu phiếu, luật
+mở lại dòng xóa mốc. **Mở lại** bằng cách đổi đúng một hằng số đó thành *bật*, khi luồng yêu cầu
+mua hàng ngừng dùng giao diện cũ, hoặc khi màn chi tiết bên giao diện cũ có lối dẫn sang khu
+phương án của giao diện mới. Một bài kiểm canh chiều ngược lại: để mặc định thì không một dòng
+thông báo nào được sinh ra, ai bật lên mà chưa bàn lại sẽ thấy bộ kiểm đỏ.
+
+#### H.11.1 BỎ NÚT "Chốt xong lựa chọn" — đại ca chốt cùng ngày 17/09/2026
+
+Xem bản đầu xong, đại ca chốt **bỏ hẳn cái nút**: *"bỏ nút đó đi, chỉ cần người yêu cầu chọn là
+oke, rồi sau này mình sẽ có chổ cho họ chốt mua sau"*.
+
+**Vì sao bỏ là đúng.** Bảng luật ở trên cho nút đó một điều kiện duy nhất: mọi dòng đã được thu
+mua chốt hoàn thành xử lý. Nghĩa là tới lúc bấm được thì người yêu cầu **vừa mới chọn xong ngay
+bên trên** — nút không hỏi thêm điều gì họ chưa trả lời, nó chỉ bắt xác nhận lại một việc vừa
+làm. Cái giá phải trả thì có thật: quên bấm là phiếu nằm im, mà người quên sẽ không biết mình
+quên vì màn hình của họ không khác gì lúc đã bấm. Thứ thật sự cần một cái bấm rõ ràng là **chốt
+MUA** — đồng ý xuống tiền — và đó là một việc khác, sẽ có chỗ riêng.
+
+**Cái gì mất, cái gì còn.**
+
+| Phần | Sau 17/09/2026 |
+|------|----------------|
+| Nút *Chốt xong lựa chọn* và dòng chữ *"Đã chốt xong lựa chọn lúc …"* trong thẻ *Phương án* | **Bỏ hẳn** |
+| Hai cột `options_chosen_at` · `options_chosen_by` và migration `f1c3a7b52d48` | **Giữ nguyên** — chỗ chốt mua sắp làm sẽ ghi vào đúng hai cột này |
+| Đường API `POST …/options/choice-complete` + `option_service.mark_choice_done` + mã việc `options_choice_done` | **Giữ nguyên**, hiện không lối bấm nào gọi tới |
+| Luật mở lại một dòng thì xóa mốc | **Giữ nguyên** |
+| Chuông thứ hai (`notify_options_chosen`) | Vẫn TẮT như trên, và nay còn thêm một lý do: không ai bấm thì không có gì bắn |
+| 10 bài kiểm backend | **Giữ nguyên** — chúng kiểm đường API, không kiểm cái nút |
+
+**Không có gì chặn theo mốc này**, trước lẫn sau khi bỏ nút: việc sinh đơn mua hàng theo phương
+án chỉ đọc cờ *đã chọn* của từng dòng, `options_chosen_at` chưa bao giờ là điều kiện. Nên bỏ nút
+không làm kẹt bất kỳ phiếu nào đang chạy.
+
+### H.12 Trạng thái phiếu KHÔNG phản ánh chặng phương án (ghi nhận 17/09/2026)
+
+Trạng thái của yêu cầu mua hàng là **số liệu suy ra**, không phải ô ai đó bấm: hệ thống đếm
+phần dòng hàng đã nằm trên đơn mua hàng, đã nhận hàng, đã có mã kế toán, rồi tự xếp phiếu vào
+*đã điều phối → đang xử lý → đang mua → đã mua → hoàn thành*. Nghĩa là **cả chặng phương án diễn
+ra bên trong đúng một trạng thái** *(đã điều phối)*: từ lúc điều phối cho tới lúc sinh đơn đầu
+tiên, người xem danh sách thấy một chữ duy nhất, không phân biệt được phiếu đang chờ thu mua gắn
+phương án, chờ người yêu cầu chọn, hay đã chốt xong chỉ còn đợi lập đơn.
+
+**Chốt: KHÔNG thêm mã trạng thái mới vào chuỗi đó.** Chuỗi năm bậc đang được đọc bởi ngưỡng tính
+trạng thái, phù hiệu màu, bộ lọc danh sách, tệp Excel, bản in và các công cụ của trợ lý AI —
+chèn thêm một bậc là phải rà lại toàn bộ, đổi lấy một thông tin chỉ sống trong vài ngày đầu của
+phiếu. Hướng đi đúng là **một dải "chặng phương án" riêng, suy ra từ dữ liệu đã có** (cờ đã chốt
+hoàn thành xử lý của từng dòng + mốc chốt xong lựa chọn ở H.11): bốn nấc *chưa xử lý · thu mua
+đang xử lý · chờ chọn · đã chốt xong*, bày thành một phù hiệu phụ trên màn danh sách và một bộ
+lọc. Việc này chính là N-18 ở H.9.
+
+**Cập nhật cùng ngày: đại ca chốt BỎ phần bày ra màn danh sách** (N-18) — không cần thiết. Vậy
+kết luận của mục này rút lại còn đúng một vế: **chuỗi trạng thái của phiếu giữ nguyên năm bậc**,
+chặng phương án chỉ xem được khi mở phiếu ra, và đó là trạng thái mong muốn chứ không phải nợ.
+
+---
+
+## I. Chứng từ liên quan trên phiếu (bao-CR-422, 17/09/2026)
+
+> Đại ca: *"trên yêu cầu mua hàng cho hiển thị ra yêu cầu báo giá được liên kết nhé. trên v2
+> chưa có, trên v1 thì có rồi, trên v2 chưa có chổ nào để xem danh sách đơn mua hàng trên yêu
+> cầu mua hàng luôn"*
+
+### I.1 Bài toán
+
+Một phiếu yêu cầu mua hàng nằm giữa hai chứng từ khác: **phía trước** là yêu cầu báo giá đã chốt
+phương án và sinh ra nó, **phía sau** là các đơn mua hàng lập từ nó. Cả hai đường đều đã có
+trong cơ sở dữ liệu từ lâu, nhưng trên màn hình thì gần như không thấy:
+
+| Đường liên kết | Trước bao-CR-422 | Vấn đề |
+|---|---|---|
+| Phiếu ← yêu cầu báo giá | Một dòng chữ *Từ yêu cầu báo giá* lẫn giữa thẻ *Thông tin chung* | Chỉ bày được **một** phiếu nguồn, các nguồn còn lại bị giấu |
+| Phiếu → đơn mua hàng | Nút *ĐMH liên quan* ở thanh lệnh | Nút **tự ẩn** khi phiếu chưa có đơn nào, nên không ai biết là nó tồn tại |
+
+Chỗ chỉ bày một nguồn không phải lỗi giao diện mà là lỗi ở máy chủ: hàm `_source_survey_request`
+đọc bảng liên kết rồi cắt `limit(1)`. Một yêu cầu mua hàng gom được nhiều dòng đã chốt phương án,
+mà những dòng ấy có thể nằm ở các yêu cầu báo giá khác nhau, nên phiếu gom từ hai nguồn trở lên
+luôn mất nguồn thứ hai trở đi — ở **cả** giao diện cũ lẫn giao diện mới.
+
+### I.2 Máy chủ trả gì
+
+Hàm đổi tên thành `_linked_survey_requests`, trả về danh sách thay vì một phiếu:
+
+- Đọc `tab_survey_request_pr` theo **đúng thứ tự liên kết được ghi**, khử trùng — một yêu cầu
+  báo giá có nhiều dòng cùng đổ vào một phiếu vẫn chỉ là một nguồn.
+- Bảng liên kết rỗng thì mới lùi về dấu vết đời cũ `tab_survey_request_line.pr_id`, cũng gom đủ
+  và khử trùng. **Không cộng dồn hai đường** — phiếu mới luôn có cả hai dấu vết, cộng dồn là đếm
+  trùng và bày cả những nguồn mà bảng liên kết cố ý không nhận.
+- Phiếu nguồn đã bị xóa thì bỏ đúng dòng đó, giữ nguyên các nguồn còn sống; không bày mã cụt.
+- Mỗi dòng gồm mã, trạng thái, ngày yêu cầu, người yêu cầu — đủ để bày một dòng bấm được mà giao
+  diện không phải gọi thêm lượt nào.
+
+Phần trả về của phiếu có thêm khóa `survey_requests`. **Hai khóa cũ `survey_request_id` và
+`survey_request_code` giữ nguyên tên và nguyên nghĩa** (phiếu nguồn đầu tiên, rỗng khi phiếu lập
+tay) vì giao diện cũ và bản in đang đọc thẳng chúng — thêm khóa mới thì bên đó không phải sửa gì.
+Số lượt truy vấn không tăng: vẫn một lượt đọc bảng liên kết và một lượt đọc phiếu nguồn.
+
+### I.3 Thẻ "Chứng từ liên quan"
+
+Trên màn chi tiết phiếu của giao diện mới, ngay dưới thẻ *Phương án*, có một thẻ cố định gồm hai
+khu:
+
+- **Yêu cầu báo giá nguồn** — mỗi nguồn một dòng: mã bấm sang chi tiết yêu cầu báo giá, ngày yêu
+  cầu, người yêu cầu, trạng thái. Phiếu lập tay thì nói rõ *Phiếu này lập tay, không sinh ra từ
+  yêu cầu báo giá nào.*
+- **Đơn mua hàng đã lập** — mỗi đơn một dòng: mã bấm sang chi tiết đơn, ngày đặt, nhà cung cấp,
+  tổng tiền, trạng thái. Chưa có đơn nào thì nói *Chưa có đơn mua hàng nào được lập từ phiếu này.*
+
+Thẻ **không tự ẩn khi rỗng**, vì "chưa có đơn nào" cũng chính là câu trả lời người dùng đang đi
+tìm. Nút *ĐMH liên quan* ở thanh lệnh bỏ đi cùng lúc, tránh hai lối vào cho một việc.
+
+Phân quyền: không có `survey_request:read` thì mã yêu cầu báo giá bày dạng chữ chứ không dựng
+link cụt; không có `purchase_order:read` thì khu đơn hàng ẩn hẳn và hệ thống **không gọi** danh
+sách đơn để khỏi ăn 403. Ô *Từ yêu cầu báo giá* trong thẻ *Thông tin chung* giữ lại cho quen mắt,
+thêm chú *và n phiếu nữa* khi phiếu còn nguồn khác.
+
+### I.4 Không đụng gì tới giao diện cũ
+
+Không thêm bảng, không thêm cột, không có migration, không thêm khóa phân quyền. Thay đổi duy
+nhất ở phần trả về là **thêm** một khóa. Giao diện cũ và hai bản in đọc hai khóa vô hướng như
+trước, hành vi y nguyên.

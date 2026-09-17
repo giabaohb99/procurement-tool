@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -154,6 +154,7 @@ function buildPurchaseRequest(
     department: 'Marketing',
     head_of_dept: '',
     head_of_dept_id: 0,
+    handler_dept_id: 0,
     purpose: '',
     request_date: '2026-09-01',
     received_date: '2026-09-02',
@@ -185,6 +186,8 @@ function buildPurchaseRequest(
     dispatcher_signature: '',
     purchasing_head_name: '',
     purchasing_head_signature: '',
+    options_chosen_at: null,
+    options_chosen_by_name: '',
     items: [buildItem()],
     subtotal: 0,
     vat: 0,
@@ -448,5 +451,30 @@ describe('PurchaseRequestChooseCard', () => {
     expect(screen.queryByRole('radio', { name: /Phương án 1/ })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Mở lại cho NSTM xử lý' })).toBeNull()
     expect(screen.queryByRole('button', { name: /Sửa giá \/ NCC/ })).toBeNull()
+  })
+
+  // ── bao-CR-419: mốc chốt xong lựa chọn KHÔNG còn lối bấm ──────────────────────
+
+  it('never shows a finish-choosing button, with or without the milestone stamped', () => {
+    // Đại ca bỏ nút "Chốt xong lựa chọn" ngày 17/09/2026: người yêu cầu chọn
+    // phương án là đủ, việc chốt mua sẽ có chỗ riêng sau. Mốc dưới DB và đường
+    // API vẫn còn nên nút rất dễ bị dựng lại theo quán tính — bài kiểm này canh
+    // đúng chỗ đó, cả khi phiếu CHƯA có mốc lẫn khi đã có sẵn mốc cũ.
+    mockUser = { employee_id: 44, emp_code: 'REQ01' }
+    grantedPermissions = ['purchase_request:read']
+
+    renderCard(buildPurchaseRequest())
+    expect(screen.queryByRole('button', { name: 'Chốt xong lựa chọn' })).toBeNull()
+    expect(screen.queryByText(/Chọn xong cho mọi dòng thì bấm/)).toBeNull()
+
+    cleanup()
+    renderCard(
+      buildPurchaseRequest({
+        options_chosen_at: '2026-09-17T10:30:00',
+        options_chosen_by_name: 'Nguyễn Văn A',
+      }),
+    )
+    expect(screen.queryByRole('button', { name: 'Chốt xong lựa chọn' })).toBeNull()
+    expect(screen.queryByText(/Đã chốt xong lựa chọn lúc/)).toBeNull()
   })
 })

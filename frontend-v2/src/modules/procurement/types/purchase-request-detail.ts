@@ -1,5 +1,19 @@
 import type { PurchaseRequestOption } from './purchase-request-options'
 
+/**
+ * bao-CR-422 — một YCBG đã sinh ra phiếu YCMH này, đủ để bày một dòng bấm được mà
+ * không phải gọi thêm API: mã để bấm, trạng thái / ngày / người yêu cầu để người
+ * đọc biết nguồn đang tới đâu.
+ */
+export interface LinkedSurveyRequest {
+  id: number
+  code: string
+  /** Mã trạng thái YCBG — tra nhãn ở `SR_STATUS_LABELS`. */
+  status: string
+  request_date: string
+  requester: string
+}
+
 /** Một dòng hàng của phiếu YCMH — khớp `items[]` của `GET /api/purchase-requests/{id}`. */
 export interface PurchaseRequestItem {
   /** 0 / thiếu = dòng mới chưa lưu. GIỮ id khi sửa, nếu không ảnh đối chiếu sẽ mồ côi. */
@@ -108,9 +122,17 @@ export interface PurchaseRequestDetail {
    * (`quote_file_url`) lẫn tệp đính kèm mới qua `tab_file`. Bản in đọc cờ này.
    */
   has_quote_file?: boolean
-  /** bao-CR-318 — YCBG sinh ra phiếu này (0 / rỗng = lập tay). */
+  /**
+   * bao-CR-318 — YCBG sinh ra phiếu này (0 / rỗng = lập tay).
+   *
+   * Đây là phiếu nguồn ĐẦU TIÊN thôi. Một YCMH gom được nhiều dòng đã chốt phương
+   * án nằm ở những YCBG khác nhau, nên danh sách đủ ở `survey_requests` (bao-CR-422).
+   * Hai khóa này giữ nguyên tên vì giao diện cũ và bản in đang đọc thẳng chúng.
+   */
   survey_request_id?: number
   survey_request_code?: string
+  /** bao-CR-422 — MỌI YCBG đã sinh ra phiếu này, theo thứ tự liên kết. */
+  survey_requests?: LinkedSurveyRequest[]
 
   /**
    * Công tắc "duyệt điều phối" của hệ thống. TẮT thì phiếu "Đã duyệt" đã làm
@@ -140,6 +162,13 @@ export interface PurchaseRequestDetail {
    */
   purchasing_head_name: string
   purchasing_head_signature: string
+  /**
+   * bao-CR-419 — MỐC "người yêu cầu đã chốt xong lựa chọn phương án" cho cả phiếu.
+   * Rỗng nghĩa là chưa bấm chốt (kể cả khi mọi dòng đã có phương án được tick, vì
+   * phương án 0 luôn được tick sẵn). Mở lại một dòng cho NSTM là mốc này bị xóa.
+   */
+  options_chosen_at: string | null
+  options_chosen_by_name: string
 
   items: PurchaseRequestItem[]
   /** Tiền hàng chưa VAT / tiền VAT / tổng cộng — backend cộng từ các dòng. */

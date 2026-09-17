@@ -1,7 +1,8 @@
-import { ArrowLeft, Printer, X } from 'lucide-react'
+import { ArrowLeft, Printer, Users, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 
+import { usePermission } from '@/core/authorization/use-permission'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
 import { ErrorState } from '@/shared/ui/error-state'
@@ -42,6 +43,8 @@ export function PurchaseRequestPrintPage({ fromPo = false }: { fromPo?: boolean 
   const { id } = useParams()
   const navigate = useNavigate()
   const routeId = Number(id)
+  const { can } = usePermission()
+  const canSeeSupplier = can('supplier', 'read')
   //  Hai nguồn dữ liệu, mỗi lần chỉ một cái chạy — hook kia nhận 0 nên `enabled` tắt nó.
   const byRequest = usePurchaseRequest(fromPo ? 0 : routeId)
   const byOrder = usePurchaseRequestOfPurchaseOrder(fromPo ? routeId : 0)
@@ -116,6 +119,19 @@ export function PurchaseRequestPrintPage({ fromPo = false }: { fromPo?: boolean 
             <Printer />
             In / Lưu PDF
           </Button>
+          {/* bao-CR-420: lối bắc sang bản tách theo NCC, đối xứng với nút "Xem
+              tờ phiếu gốc" bên trang kia. Chỉ hiện khi người xem có quyền xem
+              NCC — trang bên kia tự gác lại lần nữa (N-17). Mở từ ĐƠN MUA HÀNG
+              thì KHÔNG hiện: `id` trên URL lúc đó là id của đơn, bắc sang sẽ ra
+              nhầm phiếu. */}
+          {!fromPo && canSeeSupplier && (
+            <Button variant="outline" asChild>
+              <Link to={appRoutes.procurement.purchaseRequestSupplierPrint(routeId)}>
+                <Users />
+                Xem bản tách theo nhà cung cấp
+              </Link>
+            </Button>
+          )}
           <Button variant="outline" onClick={closePrintPage}>
             <X />
             Đóng

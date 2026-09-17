@@ -261,29 +261,54 @@ def _has_quote_file(db: Session, pr) -> bool:
     return db.query(q.exists()).scalar() is True
 
 
-def _source_survey_request(db: Session, pr) -> tuple[int, str]:
-    """bao-CR-318 — YÊU CẦU BÁO GIÁ (YCBG) đã sinh ra phiếu này, để YCMH có đường quay về.
+def _linked_survey_requests(db: Session, pr) -> list[dict]:
+    """bao-CR-318 (mở rộng bao-CR-422) — MỌI YÊU CẦU BÁO GIÁ (YCBG) đã sinh ra phiếu này.
 
     Đơn mua hàng có `pr_code` trỏ ngược về YCMH, nhưng chiều YCMH -> YCBG thì chỉ nằm trong
     câu chữ ở ô Nội dung, bấm không ra. Liên kết thật vốn đã có sẵn trong CSDL:
       - `tab_survey_request_pr`: mỗi lần chốt phương án tạo YCMH ghi 1 dòng (nguồn chuẩn);
       - `tab_survey_request_line.pr_id`: đường cũ, dùng cho phiếu tạo trước khi có bảng trên.
-    Không tra ra thì trả (0, "") và giao diện không hiện gì — phiếu lập tay là bình thường.
+
+    Bản đầu (bao-CR-318) chỉ lấy MỘT phiếu bằng `limit(1)`, và điều đó giấu bớt sự thật: một
+    YCMH gom được nhiều dòng đã chốt phương án, mà các dòng ấy có thể nằm ở những YCBG khác
+    nhau. Người xem thấy đúng một mã liền tưởng phiếu chỉ có một nguồn. Nay trả cả danh sách,
+    xếp theo thứ tự liên kết được ghi (nguồn đầu tiên đứng đầu).
+
+    Không tra ra thì trả danh sách rỗng — phiếu lập tay là chuyện bình thường, không phải lỗi.
     """
     from app.modules.survey_request.model import (SurveyRequest, SurveyRequestLine,
                                                   SurveyRequestPr)
 
-    sr_id = (db.query(SurveyRequestPr.survey_request_id)
-             .filter(SurveyRequestPr.pr_id == pr.id)
-             .order_by(SurveyRequestPr.id.asc()).limit(1).scalar())
-    if not sr_id:
-        sr_id = (db.query(SurveyRequestLine.survey_request_id)
-                 .filter(SurveyRequestLine.pr_id == pr.id)
-                 .order_by(SurveyRequestLine.id.asc()).limit(1).scalar())
-    if not sr_id:
-        return 0, ""
-    code = db.query(SurveyRequest.code).filter(SurveyRequest.id == sr_id).scalar()
-    return (int(sr_id), code or "") if code else (0, "")
+    # Gom id theo ĐÚNG thứ tự gặp và khử trùng: một YCBG có nhiều dòng cùng đổ vào một YCMH
+    # thì vẫn chỉ là một nguồn, bày hai lần là người đọc tưởng có hai phiếu.
+    sr_ids: list[int] = []
+    for (sr_id,) in (db.query(SurveyRequestPr.survey_request_id)
+                     .filter(SurveyRequestPr.pr_id == pr.id)
+                     .order_by(SurveyRequestPr.id.asc()).all()):
+        if sr_id and sr_id not in sr_ids:
+            sr_ids.append(int(sr_id))
+    if not sr_ids:
+        for (sr_id,) in (db.query(SurveyRequestLine.survey_request_id)
+                         .filter(SurveyRequestLine.pr_id == pr.id)
+                         .order_by(SurveyRequestLine.id.asc()).all()):
+            if sr_id and sr_id not in sr_ids:
+                sr_ids.append(int(sr_id))
+    if not sr_ids:
+        return []
+
+    rows = (db.query(SurveyRequest.id, SurveyRequest.code, SurveyRequest.status,
+                     SurveyRequest.request_date, SurveyRequest.requester)
+            .filter(SurveyRequest.id.in_(sr_ids)).all())
+    by_id = {int(r[0]): r for r in rows}
+    out: list[dict] = []
+    for sid in sr_ids:
+        r = by_id.get(sid)
+        # Phiếu nguồn đã bị xóa thì bỏ qua: liên kết còn nhưng không có gì để bấm vào.
+        if not r or not r[1]:
+            continue
+        out.append({"id": sid, "code": r[1], "status": r[2] or "",
+                    "request_date": r[3] or "", "requester": r[4] or ""})
+    return out
 
 
 def _out(db: Session, pr, user=None) -> dict:
@@ -326,10 +351,19 @@ def _out(db: Session, pr, user=None) -> dict:
         _blank_supplier(d)
     d["created_at"] = pr.created_at
     d["created_by_name"] = resolve_actor(db, pr.created_by)
+    # bao-CR-419: mốc người yêu cầu chốt xong lựa chọn phương án (None = vòng này chưa xong).
+    d["options_chosen_at"] = pr.options_chosen_at
+    d["options_chosen_by_name"] = resolve_actor(db, pr.options_chosen_by) if pr.options_chosen_by else ""
     # bao-CR-317: ô "Báo giá đính kèm" trên bản in — xem `_has_quote_file`.
     d["has_quote_file"] = _has_quote_file(db, pr)
-    # bao-CR-318: đường quay về YCBG nguồn — xem `_source_survey_request`. Rỗng = phiếu lập tay.
-    d["survey_request_id"], d["survey_request_code"] = _source_survey_request(db, pr)
+    # bao-CR-318 + bao-CR-422: đường quay về YCBG nguồn — xem `_linked_survey_requests`.
+    # Danh sách rỗng = phiếu lập tay. Hai khóa vô hướng bên dưới là phiếu nguồn ĐẦU TIÊN, giữ
+    # nguyên tên cũ vì giao diện cũ (`frontend/`) và bản in đang đọc thẳng chúng — thêm khóa
+    # mới thì bên đó không phải sửa gì.
+    srs = _linked_survey_requests(db, pr)
+    d["survey_requests"] = srs
+    d["survey_request_id"] = srs[0]["id"] if srs else 0
+    d["survey_request_code"] = srs[0]["code"] if srs else ""
     # Chữ ký ô "Người lập" trên phiếu in. Tra theo NHÂN SỰ người yêu cầu (đúng cái TÊN đang in);
     # phiếu cũ chưa có requester_id thì mới lấy chữ ký người tạo, và chỉ khi tên trùng nhau —
     # tránh in chữ ký người A dưới tên người B khi thu mua lập phiếu hộ bộ phận khác.
@@ -1160,7 +1194,33 @@ def complete_options(pid: int, data: PROptionCompleteIn, db: Session = Depends(g
     msg = "Đã chốt hoàn thành xử lý phương án"
     if all_done:
         msg += " — cả phiếu đã xử lý xong"
+        # bao-CR-419: ĐỢI XONG CẢ PHIẾU mới báo người yêu cầu. Phiếu nhiều NSTM thì
+        # người chốt cuối cùng mới làm nổ chuông, mỗi phiếu đúng một cái.
+        # Đang TẮT — xem `option_service.OPTION_BELLS_ENABLED`; lời gọi giữ nguyên
+        # để lúc mở lại chỉ phải đổi đúng hằng đó.
+        option_service.notify_options_ready(db, pr, user.id)
     return success({"done": done, "empty": empty, "all_done": all_done}, msg)
+
+
+@router.post("/{pid}/options/choice-complete")
+def complete_option_choice(pid: int, db: Session = Depends(get_db),
+                           user=Depends(require("purchase_request", "read"))):
+    """bao-CR-419 — NGƯỜI YÊU CẦU "Chốt xong lựa chọn" cho cả phiếu, rồi chuông báo
+    NSTM của từng dòng vào gom đơn.
+
+    Cổng `read` + `ensure_can_choose` y hệt nút chốt phương án: đây là nút kết của
+    chính việc chốt đó, ai chốt được phương án thì chốt được phần lựa chọn.
+    """
+    pr = _in_scope(db, pid, user, "read")
+    option_service.ensure_stage(pr)
+    option_service.ensure_can_choose(
+        pr, user, user_has_permission(db, user, "purchase_request", "approve"))
+    lines = option_service.mark_choice_done(db, pr, user)
+    # Chuông đang TẮT — xem `option_service.OPTION_BELLS_ENABLED`. Mốc chốt vẫn ghi,
+    # nên thu mua vẫn nhìn thấy phiếu đã chốt xong ở màn chi tiết.
+    option_service.notify_options_chosen(db, pr, user.id)
+    return success({"options_chosen_at": pr.options_chosen_at, "lines": lines},
+                   "Đã chốt xong lựa chọn — thu mua sẽ lập đơn theo phương án đã chọn")
 
 
 @router.post("/{pid}/items/{item_id}/options/reopen")

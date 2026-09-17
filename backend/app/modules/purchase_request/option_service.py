@@ -8,6 +8,8 @@ Tách khỏi `service.py` vì tệp đó đã hơn 1000 dòng và toàn bộ ph�
 với một bảng (`tab_purchase_request_item_option`).
 """
 
+from datetime import datetime
+
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
@@ -526,8 +528,6 @@ def complete_options(db: Session, pr: PurchaseRequest, user, emp_code: str,
         done_now += 1
     db.commit()
     all_done = all(i.options_done for i in items)
-    # "options_complete" chưa khai trong action_catalog (tệp đó đang có CR khác sửa dở)
-    # — nhật ký vẫn ghi, chỉ hiện mã trần; nợ khai nhãn ghi ở change-log-bao.md.
     record(db, user.id, ENTITY, pr.id, "options_complete",
            f"Chốt hoàn thành xử lý phương án: {done_now} dòng"
            + (f" (trong đó {empty_now} chốt rỗng)" if empty_now else ""))
@@ -544,9 +544,141 @@ def reopen_line(db: Session, pr: PurchaseRequest, item: PurchaseRequestItem, use
     item.options_done = False
     item.no_option = False
     item.updated_by = user.id
+    # bao-CR-419: mở lại một dòng là mở lại cả vòng thương lượng — mốc "đã chốt xong
+    # lựa chọn" của phiếu phải xóa, kẻo thu mua vẫn thấy dấu cũ và tưởng phiếu đã yên.
+    pr.options_chosen_at = None
+    pr.options_chosen_by = 0
     db.commit()
     record(db, user.id, ENTITY, pr.id, "options_reopen",
            f"Mở lại xử lý phương án cho dòng {item.product_name or item.product_code}")
+
+
+def mark_choice_done(db: Session, pr: PurchaseRequest, user) -> int:
+    """bao-CR-419 — NGƯỜI YÊU CẦU bấm "Chốt xong lựa chọn" cho CẢ PHIẾU.
+
+    Mặt đối xứng của `complete_options`: NSTM chốt hết phần mình thì người yêu cầu
+    vào chọn, chọn xong bấm nút này để trả phiếu lại cho thu mua đi gom đơn.
+
+    Vì sao phải có nút chứ không tự suy: H.10.2 tick sẵn phương án 0 nên dòng nào
+    cũng đang có phương án được chọn kể từ lúc điều phối — "im lặng vì đồng ý mua
+    theo yêu cầu gốc" và "chưa hề mở phiếu ra xem" cho ra cùng một dữ liệu. Không
+    có nút thì thu mua chỉ còn cách đoán, hoặc đợi mãi.
+
+    Chốt theo CẢ PHIẾU chứ không theo dòng (đại ca chốt 17/09): phiếu 20 dòng mà báo
+    theo dòng là 20 cái chuông dội vào thu mua.
+
+    Trả về số dòng của phiếu (để câu thông báo nói được đã chốt trên bao nhiêu dòng).
+    """
+    items = items_of(db, pr)
+    if not items:
+        raise HTTPException(400, "Phiếu không có dòng hàng nào")
+    pending = [i for i in items if not i.options_done]
+    if pending:
+        raise HTTPException(400, f"Còn {len(pending)} dòng nhân sự thu mua chưa chốt "
+                                 "hoàn thành xử lý — chưa chốt xong lựa chọn được")
+    if pr.options_chosen_at:
+        raise HTTPException(400, "Phiếu đã chốt xong lựa chọn rồi — muốn chọn lại "
+                                 "hãy mở lại dòng cần sửa")
+    pr.options_chosen_at = datetime.now()
+    pr.options_chosen_by = user.id
+    pr.updated_by = user.id
+    db.commit()
+    record(db, user.id, ENTITY, pr.id, "options_choice_done",
+           f"Chốt xong lựa chọn phương án cho cả phiếu ({len(items)} dòng)")
+    return len(items)
+
+
+#  =====================================================================
+#  CHUÔNG (bao-CR-419) — hai lần bàn giao của luồng phương án
+#
+#  Trước CR này luồng phương án không có cái chuông nào: NSTM chốt xong thì người
+#  yêu cầu không biết tới lượt mình, người yêu cầu chọn xong thì thu mua không biết
+#  để vào gom đơn. Hai bên phải hẹn nhau ngoài hệ thống.
+#
+#  Cả hai chuông đều ĐỢI XONG CẢ PHIẾU mới bắn một lần (đại ca chốt 17/09) — không
+#  bắn theo từng dòng.
+#  =====================================================================
+
+#  TẮT có chủ ý (đại ca chốt 17/09/2026). Chuông đã viết xong và đã có bài kiểm,
+#  nhưng chưa cho chạy thật vì người nhận chuông thứ nhất là NGƯỜI YÊU CẦU, mà
+#  người yêu cầu phần lớn vẫn đang dùng giao diện cũ (`frontend/`) — màn chi tiết
+#  phiếu bên đó KHÔNG có khu phương án, nên họ sẽ nhận một lời mời vào chọn mà bấm
+#  vào thì không thấy chỗ nào để chọn.
+#
+#  MỞ LẠI: đổi hằng này thành True (chỉ một dòng, không phải viết lại gì), khi
+#  giao diện cũ ngừng dùng cho luồng yêu cầu mua hàng, hoặc khi màn chi tiết phiếu
+#  bên giao diện cũ có lối dẫn sang khu phương án của giao diện mới.
+#
+#  Tắt chuông KHÔNG tắt phần còn lại của bao-CR-419: nút "Chốt xong lựa chọn",
+#  mốc `options_chosen_at` / `options_chosen_by` và việc mở lại dòng xóa mốc vẫn
+#  chạy bình thường — đó là dữ liệu của luồng, không phải thông báo.
+OPTION_BELLS_ENABLED = False
+
+def _requester_user_id(db: Session, pr: PurchaseRequest) -> int:
+    """Tài khoản của NGƯỜI YÊU CẦU — khuôn `service._notify_expected_changed`:
+    tra theo nhân sự `requester_id`, phiếu cũ không có thì lấy người lập phiếu."""
+    from app.modules.user.model import User
+
+    if pr.requester_id:
+        u = (db.query(User)
+             .filter(User.employee_id == pr.requester_id, User.is_active == True)
+             .first())
+        if u:
+            return u.id
+    return pr.created_by or 0
+
+
+def _line_assignee_user_ids(db: Session, items: list[PurchaseRequestItem]) -> list[int]:
+    """Tài khoản của NSTM phụ trách TỪNG DÒNG (đại ca chốt 17/09: người nhận là NSTM
+    trên dòng, không phải người đứng tên cả phiếu). Một NSTM ôm nhiều dòng thì vẫn
+    chỉ một chuông — khử trùng ngay ở đây chứ không dựa vào bên nhận."""
+    from app.modules.employee.model import Employee
+    from app.modules.user.model import User
+
+    codes = {(i.assignee or "").strip() for i in items if (i.assignee or "").strip()}
+    if not codes:
+        return []
+    emp_ids = [e.id for e in db.query(Employee).filter(Employee.code.in_(codes)).all()]
+    if not emp_ids:
+        return []
+    return [u.id for u in db.query(User)
+            .filter(User.employee_id.in_(emp_ids), User.is_active == True).all()]
+
+
+def notify_options_ready(db: Session, pr: PurchaseRequest, actor_id: int) -> None:
+    """NSTM vừa chốt hoàn thành xử lý DÒNG CUỐI CÙNG -> báo người yêu cầu vào chọn.
+
+    Chỉ gọi khi cả phiếu đã xong (`all_done`). Không tự báo cho chính người vừa bấm:
+    quản lý thu mua chốt hộ phiếu của chính mình thì khỏi nhận chuông của mình.
+    """
+    if not OPTION_BELLS_ENABLED:
+        return
+    from app.modules.notification.service import trigger_notification
+
+    uid = _requester_user_id(db, pr)
+    if not uid or uid == actor_id:
+        return
+    trigger_notification(
+        db=db, event="pr_options_ready", doc_type="purchase_request", doc_code=pr.code,
+        creator_id=actor_id or pr.created_by, background_tasks=None,
+        is_urgent=bool(pr.is_urgent), link=f"/purchase-requests/{pr.id}",
+        recipient_ids=[uid])
+
+
+def notify_options_chosen(db: Session, pr: PurchaseRequest, actor_id: int) -> None:
+    """Người yêu cầu vừa CHỐT XONG LỰA CHỌN cả phiếu -> báo NSTM của từng dòng."""
+    if not OPTION_BELLS_ENABLED:
+        return
+    from app.modules.notification.service import trigger_notification
+
+    uids = [u for u in _line_assignee_user_ids(db, items_of(db, pr)) if u != actor_id]
+    if not uids:
+        return
+    trigger_notification(
+        db=db, event="pr_options_chosen", doc_type="purchase_request", doc_code=pr.code,
+        creator_id=actor_id or pr.created_by, background_tasks=None,
+        is_urgent=bool(pr.is_urgent), link=f"/purchase-requests/{pr.id}",
+        recipient_ids=uids)
 
 
 def generate_purchase_orders(db: Session, pr: PurchaseRequest, user_id: int) -> dict:

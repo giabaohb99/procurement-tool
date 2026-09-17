@@ -4,7 +4,6 @@ import {
   Ban,
   Check,
   CheckCheck,
-  ChevronDown,
   Copy,
   CornerUpLeft,
   ListChecks,
@@ -43,7 +42,7 @@ import {
   AlertDialogTitle,
 } from '@/shared/ui/alert-dialog'
 import { useHasChanged } from '@/shared/hooks/use-has-changed'
-import { DetailPageHeader, ResponsiveLabel } from '@/shared/ui/detail-page-header'
+import { DetailPageHeader } from '@/shared/ui/detail-page-header'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
@@ -57,12 +56,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/shared/ui/dialog'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/shared/ui/dropdown-menu'
 import { ErrorState } from '@/shared/ui/error-state'
 import { PageContainer } from '@/shared/ui/page-container'
 import { Skeleton } from '@/shared/ui/skeleton'
@@ -80,7 +73,7 @@ import { PurchaseRequestLineDetailDialog } from '../components/purchase-request-
 import { PurchaseRequestChooseCard } from '../components/purchase-request-choose-card'
 import { PurchaseRequestSupplierCard } from '../components/purchase-request-supplier-card'
 import { DocumentMoneyTotals } from '../components/document-money-totals'
-import { RelatedPurchaseOrdersCard } from '../components/related-purchase-orders-card'
+import { PurchaseRequestLinkedDocumentsCard } from '../components/purchase-request-linked-documents-card'
 import { TransferDeptDialog, type TransferDeptMode } from '../components/transfer-dept-dialog'
 import {
   useAssignPurchaser,
@@ -96,8 +89,10 @@ import {
   type PurchaseRequestAction,
 } from '../hooks/use-purchase-request'
 import { useGeneratePrOrders } from '../hooks/use-purchase-request-options'
+import { useRelatedPurchaseOrders } from '../hooks/use-purchase-request-support'
 import { isPrOptionStageOpen } from '../types/purchase-request-options'
 import { PR_STATUS_LABELS } from '../types/purchase-document'
+import type { PurchaseOrder } from '../types/purchase-document'
 import type { PurchaseOrderItem } from '../types/purchase-order-detail'
 import {
   buildPurchaseOrderLines,
@@ -169,6 +164,10 @@ export function PurchaseRequestDetailPage() {
 
   const { data: serverData, isLoading, isError } = usePurchaseRequest(purchaseRequestId)
   const { data: progress } = useOrderProgress(purchaseRequestId)
+  // bao-CR-421: hộp xác nhận trước khi gom đơn theo phương án phải nói được phiếu
+  // này ĐÃ có đơn mua hàng nào chưa. Gọi đúng truy vấn của thẻ "Chứng từ liên quan"
+  // (cùng `queryKey`) nên TanStack Query dùng lại kết quả, không tốn thêm lượt gọi.
+  const { data: relatedOrdersData } = useRelatedPurchaseOrders(isNew ? '' : serverData?.code || '')
   const { data: companiesData } = useCompanies({ page_size: 500, is_active: true })
   const { data: employeesData } = useEmployees({ page_size: 1000, is_active: true })
   // bao-CR-414: danh mục phòng ban cho ô «Nhờ phòng xử lý». Mọi vai trò seed đều đọc được
@@ -341,6 +340,24 @@ export function PurchaseRequestDetailPage() {
     can('purchase_order', 'create') &&
     hasDoneLine &&
     hasLineToGenerate
+  /**
+   * bao-CR-420 — nút "Tạo đơn mua hàng" chỉ còn MỘT đường, chọn sẵn thay người
+   * bấm. Thứ tự ưu tiên không phải tùy ý:
+   *
+   * - Phiếu đã có phương án chốt và còn dòng gom được thì đường ĐÚNG là gom
+   *   theo phương án. Lập tay lúc này bỏ qua đúng phần việc NSTM vừa làm — đơn
+   *   ra thiếu nhà cung cấp và thiếu giá đã khảo sát.
+   * - Không có đường phương án (phiếu cũ, hoặc chưa ai chốt xong) thì lập tay là
+   *   đường duy nhất; ẩn nốt thì thu mua không lập nổi đơn từ màn này.
+   *
+   * Vai trò quyết định người nào thấy gì: cả hai đường đều đòi
+   * `purchase_order.create`, nên người yêu cầu không thấy nút này.
+   */
+  const orderMode: 'options' | 'manual' | null = canGenerateFromOptions
+    ? 'options'
+    : canCreateManual
+      ? 'manual'
+      : null
   // Bản in theo NCC (H.6 bản B) — gác N-17: chỉ người có quyền xem NCC; trang in
   // tự gác lại lần nữa. Phiếu đã đóng vẫn in được để lưu hồ sơ.
   const canPrintBySupplier = !isNew && can('supplier', 'read') && hasDoneLine
@@ -470,18 +487,44 @@ export function PurchaseRequestDetailPage() {
   /**
    * Gom dòng đã chọn phương án thành các đơn nháp theo NCC (bao-CR-310 H.10.6).
    * Dời từ thẻ Phương án lên đây khi nhập nút — hành vi giữ nguyên.
+   *
+   * bao-CR-421 — phiếu ĐÃ CÓ đơn mua hàng thì hộp xác nhận phải nói thẳng điều đó
+   * rồi mới hỏi có tạo thêm không. Lý do là nút này nằm ngay đầu trang và bấm một
+   * cái là ra đơn nháp, nên người thu mua quay lại phiếu cũ rất dễ bấm lần nữa mà
+   * không nhớ hôm trước đã gom rồi; câu xác nhận cũ chỉ tả việc sắp làm, không hề
+   * cho biết phiếu đang ở tình trạng nào. Hệ thống KHÔNG đặt trùng — backend bỏ
+   * qua dòng đã nằm trên đơn — nhưng thứ đại ca cần là người bấm được hỏi trước,
+   * vì "tạo thêm" có khi đúng ý (đặt bổ sung, đổi NCC) mà có khi là bấm nhầm.
+   * Đơn đang có lấy từ cùng truy vấn của thẻ "ĐMH liên quan"; truy vấn chưa về thì
+   * rơi về câu xác nhận cũ chứ không chặn nút.
    */
   async function handleGenerateOrders() {
     if (generatingRef.current) return
-    const ok = await confirmDialog({
-      title: 'Tạo đơn mua hàng theo phương án',
-      message:
-        'Hệ thống sẽ gom các dòng đã chọn phương án theo nhà cung cấp thành các đơn mua hàng NHÁP; ' +
-        'dòng chưa có nhà cung cấp gom vào một đơn riêng để bổ sung sau. ' +
-        'Dòng đã nằm trên đơn mua hàng sẽ được bỏ qua. Tiếp tục?',
-      confirmLabel: 'Tạo đơn nháp',
-      tone: 'default',
-    })
+    const existingOrders = relatedOrdersData?.items ?? []
+    const orderCodeList = describeExistingOrders(existingOrders)
+    const ok = await confirmDialog(
+      existingOrders.length
+        ? {
+            title: 'Phiếu này đã có đơn mua hàng',
+            message:
+              `Phiếu ${data.code} đã có ${existingOrders.length} đơn mua hàng` +
+              `${orderCodeList ? `: ${orderCodeList}` : ''}.\n\n` +
+              'Hệ thống chỉ gom thêm những dòng CHƯA nằm trên đơn nào và đã chọn phương án, ' +
+              'nên các đơn đang có không bị đụng tới và không có dòng nào bị đặt trùng. ' +
+              'Vẫn tạo thêm đơn nháp cho phiếu này?',
+            confirmLabel: 'Tạo thêm đơn nháp',
+            tone: 'default',
+          }
+        : {
+            title: 'Tạo đơn mua hàng theo phương án',
+            message:
+              'Hệ thống sẽ gom các dòng đã chọn phương án theo nhà cung cấp thành các đơn mua hàng NHÁP; ' +
+              'dòng chưa có nhà cung cấp gom vào một đơn riêng để bổ sung sau. ' +
+              'Dòng đã nằm trên đơn mua hàng sẽ được bỏ qua. Tiếp tục?',
+            confirmLabel: 'Tạo đơn nháp',
+            tone: 'default',
+          },
+    )
     if (!ok) return
     generatingRef.current = true
     generateOrders.mutate(undefined, {
@@ -615,41 +658,30 @@ export function PurchaseRequestDetailPage() {
           Duyệt điều phối
         </Button>
       )}
-      {/* bao-CR-310 đợt 4 (rà lại): MỘT nút "Tạo đơn mua hàng" cho cả hai đường
-          lập tay / gom theo phương án — đủ cả hai thì sổ xuống chọn, chỉ còn một
-          đường thì bấm thẳng (sổ xuống một mục là bắt thêm một chạm vô nghĩa).
-          Nhãn NGẮN ở khổ hẹp: bản đầy đủ rộng ~180px, đúng phần đẩy cụm nút rớt
-          xuống hàng riêng trên máy 390px; "ĐMH" là từ viết tắt dùng hằng ngày. */}
-      {canCreateManual && canGenerateFromOptions ? (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button disabled={runAction.isPending || generateOrders.isPending}>
-              {generateOrders.isPending ? <Loader2 className="animate-spin" /> : <ShoppingCart />}
-              <ResponsiveLabel short="Tạo ĐMH" long="Tạo đơn mua hàng" />
-              <ChevronDown />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onSelect={() => handleCreatePurchaseOrder()}>
-              Lập tay — chọn dòng còn phải mua
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => void handleGenerateOrders()}>
-              Theo phương án đã chọn — gom theo NCC
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      ) : canCreateManual ? (
-        <Button onClick={handleCreatePurchaseOrder} disabled={runAction.isPending}>
-          <ShoppingCart />
-          <ResponsiveLabel short="Tạo ĐMH" long="Tạo đơn mua hàng" />
-        </Button>
-      ) : canGenerateFromOptions ? (
+      {/* bao-CR-420 (đại ca chốt 17/09/2026): MỘT nút, KHÔNG sổ xuống. Bản cũ
+          (bao-CR-310 đợt 4) bày cả hai đường lập tay / gom theo phương án trong
+          một menu, nên lần nào cũng mất hai chạm cho việc làm hằng ngày.
+          Đường nào chạy là do trạng thái phiếu + quyền của người bấm quyết
+          định, xem `orderMode` — không hỏi lại người dùng nữa.
+          Nhãn là "Tạo đơn" ở MỌI khổ màn hình (đại ca chốt 17/09/2026): bản dài
+          cũ ("Tạo đơn theo phương án" / "Tạo đơn mua hàng") tả cách chạy bên
+          trong, thứ người bấm không chọn được và cũng không cần biết — đường nào
+          chạy đã do trạng thái phiếu quyết định rồi. Hai nhánh dùng CHUNG một
+          chữ nên nút không đổi tên theo vai trò người đăng nhập, và chữ ngắn thì
+          khỏi cần đổi nhãn theo bề ngang nữa. Việc sắp làm nói ở hộp xác nhận
+          (bao-CR-421), chỗ có đủ chỗ để nói cho tử tế. */}
+      {orderMode === 'options' ? (
         <Button
-          disabled={generateOrders.isPending}
+          disabled={runAction.isPending || generateOrders.isPending}
           onClick={() => void handleGenerateOrders()}
         >
           {generateOrders.isPending ? <Loader2 className="animate-spin" /> : <ShoppingCart />}
-          <ResponsiveLabel short="Tạo ĐMH" long="Tạo đơn theo phương án" />
+          Tạo đơn
+        </Button>
+      ) : orderMode === 'manual' ? (
+        <Button onClick={handleCreatePurchaseOrder} disabled={runAction.isPending}>
+          <ShoppingCart />
+          Tạo đơn
         </Button>
       ) : null}
     </>
@@ -659,8 +691,8 @@ export function PurchaseRequestDetailPage() {
    * Lệnh PHỤ — khổ rộng bày thẳng, khổ hẹp gom vào nút `⋯`.
    *
    * ⚠️ Dựng thành BIẾN chứ không viết hai lần: mỗi nút kéo theo state hoặc
-   * mutation riêng (`DeleteConfirmButton`, `RelatedPurchaseOrdersCard` có truy
-   * vấn của nó), chép ra hai bản là hai bộ state song song cho cùng một lệnh.
+   * mutation riêng (`DeleteConfirmButton` có mutation của nó), chép ra hai bản
+   * là hai bộ state song song cho cùng một lệnh.
    */
   const secondaryActions = editing ? (
     <>
@@ -697,52 +729,33 @@ export function PurchaseRequestDetailPage() {
     </>
   ) : (
     <>
-      {/* bao-CR-310 đợt 4 (rà lại): hai bản in nhập chung MỘT nút "In" sổ
-          xuống theo góp ý của khách — chưa có bản in theo NCC (chưa dòng nào
-          chốt phương án, hoặc thiếu quyền xem NCC) thì giữ nút bấm thẳng. */}
-      {canPrintBySupplier ? (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline">
-              <Printer />
-              In phiếu
-              <ChevronDown />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem asChild>
-              <Link
-                to={appRoutes.procurement.purchaseRequestPrint(data.id)}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Phiếu yêu cầu mua hàng
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link
-                to={appRoutes.procurement.purchaseRequestSupplierPrint(data.id)}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Phiếu yêu cầu tách theo nhà cung cấp
-              </Link>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      ) : (
-        <Button variant="outline" asChild>
-          <Link
-            to={appRoutes.procurement.purchaseRequestPrint(data.id)}
-            target="_blank"
-            rel="noreferrer"
-          >
-            <Printer />
-            In phiếu
-          </Link>
-        </Button>
-      )}
-      {!isNew && <RelatedPurchaseOrdersCard purchaseRequestCode={data.code} />}
+      {/* bao-CR-420 (đại ca chốt 17/09/2026): MỘT nút in, KHÔNG sổ xuống. Bản
+          nào mở ra là do vai trò người bấm quyết định — người có quyền xem nhà
+          cung cấp (thu mua) hằng ngày cần bản tách theo NCC để gửi từng nơi,
+          người yêu cầu cần tờ phiếu gốc. Bản kia KHÔNG mất: thanh công cụ của
+          chính trang in có lối bắc sang, xem hai trang in của YCMH.
+          Nhãn là "In phiếu" cho cả hai bản (đại ca chốt 17/09/2026) — nút đổi
+          tên theo quyền người đăng nhập thì hai người ngồi cạnh nhau mô tả cùng
+          một nút bằng hai cái tên, gọi điện cho nhau không ai hiểu ai. Bản nào
+          mở ra thì chính trang in nói, không phải cái nút. */}
+      <Button variant="outline" asChild>
+        <Link
+          to={
+            canPrintBySupplier
+              ? appRoutes.procurement.purchaseRequestSupplierPrint(data.id)
+              : appRoutes.procurement.purchaseRequestPrint(data.id)
+          }
+          target="_blank"
+          rel="noreferrer"
+        >
+          <Printer />
+          In phiếu
+        </Link>
+      </Button>
+      {/* bao-CR-422: nút "ĐMH liên quan" ở đây đã bỏ. Nút TỰ ẨN khi phiếu chưa có
+          đơn nào, nên đúng lúc người ta cần biết "phiếu này đã lập đơn chưa" thì
+          màn hình không nói gì cả. Danh sách ĐMH nay nằm cố định trong thẻ
+          "Chứng từ liên quan" bên dưới, cùng chỗ với danh sách YCBG nguồn. */}
       {/* bao-CR-310: mở từ lúc thu mua tiếp nhận phiếu; phiếu đóng vẫn
           vào được để XEM lại phương án đã chốt. Đợt 3b: màn đó là bàn
           làm việc của NSTM nên đòi thêm quyền ghi — người yêu cầu
@@ -950,6 +963,11 @@ export function PurchaseRequestDetailPage() {
               ở đây cho người yêu cầu chọn phương án; thẻ tự ẩn khi chưa có dòng nào. */}
           {!isNew && !editing && <PurchaseRequestChooseCard purchaseRequest={data} />}
 
+          {/* bao-CR-422: hai chiều liên kết của phiếu — YCBG nào đẻ ra nó, nó đẻ ra
+              ĐMH nào. Thẻ đứng yên một chỗ kể cả khi chưa có gì để bày, vì "chưa có
+              đơn nào" cũng là câu trả lời người dùng đang đi tìm. */}
+          {!isNew && !editing && <PurchaseRequestLinkedDocumentsCard data={data} />}
+
           <DocumentAttachmentsCard
             entity="purchase_request"
             entityId={purchaseRequestId}
@@ -1155,11 +1173,25 @@ function createEmptyPurchaseRequest(user?: AuthUser | null): PurchaseRequestDeta
     dispatcher_signature: '',
     purchasing_head_name: '',
     purchasing_head_signature: '',
+    options_chosen_at: null,
+    options_chosen_by_name: '',
     items: [],
     subtotal: 0,
     vat: 0,
     total: 0,
   }
+}
+
+/**
+ * bao-CR-421 — kể tên các ĐMH phiếu đang có, để hộp xác nhận nói được "đã có đơn
+ * nào" chứ không chỉ nói "đã có đơn rồi". Phiếu gom nhiều NCC ra cả chục đơn nên
+ * chỉ đọc ba mã đầu; phần còn lại đếm gộp, không thì câu thông báo dài hơn cả hộp.
+ */
+function describeExistingOrders(orders: PurchaseOrder[]): string {
+  const codes = orders.map((order) => order.code).filter(Boolean)
+  const shown = codes.slice(0, 3).join(', ')
+  const rest = codes.length - 3
+  return rest > 0 ? `${shown} và ${rest} đơn khác` : shown
 }
 
 /**

@@ -1,4 +1,7 @@
-from sqlalchemy import BigInteger, Boolean, Index, Integer, Numeric, SmallInteger, String, Text
+from datetime import datetime
+
+from sqlalchemy import (BigInteger, Boolean, DateTime, Index, Integer, Numeric,
+                        SmallInteger, String, Text)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base_model import Base, AuditMixin
@@ -68,6 +71,15 @@ class PurchaseRequest(Base, AuditMixin):
     #   pur = NCC từ khảo sát/thu mua (chỉ supplier.read mới thấy, supplier.write mới sửa)
     # Các cột suggested_supplier* ở trên GIỮ LẠI = "NCC hiệu lực" (đồng bộ để ĐMH/list/in cũ dùng).
     supplier_info: Mapped[str] = mapped_column(Text, default="")
+
+    # bao-CR-419 — MỐC "người yêu cầu đã chốt xong lựa chọn phương án" cho CẢ PHIẾU.
+    # Vì sao phải lưu: H.10.2 tick sẵn phương án 0 nên dòng nào cũng có phương án đang
+    # chọn ngay từ đầu — "im lặng vì đồng ý" và "chưa hề mở phiếu ra xem" nhìn giống
+    # hệt nhau, không suy ra được từ `is_chosen`. Thu mua cần một dấu dứt khoát để biết
+    # lúc nào vào gom đơn, và đó cũng là chỗ treo chuông `pr_options_chosen`.
+    # NULL = vòng này chưa chốt xong. Mở lại một dòng bất kỳ sẽ xóa mốc về NULL.
+    options_chosen_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    options_chosen_by: Mapped[int] = mapped_column(BigInteger, default=0)
 
     # Soft delete
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)

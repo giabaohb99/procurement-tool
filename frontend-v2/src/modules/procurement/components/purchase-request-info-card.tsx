@@ -73,6 +73,10 @@ export function PurchaseRequestInfoCard({
   // bao-CR-318: đường về YCBG nguồn — chỉ thành link khi người xem đọc được YCBG,
   // không thì hiện mã dạng chữ (bấm vào chỉ ăn 403).
   const surveyRequestLinkable = Boolean(data.survey_request_id) && can('survey_request', 'read')
+  // bao-CR-422: một phiếu có thể gom nhiều YCBG. Ô này chỉ đủ chỗ cho phiếu đầu, nên khi
+  // còn phiếu khác phải nói ra — im lặng là người đọc tưởng phiếu chỉ có một nguồn. Danh
+  // sách đủ nằm ở thẻ "Chứng từ liên quan" (`purchase-request-linked-documents-card.tsx`).
+  const otherSurveyRequestCount = Math.max((data.survey_requests?.length ?? 0) - 1, 0)
   return (
     <Card className="gap-4 py-4">
       {/* Cùng một khuôn với các thẻ khác trên trang — xem ghi chú `pb-3!` ở
@@ -99,6 +103,11 @@ export function PurchaseRequestInfoCard({
               </Link>
             ) : (
               data.survey_request_code
+            )}
+            {otherSurveyRequestCount > 0 && (
+              <span className="text-muted-foreground ml-1 text-xs">
+                và {otherSurveyRequestCount} phiếu nữa
+              </span>
             )}
           </Field>
         )}
