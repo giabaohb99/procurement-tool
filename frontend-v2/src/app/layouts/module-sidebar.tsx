@@ -87,9 +87,9 @@ const navItemClass = [
   'data-[active=true]:active:bg-sidebar-active data-[active=true]:active:text-sidebar-active-foreground',
 ].join(' ')
 
-/** Lớp sơn cho mục con trong submenu: nhỏ hơn (h-8), chữ xs, thụt lề chuẩn. */
+/** Lớp sơn cho mục con trong submenu: cùng cỡ chữ với mục cha, thụt lề chuẩn. */
 const navSubItemClass = [
-  'h-8 gap-2.5 rounded-lg px-2.5 text-xs font-medium text-sidebar-foreground/75',
+  'h-9 gap-2.5 rounded-lg px-2.5 text-sm font-medium text-sidebar-foreground/80',
   '[&>svg]:size-4 [&>svg]:text-sidebar-foreground/50',
   'hover:bg-sidebar-foreground/10 hover:text-sidebar-foreground hover:[&>svg]:text-sidebar-foreground/70',
   'active:bg-sidebar-foreground/15 active:text-sidebar-foreground',
