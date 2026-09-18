@@ -26,8 +26,7 @@ import {
 } from '@/shared/ui/select'
 import { cn } from '@/shared/utils/cn'
 import { LeaveBalanceCard } from '../components/leave-balance-card'
-import { LeaveSectionTabs } from '../components/leave-section-tabs'
-import { LIST_SECTION_TOOLBAR_STICKY } from '../utils/list-sticky'
+import { LIST_TOOLBAR_STICKY_TOP } from '../utils/list-sticky'
 import {
   useAllocateLeaveBalance,
   useCloseLeaveYear,
@@ -350,8 +349,6 @@ export function LeaveBalancePage() {
         data-scrolled={scrolled ? '' : undefined}
         className="group flex min-h-0 flex-1 flex-col"
       >
-        <LeaveSectionTabs sticky />
-
         <Card className="flex min-h-0 w-full min-w-0 flex-1 flex-col p-3 md:p-4">
         <DataTable
           fillHeight
@@ -366,7 +363,7 @@ export function LeaveBalancePage() {
               : `Chưa cấp quỹ phép năm ${year}. Bấm «Cấp quỹ năm ${year}» để tạo.`
           }
           storageKey="hr.leave-balances"
-          toolbarClassName={LIST_SECTION_TOOLBAR_STICKY}
+          toolbarClassName={LIST_TOOLBAR_STICKY_TOP}
           onRowClick={(b) => navigate(appRoutes.hr.leaveBalanceDetail(b.id))}
           //  Khổ hẹp: thẻ thay bảng — bảng này mười một cột, trên máy 393px chỉ
           //  thấy hai cột đầu và cả mười con số nằm sau một thao tác cuộn ngang.

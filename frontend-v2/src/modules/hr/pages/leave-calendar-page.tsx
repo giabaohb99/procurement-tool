@@ -7,7 +7,6 @@ import { LeaveCalendarDayView } from '../components/leave-calendar-day-view'
 import { LeaveCalendarMonthGrid } from '../components/leave-calendar-month-grid'
 import { LeaveCalendarToolbar } from '../components/leave-calendar-toolbar'
 import { LeaveCalendarWeekGrid } from '../components/leave-calendar-week-grid'
-import { LeaveSectionTabs } from '../components/leave-section-tabs'
 import { useHolidays, useLeaveRequests } from '../hooks/use-leave'
 import { LEAVE_STATUS, type LeaveRequest } from '../types/leave'
 import { rangeOf, shiftAnchor, toISODate, type CalendarMode } from '../utils/calendar-grid'
@@ -136,8 +135,6 @@ export function LeaveCalendarPage() {
           </span>
         }
       />
-
-      <LeaveSectionTabs />
 
       {/*  Thanh điều hướng đặt DƯỚI tiêu đề, không nhét vào `actions`: nó có
            năm cụm điều khiển và cần cả chiều ngang, còn khe `actions` thì chia

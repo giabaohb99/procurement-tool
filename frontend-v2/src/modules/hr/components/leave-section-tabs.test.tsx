@@ -43,68 +43,44 @@ beforeEach(() => {
 })
 
 describe('LeaveSectionTabs', () => {
-  it('giữ NGUYÊN năm đường dẫn cũ — tab chỉ là thanh điều hướng', () => {
-    //  Link trong thư báo việc duyệt trỏ thẳng `/hr/leave-requests/{id}`
-    //  (`task_notification.ENTITY_LINKS`). Gộp về một đường `?tab=…` là gãy hết
-    //  thư đã gửi lẫn link người dùng dán cho nhau.
-    grants = NHAN_SU
-    build(appRoutes.hr.leaveRequests)
-    const hrefs = screen.getAllByRole('link').map((a) => a.getAttribute('href'))
-    expect(hrefs).toContain(appRoutes.hr.leaveRequests)
-    expect(hrefs).toContain(appRoutes.hr.leaveCalendar)
-    expect(hrefs).toContain(appRoutes.hr.leaveBalances)
-    expect(hrefs).toContain(appRoutes.hr.leaveTypes)
-  })
-
-  it('người thường KHÔNG thấy tab «Quỹ phép năm» và «Thiết lập»', () => {
-    //  Quyền chuyển từ MENU xuống thanh tab này. Bê thiếu luật đó là nhân viên
-    //  nhìn thấy cả tab khai danh mục rồi bấm vào ăn 403.
-    grants = NHAN_VIEN
-    build(appRoutes.hr.leaveRequests)
-    expect(screen.queryByRole('link', { name: 'Quỹ phép năm' })).toBeNull()
-    expect(screen.queryByRole('link', { name: 'Thiết lập' })).toBeNull()
-    expect(screen.getByRole('link', { name: 'Lịch nghỉ' })).toBeInTheDocument()
-  })
-
-  it('chỉ có quyền một trong hai danh mục thì vẫn vào được «Thiết lập»', () => {
-    grants = [...NHAN_VIEN, 'holiday.write']
-    build(appRoutes.hr.leaveRequests)
-    expect(screen.getByRole('link', { name: 'Thiết lập' })).toBeInTheDocument()
-  })
-
-  it('tab «Thiết lập» SÁNG cả khi đang ở màn Lịch ngày lễ', () => {
-    //  Hai màn con một tab: `NavLink` một mình chỉ so đúng đường của chính nó,
-    //  nên không có `alsoMatch` thì mở Lịch ngày lễ xong cả hàng tab tối om.
-    grants = NHAN_SU
-    build(appRoutes.hr.holidays)
-    expect(activeLabels()).toContain('Thiết lập')
-  })
-
-  it('trong «Thiết lập» thì hiện hàng tab con, ngoài đó thì không', () => {
+  it('trong «Thiết lập» thì hiện hai tab con Loại nghỉ và Lịch ngày lễ', () => {
     grants = NHAN_SU
     build(appRoutes.hr.leaveTypes)
+    expect(screen.getByRole('link', { name: 'Loại nghỉ' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Lịch ngày lễ' })).toBeInTheDocument()
   })
 
-  it('không đứng trong «Thiết lập» thì không có hàng tab con', () => {
+  it('tab «Lịch ngày lễ» SÁNG khi đang ở màn Lịch ngày lễ', () => {
     grants = NHAN_SU
-    build(appRoutes.hr.leaveCalendar)
-    expect(screen.queryByRole('link', { name: 'Lịch ngày lễ' })).toBeNull()
+    build(appRoutes.hr.holidays)
+    expect(activeLabels()).toContain('Lịch ngày lễ')
   })
 
-  it('chỉ sửa được MỘT danh mục thì không dựng hàng tab con một mục', () => {
-    //  Một tab thì không phải là tab — người dùng không chuyển đi đâu được.
-    grants = [...NHAN_VIEN, 'leave_type.write']
-    build(appRoutes.hr.leaveTypes)
-    expect(screen.queryByRole('link', { name: 'Loại nghỉ' })).toBeNull()
-  })
-
-  it('chỉ còn một tab và không ở Thiết lập thì ẩn hẳn thanh', () => {
-    //  Người không có `leave_request.read` (vd chỉ giữ khóa quỹ) thì thanh còn
-    //  đúng một mục — vẽ ra chỉ tốn một dòng mà không đi đâu được.
-    grants = ['leave_balance.read']
+  it('không đứng trong «Thiết lập» thì ẩn hẳn thanh', () => {
+    grants = NHAN_SU
     const { container } = render(
-      <MemoryRouter initialEntries={[appRoutes.hr.leaveBalances]}>
+      <MemoryRouter initialEntries={[appRoutes.hr.leaveCalendar]}>
+        <LeaveSectionTabs />
+      </MemoryRouter>,
+    )
+    expect(container).toBeEmptyDOMElement()
+  })
+
+  it('người thường KHÔNG thấy tab con Thiết lập', () => {
+    grants = NHAN_VIEN
+    const { container } = render(
+      <MemoryRouter initialEntries={[appRoutes.hr.leaveTypes]}>
+        <LeaveSectionTabs />
+      </MemoryRouter>,
+    )
+    expect(container).toBeEmptyDOMElement()
+  })
+
+  it('chỉ sửa được MỘT danh mục thì không dựng hàng tab một mục', () => {
+    // Một tab thì không phải là tab — người dùng không chuyển đi đâu được.
+    grants = [...NHAN_VIEN, 'leave_type.write']
+    const { container } = render(
+      <MemoryRouter initialEntries={[appRoutes.hr.leaveTypes]}>
         <LeaveSectionTabs />
       </MemoryRouter>,
     )

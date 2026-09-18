@@ -13,7 +13,6 @@ import { Card } from '@/shared/ui/card'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { RoomTimelineGrid } from '../components/room-timeline-grid'
-import { RoomSectionTabs } from '../components/room-section-tabs'
 import {
   useMeetingRooms,
   useRescheduleRoomBooking,
@@ -106,8 +105,6 @@ export function RoomCalendarPage() {
           ) : undefined
         }
       />
-
-      <RoomSectionTabs />
 
       {/*  ⚠️ KHÔNG `flex-1`: bốn phòng thì lưới cao 210px, mà thẻ giãn hết
            khung là chừa một hộp rỗng cả nghìn pixel bên dưới (khách chụp lại
