@@ -1,4 +1,5 @@
 import type { DataTableColumn } from '@/shared/data-table'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/ui/tooltip'
 import { formatDate } from '@/shared/utils/format-date'
 import type { ApprovalFlowStrip as FlowStrip, LeaveRequest } from '../types/leave'
 import { leaveLinesText, leaveTypeLabel } from '../utils/leave-type-label'
@@ -147,11 +148,29 @@ export function reasonColumn<T extends LeaveRequest>(): DataTableColumn<T> {
   return {
     key: 'reason',
     header: 'Lý do',
-    cell: (r) => r.reason,
-    //  ⚠️ Đừng khai `compactHidden` ở đây — thuộc tính đó chỉ có nghĩa với
-    //  `LinesTable` (bảng dòng chứng từ). `DataTable` không đọc nó, nên đặt vào
-    //  chỉ tạo ảo giác là cột đã được giấu bớt.
-    wrap: true,
-    minWidth: 180,
+    cell: (r) => {
+      const reason = r.reason?.trim()
+      if (!reason) return <span className="text-muted-foreground">—</span>
+
+      return (
+        <TooltipProvider delayDuration={150}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="block min-w-0 truncate cursor-default">
+                {reason}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent
+              side="top"
+              className="max-w-sm break-words whitespace-pre-wrap text-xs font-normal"
+            >
+              {reason}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )
+    },
+    width: 220,
+    minWidth: 160,
   }
 }
