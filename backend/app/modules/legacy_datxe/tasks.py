@@ -23,6 +23,7 @@ nhìn lại thì `is_unchanged` chặn ngay, không tốn dòng sổ nào.
 import json
 import logging
 import time
+from datetime import datetime, timezone
 
 from sqlalchemy import select
 
@@ -83,9 +84,10 @@ def now_ms() -> int:
 def read_cursor(db) -> tuple[int, str]:
     """Mốc bắt đầu của lượt này. Trả `(mốc, chuỗi con trỏ lần trước)`."""
     previous = last_successful_run(db, SOURCE_DATXE, JOB_PULL)
-    if previous is not None:
+    if previous is not None and previous.cursor_to:
         try:
-            return int(previous.cursor_to), previous.cursor_to
+            val = int(previous.cursor_to)
+            return val, str(val)
         except (TypeError, ValueError):
             LOGGER.warning("Con trỏ lượt trước không phải số: %r", previous.cursor_to)
     return now_ms() - FIRST_RUN_LOOKBACK_HOURS * 3600 * 1000, ""
@@ -125,18 +127,20 @@ def pull_updated(db, *, run_id: int = 0, user_id: int = 0, start_at: int | None 
     stats = {"fetched": len(ordered), "written": 0, "skipped": 0, "failed": 0,
              "unknown_type": 0, "cursor_from": cursor_from, "cursor_to": ""}
     seal_type_id = 0
-    cursor_to = start_at
+    cursor_to = start_at_val
 
     for legacy_id, node in ordered:
         if not isinstance(node, dict):
             stats["unknown_type"] += 1
             continue
+        up_ms = _updated_at(node)
         entity = entity_of(node)
         if entity not in MODEL:
             #  Nhánh `requests` bên app cũ còn loại phiếu khác (vd đặt phòng
             #  họp). Không phải lỗi — chỉ là không thuộc phần đang đồng bộ.
             stats["unknown_type"] += 1
-            cursor_to = max(cursor_to, _updated_at(node))
+            if up_ms > 0:
+                cursor_to = max(cursor_to, up_ms)
             continue
         if entity == ENTITY_SEAL and not seal_type_id:
             seal_type_id = get_seal_type_id(db)
@@ -145,7 +149,8 @@ def pull_updated(db, *, run_id: int = 0, user_id: int = 0, start_at: int | None 
                         run_id=run_id, people=people, catalog=catalog,
                         seal_type_id=seal_type_id, user_id=user_id)
         _count(stats, entry)
-        cursor_to = max(cursor_to, _updated_at(node))
+        if up_ms > 0:
+            cursor_to = max(cursor_to, up_ms)
 
     #  Con trỏ tiến kể cả khi vài phiếu hỏng: mỗi phiếu hỏng đã có dòng sổ *lỗi*
     #  của riêng nó, và `datxe.retry_pending` nhặt lại. Neo con trỏ lại vì một
@@ -226,8 +231,20 @@ def retry_pending(db, *, run_id: int = 0, user_id: int = 0) -> dict:
 def _updated_at(node) -> int:
     try:
         val = (node or {}).get(CURSOR_FIELD) or (node or {}).get("createdAt") or 0
-        return int(val)
-    except (TypeError, ValueError):
+        if isinstance(val, (int, float)):
+            return int(val)
+        if isinstance(val, str):
+            val_str = val.strip()
+            if not val_str:
+                return 0
+            if val_str.isdigit() or (val_str.startswith("-") and val_str[1:].isdigit()):
+                return int(val_str)
+            dt = datetime.fromisoformat(val_str.replace("Z", "+00:00"))
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return int(dt.timestamp() * 1000)
+        return 0
+    except (TypeError, ValueError, AttributeError):
         return 0
 
 
