@@ -72,6 +72,7 @@ def main():
     exe = shutil.which("mysql") or shutil.which("mariadb") or "mysql"
     cmd = [
         exe,
+        "-f",
         "-h", settings.DB_HOST,
         "-P", str(settings.DB_PORT),
         "-u", settings.DB_USER,
