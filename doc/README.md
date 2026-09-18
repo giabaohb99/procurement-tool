@@ -5,7 +5,7 @@
 | Muốn biết | Đọc |
 |---|---|
 | Hệ thống làm được gì, màn nào chạy ra sao | [tai-lieu-chuc-nang/00-muc-luc.md](tai-lieu-chuc-nang/00-muc-luc.md) |
-| Ai đổi gì, khi nào, ảnh hưởng ra sao (+ nhật ký deploy, quyết định đã chốt) | [tai-lieu-ky-thuat/change-log.md](tai-lieu-ky-thuat/change-log.md) **+** [change-log-bao.md](tai-lieu-ky-thuat/change-log-bao.md) — **đọc cả hai** |
+| Ai đổi gì, khi nào, ảnh hưởng ra sao (+ nhật ký deploy, quyết định đã chốt) | [tai-lieu-ky-thuat/change-log.md](tai-lieu-ky-thuat/change-log.md) **+** [change-log-bao.md](tai-lieu-ky-thuat/change-log-bao.md) — **đọc cả hai** (mảng AI có sổ riêng: [change-log-ai.md](tai-lieu-ky-thuat/change-log-ai.md)) |
 | Xây bằng cách nào (kiến trúc, DB, API, phân quyền) | [tai-lieu-ky-thuat/technical-design.md](tai-lieu-ky-thuat/technical-design.md) |
 
 ## tai-lieu-chuc-nang/ — Tài liệu chức năng (nghiệp vụ, cho người dùng & BA)
@@ -15,6 +15,7 @@
 ## tai-lieu-ky-thuat/ — Tài liệu kỹ thuật
 - `change-log.md` — **sổ CR** (mỗi thay đổi 1 dòng) + việc còn nợ (N-xxx) + quyết định đã chốt (D-xxx) + **nhật ký deploy**
 - `change-log-bao.md` — **cùng một sổ CR đó, phần của dải `bao` từ bao-CR-310** (tách 07/09/2026 vì cả đội chèn chung một dòng đầu bảng nên merge nào cũng xung đột). **Tra CR thì đọc cả hai tệp; cấp số mới cũng grep cả hai** — dải số vẫn chung cho cả đội. N-xxx / D-xxx / deploy cũ vẫn chỉ ở `change-log.md`
+- `change-log-ai.md` — **sổ RIÊNG của mảng tự động hóa bằng AI** (Agent Hub), tách 18/09/2026. Dải `ai-CR-*` là **dải số độc lập**, cấp số chỉ grep tệp này. Đây là bộ máy *làm ra* phần mềm chứ không phải một phân hệ của phần mềm, nên không trộn vào hai sổ trên. Thiết kế ở [`../agent-hub/`](../agent-hub/README.md)
 - `technical-design.md`, `thiet-ke-ky-thuat-chi-tiet.md`, `so-do-ky-thuat.md` — TDD
 - `mo-hinh-du-lieu-san-pham.md` — **đọc trước khi đụng vào cấu trúc Sản phẩm**: vì sao `tab_product` là bảng variant, thuộc tính động, tầng họ sản phẩm, hợp đồng "chọn mã VTBB → tự động điền", và danh sách việc CẤM làm
 - `quy-trinh-tai-lieu.md` — quy trình tài liệu & kiểm soát thay đổi (tài liệu nào ra đời khi nào)
@@ -46,6 +47,13 @@
 - `Go_Live_Checklist.md` — checklist trước khi chạy thật
 - `CHANGELOG.md` — nhật ký theo ngày (bản ngắn, đọc nhanh)
 - `FEATURE_CHECKLIST.md`, `NAMING_CONVENTIONS.md`, `Plan_Celery_Worker.md`
+
+## agent-hub/ — Tự động hóa bằng AI (BẬC 1 ĐANG DỰNG, `ai-CR-002`)
+Bộ máy nhận ticket → AI quản lý (Gemini) tóm tắt & đề xuất → đại ca duyệt qua Telegram → bot code (Claude Code CLI trên máy đại ca) thực hiện → CI/CD → dev → đại ca duyệt → prod.
+- `README.md` — tóm tắt + mục lục
+- `01-thiet-ke-ky-thuat.md` — TDD: kiến trúc, bảy trạm, mô hình dữ liệu, cấu hình, lộ trình bốn bậc, bảng rủi ro
+- `02-bo-quy-tac-bot.md` — ⚠️ **bot được phép và bị cấm làm gì.** Đọc trước khi dựng bậc 2
+- Sổ CR riêng: [`tai-lieu-ky-thuat/change-log-ai.md`](tai-lieu-ky-thuat/change-log-ai.md)
 
 ## Khác
 - `testcase/` — kịch bản test tay; `ke-hoach-import/`, `ke-hoach-celery/`, `dat-xe-duyet-dau/` — kế hoạch từng mảng

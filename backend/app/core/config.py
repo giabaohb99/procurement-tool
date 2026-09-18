@@ -189,6 +189,36 @@ class Settings(BaseSettings):
     # tài xế, không bao giờ phòng ban / công ty / nhân sự / tài khoản (§9.6).
     SYNC_DATXE_AUTO_CREATE: bool = False
 
+    # --- Agent Hub (doc/agent-hub/) ---
+    # Bậc 1: nhận việc qua Telegram, Gemini gom + tóm tắt + đề xuất cách sửa, in ra
+    # Telegram và ghi vào sổ. KHÔNG sửa mã. Mọi cờ mặc định TẮT — chưa bật thì không
+    # một lời gọi nào đi ra ngoài, đúng nếp `legacy_datxe` / `pos365`.
+    AGENT_HUB_ENABLED: bool = False
+    AGENT_TELEGRAM_BOT_TOKEN: str = ""
+    # CHỈ chat_id này được ra lệnh. Rỗng = không ai ra lệnh được (chốt chặn, không
+    # phải "cho tất cả") — xem `telegram.is_allowed_chat`.
+    AGENT_TELEGRAM_CHAT_ID: str = ""
+    # Khóa Gemini RIÊNG của bot (QĐ-AI-7). CỐ Ý không lùi về GEMINI_API_KEY: bot chạy
+    # nền gọi liên tục, đốt hết hạn mức thì Trợ lý AI đang phục vụ người thật chết
+    # theo, mà lúc đó không ai biết vì sao.
+    AGENT_GEMINI_API_KEY: str = ""
+    AGENT_MANAGER_MODEL: str = "gemini-flash-latest"
+    # Trần số task mỗi ngày. Trần này bảo vệ ĐẠI CA chứ không phải bảo vệ máy — hạn
+    # mức dùng chung với người, bot ngốn hết thì người ngồi gõ tay cũng hết lượt.
+    AGENT_DAILY_TASK_CAP: int = 5
+    # Khoảng lặng trước khi gom: tin nhắn phải nằm yên bấy nhiêu giây mới đem đi
+    # phân loại. Không có nó thì mỗi tin một task và bot KHÔNG BAO GIỜ gom được gì —
+    # mà "gom được không" lại đúng là câu bậc 1 phải trả lời.
+    AGENT_TRIAGE_DELAY_SEC: int = 90
+    # Trần tin nhắn gom trong MỘT lời gọi Gemini. Vượt thì để lượt sau.
+    AGENT_TRIAGE_BATCH: int = 20
+    # Email tài khoản ERP mà lệnh `/hoi` chạy DƯỚI QUYỀN người đó.
+    # ⚠️ Trợ lý AI lọc dữ liệu theo người đăng nhập, mà Telegram thì không đăng nhập —
+    # nên phải chỉ đích danh một tài khoản. Để trống = tắt hẳn lệnh `/hoi`. ĐỪNG khai
+    # tài khoản quản trị: ai nhắn được cho bot sẽ đọc được đúng những gì tài khoản này
+    # đọc được. Hàng rào duy nhất còn lại là `AGENT_TELEGRAM_CHAT_ID`.
+    AGENT_ASSISTANT_USER: str = ""
+
     # --- Celery / Redis ---
     # Broker + result backend dùng chung 1 Redis (đủ cho quy mô ~20-100 user).
     REDIS_URL: str = "redis://redis:6379/0"

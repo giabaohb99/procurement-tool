@@ -3154,3 +3154,58 @@ Trang chi tiết phân công văn thư đóng dấu tại đường dẫn `/appr
 Mã nguồn: `frontend-v2/src/modules/approval-seal/components/seal-clerk-detail-header.tsx` (thành phần thanh đầu trang mới) · `frontend-v2/src/modules/approval-seal/pages/seal-clerk-detail-page.tsx` (trang chi tiết hoàn thiện) · `frontend-v2/src/modules/approval-seal/components/company-row.tsx` (thêm nút gỡ nhanh công ty) · bài kiểm `seal-clerk-detail-page.test.tsx`.
 Commit: `5fbce75a` trên nhánh `erp-v2`.
 
+
+## ai-CR-002 | Dựng bậc 1 của Agent Hub: bot Telegram gom việc, viết bản đề xuất và tra kho tài liệu
+- status: dang-lam
+- date: 2026-09-18
+- pic: NSU209
+Đại ca duyệt bản thiết kế Agent Hub rồi ra lệnh làm bậc 1. Bậc này dựng một con bot quản lý
+nhận việc qua Telegram: đại ca nhắn một câu mô tả việc cần làm, bot gom những tin cùng loại
+lại thành một đầu việc, tóm tắt, rồi tự viết ra một bản đề xuất cách sửa kèm danh sách tệp nó
+định đụng tới và bài kiểm dự kiến. Bản đề xuất in thẳng ra Telegram kèm ba nút Duyệt, Sửa lại,
+Bỏ việc này. **Bậc 1 dừng đúng ở đó — bot chưa được sửa một dòng mã nào của hệ thống.** Mục
+đích của cả bậc này chỉ là trả lời một câu: con bot có đủ khôn để gom việc và viết ra phạm vi
+cụ thể hay không. Nếu nó viết ra toàn thứ chung chung thì dừng dự án ở đây, đỡ được rất nhiều
+công của bậc sau.
+
+Toàn bộ chạy nền trong máy chạy việc nền đang có, không dựng thêm dịch vụ nào, không dựng màn
+hình nào. Muốn xem sổ thì mở Adminer. Cầu dao tổng mặc định tắt, chưa bật thì không một lời
+gọi nào đi ra ngoài.
+
+Năm điểm đáng nhớ của bản dựng này:
+
+- **Bot còn làm cửa hỏi đáp cho Trợ lý AI có sẵn.** Nhắn `/hoi` kèm câu hỏi thì câu đó đi
+  thẳng vào Trợ lý AI và trả lời ngay tại chỗ, không đẻ ra đầu việc nào; nhắn chữ thường mới
+  vào luồng gom việc. Một con bot, hai nhánh, chia bằng chữ đầu dòng, vì đại ca chỉ có một cái
+  điện thoại. Chỗ nguy hiểm đã ghi rõ trong tài liệu: Trợ lý AI lọc dữ liệu theo người đăng
+  nhập mà Telegram thì không có đăng nhập, nên phải chỉ đích danh một tài khoản để chạy dưới
+  quyền người đó, và **tuyệt đối không được khai tài khoản quản trị** — ai nhắn được cho bot
+  sẽ đọc được đúng những gì tài khoản đó đọc được. Để trống là tắt hẳn nhánh này.
+- **Kho tài liệu của bot để riêng, không dùng chung với Trợ lý AI.** Kho của Trợ lý AI chỉ
+  chứa bài hướng dẫn cho người dùng cuối, còn bot cần đọc nhật ký kỹ thuật nội bộ. Trộn chung
+  thì khách hỏi một câu nghiệp vụ lại nhận về một đoạn nhật ký deploy, vì tầng tra cứu hiện
+  không lọc theo nguồn.
+- **Bot chạy bằng một khóa Gemini riêng.** Dùng chung khóa với Trợ lý AI thì bot chạy nền đốt
+  hết hạn mức, Trợ lý AI đang phục vụ người thật chết theo, mà lúc đó không ai biết vì sao.
+- **Kéo tin mỗi mười giây thay vì giữ kết nối treo** như bản thiết kế viết ban đầu. Máy chạy
+  việc nền khai đúng một luồng, giữ một kết nối treo ba mươi giây nghĩa là suốt ba mươi giây
+  đó không việc nền nào khác chạy được, kể cả gửi thư. Đã ghi đính chính vào tài liệu thiết kế
+  kèm lý do và đường nâng cấp.
+- **Nạp kho tài liệu không xóa kho cũ trước nữa.** Kho hiện hơn bốn nghìn đoạn, tức hơn bốn
+  mươi lượt gọi API nhúng nối nhau, và bị chặn hạn mức ở giữa chừng là chuyện bình thường. Nếu
+  xóa trước thì lần hỏng đó để lại một kho đầy ba phần tư, mà hàm tra cứu cố ý không báo lỗi
+  ra ngoài, nên bot vẫn tra, vẫn trả lời, chỉ là thiếu mất một phần tài liệu và không ai thấy.
+  Nay nạp đè lên, chạy lại chỉ vá vào chỗ thiếu, và chỉ dọn rác khi lượt nạp đã đi trọn.
+
+Đã kiểm trên máy: chín bài kiểm mới đều xanh, năm bảng sổ dựng đúng, các phần đều nạp được.
+Còn thiếu bước sinh tệp migration vì ảnh Docker của máy em bị dọn sạch nên phải dựng lại từ
+đầu, lần dựng đầu đứt ở khâu tải gói do chập mạng.
+
+Mã nguồn: phân hệ mới `backend/app/modules/agent_hub/` gồm sáu tệp (sổ dữ liệu, bộ mã số, cầu
+nối Telegram, bộ nhớ tài liệu, bộ gọi Gemini, tầng luồng việc) · bài kiểm
+`test/backend/test_agent_hub.py` · đăng ký việc nền trong `backend/app/core/celery_app.py` ·
+khai báo bảng trong `backend/app/core/all_models.py` · tách nguồn khóa trong
+`backend/app/modules/assistant/provider/gemini.py` · gắn thêm hai thư mục chỉ đọc cho máy chạy
+việc nền trong `docker-compose.yml`.
+Tham chiếu: `doc/agent-hub/01-thiet-ke-ky-thuat.md` và ba quyết định mới QĐ-AI-8, QĐ-AI-9,
+QĐ-AI-10 trong `doc/tai-lieu-ky-thuat/change-log-ai.md`.

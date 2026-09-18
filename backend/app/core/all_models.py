@@ -88,3 +88,5 @@ from app.modules.coffee_point import model as _coffee_point  # noqa: F401
 # Sổ đồng bộ dùng chung cho MỌI hệ ngoài (app đặt xe, POS365, đơn hàng...) —
 # `tab_pos_sync_run` cũ đã gộp vào đây, xem `modules/sync_log/model.py`.
 from app.modules.sync_log import model as _sync_log  # noqa: F401
+# Agent Hub (doc/agent-hub/, ai-CR-002) — năm bảng sổ của bot quản lý.
+from app.modules.agent_hub import model as _agent_hub  # noqa: F401

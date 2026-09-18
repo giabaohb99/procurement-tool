@@ -34,8 +34,14 @@ class GeminiProvider(Provider):
     default_model = settings.AI_GEMINI_MODEL or "gemini-flash-latest"
     supports_tools = True
 
+    def _api_key(self) -> str:
+        """Khóa dùng cho lượt gọi này. Tách thành hàm để lớp con đổi được nguồn khóa —
+        Agent Hub chạy khóa RIÊNG (`AGENT_GEMINI_API_KEY`) chứ không tiêu chung hạn mức
+        với Trợ lý AI, xem `agent_hub/manager.py`."""
+        return settings.GEMINI_API_KEY
+
     def is_configured(self) -> bool:
-        return bool(settings.GEMINI_API_KEY)
+        return bool(self._api_key())
 
     # ── Hạ tầng dùng chung ────────────────────────────────────────────────────────────
     def _gen_config(self, model: str, max_tokens: int, temperature: float, thinking: bool) -> dict:
@@ -47,7 +53,7 @@ class GeminiProvider(Provider):
     def _post(self, model: str, payload: dict) -> dict:
         headers = {
             "content-type": "application/json",
-            "x-goog-api-key": settings.GEMINI_API_KEY,
+            "x-goog-api-key": self._api_key(),
         }
         url = BASE_URL.format(model=model)
         try:

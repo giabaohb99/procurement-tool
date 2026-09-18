@@ -24,9 +24,14 @@ def point_id(source: str, source_id: int, chunk_index: int) -> str:
 class VectorStore:
     """Giao tiếp Qdrant tối thiểu: bảo đảm collection, nạp point, xóa theo nguồn, tìm."""
 
-    def __init__(self, url: str, dim: int) -> None:
+    def __init__(self, url: str, dim: int, collection: str = COLLECTION) -> None:
         self._url = url
         self._dim = dim
+        #  Kho nào. Mặc định `kb_docs` của Trợ lý AI; Agent Hub dựng bản riêng với
+        #  tên khác (`agent_docs`) vì đó là CORPUS KHÁC — tài liệu nội bộ của repo.
+        #  Trộn hai corpus vào một kho thì người dùng hỏi trợ lý một câu về nghiệp vụ
+        #  và nhận lại một đoạn nhật ký kỹ thuật, còn bot lại tra trúng bài HDSD.
+        self._collection = collection
         self._client = None
 
     @property
@@ -38,10 +43,10 @@ class VectorStore:
 
     def ensure_collection(self) -> None:
         from qdrant_client.http import models as qm
-        if self.client.collection_exists(COLLECTION):
+        if self.client.collection_exists(self._collection):
             return
         self.client.create_collection(
-            collection_name=COLLECTION,
+            collection_name=self._collection,
             vectors_config=qm.VectorParams(size=self._dim, distance=qm.Distance.COSINE),
         )
 
@@ -51,7 +56,7 @@ class VectorStore:
             return
         from qdrant_client.http import models as qm
         self.client.upsert(
-            collection_name=COLLECTION,
+            collection_name=self._collection,
             points=[
                 qm.PointStruct(id=p["id"], vector=p["vector"], payload=p["payload"])
                 for p in points
@@ -62,7 +67,7 @@ class VectorStore:
         """Xóa mọi đoạn của MỘT bản ghi nguồn (trước khi nạp lại, hoặc khi bản ghi bị xóa)."""
         from qdrant_client.http import models as qm
         self.client.delete(
-            collection_name=COLLECTION,
+            collection_name=self._collection,
             points_selector=qm.FilterSelector(filter=qm.Filter(must=[
                 qm.FieldCondition(key="source", match=qm.MatchValue(value=source)),
                 qm.FieldCondition(key="source_id", match=qm.MatchValue(value=source_id)),
@@ -76,7 +81,7 @@ class VectorStore:
         if only_active:
             flt = qm.Filter(must=[qm.FieldCondition(key="is_active", match=qm.MatchValue(value=True))])
         hits = self.client.query_points(
-            collection_name=COLLECTION, query=vector, limit=limit,
+            collection_name=self._collection, query=vector, limit=limit,
             query_filter=flt, with_payload=True,
         ).points
         return [{**(h.payload or {}), "score": h.score} for h in hits]

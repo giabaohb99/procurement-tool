@@ -58,6 +58,7 @@ celery_app.conf.update(
         "app.modules.assistant.rag.tasks",  # Nạp chỉ mục vector loại B (HDSD + FAQ) khi có hook / bấm nút
         "app.modules.coffee_point.tasks",   # Điểm cà phê × POS365 — kéo đơn / reset kỳ / đối chiếu
         "app.modules.legacy_datxe.tasks",   # App đặt xe / duyệt dấu cũ — lưới an toàn + chạy lại
+        "app.modules.agent_hub.tasks",      # Agent Hub — kéo tin Telegram, gom việc, nạp kho tài liệu
         # "app.tasks.alerts",           # Phase 2 — cảnh báo theo lịch
         # "app.tasks.report_tasks",     # Phase 3 — refresh báo cáo
     ],
@@ -120,6 +121,26 @@ celery_app.conf.update(
         },
     },
 )
+
+#  Agent Hub — chỉ đưa vào lịch khi đã bật, vì hai vòng này thức dậy rất dày và
+#  không có lý do gì để chúng chạy trên máy chưa cấu hình bot.
+if settings.AGENT_HUB_ENABLED:
+    celery_app.conf.beat_schedule.update({
+        #  10 giây một lượt: Telegram không giữ kết nối chờ (xem `telegram.POLL_TIMEOUT`)
+        #  nên độ trễ đại ca cảm thấy đúng bằng nhịp này.
+        #  `expires` NGẮN HƠN nhịp là chủ ý: worker bận một phút rồi rảnh ra thì sáu lượt
+        #  kéo cũ dồn cục sẽ chạy liền nhau và cùng đọc một con trỏ — thà bỏ chúng đi.
+        "agent-poll-telegram": {
+            "task": "agent.poll_telegram",
+            "schedule": 10.0,
+            "options": {"expires": 8},
+        },
+        "agent-triage-inbox": {
+            "task": "agent.triage_inbox",
+            "schedule": crontab(minute="*"),
+            "options": {"expires": 50},
+        },
+    })
 
 if not settings.POS365_HARD_OFF:
     celery_app.conf.beat_schedule.update({

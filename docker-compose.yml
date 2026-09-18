@@ -193,6 +193,15 @@ services:
     cpus: 1
     volumes:
       - ./backend:/app # mount code -> hot reload tasks (restart worker khi sửa)
+      # CHỈ-ĐỌC, cho đúng một việc: `agent.reindex_docs` nạp tài liệu dự án vào Qdrant
+      # làm trí nhớ cho bot quản lý (`app/modules/agent_hub/memory.py`). Mount ở ĐÂY chứ
+      # không mount vào `api`: chỉ worker chạy việc đó, còn uvicorn bên kia chạy
+      # `--reload` và dò hệ tệp theo chu kỳ trên Windows — đưa thêm 25 MB tài liệu vào
+      # tầm dò của nó là tốn CPU không đổi lại gì.
+      - ./doc:/app/doc:ro
+      # `CLAUDE.md` nằm ở GỐC repo, ngoài `./backend`, nên phải mount riêng một tệp —
+      # mà nó lại là tài liệu quan trọng nhất cho bot: luật R2, hai nhánh, cổng kiểm.
+      - ./CLAUDE.md:/app/CLAUDE.md:ro
     # -c 1: local chỉ cần một tiến trình con. VPS để -c 2 trong docker-compose.dev.yml.
     command: celery -A app.core.celery_app worker -l info -c 1
     depends_on:
