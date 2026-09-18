@@ -168,6 +168,15 @@ def _local_iso(ms) -> str:
         return str(ms).strip()[:16]
 
 
+def _safe_int(val, default: int = 1, max_val: int = 999) -> int:
+    try:
+        n = int(val or default)
+        return max(0, min(n, max_val))
+    except (TypeError, ValueError):
+        return default
+
+
+
 # ---------------------------------------------------------------------------
 # Tra danh mục (công ty / phòng ban)
 # ---------------------------------------------------------------------------
@@ -438,9 +447,9 @@ def build_booking(db, key: str, node: dict, people: PeopleResolver,
         start_time=_local_iso(details.get("startTime")),
         end_time=_local_iso(details.get("endTime")),
         # --- riêng đặt xe công tác ---
-        passenger_count=int(details.get("passengerCount") or 1),
-        attendees=(details.get("attendees") or "").strip(),
-        contact_phone=(details.get("contactPhone") or "").strip(),
+        passenger_count=_safe_int(details.get("passengerCount"), default=1, max_val=999),
+        attendees=(details.get("attendees") or "").strip()[:500],
+        contact_phone=(details.get("contactPhone") or "").strip()[:50],
         is_round_trip=bool(details.get("isRoundTrip")),
         # --- riêng giao hàng ---
         goods_name=(details.get("itemName") or "").strip(),
