@@ -1,4 +1,4 @@
-import { ArrowLeft, Copy, Loader2, Printer, Send } from 'lucide-react'
+import { Copy, Loader2, Printer, Send } from 'lucide-react'
 import { useCallback, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
@@ -12,15 +12,22 @@ import { DeleteConfirmButton } from '@/shared/ui/delete-confirm-button'
 import { PageContainer } from '@/shared/ui/page-container'
 import { SealApprovalPanel } from '../components/seal-approval-panel'
 import { SealDetailBody } from '../components/seal-detail-body'
+import { SealDetailHeader } from '../components/seal-detail-header'
 import { SealRequestForm, type SealFormHandle } from '../components/seal-request-form'
-import { SealStatusBadge } from '../components/status-pill'
 import { SealWorkflowActions } from '../components/seal-workflow-actions'
 import { useDeleteSealRequest, useSealRequest } from '../hooks/use-seal-requests'
 import { EDITABLE_SEAL_STATUSES } from '../types/seal-request'
 
 /**
- * Trang CHI TIẾT phiếu đóng dấu (`/approval-seal/:id`) — xem + thao tác theo vai
- * trò. Sửa mở TRANG riêng `/:id/edit`.
+ * Trang CHI TIẾT phiếu đóng dấu (`/approval-seal/:id`) — xem + thao tác theo vai trò.
+ *
+ * Bố cục cải tiến:
+ * - Header dính đỉnh màn hình (`sticky top-0`) hiển thị mã phiếu, tiêu đề, trạng thái
+ *   và cụm nút thao tác nghiệp vụ.
+ * - Thân trang chia 2 cột:
+ *   + Cột trái: Thông tin văn bản, công ty đóng dấu, người tạo, tiến trình duyệt & chứng từ đính kèm.
+ *   + Cột phải (Sticky scroll): Ghim cố định và cuộn độc lập cho Luồng duyệt nhiều bước,
+ *     Trao đổi bình luận (`DocumentComments`) và Lịch sử thao tác (`AuditTimeline`).
  */
 export function SealRequestDetailPage() {
   const navigate = useNavigate()
@@ -36,98 +43,83 @@ export function SealRequestDetailPage() {
   const canDelete = Boolean(data) && can('seal_request', 'delete')
   const canCreate = can('seal_request', 'create')
 
-  //  Nút Lưu nháp / Gửi duyệt nằm ở thanh công cụ trên (cạnh In phiếu) nhưng do FORM
-  //  bên dưới thực thi — điều khiển qua `ref`; `saving` để khóa nút khi đang lưu.
+  // Nút Lưu nháp / Gửi duyệt do FORM bên dưới thực thi qua `ref`
   const formRef = useRef<SealFormHandle>(null)
   const [saving, setSaving] = useState(false)
   const onPendingChange = useCallback((p: boolean) => setSaving(p), [])
 
-  return (
-    <PageContainer className="w-full">
-      <div className="mb-3 flex flex-wrap items-center gap-3">
+  const headerActions = data ? (
+    <>
+      <SealWorkflowActions request={data} />
+      {canEdit && (
+        <>
+          <Button
+            variant="outline"
+            onClick={() => formRef.current?.save(false)}
+            disabled={saving}
+          >
+            Lưu nháp
+          </Button>
+          <Button onClick={() => formRef.current?.save(true)} disabled={saving}>
+            {saving ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+            Gửi duyệt
+          </Button>
+        </>
+      )}
+      {canCreate && (
         <Button
           variant="outline"
-          size="icon"
-          aria-label="Về danh sách yêu cầu đóng dấu"
-          onClick={() => navigate(appRoutes.approvalSeal.requests)}
+          onClick={() => navigate(`${appRoutes.approvalSeal.new}?from=${data.id}`)}
         >
-          <ArrowLeft className="size-4" />
+          <Copy className="size-4" />
+          Nhân bản
         </Button>
-        {/*  Tiêu đề + badge gom vào một nhóm co giãn (`flex-1 min-w-0`): tiêu đề DÀI bị
-            `truncate` cắt "…" trong khoảng cho phép, KHÔNG đẩy cụm nút (Duyệt…) tràn khỏi
-            màn hình. `min-w-0` trên cả nhóm LẪN h1 để chữ co được dưới bề rộng nội dung. */}
-        <div className="flex min-w-0 flex-1 items-center gap-3">
-          <h1
-            className="min-w-0 truncate text-xl font-semibold tracking-tight text-navy dark:text-foreground"
-            title={data ? data.purpose || `Yêu cầu đóng dấu ${data.code}` : undefined}
-          >
-            {data ? data.purpose || `Yêu cầu đóng dấu ${data.code}` : 'Chi tiết yêu cầu đóng dấu'}
-          </h1>
-          {data && <SealStatusBadge status={data.status} label={data.status_label} />}
-        </div>
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          {data && <SealWorkflowActions request={data} />}
-          {/*  Phiếu sửa được: Lưu nháp / Gửi duyệt nằm CHUNG hàng với In phiếu, BÊN TRÁI
-              Nhân bản; nút do FORM bên dưới thực thi qua `formRef`. */}
-          {canEdit && data && (
-            <>
-              <Button
-                variant="outline"
-                onClick={() => formRef.current?.save(false)}
-                disabled={saving}
-              >
-                Lưu nháp
-              </Button>
-              <Button onClick={() => formRef.current?.save(true)} disabled={saving}>
-                {saving ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
-                Gửi duyệt
-              </Button>
-            </>
-          )}
-          {canCreate && data && (
-            <Button
-              variant="outline"
-              onClick={() => navigate(`${appRoutes.approvalSeal.new}?from=${data.id}`)}
-            >
-              <Copy className="size-4" />
-              Nhân bản
-            </Button>
-          )}
-          {data && (
-            <Button variant="outline" onClick={() => navigate(appRoutes.approvalSeal.print(data.id))}>
-              <Printer className="size-4" />
-              In phiếu
-            </Button>
-          )}
-          {canDelete && data && (
-            <DeleteConfirmButton
-              recordName={data.purpose || data.code}
-              pending={deleteMutation.isPending}
-              onConfirm={async () => {
-                await deleteMutation.mutateAsync(data.id)
-                navigate(appRoutes.approvalSeal.requests)
-              }}
-              warning="Phiếu và chứng từ đính kèm sẽ bị gỡ."
-            />
-          )}
-        </div>
-      </div>
+      )}
+      <Button variant="outline" onClick={() => navigate(appRoutes.approvalSeal.print(data.id))}>
+        <Printer className="size-4" />
+        In phiếu
+      </Button>
+      {canDelete && (
+        <DeleteConfirmButton
+          recordName={data.title || data.purpose || data.code}
+          pending={deleteMutation.isPending}
+          onConfirm={async () => {
+            await deleteMutation.mutateAsync(data.id)
+            navigate(appRoutes.approvalSeal.requests)
+          }}
+          warning="Phiếu và chứng từ đính kèm sẽ bị gỡ."
+        />
+      )}
+    </>
+  ) : null
 
-      {isLoading && <p className="text-sm text-muted-foreground">Đang tải…</p>}
+  return (
+    <PageContainer className="w-full">
+      {data && (
+        <SealDetailHeader
+          request={data}
+          onBack={() => navigate(appRoutes.approvalSeal.requests)}
+          actions={headerActions}
+        />
+      )}
+
+      {isLoading && (
+        <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
+          Đang tải yêu cầu đóng dấu…
+        </div>
+      )}
+
       {isError && (
-        <p className="text-sm text-destructive">
-          Không tải được yêu cầu. Kiểm tra kết nối hoặc quyền truy cập.
-        </p>
+        <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
+          Không tải được yêu cầu. Kiểm tra kết nối mạng hoặc quyền truy cập.
+        </div>
       )}
 
       {data && (
-        //  2 cột như trang Đặt xe: nội dung bên trái, Trao đổi + Lịch sử dồn cột phải
-        //  (đổi breakpoint lg + 360px cho khớp `/vehicle-booking/:id`).
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
-          <div className="flex min-w-0 flex-col gap-5">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+          {/* Cột trái: Nội dung chi tiết phiếu hoặc Form chỉnh sửa */}
+          <div className="flex min-w-0 flex-col gap-6">
             {canEdit ? (
-              //  Sửa được thì cả trang là biểu mẫu (kèm đính kèm bên trong form);
-              //  lưu/gửi duyệt xong query tự nạp lại nên trang chuyển đúng trạng thái.
               <SealRequestForm
                 ref={formRef}
                 request={data}
@@ -151,13 +143,11 @@ export function SealRequestDetailPage() {
               </>
             )}
           </div>
-          <div className="flex flex-col gap-5">
-            {/* Luồng duyệt nhiều bước — chỉ hiện khi phiếu đang chạy trong bộ máy
-                (bật ApprovalSwitch); cụm nút cổng-1 (TBP) ở đầu trang đã tự ẩn. */}
+
+          {/* Cột phải: Sticky scroll theo header */}
+          <div className="flex flex-col gap-5 lg:sticky lg:top-[calc(var(--seal-header-h,0px)+0.75rem)] lg:max-h-[calc(100dvh-3.5rem-var(--seal-header-h,0px)-2rem)] lg:self-start lg:overflow-y-auto pr-0.5">
             {data.approval_running && <SealApprovalPanel requestId={data.id} />}
-            {/*  Trao đổi trên phiếu — dùng chung widget bình luận (entity/entityId). */}
             <DocumentComments entity="seal_request" entityId={data.id} />
-            {/*  AuditTimeline tự dựng thẻ có tiêu đề — không bọc thêm Card kẻo lặp tiêu đề. */}
             <AuditTimeline entity="seal_request" entityId={data.id} showMessage dense />
           </div>
         </div>
