@@ -123,6 +123,8 @@ def apply_sort(query, model, sort_by: str | None, sort_dir: str = "asc", default
             return query.order_by(col.is_(None).asc(), order)
         return query.order_by(order)
     if default is not None:
+        if isinstance(default, (list, tuple)):
+            return query.order_by(*default)
         return query.order_by(default)
     return query.order_by(model.id.desc())
 

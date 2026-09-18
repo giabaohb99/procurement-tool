@@ -6,6 +6,7 @@ Gác hai trục như mọi module: `require("leave_request", action)` cho quyề
 khác kèm lý do nghỉ, thứ riêng tư nhất trong cả hệ này.
 """
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from sqlalchemy import case
 from sqlalchemy.orm import Session
 
 from app.core.audit import record as audit_record, resolve_actor
@@ -14,6 +15,10 @@ from app.core.base_controller import apply_filters, apply_sort_from_request, pag
 from app.core.database import get_db
 from app.core.response import success
 from app.core.scoping import apply_scope, get_scoped
+
+from app.modules.company.model import Company
+from app.modules.department.model import Department
+from app.modules.employee.model import Employee
 
 from . import (approval_bridge, balance_service, request_serializer,
                request_service, workday_service)
@@ -77,8 +82,13 @@ def list_requests(
     if to_date:
         query = query.filter(LeaveRequest.from_date <= to_date)
     query = apply_scope(query, LeaveRequest, ENTITY, user, get_perm_profile(db, user))
-    query = apply_sort_from_request(query, LeaveRequest, request,
-                                    default=LeaveRequest.id.desc())
+    is_pending = case((LeaveRequest.status == LR_PENDING, 0), else_=1)
+    query = apply_sort_from_request(
+        query,
+        LeaveRequest,
+        request,
+        default=(is_pending.asc(), LeaveRequest.id.desc()),
+    )
     total = query.count()
     items = query.offset(pg["offset"]).limit(pg["limit"]).all()
 
@@ -127,15 +137,44 @@ def get_request(rid: int, db: Session = Depends(get_db),
     #  đơn về cho chính mình.
     #
     #  Chỉ dựng ở đường lấy MỘT đơn — danh sách mà tra thêm mỗi dòng một tên là N+1.
-    data["decided_by_name"] = (
-        resolve_actor(db, obj.updated_by)
-        if obj.decided_at and obj.status in DECIDED_FINAL_STATUSES else ""
-    )
+    decided_by = ""
+    if obj.decided_at and obj.status in DECIDED_FINAL_STATUSES:
+        if obj.approval_instance_id:
+            from app.modules.approval.instance_model import ACTION_APPROVE, ApprovalAction
+            act = (
+                db.query(ApprovalAction)
+                .filter(
+                    ApprovalAction.instance_id == obj.approval_instance_id,
+                    ApprovalAction.action == ACTION_APPROVE,
+                )
+                .order_by(ApprovalAction.id.desc())
+                .first()
+            )
+            if act and act.actor_employee_id:
+                approver_emp = db.get(Employee, act.actor_employee_id)
+                if approver_emp:
+                    decided_by = approver_emp.full_name
+        if not decided_by:
+            decided_by = resolve_actor(db, obj.updated_by)
+    data["decided_by_name"] = decided_by
     #  AI LẬP tờ đơn — mốc đầu tiên của dòng thời gian. Hành chính lập hộ là
     #  chuyện thường ở phân hệ này (`created_by` khác `employee_id`), nên ghi
     #  «{tên người nghỉ} lập đơn» là gán nhầm việc cho người không làm.
     data["created_by_name"] = resolve_actor(db, obj.created_by)
     data["handovers"] = request_serializer.dump_handovers(obj, names)
+
+    emp = db.get(Employee, obj.employee_id) if obj.employee_id else None
+    if emp:
+        data["employee_position"] = emp.position or ""
+        if not data.get("contact_phone"):
+            data["contact_phone"] = emp.phone or ""
+    dept_id = obj.department_id or (emp.department_id if emp else 0)
+    dept = db.get(Department, dept_id) if dept_id else None
+    data["department_name"] = dept.name if dept else ""
+    comp_id = obj.company_id or (emp.company_id if emp else 0)
+    comp = db.get(Company, comp_id) if comp_id else None
+    data["company_name"] = comp.name if comp else ""
+
     return success(data)
 
 

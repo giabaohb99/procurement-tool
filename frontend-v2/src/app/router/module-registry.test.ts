@@ -70,7 +70,8 @@ describe('module-registry', () => {
 
   it('mục menu trái nào cũng nằm trong đường dẫn của chính phân hệ đó', () => {
     for (const module of moduleRegistry) {
-      for (const item of module.nav) {
+      const allItems = module.nav.flatMap((i) => [i, ...(i.children ?? [])])
+      for (const item of allItems) {
         if (item.crossModule) continue // lối tắt sang phân hệ khác — xét riêng bên dưới
         expect(item.path, `${module.id} - ${item.label}`).toMatch(
           new RegExp(`^${module.path}(/|$)`),
@@ -137,7 +138,8 @@ describe('module-registry', () => {
     const missing: string[] = []
     for (const module of moduleRegistry) {
       if (openByDesign.has(module.id)) continue
-      for (const item of module.nav) {
+      const allItems = module.nav.flatMap((i) => [i, ...(i.children ?? [])])
+      for (const item of allItems) {
         if (!item.entity && !item.entities?.length) {
           missing.push(`${module.id} - ${item.label}`)
         }
@@ -155,9 +157,10 @@ describe('module-registry', () => {
     //  vô hình hoàn toàn — không nằm trên menu, cũng không tô sáng chỗ nào.
     const sai: string[] = []
     for (const module of moduleRegistry) {
-      const paths = new Set(module.nav.map((i) => i.path))
-      const pointedAt = new Set(module.nav.flatMap((i) => i.matchPaths ?? []))
-      for (const item of module.nav) {
+      const allItems = module.nav.flatMap((i) => [i, ...(i.children ?? [])])
+      const paths = new Set(allItems.map((i) => i.path))
+      const pointedAt = new Set(allItems.flatMap((i) => i.matchPaths ?? []))
+      for (const item of allItems) {
         for (const p of item.matchPaths ?? []) {
           if (!paths.has(p)) sai.push(`${module.id} - ${item.label}: ${p} không có mục nào khai`)
         }

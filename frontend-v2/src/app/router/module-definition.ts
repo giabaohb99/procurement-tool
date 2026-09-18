@@ -9,7 +9,8 @@ export interface ModuleNavItem {
   label: string
   /** Đường dẫn tuyệt đối. */
   path: string
-  icon: LucideIcon
+  /** Biểu tượng của mục menu. Với mục con trong submenu thì icon là tùy chọn. */
+  icon?: LucideIcon
   /** Thiếu quyền trên entity này thì ẩn mục. Bỏ trống = luôn hiện. */
   entity?: PermissionEntity
   /**
@@ -91,6 +92,8 @@ export interface ModuleNavItem {
    * hết nổi bật, mà mục đích của nó đúng là để nổi bật.
    */
   badge?: ComponentType
+  /** Các mục con tạo thành submenu sổ xuống trong thanh bên. */
+  children?: ModuleNavItem[]
 }
 
 /**

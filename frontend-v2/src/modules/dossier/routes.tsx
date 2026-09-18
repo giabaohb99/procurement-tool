@@ -37,7 +37,7 @@ export const dossierModule: ErpModule = {
   icon: FolderOpen,
   path: appRoutes.dossier.root,
   accent: 'bg-green-500/10 text-green-600 dark:text-green-400',
-  enabled: true,
+  enabled: false,
 
   nav: [
     {

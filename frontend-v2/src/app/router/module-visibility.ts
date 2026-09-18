@@ -45,7 +45,19 @@ export function canManageEntity(entity: PermissionEntity, can: CanFn): boolean {
  * lại lệch nhau đúng kiểu trên.
  */
 export function visibleNavItems(module: ErpModule, can: CanFn, ctx: NavContext = {}) {
-  return module.nav.filter((item) => itemAllowed(item, can, ctx))
+  return module.nav
+    .filter((item) => itemAllowed(item, can, ctx))
+    .map((item) => {
+      if (!item.children?.length) return item
+      const visibleChildren = item.children.filter((child) => itemAllowed(child, can, ctx))
+      return { ...item, children: visibleChildren }
+    })
+    .filter((item) => {
+      if (item.children && item.children.length === 0) {
+        return false
+      }
+      return true
+    })
 }
 
 export function canOpenModule(module: ErpModule, can: CanFn, ctx: NavContext = {}) {
@@ -76,6 +88,11 @@ function entityAllowed(item: ModuleNavItem, entity: PermissionEntity, can: CanFn
 
 /** Áp đúng luật hiển thị của `visibleNavItems` cho MỘT mục — dùng lại cho cả menu lẫn route. */
 function itemAllowed(item: ModuleNavItem, can: CanFn, ctx: NavContext = {}): boolean {
+  // Mục có danh sách con: được phép hiện nếu CÓ ÍT NHẤT MỘT mục con được phép.
+  if (item.children?.length) {
+    return item.children.some((child) => itemAllowed(child, can, ctx))
+  }
+
   //  Luật quyền tĩnh trước.
   let baseOk: boolean
   if (item.entity) baseOk = entityAllowed(item, item.entity, can)
@@ -113,7 +130,8 @@ export function firstAccessibleNavPath(
   can: CanFn,
   ctx: NavContext = {},
 ): string | null {
-  const item = module.nav.find(
+  const allItems = module.nav.flatMap((i) => (i.children?.length ? [i, ...i.children] : [i]))
+  const item = allItems.find(
     (i) => i.path !== module.path && !i.crossModule && !i.hidden && itemAllowed(i, can, ctx),
   )
   return item?.path ?? null
@@ -135,7 +153,8 @@ export function canAccessRoute(
   can: CanFn,
   ctx: NavContext = {},
 ): boolean {
-  const item = [...module.nav]
+  const allItems = module.nav.flatMap((i) => (i.children?.length ? [...i.children, i] : [i]))
+  const item = allItems
     .filter((i) => pathname === i.path || pathname.startsWith(`${i.path}/`))
     .sort((a, b) => b.path.length - a.path.length)[0]
   return item ? itemAllowed(item, can, ctx) : true

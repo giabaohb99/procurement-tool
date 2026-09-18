@@ -5,7 +5,7 @@ import { assistantModule } from '@/modules/assistant/routes'
 import { customerModule } from '@/modules/customer/routes'
 import { degoCoffeeModule } from '@/modules/dego-coffee/routes'
 import { documentModule } from '@/modules/document/routes'
-import { dossierModule } from '@/modules/dossier/routes'
+// import { dossierModule } from '@/modules/dossier/routes'
 import { financeModule } from '@/modules/finance/routes'
 import { forumModule } from '@/modules/forum/routes'
 import { helpCenterModule } from '@/modules/help/routes'
@@ -39,7 +39,7 @@ export const allModules: ErpModule[] = [
   financeModule,
   workModule,
   documentModule,
-  dossierModule,
+  // dossierModule: Tạm thời ẩn hoàn toàn khỏi danh sách phân hệ trong phiên bản này theo yêu cầu
   approvalModule,
   approvalSealModule,
   vehicleBookingModule,

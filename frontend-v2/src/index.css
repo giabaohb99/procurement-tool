@@ -1282,8 +1282,15 @@
   height: 14px;
 }
 
-/* Bản in không có khung, không có núm — chỉ còn hình chữ ký. */
+/* Bản in không có khung, không có núm — chỉ còn hình chữ ký; ẩn devtools và các nút nổi toàn cục. */
 @media print {
+  .tsqd-parent-container,
+  [class*="tsqd"],
+  [data-sonner-toaster],
+  .no-print {
+    display: none !important;
+  }
+
   .doc-signature-holder {
     outline: none !important;
   }

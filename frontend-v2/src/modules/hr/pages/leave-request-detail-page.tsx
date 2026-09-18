@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Ban, Check, Save, Send, Trash2, X } from 'lucide-react'
+import { ArrowLeft, Ban, Check, Printer, Save, Send, Trash2, X } from 'lucide-react'
 
 import { usePermission } from '@/core/authorization/use-permission'
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -278,6 +278,17 @@ export function LeaveRequestDetailPage() {
                 </Button>
               </>
               )}
+
+            {request?.status === LEAVE_STATUS.APPROVED && (
+              <Button
+                variant="outline"
+                className={SECONDARY_ACTION_SLOT}
+                onClick={() => navigate(appRoutes.hr.leaveRequestPrint(requestId))}
+              >
+                <Printer className="size-4" />
+                In đơn
+              </Button>
+            )}
 
             {request &&
               (request.status === LEAVE_STATUS.PENDING ||

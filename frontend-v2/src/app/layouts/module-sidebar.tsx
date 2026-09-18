@@ -1,10 +1,17 @@
-import { Link, NavLink, useLocation } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { ChevronDown } from 'lucide-react'
 
 import type { ErpModule, ModuleNavItem } from '@/app/router/module-definition'
 import { visibleNavItems } from '@/app/router/module-visibility'
 import { useNavContext, usePermission } from '@/core/authorization/use-permission'
 import { env } from '@/core/config/env'
 import { appRoutes } from '@/shared/constants/app-routes'
+import { cn } from '@/shared/utils/cn'
+import {
+  Collapsible,
+  CollapsibleContent,
+} from '@/shared/ui/collapsible'
 import {
   Sidebar,
   SidebarContent,
@@ -15,6 +22,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   useSidebar,
 } from '@/shared/ui/sidebar'
 import { SidebarResizeHandle } from './sidebar-resize-handle'
@@ -73,6 +83,19 @@ const navItemClass = [
   //  Rê chuột / nhấn vào chính mục đang mở thì GIỮ NGUYÊN viên nền của nó. Không
   //  khai thì hai luật `hover:`/`active:` ở trên thắng và mục đang mở nhấp nháy
   //  về vệt xám mỗi lần chạm tới.
+  'data-[active=true]:hover:bg-sidebar-active data-[active=true]:hover:text-sidebar-active-foreground',
+  'data-[active=true]:active:bg-sidebar-active data-[active=true]:active:text-sidebar-active-foreground',
+].join(' ')
+
+/** Lớp sơn cho mục con trong submenu: nhỏ hơn (h-8), chữ xs, thụt lề chuẩn. */
+const navSubItemClass = [
+  'h-8 gap-2.5 rounded-lg px-2.5 text-xs font-medium text-sidebar-foreground/75',
+  '[&>svg]:size-4 [&>svg]:text-sidebar-foreground/50',
+  'hover:bg-sidebar-foreground/10 hover:text-sidebar-foreground hover:[&>svg]:text-sidebar-foreground/70',
+  'active:bg-sidebar-foreground/15 active:text-sidebar-foreground',
+  'data-[active=true]:bg-sidebar-active data-[active=true]:font-semibold',
+  'data-[active=true]:text-sidebar-active-foreground',
+  'data-[active=true]:[&>svg]:text-current',
   'data-[active=true]:hover:bg-sidebar-active data-[active=true]:hover:text-sidebar-active-foreground',
   'data-[active=true]:active:bg-sidebar-active data-[active=true]:active:text-sidebar-active-foreground',
 ].join(' ')
@@ -176,7 +199,7 @@ export function ModuleSidebar({
           <SidebarGroupContent>
             <SidebarMenu className="gap-1">
               {ungrouped.map((item) => (
-                <NavMenuItem key={item.path} item={item} onNavigate={closeOnMobile} />
+                <NavItemRenderer key={item.path} item={item} onNavigate={closeOnMobile} />
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
@@ -189,7 +212,7 @@ export function ModuleSidebar({
             <SidebarGroupContent>
               <SidebarMenu className="gap-1">
                 {items.map((item) => (
-                  <NavMenuItem key={item.path} item={item} onNavigate={closeOnMobile} />
+                  <NavItemRenderer key={item.path} item={item} onNavigate={closeOnMobile} />
                 ))}
               </SidebarMenu>
             </SidebarGroupContent>
@@ -200,6 +223,130 @@ export function ModuleSidebar({
       {/* Vạch mép phải: kéo để đổi bề rộng, bấm để thu/mở. */}
       <SidebarResizeHandle onResize={onResizeWidth} />
     </Sidebar>
+  )
+}
+
+function NavItemRenderer({
+  item,
+  onNavigate,
+}: {
+  item: ModuleNavItem
+  onNavigate: () => void
+}) {
+  if (item.children && item.children.length > 0) {
+    return <NavMenuItemWithSub item={item} onNavigate={onNavigate} />
+  }
+  return <NavMenuItem item={item} onNavigate={onNavigate} />
+}
+
+function NavMenuItemWithSub({
+  item,
+  onNavigate,
+}: {
+  item: ModuleNavItem
+  onNavigate: () => void
+}) {
+  const { pathname } = useLocation()
+  const { isMobile, state, setOpenMobile } = useSidebar()
+  const navigate = useNavigate()
+
+  // Kiểm tra đường dẫn hiện tại khớp với mục cha hoặc bất kỳ mục con nào
+  const isChildActive = item.children?.some(
+    (c) =>
+      pathname === c.path ||
+      pathname.startsWith(`${c.path}/`) ||
+      c.matchPaths?.some((p) => pathname === p || pathname.startsWith(`${p}/`)),
+  )
+  const isSelfActive =
+    pathname === item.path ||
+    pathname.startsWith(`${item.path}/`) ||
+    item.matchPaths?.some((p) => pathname === p || pathname.startsWith(`${p}/`))
+
+  const isAnyActive = Boolean(isSelfActive || isChildActive)
+  const [prevPath, setPrevPath] = useState(pathname)
+  const [isOpen, setIsOpen] = useState(isAnyActive)
+
+  // Khi chuyển sang route con của mục này, tự động mở submenu theo khuyến nghị của React
+  if (prevPath !== pathname) {
+    setPrevPath(pathname)
+    if (isAnyActive) {
+      setIsOpen(true)
+    }
+  }
+
+  const handleParentClick = () => {
+    setIsOpen(true)
+    const targetPath = item.children?.[0]?.path ?? item.path
+    navigate(targetPath)
+    if (isMobile) {
+      setOpenMobile(false)
+    }
+    onNavigate()
+  }
+
+  const handleChevronClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    e.preventDefault()
+    setIsOpen((prev) => !prev)
+  }
+
+  return (
+    <Collapsible open={isOpen} onOpenChange={setIsOpen} className="group/collapsible">
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          tooltip={item.label}
+          isActive={isAnyActive && (!isOpen || state === 'collapsed')}
+          className={navItemClass}
+          onClick={handleParentClick}
+        >
+          {item.icon && <item.icon />}
+          <span className="truncate">{item.label}</span>
+          <ChevronDown
+            className={cn(
+              'ml-auto size-4 shrink-0 transition-transform duration-200 group-data-[collapsible=icon]:hidden',
+              !isOpen && '-rotate-90',
+            )}
+            onClick={handleChevronClick}
+          />
+        </SidebarMenuButton>
+        <CollapsibleContent>
+          <SidebarMenuSub className="my-1 gap-0.5">
+            {item.children?.map((child) => {
+              const alsoActive = child.matchPaths?.some(
+                (p) => pathname === p || pathname.startsWith(`${p}/`),
+              )
+
+              return (
+                <SidebarMenuSubItem key={child.path}>
+                  <NavLink
+                    to={child.path}
+                    end={child.end}
+                    onClick={() => {
+                      onNavigate()
+                      if (isMobile) setOpenMobile(false)
+                    }}
+                  >
+                    {({ isActive }) => (
+                      <SidebarMenuSubButton
+                        asChild
+                        isActive={isActive || alsoActive}
+                        className={navSubItemClass}
+                      >
+                        <span>
+                          {child.icon && <child.icon />}
+                          <span>{child.label}</span>
+                          {child.badge && <child.badge />}
+                        </span>
+                      </SidebarMenuSubButton>
+                    )}
+                  </NavLink>
+                </SidebarMenuSubItem>
+              )
+            })}
+          </SidebarMenuSub>
+        </CollapsibleContent>
+      </SidebarMenuItem>
+    </Collapsible>
   )
 }
 
@@ -233,7 +380,7 @@ function NavMenuItem({
           >
             <span>
               {/* Cỡ và màu icon do `navItemClass` quyết định để active/hover đổi theo. */}
-              <item.icon />
+              {item.icon && <item.icon />}
               <span>{item.label}</span>
               {/*  Huy hiệu đứng CUỐI dòng (`ml-auto` do chính nó mang) và tự ẩn
                    khi không có việc — xem `ModuleNavItem.badge`. Menu thu gọn

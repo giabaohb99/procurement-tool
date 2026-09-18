@@ -367,3 +367,147 @@ describe('B5 — phân hệ đang tắt', () => {
     expect(moduleRegistry.filter((m) => !m.enabled)).toEqual([])
   })
 })
+
+describe('mục có submenu (children)', () => {
+  it('lọc các mục con theo đúng quyền của từng mục con', () => {
+    const hr = module([
+      {
+        label: 'Nghỉ phép',
+        path: '/hr/leave-requests',
+        entity: 'leave_request',
+        children: [
+          { label: 'Đơn nghỉ phép', path: '/hr/leave-requests', entity: 'leave_request' },
+          { label: 'Quỹ phép', path: '/hr/leave-balances', entity: 'leave_balance' },
+          { label: 'Thiết lập', path: '/hr/leave-types', entity: 'leave_type', manage: true },
+        ],
+      },
+    ])
+
+    // Chỉ có quyền xem đơn:
+    const nhanVien = visibleNavItems(hr, allow('leave_request'))
+    expect(nhanVien[0].children?.map((c) => c.label)).toEqual(['Đơn nghỉ phép'])
+
+    // Có thêm quyền xem quỹ:
+    const coQuy = visibleNavItems(hr, allow('leave_request', 'leave_balance'))
+    expect(coQuy[0].children?.map((c) => c.label)).toEqual(['Đơn nghỉ phép', 'Quỹ phép'])
+  })
+
+  it('canAccessRoute kiểm tra đúng quyền của mục con', () => {
+    const hr = module([
+      {
+        label: 'Nghỉ phép',
+        path: '/hr/leave-requests',
+        entities: ['leave_request', 'leave_balance'],
+        children: [
+          { label: 'Đơn nghỉ phép', path: '/hr/leave-requests', entity: 'leave_request' },
+          { label: 'Quỹ phép', path: '/hr/leave-balances', entity: 'leave_balance' },
+        ],
+      },
+    ])
+
+    expect(canAccessRoute(hr, '/hr/leave-balances', allow('leave_request'))).toBe(false)
+    expect(canAccessRoute(hr, '/hr/leave-balances', allow('leave_balance'))).toBe(true)
+    expect(canAccessRoute(hr, '/hr/leave-requests', allow('leave_balance'))).toBe(false)
+    expect(canAccessRoute(hr, '/hr/leave-requests', allow('leave_request'))).toBe(true)
+  })
+})
+
+describe('Phân quyền cụm Nghỉ phép thực tế (hrModule)', () => {
+  const hr = allModules.find((m) => m.id === 'hr')!
+
+  function makeCan(perms: Record<string, string[]>) {
+    return (entity: PermissionEntity, action: PermissionAction = 'read') => {
+      return perms[entity]?.includes(action) ?? false
+    }
+  }
+
+  describe('Chặn truy cập trực tiếp qua URL (canAccessRoute)', () => {
+    it('/hr/leave-requests: chỉ cho phép khi có quyền leave_request', () => {
+      expect(canAccessRoute(hr, '/hr/leave-requests', makeCan({ leave_request: ['read'] }))).toBe(true)
+      expect(canAccessRoute(hr, '/hr/leave-requests', makeCan({ leave_balance: ['read'] }))).toBe(false)
+      expect(canAccessRoute(hr, '/hr/leave-requests', makeCan({ leave_type: ['write'] }))).toBe(false)
+      expect(canAccessRoute(hr, '/hr/leave-requests', makeCan({}))).toBe(false)
+    })
+
+    it('/hr/leave-calendar: chỉ cho phép khi có quyền leave_request', () => {
+      expect(canAccessRoute(hr, '/hr/leave-calendar', makeCan({ leave_request: ['read'] }))).toBe(true)
+      expect(canAccessRoute(hr, '/hr/leave-calendar', makeCan({ leave_balance: ['read'] }))).toBe(false)
+      expect(canAccessRoute(hr, '/hr/leave-calendar', makeCan({}))).toBe(false)
+    })
+
+    it('/hr/leave-balances: chỉ cho phép khi có quyền leave_balance', () => {
+      expect(canAccessRoute(hr, '/hr/leave-balances', makeCan({ leave_balance: ['read'] }))).toBe(true)
+      expect(canAccessRoute(hr, '/hr/leave-balances', makeCan({ leave_request: ['read', 'create'] }))).toBe(false)
+      expect(canAccessRoute(hr, '/hr/leave-balances', makeCan({}))).toBe(false)
+    })
+
+    it('/hr/leave-types: đòi hỏi quyền quản lý (manage: true) trên leave_type hoặc holiday', () => {
+      // Có quyền sửa/tạo loại nghỉ -> vào được
+      expect(canAccessRoute(hr, '/hr/leave-types', makeCan({ leave_type: ['write'] }))).toBe(true)
+      expect(canAccessRoute(hr, '/hr/leave-types', makeCan({ holiday: ['create'] }))).toBe(true)
+      // Chỉ có quyền read (đổ dropdown) -> KHÔNG vào được màn quản lý
+      expect(canAccessRoute(hr, '/hr/leave-types', makeCan({ leave_type: ['read'] }))).toBe(false)
+      // Nhân viên thường có leave_request -> KHÔNG vào được
+      expect(canAccessRoute(hr, '/hr/leave-types', makeCan({ leave_request: ['read', 'create', 'write'] }))).toBe(false)
+      expect(canAccessRoute(hr, '/hr/leave-types', makeCan({}))).toBe(false)
+    })
+
+    it('/hr/holidays: đòi hỏi quyền quản lý (manage: true) trên holiday', () => {
+      expect(canAccessRoute(hr, '/hr/holidays', makeCan({ holiday: ['write'] }))).toBe(true)
+      expect(canAccessRoute(hr, '/hr/holidays', makeCan({ holiday: ['read'] }))).toBe(false)
+      expect(canAccessRoute(hr, '/hr/holidays', makeCan({ leave_request: ['read'] }))).toBe(false)
+      expect(canAccessRoute(hr, '/hr/holidays', makeCan({}))).toBe(false)
+    })
+  })
+
+  describe('Hiển thị trên Sidebar (visibleNavItems)', () => {
+    it('nhân viên thường (leave_request): chỉ thấy Đơn nghỉ phép và Lịch nghỉ', () => {
+      const items = visibleNavItems(hr, makeCan({ leave_request: ['read'], employee: ['read'] }))
+      const leaveMenu = items.find((i) => i.label === 'Nghỉ phép')
+      expect(leaveMenu).toBeDefined()
+      expect(leaveMenu?.children?.map((c) => c.label)).toEqual(['Đơn nghỉ phép', 'Lịch nghỉ'])
+    })
+
+    it('người quản lý quỹ phép (leave_balance): chỉ thấy Quỹ phép năm', () => {
+      const items = visibleNavItems(hr, makeCan({ leave_balance: ['read'], employee: ['read'] }))
+      const leaveMenu = items.find((i) => i.label === 'Nghỉ phép')
+      expect(leaveMenu).toBeDefined()
+      expect(leaveMenu?.children?.map((c) => c.label)).toEqual(['Quỹ phép năm'])
+    })
+
+    it('người quản lý danh mục (leave_type:write): chỉ thấy Thiết lập', () => {
+      const items = visibleNavItems(hr, makeCan({ leave_type: ['write'], employee: ['read'] }))
+      const leaveMenu = items.find((i) => i.label === 'Nghỉ phép')
+      expect(leaveMenu).toBeDefined()
+      expect(leaveMenu?.children?.map((c) => c.label)).toEqual(['Thiết lập'])
+    })
+
+    it('quản trị viên nhân sự có đủ mọi quyền: thấy trọn vẹn 4 mục', () => {
+      const items = visibleNavItems(
+        hr,
+        makeCan({
+          leave_request: ['read'],
+          leave_balance: ['read'],
+          leave_type: ['write'],
+          holiday: ['write'],
+          employee: ['read'],
+        }),
+      )
+      const leaveMenu = items.find((i) => i.label === 'Nghỉ phép')
+      expect(leaveMenu).toBeDefined()
+      expect(leaveMenu?.children?.map((c) => c.label)).toEqual([
+        'Đơn nghỉ phép',
+        'Lịch nghỉ',
+        'Quỹ phép năm',
+        'Thiết lập',
+      ])
+    })
+
+    it('tài khoản không có quyền nào thuộc cụm nghỉ phép: menu Nghỉ phép ẩn hoàn toàn', () => {
+      const items = visibleNavItems(hr, makeCan({ employee: ['read'], department: ['read'] }))
+      const leaveMenu = items.find((i) => i.label === 'Nghỉ phép')
+      expect(leaveMenu).toBeUndefined()
+    })
+  })
+})
+

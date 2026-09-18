@@ -379,6 +379,7 @@ export const appRoutes = {
     leaveRequests: '/hr/leave-requests',
     leaveRequestNew: '/hr/leave-requests/new',
     leaveRequestDetail: (id: number | string) => `/hr/leave-requests/${id}`,
+    leaveRequestPrint: (id: number | string) => `/print/leave-request/${id}`,
     /** Lịch nghỉ — «tuần tới ai nghỉ». */
     leaveCalendar: '/hr/leave-calendar',
     /** Quỹ phép năm: cấp phát, chỉnh tay. */

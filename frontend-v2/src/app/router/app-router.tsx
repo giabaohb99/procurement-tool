@@ -153,6 +153,14 @@ export const router = createBrowserRouter([
             }),
             errorElement: <RouteErrorPage />,
           },
+          {
+            path: appRoutes.hr.leaveRequestPrint(':id'),
+            lazy: async () => ({
+              Component: (await import('@/modules/hr/pages/leave-request-print-page'))
+                .LeaveRequestPrintPage,
+            }),
+            errorElement: <RouteErrorPage />,
+          },
           //  Phân hệ TỰ MANG KHUNG riêng (Diễn đàn) — đứng ngoài `ModuleLayout`
           //  như các trang in; `routes.tsx` của phân hệ tự lo layout + errorElement.
           ...customModuleRoutes,

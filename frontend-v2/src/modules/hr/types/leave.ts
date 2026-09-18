@@ -39,6 +39,17 @@ export const EDITABLE_LEAVE_STATUSES: number[] = [
   LEAVE_STATUS.RETURNED,
 ]
 
+// ── Phạm vi danh sách đơn nghỉ phép ────────────────────────────────────────────
+
+export const LEAVE_SCOPE = {
+  ALL: 'all',
+  TO_APPROVE: 'to-approve',
+  MINE: 'mine',
+  HANDLED: 'handled',
+} as const
+
+export type LeaveScope = (typeof LEAVE_SCOPE)[keyof typeof LEAVE_SCOPE]
+
 // ── Buổi nghỉ ──────────────────────────────────────────────────────────────────
 
 export const LEAVE_SESSION = { FULL: 1, MORNING: 2, AFTERNOON: 3, HOURLY: 4 } as const
@@ -212,9 +223,12 @@ export interface LeaveRequest {
   id: number
   code: string
   company_id: number
+  company_name?: string
   department_id: number
+  department_name?: string
   employee_id: number
   employee_name?: string
+  employee_position?: string
   /**
    * Loại nghỉ CHÍNH — dòng chiếm nhiều ngày nhất. Cột dẫn xuất do backend đặt,
    * dùng cho bộ lọc và cột gọn của Lịch nghỉ. Bản kê đủ nằm ở `lines`.

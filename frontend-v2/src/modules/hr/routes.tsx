@@ -74,20 +74,16 @@ export const hrModule: ErpModule = {
       group: 'Danh mục',
     },
     //  ── Nghỉ phép (CR-259) ────────────────────────────────────────────────
-    //  ⚠️ **MỘT mục menu cho cả năm màn** (04/09/2026). Trước đó là năm mục rời
-    //  thành một nhóm riêng, chiếm gần nửa chiều cao menu Nhân sự — trong khi
-    //  bốn trong năm màn là thứ mở vài lần một tháng. Nay chuyển qua lại bằng
-    //  `LeaveSectionTabs` ngay trong trang.
-    //
-    //  Năm ĐƯỜNG DẪN giữ nguyên (xem docstring của `leave-section-tabs.tsx`),
-    //  nên bốn màn kia vẫn khai đủ ở đây với `hidden: true` để **giữ khóa quyền
-    //  riêng của từng màn** cho `canAccessRoute` — gõ thẳng `/hr/leave-types` mà
-    //  không có quyền vẫn phải bị chặn tử tế.
+    //  Submenu gồm 4 mục con trên sidebar bên trái:
+    //   1. Đơn nghỉ phép (leaveRequests)
+    //   2. Lịch nghỉ (leaveCalendar)
+    //   3. Quỹ phép năm (leaveBalances)
+    //   4. Thiết lập (leaveTypes + holidays)
     {
       label: 'Nghỉ phép',
       path: appRoutes.hr.leaveRequests,
       icon: CalendarOff,
-      entity: 'leave_request',
+      entities: ['leave_request', 'leave_balance', 'leave_type', 'holiday'],
       //  ⚠️ Phải khai `group`, kẻo mục rơi vào rổ KHÔNG NHÓM — rổ đó đứng trên
       //  cùng, không tiêu đề, và vốn chỉ dành cho «Tổng quan». Hai mục nghỉ phép
       //  / phòng họp nằm lửng ở đó đọc như phần đuôi của Tổng quan chứ không ra
@@ -99,31 +95,34 @@ export const hrModule: ErpModule = {
         appRoutes.hr.leaveTypes,
         appRoutes.hr.holidays,
       ],
-    },
-    {
-      label: 'Lịch nghỉ',
-      path: appRoutes.hr.leaveCalendar,
-      icon: CalendarRange,
-      entity: 'leave_request',
-      hidden: true,
-    },
-    {
-      label: 'Quỹ phép năm',
-      path: appRoutes.hr.leaveBalances,
-      icon: Wallet,
-      entity: 'leave_balance',
-      hidden: true,
-    },
-    {
-      label: 'Loại nghỉ',
-      path: appRoutes.hr.leaveTypes,
-      icon: CalendarDays,
-      entity: 'leave_type',
-      //  Sửa luật nghỉ là việc quản trị — chỉ người có quyền ghi mới vào được,
-      //  chứ không mở cho mọi người rồi khóa từng nút bên trong. Cùng luật với
-      //  tab «Thiết lập» trong `leave-section-tabs.tsx`.
-      manage: true,
-      hidden: true,
+      children: [
+        {
+          label: 'Đơn nghỉ phép',
+          path: appRoutes.hr.leaveRequests,
+          icon: CalendarOff,
+          entity: 'leave_request',
+        },
+        {
+          label: 'Lịch nghỉ',
+          path: appRoutes.hr.leaveCalendar,
+          icon: CalendarRange,
+          entity: 'leave_request',
+        },
+        {
+          label: 'Quỹ phép năm',
+          path: appRoutes.hr.leaveBalances,
+          icon: Wallet,
+          entity: 'leave_balance',
+        },
+        {
+          label: 'Thiết lập',
+          path: appRoutes.hr.leaveTypes,
+          icon: CalendarDays,
+          entities: ['leave_type', 'holiday'],
+          manage: true,
+          matchPaths: [appRoutes.hr.holidays],
+        },
+      ],
     },
     {
       label: 'Lịch ngày lễ',
