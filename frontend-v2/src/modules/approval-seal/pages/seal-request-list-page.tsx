@@ -21,6 +21,7 @@ import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { QuickFilterSheet } from '@/shared/ui/quick-filter-sheet'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/ui/tooltip'
 import { formatDateTime } from '@/shared/utils/format-date'
 import { CompanyAvatarGroup } from '../components/company-avatar-group'
 import { SealStatusBadge } from '../components/status-pill'
@@ -147,7 +148,11 @@ function SealRequestListContent() {
       {
         key: 'code',
         header: 'Mã phiếu',
-        cell: (r) => <span className="font-semibold text-primary tabular-nums">{r.code || '—'}</span>,
+        cell: (r) => (
+          <span className="font-semibold text-primary tabular-nums" title={r.code}>
+            {r.code || '—'}
+          </span>
+        ),
         width: 110,
         hideable: false,
         defaultPinned: true,
@@ -157,12 +162,26 @@ function SealRequestListContent() {
         key: 'purpose',
         header: 'Văn bản / Mục đích',
         cell: (r) => (
-          <div className="min-w-0 py-0.5">
-            {r.title && (
-              <div className="truncate font-medium text-foreground">{r.title}</div>
-            )}
-            <div className="line-clamp-2 text-xs text-muted-foreground">{r.purpose}</div>
-          </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="min-w-0 py-0.5 cursor-default">
+                {r.title && (
+                  <div className="truncate font-medium text-foreground">{r.title}</div>
+                )}
+                <div className="line-clamp-2 text-xs text-muted-foreground">{r.purpose}</div>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-md p-3 text-left space-y-1.5 shadow-lg">
+              {r.title && (
+                <div className="font-semibold text-xs text-background border-b border-background/20 pb-1">
+                  {r.title}
+                </div>
+              )}
+              <div className="text-xs text-background/90 whitespace-pre-wrap leading-relaxed">
+                {r.purpose}
+              </div>
+            </TooltipContent>
+          </Tooltip>
         ),
         wrap: true,
         minWidth: 240,
@@ -189,12 +208,28 @@ function SealRequestListContent() {
         key: 'requester',
         header: 'Người tạo',
         cell: (r) => (
-          <div className="truncate text-xs font-medium">
-            <div>{r.requester || '—'}</div>
-            {r.requester_role && (
-              <div className="truncate text-[11px] text-muted-foreground">{r.requester_role}</div>
-            )}
-          </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="min-w-0 cursor-default">
+                <div className="truncate text-xs font-medium text-foreground">{r.requester || '—'}</div>
+                {r.requester_role && (
+                  <div className="truncate text-[11px] text-muted-foreground">{r.requester_role}</div>
+                )}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-xs p-2.5 text-left space-y-1 shadow-lg">
+              <div className="font-semibold text-xs text-background">{r.requester || '—'}</div>
+              {r.requester_role && (
+                <div className="text-[11px] text-background/80">{r.requester_role}</div>
+              )}
+              {r.requester_email && (
+                <div className="text-[11px] text-background/70 font-mono">{r.requester_email}</div>
+              )}
+              {r.requester_phone && (
+                <div className="text-[11px] text-background/70 font-mono">{r.requester_phone}</div>
+              )}
+            </TooltipContent>
+          </Tooltip>
         ),
         width: 160,
         sortable: true,

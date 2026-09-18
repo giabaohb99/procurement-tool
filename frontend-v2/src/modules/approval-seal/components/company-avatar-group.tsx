@@ -39,13 +39,13 @@ export function CompanyAvatarGroup({
             )}
           </div>
         </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-xs space-y-1 p-2 text-left">
-          <div className="flex items-center gap-1.5 font-semibold text-xs text-background">
-            <Building2 className="size-3.5 shrink-0 text-primary-foreground/70" />
-            <span>{c.name}</span>
+        <TooltipContent side="top" className="max-w-sm space-y-1 p-2.5 text-left shadow-lg">
+          <div className="flex items-start gap-1.5 font-semibold text-xs text-background">
+            <Building2 className="size-3.5 shrink-0 mt-0.5 text-primary-foreground/70" />
+            <span className="break-words leading-tight">{c.name}</span>
           </div>
           {c.tax_code && (
-            <div className="font-mono text-[11px] text-background/80">
+            <div className="font-mono text-[11px] text-background/80 pl-5">
               MST: {c.tax_code}
             </div>
           )}
@@ -74,13 +74,13 @@ export function CompanyAvatarGroup({
                 </AvatarFallback>
               </Avatar>
             </TooltipTrigger>
-            <TooltipContent side="top" className="max-w-xs space-y-1 p-2 text-left">
-              <div className="flex items-center gap-1.5 font-semibold text-xs text-background">
-                <Building2 className="size-3.5 shrink-0 text-primary-foreground/70" />
-                <span>{c.name}</span>
+            <TooltipContent side="top" className="max-w-sm space-y-1 p-2.5 text-left shadow-lg">
+              <div className="flex items-start gap-1.5 font-semibold text-xs text-background">
+                <Building2 className="size-3.5 shrink-0 mt-0.5 text-primary-foreground/70" />
+                <span className="break-words leading-tight">{c.name}</span>
               </div>
               {c.tax_code && (
-                <div className="font-mono text-[11px] text-background/80">
+                <div className="font-mono text-[11px] text-background/80 pl-5">
                   MST: {c.tax_code}
                 </div>
               )}
@@ -95,14 +95,19 @@ export function CompanyAvatarGroup({
                 +{remainingCount}
               </div>
             </TooltipTrigger>
-            <TooltipContent side="top" className="max-w-xs p-2 text-left">
-              <div className="mb-1 text-[11px] font-semibold text-background">
+            <TooltipContent side="top" className="max-w-sm p-2.5 text-left shadow-lg space-y-1.5">
+              <div className="font-semibold text-xs text-background border-b border-background/20 pb-1">
                 Các công ty khác ({remainingCount}):
               </div>
-              <ul className="space-y-1 text-xs text-background/90">
+              <ul className="space-y-1.5 text-xs text-background/90 max-h-48 overflow-y-auto">
                 {companies.slice(maxVisible).map((c) => (
-                  <li key={c.id} className="truncate">
-                    • {c.name}
+                  <li key={c.id} className="space-y-0.5">
+                    <div className="break-words leading-tight">• {c.name}</div>
+                    {c.tax_code && (
+                      <div className="text-[10px] text-background/70 pl-2 font-mono">
+                        MST: {c.tax_code}
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -111,9 +116,30 @@ export function CompanyAvatarGroup({
         )}
       </AvatarGroup>
 
-      <span className="text-[11px] font-medium text-muted-foreground">
-        ({companies.length} công ty)
-      </span>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="cursor-pointer text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground hover:underline underline-offset-2">
+            ({companies.length} công ty)
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-sm p-2.5 text-left shadow-lg space-y-1.5">
+          <div className="font-semibold text-xs text-background border-b border-background/20 pb-1">
+            Danh sách công ty ({companies.length})
+          </div>
+          <ul className="space-y-1.5 text-xs text-background/90 max-h-48 overflow-y-auto">
+            {companies.map((c) => (
+              <li key={c.id} className="space-y-0.5">
+                <div className="break-words leading-tight">• {c.name}</div>
+                {c.tax_code && (
+                  <div className="text-[10px] text-background/70 pl-2 font-mono">
+                    MST: {c.tax_code}
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        </TooltipContent>
+      </Tooltip>
     </div>
   )
 }

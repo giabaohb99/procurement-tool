@@ -9,6 +9,8 @@ import { ThemeSync } from '@/shared/theme/theme-sync'
 import { ConfirmDialogHost } from '@/shared/ui/confirm-dialog'
 import { Toaster } from '@/shared/ui/sonner'
 
+import { TooltipProvider } from '@/shared/ui/tooltip'
+
 /**
  * Gom mọi provider toàn cục về một chỗ, thứ tự từ ngoài vào trong:
  * theme -> react-query -> nội dung. Không cần AuthProvider vì auth nằm ở
@@ -25,9 +27,11 @@ export function AppProviders({ children }: { children: ReactNode }) {
         {/* Bảng màu đi theo TÀI KHOẢN (máy chủ), khác `ThemeProvider` ở trên chỉ
             lo chế độ nền Sáng/Tối và nhớ trong máy. Hai thứ vuông góc nhau. */}
         <ThemeSync />
-        {children}
-        <Toaster position="top-center" richColors closeButton />
-        <ConfirmDialogHost />
+        <TooltipProvider delayDuration={150}>
+          {children}
+          <Toaster position="top-center" richColors closeButton />
+          <ConfirmDialogHost />
+        </TooltipProvider>
         {/* Nút devtools để góc TRÁI-dưới: góc phải-dưới đã dành cho bong bóng Trợ lý AI. */}
         {env.isDev && (
           <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-left" />
