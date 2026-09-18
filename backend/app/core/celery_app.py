@@ -91,24 +91,7 @@ celery_app.conf.update(
             "schedule": crontab(hour=4, minute=10),  # 04:10 VN, mỗi ngày
         },
         # --- Điểm cà phê × POS365 (doc/erp/diem-ca-phe/03 §4). Cầu dao
-        # POS365_HARD_OFF nằm trong client: môi trường chưa bật thì các task này
-        # kết thúc ngay bằng dòng nhật ký SKIPPED, không một call nào ra ngoài.
-        "coffee-pull-orders": {
-            "task": "coffee.pull_orders",
-            "schedule": crontab(minute=f"*/{settings.POS365_PULL_MINUTES}"),
-        },
-        "coffee-check-voids": {
-            "task": "coffee.check_voids",
-            "schedule": crontab(minute=15),                          # mỗi giờ, phút 15
-        },
-        "coffee-monthly-reset": {
-            "task": "coffee.monthly_reset",
-            "schedule": crontab(day_of_month=1, hour=0, minute=5),   # 00:05 ngày 1 hằng tháng
-        },
-        "coffee-reconcile": {
-            "task": "coffee.reconcile",
-            "schedule": crontab(hour=6, minute=0),                   # 06:00 hằng ngày
-        },
+        # POS365_HARD_OFF: khi tắt thì không đưa các task này vào lịch beat.
         # coffee.mirror_balance (D-07) CHƯA có lịch — bật sau khi POC P5 xác nhận
         # PartnerSave ghi được Point.
         # --- App đặt xe / duyệt dấu cũ (doc/dong-bo-dat-xe-duyet-dau/ §11).
@@ -127,3 +110,24 @@ celery_app.conf.update(
         },
     },
 )
+
+if not settings.POS365_HARD_OFF:
+    celery_app.conf.beat_schedule.update({
+        "coffee-pull-orders": {
+            "task": "coffee.pull_orders",
+            "schedule": crontab(minute=f"*/{settings.POS365_PULL_MINUTES}"),
+        },
+        "coffee-check-voids": {
+            "task": "coffee.check_voids",
+            "schedule": crontab(minute=15),
+        },
+        "coffee-monthly-reset": {
+            "task": "coffee.monthly_reset",
+            "schedule": crontab(day_of_month=1, hour=0, minute=5),
+        },
+        "coffee-reconcile": {
+            "task": "coffee.reconcile",
+            "schedule": crontab(hour=6, minute=0),
+        },
+    })
+
