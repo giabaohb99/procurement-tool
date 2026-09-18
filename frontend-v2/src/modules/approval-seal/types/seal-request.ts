@@ -61,6 +61,8 @@ export interface SealCompanyRef {
 export interface SealRequest {
   id: number
   code: string
+  title?: string
+  copies?: number
   status: number
   status_label: string
   purpose: string

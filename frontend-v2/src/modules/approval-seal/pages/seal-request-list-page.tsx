@@ -146,46 +146,104 @@ function SealRequestListContent() {
       {
         key: 'code',
         header: 'Mã phiếu',
-        cell: (r) => <span className="font-medium tabular-nums">{r.code || '—'}</span>,
-        width: 120,
+        cell: (r) => <span className="font-semibold text-primary tabular-nums">{r.code || '—'}</span>,
+        width: 110,
         hideable: false,
         defaultPinned: true,
         sortable: true,
       },
       {
         key: 'purpose',
-        header: 'Mục đích',
-        cell: (r) => r.purpose,
+        header: 'Văn bản / Mục đích',
+        cell: (r) => (
+          <div className="min-w-0 py-0.5">
+            {r.title && (
+              <div className="truncate font-medium text-foreground">{r.title}</div>
+            )}
+            <div className="line-clamp-2 text-xs text-muted-foreground">{r.purpose}</div>
+          </div>
+        ),
         wrap: true,
-        minWidth: 200,
+        minWidth: 240,
         sortable: true,
       },
       {
         key: 'companies',
-        header: 'Công ty',
-        cell: (r) => (r.companies.length > 0 ? r.companies.map((c) => c.name).join(', ') : '—'),
+        header: 'Công ty đóng dấu',
+        cell: (r) => {
+          if (!r.companies || r.companies.length === 0) return <span className="text-muted-foreground">—</span>
+          if (r.companies.length === 1) {
+            const c = r.companies[0]
+            return (
+              <div className="flex items-center gap-1.5 text-xs font-medium">
+                {c.logo && (
+                  <img
+                    src={c.logo}
+                    alt=""
+                    className="size-4 shrink-0 rounded-xs object-contain"
+                  />
+                )}
+                <span className="truncate">{c.name}</span>
+              </div>
+            )
+          }
+          return (
+            <div className="flex flex-wrap items-center gap-1">
+              {r.companies.map((c) => (
+                <span
+                  key={c.id}
+                  className="inline-flex items-center gap-1 rounded-md border border-border/70 bg-muted/40 px-1.5 py-0.5 text-[11px] font-medium text-foreground"
+                  title={c.name}
+                >
+                  {c.logo && (
+                    <img src={c.logo} alt="" className="size-3 shrink-0 rounded-xs object-contain" />
+                  )}
+                  <span className="max-w-[130px] truncate">{c.name}</span>
+                </span>
+              ))}
+            </div>
+          )
+        },
         wrap: true,
-        minWidth: 200,
+        minWidth: 220,
+      },
+      {
+        key: 'copies',
+        header: 'Số bản',
+        align: 'right',
+        width: 90,
+        cell: (r) => (
+          <span className="font-mono text-xs tabular-nums text-foreground">
+            {r.copies ? `${r.copies} bản` : '—'}
+          </span>
+        ),
       },
       {
         key: 'requester',
         header: 'Người tạo',
-        cell: (r) => r.requester,
-        width: 150,
+        cell: (r) => (
+          <div className="truncate text-xs font-medium">
+            <div>{r.requester || '—'}</div>
+            {r.requester_role && (
+              <div className="truncate text-[11px] text-muted-foreground">{r.requester_role}</div>
+            )}
+          </div>
+        ),
+        width: 160,
         sortable: true,
       },
       {
         key: 'status',
         header: 'Trạng thái',
         cell: (r) => <SealStatusBadge status={r.status} label={r.status_label} />,
-        width: 130,
+        width: 140,
         sortable: true,
       },
       {
         key: 'created_at',
         header: 'Ngày tạo',
-        cell: (r) => <span className="tabular-nums">{formatDateTime(r.created_at) || '—'}</span>,
-        width: 150,
+        cell: (r) => <span className="tabular-nums text-xs text-muted-foreground">{formatDateTime(r.created_at) || '—'}</span>,
+        width: 140,
         sortable: true,
       },
       {

@@ -29,7 +29,9 @@ class SealTypeResponse(SealTypeBase):
 # --- Yêu cầu đóng dấu -------------------------------------------------------
 
 class SealRequestBase(BaseModel):
+    title: str = ""
     purpose: str = Field("", description="Mục đích sử dụng — tiêu đề hiển thị của phiếu")
+    copies: int = 1
     #  NHIỀU công ty cần đóng dấu (bảng nối tab_seal_request_company).
     company_ids: list[int] = Field(default_factory=list)
     department_id: int = 0
@@ -42,7 +44,9 @@ class SealRequestCreate(SealRequestBase):
 
 
 class SealRequestUpdate(BaseModel):
+    title: str | None = None
     purpose: str | None = None
+    copies: int | None = None
     company_ids: list[int] | None = None
     department_id: int | None = None
     first_approver_id: int | None = None
@@ -66,6 +70,9 @@ class CompanyRef(BaseModel):
     tax_code: str = ""
     logo: str = ""
 
+    class Config:
+        from_attributes = True
+
 
 class SealRequestResponse(SealRequestBase):
     id: int
@@ -75,7 +82,7 @@ class SealRequestResponse(SealRequestBase):
     requester: str = ""
     requester_id: int = 0
     # Nhãn nối thêm (backend join) — hiển thị trên chi tiết.
-    companies: list[CompanyRef] = Field(default_factory=list)
+    companies: list[dict] = Field(default_factory=list)
     requester_email: str = ""
     requester_phone: str = ""
     requester_role: str = ""
