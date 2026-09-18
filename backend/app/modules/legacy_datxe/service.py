@@ -301,6 +301,8 @@ def _write(db, entry: SyncLog, *, entity: str, legacy_id: str, node: dict,
                                node=node, people=people)
         sync_legacy_attachments(db, entity=entity, entity_id=fresh.id, node=node,
                                 people=people)
+        sync_legacy_approval_history(db, entity=entity, entity_id=fresh.id, code=fresh.code,
+                                     purpose=getattr(fresh, "purpose", "") or "", node=node, people=people)
         db.commit()
         entry.action = int(SyncAction.CREATE)
         return finish_ok(db, entry, f"Đã tạo phiếu {fresh.code}", local_id=fresh.id,
@@ -315,6 +317,8 @@ def _write(db, entry: SyncLog, *, entity: str, legacy_id: str, node: dict,
                                node=node, people=people)
         sync_legacy_attachments(db, entity=entity, entity_id=existing.id, node=node,
                                 people=people)
+        sync_legacy_approval_history(db, entity=entity, entity_id=existing.id, code=existing.code,
+                                     purpose=getattr(existing, "purpose", "") or "", node=node, people=people)
         if fresh.status and fresh.status != existing.status:
             old = existing.status
             existing.status = fresh.status
@@ -336,6 +340,8 @@ def _write(db, entry: SyncLog, *, entity: str, legacy_id: str, node: dict,
                            node=node, people=people)
     sync_legacy_attachments(db, entity=entity, entity_id=existing.id, node=node,
                             people=people)
+    sync_legacy_approval_history(db, entity=entity, entity_id=existing.id, code=existing.code,
+                                 purpose=getattr(existing, "purpose", "") or "", node=node, people=people)
     if not changed and not touched:
         #  Cố ý KHÔNG chốt `content_hash` vào dòng *bỏ qua*: chỉ dòng THÀNH CÔNG
         #  mới chặn được lượt sau (`is_unchanged`). Phiếu đổi ở ô mà ERP không
@@ -445,3 +451,49 @@ def sync_legacy_attachments(db, *, entity: str, entity_id: int, node: dict,
             added += 1
 
     return added
+
+
+def sync_legacy_approval_history(db, *, entity: str, entity_id: int, code: str, purpose: str,
+                                node: dict, people: PeopleResolver | None = None) -> int:
+    """Tự động đồng bộ mảng approval.history của phiếu app cũ sang tab_approval_instance,
+    tab_approval_task, tab_approval_action để widget 'LUỒNG DUYỆT NHIỀU BƯỚC' góc trên bên phải
+    hiển thị đúng quy trình phê duyệt.
+    """
+    from app.modules.approval.instance_model import ApprovalInstance
+    from scripts.legacy_sync.import_approval_history import (
+        _step_names,
+        build_actions,
+        build_instance,
+        build_tasks,
+    )
+
+    has_inst = db.execute(
+        select(ApprovalInstance.id)
+        .where(ApprovalInstance.entity == entity, ApprovalInstance.entity_id == entity_id)
+        .limit(1)
+    ).scalar_one_or_none()
+    if has_inst is not None:
+        return 0
+
+    people = people or PeopleResolver(db)
+    stats: collections.Counter = collections.Counter()
+    hist = (node.get("approval") or {}).get("history") or []
+
+    instance = build_instance(entity, entity_id, code or "", purpose or "", node, people, stats)
+    if instance is None:
+        return 0
+
+    names = _step_names((node.get("approval") or {}).get("workflowSnapshot") or {})
+    db.add(instance)
+    db.flush()
+
+    tasks, decisive = build_tasks(instance.id, hist, names, people, stats)
+    for task_row in tasks.values():
+        db.add(task_row)
+    db.flush()
+
+    for action_row in build_actions(instance.id, hist, names, people, stats, tasks, decisive):
+        db.add(action_row)
+    db.flush()
+
+    return 1
