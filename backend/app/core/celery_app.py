@@ -4,6 +4,16 @@ Import ở mọi nơi:  from app.core.celery_app import celery_app
 Chạy worker:       celery -A app.core.celery_app worker -l info
 Chạy beat:         celery -A app.core.celery_app beat -l info
 """
+import os
+import sys
+
+# Đảm bảo /app (WORKDIR của container) trong sys.path, để các module nằm ngoài
+# backend/ (ví dụ scripts/legacy_sync/) import được khi chạy trong Celery worker.
+# Celery fork worker không kế thừa sys.path của tiến trình cha đầy đủ.
+_app_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if _app_root not in sys.path:
+    sys.path.insert(0, _app_root)
+
 from celery import Celery
 from celery.schedules import crontab
 
