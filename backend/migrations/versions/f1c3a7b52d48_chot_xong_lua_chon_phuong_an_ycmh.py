@@ -33,14 +33,19 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column(
-        "tab_purchase_request",
-        sa.Column("options_chosen_at", sa.DateTime(), nullable=True),
-    )
-    op.add_column(
-        "tab_purchase_request",
-        sa.Column("options_chosen_by", sa.BigInteger(), nullable=False, server_default="0"),
-    )
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    cols = [c['name'] for c in inspector.get_columns("tab_purchase_request")]
+    if "options_chosen_at" not in cols:
+        op.add_column(
+            "tab_purchase_request",
+            sa.Column("options_chosen_at", sa.DateTime(), nullable=True),
+        )
+    if "options_chosen_by" not in cols:
+        op.add_column(
+            "tab_purchase_request",
+            sa.Column("options_chosen_by", sa.BigInteger(), nullable=False, server_default="0"),
+        )
 
 
 def downgrade() -> None:
