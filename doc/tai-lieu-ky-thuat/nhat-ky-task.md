@@ -3141,3 +3141,16 @@ Màn Tiến độ mua hàng và Tiến độ báo giá ở giao diện mới ch�
 prod ổn.
 Mã nguồn: `frontend-v2/src/modules/procurement/pages/purchase-progress-page.tsx` và màn Tiến
 độ báo giá v2.
+
+## duoc-CR-425 | Thiết kế lại trang chi tiết phân công văn thư đóng dấu với thanh đầu dính và cột phải cuộn độc lập
+- status: xong
+- date: 2026-09-18
+- pic: NSU209
+Trang chi tiết phân công văn thư đóng dấu tại đường dẫn `/approval-seal/clerks/:id` được thiết kế lại hoàn chỉnh theo khuôn giao diện hiện đại:
+- Thanh tiêu đề trên cùng dính chặt ở đỉnh trang khi cuộn xuống dưới, kèm hiệu ứng nền canvas mờ đục. Thanh này tích hợp nút quay lại danh sách, ảnh đại diện và họ tên văn thư, huy hiệu cảnh báo khi có thay đổi chưa lưu, cụm nút lưu và xóa phân công, cùng dải tóm tắt gồm mã nhân viên, phòng ban, chức vụ, trạng thái nhận việc, loại hình văn thư tổng hay đơn vị, và cụm ảnh tròn các công ty phụ trách có hiển thị giải thích khi rê chuột.
+- Thân trang chia làm hai cột rõ rệt: cột bên trái hiển thị thẻ thông tin nhân sự lấy từ hồ sơ nhân sự kèm liên kết mở xem chi tiết, và thẻ cấu hình phân công đóng dấu gồm ô chọn trạng thái, công tắc bật chế độ văn thư tổng cho nhiều pháp nhân, ô chọn công ty phụ trách có thanh tìm kiếm, và danh sách các thẻ công ty đã chọn kèm nút gỡ nhanh từng đơn vị.
+- Cột bên phải được ghim cố định và cho phép cuộn độc lập theo thanh đầu trang, bao gồm thẻ tóm tắt tổng quan trạng thái nhận việc và loại hình văn thư, khu vực trao đổi bình luận nội bộ, và nhật ký theo dõi lịch sử thao tác.
+- Đã bổ sung bộ kiểm thử tự động gồm tám bài kiểm tra cho toàn bộ phân hệ duyệt dấu và đạt kết quả kiểm tra kiểu dữ liệu sạch hoàn toàn.
+Mã nguồn: `frontend-v2/src/modules/approval-seal/components/seal-clerk-detail-header.tsx` (thành phần thanh đầu trang mới) · `frontend-v2/src/modules/approval-seal/pages/seal-clerk-detail-page.tsx` (trang chi tiết hoàn thiện) · `frontend-v2/src/modules/approval-seal/components/company-row.tsx` (thêm nút gỡ nhanh công ty) · bài kiểm `seal-clerk-detail-page.test.tsx`.
+Commit: `5fbce75a` trên nhánh `erp-v2`.
+
