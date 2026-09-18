@@ -30,7 +30,7 @@ import { SearchSelect } from '@/shared/ui/search-select'
 import { Switch } from '@/shared/ui/switch'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/ui/tooltip'
 import { cn } from '@/shared/utils/cn'
-import { CompanyChips } from '../components/company-chips'
+import { CompanyAvatarGroup } from '../components/company-avatar-group'
 import { ClerkStatusBadge } from '../components/status-pill'
 import { useSealClerks, useSyncSealClerks } from '../hooks/use-seal-clerks'
 import { CLERK_STATUS, type SealClerkGroup } from '../types/seal-clerk'
@@ -178,16 +178,14 @@ export function SealClerkListPage() {
       {
         key: 'companies',
         header: 'Công ty phụ trách',
-        minWidth: 340,
-        wrap: true,
+        minWidth: 220,
         cell: (r) => (
-          <div className="flex flex-col gap-1.5 py-1">
-            <CompanyChips companies={r.companies} />
-            {r.companies.length > 0 && (
-              <span className="text-[11px] font-medium text-muted-foreground">
-                Phụ trách {r.companies.length} công ty
-              </span>
-            )}
+          <div className="py-1">
+            <CompanyAvatarGroup
+              companies={r.companies}
+              maxVisible={4}
+              showNameWhenSingle={true}
+            />
           </div>
         ),
       },

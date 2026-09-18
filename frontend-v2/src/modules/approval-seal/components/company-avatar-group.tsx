@@ -2,10 +2,15 @@ import { Building2 } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarGroup, AvatarImage } from '@/shared/ui/avatar'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/ui/tooltip'
-import type { SealCompanyRef } from '../types/seal-request'
+export interface CompanyAvatarItem {
+  id: number
+  name: string
+  logo?: string | null
+  tax_code?: string | null
+}
 
 interface CompanyAvatarGroupProps {
-  companies: SealCompanyRef[]
+  companies: CompanyAvatarItem[]
   maxVisible?: number
   showNameWhenSingle?: boolean
 }
@@ -27,7 +32,7 @@ export function CompanyAvatarGroup({
         <TooltipTrigger asChild>
           <div className="inline-flex max-w-full cursor-pointer items-center gap-2 rounded-md py-0.5 transition-colors hover:text-primary">
             <Avatar size="sm" className="size-6 shrink-0 border border-border/60 bg-white shadow-2xs">
-              <AvatarImage src={c.logo} alt={c.name} className="object-contain p-0.5" />
+              <AvatarImage src={c.logo || undefined} alt={c.name} className="object-contain p-0.5" />
               <AvatarFallback className="bg-primary/10 text-[10px] font-bold text-primary">
                 {(c.name || '?').trim().charAt(0).toUpperCase()}
               </AvatarFallback>
@@ -69,7 +74,7 @@ export function CompanyAvatarGroup({
                   size="sm"
                   className="size-7 cursor-pointer border-2 border-background bg-white shadow-2xs transition-transform duration-100 hover:z-30 hover:scale-110 hover:border-primary [&>*]:pointer-events-none"
                 >
-                  <AvatarImage src={c.logo} alt={c.name} className="object-contain p-0.5" />
+                  <AvatarImage src={c.logo || undefined} alt={c.name} className="object-contain p-0.5" />
                   <AvatarFallback className="bg-primary/10 text-[10px] font-bold text-primary">
                     {(c.name || '?').trim().charAt(0).toUpperCase()}
                   </AvatarFallback>
