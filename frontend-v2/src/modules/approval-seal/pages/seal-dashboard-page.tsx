@@ -1,4 +1,14 @@
-import { CheckCircle2, ClipboardCheck, List, Plus, SlidersHorizontal, Stamp } from 'lucide-react'
+import {
+  AlertCircle,
+  Building2,
+  CheckCircle2,
+  ClipboardCheck,
+  Clock,
+  List,
+  Plus,
+  SlidersHorizontal,
+  Stamp,
+} from 'lucide-react'
 import { useMemo, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -23,23 +33,26 @@ import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { StatCard } from '@/shared/ui/stat-card'
 import { cn } from '@/shared/utils/cn'
+import { SealDirectoryGlanceCard } from '../components/seal-directory-glance-card'
 import { SealQueueTable } from '../components/seal-queue-table'
+import { SealWorkflowGuideCard } from '../components/seal-workflow-guide-card'
 import { useSealDashboard } from '../hooks/use-seal-dashboard'
 import { SEAL_STATUS, SEAL_STATUS_LABELS } from '../types/seal-request'
 
-/** Số cột KPI khớp đúng số thẻ hiện ra (Tailwind cần class tĩnh). */
-const KPI_GRID_COLS: Record<number, string> = {
-  1: 'xl:grid-cols-1',
-  2: 'xl:grid-cols-2',
-  3: 'xl:grid-cols-3',
-  4: 'xl:grid-cols-4',
-  5: 'xl:grid-cols-5',
-}
-
 /** Các khối bảng/biểu đồ có thể ẩn/hiện trên trang tổng quan. */
-type BlockKey = 'recent' | 'approve' | 'clerk' | 'director' | 'trend' | 'status' | 'company'
+type BlockKey =
+  | 'workflow'
+  | 'recent'
+  | 'approve'
+  | 'clerk'
+  | 'director'
+  | 'trend'
+  | 'status'
+  | 'company'
+  | 'directory'
 
 const BLOCK_LABELS: Record<BlockKey, string> = {
+  workflow: 'Quy trình duyệt dấu',
   recent: 'Phiếu gần đây của tôi',
   approve: 'Chờ phê duyệt',
   clerk: 'Chờ đóng dấu',
@@ -47,12 +60,13 @@ const BLOCK_LABELS: Record<BlockKey, string> = {
   trend: 'Số phiếu theo tháng',
   status: 'Theo trạng thái',
   company: 'Theo công ty',
+  directory: 'Danh mục & Văn thư',
 }
 
-//  Ba bảng phiếu ẩn MẶC ĐỊNH (người dùng tự bật lại trong menu "Hiển thị").
-const DEFAULT_HIDDEN: BlockKey[] = ['recent', 'approve', 'clerk']
+// Mặc định KHÔNG ẨN khối nào để trang đầy đủ thông tin và sống động ngay khi mở
+const DEFAULT_HIDDEN: BlockKey[] = []
 
-//  Màu lát bánh "Theo trạng thái" — xoay vòng bộ màu biểu đồ đã chốt của theme.
+// Màu lát bánh "Theo trạng thái"
 const STATUS_COLORS = [
   'var(--chart-1)',
   'var(--chart-2)',
@@ -61,12 +75,10 @@ const STATUS_COLORS = [
   'var(--chart-neutral)',
 ]
 
-/** Ngày local → 'yyyy-mm-dd'. */
 function toYmd(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-/** Khoảng báo cáo mặc định: 30 ngày gần nhất (bao hôm nay). */
 function defaultReportRange(): { from: string; to: string } {
   const to = new Date()
   const from = new Date()
@@ -75,17 +87,17 @@ function defaultReportRange(): { from: string; to: string } {
 }
 
 /**
- * Tổng quan Duyệt dấu — thẻ KPI theo vai trò + bảng báo cáo:
- *  · Nhân sự thường: 1 bảng full-width "Phiếu gần đây của tôi".
- *  · Có vai trò (TBP/Giám đốc/Văn thư): 2 cột — cột 1 "Phiếu gần đây của tôi",
- *    cột 2 theo vai trò (Chờ phê duyệt / Yêu cầu đã phê duyệt / Chờ đóng dấu).
- *  · Mọi người: thống kê theo tháng / trạng thái / bộ phận theo PHẠM VI RIÊNG.
+ * Tổng quan Duyệt dấu — Layout mới phong phú, đa chiều:
+ *  1. Thanh công cụ & Bộ lọc thời gian chuẩn ERP
+ *  2. Dải KPI metrics toàn diện theo vai trò và tổng thể
+ *  3. Hàng đợi công việc (Chờ duyệt / Chờ đóng dấu / Phiếu gần đây) hiển thị mặc định
+ *  4. Sơ đồ quy trình trình ký & đóng dấu 4 bước chuẩn hóa
+ *  5. Thống kê xu hướng tháng, cơ cấu trạng thái, và phân bổ theo công ty
+ *  6. Danh mục con dấu lưu hành & Đội ngũ văn thư phụ trách
  */
 export function SealDashboardPage() {
   const { can } = usePermission()
 
-  //  Khoảng ngày áp cho MỌI khối báo cáo (theo tháng / trạng thái / công ty). Mặc
-  //  định 30 ngày gần nhất; bấm X để bỏ lọc → lấy tất cả.
   const [reportRange, setReportRange] = useState(defaultReportRange)
   const hasRange = Boolean(reportRange.from || reportRange.to)
   const { data, isLoading } = useSealDashboard({
@@ -102,12 +114,19 @@ export function SealDashboardPage() {
   const mineByStatus = mine?.by_status ?? {}
   const mineTotal = Object.values(mineByStatus).reduce((sum, n) => sum + n, 0)
 
-  const kpiCount =
-    (mine ? 1 : 0) + (approve ? 1 : 0) + (clerk ? 2 : 0) + (director ? 1 : 0)
+  // Tổng số phiếu trong kỳ tính từ stats
+  const totalStatsCount = useMemo(() => {
+    return (stats?.by_status ?? []).reduce((acc, curr) => acc + curr.value, 0)
+  }, [stats])
 
-  //  Khối nào CÓ theo vai trò (chỉ liệt kê trong menu Hiển thị những khối này).
+  const completedStatsCount = useMemo(() => {
+    const item = (stats?.by_status ?? []).find((s) => s.key === SEAL_STATUS.completed)
+    return item?.value ?? 0
+  }, [stats])
+
   const available = useMemo<Record<BlockKey, boolean>>(
     () => ({
+      workflow: true,
       recent: Boolean(mine),
       approve: Boolean(approve),
       clerk: Boolean(clerk),
@@ -115,11 +134,11 @@ export function SealDashboardPage() {
       trend: Boolean(stats),
       status: Boolean(stats),
       company: Boolean(stats),
+      directory: true,
     }),
     [mine, approve, clerk, director, stats],
   )
 
-  //  Khối bị ẩn — mặc định ẩn 3 bảng phiếu; người dùng bật/tắt trong menu "Hiển thị".
   const [hidden, setHidden] = useState<Set<BlockKey>>(() => new Set(DEFAULT_HIDDEN))
   const shows = (k: BlockKey) => available[k] && !hidden.has(k)
   const toggle = (k: BlockKey) =>
@@ -131,33 +150,17 @@ export function SealDashboardPage() {
     })
   const menuKeys = (Object.keys(BLOCK_LABELS) as BlockKey[]).filter((k) => available[k])
 
-  //  Bấm thẻ KPI → sang danh sách đã lọc đúng nội dung thẻ. "Phiếu của tôi" không
-  //  gắn với một trạng thái nên chỉ mở danh sách (phạm vi `own` tự lọc phiếu của mình).
   const requestsRoute = appRoutes.approvalSeal.requests
   const withStatus = (status: number) => `${requestsRoute}?status=${status}`
 
-  //  Các thẻ bảng ĐANG BẬT, theo thứ tự cố định. `h-full` để khi xếp 2 cột các thẻ
-  //  giãn bằng chiều cao hàng (items-stretch ở lưới cha).
-  const tableCards: ReactNode[] = []
-  if (shows('recent')) {
-    tableCards.push(
-      <Card key="recent" className="h-full p-4">
-        <SealQueueTable
-          title="Phiếu gần đây của tôi"
-          description="Phiếu đóng dấu bạn đã tạo"
-          rows={mine?.recent ?? []}
-          isLoading={isLoading}
-          emptyMessage="Bạn chưa tạo phiếu nào."
-        />
-      </Card>,
-    )
-  }
-  if (shows('approve') && approve) {
-    tableCards.push(
-      <Card key="approve" className="h-full p-4">
+  // Gom các thẻ hàng đợi công việc
+  const queueCards: ReactNode[] = []
+  if (shows('approve') && approve && approve.items.length > 0) {
+    queueCards.push(
+      <Card key="approve" className="h-full p-4 border-amber-500/20 shadow-xs">
         <SealQueueTable
           title="Chờ phê duyệt"
-          description={`${approve.pending} phiếu đang chờ bạn duyệt`}
+          description={`${approve.pending} phiếu đang chờ bạn thẩm định và duyệt`}
           rows={approve.items}
           hideStatusFilter
           isLoading={isLoading}
@@ -166,12 +169,13 @@ export function SealDashboardPage() {
       </Card>,
     )
   }
-  if (shows('clerk') && clerk) {
-    tableCards.push(
-      <Card key="clerk" className="h-full p-4">
+
+  if (shows('clerk') && clerk && clerk.queue.length > 0) {
+    queueCards.push(
+      <Card key="clerk" className="h-full p-4 border-blue-500/20 shadow-xs">
         <SealQueueTable
           title="Chờ đóng dấu"
-          description={`${clerk.to_stamp} phiếu đã duyệt, chờ đóng dấu`}
+          description={`${clerk.to_stamp} phiếu đã duyệt, sẵn sàng đóng dấu`}
           rows={clerk.queue}
           hideStatusFilter
           isLoading={isLoading}
@@ -180,9 +184,10 @@ export function SealDashboardPage() {
       </Card>,
     )
   }
-  if (shows('director') && director) {
-    tableCards.push(
-      <Card key="director" className="h-full p-4">
+
+  if (shows('director') && director && director.items.length > 0) {
+    queueCards.push(
+      <Card key="director" className="h-full p-4 border-border/80 shadow-xs">
         <SealQueueTable
           title="Yêu cầu đã phê duyệt"
           description={`${director.count} phiếu đã duyệt của công ty bạn`}
@@ -195,7 +200,25 @@ export function SealDashboardPage() {
     )
   }
 
-  //  Lát bánh "Theo trạng thái" — bỏ lát 0 phiếu, tô màu xoay vòng theo bộ màu theme.
+  if (shows('recent')) {
+    queueCards.push(
+      <Card key="recent" className="h-full p-4 border-border/80 shadow-xs">
+        <SealQueueTable
+          title="Phiếu gần đây của tôi"
+          description={
+            mineTotal > 0
+              ? `${mineTotal} phiếu bạn đã lập trên hệ thống`
+              : 'Các yêu cầu đóng dấu do bạn khởi tạo'
+          }
+          rows={mine?.recent ?? []}
+          isLoading={isLoading}
+          emptyMessage="Bạn chưa tạo yêu cầu đóng dấu nào."
+        />
+      </Card>,
+    )
+  }
+
+  // Lát bánh biểu đồ trạng thái
   const statusSlices: DonutSlice[] = (stats?.by_status ?? [])
     .filter((s) => s.value > 0)
     .map((s, i) => ({
@@ -207,11 +230,10 @@ export function SealDashboardPage() {
   return (
     <PageContainer>
       <PageHeader
-        title="Duyệt dấu"
-        description="Bảng báo cáo yêu cầu đóng dấu theo vai trò của bạn."
+        title="Tổng quan Duyệt dấu"
+        description="Theo dõi tình trạng trình ký, tiến độ thẩm định và số lượng đóng dấu chứng từ toàn hệ thống."
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            {/*  Bộ lọc thời gian — áp cho MỌI khối báo cáo bên dưới (mặc định 30 ngày; X = tất cả). */}
             <DateRangePicker
               from={reportRange.from}
               to={reportRange.to}
@@ -227,13 +249,12 @@ export function SealDashboardPage() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>Bảng hiển thị</DropdownMenuLabel>
+                  <DropdownMenuLabel>Bố cục trang tổng quan</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   {menuKeys.map((k) => (
                     <DropdownMenuCheckboxItem
                       key={k}
                       checked={!hidden.has(k)}
-                      //  Giữ menu MỞ khi tick nhiều khối (mặc định Radix đóng sau mỗi lần chọn).
                       onSelect={(e) => e.preventDefault()}
                       onCheckedChange={() => toggle(k)}
                     >
@@ -250,7 +271,7 @@ export function SealDashboardPage() {
               </Link>
             </Button>
             {can('seal_request', 'create') && (
-              <Button asChild>
+              <Button asChild className="bg-primary hover:bg-primary/90">
                 <Link to={appRoutes.approvalSeal.new}>
                   <Plus className="mr-1.5 size-4" />
                   Tạo yêu cầu
@@ -261,111 +282,151 @@ export function SealDashboardPage() {
         }
       />
 
-      {/* Thẻ KPI theo vai trò */}
-      {kpiCount > 0 && (
-        <div className={cn('mb-4 grid gap-4 sm:grid-cols-2', KPI_GRID_COLS[kpiCount] ?? 'xl:grid-cols-4')}>
-          {mine && (
-            <StatCard
-              icon={Stamp}
-              label="Phiếu của tôi"
-              value={mineTotal}
-              hint={`${mineByStatus[SEAL_STATUS.pending] ?? 0} chờ duyệt · ${mineByStatus[SEAL_STATUS.completed] ?? 0} đã đóng dấu`}
-              loading={isLoading}
-              to={requestsRoute}
-            />
-          )}
-          {approve && (
-            <StatCard
-              icon={ClipboardCheck}
-              label="Chờ tôi duyệt"
-              value={approve.pending}
-              hint={approve.pending ? 'Cần phê duyệt' : 'Không tồn đọng'}
-              tone={approve.pending ? 'warning' : undefined}
-              loading={isLoading}
-              to={withStatus(SEAL_STATUS.pending)}
-            />
-          )}
-          {clerk && (
-            <>
-              <StatCard
-                icon={Stamp}
-                label="Chờ đóng dấu"
-                value={clerk.to_stamp}
-                hint={clerk.to_stamp ? 'Đã duyệt, chờ văn thư' : 'Không tồn đọng'}
-                tone={clerk.to_stamp ? 'warning' : undefined}
-                loading={isLoading}
-                to={withStatus(SEAL_STATUS.approved)}
-              />
-              <StatCard
-                icon={CheckCircle2}
-                label="Đã đóng dấu"
-                value={clerk.completed}
-                hint="Đã hoàn thành đóng dấu"
-                loading={isLoading}
-                to={withStatus(SEAL_STATUS.completed)}
-              />
-            </>
-          )}
-          {director && (
-            <StatCard
-              icon={CheckCircle2}
-              label="Đã phê duyệt"
-              value={director.count}
-              hint="Của công ty bạn"
-              loading={isLoading}
-              to={withStatus(SEAL_STATUS.approved)}
-            />
-          )}
+      {/* ── 1. Dải thẻ KPI Metrics đa chiều ───────────────────────────────── */}
+      <div className="mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+        {/* Phiếu của tôi */}
+        <StatCard
+          icon={Stamp}
+          label="Phiếu của tôi"
+          value={mineTotal}
+          hint={`${mineByStatus[SEAL_STATUS.pending] ?? 0} chờ duyệt · ${mineByStatus[SEAL_STATUS.completed] ?? 0} đã đóng dấu`}
+          loading={isLoading}
+          to={requestsRoute}
+        />
+
+        {/* Chờ tôi duyệt (TBP) */}
+        {approve && (
+          <StatCard
+            icon={ClipboardCheck}
+            label="Chờ tôi duyệt"
+            value={approve.pending}
+            hint={approve.pending > 0 ? 'Hồ sơ cần thẩm định ngay' : 'Không có việc tồn'}
+            tone={approve.pending > 0 ? 'warning' : undefined}
+            loading={isLoading}
+            to={withStatus(SEAL_STATUS.pending)}
+          />
+        )}
+
+        {/* Chờ văn thư đóng dấu */}
+        {clerk ? (
+          <StatCard
+            icon={Clock}
+            label="Chờ đóng dấu"
+            value={clerk.to_stamp}
+            hint={clerk.to_stamp > 0 ? 'Đã duyệt, chờ dập dấu' : 'Không tồn đọng'}
+            tone={clerk.to_stamp > 0 ? 'warning' : undefined}
+            loading={isLoading}
+            to={withStatus(SEAL_STATUS.approved)}
+          />
+        ) : (
+          <StatCard
+            icon={Clock}
+            label="Chờ duyệt của tôi"
+            value={mineByStatus[SEAL_STATUS.pending] ?? 0}
+            hint="Đang chờ TBP phê duyệt"
+            loading={isLoading}
+            to={withStatus(SEAL_STATUS.pending)}
+          />
+        )}
+
+        {/* Đã đóng dấu hoàn tất */}
+        <StatCard
+          icon={CheckCircle2}
+          label="Đã hoàn thành"
+          value={clerk ? clerk.completed : (mineByStatus[SEAL_STATUS.completed] ?? completedStatsCount)}
+          hint={clerk ? 'Văn thư đã đóng dấu' : 'Đã đóng dấu bàn giao'}
+          loading={isLoading}
+          to={withStatus(SEAL_STATUS.completed)}
+        />
+
+        {/* Tổng hồ sơ trong kỳ hoặc Bị từ chối */}
+        {(mineByStatus[SEAL_STATUS.rejected] ?? 0) > 0 ? (
+          <StatCard
+            icon={AlertCircle}
+            label="Bị từ chối / Trả lại"
+            value={(mineByStatus[SEAL_STATUS.rejected] ?? 0) + (mineByStatus[SEAL_STATUS.returned] ?? 0)}
+            hint="Cần xem lý do & hiệu chỉnh"
+            tone="danger"
+            loading={isLoading}
+            to={withStatus(SEAL_STATUS.rejected)}
+          />
+        ) : (
+          <StatCard
+            icon={Building2}
+            label="Tổng lưu lượng"
+            value={totalStatsCount || mineTotal}
+            hint={hasRange ? 'Theo khoảng ngày đã chọn' : 'Toàn thời gian'}
+            loading={isLoading}
+            to={requestsRoute}
+          />
+        )}
+      </div>
+
+      {/* ── 2. Sơ đồ quy trình 4 bước duyệt dấu ──────────────────────────── */}
+      {shows('workflow') && (
+        <div className="mb-4">
+          <SealWorkflowGuideCard />
         </div>
       )}
 
-      {/* Hàng bảng — chỉ dựng các khối được chọn; 1 khối thì full-width, ≥2 thì 2 cột. */}
-      {tableCards.length > 0 && (
-        <div className={cn('grid items-stretch gap-4', tableCards.length >= 2 && 'lg:grid-cols-2')}>
-          {tableCards}
+      {/* ── 3. Hàng đợi công việc & Danh sách gần đây ──────────────────────── */}
+      {queueCards.length > 0 && (
+        <div className={cn('mb-4 grid items-stretch gap-4', queueCards.length >= 2 && 'lg:grid-cols-2')}>
+          {queueCards}
         </div>
       )}
 
-      {/* Thống kê theo phạm vi riêng — mọi vai trò; bố cục co theo biểu đồ được chọn. */}
+      {/* ── 4. Thống kê phân tích: Xu hướng · Trạng thái · Công ty ────────── */}
       {(shows('trend') || shows('status') || shows('company')) && stats && (
-        <div className="mt-4 flex flex-col gap-4">
-          {(shows('trend') || shows('status')) && (
-            <div className={cn('grid items-start gap-4', shows('trend') && shows('status') && 'lg:grid-cols-3')}>
-              {shows('trend') && (
-                <ChartCard
-                  className={cn(shows('status') && 'lg:col-span-2')}
-                  title="Số phiếu theo tháng"
-                  description={hasRange ? 'Theo khoảng đã chọn' : '12 tháng gần nhất, trong phạm vi của bạn'}
-                  loading={isLoading}
-                  isEmpty={stats.trend.every((p) => p.value === 0)}
-                  emptyLabel="Chưa phát sinh phiếu."
-                >
-                  <ColumnChart data={stats.trend} formatValue={(v) => String(v)} />
-                </ChartCard>
-              )}
-              {shows('status') && (
-                <ChartCard
-                  title="Theo trạng thái"
-                  description={hasRange ? 'Số phiếu mỗi trạng thái (khoảng đã chọn)' : 'Số phiếu mỗi trạng thái (tất cả)'}
-                  loading={isLoading}
-                  isEmpty={statusSlices.length === 0}
-                  emptyLabel="Không có phiếu trong khoảng đã chọn."
-                >
-                  <DonutChart data={statusSlices} centerLabel="phiếu" formatValue={(v) => String(v)} />
-                </ChartCard>
-              )}
-            </div>
-          )}
+        <div className="mb-4 flex flex-col gap-4">
+          <div className="grid items-start gap-4 lg:grid-cols-3">
+            {/* Biểu đồ số phiếu theo tháng */}
+            {shows('trend') && (
+              <ChartCard
+                className={cn(shows('status') ? 'lg:col-span-2' : 'lg:col-span-3')}
+                title="Xu hướng yêu cầu theo tháng"
+                description={hasRange ? 'Khối lượng phiếu phát sinh theo khoảng thời gian đã chọn' : 'Khối lượng phát sinh 12 tháng gần nhất'}
+                loading={isLoading}
+                isEmpty={stats.trend.every((p) => p.value === 0)}
+                emptyLabel="Chưa phát sinh phiếu trong khoảng thời gian này."
+              >
+                <ColumnChart data={stats.trend} formatValue={(v) => String(v)} />
+              </ChartCard>
+            )}
+
+            {/* Biểu đồ phân bổ trạng thái */}
+            {shows('status') && (
+              <ChartCard
+                title="Cơ cấu theo trạng thái"
+                description={hasRange ? 'Tỷ lệ trạng thái trong khoảng đã chọn' : 'Tỷ lệ trạng thái toàn bộ yêu cầu'}
+                loading={isLoading}
+                isEmpty={statusSlices.length === 0}
+                emptyLabel="Không có dữ liệu trạng thái."
+              >
+                <DonutChart data={statusSlices} centerLabel="phiếu" formatValue={(v) => String(v)} />
+              </ChartCard>
+            )}
+          </div>
+
+          {/* Phân bổ theo công ty */}
           {shows('company') && (
             <ChartCard
-              title="Theo công ty"
-              description={hasRange ? 'Số phiếu theo công ty (khoảng đã chọn)' : 'Số phiếu theo công ty'}
+              title="Khối lượng đóng dấu theo Công ty / Pháp nhân"
+              description={hasRange ? 'Số lượt đóng dấu cho từng pháp nhân trong khoảng đã chọn' : 'Số lượt đóng dấu cho từng pháp nhân trực thuộc tập đoàn'}
               loading={isLoading}
               isEmpty={stats.by_company.length === 0}
+              emptyLabel="Chưa có dữ liệu theo công ty."
             >
               <BarList items={stats.by_company.map((c) => ({ label: c.name, value: c.value }))} />
             </ChartCard>
           )}
+        </div>
+      )}
+
+      {/* ── 5. Danh mục con dấu & Văn thư phụ trách ───────────────────────── */}
+      {shows('directory') && (
+        <div className="mb-4">
+          <SealDirectoryGlanceCard />
         </div>
       )}
     </PageContainer>
