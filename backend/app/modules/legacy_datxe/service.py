@@ -144,6 +144,8 @@ def sync_seal_companies(db, seal: SealRequest, company_ids: list[int]) -> bool:
     dữ liệu (`core/scoping.py` nhánh `seal_request`) — sai ở đây là sai người
     được thấy phiếu, nên phải theo sát bên app cũ cả chiều thêm lẫn chiều bớt.
     """
+    if not company_ids and getattr(seal, "company_id", 0) > 0:
+        company_ids = [seal.company_id]
     current = {row.company_id: row for row in db.execute(
         select(SealRequestCompany)
         .where(SealRequestCompany.seal_request_id == seal.id)).scalars()}

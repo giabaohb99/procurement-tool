@@ -216,7 +216,20 @@ class LegacyCatalog:
         if branch == BRANCH_DEPARTMENT:
             return self._only(Department, Department.name, node.get("name"))
         if branch == BRANCH_BRAND:
-            return self._only(Company, Company.name, node.get("name"))
+            row = self._only(Company, Company.name, node.get("name"))
+            if row:
+                return row
+            raw = normalize_name(node.get("name"))
+            if not raw:
+                return None
+            for c in self.db.execute(select(Company)).scalars():
+                c_name = normalize_name(c.name)
+                if c_name and (c_name in raw or raw in c_name):
+                    return c
+                tax = (getattr(c, "tax_code", "") or "").strip()
+                if tax and tax in raw:
+                    return c
+            return None
         return None
 
     def _first(self, model, column, needle: str, normalizer):
