@@ -63,3 +63,12 @@ db-export/*
 
 # Tài khoản chạy sync_task_journal.py (bao-CR-399) — mỗi máy tự điền, cấm commit.
 backend/scripts/.task_sync.env
+
+# Đầu ra của graphify (`/graphify .`). Giữ lại bản đọc được — báo cáo + đồ thị HTML
+# — vì cả nhóm dùng chung mà không cần cài graphify. Chặn phần còn lại: `graph.json`
+# nặng 16 MB, `cache/` là bộ đệm theo máy, còn `converted/` là bản xlsx/docx đổ ra
+# markdown (dữ liệu NCC, thu mua, khảo sát) — tất cả chạy lại `graphify` là có.
+graphify-out/*
+!graphify-out/GRAPH_REPORT.md
+!graphify-out/graph.html
+backend/graphify-out/
