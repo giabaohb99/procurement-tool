@@ -16,7 +16,7 @@ from app.core.config import settings
 from app.core.database import engine, SessionLocal
 from app.core.storage import download_bytes
 from app.modules.backup.model import DbBackup
-from app.modules.legacy_datxe.service import pull_updated
+from app.modules.legacy_datxe.tasks import pull_updated
 
 
 def kill_other_connections():
