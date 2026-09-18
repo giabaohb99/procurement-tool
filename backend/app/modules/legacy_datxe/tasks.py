@@ -60,10 +60,8 @@ JOB_RETRY = "retry_pending"
 NODE_REQUESTS = "requests"
 CURSOR_FIELD = "updatedAt"
 
-#: Lượt ĐẦU TIÊN (sổ chưa có con trỏ nào) chỉ nhìn lại chừng này giờ. Không quét
-#: cả nhánh: 1313 phiếu cũ đã nạp một lần hồi P1, lôi hết lại chỉ để so mã băm là
-#: đổ một nghìn dòng sổ vô nghĩa ngay lần chạy đầu.
-FIRST_RUN_LOOKBACK_HOURS = 24
+#: Lượt ĐẦU TIÊN (sổ chưa có con trỏ nào) nhìn lại 365 ngày để kéo phiếu cũ.
+FIRST_RUN_LOOKBACK_HOURS = 24 * 365
 
 #: Trần phiếu một lượt. Sửa dồn quá trần thì lượt sau kéo tiếp từ chỗ con trỏ
 #: dừng — chậm chứ không mất.
