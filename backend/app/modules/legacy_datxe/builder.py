@@ -343,6 +343,8 @@ def build_seal(db, key: str, node: dict, people: PeopleResolver, seal_type_id: i
     emp = people.employee(node.get("createdBy") or "")
     snap = _requester_snapshot(db, emp)
     company_ids = _companies_of(details, company_index, stats)
+    if not company_ids and snap["company_id"]:
+        company_ids = [snap["company_id"]]
     if len(company_ids) > 1:
         stats["phieu dau nhieu cong ty"] += 1
 
