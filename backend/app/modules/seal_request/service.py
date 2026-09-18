@@ -363,8 +363,9 @@ def _emp_of_user(db: Session, user_id: int) -> Employee | None:
     return db.get(Employee, u.employee_id) if u and u.employee_id else None
 
 
-def _company_refs(db: Session, company_ids: list[int], *, logo_map=None, company_map=None) -> list[dict]:
-    """[{id,name,tax_code,logo}] cho danh sách công ty (giữ thứ tự)."""
+def _company_refs(db: Session, company_ids: list[int], *, logo_map=None, company_map=None) -> list["CompanyRef"]:
+    """[CompanyRef] cho danh sách công ty (giữ thứ tự)."""
+    from .schema import CompanyRef
     if not company_ids:
         return []
     if company_map is None:
@@ -377,8 +378,12 @@ def _company_refs(db: Session, company_ids: list[int], *, logo_map=None, company
     for cid in company_ids:
         co = company_map.get(cid)
         if co:
-            out.append({"id": cid, "name": co.name, "tax_code": co.tax_code or "",
-                        "logo": logo_map.get(cid, "")})
+            out.append(CompanyRef(
+                id=cid,
+                name=co.name or "",
+                tax_code=co.tax_code or "",
+                logo=logo_map.get(cid, ""),
+            ))
     return out
 
 

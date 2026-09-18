@@ -361,24 +361,35 @@ def _write(db, entry: SyncLog, *, entity: str, legacy_id: str, node: dict,
 
 def sync_legacy_audit_logs(db, *, entity: str, entity_id: int, code: str,
                            node: dict, people: PeopleResolver | None = None) -> int:
-    """Tự động đồng bộ mảng approval.history của phiếu app cũ sang tab_audit_log.
+    """Đồng bộ mảng approval.history của phiếu app cũ sang tab_audit_log.
 
-    Đảm bảo thẻ 'Lịch sử thao tác' trên màn chi tiết ERP có đủ nhật ký hành trình.
+    Mỗi lần phiếu được cập nhật từ Firebase, xóa các dòng nhật ký cũ do script
+    ghi (actor_kind = ACTOR_KIND_SCRIPT) rồi ghi lại toàn bộ từ history mới nhất.
+    Dòng do người dùng thật tạo bên ERP (actor_kind khác) KHÔNG bị xóa.
     """
     hist = (node.get("approval") or {}).get("history") or []
     if not hist:
         return 0
 
+    from app.core.logging_codes import ACTOR_KIND_SCRIPT
     from app.modules.audit.model import AuditLog
     from scripts.legacy_sync.import_audit_log import build_rows
 
-    has_audit = db.execute(
-        select(AuditLog.id)
-        .where(AuditLog.entity == entity, AuditLog.entity_id == entity_id)
-        .limit(1)
-    ).scalar_one_or_none()
-    if has_audit is not None:
-        return 0
+    #  Xóa các dòng nhật ký cũ do script nạp từ app cũ trước đó.
+    #  Dòng do người dùng thật tạo bên ERP (actor_kind != ACTOR_KIND_SCRIPT)
+    #  được giữ nguyên — chúng là thao tác thật, không phải dữ liệu đồng bộ.
+    old_rows = list(db.execute(
+        select(AuditLog)
+        .where(
+            AuditLog.entity == entity,
+            AuditLog.entity_id == entity_id,
+            AuditLog.actor_kind == ACTOR_KIND_SCRIPT,
+        )
+    ).scalars())
+    for row in old_rows:
+        db.delete(row)
+    if old_rows:
+        db.flush()
 
     people = people or PeopleResolver(db)
     noun = "yêu cầu đóng dấu" if entity == ENTITY_SEAL else "yêu cầu đặt xe"
@@ -455,11 +466,19 @@ def sync_legacy_attachments(db, *, entity: str, entity_id: int, node: dict,
 
 def sync_legacy_approval_history(db, *, entity: str, entity_id: int, code: str, purpose: str,
                                 node: dict, people: PeopleResolver | None = None) -> int:
-    """Tự động đồng bộ mảng approval.history của phiếu app cũ sang tab_approval_instance,
-    tab_approval_task, tab_approval_action để widget 'LUỒNG DUYỆT NHIỀU BƯỚC' góc trên bên phải
+    """Đồng bộ mảng approval.history của phiếu app cũ sang tab_approval_instance,
+    tab_approval_task, tab_approval_action để widget 'LUỒNG DUYỆT NHIỀU BƯỚC'
     hiển thị đúng quy trình phê duyệt.
+
+    Mỗi lần phiếu được cập nhật từ Firebase, xóa toàn bộ phiên duyệt cũ (instance
+    + task + action) rồi tạo lại từ history mới nhất. Chỉ xóa phiên do script nạp
+    (flow_id = 0) — phiên duyệt thật bên ERP (flow_id > 0) được bảo toàn.
     """
-    from app.modules.approval.instance_model import ApprovalInstance
+    from app.modules.approval.instance_model import (
+        ApprovalAction,
+        ApprovalInstance,
+        ApprovalTask,
+    )
     from scripts.legacy_sync.import_approval_history import (
         _step_names,
         build_actions,
@@ -467,13 +486,31 @@ def sync_legacy_approval_history(db, *, entity: str, entity_id: int, code: str, 
         build_tasks,
     )
 
-    has_inst = db.execute(
-        select(ApprovalInstance.id)
-        .where(ApprovalInstance.entity == entity, ApprovalInstance.entity_id == entity_id)
-        .limit(1)
-    ).scalar_one_or_none()
-    if has_inst is not None:
-        return 0
+    #  Xóa các phiên duyệt do script nạp từ app cũ (flow_id = 0).
+    #  Phiên duyệt thật bên ERP (flow_id > 0) KHÔNG bị xóa — chúng là
+    #  quyết định thật của người dùng, không phải dữ liệu phản chiếu.
+    old_instances = list(db.execute(
+        select(ApprovalInstance)
+        .where(
+            ApprovalInstance.entity == entity,
+            ApprovalInstance.entity_id == entity_id,
+            ApprovalInstance.flow_id == 0,
+        )
+    ).scalars())
+    for inst in old_instances:
+        inst_id = inst.id
+        #  Xóa action trước (không có FK cascade trong ORM).
+        for action_row in db.execute(
+            select(ApprovalAction).where(ApprovalAction.instance_id == inst_id)
+        ).scalars():
+            db.delete(action_row)
+        for task_row in db.execute(
+            select(ApprovalTask).where(ApprovalTask.instance_id == inst_id)
+        ).scalars():
+            db.delete(task_row)
+        db.delete(inst)
+    if old_instances:
+        db.flush()
 
     people = people or PeopleResolver(db)
     stats: collections.Counter = collections.Counter()
