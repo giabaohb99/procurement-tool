@@ -131,12 +131,8 @@ ACTION_FROM_LEGACY = {
     "approved": ACTION_APPROVE,
     "rejected": ACTION_REJECT,
     "needs_correction": ACTION_RETURN,
-    #  ERP không tách "người nộp tự rút" với "quản trị hủy hộ" — cùng là
-    #  ACTION_WITHDRAW. Chỗ phân biệt duy nhất còn lại là câu ghi chú, nên
-    #  dòng quản trị hủy được đánh dấu bằng `ADMIN_CANCEL_PREFIX`.
     "canceled": ACTION_WITHDRAW,
     "admin_canceled": ACTION_WITHDRAW,
-    "edited": ACTION_COMMENT,
 }
 
 ADMIN_CANCEL_PREFIX = "[Quản trị hủy] "
