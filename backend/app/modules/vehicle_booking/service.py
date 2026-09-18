@@ -54,7 +54,23 @@ from .schema import (
 FILTERABLE = ["status", "request_type", "company_id", "department_id", "requester_id"]
 
 # Ô "Tìm nhanh" trên danh sách quét các trường này.
-SEARCH_FIELDS = ("code", "purpose", "requester", "start_location", "end_location")
+SEARCH_FIELDS = (
+    "code",
+    "purpose",
+    "requester",
+    "start_location",
+    "end_location",
+    "goods_name",
+    "goods_size",
+    "sender_name",
+    "sender_phone",
+    "receiver_name",
+    "receiver_phone",
+    "contact_phone",
+    "special_instructions",
+    "attendees",
+    "note",
+)
 
 
 def apply_keyword_search(query, keyword: str | None):

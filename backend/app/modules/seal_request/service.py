@@ -41,7 +41,7 @@ FILTERABLE = ["status", "seal_type_id", "company_id", "department_id", "requeste
 
 
 def apply_keyword_search(query, keyword: str | None):
-    """Tìm nhanh theo mã / mục đích / tên chứng từ."""
+    """Tìm nhanh theo mã / mục đích / tên chứng từ / người tạo / ghi chú."""
     kw = (keyword or "").strip()
     if not kw:
         return query
@@ -50,6 +50,8 @@ def apply_keyword_search(query, keyword: str | None):
         SealRequest.code.like(like)
         | SealRequest.purpose.like(like)
         | SealRequest.title.like(like)
+        | SealRequest.requester.like(like)
+        | SealRequest.note.like(like)
     )
 
 
