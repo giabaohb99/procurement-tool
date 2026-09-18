@@ -27,10 +27,13 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    #  `nullable=True` chứ không `server_default='[]'`: hồ sơ lập trước đợt này
-    #  mang `NULL`, và model đọc qua `custom_field_defs` nên `NULL` với `[]` là
-    #  một. Đặt mặc định ở DB chỉ thêm dạng thứ hai của cùng một nghĩa.
-    op.add_column("tab_dossier", sa.Column("custom_fields", sa.JSON(), nullable=True))
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    tables = inspector.get_table_names()
+    if "tab_dossier" in tables:
+        cols = [c['name'] for c in inspector.get_columns("tab_dossier")]
+        if "custom_fields" not in cols:
+            op.add_column("tab_dossier", sa.Column("custom_fields", sa.JSON(), nullable=True))
 
 
 def downgrade() -> None:
