@@ -56,6 +56,7 @@ from app.modules.vehicle_booking.model import (
     VehicleBooking,
 )
 
+from . import firebase
 from .builder import (
     LEGACY_SEAL_TYPE_NAME,
     SYSTEM_ACTOR_ID,
