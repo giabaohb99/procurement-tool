@@ -296,6 +296,8 @@ def _write(db, entry: SyncLog, *, entity: str, legacy_id: str, node: dict,
             sync_seal_companies(db, fresh, company_ids)
         sync_legacy_audit_logs(db, entity=entity, entity_id=fresh.id, code=fresh.code,
                                node=node, people=people)
+        sync_legacy_attachments(db, entity=entity, entity_id=fresh.id, node=node,
+                                people=people)
         db.commit()
         entry.action = int(SyncAction.CREATE)
         return finish_ok(db, entry, f"Đã tạo phiếu {fresh.code}", local_id=fresh.id,
@@ -308,6 +310,8 @@ def _write(db, entry: SyncLog, *, entity: str, legacy_id: str, node: dict,
     if existing.status in CLOSED_STATUSES[entity]:
         sync_legacy_audit_logs(db, entity=entity, entity_id=existing.id, code=existing.code,
                                node=node, people=people)
+        sync_legacy_attachments(db, entity=entity, entity_id=existing.id, node=node,
+                                people=people)
         if fresh.status and fresh.status != existing.status:
             old = existing.status
             existing.status = fresh.status
@@ -327,6 +331,8 @@ def _write(db, entry: SyncLog, *, entity: str, legacy_id: str, node: dict,
     touched = sync_seal_companies(db, existing, company_ids) if entity == ENTITY_SEAL else False
     sync_legacy_audit_logs(db, entity=entity, entity_id=existing.id, code=existing.code,
                            node=node, people=people)
+    sync_legacy_attachments(db, entity=entity, entity_id=existing.id, node=node,
+                            people=people)
     if not changed and not touched:
         #  Cố ý KHÔNG chốt `content_hash` vào dòng *bỏ qua*: chỉ dòng THÀNH CÔNG
         #  mới chặn được lượt sau (`is_unchanged`). Phiếu đổi ở ô mà ERP không
@@ -373,3 +379,66 @@ def sync_legacy_audit_logs(db, *, entity: str, entity_id: int, code: str,
     for row in rows:
         db.add(row)
     return len(rows)
+
+
+def sync_legacy_attachments(db, *, entity: str, entity_id: int, node: dict,
+                            people: PeopleResolver | None = None) -> int:
+    """Tự động đồng bộ mảng details.attachedFileIds của phiếu app cũ sang tab_file + tab_file_link.
+
+    Đảm bảo khối 'Chứng từ & Tài liệu đính kèm' trên màn chi tiết ERP hiển thị đủ các tệp.
+    """
+    if entity != ENTITY_SEAL:
+        return 0
+    details = node.get("details") or {}
+    ids = details.get("attachedFileIds") or []
+    if isinstance(ids, dict):
+        ids = [ids[k] for k in sorted(ids, key=lambda k: (len(k), k))]
+    file_ids = [i for i in ids if isinstance(i, str) and i.strip()]
+    if not file_ids:
+        return 0
+
+    from app.core.legacy_files import SOURCE_DATXE
+    from app.modules.attachment.model import FileLink, StoredFile
+    from scripts.legacy_sync.import_attachments import build_stored_file
+
+    people = people or PeopleResolver(db)
+    added = 0
+
+    for external_id in file_ids:
+        sf = db.execute(
+            select(StoredFile).where(
+                StoredFile.source == SOURCE_DATXE,
+                StoredFile.external_id == external_id
+            )
+        ).scalar_one_or_none()
+
+        if sf is None:
+            file_meta = firebase.read_node(f"files/{external_id}") or {}
+            if not file_meta:
+                continue
+            stats: collections.Counter = collections.Counter()
+            sf = build_stored_file(external_id, file_meta, people, stats)
+            db.add(sf)
+            db.flush()
+
+        link = db.execute(
+            select(FileLink.id).where(
+                FileLink.file_id == sf.id,
+                FileLink.entity == entity,
+                FileLink.entity_id == entity_id
+            )
+        ).scalar_one_or_none()
+
+        if link is None:
+            fl = FileLink(
+                file_id=sf.id,
+                entity=entity,
+                entity_id=entity_id,
+                doc_type="signed_doc",
+                created_by=sf.created_by,
+                updated_by=sf.updated_by,
+            )
+            db.add(fl)
+            added += 1
+
+    return added
