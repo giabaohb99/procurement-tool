@@ -30,4 +30,10 @@ describe('CompanyAvatarGroup', () => {
     renderWithTooltip(<CompanyAvatarGroup companies={MOCK_COMPANIES} />)
     expect(screen.getByText('(3 công ty)')).toBeInTheDocument()
   })
+
+  it('hỗ trợ hiển thị đúng số lượng avatar tooltip trigger trong group', () => {
+    const { container } = renderWithTooltip(<CompanyAvatarGroup companies={MOCK_COMPANIES} />)
+    const avatarTriggers = container.querySelectorAll('[data-slot="avatar-group"] [data-slot="tooltip-trigger"]')
+    expect(avatarTriggers.length).toBe(3)
+  })
 })
