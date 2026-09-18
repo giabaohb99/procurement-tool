@@ -99,15 +99,18 @@ def check_ready() -> None:
         raise LegacySyncOff("Chưa khai LEGACY_FIREBASE_DB_URL / LEGACY_FIREBASE_SECRET")
 
 
-def pull_updated(db, *, run_id: int = 0, user_id: int = 0, fetch=None) -> dict:
+def pull_updated(db, *, run_id: int = 0, user_id: int = 0, start_at: int | None = None, fetch=None) -> dict:
     """Kéo phiếu có `updatedAt` mới hơn con trỏ. Trả bộ đếm cho dòng lượt chạy.
 
     `fetch` thay được để bài kiểm khỏi đi hỏi Firebase thật.
     """
     check_ready()
-    start_at, cursor_from = read_cursor(db)
+    if start_at is None:
+        start_at_val, cursor_from = read_cursor(db)
+    else:
+        start_at_val, cursor_from = start_at, str(start_at)
     fetch = fetch or firebase.query_node
-    nodes = fetch(NODE_REQUESTS, order_by=CURSOR_FIELD, start_at=start_at,
+    nodes = fetch(NODE_REQUESTS, order_by=CURSOR_FIELD, start_at=start_at_val,
                   limit=MAX_RECORDS_PER_RUN) or {}
 
     #  Xếp theo `updatedAt` tăng dần rồi mới xử: con trỏ phải tiến theo đúng thứ
