@@ -22,6 +22,7 @@ import { PageHeader } from '@/shared/ui/page-header'
 import { QuickFilterSheet } from '@/shared/ui/quick-filter-sheet'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { formatDateTime } from '@/shared/utils/format-date'
+import { CompanyAvatarGroup } from '../components/company-avatar-group'
 import { SealStatusBadge } from '../components/status-pill'
 import { SEAL_REQUEST_FILTER_FIELDS } from '../config/seal-request-filter-fields'
 import { useSealRequests } from '../hooks/use-seal-requests'
@@ -170,42 +171,8 @@ function SealRequestListContent() {
       {
         key: 'companies',
         header: 'Công ty đóng dấu',
-        cell: (r) => {
-          if (!r.companies || r.companies.length === 0) return <span className="text-muted-foreground">—</span>
-          if (r.companies.length === 1) {
-            const c = r.companies[0]
-            return (
-              <div className="flex items-center gap-1.5 text-xs font-medium">
-                {c.logo && (
-                  <img
-                    src={c.logo}
-                    alt=""
-                    className="size-4 shrink-0 rounded-xs object-contain"
-                  />
-                )}
-                <span className="truncate">{c.name}</span>
-              </div>
-            )
-          }
-          return (
-            <div className="flex flex-wrap items-center gap-1">
-              {r.companies.map((c) => (
-                <span
-                  key={c.id}
-                  className="inline-flex items-center gap-1 rounded-md border border-border/70 bg-muted/40 px-1.5 py-0.5 text-[11px] font-medium text-foreground"
-                  title={c.name}
-                >
-                  {c.logo && (
-                    <img src={c.logo} alt="" className="size-3 shrink-0 rounded-xs object-contain" />
-                  )}
-                  <span className="max-w-[130px] truncate">{c.name}</span>
-                </span>
-              ))}
-            </div>
-          )
-        },
-        wrap: true,
-        minWidth: 220,
+        cell: (r) => <CompanyAvatarGroup companies={r.companies} />,
+        minWidth: 180,
       },
       {
         key: 'copies',

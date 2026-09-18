@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
+import { CompanyAvatarGroup } from './company-avatar-group'
 import { SealStatusBadge } from './status-pill'
 import { SEAL_STATUS_LABELS, type SealRequest } from '../types/seal-request'
 
@@ -86,8 +87,7 @@ export function SealQueueTable({
         key: 'companies',
         header: 'Công ty đóng dấu',
         minWidth: 160,
-        wrap: true,
-        cell: (r) => r.companies.map((c) => c.name).join(', ') || '—',
+        cell: (r) => <CompanyAvatarGroup companies={r.companies} />,
       },
       { key: 'requester', header: 'Người tạo', width: 150, cell: (r) => r.requester },
       {
