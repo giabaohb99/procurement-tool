@@ -35,13 +35,11 @@ import { StatCard } from '@/shared/ui/stat-card'
 import { cn } from '@/shared/utils/cn'
 import { SealDirectoryGlanceCard } from '../components/seal-directory-glance-card'
 import { SealQueueTable } from '../components/seal-queue-table'
-import { SealWorkflowGuideCard } from '../components/seal-workflow-guide-card'
 import { useSealDashboard } from '../hooks/use-seal-dashboard'
 import { SEAL_STATUS, SEAL_STATUS_LABELS } from '../types/seal-request'
 
 /** Các khối bảng/biểu đồ có thể ẩn/hiện trên trang tổng quan. */
 type BlockKey =
-  | 'workflow'
   | 'recent'
   | 'approve'
   | 'clerk'
@@ -52,7 +50,6 @@ type BlockKey =
   | 'directory'
 
 const BLOCK_LABELS: Record<BlockKey, string> = {
-  workflow: 'Quy trình duyệt dấu',
   recent: 'Phiếu gần đây của tôi',
   approve: 'Chờ phê duyệt',
   clerk: 'Chờ đóng dấu',
@@ -126,7 +123,6 @@ export function SealDashboardPage() {
 
   const available = useMemo<Record<BlockKey, boolean>>(
     () => ({
-      workflow: true,
       recent: Boolean(mine),
       approve: Boolean(approve),
       clerk: Boolean(clerk),
@@ -362,14 +358,7 @@ export function SealDashboardPage() {
         )}
       </div>
 
-      {/* ── 2. Sơ đồ quy trình 4 bước duyệt dấu ──────────────────────────── */}
-      {shows('workflow') && (
-        <div className="mb-4">
-          <SealWorkflowGuideCard />
-        </div>
-      )}
-
-      {/* ── 3. Hàng đợi công việc & Danh sách gần đây ──────────────────────── */}
+      {/* ── 2. Hàng đợi công việc & Danh sách gần đây ──────────────────────── */}
       {queueCards.length > 0 && (
         <div className={cn('mb-4 grid items-stretch gap-4', queueCards.length >= 2 && 'lg:grid-cols-2')}>
           {queueCards}
