@@ -112,6 +112,9 @@ def pull_updated(db, *, run_id: int = 0, user_id: int = 0, start_at: int | None 
     fetch = fetch or firebase.query_node
     nodes = fetch(NODE_REQUESTS, order_by=CURSOR_FIELD, start_at=start_at_val,
                   limit=MAX_RECORDS_PER_RUN) or {}
+    if not nodes:
+        all_nodes = firebase.read_node(NODE_REQUESTS) or {}
+        nodes = {k: v for k, v in all_nodes.items() if _updated_at(v) >= start_at_val}
 
     #  Xếp theo `updatedAt` tăng dần rồi mới xử: con trỏ phải tiến theo đúng thứ
     #  tự thời gian, không theo thứ tự khóa Firebase trả về.
