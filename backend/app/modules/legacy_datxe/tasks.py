@@ -221,7 +221,8 @@ def retry_pending(db, *, run_id: int = 0, user_id: int = 0) -> dict:
 
 def _updated_at(node) -> int:
     try:
-        return int((node or {}).get(CURSOR_FIELD) or 0)
+        val = (node or {}).get(CURSOR_FIELD) or (node or {}).get("createdAt") or 0
+        return int(val)
     except (TypeError, ValueError):
         return 0
 
