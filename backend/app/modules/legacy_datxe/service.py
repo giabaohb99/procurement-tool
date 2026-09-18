@@ -294,6 +294,8 @@ def _write(db, entry: SyncLog, *, entity: str, legacy_id: str, node: dict,
         fresh.code = f"{CODE_PREFIX[entity]}{fresh.id:06d}"
         if entity == ENTITY_SEAL:
             sync_seal_companies(db, fresh, company_ids)
+        sync_legacy_audit_logs(db, entity=entity, entity_id=fresh.id, code=fresh.code,
+                               node=node, people=people)
         db.commit()
         entry.action = int(SyncAction.CREATE)
         return finish_ok(db, entry, f"Đã tạo phiếu {fresh.code}", local_id=fresh.id,
@@ -304,6 +306,8 @@ def _write(db, entry: SyncLog, *, entity: str, legacy_id: str, node: dict,
     #  `legacy_id` lên một hàng có sẵn, và dấu đó đúng bất kể phiếu này có được
     #  ghi hay không. `finish_*` tự `commit` nên phần đó đi theo.
     if existing.status in CLOSED_STATUSES[entity]:
+        sync_legacy_audit_logs(db, entity=entity, entity_id=existing.id, code=existing.code,
+                               node=node, people=people)
         if fresh.status and fresh.status != existing.status:
             old = existing.status
             existing.status = fresh.status
@@ -321,6 +325,8 @@ def _write(db, entry: SyncLog, *, entity: str, legacy_id: str, node: dict,
     # --- đang mở: ghi đè hết, trừ ghi rỗng đè lên đang có ------------------
     changed = copy_legacy_fields(existing, fresh, stats)
     touched = sync_seal_companies(db, existing, company_ids) if entity == ENTITY_SEAL else False
+    sync_legacy_audit_logs(db, entity=entity, entity_id=existing.id, code=existing.code,
+                           node=node, people=people)
     if not changed and not touched:
         #  Cố ý KHÔNG chốt `content_hash` vào dòng *bỏ qua*: chỉ dòng THÀNH CÔNG
         #  mới chặn được lượt sau (`is_unchanged`). Phiếu đổi ở ô mà ERP không
@@ -336,3 +342,34 @@ def _write(db, entry: SyncLog, *, entity: str, legacy_id: str, node: dict,
                      f"{', '.join(changed) or '(bảng nối công ty)'}",
                      local_id=existing.id, warnings=flags(),
                      content_hash=content_hash)
+
+
+def sync_legacy_audit_logs(db, *, entity: str, entity_id: int, code: str,
+                           node: dict, people: PeopleResolver | None = None) -> int:
+    """Tự động đồng bộ mảng approval.history của phiếu app cũ sang tab_audit_log.
+
+    Đảm bảo thẻ 'Lịch sử thao tác' trên màn chi tiết ERP có đủ nhật ký hành trình.
+    """
+    hist = (node.get("approval") or {}).get("history") or []
+    if not hist:
+        return 0
+
+    from app.modules.audit.model import AuditLog
+    from scripts.legacy_sync.import_audit_log import build_rows
+
+    has_audit = db.execute(
+        select(AuditLog.id)
+        .where(AuditLog.entity == entity, AuditLog.entity_id == entity_id)
+        .limit(1)
+    ).scalar_one_or_none()
+    if has_audit is not None:
+        return 0
+
+    people = people or PeopleResolver(db)
+    noun = "yêu cầu đóng dấu" if entity == ENTITY_SEAL else "yêu cầu đặt xe"
+    stats: collections.Counter = collections.Counter()
+
+    rows = build_rows(entity, entity_id, noun, code, hist, people, stats)
+    for row in rows:
+        db.add(row)
+    return len(rows)
