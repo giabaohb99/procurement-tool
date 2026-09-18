@@ -133,33 +133,39 @@ export const hrModule: ErpModule = {
       hidden: true,
     },
     //  ── Đặt phòng họp (duoc-CR-279) ───────────────────────────────────────
-    //  MỘT mục menu cho ba màn (lịch · phiếu · danh mục phòng), chuyển bằng
-    //  `RoomSectionTabs`. Cùng luật với cụm Nghỉ phép ngay trên.
+    //  Submenu gồm 3 mục con trên sidebar bên trái:
+    //   1. Lịch phòng họp (roomCalendar)
+    //   2. Phiếu đặt phòng (roomBookings)
+    //   3. Danh mục phòng họp (meetingRooms — chỉ quản trị viên)
     {
       label: 'Đặt phòng họp',
       path: appRoutes.hr.roomCalendar,
       icon: DoorOpen,
-      entity: 'room_booking',
+      entities: ['room_booking', 'meeting_room'],
       //  Cùng lý do với «Nghỉ phép» ngay trên — xem ghi chú ở đó.
       group: 'Danh mục',
       matchPaths: [appRoutes.hr.roomBookings, appRoutes.hr.meetingRooms],
-    },
-    {
-      label: 'Phiếu đặt phòng',
-      path: appRoutes.hr.roomBookings,
-      icon: DoorOpen,
-      entity: 'room_booking',
-      hidden: true,
-    },
-    {
-      label: 'Danh mục phòng họp',
-      path: appRoutes.hr.meetingRooms,
-      icon: DoorOpen,
-      entity: 'meeting_room',
-      //  Khai phòng là việc quản trị — chỉ người SỬA được mới vào, cùng luật
-      //  với tab «Danh mục phòng» trong `RoomSectionTabs`.
-      manage: true,
-      hidden: true,
+      children: [
+        {
+          label: 'Lịch phòng họp',
+          path: appRoutes.hr.roomCalendar,
+          icon: CalendarRange,
+          entity: 'room_booking',
+        },
+        {
+          label: 'Phiếu đặt phòng',
+          path: appRoutes.hr.roomBookings,
+          icon: DoorOpen,
+          entity: 'room_booking',
+        },
+        {
+          label: 'Danh mục phòng',
+          path: appRoutes.hr.meetingRooms,
+          icon: Building,
+          entity: 'meeting_room',
+          manage: true,
+        },
+      ],
     },
     //  «Phân quyền tài khoản» đã dời sang phân hệ QUẢN TRỊ (duoc-CR-396) — khai
     //  ai được làm gì là việc quản trị hệ thống, không phải nghiệp vụ nhân sự.
