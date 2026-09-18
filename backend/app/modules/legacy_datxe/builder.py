@@ -115,14 +115,32 @@ DRIVER_STATUS_FROM_LEGACY = {
 # ---------------------------------------------------------------------------
 
 def _utc_dt(ms) -> datetime | None:
-    """Mốc epoch (ms) -> `datetime` KHÔNG múi giờ, theo UTC.
+    """Mốc epoch (ms) hoặc chuỗi ISO -> `datetime` KHÔNG múi giờ, theo UTC.
 
     Dùng cho cột `DateTime` và cho mốc do máy chủ đóng — xem ghi chú "hai đồng
     hồ" ở đầu tệp.
     """
     if not ms:
         return None
-    return datetime.fromtimestamp(int(ms) / 1000, tz=timezone.utc).replace(tzinfo=None)
+    try:
+        num = float(ms)
+        s = num / 1000 if num > 1e11 else num
+        return datetime.fromtimestamp(s, tz=timezone.utc).replace(tzinfo=None)
+    except (TypeError, ValueError):
+        pass
+    val_str = str(ms).strip()
+    if not val_str:
+        return None
+    try:
+        dt = datetime.fromisoformat(val_str.replace("Z", "+00:00"))
+        return dt.replace(tzinfo=None)
+    except ValueError:
+        for fmt in ("%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S"):
+            try:
+                return datetime.strptime(val_str, fmt)
+            except ValueError:
+                pass
+        return None
 
 
 def _utc_iso(ms) -> str:
@@ -132,15 +150,22 @@ def _utc_iso(ms) -> str:
 
 
 def _local_iso(ms) -> str:
-    """Mốc epoch (ms) -> chuỗi ISO phút theo GIỜ VIỆT NAM.
+    """Mốc epoch (ms) hoặc chuỗi ISO -> chuỗi ISO phút theo GIỜ VIỆT NAM.
 
     Chỉ dùng cho `start_time` / `end_time`: đó là giờ người dùng gõ, ERP đang
     lưu nguyên văn chuỗi trình duyệt gửi lên nên nó là giờ địa phương.
     """
     if not ms:
         return ""
-    return (datetime.fromtimestamp(int(ms) / 1000, tz=VN_OFFSET)
-            .replace(tzinfo=None).isoformat(timespec="minutes"))
+    if isinstance(ms, str) and ("T" in ms or "- " in ms or "-" in ms) and not ms.replace(".", "").isdigit():
+        return ms.strip()[:16]
+    try:
+        num = float(ms)
+        s = num / 1000 if num > 1e11 else num
+        return (datetime.fromtimestamp(s, tz=VN_OFFSET)
+                .replace(tzinfo=None).isoformat(timespec="minutes"))
+    except (TypeError, ValueError):
+        return str(ms).strip()[:16]
 
 
 # ---------------------------------------------------------------------------
