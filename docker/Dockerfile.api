@@ -14,5 +14,7 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 
 # Code sẽ được mount qua volume khi dev; COPY để chạy được cả khi không mount
 COPY backend/ /app/
+# Scripts nạp dữ liệu — một số hàm dùng chung với đồng bộ thường trực (sync_legacy_*)
+COPY scripts/ /app/scripts/
 
 CMD ["sh", "start.sh"]
