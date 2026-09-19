@@ -1,6 +1,6 @@
 from fastapi import HTTPException
 from sqlalchemy import or_
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from .model import Department, DepartmentCompany
 from .schema import (DepartmentCompanyInput, DepartmentCreate,
@@ -59,7 +59,16 @@ def list_departments(db: Session, q: str | None, pg: dict, is_active: bool | Non
     """
     from app.core.base_controller import apply_sort
     from app.core.filter_operators import apply_operator_filters
-    query = db.query(Department)
+    #  ⚠️ `selectinload(manager)` là chốt HIỆU NĂNG, không phải tối ưu vặt:
+    #  `DepartmentOut.manager_name` đọc qua quan hệ `Department.manager`, nên
+    #  thiếu nó là **mỗi dòng một truy vấn** ngay trong vòng `model_validate` của
+    #  controller. Ô chọn phòng ban ở tab «Người đang giữ» (màn Chức vụ) gọi
+    #  endpoint này với `page_size=200`, tức mở một cái tab là hai trăm câu SELECT.
+    #  Dùng `selectinload` chứ không `joinedload`: nhánh `q` bên dưới đã tự
+    #  `outerjoin` sang `Employee` để tìm theo tên trưởng bộ phận, thêm một phép
+    #  nối nữa vào cùng câu là dễ nhân đôi dòng. Bài kiểm canh:
+    #  `test_loc_danh_muc_phong_cong_ty.py::test_department_list_eager_loads_manager`.
+    query = db.query(Department).options(selectinload(Department.manager))
     if scope_cond is not None:
         query = query.filter(scope_cond)
     # Bộ lọc điều kiện (`name__contains=...`) — ô "Tìm kiếm" chung `q` bên dưới vẫn giữ nguyên
