@@ -3190,6 +3190,11 @@ Excel nhập xuất trỏ vào dòng. Mã vẫn nằm trong biểu mẫu thêm s
 cao. Huy hiệu mã trên thẻ khổ điện thoại và trên trang chi tiết đổi theo, câu xác nhận xóa cũng
 đọc theo ID.
 
+Đại ca mở màn ra thì cột ID nằm tận cuối bảng chứ không ở đầu. Không phải mã sai: bảng nhớ bố
+cục trong bộ nhớ trình duyệt, thứ tự đã lưu xếp trước còn cột mới khai thì nối vào cuối. Đã
+nâng khóa nhớ bố cục lên đuôi `.v2` để mọi người nhận lại thứ tự mặc định mới; khóa cũ nằm lại
+vô hại. Lần sau đổi bộ cột kiểu này cũng phải nâng số đó.
+
 Tab «Người đang giữ» ở trang chi tiết giữ nguyên, nhưng ô lọc phòng ban nay đọc danh mục phòng
 ban thay vì bảng đếm vừa bỏ. Hệ quả phải biết: ô đó liệt kê mọi phòng ban chứ không riêng phòng
 đang có người giữ, và mục chọn không còn kèm số người. Thêm mục «(Chưa gắn phòng ban)» vì danh
