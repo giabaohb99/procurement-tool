@@ -3256,3 +3256,369 @@ Mã nguồn: `backend/app/modules/employee/position_controller.py` · `position_
 `test/backend/test_loc_danh_muc_phong_cong_ty.py` · `frontend-v2/src/modules/hr/config/job-position-crud.tsx` ·
 `components/job-position-holders-panel.tsx` · `hooks/use-job-positions.ts` ·
 `types/job-position.ts` · `shared/constants/query-keys.ts` · xóa `components/job-position-holders-cell.tsx`.
+
+## bao-CR-428 | Màn Vai trò và quyền đọc được ngay, nhãn bậc phạm vi viết tổng quát
+- status: xong
+- date: 2026-09-19
+- pic: NSU209
+Đại ca xem màn Vai trò và quyền rồi báo ba chuyện: cột vai trò bên trái quá hẹp nên tên dài
+bị cắt thành ba chấm, mỗi vai trò không có lấy một câu giải thích nó lo việc gì, và nhãn bậc
+phạm vi ghi "Thu mua (được giao + đã duyệt)" là gắn tên phân hệ vào một luật vốn dùng chung.
+Đại ca cũng chốt luôn luật dùng vai trò để em ghi vào tài liệu: một vai trò chỉ lo đúng một
+chức năng, một người làm nhiều việc thì gán nhiều vai trò, không dồn thêm quyền vào vai trò
+sẵn có. Ý làm bậc riêng cho từng tài khoản vì thế bỏ, để sau nếu cần.
+
+Phía máy chủ em đổi chữ của hai bậc thành "Được giao + đã duyệt" và "Được giao + đã duyệt
+trong phòng", mã bậc và luật lọc giữ nguyên. Em viết cho mỗi vai trò chuẩn một câu mô tả
+ngắn, seed chỉ điền khi ô đang trống nên bản người dùng đã sửa trên dev không bị đè. Đường
+API danh sách vai trò trả thêm số tài khoản đang giữ và các ô đã tick, gom bằng hai truy vấn
+cho cả danh sách chứ không hỏi từng vai trò.
+
+Phía giao diện v2, cột trái nới rộng, tên xuống dòng chứ không cắt, dưới tên có mã, câu mô
+tả, số người đang giữ và mấy chip phân hệ suy từ ô đã tick. Chip bỏ qua những ô mà gần như
+vai trò nào cũng có (công việc, nghỉ phép, đọc danh mục), nếu không thì vai trò nào cũng
+hiện giống nhau; vai trò chỉ có đúng phần nền thì vẫn in phần nền chứ không ghi "chưa cấp
+quyền". Tiêu đề khung ma trận cho sửa câu mô tả tại chỗ giống cách đổi tên, form tạo vai
+trò có thêm ô mô tả, ô tìm kiếm tìm cả trong mô tả. Ma trận mặc định chỉ mở phân hệ có
+tick và gập phân hệ trống, vai trò mới chưa tick gì thì mở hết. Ở tab Người dùng, rê chuột
+lên huy hiệu vai trò là thấy câu mô tả. Em cũng bổ sung mấy nhóm phân hệ còn thiếu trong
+bảng nhóm để nghỉ phép, hồ sơ, đặt phòng họp, điểm cà phê không rơi vào nhóm "Khác".
+
+Ba cổng kiểm của v2 xanh, bài kiểm máy chủ cho phần seed và sắp xếp vai trò xanh. Tất cả
+đang nằm ở máy em, chưa commit, chưa lên dev. Không có migration.
+Mã nguồn: backend/app/core/permissions.py · backend/app/seed.py ·
+backend/app/modules/role/service.py · frontend-v2/src/modules/system/utils/role-module-summary.ts ·
+components/role-list-item.tsx · components/role-name-inline-edit.tsx ·
+components/role-permission-matrix.tsx · pages/role-permission-page.tsx ·
+doc/phan-quyen/Thiet_Ke_Phan_Quyen.md mục 8.
+
+## bao-CR-427 | Gom hai tầng phạm vi về một màn, viết lại bằng tiếng Việt thường
+- status: dang-lam
+- date: 2026-09-19
+- pic: NSU209
+Đại ca mở hộp thoại Phạm vi của một tài khoản nhân viên thu mua nhà máy rồi báo là không biết
+phải chọn gì trong đó, dù đã hiểu luồng. Nguyên nhân không nằm ở cách sắp xếp ô: phạm vi thật
+sự xếp hai tầng ở hai màn khác nhau. Tầng một là bậc của vai trò, khai ở màn Ma trận quyền.
+Tầng hai là mấy ô tick cộng thêm hoặc trừ bớt cho riêng một tài khoản, khai trong hộp thoại
+này. Hộp thoại chỉ bày tầng hai, nên trên toàn hệ thống không có chỗ nào trả lời được câu hỏi
+duy nhất mà người khai quyền cần biết: tài khoản này rốt cuộc thấy những gì.
+
+Bản làm đầu bày cả hai tầng thành hai khối nằm cạnh nhau. Đại ca xem xong bác tiếp, và bác
+đúng chỗ cốt lõi: bậc công ty của máy chủ vốn đã nghĩa là công ty ghi trong hồ sơ của chính
+người đó, nên gán vai trò xong là tài khoản đã có phạm vi rồi, không ai phải đi tick gì cả.
+Bày hai tầng ngang hàng khiến người mở hộp thoại tưởng mình phải khai đủ năm ô, mà đọc hết
+hai khối chữ thì cũng không ai đọc.
+
+Bản chốt vì thế chỉ còn một khối trả lời đúng một câu: tài khoản này thấy gì. Khối đó gom các
+đối tượng theo bậc, dịch mỗi bậc thành một câu tiếng Việt thường, và thay tên thật của công ty
+với phòng ban lấy từ hồ sơ nhân sự của chủ tài khoản vào câu đó. Người đọc thấy thẳng là tài
+khoản này xem được mọi chứng từ trong công ty tên gì, phòng tên gì, chứ không phải một câu
+chung chung rồi tự đi tra. Bậc cố ý để chỉ đọc chứ không cho sửa tại chỗ: bậc thuộc về vai
+trò, sửa ở đây là lặng lẽ đổi phạm vi của mọi tài khoản khác đang mang vai trò đó, trong khi
+hộp thoại lại mang tên một người.
+
+Thiếu hồ sơ thì phải nói ra, vì máy chủ chặn sạch chứ không lọc hụt: tài khoản chưa gắn hồ sơ
+nhân sự, hoặc hồ sơ chưa gắn công ty, hoặc chưa gắn phòng ban, đều dẫn tới không thấy một
+chứng từ nào. Khối tóm tắt cảnh báo đỏ ngay tại chỗ và nói rõ việc phải làm nằm ở màn Nhân sự
+chứ không phải khai bù ở hộp thoại này. Ba trạng thái phân biệt rạch ròi, không gộp: chưa gắn
+hồ sơ là sự thật đọc thẳng từ tài khoản nên cảnh báo được ngay; có hồ sơ mà chưa đọc được thì
+im lặng, chỉ ghi một dòng mờ là đang thiếu tên thật; đọc được mà thấy trống mới là chưa gắn.
+
+Năm ô tick tụt xuống một mục tên «Ngoại lệ», mặc định đóng, chỉ mở khi người này cần khác
+mặc định. Nhãn mục đeo số mục đang khai, và mọi ngoại lệ đã khai vẫn hiện trong khối tóm tắt
+kể cả lúc mục đang gấp — gấp mà không nhắc thì khối trên nói tài khoản thấy cả công ty trong
+khi thật ra còn một phòng bị loại trừ, tức nói dối bằng cách bỏ bớt.
+
+Gấp chứ không bỏ, và luật phạm vi dưới máy chủ không đụng tới. Đo trên cơ sở dữ liệu của máy
+local thì bốn mươi ba dòng phạm vi riêng trải trên ba mươi tư trong hai trăm chín mươi bảy tài
+khoản, hai mươi lăm trong hai mươi bảy dòng khai công ty chỉ chép lại đúng công ty đã có trong
+hồ sơ, nhưng hai dòng khác thật và mười một tài khoản chưa gắn hồ sơ đang sống nhờ mấy dòng
+đó. Bỏ ô tick hôm nay là mười ba người mất phạm vi trong im lặng.
+
+Tên hai ô vẫn sửa như bản đầu. Ô cũ tên «Phòng ban được xem» thật ra không thu hẹp gì cả, nó
+ghép bằng phép hoặc nên CỘNG THÊM chứng từ của phòng đó vào phần vai trò đã thấy, và bị bỏ qua
+hoàn toàn khi vai trò đã ở bậc «Tất cả». Đọc tên ô thì ai cũng hiểu ngược lại. Nay đổi thành
+«Xem THÊM phòng ban», và khi vai trò đã ở bậc cao nhất thì ô tự mờ đi kèm một câu nói rõ là
+tick vào cũng không đổi được gì. Ô công ty đổi thành «Chỉ trong công ty» cho đúng việc nó làm.
+Mỗi ô có thêm một dòng nói nó thu hẹp hay cộng thêm. Cảnh báo khi một phòng vừa nằm ở ô xem
+thêm vừa nằm ở ô loại trừ vẫn giữ, và cố ý đặt ngoài mục gấp: loại trừ thắng nên phần xem thêm
+vô tác dụng, giấu nó đi là giấu đúng thứ đang làm hỏng phần vừa khai.
+
+Màn Ma trận quyền nhận thêm tham số vai trò trên đường dẫn để đường dẫn từ hộp thoại mở đúng
+vai trò đang xét, chứ không thả người ta vào danh sách rỗng rồi bắt tự tìm.
+
+Không đụng máy chủ, không thêm bảng, không đổi một hạt phân quyền nào — chỉ trình bày lại thứ
+đã có. Ba truy vấn mới đều tự tắt khi người khai thiếu quyền: thiếu quyền đọc vai trò thì khối
+tóm tắt hiện câu giải thích thay vì một khung trống, thiếu quyền đọc nhân sự thì câu tóm tắt
+lùi về lối nói chung chung chứ không vu cho hồ sơ là chưa gắn công ty.
+
+Bản giao diện cũ đang chạy trên máy thật để nguyên, theo đúng lệnh không đụng prod.
+
+Kiểm tra: kiểu dữ liệu sạch, không lỗi lint, một trăm sáu mươi sáu bài kiểm của phân hệ Quản
+trị đều xanh — trong đó ba mươi tư bài cho hộp thoại Phạm vi và mười bảy bài cho lớp dựng câu
+tóm tắt; một bài trong số đó cố ý để đỏ và đã khai trước, nó ghim lỗ hai phòng trùng tên ở hai
+pháp nhân.
+Mã nguồn: `frontend-v2/src/modules/system/utils/scope-summary.ts` ·
+`components/account-scope-summary-panel.tsx` · `components/user-scope-dialog.tsx` ·
+`pages/role-permission-page.tsx` · `frontend-v2/src/modules/hr/hooks/use-roles.ts` ·
+`hooks/use-employees.ts`.
+
+## dong-bo-datxe-app-cu-p2 | Bên app đặt xe cũ: đóng dấu thời điểm sửa và móc đẩy phiếu thẳng sang ERP
+- status: dang-lam
+- date: 2026-09-19
+- list: Duyệt dấu, Đặt xe
+
+Phần việc nằm bên app cũ của chặng hai, tức chiều app cũ đẩy phiếu sang ERP. Trước đợt này ERP
+đã có sẵn cửa nhận và hai vòng quét nền, nhưng phía app cũ chưa có gì: phiếu sửa xong không ai
+báo, mà cũng không mang dấu thời điểm sửa để vòng quét nhận ra.
+
+Việc thứ nhất là đóng dấu thời điểm sửa lên mọi đường ghi. Đo bản kết xuất của máy thật thì ô
+ngày tạo có mười lăm nghìn bảy trăm sáu ba chỗ, còn ô thời điểm sửa có không chỗ nào, nên vòng
+quét bên ERP dù chạy đúng vẫn kéo về rỗng mãi mãi. Nhánh phiếu có ba đường ghi và đường thứ ba
+là bốn nhịp của tài xế, nó không đi qua tầng cơ sở dữ liệu nên rất dễ sót. Hai nhánh danh mục
+xe và tài xế cũng đóng dấu nốt, vì ERP tra hai thứ đó theo dấu nhận dạng cũ, đổi biển số hay
+đổi số điện thoại mà không đóng dấu thì bản phản chiếu bên ERP đứng im. Trước khi gõ có đọc
+luật ghi thật của Firebase bằng khóa đọc để chắc một điều: luật kiểm của cả ba nhánh chỉ đòi
+phải có mấy khóa bắt buộc chứ không cấm khóa lạ, nếu nó cấm thì thêm một khóa mới vào cùng cú
+ghi sẽ làm hỏng luôn thao tác của người dùng.
+
+Việc thứ hai là móc đẩy phiếu. Ghi xong phiếu thì gọi thẳng sang ERP, phiếu có mặt bên đó trong
+vài giây; vòng quét ba phút chỉ còn là lưới đỡ cho những lượt móc này trượt. Bản thiết kế bảo
+đặt móc ở tầng nghiệp vụ, em đặt ở tầng cơ sở dữ liệu và ghi rõ chỗ khác đó vào tài liệu: tầng
+nghiệp vụ có hơn mười chỗ gọi hàm cập nhật phiếu, rải khắp bốn nhóm màn, bỏ sót một chỗ là đúng
+loại lỗi im lặng đã dính mấy lần, phiếu vẫn ghi, người dùng vẫn thấy bình thường, chỉ ERP là
+không bao giờ biết. Ba đường ghi kia lại trùng đúng tập hợp với chỗ đóng dấu thời điểm sửa, tức
+đã có bài kiểm canh sẵn.
+
+Ba chỗ nhỏ phải nghĩ kỹ khi dựng gói tin. Gói gửi đi bỏ khóa mã phiếu, vì vòng quét đọc thẳng
+Firebase nên bản ghi của nó không có khóa này, gửi kèm thì hai đường cùng một phiếu ra hai vân
+nội dung khác nhau và ERP tưởng phiếu đổi mỗi lần quét. Cú ghi ngược mã phiếu bên ERP thì cố ý
+không đóng dấu thời điểm sửa, khác mọi đường ghi khác, vì đó là ô do ERP làm chủ và chính ERP
+vừa cấp xong, đóng dấu ở đây làm phiếu trông như vừa bị sửa rồi kéo thêm một lượt xử vô ích,
+lặp mãi. Mã sự kiện dựng từ mã phiếu cũ cộng chính con dấu thời điểm sửa chứ không phải một mã
+ngẫu nhiên, nhờ vậy gửi lại đúng một lần ghi thì ERP nhận ra trùng và bỏ qua.
+
+Móc hỏng thì không được làm hỏng việc của người dùng. ERP sập, hết giờ chờ, sai khóa ký, tất cả
+đều nuốt lại thành một dòng ghi chú, người bấm nút vẫn tạo được phiếu như thường, phiếu trượt
+để vòng quét nhặt về sau.
+
+Bẫy gặp phải khi gõ: viết câu tách phần dư để bỏ một khóa ra khỏi bản ghi thì trình biên dịch
+hết bộ nhớ, vì kiểu của phiếu là kiểu hợp của mấy loại phiếu và tách phần dư trên nó bắt trình
+biên dịch bung hết tổ hợp; phải chép nông rồi xóa khóa. Kho mã app cũ còn bắt tên nhánh theo
+chuẩn Git Flow ngay lúc commit, đẩy thẳng lên nhánh dev là bị chặn.
+
+Kiểm tra: kiểu dữ liệu sạch. Bộ chạy bài kiểm của app cũ hỏng sẵn trên máy này từ trước, không
+phải do đường dẫn có dấu tiếng Việt, đã dựng thử một đường dẫn không dấu và hỏng y hệt. Vì vậy
+ngoài hai mươi mốt bài kiểm gửi kèm cho máy chủ tích hợp chạy, em bó hai tệp mã bằng esbuild
+rồi chạy thẳng trên Node để kiểm thật, cả chuỗi đẩy phiếu sang ERP rồi ghi ngược mã phiếu đều
+xanh. Chữ ký neo bằng mẫu tính từ chính hàm ký của ERP chứ không tự ký tự so, kể cả mẫu có dấu
+tiếng Việt, vì lệch bảng mã thì phiếu có dấu bị từ chối hết còn phiếu không dấu vẫn lọt, kiểu
+hỏng khó lần nhất.
+
+Khóa ký cho worker dev đã đặt xong chiều mười chín tháng chín. Câu lệnh đặt khóa bằng dòng lệnh
+chạy không được vì máy chưa đăng nhập tài khoản Cloudflare, mã thông hành dùng để triển khai nằm
+trong máy chủ tích hợp chứ không nằm dưới máy; đại ca dán tay trên trang quản trị, chọn đúng
+kiểu khóa bí mật chứ không phải biến thường. Trước đó em bắn thử một gói ký đúng nhưng thân
+rỗng sang ERP dev và nhận về lời than thiếu mã phiếu chứ không phải lời từ chối chữ ký, nghĩa là
+đầu ERP đang giữ đúng khóa đó và cửa nhận đang mở. Cờ đồng bộ của môi trường dev bật lên trong
+cùng đợt này, nằm trong yêu cầu gộp mã số một trăm mười một; gộp xong là worker dev tự triển
+khai và móc bắn thật.
+
+Một chuyện phải nhớ về hai nơi khai biến: hai biến thường bắt buộc khai trong tệp cấu hình của
+worker, còn khóa ký thì tuyệt đối không. Lệnh triển khai lấy khối biến trong tệp làm chuẩn và gỡ
+sạch biến nào vắng mặt, nên đặt biến thường trên trang quản trị là mất lúc nào không hay; ngược
+lại tệp cấu hình thì vào kho mã, để khóa ký ở đó là lộ khóa.
+
+Bẫy cuối cùng lúc commit: chốt kiểm trước khi commit của kho app cũ có bước sinh lại tệp khai
+kiểu, và bước đó làm Node hết bộ nhớ trên máy này. Nới vùng nhớ cho Node là qua, không phải bỏ
+qua chốt kiểm. Tệp khai kiểu sinh ra lệch bốn nghìn năm trăm dòng so với bản trong kho vì bản
+trong kho cũ từ lần trước cũng hết bộ nhớ; cố ý để ngoài đợt này vì mã không đọc tệp đó, kiểu
+môi trường của app cũ gõ tay ở một tệp riêng.
+Mã nguồn: `src/utils/erp-sync.ts` · `src/db/requests.db.ts` · `src/db/vehicles.db.ts` ·
+`src/db/drivers.db.ts` · `src/services/driver.service.ts` · `wrangler.jsonc` ·
+`test/endpoints/erp-sync.test.ts` · `test/endpoints/erp-sync-writeback.test.ts` ·
+`test/endpoints/updated-at-stamp.test.ts` (kho `my-firebase-api`).
+Chạy thử đầu-cuối ngày mười chín tháng chín, đã chạy trên hạ tầng thật chứ không phải giả lập:
+đại ca tạo một phiếu đóng dấu bên app dev, ERP dựng ngay phiếu mới và ghi một dòng vào sổ đồng
+bộ, rồi worker ghi số phiếu ERP ngược trở lại Firebase. Ba điều đáng ghi. Chữ ký qua cửa ngay
+lần đầu, kể cả với lý do có dấu tiếng Việt, nghĩa là cách ghép chuỗi ký hai bên khớp nhau trên
+dữ liệu thật chứ không riêng trên mẫu neo. Cú ghi ngược không đóng dấu lại thời điểm sửa, đúng
+như thiết kế; nếu nó đóng dấu thì mỗi lần đẩy phiếu sẽ tự sinh ra một lần đẩy nữa và vòng lặp
+không bao giờ dừng. Và mốc thời gian trong sổ là giờ chuẩn quốc tế, lệch bảy tiếng so với đồng
+hồ treo tường, vì máy chủ chạy tiến trình và cơ sở dữ liệu đều theo giờ đó; đã dò lại các phiếu
+nạp từ chặng một thì không phiếu nào lệch chuẩn so với phiếu mới, tức trong một bảng chỉ có một
+đồng hồ, đó mới là thứ đáng sợ nếu sai.
+Mã nguồn: sổ đồng bộ dòng `4763`, phiếu ERP `DD000863`, khóa ngoài `rN-5jqXd2G8Dm3HT1SKnH`.
+Commit: `3977faf` đóng dấu danh mục, đã gộp vào nhánh dev qua PR #110; `250c9ab` móc đẩy phiếu
+và bật cờ dev, đã gộp qua PR #111, worker dev chạy bản `e5becb27`.
+
+### dong-bo-datxe-app-cu-p2-dau | Đóng dấu thời điểm sửa lên ba đường ghi phiếu và hai nhánh danh mục
+- status: xong
+Đã gộp vào nhánh dev, máy chủ tích hợp chạy xanh và worker dev đã nhận bản mới.
+
+### dong-bo-datxe-app-cu-p2-moc | Móc đẩy phiếu sang ERP kèm ghi ngược mã phiếu
+- status: xong
+Khóa ký đã đặt trên worker dev, cờ đồng bộ bật qua yêu cầu gộp mã số một trăm mười một, và đã
+chạy thử thật: phiếu tạo bên app dev sang tới ERP trong vài giây, số phiếu ERP ghi ngược về
+Firebase, chữ ký và chữ có dấu đều nguyên vẹn.
+
+### dong-bo-datxe-app-cu-p2-co | Cờ chặn bắn ngược khi phiếu do ERP ghi xuống
+- status: dang-lam
+Để lại làm cùng chặng ba, lúc này chưa có chiều ngược nào để mà chặn.
+
+## bao-CR-429 | Đưa cấu hình trợ lý AI từ tệp môi trường xuống bảng cấu hình trên màn hình
+- status: xong
+- date: 2026-09-19
+Đại ca đặt việc: mấy thông tin đang nằm trong tệp môi trường, nhất là khóa của các dịch vụ AI,
+nên đưa xuống bảng cấu hình để người dùng tự dán vào, còn hệ thống chỉ cần chỉ đường tới chỗ
+lấy khóa. Lý do rất thực tế: khóa đó là thứ người dùng phải tự đi đăng ký rồi mang về, mà bắt
+họ mở phiên làm việc từ xa vào máy chủ sửa tệp thì chặn đúng người đáng ra tự làm được, và mỗi
+lần đổi khóa là một lần phải khởi động lại toàn bộ dịch vụ. Việc chia ba nhịp và nay đã xong
+cả ba.
+
+Nhịp một là làm cho nhật ký cấu hình đọc được. Bảng cấu hình lưu theo kiểu mỗi dòng một cặp
+khóa và giá trị, nên lớp ghi nhật ký tự động dựng ở đợt trước ghi ra tên cột kỹ thuật là
+"svalue" cho mọi dòng. Nghĩa là nhật ký có ghi, nhưng đọc lên không biết dòng đó đổi cấu hình
+nào. Nay bảng được đưa vào danh sách miễn ghi tự động, còn tầng nghiệp vụ của màn cấu hình tự
+ghi lấy với tên trường là chính khóa cấu hình thật; khóa bí mật thì che cả giá trị cũ lẫn giá
+trị mới. Có thêm một chốt so sánh trước khi ghi, vì màn hình gửi lại toàn bộ các ô mỗi lần bấm
+Lưu, không có chốt đó thì một lần lưu đẻ ra một dòng nhật ký cho mỗi ô dù người dùng chỉ sửa
+đúng một chỗ.
+
+Nhịp hai dời nguyên cụm trợ lý AI xuống bảng cấu hình: sáu mục thường là công tắc bật trợ lý,
+nhà cung cấp mặc định, tên model của Claude, tên model của Gemini, model rẻ dành cho câu tra
+cứu, và trần số câu hỏi mỗi người mỗi ngày; cùng hai khóa bí mật là khóa của Claude và khóa
+của Gemini. Giá trị dưới cơ sở dữ liệu đè lên tệp môi trường, còn ô để trống thì rơi về tệp
+môi trường chứ không thành rỗng. Khai báo trường nay nhận thêm đường dẫn tài liệu, hiện thành
+nút Lấy ở đây mở đúng trang cấp khóa, nhận thêm câu diễn giải dưới ô, và có thêm kiểu ô chọn
+cho mục nhà cung cấp. Thẻ Trợ lý AI trên màn cấu hình trước đây bị ẩn với người không có quyền
+viết bài hướng dẫn, vì hồi đó nó chỉ chứa mỗi nút nạp lại chỉ mục; nay nó giữ khóa dịch vụ và
+trần chi phí nên phải hiện cho người quản trị cấu hình, riêng nút nạp chỉ mục vẫn gác theo
+quyền cũ.
+
+Bốn mục cố ý để lại tệp môi trường chứ không dời cho đủ bộ. Hai mục về model nhúng và số chiều
+vector, vì đổi chúng là mọi vector đã nhúng thành vô nghĩa và phải dựng lại cả kho tài liệu, mà
+một ô nhập trên màn hình thì không nói được cái giá đó. Hai mục về địa chỉ kho vector và công
+tắc tra cứu tài liệu, vì chúng gắn với chuyện máy chủ có chạy dịch vụ kho vector hay không, tức
+việc của người dựng hệ thống chứ không phải lựa chọn nghiệp vụ.
+
+Hai chỗ dễ sai phải ghi lại. Thứ nhất, tên model mặc định của hai nhà cung cấp trước đây khai
+thẳng làm thuộc tính của lớp, tức giá trị chốt ngay lúc nạp mã nguồn; nguồn nay là cơ sở dữ
+liệu nên để nguyên là chạm cơ sở dữ liệu trước khi ứng dụng kịp dựng xong, và người dùng đổi
+model trên màn hình cũng không ăn thua cho tới lần khởi động lại. Phải đổi thành thuộc tính
+tính lúc đọc. Thứ hai, đường ghi cấu hình nhận vào một túi khóa và giá trị tự do, không có
+khuôn dữ liệu nào đứng giữa, mà hàm ép kiểu thì nuốt lỗi: số gõ sai thành không, chữ lạ thành
+tắt. Riêng với trần số câu hỏi thì số không lại mang nghĩa không giới hạn, nên gõ nhầm chỗ đó
+là lặng lẽ mở trần chi phí và chỗ nó lộ ra là hóa đơn cuối tháng. Đã thêm cổng kiểm giá trị
+lúc ghi, nhưng vẫn cho ô số và ô chọn để trống đi qua, vì màn hình gửi lại mọi ô mỗi lần Lưu,
+bắt lỗi ở đó là chặn cả lần lưu chỉ vì một ô người dùng chưa từng đụng tới.
+
+Một chỗ làm khác bản thiết kế ban đầu: dự định gộp khóa bí mật vào chung một danh sách trường
+cho gọn, nhưng đã bỏ ý đó. Cửa đọc cấu hình gắn giá trị cho danh sách trường thường và chỉ gắn
+cờ đã cấu hình hay chưa cho danh sách bí mật; gộp lại thì chỉ còn đúng một câu điều kiện đứng
+giữa khóa dịch vụ và cửa đọc công khai, và ngày có người dọn dẹp vòng lặp ấy sẽ không thấy mình
+vừa gỡ mất cái gì. Lý do này đã viết thẳng vào mã nguồn.
+
+Nhịp ba dời nốt cụm đồng bộ ra khỏi tệp môi trường, theo đúng câu đại ca chốt: có trong bảng
+cấu hình thì tin bảng, bảng để trống thì đọc tệp môi trường, cả hai đều trống thì coi như chưa
+cấu hình. Mười ba mục thường và ba khóa bí mật đã xuống bảng, chia thành ba thẻ mới trên màn
+hình là App đặt xe cũ, POS365 của Điểm cà phê, và thẻ Chung cho địa chỉ giao diện dùng trong
+thư, số ngày giữ thông báo, số bản sao lưu giữ lại. Hai hệ ngoài cố ý tách hai thẻ chứ không
+gộp một thẻ Đồng bộ, vì lúc cần hạ cầu dao khẩn cấp cho một hệ thì không được để người trực
+nhìn nhầm sang công tắc của hệ kia.
+
+Chỗ sửa đáng kể nhất nằm ở lớp tiếp hợp của sổ đồng bộ. Trước đây nó giữ thẳng giá trị công tắc
+và mã ký chung, tức giá trị bị chụp lại lúc nạp mã nguồn; nay nó chỉ giữ TÊN khóa cấu hình và
+đọc lúc chạy, nên hạ cầu dao trên màn hình là có hiệu lực ngay. Nhờ đường đọc rơi về đúng biến
+môi trường viết hoa cùng tên nên nguồn nào cố ý giữ cờ ở tệp môi trường vẫn dùng chung một lối
+đọc, không phải rẽ nhánh.
+
+Sáu mục cố ý ở lại tệp môi trường, chia hai lý do. Bốn mục là chu kỳ chạy nền và cầu dao của
+POS365, vì chúng được đọc trong lúc dựng lịch chạy nền, tức người dùng bấm Lưu xong màn hình
+báo thành công mà lịch vẫn y nguyên cho tới khi ai đó dựng lại dịch vụ chạy nền; một ô không có
+tác dụng còn tệ hơn không có ô nào. Hai mục còn lại là mã công ty mặc định lúc nạp và cờ báo
+tin khi nạp hàng loạt, vì rà cả mã nguồn thì không chỗ nào đọc tới chúng. Đáng chú ý là cờ báo
+tin tự mô tả mình chặn bão thông báo lúc nạp hàng loạt, nhưng cái chặn đó chưa từng được viết.
+
+Hai chỗ suýt thành lỗi xóa dữ liệu. Số ngày giữ thông báo và số bản sao lưu giữ lại vốn là hằng
+số đọc từ tệp môi trường, nay thành ô nhập trên màn hình, mà một ô bỏ trống hay số không đi
+thẳng xuống thì nghĩa là mốc cắt bằng đúng lúc này: lượt dọn nền kế tiếp xóa sạch thông báo của
+cả hệ, còn bên sao lưu thì xóa sạch mọi bản đang giữ, và đó là thứ người ta chỉ phát hiện đúng
+lúc cần phục hồi. Cả hai nay đều có sàn. Riêng số bản sao lưu còn phải đổi từ hằng số đầu tệp
+thành hàm, vì hằng số chốt giá trị ngay lúc nạp mã nguồn, đúng cái bẫy đã gặp ở nhịp hai.
+
+Đo đạc trên máy em: mười bốn bài kiểm mới cho nhịp hai, cộng mười hai bài của nhịp một là hai
+mươi sáu bài xanh; nhịp ba thêm ba mươi sáu bài, chạy chung với tệp kiểm của nhịp hai ra năm
+mươi mốt bài xanh; một trăm bốn mươi tám bài kiểm cũ của sao lưu, Điểm cà phê, sổ đồng bộ và các vòng
+nạp app đặt xe vẫn xanh; một trăm tám mươi bảy bài của phân hệ Quản trị trên giao diện mới
+xanh, một bài đỏ sẵn từ trước không liên quan; hai cổng kiểm kiểu và kiểm nếp viết mã chạy cả
+cây đều không lỗi. Chưa commit, chưa lên dev.
+
+Sau khi dời xong còn một việc dễ bỏ sót: ô nào chưa có dòng dưới bảng thì màn hình hiện
+TRỐNG, trong khi hệ thống vẫn chạy bằng giá trị `.env` phía sau. Ô trống đọc như "chưa
+cấu hình", và người xem rất dễ kết luận nhầm là đường đồng bộ đang tắt rồi đi bật lại thứ
+vốn đang bật. Nên có thêm `scripts/seed_app_settings.py` nạp một lượt giá trị `.env` đang
+chạy xuống bảng, mặc định chỉ điền khóa chưa có dòng — DB vẫn là nguồn sự thật của cấu
+hình, giống luật của `seed_prod.py`, nên thứ người dùng đã tự đặt trên màn hình không bị
+`.env` cũ kéo ngược. Script phải chạy TRONG từng môi trường: bản mã của khóa bí mật suy từ
+`JWT_SECRET` của chính môi trường đó, chép dòng bí mật từ máy này sang máy kia là ra bản mã
+giải không nổi, mà `_decrypt` lại nuốt lỗi trả chuỗi rỗng nên hệ thống chỉ lặng lẽ rơi về
+`.env`. Đã chạy trên máy em: hai mươi mốt khóa được điền, mười hai khóa đã có giá trị dưới
+DB thì giữ nguyên, bảy khóa cả hai nơi đều trống thì bỏ qua; đọc lại bằng `app_settings.get`
+thì giá trị hiệu lực không đổi chỗ nào và ba khóa bí mật đều giải mã đúng độ dài.
+Quyền `setting` đã kiểm cả hai môi trường: chỉ vai trò `admin` giữ, không phải sửa gì.
+Mã nguồn: `backend/app/core/app_settings.py` · `backend/app/modules/setting/service.py` ·
+`backend/scripts/seed_app_settings.py` ·
+`backend/app/modules/sync_log/registry.py` · `backend/app/core/legacy_files.py` ·
+`backend/app/modules/legacy_datxe/{resolver,firebase}.py` ·
+`backend/app/modules/coffee_point/{pos365_client,controller,service}.py` ·
+`backend/app/modules/notification/{service,tasks}.py` ·
+`backend/app/modules/backup/{service,controller}.py` · `backend/app/modules/auth/controller.py` ·
+`test/backend/test_cau_hinh_dong_bo_cr429.py` ·
+`backend/app/modules/assistant/provider/{__init__,claude,gemini}.py` ·
+`backend/app/modules/assistant/{controller,service,usage}.py` ·
+`backend/app/modules/assistant/rag/embedder.py` · `test/backend/test_cau_hinh_ai_cr429.py` ·
+`frontend-v2/src/modules/system/components/setting-doc-link.tsx` · `setting-field-row.tsx` ·
+`setting-secret-row.tsx` · `pages/setting-page.tsx`.
+
+### bao-CR-429-nhip-1 | Nhật ký cấu hình gọi đúng tên mục vừa đổi
+- status: xong
+Bảng cấu hình ra khỏi lớp ghi nhật ký tự động và tự ghi lấy với tên trường là khóa cấu hình
+thật, khóa bí mật che cả hai đầu. Mười hai bài kiểm xanh.
+
+### bao-CR-429-nhip-2 | Cụm trợ lý AI xuống bảng cấu hình, có link tới chỗ lấy khóa
+- status: xong
+Sáu mục thường và hai khóa bí mật đã dời, giao diện có ô chọn và nút mở trang cấp khóa. Mười
+bốn bài kiểm xanh.
+
+### bao-CR-429-nhip-3 | Dời cụm đồng bộ, điểm bán hàng và ngưỡng cảnh báo
+- status: xong
+Mười ba mục thường và ba khóa bí mật của cụm đồng bộ đã xuống bảng cấu hình, chia ba thẻ mới
+trên màn hình. Lớp tiếp hợp của sổ đồng bộ nay giữ tên khóa chứ không giữ giá trị nên hạ cầu
+dao là có hiệu lực ngay, không phải dựng lại dịch vụ. Sáu mục cố ý ở lại tệp môi trường vì bốn
+mục bị chụp giá trị lúc dựng lịch chạy nền và hai mục không chỗ nào đọc tới. Hai ô đếm số ngày
+giữ và số bản sao lưu đã thêm sàn để một ô bỏ trống không thành lệnh xóa sạch. Ba mươi sáu
+bài kiểm xanh.
+
+## bao-CR-430 | Cảnh báo khi loại trừ phòng của chính chủ tài khoản trong popup Phạm vi
+- status: xong
+- date: 2026-09-19
+- pic: NSU209
+Đại ca hỏi: tài khoản của nhà máy mà vào ô loại trừ phòng ban chọn đúng nhà máy thì sao. Em
+rà lại luật lọc: loại trừ thắng mọi bậc phạm vi, nên trừ đúng phòng mình là phiếu của phòng
+mình biến mất khỏi mọi vai trò có gắn phạm vi này. Với bậc "được giao + đã duyệt trong phòng"
+thì luật bậc gần như bị triệt tiêu, chỉ còn phiếu phòng khác nhờ phòng mình xử lý là lọt qua.
+Máy chủ vẫn cho lưu và không có triệu chứng nào. Đại ca chốt: cảnh báo thôi, đừng chặn.
+
+Em thêm một câu cảnh báo tông vàng trong popup Phạm vi dữ liệu của giao diện v2, đặt ngoài
+mục gấp Ngoại lệ ngay dưới câu mâu thuẫn màu đỏ, hiện khi ô loại trừ có phòng chính hoặc
+phòng kiêm nhiệm của chủ tài khoản. Nút Lưu vẫn bấm được. So theo tên phòng vì popup làm
+việc bằng tên; tên rỗng bị bỏ để tài khoản chưa gắn hồ sơ không khớp giả. Phòng kiêm nhiệm
+lấy từ cửa phòng ban của nhân sự rồi tra ngược qua danh mục, và cửa đó tự tắt khi người dùng
+thiếu quyền đọc nhân sự, giữ đúng luật cũ là không gọi cửa nhân sự khi không có quyền.
+
+Năm bài kiểm cho hàm thuần và sáu bài kiểm cho popup, cả ba cổng kiểm của v2 xanh. Bẫy lúc
+viết bài kiểm: đường danh mục phòng ban cũng kết thúc bằng chữ departments nên so đuôi suông
+là đếm nhầm. Máy chủ không đổi, không migration. Đang ở máy em, chưa commit, chưa lên dev.
+Mã nguồn: frontend-v2/src/modules/system/components/user-scope-dialog.tsx ·
+utils/scope-summary.ts · modules/hr/hooks/use-employees.ts.
