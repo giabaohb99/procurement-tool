@@ -3640,3 +3640,110 @@ Mã nguồn: frontend-v2/src/modules/system/components/user-scope-dialog.tsx ·
 utils/scope-summary.ts · modules/hr/hooks/use-employees.ts.
 Commit: 277b0cd2 (gom chung CR-427/428/430).
 Deploy: dev chiều 19/09/2026 (8d2c52a2), không có migration.
+
+
+## duoc-CR-427 | Thiết kế lại thân trang chi tiết phiếu đặt xe: bỏ tường ô khóa, dựng trục lộ trình và trục tiến trình
+- status: xong
+- date: 2026-09-19
+- pic: NSU209
+Trang chi tiết phiếu đặt xe tại đường dẫn `/vehicle-booking/:id` được dựng lại phần thân. Đại ca
+mở phiếu DX324 lên và nói nhìn nhiều ô nhập quá, xấu. Đọc lại thì vấn đề không nằm ở số lượng ô
+mà ở chỗ một trang CHỈ ĐỂ XEM lại đang mặc áo của biểu mẫu: hai mươi bốn ô khóa có viền xếp thành
+lưới hai cột, và quá nửa trong số đó rỗng vì phiếu chưa duyệt, chưa điều phối, chưa chạy. Riêng
+khối Thông tin phê duyệt có mười ô thì cả mười đều trống. Ô trống chiếm đúng bằng chỗ của dữ liệu
+thật nên mắt phải quét hết cả trang mới lọc ra được chỗ nào có chữ. Cộng thêm mã phiếu, mục đích
+chuyến, người tạo, lộ trình và giờ đi về đều lặp lại y nguyên phần tiêu đề ngay phía trên.
+
+Ba việc đã làm. Một là bỏ ô có viền ở màn xem, đổi sang nhãn nhỏ kèm chữ trần, đúng khuôn trang
+chi tiết Văn thư vừa dựng tuần trước. Chữ trần vẫn bôi đen và chép được, tức vẫn giữ nguyên lý do
+ra đời của ô khóa dùng chung. Hai là biến ô rỗng thành câu trả lời: mười ô duyệt, điều phối, hoàn
+thành gom về một trục tiến trình bốn chặng, chặng chưa tới lượt đọc ra thành chữ Chờ điều phối kèm
+vòng tròn nét đứt, người xem biết ngay phiếu đang dừng ở đâu thay vì phải suy ra từ mấy khung
+trắng. Ba là xếp theo việc chứ không theo bảng dữ liệu: lộ trình vẽ thành đường đi thật gồm điểm
+đi, các điểm dừng và điểm đến, mỗi điểm kèm mốc giờ của chính nó; người gửi và người nhận của phiếu
+giao hàng gom thành hai khối có nút chép số điện thoại; sáu ô thông tin người tạo rút về một danh
+thiếp. Ô nào rỗng thì bỏ hẳn, không bày dấu gạch ngang.
+
+Vá được một lỗi hiển thị có sẵn trong lúc làm: chặng phê duyệt nếu đọc theo mốc `approved_at` thì
+phiếu chạy qua luồng duyệt nhiều bước sẽ luôn hiện Chờ phê duyệt, vì máy chủ đẩy phiếu sang trạng
+thái đã duyệt mà không ghi mốc duyệt một bước. Đúng ca phiếu DX324 trên máy thật. Nay lấy trạng
+thái phiếu làm nguồn chính và có bài kiểm canh.
+
+Bố cục chốt sau ba lượt đại ca xem: cột trái là người yêu cầu, lộ trình, hàng hóa, ghi chú rồi
+lịch sử thao tác; cột phải dính khi cuộn gồm tiến trình xử lý, luồng duyệt và trao đổi. Lịch sử
+thao tác cố ý nằm ở cột trái vì cột phải có trần chiều cao và vùng cuộn riêng, mà lịch sử thì dài
+ra mãi theo thời gian, nhốt nó vào một khung cuộn cao ba trăm điểm ảnh là sai kiểu dữ liệu. Thẻ
+tiến trình khi dời sang cột phụ hẹp ba trăm sáu mươi điểm ảnh phải sửa hai chỗ: lề rút về bằng hai
+thẻ hàng xóm, và tên chặng tách riêng một dòng còn người với mốc giờ xuống dòng dưới, vì xếp cả ba
+trên một dòng thì ở cột hẹp câu gãy tùy tiện và tên chặng chìm giữa hai mẩu chữ xám.
+
+Hạn chế đã biết, chưa làm: ở khổ điện thoại lưới xếp dọc nên thẻ tiến trình rơi xuống sau phần
+thân phiếu. Muốn nó nằm ngay dưới lộ trình trên điện thoại thì phải dựng thẻ hai lần kèm ẩn hiện
+theo khổ màn, chờ đại ca chốt có đáng hay không.
+
+Còn một điểm cần đại ca quyết: luật ô chỉ xem trong CLAUDE.md đang viết chung một câu là mọi chỗ
+hiển thị dữ liệu đều dùng ô khóa. Thực tế nay đã tách hai vế, biểu mẫu có ô bị khóa thì dùng ô
+khóa, còn trang thuần xem thì dùng chữ trần. Phân hệ Văn thư đi hướng này trước, nay thêm Đặt xe.
+Đại ca gật thì sửa lại đoạn luật đó và tài liệu giao diện cho khớp.
+
+Kiểm tra: mười hai bài kiểm cho hàm dựng chặng và năm bài kiểm cho hàm định dạng mốc thời gian,
+bảy mươi bài kiểm của phân hệ Đặt xe xanh hết, kiểu dữ liệu sạch, không lỗi lint. Đã bấm tay trên
+trình duyệt bốn ca phiếu gồm đã duyệt, giao hàng đang điều phối, hoàn thành và đã hủy, ở cả khổ
+rộng lẫn khổ điện thoại ba trăm chín mươi điểm ảnh. Máy chủ không đổi, không migration.
+Mã nguồn: `frontend-v2/src/modules/vehicle-booking/utils/build-booking-stages.ts` (hàm thuần dựng
+bốn chặng, kèm bài kiểm) · `components/booking-route-card.tsx` · `booking-progress-card.tsx` ·
+`booking-requester-card.tsx` · `booking-delivery-card.tsx` · `booking-info-item.tsx` ·
+`booking-timeline-item.tsx` · `booking-detail-body.tsx` (từ 204 dòng rút còn phần ghép) ·
+`pages/vehicle-booking-detail-page.tsx` · `utils/booking-time-format.ts` (thêm hàm `formatStamp`).
+
+
+## duoc-CR-428 | Dựng lại trang Tổng quan Duyệt dấu: bỏ bảng nhồi trong khung hẹp, vá màu bánh trùng và hai lỗ trắng
+- status: xong
+- date: 2026-09-19
+- pic: NSU209
+Trang Tổng quan Duyệt dấu tại đường dẫn `/approval-seal`. Đại ca mở ra và nói nhìn khá xấu. Rà
+từng khối thì ra bốn chỗ hỏng chứ không phải một, và hai trong số đó là lỗi thật chứ không phải
+chuyện thẩm mỹ.
+
+Thứ nhất, hai khối việc cần xử lý dùng bảng sáu cột nhưng lại nằm trong lưới hai cột, mỗi khung
+chỉ rộng khoảng sáu trăm điểm ảnh. Hậu quả đo được trên máy: cột công ty đóng dấu cụt thành «CÔNG
+TY TNHH DE…» ở cả bốn dòng, tức bốn ô giống hệt nhau và không phân biệt được dòng nào với dòng
+nào; tiêu đề văn bản đứt giữa chữ; hai cột cuối là ngày tạo và trạng thái bị đẩy khuất hẳn. Đã
+thay bằng danh sách hàng đợi mới: mã phiếu và tiêu đề văn bản đầy đủ ở hàng trên, công ty và
+người tạo và ngày ở hàng dưới, cả dòng là một liên kết nên bấm chỗ nào cũng mở được chi tiết.
+Cùng lượng dữ liệu đó nhưng đọc hết mà không phải cuộn ngang. Bảng đầy đủ vẫn còn nguyên ở màn
+danh sách yêu cầu đóng dấu, nơi nó có cả chiều ngang trang; tệp bảng cũ đã xóa hẳn chứ không để
+lại hai bản.
+
+Thứ hai, thẻ danh mục con dấu chừa một mảng trắng gần ba trăm điểm ảnh ở giữa, nhìn như biểu đồ
+tải hỏng. Nguyên nhân là thẻ khai căn đều hai đầu trong khi nó nằm cùng hàng lưới với thẻ văn thư
+cao hơn, nên mấy con chip bị đẩy xuống đáy. Hai hàng đợi cũng cùng bệnh do khai cao bằng nhau:
+hàng đợi một dòng bị kéo cao bằng hàng đợi bốn dòng. Nay mọi thẻ cao theo nội dung của chính nó.
+
+Thứ ba là lỗi thật của biểu đồ tròn cơ cấu trạng thái: «Yêu cầu chỉnh sửa» tô trùng đúng màu của
+«Nháp», hai ô chú giải xanh y hệt nhau. Bảng màu chỉ có năm màu trong khi bộ mã có bảy trạng
+thái, lại đánh theo thứ hạng trong mảng đã lọc nên kỳ nào không phát sinh phiếu nháp là toàn bộ
+màu dịch một bậc, người đã quen xanh lá là xong sẽ đọc sai cả biểu đồ. Nay khai màu theo mã
+trạng thái, lấy tông ngữ nghĩa giống huy hiệu là cam cho chờ, xanh lá cho xong, đỏ cho từ chối.
+Có bài kiểm canh đủ bảy màu và không màu nào trùng nhau.
+
+Thứ tư là tràn ngang ở khổ điện thoại, phát hiện lúc bấm tay: thiếu khai co được nên tên pháp
+nhân dài hai lăm tới bốn lăm ký tự đẩy cả trang sinh thanh cuộn ngang và liên kết xem tất cả
+văng ra ngoài mép. Kèm theo, mỗi dòng văn thư trước in đủ tên mọi công ty phụ trách nối bằng dấu
+phẩy nên gãy ba hàng và huy hiệu văn thư tổng bị chen vào giữa đoạn chữ; nay dùng cụm ảnh tròn
+công ty như ở màn danh sách văn thư, kèm số pháp nhân. Biểu đồ cột nâng chiều cao lên ba trăm
+bốn mươi để lấp dải trắng dưới trục X, vì thẻ biểu đồ luôn cao bằng thẻ bánh nằm cạnh.
+
+Còn một điểm chờ đại ca quyết, chưa tự đổi: bộ lọc thời gian mặc định là ba mươi ngày nên biểu đồ
+xu hướng theo tháng gần như luôn chỉ vẽ được hai cột, trong khi nó sinh ra để đọc mười hai tháng.
+Đổi mặc định sang mười hai tháng thì biểu đồ mới có nghĩa, nhưng mọi con số trên trang đổi theo,
+gồm cả ô tổng lưu lượng và bánh trạng thái và thanh theo công ty.
+
+Kiểm tra: kiểu dữ liệu sạch, không lỗi lint, hai mươi mốt bài kiểm của phân hệ xanh trong đó
+mười ba bài mới. Đã bấm tay trên trình duyệt ở khổ rộng một nghìn sáu trăm và khổ điện thoại ba
+trăm chín mươi, đo lại bề rộng trang đúng bằng bề rộng màn hình. Máy chủ không đổi, không
+migration.
+Mã nguồn: `frontend-v2/src/modules/approval-seal/components/seal-queue-list.tsx` (danh sách hàng
+đợi mới, kèm bài kiểm) · `components/seal-directory-glance-card.tsx` (viết lại hai thẻ chân
+trang) · `pages/seal-dashboard-page.tsx` · `types/seal-request.ts` (bảng màu biểu đồ theo mã
+trạng thái, kèm bài kiểm) · xóa `components/seal-queue-table.tsx`.

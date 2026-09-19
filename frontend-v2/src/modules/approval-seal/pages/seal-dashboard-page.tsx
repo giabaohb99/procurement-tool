@@ -16,7 +16,6 @@ import { usePermission } from '@/core/authorization/use-permission'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { BarList } from '@/shared/ui/bar-list'
 import { Button } from '@/shared/ui/button'
-import { Card } from '@/shared/ui/card'
 import { ChartCard } from '@/shared/ui/chart'
 import { ColumnChart } from '@/shared/ui/column-chart'
 import { DateRangePicker } from '@/shared/ui/date-range-picker'
@@ -34,9 +33,9 @@ import { PageHeader } from '@/shared/ui/page-header'
 import { StatCard } from '@/shared/ui/stat-card'
 import { cn } from '@/shared/utils/cn'
 import { SealDirectoryGlanceCard } from '../components/seal-directory-glance-card'
-import { SealQueueTable } from '../components/seal-queue-table'
+import { SealQueueList } from '../components/seal-queue-list'
 import { useSealDashboard } from '../hooks/use-seal-dashboard'
-import { SEAL_STATUS, SEAL_STATUS_LABELS } from '../types/seal-request'
+import { SEAL_STATUS, SEAL_STATUS_CHART_COLOR, SEAL_STATUS_LABELS } from '../types/seal-request'
 
 /** Các khối bảng/biểu đồ có thể ẩn/hiện trên trang tổng quan. */
 type BlockKey =
@@ -62,15 +61,6 @@ const BLOCK_LABELS: Record<BlockKey, string> = {
 
 // Mặc định KHÔNG ẨN khối nào để trang đầy đủ thông tin và sống động ngay khi mở
 const DEFAULT_HIDDEN: BlockKey[] = []
-
-// Màu lát bánh "Theo trạng thái"
-const STATUS_COLORS = [
-  'var(--chart-1)',
-  'var(--chart-2)',
-  'var(--chart-3)',
-  'var(--chart-4)',
-  'var(--chart-neutral)',
-]
 
 function toYmd(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -149,78 +139,86 @@ export function SealDashboardPage() {
   const requestsRoute = appRoutes.approvalSeal.requests
   const withStatus = (status: number) => `${requestsRoute}?status=${status}`
 
-  // Gom các thẻ hàng đợi công việc
+  // Gom các hàng đợi công việc
   const queueCards: ReactNode[] = []
   if (shows('approve') && approve && approve.items.length > 0) {
     queueCards.push(
-      <Card key="approve" className="h-full p-4 border-amber-500/20 shadow-xs">
-        <SealQueueTable
-          title="Chờ phê duyệt"
-          description={`${approve.pending} phiếu đang chờ bạn thẩm định và duyệt`}
-          rows={approve.items}
-          hideStatusFilter
-          isLoading={isLoading}
-          emptyMessage="Không có phiếu chờ duyệt."
-        />
-      </Card>,
+      <SealQueueList
+        key="approve"
+        icon={ClipboardCheck}
+        tone="amber"
+        title="Chờ phê duyệt"
+        description="Phiếu đang chờ bạn thẩm định và duyệt"
+        rows={approve.items}
+        total={approve.pending}
+        isLoading={isLoading}
+        emptyMessage="Không có phiếu chờ duyệt."
+        viewAllTo={withStatus(SEAL_STATUS.pending)}
+      />,
     )
   }
 
   if (shows('clerk') && clerk && clerk.queue.length > 0) {
     queueCards.push(
-      <Card key="clerk" className="h-full p-4 border-blue-500/20 shadow-xs">
-        <SealQueueTable
-          title="Chờ đóng dấu"
-          description={`${clerk.to_stamp} phiếu đã duyệt, sẵn sàng đóng dấu`}
-          rows={clerk.queue}
-          hideStatusFilter
-          isLoading={isLoading}
-          emptyMessage="Không có phiếu chờ đóng dấu."
-        />
-      </Card>,
+      <SealQueueList
+        key="clerk"
+        icon={Stamp}
+        tone="blue"
+        title="Chờ đóng dấu"
+        description="Đã duyệt, sẵn sàng dập dấu"
+        rows={clerk.queue}
+        total={clerk.to_stamp}
+        isLoading={isLoading}
+        emptyMessage="Không có phiếu chờ đóng dấu."
+        viewAllTo={withStatus(SEAL_STATUS.approved)}
+      />,
     )
   }
 
   if (shows('director') && director && director.items.length > 0) {
     queueCards.push(
-      <Card key="director" className="h-full p-4 border-border/80 shadow-xs">
-        <SealQueueTable
-          title="Yêu cầu đã phê duyệt"
-          description={`${director.count} phiếu đã duyệt của công ty bạn`}
-          rows={director.items}
-          hideStatusFilter
-          isLoading={isLoading}
-          emptyMessage="Chưa có yêu cầu nào."
-        />
-      </Card>,
+      <SealQueueList
+        key="director"
+        icon={CheckCircle2}
+        title="Yêu cầu đã phê duyệt"
+        description="Phiếu đã duyệt của công ty bạn"
+        rows={director.items}
+        total={director.count}
+        isLoading={isLoading}
+        emptyMessage="Chưa có yêu cầu nào."
+        viewAllTo={withStatus(SEAL_STATUS.approved)}
+      />,
     )
   }
 
   if (shows('recent')) {
     queueCards.push(
-      <Card key="recent" className="h-full p-4 border-border/80 shadow-xs">
-        <SealQueueTable
-          title="Phiếu gần đây của tôi"
-          description={
-            mineTotal > 0
-              ? `${mineTotal} phiếu bạn đã lập trên hệ thống`
-              : 'Các yêu cầu đóng dấu do bạn khởi tạo'
-          }
-          rows={mine?.recent ?? []}
-          isLoading={isLoading}
-          emptyMessage="Bạn chưa tạo yêu cầu đóng dấu nào."
-        />
-      </Card>,
+      <SealQueueList
+        key="recent"
+        icon={Clock}
+        title="Phiếu gần đây của tôi"
+        description="Yêu cầu đóng dấu do bạn khởi tạo"
+        rows={mine?.recent ?? []}
+        total={mineTotal}
+        isLoading={isLoading}
+        //  Danh sách này TRỘN nhiều trạng thái (nháp, chờ duyệt, xong) nên phải
+        //  bày huy hiệu; ba hàng đợi trên thì mọi dòng cùng một trạng thái,
+        //  bày vào chỉ là một cột chữ lặp lại.
+        showStatus
+        emptyMessage="Bạn chưa tạo yêu cầu đóng dấu nào."
+        viewAllTo={requestsRoute}
+      />,
     )
   }
 
-  // Lát bánh biểu đồ trạng thái
+  // Lát bánh biểu đồ trạng thái — màu khai theo MÃ trạng thái (xem ghi chú ở
+  // `SEAL_STATUS_CHART_COLOR`), không đánh theo thứ hạng trong mảng.
   const statusSlices: DonutSlice[] = (stats?.by_status ?? [])
     .filter((s) => s.value > 0)
-    .map((s, i) => ({
+    .map((s) => ({
       label: s.label || SEAL_STATUS_LABELS[s.key ?? 0] || '—',
       value: s.value,
-      color: STATUS_COLORS[i % STATUS_COLORS.length],
+      color: SEAL_STATUS_CHART_COLOR[s.key ?? 0] ?? 'var(--chart-neutral)',
     }))
 
   return (
@@ -359,8 +357,12 @@ export function SealDashboardPage() {
       </div>
 
       {/* ── 2. Hàng đợi công việc & Danh sách gần đây ──────────────────────── */}
+      {/*  `items-start`: mỗi hàng đợi cao theo SỐ DÒNG của nó. Bản trước kéo
+          bằng nhau (`items-stretch` + `h-full`) nên hàng đợi một dòng nằm cạnh
+          hàng đợi bốn dòng để thừa một mảng trắng gần 200px — trông như khối
+          vẽ hỏng. Mép dưới so le thì thật thà hơn một cái hộp rỗng. */}
       {queueCards.length > 0 && (
-        <div className={cn('mb-4 grid items-stretch gap-4', queueCards.length >= 2 && 'lg:grid-cols-2')}>
+        <div className={cn('mb-4 grid items-start gap-4', queueCards.length >= 2 && 'lg:grid-cols-2')}>
           {queueCards}
         </div>
       )}
@@ -379,7 +381,12 @@ export function SealDashboardPage() {
                 isEmpty={stats.trend.every((p) => p.value === 0)}
                 emptyLabel="Chưa phát sinh phiếu trong khoảng thời gian này."
               >
-                <ColumnChart data={stats.trend} formatValue={(v) => String(v)} />
+                {/*  Cao 340 chứ không phải mặc định 280: thẻ này nằm cùng hàng
+                    với thẻ bánh trạng thái — bánh + sáu dòng chú giải cao 474px,
+                    mà `ChartCard` khai `h-full` nên hai thẻ luôn cao bằng nhau.
+                    Để 280 thì dưới trục X thừa một dải trắng gần 100px, đọc ra
+                    như biểu đồ vẽ thiếu. */}
+                <ColumnChart data={stats.trend} height={340} formatValue={(v) => String(v)} />
               </ChartCard>
             )}
 
