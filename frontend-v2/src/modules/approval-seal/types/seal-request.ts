@@ -43,6 +43,32 @@ export const SEAL_STATUS_BADGE: Record<number, BadgeTone> = {
   [SEAL_STATUS.returned]: 'warn', // Yêu cầu chỉnh sửa (bị trả lại)
 }
 
+/**
+ * Màu lát bánh của biểu đồ "Cơ cấu theo trạng thái" — khai THEO MÃ trạng thái,
+ * không theo thứ hạng trong mảng dữ liệu.
+ *
+ * ⚠️ Bản trước lấy `STATUS_COLORS[i % 5]` với `i` là vị trí sau khi đã lọc bỏ
+ * trạng thái rỗng. Hai lỗi cùng lúc: bộ mã có BẢY trạng thái mà bảng màu chỉ
+ * năm màu nên «Yêu cầu chỉnh sửa» tô lại đúng màu của «Nháp» (thấy được trên
+ * máy thật: hai ô chú giải xanh y hệt nhau); và vì đánh theo thứ hạng nên kỳ
+ * nào không có phiếu Nháp là toàn bộ màu dịch một bậc — người đã quen "xanh lá
+ * là xong" đọc sai cả biểu đồ.
+ *
+ * Màu lấy đúng tinh thần tông huy hiệu ở `SEAL_STATUS_BADGE`: cảnh báo = cam,
+ * xong = xanh lá, hỏng = đỏ, trung tính = xám. Nháp và Đã hủy cùng tông xám ở
+ * huy hiệu nhưng phải KHÁC nhau trên bánh (hai lát cạnh nhau), nên một xám
+ * nhạt một xám đậm.
+ */
+export const SEAL_STATUS_CHART_COLOR: Record<number, string> = {
+  [SEAL_STATUS.draft]: 'var(--chart-neutral)',
+  [SEAL_STATUS.pending]: 'var(--warning)',
+  [SEAL_STATUS.approved]: 'var(--info)',
+  [SEAL_STATUS.completed]: 'var(--success)',
+  [SEAL_STATUS.rejected]: 'var(--destructive)',
+  [SEAL_STATUS.cancelled]: 'var(--muted-foreground)',
+  [SEAL_STATUS.returned]: 'var(--chart-2)',
+}
+
 /** Chỉ sửa được khi phiếu còn nháp hoặc bị trả về (khớp EDITABLE_STATUSES ở backend). */
 export const EDITABLE_SEAL_STATUSES = new Set<number>([SEAL_STATUS.draft, SEAL_STATUS.returned])
 
