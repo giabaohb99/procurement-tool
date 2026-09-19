@@ -10,6 +10,7 @@ import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useScrolled } from '@/shared/hooks/use-scrolled'
+import { useUrlMultiParam } from '@/shared/hooks/use-url-multi-param'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlRangeParam } from '@/shared/hooks/use-url-range-param'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
@@ -17,6 +18,7 @@ import type { ListParams } from '@/shared/types/api'
 import { Card } from '@/shared/ui/card'
 import { DateRangePicker } from '@/shared/ui/date-range-picker'
 import { PageContainer } from '@/shared/ui/page-container'
+import { MultiPicker } from '@/shared/ui/multi-picker'
 import { PageHeader } from '@/shared/ui/page-header'
 import { QuickFilterField, QuickFilterSheet } from '@/shared/ui/quick-filter-sheet'
 import { SearchField } from '@/shared/ui/search-field'
@@ -64,12 +66,14 @@ const DEFAULT_DATE_FIELD = DATE_FIELDS[0].value
  */
 export function PurchaseProgressPage() {
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
-  const [companyId, setCompanyId] = useUrlParamState('company_id', ALL)
+  // bao-CR-423: ô Công ty và ô Tiến độ chọn được NHIỀU giá trị; không chọn gì là
+  // "Tất cả". Chọn nhiều trong CÙNG một ô nghĩa là HOẶC, hai ô khác nhau vẫn là VÀ.
+  const [companyIds, setCompanyIds] = useUrlMultiParam('company_id')
   // CR-088: lọc theo ID phòng ban. Gửi TÊN thì phòng đổi tên là bộ lọc trượt sạch,
   // danh sách rỗng mà không báo gì. Backend vẫn nhận `department=<tên>` cho các
   // đường dẫn cũ đã lưu, chỉ có màn này thôi không gửi nữa.
   const [departmentId, setDepartmentId] = useUrlParamState('department_id', ALL)
-  const [status, setStatus] = useUrlParamState('status', ALL)
+  const [statuses, setStatuses] = useUrlMultiParam('status')
   const [dateField, setDateField] = useUrlParamState('date_field', DEFAULT_DATE_FIELD)
   const [dateFrom, dateTo, setDateRange] = useUrlRangeParam('date_from', 'date_to')
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
@@ -90,9 +94,9 @@ export function PurchaseProgressPage() {
 
   const [page, setPage] = usePageResetOnFilterChange([
     debouncedValue,
-    companyId,
+    companyIds,
     departmentId,
-    status,
+    statuses,
     dateField,
     dateFrom,
     dateTo,
@@ -100,9 +104,11 @@ export function PurchaseProgressPage() {
 
   const params: ListParams = { page, page_size: pageSize }
   if (debouncedValue) params.q = debouncedValue
-  if (companyId !== ALL) params.company_id = Number(companyId)
+  //  Gửi nối bằng dấu phẩy, kể cả khi mới chọn một — `read_multi_param` bên
+  //  backend đọc được cả dạng đó lẫn dạng lặp khóa (bao-CR-423).
+  if (companyIds.length) params.company_id = companyIds.join(',')
   if (departmentId !== ALL) params.department_id = Number(departmentId)
-  if (status !== ALL) params.status = status
+  if (statuses.length) params.status = statuses.join(',')
   if (dateFrom || dateTo) {
     const field = DATE_FIELDS.find((item) => item.value === dateField) ?? DATE_FIELDS[0]
     if (dateFrom) params[field.from] = dateFrom
@@ -260,20 +266,25 @@ export function PurchaseProgressPage() {
   //
   //  `max-md:w-full`: trong tờ trượt mỗi ô có trọn bề ngang màn hình; giữ bề
   //  rộng cứng `w-48` thì ô nép trái và chừa một khoảng trống dài bên phải.
+  //  `MultiPicker` tự chiếm trọn bề ngang của thẻ bọc, nên bề rộng cứng đặt ở
+  //  lớp `div` bên ngoài chứ không đặt trên ô.
   const companySelect = (
-    <Select value={companyId} onValueChange={setCompanyId}>
-      <SelectTrigger className="w-48 max-md:w-full" aria-label="Lọc theo công ty">
-        <SelectValue placeholder="Công ty" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value={ALL}>Tất cả công ty</SelectItem>
-        {(companies?.items ?? []).map((company) => (
-          <SelectItem key={company.id} value={String(company.id)}>
-            {company.name}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <div className="w-48 max-md:w-full" aria-label="Lọc theo công ty">
+      <MultiPicker
+        value={companyIds}
+        onChange={setCompanyIds}
+        options={(companies?.items ?? []).map((company) => ({
+          id: String(company.id),
+          label: company.name,
+        }))}
+        placeholder="Tất cả công ty"
+        searchPlaceholder="Tìm công ty…"
+        emptyMessage="Không tìm thấy công ty nào."
+        contentClassName="w-72"
+        summaryInTrigger
+        clearInTrigger
+      />
+    </div>
   )
 
   const departmentSelect = (
@@ -293,19 +304,18 @@ export function PurchaseProgressPage() {
   )
 
   const statusSelect = (
-    <Select value={status} onValueChange={setStatus}>
-      <SelectTrigger className="w-52 max-md:w-full" aria-label="Lọc theo tiến độ">
-        <SelectValue placeholder="Tiến độ" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value={ALL}>Tất cả tiến độ</SelectItem>
-        {PO_PROGRESS_STATUS.map((item) => (
-          <SelectItem key={item.value} value={item.value}>
-            {item.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <div className="w-52 max-md:w-full" aria-label="Lọc theo tiến độ">
+      <MultiPicker
+        value={statuses}
+        onChange={setStatuses}
+        options={PO_PROGRESS_STATUS.map((item) => ({ id: item.value, label: item.label }))}
+        placeholder="Tất cả tiến độ"
+        searchPlaceholder="Tìm tiến độ…"
+        emptyMessage="Không tìm thấy tiến độ nào."
+        summaryInTrigger
+        clearInTrigger
+      />
+    </div>
   )
 
   //  Chọn MỐC trước, rồi tới khoảng ngày — đọc xuôi thành một câu "theo ngày
@@ -337,9 +347,12 @@ export function PurchaseProgressPage() {
   )
 
   const activeFilterCount =
-    [companyId !== ALL, departmentId !== ALL, status !== ALL, Boolean(dateFrom || dateTo)].filter(
-      Boolean,
-    ).length
+    [
+      companyIds.length > 0,
+      departmentId !== ALL,
+      statuses.length > 0,
+      Boolean(dateFrom || dateTo),
+    ].filter(Boolean).length
 
   return (
     //  ⚠️ `fill` chỉ bật từ `md`: ở khổ hẹp bảng đổi sang danh sách THẺ dài, mà
@@ -436,9 +449,9 @@ export function PurchaseProgressPage() {
               <QuickFilterSheet
                 activeCount={activeFilterCount}
                 onClearAll={() => {
-                  setCompanyId(ALL)
+                  setCompanyIds([])
                   setDepartmentId(ALL)
-                  setStatus(ALL)
+                  setStatuses([])
                   setDateField(DEFAULT_DATE_FIELD)
                   setDateRange('', '')
                 }}

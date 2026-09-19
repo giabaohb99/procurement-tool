@@ -106,11 +106,28 @@ describe('PurchaseProgressPage — khoảng ngày', () => {
   it('keeps the other filters while a range is active', () => {
     build('/procurement/purchase-progress?company_id=7&status=partial&date_from=2026-08-01')
 
+    //  bao-CR-423: hai ô này chọn được nhiều giá trị nên gửi đi là CHUỖI nối
+    //  bằng dấu phẩy, kể cả khi mới chọn một — `read_multi_param` bên backend
+    //  đọc được cả hai dạng.
     expect(lastCall()).toMatchObject({
-      company_id: 7,
+      company_id: '7',
       status: 'partial',
       order_date_from: '2026-08-01',
     })
+  })
+
+  it('joins several picks of one filter box into a single comma-joined param', () => {
+    //  Nhiều giá trị trong CÙNG một ô = HOẶC; hai ô khác nhau vẫn là VÀ.
+    build('/procurement/purchase-progress?company_id=7,9&status=partial,ordered')
+
+    expect(lastCall()).toMatchObject({ company_id: '7,9', status: 'partial,ordered' })
+  })
+
+  it('sends no param for a filter box with nothing picked', () => {
+    build('/procurement/purchase-progress?status=')
+
+    expect(lastCall().status).toBeUndefined()
+    expect(lastCall().company_id).toBeUndefined()
   })
 
   it('shows both controls on the toolbar', () => {

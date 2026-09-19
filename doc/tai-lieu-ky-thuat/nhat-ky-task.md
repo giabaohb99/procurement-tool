@@ -3077,8 +3077,8 @@ thành `_linked_survey_requests`, `_out` trả thêm khóa `survey_requests`) ·
 Tham chiếu: dòng `bao-CR-422-chung-tu-lien-quan-tren-ycmh` trong `change-log-bao.md`; mô tả
 chức năng ở mục I của `doc/tai-lieu-chuc-nang/03-yeu-cau-mua-hang.md`.
 
-## bao-CR-423 | Ô lọc trạng thái và công ty ở hai màn Tiến độ (giao diện cũ) chọn được nhiều giá trị
-- status: dang-lam
+## bao-CR-423 | Ô lọc trạng thái và công ty ở hai màn Tiến độ chọn được nhiều giá trị
+- status: xong
 - date: 2026-09-17
 Đại ca gửi ảnh ô Trạng thái tiến độ của màn Tiến độ mua hàng bản cũ và bảo làm trên nhánh
 chính trước: người dùng muốn tick chọn nhiều trạng thái một lượt, ô Công ty cũng vậy, và màn
@@ -3136,11 +3136,30 @@ Deploy: prod 17/09/2026; sao lưu `~/proc_backups/procurement_truoc_cr423_202609
 dựng lại `api` · `celery-worker` · `celery-beat` · `web`.
 
 ### bao-CR-423-port-v2 | Bê sang giao diện mới rồi gộp nhánh chính vào erp-v2
-- status: dang-lam
-Màn Tiến độ mua hàng và Tiến độ báo giá ở giao diện mới chưa đụng; làm sau khi bản cũ lên
-prod ổn.
-Mã nguồn: `frontend-v2/src/modules/procurement/pages/purchase-progress-page.tsx` và màn Tiến
-độ báo giá v2.
+- status: xong
+- date: 2026-09-19
+Em gộp nhánh chính vào erp-v2 để phần máy chủ của việc này sang cây dev. Chỉ một chỗ đụng nhau
+là sổ ghi thay đổi, hai bên cùng thêm một dòng lên đầu bảng; em giữ cả hai rồi xếp theo số việc
+giảm dần. Gộp xong em chạy lại mười bài kiểm của phần máy chủ trên nền erp-v2, xanh hết.
+
+Bên giao diện mới em không dựng thêm ô chọn riêng như bản cũ. Ô chọn nhiều đã có sẵn trong bộ
+dùng chung và nhận được cả khóa số lẫn khóa chữ, nên em chỉ thêm một lối bày mới cho nó: trong
+khung ghi tên mục đầu kèm đuôi cộng số còn lại, rê chuột thấy đủ tên, và bỏ hẳn dải viên bên
+dưới để ô lọc trên thanh công cụ vẫn cao đúng một hàng. Không bật lối này thì ô chọn giữ nguyên
+nết cũ nên hai mươi mấy màn đang dùng nó không bị ảnh hưởng.
+
+Em cũng thêm một móc đọc ghi tham số nhiều giá trị trên đường dẫn, dùng chung một luật với phần
+máy chủ: cắt theo dấu phẩy, bỏ khoảng trắng thừa, khử trùng và giữ nguyên thứ tự người dùng
+tick. Không tick gì thì xóa hẳn tham số khỏi đường dẫn chứ không để lại một dấu bằng rỗng. Màn
+Tiến độ mua hàng nối hai ô Công ty và Tiến độ dòng vào móc này, màn Tiến độ báo giá nối ô Tiến
+độ dòng, nút xuất Excel của màn đó đi theo cùng chuỗi. Ô Bộ phận và ô Trễ hạn vẫn chọn một như
+cũ. Tám bài kiểm cho móc mới, bốn bài cho lối bày mới của ô chọn, thêm bốn bài ở hai màn; chạy
+cả cụm ra tám mươi tám bài xanh, kiểm kiểu và kiểm nếp mã cả cây đều không lỗi.
+Mã nguồn: `frontend-v2/src/shared/hooks/use-url-multi-param.ts` (mới) ·
+`frontend-v2/src/shared/ui/multi-picker.tsx` (thêm `summaryInTrigger`) ·
+`frontend-v2/src/modules/procurement/pages/purchase-progress-page.tsx` ·
+`frontend-v2/src/modules/procurement/pages/survey-progress-page.tsx`.
+Commit: `cf6acd9f` (gộp nhánh chính) trên nhánh `erp-v2`.
 
 ## duoc-CR-425 | Thiết kế lại trang chi tiết phân công văn thư đóng dấu với thanh đầu dính và cột phải cuộn độc lập
 - status: xong

@@ -146,6 +146,20 @@ describe('SurveyProgressPage — khoảng ngày', () => {
     })
   })
 
+  it('joins several picked progress labels into one comma-joined param', () => {
+    //  bao-CR-423: chọn nhiều nhãn trong cùng ô Tiến độ dòng = HOẶC. Nhãn không
+    //  chứa dấu phẩy nên backend tách lại đúng.
+    build('/procurement/survey-progress?state=Đã trả kết quả,Trễ hạn')
+
+    expect(lastCall().state).toBe('Đã trả kết quả,Trễ hạn')
+  })
+
+  it('sends no state param when nothing is picked', () => {
+    build('/procurement/survey-progress?state=')
+
+    expect(lastCall().state).toBeUndefined()
+  })
+
   it('exports the SAME range the table is showing', async () => {
     const user = userEvent.setup()
     build('/procurement/survey-progress?date_field=result&date_from=2026-09-01&date_to=2026-09-30')

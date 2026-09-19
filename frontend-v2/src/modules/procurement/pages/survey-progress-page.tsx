@@ -15,6 +15,7 @@ import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useScrolled } from '@/shared/hooks/use-scrolled'
+import { useUrlMultiParam } from '@/shared/hooks/use-url-multi-param'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlRangeParam } from '@/shared/hooks/use-url-range-param'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
@@ -24,6 +25,7 @@ import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { DateRangePicker } from '@/shared/ui/date-range-picker'
 import { PageContainer } from '@/shared/ui/page-container'
+import { MultiPicker } from '@/shared/ui/multi-picker'
 import { PageHeader } from '@/shared/ui/page-header'
 import { QuickFilterField, QuickFilterSheet } from '@/shared/ui/quick-filter-sheet'
 import { SearchField } from '@/shared/ui/search-field'
@@ -95,7 +97,9 @@ function SurveyProgressContent() {
   const canExport = can('survey_request', 'export')
 
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
-  const [progressState, setProgressState] = useUrlParamState('state', ALL)
+  // bao-CR-423: ô Tiến độ dòng chọn được NHIỀU nhãn; không chọn gì là "Tất cả".
+  // Chọn nhiều nhãn nghĩa là HOẶC — backend hợp điều kiện của từng nhãn lại.
+  const [progressStates, setProgressStates] = useUrlMultiParam('state')
   const [late, setLate] = useUrlParamState('late', ALL)
   const [dateField, setDateField] = useUrlParamState('date_field', DEFAULT_DATE_FIELD)
   const [dateFrom, dateTo, setDateRange] = useUrlRangeParam('date_from', 'date_to')
@@ -120,7 +124,7 @@ function SurveyProgressContent() {
   const [page, setPage] = usePageResetOnFilterChange([
     queryKey,
     debouncedValue,
-    progressState,
+    progressStates,
     late,
     dateField,
     dateFrom,
@@ -138,7 +142,9 @@ function SurveyProgressContent() {
 
   const params: ListParams = { page, page_size: pageSize, ...queryParams, ...dateParams }
   if (debouncedValue) params.q = debouncedValue
-  if (progressState !== ALL) params.state = progressState
+  //  Gửi nối bằng dấu phẩy — nhãn tiến độ không chứa dấu phẩy nên tách lại được;
+  //  `read_multi_param` bên backend đọc cả dạng này lẫn dạng lặp khóa (bao-CR-423).
+  if (progressStates.length) params.state = progressStates.join(',')
   if (late !== ALL) params.late = late
 
   const { data, isLoading, isError } = useSurveyProgress(params)
@@ -148,7 +154,7 @@ function SurveyProgressContent() {
   const handleExportExcel = async () => {
     const query = new URLSearchParams()
     if (debouncedValue) query.set('q', debouncedValue)
-    if (progressState !== ALL) query.set('state', progressState)
+    if (progressStates.length) query.set('state', progressStates.join(','))
     if (late !== ALL) query.set('late', late)
     for (const [key, value] of Object.entries(dateParams)) query.set(key, value)
     const queryString = query.toString() ? `?${query.toString()}` : ''
@@ -235,20 +241,21 @@ function SurveyProgressContent() {
   //
   //  `max-md:w-full`: trong tờ trượt mỗi ô có trọn bề ngang màn hình; giữ bề
   //  rộng cứng `w-48` thì ô nép trái và chừa một khoảng trống dài bên phải.
+  //  `MultiPicker` tự chiếm trọn bề ngang của thẻ bọc, nên bề rộng cứng đặt ở
+  //  lớp `div` bên ngoài chứ không đặt trên ô.
   const stateSelect = (
-    <Select value={progressState} onValueChange={setProgressState}>
-      <SelectTrigger className="w-48 max-md:w-full" aria-label="Lọc theo tiến độ dòng">
-        <SelectValue placeholder="Tiến độ dòng" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value={ALL}>Tất cả tiến độ</SelectItem>
-        {Object.keys(SURVEY_PROGRESS_COLORS).map((st) => (
-          <SelectItem key={st} value={st}>
-            {st}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <div className="w-48 max-md:w-full" aria-label="Lọc theo tiến độ dòng">
+      <MultiPicker
+        value={progressStates}
+        onChange={setProgressStates}
+        options={Object.keys(SURVEY_PROGRESS_COLORS).map((st) => ({ id: st, label: st }))}
+        placeholder="Tất cả tiến độ"
+        searchPlaceholder="Tìm tiến độ…"
+        emptyMessage="Không tìm thấy tiến độ nào."
+        summaryInTrigger
+        clearInTrigger
+      />
+    </div>
   )
 
   const lateSelect = (
@@ -296,7 +303,7 @@ function SurveyProgressContent() {
   //  điều kiện nâng cao — vì cả hai nay nằm sau đúng một nút đó. Đếm thiếu một
   //  tầng thì người dùng thấy nút không dấu gì mà danh sách vẫn đang bị lọc.
   const activeFilterCount =
-    [progressState !== ALL, late !== ALL, Boolean(dateFrom || dateTo)].filter(Boolean).length +
+    [progressStates.length > 0, late !== ALL, Boolean(dateFrom || dateTo)].filter(Boolean).length +
     filter.activeCount
 
   return (
@@ -429,7 +436,7 @@ function SurveyProgressContent() {
               <QuickFilterSheet
                 activeCount={activeFilterCount}
                 onClearAll={() => {
-                  setProgressState(ALL)
+                  setProgressStates([])
                   setLate(ALL)
                   setDateField(DEFAULT_DATE_FIELD)
                   setDateRange('', '')
