@@ -69,7 +69,14 @@ export const JOB_POSITION_CRUD_CONFIG: CrudConfig<JobPosition> = {
     'Khai chức danh dùng chung — đây là nguồn của ô «Vị trí / Chức vụ» trên hồ sơ nhân sự.',
   unitLabel: 'chức vụ',
   apiPath: '/api/job-positions',
-  storageKey: 'hr.job-positions',
+  //  ⚠️ Đuôi `.v2` là CÓ CHỦ Ý (19/09/2026). Bộ cột vừa đổi hẳn: bỏ hai cột đếm,
+  //  `code` thay bằng `id`. Ai đã từng đụng menu «Cột» thì `useTableLayout` đọc
+  //  bản lưu trong `localStorage` và **bản lưu thắng** — `columnOrder` cũ xếp
+  //  trước, khóa mới nối vào CUỐI, nên cột ID lẽ ra đứng đầu lại rơi xuống sau
+  //  cột *Trạng thái* (đại ca bắt được ngay khi mở màn). Đổi khóa là mọi người
+  //  nhận lại thứ tự mặc định mới; khóa cũ nằm lại trong `localStorage` vô hại.
+  //  Đổi bộ cột kiểu này lần sau cũng phải nâng số ở đây.
+  storageKey: 'hr.job-positions.v2',
   listRoute: appRoutes.hr.jobPositions,
   //  Thêm chức vụ mở TRANG RIÊNG chứ không phải hộp thoại (08/09/2026). Không
   //  phải vì form dài — nó chỉ 5 ô — mà vì mỗi ô ở đây kéo theo một hệ quả phải
