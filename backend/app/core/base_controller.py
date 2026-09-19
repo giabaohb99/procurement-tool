@@ -184,6 +184,22 @@ def apply_range_filters(query, model, request: Request, fields: list[str]):
     return query
 
 
+def read_multi_param(request: Request, key: str) -> list[str]:
+    """Đọc một tham số lọc CHỌN NHIỀU giá trị (bao-CR-423).
+
+    Nhận cả hai kiểu gửi: lặp khóa (`?status=a&status=b`) và gộp bằng dấu phẩy
+    (`?status=a,b`) — màn cũ giữ bộ lọc trên URL dưới dạng chuỗi nên gửi kiểu thứ hai.
+    Cắt khoảng trắng, bỏ phần tử rỗng, khử trùng nhưng GIỮ THỨ TỰ. Gửi một giá trị thì trả
+    về danh sách một phần tử, nên chỗ gọi vẫn dùng được `==` khi chỉ có một."""
+    seen: list[str] = []
+    for raw in request.query_params.getlist(key):
+        for piece in (raw or "").split(","):
+            v = piece.strip()
+            if v and v not in seen:
+                seen.append(v)
+    return seen
+
+
 def apply_equals(query, model, request: Request, fields: list[str], cast=int):
     """Lọc bằng (=) cho cột số/khóa ngoại (vd company_id). Bỏ trống -> không lọc."""
     for field in fields:

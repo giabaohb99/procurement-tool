@@ -18,7 +18,7 @@ from sqlalchemy import and_, exists, func, or_, select
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user, get_perm_profile, user_has_permission
-from app.core.base_controller import pagination
+from app.core.base_controller import pagination, read_multi_param
 from app.core.database import get_db
 from app.core.filter_operators import apply_operator_filters_map
 from app.core.ref_filter import apply_ref_filters
@@ -204,9 +204,13 @@ def _build_query(request: Request, db: Session, user, prof: dict,
          .join(SurveyRequestLine, SurveyRequestLine.survey_request_id == SurveyRequest.id))
 
     # ----- Filter -----
-    company_id = (request.query_params.get("company_id") or "").strip()
-    if company_id.isdigit():
-        q = q.filter(SurveyRequest.company_id == int(company_id))
+    # bao-CR-423: ô Công ty và ô Tiến độ dòng CHỌN ĐƯỢC NHIỀU giá trị. Nhận cả
+    # `company_id=1,2` lẫn `company_id=1&company_id=2`; một giá trị thì lọc `==` như cũ.
+    company_ids = [int(v) for v in read_multi_param(request, "company_id") if v.isdigit()]
+    if len(company_ids) == 1:
+        q = q.filter(SurveyRequest.company_id == company_ids[0])
+    elif company_ids:
+        q = q.filter(SurveyRequest.company_id.in_(company_ids))
     # CR-088: màn hình đã đổi sang `department_id=` (xử lý ở `apply_ref_filters` bên dưới);
     # nhánh theo TÊN này giữ cho các đường dẫn đã lưu sẵn và ai gọi API thẳng.
     department = (request.query_params.get("department") or "").strip()
@@ -224,11 +228,14 @@ def _build_query(request: Request, db: Session, user, prof: dict,
     line_status = (request.query_params.get("line_status") or "").strip()
     if line_status:
         q = q.filter(SurveyRequestLine.line_status == line_status)
-    state = (request.query_params.get("state") or "").strip()   # cột TÍNH "Tiến độ dòng"
-    if state:
-        cond = _state_cond(state)
-        if cond is not None:
-            q = q.filter(cond)
+    # Cột TÍNH "Tiến độ dòng" — chọn nhiều nhãn thì HỢP (OR) các điều kiện của từng nhãn;
+    # nhãn lạ bị bỏ qua, mà toàn nhãn lạ thì không lọc (giữ đúng nết cũ của một giá trị).
+    state_conds = [c for c in (_state_cond(s) for s in read_multi_param(request, "state"))
+                   if c is not None]
+    if len(state_conds) == 1:
+        q = q.filter(state_conds[0])
+    elif state_conds:
+        q = q.filter(or_(*state_conds))
     month = (request.query_params.get("month") or "").strip()      # YYYY-MM theo ngày tiếp nhận
     if month:
         q = q.filter(SurveyRequestLine.received_date.like(f"{month}%"))
