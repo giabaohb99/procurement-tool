@@ -90,6 +90,16 @@
   --input: #e2e8f0;
   --ring: #00aeef;
 
+  /* Nét NHÁNH CÂY của bảng gom nhóm (hàng cha ▸ hàng con) — xem
+     `modules/hr/utils/group-leave-balances.ts`.
+
+     ⚠️ KHÔNG dùng `--border` cho việc này. Nét kẻ ô chỉ cần tách hai vùng nền
+     cạnh nhau nên nó cố tình nhạt; còn nhánh cây phải ĐỌC ĐƯỢC THÀNH HÌNH, mà
+     lại đi qua ba nền khác nhau — nền thẻ, nền hàng con `muted`, và nền xanh
+     `row-selected` của hàng cha đang bung. Ở nền xanh đó `--border` mất hút
+     hoàn toàn: thân cây có vẽ, chỉ là không ai thấy. */
+  --tree-line: color-mix(in oklab, var(--muted-foreground) 45%, transparent);
+
   /* Màu ngữ nghĩa cho trạng thái chứng từ (chờ duyệt / đã duyệt / hủy). */
   --success: #16a34a;
   --warning: #d97706;
@@ -227,6 +237,11 @@
   --input: #334155;
   --ring: #00aeef;
 
+  /* Khai lại cho nền tối dù biểu thức y hệt: `--muted-foreground` ở đây là
+     #94a3b8 chứ không phải #64748b, nên nét ra sáng hơn nền thay vì tối hơn.
+     Giữ cùng tỉ lệ 45% để độ tương phản hai chế độ ngang nhau. */
+  --tree-line: color-mix(in oklab, var(--muted-foreground) 45%, transparent);
+
   /* Cùng 4 tông nhưng chỉnh bậc cho nền tối (không lật màu tự động) —
      đã kiểm lại trên nền #1e293b: tương phản ≥ 3:1, CVD ΔE 8.4. */
   --chart-1: #3987e5;
@@ -272,6 +287,7 @@
   --color-row-stripe: var(--row-stripe);
   --color-row-hover: var(--row-hover);
   --color-row-selected: var(--row-selected);
+  --color-tree-line: var(--tree-line);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);

@@ -85,6 +85,14 @@ export function ColumnHeaderCell<T>({
       }}
       className={cn(
         'transition-[opacity,box-shadow] duration-150 select-none',
+        //  ⚠️ Vạch kéo giãn thò 4px ra ngoài mép phải ô (`-right-1`) để dễ trúng
+        //  tay. Ở CỘT CUỐI, 4px đó thò ra ngoài cả bảng — khung cuộn đếm nó vào
+        //  `scrollWidth` và vẽ một thanh cuộn ngang cao 8px cho đúng 4px không
+        //  có gì để xem. Bảng vốn tràn thì chẳng ai nhận ra, nhưng bảng vừa khít
+        //  màn (Quỹ phép năm, 19/09/2026) thì đó là một dải xám thừa nằm dưới
+        //  hàng cuối. Cột cuối kéo giãn sang phải cũng không còn gì để kéo nên
+        //  ép nó phẳng mép không mất gì.
+        'last:[&>[role=separator]]:right-0',
         resizing
           ? 'cursor-col-resize'
           : draggable
