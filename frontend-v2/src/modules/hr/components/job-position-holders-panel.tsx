@@ -22,8 +22,8 @@ import {
   SelectValue,
 } from '@/shared/ui/select'
 import { nameInitials } from '@/shared/utils/name-initials'
+import { useDepartments } from '../hooks/use-departments'
 import { useEmployees } from '../hooks/use-employees'
-import { useJobPositionStats } from '../hooks/use-job-positions'
 import { DETAIL_TOOLBAR_STICKY } from '../utils/list-sticky'
 import { EMPLOYEE_STATUS_OPTIONS } from '../types/employee'
 import type { Employee } from '../types/employee'
@@ -106,8 +106,21 @@ export function JobPositionHoldersPanel({ positionId }: { positionId: number }) 
   //  là mỗi ký tự gõ ra một lần đặt lại trang, kể cả khi truy vấn chưa hề đổi.
   const [page, setPage] = usePageResetOnFilterChange([search, status, departmentId])
 
-  const { data: stats } = useJobPositionStats(allowed)
-  const departments = stats?.get(positionId)?.departments ?? []
+  //  ⚠️ Ô lọc phòng ban đọc DANH MỤC phòng ban, không đọc bảng đếm ngược
+  //  (19/09/2026 — endpoint `/api/job-positions/stats` đã bỏ cùng hai cột đếm ở
+  //  màn danh sách). Hệ quả phải biết: danh sách này là MỌI phòng ban chứ không
+  //  chỉ phòng đang có người giữ chức vụ, và mục chọn không còn kèm số người —
+  //  chọn nhầm một phòng không ai giữ thì bảng rỗng, và câu rỗng đã nói rõ là
+  //  "không khớp bộ lọc" chứ không phải "chưa ai giữ".
+  //
+  //  ⚠️ Tự tắt khi thiếu `department.read`: đây là tab mượn dữ liệu của hai phân
+  //  hệ khác, mà 403 trên GET không bật toast — cứ gọi thì ô chọn chỉ hiện rỗng
+  //  và người dùng tưởng công ty chưa khai phòng ban nào.
+  const { data: departmentPage } = useDepartments(
+    { page_size: 200, is_active: true },
+    { enabled: allowed && can('department', 'read') },
+  )
+  const departments = departmentPage?.items ?? []
 
   const { data, isLoading, isError } = useEmployees(
     {
@@ -132,8 +145,6 @@ export function JobPositionHoldersPanel({ positionId }: { positionId: number }) 
     )
   }
 
-  const grandTotal = departments.reduce((sum, dept) => sum + dept.count, 0)
-
   const filtering = Boolean(search || status) || departmentId !== ALL_DEPARTMENTS
 
   //  ⚠️ **CHỨC VỤ MỘT NGƯỜI THÌ KHÔNG CÓ GÌ ĐỂ TÌM.** Thanh công cụ mang ô tìm
@@ -153,11 +164,12 @@ export function JobPositionHoldersPanel({ positionId }: { positionId: number }) 
   //  bản luôn nói cùng một giá trị — khuôn của `leave-balance-page`, không phải
   //  bản chép cần dọn.
   //
-  //  ⚠️ Ô chọn phòng ban đòi **từ HAI phòng trở lên**, không phải "có phòng nào
-  //  thì bày": cả danh sách nằm gọn trong một phòng thì «Tất cả phòng ban (5)»
-  //  và «Phòng Kinh doanh (5)» trả về đúng cùng một kết quả — một ô chọn hỏi
-  //  người dùng một câu mà mọi câu trả lời đều như nhau.
-  const departmentSelect = departments.length > 1 && (
+  //  ⚠️ Mốc là **có phòng ban nào không**, không còn là "từ hai phòng trở lên"
+  //  (19/09/2026). Mốc hai phòng đúng khi danh sách này là các phòng ĐANG GIỮ
+  //  chức vụ — gom gọn trong một phòng thì mọi câu trả lời cho ra cùng kết quả.
+  //  Nay nó là cả danh mục, và ô chọn còn mang mục «(Chưa gắn phòng ban)», nên
+  //  một phòng thôi đã có ba câu trả lời khác nhau. Danh mục rỗng thì mới tắt.
+  const departmentSelect = departments.length > 0 && (
     <Select
       value={String(departmentId)}
       onValueChange={(value) => setDepartmentId(Number(value))}
@@ -166,14 +178,15 @@ export function JobPositionHoldersPanel({ positionId }: { positionId: number }) 
         <SelectValue placeholder="Phòng ban" />
       </SelectTrigger>
       <SelectContent>
-        {/*  Kèm số ngay trong mục chọn: đó là thứ dãy chip cũ nói được mà một ô
-             chọn trần thì không. */}
-        <SelectItem value={String(ALL_DEPARTMENTS)}>
-          Tất cả phòng ban ({grandTotal})
-        </SelectItem>
+        <SelectItem value={String(ALL_DEPARTMENTS)}>Tất cả phòng ban</SelectItem>
+        {/*  ⚠️ Nhóm «chưa gắn phòng ban» phải có mặt: `department_id = 0` là một
+             bộ lọc THẬT (`apply_filters` so khớp chính xác), và đó chính là nhóm
+             người quản lý danh mục đi tìm để gắn cho đủ. Danh mục phòng ban
+             không có dòng nào mang id 0 nên phải tự thêm. */}
+        <SelectItem value="0">(Chưa gắn phòng ban)</SelectItem>
         {departments.map((dept) => (
           <SelectItem key={dept.id} value={String(dept.id)}>
-            {dept.name} ({dept.count})
+            {dept.name}
           </SelectItem>
         ))}
       </SelectContent>

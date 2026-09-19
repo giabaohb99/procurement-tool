@@ -153,10 +153,6 @@ export const queryKeys = {
     /** Danh mục Chức vụ (duoc-CR-320) — nguồn ô chọn «Vị trí / Chức vụ». */
     jobPositions: (params?: Record<string, unknown>) =>
       ['hr', 'job-positions', params ?? {}] as const,
-    //  Đếm ngược người giữ từng chức vụ (duoc-CR-322). MỘT khóa cho cả bảng —
-    //  mỗi ô trong cột «Đang giữ» gọi cùng hook này, react-query gộp lại thành
-    //  một lời gọi. Khóa theo từng dòng là 13 request cho 13 dòng.
-    jobPositionStats: () => ['hr', 'job-positions', 'stats'] as const,
     company: (id: number) => ['hr', 'companies', id] as const,
     roles: (params?: Record<string, unknown>) => ['hr', 'roles', params ?? {}] as const,
     /** Danh sách entity/action/scope để dựng ma trận — gần như bất biến. */

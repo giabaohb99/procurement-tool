@@ -5,11 +5,6 @@ import type { CrudConfig } from '@/shared/crud'
 import { CrudRecordCard } from '@/shared/crud/crud-record-card'
 import { Badge } from '@/shared/ui/badge'
 import type { IdentityChip } from '@/shared/ui/record-identity-card'
-import {
-  JobPositionDepartments,
-  JobPositionHolderCount,
-  JobPositionHoldersLine,
-} from '../components/job-position-holders-cell'
 import { JobPositionHoldersPanel } from '../components/job-position-holders-panel'
 import type { JobPosition } from '../types/job-position'
 
@@ -23,7 +18,10 @@ import type { JobPosition } from '../types/job-position'
 function jobPositionChips(r: JobPosition, quietWhenNormal = false): IdentityChip[] {
   const normal = r.is_active && quietWhenNormal
   return [
-    { icon: Hash, text: r.code, tone: 'code' },
+    //  ⚠️ Nhận diện bằng **ID**, không phải mã (19/09/2026). Mã `cv-xxx` là thứ
+    //  tệp CSV nhập/xuất dùng để trỏ dòng, không phải thứ người dùng gọi tên một
+    //  chức vụ — bày nó ra chỉ chiếm chỗ. Mã vẫn sửa/đọc được trong biểu mẫu.
+    { icon: Hash, text: String(r.id), tone: 'code' },
     ...(normal
       ? []
       : [
@@ -103,48 +101,43 @@ export const JOB_POSITION_CRUD_CONFIG: CrudConfig<JobPosition> = {
       ],
     },
   ],
-  getItemName: (r) => `${r.name} (${r.code})`,
+  getItemName: (r) => `${r.name} (#${r.id})`,
   deleteWarning:
     'Chức vụ đang có người giữ thì không xóa được. Xóa rồi thì hồ sơ cũ mất chức danh. ' +
     'Muốn dẹp thì bỏ tick «Đang dùng»: chức vụ biến khỏi ô chọn nhưng hồ sơ cũ vẫn đọc được.',
   chips: (r) => jobPositionChips(r),
-  //  Khổ hẹp: THẺ thay bảng. Bảng khai 6 cột, bề rộng tự nhiên ~1160px — trên
-  //  máy 390px chỉ thấy *Mã chức vụ* (còn bị cắt đuôi thành «truong-phong-…»)
-  //  và *Tên chức vụ*, tức người ta phải cuộn ngang mới biết chức vụ đó có ai
-  //  giữ hay không — mà đó chính là câu hỏi họ mở màn này ra để trả lời.
+  //  Khổ hẹp: THẺ thay bảng, để *Tên chức vụ* và *Ghi chú* không phải cuộn ngang
+  //  mới đọc được.
   //
   //  ⚠️ Thẻ chỉ nói cái BẤT THƯỜNG: huy hiệu trạng thái tắt đi khi *Đang dùng*
   //  (13/13 dòng hiện tại đều vậy, in ra là mười ba dòng giống hệt nhau ăn mỗi
   //  dòng một hàng của thẻ). Trang chi tiết thì ngược lại, vẫn bày đủ — ở đó
   //  chỉ có MỘT bản ghi nên không có gì lặp, và người đang sửa cần đọc được cả
   //  giá trị mặc định.
-  //
-  //  Hai cột đếm ngược gộp thành MỘT dòng chữ («3 người · Kế toán, Kinh doanh»)
-  //  thay vì hai cụm ảnh: trên thẻ không có tiêu đề cột nào để phân biệt cụm
-  //  nào là người, cụm nào là phòng ban.
   mobileCard: (r) => (
     <CrudRecordCard
       title={r.name}
       subtitle={
-        <>
-          <JobPositionHoldersLine positionId={r.id} />
-          {/*  Ghi chú là chữ tự do, không chặn độ dài ở tầng nhập — cắt ĐÚNG MỘT
-               dòng bằng «…» (luật chung của thẻ danh mục, khách chốt
-               10/09/2026). Đầy đủ thì đọc ở trang chi tiết. */}
-          {r.note && <span className="block truncate">{r.note}</span>}
-        </>
+        //  Ghi chú là chữ tự do, không chặn độ dài ở tầng nhập — cắt ĐÚNG MỘT
+        //  dòng bằng «…» (luật chung của thẻ danh mục, khách chốt 10/09/2026).
+        //  Đầy đủ thì đọc ở trang chi tiết.
+        r.note ? <span className="block truncate">{r.note}</span> : undefined
       }
       chips={jobPositionChips(r, true)}
     />
   ),
   columns: [
+    //  ⚠️ Cột nhận diện là **ID**, không phải mã (19/09/2026). Mã `cv-xxx` dài
+    //  bằng cả tên chức vụ, hay bị cắt đuôi («truong-phong-…») và không ai gọi
+    //  một chức vụ bằng nó — nó chỉ là khóa để tệp CSV trỏ vào dòng. Mã vẫn nằm
+    //  trong biểu mẫu, vẫn lọc được ở bộ lọc nâng cao, chỉ không chiếm cột nữa.
     {
-      key: 'code',
-      header: 'Mã chức vụ',
-      width: 170,
+      key: 'id',
+      header: 'ID',
+      width: 80,
       sortable: true,
       hideable: false,
-      cell: (r) => <span className="font-semibold text-primary">{r.code}</span>,
+      cell: (r) => <span className="font-semibold text-primary">{r.id}</span>,
     },
     {
       key: 'name',
@@ -153,27 +146,6 @@ export const JOB_POSITION_CRUD_CONFIG: CrudConfig<JobPosition> = {
       sortable: true,
       hideable: false,
       cell: (r) => <span className="font-medium">{r.name}</span>,
-    },
-    //  Hai cột ĐẾM NGƯỢC (duoc-CR-322) — xem `job-position-holders-cell.tsx`.
-    //  Chúng không đọc `r`, chỉ lấy `r.id` rồi tra vào một truy vấn chung; đừng
-    //  đổi thành `sortable` vì DataTable sắp theo giá trị của `r`, mà ở đây
-    //  `r` không hề chứa con số đang hiện.
-    {
-      key: 'holder_count',
-      header: 'Đang giữ',
-      //  Xếp chồng ảnh nên căn TRÁI: căn phải thì cụm vòng tròn dính mép cột và
-      //  cái «+N» ở cuối chuỗi lại là thứ nằm sát đường kẻ, đọc như một cột số.
-      width: 150,
-      cell: (r) => <JobPositionHolderCount positionId={r.id} />,
-    },
-    {
-      key: 'holder_departments',
-      header: 'Phòng ban đang giữ',
-      //  Hẹp lại và BỎ `wrap` (08/09/2026): ô này nay là một dãy vòng tròn chữ
-      //  viết tắt chứ không còn là danh sách tên phòng xuống dòng — để rộng thì
-      //  cụm ảnh dạt về trái và chừa hai phần ba ô trống.
-      width: 170,
-      cell: (r) => <JobPositionDepartments positionId={r.id} />,
     },
     { key: 'note', header: 'Ghi chú', width: 280, wrap: true, minWidth: 180, cell: (r) => r.note || '—' },
     {
