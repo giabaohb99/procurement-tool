@@ -9,7 +9,9 @@ import {
   RefreshCw,
   Save,
   Send,
+  SlidersHorizontal,
   Sparkles,
+  Store,
 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -38,14 +40,19 @@ import type { SettingField, SettingGroup, SettingSecret } from '../types/setting
 import { buildSettingValues } from '../utils/build-setting-values'
 
 /**
- * Bốn TAB của trang Cấu hình. Ba tab đầu bám đúng `SettingGroup` backend trả về;
- * tab *Trợ lý AI* không có ô nhập nào, chỉ một nút chạy việc nền.
+ * Các TAB của trang Cấu hình, mỗi tab bám đúng một `SettingGroup` backend trả về.
  *
  * ⚠️ **Tách tab ngày 14/09/2026** (duoc-CR-397). Trước đó sáu khối xếp dọc một
  * mạch, cuộn hơn ba màn hình: đổi một ô SMTP phải lăn qua cả khối lưu trữ và
  * bảng mẫu email. Khối *Mẫu email thông báo* đã ra TRANG RIÊNG
  * (`/system/email-templates`) chứ không thành tab — nó là nội dung soạn thảo,
  * không phải thông số, và tự lưu lấy chứ không dùng nút *Lưu cấu hình* chung.
+ *
+ * ⚠️ Ba tab cuối thêm ở bao-CR-429: đây là các thông số trước kia chỉ sửa được
+ * bằng cách vào máy chủ sửa tệp môi trường rồi dựng lại dịch vụ. Hai hệ ngoài
+ * tách thành HAI tab chứ không gộp một tab «Đồng bộ» — mỗi hệ có cầu dao và mã
+ * đăng nhập riêng, xếp chung một thẻ thì lúc cần tắt gấp một hệ rất dễ tắt nhầm
+ * hệ kia.
  */
 const TABS: {
   value: string
@@ -80,7 +87,31 @@ const TABS: {
     value: 'assistant',
     label: 'Trợ lý AI',
     icon: Sparkles,
-    description: 'Chỉ mục tìm kiếm tài liệu HDSD + FAQ dùng cho Trợ lý AI.',
+    group: 'ai',
+    description:
+      'Khóa API nhà cung cấp model, model dùng cho từng loại câu hỏi và trần chi phí mỗi ngày.',
+  },
+  {
+    value: 'sync',
+    label: 'App đặt xe (cũ)',
+    icon: RefreshCw,
+    group: 'sync',
+    description:
+      'Đường nối hai chiều với app đặt xe & duyệt dấu cũ: cầu dao bật tắt, địa chỉ, mã ký chung.',
+  },
+  {
+    value: 'pos365',
+    label: 'POS365 (Điểm cà phê)',
+    icon: Store,
+    group: 'pos365',
+    description: 'Cửa hàng POS365 mà hệ thống kéo đơn về: địa chỉ, tài khoản và mã thanh toán.',
+  },
+  {
+    value: 'system',
+    label: 'Chung',
+    icon: SlidersHorizontal,
+    group: 'system',
+    description: 'Địa chỉ giao diện dùng trong email, số ngày giữ thông báo và số bản sao lưu.',
   },
 ]
 
@@ -184,14 +215,16 @@ export function SettingPage() {
 
   //  Tab đang xem ghi lên URL (`?tab=`) nên gửi link cho người khác vẫn ra đúng
   //  chỗ, và quay lại từ trang con không rơi về tab đầu.
-  //  Tab *Trợ lý AI* chỉ hiện với người nạp lại chỉ mục được — nó không có ô
-  //  nhập nào, bày ra cho người không bấm được là một tab rỗng.
-  const visibleTabs = TABS.filter((item) => item.value !== 'assistant' || canReindex)
+  //  ⚠️ Tab *Trợ lý AI* TỪNG bị ẩn với người không có `help_article.write`, vì
+  //  hồi đó nó chỉ có mỗi nút nạp lại chỉ mục. Từ bao-CR-429 nó chứa khóa API và
+  //  trần chi phí, tức là việc của người quản trị cấu hình — ẩn nó đi thì người
+  //  đúng vai lại không thấy. Nút nạp chỉ mục vẫn gác riêng theo quyền cũ.
+  const visibleTabs = TABS
   const current = visibleTabs.find((item) => item.value === tab) ?? visibleTabs[0]
 
   //  Số ô đã sửa mà CHƯA lưu. Bắt buộc phải bày ra từ khi chia tab: sửa ở tab
   //  Email rồi chuyển sang tab Lưu trữ thì thay đổi kia biến mất khỏi tầm mắt,
-  //  mà nút Lưu lại là nút CHUNG cho cả bốn tab — không có con số này thì người
+  //  mà nút Lưu lại là nút CHUNG cho mọi tab — không có con số này thì người
   //  dùng hoặc quên bấm Lưu, hoặc bấm Lưu mà không biết mình đang lưu những gì.
   const dirtyCount = Object.keys(edited).length + Object.keys(secretInputs).length
 
@@ -279,8 +312,12 @@ export function SettingPage() {
                    liền mạch ngay dưới phần khai máy chủ gửi. */}
               {item.value === 'email' && <EmailExclusionPanel canWrite={canWrite} />}
 
-              {item.value === 'assistant' && (
-                <FormCard title="Trợ lý AI" icon={Sparkles} iconClassName="text-muted-foreground">
+              {item.value === 'assistant' && canReindex && (
+                <FormCard
+                  title="Chỉ mục tài liệu"
+                  icon={Sparkles}
+                  iconClassName="text-muted-foreground"
+                >
                   <div className="flex flex-wrap items-center gap-2">
                     <Button
                       variant="outline"
@@ -326,8 +363,8 @@ interface SettingGroupCardProps {
 /**
  * Một NHÓM ô cấu hình: ô thường + ô bí mật + nút thử kết nối của nhóm đó.
  *
- * Tách khỏi `SettingPage` khi chia tab (duoc-CR-397) — thân trang có bốn tab, để
- * nguyên khối này ở giữa thì đọc không ra đâu là khung tab đâu là ruột nhóm.
+ * Tách khỏi `SettingPage` khi chia tab (duoc-CR-397) — thân trang có nhiều tab,
+ * để nguyên khối này ở giữa thì đọc không ra đâu là khung tab đâu là ruột nhóm.
  */
 function SettingGroupCard({
   group,

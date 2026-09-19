@@ -136,12 +136,18 @@ def should_capture_response(method: str, status_code: int) -> bool:
 #  `tab_login_session` nằm trong danh sách vì `last_seen_at` bị dập mỗi lời gọi
 #  API: ghi lại nó nghĩa là mỗi request đẻ một dòng thay đổi, rồi dòng đó lại là
 #  một thay đổi. `tab_notification` thì mỗi thao tác sinh vài chục dòng chuông.
+#  `tab_setting` nằm đây vì lý do KHÁC hẳn bốn bảng trên: không phải vòng lặp,
+#  không phải ồn ào, mà vì lớp tự động ghi theo tên CỘT còn bảng này là
+#  KHÓA-GIÁ TRỊ. Dòng tự động đọc ra "svalue: false -> true" — đúng nhưng vô
+#  nghĩa, vì cái người đi tra cần biết là khóa nào. Nó tự ghi lấy bằng
+#  `change_tracker.record_change()` với `field` là `skey` thật.
 NO_LOG_TABLES = frozenset({
     "tab_audit_log",
     "tab_change_log",
     "tab_request_log",
     "tab_login_session",
     "tab_notification",
+    "tab_setting",
 })
 
 # --------------------------------------------------------------------------

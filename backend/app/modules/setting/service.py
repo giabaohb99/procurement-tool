@@ -1,10 +1,12 @@
 import smtplib
 from email.mime.text import MIMEText
 
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.core import app_settings
 from app.core.audit import record
+from app.core.change_tracker import record_change
 
 from .model import Setting
 
@@ -26,16 +28,161 @@ FIELDS = [
              "tự phân bổ nhân sự (phiếu sang \"Đã điều phối\"). "
              "TẮT: quay về luồng cũ — trưởng bộ phận duyệt là phân bổ nhân sự ngay, bỏ hẳn bước thứ 2. "
              "Đổi lúc nào cũng được, có hiệu lực ngay, không ảnh hưởng phiếu đã xử lý xong."},
+    {"key": "ai_enabled", "group": "ai", "type": "bool", "label": "Bật trợ lý AI",
+     "hint": "TẮT thì mọi đường /api/assistant trả 403 và ô chat biến mất khỏi giao diện. "
+             "Bật mà chưa dán key nào thì trợ lý vẫn báo chưa cấu hình."},
+    {"key": "ai_default_provider", "group": "ai", "type": "select",
+     "label": "Nhà cung cấp mặc định",
+     "options": [{"value": "claude", "label": "Claude (Anthropic)"},
+                 {"value": "gemini", "label": "Gemini (Google)"}],
+     "hint": "Dùng khi câu hỏi không chỉ định nhà. Nhà được chọn mà chưa có key thì "
+             "hệ thống tự rơi sang nhà nào đang có key."},
+    {"key": "ai_claude_model", "group": "ai", "type": "str", "label": "Model Claude",
+     "hint": "Để trống = claude-sonnet-5.",
+     "doc_url": "https://docs.claude.com/en/docs/about-claude/models/overview"},
+    {"key": "ai_gemini_model", "group": "ai", "type": "str", "label": "Model Gemini",
+     "hint": "Để trống = gemini-flash-latest. Đuôi \"-latest\" là bí danh TỰ NHẢY phiên bản; "
+             "chạy thật nên ghim hẳn một bản cụ thể.",
+     "doc_url": "https://ai.google.dev/gemini-api/docs/models"},
+    {"key": "ai_lookup_model", "group": "ai", "type": "str", "label": "Model rẻ cho câu tra cứu",
+     "hint": "Câu tra cứu/hỏi chung sẽ đi bằng model này cho đỡ tốn; câu tư vấn vẫn dùng model "
+             "chính. Để trống = dùng chung model chính. Phải là model CÙNG NHÀ với nhà mặc định."},
+    {"key": "ai_daily_msg_limit", "group": "ai", "type": "int",
+     "label": "Trần số câu hỏi mỗi người mỗi ngày",
+     "hint": "Chặn một tài khoản đốt token vô hạn — mỗi lượt hỏi nhồi cả gói tri thức lẫn lịch "
+             "sử hội thoại nên đắt hơn vẻ ngoài của nó. Đặt 0 = không giới hạn."},
+    {"key": "email_workflow_enabled", "group": "email", "type": "bool",
+     "label": "Gửi email cho luồng duyệt",
+     "hint": "Ngoài chuông trong hệ thống thì gửi thêm thư cho từng người duyệt. Vốn chỉ bật ở "
+             "môi trường thử; bật ở hệ thật là mỗi lượt duyệt đẻ một thư cho mỗi người nhận."},
+    {"key": "email_test_manager", "group": "email", "type": "str",
+     "label": "Hộp thư thử — nhóm quản lý",
+     "hint": "Đặt hai ô này thì thư của luồng duyệt không đi tới địa chỉ thật mà dồn về đây, "
+             "chia theo vai trò người nhận. Bỏ trống cả hai = gửi đúng địa chỉ thật."},
+    {"key": "email_test_staff", "group": "email", "type": "str",
+     "label": "Hộp thư thử — nhóm nhân viên"},
+    #  Cụm đồng bộ với app đặt xe / duyệt dấu cũ. Xem doc/dong-bo-dat-xe-duyet-dau/.
+    {"key": "sync_datxe_enabled", "group": "sync", "type": "bool",
+     "label": "Bật đồng bộ với app đặt xe cũ",
+     "hint": "TẮT là ngắt cả hai chiều ngay lập tức: app cũ gọi vào bị từ chối, ERP cũng thôi "
+             "gọi ra. Đây là cầu dao dùng khi đường nối giữa hai hệ trục trặc."},
+    {"key": "sync_legacy_api_base", "group": "sync", "type": "str",
+     "label": "Địa chỉ gốc API của app cũ",
+     "hint": "Ví dụ https://... — không kèm đuôi đường dẫn. Trống thì coi như chưa cấu hình."},
+    {"key": "sync_datxe_auto_create", "group": "sync", "type": "bool",
+     "label": "Tự tạo xe / tài xế chưa có trong danh mục",
+     "hint": "BẬT: tra danh mục không ra thì tự đẻ một dòng mới và gắn cờ cần soát lại trên sổ "
+             "đồng bộ. TẮT: để trống ô đó và ghi cảnh báo. Bật rồi phải có người đi soát."},
+    {"key": "legacy_firebase_db_url", "group": "sync", "type": "str",
+     "label": "Địa chỉ Firebase Realtime Database của app cũ",
+     "hint": "Nơi đọc danh mục xe / tài xế của app cũ. Thiếu ô này hoặc thiếu khóa bên dưới thì "
+             "việc tra danh mục nằm im, phiếu vẫn nhận được nhưng thiếu ô xe và tài xế."},
+    #  Cụm POS365 (Điểm cà phê). Xem doc/erp/diem-ca-phe/.
+    {"key": "pos365_base_url", "group": "pos365", "type": "str",
+     "label": "Địa chỉ cửa hàng POS365",
+     "hint": "Trống thì mọi lời gọi POS365 dừng ngay trước khi ra khỏi máy."},
+    {"key": "pos365_username", "group": "pos365", "type": "str", "label": "Tài khoản POS365"},
+    {"key": "pos365_payment_account_id", "group": "pos365", "type": "int",
+     "label": "Mã tài khoản thanh toán «Trừ điểm»",
+     "hint": "Chỉ đơn hàng POS365 đi qua tài khoản này mới được ghi vào sổ điểm. Điền sai số là "
+             "nhặt nhầm đơn của phương thức khác, hoặc không nhặt được đơn nào."},
+    #  Thông số chung.
+    {"key": "frontend_url", "group": "system", "type": "str",
+     "label": "Địa chỉ giao diện người dùng",
+     "hint": "Dùng để dựng đường dẫn tuyệt đối trong email (nút bấm vào phiếu, link đặt lại mật "
+             "khẩu). Điền sai thì thư vẫn gửi nhưng bấm nút trong thư đi lạc."},
+    {"key": "notification_keep_days", "group": "system", "type": "int",
+     "label": "Số ngày giữ thông báo trong hệ thống",
+     "hint": "Thông báo cũ hơn số ngày này bị vòng dọn dẹp xóa đi. Để trống hoặc 0 thì hệ thống "
+             "dùng lại mức mặc định chứ không xóa sạch."},
+    {"key": "backup_keep", "group": "system", "type": "int",
+     "label": "Số bản sao lưu cơ sở dữ liệu giữ lại",
+     "hint": "Giữ bấy nhiêu bản mới nhất, cũ hơn thì xóa cả tệp lẫn dòng ghi. Chạy hai lần mỗi "
+             "ngày nên 30 bản là khoảng mười lăm ngày."},
 ]
 # Trường bí mật: NHẬP được (mã hóa lưu DB), KHÔNG hiển thị lại
+#
+#  CỐ Ý tách khỏi `FIELDS` chứ không gộp một mảng cho gọn: `get_all()` gắn
+#  `value` cho mảng trên và chỉ gắn `configured` cho mảng này. Gộp lại thì chỉ
+#  còn một câu `if` đứng giữa khóa API và cửa đọc công khai, và ngày ai đó dọn
+#  dẹp vòng lặp ấy sẽ không thấy mình vừa gỡ mất cái gì.
 SECRET_FIELDS = [
     {"key": "smtp_password", "group": "email", "label": "SMTP App Password"},
     {"key": "r2_access_key_id", "group": "storage", "label": "R2 Access Key ID"},
     {"key": "r2_secret_access_key", "group": "storage", "label": "R2 Secret Key"},
+    {"key": "anthropic_api_key", "group": "ai", "label": "Claude API Key",
+     "hint": "Đăng ký ở Anthropic Console rồi dán key vào đây. Để trống thì Claude coi như "
+             "chưa cấu hình và trợ lý chuyển sang nhà còn lại.",
+     "doc_url": "https://console.anthropic.com/settings/keys"},
+    {"key": "gemini_api_key", "group": "ai", "label": "Google Gemini API Key",
+     "hint": "Lấy ở Google AI Studio. Key này còn dùng cho phần nhúng tài liệu của tìm kiếm "
+             "thông minh, không riêng phần hỏi đáp.",
+     "doc_url": "https://aistudio.google.com/apikey"},
+    {"key": "sync_shared_secret", "group": "sync", "label": "Mã ký chung với app đặt xe cũ",
+     "hint": "Hai hệ ký lời gọi của nhau bằng mã này. Đổi ở đây thì phải đổi ĐỒNG THỜI bên app "
+             "cũ, lệch nhau là mọi lời gọi qua lại bị từ chối."},
+    {"key": "legacy_firebase_secret", "group": "sync",
+     "label": "Khóa đọc Firebase của app đặt xe cũ",
+     "hint": "Khóa chỉ dùng để ĐỌC danh mục xe / tài xế bên app cũ."},
+    {"key": "pos365_password", "group": "pos365", "label": "Mật khẩu tài khoản POS365",
+     "hint": "Sai mật khẩu thì các vòng chạy nền dừng ở lần đăng nhập đầu tiên chứ không thử "
+             "lại liên tục — POS365 khóa tài khoản nếu bị gõ sai nhiều lần."},
 ]
 
 _FIELD_KEYS = {f["key"]: f for f in FIELDS}
 _SECRET_KEYS = {s["key"] for s in SECRET_FIELDS}
+_LABELS = {**{f["key"]: f["label"] for f in FIELDS},
+           **{s["key"]: s["label"] for s in SECRET_FIELDS}}
+
+
+def _label_of(key: str) -> str:
+    return _LABELS.get(key, key)
+
+
+_TRUTHY = {"true", "1", "yes", "on"}
+_FALSY = {"false", "0", "no", "off", ""}
+
+
+def _normalize(field: dict, val) -> str:
+    """Đưa giá trị người dùng gửi về đúng chuỗi sẽ nằm dưới DB, chặn thứ vô nghĩa.
+
+    Đây là cửa PUT nhận `values: dict` tự do, không có schema Pydantic đứng giữa.
+    Không kiểm ở đây thì giá trị hỏng đi thẳng xuống bảng rồi `app_settings._cast`
+    mới gặp nó — mà `_cast` nuốt lỗi: số gõ sai thành `0`, chữ gõ sai thành `False`.
+
+    Với trần câu hỏi AI, `0` lại đang MANG NGHĨA "không giới hạn". Gõ nhầm
+    "50 câu" vào ô đó sẽ không báo gì cả, chỉ lặng lẽ mở toang trần chi phí — và
+    chỗ phát hiện ra là hóa đơn cuối tháng.
+    """
+    kind = field.get("type", "str")
+    nhan = field["label"]
+    if kind in ("int", "select") and str(val).strip() == "":
+        #  Ô để TRỐNG không phải giá trị hỏng — đó là "bỏ đặt, dùng lại `.env`"
+        #  (xem `app_settings.get`: chuỗi rỗng dưới DB thì rơi về dự phòng).
+        #  Màn hình gửi lại MỌI ô mỗi lần bấm Lưu, nên bắt lỗi ở đây sẽ chặn cả
+        #  lần lưu chỉ vì một ô người dùng chưa từng đụng tới.
+        return ""
+    if kind == "int":
+        try:
+            return str(int(str(val).strip()))
+        except (TypeError, ValueError):
+            raise HTTPException(400, f"\"{nhan}\" phải là số nguyên") from None
+    if kind == "bool":
+        if isinstance(val, bool):
+            return "true" if val else "false"
+        raw = str(val).strip().lower()
+        if raw in _TRUTHY:
+            return "true"
+        if raw in _FALSY:
+            return "false"
+        raise HTTPException(400, f"\"{nhan}\" chỉ nhận bật hoặc tắt")
+    if kind == "select":
+        allowed = [o["value"] for o in field.get("options", [])]
+        raw = str(val).strip()
+        if raw not in allowed:
+            raise HTTPException(400, f"\"{nhan}\" phải là một trong: {', '.join(allowed)}")
+        return raw
+    return str(val)
 
 
 def get_all() -> dict:
@@ -44,27 +191,51 @@ def get_all() -> dict:
     return {"fields": fields, "secrets": secrets}
 
 
-def _upsert(db: Session, key: str, raw: str, user_id: int):
+def _upsert(db: Session, key: str, raw: str, user_id: int, masked: bool = False) -> bool:
+    """Ghi một khóa, kèm dòng nhật ký trước/sau. Trả về có thật sự đổi không.
+
+    `tab_setting` nằm trong `NO_LOG_TABLES` nên lớp ORM không ghi hộ — xem lời
+    giải ở đó. Đổi lại, chỗ này phải tự bắt giá trị cũ TRƯỚC khi gán đè.
+
+    Khóa bí mật thì ghi dòng nhật ký nhưng CHE giá trị. Dưới DB nó đã là bản mã,
+    chép bản mã vào một bảng chỉ-thêm chẳng ai đọc được mà vẫn là bí mật nằm
+    thêm một chỗ nữa; thứ đáng ghi lại là *đã có người đổi khóa này, lúc nào*.
+    """
     row = db.query(Setting).filter(Setting.skey == key).first()
+    before = row.svalue if row else None
+    if before == raw:
+        #  Màn hình gửi lại MỌI ô mỗi lần bấm Lưu, nên không lọc thì mỗi lần lưu
+        #  đẻ một dòng nhật ký cho từng khóa và quyển sổ hết đọc được.
+        return False
     if row:
         row.svalue = raw
         row.updated_by = user_id
     else:
-        db.add(Setting(skey=key, svalue=raw, created_by=user_id, updated_by=user_id))
+        row = Setting(skey=key, svalue=raw, created_by=user_id, updated_by=user_id)
+        db.add(row)
+        db.flush()
+    record_change(db, Setting.__tablename__, row.id, key, before, raw, masked=masked)
+    return True
 
 
 def save(db: Session, values: dict, user_id: int) -> dict:
+    changed: list[str] = []
     for key, val in (values or {}).items():
         if key in _FIELD_KEYS:
-            raw = "true" if val is True else ("false" if val is False else str(val))
-            _upsert(db, key, raw, user_id)
+            if _upsert(db, key, _normalize(_FIELD_KEYS[key], val), user_id):
+                changed.append(key)
         elif key in _SECRET_KEYS:
             # Rỗng = giữ nguyên (không ghi đè). Có giá trị = mã hóa rồi lưu.
             if str(val).strip():
-                _upsert(db, key, app_settings.encrypt(str(val)), user_id)
+                if _upsert(db, key, app_settings.encrypt(str(val)), user_id, masked=True):
+                    changed.append(key)
     db.commit()
     app_settings.refresh()
-    record(db, user_id, "setting", 0, "update", "Cập nhật cấu hình hệ thống")
+    #  Kể tên khóa ngay trong dòng audit: dòng thời gian bày câu này, và "đã đổi
+    #  endpoint lưu trữ" với "đã đổi số ngày giữ thông báo" là hai mức nghiêm
+    #  trọng khác nhau — phải thấy được mà không cần mở nhật ký chi tiết.
+    detail = ", ".join(_label_of(k) for k in changed) if changed else "không ô nào đổi"
+    record(db, user_id, "setting", 0, "update", f"Cập nhật cấu hình hệ thống: {detail}")
     return get_all()
 
 

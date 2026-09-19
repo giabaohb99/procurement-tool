@@ -12,6 +12,7 @@ from typing import Protocol, runtime_checkable
 
 import requests
 
+from app.core import app_settings
 from app.core.config import settings
 
 _BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:batchEmbedContents"
@@ -95,7 +96,7 @@ def get_embedder() -> Embedder:
     if _embedder is None:
         _embedder = GeminiEmbedder(
             model=settings.AI_EMBED_MODEL,
-            api_key=settings.GEMINI_API_KEY,
+            api_key=app_settings.get("gemini_api_key"),
             dim=settings.AI_EMBED_DIM,
         )
     return _embedder

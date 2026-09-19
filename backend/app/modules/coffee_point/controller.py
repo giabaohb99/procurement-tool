@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.core.audit import record as audit_record
 from app.core.auth import get_current_user, get_perm_profile, require
-from app.core.config import settings
+from app.core import app_settings
 from app.core.base_controller import apply_filters, pagination
 from app.core.database import get_db
 from app.core.response import success
@@ -401,7 +401,7 @@ def create_self_order(data: SelfOrderIn, db: Session = Depends(get_db),
     try:
         created = client.create_order(
             partner_id=member.pos_partner_id, items=items,
-            account_id=settings.POS365_PAYMENT_ACCOUNT_ID, description=note)
+            account_id=app_settings.get("pos365_payment_account_id"), description=note)
     except Pos365Error as e:
         raise HTTPException(502, f"POS365 từ chối đơn: {e}")
 
@@ -533,8 +533,8 @@ def pos_dashboard(days: int = Query(7, ge=1, le=31),
     except Pos365Error as e:
         raise HTTPException(502, str(e))
     data = service.build_pos_dashboard(
-        orders, accounts, settings.POS365_PAYMENT_ACCOUNT_ID, days=days)
-    data["store_url"] = settings.POS365_BASE_URL
+        orders, accounts, app_settings.get("pos365_payment_account_id"), days=days)
+    data["store_url"] = app_settings.get("pos365_base_url")
     return success(data)
 
 

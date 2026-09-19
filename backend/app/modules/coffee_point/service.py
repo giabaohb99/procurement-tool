@@ -14,7 +14,7 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.core.config import settings
+from app.core import app_settings
 from app.modules.employee.model import Employee
 from app.modules.sync_log.model import SyncLog
 from app.modules.sync_log.registry import SOURCE_POS365
@@ -371,7 +371,7 @@ def run_pull_orders(db: Session, client, actor_id: int = 0, page_size: int = 50,
     Danh sách POS365 mới nhất trước (theo spec mẫu); dừng khi cả trang đã cũ hơn
     mốc hoặc hết `max_pages` (chặn kéo vô hạn khi dữ liệu bất thường).
     """
-    account_id = settings.POS365_PAYMENT_ACCOUNT_ID
+    account_id = app_settings.get("pos365_payment_account_id")
     cutoff = _pull_cutoff(db)
     started = now_str()
     stats = {"fetched": 0, "written": 0, "skipped": 0,

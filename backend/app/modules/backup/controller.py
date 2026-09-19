@@ -31,7 +31,7 @@ def list_(pg: dict = Depends(pagination), db: Session = Depends(get_db),
     q = db.query(DbBackup)
     total = q.count()
     items = q.order_by(DbBackup.id.desc()).offset(pg["offset"]).limit(pg["limit"]).all()
-    return success({"total": total, "items": [_out(db, r) for r in items], "keep": service.KEEP})
+    return success({"total": total, "items": [_out(db, r) for r in items], "keep": service.keep_count()})
 
 
 @router.post("/run")

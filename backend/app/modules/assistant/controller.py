@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFil
 from sqlalchemy.orm import Session
 
 from app.core.auth import require
+from app.core import app_settings
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.response import success
@@ -25,7 +26,7 @@ router = APIRouter(prefix="/api/assistant", tags=["assistant"])
 
 
 def _guard():
-    if not settings.AI_ENABLED:
+    if not app_settings.get("ai_enabled"):
         raise HTTPException(status_code=403, detail="Trợ lý AI chưa được bật (AI_ENABLED)")
 
 
@@ -35,7 +36,7 @@ def list_providers(user=Depends(require("assistant", "read"))):
     _guard()
     return success({
         "providers": configured_providers(),
-        "default_provider": settings.AI_DEFAULT_PROVIDER,
+        "default_provider": app_settings.get("ai_default_provider"),
     })
 
 

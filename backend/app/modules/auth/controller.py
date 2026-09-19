@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.core.auth import (SESSION_EXPIRED_MESSAGE, create_access_token, create_refresh_token,
                            decode_token, decode_token_claims, get_current_user,
                            get_user_permissions, hash_password, verify_password)
+from app.core import app_settings
 from app.core.audit import record as audit_record
 from app.core.client_ip import get_client_ip
 from app.core.config import settings
@@ -352,7 +353,7 @@ def forgot_password(request: Request, data: schema.ForgotPasswordInput, backgrou
     from app.core.auth import create_reset_token
     token = create_reset_token(user.id)
     
-    frontend_url = settings.FRONTEND_URL if hasattr(settings, 'FRONTEND_URL') else "http://localhost:5173"
+    frontend_url = app_settings.get("frontend_url") or "http://localhost:5173"
     reset_link = f"{frontend_url}/reset-password?token={token}"
     
     from app.modules.notification.service import send_password_reset_email

@@ -19,7 +19,7 @@ import logging
 
 import requests
 
-from app.core.config import settings
+from app.core import app_settings
 
 LOGGER = logging.getLogger(__name__)
 
@@ -29,8 +29,8 @@ READ_TIMEOUT = 8
 
 
 def is_configured() -> bool:
-    return bool((settings.LEGACY_FIREBASE_DB_URL or "").strip()
-                and (settings.LEGACY_FIREBASE_SECRET or "").strip())
+    return bool((app_settings.get("legacy_firebase_db_url") or "").strip()
+                and (app_settings.get("legacy_firebase_secret") or "").strip())
 
 
 def query_node(path: str, *, order_by: str, start_at, limit: int = 0) -> dict | None:
@@ -74,9 +74,10 @@ def read_node(path: str, *, params: dict | None = None) -> dict | None:
     """
     if not is_configured():
         return None
-    base = settings.LEGACY_FIREBASE_DB_URL.strip().rstrip("/")
+    base = (app_settings.get("legacy_firebase_db_url") or "").strip().rstrip("/")
     url = f"{base}/{path.strip('/')}.json"
-    query = {"auth": settings.LEGACY_FIREBASE_SECRET.strip(), **(params or {})}
+    query = {"auth": (app_settings.get("legacy_firebase_secret") or "").strip(),
+             **(params or {})}
     try:
         resp = requests.get(url, params=query, timeout=READ_TIMEOUT)
         resp.raise_for_status()

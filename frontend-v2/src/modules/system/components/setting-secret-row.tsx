@@ -4,6 +4,8 @@ import { Label } from '@/shared/ui/label'
 
 import type { SettingSecret } from '../types/setting'
 
+import { SettingDocLink } from './setting-doc-link'
+
 interface SettingSecretRowProps {
   secret: SettingSecret
   value: string
@@ -33,18 +35,23 @@ export function SettingSecretRow({
 
   return (
     <div className="flex flex-col gap-1.5 py-2">
-      <Label htmlFor={inputId} className="flex flex-wrap items-center gap-2 text-[13px]">
-        {secret.label}
-        {secret.configured ? (
-          <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400">
-            Đã cấu hình
-          </Badge>
-        ) : (
-          <Badge variant="outline" className="text-muted-foreground">
-            Chưa đặt
-          </Badge>
-        )}
-      </Label>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <Label htmlFor={inputId} className="flex flex-wrap items-center gap-2 text-[13px]">
+          {secret.label}
+          {secret.configured ? (
+            <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400">
+              Đã cấu hình
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="text-muted-foreground">
+              Chưa đặt
+            </Badge>
+          )}
+        </Label>
+        {/*  Link ra trang cấp khóa — với ô khóa API thì đây là thứ người dùng
+             cần trước cả ô nhập, vì họ chưa có gì để gõ vào. */}
+        {secret.doc_url && <SettingDocLink href={secret.doc_url} />}
+      </div>
       <Input
         id={inputId}
         type="password"
@@ -54,6 +61,9 @@ export function SettingSecretRow({
         placeholder={secret.configured ? 'Để trống nếu giữ nguyên' : 'Nhập giá trị…'}
         onChange={(event) => onChange(secret.key, event.target.value)}
       />
+      {secret.hint && (
+        <p className="text-xs leading-relaxed text-muted-foreground">{secret.hint}</p>
+      )}
     </div>
   )
 }

@@ -9,11 +9,20 @@ import os
 import subprocess
 from datetime import datetime
 
+from app.core import app_settings
 from app.core.config import settings
 from app.core.storage import env_prefix, upload_fileobj, delete_key
 
-# Số bản backup giữ lại (cũ hơn -> xóa). Đọc từ .env, mặc định 30 (~15 ngày với 2 lần/ngày).
-KEEP = getattr(settings, "BACKUP_KEEP", 30)
+
+def keep_count() -> int:
+    """Số bản sao lưu giữ lại (cũ hơn thì xóa), mặc định 30 (~15 ngày với 2 lần/ngày).
+
+    Phải là HÀM chứ không phải hằng số: từ bao-CR-429 con số này sửa được trên
+    màn Cấu hình hệ thống, mà hằng số ở đầu tệp thì chốt giá trị ngay lúc nạp
+    module — người dùng đổi xong vẫn phải dựng lại dịch vụ mới có tác dụng.
+    Sàn 1 để một ô rỗng không biến thành «xóa sạch mọi bản sao lưu».
+    """
+    return max(1, int(app_settings.get("backup_keep") or 0) or settings.BACKUP_KEEP or 30)
 
 
 def _la_client_mariadb(exe: str) -> bool:
@@ -72,9 +81,9 @@ def _strip_sandbox_lines(sql: bytes) -> bytes:
 
 
 def _prune(db) -> int:
-    """Giữ KEEP bản mới nhất, xóa phần cũ hơn (cả file R2 lẫn dòng DB). Trả số bản đã xóa."""
+    """Giữ `keep_count()` bản mới nhất, xóa phần cũ hơn (cả file R2 lẫn dòng DB). Trả số bản đã xóa."""
     from .model import DbBackup
-    olds = db.query(DbBackup).order_by(DbBackup.id.desc()).offset(KEEP).all()
+    olds = db.query(DbBackup).order_by(DbBackup.id.desc()).offset(keep_count()).all()
     n = 0
     for o in olds:
         if o.file_key:

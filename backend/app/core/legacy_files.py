@@ -38,7 +38,7 @@ import logging
 import requests
 from fastapi import HTTPException
 
-from app.core.config import settings
+from app.core import app_settings
 from app.core.storage import (download_bytes, download_legacy_bytes,
                               legacy_bucket_ready)
 from app.core.sync_signature import sign_headers
@@ -78,9 +78,9 @@ def is_remote(stored_file) -> bool:
 def legacy_ready() -> bool:
     """Đã đủ cấu hình để hỏi app cũ chưa (bật cờ + có gốc API + có khóa ký)."""
     return bool(
-        settings.SYNC_DATXE_ENABLED
-        and (settings.SYNC_LEGACY_API_BASE or "").strip()
-        and (settings.SYNC_SHARED_SECRET or "").strip()
+        app_settings.get("sync_datxe_enabled")
+        and (app_settings.get("sync_legacy_api_base") or "").strip()
+        and (app_settings.get("sync_shared_secret") or "").strip()
     )
 
 
@@ -179,7 +179,7 @@ def request_legacy_file_url(external_id: str) -> str:
     không phải một lỗi lạ. Tên hai đầu đề chữ ký ở đây là bản đề xuất của phía
     ERP; khi dựng đường bên kia phải khớp đúng hai tên này.
     """
-    base = (settings.SYNC_LEGACY_API_BASE or "").rstrip("/")
+    base = (app_settings.get("sync_legacy_api_base") or "").rstrip("/")
     path = f"/api/v1/sync/files/{external_id}/url"
     response = requests.get(
         f"{base}{path}",

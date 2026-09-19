@@ -1,8 +1,14 @@
 /** Nhóm cấu hình do backend gán cho từng trường (`service.py` phía backend). */
-export type SettingGroup = 'workflow' | 'email' | 'storage'
+export type SettingGroup = 'workflow' | 'email' | 'storage' | 'ai' | 'sync' | 'pos365' | 'system'
 
-/** Kiểu ô nhập — quyết định trang vẽ công tắc, ô số hay ô chữ. */
-export type SettingType = 'bool' | 'int' | 'str'
+/** Kiểu ô nhập — quyết định trang vẽ công tắc, ô số, ô chọn hay ô chữ. */
+export type SettingType = 'bool' | 'int' | 'str' | 'select'
+
+/** Một lựa chọn của ô `select`. Backend khai kèm trường, frontend không tự đoán. */
+export interface SettingOption {
+  value: string
+  label: string
+}
 
 /**
  * Một trường cấu hình THƯỜNG: đọc được, sửa được, hiển thị lại được.
@@ -18,6 +24,13 @@ export interface SettingField {
   value: unknown
   /** Diễn giải dài cho công tắc đổi quy trình — hiện ngay dưới ô. */
   hint?: string
+  /** Chỉ có ở `type: 'select'`. */
+  options?: SettingOption[]
+  /**
+   * Đường dẫn TỚI CHỖ LẤY giá trị này (trang cấp khóa API, trang danh sách
+   * model). Mở tab mới, không phải trang trong hệ thống.
+   */
+  doc_url?: string
 }
 
 /**
@@ -32,6 +45,9 @@ export interface SettingSecret {
   group: SettingGroup
   label: string
   configured: boolean
+  hint?: string
+  /** Trang đăng ký lấy khóa — thứ người dùng cần nhất khi lần đầu vào ô này. */
+  doc_url?: string
 }
 
 export interface SettingPayload {

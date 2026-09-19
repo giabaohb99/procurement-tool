@@ -348,6 +348,36 @@ def _after_soft_rollback(session, previous_transaction) -> None:
     _drop_uncommitted(session)
 
 
+def record_change(session, table_name: str, row_id: int, field: str,
+                  before, after, masked: bool = False) -> None:
+    """Ghi tay MỘT dòng trước/sau — dành cho bảng mà lớp tự động nói không nên lời.
+
+    Lớp ORM ghi theo TÊN CỘT, và điều đó đúng với mọi bảng có mỗi cột một ý
+    nghĩa. Bảng KHÓA-GIÁ TRỊ thì không: `tab_setting` chỉ có `skey` và `svalue`,
+    nên dòng tự động đọc ra *"tab_setting#7 svalue: false -> true"* — biết có
+    người đổi một thứ gì đó, không biết thứ gì. Mà nguyên giá trị của quyển sổ
+    này là trả lời được câu "ai đổi cái gì".
+
+    Nên những bảng đó tự khai vào `NO_LOG_TABLES` rồi gọi hàm này với `field` là
+    khóa THẬT. Đổi lại thì tầng gọi phải tự lo đúng hai việc lớp tự động lo hộ:
+    đọc giá trị cũ TRƯỚC khi ghi đè, và tự quyết có che hay không.
+
+    Vẫn đi chung đường ống với dòng tự động — cùng bộ đệm, cùng `request_id`,
+    cùng luật "chỉ ghi thứ đã commit". Quay đầu giao dịch là dòng này mất theo,
+    đúng như thế.
+    """
+    ctx = get_context()
+    if ctx is None:
+        return
+    ctx.changes.append(PendingChange(
+        table_name=table_name, op=CHANGE_OP_UPDATE, owner=id(session), row_id=row_id,
+        field=str(field)[:64],
+        before_value=_stringify(before) if not masked else None,
+        after_value=_stringify(after) if not masked else None,
+        is_masked=masked,
+    ))
+
+
 _INSTALLED = False
 
 

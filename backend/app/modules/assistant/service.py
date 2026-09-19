@@ -8,7 +8,7 @@ Routing quyết định: bật/tắt suy nghĩ + trần token + có mở tool ha
 """
 from datetime import date
 
-from app.core.config import settings
+from app.core import app_settings
 
 from . import tools as tool_layer
 from .knowledge import build_system
@@ -242,8 +242,9 @@ def ask(
     # Guard chi phí: câu tra cứu / mặc định có thể chạy model RẺ hơn (nếu admin khai
     # AI_LOOKUP_MODEL); câu tư vấn (advice) giữ model mặc định, thông minh hơn. Caller
     # chỉ định model tường minh thì tôn trọng, không đè.
-    if model is None and settings.AI_LOOKUP_MODEL and kind in ("lookup", "general"):
-        model = settings.AI_LOOKUP_MODEL
+    lookup_model = app_settings.get("ai_lookup_model")
+    if model is None and lookup_model and kind in ("lookup", "general"):
+        model = lookup_model
 
     tool_on = bool(cfg["tools"] and db is not None and user is not None and prov.supports_tools)
 
