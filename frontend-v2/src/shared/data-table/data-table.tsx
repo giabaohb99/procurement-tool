@@ -128,6 +128,19 @@ export interface DataTableProps<T> {
 
   onRowClick?: (row: T) => void
   /**
+   * Class thêm cho MỘT HÀNG, tính theo dữ liệu của chính hàng đó.
+   *
+   * Dành cho bảng có hàng KHÔNG ĐỒNG HẠNG — hàng gom nhóm và hàng con của nó
+   * (bảng Quỹ phép năm). Không có nó thì hai loại hàng chỉ khác nhau ở nội dung
+   * một ô, và người đọc phải suy ra thứ bậc từ dấu thụt lề rộng 16px.
+   *
+   * ⚠️ Kẻ sọc chẵn/lẻ mặc định (`odd:bg-card even:bg-row-stripe`) ĐÈ ĐƯỢC từ
+   * đây — `cn` gộp bằng `tailwind-merge` nên khai lại đúng cặp biến thể đó là
+   * bản của hàng thắng. Bảng gom nhóm nên tắt sọc: sọc chạy theo thứ tự hàng
+   * chứ không theo nhóm, nên nó cắt ngang đúng thứ bậc vừa dựng ra.
+   */
+  rowClassName?: (row: T) => string | undefined
+  /**
    * Chạy khi con trỏ RÊ VÀO một dòng — dùng để NẠP TRƯỚC dữ liệu trang chi tiết.
    *
    * Vì sao cần: bấm một dòng rồi mới bắt đầu gọi API thì người dùng ngồi nhìn
@@ -241,6 +254,7 @@ export function DataTable<T>({
   emptyMessage = 'Không có dữ liệu.',
   errorMessage = 'Không tải được danh sách. Kiểm tra kết nối hoặc quyền truy cập.',
   onRowClick,
+  rowClassName,
   onRowHover,
   onRefresh,
   toolbar,
@@ -633,7 +647,7 @@ export function DataTable<T>({
               rows?.map((row) => (
                 <TableRow
                   key={getRowId(row)}
-                  className={cn(ROW_BG, onRowClick && 'cursor-pointer')}
+                  className={cn(ROW_BG, onRowClick && 'cursor-pointer', rowClassName?.(row))}
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
                   onMouseEnter={onRowHover ? () => onRowHover(row) : undefined}
                 >

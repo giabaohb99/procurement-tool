@@ -6,6 +6,12 @@ import { hasQuota } from '../utils/leave-balance-quota'
 
 interface LeaveBalanceCardProps {
   balance: LeaveBalance
+  /**
+   * Bỏ dòng TÊN NGƯỜI. Dùng cho thẻ con nằm dưới một thẻ nhóm đã in tên rồi —
+   * người có tám loại nghỉ mà thẻ nào cũng lặp lại tên thì tên thành nhiễu, và
+   * thứ phân biệt tám thẻ với nhau (loại nghỉ) bị đẩy xuống hàng hai.
+   */
+  hideEmployeeName?: boolean
 }
 
 /**
@@ -24,7 +30,7 @@ interface LeaveBalanceCardProps {
  * dấu gạch mờ. Riêng «Còn lại» thì luôn hiện — ở đó số 0 nghĩa là **hết phép**,
  * đúng thứ phải đập vào mắt.
  */
-export function LeaveBalanceCard({ balance }: LeaveBalanceCardProps) {
+export function LeaveBalanceCard({ balance, hideEmployeeName }: LeaveBalanceCardProps) {
   const extras: string[] = []
   if (balance.seniority_days) extras.push(`+${balance.seniority_days} thâm niên`)
   if (balance.carried_days) extras.push(`+${balance.carried_days} chuyển năm trước`)
@@ -38,9 +44,11 @@ export function LeaveBalanceCard({ balance }: LeaveBalanceCardProps) {
   return (
     <div className="flex items-start gap-3">
       <div className="min-w-0 flex-1 space-y-1.5">
-        <span className="block truncate font-medium text-foreground">
-          {balance.employee_name || `#${balance.employee_id}`}
-        </span>
+        {!hideEmployeeName && (
+          <span className="block truncate font-medium text-foreground">
+            {balance.employee_name || `#${balance.employee_id}`}
+          </span>
+        )}
 
         {/*  Loại nghỉ có KHUNG: nó nằm giữa tên người và một dòng chữ số cùng cỡ,
              để trần thì ba dòng đọc thành một đoạn văn không phân vai. */}

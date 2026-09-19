@@ -1,11 +1,12 @@
-import { useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArchiveRestore, CalendarPlus } from 'lucide-react'
+import { ArchiveRestore, CalendarPlus, TriangleAlert } from 'lucide-react'
 
 import { usePermission } from '@/core/authorization/use-permission'
 import { appConfig } from '@/core/config/app-config'
 import { appRoutes } from '@/shared/constants/app-routes'
-import { DataTable, type DataTableColumn } from '@/shared/data-table'
+import { DataTable } from '@/shared/data-table'
+import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
 import { useScrolled } from '@/shared/hooks/use-scrolled'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
@@ -24,8 +25,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
-import { cn } from '@/shared/utils/cn'
-import { LeaveBalanceCard } from '../components/leave-balance-card'
+import { buildLeaveBalanceColumns } from '../components/leave-balance-columns'
+import { LeaveBalanceRowCard } from '../components/leave-balance-row-card'
 import { LIST_TOOLBAR_STICKY_TOP } from '../utils/list-sticky'
 import {
   useAllocateLeaveBalance,
@@ -33,14 +34,29 @@ import {
   useLeaveBalances,
   useLeaveTypes,
 } from '../hooks/use-leave'
-import type { LeaveBalance } from '../types/leave'
-import { hasQuota } from '../utils/leave-balance-quota'
+import {
+  flattenLeaveBalanceGroups,
+  groupLeaveBalances,
+  leaveBalanceRowClass,
+  type LeaveBalanceRow,
+} from '../utils/group-leave-balances'
 
 const ALL = 'all'
 
 //  Bao nhiêu năm bày ra ô chọn. Quỹ phép không tra ngược quá vài năm — cần xa
 //  hơn thì đó là việc của báo cáo, không phải màn thao tác hằng ngày.
 const YEAR_SPAN = 3
+
+/**
+ * Kéo TRỌN danh sách quỹ của năm đang xem về một lượt.
+ *
+ * ⚠️ Bảng gom theo NGƯỜI nên phân trang phải đếm theo người, mà backend chỉ cắt
+ * trang theo DÒNG QUỸ — để backend cắt thì một nhân sự tám loại nghỉ có thể bị
+ * xé đôi qua hai trang và tổng của họ sai ở cả hai. 5000 là trần `page_size`
+ * của `core/base_controller.py`; công ty 262 người × 8 loại nghỉ ≈ 2100 dòng,
+ * còn dư gấp đôi. Vượt trần thì `truncated` bên dưới nói ra, không nuốt.
+ */
+const FULL_LIST_PAGE_SIZE = 5000
 
 /**
  * QUỸ PHÉP NĂM — màn của phòng Nhân sự.
@@ -57,6 +73,14 @@ const YEAR_SPAN = 3
  *    TRANG CHI TIẾT (`/hr/leave-balances/:id`), không phải popup từ dòng: xem
  *    docstring của `leave-balance-detail-page.tsx`.
  *
+ * ⚠️ **Bảng GOM THEO NGƯỜI, loại nghỉ là dòng con** (19/09/2026). Trước đó bảng
+ * bày phẳng mười một cột, một dòng cho mỗi (người × loại nghỉ). Hai chỗ hỏng:
+ * ở màn 1600px bảng vẫn tràn và thứ bị đẩy ra ngoài mép phải đúng là cột «Còn
+ * lại» — con số duy nhất người ta mở màn này để xem; còn công ty khai đủ tám
+ * loại nghỉ thì bảng dài gấp tám lần số người và câu hỏi *"anh A còn mấy ngày"*
+ * phải tự cộng tám dòng mới trả lời được. Luật gom nằm ở
+ * `utils/group-leave-balances.ts`, cột ở `components/leave-balance-columns.tsx`.
+ *
  * ⚠️ Thanh công cụ đi ĐÚNG KHUÔN màn Đơn nghỉ phép: ô tìm bên trái rồi tới các
  * ô chọn. Trước 03/09/2026 màn này chỉ có mỗi ô «Năm», nên một công ty vài trăm
  * người là vài chục trang cuộn tay để tìm một cái tên.
@@ -70,8 +94,21 @@ export function LeaveBalancePage() {
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [year, setYear] = useUrlParamState('year', String(currentYear))
   const [leaveTypeId, setLeaveTypeId] = useUrlParamState('leave_type_id', ALL)
-  const [page, setPage] = useState(1)
+  //  Trang TỰ VỀ 1 khi đổi bộ lọc: kết quả mới thường ít hơn, giữ số trang cũ
+  //  là rơi vào trang trống. Theo dõi giá trị tìm kiếm ĐÃ HOÃN, không theo ô
+  //  nhập thô — kẻo mỗi ký tự gõ vào là một lần đặt lại trang.
+  const [page, setPage] = usePageResetOnFilterChange([debouncedValue, year, leaveTypeId])
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
+
+  //  Nhóm đang bung, giữ theo id NHÂN SỰ nên đổi trang rồi quay lại vẫn còn.
+  const [expanded, setExpanded] = useState<ReadonlySet<number>>(() => new Set())
+  const toggleGroup = useCallback((employeeId: number) => {
+    setExpanded((prev) => {
+      const next = new Set(prev)
+      if (!next.delete(employeeId)) next.add(employeeId)
+      return next
+    })
+  }, [])
 
   //  Dải ghim đầu trang đổ bóng khi có nội dung trôi bên dưới — xem
   //  `list-sticky.ts`. Đo ở khối bọc vì nó nằm cùng khung cuộn với hai dải.
@@ -105,144 +142,53 @@ export function LeaveBalancePage() {
     if (ok) closeYear.mutate({ year: target })
   }
 
+  //  KHÔNG có `page` trong params: trang cắt ở client theo NGƯỜI (xem
+  //  `FULL_LIST_PAGE_SIZE`). Lọc và tìm kiếm vẫn ở backend — `apply_scope` chạy
+  //  ở đó, và tìm theo tên nhân sự cần bảng `tab_employee`.
   const params = useMemo<ListParams>(() => {
-    const p: ListParams = { page, page_size: pageSize, year }
+    const p: ListParams = { page: 1, page_size: FULL_LIST_PAGE_SIZE, year }
     if (debouncedValue) p.search = debouncedValue
     if (leaveTypeId !== ALL) p.leave_type_id = leaveTypeId
     return p
-  }, [page, pageSize, year, debouncedValue, leaveTypeId])
+  }, [year, debouncedValue, leaveTypeId])
 
   const { data, isLoading, isError } = useLeaveBalances(params)
+
+  const groups = useMemo(() => groupLeaveBalances(data?.items), [data])
+  //  Vượt trần `page_size` thì danh sách bị cắt cụt ở backend và mọi tổng đều
+  //  thiếu. Nói ra chứ đừng để người dùng đọc một con số sai mà không biết.
+  const truncated = (data?.total ?? 0) > (data?.items?.length ?? 0)
+
+  const pageGroups = useMemo(
+    () => groups.slice((page - 1) * pageSize, page * pageSize),
+    [groups, page, pageSize],
+  )
+  const rows = useMemo(
+    () => flattenLeaveBalanceGroups(pageGroups, expanded),
+    [pageGroups, expanded],
+  )
 
   const years = useMemo(
     () => Array.from({ length: YEAR_SPAN + 1 }, (_, i) => String(currentYear + 1 - i)),
     [currentYear],
   )
 
-  const columns = useMemo<DataTableColumn<LeaveBalance>[]>(
-    () => [
-      {
-        key: 'employee_name',
-        header: 'Nhân sự',
-        cell: (b) => (
-          <span className="font-medium">{b.employee_name || `#${b.employee_id}`}</span>
-        ),
-        width: 220,
-        hideable: false,
-        defaultPinned: true,
-      },
-      {
-        key: 'leave_type_name',
-        header: 'Loại nghỉ',
-        cell: (b) => b.leave_type_name || `#${b.leave_type_id}`,
-        width: 150,
-      },
-      {
-        key: 'allocated_days',
-        header: 'Hạn mức',
-        cell: (b) => <DayCount value={b.allocated_days} />,
-        width: 110,
-        align: 'right',
-      },
-      {
-        key: 'seniority_days',
-        header: 'Thâm niên',
-        //  Tách khỏi «Hạn mức» để màn hình giải thích được "12 + 2" thay vì
-        //  trưng ra con số 14 không rõ từ đâu ra.
-        cell: (b) => <DayCount value={b.seniority_days} signed />,
-        width: 110,
-        align: 'right',
-      },
-      {
-        key: 'carried_days',
-        header: 'Chuyển năm trước',
-        cell: (b) => <DayCount value={b.carried_days} signed />,
-        width: 150,
-        align: 'right',
-      },
-      {
-        key: 'carried_out_days',
-        header: 'Đã chuyển đi',
-        //  Phần đã mang sang năm sau lúc kết sổ. Nó ĐÃ bị trừ khỏi «Còn lại»,
-        //  nên không có cột này thì số dư năm cũ tụt mà không dòng nào giải
-        //  thích — và người xem sẽ đi tìm xem ai vừa nghỉ mấy ngày đó.
-        cell: (b) => <DayCount value={b.carried_out_days} />,
-        width: 130,
-        align: 'right',
-      },
-      {
-        key: 'carried_expired_days',
-        header: 'Hết hạn',
-        //  Phép mang sang quá hạn dùng thì mất. Cột này KHÔNG nằm trong công
-        //  thức còn lại — nó chỉ nói ra chỗ số ngày đã đi đâu.
-        cell: (b) => (
-          <DayCount
-            value={b.carried_expired_days}
-            className="text-muted-foreground line-through"
-          />
-        ),
-        width: 110,
-        align: 'right',
-      },
-      {
-        key: 'adjusted_days',
-        header: 'Điều chỉnh tay',
-        //  Cột DUY NHẤT mang được số âm — `signed` tự xử dấu, gắn `+` cứng ở
-        //  đây sẽ ra "+-2".
-        cell: (b) => <DayCount value={b.adjusted_days} signed />,
-        width: 140,
-        align: 'right',
-      },
-      {
-        key: 'used_days',
-        header: 'Đã nghỉ',
-        cell: (b) => <DayCount value={b.used_days} />,
-        width: 110,
-        align: 'right',
-      },
-      {
-        key: 'pending_days',
-        header: 'Chờ duyệt',
-        //  Hổ phách vì đây là ngày ĐANG GIỮ CHỖ: chưa nghỉ nhưng cũng không
-        //  tiêu được nữa. Số 0 vẫn để mờ như mọi cột khác — tô cả cột vàng khè
-        //  trong khi chẳng có gì đang chờ là màu mất hết nghĩa.
-        cell: (b) => (
-          <DayCount value={b.pending_days} className="text-amber-600 dark:text-amber-400" />
-        ),
-        width: 110,
-        align: 'right',
-      },
-      {
-        key: 'remaining_days',
-        header: 'Còn lại',
-        //  ⚠️ KHÔNG `text-primary`: primary là navy — đúng màu nút hành động
-        //  chính — nên con số đọc ra như một cái link bấm được. Đây là cột người
-        //  ta quét mắt tìm, đậm hơn là đủ. Hết phép thì tô đỏ, vì đó là thứ Nhân
-        //  sự cần thấy ngay giữa một bảng toàn số.
-        //
-        //  ⚠️ Nhưng chỉ đỏ khi CÓ QUỸ mà tiêu hết. Loại nghỉ không cấp hạn mức
-        //  (tang chế, cưới hỏi, nghỉ bù…) luôn còn 0 và chiếm phần lớn số dòng —
-        //  tô đỏ hết thì màu đỏ mất nghĩa đúng chỗ nó cần có nghĩa. Xem `hasQuota`.
-        cell: (b) => (
-          <DayCount
-            value={b.remaining_days}
-            alwaysShow
-            className={cn(
-              'font-semibold',
-              b.remaining_days > 0
-                ? 'text-foreground'
-                : hasQuota(b)
-                  ? 'text-destructive'
-                  : 'text-muted-foreground',
-            )}
-          />
-        ),
-        width: 110,
-        align: 'right',
-        hideable: false,
-      },
-    ],
-    [],
+  const columns = useMemo(
+    () => buildLeaveBalanceColumns({ expanded, onToggle: toggleGroup }),
+    [expanded, toggleGroup],
+  )
+
+  //  Bấm vào hàng: hàng NHÓM thì bung/thu (nó không có dòng quỹ nào để mở),
+  //  hàng còn lại mở trang chi tiết đúng dòng quỹ đó.
+  const openRow = useCallback(
+    (row: LeaveBalanceRow) => {
+      if (row.kind === 'group') {
+        toggleGroup(row.group.employeeId)
+        return
+      }
+      navigate(appRoutes.hr.leaveBalanceDetail(row.balance.id))
+    },
+    [navigate, toggleGroup],
   )
 
   //  Hai ô chọn dựng MỘT LẦN rồi đặt vào một trong hai chỗ tùy khổ màn — xem
@@ -279,6 +225,8 @@ export function LeaveBalancePage() {
       </SelectContent>
     </Select>
   )
+
+  const filtering = Boolean(debouncedValue) || leaveTypeId !== ALL
 
   return (
     //  ⚠️ `fill` chỉ bật từ `md`: ở khổ hẹp bảng biến thành danh sách thẻ dài,
@@ -349,108 +297,109 @@ export function LeaveBalancePage() {
         data-scrolled={scrolled ? '' : undefined}
         className="group flex min-h-0 flex-1 flex-col"
       >
+        {truncated && (
+          <p className="mb-2 flex items-center gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-foreground">
+            <TriangleAlert className="size-4 shrink-0 text-warning" />
+            Năm {year} có {data?.total} dòng quỹ, vượt trần {FULL_LIST_PAGE_SIZE} dòng tải về
+            một lượt — bảng đang thiếu người và các con số tổng chưa đủ. Lọc bớt theo loại nghỉ
+            hoặc tìm theo tên để xem đúng.
+          </p>
+        )}
+
         <Card className="flex min-h-0 w-full min-w-0 flex-1 flex-col p-3 md:p-4">
-        <DataTable
-          fillHeight
-          columns={columns}
-          rows={data?.items}
-          getRowId={(b) => b.id}
-          isLoading={isLoading}
-          isError={isError}
-          emptyMessage={
-            debouncedValue || leaveTypeId !== ALL
-              ? 'Không có dòng quỹ nào khớp bộ lọc.'
-              : `Chưa cấp quỹ phép năm ${year}. Bấm «Cấp quỹ năm ${year}» để tạo.`
-          }
-          storageKey="hr.leave-balances"
-          toolbarClassName={LIST_TOOLBAR_STICKY_TOP}
-          onRowClick={(b) => navigate(appRoutes.hr.leaveBalanceDetail(b.id))}
-          //  Khổ hẹp: thẻ thay bảng — bảng này mười một cột, trên máy 393px chỉ
-          //  thấy hai cột đầu và cả mười con số nằm sau một thao tác cuộn ngang.
-          mobileCard={(b) => <LeaveBalanceCard balance={b} />}
-          pagination={{
-            page,
-            pageSize,
-            total: data?.total ?? 0,
-            onPageChange: setPage,
-            onPageSizeChange: setPageSize,
-            unitLabel: 'dòng quỹ',
-          }}
-          toolbar={
-            <>
-              {/*  ⚠️ Sàn `min-w-56` chỉ áp từ `md`: dưới ngưỡng đó ô tìm là
-                   `flex-1` với `flex-basis: 0` nên nó không bao giờ ép nhóm nút
-                   bên phải xuống một hàng riêng.
-
-                   Câu gợi ý ngắn để ĐỌC HẾT được ở khổ hẹp: ô còn 142px sau khi
-                   chia chỗ cho nút Bộ lọc và nút Tải lại, bản cũ cần 206px nên
-                   cụt thành «Tìm theo tên hoặc m». */}
-              <SearchField
-                value={keyword}
-                onChange={setKeyword}
-                placeholder="Tìm tên, mã nhân sự"
-                className="md:min-w-56 md:max-w-xs"
+          <DataTable
+            fillHeight
+            columns={columns}
+            rows={rows}
+            getRowId={(row) => row.id}
+            isLoading={isLoading}
+            isError={isError}
+            emptyMessage={
+              filtering
+                ? 'Không có dòng quỹ nào khớp bộ lọc.'
+                : `Chưa cấp quỹ phép năm ${year}. Bấm «Cấp quỹ năm ${year}» để tạo.`
+            }
+            //  ⚠️ Khóa `.v2`: bộ cột đổi hẳn (thêm «Tổng cấp», năm cột giải
+            //  thích chuyển sang ẩn sẵn). Ai đã từng đụng menu «Cột» thì bản lưu
+            //  trong localStorage THẮNG `defaultHidden`, nên giữ khóa cũ là họ
+            //  vẫn thấy nguyên cái bảng tràn màn hình vừa đi sửa.
+            storageKey="hr.leave-balances.v2"
+            toolbarClassName={LIST_TOOLBAR_STICKY_TOP}
+            onRowClick={openRow}
+            //  Ba mức nền: hàng thường · hàng CHA ĐANG BUNG (nổi bật) · hàng
+            //  con. Luật và lý do ở `leaveBalanceRowClass`.
+            rowClassName={(row) =>
+              leaveBalanceRowClass(
+                row,
+                row.kind === 'group' && expanded.has(row.group.employeeId),
+              )
+            }
+            //  Khổ hẹp: thẻ thay bảng — bảng này tới mười một cột số, trên máy
+            //  393px chỉ thấy cột tên và cả bảng số nằm sau một thao tác cuộn
+            //  ngang.
+            mobileCard={(row) => (
+              <LeaveBalanceRowCard
+                row={row}
+                expanded={row.kind === 'group' && expanded.has(row.group.employeeId)}
               />
+            )}
+            pagination={{
+              page,
+              pageSize,
+              //  Đếm theo NGƯỜI, không theo dòng quỹ — đó là thứ bảng đang bày
+              //  ra mỗi hàng gốc một cái.
+              total: groups.length,
+              onPageChange: setPage,
+              onPageSizeChange: setPageSize,
+              unitLabel: 'nhân sự',
+            }}
+            toolbar={
+              <>
+                {/*  ⚠️ Sàn `min-w-56` chỉ áp từ `md`: dưới ngưỡng đó ô tìm là
+                     `flex-1` với `flex-basis: 0` nên nó không bao giờ ép nhóm nút
+                     bên phải xuống một hàng riêng.
 
-              {/*  ⚠️ Huy hiệu trên nút «Bộ lọc» đếm CẢ Ô NĂM khi nó khác năm hiện
-                   tại. Năm là thứ quyết định mọi con số trên bảng, mà ở khổ hẹp
-                   nó nằm khuất trong tờ trượt — không có dấu này thì người dùng
-                   xem quỹ 2024 và tưởng đang xem 2026, rồi đi hỏi vì sao ai cũng
-                   hết phép. */}
-              <QuickFilterSheet
-                activeCount={
-                  (leaveTypeId !== ALL ? 1 : 0) + (year !== String(currentYear) ? 1 : 0)
-                }
-                onClearAll={() => {
-                  setLeaveTypeId(ALL)
-                  setYear(String(currentYear))
-                }}
-              >
-                <QuickFilterField label="Loại nghỉ">{typeSelect}</QuickFilterField>
-                <QuickFilterField label="Năm">{yearSelect}</QuickFilterField>
-              </QuickFilterSheet>
+                     Câu gợi ý ngắn để ĐỌC HẾT được ở khổ hẹp: ô còn 142px sau khi
+                     chia chỗ cho nút Bộ lọc và nút Tải lại, bản cũ cần 206px nên
+                     cụt thành «Tìm theo tên hoặc m». */}
+                <SearchField
+                  value={keyword}
+                  onChange={setKeyword}
+                  placeholder="Tìm tên, mã nhân sự"
+                  className="md:min-w-56 md:max-w-xs"
+                />
 
-              {/*  Cùng hai ô chọn dựng hai lần (hàng ngang ở màn rộng · tờ trượt
-                   ở màn hẹp). State nằm ở màn cha nên hai bản luôn nói cùng một
-                   giá trị — khuôn của `survey-list-page`, không phải trùng lặp
-                   cần dọn. */}
-              <div className="hidden items-center gap-3 md:flex">
-                {typeSelect}
-                {yearSelect}
-              </div>
-            </>
-          }
-        />
+                {/*  ⚠️ Huy hiệu trên nút «Bộ lọc» đếm CẢ Ô NĂM khi nó khác năm hiện
+                     tại. Năm là thứ quyết định mọi con số trên bảng, mà ở khổ hẹp
+                     nó nằm khuất trong tờ trượt — không có dấu này thì người dùng
+                     xem quỹ 2024 và tưởng đang xem 2026, rồi đi hỏi vì sao ai cũng
+                     hết phép. */}
+                <QuickFilterSheet
+                  activeCount={
+                    (leaveTypeId !== ALL ? 1 : 0) + (year !== String(currentYear) ? 1 : 0)
+                  }
+                  onClearAll={() => {
+                    setLeaveTypeId(ALL)
+                    setYear(String(currentYear))
+                  }}
+                >
+                  <QuickFilterField label="Loại nghỉ">{typeSelect}</QuickFilterField>
+                  <QuickFilterField label="Năm">{yearSelect}</QuickFilterField>
+                </QuickFilterSheet>
+
+                {/*  Cùng hai ô chọn dựng hai lần (hàng ngang ở màn rộng · tờ trượt
+                     ở màn hẹp). State nằm ở màn cha nên hai bản luôn nói cùng một
+                     giá trị — khuôn của `survey-list-page`, không phải trùng lặp
+                     cần dọn. */}
+                <div className="hidden items-center gap-3 md:flex">
+                  {typeSelect}
+                  {yearSelect}
+                </div>
+              </>
+            }
+          />
         </Card>
       </div>
     </PageContainer>
   )
-}
-
-/**
- * Một ô SỐ NGÀY trong bảng quỹ.
- *
- * ⚠️ Số `0` hiện thành dấu gạch mờ, không phải chữ "0". Bảng này có bảy cột số
- * mà bốn cột trong đó hầu như luôn bằng 0 (thâm niên, chuyển năm, điều chỉnh
- * tay) — in "0" và "+0" ra hết thì cả bảng đặc số, và mắt không còn nhặt ra
- * được ô nào thật sự có giá trị. Cột «Còn lại» thì `alwaysShow`: ở đó số 0 mang
- * nghĩa **hết phép**, đúng thứ phải đập vào mắt.
- */
-function DayCount({
-  value,
-  signed = false,
-  alwaysShow = false,
-  className,
-}: {
-  value: number
-  /** Thêm dấu `+` khi dương. Số âm tự mang dấu `-`, không ghép tay. */
-  signed?: boolean
-  alwaysShow?: boolean
-  className?: string
-}) {
-  if (!value && !alwaysShow) {
-    return <span className="text-muted-foreground/40">—</span>
-  }
-  const prefix = signed && value > 0 ? '+' : ''
-  return <span className={cn('tabular-nums', className)}>{`${prefix}${value}`}</span>
 }
