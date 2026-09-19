@@ -3285,16 +3285,17 @@ lên huy hiệu vai trò là thấy câu mô tả. Em cũng bổ sung mấy nhó
 bảng nhóm để nghỉ phép, hồ sơ, đặt phòng họp, điểm cà phê không rơi vào nhóm "Khác".
 
 Ba cổng kiểm của v2 xanh, bài kiểm máy chủ cho phần seed và sắp xếp vai trò xanh. Đã commit
-chiều 19/09 chung một gói với CR-427 và CR-430, chưa lên dev. Không có migration. Bẫy lòi ra
+chiều 19/09 chung một gói với CR-427 và CR-430. Không có migration. Bẫy lòi ra
 sau khi commit: tệp gom phân hệ bị git coi là tệp nhị phân vì hai ký tự rỗng (mã 0) lọt vào
 chỗ đáng ra là dấu cách ngăn tên đối tượng với tên hành động; đã thay bằng dấu cách, bài kiểm
-vẫn xanh.
+vẫn xanh. Đã đẩy lên máy chủ thử chiều 19/09, chỉ dựng lại giao diện v2.
 Mã nguồn: backend/app/core/permissions.py · backend/app/seed.py ·
 backend/app/modules/role/service.py · frontend-v2/src/modules/system/utils/role-module-summary.ts ·
 components/role-list-item.tsx · components/role-name-inline-edit.tsx ·
 components/role-permission-matrix.tsx · pages/role-permission-page.tsx ·
 doc/phan-quyen/Thiet_Ke_Phan_Quyen.md mục 8.
-Commit: 277b0cd2 (gom chung CR-427/428/430).
+Commit: 277b0cd2 (gom chung CR-427/428/430) + 6b68a676 (vá ký tự rỗng).
+Deploy: dev chiều 19/09/2026 (8d2c52a2), không có migration.
 
 ## bao-CR-427 | Gom hai tầng phạm vi về một màn, viết lại bằng tiếng Việt thường
 - status: xong
@@ -3367,6 +3368,7 @@ Mã nguồn: `frontend-v2/src/modules/system/utils/scope-summary.ts` ·
 `pages/role-permission-page.tsx` · `frontend-v2/src/modules/hr/hooks/use-roles.ts` ·
 `hooks/use-employees.ts`.
 Commit: 277b0cd2 (gom chung CR-427/428/430).
+Deploy: dev chiều 19/09/2026 (8d2c52a2), không có migration.
 
 ## dong-bo-datxe-app-cu-p2 | Bên app đặt xe cũ: đóng dấu thời điểm sửa và móc đẩy phiếu thẳng sang ERP
 - status: dang-lam
@@ -3633,7 +3635,8 @@ thiếu quyền đọc nhân sự, giữ đúng luật cũ là không gọi cử
 Năm bài kiểm cho hàm thuần và sáu bài kiểm cho popup, cả ba cổng kiểm của v2 xanh. Bẫy lúc
 viết bài kiểm: đường danh mục phòng ban cũng kết thúc bằng chữ departments nên so đuôi suông
 là đếm nhầm. Máy chủ không đổi, không migration. Đã commit chiều 19/09 chung gói với CR-427
-và CR-428, chưa lên dev.
+và CR-428, đã lên máy chủ thử cùng chiều.
 Mã nguồn: frontend-v2/src/modules/system/components/user-scope-dialog.tsx ·
 utils/scope-summary.ts · modules/hr/hooks/use-employees.ts.
 Commit: 277b0cd2 (gom chung CR-427/428/430).
+Deploy: dev chiều 19/09/2026 (8d2c52a2), không có migration.
