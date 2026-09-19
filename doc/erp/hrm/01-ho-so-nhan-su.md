@@ -419,6 +419,18 @@ Test: `test_danh_muc_chuc_vu.py` (**20 ca**) + sửa số đếm entity ở `tes
 
 **Đếm ngược người giữ + cụm ảnh xếp chồng** (duoc-CR-322, 08/09/2026). Câu hỏi thật của người quản lý danh mục trước khi sửa hay dẹp một chức vụ là *ai đang mang chức danh này* — không có nó thì việc duy nhất làm được là bấm Xóa rồi đọc câu từ chối.
 
+> ⚠️ **ĐÍNH CHÍNH 19/09/2026 (duoc-CR-426) — phần dưới đây là LỊCH SỬ, không còn chạy.**
+> Khách yêu cầu bỏ hai cột «Đang giữ» và «Phòng ban đang giữ» khỏi bảng danh mục.
+> Đã gỡ luôn `GET /api/job-positions/stats` cùng hai hàm `count_holders_by_department`
+> và `list_holder_faces` — giữ một đường API không màn nào đọc thì lần sau có người
+> sửa nhầm cũng không ai biết. **Còn nguyên:** tab «Người đang giữ» ở trang chi tiết
+> (nguồn duy nhất trả lời *ai đang mang chức danh này*), chốt chặn xóa, và luật
+> «chốt xóa đếm toàn công ty». Ô lọc phòng ban của tab đó nay đọc **danh mục phòng
+> ban** nên liệt kê mọi phòng và không kèm số người; mục «(Chưa gắn phòng ban)» phải
+> tự thêm tay vì danh mục không có dòng nào mang `id = 0`. Cột nhận diện trên bảng
+> đổi từ `code` sang `id` (mã vẫn ở trong biểu mẫu và ở bộ lọc nâng cao). Đọc tiếp
+> phần dưới chỉ để hiểu **vì sao** từng làm vậy, đừng lấy làm đặc tả.
+
 `GET /api/job-positions/stats` trả `{position_id, total, departments[{id, name, count}], holders}`. Hai truy vấn cho **cả bảng**: một `GROUP BY (position_id, department_id)` để đếm, một `outerjoin` sang `tab_user` + `tab_file` để lấy vài gương mặt.
 
 - ⚠️ **Tách endpoint riêng, không thêm `employee_count` vào `JobPositionResponse`** — serializer chạy cho từng dòng nên đếm ở đó là một truy vấn mỗi dòng, và nó chạy cả ở những chỗ chỉ cần tên chức vụ.

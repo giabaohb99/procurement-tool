@@ -3173,3 +3173,44 @@ Trang chi tiết phân công văn thư đóng dấu tại đường dẫn `/appr
 Mã nguồn: `frontend-v2/src/modules/approval-seal/components/seal-clerk-detail-header.tsx` (thành phần thanh đầu trang mới) · `frontend-v2/src/modules/approval-seal/pages/seal-clerk-detail-page.tsx` (trang chi tiết hoàn thiện) · `frontend-v2/src/modules/approval-seal/components/company-row.tsx` (thêm nút gỡ nhanh công ty) · bài kiểm `seal-clerk-detail-page.test.tsx`.
 Commit: `5fbce75a` trên nhánh `erp-v2`.
 
+
+## duoc-CR-426 | Bỏ hai cột đếm người giữ ở danh mục Chức vụ, cột mã đổi thành ID
+- status: xong
+- date: 2026-09-19
+- pic: NSU209
+Màn danh mục Chức vụ tại đường dẫn `/hr/job-positions` bỏ hẳn hai cột «Đang giữ» và «Phòng ban
+đang giữ». Bỏ luôn đường API đếm ngược nuôi hai cột đó ở máy chủ, kèm hai hàm đếm và mười một
+bài kiểm của chúng — giữ lại một đường API mà không màn nào đọc thì lần sau có người sửa nhầm
+cũng không ai biết. Chốt chặn xóa chức vụ đang có người giữ vẫn nguyên, nó đếm bằng hàm khác và
+đếm trên toàn công ty.
+
+Cột «Mã chức vụ» đổi thành cột ID. Mã dạng `cv-truong-phong-mua-hang` dài gần bằng cả tên chức
+vụ, luôn bị cắt đuôi trong ô bảng, và không ai gọi một chức vụ bằng nó — nó chỉ là khóa để tệp
+Excel nhập xuất trỏ vào dòng. Mã vẫn nằm trong biểu mẫu thêm sửa và vẫn lọc được ở bộ lọc nâng
+cao. Huy hiệu mã trên thẻ khổ điện thoại và trên trang chi tiết đổi theo, câu xác nhận xóa cũng
+đọc theo ID.
+
+Tab «Người đang giữ» ở trang chi tiết giữ nguyên, nhưng ô lọc phòng ban nay đọc danh mục phòng
+ban thay vì bảng đếm vừa bỏ. Hệ quả phải biết: ô đó liệt kê mọi phòng ban chứ không riêng phòng
+đang có người giữ, và mục chọn không còn kèm số người. Thêm mục «(Chưa gắn phòng ban)» vì danh
+mục không có dòng nào mang số không, mà đó lại đúng là nhóm người quản lý đi tìm để gắn cho đủ.
+Ô này tự tắt khi thiếu quyền đọc phòng ban.
+
+Rà lại thì thấy chính chỗ vừa sửa mở ra một lỗ hiệu năng có sẵn: danh sách phòng ban dựng tên
+trưởng bộ phận bằng quan hệ nạp lười, nên mỗi dòng là một câu hỏi thêm xuống cơ sở dữ liệu. Ô
+lọc mới hỏi hai trăm dòng một lượt, tức mở một cái tab là hai trăm câu SELECT. Đã nạp gộp bằng
+`selectinload` và thêm một bài kiểm đếm số câu SQL để canh. Bài kiểm đo bằng tính chất chứ
+không bằng một con số cố định: chạy hai lượt hai dòng và tám dòng rồi đòi số câu y hệt nhau.
+Bản đầu của bài kiểm dùng chung một trưởng bộ phận cho cả tám phòng và nó xanh giả — lượt nạp
+đầu đưa người đó vào bộ nhớ phiên, bảy dòng sau lấy lại không tốn câu nào; phải cho mỗi phòng
+một người khác nhau thì lỗi mới lộ. Đã thử gỡ bản vá ra chạy lại để chắc chắn bài kiểm bắt
+được: bốn câu cho hai dòng, mười câu cho tám dòng.
+
+Kiểm tra: kiểu dữ liệu sạch, không lỗi lint, bốn trăm chín mươi bài kiểm của phân hệ Nhân sự
+cùng khu dùng chung đều xanh, hai mươi hai bài kiểm danh mục chức vụ và hai mươi mốt bài kiểm
+danh mục phòng ban ở máy chủ xanh.
+Mã nguồn: `backend/app/modules/employee/position_controller.py` · `position_service.py` ·
+`backend/app/modules/department/service.py` · `test/backend/test_danh_muc_chuc_vu.py` ·
+`test/backend/test_loc_danh_muc_phong_cong_ty.py` · `frontend-v2/src/modules/hr/config/job-position-crud.tsx` ·
+`components/job-position-holders-panel.tsx` · `hooks/use-job-positions.ts` ·
+`types/job-position.ts` · `shared/constants/query-keys.ts` · xóa `components/job-position-holders-cell.tsx`.
