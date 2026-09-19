@@ -3814,3 +3814,39 @@ có quyền xem. Nay ba ô đó vẫn dựng nhưng đổi dòng chú thích th�
 báo thôi tô màu vàng vì không còn cảnh báo điều gì. Cùng lối xử lý đã dùng cho hai ô nghỉ phép.
 Kiểm tra: bài kiểm mới cho dải thẻ, ba cổng của v2 xanh.
 Mã nguồn: `frontend-v2/src/modules/hr/components/hr-overview-stats.tsx` (kèm bài kiểm).
+
+
+## bao-CR-431 | Giữ thẻ Lịch sử phê duyệt sau khi luồng duyệt đã xong
+- status: xong
+- date: 2026-09-19
+- pic: NSU209
+Đại ca báo một phiếu đặt xe duyệt xong rồi mà trang chi tiết không còn chỗ nào bày luồng duyệt
+riêng của nó, trong khi phiếu đóng dấu chạy cùng bộ máy thì vẫn thấy lịch sử phê duyệt. Rà ra thì
+hai trang chi tiết đang gác thẻ Luồng duyệt bằng cờ «đang chạy». Cờ đó tắt ngay khi phiên duyệt
+đóng lại, nên dấu vết phê duyệt biến mất đúng lúc người ta cần tra lại. Riêng đặt xe còn nặng hơn:
+luồng «Duyệt tự động bởi HOD» — trưởng bộ phận duyệt — chỉ có một bước, phiên mở ra rồi đóng ngay
+trong cùng một lần bấm, nên thẻ ấy chưa bao giờ kịp hiện lấy một lần.
+
+Nay phía máy chủ trả thêm một ô mang mã phiên duyệt gần nhất, kể cả phiên đã kết thúc; cờ «đang
+chạy» giữ nguyên nhiệm vụ cũ là ẩn ba nút duyệt một bước. Hai câu hỏi khác nhau thì phải có hai ô
+khác nhau: một ô hỏi «có đang chạy không», ô kia hỏi «đã từng vào bộ máy chưa». Cả hai ô lấy từ
+MỘT câu truy vấn vì bộ máy chỉ mở phiên mới khi không còn phiên nào đang mở — dưới bảng có ràng
+buộc duy nhất canh việc đó — nên phiên còn mở, nếu có, luôn là phiên mới nhất. Giao diện đổi sang
+gác bằng ô mới. Đường API trả chi tiết phiên vốn đã trả cả phiên đã xong, và hai thẻ con vốn đã vẽ
+đúng cho cả hai trạng thái, nên chỉ phải sửa đúng cái cổng ngoài cùng.
+
+Kiểm tra: 4 bài kiểm mới phía máy chủ cho hàm tra phiên mới nhất — giữ được phiên đã xong, không
+lẫn sang chứng từ khác, lấy đúng vòng duyệt mới nhất khi một phiếu chạy hai vòng. Ba cổng của v2
+xanh: kiểm kiểu 0 lỗi, soát mã 0 lỗi, 91 bài kiểm của hai phân hệ đặt xe và duyệt dấu đều xanh.
+Còn 12 bài kiểm đỏ trong vùng lân cận là lỗi có sẵn từ trước, đã kiểm chứng bằng cách cất phần
+sửa đi rồi chạy lại vẫn đỏ y hệt, nên để riêng thành việc dọn sau.
+
+Kiểm chứng trên máy chủ thử sau khi deploy, lấy đúng hai phiếu trong ảnh đại ca gửi: phiếu đóng
+dấu DX000932 nay có mã phiên 1557 và cờ đang chạy đã tắt, tức thẻ Lịch sử phê duyệt hiện trở lại;
+phiếu đặt xe DD000864 giữ nguyên mã phiên 1553 và vẫn đang chạy ở bước 3.
+Mã nguồn: `backend/app/modules/approval/instance_service.py` (hàm tra phiên mới nhất) · hai tệp
+cầu nối `approval_bridge.py` của đặt xe và duyệt dấu · `schema.py` và `service.py` của hai phân hệ
+đó · hai tệp kiểu dữ liệu và hai trang chi tiết bên `frontend-v2` ·
+`test/backend/test_dau_vet_duyet_con_lai_sau_khi_xong.py`.
+Commit: a71e044e (bản vá) · 2f82a492 (nhật ký thay đổi) · đẩy lên nhánh erp-v2 ở 3a18ebab.
+Deploy: dev 19/09/2026 (3a18ebab), không có migration.
