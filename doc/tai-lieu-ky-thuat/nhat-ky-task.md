@@ -3557,7 +3557,7 @@ mươi sáu bài xanh; nhịp ba thêm ba mươi sáu bài, chạy chung với t
 mươi mốt bài xanh; một trăm bốn mươi tám bài kiểm cũ của sao lưu, Điểm cà phê, sổ đồng bộ và các vòng
 nạp app đặt xe vẫn xanh; một trăm tám mươi bảy bài của phân hệ Quản trị trên giao diện mới
 xanh, một bài đỏ sẵn từ trước không liên quan; hai cổng kiểm kiểu và kiểm nếp viết mã chạy cả
-cây đều không lỗi. Chưa commit, chưa lên dev.
+cây đều không lỗi. Đã commit `140c85e0` và deploy dev ngày 19/09/2026.
 
 Sau khi dời xong còn một việc dễ bỏ sót: ô nào chưa có dòng dưới bảng thì màn hình hiện
 TRỐNG, trong khi hệ thống vẫn chạy bằng giá trị `.env` phía sau. Ô trống đọc như "chưa
@@ -3572,6 +3572,14 @@ giải không nổi, mà `_decrypt` lại nuốt lỗi trả chuỗi rỗng nên
 DB thì giữ nguyên, bảy khóa cả hai nơi đều trống thì bỏ qua; đọc lại bằng `app_settings.get`
 thì giá trị hiệu lực không đổi chỗ nào và ba khóa bí mật đều giải mã đúng độ dài.
 Quyền `setting` đã kiểm cả hai môi trường: chỉ vai trò `admin` giữ, không phải sửa gì.
+Trên dev script điền mười chín khóa, đọc lại thì giá trị hiệu lực cũng không đổi chỗ nào.
+Một bẫy lòi ra lúc deploy: bảng lệnh ở `doc/chung/Deploy_VPS.md` ghi dev chạy kèm
+`-p procurement-dev`, nhưng bộ đang chạy thật mang tên project mặc định
+`procurement-tool-dev` lấy theo tên thư mục. Truyền `-p` sai là compose không nhận ra bộ
+đang chạy mà dựng thêm một bộ SONG SONG — hai `api`, hai `celery-worker`, và nguy nhất là
+hai `celery-beat` cùng bắn lịch, tức vòng quét đồng bộ và sao lưu chạy đôi. Bộ mới không
+chiếm cổng nào nên `up` vẫn báo thành công và log cũng sạch; chỉ `docker ps` mới lộ. Đã gỡ
+bộ thừa ngay và sửa lại bảng lệnh trong tài liệu.
 Mã nguồn: `backend/app/core/app_settings.py` · `backend/app/modules/setting/service.py` ·
 `backend/scripts/seed_app_settings.py` ·
 `backend/app/modules/sync_log/registry.py` · `backend/app/core/legacy_files.py` ·
