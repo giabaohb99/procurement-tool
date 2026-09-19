@@ -3640,3 +3640,58 @@ Mã nguồn: frontend-v2/src/modules/system/components/user-scope-dialog.tsx ·
 utils/scope-summary.ts · modules/hr/hooks/use-employees.ts.
 Commit: 277b0cd2 (gom chung CR-427/428/430).
 Deploy: dev chiều 19/09/2026 (8d2c52a2), không có migration.
+
+
+## duoc-CR-427 | Thiết kế lại thân trang chi tiết phiếu đặt xe: bỏ tường ô khóa, dựng trục lộ trình và trục tiến trình
+- status: xong
+- date: 2026-09-19
+- pic: NSU209
+Trang chi tiết phiếu đặt xe tại đường dẫn `/vehicle-booking/:id` được dựng lại phần thân. Đại ca
+mở phiếu DX324 lên và nói nhìn nhiều ô nhập quá, xấu. Đọc lại thì vấn đề không nằm ở số lượng ô
+mà ở chỗ một trang CHỈ ĐỂ XEM lại đang mặc áo của biểu mẫu: hai mươi bốn ô khóa có viền xếp thành
+lưới hai cột, và quá nửa trong số đó rỗng vì phiếu chưa duyệt, chưa điều phối, chưa chạy. Riêng
+khối Thông tin phê duyệt có mười ô thì cả mười đều trống. Ô trống chiếm đúng bằng chỗ của dữ liệu
+thật nên mắt phải quét hết cả trang mới lọc ra được chỗ nào có chữ. Cộng thêm mã phiếu, mục đích
+chuyến, người tạo, lộ trình và giờ đi về đều lặp lại y nguyên phần tiêu đề ngay phía trên.
+
+Ba việc đã làm. Một là bỏ ô có viền ở màn xem, đổi sang nhãn nhỏ kèm chữ trần, đúng khuôn trang
+chi tiết Văn thư vừa dựng tuần trước. Chữ trần vẫn bôi đen và chép được, tức vẫn giữ nguyên lý do
+ra đời của ô khóa dùng chung. Hai là biến ô rỗng thành câu trả lời: mười ô duyệt, điều phối, hoàn
+thành gom về một trục tiến trình bốn chặng, chặng chưa tới lượt đọc ra thành chữ Chờ điều phối kèm
+vòng tròn nét đứt, người xem biết ngay phiếu đang dừng ở đâu thay vì phải suy ra từ mấy khung
+trắng. Ba là xếp theo việc chứ không theo bảng dữ liệu: lộ trình vẽ thành đường đi thật gồm điểm
+đi, các điểm dừng và điểm đến, mỗi điểm kèm mốc giờ của chính nó; người gửi và người nhận của phiếu
+giao hàng gom thành hai khối có nút chép số điện thoại; sáu ô thông tin người tạo rút về một danh
+thiếp. Ô nào rỗng thì bỏ hẳn, không bày dấu gạch ngang.
+
+Vá được một lỗi hiển thị có sẵn trong lúc làm: chặng phê duyệt nếu đọc theo mốc `approved_at` thì
+phiếu chạy qua luồng duyệt nhiều bước sẽ luôn hiện Chờ phê duyệt, vì máy chủ đẩy phiếu sang trạng
+thái đã duyệt mà không ghi mốc duyệt một bước. Đúng ca phiếu DX324 trên máy thật. Nay lấy trạng
+thái phiếu làm nguồn chính và có bài kiểm canh.
+
+Bố cục chốt sau ba lượt đại ca xem: cột trái là người yêu cầu, lộ trình, hàng hóa, ghi chú rồi
+lịch sử thao tác; cột phải dính khi cuộn gồm tiến trình xử lý, luồng duyệt và trao đổi. Lịch sử
+thao tác cố ý nằm ở cột trái vì cột phải có trần chiều cao và vùng cuộn riêng, mà lịch sử thì dài
+ra mãi theo thời gian, nhốt nó vào một khung cuộn cao ba trăm điểm ảnh là sai kiểu dữ liệu. Thẻ
+tiến trình khi dời sang cột phụ hẹp ba trăm sáu mươi điểm ảnh phải sửa hai chỗ: lề rút về bằng hai
+thẻ hàng xóm, và tên chặng tách riêng một dòng còn người với mốc giờ xuống dòng dưới, vì xếp cả ba
+trên một dòng thì ở cột hẹp câu gãy tùy tiện và tên chặng chìm giữa hai mẩu chữ xám.
+
+Hạn chế đã biết, chưa làm: ở khổ điện thoại lưới xếp dọc nên thẻ tiến trình rơi xuống sau phần
+thân phiếu. Muốn nó nằm ngay dưới lộ trình trên điện thoại thì phải dựng thẻ hai lần kèm ẩn hiện
+theo khổ màn, chờ đại ca chốt có đáng hay không.
+
+Còn một điểm cần đại ca quyết: luật ô chỉ xem trong CLAUDE.md đang viết chung một câu là mọi chỗ
+hiển thị dữ liệu đều dùng ô khóa. Thực tế nay đã tách hai vế, biểu mẫu có ô bị khóa thì dùng ô
+khóa, còn trang thuần xem thì dùng chữ trần. Phân hệ Văn thư đi hướng này trước, nay thêm Đặt xe.
+Đại ca gật thì sửa lại đoạn luật đó và tài liệu giao diện cho khớp.
+
+Kiểm tra: mười hai bài kiểm cho hàm dựng chặng và năm bài kiểm cho hàm định dạng mốc thời gian,
+bảy mươi bài kiểm của phân hệ Đặt xe xanh hết, kiểu dữ liệu sạch, không lỗi lint. Đã bấm tay trên
+trình duyệt bốn ca phiếu gồm đã duyệt, giao hàng đang điều phối, hoàn thành và đã hủy, ở cả khổ
+rộng lẫn khổ điện thoại ba trăm chín mươi điểm ảnh. Máy chủ không đổi, không migration.
+Mã nguồn: `frontend-v2/src/modules/vehicle-booking/utils/build-booking-stages.ts` (hàm thuần dựng
+bốn chặng, kèm bài kiểm) · `components/booking-route-card.tsx` · `booking-progress-card.tsx` ·
+`booking-requester-card.tsx` · `booking-delivery-card.tsx` · `booking-info-item.tsx` ·
+`booking-timeline-item.tsx` · `booking-detail-body.tsx` (từ 204 dòng rút còn phần ghép) ·
+`pages/vehicle-booking-detail-page.tsx` · `utils/booking-time-format.ts` (thêm hàm `formatStamp`).

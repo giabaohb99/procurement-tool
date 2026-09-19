@@ -12,6 +12,7 @@ import { BookingApprovalPanel } from '../components/booking-approval-panel'
 import { BookingDetailBody } from '../components/booking-detail-body'
 import { BookingDetailHeader } from '../components/booking-detail-header'
 import { BookingForm } from '../components/booking-form'
+import { BookingProgressCard } from '../components/booking-progress-card'
 import { BookingDispatchDialog } from '../components/booking-dispatch-dialog'
 import { BookingStatusBadge } from '../components/status-pill'
 import { BookingWorkflowActions } from '../components/booking-workflow-actions'
@@ -96,10 +97,19 @@ export function VehicleBookingDetailPage() {
       )}
 
       {data && (
-        //  Màn rộng: nội dung chính bên trái, luồng duyệt + lịch sử dồn cột phải.
+        //  Màn rộng: nội dung phiếu + lịch sử bên trái, tiến trình · luồng duyệt ·
+        //  trao đổi dồn cột phải (những thứ cần thấy trong lúc đọc phiếu).
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
           <div className="flex min-w-0 flex-col gap-5">
             <BookingDetailBody booking={data} />
+            {/*  Lịch sử thao tác khép lại CỘT CHÍNH, dưới Ghi chú: nó là thứ đọc
+                sau cùng (tra lại phiếu đã đi qua tay ai), dài ra theo thời gian,
+                và ở cột phụ có vùng cuộn riêng thì nó đẩy Trao đổi lên trên rồi
+                tự cuộn trong một khung cao 300px — đúng kiểu dữ liệu không nên
+                nhốt. `AuditTimeline` tự dựng thẻ có tiêu đề (không bọc thêm Card
+                kẻo lặp tiêu đề); `messageOnly` vì backend đã ghi câu tự mô tả
+                ("Đã điều phối Xe…", "Yêu cầu chỉnh sửa — Lý do: …"). */}
+            <AuditTimeline entity="vehicle_booking" entityId={data.id} messageOnly dense />
           </div>
           {/*  Cột phụ DÍNH dưới tiêu đề khi cuộn. Thân phiếu dài gấp mấy lần cột này,
               nên cuộn xuống giữa phiếu là khung Trao đổi trôi mất — muốn ghi một câu
@@ -114,15 +124,17 @@ export function VehicleBookingDetailPage() {
                 chặn thì phần đuôi bị ghim ra ngoài màn và KHÔNG cuộn tới được.
                 `3.5rem` là thanh trên của khung (nằm ngoài vùng cuộn). */}
           <div className="flex flex-col gap-5 lg:sticky lg:top-[calc(var(--booking-header-h,0px)+0.75rem)] lg:max-h-[calc(100dvh-3.5rem-var(--booking-header-h,0px)-2rem)] lg:self-start lg:overflow-y-auto">
+            {/*  Tiến trình xử lý đứng ĐẦU cột phụ: bốn khung ở cột này đều trả lời
+                "phiếu đang ở đâu, ai đã nói gì" — đọc từ trạng thái hiện thời
+                (Tiến trình) xuống việc phải làm (Luồng duyệt) rồi tới trao đổi và
+                dấu vết. Để nó ở cột chính thì nó cắt đôi mạch *chuyến đi này là gì*
+                (lộ trình → hàng hóa → người yêu cầu), và cuộn xuống là mất. */}
+            <BookingProgressCard booking={data} />
             {/* Luồng duyệt nhiều bước — chỉ hiện khi phiếu đang chạy trong bộ máy
                 (bật ApprovalSwitch); 3 nút duyệt một bước ở đầu trang đã tự ẩn. */}
             {data.approval_running && <BookingApprovalPanel bookingId={data.id} />}
             {/*  Trao đổi trên phiếu — dùng chung widget bình luận (entity/entityId). */}
             <DocumentComments entity="vehicle_booking" entityId={data.id} />
-            {/*  AuditTimeline tự dựng thẻ có tiêu đề "Lịch sử thao tác" (không bọc thêm Card
-                kẻo lặp tiêu đề). messageOnly: backend ghi câu tự mô tả ("Chỉnh sửa: …",
-                "Đã điều phối Xe…", "Yêu cầu chỉnh sửa — Lý do: …") nên hiện thẳng. */}
-            <AuditTimeline entity="vehicle_booking" entityId={data.id} messageOnly dense />
           </div>
         </div>
       )}
