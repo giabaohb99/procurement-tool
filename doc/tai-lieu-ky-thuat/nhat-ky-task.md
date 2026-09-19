@@ -3747,3 +3747,70 @@ Mã nguồn: `frontend-v2/src/modules/approval-seal/components/seal-queue-list.t
 đợi mới, kèm bài kiểm) · `components/seal-directory-glance-card.tsx` (viết lại hai thẻ chân
 trang) · `pages/seal-dashboard-page.tsx` · `types/seal-request.ts` (bảng màu biểu đồ theo mã
 trạng thái, kèm bài kiểm) · xóa `components/seal-queue-table.tsx`.
+
+
+## duoc-CR-429 | Màn Quỹ phép năm gom dòng theo người, bày dạng cây cha–con
+- status: xong
+- date: 2026-09-19
+- pic: NSU209
+Màn Quỹ phép năm tại đường dẫn `/hr/leave-balances` trước đây bày phẳng mỗi dòng quỹ một hàng.
+Máy chủ trả một dòng cho mỗi bộ ba người và năm và loại nghỉ, nên công ty khai tám loại nghỉ là
+mỗi nhân sự tám hàng, mà sáu trong tám hàng đó hạn mức bằng không. Bảng vì thế dài gấp tám lần
+số người, và đúng câu hỏi người ta mở màn này để hỏi — anh A còn mấy ngày phép — lại phải tự
+cộng tám hàng mới trả lời được.
+
+Nay gom theo người. Người có từ hai loại nghỉ trở lên thành một hàng cha bày số tổng, bấm vào
+thì bung ra các hàng con là từng loại nghỉ, có nét nhánh cây nối xuống và khuỷu cuối đóng lại ở
+dòng chót. Người chỉ có một loại nghỉ thì bày thẳng dòng đó, không có gì để bung. Ba dạng hàng
+tách nhau bằng một trường loại chứ không suy từ việc có con hay không, vì hàng đơn và hàng con
+bày cùng một dòng quỹ nhưng thụt lề khác nhau và bấm vào cho kết quả khác nhau.
+
+Hệ quả phải nhớ: gom nhóm nghĩa là PHÂN TRANG ĐẾM THEO NGƯỜI chứ không theo dòng quỹ, nên trang
+phải kéo trọn danh sách của năm đang xem về một lượt rồi tự cắt trang. Cắt trang ở máy chủ thì
+một người bị xé đôi qua hai trang và tổng của họ sai ở cả hai.
+
+Ba thay đổi kéo theo ở lớp dùng chung. Một là bảng dùng chung nhận thêm cửa khai lớp CSS cho
+từng hàng, để hàng cha và hàng con khác nhau bằng nền chứ không chỉ bằng một dấu thụt lề rộng
+mười sáu điểm ảnh; bảng gom nhóm cũng tắt kẻ sọc chẵn lẻ vì sọc chạy theo thứ tự hàng chứ không
+theo nhóm nên nó cắt ngang đúng thứ bậc vừa dựng. Hai là thêm một biến màu riêng cho nét nhánh
+cây: nét kẻ ô vốn cố tình nhạt vì chỉ cần tách hai vùng nền, còn nhánh cây phải đọc được thành
+hình mà lại đi qua ba nền khác nhau, ở nền xanh của hàng cha đang bung thì nét kẻ ô mất hút hoàn
+toàn. Ba là vá một lỗi có sẵn của bảng dùng chung: vạch kéo giãn cột thò bốn điểm ảnh ra ngoài
+mép phải cho dễ trúng tay, nhưng ở cột cuối thì bốn điểm ảnh đó thò ra ngoài cả bảng và khung
+cuộn vẽ hẳn một thanh cuộn ngang cao tám điểm ảnh cho đúng chỗ trống đó. Bảng nào vốn tràn thì
+không ai nhận ra, nhưng bảng vừa khít màn như màn này thì đó là một dải xám thừa dưới hàng cuối.
+
+Kèm theo một script dữ liệu mẫu ở máy chủ, chạy tay, cố ý không nằm trong seed chung và tuyệt
+đối không được gọi từ seed của bản chạy thật. Lý do: trên cơ sở dữ liệu mẫu chỉ mỗi loại Phép
+năm bật trừ vào quỹ, nên nút cấp quỹ tạo đúng một dòng cho mỗi người và màn hình ra hai trăm
+sáu mươi mốt hàng giống hệt nhau — không hàng nào có loại nghỉ thứ hai để gom, không hàng nào
+có ngày chờ duyệt, không hàng nào hết phép, tức mọi nhánh hiển thị vừa dựng đều nằm ngoài tầm
+mắt. Script dựng sáu ca mẫu nhắm đúng sáu nhánh đó, có ca lẻ nửa ngày và ca điều chỉnh âm. Khác
+mọi seed khác trong dự án, nó GHI ĐÈ chứ không chỉ thêm, vì là đồ thử nên chạy lại phải ra đúng
+một bộ số; đổi lại nó chỉ đụng vào sáu người đầu với bốn loại nghỉ của năm hiện tại và có cờ
+dọn sạch.
+
+Kiểm tra: kiểu dữ liệu sạch, không lỗi lint, sáu trăm mười tám bài kiểm của phân hệ Nhân sự và
+khu bảng dùng chung đều xanh. Đã bấm tay trên trình duyệt: bung nhóm ba loại nghỉ ra đủ ba dòng
+con có nhánh cây, số tổng của hàng cha khớp tổng ba dòng con, phân trang đếm đúng hai trăm sáu
+mươi mốt nhân sự.
+Mã nguồn: `frontend-v2/src/modules/hr/utils/group-leave-balances.ts` (hàm gom nhóm, kèm bài
+kiểm) · `components/leave-balance-columns.tsx` · `leave-balance-cells.tsx` ·
+`leave-balance-row-card.tsx` (thẻ khổ điện thoại) · `leave-balance-card.tsx` ·
+`pages/leave-balance-page.tsx` · `frontend-v2/src/shared/data-table/data-table.tsx` (cửa khai
+lớp CSS cho từng hàng) · `column-header-cell.tsx` (vạch kéo giãn cột cuối) ·
+`frontend-v2/src/index.css` (biến màu nhánh cây) · `backend/app/seed_quy_phep_mau.py`.
+
+
+## duoc-CR-430 | Dải thẻ Tổng quan Nhân sự nói rõ «Không có quyền xem» thay vì để số 0
+- status: xong
+- date: 2026-09-19
+- pic: NSU209
+Ba ô trên dải thẻ Tổng quan Nhân sự đọc từ hồ sơ nhân sự. Người thiếu quyền đọc hồ sơ thì truy
+vấn không chạy nên mọi con số về không — mà số không ở đây KHÔNG có nghĩa là không có ai, nó có
+nghĩa là không được xem. Không nói ra thì người dùng đọc ô «Hồ sơ cần bổ sung 0 — Đã khai đủ» và
+tin rằng hồ sơ toàn công ty đã khai đủ, trong khi mấy thẻ ngay bên dưới đã báo đúng là họ không
+có quyền xem. Nay ba ô đó vẫn dựng nhưng đổi dòng chú thích thành «Không có quyền xem», và ô cảnh
+báo thôi tô màu vàng vì không còn cảnh báo điều gì. Cùng lối xử lý đã dùng cho hai ô nghỉ phép.
+Kiểm tra: bài kiểm mới cho dải thẻ, ba cổng của v2 xanh.
+Mã nguồn: `frontend-v2/src/modules/hr/components/hr-overview-stats.tsx` (kèm bài kiểm).
