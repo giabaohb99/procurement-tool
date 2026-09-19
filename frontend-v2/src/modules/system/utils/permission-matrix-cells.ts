@@ -1,5 +1,26 @@
 import type { PermissionMeta, RolePermissionRow } from '@/modules/hr/types/role'
 import { permissionField } from '@/modules/hr/types/role'
+import type { PermissionGroup } from '../config/permission-groups'
+
+/**
+ * Mã các phân hệ KHÔNG có ô nào được tick — tập gập ban đầu của ma trận
+ * (bao-CR-428). Mở sẵn chỗ vai trò có quyền, gập chỗ trống, để người đọc không
+ * phải cuộn qua hai chục nhóm trắng. Chưa tick ở BẤT KỲ đâu (vai trò mới) thì trả
+ * tập rỗng = mở hết: gập hết lúc đó là một bảng chỉ toàn dòng tiêu đề.
+ */
+export function collapseGroupsWithoutTicks(
+  tree: PermissionGroup[],
+  rows: Record<string, RolePermissionRow>,
+  actionKeys: string[],
+): Set<string> {
+  const hasTick = (entityKey: string) => {
+    const row = rows[entityKey]
+    return !!row && actionKeys.some((action) => !!row[permissionField(action)])
+  }
+  const empty = tree.filter((group) => !group.entities.some((e) => hasTick(e.key)))
+  if (empty.length === tree.length) return new Set()
+  return new Set(empty.map((group) => group.id))
+}
 
 /**
  * Đọc/ghi một TẬP Ô của ma trận phân quyền (`entities × actions`).

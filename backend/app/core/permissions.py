@@ -218,8 +218,10 @@ ACTION_LABELS = {
 # của người xem. Dùng cho người quản lý thu mua của một phòng tự mua (nhà máy).
 SCOPES = ["own", "assigned", "proc", "dept_proc", "dept", "company", "all"]
 SCOPE_LABELS = {
-    "own": "Của mình", "assigned": "Được giao", "proc": "Thu mua (được giao + đã duyệt)",
-    "dept_proc": "Thu mua trong phòng mình",
+    #  bao-CR-428: nhãn hai bậc `proc`/`dept_proc` viết TỔNG QUÁT (không gắn chữ "Thu mua"),
+    #  vì cùng một bậc cấp được cho bất kỳ khóa nào có trạng thái duyệt.
+    "own": "Của mình", "assigned": "Được giao", "proc": "Được giao + đã duyệt",
+    "dept_proc": "Được giao + đã duyệt trong phòng",
     "dept": "Phòng ban", "company": "Công ty", "all": "Tất cả",
 }
 SCOPE_RANK = {"own": 0, "assigned": 1, "proc": 1, "dept_proc": 1, "dept": 2, "company": 3, "all": 4}

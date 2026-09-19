@@ -213,6 +213,15 @@ Dòng 2  Vai trò [ Người duyệt PYC   ▾ ]  Phòng ban [ IT ✕ ]        �
 2. ✅ Hành động: **8 cờ** — Xem/Tạo/Sửa/Xóa/Duyệt/**Hủy**/In/Xuất.
 3. ✅ **Menu/danh mục hiện theo quyền Xem** — có quyền xem cái nào thì hiện cái đó (mục 4).
 4. ✅ Làm theo lộ trình 3 bước, **Bước 1 trước**; thao tác cấp quyền theo luồng mục 5b (gọn, 3 bước/người).
+5. ✅ **Một vai trò = một chức năng** (đại ca chốt 19/09/2026, bao-CR-428). Vai trò chỉ gom
+   quyền của đúng một việc. Một người làm nhiều việc thì **gán nhiều vai trò**, không dồn
+   thêm quyền vào vai trò sẵn có. Hệ quả: (a) KHÔNG có "bậc riêng" theo từng tài khoản —
+   bậc phạm vi thuộc về vai trò, muốn một người thấy rộng hơn thì gán thêm vai trò có bậc
+   rộng hơn; (b) ngoại lệ ở `tab_user_scope` dùng chung cho mọi vai trò của tài khoản đó;
+   (c) mỗi vai trò chuẩn có **một câu mô tả** nói nó lo việc gì (seed điền khi ô trống, sửa
+   được ở màn Vai trò & quyền) để người đọc hay trợ lý AI trả lời được câu "vai trò này để
+   làm gì". Nhãn bậc viết tổng quát, không gắn tên phân hệ: «Được giao + đã duyệt» thay cho
+   «Thu mua (được giao + đã duyệt)».
 
 ---
 

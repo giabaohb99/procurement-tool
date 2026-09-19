@@ -257,6 +257,7 @@ export function UserPermissionDetailPage() {
 
       <UserScopeDialog
         userId={userId}
+        employeeId={account.employee_id}
         roleId={scopeRoleId}
         roleName={scopeRoleName}
         onClose={() => setScopeRoleId(null)}

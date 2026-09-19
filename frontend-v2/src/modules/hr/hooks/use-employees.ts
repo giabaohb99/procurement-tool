@@ -47,11 +47,18 @@ export function useMyEmployee() {
   })
 }
 
-export function useEmployee(id: number) {
+/**
+ * Một hồ sơ nhân sự theo id.
+ *
+ * `enabled`: cùng lý do như `useEmployees` — phân hệ khác mượn hồ sơ này (hộp
+ * thoại Phạm vi đọc công ty / phòng ban của chủ tài khoản) phải tự tắt khi người
+ * dùng không có `employee.read`, kẻo cứ mở là ăn 403.
+ */
+export function useEmployee(id: number, options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: queryKeys.hr.employee(id),
     queryFn: () => employeeApi.getById(id),
-    enabled: id > 0,
+    enabled: id > 0 && (options.enabled ?? true),
   })
 }
 
@@ -60,12 +67,19 @@ export function useEmployee(id: number) {
  * Lỗi đã được http-client toast sẵn (không phải GET) nên ở đây chỉ lo báo
  * thành công và làm mới cache.
  */
-/** Phòng chính + phòng kiêm nhiệm của một nhân sự, tách bạch hai khóa. */
-export function useEmployeeDepartments(employeeId: number) {
+/**
+ * Phòng chính + phòng kiêm nhiệm của một nhân sự, tách bạch hai khóa.
+ * `options.enabled` cùng lý do với `useEmployee`: màn mượn dữ liệu nhân sự
+ * (popup phạm vi, bao-CR-430) phải tự tắt khi người dùng thiếu `employee.read`.
+ */
+export function useEmployeeDepartments(
+  employeeId: number,
+  options: { enabled?: boolean } = {},
+) {
   return useQuery({
     queryKey: queryKeys.hr.employeeDepartments(employeeId),
     queryFn: () => employeeApi.getDepartments(employeeId),
-    enabled: employeeId > 0,
+    enabled: employeeId > 0 && (options.enabled ?? true),
   })
 }
 

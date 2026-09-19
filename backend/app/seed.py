@@ -639,6 +639,58 @@ for _role_info in STD_ROLES.values():
     _role_info["perms"].setdefault("dossier_type", (["read"], "all"))
 
 
+#  ── Mô tả một câu cho từng vai trò chuẩn (bao-CR-428) ─────────────────────
+#  Hiện dưới tên vai trò ở màn Phân quyền và là câu trợ lý AI trả lời khi ai
+#  hỏi "vai trò X là gì". Cố ý NGẮN — một câu, nói việc chứ không liệt kê khóa.
+#  Seed CHỈ điền khi cột `description` đang trống (D-018): người quản trị sửa
+#  câu này trên màn hình thì lần deploy sau vẫn giữ nguyên.
+#
+#  Luật đại ca chốt 19/09/2026: MỘT vai trò = MỘT chức năng; một người giữ
+#  nhiều vai trò. Thêm vai trò mới thì thêm một dòng ở đây, đừng nhét thêm
+#  việc vào vai trò có sẵn.
+ROLE_DESCRIPTIONS = {
+    "admin": "Quản trị toàn hệ thống: phân quyền, cấu hình, mọi phân hệ.",
+    "employee": "Nhân viên thường: lập yêu cầu mua hàng và yêu cầu báo giá của mình.",
+    "hr_profile": "Giữ hồ sơ nhân viên, kể cả trường nhạy cảm (CCCD, ngân hàng).",
+    "dept_head": "Trưởng phòng: duyệt yêu cầu mua hàng và xem báo cáo của phòng mình.",
+    "company_head": "Lãnh đạo công ty: xem yêu cầu mua hàng toàn công ty và dùng trợ lý AI.",
+    "pur_staff": "Nhân viên thu mua: xử lý yêu cầu được giao, khảo sát giá, lập đơn hàng.",
+    "pur_manager": "Quản lý thu mua: toàn quyền nghiệp vụ thu mua, không quản trị hệ thống.",
+    "pur_dept_manager": "Quản lý thu mua của một phòng tự mua hàng, chỉ thấy phiếu của phòng mình.",
+    "pur_admin": "Admin thu mua: quản danh mục, xem mọi chứng từ thu mua nhưng không duyệt.",
+    "help_admin": "Soạn và sửa bài trong Trung tâm hướng dẫn sử dụng.",
+    "support": "Tiếp nhận và xử lý phiếu hỗ trợ của người dùng.",
+    "forum_admin": "Quản trị Diễn đàn nội bộ: chuyên mục, ẩn hoặc xóa bài vi phạm.",
+    "vanban_xem": "Chỉ xem văn bản của công ty mình, không sửa, không in.",
+    "vanban_sua": "Soạn, sửa và gửi duyệt văn bản; không xóa, không tự duyệt.",
+    "booking_dispatcher": "Điều phối xe: duyệt phiếu đặt xe, phân xe và tài xế.",
+    "booking_manager": "Quản lý đội xe: điều phối và quản danh mục xe, tài xế.",
+    "booking_driver": "Tài xế: xem và cập nhật chuyến xe được phân cho mình.",
+    "booking_requester": "Người đặt xe: tạo và theo dõi phiếu đặt xe của mình.",
+    "seal_clerk": "Văn thư: đóng dấu và hoàn thành phiếu duyệt dấu của công ty mình.",
+    "seal_approver": "Trưởng bộ phận: duyệt phiếu xin đóng dấu của phòng mình.",
+    "seal_admin": "Quản danh mục con dấu và xem mọi phiếu duyệt dấu.",
+    "seal_director": "Giám đốc: nhận thông báo và xem phiếu đóng dấu đã duyệt của công ty mình.",
+    "dossier_admin": "Quản danh mục loại hồ sơ và kho hồ sơ công ty.",
+    "hr_leave": "Quản lý nghỉ phép: loại nghỉ, ngày lễ, quỹ phép và đơn nghỉ của mọi người.",
+    "coffee_admin": "Quản trị Điểm cà phê: chính sách, thành viên, chốt cấp phát kỳ.",
+    "coffee_counter": "Quầy cà phê: chỉ tra cứu số dư của thành viên.",
+}
+
+
+def fill_role_description(db, role, code):
+    """Điền mô tả mặc định cho vai trò ĐANG TRỐNG mô tả. Không ghi đè câu đã sửa tay."""
+    if getattr(role, "description", None):
+        return False
+    text = ROLE_DESCRIPTIONS.get(code)
+    if not text:
+        return False
+    role.description = text
+    db.add(role)
+    db.commit()
+    return True
+
+
 def seed_standard_roles(db):
     """Tạo các vai trò chuẩn + ma trận quyền. Không tạo user; gán cho nhân sự ở màn Phân quyền.
 
@@ -655,6 +707,8 @@ def seed_standard_roles(db):
             db.add(role)
             db.commit()
             db.refresh(role)
+        # bao-CR-428: mô tả chỉ điền khi trống — chạy cho cả vai trò cũ, KHÔNG qua cổng FORCE_SYNC.
+        fill_role_description(db, role, code)
         if not is_new and not FORCE_SYNC:
             continue   # vai trò đã có trên DB -> KHÔNG đụng vào quyền đã chỉnh tay
         existing = {p.entity for p in db.query(Permission).filter(Permission.role_id == role.id).all()}
@@ -849,6 +903,7 @@ def ensure_admin_role(db):
         db.add(admin_role)
         db.commit()
         db.refresh(admin_role)
+    fill_role_description(db, admin_role, "admin")
 
     for _ar in db.query(Role).filter(Role.code.in_(["admin", "ADMINISTRATOR"])).all():
         existing = {p.entity for p in db.query(Permission).filter(Permission.role_id == _ar.id).all()}

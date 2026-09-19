@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
 import type { RolePermissionRow } from '@/modules/hr/types/role'
+import type { PermissionGroup } from '../config/permission-groups'
 import {
   cellsState,
+  collapseGroupsWithoutTicks,
   setCells,
   toggleCells,
   toPermissionPayload,
@@ -180,5 +182,53 @@ describe('toPermissionPayload', () => {
       purchase_order: { entity: 'purchase_order', scope: '', can_read: true },
     }
     expect(toPermissionPayload(meta, rows)[0].scope).toBe('own')
+  })
+})
+
+describe('collapseGroupsWithoutTicks', () => {
+  // bao-CR-428: ma trận mở ra lần đầu chỉ xoè nhóm CÓ dấu tick; nhóm trống gập lại
+  // để mắt người đọc rơi ngay vào phần vai trò thật sự được cấp.
+  const COLLAPSE_TREE: PermissionGroup[] = [
+    {
+      id: 'procurement',
+      title: 'Thu mua',
+      entities: [
+        { key: 'purchase_request', label: 'Yêu cầu mua hàng' },
+        { key: 'purchase_order', label: 'Đơn mua hàng' },
+      ],
+    },
+    { id: 'finance', title: 'Tài chính', entities: [{ key: 'payable', label: 'Công nợ' }] },
+    { id: 'hr', title: 'Nhân sự', entities: [{ key: 'employee', label: 'Nhân sự' }] },
+  ]
+  const COLLAPSE_ACTIONS = ['read', 'create', 'write']
+
+  it('collapses only the groups that have no tick at all', () => {
+    const collapsed = collapseGroupsWithoutTicks(
+      COLLAPSE_TREE,
+      rowsOf(['purchase_order', ['read']]),
+      COLLAPSE_ACTIONS,
+    )
+    expect([...collapsed].sort()).toEqual(['finance', 'hr'])
+  })
+
+  it('opens everything when the role has no tick anywhere — collapsing all would hide the whole matrix', () => {
+    expect(collapseGroupsWithoutTicks(COLLAPSE_TREE, {}, COLLAPSE_ACTIONS).size).toBe(0)
+    const allFalse: Record<string, RolePermissionRow> = {
+      payable: { entity: 'payable', scope: 'own', can_read: false, can_write: false },
+    }
+    expect(collapseGroupsWithoutTicks(COLLAPSE_TREE, allFalse, COLLAPSE_ACTIONS).size).toBe(0)
+  })
+
+  it('ignores columns outside the action list', () => {
+    const rows: Record<string, RolePermissionRow> = {
+      payable: { entity: 'payable', scope: 'own', can_legacy: true },
+      employee: { entity: 'employee', scope: 'own', can_read: true },
+    }
+    const collapsed = collapseGroupsWithoutTicks(COLLAPSE_TREE, rows, COLLAPSE_ACTIONS)
+    expect([...collapsed].sort()).toEqual(['finance', 'procurement'])
+  })
+
+  it('returns an empty set for an empty tree', () => {
+    expect(collapseGroupsWithoutTicks([], rowsOf(['a', ['read']]), COLLAPSE_ACTIONS).size).toBe(0)
   })
 })

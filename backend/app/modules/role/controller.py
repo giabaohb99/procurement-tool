@@ -34,7 +34,16 @@ def list_roles(request: Request, db: Session = Depends(get_db),
                user=Depends(require("role", "read"))):
     # Trả mảng thô (không phân trang) — CrudList tự sort/phân trang phía client.
     q = apply_filters(service.list_roles_query(db), Role, request, FILTERABLE)
-    return success([RoleOut.model_validate(r).model_dump() for r in q.all()])
+    roles = q.all()
+    # bao-CR-428: kèm số người giữ + ô đã tick để cột trái màn Phân quyền in số
+    # người và chip phân hệ mà không phải gọi thêm N lượt `/permissions`.
+    summary = service.summarize_roles(db, [r.id for r in roles])
+    items = []
+    for r in roles:
+        item = RoleOut.model_validate(r).model_dump()
+        item.update(summary.get(r.id, {"user_count": 0, "granted": {}}))
+        items.append(item)
+    return success(items)
 
 
 @router.post("")

@@ -27,6 +27,7 @@ import {
 } from '../config/permission-groups'
 import {
   cellsState,
+  collapseGroupsWithoutTicks,
   emptyRow,
   setCells,
   toggleCells,
@@ -86,10 +87,17 @@ export function RolePermissionMatrix({
   readOnly,
 }: RolePermissionMatrixProps) {
   const actionKeys = meta.actions.map((action) => action.key)
-  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set())
-  const [keyword, setKeyword] = useState('')
-
   const fullTree = buildPermissionTree(meta.entities)
+  //  Mở sẵn phân hệ CÓ tick, gập phân hệ trống (bao-CR-428): 60 mục xổ hết thì
+  //  người đọc phải cuộn qua hai chục nhóm trắng mới tới chỗ vai trò này thật
+  //  sự có quyền. Chưa tick gì cả (vai trò mới) thì mở hết — gập hết lúc đó là
+  //  một bảng chỉ toàn dòng tiêu đề, không biết bắt đầu tick từ đâu.
+  //  Chỉ tính MỘT LẦN lúc mount: nơi gọi truyền `key={roleId}` nên đổi vai trò
+  //  là dựng lại; còn trong lúc tick thì không tự gập/mở gì cả.
+  const [collapsed, setCollapsed] = useState<Set<string>>(() =>
+    collapseGroupsWithoutTicks(fullTree, rows, actionKeys),
+  )
+  const [keyword, setKeyword] = useState('')
   const groups = filterPermissionTree(fullTree, keyword)
   const isFiltering = keyword.trim().length > 0
 

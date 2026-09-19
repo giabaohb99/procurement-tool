@@ -23,7 +23,12 @@ import { Card } from '@/shared/ui/card'
 import { Input } from '@/shared/ui/input'
 import { useCreateRole, useSaveRoleOrder } from '@/modules/hr/hooks/use-roles'
 import type { Role } from '@/modules/hr/types/role'
+import { summarizeRoleModules } from '../utils/role-module-summary'
 import { RoleListItem } from './role-list-item'
+
+/** Trần mô tả khớp cột `tab_role.description` (`String(255)`). */
+const MAX_DESCRIPTION_LENGTH = 255
+const EMPTY_DRAFT = { code: '', name: '', description: '' }
 
 interface RoleSidePanelProps {
   roles: Role[]
@@ -31,11 +36,15 @@ interface RoleSidePanelProps {
   onSelect: (roleId: number) => void
 }
 
-/** Cột trái màn Phân quyền: tìm, chọn, tạo, đổi tên và xếp thứ tự vai trò. */
+/**
+ * Cột trái màn Phân quyền: tìm, chọn, tạo và xếp thứ tự vai trò. Mỗi dòng in
+ * tên + mô tả + số người + chip phân hệ (bao-CR-428) để không phải bấm vào từng
+ * vai trò mới biết nó là gì.
+ */
 export function RoleSidePanel({ roles, selectedId, onSelect }: RoleSidePanelProps) {
   const [keyword, setKeyword] = useState('')
   const [isAdding, setAdding] = useState(false)
-  const [draft, setDraft] = useState({ code: '', name: '' })
+  const [draft, setDraft] = useState(EMPTY_DRAFT)
   //  Thứ tự đang hiện trên màn, đặt ngay lúc thả. Chờ máy chủ trả rồi mới vẽ lại
   //  thì dòng vừa kéo nhảy về chỗ cũ chừng nửa giây — nhìn như thao tác trượt.
   //  `null` = chưa kéo lần nào, cứ theo thứ tự máy chủ trả.
@@ -54,10 +63,18 @@ export function RoleSidePanel({ roles, selectedId, onSelect }: RoleSidePanelProp
   )
 
   const sorted = applyPendingOrder(roles, thuTuTamThoi)
+  //  Chip phân hệ suy từ ô đã tick — tính trên CẢ danh sách một lượt (mốc "ô
+  //  nền chung" cần nhìn mọi vai trò), rồi tra theo id cho từng dòng.
+  const modulesByRole = summarizeRoleModules(roles)
 
+  //  Tìm theo cả câu mô tả: gõ "công nợ" ra được vai trò kế toán dù tên nó không
+  //  có chữ đó.
   const visible = sorted.filter(
     (role) =>
-      !keyword || `${role.name} ${role.code}`.toLowerCase().includes(keyword.toLowerCase()),
+      !keyword ||
+      `${role.name} ${role.code} ${role.description}`
+        .toLowerCase()
+        .includes(keyword.toLowerCase()),
   )
 
   //  ĐANG LỌC THÌ KHÔNG CHO KÉO. Trên danh sách đã lọc, "thả dòng A xuống dưới
@@ -86,9 +103,10 @@ export function RoleSidePanel({ roles, selectedId, onSelect }: RoleSidePanelProp
     const created = await createRole.mutateAsync({
       code,
       name: draft.name.trim() || code,
+      description: draft.description.trim(),
     })
     setAdding(false)
-    setDraft({ code: '', name: '' })
+    setDraft(EMPTY_DRAFT)
     onSelect(created.id)
   }
 
@@ -118,6 +136,14 @@ export function RoleSidePanel({ roles, selectedId, onSelect }: RoleSidePanelProp
             placeholder="Tên vai trò"
             value={draft.name}
             onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+          />
+          {/*  Hỏi mô tả ngay lúc tạo: để trống thì dòng vai trò ở cột trái chỉ
+               có mỗi cái tên, đúng thứ bao-CR-428 đang sửa. */}
+          <Input
+            placeholder="Mô tả ngắn: vai trò này lo việc gì"
+            maxLength={MAX_DESCRIPTION_LENGTH}
+            value={draft.description}
+            onChange={(e) => setDraft({ ...draft, description: e.target.value })}
           />
           <div className="flex gap-2">
             <Button
@@ -165,13 +191,15 @@ export function RoleSidePanel({ roles, selectedId, onSelect }: RoleSidePanelProp
             items={visible.map((role) => role.id)}
             strategy={verticalListSortingStrategy}
           >
-            {visible.map((role) => (
+            {visible.map((role, index) => (
               <RoleListItem
                 key={role.id}
                 role={role}
                 selected={role.id === selectedId}
                 onSelect={onSelect}
                 canDrag={canDrag}
+                modules={modulesByRole.get(role.id) ?? []}
+                striped={index % 2 === 1}
               />
             ))}
           </SortableContext>
