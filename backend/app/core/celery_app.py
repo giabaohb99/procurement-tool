@@ -118,6 +118,13 @@ celery_app.conf.update(
             "task": "datxe.retry_pending",
             "schedule": crontab(minute="3,13,23,33,43,53"),
         },
+        #  Lưới đỡ của lưới đỡ: MỖI ĐÊM MỘT LẦN, đọc cả nhánh phiếu, bỏ con trỏ
+        #  và dựng lại cả dữ liệu suy ra của phiếu không đổi nội dung. Nặng —
+        #  ĐỪNG hạ xuống nhịp phút; hai vòng trên đã lo phần thường ngày.
+        "datxe-full-sweep": {
+            "task": "datxe.full_sweep",
+            "schedule": crontab(hour=2, minute=15),  # 02:15 VN, mỗi ngày
+        },
     },
 )
 

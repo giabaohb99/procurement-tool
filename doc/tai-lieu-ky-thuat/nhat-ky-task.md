@@ -3173,3 +3173,40 @@ Trang chi tiết phân công văn thư đóng dấu tại đường dẫn `/appr
 Mã nguồn: `frontend-v2/src/modules/approval-seal/components/seal-clerk-detail-header.tsx` (thành phần thanh đầu trang mới) · `frontend-v2/src/modules/approval-seal/pages/seal-clerk-detail-page.tsx` (trang chi tiết hoàn thiện) · `frontend-v2/src/modules/approval-seal/components/company-row.tsx` (thêm nút gỡ nhanh công ty) · bài kiểm `seal-clerk-detail-page.test.tsx`.
 Commit: `5fbce75a` trên nhánh `erp-v2`.
 
+
+## bao-CR-426 | Vá ba lỗ im lặng của vòng quét đồng bộ app đặt xe cũ và thêm vòng quét toàn bộ mỗi đêm
+- status: xong
+- date: 2026-09-19
+- pic: NSU209
+Vòng chạy nền kéo phiếu từ app đặt xe cũ về ERP có ba chỗ hỏng mà không chỗ nào báo lỗi, nên
+nhìn bề ngoài vẫn như đang chạy đúng. Em vá cả ba và thêm một vòng quét thứ ba làm lưới đỡ.
+
+Lỗ thứ nhất là con trỏ thời gian tự đẩy mình vào tương lai. Hàm đọc mốc thời gian của phiếu có
+đường lùi về ngày tạo khi phiếu chưa mang mốc sửa, mà chính hàm đó lại được dùng để tiến con
+trỏ. Một phiếu thử tạo bên ERP cuối tháng Tám đã kéo con trỏ vượt lên trước toàn bộ dữ liệu
+thật, khiến bốn trăm tám mươi phiếu bên bản dev bị giấu vĩnh viễn. Em tách riêng một hàm chỉ
+dành cho việc tiến con trỏ, hàm này chỉ nhận mốc sửa thật, không có thì trả về không.
+
+Lỗ thứ hai là chốt so nội dung chặn luôn phần dựng lại dữ liệu suy ra. Phiếu nào không đổi nội
+dung thì luồng xử lý thoát ra sớm, nên phiên duyệt, nhật ký thao tác và tệp đính kèm của phiếu
+đó không bao giờ được dựng lại. Đây chính là gốc của việc ba trăm năm mươi ba phiếu không có
+luồng duyệt. Em thêm một tham số ép dựng lại, nhưng cố ý không mở cho vòng chạy ba phút vì mở
+là mỗi nhịp dựng lại cả nhánh.
+
+Lỗ thứ ba là hàm đọc cả nhánh trả về cùng một giá trị cho hai nghĩa khác hẳn nhau, nhánh rỗng
+và nhánh hỏng. Hậu quả là đường dự phòng tải cả nhánh chạy ở mọi nhịp, âm thầm, kể cả lúc mọi
+thứ bình thường. Nay nhánh rỗng trả về tập rỗng, chỉ khi hỏng thật mới trả về giá trị không,
+và lúc rơi vào đường dự phòng thì ghi một dòng cảnh báo.
+
+Vòng quét toàn bộ chạy lúc hai giờ mười lăm mỗi đêm, bỏ con trỏ và ép dựng lại dữ liệu suy ra
+của cả phiếu không đổi nội dung. Vòng này nặng nên cố ý không hạ xuống nhịp phút, hai vòng cũ
+vẫn lo phần thường ngày. Có một bẫy đáng ghi lại khi viết bài kiểm: ba hàm dựng dữ liệu suy ra
+chạy trước câu trả về bỏ qua, nên một lượt quét ép buộc có dựng lại thật mà dòng sổ vẫn đóng ở
+trạng thái bỏ qua. Bài kiểm phải đếm lời gọi hàm dựng chứ đếm số bản ghi đã ghi là đo nhầm chỗ.
+Bộ kiểm của riêng vòng quét lên hai mươi ba bài, chạy cả năm tệp liên quan ra chín mươi tám bài
+xanh.
+Mã nguồn: `backend/app/modules/legacy_datxe/tasks.py` (thêm `cursor_value` và `full_sweep_task`) ·
+`backend/app/modules/legacy_datxe/service.py` (tham số `force`) ·
+`backend/app/modules/legacy_datxe/firebase.py` (`read_node` phân biệt rỗng với hỏng) ·
+`backend/app/modules/sync_log/registry.py` · `backend/app/core/celery_app.py` ·
+bài kiểm `test/backend/test_dong_bo_datxe_vong_quet.py`.

@@ -190,6 +190,7 @@ def apply_legacy_record(
     catalog: LegacyCatalog | None = None,
     seal_type_id: int = 0,
     user_id: int = 0,
+    force: bool = False,
 ) -> SyncLog | None:
     """Nhận MỘT phiếu từ app cũ. Trả dòng sổ đã đóng, hoặc `None`.
 
@@ -199,6 +200,14 @@ def apply_legacy_record(
 
     `people` / `catalog` / `seal_type_id` truyền vào được để một vòng quét nhiều
     phiếu chỉ dựng chúng một lần — hàm dựng của hai cái đầu đều nạp sẵn cả bảng.
+
+    `force=True` bỏ qua phép so mã băm, tức là **xử lại phiếu dù nội dung bên app
+    cũ không đổi**. Cần có, vì phép so kia chỉ trả lời được "nội dung NGUỒN có đổi
+    không", không trả lời được "bên ERP đã dựng đủ thứ suy ra từ nội dung đó
+    chưa". Ngày 18/09/2026 có 353 phiếu về ERP trước khi bộ dựng luồng duyệt ra
+    đời; từ đó mọi lượt quét đều thoát ở dòng dưới đây, và chúng nằm im không
+    luồng duyệt cho tới khi có người chạy tay một đợt vá. Đường `force` là để lần
+    sau không phải làm thế nữa — xem `tasks.py::full_sweep`.
     """
     entity = entity or entity_of(node)
     if entity not in MODEL:
@@ -207,7 +216,7 @@ def apply_legacy_record(
         raise ValueError("Thiếu khóa app cũ (legacy_id)")
 
     content_hash = compute_hash(node)
-    if is_unchanged(db, SOURCE_DATXE, entity, legacy_id, content_hash):
+    if not force and is_unchanged(db, SOURCE_DATXE, entity, legacy_id, content_hash):
         return None
 
     entry = open_entry(db, source=SOURCE_DATXE, entity=entity, legacy_id=legacy_id,

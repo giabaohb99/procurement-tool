@@ -158,6 +158,7 @@ register_source(
         jobs={
             "pull_updated": "Kéo phiếu đã sửa",
             "retry_pending": "Chạy lại phiếu lỗi",
+            "full_sweep": "Quét toàn bộ, dựng lại dữ liệu phản chiếu",
         },
         extra_warnings={
             "no_plate": "Xe không có biển số, đã đặt mã tạm",

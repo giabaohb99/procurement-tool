@@ -57,10 +57,20 @@ def query_node(path: str, *, order_by: str, start_at, limit: int = 0) -> dict | 
 def read_node(path: str, *, params: dict | None = None) -> dict | None:
     """Đọc một nhánh, vd `read_node("vehicles/veh_04")`.
 
-    Trả `None` khi chưa cấu hình, khi mạng hỏng, hoặc khi nhánh không tồn tại —
-    ba ca đó người gọi xử như nhau (tra không ra). Lỗi ghi vào log ứng dụng chứ
-    KHÔNG ném lên: một lần Firebase chập không được phép làm hỏng cả lượt nhận
-    phiếu, vì phiếu vẫn dựng được thiếu mỗi ô danh mục.
+    HAI KẾT CỤC KHÁC NHAU, ĐỪNG GỘP:
+
+    - `None` = **hỏng** (chưa cấu hình, mạng chập, Firebase trả 400 vì thiếu chỉ
+      mục). Người gọi nào cần biết "truy vấn có chạy được không" thì nhìn ô này.
+    - `{}` = chạy được nhưng **nhánh rỗng / không khớp gì**. Firebase trả `null`
+      cho nhánh không có dữ liệu, mà `null` là câu trả lời hợp lệ.
+
+    Trước đây cả hai ca cùng trả `None`, nên vòng quét không phân biệt nổi "hôm
+    nay không có phiếu nào mới" với "truy vấn chỉ mục hỏng từ hôm kia" — và nó
+    chọn cách nặng nhất (tải cả nhánh) cho cả hai. Ai chỉ cần tra một ô danh mục
+    thì vẫn viết `read_node(...) or {}` như cũ, không phải sửa gì.
+
+    Lỗi ghi vào log ứng dụng chứ KHÔNG ném lên: một lần Firebase chập không được
+    phép làm hỏng cả lượt nhận phiếu, vì phiếu vẫn dựng được thiếu mỗi ô danh mục.
     """
     if not is_configured():
         return None
@@ -76,4 +86,7 @@ def read_node(path: str, *, params: dict | None = None) -> dict | None:
         #  câu lỗi của requests thì có — nên chỉ nói đường dẫn nhánh.
         LOGGER.warning("Không đọc được nhánh %r bên app cũ: %s", path, type(exc).__name__)
         return None
+    if data is None:
+        #  Nhánh rỗng, hoặc truy vấn lọc không khớp bản ghi nào. Không phải lỗi.
+        return {}
     return data if isinstance(data, dict) else None
