@@ -25,36 +25,3 @@ export type JobPosition = {
   department_id: number
   updated_at?: string | null
 }
-
-/**
- * Đếm ngược từ hồ sơ: chức vụ này có bao nhiêu người giữ, ở những phòng nào
- * (duoc-CR-322, `GET /api/job-positions/stats`).
- *
- * ⚠️ `total` **lọc theo phạm vi dữ liệu** của người đang xem, nên nó có thể NHỎ
- * HƠN con số mà backend nêu khi từ chối xóa (chốt đó đếm toàn công ty). Câu
- * chặn xóa tự nói rõ «trên toàn công ty» vì lý do đó.
- */
-/**
- * Một gương mặt trong cụm xếp chồng ảnh. `avatar` rỗng khi hồ sơ chưa được cấp
- * tài khoản hoặc chưa đặt ảnh — giao diện rơi về chữ viết tắt, không phải lỗi.
- */
-export type JobPositionHolderFace = { id: number; full_name: string; avatar: string }
-
-export type JobPositionStat = {
-  position_id: number
-  total: number
-  /**
-   * Phòng ban đang có người giữ chức vụ này, đông người nhất trước.
-   *
-   * ⚠️ CỐ Ý không kèm gương mặt: cột «Phòng ban đang giữ» xếp chồng ảnh của
-   * **phòng ban** (chữ viết tắt tên phòng), không phải ảnh người trong phòng —
-   * thứ đó đã có ở cột «Đang giữ» ngay bên cạnh.
-   */
-  departments: { id: number; name: string; count: number }[]
-  /**
-   * Gương mặt ở mức chức vụ, tối đa 6 (`HOLDER_FACES_PER_POSITION` ở backend).
-   * ⚠️ **Không phải danh sách đầy đủ** — số thật là `total`, nên «+N» phải tính
-   * từ `total` chứ đừng lấy `holders.length`. Xem đủ thì mở tab «Người đang giữ».
-   */
-  holders: JobPositionHolderFace[]
-}

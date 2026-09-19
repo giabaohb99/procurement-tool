@@ -21,12 +21,7 @@ có ĐÚNG HAI đường ghi vào `position`, cả hai nằm trong tệp này:
 Thêm đường thứ ba ở chỗ khác là mở lại đúng mớ dữ liệu mà đợt này đang dọn.
 """
 from fastapi import HTTPException
-from sqlalchemy import func
 from sqlalchemy.orm import Session
-
-from app.modules.attachment.model import StoredFile
-from app.modules.department.model import Department
-from app.modules.user.model import User
 
 from .model import Employee
 from .position_model import JobPosition
@@ -136,104 +131,6 @@ def count_employees(db: Session, position_id: int) -> int:
 
     ⚠️ **KHÔNG lọc theo phạm vi dữ liệu**, cố ý: đây là chốt TOÀN VẸN dữ liệu,
     không phải một con số để đọc. Lọc theo phạm vi thì người chỉ thấy phòng mình
-    xóa được một chức vụ mà phòng khác đang giữ. Con số bày cho người xem thì
-    ngược lại — xem `count_holders_by_department`.
+    xóa được một chức vụ mà phòng khác đang giữ.
     """
     return db.query(Employee).filter(Employee.position_id == position_id).count()
-
-
-def count_holders_by_department(db: Session, scoped_employees) -> dict[int, dict]:
-    """Đếm NGƯỢC từ hồ sơ: mỗi chức vụ có bao nhiêu người, ở những phòng nào.
-
-    Trả `{position_id: {"total": n, "departments": [{"id", "name", "count"}]}}`.
-
-    ⚠️ `scoped_employees` là một truy vấn `Employee` **đã đi qua `apply_scope`**.
-    Bắt chỗ gọi truyền vào chứ không tự dựng, vì con số này là thứ NGƯỜI TA ĐỌC:
-    ai không được xem hồ sơ của phòng khác thì cũng không được biết phòng đó có
-    bao nhiêu người qua một cột đếm. Hệ quả phải chấp nhận: số ở đây có thể NHỎ
-    HƠN số mà chốt xóa dùng, nên câu chặn xóa phải tự nói ra số của nó.
-
-    ⚠️ Đếm bằng **một** câu `GROUP BY`, không lặp từng chức vụ. Bảng danh mục
-    hiện 13 dòng nên vòng lặp vẫn chạy, nhưng nó lớn theo số chức vụ và không có
-    gì chặn — cùng lý do trang này không nhét `employee_count` vào serializer.
-    """
-    rows = (scoped_employees
-            .with_entities(Employee.position_id, Employee.department_id,
-                           func.count(Employee.id))
-            .filter(Employee.position_id != 0)
-            .group_by(Employee.position_id, Employee.department_id)
-            .all())
-
-    dept_names = dict(db.query(Department.id, Department.name).all())
-
-    stats: dict[int, dict] = {}
-    for position_id, department_id, count in rows:
-        entry = stats.setdefault(int(position_id), {"total": 0, "departments": []})
-        entry["total"] += int(count)
-        entry["departments"].append({
-            "id": int(department_id or 0),
-            #  Hồ sơ chưa gắn phòng vẫn phải hiện ra: bỏ đi thì tổng không khớp
-            #  tổng các dòng phòng ban, và người đọc đi tìm dòng thiếu.
-            "name": dept_names.get(int(department_id or 0)) or "(Chưa gắn phòng ban)",
-            "count": int(count),
-        })
-
-    #  Nhiều người nhất lên trước — đó là phòng người đọc muốn biết.
-    for entry in stats.values():
-        entry["departments"].sort(key=lambda d: (-d["count"], d["name"]))
-    return stats
-
-
-#  Số gương mặt gửi kèm mỗi chức vụ. Cột trong bảng chỉ xếp chồng được vài cái
-#  rồi phải gộp thành «+N», nên gửi nhiều hơn là tốn băng thông cho thứ không ai
-#  nhìn thấy. Giao diện tự quyết hiện mấy cái, miễn đừng quá số này.
-HOLDER_FACES_PER_POSITION = 6
-
-
-def list_holder_faces(db: Session, scoped_employees) -> dict[int, list[dict]]:
-    """Vài gương mặt đại diện — để bảng xếp chồng ảnh (duoc-CR-322).
-
-    Trả `{position_id: [{"id", "full_name", "avatar"}]}`.
-
-    ⚠️ Gom theo CHỨC VỤ, không theo cặp (chức vụ × phòng ban). Bản đầu tách theo
-    cặp để cột «Phòng ban đang giữ» xếp ảnh của từng phòng, nhưng cột đó nay
-    hiển thị **ảnh của PHÒNG BAN** chứ không phải của người trong phòng — nên
-    không còn ai đọc dữ liệu tách theo phòng nữa.
-
-    ⚠️ **`Employee.avatar` và `User.avatar` đều là `@property`, không phải cột** —
-    đưa vào `with_entities` là `ArgumentError` ngay lúc chạy (đã dính). Ảnh thật
-    nằm ở `tab_file`, nối qua `tab_user.avatar_file_id`; nên phải `outerjoin` hai
-    lần rồi tự dựng lại đúng thứ tự ưu tiên `thumb_url or url` mà property kia
-    đang dùng. Đọc thẳng property trong vòng lặp thì đúng giá trị nhưng thành một
-    truy vấn mỗi người.
-
-    Hồ sơ chưa được cấp tài khoản (hoặc có tài khoản mà chưa đặt ảnh) thì rỗng —
-    giao diện rơi về chữ cái đầu của tên, không phải lỗi.
-
-    ⚠️ Cắt bớt Ở PYTHON sau khi đã sắp, không cắt trong SQL: một câu `LIMIT` cho
-    cả bảng thì chức vụ đứng sau mất sạch gương mặt. Số hồ sơ của một công ty
-    (~vài trăm) nhỏ hơn hẳn ngưỡng đáng lo, và câu này vẫn là MỘT truy vấn.
-    """
-    rows = (scoped_employees
-            .outerjoin(User, User.employee_id == Employee.id)
-            .outerjoin(StoredFile, StoredFile.id == User.avatar_file_id)
-            .with_entities(Employee.position_id, Employee.id, Employee.full_name,
-                           StoredFile.thumb_url, StoredFile.url)
-            .filter(Employee.position_id != 0)
-            .order_by(Employee.full_name.asc())
-            .all())
-
-    faces: dict[int, list[dict]] = {}
-    for position_id, employee_id, full_name, thumb_url, url in rows:
-        bucket = faces.setdefault(int(position_id), [])
-        if len(bucket) >= HOLDER_FACES_PER_POSITION:
-            continue
-        bucket.append({
-            "id": int(employee_id),
-            "full_name": full_name or "",
-            #  Cùng thứ tự ưu tiên với `User.avatar`: bản thumb trước (ảnh vẽ
-            #  32px, tải nguyên bản gốc là phí băng thông), ảnh cũ chưa có thumb
-            #  thì về bản gốc.
-            "avatar": thumb_url or url or "",
-        })
-    return faces
