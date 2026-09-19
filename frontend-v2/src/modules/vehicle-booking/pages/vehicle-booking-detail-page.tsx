@@ -114,9 +114,11 @@ export function VehicleBookingDetailPage() {
                 chặn thì phần đuôi bị ghim ra ngoài màn và KHÔNG cuộn tới được.
                 `3.5rem` là thanh trên của khung (nằm ngoài vùng cuộn). */}
           <div className="flex flex-col gap-5 lg:sticky lg:top-[calc(var(--booking-header-h,0px)+0.75rem)] lg:max-h-[calc(100dvh-3.5rem-var(--booking-header-h,0px)-2rem)] lg:self-start lg:overflow-y-auto">
-            {/* Luồng duyệt nhiều bước — chỉ hiện khi phiếu đang chạy trong bộ máy
-                (bật ApprovalSwitch); 3 nút duyệt một bước ở đầu trang đã tự ẩn. */}
-            {data.approval_running && <BookingApprovalPanel bookingId={data.id} />}
+            {/* Luồng duyệt nhiều bước — hiện khi phiếu ĐÃ TỪNG vào bộ máy, kể cả
+                phiên đã duyệt xong: thẻ này còn mang Lịch sử phê duyệt. Gác bằng
+                `approval_running` là sai — luồng "Duyệt tự động bởi HOD" chỉ 1 bước
+                nên đóng ngay, dấu vết không bao giờ kịp hiện (19/09/2026). */}
+            {data.approval_instance_id != null && <BookingApprovalPanel bookingId={data.id} />}
             {/*  Trao đổi trên phiếu — dùng chung widget bình luận (entity/entityId). */}
             <DocumentComments entity="vehicle_booking" entityId={data.id} />
             {/*  AuditTimeline tự dựng thẻ có tiêu đề "Lịch sử thao tác" (không bọc thêm Card

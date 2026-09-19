@@ -409,9 +409,16 @@ def serialize_seal_request(db: Session, req: SealRequest) -> dict:
     #  Văn thư đã đóng dấu (khối "Thông tin phê duyệt") — tên từ tài khoản completed_by.
     clerk = _emp_of_user(db, req.completed_by)
     out.completed_by_name = (clerk.full_name if clerk else "") or ""
-    #  Có phiên duyệt nhiều bước đang chạy? → FE ẩn nút duyệt cổng-1 trực tiếp.
-    from .approval_bridge import running_instance
-    out.approval_running = running_instance(db, req.id) is not None
+    #  Phiên duyệt nhiều bước gần nhất. Còn mở → FE ẩn nút duyệt cổng-1 trực tiếp;
+    #  đã đóng → FE vẫn cần ID để vẽ thẻ Lịch sử phê duyệt. Một câu truy vấn trả
+    #  cả hai: bộ máy chỉ mở phiên mới khi không còn phiên nào mở, nên phiên còn
+    #  mở (nếu có) luôn là phiên mới nhất.
+    from app.modules.approval.instance_model import INSTANCE_OPEN_STATUSES
+
+    from .approval_bridge import latest_instance
+    instance = latest_instance(db, req.id)
+    out.approval_instance_id = instance.id if instance else None
+    out.approval_running = instance is not None and instance.status in INSTANCE_OPEN_STATUSES
     return out.model_dump()
 
 

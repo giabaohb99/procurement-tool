@@ -196,6 +196,10 @@ export interface VehicleBooking {
   is_assigned_driver: boolean
   /** True khi phiếu đang chạy trong luồng duyệt nhiều bước — ẩn 3 nút duyệt cũ. */
   approval_running?: boolean
+  /** ID phiên duyệt gần nhất, KỂ CẢ phiên đã xong — `null` nếu phiếu chưa vào bộ máy.
+   *  Gác thẻ Lịch sử phê duyệt bằng ô này, không bằng `approval_running`. Chỉ có ở
+   *  phản hồi CHI TIẾT. */
+  approval_instance_id?: number | null
   created_at: string | null
 }
 

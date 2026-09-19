@@ -44,6 +44,11 @@ def running_instance(db: Session, req_id: int):
     return instance_service.running_instance(db, ENTITY, req_id)
 
 
+def latest_instance(db: Session, req_id: int):
+    """Phiên duyệt mới nhất, KỂ CẢ đã kết thúc — để trang chi tiết còn vẽ dấu vết."""
+    return instance_service.latest_instance(db, ENTITY, req_id)
+
+
 def block_legacy_path(db: Session, req: SealRequest) -> None:
     """Khóa ba nút duyệt CỔNG 1 khi phiếu đang chạy trong bộ máy nhiều bước."""
     if running_instance(db, req.id) is not None:

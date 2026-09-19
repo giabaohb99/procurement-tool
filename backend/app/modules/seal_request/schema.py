@@ -93,6 +93,9 @@ class SealRequestResponse(SealRequestBase):
     completed_at: str = ""          # thời điểm hoàn thành (đóng dấu)
     #  Đang chạy LUỒNG DUYỆT NHIỀU BƯỚC (engine) → FE ẩn nút duyệt một bước (cổng 1).
     approval_running: bool = False
+    #  ĐÃ TỪNG vào bộ máy nhiều bước (phiên mới nhất, kể cả đã xong) → FE vẫn vẽ
+    #  thẻ Lịch sử phê duyệt sau khi luồng kết thúc. Khác `approval_running`.
+    approval_instance_id: int | None = None
     created_at: str | None = None
 
     @field_validator("created_at", mode="before")

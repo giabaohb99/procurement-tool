@@ -146,7 +146,10 @@ export function SealRequestDetailPage() {
 
           {/* Cột phải: Sticky scroll theo header */}
           <div className="flex flex-col gap-5 lg:sticky lg:top-[calc(var(--seal-header-h,0px)+0.75rem)] lg:max-h-[calc(100dvh-3.5rem-var(--seal-header-h,0px)-2rem)] lg:self-start lg:overflow-y-auto pr-0.5">
-            {data.approval_running && <SealApprovalPanel requestId={data.id} />}
+            {/*  Gác bằng `approval_instance_id` (phiên gần nhất, kể cả đã xong) chứ
+                 KHÔNG bằng `approval_running`: thẻ này chứa cả Lịch sử phê duyệt,
+                 gác bằng cờ "đang chạy" thì duyệt xong là dấu vết biến mất. */}
+            {data.approval_instance_id != null && <SealApprovalPanel requestId={data.id} />}
             <DocumentComments entity="seal_request" entityId={data.id} />
             <AuditTimeline entity="seal_request" entityId={data.id} showMessage dense />
           </div>
