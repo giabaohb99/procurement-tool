@@ -342,32 +342,41 @@ def make_purchase_requests(world) -> dict[str, int]:
     return {k: v.id for k, v in rows.items()}
 
 
-def test_b1_thu_mua_khong_nhat_duoc_phieu_da_duyet_cua_phap_nhan_khac(db, world):
-    """B1 — `proc` AND thêm pháp nhân của người xem (`_proc_status_cond`, `:231-243`).
+def test_b1_thu_mua_gan_phap_nhan_van_nhat_duoc_phieu_da_duyet_cua_phap_nhan_khac(db, world):
+    """B1 — bao-CR-434 ĐẢO P1-1: `proc` KHÔNG còn AND pháp nhân của người xem.
 
-    Trước P1-1 nhánh «nhặt việc» không kèm pháp nhân, nên bật đa pháp nhân là
-    thu mua công ty con nhặt được phiếu đã duyệt của MỌI công ty.
-
-    ⚠️ Lọc pháp nhân CHỈ nằm trong nhánh trạng thái. Bốn nhánh còn lại của cùng
-    `or_()` (phiếu mình tạo · mình yêu cầu · `assignee_id` · dòng gán mã mình)
-    không kèm pháp nhân — nên `A_giao_dong` vẫn lọt qua nhánh dòng, và đó là
-    đúng: việc đã giao đích danh thì không phải việc của trục pháp nhân.
+    P1-1 (CR-164) từng siết nhánh «nhặt việc» theo `company_id` trên hồ sơ. Đại ca
+    chốt 21/09/2026: pháp nhân trên hồ sơ chỉ là chuyện pháp lý, một phòng có thể
+    mua cho nhiều pháp nhân — nên a3 (hồ sơ pháp nhân A) phải nhặt được cả
+    `B_duyet`. Muốn nhốt vào một pháp nhân thì khai tay ở «Chỉ trong công ty»
+    (xem B1b). Phiếu nháp (`A_nhap`, `B_nhap`) vẫn không lọt: trạng thái là tiêu
+    chí duy nhất của nhánh này.
     """
     from app.modules.purchase_request.model import PurchaseRequest
 
     pr = make_purchase_requests(world)
     a3 = world.grant("a3", "purchase_request", scope="proc")   # nhân sự pháp nhân A
+    assert a3.sees(PurchaseRequest) == {pr["A_duyet"], pr["B_duyet"], pr["A_giao_dong"]}
+    assert a3.can_get(PurchaseRequest, pr["B_duyet"]) is True
+
+
+def test_b1b_chi_trong_cong_ty_moi_la_cach_nhot_thu_mua_vao_mot_phap_nhan(db, world):
+    """B1b — cách DUY NHẤT thu hẹp theo pháp nhân sau CR-434: ô «Chỉ trong công ty»
+    (`_explicit_cond`, chiều `company`, include). Khai tay thì AND vào mọi nhánh của
+    grant, kể cả nhánh «dòng gán mã mình» — `A_giao_dong` thuộc A nên vẫn còn.
+    """
+    from app.modules.purchase_request.model import PurchaseRequest
+
+    pr = make_purchase_requests(world)
+    a3 = world.grant("a3", "purchase_request", scope="proc", inc_company=["A"])
     assert a3.sees(PurchaseRequest) == {pr["A_duyet"], pr["A_giao_dong"]}
     assert a3.can_get(PurchaseRequest, pr["B_duyet"]) is False
 
 
 def test_b2_thu_mua_chua_gan_phap_nhan_van_nhat_duoc_het(db, world):
-    """B2 — ghim hành vi CỐ Ý: `company_id = 0` thì `proc` KHÔNG thu hẹp.
-
-    `_proc_status_cond` chỉ AND pháp nhân khi người xem đã gắn `company_id`
-    (`scoping.py:241`). Dữ liệu prod hiện còn nhiều nhân sự chưa gắn, siết luôn
-    là Thu mua đứng hình. Gắn `company_id` xong thì tự lọc — lúc đó bài này phải
-    đổi, và đó là đúng chỗ cần đổi.
+    """B2 — `company_id = 0` thì `proc` nhặt hết; sau CR-434 đây không còn là ngoại
+    lệ mà là hành vi chung (B1 với hồ sơ đã gắn pháp nhân cho cùng kết quả).
+    Giữ bài để canh riêng đường «chưa gắn nhân sự / chưa gắn pháp nhân».
     """
     from app.modules.purchase_request.model import PurchaseRequest
 

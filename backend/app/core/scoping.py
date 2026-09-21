@@ -374,19 +374,18 @@ def _emp_match(model, col_id: str, col_name: str, emp_id: int, emp_name: str):
     return or_(*cs) if len(cs) > 1 else cs[0]
 
 
-def _proc_status_cond(model, f, company_id: int, statuses: list[str]):
-    """Nhánh "nhặt việc" của bậc `proc`: phiếu ở các trạng thái đã duyệt — P1-1 (kế hoạch 12).
+def _proc_status_cond(model, statuses: list[str]):
+    """Nhánh "nhặt việc" của bậc `proc` / `dept_proc`: phiếu ở các trạng thái sau duyệt.
 
-    AND thêm pháp nhân của người xem để thu mua công ty con không nhặt được phiếu công ty
-    khác. `company_id = 0` (nhân sự chưa gắn pháp nhân — dữ liệu prod hiện tại) thì KHÔNG
-    thu hẹp, giữ đúng hành vi cũ để Thu mua không gián đoạn; gắn công ty rồi thì tự lọc.
-    Entity không khai chiều `company` cũng không thu hẹp — nhưng cả hai chỗ đang gọi
-    (`purchase_request`, `purchase_order`) đều có cột này.
+    bao-CR-434 ĐẢO P1-1 (kế hoạch 12, CR-164): trước đây nhánh này AND thêm pháp nhân của
+    người xem khi hồ sơ nhân sự đã gắn `company_id`. Đại ca chốt 21/09/2026: pháp nhân trên
+    hồ sơ chỉ là chuyện pháp lý — phòng nhà máy (Dego Organic) mua cho nhiều công ty và ghi
+    hóa đơn về công ty khác mình, nên điền ô Pháp nhân cho một người là họ MẤT phiếu của các
+    công ty còn lại mà không ai được báo. Từ nay hồ sơ KHÔNG tự thu hẹp gì cả; muốn nhốt một
+    tài khoản vào một pháp nhân thì khai tận tay ở ô «Chỉ trong công ty» của hộp thoại Phạm
+    vi (`_explicit_cond`, chiều `company`) — giới hạn nào cũng phải là thứ quản trị nhìn thấy.
     """
-    status_cond = getattr(model, "status").in_(statuses)
-    if company_id and f.get("company"):
-        return and_(status_cond, getattr(model, f["company"]) == company_id)
-    return status_cond
+    return getattr(model, "status").in_(statuses)
 
 
 def _chan(entity, scope, user, reason):
@@ -456,18 +455,15 @@ def _role_scope_cond(model, entity, scope, user, profile, perms=None):
             # "proc" (NV/Admin thu mua): thấy thêm MỌI phiếu đã duyệt để nhặt việc + phân bổ.
             # CR-034: gồm cả 'approved' (TP duyệt xong, ĐANG CHỜ ĐIỀU PHỐI) — thiếu trạng thái này
             # thì chính người phải điều phối lại không nhìn thấy phiếu.
-            # P1-1 (kế hoạch 12): nhánh này TRƯỚC ĐÂY không kèm lọc pháp nhân, nên bật đa pháp
-            # nhân là thu mua công ty con nhặt được phiếu đã duyệt của MỌI công ty. AND thêm
-            # công ty của người xem — nhưng CHỈ khi họ đã gắn `company_id`. Nhân sự chưa gắn
-            # (dữ liệu prod hiện tại, company_id=0) giữ nguyên hành vi cũ để Thu mua không gián
-            # đoạn; gắn company_id (bước bật đa pháp nhân) thì tự lọc đúng công ty.
+            # Nhánh này CỐ Ý không lọc pháp nhân (bao-CR-434 đảo P1-1, xem `_proc_status_cond`):
+            # nhà máy mua cho nhiều công ty; nhốt theo pháp nhân là việc của ô «Chỉ trong
+            # công ty», không phải của hồ sơ nhân sự.
             # bao-CR-371: phải là CẢ vòng đời sau duyệt, không chỉ 2 mốc đầu. Liệt kê tay
             # ["approved","dispatched"] nghĩa là phiếu vừa chạy sang 'processing' là BIẾN MẤT
             # khỏi mắt chính người thu mua đang xử lý nó (mở link ra thì "Không tìm thấy"),
             # trừ khi tình cờ họ là người tạo / người yêu cầu / người được gán.
             if is_proc:
-                conds.append(_proc_status_cond(model, f, company_id,
-                                                list(STATUS_AFTER_APPROVE)))
+                conds.append(_proc_status_cond(model, list(STATUS_AFTER_APPROVE)))
             if profile.get("employee_id"):
                 conds.append(model.assignee_id == profile["employee_id"])
             if profile.get("emp_code"):
@@ -504,7 +500,7 @@ def _role_scope_cond(model, entity, scope, user, profile, perms=None):
                 # bao-CR-371: cùng lỗi với YCMH — nhận hàng xong (`partial`/`received`/
                 # `completed`) thì đơn không được biến mất khỏi mắt người thu mua đang theo nó.
                 from app.modules.purchase_order.model import STATUS_AFTER_APPROVE as PO_AFTER_APPROVE
-                conds.append(_proc_status_cond(model, f, company_id, list(PO_AFTER_APPROVE)))
+                conds.append(_proc_status_cond(model, list(PO_AFTER_APPROVE)))
             ec = _emp_match(model, "nspt_id", "nspt",
                             profile.get("employee_id") or 0, profile.get("emp_name") or "")
             if ec is not None:

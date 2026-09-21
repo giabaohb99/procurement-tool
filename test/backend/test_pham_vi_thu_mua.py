@@ -270,19 +270,19 @@ def model_of(name: str):
 # ══════════════════════════════════════════════════════════════════════════════
 
 
-def test_p1_thu_mua_pham_vi_proc_khong_nhat_duoc_phieu_da_duyet_cua_phap_nhan_khac(world, docs):
+def test_p1_thu_mua_pham_vi_proc_nhat_moi_phieu_da_duyet_khong_ke_phap_nhan(world, docs):
     """Nhánh `proc` là chỗ NHẶT VIỆC: nó cố ý cho thu mua thấy MỌI phiếu đã duyệt, kể cả
-    phiếu mình chưa đụng tới. P1-1 (kế hoạch 12) AND thêm pháp nhân của người xem
-    (`_proc_status_cond`, `scoping.py:231-243`) — bỏ vế đó là thu mua công ty con đọc
-    trọn đơn hàng của mọi công ty trong tập đoàn.
+    phiếu mình chưa đụng tới và kể cả phiếu đứng tên pháp nhân khác. P1-1 (kế hoạch 12)
+    từng AND thêm pháp nhân trên hồ sơ người xem; bao-CR-434 đảo lại (21/09/2026) vì
+    một phòng — nhà máy Dego Organic — mua cho nhiều pháp nhân, hồ sơ chỉ là pháp lý.
 
-    Ca này chứng minh cả hai vế cùng lúc: nhặt được HAI phiếu đã duyệt của pháp nhân A
-    (một do mình lập, một của người khác), và KHÔNG nhặt phiếu đã duyệt của B.
+    Ca này chứng minh: a3 (hồ sơ pháp nhân A) nhặt được HAI phiếu đã duyệt của A (một do
+    mình lập, một của người khác) VÀ phiếu đã duyệt của B. Muốn nhốt vào A thì khai
+    «Chỉ trong công ty» — xem `test_b1b_...` ở `test_pham_vi_cap_bac_ma_tran.py`.
     """
     a3 = world.grant("a3", "purchase_request", scope="proc")
     seen = a3.sees(model_of("purchase_request"))
-    assert seen == pick(docs, "pr_a_duyet", "pr_a2_duyet")
-    assert docs["pr_b_duyet"] not in seen, "phiếu đã duyệt của pháp nhân B không được lọt"
+    assert seen == pick(docs, "pr_a_duyet", "pr_a2_duyet", "pr_b_duyet")
 
 
 def test_p2_pham_vi_proc_khong_thay_phieu_con_nhap_cua_dong_nghiep_cung_phap_nhan(world, docs):
@@ -313,8 +313,11 @@ def test_p3_go_id_ycmh_ngoai_pham_vi_va_id_khong_ton_tai_cho_cung_mot_ket_qua(wo
     """
     from app.modules.purchase_request import controller as pr_ctl
 
-    a3 = world.grant("a3", "purchase_request", scope="proc")
+    #  Sau bao-CR-434 bậc `proc` trần nhặt cả phiếu của B, nên phải nhốt a3 vào A bằng
+    #  «Chỉ trong công ty» thì `pr_b_duyet` mới thật sự nằm NGOÀI phạm vi.
+    a3 = world.grant("a3", "purchase_request", scope="proc", inc_company=["A"])
     assert docs["pr_a_duyet"] in a3.sees(model_of("purchase_request"))
+    assert docs["pr_b_duyet"] not in a3.sees(model_of("purchase_request"))
     assert read_body(pr_ctl.get_pr(docs["pr_a_duyet"], world.db, a3.user))["code"] == "YC_A_DUYET"
 
     with pytest.raises(HTTPException) as ngoai:
@@ -1085,22 +1088,36 @@ def test_d5_bang_dong_dmh_loc_qua_don_cha_chu_khong_truy_van_thang(world, docs):
     assert ra["total"] == 1
 
 
-def test_d6_pham_vi_proc_cua_dmh_chi_nhat_don_da_duyet_cung_phap_nhan(world, docs):
+def test_d6_pham_vi_proc_cua_dmh_nhat_don_da_duyet_khong_ke_phap_nhan(world, docs):
     """Nhánh `proc` của ĐMH khác YCMH: chỉ mở trạng thái `approved` (không có `dispatched`)
     và ghép thêm `_emp_match` theo `nspt_id` (CR-087 — khớp id, tên chỉ là đường lùi).
+    Sau bao-CR-434 nhánh trạng thái không lọc pháp nhân: `po_b` vừa duyệt là a3 thấy ngay;
+    `po_b_nhap`/đơn chưa duyệt vẫn không lọt, và nhốt vào A thì phải khai «Chỉ trong công ty».
     """
     from app.modules.purchase_order.model import PurchaseOrder
 
+    a3 = world.grant("a3", "purchase_order", scope="proc")
+    assert a3.sees(PurchaseOrder) == {docs["po_a_duyet"]}, "chưa duyệt thì không nhặt"
+
     world.db.get(PurchaseOrder, docs["po_b"]).status = "approved"
     world.db.commit()
+    assert a3.sees(PurchaseOrder) == pick(docs, "po_a_duyet", "po_b"), (
+        "đơn đã duyệt của pháp nhân B cũng nhặt — hồ sơ pháp nhân A không thu hẹp (CR-434)")
 
-    a3 = world.grant("a3", "purchase_order", scope="proc")
-    assert a3.sees(PurchaseOrder) == {docs["po_a_duyet"]}, "đơn đã duyệt của pháp nhân A"
+    #  Gọi `grant` lần hai là THÊM vai trò (hợp OR), nên ca nhốt dùng người khác: a2 —
+    #  cũng hồ sơ pháp nhân A, và `po_a_duyet` là đơn a2 lập nên vẫn thấy qua nhánh chủ.
+    a2_only_a = world.grant("a2", "purchase_order", scope="proc", inc_company=["A"])
+    assert a2_only_a.sees(PurchaseOrder) == {docs["po_a_duyet"]}, "«Chỉ trong công ty» mới nhốt"
+
+    world.db.get(PurchaseOrder, docs["po_b"]).nspt_id = world.emp["a2"]
+    world.db.commit()
+    assert a2_only_a.sees(PurchaseOrder) == {docs["po_a_duyet"]}, (
+        "nhốt tay thắng mọi nhánh, kể cả nhánh NSPT là mình (`_explicit_cond` AND)")
 
     world.db.get(PurchaseOrder, docs["po_b"]).nspt_id = world.emp["a3"]
     world.db.commit()
     assert a3.sees(PurchaseOrder) == pick(docs, "po_a_duyet", "po_b"), (
-        "gán NSPT là mình thì thấy, kể cả đơn pháp nhân khác — đúng thiết kế `assigned`")
+        "gán NSPT là mình thì thấy — nhánh này chưa bao giờ lọc pháp nhân")
 
 
 def test_d7_nhan_hang_khong_co_cong_rieng_moi_duong_deu_di_qua_dmh(world, docs):
@@ -1333,7 +1350,10 @@ def test_p13_moi_route_ghi_ycmh_kiem_pham_vi_hai_chieu(world, docs, ten, scope, 
                                                        loi_trong):
     from app.modules.purchase_request import controller as pr_ctl
 
-    a3 = world.grant("a3", "purchase_request", scope=scope, actions=("read", action))
+    #  Bậc `proc` trần nhặt mọi phiếu đã duyệt kể cả của B (bao-CR-434), nên ca `dispatch`
+    #  phải nhốt a3 vào A bằng «Chỉ trong công ty» để YC_NGOAI thật sự ngoài phạm vi.
+    narrow = {"inc_company": ["A"]} if scope == "proc" else {}
+    a3 = world.grant("a3", "purchase_request", scope=scope, actions=("read", action), **narrow)
     trong = create_request(world.db, code="YC_TRONG", company_id=world.co["A"],
                            created_by=world.actor("a3").user.id, status=trang_thai)
     ngoai = create_request(world.db, code="YC_NGOAI", company_id=world.co["B"],

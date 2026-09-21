@@ -14,10 +14,16 @@ nằm hoàn toàn ở **vai trò + phạm vi của từng tài khoản**:
 | **A. Nhà máy** (phòng tự mua) | người đang thuộc phòng đó | *Quản lý thu mua phòng* (`pur_dept_manager`) + *Nhân viên thu mua* (`pur_staff`) | bậc **Được giao + đã duyệt trong phòng** (`dept_proc`) | phiếu đã duyệt **của phòng mình** và phiếu phòng khác **nhờ** phòng mình xử lý |
 | **B. Thu mua trừ nhà máy** | người phòng Thu mua chung | *Quản lý thu mua* (`pur_manager`), *Admin thu mua* (`pur_admin`), *Nhân viên thu mua* (`pur_staff`) | như hiện tại + ô **Loại trừ phòng ban** = phòng tự mua | mọi phiếu **trừ** phiếu của phòng tự mua; phiếu phòng tự mua **nhờ** Thu mua chung thì vẫn thấy |
 
-Ba điều quyết định kết quả:
+Bốn điều quyết định kết quả:
 
 - **Phòng ban trong hồ sơ nhân sự** là thứ máy dùng để tính "phòng mình". Người của bộ A
   phải có phòng ban chính (hoặc phòng kiêm nhiệm) đúng là phòng tự mua.
+- **Pháp nhân trong hồ sơ nhân sự KHÔNG thu hẹp gì** (từ 21/09/2026, bao-CR-434). Nó chỉ
+  là công ty ký hợp đồng lao động. Người của Dego Organic ký với Dego Holding vẫn thấy và
+  xử lý phiếu của phòng mình **đứng tên bất kỳ pháp nhân nào**, vì nhà máy mua cho nhiều
+  công ty. Pháp nhân trên phiếu do người lập phiếu tự chọn, không cần trùng pháp nhân của
+  họ. Muốn nhốt một tài khoản vào đúng một pháp nhân thì mới khai ô *Chỉ trong công ty*
+  trong hộp Phạm vi. **Hai bộ trong hướng dẫn này không khai ô đó.**
 - **Loại trừ thắng mọi bậc**. Ô *Loại trừ phòng ban* trừ ra khỏi cả bậc `all`, nên bộ B
   giữ nguyên bậc đang có, chỉ khai thêm ô loại trừ.
 - **Ô "Xem THÊM phòng ban" là cộng thêm, không thu hẹp.** Đừng dùng nó để giới hạn bộ A;
@@ -60,7 +66,8 @@ Bảy tài khoản trên đều đi qua đúng bốn bước này; mục 4 và 5
    - **Họ tên**.
    - **Email**: bắt buộc điền ngay. Email này là **tên đăng nhập** của tài khoản sẽ tạo ở
      bước 2; tài khoản test dùng dạng `<mã viết thường>@dego.test`.
-   - **Pháp nhân**: chọn công ty (Dego Holding).
+   - **Pháp nhân**: chọn công ty ký hợp đồng lao động (Dego Holding). Ô này **không**
+     giới hạn phiếu người đó thấy (xem mục 1).
    - **Phòng ban**: chọn đúng phòng của bộ (Dego Organic cho bộ A, Sản xuất -Thu mua cho bộ B).
      Ô này chỉ hiện phòng của pháp nhân vừa chọn.
    - **Vị trí / Chức vụ**: chọn chức danh in trên phiếu (Trưởng phòng, Nhân viên thu mua...).
@@ -102,7 +109,8 @@ Nếu nút không hiện mà thẻ báo "Hãy nhập Email ở hồ sơ và lưu
 2. Hộp *Phạm vi — {tên vai trò}*. Phần trên tóm tắt tài khoản này đang thấy gì với vai trò
    đó; **không cần khai gì thêm** cho bộ A.
 3. Bộ B: mở mục gập **Ngoại lệ**, xuống ô **Loại trừ phòng ban** (khung đỏ), chọn phòng tự
-   mua (Dego Organic). Các ô còn lại **để trống**.
+   mua (Dego Organic). Các ô còn lại **để trống**, nhất là *Chỉ trong công ty*: khai vào
+   là bộ B mất phiếu đứng tên các pháp nhân khác.
 4. Bấm **Lưu phạm vi**.
 
 ## 4. Bộ A — Nhà máy (phòng tự mua hàng)
@@ -164,9 +172,9 @@ bằng email (hoặc mã NV) của từng tài khoản.
 |---|---|---|
 | `NM_YC` | lập được Yêu cầu mua hàng; danh sách chỉ có phiếu mình lập | nhà cung cấp, đơn mua hàng |
 | `NM_TP` | phiếu **Đã gửi duyệt** của phòng Dego Organic, nút *Duyệt* | phiếu phòng khác |
-| `NM_MUA` | phiếu **Đã duyệt** trở đi của Dego Organic; nút *Điều phối*; phiếu phòng khác có ô *Nhờ phòng xử lý* = Dego Organic | phiếu đã duyệt của phòng khác; danh sách trống khi chưa có phiếu nào của phòng được duyệt |
+| `NM_MUA` | phiếu **Đã duyệt** trở đi của Dego Organic **đứng tên bất kỳ pháp nhân nào**; nút *Điều phối*; phiếu phòng khác có ô *Nhờ phòng xử lý* = Dego Organic | phiếu đã duyệt của phòng khác; danh sách trống khi chưa có phiếu nào của phòng được duyệt |
 | `NM_NV` | dòng đã được gán cho mình | dòng gán người khác |
-| `TM_QL` | mọi phiếu đã duyệt của mọi phòng **trừ** Dego Organic; phiếu Dego Organic **nhờ** Sản xuất -Thu mua | phiếu Dego Organic thông thường (kể cả gõ thẳng id lên URL: phải ra *Không tìm thấy*) |
+| `TM_QL` | mọi phiếu đã duyệt của mọi phòng, **mọi pháp nhân**, **trừ** Dego Organic; phiếu Dego Organic **nhờ** Sản xuất -Thu mua | phiếu Dego Organic thông thường (kể cả gõ thẳng id lên URL: phải ra *Không tìm thấy*) |
 | `TM_AD` | như `TM_QL`, không có nút duyệt | như `TM_QL` |
 | `TM_NV` | dòng được gán | phiếu chưa gán |
 
@@ -198,6 +206,9 @@ Không sửa mã, không sửa cấu hình. Lặp lại:
    mua*, khai *Phân công phụ trách* với *Phòng áp dụng* = phòng đó).
 2. Mục 5 bước 4: mở **từng** tài khoản Thu mua chung, thêm phòng mới vào ô *Loại trừ phòng
    ban* của **từng** vai trò thu mua họ giữ.
+- **Không thấy phiếu đứng tên pháp nhân khác**: có người đã khai *Chỉ trong công ty* trong
+  hộp Phạm vi của vai trò đó. Xóa ô đó. Pháp nhân trong hồ sơ nhân sự **không** phải
+  nguyên nhân (từ bao-CR-434 hồ sơ không thu hẹp gì).
 
 Bước 2 là chỗ dễ quên nhất và quên thì **lủng im lặng**: Thu mua chung vẫn thấy phiếu phòng
 mới mà không ai báo lỗi. Ghi phòng mới vào danh sách kiểm định kỳ của quản trị.

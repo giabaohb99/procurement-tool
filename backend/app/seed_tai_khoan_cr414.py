@@ -123,8 +123,9 @@ def seed_cr414_accounts(db, company_id: int = COMPANY_ME_ID) -> int:
         db.add(UserRole(user_id=user.id, role_id=role.id, created_by=1, updated_by=1))
 
         db.query(UserScope).filter(UserScope.user_id == user.id).delete(synchronize_session=False)
-        db.add(UserScope(user_id=user.id, role_id=role.id, entity="", dim="company",
-                         value=str(company_id), is_exclude=False, created_by=1, updated_by=1))
+        # bao-CR-434: KHÔNG khai «Chỉ trong công ty» cho bộ mẫu nữa. Pháp nhân trên hồ sơ chỉ
+        # là chuyện pháp lý, phòng nhà máy mua cho nhiều pháp nhân — dòng include cũ che mất
+        # đúng ca đó, nên trên dev chưa ai thấy P1-1 cắt phiếu pháp nhân khác.
         for excluded_name in EXCLUDED_DEPARTMENTS.get(code, []):
             excluded_id = _find_department_id(db, excluded_name)
             if excluded_id is None:
