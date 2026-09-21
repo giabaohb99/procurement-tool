@@ -4465,3 +4465,49 @@ bài người chưa gắn phòng bị chặn có cảnh báo dù phiếu đã ph
 483 bài xanh, nhiều hơn trước hai bài.
 
 Mã nguồn: `backend/app/core/scoping.py`, `test/backend/test_pham_vi_cap_bac_ma_tran.py`.
+
+## bao-CR-447 | Rà nốt ô lọc nhanh bốn màn thu mua còn lại, vá bốn chỗ lọc sai trong im lặng
+- status: xong
+- date: 2026-09-21
+- pic: NSU209
+
+Xong đợt rà ba cụm màn thu mua, em kiến nghị rà nốt bốn màn chưa đụng tới và đại ca duyệt. Bốn màn
+đó là Tiến độ báo giá, Phiếu khảo sát, Công nợ và Báo cáo mua hàng. Cách làm giữ nguyên như đợt
+trước: đối chiếu từng ô trên thanh công cụ với bản đang chạy thật và với bộ tham số backend thật sự
+đọc, thiếu thì bù, gửi sai kiểu giá trị thì vá.
+
+Màn Tiến độ báo giá có ba lỗi. Thứ nhất, màn này không lọc được theo pháp nhân bằng đường nào cả:
+thanh công cụ không có ô, còn ô công ty trong bộ lọc điều kiện thì gửi xuống một tham số bị bỏ rơi,
+vì bảng tra điều kiện của controller chính là bảng sắp xếp trừ đi cột công ty, mà tham số không nằm
+trong bảng tra thì bị bỏ không báo gì. Người dùng chọn một công ty rồi đinh ninh đang xem riêng công
+ty đó, trong khi bảng vẫn là toàn bộ. Em bù ô công ty chọn được nhiều pháp nhân, theo đúng nếp gộp
+bằng dấu phẩy đã dùng từ bao-CR-423, và bỏ luôn khai báo điều kiện chết kia cho người sau khỏi vấp.
+
+Thứ hai, ô trễ hạn có hai vế nhưng chỉ vế trễ chạy thật. Vế đúng hạn gửi xuống số không, mà
+controller chỉ nhận một, true hoặc yes, nên chọn đúng hạn ra kết quả y hệt như không lọc, tức là
+trả về cả dòng trễ lẫn dòng đúng hạn. Nay nhận đủ cả hai vế và vế phủ định là phần bù đúng nghĩa của
+vế trễ, không chồng lấn cũng không hở dòng nào.
+
+Thứ ba, nút xuất Excel tự ghép chuỗi truy vấn riêng nên bỏ quên bộ lọc điều kiện. Đang xem mười mấy
+dòng đã lọc theo nội dung yêu cầu mà tệp tải về lại là cả bảng, không ai đối chiếu nổi. Em tách bộ
+lọc ra khỏi tham số phân trang rồi truyền thẳng vào lời gọi tải tệp, nên tệp xuất ra đúng cái đang
+xem và không dính số trang.
+
+Màn Phiếu khảo sát thiếu ô lọc theo nhóm hàng mà bản đang chạy thật có sẵn, em bù vào, khớp theo tên
+nhóm vì cột dưới bảng chép nhãn chứ không giữ khóa. Màn Công nợ thiếu hẳn khoảng tiền: backend và
+bản cũ đều nhận hai đầu số tiền nhưng bản mới không có ô nào viết chúng. Em bù hai ô số, và chốt lọc
+theo giá trị số chứ không theo chuỗi rỗng, vì đường dẫn ai đó lưu lại mang đầu dưới bằng không sẽ vẽ
+ra một ô trống, do số không định dạng ra chuỗi rỗng, mà vẫn lặng lẽ cắt mất các khoản âm là hàng trả
+lại; chuỗi rác cũng chặn tại đây thay vì rơi xuống backend. Khoảng tiền này đi kèm luôn vào tệp
+Excel xuất ra. Màn Báo cáo mua hàng thì đủ, không phải sửa gì.
+
+Bài kiểm: thêm mới tệp kiểm cho màn Phiếu khảo sát với 6 bài, trước đó màn này chưa có tệp kiểm nào;
+thêm 8 bài khoảng tiền cho màn Công nợ, gồm ca số không, ca chuỗi rác và ca số âm phải giữ lại; thêm
+các bài ô công ty cùng hai bài xuất tệp cho màn Tiến độ báo giá; và một tệp kiểm backend mới 9 bài
+chốt hai vế của ô trễ hạn, gồm cả dạng chữ true, yes, false, no, mốc so sánh rơi đúng ngày hết hạn,
+và dòng chưa có hạn trả thì không rơi vào vế nào. Cổng kiểm: typecheck 0 lỗi, lint 0 lỗi, vitest hai
+phân hệ thu mua và tài chính xanh hết.
+
+Mã nguồn: `backend/app/modules/survey_progress/controller.py`, `frontend-v2/src/modules/procurement/pages/survey-progress-page.tsx`, `frontend-v2/src/modules/procurement/pages/survey-list-page.tsx`, `frontend-v2/src/modules/finance/pages/payable-list-page.tsx`, `frontend-v2/src/modules/procurement/config/procurement-filter-fields.ts`, `test/backend/test_loc_tre_han_cr447.py`.
+
+Commit: chưa commit, chờ đại ca duyệt.

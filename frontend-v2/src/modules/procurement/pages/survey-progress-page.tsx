@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 
 import { appConfig } from '@/core/config/app-config'
 import { usePermission } from '@/core/authorization/use-permission'
+import { useCompanies } from '@/modules/hr/hooks/use-companies'
 import {
   ConditionalFilter,
   FilterProvider,
@@ -73,6 +74,7 @@ const FILTER_CONFIG = {
   //  Mọi ô lọc trên thanh công cụ. Thiếu tên nào ở đây là bấm "Áp dụng" bộ lọc
   //  nâng cao xong mất luôn ô đó.
   preserveParams: [
+    'company_id',
     'state',
     'late',
     'date_field',
@@ -97,6 +99,11 @@ function SurveyProgressContent() {
   const canExport = can('survey_request', 'export')
 
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
+  //  Ô Công ty chọn được NHIỀU pháp nhân — `_build_query` bên backend đã đọc
+  //  `company_id=1,2` từ bao-CR-423, chỉ là màn này chưa bao giờ dựng ô.
+  //  KHÔNG đưa Công ty xuống bộ lọc điều kiện: `_cond_map` cố tình gỡ
+  //  `company_id` khỏi whitelist, gửi `company_id__is=` xuống là bị bỏ lặng.
+  const [companyIds, setCompanyIds] = useUrlMultiParam('company_id')
   // bao-CR-423: ô Tiến độ dòng chọn được NHIỀU nhãn; không chọn gì là "Tất cả".
   // Chọn nhiều nhãn nghĩa là HOẶC — backend hợp điều kiện của từng nhãn lại.
   const [progressStates, setProgressStates] = useUrlMultiParam('state')
@@ -104,6 +111,7 @@ function SurveyProgressContent() {
   const [dateField, setDateField] = useUrlParamState('date_field', DEFAULT_DATE_FIELD)
   const [dateFrom, dateTo, setDateRange] = useUrlRangeParam('date_from', 'date_to')
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
+  const { data: companies } = useCompanies({ page_size: 500, is_active: true })
   const { queryParams, queryKey } = useFilterQuery()
 
   const navigate = useNavigate()
@@ -124,6 +132,7 @@ function SurveyProgressContent() {
   const [page, setPage] = usePageResetOnFilterChange([
     queryKey,
     debouncedValue,
+    companyIds,
     progressStates,
     late,
     dateField,
@@ -140,25 +149,25 @@ function SurveyProgressContent() {
     if (dateTo) dateParams[field.to] = dateTo
   }
 
-  const params: ListParams = { page, page_size: pageSize, ...queryParams, ...dateParams }
-  if (debouncedValue) params.q = debouncedValue
+  //  Phần LỌC tách khỏi phần phân trang: nút Xuất Excel dùng lại đúng tập này
+  //  nên file xuất luôn khớp bảng. Trước đây nút xuất tự dựng lấy query string
+  //  và BỎ QUÊN `queryParams` — đang lọc điều kiện mà bấm xuất thì ra cả bảng.
+  const filterParams: ListParams = { ...queryParams, ...dateParams }
+  if (debouncedValue) filterParams.q = debouncedValue
+  if (companyIds.length) filterParams.company_id = companyIds.join(',')
   //  Gửi nối bằng dấu phẩy — nhãn tiến độ không chứa dấu phẩy nên tách lại được;
   //  `read_multi_param` bên backend đọc cả dạng này lẫn dạng lặp khóa (bao-CR-423).
-  if (progressStates.length) params.state = progressStates.join(',')
-  if (late !== ALL) params.late = late
+  if (progressStates.length) filterParams.state = progressStates.join(',')
+  if (late !== ALL) filterParams.late = late
+
+  const params: ListParams = { page, page_size: pageSize, ...filterParams }
 
   const { data, isLoading, isError } = useSurveyProgress(params)
   const items = data?.items ?? []
   const showSupplier = data?.show_supplier ?? canReadSupplier
 
   const handleExportExcel = async () => {
-    const query = new URLSearchParams()
-    if (debouncedValue) query.set('q', debouncedValue)
-    if (progressStates.length) query.set('state', progressStates.join(','))
-    if (late !== ALL) query.set('late', late)
-    for (const [key, value] of Object.entries(dateParams)) query.set(key, value)
-    const queryString = query.toString() ? `?${query.toString()}` : ''
-    await downloadFile(`/api/survey-progress/export/xlsx${queryString}`, 'tien-do-bao-gia.xlsx')
+    await downloadFile('/api/survey-progress/export/xlsx', 'tien-do-bao-gia.xlsx', filterParams)
   }
 
   const columns = useMemo<DataTableColumn<SurveyProgressItem>[]>(() => {
@@ -243,6 +252,25 @@ function SurveyProgressContent() {
   //  rộng cứng `w-48` thì ô nép trái và chừa một khoảng trống dài bên phải.
   //  `MultiPicker` tự chiếm trọn bề ngang của thẻ bọc, nên bề rộng cứng đặt ở
   //  lớp `div` bên ngoài chứ không đặt trên ô.
+  const companySelect = (
+    <div className="w-48 max-md:w-full" aria-label="Lọc theo công ty">
+      <MultiPicker
+        value={companyIds}
+        onChange={setCompanyIds}
+        options={(companies?.items ?? []).map((company) => ({
+          id: String(company.id),
+          label: company.name,
+        }))}
+        placeholder="Tất cả công ty"
+        searchPlaceholder="Tìm công ty…"
+        emptyMessage="Không tìm thấy công ty nào."
+        contentClassName="w-72"
+        summaryInTrigger
+        clearInTrigger
+      />
+    </div>
+  )
+
   const stateSelect = (
     <div className="w-48 max-md:w-full" aria-label="Lọc theo tiến độ dòng">
       <MultiPicker
@@ -303,8 +331,12 @@ function SurveyProgressContent() {
   //  điều kiện nâng cao — vì cả hai nay nằm sau đúng một nút đó. Đếm thiếu một
   //  tầng thì người dùng thấy nút không dấu gì mà danh sách vẫn đang bị lọc.
   const activeFilterCount =
-    [progressStates.length > 0, late !== ALL, Boolean(dateFrom || dateTo)].filter(Boolean).length +
-    filter.activeCount
+    [
+      companyIds.length > 0,
+      progressStates.length > 0,
+      late !== ALL,
+      Boolean(dateFrom || dateTo),
+    ].filter(Boolean).length + filter.activeCount
 
   return (
     //  ⚠️ `fill` chỉ bật từ `md`: ở khổ hẹp bảng đổi sang danh sách THẺ dài, mà
@@ -420,6 +452,7 @@ function SurveyProgressContent() {
                    là rớt nguyên khối xuống dòng dưới và chừa khoảng trống dài
                    bên phải ô tìm kiếm. */}
               <div className="max-md:hidden md:contents">
+                {companySelect}
                 {stateSelect}
                 {lateSelect}
                 {dateFieldSelect}
@@ -436,6 +469,7 @@ function SurveyProgressContent() {
               <QuickFilterSheet
                 activeCount={activeFilterCount}
                 onClearAll={() => {
+                  setCompanyIds([])
                   setProgressStates([])
                   setLate(ALL)
                   setDateField(DEFAULT_DATE_FIELD)
@@ -444,6 +478,7 @@ function SurveyProgressContent() {
                 }}
                 onApply={filter.apply}
               >
+                <QuickFilterField label="Công ty">{companySelect}</QuickFilterField>
                 <QuickFilterField label="Tiến độ dòng">{stateSelect}</QuickFilterField>
                 <QuickFilterField label="Trễ hạn">{lateSelect}</QuickFilterField>
                 <QuickFilterField label="Mốc ngày">{dateFieldSelect}</QuickFilterField>

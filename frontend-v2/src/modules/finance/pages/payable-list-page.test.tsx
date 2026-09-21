@@ -344,3 +344,81 @@ describe('PayableListPage — khoảng ngày', () => {
     expect(yearSelect).toHaveTextContent('Tất cả các năm')
   })
 })
+
+/**
+ * bao-CR-447 — khoảng TIỀN.
+ *
+ * Backend đọc `amount_from` / `amount_to` (so trên `Payable.total`) và bản v1 có
+ * đủ cặp ô này, nhưng v2 thì không có ở đâu cả: không trên thanh công cụ, cũng
+ * không trong bộ lọc điều kiện. Câu "khoản nào trên 100 triệu" không hỏi được.
+ */
+describe('PayableListPage — khoảng tiền', () => {
+  function lastCall() {
+    return listCalls[listCalls.length - 1]
+  }
+
+  it('sends both ends of the range', () => {
+    build('/finance/payables?amount_from=1000000&amount_to=5000000')
+
+    expect(lastCall()).toMatchObject({ amount_from: '1000000', amount_to: '5000000' })
+  })
+
+  it('accepts a half-open range — "từ 100 triệu trở lên" is a real question', () => {
+    build('/finance/payables?amount_from=100000000')
+
+    expect(lastCall().amount_from).toBe('100000000')
+    expect(lastCall().amount_to).toBeUndefined()
+  })
+
+  it('sends nothing when both boxes are empty', () => {
+    //  Gửi `amount_from=""` xuống là backend ép kiểu số trên chuỗi rỗng — hoặc nổ
+    //  500, hoặc hiểu thành 0 và cắt mất khoản nợ âm (hàng trả lại).
+    build('/finance/payables?amount_from=&amount_to=')
+
+    expect(lastCall().amount_from).toBeUndefined()
+    expect(lastCall().amount_to).toBeUndefined()
+  })
+
+  it('keeps a zero bound out of the query — ô vẽ ra TRỐNG thì đừng lọc', () => {
+    //  `formatNumberVn(0)` trả chuỗi rỗng nên `amount_from=0` hiện thành một ô
+    //  trống trơn. Gửi nó xuống là bảng đang bị cắt mất các khoản ÂM (hàng trả
+    //  lại) mà trên màn hình không có dấu hiệu nào.
+    build('/finance/payables?amount_from=0&amount_to=0')
+
+    expect(lastCall().amount_from).toBeUndefined()
+    expect(lastCall().amount_to).toBeUndefined()
+  })
+
+  it('drops a junk bound instead of sending it to the backend', () => {
+    //  Sửa tay URL không được làm vỡ trang: `Number('abc')` là `NaN`, và
+    //  `amount_from=abc` xuống tới `float()` bên backend là lỗi 500.
+    build('/finance/payables?amount_from=abc')
+
+    expect(lastCall().amount_from).toBeUndefined()
+  })
+
+  it('keeps a negative lower bound — khoản âm là hàng trả lại, hỏi được', () => {
+    build('/finance/payables?amount_from=-500000')
+
+    expect(lastCall().amount_from).toBe('-500000')
+  })
+
+  it('exports the SAME amount range the table is showing', async () => {
+    const user = userEvent.setup()
+    build('/finance/payables?amount_from=1000000&amount_to=5000000')
+
+    await user.click(screen.getByRole('button', { name: /Xuất Excel/ }))
+
+    expect(downloadFileMock.mock.calls[0][2]).toMatchObject({
+      amount_from: '1000000',
+      amount_to: '5000000',
+    })
+  })
+
+  it('bày cặp ô tiền trên thanh công cụ', () => {
+    build()
+
+    expect(screen.getAllByLabelText('Lọc tổng nợ từ').length).toBeGreaterThan(0)
+    expect(screen.getAllByLabelText('Lọc tổng nợ đến').length).toBeGreaterThan(0)
+  })
+})

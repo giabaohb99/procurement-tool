@@ -256,12 +256,22 @@ def _build_query(request: Request, db: Session, user, prof: dict,
     elif answered == "no":
         q = q.filter(SurveyRequestLine.result_date == "")
     # Trễ hạn: đã trả sau hạn, HOẶC chưa trả mà hạn đã qua. Cả hai vế so sánh chuỗi ngày.
-    if (request.query_params.get("late") or "").strip() in ("1", "true", "yes"):
+    # `late=0` là vế NGƯỢC — màn v2 có sẵn mục "Đúng hạn" trong ô lọc, trước đây gửi xuống
+    # rồi rơi vào khoảng trống: không khớp nhánh nào nên câu lệnh không lọc gì, bảng trả về
+    # cả dòng trễ lẫn dòng đúng hạn mà chẳng chỗ nào báo. Dòng CHƯA CÓ HẠN TRẢ không thuộc
+    # bên nào (không biết sớm hay muộn so với cái gì) nên bị loại khỏi cả hai vế.
+    late = (request.query_params.get("late") or "").strip().lower()
+    if late in ("1", "true", "yes", "0", "false", "no"):
         today = _today().strftime("%Y-%m-%d")
-        q = q.filter(SurveyRequestLine.result_due_date != "").filter(or_(
-            (SurveyRequestLine.result_date != "")
-            & (SurveyRequestLine.result_date > SurveyRequestLine.result_due_date),
-            (SurveyRequestLine.result_date == "") & (SurveyRequestLine.result_due_date < today)))
+        # `coalesce` là BẮT BUỘC ở vế phủ định: `result_date` để NULL (dòng cũ nhập từ Excel)
+        # thì `NULL != ''` ra NULL, `NOT NULL` cũng NULL — dòng chưa trả kết quả sẽ rụng khỏi
+        # nhóm "Đúng hạn" dù nó đang còn hạn.
+        answered_at = func.coalesce(SurveyRequestLine.result_date, "")
+        due_at = func.coalesce(SurveyRequestLine.result_due_date, "")
+        late_cond = or_((answered_at != "") & (answered_at > due_at),
+                        (answered_at == "") & (due_at < today))
+        q = q.filter(due_at != "").filter(
+            late_cond if late in ("1", "true", "yes") else ~late_cond)
     kw = (request.query_params.get("q") or "").strip()
     if kw:
         like = f"%{kw}%"

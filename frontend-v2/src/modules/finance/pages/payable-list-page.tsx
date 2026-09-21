@@ -26,6 +26,7 @@ import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { Checkbox } from '@/shared/ui/checkbox'
 import { DateRangePicker } from '@/shared/ui/date-range-picker'
+import { NumberInput } from '@/shared/ui/number-input'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { QuickFilterField, QuickFilterSheet } from '@/shared/ui/quick-filter-sheet'
@@ -116,6 +117,8 @@ const FILTER_CONFIG = {
     'date_field',
     'date_from',
     'date_to',
+    'amount_from',
+    'amount_to',
   ],
 }
 
@@ -148,6 +151,11 @@ function PayableListContent() {
   const [year, setYear] = useUrlParamState('year', String(THIS_YEAR))
   const [dateField, setDateField] = useUrlParamState('date_field', DEFAULT_DATE_FIELD)
   const [dateFrom, dateTo, setDateRange] = useUrlRangeParam('date_from', 'date_to')
+  //  Khoảng tiền lọc trên TỔNG NỢ (`Payable.total`), đúng cột mà backend so —
+  //  không phải "còn phải trả". Giữ nguyên dạng chuỗi trên URL: rỗng = không lọc,
+  //  ép sang số thì 0 và "bỏ trống" lẫn vào nhau.
+  const [amountFrom, setAmountFrom] = useUrlParamState('amount_from', '')
+  const [amountTo, setAmountTo] = useUrlParamState('amount_to', '')
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
   /** Cột đang hiện trên bảng — nút "Xuất Excel" bám theo để file khớp màn hình. */
   const [visibleColumnKeys, setVisibleColumnKeys] = useState<string[]>([])
@@ -183,6 +191,8 @@ function PayableListContent() {
     dateField,
     dateFrom,
     dateTo,
+    amountFrom,
+    amountTo,
   ]
 
   const [page, setPage] = usePageResetOnFilterChange(filterSignature)
@@ -203,6 +213,12 @@ function PayableListContent() {
   if (companyId !== ALL) filterParams.company_id = Number(companyId)
   if (status !== ALL) filterParams.status = status
   if (aging !== ALL) filterParams.aging = aging
+  //  Lọc theo giá trị SỐ chứ không theo chuỗi rỗng: `amount_from=0` (đường dẫn ai
+  //  đó lưu, hoặc gõ tay) vẽ ra ô TRỐNG — `formatNumberVn(0)` trả chuỗi rỗng — mà
+  //  vẫn cắt mất các khoản âm (hàng trả lại). Chuỗi rác thành `NaN`, cũng rơi vào
+  //  đây thay vì đi xuống backend.
+  if (Number(amountFrom)) filterParams.amount_from = amountFrom
+  if (Number(amountTo)) filterParams.amount_to = amountTo
   if (hasDateRange) {
     const field = DATE_FIELDS.find((f) => f.value === dateField) ?? DATE_FIELDS[0]
     if (dateFrom) filterParams[field.from] = dateFrom
@@ -599,6 +615,32 @@ function PayableListContent() {
     />
   )
 
+  //  Hai ô tiền đi thành MỘT cặp "từ → đến" trên cùng một hàng: tách ra hai ô
+  //  rời trên thanh công cụ thì đọc không ra chúng là một khoảng, và ở khổ hẹp
+  //  chúng còn bị chen mất thứ tự. Số nguyên (`decimals={false}`) — công nợ
+  //  ghi bằng đồng, không ai lọc tới hào.
+  const amountRangeInput = (
+    <div className="flex w-56 items-center gap-1.5 max-md:w-full">
+      <NumberInput
+        value={Number(amountFrom) || 0}
+        onChange={(value) => setAmountFrom(value ? String(value) : '')}
+        decimals={false}
+        placeholder="Từ…"
+        aria-label="Lọc tổng nợ từ"
+        className="h-9 text-xs"
+      />
+      <span className="text-muted-foreground">→</span>
+      <NumberInput
+        value={Number(amountTo) || 0}
+        onChange={(value) => setAmountTo(value ? String(value) : '')}
+        decimals={false}
+        placeholder="Đến…"
+        aria-label="Lọc tổng nợ đến"
+        className="h-9 text-xs"
+      />
+    </div>
+  )
+
   const yearSelect = (
     <Select value={hasDateRange ? ALL : year} onValueChange={setYear}>
       <SelectTrigger
@@ -637,6 +679,7 @@ function PayableListContent() {
     (aging !== ALL ? 1 : 0) +
     (hasDateRange ? 1 : 0) +
     (year !== String(THIS_YEAR) ? 1 : 0) +
+    (amountFrom || amountTo ? 1 : 0) +
     filter.activeCount
 
   return (
@@ -829,6 +872,8 @@ function PayableListContent() {
                   //  đổi phạm vi rộng hơn lúc mới mở màn — người dùng bấm "xóa
                   //  lọc" xong thấy thêm dữ liệu thì đọc ra như lỗi.
                   setYear(String(THIS_YEAR))
+                  setAmountFrom('')
+                  setAmountTo('')
                   filter.reset()
                 }}
                 onApply={filter.apply}
@@ -839,6 +884,7 @@ function PayableListContent() {
                 <QuickFilterField label="Mốc ngày">{dateFieldSelect}</QuickFilterField>
                 <QuickFilterField label="Khoảng ngày">{dateRangeInput}</QuickFilterField>
                 <QuickFilterField label="Năm">{yearSelect}</QuickFilterField>
+                <QuickFilterField label="Tổng nợ (từ → đến)">{amountRangeInput}</QuickFilterField>
                 <AdvancedFilterSection />
               </QuickFilterSheet>
 
@@ -856,6 +902,7 @@ function PayableListContent() {
                 {dateFieldSelect}
                 {dateRangeInput}
                 {yearSelect}
+                {amountRangeInput}
                 <ConditionalFilter />
               </div>
             </>

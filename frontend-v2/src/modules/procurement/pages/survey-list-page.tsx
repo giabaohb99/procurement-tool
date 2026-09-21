@@ -35,11 +35,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select'
+import { SearchSelect } from '@/shared/ui/search-select'
 import { STICKY_TOOLBAR_TOP } from '@/shared/ui/sticky-toolbar'
 import { formatDateTime } from '@/shared/utils/format-date'
 import { StatusBadge } from '../components/document-status-badge'
 import { SurveyCard } from '../components/survey-card'
 import { SURVEY_FILTER_FIELDS } from '../config/procurement-filter-fields'
+import { usePurchaseRequestItemGroups } from '../hooks/use-purchase-request-support'
 import { useSurveys } from '../hooks/use-purchase-documents'
 import {
   SURVEY_STATUS_LABELS,
@@ -53,7 +55,10 @@ const ALL = 'all'
 const FILTER_CONFIG = {
   fields: SURVEY_FILTER_FIELDS,
   allowConjunctionToggle: true,
-  preserveParams: ['status', 'survey_type', 'product_code', 'sort_by', 'sort_dir'],
+  //  `product_code` từng nằm đây nhưng màn không có ô nào ghi nó — bản v1 có ô
+  //  «Mã SP (NCC)» riêng, còn ở đây ô tìm kiếm đã gánh luôn phần đó (backend đọc
+  //  `code` / `q` / `search` / `product_code` vào CÙNG một câu tìm đa trường).
+  preserveParams: ['status', 'survey_type', 'item_group', 'sort_by', 'sort_dir'],
 }
 
 export function SurveyListPage() {
@@ -73,7 +78,11 @@ function SurveyListContent() {
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [status, setStatus] = useUrlParamState('status', ALL)
   const [surveyType, setSurveyType] = useUrlParamState('survey_type', ALL)
+  //  Nhóm hàng lọc theo TÊN, không phải id — `Survey.item_group` lưu tên nhóm
+  //  (bảng chưa có cột `item_group_id`), giống hệt ô cùng tên ở bản v1.
+  const [itemGroup, setItemGroup] = useUrlParamState('item_group', ALL)
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
+  const { data: itemGroups } = usePurchaseRequestItemGroups()
 
   const sortBy = searchParams.get('sort_by') || ''
   const sortDir = (searchParams.get('sort_dir') as 'asc' | 'desc') || 'asc'
@@ -89,12 +98,21 @@ function SurveyListContent() {
   const stickyRef = useRef<HTMLDivElement>(null)
   const scrolled = useScrolled(stickyRef)
 
-  const [page, setPage] = usePageResetOnFilterChange([queryKey, debouncedValue, status, surveyType, sortBy, sortDir])
+  const [page, setPage] = usePageResetOnFilterChange([
+    queryKey,
+    debouncedValue,
+    status,
+    surveyType,
+    itemGroup,
+    sortBy,
+    sortDir,
+  ])
 
   const params: ListParams = { page, page_size: pageSize, ...queryParams }
   if (debouncedValue) params.code = debouncedValue
   if (status !== ALL) params.status = status
   if (surveyType !== ALL) params.survey_type = surveyType
+  if (itemGroup !== ALL) params.item_group = itemGroup
   if (sortBy) {
     params.sort_by = sortBy
     params.sort_dir = sortDir
@@ -124,11 +142,13 @@ function SurveyListContent() {
   //  điều kiện nâng cao — vì cả hai nay nằm sau đúng một nút đó. Đếm thiếu một
   //  tầng thì người dùng thấy nút không dấu gì mà danh sách vẫn đang bị lọc.
   const activeCount =
-    [status !== ALL, surveyType !== ALL].filter(Boolean).length + filter.activeCount
+    [status !== ALL, surveyType !== ALL, itemGroup !== ALL].filter(Boolean).length +
+    filter.activeCount
 
   const clearAllFilters = () => {
     setStatus(ALL)
     setSurveyType(ALL)
+    setItemGroup(ALL)
     filter.reset()
   }
 
@@ -269,6 +289,30 @@ function SurveyListContent() {
     </Select>
   )
 
+  //  Danh mục nhóm hàng vài chục dòng — nạp một lần rồi lọc tại chỗ, không cần
+  //  tra phía server. `value` là TÊN nhóm vì backend so bằng tên.
+  //
+  //  ⚠️ Nhãn đặt ở thẻ BỌC, không truyền `aria-label` cho `SearchSelect`:
+  //  component không spread prop lạ nên thuộc tính có gạch ngang lọt `tsc` rồi
+  //  rơi vào hư không — đúng cái bẫy ghi trong chính tệp `search-select.tsx`.
+  const itemGroupSelect = (
+    <div className="w-full md:w-44" aria-label="Lọc theo nhóm hàng">
+      <SearchSelect
+        value={itemGroup === ALL ? '' : itemGroup}
+        onChange={(value) => setItemGroup(value || ALL)}
+        options={(itemGroups?.items ?? []).map((group) => ({
+          value: group.name,
+          label: group.name,
+        }))}
+        placeholder="Tất cả nhóm hàng"
+        searchPlaceholder="Tìm nhóm hàng…"
+        emptyMessage="Không tìm thấy nhóm hàng nào."
+        clearable
+        size="sm"
+      />
+    </div>
+  )
+
   return (
     //  ⚠️ `fill` chỉ bật từ `md`: ở khổ hẹp bảng đổi sang danh sách THẺ dài, mà
     //  `fill` nhét nó vào một khe vài trăm pixel và biến thành cuộn LỒNG — vuốt
@@ -367,6 +411,7 @@ function SurveyListContent() {
                    ô lọc thứ sáu (bao-CR-319). */}
               <div className="hidden md:contents">
                 {typeSelect}
+                {itemGroupSelect}
                 {statusSelect}
                 <ConditionalFilter />
               </div>
@@ -381,6 +426,7 @@ function SurveyListContent() {
                 onApply={filter.apply}
               >
                 <QuickFilterField label="Loại khảo sát">{typeSelect}</QuickFilterField>
+                <QuickFilterField label="Nhóm hàng">{itemGroupSelect}</QuickFilterField>
                 <QuickFilterField label="Trạng thái">{statusSelect}</QuickFilterField>
                 <AdvancedFilterSection />
               </QuickFilterSheet>

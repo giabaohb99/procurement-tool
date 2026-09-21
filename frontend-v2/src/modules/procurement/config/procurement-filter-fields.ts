@@ -267,7 +267,10 @@ export const SURVEY_FILTER_FIELDS: FilterFieldDefinition[] = [
 export const SURVEY_PROGRESS_FILTER_FIELDS: FilterFieldDefinition[] = [
   { name: 'code', label: 'Mã YCBG', type: 'text' },
   { name: 'purpose', label: 'Mục đích', type: 'text' },
-  COMPANY_FIELD,
+  //  ⚠️ KHÔNG có ô Công ty ở đây. `survey_progress/controller._cond_map` cố tình
+  //  gỡ `company_id` khỏi whitelist (ô Công ty thuộc thanh lọc nhanh), nên
+  //  `company_id__is=5` bị `apply_operator_filters_map` bỏ LẶNG: người dùng chọn
+  //  công ty, bấm Áp dụng, bảng vẫn nguyên cả tập mà không chỗ nào báo gì.
   { ...EMPLOYEE_FIELD, name: 'requester_id', label: 'Người yêu cầu' },
   { ...DEPARTMENT_FIELD, label: 'Bộ phận' },
   { name: 'request_date', label: 'Ngày yêu cầu', type: 'date' },
