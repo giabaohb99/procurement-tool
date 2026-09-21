@@ -30,6 +30,7 @@ import { useDepartments } from '@/modules/hr/hooks/use-departments'
 import { useEmployees } from '@/modules/hr/hooks/use-employees'
 import { AuditTimeline } from '@/shared/audit'
 import { appRoutes } from '@/shared/constants/app-routes'
+import { DOSSIER_UI_ENABLED } from '@/shared/constants/feature-flags'
 import { queryKeys } from '@/shared/constants/query-keys'
 import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import { DetailPageHeader, ResponsiveLabel } from '@/shared/ui/detail-page-header'
@@ -795,8 +796,10 @@ export function SurveyRequestDetailPage() {
             bản đầy đủ hơn (gom theo giai đoạn + cột tiến trình). Ba trang chứng
             từ còn lại vẫn dùng `RequiredDossiersCard` như cũ.
 
-            Thẻ tự ẩn khi thiếu quyền / đang nạp / không có hồ sơ nào khớp. */}
-        <DossierChecklistCard surveyRequestId={surveyRequestId} />
+            Thẻ tự ẩn khi thiếu quyền / đang nạp / không có hồ sơ nào khớp.
+            Cờ ngoài là công tắc TẠM ẨN cả phân hệ Hồ sơ (21/09/2026) — xem
+            `DOSSIER_UI_ENABLED`. */}
+        {DOSSIER_UI_ENABLED && <DossierChecklistCard surveyRequestId={surveyRequestId} />}
 
         {!isNew && (
           <>

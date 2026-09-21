@@ -24,6 +24,7 @@ import { RequiredDossiersCard } from '@/modules/dossier/components/required-doss
 import { DOC_KINDS } from '@/modules/dossier/types/dossier-applicability'
 import { AuditTimeline } from '@/shared/audit'
 import { appRoutes } from '@/shared/constants/app-routes'
+import { DOSSIER_UI_ENABLED } from '@/shared/constants/feature-flags'
 import { SURVEY_APPROVE_STATUS, labelOf } from '@/shared/constants/statuses'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { useHasChanged } from '@/shared/hooks/use-has-changed'
@@ -746,8 +747,11 @@ export function SurveyDetailPage() {
         ))}
 
         {/* Thẻ tự ẩn khi thiếu quyền / đang nạp / không có hồ sơ nào khớp
-            điều kiện áp dụng — không cần bọc điều kiện ở đây. */}
-        <RequiredDossiersCard docKind={DOC_KINDS.SURVEY} docId={surveyId || undefined} />
+            điều kiện áp dụng. Cờ ngoài là công tắc TẠM ẨN cả phân hệ Hồ sơ
+            (21/09/2026) — xem `DOSSIER_UI_ENABLED`. */}
+        {DOSSIER_UI_ENABLED && (
+          <RequiredDossiersCard docKind={DOC_KINDS.SURVEY} docId={surveyId || undefined} />
+        )}
 
         {!isNew && (
           <>
