@@ -12,6 +12,7 @@ import { BookingApprovalPanel } from '../components/booking-approval-panel'
 import { BookingDetailBody } from '../components/booking-detail-body'
 import { BookingDetailHeader } from '../components/booking-detail-header'
 import { BookingForm } from '../components/booking-form'
+import { BookingNoteCard } from '../components/booking-note-card'
 import { BookingProgressCard } from '../components/booking-progress-card'
 import { BookingDispatchDialog } from '../components/booking-dispatch-dialog'
 import { BookingStatusBadge } from '../components/status-pill'
@@ -97,46 +98,51 @@ export function VehicleBookingDetailPage() {
       )}
 
       {data && (
-        //  Màn rộng: nội dung phiếu + lịch sử bên trái, tiến trình · luồng duyệt ·
-        //  trao đổi dồn cột phải (những thứ cần thấy trong lúc đọc phiếu).
+        //  Màn rộng: nội dung phiếu + Trao đổi bên trái, tiến trình · luồng duyệt ·
+        //  lịch sử dồn cột phải.
+        //
+        //  ⚠️ **Cột phải KHÔNG có vùng cuộn riêng** (đại ca chốt 21/09/2026): cả cột
+        //  cuộn theo trang, không `sticky`, không `max-h`, không `overflow-y-auto`.
+        //  Bản trước ghim cột phải dưới tiêu đề rồi cho nó tự cuộn bên trong, nên
+        //  trang có HAI vùng cuộn cạnh nhau: bánh xe chuột đổi nghĩa tùy con trỏ
+        //  đang đậu ở nửa nào, và thanh cuộn con trong một cột rộng 360px thì vừa
+        //  khó thấy vừa khó bấm. Đừng dựng lại; muốn thấy một khung trong lúc đọc
+        //  phiếu thì xếp nó lên ĐẦU cột, đừng ghim cả cột.
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
           <div className="flex min-w-0 flex-col gap-5">
             <BookingDetailBody booking={data} />
-            {/*  Lịch sử thao tác khép lại CỘT CHÍNH, dưới Ghi chú: nó là thứ đọc
-                sau cùng (tra lại phiếu đã đi qua tay ai), dài ra theo thời gian,
-                và ở cột phụ có vùng cuộn riêng thì nó đẩy Trao đổi lên trên rồi
-                tự cuộn trong một khung cao 300px — đúng kiểu dữ liệu không nên
-                nhốt. `AuditTimeline` tự dựng thẻ có tiêu đề (không bọc thêm Card
-                kẻo lặp tiêu đề); `messageOnly` vì backend đã ghi câu tự mô tả
-                ("Đã điều phối Xe…", "Yêu cầu chỉnh sửa — Lý do: …"). */}
-            <AuditTimeline entity="vehicle_booking" entityId={data.id} messageOnly dense />
+            {/*  Trao đổi khép lại CỘT CHÍNH, dưới nội dung phiếu (21/09/2026 — đổi
+                chỗ với Lịch sử thao tác). Nó là thứ NGƯỜI TA GÕ VÀO, nên cần bề
+                ngang của cột chính: ô nhập rộng 360px thì câu ba dòng đọc như một
+                cột báo, mà bình luận trên phiếu thường là một đoạn trích dẫn giá
+                hoặc một dãy mốc giờ. Dùng chung widget bình luận (entity/entityId). */}
+            <DocumentComments entity="vehicle_booking" entityId={data.id} />
           </div>
-          {/*  Cột phụ DÍNH dưới tiêu đề khi cuộn. Thân phiếu dài gấp mấy lần cột này,
-              nên cuộn xuống giữa phiếu là khung Trao đổi trôi mất — muốn ghi một câu
-              về chỗ vừa đọc thì phải cuộn ngược lên.
-
-              Ba mảnh phải khớp nhau:
-              · `self-start` — ô lưới mặc định kéo cao bằng cả hàng, mà `sticky` chỉ
-                có tác dụng khi phần tử THẤP HƠN vùng cuộn của nó.
-              · `top-[var(--booking-header-h)]` — tiêu đề tự đo rồi ghi biến này ra
-                thẻ cha; thiếu nó thì cột phụ trượt lên và chui xuống dưới tiêu đề.
-              · `max-h` + `overflow-y-auto` — Trao đổi dài ra theo số bình luận; không
-                chặn thì phần đuôi bị ghim ra ngoài màn và KHÔNG cuộn tới được.
-                `3.5rem` là thanh trên của khung (nằm ngoài vùng cuộn). */}
-          <div className="flex flex-col gap-5 lg:sticky lg:top-[calc(var(--booking-header-h,0px)+0.75rem)] lg:max-h-[calc(100dvh-3.5rem-var(--booking-header-h,0px)-2rem)] lg:self-start lg:overflow-y-auto">
-            {/*  Tiến trình xử lý đứng ĐẦU cột phụ: bốn khung ở cột này đều trả lời
-                "phiếu đang ở đâu, ai đã nói gì" — đọc từ trạng thái hiện thời
-                (Tiến trình) xuống việc phải làm (Luồng duyệt) rồi tới trao đổi và
-                dấu vết. Để nó ở cột chính thì nó cắt đôi mạch *chuyến đi này là gì*
-                (lộ trình → hàng hóa → người yêu cầu), và cuộn xuống là mất. */}
+          <div className="flex flex-col gap-5">
+            {/*  Tiến trình xử lý đứng ĐẦU cột phụ: ba khung ở cột này đều trả lời
+                "phiếu đang ở đâu, đã đi qua tay ai" — đọc từ trạng thái hiện thời
+                (Tiến trình) xuống việc phải làm (Luồng duyệt) rồi tới dấu vết. Để
+                nó ở cột chính thì nó cắt đôi mạch *chuyến đi này là gì*
+                (lộ trình → hàng hóa → người yêu cầu). */}
             <BookingProgressCard booking={data} />
             {/* Luồng duyệt nhiều bước — hiện khi phiếu ĐÃ TỪNG vào bộ máy, kể cả
                 phiên đã duyệt xong: thẻ này còn mang Lịch sử phê duyệt. Gác bằng
                 `approval_running` là sai — luồng "Duyệt tự động bởi HOD" chỉ 1 bước
                 nên đóng ngay, dấu vết không bao giờ kịp hiện (19/09/2026). */}
             {data.approval_instance_id != null && <BookingApprovalPanel bookingId={data.id} />}
-            {/*  Trao đổi trên phiếu — dùng chung widget bình luận (entity/entityId). */}
-            <DocumentComments entity="vehicle_booking" entityId={data.id} />
+            {/*  Ghi chú (21/09/2026 — dời từ cuối thân phiếu sang đây). Đó là lời
+                NGƯỜI LẬP dặn thêm, mà người đọc nó là người sắp quyết định
+                duyệt / điều phối / nhận chuyến — tức cùng cột với Tiến trình và
+                Luồng duyệt. Thẻ TỰ ẨN khi ghi chú rỗng. */}
+            <BookingNoteCard booking={data} />
+            {/*  Lịch sử thao tác đứng CUỐI cột phụ: chỉ đọc, mỗi dòng một câu ngắn
+                nên chịu được cột hẹp, và nó là thứ tra lại chứ không phải thứ gõ
+                vào. `AuditTimeline` tự dựng thẻ có tiêu đề (không bọc thêm Card kẻo
+                lặp tiêu đề); `messageOnly` vì backend đã ghi câu tự mô tả ("Đã điều
+                phối Xe…", "Yêu cầu chỉnh sửa — Lý do: …"). Nó dài ra theo thời gian
+                nhưng KHÔNG cần chặn chiều cao ở đây: bản thân nó chỉ hiện một số
+                dòng đầu rồi để lại nút «Xem thêm», nên cột phải không phình vô hạn. */}
+            <AuditTimeline entity="vehicle_booking" entityId={data.id} messageOnly dense />
           </div>
         </div>
       )}

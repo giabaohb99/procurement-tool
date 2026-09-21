@@ -8,6 +8,7 @@ khớp theo `key` ở đầu tiêu đề).
 Định dạng một mục:
 
 ```
+
 ## <key> | <tiêu đề hiển thị>
 - status: dang-lam | xong | huy
 - date: YYYY-MM-DD           (tùy chọn — thành ngày bắt đầu của task)
@@ -5074,6 +5075,7 @@ Mã nguồn: `frontend-v2/src/shared/constants/feature-flags.ts` (mới, khai c�
 `module-registry.test.ts`; bốn trang chi tiết trong `frontend-v2/src/modules/procurement/pages/`
 là `purchase-request-detail-page.tsx`, `purchase-order-detail-page.tsx`, `survey-detail-page.tsx`
 và `survey-request-detail-page.tsx`.
+
 ## bao-CR-452 | Sổ đồng bộ phía app đặt xe cũ: ghi lại những lượt bắn không bao giờ tới ERP
 - status: xong
 - date: 2026-09-21
@@ -5199,3 +5201,40 @@ nên nếu có ai sửa tay lệch một bên thì người đó qua được c�
 hình sẽ báo lỗi đỏ chứ không phải bảng rỗng — đúng kiểu hỏng cần có, nó kêu chứ không im.
 Tài liệu: `doc/dong-bo-dat-xe-duyet-dau/TIEN-DO.md` (§P1, quyết định N),
 `doc/dong-bo-dat-xe-duyet-dau/README.md` (bảng quyết định).
+
+## duoc-CR-439 | Chi tiết phiếu đặt xe: đổi chỗ Trao đổi với Lịch sử, dời Ghi chú sang cột phải, bỏ vùng cuộn riêng
+- status: xong
+- date: 2026-09-21
+Đại ca mở một phiếu đặt xe rồi chỉ ra ba chỗ phải sửa ở bố cục trang chi tiết. Một là khối
+Trao đổi đổi chỗ với khối Lịch sử thao tác: Trao đổi sang cột trái, Lịch sử sang cột phải.
+Lý do đứng sau chỗ đổi này là Trao đổi có ô để người ta GÕ VÀO nên cần bề ngang của cột
+chính — ô nhập rộng 360px thì một câu ba dòng đọc như cột báo, mà bình luận trên phiếu
+thường là một đoạn trích giá hoặc một dãy mốc giờ; còn Lịch sử thao tác chỉ để đọc, mỗi
+dòng một câu ngắn nên chịu được cột hẹp. Hai là khối Ghi chú dời từ cuối thân phiếu sang
+cột phải: đó là lời người lập dặn thêm, mà người đọc nó là người sắp quyết định duyệt,
+điều phối hay nhận chuyến, nên nó thuộc về cột trả lời câu «phiếu đang ở đâu, ai dặn gì»
+chứ không nằm cuối mạch «chuyến đi này là gì».
+
+Ba là cột phải bỏ hẳn vùng cuộn riêng, cả cột cuộn theo trang. Trước đó cột phải bị ghim
+dính dưới tiêu đề rồi tự cuộn bên trong, nên trang có hai vùng cuộn nằm cạnh nhau: bánh xe
+chuột đổi nghĩa tùy con trỏ đang đậu ở nửa nào, mà thanh cuộn con trong một cột rộng 360px
+thì vừa khó thấy vừa khó bấm. Em đã đo lại trên trình duyệt sau khi sửa: cả trang nay chỉ
+còn đúng một vùng cuộn.
+
+Kèm theo có hai việc dọn. Thứ nhất, phép đo chiều cao tiêu đề — một bộ theo dõi kích thước
+ghi ra biến CSS — chỉ có đúng một người dùng là cột phải lúc còn dính; cột hết dính thì nó
+thành phép đo chạy suốt mà không ai đọc, nên em gỡ và để lại ghi chú kèm ba con số đã đo
+phòng khi cần dựng lại. Thứ hai, thẻ Ghi chú tách hẳn ra thành một tệp riêng thay vì truyền
+cờ ẩn hiện qua thân phiếu, vì thân phiếu và cột phải là hai chỗ gọi khác nhau mà một tấm
+thẻ thì chỉ nên có một chủ. Thẻ vẫn tự ẩn khi ghi chú rỗng như cũ, và được thêm luật ngắt
+từ: ở cột hẹp, một chuỗi dài không có khoảng trắng như đường dẫn tệp sẽ đẩy cả thẻ tràn ra
+ngoài nếu không có nó.
+Kiểm tra: typecheck 0 lỗi, lint 0 lỗi và không thêm cảnh báo nào, 74 bài giao diện của phân
+hệ đặt xe xanh. Đã bấm tay trên trình duyệt ở phiếu DX391 của máy local, chụp màn hình đối
+chiếu cả lúc đứng yên lẫn lúc cuộn tới đáy. Không thêm bài kiểm mới vì đây là bố cục thuần,
+đúng thứ luật viết bài kiểm của dự án bảo là đừng viết. Chưa deploy, mới nằm ở máy em.
+Mã nguồn: `frontend-v2/src/modules/vehicle-booking/pages/vehicle-booking-detail-page.tsx`
+(đổi chỗ hai khối, bỏ dính và bỏ vùng cuộn của cột phải);
+`components/booking-note-card.tsx` (mới, tách từ thân phiếu);
+`components/booking-detail-body.tsx` (bỏ khối Ghi chú);
+`components/booking-detail-header.tsx` (gỡ phép đo chiều cao không còn ai dùng).

@@ -1,20 +1,19 @@
-import { StickyNote } from 'lucide-react'
-
-import { Card } from '@/shared/ui/card'
 import { REQUEST_TYPE, type VehicleBooking } from '../types/vehicle-booking'
 import { BookingDeliveryCard } from './booking-delivery-card'
-import { BookingCardHeader } from './booking-info-item'
 import { BookingRequesterCard } from './booking-requester-card'
 import { BookingRouteCard } from './booking-route-card'
 
 /**
  * Thân chi tiết phiếu đặt xe.
  *
- * Bố cục (đổi 19/09/2026): NGƯỜI YÊU CẦU → LỘ TRÌNH → (HÀNG HÓA) → GHI CHÚ —
- * ai đặt, rồi mới tới đi đâu, chở gì.
- * Thẻ **Tiến trình xử lý** không nằm ở đây mà ở CỘT PHỤ bên phải (xem
- * `vehicle-booking-detail-page.tsx`): nó là *phiếu đang ở đâu*, cùng loại với
- * luồng duyệt · trao đổi · lịch sử, và cần thấy được trong lúc đọc phần thân.
+ * Bố cục (đổi 19/09/2026): NGƯỜI YÊU CẦU → LỘ TRÌNH → (HÀNG HÓA) — ai đặt, rồi
+ * mới tới đi đâu, chở gì. Cả mạch trả lời đúng một câu: *chuyến đi này là gì*.
+ *
+ * Hai thẻ CỐ Ý không nằm ở đây mà ở CỘT PHỤ bên phải (xem
+ * `vehicle-booking-detail-page.tsx`) vì chúng trả lời câu khác — *phiếu đang ở
+ * đâu, ai dặn gì* — và cần thấy được trong lúc đọc phần thân:
+ * **Tiến trình xử lý**, và **Ghi chú** (dời sang đó 21/09/2026, xem
+ * `BookingNoteCard`).
  *
  * Bản trước là bốn thẻ chứa ~24 ô có viền xếp thành lưới hai cột — trang XEM mà
  * nhìn ra một biểu mẫu bị khóa, và quá nửa số ô rỗng (chưa duyệt, chưa điều
@@ -39,17 +38,6 @@ export function BookingDetailBody({ booking }: { booking: VehicleBooking }) {
       <BookingRequesterCard booking={booking} />
       <BookingRouteCard booking={booking} />
       {isDelivery && <BookingDeliveryCard booking={booking} />}
-
-      {/*  Chỉ hiện khi ghi chú CÓ NỘI DUNG THẬT — `.trim()` để ô toàn khoảng trắng /
-          xuống dòng cũng coi như rỗng, không dựng khung trống. */}
-      {booking.note?.trim() && (
-        <Card className="flex flex-col gap-3 p-5 pb-4">
-          <BookingCardHeader icon={<StickyNote className="size-5 text-amber-600 dark:text-amber-400" />}>
-            Ghi chú
-          </BookingCardHeader>
-          <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">{booking.note}</p>
-        </Card>
-      )}
     </>
   )
 }
