@@ -4512,3 +4512,56 @@ Mã nguồn: `backend/app/modules/survey_progress/controller.py`, `frontend-v2/s
 
 Commit: `08ee3398` trên nhánh erp-v2.
 Deploy: máy chủ thử nghiệm, 21/09/2026 (bản dựng trên máy thử = 08ee3398, dựng lại api, celery-worker và erp).
+
+## bao-CR-450 | Hai bài hướng dẫn cho luồng phương án của yêu cầu mua hàng, kèm chỗ đứng cho tool AI của chặng này
+- status: xong
+- date: 2026-09-21
+- pic: NSU209
+
+Luồng phương án trên yêu cầu mua hàng đã chạy được một thời gian nhưng kho hướng dẫn sử dụng
+chưa có bài nào nói về nó. Mười hai bài về mua hàng đang chạy, bài mới nhất sửa ngày hai mươi
+tám tháng tám, không bài nào nhắc tới phương án. Hậu quả là người dùng mới nhận phiếu không biết
+chọn phương án xong thì còn phải làm gì nữa không, và không phân biệt được nút chốt hoàn thành
+xử lý của nhân viên thu mua với việc chọn phương án của người yêu cầu. Đây là khoản nợ đã ghi
+nhận từ đợt làm luồng phương án.
+
+Lần này viết hai bài chứ không gộp một, vì màn hình có hai người dùng khác hẳn nhau và người yêu
+cầu thì cố ý không được nhìn thấy nhà cung cấp. Gộp một bài thì hoặc là lộ tên nhà cung cấp cho
+người không có quyền xem, hoặc là bắt nhân viên thu mua đọc phần viết cho người khác. Bài thứ
+nhất dành cho nhân viên thu mua, nằm trong nhóm dành cho nhân viên mua hàng, đi đủ đường: ai làm
+gì, hàng rào chỉ được gắn phương án vào dòng của mình, mở màn xử lý phương án ở đâu, gắn phương
+án bằng hai đường là lấy từ kho khảo sát hoặc nhập tay, bản chụp giá giữ nguyên khi phiếu khảo
+sát gốc đổi về sau, phương án không nào là bản sao của chính yêu cầu gốc và không xóa được, chốt
+hoàn thành xử lý và nghĩa thật của chốt rỗng, khe nới sau khi đã chốt, áp một nhà cung cấp cho
+nhiều dòng, mở lại cho thu mua xử lý, một nút tạo đơn với ba nhánh và hai lời hộp xác nhận, hai
+bản in, thẻ chứng từ liên quan, và tám bẫy hay gặp. Bài thứ hai dành cho người yêu cầu, nằm trong
+nhóm dành cho người yêu cầu, ngắn hơn và cố ý không nhắc tên nhà cung cấp; bài này nói rõ ba điều
+người yêu cầu hay hỏi nhất: không làm gì thì hệ thống vẫn mua theo yêu cầu gốc, bỏ chọn hết là
+khoan mua dòng đó, và không có chuông nào báo tới lượt họ nên phải tự vào phiếu xem.
+
+Script seed đi theo khuôn các script seed bài con đã có: chạy lại bao nhiêu lần cũng được nhờ xóa
+rồi chèn lại nhưng giữ nguyên thứ tự cũ của bài, xóa sâu trước vì khóa ngoại cha con không tự xóa
+theo, và nếu không tìm thấy nhóm cha thì dừng hẳn chứ không tự tạo bài gốc. Có một chỗ phải chỉnh
+riêng: nhóm dành cho nhân viên mua hàng có một bài cố ý để số thứ tự năm mươi, nên nếu lấy số lớn
+nhất cộng một thì bài mới rơi xuống tận cuối nhóm; nay mỗi bài khai sẵn chỗ đứng mong muốn. Đã rà
+mười bốn liên kết nội bộ của hai bài, mọi đường dẫn đều trỏ đúng một bài đang tồn tại, không có
+liên kết cụt, và đã mở cả hai bài trên cổng hướng dẫn để xem thử.
+
+Cùng lượt này còn ghi chỗ đứng cho cụm công cụ trợ lý AI của chặng phương án vào danh sách công
+cụ, thành nhóm hai mươi, có nói rõ nó thuộc phần nào là phân hệ thu mua, chứng từ yêu cầu mua
+hàng, màn xử lý phương án. Lý do phải ghi: hôm nay trợ lý mù hoàn toàn chặng này vì công cụ đọc
+chứng từ thu mua không trả về một trường nào của phương án, nên người hỏi phiếu này chọn phương án
+nào rồi sẽ nhận một câu trả lời nghe rất thật mà sai. Đề xuất xếp theo thứ tự rẻ trước: việc đáng
+làm nhất không phải viết công cụ mà là bật lại phần tra cứu hướng dẫn để hai bài vừa viết trả lời
+thay; sau đó mở rộng công cụ đọc chứng từ sẵn có bằng một tham số thay vì đẻ công cụ mới, vì danh
+sách đã ba mươi bảy công cụ và thêm nữa thì model chọn sai nhiều hơn; rồi mới tới ba công cụ mới
+được cấp số là tra phiếu đang chờ chính mình ở chặng phương án, đề xuất chọn phương án cho một
+dòng, và đề xuất áp một nhà cung cấp cho nhiều dòng. Hai công cụ sau thuộc tầng ghi có xác nhận
+nên chỉ trả bản đề xuất, người dùng bấm xác nhận thì mới ghi. Ba việc chốt là không mở cho trợ lý:
+tạo đơn mua hàng từ phương án, gắn sửa xóa phương án, và bấm nút chốt hoàn thành xử lý.
+
+Mã nguồn: script seed hai bài ở `backend/scripts/seed_help_xu_ly_phuong_an.py` (mới). Tài liệu
+nghiệp vụ `doc/tai-lieu-chuc-nang/03-yeu-cau-mua-hang.md` mục H đóng khoản nợ N-20. Danh sách công
+cụ trợ lý `doc/erp/tai-lieu-ai/02-danh-sach-api-tool.md` thêm Nhóm 20 và ghi chú mở rộng ở T27;
+`doc/erp/tai-lieu-ai/04-bao-mat-va-van-hanh.md` mục 5 cập nhật số công cụ còn nợ và hai chỗ phải
+soi khi code.

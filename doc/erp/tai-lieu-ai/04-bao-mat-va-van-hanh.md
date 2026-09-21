@@ -139,15 +139,22 @@ Cột "Điều kiện" là quyền của **người đang hỏi**; thiếu thì 
 
 ⚠️ **Bảng này phủ 36 tool.** T1-T34 đang chạy dev + prod; hai dòng cuối (**T35
 `my_leave_summary`** và **T45 `employee_lookup`**, bao-CR-386 ngày 12/09/2026) xong local,
-**chưa deploy**. Còn nợ **12 tool** cho các phân hệ mọc sau 28/08/2026 (T36-T44, T46-T48:
-Kho · Đặt phòng họp · Đặt xe · Công việc · Diễn đàn · Đóng dấu, cộng lịch nghỉ của phòng) —
-nằm ở mục *Đợt 3* của `02-danh-sach-api-tool.md`, **chưa code nên chưa có dòng ở đây**. Luật
+**chưa deploy**. Còn nợ **15 tool** cho các phân hệ mọc sau 28/08/2026 (T36-T44, T46-T48:
+Kho · Đặt phòng họp · Đặt xe · Công việc · Diễn đàn · Đóng dấu, cộng lịch nghỉ của phòng —
+mục *Đợt 3* của `02-danh-sach-api-tool.md`; và **T50-T52** cho chặng *Xử lý phương án* của
+YCMH, đề xuất 21/09/2026 — **Nhóm 20** cùng tài liệu), **chưa code nên chưa có dòng ở đây**. Luật
 là điền vào bảng này **cùng lúc với code**, không để sau — đây là thứ duy nhất khách đọc khi
 hỏi "AI có lòi thông tin vượt quyền không".
 
 Tool còn nợ đáng soi kỹ nhất là **T36 `team_leave_calendar`**: nó trả tên người kèm ngày
 vắng mặt, phải đi đúng `apply_scope` của `leave_request` — entity duy nhất khai cả `owner`
 lẫn `self`, tự viết điều kiện là lọt đơn do hành chính lập hộ.
+
+Cụm **T50-T52** (Nhóm 20) có hai chỗ phải soi khi code: (a) phương án của dòng YCMH mang tên
+NCC, mà màn chọn của **người yêu cầu** cố ý che cụm NCC khi thiếu `supplier.read` (H.3.8) —
+tool trả thẳng bảng phương án là **đi vòng qua chính cơ chế che đó**, nên phải chép đúng luật
+che của backend; (b) T51/T52 thuộc tầng GHI có xác nhận, ghi thật nằm ở endpoint `confirm-*`
+và phải kiểm lại từ đầu như T31/T49, không tin gì trong `confirm_token` ngoài danh tính.
 
 ### Nhóm tra cứu thu mua (`catalog.py`)
 
