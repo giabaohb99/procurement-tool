@@ -4614,8 +4614,15 @@ khai lối tắt, nên đã khai thêm.
 Mã nguồn: `frontend-v2/src/modules/system/pages/sync-log-list-page.tsx`, `frontend-v2/src/modules/system/components/sync-log-detail-sheet.tsx`, `frontend-v2/src/modules/system/api/sync-log-api.ts`, `frontend-v2/src/modules/system/hooks/use-sync-logs.ts`, `frontend-v2/src/modules/system/utils/sync-log-format.ts`, `frontend-v2/src/modules/system/routes.tsx`, `frontend-v2/src/modules/system/config/dashboard-shortcuts.ts`, `backend/app/modules/sync_log/tasks.py`, `backend/app/modules/sync_log/service.py`, `backend/app/modules/sync_log/controller.py`, `backend/app/core/celery_app.py`, `test/backend/test_so_dong_bo_cr449.py`, `test/backend/conftest.py`.
 
 Commit: `e53c0422` trên nhánh erp-v2.
-Deploy: máy chủ thử nghiệm, 21/09/2026 — dựng lại ba dịch vụ api, celery-worker và erp. Chưa lên
-bản thật.
+Deploy: máy chủ thử nghiệm, 21/09/2026 — dựng lại api, celery-worker, celery-beat và erp. Chưa
+lên bản thật.
+
+Suýt hụt một nhịp: tài liệu quy trình ghi rằng máy thử nghiệm không có dịch vụ chạy lịch định kỳ,
+nên câu lệnh deploy dev không dựng lại nó. Thực tế có, và chuông tám giờ sáng của lượt này khai
+đúng trong phần cấu hình mà dịch vụ đó đọc. Dựng thiếu thì máy chủ chạy mã mới còn bảng lịch vẫn
+là bảng cũ, và thứ hỏng là một việc KHÔNG xảy ra: không báo lỗi, không dịch vụ nào đỏ, chỉ là tới
+giờ chẳng có gì chạy. Đã dựng lại và đếm đủ mười một lịch, có tên lịch mới. Đã vá luôn câu lệnh và
+bảng trong tài liệu quy trình để lần sau không hụt nữa.
 
 ## bao-CR-450 | Hai bài hướng dẫn cho luồng phương án của yêu cầu mua hàng, kèm chỗ đứng cho tool AI của chặng này
 - status: xong

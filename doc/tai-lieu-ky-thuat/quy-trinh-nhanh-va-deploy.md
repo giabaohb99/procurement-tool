@@ -247,15 +247,22 @@ bước B.1 phải soi danh sách migration trước.
 ```bash
 cd ~/procurement-tool-dev
 git fetch origin && git reset --hard origin/erp-v2 && git status --short && git log --oneline -1
-docker compose --env-file .env.dev -f docker-compose.dev.yml up -d --build api celery-worker erp
+docker compose --env-file .env.dev -f docker-compose.dev.yml up -d --build api celery-worker celery-beat erp
 ```
 
 | Đã sửa | Build lại |
 |---|---|
-| `backend/` | `api` + `celery-worker` (dev **không có** `celery-beat`) |
+| `backend/` | `api` **và** `celery-worker` **và** `celery-beat` (ba service chung một image) |
 | `frontend-v2/` | `erp` |
 | `frontend/` | `web` |
 | `help-center/` | `help` |
+
+> ⚠️ **Dev CÓ `celery-beat`** (bảng trên từng ghi là không có — sai, đã vá 21/09/2026). Quên nó
+> thì api chạy code mới còn **lịch chạy định kỳ vẫn là lịch cũ**, và cái hỏng là một việc *không
+> xảy ra*: không báo lỗi, không container nào đỏ, chỉ là tới giờ chẳng có gì chạy. Kiểm bằng
+> `docker compose --env-file .env.dev -f docker-compose.dev.yml exec -T celery-beat python -c
+> "from app.core.celery_app import celery_app as c; print(sorted(c.conf.beat_schedule))"` —
+> đếm đủ tên lịch mới vừa thêm thì mới xong.
 
 > **KHÔNG truyền `-p procurement-dev`.** Stack dev thật nằm dưới project **`procurement-tool-dev`**
 > (tên mặc định theo thư mục). Thêm `-p procurement-dev` là compose tưởng đây là stack khác, đẻ ra
