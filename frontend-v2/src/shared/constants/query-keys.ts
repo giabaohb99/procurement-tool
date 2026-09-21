@@ -391,6 +391,15 @@ export const queryKeys = {
     /** Lịch sử đăng nhập N ngày của MỘT tài khoản (phiên + lần thất bại). */
     loginHistory: (userId: number, days: number) =>
       ['system', 'login-sessions', 'history', userId, days] as const,
+    /** Sổ đồng bộ với hệ ngoài — `tab_sync_log` (bao-CR-449). */
+    syncLogs: (params?: Record<string, unknown>) =>
+      ['system', 'sync-logs', params ?? {}] as const,
+    /** Thẻ đếm theo trạng thái — CÙNG nhánh với danh sách để bấm Chạy lại là cả hai cùng nạp lại. */
+    syncLogStats: (params?: Record<string, unknown>) =>
+      ['system', 'sync-logs', 'stats', params ?? {}] as const,
+    /** Bộ chọn cho các ô lọc (nguồn / đối tượng / cờ cảnh báo) — backend là nguồn sự thật. */
+    syncLogMeta: () => ['system', 'sync-logs', 'meta'] as const,
+    syncLogDetail: (id: number) => ['system', 'sync-logs', 'detail', id] as const,
     /** Hộp thư gửi danh nghĩa địa chỉ khác (26/08/2026). */
     mailboxes: () => ['system', 'mailboxes'] as const,
     /** Mẫu email thông báo theo bước (Đặt xe) — sửa được trong Cấu hình. */

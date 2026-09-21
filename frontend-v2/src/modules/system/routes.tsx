@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   MailCheck,
   MonitorSmartphone,
+  RefreshCcwDot,
   ScrollText,
   Settings,
   ShieldCheck,
@@ -109,6 +110,16 @@ export const systemModule: ErpModule = {
       manage: true,
     },
     {
+      //  bao-CR-449 (P4 của đồng bộ app đặt xe cũ). Không `manage`: quyền `read`
+      //  là đủ để mở màn, `sync_log.write` chỉ mở thêm nút *Chạy lại* trong ngăn
+      //  chi tiết. Ai chỉ đi tra "phiếu này sang được chưa" thì không cần quyền
+      //  gọi ngược sang hệ ngoài.
+      label: 'Sổ đồng bộ',
+      path: appRoutes.system.syncLogs,
+      icon: RefreshCcwDot,
+      entity: 'sync_log',
+    },
+    {
       //  duoc-CR-396: dời từ phân hệ Nhân sự sang đây. Khai ai được làm gì là
       //  việc QUẢN TRỊ HỆ THỐNG — màn này gác cả 55 khóa quyền của mọi phân hệ
       //  chứ không riêng hồ sơ nhân viên, nên nó đứng cạnh *Cấu hình hệ thống*
@@ -192,6 +203,12 @@ export const systemModule: ErpModule = {
       path: appRoutes.system.sessions,
       lazy: async () => ({
         Component: (await import('./pages/login-session-list-page')).LoginSessionListPage,
+      }),
+    },
+    {
+      path: appRoutes.system.syncLogs,
+      lazy: async () => ({
+        Component: (await import('./pages/sync-log-list-page')).SyncLogListPage,
       }),
     },
     {

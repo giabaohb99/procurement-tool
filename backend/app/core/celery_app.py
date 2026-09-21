@@ -59,6 +59,7 @@ celery_app.conf.update(
         "app.modules.assistant.rag.tasks",  # Nạp chỉ mục vector loại B (HDSD + FAQ) khi có hook / bấm nút
         "app.modules.coffee_point.tasks",   # Điểm cà phê × POS365 — kéo đơn / reset kỳ / đối chiếu
         "app.modules.legacy_datxe.tasks",   # App đặt xe / duyệt dấu cũ — lưới an toàn + chạy lại
+        "app.modules.sync_log.tasks",       # Chuông 08:00 cho dòng sổ đồng bộ lỗi quá 24h (bao-CR-449)
         # "app.tasks.alerts",           # Phase 2 — cảnh báo theo lịch
         # "app.tasks.report_tasks",     # Phase 3 — refresh báo cáo
     ],
@@ -137,6 +138,14 @@ celery_app.conf.update(
         "datxe-full-sweep": {
             "task": "datxe.full_sweep",
             "schedule": crontab(hour=2, minute=15),  # 02:15 VN, mỗi ngày
+        },
+        #  Chuông sáng cho dòng sổ đồng bộ hỏng quá 24 giờ mà ba vòng trên không
+        #  tự vá được (bao-CR-449). Dùng CHUNG cho mọi hệ nguồn của quyển sổ,
+        #  không riêng app đặt xe. 08:00 vì xử một dòng lỗi là việc tay: bắn lúc
+        #  người ta vừa tới bàn thì chuông còn được đọc.
+        "alert-stale-sync-failures": {
+            "task": "sync_log.alert_stale_failures",
+            "schedule": crontab(hour=8, minute=0),  # 08:00 VN, mỗi ngày
         },
     },
 )

@@ -53,6 +53,37 @@ def _clear_perm_cache():
     touch_state_clear()
 
 
+# ── Cấu hình hiệu lực: cắt đường ra DB THẬT ────────────────────────────────────
+@pytest.fixture(autouse=True)
+def _isolate_app_settings():
+    """`app_settings.get()` tự mở `SessionLocal()` — tức DB **MySQL thật**.
+
+    Bộ test chạy SQLite trong bộ nhớ, nhưng hàm này không đi qua fixture `db`:
+    nó dựng phiên riêng từ `app.core.database`, nạp cả bảng `tab_setting` của
+    máy đang chạy vào một cache cấp module, và **DB đè .env**. Hệ quả là mọi
+    `monkeypatch.setattr(settings, "SYNC_DATXE_ENABLED", False)` trong bộ test
+    thành vô nghĩa — giá trị thắng là hàng trong DB của người đang chạy test.
+
+    Đã cắn thật: sau bao-CR-428/429 (nạp `.env` xuống `tab_setting`), tám bài
+    của cụm đồng bộ app đặt xe cũ đỏ cùng lúc — `SYNC_DATXE_ENABLED` tắt mà vòng
+    quét vẫn đi hỏi Firebase, khóa ký monkeypatch mà chữ ký vẫn lệch (401). Mã
+    nguồn không sai; bộ test đang đọc cấu hình của máy khác.
+
+    Nhốt lại bằng cách ép cache RỖNG và hạn dùng ở tương lai xa: không còn dòng
+    DB nào, nên `get()` rơi hết về `.env`/`settings` — đúng thứ các bài đang
+    monkeypatch. Bài nào cần một khóa có giá trị thì cứ đặt thẳng vào
+    `app_settings._cache`.
+    """
+    import time
+
+    from app.core import app_settings
+    goc_cache, goc_exp = app_settings._cache, app_settings._exp
+    app_settings._cache = {}
+    app_settings._exp = time.time() + 10_000
+    yield
+    app_settings._cache, app_settings._exp = goc_cache, goc_exp
+
+
 # ── Fixture db ──────────────────────────────────────────────────────────────────
 @pytest.fixture(scope="function")
 def db():

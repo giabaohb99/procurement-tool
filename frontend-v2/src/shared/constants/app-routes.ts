@@ -311,6 +311,18 @@ export const appRoutes = {
       `/system/logs?request_id=${encodeURIComponent(requestId)}`,
     /** Phiên đăng nhập đang mở toàn hệ — đá phiên / bắt đăng nhập lại (bao-CR-395). */
     sessions: '/system/sessions',
+    /**
+     * Sổ đồng bộ với hệ ngoài — một dòng = một bản ghi hoặc một lượt chạy đi qua
+     * `tab_sync_log` (bao-CR-449, P4 của đồng bộ app đặt xe cũ).
+     *
+     * ⚠️ Không cùng họ với `system.logs`: màn kia ghi những gì NGƯỜI TA bấm bên
+     * trong ERP, màn này ghi những gì HỆ NGOÀI đẩy sang hoặc ERP đẩy đi. Một
+     * phiếu đặt xe hỏng lúc nhận về không để lại dòng nào ở màn kia.
+     *
+     * Nhận `?status=` / `?warning=` để mở sẵn một ô lọc — chuông 08:00 đi vào
+     * bằng đường này.
+     */
+    syncLogs: '/system/sync-logs',
     /** Hộp thư gửi danh nghĩa địa chỉ khác — dùng lúc ban hành văn bản. */
     mailboxes: '/system/mailboxes',
     /** Quản lý nhập dữ liệu — danh sách các lần nạp dữ liệu hàng loạt. */

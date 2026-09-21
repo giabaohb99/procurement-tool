@@ -24,7 +24,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -326,6 +326,113 @@ def recent_runs(db: Session, source: str, job: str, limit: int,
     if statuses:
         query = query.where(SyncLog.status.in_([int(s) for s in statuses]))
     return list(db.execute(query.order_by(SyncLog.id.desc()).limit(limit)).scalars())
+
+
+#: Dòng lỗi phải cũ hơn ngần này giờ mới đáng gọi người. Phần lớn sự cố đồng bộ
+#: tự khỏi ở vòng `retry_pending` kế tiếp (10 phút một lần); báo ngay thì chuông
+#: kêu cả ngày vì những thứ đã lành trước khi ai kịp mở màn hình.
+STALE_FAILURE_HOURS = 24
+
+#: Trần số dòng một lượt quét. Sổ lỗi dài hơn ngần này thì vấn đề không còn nằm
+#: ở từng dòng nữa — chuông chỉ cần nói "nhiều quá, vào mà xem".
+STALE_FAILURE_LIMIT = 500
+
+#: Kết cục được coi là ĐÃ VÁ. `SKIPPED` tính là vá: nó nghĩa là lần sau nhìn lại
+#: thì bên ERP đã có hàng đúng rồi, không còn việc gì phải làm.
+HEALED_STATUSES = (SyncStatus.SUCCESS, SyncStatus.SKIPPED)
+
+
+def find_stale_failures(db: Session, *, hours: int = STALE_FAILURE_HOURS,
+                        limit: int = STALE_FAILURE_LIMIT,
+                        source: str = "") -> list[SyncLog]:
+    """Dòng LỖI cũ hơn `hours` giờ mà tới giờ vẫn chưa ai vá được.
+
+    "Vá được" nghĩa là SAU dòng lỗi đó, sổ có một dòng khác cùng đối tượng kết
+    thúc êm. Phải xét vòng vèo như vậy vì `clone_for_retry` cố ý KHÔNG sửa dòng
+    cũ (luật §3.2): bấm chạy lại mười lần thì dòng lỗi đầu tiên vẫn mang trạng
+    thái *lỗi* vĩnh viễn. Đếm thẳng theo trạng thái là sáng nào chuông cũng réo
+    lại đúng mấy dòng người ta đã xử xong từ tuần trước, và chuông nào kêu sai
+    vài lần thì người ta thôi đọc nó.
+
+    Dòng BẢN GHI soi theo (nguồn, đối tượng, mã bên cũ); dòng LƯỢT CHẠY soi theo
+    (nguồn, công việc) — một lượt kéo thành công sau đó đã kéo bù phần lỡ, vì
+    con trỏ chỉ tiến khi thành công.
+
+    Bản ghi không có mã bên cũ thì không soi được, và cố ý coi như CHƯA vá: đó
+    là dòng hỏng tới mức không nhận ra nó nói về phiếu nào, càng cần người nhìn.
+
+    Cố ý KHÔNG chặn trần tuổi: một dòng hỏng ba tháng không ai đụng vẫn phải kêu
+    mỗi sáng. Đường tắt duy nhất để im là vá nó, đúng như mong muốn.
+    """
+    cutoff = (datetime.now(VN_TZ) - timedelta(hours=max(hours, 0))).replace(tzinfo=None)
+    query = select(SyncLog).where(
+        SyncLog.status == int(SyncStatus.FAILED),
+        SyncLog.created_at < cutoff,
+    )
+    if source:
+        query = query.where(SyncLog.source == source)
+    failures = list(db.execute(query.order_by(SyncLog.id.desc()).limit(limit)).scalars())
+    if not failures:
+        return []
+
+    records = [f for f in failures if f.grain != int(SyncGrain.RUN) and f.legacy_id]
+    runs = [f for f in failures if f.grain == int(SyncGrain.RUN) and f.job]
+    healed = _find_healed_records(db, records)
+    healed_runs = _find_healed_runs(db, runs)
+
+    stale: list[SyncLog] = []
+    for row in failures:
+        if row.grain == int(SyncGrain.RUN) and row.job:
+            if healed_runs.get((row.source, row.job), 0) > row.id:
+                continue
+        elif row.legacy_id:
+            if healed.get((row.source, row.entity, row.legacy_id), 0) > row.id:
+                continue
+        stale.append(row)
+    return stale
+
+
+#  Hai hàm dưới cố ý lọc bằng BA (hoặc HAI) mệnh đề `IN` rời nhau thay vì một
+#  `IN` trên bộ ba cột. Ràng buộc rời là một tập CHA của tập cần tìm — nhưng
+#  `GROUP BY` trả về đúng khóa thật, mà bên gọi chỉ tra theo khóa thật, nên kết
+#  quả vẫn chính xác. Đổi lại: chạy được trên cả MySQL lẫn SQLite của bộ test,
+#  và dùng được chỉ mục `ix_sync_log_source_legacy` thay vì quét bảng.
+
+def _find_healed_records(db: Session, rows: list[SyncLog]) -> dict[tuple, int]:
+    """{(nguồn, đối tượng, mã bên cũ): id dòng êm MỚI NHẤT}."""
+    if not rows:
+        return {}
+    found = db.execute(
+        select(SyncLog.source, SyncLog.entity, SyncLog.legacy_id, func.max(SyncLog.id))
+        .where(
+            SyncLog.id > min(r.id for r in rows),
+            SyncLog.status.in_([int(s) for s in HEALED_STATUSES]),
+            SyncLog.source.in_({r.source for r in rows}),
+            SyncLog.entity.in_({r.entity for r in rows}),
+            SyncLog.legacy_id.in_({r.legacy_id for r in rows}),
+        )
+        .group_by(SyncLog.source, SyncLog.entity, SyncLog.legacy_id)
+    ).all()
+    return {(source, entity, legacy_id): int(newest)
+            for source, entity, legacy_id, newest in found}
+
+
+def _find_healed_runs(db: Session, rows: list[SyncLog]) -> dict[tuple, int]:
+    """{(nguồn, công việc): id lượt chạy THÀNH CÔNG mới nhất}."""
+    if not rows:
+        return {}
+    found = db.execute(
+        select(SyncLog.source, SyncLog.job, func.max(SyncLog.id))
+        .where(
+            SyncLog.id > min(r.id for r in rows),
+            SyncLog.grain == int(SyncGrain.RUN),
+            SyncLog.status == int(SyncStatus.SUCCESS),
+            SyncLog.source.in_({r.source for r in rows}),
+            SyncLog.job.in_({r.job for r in rows}),
+        )
+        .group_by(SyncLog.source, SyncLog.job)
+    ).all()
+    return {(source, job): int(newest) for source, job, newest in found}
 
 
 def _finish(db: Session, entry: SyncLog, status: SyncStatus, message: str,
