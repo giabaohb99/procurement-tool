@@ -113,6 +113,21 @@ Nếu nút không hiện mà thẻ báo "Hãy nhập Email ở hồ sơ và lưu
    là bộ B mất phiếu đứng tên các pháp nhân khác.
 4. Bấm **Lưu phạm vi**.
 
+### Làm nhanh Bước 3 và 4 bằng Trợ lý AI (từ 21/09/2026)
+
+Xong Bước 1 và 2 bằng tay rồi, hai bước còn lại có thể nhờ Trợ lý AI: gõ vào ô chat, ví dụ
+*"lập bộ tài khoản nhân viên thu mua cho Nguyễn Văn A, loại trừ phòng Dego Organic"*. Trợ lý
+dò trước (đã có tài khoản chưa, đang giữ vai trò gì, phạm vi đang khai gì) rồi hiện **thẻ đề
+xuất** liệt kê từng dòng *thêm / bỏ / không đổi*. Đọc kỹ thẻ, đúng ý thì bấm **Xác nhận** —
+tới lúc đó hệ thống mới gán vai trò và ghi phạm vi, và vẫn kiểm lại quyền của chính bạn y như
+lúc bấm tay trên màn Phân quyền. Thẻ báo *"đã đúng bộ"* thì không có gì để xác nhận.
+
+Trợ lý **không** tạo tài khoản đăng nhập, **không** đặt mật khẩu, **không** tạo vai trò mới
+và **không** tick thêm quyền vào vai trò — ba việc đó vẫn phải làm tay ở Bước 1-2 hoặc ở màn
+*Vai trò & quyền*. Người chưa có tài khoản thì trợ lý chỉ chỉ đường sang màn Người dùng.
+Cảnh báo vàng trên thẻ về ô *Chỉ trong công ty* còn khai là lời nhắc của điểm 3 trong Bước 4
+ở trên; muốn gỡ thì nói rõ với trợ lý, nó không tự gỡ.
+
 ## 4. Bộ A — Nhà máy (phòng tự mua hàng)
 
 ### 4.1 Bốn tài khoản
@@ -191,6 +206,9 @@ Sản xuất -Thu mua, `NM_TP` duyệt: lúc này `TM_QL` thấy, `NM_MUA` vẫn
 - **Sửa hồ sơ hoặc quyền của chính mình bị khóa**: cố ý, nhờ quản trị khác.
 - **Hai phòng trùng tên ở hai công ty**: ô loại trừ khớp theo **tên**, sẽ trừ cả hai.
   Đặt tên phòng khác nhau trước.
+- **Không thấy phiếu đứng tên pháp nhân khác**: có người đã khai *Chỉ trong công ty* trong
+  hộp Phạm vi của vai trò đó. Xóa ô đó. Pháp nhân trong hồ sơ nhân sự **không** phải
+  nguyên nhân (từ bao-CR-434 hồ sơ không thu hẹp gì).
 - **Nhờ nhầm sang phòng không có ai giữ vai trò thu mua**: phiếu chỉ còn phòng lập thấy.
   Sửa lại ô *Nhờ phòng xử lý* khi phiếu còn Nháp / Bị trả lại, hoặc dùng nút
   *Trả về phòng lập* trên phiếu đã duyệt.
@@ -206,9 +224,6 @@ Không sửa mã, không sửa cấu hình. Lặp lại:
    mua*, khai *Phân công phụ trách* với *Phòng áp dụng* = phòng đó).
 2. Mục 5 bước 4: mở **từng** tài khoản Thu mua chung, thêm phòng mới vào ô *Loại trừ phòng
    ban* của **từng** vai trò thu mua họ giữ.
-- **Không thấy phiếu đứng tên pháp nhân khác**: có người đã khai *Chỉ trong công ty* trong
-  hộp Phạm vi của vai trò đó. Xóa ô đó. Pháp nhân trong hồ sơ nhân sự **không** phải
-  nguyên nhân (từ bao-CR-434 hồ sơ không thu hẹp gì).
 
 Bước 2 là chỗ dễ quên nhất và quên thì **lủng im lặng**: Thu mua chung vẫn thấy phiếu phòng
 mới mà không ai báo lỗi. Ghi phòng mới vào danh sách kiểm định kỳ của quản trị.

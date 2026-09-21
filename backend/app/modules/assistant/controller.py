@@ -83,6 +83,26 @@ def confirm_document_update(body: ConfirmUpdateIn,
     return success(result, message=f"Đã sửa phiếu {result['code']}: {fields}")
 
 
+@router.post("/confirm-account-setup")
+def confirm_account_setup_proposal(body: ConfirmUpdateIn,
+                                   user=Depends(require("assistant", "read")),
+                                   db: Session = Depends(get_db)):
+    """Bước 2 của tool `propose_account_setup` (bao-CR-435): NGƯỜI DÙNG bấm 'Xác nhận' trên
+    thẻ đề xuất lập bộ tài khoản thu mua.
+
+    Backend kiểm lại tại thời điểm bấm (token + đúng chủ + `user.write`/`role.read`/
+    `employee.read` + phạm vi tài khoản + L1/L2 chống tự nâng quyền) rồi ghi qua đúng hai
+    service của màn Phân quyền — xem `tools/account_setup_tool.confirm_account_setup`.
+    Cùng lý do với `/confirm-update`: gác `assistant.read`, quyền GHI thật kiểm bên trong.
+    """
+    _guard()
+    from .tools.account_setup_tool import confirm_account_setup
+
+    result = confirm_account_setup(db, user, body.token)
+    what = ", ".join(result["updated"]) if result["updated"] else "không có gì đổi"
+    return success(result, message=f"Bộ tài khoản {result['target_label']}: {what}")
+
+
 @router.post("/uploads")
 def upload_chat_attachment(file: UploadFile = File(...),
                            user=Depends(require("assistant", "read")),

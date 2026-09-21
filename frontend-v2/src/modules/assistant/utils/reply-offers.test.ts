@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { ChatReply, UpdateProposal } from '../types/assistant'
+import type { AccountSetupProposal, ChatReply, UpdateProposal } from '../types/assistant'
 import type { DraftOffer } from './reply-offers'
 import { draftNavigation, pickDraftOffer, pickFileOffer, pickUpdateOffer } from './reply-offers'
 
@@ -120,6 +120,53 @@ describe('pickUpdateOffer', () => {
     //  Thẻ cũ hiện dai sẽ gây bấm nhầm — token vẫn hết hạn ở backend nhưng đừng thử người dùng.
     expect(pickUpdateOffer(reply([{ name: 'my_approval_tasks', args: {}, rows: 3 }]))).toBeNull()
     expect(pickUpdateOffer(reply(undefined))).toBeNull()
+  })
+
+  const accountSetup: AccountSetupProposal = {
+    kind: 'account_setup_proposal',
+    target_label: 'Trần Văn A (NV001)',
+    employee: {
+      code: 'NV001',
+      full_name: 'Trần Văn A',
+      department: 'Phòng Thu mua',
+      position: 'Nhân viên',
+      has_account: true,
+      account_active: true,
+    },
+    lines: [
+      { kind: 'role', role_code: 'pur_staff', label: 'Nhân viên thu mua', status: 'thêm' },
+      { kind: 'scope', role_code: 'pur_staff', label: 'Loại trừ phòng: Dego Organic', status: 'thêm' },
+    ],
+    warnings: [],
+    changed: 2,
+    confirm_token: 'tk-acc',
+    url: '/system/permissions/users/9',
+  }
+
+  it('bao-CR-435: propose_account_setup proposal is picked with its kind intact', () => {
+    const offer = pickUpdateOffer(
+      reply([{ name: 'propose_account_setup', args: {}, rows: 2, proposal: accountSetup }]),
+    )
+    expect(offer).toEqual({ conversationId: 7, proposal: accountSetup })
+    expect(offer?.proposal.kind).toBe('account_setup_proposal')
+  })
+
+  it('bao-CR-435: the LAST proposal of a turn wins when both tools ran', () => {
+    //  Hai thẻ cùng lượt thì thẻ sau đè thẻ trước — cùng luật với draft/file, tránh
+    //  dựng hai thẻ xác nhận chồng nhau trong bong bóng chat.
+    const offer = pickUpdateOffer(
+      reply([
+        { name: 'propose_document_update', args: {}, rows: 1, proposal },
+        { name: 'propose_account_setup', args: {}, rows: 2, proposal: accountSetup },
+      ]),
+    )
+    expect(offer?.proposal.kind).toBe('account_setup_proposal')
+  })
+
+  it('bao-CR-435: account tool blocked / denied (no proposal) does not build a card', () => {
+    expect(
+      pickUpdateOffer(reply([{ name: 'propose_account_setup', args: {}, rows: 0 }])),
+    ).toBeNull()
   })
 })
 

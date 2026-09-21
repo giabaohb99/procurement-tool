@@ -91,6 +91,15 @@ là cách đúng. Vùng *tải tệp lên* ở §4 nay **đã có người nhìn
 - **Cửa gắn tệp thứ HAI** — `ticket/service._register_files` gắn `file_id` vào `FileLink` mà
   không hỏi chủ sở hữu, y hệt BM-025 nhưng ở một module khác. `comment` và `forum` thì có kiểm
   nhưng mỗi nơi chép một bản; cả ba nay dùng chung `attachment/service.select_attachable_ids`.
+**Bản 2.3 — 21/09/2026.** Không thêm dòng BM; ghi nhận **một cửa GHI mới vào phân quyền**
+mở có chủ ý (`bao-CR-435`, `assistant/tools/account_setup_tool.py` + endpoint
+`POST /api/assistant/confirm-account-setup`): trợ lý AI gán vai trò CÓ SẴN + ô loại trừ phòng
+ban theo khuôn đề xuất → người bấm Xác nhận. Cửa này đi qua **đúng bộ chốt của màn Phân
+quyền** — `user.write` + `role.read` + `employee.read`, `get_scoped(User, write)`, L1
+`block_edit_own_permissions`, L2 `block_role_escalation` — và kiểm lại toàn bộ lúc bấm, không
+tin đề xuất cũ (vai trò được tick thêm quyền sau lúc đề xuất vẫn bị chặn). Không tạo tài
+khoản, không mật khẩu, không tạo vai trò. Lý do ghi vào sổ: lần rà sau phải đếm nó vào census
+"đường ghi vào `user_role` / `tab_user_scope`" — trước nay chỉ có màn Phân quyền và seed.
 
 ---
 
@@ -1535,6 +1544,7 @@ chứ không riêng `IMAGE_EXTS` — hằng số đó đã bị xóa, luật nay
 | **BM-029** | `test_zip_khong_co_duong_dan_di_len` | Dựng `StoredFile.filename = "../../evil.pdf"`, gọi `/chain/zip`, đọc `namelist()` của tệp nén → **không mục nào** chứa `..` |
 | **BM-030** | `test_ten_tep_qua_dai_tra_422` | Tên **300 ký tự** → **422**, không phải 500. ⚠️ Kiểm ở **tầng chặn**, đừng ghi xuống DB rồi khẳng định — SQLite không ép `VARCHAR`, xem bẫy ngay dưới |
 | **BM-031** | `test_upload_file_doi_quyen_voi_comment` | Tài khoản không quyền gì gọi `/upload-file` với `entity=comment` → phải bị chặn |
+| **bao-CR-435** (cửa ghi mới, không phải BM) | `test_assistant_account_setup_tool.py` (22 ca) | Thiếu một trong ba khóa → `denied`; tự sửa mình → L1; vai trò mang quyền người hỏi không có → L2 (cả lúc đề xuất lẫn lúc xác nhận, kể cả khi vai trò được tick thêm quyền SAU lúc đề xuất); tài khoản ngoài phạm vi → "không tìm thấy"; token người khác / token loại `confirm-update` → 403; hết hạn / rác → 400; chạy lại → mọi dòng «không đổi», không ghi gì |
 
 ⚠️ **Bẫy đã biết, đừng dẫm lại:** `test/backend` chạy **SQLite**, mà SQLite **không** ép độ dài
 `VARCHAR` và không có nhiều ràng buộc của MySQL — bài kiểm nào ghi xuống DB rồi khẳng định là

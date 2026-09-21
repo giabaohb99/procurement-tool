@@ -3,6 +3,7 @@ import type {
   AssistantAttachment,
   ChatReply,
   ChatRequest,
+  ConfirmAccountSetupResult,
   ConfirmUpdateResult,
   ConversationDetail,
   ConversationSummary,
@@ -42,6 +43,13 @@ export const assistantApi = {
    */
   confirmUpdate: (token: string) =>
     apiPost<ConfirmUpdateResult>(`${BASE_URL}/confirm-update`, { token }),
+
+  /**
+   * Bấm 'Xác nhận' trên thẻ đề xuất lập bộ tài khoản (bao-CR-435) — cùng khuôn: chỉ gửi
+   * token, backend kiểm lại quyền / phạm vi / chống tự nâng quyền rồi mới gán.
+   */
+  confirmAccountSetup: (token: string) =>
+    apiPost<ConfirmAccountSetupResult>(`${BASE_URL}/confirm-account-setup`, { token }),
 
   /** Xóa hội thoại của chính mình. */
   remove: (id: number) => apiDelete<null>(`${BASE_URL}/conversations/${id}`),

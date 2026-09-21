@@ -206,9 +206,10 @@ lẫn `self`, tự viết điều kiện là lọt đơn do hành chính lập h
 
 ### Nhóm sửa phiếu có xác nhận + phiếu hỗ trợ (`update_tool.py`, `ticket_tool.py`, thêm 28/08/2026 — đợt CR-218)
 
-Đây là nơi DUY NHẤT trợ lý dùng action `write` — và bản thân tool vẫn KHÔNG ghi gì: việc
-ghi nằm ở endpoint `POST /api/assistant/confirm-update`, chỉ chạy khi người dùng bấm nút
-Xác nhận trên thẻ so sánh cũ/mới.
+Đây là nơi ĐẦU TIÊN trợ lý dùng action `write` (nơi thứ hai là nhóm lập bộ tài khoản ngay
+dưới, 21/09/2026) — và bản thân tool vẫn KHÔNG ghi gì: việc ghi nằm ở endpoint
+`POST /api/assistant/confirm-update`, chỉ chạy khi người dùng bấm nút Xác nhận trên thẻ so
+sánh cũ/mới.
 
 | Tool | Việc | Điều kiện |
 |------|------|-----------|
@@ -219,6 +220,21 @@ Xác nhận trên thẻ so sánh cũ/mới.
 | `my_tickets` | Phiếu hỗ trợ CỦA CHÍNH người hỏi (mới nhất trước, kèm nhãn trạng thái + `url`) | `ticket.read`, rồi **ép lọc chính chủ** theo cả hai cột (`created_by` = tài khoản HOẶC `requester_id` = mã nhân sự — thấy cả phiếu người khác tạo hộ) kể cả khi scope là `all`; limit mặc định 10, trần 30 |
 | `my_leave_summary` *(12/09, chưa deploy)* | Quỹ phép của chính người hỏi theo **từng loại nghỉ** (tổng · đã dùng · đang giữ chỗ · chuyển sang · còn lại) + đơn nghỉ của chính họ kèm số + nhãn trạng thái, dòng loại nghỉ và `url`. Read-only: **không gọi `ensure_balance()`** (hàm đó cấp phát dòng quỹ mới), loại chưa cấp quỹ trả cờ `allocated: false` | `leave_request.read` — cùng lý lẽ với `GET /api/leave-requests/tools/my-balance`: đây là quỹ của CHÍNH người hỏi, đòi thêm `leave_balance.read` là chắc chắn có người quên cấp rồi số hiện 0 vĩnh viễn. Rồi **ép lọc `employee_id` = mã nhân sự người hỏi** kể cả khi scope là `all`; **cố ý KHÔNG lọc `created_by`** — ở phân hệ này `created_by` nghĩa là "tôi lập hộ NGƯỜI KHÁC", gộp vào là phát dữ liệu nghỉ phép của người ta. Tài khoản chưa gắn nhân sự (`employee_id = 0`) nhận lỗi mềm, không trả quỹ của "nhân sự số 0". Limit 10, trần 30 (chỉ kẹp danh sách đơn) |
 | `employee_lookup` *(12/09, chưa deploy)* | Danh bạ nhân sự: tra theo tên / mã NV / email / điện thoại / chức vụ, hoặc liệt kê theo phòng ban. **Trả đúng 12 trường danh bạ** (mã · họ tên · chức vụ · cấp bậc · phòng ban · công ty · email · điện thoại công việc · quản lý trực tiếp · nhãn tình trạng · còn làm việc) | `employee.read` + `apply_scope` — tool ĐẦU TIÊN đọc hồ sơ NGƯỜI KHÁC, trước nó trợ lý chỉ đọc 5 trường của chính người hỏi. Ba lớp: khóa quyền · `apply_scope` (người scope `own` chỉ thấy mình) · **danh sách trắng trường ra** (`_OUT_FIELDS`, dựng theo danh sách chứ không `model_dump()` rồi xóa bớt). Danh sách trắng đã loại sạch **15 trường nhạy cảm** nên tool **không đòi** `employee_sensitive.read`; vẫn chạy thêm một lượt `sensitive.mask_many` làm chốt dự phòng. Mặc định chỉ người đang làm việc; limit 10, trần 30 |
+
+### Nhóm lập bộ tài khoản có xác nhận (`account_setup_tool.py`, bao-CR-435, 21/09/2026)
+
+Cửa GHI thứ hai của trợ lý, và là lần đầu trợ lý đụng vào **phân quyền** (`user_role` +
+`tab_user_scope`). Luật giữ nguyên: tool chỉ ĐỀ XUẤT, ghi ở endpoint riêng khi người bấm.
+Tool tái dùng đúng hai hàm màn Phân quyền đang gọi (`assign_roles`, `set_user_scope`) nên
+audit + `perm_cache_clear` ăn nguyên; **không có đường ghi thứ ba** vào hai bảng đó.
+
+| Tool | Việc | Điều kiện |
+|------|------|-----------|
+| `propose_account_setup` | Tìm nhân sự → kiểm có tài khoản → đọc vai trò + phạm vi đang có → so từng dòng «thêm / bỏ / không đổi» cho vai trò CÓ SẴN trong bộ mẫu (6 mã) và ô *Loại trừ phòng ban*; cảnh báo tài khoản khóa + dòng «Chỉ trong công ty» còn sót (bao-CR-434). Trả `proposal` + `confirm_token`, **không ghi DB**. Chạy lại = mọi dòng «không đổi», không có nút | `user.write` + `role.read` + `employee.read` — thiếu một khóa là `denied`; `get_scoped(User, write)` (ngoài phạm vi = "không tìm thấy"); **L1** `block_edit_own_permissions` (không tự sửa mình); **L2** `block_role_escalation` (vai trò mang `(entity, action)` người hỏi không có → 403, kể cả khi vai trò đó nằm trong bộ mẫu); mã vai trò ngoài bộ mẫu / tên phòng lạ → lỗi mềm kèm danh sách hợp lệ. **Không** tạo tài khoản, **không** mật khẩu, **không** tạo vai trò |
+| *(endpoint)* `POST /api/assistant/confirm-account-setup` | Gán vai trò (`assign_roles`, chỉ khi bộ vai trò thật sự đổi) rồi ghi từng phạm vi (`set_user_scope`, chỉ dòng khác hiện trạng); `actor_id` là người bấm | Token Fernet loại `account_setup_proposal` gắn user (token của `confirm-update` hay của người khác = 403), hạn 15 phút (quá hạn / rác = 400); rồi **KIỂM LẠI TOÀN BỘ** không tin đề xuất: ba khóa quyền + `get_scoped` + L1 + `block_missing_roles` (vai trò bị xóa giữa chừng = 400) + L2 với **quyền hiện tại** của vai trò — vai trò được tick thêm quyền sau lúc đề xuất vẫn bị chặn |
+
+Bài kiểm: `test/backend/test_assistant_account_setup_tool.py` (22 ca) — mỗi cửa chặn một
+ca, cộng ca chạy lại không đổi và ca token hết hạn / sai chủ / sai loại.
 
 ---
 

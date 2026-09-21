@@ -110,6 +110,54 @@ export interface ConfirmUpdateResult {
   url: string
 }
 
+/** Một dòng của đề xuất lập bộ tài khoản (bao-CR-435): vai trò hoặc ô phạm vi + kết cục. */
+export interface AccountSetupLine {
+  kind: 'role' | 'scope'
+  role_code: string
+  label: string
+  /** Chữ do backend dựng — cùng từ với nhật ký của màn Phân quyền, đừng dịch lại ở TS. */
+  status: 'thêm' | 'bỏ' | 'không đổi'
+}
+
+/** Hồ sơ nhân sự đã dò được — hiện đầu thẻ để người bấm biết mình đang gán cho AI. */
+export interface AccountSetupEmployee {
+  code: string
+  full_name: string
+  department: string
+  position: string
+  has_account: boolean
+  account_active: boolean
+}
+
+/**
+ * Đề xuất lập / chỉnh BỘ TÀI KHOẢN thu mua do tool `propose_account_setup` sinh
+ * (bao-CR-435) — cùng khuôn với `UpdateProposal`: chỉ là đề xuất, `confirm_token` gửi
+ * lên `POST /api/assistant/confirm-account-setup` khi người dùng bấm 'Xác nhận'.
+ * `changed = 0` nghĩa là tài khoản đã đúng bộ, thẻ không hiện nút xác nhận.
+ */
+export interface AccountSetupProposal {
+  kind: 'account_setup_proposal'
+  target_label: string
+  employee: AccountSetupEmployee
+  lines: AccountSetupLine[]
+  warnings: string[]
+  changed: number
+  confirm_token: string
+  /** Trang Phân quyền tài khoản của người đó — nút 'Mở phân quyền'. */
+  url: string
+}
+
+/** Kết quả bấm 'Xác nhận' lập bộ tài khoản — `updated` rỗng = không có gì đổi. */
+export interface ConfirmAccountSetupResult {
+  target_label: string
+  roles: string[]
+  updated: string[]
+  url: string
+}
+
+/** Mọi loại đề xuất có xác nhận mà backend gắn vào `tool_calls[].proposal`. */
+export type AssistantProposal = UpdateProposal | AccountSetupProposal
+
 /** Một lần trợ lý gọi công cụ trong lượt trả lời (backend chỉ trả tên + tham số). */
 export interface AssistantToolCall {
   name: string
@@ -126,8 +174,9 @@ export interface AssistantToolCall {
     size: number
     download_url: string
   }
-  /** Đề xuất sửa phiếu của tool `propose_document_update` (CR-218) — dựng thẻ xác nhận. */
-  proposal?: UpdateProposal
+  /** Đề xuất có xác nhận: sửa phiếu (`propose_document_update`, CR-218) hoặc lập bộ tài
+   *  khoản (`propose_account_setup`, bao-CR-435) — phân biệt bằng `kind`. */
+  proposal?: AssistantProposal
 }
 
 /** Kết quả một lượt `/chat`. */

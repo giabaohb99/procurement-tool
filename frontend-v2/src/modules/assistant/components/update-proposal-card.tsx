@@ -4,11 +4,10 @@ import { useNavigate } from 'react-router-dom'
 
 import { Button } from '@/shared/ui/button'
 import { assistantApi } from '../api/assistant-api'
-import type { ConfirmUpdateResult } from '../types/assistant'
-import type { UpdateOffer } from '../utils/reply-offers'
+import type { ConfirmUpdateResult, UpdateProposal } from '../types/assistant'
 
 interface UpdateProposalCardProps {
-  offer: UpdateOffer
+  proposal: UpdateProposal
   /** Người dùng bấm 'Bỏ qua' — gỡ thẻ (token vẫn tự hết hạn ở backend). */
   onDismiss: () => void
   /** Gọi trước khi điều hướng mở phiếu — bong bóng chat dùng để tự thu gọn. */
@@ -22,12 +21,10 @@ interface UpdateProposalCardProps {
  * bộ quyền/phạm vi/trạng thái tại thời điểm bấm nên thẻ cũ bấm lại chỉ ăn lỗi, không
  * ghi bậy.
  */
-export function UpdateProposalCard({ offer, onDismiss, onNavigate }: UpdateProposalCardProps) {
+export function UpdateProposalCard({ proposal, onDismiss, onNavigate }: UpdateProposalCardProps) {
   const navigate = useNavigate()
   const [saving, setSaving] = useState(false)
   const [done, setDone] = useState<ConfirmUpdateResult | null>(null)
-
-  const { proposal } = offer
 
   const handleConfirm = async () => {
     setSaving(true)

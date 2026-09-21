@@ -4087,6 +4087,45 @@ Mã nguồn: `backend/app/modules/purchase_order/service.py` (`order_amount_map`
 Commit: `db96d8df`.
 Deploy: máy chủ thử, 21/09/2026 (kiểm lại tại đó: 80 đơn gần nhất, cột Tiền hàng trong tệp Excel khớp màn hình, lệch 0).
 
+## bao-CR-435 | Trợ lý AI lập bộ tài khoản thu mua bằng đề xuất rồi xác nhận
+- status: xong
+- date: 2026-09-21
+- pic: NSU209
+Đại ca muốn có một tool cho trợ lý AI để lập bộ tài khoản thu mua theo hướng dẫn 20, và hỏi liệu
+tool có nên vừa tạo vai trò, vừa gán vai trò, vừa chỉnh phạm vi hay không. Em đề nghị tách làm hai
+giai đoạn: giai đoạn này chỉ gán những vai trò đã có sẵn trong bộ mẫu và khai ô loại trừ phòng ban,
+còn việc tạo vai trò mới theo yêu cầu của khách thì để sau vì phải hỏi xác nhận nhiều bước hơn. Đại
+ca đồng ý làm tool trước.
+
+Tool làm theo đúng khuôn đề xuất rồi xác nhận của việc sửa phiếu: trợ lý chỉ dò và đề xuất, hệ
+thống chỉ ghi khi chính người dùng bấm nút Xác nhận trên thẻ trong khung chat. Trước khi đề xuất,
+tool tìm nhân sự theo mã, rồi theo email đăng nhập, rồi theo tên gần đúng, quá sáu ứng viên thì hỏi
+lại; kiểm người đó đã có tài khoản chưa; đọc vai trò và phạm vi đang có; rồi so từng dòng ra ba kết
+cục thêm, bỏ, không đổi. Mặc định chỉ thêm vai trò, giữ vai trò đang có. Thẻ cảnh báo vàng khi tài
+khoản đang khóa hoặc khi vai trò thu mua còn khai ô Chỉ trong công ty, nhưng không tự gỡ dòng đó,
+chỉ gỡ khi người dùng nói rõ. Chạy lại lần hai thì mọi dòng đều không đổi và thẻ không có nút.
+
+Tool không tạo tài khoản đăng nhập, không đụng mật khẩu, không tạo vai trò và không tick quyền.
+Nhân sự chưa có tài khoản thì tool chặn lại và chỉ đường sang màn Người dùng để lập tay.
+
+Cửa kiểm dùng đúng bộ chốt của màn Phân quyền: ba khóa quyền là ghi người dùng, đọc vai trò và
+đọc nhân sự; phạm vi dữ liệu trên tài khoản đích; chốt không tự sửa chính mình; chốt không gán vai
+trò mang quyền mà người hỏi không có. Lúc bấm Xác nhận, đường API kiểm lại toàn bộ từ đầu chứ
+không tin đề xuất cũ: mã xác nhận phải đúng chủ, đúng loại và còn hạn mười lăm phút; vai trò bị
+xóa giữa chừng thì báo lỗi; vai trò được tick thêm quyền sau lúc đề xuất vẫn bị chặn. Ghi thật thì
+gọi lại đúng hai hàm màn Phân quyền đang dùng nên nhật ký thao tác và bộ nhớ đệm quyền đều được
+xử lý như bấm tay.
+
+Kiểm tra: 22 bài kiểm backend mới, mỗi cửa chặn một bài, thêm bài chạy lại không đổi và các bài mã
+xác nhận hết hạn, sai chủ, sai loại. Giao diện v2 qua cổng kiểm kiểu 0 lỗi, lint 0 lỗi, 44 bài
+kiểm của phân hệ trợ lý xanh. Không đổi cấu trúc cơ sở dữ liệu, không đổi đường API cũ. Tài liệu
+đã cập nhật ở ba tệp trợ lý AI, hướng dẫn 20 và sổ bảo mật bản 2.3. Chưa commit, đợi đại ca bảo.
+Mã nguồn: `backend/app/modules/assistant/tools/account_setup_tool.py` (mới) ·
+`backend/app/modules/assistant/controller.py` · `backend/app/modules/assistant/service.py` ·
+`frontend-v2/src/modules/assistant/components/account-setup-proposal-card.tsx` (mới) ·
+`frontend-v2/src/modules/assistant/utils/reply-offers.ts` ·
+`test/backend/test_assistant_account_setup_tool.py`.
+
 ## bao-CR-437 | Vá bốn chỗ cột tiền còn thiếu tỷ giá ở tệp Excel, Báo cáo và Trang chủ
 - status: xong
 - date: 2026-09-21

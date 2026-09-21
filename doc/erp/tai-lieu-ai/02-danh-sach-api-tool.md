@@ -1,8 +1,9 @@
 # Danh sách API / tool cho bot (loại A - dữ liệu có cấu trúc)
 
-Phiên bản: 12/09/2026 (bản đầu 25/08/2026). Trạng thái: **ĐÃ CODE 36 tool** (T1-T34 + T35 +
-T45) — mã nguồn ở `backend/app/modules/assistant/tools/`. T1-T34 đang chạy dev và prod; **T35
-`my_leave_summary` và T45 `employee_lookup` mới xong local 12/09 (bao-CR-386), chưa deploy**.
+Phiên bản: 21/09/2026 (bản đầu 25/08/2026). Trạng thái: **ĐÃ CODE 37 tool** (T1-T34 + T35 +
+T45 + T49) — mã nguồn ở `backend/app/modules/assistant/tools/`. T1-T34 đang chạy dev và prod; **T35
+`my_leave_summary` và T45 `employee_lookup` mới xong local 12/09 (bao-CR-386), chưa deploy**;
+**T49 `propose_account_setup` (bao-CR-435, 21/09) mới xong local, chưa commit** — xem Nhóm 19.
 **Còn nợ 12 tool** (T36-T44, T46-T48) cho các phân hệ mọc sau 28/08 — xem mục *Đợt 3* gần
 cuối tài liệu.
 Liên quan: kiến trúc ở `01-kien-truc-tro-ly-ai.md`; bảo mật và vận hành thực tế ở
@@ -438,7 +439,9 @@ duyệt, T20-T22 soạn nháp, T23-T24 + T30 tiện ích (xuất Word / tra HDSD
 T25-T26 công nợ + YCTT, T27-T29 trợ lý cho quản lý và người trình phiếu (recap chứng từ +
 phiếu chờ duyệt + phiếu của tôi), T31-T34 đợt CR-218 (sửa phiếu có xác nhận + đọc YCTT +
 phiếu hỗ trợ), và hai tool đầu tiên của Đợt 3 — **T35** quỹ phép + đơn nghỉ của chính mình,
-**T45** danh bạ nhân sự (bao-CR-386, 12/09/2026).
+**T45** danh bạ nhân sự (bao-CR-386, 12/09/2026). Ngày 21/09/2026 thêm **T49**
+`propose_account_setup` (bao-CR-435) — tool GHI có xác nhận thứ hai, và là ngoại lệ hẹp duy
+nhất của luật "không mở Quản trị" (xem Nhóm 19), nâng bộ lên **37 cái**.
 
 ---
 
@@ -731,6 +734,38 @@ tool liền mạch. Việc backend mới duy nhất: mở rộng search sang **n
 
 ---
 
+## Nhóm 19 - Quản trị: lập bộ tài khoản thu mua (`account_setup_tool.py`, bao-CR-435, 21/09/2026)
+
+Ngoại lệ HẸP của luật "Quản trị cố ý không mở" ở mục dưới. Lý do mở: hướng dẫn 20 (bộ tài
+khoản phòng tự mua hàng) có bốn bước bấm tay, hai bước sau (gán vai trò + khai ô loại trừ
+phòng ban) lặp lại y hệt cho từng người và dễ quên ô «Chỉ trong công ty». Tool chỉ làm đúng
+hai bước đó, theo khuôn **đề xuất rồi xác nhận** của T31/T32 — model không có nút để bấm.
+
+### T49. propose_account_setup - Đề xuất lập / chỉnh bộ tài khoản thu mua
+- Mục đích: "lập bộ tài khoản thu mua cho Nguyễn Văn A", "gán A làm nhân viên thu mua và
+  loại trừ Dego Organic", "kiểm xem tài khoản B đã đúng bộ chưa".
+- Tham số: `employee` (mã NV / họ tên / email đăng nhập), `role_codes` (chỉ 6 mã trong bộ
+  mẫu: `employee` · `dept_head` · `pur_staff` · `pur_manager` · `pur_dept_manager` ·
+  `pur_admin`), `replace_roles` (mặc định false = chỉ THÊM), `exclude_departments` (tên phòng
+  cần loại trừ khỏi phạm vi các vai trò thu mua), `remove_company_include` (mặc định false).
+- Việc tool làm TRƯỚC khi đề xuất: tìm nhân sự (mã đúng → email đúng → tên gần đúng, quá 6
+  ứng viên thì hỏi lại), kiểm đã có tài khoản chưa, đọc vai trò và phạm vi đang có, rồi so
+  từng dòng.
+- Đầu ra: `proposal` gồm hồ sơ tóm tắt, danh sách dòng vai trò / phạm vi với kết cục
+  «thêm» · «bỏ» · «không đổi», cảnh báo (tài khoản đang khóa, còn dòng «Chỉ trong công ty»
+  trên vai trò thu mua — bao-CR-434), số dòng đổi và `confirm_token` 15 phút. Mọi dòng
+  «không đổi» thì thẻ không có nút Xác nhận. Chạy lại lần hai là mọi dòng «không đổi».
+- KHÔNG làm: tạo tài khoản đăng nhập, đặt / đổi mật khẩu, tạo vai trò mới, tick quyền trong
+  vai trò. Nhân sự chưa có tài khoản → chặn kèm đường dẫn màn Người dùng để lập tay.
+- Quyền: `user.write` + `role.read` + `employee.read`, cộng `apply_scope(User, write)` (ngoài
+  phạm vi = "không tìm thấy"), chặn tự sửa chính mình (L1) và chặn gán vai trò mang quyền
+  người hỏi không có (L2, `block_role_escalation`). Ghi thật ở endpoint
+  `POST /api/assistant/confirm-account-setup`, kiểm lại toàn bộ từ đầu — xem `04` §5.
+- Giai đoạn 2 (chưa làm): tool tạo vai trò theo yêu cầu khách — cần hỏi xác nhận nhiều bước
+  hơn, để riêng.
+
+---
+
 ## Chưa xếp lịch, chưa cấp số
 
 - **Điểm cà phê** (`coffee_point`) - chờ POS365 chạy thật rồi mới biết câu hỏi nào đáng hỏi.
@@ -739,7 +774,9 @@ tool liền mạch. Việc backend mới duy nhất: mở rộng search sang **n
 - **Thông báo / cảnh báo** (`notification`, `alert`, `push`) - trùng việc với chuông trên
   giao diện.
 - **Quản trị** (`role`, `user`, `audit`, `login_session`, `backup`) - **cố ý không mở**.
-  Trợ lý không được là một đường vòng vào phân quyền.
+  Trợ lý không được là một đường vòng vào phân quyền. Ngoại lệ hẹp duy nhất: **T49** (Nhóm
+  19, 21/09/2026) gán vai trò CÓ SẴN + ô loại trừ phòng ban, cùng cửa kiểm với màn Phân
+  quyền và chỉ ghi khi người bấm Xác nhận — không tạo tài khoản, không tạo vai trò.
 
 ---
 
