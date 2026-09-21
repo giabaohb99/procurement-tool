@@ -4909,3 +4909,100 @@ giao diện erp. Kho vector trên đó **đã đủ 87 trên 87 bài và 11 trê
 gặp** từ lượt nạp bù tay của bao-CR-450, nên lệnh chạy tay báo không có gì phải nạp.
 Đã thử luôn đường của nút: xếp hàng việc nạp bù, tiến trình chạy nền nhận việc, đối
 chiếu xong rải 0 nguồn rồi kết thúc êm — đúng như mong đợi khi kho đang đủ.
+
+## duoc-CR-437 | Ép tải luồng duyệt phiếu đặt xe: vá bảy lỗ, trong đó một lỗ làm phiếu kẹt vĩnh viễn
+- status: xong
+- date: 2026-09-21
+Đại ca nhờ ép tải (stress test) đúng cảnh một người lập phiếu đặt xe rồi một người khác
+được phân quyền vào duyệt. Em viết 30 bài kiểm mới cho cảnh đó, chạy ra 15 xanh 11 đỏ, và
+cả 11 bài đỏ đều là lỗi thật chứ không phải bài kiểm viết sai. Phần máy trạng thái của bộ
+máy duyệt thì vững: ký chặng một không đẩy phiếu đi, không ai ký vượt chặng, người lập kiêm
+trưởng bộ phận thì phiếu dừng lại chứ không tự đi tiếp, bấm đúp nút Gửi duyệt hay nút Duyệt
+đều bị chặn.
+
+Lỗ nặng nhất làm **phiếu kẹt vĩnh viễn mà không chỗ nào báo lỗi**. Người duyệt chặng hai của
+một luồng thật gần như luôn ở phòng khác (Hành chính, Nhân sự, Ban giám đốc), mà phạm vi dữ
+liệu của họ không với tới phiếu của phòng khác. Phân hệ Đặt xe lại đã bỏ màn «Việc của tôi»
+từ 21/08/2026, nên chỗ duy nhất bấm được nút Duyệt là thẻ luồng duyệt nằm TRONG trang chi
+tiết phiếu. Cộng lại thành chuỗi: mở chi tiết phiếu thì báo không tìm thấy, đường API hỏi
+phiên duyệt trả về rỗng nên thẻ duyệt không hiện ra, thư báo bấm vào ra trang trống. Em nới
+quyền ĐỌC cho đúng người đang có việc treo trên phiếu đó, nới ở cả hai cửa (cửa của bộ máy
+duyệt và cửa đọc chi tiết phiếu), và chỉ nới lúc việc còn treo — ký xong là quyền đọc thêm
+đó đóng lại, giống hệt cách phân hệ Nghỉ phép đã vá hồi CR-260. Mọi cửa GHI giữ nguyên.
+
+Sáu lỗ còn lại. Một, hai cửa của điều phối viên (trả lại và từ chối ở khâu điều phối) không
+gọi chốt khóa đường duyệt thẳng, nên người có quyền sửa trả phiếu về hoặc khóa phiếu ngay
+trong lúc luồng đang ở chặng một, phiên duyệt thì vẫn chạy — ba nút kia đã khóa từ đầu, hai
+cửa này bị quên. Hai, hàm nhận kết cục của luồng đặt lại trạng thái phiếu vô điều kiện, nên
+một phiếu đã bị từ chối SỐNG LẠI thành «đã duyệt» khi người duyệt ký sau đó; nay bốn hàm
+nhận kết cục đều tự kiểm trạng thái nguồn và ghi cảnh báo vào sổ khi bỏ qua. Ba, duyệt qua
+bộ máy nhiều bước không ghi người ký và mốc giờ, nên chi tiết phiếu lẫn bản in đều ghi tên
+người mà NGƯỜI TẠO tự chọn trong biểu mẫu — người có thể chưa hề ký — với ô thời gian trống;
+nay ghi đúng người vừa bấm. Bốn, xóa phiếu không dọn phiên duyệt, để lại việc mồ côi trong
+hộp người duyệt và ký được trên một phiếu đã xóa. Năm, đường duyệt một bước (đường đang chạy
+thật vì công tắc bộ máy còn tắt) cho người lập tự ký phiếu của chính mình; nay chặn, nhưng
+đại ca chốt miễn cho người có phạm vi «tất cả» vì điều phối viên và quản lý điều phối là
+người chốt xe cho cả công ty, phiếu của chính họ cũng chỉ có họ duyệt. Sáu, phiếu bị chặn mà
+đang giữ xe và tài xế thì nay nhả ra, không thì phép chống trùng khung giờ vẫn tính xe đó
+đang bận vì một phiếu đã khóa.
+
+Một chuyện đại ca chốt GIỮ NGUYÊN: điều phối viên vẫn gán được xe và tài xế cho phiếu chưa
+ai ký, kể cả phiếu còn nháp, vì có chuyến gấp phải gọi xe trước chữ ký. Em ghim quyết định
+đó thành bài kiểm kèm nhịp phải đúng theo sau — ký xong thì phiếu giữ nguyên «đã điều phối»
+chứ không bị đẩy lùi về «đã duyệt», vì đẩy lùi là xóa mất bước đã đi trong khi xe và tài xế
+vẫn đang giữ chuyến.
+
+Sáu bài kiểm cũ của phân hệ đặt xe dùng chung một người cho cả việc lập lẫn việc duyệt cho
+gọn; gọn nhưng dựng sai cảnh thật, và chính chỗ đó che mất lỗ tự duyệt suốt thời gian qua.
+Em tách người duyệt ra thành người riêng ở 15 chỗ gọi trong 5 tệp.
+
+Kiểm tra: 30 bài mới xanh hết, 179 bài của cả phân hệ đặt xe xanh, 1228 bài của cụm phạm vi
+dữ liệu và cụm bộ máy duyệt xanh. Sáu bài đỏ còn lại của cụm phạm vi là đỏ sẵn từ trước, đã
+đối chiếu bằng cách cất tạm thay đổi rồi chạy lại. Hai bài về điểm dừng trong
+`test_dat_xe_noi_bo.py` cũng đỏ sẵn (khuôn dữ liệu điểm dừng thêm ô ghi chú mà bài kiểm chưa
+cập nhật) — em sửa luôn vì chỉ là sửa số liệu mong đợi. Chưa deploy, mới nằm ở máy em.
+Mã nguồn: `backend/app/modules/vehicle_booking/approval_bridge.py` (thêm `booking_for_approver`
+để trả phiếu cho đúng người đang phải ký, thêm `_booking_for_outcome` làm chốt cuối cho bốn
+hàm nhận kết cục, ghi người ký và mốc giờ trong `_on_approved`, nhả xe khi phiếu bị chặn);
+`controller.py` (nới cửa đọc chi tiết phiếu, thêm chốt khóa vào hai cửa điều phối, dọn phiên
+duyệt khi xóa phiếu); `service.py` (`_block_self_approval`). Bài kiểm mới:
+`test/backend/test_dat_xe_stress_luong_duyet.py`. Báo cáo ép tải đầy đủ:
+`frontend-v2/plans/reports/tester-260921-1529-dat-xe-stress-luong-duyet.md`.
+Tham chiếu: tài liệu chức năng `doc/tai-lieu-chuc-nang/16-dat-xe.md` mục «Luồng duyệt nhiều bước».
+
+## duoc-CR-438 | Tạm ẩn phân hệ Hồ sơ khỏi giao diện, kể cả bốn thẻ cắm trong Thu mua
+- status: xong
+- date: 2026-09-21
+Đại ca yêu cầu giấu phân hệ Hồ sơ khỏi giao diện, giấu luôn phần cắm bên Thu mua. Em thêm một
+công tắc duy nhất tên `DOSSIER_UI_ENABLED` và dùng nó ở cả hai chỗ phân hệ này lộ ra. Chỗ thứ
+nhất là bản thân phân hệ: bảng đăng ký không nhận nó nữa nên không còn thẻ trên màn chọn phân
+hệ, không còn mục thanh bên, và gõ thẳng đường dẫn `/dossier` lên trình duyệt cũng ra trang
+không tìm thấy vì route không được đăng ký. Chỗ thứ hai là bốn tấm thẻ nằm trong phân hệ Thu
+mua: thẻ «Hồ sơ cần kèm» ở chi tiết yêu cầu mua hàng, đơn mua hàng và phiếu khảo sát, cùng thẻ
+«Hồ sơ cần hoàn thành» ở chi tiết yêu cầu báo giá.
+
+Phải giấu cả hai chỗ cùng lúc chứ không giấu được mỗi chỗ: bỏ mỗi tấm thẻ ngoài màn chọn phân
+hệ thì bốn thẻ kia vẫn nằm giữa các trang chứng từ Thu mua, mà người dùng lại không còn màn nào
+để đi quản lý đống hồ sơ mà chúng đang đòi.
+
+Em cố ý KHÔNG dùng cách tắt phân hệ có sẵn (`enabled: false`). Cách đó vẫn dựng một tấm thẻ
+«Sắp có» mờ trên màn chọn phân hệ, tức vẫn khoe ra đúng thứ đang muốn giấu; nó sinh ra cho phân
+hệ chưa tới lượt làm, không phải cho phân hệ đã làm xong mà tạm cất đi.
+
+Backend giữ nguyên hoàn toàn: bảng dữ liệu, các đường API và hai khóa quyền của hồ sơ vẫn còn,
+nên dữ liệu ai đã nhập vẫn nằm đó và hiện lại đầy đủ khi bật cờ. Bật lại chỉ cần đổi một chữ
+`false` thành `true`, không phải sửa chỗ nào khác. Màn Phân quyền vẫn còn nhóm «Hồ sơ» với hai
+khóa của nó — em để nguyên vì đó là bảng khóa quyền của backend, gỡ đi thì vai trò nào đang
+được cấp sẽ thành quyền ẩn không ai sửa được.
+
+Bài kiểm mới bám theo cờ chứ không chốt cứng là phải ẩn, nên bật lại là nó tự xanh; thứ nó canh
+là hai vế phải đi cùng nhau — có thẻ thì phải có route và ngược lại, lệch một vế thì hoặc thẻ
+bấm vào ra trang trắng, hoặc đã giấu rồi mà gõ thẳng đường dẫn vẫn vào được.
+Kiểm tra: 698 bài giao diện của ba khu đụng tới (khung định tuyến, Thu mua, Hồ sơ) xanh,
+typecheck 0 lỗi, lint 0 lỗi và không thêm cảnh báo nào (31 cảnh báo trước và sau đều bằng nhau,
+đã đo bằng cách cất tạm thay đổi rồi chạy lại). Chưa deploy, mới nằm ở máy em.
+Mã nguồn: `frontend-v2/src/shared/constants/feature-flags.ts` (mới, khai cờ);
+`frontend-v2/src/app/router/module-registry.ts` (bỏ đăng ký phân hệ theo cờ) kèm bài kiểm
+`module-registry.test.ts`; bốn trang chi tiết trong `frontend-v2/src/modules/procurement/pages/`
+là `purchase-request-detail-page.tsx`, `purchase-order-detail-page.tsx`, `survey-detail-page.tsx`
+và `survey-request-detail-page.tsx`.
