@@ -4281,3 +4281,27 @@ hàng và chưa ai cấp cho đặt xe nên chưa ảnh hưởng ai; đã đánh
 Bài kiểm: chạy nguyên tệp ma trận phạm vi ra 481 xanh, trước đó là 453 xanh và 28 đỏ.
 
 Mã nguồn: test/backend/test_pham_vi_cap_bac_ma_tran.py, doc/tai-lieu-ky-thuat/change-log-bao.md
+
+## bao-CR-441 | Viết bài Trung tâm HDSD «Lập bộ tài khoản thu mua bằng Trợ lý AI»
+- status: xong
+- date: 2026-09-21
+- pic: NSU209
+
+Sau bao-CR-440 em kiến nghị viết bài hướng dẫn cho người dùng cuối về tool trợ lý AI lập bộ tài
+khoản (bao-CR-435), vì Trung tâm HDSD chưa có bài nào nói tới nó, và đại ca duyệt làm luôn.
+
+Bài đặt làm bài con của bài «Trợ lý AI» trong nhóm «Các chức năng khác», không dựng thẻ phân hệ
+mới ngoài trang chủ và không đụng nội dung bài cha. Nội dung gương đúng mục 3 của hướng dẫn lập
+bộ tài khoản và hành vi thật của tool: điều kiện trước khi hỏi (hồ sơ và tài khoản đăng nhập đã
+có, ba quyền người hỏi cần có, không tự lập cho chính mình), bốn bước từ mở trợ lý, gõ yêu cầu
+kèm bảng câu mẫu cho hai bộ tài khoản, đọc thẻ đề xuất với các dòng thêm, bỏ, không đổi và cảnh
+báo vàng, hạn thẻ mười lăm phút, tới lúc bấm Xác nhận và kiểm lại ở màn Phân quyền. Kèm bảng
+việc trợ lý không làm và làm ở đâu thay thế, bảng sáu vai trò bộ mẫu, bảng trợ lý trả lời thế
+này thì làm gì, và mục kiểm tra sau khi làm.
+
+Bài nạp bằng một script seed chạy lại được nhiều lần: tìm bài cha theo tiêu đề, có bài cũ cùng
+tiêu đề thì xóa rồi chèn lại giữ nguyên thứ tự, không thấy bài cha thì dừng chứ không tự tạo
+bài gốc. Đã chạy hai lần dưới máy, xem trên Trung tâm HDSD cổng 8082 thấy đúng cây và các liên
+kết nội bộ. Hướng dẫn 20 thêm một dòng trỏ sang bài này để ai đổi hành vi tool thì sửa cả hai.
+
+Mã nguồn: backend/scripts/seed_help_tro_ly_ai_lap_bo_tai_khoan.py, doc/tai-lieu-chuc-nang/20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md

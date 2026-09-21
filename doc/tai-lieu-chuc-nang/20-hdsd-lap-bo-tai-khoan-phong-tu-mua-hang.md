@@ -128,6 +128,11 @@ và **không** tick thêm quyền vào vai trò — ba việc đó vẫn phải 
 Cảnh báo vàng trên thẻ về ô *Chỉ trong công ty* còn khai là lời nhắc của điểm 3 trong Bước 4
 ở trên; muốn gỡ thì nói rõ với trợ lý, nó không tự gỡ.
 
+Bài tương ứng cho người dùng cuối trên Trung tâm HDSD: *Các chức năng khác › Trợ lý AI › Lập bộ
+tài khoản thu mua bằng Trợ lý AI* (bao-CR-441, seed bằng
+`backend/scripts/seed_help_tro_ly_ai_lap_bo_tai_khoan.py`). Đổi hành vi tool thì sửa cả mục này
+lẫn bài đó.
+
 ## 4. Bộ A — Nhà máy (phòng tự mua hàng)
 
 ### 4.1 Bốn tài khoản
