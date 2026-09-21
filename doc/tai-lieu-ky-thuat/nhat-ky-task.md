@@ -4305,3 +4305,27 @@ bài gốc. Đã chạy hai lần dưới máy, xem trên Trung tâm HDSD cổng
 kết nội bộ. Hướng dẫn 20 thêm một dòng trỏ sang bài này để ai đổi hành vi tool thì sửa cả hai.
 
 Mã nguồn: backend/scripts/seed_help_tro_ly_ai_lap_bo_tai_khoan.py, doc/tai-lieu-chuc-nang/20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md
+## bao-CR-444 | Viết bài Trung tâm HDSD «Lập bộ tài khoản phòng tự mua hàng»
+- status: xong
+- date: 2026-09-21
+- pic: NSU209
+
+Sau bao-CR-441 em kiến nghị viết thêm bài bốn bước làm tay cho quản trị, vì bài trợ lý AI chỉ
+nói hai bước cuối còn hướng dẫn lập bộ tài khoản đầy đủ mới nằm ở tài liệu kỹ thuật. Đại ca chốt
+bài đặt trong cụm Trợ lý AI, cạnh bài vừa viết, chứ không đặt dưới Quản trị hệ thống.
+
+Bài là bài con thứ hai của bài «Trợ lý AI» trong nhóm «Các chức năng khác». Nội dung gương đủ tám
+mục của hướng dẫn lập bộ tài khoản: hai bộ tài khoản (phòng tự mua và Thu mua chung trừ phòng đó)
+với bốn điều quyết định kết quả, phần chuẩn bị, bốn bước làm cho mỗi tài khoản từ tạo hồ sơ nhân
+sự, tạo tài khoản đăng nhập, gán vai trò tới khai phạm vi, phần riêng của bộ phòng tự mua kèm khai
+phân công phụ trách theo phòng, phần riêng của bộ Thu mua chung kèm ghi chú ô loại trừ, bảng kiểm
+tra từng tài khoản và đường chạy thử ngắn nhất, các bẫy hay gặp, và cách mở thêm một phòng tự mua
+khác. Mục bẫy có thêm câu chuyển phòng là chuyển cả phiếu, không chuyển một phần dòng, là món nợ
+hướng dẫn còn lại của bao-CR-414. Bài nói bằng tên vai trò, cố ý không nêu mã tài khoản mẫu của
+môi trường thử. Bài trợ lý AI thêm một liên kết chéo sang bài này và ngược lại.
+
+Script seed idempotent cùng khuôn bài trước: tìm bài cha theo tiêu đề, xóa bài cũ cùng tiêu đề rồi
+chèn lại giữ thứ tự, không thấy bài cha thì dừng. Chạy hai lần dưới máy ra cùng kết quả, đã mở
+Trung tâm HDSD dưới máy xem cây, đường dẫn và các bảng. Hướng dẫn 20 thêm một đoạn trỏ sang bài.
+
+Mã nguồn: `backend/scripts/seed_help_lap_bo_tai_khoan_phong_tu_mua.py` (mới), `backend/scripts/seed_help_tro_ly_ai_lap_bo_tai_khoan.py`, `doc/tai-lieu-chuc-nang/20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md`, `doc/tai-lieu-ky-thuat/change-log-bao.md`.

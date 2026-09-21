@@ -131,7 +131,10 @@ Cảnh báo vàng trên thẻ về ô *Chỉ trong công ty* còn khai là lời
 Bài tương ứng cho người dùng cuối trên Trung tâm HDSD: *Các chức năng khác › Trợ lý AI › Lập bộ
 tài khoản thu mua bằng Trợ lý AI* (bao-CR-441, seed bằng
 `backend/scripts/seed_help_tro_ly_ai_lap_bo_tai_khoan.py`). Đổi hành vi tool thì sửa cả mục này
-lẫn bài đó.
+lẫn bài đó. Bản bốn bước LÀM TAY của cả hướng dẫn này (mục 1 → 8, nói bằng tên vai trò, không nêu
+mã tài khoản mẫu) cũng đã lên Trung tâm HDSD cạnh bài đó: *Các chức năng khác › Trợ lý AI › Lập bộ
+tài khoản phòng tự mua hàng* (bao-CR-444, seed bằng
+`backend/scripts/seed_help_lap_bo_tai_khoan_phong_tu_mua.py`). Sửa mục nào ở đây thì sửa bài đó theo.
 
 ## 4. Bộ A — Nhà máy (phòng tự mua hàng)
 

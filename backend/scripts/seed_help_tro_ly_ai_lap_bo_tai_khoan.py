@@ -142,7 +142,7 @@ CONTENT = f"""<h2>I. Giới thiệu</h2>
 <h2>VIII. Điều hướng</h2>
 <ul>
 <li><strong>Thuộc thư mục:</strong> Các chức năng khác › {ref(PARENT_TITLE, "Trợ lý AI")}</li>
-<li><strong>Bài liên quan:</strong> {ref("Vai trò", "Vai trò")} · {ref("Nhân sự", "Nhân sự")}</li>
+<li><strong>Bài liên quan:</strong> {ref("Lập bộ tài khoản phòng tự mua hàng", "Lập bộ tài khoản phòng tự mua hàng")} (bốn bước làm tay) · {ref("Vai trò", "Vai trò")} · {ref("Nhân sự", "Nhân sự")}</li>
 </ul>
 """
 
