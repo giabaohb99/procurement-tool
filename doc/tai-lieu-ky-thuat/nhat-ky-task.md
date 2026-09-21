@@ -4329,3 +4329,28 @@ chèn lại giữ thứ tự, không thấy bài cha thì dừng. Chạy hai l�
 Trung tâm HDSD dưới máy xem cây, đường dẫn và các bảng. Hướng dẫn 20 thêm một đoạn trỏ sang bài.
 
 Mã nguồn: `backend/scripts/seed_help_lap_bo_tai_khoan_phong_tu_mua.py` (mới), `backend/scripts/seed_help_tro_ly_ai_lap_bo_tai_khoan.py`, `doc/tai-lieu-chuc-nang/20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md`, `doc/tai-lieu-ky-thuat/change-log-bao.md`.
+
+## bao-CR-445 | Script seed nhận sở hữu bài cha «Trợ lý AI» trên Trung tâm HDSD
+- status: xong
+- date: 2026-09-21
+- pic: NSU209
+
+Sau bao-CR-444 em kiến nghị rà lại bài cha «Trợ lý AI», vì bài đó vẫn ghi ở mục Điều hướng là bài
+cuối của bộ tài liệu dù nay đã có hai bài con, và bảng nhóm câu hỏi ví dụ chưa có nhóm lập bộ tài
+khoản. Bài này vốn nạp tay từ bảng Excel, không thuộc script nào, nên đại ca chốt cho em viết script
+nhận sở hữu nó để từ nay sửa qua script và chạy lặp lại được trên từng môi trường.
+
+Em so bài trên hai môi trường trước khi viết: bản dev mới hơn bản dưới máy đúng một ví dụ câu hỏi
+về khoản nợ có hóa đơn trong tháng, nên lấy bản dev làm nền và giữ nguyên toàn bộ. Chỉ sửa ba chỗ:
+bảng nhóm câu hỏi thêm dòng lập bộ tài khoản thu mua dành cho quản trị, khớp công cụ gán vai trò của
+trợ lý; bước kiểm chứng thêm một gạch đầu dòng về thẻ đề xuất và nút Xác nhận; mục điều hướng bỏ câu
+bài cuối, thêm dòng bài con và đường dẫn sang bài trước. Chính cổng Trung tâm HDSD cũng tự hiện bài
+tiếp theo là bài con, nên câu bài cuối sai thật chứ không phải chỉ thừa.
+
+Script khác các seed bài con ở một điểm cốt yếu: bài cha có hai bài con thuộc script khác, nên
+không xóa rồi chèn lại mà cập nhật tại chỗ, giữ nguyên số bài, thứ tự và các bài con. Chưa có bài
+thì tạo ở cuối nhóm, không thấy nhóm cha thì dừng. Trên một cơ sở dữ liệu trống phải chạy script này
+trước rồi mới chạy hai seed bài con. Chạy hai lần dưới máy ra cùng kết quả, lần hai báo nội dung
+không đổi; đã mở Trung tâm HDSD dưới máy xem bảng, mục điều hướng và ba đường dẫn.
+
+Mã nguồn: `backend/scripts/seed_help_tro_ly_ai.py` (mới), `doc/tai-lieu-ky-thuat/change-log-bao.md`.
