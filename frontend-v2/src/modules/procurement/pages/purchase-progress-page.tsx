@@ -1,10 +1,18 @@
+import { Download } from 'lucide-react'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import { downloadFile } from '@/core/api/download-file'
 import { usePermission } from '@/core/authorization/use-permission'
 import { appConfig } from '@/core/config/app-config'
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
 import { useDepartments } from '@/modules/hr/hooks/use-departments'
+import {
+  ConditionalFilter,
+  FilterProvider,
+  useFilterContext,
+  useFilterQuery,
+} from '@/shared/conditional-filter'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
@@ -15,6 +23,8 @@ import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlRangeParam } from '@/shared/hooks/use-url-range-param'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import type { ListParams } from '@/shared/types/api'
+import { AdvancedFilterSection } from '@/shared/ui/advanced-filter-section'
+import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { DateRangePicker } from '@/shared/ui/date-range-picker'
 import { PageContainer } from '@/shared/ui/page-container'
@@ -32,10 +42,16 @@ import {
 import { PO_PROGRESS_STATUS } from '@/shared/constants/statuses'
 import { STICKY_TOOLBAR_TOP } from '@/shared/ui/sticky-toolbar'
 import { formatDate } from '@/shared/utils/format-date'
-import { formatMoney, formatQuantity, formatUnitPrice } from '@/shared/utils/format-money'
+import {
+  formatMoney,
+  formatQuantity,
+  formatUnitPrice,
+  formatUnitPriceWithCurrency,
+} from '@/shared/utils/format-money'
 import { cn } from '@/shared/utils/cn'
 import { DocumentStatusBadge, ProgressStatusBadge } from '../components/document-status-badge'
 import { PurchaseProgressCard } from '../components/purchase-progress-card'
+import { PURCHASE_PROGRESS_FILTER_FIELDS } from '../config/procurement-filter-fields'
 import { usePurchaseProgress } from '../hooks/use-purchase-documents'
 import type { PurchaseProgressRow } from '../types/purchase-progress'
 
@@ -57,14 +73,62 @@ const DATE_FIELDS = [
 const DEFAULT_DATE_FIELD = DATE_FIELDS[0].value
 
 /**
+ * Tình trạng nhận hàng — hỏi trên TỔNG số đã nhận của dòng đơn, không phải trên
+ * từng lần giao. Backend tính bằng truy vấn con (`purchase_progress/controller.py`,
+ * khóa `recv_state`), nên ba lựa chọn dưới đây là ba câu hỏi khác nhau chứ không
+ * phải ba mức của một thang: "Chưa đủ" BAO GỒM cả những dòng chưa nhận gì.
+ */
+const RECV_STATES = [
+  { value: 'unreceived', label: 'Chưa giao (SL nhận = 0)' },
+  { value: 'under', label: 'Chưa đủ (nhận < đặt)' },
+  { value: 'full', label: 'Đã đủ (nhận ≥ đặt)' },
+] as const
+
+/**
  * Tiến độ mua hàng — báo cáo phẳng theo TỪNG LẦN GIAO của từng dòng đơn hàng,
  * không phải danh sách chứng từ.
  *
- * Endpoint `/api/purchase-progress` KHÔNG chạy qua `apply_filters` mà tự đọc bộ
- * tham số riêng (`company_id`, `department_id`, `status`, `q`, các cặp ngày…) nên
- * màn này không dùng "Bộ lọc điều kiện" như các danh sách khác.
+ * ⚠️ Endpoint `/api/purchase-progress` KHÔNG chạy qua `apply_filters`: nó tự đọc
+ * bộ tham số riêng cho các ô lọc nhanh (`company_id`, `department_id`, `status`,
+ * `recv_state`, `q`, các cặp ngày…) rồi mới gọi `apply_operator_filters_map` cho
+ * "Bộ lọc điều kiện". Nghĩa là danh sách trường của bộ lọc điều kiện phải khớp
+ * `_cond_map()` bên backend — khóa nào không có trong map thì bị bỏ qua IM LẶNG,
+ * người dùng lọc xong vẫn thấy nguyên danh sách cũ mà không chỗ nào báo lỗi.
+ *
+ * `showSupplier` phải khai ở đây (ngoài `FilterProvider`) nên lấy từ quyền
+ * `supplier.read` — đúng thứ backend dùng để dựng `show_supplier`, chỉ khác là
+ * biết được ngay mà không phải đợi câu trả lời đầu tiên.
  */
 export function PurchaseProgressPage() {
+  const { can } = usePermission()
+  const showSupplierFields = can('supplier', 'read')
+  const filterConfig = useMemo(
+    () => ({
+      fields: PURCHASE_PROGRESS_FILTER_FIELDS(showSupplierFields),
+      allowConjunctionToggle: true,
+      //  Mọi tham số của ô lọc NHANH phải kê ở đây, nếu không thì mỗi lần bấm
+      //  "Áp dụng" bộ lọc điều kiện là chúng bị quét khỏi URL.
+      preserveParams: [
+        'company_id',
+        'department_id',
+        'status',
+        'recv_state',
+        'date_field',
+        'date_from',
+        'date_to',
+      ],
+    }),
+    [showSupplierFields],
+  )
+
+  return (
+    <FilterProvider config={filterConfig}>
+      <PurchaseProgressContent />
+    </FilterProvider>
+  )
+}
+
+function PurchaseProgressContent() {
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   // bao-CR-423: ô Công ty và ô Tiến độ chọn được NHIỀU giá trị; không chọn gì là
   // "Tất cả". Chọn nhiều trong CÙNG một ô nghĩa là HOẶC, hai ô khác nhau vẫn là VÀ.
@@ -74,12 +138,23 @@ export function PurchaseProgressPage() {
   // đường dẫn cũ đã lưu, chỉ có màn này thôi không gửi nữa.
   const [departmentId, setDepartmentId] = useUrlParamState('department_id', ALL)
   const [statuses, setStatuses] = useUrlMultiParam('status')
+  const [recvState, setRecvState] = useUrlParamState('recv_state', ALL)
   const [dateField, setDateField] = useUrlParamState('date_field', DEFAULT_DATE_FIELD)
   const [dateFrom, dateTo, setDateRange] = useUrlRangeParam('date_from', 'date_to')
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
+  /** Cột đang hiện trên bảng — nút "Xuất Excel" bám theo để tệp khớp màn hình. */
+  const [visibleColumnKeys, setVisibleColumnKeys] = useState<string[]>([])
 
   const navigate = useNavigate()
   const { can } = usePermission()
+  //  Gác nút Xuất Excel bằng đúng phép OR của backend: quyền `export` trên ĐMH
+  //  HOẶC trên YCMH, vì một dòng tiến độ ghép dữ liệu của cả hai chứng từ.
+  const canExport = can('purchase_order', 'export') || can('purchase_request', 'export')
+
+  const { queryParams, queryKey } = useFilterQuery()
+  //  Bộ lọc điều kiện: khổ rộng mở bằng nút riêng + popover, khổ hẹp nhúng
+  //  thẳng phần ruột vào tờ trượt. Cần `apply` cho nút "Áp dụng" của tờ trượt.
+  const filter = useFilterContext()
 
   //  CÙNG một `useIsMobile` mà `DataTable` dùng để đổi sang thẻ, nên hai bên
   //  không thể lệch nhau: hễ đang bày thẻ thì chạm-để-mở cũng đang bật.
@@ -93,29 +168,52 @@ export function PurchaseProgressPage() {
   const { data: departments } = useDepartments({ page_size: 500, is_active: true })
 
   const [page, setPage] = usePageResetOnFilterChange([
+    queryKey,
     debouncedValue,
     companyIds,
     departmentId,
     statuses,
+    recvState,
     dateField,
     dateFrom,
     dateTo,
   ])
 
-  const params: ListParams = { page, page_size: pageSize }
-  if (debouncedValue) params.q = debouncedValue
+  /**
+   * Bộ lọc đang đặt, KHÔNG kèm phân trang. Tách riêng để nút "Xuất Excel" gửi
+   * lại đúng bộ này — backend dùng chung `_build_query` cho cả danh sách lẫn
+   * đường xuất tệp nên tham số y hệt là ra đúng tập dữ liệu người dùng đang nhìn.
+   */
+  const filterParams: ListParams = { ...queryParams }
+  if (debouncedValue) filterParams.q = debouncedValue
   //  Gửi nối bằng dấu phẩy, kể cả khi mới chọn một — `read_multi_param` bên
   //  backend đọc được cả dạng đó lẫn dạng lặp khóa (bao-CR-423).
-  if (companyIds.length) params.company_id = companyIds.join(',')
-  if (departmentId !== ALL) params.department_id = Number(departmentId)
-  if (statuses.length) params.status = statuses.join(',')
+  if (companyIds.length) filterParams.company_id = companyIds.join(',')
+  if (departmentId !== ALL) filterParams.department_id = Number(departmentId)
+  if (statuses.length) filterParams.status = statuses.join(',')
+  if (recvState !== ALL) filterParams.recv_state = recvState
   if (dateFrom || dateTo) {
     const field = DATE_FIELDS.find((item) => item.value === dateField) ?? DATE_FIELDS[0]
-    if (dateFrom) params[field.from] = dateFrom
-    if (dateTo) params[field.to] = dateTo
+    if (dateFrom) filterParams[field.from] = dateFrom
+    if (dateTo) filterParams[field.to] = dateTo
   }
 
+  const params: ListParams = { page, page_size: pageSize, ...filterParams }
+
   const { data, isLoading, isError } = usePurchaseProgress(params)
+
+  /**
+   * Chỉ xuất những cột đang bày trên bảng. Khóa cột của bảng trùng khớp hoàn
+   * toàn với khóa cột trong `purchase_progress/export.py`, nên gửi thẳng được —
+   * KHÁC màn Đơn mua hàng, nơi hai bên lệch tên và phải đi qua một bảng dịch.
+   */
+  const handleExportExcel = async () => {
+    const cols = visibleColumnKeys.join(',')
+    await downloadFile('/api/purchase-progress/export/xlsx', 'tien-do-mua-hang.xlsx', {
+      ...filterParams,
+      ...(cols ? { cols } : {}),
+    })
+  }
 
   // Không có quyền `supplier.read` thì backend xóa trắng cột NCC / vận chuyển —
   // ẩn luôn cho khỏi bày ra một loạt ô rỗng.
@@ -178,9 +276,26 @@ export function PurchaseProgressPage() {
       {
         key: 'price',
         header: 'Đơn giá',
-        width: 120,
+        width: 130,
         align: 'right',
-        cell: (r) => <span className="tabular-nums">{formatUnitPrice(r.price) || 0}</span>,
+        cell: (r) => (
+          <span className="tabular-nums">{formatUnitPriceWithCurrency(r.price, r.currency) || 0}</span>
+        ),
+      },
+      //  bao-CR-439 — hai cột CĂN CỨ QUY ĐỔI cho mọi cột "Thành tiền" bên phải, xếp ngay trước
+      //  cột tiền đầu tiên để đọc liền một mạch: đơn giá nguyên tệ × tỷ giá -> thành tiền đồng.
+      //  Không đánh `defaultHidden`: cột bày ra theo yêu cầu thì phải thấy ngay. Người đã từng
+      //  kéo thả đổi thứ tự cột sẽ thấy hai cột này nằm ở CUỐI bảng (bản lưu trong localStorage
+      //  không có khóa mới nên `useTableLayout` nối chúng vào đuôi) — kéo lại một lần là xong.
+      { key: 'currency', header: 'Đồng tiền', width: 100, cell: (r) => r.currency || '' },
+      {
+        key: 'exchange_rate',
+        header: 'Tỷ giá',
+        width: 110,
+        align: 'right',
+        //  Ô này không bao giờ trống: backend cho qua `normalize_rate`, dòng cũ chưa khai tỷ giá
+        //  đọc thành 1 — đúng bằng số nó đang nhân vào cột thành tiền.
+        cell: (r) => <span className="tabular-nums">{formatUnitPrice(r.exchange_rate)}</span>,
       },
       {
         key: 'order_amount',
@@ -318,6 +433,22 @@ export function PurchaseProgressPage() {
     </div>
   )
 
+  const recvStateSelect = (
+    <Select value={recvState} onValueChange={setRecvState}>
+      <SelectTrigger className="w-52 max-md:w-full" aria-label="Lọc theo tình trạng nhận">
+        <SelectValue placeholder="Tình trạng nhận" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={ALL}>Tất cả tình trạng nhận</SelectItem>
+        {RECV_STATES.map((item) => (
+          <SelectItem key={item.value} value={item.value}>
+            {item.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+
   //  Chọn MỐC trước, rồi tới khoảng ngày — đọc xuôi thành một câu "theo ngày
   //  nhận, từ … tới …". Hai ô đứng liền nhau để không ai lọc nhầm mốc mà không
   //  để ý; trong tờ trượt cũng phải giữ đúng thứ tự đó.
@@ -351,6 +482,7 @@ export function PurchaseProgressPage() {
       companyIds.length > 0,
       departmentId !== ALL,
       statuses.length > 0,
+      recvState !== ALL,
       Boolean(dateFrom || dateTo),
     ].filter(Boolean).length
 
@@ -369,6 +501,20 @@ export function PurchaseProgressPage() {
           <span className="max-md:hidden">
             Theo dõi từng lần giao hàng của các dòng đơn mua hàng.
           </span>
+        }
+        //  Nút chiếm trọn hàng ở khổ hẹp — không có lớp này thì nó co theo chữ
+        //  và dán mép phải sau một khoảng trống dài. Nhắm `[&>div]` vì cụm nút
+        //  bọc thêm một lớp `div`.
+        actionsClassName="max-md:[&>div]:w-full"
+        actions={
+          canExport ? (
+            <div className="flex items-center gap-2">
+              <Button variant="outline" className="max-md:flex-1" onClick={handleExportExcel}>
+                <Download className="mr-1.5 size-4" />
+                Xuất Excel
+              </Button>
+            </div>
+          ) : undefined
         }
       />
 
@@ -410,6 +556,7 @@ export function PurchaseProgressPage() {
           }
           toolbarClassName={STICKY_TOOLBAR_TOP}
           storageKey="procurement.purchase-progress"
+          onVisibleColumnsChange={setVisibleColumnKeys}
           pagination={{
             page,
             pageSize,
@@ -419,10 +566,10 @@ export function PurchaseProgressPage() {
             unitLabel: 'dòng',
           }}
           toolbar={
-            //  ⚠️ **Khổ điện thoại: năm ô lọc dọn vào TỜ TRƯỢT**, thanh công cụ
-            //  còn một hàng. Năm ô khai bề rộng cứng (`w-52`…`w-40`) cộng ô
-            //  khoảng ngày, nên ở 390px mỗi ô rơi xuống một hàng riêng: **sáu
-            //  hàng ≈ 700px** chắn trên đầu danh sách, tức dòng đầu tiên bắt đầu
+            //  ⚠️ **Khổ điện thoại: mọi ô lọc dọn vào TỜ TRƯỢT**, thanh công cụ
+            //  còn một hàng. Các ô khai bề rộng cứng (`w-52`…`w-40`) cộng ô
+            //  khoảng ngày, nên ở 390px mỗi ô rơi xuống một hàng riêng: **bảy
+            //  hàng ≈ 800px** chắn trên đầu danh sách, tức dòng đầu tiên bắt đầu
             //  dưới mép màn hình.
             <>
               {/*  Câu gợi ý RÚT GỌN ở khổ hẹp: bản đầy đủ liệt kê sáu thứ tìm
@@ -452,15 +599,19 @@ export function PurchaseProgressPage() {
                   setCompanyIds([])
                   setDepartmentId(ALL)
                   setStatuses([])
+                  setRecvState(ALL)
                   setDateField(DEFAULT_DATE_FIELD)
                   setDateRange('', '')
                 }}
+                onApply={filter.apply}
               >
                 <QuickFilterField label="Công ty">{companySelect}</QuickFilterField>
                 <QuickFilterField label="Bộ phận">{departmentSelect}</QuickFilterField>
                 <QuickFilterField label="Tiến độ">{statusSelect}</QuickFilterField>
+                <QuickFilterField label="Tình trạng nhận">{recvStateSelect}</QuickFilterField>
                 <QuickFilterField label="Mốc ngày">{dateFieldSelect}</QuickFilterField>
                 <QuickFilterField label="Khoảng ngày">{dateRangeInput}</QuickFilterField>
+                <AdvancedFilterSection />
               </QuickFilterSheet>
 
               {/*  `md:contents` chứ không `md:flex`: bọc cụm lọc vào một `div`
@@ -471,8 +622,10 @@ export function PurchaseProgressPage() {
                 {companySelect}
                 {departmentSelect}
                 {statusSelect}
+                {recvStateSelect}
                 {dateFieldSelect}
                 {dateRangeInput}
+                <ConditionalFilter />
               </div>
             </>
           }

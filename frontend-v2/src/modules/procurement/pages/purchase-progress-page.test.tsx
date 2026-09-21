@@ -1,7 +1,8 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ListParams } from '@/shared/types/api'
 import { PurchaseProgressPage } from './purchase-progress-page'
@@ -27,6 +28,31 @@ vi.mock('@/modules/hr/hooks/use-departments', () => ({
   useDepartments: () => ({ data: { total: 1, items: [{ id: 3, name: 'Phòng Sản xuất' }] } }),
 }))
 
+//  bao-CR-442: nút "Xuất Excel" gác bằng quyền `export` của ĐMH HOẶC của YCMH,
+//  nên hai cờ tách riêng để bắt được đúng phép HOẶC đó.
+let canExportPurchaseOrder = true
+let canExportPurchaseRequest = false
+let canReadSupplier = true
+
+vi.mock('@/core/authorization/use-permission', () => ({
+  usePermission: () => ({
+    can: (entity: string, action: string) => {
+      if (entity === 'supplier' && action === 'read') return canReadSupplier
+      if (action !== 'export') return true
+      if (entity === 'purchase_order') return canExportPurchaseOrder
+      if (entity === 'purchase_request') return canExportPurchaseRequest
+      return false
+    },
+    canAccess: () => true,
+  }),
+}))
+
+const downloadFile = vi.fn()
+
+vi.mock('@/core/api/download-file', () => ({
+  downloadFile: (...args: unknown[]) => downloadFile(...args),
+}))
+
 const rows: PurchaseProgressRow[] = [
   {
     po_id: 1,
@@ -36,6 +62,7 @@ const rows: PurchaseProgressRow[] = [
     received_date: '2026-09-02',
     product_code: 'SP-01',
     product_name: 'Thùng carton 3 lớp',
+    price: 1000,
     delivery_no: 1,
   } as PurchaseProgressRow,
 ]
@@ -61,6 +88,10 @@ function lastCall() {
 beforeEach(() => {
   listCalls.length = 0
   localStorage.clear()
+  downloadFile.mockReset()
+  canExportPurchaseOrder = true
+  canExportPurchaseRequest = false
+  canReadSupplier = true
 })
 
 describe('PurchaseProgressPage — khoảng ngày', () => {
@@ -167,5 +198,150 @@ describe('PurchaseProgressPage — cột chữ đọc đủ', () => {
     // Cột ngày để nguyên `truncate`: cho xuống dòng thì hàng cao lệch nhau mà
     // chẳng đọc thêm được chữ nào.
     expect(cellOf('05/08/2026').querySelector('.truncate')).not.toBeNull()
+  })
+})
+
+describe('PurchaseProgressPage — căn cứ quy đổi của cột tiền (bao-CR-439)', () => {
+  //  Từ bao-CR-437 mọi cột "Thành tiền" trên màn này đã QUY ĐỔI về đồng, trong khi ô
+  //  Đơn giá ngay bên trái vẫn là số nguyên tệ in trên hóa đơn nhà cung cấp. Hai ô cạnh
+  //  nhau mang hai loại tiền mà không ô nào nói ra thì người đọc nhân tay và ra một con
+  //  số thứ ba — đúng câu hỏi "sao số này khác số kia" mà CR này sinh ra để trả lời.
+  const fxRow = {
+    po_id: 2,
+    po_code: 'PO-0002',
+    company_id: 0,
+    order_date: '2026-08-06',
+    product_code: 'SP-02',
+    product_name: 'Màng PE nhập khẩu',
+    price: 4.85,
+    currency: 'CNY',
+    exchange_rate: 3.62,
+    order_amount: 155_117_000,
+    delivery_no: 1,
+  } as PurchaseProgressRow
+
+  beforeEach(() => {
+    rows.push(fxRow)
+  })
+
+  afterEach(() => {
+    rows.pop()
+  })
+
+  it('puts both conversion-basis columns on the table, not behind the "Cột" menu', () => {
+    build()
+
+    expect(screen.getByText('Đồng tiền')).toBeInTheDocument()
+    expect(screen.getByText('Tỷ giá')).toBeInTheDocument()
+    expect(screen.getByText('CNY')).toBeInTheDocument()
+    expect(screen.getByText('3,62')).toBeInTheDocument()
+  })
+
+  it('stamps the currency code on a foreign-currency unit price and leaves a dong one bare', () => {
+    build()
+
+    expect(screen.getByText('4,85 CNY')).toBeInTheDocument()
+    //  Gần hết đơn là VND: gắn đuôi vào mọi dòng thì cột dài thêm mà chẳng nói gì mới.
+    expect(screen.getByText('1.000')).toBeInTheDocument()
+    expect(screen.queryByText('1.000 VND')).toBeNull()
+  })
+})
+
+describe('PurchaseProgressPage — tình trạng nhận (bao-CR-442)', () => {
+  it('forwards the pick as recv_state — the one filter that asks about the total received', () => {
+    build('/procurement/purchase-progress?recv_state=under')
+
+    expect(lastCall().recv_state).toBe('under')
+  })
+
+  it('sends nothing when the box is left at "Tất cả"', () => {
+    //  "all" là mốc của giao diện, không phải một giá trị backend hiểu: gửi lên
+    //  thì `_build_query` so `recv_state == "all"` không trúng nhánh nào và bộ
+    //  lọc coi như bị bỏ qua — im lặng, đúng kiểu khó tìm nhất.
+    build('/procurement/purchase-progress?recv_state=all')
+
+    expect(lastCall().recv_state).toBeUndefined()
+  })
+
+  it('shows the box with the wording of the bản cũ so the two screens answer the same question', () => {
+    build()
+
+    expect(screen.getByText('Tất cả tình trạng nhận')).toBeInTheDocument()
+  })
+})
+
+describe('PurchaseProgressPage — bộ lọc điều kiện (bao-CR-442)', () => {
+  it('forwards a conditional-filter param read from the URL', () => {
+    //  Khóa phải khớp `_cond_map()` bên backend; sai một chữ thì backend bỏ qua
+    //  IM LẶNG và người dùng vẫn thấy nguyên danh sách cũ.
+    build('/procurement/purchase-progress?currency__eq=CNY')
+
+    expect(lastCall().currency__eq).toBe('CNY')
+  })
+
+  it('drops the supplier conditions when the user cannot read suppliers', () => {
+    //  Backend gỡ hẳn cụm NCC khỏi map khi thiếu `supplier.read` — lọc rồi đếm
+    //  số dòng còn lại là mò ra được tên nhà cung cấp.
+    canReadSupplier = false
+    build('/procurement/purchase-progress?supplier_name__contains=Minh&currency__eq=CNY')
+
+    expect(lastCall().supplier_name__contains).toBeUndefined()
+    expect(lastCall().currency__eq).toBe('CNY')
+  })
+})
+
+describe('PurchaseProgressPage — xuất Excel (bao-CR-442)', () => {
+  it('hides the button when the user can export neither ĐMH nor YCMH', () => {
+    canExportPurchaseOrder = false
+    canExportPurchaseRequest = false
+    build()
+
+    expect(screen.queryByRole('button', { name: /Xuất Excel/ })).toBeNull()
+  })
+
+  it('shows the button on the YCMH permission alone — a row joins both chứng từ', () => {
+    canExportPurchaseOrder = false
+    canExportPurchaseRequest = true
+    build()
+
+    expect(screen.getByRole('button', { name: /Xuất Excel/ })).toBeInTheDocument()
+  })
+
+  it('exports with the filters on screen but without the paging', async () => {
+    //  Gửi kèm `page`/`page_size` thì tệp chỉ có đúng trang đang xem — người
+    //  dùng lọc ra 900 dòng, bấm xuất, mở tệp ra thấy 20 dòng mà không báo gì.
+    build('/procurement/purchase-progress?company_id=7&recv_state=full&date_from=2026-08-01')
+
+    await userEvent.click(screen.getByRole('button', { name: /Xuất Excel/ }))
+
+    await waitFor(() => expect(downloadFile).toHaveBeenCalledTimes(1))
+    const [url, filename, params] = downloadFile.mock.calls[0] as [
+      string,
+      string,
+      Record<string, unknown>,
+    ]
+    expect(url).toBe('/api/purchase-progress/export/xlsx')
+    expect(filename).toBe('tien-do-mua-hang.xlsx')
+    expect(params).toMatchObject({
+      company_id: '7',
+      recv_state: 'full',
+      order_date_from: '2026-08-01',
+    })
+    expect(params.page).toBeUndefined()
+    expect(params.page_size).toBeUndefined()
+  })
+
+  it('asks only for the columns still on the table', async () => {
+    build()
+
+    await userEvent.click(screen.getByRole('button', { name: /Xuất Excel/ }))
+
+    await waitFor(() => expect(downloadFile).toHaveBeenCalledTimes(1))
+    const params = downloadFile.mock.calls[0][2] as Record<string, unknown>
+    const cols = String(params.cols).split(',')
+    expect(cols).toContain('po_code')
+    //  Khóa cột của bảng trùng khóa cột trong `purchase_progress/export.py`, nên
+    //  gửi thẳng được — cột `defaultHidden` không nằm trong danh sách này.
+    expect(cols).not.toContain('misa_code')
   })
 })
