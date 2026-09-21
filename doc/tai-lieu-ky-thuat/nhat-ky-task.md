@@ -4551,8 +4551,8 @@ lại tách P6 thành hai đợt.
 
 Mã nguồn: `backend/app/modules/system_log/anomaly.py`, `backend/app/modules/system_log/retention.py`, `backend/app/modules/system_log/tasks.py`, `backend/app/core/celery_app.py`, `backend/app/core/logging_policy.py`, `backend/app/core/storage.py`, `backend/app/core/action_catalog.py`, `backend/app/modules/audit/tasks.py`, `test/backend/test_nhat_ky_p6_cr448.py`.
 
-Commit: chưa, chờ lệnh.
-Deploy: chưa.
+Commit: `eaff20a5` trên nhánh `erp-v2`, 21/09/2026 (tách riêng, không dính phần của bao-CR-449 cùng sửa `celery_app.py`).
+Deploy: máy chủ thử nghiệm, 21/09/2026 (dựng lại api, celery-worker, celery-beat; worker đã nhận hai việc nền mới). Prod chưa.
 
 ---
 

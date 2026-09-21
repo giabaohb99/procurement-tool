@@ -44,7 +44,7 @@ commit `b5787ccc` nằm trên `origin/main`). Dòng change-log-bao còn ghi "pro
 | **P3b** | Ba chỗ hiện phiên (Quản trị · Trang cá nhân · tab Nhân sự) + khóa quyền `login_session` + endpoint đọc/đá — **XONG: commit `00b740b5` + deploy DEV 14/09 (bao-CR-395)**, chỉ `frontend-v2`, 5 chỗ khác bản vẽ ở §8.5.1 | Prod chờ gộp `erp-v2` → `main` |
 | **P4** | `tab_change_log` + sự kiện ORM + che cột nhạy cảm + chốt gộp nhập liệu — **trước/sau từng trường**, nặng nhất | **XONG mã + test local 14/09 (bao-CR-402)** — chờ commit + deploy |
 | **P5** | Màn `/system/logs`: gộp theo `request_id`, 4 tab, theo dõi trực tiếp, biểu đồ; `/api/audit-logs` trả thêm `request_id` | P2, P4 (tab *Thay đổi* ẩn khi chưa có P4) |
-| **P6 đợt 1** | Dọn 16 tháng theo tháng (chỉ tháng đã có gói R2) + gói R2 đủ 4 bảng + cảnh báo IP lạ / đổi thiết bị giữa phiên / xóa hàng loạt / nhiều 403 lên chuông quản trị — **XONG mã + 19 bài kiểm local 21/09 (bao-CR-448)**, chờ commit + deploy dev | P3, P4 |
+| **P6 đợt 1** | Dọn 16 tháng theo tháng (chỉ tháng đã có gói R2) + gói R2 đủ 4 bảng + cảnh báo IP lạ / đổi thiết bị giữa phiên / xóa hàng loạt / nhiều 403 lên chuông quản trị — **XONG — bao-CR-448, commit `eaff20a5` + deploy DEV 21/09/2026**, prod chưa | P3, P4 |
 | **P6 đợt 2** | Phân vùng theo năm + `DROP PARTITION` + tách 4 bảng nhật ký khỏi sao lưu đêm (dump hai lượt) — đụng cấu trúc bảng và lịch sao lưu | P6 đợt 1 |
 
 ## 3. HRM (đồng nghiệp làm — chỉ theo dõi)
@@ -102,6 +102,28 @@ Hai khối khác nhau, đừng lẫn:
   đại ca chốt 14/09: **PENDING**, chưa xếp lịch. Điều kiện "tạm dừng chờ commit của đồng nghiệp"
   trong tài liệu đã hết hiệu lực từ 12/09 (bản chờ đó chính là khối Báo cáo thực hiện ở trên).
   Khi mở lại: chạy checklist mục 14 để rà danh sách theo mã thật rồi mới code.
+- **Giá ba giai đoạn + Chi phí thu mua — bàn 21/09/2026, ĐẶT CHỖ `bao-CR-453`, chưa quyết, chưa
+  có mã.** Đại ca nêu: đơn nhập khẩu hiện nhập giá một lần là xong, nhưng thực tế qua ba bước
+  (kế hoạch mua hàng → giá tạm tính → giá cuối) và **công nợ thật chỉ sinh ở giá cuối**; ngoài ra
+  một đơn còn nhiều khoản chi khác (vận chuyển, kho bãi, khoản người dùng tự khai), muốn tách thành
+  chức năng riêng, chỉ ảnh hưởng giá vốn sản phẩm chứ không đổi giá đơn hàng. Đánh giá sơ bộ:
+  - **Tên gợi ý: «Chi phí thu mua»** (entity `purchase_cost`), ba cột **Dự toán / Tạm tính /
+    Quyết toán** — tránh chữ "giá trị khác" vì không nói được nó là chi phí.
+  - **Đặt ở ĐMH, không ở YCMH.** YCMH chỉ giữ giá đề xuất (= kế hoạch, `PurchaseRequestItem.price`
+    sẵn có). Giá hàng ba giai đoạn = cột giai đoạn SMALLINT + IntEnum trên ĐMH (chỉ đơn nhập khẩu),
+    giá tạm tính + tỷ giá tạm trên dòng ĐMH, thao tác «Chốt giá» khóa giá cuối.
+  - **Nền có sẵn để nới:** `POImportCost` (15 loại chi phí, trạng thái Dự kiến/Thực tế của
+    bao-CR-347, tiền tệ + tỷ giá, cách phân bổ 5 kiểu, NCC dịch vụ, hóa đơn) — nới thành bảng cho
+    mọi đơn + danh mục loại chi phí người dùng tự khai (mỗi loại: cách phân bổ mặc định, có sinh
+    công nợ không, NCC dịch vụ) + thêm cột giai đoạn; phí vận chuyển đang nhập riêng thì gom về.
+    Công nợ vẫn qua `pay_service.upsert()` khóa (source_type, ref_type, ref_id) nên chuyển giai
+    đoạn là cập nhật, không sinh dòng đôi. Lịch sử ba cột lấy từ `tab_change_log` (bao-CR-402).
+    Báo cáo chênh lệch dựng trên `report/import_landed_cost.py`.
+  - **Bốn điểm đại ca phải quyết trước khi làm:** (1) chốt tên và ba nhãn cột; (2) nới bảng
+    `POImportCost` thành bảng chung hay dựng bảng mới, có gom phí vận chuyển hiện có vào không;
+    (3) danh mục loại chi phí do ai quản (quản trị hay thu mua tự thêm) và loại nào sinh công nợ;
+    (4) công nợ sinh ở **Quyết toán** thôi (an toàn) hay sinh từ **Tạm tính** kèm cờ tạm để kế
+    toán thấy sớm. Chốt xong mới lập thiết kế; **v1 trước rồi mới port v2**.
 
 ## 6. Giao diện v2
 
