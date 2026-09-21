@@ -3982,6 +3982,114 @@ Kiểm tra: 7 bài kiểm mới, trong đó 2 bài đếm số lượt hỏi cơ
 một lượt vào bảng nối dù trang có 30 dòng, một bài so hai kích cỡ trang để bắt cả những chỗ hỏi
 theo dòng mọc ở bảng khác. Đã thử đem mã cũ chạy lại hai bài đó để chắc chúng đỏ thật chứ không
 phải xanh suông. 49 bài kiểm của cụm duyệt dấu chạy lại đều xanh. Không có thay đổi cấu trúc cơ sở
-dữ liệu, không đổi đường API, giao diện không đổi. Chưa commit, đợi đại ca bảo.
+dữ liệu, không đổi đường API, giao diện không đổi.
+
+Đã lên máy chủ thử và kiểm lại trên dữ liệu thật ở đó: một trang 50 dòng hết 5 lượt hỏi, đúng một
+lượt vào bảng nối, và thứ tự công ty của phiếu đọc ra vẫn đúng như người lập gõ vào.
 Mã nguồn: `backend/app/modules/seal_request/service.py` (thêm hàm lấy danh sách công ty theo lô) ·
 `test/backend/test_duyet_dau_gom_cong_ty.py`.
+Commit: `56e774b2`.
+Deploy: máy chủ thử, 21/09/2026.
+
+## bao-CR-436 | Màn Đơn mua hàng và màn Công nợ hỏi gọn cả trang thay vì hỏi từng dòng
+- status: xong
+- date: 2026-09-21
+- pic: NSU209
+Đại ca bảo rà tiếp hai màn nặng nhất theo đúng lối vừa làm với màn Duyệt dấu. Em soi hết đường đọc
+của hai màn đó và tìm được bốn chỗ hỏi cơ sở dữ liệu theo từng dòng, cả bốn đều là lỗi có sẵn từ
+lâu chứ không phải mới sinh.
+
+Chỗ thứ nhất ở màn Đơn mua hàng. Cột Tiền hàng phải cộng các dòng hàng của đơn, mà hàm dựng danh
+sách đi hỏi dòng hàng của từng đơn một, nên một trang có bao nhiêu đơn là bấy nhiêu lượt vào cơ sở
+dữ liệu. Nay gom một lượt cho cả trang, cộng bằng đúng biểu thức cũ, số lượng đặt nhân đơn giá
+nhân thuế nhân tỷ giá, giữ nguyên từng dấu ngoặc để con số không trôi đi một cách im lặng. Đơn
+chưa có dòng hàng nào vẫn có khóa với giá trị không, để chỗ gọi khỏi phải đoán giữa «đơn rỗng» và
+«mình quên hỏi đơn này». Nhân tiện em tách riêng luật đọc ô tỷ giá thành một hàm dùng chung, vì
+giờ có hai nơi đọc nó, một nơi đọc qua dòng hàng và một nơi đọc thẳng cột. Luật đó là ô trống phải
+đọc thành một chứ không phải không: nhân với không thì cả đơn hàng thành không đồng mà chẳng chỗ
+nào báo lỗi, đúng chỗ từng phải vá hồi làm đơn nhập khẩu.
+
+Chỗ thứ hai ở màn Công nợ. Ngày hóa đơn không có cột riêng trên bảng công nợ, phải dò ngược chuỗi
+chứng từ: xem đợt giao có tự khai ngày không, không có thì xuống dòng hàng, vẫn không có thì lùi
+về ngày phát sinh nếu khoản đó đã có số hóa đơn. Dò như vậy tốn hai lượt hỏi, mà hàm dựng một dòng
+danh sách gọi nó cho từng khoản, nên mỗi dòng trên màn hình tốn tới hai lượt. Nay gom hai lượt cho
+cả trang, và chỉ hỏi dòng hàng của những đợt giao không tự khai ngày, y như bản cũ chứ không hỏi
+thừa. Bản dò một khoản vẫn giữ vì còn chỗ gọi lẻ, chỉ ghi thêm lời nhắc đừng đem đặt vào vòng lặp.
+
+Chỗ thứ ba là tệp xuất Excel của màn Công nợ, gọi đúng hàm dò đó nhưng lại không phân trang, chỉ
+chặn ở trần số dòng, nên nặng hơn màn danh sách nhiều lần. Chỗ thứ tư là tool công nợ của trợ lý
+AI. Cả hai nay dùng chung bản gom.
+
+Một điều phải nhớ cho lần sau: luật dò ngày hóa đơn tồn tại hai bản, một bản viết bằng Python để
+dựng dữ liệu và một bản viết thẳng trong câu truy vấn để lọc và sắp xếp. Sửa một bên mà quên bên
+kia thì màn hình hiện một ngày còn bộ lọc hiểu một ngày khác, đúng kiểu lỗi từng phải vá ở việc
+lọc theo khoảng ngày hóa đơn. Em đã ghi lời cảnh báo đó vào chú thích của cả hai bản.
+
+Số đo dưới máy em, dữ liệu có 97 đơn mua hàng và 192 khoản công nợ. Màn Đơn mua hàng từ 97 lượt
+hỏi và 78,7 mili giây xuống còn 1 lượt và 1,8 mili giây. Màn Công nợ từ 346 lượt hỏi và 237,6 mili
+giây xuống còn 2 lượt và 2,9 mili giây. Đối chiếu đúng sai thì em gọi thẳng hai đường API thật rồi
+so từng ô với cách tính cũ: 97 dòng đơn mua hàng và 100 khoản công nợ, lệch không ô nào.
+
+Em cũng soi và xác nhận sạch mấy chỗ dễ nghi mà hóa ra không có vấn đề: màn Tiến độ mua hàng, tệp
+xuất Excel của đơn mua hàng, hàm lấy mã đơn Misa, và thẻ tổng hợp công nợ vốn là mấy câu cộng
+thuần trong cơ sở dữ liệu.
+
+Kiểm tra: 12 bài kiểm mới trong một tệp, trong đó 4 bài đếm số lượt hỏi. Em đã đem mã cũ chạy lại
+đúng bốn bài đó để chắc chúng đỏ thật chứ không xanh suông. Chạy lại các bộ kiểm của hai phân hệ
+và của trợ lý AI thì 151 bài xanh; thêm các bộ kiểm phạm vi và xuất Excel thì 173 bài xanh, còn
+một bài đỏ là bài đỏ có sẵn về thẻ tổng hợp công nợ trả thêm hai khóa của việc phòng tự mua hàng,
+không dính gì tới việc này. Không đổi cấu trúc cơ sở dữ liệu, không đổi đường API, giao diện không
+đổi. Hai số 434 và 435 bị phiên khác lấy trong ngày nên việc này mang số 436. Chưa commit, đợi đại
+ca bảo.
+Mã nguồn: `backend/app/modules/purchase_order/service.py` (`order_amount_map`, `normalize_rate`) ·
+`backend/app/modules/purchase_order/controller.py` · `backend/app/modules/payable/service.py`
+(`invoice_date_map`) · `backend/app/modules/payable/controller.py` ·
+`backend/app/modules/payable/export.py` · `backend/app/modules/assistant/tools/payable_tool.py` ·
+`test/backend/test_dmh_cong_no_gom_truy_van.py`.
+
+## bao-CR-437 | Vá bốn chỗ cột tiền còn thiếu tỷ giá ở tệp Excel, Báo cáo và Trang chủ
+- status: xong
+- date: 2026-09-21
+- pic: NSU209
+Lúc rà hai màn nặng ở việc trước, em mở thử tệp Excel Đơn mua hàng và thấy cột Tiền hàng trong tệp
+không khớp cột cùng tên trên màn hình. Lần theo thì ra không phải một lỗi lẻ mà là cả một họ: nền
+tiền tệ dựng hồi làm đơn nhập khẩu mới chỉ phủ được đường ghi, tức là công nợ, tồn kho và cột tiền
+của màn danh sách. Bốn chỗ đọc còn lại thì mỗi chỗ giữ một bản chép riêng của cùng một phép nhân,
+và bản nào cũng thiếu đúng một thừa số là tỷ giá. Đại ca bảo vá hết một lượt rồi đẩy một lần.
+
+Chỗ thứ nhất là tệp Excel Đơn mua hàng, cột Tiền hàng ở cụm đầu đơn. Chỗ thứ hai là hàm dựng dòng
+của màn Tiến độ mua hàng, hai cột Thành tiền đơn hàng và Thành tiền nhận. Chỗ này nặng nhất vì một
+hàm nuôi ba nơi cùng lúc: bảng Tiến độ trên màn hình ở cả bản cũ lẫn bản mới, tệp Excel Tiến độ, và
+cụm dòng của chính tệp Excel Đơn mua hàng. Cả ba nơi đều vẽ con số đó bằng hàm định dạng tiền Việt,
+tức là dán nhãn đồng lên một số nguyên tệ. Chú thích ngay trong mã còn viết rằng đây mới là số ghi
+công nợ, mà câu đó sai: công nợ đi qua đơn giá đã quy đổi nên vẫn đúng, chỉ cột trên màn là lệch.
+
+Chỗ thứ ba ở màn Báo cáo mua hàng. Tệp điều khiển giữ hai hàm tính tiền trùng tên với tệp nghiệp vụ
+nhưng thiếu tỷ giá, nên hai tab của cùng một màn ra hai con số khác nhau tùy người xem bấm vào tab
+nào. Em xóa hẳn bản chép, chỉ còn một bản duy nhất ở tệp nghiệp vụ và đổi sang tên dùng chung được.
+Chỗ thứ tư là biểu đồ chi tiêu mười hai tháng của Trang chủ, trong khi mọi khối chi tiêu khác cùng
+màn thì đã quy đổi đủ, nên tháng nào có đơn ngoại tệ là cột thấp hẳn xuống mà không ai đọc ra vì sao.
+
+Sai số không phải vài phần trăm. Dưới máy có một trăm mười hai dòng hàng, sáu dòng tỷ giá lớn hơn
+một thuộc ba đơn; riêng một đơn bằng nhân dân tệ tỷ giá ba nghìn sáu trăm hai mươi có giá trị bốn
+mươi hai nghìn tám trăm năm mươi tệ, tức một trăm năm mươi lăm triệu một trăm mười bảy nghìn đồng.
+Đúng hai con số đó là thứ ba trong bốn chỗ trên đang hiện sai. Em dựng lại tình huống bằng cách gỡ
+tỷ giá ra rồi xem bài kiểm đỏ lên với đúng cặp số ấy, để chắc là mình vá đúng chỗ chứ không đoán.
+
+Hình thức tệp Excel thì đại ca chưa chọn nên em tự quyết và ghi rõ ở đây: tệp quy đổi cho khớp màn
+hình, đồng thời thêm hai cột mới là Đồng tiền và Tỷ giá vào cụm dòng để kế toán còn đối chiếu ngược
+về hóa đơn nguyên tệ của nhà cung cấp. Hai cột đó phải ép xuất, vì bảng trên màn hình chưa bày chúng
+nên danh sách cột người dùng gửi lên không bao giờ chứa, không ép thì tệp ra toàn cột tiền đã quy
+đổi mà không kèm căn cứ quy đổi. Ranh giới còn lại giữ nguyên có chủ ý: hai cột Đơn giá vẫn để
+nguyên tệ vì đó là số in trên hóa đơn, quy đổi đi là hết đối chiếu được. Màn chi tiết đơn mua hàng
+và bản in của nó cũng nguyên tệ theo thiết kế, em đã soi và xác nhận không phải lỗi.
+
+Kiểm tra: một tệp bài kiểm mới với mười hai bài, gồm bốn chỗ vừa vá, bài chốt đơn giá phải giữ
+nguyên tệ, bài chốt hai cột căn cứ không bị bộ lọc cột gạt ra, và bài chốt hồi quy rằng đơn trong
+nước không đổi một đồng nào. Chạy cùng mười tệp liên quan thì một trăm ba mươi mốt bài xanh. Không
+đổi cấu trúc cơ sở dữ liệu, không đổi đường API, không đổi giao diện.
+Mã nguồn: `backend/app/modules/purchase_order/export.py` ·
+`backend/app/modules/purchase_progress/export.py` ·
+`backend/app/modules/purchase_progress/controller.py` ·
+`backend/app/modules/report/service.py` · `backend/app/modules/report/controller.py` ·
+`backend/app/modules/dashboard/controller.py` · `test/backend/test_ty_gia_cot_tien_cr437.py` (mới).

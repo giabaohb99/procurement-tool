@@ -44,6 +44,9 @@ COLS = [
 def build_rows(db: Session, items: list[Payable]) -> list[dict]:
     company_name = dict(db.query(Company.id, Company.name).all())
     misa_by_po = service.misa_code_by_po(db, items)
+    #  Tệp xuất KHÔNG phân trang (chỉ chặn ở trần số dòng), nên dò từng khoản ở đây tốn
+    #  gấp đôi số dòng — nặng hơn màn danh sách nhiều lần.
+    inv_dates = service.invoice_date_map(db, items)
     rows = []
     for p in items:
         aging = service.aging_bucket(p.due_date)
@@ -55,7 +58,7 @@ def build_rows(db: Session, items: list[Payable]) -> list[dict]:
             "po_code": p.po_code,
             "misa_code": misa_by_po.get(p.po_id, ""),
             "invoice_no": p.invoice_no,
-            "invoice_date": service.get_invoice_date(db, p),
+            "invoice_date": inv_dates.get(p.id, ""),
             "incur_date": p.incur_date,
             "created_at": p.created_at,
             "due_date": p.due_date,

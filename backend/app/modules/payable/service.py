@@ -26,21 +26,63 @@ def debt_days(payment_terms: str) -> int:
     return int(m.group(1)) if m else 0
 
 
+def invoice_date_map(db: Session, items: list[Payable]) -> dict[int, str]:
+    """Ngày hóa đơn của NHIỀU khoản nợ, HAI lượt truy vấn. Khóa = id khoản nợ.
+
+    Ngày hóa đơn không có cột trên `tab_payable`: phải dò dọc chuỗi chứng từ, đợt
+    giao hàng trước rồi mới tới dòng hàng. Hỏi theo từng khoản nợ là mỗi dòng danh
+    sách tới hai lượt vào cơ sở dữ liệu — đo trên 192 khoản nợ thật: 346 lượt và
+    238 ms, gom lại còn 2 lượt.
+
+    Đây là bản Python DUY NHẤT của luật dò ngày; `get_invoice_date` chỉ là lối vào
+    cho một khoản. Vẫn còn bản SQL `invoice_date_expr()` dùng để lọc và sắp xếp —
+    **sửa luật thì phải sửa CẢ HAI**, xem chú thích của hàm đó.
+    """
+    from app.modules.purchase_order.model import PODelivery, POItem
+
+    rows = [p for p in items if p is not None]
+    if not rows:
+        return {}
+    result: dict[int, str] = {}
+    #  Chỉ khoản nợ sinh từ một đợt giao mới có đường dò; khoản khác rơi thẳng xuống
+    #  nhánh lùi ở dưới.
+    ref_ids = {p.ref_id for p in rows if p.ref_type == "delivery" and p.ref_id}
+    deliveries: dict[int, tuple[str, int]] = {}
+    if ref_ids:
+        deliveries = {
+            did: ((inv or "").strip(), int(item_id or 0))
+            for did, inv, item_id in db.query(PODelivery.id, PODelivery.invoice_date,
+                                              PODelivery.po_item_id)
+            .filter(PODelivery.id.in_(ref_ids)).all()
+        }
+    #  Chỉ hỏi dòng hàng của những đợt giao KHÔNG tự khai ngày — đợt đã khai thì
+    #  không đi tiếp, y như bản dò từng khoản.
+    item_ids = {iid for inv, iid in deliveries.values() if not inv and iid}
+    item_dates: dict[int, str] = {}
+    if item_ids:
+        item_dates = {
+            iid: (inv or "").strip()
+            for iid, inv in db.query(POItem.id, POItem.invoice_date)
+            .filter(POItem.id.in_(item_ids)).all()
+        }
+    for p in rows:
+        found = ""
+        if p.ref_type == "delivery" and p.ref_id and p.ref_id in deliveries:
+            inv, item_id = deliveries[p.ref_id]
+            found = inv or (item_dates.get(item_id, "") if item_id else "")
+        if not found and (p.invoice_no or "").strip() and (p.incur_date or "").strip():
+            found = p.incur_date
+        result[p.id] = found
+    return result
+
+
 def get_invoice_date(db: Session, p: Payable) -> str:
-    """Dò ngày hóa đơn từ đợt giao hàng PODelivery -> POItem -> incur_date."""
-    if p and p.ref_type == "delivery" and p.ref_id:
-        from app.modules.purchase_order.model import PODelivery, POItem
-        d = db.get(PODelivery, p.ref_id)
-        if d:
-            if (d.invoice_date or "").strip():
-                return d.invoice_date
-            if d.po_item_id:
-                it = db.get(POItem, d.po_item_id)
-                if it and (it.invoice_date or "").strip():
-                    return it.invoice_date
-    if p and (p.invoice_no or "").strip() and (p.incur_date or "").strip():
-        return p.incur_date
-    return ""
+    """Ngày hóa đơn của MỘT khoản nợ.
+
+    ⚠️ **Cho một khoản thôi.** Cần cả một trang thì gọi `invoice_date_map` — đặt hàm
+    này vào vòng lặp là mỗi dòng danh sách tới hai lượt vào cơ sở dữ liệu.
+    """
+    return invoice_date_map(db, [p]).get(getattr(p, "id", 0), "") if p else ""
 
 
 def join_invoice_date(q):
@@ -57,10 +99,10 @@ def join_invoice_date(q):
 
 
 def invoice_date_expr():
-    """Bản SQL của `get_invoice_date` — dùng để LỌC/SẮP ngay trong câu truy vấn.
+    """Bản SQL của `invoice_date_map` — dùng để LỌC/SẮP ngay trong câu truy vấn.
 
     Ngày hóa đơn không có cột trên `tab_payable`, phải dò dọc chuỗi chứng từ, nên tồn tại
-    hai bản: bản Python đọc từng dòng (`get_invoice_date`) và bản SQL này. **Sửa luật thì
+    hai bản: bản Python dựng dữ liệu (`invoice_date_map`) và bản SQL này. **Sửa luật thì
     phải sửa CẢ HAI** — lệch nhau là màn hình hiện một ngày còn bộ lọc hiểu một ngày khác,
     đúng kiểu lỗi bao-CR-305 vừa phải vá. Phải `join_invoice_date(q)` trước khi dùng.
     """

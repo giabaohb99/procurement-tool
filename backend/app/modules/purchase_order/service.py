@@ -26,13 +26,20 @@ from .model import (ALLOCATION_METHOD_LABELS, AllocationMethod, DEFAULT_CURRENCY
 from .schema import POCreate, POUpdate
 
 
-def rate_of(obj) -> float:
-    """Tỷ giá dùng để quy đổi về đồng tiền hạch toán.
+def normalize_rate(value) -> float:
+    """Đọc một ô tỷ giá thành số nhân được.
 
     bao-CR-319. Dòng cũ (trước khi có cột) và dòng VNĐ đều để trống hoặc 0 — phải đọc
     thành 1, vì nhân với 0 sẽ biến cả đơn hàng thành 0 đồng mà không báo lỗi ở đâu cả.
+    Tách riêng khỏi `rate_of` để chỗ nào đọc thẳng cột (truy vấn gom cả trang) vẫn dùng
+    chung đúng một luật, không phải chép lại.
     """
-    return float(getattr(obj, "exchange_rate", 0) or 0) or 1.0
+    return float(value or 0) or 1.0
+
+
+def rate_of(obj) -> float:
+    """Tỷ giá dùng để quy đổi về đồng tiền hạch toán, đọc từ một dòng hàng."""
+    return normalize_rate(getattr(obj, "exchange_rate", 0))
 
 
 # bao-CR-321 — mặc định của ba điều khoản in trên Đơn đặt hàng (mục 2 và mục 5 của
@@ -120,6 +127,34 @@ def get_po(db: Session, pid: int) -> PurchaseOrder:
 
 def items_of(db: Session, po_id: int):
     return db.query(POItem).filter(POItem.po_id == po_id).order_by(POItem.id.asc()).all()
+
+
+def order_amount_map(db: Session, po_ids: list[int]) -> dict[int, float]:
+    """Giá trị ĐẶT HÀNG đã quy đổi của NHIỀU đơn, gom MỘT lượt truy vấn. Khóa = id đơn.
+
+    Đúng con số cột *Tiền hàng* ở màn danh sách: số lượng đặt × đơn giá × VAT × tỷ giá,
+    cộng hết các dòng của đơn. Tính theo số lượng ĐẶT (không phải số thực nhận) nên cột
+    không tụt về 0 khi dòng chuyển sang đã đặt mà chưa nhận hàng; nhân tỷ giá vì đơn ngoại
+    tệ đứng chung bảng với đơn trong nước (bao-CR-319, đơn VNĐ có tỷ giá 1 nên số cũ y nguyên).
+
+    Hỏi dòng hàng theo từng đơn là mỗi dòng danh sách một lượt vào cơ sở dữ liệu — đo trên
+    97 đơn thật: 97 lượt và 79 ms. Đơn không có dòng hàng nào vẫn có mặt trong kết quả với
+    giá trị 0, để người gọi khỏi phải phân biệt "không có dòng" với "thiếu khóa".
+    """
+    ids = [int(i) for i in po_ids if i]
+    if not ids:
+        return {}
+    result: dict[int, float] = {i: 0.0 for i in ids}
+    rows = (db.query(POItem.po_id, POItem.qty_order, POItem.price, POItem.vat,
+                     POItem.exchange_rate)
+            .filter(POItem.po_id.in_(ids)).all())
+    for po_id, qty, price, vat, rate in rows:
+        #  Giữ NGUYÊN biểu thức của bản tính từng đơn (kể cả luật đọc tỷ giá trống thành 1);
+        #  viết lại gọn hơn là số tiền trôi một cách im lặng.
+        result[po_id] = result.get(po_id, 0.0) + (
+            float(qty or 0) * float(price or 0) * (1 + float(vat or 0) / 100)
+            * normalize_rate(rate))
+    return {k: round(v, 2) for k, v in result.items()}
 
 
 def deliveries_of(db: Session, item_id: int):

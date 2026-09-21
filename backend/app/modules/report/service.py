@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.modules.payable.model import Payable
 from app.modules.purchase_order.model import PODelivery, POItem, PurchaseOrder
+from app.modules.purchase_order.service import normalize_rate
 from .model import ReportSnapshot
 
 
@@ -21,16 +22,28 @@ def _mk(s):
 
 def _rate_of(it):
     """bao-CR-319 — tỷ giá của dòng hàng; dòng cũ / dòng VNĐ đọc thành 1."""
-    return float(getattr(it, "exchange_rate", 0) or 0) or 1.0
+    return normalize_rate(getattr(it, "exchange_rate", 0))
 
 
-def _amt(it):
+def order_amount_of(it) -> float:
+    """Giá trị ĐẶT HÀNG của một dòng, ĐÃ quy đổi: SL đặt × đơn giá × VAT × tỷ giá.
+
+    bao-CR-437 — đổi từ tên riêng `_amt` sang tên dùng chung được, vì `controller.py`
+    từng giữ một bản chép CÙNG TÊN nhưng thiếu tỷ giá. Hai bản đó nuôi hai tab của cùng
+    một màn Báo cáo, nên một đơn ngoại tệ ra hai con số tùy người xem bấm vào tab nào.
+    """
     # Báo cáo cộng gộp nhiều đơn nên PHẢI quy đổi về một loại tiền, không thì tổng vô nghĩa.
     return float(it.qty_order or 0) * float(it.price or 0) * (1 + float(it.vat or 0) / 100) * _rate_of(it)
 
 
-def _recv_amt(it):
+def received_amount_of(it) -> float:
+    """Giá trị ĐÃ NHẬN của một dòng, ĐÃ quy đổi — cùng luật với `order_amount_of`."""
     return float(it.qty_received or 0) * float(it.price or 0) * (1 + float(it.vat or 0) / 100) * _rate_of(it)
+
+
+#  Tên cũ, giữ cho phần thân tệp này khỏi phải sửa hàng loạt.
+_amt = order_amount_of
+_recv_amt = received_amount_of
 
 
 def _rate(part, whole):

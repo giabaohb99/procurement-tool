@@ -276,12 +276,12 @@ PO_STATUSES =["draft", "submitted", "approved", "partial", "received", "complete
 REAL_PO_STATUSES = {"approved", "partial", "received", "completed"}   # đơn hàng thật (bỏ nháp/chờ duyệt/hủy/từ chối)
 
 
-def _amt(it):
-    return float(it.qty_order or 0) * float(it.price or 0) * (1 + float(it.vat or 0) / 100)
-
-
-def _recv_amt(it):
-    return float(it.qty_received or 0) * float(it.price or 0) * (1 + float(it.vat or 0) / 100)
+#  bao-CR-437: hai hàm này TỪNG được chép lại ngay tại đây và chép THIẾU tỷ giá, trong khi bản
+#  ở `service.py` (nuôi tab ma trận + tệp Excel) thì có. Cùng một màn Báo cáo, cùng một đơn
+#  ngoại tệ, hai tab ra hai con số lệch nhau đúng bằng tỷ giá — trên dữ liệu thật là lệch hàng
+#  nghìn lần. Nay chỉ còn MỘT bản; muốn đổi luật tính thì sửa ở `service.py`.
+_amt = report_service.order_amount_of
+_recv_amt = report_service.received_amount_of
 
 
 @router.get("/procurement")

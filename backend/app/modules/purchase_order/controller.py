@@ -323,6 +323,7 @@ def list_po(request: Request, pg: dict = Depends(pagination), db: Session = Depe
             user=Depends(require("purchase_order", "read"))):
     q = _list_query(request, db, user)
     total, items = service.list_po(db, q, pg)
+    amounts = service.order_amount_map(db, [p.id for p in items])
     out = []
     for p in items:
         row = {c: getattr(p, c) for c in HEADER}
@@ -333,9 +334,8 @@ def list_po(request: Request, pg: dict = Depends(pagination), db: Session = Depe
         # bao-CR-319: cột này đứng chung một bảng với đơn trong nước nên phải là số ĐÃ QUY ĐỔI
         # (đơn VNĐ có tỷ giá 1 → không đổi số cũ). Không quy đổi thì đơn ngoại tệ nằm cạnh đơn
         # nội tệ mà không cách nào biết cột nào là tiền gì.
-        row["amount"] = round(sum(
-            float(i.qty_order or 0) * float(i.price or 0) * (1 + float(i.vat or 0) / 100)
-            * service.rate_of(i) for i in service.items_of(db, p.id)), 2)
+        # bao-CR-436: gom cả trang một lượt truy vấn — luật tính nằm trong `order_amount_map`.
+        row["amount"] = amounts.get(p.id, 0.0)
         row["order_type"] = int(p.order_type or OrderType.DOMESTIC)
         row["order_type_label"] = ORDER_TYPE_LABELS.get(OrderType(row["order_type"]), "")
         out.append(row)

@@ -16,7 +16,12 @@ from .model import Payable
 router = APIRouter(prefix="/api/payables", tags=["payable"])
 
 
-def _out(db: Session, p: Payable, misa_by_po: dict[int, str] | None = None) -> dict:
+def _out(db: Session, p: Payable, misa_by_po: dict[int, str] | None = None,
+         invoice_dates: dict[int, str] | None = None) -> dict:
+    #  `invoice_dates` là bản gom NGÀY HÓA ĐƠN cho cả trang (bao-CR-436). Không truyền thì
+    #  tự dò một khoản — đúng, nhưng chỉ dành cho lối gọi lẻ, đừng để rơi vào vòng lặp.
+    invoice_date = (invoice_dates.get(p.id, "") if invoice_dates is not None
+                    else service.get_invoice_date(db, p))
     return {
         "id": p.id, "company_id": p.company_id, "supplier_code": p.supplier_code,
         # bao-CR-414 GĐ4 — phòng xử lý đơn lúc nợ sinh ra (0 = nợ cũ / thu mua chung).
@@ -25,7 +30,7 @@ def _out(db: Session, p: Payable, misa_by_po: dict[int, str] | None = None) -> d
         "supplier_name": p.supplier_name, "source_type": p.source_type,
         "po_id": p.po_id, "po_code": p.po_code, "invoice_no": p.invoice_no,
         "misa_code": (misa_by_po or {}).get(p.po_id, ""),
-        "invoice_date": service.get_invoice_date(db, p),
+        "invoice_date": invoice_date,
         "incur_date": p.incur_date, "due_date": p.due_date, "created_at": p.created_at,
         "amount": float(p.amount or 0), "vat": float(p.vat or 0), "total": float(p.total or 0),
         "paid_amount": float(p.paid_amount or 0), "remaining": float(p.remaining or 0),
@@ -129,7 +134,9 @@ def list_payables(request: Request, pg: dict = Depends(pagination), db: Session 
     rows = (q.order_by(Payable.due_date.asc(), Payable.id.desc())
             .offset(pg["offset"]).limit(pg["limit"]).all())
     misa = service.misa_code_by_po(db, rows)
-    return success({"total": total, "items": [_out(db, p, misa) for p in rows]})
+    inv_dates = service.invoice_date_map(db, rows)
+    return success({"total": total,
+                    "items": [_out(db, p, misa, inv_dates) for p in rows]})
 
 
 def _sum_row(q, today: str) -> dict:

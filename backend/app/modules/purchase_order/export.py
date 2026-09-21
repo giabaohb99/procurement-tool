@@ -11,6 +11,10 @@ Hai cột tiền dễ nhầm:
 - "Tiền hàng" (đầu đơn) = tổng giá trị ĐẶT của cả đơn, tính một lần trên dòng hàng nên KHÔNG bị
   nhân lên theo số lần giao. Lọc "STT dòng = 1" rồi cộng cột này sẽ ra đúng tổng các đơn.
 - "Thành tiền nhận" (dòng) = theo SL thực nhận của lần giao đó — đây mới là số ghi công nợ.
+
+bao-CR-437 — MỌI cột "Thành tiền" trong tệp này (đầu đơn lẫn dòng) đều là số ĐÃ QUY ĐỔI về
+đồng; riêng "Đơn giá" và "Đơn giá (Sau VAT)" giữ NGUYÊN TỆ vì đó là số in trên hóa đơn nhà
+cung cấp. Căn cứ quy đổi nằm ở hai cột "Đồng tiền" và "Tỷ giá" của cụm dòng.
 """
 from sqlalchemy.orm import Session
 
@@ -19,6 +23,7 @@ from app.core.status_codes import PO_DOCUMENT_STATUS, PO_ITEM_LINE_STATUS
 from app.modules.company.model import Company
 from app.modules.purchase_progress import export as progress_ex
 from .model import PODelivery, POItem, PurchaseOrder
+from .service import normalize_rate
 
 STATUS_LABEL = {
     "draft": "Nháp", "submitted": "Chờ duyệt", "approved": "Đã duyệt",
@@ -94,7 +99,11 @@ def build_rows(db: Session, pos: list[PurchaseOrder], show_supplier: bool = True
     rows: list[dict] = []
     for po in pos:
         lines = by_po.get(po.id, [])
-        # Tiền hàng đầu đơn: cộng theo DÒNG HÀNG (mỗi dòng một lần), không cộng theo lần giao
+        # Tiền hàng đầu đơn: cộng theo DÒNG HÀNG (mỗi dòng một lần), không cộng theo lần giao.
+        # bao-CR-437 — phải nhân TỶ GIÁ, đúng bằng luật của cột cùng tên trên màn hình
+        # (`purchase_order.service.order_amount_map`). Thiếu thừa số đó thì một đơn CNY hiện
+        # 155.117.000 trên bảng nhưng tải về thành 42.850, cùng một nhãn cột "Tiền hàng",
+        # không dấu hiệu nào báo là hai loại tiền khác nhau.
         seen: set[int] = set()
         order_amount = 0.0
         for it, _ in lines:
@@ -102,7 +111,8 @@ def build_rows(db: Session, pos: list[PurchaseOrder], show_supplier: bool = True
                 continue
             seen.add(it.id)
             order_amount += round(float(it.qty_order or 0) * float(it.price or 0)
-                                  * (1 + float(it.vat or 0) / 100), 2)
+                                  * (1 + float(it.vat or 0) / 100)
+                                  * normalize_rate(getattr(it, "exchange_rate", 0)), 2)
         head = {
             "code": po.code,
             "misa_code": po.misa_code,
