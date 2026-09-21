@@ -4903,3 +4903,9 @@ Mã nguồn: `backend/scripts/reindex_help_rag.py` (mới);
 `frontend-v2/src/modules/system/components/rag-index-panel.tsx` (mới, kèm bài kiểm),
 `api/setting-api.ts`, `hooks/use-settings.ts`, `pages/setting-page.tsx`, `types/setting.ts`;
 `frontend-v2/src/shared/constants/query-keys.ts`; `test/backend/test_rag_nap_bu_chi_muc.py` (mới).
+Commit: `8f1f39a1` trên nhánh erp-v2, gồm đúng 15 tệp của lượt này.
+Deploy: máy chủ thử nghiệm ngày 21/09/2026 — dựng lại api, hai tiến trình chạy nền và
+giao diện erp. Kho vector trên đó **đã đủ 87 trên 87 bài và 11 trên 11 câu hỏi thường
+gặp** từ lượt nạp bù tay của bao-CR-450, nên lệnh chạy tay báo không có gì phải nạp.
+Đã thử luôn đường của nút: xếp hàng việc nạp bù, tiến trình chạy nền nhận việc, đối
+chiếu xong rải 0 nguồn rồi kết thúc êm — đúng như mong đợi khi kho đang đủ.
