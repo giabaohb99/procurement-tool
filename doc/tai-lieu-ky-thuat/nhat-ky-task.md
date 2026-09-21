@@ -5162,3 +5162,40 @@ Mã nguồn (kho app cũ, không phải kho này): `my-firebase-api/src/db/sync-
 `degoholding-app-frontend/src/components/features/admin/SyncLogManagement.tsx` (mới),
 `src/pages/AdminPage.tsx`, `src/types/common.types.ts`.
 Tài liệu: `doc/dong-bo-dat-xe-duyet-dau/TIEN-DO.md`.
+
+## dong-bo-datxe-qd-n-34-phieu | Chốt 34 phiếu đang chờ duyệt: để app cũ ký nốt
+- status: xong
+- date: 2026-09-21
+- pic: NSU209
+- list: Duyệt dấu, Đặt xe
+
+Câu treo từ lượt nạp lịch sử duyệt hôm mười sáu tháng chín, nay đại ca chốt. Trước hết phải nói
+lại cho đúng một điều em từng nói lệch: ba mươi tư phiếu đó không hề thiếu bên ERP, chúng đã nhập
+đủ cùng một nghìn ba trăm mười ba phiên. Thứ thiếu là việc đang chờ của người duyệt, và nó thiếu
+vì bộ nạp cố ý không mở — mở ra là đổ hơn một nghìn ba trăm việc đã xong từ đời nào vào hàng chờ
+của người thật.
+
+Đại ca chọn phương án để app cũ ký nốt. Nghĩa là không viết thêm bước nào: người duyệt vẫn ký bên
+app cũ, kênh chiều app cũ đẩy sự kiện sang, ERP tự đóng phiên. Số ba mươi tư tự teo dần mỗi ngày,
+và đó là lý do phương án này rẻ hơn hẳn phương án kia.
+
+Cái giá phải nói thành lời chứ không để người ta tự vấp: trong lúc đó không ai bên ERP duyệt được
+ba mươi tư phiếu ấy. Chúng thấy được, tìm được, nhưng đứng im — vì phiên còn mở chiếm chỗ chạy nên
+chốt chặn đường cũ khóa ba nút duyệt thẳng. Chỗ này vừa là cái mất vừa là cái được: hai nơi cùng
+ký được một phiếu mới là nguồn mâu thuẫn không gỡ nổi. Ai mở ra mà không biết chuyện này sẽ tưởng
+hệ thống hỏng, nên đã ghi thẳng vào tài liệu tiến độ và bảng quyết định.
+
+Điều kiện lật quyết định cũng ghi kèm: nếu định tắt app cũ trước khi ba mươi tư phiếu đó ký xong
+thì phải làm phương án còn lại — duyệt qua từng phiên, quy tài khoản app cũ ra người dùng ERP, rồi
+mở việc chờ đúng tại chặng phiếu đang đứng. Không dùng lại được hàm khởi động luồng có sẵn, vì hàm
+đó dựng luồng từ chặng đầu, tức đẩy phiếu lùi lại và bắt người ta ký lại từ đầu.
+
+Cùng buổi, đại ca đã dán xong đoạn luật cho nhánh sổ đồng bộ trên nền tảng dữ liệu của app cũ. Em
+rà lại đoạn đó trong mã nguồn để chắc đường dẫn vai trò không phải đoán: hồ sơ người dùng nằm dưới
+nhánh người dùng theo mã tài khoản và có trường vai trò, ghi cùng lúc với lúc gắn vai trò lên thẻ
+đăng nhập. Và quan trọng hơn, cả đường đọc lẫn đường ghi của sổ đều đi bằng thẻ của chính người
+dùng chứ không phải thẻ quản trị, nên đoạn luật đó thật sự gánh việc. Vai trò được giữ ở hai nơi
+nên nếu có ai sửa tay lệch một bên thì người đó qua được cửa API nhưng bị nền tảng chặn, và màn
+hình sẽ báo lỗi đỏ chứ không phải bảng rỗng — đúng kiểu hỏng cần có, nó kêu chứ không im.
+Tài liệu: `doc/dong-bo-dat-xe-duyet-dau/TIEN-DO.md` (§P1, quyết định N),
+`doc/dong-bo-dat-xe-duyet-dau/README.md` (bảng quyết định).

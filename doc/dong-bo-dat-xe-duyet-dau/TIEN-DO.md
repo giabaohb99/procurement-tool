@@ -261,10 +261,27 @@ docker compose exec -T -e PYTHONPATH=/app api \
 Ba con số phải đúng: việc ở trạng thái 1 hoặc 2 = **0** · phiên đã duyệt không
 còn chặng nào `cancelled` · số dấu vết có `task_id` = số việc.
 
-**Còn phải quyết:** 34 phiếu `pending_approval` (còn `pendingApproverUids`) —
-để `INSTANCE_RUNNING` thì có mở việc chờ thật cho người duyệt bên ERP không, hay
-nhập về dạng đứng yên rồi người ta xử nốt bên app cũ. Đây là câu của đồng bộ hai
-chiều, để lại P2.
+**ĐÃ QUYẾT — QĐ-N, đại ca chốt 21/09/2026: phương án A, để app cũ ký nốt.**
+34 phiếu `pending_approval` (còn `pendingApproverUids`) giữ nguyên như đang nhập:
+phiên ở `INSTANCE_RUNNING`, **không mở việc chờ** bên ERP. Người duyệt ký bên app
+cũ, kênh P2 đẩy sự kiện sang, ERP tự đóng phiên. Không phải viết thêm bước nào.
+
+Hệ quả phải biết rõ, vì nó có hai mặt và mặt mất không tự nói ra:
+
+- **Được:** phiên còn mở chiếm `running_slot`, nên `block_legacy_path` khóa ba nút
+  duyệt thẳng bên ERP. Đúng ý muốn trong lúc chữ ký vẫn đặt ở app cũ — hai nơi
+  cùng ký được một phiếu là nguồn của mâu thuẫn không gỡ được.
+- **Mất:** **không ai trong ERP duyệt được 34 phiếu đó.** Chúng thấy được, tìm
+  được, nhưng đứng im. Ai mở ra mà không biết chuyện này sẽ tưởng hệ thống hỏng.
+
+**Điều kiện lật quyết định:** nếu định **tắt app cũ trước khi 34 phiếu đó ký
+xong** thì phải làm phương án B — duyệt qua 34 phiên, đọc `pendingApproverUids`,
+quy từng tài khoản app cũ ra người dùng ERP, rồi mở việc chờ **đúng tại chặng
+phiếu đang đứng**. Không dùng lại `instance_service.start` được: hàm đó dựng luồng
+từ chặng đầu, tức là đẩy phiếu lùi lại và bắt người ta ký lại từ đầu.
+
+Danh sách 34 phiếu in ra ở cuối mỗi lượt chạy `import_approval_history.py` — số
+đó tự teo dần mỗi ngày, và đó chính là lý do A rẻ hơn B.
 
 ---
 
