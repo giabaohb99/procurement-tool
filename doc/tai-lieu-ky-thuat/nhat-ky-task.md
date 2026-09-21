@@ -4613,8 +4613,9 @@ khai lối tắt, nên đã khai thêm.
 
 Mã nguồn: `frontend-v2/src/modules/system/pages/sync-log-list-page.tsx`, `frontend-v2/src/modules/system/components/sync-log-detail-sheet.tsx`, `frontend-v2/src/modules/system/api/sync-log-api.ts`, `frontend-v2/src/modules/system/hooks/use-sync-logs.ts`, `frontend-v2/src/modules/system/utils/sync-log-format.ts`, `frontend-v2/src/modules/system/routes.tsx`, `frontend-v2/src/modules/system/config/dashboard-shortcuts.ts`, `backend/app/modules/sync_log/tasks.py`, `backend/app/modules/sync_log/service.py`, `backend/app/modules/sync_log/controller.py`, `backend/app/core/celery_app.py`, `test/backend/test_so_dong_bo_cr449.py`, `test/backend/conftest.py`.
 
-Commit: chưa, chờ lệnh.
-Deploy: chưa.
+Commit: `e53c0422` trên nhánh erp-v2.
+Deploy: máy chủ thử nghiệm, 21/09/2026 — dựng lại ba dịch vụ api, celery-worker và erp. Chưa lên
+bản thật.
 
 ## bao-CR-450 | Hai bài hướng dẫn cho luồng phương án của yêu cầu mua hàng, kèm chỗ đứng cho tool AI của chặng này
 - status: xong
@@ -5128,9 +5129,25 @@ suy ngược ra nguyên nhân, đi hỏi thẳng cái lỗi. Không tệp kiểm
 chủ biên, nên chạy vòng bằng một cấu hình thường là đủ; cách dựng lại ghi trong tài liệu tiến độ.
 
 Kiểm tra: 10 bài mới cho đường ghi ngược sau khi đẩy phiếu, 11 bài mới cho quyển sổ, chạy cả bộ
-app cũ ra 188 bài xanh trên 22 tệp. Kiểm kiểu dữ liệu sạch ở cả máy chủ biên lẫn giao diện, soát
-mã sạch các tệp vừa sửa. Chưa commit, chưa đẩy, chưa deploy: đẩy nhánh của app cũ là tự deploy nên
-phải chờ đại ca bảo.
+app cũ ra 188 bài xanh trên 22 tệp; bên giao diện chạy ra 140 bài xanh trên 24 tệp và dựng bản
+phát hành xong. Kiểm kiểu dữ liệu sạch ở cả máy chủ biên lẫn giao diện, soát mã sạch các tệp vừa
+sửa.
+
+Bộ kiểm của giao diện app cũ có lúc chết vì hết bộ nhớ chứ không phải vì mã sai: cách chạy mặc
+định mở nhiều tiến trình con cùng lúc, trên máy đang chạy sẵn cả chồng máy ảo thì không đủ chỗ.
+Ép chạy một luồng là xanh đủ. Ghi lại để lần sau đừng đi tìm lỗi ở chỗ không có.
+
+Lúc commit, móc tự động của kho máy chủ biên sinh lại tệp khai kiểu của nền tảng và làm mất sạch
+phần khai các khóa bí mật, vì máy đang làm không đăng nhập nền tảng nên không nhìn thấy chúng.
+Đã bỏ thay đổi đó đi, không đưa vào commit. Đây là bẫy chung: tệp do máy sinh mà sinh lại ở một
+máy thiếu quyền thì bản mới nghèo hơn bản cũ, và nó nghèo đi trong im lặng.
+
+Đã đẩy lên nhánh dev của cả hai kho app cũ, tức đã tự deploy lên bản dev. Chưa lên bản thật.
+Việc còn phải làm tay: đại ca dán đoạn luật cho nhánh sổ trên nền tảng dữ liệu. Chưa dán thì mọi
+cú ghi bị từ chối, và màn hình vẫn mở được nhưng luôn báo không có phiếu nào đang kẹt — tức là
+một câu trả lời sai, chứ không phải một màn hình lỗi.
+Commit: `my-firebase-api` `4f0b9d6`, gộp vào nhánh dev bằng `d765925`;
+`degoholding-app-frontend` `5f4d13a` trên nhánh dev.
 Mã nguồn (kho app cũ, không phải kho này): `my-firebase-api/src/db/sync-logs.db.ts` (mới),
 `src/utils/erp-sync.ts`, `src/db/requests.db.ts`, `src/types/db.types.ts`,
 `src/services/administrator.service.ts`, `src/api/v1/administrator.router.ts`;
