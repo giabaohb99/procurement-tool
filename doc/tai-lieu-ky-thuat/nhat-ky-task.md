@@ -4257,6 +4257,10 @@ vitest thư mục thu mua và thư mục dùng chung 522 xanh; bản cũ typeche
 
 Mã nguồn: backend/app/modules/purchase_progress/controller.py, backend/app/modules/purchase_progress/export.py, frontend/src/pages/PurchaseProgress.tsx, frontend/src/config/conditional-filters.ts, frontend-v2/src/modules/procurement/pages/purchase-progress-page.tsx, frontend-v2/src/modules/procurement/types/purchase-progress.ts, frontend-v2/src/shared/utils/format-money.ts, test/backend/test_ty_gia_cot_tien_cr437.py
 
+Commit: `32a0686a` trên nhánh erp-v2. Phần bản mới của việc này nằm trong commit `62522bf5` của
+bao-CR-442 vì hai việc cùng sửa một vùng mã trên màn Tiến độ, tách ra không sạch.
+Deploy: máy chủ thử nghiệm, 21/09/2026, dựng lại api + celery-worker + erp + web, không migration.
+
 ## bao-CR-440 | Vá 28 bài kiểm ma trận phạm vi cho bậc «Được giao + đã duyệt trong phòng»
 - status: xong
 - date: 2026-09-21
@@ -4305,6 +4309,89 @@ bài gốc. Đã chạy hai lần dưới máy, xem trên Trung tâm HDSD cổng
 kết nội bộ. Hướng dẫn 20 thêm một dòng trỏ sang bài này để ai đổi hành vi tool thì sửa cả hai.
 
 Mã nguồn: backend/scripts/seed_help_tro_ly_ai_lap_bo_tai_khoan.py, doc/tai-lieu-chuc-nang/20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md
+
+## bao-CR-442 | Thêm xuất Excel, bộ lọc điều kiện và ô lọc tình trạng nhận cho màn Tiến độ mua hàng bản mới
+- status: xong
+- date: 2026-09-21
+- pic: NSU209
+
+Đại ca dặn trước khi đẩy lên máy chủ thử nghiệm thì làm nốt phần xuất Excel và bộ lọc điều kiện
+cho màn Tiến độ mua hàng. Mở hai bản ra so thì màn bản mới thiếu ba thứ bản đang chạy thật đã có:
+nút xuất tệp, khối bộ lọc điều kiện, và ô lọc nhanh tình trạng nhận hàng. Đây là màn báo cáo dài
+nhất của phân hệ thu mua, một hàng là đơn hàng ghép với dòng hàng ghép với lần giao, nên thiếu ba
+thứ đó thì người dùng vẫn phải quay về bản cũ mỗi lần cần lấy số ra ngoài.
+
+Nút xuất tệp gọi đúng đường xuất sẵn có của backend, gửi kèm y hệt bộ tham số đang lọc trên màn
+nhưng bỏ số trang và cỡ trang, vì xuất là xuất cả tập chứ không phải xuất trang đang xem. Gửi thêm
+danh sách cột đang bày nên tệp ra khớp hệt thứ người dùng đang nhìn, ai tắt bớt cột thì tệp cũng
+gọn theo. Khóa cột của bảng bản mới trùng khớp hoàn toàn với khóa cột bên tệp xuất nên gửi thẳng
+được, khác màn Đơn mua hàng vốn phải đi qua một bảng dịch tên. Nút gác bằng quyền xuất của đơn mua
+hàng hoặc quyền xuất của yêu cầu mua hàng, vì màn này trộn dữ liệu của hai loại chứng từ, gác một
+bên thôi là chặn nhầm người có quyền.
+
+Bộ lọc điều kiện khai 45 trường, chia ba cụm đúng thứ tự một hàng được ghép: đơn mua hàng, rồi
+dòng hàng, rồi lần giao. Tên trường lấy từ bảng tên cột cho phép sắp xếp của backend, vì bảng dùng
+cho bộ lọc điều kiện dẫn xuất từ chính bảng đó; khai tên nào không có trong bảng thì backend bỏ qua
+im lặng, người dùng dựng xong điều kiện vẫn thấy nguyên danh sách cũ mà không chỗ nào báo lỗi. Sáu
+trường thuộc cụm nhà cung cấp và vận chuyển tự rụng khi người xem không có quyền đọc nhà cung cấp,
+đúng như backend cũng gỡ chúng khỏi bảng, vì lọc rồi đếm số dòng còn lại là mò ra được tên nhà cung
+cấp. Riêng ô công ty cố ý không khai, vì thanh lọc nhanh đã có ô chọn công ty theo tên, còn gõ số
+định danh vào bộ lọc điều kiện thì chẳng ai dùng. Ba ô tham chiếu là mã nhà cung cấp, nhóm hàng và
+kho làm thành ô chọn có tìm kiếm chứ không bắt gõ tay mã.
+
+Ô tình trạng nhận có ba lựa chọn là chưa giao, chưa đủ và đã đủ, hỏi trên tổng số đã nhận của dòng
+đơn chứ không trên từng lần giao. Ba lựa chọn này là ba câu hỏi khác nhau chứ không phải ba mức của
+một thang: chưa đủ bao gồm cả những dòng chưa nhận gì, nên câu chữ trên ô phải nói rõ ngưỡng.
+
+Bài kiểm: thêm 9 bài cho màn bản mới. Ô tình trạng nhận gửi đúng giá trị và không gửi gì khi để ở
+Tất cả; điều kiện đọc từ đường dẫn đi tới được truy vấn; điều kiện thuộc cụm nhà cung cấp bị loại
+khi thiếu quyền mà điều kiện khác vẫn sống; nút xuất ẩn khi không có quyền nào, hiện khi chỉ có
+quyền của yêu cầu mua hàng; và lượt xuất gửi đủ bộ lọc, không kèm số trang, danh sách cột không có
+cột đang ẩn. Chạy lại: typecheck 0 lỗi, lint 0 lỗi, vitest thư mục thu mua 456 xanh và thư mục dùng
+chung 104 xanh.
+
+Mã nguồn: frontend-v2/src/modules/procurement/pages/purchase-progress-page.tsx, frontend-v2/src/modules/procurement/config/procurement-filter-fields.ts, frontend-v2/src/modules/procurement/config/ref-filter-options.ts
+
+Commit: `62522bf5` trên nhánh erp-v2 (gánh luôn hai cột Đồng tiền và Tỷ giá bản mới của bao-CR-439).
+Deploy: máy chủ thử nghiệm, 21/09/2026, cùng đợt với bao-CR-439 và bao-CR-443.
+
+## bao-CR-443 | Bù những ô lọc nhanh còn thiếu trên ba màn danh sách thu mua bản mới
+- status: xong
+- date: 2026-09-21
+- pic: NSU209
+
+Cùng lượt việc trên, đại ca dặn rà những ô lọc nằm phía ngoài bộ lọc điều kiện trên các màn danh
+sách thu mua đang chạy, chỉ cần ba cụm là yêu cầu, tiến độ và đơn hàng, thiếu đâu thì làm thêm. Em
+rà từng ô trên thanh công cụ của bốn màn thuộc ba cụm đó, đối chiếu với bản đang chạy thật và với
+bộ tham số backend thật sự đọc được.
+
+Thiếu bốn chỗ. Màn Yêu cầu mua hàng và màn Yêu cầu báo giá đều thiếu ô lọc theo phân loại và ô lọc
+theo nhân sự thu mua phụ trách. Màn Đơn mua hàng thiếu ô lọc theo phân loại và ô lọc theo số hóa
+đơn. Bốn tham số này không nằm trong bộ lọc dùng chung của backend mà do controller tự đọc rồi ghép
+truy vấn con lên bảng dòng, riêng số hóa đơn thì hỏi cả bảng lần giao, nên chúng chỉ làm được ô lọc
+nhanh chứ không đưa vào bộ lọc điều kiện được.
+
+Trong lúc rà thì lòi ra một lỗi thật. Ô lọc nhân sự phụ trách của màn Tiến độ báo giá bên bản mới
+đang lấy danh mục nhân sự trả về số định danh, trong khi cột phụ trách dưới bảng dòng lưu mã nhân
+sự và backend so khớp chính xác. Chọn một người là danh sách rỗng, không chỗ nào báo lỗi, người
+dùng chỉ thấy màn hình trống rồi tưởng người đó chưa được giao việc nào. Em vá bằng một bộ nạp danh
+mục dùng chung mới, trả mã làm giá trị và loại thẳng những người chưa có mã, vì chọn họ ra thì
+cũng chỉ ra rỗng.
+
+Ba tham số còn lại khớp theo tên phân loại chứ không theo khóa, vì cột dưới bảng dòng chép nhãn chứ
+không giữ khóa; còn số hóa đơn khớp kiểu chứa nên gõ một mẩu vẫn ra kết quả, vì vậy để ô chữ chứ
+không làm ô chọn. Mọi ô đều đọc và ghi thẳng vào đường dẫn nên chia sẻ được đường dẫn đã lọc sẵn.
+
+Bài kiểm: thêm mới hai tệp kiểm cho màn Đơn mua hàng với 5 bài và màn Yêu cầu mua hàng với 4 bài,
+thêm 4 bài vào tệp kiểm sẵn có của màn Yêu cầu báo giá. Mỗi màn chốt đủ bốn điều: tham số gửi đúng
+kiểu giá trị, không gửi gì khi ô đang ở Tất cả hoặc để trống, ô lọc cũ vẫn sống cùng ô mới, và cả
+hai ô có mặt trên thanh công cụ.
+
+Mã nguồn: frontend-v2/src/modules/procurement/config/ref-filter-options.ts, frontend-v2/src/modules/procurement/config/procurement-filter-fields.ts, frontend-v2/src/modules/procurement/pages/purchase-request-list-page.tsx, frontend-v2/src/modules/procurement/pages/survey-request-list-page.tsx, frontend-v2/src/modules/procurement/pages/purchase-order-list-page.tsx
+
+Commit: `4ba93171` trên nhánh erp-v2.
+Deploy: máy chủ thử nghiệm, 21/09/2026 (bản dựng trên máy thử = 4ba93171).
+
 ## bao-CR-444 | Viết bài Trung tâm HDSD «Lập bộ tài khoản phòng tự mua hàng»
 - status: xong
 - date: 2026-09-21
