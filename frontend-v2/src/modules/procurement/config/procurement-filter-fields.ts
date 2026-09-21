@@ -15,6 +15,7 @@ import {
 import {
   fetchCompanyOptions,
   fetchDepartmentOptions,
+  fetchEmployeeCodeOptions,
   fetchEmployeeOptions,
   fetchItemGroupOptions,
   fetchSupplierCodeOptions,
@@ -277,8 +278,23 @@ export const SURVEY_PROGRESS_FILTER_FIELDS: FilterFieldDefinition[] = [
     operators: [...STATUS_OPERATORS],
     options: statusOptions(SR_STATUS_LABELS),
   },
-  { name: 'item_group', label: 'Phân loại', type: 'text' },
-  { ...EMPLOYEE_FIELD, name: 'assignee', label: 'NSTM phụ trách' },
+  {
+    name: 'item_group',
+    label: 'Phân loại',
+    type: 'combobox',
+    operators: REF_OPERATORS,
+    fetchOptions: fetchItemGroupOptions,
+  },
+  //  ⚠️ MÃ nhân sự, không phải id — `survey_progress/controller._cond_map` trỏ `assignee`
+  //  vào `SurveyRequestLine.assignee`, cột đó lưu mã. Trước bao-CR-443 ô này dùng chung
+  //  `EMPLOYEE_FIELD` (gửi id) nên lọc xong danh sách luôn rỗng mà không báo gì.
+  {
+    name: 'assignee',
+    label: 'NSTM phụ trách',
+    type: 'combobox',
+    operators: REF_OPERATORS,
+    fetchOptions: fetchEmployeeCodeOptions,
+  },
   { name: 'request_qty', label: 'SL dự kiến', type: 'number' },
   { name: 'uom', label: 'ĐVT', type: 'text' },
   { name: 'proposed_price', label: 'Giá đề xuất', type: 'number' },

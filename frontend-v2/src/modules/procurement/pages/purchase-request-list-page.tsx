@@ -10,6 +10,7 @@ import { httpClient } from '@/core/api/http-client'
 import { downloadFile } from '@/core/api/download-file'
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
 import { useDepartments } from '@/modules/hr/hooks/use-departments'
+import { useEmployees } from '@/modules/hr/hooks/use-employees'
 import {
   ConditionalFilter,
   FilterProvider,
@@ -45,6 +46,7 @@ import { formatMoney } from '@/shared/utils/format-money'
 import { PurchaseRequestCard } from '../components/purchase-request-card'
 import { StatusBadge } from '../components/document-status-badge'
 import { PURCHASE_REQUEST_FILTER_FIELDS } from '../config/procurement-filter-fields'
+import { usePurchaseRequestItemGroups } from '../hooks/use-purchase-request-support'
 import { usePurchaseRequests } from '../hooks/use-purchase-documents'
 import {
   PR_STATUS_LABELS,
@@ -62,6 +64,8 @@ const FILTER_CONFIG = {
     'department_id',
     'status',
     'is_urgent',
+    'item_group',
+    'assignee',
     'need_date_from',
     'need_date_to',
     'request_date_from',
@@ -91,6 +95,15 @@ function PurchaseRequestListContent() {
   const [departmentId, setDepartmentId] = useUrlParamState('department_id', ALL)
   const [status, setStatus] = useUrlParamState('status', ALL)
   const [isUrgent, setIsUrgent] = useUrlParamState('is_urgent', ALL)
+  //  Hai ô lọc chạy trên BẢNG DÒNG chứ không trên đầu phiếu, nên chúng không nằm
+  //  trong `FILTERABLE` của backend và không đưa xuống "Bộ lọc điều kiện" được —
+  //  phải đứng ngoài đây (`purchase_request/controller.py`).
+  //
+  //  ⚠️ `assignee` gửi **MÃ** nhân sự, `item_group` gửi **TÊN** phân loại: dòng
+  //  phiếu chép chữ xuống chứ không giữ khóa. Gửi id thì backend so khớp không
+  //  trúng gì cả và danh sách rỗng trong im lặng.
+  const [itemGroup, setItemGroup] = useUrlParamState('item_group', ALL)
+  const [assignee, setAssignee] = useUrlParamState('assignee', ALL)
   const [needDateFrom, setNeedDateFrom] = useUrlParamState('need_date_from', '')
   const [needDateTo, setNeedDateTo] = useUrlParamState('need_date_to', '')
   const [reqDateFrom, setReqDateFrom] = useUrlParamState('request_date_from', '')
@@ -102,6 +115,13 @@ function PurchaseRequestListContent() {
 
   const { data: companies } = useCompanies({ page_size: 500, is_active: true })
   const { data: departments } = useDepartments({ page_size: 500, is_active: true })
+  //  Hai danh mục MƯỢN của phân hệ khác — tắt hẳn khi thiếu quyền, kẻo cứ mở màn
+  //  là ăn một toast 403 cho thứ chỉ là nguồn của ô lọc.
+  const { data: itemGroups } = usePurchaseRequestItemGroups(can('item_group', 'read'))
+  const { data: employees } = useEmployees(
+    { page_size: 500, is_active: true },
+    { enabled: can('employee', 'read') },
+  )
   const { queryParams, queryKey } = useFilterQuery()
 
   //  Bộ lọc nâng cao: khổ rộng mở bằng popover, khổ hẹp nhúng ruột vào tờ trượt.
@@ -118,6 +138,8 @@ function PurchaseRequestListContent() {
     departmentId,
     status,
     isUrgent,
+    itemGroup,
+    assignee,
     needDateFrom,
     needDateTo,
     reqDateFrom,
@@ -132,6 +154,8 @@ function PurchaseRequestListContent() {
   if (departmentId !== ALL) params.department_id = Number(departmentId)
   if (status !== ALL) params.status = status
   if (isUrgent !== ALL) params.is_urgent = isUrgent === 'true'
+  if (itemGroup !== ALL) params.item_group = itemGroup
+  if (assignee !== ALL) params.assignee = assignee
   if (needDateFrom) params.need_date_from = needDateFrom
   if (needDateTo) params.need_date_to = needDateTo
   if (reqDateFrom) params.request_date_from = reqDateFrom
@@ -167,6 +191,8 @@ function PurchaseRequestListContent() {
     departmentId !== ALL,
     status !== ALL,
     isUrgent === 'true',
+    itemGroup !== ALL,
+    assignee !== ALL,
     Boolean(needDateFrom || needDateTo),
     Boolean(reqDateFrom || reqDateTo),
   ].filter(Boolean).length
@@ -176,6 +202,8 @@ function PurchaseRequestListContent() {
     setDepartmentId(ALL)
     setStatus(ALL)
     setIsUrgent(ALL)
+    setItemGroup(ALL)
+    setAssignee(ALL)
     setNeedDateFrom('')
     setNeedDateTo('')
     setReqDateFrom('')
@@ -347,6 +375,42 @@ function PurchaseRequestListContent() {
     </Select>
   )
 
+  const itemGroupSelect = (
+    <Select value={itemGroup} onValueChange={setItemGroup}>
+      <SelectTrigger className="w-full md:w-36 text-xs h-9" aria-label="Lọc theo phân loại">
+        <SelectValue placeholder="Phân loại" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={ALL}>Tất cả phân loại</SelectItem>
+        {(itemGroups?.items ?? []).map((group) => (
+          <SelectItem key={group.id} value={group.name}>
+            {group.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+
+  const assigneeSelect = (
+    <Select value={assignee} onValueChange={setAssignee}>
+      <SelectTrigger className="w-full md:w-36 text-xs h-9" aria-label="Lọc theo NSTM phụ trách">
+        <SelectValue placeholder="NSTM phụ trách" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={ALL}>Tất cả NSTM</SelectItem>
+        {(employees?.items ?? [])
+          //  Nhân sự chưa có mã thì không lọc được — bỏ khỏi danh sách chứ đừng
+          //  để một dòng bấm vào là bảng rỗng.
+          .filter((employee) => Boolean(employee.code))
+          .map((employee) => (
+            <SelectItem key={employee.id} value={employee.code}>
+              {employee.full_name} ({employee.code})
+            </SelectItem>
+          ))}
+      </SelectContent>
+    </Select>
+  )
+
   const needDateInput = (
     <DateRangePicker
       from={needDateFrom}
@@ -485,6 +549,8 @@ function PurchaseRequestListContent() {
                 {companySelect}
                 {departmentSelect}
                 {statusSelect}
+                {itemGroupSelect}
+                {assigneeSelect}
                 {needDateInput}
                 {reqDateInput}
                 <ConditionalFilter />
@@ -512,6 +578,8 @@ function PurchaseRequestListContent() {
                 <QuickFilterField label="Công ty">{companySelect}</QuickFilterField>
                 <QuickFilterField label="Bộ phận yêu cầu">{departmentSelect}</QuickFilterField>
                 <QuickFilterField label="Trạng thái">{statusSelect}</QuickFilterField>
+                <QuickFilterField label="Phân loại">{itemGroupSelect}</QuickFilterField>
+                <QuickFilterField label="NSTM phụ trách">{assigneeSelect}</QuickFilterField>
                 <QuickFilterField label="Ngày cần hàng">{needDateInput}</QuickFilterField>
                 <QuickFilterField label="Ngày tạo">{reqDateInput}</QuickFilterField>
                 <AdvancedFilterSection />

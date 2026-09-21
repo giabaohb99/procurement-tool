@@ -28,6 +28,7 @@ import { AdvancedFilterSection } from '@/shared/ui/advanced-filter-section'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
+import { Input } from '@/shared/ui/input'
 import { DateRangePicker } from '@/shared/ui/date-range-picker'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
@@ -48,6 +49,7 @@ import { PurchaseOrderCard } from '../components/purchase-order-card'
 import { DocumentStatusBadge, StatusBadge } from '../components/document-status-badge'
 import { PURCHASE_ORDER_FILTER_FIELDS } from '../config/procurement-filter-fields'
 import { usePurchaseOrders } from '../hooks/use-purchase-documents'
+import { usePurchaseRequestItemGroups } from '../hooks/use-purchase-request-support'
 import {
   PO_STATUS_LABELS,
   statusOptions,
@@ -87,6 +89,7 @@ const FILTER_CONFIG = {
     'document_status',
     'status',
     'invoice_no',
+    'item_group',
     'is_urgent',
     'order_type',
     'order_date_from',
@@ -119,6 +122,18 @@ function PurchaseOrderListContent() {
   const [status, setStatus] = useUrlParamState('status', ALL)
   const [isUrgent, setIsUrgent] = useUrlParamState('is_urgent', ALL)
   const [orderType, setOrderType] = useUrlParamState('order_type', ALL)
+  //  Hai ô lọc chạy trên BẢNG DÒNG / bảng giao hàng chứ không trên đầu đơn, nên
+  //  chúng không nằm trong `FILTERABLE` và không đưa xuống "Bộ lọc điều kiện"
+  //  được — phải đứng ngoài đây (`purchase_order/controller.py`).
+  //
+  //  `item_group` gửi **TÊN** phân loại (dòng đơn chép chữ xuống, không giữ
+  //  khóa); `invoice_no` so khớp CHỨA và hỏi cả dòng hàng lẫn lần giao.
+  const [itemGroup, setItemGroup] = useUrlParamState('item_group', ALL)
+  const {
+    value: invoiceNo,
+    setValue: setInvoiceNo,
+    debouncedValue: debouncedInvoiceNo,
+  } = useUrlSearchParam('invoice_no')
   const [orderDateFrom, setOrderDateFrom] = useUrlParamState('order_date_from', '')
   const [orderDateTo, setOrderDateTo] = useUrlParamState('order_date_to', '')
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
@@ -131,6 +146,9 @@ function PurchaseOrderListContent() {
   const { data: companies } = useCompanies({ page_size: 500, is_active: true })
   const { data: suppliers } = useSuppliers({ page_size: 500, is_active: true })
   const { data: employees } = useEmployees({ page_size: 500, is_active: true })
+  //  Danh mục MƯỢN của phân hệ Sản xuất — tắt hẳn khi thiếu quyền, kẻo cứ mở màn
+  //  là ăn một toast 403 cho thứ chỉ là nguồn của ô lọc.
+  const { data: itemGroups } = usePurchaseRequestItemGroups(can('item_group', 'read'))
   const { queryParams, queryKey } = useFilterQuery()
 
   //  Bộ lọc nâng cao: khổ rộng mở bằng nút riêng + popover, khổ hẹp nhúng
@@ -151,6 +169,8 @@ function PurchaseOrderListContent() {
     status,
     isUrgent,
     orderType,
+    itemGroup,
+    debouncedInvoiceNo,
     orderDateFrom,
     orderDateTo,
     sortBy,
@@ -172,6 +192,8 @@ function PurchaseOrderListContent() {
   if (status !== ALL) filterParams.status = status
   if (isUrgent === 'true') filterParams.is_urgent = true
   if (orderType !== ALL) filterParams.order_type = Number(orderType)
+  if (itemGroup !== ALL) filterParams.item_group = itemGroup
+  if (debouncedInvoiceNo) filterParams.invoice_no = debouncedInvoiceNo
   if (orderDateFrom) filterParams.order_date_from = orderDateFrom
   if (orderDateTo) filterParams.order_date_to = orderDateTo
   if (sortBy) {
@@ -217,6 +239,8 @@ function PurchaseOrderListContent() {
     status !== ALL,
     isUrgent === 'true',
     orderType !== ALL,
+    itemGroup !== ALL,
+    Boolean(invoiceNo),
     Boolean(orderDateFrom || orderDateTo),
   ].filter(Boolean).length
 
@@ -228,6 +252,8 @@ function PurchaseOrderListContent() {
     setStatus(ALL)
     setIsUrgent(ALL)
     setOrderType(ALL)
+    setItemGroup(ALL)
+    setInvoiceNo('')
     setOrderDateFrom('')
     setOrderDateTo('')
   }
@@ -473,6 +499,35 @@ function PurchaseOrderListContent() {
     </Select>
   )
 
+  const itemGroupSelect = (
+    <Select value={itemGroup} onValueChange={setItemGroup}>
+      <SelectTrigger className="w-full md:w-36 text-xs h-9" aria-label="Lọc theo phân loại">
+        <SelectValue placeholder="Phân loại" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={ALL}>Tất cả phân loại</SelectItem>
+        {(itemGroups?.items ?? []).map((group) => (
+          <SelectItem key={group.id} value={group.name}>
+            {group.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+
+  //  Ô NHẬP chứ không phải ô chọn: số hóa đơn là chuỗi tự do do kế toán gõ, và
+  //  người dùng thường chỉ nhớ vài chữ số cuối — backend so khớp CHỨA nên gõ
+  //  một khúc là đủ.
+  const invoiceNoInput = (
+    <Input
+      value={invoiceNo}
+      onChange={(e) => setInvoiceNo(e.target.value)}
+      placeholder="Số hóa đơn…"
+      aria-label="Lọc theo số hóa đơn"
+      className="h-9 w-full text-xs md:w-36"
+    />
+  )
+
   const dateRangeInput = (
     <DateRangePicker
       from={orderDateFrom}
@@ -610,6 +665,8 @@ function PurchaseOrderListContent() {
                 {docStatusSelect}
                 {statusSelect}
                 {orderTypeSelect}
+                {itemGroupSelect}
+                {invoiceNoInput}
                 {dateRangeInput}
                 <ConditionalFilter />
               </div>
@@ -638,6 +695,8 @@ function PurchaseOrderListContent() {
                 <QuickFilterField label="Hồ sơ chứng từ">{docStatusSelect}</QuickFilterField>
                 <QuickFilterField label="Trạng thái">{statusSelect}</QuickFilterField>
                 <QuickFilterField label="Loại đơn">{orderTypeSelect}</QuickFilterField>
+                <QuickFilterField label="Phân loại">{itemGroupSelect}</QuickFilterField>
+                <QuickFilterField label="Số hóa đơn">{invoiceNoInput}</QuickFilterField>
                 <QuickFilterField label="Ngày đặt">{dateRangeInput}</QuickFilterField>
                 <AdvancedFilterSection />
               </QuickFilterSheet>
