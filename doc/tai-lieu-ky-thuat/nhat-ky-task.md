@@ -4556,6 +4556,66 @@ Deploy: máy chủ thử nghiệm, 21/09/2026 (dựng lại api, celery-worker, 
 
 ---
 
+## bao-CR-449 | Sổ đồng bộ: màn hình tra cứu và chuông gọi người khi có dòng lỗi để lâu
+- status: xong
+- date: 2026-09-21
+
+Quyển sổ đồng bộ dùng chung đã chạy từ giữa tháng chín và đang ghi từng lượt kéo dữ liệu lẫn từng
+bản ghi đi qua, nhưng tới nay muốn biết một phiếu bên app đặt xe cũ đã sang được chưa thì phải mở
+cơ sở dữ liệu lên gõ câu truy vấn. Phiên này dựng màn hình cho nó, ở phân hệ Quản trị, mục Sổ đồng
+bộ, đi kèm một khóa quyền đã có sẵn từ trước.
+
+Màn hình bày chung cả hai hạt của quyển sổ trong một bảng: dòng lượt chạy mang bộ đếm kéo về, đã
+ghi, bỏ qua; dòng bản ghi mang mã bên app cũ và câu lỗi nguyên văn. Đầu trang là năm thẻ đếm theo
+trạng thái, bấm vào thẻ nào thì lọc theo trạng thái đó, thẻ lỗi đổi sang màu cảnh báo khi số khác
+không. Lọc được theo khoảng ngày, nguồn, trạng thái, hạt, loại dữ liệu, cờ cảnh báo, mã bên app cũ
+và một mẩu câu lỗi nhớ được; mặc định là bảy ngày gần nhất và cố ý không có mục xem tất cả, vì sổ
+này là sổ dày nhất hệ thống. Có thêm một nút lọc riêng cho nhóm chưa gắn được người, là nhóm phải
+đi dò tay nhiều nhất. Từ một dòng lượt chạy bấm xuống xem đúng đám bản ghi nó vừa ghi được.
+
+Mở một dòng ra thì ngăn bên phải bày nguyên văn câu bên kia trả về và nguyên cục dữ liệu nhận được,
+để thô chứ không tô màu và không diễn giải, vì đúng lúc hỏng thì cục đó thường không còn đúng khuôn.
+Nút chạy lại chỉ nằm trong ngăn chi tiết chứ không đặt thành nút trên từng dòng bảng: chạy lại là
+gọi ngược sang hệ ngoài, bấm mà chưa đọc câu lỗi thì phần lớn lần bấm là vô ích. Bấm chạy lại sinh
+một dòng chờ mới và dòng cũ giữ nguyên lịch sử, đúng luật ba điều của quyển sổ.
+
+Phía sau thêm hai thứ. Một là đường lọc theo một cờ cảnh báo cụ thể: cột cờ là chuỗi nhiều cờ ngăn
+bằng dấu phẩy nên phải bọc dấu phẩy ở hai đầu rồi mới so, không thì một cờ khớp nhầm vào khúc con
+của cờ khác và danh sách trả ra trông vẫn rất hợp lý; cờ lạ thì trả về lỗi bốn trăm chứ không bỏ
+qua trong im lặng. Hai là chuông tám giờ sáng, gọi người khi có dòng lỗi quá hai mươi bốn tiếng mà
+chưa ai vá. Chỗ khó của chuông này là bấm chạy lại cố ý không sửa dòng cũ, nên một dòng đã xử xong
+vẫn mang trạng thái lỗi vĩnh viễn; đếm thẳng theo trạng thái thì sáng nào chuông cũng réo lại đúng
+mấy dòng người ta đã xử từ tuần trước, mà chuông kêu sai vài lần thì người ta thôi đọc nó. Nên nó
+hỏi ngược lại: sau dòng lỗi đó, sổ đã có dòng nào cùng đối tượng kết thúc êm chưa. Bản ghi soi theo
+bộ ba nguồn, loại dữ liệu và mã bên app cũ; lượt chạy soi theo nguồn và tên công việc, vì con trỏ
+chỉ tiến khi lượt chạy thành công nên lượt sau đã kéo bù phần lỡ. Dòng hỏng tới mức không biết nó
+nói về phiếu nào thì luôn tính là chưa vá. Cố ý không đặt trần tuổi: dòng hỏng ba tháng không ai
+đụng vẫn phải kêu mỗi sáng, đường duy nhất để nó im là đi vá nó.
+
+Trong lúc chạy bài kiểm thì lòi ra một chỗ rò của chính bộ kiểm thử, có từ trước phiên này. Hàm
+đọc cấu hình hiệu lực tự mở một phiên cơ sở dữ liệu riêng, tức là MySQL thật, trong khi bộ kiểm thử
+chạy SQLite trong bộ nhớ; nó nạp bảng cấu hình của máy đang chạy vào bộ nhớ đệm và giá trị dưới cơ
+sở dữ liệu đè lên tệp môi trường. Hệ quả là mọi lệnh thay giá trị cấu hình trong bài kiểm đều vô
+nghĩa, và tám bài của cụm đồng bộ app đặt xe cũ đỏ cùng lúc kể từ khi cấu hình được nạp xuống bảng:
+tắt nguồn đồng bộ mà vòng quét vẫn đi hỏi ra ngoài, thay khóa ký mà chữ ký vẫn lệch. Vá bằng một
+mục dựng sẵn chạy quanh mọi bài, ép bộ nhớ đệm rỗng để hàm đó rơi hết về tệp môi trường, đúng thứ
+các bài đang thay. Tám bài xanh lại.
+
+Bài kiểm mới hai mươi hai bài, chạy riêng tệp đó và chạy lại cả cụm đồng bộ, xanh hết: dòng lỗi đã
+có dòng êm sau đó thì không gọi người, chỉ có dòng chờ đi sau thì vẫn gọi, dòng êm đi trước không
+tính, bỏ qua tính là đã vá, không soi nhầm sang nguồn khác hay loại dữ liệu khác, dòng không có mã
+bên app cũ luôn gọi, dòng lỗi năm phút trước thì im, dòng hỏng một trăm ngày vẫn gọi, lượt chạy soi
+theo tên công việc chứ không theo mã, một bản ghi lẻ sang êm không vá hộ được cho lượt quét, cùng
+trần số dòng và lọc theo nguồn; phía ô lọc cờ thì cờ nằm giữa chuỗi, nằm ở hai đầu, cờ là khúc đầu
+của một cờ dài hơn, chuỗi rỗng không được lọc mất dòng nào. Bên giao diện mười hai bài cho ba hàm
+rút gọn hiển thị, và một bài canh sẵn của trang tổng quan bắt đúng việc em vừa thêm màn mà chưa
+khai lối tắt, nên đã khai thêm.
+
+Mã nguồn: `frontend-v2/src/modules/system/pages/sync-log-list-page.tsx`, `frontend-v2/src/modules/system/components/sync-log-detail-sheet.tsx`, `frontend-v2/src/modules/system/api/sync-log-api.ts`, `frontend-v2/src/modules/system/hooks/use-sync-logs.ts`, `frontend-v2/src/modules/system/utils/sync-log-format.ts`, `frontend-v2/src/modules/system/routes.tsx`, `frontend-v2/src/modules/system/config/dashboard-shortcuts.ts`, `backend/app/modules/sync_log/tasks.py`, `backend/app/modules/sync_log/service.py`, `backend/app/modules/sync_log/controller.py`, `backend/app/core/celery_app.py`, `test/backend/test_so_dong_bo_cr449.py`, `test/backend/conftest.py`.
+
+Commit: chưa, chờ lệnh.
+Deploy: chưa.
+
 ## bao-CR-450 | Hai bài hướng dẫn cho luồng phương án của yêu cầu mua hàng, kèm chỗ đứng cho tool AI của chặng này
 - status: xong
 - date: 2026-09-21
@@ -5006,3 +5066,75 @@ Mã nguồn: `frontend-v2/src/shared/constants/feature-flags.ts` (mới, khai c�
 `module-registry.test.ts`; bốn trang chi tiết trong `frontend-v2/src/modules/procurement/pages/`
 là `purchase-request-detail-page.tsx`, `purchase-order-detail-page.tsx`, `survey-detail-page.tsx`
 và `survey-request-detail-page.tsx`.
+## bao-CR-452 | Sổ đồng bộ phía app đặt xe cũ: ghi lại những lượt bắn không bao giờ tới ERP
+- status: xong
+- date: 2026-09-21
+- pic: NSU209
+Đại ca nhớ là app cũ hình như đã có màn sổ đồng bộ rồi. Rà lại thì chưa: màn quản trị của app cũ
+có sáu tab và không tab nào nói về đồng bộ, thứ đại ca nhớ là màn Sổ đồng bộ của ERP vừa dựng hôm
+qua. Nên lượt này làm thêm phía app cũ, nhưng cố ý không chép lại quyển sổ bên kia.
+
+Hai quyển sổ nhìn hai phía khác nhau của cùng một đường ống. Sổ bên ERP ghi những gói đã tới nơi,
+nên nó kể được rất kỹ chuyện gì xảy ra sau khi nhận. Chỗ nó mù là những lượt bắn không bao giờ
+tới: ERP đang sập, mạng đứt giữa chừng, hoặc khóa ký sai nên bị từ chối ngay ngoài cửa. Những lượt
+đó gói chưa từng chạm tới bên kia, bên kia không có gì để mà ghi, và chỉ app cũ mới biết là mình
+đã bắn mà trượt. Trước lượt này chúng rơi vào dòng in lỗi của máy chủ biên rồi mất hút, tức phiếu
+kẹt vô hình ở cả hai đầu.
+
+Chọn ghi mỗi phiếu một dòng, lấy chính mã phiếu bên app cũ làm khóa: trượt lần nữa thì đè lên dòng
+cũ, sang được thì xóa dòng đi. Bàn cả phương án ghi mỗi lượt thử một dòng cho đủ lịch sử nhưng bỏ,
+vì đúng lúc hệ hỏng nặng nhất là lúc quyển sổ phình nhanh nhất, mà người mở nó ra lại đang cần một
+câu trả lời ngắn. Kiểu một phiếu một dòng thì sổ đọc thẳng ra danh sách việc phải làm, có trần tự
+nhiên bằng số phiếu đang kẹt, và tự lành theo vòng quét ba phút của ERP. Đổi lại mất lịch sử từng
+lần thử, chấp nhận được vì lịch sử đầy đủ của mọi thứ đã sang được nằm bên sổ ERP; hai quyển bù
+nhau chứ không chồng nhau.
+
+Ba chỗ phải nghĩ trong lúc làm. Thứ nhất, hàm đẩy phiếu sang ERP trước đây trả về một con số và
+dùng số không cho cả ba kết cục khác hẳn nhau: cờ đồng bộ đang tắt, ERP đã nhận mà không cấp số,
+và bắn trượt. Gộp như vậy nên không chỗ nào ghi lại được, phải tách ra thành một cục kết quả mang
+theo trạng thái, mã trả về và câu lỗi nguyên văn cắt ngắn. Thứ hai, ERP trả mã thành công mà thiếu
+số phiếu bên đó thì vẫn là đã nhận; coi đó là trượt thì sinh ra một dòng kẹt cho một phiếu chẳng
+hề kẹt, và người đi xử lý nó sẽ không tìm thấy gì để xử. Thứ ba, số phiếu ERP và trạng thái đồng
+bộ phải ghi trong một lần cập nhật; ghi hai lần thì mọi màn hình đang theo dõi nhánh phiếu thức
+dậy vẽ lại hai lượt.
+
+Đường đi êm không tốn thêm một lời gọi nào sang kho dữ liệu: phiếu vốn không kẹt thì không đụng
+tới sổ. Chỉ phiếu vừa thoát khỏi trạng thái kẹt mới tốn thêm một lệnh xóa.
+
+⚠️ Mọi cú ghi vào sổ đều nuốt lỗi, cố ý. Luật của kho dữ liệu chưa mở nhánh mới thì cú ghi bị từ
+chối, và người vừa bấm nút gửi phiếu không có lý do gì phải lãnh một thông báo đỏ cho chuyện đó,
+nhất là khi phiếu của họ đã lưu xong xuôi. Xấu nhất là quyển sổ rỗng, đúng bằng tình trạng trước
+lượt này. Ngược lại đường đọc thì vẫn ném lỗi bình thường, vì nuốt ở đó là bày ra một quyển sổ
+rỗng giả, đúng lúc người ta mở nó ra để xem có phiếu nào kẹt không.
+
+Màn hình đặt thành tab cuối cùng của khu quản trị app cũ: mấy tab trên là việc làm hằng ngày, tab
+này chỉ mở khi nghi phiếu không sang được, và ngày thường nó rỗng. Bảng năm cột, mã trả về được
+dịch ra câu người thường đọc được và vẫn giữ nguyên con số bên cạnh để còn tra. Cố ý không có nút
+xóa: dòng ở đây không phải rác để dọn, nó là một phiếu đang thiếu bên ERP, xóa đi chỉ mất dấu chứ
+phiếu vẫn thiếu như cũ.
+
+⚠️ Còn một việc tay của đại ca thì sổ mới sống: dán đoạn luật cho nhánh mới trên bảng điều khiển
+của kho dữ liệu, đoạn đó viết sẵn ở cuối tệp sổ. Luật phải cho mọi người đã đăng nhập được ghi,
+đừng siết theo vai trò quản trị — phiếu trượt thường là phiếu của nhân viên thường vừa bấm nút,
+siết lại thì đúng những ca cần ghi nhất lại không ghi nổi. Đường đọc thì vẫn chỉ quản trị.
+
+Nhân lượt này gỡ luôn bộ chạy bài kiểm của app cũ, hỏng từ ngày mười bảy. Thủ phạm là chữ đ trong
+tên thư mục chứa mã nguồn: cầu nạp mô-đun của bộ chạy nhét đường dẫn tệp vào một phần đầu thư
+truyền tin vốn chỉ chịu được bảng mã một byte. Đính chính hai dòng nhật ký của chính em: dòng ngày
+mười bảy đổ cho lệch phiên bản hai gói, sai, hai gói khớp nhau; dòng ngày mười chín khẳng định
+không phải do đường dẫn vì đã dựng lối tắt tên không dấu mà vẫn hỏng, cũng sai, vì máy chạy tự quy
+đường dẫn về lối thật nên lối tắt không đổi được gì. Bài học là thấy cách chữa không ăn thì đừng
+suy ngược ra nguyên nhân, đi hỏi thẳng cái lỗi. Không tệp kiểm nào của app cũ cần môi trường máy
+chủ biên, nên chạy vòng bằng một cấu hình thường là đủ; cách dựng lại ghi trong tài liệu tiến độ.
+
+Kiểm tra: 10 bài mới cho đường ghi ngược sau khi đẩy phiếu, 11 bài mới cho quyển sổ, chạy cả bộ
+app cũ ra 188 bài xanh trên 22 tệp. Kiểm kiểu dữ liệu sạch ở cả máy chủ biên lẫn giao diện, soát
+mã sạch các tệp vừa sửa. Chưa commit, chưa đẩy, chưa deploy: đẩy nhánh của app cũ là tự deploy nên
+phải chờ đại ca bảo.
+Mã nguồn (kho app cũ, không phải kho này): `my-firebase-api/src/db/sync-logs.db.ts` (mới),
+`src/utils/erp-sync.ts`, `src/db/requests.db.ts`, `src/types/db.types.ts`,
+`src/services/administrator.service.ts`, `src/api/v1/administrator.router.ts`;
+`test/endpoints/sync-logs.db.test.ts` (mới), `erp-sync-writeback.test.ts`;
+`degoholding-app-frontend/src/components/features/admin/SyncLogManagement.tsx` (mới),
+`src/pages/AdminPage.tsx`, `src/types/common.types.ts`.
+Tài liệu: `doc/dong-bo-dat-xe-duyet-dau/TIEN-DO.md`.

@@ -13,6 +13,34 @@ vào đó (migration `e5a1b9c73d04`), 33 bài kiểm xanh. **Byte thật của 1
 kèm đã thông 17/09** — đọc thẳng bucket app cũ bằng khóa chỉ-đọc, kiểm đủ 1 488/1 488
 (xem §P6). Còn: **phần việc bên app cũ chưa động tới**, chưa lên dev, **chưa commit**.
 
+**Bổ sung 21/09/2026 — P4 XONG (bao-CR-449):** quyển sổ nay có màn hình đọc được ở
+`/system/sync-logs` (phân hệ Quản trị, khóa `sync_log`), kèm chuông 08:00 gọi người khi
+có dòng lỗi quá 24 giờ chưa ai vá. Mới ở **dev**, chưa lên prod. Đây là lần đầu người
+không mở được terminal cũng tra được câu *"phiếu bên app cũ sang được chưa, hỏng vì gì"*.
+
+**Bổ sung 21/09/2026 — sổ đồng bộ phía APP CŨ (bao-CR-452):** thêm nhánh `sync_logs` + tab **Đồng bộ
+ERP** trong màn Quản trị của app cũ, giữ đúng phần mà sổ ERP không thể biết — những lượt
+bắn **không bao giờ tới nơi**. Mã xong và bài kiểm xanh, **chưa commit chưa deploy**;
+chặn duy nhất là đại ca dán đoạn Luật Firebase cho nhánh mới. Nhân đây gỡ luôn cái bộ
+chạy test app cũ hỏng từ 17/09: thủ phạm là **chữ `đ` trong đường dẫn**, không phải lệch
+phiên bản như hai dòng nhật ký trước đã ghi.
+
+**Cách chạy test app cũ cho tới khi ai đó dời thư mục sang đường dẫn không dấu.** Lượt này
+em chạy bằng một cấu hình tạm rồi xóa đi (không commit vào repo app cũ, vì nó sẽ hỏng ngay
+khi có tệp kiểm nào `import 'cloudflare:test'` — hiện **không tệp nào** dùng). Cần chạy lại
+thì dựng lại đúng tệp này rồi `npx vitest run --config vitest.node.config.mts`:
+
+```ts
+// my-firebase-api/vitest.node.config.mts — TẠM THỜI, không commit
+import { defineConfig } from "vitest/config";
+export default defineConfig({
+  test: { environment: "node", setupFiles: ["./test/setup.ts"], include: ["test/**/*.test.ts"] },
+});
+```
+
+Cách chữa dứt điểm là dời cả cây mã sang đường dẫn ASCII (`app dat xe`), không phải dựng
+junction — Node tự quy đường dẫn về lối thật nên junction vô hiệu.
+
 ---
 
 ## Chặn đường — phải gỡ trước khi vào P0
@@ -72,10 +100,10 @@ kèm đã thông 17/09** — đọc thẳng bucket app cũ bằng khóa chỉ-đ
 | [x] | Biến môi trường, công tắc để tắt — `SYNC_DATXE_ENABLED` · `SYNC_SHARED_SECRET` · `SYNC_LEGACY_API_BASE`. ⚠️ Cờ của POS365 là **cầu dao NGẮT** (`POS365_HARD_OFF`, bật = TẮT), ngược chiều — adapter khai `enabled_inverted` thay vì đổi tên biến đang chạy thật ở prod | ERP |
 | [x] | Hàm ký / kiểm chữ ký + bài kiểm — `core/sync_signature.py` (phía ERP). Khóa theo TỪNG NGUỒN, lệch giờ quá 5 phút thì từ chối. ⚠️ **Bài kiểm lôi ra một lỗ thật**: `hmac.compare_digest` ném `TypeError` khi chuỗi có ký tự ngoài ASCII, tức một header chữ ký có dấu là đổ **500** thay vì bị từ chối gọn — nay so bằng **bytes** | ERP |
 | [x] | Hàm ký / kiểm chữ ký phía app cũ — `signErpBody` ở `src/utils/erp-sync.ts` (HMAC-SHA256 qua WebCrypto). App cũ chỉ **ký để gửi đi**, không kiểm chữ ký của ai vì đường đồng bộ là một chiều. Hai mẫu chữ ký trong bài kiểm tính từ chính `app/core/sync_signature.py` của ERP, một mẫu có dấu tiếng Việt — hai đầu lệch bảng mã thì chỉ phiếu CÓ DẤU bị 401, kiểu hỏng khó lần nhất | App cũ |
-| [~] | Ba trường `updatedAt`, `erpId`, `syncStatus` — **khai kiểu xong** ở `src/types/db.types.ts` (cả ba đều KHÔNG bắt buộc: phiếu có trước ngày nối ERP không mang ô nào). `updatedAt` đã ghi thật; `erpId` và `syncStatus` chờ chiều bắn sự kiện | App cũ |
+| [x] | Ba trường `updatedAt`, `erpId`, `syncStatus` — **cả ba đã ghi thật 21/09**. Khai kiểu ở `src/types/db.types.ts`, đều KHÔNG bắt buộc: phiếu có trước ngày nối ERP không mang ô nào. `syncStatus` cố ý chỉ có **hai** giá trị `synced`/`failed`, không có giá trị thứ ba cho "chưa bắn" — phiếu chưa bắn thì **vắng khóa**, và vắng khóa khác hẳn `failed` về nghĩa. `erpId` và `syncStatus` gom vào **cùng một cú PATCH**: hai lượt ghi liền nhau lên một phiếu là hai lần đánh thức mọi máy đang nghe nhánh `requests` | App cũ |
 | [x] | Mọi đường ghi đều cập nhật `updatedAt` — `stampUpdatedAt` ở `src/utils/db.helpers.ts`, cắm vào **cả ba** đường ghi: `createRequestInDb` (PUT) · `updateRequestInDb` (PATCH) · `patchRequest` của `driver.service.ts`. Đường thứ ba là đường **dễ sót nhất** — nó không đi qua tầng `db/`, mà bốn nhịp của tài xế đều chạy qua đó | App cũ |
 | [x] | Khai `.indexOn: ["updatedAt"]` trong Rules — **đại ca tự thêm 17/09, cả dev lẫn prod**. Em kiểm lại dự án dev bằng khóa đọc của ERP: `requests` đã có. Hai nhánh `vehicles`/`drivers` **cố ý không khai** — vòng quét chỉ hỏi nhánh `requests` (`NODE_REQUESTS` ở `tasks.py`), xe và tài xế đi bằng đường tra theo id | App cũ |
-| [ ] | Nhánh `sync_logs` + màn hình xem sổ | App cũ |
+| [~] | Nhánh `sync_logs` + màn hình xem sổ — **mã xong 21/09, chờ đại ca mở Luật Firebase.** Sổ này KHÔNG chép lại `tab_sync_log` của ERP: sổ bên kia ghi những gì **tới nơi**, còn quyển này giữ đúng chỗ mù của nó — những lượt bắn **không bao giờ tới** (ERP sập, hết giờ chờ, sai khóa), thứ mà trước nay chỉ rơi vào `console.error` của Worker. **Một phiếu một dòng**, khóa là `legacyId` trần: trượt nữa thì đè, sang được thì xóa — nên nhánh tự chặn trên (ERP sập cả ngày thì sổ dày bằng số PHIẾU chứ không phải số LƯỢT) và tự lành theo vòng quét 3 phút. Cửa đọc `GET /v1/administrator/sync-logs`, màn hình là tab **Đồng bộ ERP** trong Quản trị hệ thống, **cố ý không có nút xóa**. ⚠️ Mọi cú ghi sổ đều **nuốt lỗi**, nên chưa mở Luật thì không ai gãy, chỉ là sổ rỗng vĩnh viễn — đoạn Rules phải dán nằm ở cuối `src/db/sync-logs.db.ts` | App cũ |
 | [~] | Biến bí mật `SYNC_ENABLED`, `SYNC_SHARED_SECRET` — **khóa ký đã đặt xong 19/09** dạng **Secret** trên worker `my-firebase-api-dev` (đại ca dán tay trên Dashboard; `wrangler secret put` chạy không được vì máy chưa đăng nhập Cloudflare). `SYNC_ENABLED` = `"true"` cho dev nằm trong PR #111, **bật thật khi PR merge**. ⚠️ Hai biến thường phải khai trong `wrangler.jsonc`, khóa ký thì tuyệt đối không — `wrangler deploy` gỡ mọi Variable vắng mặt trong khối `vars`, còn tệp cấu hình thì vào git | App cũ |
 
 **Tiêu chí xong:** migration lên/xuống được trên bản sao DB dev; tạo phiếu bên app cũ thấy `updatedAt` nhảy; bài kiểm chữ ký xanh; hành vi hai hệ **không đổi**.
@@ -286,15 +314,25 @@ chiều, để lại P2.
 
 | | Việc |
 |---|---|
-| [ ] | Màn `/system/sync-log` trong `frontend-v2` |
-| [ ] | Lọc theo trạng thái / loại / chiều / ngày / mã bên cũ |
-| [ ] | Xem chi tiết: nguyên cục JSON và nguyên văn lỗi |
-| [ ] | Nút chạy lại (quyền ghi) |
-| [ ] | Thẻ đếm đầu trang |
-| [ ] | Bộ lọc "chưa gắn được người" |
-| [ ] | Cảnh báo 08:00 cho dòng lỗi quá 24 giờ |
+| [x] | Màn **`/system/sync-logs`** trong `frontend-v2` — `system/pages/sync-log-list-page.tsx`, menu *Quản trị › Sổ đồng bộ*, khóa `sync_log` (bản vẽ ghi `/system/sync-log` số ít, đường thật là số nhiều cho khớp nếp đặt tên của phân hệ) |
+| [x] | Lọc theo trạng thái / hạt / nguồn / đối tượng / ngày / mã bên cũ / lượt chạy — mặc định **7 ngày**, cố ý không có mục "tất cả" (sổ này dày nhất hệ thống) |
+| [x] | Xem chi tiết: nguyên cục JSON và nguyên văn lỗi — `sync-log-detail-sheet.tsx`, cục dữ liệu để **chuỗi thô**, không `JSON.parse` |
+| [x] | Nút chạy lại (quyền `sync_log.write`) — chỉ nằm trong ngăn chi tiết, chỉ hiện với dòng *lỗi* / *chờ* |
+| [x] | Thẻ đếm đầu trang — đếm theo trạng thái, thẻ *lỗi* đổi màu khi khác 0, bấm vào là lọc |
+| [x] | Bộ lọc "chưa gắn được người" — nút riêng cho cờ `no_employee`, kèm ô chọn mọi cờ cảnh báo khác |
+| [x] | Cảnh báo 08:00 cho dòng lỗi quá 24 giờ — `sync_log/tasks.py::alert_stale_failures`, chuông trong hệ (không email) |
 
 **Tiêu chí xong:** dòng lỗi cố ý tạo hiện đúng trên màn; bấm chạy lại thành công, không đẻ phiếu trùng.
+
+**Đã xong 21/09/2026** (bao-CR-449) — dev, chưa lên prod.
+
+⚠️ **Chuông KHÔNG đếm thẳng theo trạng thái.** `clone_for_retry` cố ý không sửa dòng cũ
+(luật §3.2 của `mo-ta-ky-thuat.md`), nên một dòng đã xử xong vẫn mang trạng thái *lỗi*
+vĩnh viễn. `find_stale_failures` vì thế hỏi *"sau dòng này, sổ có dòng nào cùng đối tượng
+kết thúc êm chưa"* — bản ghi soi theo `(nguồn, đối tượng, mã bên cũ)`, lượt chạy soi theo
+`(nguồn, công việc)`. Đếm thẳng là sáng nào chuông cũng réo lại đúng mấy dòng đã xử xong
+từ tuần trước, mà chuông kêu sai vài lần thì người ta thôi đọc nó. Cố ý **không có trần
+tuổi**: đường duy nhất để một dòng im là đi vá nó.
 
 ---
 
@@ -481,3 +519,4 @@ là cách phân biệt "nhập từ app cũ" với thao tác thật bên ERP khi
 | 17/09/2026 | **Đóng dấu `updatedAt` bên app cũ — mảnh cuối để vòng quét thôi chạy không** | Đại ca tự khai `".indexOn": ["updatedAt"]` cho nhánh `requests` ở cả hai dự án Firebase. Đo lại bản kết xuất prod thì `createdAt` có **15 763** chỗ còn `updatedAt` có **0** — chỉ mục đã mở nhưng chưa phiếu nào mang trường đó, nên vòng quét bên ERP dù chạy đúng vẫn kéo về rỗng vĩnh viễn. Vá bằng `stampUpdatedAt` cắm vào **cả ba** đường ghi của nhánh `requests`; đường thứ ba (`patchRequest` trong `driver.service.ts`) không đi qua tầng `db/` nên rất dễ sót, mà bốn nhịp của tài xế đều chạy qua nó. Trước khi gõ có đọc Rules thật bằng khóa đọc của ERP để chắc một điều: `.validate` của `$requestId` dùng `hasChildren([...])`, tức **đòi có mấy khóa bắt buộc chứ không cấm khóa lạ** — nếu nó cấm thì thêm `updatedAt` vào cùng cú ghi sẽ làm hỏng luôn thao tác của người dùng. Hai nhánh `vehicles`/`drivers` **không khai chỉ mục**, đúng ý: vòng quét chỉ hỏi `requests`. ⚠️ Bộ chạy test của app cũ **hỏng sẵn từ trước** (`No such module "cloudflare:test-internal"`, lệch phiên bản `vitest` ↔ `@cloudflare/vitest-pool-workers`) — cất hết thay đổi đi chạy lại vẫn hỏng y hệt; phải chạy vòng qua bằng một cấu hình Node tạm mới kiểm được, **40/40 xanh** trên 6 tệp phủ mọi service ghi vào `requests` |
 | 19/09/2026 | **Ba lỗ của vòng quét, và cả ba đều IM LẶNG — vá xong, thêm vòng thứ ba** | (1) **Con trỏ tự đẩy mình vào tương lai.** `_updated_at()` lùi về `createdAt` khi phiếu chưa có dấu thời gian, mà con trỏ lại tiến theo chính hàm đó — một phiếu thử tạo bên ERP ngày 29/08 đã kéo con trỏ lên `1787975823428`, **giấu vĩnh viễn** cả 480 phiếu Firebase dev (`createdAt` 2025-07 → 2025-09). Tách hẳn `cursor_value()`: mốc để TIẾN con trỏ **chỉ nhận `updatedAt` thật**, không có thì trả `0`. Hai hàm nhìn giống nhau nên phải tách tên — trộn chung là lỗi quay lại ngay lần ai đó sửa. (2) **`is_unchanged` chặn luôn phần dựng lại.** Phiếu không đổi nội dung thì `apply_legacy_record` thoát trước khi tới `open_entry`, nên phiên duyệt · nhật ký · tệp đính kèm **không bao giờ được dựng lại** — đúng gốc của 353 phiếu không có luồng duyệt hôm trước. Thêm tham số `force`, nhưng **không mở cho vòng chạy 3 phút**: mở là mỗi nhịp dựng lại cả nhánh. (3) **`read_node` trả `None` cho cả hai nghĩa** *"nhánh rỗng"* và *"hỏng"*, nên nhánh dự phòng "đọc cả nhánh" chạy ở **mọi** nhịp, âm thầm, kể cả lúc mọi thứ bình thường. Nay `{}` = chạy được mà rỗng, `None` = hỏng, và lúc rơi vào dự phòng thì **kêu lên một dòng cảnh báo** — trước đó chỉ mục hỏng trông y hệt "hôm nay không ai sửa phiếu nào". Thêm **vòng thứ ba** `datxe.full_sweep` 02:15 mỗi đêm (bỏ con trỏ + `force`) làm lưới đỡ của lưới đỡ; **cố ý không hạ xuống nhịp phút**. ⚠️ Bẫy lúc viết bài kiểm: ba hàm dựng dữ liệu suy ra chạy **TRƯỚC** câu `return finish_skipped(...)` trong `_write`, nên một lượt quét ép buộc **có dựng lại thật** mà dòng sổ vẫn đóng là `SKIPPED` — bài kiểm phải đếm **lời gọi hàm dựng**, đếm cột `written` là đo nhầm chỗ và ra kết luận ngược. Bộ kiểm 23 → 98 bài xanh trên năm tệp liên quan |
 | 19/09/2026 | **Móc đẩy phiếu bên app cũ — đặt ở tầng DB chứ không tầng service, và kiểm chữ ký bằng mẫu của bên kia** | Vòng quét 3 phút chỉ là lưới đỡ; đường chính của P2 là app cũ ghi xong phiếu thì gọi thẳng sang ERP. `src/utils/erp-sync.ts` + móc ở **cả ba** đường ghi. **Khác bản vẽ, cố ý:** §P2 bảo móc ở tầng service, nhưng tầng đó có hơn mười chỗ gọi `updateRequestInDb` rải khắp `admin`/`approval`/`dispatch`/`request` — sót một chỗ là đúng loại lỗi im lặng đã dính mấy lần (phiếu vẫn ghi, người dùng vẫn thấy bình thường, chỉ ERP là không bao giờ biết). Móc ở tầng `db/` thì phủ kín và trùng đúng tập hợp với chỗ đóng dấu `updatedAt`, tức đã có bài kiểm canh sẵn. Ba chỗ nhỏ phải nghĩ kỹ: (1) gói gửi đi **bỏ khóa `id`** — vòng quét đọc thẳng Firebase nên node của nó không có khóa này, gửi kèm là hai đường cùng một phiếu ra hai vân nội dung khác nhau và ERP tưởng phiếu đổi mỗi lần quét; (2) ghi ngược `erpId` **không đóng dấu `updatedAt`**, vì đó là ô do ERP làm chủ và chính ERP vừa cấp xong — đóng dấu là phiếu trông như vừa bị sửa, kéo thêm một lượt xử vô ích, lặp mãi; (3) `event_id` dựng từ `legacy_id` + chính con dấu `updatedAt` chứ không phải mã ngẫu nhiên, gửi lại đúng một lần ghi thì ERP nhận ra trùng. ⚠️ Bẫy trình biên dịch: `const { id, ...than } = node` làm `tsc` **hết bộ nhớ** — `AnyRequest` là kiểu hợp của mấy loại phiếu, tách phần dư trên nó bắt trình biên dịch bung tổ hợp; phải chép nông rồi `delete`. Bộ chạy test của app cũ vẫn hỏng sẵn trên máy này (`cloudflare:test-internal`, **không** phải do đường dẫn có dấu — đã dựng junction ASCII thử, hỏng y hệt), nên ngoài 21 bài kiểm gửi kèm cho CI chạy, em bó `erp-sync.ts` và `requests.db.ts` bằng esbuild rồi chạy thẳng trên Node để kiểm thật: cả chuỗi `syncRequestToErp → fetch ERP → ghi ngược Firebase` xanh. Chữ ký neo bằng **mẫu tính từ `app/core/sync_signature.py` của ERP** chứ không tự ký tự so — kể cả mẫu có dấu tiếng Việt, vì lệch bảng mã thì phiếu có dấu 401 hết còn phiếu không dấu vẫn lọt, kiểu hỏng khó lần nhất |
+| 21/09/2026 | **bao-CR-452 — Sổ đồng bộ phía app cũ, và cái bộ chạy test hỏng suốt bốn ngày hóa ra hỏng vì chữ `đ` trong đường dẫn** | Đại ca nhớ là "hình như có màn hình `sync_logs` rồi"; rà lại thì **chưa có bên app cũ** — cái đại ca nhớ là màn `/system/sync-logs` của ERP dựng ở P4. Làm thêm, nhưng cố ý **không chép lại sổ bên kia**: sổ ERP ghi những gì **tới nơi**, chỗ nó mù là những lượt bắn **không bao giờ tới**, và chỉ app cũ mới biết mình đã bắn mà trượt. Chọn **một phiếu một dòng** (khóa `legacyId` trần, trượt nữa thì đè, sang được thì xóa) thay vì một lượt một dòng: sổ theo lượt thì đúng lúc hệ hỏng nặng nhất là lúc nó phình nhanh nhất, còn kiểu này ra **danh sách việc phải làm** và tự lành theo vòng quét 3 phút. Đổi lại mất lịch sử từng lần thử — chấp nhận được, lịch sử đầy đủ của mọi thứ ĐÃ SANG ĐƯỢC nằm bên sổ ERP, hai quyển bù nhau chứ không chồng nhau. Ba chỗ phải nghĩ: (1) `pushRequestToErp` trước đây trả số `0` cho **cả ba** kết cục *tắt cờ* · *ERP nhận mà không cấp số* · *bắn trượt*, gộp vậy nên mới không có chỗ nào ghi lại được — tách thành `ErpPushResult` mang `status`/`httpStatus`/`message`; (2) HTTP 200 mà thiếu `erp_id` vẫn là **ĐÃ NHẬN**, coi là trượt thì sinh ra một dòng kẹt cho phiếu chẳng kẹt; (3) Luật Firebase phải mở `.write` cho **mọi người đã đăng nhập** chứ không siết theo vai trò — phiếu trượt thường là phiếu của nhân viên thường vừa bấm nút, siết vào Administrator thì đúng những ca cần ghi nhất lại không ghi nổi. **Đính chính hai dòng nhật ký 17/09 và 19/09 của chính em:** bộ chạy test app cũ hỏng **không phải** do lệch phiên bản `vitest` ↔ `@cloudflare/vitest-pool-workers` (hai gói khớp dải `peerDependencies`), và **đúng là** do đường dẫn — bật `NODE_DEBUG=vitest-pool-workers:module-fallback` ra nguyên văn `Cannot convert argument to a ByteString because the character at index 32 has a value of 273`, tức chữ **`đ`** trong `app đặt xe`: cầu nạp mô-đun nhét đường dẫn tệp vào một **header HTTP**, mà header chỉ chịu được Latin-1. Lần 19/09 dựng junction ASCII thấy hỏng y hệt nên kết luận vội là "không phải đường dẫn" — **sai, vì Node tự quy đường dẫn về lối thật**, junction không đổi được gì. **Bài học: thấy cách chữa không ăn thì đừng suy ngược ra nguyên nhân, đi hỏi thẳng cái lỗi.** Không tệp kiểm nào của app cũ dùng `cloudflare:test`, nên chạy vòng bằng một cấu hình pool Node là đủ: **188 bài xanh trên 22 tệp**, `tsc --noEmit` sạch cả hai bên | Mã xong, **chưa commit, chưa đẩy, chưa deploy**. Chặn duy nhất: đại ca dán đoạn Rules cho nhánh `sync_logs` (nằm cuối `src/db/sync-logs.db.ts`) |
