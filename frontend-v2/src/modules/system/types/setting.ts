@@ -60,3 +60,25 @@ export interface SettingTestResult {
   ok: boolean
   message: string
 }
+
+/** Hai đường nạp chỉ mục tài liệu: bù phần thiếu, hoặc dựng lại toàn bộ. */
+export type RagReindexMode = 'missing' | 'all'
+
+/**
+ * Số liệu đối chiếu DB với kho vector của Trợ lý AI.
+ *
+ * `enabled: false` nghĩa là `AI_RAG_ENABLED` đang tắt — lúc đó backend KHÔNG gửi các
+ * con số, nên mọi trường đếm đều là tùy chọn, đừng đọc thẳng mà không hỏi `enabled`.
+ * `orphans` = đoạn còn trong kho mà bản ghi dưới DB đã bị xóa.
+ */
+export interface RagIndexStatus {
+  enabled: boolean
+  help_total?: number
+  faq_total?: number
+  help_indexed?: number
+  faq_indexed?: number
+  missing?: number
+  missing_help?: number
+  missing_faq?: number
+  orphans?: number
+}

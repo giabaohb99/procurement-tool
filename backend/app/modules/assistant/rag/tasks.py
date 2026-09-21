@@ -74,3 +74,26 @@ def rebuild_all_task() -> dict:
         reindex_source_task.delay(source, source_id)
     log.info("Đã rải %s task nạp lại chỉ mục", len(refs))
     return {"status": "queued", "sources": len(refs)}
+
+
+@celery_app.task(name="assistant.rag.reindex_missing", **_RETRY)
+def reindex_missing_task() -> dict:
+    """Nạp bù CHỈ những nguồn chưa có đoạn nào trong kho — do nút 'Nạp bù bài thiếu' gọi.
+
+    Khác `rebuild_all_task` ở đúng một chỗ: lọc trước bằng `missing_source_refs`. Chỗ đó lại
+    là chỗ đắt nhất — nhúng có trần request/phút, nên dựng lại cả kho chỉ vì vừa seed thêm hai
+    bài vừa lâu vừa dễ 429. Kho trống thì hai đường ra kết quả y hệt nhau.
+
+    Vẫn rải mỗi nguồn một task như đường toàn bộ: nguồn nào 429 chỉ mình nó retry.
+    """
+    if not settings.AI_RAG_ENABLED:
+        return {"status": "skipped", "reason": "AI_RAG_ENABLED=false"}
+    db = SessionLocal()
+    try:
+        refs = indexer.missing_source_refs(db)
+    finally:
+        db.close()
+    for source, source_id in refs:
+        reindex_source_task.delay(source, source_id)
+    log.info("Đã rải %s task nạp bù chỉ mục", len(refs))
+    return {"status": "queued", "sources": len(refs)}

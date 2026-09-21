@@ -370,6 +370,8 @@ export const queryKeys = {
     all: ['system'] as const,
     /** Cấu hình chạy nóng (email, lưu trữ, công tắc quy trình) — một khóa duy nhất. */
     settings: () => ['system', 'settings'] as const,
+    /** Đối chiếu DB với kho vector của Trợ lý AI (bao-CR-451) — bài nào chưa vào chỉ mục. */
+    ragIndexStatus: () => ['system', 'rag-index-status'] as const,
     backups: (params?: Record<string, unknown>) => ['system', 'backups', params ?? {}] as const,
     auditLogs: (params?: Record<string, unknown>) => ['system', 'audit-logs', params ?? {}] as const,
     /**

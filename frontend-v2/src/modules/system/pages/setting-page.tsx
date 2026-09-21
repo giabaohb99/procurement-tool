@@ -22,7 +22,6 @@ import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { ErrorState } from '@/shared/ui/error-state'
-import { FormCard } from '@/shared/ui/form-card'
 import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
@@ -33,6 +32,7 @@ import { Tabs, TabsContent, TabsTrigger } from '@/shared/ui/tabs'
 
 import { settingApi } from '../api/setting-api'
 import { EmailExclusionPanel } from '../components/email-exclusion-panel'
+import { RagIndexPanel } from '../components/rag-index-panel'
 import { SettingFieldRow } from '../components/setting-field-row'
 import { SettingSecretRow } from '../components/setting-secret-row'
 import { useSaveSettings, useSettings } from '../hooks/use-settings'
@@ -143,7 +143,6 @@ export function SettingPage() {
   const [secretInputs, setSecretInputs] = useState<Record<string, string>>({})
   const [testTo, setTestTo] = useState('')
   const [testing, setTesting] = useState<'' | 'email' | 'storage'>('')
-  const [reindexing, setReindexing] = useState(false)
   const [tab, setTab] = useUrlParamState('tab', TABS[0].value)
 
   const draft: SettingField[] = (data?.fields ?? []).map((field) =>
@@ -181,19 +180,6 @@ export function SettingPage() {
       toast.error(extractErrorMessage(error))
     } finally {
       setTesting('')
-    }
-  }
-
-  async function runReindex() {
-    setReindexing(true)
-    try {
-      await settingApi.reindexDocs()
-      // Chạy nền: chỉ báo ĐÃ XẾP HÀNG, không hứa hẹn xong ngay.
-      toast.success('Đã xếp hàng nạp lại chỉ mục tài liệu — worker sẽ chạy nền ít phút')
-    } catch {
-      // http client đã hiện toast lỗi (kể cả 400 khi RAG chưa bật).
-    } finally {
-      setReindexing(false)
     }
   }
 
@@ -312,32 +298,7 @@ export function SettingPage() {
                    liền mạch ngay dưới phần khai máy chủ gửi. */}
               {item.value === 'email' && <EmailExclusionPanel canWrite={canWrite} />}
 
-              {item.value === 'assistant' && canReindex && (
-                <FormCard
-                  title="Chỉ mục tài liệu"
-                  icon={Sparkles}
-                  iconClassName="text-muted-foreground"
-                >
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button
-                      variant="outline"
-                      disabled={reindexing}
-                      onClick={() => void runReindex()}
-                    >
-                      {reindexing ? (
-                        <Loader2 className="size-4 animate-spin" />
-                      ) : (
-                        <RefreshCw className="size-4" />
-                      )}
-                      Nạp lại chỉ mục tài liệu
-                    </Button>
-                    <span className="text-xs text-muted-foreground">
-                      Dựng lại kho tìm kiếm HDSD + FAQ cho Trợ lý AI. Chạy nền, có thể mất vài
-                      phút. Dùng khi mới bật tìm kiếm tài liệu hoặc nghi chỉ mục lệch.
-                    </span>
-                  </div>
-                </FormCard>
-              )}
+              {item.value === 'assistant' && canReindex && <RagIndexPanel />}
             </TabsContent>
           ))}
         </Tabs>

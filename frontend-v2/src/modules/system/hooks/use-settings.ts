@@ -31,3 +31,23 @@ export function useSaveSettings() {
     },
   })
 }
+
+/**
+ * Số bài HDSD + FAQ đã vào kho vector của Trợ lý AI (bao-CR-451).
+ *
+ * `enabled` do người gọi truyền vào: thẻ này chỉ dựng cho người có `help_article.write`,
+ * mà backend cũng đòi đúng quyền đó — gọi khi chưa đủ quyền thì người dùng ăn toast 403
+ * ngay lúc mở tab.
+ *
+ * KHÔNG tự nạp lại theo chu kỳ: mỗi lần gọi là một lượt quét kho vector, mà con số chỉ
+ * đổi khi có người seed bài hoặc bấm nạp. Bấm xong thì `invalidate` là đủ — nhưng nhớ là
+ * worker chạy nền, bấm xong hỏi ngay vẫn ra số cũ.
+ */
+export function useRagIndexStatus(enabled: boolean) {
+  return useQuery({
+    queryKey: queryKeys.system.ragIndexStatus(),
+    queryFn: () => settingApi.ragIndexStatus(),
+    enabled,
+    staleTime: 60_000,
+  })
+}

@@ -4851,3 +4851,55 @@ Mã nguồn: `backend/app/modules/dossier/depends_service.py` (mới), `model.py
 `frontend-v2/src/modules/procurement/components/survey-report/*`;
 `backend/app/seed_ho_so_mau_ycbg.py`.
 Migration: `e82871ec2852` — thêm cột `depends` vào `tab_dossier`.
+
+## bao-CR-451 | Nạp bù chỉ mục tài liệu cho Trợ lý AI: một lệnh chạy tay và một chỗ bấm
+- status: xong
+- date: 2026-09-21
+- pic: NSU209
+Vá gốc chuyện phát hiện hôm qua ở bao-CR-450. Trung tâm trợ giúp có một móc tự nạp bài mới vào
+kho tìm kiếm của Trợ lý AI, nhưng móc đó gắn ở tầng nghiệp vụ của màn quản trị bài viết, còn mọi
+script seed bài hướng dẫn thì ghi thẳng xuống dữ liệu — bài do seed dựng ra vì thế không bao giờ
+vào kho, và trợ lý trả lời như thể bài đó không tồn tại. Trên máy chủ thử nghiệm kho chỉ có 55
+trên 87 bài, hụt đúng 32 bài của seed, hụt suốt nhiều tháng mà không chỗ nào nói ra.
+
+Đại ca chốt làm theo hướng chạy tay chứ không tự chạy mỗi lần deploy, vì nhúng văn bản là lời gọi
+mạng có trần số lần mỗi phút và lượt nạp bù hôm qua đã dính lỗi quá hạn mức ba lần. Nên lượt này
+làm hai đường cho cùng một việc, dùng chung một hàm nạp, không có bản chép thứ hai.
+
+Đường thứ nhất là một lệnh chạy tay trong máy chủ ứng dụng. Mặc định nó chỉ nạp phần còn thiếu,
+in ra từng bài kèm số đoạn, nghỉ hai giây giữa hai bài và thử lại có giãn cách khi lỗi; thêm
+tham số thì xem trước mà không gọi mạng, hoặc dựng lại toàn bộ. Lệnh này nhúng ngay tại chỗ chứ
+không xếp hàng cho worker, nên chạy được cả khi worker chết và nhìn thấy ngay bài nào hỏng. Thua
+bài nào thì trả mã lỗi để kịch bản deploy còn biết mà dừng.
+
+Đường thứ hai là chỗ bấm, đặt trong Cấu hình hệ thống, tab Trợ lý AI. Chỗ này trước đã có một
+nút nạp lại, nhưng nút đó dựng lại TOÀN BỘ kho — đúng thứ đã làm dính lỗi quá hạn mức — và quan
+trọng hơn, nó không nói ra con số nào cả. Nay thẻ bày trước mặt số bài đã vào kho trên tổng số
+bài đang có, còn thiếu bao nhiêu, rồi mới tới hai nút tách bạch: nạp bù bài thiếu cho việc thường
+ngày, nạp lại toàn bộ cho lúc đổi model nhúng. Con số là thứ khiến người ta bấm đúng lúc; thiếu
+nó thì nút nằm đó cũng như không, đúng như đã xảy ra.
+
+⚠️ Bài có thân rỗng cắt ra không được đoạn nào nên không bao giờ nằm trong kho, tức lần nạp bù
+nào cũng thấy nó thiếu. Vô hại vì không đoạn thì không gọi nhúng, nhưng đừng tưởng là lỗi. Ngược
+lại, bài đã xóa dưới dữ liệu gốc mà kho còn đoạn thì KHÔNG được đếm là thiếu, không thì con số
+trên màn hình vĩnh viễn không về không; số đó đếm riêng thành mục tài liệu mồ côi, và nói rõ nạp
+lại toàn bộ cũng không dọn được chúng vì đường nạp chỉ ghi đè chứ không xóa cả kho.
+
+⚠️ Đường API đọc số liệu cố ý KHÔNG trả lỗi khi tìm kiếm vector đang tắt, chỉ trả một cờ tắt —
+thẻ này luôn hiện trên màn Cấu hình, ném lỗi thì người mở tab ăn thông báo đỏ dù chẳng làm gì
+sai. Màn hình đọc cờ đó rồi nói thẳng là đang tắt, chứ không hiện 0 trên 0 bài: hai chuyện đó dẫn
+tới hai hành động khác hẳn nhau. Đường nạp thì vẫn trả lỗi như cũ, vì đó là người chủ động bấm.
+
+Bấm xong thẻ không tự đọc lại số: worker chạy nền, hỏi ngay thì ra số cũ và người dùng đọc ra là
+bấm không ăn thua. Có nút kiểm tra lại riêng cho việc đó.
+
+Kiểm tra: 9 bài backend mới cho phần đối chiếu và task nạp bù, 6 bài giao diện cho thẻ mới, 217
+bài của phân hệ Quản trị xanh, typecheck và lint 0 lỗi. Đã chạy thật lệnh chạy tay trên máy
+LOCAL: kho đang 54 trên 87 bài, nạp bù 33 nguồn ra 134 đoạn, không nguồn nào thua, sau đó đủ 87
+trên 87; chạy lại lần nữa thì báo không có gì phải nạp.
+Mã nguồn: `backend/scripts/reindex_help_rag.py` (mới);
+`backend/app/modules/assistant/rag/store.py`, `indexer.py`, `tasks.py`;
+`backend/app/modules/assistant/controller.py`;
+`frontend-v2/src/modules/system/components/rag-index-panel.tsx` (mới, kèm bài kiểm),
+`api/setting-api.ts`, `hooks/use-settings.ts`, `pages/setting-page.tsx`, `types/setting.ts`;
+`frontend-v2/src/shared/constants/query-keys.ts`; `test/backend/test_rag_nap_bu_chi_muc.py` (mới).
