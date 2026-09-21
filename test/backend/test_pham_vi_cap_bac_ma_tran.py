@@ -1,4 +1,4 @@
-"""Cụm 02 — sáu cấp phạm vi × 53 entity, và bốn nhánh viết tay của `_role_scope_cond`.
+"""Cụm 02 — bảy cấp phạm vi × mọi entity, và bốn nhánh viết tay của `_role_scope_cond`.
 
 `test_pham_vi_khai_du_b07.py` kiểm **khai đủ**: mọi entity có mặt trong
 `SCOPE_FIELDS`. Tệp này kiểm **ăn đúng**: với mỗi (entity, cấp bậc) thì
@@ -11,7 +11,8 @@ Vì sao phải kiểm tên cột chứ không chỉ kiểm "có điều kiện":
 vẫn xanh — trong khi phạm vi đã lọc sai hoàn toàn.
 
 Bốn phần:
-  A  ma trận sinh tự động (53 × 6) — thêm entity mới là TỰ CÓ ca kiểm
+  A  ma trận sinh tự động (entity × 7 cấp, đọc từ `ENTITIES` × `SCOPES`) — thêm entity
+     mới hay cấp mới là TỰ CÓ ca kiểm (bậc `dept_proc` thêm ở bao-CR-414, gương ở bao-CR-440)
   B  bốn nhánh `assigned`/`proc` viết tay + nhánh rơi về `own`   (B1–B14)
   C  hai entity khai CẢ `owner` LẪN `self`                       (C1–C5)
   D  kiêm nhiệm phòng ban — CR-167                                (D1–D3)
@@ -83,6 +84,36 @@ def expect_outcome(entity: str, scope: str, profile: dict, model):
             #  (`scoping.py:287, 309, 326, 338`). Phần còn lại kiểm ở nhóm B.
             return COND, ("created_by",), False
         scope = "own"       # `scoping.py:342` — rơi về "của mình", KHÔNG báo gì
+
+    if scope == "dept_proc":
+        #  bao-CR-414 — bậc thứ bảy, gương của `_role_scope_cond` (`scoping.py:437-524`).
+        #  Chỉ ba chứng từ thu mua được AND thêm "phiếu thuộc phòng mình" (`_narrow_to_dept`);
+        #  entity còn lại lấy THẲNG `_dept_match` (không AND pháp nhân, không rơi về `own`).
+        #  Không dựng nổi điều kiện phòng (chưa gắn phòng, hoặc entity không có chiều phòng)
+        #  thì `_chan` — có log, khác nhánh `dept` câm ở `scoping.py:373`.
+        #  Gương lại `_dept_match` (`scoping.py:286-306`): cột nào lọt vào SQL tùy hồ sơ.
+        dept_ids = profile.get("dept_ids") or []
+        dept_names = [x for x in (profile.get("dept_names") or []) if x] \
+            or ([profile["dept_name"]] if profile.get("dept_name") else [])
+        dept_cols = []
+        if f.get("dept_id") and dept_ids:
+            dept_cols.append(f["dept_id"])
+        if f.get("dept_name") and dept_names:
+            dept_cols.append(f["dept_name"])
+        if f.get("handler_dept") and dept_ids:
+            dept_cols.append(f["handler_dept"])
+        if entity == "vehicle_booking":
+            #  Nhánh viết tay của đặt xe `return` TRƯỚC `_narrow_to_dept` (`scoping.py:516`)
+            #  nên `dept_proc` == `assigned` ở đây: KHÔNG khoanh phòng, KHÔNG chặn người
+            #  chưa gắn phòng. Ghim hành vi hiện tại.
+            #  # QUYẾT ĐỊNH CHỜ: có nên AND phòng cho đặt xe như ba chứng từ thu mua không?
+            #  Bậc này sinh ra cho phòng tự mua hàng (bao-CR-414), chưa ai cấp nó cho đặt xe.
+            return COND, ("created_by",), False
+        if not dept_cols:
+            return BLOCK, (), True           # `_chan` — `scoping.py:446` / `:522`
+        if entity in HANDWRITTEN_ASSIGNED:
+            return COND, ("created_by", *dept_cols), False
+        return COND, tuple(dept_cols), False
 
     if scope == "own":
         if f.get("owner"):
@@ -166,12 +197,12 @@ def rename_employee(world, key: str, full_name: str) -> None:
     perm_cache_clear()      # `emp_name` nằm trong hồ sơ quyền đã cache 60 giây
 
 
-# ── A. Ma trận 53 entity × 6 cấp bậc ───────────────────────────────────────────
+# ── A. Ma trận entity × 7 cấp bậc ──────────────────────────────────────────────
 
 @pytest.mark.parametrize("entity", sorted(ENTITIES))
 @pytest.mark.parametrize("scope", SCOPES)
 def test_ma_tran_moi_entity_nhan_du_sau_cap_pham_vi(db, world, caplog, entity, scope):
-    """318 cặp (entity × cấp bậc) — thêm entity mới là TỰ CÓ ca kiểm, không ai phải nhớ.
+    """Mọi cặp (entity × cấp bậc) — thêm entity mới là TỰ CÓ ca kiểm, không ai phải nhớ.
 
     Chạy trên hai hồ sơ đối lập: `a1` khai đủ pháp nhân + phòng ban, `khongcty`
     chưa gắn gì. Cặp này mới lộ được nhánh chặn: hồ sơ đủ thì nhánh

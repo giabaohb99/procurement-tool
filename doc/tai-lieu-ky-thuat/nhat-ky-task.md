@@ -4256,3 +4256,28 @@ bản mới. Chạy lại hai tệp liên quan ở backend ra 22 xanh; bản m�
 vitest thư mục thu mua và thư mục dùng chung 522 xanh; bản cũ typecheck vẫn đúng 4 lỗi cũ có sẵn.
 
 Mã nguồn: backend/app/modules/purchase_progress/controller.py, backend/app/modules/purchase_progress/export.py, frontend/src/pages/PurchaseProgress.tsx, frontend/src/config/conditional-filters.ts, frontend-v2/src/modules/procurement/pages/purchase-progress-page.tsx, frontend-v2/src/modules/procurement/types/purchase-progress.ts, frontend-v2/src/shared/utils/format-money.ts, test/backend/test_ty_gia_cot_tien_cr437.py
+
+## bao-CR-440 | Vá 28 bài kiểm ma trận phạm vi cho bậc «Được giao + đã duyệt trong phòng»
+- status: xong
+- date: 2026-09-21
+- pic: NSU209
+
+Sau bao-CR-438 em kiến nghị soi 28 bài kiểm ma trận phạm vi đỏ sẵn từ bao-CR-414 và đại ca duyệt.
+Soi ra thì đây là lỗ ở chính bài kiểm chứ không phải quyết định thiết kế còn treo: bao-CR-414 thêm
+bậc thứ bảy vào danh sách cấp phạm vi và viết nhánh xử lý trong hàm sinh điều kiện lọc, nhưng hàm
+gương trong tệp kiểm ma trận, vốn suy kết quả mong đợi từ phần khai báo cột, chưa biết bậc mới nên
+ném lỗi «cấp bậc lạ» cho cả 28 cặp entity với hồ sơ.
+
+Em thêm nhánh cho bậc mới vào hàm gương, phản chiếu đúng luật đang chạy: ba chứng từ thu mua lấy
+nhánh thu mua rồi khoanh thêm phiếu thuộc phòng mình (phòng lập hoặc phòng được nhờ); entity khác
+lấy thẳng điều kiện phòng, không khoanh pháp nhân, không rơi về của mình; không dựng nổi điều kiện
+phòng thì chặn và ghi log. Sửa luôn ba đoạn mô tả cũ còn ghi sáu cấp và 318 cặp. Không đổi mã
+nguồn phần phân quyền.
+
+Lòi ra một chỗ lệch thật, em chỉ ghim chứ không sửa: nhánh viết tay của đặt xe trả về trước khi
+khoanh phòng, nên với đặt xe bậc này giống hệt bậc được giao. Bậc này sinh ra cho phòng tự mua
+hàng và chưa ai cấp cho đặt xe nên chưa ảnh hưởng ai; đã đánh dấu quyết định chờ trong tệp kiểm.
+
+Bài kiểm: chạy nguyên tệp ma trận phạm vi ra 481 xanh, trước đó là 453 xanh và 28 đỏ.
+
+Mã nguồn: test/backend/test_pham_vi_cap_bac_ma_tran.py, doc/tai-lieu-ky-thuat/change-log-bao.md
