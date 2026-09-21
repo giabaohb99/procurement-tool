@@ -3942,8 +3942,46 @@ chặng phải chờ; bài thứ chín đếm số lượt hỏi cơ sở dữ l
 này ai đặt câu hỏi vào trong vòng lặp là đỏ ngay. 63 bài kiểm của cụm duyệt chạy lại đều xanh. Ba cổng của v2 xanh: kiểm kiểu 0 lỗi,
 soát mã 0 lỗi, 149 bài kiểm của ba phân hệ duyệt, duyệt dấu và đặt xe đều xanh. Chạy thử trên dữ
 liệu thật dưới máy em: 12 phiếu đóng dấu gần nhất nay phiếu nào chờ cũng nói rõ đang chờ ai, phiếu
-đã xong vẫn đọc «Đã duyệt đủ 3/3 chặng» như cũ. Chưa commit, đợi đại ca bảo.
+đã xong vẫn đọc «Đã duyệt đủ 3/3 chặng» như cũ. Đã deploy máy chủ thử, xem lại đúng phiếu đại ca
+gửi ảnh thì nay đọc «Chờ duyệt — Đang ở chặng 3/3 · Duyệt Brand & Pháp chế».
 Mã nguồn: `backend/app/modules/approval/steps_service.py` (luật chặng đang chờ và câu tóm tắt) ·
 `schema.py` cùng `service.py` của hai phân hệ duyệt dấu và đặt xe · thẻ dùng chung
 `frontend-v2/src/modules/approval/components/approval-stage-note.tsx` · hai màn danh sách và hai
 đầu trang chi tiết bên `frontend-v2` · `test/backend/test_luong_duyet_nap_tu_app_cu.py`.
+Commit: `4e23ce71` (phần mã nguồn, lọt vào commit của phiên khác chạy gom cả cây) và `2e5b8655`
+(tài liệu cùng bài kiểm đếm truy vấn).
+Deploy: máy chủ thử, ngày 21/09/2026.
+
+## bao-CR-433 | Danh sách công ty của màn Duyệt dấu hỏi một lượt thay vì hỏi từng dòng
+- status: xong
+- date: 2026-09-21
+- pic: NSU209
+Việc này là chỗ nợ mà lần đo tốc độ ở việc trước lòi ra, không phải lỗi mới sinh. Một phiếu đóng
+dấu gắn được nhiều công ty, và hàm dựng danh sách phiếu đi hỏi danh sách công ty của từng dòng một.
+Nên một trang hai mươi dòng là hai mươi lượt vào cơ sở dữ liệu chỉ để lấy mấy con số ấy, hai trăm
+dòng là hai trăm lượt.
+
+Nay hỏi một lượt cho cả trang. Thêm một hàm lấy danh sách công ty của NHIỀU phiếu, trả về theo khóa
+là số phiếu; phiếu chưa gắn công ty nào vẫn có khóa với danh sách rỗng, để chỗ gọi khỏi phải đoán
+giữa «phiếu này chưa gắn ai» và «mình quên hỏi phiếu này». Bản hỏi một phiếu vẫn giữ nguyên vì còn
+năm chỗ khác dùng, và cả năm đều hỏi cho đúng một tờ phiếu chứ không nằm trong vòng lặp; chỉ ghi
+thêm vào chú thích của nó một lời nhắc đừng đem đặt vào vòng lặp.
+
+Điều phải giữ cho bằng được là THỨ TỰ công ty. Thứ tự đó là thứ tự người lập phiếu gõ vào, nó đi
+thẳng ra ô công ty trên màn hình và ra bản in đưa cho khách, nên gom theo lô mà quên sắp thì cơ sở
+dữ liệu trả về kiểu nào cũng được và không có gì báo sai cả. Bản gom sắp theo đúng thứ tự thêm, y
+như bản cũ.
+
+Số đo trên dữ liệu thật dưới máy em, 1148 phiếu đóng dấu: một trang 200 dòng từ 205 lượt hỏi và 129
+mili giây xuống còn 6 lượt và 28 mili giây; trang 20 dòng từ 25 lượt xuống 6 lượt. Đối chiếu đúng
+sai trên 400 phiếu thật theo hai đường: so bản gom với bản hỏi từng phiếu thì lệch 0 phiếu, trong
+đó có 38 phiếu nhiều công ty và thứ tự giữ nguyên; rồi ép hàm dựng danh sách chạy lại lối cũ để so
+kết quả đầy đủ thì lệch 0 ô, 213 trên 213 nhóm công ty dựng ra đủ thẻ.
+
+Kiểm tra: 7 bài kiểm mới, trong đó 2 bài đếm số lượt hỏi cơ sở dữ liệu — một bài chặn cứng ở mức
+một lượt vào bảng nối dù trang có 30 dòng, một bài so hai kích cỡ trang để bắt cả những chỗ hỏi
+theo dòng mọc ở bảng khác. Đã thử đem mã cũ chạy lại hai bài đó để chắc chúng đỏ thật chứ không
+phải xanh suông. 49 bài kiểm của cụm duyệt dấu chạy lại đều xanh. Không có thay đổi cấu trúc cơ sở
+dữ liệu, không đổi đường API, giao diện không đổi. Chưa commit, đợi đại ca bảo.
+Mã nguồn: `backend/app/modules/seal_request/service.py` (thêm hàm lấy danh sách công ty theo lô) ·
+`test/backend/test_duyet_dau_gom_cong_ty.py`.

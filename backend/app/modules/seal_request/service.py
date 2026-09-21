@@ -139,10 +139,36 @@ def _now() -> str:
 
 
 def get_company_ids(db: Session, req_id: int) -> list[int]:
-    """Danh sách công ty của phiếu (theo thứ tự thêm)."""
+    """Danh sách công ty của phiếu (theo thứ tự thêm).
+
+    ⚠️ **Cho MỘT phiếu thôi.** Cần cả một trang thì gọi `get_company_ids_map` —
+    đặt hàm này vào vòng lặp là mỗi dòng danh sách một lượt vào cơ sở dữ liệu.
+    """
     return [c for (c,) in db.query(SealRequestCompany.company_id)
             .filter(SealRequestCompany.seal_request_id == req_id)
             .order_by(SealRequestCompany.id).all()]
+
+
+def get_company_ids_map(db: Session, req_ids: list[int]) -> dict[int, list[int]]:
+    """Danh sách công ty của NHIỀU phiếu, MỘT lượt truy vấn. Khóa = id phiếu.
+
+    Phiếu không có công ty nào thì vẫn có khóa, giá trị rỗng — chỗ gọi khỏi phải
+    phân biệt "chưa gắn công ty" với "quên hỏi".
+
+    Sắp theo `id` của chính bảng nối để GIỮ THỨ TỰ THÊM, y như bản một phiếu: thứ
+    tự đó đi thẳng ra bản in và ra ô công ty trên màn hình, nên đổi nó là đổi thứ
+    người dùng nhìn thấy.
+    """
+    ids = [i for i in dict.fromkeys(req_ids) if i]
+    if not ids:
+        return {}
+    result: dict[int, list[int]] = {i: [] for i in ids}
+    rows = (db.query(SealRequestCompany.seal_request_id, SealRequestCompany.company_id)
+            .filter(SealRequestCompany.seal_request_id.in_(ids))
+            .order_by(SealRequestCompany.id).all())
+    for req_id, company_id in rows:
+        result[req_id].append(company_id)
+    return result
 
 
 def is_assigned_clerk(db: Session, user, req: SealRequest) -> bool:
@@ -433,7 +459,7 @@ def _approval_summaries(db: Session, req_ids: list[int]) -> dict[int, str]:
 
 def serialize_seal_requests(db: Session, reqs: list[SealRequest]) -> list[dict]:
     """Danh sách phiếu → list dict, nối công ty theo LÔ (tránh N+1)."""
-    ids_map = {r.id: get_company_ids(db, r.id) for r in reqs}
+    ids_map = get_company_ids_map(db, [r.id for r in reqs])
     all_cids = {c for cids in ids_map.values() for c in cids}
     company_map = ({c.id: c for c in db.query(Company).filter(Company.id.in_(all_cids)).all()}
                    if all_cids else {})
