@@ -4,6 +4,8 @@ import type { Control } from 'react-hook-form'
 import type { CrudFormField, CrudOption, CrudRecord } from '@/shared/crud'
 import type { DossierFieldValue } from '../types/dossier'
 import { toCustomRows } from '../types/dossier-custom-row'
+import type { ApplyCondition, DocKind } from '../types/dossier-applicability'
+import { APPLY_RULES_FIELD, toApplyRules } from '../types/dossier-apply-rules'
 import type { DossierFieldDef } from '../types/dossier-field'
 import type { DossierType } from '../types/dossier-type'
 
@@ -63,6 +65,18 @@ interface BuildOptions {
     disabled: boolean
     typeId: number
   }) => ReactNode
+  /** Vẽ khối «Điều kiện áp dụng» — cùng lý do không nhập JSX ở đây. */
+  renderApplyRules: (ctx: {
+    control: Control<CrudRecord>
+    name: string
+    disabled: boolean
+  }) => ReactNode
+  /** Vẽ khối «Hồ sơ tiên quyết» — component tự lấy id đang sửa từ URL. */
+  renderDepends: (ctx: {
+    control: Control<CrudRecord>
+    name: string
+    disabled: boolean
+  }) => ReactNode
 }
 
 export function buildDossierFormFields(
@@ -97,6 +111,20 @@ export function buildDossierFormFields(
       label: 'Tên hồ sơ',
       required: true,
       placeholder: 'VD: Giấy phép kinh doanh 2026',
+      //  ⚠️ **Ăn cả hàng, và đó là thứ nắn lại cả cụm ba ô.** Lưới của khung
+      //  CRUD là HAI cột cứng, nên ba ô xếp ra `[Tên][Loại]` rồi `[Hạn][lỗ
+      //  trống]` — một khoảng trắng bằng nửa bề ngang nằm chình ình giữa biểu
+      //  mẫu. Đẩy Tên lên chiếm trọn hàng đầu thì hai ô còn lại vừa khít hàng
+      //  hai, hết lỗ.
+      //
+      //  Được thêm một thứ không cố ý mà quan trọng hơn: *Tên hồ sơ* là ô DUY
+      //  NHẤT không có câu chú thích, nên lúc nó đứng cạnh *Loại hồ sơ* thì hai
+      //  cột hụt đáy nhau đúng một dòng chữ. Giờ hàng hai là hai ô ĐỀU có chú
+      //  thích, đáy bằng nhau.
+      //
+      //  Cũng hợp lẽ về nội dung: tên hồ sơ là chuỗi dài nhất của cả biểu mẫu
+      //  («Hợp đồng nguyên tắc NCC An Phát»), còn loại và hạn thì ngắn.
+      fullWidth: true,
     },
     {
       //  ⚠️ Ô QUYẾT ĐỊNH CẢ BIỂU MẪU — đổi loại là cụm dưới mọc ra bộ ô khác.
@@ -142,8 +170,47 @@ export function buildDossierFormFields(
     values.extra_fields as Record<string, DossierFieldValue> | undefined,
   )
 
+  //  Điều kiện áp dụng: HAI cột dưới DB, MỘT ô trên biểu mẫu — cùng khuôn với
+  //  `custom_rows` ngay trên, phép tách nằm ở `fromApplyRules`.
+  //  (Dựng sau `rows` nhưng BÀY trước nó — xem thứ tự trong mảng trả về.)
+  const applyRules = toApplyRules(
+    values.apply_doc_kinds as DocKind[] | undefined,
+    values.apply_conditions as ApplyCondition[] | undefined,
+  )
+
   return [
     ...base,
+    {
+      //  ⚠️ Đứng TRƯỚC «Trường riêng» (đại ca chốt 21/09/2026). Lý lẽ cũ —
+      //  *khai xong tờ giấy có gì rồi mới tới chuyện nó kèm theo đâu* — nghe
+      //  thuận nhưng sai về chiều cao: khối «Trường riêng» giãn tới 20 dòng,
+      //  nên để nó trên thì khối điều kiện bị đẩy khỏi tầm mắt đúng ở những tờ
+      //  hồ sơ khai nhiều nhất. Cả hai nay đều GẬP ĐƯỢC, nên thứ đứng trước là
+      //  thứ có chiều cao đoán trước được.
+      name: APPLY_RULES_FIELD,
+      label: 'Điều kiện áp dụng',
+      type: 'custom',
+      fullWidth: true,
+      defaultValue: applyRules,
+      render: ({ control, name, disabled }) =>
+        options.renderApplyRules({ control, name, disabled }),
+    },
+    {
+      //  ⚠️ Đứng NGAY SAU «Điều kiện áp dụng»: hai khối cùng trả lời câu hỏi
+      //  *«tờ này gắn vào đâu, theo thứ tự nào»*, còn «Trường riêng» là nội
+      //  dung bên trong tờ giấy. Chiều cao cũng đoán trước được nên không đẩy
+      //  gì khỏi tầm mắt.
+      name: 'depends',
+      //  Nhãn để RỖNG: khối tự mang tiêu đề bằng `CollapsibleSection`, y như
+      //  «Điều kiện áp dụng» ngay trên. Khai nhãn ở đây là hiện hai dòng tiêu
+      //  đề chồng nhau.
+      label: '',
+      type: 'custom',
+      fullWidth: true,
+      defaultValue: (values.depends as number[] | undefined) ?? [],
+      render: ({ control, name, disabled }) =>
+        options.renderDepends({ control, name, disabled }),
+    },
     {
       name: CUSTOM_ROWS_FIELD,
       label: 'Trường riêng của hồ sơ này',

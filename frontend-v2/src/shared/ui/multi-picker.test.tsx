@@ -225,3 +225,54 @@ describe('MultiPicker — khung tóm tắt cho ô lọc', () => {
     expect(screen.getByRole('button', { name: 'Bỏ hết' })).toBeInTheDocument()
   })
 })
+
+describe('MultiPicker · hideSelectAll', () => {
+  async function openWithoutSelectAll(value: number[] = []) {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    render(
+      <MultiPicker
+        value={value}
+        onChange={onChange}
+        options={OPTIONS}
+        placeholder="Chọn pháp nhân…"
+        hideSelectAll
+      />,
+    )
+    await user.click(
+      screen.getByRole('button', {
+        name: value.length ? new RegExp(`Đã chọn ${value.length}`) : /Chọn pháp nhân/,
+      }),
+    )
+    return { user, onChange }
+  }
+
+  //  Có chỗ «chọn hết» là thao tác gần như luôn SAI — vd ô Hồ sơ tiên quyết:
+  //  chọn mọi tờ trong kho làm tiên quyết cho một tờ thì tờ đó khóa gần như
+  //  vĩnh viễn. Mà nút lại nằm đúng chỗ dễ bấm nhầm nhất, ngay trên mục đầu.
+  it('giấu hàng chọn tất cả ở cả hai chiều bật/tắt', async () => {
+    await openWithoutSelectAll()
+    expect(screen.queryByRole('button', { name: /Chọn tất cả/ })).not.toBeInTheDocument()
+  })
+
+  it('tick hết rồi vẫn không mọc ra nút bỏ chọn tất cả', async () => {
+    await openWithoutSelectAll([1, 2, 3])
+    expect(screen.queryByRole('button', { name: /Bỏ chọn tất cả/ })).not.toBeInTheDocument()
+  })
+
+  //  Giấu một hàng KHÔNG được làm hỏng phần còn lại của ô chọn.
+  it('vẫn chọn được từng mục như thường', async () => {
+    const { user, onChange } = await openWithoutSelectAll()
+    //  Mục trong danh sách là `<button>`, không phải `role="option"` — ô chọn
+    //  này tự dựng chứ không đi qua Command của shadcn.
+    await user.click(screen.getByRole('button', { name: /N2SBIO VIỆT NAM/ }))
+    expect(onChange).toHaveBeenCalledWith([2])
+  })
+
+  it('vẫn tìm được', async () => {
+    const { user } = await openWithoutSelectAll()
+    await user.type(screen.getByPlaceholderText('Tìm…'), 'dr xanh')
+    expect(screen.getByRole('button', { name: /DR XANH/ })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /DEGO HOLDING/ })).not.toBeInTheDocument()
+  })
+})

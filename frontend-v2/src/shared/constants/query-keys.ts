@@ -542,6 +542,24 @@ export const queryKeys = {
     all: ['seal-clerk'] as const,
     list: (params?: Record<string, unknown>) => ['seal-clerk', 'list', params ?? {}] as const,
   },
+  /** Phân hệ Hồ sơ — kho giấy tờ công ty. */
+  dossier: {
+    all: ['dossier'] as const,
+    /**
+     * Hồ sơ phải kèm theo MỘT chứng từ (`/api/dossiers/applicable`).
+     *
+     * Khóa mang cả loại lẫn id chứng từ: cùng một số `id` tồn tại ở cả bốn loại
+     * chứng từ, bỏ `docKind` ra khỏi khóa là ĐMH 363 đọc phải kết quả đã nhớ
+     * của YCMH 363.
+     */
+    applicable: (docKind: string, docId: number) =>
+      ['dossier', 'applicable', docKind, docId] as const,
+    /** MỘT tờ hồ sơ đầy đủ (`/api/dossiers/{id}`) — hộp sửa nhanh cần các ô mà
+     *  danh sách `applicable` không trả về (ngày cấp, người phụ trách, nơi lưu). */
+    detail: (id: number) => ['dossier', 'detail', id] as const,
+    /** Danh sách gọn để chọn HỒ SƠ TIÊN QUYẾT trong biểu mẫu hồ sơ. */
+    candidates: () => ['dossier', 'candidates'] as const,
+  },
   /** Phân hệ Điểm cà phê × POS365 (doc/erp/diem-ca-phe/). */
   coffee: {
     all: ['coffee'] as const,

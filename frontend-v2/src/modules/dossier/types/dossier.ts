@@ -7,6 +7,7 @@
  * giữ · hạn hiệu lực) là CỘT THẬT; phần riêng của từng loại nằm trong
  * `extra_fields`, khai ở `DossierType.field_schema` — xem `dossier-field.ts`.
  */
+import type { ApplyCondition, DocKind } from './dossier-applicability'
 import type { DossierFieldDef, DossierFieldType } from './dossier-field'
 
 /**
@@ -118,6 +119,23 @@ export type Dossier = {
    * cùng ghi vào một chỗ.
    */
   custom_fields: DossierFieldDef[]
+  /**
+   * ĐIỀU KIỆN ÁP DỤNG — hồ sơ này phải kèm theo chứng từ nào.
+   *
+   * ⚠️ **Hai ca rỗng, hai nghĩa ngược nhau**: `apply_doc_kinds` rỗng = không
+   * hiện ở đâu cả; có màn mà `apply_conditions` rỗng = áp cho MỌI phiếu loại
+   * đó. Xem `dossier-applicability.ts`.
+   */
+  apply_doc_kinds: DocKind[]
+  apply_conditions: ApplyCondition[]
+  /**
+   * HỒ SƠ TIÊN QUYẾT — `id` các tờ phải hoàn thành trước tờ này.
+   *
+   * ⚠️ Ràng buộc thuộc về TỜ GIẤY (khai một lần cho cả kho), nhưng «xong» thì
+   * tính theo TỪNG CHỨNG TỪ — nên một tờ đang khóa ở phiếu A có thể đã mở ở
+   * phiếu B. Chỗ tính khóa nằm ở backend, xem `ApplicableDossier.locked`.
+   */
+  depends: number[]
   /** Bộ sinh CRUD gắn thêm cho mọi bản ghi (bao-CR-294). */
   updated_at?: string | null
 }
@@ -139,3 +157,6 @@ export function extraFieldName(key: string): string {
 
 /** Kiểu ô của khung CRUD tương ứng với kiểu trường tùy biến. */
 export type { DossierFieldType }
+
+/** Trần số hồ sơ tiên quyết — khớp `MAX_DOSSIER_DEPENDS` ở backend. */
+export const MAX_DOSSIER_DEPENDS = 30

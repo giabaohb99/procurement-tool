@@ -15,6 +15,7 @@ from typing import Annotated
 from pydantic import (BaseModel, Field, StringConstraints, field_validator,
                       model_validator)
 
+from .applicability import validate_conditions, validate_doc_kinds
 from .constants import (DOSSIER_DRAFT, DOSSIER_STATUS_LABELS,
                         DOSSIER_STATUS_VALUES)
 from .field_schema import validate_field_schema
@@ -89,11 +90,29 @@ class DossierCreate(BaseModel):
     #  TRƯỜNG RIÊNG của hồ sơ này — người lập tự khai tại chỗ. Cùng cấu trúc với
     #  `field_schema` của loại; giá trị đi chung vào `extra_fields`.
     custom_fields: list = []
+    #  ĐIỀU KIỆN ÁP DỤNG — xem `applicability.py`. Mặc định RỖNG = hồ sơ không
+    #  hiện ra ở chứng từ nào, đúng hành vi cũ của mọi hồ sơ đang có.
+    apply_doc_kinds: list = []
+    apply_conditions: list = []
+    #  TIÊN QUYẾT — `id` các tờ phải hoàn thành trước tờ này. Vòng lặp và id
+    #  không tồn tại thì chặn ở `controller._before_*` (cần `db` nên không kiểm
+    #  được bằng validator của Pydantic).
+    depends: list[int] = []
 
     @field_validator("custom_fields")
     @classmethod
     def _check_custom(cls, v: list) -> list:
         return validate_field_schema(v)
+
+    @field_validator("apply_doc_kinds")
+    @classmethod
+    def _check_kinds(cls, v: list) -> list:
+        return validate_doc_kinds(v)
+
+    @field_validator("apply_conditions")
+    @classmethod
+    def _check_conditions(cls, v: list) -> list:
+        return validate_conditions(v)
 
     @field_validator("name")
     @classmethod
@@ -147,11 +166,24 @@ class DossierUpdate(BaseModel):
     note: Str1000 | None = None
     extra_fields: dict | None = None
     custom_fields: list | None = None
+    apply_doc_kinds: list | None = None
+    apply_conditions: list | None = None
+    depends: list[int] | None = None
 
     @field_validator("custom_fields")
     @classmethod
     def _check_custom(cls, v: list | None) -> list | None:
         return None if v is None else validate_field_schema(v)
+
+    @field_validator("apply_doc_kinds")
+    @classmethod
+    def _check_kinds(cls, v: list | None) -> list | None:
+        return None if v is None else validate_doc_kinds(v)
+
+    @field_validator("apply_conditions")
+    @classmethod
+    def _check_conditions(cls, v: list | None) -> list | None:
+        return None if v is None else validate_conditions(v)
 
     @field_validator("name")
     @classmethod
@@ -203,6 +235,14 @@ class DossierResponse(BaseModel):
     #  Đọc qua thuộc tính `custom_field_defs` của model, KHÔNG đọc thẳng cột:
     #  cột có thể đang `NULL` với hồ sơ lập trước khi có nó.
     custom_fields: list = Field(default_factory=list, validation_alias="custom_field_defs")
+    #  Cũng đọc qua thuộc tính, cùng lý do: cột `NULL` với mọi hồ sơ lập trước
+    #  21/09/2026, mà `None` ra API thì chỗ nào quên `?? []` sẽ nổ khi mở hồ sơ cũ.
+    apply_doc_kinds: list = Field(default_factory=list,
+                                  validation_alias="apply_doc_kind_list")
+    apply_conditions: list = Field(default_factory=list,
+                                   validation_alias="apply_condition_list")
+    #  Cùng lý do cột `NULL`, đọc qua thuộc tính chứ không đọc thẳng cột.
+    depends: list = Field(default_factory=list, validation_alias="depend_list")
 
     @field_validator("extra_fields", mode="before")
     @classmethod

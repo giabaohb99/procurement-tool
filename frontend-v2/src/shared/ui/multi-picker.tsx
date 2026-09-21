@@ -65,6 +65,15 @@ interface MultiPickerProps<Id extends MultiPickerId = MultiPickerId> {
    * cái gì. Tên đầy đủ của mọi mục nằm ở thuộc tính `title` để rê chuột xem được.
    */
   summaryInTrigger?: boolean
+  /**
+   * Bỏ hàng «Chọn tất cả» trên đầu danh sách.
+   *
+   * ⚠️ Dùng khi «chọn hết» là một thao tác gần như luôn SAI, không phải khi
+   * danh sách dài. Ví dụ ô *Hồ sơ tiên quyết*: chọn mọi tờ trong kho làm tiên
+   * quyết cho một tờ thì tờ đó khóa gần như vĩnh viễn, mà nút lại nằm đúng chỗ
+   * dễ bấm nhầm nhất — ngay trên mục đầu tiên.
+   */
+  hideSelectAll?: boolean
 }
 
 /** Số dòng tối đa trong danh sách thả xuống — dài hơn thì bắt gõ tìm. */
@@ -109,6 +118,7 @@ export function MultiPicker<Id extends MultiPickerId = MultiPickerId>({
   chipsInTrigger = false,
   hideChips = false,
   summaryInTrigger = false,
+  hideSelectAll = false,
 }: MultiPickerProps<Id>) {
   const [open, setOpen] = useState(false)
   const [keyword, setKeyword] = useState('')
@@ -238,7 +248,7 @@ export function MultiPicker<Id extends MultiPickerId = MultiPickerId>({
               onChange={(event) => setKeyword(event.target.value)}
             />
           </div>
-          {filtered.length > 0 && (
+          {filtered.length > 0 && !hideSelectAll && (
             <div className="flex items-center justify-between gap-2 border-b px-2 py-1.5">
               <button
                 type="button"

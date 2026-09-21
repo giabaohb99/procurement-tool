@@ -75,7 +75,11 @@ describe('buildDossierFormFields', () => {
 describe('ô TỰ VẼ giữ các hàng «trường riêng»', () => {
   const types = [type({ id: 1, field_schema: [def(), def({ key: 'gt', label: 'Giá trị', type: 'number' })] })]
   const withEditor = (values: Record<string, unknown>) =>
-    buildDossierFormFields(types, values, { renderCustomFields: () => null })
+    buildDossierFormFields(types, values, {
+      renderCustomFields: () => null,
+      renderApplyRules: () => null,
+    renderDepends: () => null,
+    })
 
   it('chỉ dựng ô đó khi nơi gọi có truyền hàm vẽ', () => {
     //  Bộ test gọi hàm này rất nhiều chỉ để soi ba ô khung; bắt chúng truyền một
