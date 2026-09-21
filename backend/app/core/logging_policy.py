@@ -392,3 +392,30 @@ LOG_RETENTION_MONTHS = 16
 #  lượt gọi API đứng chờ ghi nhật ký — dọn rác mà thành sự cố.
 CLEANUP_BATCH_SIZE = 2000
 CLEANUP_MAX_BATCHES = 500
+
+
+# --------------------------------------------------------------------------
+# 7. Ngưỡng cảnh báo bất thường (bao-CR-448, CR-312 P6)
+# --------------------------------------------------------------------------
+#  Bốn dấu hiệu ở §10 P6 của tài liệu gốc được tính trong MỘT việc nền chạy
+#  theo nhịp, đọc lại ba bảng nhật ký — cố ý KHÔNG đặt vào middleware, vì mỗi
+#  phép so ở đó là một truy vấn thêm cho mọi lượt gọi API.
+#
+#  Cửa sổ quét dài hơn nhịp chạy (30 phút cho nhịp 15 phút) để hai lần chạy
+#  gối lên nhau: việc nền chết một nhịp thì không có lỗ. Báo trùng chặn bằng
+#  dòng đánh dấu trong `tab_audit_log` (`anomaly_alert`, khóa ở `doc_code`),
+#  cùng cách `file_access_log` dùng cho cảnh báo mở tệp dồn dập.
+ANOMALY_WINDOW_MINUTES = 30
+#  IP «lạ» = chưa từng thấy ở phiên nào của CHÍNH người đó trong 30 ngày trước.
+#  Lần đăng nhập đầu tiên của một tài khoản không tính — chưa có gì để so.
+ANOMALY_KNOWN_IP_DAYS = 30
+#  Từ ngần này dòng bị xóa trong MỘT `request_id` thì gọi là xóa hàng loạt.
+#  Xóa một phiếu có 15 dòng con vẫn là một thao tác thường; 20 dòng trở lên
+#  thì hoặc là nhập liệu hàng loạt (đã có cờ gộp), hoặc là thứ cần người nhìn.
+ANOMALY_BULK_DELETE_MIN = 20
+#  Từ ngần này lượt 403 trong cửa sổ, cùng một người (hoặc cùng IP khi chưa
+#  đăng nhập), thì là đang dò quyền chứ không phải bấm nhầm.
+ANOMALY_FORBIDDEN_MIN = 10
+#  Một người / một dấu hiệu chỉ báo lại sau ngần này phút — chuông kêu mỗi 15
+#  phút về cùng một chuyện thì sau ba lần không ai nghe nữa.
+ANOMALY_COOLDOWN_MINUTES = 120

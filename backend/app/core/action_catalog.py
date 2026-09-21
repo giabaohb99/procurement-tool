@@ -232,6 +232,12 @@ _AUTH = (
     #  BỊ cắt, `created_by=` người bấm — nên tra lịch sử một người là ra đủ.
     ActionCode("session_revoked", "Đá phiên khỏi thiết bị", ACTION_GROUP_AUTH),
     ActionCode("logout_all", "Đăng xuất mọi thiết bị", ACTION_GROUP_AUTH),
+    #  bao-CR-448 / CR-312 P6 — việc nền `system_log.detect_anomalies` ghi mã
+    #  này với `created_by = 0` khi đã báo chuông cho quản trị về một dấu hiệu
+    #  bất thường (đăng nhập IP lạ · đổi thiết bị giữa phiên · xóa hàng loạt ·
+    #  dồn dập 403). `entity_id` = id NGƯỜI bị nhắc tới (0 khi chưa đăng nhập),
+    #  `doc_code` = khóa chống báo trùng — cùng cách `file_alert` ở nhóm XEM.
+    ActionCode("anomaly_alert", "Cảnh báo bất thường", ACTION_GROUP_AUTH),
 )
 
 #  =====================================================================

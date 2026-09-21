@@ -54,6 +54,7 @@ celery_app.conf.update(
         "app.modules.notification.tasks", # Dọn thông báo cũ (mỗi ngày)
         "app.modules.audit.tasks",        # Đóng gói nhật ký ra R2 (hằng tháng, không xóa DB)
         "app.modules.request_log.tasks",  # Dọn dòng GET quá 90 ngày (mỗi ngày, sau khi đã có gói R2)
+        "app.modules.system_log.tasks",   # Cảnh báo bất thường (15 phút) + dọn 4 bảng nhật ký quá 16 tháng (bao-CR-448)
         "app.modules.attachment.tasks",   # Dọn tệp đính kèm mồ côi quá 7 ngày (mỗi ngày)
         "app.modules.assistant.rag.tasks",  # Nạp chỉ mục vector loại B (HDSD + FAQ) khi có hook / bấm nút
         "app.modules.coffee_point.tasks",   # Điểm cà phê × POS365 — kéo đơn / reset kỳ / đối chiếu
@@ -93,6 +94,18 @@ celery_app.conf.update(
         "cleanup-get-logs": {
             "task": "request_log.cleanup",
             "schedule": crontab(hour=3, minute=40),  # 03:40 VN, mỗi ngày
+        },
+        #  Dọn BỐN bảng nhật ký quá 16 tháng, theo tháng, chỉ tháng đã có gói R2
+        #  (bao-CR-448). Đặt sau request_log.cleanup 03:40 cùng lý do ở trên.
+        "cleanup-expired-logs": {
+            "task": "system_log.cleanup_expired",
+            "schedule": crontab(hour=3, minute=50),  # 03:50 VN, mỗi ngày
+        },
+        #  Bốn dấu hiệu bất thường (IP lạ, đổi thiết bị giữa phiên, xóa hàng loạt,
+        #  dồn dập 403) — quét cửa sổ 30 phút mỗi 15 phút, báo chuông quản trị.
+        "detect-log-anomalies": {
+            "task": "system_log.detect_anomalies",
+            "schedule": crontab(minute="*/15"),
         },
         #  Tệp tải lên mà không bao giờ được gắn vào phiếu nào (người dùng bỏ dở form)
         #  — trước bao-CR-408 chúng nằm lại vĩnh viễn trên storage. Xem attachment/tasks.py.

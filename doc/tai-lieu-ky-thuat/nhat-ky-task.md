@@ -4513,6 +4513,49 @@ Mã nguồn: `backend/app/modules/survey_progress/controller.py`, `frontend-v2/s
 Commit: `08ee3398` trên nhánh erp-v2.
 Deploy: máy chủ thử nghiệm, 21/09/2026 (bản dựng trên máy thử = 08ee3398, dựng lại api, celery-worker và erp).
 
+## bao-CR-448 | Cảnh báo bất thường lên chuông quản trị và dọn bốn bảng nhật ký quá 16 tháng
+- status: xong
+- date: 2026-09-21
+- pic: NSU209
+
+Đây là đợt một của giai đoạn P6 trong cụm nhật ký bao-CR-312, phần duy nhất của cụm đó còn dở.
+Đại ca duyệt làm phần cảnh báo bất thường và dọn dữ liệu quá hạn trước; hai việc còn lại của P6
+là phân vùng bảng theo năm và tách bốn bảng nhật ký khỏi sao lưu đêm thì để đợt sau vì đụng cấu
+trúc bảng và lịch sao lưu.
+
+Việc dọn chạy nền mỗi đêm lúc 03:50, sau việc dọn dòng đọc 90 ngày. Mốc 16 tháng làm tròn về
+đầu tháng để đơn vị xóa trùng đơn vị gói, rồi xóa theo từng tháng của từng bảng, mỗi lô hai nghìn
+dòng và tối đa năm trăm lô một đêm. Trước khi xóa tháng nào của bảng nào, nó hỏi kho R2 xem tệp
+mã băm của đúng tháng đó, bảng đó đã có chưa; chưa có thì bỏ qua tháng đó, ghi cảnh báo và giữ
+nguyên. Máy chưa nối R2 thì việc tự tắt và nói ra bằng trạng thái bỏ qua chứ không ném lỗi. Phiên
+đăng nhập xét theo lúc đóng nhưng gom tháng theo lúc mở, vì gói R2 gom theo ngày mở. Kèm theo,
+việc đóng gói hằng tháng nay gói đủ bốn bảng thay vì hai như bản đầu, nếu không thì bảng thay đổi
+và bảng phiên hoặc không bao giờ được dọn, hoặc bị dọn mà không có bản sao.
+
+Việc cảnh báo chạy mỗi mười lăm phút, quét cửa sổ ba mươi phút vừa qua theo đồng hồ của cơ sở dữ
+liệu, và báo bốn dấu hiệu lên chuông: đăng nhập từ địa chỉ mạng chưa từng thấy ở chính người đó
+trong ba mươi ngày (lần đăng nhập đầu tiên không tính); cùng một phiên mà gửi lượt gọi từ hai dấu
+thiết bị khác nhau; một lượt gọi xóa từ hai mươi dòng trở lên; và một người hay một địa chỉ bị
+chặn quyền từ mười lần trong cửa sổ. Riêng phiên chỉ đổi địa chỉ mạng thì cố ý không báo chuông
+vì đổi wifi sang 4G là chuyện mỗi ngày, và nhật ký đã có dòng gia hạn đổi địa chỉ cho việc đó.
+Chuông gửi tới những ai đọc được màn Phiên đăng nhập ở phạm vi toàn hệ, không có ai thì lùi về vai
+trò quản trị, và bỏ qua chính người bị nhắc tới. Mỗi sự kiện chỉ báo một lần: lần báo ghi một dòng
+nhật ký thao tác với mã hành động mới là cảnh báo bất thường, lần chạy sau tra dòng đó trước.
+
+Bài kiểm mới mười chín bài, chạy riêng tệp đó, xanh hết: dọn không chạy khi chưa có R2, chỉ xóa
+tháng đã có gói và giữ tháng chưa có, bốn bảng đều được dọn, phiên còn sống thì giữ, chạy thử chỉ
+đếm không xóa; mỗi dấu hiệu tạo chuông và dòng đánh dấu, chạy lần hai không báo trùng, dưới ngưỡng
+hoặc ngoài cửa sổ thì im, đăng nhập lần đầu không báo, đổi địa chỉ mạng không báo, lùi về vai trò
+quản trị khi không ai giữ khóa phiên. Tài liệu thiết kế cập nhật mục 9 và mục 10, kiểm kê việc còn
+lại tách P6 thành hai đợt.
+
+Mã nguồn: `backend/app/modules/system_log/anomaly.py`, `backend/app/modules/system_log/retention.py`, `backend/app/modules/system_log/tasks.py`, `backend/app/core/celery_app.py`, `backend/app/core/logging_policy.py`, `backend/app/core/storage.py`, `backend/app/core/action_catalog.py`, `backend/app/modules/audit/tasks.py`, `test/backend/test_nhat_ky_p6_cr448.py`.
+
+Commit: chưa, chờ lệnh.
+Deploy: chưa.
+
+---
+
 ## bao-CR-450 | Hai bài hướng dẫn cho luồng phương án của yêu cầu mua hàng, kèm chỗ đứng cho tool AI của chặng này
 - status: xong
 - date: 2026-09-21

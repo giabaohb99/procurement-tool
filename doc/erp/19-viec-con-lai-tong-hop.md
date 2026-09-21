@@ -44,7 +44,8 @@ commit `b5787ccc` nằm trên `origin/main`). Dòng change-log-bao còn ghi "pro
 | **P3b** | Ba chỗ hiện phiên (Quản trị · Trang cá nhân · tab Nhân sự) + khóa quyền `login_session` + endpoint đọc/đá — **XONG: commit `00b740b5` + deploy DEV 14/09 (bao-CR-395)**, chỉ `frontend-v2`, 5 chỗ khác bản vẽ ở §8.5.1 | Prod chờ gộp `erp-v2` → `main` |
 | **P4** | `tab_change_log` + sự kiện ORM + che cột nhạy cảm + chốt gộp nhập liệu — **trước/sau từng trường**, nặng nhất | **XONG mã + test local 14/09 (bao-CR-402)** — chờ commit + deploy |
 | **P5** | Màn `/system/logs`: gộp theo `request_id`, 4 tab, theo dõi trực tiếp, biểu đồ; `/api/audit-logs` trả thêm `request_id` | P2, P4 (tab *Thay đổi* ẩn khi chưa có P4) |
-| **P6** | Phân vùng theo năm + dọn 16 tháng + tách 4 bảng nhật ký khỏi sao lưu đêm (dump hai lượt) + cảnh báo IP lạ / đổi IP giữa phiên / xóa hàng loạt / nhiều 403 | P3, P4 |
+| **P6 đợt 1** | Dọn 16 tháng theo tháng (chỉ tháng đã có gói R2) + gói R2 đủ 4 bảng + cảnh báo IP lạ / đổi thiết bị giữa phiên / xóa hàng loạt / nhiều 403 lên chuông quản trị — **XONG mã + 19 bài kiểm local 21/09 (bao-CR-448)**, chờ commit + deploy dev | P3, P4 |
+| **P6 đợt 2** | Phân vùng theo năm + `DROP PARTITION` + tách 4 bảng nhật ký khỏi sao lưu đêm (dump hai lượt) — đụng cấu trúc bảng và lịch sao lưu | P6 đợt 1 |
 
 ## 3. HRM (đồng nghiệp làm — chỉ theo dõi)
 
