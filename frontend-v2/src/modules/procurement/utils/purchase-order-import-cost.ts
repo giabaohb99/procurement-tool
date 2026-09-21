@@ -40,6 +40,76 @@ export function resolveLineCurrency(
   return { currency, exchangeRate: effectiveExchangeRate(currency, exchangeRate) }
 }
 
+/**
+ * bao-CR-364 (port v2) — nhãn tiền tệ của một bảng TỔNG phải lấy từ các DÒNG, không lấy
+ * từ đầu phiếu. Từ bao-CR-319 mỗi dòng mang tiền tệ + tỷ giá riêng, đầu phiếu chỉ là mặc
+ * định cho dòng để trống. Đầu phiếu `VND` mà dòng `USD` là chuyện bình thường (PO00122 prod:
+ * 6.500 USD × 26.500 = 172.250.000 đ) — dán nhãn theo đầu phiếu ra ngay "6.500 VND".
+ *
+ * `mixed = true` khi các dòng KHÔNG cùng một loại tiền: cộng ngang các dòng là vô nghĩa
+ * (USD cộng VND), nơi gọi phải chuyển sang bày bản quy đổi VNĐ thay vì dán đại một nhãn.
+ * Dòng để trống tiền tệ thì theo `fallback` (tiền tệ đầu phiếu).
+ */
+export function resolveTotalsCurrency(
+  lineCurrencies: (string | null | undefined)[],
+  fallback: string,
+): { currency: string; mixed: boolean } {
+  const base = (fallback || DEFAULT_CURRENCY).trim().toUpperCase() || DEFAULT_CURRENCY
+  const found: string[] = []
+  for (const raw of lineCurrencies) {
+    const code = String(raw ?? '').trim().toUpperCase() || base
+    if (!found.includes(code)) found.push(code)
+  }
+  return { currency: found.length === 1 ? found[0] : base, mixed: found.length > 1 }
+}
+
+/** Ba dòng tổng cuối bảng dòng hàng ĐMH + tiền tệ để dán nhãn (bao-CR-364). */
+export interface OrderTotals {
+  subtotal: number
+  vat: number
+  total: number
+  /** Tiền tệ của ba con số trên. Đơn trộn nhiều loại tiền thì luôn là VND (đã quy đổi). */
+  currency: string
+  /** Các dòng KHÔNG cùng một loại tiền — ba dòng tổng đang là bản quy đổi VNĐ. */
+  mixed: boolean
+}
+
+/**
+ * Tổng tiền theo SL ĐẶT của đơn, tính tại chỗ để thấy ngay khi gõ. Dòng cùng một loại tiền
+ * thì cộng thẳng nguyên tệ; trộn nhiều loại tiền thì mỗi dòng nhân tỷ giá của chính nó rồi
+ * mới cộng (bản quy đổi VNĐ), vì cộng ngang USD với VND ra một con số vô nghĩa.
+ */
+export function summarizeOrderTotals(
+  order: Pick<PurchaseOrderDetail, 'currency' | 'exchange_rate' | 'items'>,
+): OrderTotals {
+  const items = order.items ?? []
+  const { currency, mixed } = resolveTotalsCurrency(
+    items.map((item) => item.currency),
+    order.currency,
+  )
+  let subtotal = 0
+  let total = 0
+  for (const item of items) {
+    const gross = (Number(item.qty_order) || 0) * (Number(item.price) || 0)
+    const withVat = gross * (1 + (Number(item.vat) || 0) / 100)
+    if (mixed) {
+      const { exchangeRate } = resolveLineCurrency(item, order)
+      subtotal += gross * exchangeRate
+      total += displayLineBaseAmount(item, order)
+    } else {
+      subtotal += gross
+      total += withVat
+    }
+  }
+  return {
+    subtotal,
+    vat: total - subtotal,
+    total,
+    currency: mixed ? DEFAULT_CURRENCY : currency,
+    mixed,
+  }
+}
+
 /** Thành tiền quy đổi VNĐ của dòng theo SL ĐẶT (gồm VAT dòng). */
 export function lineBaseAmount(
   item: Pick<PurchaseOrderItem, 'qty_order' | 'price' | 'vat' | 'currency' | 'exchange_rate'>,

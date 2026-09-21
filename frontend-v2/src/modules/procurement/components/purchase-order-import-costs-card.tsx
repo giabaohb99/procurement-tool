@@ -827,12 +827,21 @@ export function PurchaseOrderImportCostsCard({
                           <TableCell className="text-right">
                             {settled ? (
                               <Badge variant="outline">Đã chi đủ</Badge>
+                            ) : group.unpaid_payable_ids.length === 0 ? (
+                              // bao-CR-379 (port v2): còn tiền mà không có khoản công nợ nào
+                              // để tick = nhóm CHƯA thành công nợ (chưa chọn NCC, dòng chưa
+                              // Lưu hoặc số tiền 0) — nói rõ thay vì nút Tạo YCTT mờ.
+                              <span
+                                className="text-xs text-muted-foreground"
+                                title="Chưa chọn NCC, dòng chưa Lưu hoặc số tiền 0 — chưa có khoản công nợ để tạo YCTT."
+                              >
+                                Chưa thành công nợ
+                              </span>
                             ) : (
                               <Button
                                 type="button"
                                 size="sm"
                                 variant="outline"
-                                disabled={group.unpaid_payable_ids.length === 0}
                                 onClick={() => goCreatePaymentRequest(group.unpaid_payable_ids)}
                               >
                                 Tạo YCTT

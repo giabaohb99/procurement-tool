@@ -39,6 +39,7 @@ import {
   usePurchaseRequestUnits,
   usePurchaseRequestWarehouses,
 } from '../hooks/use-purchase-request-support'
+import { resolveCatalogSelection } from '../utils/catalog-selection'
 import {
   VAT_OPTIONS,
   type PurchaseRequestItem,
@@ -731,9 +732,10 @@ function CatalogSelect({
   options: { value: string; label: string }[]
   onChange: (value: string) => void
 }) {
+  const resolved = resolveCatalogSelection(value, options)
   return (
     <Select
-      value={value || EMPTY_CATALOG_VALUE}
+      value={resolved.selected || EMPTY_CATALOG_VALUE}
       onValueChange={(next) => onChange(next === EMPTY_CATALOG_VALUE ? '' : next)}
     >
       <SelectTrigger size="sm" className="w-full">
@@ -741,7 +743,7 @@ function CatalogSelect({
       </SelectTrigger>
       <SelectContent position="popper" align="start">
         <SelectItem value={EMPTY_CATALOG_VALUE}>{placeholder}</SelectItem>
-        {options.map((option) => (
+        {resolved.options.map((option) => (
           <SelectItem key={option.value} value={option.value}>
             {option.label}
           </SelectItem>

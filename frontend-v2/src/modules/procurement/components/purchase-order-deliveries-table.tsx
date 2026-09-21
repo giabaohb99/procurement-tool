@@ -403,17 +403,10 @@ export function PurchaseOrderDeliveriesTable({
           <Input
             value={delivery.invoice_no || ''}
             placeholder="Số HĐ đợt này"
-            onChange={(event) => {
-              const value = event.target.value
-              patch(index, {
-                invoice_no: value,
-                // Có số hóa đơn mà chưa có ngày thì lấy hôm nay — kế toán gần
-                // như luôn nhập hai ô này cùng lúc.
-                ...(value && !delivery.invoice_date
-                  ? { invoice_date: new Date().toISOString().slice(0, 10) }
-                  : {}),
-              })
-            }}
+            // bao-CR-367 (port v2): KHÔNG tự điền ngày hôm nay khi gõ số hóa đơn.
+            // Ngày hóa đơn là ngày trên tờ hóa đơn của NCC, không phải ngày nhập;
+            // tự điền là ngày sai chảy tiếp sang YCTT (delivery_invoice_date).
+            onChange={(event) => patch(index, { invoice_no: event.target.value })}
           />
         ) : (
           delivery.invoice_no || ''

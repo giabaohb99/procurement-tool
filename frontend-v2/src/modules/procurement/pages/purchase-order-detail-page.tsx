@@ -47,10 +47,7 @@ import { DocumentMoneyTotals } from '../components/document-money-totals'
 import { StatusBadge } from '../components/document-status-badge'
 import { PurchaseOrderImportCostsCard } from '../components/purchase-order-import-costs-card'
 import { PurchaseOrderInfoCard } from '../components/purchase-order-info-card'
-import {
-  orderLineAmount,
-  PurchaseOrderItemsTable,
-} from '../components/purchase-order-items-table'
+import { PurchaseOrderItemsTable } from '../components/purchase-order-items-table'
 import { PurchaseOrderLineDialog } from '../components/purchase-order-line-dialog'
 import { PurchaseOrderPaymentDialog } from '../components/purchase-order-payment-dialog'
 import { PurchaseOrderPaymentRequestsCard } from '../components/purchase-order-payment-requests-card'
@@ -85,6 +82,7 @@ import { duplicatePurchaseOrderCodes, validatePurchaseOrder } from '../utils/req
 import {
   displayLineBaseAmount,
   isMissingExchangeRate,
+  summarizeOrderTotals,
 } from '../utils/purchase-order-import-cost'
 import { summarizeShipping } from '../utils/purchase-order-shipping'
 import {
@@ -188,13 +186,20 @@ export function PurchaseOrderDetailPage() {
   const isNewChanged = useHasChanged(isNew)
   if ((serverDataChanged || isNewChanged) && !isNew) setDraft(serverData ?? null)
 
-  /** Tiền theo SL ĐẶT — tính tại chỗ để người dùng thấy ngay khi gõ. */
-  const orderTotals = useMemo(() => {
-    const items = draft?.items ?? []
-    const subtotal = items.reduce((sum, item) => sum + item.qty_order * item.price, 0)
-    const total = items.reduce((sum, item) => sum + orderLineAmount(item), 0)
-    return { subtotal, vat: total - subtotal, total }
-  }, [draft?.items])
+  /**
+   * Tiền theo SL ĐẶT — tính tại chỗ để người dùng thấy ngay khi gõ. bao-CR-364: tiền tệ
+   * dán nhãn lấy từ các DÒNG (đầu phiếu chỉ là mặc định); trộn nhiều loại tiền thì ba
+   * dòng tổng là bản quy đổi VNĐ.
+   */
+  const orderTotals = useMemo(
+    () =>
+      summarizeOrderTotals({
+        currency: draft?.currency ?? '',
+        exchange_rate: draft?.exchange_rate ?? 0,
+        items: draft?.items ?? [],
+      }),
+    [draft?.currency, draft?.exchange_rate, draft?.items],
+  )
 
   /** bao-CR-319: đơn nhập khẩu — tổng tiền hàng đã quy đổi VNĐ (dòng để trống thì theo đơn). */
   const baseTotal = useMemo(() => {
@@ -685,30 +690,45 @@ export function PurchaseOrderDetailPage() {
               }}
             />
             <DocumentMoneyTotals
-              {...orderTotals}
+              subtotal={orderTotals.subtotal}
+              vat={orderTotals.vat}
+              total={orderTotals.total}
               subtotalLabel={
-                isImportOrder(data)
-                  ? `Tiền hàng theo SL đặt (nguyên tệ ${data.currency || 'VND'})`
-                  : 'Tiền hàng theo SL đặt (chưa VAT)'
+                !isImportOrder(data)
+                  ? 'Tiền hàng theo SL đặt (chưa VAT)'
+                  : orderTotals.mixed
+                    ? 'Tiền hàng theo SL đặt (quy đổi VNĐ)'
+                    : `Tiền hàng theo SL đặt (nguyên tệ ${orderTotals.currency})`
               }
               totalLabel={
-                isImportOrder(data)
-                  ? `Tổng đơn đặt (nguyên tệ ${data.currency || 'VND'})`
-                  : 'Tổng đơn đặt (gồm VAT)'
+                !isImportOrder(data)
+                  ? 'Tổng đơn đặt (gồm VAT)'
+                  : orderTotals.mixed
+                    ? 'Tổng đơn đặt (quy đổi VNĐ)'
+                    : `Tổng đơn đặt (nguyên tệ ${orderTotals.currency})`
               }
-              currency={isImportOrder(data) ? data.currency : undefined}
+              currency={isImportOrder(data) ? orderTotals.currency : undefined}
             />
             {isImportOrder(data) && (
               <div className="ml-auto w-full max-w-sm space-y-1 text-sm">
-                <p className="flex justify-between gap-4">
-                  <span className="text-muted-foreground">Tổng quy đổi (VNĐ)</span>
-                  <span
-                    className="font-semibold text-navy tabular-nums dark:text-foreground"
-                    title="Cộng thành tiền quy đổi của từng dòng theo tỷ giá dòng (trống thì theo tỷ giá đơn)."
-                  >
-                    {formatMoney(baseTotal)} đ
-                  </span>
-                </p>
+                {orderTotals.mixed ? (
+                  // Đơn trộn nhiều loại tiền: ba dòng tổng ở trên đã là bản quy đổi,
+                  // lặp lại "Tổng quy đổi" là hai con số giống nhau — thay bằng câu nói rõ.
+                  <p className="text-right text-xs text-muted-foreground">
+                    Đơn có nhiều loại tiền — các dòng tổng đã quy đổi VNĐ theo tỷ giá từng
+                    dòng (trống thì theo tỷ giá đơn).
+                  </p>
+                ) : (
+                  <p className="flex justify-between gap-4">
+                    <span className="text-muted-foreground">Tổng quy đổi (VNĐ)</span>
+                    <span
+                      className="font-semibold text-navy tabular-nums dark:text-foreground"
+                      title="Cộng thành tiền quy đổi của từng dòng theo tỷ giá dòng (trống thì theo tỷ giá đơn)."
+                    >
+                      {formatMoney(baseTotal)} đ
+                    </span>
+                  </p>
+                )}
                 {missingRateCount > 0 && (
                   <p className="flex items-center justify-end gap-1.5 text-xs text-warning">
                     <AlertTriangle className="size-3.5" />

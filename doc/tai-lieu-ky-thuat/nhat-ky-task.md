@@ -4174,3 +4174,43 @@ Mã nguồn: `backend/app/modules/purchase_order/export.py` ·
 `backend/app/modules/dashboard/controller.py` · `test/backend/test_ty_gia_cot_tien_cr437.py` (mới).
 Commit: `db96d8df`.
 Deploy: máy chủ thử, 21/09/2026 (kiểm lại tại đó: 80 đơn gần nhất, cột Tiền hàng trong tệp Excel khớp màn hình, lệch 0).
+
+## bao-CR-438 | Bê ba lỗi hiển thị đã vá ở bản cũ sang giao diện mới
+- status: xong
+- date: 2026-09-21
+- pic: NSU209
+Đại ca bảo kiểm xem các bản vá ở giao diện cũ từ đầu tháng chín đã có đủ ở giao diện mới chưa.
+Em rà hai mươi sáu bản vá thì hai mươi hai bản đã có sẵn bên mới, bốn bản là chuyện riêng của giao
+diện cũ không cần bê, còn lại đúng ba chỗ thiếu và một chữ gợi ý. Đại ca đồng ý gom cả bốn thành
+một việc để làm và đưa lên máy thử nghiệm.
+
+Chỗ thứ nhất là bảng giao hàng nhiều đợt của Đơn mua hàng. Khi gõ số hóa đơn, giao diện mới vẫn
+tự điền ngày hóa đơn bằng ngày hôm nay, đúng đoạn mà bản cũ đã bỏ vì ngày hóa đơn là ngày ghi trên
+tờ hóa đơn của nhà cung cấp, không phải ngày nhập máy, và ngày sai đó chảy tiếp sang Yêu cầu thanh
+toán. Em bỏ hẳn đoạn tự điền.
+
+Chỗ thứ hai là khối tổng tiền cuối bảng dòng hàng của Đơn mua hàng. Khối này lấy loại tiền ghi ở
+đầu phiếu để dán nhãn cho con số cộng từ các dòng, nên đơn ghi đầu phiếu là tiền Việt mà dòng hàng
+là đô la thì in ra sáu nghìn năm trăm đồng ngay trên dòng quy đổi một trăm bảy mươi hai triệu. Nay
+nhãn lấy theo loại tiền thật của các dòng; nếu các dòng không cùng một loại tiền thì ba dòng tổng
+chuyển sang bản quy đổi tiền Việt, mỗi dòng nhân tỷ giá của chính nó rồi mới cộng, và có câu nói rõ
+đơn đang có nhiều loại tiền. Bản cũ còn nợ bài kiểm tự động cho luật này vì bên đó không có bộ chạy
+kiểm; em viết đủ ở bên mới.
+
+Chỗ thứ ba là ô chọn Phân loại trên bảng dòng hàng của Yêu cầu mua hàng. Ô chọn chỉ vẽ được giá
+trị nào có trong danh mục, nên dòng mang phân loại ngoài danh mục thì ngoài bảng để trắng trong khi
+hộp Chi tiết dòng vẫn hiện chữ, hai chỗ nói hai điều khác nhau. Nay giá trị ngoài danh mục vẫn hiện
+kèm nhãn ngoài danh mục, giá trị chỉ lệch hoa thường thì lấy đúng cách viết của danh mục, và lúc
+danh mục chưa tải xong thì không dán nhãn kẻo phiếu cũ nào cũng bị gắn nhãn sai một thoáng. Luật
+này áp luôn cho ô Kho nhận và Đơn vị tính vì ba ô dùng chung một khuôn.
+
+Chữ gợi ý là ở bảng thanh toán chi phí theo nhà cung cấp của đơn nhập khẩu. Nhóm chi phí chưa
+thành công nợ trước đây chỉ có nút tạo yêu cầu thanh toán bị mờ mà không nói lý do; nay thay bằng
+chữ mờ chưa thành công nợ kèm lời giải thích khi rê chuột.
+
+Cả bốn chỗ chỉ sửa giao diện mới, không đụng máy chủ, không có migration. Ba cổng kiểm đều xanh.
+Mã nguồn: frontend-v2/src/modules/procurement/components/purchase-order-deliveries-table.tsx,
+pages/purchase-order-detail-page.tsx, utils/purchase-order-import-cost.ts (resolveTotalsCurrency,
+summarizeOrderTotals), utils/catalog-selection.ts (resolveCatalogSelection),
+components/purchase-request-items-table.tsx, components/purchase-order-import-costs-card.tsx.
+Tham chiếu: bản cũ bao-CR-364, bao-CR-367, bao-CR-372, bao-CR-379.

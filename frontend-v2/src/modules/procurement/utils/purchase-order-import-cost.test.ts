@@ -25,7 +25,9 @@ import {
   manualAllocationTotal,
   paymentBlockReason,
   percentOf,
+  resolveTotalsCurrency,
   setManualAllocation,
+  summarizeOrderTotals,
   switchAllocationMethod,
   switchOrderType,
 } from './purchase-order-import-cost'
@@ -331,6 +333,113 @@ describe('switchOrderType', () => {
       customs_decl_no: '',
       customs_decl_date: '',
       import_costs: [],
+    })
+  })
+})
+
+/**
+ * bao-CR-364 (port v2). Lỗi đã gặp trên prod (PO00122): đầu phiếu VND, dòng duy nhất
+ * USD × 26.500 — bảng tổng in "6.500 VND" ngay trên "Quy đổi 172.250.000 đ".
+ */
+describe('resolveTotalsCurrency', () => {
+  it('labels the totals with the line currency, not the header currency', () => {
+    expect(resolveTotalsCurrency(['USD'], 'VND')).toEqual({ currency: 'USD', mixed: false })
+  })
+
+  it('falls back to the header currency for blank lines and treats VND header as VND', () => {
+    expect(resolveTotalsCurrency(['', null, undefined], 'VND')).toEqual({
+      currency: 'VND',
+      mixed: false,
+    })
+    expect(resolveTotalsCurrency([], '')).toEqual({ currency: 'VND', mixed: false })
+  })
+
+  it('ignores case and whitespace so "usd" and "USD " are one currency', () => {
+    expect(resolveTotalsCurrency(['usd', 'USD ', ' Usd'], 'vnd')).toEqual({
+      currency: 'USD',
+      mixed: false,
+    })
+  })
+
+  it('flags mixed currencies and returns the header currency as the label', () => {
+    expect(resolveTotalsCurrency(['USD', 'VND'], 'VND')).toEqual({ currency: 'VND', mixed: true })
+    // Dòng trống theo đầu phiếu (VND) + dòng USD = hai loại tiền.
+    expect(resolveTotalsCurrency(['', 'USD'], 'VND')).toEqual({ currency: 'VND', mixed: true })
+  })
+})
+
+describe('summarizeOrderTotals', () => {
+  it('sums in the line currency when every line shares one currency', () => {
+    const order = importOrder({
+      currency: 'VND',
+      exchange_rate: 1,
+      items: [
+        { ...line(), qty_order: 10, price: 500, vat: 0, currency: 'USD', exchange_rate: 26500 },
+        { ...line(), qty_order: 1, price: 1500, vat: 0, currency: 'usd', exchange_rate: 26500 },
+      ],
+    })
+    expect(summarizeOrderTotals(order)).toEqual({
+      subtotal: 6500,
+      vat: 0,
+      total: 6500,
+      currency: 'USD',
+      mixed: false,
+    })
+  })
+
+  it('converts every line by its own rate when currencies are mixed', () => {
+    const order = importOrder({
+      currency: 'VND',
+      exchange_rate: 1,
+      items: [
+        { ...line(), qty_order: 1, price: 100, vat: 0, currency: 'USD', exchange_rate: 25000 },
+        { ...line(), qty_order: 2, price: 1000, vat: 10, currency: '', exchange_rate: 0 },
+      ],
+    })
+    const totals = summarizeOrderTotals(order)
+    expect(totals.mixed).toBe(true)
+    expect(totals.currency).toBe('VND')
+    // 100 × 25.000 + 2 × 1.000 = 2.502.000 chưa VAT; VAT 10% của dòng VND = 200.
+    expect(totals.subtotal).toBe(2_502_000)
+    expect(totals.vat).toBeCloseTo(200, 6)
+    expect(totals.total).toBeCloseTo(2_502_200, 6)
+  })
+
+  it('prefers the stored base_amount of a line when the order is mixed', () => {
+    const order = importOrder({
+      currency: 'VND',
+      exchange_rate: 1,
+      items: [
+        { ...line(), qty_order: 1, price: 100, currency: 'USD', exchange_rate: 25000, base_amount: 2_600_000 },
+        { ...line(), qty_order: 1, price: 1000, currency: 'VND', exchange_rate: 1 },
+      ],
+    })
+    expect(summarizeOrderTotals(order).total).toBe(2_601_000)
+  })
+
+  it('drops a foreign line without any rate to zero instead of adding raw USD to VND', () => {
+    // Dòng USD không tỷ giá thì mượn tỷ giá ĐƠN (luật `resolveLineCurrency`); đơn cũng
+    // không có thì dòng đó quy đổi = 0 và màn hình cảnh báo "chưa có tỷ giá" riêng.
+    const order = importOrder({
+      currency: 'VND',
+      exchange_rate: 0,
+      items: [
+        { ...line(), qty_order: 1, price: 100, currency: 'USD', exchange_rate: 0 },
+        { ...line(), qty_order: 1, price: 1000, currency: 'VND', exchange_rate: 1 },
+      ],
+    })
+    const totals = summarizeOrderTotals(order)
+    expect(totals.mixed).toBe(true)
+    expect(totals.total).toBe(1000)
+  })
+
+  it('returns zeros and the header currency for an order with no lines', () => {
+    expect(summarizeOrderTotals(importOrder({ currency: 'EUR', items: [] }))).toEqual({
+      subtotal: 0,
+      vat: 0,
+      total: 0,
+      currency: 'EUR',
+      mixed: false,
     })
   })
 })
