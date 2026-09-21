@@ -6,6 +6,7 @@ import {
   formatPercent,
   formatQuantity,
   formatUnitPrice,
+  formatUnitPriceWithCurrency,
 } from './format-money'
 
 describe('formatMoneyWithCurrency', () => {
@@ -29,6 +30,39 @@ describe('formatMoneyWithCurrency', () => {
   it('leaves only the unit for an empty amount', () => {
     expect(formatMoneyWithCurrency(null, 'USD')).toBe(' USD')
     expect(formatMoneyWithCurrency('abc', 'VND')).toBe(' đ')
+  })
+})
+
+describe('formatUnitPriceWithCurrency', () => {
+  //  Ô đơn giá đứng cạnh ô thành tiền ĐÃ QUY ĐỔI (bao-CR-437). Mã tiền là thứ duy
+  //  nhất giải thích vì sao nhân tay đơn giá với số lượng không ra thành tiền.
+  it('shows the code next to the price when the line is not in dong', () => {
+    expect(formatUnitPriceWithCurrency(4.85, 'CNY')).toBe('4,85 CNY')
+    expect(formatUnitPriceWithCurrency(4.85, 'cny')).toBe('4,85 CNY')
+    expect(formatUnitPriceWithCurrency(5_230.5, ' usd ')).toBe('5.230,5 USD')
+  })
+
+  //  Gần hết đơn là VND: gắn đuôi vào mọi dòng thì cột dài thêm mà chẳng nói gì mới.
+  it('leaves a dong price bare — no code, no dong sign', () => {
+    expect(formatUnitPriceWithCurrency(1_000, 'VND')).toBe('1.000')
+    expect(formatUnitPriceWithCurrency(1_000, '')).toBe('1.000')
+    expect(formatUnitPriceWithCurrency(1_000, null)).toBe('1.000')
+    expect(formatUnitPriceWithCurrency(1_000)).toBe('1.000')
+  })
+
+  //  Khác `formatMoneyWithCurrency`: ô trống phải trống hẳn, đừng để lại mỗi mã tiền
+  //  lửng lơ giữa cột số.
+  it('stays empty for an empty amount instead of showing a lone code', () => {
+    expect(formatUnitPriceWithCurrency(null, 'USD')).toBe('')
+    expect(formatUnitPriceWithCurrency('', 'USD')).toBe('')
+    expect(formatUnitPriceWithCurrency('abc', 'USD')).toBe('')
+  })
+
+  //  Đơn giá lưu tới 4 số lẻ (migration d4b9e7c1a305) — cắt bớt là lệch tiền hàng.
+  it('keeps all four decimals the column allows', () => {
+    expect(formatUnitPriceWithCurrency(0.1234, 'CNY')).toBe('0,1234 CNY')
+    expect(formatUnitPriceWithCurrency(-12.5, 'CNY')).toBe('-12,5 CNY')
+    expect(formatUnitPriceWithCurrency(0, 'CNY')).toBe('0 CNY')
   })
 })
 

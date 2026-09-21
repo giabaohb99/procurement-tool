@@ -27,6 +27,13 @@ import TableScroll from '../components/TableScroll'
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 // ĐƠN GIÁ hiện đủ 4 số lẻ — mặc định toLocaleString chỉ cho 3, cắt mất chữ số cuối
 const fmtPrice = (n: any) => Number(n || 0).toLocaleString('vi-VN', { maximumFractionDigits: 4 })
+// bao-CR-439 — ĐƠN GIÁ giữ NGUYÊN TỆ (số in trên hóa đơn NCC) còn THÀNH TIỀN ngay bên phải là
+// số ĐÃ QUY ĐỔI về đồng. Hai ô cạnh nhau, khác loại tiền, mà không ô nào nói ra thì người đọc
+// nhân tay và ra một con số thứ ba. Dán mã tiền vào đơn giá khi dòng không phải VND.
+const fmtPriceCur = (n: any, currency?: string) => {
+  const cur = String(currency || '').trim().toUpperCase()
+  return cur && cur !== 'VND' ? `${fmtPrice(n)} ${cur}` : fmtPrice(n)
+}
 const NOWRAP = { whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis' }
 const MUTED = { color: 'var(--muted)' } as const
 const R = { textAlign: 'right' as const }
@@ -122,8 +129,17 @@ const COLS: Col[] = [
   { key: 'unit', label: 'ĐVT', w: 56, sort: 'unit', cell: (r) => r.unit },
   { key: 'qty_request', hide: true, label: 'SL YC', w: 76, sort: 'qty_request', td: R, cell: (r) => fmt(r.qty_request) },
   { key: 'qty_order', label: 'SL đặt', w: 76, sort: 'qty_order', td: R, cell: (r) => fmt(r.qty_order) },
-  { key: 'price', label: 'Đơn giá', w: 96, sort: 'price', td: R, cell: (r) => fmtPrice(r.price) },
+  { key: 'price', label: 'Đơn giá', w: 110, sort: 'price', td: R, cell: (r) => fmtPriceCur(r.price, r.currency) },
   { key: 'vat', hide: true, label: 'VAT%', w: 60, sort: 'vat', td: R, cell: (r) => r.vat || 0 },
+  // bao-CR-439: hai cột CĂN CỨ QUY ĐỔI cho mọi cột "Thành tiền" bên phải — xếp ngay trước cột
+  // tiền đầu tiên, đọc liền một mạch "đơn giá nguyên tệ × tỷ giá -> thành tiền đồng".
+  // KHÔNG đánh `hide` (cùng lý do hai cột hóa đơn của bao-CR-409): cột bày ra theo yêu cầu thì
+  // phải thấy ngay, mà localStorage của bảng này chỉ lưu danh sách cột ĐANG ẨN nên key mới
+  // không nằm trong đó — người đã từng chỉnh menu "Cột" cũng thấy đủ hai cột.
+  { key: 'currency', label: 'Đồng tiền', w: 84, sort: 'currency', cell: (r) => r.currency || '' },
+  // Tỷ giá lưu 6 số lẻ, `fmtPrice` cắt còn 4 là đủ đọc. Ô này KHÔNG bao giờ trống: backend đã
+  // cho qua `normalize_rate`, dòng cũ chưa có tỷ giá đọc thành 1 — đúng bằng số nó đang nhân.
+  { key: 'exchange_rate', label: 'Tỷ giá', w: 96, sort: 'exchange_rate', td: R, cell: (r) => fmtPrice(r.exchange_rate) },
   { key: 'order_amount', label: 'Thành tiền ĐH', w: 128, td: { ...R, fontWeight: 600 }, cell: (r) => fmtVND(r.order_amount) },
   { key: 'progress_status', label: 'Tiến độ', w: 176, sort: 'progress_status', cell: (r) => pgBadge(r.progress_status) },
   { key: 'delivery_no', hide: true, label: 'Lần giao', w: 72, sort: 'delivery_no', td: R, cell: (r) => r.delivery_no ?? '—' },

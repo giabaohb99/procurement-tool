@@ -95,6 +95,9 @@ export const purchaseProgressCondFilters = (showSupplier: boolean): FilterFieldD
   condDate('required_date', 'Ngày cần'), condDate('expected_date', 'Dự kiến nhận'),
   condNumber('qty_request', 'SL yêu cầu'), condNumber('qty_order', 'SL đặt'),
   condNumber('price', 'Đơn giá'), condNumber('vat', 'VAT %'),
+  // bao-CR-439: lọc theo đồng tiền để soi riêng cụm ngoại tệ — cột thành tiền đã quy đổi nên
+  // không còn cách nào nhìn ra chúng giữa bảng, mà đó lại là cụm hay phải kiểm lại nhất.
+  condText('currency', 'Đồng tiền'), condNumber('exchange_rate', 'Tỷ giá'),
   condSelect('progress_status', 'Tiến độ dòng', PO_PROGRESS_STATUSES),
   condDate('document_delivery_date', 'Ngày giao chứng từ cho KT'),
   // Lần giao

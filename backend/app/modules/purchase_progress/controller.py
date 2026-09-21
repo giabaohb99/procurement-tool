@@ -88,6 +88,9 @@ def _sort_map():
         "expected_date": POItem.expected_date,
         "qty_request": POItem.qty_request, "qty_order": POItem.qty_order,
         "price": POItem.price, "vat": POItem.vat, "progress_status": POItem.progress_status,
+        # bao-CR-439: hai cột căn cứ quy đổi nay có mặt trên bảng, nên phải sắp xếp và lọc điều
+        # kiện được như mọi cột khác — "lọc ra dòng khác VND" là câu hỏi đầu tiên của kế toán.
+        "currency": POItem.currency, "exchange_rate": POItem.exchange_rate,
         # bao-CR-409 (ticket prod 51): ngày giao chứng từ cho kế toán — dữ liệu vốn đã trả về
         # trong hàng nhưng không nằm ở đây nên không sắp xếp cũng không lọc điều kiện được
         "document_delivery_date": POItem.document_delivery_date,

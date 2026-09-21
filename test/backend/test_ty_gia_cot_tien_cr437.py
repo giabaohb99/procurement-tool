@@ -19,14 +19,19 @@ hiệu nào trên giao diện báo rằng hai con số đó khác loại tiền.
 Ranh giới đó cũng được chốt ở đây để lần sau không ai "sửa cho đồng bộ".
 """
 import json
+from types import SimpleNamespace
+
+from starlette.datastructures import QueryParams
 
 from app.core.export_xlsx import pick_columns
+from app.core.filter_operators import apply_operator_filters_map
 from app.modules.dashboard.controller import overview
 from app.modules.payable.model import Payable
 from app.modules.purchase_order import export as po_export
 from app.modules.purchase_order import service as po_service
 from app.modules.purchase_order.model import OrderType, PODelivery, POItem, PurchaseOrder
 from app.modules.purchase_order.schema import DeliveryIn, POItemIn
+from app.modules.purchase_progress import controller as progress_ctl
 from app.modules.purchase_progress import export as progress_ex
 from app.modules.report import controller as report_ctl
 from app.modules.report import service as report_svc
@@ -168,10 +173,10 @@ def test_tien_do_co_cot_dong_tien_va_ty_gia(db, seed):
 
 
 def test_hai_cot_can_cu_luon_xuat_du_khong_bay_tren_bang():
-    """Bảng Tiến độ chưa có hai cột này, nên `cols` gửi lên không bao giờ chứa chúng.
+    """Bảng Tiến độ có hai cột này từ bao-CR-439, nhưng ẩn/hiện được như mọi cột khác.
 
-    `pick_columns` vốn bỏ mọi key không nằm trong danh sách cột đang hiện — không ép
-    qua `always` thì tệp ra toàn cột tiền đã quy đổi mà không kèm căn cứ quy đổi.
+    `pick_columns` vốn bỏ mọi key không nằm trong danh sách cột đang hiện — ai tắt hai cột
+    đó đi mà không ép qua `always` thì tệp ra toàn cột tiền đã quy đổi, không kèm căn cứ.
     """
     cols_tren_man_hinh = "po_code,product_code,qty_order,price,order_amount"
 
@@ -218,3 +223,35 @@ def test_trang_chu_chi_tieu_12_thang_da_quy_doi(db, seed, cap_quyen):
     assert data["year"] == RECV_DATE[:4]
     #  Cả hai dòng nhận đủ trong cùng một tháng -> cột tháng đó bằng trọn giá trị đơn
     assert thang["T9"] == round(TIEN_QUY_DOI, 0)
+
+
+# ── 5. bao-CR-439: hai cột căn cứ lên BẢNG, không chỉ nằm trong tệp xuất ─────────
+def test_hai_cot_can_cu_sap_xep_va_loc_duoc_nhu_cot_hang_xom():
+    """Cột có nút sắp xếp mà backend không biết key đó thì bấm vào KHÔNG XẢY RA GÌ — im lặng.
+
+    `_cond_map` dẫn xuất từ `_sort_map` nên một dòng khai ở đó mở luôn bộ lọc điều kiện. Kiểm
+    cả bản `show_supplier=False`: hai cột này không phải cụm NCC, không được rơi theo.
+    """
+    assert {"currency", "exchange_rate"} <= set(progress_ctl._sort_map())
+    assert {"currency", "exchange_rate"} <= set(progress_ctl._cond_map(False))
+
+
+def test_loc_theo_dong_tien_ra_dung_cum_ngoai_te(db, seed):
+    """Cột thành tiền nay quy đổi hết, nên KHÔNG còn cách nào nhìn ra dòng ngoại tệ giữa bảng."""
+    _po_ngoai_te(db, seed)
+    po_vnd = _make_po(db, seed, code="PO-VND-438")
+    po_service._save_items(db, po_vnd, [_item_in(qty_request=2, qty_order=2, price=1000)],
+                           user_id=1)
+    db.commit()
+
+    def _codes(qs: str) -> set[str]:
+        q = (db.query(PurchaseOrder, POItem)
+             .join(POItem, POItem.po_id == PurchaseOrder.id))
+        req = SimpleNamespace(query_params=QueryParams(qs))
+        return {po.code for po, _it in
+                apply_operator_filters_map(q, progress_ctl._cond_map(True), req).all()}
+
+    assert _codes("currency__eq=CNY") == {"PO-CNY-437"}
+    assert _codes("currency__ne=CNY") == {"PO-VND-438"}
+    #  Đơn trong nước để tỷ giá 1; "lớn hơn 1" là cách lọc ra mọi dòng có quy đổi
+    assert _codes("exchange_rate__gt=1") == {"PO-CNY-437"}

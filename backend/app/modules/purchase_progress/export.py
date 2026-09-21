@@ -116,8 +116,9 @@ PROGRESS_RENAME = {
 }
 
 #  Cột LUÔN có mặt trong tệp xuất, kể cả khi người dùng không bày nó trên bảng (bao-CR-437).
-#  Bảng trên màn hình chưa có cột đồng tiền / tỷ giá, nên `cols` gửi lên không bao giờ chứa hai
-#  khóa này — không ép thì tệp ra toàn cột tiền đã quy đổi mà không kèm căn cứ quy đổi.
+#  Bảng trên màn hình đã có cột đồng tiền / tỷ giá từ bao-CR-439, nhưng hai cột đó ẩn/hiện được
+#  như mọi cột khác — ai tắt đi thì `cols` gửi lên không còn chúng, và tệp ra toàn cột tiền đã
+#  quy đổi mà không kèm căn cứ quy đổi. `pick_columns` tự khử trùng nên ép luôn là an toàn.
 ALWAYS_COLS = ("currency", "exchange_rate")
 
 SHEET_TITLE = "Tien do mua hang"
