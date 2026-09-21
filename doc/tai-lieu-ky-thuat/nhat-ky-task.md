@@ -4565,6 +4565,21 @@ nghiệp vụ `doc/tai-lieu-chuc-nang/03-yeu-cau-mua-hang.md` mục H đóng kho
 cụ trợ lý `doc/erp/tai-lieu-ai/02-danh-sach-api-tool.md` thêm Nhóm 20 và ghi chú mở rộng ở T27;
 `doc/erp/tai-lieu-ai/04-bao-mat-va-van-hanh.md` mục 5 cập nhật số công cụ còn nợ và hai chỗ phải
 soi khi code.
+
+Lúc đẩy lên máy chủ thử nghiệm thì lòi ra một chuyện đáng ghi lại. Phần tra cứu hướng dẫn bằng
+trợ lý trên máy thử **vốn đã bật sẵn**, nhưng kho tri thức chỉ có năm mươi lăm bài trên tổng số
+tám mươi bảy bài đang có, và ba mươi hai bài thiếu đúng là ba mươi hai bài do script seed dựng
+ra. Lý do là việc nạp lại kho tri thức được bắn từ tầng dịch vụ của Trung tâm hướng dẫn, còn
+script seed thì ghi thẳng xuống cơ sở dữ liệu nên không ai bắn cả. Hậu quả là mọi bài viết bằng
+script, kể cả hai bài lần này, trợ lý trả lời như thể chúng không tồn tại. Lượt này đã nạp bù đủ
+ba mươi hai bài, nay tám mươi bảy trên tám mươi bảy bài đều đã có trong kho, và thử hỏi một câu
+về chọn phương án thì hai bài mới đứng đầu danh sách. Chỗ gốc thì chưa vá: lần seed sau vẫn sẽ
+hụt nếu không ai nạp bù bằng tay.
+
+Commit: `d9212b51` trên nhánh erp-v2.
+Deploy: máy chủ thử nghiệm, 21/09/2026 — dựng lại api rồi chạy script seed trên máy đó (bài id
+89 và 90), rà lại mười bốn liên kết nội bộ ngay trên dữ liệu dev, và nạp bù kho tri thức.
+
 ## duoc-CR-431 | Điều kiện áp dụng của hồ sơ: chứng từ có dòng hàng khớp thì mọc ra thẻ «Hồ sơ cần kèm»
 - status: xong
 - date: 2026-09-21
