@@ -4046,6 +4046,8 @@ Mã nguồn: `backend/app/modules/purchase_order/service.py` (`order_amount_map`
 (`invoice_date_map`) · `backend/app/modules/payable/controller.py` ·
 `backend/app/modules/payable/export.py` · `backend/app/modules/assistant/tools/payable_tool.py` ·
 `test/backend/test_dmh_cong_no_gom_truy_van.py`.
+Commit: `db96d8df`.
+Deploy: máy chủ thử, 21/09/2026 (kiểm lại tại đó: 80 đơn gần nhất, cột Tiền hàng trong tệp Excel khớp màn hình, lệch 0).
 
 ## bao-CR-437 | Vá bốn chỗ cột tiền còn thiếu tỷ giá ở tệp Excel, Báo cáo và Trang chủ
 - status: xong
@@ -4093,3 +4095,5 @@ Mã nguồn: `backend/app/modules/purchase_order/export.py` ·
 `backend/app/modules/purchase_progress/controller.py` ·
 `backend/app/modules/report/service.py` · `backend/app/modules/report/controller.py` ·
 `backend/app/modules/dashboard/controller.py` · `test/backend/test_ty_gia_cot_tien_cr437.py` (mới).
+Commit: `db96d8df`.
+Deploy: máy chủ thử, 21/09/2026 (kiểm lại tại đó: 80 đơn gần nhất, cột Tiền hàng trong tệp Excel khớp màn hình, lệch 0).
