@@ -513,7 +513,12 @@ def _role_scope_cond(model, entity, scope, user, profile, perms=None):
             conds = [model.created_by == user.id]
             drv_sub = select(Driver.id).where(Driver.user_id == user.id)
             conds.append(model.assigned_driver_id.in_(drv_sub))
-            return or_(*conds)
+            # bao-CR-446: trước đây nhánh này `return` thẳng, bỏ qua `_narrow_to_dept`, nên
+            # với đặt xe `dept_proc` == `assigned` (không khoanh phòng, không chặn người chưa
+            # gắn phòng) — lệch với luật chung của bậc này ghi ở đầu khối. Nay đi qua cùng
+            # một cửa với ba chứng từ thu mua: `assigned`/`proc` giữ nguyên, `dept_proc`
+            # AND thêm «phiếu thuộc phòng mình».
+            return _narrow_to_dept(or_(*conds))
         if in_dept_proc:
             # bao-CR-414: entity không phải chứng từ thu mua → `dept_proc` rơi về bậc `dept`
             # (thấy trong phòng mình), không rơi về `own` như `assigned`/`proc`.

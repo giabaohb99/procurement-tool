@@ -4441,3 +4441,27 @@ trước rồi mới chạy hai seed bài con. Chạy hai lần dưới máy ra 
 không đổi; đã mở Trung tâm HDSD dưới máy xem bảng, mục điều hướng và ba đường dẫn.
 
 Mã nguồn: `backend/scripts/seed_help_tro_ly_ai.py` (mới), `doc/tai-lieu-ky-thuat/change-log-bao.md`.
+
+## bao-CR-446 | Bậc «Được giao + đã duyệt của phòng» trên Đặt xe khoanh thêm phòng mình
+- status: xong
+- date: 2026-09-21
+- pic: NSU209
+
+Lúc vá bài kiểm ma trận phạm vi ở bao-CR-440, em phát hiện một chỗ lệch thật và chỉ ghim lại chờ
+đại ca quyết: nhánh tính phạm vi của phiếu đặt xe trả kết quả trước khi đi qua bước khoanh phòng,
+nên bậc dành cho phòng tự mua hàng trên đặt xe mở y hệt bậc được giao, không khoanh phòng và
+không chặn người chưa gắn phòng. Luật chung của bậc này từ bao-CR-414 là lấy đúng nhánh được giao
+rồi AND thêm điều kiện phiếu thuộc phòng mình. Đại ca chốt sửa cho khớp luật chung.
+
+Sửa đúng một dòng: nhánh đặt xe đi qua cùng cửa khoanh phòng với ba chứng từ thu mua. Hai bậc
+được giao và được giao đã duyệt trên đặt xe không đổi gì vì bước khoanh phòng chỉ tác động lên bậc
+của phòng. Bậc của phòng nay chỉ còn phiếu vừa do mình tạo hoặc phân cho tài xế là mình, vừa có
+phòng ban thuộc phòng mình; người chưa gắn phòng thì bị chặn kèm một dòng cảnh báo, cùng luật ba
+chứng từ. Chưa ai được cấp bậc này trên đặt xe nên không ai đang dùng bị thay đổi dữ liệu nhìn thấy.
+
+Bài kiểm: bỏ nhánh riêng đang ghim hành vi cũ trong hàm gương của tệp ma trận, bốn nhánh viết tay
+nay cùng một khuôn; thêm hai bài dữ liệu thật, một bài bốn phiếu đủ bốn ca thấy và không thấy, một
+bài người chưa gắn phòng bị chặn có cảnh báo dù phiếu đã phân cho chính họ. Nguyên tệp ma trận
+483 bài xanh, nhiều hơn trước hai bài.
+
+Mã nguồn: `backend/app/core/scoping.py`, `test/backend/test_pham_vi_cap_bac_ma_tran.py`.

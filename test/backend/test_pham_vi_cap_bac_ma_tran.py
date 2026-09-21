@@ -86,9 +86,10 @@ def expect_outcome(entity: str, scope: str, profile: dict, model):
         scope = "own"       # `scoping.py:342` — rơi về "của mình", KHÔNG báo gì
 
     if scope == "dept_proc":
-        #  bao-CR-414 — bậc thứ bảy, gương của `_role_scope_cond` (`scoping.py:437-524`).
-        #  Chỉ ba chứng từ thu mua được AND thêm "phiếu thuộc phòng mình" (`_narrow_to_dept`);
-        #  entity còn lại lấy THẲNG `_dept_match` (không AND pháp nhân, không rơi về `own`).
+        #  bao-CR-414 — bậc thứ bảy, gương của `_role_scope_cond` (`scoping.py:437-529`).
+        #  Bốn nhánh viết tay (ba chứng từ thu mua + đặt xe, từ bao-CR-446) được AND thêm
+        #  "phiếu thuộc phòng mình" (`_narrow_to_dept`); entity còn lại lấy THẲNG
+        #  `_dept_match` (không AND pháp nhân, không rơi về `own`).
         #  Không dựng nổi điều kiện phòng (chưa gắn phòng, hoặc entity không có chiều phòng)
         #  thì `_chan` — có log, khác nhánh `dept` câm ở `scoping.py:373`.
         #  Gương lại `_dept_match` (`scoping.py:286-306`): cột nào lọt vào SQL tùy hồ sơ.
@@ -102,13 +103,8 @@ def expect_outcome(entity: str, scope: str, profile: dict, model):
             dept_cols.append(f["dept_name"])
         if f.get("handler_dept") and dept_ids:
             dept_cols.append(f["handler_dept"])
-        if entity == "vehicle_booking":
-            #  Nhánh viết tay của đặt xe `return` TRƯỚC `_narrow_to_dept` (`scoping.py:516`)
-            #  nên `dept_proc` == `assigned` ở đây: KHÔNG khoanh phòng, KHÔNG chặn người
-            #  chưa gắn phòng. Ghim hành vi hiện tại.
-            #  # QUYẾT ĐỊNH CHỜ: có nên AND phòng cho đặt xe như ba chứng từ thu mua không?
-            #  Bậc này sinh ra cho phòng tự mua hàng (bao-CR-414), chưa ai cấp nó cho đặt xe.
-            return COND, ("created_by",), False
+        #  Đặt xe từng `return` TRƯỚC `_narrow_to_dept` nên `dept_proc` == `assigned`;
+        #  bao-CR-446 đưa nó qua cùng cửa với ba chứng từ thu mua — không còn nhánh riêng.
         if not dept_cols:
             return BLOCK, (), True           # `_chan` — `scoping.py:446` / `:522`
         if entity in HANDWRITTEN_ASSIGNED:
@@ -647,6 +643,74 @@ def test_b11_phieu_chua_phan_tai_xe_thi_khong_lot(db, world):
     assert a1.sees(VehicleBooking) == {xe["da_phan"]}
     assert a1.can_get(VehicleBooking, xe["chua_phan"]) is False
     assert a1.can_get(VehicleBooking, xe["phan_khac"]) is False
+
+
+def make_vehicle_bookings_by_dept(world, driver_id: int) -> dict[str, int]:
+    """Bốn phiếu đặt xe cho bậc `dept_proc`: phân cho tài xế × phòng mình/phòng khác,
+    cùng phòng nhưng chưa phân, và phiếu mình tạo ở phòng khác."""
+    from app.modules.vehicle_booking.model import VehicleBooking
+
+    db = world.db
+    rows = {
+        "phan_cung_phong": VehicleBooking(code="XE-P-KT", company_id=world.co["A"],
+                                          department_id=world.dept["A.kt"],
+                                          created_by=world.user_id("b1"),
+                                          assigned_driver_id=driver_id),
+        "phan_khac_phong": VehicleBooking(code="XE-P-MUA", company_id=world.co["A"],
+                                          department_id=world.dept["A.mua"],
+                                          created_by=world.user_id("b1"),
+                                          assigned_driver_id=driver_id),
+        "cung_phong_chua_phan": VehicleBooking(code="XE-KT-CHUA", company_id=world.co["A"],
+                                               department_id=world.dept["A.kt"],
+                                               created_by=world.user_id("b1"),
+                                               assigned_driver_id=None),
+        "minh_tao_khac_phong": VehicleBooking(code="XE-TOI-MUA", company_id=world.co["A"],
+                                              department_id=world.dept["A.mua"],
+                                              created_by=world.user_id("a1"),
+                                              assigned_driver_id=None),
+    }
+    db.add_all(rows.values())
+    db.flush()
+    return {k: v.id for k, v in rows.items()}
+
+
+def test_b11b_dept_proc_dat_xe_khoanh_them_phong_minh(db, world):
+    """B11b — bao-CR-446: `dept_proc` trên đặt xe = nhánh `assigned` AND «phiếu thuộc phòng mình».
+
+    Trước CR này nhánh đặt xe `return` trước `_narrow_to_dept` nên `dept_proc` mở
+    y hệt `assigned`: phiếu phân cho mình ở phòng khác, phiếu mình tạo ở phòng khác
+    đều lọt. Nay chỉ còn phiếu vừa «của mình / phân cho mình» vừa thuộc phòng mình.
+    Phiếu cùng phòng nhưng chưa phân vẫn không lọt — AND phòng là thu hẹp, không nới.
+    """
+    from app.modules.vehicle_booking.model import Driver, VehicleBooking
+
+    tai_xe = Driver(name="Tài xế a1", user_id=world.user_id("a1"))
+    db.add(tai_xe)
+    db.flush()
+    xe = make_vehicle_bookings_by_dept(world, tai_xe.id)
+
+    a1 = world.grant("a1", "vehicle_booking", scope="dept_proc")
+    assert a1.sees(VehicleBooking) == {xe["phan_cung_phong"]}
+    assert a1.can_get(VehicleBooking, xe["phan_khac_phong"]) is False
+    assert a1.can_get(VehicleBooking, xe["cung_phong_chua_phan"]) is False
+    assert a1.can_get(VehicleBooking, xe["minh_tao_khac_phong"]) is False
+
+
+def test_b11c_dept_proc_dat_xe_chan_nguoi_chua_gan_phong(db, world, caplog):
+    """B11c — bao-CR-446: người chưa gắn phòng đặt bậc `dept_proc` trên đặt xe thì CHẶN có log,
+    kể cả khi phiếu đã phân cho chính họ — cùng luật với ba chứng từ thu mua (`_chan`)."""
+    from app.modules.vehicle_booking.model import Driver, VehicleBooking
+
+    tai_xe = Driver(name="Tài xế không phòng", user_id=world.user_id("khongphong"))
+    db.add(tai_xe)
+    db.flush()
+    xe = make_vehicle_bookings_by_dept(world, tai_xe.id)
+
+    with caplog.at_level(logging.WARNING, logger="app.scoping"):
+        kp = world.grant("khongphong", "vehicle_booking", scope="dept_proc")
+        assert kp.sees(VehicleBooking) == set()
+        assert kp.can_get(VehicleBooking, xe["phan_cung_phong"]) is False
+    assert any("chua gan phong ban" in r.getMessage() for r in caplog.records)
 
 
 # ── B12–B14. Entity KHÔNG có nhánh riêng → rơi về `own` ────────────────────────
