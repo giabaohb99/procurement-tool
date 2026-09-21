@@ -4214,3 +4214,45 @@ pages/purchase-order-detail-page.tsx, utils/purchase-order-import-cost.ts (resol
 summarizeOrderTotals), utils/catalog-selection.ts (resolveCatalogSelection),
 components/purchase-request-items-table.tsx, components/purchase-order-import-costs-card.tsx.
 Tham chiếu: bản cũ bao-CR-364, bao-CR-367, bao-CR-372, bao-CR-379.
+Commit: b8f407d2 trên nhánh erp-v2 (cùng đợt đẩy lên máy thử với bao-CR-434 63d3958f và bao-CR-435 1623dd65).
+Deploy: máy chủ thử nghiệm, 21/09/2026, dựng lại erp + api + celery.
+
+## bao-CR-439 | Bày cột Đồng tiền và Tỷ giá lên màn Tiến độ mua hàng
+- status: xong
+- date: 2026-09-21
+- pic: NSU209
+Đây là phần đuôi của việc trước. Sau khi vá bốn chỗ thiếu tỷ giá, mọi cột thành tiền trên màn Tiến
+độ mua hàng đều đã quy đổi về đồng, còn ô Đơn giá ngay bên trái thì cố ý giữ nguyên tệ vì đó là số
+in trên hóa đơn nhà cung cấp, quy đổi đi là hết đối chiếu được. Hai ô nằm cạnh nhau mang hai loại
+tiền mà không ô nào nói ra, nên người đọc nhân tay đơn giá với số lượng rồi ra một con số thứ ba.
+Tệ hơn nữa là tệp Excel của chính màn đó đã có hai cột Đồng tiền và Tỷ giá từ việc trước, còn màn
+hình thì không: hai nơi cùng một dữ liệu mà mang lượng thông tin khác nhau chính là thứ đẻ ra câu
+hỏi sao số này khác số kia. Đại ca chốt làm luôn.
+
+Màn hình nay có thêm hai cột Đồng tiền và Tỷ giá, xếp ngay trước cột thành tiền đầu tiên để đọc
+liền một mạch: đơn giá nguyên tệ nhân tỷ giá ra thành tiền đồng. Ô Đơn giá của dòng ngoại tệ được
+dán thêm mã tiền ở đuôi, còn dòng nội tệ để trơn vì gần hết đơn là tiền đồng, gắn đuôi vào mọi dòng
+thì cột dài thêm mà chẳng nói gì mới. Ô tỷ giá không bao giờ trống, vì backend đã cho giá trị qua
+chốt chuẩn hóa nên dòng cũ chưa ai khai đọc thành 1, đúng bằng số nó đang nhân vào cột thành tiền.
+Cả hai cột đều không đánh dấu ẩn mặc định: cột bày ra theo yêu cầu thì phải thấy ngay. Bản cũ chỉ
+lưu danh sách cột đang ẩn nên người đã từng chỉnh menu Cột vẫn thấy đủ; bản mới lưu cả thứ tự cột
+nên ai từng kéo thả sẽ thấy hai cột này nằm ở cuối bảng, kéo lại một lần là xong.
+
+Làm ở cả hai bản giao diện. Bản cũ có thêm hai ô lọc điều kiện theo đồng tiền và theo tỷ giá, để
+soi riêng cụm ngoại tệ: cột thành tiền đã quy đổi hết nên không còn cách nào nhìn ra chúng giữa
+bảng, mà đó lại là cụm hay phải kiểm lại nhất. Muốn lọc và sắp xếp được thì backend phải biết hai
+tên cột đó, nên em khai thêm vào bảng tên cột cho phép sắp xếp của màn Tiến độ; bộ lọc điều kiện
+dẫn xuất từ chính bảng đó nên mở theo. Cột có nút sắp xếp mà backend không biết tên thì bấm vào
+không xảy ra gì cả, im lặng hoàn toàn, nên đây là chốt phải có chứ không phải làm thêm cho đẹp.
+
+Hai cột căn cứ vẫn nằm trong nhóm luôn xuất của tệp Excel dù màn hình đã bày chúng, vì chúng ẩn
+hiện được như mọi cột khác: ai tắt đi thì danh sách cột gửi lên không còn chúng, và tệp ra toàn cột
+tiền đã quy đổi mà không kèm căn cứ quy đổi. Hàm chọn cột tự khử trùng nên ép luôn là an toàn.
+
+Bài kiểm: thêm 2 bài backend vào tệp kiểm của việc trước, chốt hai tên cột có mặt trong cả bảng sắp
+xếp lẫn bộ lọc điều kiện kể cả khi người xem không có quyền đọc nhà cung cấp, và chốt lọc theo đồng
+tiền ra đúng cụm ngoại tệ. Thêm 4 bài cho hàm định dạng đơn giá kèm mã tiền và 2 bài cho màn hình
+bản mới. Chạy lại hai tệp liên quan ở backend ra 22 xanh; bản mới typecheck 0 lỗi, lint 0 lỗi,
+vitest thư mục thu mua và thư mục dùng chung 522 xanh; bản cũ typecheck vẫn đúng 4 lỗi cũ có sẵn.
+
+Mã nguồn: backend/app/modules/purchase_progress/controller.py, backend/app/modules/purchase_progress/export.py, frontend/src/pages/PurchaseProgress.tsx, frontend/src/config/conditional-filters.ts, frontend-v2/src/modules/procurement/pages/purchase-progress-page.tsx, frontend-v2/src/modules/procurement/types/purchase-progress.ts, frontend-v2/src/shared/utils/format-money.ts, test/backend/test_ty_gia_cot_tien_cr437.py
