@@ -162,6 +162,36 @@ def test_current_seq_tro_ra_ngoai_ban_chup_thi_khong_no(db, signer):
     assert steps_service.STEP_CURRENT not in [s["state"] for s in flow["steps"]]
 
 
+def test_cau_tom_tat_ca_trang_van_chi_ton_BA_truy_van(db, signer):
+    """Câu tóm tắt đi kèm MỌI dòng của màn danh sách, nên nó phải phẳng.
+
+    `summaries_of_entities` là cửa mà bốn hàm dựng dữ liệu của Duyệt dấu và Đặt
+    xe gọi vào. Đặt một truy vấn trong vòng lặp ở đây là mỗi dòng danh sách một
+    lượt vào cơ sở dữ liệu — hai mươi dòng thành hơn sáu mươi lượt, đúng cái
+    `steps_service` sinh ra để tránh. Ba là TRẦN CỨNG, không phải số đo tham
+    khảo: phiên + việc + tên người, không thêm gì nữa.
+    """
+    from sqlalchemy import event
+
+    ids = list(range(900, 930))
+    for entity_id in ids:
+        _legacy_instance(db, entity_id, current_seq=3, signed_until=1, signer_id=signer.id)
+
+    counted: list[str] = []
+
+    def _count(conn, cursor, statement, *args):
+        counted.append(statement)
+
+    event.listen(db.get_bind(), "before_cursor_execute", _count)
+    try:
+        summaries = steps_service.summaries_of_entities(db, ENTITY, ids)
+    finally:
+        event.remove(db.get_bind(), "before_cursor_execute", _count)
+
+    assert len(summaries) == len(ids)
+    assert len(counted) <= 3, f"Đã quay lại N+1: {len(counted)} truy vấn cho {len(ids)} dòng"
+
+
 def test_buoc_nhan_ban_sao_khong_bao_gio_thanh_chang_dang_cho(db, signer):
     """`NODE_CC` không chặn ai. Đếm nó vào là bịa ra một chặng phải chờ."""
     nodes = [_node(1, STEP_NAMES[1]),

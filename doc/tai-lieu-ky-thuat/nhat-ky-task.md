@@ -3866,8 +3866,8 @@ Còn 12 bài kiểm đỏ trong vùng lân cận là lỗi có sẵn từ trư�
 sửa đi rồi chạy lại vẫn đỏ y hệt, nên để riêng thành việc dọn sau.
 
 Kiểm chứng trên máy chủ thử sau khi deploy, lấy đúng hai phiếu trong ảnh đại ca gửi: phiếu đóng
-dấu DX000932 nay có mã phiên 1557 và cờ đang chạy đã tắt, tức thẻ Lịch sử phê duyệt hiện trở lại;
-phiếu đặt xe DD000864 giữ nguyên mã phiên 1553 và vẫn đang chạy ở bước 3.
+xe DX000932 nay có mã phiên 1557 và cờ đang chạy đã tắt, tức thẻ Lịch sử phê duyệt hiện trở lại;
+phiếu đóng dấu DD000864 giữ nguyên mã phiên 1553 và vẫn đang chạy ở bước 3.
 Mã nguồn: `backend/app/modules/approval/instance_service.py` (hàm tra phiên mới nhất) · hai tệp
 cầu nối `approval_bridge.py` của đặt xe và duyệt dấu · `schema.py` và `service.py` của hai phân hệ
 đó · hai tệp kiểu dữ liệu và hai trang chi tiết bên `frontend-v2` ·
@@ -3898,3 +3898,52 @@ kiểm tra sau khi làm theo từng tài khoản, bẫy hay gặp, và cách m�
 Thêm một dòng vào mục lục tài liệu chức năng. Chưa commit, đợi đại ca bảo.
 Mã nguồn: `doc/tai-lieu-chuc-nang/20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md` ·
 `doc/tai-lieu-chuc-nang/00-muc-luc.md`.
+
+## bao-CR-432 | Phiếu Chờ duyệt nói rõ đang chờ ở chặng nào
+- status: xong
+- date: 2026-09-21
+- pic: NSU209
+Đại ca thấy phiếu đóng dấu «HĐ testa» bên app đặt xe cũ ghi là đã duyệt, còn trên ERP vẫn là Chờ
+duyệt, để từ thứ Bảy tới đầu tuần vẫn vậy. Rà tận nơi thì đồng bộ không hỏng và ERP cũng không sai:
+phiếu mới ký xong chặng một, đang nằm chờ Brand và Pháp chế ở chặng ba. Chuyện là hai bên đặt tên
+trạng thái theo hai lối khác nhau — app cũ gọi tên theo CHẶNG đang chờ nên chặng cuối nó viết luôn
+thành «Đã Duyệt», còn ERP gọi tên theo KẾT QUẢ nên ký hết mới đổi tên. Cùng một tờ phiếu, hai màn
+hình kể hai câu chuyện, và người xem đọc ra là đồng bộ chết.
+
+Đại ca chốt chỉ sửa bên ERP, không đụng app cũ và cũng không đẻ thêm mã trạng thái mới. Nay cạnh
+huy hiệu Chờ duyệt có thêm một dòng chữ nhỏ nói đang ở chặng mấy trên mấy và tên chặng đó, ví dụ
+«Đang ở chặng 3/3 · Duyệt Brand & Pháp chế». Dòng này có ở cả màn danh sách lẫn trang chi tiết,
+cho cả Duyệt dấu lẫn Đặt xe. Không phải nhập thêm gì, không phải nạp lại dữ liệu cũ: số chặng đang
+chờ và tên các chặng đã nằm sẵn trong phiên duyệt từ hồi nạp dữ liệu về.
+
+Chỗ phải sửa thật nằm trong bộ máy vẽ luồng duyệt. Nó vốn chỉ nhìn bảng việc để biết phiếu đang
+đứng đâu, mà phiếu nạp từ app cũ thì chỉ có dòng việc cho những chặng ĐÃ ký — chặng đang chờ không
+có dòng nào, nên chẳng chặng nào sáng lên và câu tóm tắt rơi về mấy chữ trống rỗng. Nay phiên nào
+còn mở thì chặng mà phiên đang đứng chính là chặng đang chờ, kể cả khi bảng việc im lặng. Đem luật
+mới soi lại dữ liệu thật thì lòi thêm một ca nữa: phiếu bị Pháp chế trả về cho sửa rồi nộp lại đúng
+chặng đó, dòng việc của vòng cũ bị hủy nên màn hình vẽ chặng ấy thành «đã hủy» — đọc ra là phiếu
+chết trong khi nó đang chờ chữ ký. Ca này cũng vào luật luôn. Chặng đã ký hay đã bị từ chối thì
+giữ nguyên, không cho nói ngược lại. Thêm nữa, khi ERP không biết tên người đang giữ việc — phiếu
+app cũ thì người ta vẫn ký bên app cũ nên ERP không giao việc cho ai — thì câu tóm tắt đọc tên
+chặng thay vì để trống, vì «Đang ở chặng 3/3» một mình thì đúng nhưng chẳng giúp được gì.
+
+Đại ca hỏi thêm câu tóm tắt này có làm chậm màn danh sách không, vì mỗi dòng đều có nó. Đã đo trên
+dữ liệu thật dưới máy em, 1148 phiếu đóng dấu: phần luồng duyệt tốn đúng BA lượt hỏi cơ sở dữ liệu
+cho cả trang, không đổi theo số dòng — 20 dòng hết 6 mili giây, 50 dòng hết 9, 200 dòng hết 20. Cả
+hai bảng nó đọc đều đã có chỉ mục sẵn. Nhân lúc đo thì thấy hàm dựng danh sách phiếu đóng dấu có
+một chỗ hỏi cơ sở dữ liệu theo từng dòng từ trước tới nay (lấy danh sách công ty của mỗi phiếu),
+nên cả trang 20 dòng tốn 25 lượt chứ không phải 5 — chỗ đó không thuộc việc này, ghi lại để xử lý
+riêng. Màn Tổng quan gọi hàm dựng danh sách bốn lần nên tốn thêm tối đa 12 lượt, đo thực tế 2 lượt
+mất 2 mili giây.
+
+Kiểm tra: 9 bài kiểm mới phía máy chủ dựng đúng hình dạng phiên nạp từ app cũ, gồm cả các ca cực
+đoan như số chặng đang chờ trỏ ra ngoài bản vẽ luồng, hay bước gửi bản sao không được tính thành
+chặng phải chờ; bài thứ chín đếm số lượt hỏi cơ sở dữ liệu trên 30 phiếu và chặn ở mức ba, để sau
+này ai đặt câu hỏi vào trong vòng lặp là đỏ ngay. 63 bài kiểm của cụm duyệt chạy lại đều xanh. Ba cổng của v2 xanh: kiểm kiểu 0 lỗi,
+soát mã 0 lỗi, 149 bài kiểm của ba phân hệ duyệt, duyệt dấu và đặt xe đều xanh. Chạy thử trên dữ
+liệu thật dưới máy em: 12 phiếu đóng dấu gần nhất nay phiếu nào chờ cũng nói rõ đang chờ ai, phiếu
+đã xong vẫn đọc «Đã duyệt đủ 3/3 chặng» như cũ. Chưa commit, đợi đại ca bảo.
+Mã nguồn: `backend/app/modules/approval/steps_service.py` (luật chặng đang chờ và câu tóm tắt) ·
+`schema.py` cùng `service.py` của hai phân hệ duyệt dấu và đặt xe · thẻ dùng chung
+`frontend-v2/src/modules/approval/components/approval-stage-note.tsx` · hai màn danh sách và hai
+đầu trang chi tiết bên `frontend-v2` · `test/backend/test_luong_duyet_nap_tu_app_cu.py`.
