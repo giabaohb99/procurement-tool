@@ -63,11 +63,50 @@ Số hóa việc đặt xe trong nội bộ DEGO: nhân sự tạo **yêu cầu 
 - `Điều phối` + tài xế: **Chấp nhận** (`/driver/accept`, Chờ tài xế → Đã nhận) · **Từ chối chuyến** (`/driver/reject` + lý do → Tài xế từ chối, chờ điều phối lại) · **Bắt đầu** (`/driver/start`, Đã nhận → Đang đi, chấm `actual_start_time`) · **Hoàn tất** (`/driver/complete`, Đang đi → phiếu *Hoàn thành* + `driver_status` Hoàn thành, chấm `actual_end_time`, ghi km/chi phí).
 - Chốt chặn tài xế: `_ensure_can_drive` — người **là tài xế** chỉ đụng được chuyến của mình; người **không phải tài xế** (admin/điều phối) được thao tác thay.
 
-> **Lưu ý — luồng duyệt hiện tại.** Các bước Duyệt/Trả/Từ chối là **chuyển trạng thái trực tiếp theo
-> quyền `approve`**, **CHƯA** chạy qua engine đa-bước của `approval_flow`. Đã tạo sẵn **luồng duyệt
-> cấu hình** "Duyệt yêu cầu đặt xe" (entity `vehicle_booking`, 2 bước) ở `/approval/flows`, nhưng
-> *runtime bridge* (`entity_hooks.register` + `ApprovalSwitch`) là việc của phase sau — xem
-> `doc/dat-xe-duyet-dau/`.
+> **Hai đường duyệt, chọn bằng một cái cờ.** Mặc định (cờ `ApprovalSwitch` của entity
+> `vehicle_booking` TẮT, hoặc bật mà chưa khai luồng nào khớp) thì Duyệt/Trả/Từ chối là **chuyển
+> trạng thái trực tiếp theo quyền `approve`** — đúng bảng trên. Bật cờ + có luồng khớp thì gửi duyệt
+> mở một **phiên duyệt nhiều bước** của `approval_flow`; xem mục «Luồng duyệt nhiều bước» cuối tài liệu.
+
+### Luồng duyệt nhiều bước (`approval_bridge`)
+
+Cái nối nằm ở `backend/app/modules/vehicle_booking/approval_bridge.py`. Bật bằng `ApprovalSwitch`
+(entity `vehicle_booking`) + khai luồng ở `/approval/flows`. Sáu luật đã trả giá, **đừng gỡ**:
+
+1. **Đang chạy luồng thì mọi cửa đổi trạng thái khác phải đóng.** `block_legacy_path` gác **năm**
+   cửa: `/approve` · `/return` · `/reject` · `/dispatch/return` · `/dispatch/reject`. Hai cửa cuối
+   bị quên tới 21/09/2026 — chúng chạy đúng hai hàm service mà ba nút kia chạy, và `_RETURNABLE`
+   nhận cả *Chờ duyệt*.
+2. **Bốn hàm nhận kết cục tự kiểm trạng thái nguồn** (`_booking_for_outcome`). Phiếu đã xóa / đã
+   khóa / đã chạy xong chuyến thì bộ máy KHÔNG đặt lại trạng thái, chỉ ghi cảnh báo vào sổ. Thiếu
+   chốt này thì một phiếu **đã bị từ chối sống lại** thành *Đã duyệt* khi người duyệt ký sau đó.
+3. **Ký xong phải ghi `approved_by` + `approved_at`.** Thiếu thì `serialize_booking` lùi về
+   `first_approver_id` — người mà NGƯỜI TẠO tự chọn trong biểu mẫu, có thể chưa hề ký — rồi chi
+   tiết phiếu lẫn **bản in** đều ghi tên người đó với ô giờ trống.
+4. **Người ĐANG GIỮ VIỆC đọc được phiếu dù ngoài phạm vi dữ liệu** (`booking_for_approver`, nới ở
+   cả `entity_hooks` lẫn `GET /api/vehicle-bookings/{id}`). Đặt xe **không còn màn «Việc của tôi»**
+   (xóa 21/08/2026): nút Duyệt nằm trong `BookingApprovalPanel` NẰM TRONG trang chi tiết phiếu, nên
+   404 ở cửa đọc = phiếu kẹt vĩnh viễn, không chỗ nào đỏ lên. Nới chỉ cho cửa ĐỌC và chỉ lúc việc
+   còn treo — ký xong là đóng lại (cùng luật với `leave.can_read_request`, CR-260).
+5. **Xóa phiếu thì dọn luôn phiên duyệt** (`instance_service.delete_by_entity`, gọi TRƯỚC khi đặt
+   `is_deleted`, cùng giao dịch). Dấu vết không mất theo: `_write_log` đã chép mọi kết cục của
+   luồng vào nhật ký thao tác của chính phiếu.
+6. **Ô «Trưởng bộ phận phê duyệt» (`first_approver_id`) bộ máy KHÔNG đọc tới.** Nó không nằm trong
+   `entity_context`, nên bước khai *lấy người duyệt từ ô trên phiếu* (`APPROVER_FIELD`) không bao
+   giờ khớp → bước rỗng → phiếu kẹt. Kể cả khai thêm cũng sai kiểu: ô đó lưu **id TÀI KHOẢN** còn
+   `APPROVER_FIELD` đọc ra **id NHÂN SỰ**. Ô này hiện chỉ dùng để hiển thị.
+
+> **QUYẾT ĐỊNH 21/09/2026 — điều phối SỚM vẫn cho.** `dispatch_booking` cố ý chỉ chặn `_CLOSED_STATUSES`
+> (hủy · từ chối · hoàn thành), nên gán được xe + tài xế cho phiếu **chưa ai ký, kể cả còn Nháp** —
+> giữ lại vì có chuyến gấp phải gọi xe trước chữ ký. Đổi lại, khi luồng ký xong thì phiếu **giữ
+> nguyên «Đã điều phối»**, không bị đẩy lùi về «Đã duyệt».
+
+> **I08 cho đường duyệt MỘT BƯỚC** (`service._block_self_approval`, 21/09/2026): người lập phiếu
+> không tự bấm Duyệt phiếu của mình — **trừ người có phạm vi `all`** trên `vehicle_booking.approve`
+> (điều phối viên · quản lý điều phối · admin), vì họ là người chốt xe cho cả công ty. Bộ máy nhiều
+> bước có luật này sẵn (`instance_service._exclude_submitter`).
+
+Bài kiểm ép tải cả cụm: `test/backend/test_dat_xe_stress_luong_duyet.py` (30 ca).
 
 Chỉ trạng thái **Nháp** và **Yêu cầu chỉnh sửa** cho sửa nội dung phiếu (`EDITABLE_STATUSES`); sau khi
 vào luồng thì khóa.

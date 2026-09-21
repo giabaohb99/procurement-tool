@@ -406,11 +406,39 @@ def _now() -> str:
 
 # --- Người duyệt (quyền `approve`) ---
 
+def _block_self_approval(db: Session, booking: VehicleBooking, user) -> None:
+    """I08 cho ĐƯỜNG DUYỆT MỘT BƯỚC — người lập phiếu không tự ký phiếu của mình.
+
+    Bộ máy nhiều bước có luật này từ đầu (`instance_service._exclude_submitter`),
+    còn đường một bước thì chỉ hỏi «phiếu có đang Chờ duyệt không» — mà đây mới
+    là đường ĐANG CHẠY THẬT, vì cờ bộ máy mặc định tắt. Ai kiêm một vai có
+    `vehicle_booking.approve` tự duyệt phiếu xe của chính mình, nhật ký đọc xuôi
+    tới mức không ai soi (đo được 21/09/2026).
+
+    ⚠️ **Miễn cho phạm vi `all`** (đại ca chốt 21/09/2026): điều phối viên và
+    quản lý điều phối là người chốt xe cho cả công ty, phiếu của chính họ cũng
+    chỉ có họ duyệt — chặn cứng là khóa luôn việc thường ngày của đúng hai vai
+    trò vận hành phân hệ này. Người dùng thường (phạm vi `own`/`dept`) thì không.
+    """
+    from app.core.auth import get_perm_profile
+    from app.core.scoping import has_global_scope
+
+    uid = getattr(user, "id", 0)
+    if uid not in (booking.created_by, booking.requester_id):
+        return
+    if has_global_scope(get_perm_profile(db, user), "vehicle_booking", "approve"):
+        return
+    raise HTTPException(
+        403, "Bạn là người lập phiếu này nên không tự duyệt được — "
+             "chuyển cho người duyệt của bộ phận.")
+
+
 def approve_booking(db: Session, booking: VehicleBooking, user,
                     background_tasks=None) -> VehicleBooking:
     """Người duyệt CHẤP NHẬN phiếu Chờ duyệt → Đã duyệt (chờ điều phối)."""
     if booking.status != BK_PENDING:
         raise HTTPException(400, "Chỉ duyệt được phiếu đang Chờ duyệt")
+    _block_self_approval(db, booking, user)
     booking.status = BK_APPROVED
     booking.approved_by = getattr(user, "id", 0)   # NGƯỜI bấm Duyệt (có thể khác người được chọn)
     booking.approved_at = datetime.now().isoformat(timespec="seconds")

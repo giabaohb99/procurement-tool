@@ -27,6 +27,17 @@ from app.modules.vehicle_booking.service import (
 )
 
 
+def _approver(uid: int = 900):
+    """NGƯỜI DUYỆT — phải khác người lập phiếu.
+
+    Từ 21/09/2026 `service._block_self_approval` chặn người lập tự ký phiếu của
+    mình ở cả đường duyệt một bước (trừ người có phạm vi «tất cả»). Mấy bài dưới
+    đây trước đó dùng CHUNG một actor cho cả lập lẫn duyệt cho gọn — gọn nhưng
+    dựng sai cảnh thật, và chính chỗ đó che mất lỗ suốt thời gian qua.
+    """
+    return SimpleNamespace(id=uid)
+
+
 def _actor(db, *, uid=101, dept=7, company=3):
     emp = Employee(code="NV900", full_name="Phạm Người Tạo", email="creator@dego.vn",
                    department_id=dept, company_id=company)
@@ -115,7 +126,7 @@ def test_approve_notifies_dispatcher_role(db):
     actor = _actor(db)
     dispatcher = _dispatcher(db)
     b = create_booking(db, _payload(), actor, submit=True)  # Chờ duyệt
-    approve_booking(db, b, actor)  # background_tasks=None → email bỏ qua, chuông vẫn tạo
+    approve_booking(db, b, _approver())  # background_tasks=None → email bỏ qua, chuông vẫn tạo
 
     bells = db.query(Notification).filter(Notification.user_id == dispatcher.id).all()
     assert len(bells) == 1

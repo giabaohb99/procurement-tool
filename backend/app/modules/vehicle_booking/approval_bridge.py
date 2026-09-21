@@ -15,6 +15,8 @@ xong bộ máy gọi ngược `_on_approved/...` ở dưới để đổi trạn
 
 Mẫu: `app/modules/document/approval_bridge.py`.
 """
+import logging
+from datetime import datetime
 from types import SimpleNamespace
 
 from fastapi import HTTPException
@@ -22,9 +24,15 @@ from sqlalchemy.orm import Session
 
 from app.modules.approval import entity_hooks, flow_service, instance_service
 
-from .model import BK_APPROVED, BK_DRAFT, BK_REJECTED, BK_RETURNED, VehicleBooking
+from .model import (BK_APPROVED, BK_DISPATCHED, BK_DRAFT, BK_PENDING,
+                    BK_REJECTED, BK_RETURNED, VehicleBooking)
 
 ENTITY = "vehicle_booking"
+
+#  Trạng thái phiếu mà một kết cục của luồng CÒN CÓ NGHĨA. Ngoài khoảng này ra
+#  thì phiếu đã đi đường khác (bị xóa, đã khóa, đã chạy xong chuyến) và bộ máy
+#  KHÔNG được đặt lại trạng thái — xem `_booking_for_outcome`.
+_OPEN_FOR_FLOW = (BK_PENDING, BK_APPROVED, BK_DISPATCHED)
 
 
 def entity_context(booking: VehicleBooking) -> dict:
@@ -117,28 +125,80 @@ def _actor(instance) -> SimpleNamespace:
     return SimpleNamespace(id=instance.updated_by or 0)
 
 
+def _booking_for_outcome(db: Session, booking_id: int, what: str) -> VehicleBooking | None:
+    """Phiếu mà kết cục của luồng ĐƯỢC PHÉP đụng vào. `None` = bỏ qua, có ghi log.
+
+    ⚠️ Không có chốt này thì hook đặt trạng thái VÔ ĐIỀU KIỆN, và mỗi cửa đổi
+    trạng thái khác của đặt xe đều biến thành một đường làm hỏng dữ liệu:
+
+    * phiếu **đã bị từ chối** (điều phối viên từ chối trong lúc luồng còn chạy)
+      SỐNG LẠI thành «Đã duyệt» khi người duyệt bấm Duyệt sau đó;
+    * phiếu **đã xóa** vẫn được đặt lại trạng thái, nên `is_deleted` mang một
+      trạng thái mới toanh mà không màn nào bày ra để ai đó sửa;
+    * phiếu **đã chạy xong chuyến** bị đẩy lùi về «Đã duyệt».
+
+    Đây là chốt cuối, không thay cho `block_legacy_path` ở controller: cửa kia
+    nói với người bấm «đi ra màn duyệt», cửa này giữ dữ liệu khi có đường nào lọt.
+    """
+    booking = db.get(VehicleBooking, booking_id)
+    if booking is None or booking.is_deleted:
+        logging.getLogger(__name__).warning(
+            "Luồng duyệt %s phiếu đặt xe #%s: phiếu không còn tồn tại", what, booking_id)
+        return None
+    if booking.status not in _OPEN_FOR_FLOW:
+        logging.getLogger(__name__).warning(
+            "Luồng duyệt %s phiếu đặt xe #%s: phiếu đang ở trạng thái %s nên KHÔNG đổi "
+            "trạng thái theo luồng", what, booking_id, booking.status)
+        return None
+    return booking
+
+
 def _on_approved(db: Session, booking_id: int, instance) -> None:
     """Ký hết các bước → phiếu Đã duyệt (chờ điều phối). Báo Điều phối viên + Người tạo."""
     from .notify import notify_approved
 
-    booking = db.get(VehicleBooking, booking_id)
+    booking = _booking_for_outcome(db, booking_id, "duyệt")
     if booking is None:
         return
-    booking.status = BK_APPROVED
+    #  ⚠️ GHI NGƯỜI KÝ THẬT + MỐC GIỜ, đúng như đường duyệt một bước.
+    #
+    #  Thiếu hai cột này thì `serialize_booking` lùi về `first_approver_id` —
+    #  **người mà NGƯỜI TẠO tự chọn trong biểu mẫu**, có thể chưa hề ký và có thể
+    #  không nằm trong luồng — rồi trang chi tiết lẫn BẢN IN đều ghi tên người đó
+    #  ở dòng «Người phê duyệt», với ô thời gian trống
+    #  (`build-booking-stages.ts` đọc `approved_at`).
+    booking.approved_by = instance.updated_by or 0
+    booking.approved_at = datetime.now().isoformat(timespec="seconds")
+    #  Phiếu đã được điều phối trước khi ký xong (cửa điều phối cố ý không chặn
+    #  trạng thái Chờ duyệt) thì GIỮ NGUYÊN «Đã điều phối»: đẩy lùi về «Đã duyệt»
+    #  là xóa mất bước đã đi, trong khi xe và tài xế vẫn đang giữ chuyến đó.
+    if booking.status == BK_PENDING:
+        booking.status = BK_APPROVED
     booking.updated_by = instance.updated_by or 0
     db.commit()
     _write_log(db, booking_id, instance, "approve", "Xong hết các bước của luồng — đã duyệt")
     notify_approved(db, booking, None, actor=_actor(instance))
 
 
+def _clear_dispatch_if_needed(booking: VehicleBooking) -> None:
+    """Phiếu bị chặn mà đang giữ xe/tài xế thì phải nhả ra — cùng luật với
+    `service._clear_dispatch` ở đường duyệt một bước. Không nhả thì xe vẫn bị
+    tính là có chuyến trong phép chống trùng khung giờ của một phiếu đã khóa."""
+    from .service import _clear_dispatch
+
+    if booking.status == BK_DISPATCHED:
+        _clear_dispatch(booking)
+
+
 def _on_rejected(db: Session, booking_id: int, instance) -> None:
     """Từ chối ở một bước → phiếu Từ chối (khóa)."""
     from .notify import notify
 
-    booking = db.get(VehicleBooking, booking_id)
+    booking = _booking_for_outcome(db, booking_id, "từ chối")
     if booking is None:
         return
     reason = _reason(instance, "Bị từ chối")
+    _clear_dispatch_if_needed(booking)
     booking.status = BK_REJECTED
     #  Lý do ở nhật ký + thông báo, không ghi vào Ghi chú.
     booking.updated_by = instance.updated_by or 0
@@ -151,10 +211,11 @@ def _on_returned(db: Session, booking_id: int, instance) -> None:
     """Trả lại tận người nộp → phiếu Yêu cầu chỉnh sửa (sửa & gửi lại được)."""
     from .notify import notify
 
-    booking = db.get(VehicleBooking, booking_id)
+    booking = _booking_for_outcome(db, booking_id, "trả lại")
     if booking is None:
         return
     reason = _reason(instance, "Bị trả về")
+    _clear_dispatch_if_needed(booking)
     booking.status = BK_RETURNED
     #  Lý do ở nhật ký + thông báo, không ghi vào Ghi chú.
     booking.updated_by = instance.updated_by or 0
@@ -170,9 +231,10 @@ def _on_withdrawn(db: Session, booking_id: int, instance) -> None:
     (đường gửi chỉ nhận nháp/bị trả) mà `block_legacy_path` chỉ khóa khi phiên còn
     chạy — thành đường tắt duyệt không ai ký (đúng cảnh báo ở `entity_hooks`).
     """
-    booking = db.get(VehicleBooking, booking_id)
+    booking = _booking_for_outcome(db, booking_id, "rút lại")
     if booking is None:
         return
+    _clear_dispatch_if_needed(booking)
     booking.status = BK_DRAFT
     booking.updated_by = instance.updated_by or 0
     db.commit()
@@ -197,14 +259,58 @@ def _context_by_id(db: Session, booking_id: int) -> dict:
 entity_hooks.register_subject(ENTITY, _context_by_id)
 
 
+def booking_for_approver(db: Session, booking_id: int, user) -> VehicleBooking | None:
+    """Phiếu mà người này đang PHẢI KÝ — `None` nếu họ không giữ việc nào trên nó.
+
+    Đường lùi của `GET /api/vehicle-bookings/{id}` khi `get_scoped` không cho qua.
+    Mở cửa ĐỌC ở `entity_hooks` thôi thì chưa đủ: nút Duyệt của Đặt xe nằm trong
+    `BookingApprovalPanel`, mà panel đó nằm TRONG trang chi tiết phiếu — chi tiết
+    404 thì người duyệt vẫn không tới được nút của mình.
+
+    Chỉ ĐỌC. Mọi cửa GHI (sửa · điều phối · duyệt thẳng) vẫn đi qua `get_scoped`
+    với đúng hành động của nó.
+    """
+    from app.modules.approval import steps_service
+
+    booking = db.get(VehicleBooking, booking_id)
+    if booking is None or booking.is_deleted:
+        return None
+    if not steps_service.has_pending_task(
+            db, ENTITY, booking_id, getattr(user, "employee_id", 0) or 0):
+        return None
+    return booking
+
+
 def _can_read_booking(db: Session, booking_id: int, user) -> bool:
-    """Người này có đọc được phiếu của phiên duyệt đó không — bám đúng phạm vi
-    `vehicle_booking` (dùng lại `get_scoped`, không chép luật lần hai)."""
+    """Ai xem được phiếu này: **trong phạm vi dữ liệu, HOẶC đang phải ký nó**.
+
+    Vế đầu là luật cũ — dùng lại đúng phạm vi của `vehicle_booking`, không chép
+    luật lần hai. Bỏ nó là `/api/approvals/of/vehicle_booking/<id>` phơi mục đích
+    chuyến + tên người đi cho bất kỳ ai đăng nhập (lỗ đã dựng lại được với văn
+    bản 25/08/2026).
+
+    ⚠️ Vế sau thêm 21/09/2026, và không có nó thì **luồng duyệt nhiều bước của
+    Đặt xe không chạy được**: chặng 2 của luồng thật gần như luôn là người phòng
+    khác (Hành chính · Nhân sự · Ban giám đốc), mà phạm vi dữ liệu của họ không
+    với tới phiếu của phòng Kế toán. Nặng hơn Nghỉ phép một bậc vì Đặt xe **không
+    còn màn «Việc của tôi»** (xóa 21/08/2026) — chỗ duy nhất bấm Duyệt là
+    `BookingApprovalPanel` NẰM TRONG trang chi tiết phiếu. Cho nên chuỗi hậu quả
+    là: chi tiết phiếu 404 → `of/…` trả `null` → panel duyệt không render → thư
+    báo bấm vào ra trang trống → **phiếu kẹt vĩnh viễn, không chỗ nào đỏ lên**.
+
+    ⚠️ Nới đúng **lúc đang có việc treo**, không nới cho người «đã từng ký» —
+    cùng lý lẽ với `can_read_request` của Nghỉ phép (CR-260): ký xong là quyền
+    đọc thêm đó đóng lại, nếu không thì mỗi lượt ký lại thêm vĩnh viễn một phiếu
+    vào tầm nhìn của một người và phạm vi dữ liệu phình dần, không ai rà lại được.
+    """
     from app.core.auth import get_perm_profile
     from app.core.scoping import get_scoped
 
     obj = get_scoped(db, VehicleBooking, ENTITY, booking_id, user, get_perm_profile(db, user))
-    return obj is not None and not obj.is_deleted
+    if obj is not None and not obj.is_deleted:
+        return True
+    #  Phiếu đã xóa thì thôi, kể cả đang giữ việc: không còn gì để đọc.
+    return booking_for_approver(db, booking_id, user) is not None
 
 
 entity_hooks.register_reader(ENTITY, _can_read_booking)
