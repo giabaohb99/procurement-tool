@@ -55,6 +55,14 @@ export function StatCard({
         //  ⚠️ `@container/stat` là để CON SỐ tự co theo bề rộng THẺ, không theo
         //  bề rộng màn hình — xem ghi chú ở thẻ `<p>` bên dưới.
         '@container/stat gap-1.5 py-4',
+        //  ⚠️ `h-full` là chốt CAO ĐỀU CẢ HÀNG, không phải trang trí. Thẻ CÓ `to`
+        //  thì ô lưới là thẻ `Link` bọc ngoài: ô lưới giãn cao bằng hàng, nhưng
+        //  `Card` bên trong vẫn cao theo nội dung nên nó THỤT LÊN, chừa một
+        //  khoảng trống dưới đáy. Thẻ KHÔNG có `to` thì chính `Card` là ô lưới
+        //  nên nó cao đủ. Hậu quả: cùng một dải KPI, thẻ bấm được thấp hơn thẻ
+        //  không bấm được, và chỉ cần một dòng chú thích gãy hai dòng là cả dải
+        //  so le (thấy trên Tổng quan Đặt xe, 19/09/2026).
+        'h-full',
         //  Có `to`: cho cảm giác bấm được (con trỏ + đổi nền/viền khi rê chuột).
         to && 'cursor-pointer transition-colors hover:border-primary/50 hover:bg-accent/40',
         //  Có `to` thì ô lưới là thẻ `Link` bọc ngoài, `className` gắn ở đó.
@@ -140,7 +148,9 @@ export function StatCard({
       to={to}
       aria-label={`${label} — mở danh sách`}
       className={cn(
-        'block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        //  `h-full`: ô lưới giãn cao bằng hàng thì thẻ bên trong mới có gì để
+        //  bám vào mà giãn theo (xem ghi chú `h-full` ở `Card`).
+        'block h-full rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         className,
       )}
     >

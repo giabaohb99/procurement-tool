@@ -38,8 +38,20 @@ function EmptyRow({ span }: { span: number }) {
   )
 }
 
-/** Bảng "Thống kê theo xe" — số phiếu · hoàn tất · tổng km · tổng chi phí. */
+/**
+ * Bảng "Thống kê theo xe" — số phiếu · hoàn tất · (km) · (chi phí).
+ *
+ * ⚠️ Hai cột **Km** và **Chi phí** chỉ dựng khi CÓ ÍT NHẤT MỘT dòng có số. Hai
+ * cột đó đầy đủ chỉ khi văn thư nhập km và chi phí lúc đóng chuyến, mà phần lớn
+ * chuyến nội thành không ai nhập — bày ra thì được một cột dấu gạch chạy dọc cả
+ * bảng, chiếm chỗ ngang với cột có số thật. Còn một dòng có số thì cột vẫn hiện,
+ * vì lúc đó dấu gạch mới mang nghĩa "chuyến này chưa nhập".
+ */
 export function VehicleStatsTable({ rows }: { rows: VehicleStatRow[] }) {
+  const showKm = rows.some((r) => r.distance_km > 0)
+  const showCost = rows.some((r) => r.cost > 0)
+  const span = 3 + (showKm ? 1 : 0) + (showCost ? 1 : 0)
+
   return (
     <Table>
       <TableHeader>
@@ -47,23 +59,29 @@ export function VehicleStatsTable({ rows }: { rows: VehicleStatRow[] }) {
           <TableHead>Xe</TableHead>
           <TableHead className="text-right">Số phiếu</TableHead>
           <TableHead className="text-right">Hoàn tất</TableHead>
-          <TableHead className="text-right">Km</TableHead>
-          <TableHead className="text-right">Chi phí</TableHead>
+          {showKm && <TableHead className="text-right">Km</TableHead>}
+          {showCost && <TableHead className="text-right">Chi phí</TableHead>}
         </TableRow>
       </TableHeader>
       <TableBody>
         {rows.length === 0 ? (
-          <EmptyRow span={5} />
+          <EmptyRow span={span} />
         ) : (
           rows.map((r) => (
             <TableRow key={r.id}>
               <TableCell className="font-medium">{r.label}</TableCell>
               <TableCell className="text-right tabular-nums">{r.total}</TableCell>
               <TableCell className="text-right tabular-nums text-muted-foreground">{r.completed}</TableCell>
-              <TableCell className="text-right tabular-nums text-muted-foreground">{km(r.distance_km)}</TableCell>
-              <TableCell className="text-right tabular-nums">
-                {r.cost > 0 ? `${compactMoney(r.cost)} đ` : '—'}
-              </TableCell>
+              {showKm && (
+                <TableCell className="text-right tabular-nums text-muted-foreground">
+                  {km(r.distance_km)}
+                </TableCell>
+              )}
+              {showCost && (
+                <TableCell className="text-right tabular-nums">
+                  {r.cost > 0 ? `${compactMoney(r.cost)} đ` : '—'}
+                </TableCell>
+              )}
             </TableRow>
           ))
         )}
@@ -72,8 +90,10 @@ export function VehicleStatsTable({ rows }: { rows: VehicleStatRow[] }) {
   )
 }
 
-/** Bảng "Thống kê theo tài xế" — số phiếu · hoàn tất · tổng km. */
+/** Bảng "Thống kê theo tài xế" — số phiếu · hoàn tất · (km). Cột Km ẩn khi cả bảng rỗng. */
 export function DriverStatsTable({ rows }: { rows: DriverStatRow[] }) {
+  const showKm = rows.some((r) => r.distance_km > 0)
+
   return (
     <Table>
       <TableHeader>
@@ -81,19 +101,23 @@ export function DriverStatsTable({ rows }: { rows: DriverStatRow[] }) {
           <TableHead>Tài xế</TableHead>
           <TableHead className="text-right">Số phiếu</TableHead>
           <TableHead className="text-right">Hoàn tất</TableHead>
-          <TableHead className="text-right">Km</TableHead>
+          {showKm && <TableHead className="text-right">Km</TableHead>}
         </TableRow>
       </TableHeader>
       <TableBody>
         {rows.length === 0 ? (
-          <EmptyRow span={4} />
+          <EmptyRow span={showKm ? 4 : 3} />
         ) : (
           rows.map((r) => (
             <TableRow key={r.id}>
               <TableCell className="font-medium">{r.name}</TableCell>
               <TableCell className="text-right tabular-nums">{r.total}</TableCell>
               <TableCell className="text-right tabular-nums text-muted-foreground">{r.completed}</TableCell>
-              <TableCell className="text-right tabular-nums text-muted-foreground">{km(r.distance_km)}</TableCell>
+              {showKm && (
+                <TableCell className="text-right tabular-nums text-muted-foreground">
+                  {km(r.distance_km)}
+                </TableCell>
+              )}
             </TableRow>
           ))
         )}

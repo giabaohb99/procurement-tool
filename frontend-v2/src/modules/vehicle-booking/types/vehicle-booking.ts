@@ -72,6 +72,35 @@ export const BOOKING_STATUS_BADGE: Record<number, BadgeTone> = {
   [BOOKING_STATUS.returned]: 'warn', // Yêu cầu chỉnh sửa (bị trả lại)
 }
 
+/**
+ * Màu lát bánh "Theo trạng thái" trên trang Tổng quan — khai THEO MÃ trạng thái,
+ * không đánh theo thứ hạng trong mảng dữ liệu.
+ *
+ * ⚠️ Bản trước dùng một mảng NĂM màu đánh theo vị trí (`STATUS_COLORS[i % 5]`)
+ * sau khi đã lọc bỏ trạng thái rỗng. Bộ mã có TÁM trạng thái nên hai trạng thái
+ * cuối tô lại màu của hai trạng thái đầu; và vì đánh theo thứ hạng nên kỳ nào
+ * không phát sinh phiếu Nháp là toàn bộ màu dịch một bậc — người đã quen "xanh
+ * lá là xong" đọc sai cả biểu đồ. Cùng lỗi đã vá ở Duyệt dấu (duoc-CR-428).
+ *
+ * Màu lấy đúng tinh thần tông huy hiệu ở `BOOKING_STATUS_BADGE`. Nháp và Đã hủy
+ * cùng tông xám ở huy hiệu nhưng phải KHÁC nhau trên bánh (hai lát cạnh nhau),
+ * nên một xám nhạt một xám đậm.
+ */
+export const BOOKING_STATUS_CHART_COLOR: Record<number, string> = {
+  [BOOKING_STATUS.draft]: 'var(--chart-neutral)',
+  [BOOKING_STATUS.pending]: 'var(--warning)',
+  [BOOKING_STATUS.approved]: 'var(--info)',
+  //  VÀNG chứ không phải xanh dương: `--info` (Đã duyệt) và `--chart-1` chỉ
+  //  cách nhau một bậc lam, mà hai trạng thái này là hai lát LỚN nhất của bánh
+  //  và luôn xuất hiện cùng nhau — đặt cạnh nhau thì chú giải ra hai chấm xanh
+  //  gần như y hệt, đúng thứ vừa đi vá.
+  [BOOKING_STATUS.dispatched]: 'var(--chart-4)',
+  [BOOKING_STATUS.completed]: 'var(--success)',
+  [BOOKING_STATUS.rejected]: 'var(--destructive)',
+  [BOOKING_STATUS.cancelled]: 'var(--muted-foreground)',
+  [BOOKING_STATUS.returned]: 'var(--chart-2)',
+}
+
 // --- Trạng thái tài xế ----------------------------------------------------
 export const DRIVER_STATUS = {
   none: 0,

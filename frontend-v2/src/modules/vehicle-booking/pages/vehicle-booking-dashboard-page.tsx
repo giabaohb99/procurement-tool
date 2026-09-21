@@ -1,6 +1,5 @@
 import {
   ClipboardCheck,
-  Gauge,
   List,
   Plus,
   Route as RouteIcon,
@@ -34,16 +33,26 @@ import { cn } from '@/shared/utils/cn'
 import { BookingQueueTable } from '../components/booking-queue-table'
 import { DriverStatsTable, VehicleStatsTable } from '../components/fleet-stats-table'
 import { useVehicleBookingDashboard } from '../hooks/use-vehicle-booking-dashboard'
-import { compactMoney } from '../utils/compact-money'
-import { BOOKING_STATUS, BOOKING_STATUS_LABELS } from '../types/vehicle-booking'
+import {
+  BOOKING_STATUS,
+  BOOKING_STATUS_CHART_COLOR,
+  BOOKING_STATUS_LABELS,
+} from '../types/vehicle-booking'
 
-/** Số cột KPI khớp đúng số thẻ hiện ra (Tailwind cần class tĩnh). */
+/**
+ * Số cột KPI khớp đúng số thẻ hiện ra (Tailwind cần class tĩnh).
+ *
+ * ⚠️ Phải phủ MỌI số thẻ có thể xảy ra. Thiếu một khóa là rơi về mặc định năm
+ * cột, và người có đủ vai trò (6 thẻ) thấy một hàng năm thẻ cộng một thẻ lẻ loi
+ * ở hàng dưới — đúng lỗi bày ra trên máy trước 19/09/2026 khi còn 7 thẻ.
+ */
 const KPI_GRID_COLS: Record<number, string> = {
   1: 'xl:grid-cols-1',
   2: 'xl:grid-cols-2',
   3: 'xl:grid-cols-3',
   4: 'xl:grid-cols-4',
   5: 'xl:grid-cols-5',
+  6: 'lg:grid-cols-3 xl:grid-cols-6',
 }
 
 /** Các khối bảng/biểu đồ có thể ẩn/hiện trên trang tổng quan. */
@@ -67,9 +76,6 @@ const BLOCK_LABELS: Record<BlockKey, string> = {
 
 //  Ẩn MẶC ĐỊNH ba bảng hàng-chờ (bật lại trong menu "Hiển thị").
 const DEFAULT_HIDDEN: BlockKey[] = ['approve', 'dispatch', 'recent']
-
-//  Màu lát bánh "Theo trạng thái" — xoay vòng bộ màu biểu đồ của theme.
-const STATUS_COLORS = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-neutral)']
 
 /** Ngày local → 'yyyy-mm-dd'. */
 function toYmd(d: Date): string {
@@ -111,9 +117,9 @@ export function VehicleBookingDashboardPage() {
   const mineByStatus = mine?.by_status ?? {}
   const mineTotal = Object.values(mineByStatus).reduce((sum, n) => sum + n, 0)
 
-  // Đếm số thẻ KPI để chia cột (mine:1 · approve:1 · dispatch:3 · driver:2).
+  // Đếm số thẻ KPI để chia cột (mine:1 · approve:1 · dispatch:2 · driver:2).
   const kpiCount =
-    (mine ? 1 : 0) + (approve ? 1 : 0) + (dispatch ? 3 : 0) + (driver ? 2 : 0)
+    (mine ? 1 : 0) + (approve ? 1 : 0) + (dispatch ? 2 : 0) + (driver ? 2 : 0)
 
   //  Bấm thẻ KPI → danh sách đã lọc đúng nội dung thẻ.
   const requestsRoute = appRoutes.vehicleBooking.requests
@@ -150,48 +156,75 @@ export function VehicleBookingDashboardPage() {
   const menuKeys = (Object.keys(BLOCK_LABELS) as BlockKey[]).filter((k) => available[k])
 
   //  Các bảng hàng-chờ đang bật (theo thứ tự cố định).
+  //
+  //  ⚠️ KHÔNG bọc `ChartCard`: `BookingQueueTable` tự dựng tiêu đề trong thanh
+  //  công cụ của chính nó và `DataTable` đã có khung viền riêng. Bọc thêm thì ra
+  //  ba tầng thanh công cụ chồng nhau (tiêu đề thẻ · ô lọc · hàng nút) — gần
+  //  150px trước khi thấy dòng đầu tiên, và hai lớp viền lồng nhau.
   const queueCards: ReactNode[] = []
   if (shows('approve') && approve) {
     queueCards.push(
-      <ChartCard key="approve" title="Chờ tôi duyệt" description={`${approve.pending} phiếu đang chờ`} loading={isLoading}>
-        <BookingQueueTable rows={approve.items} hideStatusFilter emptyMessage="Không có phiếu chờ duyệt." />
-      </ChartCard>,
+      <BookingQueueTable
+        key="approve"
+        title="Chờ tôi duyệt"
+        description={`${approve.pending} phiếu đang chờ bạn phê duyệt`}
+        rows={approve.items}
+        hideStatusFilter
+        isLoading={isLoading}
+        emptyMessage="Không có phiếu chờ duyệt."
+        viewAllTo={withStatus(BOOKING_STATUS.pending)}
+      />,
     )
   }
   if (shows('dispatch') && dispatch) {
     queueCards.push(
-      <ChartCard
+      <BookingQueueTable
         key="dispatch"
         title="Chờ điều phối"
         description={`${dispatch.to_dispatch} phiếu đã duyệt, chờ phân xe`}
-        loading={isLoading}
-      >
-        <BookingQueueTable rows={dispatch.queue} hideStatusFilter emptyMessage="Không có phiếu chờ điều phối." />
-      </ChartCard>,
+        rows={dispatch.queue}
+        hideStatusFilter
+        isLoading={isLoading}
+        emptyMessage="Không có phiếu chờ điều phối."
+        viewAllTo={withStatus(BOOKING_STATUS.approved)}
+      />,
     )
   }
   if (shows('driver') && driver) {
     queueCards.push(
-      <ChartCard key="driver" title="Chuyến của tôi" description="Chuyến được phân cho bạn" loading={isLoading}>
-        <BookingQueueTable rows={driver.trips} emptyMessage="Bạn chưa có chuyến nào." />
-      </ChartCard>,
+      <BookingQueueTable
+        key="driver"
+        title="Chuyến của tôi"
+        description="Chuyến được phân cho bạn"
+        rows={driver.trips}
+        isLoading={isLoading}
+        emptyMessage="Bạn chưa có chuyến nào."
+        viewAllTo={myTripsRoute}
+      />,
     )
   }
   if (shows('recent') && mine) {
     queueCards.push(
-      <ChartCard key="recent" title="Phiếu gần đây của tôi" description="8 phiếu mới nhất" loading={isLoading}>
-        <BookingQueueTable rows={mine.recent} emptyMessage="Bạn chưa tạo phiếu nào." />
-      </ChartCard>,
+      <BookingQueueTable
+        key="recent"
+        title="Phiếu gần đây của tôi"
+        description="8 phiếu mới nhất do bạn lập"
+        rows={mine.recent}
+        isLoading={isLoading}
+        emptyMessage="Bạn chưa tạo phiếu nào."
+        viewAllTo={requestsRoute}
+      />,
     )
   }
 
-  //  Lát bánh "Theo trạng thái" (bỏ lát 0, tô màu xoay vòng).
+  //  Lát bánh "Theo trạng thái" (bỏ lát 0). Màu khai theo MÃ trạng thái — xem
+  //  ghi chú ở `BOOKING_STATUS_CHART_COLOR`, đừng đánh màu theo thứ hạng.
   const statusSlices: DonutSlice[] = (company?.by_status ?? [])
     .filter((s) => s.value > 0)
-    .map((s, i) => ({
+    .map((s) => ({
       label: s.label || BOOKING_STATUS_LABELS[s.key ?? 0] || '—',
       value: s.value,
-      color: STATUS_COLORS[i % STATUS_COLORS.length],
+      color: BOOKING_STATUS_CHART_COLOR[s.key ?? 0] ?? 'var(--chart-neutral)',
     }))
 
   return (
@@ -250,8 +283,11 @@ export function VehicleBookingDashboardPage() {
         }
       />
 
+      {/*  HAI CỘT ngay từ khổ điện thoại (giống dải KPI Nhân sự): sáu ô xếp một
+          cột là hơn một màn hình chỉ để đọc sáu con số, mà giá trị ở đây đều là
+          số đếm ngắn nên nửa hàng thừa chỗ. */}
       {kpiCount > 0 && (
-        <div className={cn('mb-4 grid gap-4 sm:grid-cols-2', KPI_GRID_COLS[kpiCount] ?? 'xl:grid-cols-5')}>
+        <div className={cn('mb-4 grid grid-cols-2 gap-4', KPI_GRID_COLS[kpiCount] ?? 'xl:grid-cols-5')}>
           {mine && (
             <StatCard
               icon={Truck}
@@ -292,13 +328,13 @@ export function VehicleBookingDashboardPage() {
                 loading={isLoading}
                 to={withStatus(BOOKING_STATUS.dispatched)}
               />
-              <StatCard
-                icon={Gauge}
-                label="Quãng đường"
-                value={`${dispatch.distance_sum.toLocaleString('vi-VN')} km`}
-                hint={`Chi phí ${compactMoney(dispatch.cost_sum)} đ`}
-                loading={isLoading}
-              />
+              {/*  Thẻ "Quãng đường / Chi phí" đã BỎ khỏi dải KPI (19/09/2026).
+                  Km và chi phí chỉ có số khi đóng chuyến có người nhập, mà phần
+                  lớn chuyến nội thành không ai nhập — nên ô này gần như luôn đọc
+                  «0 km · Chi phí 0 đ», tức một ô vĩnh viễn rỗng đứng ngang hàng
+                  với những ô đang đếm việc phải làm. Nó cũng là ô DUY NHẤT không
+                  bấm được. Số đó vẫn còn ở bảng «Thống kê theo xe», nơi nó tách
+                  được theo từng xe. */}
             </>
           )}
           {driver && (
@@ -336,10 +372,15 @@ export function VehicleBookingDashboardPage() {
           Bố cục 2×2: [Số phiếu theo tháng | Theo loại yêu cầu] · [Theo trạng thái | Theo công ty]. */}
       {(shows('trend') || shows('type') || shows('status') || shows('company')) && company && (
         <div className="mt-4 flex flex-col gap-4">
+          {/*  Hàng này chia 2/3 – 1/3 chứ không đôi đều: bên trái là biểu đồ cột
+              theo thời gian (càng rộng càng đọc được nhiều mốc), bên phải chỉ có
+              HAI lát bánh (Công tác / Giao hàng) — cho nó nửa trang thì bánh
+              không to thêm, chỉ có khoảng trắng hai bên rộng ra. */}
           {(shows('trend') || shows('type')) && (
-            <div className="grid items-start gap-4 lg:grid-cols-2">
+            <div className="grid items-start gap-4 lg:grid-cols-3">
               {shows('trend') && (
                 <ChartCard
+                  className={cn(shows('type') ? 'lg:col-span-2' : 'lg:col-span-3')}
                   title="Số phiếu theo tháng"
                   description={hasRange ? 'Theo khoảng đã chọn' : '12 tháng gần nhất, trong phạm vi bạn xem được'}
                   loading={isLoading}
@@ -350,7 +391,12 @@ export function VehicleBookingDashboardPage() {
                 </ChartCard>
               )}
               {shows('type') && (
-                <ChartCard title="Theo loại yêu cầu" description="Công tác vs Giao hàng" loading={isLoading}>
+                <ChartCard
+                  className={cn(shows('trend') ? undefined : 'lg:col-span-3')}
+                  title="Theo loại yêu cầu"
+                  description="Công tác vs Giao hàng"
+                  loading={isLoading}
+                >
                   <DonutChart
                     centerLabel="phiếu"
                     data={[
@@ -393,12 +439,12 @@ export function VehicleBookingDashboardPage() {
       {(shows('vehicles') || shows('drivers')) && fleet && (
         <div className="mt-4 grid items-start gap-4 lg:grid-cols-2">
           {shows('vehicles') && (
-            <ChartCard title="Thống kê theo xe" description="Số phiếu · hoàn tất · km · chi phí" loading={isLoading}>
+            <ChartCard title="Thống kê theo xe" description="Số phiếu và số chuyến hoàn tất của từng xe" loading={isLoading}>
               <VehicleStatsTable rows={fleet.by_vehicle} />
             </ChartCard>
           )}
           {shows('drivers') && (
-            <ChartCard title="Thống kê theo tài xế" description="Số phiếu · hoàn tất · km" loading={isLoading}>
+            <ChartCard title="Thống kê theo tài xế" description="Số phiếu và số chuyến hoàn tất của từng tài xế" loading={isLoading}>
               <DriverStatsTable rows={fleet.by_driver} />
             </ChartCard>
           )}
