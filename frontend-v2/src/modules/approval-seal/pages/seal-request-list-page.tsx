@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import { usePermission } from '@/core/authorization/use-permission'
 import { appConfig } from '@/core/config/app-config'
+import { ApprovalStageNote } from '@/modules/approval/components/approval-stage-note'
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
 import { useDepartments } from '@/modules/hr/hooks/use-departments'
 import { ConditionalFilter, FilterProvider, useFilterQuery } from '@/shared/conditional-filter'
@@ -237,8 +238,14 @@ function SealRequestListContent() {
       {
         key: 'status',
         header: 'Trạng thái',
-        cell: (r) => <SealStatusBadge status={r.status} label={r.status_label} />,
-        width: 140,
+        cell: (r) => (
+          <div className="flex min-w-0 flex-col items-start gap-1">
+            <SealStatusBadge status={r.status} label={r.status_label} />
+            {/* Phiếu đồng bộ từ app cũ có thể đã ký vài chặng mà badge vẫn là Chờ duyệt. */}
+            <ApprovalStageNote summary={r.approval_summary} className="max-w-full" />
+          </div>
+        ),
+        width: 190,
         sortable: true,
       },
       {

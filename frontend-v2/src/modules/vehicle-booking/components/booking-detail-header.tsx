@@ -2,6 +2,7 @@ import { ArrowLeft, Clock, MapPin, User } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import type { ReactNode } from 'react'
 
+import { ApprovalStageNote } from '@/modules/approval/components/approval-stage-note'
 import { Button } from '@/shared/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/ui/tooltip'
 
@@ -122,12 +123,14 @@ export function BookingDetailHeader({
           dải duy nhất để hàng đầu chỉ còn đúng hai thứ — phiếu này là gì, và làm
           gì với nó. */}
       <div className="col-start-2 flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex min-w-0 shrink-0 items-center gap-2">
           <TypeIcon className="size-3.5 shrink-0" />
           <span>{booking.request_type_label}</span>
           <span aria-hidden="true">·</span>
           <span className="font-semibold text-foreground/80 tabular-nums">{booking.code}</span>
           <BookingStatusBadge status={booking.status} driverStatus={booking.driver_status} />
+          {/* Badge chỉ nói Chờ duyệt; dòng này nói đang chờ Ở CHẶNG NÀO. */}
+          <ApprovalStageNote summary={booking.approval_summary} className="max-w-[260px]" />
         </div>
 
         {/*  Tóm tắt chuyến. `flex-wrap` + `min-w-0` trên từng mục để lộ trình dài

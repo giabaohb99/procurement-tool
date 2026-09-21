@@ -117,6 +117,9 @@ export interface SealRequest {
    *  Gác thẻ Lịch sử phê duyệt bằng ô này, không bằng `approval_running`. Chỉ có ở
    *  phản hồi CHI TIẾT. */
   approval_instance_id?: number | null
+  /** Câu một dòng «Đang ở chặng 3/3 · Duyệt Brand & Pháp chế» — dòng phụ cạnh badge
+   *  trạng thái, backend dựng sẵn. Rỗng = phiếu chưa vào bộ máy duyệt. */
+  approval_summary?: string
   /** Người xem có được thao tác CỔNG-2 (đóng dấu / trả / từ chối) không — CHỈ Văn thư
    *  được phân công (hoặc quản trị). Có ở phản hồi CHI TIẾT; danh sách không kèm. */
   can_stamp?: boolean

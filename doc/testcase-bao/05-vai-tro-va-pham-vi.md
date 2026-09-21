@@ -16,12 +16,16 @@
 
 Chọn theo VAI TRÒ, không chép tên:
 
-| Ký hiệu trong ca | Vai trò | Cần có gì |
-|---|---|---|
-| **QT** | quản trị (`admin`) | đủ `role.read/write`, `employee.read`, `department.read`, `company.read` |
-| **TK-NM** | một tài khoản của **nhà máy** (bậc `dept_proc`, ví dụ `pur_dept_manager`) | ĐÃ gắn hồ sơ nhân sự, hồ sơ có công ty + phòng ban |
-| **TK-TRỐNG** | một tài khoản **chưa gắn hồ sơ nhân sự** (badge *Thiếu hồ sơ* ở tab Người dùng) | dùng cho ca hồ sơ trống |
-| **TK-KHAI** | một tài khoản có `role.write` nhưng **KHÔNG** có `employee.read` | dùng cho ca thiếu quyền; nếu dev chưa có thì tạo vai trò tạm rồi xóa sau |
+| Ký hiệu trong ca | Vai trò | Cần có gì | Trên dev (đã seed 19/09/2026) |
+|---|---|---|---|
+| **QT** | quản trị (`admin`) | đủ `role.read/write`, `employee.read`, `department.read`, `company.read` | tài khoản admin sẵn có |
+| **TK-NM** | một tài khoản của **nhà máy** (bậc `dept_proc`, ví dụ `pur_dept_manager`) | ĐÃ gắn hồ sơ nhân sự, hồ sơ có công ty + phòng ban | `NM_MUA` — phòng chính *Dego Organic*, chưa có phòng kiêm nhiệm |
+| **TK-TRỐNG** | một tài khoản **chưa gắn hồ sơ nhân sự** (badge *Thiếu hồ sơ* ở tab Người dùng) | dùng cho ca hồ sơ trống | `TK_TRONG` — vai trò `employee`, đăng nhập bằng email `tk_trong@dego.test` (không có mã nhân viên) |
+| **TK-KHAI** | một tài khoản có `role.write` nhưng **KHÔNG** có `employee.read` | dùng cho ca thiếu quyền; nếu dev chưa có thì tạo vai trò tạm rồi xóa sau | `TK_KHAI` — vai trò tạm `test_no_employee_read` (role/user đọc+sửa, department/company chỉ đọc), đăng nhập bằng email `tk_khai@dego.test`; **xóa vai trò tạm sau khi chấm** |
+
+Mật khẩu các tài khoản test = mã tài khoản (quy ước của menu Đổi tài khoản nhanh). Bộ CR-414
+trên dev còn `TM_QL` / `TM_AD` (phòng *Sản xuất -Thu mua*) đã gắn sẵn **Loại trừ phòng ban =
+Dego Organic**, dùng làm mẫu đối chiếu cho các ca xem phạm vi đã lưu.
 
 Trước khi bắt đầu: đăng nhập QT, tab Người dùng, ghi lại **tên phòng chính** của TK-NM
 (mở hồ sơ nhân sự nếu cần) và **một phòng kiêm nhiệm** nếu có. Mấy ca CR-430 cần đúng

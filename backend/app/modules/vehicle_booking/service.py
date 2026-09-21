@@ -642,7 +642,16 @@ def serialize_booking(db: Session, obj: VehicleBooking, viewer=None) -> dict:
     instance = latest_instance(db, obj.id)
     out.approval_instance_id = instance.id if instance else None
     out.approval_running = instance is not None and instance.status in INSTANCE_OPEN_STATUSES
+    out.approval_summary = _approval_summaries(db, [obj.id]).get(obj.id, "")
     return out.model_dump()
+
+
+def _approval_summaries(db: Session, booking_ids: list[int]) -> dict[int, str]:
+    """Câu tóm tắt luồng duyệt của từng phiếu. Khóa = id phiếu, thiếu = chưa có luồng."""
+    from app.modules.approval import steps_service
+
+    from .approval_bridge import ENTITY
+    return steps_service.summaries_of_entities(db, ENTITY, booking_ids)
 
 
 def serialize_bookings(db: Session, objs: list[VehicleBooking]) -> list[dict]:
@@ -657,10 +666,12 @@ def serialize_bookings(db: Session, objs: list[VehicleBooking]) -> list[dict]:
         {d.id: d for d in db.query(Driver).filter(Driver.id.in_(drv_ids)).all()}
         if drv_ids else {}
     )
+    summaries = _approval_summaries(db, [o.id for o in objs])
     result = []
     for o in objs:
         out = VehicleBookingResponse.model_validate(o)
         out.status_label = _display_status_label(o)  # nhãn có tính bước tài xế
+        out.approval_summary = summaries.get(o.id, "")
         out.assigned_vehicle_label = _vehicle_label(veh_map.get(o.assigned_vehicle_id))
         driver = drv_map.get(o.assigned_driver_id)
         if driver:

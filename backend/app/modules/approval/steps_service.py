@@ -98,6 +98,20 @@ def steps_of_entities(db: Session, entity: str, entity_ids: list[int]) -> dict[i
     }
 
 
+def summaries_of_entities(db: Session, entity: str, entity_ids: list[int]) -> dict[int, str]:
+    """Chỉ CÂU TÓM TẮT luồng duyệt của từng chứng từ. Khóa = `entity_id`.
+
+    Cho màn danh sách / khối đầu trang chi tiết chỉ cần một dòng chữ cạnh badge
+    trạng thái, không vẽ dải chấm. Vẫn đi qua `steps_of_entities` để câu chữ ở
+    mọi chỗ là MỘT câu — dựng riêng một câu gọn hơn ở đây là sớm muộn hai màn
+    nói khác nhau về cùng một phiếu.
+    """
+    return {
+        entity_id: flow.get("summary") or ""
+        for entity_id, flow in steps_of_entities(db, entity, entity_ids).items()
+    }
+
+
 def _names_of(db: Session, employee_ids: set[int]) -> dict[int, str]:
     ids = {i for i in employee_ids if i}
     if not ids:
@@ -198,6 +212,22 @@ def _one_step(seq: int, group: list[ApprovalTask], planned_name: str | None,
     else:
         state = STEP_TODO
 
+    #  PHIÊN CÒN MỞ thì chặng `current_seq` là chặng ĐANG CHỜ — kể cả khi bảng
+    #  việc không nói được điều đó. Hai ca có thật, đều từ app đặt xe cũ:
+    #
+    #  · chặng chưa có dòng việc nào (`STEP_TODO`): bản nạp chỉ dựng việc cho
+    #    chặng ĐÃ ký, nên phiếu ký xong chặng 1 rồi nằm chờ Pháp chế ở chặng 3
+    #    không có chấm nào sáng (DD000864, 19/09/2026);
+    #  · chặng chỉ còn việc đã hủy (`STEP_CANCELLED`): Pháp chế trả về cho sửa,
+    #    người nộp sửa rồi gửi lại đúng chặng đó — vòng cũ bị hủy nhưng chặng
+    #    thì đang chờ lại, vẽ "đã hủy" là đọc thành phiếu chết (DD000865).
+    #
+    #  Chỉ đè lên hai trạng thái đó: chặng ĐÃ KÝ hay BỊ TỪ CHỐI là chuyện đã
+    #  rồi, `current_seq` không nói ngược lại được.
+    if (instance.status in _OPEN_STATUSES and seq == instance.current_seq
+            and state in (STEP_TODO, STEP_CANCELLED)):
+        state = STEP_CURRENT
+
     return {
         "seq": seq,
         #  Tên từ VIỆC trước, tên từ bản chụp sau: việc mang tên chặng lúc phiếu
@@ -258,8 +288,14 @@ def _summary(instance: ApprovalInstance, steps: list[dict], current: dict | None
         who = ", ".join(
             _unique_names(a["name"] for a in current["assignees"]
                           if a["status"] in _LIVE_TASK_STATUSES))
-        vitri = f"Đang ở chặng {current['seq']}/{total}"
-        return f"{vitri} · {who}" if who else vitri
+        position = f"Đang ở chặng {current['seq']}/{total}"
+        if who:
+            return f"{position} · {who}"
+        #  Không biết tên người thì nói TÊN CHẶNG — «Đang ở chặng 3/3» một mình
+        #  đúng nhưng vô dụng, người xem vẫn phải mở phiếu ra mới biết đang nằm
+        #  ở đâu. Chặng nạp từ app cũ không có ai được giao trong ERP (việc duyệt
+        #  vẫn nằm bên app cũ) nên đây là đường thường gặp, không phải ngoại lệ.
+        return f"{position} · {current['name']}" if current["name"] else position
     return INSTANCE_STATUS_LABELS.get(instance.status, "")
 
 

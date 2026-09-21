@@ -258,6 +258,10 @@ class VehicleBookingResponse(VehicleBookingBase):
     # Frontend gác thẻ Lịch sử phê duyệt bằng ô này chứ không bằng `approval_running`
     # — luồng 1 bước xong ngay, gác bằng cờ "đang chạy" là dấu vết không bao giờ hiện.
     approval_instance_id: int | None = None
+    #  Câu một dòng «Đang ở chặng 2/3 · Duyệt của Giám đốc» — đứng CẠNH badge
+    #  trạng thái chứ không thay nó (xem `seal_request/schema.py`). Rỗng = phiếu
+    #  chưa vào bộ máy duyệt.
+    approval_summary: str = ""
     created_at: str | None = None
 
     @field_validator("created_at", mode="before")

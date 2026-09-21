@@ -1,6 +1,7 @@
 import { ArrowLeft, Calendar, Files, User } from 'lucide-react'
 import { useEffect, useRef, type ReactNode } from 'react'
 
+import { ApprovalStageNote } from '@/modules/approval/components/approval-stage-note'
 import { Button } from '@/shared/ui/button'
 import { formatDateTime } from '@/shared/utils/format-date'
 import { CompanyAvatarGroup } from './company-avatar-group'
@@ -86,11 +87,13 @@ export function SealDetailHeader({ request, onBack, actions }: SealDetailHeaderP
 
       {/* Hàng 2: Dải thông tin tóm tắt (Metadata Ribbon) */}
       <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex min-w-0 shrink-0 items-center gap-2">
           <span className="font-mono font-bold text-primary tabular-nums">
             {request.code || '— (Nháp)'}
           </span>
           <SealStatusBadge status={request.status} label={request.status_label} />
+          {/* Badge chỉ nói Chờ duyệt; dòng này nói đang chờ Ở CHẶNG NÀO. */}
+          <ApprovalStageNote summary={request.approval_summary} className="max-w-[260px]" />
         </div>
 
         <span className="hidden text-border sm:inline" aria-hidden="true">|</span>

@@ -3816,6 +3816,30 @@ Kiểm tra: bài kiểm mới cho dải thẻ, ba cổng của v2 xanh.
 Mã nguồn: `frontend-v2/src/modules/hr/components/hr-overview-stats.tsx` (kèm bài kiểm).
 
 
+## testcase-05-vai-tro-pham-vi | Ca test tay tệp 05 và bộ tài khoản test trên máy chủ thử
+- status: xong
+- date: 2026-09-19
+- pic: NSU209
+Viết bộ ca test tay cho ba việc CR-427, CR-428 và CR-430 thành tệp 05 trong thư mục ca test,
+kèm dòng mục lục. Rà lại máy chủ thử trước khi giao thì thấy chưa có dữ liệu để chấm: vai trò
+quản lý thu mua của phòng chưa có ai giữ, không có tài khoản nào thiếu hồ sơ nhân sự, không có
+tài khoản nào sửa được vai trò mà lại không đọc được nhân sự, và bảng phạm vi theo người chưa
+có lấy một dòng loại trừ. Đại ca bảo chạy seed lên máy chủ thử và tạo luôn hai tài khoản còn
+thiếu.
+
+Chạy seed mười tài khoản CR-414 trên máy chủ thử, ra đủ mười hồ sơ ở ba phòng Dego Organic,
+Sản xuất -Thu mua và Hành chính; hai tài khoản quản lý thu mua trừ nhà máy có sẵn dòng loại trừ
+phòng Dego Organic. Dựng thêm một script nhỏ chạy thẳng vào container, tạo tài khoản trống hồ
+sơ nhân sự với vai trò nhân viên, và tài khoản thiếu quyền đọc nhân sự qua một vai trò tạm chỉ
+được đọc sửa vai trò và tài khoản, đọc phòng ban và công ty. Cả hai đăng nhập bằng email vì
+không có mã nhân viên. Script chạy lại không đẻ thêm bản ghi và có xóa bộ đệm quyền. Đã điền mã
+tài khoản thật vào bảng chuẩn bị của tệp 05. Vai trò tạm phải xóa sau khi chấm xong.
+Mã nguồn: `doc/testcase-bao/05-vai-tro-va-pham-vi.md` · `doc/testcase-bao/00-muc-luc.md` ·
+`backend/app/seed_tai_khoan_cr414.py` (script hai tài khoản phụ để ngoài kho mã).
+Commit: 4106270c (tệp 05 + mục lục, chưa đẩy); phần điền mã tài khoản chưa commit.
+Deploy: dữ liệu test trên máy chủ thử 19/09/2026, không đụng mã nguồn đang chạy.
+
+
 ## bao-CR-431 | Giữ thẻ Lịch sử phê duyệt sau khi luồng duyệt đã xong
 - status: xong
 - date: 2026-09-19
@@ -3850,3 +3874,27 @@ cầu nối `approval_bridge.py` của đặt xe và duyệt dấu · `schema.py
 `test/backend/test_dau_vet_duyet_con_lai_sau_khi_xong.py`.
 Commit: a71e044e (bản vá) · 2f82a492 (nhật ký thay đổi) · đẩy lên nhánh erp-v2 ở 3a18ebab.
 Deploy: dev 19/09/2026 (3a18ebab), không có migration.
+
+## hdsd-bo-tai-khoan-phong-tu-mua | Hướng dẫn thao tác lập hai bộ tài khoản: Nhà máy và Thu mua trừ nhà máy
+- status: xong
+- date: 2026-09-21
+- pic: NSU209
+Đại ca xin một tệp hướng dẫn thao tác để tự tay lập hai bộ tài khoản trên giao diện mới: bộ của
+riêng nhà máy (thu mua nội bộ trong phòng) và bộ thu mua chung nhưng không thấy phiếu của nhà máy.
+Trước khi viết, rà lại bản chốt 17/09 của việc phòng tự mua hàng để khỏi viết theo bản cũ: không
+có ô «Phòng tự mua hàng» nào cả, toàn bộ bài toán gói trong ba bộ phạm vi — vai trò Quản lý thu
+mua phòng cho nhà máy, và ô Loại trừ phòng ban trong hộp thoại Phạm vi cho hai tài khoản thu mua
+chung. Cũng rà lại từng nhãn nút, tên ô và tên tab của các màn Nhân sự, Phân quyền tài khoản và
+Phân công phụ trách trên giao diện mới, rồi soát ba chỗ dễ nói sai với mã nguồn: bậc phạm vi theo
+phòng có tính cả phòng kiêm nhiệm (có, vì đọc bảng nhân sự × phòng ban); nút Chuyển phòng xử lý
+hiện cho ai (chỉ quản lý thu mua của phòng đang giữ phiếu hoặc toàn hệ, đã sửa lại câu); ô loại
+trừ gặp hai phòng trùng tên thì ra sao (rơi về so tên nên trừ cả hai).
+
+Tệp viết theo bảy tài khoản mẫu trùng tên với bộ đã seed trên máy chủ thử, để ai làm theo có thể
+mở máy chủ thử ra đối chiếu. Bố cục: hiểu trước khi bấm, chuẩn bị, bốn bước chung cho mọi tài
+khoản (hồ sơ nhân sự, tài khoản đăng nhập, gán vai trò, phạm vi), phần riêng của từng bộ, bảng
+kiểm tra sau khi làm theo từng tài khoản, bẫy hay gặp, và cách mở thêm một phòng tự mua khác
+(phải nhớ thêm phòng đó vào ô loại trừ của mọi tài khoản thu mua chung, không có gì tự nhắc).
+Thêm một dòng vào mục lục tài liệu chức năng. Chưa commit, đợi đại ca bảo.
+Mã nguồn: `doc/tai-lieu-chuc-nang/20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md` ·
+`doc/tai-lieu-chuc-nang/00-muc-luc.md`.

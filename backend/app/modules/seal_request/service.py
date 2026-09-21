@@ -419,7 +419,16 @@ def serialize_seal_request(db: Session, req: SealRequest) -> dict:
     instance = latest_instance(db, req.id)
     out.approval_instance_id = instance.id if instance else None
     out.approval_running = instance is not None and instance.status in INSTANCE_OPEN_STATUSES
+    out.approval_summary = _approval_summaries(db, [req.id]).get(req.id, "")
     return out.model_dump()
+
+
+def _approval_summaries(db: Session, req_ids: list[int]) -> dict[int, str]:
+    """Câu tóm tắt luồng duyệt của từng phiếu. Khóa = id phiếu, thiếu = chưa có luồng."""
+    from app.modules.approval import steps_service
+
+    from .approval_bridge import ENTITY
+    return steps_service.summaries_of_entities(db, ENTITY, req_ids)
 
 
 def serialize_seal_requests(db: Session, reqs: list[SealRequest]) -> list[dict]:
@@ -432,6 +441,7 @@ def serialize_seal_requests(db: Session, reqs: list[SealRequest]) -> list[dict]:
     if all_cids:
         from app.modules.company.service import get_company_logo_map
         logo_map = get_company_logo_map(db, list(all_cids))
+    summaries = _approval_summaries(db, [r.id for r in reqs])
     result = []
     for r in reqs:
         out = SealRequestResponse.model_validate(r)
@@ -439,5 +449,6 @@ def serialize_seal_requests(db: Session, reqs: list[SealRequest]) -> list[dict]:
         cids = ids_map.get(r.id, [])
         out.company_ids = cids
         out.companies = _company_refs(db, cids, logo_map=logo_map, company_map=company_map)
+        out.approval_summary = summaries.get(r.id, "")
         result.append(out.model_dump())
     return result

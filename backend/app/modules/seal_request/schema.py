@@ -96,6 +96,11 @@ class SealRequestResponse(SealRequestBase):
     #  ĐÃ TỪNG vào bộ máy nhiều bước (phiên mới nhất, kể cả đã xong) → FE vẫn vẽ
     #  thẻ Lịch sử phê duyệt sau khi luồng kết thúc. Khác `approval_running`.
     approval_instance_id: int | None = None
+    #  Câu một dòng «Đang ở chặng 3/3 · Duyệt Brand & Pháp chế» — đứng CẠNH badge
+    #  trạng thái chứ không thay nó. Badge chỉ nói *Chờ duyệt*, còn phiếu nạp từ
+    #  app cũ thường đã ký xong một hai chặng; thiếu câu này người xem đọc thành
+    #  «chưa ai duyệt» rồi đi hỏi lại. Rỗng = phiếu chưa vào bộ máy duyệt.
+    approval_summary: str = ""
     created_at: str | None = None
 
     @field_validator("created_at", mode="before")

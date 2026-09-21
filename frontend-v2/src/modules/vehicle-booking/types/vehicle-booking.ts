@@ -200,6 +200,9 @@ export interface VehicleBooking {
    *  Gác thẻ Lịch sử phê duyệt bằng ô này, không bằng `approval_running`. Chỉ có ở
    *  phản hồi CHI TIẾT. */
   approval_instance_id?: number | null
+  /** Câu một dòng «Đang ở chặng 2/3 · Duyệt của Giám đốc» — dòng phụ cạnh badge
+   *  trạng thái, backend dựng sẵn. Rỗng = phiếu chưa vào bộ máy duyệt. */
+  approval_summary?: string
   created_at: string | null
 }
 
