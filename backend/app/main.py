@@ -49,6 +49,7 @@ from app.modules.employee.controller import router as employee_router
 from app.modules.employee.position_controller import router as job_position_router
 from app.modules.dossier.type_controller import router as dossier_type_router
 from app.modules.dossier.controller import router as dossier_router
+from app.modules.dossier.applicability_controller import router as dossier_applicable_router
 from app.modules.vehicle_booking.controller import router as vehicle_booking_router
 from app.modules.vehicle_booking.catalog_controller import (
     dispatch_router, driver_router, vehicle_router)
@@ -190,6 +191,10 @@ app.include_router(department_router)
 app.include_router(employee_router)
 app.include_router(job_position_router)
 app.include_router(dossier_type_router)
+#  ⚠️ PHẢI nạp TRƯỚC `dossier_router`: bộ sinh CRUD đăng ký `/api/dossiers/{id}`
+#  với `id: int`, mà FastAPI khớp tuyến theo thứ tự nạp — nạp sau thì
+#  `/api/dossiers/applicable` rơi vào tuyến `{id}` và trả 422.
+app.include_router(dossier_applicable_router)
 app.include_router(dossier_router)
 app.include_router(supplier_router)
 app.include_router(product_router)

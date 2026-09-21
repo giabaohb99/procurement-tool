@@ -52,8 +52,8 @@ export function DossierReferenceValue({
     //  Chưa chọn danh mục thì không có gì để mà bày. Nói ra việc phải làm trước,
     //  đừng để một ô chọn rỗng bấm vào mở ra khoảng trắng.
     return (
-      <div className="flex h-9 items-center text-xs text-muted-foreground">
-        Chọn «Danh mục» bên dưới trước
+      <div className="flex h-9 items-center text-xs text-balance text-muted-foreground">
+        Chọn danh mục ở dòng dưới trước
       </div>
     )
   }

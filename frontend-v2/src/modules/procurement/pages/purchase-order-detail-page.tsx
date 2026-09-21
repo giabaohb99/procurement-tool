@@ -27,6 +27,8 @@ import { usePrepayHanging } from '@/modules/finance/hooks/use-payment-requests'
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
 import { useEmployees } from '@/modules/hr/hooks/use-employees'
 import { useSuppliers } from '@/modules/production/hooks/use-suppliers'
+import { RequiredDossiersCard } from '@/modules/dossier/components/required-dossiers-card'
+import { DOC_KINDS } from '@/modules/dossier/types/dossier-applicability'
 import { AuditTimeline } from '@/shared/audit'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
@@ -794,6 +796,13 @@ export function PurchaseOrderDetailPage() {
           entityId={purchaseOrderId}
           canManage={!locked && can('purchase_order', 'write')}
           documentStatus={data.document_status}
+        />
+
+        {/* Thẻ tự ẩn khi thiếu quyền / đang nạp / không có hồ sơ nào khớp
+            điều kiện áp dụng — không cần bọc điều kiện ở đây. */}
+        <RequiredDossiersCard
+          docKind={DOC_KINDS.PURCHASE_ORDER}
+          docId={purchaseOrderId || undefined}
         />
 
         {!isNew && (

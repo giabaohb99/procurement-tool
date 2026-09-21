@@ -47,7 +47,7 @@ beforeEach(() => {
 describe('DossierReferenceValue — chưa chọn danh mục', () => {
   it('nói ra việc phải làm trước thay vì bày một ô chọn rỗng', async () => {
     renderValue({ source: '' })
-    expect(screen.getByText('Chọn «Danh mục» bên dưới trước')).toBeInTheDocument()
+    expect(screen.getByText('Chọn danh mục ở dòng dưới trước')).toBeInTheDocument()
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
     expect(apiGet).not.toHaveBeenCalled()
   })
@@ -63,7 +63,7 @@ describe('DossierReferenceValue — chưa chọn danh mục', () => {
           <DossierReferenceValue id="x" source={source} value="" onChange={vi.fn()} />
         </QueryClientProvider>,
       )
-      expect(screen.getByText('Chọn «Danh mục» bên dưới trước'), source).toBeInTheDocument()
+      expect(screen.getByText('Chọn danh mục ở dòng dưới trước'), source).toBeInTheDocument()
       unmount()
     }
     expect(apiGet).not.toHaveBeenCalled()

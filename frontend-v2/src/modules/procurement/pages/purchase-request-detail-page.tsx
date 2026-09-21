@@ -28,6 +28,8 @@ import { usePermission } from '@/core/authorization/use-permission'
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
 import { useDepartments } from '@/modules/hr/hooks/use-departments'
 import { useEmployees } from '@/modules/hr/hooks/use-employees'
+import { RequiredDossiersCard } from '@/modules/dossier/components/required-dossiers-card'
+import { DOC_KINDS } from '@/modules/dossier/types/dossier-applicability'
 import { AuditTimeline } from '@/shared/audit'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { queryKeys } from '@/shared/constants/query-keys'
@@ -972,6 +974,13 @@ export function PurchaseRequestDetailPage() {
             entity="purchase_request"
             entityId={purchaseRequestId}
             canManage={canManageAttachments}
+          />
+
+          {/* Thẻ tự ẩn khi thiếu quyền / đang nạp / không có hồ sơ nào khớp
+              điều kiện áp dụng — không cần bọc điều kiện ở đây. */}
+          <RequiredDossiersCard
+            docKind={DOC_KINDS.PURCHASE_REQUEST}
+            docId={purchaseRequestId || undefined}
           />
 
           {!isNew && (
