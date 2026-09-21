@@ -4565,3 +4565,231 @@ nghiệp vụ `doc/tai-lieu-chuc-nang/03-yeu-cau-mua-hang.md` mục H đóng kho
 cụ trợ lý `doc/erp/tai-lieu-ai/02-danh-sach-api-tool.md` thêm Nhóm 20 và ghi chú mở rộng ở T27;
 `doc/erp/tai-lieu-ai/04-bao-mat-va-van-hanh.md` mục 5 cập nhật số công cụ còn nợ và hai chỗ phải
 soi khi code.
+## duoc-CR-431 | Điều kiện áp dụng của hồ sơ: chứng từ có dòng hàng khớp thì mọc ra thẻ «Hồ sơ cần kèm»
+- status: xong
+- date: 2026-09-21
+- pic: NSU209
+Trước đây hồ sơ chỉ nằm trong kho của phân hệ Hồ sơ, ai cần thì phải nhớ mà đi tìm. Nay mỗi tờ hồ
+sơ khai được hai thứ: áp cho loại chứng từ nào, và dòng hàng phải thỏa điều kiện gì. Chứng từ nào
+có ít nhất một dòng khớp thì trang chi tiết của nó mọc ra thẻ «Hồ sơ cần kèm», kèm câu nói rõ vì
+sao khớp — ví dụ «vì dòng 3 có sản phẩm VT00021». Bốn màn nhận thẻ: Yêu cầu mua hàng, Đơn mua
+hàng, Yêu cầu báo giá và Phiếu khảo sát. Hai chiều khai điều kiện là Sản phẩm và Phân loại
+VTBB/NL, nối nhau bằng VÀ, với năm phép so sánh là · khác · thuộc · không thuộc · chứa.
+
+Hình dạng điều kiện mượn lại của bộ máy duyệt để khỏi đẻ thêm một cú pháp thứ hai, nhưng cố ý
+KHÔNG dùng chung mã nguồn: bộ máy duyệt soi bối cảnh của cả phiếu, còn cái này soi từng dòng
+hàng. Khác nhau nữa ở chỗ khai sai thì bên này NÉM lỗi chứ không nuốt — nuốt thì người dùng thấy
+báo lưu thành công rồi tin rằng hồ sơ đã gắn điều kiện, trong khi nó sẽ không hiện ra ở đâu cả.
+
+Ba chỗ dễ hỏng trong im lặng đã chặn sẵn. Thứ nhất, hai ca rỗng mang hai nghĩa ngược nhau: chưa
+chọn màn nào thì hồ sơ không hiện ở đâu, còn chọn màn mà không khai điều kiện thì áp cho MỌI
+phiếu loại đó — cả hai đều được nói thành câu trên màn hình chứ không để suy ra từ bảng trống.
+Thứ hai, đường API gác hai cửa: đọc được hồ sơ chưa đủ, phải đọc được chính chứng từ nguồn, vì
+câu lý do nói ra cả mã sản phẩm lẫn số dòng của tờ đơn đó. Thứ ba, dòng Yêu cầu báo giá KHÔNG
+mang mã sản phẩm — bảng dòng của nó chỉ có phân loại, mã chỉ xuất hiện ở phương án đã chốt — nên
+màn khai hiện cảnh báo riêng cho màn này, kẻo người khai gắn điều kiện theo sản phẩm rồi đi tìm
+lỗi ở chỗ không có lỗi nào.
+
+Kiểm tra: 27 bài backend cho phần khớp và phần kiểm lúc khai, 17 bài giao diện cho bộ mã và phép
+tách hai cột, 93 bài hồ sơ cũ vẫn xanh; đã bấm tay đường API trên dữ liệu thật (gắn điều kiện vào
+HS002, mở đơn PO00363 thì khớp đúng dòng 1).
+Mã nguồn: `backend/app/modules/dossier/applicability.py`, `applicability_controller.py`,
+`model.py`, `schema.py`; `frontend-v2/src/modules/dossier/types/dossier-applicability.ts`,
+`types/dossier-apply-rules.ts`, `components/dossier-apply-rules-editor.tsx`,
+`components/required-dossiers-card.tsx`, `hooks/use-applicable-dossiers.ts`.
+Migration: `2ef5534e5ace` — thêm `apply_doc_kinds` và `apply_conditions` vào `tab_dossier`.
+
+## duoc-CR-432 | Thẻ «Hồ sơ cần hoàn thành» trên chi tiết YCBG nhìn y hệt thẻ «Báo cáo thực hiện»
+- status: xong
+- date: 2026-09-21
+- pic: NSU209
+Hai thẻ nằm cạnh nhau trên cùng một trang mà lệch nhau vài chỗ nhỏ, nên mắt đọc ra hai khối khác
+loại chứ không phải hai cách theo dõi cùng một việc. Nay đã căn cho khớp: thanh tiến độ của nhóm
+dùng đúng lối của bản gốc (chữ đè giữa thanh, màu mềm, xanh lá khi xong hết), ô tổng «Đã có giấy»
+dùng lại chính thanh đó thay vì tự vẽ một cái thứ hai, khung nội dung chia đúng bề ngang như bản
+gốc và cột Tiến trình ẩn ở màn hẹp. Dòng hồ sơ mọc thêm viên ngày hết hiệu lực — dữ liệu vốn đã
+có mà chưa bày ra ở đâu — tô theo mức khẩn do backend tính, không tự trừ ngày ở giao diện.
+
+Huy hiệu «BẢN THỬ» cạnh tiêu đề và khung chú thích màu hổ phách ở chân thẻ đã bỏ theo yêu cầu của
+đại ca. Nhưng khác biệt mà khung đó nói ra thì vẫn thật và vẫn phải nói: ô tick ở thẻ này đọc
+trạng thái của tờ giấy TRONG KHO, dùng chung cho mọi phiếu, chứ không phải «đã xong cho riêng
+phiếu này». Câu đó dời xuống dòng chú thích dưới danh sách, đúng chỗ bản gốc đặt câu «hồ sơ khóa
+= chờ hồ sơ tiên quyết».
+
+Bài kiểm mới cho hai hàm thuần bắt được một chỗ không ổn định: hai tờ CÙNG hạn hiệu lực thì phép
+gộp đang lấy tờ đứng sau, nên ô tổng đổi màu qua lại giữa hai lần tải chỉ vì API xếp khác thứ tự.
+Đã sửa cho nó giữ tờ đứng trước.
+Kiểm tra: 10 bài mới cho phần tính hạn hiệu lực, 288 bài của phân hệ Thu mua xanh, typecheck và
+lint 0 lỗi; đã bấm tay trên trình duyệt ở phiếu YCBG 2931.
+Mã nguồn: `frontend-v2/src/modules/procurement/components/survey-report/dossier-checklist-card.tsx`,
+`dossier-checklist-groups.tsx`; `frontend-v2/src/modules/procurement/utils/dossier-checklist-helpers.ts`
+(kèm bài kiểm).
+
+## duoc-CR-433 | Chế độ «Theo dòng hàng» của thẻ Hồ sơ thành BẢNG, và hai khối dùng chung một bộ số liệu để đối chiếu
+- status: xong
+- date: 2026-09-21
+- pic: NSU209
+Bấm sang «Theo dòng hàng» ở thẻ Hồ sơ cần hoàn thành thì vẫn ra danh sách gập y như «Xem tổng»,
+trong khi bản gốc ở đó là một cái bảng: mỗi dòng hàng một dòng, các cột Hồ sơ · Đã xong · Tiến độ
+· Hạn gần nhất, bấm vào dòng thì sổ hồ sơ của riêng nó, dưới cùng có dòng Tổng cả phiếu. Nay đã
+dựng đúng cái bảng đó.
+
+Làm xong mới lộ một lỗi đếm nằm sẵn từ trước: bộ hồ sơ chung đang bị chép xuống MỌI dòng hàng,
+nên ba dòng của phiếu 2931 đều ghi y hệt nhau «6/15 · 40%» — con số của cả phiếu, không nói gì về
+dòng đó — và dòng Tổng đếm một tờ giấy tới bốn lần. Nay hồ sơ chung đứng riêng một dòng «Chung
+(cả phiếu)» như bản gốc. Hai chỗ lệch nữa cũng sửa theo: cột Tiến trình bên phải trước đây đi
+theo chế độ xem nên bấm sang «Theo dòng hàng» là nó liệt kê ba dòng hàng thay vì năm giai đoạn,
+và nó tụt theo từ khóa đang gõ ở ô tìm; nay luôn đi theo giai đoạn và luôn đếm trên toàn bộ hồ
+sơ, đúng như bản gốc.
+
+Để đại ca đối chiếu hai khối bằng mắt, script nạp hồ sơ mẫu nay gán đủ ngày cấp và ngày hết hiệu
+lực, thêm hai cờ chạy: `--ghi-de` áp lại kịch bản lên hồ sơ đã có, `--ycbg <số>` ghi cùng kịch
+bản đó sang khối Báo cáo thực hiện của một phiếu. Hai mốc khẩn (quá hạn 3 ngày, còn 5 ngày) cố ý
+đặt vào đầu việc CHƯA xong, vì ô «Hết hiệu lực gần nhất» của Báo cáo thực hiện bỏ qua đầu việc đã
+hoàn thành còn kho Hồ sơ thì tính cả — dồn mốc vào tờ đã xong thì một bên ra gạch ngang, một bên
+ra ngày đỏ, và lúc đối chiếu nó đọc ra như một bên tính sai.
+
+Ba thứ vẫn không đối chiếu được và đó là kết quả của cuộc thử, không phải việc còn dở: cờ Bắt
+buộc, hồ sơ tiên quyết, và mốc dự định hoàn tất của từng việc — kho Hồ sơ không có cột nào lưu ba
+thứ đó. Thang trạng thái cũng lệch: báo cáo bốn mức, kho hồ sơ hai mức.
+
+Bài kiểm mới cho phép gom theo dòng hàng bắt thêm được một ca: tờ hồ sơ khớp nhiều dòng phải hiện
+ở mọi dòng nó khớp, khác hẳn với việc nhân bản bộ chung.
+Kiểm tra: 17 bài cho phần tính của thẻ, 185 bài của nhóm hàm Thu mua xanh, typecheck và lint 0
+lỗi; đã chạy script rồi bấm tay đối chiếu hai khối trên phiếu 2931.
+Mã nguồn: `frontend-v2/src/modules/procurement/components/survey-report/dossier-checklist-table.tsx`
+(mới), `dossier-checklist-card.tsx`, `dossier-checklist-groups.tsx`;
+`frontend-v2/src/modules/procurement/utils/dossier-checklist-helpers.ts` (kèm bài kiểm);
+`backend/app/seed_ho_so_mau_ycbg.py`.
+
+## duoc-CR-434 | Hộp sửa hồ sơ trong thẻ «Hồ sơ cần hoàn thành» bày đủ ô như hộp bên Báo cáo thực hiện
+- status: xong
+- date: 2026-09-21
+- pic: NSU209
+Dòng ngoài của hai khối đã khớp nhau, nhưng bấm nút sửa thì lệch hẳn: hộp bên Báo cáo thực hiện có
+mười một ô kèm danh sách hồ sơ tiên quyết, hộp bên Hồ sơ chỉ có ba ô là tình trạng, hạn hiệu lực
+và ghi chú. Rà lại thì kho Hồ sơ thật ra có chỗ lưu cho tám trong số đó, chỉ là hộp chưa bày:
+tiêu đề, mô tả, trạng thái, loại hồ sơ (chính là giai đoạn), ngày cấp (chính là ngày bắt đầu thực
+hiện), ngày hết hiệu lực, người phụ trách và nơi lưu bản giấy. Nay bày đủ tám ô đó, xếp đúng thứ
+tự và đúng lưới của hộp bên kia.
+
+Bốn ô còn lại kho Hồ sơ không có cột nào tương ứng: cờ bắt buộc, mốc dự định hoàn tất, ràng buộc
+tiên quyết, và dòng hàng. Riêng dòng hàng thì suy ra được từ điều kiện áp dụng nên vẫn hiện câu lý
+do khớp. Cả bốn dựng dạng chỉ đọc kèm câu nói rõ là kho hồ sơ chưa có, chứ không dựng ô nhập rồi
+khóa lại: khóa thì người dùng cứ bấm mãi vào một thứ không bao giờ phản hồi, mà thuộc tính khóa
+còn gỡ luôn khả năng bôi đen và sao chép.
+
+Cố ý không có nút Xóa dù hộp bên kia có. Xóa ở đây là xóa tờ giấy khỏi kho của cả công ty chứ
+không phải gỡ nó khỏi phiếu đang mở — hai việc khác hẳn nhau, mà nút đứng cùng chỗ thì người dùng
+đọc ra nghĩa thứ hai.
+
+Danh sách hồ sơ khớp một chứng từ cố ý trả bộ trường gọn, không mang ngày cấp, người phụ trách hay
+nơi lưu. Thay vì phình danh sách cho mọi lượt mở phiếu phải cõng thêm dữ liệu mà hầu hết không ai
+nhìn, hộp sửa đọc riêng tờ hồ sơ đầy đủ đúng lúc mở.
+Kiểm tra: 558 bài của hai phân hệ Thu mua và Hồ sơ xanh, typecheck và lint 0 lỗi; đã bấm tay trên
+trình duyệt — mở hộp ở hồ sơ HS0003 đối chiếu từng ô với hộp bên Báo cáo, sửa nơi lưu rồi lưu lại
+thành công.
+Mã nguồn: `frontend-v2/src/modules/procurement/components/survey-report/dossier-quick-edit-dialog.tsx`,
+`frontend-v2/src/modules/dossier/hooks/use-dossier.ts` (mới),
+`frontend-v2/src/shared/constants/query-keys.ts`.
+
+## duoc-CR-435 | Tiến độ hồ sơ đi theo TỪNG chứng từ, không còn dùng chung toàn công ty
+- status: xong
+- date: 2026-09-21
+- pic: NSU209
+Thẻ «Hồ sơ cần hoàn thành» vẫn đo tiến độ bằng cột tình trạng của chính tờ hồ sơ trong kho, mà
+cột đó dùng chung cho cả công ty. Hậu quả: tick xong một tờ ở yêu cầu báo giá này thì hai chục
+phiếu khác cũng hiện đã xong, nên con số tiến độ của mọi phiếu giống hệt nhau và không nói lên
+điều gì. Nay có bảng mới ghi tiến độ theo từng cặp chứng từ và hồ sơ.
+
+Ranh giới giữa hai bảng là thứ phải giữ. Thuộc về TỜ GIẤY thì ở lại kho hồ sơ: tên, loại, ngày
+cấp, hạn hiệu lực, nơi lưu bản gốc, người giữ hồ sơ — đổi một lần, đúng cho mọi phiếu. Thuộc về
+VIỆC LÀM HỒ SƠ CHO PHIẾU NÀY thì sang bảng mới: tới đâu rồi, có bắt buộc với phiếu này không, ai
+đang làm, hẹn xong hôm nào, ghi chú riêng, tệp đã nộp. Hạn hiệu lực cố ý KHÔNG chép xuống từng
+phiếu dù khối Báo cáo thực hiện có cột đó: một tờ giấy chỉ có một ngày hết hạn, chép xuống là
+dựng ra nhiều bản của cùng một sự thật rồi chờ chúng lệch nhau.
+
+Làm cho cả bốn loại chứng từ vì bảng đã mang sẵn loại và số chứng từ, không tốn thêm gì. Dòng chỉ
+sinh ra khi có người động vào; chưa ai đụng thì trả mặc định chưa bắt đầu, khỏi đẻ sẵn hàng trăm
+dòng rỗng mỗi lần mở phiếu. Quyền ghi đòi quyền sửa CHÍNH TỜ PHIẾU chứ không đòi quyền sửa kho hồ
+sơ — ai sửa được phiếu thì tick được hồ sơ của phiếu đó; bắt theo kho thì hóa ra phải có quyền
+sửa danh mục toàn công ty mới đánh dấu xong được một việc trên đơn của mình.
+
+Thẻ nay có đủ những thứ trước đây phải ghi là kho hồ sơ chưa có: ô tick bấm được, cờ bắt buộc,
+người thực hiện, mốc dự định hoàn tất, ghi chú riêng và tệp đính kèm của phiếu. Trạng thái lên
+bốn mức bằng đúng thang của Báo cáo thực hiện. Hộp sửa tách hai cụm rõ ràng, cụm cuối nói thẳng
+là đụng tới tờ giấy dùng chung.
+
+Hai thang trạng thái TRÙNG DẢI SỐ nên gán nhầm thang không bao giờ nổ, giá trị vẫn hợp lệ — có
+bài kiểm chốt bằng số để người sau đọc ra điều đó trước khi nghĩ tới chuyện gộp hai cột.
+Kiểm tra: 18 bài mới cho bảng tiến độ, 93 bài hồ sơ cũ xanh, 558 bài giao diện của hai phân hệ
+xanh, typecheck và lint 0 lỗi. Đã bấm tay: tick ở phiếu 2931 lên 1/15, mở phiếu 2930 vẫn 0/15 với
+cùng tờ hồ sơ đó.
+Mã nguồn: `backend/app/modules/dossier/progress_model.py`, `progress_service.py`,
+`applicability_controller.py`, `constants.py`; `frontend-v2/src/modules/dossier/hooks/use-dossier-progress.ts`,
+`types/dossier-applicability.ts`; `frontend-v2/src/modules/procurement/components/survey-report/*`,
+`utils/dossier-checklist-helpers.ts`; `backend/app/seed_ho_so_mau_ycbg.py`.
+Migration: `b92c74d55ee7` — thêm bảng `tab_dossier_progress`.
+
+## duoc-CR-436 | Hồ sơ tiên quyết: khai trên TỜ HỒ SƠ, khóa tính theo từng chứng từ
+- status: xong
+- date: 2026-09-21
+- pic: NSU209
+Nốt cuối cùng mà thẻ «Hồ sơ cần hoàn thành» còn thiếu so với khối Báo cáo thực hiện. Nay mỗi tờ hồ
+sơ khai được danh sách những tờ phải xong TRƯỚC nó; trên mỗi chứng từ, tờ nào còn chờ thì làm mờ,
+hiện biểu tượng khóa, ô tick bị chặn và rê chuột đọc ra đang chờ tờ nào.
+
+⚠️ Chỗ KHAI và chỗ TÍNH nằm ở hai nơi, và đó là điểm tinh tế của cả tính năng. Ràng buộc khai
+trên chính tờ hồ sơ bên phân hệ Hồ sơ, MỘT lần cho cả kho — trình tự giấy tờ của công ty là một,
+đơn mua hàng chỉ phát hành sau khi hợp đồng ký xong, ở mọi thương vụ. Nhưng «đã xong» thì vẫn
+tính theo từng chứng từ, nên câu hỏi tờ này có đang khóa không vẫn là câu hỏi của riêng từng
+phiếu: cùng một tờ có thể khóa ở phiếu này mà đã mở ở phiếu kia. Ràng buộc dùng chung, trạng thái
+riêng — đừng gộp lại. Bản đầu tôi làm theo hướng khai trong từng tờ phiếu, đại ca đổi lại trong
+ngày; phần tính khóa giữ nguyên vì nó buộc phải theo phiếu.
+
+Thẻ bên Thu mua chỉ ĐỌC ràng buộc này: hộp sửa bày danh sách kèm dấu đã xong hay chưa và một
+đường dẫn mở tờ hồ sơ, không khai được tại chỗ. Khai được ở cả hai nơi thì mỗi phiếu một chuỗi và
+không ai biết bản nào đúng.
+
+Năm chốt, tất cả ở backend chứ không chỉ khóa nút trên màn hình: không tự trỏ chính nó; không tạo
+vòng, kể cả vòng dài ba bước; không trỏ tới hồ sơ không tồn tại; không vượt trần ba mươi tờ; và
+không đánh dấu hoàn thành khi tiên quyết chưa xong. Giao diện gác chỉ để tiện tay, gọi thẳng
+đường API vẫn phải bị chặn, không thì dải tiến độ nói dối. Vòng dò có trần độ sâu, và chạm trần
+là CHẶN chứ không trả về im lặng, vì dò không thấy không phải là không có. Vòng ở đây nguy hơn
+bản theo-phiếu: một vòng khai nhầm trong kho làm hỏng MỌI phiếu dùng tới hai tờ đó.
+
+Ba chỗ hỏng thầm lặng đã chặn sẵn. Thứ nhất, xóa một hồ sơ không đi dọn cột tiên quyết của tờ
+khác, nên id chết còn lại — coi id chết là chưa xong sẽ khóa tờ kia vĩnh viễn bằng một tờ không
+còn hiện ra ở đâu; nay cả chỗ tính khóa lẫn chỗ bày đều tự lọc. Thứ hai, dò vòng phải nhớ đỉnh đã
+qua, không thì đồ thị hình kim cương (hai nhánh cùng chờ một tờ) bị đi lại nhiều lần và chạm trần
+độ sâu, tức chặn NHẦM một khai báo hoàn toàn hợp lệ. Thứ ba, id của tờ đang sửa phải lấy từ địa
+chỉ trang chứ không lấy từ giá trị biểu mẫu — biểu mẫu không có ô id, nên lấy ở đó thì chính tờ
+đang sửa vẫn nằm trong danh sách chọn.
+
+Ô khai dùng lại bộ chọn nhiều mục dùng chung của ứng dụng, không tự dựng danh sách tick tại chỗ.
+Bản đầu đổ thẳng hơn bốn mươi tờ vào một ô cuộn cao mười ba rem nằm giữa biểu mẫu: cuộn trong
+cuộn, dòng trên cùng luôn bị cắt ngang, và chiều cao đó chiếm chỗ ngay cả khi không khai gì. Nay
+là một hàng đúng bằng ô ngay trên nó, chip nằm trong khung chứ không rải thành dải riêng bên dưới
+— dải riêng làm ô cao hai hàng cho đúng một lựa chọn, mà hàng trên chỉ ghi số lượng nên phải nhìn
+xuống hàng dưới mới biết chọn tờ nào.
+
+Bộ chọn dùng chung có thêm một tùy chọn mới: giấu hàng «chọn tất cả». Dùng khi «chọn hết» là thao
+tác gần như luôn SAI chứ không phải khi danh sách dài — ở đây chọn mọi tờ trong kho làm tiên
+quyết cho một tờ thì tờ đó khóa gần như vĩnh viễn, mà nút lại nằm đúng chỗ dễ bấm nhầm nhất, ngay
+trên mục đầu tiên.
+
+Script nạp dữ liệu mẫu khai chuỗi tiên quyết bằng TÊN chứ không bằng số thứ tự như mẫu của bản
+gốc: chèn thêm một dòng vào giữa bảng là mọi số phía sau lệch một nấc, im lặng, và chuỗi trỏ sai
+chỗ.
+Kiểm tra: 14 bài backend mới cho phần tiên quyết cộng 4 bài giao diện cho tùy chọn giấu «chọn tất
+cả», 129 bài backend của cụm hồ sơ xanh, 787 bài giao diện xanh, typecheck và lint 0 lỗi. Đã bấm tay trên trình duyệt và gọi thẳng đường API: cả năm chốt
+trả đúng câu lỗi, tick xong tờ tiên quyết thì tờ chờ nó mở khóa ngay, chín tờ đang khóa dây
+chuyền trên phiếu 2931.
+Mã nguồn: `backend/app/modules/dossier/depends_service.py` (mới), `model.py`, `schema.py`,
+`controller.py`, `applicability_controller.py`, `constants.py`;
+`frontend-v2/src/modules/dossier/components/dossier-depends-editor.tsx` (mới),
+`utils/dossier-form-fields.ts`, `config/dossier-crud.tsx`, `types/dossier.ts`;
+`frontend-v2/src/shared/ui/multi-picker.tsx` (kèm bài kiểm);
+`frontend-v2/src/modules/procurement/components/survey-report/*`;
+`backend/app/seed_ho_so_mau_ycbg.py`.
+Migration: `e82871ec2852` — thêm cột `depends` vào `tab_dossier`.
