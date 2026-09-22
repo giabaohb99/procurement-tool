@@ -5163,6 +5163,10 @@ Mã nguồn (kho app cũ, không phải kho này): `my-firebase-api/src/db/sync-
 `src/pages/AdminPage.tsx`, `src/types/common.types.ts`.
 Tài liệu: `doc/dong-bo-dat-xe-duyet-dau/TIEN-DO.md`.
 
+Ngày 22/09 em gỡ bỏ phần quyển sổ của đợt này, xem mục bao-CR-456. Ba thứ còn giữ lại từ
+đợt này là cách đọc kết quả một lượt bắn, cách gộp hai ô vào đúng một lượt ghi, và dấu
+trạng thái trên phiếu.
+
 ## dong-bo-datxe-qd-n-34-phieu | Chốt 34 phiếu đang chờ duyệt: để app cũ ký nốt
 - status: xong
 - date: 2026-09-21
@@ -5199,6 +5203,7 @@ nên nếu có ai sửa tay lệch một bên thì người đó qua được c�
 hình sẽ báo lỗi đỏ chứ không phải bảng rỗng — đúng kiểu hỏng cần có, nó kêu chứ không im.
 Tài liệu: `doc/dong-bo-dat-xe-duyet-dau/TIEN-DO.md` (§P1, quyết định N),
 `doc/dong-bo-dat-xe-duyet-dau/README.md` (bảng quyết định).
+
 
 ## bao-CR-455 | Dọn ba hành động ma: bài kiểm cổng quyền v2 xanh trở lại
 - status: xong
@@ -5332,10 +5337,6 @@ Chưa commit, chưa đưa lên máy chủ thử nghiệm, chờ đại ca bảo.
 Mã nguồn: `backend/app/modules/system_log/partition.py` (mới), `backend/app/modules/system_log/retention.py`, `backend/app/modules/backup/service.py`, `backend/migrations/versions/f2c5b9d71a48_phan_vung_bon_bang_nhat_ky_theo_nam.py` (mới), `test/backend/test_phan_vung_nhat_ky_cr454.py` (mới).
 Tài liệu: `doc/tai-lieu-ky-thuat/nhat-ky-va-phien-dang-nhap.md` (§9 + bảng §10), `doc/erp/19-viec-con-lai-tong-hop.md`, `doc/tai-lieu-ky-thuat/change-log-bao.md`.
 
-Ngày 22/09 em gỡ bỏ phần quyển sổ của đợt này, xem mục bao-CR-456. Ba thứ còn giữ lại từ
-đợt này là cách đọc kết quả một lượt bắn, cách gộp hai ô vào đúng một lượt ghi, và dấu
-trạng thái trên phiếu.
-
 ## bao-CR-456 | Gỡ quyển sổ đồng bộ bên app đặt xe cũ, dồn việc theo dõi về một chỗ duy nhất
 - status: xong
 - date: 2026-09-22
@@ -5384,10 +5385,59 @@ một trăm bốn mươi bài kiểm trong hai mươi bốn tệp đều qua.
 
 Còn hai việc phải làm tay mà em không tự làm được. Thứ nhất là bỏ khối phân quyền của nhánh
 sổ trong phần Luật của kho dữ liệu app cũ, em không được phép sửa phần đó. Thứ hai là dọn một
-dòng sổ mồ côi và một dấu đỏ còn sót trên phiếu đã nói ở trên; cách sạch nhất là đại ca vào
-sửa phiếu duyệt dấu DD000865 một lần, app cũ sẽ bắn lại và tự gỡ dấu đỏ.
+dòng sổ mồ côi và một dấu đỏ còn sót trên phiếu đã nói ở trên. Lúc viết dòng này em tưởng
+đại ca chỉ cần vào sửa phiếu duyệt dấu DD000865 một lần là app cũ bắn lại rồi tự gỡ dấu đỏ,
+nhưng ngay sau đó bao-CR-457 gỡ luôn cái dấu ấy khỏi app cũ nên đường dọn đó không còn chạy
+nữa. Cả hai thứ sót lại nay là rác trơ: không ai ghi, không ai đọc, cứ để nguyên.
 
 Commit: `my-firebase-api` nhánh dev c6f2b93, `degoholding-app-frontend` nhánh dev 155c861.
 Deploy: cả hai đã lên môi trường thử của app cũ ngày 22/09; lượt triển khai máy chủ của
 my-firebase-api chạy xong không lỗi.
 Tham chiếu: bao-CR-452 là đợt dựng quyển sổ này, bao-CR-449 là màn «Sổ đồng bộ» thay thế nó.
+
+
+## bao-CR-457 | Gỡ nốt dấu trạng thái đồng bộ mà app đặt xe cũ đóng lên từng phiếu
+- status: xong
+- date: 2026-09-22
+- pic: NSU209
+Đây là nửa còn lại của việc hôm nay. Sáng nay em gỡ quyển sổ đồng bộ bên app đặt xe cũ, còn
+một thứ nhỏ hơn thì em cố ý giữ lại và nói riêng với đại ca: sau mỗi lượt bắn phiếu sang hệ
+thống của mình, app cũ vẫn đóng lên chính phiếu đó một cái dấu ghi lượt bắn vừa rồi trót lọt
+hay trượt. Đại ca bảo dọn nốt, nên em gỡ.
+
+Lý do thứ nhất là không còn ai đọc cái dấu đó. Chỗ duy nhất đọc nó là màn hình vừa bị gỡ sáng
+nay. Bên hệ thống của mình thì chưa từng đọc, vì mình tự giữ sổ đồng bộ riêng trong cơ sở dữ
+liệu của mình; em rà lại toàn bộ phần đọc kho app cũ bên mình, không có lấy một chỗ nào nhắc
+tới cái dấu này.
+
+Lý do thứ hai là nó mắc đúng cái bệnh đã khai tử quyển sổ: ghi được mà không xóa được. Ba vòng
+quét bên mình đọc kho app cũ ở chế độ chỉ đọc, cố ý không bao giờ ghi vào, nên phiếu được nhặt
+về xong thì cái dấu trượt vẫn nằm nguyên trên phiếu. Một cái dấu chỉ biết bật mà không biết
+tắt thì càng để lâu càng sai, và người nhìn vào sẽ hiểu ngược hẳn tình trạng thật.
+
+Em sửa ba tệp bên app cũ. Nhánh bắn trượt nay trả về tay không, không đóng dấu gì lên phiếu.
+Nhánh bắn trót lọt chỉ còn đúng một cú ghi số phiếu bên mình trở lại app cũ, và chỉ ghi khi
+con số thật sự đổi; chỗ này đáng giữ kỷ luật vì mỗi cú ghi là một lần đánh thức mọi máy đang
+mở màn danh sách phiếu của app cũ. Kiểu dữ liệu của phiếu bỏ luôn ô dấu và kiểu giá trị của
+nó. Bài kiểm của luồng ghi ngược sửa lại cho khớp: một lượt bắn trót lọt chỉ được đẻ ra đúng
+một cú ghi gồm mỗi số phiếu, còn một lượt bắn trượt thì không được chạm vào kho app cũ lần
+nào.
+
+Dữ liệu cũ em để nguyên. Những phiếu đã bị đóng dấu từ trước nay thành rác trơ: không ai ghi
+thêm, không ai đọc, không ai xóa. Dựng một lượt quét dọn cho một ô vô hại thì tốn hơn cái hại
+nó gây ra, mà lại phải mở quyền ghi vào kho app cũ, đúng thứ mình đang cố tránh.
+
+Bài kiểm bên app cũ vẫn chưa chạy lại được, y như sáng nay: bộ chạy thử của kho đó hỏng sẵn ở
+tầng khởi động máy ảo, em đã chứng minh bằng cách cất hết thay đổi rồi chạy trên cây mã sạch
+thì vẫn hỏng y hệt. Nghĩa là mấy bài kiểm em vừa sửa lại là chưa được chạy lần nào. Thay vào
+đó em kiểm bằng cổng kiểm kiểu dữ liệu, chạy sạch không một lỗi, cộng với một lượt rà toàn văn
+cả hai kho app cũ không còn chỗ nào nhắc tên cái dấu này.
+
+Bên hệ thống của mình không đụng một dòng nào. Chỗ tra phiếu kẹt vẫn là màn «Sổ đồng bộ»,
+nơi có đủ cả lượt về bằng móc bắn thẳng lẫn lượt về bằng vòng quét.
+
+Mã nguồn (kho app cũ, không phải kho này): `my-firebase-api/src/db/requests.db.ts`,
+`my-firebase-api/src/types/db.types.ts`, `my-firebase-api/test/endpoints/erp-sync-writeback.test.ts`.
+Commit: `my-firebase-api` nhánh dev 434cb88; lượt triển khai máy chủ chạy xong không lỗi.
+Tham chiếu: bao-CR-456 là đợt gỡ quyển sổ, bao-CR-452 là đợt dựng ra cả hai thứ, bao-CR-449 là
+màn «Sổ đồng bộ» thay thế chúng.
