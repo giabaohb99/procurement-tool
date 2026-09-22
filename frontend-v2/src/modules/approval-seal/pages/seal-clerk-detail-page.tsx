@@ -1,21 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import {
-  AlertCircle,
-  Briefcase,
-  Building,
-  Building2,
-  ExternalLink,
-  Hash,
-  Mail,
-  Phone,
-  Save,
-  ShieldCheck,
-  Stamp,
-  Trash2,
-  UserCheck,
-} from 'lucide-react'
+import { AlertCircle, Save, ShieldCheck, Stamp, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
 import { usePermission } from '@/core/authorization/use-permission'
@@ -43,43 +29,9 @@ import { toastDeletedWithUndo } from '@/shared/utils/toast-undo'
 import { sealClerkApi } from '../api/seal-clerk-api'
 import { CompanyRow } from '../components/company-row'
 import { SealClerkDetailHeader } from '../components/seal-clerk-detail-header'
+import { SealClerkEmployeeCard } from '../components/seal-clerk-employee-card'
 import { useSealClerk, useSealClerkByEmployee, useSyncSealClerks } from '../hooks/use-seal-clerks'
 import { CLERK_STATUS, CLERK_STATUS_LABELS } from '../types/seal-clerk'
-
-function InfoItem({
-  icon: Icon,
-  label,
-  value,
-  href,
-}: {
-  icon: React.ComponentType<{ className?: string }>
-  label: string
-  value?: string | null
-  href?: string
-}) {
-  return (
-    <div className="flex items-start gap-3 rounded-lg border border-border/50 bg-muted/15 p-3">
-      <div className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground">
-        <Icon className="size-4" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-xs font-medium text-muted-foreground">{label}</p>
-        {href && value ? (
-          <a
-            href={href}
-            className="mt-0.5 inline-block truncate text-sm font-medium text-primary hover:underline"
-          >
-            {value}
-          </a>
-        ) : (
-          <p className="mt-0.5 truncate text-sm font-medium text-foreground">
-            {value || '—'}
-          </p>
-        )}
-      </div>
-    </div>
-  )
-}
 
 /**
  * Trang CHI TIẾT phân công văn thư đóng dấu (`/approval-seal/clerks/:id`).
@@ -87,11 +39,11 @@ function InfoItem({
  * Bố cục cải tiến:
  * - Header dính đỉnh màn hình (`sticky top-0`) hiển thị tên văn thư, ảnh đại diện,
  *   trạng thái, dải metadata và cụm nút thao tác (Lưu thay đổi, Xóa phân công).
- * - Thân trang chia 2 cột:
- *   + Cột trái: Thông tin nhân sự (hồ sơ HR) & Cấu hình phân công đóng dấu
- *     (Trạng thái, Văn thư tổng, Danh sách công ty có thể gỡ nhanh).
- *   + Cột phải (Sticky scroll): Ghim cố định và cuộn độc lập cho Thẻ tổng quan
- *     phân công, Trao đổi bình luận (`DocumentComments`) & Lịch sử thao tác (`AuditTimeline`).
+ * - Thân trang chia 2 cột (xếp lại 22/09/2026):
+ *   + Cột trái = nơi LÀM VIỆC: Cấu hình phân công đóng dấu (Trạng thái · Văn thư
+ *     tổng · Danh sách công ty), rồi Trao đổi.
+ *   + Cột phải = khối CHỈ ĐỌC: Thông tin nhân sự (`SealClerkEmployeeCard`) và Lịch
+ *     sử thao tác. Cuộn theo trang, KHÔNG ghim và KHÔNG có vùng cuộn riêng.
  */
 export function SealClerkDetailPage() {
   const { id } = useParams()
@@ -301,78 +253,8 @@ export function SealClerkDetailPage() {
 
       {row && (
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
-          {/* Cột trái: Thông tin nhân sự & Cấu hình phân công đóng dấu */}
+          {/* Cột trái: phần việc chính của trang + hai khối dài theo thời gian */}
           <div className="flex min-w-0 flex-col gap-6">
-            {/* Card 1: Thông tin nhân sự */}
-            <Card className="flex flex-col gap-4 p-5 pb-4">
-              <div className="-mx-5 -mt-1 flex items-center justify-between border-b px-5 pb-3">
-                <h3 className="flex items-center gap-2 text-sm font-semibold text-navy dark:text-foreground">
-                  <UserCheck className="size-4 text-primary" />
-                  Thông tin nhân sự
-                </h3>
-                {employeeId > 0 && canViewEmployee && (
-                  <Link
-                    to={appRoutes.hr.employeeDetail(employeeId)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-primary transition-colors hover:underline"
-                  >
-                    Xem hồ sơ chi tiết
-                    <ExternalLink className="size-3" />
-                  </Link>
-                )}
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                <InfoItem
-                  icon={Hash}
-                  label="Mã nhân viên"
-                  value={employee?.code || row.employee_code}
-                />
-                <InfoItem
-                  icon={UserCheck}
-                  label="Họ và tên"
-                  value={employee?.full_name || row.employee_name}
-                />
-                <InfoItem
-                  icon={Mail}
-                  label="Email công việc"
-                  value={employee?.email}
-                  href={employee?.email ? `mailto:${employee.email}` : undefined}
-                />
-                <InfoItem
-                  icon={Phone}
-                  label="Số điện thoại"
-                  value={employee?.phone}
-                  href={employee?.phone ? `tel:${employee.phone}` : undefined}
-                />
-                <InfoItem
-                  icon={Building2}
-                  label="Phòng ban trực thuộc"
-                  value={employee?.department_name}
-                />
-                <InfoItem
-                  icon={Briefcase}
-                  label="Chức danh / Vị trí"
-                  value={employee?.position}
-                />
-                {employee?.company_name && (
-                  <InfoItem
-                    icon={Building}
-                    label="Pháp nhân trực thuộc"
-                    value={employee.company_name}
-                  />
-                )}
-                {employee?.status_label && (
-                  <InfoItem
-                    icon={UserCheck}
-                    label="Trạng thái nhân sự"
-                    value={employee.status_label}
-                  />
-                )}
-              </div>
-            </Card>
-
             {/* Card 2: Cấu hình phân công đóng dấu */}
             <Card className="flex flex-col gap-5 p-5 pb-4">
               <div className="-mx-5 -mt-1 flex items-center justify-between border-b px-5 pb-3">
@@ -495,77 +377,55 @@ export function SealClerkDetailPage() {
                     ))}
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border/80 bg-muted/10 p-6 text-center">
-                    <Building className="size-8 text-muted-foreground/60" />
+                  //  Khung rỗng + câu cảnh báo (dời từ thẻ «Tổng quan phân công»
+                  //  ở cột phải sang, 22/09/2026): cảnh báo phải đứng ngay cạnh
+                  //  thứ sửa được nó — ô chọn công ty ở ngay trên. Nằm tận cột
+                  //  bên kia thì người đọc phải tự nối hai chỗ với nhau.
+                  <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-amber-500/40 bg-amber-500/5 p-6 text-center">
+                    <AlertCircle className="size-8 text-amber-500/70" />
                     <p className="mt-2 text-sm font-medium text-foreground">Chưa chọn công ty nào</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      Văn thư này cần được phân công ít nhất một công ty để bắt đầu nhận phiếu đóng dấu.
+                    <p className="mt-0.5 max-w-sm text-xs text-muted-foreground">
+                      Văn thư này chưa nhận phiếu đóng dấu của công ty nào. Chọn ít nhất một
+                      công ty ở ô phía trên rồi bấm <span className="font-medium">Lưu</span>.
                     </p>
                   </div>
                 )}
               </div>
             </Card>
+
+            {/*  Trao đổi khép lại CỘT TRÁI: nó là thứ NGƯỜI TA GÕ VÀO nên cần bề
+                 ngang của cột chính — ô nhập rộng 380px thì một câu ba dòng đọc
+                 như cột báo. Lịch sử thao tác thì ngược lại, sang cột phải. */}
+            <DocumentComments entity="seal_clerk" entityId={row.id} />
           </div>
 
-          {/* Cột phải: Sticky scroll theo header */}
-          <div className="flex flex-col gap-5 lg:sticky lg:top-[calc(var(--clerk-header-h,0px)+0.75rem)] lg:max-h-[calc(100dvh-3.5rem-var(--clerk-header-h,0px)-2rem)] lg:self-start lg:overflow-y-auto pr-0.5">
-            {/* Card Tổng quan phân công */}
-            <Card className="flex flex-col gap-4 p-5 pb-4">
-              <h3 className="-mx-5 -mt-1 flex items-center gap-2 border-b px-5 pb-3 text-sm font-semibold text-navy dark:text-foreground">
-                <ShieldCheck className="size-4 text-primary" />
-                Tổng quan phân công
-              </h3>
+          {/*  Cột phải — khối THAM CHIẾU, chỉ đọc. Thẻ «Tổng quan phân công» đã
+               BỎ (22/09/2026): ba dòng của nó — trạng thái nhận phiếu · loại hình
+               văn thư · số công ty — đọc từ đúng ba ô người dùng đang chỉnh ở cột
+               trái, tức là một tấm gương. Tệ hơn: nó soi cả những thay đổi CHƯA
+               LƯU, nên nó không nói được điều gì mà nhìn sang cột trái không
+               thấy. Trạng thái và loại hình còn nằm sẵn trên dải tóm tắt ở tiêu
+               đề trang. Câu cảnh báo «chưa phân công công ty nào» thì KHÔNG bỏ —
+               nó dời xuống ngay dưới danh sách công ty, chỗ người ta sửa được.
 
-              <div className="space-y-2.5 text-sm">
-                <div className="flex items-center justify-between gap-2 rounded-md bg-muted/30 px-3 py-2">
-                  <span className="text-xs text-muted-foreground">Trạng thái nhận phiếu</span>
-                  {status === CLERK_STATUS.active ? (
-                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                      <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-                      Sẵn sàng nhận phiếu
-                    </span>
-                  ) : status === CLERK_STATUS.onLeave ? (
-                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
-                      <span className="size-2 rounded-full bg-amber-500" />
-                      Tạm dừng (Nghỉ phép)
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                      <span className="size-2 rounded-full bg-slate-400" />
-                      Ngưng hoạt động
-                    </span>
-                  )}
-                </div>
+               ⚠️ KHÔNG có vùng cuộn riêng (cùng luật đã áp cho chi tiết phiếu
+               đóng dấu): không `sticky`, không `max-h`, không `overflow-y-auto`
+               — hai vùng cuộn cạnh nhau làm bánh xe chuột đổi nghĩa tùy con trỏ
+               đang đậu ở nửa nào. */}
+          <div className="flex flex-col gap-5">
+            <SealClerkEmployeeCard
+              employeeId={employeeId}
+              fallbackName={row.employee_name}
+              fallbackCode={row.employee_code}
+              employee={employee}
+              canViewEmployee={canViewEmployee}
+            />
 
-                <div className="flex items-center justify-between gap-2 rounded-md bg-muted/30 px-3 py-2">
-                  <span className="text-xs text-muted-foreground">Loại hình văn thư</span>
-                  <span className="text-xs font-medium text-foreground">
-                    {isHead ? 'Văn thư tổng (Đa pháp nhân)' : 'Văn thư đơn vị'}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between gap-2 rounded-md bg-muted/30 px-3 py-2">
-                  <span className="text-xs text-muted-foreground">Số công ty phụ trách</span>
-                  <span className="font-mono text-xs font-bold text-primary tabular-nums">
-                    {companyIds.length} công ty
-                  </span>
-                </div>
-
-                {companyIds.length === 0 && (
-                  <div className="flex items-start gap-2 rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-300">
-                    <AlertCircle className="mt-0.5 size-4 shrink-0" />
-                    <span>
-                      Văn thư này hiện chưa được phân công công ty nào. Cần chọn công ty để có thể tiếp nhận phiếu đóng dấu.
-                    </span>
-                  </div>
-                )}
-              </div>
-            </Card>
-
-            {/* Trao đổi bình luận */}
-            <DocumentComments entity="seal_clerk" entityId={row.id} />
-
-            {/* Lịch sử thao tác */}
+            {/*  Lịch sử thao tác đứng CUỐI cột phải (dời 22/09/2026 — cùng cách
+                 đã chốt ở phiếu đặt xe, CR-439). Nó chỉ để ĐỌC và mỗi dòng là một
+                 câu ngắn tự mô tả nên chịu được cột hẹp; để nó ở cột trái thì cột
+                 phải chỉ còn một thẻ cao 300px, bỏ trống hơn nửa màn. Tự dựng thẻ
+                 có tiêu đề riêng nên KHÔNG bọc thêm `Card` kẻo lặp tiêu đề. */}
             <AuditTimeline entity="seal_clerk" entityId={row.id} showMessage dense />
           </div>
         </div>

@@ -15,7 +15,9 @@ Chạy (LOCAL/DEV): docker compose exec -T api python -m scripts.seed_seal_reque
 from datetime import datetime, timedelta
 
 import app.core.all_models  # noqa: F401 — nạp toàn bộ model
+from app.core.audit import record as audit_record
 from app.core.database import SessionLocal
+from app.modules.audit.model import AuditLog
 from app.modules.company.model import Company
 from app.modules.department.model import Department
 from app.modules.employee.model import Employee
@@ -32,6 +34,44 @@ from app.modules.seal_request.model import (
     SealType,
 )
 from app.modules.user.model import User
+
+#  Câu nhật ký phải KHỚP `seal_request/controller.py::_with_reason` — màn chi tiết
+#  moi lý do ra từ đúng chuỗi này (`frontend-v2/.../utils/extract-seal-reason.ts`).
+#  Gõ khác một ký tự là phiếu mẫu mất lý do mà không có lỗi nào báo.
+REASON_MARK = " — Lý do: "
+
+#  Hai kết cục chặn, mỗi cái một câu mở đầu riêng (giống hệt controller).
+STOP_ACTIONS = {
+    SEAL_RETURNED: ("update", "Yêu cầu chỉnh sửa"),
+    SEAL_REJECTED: ("cancel", "Từ chối yêu cầu"),
+}
+
+
+def _ghi_ly_do_chan(db, req, reason: str, actor_user_id: int) -> bool:
+    """Ghi dấu vết LÝ DO bị trả về / từ chối cho một phiếu mẫu.
+
+    ⚠️ Vì sao seed phải tự ghi dòng này: lý do KHÔNG có cột riêng trên phiếu —
+    backend cố ý chỉ đặt nó trong câu nhật ký (`_with_reason`) và thư thông báo,
+    còn `note` để dành cho chữ của người TẠO phiếu. Seed nào nhét lý do vào
+    `note` là vừa sai chỗ, vừa làm màn chi tiết không có gì để hiện.
+
+    Chạy lại được: đã có dòng mang dấu «— Lý do:» thì bỏ qua.
+    """
+    action, prefix = STOP_ACTIONS.get(req.status, ("", ""))
+    if not action or not reason:
+        return False
+
+    da_co = (db.query(AuditLog)
+             .filter(AuditLog.entity == "seal_request", AuditLog.entity_id == req.id,
+                     AuditLog.message.like(f"%{REASON_MARK.strip()}%"))
+             .first())
+    if da_co:
+        return False
+
+    audit_record(db, actor_user_id, "seal_request", req.id, action,
+                 f"{prefix}{REASON_MARK}{reason}", doc_code=req.code)
+    return True
+
 
 SAMPLE_REQUESTS = [
     {
@@ -153,7 +193,8 @@ SAMPLE_REQUESTS = [
         "status": SEAL_RETURNED,
         "days_ago": 5,
         "seal_type": "Dấu tròn công ty",
-        "note": "TBP yêu cầu chỉnh sửa: Bổ sung thêm mẫu nhãn hiệu màu và danh mục nhóm sản phẩm 05.",
+        "note": "Hồ sơ gồm tờ khai và 3 mẫu nhãn in màu.",
+        "stop_reason": "Bổ sung thêm mẫu nhãn hiệu màu và danh mục nhóm sản phẩm 05.",
     },
     {
         "code": "DD012",
@@ -164,7 +205,8 @@ SAMPLE_REQUESTS = [
         "status": SEAL_REJECTED,
         "days_ago": 7,
         "seal_type": "Dấu chức danh",
-        "note": "Từ chối: Chưa đính kèm thư mời chính thức của ban tổ chức hội chợ.",
+        "note": "Đoàn 4 người, đi 5 ngày.",
+        "stop_reason": "Chưa đính kèm thư mời chính thức của ban tổ chức hội chợ.",
     },
     {
         "code": "DD013",
@@ -260,7 +302,18 @@ def run():
             code = item["code"]
             existing = db.query(SealRequest).filter(SealRequest.code == code).first()
             if existing:
-                print(f"  = Đã có phiếu: {code}")
+                #  Phiếu cũ vẫn có thể THIẾU dấu vết lý do (bản seed trước nhét lý do
+                #  vào `note`). Vá ngay ở đây thay vì bắt người ta xóa sạch CSDL.
+                #  Bản seed cũ nhét lý do vào ô Ghi chú. Trả ô đó về đúng nghĩa —
+                #  nhưng CHỈ khi nó còn y nguyên chữ của bản seed cũ, để không đè
+                #  lên ghi chú ai đó đã sửa tay trên giao diện.
+                if item.get("stop_reason") and existing.note.startswith(("Từ chối:", "TBP yêu cầu chỉnh sửa:")):
+                    existing.note = item["note"]
+
+                if _ghi_ly_do_chan(db, existing, item.get("stop_reason", ""), approver_user.id):
+                    print(f"  ~ Vá dấu vết lý do cho phiếu: {code}")
+                else:
+                    print(f"  = Đã có phiếu: {code}")
                 continue
 
             created_time = now - timedelta(days=item["days_ago"], hours=item.get("hours", 3))
@@ -326,6 +379,9 @@ def run():
             # Gắn các công ty vào bảng nối tab_seal_request_company
             for cid in comp_ids:
                 db.add(SealRequestCompany(seal_request_id=req.id, company_id=cid))
+
+            #  Phiếu bị trả về / từ chối: ghi dấu vết lý do đúng như luồng thật.
+            _ghi_ly_do_chan(db, req, item.get("stop_reason", ""), approver_user.id)
 
             created_count += 1
             print(f"  + Tạo yêu cầu đóng dấu: {code} - {item['title']} ({req.status_label})")

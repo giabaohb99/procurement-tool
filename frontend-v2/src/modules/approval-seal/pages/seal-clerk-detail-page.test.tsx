@@ -110,7 +110,7 @@ function renderDetailPage() {
 }
 
 describe('SealClerkDetailPage', () => {
-  it('hiển thị đầy đủ tiêu đề, thông tin nhân sự, cấu hình và cột tổng quan sticky', async () => {
+  it('hiển thị đủ tiêu đề, cấu hình phân công, thông tin nhân sự và hai khối dấu vết', async () => {
     renderDetailPage()
 
     // Header & metadata
@@ -120,21 +120,28 @@ describe('SealClerkDetailPage', () => {
     expect(screen.getAllByText('Chuyên viên Hành chính').length).toBeGreaterThan(0)
     expect(screen.getAllByText('Văn thư tổng').length).toBeGreaterThan(0)
 
-    // Cột trái: Thông tin nhân sự
-    expect(screen.getByText('Thông tin nhân sự')).toBeInTheDocument()
-    expect(screen.getByText('hien.ttt@degoholding.com')).toBeInTheDocument()
-    expect(screen.getByText('0901234567')).toBeInTheDocument()
-
-    // Cột trái: Cấu hình phân công đóng dấu
+    // Cột trái: Cấu hình phân công đóng dấu — phần việc chính của trang
     expect(screen.getByText('Cấu hình phân công đóng dấu')).toBeInTheDocument()
     expect(screen.getByText('Trạng thái phân công')).toBeInTheDocument()
     expect(screen.getAllByText(/Văn thư tổng/i).length).toBeGreaterThan(0)
 
-    // Cột phải: Tổng quan phân công & comments & audit
-    expect(screen.getByText('Tổng quan phân công')).toBeInTheDocument()
-    expect(screen.getByText('Sẵn sàng nhận phiếu')).toBeInTheDocument()
+    // Cột phải: Thông tin nhân sự (chỉ đọc)
+    expect(screen.getByText('Thông tin nhân sự')).toBeInTheDocument()
+    expect(screen.getByText('hien.ttt@degoholding.com')).toBeInTheDocument()
+    expect(screen.getByText('0901234567')).toBeInTheDocument()
+
     expect(screen.getByTestId('document-comments')).toBeInTheDocument()
     expect(screen.getByTestId('audit-timeline')).toBeInTheDocument()
+  })
+
+  //  Thẻ «Tổng quan phân công» bỏ ngày 22/09/2026 — nó chỉ soi lại ba ô đang
+  //  chỉnh ở cột trái (và soi cả thay đổi CHƯA LƯU), nên không nói được điều gì
+  //  mà nhìn sang cột trái không thấy. Bài kiểm này giữ cho nó đừng mọc lại.
+  it('không dựng lại thẻ tổng quan soi ngược cấu hình bên trái', () => {
+    renderDetailPage()
+
+    expect(screen.queryByText('Tổng quan phân công')).not.toBeInTheDocument()
+    expect(screen.queryByText('Sẵn sàng nhận phiếu')).not.toBeInTheDocument()
   })
 
   it('cho phép gỡ nhanh công ty khỏi danh sách phụ trách', async () => {
