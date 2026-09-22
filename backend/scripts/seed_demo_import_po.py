@@ -2,7 +2,8 @@
 
 Đi qua đúng API thật (`POST /api/purchase-orders` → submit → approve) chứ không nhét
 thẳng vào DB, để dữ liệu mẫu chạy qua toàn bộ luật của backend: chuẩn hóa loại tiền
-xuống dòng hàng, quy đổi `base_amount`, sinh công nợ.
+xuống dòng hàng, quy đổi `base_amount`, khai chi phí thu mua ở giai đoạn Dự toán
+(bao-CR-453 — chưa sinh công nợ chi phí, muốn có nợ thì chốt Quyết toán trên màn đơn).
 
 Chạy: docker compose exec api python scripts/seed_demo_import_po.py
 """
@@ -97,29 +98,29 @@ DEMO_ORDERS = [
         "costs": [
             {"cost_type": 1, "description": "Cước biển Thượng Hải – Cát Lái, 2x40HC",
              "supplier_code": "SITC LINES", "supplier_name": "CONG TY TNHH SITC VIET NAM",
-             "currency": "VND", "amount": 42_500_000, "vat": 0, "allocation_method": 1,
+             "currency": "VND", "estimate_amount": 42_500_000, "vat": 0, "allocation_method": 1,
              "invoice_no": "SITC-26/1042", "invoice_date": "2026-10-09", "payment_due_date": "2026-10-24"},
             {"cost_type": 2, "description": "Phí địa phương tại cảng (THC, D/O, nâng hạ)",
              "supplier_code": "SITC LINES", "supplier_name": "CONG TY TNHH SITC VIET NAM",
-             "currency": "VND", "amount": 8_750_000, "vat": 8, "allocation_method": 1,
+             "currency": "VND", "estimate_amount": 8_750_000, "vat": 8, "allocation_method": 1,
              "invoice_no": "SITC-26/1043", "invoice_date": "2026-10-09", "payment_due_date": "2026-10-24"},
             {"cost_type": 3, "description": "Phí dịch vụ khai thuê hải quan",
              "supplier_code": "VINALOG", "supplier_name": "CONG TY CP GIAO NHAN VINALOG",
-             "currency": "VND", "amount": 3_500_000, "vat": 8, "allocation_method": 1,
+             "currency": "VND", "estimate_amount": 3_500_000, "vat": 8, "allocation_method": 1,
              "invoice_no": "VNL-26/0771", "invoice_date": "2026-10-08", "payment_due_date": "2026-11-07"},
             {"cost_type": 4, "description": "Thuế nhập khẩu theo tờ khai 105987654321",
              "supplier_code": "NSNN", "supplier_name": "Ngân sách nhà nước",
-             "currency": "VND", "amount": 27_914_400, "vat": 0, "allocation_method": 1,
+             "currency": "VND", "estimate_amount": 27_914_400, "vat": 0, "allocation_method": 1,
              "payment_due_date": "2026-10-08"},
             {"cost_type": 5, "description": "Thuế GTGT hàng nhập khẩu theo tờ khai 105987654321",
              "supplier_code": "NSNN", "supplier_name": "Ngân sách nhà nước",
-             "currency": "VND", "amount": 60_696_320, "vat": 0, "allocation_method": 1,
+             "currency": "VND", "estimate_amount": 60_696_320, "vat": 0, "allocation_method": 1,
              "payment_due_date": "2026-10-08"},
             # Cước kéo hàng về kho chia theo KHỐI LƯỢNG chứ không theo giá trị — hai dòng
             # thùng carton nặng gần bằng nhau nhưng đơn giá lệch hẳn.
             {"cost_type": 10, "description": "Vận chuyển nội địa Cát Lái – kho Agama",
              "supplier_code": "VINALOG", "supplier_name": "CONG TY CP GIAO NHAN VINALOG",
-             "currency": "VND", "amount": 6_200_000, "vat": 8, "allocation_method": 2,
+             "currency": "VND", "estimate_amount": 6_200_000, "vat": 8, "allocation_method": 2,
              "invoice_no": "VNL-26/0783", "invoice_date": "2026-10-12", "payment_due_date": "2026-11-11"},
         ],
         # Thành tiền của dòng tính theo SL THỰC NHẬN, nên không khai lần giao thì đơn
@@ -168,14 +169,14 @@ DEMO_ORDERS = [
             "import_costs": [
                 {"cost_type": 1, "description": "Cước biển Port Klang – Cát Lái, 1x40HC",
                  "supplier_code": "SITC LINES", "supplier_name": "CONG TY TNHH SITC VIET NAM",
-                 "amount": 950, "vat": 0, "allocation_method": 1},   # để trống loại tiền = theo đơn (USD)
+                 "estimate_amount": 950, "vat": 0, "allocation_method": 1},   # để trống loại tiền = theo đơn (USD)
                 {"cost_type": 9, "description": "Bảo hiểm hàng hóa 110% trị giá CIF",
                  "supplier_code": "VINALOG", "supplier_name": "CONG TY CP GIAO NHAN VINALOG",
-                 "currency": "USD", "amount": 120, "vat": 0, "allocation_method": 1},
+                 "currency": "USD", "estimate_amount": 120, "vat": 0, "allocation_method": 1},
                 # Phí trả bằng tiền Việt nằm trong đơn USD — tỷ giá phải là 1
                 {"cost_type": 8, "description": "Phí kiểm tra chất lượng chuyên ngành",
                  "supplier_code": "VINALOG", "supplier_name": "CONG TY CP GIAO NHAN VINALOG",
-                 "currency": "VND", "amount": 2_400_000, "vat": 8, "allocation_method": 3},
+                 "currency": "VND", "estimate_amount": 2_400_000, "vat": 8, "allocation_method": 3},
             ],
         },
         "approve": False,
@@ -224,18 +225,18 @@ DEMO_ORDERS = [
         "costs": [
             {"cost_type": 1, "description": "Cước biển Thượng Hải – Cát Lái, 1x20DC",
              "supplier_code": "SITC LINES", "supplier_name": "CONG TY TNHH SITC VIET NAM",
-             "currency": "USD", "amount": 780, "vat": 0, "allocation_method": 1,
+             "currency": "USD", "estimate_amount": 780, "vat": 0, "allocation_method": 1,
              "invoice_no": "SITC-26/1101", "invoice_date": "2026-11-02", "payment_due_date": "2026-11-17"},
             {"cost_type": 2, "description": "Phí địa phương tại cảng (THC, D/O, nâng hạ)",
              "supplier_code": "SITC LINES", "supplier_name": "CONG TY TNHH SITC VIET NAM",
-             "currency": "VND", "amount": 5_200_000, "vat": 8, "allocation_method": 1,
+             "currency": "VND", "estimate_amount": 5_200_000, "vat": 8, "allocation_method": 1,
              "invoice_no": "SITC-26/1102", "invoice_date": "2026-11-02", "payment_due_date": "2026-11-17"},
             {"cost_type": 3, "description": "Phí dịch vụ khai thuê hải quan",
              "supplier_code": "VINALOG", "supplier_name": "CONG TY CP GIAO NHAN VINALOG",
-             "currency": "VND", "amount": 3_000_000, "vat": 8, "allocation_method": 1},
+             "currency": "VND", "estimate_amount": 3_000_000, "vat": 8, "allocation_method": 1},
             {"cost_type": 10, "description": "Vận chuyển nội địa Cát Lái – kho Agama",
              "supplier_code": "VINALOG", "supplier_name": "CONG TY CP GIAO NHAN VINALOG",
-             "currency": "VND", "amount": 4_100_000, "vat": 8, "allocation_method": 1},
+             "currency": "VND", "estimate_amount": 4_100_000, "vat": 8, "allocation_method": 1},
         ],
     },
 ]
@@ -346,7 +347,7 @@ def main():
             status += ", đã khai tờ khai hải quan"
         if cfg.get("costs"):
             call(f"/api/purchase-orders/{pid}", tok, {"import_costs": cfg["costs"]}, method="PATCH")
-            status += ", đã khai chi phí lô hàng"
+            status += ", đã khai chi phí thu mua (Dự toán)"
         if cfg.get("deliveries"):
             record_deliveries(tok, pid, cfg["deliveries"])
             status += ", đã nhận hàng"
@@ -363,12 +364,12 @@ def main():
                   f"quy đổi {float(it.get('base_amount') or 0):>16,.2f} VNĐ")
         for c in d.get("import_costs") or []:
             print(f"    [chi phí] {c.get('cost_type_label'):28s} {c.get('supplier_code') or '(chưa chọn)':16s} "
-                  f"{c.get('currency'):4s} {float(c.get('amount') or 0):>12,.2f} +{float(c.get('vat') or 0):g}% "
-                  f"→ {float(c.get('base_amount') or 0):>16,.2f} VNĐ · {c.get('allocation_method_label')}")
+                  f"{c.get('currency'):4s} {float(c.get('estimate_amount') or 0):>12,.2f} +{float(c.get('vat') or 0):g}% "
+                  f"→ {float(c.get('effective_base') or 0):>16,.2f} VNĐ · {c.get('allocation_method_label')}")
         summary = d.get("import_cost_summary") or {}
         if summary:
             print(f"    Tiền hàng quy đổi {float(summary.get('goods_base_total') or 0):>18,.2f} VNĐ")
-            print(f"    Chi phí nhập khẩu {float(summary.get('cost_total') or 0):>18,.2f} VNĐ")
+            print(f"    Chi phí thu mua   {float(summary.get('cost_total') or 0):>18,.2f} VNĐ")
             print(f"    Tổng giá trị lô   {float(summary.get('landed_total') or 0):>18,.2f} VNĐ")
 
 

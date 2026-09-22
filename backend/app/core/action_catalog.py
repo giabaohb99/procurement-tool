@@ -97,6 +97,9 @@ _EDIT = (
     ActionCode("expected_date", "Đổi ngày dự kiến", ACTION_GROUP_EDIT),
     ActionCode("pr_created", "Sinh yêu cầu mua hàng", ACTION_GROUP_EDIT),
     ActionCode("reply", "Phản hồi", ACTION_GROUP_EDIT),
+    # bao-CR-453 — chi phí thu mua ba giai đoạn
+    ActionCode("cost_stage_prov", "Chốt tạm tính chi phí thu mua", ACTION_GROUP_EDIT),
+    ActionCode("cost_line_final", "Quyết toán riêng một dòng chi phí", ACTION_GROUP_EDIT),
 )
 
 #  ---------------------------------------------------------------------
@@ -199,6 +202,10 @@ _APPROVAL = (
     #  bằng chính trạng thái mới. Nhãn nói rõ "hủy duyệt" chứ không nói "nháp":
     #  người đọc nhật ký cần biết đơn vừa TỤT khỏi trạng thái đã duyệt.
     ActionCode("draft", "Hủy duyệt, đưa về Nháp", ACTION_GROUP_APPROVE),
+    # bao-CR-453 — chi phí thu mua ba giai đoạn
+    ActionCode("cost_stage_final", "Chốt quyết toán chi phí thu mua", ACTION_GROUP_APPROVE),
+    ActionCode("cost_stage_reopen", "Mở lại giai đoạn chi phí thu mua", ACTION_GROUP_APPROVE),
+    ActionCode("cost_line_reopen", "Mở lại một dòng chi phí đã quyết toán", ACTION_GROUP_APPROVE),
 )
 
 #  =====================================================================

@@ -102,8 +102,9 @@ Hai khối khác nhau, đừng lẫn:
   đại ca chốt 14/09: **PENDING**, chưa xếp lịch. Điều kiện "tạm dừng chờ commit của đồng nghiệp"
   trong tài liệu đã hết hiệu lực từ 12/09 (bản chờ đó chính là khối Báo cáo thực hiện ở trên).
   Khi mở lại: chạy checklist mục 14 để rà danh sách theo mã thật rồi mới code.
-- **Giá ba giai đoạn + Chi phí thu mua — bàn 21/09/2026, ĐẶT CHỖ `bao-CR-453`, chưa quyết, chưa
-  có mã.** Đại ca nêu: đơn nhập khẩu hiện nhập giá một lần là xong, nhưng thực tế qua ba bước
+- **Giá ba giai đoạn + Chi phí thu mua — bàn 21/09/2026, `bao-CR-453`, bảy điểm chốt
+  22/09/2026, thiết kế `doc/erp/nhap-khau/02-chi-phi-thu-mua.md`, ĐÃ CODE ĐỦ GĐ1..GĐ5 cùng ngày
+  (một commit, lên dev; prod chưa). Phần còn lại của khối này = giá HÀNG ba giai đoạn (tách CR sau).** Đại ca nêu: đơn nhập khẩu hiện nhập giá một lần là xong, nhưng thực tế qua ba bước
   (kế hoạch mua hàng → giá tạm tính → giá cuối) và **công nợ thật chỉ sinh ở giá cuối**; ngoài ra
   một đơn còn nhiều khoản chi khác (vận chuyển, kho bãi, khoản người dùng tự khai), muốn tách thành
   chức năng riêng, chỉ ảnh hưởng giá vốn sản phẩm chứ không đổi giá đơn hàng. Đánh giá sơ bộ:
@@ -119,11 +120,22 @@ Hai khối khác nhau, đừng lẫn:
     Công nợ vẫn qua `pay_service.upsert()` khóa (source_type, ref_type, ref_id) nên chuyển giai
     đoạn là cập nhật, không sinh dòng đôi. Lịch sử ba cột lấy từ `tab_change_log` (bao-CR-402).
     Báo cáo chênh lệch dựng trên `report/import_landed_cost.py`.
-  - **Bốn điểm đại ca phải quyết trước khi làm:** (1) chốt tên và ba nhãn cột; (2) nới bảng
-    `POImportCost` thành bảng chung hay dựng bảng mới, có gom phí vận chuyển hiện có vào không;
-    (3) danh mục loại chi phí do ai quản (quản trị hay thu mua tự thêm) và loại nào sinh công nợ;
-    (4) công nợ sinh ở **Quyết toán** thôi (an toàn) hay sinh từ **Tạm tính** kèm cờ tạm để kế
-    toán thấy sớm. Chốt xong mới lập thiết kế; **v1 trước rồi mới port v2**.
+  - **ĐÃ CHỐT 22/09/2026 (điểm 1):** tên **«Chi phí thu mua»** (khớp TK 1562 Thông tư 200), ba
+    nhãn cột **Dự toán / Tạm tính / Quyết toán**, bố cục màn hình theo bản phác: khối nằm trong chi
+    tiết ĐMH cho MỌI loại đơn; **một dòng ba số** thay cho cờ Dự kiến/Thực tế của bao-CR-347 (dữ
+    liệu cũ đổ vào cột Quyết toán); đơn có giai đoạn hiện hành, cột hiện hành tô nền và gõ được,
+    cột đã qua khóa; nút «Chốt tạm tính» / «Chốt quyết toán» theo đơn, ô trống thì chép số cột
+    trước sang; khoản có hóa đơn sớm được quyết toán riêng dòng; bốn ô tổng + cột Lệch; khối «Chi
+    phí theo dòng hàng» thêm nút xem theo giai đoạn; báo cáo giá vốn có sẵn nhận thêm ba cột.
+  - **ĐÃ CHỐT 22/09/2026 (điểm 2-7, theo đúng phương án đề xuất):** (2) nới `POImportCost` tại chỗ,
+    đổi tên bảng thành `tab_po_cost`, phí vận chuyển giữ nguyên trên lần giao, chỉ hiện thêm như dòng
+    chỉ xem; (3) 15 mã sẵn có thành dòng seed của danh mục `tab_po_cost_type`, quản trị thêm bớt, mọi
+    loại sinh công nợ trừ loại đánh dấu «không sinh»; (4) công nợ chỉ sinh ở Quyết toán; (5)
+    `purchase_order.write` chốt, mở lại cần `purchase_order.approve` + lý do; (6) giá hàng ba giai
+    đoạn tách CR sau; (7) mỗi giai đoạn một tỷ giá. **Thiết kế đầy đủ** (11 mục: chức năng A-F, mô
+    hình dữ liệu, API, audit, phân quyền, test, 5 đợt) ở `doc/erp/nhap-khau/02-chi-phi-thu-mua.md`.
+    **Đã làm 22/09/2026:** GĐ1 backend + migration `05a62d38a47a` → GĐ2/GĐ3 v1 → GĐ4 port v2 →
+    GĐ5 tài liệu + HDSD (`seed_help_chi_phi_thu_mua.py`), một commit lên dev.
 
 ## 6. Giao diện v2
 

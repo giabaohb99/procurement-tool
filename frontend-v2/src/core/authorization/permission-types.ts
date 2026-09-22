@@ -149,6 +149,7 @@ export const ENTITIES = [
   //  mọi nguồn (app đặt xe, POS365, đơn hàng...). `write` KHÔNG phải sửa dòng sổ
   //  — sổ không sửa được — mà là nút «Chạy lại», tức gọi ngược sang hệ ngoài.
   'sync_log',
+  'purchase_cost_type',
 ] as const
 
 export type PermissionEntity = (typeof ENTITIES)[number]

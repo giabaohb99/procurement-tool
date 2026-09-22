@@ -108,6 +108,9 @@ export const queryKeys = {
 
     /** Số liệu trang Tổng quan Thu mua (`/api/dashboard/overview`). */
     dashboard: () => ['procurement', 'dashboard'] as const,
+    /** bao-CR-453 — danh mục loại chi phí thu mua (`/api/po-cost-types`). */
+    poCostTypes: (params?: Record<string, unknown>) =>
+      ['procurement', 'po-cost-types', params ?? {}] as const,
   },
   production: {
     all: ['production'] as const,

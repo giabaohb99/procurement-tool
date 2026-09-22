@@ -1,6 +1,6 @@
 # TỪ ĐIỂN DỮ LIỆU — CỤM CHỨNG TỪ THU MUA
 
-Bản 1.0 — 28/08/2026. Nguồn sự thật là model.py; tệp này chép Ý NGHĨA, không thay mã.
+Bản 1.1 — 28/08/2026, cập nhật 22/09/2026 (bao-CR-453: thêm `tab_po_cost`, `tab_po_cost_type`, cột `cost_stage`). Nguồn sự thật là model.py; tệp này chép Ý NGHĨA, không thay mã.
 
 ---
 
@@ -20,6 +20,8 @@ Bản 1.0 — 28/08/2026. Nguồn sự thật là model.py; tệp này chép Ý 
 12. `tab_po_delivery` — Lần giao hàng
 13. `tab_goods_receipt` — Phiếu nhập kho (sinh ngầm)
 14. `tab_purchase_history` — Lịch sử mua hàng (snapshot)
+15. `tab_po_cost` — Chi phí thu mua của ĐMH (ba giai đoạn)
+16. `tab_po_cost_type` — Danh mục Loại chi phí thu mua
 
 ---
 
@@ -413,6 +415,7 @@ Module trung tâm của vòng đời mua hàng. Lưu thông tin hợp đồng mu
 | `is_urgent` | bool | Cờ gấp |
 | `status` | str(30) | Trạng thái: `draft` / `submitted` / `approved` / `partial` / `received` / `cancelled` |
 | `document_status` | str(30) | Trạng thái hồ sơ chứng từ kế toán (cập nhật tay): `none` / `partial` / `full` |
+| `cost_stage` | smallint | Giai đoạn chi phí thu mua của cả đơn (bao-CR-453): `1` Dự toán · `2` Tạm tính · `3` Quyết toán. Mặc định 1; chỉ đi lên bằng chốt (`advance_cost_stage`), lùi bằng mở lại (`reopen_cost_stage`, cần quyền duyệt + lý do). Đơn cũ trước CR-453 có dòng chi phí hoặc đã đóng được đặt 3 |
 | `note` | text | Ghi chú |
 | `approve_note` | text | Ghi chú khi duyệt |
 
@@ -583,6 +586,65 @@ Snapshot bất biến của một dòng hàng ĐMH tại thời điểm dòng đ
 
 ---
 
+## `tab_po_cost` — Chi phí thu mua của ĐMH
+
+Mỗi dòng là một khoản chi ngoài giá hàng (cước, phí cảng, thuế nhập, kiểm định, bảo hiểm, lưu kho...) của **một nhà cung cấp** trên một ĐMH, áp cho mọi loại đơn từ bao-CR-453 (trước đó là `tab_po_import_cost`, chỉ đơn nhập khẩu — bao-CR-319). Mỗi dòng mang **ba bộ số** Dự toán / Tạm tính / Quyết toán. Mã nguồn: `backend/app/modules/purchase_order/model.py` (`POCost`). Đặc tả: `doc/tai-lieu-chuc-nang/04-don-mua-hang.md` mục K.
+
+| Cột | Kiểu | Ý nghĩa |
+|-----|------|---------|
+| `id` | int | Khóa chính |
+| `po_id` | int | FK → `tab_purchase_order.id` |
+| `cost_type` | smallint | Mã loại chi phí, trỏ `tab_po_cost_type.code` (nối theo mã, không FK). 1..14 và 99 là bộ gốc; mã lạ hiện nhãn *Chi phí khác* |
+| `description` | str(255) | Diễn giải |
+| `supplier_code` / `supplier_name` | str(50) / str(255) | NCC nhận tiền của khoản này (nhóm thuế mặc định `NSNN`). Trống thì không sinh công nợ |
+| `currency` | str(10) | Đồng tiền, dùng chung ba giai đoạn |
+| `estimate_amount` / `provisional_amount` / `final_amount` | decimal(18,2), NULL | Tiền nguyên tệ trước thuế của từng giai đoạn. **NULL = chưa có số** (khác 0) |
+| `estimate_rate` / `provisional_rate` / `final_rate` | decimal(18,6) | Tỷ giá riêng từng giai đoạn, mặc định 1 |
+| `estimate_base` / `provisional_base` / `final_base` | decimal(18,2), NULL | = amount × (1 + vat%) × rate, đã gồm VAT và quy đổi; server tính, lưu để báo cáo cộng |
+| `line_stage` | smallint | Giai đoạn riêng của dòng: `1` theo đơn · `3` quyết toán riêng (hóa đơn về sớm). Hiệu lực = max(`cost_stage` của đơn, `line_stage`) |
+| `vat` | decimal(5,2) | % VAT của khoản, 0 với thuế nộp ngân sách |
+| `allocation_method` | smallint | Cách chia về dòng hàng: 1 giá trị · 2 khối lượng · 3 số lượng · 4 chỉ định một mã · 5 nhập tay |
+| `allocation_target` | str(50) | Mã hàng đích khi chọn cách 4 |
+| `manual_allocation` | text | JSON `{"<id dòng hàng>": tiền}` khi chọn cách 5; một bộ dùng chung ba giai đoạn, tổng phải khớp số quy đổi hiệu lực |
+| `invoice_no` / `invoice_date` | str(50) / str(10) | Hóa đơn của khoản → chép sang công nợ |
+| `payment_due_date` | str(10) | Hạn trả, ưu tiên hơn điều khoản NCC |
+| `note` | text | Ghi chú |
+
+**Logic chính:**
+
+- Công nợ (`tab_payable`, `source_type = import_cost`, `ref_id` = id dòng) **chỉ sinh từ bộ Quyết toán** của dòng có giai đoạn hiệu lực 3, khi đơn đã duyệt, có NCC và loại chi phí `creates_payable`.
+- Server chỉ ghi số ở **cột hiệu lực**; chốt giai đoạn chép ô trống của cột kế từ cột trước. Mở lại không xóa số, chỉ mở khóa; dòng đã chi giữ nguyên quyết toán.
+- Kết quả phân bổ về dòng hàng **không lưu**, tính bay khi xem/in cho từng giai đoạn.
+- Bốn cột cũ `amount / exchange_rate / base_amount / cost_status` bỏ ở migration `05a62d38a47a`; dữ liệu cũ đổ vào bộ Quyết toán.
+
+---
+
+## `tab_po_cost_type` — Danh mục Loại chi phí thu mua
+
+Bảng danh mục người dùng tự thêm bớt (bao-CR-453), thay bộ mã cứng `ImportCostType`. Mã nguồn: `backend/app/modules/purchase_order/model.py` (`POCostType`), API `/api/po-cost-types` (`purchase_order/cost_type.py`), quyền `purchase_cost_type`.
+
+| Cột | Kiểu | Ý nghĩa |
+|-----|------|---------|
+| `id` | int | Khóa chính |
+| `code` | smallint, unique | Mã dùng ở `tab_po_cost.cost_type`. 15 mã gốc seed (1..14, 99); mã mới tự cấp từ 15, không bao giờ cấp 99; không sửa sau khi tạo |
+| `name` | str(100) | Tên loại chi phí |
+| `group_kind` | smallint | `1` Thuế nộp ngân sách · `2` Dịch vụ |
+| `creates_payable` | bool | Tắt = dòng mang loại này không thành công nợ, không chặn Hoàn thành đơn (khoản đã trả ngoài hệ thống) |
+| `default_supplier_code` | str(50) | NCC điền sẵn khi chọn loại (`NSNN` cho nhóm thuế) |
+| `default_allocation_method` | smallint | Cách chia điền sẵn |
+| `default_vat` | decimal(5,2) | VAT % điền sẵn |
+| `sort_order` | int | Thứ tự trong ô chọn |
+| `is_active` | bool | Tắt để ẩn khỏi ô chọn thay vì xóa khi loại đã dùng |
+| `note` | str(500) | Ghi chú |
+
+**Logic chính:**
+
+- Mã **99 «Chi phí khác»** không đổi tên, không tắt, không xóa — chỗ rơi của mã lạ.
+- Loại còn dòng `tab_po_cost` trỏ tới thì không xóa được (400 kèm số dòng).
+- CSV chỉ xuất, không nhập (đường nhập đi vòng qua ba chốt trên).
+
+---
+
 ## Quan hệ trong cụm
 
 Sơ đồ kết nối chính giữa các bảng trong cụm chứng từ thu mua:
@@ -596,6 +658,7 @@ Sơ đồ kết nối chính giữa các bảng trong cụm chứng từ thu mua
 - **`tab_purchase_request`** ← `tab_purchase_request_item` (`pr_id`): một YCMH có nhiều dòng hàng.
 - **`tab_purchase_order`** ← `tab_po_item` (`po_id`) ← `tab_po_delivery` (`po_item_id`): chuỗi 3 cấp ĐMH → dòng → lần giao.
 - **`tab_po_delivery.delivery_id`** ↔ `tab_goods_receipt.delivery_id` (unique): 1 lần giao chỉ có 1 phiếu nhập kho.
+- **`tab_purchase_order`** ← `tab_po_cost` (`po_id`): một ĐMH có nhiều dòng chi phí thu mua; `tab_po_cost.cost_type` nối `tab_po_cost_type.code` **theo mã** (không FK); mỗi dòng chi phí đã quyết toán ↔ một `tab_payable` (`ref_type = import_cost`, `ref_id` = id dòng).
 - **`tab_po_item.id`** ↔ `tab_purchase_history.po_item_id` (unique): khi dòng ĐMH vào `completed`, một bản snapshot ghi vào lịch sử mua hàng.
 - **Nối theo chuỗi `product_code`** (không có FK vật lý): `tab_purchase_request_item`, `tab_po_item`, `tab_goods_receipt`, `tab_purchase_history`, `tab_survey_product_line` (qua `Survey.item_code`), và `tab_survey_request_option.system_product_code` đều dùng `product_code` làm hạt nối — thay đổi mã sản phẩm sau khi đã nhận hàng là vi phạm tính nhất quán và bị service chặn cứng.
 - **Nối ĐMH ↔ YCMH theo chuỗi `pr_code`**: `tab_purchase_order.pr_code = tab_purchase_request.code` — không có FK vật lý để ĐMH độc lập (không bắt buộc từ YCMH) vẫn hợp lệ.

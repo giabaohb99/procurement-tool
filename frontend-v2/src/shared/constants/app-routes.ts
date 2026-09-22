@@ -98,6 +98,9 @@ export const appRoutes = {
     /** Phân công phụ trách NSTM theo phân loại. */
     categoryAssignees: '/procurement/category-assignees',
     categoryAssigneeNew: '/procurement/category-assignees/new',
+    /** bao-CR-453 — danh mục loại chi phí thu mua. */
+    poCostTypes: '/procurement/po-cost-types',
+    poCostTypeDetail: (id: number | string) => `/procurement/po-cost-types/${id}`,
   },
   /**
    * Bộ máy phê duyệt dùng chung — không nằm trong phân hệ nào vì «Việc của tôi»

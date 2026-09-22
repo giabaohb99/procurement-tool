@@ -5,6 +5,7 @@ import {
   ClipboardList,
   FileText,
   LayoutDashboard,
+  PackagePlus,
   ReceiptText,
   ShoppingCart,
   TextSearch,
@@ -138,6 +139,15 @@ export const procurementModule: ErpModule = {
       path: appRoutes.procurement.categoryAssignees,
       icon: UserCheck,
       entity: 'category_assignee',
+      manage: true,
+      group: 'Cấu hình',
+    },
+    // bao-CR-453 — danh mục loại chi phí thu mua
+    {
+      label: 'Loại chi phí thu mua',
+      path: appRoutes.procurement.poCostTypes,
+      icon: PackagePlus,
+      entity: 'purchase_cost_type',
       manage: true,
       group: 'Cấu hình',
     },
@@ -290,6 +300,19 @@ export const procurementModule: ErpModule = {
       path: appRoutes.procurement.categoryAssigneeNew,
       lazy: async () => ({
         Component: (await import('./pages/category-assignee-form-page')).CategoryAssigneeFormPage,
+      }),
+    },
+    // bao-CR-453 — danh mục loại chi phí thu mua
+    {
+      path: appRoutes.procurement.poCostTypes,
+      lazy: async () => ({
+        Component: (await import('./pages/po-cost-type-list-page')).PoCostTypeListPage,
+      }),
+    },
+    {
+      path: appRoutes.procurement.poCostTypeDetail(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/po-cost-type-detail-page')).PoCostTypeDetailPage,
       }),
     },
   ],

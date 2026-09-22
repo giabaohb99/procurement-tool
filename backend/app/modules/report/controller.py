@@ -58,7 +58,7 @@ def daily(request: Request, db: Session = Depends(get_db), user=Depends(require(
         if p.source_type == "shipping":
             e["shipping"] += t
         elif p.source_type == "goods":
-            # bao-CR-319 P5: nợ chi phí nhập khẩu (import_cost) chỉ vào tổng, không đếm là hàng
+            # bao-CR-319 P5: nợ chi phí thu mua (import_cost) chỉ vào tổng, không đếm là hàng
             e["goods"] += t
     days = [{"date": k, "day": k[8:10], "goods": round(v["goods"], 2),
              "shipping": round(v["shipping"], 2), "amount": round(v["amount"], 2)}
@@ -236,35 +236,43 @@ def _id_list(raw: str) -> list[int]:
 
 def _import_landed_cost_data(request: Request, db: Session) -> dict:
     qp = request.query_params
+    # bao-CR-453: `stage` = 1/2/3 (Dự toán / Tạm tính / Quyết toán) hoặc bỏ trống = số hiệu lực;
+    # `include_domestic=1` gom cả đơn trong nước (chi phí thu mua nay có trên mọi loại đơn).
     return import_landed_cost.compute(
         db, po_ids=_id_list(qp.get("po_ids") or ""),
         codes=[c.strip() for c in (qp.get("codes") or "").split(",") if c.strip()],
         date_from=(qp.get("date_from") or "").strip(), date_to=(qp.get("date_to") or "").strip(),
-        company_id=qp.get("company_id"))
+        company_id=qp.get("company_id"),
+        stage=import_landed_cost.parse_stage(qp.get("stage")),
+        include_domestic=(qp.get("include_domestic") or "").strip().lower() in ("1", "true", "yes"))
 
 
 @router.get("/import-landed-cost")
 def import_landed_cost_report(request: Request, db: Session = Depends(get_db),
                               user=Depends(require("report", "read"))):
-    """Giá vốn lô hàng NHẬP KHẨU (bao-CR-347) — chọn theo mã đơn hoặc theo khoảng ngày đặt.
+    """Giá vốn lô hàng (bao-CR-347; ba giai đoạn chi phí bao-CR-453) — chọn theo mã đơn
+    hoặc theo khoảng ngày đặt.
 
-    Tham số: po_ids / codes (ưu tiên), hoặc date_from + date_to; kèm company_id.
+    Tham số: po_ids / codes (ưu tiên), hoặc date_from + date_to; kèm company_id;
+    `stage` = 1/2/3 xem giá vốn theo Dự toán / Tạm tính / Quyết toán, bỏ trống = số hiệu
+    lực của từng đơn; `include_domestic=1` gom cả đơn trong nước (mặc định chỉ nhập khẩu).
     Một lần gọi trả CẢ HAI cách đọc — `orders` (theo lô) và `items` (theo dòng hàng) — vì
     hai tab dùng chung một lần lọc, đổi tab không nên gọi lại API.
 
     Số liệu dựa trên đơn giá và chi phí của NCC nên gác cùng mức với báo cáo NCC.
     """
     if not _can_see_ncc(db, user):
-        raise HTTPException(status_code=403, detail="Không có quyền xem giá vốn lô hàng nhập khẩu")
+        raise HTTPException(status_code=403, detail="Không có quyền xem giá vốn lô hàng")
     return success(_import_landed_cost_data(request, db))
 
 
 @router.get("/import-landed-cost/export")
 def import_landed_cost_export(request: Request, db: Session = Depends(get_db),
                               user=Depends(require("report", "export"))):
-    """Xuất báo cáo giá vốn lô hàng nhập khẩu ra Excel — hai sheet, theo lô và theo dòng hàng."""
+    """Xuất báo cáo giá vốn lô hàng ra Excel — hai sheet, theo lô và theo dòng hàng; nhận
+    cùng bộ tham số `stage` / `include_domestic` với đường đọc."""
     if not _can_see_ncc(db, user):
-        raise HTTPException(status_code=403, detail="Không có quyền xem giá vốn lô hàng nhập khẩu")
+        raise HTTPException(status_code=403, detail="Không có quyền xem giá vốn lô hàng")
     buf = build_import_landed_cost_workbook(_import_landed_cost_data(request, db))
     return StreamingResponse(
         buf, media_type=_XLSX_MIME,

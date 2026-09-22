@@ -17,7 +17,7 @@ import {
   type ImportCostSummary,
   type PurchaseOrderImportCost,
 } from '../types/purchase-order-detail'
-import { costBaseAmount, lineBaseAmount } from '../utils/purchase-order-import-cost'
+import { costBaseAmount, getAllocationForStage, lineBaseAmount } from '../utils/purchase-order-import-cost'
 
 /**
  * bao-CR-319 P4 — bản in ĐƠN MUA HÀNG NHẬP KHẨU, bốn khối:
@@ -89,6 +89,7 @@ export function PurchaseOrderImportPrintPage() {
 
 const EMPTY_SUMMARY: ImportCostSummary = {
   goods_base_total: 0,
+  effective_total: 0,
   cost_total: 0,
   paid_total: 0,
   remaining_total: 0,
@@ -109,6 +110,17 @@ interface CostGroup {
   label: string
   rows: PurchaseOrderImportCost[]
   total: number
+}
+
+/**
+ * bao-CR-453 — số tiền NGUYÊN TỆ của giai đoạn hiệu lực để bày trên bản in.
+ * Dùng `effective_stage` nếu backend trả về; fallback về Dự toán.
+ */
+function effectiveOriginalAmount(cost: PurchaseOrderImportCost): number {
+  const stage = Number(cost.effective_stage) || 1
+  if (stage >= 3) return Number(cost.final_amount) || 0
+  if (stage >= 2) return Number(cost.provisional_amount) || 0
+  return Number(cost.estimate_amount) || 0
 }
 
 /** Khối B lồng theo loại: mỗi loại một dòng tổng, bên dưới là từng khoản; loại to nhất lên đầu. */
@@ -143,7 +155,8 @@ function PurchaseOrderImportPrintDocument({ data }: { data: PurchaseOrderPrintDa
   const items = data.items ?? []
   const costs = data.import_costs ?? []
   const summary = data.import_cost_summary ?? EMPTY_SUMMARY
-  const allocation = data.import_cost_allocation ?? EMPTY_ALLOCATION
+  // bao-CR-453: allocation nay là dict theo giai đoạn — lấy "effective" cho bản in.
+  const allocation = getAllocationForStage(data.import_cost_allocation, 'effective') ?? EMPTY_ALLOCATION
   const currency = (data.currency || DEFAULT_CURRENCY).trim().toUpperCase()
   const exchangeRate = Number(data.exchange_rate) || 1
 
@@ -303,7 +316,7 @@ function PurchaseOrderImportPrintDocument({ data }: { data: PurchaseOrderPrintDa
                       {cost.invoice_date ? ` (${formatDate(cost.invoice_date)})` : ''}
                     </td>
                     <td className="text-right">
-                      {formatUnitPrice(cost.amount)} {cost.currency || currency}
+                      {formatUnitPrice(effectiveOriginalAmount(cost))} {cost.currency || currency}
                     </td>
                     <td className="text-center">
                       {Number(cost.vat) ? `${formatQuantity(cost.vat)}%` : ''}

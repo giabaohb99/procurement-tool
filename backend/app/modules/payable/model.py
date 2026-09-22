@@ -8,8 +8,8 @@ class Payable(Base, AuditMixin):
     """Khoản công nợ phải trả — SINH NGẦM khi nhận hàng. 1 dòng = 1 lần giao × 1 luồng.
 
     source_type: goods = nợ NCC bán hàng ; shipping = nợ đơn vị vận chuyển ;
-                 import_cost = nợ một dòng chi phí lô hàng nhập khẩu (bao-CR-319 P5,
-                 ref_type = "import_cost", ref_id = id dòng `tab_po_import_cost`).
+                 import_cost = nợ một dòng chi phí thu mua (bao-CR-319 P5, mở cho mọi loại đơn bao-CR-453,
+                 ref_type = "import_cost", ref_id = id dòng `tab_po_cost`).
     """
 
     __tablename__ = "tab_payable"

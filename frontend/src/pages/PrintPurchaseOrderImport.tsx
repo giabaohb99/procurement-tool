@@ -42,7 +42,12 @@ export default function PrintPurchaseOrderImport() {
   const items: any[] = po.items || []
   const costs: any[] = po.import_costs || []
   const summary = po.import_cost_summary || { by_type: [], by_supplier: [], goods_base_total: 0, cost_total: 0, landed_total: 0 }
-  const alloc = po.import_cost_allocation || { lines: [], warnings: [], goods_base_total: 0, cost_total: 0, landed_total: 0 }
+  // bao-CR-453: import_cost_allocation nay là dict {"1":…,"2":…,"3":…,"effective":…}
+  // Bản in luôn dùng số hiệu lực (khóa "effective") để in đúng giai đoạn hiện hành.
+  const allocRaw = po.import_cost_allocation || {}
+  const alloc = (allocRaw['effective'] || allocRaw[String(po.cost_stage || 3)] || allocRaw) as any
+  // Tiêu đề giai đoạn hiện hành để ghi vào tiêu đề khối B/C/D (ví dụ "(Quyết toán)")
+  const stageSuffix = po.cost_stage_label ? ` (${po.cost_stage_label})` : ''
   // bao-CR-364: cột "Đơn giá / Thành tiền" in số của DÒNG, nên nhãn tiền tệ cũng phải lấy từ
   // dòng. Đầu phiếu chỉ là giá trị mặc định cho dòng để trống — đơn đầu phiếu ghi VND mà dòng
   // ghi USD là chuyện bình thường, và tờ này thì đưa cho nhà cung cấp.
@@ -63,7 +68,8 @@ export default function PrintPurchaseOrderImport() {
   for (const c of costs) {
     let g = byType.find((x) => x.label === c.cost_type_label)
     if (!g) { g = { label: c.cost_type_label || 'Khác', rows: [], total: 0 }; byType.push(g) }
-    g.rows.push(c); g.total += Number(c.base_amount) || 0
+    // bao-CR-453: effective_base thay thế base_amount (đã bị bỏ); base_amount giữ làm alias ở API
+    g.rows.push(c); g.total += Number(c.effective_base ?? c.base_amount) || 0
   }
   byType.sort((a, b) => b.total - a.total)
 
@@ -167,7 +173,8 @@ export default function PrintPurchaseOrderImport() {
 
         {/* ── B. Chi phí lô hàng, lồng theo loại ── */}
         <div className="print-block">
-          <div style={blockTitle}>B. CHI PHÍ LÔ HÀNG</div>
+          {/* bao-CR-453: tiêu đề ghi rõ giai đoạn đang in */}
+          <div style={blockTitle}>B. CHI PHÍ THU MUA{stageSuffix}</div>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
@@ -188,10 +195,11 @@ export default function PrintPurchaseOrderImport() {
                       <td style={{ ...cell, paddingLeft: 18 }}>{c.description || '-'}</td>
                       <td style={cell}>{c.supplier_name || c.supplier_code}</td>
                       <td style={cell}>{c.invoice_no}{c.invoice_date ? ` (${dmy(c.invoice_date)})` : ''}</td>
-                      <td style={right}>{fmtPrice(c.amount)} {c.currency}</td>
+                      <td style={right}>{fmtPrice(c.amount ?? c.effective_base)} {c.currency}</td>
                       <td style={{ ...cell, textAlign: 'center' }}>{Number(c.vat) ? `${fmtQty(c.vat)}%` : '-'}</td>
                       <td style={cell}>{c.allocation_method_label}{c.allocation_target ? ` (${c.allocation_target})` : ''}</td>
-                      <td style={right}>{fmtVND(c.base_amount)}</td>
+                      {/* bao-CR-453: effective_base là số quy đổi hiệu lực; base_amount alias giữ tương thích */}
+                      <td style={right}>{fmtVND(c.effective_base ?? c.base_amount)}</td>
                     </tr>
                   ))}
                 </Fragment>
@@ -211,7 +219,7 @@ export default function PrintPurchaseOrderImport() {
 
         {/* ── C. Phải trả theo từng NCC ── */}
         <div className="print-block">
-          <div style={blockTitle}>C. PHẢI TRẢ THEO TỪNG NHÀ CUNG CẤP</div>
+          <div style={blockTitle}>C. PHẢI TRẢ THEO TỪNG NHÀ CUNG CẤP{stageSuffix}</div>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
@@ -255,7 +263,7 @@ export default function PrintPurchaseOrderImport() {
 
         {/* ── D. Chi phí phân bổ theo dòng hàng ── */}
         <div className="print-block">
-          <div style={blockTitle}>D. CHI PHÍ PHÂN BỔ THEO DÒNG HÀNG</div>
+          <div style={blockTitle}>D. CHI PHÍ PHÂN BỔ THEO DÒNG HÀNG{stageSuffix}</div>
           <div style={{ fontSize: 10, fontStyle: 'italic', marginBottom: 4 }}>
             Chia theo cách ghi ở từng khoản chi phí (khối B); phần lệch làm tròn dồn vào dòng cuối để tổng luôn khớp.
             Số này chỉ để tham khảo, không ghi nhận vào giá nhập kho.

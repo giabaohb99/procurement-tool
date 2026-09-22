@@ -1,5 +1,8 @@
 """bao-CR-319 P3 — chi phí lô hàng nhập khẩu + khóa VAT dòng hàng.
 
+bao-CR-453: số tiền nay nằm ở bộ DỰ TOÁN (`estimate_*`) của dòng — đơn mới lập đứng ở
+giai đoạn Dự toán; ba giai đoạn kiểm riêng ở `test_po_chi_phi_thu_mua_cr453.py`.
+
 Hai thứ dễ hỏng âm thầm được canh ở đây:
 1. VAT dòng hàng của đơn NHẬP KHẨU phải luôn bằng 0. Thuế GTGT hàng nhập nộp ngân sách
    nhà nước và đã khai thành một dòng chi phí; gõ thêm VAT ở dòng hàng là cộng thuế hai
@@ -12,7 +15,7 @@ from fastapi import HTTPException
 
 from app.modules.purchase_order import service
 from app.modules.purchase_order.model import (AllocationMethod, IMPORT_COST_TAX_TYPES,
-                                              ImportCostType, OrderType, POImportCost,
+                                              ImportCostType, OrderType, POCost,
                                               PurchaseOrder)
 from app.modules.purchase_order.schema import DeliveryIn, POImportCostIn, POItemIn, POUpdate
 from app.modules.payable.model import Payable
@@ -43,7 +46,7 @@ def _item_in(**kw):
 
 def _cost_in(**kw):
     base = dict(cost_type=int(ImportCostType.OCEAN_FREIGHT), description="Cước biển",
-                supplier_code="HANGTAU", supplier_name="Hãng tàu ABC", amount=1_000_000, vat=8)
+                supplier_code="HANGTAU", supplier_name="Hãng tàu ABC", estimate_amount=1_000_000, vat=8)
     base.update(kw)
     return POImportCostIn(**base)
 
@@ -99,28 +102,28 @@ def test_dong_chi_phi_thua_huong_loai_tien_cua_don(db, seed):
 
     c = service.import_costs_of(db, po.id)[0]
     assert c.currency == "USD"
-    assert float(c.exchange_rate) == RATE
+    assert float(c.estimate_rate) == RATE
 
 
 def test_dong_chi_phi_tra_bang_tien_viet_khong_dinh_ty_gia_cua_don(db, seed):
     """Cước nội địa trả bằng VNĐ nằm trong đơn USD — nhân tỷ giá đơn vào là phồng 25.000 lần."""
     po = _make_po(db, seed)
-    service._save_import_costs(db, po, [_cost_in(currency="VND", amount=2_000_000, vat=0)], user_id=1)
+    service._save_import_costs(db, po, [_cost_in(currency="VND", estimate_amount=2_000_000, vat=0)], user_id=1)
     db.flush()
 
     c = service.import_costs_of(db, po.id)[0]
-    assert float(c.exchange_rate) == 1.0
-    assert float(c.base_amount) == 2_000_000
+    assert float(c.estimate_rate) == 1.0
+    assert float(c.estimate_base) == 2_000_000
 
 
-def test_base_amount_gom_ca_vat_va_ty_gia(db, seed):
+def test_so_quy_doi_gom_ca_vat_va_ty_gia(db, seed):
     po = _make_po(db, seed)
-    service._save_import_costs(db, po, [_cost_in(currency="USD", amount=100, vat=8)], user_id=1)
+    service._save_import_costs(db, po, [_cost_in(currency="USD", estimate_amount=100, vat=8)], user_id=1)
     db.flush()
 
     c = service.import_costs_of(db, po.id)[0]
-    assert float(c.amount) == 100                      # nguyên tệ, TRƯỚC thuế
-    assert float(c.base_amount) == 100 * 1.08 * RATE   # đã gồm VAT, đã quy đổi
+    assert float(c.estimate_amount) == 100                          # nguyên tệ, TRƯỚC thuế
+    assert float(c.estimate_base) == pytest.approx(100 * 1.08 * RATE)   # đã gồm VAT, đã quy đổi
 
 
 def test_loai_chi_phi_la_thue_van_luu_duoc_ncc_ngan_sach(db, seed):
@@ -128,7 +131,7 @@ def test_loai_chi_phi_la_thue_van_luu_duoc_ncc_ngan_sach(db, seed):
     service._save_import_costs(db, po, [_cost_in(
         cost_type=int(ImportCostType.IMPORT_DUTY), description="Thuế nhập khẩu",
         supplier_code="NSNN", supplier_name="Ngân sách nhà nước",
-        currency="VND", amount=5_000_000, vat=0)], user_id=1)
+        currency="VND", estimate_amount=5_000_000, vat=0)], user_id=1)
     db.flush()
 
     c = service.import_costs_of(db, po.id)[0]
@@ -216,17 +219,17 @@ def test_doi_sang_cach_khac_thi_xoa_so_nhap_tay(db, seed):
 def test_luu_lai_thi_upsert_theo_id_va_xoa_dong_khong_con_gui_len(db, seed):
     po = _make_po(db, seed)
     service._save_import_costs(db, po, [_cost_in(), _cost_in(
-        cost_type=int(ImportCostType.STORAGE), description="Lưu bãi", amount=200)], user_id=1)
+        cost_type=int(ImportCostType.STORAGE), description="Lưu bãi", estimate_amount=200)], user_id=1)
     db.flush()
     rows = service.import_costs_of(db, po.id)
     assert len(rows) == 2
     giu_id = rows[0].id
 
-    service._save_import_costs(db, po, [_cost_in(id=giu_id, amount=1_500_000)], user_id=1)
+    service._save_import_costs(db, po, [_cost_in(id=giu_id, estimate_amount=1_500_000)], user_id=1)
     db.flush()
     rows = service.import_costs_of(db, po.id)
     assert [r.id for r in rows] == [giu_id]
-    assert float(rows[0].amount) == 1_500_000
+    assert float(rows[0].estimate_amount) == 1_500_000
 
 
 def test_khong_gui_khoa_import_costs_thi_giu_nguyen_bang(db, seed):
@@ -264,4 +267,4 @@ def test_xoa_don_thi_xoa_ca_dong_chi_phi(db, seed):
     pid = po.id
 
     service.delete_po(db, pid, user_id=1)
-    assert db.query(POImportCost).filter(POImportCost.po_id == pid).count() == 0
+    assert db.query(POCost).filter(POCost.po_id == pid).count() == 0

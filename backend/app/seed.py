@@ -979,6 +979,29 @@ def force_resync_roles(db):
     print("SEED_FORCE_SYNC=true: đã ghi đè ma trận quyền các vai trò chuẩn theo app/seed.py.")
 
 
+def seed_cost_types(db) -> int:
+    """bao-CR-453: nạp 15 loại chi phí thu mua gốc vào `tab_po_cost_type` — CHỈ THÊM mã còn thiếu.
+
+    Không ghi đè tên / nhóm / NCC mặc định người dùng đã sửa trên màn danh mục (D-018). Chạy
+    được ở cả local, dev lẫn prod; migration đã seed sẵn nên trên DB đã nâng cấp hàm này
+    thường không thêm gì. Trả về số dòng vừa thêm.
+    """
+    from app.modules.purchase_order.model import DEFAULT_COST_TYPES, POCostType
+
+    existing = {int(code) for (code,) in db.query(POCostType.code).all()}
+    added = 0
+    for code, name, group_kind, creates_payable, default_supplier_code, sort_order in DEFAULT_COST_TYPES:
+        if code in existing:
+            continue
+        db.add(POCostType(code=code, name=name, group_kind=group_kind, creates_payable=creates_payable,
+                          default_supplier_code=default_supplier_code, sort_order=sort_order,
+                          is_active=True))
+        added += 1
+    if added:
+        db.commit()
+    return added
+
+
 # ---- Phân hệ VĂN THƯ · danh mục nền ----
 # Ba sổ mở sẵn cho pháp nhân đầu tiên: đến / đi / nội bộ.
 # Mỗi sổ một bộ đếm riêng, đếm lại từ 1 mỗi năm — đúng lệ hành chính.
@@ -1262,6 +1285,7 @@ def run():
         # Vai trò chuẩn (Nhân sự / Trưởng phòng / Quản lý cty / NV thu mua / QL thu mua / Admin thu mua)
         seed_standard_roles(db)
         force_resync_roles(db)
+        seed_cost_types(db)   # bao-CR-453 — danh mục Loại chi phí thu mua, chỉ thêm mã thiếu
 
         # Deduplication tracking sets (using upper case for case-insensitivity)
         seen_companies = {c[0].upper() for c in db.query(Company.code).all()}

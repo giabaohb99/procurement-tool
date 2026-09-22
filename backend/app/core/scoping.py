@@ -280,6 +280,7 @@ SCOPE_FIELDS = {
     #  ở đây nghĩa là đúng những dòng lỗi nặng nhất thì không ai nhìn thấy.
     #  Chốt là ở cửa: khóa `sync_log` chỉ cấp cho quản trị hệ thống.
     "sync_log":         PUBLIC,
+    "purchase_cost_type": PUBLIC,   # bao-CR-453 — danh mục dùng chung, không có chủ
 }
 
 

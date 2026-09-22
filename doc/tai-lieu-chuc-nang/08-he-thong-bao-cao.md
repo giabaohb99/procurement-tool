@@ -578,12 +578,12 @@ Dữ liệu tính realtime từ `/api/reports/request-matrix?kind=ycks`. Ma tr�
 | Hoàn tất | Hoàn thành |
 | Đã hủy | Đã hủy |
 
-### Tab Giá vốn nhập khẩu (bao-CR-347)
+### Tab Giá vốn nhập khẩu (bao-CR-347, giai đoạn chi phí bao-CR-453)
 
 Giá vốn từng **lô hàng nhập khẩu**: tiền hàng + toàn bộ chi phí lô hàng, ra tổng giá vốn và giá mỗi ký.
 Chỉ hiện với người có `purchase_order:read` (số liệu NCC, gác cùng mức tab NCC); dữ liệu realtime từ
-`/api/reports/import-landed-cost`. Nguồn: đơn có `order_type = 2` và bảng `tab_po_import_cost`
-(`04-don-mua-hang.md` mục K).
+`/api/reports/import-landed-cost`. Nguồn: đơn có `order_type = 2` (tick *Gồm đơn trong nước* thì thêm cả
+đơn trong nước có dòng chi phí — bao-CR-453) và bảng `tab_po_cost` (`04-don-mua-hang.md` mục K).
 
 **HAI TAB, MỘT LẦN LỌC.** Một lời gọi API trả cả hai cách đọc, nên đổi tab **không** tải lại số liệu:
 
@@ -592,7 +592,7 @@ Chỉ hiện với người có `purchase_order:read` (số liệu NCC, gác cù
 | **Theo lô hàng** | **XOAY DỌC** — khác mọi tab còn lại: **mỗi ĐƠN là một CỘT**, mỗi chỉ tiêu là một DÒNG, đúng mẫu kế toán khách đang dùng. Cột cuối là **TỔNG** của các đơn đang xem | Cả lô này về tới kho tốn bao nhiêu, giá mỗi ký là bao nhiêu |
 | **Chi tiết theo dòng hàng** | Bảng ngang bình thường — **mỗi mã hàng một DÒNG**, dòng cuối là TỔNG | Riêng mã hàng này giá vốn một đơn vị là bao nhiêu |
 
-**Tên các loại chi phí lấy nguyên danh mục `ImportCostType` của hệ thống** (`04-don-mua-hang.md` mục K.1),
+**Tên các loại chi phí lấy nguyên danh mục Loại chi phí thu mua** (`tab_po_cost_type`, `04-don-mua-hang.md` mục K.6),
 **không** gom nhóm lại theo mẫu giấy — thu mua gõ chi phí theo danh mục đó, báo cáo phải soi ngược về được.
 Bảng **chỉ bày loại có phát sinh** trong lần lọc hiện tại, đánh số `2.1`, `2.2`… theo thứ tự danh mục: bảng
 đã rộng sẵn vì mỗi đơn một cột, thêm mươi dòng 0 đồng là đẩy phần đọc được ra khỏi tờ giấy.
@@ -603,11 +603,16 @@ Bảng **chỉ bày loại có phát sinh** trong lần lọc hiện tại, đá
 |--------|---------|
 | Mã đơn | Nhiều mã cách nhau dấu phẩy. Có mã thì **bỏ qua** khoảng ngày — đây là đường dùng chính khi in |
 | Từ / đến ngày đặt | Chỉ dùng khi bỏ trống mã đơn; mặc định trọn năm đang chọn |
+| Giai đoạn (bao-CR-453) | `stage` = 1 Dự toán · 2 Tạm tính · 3 Quyết toán · bỏ trống = **số hiệu lực** của từng đơn. Giao diện mặc định **Quyết toán**. Dòng chi phí không có số ở giai đoạn đang xem thì không vào bảng |
+| Gồm đơn trong nước (bao-CR-453) | `include_domestic=1` gom cả đơn trong nước có dòng chi phí thu mua; mặc định tắt để số cũ không đổi. Tên tab vẫn giữ *Giá vốn nhập khẩu* |
 
 **Tab Theo lô hàng — các dòng chỉ tiêu**: Ngày đặt hàng · Nhà cung cấp · Trạng thái · Ngày hàng rời cảng
 (ETD) · Số tờ khai hải quan · Ngày tờ khai · Ghi chú · Số lượng · Khối lượng (kg) · Đồng tiền · Tiền hàng
-(nguyên tệ) · Tỷ giá · **1 Tiền hàng (vnd)** · **2 Chi phí nhập khẩu (vnd)** (2.1, 2.2… một dòng cho mỗi
-loại chi phí có phát sinh) · **Tổng giá vốn (vnd)** · **Giá vốn/Kg (vnd)**.
+(nguyên tệ) · Tỷ giá · **1 Tiền hàng (vnd)** · **2 Chi phí thu mua (vnd)** (2.1, 2.2… một dòng cho mỗi
+loại chi phí có phát sinh) · **Tổng giá vốn (vnd)** · **Giá vốn/Kg (vnd)**. Từ bao-CR-453 mỗi đơn còn
+trả **Giai đoạn chi phí** (`cost_stage`, nhãn), **Chi phí dự toán** (`estimate_cost_total`), **Chi phí quyết
+toán** (`final_cost_total`) và **Lệch** (`variance`, trống khi chưa có dự toán) để so dự toán với quyết toán
+ngay trên báo cáo; cột TỔNG cộng ba số đó.
 
 Tên chỉ tiêu gọi theo **trường của đơn mua hàng**, không chép mẫu giấy của khách. Mẫu giấy có ba ô không
 dùng được ở đây: *"Lần nhận"* (chi phí gắn theo **cả đơn**, không tách theo lượt nhận — đại ca chốt
@@ -624,7 +629,7 @@ dùng được ở đây: *"Lần nhận"* (chi phí gắn theo **cả đơn**, 
 | Tiền hàng (nguyên tệ) | Tiền hàng theo **đồng tiền của đơn**, đã gồm VAT dòng. **Bỏ trống khi lẫn đồng tiền** — cộng yên với đô ra một số không thuộc đồng tiền nào. Lẫn ở hai cấp: (a) trong một đơn, vì **từng dòng hàng khai được đồng tiền riêng** (`04-don-mua-hang.md` mục B.30) — đơn USD kèm một dòng VND là bỏ trống ô của chính đơn đó; (b) giữa các đơn trong cột TỔNG |
 | Tỷ giá | Tỷ giá của đơn. Cột TỔNG bỏ trống |
 | 1 Tiền hàng (vnd) | Tiền hàng **đã quy đổi VNĐ** qua tỷ giá của từng đơn — cộng được vì đã cùng một đồng tiền |
-| 2 Chi phí nhập khẩu + các dòng loại | Gom `base_amount` của `tab_po_import_cost` theo `cost_type`. Mã lạ dồn về *Chi phí khác* để tiền không biến mất khỏi tổng |
+| 2 Chi phí thu mua + các dòng loại | Gom cột quy đổi của **giai đoạn đã chọn** (`estimate_base` / `provisional_base` / `final_base`, bỏ trống = số hiệu lực) trong `tab_po_cost` theo `cost_type`. Tên loại đọc từ danh mục; mã không có trong danh mục dồn về *Chi phí khác* để tiền không biến mất khỏi tổng |
 | Tổng giá vốn | Tiền hàng (vnd) + Chi phí nhập khẩu |
 | Giá vốn/Kg | Tổng giá vốn ÷ tổng `weight_kg`. **Chưa khai kg thì để 0**, không chia. Cột TỔNG chia lại từ tổng tiền / tổng kg, không cộng dồn giá/kg từng đơn |
 
@@ -639,8 +644,9 @@ Khối lượng (kg) · Tiền hàng (vnd) · một cột cho mỗi loại chi p
 | Giá vốn/ĐVT | Tổng giá vốn ÷ `qty_order`. **Dòng TỔNG bỏ trống ô này** — mỗi dòng một đơn vị tính khác nhau, cộng cái kg với cái *cái* rồi chia ra là số không đọc được |
 | Cảnh báo | Chia theo khối lượng mà chưa khai kg, gõ tay lệch tổng… hiện thành dải nhắc phía trên bảng, **kèm mã đơn**; báo cáo vẫn chạy, chỉ nói rõ chỗ nào phải dò lại |
 
-**Xuất Excel**: `/api/reports/import-landed-cost/export` (`report:export`) — **hai sheet** `GIA VON THEO LO`
-và `THEO DONG HANG`, bố cục y hệt hai tab, mỗi sheet kèm ba ô ký cuối biểu.
+**Xuất Excel**: `/api/reports/import-landed-cost/export` (`report:export`, cùng bộ tham số `stage` /
+`include_domestic`) — **hai sheet** `GIA VON THEO LO` và `THEO DONG HANG`, bố cục y hệt hai tab, đầu sheet ghi
+giai đoạn đang xem, mỗi sheet kèm ba ô ký cuối biểu.
 
 **Bản in**: `/print/import-landed-cost?codes=…&view=orders|items` — **A4 NGANG**, ba ô ký tay *Người lập biểu
 · Kế toán · Quản lý duyệt*. Mỗi lần in **một** bảng: hai bảng xoay ngang dọc khác nhau, ghép chung một tờ là
@@ -648,7 +654,8 @@ không đọc được. Không có luồng duyệt trong phần mềm: quản l�
 09/2026). Đường vào nhanh cho một đơn: menu **In → In Báo cáo giá vốn** trên màn chi tiết ĐMH.
 
 **Ranh giới:** số liệu **tính bay lúc xem/in, không lưu**, không đẩy vào kho, không đổi giá nhập — cùng
-ranh giới với phần phân bổ chi phí ở bao-CR-319 P4.
+ranh giới với phần phân bổ chi phí ở bao-CR-319 P4. Cờ *Dự kiến / Thực tế* của bao-CR-347 đã bỏ (bao-CR-453):
+muốn xem số ước tính thì chọn giai đoạn Dự toán / Tạm tính.
 
 ### Tab Tồn kho
 

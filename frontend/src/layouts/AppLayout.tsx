@@ -200,6 +200,13 @@ const NAV_GROUPS: NavGroup[] = [
         manage: true,
       },
       {
+        to: "/po-cost-types",
+        label: "Loại chi phí thu mua",
+        icon: "ti-receipt-2",
+        entity: "purchase_cost_type",
+        manage: true,
+      },
+      {
         to: "/departments",
         label: "Phòng ban",
         icon: "ti-tag",

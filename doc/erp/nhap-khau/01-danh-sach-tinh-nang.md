@@ -6,6 +6,7 @@
 | **Loại tài liệu** | Yêu cầu rút gọn (BRD + PRD gộp) — chốt trước khi code |
 | **Nguồn yêu cầu** | Báo cáo *"Thủ tục pháp lý & giấy phép nhập khẩu K₂SO₄ + KNO₃"* (Phòng Thu mua, 11/09/2026) và bản giao diện gợi ý 3 màn do khách dựng |
 | **Xây trên** | Đơn mua hàng nhập khẩu đã có — `order_type = IMPORT` (bao-CR-319/347), điều khoản in (bao-CR-321), báo cáo giá vốn nhập khẩu |
+| **Liên quan** | **Chi phí thu mua ba giai đoạn** Dự toán / Tạm tính / Quyết toán trên mọi loại đơn + danh mục Loại chi phí thu mua — `bao-CR-453`, thiết kế và tình trạng ở [02-chi-phi-thu-mua.md](02-chi-phi-thu-mua.md) (code xong 22/09/2026, dev). Checklist hồ sơ ở tài liệu này **không** đụng bảng chi phí |
 | **CR** | Chưa cấp. Số trống kế tiếp tại thời điểm viết: **386** (grep cả `change-log.md` lẫn `change-log-bao.md` trước khi đặt chỗ) |
 | **Trạng thái** | ⚠️ **TẠM DỪNG 12/09/2026** — đồng nghiệp đã dựng xong một bản màn *Báo cáo thực hiện* trên **Yêu cầu báo giá**. Chờ commit của bản đó, gộp lại, rà mã nguồn rồi mới sửa tài liệu này theo. **Không code theo tài liệu này trong lúc chờ.** Checklist rà ở mục 14 |
 

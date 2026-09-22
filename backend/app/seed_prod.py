@@ -31,7 +31,7 @@ from app.modules.role.model import Role, Permission  # noqa: F401
 from app.modules.user.model import User, UserRole
 
 from app.seed import (ensure_admin_role, force_resync_roles,
-                      seed_document_phase1, seed_help_admin,
+                      seed_cost_types, seed_document_phase1, seed_help_admin,
                       seed_help_home_sections, seed_standard_roles)
 
 
@@ -88,6 +88,10 @@ def run():
         n_phase1 = seed_document_phase1(db)
         if n_phase1:
             print(f"Nạp/cập nhật {n_phase1} dòng dữ liệu Phase 1 Văn thư.")
+
+        n_cost_types = seed_cost_types(db)   # bao-CR-453 — chỉ thêm mã còn thiếu
+        if n_cost_types:
+            print(f"Nạp {n_cost_types} loại chi phí thu mua còn thiếu vào danh mục.")
 
         print("Seed prod done (không nạp dữ liệu mẫu, không ghi đè dữ liệu đã có).")
     finally:

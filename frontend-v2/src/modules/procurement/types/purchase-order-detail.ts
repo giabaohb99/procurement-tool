@@ -144,12 +144,26 @@ export interface PurchaseOrderDetail {
   approve_note?: string
 
   items: PurchaseOrderItem[]
-  /** bao-CR-319 P3 — chi phí lô hàng nhập khẩu; đơn trong nước là mảng rỗng. */
+  /**
+   * bao-CR-453 — chi phí thu mua (trước là "chi phí lô hàng nhập khẩu" bao-CR-319 P3).
+   * Tên khóa `import_costs` giữ nguyên (tên lịch sử).
+   * Mọi loại đơn (trong nước + nhập khẩu) đều có thể có khoản.
+   */
   import_costs: PurchaseOrderImportCost[]
-  /** Backend gom sẵn theo loại / theo NCC (P5 tạo YCTT từ đúng số này). */
+  /** Backend gom sẵn theo loại / theo NCC. Tên khóa `import_cost_summary` giữ nguyên. */
   import_cost_summary?: ImportCostSummary
-  /** Chi phí chia về từng dòng hàng — CHỈ XEM, không lưu, không vào kho. */
-  import_cost_allocation?: ImportCostAllocation
+  /**
+   * Chi phí chia về từng dòng hàng — CHỈ XEM.
+   * bao-CR-453: nay là dict theo giai đoạn `{"1": Alloc, "2": Alloc, "3": Alloc, "effective": Alloc}`.
+   * Tên khóa `import_cost_allocation` giữ nguyên.
+   */
+  import_cost_allocation?: ImportCostAllocationByStage
+  /**
+   * bao-CR-453 — giai đoạn hiện hành chi phí: 1 Dự toán | 2 Tạm tính | 3 Quyết toán.
+   * Mặc định 1 cho đơn mới.
+   */
+  cost_stage?: number
+  cost_stage_label?: string
 
   /** Tiền theo SL THỰC NHẬN (đã chốt). */
   subtotal: number
@@ -163,24 +177,30 @@ export interface PurchaseOrderDetail {
   unpaid_total: number
 }
 
-/** Một khoản chi phí của lô hàng nhập khẩu (bao-CR-319 P3). */
+/**
+ * Một khoản chi phí thu mua (bao-CR-453, nới từ bao-CR-319).
+ *
+ * Tên lịch sử: `POImportCost` / `import_costs` — giữ nguyên ở API key và backend,
+ * chỉ đổi nhãn người dùng thấy.
+ */
 export interface PurchaseOrderImportCost {
   /** Thiếu / 0 = dòng mới chưa lưu. */
   id?: number
-  /** `IMPORT_COST_TYPE_OPTIONS`. */
+  /** Mã số loại chi phí — khoá trong `tab_po_cost_type`. */
   cost_type: number
+  /** Tên loại chi phí từ `tab_po_cost_type.name`. */
+  cost_type_name?: string
+  /** Nhãn hiển thị = `cost_type_name`; giữ tên cũ để tương thích component. */
   cost_type_label?: string
+  /** Loại chi phí này có sinh công nợ phải trả hay không. */
+  creates_payable?: boolean
   description: string
   /** NCC nhận tiền của KHOẢN này (hãng tàu, khai thuê, ngân sách nhà nước...). */
   supplier_code: string
   supplier_name: string
+  /** Đồng tiền chung cho cả ba giai đoạn của khoản. */
   currency: string
-  exchange_rate: number
-  /** NGUYÊN TỆ, chưa gồm VAT. */
-  amount: number
   vat: number
-  /** Đã gồm VAT và đã quy đổi VNĐ — backend tính. */
-  base_amount?: number
   /** `ALLOCATION_METHOD_OPTIONS`. */
   allocation_method: number
   allocation_method_label?: string
@@ -192,6 +212,48 @@ export interface PurchaseOrderImportCost {
   invoice_date: string
   payment_due_date: string
   note: string
+
+  /** Giai đoạn riêng của dòng: 1 = theo đơn, 3 = đã quyết toán riêng. */
+  line_stage?: number
+  /** Giai đoạn hiệu lực = max(giai đoạn đơn, line_stage). Backend tính. */
+  effective_stage?: number
+  effective_stage_label?: string
+
+  // --- Ba giai đoạn: Dự toán / Tạm tính / Quyết toán ---
+  /** Tiền nguyên tệ giai đoạn Dự toán (null = chưa nhập). */
+  estimate_amount?: number | null
+  /** Tỷ giá giai đoạn Dự toán. */
+  estimate_rate?: number
+  /** Quy đổi VNĐ giai đoạn Dự toán — backend tính. */
+  estimate_base?: number | null
+
+  /** Tiền nguyên tệ giai đoạn Tạm tính. */
+  provisional_amount?: number | null
+  /** Tỷ giá giai đoạn Tạm tính. */
+  provisional_rate?: number
+  /** Quy đổi VNĐ giai đoạn Tạm tính. */
+  provisional_base?: number | null
+
+  /** Tiền nguyên tệ giai đoạn Quyết toán. */
+  final_amount?: number | null
+  /** Tỷ giá giai đoạn Quyết toán. */
+  final_rate?: number
+  /** Quy đổi VNĐ giai đoạn Quyết toán. */
+  final_base?: number | null
+
+  /** Lệch = số hiệu lực − dự toán (quy đổi VNĐ). Null khi chưa có Dự toán. */
+  variance_base?: number | null
+  /** Lệch tính theo % so với Dự toán. */
+  variance_pct?: number | null
+
+  /**
+   * Quy đổi VNĐ của giai đoạn hiệu lực — backend tính, dùng cho tổng và phân bổ.
+   * Alias: `base_amount` (giữ tên lịch sử để bản in và YCTT không gãy).
+   */
+  effective_base?: number
+  /** Alias của `effective_base` — giữ tên lịch sử. */
+  base_amount?: number
+
   /** Công nợ của khoản — backend tính, 0 = chưa thành công nợ. */
   payable_id?: number
   paid_amount?: number
@@ -219,10 +281,31 @@ export interface ImportCostSummaryBySupplier {
 
 export interface ImportCostSummary {
   goods_base_total: number
+  /** Tổng hiệu lực — alias `cost_total` (giữ tên lịch sử). */
+  effective_total: number
+  /** Alias `effective_total` — giữ tên lịch sử để bản in và YCTT không gãy. */
   cost_total: number
   paid_total: number
   remaining_total: number
   landed_total: number
+  /** Tổng Dự toán. */
+  estimate_total?: number
+  /** Tổng Tạm tính. */
+  provisional_total?: number
+  /** Tổng Quyết toán. */
+  final_total?: number
+  /** Lệch tổng = quyết toán (hoặc hiệu lực) − dự toán. */
+  variance_total?: number | null
+  variance_pct?: number | null
+  /** Tổng phí vận chuyển các lần giao (chỉ xem, không cộng vào cost_total). */
+  shipping_total?: number
+  /** Giai đoạn hiện hành của đơn (1/2/3). */
+  stage?: number
+  stage_label?: string
+  /** Số dòng chưa quyết toán. */
+  lines_not_final?: number
+  /** Số dòng chưa có NCC (sẽ không thành công nợ khi chốt quyết toán). */
+  lines_without_supplier?: number
   by_type: ImportCostSummaryByType[]
   by_supplier: ImportCostSummaryBySupplier[]
 }
@@ -255,12 +338,70 @@ export interface ImportCostAllocationLine {
   costs: ImportCostAllocationShare[]
 }
 
+/** Phân bổ cho một giai đoạn (hoặc "effective"). */
 export interface ImportCostAllocation {
   lines: ImportCostAllocationLine[]
   goods_base_total: number
   cost_total: number
   landed_total: number
   warnings: string[]
+}
+
+/**
+ * bao-CR-453 — phân bổ chi phí theo từng giai đoạn.
+ *
+ * Khóa: "1" | "2" | "3" | "effective". Mặc định dùng khóa = String(cost_stage)
+ * của đơn; nút chọn giai đoạn trên khối "Chi phí theo dòng hàng" cho phép xem
+ * giai đoạn khác không cần gọi lại server.
+ */
+export type ImportCostAllocationByStage = Record<string, ImportCostAllocation>
+
+/**
+ * bao-CR-453 — giai đoạn chi phí (CostStage).
+ * 1 = Dự toán · 2 = Tạm tính · 3 = Quyết toán.
+ */
+export const COST_STAGE_ESTIMATE = 1
+export const COST_STAGE_PROVISIONAL = 2
+export const COST_STAGE_FINAL = 3
+
+export const COST_STAGE_OPTIONS: { value: number; label: string }[] = [
+  { value: COST_STAGE_ESTIMATE, label: 'Dự toán' },
+  { value: COST_STAGE_PROVISIONAL, label: 'Tạm tính' },
+  { value: COST_STAGE_FINAL, label: 'Quyết toán' },
+]
+
+export function costStageLabel(stage: number): string {
+  return COST_STAGE_OPTIONS.find((o) => o.value === Number(stage))?.label ?? 'Dự toán'
+}
+
+/**
+ * bao-CR-453 — một dòng của danh mục Loại chi phí thu mua (entity
+ * `purchase_cost_type`, bảng `tab_po_cost_type`, đường API `/api/po-cost-types`).
+ *
+ * `code` là số: 1..14 là mười lăm loại cũ seed sẵn, 15 trở đi là loại người dùng
+ * tự thêm, 99 là «Chi phí khác» — chỗ rơi của mã lạ, không xóa được.
+ */
+/**
+ * Khai bằng `type` chứ KHÔNG phải `interface`: `CrudConfig<T>` ràng
+ * `T extends CrudRecord` (= `Record<string, unknown>`), mà TypeScript chỉ cấp chỉ
+ * mục ngầm cho bí danh kiểu, không cấp cho `interface`. Đổi lại thành `interface`
+ * là hai màn danh mục loại chi phí đỏ typecheck ngay.
+ */
+export type PoCostType = {
+  id: number
+  code: number
+  name: string
+  /** 1 = Thuế nộp ngân sách · 2 = Dịch vụ. */
+  group_kind: number
+  /** Bật thì dòng chi phí quyết toán sẽ sinh công nợ cho nhà cung cấp. */
+  creates_payable: boolean
+  default_supplier_code: string
+  default_allocation_method: number
+  default_vat: number
+  sort_order: number
+  is_active: boolean
+  note: string
+  updated_at?: string
 }
 
 /** bao-CR-319 — loại đơn mua hàng (SMALLINT ở backend, `OrderType`). */

@@ -41,7 +41,10 @@ export interface PurchaseOrderItemPayload
   deliveries: PurchaseOrderDelivery[]
 }
 
-/** Khoản chi phí lô hàng gửi lên — bỏ các cột backend tính (`base_amount`, công nợ...). */
+/**
+ * Khoản chi phí gửi lên — bao-CR-453: bỏ `amount`/`exchange_rate` cũ, thay bằng
+ * ba giai đoạn. Backend vẫn chấp nhận `amount` cho đơn cũ nhưng frontend không gửi.
+ */
 export type PurchaseOrderImportCostPayload = Pick<
   PurchaseOrderImportCost,
   | 'id'
@@ -50,8 +53,12 @@ export type PurchaseOrderImportCostPayload = Pick<
   | 'supplier_code'
   | 'supplier_name'
   | 'currency'
-  | 'exchange_rate'
-  | 'amount'
+  | 'estimate_amount'
+  | 'estimate_rate'
+  | 'provisional_amount'
+  | 'provisional_rate'
+  | 'final_amount'
+  | 'final_rate'
   | 'vat'
   | 'allocation_method'
   | 'allocation_target'
@@ -176,6 +183,34 @@ export const purchaseOrderApi = {
     apiPost<PurchaseOrderDetail>(`${BASE_URL}/${id}/return`, { reason }),
   cancel: (id: number, reason: string) =>
     apiPost<PurchaseOrderDetail>(`${BASE_URL}/${id}/cancel`, { reason }),
+
+  /**
+   * bao-CR-453 — Chốt giai đoạn chi phí: Dự toán → Tạm tính hoặc Tạm tính → Quyết toán.
+   * Yêu cầu `purchase_order.write`.
+   */
+  advanceCostStage: (id: number) =>
+    apiPost<PurchaseOrderDetail>(`${BASE_URL}/${id}/cost-stage/advance`, {}),
+
+  /**
+   * bao-CR-453 — Mở lại giai đoạn chi phí (Tạm tính → Dự toán hoặc Quyết toán → Tạm tính).
+   * Yêu cầu `purchase_order.approve` + bắt buộc có lý do.
+   */
+  reopenCostStage: (id: number, reason: string) =>
+    apiPost<PurchaseOrderDetail>(`${BASE_URL}/${id}/cost-stage/reopen`, { reason }),
+
+  /**
+   * bao-CR-453 — Quyết toán một dòng chi phí riêng lẻ (đặt `line_stage = 3`).
+   * Dùng khi đơn chưa quyết toán tổng nhưng dòng này đã biết số cuối.
+   */
+  finalizeCostLine: (id: number, costId: number) =>
+    apiPost<PurchaseOrderDetail>(`${BASE_URL}/${id}/costs/${costId}/finalize`, {}),
+
+  /**
+   * bao-CR-453 — Mở lại một dòng đã quyết toán riêng lẻ (đặt `line_stage` về theo đơn).
+   * Yêu cầu `purchase_order.approve` + lý do.
+   */
+  reopenCostLine: (id: number, costId: number, reason: string) =>
+    apiPost<PurchaseOrderDetail>(`${BASE_URL}/${id}/costs/${costId}/reopen`, { reason }),
 
   /** Tình trạng hồ sơ chứng từ — cập nhật được cả khi đơn đã hoàn thành. */
   setDocumentStatus: (id: number, documentStatus: string) =>

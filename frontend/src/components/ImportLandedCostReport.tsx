@@ -212,19 +212,34 @@ export function LandedCostSignatures() {
 }
 
 /** Tham số lọc dùng chung cho gọi API, xuất Excel và mở bản in. */
-export function landedCostParams(f: { codes: string; date_from: string; date_to: string }, companyId?: string) {
+export function landedCostParams(
+  f: { codes: string; date_from: string; date_to: string; stage?: string; include_domestic?: boolean },
+  companyId?: string,
+) {
   const params: any = {}
   const codes = f.codes.split(',').map((c) => c.trim()).filter(Boolean).join(',')
   if (codes) params.codes = codes
   else { if (f.date_from) params.date_from = f.date_from; if (f.date_to) params.date_to = f.date_to }
   if (companyId) params.company_id = companyId
+  // bao-CR-453 GĐ3: lọc theo giai đoạn chi phí và gồm đơn trong nước
+  if (f.stage) params.stage = f.stage
+  if (f.include_domestic) params.include_domestic = 1
   return params
 }
+
+// bao-CR-453 GĐ3: tùy chọn giai đoạn lọc
+const STAGE_OPTS = [
+  { value: '', label: 'Số hiệu lực' },
+  { value: '3', label: 'Quyết toán' },
+  { value: '2', label: 'Tạm tính' },
+  { value: '1', label: 'Dự toán' },
+]
 
 export default function ImportLandedCostReport({ year, companyId }: { year: string; companyId?: string }) {
   const { can } = useAuth()
   const y = year && year !== 'all' ? year : String(new Date().getFullYear())
-  const [f, setF] = useState({ codes: '', date_from: `${y}-01-01`, date_to: `${y}-12-31` })
+  // bao-CR-453 GĐ3: thêm stage (mặc định '' = số hiệu lực) và include_domestic
+  const [f, setF] = useState({ codes: '', date_from: `${y}-01-01`, date_to: `${y}-12-31`, stage: '', include_domestic: false })
   // Một lần gọi API trả cả hai cách đọc, nên đổi tab KHÔNG tải lại số liệu.
   const [view, setView] = useState<LandedCostView>('orders')
   const [data, setData] = useState<any>(null)
@@ -269,6 +284,20 @@ export default function ImportLandedCostReport({ year, companyId }: { year: stri
         <div className="filter-item" style={{ flex: '0 0 150px' }}><label>Đến ngày đặt</label>
           <input type="date" value={f.date_to} disabled={!!f.codes.trim()}
                  onChange={(e) => setF((s) => ({ ...s, date_to: e.target.value }))} /></div>
+        {/* bao-CR-453 GĐ3: lọc theo giai đoạn chi phí */}
+        <div className="filter-item" style={{ flex: '0 0 160px' }}><label>Giai đoạn chi phí</label>
+          <select value={f.stage} onChange={(e) => setF((s) => ({ ...s, stage: e.target.value }))}>
+            {STAGE_OPTS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        </div>
+        <div className="filter-item" style={{ flex: '0 0 auto', alignSelf: 'flex-end', paddingBottom: 2 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontWeight: 400 }}>
+            <input type="checkbox" checked={!!f.include_domestic}
+              onChange={(e) => setF((s) => ({ ...s, include_domestic: e.target.checked }))}
+              style={{ width: 15, height: 15 }} />
+            Gồm đơn trong nước
+          </label>
+        </div>
         <button className="btn" disabled={busy} onClick={() => load()}>Xem</button>
         <button className="btn ghost" disabled={!data?.orders?.length} onClick={openPrint}><i className="ti ti-printer" />In</button>
         {can('report', 'export') && (

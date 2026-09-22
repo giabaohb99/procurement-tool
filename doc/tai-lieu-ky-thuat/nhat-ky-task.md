@@ -5481,42 +5481,57 @@ Mã nguồn: `frontend-v2/src/modules/vehicle-booking/pages/vehicle-booking-deta
 `components/booking-detail-body.tsx` (bỏ khối Ghi chú);
 `components/booking-detail-header.tsx` (gỡ phép đo chiều cao không còn ai dùng).
 
-## bao-CR-453 | Chi phí thu mua: chốt bảy điểm thiết kế và viết tài liệu thiết kế, chưa code
-- status: dang-lam
+## bao-CR-453 | Chi phí thu mua ba giai đoạn: code đủ năm đợt một lần, lên môi trường thử
+- status: xong
 - date: 2026-09-22
 - pic: NSU209
 Hôm qua đại ca nêu ý giữa lúc bàn việc khác: đơn mua hàng hiện chỉ có một con số chi phí,
 trong khi thực tế đi qua ba bước dự toán, tạm tính rồi quyết toán, và công nợ thật chỉ nên
-hiện ra ở bước cuối. Đại ca tự nhận hay quên nên dặn ghi lại; em đặt chỗ số 453 ngay hôm đó.
+hiện ra ở bước cuối. Em đặt chỗ số 453 ngay hôm đó. Sáng nay em dựng bản phác, đại ca duyệt
+tên «Chi phí thu mua» (khớp tài khoản 1562 của Thông tư 200) và chốt bảy điểm thiết kế theo
+đúng phương án đề xuất; em viết tài liệu thiết kế theo khuôn hồ sơ nhập khẩu. Rồi đại ca ra
+lệnh làm đủ năm đợt một lần và đẩy lên một lượt, nên em làm hết trong cùng ngày.
 
-Hôm nay em dựng bản phác màn hình và đề xuất tên gọi. Đại ca duyệt tên «Chi phí thu mua» (khớp
-tài khoản 1562 của Thông tư 200), ba cột Dự toán / Tạm tính / Quyết toán, và bố cục: khối nằm
-trong chi tiết đơn mua hàng cho mọi loại đơn, một dòng ba số thay cho cờ Dự kiến / Thực tế cũ,
-cột hiện hành tô nền và gõ được, cột đã qua khóa, hai nút chốt theo đơn, một dòng có thể quyết
-toán sớm khi hóa đơn về trước. Sáu điểm còn lại em nêu kèm phương án mặc định và đại ca chốt
-theo đúng đề xuất: nới bảng chi phí nhập khẩu tại chỗ và đổi tên, phí vận chuyển giữ nguyên
-trên lần giao chỉ hiện thêm để xem; mười lăm loại chi phí sẵn có thành dòng seed của một danh
-mục quản trị tự thêm bớt, loại nào cũng sinh công nợ trừ loại đánh dấu không sinh; công nợ chỉ
-sinh ở Quyết toán; người có quyền sửa đơn thì chốt, mở lại cần quyền duyệt đơn và phải ghi lý
-do; giá hàng ba giai đoạn tách thành yêu cầu riêng sau; mỗi giai đoạn một tỷ giá.
+Đợt một phía máy chủ: bảng chi phí nhập khẩu đổi tên thành bảng chi phí thu mua, mỗi dòng
+mang ba bộ số tiền, tỷ giá, quy đổi cho Dự toán, Tạm tính, Quyết toán, thêm cột giai đoạn
+riêng của dòng; đơn mua hàng thêm cột giai đoạn; bốn cột cũ (số tiền, tỷ giá, quy đổi, cờ dự
+kiến hay thực tế) bỏ, dữ liệu cũ đổ vào bộ Quyết toán và đơn cũ coi như đã chốt. Bảng danh
+mục loại chi phí mới, mười lăm loại cũ thành dòng seed, mã 99 «Chi phí khác» là chỗ rơi của
+mã lạ và không xóa được; loại đã dùng trên đơn thì không xóa, chỉ tắt. Khóa quyền mới cho
+danh mục. Máy chủ chỉ ghi số vào cột giai đoạn hiệu lực, cột khác gõ vào thì bỏ qua; hai
+đường API chốt và mở lại giai đoạn cho cả đơn, hai đường quyết toán và mở lại riêng một dòng;
+chốt thì chép ô trống của cột kế từ cột trước, mở lại không xóa số chỉ mở khóa, cần quyền
+duyệt đơn và lý do tối thiểu mười ký tự. Công nợ chỉ sinh từ bộ Quyết toán khi đơn đã duyệt,
+dòng có nhà cung cấp và loại chi phí có bật sinh công nợ; hạ số xuống dưới số đã chi thì từ
+chối; dòng đã chi thì mở lại vẫn giữ nguyên quyết toán. Đơn có dòng chi phí phải chốt quyết
+toán mới Hoàn thành. Phân bổ về dòng hàng tính cho từng giai đoạn, trả về bốn bộ; báo cáo giá
+vốn nhập khẩu thêm ô giai đoạn và ô gồm đơn trong nước. Năm mã hành động nhật ký mới. Một
+migration duy nhất, bộ kiểm mới cùng bốn bộ kiểm cũ của chi phí nhập khẩu sửa theo, tất cả
+xanh.
 
-Em viết tài liệu thiết kế theo khuôn của tài liệu hồ sơ nhập khẩu: bảy điểm đã chốt, vì sao
-cần, phạm vi làm và cố ý không làm, khái niệm, danh sách chức năng sáu nhóm, mô hình dữ liệu
-(bảng chi phí đổi tên với chín cột giai đoạn, bảng danh mục loại chi phí mới, cột giai đoạn
-trên đơn), năm mã hành động nhật ký, API mới, phân quyền có một khóa quyền mới cho danh mục,
-bộ test chín bài, chia năm đợt, rủi ro và ba câu hỏi còn mở cho khách. Ba tên mã lịch sử cố ý
-giữ nguyên để hai giao diện không gãy: mã nguồn công nợ, khóa dữ liệu trong API chi tiết đơn.
-Dữ liệu cũ đổ vào cột Quyết toán, đơn cũ coi như đã chốt.
+Đợt hai và ba trên giao diện cũ: thẻ đổi tên, hiện cho mọi loại đơn, dải ba bước đầu thẻ,
+ba cụm cột với cột hiện hành tô nền gõ được và cột đã qua khóa, cột lệch, bốn ô tổng, hai nút
+chốt, nút mở lại có hộp ghi lý do, menu quyết toán riêng một dòng, ô chọn loại chi phí đọc
+danh mục và tự điền nhà cung cấp, VAT, cách phân bổ vào ô trống; menu Danh mục thêm màn Loại
+chi phí thu mua; bản in nhập khẩu in số của giai đoạn hiện hành; báo cáo giá vốn có ô giai
+đoạn. Đợt bốn bê toàn bộ sang giao diện mới và gỡ tên lớp cũ ở máy chủ. Đợt năm: tài liệu
+chức năng đơn mua hàng mục K viết lại, tài liệu báo cáo, từ điển dữ liệu thêm hai bảng, danh
+sách tính năng nhập khẩu, tài liệu thiết kế đánh dấu đã code, và một bài hướng dẫn sử dụng
+mới «Chi phí thu mua trên đơn mua hàng» dưới nhóm Nhân viên Mua hàng, seed bằng script riêng.
 
-Chưa có một dòng mã nào. Việc kế tiếp là đợt một phía máy chủ khi đại ca ra lệnh, làm trên
-giao diện cũ trước rồi mới bê sang giao diện mới. Máy chủ chính đang tạm dừng cập nhật nên mọi
-đợt chỉ lên môi trường thử.
+Máy chủ chính đang tạm dừng cập nhật nên đợt này chỉ lên môi trường thử. Ba câu hỏi còn mở
+cho khách nằm ở tài liệu thiết kế; giá hàng ba giai đoạn trên đơn nhập khẩu tách thành yêu cầu
+riêng sau.
 
-Tài liệu: `doc/erp/nhap-khau/02-chi-phi-thu-mua.md` (mới), `doc/erp/19-viec-con-lai-tong-hop.md` §5,
-`doc/tai-lieu-ky-thuat/change-log-bao.md` (dòng bao-CR-453).
-Mã nguồn: chưa có.
-Commit: chưa, chờ lệnh.
-
+Tài liệu: `doc/erp/nhap-khau/02-chi-phi-thu-mua.md`, `doc/tai-lieu-chuc-nang/04-don-mua-hang.md` mục K,
+`08-he-thong-bao-cao.md`, `doc/erp/tai-lieu-ky-thuat/05a-du-lieu-thu-mua.md`, `doc/erp/nhap-khau/01-danh-sach-tinh-nang.md`,
+`doc/erp/19-viec-con-lai-tong-hop.md` §5, `doc/tai-lieu-ky-thuat/change-log-bao.md` (dòng bao-CR-453).
+Mã nguồn: `backend/app/modules/purchase_order/` (model, schema, service, controller, cost_type.py),
+`backend/migrations/versions/05a62d38a47a_*.py`, `backend/scripts/seed_help_chi_phi_thu_mua.py`,
+`test/backend/test_po_chi_phi_thu_mua_cr453.py`, `frontend/src/pages/PurchaseOrderDetail.tsx`,
+`frontend/src/config/cruds.tsx`, `frontend-v2/src/modules/procurement/` (thẻ chi phí, API, kiểu, tiện ích, bản in).
+Commit: một commit trên nhánh erp-v2 ngày 22/09/2026, tiêu đề bắt đầu bằng «bao-CR-453».
+Deploy: dev 22/09/2026, prod chưa (tạm dừng theo chốt 19/09).
 ## bao-CR-458 | Chữa bộ chạy thử của app đặt xe cũ: chạy lại được ngay trên máy làm việc
 - status: xong
 - date: 2026-09-22

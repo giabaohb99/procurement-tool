@@ -162,9 +162,16 @@ def test_du_55_entity():
     ⚠️ Khai **CỘT THẬT** ở `SCOPE_FIELDS` (`company_id` · `department_id` ·
     `created_by` · `owner_employee_id`), KHÔNG PUBLIC — hồ sơ thuộc về một pháp
     nhân, một phòng và một người. Bốn chiều kiểm ở `test_ho_so_pham_vi.py`.
+
+    65 → 66 ngày 22/09/2026 (bao-CR-453): `purchase_cost_type` — Danh mục Loại chi
+    phí thu mua (`tab_po_cost_type`), thay bộ mã cứng `ImportCostType`. Khóa riêng
+    theo luật «một khóa = một màn hình» (`/api/po-cost-types`): khai chi phí trên
+    đơn là việc hằng ngày của thu mua, còn thêm bớt LOẠI chi phí là đổi cột của
+    báo cáo giá vốn cho cả công ty. PUBLIC ở `SCOPE_FIELDS`: một loại chi phí là
+    một loại chi phí với mọi pháp nhân, không có chủ để lọc.
     """
-    assert len(ENTITIES) == 65
-    assert len(SCOPE_FIELDS) == 65
+    assert len(ENTITIES) == 66
+    assert len(SCOPE_FIELDS) == 66
 
 
 # ── 2. Không dựng nổi điều kiện thì chặn ────────────────────────────────────────

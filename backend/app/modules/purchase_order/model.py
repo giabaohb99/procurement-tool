@@ -1,6 +1,6 @@
 from enum import IntEnum
 
-from sqlalchemy import BigInteger, Boolean, Index, Numeric, SmallInteger, String, Text
+from sqlalchemy import BigInteger, Boolean, Index, Integer, Numeric, SmallInteger, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base_model import Base, AuditMixin
@@ -74,24 +74,52 @@ IMPORT_COST_TYPE_LABELS = {
 }
 
 
-class ImportCostStatus(IntEnum):
-    """Khoản chi phí đang là số DỰ KIẾN hay số THỰC TẾ (bao-CR-347).
+class CostStage(IntEnum):
+    """Giai đoạn của bộ CHI PHÍ THU MUA trên một đơn (bao-CR-453).
 
-    Thu mua gõ trước một bộ chi phí dự toán lúc chưa có hóa đơn để chốt giá bán, rồi
-    thay dần bằng số thật khi chứng từ về. Hai loại phải sống CÙNG một dòng vì báo cáo
-    giá vốn cần bày cạnh nhau và tính chênh lệch.
+    Thay cho cờ Dự kiến/Thực tế của bao-CR-347: một dòng chi phí nay mang BA con số
+    sống cạnh nhau — Dự toán (lúc chốt giá bán, chưa có chứng từ), Tạm tính (có báo
+    giá / tờ khai, chưa có hóa đơn) và Quyết toán (hóa đơn về, số cuối). Giai đoạn
+    ghi ở ĐƠN (`PurchaseOrder.cost_stage`) và có thể vượt trước ở TỪNG DÒNG
+    (`POCost.line_stage`) khi một khoản có hóa đơn sớm hơn các khoản khác.
 
-    Chỉ dòng THỰC TẾ mới sinh công nợ và mới bị xét khi Hoàn thành đơn — nếu không thì
-    Yêu cầu thanh toán đòi trả một khoản chưa có hóa đơn.
+    Chỉ số QUYẾT TOÁN mới sinh công nợ và mới bị xét khi Hoàn thành đơn — nếu không
+    thì Yêu cầu thanh toán đòi trả một khoản chưa có hóa đơn.
     """
 
-    ESTIMATED = 1   # Dự kiến
-    ACTUAL = 2      # Thực tế
+    ESTIMATE = 1      # Dự toán
+    PROVISIONAL = 2   # Tạm tính
+    FINAL = 3         # Quyết toán
 
 
-IMPORT_COST_STATUS_LABELS = {
-    ImportCostStatus.ESTIMATED: "Dự kiến",
-    ImportCostStatus.ACTUAL: "Thực tế",
+COST_STAGE_LABELS = {
+    CostStage.ESTIMATE: "Dự toán",
+    CostStage.PROVISIONAL: "Tạm tính",
+    CostStage.FINAL: "Quyết toán",
+}
+
+# Ba bộ cột `<giai đoạn>_amount / _rate / _base` trên `POCost`, theo đúng thứ tự giai đoạn.
+COST_STAGE_PREFIX = {
+    CostStage.ESTIMATE: "estimate",
+    CostStage.PROVISIONAL: "provisional",
+    CostStage.FINAL: "final",
+}
+
+
+class CostTypeGroup(IntEnum):
+    """Nhóm của một loại chi phí thu mua trong danh mục `tab_po_cost_type` (bao-CR-453).
+
+    Hai nhóm khác hẳn nhau về NGƯỜI NHẬN tiền: thuế nộp ngân sách nhà nước, còn lại
+    trả cho hãng tàu / đơn vị dịch vụ / kho bãi — nên giao diện gợi ý NCC theo nhóm.
+    """
+
+    STATE_BUDGET = 1   # Thuế nộp ngân sách
+    SERVICE = 2        # Dịch vụ / phí trả nhà cung cấp
+
+
+COST_TYPE_GROUP_LABELS = {
+    CostTypeGroup.STATE_BUDGET: "Thuế nộp ngân sách",
+    CostTypeGroup.SERVICE: "Dịch vụ",
 }
 
 # Khoản nộp cho nhà nước — giao diện gợi ý sẵn NCC "Ngân sách nhà nước" cho mấy loại này.
@@ -178,6 +206,10 @@ class PurchaseOrder(Base, AuditMixin):
     inspection_days: Mapped[int] = mapped_column(SmallInteger, default=0)
     return_days: Mapped[int] = mapped_column(SmallInteger, default=0)
     invoice_deadline: Mapped[str] = mapped_column(String(255), default="")
+    # --- bao-CR-453: giai đoạn của bộ chi phí thu mua, xem CostStage. Đơn mới bắt đầu ở
+    # Dự toán; chỉ đi lên bằng `advance_cost_stage`, lùi bằng `reopen_cost_stage` (cần
+    # quyền duyệt + lý do). Đơn KHÔNG có dòng chi phí nào thì Hoàn thành tự đặt = 3.
+    cost_stage: Mapped[int] = mapped_column(SmallInteger, default=int(CostStage.ESTIMATE), index=True)
 
 
 class POItem(Base, AuditMixin):
@@ -232,8 +264,8 @@ class POItem(Base, AuditMixin):
     status_before_pause: Mapped[str] = mapped_column(String(40), default="")
 
 
-class POImportCost(Base, AuditMixin):
-    """Một khoản chi phí của lô hàng nhập khẩu (bao-CR-319 P3).
+class POCost(Base, AuditMixin):
+    """Một khoản CHI PHÍ THU MUA của đơn (bao-CR-319 P3, mở rộng bao-CR-453).
 
     Bảng PHẲNG, gắn thẳng vào ĐƠN chứ không vào dòng hàng: một khoản cước biển là của
     cả lô, không của riêng mã nào. Việc chia về dòng hàng là chuyện XEM (P4), tính lúc
@@ -241,34 +273,83 @@ class POImportCost(Base, AuditMixin):
 
     Mỗi dòng tự khai NCC vì tiền đi về nhiều nơi khác nhau: cước trả hãng tàu, thuế nộp
     ngân sách nhà nước, phí khai thuê trả đơn vị dịch vụ.
+
+    bao-CR-453: mỗi dòng mang BA bộ số theo giai đoạn (`estimate_` / `provisional_` /
+    `final_` × `amount` / `rate` / `base`). `amount` là số TRƯỚC thuế theo đồng tiền của
+    dòng, `rate` là tỷ giá RIÊNG của giai đoạn đó (tỷ giá lúc dự toán khác lúc có hóa
+    đơn), `base` = amount × (1 + vat%) × rate quy về VNĐ, tính lúc lưu. Cột `amount`
+    NULL nghĩa là giai đoạn đó CHƯA có số — khác với 0 đồng.
+    Bảng cũ tên `tab_po_import_cost`; đổi tên vì áp cho MỌI loại đơn, không riêng nhập khẩu.
     """
 
-    __tablename__ = "tab_po_import_cost"
+    __tablename__ = "tab_po_cost"
+    __table_args__ = (Index("ix_po_cost_po_stage", "po_id", "line_stage"),)
 
     po_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    # Mã loại chi phí, tra danh mục `tab_po_cost_type.code` (không FK — cùng nếp `product_code`).
     cost_type: Mapped[int] = mapped_column(SmallInteger, default=int(ImportCostType.OTHER), index=True)
-    # bao-CR-347. Dòng cũ đều là số thật (đã sinh công nợ) nên migration điền ACTUAL.
-    cost_status: Mapped[int] = mapped_column(SmallInteger, default=int(ImportCostStatus.ACTUAL), index=True)
+    # Giai đoạn RIÊNG của dòng, chỉ có nghĩa khi VƯỢT giai đoạn của đơn (một khoản có hóa
+    # đơn sớm). Giai đoạn hiệu lực = max(po.cost_stage, line_stage), xem `effective_stage_of`.
+    line_stage: Mapped[int] = mapped_column(SmallInteger, default=int(CostStage.ESTIMATE))
     description: Mapped[str] = mapped_column(String(255), default="")
     supplier_code: Mapped[str] = mapped_column(String(50), default="", index=True)
     supplier_name: Mapped[str] = mapped_column(String(255), default="")
-    # Tiền của khoản chi phí. Cùng quy ước với dòng hàng: `amount` là số TRƯỚC thuế theo
-    # đồng tiền của chính dòng chi phí, `base_amount` là tổng ĐÃ gồm VAT quy về VNĐ.
     currency: Mapped[str] = mapped_column(String(10), default=DEFAULT_CURRENCY)
-    exchange_rate: Mapped[float] = mapped_column(Numeric(18, 6), default=1)
-    amount: Mapped[float] = mapped_column(Numeric(18, 2), default=0)
     vat: Mapped[float] = mapped_column(Numeric(5, 2), default=0)             # % VAT của khoản chi phí
-    base_amount: Mapped[float] = mapped_column(Numeric(18, 2), default=0)    # amount × (1 + vat%) × tỷ giá
+    estimate_amount: Mapped[float | None] = mapped_column(Numeric(18, 2), nullable=True)
+    estimate_rate: Mapped[float] = mapped_column(Numeric(18, 6), default=1)
+    estimate_base: Mapped[float | None] = mapped_column(Numeric(18, 2), nullable=True)
+    provisional_amount: Mapped[float | None] = mapped_column(Numeric(18, 2), nullable=True)
+    provisional_rate: Mapped[float] = mapped_column(Numeric(18, 6), default=1)
+    provisional_base: Mapped[float | None] = mapped_column(Numeric(18, 2), nullable=True)
+    final_amount: Mapped[float | None] = mapped_column(Numeric(18, 2), nullable=True)
+    final_rate: Mapped[float] = mapped_column(Numeric(18, 6), default=1)
+    final_base: Mapped[float | None] = mapped_column(Numeric(18, 2), nullable=True)
     allocation_method: Mapped[int] = mapped_column(SmallInteger, default=int(AllocationMethod.BY_VALUE))
     allocation_target: Mapped[str] = mapped_column(String(50), default="")   # mã hàng, chỉ dùng khi chỉ định
     # Cách 5 "Nhập tay": JSON {"<id dòng hàng>": số tiền VNĐ}. Đây là cách chia DUY NHẤT phải lưu
     # kết quả, vì con số do người gõ chứ không suy ra được từ dữ liệu khác. Tổng phải bằng đúng
-    # `base_amount` (kiểm khi lưu); cách khác thì cột này để trống.
+    # số quy đổi của giai đoạn hiệu lực (kiểm khi lưu); cách khác thì cột này để trống.
     manual_allocation: Mapped[str] = mapped_column(Text, default="")
     invoice_no: Mapped[str] = mapped_column(String(50), default="")
     invoice_date: Mapped[str] = mapped_column(String(10), default="")
     payment_due_date: Mapped[str] = mapped_column(String(10), default="")    # hạn trả khoản chi phí
     note: Mapped[str] = mapped_column(String(255), default="")
+
+
+class POCostType(Base, AuditMixin):
+    """Danh mục LOẠI CHI PHÍ THU MUA (bao-CR-453), thay bộ mã cứng `ImportCostType`.
+
+    Giữ nguyên SỐ của 15 mã cũ (1..14 và 99) vì chúng đã nằm trong dữ liệu; mã mới cấp
+    từ 15 trở đi và không bao giờ cấp 99. Mã 99 «Chi phí khác» là chỗ rơi mặc định nên
+    không xóa, không ngừng dùng được.
+    """
+
+    __tablename__ = "tab_po_cost_type"
+
+    code: Mapped[int] = mapped_column(SmallInteger, unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(100), default="")
+    group_kind: Mapped[int] = mapped_column(SmallInteger, default=int(CostTypeGroup.SERVICE))
+    # False = khoản không trả cho ai (ví dụ chi phí nội bộ ước tính) → không sinh công nợ.
+    creates_payable: Mapped[bool] = mapped_column(Boolean, default=True)
+    default_supplier_code: Mapped[str] = mapped_column(String(50), default="")
+    default_allocation_method: Mapped[int] = mapped_column(SmallInteger, default=int(AllocationMethod.BY_VALUE))
+    default_vat: Mapped[float] = mapped_column(Numeric(5, 2), default=0)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    note: Mapped[str] = mapped_column(String(500), default="")
+
+
+# 15 mã gốc seed vào danh mục (migration + bộ test). (code, name, group_kind, creates_payable,
+# default_supplier_code, sort_order). Giữ TRÙNG với `IMPORT_COST_TYPE_LABELS` để mã cũ đọc ra đúng tên.
+DEFAULT_COST_TYPES = tuple(
+    (int(t), IMPORT_COST_TYPE_LABELS[t],
+     int(CostTypeGroup.STATE_BUDGET) if t in IMPORT_COST_TAX_TYPES else int(CostTypeGroup.SERVICE),
+     True,
+     STATE_BUDGET_SUPPLIER_CODE if t in IMPORT_COST_TAX_TYPES else "",
+     i * 10)
+    for i, t in enumerate(sorted(ImportCostType, key=int), start=1)
+)
 
 
 class PODelivery(Base, AuditMixin):

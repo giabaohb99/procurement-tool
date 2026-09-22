@@ -89,6 +89,8 @@ import {
 } from '../utils/purchase-order-import-cost'
 import { summarizeShipping } from '../utils/purchase-order-shipping'
 import {
+  COST_STAGE_ESTIMATE,
+  COST_STAGE_FINAL,
   isDeliveryStage,
   isImportOrder,
   isPurchaseOrderApproved,
@@ -355,12 +357,26 @@ export function PurchaseOrderDetailPage() {
         return
       }
     }
-    // bao-CR-319: chi phí lô hàng còn nợ thì nhắc trước — Hoàn thành không chặn,
+    // bao-CR-319: chi phí thu mua còn nợ thì nhắc trước — Hoàn thành không chặn,
     // nhưng người dùng hay tưởng "xong đơn" là "xong tiền".
     if (action === 'complete' && (data.import_cost_summary?.remaining_total ?? 0) > 0.01) {
       const proceed = await confirmDialog({
-        title: 'Chi phí lô hàng còn nợ',
-        message: `Đơn còn ${(data.import_cost_summary?.remaining_total ?? 0).toLocaleString('vi-VN', { maximumFractionDigits: 0 })} đ chi phí lô hàng chưa thanh toán. Vẫn đánh dấu Hoàn thành? Công nợ đó vẫn theo dõi được ở phân hệ Tài chính.`,
+        title: 'Chi phí thu mua còn nợ',
+        message: `Đơn còn ${(data.import_cost_summary?.remaining_total ?? 0).toLocaleString('vi-VN', { maximumFractionDigits: 0 })} đ chi phí thu mua chưa thanh toán. Vẫn đánh dấu Hoàn thành? Công nợ đó vẫn theo dõi được ở phân hệ Tài chính.`,
+        confirmLabel: 'Vẫn hoàn thành',
+        cancelLabel: 'Để sau',
+      })
+      if (!proceed) return
+    }
+    // bao-CR-453: còn dòng chi phí chưa quyết toán thì nhắc — vẫn không chặn.
+    if (
+      action === 'complete' &&
+      (data.cost_stage ?? COST_STAGE_ESTIMATE) < COST_STAGE_FINAL &&
+      (data.import_cost_summary?.lines_not_final ?? 0) > 0
+    ) {
+      const proceed = await confirmDialog({
+        title: 'Chi phí chưa quyết toán',
+        message: `Còn ${data.import_cost_summary?.lines_not_final ?? 0} dòng chi phí chưa quyết toán. Nên chốt Quyết toán trước khi Hoàn thành. Vẫn tiếp tục?`,
         confirmLabel: 'Vẫn hoàn thành',
         cancelLabel: 'Để sau',
       })
@@ -778,17 +794,15 @@ export function PurchaseOrderDetailPage() {
           </CardContent>
         </Card>
 
-        {/* bao-CR-319: thẻ chi phí lô hàng chỉ có ở đơn NHẬP KHẨU. */}
-        {isImportOrder(data) && (
-          <PurchaseOrderImportCostsCard
-            order={data}
-            // Bảng chi phí mở cả khi đơn đã duyệt (cước tàu, thuế về sau) — giống v1.
-            editable={headerEditable || afterApproveEditable}
-            isNew={isNew}
-            suppliers={suppliersData?.items ?? []}
-            onChange={(import_costs) => patch({ import_costs })}
-          />
-        )}
+        {/* bao-CR-453: thẻ chi phí thu mua hiện cho MỌI loại đơn (trước: chỉ nhập khẩu). */}
+        <PurchaseOrderImportCostsCard
+          order={data}
+          // Bảng chi phí mở cả khi đơn đã duyệt (cước tàu, thuế về sau) — giống v1.
+          editable={headerEditable || afterApproveEditable}
+          isNew={isNew}
+          suppliers={suppliersData?.items ?? []}
+          onChange={(import_costs) => patch({ import_costs })}
+        />
 
         {!isNew && <PurchaseOrderPaymentRequestsCard poCode={data.code} />}
 

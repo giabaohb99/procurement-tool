@@ -913,7 +913,7 @@ Ngoài 2 mẫu trên, phiếu liên quan là **Phiếu đề xuất mua hàng h�
 8. Tổng tiền trên header: `subtotal` = SL nhận × đơn giá; `vat` = tiền thuế từ thực nhận; `total` = subtotal + vat; `order_subtotal`/`order_total` = theo SL đặt (dùng cho bản in).
 9. Công nợ hàng: sinh khi `received_qty > 0`; xóa khi `received_qty` về 0. Không có VAT riêng ở cấp đơn vị giao — VAT tính từ `po_item.vat`.
 10. Công nợ vận chuyển: sinh khi carrier được chọn VÀ `shipping_amount > 0`; xóa khi carrier xóa hoặc `shipping_amount = 0`.
-11. Tạo yêu cầu thanh toán từ đơn: khi đơn ở `approved`/`partial`/`received`/`completed` và tổng công nợ còn lại (`unpaid_total`) > 0, người dùng có quyền `payment_request:create` thấy nút "Tạo yêu cầu thanh toán". Popup hiện tối đa 3 tab: **NCC sản xuất** (hàng hóa, `source_type='goods'`), **NCC vận chuyển** (`source_type='shipping'`) và — từ bao-CR-319 P5, chỉ khi đơn có khoản nợ loại này — **Chi phí lô hàng** (`source_type='import_cost'`). Tab mở sẵn là tab đầu tiên có khoản nợ. Mặc định chọn sẵn (tick) toàn bộ khoản nợ hàng hóa; khoản nợ vận chuyển / chi phí lô hàng người dùng tự chọn thêm. Gửi lên `POST /api/payment-requests` — server tự tách mỗi cặp (NCC, loại nợ) một phiếu. Với đơn nhập khẩu còn hai đường tạo YCTT nữa ngay trong thẻ chi phí lô hàng (mục K.4).
+11. Tạo yêu cầu thanh toán từ đơn: khi đơn ở `approved`/`partial`/`received`/`completed` và tổng công nợ còn lại (`unpaid_total`) > 0, người dùng có quyền `payment_request:create` thấy nút "Tạo yêu cầu thanh toán". Popup hiện tối đa 3 tab: **NCC sản xuất** (hàng hóa, `source_type='goods'`), **NCC vận chuyển** (`source_type='shipping'`) và — từ bao-CR-319 P5, chỉ khi đơn có khoản nợ loại này — **Chi phí thu mua** (`source_type='import_cost'`, tên mã giữ nguyên từ bao-CR-319; từ bao-CR-453 áp cho mọi loại đơn). Tab mở sẵn là tab đầu tiên có khoản nợ. Mặc định chọn sẵn (tick) toàn bộ khoản nợ hàng hóa; khoản nợ vận chuyển / chi phí thu mua người dùng tự chọn thêm. Gửi lên `POST /api/payment-requests` — server tự tách mỗi cặp (NCC, loại nợ) một phiếu. Đơn có dòng chi phí còn hai đường tạo YCTT nữa ngay trong thẻ Chi phí thu mua (mục K.4).
 
 12. Khóa dòng hoàn thành: dòng hàng có `progress_status = 'Hoàn thành'` hoặc `'Hủy đơn'` bị khóa hoàn toàn — không sửa thông tin sản phẩm, không thêm/sửa/xóa lần giao trong popup chi tiết dòng. Backend bỏ qua (skip) dòng bị khóa khi lưu đơn (không cho phép sửa kể cả qua API).
 
@@ -1151,160 +1151,244 @@ thì tạo một **vai trò riêng** chỉ tick ô "Xuất" của màn tương �
 
 ---
 
-## K. Đơn nhập khẩu — chi phí lô hàng (`tab_po_import_cost`) — bao-CR-319 P3..P5
+## K. Chi phí thu mua (`tab_po_cost`) — bao-CR-319 P3..P5 · bao-CR-347 · **bao-CR-453**
 
-Chỉ áp cho đơn có `order_type = 2` (Nhập khẩu, mục A.18). Thẻ **"Chi phí lô hàng nhập khẩu"** nằm ngay
-dưới bảng Dòng hàng trên màn chi tiết ĐMH, gồm: bảng chi phí phẳng (K.1) · dải thẻ số (K.3) · khối
-"Thanh toán chi phí theo nhà cung cấp" (K.4) · panel "Chi phí theo dòng hàng" chỉ đọc (K.2).
+**Lịch sử.** Mục này ra đời ở bao-CR-319 dưới tên *Chi phí lô hàng nhập khẩu* (bảng `tab_po_import_cost`,
+chỉ đơn `order_type = 2`). **bao-CR-453 (22/09/2026)** mở cho **mọi loại đơn**, đổi tên bảng thành
+`tab_po_cost`, thay cờ *Dự kiến / Thực tế* bằng **ba giai đoạn Dự toán → Tạm tính → Quyết toán** và đưa
+bộ loại chi phí vào **danh mục người dùng quản** (K.6). Thiết kế đầy đủ, bảy điểm khách đã chốt và lý do
+từng lựa chọn: `doc/erp/nhap-khau/02-chi-phi-thu-mua.md`. Ba tên mã lịch sử **cố ý giữ nguyên** vì đã nằm
+trong dữ liệu và trong hai giao diện: `source_type = import_cost` trên `tab_payable`, khóa
+`import_costs` / `import_cost_summary` / `import_cost_allocation` của API chi tiết ĐMH; chỉ nhãn người
+dùng thấy đổi thành *Chi phí thu mua*.
 
-**Ranh giới.** Đây là landed cost nhưng hệ CHƯA có phân hệ hóa đơn nên **không tính giá vốn / giá nhập
-kho, không lưu kết quả phân bổ xuống cột nào** — chỉ lưu chi phí, sinh công nợ và in báo cáo. Vài đơn
-một năm nên không làm custom-field engine.
+Thẻ **"Chi phí thu mua"** nằm ngay dưới bảng Dòng hàng trên màn chi tiết ĐMH, gồm: dải giai đoạn + nút
+chốt (K.0) · bảng chi phí ba cột giai đoạn (K.1) · bốn ô tổng (K.3) · khối "Thanh toán chi phí theo nhà
+cung cấp" (K.4) · panel "Chi phí theo dòng hàng" chỉ đọc có nút chọn giai đoạn (K.2). Đơn trong nước chưa
+có dòng nào thì thẻ thu gọn còn tiêu đề + nút *Thêm chi phí*.
 
-### K.1 Bảng chi phí (P3)
+**Ranh giới (giữ từ bao-CR-319).** Đây là landed cost nhưng hệ CHƯA có phân hệ hóa đơn nên **không tính
+giá vốn / giá nhập kho, không lưu kết quả phân bổ xuống cột nào** — chỉ lưu chi phí, sinh công nợ và in
+báo cáo. Giá **hàng** ba giai đoạn (đơn giá dòng ĐMH) là CR riêng sau, không thuộc mục này.
+
+### K.0 Ba giai đoạn (bao-CR-453)
+
+| Khái niệm | Luật |
+|---|---|
+| `CostStage` | SMALLINT + IntEnum: `1` Dự toán · `2` Tạm tính · `3` Quyết toán (`COST_STAGE_LABELS`). |
+| `tab_purchase_order.cost_stage` | Giai đoạn hiện hành của **cả đơn**, mặc định `1` cho mọi đơn mới bất kể loại (đơn không có dòng chi phí thì giai đoạn vô hại). Chỉ đi lên bằng `advance_cost_stage`, lùi bằng `reopen_cost_stage`. |
+| `tab_po_cost.line_stage` | Giai đoạn riêng của dòng, `1` hoặc `3`. **Giai đoạn hiệu lực** của dòng = max(đơn, dòng) (`effective_stage_of`) — một dòng được *quyết toán riêng* khi hóa đơn về sớm. |
+| Cột hiện hành | Ô của giai đoạn hiệu lực gõ được và tô nền; cột đã qua khóa; cột chưa tới mờ. Server chỉ nhận số ở cột hiệu lực; số gửi cho cột khác **bị bỏ qua** (không 400, để lưu tự động không kẹt). |
+| Số hiệu lực | Số của giai đoạn cao nhất **đã có số** trên dòng (`filled_stage_of`). Dùng cho bản in, cột Lệch, `cost_total` và báo cáo khi không chỉ định giai đoạn. |
+| Lệch | Số hiệu lực quy đổi trừ Dự toán quy đổi, kèm %. Dòng chưa có Dự toán thì Lệch trống, không coi là 100 %. |
+| **Chốt tạm tính** (1 → 2) | `purchase_order.write`. Ô Tạm tính trống thì chép **số tiền + tỷ giá** Dự toán sang, đã có số thì giữ. Bảng gửi kèm request để lưu rồi chốt trong một transaction. |
+| **Chốt quyết toán** (2 → 3) | `purchase_order.write`. Chép Tạm tính sang ô Quyết toán trống, rồi chạy đồng bộ công nợ (K.4). Hộp xác nhận nêu số dòng sẽ thành công nợ và số dòng chưa có NCC. Chốt thẳng 1 → 3 (`target = 3`) được: hệ chép theo đúng thứ tự, ghi hai dòng audit. |
+| **Quyết toán riêng dòng** | `purchase_order.write`, chỉ khi đơn chưa ở Quyết toán: `line_stage = 3`, chép số hiệu lực sang ô Quyết toán nếu trống, đồng bộ công nợ cho riêng dòng đó. |
+| **Mở lại** (3 → 2, 2 → 1, hoặc một dòng đã quyết toán riêng) | `purchase_order.approve` + **lý do ≥ 10 ký tự** ghi vào audit. Dòng có công nợ **đã chi một phần** thì giữ `line_stage = 3` và giữ nợ; dòng khác gỡ nợ chưa chi (như luật hủy đơn). Số ở cột đã mở không xóa, chỉ mở khóa. Mở lại một dòng đã chi → 400. |
+| Audit | `core/action_catalog.py`: `cost_stage_prov` (EDIT) · `cost_stage_final` (APPROVE) · `cost_stage_reopen` (APPROVE, `note` = lý do) · `cost_line_final` (EDIT, `note` = "#id dòng") · `cost_line_reopen` (APPROVE). Ngày và người chốt trên dải giai đoạn đọc từ đây; đơn cũ không có dòng audit thì dải ghi "chốt khi nâng cấp". `tab_change_log` (bao-CR-402) tự ghi trước/sau cho `POCost`. |
+
+API mới (bên cạnh `GET/PATCH /api/purchase-orders/{id}` giữ khóa cũ):
+
+| Method | Đường dẫn | Body | Quyền |
+|---|---|---|---|
+| `POST` | `/{pid}/cost-stage/advance` | `{ "target": 2 \| 3, "import_costs": [...] }` | `purchase_order.write` |
+| `POST` | `/{pid}/cost-stage/reopen` | `{ "target": 1 \| 2, "reason": "..." }` | `purchase_order.approve` |
+| `POST` | `/{pid}/costs/{cost_id}/finalize` | rỗng | `purchase_order.write` |
+| `POST` | `/{pid}/costs/{cost_id}/reopen` | `{ "reason": "..." }` | `purchase_order.approve` |
+
+`GET /{id}` trả `cost_stage`, `cost_stage_label`; mỗi phần tử `import_costs[]` có `estimate_ / provisional_ /
+final_` × `amount | rate | base`, `line_stage`, `effective_stage`, `effective_stage_label`, `effective_base`
+(`base_amount` = cùng số, giữ tên cho bản in cũ), `variance_base`, `variance_pct`, `cost_type_name`,
+`creates_payable`, `payable_id`, `paid_amount`, `remaining`, `payable_status`. **Bỏ** `amount`,
+`exchange_rate`, `cost_status`, `cost_status_label`.
+
+### K.1 Bảng chi phí (P3, sửa ở bao-CR-453)
 
 Mỗi dòng là **một khoản chi phí của một nhà cung cấp** (hãng tàu · đơn vị khai thuê · kho bãi · bảo
 hiểm · *Ngân sách nhà nước* cho các khoản thuế). NCC khai ở **từng dòng**, không lấy theo NCC bán hàng
 của đơn. Bảng **mở cả khi đơn đã duyệt** (`block_edit_approved_order` bỏ qua khóa `import_costs`) vì
-hóa đơn cước, tờ khai thuế, phí lưu bãi đều về sau ngày duyệt.
+hóa đơn cước, tờ khai thuế, phí lưu bãi đều về sau ngày duyệt; đơn *Hoàn thành* / *Hủy* thì chỉ xem.
+Cột: **#** · Loại chi phí · Diễn giải · NCC · Tiền tệ · **Dự toán** · **Tạm tính** · **Quyết toán** · **Lệch**
+· VAT % · Đã chi · Còn lại · Số HĐ · Ngày HĐ · Hạn TT · Cách phân bổ · Mã chỉ định · Ghi chú · Hành động.
 
 | Cột | Ý nghĩa / luật |
 |-----|----------------|
-| `cost_type` | SMALLINT + IntEnum `ImportCostType`: 1 Cước vận tải quốc tế · 2 Phí địa phương tại cảng · 3 Phí dịch vụ hải quan · 4 Thuế nhập khẩu · 5 Thuế GTGT hàng nhập · 6 Thuế TTĐB · 7 Thuế BVMT · 8 Kiểm tra chuyên ngành · 9 Bảo hiểm · 10 Vận chuyển nội địa · 11 Lưu kho/bãi · **12 Dịch vụ hỗ trợ nhập khẩu, vận chuyển · 13 Chi tiền hư container · 14 Lãi trả chậm** (ba mã thêm ở bao-CR-347, đánh số tiếp chứ **không** đánh lại từ đầu vì mã cũ đã nằm trong dữ liệu prod) · 99 Khác. Mã lạ đẩy về 99. Chọn nhóm thuế (4..7) thì giao diện tự điền NCC `NSNN` *Ngân sách nhà nước* (seed ở migration `ed610675320b`, `downgrade` cố ý giữ lại vì có thể đã gắn công nợ thật). **Loại chi phí ĐƯỢC TRÙNG trong một đơn** (cố ý, khách hỏi 09/09): một dòng = một hóa đơn của một NCC, nên hai hóa đơn cước của hai chặng, hay hai lần lưu bãi, là hai dòng cùng loại. |
-| `description` | Diễn giải tự do. Ô trên bảng **xuống dòng và cao theo nội dung** (như Tên hàng), không cắt chữ; Ghi chú cũng vậy (09/09). |
+| `cost_type` | SMALLINT, **mã trong danh mục `tab_po_cost_type`** (K.6). Bộ 15 mã gốc giữ nguyên số: 1 Cước vận tải quốc tế · 2 Phí địa phương tại cảng · 3 Phí dịch vụ hải quan · 4 Thuế nhập khẩu · 5 Thuế GTGT hàng nhập · 6 Thuế TTĐB · 7 Thuế BVMT · 8 Kiểm tra chuyên ngành · 9 Bảo hiểm · 10 Vận chuyển nội địa · 11 Lưu kho/bãi · 12 Dịch vụ hỗ trợ nhập khẩu, vận chuyển · 13 Chi tiền hư container · 14 Lãi trả chậm (ba mã thêm ở bao-CR-347, đánh số tiếp vì mã cũ đã nằm trong dữ liệu prod) · 99 Khác. Enum `ImportCostType` giữ làm nhãn dự phòng; mã không có trong danh mục thì nhãn rơi về 99. Chọn loại thì giao diện tự điền NCC mặc định / cách phân bổ / VAT của loại **nếu ô đang trống** (nhóm thuế 4..7 mặc định NCC `NSNN`, seed ở migration `ed610675320b`). **Loại chi phí ĐƯỢC TRÙNG trong một đơn** (một dòng = một hóa đơn của một NCC). Loại đã tắt: dòng đang mang vẫn lưu được và hiện tên kèm "(đã tắt)", ô chọn không liệt kê. |
+| `description` | Diễn giải tự do. Ô trên bảng **xuống dòng và cao theo nội dung**; Ghi chú cũng vậy (09/09). |
 | `supplier_code` / `supplier_name` | NCC nhận tiền của khoản này. Trống thì dòng vẫn lưu nhưng **không sinh công nợ** (K.4). |
-| `currency` / `exchange_rate` | Cùng đồng tiền với đơn thì theo tỷ giá đơn; **khác đồng tiền thì tỷ giá = 1, không mượn tỷ giá đơn** (chi phí VNĐ trong đơn USD mà nhân 25.000 là phồng lên 25.000 lần). |
-| `amount` | Tiền **nguyên tệ TRƯỚC thuế**. |
-| `vat` | % thuế GTGT của khoản chi phí (0 với các dòng thuế nộp ngân sách). |
-| `base_amount` | = `amount × (1 + vat%) × tỷ giá` — **đã gồm VAT, đã quy đổi**. Tính phía server (`import_cost_base`). Không đặt tên kiểu `amount_vnd` (xem B.32). |
-| `allocation_method` | SMALLINT + IntEnum `AllocationMethod`: 1 theo giá trị (mặc định) · 2 theo khối lượng (`weight_kg`) · 3 theo số lượng (`qty_order`) · 4 chỉ định một mã hàng · 5 **nhập tay** (09/09). Chọn 4 mà bỏ trống mã thì hạ về 1. Cột hiện ngay sau Diễn giải để không bị đẩy khuất ngoài màn hình. |
+| `currency` | Một đồng tiền cho cả ba giai đoạn. |
+| `estimate_amount` · `provisional_amount` · `final_amount` | Numeric(18,2), **NULL = chưa có số** (khác 0 = gõ 0 thật, vì luật chép sang chỉ chép vào ô NULL). Tiền **nguyên tệ TRƯỚC thuế** của từng giai đoạn. |
+| `estimate_rate` · `provisional_rate` · `final_rate` | Numeric(18,6), mặc định 1. **Mỗi giai đoạn một tỷ giá** (điểm 7 khách chốt). Cùng đồng tiền với đơn thì lấy theo tỷ giá đơn; **khác đồng tiền thì tỷ giá = 1, không mượn tỷ giá đơn** (chi phí VNĐ trong đơn USD mà nhân 25.000 là phồng lên 25.000 lần). |
+| `estimate_base` · `provisional_base` · `final_base` | = `amount × (1 + vat%) × rate` — **đã gồm VAT, đã quy đổi**, tính phía server (`cost_base_of`, `compute_cost_bases`), lưu để báo cáo cộng bằng IN. Không đặt tên kiểu `amount_vnd` (B.32). |
+| `line_stage` | `1` hoặc `3`, xem K.0. Index `(po_id, line_stage)`. |
+| `vat` | % thuế GTGT của khoản (0 với các dòng thuế nộp ngân sách), dùng chung ba giai đoạn. |
+| `allocation_method` | SMALLINT + IntEnum `AllocationMethod`: 1 theo giá trị (mặc định) · 2 theo khối lượng (`weight_kg`) · 3 theo số lượng (`qty_order`) · 4 chỉ định một mã hàng · 5 **nhập tay** (09/09). Chọn 4 mà bỏ trống mã thì hạ về 1. |
 | `allocation_target` | Mã hàng đích khi chọn cách 4. Là **mã** chứ không phải id dòng vì dòng ĐMH được phép trùng mã. |
-| `manual_allocation` | TEXT JSON `{"<id dòng hàng>": số tiền VNĐ}`, chỉ dùng khi chọn cách 5 (cách khác lưu rỗng). Đây là cách chia **duy nhất phải lưu kết quả** vì con số do thu mua gõ để cân với chứng từ, không suy ra được từ dữ liệu khác. Khóa là **id dòng** (không phải mã hàng) vì gõ tay thì mỗi dòng một số kể cả trùng mã; khóa của dòng đã xóa bị bỏ khi lưu. Tổng các dòng phải bằng `base_amount` (dung sai 1 đ), lệch hoặc chưa gõ dòng nào thì **400** ngay lúc Lưu. Migration `b7e2c4d9a1f3`. |
-| `invoice_no` / `invoice_date` | Số và ngày hóa đơn của khoản chi phí → chép sang công nợ (`invoice_no`, `incur_date`). |
+| `manual_allocation` | TEXT JSON `{"<id dòng hàng>": số tiền VNĐ}`, chỉ dùng khi chọn cách 5. **Một bộ số dùng chung cho ba giai đoạn**: tổng phải khớp số quy đổi **hiệu lực** của dòng (dung sai 1 đ), lệch hoặc chưa gõ dòng nào thì **400** lúc Lưu. Khóa là **id dòng**; khóa của dòng đã xóa bị bỏ khi lưu. Migration `b7e2c4d9a1f3`. |
+| `invoice_no` / `invoice_date` | Số và ngày hóa đơn của khoản → chép sang công nợ (`invoice_no`, `incur_date`). |
 | `payment_due_date` | Hạn thanh toán của khoản; có thì **ưu tiên** hơn hạn tính từ điều khoản NCC. |
-| `cost_status` | **bao-CR-347.** SMALLINT + IntEnum `ImportCostStatus`: `1` Dự kiến · `2` Thực tế (mặc định). **Giao diện KHÔNG còn ô này** — đại ca chốt 10/09/2026 bỏ hẳn khái niệm Dự kiến khỏi màn hình, thu mua chỉ gõ chi phí khi đã có số thật, nên mọi dòng tạo mới đều là `2`. Cột giữ lại làm **tấm lưới an toàn**: `is_actual_cost()` / `actual_costs()` vẫn lọc, để dòng dự kiến sót lại từ đợt thử nghiệm không sinh công nợ, không vào `cost_total`, không chia về dòng hàng và không chặn Hoàn thành đơn (K.4 mục 8). Dòng cũ chưa khai cột này (dữ liệu trước CR-347) đọc thành **Thực tế** nên prod không đổi số. |
 | `note` | Ghi chú. |
+| ~~`amount`, `exchange_rate`, `base_amount`, `cost_status`~~ | **Đã bỏ ở bao-CR-453** (migration `05a62d38a47a`, K.7). `cost_status` từng là tấm lưới *Dự kiến / Thực tế* của bao-CR-347 (giao diện đã ẩn từ 10/09/2026); nay thay bằng ba giai đoạn nên không còn hai nguồn sự thật. |
 
 Quy ước API: payload `PATCH` **không gửi** khóa `import_costs` (`None`) = *không đụng bảng*; gửi mảng
 rỗng `[]` = *xóa hết*. Hai nghĩa khác nhau — gộp lại thì mọi lần lưu lần giao đều quét sạch bảng chi phí.
+Phần tử gửi lên theo `POImportCostIn`: cặp `<stage>_amount` / `<stage>_rate` của từng giai đoạn; server
+chỉ ghi cột hiệu lực (K.0) và tính lại ba `_base`.
 
 **Khóa VAT dòng hàng = 0 ở BACKEND** (`_save_items`) cho đơn nhập khẩu, không chỉ ẩn trên giao diện:
 hóa đơn NCC nước ngoài không có thuế GTGT Việt Nam; thuế GTGT hàng nhập nộp ngân sách theo tờ khai và
 đã khai thành một dòng chi phí. Để người dùng gõ VAT ở dòng hàng nữa là cộng thuế HAI LẦN và ghi nợ
-khoản thuế đó cho chính người bán. Đơn trong nước không đổi.
-Giao diện đơn nhập khẩu **ẩn hẳn** VAT dòng hàng (khách yêu cầu 09/09/2026, đỡ hai cột vô nghĩa): cột
-*VAT%* + *Đơn giá (Sau VAT)* ở bảng dòng hàng, hai ô cùng tên ở popup chi tiết dòng, cột *VAT%* ở bảng lần
-giao đều `!isImport`; bản in NK khối A vốn không có cột này. Đơn trong nước hiện như cũ. Backend vẫn ép 0
-nên ẩn giao diện không làm lọt thuế.
+khoản thuế đó cho chính người bán. Đơn trong nước không đổi. Giao diện đơn nhập khẩu **ẩn hẳn** VAT dòng
+hàng (khách yêu cầu 09/09/2026): cột *VAT%* + *Đơn giá (Sau VAT)* ở bảng dòng hàng, hai ô cùng tên ở popup
+chi tiết dòng, cột *VAT%* ở bảng lần giao đều `!isImport`. Backend vẫn ép 0 nên ẩn giao diện không làm lọt thuế.
 
-### K.2 Phân bổ chỉ để xem (P4)
+**Popup chi tiết một khoản chi phí** (09/09, khách yêu cầu "như dòng hàng"; bao-CR-453 thêm ba khối giai
+đoạn): cột cuối bảng là *Hành động* gồm cây bút (mọi trạng thái), thùng rác (khi còn sửa được) và menu
+*Quyết toán dòng này* / *Mở lại dòng*. Cây bút mở popup *Chi tiết chi phí #n* dạng form hai cột, trong đó
+**mỗi giai đoạn một khối**: số tiền nguyên tệ · tỷ giá · quy đổi · tình trạng (đã chốt / hiện hành / chưa
+tới). Popup **dùng chung state với bảng** (`setCost`) và vẫn phải bấm **Lưu của đơn**; đơn khóa thì popup
+chỉ xem. Đầu popup ghi vì sao dòng chưa thành công nợ (chưa quyết toán · chưa Lưu · chưa chọn NCC hoặc
+tiền 0 · đơn chưa duyệt · loại không sinh công nợ).
 
-Hàm thuần `service.allocate_import_costs(items, costs)` chạy trong `_out` (khóa `import_cost_allocation`)
-nên màn hình, bản in và YCTT đọc cùng một con số. **Không lưu, không đẩy vào kho.** Cơ sở chia cộng lại
-bằng 0 (chưa gõ kg, SL 0, mã chỉ định không có trên đơn) thì **lùi về theo giá trị**, giá trị cũng 0
-thì chia đều; khi lùi ghi `warnings` + `effective_method` khác `allocation_method` để giao diện / bản in
-đánh dấu (*) chứ không đổi cách trong im lặng. Làm tròn 2 số lẻ, phần lệch **dồn vào dòng hàng cuối**
-trong số các dòng nhận khoản đó nên tổng luôn khớp. Panel "Chi phí theo dòng hàng" lồng NGƯỢC: dòng hàng
-là CHA, mở ra thấy từng khoản + cách chia + tỷ lệ; tính từ dữ liệu ĐÃ LƯU nên có dòng nhắc "sửa xong bấm
-Lưu", kèm nút *Mở tất cả / Thu gọn*. Nhãn cột cố ý không dùng chữ "gánh": *Chi phí phân bổ* · *Tỷ lệ chi
-phí* · *Số tiền (đ)* (09/09, theo góp ý khách).
+### K.2 Phân bổ chỉ để xem (P4, thêm giai đoạn ở bao-CR-453)
 
-**Cách 5 "Nhập tay" (09/09, khách chốt):** thu mua thường phải gõ tay để cân số với chứng từ. Chọn *Nhập
-tay* ở cột Cách phân bổ thì bảng "Chi phí theo dòng hàng" tự mở mọi dòng, trong mỗi dòng hàng hiện thêm
-một dòng con nền vàng có **ô gõ số tiền** cho khoản đó (số đang chia theo cách cũ được điền sẵn để chỉ
-sửa vài dòng cần cân); dải báo trên panel cộng sống *đã nhập / phải bằng / lệch*. **Chỉ có hiệu lực khi
-bấm Lưu của đơn** — không có nút lưu riêng, đúng ý khách "sửa điều kiện thì phải bấm Lưu". Giao diện chặn
-sớm khi lệch, backend chặn thật (400) trong `_save_import_costs`. Lúc xem, `allocate_import_costs` vẫn kiểm
-lại: tổng khớp thì dùng nguyên số đã gõ (`effective_method = 5`, tỷ lệ = số gõ / khoản), dòng không gõ thì
-không nhận khoản; lệch (dòng hàng bị xóa sau đó, số tiền khoản đổi) thì lùi về theo giá trị + `warnings`
-như các cách khác. Giữ nguyên "Chỉ định một mã hàng" một mã; không làm popup, không gõ tay tỷ lệ.
+Hàm thuần `service.allocate_import_costs(items, costs, stage)` chạy trong `_out`; khóa
+`import_cost_allocation` nay trả **bốn bộ** `{"1": ..., "2": ..., "3": ..., "effective": ...}` (mỗi bộ đúng
+hình cũ) để panel "Chi phí theo dòng hàng" đổi nút giai đoạn **không gọi lại server**; nút mặc định =
+giai đoạn hiện hành của đơn, giai đoạn chưa có số nào thì nút mờ. Dòng chi phí không có số ở giai đoạn
+đang xem thì không tham gia chia. Màn hình, bản in và YCTT đọc cùng một con số. **Không lưu, không đẩy
+vào kho.** Cơ sở chia cộng lại bằng 0 (chưa gõ kg, SL 0, mã chỉ định không có trên đơn) thì **lùi về theo
+giá trị**, giá trị cũng 0 thì chia đều; khi lùi ghi `warnings` + `effective_method` khác
+`allocation_method` để giao diện / bản in đánh dấu (*). Làm tròn 2 số lẻ, phần lệch **dồn vào dòng hàng
+cuối** nên tổng luôn khớp. Panel lồng NGƯỢC: dòng hàng là CHA, mở ra thấy từng khoản + cách chia + tỷ lệ;
+tính từ dữ liệu ĐÃ LƯU nên có dòng nhắc "sửa xong bấm Lưu", kèm nút *Mở tất cả / Thu gọn*. Nhãn cột:
+*Chi phí phân bổ* · *Tỷ lệ chi phí* · *Số tiền (đ)* (09/09).
 
-**Popup chi tiết một khoản chi phí (09/09, khách yêu cầu "như dòng hàng"):** cột cuối bảng chi phí đổi
-thành *Hành động* gồm cây bút (mọi trạng thái) và thùng rác (chỉ khi còn sửa được). Cây bút mở popup
-*Chi tiết chi phí #n* bày đủ mọi trường theo dạng form hai cột (loại · NCC · diễn giải · tiền tệ · tỷ giá
-· số tiền · VAT · quy đổi · cách phân bổ · mã chỉ định / tình trạng nhập tay · số và ngày hóa đơn · hạn
-thanh toán · công nợ đã chi / còn lại · ghi chú). Popup **dùng chung state với bảng** (`setCost`): sửa ở
-đâu cũng là một, và vẫn phải bấm **Lưu của đơn** như mọi thay đổi trên bảng; đơn khóa thì popup chỉ xem.
-Đầu popup ghi vì sao dòng chưa thành công nợ (dòng mới chưa Lưu · chưa chọn NCC hoặc tiền 0 · đơn chưa
-duyệt) để thu mua khỏi đoán.
+**Cách 5 "Nhập tay" (09/09, khách chốt):** chọn *Nhập tay* thì panel tự mở mọi dòng, trong mỗi dòng hàng
+hiện một dòng con nền vàng có **ô gõ số tiền** cho khoản đó (số đang chia theo cách cũ được điền sẵn);
+dải báo cộng sống *đã nhập / phải bằng / lệch*. **Chỉ có hiệu lực khi bấm Lưu của đơn.** Giao diện chặn
+sớm khi lệch, backend chặn thật (400) trong `_save_import_costs`. Lúc xem, tổng khớp thì dùng nguyên số
+đã gõ (`effective_method = 5`), lệch thì lùi về theo giá trị + `warnings`. Không gõ tay tỷ lệ, không
+nhiều mã chỉ định.
 
 Bản in thứ ba **"In Đơn nhập khẩu"** (`PrintPurchaseOrderImport.tsx`, route
-`/print/purchase-order-import/:id`, chỉ hiện với đơn NK) gồm 4 khối: A hàng hóa (nguyên tệ + quy đổi,
-cột kg, VAT 0) · B chi phí lồng hai tầng theo loại kèm NCC · C phải trả theo từng NCC (NCC bán hàng +
-`import_cost_summary.by_supplier`) · D chi phí chia về dòng hàng. Hai mẫu in ở mục E không đụng.
+`/print/purchase-order-import/:id`, chỉ đơn NK) gồm 4 khối: A hàng hóa · B chi phí lồng hai tầng theo
+loại kèm NCC · C phải trả theo từng NCC · D chi phí chia về dòng hàng. Khối B, C, D đọc **số hiệu lực**
+và tiêu đề khối ghi rõ giai đoạn "(Quyết toán)" / "(Tạm tính)" / "(Dự toán)" — bản in là chứng từ của
+một giai đoạn, không in ba cột. Hai mẫu in ở mục E không đụng.
 
-### K.3 Dải thẻ số
+### K.3 Bốn ô tổng (bao-CR-453 thay dải năm thẻ)
 
-Năm thẻ ngay dưới bảng chi phí: **Tiền hàng quy đổi** (`goods_base_total`) · **Tổng chi phí NK**
-(`cost_total`, kèm % so tiền hàng) · **Đã chi** (`paid_total`) · **Còn phải chi** (`remaining_total`) ·
-**Tổng giá trị lô hàng** (`landed_total` = tiền hàng + chi phí). Hai thẻ Đã chi / Còn phải chi chỉ hiện khi đơn đã đủ điều kiện sinh nợ
-(K.4) hoặc đã có tiền chi. Số lấy từ `import_cost_summary` trả về trong `_out`.
+Dưới bảng: **Dự toán** (`estimate_total`) · **Tạm tính** (`provisional_total`) · **Quyết toán**
+(`final_total`) · **Lệch** (`variance_total`, kèm `variance_pct`; số hiệu lực trừ dự toán). Một dòng nhỏ
+bên dưới: *Tiền hàng quy đổi* (`goods_base_total`) · *Tổng chi phí* (`cost_total` = tổng số hiệu lực,
+kèm % so tiền hàng) · *Đã chi* (`paid_total`) · *Còn phải chi* (`remaining_total`) · *Tổng giá trị lô
+hàng* (`landed_total`); *Đã chi / Còn phải chi* chỉ hiện khi đơn đã đủ điều kiện sinh nợ hoặc đã có tiền
+chi. Cuối bảng có dòng chỉ xem **Phí vận chuyển (theo lần giao)** = tổng `shipping_amount` các lần giao
+(`shipping_total`), chỉ điền cột Quyết toán, **không cộng vào bốn ô tổng** vì đã có công nợ `shipping` và
+YCTT riêng. `import_cost_summary` còn trả `stage`, `stage_label`, `lines_not_final`,
+`lines_without_supplier` cho hộp Hoàn thành (K.4 mục 8).
 
-### K.4 Công nợ từng dòng chi phí + Yêu cầu thanh toán (P5)
+### K.4 Công nợ từng dòng chi phí + Yêu cầu thanh toán (P5, sửa ở bao-CR-453)
 
 Dùng lại bảng `tab_payable` — **không dựng luồng công nợ thứ hai**. Mỗi dòng chi phí thành **một khoản
 nợ** `source_type = ref_type = 'import_cost'`, `ref_id` = id dòng chi phí, `po_id`/`po_code` = đơn.
-Nhãn hiển thị "Chi phí nhập khẩu" dùng chung ở màn Công nợ, YCTT, dashboard NCC, xuất Excel
+Nhãn hiển thị **"Chi phí thu mua"** dùng chung ở màn Công nợ, YCTT, dashboard NCC, xuất Excel
 (`frontend/src/utils/payable.ts`, `payable/export.py`).
 
-Luật đồng bộ (`sync_import_cost_payables`, idempotent, gọi sau mỗi lần lưu bảng chi phí và mỗi lần đổi
-trạng thái đơn):
+Luật đồng bộ (`sync_import_cost_payables`, idempotent, gọi sau mỗi lần lưu bảng chi phí, mỗi lần chốt /
+mở lại giai đoạn và mỗi lần đổi trạng thái đơn):
 
 1. Đơn ở `approved` / `partial` / `received` / `completed` (`IMPORT_COST_PAYABLE_STATUSES`) mới sinh nợ.
-   Nháp / chờ duyệt là số ước tính; hủy / từ chối thì không còn gì phải trả.
-2. Dòng 0 đồng hoặc chưa khai NCC không thành nợ; đang có nợ mà bỏ NCC → gỡ nợ (nếu chưa chi).
-3. `amount` công nợ = gốc trước VAT đã quy đổi, `vat` = tiền thuế, `total` = `base_amount` — cùng quy
-   ước với nợ hàng. `incur_date` = ngày hóa đơn của dòng, trống thì lấy ngày đặt hàng. `due_date` ưu tiên
-   `payment_due_date` của dòng, trống thì tính theo điều khoản NCC (`debt_days`).
-4. Sửa số tiền / NCC / hóa đơn của dòng → cùng khoản nợ cập nhật theo (khóa theo `ref_id`).
-5. **Dòng đã chi (paid_amount > 0) thì cấm xóa** (`block_delete_paid_import_cost`, 400 "đã chi") — xóa là
-   mất chỗ đối chiếu số đã trả. Sửa số tiền hoặc ghi chú thay vì xóa.
+2. **Chỉ dòng có giai đoạn hiệu lực = Quyết toán** (`is_final_cost(row, po)`, thay `is_actual_cost` của
+   bao-CR-347) **và loại có `creates_payable`** (K.6) mới thành nợ. Dòng 0 đồng hoặc chưa khai NCC không
+   thành nợ; đang có nợ mà bỏ NCC / mở lại giai đoạn → gỡ nợ (nếu chưa chi).
+3. `amount` công nợ = `final_amount × final_rate` (gốc trước VAT đã quy đổi), `vat` = tiền thuế, `total` =
+   `final_base`. `incur_date` = ngày hóa đơn của dòng, trống thì lấy ngày đặt hàng. `due_date` ưu tiên
+   `payment_due_date`, trống thì tính theo điều khoản NCC (`debt_days`).
+4. Sửa số Quyết toán / NCC / hóa đơn của dòng → cùng khoản nợ cập nhật theo (khóa theo `ref_id`). Hạ số
+   xuống dưới số đã chi → **400** "đã chi X".
+5. **Dòng đã chi (paid_amount > 0) thì cấm xóa** (`block_delete_paid_import_cost`). Dòng đã quyết toán
+   nhưng chưa chi: xóa được, gỡ nợ.
 6. Hủy / từ chối đơn: gỡ khoản nợ chưa chi, **giữ** khoản đã chi (cùng cách với nợ hàng khi hủy đơn).
-7. `unpaid_total` trên header cộng cả phần còn lại của nợ chi phí (B.29). Báo cáo công nợ theo ngày
-   (`report/controller.py`) cộng nợ chi phí vào tổng nhưng **không đếm vào cột hàng**.
-8. **Đơn NHẬP KHẨU chỉ được Hoàn thành khi trả đủ chi phí lô hàng** (`block_complete_unpaid_import_costs`,
-   gọi trong `POST /{id}/complete` sau khi đã kiểm dòng hàng; khách chốt "mức chặt" 09/09/2026). Duyệt từng
-   dòng chi phí có tiền: chưa thành công nợ (chưa chọn NCC / chưa Lưu đơn) hoặc còn lại > 0,01 đ (tính
-   `total - paid_amount`, không đọc cột `remaining` tính sẵn) → 400 liệt kê từng khoản "Diễn giải (NCC): còn
-   X đ". **Đơn trong nước không đổi** (chi phí lô hàng vốn không có). Giao diện: hộp xác nhận Hoàn thành nhắc
-   trước số còn lại (`import_cost_summary.remaining_total`) để khỏi bấm rồi ăn lỗi. Tiến độ từng dòng hàng
-   vẫn chỉ xét nợ hàng (`is_line_paid`), nên dòng hàng có thể "Hoàn thành" trước khi đơn đóng được.
+7. `unpaid_total` trên header cộng cả phần còn lại của nợ chi phí (B.29). Báo cáo công nợ theo ngày cộng
+   nợ chi phí vào tổng nhưng **không đếm vào cột hàng**.
+8. **Hoàn thành đơn** (`POST /{id}/complete`, sau khi kiểm dòng hàng): đơn **có ít nhất một dòng chi phí**
+   thì phải ở **Quyết toán** (`block_complete_not_final_costs`, 400 "Chốt quyết toán chi phí trước khi
+   Hoàn thành"); đơn không có dòng nào thì không chặn và hệ **tự đặt `cost_stage = 3`** khi Hoàn thành.
+   Đơn **NHẬP KHẨU** giữ thêm luật chặt bao-CR-319 (khách chốt 09/09/2026):
+   `block_complete_unpaid_import_costs` duyệt từng dòng có tiền ở cột Quyết toán — chưa thành công nợ hoặc
+   còn lại > 0,01 đ → 400 liệt kê "Diễn giải (NCC): còn X đ". Đơn trong nước **không** có luật trả đủ.
+   Hộp xác nhận Hoàn thành nhắc trước giai đoạn hiện hành, số dòng chưa quyết toán và còn phải chi. Tiến
+   độ từng dòng hàng vẫn chỉ xét nợ hàng (`is_line_paid`).
 
 Tạo YCTT từ nợ chi phí — **YCTT chỉ nhận một NCC / một loại nợ mỗi phiếu**, nên có ba đường, cả ba đều
 đưa về `/payment-requests/new?payables=<id,id,...>` và server tự tách phiếu:
 
 - **Khối "Thanh toán chi phí theo nhà cung cấp"**: mỗi NCC một dòng Số khoản · Phải trả · Đã chi · Còn lại
-  và nút **Tạo YCTT** riêng (gửi `unpaid_payable_ids` của NCC đó); chi đủ rồi thì hiện "Đã chi đủ". Đây là
-  đường chính — bấm là ra phiếu hợp lệ, khỏi tick tay rồi bị chặn.
-- **Tick trên bảng chi phí**: cột checkbox đầu bảng (chỉ dòng đã có nợ và còn phải chi) + nút **"Tạo YCTT
-  (n dòng đã tick)"** trên đầu thẻ; tick nhiều NCC thì server tách mỗi NCC một phiếu.
-- **Popup "Tạo yêu cầu thanh toán"** của đơn: tab thứ ba *Chi phí lô hàng* (quy tắc F.11).
+  và nút **Tạo YCTT** riêng; chi đủ rồi thì hiện "Đã chi đủ". Đây là đường chính.
+- **Tick trên bảng chi phí**: cột checkbox (chỉ dòng đã quyết toán, đã có nợ và còn phải chi) + nút
+  **"Tạo YCTT (n dòng đã tick)"**; tick nhiều NCC thì server tách mỗi NCC một phiếu.
+- **Popup "Tạo yêu cầu thanh toán"** của đơn: tab thứ ba *Chi phí thu mua* (quy tắc F.11).
 
 Cả ba chỉ hiện khi đơn đủ điều kiện sinh nợ và người dùng có `payment_request:create`. Bảng chi phí có
-thêm hai cột **Đã chi** / **Còn lại** đọc từ khoản nợ (dòng chưa thành nợ hiện "—" và Còn lại = `base_amount`).
+hai cột **Đã chi** / **Còn lại** đọc từ khoản nợ (dòng chưa thành nợ hiện "—").
 
-Phía YCTT: `check_submit` vẫn bắt mỗi dòng có Số hóa đơn (gõ ngay trên phiếu được); khớp khoản nợ theo
-(NCC, loại, mã ĐMH, số HĐ) như cũ, dòng `import_cost` không khớp được thì lùi về khớp theo `payable_id`
-của dòng (nhiều dòng chi phí cùng ĐMH có thể chưa có số HĐ lúc lập phiếu). Chi tiền (`paid`) trừ đúng
+Phía YCTT: `check_submit` vẫn bắt mỗi dòng có Số hóa đơn; khớp khoản nợ theo (NCC, loại, mã ĐMH, số HĐ)
+như cũ, dòng `import_cost` không khớp được thì lùi về khớp theo `payable_id`. Chi tiền (`paid`) trừ đúng
 khoản nợ của từng dòng chi phí. Phiếu gõ tay chấp nhận `source_type = 'import_cost'`.
 
-**Test:** `test_po_tien_te_cr319.py` (P1) · `test_po_chi_phi_nhap_khau_cr319.py` (P3) ·
-`test_po_phan_bo_chi_phi_cr319.py` (P4) · `test_po_cong_no_chi_phi_cr319.py` (P5). Dữ liệu thử local:
-`backend/scripts/seed_demo_import_po.py`.
+### K.5 Giá vốn lô hàng (bao-CR-347, thêm giai đoạn ở bao-CR-453)
 
-### K.5 Giá vốn lô hàng (bao-CR-347)
-
-Báo cáo giá vốn nằm ở **Báo cáo mua hàng → tab "Giá vốn nhập khẩu"** (`08-he-thong-bao-cao.md` mục 10),
-kèm bản in ngang A4 có ba ô ký tay và file Excel hai sheet. Đường vào nhanh cho một đơn: menu
-**In → In Báo cáo giá vốn** trên màn chi tiết ĐMH.
-
-Thẻ chi phí của ĐMH **không có ô "Dự kiến / Thực tế"** (đại ca chốt 10/09/2026): thu mua chỉ gõ chi phí
-khi đã có số thật, nên mọi dòng đều là **Thực tế** và cả bảng chi phí lẫn báo cáo đọc thẳng số đã gõ.
-Cột `cost_status` vẫn còn trong CSDL (K.1) như một tấm lưới — dòng dự kiến sót lại từ đợt thử nghiệm
-không lọt được vào công nợ.
+Báo cáo giá vốn nằm ở **Báo cáo mua hàng → tab "Giá vốn nhập khẩu"** (`08-he-thong-bao-cao.md`), kèm
+bản in ngang A4 ba ô ký tay và file Excel hai sheet. Đường vào nhanh cho một đơn: menu **In → In Báo cáo
+giá vốn** trên màn chi tiết ĐMH. Từ bao-CR-453 báo cáo có ô lọc **Giai đoạn** (`stage` = 1/2/3, bỏ
+trống = số hiệu lực; giao diện mặc định Quyết toán), tick **Gồm đơn trong nước** (`include_domestic`,
+mặc định chỉ nhập khẩu để số cũ không đổi), và mỗi đơn thêm `cost_stage`, `estimate_cost_total`,
+`final_cost_total`, `variance` để so dự toán với quyết toán.
 
 **Ranh giới giữ nguyên như K.2:** giá vốn **tính bay lúc xem/in, không lưu**, không đẩy vào kho, không đổi
-giá nhập. Báo cáo **không có ô "Lần nhận"** của mẫu giấy: chi phí gắn theo **cả đơn**, không tách theo lượt
-nhận (đại ca chốt 09/2026), nên ô đó luôn là 1 và chỉ tổ làm rối bảng.
+giá nhập. Báo cáo **không có ô "Lần nhận"**: chi phí gắn theo **cả đơn**, không tách theo lượt nhận (khách
+chốt 09/2026).
 
-**Test:** `test_gia_von_nhap_khau_cr347.py`. Migration `a1c6f80b2d47` (`cost_status` + `etd_date`).
+### K.6 Danh mục Loại chi phí thu mua (`tab_po_cost_type`, bao-CR-453)
+
+Màn **Danh mục → Loại chi phí thu mua**, API `/api/po-cost-types` (`make_crud_router`, module
+`purchase_order/cost_type.py` — nằm trong module ĐMH vì danh mục cần `POCost` để đếm dòng đang dùng và
+`_save_import_costs` cần `POCostType` để kiểm mã). Quyền mới **`purchase_cost_type`** (ENTITIES, `PUBLIC`
+ở `SCOPE_FIELDS`), seed cho `admin` và `pur_manager`; một khóa = một màn hình (CR-157). Trên hệ đang chạy,
+vai trò cũ không tự có khóa (D-018) — tick ở màn Phân quyền.
+
+| Cột | Luật |
+|---|---|
+| `code` | SMALLINT, unique. 15 mã gốc (1..14, 99) seed ở migration `05a62d38a47a` từ `DEFAULT_COST_TYPES`, **giữ nguyên số**. Bỏ trống khi tạo thì tự cấp **số kế tiếp từ 15**, không bao giờ cấp 99 (`next_cost_type_code` loại 99 khỏi phép max). Không sửa được sau khi tạo. |
+| `name` | String(100), bắt buộc. |
+| `group_kind` | `CostTypeGroup`: `1` Thuế nộp ngân sách · `2` Dịch vụ. Seed: 4..7 = 1, còn lại = 2. |
+| `creates_payable` | Mặc định bật. **Tắt** = dòng mang loại này không thành `tab_payable`, không chặn Hoàn thành, nhưng vẫn vào tổng chi phí và phân bổ (khoản đã trả ngoài hệ thống: ứng tiền mặt, khoản nội bộ). |
+| `default_supplier_code` · `default_allocation_method` · `default_vat` | Giá trị điền sẵn khi chọn loại trên bảng chi phí, chỉ điền vào ô trống. Seed `NSNN` cho nhóm thuế. |
+| `sort_order` · `is_active` · `note` | Thứ tự ô chọn; **tắt** thay vì xóa khi loại đã dùng. |
+
+Ba chốt: mã **99 «Chi phí khác»** không đổi tên, không tắt, không xóa (chỗ rơi của mã lạ); loại còn dòng
+chi phí trỏ tới thì **không xóa** (400 kèm số dòng, gợi bỏ tick *Đang dùng*); CSV chỉ xuất, không nhập
+(đường nhập đi vòng qua ba chốt).
+
+### K.7 Dữ liệu cũ — migration `05a62d38a47a` (bao-CR-453)
+
+1. Đổi tên `tab_po_import_cost` → `tab_po_cost` cùng ba chỉ mục (MySQL không tự đổi tên chỉ mục).
+2. Dòng `cost_status = 2` (Thực tế) hoặc trống: `amount / exchange_rate / base_amount` chép sang **ba cột
+   Quyết toán**, `line_stage = 3`. Dòng `cost_status = 1` (Dự kiến sót từ đợt thử nghiệm): chép sang **cột
+   Dự toán**, `line_stage = 1`. Xong thì bỏ bốn cột cũ.
+3. `tab_purchase_order.cost_stage`: đơn có ít nhất một dòng chi phí, hoặc đang `completed` / `cancelled` /
+   `rejected` → `3`; đơn còn dòng dự kiến → `1`; còn lại mặc định `1`.
+4. Tạo `tab_po_cost_type` + nạp 15 mã gốc (chỉ thêm mã còn thiếu, chạy lại không đè).
+5. Công nợ `import_cost` hiện có **không đụng**: dòng đã quyết toán nên `sync` chạy lại cho ra đúng khoản
+   nợ cũ (test đếm số khoản nợ trước / sau). Không có dòng audit chốt cho đơn cũ.
+
+`downgrade` dựng lại bốn cột cũ từ bộ Quyết toán (dòng chưa quyết toán lấy bộ cao nhất đã có số, `cost_status = 1`),
+đổi tên bảng về như cũ, bỏ `cost_stage` và bảng danh mục.
+
+**Test:** `test_po_chi_phi_thu_mua_cr453.py` (giai đoạn, danh mục, công nợ theo quyết toán, Hoàn thành,
+migration) · `test_po_tien_te_cr319.py` (P1) · `test_po_chi_phi_nhap_khau_cr319.py` (P3) ·
+`test_po_phan_bo_chi_phi_cr319.py` (P4) · `test_po_cong_no_chi_phi_cr319.py` (P5) ·
+`test_gia_von_nhap_khau_cr347.py`. Dữ liệu thử local: `backend/scripts/seed_demo_import_po.py`. Migration
+lịch sử: `ed610675320b` (NSNN) · `b7e2c4d9a1f3` (nhập tay) · `a1c6f80b2d47` (`cost_status` + `etd_date`).

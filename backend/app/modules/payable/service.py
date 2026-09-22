@@ -169,7 +169,7 @@ def upsert(db: Session, *, source_type: str, ref_id: int, company_id: int, suppl
     """Tạo/cập nhật 1 khoản nợ (idempotent theo source_type + ref_type + ref_id).
 
     `ref_type = "delivery"` (mặc định): `ref_id` là id lần giao — hai luồng goods/shipping.
-    `ref_type = "import_cost"` (bao-CR-319 P5): `ref_id` là id dòng chi phí lô hàng nhập khẩu.
+    `ref_type = "import_cost"` (bao-CR-319 P5): `ref_id` là id dòng chi phí thu mua (`tab_po_cost`).
     `due_date` có giá trị thì dùng thẳng (dòng chi phí có ô *Hạn thanh toán* riêng),
     rỗng thì tính từ ngày phát sinh + số ngày công nợ của NCC như trước.
     `department_id` (bao-CR-414 GĐ4): phòng đang xử lý đơn — người gọi tính sẵn bằng

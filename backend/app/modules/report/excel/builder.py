@@ -101,7 +101,7 @@ def build_report_workbook(data: dict, sheet: str) -> BytesIO:
 
 
 def build_import_landed_cost_workbook(data: dict) -> BytesIO:
-    """Workbook báo cáo giá vốn lô hàng nhập khẩu (bao-CR-347) — hai sheet, hai cách đọc.
+    """Workbook báo cáo giá vốn lô hàng (bao-CR-347, mở cho mọi loại đơn bao-CR-453) — hai sheet, hai cách đọc.
 
     Tách khỏi `build_report_workbook` vì nguồn dữ liệu khác hẳn (không đi qua
     `report_service.compute`) và bố cục xoay dọc, không dùng chung bộ spec pivot.

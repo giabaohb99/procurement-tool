@@ -1,4 +1,4 @@
-"""Hai sheet Excel của báo cáo giá vốn lô hàng nhập khẩu (bao-CR-347).
+"""Hai sheet Excel của báo cáo giá vốn lô hàng (bao-CR-347, mở rộng bao-CR-453).
 
 * **GIA VON THEO LO** xoay dọc so với mọi báo cáo còn lại: mỗi ĐƠN là một CỘT, mỗi chỉ tiêu
   là một DÒNG. Vì thế không tái dùng được `build_pivot_sheet` — bảng kia luôn là thực thể
@@ -57,9 +57,13 @@ def build_import_landed_cost_sheet(ws, data: dict) -> None:
     if orders:
         columns.append({"title": "TỔNG", "row": totals, "is_total": True})
 
-    ws.cell(row=1, column=1, value="BÁO CÁO GIÁ VỐN LÔ HÀNG NHẬP KHẨU").font = S.FONT_TITLE
-    ws.cell(row=2, column=1,
-            value="Số liệu tính tại thời điểm xuất file.").font = S.FONT_DESC
+    ws.cell(row=1, column=1, value="BÁO CÁO GIÁ VỐN LÔ HÀNG").font = S.FONT_TITLE
+    # bao-CR-453: ghi rõ số theo giai đoạn nào để hai bản xuất khác giai đoạn không bị so nhầm.
+    stage_label = (data.get("stage_label") or "").strip()
+    desc = "Số liệu tính tại thời điểm xuất file."
+    if stage_label:
+        desc = f"Chi phí thu mua theo giai đoạn: {stage_label}. " + desc
+    ws.cell(row=2, column=1, value=desc).font = S.FONT_DESC
 
     head = 4
     ws.cell(row=head, column=1, value="STT")
@@ -99,7 +103,7 @@ def build_import_landed_cost_sheet(ws, data: dict) -> None:
     _write_row(ws, r, [c["row"].get("goods_base", 0) for c in columns], total=True)
     r += 1
 
-    _label_col(ws, r, "2", "Chi phí nhập khẩu (vnd)", bold=True)
+    _label_col(ws, r, "2", "Chi phí thu mua (vnd)", bold=True)
     _write_row(ws, r, [c["row"].get("cost_total", 0) for c in columns], total=True)
     r += 1
     for g in cost_types:
@@ -128,7 +132,7 @@ def build_import_landed_cost_item_sheet(ws, data: dict) -> None:
     rows = data.get("items", [])
     totals = data.get("item_totals", {})
 
-    ws.cell(row=1, column=1, value="GIÁ VỐN NHẬP KHẨU THEO DÒNG HÀNG").font = S.FONT_TITLE
+    ws.cell(row=1, column=1, value="GIÁ VỐN LÔ HÀNG THEO DÒNG HÀNG").font = S.FONT_TITLE
     ws.cell(row=2, column=1,
             value="Chi phí của lô được chia về từng mã hàng theo cách chia khai trên "
                   "từng khoản chi.").font = S.FONT_DESC

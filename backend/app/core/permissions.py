@@ -129,6 +129,7 @@ ENTITIES = [
     # ⚠️ Nhật ký đồng bộ RIÊNG của POS365 (`/api/coffee/sync/runs`) vẫn đi bằng
     # `pos_order.read` như cũ dù nay đọc chung một bảng.
     "sync_log",
+    "purchase_cost_type",   # bao-CR-453 — danh mục Loại chi phí thu mua
 ]
 
 ACTIONS = ["read", "create", "write", "delete", "approve", "cancel", "print", "export"]
@@ -204,6 +205,7 @@ ENTITY_LABELS = {
     "audit": "Nhật ký hệ thống (tra toàn hệ)",
     "change_log": "Nhật ký hệ thống › Giá trị trước/sau",
     "sync_log": "Sổ đồng bộ với hệ ngoài",
+    "purchase_cost_type": "Danh mục Loại chi phí thu mua",
 }
 
 ACTION_LABELS = {

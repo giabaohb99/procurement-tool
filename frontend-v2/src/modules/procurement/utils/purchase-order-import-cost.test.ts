@@ -6,6 +6,7 @@ import {
   ORDER_TYPE_IMPORT,
   STATE_BUDGET_SUPPLIER_CODE,
   STATE_BUDGET_SUPPLIER_NAME,
+  type ImportCostAllocation,
   type PurchaseOrderDetail,
   type PurchaseOrderImportCost,
   type PurchaseOrderItem,
@@ -13,10 +14,12 @@ import {
 import { createEmptyImportCost, createEmptyPurchaseOrder } from './purchase-order-draft'
 import {
   applyCostType,
+  availableAllocationStages,
   costBaseAmount,
   displayCostBaseAmount,
   displayLineBaseAmount,
   effectiveExchangeRate,
+  getAllocationForStage,
   groupCostsBySupplier,
   groupCostsByType,
   isMissingExchangeRate,
@@ -111,12 +114,41 @@ describe('lineBaseAmount', () => {
 })
 
 describe('costBaseAmount', () => {
-  it('includes VAT and converts by the cost own rate', () => {
-    expect(costBaseAmount(cost({ amount: 100, vat: 8, currency: 'USD', exchange_rate: 25_000 }))).toBeCloseTo(
-      100 * 1.08 * 25_000,
-      6,
+  it('computes from the estimate stage by default (orderStage = 1)', () => {
+    // estimate_amount=100 USD × 8% VAT × 25,000 tỷ giá
+    expect(
+      costBaseAmount(
+        cost({ estimate_amount: 100, estimate_rate: 25_000, vat: 8, currency: 'USD' }),
+        1,
+      ),
+    ).toBeCloseTo(100 * 1.08 * 25_000, 6)
+    expect(costBaseAmount(cost({ estimate_amount: 1_000_000, vat: 0, currency: 'VND' }), 1)).toBe(
+      1_000_000,
     )
-    expect(costBaseAmount(cost({ amount: 1_000_000, vat: 0, currency: 'VND' }))).toBe(1_000_000)
+  })
+
+  it('uses provisional_amount when orderStage = 2', () => {
+    expect(
+      costBaseAmount(cost({ provisional_amount: 200, provisional_rate: 25_000, vat: 0, currency: 'USD' }), 2),
+    ).toBe(200 * 25_000)
+  })
+
+  it('uses final_amount when orderStage = 3 or line_stage = 3', () => {
+    expect(
+      costBaseAmount(cost({ final_amount: 300, final_rate: 1, vat: 0, currency: 'VND' }), 3),
+    ).toBe(300)
+    // line_stage=3 đẩy effective lên 3 dù orderStage=1
+    expect(
+      costBaseAmount(
+        cost({ final_amount: 300, final_rate: 1, vat: 0, currency: 'VND', line_stage: 3 }),
+        1,
+      ),
+    ).toBe(300)
+  })
+
+  it('returns 0 when the effective stage amount is null/undefined', () => {
+    expect(costBaseAmount(cost({ estimate_amount: null, vat: 0, currency: 'VND' }), 1)).toBe(0)
+    expect(costBaseAmount(cost({}), 1)).toBe(0)
   })
 })
 
@@ -153,13 +185,15 @@ describe('manual allocation', () => {
 
   it('reports no gap inside the 1 VND tolerance and the exact gap outside it', () => {
     const c = cost({
-      amount: 1000,
+      estimate_amount: 1000,
       vat: 0,
       currency: 'VND',
       allocation_method: ALLOCATION_MANUAL,
       manual_allocation: { '1': 600, '2': 399.5 },
     })
+    // gap = 1000 − 999.5 = 0.5 — nằm trong dung sai 1 VND
     expect(manualAllocationGap(c)).toBe(0)
+    // gap = 1000 − 600 = 400 — vượt dung sai
     expect(manualAllocationGap({ ...c, manual_allocation: { '1': 600 } })).toBe(400)
   })
 
@@ -182,8 +216,10 @@ describe('display base amounts', () => {
   })
 
   it('does the same for a cost line', () => {
-    expect(displayCostBaseAmount(cost({ amount: 100, currency: 'VND', base_amount: 999 }))).toBe(999)
-    expect(displayCostBaseAmount(cost({ amount: 100, currency: 'VND', base_amount: 0 }))).toBe(100)
+    // base_amount > 0 thì trả thẳng
+    expect(displayCostBaseAmount(cost({ currency: 'VND', base_amount: 999 }))).toBe(999)
+    // base_amount = 0 thì tính lại theo estimate_amount (stage 1)
+    expect(displayCostBaseAmount(cost({ estimate_amount: 100, currency: 'VND', base_amount: 0 }))).toBe(100)
   })
 })
 
@@ -212,9 +248,9 @@ describe('isMissingExchangeRate', () => {
 describe('grouping costs', () => {
   it('groups by type, sums converted amounts and sorts the biggest group first', () => {
     const groups = groupCostsByType([
-      cost({ cost_type: 1, amount: 100, currency: 'VND' }),
-      cost({ cost_type: 4, amount: 5_000, currency: 'VND', cost_type_label: 'Thuế NK' }),
-      cost({ cost_type: 1, amount: 200, currency: 'VND' }),
+      cost({ cost_type: 1, estimate_amount: 100, currency: 'VND' }),
+      cost({ cost_type: 4, estimate_amount: 5_000, currency: 'VND', cost_type_label: 'Thuế NK' }),
+      cost({ cost_type: 1, estimate_amount: 200, currency: 'VND' }),
     ])
     expect(groups.map((group) => [group.cost_type, group.count, group.base_amount])).toEqual([
       [4, 1, 5_000],
@@ -225,9 +261,9 @@ describe('grouping costs', () => {
 
   it('puts costs without a supplier into one blank group instead of dropping them', () => {
     const groups = groupCostsBySupplier([
-      cost({ supplier_code: '', amount: 10, currency: 'VND' }),
-      cost({ supplier_code: 'NCC1', supplier_name: 'A', amount: 5, currency: 'VND' }),
-      cost({ supplier_code: '', amount: 20, currency: 'VND' }),
+      cost({ supplier_code: '', estimate_amount: 10, currency: 'VND' }),
+      cost({ supplier_code: 'NCC1', supplier_name: 'A', estimate_amount: 5, currency: 'VND' }),
+      cost({ supplier_code: '', estimate_amount: 20, currency: 'VND' }),
     ])
     expect(groups).toHaveLength(2)
     const blank = groups.find((group) => group.supplier_code === '')
@@ -251,22 +287,27 @@ describe('percentOf', () => {
 })
 
 describe('paymentBlockReason', () => {
+  // Dòng đã lưu, đã duyệt, còn nợ — trường hợp tick được.
   const payable = cost({
     id: 9,
     supplier_code: 'NCC1',
-    amount: 100,
+    // bao-CR-453: số tiền hiệu lực nằm trong effective_base
+    effective_base: 100,
     payable_id: 77,
     remaining: 100,
   })
 
   it('explains, in order, why a cost cannot be ticked for a payment request', () => {
-    expect(paymentBlockReason(cost({ supplier_code: 'NCC1', amount: 1 }), true)).toBe(
+    // Chưa có id = dòng mới chưa Lưu
+    expect(paymentBlockReason(cost({ supplier_code: 'NCC1' }), true)).toBe(
       'Chưa thành công nợ (dòng mới chưa Lưu)',
     )
+    // Có id nhưng thiếu NCC
     expect(paymentBlockReason({ ...payable, supplier_code: '' }, true)).toBe(
       'Chưa thành công nợ (chưa chọn NCC hoặc số tiền 0)',
     )
-    expect(paymentBlockReason({ ...payable, amount: 0 }, true)).toBe(
+    // Có id + NCC nhưng số tiền hiệu lực = 0
+    expect(paymentBlockReason({ ...payable, effective_base: 0 }, true)).toBe(
       'Chưa thành công nợ (chưa chọn NCC hoặc số tiền 0)',
     )
     expect(paymentBlockReason(payable, false)).toBe('Chưa thành công nợ (đơn chưa duyệt)')
@@ -323,7 +364,7 @@ describe('switchOrderType', () => {
     const order = importOrder({
       customs_decl_no: 'TK-1',
       customs_decl_date: '2026-09-01',
-      import_costs: [cost({ amount: 5 })],
+      import_costs: [cost({ estimate_amount: 5 })],
     })
     const next = switchOrderType(order, ORDER_TYPE_DOMESTIC)
     expect(next).toMatchObject({
@@ -441,5 +482,70 @@ describe('summarizeOrderTotals', () => {
       currency: 'EUR',
       mixed: false,
     })
+  })
+})
+
+// Helper nhanh cho `ImportCostAllocation` — chỉ điền trường kiểm tra được, bỏ qua phần còn lại.
+function alloc(overrides: Partial<ImportCostAllocation>): ImportCostAllocation {
+  return {
+    lines: [],
+    goods_base_total: 0,
+    cost_total: 0,
+    landed_total: 0,
+    warnings: [],
+    ...overrides,
+  }
+}
+
+describe('getAllocationForStage', () => {
+  const byStage: Record<string, ImportCostAllocation> = {
+    '1': alloc({ lines: [{ item_id: 1, product_code: '', product_name: '', unit: '', qty_order: 1, weight_kg: 0, goods_base: 0, cost_base: 0, landed_base: 0, costs: [] }], cost_total: 100 }),
+    '3': alloc({ cost_total: 200 }),
+    effective: alloc({ cost_total: 300 }),
+  }
+
+  it('returns allocation data for a given numeric or string stage key', () => {
+    expect(getAllocationForStage(byStage, 1)?.cost_total).toBe(100)
+    expect(getAllocationForStage(byStage, '3')?.cost_total).toBe(200)
+    expect(getAllocationForStage(byStage, 'effective')?.cost_total).toBe(300)
+  })
+
+  it('returns undefined for a missing stage key', () => {
+    expect(getAllocationForStage(byStage, 2)).toBeUndefined()
+    expect(getAllocationForStage(byStage, 99)).toBeUndefined()
+  })
+
+  it('returns undefined when allocation dict is null or undefined', () => {
+    expect(getAllocationForStage(null, 1)).toBeUndefined()
+    expect(getAllocationForStage(undefined, 1)).toBeUndefined()
+    expect(getAllocationForStage({}, 1)).toBeUndefined()
+  })
+})
+
+describe('availableAllocationStages', () => {
+  const itemLine = (id: number) => ({
+    item_id: id, product_code: '', product_name: '', unit: '', qty_order: 1,
+    weight_kg: 0, goods_base: 0, cost_base: 0, landed_base: 0, costs: [],
+  })
+
+  it('returns stage keys that have at least one allocation line', () => {
+    const byStage: Record<string, ImportCostAllocation> = {
+      '1': alloc({ lines: [itemLine(1)] }),
+      '2': alloc({ lines: [] }),
+      '3': alloc({ lines: [itemLine(2)] }),
+      effective: alloc({ lines: [itemLine(3)] }),
+    }
+    const available = availableAllocationStages(byStage)
+    expect(available).toEqual(new Set(['1', '3', 'effective']))
+  })
+
+  it('returns empty set when all stages have no lines', () => {
+    expect(availableAllocationStages({ '1': alloc({ lines: [] }), '2': alloc({ lines: [] }) })).toEqual(new Set())
+  })
+
+  it('returns empty set for null, undefined, or empty dict', () => {
+    expect(availableAllocationStages(null)).toEqual(new Set())
+    expect(availableAllocationStages(undefined)).toEqual(new Set())
+    expect(availableAllocationStages({})).toEqual(new Set())
   })
 })
