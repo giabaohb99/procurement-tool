@@ -5200,6 +5200,91 @@ hình sẽ báo lỗi đỏ chứ không phải bảng rỗng — đúng kiểu 
 Tài liệu: `doc/dong-bo-dat-xe-duyet-dau/TIEN-DO.md` (§P1, quyết định N),
 `doc/dong-bo-dat-xe-duyet-dau/README.md` (bảng quyết định).
 
+## bao-CR-454 | Chia bốn bảng nhật ký theo năm và tách chúng khỏi bản sao lưu hằng đêm
+- status: xong
+- date: 2026-09-21
+- pic: NSU209
+- list: Nhật ký hệ thống
+
+Đây là đợt hai, cũng là đợt cuối, của giai đoạn P6 trong cụm nhật ký bao-CR-312. Đợt một hôm nay
+đã dọn được dữ liệu quá mười sáu tháng, nhưng dọn bằng cách xóa từng dòng, mỗi lô hai nghìn dòng
+và tối đa năm trăm lô một đêm. Cách đó đúng nhưng có trần: bảng lượt gọi ghi khoảng ba nghìn dòng
+mỗi ngày, nên một năm quá hạn là hơn một triệu dòng, tức hơn năm trăm lô. Đêm nào cũng chạm trần,
+đêm nào cũng còn dư, và mỗi lô là một giao dịch xóa đè lên đúng cái bảng mà mọi lượt gọi đang
+ghi vào. Bỏ cả một năm bằng một thao tác trên siêu dữ liệu thì máy chỉ gỡ tệp của phần đó ra,
+không đi qua từng dòng.
+
+Muốn làm được vậy thì bảng phải chia sẵn theo năm, và muốn chia được thì phải nới khóa trước.
+Máy chủ cơ sở dữ liệu đòi mọi khóa duy nhất phải chứa đủ những cột nằm trong biểu thức chia, nên
+khóa chính của cả bốn bảng nới thành hai cột là số thứ tự cộng ngày tạo, còn hai khóa duy nhất
+phụ của bảng lượt gọi và bảng phiên cũng nới theo, với cột định danh đứng trước. Đặt cột định
+danh lên đầu là có chủ ý: mọi câu tra theo một cột vẫn đi bằng chỉ mục đó như cũ, nên không phải
+sửa một dòng mã nào. Phần nới lỏng thật sự là ràng buộc duy nhất, về lý nay cho phép hai dòng
+trùng mã mà khác ngày tạo; cả hai giá trị đều sinh ngẫu nhiên tại chỗ nên không đáng đem cân với
+việc dọn nổi một triệu dòng.
+
+Có một chỗ bắt buộc phải làm đúng, sai là hỏng giữa chừng: bỏ khóa chính cũ và thêm khóa chính
+mới phải nằm trong cùng một câu lệnh. Cột số thứ tự là cột tự tăng, mà máy chủ đòi cột tự tăng
+luôn phải là cột đầu của một khóa nào đó, nên tách ra hai câu là lúc giữa hai câu đó nó không
+thuộc khóa nào và lệnh thứ nhất bị từ chối ngay.
+
+Bộ kiểm chạy trên cơ sở dữ liệu nhẹ vốn không có khái niệm phân vùng, nên mô hình dữ liệu vẫn
+khai khóa chính một cột để bộ kiểm dựng được bảng; toàn bộ phần đổi cấu trúc nằm trong tệp
+chuyển đổi, sau một chốt chặn chỉ cho chạy trên máy chủ thật. Đã chạy thử cả hai chiều trên máy:
+chạy lên thì dựng đủ phân vùng, chạy lùi thì gom lại thành bảng thường mà không mất dòng nào.
+
+Việc dọn hằng đêm nay chạy ba nhịp thay vì một: tạo trước phân vùng của năm sau, bỏ nguyên phân
+vùng của năm đã nằm trọn ngoài mốc, rồi mới xóa theo dòng phần còn lại. Hai đường sống cạnh nhau
+chứ không thay nhau, vì mốc mười sáu tháng luôn rơi vào giữa một năm: năm nằm trọn bên ngoài thì
+bỏ nguyên, mấy tháng đầu của năm bị mốc cắt đôi thì vẫn phải xóa từng dòng. Nhịp tạo trước phân
+vùng chạy mỗi đêm là để tới giao thừa phân vùng của năm mới đã đứng sẵn; thiếu nó thì dòng của
+năm mới rơi vào phần hứng chung, và nằm chung một rọ thì không bỏ riêng năm nào được nữa.
+
+Phần sao lưu thì theo quyết định C đã chốt từ đầu: bốn bảng nhật ký không đi theo bản sao lưu
+hằng đêm nữa vì chúng đã có đường lưu trữ riêng theo tháng. Bật ghi nhật ký đầy đủ thì cơ sở dữ
+liệu phình từ mười tám phẩy bảy lên khoảng hai trăm mười lăm mê-ga, mỗi bản sao lưu nén từ một
+phẩy không chín lên tám tới mười lăm mê-ga, nhân với ba mươi bản giữ lại là hai trăm năm mươi
+tới bốn trăm năm mươi mê-ga trên kho ngoài, và mỗi đêm sao lưu lâu thêm, hai lần một ngày. Đổi
+lại, phục hồi từ bản sao lưu sẽ ra một hệ thống trắng nhật ký — đánh đổi này đã biết và đã chấp
+nhận, vì nhật ký để truy trách nhiệm chứ không phải để khôi phục dữ liệu.
+
+Chỗ này có một cái bẫy phải nói rõ vì nó không kêu lúc sao lưu, nó kêu lúc phục hồi. Cờ bỏ bảng
+không chỉ bỏ dữ liệu, nó bỏ luôn cả câu tạo bảng. Chỉ dùng một lượt thì phục hồi xong bốn bảng
+đó không tồn tại, mà số hiệu phiên bản lược đồ nằm trong chính bản sao lưu ấy lại đang ở mốc mới
+nhất, nên bước nâng cấp lược đồ lúc khởi động coi như không còn gì phải làm và không dựng lại
+bảng nào. Hệ thống lên xanh, rồi chết ở truy vấn đầu tiên chạm nhật ký, tức là ở lớp trung gian,
+tức là ở mọi lượt gọi. Vì vậy phải chạy hai lượt: lượt một lấy dữ liệu nghiệp vụ và loại bốn
+bảng, lượt hai chỉ lấy cấu trúc của đúng bốn bảng đó. Lượt hai cũng chính là chỗ giữ lại mệnh đề
+chia theo năm, nên bảng phục hồi ra đúng hình, chỉ rỗng ruột.
+
+Ba chỗ em làm khác bản vẽ, và cả ba là chỗ bản vẽ nói hụt chứ không phải làm tắt. Thứ nhất, bản
+vẽ đòi đủ mười hai gói tháng mới cho bỏ một năm; nhưng việc đóng gói cố ý không đẩy gì lên khi
+tháng đó rỗng, nên đòi đủ mười hai theo đúng câu chữ thì một năm có một tháng nghỉ là một năm
+không bao giờ bỏ được. Luật thật em đặt là một tháng coi như đạt khi đã có gói hoặc hiện không
+còn dòng nào dưới cơ sở dữ liệu — đúng luật mà đường xóa theo dòng vẫn đang dùng. Thứ hai, em
+thêm một chốt nữa bản vẽ không có: không còn dòng nào của năm đó chưa quá hạn. Với ba bảng xét
+theo ngày tạo thì con số này luôn bằng không; nó tồn tại vì bảng thứ tư, bảng phiên đăng nhập,
+gom tháng theo lúc mở nhưng hết hạn theo lúc đóng. Thứ ba, danh sách bốn bảng bên phần sao lưu
+được suy ra từ danh sách của phần đóng gói chứ không chép tay lại; chép tay thì đúng câu chữ của
+bản vẽ nhưng lại dựng lên đúng thứ mà câu sau của nó cảnh báo, là hai nơi khai cùng một danh
+sách rồi lệch nhau.
+
+Một lỗi em tự bắt được trong lúc viết, đáng ghi vì nó im lặng tuyệt đối. Hàm đếm dòng chưa quá
+hạn ban đầu em viết là phủ định của điều kiện hết hạn. Điều kiện của bảng phiên so trên hai cột
+cho phép rỗng, mà trong ngôn ngữ truy vấn thì phủ định của một giá trị rỗng vẫn ra rỗng, nên
+dòng đó rơi khỏi cả hai vế và hàm báo không có ai — đúng cho cái dòng mà nó sinh ra để bắt. Viết
+lại thành hiệu của hai phép đếm thì hết.
+
+Bài kiểm mới bốn mươi lăm bài, chạy riêng tệp đó xanh hết; chạy kèm bốn tệp nhật ký và sao lưu
+cũ ra một trăm năm mươi tám bài xanh, không bài nào của đợt một đỏ vì mọi khóa trả về đều giữ
+nguyên. Đáng kể nhất là ba bài canh số lượt sao lưu: gộp về một lượt là đỏ ngay, và bài kiểm đó
+là thứ duy nhất bắt được lỗi vốn chỉ lộ ra lúc phục hồi.
+
+Chưa commit, chưa đưa lên máy chủ thử nghiệm, chờ đại ca bảo.
+
+Mã nguồn: `backend/app/modules/system_log/partition.py` (mới), `backend/app/modules/system_log/retention.py`, `backend/app/modules/backup/service.py`, `backend/migrations/versions/f2c5b9d71a48_phan_vung_bon_bang_nhat_ky_theo_nam.py` (mới), `test/backend/test_phan_vung_nhat_ky_cr454.py` (mới).
+Tài liệu: `doc/tai-lieu-ky-thuat/nhat-ky-va-phien-dang-nhap.md` (§9 + bảng §10), `doc/erp/19-viec-con-lai-tong-hop.md`, `doc/tai-lieu-ky-thuat/change-log-bao.md`.
+
 Ngày 22/09 em gỡ bỏ phần quyển sổ của đợt này, xem mục bao-CR-456. Ba thứ còn giữ lại từ
 đợt này là cách đọc kết quả một lượt bắn, cách gộp hai ô vào đúng một lượt ghi, và dấu
 trạng thái trên phiếu.

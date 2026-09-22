@@ -45,7 +45,7 @@ commit `b5787ccc` nằm trên `origin/main`). Dòng change-log-bao còn ghi "pro
 | **P4** | `tab_change_log` + sự kiện ORM + che cột nhạy cảm + chốt gộp nhập liệu — **trước/sau từng trường**, nặng nhất | **XONG mã + test local 14/09 (bao-CR-402)** — chờ commit + deploy |
 | **P5** | Màn `/system/logs`: gộp theo `request_id`, 4 tab, theo dõi trực tiếp, biểu đồ; `/api/audit-logs` trả thêm `request_id` | P2, P4 (tab *Thay đổi* ẩn khi chưa có P4) |
 | **P6 đợt 1** | Dọn 16 tháng theo tháng (chỉ tháng đã có gói R2) + gói R2 đủ 4 bảng + cảnh báo IP lạ / đổi thiết bị giữa phiên / xóa hàng loạt / nhiều 403 lên chuông quản trị — **XONG — bao-CR-448, commit `eaff20a5` + deploy DEV 21/09/2026**, prod chưa | P3, P4 |
-| **P6 đợt 2** | Phân vùng theo năm + `DROP PARTITION` + tách 4 bảng nhật ký khỏi sao lưu đêm (dump hai lượt) — đụng cấu trúc bảng và lịch sao lưu | P6 đợt 1 |
+| **P6 đợt 2** | Phân vùng theo năm + `DROP PARTITION` + tách 4 bảng nhật ký khỏi sao lưu đêm (dump hai lượt) — **XONG — bao-CR-454, migration `f2c5b9d71a48`, 21/09/2026**, prod chưa | P6 đợt 1 |
 
 ## 3. HRM (đồng nghiệp làm — chỉ theo dõi)
 
