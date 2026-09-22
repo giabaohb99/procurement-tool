@@ -1,5 +1,4 @@
 import { ArrowLeft, Clock, MapPin, User } from 'lucide-react'
-import { useEffect, useRef } from 'react'
 import type { ReactNode } from 'react'
 
 import { ApprovalStageNote } from '@/modules/approval/components/approval-stage-note'
@@ -39,23 +38,14 @@ export function BookingDetailHeader({
     booking.request_type === REQUEST_TYPE.delivery ? DeliveryBookingIcon : CarBookingIcon
   const route = [booking.start_location, booking.end_location].filter(Boolean).join(' → ')
 
-  //  Báo CHIỀU CAO THẬT của tiêu đề ra ngoài, dưới dạng biến CSS trên thẻ cha, để
-  //  cột phụ bên phải dính được ngay DƯỚI nó (`top: var(--booking-header-h)`).
+  //  ⚠️ ĐÃ BỎ phép đo chiều cao tiêu đề (`--booking-header-h`, 21/09/2026).
   //
-  //  Phải đo chứ không viết số cứng: tiêu đề cao 104px khi mục đích chuyến gói
-  //  một dòng, 144px khi hai dòng, 176px ở khổ hẹp — ghim một con số thì nửa số
-  //  phiếu sẽ có cột phụ chui xuống dưới tiêu đề hoặc hở một khoảng trắng.
-  const ref = useRef<HTMLElement>(null)
-  useEffect(() => {
-    const el = ref.current
-    const host = el?.parentElement
-    if (!el || !host) return
-    const observer = new ResizeObserver(() =>
-      host.style.setProperty('--booking-header-h', `${el.offsetHeight}px`),
-    )
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [])
+  //  Biến CSS đó chỉ có MỘT người dùng: cột phụ bên phải, để nó `sticky` đúng
+  //  ngay dưới tiêu đề. Cột phụ nay cuộn theo trang (xem ghi chú ở
+  //  `vehicle-booking-detail-page.tsx`), nên cái `ResizeObserver` này thành một
+  //  phép đo chạy suốt mà không ai đọc. Cần ghim lại thứ gì dưới tiêu đề thì
+  //  dựng lại nó — tiêu đề cao 104px khi mục đích chuyến gói một dòng, 144px khi
+  //  hai dòng, 176px ở khổ hẹp, nên phải ĐO chứ đừng viết số cứng.
 
   return (
     //  LƯỚI 2 cột chứ không phải flex lồng nhau:
@@ -92,7 +82,6 @@ export function BookingDetailHeader({
     //  màn hình** bị khoá vĩnh viễn. Trên điện thoại đó là cái giá quá đắt cho
     //  một dải nút; ở đó cuộn bình thường.
     <header
-      ref={ref}
       className="static top-0 z-20 -mx-4 -mt-4 mb-4 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 bg-canvas px-4 pt-4 pb-3 lg:sticky lg:-mx-6 lg:-mt-6 lg:px-6 lg:pt-6"
     >
       <Button
