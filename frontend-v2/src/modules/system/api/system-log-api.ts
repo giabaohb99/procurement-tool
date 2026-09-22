@@ -125,9 +125,14 @@ export interface SystemLogRequestDetail {
   duration_ms: number
   audit_count: number
   change_count: number
-  /** Ba ô dưới đây CHỈ có khi người xem giữ khóa `change_log`. */
-  request_body?: string
-  response_body?: string
+  /** Ba ô dưới đây CHỈ có khi người xem giữ khóa `change_log`.
+   *
+   *  ⚠️ Hai ô thân là **JSON** dưới CSDL (`Mapped[dict | None]`) và backend trả
+   *  thẳng object, KHÔNG phải chuỗi — khai `string` như bản trước là làm cả trang
+   *  nổ ở `.trim()`. Đọc bằng `logBodyText(...)`, đừng gọi thẳng hàm chuỗi lên
+   *  chúng. `error_detail` mới thật là `Text`. */
+  request_body?: unknown
+  response_body?: unknown
   error_detail?: string
 }
 
