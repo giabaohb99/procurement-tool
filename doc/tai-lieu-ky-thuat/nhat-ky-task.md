@@ -5817,3 +5817,43 @@ vì gõ lại); `test/backend/test_dat_xe_ly_do_huy.py` (mới);
 `frontend-v2/src/modules/vehicle-booking/utils/build-booking-stages.ts` (dòng lý do cho
 chặng dừng); `components/booking-calendar-chip.tsx` (dòng lý do trong thẻ hover);
 `types/vehicle-booking.ts`.
+
+## duoc-CR-459 | Hộp "+N chuyến nữa" của lịch đặt xe bị nhìn xuyên qua, và thẻ hover trong hộp chui xuống dưới
+- status: xong
+- date: 2026-09-22
+Đại ca mở màn *Lịch đặt xe* ở khám Tháng, bấm vào "+2 chuyến nữa" và gửi ảnh: hộp liệt kê
+các chuyến trong ngày bị chồng chữ, chữ của lưới phía sau hiện xuyên qua thân hộp. Soi
+trên trình duyệt thì ra **hai lỗi chồng nhau**, chứ không phải một.
+
+Lỗi thứ nhất: **nền hộp trong suốt**. FullCalendar khai nền hộp bằng biến
+`--fc-page-bg-color`, mà bảng biến của lịch để biến đó `transparent` — cố ý, để lưới ngồi
+thẳng trên mặt thẻ chứ không tự tô nền riêng. Không ai ngờ cùng biến đó còn là nền của
+hộp nổi. Đo được nền hộp là `rgba(0,0,0,0)`, nên chip và chữ "+N chuyến nữa" của lưới bên
+dưới xuyên thẳng lên. Không sửa bằng cách đổi biến chung — làm vậy là lưới tự tô nền lại
+và hỏng chỗ khác; chỉ ghi đè riêng phần hộp.
+
+Lỗi thứ hai, kín hơn: **rê chuột vào một chuyến TRONG hộp thì thẻ chi tiết hiện ra ở phía
+sau hộp**. FullCalendar đặt hộp ở tầng 9999, còn thẻ hover do thư viện giao diện dựng ra
+ngoài cây và nằm ở tầng 50 — tầng thấp hơn nên bị che. Kiểm bằng cách hỏi trình duyệt
+"phần tử nào đang nằm trên cùng tại tâm thẻ hover", nó trả về một chip nằm trong hộp, tức
+thẻ bị che thật. Hạ hộp về tầng 40: vẫn nằm trên lưới (lưới không khai tầng nào), và nằm
+dưới mọi lớp nổi của bộ giao diện (thẻ hover, hộp chọn, hộp thoại đều tầng 50) — đúng thứ
+tự phải có.
+
+Dọn thêm mấy chỗ cùng hộp đó: bo góc và đổ bóng cho ra một lớp nổi (trước là góc vuông,
+bóng mờ 2 điểm); đầu hộp bỏ dải xám, thay bằng một kẻ mảnh, chữ tiêu đề từ 16 về 13 điểm
+cho bằng mọi tiêu đề phụ khác; nút đóng từ một dấu mờ không có vùng bấm thành ô 24 điểm
+có nền khi trỏ vào. Đáng kể nhất là **thân hộp nay có trần chiều cao và cuộn được** — trước
+không có trần, nên một ngày 20 chuyến là hộp cao hơn cửa sổ và mấy chuyến cuối nằm ngoài
+màn hình, không cách nào với tới.
+
+⚠️ Mọi dòng ghi đè ở đây bắt buộc có dấu `!`: FullCalendar bản 6 tự nhồi CSS của nó vào
+đầu trang LÚC CHẠY, tức sau Tailwind, nên cùng độ ưu tiên thì nó thắng vì đứng sau. Đây là
+cái bẫy đã ghi sẵn trong chính tệp này từ mấy đợt trước, ai đụng vào lịch cũng nên đọc.
+Kiểm tra: typecheck 0 lỗi, lint 0 lỗi (31 cảnh báo cũ, không đến từ tệp này), 88 bài kiểm
+của phân hệ đặt xe xanh. Đã soi tay trên trình duyệt ở khổ 1280 điểm: mở hộp của ngày
+09/09 (5 chuyến), đo lại nền hộp ra màu đặc và tầng ra 40, rê chuột vào chip trong hộp
+thấy thẻ chi tiết nổi lên trên. Chưa deploy.
+Mã nguồn: `frontend-v2/src/modules/vehicle-booking/utils/calendar-theme.ts`
+(thêm khối luật cho hộp "+N chuyến nữa": nền, tầng, bo góc, đầu hộp, nút đóng, trần chiều
+cao thân hộp).
