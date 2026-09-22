@@ -5530,7 +5530,8 @@ Mã nguồn: `backend/app/modules/purchase_order/` (model, schema, service, cont
 `backend/migrations/versions/05a62d38a47a_*.py`, `backend/scripts/seed_help_chi_phi_thu_mua.py`,
 `test/backend/test_po_chi_phi_thu_mua_cr453.py`, `frontend/src/pages/PurchaseOrderDetail.tsx`,
 `frontend/src/config/cruds.tsx`, `frontend-v2/src/modules/procurement/` (thẻ chi phí, API, kiểu, tiện ích, bản in).
-Commit: một commit trên nhánh erp-v2 ngày 22/09/2026, tiêu đề bắt đầu bằng «bao-CR-453».
+Commit: `690c9ae7` trên nhánh erp-v2 ngày 22/09/2026.
+Deploy: môi trường thử ngày 22/09/2026 — dựng lại máy chủ, worker, bộ hẹn giờ và hai giao diện; migration `05a62d38a47a` chạy xong, danh mục nạp đủ mười lăm loại, năm đơn cũ tự chuyển sang giai đoạn Quyết toán, bài hướng dẫn sử dụng dựng xong (id 91). Còn một việc phải làm tay: khóa quyền mới hiện chỉ có ở vai trò quản trị, muốn nhân viên mua hàng đọc được danh mục thì vào màn Phân quyền tick thêm — chưa tick thì ô chọn loại chi phí tự rơi về mười lăm mã cứng, không ai gặp lỗi nhưng cũng không thấy loại mới thêm.
 Deploy: dev 22/09/2026, prod chưa (tạm dừng theo chốt 19/09).
 ## bao-CR-458 | Chữa bộ chạy thử của app đặt xe cũ: chạy lại được ngay trên máy làm việc
 - status: xong
