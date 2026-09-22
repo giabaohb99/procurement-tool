@@ -53,18 +53,80 @@ def _upsert(db: Session, key: str, raw: str, user_id: int):
         db.add(Setting(skey=key, svalue=raw, created_by=user_id, updated_by=user_id))
 
 
+def _to_raw(val) -> str:
+    """Đưa giá trị người dùng gửi lên về ĐÚNG dạng chuỗi được lưu trong `tab_setting`.
+
+    Dùng chung cho cả nhịp ghi lẫn nhịp so sánh trước/sau — hai nhịp mà quy
+    đổi lệch nhau thì nhật ký báo "có đổi" ở một ô không ai đụng tới.
+    """
+    if val is True:
+        return "true"
+    if val is False:
+        return "false"
+    return "" if val is None else str(val)
+
+
+def _format_value(field: dict, raw: str) -> str:
+    """Chuỗi thô → câu cho NGƯỜI đọc. Ô trống phải nói thành lời, đừng để khoảng trắng."""
+    if field.get("type") == "bool":
+        return "Bật" if raw == "true" else "Tắt"
+    return raw if raw.strip() else "(trống)"
+
+
+def _collect_changes(values: dict) -> list[tuple[str, str]]:
+    """Liệt kê những ô THẬT SỰ đổi giá trị: `(khóa, câu «Nhãn: trước -> sau»)`.
+
+    Giá trị "trước" lấy từ `app_settings.get` — tức giá trị đang có hiệu lực
+    (DB, thiếu thì `.env`), đúng thứ người dùng vừa nhìn thấy trên màn hình.
+    Trường bí mật CHỈ ghi nhận là có đặt lại; giá trị không bao giờ vào nhật ký.
+    """
+    changes: list[tuple[str, str]] = []
+    for key, val in (values or {}).items():
+        field = _FIELD_KEYS.get(key)
+        if field:
+            before = _to_raw(app_settings.get(key))
+            after = _to_raw(val)
+            if before != after:
+                changes.append((key, f"{field['label']}: {_format_value(field, before)}"
+                                     f" -> {_format_value(field, after)}"))
+        elif key in _SECRET_KEYS and str(val).strip():
+            label = next(s["label"] for s in SECRET_FIELDS if s["key"] == key)
+            changes.append((key, f"{label}: đã đặt giá trị mới (không ghi giá trị vào nhật ký)"))
+    return changes
+
+
+def _write_audit(db: Session, user_id: int, changes: list[tuple[str, str]]):
+    """Ghi MỘT dòng nhật ký kèm chi tiết từng ô.
+
+    `changed_fields` giữ danh sách KHÓA để còn lọc được, `message` giữ câu cho
+    người đọc. Trước bao-CR-461 chỗ này ghi đúng một câu "Cập nhật cấu hình hệ
+    thống" — mở nhật ký ra không ai biết ai đã đổi ô nào thành gì, mà cấu hình
+    email lại là thứ hỏng một ô là cả hệ thống ngừng gửi thư.
+    """
+    message = "Cập nhật cấu hình hệ thống\n" + "\n".join(line for _, line in changes)
+    log = record(db, user_id, "setting", 0, "update", message)
+    #  Hai cột ngữ cảnh của bao-CR-312 P1: `record` không tự điền được vì nó
+    #  không biết gì về nghiệp vụ của lời gọi.
+    log.changed_fields = ", ".join(key for key, _ in changes)[:500]
+    log.change_count = len(changes)
+    db.commit()
+
+
 def save(db: Session, values: dict, user_id: int) -> dict:
+    #  Gom chênh lệch TRƯỚC khi ghi — ghi xong thì giá trị cũ không còn ở đâu nữa.
+    #  Không đổi gì thì KHÔNG đẻ dòng nhật ký: bấm Lưu hai lần vẫn chỉ một dấu vết.
+    changes = _collect_changes(values)
+    if changes:
+        _write_audit(db, user_id, changes)
     for key, val in (values or {}).items():
         if key in _FIELD_KEYS:
-            raw = "true" if val is True else ("false" if val is False else str(val))
-            _upsert(db, key, raw, user_id)
+            _upsert(db, key, _to_raw(val), user_id)
         elif key in _SECRET_KEYS:
             # Rỗng = giữ nguyên (không ghi đè). Có giá trị = mã hóa rồi lưu.
             if str(val).strip():
                 _upsert(db, key, app_settings.encrypt(str(val)), user_id)
     db.commit()
     app_settings.refresh()
-    record(db, user_id, "setting", 0, "update", "Cập nhật cấu hình hệ thống")
     return get_all()
 
 
