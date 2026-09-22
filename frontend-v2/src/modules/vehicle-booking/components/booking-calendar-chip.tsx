@@ -1,10 +1,15 @@
-import { CalendarClock, MapPin, TriangleAlert, User, UserCog } from 'lucide-react'
+import { Ban, CalendarClock, MapPin, TriangleAlert, User, UserCog } from 'lucide-react'
 
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/shared/ui/hover-card'
 import { cn } from '@/shared/utils/cn'
 
 import type { TimelineEvent } from '../api/vehicle-booking-timeline-api'
-import { BOOKING_STATUS_BADGE, REQUEST_TYPE, bookingStatusLabel } from '../types/vehicle-booking'
+import {
+  BOOKING_STATUS,
+  BOOKING_STATUS_BADGE,
+  REQUEST_TYPE,
+  bookingStatusLabel,
+} from '../types/vehicle-booking'
 import { formatBookingRange, timeOf } from '../utils/booking-time-format'
 import { calendarStatusStyle, needsDispatch } from '../utils/calendar-status-colors'
 import { CarBookingIcon, DeliveryBookingIcon } from './booking-type-icons'
@@ -56,6 +61,13 @@ export function BookingCalendarChip({ ev, fillHeight = false }: BookingCalendarC
     ? 'Chưa điều phối'
     : [ev.assigned_driver_label, ev.assigned_vehicle_label].filter(Boolean).join(' · ')
   const route = [ev.start_location, ev.end_location].filter(Boolean).join('  →  ')
+  //  Phiếu ĐÃ HỦY / BỊ TỪ CHỐI: thẻ hover phải nói LÝ DO. Chip trên lịch chỉ
+  //  gạch ngang chữ, nên không có nó thì người xem thấy một chuyến chết mà
+  //  không biết vì sao — và câu trả lời nằm sau hai lần bấm (mở phiếu, cuộn tới
+  //  thẻ tiến trình). Rỗng vẫn dựng dòng, xem `closeReasonFact`.
+  const isClosed =
+    ev.status === BOOKING_STATUS.cancelled || ev.status === BOOKING_STATUS.rejected
+  const closeReason = ev.cancel_reason?.trim() || 'Không ghi lý do'
 
   return (
     <HoverCard openDelay={220} closeDelay={80}>
@@ -137,6 +149,17 @@ export function BookingCalendarChip({ ev, fillHeight = false }: BookingCalendarC
           </DetailRow>
           {route && <DetailRow icon={<MapPin className="size-3.5" />}>{route}</DetailRow>}
         </div>
+
+        {isClosed && (
+          <div className="border-t pt-2.5">
+            <DetailRow icon={<Ban className="size-3.5 text-destructive" />}>
+              <span className="font-medium text-destructive">
+                {bookingStatusLabel(ev.status, ev.driver_status)}:
+              </span>{' '}
+              <span className="break-words">{closeReason}</span>
+            </DetailRow>
+          </div>
+        )}
       </HoverCardContent>
     </HoverCard>
   )

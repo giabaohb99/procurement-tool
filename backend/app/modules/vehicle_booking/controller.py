@@ -34,9 +34,15 @@ router = APIRouter(prefix="/api/vehicle-bookings", tags=["vehicle-booking"])
 
 
 def _with_reason(action: str, reason: str) -> str:
-    """Ghép hành động + lý do cho nhật ký, vd 'Từ chối chuyến đi — Lý do: Trùng lịch'."""
+    """Ghép hành động + lý do cho nhật ký, vd 'Từ chối chuyến đi — Lý do: Trùng lịch'.
+
+    ⚠️ Dấu ngăn lấy từ `service.REASON_SEP` chứ không gõ lại: `service.close_reasons`
+    TÁCH câu này ra để trả về cho màn hình (thẻ Tiến trình xử lý, thẻ hover trên
+    lịch). Gõ lại một bản ở đây thì sửa một bên là bên kia lặng lẽ không tách
+    được nữa — giao diện hiện "Không ghi lý do" cho một phiếu có ghi lý do.
+    """
     reason = (reason or "").strip()
-    return f"{action} — Lý do: {reason}" if reason else action
+    return f"{action}{service.REASON_SEP}{reason}" if reason else action
 
 
 #  Nhãn tiếng Việt của các trường người dùng SỬA — để nhật ký ghi CỤ THỂ đã đổi gì

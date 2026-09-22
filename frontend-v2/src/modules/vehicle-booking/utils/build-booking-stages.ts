@@ -70,7 +70,10 @@ export function buildBookingStages(booking: VehicleBooking): BookingStage[] {
       state: 'stopped',
       time: formatStamp(booking.approved_at),
       actor: booking.approver_name,
-      facts: [],
+      //  Phiếu TRẢ VỀ không lấy lý do: backend ghi nhật ký trả về bằng mã
+      //  `update`, trùng mã với mọi lần sửa phiếu, nên không tách ra được câu
+      //  nào chắc chắn là câu trả phiếu (xem `service._REASON_STATUSES`).
+      facts: rejected ? [closeReasonFact(booking)] : [],
     })
     return stages
   }
@@ -130,11 +133,31 @@ export function buildBookingStages(booking: VehicleBooking): BookingStage[] {
   if (cancelled) {
     return [
       ...stages.filter((stage) => stage.state !== 'pending'),
-      { key: 'cancel', title: 'Đã hủy phiếu', state: 'stopped', time: '', actor: '', facts: [] },
+      {
+        key: 'cancel',
+        title: 'Đã hủy phiếu',
+        state: 'stopped',
+        time: '',
+        actor: '',
+        facts: [closeReasonFact(booking)],
+      },
     ]
   }
 
   return stages
+}
+
+/**
+ * Dòng LÝ DO của chặng dừng (đã hủy · bị từ chối) — LUÔN dựng, kể cả khi không
+ * có lý do.
+ *
+ * ⚠️ Ẩn dòng khi rỗng là bỏ mất thông tin: người đọc không phân biệt được
+ * *"phiếu bị hủy mà không ai ghi lý do"* với *"màn hình này không bày lý do"*,
+ * nên họ đi hỏi vòng quanh một câu mà hệ thống biết chắc là không có. Phiếu nạp
+ * từ tệp Excel hệ cũ rơi đúng vào ca này — đợt nạp đó không có cột lý do.
+ */
+function closeReasonFact(booking: VehicleBooking): StageFact {
+  return { label: 'Lý do', value: booking.cancel_reason?.trim() || 'Không ghi lý do' }
 }
 
 function keepFilled(facts: StageFact[]): StageFact[] {

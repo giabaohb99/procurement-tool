@@ -5774,3 +5774,46 @@ trình duyệt ở khổ 1280 điểm (lưới ba cột, chỗ lỗi xén nút x
 Mã nguồn: `frontend-v2/src/modules/vehicle-booking/components/my-trip-card.tsx`
 (vẽ lại trục lộ trình, cho địa chỉ hai dòng, dải nút chia đều);
 `components/booking-workflow-actions.tsx` (thêm cỡ nút nhỏ cho chỗ hẹp).
+
+## duoc-CR-441 | Phiếu đặt xe đã hủy / bị từ chối phải NÓI RA lý do, ở cả thẻ tiến trình lẫn thẻ hover trên lịch
+- status: xong
+- date: 2026-09-22
+Đại ca mở một phiếu đã hủy rồi chỉ vào khối *Tiến trình xử lý*: nó chỉ ghi đúng ba chữ
+"Đã hủy phiếu", không nói vì sao, cũng không nói ai hủy lúc nào. Cùng chỗ đó ở màn *Lịch
+đặt xe*, rê chuột vào một chuyến đã hủy cũng chỉ thấy gạch ngang cái tên. Người xem biết
+chuyến chết mà không biết lý do, và câu trả lời thì nằm sau hai ba lần bấm.
+
+Chỗ khó không nằm ở giao diện mà ở chỗ **lý do không có cột riêng** trong bảng phiếu đặt
+xe. Nó được ghi vào NHẬT KÝ THAO TÁC dưới dạng một câu: đường controller ghép
+"Từ chối yêu cầu — Lý do: …", còn bộ máy duyệt nhiều bước ghi thẳng câu lý do không kèm
+tiền tố, và bản đồng bộ app cũ chép lời bình của từng bước duyệt sang đúng khuôn câu thứ
+nhất. Em chọn ĐỌC từ nhật ký thay vì thêm cột mới: thêm cột là thêm chỗ thứ ba cho cùng
+một sự thật, phải chạy migration, và vẫn phải đi vá lại toàn bộ phiếu cũ. Hàm đọc gom cả
+lô trong MỘT truy vấn vì màn lịch tháng có thể có vài trăm phiếu một lượt, và nó nhận ra
+cả hai khuôn câu.
+
+Hai chỗ cố ý làm khác điều dễ đoán. Thứ nhất, **phiếu Trả về chỉnh sửa KHÔNG lấy lý do**:
+dòng nhật ký của nó mang mã `update`, trùng mã với mọi lần sửa phiếu bình thường, nên lấy
+dòng mới nhất là vớ phải lần sửa gần nhất chứ không phải câu trả phiếu — thà không bày còn
+hơn bày sai. Thứ hai, **dòng lý do LUÔN dựng, kể cả khi rỗng**, và khi rỗng thì ghi thẳng
+"Không ghi lý do": ẩn dòng đi thì người đọc không phân biệt được *"không ai ghi lý do"* với
+*"màn hình này không bày lý do"*, rồi đi hỏi vòng quanh một câu mà hệ thống biết chắc là
+không có.
+
+⚠️ **Dữ liệu đang có trên máy local sẽ hiện "Không ghi lý do" hết.** 26 phiếu đã hủy dưới
+DB local đều đến từ đợt nạp tệp Excel hệ cũ ngày 15/09, mà hai tệp đó không có cột lý do
+nên không có gì để chép; chúng cũng không có dòng nhật ký nào. Phiếu đi qua bản đồng bộ app
+cũ (trên dev/prod) thì có, vì bản đó chép lời bình của bước duyệt. Đã dựng thử một dòng
+nhật ký đúng khuôn để soi giao diện rồi xóa đi, không để lại dữ liệu giả trong DB.
+Kiểm tra: 9 bài kiểm mới cho hàm đọc lý do (đủ hai khuôn câu, phiếu nhiều dòng đóng, câu
+mặc định của bộ máy duyệt, phiếu không có nhật ký, gọi theo lô, danh sách rỗng) — 110 bài
+kiểm đặt xe phía backend xanh; 3 bài kiểm mới phía giao diện cho hàm dựng chặng — 88 bài
+của phân hệ xanh; typecheck 0 lỗi, lint 0 lỗi. Đã soi tay cả hai màn trên trình duyệt.
+Chưa deploy.
+Mã nguồn: `backend/app/modules/vehicle_booking/service.py` (hàm `close_reasons` đọc lý do
+theo lô + tách câu, nối vào cả hai hàm dựng dữ liệu trả về);
+`schema.py` (thêm ô `cancel_reason`); `controller.py` (dùng chung dấu ngăn câu lý do thay
+vì gõ lại); `test/backend/test_dat_xe_ly_do_huy.py` (mới);
+`frontend-v2/src/modules/vehicle-booking/utils/build-booking-stages.ts` (dòng lý do cho
+chặng dừng); `components/booking-calendar-chip.tsx` (dòng lý do trong thẻ hover);
+`types/vehicle-booking.ts`.
