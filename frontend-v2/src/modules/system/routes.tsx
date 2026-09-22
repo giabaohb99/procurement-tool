@@ -103,11 +103,18 @@ export const systemModule: ErpModule = {
     {
       // bao-CR-395: khóa riêng `login_session` — Quản lý thu mua KHÔNG tự có
       // (nằm trong `_SYS_ENTITIES`), vai trò cũ trên hệ đang chạy phải được tick.
+      //
+      // bao-CR-455: bỏ `manage: true`, để mục rơi về cổng mặc định `read`.
+      // Backend chỉ gác `read` (danh sách, lịch sử) và `delete` (thu hồi phiên);
+      // `create`/`write` là HÀNH ĐỘNG MA — phiên do hệ tự mở lúc đăng nhập,
+      // không ai tạo tay và trong một phiên không có gì để sửa. Giữ `manage`
+      // thì ai được tick nhầm hai ô đó sẽ thấy menu rồi vào trong ăn 403 im
+      // lặng, mà người chỉ có `read` — đúng hình dung "được xem, không được
+      // đá" — lại KHÔNG thấy mục nào.
       label: 'Phiên đăng nhập',
       path: appRoutes.system.sessions,
       icon: MonitorSmartphone,
       entity: 'login_session',
-      manage: true,
     },
     {
       //  bao-CR-449 (P4 của đồng bộ app đặt xe cũ). Không `manage`: quyền `read`

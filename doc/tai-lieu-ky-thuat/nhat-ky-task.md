@@ -5200,6 +5200,53 @@ hình sẽ báo lỗi đỏ chứ không phải bảng rỗng — đúng kiểu 
 Tài liệu: `doc/dong-bo-dat-xe-duyet-dau/TIEN-DO.md` (§P1, quyết định N),
 `doc/dong-bo-dat-xe-duyet-dau/README.md` (bảng quyết định).
 
+## bao-CR-455 | Dọn ba hành động ma: bài kiểm cổng quyền v2 xanh trở lại
+- status: xong
+- date: 2026-09-22
+
+Bài kiểm `test_muc_menu_manage_khong_mo_bang_hanh_dong_ma` đỏ từ mười sáu tháng chín, không ai
+nhận. Nó bắt ba cặp khóa-hành động mà giao diện dùng để mở mục menu nhưng backend không có cửa
+nào gác: xóa thành viên điểm cà phê, tạo phiên đăng nhập, sửa phiên đăng nhập. Cấp một trong ba
+cho ai là người đó thấy mục menu hiện ra rồi mọi lời gọi bên trong ăn lỗi từ chối im lặng — mà
+lỗi từ chối trên đường đọc không bật thông báo, nên thứ duy nhất họ thấy là một màn hình trống,
+không chỉ về đâu cả.
+
+Ba cặp nhưng hai gốc khác nhau, nên hai cách chữa khác nhau.
+
+Phiên đăng nhập: bỏ cờ quản lý ở mục menu, để nó rơi về cổng đọc mặc định. Backend chỉ gác đọc
+(danh sách, lịch sử) và xóa (thu hồi một phiên, đá sạch phiên của một người). Tạo và sửa vốn vô
+nghĩa — phiên do hệ tự mở lúc người ta đăng nhập, không ai tạo tay, và bên trong một phiên không
+có gì để sửa. Đổi thế này còn vá luôn một lỗi ngược đang nằm đó: tài khoản chỉ được cấp quyền đọc
+phiên, đúng hình dung người soát được xem nhưng không được đá, trước nay không thấy mục menu nào
+cả. Em kiểm ba chỗ trước khi đổi để chắc không nới lộ ra ai: khóa này nằm trong cụm khóa hệ thống
+nên vai trò thu mua không tự có; Trang cá nhân đi cửa tự phục vụ riêng chứ không chạm khóa này;
+thẻ lối tắt ở trang Tổng quan cũng phải sửa theo, và chính bài kiểm ràng buộc dữ liệu giữa hai
+danh sách đó đã bắt em lúc em mới sửa một chỗ.
+
+Thành viên điểm cà phê: ghi vào danh sách lệch có chủ ý. Phân hệ đó không có một cửa xóa nào, và
+đó là cố ý chứ không phải chưa làm — thành viên nghỉ thì chuyển trạng thái sang đã nghỉ, việc này
+thu hồi số dư về không và ghi một dòng sổ điểm. Xóa cứng sẽ phá đúng quyển sổ ấy. Cùng dạng với
+hai dòng cấu hình và sao lưu đã nằm sẵn trong danh sách đó từ trước.
+
+Một bẫy tự em giăng rồi tự đạp, đáng ghi lại: sửa xong mà bài kiểm vẫn đỏ đúng hai cặp phiên đăng
+nhập. Lý do là bộ quét dò bằng chuỗi con, mà chú thích em vừa viết để giải thích vì sao đã bỏ cờ
+lại có chứa đúng chữ của cái cờ đó. Chú thích nhắc tới cờ bị tính là khai cờ. Chữa ở bộ quét chứ
+không chữa ở chú thích: nay nó bỏ chú thích trước khi cắt khối, đúng cách mà hàm bóc danh sách
+khóa ngay bên trên trong cùng tệp vẫn làm. Không sửa chỗ này thì mục nào lỡ có dòng giải thích là
+mục đó thành hành động ma vĩnh viễn, không cách nào gỡ.
+
+Phần gốc rễ thì chưa chạm và đã ghi thành nợ. Màn Phân quyền dựng ma trận bằng tích khóa nhân
+hành động nên nó vẫn bày ra cả những ô không có cửa nào gác; người phân quyền tick vào đó không
+được gì mà cũng không được báo. Hướng sửa ghi ở nợ hai mươi mốt: gom bản đồ cặp thật lúc dựng
+route rồi trả kèm bản đồ quyền, giao diện làm mờ và khóa ô không có cửa — làm mờ chứ đừng ẩn, ẩn
+thì ma trận thủng lỗ chỗ, người đọc tưởng lỗi hiển thị.
+
+Kiểm: bốn trên bốn bài xanh, trước đó một đỏ ba xanh. Cổng giao diện đủ ba: kiểu không lỗi, lint
+không lỗi, hai trăm bảy mươi mốt bài xanh trong hai thư mục đã đụng. Chưa commit, chưa deploy.
+Tài liệu: `doc/tai-lieu-ky-thuat/change-log-bao.md` (bao-CR-455),
+`doc/tai-lieu-ky-thuat/change-log.md` (nợ N-021),
+`doc/erp/19-viec-con-lai-tong-hop.md` §12.
+
 ## bao-CR-454 | Chia bốn bảng nhật ký theo năm và tách chúng khỏi bản sao lưu hằng đêm
 - status: xong
 - date: 2026-09-21

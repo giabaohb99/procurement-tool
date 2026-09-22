@@ -232,14 +232,15 @@ không chạy — hợp đồng có giá và điều khoản, cùng loại rò v
 - **Duyệt dấu** (`doc/duyet-dau/TIEN-DO.md`): Pha 5 `SealApprovalPanel` + E2E; 3 quyết định A/B/C chờ khách.
 - **Đặt xe** (`doc/dat-xe-duyet-dau/TIEN-DO.md`): E2E 6 bước; cùng 3 quyết định A/B/C.
 - **TASKS.md cũ**: Google OAuth · đơn vị quy đổi · duyệt PO theo ngưỡng · Phase 5 (mẫu in, audit UI, sao lưu).
-- **Menu `manage: true` mở bằng hành động backend KHÔNG gác** (thấy 16/09/2026, ĐANG ĐỎ):
-  `test_dong_bo_giao_dien_v2.py::test_muc_menu_manage_khong_mo_bang_hanh_dong_ma` báo ba cặp —
-  `coffee_member.delete`, `login_session.create`, `login_session.write`. Nghĩa là cấp ba hành
-  động đó cho ai thì người đó **thấy mục menu rồi vào trong ăn 403 im lặng**, vì không endpoint
-  nào gác đúng cặp ấy. Chữa một trong hai đường: bỏ `manage: true` ở mục menu (đổi sang
-  `action:` đúng hành động backend thật sự gác), hoặc thêm cặp vào `_LECH_DA_BIET` của tệp test
-  **kèm lý do**. Lỗi CÓ SẴN, không do sổ đồng bộ — **ai làm tới Điểm cà phê / phiên đăng nhập
-  thì dọn luôn**.
+- ~~**Menu `manage: true` mở bằng hành động backend KHÔNG gác**~~ (thấy 16/09/2026) — **XONG
+  22/09/2026, bao-CR-455.** Ba cặp bị báo đã xử hết, hai gốc hai cách: `login_session.create` +
+  `login_session.write` → **bỏ `manage: true`**, mục rơi về cổng `read` (backend chỉ gác
+  `read` + `delete`; phiên do hệ tự mở, không ai tạo tay và không có gì để sửa) — tiện vá luôn
+  lỗi ngược: người chỉ có `login_session.read` trước đó KHÔNG thấy mục nào. `coffee_member.delete`
+  → **ghi vào `_LECH_DA_BIET`**: phân hệ Dego Coffee cố ý không có `@router.delete` nào, thành
+  viên nghỉ thì chuyển `status` sang `LEFT` để `mark_member_left` thu hồi số dư kèm dòng sổ điểm.
+  Kèm theo, bộ quét của bài kiểm nay **bỏ chú thích trước khi cắt khối** — trước đó một chú thích
+  chỉ *nhắc tới* cờ cũng bị tính là khai cờ.
 - **Nợ kỹ thuật**: N-008 báo cáo mua hàng gom theo TÊN phòng ban · N-015 `tab_contract` còn 2 cột
   chữ tiếng Việt · phân quyền hợp đồng trên prod chưa đổi (6 vai trò còn `contract = all`) ·
   «Tên trên hóa đơn» ĐMH backend chưa ghi lúc lưu.
