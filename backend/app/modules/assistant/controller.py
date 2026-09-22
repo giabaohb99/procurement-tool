@@ -7,6 +7,8 @@ Phân quyền: cờ AI_ENABLED + quyền `assistant.read` (chỉ ban lãnh đạ
 company_head — xem seed.py). Bot LUÔN chạy dưới danh tính người hỏi (JWT của họ), không có tài
 khoản dịch vụ đặc quyền — để mọi tool loại A về sau vẫn đi qua apply_scope của chính user.
 """
+import logging
+
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
 from sqlalchemy.orm import Session
 
@@ -21,6 +23,8 @@ from . import usage as usage_layer
 from .provider import ProviderError, configured_providers
 from .schema import AskIn, ConfirmUpdateIn
 from .usage import QuotaExceeded
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/assistant", tags=["assistant"])
 
@@ -247,8 +251,10 @@ def rag_index_status(user=Depends(require("help_article", "write")),
     from .rag import indexer
     try:
         stats = indexer.index_status(db)
-    except Exception as e:  # noqa: BLE001 - Qdrant sập là lỗi hạ tầng, nói thẳng cho người xem
-        raise HTTPException(status_code=502, detail=f"Không đọc được kho vector: {e}") from e
+    except Exception:  # noqa: BLE001 - Qdrant sập là lỗi hạ tầng, nuốt và ghi log cho quản trị
+        logger.exception("Không đọc được kho vector (rag/index-status)")
+        raise HTTPException(status_code=502,
+                            detail="Không đọc được kho vector, thử lại sau") from None
     return success({"enabled": True, **stats})
 
 
@@ -280,8 +286,10 @@ def rag_reindex(mode: str = "all", user=Depends(require("help_article", "write")
     task = reindex_missing_task if mode == "missing" else rebuild_all_task
     try:
         async_result = task.delay()
-    except Exception as e:  # noqa: BLE001 - lỗi broker báo về cho người bấm, không để 500 trơ
-        raise HTTPException(status_code=502, detail=f"Xếp hàng nạp lại chỉ mục thất bại: {e}") from e
+    except Exception:  # noqa: BLE001 - lỗi broker nuốt và ghi log, không bày cấu trúc bên trong
+        logger.exception("Xếp hàng nạp lại chỉ mục thất bại (rag/reindex, mode=%s)", mode)
+        raise HTTPException(status_code=502,
+                            detail="Xếp hàng nạp lại chỉ mục thất bại, thử lại sau") from None
     message = ("Đã xếp hàng nạp bù các tài liệu còn thiếu" if mode == "missing"
                else "Đã xếp hàng nạp lại chỉ mục tài liệu")
     return success({"task_id": async_result.id, "mode": mode}, message=message)
