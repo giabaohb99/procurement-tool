@@ -5480,3 +5480,89 @@ Mã nguồn: `frontend-v2/src/modules/vehicle-booking/pages/vehicle-booking-deta
 `components/booking-note-card.tsx` (mới, tách từ thân phiếu);
 `components/booking-detail-body.tsx` (bỏ khối Ghi chú);
 `components/booking-detail-header.tsx` (gỡ phép đo chiều cao không còn ai dùng).
+
+## bao-CR-453 | Chi phí thu mua: chốt bảy điểm thiết kế và viết tài liệu thiết kế, chưa code
+- status: dang-lam
+- date: 2026-09-22
+- pic: NSU209
+Hôm qua đại ca nêu ý giữa lúc bàn việc khác: đơn mua hàng hiện chỉ có một con số chi phí,
+trong khi thực tế đi qua ba bước dự toán, tạm tính rồi quyết toán, và công nợ thật chỉ nên
+hiện ra ở bước cuối. Đại ca tự nhận hay quên nên dặn ghi lại; em đặt chỗ số 453 ngay hôm đó.
+
+Hôm nay em dựng bản phác màn hình và đề xuất tên gọi. Đại ca duyệt tên «Chi phí thu mua» (khớp
+tài khoản 1562 của Thông tư 200), ba cột Dự toán / Tạm tính / Quyết toán, và bố cục: khối nằm
+trong chi tiết đơn mua hàng cho mọi loại đơn, một dòng ba số thay cho cờ Dự kiến / Thực tế cũ,
+cột hiện hành tô nền và gõ được, cột đã qua khóa, hai nút chốt theo đơn, một dòng có thể quyết
+toán sớm khi hóa đơn về trước. Sáu điểm còn lại em nêu kèm phương án mặc định và đại ca chốt
+theo đúng đề xuất: nới bảng chi phí nhập khẩu tại chỗ và đổi tên, phí vận chuyển giữ nguyên
+trên lần giao chỉ hiện thêm để xem; mười lăm loại chi phí sẵn có thành dòng seed của một danh
+mục quản trị tự thêm bớt, loại nào cũng sinh công nợ trừ loại đánh dấu không sinh; công nợ chỉ
+sinh ở Quyết toán; người có quyền sửa đơn thì chốt, mở lại cần quyền duyệt đơn và phải ghi lý
+do; giá hàng ba giai đoạn tách thành yêu cầu riêng sau; mỗi giai đoạn một tỷ giá.
+
+Em viết tài liệu thiết kế theo khuôn của tài liệu hồ sơ nhập khẩu: bảy điểm đã chốt, vì sao
+cần, phạm vi làm và cố ý không làm, khái niệm, danh sách chức năng sáu nhóm, mô hình dữ liệu
+(bảng chi phí đổi tên với chín cột giai đoạn, bảng danh mục loại chi phí mới, cột giai đoạn
+trên đơn), năm mã hành động nhật ký, API mới, phân quyền có một khóa quyền mới cho danh mục,
+bộ test chín bài, chia năm đợt, rủi ro và ba câu hỏi còn mở cho khách. Ba tên mã lịch sử cố ý
+giữ nguyên để hai giao diện không gãy: mã nguồn công nợ, khóa dữ liệu trong API chi tiết đơn.
+Dữ liệu cũ đổ vào cột Quyết toán, đơn cũ coi như đã chốt.
+
+Chưa có một dòng mã nào. Việc kế tiếp là đợt một phía máy chủ khi đại ca ra lệnh, làm trên
+giao diện cũ trước rồi mới bê sang giao diện mới. Máy chủ chính đang tạm dừng cập nhật nên mọi
+đợt chỉ lên môi trường thử.
+
+Tài liệu: `doc/erp/nhap-khau/02-chi-phi-thu-mua.md` (mới), `doc/erp/19-viec-con-lai-tong-hop.md` §5,
+`doc/tai-lieu-ky-thuat/change-log-bao.md` (dòng bao-CR-453).
+Mã nguồn: chưa có.
+Commit: chưa, chờ lệnh.
+
+## bao-CR-458 | Chữa bộ chạy thử của app đặt xe cũ: chạy lại được ngay trên máy làm việc
+- status: xong
+- date: 2026-09-22
+- pic: NSU209
+Suốt hai đợt hôm nay em phải báo với đại ca cùng một câu: bài kiểm bên app cũ em chưa chạy
+lại được. Bộ chạy thử của kho đó chết ngay ở bước khởi động máy ảo, mọi tệp kiểm đều hỏng như
+nhau, không ra nổi một dòng kết quả. Em đã chứng minh nó hỏng sẵn từ trước bằng cách cất hết
+thay đổi rồi chạy trên cây mã sạch, vẫn hỏng y hệt. Đại ca bảo sửa, nên em truy tới gốc.
+
+Hóa ra lỗi nằm ở máy chứ không ở mã, và thủ phạm là cái tên thư mục. Đường dẫn dự án đi qua
+thư mục có dấu tiếng Việt. Bộ chạy thử của Worker không nạp mã theo kiểu thường: nó dựng một
+máy ảo giống hệt máy chủ thật rồi tiếp mã vào qua một cái cổng nội bộ, và cổng đó trả mã về
+bằng một cú chuyển hướng, gắn đường dẫn tệp vào phần tiêu đề của phản hồi. Tiêu đề kiểu đó chỉ
+chở được ký tự trong bảng mã một byte, mà chữ đ có gạch ngang thì nằm ngoài bảng ấy. Thế là
+cú dựng phản hồi ném lỗi ngay tại chỗ, cổng trả về rỗng, máy ảo báo không tìm thấy mã và tắt.
+Vì mọi tệp mã đều nằm dưới đường dẫn có dấu, không tệp nào thoát được, nên hỏng từ gốc chứ
+không phải hỏng lẻ tẻ vài bài.
+
+Em xác nhận đúng là chỗ này chứ không đoán: em dựng lại đúng cú tạo phản hồi ấy bằng đường dẫn
+thật, và nó ném lỗi nói thẳng rằng ký tự ở vị trí thứ ba mươi hai có giá trị 273, vượt quá 255.
+Vị trí đó chính là chữ đ.
+
+Cách chữa may là có sẵn ở thượng nguồn. Bản 0.19.0 của bộ chạy thử đã thêm một bước mã hóa
+đường dẫn trước khi gắn vào tiêu đề, và chỉ mã hóa khi đường dẫn thật sự có ký tự lạ, nên
+đường dẫn thường không bị đụng tới. Em nâng từ bản đang dùng lên bản nhỏ nhất có bản vá đó,
+cố ý không nhảy lên bản mới nhất: đây là kho mà CI chạy bài kiểm ngay trước khi đưa lên máy
+chủ, nhảy xa bốn đời bản là tự chuốc rủi ro làm đứng cả đường triển khai để đổi lấy thứ mình
+không cần. Yêu cầu về phiên bản của bộ chạy thử không đổi, công cụ triển khai vẫn nằm trong
+dải cũ.
+
+Chữa xong chỗ đó thì lòi ra chỗ thứ hai: bộ kiểm chạy được nhưng Node chết giữa chừng vì hết
+bộ nhớ. Lý do là mỗi luồng chạy thử dựng một máy ảo riêng, mà máy làm việc có hai mươi hai
+nhân nên nó mở hai mươi mốt máy ảo cùng lúc. Em chặn số luồng ở bốn, ghi rõ lý do ngay trong
+tệp cấu hình để sau này không ai gỡ ra vì tưởng là thừa. Cả bộ chạy hết bảy giây.
+
+Kết quả là từ nay mọi thay đổi bên app cũ đều kiểm được ngay trước khi đẩy, thay vì đẩy lên
+rồi chờ CI phát hiện hộ sau khi mã đã nằm trên máy chủ. Bộ kiểm tại chỗ ra đúng con số CI vẫn
+ra: hai mươi mốt tệp, một trăm bảy mươi tư bài qua, ba bài treo.
+
+Nhân đây em đính chính một câu em nói sáng nay. Lúc đóng bao-CR-457 em bảo mấy bài kiểm vừa
+sửa là chưa chạy lần nào. Câu đó sai: đường triển khai của kho app cũ có bước chạy bài kiểm
+ngay trước khi đưa lên máy chủ, mà lượt triển khai đợt đó xanh, nghĩa là bài kiểm đã chạy và
+đã qua, chỉ là chạy trên máy chủ CI chứ không chạy được trên máy làm việc. Em kiểm lại nhật ký
+lượt chạy đó: tệp bài kiểm luồng ghi ngược bảy bài qua hết.
+
+Mã nguồn (kho app cũ, không phải kho này): `my-firebase-api/package.json`,
+`my-firebase-api/package-lock.json`, `my-firebase-api/vitest.config.mts`. Không đụng mã nghiệp vụ.
+Commit: `my-firebase-api` nhánh dev 9b069d1.
+Tham chiếu: bao-CR-457 và bao-CR-456 là hai đợt phải báo "chưa chạy được bài kiểm".
