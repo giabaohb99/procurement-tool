@@ -2,11 +2,11 @@ import { Repeat, Route, Users } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import { Card } from '@/shared/ui/card'
+import { TimelineItem } from '@/shared/ui/timeline-item'
 import { cn } from '@/shared/utils/cn'
 import { REQUEST_TYPE, type Stop, type VehicleBooking } from '../types/vehicle-booking'
 import { formatStamp } from '../utils/booking-time-format'
 import { BookingCardHeader, BookingInfoItem } from './booking-info-item'
-import { TimelineItem } from './booking-timeline-item'
 
 /**
  * Thẻ LỘ TRÌNH — điểm đi · điểm dừng · điểm đến xếp trên một trục dọc, mỗi điểm

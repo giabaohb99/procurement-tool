@@ -1,12 +1,15 @@
+import type { TimelineState } from '@/shared/ui/timeline-item'
 import { formatMoney } from '@/shared/utils/format-money'
 import { BOOKING_STATUS, type VehicleBooking } from '../types/vehicle-booking'
 import { formatStamp } from './booking-time-format'
 
 /**
- * Trạng thái một chặng xử lý:
- * · `done` — đã xảy ra · `pending` — chưa tới lượt · `stopped` — phiếu dừng ở đây.
+ * Trạng thái một chặng xử lý — cùng bộ với điểm đánh dấu dùng chung
+ * (`shared/ui/timeline-item.tsx`): `done` · `pending` · `stopped`. Khai lại thành
+ * tên riêng ở đây cho đọc xuôi, nhưng KHÔNG chép giá trị: lệch một chữ là
+ * `TimelineMarker` vẽ nhầm vòng tròn mà `tsc` không kêu.
  */
-export type StageState = 'done' | 'pending' | 'stopped'
+export type StageState = TimelineState
 
 /** Một mẩu thông tin phụ của chặng ("Xe · 51A-12345"). Giá trị rỗng bị loại. */
 export interface StageFact {

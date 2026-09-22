@@ -1,12 +1,12 @@
-import { BadgeCheck, Check, X } from 'lucide-react'
+import { BadgeCheck } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import { Card } from '@/shared/ui/card'
+import { TimelineItem, TimelineMarker } from '@/shared/ui/timeline-item'
 import { cn } from '@/shared/utils/cn'
 import type { VehicleBooking } from '../types/vehicle-booking'
 import { buildBookingStages, type BookingStage } from '../utils/build-booking-stages'
 import { BookingCardHeader } from './booking-info-item'
-import { TimelineItem } from './booking-timeline-item'
 import { DriverStatusBadge } from './status-pill'
 
 /**
@@ -38,7 +38,7 @@ export function BookingProgressCard({ booking }: { booking: VehicleBooking }) {
           <TimelineItem
             key={stage.key}
             last={index === stages.length - 1}
-            marker={<StageMarker state={stage.state} />}
+            marker={<TimelineMarker state={stage.state} />}
           >
             <StageRow
               stage={stage}
@@ -98,29 +98,5 @@ function StageRow({ stage, badge }: { stage: BookingStage; badge?: ReactNode }) 
         </dl>
       )}
     </div>
-  )
-}
-
-/** Vòng tròn đầu chặng: xong (đặc, dấu tick) · chờ (nét đứt) · dừng (đỏ, dấu X). */
-function StageMarker({ state }: { state: BookingStage['state'] }) {
-  if (state === 'done') {
-    return (
-      <span className="grid size-5 shrink-0 place-items-center rounded-full bg-emerald-500 text-white">
-        <Check className="size-3" strokeWidth={3} />
-      </span>
-    )
-  }
-  if (state === 'stopped') {
-    return (
-      <span className="grid size-5 shrink-0 place-items-center rounded-full bg-destructive text-white">
-        <X className="size-3" strokeWidth={3} />
-      </span>
-    )
-  }
-  return (
-    <span
-      className="size-5 shrink-0 rounded-full border-2 border-dashed border-muted-foreground/40"
-      aria-hidden="true"
-    />
   )
 }
