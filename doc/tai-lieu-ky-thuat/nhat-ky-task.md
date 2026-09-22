@@ -5199,3 +5199,63 @@ nên nếu có ai sửa tay lệch một bên thì người đó qua được c�
 hình sẽ báo lỗi đỏ chứ không phải bảng rỗng — đúng kiểu hỏng cần có, nó kêu chứ không im.
 Tài liệu: `doc/dong-bo-dat-xe-duyet-dau/TIEN-DO.md` (§P1, quyết định N),
 `doc/dong-bo-dat-xe-duyet-dau/README.md` (bảng quyết định).
+
+Ngày 22/09 em gỡ bỏ phần quyển sổ của đợt này, xem mục bao-CR-456. Ba thứ còn giữ lại từ
+đợt này là cách đọc kết quả một lượt bắn, cách gộp hai ô vào đúng một lượt ghi, và dấu
+trạng thái trên phiếu.
+
+## bao-CR-456 | Gỡ quyển sổ đồng bộ bên app đặt xe cũ, dồn việc theo dõi về một chỗ duy nhất
+- status: xong
+- date: 2026-09-22
+- pic: NSU209
+Hôm qua em dựng bên app đặt xe cũ một quyển sổ nhỏ, ghi lại những phiếu bắn thẳng sang hệ
+thống mà không tới nơi. Hôm nay em gỡ nó đi, theo đúng ý đại ca.
+
+Lý do gỡ là quyển sổ đó không có đường tự dọn. Người duy nhất xóa được một dòng trong sổ là
+chính app cũ, ở lần bắn kế tiếp của đúng phiếu đó. Còn ba vòng quét bên hệ thống của mình thì
+đọc kho dữ liệu của app cũ ở chế độ chỉ đọc, cố ý không bao giờ ghi vào, nên chúng nhặt phiếu
+về được mà không xóa nổi dòng sổ, cũng không gỡ nổi dấu đỏ trên phiếu. Em đã thấy chuyện này
+xảy ra với một phiếu thật: lượt bắn thẳng trượt lúc 10 giờ 11, vòng quét dựng ra phiếu duyệt
+dấu DD000865 lúc 10 giờ 12, mà tới chiều dòng sổ và dấu đỏ vẫn còn nguyên. Phiếu đã yên vị
+bên mình từ lâu nhưng bên app cũ vẫn báo là kẹt. Cứ mỗi sự cố là sổ lại đọng thêm vài dòng
+sai như vậy, và một quyển sổ có dòng sai thì người xem sẽ thôi không tin nó nữa.
+
+Lý do thứ hai là cái nó mua được quá ít. Bên mình đã có ba lưới đỡ: móc bắn thẳng, vòng quét
+ba phút một lần theo dấu thời gian sửa, và vòng quét mỗi đêm đọc lại cả kho bỏ qua dấu thời
+gian. Phiếu nào rồi cũng về tới nơi, chậm nhất là qua một đêm. Quyển sổ bên app cũ chỉ báo
+sớm hơn lưới thứ hai khoảng ba phút, đổi lại là thêm một mặt giao diện phải nuôi, một đường
+API phải gác quyền, và một nhánh dữ liệu phải mở quyền đọc ghi.
+
+Lý do thứ ba là chỗ theo dõi đã có sẵn rồi. Màn «Sổ đồng bộ» bên mình dựng từ tuần trước đọc
+thẳng bảng nhật ký đồng bộ, lại phân biệt được phiếu về bằng móc bắn thẳng hay về bằng vòng
+quét, nên sau này muốn dựng cảnh báo «móc bắn thẳng im tiếng mấy ngày rồi» thì đủ dữ liệu để
+làm, không cần quyển sổ nào bên app cũ.
+
+Em gỡ sạch cả hai đầu: tệp đọc ghi sổ và bài kiểm của nó, đường API tra sổ, hai cú ghi và xóa
+sổ nằm trong luồng bắn phiếu, kiểu dữ liệu của một dòng sổ ở cả hai repo, và tab thứ năm
+«Đồng bộ ERP» trong màn Quản trị của app cũ. Em giữ lại ba thứ đi nhờ cùng đợt hôm qua nhưng
+không thuộc quyển sổ, vì chúng là sửa thật: cách đọc kết quả một lượt bắn, cách gộp số phiếu
+bên mình và dấu trạng thái vào đúng một lượt ghi thay vì hai, và chính dấu trạng thái trên
+phiếu.
+
+Bên hệ thống của mình không mất gì cả. Màn «Sổ đồng bộ» đứng nguyên, ba vòng quét đứng nguyên,
+chuông cảnh báo dòng lỗi để lâu đọc cơ sở dữ liệu của mình chứ không đọc kho app cũ nên không
+hề hấn. Tab «Đồng bộ ERP» thì chưa từng hiện ra với người dùng, vì bản dựng giao diện của đợt
+hôm qua không lên được máy chủ, nên gỡ đi cũng không ai thấy khác.
+
+Bài kiểm bên app cũ em chưa chạy lại được. Bộ chạy thử của repo đó đang hỏng ở tầng khởi động
+máy ảo, hỏng sẵn từ trước chứ không phải do em gỡ: em cất hết thay đổi đi, chạy lại trên cây
+mã sạch thì vẫn hỏng y hệt. Thay vào đó em kiểm bằng cổng kiểm kiểu dữ liệu, chạy sạch không
+một lỗi, cộng với một lượt rà toàn văn không còn chỗ nào nhắc tên quyển sổ. Bên giao diện app
+cũ thì ba cổng kiểm đều xanh: soát lỗi văn phong không lỗi, kiểm kiểu dữ liệu không lỗi, và
+một trăm bốn mươi bài kiểm trong hai mươi bốn tệp đều qua.
+
+Còn hai việc phải làm tay mà em không tự làm được. Thứ nhất là bỏ khối phân quyền của nhánh
+sổ trong phần Luật của kho dữ liệu app cũ, em không được phép sửa phần đó. Thứ hai là dọn một
+dòng sổ mồ côi và một dấu đỏ còn sót trên phiếu đã nói ở trên; cách sạch nhất là đại ca vào
+sửa phiếu duyệt dấu DD000865 một lần, app cũ sẽ bắn lại và tự gỡ dấu đỏ.
+
+Commit: `my-firebase-api` nhánh dev c6f2b93, `degoholding-app-frontend` nhánh dev 155c861.
+Deploy: cả hai đã lên môi trường thử của app cũ ngày 22/09; lượt triển khai máy chủ của
+my-firebase-api chạy xong không lỗi.
+Tham chiếu: bao-CR-452 là đợt dựng quyển sổ này, bao-CR-449 là màn «Sổ đồng bộ» thay thế nó.
