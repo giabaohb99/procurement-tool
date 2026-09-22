@@ -5743,3 +5743,34 @@ Mã nguồn: `components/catalog-identity-cell.tsx` và `components/catalog-reco
 (mới — hai mảnh gom từ bản chép); `components/vehicle-form.tsx`,
 `components/driver-form.tsx` (gọi chốt một-lượt khi bấm Lưu);
 `config/vehicle-crud.tsx`, `config/driver-crud.tsx` (bỏ khai báo huy hiệu chết).
+
+### duoc-CR-440-the-chuyen-xe | Thẻ chuyến ở màn Chuyến của tôi: nút bị xén, địa chỉ bị cắt mất tên quận
+- status: xong
+Đại ca chụp một thẻ chuyến gửi sang bảo làm lại. Soi ra hai lỗi thật, không phải chuyện
+thẩm mỹ.
+
+Một là **nút bị xén ngay trong viền thẻ**. Lưới ba cột chừa cho mỗi thẻ 285 điểm bề ngang
+bấm được, mà hai nút cỡ thường — «Chấp nhận» và «Từ chối chuyến» — cần 286 điểm, nên nút
+thứ hai mất đuôi chữ. Đã cho cụm nút dùng cỡ nhỏ và chia đều bề ngang: hai nút thì mỗi
+nút một nửa hàng, một nút đứng lẻ («Bắt đầu», «Hoàn thành») thì giãn hết hàng thành một
+vệt bấm rộng, dễ trúng hơn hẳn trên điện thoại.
+
+Hai là **địa chỉ bị cắt cụt đúng phần cần đọc**. Mỗi điểm dừng trước đây gói đúng một
+dòng, mà địa chỉ ở đây có dạng «Tên chỗ — số nhà, phường, quận, thành phố» nên phần rụng
+đi luôn là quận và thành phố: tài xế đọc «45 Đường số 8, P.Linh Trung, TP.Thủ Đức, TP.Hồ
+Chí ...» rồi vẫn phải mở phiếu ra mới biết đi hướng nào. Nay mỗi điểm được xuống dòng thứ
+hai. Kéo theo phải sửa cách vẽ trục lộ trình: chấm neo theo DÒNG ĐẦU của mỗi điểm chứ
+không neo theo tâm khối chữ (điểm một dòng đứng cạnh điểm hai dòng mà neo giữa thì hai
+chấm lệch nhau, trục gãy thành hai dấu rời), còn nét nối chạy từ dưới chấm tới hết ô nên
+tự dài ra theo đoạn chữ bên cạnh.
+
+Tiện thể: hàng xe và hàng hàng hóa tụt xuống đáy phần nội dung. Thẻ trong lưới luôn cao
+bằng thẻ dài nhất hàng nên thẻ ngắn thừa ra một khoảng trắng; để khoảng đó nằm giữa lộ
+trình và dòng xe thì thẻ vẫn đọc ra ba tầng, để nó nằm ngay trên dải nút thì thẻ trông
+như bị hụt một khúc.
+Kiểm tra: typecheck 0 lỗi, lint 0 lỗi, 85 bài kiểm của phân hệ xanh. Đã soi lại trên
+trình duyệt ở khổ 1280 điểm (lưới ba cột, chỗ lỗi xén nút xuất hiện) và khổ điện thoại
+390 điểm. Chưa deploy.
+Mã nguồn: `frontend-v2/src/modules/vehicle-booking/components/my-trip-card.tsx`
+(vẽ lại trục lộ trình, cho địa chỉ hai dòng, dải nút chia đều);
+`components/booking-workflow-actions.tsx` (thêm cỡ nút nhỏ cho chỗ hẹp).

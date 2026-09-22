@@ -49,6 +49,13 @@ interface BookingWorkflowActionsProps {
    * phần tóm tắt phiếu bị ép xuống ba dòng.
    */
   layout?: 'inline' | 'menu'
+  /**
+   * Cỡ nút. `sm` dành cho chỗ HẸP — cụ thể là thẻ ở màn «Chuyến của tôi»: ở lưới
+   * ba cột, phần bấm được của thẻ chỉ rộng 285px, mà hai nút cỡ thường
+   * («Chấp nhận» + «Từ chối chuyến») cần 286px nên nút thứ hai bị cắt cụt đuôi
+   * ngay trong viền thẻ (thấy ngày 22/09/2026).
+   */
+  size?: 'default' | 'sm'
 }
 
 /** Một hành động trong cụm — dựng thành danh sách rồi mới render, để phân thứ bậc. */
@@ -95,6 +102,7 @@ export function BookingWorkflowActions({
   onDispatch,
   scope = 'all',
   layout = 'inline',
+  size = 'default',
 }: BookingWorkflowActionsProps) {
   const { can } = usePermission()
   const driverOnly = scope === 'driver'
@@ -201,7 +209,7 @@ export function BookingWorkflowActions({
   return (
     <>
       {primary && (
-        <Button onClick={primary.run} disabled={busy}>
+        <Button size={size} onClick={primary.run} disabled={busy}>
           <primary.icon className="size-4" />
           {primary.label}
         </Button>
@@ -211,7 +219,12 @@ export function BookingWorkflowActions({
         ? rest.length > 0 && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" disabled={busy} aria-label="Thao tác khác">
+                <Button
+                variant="outline"
+                size={size === 'sm' ? 'icon-sm' : 'icon'}
+                disabled={busy}
+                aria-label="Thao tác khác"
+              >
                   <MoreHorizontal className="size-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -233,6 +246,7 @@ export function BookingWorkflowActions({
             <Button
               key={a.key}
               variant="outline"
+              size={size}
               //  Hành động chặn/lùi để CHỮ đỏ trên nền trắng, không tô nền đỏ đặc:
               //  nền đặc hút mắt mạnh hơn cả nút chính, nên dải nút đọc ra là
               //  "Từ chối" trước rồi mới tới việc cần làm.
