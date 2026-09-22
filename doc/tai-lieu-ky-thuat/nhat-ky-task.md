@@ -5582,3 +5582,164 @@ Mã nguồn (kho app cũ, không phải kho này): `my-firebase-api/package.json
 `my-firebase-api/package-lock.json`, `my-firebase-api/vitest.config.mts`. Không đụng mã nghiệp vụ.
 Commit: `my-firebase-api` nhánh dev 9b069d1.
 Tham chiếu: bao-CR-457 và bao-CR-456 là hai đợt phải báo "chưa chạy được bài kiểm".
+
+## duoc-CR-440 | Dọn lại giao diện hai màn danh mục Quản lý xe và Quản lý tài xế
+- status: xong
+- date: 2026-09-22
+Đại ca mở màn Quản lý xe rồi nói thẳng là nhìn xấu, chữ chỗ đậm chỗ nhạt. Đọc kỹ thì
+đúng: trên một hàng có tới ba kiểu chữ khác nhau mà không kiểu nào nói lên điều gì —
+biển số in đậm, mẫu xe chữ thường, loại xe chữ thường nhưng kèm biểu tượng — nên mắt
+không biết bám vào đâu để nhận ra một chiếc xe. Tệ hơn, ba chiếc xe thuê ngoài bỏ
+trống ô mẫu xe, thành ra ba dòng đầu bảng có một cột trắng trơn nối nhau.
+
+Em gộp hai cột biển số và mẫu xe thành MỘT ô nhận diện: biển số nằm trên, mẫu xe nằm
+dưới bằng chữ nhỏ mờ, bên trái là ô biểu tượng theo loại xe. Mỗi hàng nay chỉ còn một
+điểm nhấn duy nhất. Xe thuê ngoài không có mẫu xe thì dòng dưới lấp bằng tên đơn vị
+cho thuê, thứ trước giờ chưa từng lên bảng dù dữ liệu vẫn có.
+
+Trong lúc sửa thì lòi ra một lỗi nội dung, không phải lỗi hình thức. Cột sức chứa của
+xe mang hai nghĩa trong cùng một con số: số chỗ ngồi với xe chở người, số tấn với xe
+tải. Bản cũ nhét đơn vị vào tiêu đề cột ("Tải (người/tấn)") rồi in con số trần, mà
+tiêu đề đó lại bị cắt cụt vì cột chỉ rộng 130 điểm — nhìn vào chỉ thấy "2,4" đứng cạnh
+"7" và không có cách nào biết cái nào là tấn. Nay đơn vị đi kèm từng ô. Khi ghép đơn vị
+mới phát hiện phép đoán loại xe đang sai với XE BÁN TẢI: nó có chữ "tải" nên bốn chiếc
+Hilux và BT50 khai sức chứa 5 (là 5 CHỖ ngồi) bị đọc thành "5 tấn". Đã loại xe bán tải
+ra khỏi nhóm chở hàng và viết bài kiểm ghim đúng trường hợp này.
+
+Màn Quản lý tài xế sửa theo đúng lối đó cho hai màn anh em không lệch nhau: tên tài xế
+kèm ảnh đại diện chữ cái, giấy phép lái xe xuống dòng dưới. Trước đó hạng và số giấy
+phép chiếm hai cột riêng, mà 13 trên 15 tài xế bỏ trống số giấy phép — tức một cột rộng
+150 điểm gần như trắng.
+
+Cả hai màn được thêm: một câu mô tả dưới tiêu đề, hai ô lọc nhanh theo trạng thái và
+theo nguồn đặt sẵn ngoài bảng (trước phải mở tờ Bộ lọc mới hỏi được hai câu hỏi thường
+ngày nhất), cột đơn vị cho thuê / đơn vị cung cấp mặc định ẩn, và thẻ riêng cho khổ
+điện thoại thay cho bảng sáu cột phải cuộn ngang. Thẻ điện thoại chỉ đeo huy hiệu khi
+tình trạng KHÁC "sẵn sàng", vì cả 13 xe lẫn 15 tài xế hiện đều sẵn sàng và mười mấy
+huy hiệu giống hệt nhau thì thứ cần nhặt ra lại chìm nghỉm.
+
+Hai điều phải nói rõ cho người sau. Thứ nhất, khóa nhớ bố cục bảng của cả hai màn đã
+đổi sang đuôi ".v2" vì bộ cột đổi hẳn, mà bảng nhớ thứ tự cột trong bộ nhớ trình duyệt
+và bản nhớ luôn thắng — không đổi khóa thì ai từng đụng menu Cột sẽ thấy cột mới rơi
+xuống cuối. Thứ hai, em KHÔNG thêm ô lọc theo mẫu xe / số giấy phép / đơn vị cho thuê
+dù bảng có bày chúng: backend chỉ nhận bốn tên lọc cho mỗi danh mục và tên ngoài danh
+sách đó bị bỏ qua trong im lặng, tức người dùng đặt điều kiện, bấm Áp dụng, rồi nhận
+lại nguyên danh sách cũ mà không có lỗi nào để lần. Muốn lọc được thì phải mở danh
+sách bên backend trước.
+
+Kiểm tra: typecheck 0 lỗi, lint 0 lỗi và không thêm cảnh báo nào (vẫn đúng 31 cảnh báo
+cũ), 85 bài kiểm của phân hệ đặt xe xanh (thêm 10 bài mới cho phép đoán loại xe và
+cách ghép đơn vị sức chứa). Đã bấm tay trên trình duyệt cả hai màn ở khổ 1280 điểm và
+khổ điện thoại 390 điểm, chụp màn hình đối chiếu trước sau. Chưa deploy, mới nằm ở máy em.
+Mã nguồn: `frontend-v2/src/modules/vehicle-booking/config/vehicle-crud.tsx` và
+`config/driver-crud.tsx` (bộ cột mới, ô lọc nhanh, thẻ khổ điện thoại, đổi khóa nhớ bố cục);
+`components/vehicle-identity-cell.tsx` và `components/driver-identity-cell.tsx` (mới — ô nhận diện hai dòng);
+`utils/is-cargo-vehicle.ts` (mới — phép đoán xe chở hàng, loại trừ xe bán tải, dùng chung
+cho cả biểu tượng lẫn đơn vị sức chứa);
+`utils/format-vehicle-capacity.ts` (mới — ghép đơn vị "chỗ" hay "tấn" vào từng ô);
+`components/vehicle-type-icon.tsx` (dùng lại phép đoán chung thay vì tự bắt chữ "tải").
+
+### duoc-CR-440-chi-tiet-xe | Dọn lại trang chi tiết / sửa một chiếc xe
+- status: xong
+Đại ca mở tiếp trang sửa xe và bảo làm lại luôn. Lỗi nặng nhất không phải cái đẹp: mở
+trang ra thì đầu trang chỉ ghi "Chỉnh sửa thông tin xe", KHÔNG có chỗ nào nói đang sửa
+chiếc nào — phải đọc xuống tận ô thứ tư mới thấy biển số. Nay đầu trang là biển số, kèm
+một dòng tóm tắt (mẫu xe · loại xe · sức chứa) và hai huy hiệu nguồn với tình trạng.
+Dòng tóm tắt đọc theo giá trị ĐANG GÕ chứ không phải giá trị đã lưu, nên sửa loại xe là
+thấy đơn vị sức chứa đổi theo ngay, khỏi phải bấm Lưu để thử.
+
+Thứ hai là thứ tự các khối bị ngược: trang mở đầu bằng bốn nút chọn nguồn rồi ba ô giấy
+tờ của BÊN CHO THUÊ, tức người mở trang phải đi hết phần của nhà cung cấp mới tới biển số
+của chính chiếc xe mình đang sửa. Nay chia hai khối có tiêu đề, "Thông tin xe" đứng trước,
+"Nguồn xe" đứng sau.
+
+Thứ ba, khi sửa thì nguồn và loại nhà cung cấp đã chốt, nhưng trang vẫn dựng bốn cái nút
+mờ rồi viết hai dòng "Không đổi được…" gần giống hệt nhau bên dưới. Nút mờ vẫn trông như
+bấm được nên người ta bấm trước đọc sau. Nay hai giá trị đó hiện bằng chữ trong ô khóa —
+vẫn bôi đen và chép ra được, thứ nút mờ không cho — kèm đúng một câu giải thích.
+
+Kèm theo: ô "Tải (người/tấn)" đổi thành "Sức chứa (chỗ)" hoặc "Sức chứa (tấn)" tùy loại
+xe vừa gõ, thêm chú thích cho những ô mà nhãn nói chưa đủ, và trang Thêm xe được chặn bề
+ngang vì nó không có cột phải để bó lại — trước đó trên màn rộng mỗi ô nhập kéo dài gần
+500 điểm, gõ một biển số mười ký tự vào một ô dài bằng nửa màn hình.
+
+Dọn trùng lặp: hai hàm dựng ô nhập và dựng nút chọn vốn được chép y hệt trong cả biểu mẫu
+Xe lẫn biểu mẫu Tài xế, nay tách ra dùng chung. Biểu mẫu Tài xế CHƯA chuyển sang bản dùng
+chung (vẫn giữ bản chép của nó) — để lần sau dọn trang tài xế thì làm luôn một thể.
+Kiểm tra: typecheck 0 lỗi, lint 0 lỗi và không thêm cảnh báo, 85 bài kiểm của phân hệ
+xanh. Đã bấm tay ba trang trên trình duyệt: xe thuê ngoài (id 13), xe nội bộ (id 8) và
+trang Thêm xe — bấm thử cả nút đổi nguồn sang Thuê ngoài để chắc khối nhà cung cấp hiện
+đúng. Chưa deploy.
+Mã nguồn: `frontend-v2/src/modules/vehicle-booking/components/vehicle-form.tsx`
+(đầu trang nhận diện, chia khối, chặn bề ngang trang thêm mới);
+`components/vehicle-source-section.tsx` (mới — khối nguồn xe, bản khóa khi sửa);
+`components/catalog-form-field.tsx` và `components/catalog-mode-button.tsx`
+(mới — hai mảnh dùng chung tách từ bản chép trong hai biểu mẫu).
+
+### duoc-CR-440-chi-tiet-tai-xe | Dọn lại trang chi tiết / sửa một tài xế và gom mã dùng chung
+- status: xong
+Làm nốt trang sửa tài xế theo đúng khuôn vừa làm cho trang xe: đầu trang nay là TÊN TÀI
+XẾ kèm dòng tóm tắt (số điện thoại — hạng và số bằng lái) và hai huy hiệu nguồn với tình
+trạng, thay cho dòng chữ "Chỉnh sửa thông tin tài xế" vốn không nói đang sửa ai. Biểu mẫu
+chia ba khối có tiêu đề: Thông tin tài xế · Giấy phép lái xe · Nguồn tài xế. Nguồn và loại
+nhà cung cấp khi sửa hiện bằng chữ trong ô khóa chứ không phải bốn nút mờ.
+
+Một điểm khác trang xe: thứ tự khối ĐỔI theo việc đang tạo hay đang sửa. Lúc tạo, khối
+Nguồn đứng đầu vì nó quyết định cả phần còn lại — chọn nội bộ thì đi tìm tài khoản nhân
+sự, chọn thuê ngoài thì gõ tay tên và số điện thoại; hỏi sau là bắt người ta khai lại từ
+đầu. Lúc sửa thì nguồn đã chốt nên nó lùi xuống cuối, nhường chỗ đầu trang cho thứ sửa
+được.
+
+Ba ô tự điền theo hồ sơ nhân sự (họ tên, số điện thoại, email) trước đây là ô nhập nền
+xám: trông y như ô đang chờ gõ nhưng gõ không vào, nên người dùng bấm mấy lần rồi mới đi
+tìm chỗ sửa. Nay dùng ô khóa theo đúng mẫu chung của dự án, kèm một câu nói rõ giá trị
+lấy từ hồ sơ nhân sự và muốn đổi thì đổi ở đó. Lúc chưa chọn ai thì trong ô là câu nhắc
+màu nhạt chứ không phải chữ đậm — chữ đậm đọc ra như thể họ tên người này đúng là "Tự
+điền khi chọn tài khoản".
+
+Phần dọn mã: khối chọn nguồn của hai biểu mẫu nay là MỘT thành phần dùng chung (trước là
+hai bản chép đã bắt đầu trôi khác nhau từng chữ), và biểu mẫu tài xế chuyển hẳn sang hai
+mảnh dùng chung đã tách ở việc trước, bỏ bản chép riêng. Khối tìm tài khoản nhân sự tách
+thành tệp riêng vì nó tự giữ trạng thái tìm kiếm — biểu mẫu chỉ cần biết cuối cùng chọn
+ai. Nhờ vậy biểu mẫu tài xế từ 474 dòng xuống còn 367 dòng. Tiện thể bỏ luôn một chỗ khai
+trùng: ba ô tên · điện thoại · email trước đây được viết hai lần, một lần cho nhánh doanh
+nghiệp và một lần cho nhánh cá nhân.
+Kiểm tra: typecheck 0 lỗi, lint 0 lỗi và không thêm cảnh báo, 85 bài kiểm của phân hệ
+xanh. Đã bấm tay bốn trang: tài xế nội bộ (id 15), tài xế thuê ngoài (id 13), trang Thêm
+tài xế — gõ số điện thoại thật để tìm, bấm chọn một nhân sự và xem ba ô tự điền có đúng
+không, rồi đổi sang Thuê ngoài xem khối nhà cung cấp có hiện đủ. Chưa deploy.
+Mã nguồn: `frontend-v2/src/modules/vehicle-booking/components/driver-form.tsx`
+(đầu trang nhận diện, chia ba khối, đổi thứ tự khối theo tạo hay sửa);
+`components/driver-account-picker.tsx` (mới — tách khối tìm tài khoản nhân sự);
+`components/catalog-source-section.tsx` (đổi tên từ bản riêng của xe, nay dùng chung
+cho cả hai biểu mẫu).
+
+### duoc-CR-440-ra-lai-ma | Rà lại mã của cả ba việc trên trước khi commit
+- status: xong
+Đại ca bảo đọc lại toàn bộ thay đổi xem có lỗi lô-gic, có phạm nếp chung hay có chỗ nào
+chép lặp không. Rà ra ba việc phải sửa thêm.
+
+Một là **bấm đúp nút Lưu**. Cả hai biểu mẫu chỉ chặn bằng cách làm mờ nút theo trạng thái
+đang gửi, mà trạng thái đó là state của React nên chỉ bật ở lượt vẽ lại SAU — hai cú bấm
+liền tay nằm trong cùng một nhịp thì lọt cả hai. Dự án đã có sẵn chốt một-lượt cho đúng
+bệnh này nên chỉ việc gọi. Đáng lo nhất là danh mục Tài xế: nó KHÔNG có cột duy nhất nào
+dưới cơ sở dữ liệu, nên hai cú bấm lúc tạo mới đẻ ra hai tài xế giống hệt nhau mà không
+gì chặn lại; danh mục Xe thì ràng buộc biển số đỡ hộ lúc tạo, nhưng lúc sửa vẫn đi lọt
+hai lệnh và nhật ký thao tác ghi hai dòng cho một lần lưu.
+
+Hai là **một khai báo chết**. Cả hai danh mục đều khai bộ huy hiệu cho trang chi tiết,
+nhưng khóa đó chỉ có một chỗ đọc là trang chi tiết dựng sẵn của khung CRUD — mà Xe và Tài
+xế đều dùng trang biểu mẫu riêng, không đi qua khung đó. Tức là một bộ huy hiệu không màn
+nào vẽ, và người sau sửa nó xong sẽ đi tìm mãi không thấy đổi ở đâu. Đã bỏ và ghi lý do
+tại chỗ.
+
+Ba là **chép lặp còn sót**. Ô nhận diện của hai bảng danh sách và khối tiêu đề của hai
+trang sửa vốn là hai cặp giống nhau từng dòng; nay mỗi cặp gom về một thành phần dùng
+chung. Hai bảng đứng cạnh nhau trong cùng một menu nên chữ phải đậm bằng nhau, dòng phụ
+phải nhỏ bằng nhau — để hai bản chép là chắc chắn sẽ lệch sau vài lần sửa.
+Kiểm tra sau khi sửa: typecheck 0 lỗi, lint 0 lỗi, 85 bài kiểm của phân hệ xanh, và mở
+lại bốn màn trên trình duyệt để chắc phần gom mã không làm vỡ giao diện.
+Mã nguồn: `components/catalog-identity-cell.tsx` và `components/catalog-record-title.tsx`
+(mới — hai mảnh gom từ bản chép); `components/vehicle-form.tsx`,
+`components/driver-form.tsx` (gọi chốt một-lượt khi bấm Lưu);
+`config/vehicle-crud.tsx`, `config/driver-crud.tsx` (bỏ khai báo huy hiệu chết).
