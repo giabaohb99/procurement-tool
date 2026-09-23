@@ -427,7 +427,7 @@ Bản A mẫu mục F điền giá chốt; bản B tick theo NCC ra 1 file N tra
 gác N-17 (supplier:read) trước khi bật bản B. Chưa bắt đầu.
 
 ## bao-CR-465 | YCMH lập mới bị mất ô Phòng ban và ô Trưởng bộ phận
-- status: hoan-tat
+- status: xong
 - date: 2026-09-23
 Vá lỗi trên bản đang chạy thật: yêu cầu mua hàng lập mới thỉnh thoảng ra đời
 với ô Phòng ban trống, kéo theo ô Trưởng bộ phận cũng trống. Phiếu vẫn gửi
