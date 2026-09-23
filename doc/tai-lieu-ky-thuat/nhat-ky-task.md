@@ -6032,3 +6032,6 @@ Mã nguồn: `backend/app/core/config.py` · `backend/app/core/app_settings.py` 
 `backend/app/modules/purchase_request/controller.py` ·
 `frontend-v2/src/modules/procurement/pages/purchase-request-detail-page.tsx` ·
 `frontend-v2/src/modules/procurement/pages/purchase-request-process-page.tsx`.
+
+Đã deploy dev ngày 23/09/2026 và bật công tắc ngay sau đó, vì mặc định của nó là tắt.
+Commit: `a6b594ba` (khối chi phí) · `8b0c018d` + `fd1758d8` (công tắc) · `0c7638ad` gộp nhánh.
