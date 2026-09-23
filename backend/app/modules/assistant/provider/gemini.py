@@ -46,6 +46,31 @@ def _retry_after_seconds(resp) -> float | None:
     return None
 
 
+def _gemini_schema(schema):
+    """Dọn lược đồ tham số tool cho vừa khuôn OpenAPI rút gọn của Gemini.
+
+    Gemini chỉ nhận `enum` là danh sách CHUỖI (kèm type STRING). Tool nào khai bộ mã SỐ —
+    ví dụ `my_leave_summary.status` theo luật R2/QĐ-11 — thì Gemini trả 400 và HỎNG CẢ LƯỢT
+    hỏi, không riêng tool đó. Giữ nguyên `type: integer` để tầng chạy tool vẫn nhận số, chỉ
+    bỏ `enum` và nói danh sách giá trị cho phép bằng lời trong mô tả.
+    """
+    if not isinstance(schema, dict):
+        return schema
+    out = {k: v for k, v in schema.items()}
+    values = out.get("enum")
+    if isinstance(values, list) and any(not isinstance(v, str) for v in values):
+        out.pop("enum")
+        allowed = " | ".join(str(v) for v in values)
+        desc = out.get("description") or ""
+        out["description"] = f"{desc} Giá trị cho phép: {allowed}.".strip()
+    props = out.get("properties")
+    if isinstance(props, dict):
+        out["properties"] = {k: _gemini_schema(v) for k, v in props.items()}
+    if isinstance(out.get("items"), dict):
+        out["items"] = _gemini_schema(out["items"])
+    return out
+
+
 def _accepts_budget_zero(model: str) -> bool:
     """Chỉ dòng Gemini 2.x nhận thinkingBudget=0; 3.x trả 400 nếu gửi 0."""
     return model.startswith("gemini-2.")
@@ -200,7 +225,8 @@ class GeminiProvider(Provider):
         used_model = model or self.default_model
         contents = self._contents(messages)
         tool_decl = [{"functionDeclarations": [
-            {"name": t.name, "description": t.description, "parameters": t.parameters}
+            {"name": t.name, "description": t.description,
+             "parameters": _gemini_schema(t.parameters)}
             for t in tools
         ]}]
         acc = {"input": 0, "output": 0, "thinking": 0, "cache_read": 0}
