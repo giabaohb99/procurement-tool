@@ -466,3 +466,35 @@ CÒN LẠI:
 Mã nguồn: frontend/src/pages/PurchaseRequestDetail.tsx ·
 backend/app/modules/purchase_request/service.py ·
 test/backend/test_pyc_phong_ban_lui_cr465.py
+
+## bao-CR-406-prod | Đưa đăng nhập Google của ERP v2 lên bản chạy thật
+- status: xong
+- date: 2026-09-23
+Màn đăng nhập của giao diện mới trên bản chạy thật chưa có cửa Google, trong
+khi bản dev đã có từ 15/09. Đại ca yêu cầu đưa lên và dặn lấy khóa của dev.
+
+ĐÃ RÀ TRƯỚC KHI LÀM:
+- Khóa không phải chép: cấu hình bản chạy thật ĐÃ có sẵn cả hai khóa Google,
+  và giá trị trùng khít với bản dev (so bằng mã băm, không đọc giá trị ra).
+- Backend bản chạy thật cũng đã có sẵn đường đăng nhập Google từ lâu. Thứ duy
+  nhất thiếu là phần giao diện mới.
+- Nhánh dev đang đi trước nhánh chạy thật 219 mốc. Gộp cả nhánh là bê nguyên
+  bản dev lên bản chạy thật, nên chỉ bê riêng một mốc bằng cherry-pick.
+
+ĐÃ LÀM:
+- Bê riêng mốc đăng nhập Google sang nhánh chạy thật. Đụng độ duy nhất ở sổ
+  thay đổi, giữ cả hai dòng. Mười bốn tệp, chỉ giao diện mới và phần nối biến
+  qua tệp dựng ảnh; không đụng backend, không migration, không đổi khóa quyền.
+- Cổng kiểm chạy lại trên nền nhánh chạy thật: kiểm kiểu cả cây 0 lỗi, soát mã
+  cả cây 0 lỗi (các tệp vừa bê sang sạch cả cảnh báo), bài kiểm khu đăng nhập
+  22 bài xanh.
+- Dựng lại dịch vụ giao diện mới trên bản chạy thật. Biến khóa Google nạp lúc
+  DỰNG ảnh nên bắt buộc dựng lại chứ khởi động lại không ăn.
+
+VIỆC TAY CỦA ĐẠI CA:
+- Phải thêm địa chỉ của giao diện mới vào danh sách nguồn được phép trong bảng
+  quản trị Google, nếu không nút bấm vào sẽ bị Google từ chối. Em không đụng
+  vào tài khoản Google của công ty.
+
+Mã nguồn: frontend-v2/src/core/auth/ · docker/Dockerfile.erp.prod ·
+docker-compose.production.yml
