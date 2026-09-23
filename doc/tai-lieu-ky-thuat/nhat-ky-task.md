@@ -3486,6 +3486,25 @@ và `celery-beat`, chú thích đầu tệp ghi luôn lý do cấm đặt lại 
 `procurement-tool/docker-compose.override.yml` (bản vá tạm ở máy làm việc, không commit).
 Commit: `0c4a0850` trên nhánh `agent-hub-bac-1` (23/09/2026, chưa push).
 
+## ai-CR-027 | Đậu Đậu nhắn gọn, bỏ nút dưới tin nhắn, đại ca ra lệnh bằng chữ
+- status: xong
+- date: 2026-09-23
+- pic: NSU209
+
+Đại ca muốn bot chỉ nói đã sửa logic gì, đã kiểm gì và đánh giá, chi tiết thì hỏi mới nói, và không
+thích chọn nút dưới tin nhắn mà muốn nhắn chữ, ví dụ bảo bot tự gộp bản sửa mới vào erp-v2. Nay thẻ
+kết quả chỉ còn một đoạn tóm tắt do Claude viết cuối lượt sửa, một dòng đã kiểm gì và lệnh có thể nhắn
+tiếp; không còn danh sách tệp, tổng kết dài hay tệp bản vá đính kèm. Mọi tin của bot không còn nút.
+Đại ca ra lệnh bằng chữ: duyệt, sửa kèm điều cần đổi, gộp (kèm giờ thì thành hẹn giờ), thu hồi, xong,
+bỏ việc, làm tiếp, sửa cho xanh, chi tiết, mở yêu cầu gộp trên GitHub, ghi sổ. Để không hiểu nhầm một
+yêu cầu mới có chữ gộp hay bỏ thành lệnh, bot chỉ coi là lệnh khi tin có mã việc, có cụm chỉ vào việc
+như «việc này», «code vừa sửa», hoặc là lệnh trơn vài chữ; câu hỏi thì chỉ trả lời tình trạng; không
+rõ việc nào thì hỏi lại bằng chữ. Nút trên các thẻ cũ vẫn bấm được. Cả tệp bài kiểm 142/142 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/{service,coder,telegram}.py` (`route_task_command`,
+`task_status_line`, `send_compact_review_card`, `report_summary`) · `backend/app/core/config.py`
+(`AGENT_TG_COMPACT`) · `test/backend/test_agent_hub.py` · `change-log-ai.md`.
+
 ## ai-CR-026 | Bot tự chạy được vitest và có nút sửa cho xanh khi cổng kiểm đỏ
 - status: xong
 - date: 2026-09-23

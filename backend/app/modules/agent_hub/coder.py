@@ -346,12 +346,14 @@ trần tệp{hard_extra}. Gặp một trong các ca đó: dừng, KHÔNG sửa n
 ca nào và cần đại ca quyết gì.
 {soft_rule}
 
-## Cuối cùng, in ra một mục Markdown tên "TỔNG KẾT" gồm đúng bốn phần
+## Cuối cùng, in ra một mục Markdown tên "TỔNG KẾT" gồm đúng bốn phần, rồi MỘT dòng TÓM TẮT
 1. Từng tệp đã sửa: đường dẫn + giải thích ngắn vì sao sửa và sửa gì.
 2. Bài kiểm đã chạy: lệnh nguyên văn + kết quả (số xanh/đỏ).
 3. Tệp ngoài kế hoạch (nếu có) + lý do.
 4. Tự quyết không hỏi (mỗi dòng mở đầu «Theo QĐ-xx:» hoặc «Em giả định:») · chưa làm được / \
 cần đại ca quyết (nếu có).
+Dòng CUỐI CÙNG mở đầu đúng chữ `TÓM TẮT:` rồi 1-3 câu cho đại ca đọc trên điện thoại: đã sửa LOGIC gì \
+(không liệt kê tệp), đã kiểm gì, đánh giá rủi ro. Đại ca chỉ đọc dòng này; muốn chi tiết sẽ hỏi.
 """
 
 
@@ -1208,7 +1210,8 @@ def _stop_at_max_turns(db: Session, task: AgentTask, run: AgentRun, worktree: st
     service.reply(db, settings.AGENT_TELEGRAM_CHAT_ID,
                   f"<b>{esc(task.code)}</b>: em hết lượt khi đang sửa dở — đã sửa {len(numstat)} tệp "
                   f"(+{added}/−{deleted} dòng), chưa xong hẳn. Phần đã sửa vẫn giữ nguyên. Bấm «Làm tiếp» "
-                  f"để em nối đúng phiên cũ (thêm tối đa {CONTINUE_MAX_TURNS} lượt).",
+                  f"để em nối đúng phiên cũ (thêm tối đa {CONTINUE_MAX_TURNS} lượt)."
+                  + cmd_hint(f"Nhắn «làm tiếp {esc(task.code)}» để em làm tiếp, hoặc «bỏ {esc(task.code)}»."),
                   task_id=task.id, buttons=[("Làm tiếp", f"cont:{task.id}"), ("Bỏ việc này", f"no:{task.id}")])
     return {"task": task.code, "status": task.status, "files": len(numstat), "escalation": "max_turns"}
 
@@ -1346,7 +1349,7 @@ def run_code_task(db: Session, task: AgentTask, *, resume: bool = False, fix_gat
 
     send_review_card(db, task, run, files=files, gate=gate, escalation=escalation,
                      report=report, data=data, pr=pr)
-    if patch.strip():
+    if patch.strip() and not settings.AGENT_TG_COMPACT:     # ai-CR-027: gọn thì không gửi .diff
         try:
             telegram.send_document(chat_id, f"{task.code}.diff", patch.encode("utf-8"),
                                    caption=f"Bản vá {telegram.esc(task.code)} · {len(files)} tệp",
@@ -1356,6 +1359,67 @@ def run_code_task(db: Session, task: AgentTask, *, resume: bool = False, fix_gat
     return {"task": task.code, "status": task.status, "files": len(files), "escalation": escalation}
 
 
+def cmd_hint(text: str) -> str:
+    """Dòng gợi ý lệnh gõ bằng chữ, chỉ khi ở chế độ gọn (ai-CR-027; thẻ cũ đã có nút)."""
+    return f"\n{text}" if settings.AGENT_TG_COMPACT else ""
+
+
+_SUMMARY = re.compile(r"(?im)^\W*tóm tắt\W*:\s*(.+)$")
+
+
+def report_summary(report: str) -> str:
+    """Dòng «TÓM TẮT:» cuối tổng kết của bot (ai-CR-027); không có thì lấy đoạn đầu, cắt ngắn."""
+    hits = _SUMMARY.findall(report or "")
+    if hits:
+        return hits[-1].strip().strip("*").strip()
+    body = re.sub(r"(?m)^#+.*$|^\W*tổng kết\W*$", "", report or "", flags=re.IGNORECASE).strip()
+    first = body.split("\n\n", 1)[0].strip()
+    return first[:280] + ("…" if len(first) > 280 else "")
+
+
+def _gate_brief(gate: dict) -> str:
+    """Một dòng «đã kiểm gì» cho thẻ gọn."""
+    parts = []
+    backend = gate.get("backend", gate.get("status"))
+    if backend == "pass":
+        parts.append(f"backend XANH ({len(gate.get('tests') or [])} tệp bài kiểm)")
+    elif backend == "fail":
+        parts.append("backend ĐỎ")
+    fe = gate.get("frontend") or {}
+    if fe.get("status") == "pass":
+        parts.append("giao diện v2 XANH (" + " · ".join(s["name"] for s in fe.get("steps") or []) + ")")
+    elif fe.get("status") == "fail":
+        parts.append("giao diện v2 ĐỎ ở " + " · ".join(s["name"] for s in fe.get("steps") or [] if not s["ok"]))
+    elif fe.get("status") == "skip":
+        parts.append("giao diện v2 CHƯA kiểm được")
+    return "; ".join(parts) or "không có bài kiểm nào bị đụng"
+
+
+def send_compact_review_card(db: Session, task: AgentTask, *, gate: dict, escalation: str,
+                             report: str, pr: dict) -> None:
+    """Thẻ kết quả GỌN (ai-CR-027): đã sửa logic gì · đã kiểm gì · đánh giá · lệnh nhắn tiếp."""
+    from . import service
+
+    esc = telegram.esc
+    code = esc(task.code)
+    lines = [f"<b>{code}</b> · {esc(task.title)}"]
+    if escalation:
+        lines += [f"<b>Em dừng, chưa commit:</b> {esc(escalation)}",
+                  f"Nhắn «chi tiết {code}» để xem em vướng gì, hoặc «bỏ {code}»."]
+    else:
+        if summary := report_summary(report):
+            lines += [service._card_md(summary, limit=900)]
+        lines += [f"Đã kiểm: {esc(_gate_brief(gate))}."]
+        if pr.get("status") == "ok" and pr.get("url"):
+            lines += [f"PR: {esc(pr['url'])}"]
+        if gate.get("status") == "fail":
+            lines += [f"Nhắn «sửa cho xanh {code}» để em sửa cho qua cổng kiểm, «chi tiết {code}» để xem."]
+        else:
+            lines += [f"Nhắn «gộp {code}» để gộp vào <code>{esc(settings.AGENT_BASE_BRANCH)}</code> + "
+                      f"deploy dev · «chi tiết {code}» để xem kỹ."]
+    service.reply(db, settings.AGENT_TELEGRAM_CHAT_ID, "\n".join(lines), task_id=task.id)
+
+
 def send_review_card(db: Session, task: AgentTask, run: AgentRun, *, files: list[dict],
                      gate: dict, escalation: str, report: str, data: dict,
                      pr: dict | None = None) -> None:
@@ -1363,6 +1427,9 @@ def send_review_card(db: Session, task: AgentTask, run: AgentRun, *, files: list
 
     esc = telegram.esc
     pr = pr or {"status": "none"}
+    if settings.AGENT_TG_COMPACT:
+        send_compact_review_card(db, task, gate=gate, escalation=escalation, report=report, pr=pr)
+        return
     added = sum(f["added"] for f in files)
     deleted = sum(f["deleted"] for f in files)
     minutes = round((data.get("duration_ms") or run.duration_ms or 0) / 60000, 1)
@@ -1680,13 +1747,17 @@ def _fail_deploy(db: Session, task: AgentTask, run: AgentRun, err: str, *, pushe
         text = (f"<b>{esc(task.code)}</b>: đã gộp vào <code>{esc(settings.AGENT_BASE_BRANCH)}</code> "
                 f"(bản gộp <code>{esc(str(art.get('merge_sha') or '')[:10])}</code>) nhưng deploy dev "
                 f"HỎNG: {esc(err[:700])}\n\nBấm «Deploy dev lại» sau khi sửa nguyên nhân, hoặc «Thu hồi» "
-                "để bot revert bản gộp và deploy lại bản trước.")
+                "để bot revert bản gộp và deploy lại bản trước."
+                + cmd_hint(f"Nhắn «gộp {esc(task.code)}» để deploy dev lại, «thu hồi {esc(task.code)}» "
+                           "để revert."))
         buttons = [("Deploy dev lại", f"mgok:{task.id}"), ("Thu hồi khỏi erp-v2 + dev", f"rv:{task.id}")]
     else:
         task.status = ST_REVIEW
         text = (f"<b>{esc(task.code)}</b>: chưa gộp được vào "
                 f"<code>{esc(settings.AGENT_BASE_BRANCH)}</code>: {esc(err[:700])}\n\n"
-                "Nhánh nền không đổi. Sửa nguyên nhân rồi bấm gộp lại, hoặc đi đường PR.")
+                "Nhánh nền không đổi. Sửa nguyên nhân rồi bấm gộp lại, hoặc đi đường PR."
+                + cmd_hint(f"Nhắn «gộp {esc(task.code)}» để thử lại, «mở PR {esc(task.code)}» để đi "
+                           "đường PR."))
         buttons = [("Gộp erp-v2 + deploy dev", f"mg:{task.id}"), ("Gửi link PR để anh tự merge", f"pr:{task.id}")]
     db.commit()
     service.reply(db, settings.AGENT_TELEGRAM_CHAT_ID, text, task_id=task.id, buttons=buttons)
@@ -1827,8 +1898,12 @@ def send_deploy_card(db: Session, task: AgentTask, *, sha: str, services: list[s
                 f"Build lại: {svc}", health_line]
         if ui:
             head += [f"Thử ở: {esc(ui)}"]
-        head += ["", "Thử xong: ổn thì bấm «Xong»; không ổn thì «Thu hồi» — bot revert bản gộp "
-                     "và deploy lại bản trước, hoặc nhắn sửa gì để bot làm tiếp."]
+        if settings.AGENT_TG_COMPACT:
+            head += ["", f"Thử xong: ổn thì nhắn «xong {esc(task.code)}»; không ổn thì «thu hồi "
+                         f"{esc(task.code)}» — em revert bản gộp và deploy lại bản trước."]
+        else:
+            head += ["", "Thử xong: ổn thì bấm «Xong»; không ổn thì «Thu hồi» — bot revert bản gộp "
+                         "và deploy lại bản trước, hoặc nhắn sửa gì để bot làm tiếp."]
         buttons = [("Thu hồi khỏi erp-v2 + dev", f"rv:{task.id}"),
                    ("Hỏi thêm về bản vá", f"ask:{task.id}"), ("Xong, đóng việc", f"done:{task.id}")]
     service.reply(db, settings.AGENT_TELEGRAM_CHAT_ID, "\n".join(head), task_id=task.id,

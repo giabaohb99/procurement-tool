@@ -272,6 +272,8 @@ def answer_callback(callback_id: str, text: str = "") -> None:
     ở dưới đã chạy xong từ lâu. Lỗi ở đây KHÔNG được làm hỏng luồng chính — nó chỉ
     là cái nhấp nháy trên giao diện.
     """
+    if not callback_id:
+        return          # lệnh gõ bằng chữ (ai-CR-027) đi chung đường với nút nhưng không có nút nào
     try:
         _call("answerCallbackQuery", {"callback_query_id": callback_id, "text": text[:200]})
     except TelegramError:

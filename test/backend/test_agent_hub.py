@@ -107,6 +107,8 @@ def bot(monkeypatch):
     from app.modules.agent_hub import coder as _coder
 
     monkeypatch.setattr(settings, "AGENT_CODER_ENABLED", False)
+    #  Bài cũ viết cho thẻ có nút; chế độ gọn (ai-CR-027) bật riêng trong bài mới.
+    monkeypatch.setattr(settings, "AGENT_TG_COMPACT", False)
     for name in ("dispatch", "dispatch_scan", "dispatch_publish", "dispatch_question", "dispatch_continue", "dispatch_fix_gate",
                  "dispatch_deploy", "dispatch_revert"):
         monkeypatch.setattr(_coder, name, lambda *a, **kw: None)
@@ -3286,3 +3288,166 @@ def test_sua_cho_xanh_noi_phien_go_commit_cu_va_commit_lai(db, bot, monkeypatch,
     assert ["git", "reset", "--soft", "HEAD~1"] in calls
     assert any(c[:2] == ["git", "-c"] and "commit" in c for c in calls)
     assert task.status == service.ST_REVIEW
+
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-027: thẻ gọn, không nút, ra lệnh bằng chữ
+# ---------------------------------------------------------------------------
+def _compact(monkeypatch):
+    monkeypatch.setattr(settings, "AGENT_TG_COMPACT", True)
+
+
+def test_the_ket_qua_gon_chi_noi_logic_da_kiem_va_lenh_tiep(db, bot, monkeypatch):
+    from app.modules.agent_hub import coder
+
+    service, _, _ = bot
+    _compact(monkeypatch)
+    sent = _capture_send(monkeypatch, service)
+    task = _task_with_session(db, service, coder)
+    run = coder.latest_code_run(db, task)
+    report = ("## TỔNG KẾT\n1. Từng tệp: a.tsx +10 …(dài)\n2. …\n\n"
+              "TÓM TẮT: Đưa 3 ô lọc ra thanh ngoài, dời ô khoảng tiền vào bộ lọc. Đã chạy vitest phân hệ "
+              "Tài chính xanh. Rủi ro thấp, chỉ giao diện.")
+    gate = {"status": "pass", "backend": "none", "tests": [],
+            "frontend": {"status": "pass", "steps": [{"name": "typecheck", "ok": True},
+                                                     {"name": "vitest src/modules/finance", "ok": True}]}}
+    files = [{"path": "frontend-v2/src/a.tsx", "added": 10, "deleted": 1, "in_plan": True}]
+    coder.send_review_card(db, task, run, files=files, gate=gate, escalation="", report=report, data={})
+    text, buttons = sent[-1]
+    assert buttons == [] and "Tệp đã sửa" not in text and "TỔNG KẾT" not in text
+    assert "Đưa 3 ô lọc ra thanh ngoài" in text and "Rủi ro thấp" in text
+    assert "giao diện v2 XANH (typecheck · vitest src/modules/finance)" in text
+    assert f"«gộp {task.code}»" in text and f"«chi tiết {task.code}»" in text
+    assert len(text) < 700
+    #  Cổng đỏ: gợi ý sửa cho xanh, không gợi ý gộp.
+    red = {**gate, "status": "fail", "frontend": {"status": "fail", "steps": [{"name": "vitest x", "ok": False}]}}
+    coder.send_review_card(db, task, run, files=files, gate=red, escalation="", report=report, data={})
+    assert f"«sửa cho xanh {task.code}»" in sent[-1][0] and "«gộp" not in sent[-1][0]
+    #  Không có dòng TÓM TẮT thì lấy đoạn đầu, cắt ngắn.
+    assert coder.report_summary("## TỔNG KẾT\n\nĐã sửa lọc ngày.\n\n2. chi tiết") == "Đã sửa lọc ngày."
+
+
+def _review_task(db, service, coder, **kw):
+    return _task_with_session(db, service, coder, **kw) if kw else _task_with_session(db, service, coder)
+
+
+def test_nhan_chu_gop_viec_vua_sua_thi_gop_ngay(db, bot, monkeypatch):
+    """Đại ca 23/09: «ví dụ anh muốn bot tự merge code từ commit sửa mới này qua erp thì sao»."""
+    from app.modules.agent_hub import coder
+    from app.modules.agent_hub.model import AgentMessage
+
+    service, _, _ = bot
+    _compact(monkeypatch)
+    _capture_send(monkeypatch, service)
+    merged: list[str] = []
+    monkeypatch.setattr(service, "_dispatch_deploy", lambda db, chat, cb, task: merged.append(task.code))
+    monkeypatch.setattr(service.manager, "run_intent", lambda *a, **kw: pytest.fail("lệnh không đi phân loại"))
+    task = _task_with_session(db, service, coder)
+    service.handle_message(db, _msg("tự merge code từ commit sửa mới này qua erp"))
+    assert merged == [task.code]
+    row = db.query(AgentMessage).filter_by(direction=service.DIR_IN).order_by(AgentMessage.id.desc()).first()
+    assert row.action == service.ACT_COMMAND and row.task_id == task.id
+    service.handle_message(db, _msg(f"gộp {task.code.lower()} đi"))
+    assert merged == [task.code, task.code]
+
+
+def test_gop_kem_gio_thi_hen_gio(db, bot, monkeypatch):
+    from app.modules.agent_hub import coder
+
+    service, _, _ = bot
+    _compact(monkeypatch)
+    _deploy_on(monkeypatch)
+    sent = _capture_send(monkeypatch, service)
+    monkeypatch.setattr(service, "now_local", lambda: datetime(2026, 9, 23, 10, 0))
+    task = _task_with_session(db, service, coder)
+    service.handle_message(db, _msg(f"gộp {task.code} lúc 20h"))
+    run = _deploy_runs(db, task)[0]
+    assert run.artifact["phase"] == "hen_gio" and run.artifact["scheduled_for"] == "2026-09-23T13:00"
+    assert "Đã hẹn <b>20:00 23/09</b>" in sent[-1][0]
+
+
+def test_cau_hoi_ve_viec_chi_tra_loi_tinh_trang_khong_lam_gi(db, bot, monkeypatch):
+    from app.modules.agent_hub import coder
+
+    service, _, _ = bot
+    _compact(monkeypatch)
+    sent = _capture_send(monkeypatch, service)
+    monkeypatch.setattr(service, "_dispatch_deploy", lambda *a: pytest.fail("câu hỏi không được gộp"))
+    task = _task_with_session(db, service, coder)
+    service.handle_message(db, _msg("cái fix này đang trên nhánh nào, có merge sang erp-v2 được không"))
+    text = sent[-1][0]
+    assert "bot/x" in text and task.code in text and f"«gộp {task.code}»" in text
+
+
+def test_yeu_cau_moi_co_chu_bo_hay_gop_khong_bi_hieu_nham_la_lenh(db, bot, monkeypatch):
+    from app.modules.agent_hub import coder
+    from app.modules.agent_hub.model import AgentMessage
+
+    service, _, _ = bot
+    _compact(monkeypatch)
+    _capture_send(monkeypatch, service)
+    _fake_intent(monkeypatch, service, "viec")
+    monkeypatch.setattr(service, "_dispatch_deploy", lambda *a: pytest.fail("không được gộp"))
+    task = _task_with_session(db, service, coder)
+    for msg in ("bỏ nút tạo mới trên màn công nợ", "gộp hai cột ngày giao và ngày nhận", "bỏ ô từ đến"):
+        service.handle_message(db, _msg(msg))
+        row = db.query(AgentMessage).filter_by(direction=service.DIR_IN).order_by(AgentMessage.id.desc()).first()
+        assert row.action == "" and row.task_id == 0, msg        # vẫn là việc MỚI chờ gom
+    assert task.status == service.ST_REVIEW
+
+
+def test_nhieu_viec_thi_hoi_lai_viec_nao(db, bot, monkeypatch):
+    from app.modules.agent_hub import coder
+
+    service, _, _ = bot
+    _compact(monkeypatch)
+    sent = _capture_send(monkeypatch, service)
+    monkeypatch.setattr(service, "_dispatch_deploy", lambda *a: pytest.fail("chưa rõ việc nào"))
+    a = _task_with_session(db, service, coder)
+    b = _task_with_session(db, service, coder)
+    service.handle_message(db, _msg("gộp đi"))
+    assert "việc nào" in sent[-1][0] and a.code in sent[-1][0] and b.code in sent[-1][0]
+
+
+def test_duyet_xong_bo_sua_chi_tiet_bang_chu(db, bot, monkeypatch, tmp_path):
+    from app.modules.agent_hub import coder
+
+    service, _, _ = bot
+    _compact(monkeypatch)
+    _so_tam(monkeypatch, tmp_path)
+    sent = _capture_send(monkeypatch, service)
+    approved: list[str] = []
+    monkeypatch.setattr(service, "_dispatch_coder", lambda db, chat, task: approved.append(task.code))
+    plan = _task_with_plan(db, service, ["backend/app/x.py"])
+    service.handle_message(db, _msg("duyệt"))
+    assert approved == [plan.code] and plan.approved_at is not None
+    #  «sửa: …» lập lại kế hoạch với ý của đại ca.
+    seen: list[dict] = []
+    _fake_plan(monkeypatch, service, seen=seen)
+    _fake_rule(monkeypatch, service, generalizable=False)
+    plan2 = _task_with_plan(db, service, ["backend/app/y.py"])
+    service.handle_message(db, _msg(f"sửa: bỏ bước 2 {plan2.code}"))
+    assert "Đại ca trả lời: bỏ bước 2" in plan2.summary
+    #  xong / chi tiết / bỏ theo mã việc.
+    done = _task_with_session(db, service, coder)
+    service.handle_message(db, _msg(f"xong {done.code}"))
+    assert done.status == service.ST_DONE
+    service.handle_message(db, _msg(f"chi tiết {done.code}"))
+    assert sent[-1][0].startswith(f"<b>{done.code}</b>") and "Trạng thái:" in sent[-1][0]
+    other = _task_with_session(db, service, coder)
+    service.handle_message(db, _msg(f"bỏ {other.code}"))
+    assert other.status == service.ST_CANCELLED
+    #  Chế độ gọn: không có nút nào đi ra.
+    assert all(b == [] for _t, b in sent)
+
+
+def test_chon_lam_luon_hay_ghi_viec_bang_chu(db, bot, monkeypatch):
+    service, _, asked = bot
+    _compact(monkeypatch)
+    sent = _capture_send(monkeypatch, service)
+    _fake_intent(monkeypatch, service, "mo_ho")
+    service.handle_message(db, _msg("xem lại giúp anh"))
+    assert "«làm luôn» hoặc «ghi việc»" in sent[-1][0]
+    service.handle_message(db, _msg("làm luôn"))
+    assert asked == ["xem lại giúp anh"]

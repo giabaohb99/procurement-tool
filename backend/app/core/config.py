@@ -268,6 +268,9 @@ class Settings(BaseSettings):
     AGENT_PLAYBOOK_PATH: str = "/agent-docs/03-so-quyet-dinh.md"
     # ai-CR-018: nhánh chạy thật, lượt rà soát so với nhánh nền để biết lỗi đã sửa ở đây chưa gộp.
     AGENT_MAIN_BRANCH: str = "main"
+    # ai-CR-027: đại ca 23/09 — thẻ gọn (logic đã sửa, đã kiểm gì, đánh giá), KHÔNG nút dưới tin nhắn,
+    # ra lệnh bằng chữ («gộp AI-0007», «duyệt», «xong»…), không gửi kèm tệp .diff. false = như cũ.
+    AGENT_TG_COMPACT: bool = True
     # ai-CR-018: `doc/` trên máy đại ca (gồm phần CHƯA commit) mount chỉ đọc vào runner. Rỗng =
     # không có; compose của stack bot đặt `/local-docs` cho agent-runner.
     AGENT_LOCAL_DOCS_DIR: str = ""
