@@ -6243,10 +6243,11 @@ biểu thuế, danh mục pháp lý, rồi năm tệp tờ khai thành năm lô 
 khớp đúng máy local. Tệp tạm trên máy chủ đã xóa.
 
 Theo đại ca: chi tiết dòng hàng ở giao diện mới đổi từ ngăn kéo bên phải sang popup
-giữa màn (chưa commit).
+giữa màn.
 - Đại ca bắt API danh sách lọc theo đối tác chạy 1,8 giây: cột đối tác thiếu chỉ mục
   nên quét cả bảng. Thêm chỉ mục bằng migration riêng d7a3f9c2b481, còn 4 ms; đếm tổng
-  đổi sang đếm thẳng (chưa commit, dev chưa chạy migration này).
+  đổi sang đếm thẳng. Commit 6b71267c, dev đã chạy migration d7a3f9c2b481 (lọc đối
+  tác trên dev 14 ms).
 
 Commit: bb338ef7 (merge 2ba3a237) · Deploy: dev 23/09/2026, alembic c4d8e2a6f470
 
@@ -6354,7 +6355,9 @@ Trên giao diện mới, ô «Email công việc» chuyển từ tab Liên hệ 
 Sửa luôn câu mô tả sai dưới ô: câu cũ nói đổi email không làm đổi tài khoản, nhưng thật ra
 đăng nhập Google tra thẳng email nhân sự, còn đăng nhập mật khẩu thì hệ thống đẩy email
 mới sang tài khoản khi lưu. Câu mới nói đúng điều đó. Giao diện cũ vốn đã để email ở tab
-Thông tin nên không đổi. Chưa commit.
+Thông tin nên không đổi.
+
+Commit: a0fd9980 · Deploy: dev 23/09/2026 (dựng lại erp)
 
 Kiểm: kiểm kiểu 0 lỗi, kiểm nếp mã 0 lỗi, 520 bài kiểm phân hệ Nhân sự xanh, thêm bài
 kiểm khóa vị trí tab của ô email.
