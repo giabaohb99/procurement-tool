@@ -147,6 +147,10 @@ NO_LOG_TABLES = frozenset({
     "tab_request_log",
     "tab_login_session",
     "tab_notification",
+    #  Dữ liệu nạp từ tệp ngoài (bao-CR-470): một lần nạp hàng chục nghìn dòng; dấu
+    #  vết đã có ở lô nạp `tab_import_batch` (ai · lúc nào · tệp nào · bao nhiêu dòng).
+    "tab_customs_line",
+    "tab_customs_party",
     "tab_setting",
 })
 

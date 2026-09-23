@@ -76,6 +76,10 @@ TOOL_DANH_MUC = {
     "top_suppliers_by_purchase": "xếp hạng NCC theo giá trị mua",
     "purchase_report": "báo cáo tổng quan mua hàng",
     "analytics_query": "thống kê mua hàng tùy biến",
+    #  bao-CR-470 — dữ liệu thị trường BÊN NGOÀI (tờ khai hải quan), `customs_price` khai PUBLIC:
+    #  không có chủ sở hữu để lọc, phạm vi là "có khóa customs_price.read hay không".
+    "customs_price_stats": "giá hải quan theo kỳ — dữ liệu thị trường bên ngoài",
+    "customs_buy_timing": "thời điểm mua theo giá hải quan — như trên",
 }
 
 #  CỐ Ý không lọc phạm vi — mỗi dòng phải nói được lý do, nếu không thì nó là lỗ hổng
@@ -101,7 +105,7 @@ def test_moi_tool_deu_phai_duoc_phan_loai(db, monkeypatch):
     """
     monkeypatch.setattr(settings, "AI_RAG_ENABLED", True)
     thuc_te = {d.name for d in T.tool_defs()}
-    assert len(thuc_te) == 37, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
+    assert len(thuc_te) == 39, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
     da_khai = set(TOOL_GHI) | set(TOOL_CHUNG_TU) | set(TOOL_DANH_MUC) | set(TOOL_KHONG_PHAM_VI)
 
     thieu = sorted(thuc_te - da_khai)

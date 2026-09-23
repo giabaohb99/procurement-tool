@@ -24,6 +24,7 @@ import Me from './pages/Me'
 import PaymentRequestDetail from './pages/PaymentRequestDetail'
 import Reports from './pages/Reports'
 import PrLinesReportPage from './pages/PrLinesReportPage'
+import CustomsPrices from './pages/CustomsPrices'
 import SurveyReport from './pages/SurveyReport'
 import CategoryAssignees from './pages/CategoryAssignees'
 import CategoryAssigneeNew from './pages/CategoryAssigneeNew'
@@ -98,6 +99,8 @@ export default function App() {
             <Route path="reports" element={<Reports />} />
             {/* bao-CR-296: trang riêng của báo cáo dòng YCMH — nội dung dùng chung tab trong Báo cáo */}
             <Route path="pr-lines-report" element={<PrLinesReportPage />} />
+            {/* bao-CR-470: tra cứu giá hải quan — danh mục hóa chất đi route CRUD chung :entity */}
+            <Route path="customs-prices" element={<CustomsPrices />} />
             <Route path="survey-report" element={<SurveyReport />} />
             <Route path="category-assignees" element={<CategoryAssignees />} />
             <Route path="category-assignees/new" element={<CategoryAssigneeNew />} />

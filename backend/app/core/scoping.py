@@ -106,6 +106,12 @@ SCOPE_FIELDS = {
     # Muốn giấu NCC thì tắt bằng QUYỀN `supplier.read`, không phải bằng phạm vi.
     "product":          PUBLIC,
     "supplier":         PUBLIC,
+    # Dữ liệu thị trường BÊN NGOÀI (tờ khai hải quan GTT02, bao-CR-470): không thuộc
+    # pháp nhân hay phòng ban nào của mình, ai được tick `customs_price.read` thì
+    # thấy TOÀN BỘ (đại ca chốt 23/09/2026). Giấu thì tắt bằng quyền, không bằng phạm vi.
+    "customs_price":    PUBLIC,
+    #  Danh mục hóa chất theo văn bản — dữ liệu pháp lý chung, không thuộc pháp nhân nào.
+    "customs_regulation": PUBLIC,
     # 2b. Danh mục KHÔNG có chiều pháp nhân trong bảng. Đây là khoảng trống của
     # mô hình dữ liệu chứ không phải của tệp này — ngày nào thêm `company_id`
     # vào bảng nào thì đổi luôn dòng tương ứng ở đây.

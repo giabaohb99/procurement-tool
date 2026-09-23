@@ -211,6 +211,9 @@ _ALL_ACTIONS = ["read", "create", "write", "delete", "approve", "cancel", "print
 #  Quản lý thu mua tự cộng điểm cho mình được (`coffee_ledger.write` mở điều chỉnh
 #  tay) — đúng cái mà PS12 bắt tách quyền.
 _SYS_ENTITIES = {"user", "role", "setting", "backup", "help_article", "mailbox",
+                 #  bao-CR-470: KHÔNG tự cấp cho Quản lý thu mua — `write` là quyền nạp
+                 #  và thay dữ liệu hải quan, `delete` là hoàn tác cả lô. Đại ca tick tay.
+                 "customs_price", "customs_regulation",
                  "forum_post", "forum_board",
                  "leave_request", "leave_balance", "leave_type", "holiday",
                  #  ⚠️ Nhóm trường nhạy cảm của hồ sơ nhân sự (08/09/2026). Phải

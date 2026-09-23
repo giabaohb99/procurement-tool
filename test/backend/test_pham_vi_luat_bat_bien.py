@@ -106,6 +106,10 @@ BB3_PUBLIC_CO_LY_DO = {
     "brand": "danh mục thương hiệu dùng chung",
     "supplier": "danh mục NCC dùng chung — giấu NCC thì tắt bằng QUYỀN supplier.read",
     "product": "danh mục SP/vật tư dùng chung, hạt dữ liệu của cả hệ (D-025)",
+    "customs_price": "dữ liệu thị trường BÊN NGOÀI (tờ khai hải quan GTT02, bao-CR-470), "
+                     "không thuộc pháp nhân/phòng ban nào — giấu thì tắt bằng QUYỀN customs_price.read",
+    "customs_regulation": "danh mục hóa chất theo văn bản pháp lý (NĐ 24/2026, TT 75/2025, TT 01/2026), "
+                          "dữ liệu pháp lý chung — sửa gác bằng customs_regulation.write",
     "category_assignee": "bảng phân công NSTM theo phân loại, không thuộc pháp nhân nào",
     "doc_type": "danh mục nền Văn thư, tách khóa là để phân quyền theo MÀN HÌNH (CR-157)",
     "doc_template": "cùng lý do CR-157",
@@ -194,6 +198,8 @@ def test_bb3_khong_entity_nao_vua_public_vua_co_cot():
 BB4_CONTROLLER_MIEN_TRU = {
     # -- gác bằng hàm tự viết trong thân hàm, grep không thấy --
     "import_tool/controller.py": "gác bằng `_guard` → user_has_permission(..., 'import')",
+    "customs/controller.py": "customs_price là entity PUBLIC (dữ liệu thị trường bên ngoài, "
+                             "bao-CR-470) — cổng là require('customs_price', …) từng route",
     "export_log/controller.py": "gác bằng `_guard_view` (can_view_any hoặc setting.read)",
     "comment/controller.py": "gác bằng `service.resolve_doc` — làm CẢ require lẫn apply_scope",
     "document/controller.py": "gác bằng `access_service.ensure_can` (2 tầng) — cụm 05 B",

@@ -23,7 +23,8 @@ _FILTER_OPS = [
 _SUBSYSTEM_MODULES = {
     "hr": [ImportModule.COMPANY, ImportModule.DEPARTMENT, ImportModule.EMPLOYEE],
     "procurement": [ImportModule.SURVEY_REQUEST, ImportModule.PURCHASE_REQUEST,
-                    ImportModule.SURVEY, ImportModule.PURCHASE_ORDER],
+                    ImportModule.SURVEY, ImportModule.PURCHASE_ORDER,
+                    ImportModule.CUSTOMS_DECLARATION],
     "production": [ImportModule.SUPPLIER, ImportModule.PRODUCT, ImportModule.UNIT,
                    ImportModule.ITEM_GROUP],
     "inventory": [ImportModule.WAREHOUSE],
@@ -155,6 +156,17 @@ def revert_batch(db: Session, batch: ImportBatch, user_id: int) -> dict:
         return {"ok": False, "message": "Batch chạy thử — không ghi gì để hoàn tác"}
     if batch.status != ImportStatus.DONE:
         return {"ok": False, "message": "Chỉ hoàn tác batch đã hoàn thành (DONE)"}
+    # bao-CR-470: lô hải quan không ghi bản chụp `ImportChange` — hoàn tác = xóa dòng
+    # hàng theo `batch_id`. Rẽ TRƯỚC nhánh "không có snapshot", kẻo lô hải quan ăn câu
+    # lỗi đó; và TRƯỚC nhánh cuối `else`, vốn lùi về hàm hoàn tác của Khảo sát.
+    if batch.module == ImportModule.CUSTOMS_DECLARATION:
+        from app.modules.customs import importer as customs_importer
+        res = customs_importer.revert(db, batch)
+        if res.get("ok"):
+            batch.status = ImportStatus.REVERTED
+            batch.updated_by = user_id
+            db.commit()
+        return res
     changes = db.query(ImportChange).filter(ImportChange.batch_id == batch.id).all()
     if not changes:
         return {"ok": False, "message": "Không có bản ghi snapshot để hoàn tác"}

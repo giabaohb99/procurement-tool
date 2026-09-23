@@ -41,6 +41,7 @@ from app.modules.category_assignee import model as _category_assignee  # noqa: F
 from app.modules.survey_request import model as _survey_request  # noqa: F401
 from app.modules.survey_request import report_model as _survey_request_report  # noqa: F401
 from app.modules.import_tool import model as _import_tool  # noqa: F401
+from app.modules.customs import model as _customs  # noqa: F401
 from app.modules.export_log import model as _export_log  # noqa: F401
 from app.modules.backup import model as _backup  # noqa: F401
 from app.modules.help_center import model as _help_center  # noqa: F401

@@ -150,6 +150,10 @@ export const ENTITIES = [
   //  — sổ không sửa được — mà là nút «Chạy lại», tức gọi ngược sang hệ ngoài.
   'sync_log',
   'purchase_cost_type',
+  // bao-CR-470 — Tra cứu giá hải quan (khớp ENTITIES của backend, canh bởi
+  // test_dong_bo_giao_dien_v2.py).
+  'customs_price',
+  'customs_regulation',
 ] as const
 
 export type PermissionEntity = (typeof ENTITIES)[number]

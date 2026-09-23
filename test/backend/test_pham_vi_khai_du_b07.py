@@ -170,8 +170,8 @@ def test_du_55_entity():
     báo cáo giá vốn cho cả công ty. PUBLIC ở `SCOPE_FIELDS`: một loại chi phí là
     một loại chi phí với mọi pháp nhân, không có chủ để lọc.
     """
-    assert len(ENTITIES) == 66
-    assert len(SCOPE_FIELDS) == 66
+    assert len(ENTITIES) == 68
+    assert len(SCOPE_FIELDS) == 68
 
 
 # ── 2. Không dựng nổi điều kiện thì chặn ────────────────────────────────────────

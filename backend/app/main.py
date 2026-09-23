@@ -78,6 +78,8 @@ from app.modules.category_assignee.controller import router as category_assignee
 from app.modules.survey_request.controller import router as survey_request_router
 from app.modules.survey_request.report_controller import report_router as survey_request_report_router
 from app.modules.import_tool.controller import router as import_tool_router
+from app.modules.customs.controller import regulation_router as customs_regulation_router
+from app.modules.customs.controller import router as customs_router
 from app.modules.export_log.controller import router as export_log_router
 from app.modules.backup.controller import router as backup_router
 from app.modules.help_center.controller import router as help_center_router
@@ -258,6 +260,8 @@ app.include_router(category_assignee_router)
 app.include_router(survey_request_router)
 app.include_router(survey_request_report_router)
 app.include_router(import_tool_router)
+app.include_router(customs_router)
+app.include_router(customs_regulation_router)
 app.include_router(export_log_router)
 app.include_router(backup_router)
 app.include_router(help_center_router)

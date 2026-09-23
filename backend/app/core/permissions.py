@@ -130,6 +130,14 @@ ENTITIES = [
     # `pos_order.read` như cũ dù nay đọc chung một bảng.
     "sync_log",
     "purchase_cost_type",   # bao-CR-453 — danh mục Loại chi phí thu mua
+    # Tra cứu giá hải quan (bao-CR-470, doc/erp/hai-quan). MỘT khóa cho cả màn tra cứu:
+    # read = xem danh sách + biểu đồ · write = nạp tệp GTT02 · delete = hoàn tác lô.
+    # Không vai trò nào tự có — đại ca tick tay trên màn Phân quyền (xem `_SYS_ENTITIES`).
+    "customs_price",
+    # Danh mục hóa chất theo văn bản của phân hệ hải quan (bao-CR-470, HQ6): NĐ 24/2026
+    # PL I–IV (có ngưỡng kg), hoạt chất cấm TT 75/2025, hóa chất phải công bố TT 01/2026.
+    # Khóa RIÊNG vì là màn riêng và `write` = sửa ngưỡng pháp lý (một khóa = một màn, CR-157).
+    "customs_regulation",
 ]
 
 ACTIONS = ["read", "create", "write", "delete", "approve", "cancel", "print", "export"]
@@ -205,6 +213,8 @@ ENTITY_LABELS = {
     "audit": "Nhật ký hệ thống (tra toàn hệ)",
     "change_log": "Nhật ký hệ thống › Giá trị trước/sau",
     "sync_log": "Sổ đồng bộ với hệ ngoài",
+    "customs_price": "Tra cứu giá hải quan",
+    "customs_regulation": "Danh mục hóa chất theo văn bản (hải quan)",
     "purchase_cost_type": "Danh mục Loại chi phí thu mua",
 }
 

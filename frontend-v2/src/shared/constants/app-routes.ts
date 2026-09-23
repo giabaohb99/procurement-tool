@@ -101,6 +101,11 @@ export const appRoutes = {
     /** bao-CR-453 — danh mục loại chi phí thu mua. */
     poCostTypes: '/procurement/po-cost-types',
     poCostTypeDetail: (id: number | string) => `/procurement/po-cost-types/${id}`,
+    /** bao-CR-470 — Tra cứu giá hải quan (năm thẻ trên một màn). */
+    customsPrices: '/procurement/customs-prices',
+    /** bao-CR-470 — danh mục hóa chất theo văn bản (nguồn cảnh báo pháp lý). */
+    customsRegulations: '/procurement/customs-regulations',
+    customsRegulationDetail: (id: number | string) => `/procurement/customs-regulations/${id}`,
   },
   /**
    * Bộ máy phê duyệt dùng chung — không nằm trong phân hệ nào vì «Việc của tôi»

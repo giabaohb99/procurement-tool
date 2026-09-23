@@ -98,6 +98,17 @@ const EMPLOYEE_STATUS = EMPLOYEE_STATUSES
 
 const DEPT_ACTIVE = [{ value: 'true', label: 'Hoạt động' }, { value: 'false', label: 'Đã ẩn' }]
 
+// bao-CR-470 — mã danh sách pháp lý, khớp RegulationList của backend (customs/constants.py).
+const REGULATION_LISTS = [
+  { value: '1', label: 'NĐ 24/2026 · Phụ lục I' },
+  { value: '2', label: 'NĐ 24/2026 · Phụ lục II' },
+  { value: '3', label: 'NĐ 24/2026 · Phụ lục III (tiền chất)' },
+  { value: '4', label: 'NĐ 24/2026 · Phụ lục IV (ngưỡng khối lượng)' },
+  { value: '10', label: 'TT 75/2025 · Hoạt chất cấm' },
+  { value: '11', label: 'TT 01/2026 · Phải công bố theo lô' },
+]
+const regulationListLabel = (v: any) => REGULATION_LISTS.find((o) => o.value === String(v))?.label || String(v ?? '')
+
 const ACTIVE_OPTIONS = [
   { value: 'true', label: 'Đang dùng / Hiện' },
   { value: 'false', label: 'Ngừng / Ẩn' },
@@ -914,6 +925,55 @@ export const cruds: Record<string, CrudConfig> = {
       { key: 'is_active', label: 'Trạng thái', type: 'select', group: 'Tổ chức',
         options: ACTIVE_OPTIONS, colorMap: { 'true': '#16a34a', 'false': '#dc2626' },
         hint: 'Ngừng dùng sẽ ẩn khỏi ô chọn loại chi phí; dòng đang dùng vẫn hiện tên kèm "(đã tắt)".' },
+    ],
+  },
+  // bao-CR-470 — danh mục hóa chất theo văn bản, nguồn của thẻ «Pháp lý & thuế» màn Tra cứu giá
+  // hải quan. Nạp sẵn bằng scripts/load_customs_catalogs.py; màn này để sửa / thêm khi văn bản đổi.
+  // `list_code` là SỐ (RegulationList ở backend/app/modules/customs/constants.py).
+  'customs-regulations': {
+    slug: 'customs-regulations', entity: 'customs_regulation', title: 'Danh mục hóa chất theo văn bản',
+    apiPath: '/api/customs-regulations', importExport: true,
+    columns: [
+      { key: 'list_code', label: 'Danh sách', render: (r) => regulationListLabel(r.list_code) },
+      { key: 'name', label: 'Tên' }, { key: 'name_vi', label: 'Tên tiếng Việt' },
+      { key: 'cas_no', label: 'Số CAS' }, { key: 'category', label: 'Phân loại' },
+      { key: 'threshold_kg', label: 'Ngưỡng (kg)', render: (r) => (r.threshold_kg == null ? '' : fmtVND(r.threshold_kg)) },
+      { key: 'banned_year', label: 'Năm cấm', render: (r) => r.banned_year || '' },
+      { key: 'is_active', label: 'Trạng thái', render: (r) => badge(r.is_active) },
+      UPDATED_AT_COL,
+    ],
+    filters: [
+      { key: 'list_code', label: 'Danh sách', type: 'select', options: REGULATION_LISTS },
+      { key: 'name', label: 'Tên' }, { key: 'cas_no', label: 'Số CAS' },
+      { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS },
+    ],
+    condFilters: [
+      condSelect('list_code', 'Danh sách', REGULATION_LISTS, ['eq']),
+      condText('name', 'Tên'), condText('name_vi', 'Tên tiếng Việt'), condText('cas_no', 'Số CAS'),
+      condText('category', 'Phân loại'),
+      condSelect('is_active', 'Trạng thái', ACTIVE_OPTIONS, ['eq']),
+    ],
+    detailChips: (row) => [
+      { icon: 'ti-book', text: regulationListLabel(row.list_code) },
+      ...(row.cas_no ? [{ icon: 'ti-hash', text: `CAS ${row.cas_no}`, cls: 'code' }] : []),
+      { icon: row.is_active ? 'ti-circle-check' : 'ti-circle-x', text: row.is_active ? 'Đang dùng' : 'Ngừng' },
+    ],
+    fields: [
+      { key: 'list_code', label: 'Danh sách', type: 'select', options: REGULATION_LISTS, group: 'Định danh',
+        hint: 'Văn bản và phụ lục chứa hóa chất này. Cảnh báo trên màn tra cứu chỉ lấy từ ba danh sách: hoạt chất cấm, NĐ 24 PL4 (có ngưỡng) và danh sách phải công bố.' },
+      { key: 'name', label: 'Tên (theo văn bản)', group: 'Định danh', fullWidth: true },
+      { key: 'name_vi', label: 'Tên tiếng Việt', group: 'Định danh', fullWidth: true },
+      { key: 'cas_no', label: 'Số CAS', group: 'Định danh',
+        hint: 'Tra cứu theo công thức (H2SO4…) đổi ra số CAS rồi so đúng ô này.' },
+      { key: 'category', label: 'Phân loại', group: 'Định danh' },
+      { key: 'threshold_kg', label: 'Ngưỡng khối lượng (kg)', type: 'number', group: 'Ràng buộc',
+        hint: 'Chỉ NĐ 24/2026 Phụ lục IV có ngưỡng. Để trống nếu văn bản không nêu.' },
+      { key: 'banned_year', label: 'Năm bắt đầu cấm', type: 'number', group: 'Ràng buộc', zeroAsBlank: true },
+      { key: 'legal_basis', label: 'Căn cứ', group: 'Ràng buộc', fullWidth: true },
+      { key: 'note', label: 'Ghi chú', type: 'textarea', group: 'Khác', fullWidth: true },
+      { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS, group: 'Khác',
+        colorMap: { 'true': '#16a34a', 'false': '#dc2626' },
+        hint: 'Ngừng dùng thì không còn hiện trong tra cứu và cảnh báo.' },
     ],
   },
 }

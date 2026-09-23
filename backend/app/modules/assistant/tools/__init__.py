@@ -31,6 +31,7 @@ from .rag_tool import SEARCH_DOCS_SPEC
 from .ticket_tool import MY_TICKETS_SPEC, TICKET_CREATE_SPEC
 from .update_tool import PROPOSE_DOCUMENT_UPDATE_SPEC
 from .account_setup_tool import PROPOSE_ACCOUNT_SETUP_SPEC
+from .customs_tool import CUSTOMS_BUY_TIMING_SPEC, CUSTOMS_PRICE_STATS_SPEC
 
 
 def _active_specs() -> list:
@@ -54,7 +55,8 @@ def _active_specs() -> list:
                            TICKET_CREATE_SPEC, MY_TICKETS_SPEC,
                            MY_LEAVE_SUMMARY_SPEC, EMPLOYEE_LOOKUP_SPEC,
                            PROPOSE_DOCUMENT_UPDATE_SPEC,
-                           PROPOSE_ACCOUNT_SETUP_SPEC]
+                           PROPOSE_ACCOUNT_SETUP_SPEC,
+                           CUSTOMS_PRICE_STATS_SPEC, CUSTOMS_BUY_TIMING_SPEC]
     if settings.AI_RAG_ENABLED:
         specs.append(SEARCH_DOCS_SPEC)
     return specs

@@ -6073,6 +6073,96 @@ Mã nguồn: `backend/app/modules/purchase_order/service.py` ·
 `frontend-v2/src/modules/procurement/api/purchase-order-api.ts` ·
 `frontend-v2/src/modules/procurement/components/purchase-order-import-costs-card.tsx`.
 
+## hai-quan-thiet-ke-1-1 | Đánh giá lại thiết kế lưu trữ hải quan theo góp ý của đại ca
+- status: xong
+- date: 2026-09-23
+Đại ca góp ý hai điểm: gộp bảng doanh nghiệp nhập khẩu và bảng đối tác thành
+một bảng có phân loại; và bảng tổng hợp theo tháng là nghĩa hẹp, quý năm thì
+sao, có tận dụng được phần báo cáo sẵn có không. Khi đo lại để trả lời thì phát
+hiện chính bản thiết kế đầu dựa trên một giả định sai.
+
+PHÁT HIỆN QUYẾT ĐỊNH:
+- Tám mươi ba phần trăm tên hàng chỉ xuất hiện đúng một lần. Tên hàng là chữ tự
+  do nhét cả hàm lượng và quy cách nên gần như không bao giờ trùng. Bảng tổng hợp
+  theo tên hàng và tháng chỉ gọn hơn bảng gốc có một phẩy hai lần, và từ điển tên
+  hàng không tiết kiệm được gì.
+
+ĐÃ SỬA SANG BẢN 1.1:
+- Gộp hai bảng thành một bảng đối tượng, phân loại theo bản chất trong nước hoặc
+  nước ngoài chứ không theo vai trò, vì vai trò đã nằm ở cột nào của tờ khai trỏ
+  tới và phân loại theo vai trò sẽ vỡ khi có dữ liệu xuất khẩu.
+- Bỏ bảng tổng hợp theo tháng. Kỳ gom tháng, quý, năm là tham số của truy vấn,
+  tính ngay lúc đọc trên tập kết quả tìm kiếm.
+- Trang tổng quan dùng lại bảng kết quả tính sẵn của phân hệ Báo cáo, không đẻ
+  bảng mới. Riêng biểu đồ theo từ khóa thì không dùng được vì số khóa vô hạn.
+- Bỏ từ điển tên hàng, lưu thẳng trong dòng tờ khai.
+- Sửa con số dung lượng: bản đầu ghi gọn hơn hai phẩy hai lần là sai vì quên cộng
+  phần từ điển. Số đúng là khoảng một phẩy hai lần. Đòn bẩy thật là nén trang:
+  đo trên dữ liệu thật gọn khoảng ba lần, tính thận trọng trên đĩa khoảng hai lần.
+
+Mã nguồn: doc/erp/hai-quan/02-thiet-ke-ky-thuat.md ·
+doc/erp/hai-quan/01-danh-sach-tinh-nang.md
+
+## hai-quan-lo-trinh-giao-dien | Lộ trình phase và đề xuất màn hình cho phân hệ Tra cứu giá hải quan
+- status: xong
+- date: 2026-09-23
+Đại ca yêu cầu thêm tài liệu lộ trình phase và đề xuất màn hình cho cả giao diện
+cũ lẫn giao diện mới.
+
+ĐÃ VIẾT:
+- Lộ trình bảy phase từ chốt câu hỏi tới pháp lý, tổng khoảng hai mươi ngày công,
+  đợt đầu khoảng chín ngày công. Mỗi phase có điều kiện cần, điều kiện đủ đo bằng
+  đúng năm tệp mẫu, và đường lui. Theo quy trình giao diện cũ làm và chạy ổn trên
+  bản chạy thật trước rồi mới chuyển sang giao diện mới.
+- Đề xuất chín màn hình. Chỉ một trang chính: chưa tìm thì hiện tổng quan, đã tìm
+  thì hiện kết quả. Bảng so sánh chỗ khác nhau giữa hai giao diện.
+
+TẬN DỤNG THÊM ĐƯỢC:
+- Bảng lô nạp dùng chung của mô-đun nạp dữ liệu có sẵn đủ thứ cần: phân loại theo
+  phân hệ, giữ tệp gốc, chạy thử trước khi ghi, hoàn tác. Bỏ được bảng lô riêng,
+  nâng tài liệu thiết kế lên bản 1.2. Giao diện mới có sẵn màn quản lý lô nạp;
+  giao diện cũ không có nên làm một thẻ trong trang.
+- Giao diện cũ không có thư viện biểu đồ, vẽ theo khuôn tự vẽ sẵn có, không thêm
+  thư viện. Hàm định dạng đơn giá bốn số lẻ và nút ẩn hiện cột dùng lại được.
+
+SỐ LIỆU THẬT CỦA MỘT HOẠT CHẤT LÀM VÍ DỤ, LỘ RA BỐN ĐIỀU MÀN HÌNH BẮT BUỘC LÀM:
+- Một phần ba số dòng tính bằng lít, phải tách theo đơn vị.
+- Có tháng không có dòng nào, phải để trống chứ không vẽ thành không.
+- Tháng có vẻ rẻ nhất chỉ dựa trên ba dòng, trong khi tháng gần ngang giá dựa trên
+  mười sáu dòng. Tháng ít dữ liệu không được xét là tháng giá tốt nhất.
+- Cùng một từ khóa trộn thuốc kỹ thuật với thành phẩm, giá trần gấp đôi giá sàn.
+  Đây là lý do tra theo hoạt chất và hàm lượng ở đợt hai đáng làm.
+
+Mã nguồn: doc/erp/hai-quan/03-lo-trinh-phase.md · doc/erp/hai-quan/04-giao-dien.md ·
+doc/erp/hai-quan/02-thiet-ke-ky-thuat.md · doc/erp/hai-quan/01-danh-sach-tinh-nang.md
+
+## hai-quan-dinh-nghia-to-khai | Làm rõ tờ khai và dòng hàng trong tài liệu hải quan
+- status: xong
+- date: 2026-09-23
+Đại ca hỏi định nghĩa một tờ khai là như thế nào. Đo lại thì mỗi dòng Excel là
+một dòng hàng của tờ khai chứ không phải một tờ khai, và tài liệu đang dùng từ
+lỏng chỗ này.
+
+ĐO ĐƯỢC:
+- Số thứ tự hàng chạy từ một tới năm mươi, đúng trần năm mươi dòng một tờ khai.
+- Chín nghìn bốn trăm tám mươi tư dòng mang số thứ tự một, nên bộ mẫu có nhiều
+  nhất khoảng chín nghìn rưỡi tờ khai chứ không phải mười tám nghìn.
+- Không gom lại thành tờ khai được: không có số tờ khai, và gom theo ngày, chi
+  cục, doanh nghiệp, số hợp đồng thì chỉ bảy mươi mốt phần trăm nhóm liền mạch.
+  Phần còn lại là tờ khai chỉ còn một dòng lẻ vì các dòng hàng khác mã HS đã bị
+  bộ lọc loại trước khi xuất.
+
+ĐÃ SỬA:
+- Thêm mục định nghĩa tờ khai và dòng hàng vào tài liệu thiết kế, nâng lên bản 1.3.
+- Đổi tên bảng lớn cho đúng nghĩa dòng hàng. Đổi chữ dòng tờ khai thành dòng hàng
+  ở cả bốn tài liệu. Chỉ số trên màn hình đổi từ số lần nhập thành số dòng hàng.
+- Thêm câu hỏi thứ sáu: nguồn kết xuất có xuất kèm số tờ khai được không. Nếu
+  được thì có khóa duy nhất tự nhiên, bỏ được cách nạp xóa theo khoảng ngày.
+
+Mã nguồn: doc/erp/hai-quan/01-danh-sach-tinh-nang.md ·
+doc/erp/hai-quan/02-thiet-ke-ky-thuat.md · doc/erp/hai-quan/03-lo-trinh-phase.md ·
+doc/erp/hai-quan/04-giao-dien.md
+
 ## kiem-bat-bien-pham-vi-2309 | Vá bốn bài kiểm bất biến phạm vi đang đỏ trên erp-v2 (nợ trước bao-CR-470)
 - status: xong
 - date: 2026-09-23
@@ -6093,7 +6183,62 @@ rồi mới khai.
   HMAC, không có phiên người dùng để lọc.
 
 Kiểm: test_assistant_pham_vi_doc + test_pham_vi_luat_bat_bien +
-test_assistant_chi_co_quyen_xem — 61 xanh. Chưa commit.
+test_assistant_chi_co_quyen_xem — 61 xanh, chạy lại trên đúng cây commit
+(không có mã hải quan) cũng 61 xanh. Commit 122e7145, chưa push.
 
 Mã nguồn: test/backend/test_assistant_chi_co_quyen_xem.py ·
 test/backend/test_pham_vi_luat_bat_bien.py
+
+## bao-CR-470 | Phân hệ Tra cứu giá hải quan — làm đủ sáu phase và nạp dữ liệu thật vào máy local
+- status: xong
+- date: 2026-09-23
+Đại ca bảo khởi công trên giao diện cũ trước, rồi bảo làm luôn đủ mọi phase, đưa
+dữ liệu thật vào máy local để đại ca xem lại. Chưa commit, chưa deploy.
+
+ĐÃ LÀM:
+- Nền dữ liệu và đường nạp tệp GTT02: bảng đối tượng (doanh nghiệp nhập khẩu và đối
+  tác), bảng dòng hàng chia phân vùng theo năm, nạp theo lô có chạy thử, vá cột ngày
+  đăng ký bị Excel đảo ngày tháng, lô đã thay dữ liệu cũ thì không cho hoàn tác.
+- Màn tra cứu trên giao diện cũ, năm thẻ: danh sách, biểu đồ, nhà nhập khẩu, so
+  sánh, pháp lý và thuế. Biểu đồ chỉ chạy khi đã nhập từ khóa hoặc mã HS; tách theo
+  đơn vị tính; tháng trống để trống; tháng dưới năm dòng không được gắn giá tốt nhất.
+  Có hộp nạp dữ liệu, hộp lịch sử nạp kèm nhật ký lô, hộp chi tiết dòng hàng, xuất
+  Excel. Màn sửa danh mục hóa chất theo văn bản.
+- Giao diện mới: màn tra cứu và màn danh mục hóa chất đã chuyển sang phân hệ Thu mua,
+  cùng năm thẻ, bộ lọc nằm trên đường dẫn, chi tiết dòng hàng mở ngăn kéo bên phải.
+- Nút chọn đơn vị ghi chữ dễ đọc, ví dụ «lít (LTR)»; mã hải quan chưa rõ nghĩa thì giữ
+  nguyên mã, không đoán.
+- Nhận ra hoạt chất từ tên hàng bằng ba nguồn; thêm nguồn tên hoạt chất bóc từ danh
+  mục thuốc bảo vệ thực vật, nâng tỷ lệ nhận ra từ 41% lên 51%, và gỡ 14 dòng thuốc
+  kỹ thuật mesotrione trước bị gắn nhầm atrazine.
+- Hai công cụ cho trợ lý AI: tra giá theo kỳ và gợi ý tháng nên mua, luôn kèm độ tin
+  cậy vì mới có một năm dữ liệu.
+- Nạp danh mục pháp lý (bốn phụ lục Nghị định 24/2026, hoạt chất cấm, danh sách phải
+  công bố) và biểu thuế 2026. Đính chính tài liệu bản trước: Phụ lục IV có sẵn ngưỡng
+  khối lượng.
+
+DỮ LIỆU LOCAL: năm tệp mẫu, 18.243 dòng hàng, 7.651 dòng vá ngày, 3.503 doanh
+nghiệp và đối tác, 9.223 dòng nhận ra hoạt chất.
+
+- Bài hướng dẫn sử dụng «Tra cứu giá hải quan» trong trung tâm trợ giúp, mới dựng ở
+  máy local.
+- Làm lại biểu đồ theo lỗi đại ca bắt: dải tô là khoảng giá phổ biến (nửa số dòng ở
+  giữa) thay cho thấp nhất – cao nhất, để vài dòng giá lạ không kéo trục; rê chuột ra
+  giá, số dòng, lượng của từng kỳ; chữ trục không phình theo màn hình; hai biểu đồ
+  thẳng hàng. Đếm theo tháng ở đầu trang chuyển xuống cơ sở dữ liệu (103 → 45 ms);
+  đổi bộ lọc thì biểu đồ chỉ gọi máy chủ một lần thay vì hai.
+- Theo đại ca: bảng dòng hàng hiện đủ 32 cột, đúng thứ tự và tiêu đề như tệp Excel,
+  hai cột suy ra (hoạt chất, hàm lượng) để cuối.
+
+CHƯA LÀM: so tồn kho với ngưỡng (cần cầu nối vật tư sang hoạt chất, đại ca để sau).
+
+Kiểm: bài kiểm hải quan và 82 bài kiểm phạm vi, trợ lý đều xanh; giao diện cũ kiểm
+kiểu giữ đúng 4 lỗi nền; giao diện mới kiểm kiểu 0 lỗi, kiểm nếp mã 0 lỗi (31 cảnh báo
+cũ), 631 bài của phân hệ Thu mua và khu điều hướng xanh. Chưa commit, chờ đại ca xem.
+
+Mã nguồn: backend/app/modules/customs/* · assistant/tools/customs_tool.py ·
+scripts/load_customs_catalogs.py · scripts/seed_help_customs_prices.py ·
+migration c4d8e2a6f470 ·
+frontend/src/pages/CustomsPrices.tsx · frontend/src/components/customs/* ·
+frontend-v2/src/modules/procurement (customs-*) ·
+doc/erp/hai-quan/01…04
