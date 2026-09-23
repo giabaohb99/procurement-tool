@@ -340,13 +340,24 @@ cần đại ca quyết (nếu có).
 """
 
 
-def build_brief(task: AgentTask, docs: list[dict]) -> str:
+def build_brief(task: AgentTask, docs: list[dict], *, from_scan: bool = False) -> str:
+    """Đề bài sửa mã. `from_scan=True` (ai-CR-024): đề bài đi TIẾP trong phiên rà soát — bỏ trích
+    đoạn tài liệu và đoạn rà soát (đã nằm trong phiên), dặn dùng lại những gì đã đọc."""
     lines = [
         f"# Việc {task.code}: {task.title}", "",
         "Bạn là Đậu Đậu, bot sửa mã của Agent Hub (tự xưng «em», gọi người đọc tổng kết là «đại ca»), "
         "đang đứng trong một worktree sạch cắt từ nhánh "
         f"`{settings.AGENT_BASE_BRANCH}` của kho procurement-tool (ERP nội bộ DEGO). "
         "Làm đúng kế hoạch đã được duyệt dưới đây, rồi in tổng kết.", "",
+    ]
+    if from_scan:
+        lines += [
+            "## Tiếp theo lượt rà soát",
+            "Bạn ĐÃ rà soát việc này ở lượt trước trong chính phiên này và đã đọc các tệp liên quan. "
+            "Lượt rà soát chỉ được đọc; từ lượt này bạn được SỬA theo kế hoạch đã duyệt. Dùng lại hiểu "
+            "biết đó — KHÔNG đọc lại tệp đã đọc trừ phần sắp sửa, không rà lại thư viện dùng chung.", "",
+        ]
+    lines += [
         "## Yêu cầu gốc", task.summary or "(không có)", "",
         "## Kế hoạch đã duyệt", task.plan or "(không có)", "",
         "## Phạm vi tệp",
@@ -359,12 +370,12 @@ def build_brief(task: AgentTask, docs: list[dict]) -> str:
         lines += ["## Tài liệu bot quản lý đã tra (đọc trước khi sửa)"]
         lines += [f"- {d.get('path', '')}" for d in task.related_docs if isinstance(d, dict)]
         lines += [""]
-    if docs:
+    if docs and not from_scan:
         lines += ["## Trích đoạn tài liệu liên quan"]
         for d in docs[:4]:
             lines += [f"### {d.get('path', '')} — {d.get('title', '')}",
                       (d.get("text") or "")[:1500], ""]
-    if review := scan_message_for(task):
+    if not from_scan and (review := scan_message_for(task)):
         lines += ["## Kết quả rà soát mã trước khi lập kế hoạch (chính bạn đã đọc, ai-CR-017)",
                   review[:4000], ""]
     #  Sổ quyết định (ai-CR-015). Việc rủi ro cao không nạp sổ và giữ hai ca dừng cũ (luật 3).
@@ -437,14 +448,16 @@ _CONTINUE_BRIEF = (
 )
 
 
-def run_claude(worktree: str, brief: str, *, session_id: str, timeout: int) -> dict:
-    """Một lượt `claude -p`. Đề bài đi qua stdin (không lộ ở `ps`). Trả JSON đã bóc."""
+def run_claude(worktree: str, brief: str, *, session_id: str, timeout: int,
+               resume: bool = False) -> dict:
+    """Một lượt `claude -p`. Đề bài đi qua stdin (không lộ ở `ps`). Trả JSON đã bóc.
+    `resume=True` (ai-CR-024): đi tiếp phiên có sẵn (phiên rà soát) thay vì mở phiên mới."""
     cmd = [
         settings.AGENT_CODER_CMD, "-p",
         "--output-format", "json",
         "--permission-mode", "acceptEdits",
         "--allowedTools", ALLOWED_TOOLS,
-        "--session-id", session_id,
+        "--resume" if resume else "--session-id", session_id,
         "--max-turns", str(settings.AGENT_CODER_MAX_TURNS),
     ]
     return _run_cli(cmd, brief, worktree, timeout)
@@ -1083,6 +1096,30 @@ def _parse_numstat(raw: str) -> dict[str, tuple[int, int]]:
     return stats
 
 
+#  Phiên rà soát cũ hơn chừng này thì không nối nữa: nhánh nền có thể đã đổi nhiều (ai-CR-024).
+SCAN_REUSE_MAX_AGE_SEC = 6 * 3600
+
+
+def scan_session_to_reuse(db: Session, task: AgentTask) -> str:
+    """Phiên rà soát để lượt sửa mã đi tiếp (ai-CR-024), hoặc rỗng nếu không nên nối: không có lượt
+    rà soát thành công, quá cũ, worktree không còn, hoặc worktree đã bẩn (có thay đổi lạ)."""
+    run = latest_scan_run(db, task)
+    art = run.artifact if run is not None and isinstance(run.artifact, dict) else {}
+    sid = str(art.get("session_id") or "")
+    if not sid or run.finished_at is None:
+        return ""
+    if (datetime.now() - run.finished_at).total_seconds() > SCAN_REUSE_MAX_AGE_SEC:
+        return ""
+    worktree = Path(settings.AGENT_WORKTREE_ROOT) / task.code
+    if not worktree.exists():
+        return ""
+    try:
+        dirty = _git(str(worktree), "status", "--porcelain", timeout=60).strip()
+    except CoderError:
+        return ""
+    return "" if dirty else sid
+
+
 def resumable_session(db: Session, task: AgentTask) -> str:
     """Phiên của lượt sửa mã gần nhất đã HẾT LƯỢT (còn nối được), hoặc rỗng."""
     run = (db.query(AgentRun).filter(AgentRun.task_id == task.id, AgentRun.stage == STAGE_CODE)
@@ -1133,17 +1170,23 @@ def run_code_task(db: Session, task: AgentTask, *, resume: bool = False) -> dict
     previous = resumable_session(db, task) if resume else ""
     if resume and not previous:
         raise CoderError("không còn phiên hết lượt nào để làm tiếp")
+    #  ai-CR-024: nối phiên rà soát (Claude đã đọc mã) thay vì mở phiên mới đọc lại từ đầu.
+    scan_sid = "" if previous else scan_session_to_reuse(db, task)
     run = _start_run(db, task.id)
-    session_id = previous or str(uuid.uuid4())
+    session_id = previous or scan_sid or str(uuid.uuid4())
     #  Ghi phiên NGAY, trước lượt claude: hỏng hay hết lượt giữa chừng vẫn biết phiên nào để nối.
-    run.artifact = {"session_id": session_id, "resumed": bool(previous)}
+    run.artifact = {"session_id": session_id, "resumed": bool(previous), "from_scan": bool(scan_sid)}
     db.commit()
 
-    if previous:
+    if previous or scan_sid:
+        #  Dùng lại ĐÚNG worktree phiên đã đọc: cắt lại thì mọi tệp bị coi là «đổi sau khi đọc» và
+        #  Claude phải đọc lại hết — mất đúng cái lợi của việc nối phiên.
         worktree = str(Path(settings.AGENT_WORKTREE_ROOT) / task.code)
         if not Path(worktree).exists():
             raise CoderError(f"worktree {worktree} không còn — bấm Sửa để bot làm lại từ đầu")
         branch = task.branch_name or branch_name_for(task)
+        task.branch_name = branch[:120]
+        db.commit()
     else:
         worktree, branch = prepare_worktree(task)
         task.branch_name = branch[:120]
@@ -1157,8 +1200,20 @@ def run_code_task(db: Session, task: AgentTask, *, resume: bool = False) -> dict
                                        timeout=settings.AGENT_RUN_TIMEOUT_SEC)
         else:
             docs = memory.recall(f"{task.title}\n{task.summary}")
-            data = run_claude(worktree, build_brief(task, docs), session_id=session_id,
-                              timeout=settings.AGENT_RUN_TIMEOUT_SEC)
+            try:
+                data = run_claude(worktree, build_brief(task, docs, from_scan=bool(scan_sid)),
+                                  session_id=session_id, timeout=settings.AGENT_RUN_TIMEOUT_SEC,
+                                  resume=bool(scan_sid))
+            except CoderError as e:
+                if not scan_sid or isinstance(e, MaxTurnsError) or "No conversation found" not in str(e):
+                    raise
+                #  Phiên rà soát đã mất: lùi về phiên mới như trước ai-CR-024, không hỏng việc.
+                log.warning("agent_hub.coder: phiên rà soát %s mất, mở phiên mới", scan_sid)
+                session_id = str(uuid.uuid4())
+                run.artifact = {"session_id": session_id, "resumed": False, "from_scan": False}
+                db.commit()
+                data = run_claude(worktree, build_brief(task, docs), session_id=session_id,
+                                  timeout=settings.AGENT_RUN_TIMEOUT_SEC)
     except MaxTurnsError as e:
         return _stop_at_max_turns(db, task, run, worktree, session_id, e)
     except subprocess.TimeoutExpired:
@@ -1883,7 +1938,9 @@ def scan_task(db: Session, task: AgentTask) -> dict:
     db.commit()
     session_id = str(uuid.uuid4())
     try:
-        wt, _branch = prepare_worktree(task)
+        wt, branch = prepare_worktree(task)
+        #  Ghi nhánh ngay: lượt sửa mã đi tiếp phiên rà soát dùng lại đúng worktree + nhánh này.
+        task.branch_name = branch[:120]
         head = _git(wt, "rev-parse", "HEAD", timeout=60).strip()
         try:
             main_head = _git(wt, "rev-parse", f"origin/{settings.AGENT_MAIN_BRANCH}", timeout=60).strip()

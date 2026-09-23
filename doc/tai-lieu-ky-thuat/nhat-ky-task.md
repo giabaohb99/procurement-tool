@@ -3486,6 +3486,22 @@ và `celery-beat`, chú thích đầu tệp ghi luôn lý do cấm đặt lại 
 `procurement-tool/docker-compose.override.yml` (bản vá tạm ở máy làm việc, không commit).
 Commit: `0c4a0850` trên nhánh `agent-hub-bac-1` (23/09/2026, chưa push).
 
+## ai-CR-024 | Bước sửa mã đi tiếp phiên rà soát để khỏi đọc lại mã từ đầu
+- status: xong
+- date: 2026-09-23
+- pic: NSU209
+
+Đại ca thấy sửa một chức năng nhỏ mà bot chạy tới mười hai phút. Nguyên nhân chính là bot đọc mã hai
+lần: bước rà soát đọc hết các tệp liên quan, rồi bước sửa mã mở một phiên Claude mới không nhớ gì và
+đọc lại gần như từ đầu. Nay bước sửa mã đi tiếp đúng phiên rà soát, trên đúng thư mục làm việc mà
+phiên đó đã đọc, nên Claude có sẵn các tệp trong đầu và chỉ việc sửa; lượt rà soát vẫn chỉ được đọc,
+quyền sửa chỉ mở ở lượt sửa. Bot chỉ nối khi lượt rà soát còn mới trong sáu tiếng và thư mục làm việc
+còn sạch; phiên rà soát bị mất thì tự mở phiên mới như trước. Cả tệp bài kiểm 130/130 xanh. Hiệu quả
+thời gian sẽ đo ở việc kế tiếp.
+
+Mã nguồn: `backend/app/modules/agent_hub/coder.py` (`scan_session_to_reuse`, `run_claude(resume=)`,
+`build_brief(from_scan=)`) · `test/backend/test_agent_hub.py` · `change-log-ai.md`.
+
 ## ai-CR-023 | Bot hết lượt khi đang sửa dở thì giữ phần đã làm và có nút làm tiếp
 - status: xong
 - date: 2026-09-23

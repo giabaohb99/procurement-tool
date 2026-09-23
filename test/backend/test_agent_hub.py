@@ -890,7 +890,7 @@ def _fake_runner(monkeypatch, coder, *, touched, report="## TỔNG KẾT\n1. đ�
     monkeypatch.setattr(coder, "_git", fake_git)
     monkeypatch.setattr(coder, "prepare_worktree", lambda task: ("/worktrees/X", "bot/x"))
     monkeypatch.setattr(coder.memory, "recall", lambda q, limit=6: [])
-    monkeypatch.setattr(coder, "run_claude", lambda wt, brief, *, session_id, timeout: {
+    monkeypatch.setattr(coder, "run_claude", lambda wt, brief, *, session_id, timeout, **kw: {
         "result": report, "num_turns": 7, "duration_ms": 90000, "total_cost_usd": 0.42,
         "usage": {"input_tokens": 100, "output_tokens": 50}, "modelUsage": {"claude-x": {}}})
     monkeypatch.setattr(coder, "run_gate", lambda wt, t, **kw: {
@@ -3041,7 +3041,7 @@ def test_het_luot_khong_con_la_that_bai_ma_co_nut_lam_tiep(db, bot, monkeypatch)
         coder.parse_cli_json('{"subtype": "error_max_turns", "is_error": true, "num_turns": 81}')
     calls = _fake_runner(monkeypatch, coder, touched=["frontend-v2/src/a.tsx", "frontend-v2/src/b.tsx"])
 
-    def out_of_turns(wt, brief, *, session_id, timeout):
+    def out_of_turns(wt, brief, *, session_id, timeout, resume=False):
         assert "## Ngân sách lượt" in brief
         raise coder.MaxTurnsError("claude hết 81 lượt khi đang làm dở", {"num_turns": 81})
 
@@ -3089,3 +3089,91 @@ def test_lam_tiep_noi_dung_phien_tren_dung_worktree(db, bot, monkeypatch, tmp_pa
     #  Không còn phiên dở: nút «Làm tiếp» không giao gì.
     service.handle_callback(db, _callback(f"cont:{task.id}"))
     assert dispatched == [task.id]
+
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-024: lượt sửa mã đi tiếp phiên rà soát, khỏi đọc lại mã từ đầu
+# ---------------------------------------------------------------------------
+def _scan_ready(db, service, coder, tmp_path, monkeypatch, *, age_hours=0.1):
+    from datetime import timedelta as _td
+
+    from app.modules.agent_hub.model import AgentRun
+
+    monkeypatch.setattr(settings, "AGENT_WORKTREE_ROOT", str(tmp_path))
+    task = _task_with_plan(db, service, ["frontend-v2/src/a.tsx"], status=service.ST_CODE)
+    (tmp_path / task.code).mkdir()
+    done = datetime.now() - _td(hours=age_hours)
+    db.add(AgentRun(task_id=task.id, stage=STAGE_SCAN, provider="claude_code", model="c",
+                    status=service.RUN_OK, started_at=done, finished_at=done,
+                    artifact={"session_id": "scan-1", "message": "**Kết luận:** sửa a.tsx.", "info": {}}))
+    db.commit()
+    return task
+
+
+def test_sua_ma_di_tiep_phien_ra_soat_tren_dung_worktree(db, bot, monkeypatch, tmp_path):
+    """AI-0007: phiên sửa mã mới đọc lại từ đầu 40 tệp mà phiên rà soát vừa đọc xong."""
+    from app.modules.agent_hub import coder
+    from app.modules.agent_hub.model import AgentRun
+
+    service, _, _ = bot
+    _capture_send(monkeypatch, service)
+    _fake_runner(monkeypatch, coder, touched=["frontend-v2/src/a.tsx"])
+    monkeypatch.setattr(coder, "prepare_worktree", lambda task: pytest.fail("không được cắt lại worktree"))
+    seen: list[dict] = []
+    monkeypatch.setattr(coder, "run_claude", lambda wt, brief, *, session_id, timeout, resume=False: seen.append(
+        {"wt": wt, "brief": brief, "sid": session_id, "resume": resume}) or {"result": "## TỔNG KẾT\n1. xong"})
+    task = _scan_ready(db, service, coder, tmp_path, monkeypatch)
+    coder.run_code_task(db, task)
+    call = seen[0]
+    assert call["resume"] is True and call["sid"] == "scan-1" and call["wt"] == str(tmp_path / task.code)
+    assert "## Tiếp theo lượt rà soát" in call["brief"]
+    assert "Kết quả rà soát mã trước khi lập kế hoạch" not in call["brief"]
+    assert "## Kế hoạch đã duyệt" in call["brief"] and "## Luật bắt buộc" in call["brief"]
+    run = db.query(AgentRun).filter_by(task_id=task.id, stage=coder.STAGE_CODE).one()
+    assert run.artifact["session_id"] == "scan-1" and task.status == service.ST_REVIEW
+
+
+def test_khong_noi_phien_ra_soat_khi_qua_cu_hoac_worktree_ban(db, bot, monkeypatch, tmp_path):
+    from app.modules.agent_hub import coder
+
+    service, _, _ = bot
+    _capture_send(monkeypatch, service)
+    #  Quá 6 tiếng: nhánh nền có thể đã đổi nhiều, mở phiên mới như cũ.
+    old = _scan_ready(db, service, coder, tmp_path, monkeypatch, age_hours=7)
+    assert coder.scan_session_to_reuse(db, old) == ""
+    #  Worktree có thay đổi lạ: không nối.
+    monkeypatch.setattr(coder, "_git", lambda cwd, *a, **kw: " M frontend-v2/src/a.tsx\n")
+    task2 = _task_with_plan(db, service, ["frontend-v2/src/a.tsx"], status=service.ST_CODE)
+    (tmp_path / task2.code).mkdir()
+    from app.modules.agent_hub.model import AgentRun
+    db.add(AgentRun(task_id=task2.id, stage=STAGE_SCAN, provider="claude_code", model="c",
+                    status=service.RUN_OK, started_at=datetime.now(), finished_at=datetime.now(),
+                    artifact={"session_id": "scan-2", "message": "x", "info": {}}))
+    db.commit()
+    assert coder.scan_session_to_reuse(db, task2) == ""
+    monkeypatch.setattr(coder, "_git", lambda cwd, *a, **kw: "")
+    assert coder.scan_session_to_reuse(db, task2) == "scan-2"
+
+
+def test_phien_ra_soat_mat_thi_lui_ve_phien_moi(db, bot, monkeypatch, tmp_path):
+    from app.modules.agent_hub import coder
+    from app.modules.agent_hub.model import AgentRun
+
+    service, _, _ = bot
+    _capture_send(monkeypatch, service)
+    _fake_runner(monkeypatch, coder, touched=["frontend-v2/src/a.tsx"])
+    calls: list[tuple] = []
+
+    def fake(wt, brief, *, session_id, timeout, resume=False):
+        calls.append((resume, session_id))
+        if resume:
+            raise coder.CoderError("claude thoát mã 1: No conversation found with session ID: scan-1")
+        return {"result": "## TỔNG KẾT\n1. xong"}
+
+    monkeypatch.setattr(coder, "run_claude", fake)
+    task = _scan_ready(db, service, coder, tmp_path, monkeypatch)
+    coder.run_code_task(db, task)
+    assert calls[0] == (True, "scan-1") and calls[1][0] is False and calls[1][1] != "scan-1"
+    run = db.query(AgentRun).filter_by(task_id=task.id, stage=coder.STAGE_CODE).one()
+    assert run.artifact["session_id"] == calls[1][1] and task.status == service.ST_REVIEW
