@@ -6234,7 +6234,13 @@ CHƯA LÀM: so tồn kho với ngưỡng (cần cầu nối vật tư sang hoạ
 
 Kiểm: bài kiểm hải quan và 82 bài kiểm phạm vi, trợ lý đều xanh; giao diện cũ kiểm
 kiểu giữ đúng 4 lỗi nền; giao diện mới kiểm kiểu 0 lỗi, kiểm nếp mã 0 lỗi (31 cảnh báo
-cũ), 631 bài của phân hệ Thu mua và khu điều hướng xanh. Chưa commit, chờ đại ca xem.
+cũ), 631 bài của phân hệ Thu mua và khu điều hướng xanh.
+
+Đại ca cho gom và đẩy lên dev: commit riêng, gộp sáu commit mới của nhánh, deploy
+dev dựng lại máy chủ, tác vụ nền và hai giao diện; migration chạy xong trên dev.
+Bảng hải quan trên dev còn trống, chưa nạp dữ liệu.
+
+Commit: bb338ef7 (merge 2ba3a237) · Deploy: dev 23/09/2026, alembic c4d8e2a6f470
 
 Mã nguồn: backend/app/modules/customs/* · assistant/tools/customs_tool.py ·
 scripts/load_customs_catalogs.py · scripts/seed_help_customs_prices.py ·
