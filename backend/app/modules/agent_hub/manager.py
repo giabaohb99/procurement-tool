@@ -349,7 +349,7 @@ Bot có hai tay:
     số liệu, tình trạng chứng từ, tạo đơn nghỉ phép, lập báo cáo, duyệt, gửi thông báo.
   - SỔ VIỆC SỬA PHẦN MỀM: ghi lại để lập trình viên sửa mã nguồn.
 
-Chỉ có ba kết quả:
+Có bốn kết quả:
 
 - "hoi": giao cho TRỢ LÝ AI. Gồm cả ba dạng: người ta MUỐN BIẾT một điều có sẵn
   (số liệu, tình trạng một chứng từ, ai giữ việc, cách dùng, nội dung tài liệu);
@@ -358,6 +358,16 @@ Chỉ có ba kết quả:
   tiếp câu chuyện đang dở.
 - "viec": nhờ SỬA PHẦN MỀM — thêm/bớt/sửa tính năng, báo một chỗ chạy sai, đổi giao
   diện, đổi cách tính, xin một màn hình mới, nhờ làm tài liệu.
+- "thao_tac": người ta muốn làm gì đó với MỘT VIỆC có trong danh sách VIỆC ĐANG MỞ bên dưới —
+  kể cả chỉ nói «đồng ý», «ok», «làm đi», «thôi» để đáp lại đề nghị trong TIN BOT VỪA NHẮN. Khi
+  đó điền thêm `action` (một trong: duyet · sua_ke_hoach · gop · thu_hoi · xong · bo · lam_tiep ·
+  sua_cho_xanh · chi_tiet · mo_pr · tinh_trang · ghi_so · khong_ghi_so), `task` (mã việc, vd
+  "AI-0007"), `when` (giờ hẹn nếu có, vd "20h", "45 phút nữa"), `detail` (điều cần đổi khi
+  sua_ke_hoach), `confident` (true/false).
+  `confident` = true CHỈ khi rõ cả việc nào lẫn làm gì: người ta nói rõ, hoặc vừa «đồng ý» đúng
+  đề nghị bot vừa đưa về đúng việc đó. Với gop · thu_hoi · bo mà còn chút nghi ngờ thì false.
+  Hỏi về một việc («xong chưa», «nhánh nào», «merge được không») là tinh_trang, không phải gop.
+  Một yêu cầu sửa phần mềm MỚI (dù có chữ «gộp», «bỏ») là "viec", không phải thao_tac.
 - "mo_ho": đọc xong vẫn không chắc, hoặc tin quá ngắn/cụt để biết người ta muốn gì.
 
 Vài ca dễ nhầm:
@@ -380,10 +390,21 @@ biến mất khỏi sổ.
 
 CHỈ trả JSON, không thêm chữ nào ngoài JSON:
 {"intent": "hoi", "reason": "lý do ngắn bằng tiếng Việt"}
+hoặc với thao tác:
+{"intent": "thao_tac", "action": "gop", "task": "AI-0007", "when": "", "detail": "",
+ "confident": true, "reason": "..."}
 """
 
+INTENT_ACT = "thao_tac"
+#  Nhãn thao tác của model -> tên thao tác nội bộ của `service._run_task_command` (ai-CR-028).
+ACTIONS = {
+    "duyet": "approve", "sua_ke_hoach": "replan", "gop": "merge", "thu_hoi": "revert", "xong": "done",
+    "bo": "cancel", "lam_tiep": "continue", "sua_cho_xanh": "fixgate", "chi_tiet": "detail",
+    "mo_pr": "pr", "tinh_trang": "status", "ghi_so": "rule_yes", "khong_ghi_so": "rule_no",
+}
 
-def run_intent(text: str, *, context: str = "") -> tuple[dict, ChatResult]:
+
+def run_intent(text: str, *, context: str = "", tasks: str = "") -> tuple[dict, ChatResult]:
     """Đọc một tin và nói nó là việc cho Trợ lý AI hay một đầu việc sửa mã.
 
     Một lượt gọi RẺ (vài trăm token) đứng trước mỗi tin chữ thường, để đại ca khỏi
@@ -394,20 +415,34 @@ def run_intent(text: str, *, context: str = "") -> tuple[dict, ChatResult]:
     một câu trơ trọi: *"cho anh nghỉ thứ 6, lý do đi du lịch"* đọc rời thì giống một
     lời nhờ, đọc sau câu *"anh muốn nghỉ ngày nào?"* của bot thì rõ là câu trả lời.
     """
+    parts = []
+    if tasks:
+        #  ai-CR-028: việc đang mở + tin bot vừa nhắn, để «đồng ý» được hiểu theo ngữ cảnh.
+        parts.append(tasks)
     if context:
-        content = f"MẠCH TRƯỚC ĐÓ:\n{context}\n\nTin nhắn mới:\n{text}"
-    else:
-        content = f"Tin nhắn:\n{text}"
+        parts.append(f"MẠCH TRƯỚC ĐÓ:\n{context}")
+    parts.append(f"Tin nhắn mới:\n{text}" if parts else f"Tin nhắn:\n{text}")
+    content = "\n\n".join(parts)
     result = get_provider().ask(
         [ChatMessage(role="user", content=content)],
         model=settings.AGENT_MANAGER_MODEL,
         system=INTENT_SYSTEM,
-        max_tokens=256,
+        max_tokens=320,
         temperature=0.0,
     )
     data = parse_json(result.text)
     intent = str(data.get("intent") or "").strip().lower()
-    if intent not in (INTENT_ASK, INTENT_TASK, INTENT_UNSURE):
+    if intent not in (INTENT_ASK, INTENT_TASK, INTENT_UNSURE, INTENT_ACT):
         log.warning("agent_hub: phân loại trả ý định lạ %r, coi như mập mờ", intent)
         intent = INTENT_UNSURE
-    return {"intent": intent, "reason": str(data.get("reason") or "")[:200]}, result
+    out = {"intent": intent, "reason": str(data.get("reason") or "")[:200]}
+    if intent == INTENT_ACT:
+        action = ACTIONS.get(str(data.get("action") or "").strip().lower(), "")
+        if not action:
+            #  Thao tác lạ: hạ về mập mờ (hỏi lại), đừng đoán một thao tác có thể là gộp mã.
+            out["intent"] = INTENT_UNSURE
+        else:
+            out.update(action=action, task=str(data.get("task") or "").strip().upper(),
+                       when=str(data.get("when") or "").strip(), detail=str(data.get("detail") or "").strip(),
+                       confident=bool(data.get("confident")))
+    return out, result

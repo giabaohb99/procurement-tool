@@ -3486,6 +3486,26 @@ và `celery-beat`, chú thích đầu tệp ghi luôn lý do cấm đặt lại 
 `procurement-tool/docker-compose.override.yml` (bản vá tạm ở máy làm việc, không commit).
 Commit: `0c4a0850` trên nhánh `agent-hub-bac-1` (23/09/2026, chưa push).
 
+## ai-CR-028 | Đậu Đậu hiểu ý thao tác theo ngữ cảnh, đại ca chỉ cần nói «đồng ý»
+- status: xong
+- date: 2026-09-23
+- pic: NSU209
+
+Đại ca muốn bot phân tích ý định từ câu chữ thay vì bắt gõ đúng lệnh, ví dụ chỉ nói «đồng ý» là bot biết
+phải làm gì. Nay bước phân loại tin nhắn sẵn có đọc thêm danh sách việc đang mở và tin bot vừa nhắn, rồi
+nhận ra thêm loại thứ tư là thao tác trên một việc: duyệt, sửa kế hoạch, gộp, thu hồi, xong, bỏ, làm tiếp,
+sửa cho xanh, xem chi tiết, mở yêu cầu gộp, hỏi tình trạng hoặc ghi sổ. Không tốn thêm lượt gọi model.
+Model chắc chắn thì bot làm ngay; riêng gộp, thu hồi và bỏ việc còn phải đúng bước của việc mới làm. Chưa
+chắc thì bot hỏi lại một câu, đại ca đáp «đúng» là bot làm đúng thao tác đã hỏi mà không hỏi model lần hai,
+đáp «không» là thôi. Lệnh gõ đúng mẫu vẫn chạy thẳng như trước. Thử thật với Gemini trên sổ việc hiện
+tại: «đồng ý» được hiểu là gộp AI-0007, câu nhờ gộp kèm giờ được hiểu là hẹn giờ, yêu cầu thêm cột vẫn
+thành việc mới, câu hỏi mơ hồ thì bot hỏi lại. Mỗi lượt tốn khoảng một nghìn sáu trăm token. Cả tệp bài
+kiểm 148/148 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/{manager,service,constants}.py` (`run_intent`, `_task_context`,
+`_act_by_intent`, `_confirm_by_text`, `ACT_WAIT_CONFIRM`) · `test/backend/test_agent_hub.py` ·
+`change-log-ai.md`.
+
 ## ai-CR-027 | Đậu Đậu nhắn gọn, bỏ nút dưới tin nhắn, đại ca ra lệnh bằng chữ
 - status: xong
 - date: 2026-09-23

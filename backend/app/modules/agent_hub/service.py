@@ -21,6 +21,7 @@ Bấm Duyệt: ghi `approved_at`, rồi nếu cờ `AGENT_CODER_ENABLED` bật t
 (`coder.py`, chạy trong service `agent-runner`) sửa mã thật; cờ tắt thì dừng ở PLAN như bậc 1
 (`TIER1_MAX_STATUS`) và nói rõ là đang tắt.
 """
+import html as html_lib
 import json
 import logging
 import re
@@ -48,6 +49,7 @@ from .constants import (
     ACT_PROPOSAL_DONE,
     ACT_PROPOSAL_DROPPED,
     ACT_WAIT_CHOICE,
+    ACT_WAIT_CONFIRM,
     ACT_WAIT_DEPLOY_TIME,
     ACT_WAIT_PATCH_Q,
     ACT_WAIT_PLAN_ANSWER,
@@ -231,7 +233,8 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
         return
     #  Lệnh gõ bằng chữ trên một việc (ai-CR-027): «gộp AI-0007», «duyệt», «xong»… Đi TRƯỚC mạch trả
     #  lời kế hoạch: đang bị hỏi lại mà nhắn «bỏ việc này» là bỏ, không phải câu trả lời.
-    if _choice_by_text(db, chat_id, row, text) or route_task_command(db, chat_id, row, text):
+    if (_choice_by_text(db, chat_id, row, text) or _confirm_by_text(db, chat_id, row, text)
+            or route_task_command(db, chat_id, row, text)):
         return
     #  Trạm kế hoạch vừa hỏi lại (ai-CR-015): tin kế là câu trả lời CỦA VIỆC ĐÓ, không phải việc mới.
     if task_id := _plan_answer_target(db, chat_id, row):
@@ -245,7 +248,8 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
 
     run = start_run(db, 0, STAGE_INTENT)
     try:
-        data, result = manager.run_intent(text, context=_intent_context(db, chat_id, row.id))
+        data, result = manager.run_intent(text, context=_intent_context(db, chat_id, row.id),
+                                          tasks=_task_context(db, chat_id, row.id))
     except Exception as e:  # noqa: BLE001 - phân loại hỏng không được làm mất tin
         finish_run(db, run, error=str(e))
         log.warning("agent_hub: phân loại ý định hỏng (%s), hỏi lại đại ca", e)
@@ -258,6 +262,8 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
         answer_question(db, chat_id, text, before_id=row.id)
     elif data["intent"] == manager.INTENT_UNSURE:
         _ask_intent_choice(db, chat_id, row)
+    elif data["intent"] == manager.INTENT_ACT:
+        _act_by_intent(db, chat_id, row, text, data)
     #  GIAO VIỆC: để `action` rỗng, tin nằm lại INBOX và vòng gom lo tiếp.
     #  ai-CR-021: đại ca muốn biết ngay là bot đã nhận — nhắn MỘT câu báo nhận cho cả chùm tin
     #  liên tiếp (không phải mỗi câu một tiếng chuông, lý do bản cũ im lặng hẳn).
@@ -600,6 +606,137 @@ def _choice_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> 
     row.action = ACT_COMMAND
     _resolve_intent(db, chat_id, "", kind, pending.id)
     db.commit()
+    return True
+
+
+# ---------------------------------------------------------------------------
+# Hiểu ý thao tác theo ngữ cảnh (ai-CR-028)
+# ---------------------------------------------------------------------------
+#  Đại ca: «thay vì lệnh thì trợ lý phân tích ý định dựa trên văn bản mà làm, ví dụ anh nói đồng ý».
+#  Lệnh gõ đúng mẫu vẫn đi đường nhanh ở `route_task_command` (không tốn lượt model). Câu tự do
+#  thì lượt phân loại SẴN CÓ đọc thêm danh sách việc đang mở + tin bot vừa nhắn, và trả thêm một
+#  loại «thao_tac». Chắc thì làm; chưa chắc thì hỏi lại một câu, và câu «đúng» sau đó chạy bằng
+#  dấu đã ghi chứ không hỏi model lần nữa.
+TASK_CONTEXT_LIMIT = 8
+_YES = re.compile(r"^(đúng|đúng rồi|ừ|ừm|ờ|ok|oke|okay|được|đồng ý|phải|chuẩn|chính xác|làm đi|triển"
+                  r"|có)(\s+(rồi|đó|luôn|đi|nhé|nha|em|vậy|á))*[.! ]*$")
+_NO = re.compile(r"^(không|ko|khong|sai|thôi|đừng|chưa)(\s+(phải|đúng|làm|đâu|rồi|nhé|nha|em|đi))*[.! ]*$")
+#  Nhãn nói lại cho đại ca nghe khi hỏi xác nhận.
+_ACTION_LABELS = {
+    "approve": "duyệt kế hoạch", "replan": "lập lại kế hoạch", "merge": "gộp + deploy dev",
+    "revert": "thu hồi khỏi nhánh nền", "done": "đóng việc", "cancel": "bỏ việc", "continue": "làm tiếp",
+    "fixgate": "sửa cho cổng kiểm xanh", "detail": "xem chi tiết", "pr": "mở PR",
+    "status": "báo tình trạng", "rule_yes": "ghi vào sổ quyết định", "rule_no": "không ghi sổ",
+}
+#  Thao tác đổi mã/nhánh: model nói chắc vẫn phải khớp đúng bước của việc mới được làm ngay.
+_RISKY_ACTIONS = ("merge", "revert", "cancel")
+
+
+def _task_context(db: Session, chat_id: str, before_id: int) -> str:
+    """Việc đang mở + tin bot vừa nhắn, dạng chữ trơn cho trạm phân loại."""
+    rows = db.scalars(select(AgentTask).where(AgentTask.status.not_in(CLOSED_STATUSES))
+                      .order_by(AgentTask.updated_at.desc()).limit(TASK_CONTEXT_LIMIT)).all()
+    parts = []
+    if rows:
+        lines = [_strip_tags(task_status_line(db, t)) for t in rows]
+        parts.append("VIỆC ĐANG MỞ:\n" + "\n".join(f"- {line}" for line in lines))
+    last = db.scalar(select(AgentMessage)
+                     .where(AgentMessage.chat_id == chat_id, AgentMessage.id < before_id,
+                            AgentMessage.direction == DIR_OUT, AgentMessage.action.not_in(NOISE_ACTIONS))
+                     .order_by(AgentMessage.id.desc()).limit(1))
+    if last is not None and last.body:
+        parts.append("TIN BOT VỪA NHẮN:\n" + _strip_tags(last.body)[:INTENT_CONTEXT_CHARS])
+    return "\n\n".join(parts)
+
+
+def _strip_tags(html: str) -> str:
+    return re.sub(r"\s+", " ", html_lib.unescape(re.sub(r"<[^>]+>", "", html or ""))).strip()
+
+
+def _act_by_intent(db: Session, chat_id: str, row: AgentMessage, text: str, data: dict) -> None:
+    """Model đọc ra một thao tác trên việc: chắc thì làm, chưa chắc thì hỏi lại một câu."""
+    action = data["action"]
+    if action in ("rule_yes", "rule_no"):
+        if not _rule_by_text(db, chat_id, row, action):
+            row.action = ACT_COMMAND
+            reply(db, chat_id, "Không có đề xuất ghi sổ nào đang chờ.")
+        return
+    task = None
+    if data.get("task"):
+        task = db.scalar(select(AgentTask).where(AgentTask.code == data["task"]))
+    if task is None:
+        found = _candidates(db, action)
+        if len(found) != 1:
+            row.action = ACT_COMMAND
+            if not found:
+                reply(db, chat_id, f"Em hiểu là đại ca muốn {_ACTION_LABELS[action]}, nhưng không có việc nào "
+                      "đang ở bước đó. Nhắn kèm mã việc giúp em.")
+            else:
+                listing = " · ".join(f"<b>{telegram.esc(t.code)}</b>" for t in found[:4])
+                reply(db, chat_id, f"Đại ca muốn {_ACTION_LABELS[action]} việc nào: {listing}?")
+            return
+        task = found[0]
+    sure = bool(data.get("confident"))
+    if sure and action in _RISKY_ACTIONS:
+        states = _OPEN_FOR.get(action)
+        sure = task in _candidates(db, action) if states else task.status not in CLOSED_STATUSES
+    cmd_text = text
+    if action == "merge" and data.get("when"):
+        cmd_text = f"gộp {data['when']}"
+    row.action = ACT_COMMAND
+    row.task_id = task.id
+    if not sure:
+        db.commit()
+        reply(db, chat_id, f"Ý đại ca là <b>{_ACTION_LABELS[action]}</b> việc <b>{telegram.esc(task.code)}</b> "
+              f"({telegram.esc(task.title[:50])}) phải không? Nhắn «đúng» để em làm.",
+              task_id=task.id, action=ACT_WAIT_CONFIRM + action)
+        return
+    db.commit()
+    _run_intent_action(db, chat_id, row, task, action, cmd_text, data.get("detail") or "")
+
+
+def _run_intent_action(db: Session, chat_id: str, row: AgentMessage, task: AgentTask, action: str,
+                       text: str, detail: str) -> None:
+    if action == "replan":
+        #  Câu tự do không có dấu «sửa:» — đưa thẳng ý cần đổi cho trạm kế hoạch.
+        _answer_plan(db, chat_id, row, detail or text, task.id)
+        db.commit()
+        return
+    _run_task_command(db, chat_id, row, task, action, text)
+
+
+def _confirm_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
+    """«đúng» / «không» cho câu bot vừa hỏi xác nhận thao tác (ai-CR-028)."""
+    low = text.strip().lower()
+    yes, no = bool(_YES.match(low)), bool(_NO.match(low))
+    if not (yes or no):
+        return False
+    last = db.scalar(select(AgentMessage)
+                     .where(AgentMessage.chat_id == chat_id, AgentMessage.id < row.id,
+                            AgentMessage.action.not_in(NOISE_ACTIONS))
+                     .order_by(AgentMessage.id.desc()).limit(1))
+    if last is None or not (last.action or "").startswith(ACT_WAIT_CONFIRM) or not last.task_id:
+        return False
+    if row.created_at and last.created_at and row.created_at - last.created_at > FOLLOW_UP_WINDOW:
+        return False
+    task = db.get(AgentTask, last.task_id)
+    action = last.action[len(ACT_WAIT_CONFIRM):]
+    if task is None or action not in _ACTION_LABELS:
+        return False
+    row.action = ACT_COMMAND
+    row.task_id = task.id
+    last.action = ACT_COMMAND       # câu hỏi đã được trả lời, «đúng» lần hai không chạy lại
+    db.commit()
+    if no:
+        reply(db, chat_id, "Dạ, em không làm. Đại ca nhắn lại ý khác giúp em.", task_id=task.id)
+        db.commit()
+        return True
+    #  Lấy lại chính câu đại ca nhắn trước câu hỏi xác nhận: giờ hẹn gộp / ý sửa kế hoạch nằm trong đó.
+    origin = db.scalar(select(AgentMessage)
+                       .where(AgentMessage.chat_id == chat_id, AgentMessage.id < last.id,
+                              AgentMessage.direction == DIR_IN)
+                       .order_by(AgentMessage.id.desc()).limit(1))
+    _run_intent_action(db, chat_id, row, task, action, origin.body if origin else "", "")
     return True
 
 

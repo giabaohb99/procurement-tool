@@ -3451,3 +3451,126 @@ def test_chon_lam_luon_hay_ghi_viec_bang_chu(db, bot, monkeypatch):
     assert "«làm luôn» hoặc «ghi việc»" in sent[-1][0]
     service.handle_message(db, _msg("làm luôn"))
     assert asked == ["xem lại giúp anh"]
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-028: hiểu ý thao tác theo ngữ cảnh («đồng ý» thay cho lệnh)
+# ---------------------------------------------------------------------------
+def _fake_act(monkeypatch, service, seen=None, **data):
+    from app.modules.assistant.provider.base import ChatResult
+
+    ket_qua = ChatResult(text="", provider="agent_gemini", model="x", input_tokens=0, output_tokens=0)
+
+    def fake(text, **kw):
+        if seen is not None:
+            seen.append(kw)
+        return {"intent": "thao_tac", "reason": "", "when": "", "detail": "", **data}, ket_qua
+
+    monkeypatch.setattr(service.manager, "run_intent", fake)
+
+
+def test_dong_y_sau_de_nghi_gop_thi_gop_luon(db, bot, monkeypatch):
+    from app.modules.agent_hub import coder
+
+    service, _, _ = bot
+    _compact(monkeypatch)
+    _capture_send(monkeypatch, service)
+    merged: list[str] = []
+    monkeypatch.setattr(service, "_dispatch_deploy", lambda db, chat, cb, task: merged.append(task.code))
+    task = _task_with_session(db, service, coder)
+    service.reply(db, "12345", f"Gộp được: nhắn «gộp {task.code}».", task_id=task.id)
+    seen: list[dict] = []
+    _fake_act(monkeypatch, service, seen, action="merge", task=task.code, confident=True)
+    service.handle_message(db, _msg("đồng ý"))
+    assert merged == [task.code]
+    #  Model được đọc cả việc đang mở lẫn tin bot vừa nhắn, chữ trơn không thẻ HTML.
+    ctx = seen[0]["tasks"]
+    assert task.code in ctx and "TIN BOT VỪA NHẮN" in ctx and "<b>" not in ctx
+
+
+def test_chua_chac_thi_hoi_lai_roi_dung_moi_lam(db, bot, monkeypatch):
+    from app.modules.agent_hub import coder
+    from app.modules.agent_hub.model import AgentMessage
+
+    service, _, _ = bot
+    _compact(monkeypatch)
+    sent = _capture_send(monkeypatch, service)
+    merged: list[str] = []
+    monkeypatch.setattr(service, "_dispatch_deploy", lambda db, chat, cb, task: merged.append(task.code))
+    task = _task_with_session(db, service, coder)
+    _fake_act(monkeypatch, service, action="merge", task=task.code, confident=False)
+    service.handle_message(db, _msg("đẩy cái đó lên luôn đi em"))
+    assert merged == [] and "phải không" in sent[-1][0] and task.code in sent[-1][0]
+    #  «đúng» chạy bằng dấu đã ghi, không hỏi model lần hai.
+    monkeypatch.setattr(service.manager, "run_intent", lambda *a, **kw: pytest.fail("không hỏi lại model"))
+    service.handle_message(db, _msg("đúng rồi"))
+    assert merged == [task.code]
+    #  «đúng» lần nữa không gộp lần hai.
+    _fake_intent(monkeypatch, service, "hoi")
+    service.handle_message(db, _msg("đúng"))
+    assert merged == [task.code]
+    row = db.query(AgentMessage).filter_by(direction=service.DIR_IN).order_by(AgentMessage.id.desc()).first()
+    assert row.action != service.ACT_COMMAND
+
+
+def test_khong_thi_khong_lam(db, bot, monkeypatch):
+    from app.modules.agent_hub import coder
+
+    service, _, _ = bot
+    _compact(monkeypatch)
+    sent = _capture_send(monkeypatch, service)
+    monkeypatch.setattr(service, "_dispatch_deploy", lambda *a: pytest.fail("đại ca đã nói không"))
+    task = _task_with_session(db, service, coder)
+    _fake_act(monkeypatch, service, action="merge", task=task.code, confident=False)
+    service.handle_message(db, _msg("cho nó lên dev nhé"))
+    service.handle_message(db, _msg("không"))
+    assert "không làm" in sent[-1][0] and task.status == service.ST_REVIEW
+
+
+def test_model_chac_nhung_viec_sai_buoc_thi_van_hoi_lai(db, bot, monkeypatch):
+    """Gộp / thu hồi / bỏ: model nói chắc mà việc không ở bước hợp lệ thì vẫn hỏi, không làm."""
+    service, _, _ = bot
+    _compact(monkeypatch)
+    sent = _capture_send(monkeypatch, service)
+    monkeypatch.setattr(service, "_dispatch_revert", lambda *a: pytest.fail("chưa gộp thì không thu hồi"))
+    plan = _task_with_plan(db, service, ["backend/app/x.py"])
+    _fake_act(monkeypatch, service, action="revert", task=plan.code, confident=True)
+    service.handle_message(db, _msg("rút cái đó lại đi"))
+    assert "phải không" in sent[-1][0]
+
+
+def test_dong_y_duyet_ke_hoach_khong_can_ma_viec(db, bot, monkeypatch, tmp_path):
+    service, _, _ = bot
+    _compact(monkeypatch)
+    _so_tam(monkeypatch, tmp_path)
+    _capture_send(monkeypatch, service)
+    approved: list[str] = []
+    monkeypatch.setattr(service, "_dispatch_coder", lambda db, chat, task: approved.append(task.code))
+    plan = _task_with_plan(db, service, ["backend/app/x.py"])
+    _fake_act(monkeypatch, service, action="approve", task="", confident=True)
+    service.handle_message(db, _msg("ok em làm theo kế hoạch đó đi"))
+    assert approved == [plan.code]
+
+
+def test_run_intent_doc_thao_tac_va_ha_nhan_la_ve_mo_ho(monkeypatch):
+    from app.modules.agent_hub import manager
+    from app.modules.assistant.provider.base import ChatResult
+
+    replies = iter([
+        '{"intent":"thao_tac","action":"gop","task":"ai-0007","confident":true,"when":"20h"}',
+        '{"intent":"thao_tac","action":"xoa_nhanh","task":"AI-0007","confident":true}',
+    ])
+    seen: list[str] = []
+
+    class Fake:
+        def ask(self, messages, **kw):
+            seen.append(messages[0].content)
+            return ChatResult(text=next(replies), provider="p", model="m", input_tokens=0, output_tokens=0)
+
+    monkeypatch.setattr(manager, "get_provider", lambda: Fake())
+    data, _ = manager.run_intent("đồng ý", tasks="VIỆC ĐANG MỞ:\n- AI-0007")
+    assert data["intent"] == "thao_tac" and data["action"] == "merge"
+    assert data["task"] == "AI-0007" and data["confident"] is True and data["when"] == "20h"
+    assert "VIỆC ĐANG MỞ" in seen[0] and "Tin nhắn mới:\nđồng ý" in seen[0]
+    data, _ = manager.run_intent("xóa nhánh đi")
+    assert data["intent"] == "mo_ho"

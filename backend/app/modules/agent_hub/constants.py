@@ -142,6 +142,10 @@ STAGE_SCAN = 25
 #  phải đóng một dấu ở đây, không thì nó vừa được trả lời vừa biến thành một đầu việc.
 ACT_COMMAND = "lenh"      # Tin bắt đầu bằng `/` — lệnh, không bao giờ là việc
 ACT_ASKED = "hoi"         # Đã chuyển cho Trợ lý AI trả lời tại chỗ
+#  Bot đoán được thao tác nhưng chưa chắc, đang chờ «đúng»/«không» (ai-CR-028). Dấu thật là
+#  `cho_xn:<thao tác>` — chép luôn tên thao tác vào dấu để câu «đúng» chạy đúng thứ đã hỏi, khỏi
+#  hỏi lại model lần hai.
+ACT_WAIT_CONFIRM = "cho_xn:"
 ACT_WAIT_CHOICE = "cho_y"  # Chưa rõ hỏi hay giao việc, đang chờ đại ca bấm nút
 ACT_ANSWER = "tra_loi"    # Tin bot gửi = câu trả lời của Trợ lý AI (để nối mạch hội thoại)
 #  Kết quả tool của Trợ lý AI đưa ra Telegram (ai-CR-009). Tin CHIỀU RA, không vào mạch
