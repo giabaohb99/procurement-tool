@@ -332,6 +332,10 @@ def _out(db: Session, pr, user=None) -> dict:
     # CR-034: nút duyệt lần 2 (điều phối) — quyền tính ở server (phạm vi grant không có ở map
     # quyền phía FE). Công tắc tắt thì không ai thấy nút, vì phiếu không dừng ở 'approved' nữa.
     d["dispatch_enabled"] = service.dispatch_enabled()
+    # bao-CR-468: công tắc cụm phương án. Đi kèm phiếu chứ không phải một đường API riêng —
+    # người dùng thường KHÔNG có quyền `setting.read`, mà hai chỗ phải ẩn (nút Xử lý phương án,
+    # thẻ Chọn phương án) đều đã cầm sẵn dữ liệu phiếu này.
+    d["options_enabled"] = option_service.options_enabled()
     d["can_dispatch"] = bool(user is not None and pr.status == "approved" and d["dispatch_enabled"]
                              and _can_dispatch(get_perm_profile(db, user)))
     # bao-CR-414 GĐ5: nút "Chuyển phòng xử lý" / "Trả về phòng lập" — chỉ quản lý thu mua của

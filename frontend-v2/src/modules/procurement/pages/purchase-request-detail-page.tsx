@@ -339,6 +339,7 @@ export function PurchaseRequestDetailPage() {
   // Hết dòng gom được thì ẨN mục này thay vì để bấm ra lỗi 400 "Không còn dòng
   // nào tạo được đơn" — khách từng tưởng lỗi trong khi đơn đã tạo rồi (15/09).
   const canGenerateFromOptions =
+    !!data.options_enabled &&
     isPrOptionStageOpen(data.status) &&
     can('purchase_order', 'create') &&
     hasDoneLine &&
@@ -763,7 +764,8 @@ export function PurchaseRequestDetailPage() {
           vào được để XEM lại phương án đã chốt. Đợt 3b: màn đó là bàn
           làm việc của NSTM nên đòi thêm quyền ghi — người yêu cầu
           thường xem/chọn phương án ngay tại thẻ Phương án bên dưới. */}
-      {!isNew && isDispatched(data.status) && can('purchase_request', 'write') && (
+      {/* bao-CR-468: công tắc tắt thì cả nút này lẫn thẻ Chọn phương án bên dưới biến mất. */}
+      {!isNew && data.options_enabled && isDispatched(data.status) && can('purchase_request', 'write') && (
         <Button variant="outline" asChild>
           <Link to={appRoutes.procurement.purchaseRequestProcess(data.id)}>
             <ListChecks />
@@ -964,7 +966,9 @@ export function PurchaseRequestDetailPage() {
 
           {/* bao-CR-310 đợt 3b: dòng nào NSTM đã "chốt hoàn thành xử lý" thì hiện
               ở đây cho người yêu cầu chọn phương án; thẻ tự ẩn khi chưa có dòng nào. */}
-          {!isNew && !editing && <PurchaseRequestChooseCard purchaseRequest={data} />}
+          {!isNew && !editing && data.options_enabled && (
+            <PurchaseRequestChooseCard purchaseRequest={data} />
+          )}
 
           {/* bao-CR-422: hai chiều liên kết của phiếu — YCBG nào đẻ ra nó, nó đẻ ra
               ĐMH nào. Thẻ đứng yên một chỗ kể cả khi chưa có gì để bày, vì "chưa có

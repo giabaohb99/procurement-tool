@@ -139,6 +139,13 @@ export interface PurchaseRequestDetail {
    * việc được luôn, không phải chờ bước điều phối.
    */
   dispatch_enabled: boolean
+  /**
+   * bao-CR-468 — công tắc cụm PHƯƠNG ÁN (màn Xử lý phương án + thẻ Chọn phương án).
+   * Bật/tắt ở màn Cấu hình hệ thống; backend gửi kèm phiếu vì người dùng thường không có
+   * quyền đọc cấu hình. TẮT thì hai chỗ đó biến mất và mọi thao tác phương án bị từ chối.
+   * Bản backend cũ không gửi khóa này — thiếu thì coi như TẮT, đừng đọc trần.
+   */
+  options_enabled?: boolean
   /** Backend đã tính sẵn quyền của NGƯỜI ĐANG ĐĂNG NHẬP trên phiếu này. */
   can_dispatch: boolean
   can_approve: boolean

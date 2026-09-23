@@ -40,6 +40,12 @@ def _data(resp):
     return json.loads(resp.body)["data"]
 
 
+@pytest.fixture(autouse=True)
+def bat_cum_phuong_an(monkeypatch):
+    """bao-CR-468: cụm phương án mặc định TẮT — bật sẵn cho bộ kiểm nghiệp vụ này."""
+    monkeypatch.setattr(option_service, "options_enabled", lambda: True)
+
+
 @pytest.fixture
 def bat_chuong(monkeypatch):
     """Bật công tắc chuông cho riêng một bài kiểm — mặc định của hệ thống là TẮT."""

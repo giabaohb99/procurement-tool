@@ -92,8 +92,25 @@ def get_item(db: Session, pr: PurchaseRequest, item_id: int) -> PurchaseRequestI
     return it
 
 
+def options_enabled() -> bool:
+    """bao-CR-468 — CÔNG TẮC của cả cụm phương án YCMH (màn Xử lý phương án + thẻ chọn
+    phương án trên chi tiết phiếu).
+
+    Nguồn: màn Cấu hình hệ thống (key `pr_options_enabled`, lưu DB) → fallback .env
+    (`PR_OPTIONS_ENABLED`, mặc định TẮT). Đổi có hiệu lực ngay, không cần deploy.
+    Chỉ chặn đường GHI — ĐỌC luôn mở, vì tắt công tắc không được làm mất dấu những phương
+    án đã chốt trên phiếu cũ.
+    """
+    from app.core import app_settings
+    return bool(app_settings.get("pr_options_enabled"))
+
+
 def ensure_stage(pr: PurchaseRequest) -> None:
-    """Chặn gắn/sửa/chốt phương án khi phiếu chưa được thu mua tiếp nhận, hoặc đã đóng."""
+    """Chặn gắn/sửa/chốt phương án khi công tắc đang tắt, khi phiếu chưa được thu mua tiếp
+    nhận, hoặc khi phiếu đã đóng."""
+    if not options_enabled():
+        raise HTTPException(400, "Cụm phương án của Yêu cầu mua hàng đang TẮT. "
+                                 "Quản trị bật lại ở màn Cấu hình hệ thống thì mới dùng được.")
     if pr.status not in STAGE_OPEN:
         raise HTTPException(400, "Chỉ gắn phương án sau khi thu mua đã tiếp nhận phiếu "
                                  "và trước khi phiếu đóng.")
@@ -175,7 +192,13 @@ def ensure_option_zero(db: Session, pr: PurchaseRequest,
     `public_id = 0` xếp nó lên đầu danh sách và giữ `_next_public_id` bắt đầu từ 1.
     Tick chọn sẵn (H.10.2) CHỈ khi dòng chưa chọn gì khác — sinh bù trên phiếu đang
     chạy không được giật quyền chọn của người đã chọn. KHÔNG ghi nhật ký từng dòng:
-    đây là dữ liệu nền sinh kèm phiếu, không phải thao tác của ai."""
+    đây là dữ liệu nền sinh kèm phiếu, không phải thao tác của ai.
+
+    bao-CR-468: công tắc TẮT thì không sinh gì cả — đây là đường ghi chạy kèm lúc ĐỌC phiếu,
+    để nguyên thì tắt cụm phương án xong hệ thống vẫn lặng lẽ đẻ dữ liệu phương án mỗi lần
+    có người mở một phiếu."""
+    if not options_enabled():
+        return 0
     if pr.status not in STAGE_OPEN:
         return 0
     if items is None:
