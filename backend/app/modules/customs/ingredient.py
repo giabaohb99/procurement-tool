@@ -9,7 +9,7 @@ theo nghĩa của thu mua — hoạt chất — phải SUY RA từ chữ. Ba ngu
 2. **Tên hoạt chất trong danh mục thuốc BVTV** (`tab_customs_pesticide.active_ingredient`,
    ~6.900 thuốc): tách `Bifenazate 277g/l + Etoxazole 166g/l` thành từng tên, bỏ hàm
    lượng, rồi khớp NGUYÊN TỪ (`SULFUR` không được khớp vào `SULFURIC ACID`). Bước này
-   bù cho bộ từ khóa tay chỉ có 100 hoạt chất — thiếu nó thì chính ATRAZINE, mặt hàng
+   bù cho bộ từ khóa tay chỉ có 99 hoạt chất — thiếu nó thì chính ATRAZINE, mặt hàng
    mẫu của tính năng, chỉ nhận ra 65/92 dòng.
 3. **Tên thương mại** (cùng danh mục): tên hàng chứa `BIPYRHONE` thì hoạt chất là hoạt
    chất đăng ký của thuốc đó. Chỉ dùng khi hai bước trên không ra gì.

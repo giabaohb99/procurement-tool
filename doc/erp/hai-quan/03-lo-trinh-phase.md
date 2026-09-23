@@ -95,7 +95,7 @@ HQ0 chốt câu hỏi ──► HQ1 nền dữ liệu + nạp ──► HQ2 bả
 
 ## HQ4 — Hoạt chất, nhà nhập khẩu, so sánh, xuất Excel (≈ 4 ngày) — có rủi ro
 
-**Trạng thái: XONG MÃ 23/09/2026 (local).** Lượt đo trước đã chạy: nhận ra hoạt chất **51%** dòng (9.223 / 18.243), hàm lượng / dạng **93%** — đủ để làm tiếp. Ba nguồn theo thứ tự: 100 từ khóa tay → **tên hoạt chất bóc từ danh mục 6.919 thuốc BVTV, khớp nguyên từ** → tên thương mại. Nguồn thứ hai thêm vào sau khi đo: thiếu nó thì ATRAZINE chỉ nhận ra 65/92 dòng; nó cũng **gỡ 14 dòng thuốc kỹ thuật MESOTRIONE bị gắn nhầm ATRAZINE** chỉ vì tên hàng nhắc tới thành phẩm hỗn hợp mà nó dùng để pha. Danh mục BVTV nạp bằng `scripts/load_customs_catalogs.py`; câu hỏi "danh mục đó có được phép dùng và cập nhật định kỳ không" **vẫn mở**.
+**Trạng thái: XONG MÃ 23/09/2026 (local).** Lượt đo trước đã chạy: nhận ra hoạt chất **51%** dòng (9.223 / 18.243), hàm lượng / dạng **93%** — đủ để làm tiếp. Ba nguồn theo thứ tự: 99 từ khóa tay → **tên hoạt chất bóc từ danh mục 6.919 thuốc BVTV, khớp nguyên từ** → tên thương mại. Nguồn thứ hai thêm vào sau khi đo: thiếu nó thì ATRAZINE chỉ nhận ra 65/92 dòng; nó cũng **gỡ 14 dòng thuốc kỹ thuật MESOTRIONE bị gắn nhầm ATRAZINE** chỉ vì tên hàng nhắc tới thành phẩm hỗn hợp mà nó dùng để pha. Danh mục BVTV nạp bằng `scripts/load_customs_catalogs.py`; câu hỏi "danh mục đó có được phép dùng và cập nhật định kỳ không" **vẫn mở**.
 
 **Phạm vi:** T-04 · T-05 · T-06 · B-05. Bản cũ trước, bản mới sau, như mọi phase.
 

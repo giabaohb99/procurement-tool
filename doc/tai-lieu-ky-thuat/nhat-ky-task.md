@@ -6238,7 +6238,9 @@ cũ), 631 bài của phân hệ Thu mua và khu điều hướng xanh.
 
 Đại ca cho gom và đẩy lên dev: commit riêng, gộp sáu commit mới của nhánh, deploy
 dev dựng lại máy chủ, tác vụ nền và hai giao diện; migration chạy xong trên dev.
-Bảng hải quan trên dev còn trống, chưa nạp dữ liệu.
+Sau đó đại ca cho nạp dữ liệu lên dev: danh mục hoạt chất, thuốc bảo vệ thực vật,
+biểu thuế, danh mục pháp lý, rồi năm tệp tờ khai thành năm lô — 18.243 dòng hàng,
+khớp đúng máy local. Tệp tạm trên máy chủ đã xóa.
 
 Commit: bb338ef7 (merge 2ba3a237) · Deploy: dev 23/09/2026, alembic c4d8e2a6f470
 

@@ -384,7 +384,7 @@ Tất cả nằm trong **cùng một migration** `c4d8e2a6f470_cr470_hai_quan_ne
 Gắn **lúc nạp** (một lần cho cả lô, có bộ nhớ đệm theo tên hàng) và gắn lại toàn bộ bằng `ingredient.retag_all()` mỗi khi danh mục đổi — script nạp danh mục tự gọi. Ô tìm kiếm khớp **tên hàng HOẶC hoạt chất**.
 
 **Bộ nhận hoạt chất — ba nguồn, dùng lần lượt** (`customs/ingredient.py`):
-1. `tab_customs_ingredient_alias` — 100 từ khóa tay (`EMAMECTIN` → `EMAMECTIN BENZOATE`), khớp chuỗi con.
+1. `tab_customs_ingredient_alias` — 99 từ khóa tay (`EMAMECTIN` → `EMAMECTIN BENZOATE`), khớp chuỗi con.
 2. **Tên hoạt chất bóc từ danh mục thuốc BVTV** (`derive_aliases`): tách theo `+`, bỏ ngoặc, bỏ hàm lượng, bỏ tên tiếng Việt và tên công ty chép nhầm vào cột hoạt chất; khớp **nguyên từ** trên chuỗi đã chuẩn hóa (gạch nối thành khoảng trắng). Thêm từ đầu của tên nhiều chữ (`KANAMYCIN` → `KANAMYCIN SULFATE`) trừ các từ chung chung (`POTASSIUM`, `ALUMINIUM`, `ACRYLIC`…) — danh sách chặn ở `_GENERIC_HEADS`, mỗi mục trong đó là một lỗi gắn nhầm đã gặp trên dữ liệu thật.
 3. Tên thương mại của thuốc BVTV — chỉ khi hai nguồn trên không ra gì, vì tên thương mại hay xuất hiện trong câu *"dùng để sản xuất thuốc X"* của một hoạt chất KHÁC.
 
@@ -394,9 +394,9 @@ Gắn **lúc nạp** (một lần cho cả lô, có bộ nhớ đệm theo tên 
 
 | Bảng | Số dòng nạp | Khóa / chỉ mục | Ghi chú |
 |---|---|---|---|
-| `tab_customs_ingredient_alias` | 100 | `keyword` duy nhất | `keyword` → `canonical` |
+| `tab_customs_ingredient_alias` | 99 | `keyword` duy nhất | `keyword` → `canonical` |
 | `tab_customs_pesticide` | 6.919 | `trade_key` | Danh mục thuốc BVTV được phép: tên thương mại, hoạt chất, nhóm, đơn vị đăng ký |
-| `tab_customs_regulation` | 1.062 | `list_code`, `cas_no` | Có `AuditMixin` + màn sửa (khóa `customs_regulation`). `list_code` là SMALLINT theo `RegulationList`: 1–4 = NĐ 24/2026 Phụ lục I–IV, 10 = hoạt chất cấm TT 75/2025, 11 = phải công bố TT 01/2026. `threshold_kg` chỉ Phụ lục IV có |
+| `tab_customs_regulation` | 1.060 | `list_code`, `cas_no` | Có `AuditMixin` + màn sửa (khóa `customs_regulation`). `list_code` là SMALLINT theo `RegulationList`: 1–4 = NĐ 24/2026 Phụ lục I–IV, 10 = hoạt chất cấm TT 75/2025, 11 = phải công bố TT 01/2026. `threshold_kg` chỉ Phụ lục IV có |
 | `tab_customs_tariff` | 15.115 | `hs_code` | Biểu thuế 2026: `rate_normal` (thông thường), `rate_mfn` (ưu đãi), `rate_vat` (chuỗi, có mã nhiều mức `5/8/10`), `fta_json`, `policy`. Tra mã lá kèm các mã cha 4 · 6 · 8 số |
 
 **Nguồn dữ liệu:** các tệp `.js` của phần mềm ngoài trong `thongtinhaiquan/` — **không chép dữ liệu vào repo**, repo chỉ giữ bộ nạp. Chạy:
