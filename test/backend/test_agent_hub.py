@@ -3177,3 +3177,21 @@ def test_phien_ra_soat_mat_thi_lui_ve_phien_moi(db, bot, monkeypatch, tmp_path):
     assert calls[0] == (True, "scan-1") and calls[1][0] is False and calls[1][1] != "scan-1"
     run = db.query(AgentRun).filter_by(task_id=task.id, stage=coder.STAGE_CODE).one()
     assert run.artifact["session_id"] == calls[1][1] and task.status == service.ST_REVIEW
+
+
+
+def test_keo_tin_dong_giao_dich_truoc_khi_cho_telegram(db, bot, monkeypatch):
+    """ai-CR-025: giữ giao dịch mở suốt 25 giây long-poll thì MySQL (REPEATABLE READ) cho bot xử
+    nút bấm trên ảnh chụp CŨ — «Làm tiếp» AI-0007 bị bỏ qua im lặng."""
+    service, _, _ = bot
+    open_while_waiting: list[bool] = []
+
+    def fake_fetch(offset, timeout=0):
+        open_while_waiting.append(db.in_transaction())
+        return []
+
+    monkeypatch.setattr(service.telegram, "fetch_updates", fake_fetch)
+    service.get_cursor(db)            # có giao dịch đang mở trước lượt kéo, như vòng thật
+    assert db.in_transaction()
+    service.poll_once(db, timeout=25)
+    assert open_while_waiting == [False]

@@ -112,10 +112,15 @@ def poll_once(db: Session, *, timeout: int = telegram.POLL_TIMEOUT) -> int:
     `timeout` = số giây giữ kết nối chờ tin: vòng beat trong worker để 0 (về ngay),
     tiến trình `agent-poller` để `LONG_POLL_TIMEOUT` (ai-CR-008).
     """
-    cursor = get_cursor(db)
-    updates = telegram.fetch_updates(cursor.value, timeout=timeout)
+    offset = get_cursor(db).value
+    #  ĐÓNG giao dịch TRƯỚC khi chờ Telegram (ai-CR-025). MySQL mặc định REPEATABLE READ: giữ giao
+    #  dịch mở suốt 25 giây long-poll thì lúc xử tin, mọi thứ runner/worker vừa ghi đều vô hình —
+    #  đại ca bấm «Làm tiếp» AI-0007 mà bot thấy việc còn «Thất bại», lặng lẽ không làm gì.
+    db.commit()
+    updates = telegram.fetch_updates(offset, timeout=timeout)
     if not updates:
         return 0
+    cursor = get_cursor(db)     # đọc lại trong giao dịch MỚI, sau khi chờ
 
     for upd in updates:
         #  Đẩy con trỏ TRƯỚC khi xử. Xử xong mới đẩy thì một tin làm nổ lỗi sẽ được kéo

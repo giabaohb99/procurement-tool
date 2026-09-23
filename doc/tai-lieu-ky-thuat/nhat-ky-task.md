@@ -3486,6 +3486,22 @@ và `celery-beat`, chú thích đầu tệp ghi luôn lý do cấm đặt lại 
 `procurement-tool/docker-compose.override.yml` (bản vá tạm ở máy làm việc, không commit).
 Commit: `0c4a0850` trên nhánh `agent-hub-bac-1` (23/09/2026, chưa push).
 
+## ai-CR-025 | Nút bấm trên Telegram bị xử trên dữ liệu cũ nên bot im lặng
+- status: xong
+- date: 2026-09-23
+- pic: NSU209
+
+Đại ca bấm làm tiếp cho AI-0007 lúc 15:31 mà gần ba mươi phút bot không làm gì cũng không nhắn gì.
+Sổ có ghi lượt bấm, nhưng bộ đọc tin của bot mở một giao dịch cơ sở dữ liệu rồi giữ nguyên nó suốt hai
+mươi lăm giây chờ Telegram và cả lúc xử lý nút bấm. Cơ sở dữ liệu giữ ảnh chụp từ đầu giao dịch, nên
+bot vẫn thấy việc ở trạng thái thất bại chưa có phiên nối tiếp và chỉ hiện một thông báo nhỏ. Lỗi này
+chung cho mọi nút bấm, không riêng nút làm tiếp. Em cho bộ đọc tin đóng giao dịch ngay sau khi đọc con
+trỏ, rồi mới chờ Telegram, nên nút bấm luôn được xử trên dữ liệu mới nhất. Sau khi vá em chạy luôn
+lượt làm tiếp mà đại ca đã bấm. Cả tệp bài kiểm 131/131 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/service.py` (`poll_once`) · `test/backend/test_agent_hub.py` ·
+`change-log-ai.md`.
+
 ## ai-CR-024 | Bước sửa mã đi tiếp phiên rà soát để khỏi đọc lại mã từ đầu
 - status: xong
 - date: 2026-09-23
