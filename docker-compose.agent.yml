@@ -1,0 +1,164 @@
+# Override cho stack thử Agent Hub (worktree procurement-agent-hub).
+# Chạy GHÉP vào stack local procurement-tool đang sống: dùng chung db / redis / qdrant
+# qua mạng `procurement-tool_default`, chỉ dựng mới agent-api + celery-worker + celery-beat.
+#
+#   docker compose -p agenthub -f docker-compose.yml -f docker-compose.agent.yml \
+#       up -d --build --no-deps agent-api celery-worker celery-beat agent-poller
+#
+# ⚠️ MÁY CHỦ CỦA STACK NÀY TÊN `agent-api`, KHÔNG PHẢI `api` — đừng đổi lại.
+# Compose LUÔN đặt cho container một bí danh mạng bằng đúng tên service, trên MỌI mạng
+# nó nối vào. Hồi tên nó còn là `api`, mạng `procurement-tool_default` có hai container
+# cùng mang bí danh `api` (máy chủ thật dùng database dego-erp và máy chủ này dùng
+# dego-agent), nên tên miền nội bộ trả về luân phiên hai địa chỉ. Giao diện ERP v2 gọi
+# API qua bí danh đó, khoảng một nửa số lệnh gọi rơi sang đây — nơi không có phiên đăng
+# nhập của người dùng — và trả về lỗi hết phiên, đá người dùng ra màn đăng nhập. Đo 22/09
+# bằng một vé hợp lệ: cổng 8000 đúng 20/20 lượt, cổng 8083 chỉ đúng 9/20.
+# Bí danh mặc định KHÔNG gỡ được (chỉ thêm được), nên cách duy nhất là đặt tên khác.
+# Vì vậy service `api` của tệp gốc CỐ Ý không dựng ở stack này; khối dưới khai lại đủ.
+#
+# Cách ly với stack cũ nằm ở .env: DB_NAME=dego-agent (database riêng cùng MySQL),
+# REDIS_URL=redis://redis:6379/1 (ngăn Redis riêng, hai celery không giành việc nhau),
+# STORAGE_PREFIX=agenthub. Qdrant đã tách sẵn bằng collection `agent_docs` (QĐ-AI-9).
+#
+# Kéo tin Telegram (ai-CR-008): service `agent-poller` giữ kết nối chờ tin, nên vòng beat
+# `agent.poll_telegram` 10 giây phải TẮT — cờ AGENT_LONG_POLL=true đặt ngay ở đây cho
+# celery-beat + celery-worker, không cần khai ở .env. Hai bên cùng đọc một con trỏ là
+# xử trùng một tin.
+services:
+  # Bản sao của service `api` trong tệp gốc, chỉ khác TÊN (xem chú thích đầu tệp) và
+  # cổng. Sửa `api` ở tệp gốc thì nhớ soi lại khối này — Compose không kế thừa được
+  # giữa hai tên service khác nhau.
+  agent-api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    env_file: .env
+    # Trần rộng hơn các service khác vì pytest chạy trong chính container này.
+    mem_limit: 2g
+    cpus: 3
+    volumes:
+      - ./backend:/app # mount code -> hot reload, không cần build lại
+      - ./test:/app/test # mount test dir để pytest chạy trong container
+      - ./frontend-v2/src:/app/fe-src:ro # CHỈ-ĐỌC, cho bài kiểm đồng bộ giao diện v2
+      # Sổ quyết định của đại ca (ai-CR-015): GHI được, vì nút «Ghi vào sổ» nối mục vào tệp.
+      - ./doc/agent-hub:/agent-docs
+    ports:
+      - "8010:8000"
+    networks:
+      - default
+      - procstack
+  celery-worker:
+    environment:
+      AGENT_LONG_POLL: "true"
+    # Vòng gom lập kế hoạch ở đây nên phải đọc được sổ quyết định (ai-CR-015); chỉ đọc.
+    # ai-CR-018: kho tài liệu của bot (`agent.reindex_docs`) nạp từ `doc/` + CLAUDE.md trên MÁY
+    # đại ca (thư mục làm việc chính, có cả phần chưa commit), không nạp bản chép cũ trong worktree
+    # này. Compose ghép volume theo đích nên hai dòng dưới ĐÈ hai dòng cùng đích ở tệp gốc.
+    volumes:
+      - ./doc/agent-hub:/agent-docs:ro
+      - ../procurement-tool/doc:/app/doc:ro
+      - ../procurement-tool/CLAUDE.md:/app/CLAUDE.md:ro
+    # Một lượt PLAN (Gemini nghĩ) mất 30-90 giây; 10 giây mặc định thì restart là giết giữa chừng
+    # và việc kẹt ở trạm gom (ca AI-0006, 23/09/2026). Đã có vòng nhặt lại, đây là lớp thứ hai.
+    stop_grace_period: 120s
+    # Tệp gốc chờ service `api`; stack này không dựng nó nữa.
+    depends_on: !override
+      - agent-api
+    networks:
+      - default
+      - procstack
+  celery-beat:
+    environment:
+      AGENT_LONG_POLL: "true"
+    depends_on: !override
+      - agent-api
+    networks:
+      - default
+      - procstack
+  agent-poller:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    env_file: .env
+    environment:
+      AGENT_LONG_POLL: "true"
+    # Chỉ một vòng kéo + gọi Trợ lý AI, không nạp tài liệu, nên nhẹ hơn worker.
+    mem_limit: 512m
+    cpus: 0.5
+    volumes:
+      - ./backend:/app # sửa mã Python xong phải `restart agent-poller`, giống worker
+      # Sổ quyết định (ai-CR-015): poller xử nút «Ghi vào sổ» nên mount GHI được.
+      - ./doc/agent-hub:/agent-docs
+    command: python -m app.modules.agent_hub.poller
+    # Bị `docker stop` thì poller xong lượt đang kéo mới dừng; một lượt giữ kết nối tối
+    # đa 25 giây nên cho nó 30 giây thay vì 10 giây mặc định.
+    stop_grace_period: 30s
+    restart: unless-stopped
+    depends_on:
+      - agent-api # start.sh của máy chủ chạy migrate/seed trước
+    networks:
+      - default
+      - procstack
+  # Bậc 2 (ai-CR-011): worker chạy `claude -p` sửa mã. CHỈ nghe hàng đợi `agent_code`
+  # (celery_app.py định tuyến `agent.code_task` vào đó), nên celery-worker thường không bao
+  # giờ nhận việc này và runner không nhận việc thường.
+  #
+  # Biên container theo §E bộ quy tắc, cái gì làm được ở đây thì làm:
+  #   - mã máy chủ CHỈ ĐỌC; kho git nguồn CHỈ ĐỌC (mount đúng thư mục .git của repo gốc, KHÔNG
+  #     mount cả procurement-tool/ vì trong đó có .env); chỉ volume worktree là ghi được
+  #   - không mount doc/ (trừ `doc/agent-hub` CHỈ ĐỌC cho sổ quyết định, ai-CR-015 — thư mục
+  #     đó chỉ có thiết kế + bộ quy tắc + sổ, không bí mật), không mount home, không Docker socket
+  #   - `env_file` vẫn phải có vì runner ghi sổ + gửi Telegram; nhưng tiến trình `claude` con
+  #     được spawn với môi trường SẠCH (coder.build_env: PATH/HOME/PYTHONPATH + đúng một khóa
+  #     CLAUDE_CODE_OAUTH_TOKEN) và hạ xuống người dùng `runner`, nên không đọc được env của cha
+  #   - CHƯA làm được: chặn mạng ra chỉ còn GitHub + API Claude (compose thuần không có
+  #     egress allowlist) — ghi nhận ở §11 thiết kế, GĐ sau
+  # Chạy: up -d --build --no-deps agent-runner. Sửa coder.py xong thì `restart agent-runner`.
+  agent-runner:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.runner
+    env_file: .env
+    environment:
+      AGENT_LONG_POLL: "true"
+      C_FORCE_ROOT: "1"
+      AGENT_LOCAL_DOCS_DIR: /local-docs   # ai-CR-018
+    # pytest của worktree + Claude Code (node) chạy cạnh nhau trong này.
+    mem_limit: 3g
+    cpus: 2
+    volumes:
+      - ./backend:/app:ro
+      - ../procurement-tool/.git:/src-repo:ro
+      - agent_worktrees:/worktrees
+      - ./doc/agent-hub:/agent-docs:ro # sổ quyết định cho đề bài của `claude` (ai-CR-015)
+      # `doc/` trên máy đại ca, CHỈ ĐỌC, cho lượt rà soát đọc cả change-log/nhật ký chưa commit
+      # (ai-CR-018). Rà 23/09: không có .env, khóa hay bản sao DB trong đó; có vài tệp Excel nghiệp vụ.
+      - ../procurement-tool/doc:/local-docs:ro
+      # Khóa SSH lên VPS (ai-CR-014): mount CHỈ ĐỌC dưới /root (0700) nên `claude`/`git`/`pytest`
+      # chạy uid 1000 không với tới; chỉ lượt `ssh` của worker (root) đọc, qua bản chép 0600 tạm.
+      # Khai `AGENT_VPS_SSH_KEY_FILE=<đường dẫn khóa trên máy đại ca>` trong .env; chưa khai thì
+      # mount tệp giữ chỗ và mọi lượt deploy dừng bằng câu «khóa chưa mount».
+      - type: bind
+        source: ${AGENT_VPS_SSH_KEY_FILE:-./docker/vps_ssh_key.placeholder}
+        target: /root/vps_ssh_key
+        read_only: true
+    # Một việc một lúc (§8 thiết kế) = `-c 1`; không có cờ AGENT_MAX_CONCURRENT_RUNS.
+    command: celery -A app.core.celery_app worker -l info -c 1 -Q agent_code -n runner@%h
+    # Bị stop giữa lượt `claude -p` thì cho nó thời gian ghi FAILED + nhắn Telegram.
+    stop_grace_period: 60s
+    restart: unless-stopped
+    depends_on:
+      - agent-api
+    networks:
+      - default
+      - procstack
+
+volumes:
+  # Worktree của từng task + bản clone `base`. Sống qua các lần dựng lại container để không
+  # phải clone lại kho (lớn) mỗi lần; xóa bằng `docker volume rm agenthub_agent_worktrees`.
+  agent_worktrees:
+
+networks:
+  procstack:
+    name: procurement-tool_default
+    external: true

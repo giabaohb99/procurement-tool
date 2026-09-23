@@ -218,6 +218,72 @@ class Settings(BaseSettings):
     # tài khoản quản trị: ai nhắn được cho bot sẽ đọc được đúng những gì tài khoản này
     # đọc được. Hàng rào duy nhất còn lại là `AGENT_TELEGRAM_CHAT_ID`.
     AGENT_ASSISTANT_USER: str = ""
+    # true = tiến trình `agent-poller` riêng đang giữ kết nối chờ tin Telegram (ai-CR-008),
+    # nên vòng beat `agent.poll_telegram` 10 giây PHẢI tắt — hai bên cùng đọc một con trỏ
+    # là xử trùng một tin. Stack thử `docker-compose.agent.yml` đặt cờ này ngay trong
+    # `environment` của celery-beat/celery-worker, không cần khai ở `.env`.
+    AGENT_LONG_POLL: bool = False
+    # --- Bậc 2 (ai-CR-011): bot sửa mã bằng Claude Code CLI trong service `agent-runner` ---
+    # Cầu dao riêng của bậc 2. TẮT thì bấm Duyệt chỉ ghi sổ như bậc 1, không giao việc đi đâu.
+    AGENT_CODER_ENABLED: bool = False
+    AGENT_CODER_CMD: str = "claude"
+    # Số lượt tối đa một phiên `claude -p` được đi (mỗi lượt = một lần gọi model + tool).
+    AGENT_CODER_MAX_TURNS: int = 80
+    # Thư mục chứa worktree của từng task TRONG container runner (volume `agent_worktrees`).
+    AGENT_WORKTREE_ROOT: str = "/worktrees"
+    # Kho git nguồn, mount CHỈ ĐỌC vào runner; runner clone một bản `base` rồi cắt worktree
+    # của từng task từ `origin/<AGENT_BASE_BRANCH>` của bản đó (luật C2).
+    AGENT_REPO_SOURCE: str = "/src-repo"
+    AGENT_BASE_BRANCH: str = "erp-v2"
+    # Tài khoản hệ điều hành chạy `git` / `claude` / `pytest` trong runner. Worker Celery chạy
+    # root, tiến trình con hạ xuống người dùng này để KHÔNG đọc được môi trường của cha
+    # (`/proc/<pid>/environ` chứa khóa Telegram, Gemini, DB). Rỗng, hoặc tiến trình cha không
+    # phải root (chạy ngoài Docker), thì không hạ.
+    AGENT_RUNNER_USER: str = "runner"
+    # Hết giờ thì giết tiến trình, ghi FAILED, nhắn Telegram; không tự thử lại (§8 thiết kế).
+    AGENT_RUN_TIMEOUT_SEC: int = 1800
+    # Trần số tệp một task được đụng (luật C1). Vượt = dừng, không commit, leo thang.
+    AGENT_MAX_FILES_TOUCHED: int = 25
+    # CỐ Ý KHÔNG khai `CLAUDE_CODE_OAUTH_TOKEN` ở đây: `coder.build_env` đọc thẳng `os.environ`
+    # đúng lúc spawn, để khóa không bao giờ nằm trong đối tượng settings (dump/log/`/hoi`).
+    # Cũng không có `AGENT_MAX_CONCURRENT_RUNS`: một việc một lúc do runner chạy `-c 1`.
+    # --- Bậc 2, giai đoạn 2a (ai-CR-012): runner đẩy nhánh lên GitHub + mở PR vào nhánh nền ---
+    # TẮT thì nhánh chỉ nằm trong volume runner như GĐ1; thẻ kết quả có nút «Đẩy GitHub + mở PR»
+    # để đẩy tay từng việc. BẬT thì runner tự đẩy + mở PR ngay sau khi commit.
+    AGENT_PR_ENABLED: bool = False
+    AGENT_GITHUB_REPO: str = "giabaohb99/procurement-tool"
+    AGENT_GITHUB_API_URL: str = "https://api.github.com"
+    # CỐ Ý KHÔNG khai `AGENT_GITHUB_TOKEN` (PAT chi tiết, chỉ Contents + Pull requests của một
+    # kho): `coder.github_token()` đọc thẳng `os.environ` lúc đẩy, và khóa chỉ đi vào tiến trình
+    # `git push` (qua biến GIT_CONFIG_*, không nằm trên dòng lệnh) + lượt gọi API GitHub —
+    # KHÔNG BAO GIỜ vào tiến trình `claude`.
+    # --- Bậc 2, giai đoạn 2b·2 (ai-CR-014): gộp vào nhánh nền + deploy thử lên dev VPS ---
+    # Đại ca chốt 22/09/2026: bot đẩy nhánh của mình xong thì HỎI; đại ca bấm đồng ý (ngay hoặc hẹn
+    # giờ) mới được gộp thẳng vào AGENT_BASE_BRANCH rồi SSH lên VPS deploy dev. TẮT = thẻ kết quả
+    # không có nút gộp, chỉ còn đường PR như GĐ2a.
+    AGENT_DEPLOY_ENABLED: bool = False
+    # Sổ quyết định của đại ca (ai-CR-015): `doc/agent-hub/` mount vào container ở /agent-docs.
+    # Không có tệp thì bot chạy như trước (không tra sổ), không lỗi.
+    AGENT_PLAYBOOK_PATH: str = "/agent-docs/03-so-quyet-dinh.md"
+    # ai-CR-018: nhánh chạy thật, lượt rà soát so với nhánh nền để biết lỗi đã sửa ở đây chưa gộp.
+    AGENT_MAIN_BRANCH: str = "main"
+    # ai-CR-018: `doc/` trên máy đại ca (gồm phần CHƯA commit) mount chỉ đọc vào runner. Rỗng =
+    # không có; compose của stack bot đặt `/local-docs` cho agent-runner.
+    AGENT_LOCAL_DOCS_DIR: str = ""
+    AGENT_VPS_HOST: str = ""
+    AGENT_VPS_PORT: int = 22
+    AGENT_VPS_USER: str = ""
+    # Thư mục kho dev trên VPS và phần đuôi lệnh compose của stack dev (quy trình deploy §C: quên
+    # `-f docker-compose.dev.yml` là devthumua 502).
+    AGENT_VPS_DEV_DIR: str = "~/procurement-tool-dev"
+    AGENT_VPS_DEV_COMPOSE_ARGS: str = "--env-file .env.dev -f docker-compose.dev.yml"
+    # Đường dẫn khóa SSH TRONG container runner. Khóa thật mount chỉ đọc từ máy đại ca
+    # (`AGENT_VPS_SSH_KEY_FILE` trong .env, chỉ compose đọc) vào dưới /root — thư mục 0700 nên tiến
+    # trình `claude` (uid 1000) không với tới; `coder.run_ssh` chép ra bản 0600 tạm rồi xóa.
+    AGENT_VPS_SSH_KEY_PATH: str = "/root/vps_ssh_key"
+    # Sau deploy, chờ địa chỉ này trả 200 rồi mới báo xanh; rỗng = không kiểm.
+    AGENT_DEV_HEALTH_URL: str = "https://devthumua.degoholding.vn/api/health"
+    AGENT_DEV_UI_URL: str = "https://deverp.degoholding.vn"
 
     # --- Celery / Redis ---
     # Broker + result backend dùng chung 1 Redis (đủ cho quy mô ~20-100 user).

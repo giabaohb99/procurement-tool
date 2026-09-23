@@ -9,6 +9,7 @@ rồi giao cho một con bot code thực hiện, kiểm thử, đưa lên dev v�
 |---|---|
 | Xây bằng cách nào — kiến trúc, dữ liệu, luồng, cấu hình, lộ trình | [01-thiet-ke-ky-thuat.md](01-thiet-ke-ky-thuat.md) |
 | Bot được phép và bị cấm làm gì — lằn ranh an toàn | [02-bo-quy-tac-bot.md](02-bo-quy-tac-bot.md) |
+| Quyết định quen thuộc của đại ca, bot tra trước khi hỏi (ai-CR-015) | [03-so-quyet-dinh.md](03-so-quyet-dinh.md) |
 | Ai đổi gì, khi nào (sổ CR riêng của mảng AI) | [../tai-lieu-ky-thuat/change-log-ai.md](../tai-lieu-ky-thuat/change-log-ai.md) |
 
 ## Tóm tắt một đoạn

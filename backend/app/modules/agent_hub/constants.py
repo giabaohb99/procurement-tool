@@ -27,6 +27,12 @@ ST_DONE = 8         # Xong
 ST_CANCELLED = 9    # Đại ca bỏ
 ST_FAILED = 10      # Bot chịu thua, đã leo thang
 ST_NEEDS_INPUT = 11 # Đang hỏi lại đại ca, chờ câu trả lời
+#  Đang gộp vào nhánh nền + deploy dev (ai-CR-014). Trạm tạm, chỉ sống trong một lượt
+#  `agent.deploy_task`; xong thì sang ST_PROD (đã lên dev, chờ lệnh prod), hỏng thì về REVIEW.
+ST_DEPLOYING = 12
+#  Đang rà soát mã thật trước khi lập kế hoạch (ai-CR-017): Claude Code chỉ đọc, trên erp-v2 mới
+#  nhất. Trạm tạm giữa TRIAGE và PLAN; rà soát hỏng hay quá hạn thì vẫn lập kế hoạch theo tài liệu.
+ST_SCANNING = 13
 
 TASK_STATUS_LABELS = {
     ST_INBOX: "Mới vào sổ",
@@ -40,6 +46,8 @@ TASK_STATUS_LABELS = {
     ST_CANCELLED: "Đã bỏ",
     ST_FAILED: "Thất bại",
     ST_NEEDS_INPUT: "Đang hỏi lại",
+    ST_DEPLOYING: "Đang gộp + deploy dev",
+    ST_SCANNING: "Đang rà soát mã",
 }
 
 #  Trạng thái ĐÃ ĐÓNG: không nhận thêm thao tác nào, và tin nhắn gắn vào nó được
@@ -47,7 +55,8 @@ TASK_STATUS_LABELS = {
 CLOSED_STATUSES = (ST_DONE, ST_CANCELLED, ST_FAILED)
 
 #  Trần của bậc 1. Bậc 1 không có bot code nên không task nào được vượt qua PLAN.
-#  Chốt này là chỗ DUY NHẤT diễn đạt điều đó — bỏ nó đi thì phải có bot code thật.
+#  Từ ai-CR-011 bot code ĐÃ có (`coder.py`, service `agent-runner`), nhưng chỉ khi cờ
+#  `AGENT_CODER_ENABLED` bật; cờ tắt thì trần này vẫn đúng nguyên nghĩa.
 TIER1_MAX_STATUS = ST_PLAN
 
 # ---------------------------------------------------------------------------
@@ -107,6 +116,54 @@ RUN_STATUS_LABELS = {
 # Trạm nào sinh ra lượt gọi này — dùng lại chính bộ số trạm ở trên.
 STAGE_TRIAGE = ST_TRIAGE
 STAGE_PLAN = ST_PLAN
+STAGE_CODE = ST_CODE   # một lượt `claude -p` của runner (bậc 2, ai-CR-011)
+#  Phân loại ý định chạy TRƯỚC khi có task nên không mượn được số trạm nào; đánh số
+#  ngoài dải trạng thái task để không ai đọc nhầm nó thành một trạng thái của việc.
+STAGE_INTENT = 20
+#  Hỏi thêm về bản vá (ai-CR-013): một lượt `claude -p --resume` vào đúng phiên đã sửa việc.
+#  Cũng ngoài dải trạng thái, cùng lý do với STAGE_INTENT.
+STAGE_ASK = 21
+#  Gộp vào nhánh nền + deploy dev (ai-CR-014): một lượt merge --no-ff + push + ssh deploy. Dòng
+#  sổ này được tạo NGAY lúc đại ca đồng ý (hoặc hẹn giờ) và đóng khi deploy xong/hỏng; artifact
+#  giữ `merge_sha` — thứ lượt thu hồi cần. STAGE_REVERT = lượt `git revert -m 1` + deploy lại.
+STAGE_DEPLOY = 22
+STAGE_REVERT = 23
+#  Nháp một mục cho sổ quyết định (ai-CR-015): một lượt Gemini đọc câu bot hỏi + câu đại ca
+#  trả lời. `artifact.state` = `cho_duyet` (thẻ đang chờ bấm) · `da_ghi` · `bo` · `khong_ap`.
+STAGE_RULE = 24
+#  Rà soát mã trước kế hoạch (ai-CR-017): một lượt `claude -p` chỉ đọc. artifact giữ `message`
+#  (đoạn phân tích đã nhắn đại ca), `info` (JSON: files, root_cause, already_fixed…), `head`.
+STAGE_SCAN = 25
+
+# ---------------------------------------------------------------------------
+# Dấu đã xử của một tin nhắn ĐẾN (`tab_agent_message.action`)
+# ---------------------------------------------------------------------------
+#  Vòng gom chỉ nhặt tin `action` RỖNG. Nên mọi tin đã được xử theo đường khác đều
+#  phải đóng một dấu ở đây, không thì nó vừa được trả lời vừa biến thành một đầu việc.
+ACT_COMMAND = "lenh"      # Tin bắt đầu bằng `/` — lệnh, không bao giờ là việc
+ACT_ASKED = "hoi"         # Đã chuyển cho Trợ lý AI trả lời tại chỗ
+ACT_WAIT_CHOICE = "cho_y"  # Chưa rõ hỏi hay giao việc, đang chờ đại ca bấm nút
+ACT_ANSWER = "tra_loi"    # Tin bot gửi = câu trả lời của Trợ lý AI (để nối mạch hội thoại)
+#  Kết quả tool của Trợ lý AI đưa ra Telegram (ai-CR-009). Tin CHIỀU RA, không vào mạch
+#  hội thoại — `_recent_turns` chỉ lấy `hoi` / `tra_loi`.
+ACT_FILE = "tep"               # Bot đã gửi một tệp (báo cáo Excel/Word do tool xuất)
+ACT_PROPOSAL = "de_xuat"       # Thẻ đề xuất sửa phiếu đang chờ bấm; `body` = JSON khối proposal
+ACT_PROPOSAL_DONE = "da_sua"   # Đại ca bấm Xác nhận và phiếu đã ghi
+ACT_PROPOSAL_DROPPED = "bo_sua"  # Đại ca bấm Không sửa, hoặc xác nhận hỏng (hết hạn, mất quyền)
+#  Hỏi thêm về bản vá (ai-CR-013). Ba dấu nối thành một mạch riêng, tách khỏi mạch Trợ lý AI:
+#  bot mời hỏi -> đại ca hỏi -> Claude Code (đúng phiên đã sửa) trả lời. Tin kế tiếp trong
+#  `service.FOLLOW_UP_WINDOW` sau bất kỳ dấu nào trong ba dấu này là hỏi tiếp, không đi phân loại.
+ACT_WAIT_PATCH_Q = "cho_hoi_va"   # Tin bot: đã bấm «Hỏi thêm», đang chờ câu hỏi
+ACT_PATCH_Q = "hoi_va"            # Tin đại ca: câu hỏi về bản vá, đã giao cho runner
+ACT_PATCH_ANSWER = "tra_loi_va"   # Tin bot: câu trả lời của Claude Code về bản vá
+#  Hẹn giờ gộp + deploy dev (ai-CR-014): bot mời nhắn giờ; tin kế tiếp trong FOLLOW_UP_WINDOW là
+#  giờ hẹn, không đi phân loại. Chỉ một dấu vì câu trả lời của bot là câu thường (đã hẹn/không hiểu).
+ACT_WAIT_DEPLOY_TIME = "cho_hen_gio"
+#  Trả lời câu hỏi lại của trạm kế hoạch (ai-CR-015): trước đây câu trả lời rơi vào INBOX và
+#  đẻ thành VIỆC MỚI, việc cũ treo ở «Đang hỏi lại». Nay tin kế sau dấu chờ gắn thẳng vào việc.
+ACT_WAIT_PLAN_ANSWER = "cho_tra_loi_kh"   # Tin bot: thẻ kế hoạch đang hỏi lại / mời nói rõ thêm
+ACT_PLAN_ANSWER = "tra_loi_kh"            # Tin đại ca: câu trả lời, đã gắn vào việc + lập lại kế hoạch
+ACT_DEPLOY_TIME = "hen_gio"       # Tin đại ca: giờ hẹn gộp + deploy, đã ghi vào sổ lượt chạy
 
 # ---------------------------------------------------------------------------
 # Đơn giá model, USD / 1 triệu token
@@ -145,3 +202,17 @@ def estimate_cost_usd(model: str, input_tokens: int, output_tokens: int) -> floa
         (input_tokens * in_rate + output_tokens * out_rate) / 1_000_000,
         6,
     )
+
+
+# ---------------------------------------------------------------------------
+# Tên của bot trên Telegram (ai-CR-016, đại ca đặt 23/09/2026)
+# ---------------------------------------------------------------------------
+#  Chỉ là cách bot TỰ XƯNG trong câu chữ. Tên hiển thị của tài khoản Telegram đổi ở BotFather
+#  (`/setname`), không nằm trong mã. Trợ lý AI trên web KHÔNG đổi tên: persona chỉ chèn thêm
+#  vào lời nhắc khi câu hỏi đi từ Telegram (`service.answer_question`).
+BOT_NAME = "Đậu Đậu"
+BOT_PERSONA = (
+    f"Trong kênh Telegram này bạn tên là {BOT_NAME}, trợ lý của DEGO Holding trên Telegram. "
+    f"Tự xưng «em», gọi người đang nhắn là «đại ca». Khi được hỏi tên hay được bảo giới thiệu "
+    f"thì nói em là {BOT_NAME}. Không gọi mình là «Trợ lý AI» trong kênh này."
+)

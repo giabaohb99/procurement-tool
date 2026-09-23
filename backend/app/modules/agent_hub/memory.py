@@ -88,8 +88,23 @@ def collect_files() -> list[Path]:
     found: list[Path] = []
     for pattern in INDEX_GLOBS:
         found.extend(p for p in root.glob(pattern) if p.is_file())
+    #  ai-CR-018: `doc/` giờ là thư mục ở máy đại ca (nhánh erp-v2), nơi KHÔNG có `doc/agent-hub/`
+    #  — bộ tài liệu của bot nằm trên nhánh riêng, mount ở chỗ của sổ quyết định. Lấy từ đó.
+    if not (root / "doc" / "agent-hub").is_dir():
+        extra = Path(settings.AGENT_PLAYBOOK_PATH).parent
+        if extra.is_dir():
+            found.extend(p for p in extra.glob("*.md") if p.is_file())
     #  Bỏ trùng (một tệp có thể khớp hai glob) rồi sắp theo đường dẫn.
     return sorted(set(found))
+
+
+def rel_path(path: Path, root: Path) -> str:
+    """Đường dẫn ghi vào kho, tính từ gốc repo. Tệp tài liệu bot mượn chỗ mount khác thì ghi
+    như thể nằm ở `doc/agent-hub/` — để bot quản lý trích đúng đường dẫn trong repo."""
+    try:
+        return path.relative_to(root).as_posix()
+    except ValueError:
+        return f"doc/agent-hub/{path.name}"
 
 
 def drop_stale(store: VectorStore, run_id: int) -> None:
@@ -170,7 +185,7 @@ def reindex() -> dict:
         return n
 
     for path in collect_files():
-        rel = path.relative_to(root).as_posix()
+        rel = rel_path(path, root)
         if path.stat().st_size > MAX_FILE_BYTES:
             skipped.append(rel)
             log.warning("agent_hub: bỏ qua %s vì quá %d byte", rel, MAX_FILE_BYTES)

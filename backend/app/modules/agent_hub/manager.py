@@ -150,16 +150,30 @@ def _risk(value) -> int:
 # Trạm PLAN — đề xuất cách sửa
 # ---------------------------------------------------------------------------
 PLAN_SYSTEM = """\
-Bạn là trợ lý quản lý kỹ thuật của một hệ thống ERP nội bộ. Bạn nhận MỘT đầu việc kèm
+Bạn là Đậu Đậu, trợ lý quản lý kỹ thuật của một hệ thống ERP nội bộ. Bạn nhận MỘT đầu việc kèm
 vài đoạn tài liệu của chính dự án, và phải viết BẢN ĐỀ XUẤT CÁCH SỬA cho lập trình viên.
 
 Luật:
 1. `plan_files` là danh sách đường dẫn tệp mà việc này sẽ đụng, tính từ gốc repo
    (ví dụ "backend/app/modules/leave/service.py"). CHỈ ghi tệp bạn thật sự tin là
-   đúng, dựa trên tài liệu được cung cấp. KHÔNG đoán bừa đường dẫn.
-2. Không đủ thông tin để viết `plan_files` cụ thể thì đặt `needs_clarification` = true,
-   để `plan_files` RỖNG, và viết câu hỏi vào `questions`. Việc mơ hồ là nguồn gốc của
-   mọi thảm họa trong loại hệ thống này — hỏi lại tốn vài phút, đoán sai tốn cả buổi.
+   đúng, dựa trên tài liệu được cung cấp hoặc KẾT QUẢ RÀ SOÁT MÃ THẬT (nếu có ở cuối đề bài
+   — khi nó khác tài liệu thì tin nó, và lấy đúng đường dẫn đầy đủ trong đó). KHÔNG đoán bừa
+   đường dẫn, KHÔNG ghi tên tệp trơn thiếu thư mục.
+   Rà soát cho thấy việc ĐÃ được sửa sẵn trên nhánh nền thì đặt `needs_clarification` = true và
+   hỏi đại ca còn cần làm gì thêm, đừng lập kế hoạch sửa lại thứ đã có.
+   Câu nghiệp vụ mà rà soát nêu và đại ca CHƯA trả lời (ví dụ có chặn gửi duyệt không, có cho
+   sửa tay không): KHÔNG tự quyết thay. Bỏ phần phụ thuộc câu đó ra khỏi kế hoạch, và ghi vào
+   `assumptions` dạng "Chưa làm: <phần đó> — chờ đại ca quyết: <câu hỏi>".
+2. Chỗ chưa rõ: tra SỔ QUYẾT ĐỊNH CỦA ĐẠI CA (nếu có ở cuối đề bài) TRƯỚC khi hỏi.
+   - Có mục khớp: làm theo, ghi vào `assumptions` dạng "Theo QĐ-07: ...".
+   - Không có mục khớp nhưng có MỘT cách làm hợp lý, an toàn, dễ đảo lại: chọn nó, ghi vào
+     `assumptions` dạng "Em giả định: ...".
+   - CHỈ đặt `needs_clarification` = true (để `plan_files` RỖNG, câu hỏi vào `questions`) khi:
+     không viết nổi `plan_files`; hoặc việc dính tiền, công nợ, thanh toán, phân quyền, cấu
+     trúc cơ sở dữ liệu, prod, nhánh `main`; hoặc yêu cầu hiểu được theo hai cách dẫn tới hai
+     việc khác hẳn nhau. Hỏi thì hỏi GỌN, mỗi câu một ý, tối đa 3 câu.
+   - KHÔNG hỏi người quản lý đường dẫn tệp, tên hàm hay cấu trúc mã: anh ấy không trả lời
+     được, đó là việc của bạn. Chỉ hỏi về NGHIỆP VỤ (màn nào, kết quả mong muốn là gì).
 3. `plan` là các bước sửa, tiếng Việt, đánh số. Nói VÌ SAO làm vậy, không chỉ nói làm gì.
 4. `test_plan` nói rõ kiểm cái gì, gồm ít nhất một bài canh chiều ngược lại
    ("cái đáng lẽ không được xảy ra thì không xảy ra").
@@ -170,12 +184,23 @@ Luật:
 
 CHỈ trả JSON, không thêm chữ nào ngoài JSON:
 {"plan": "...", "plan_files": ["..."], "test_plan": "...", "risk_level": 2,
- "needs_clarification": false, "questions": [], "related_docs": ["duong/dan/tep.md"]}
+ "needs_clarification": false, "questions": [], "assumptions": [],
+ "related_docs": ["duong/dan/tep.md"]}
 """
 
+#  Việc rủi ro cao (luật 3 của sổ, ai-CR-015): không nạp sổ và nói thẳng là phải hỏi.
+_PLAN_STRICT_NOTE = (
+    "VIỆC NÀY RỦI RO CAO: KHÔNG được tự giả định. Mọi chỗ chưa rõ phải vào `questions`, "
+    "để `assumptions` rỗng."
+)
 
-def run_plan(title: str, summary: str, docs: list[dict]) -> tuple[dict, ChatResult]:
-    """Viết bản đề xuất cho một đầu việc. `docs` là kết quả `memory.recall()`."""
+
+def run_plan(title: str, summary: str, docs: list[dict], *, playbook: str = "",
+             strict: bool = False, review: str = "") -> tuple[dict, ChatResult]:
+    """Viết bản đề xuất cho một đầu việc. `docs` là kết quả `memory.recall()`.
+
+    `playbook` = phần mục của sổ quyết định (rỗng khi việc rủi ro cao hoặc chưa có sổ);
+    `strict` = việc rủi ro cao, cấm giả định (ai-CR-015)."""
     parts = [f"ĐẦU VIỆC: {title}", "", "MÔ TẢ:", summary]
     if docs:
         parts += ["", "TÀI LIỆU LIÊN QUAN CỦA DỰ ÁN (chỉ được trích từ đây):"]
@@ -184,18 +209,29 @@ def run_plan(title: str, summary: str, docs: list[dict]) -> tuple[dict, ChatResu
         #  Nói thẳng là không tra được, thay vì im lặng để model tưởng dự án không có
         #  tài liệu nào rồi tự tin bịa ra đường dẫn (luật B4).
         parts += ["", "KHÔNG tra được tài liệu liên quan. Đừng viện dẫn tệp nào cả."]
+    if review:
+        #  ai-CR-017: Claude Code đã đọc mã thật trên nhánh nền mới nhất. Tài liệu thì có thể cũ.
+        parts += ["", "KẾT QUẢ RÀ SOÁT MÃ THẬT (Đậu Đậu vừa đọc mã trên nhánh nền mới nhất; khác "
+                      "tài liệu thì tin cái này):", review]
+    if strict:
+        parts += ["", _PLAN_STRICT_NOTE]
+    elif playbook:
+        parts += ["", "SỔ QUYẾT ĐỊNH CỦA ĐẠI CA (tra trước khi hỏi, trích đúng số QĐ):", playbook]
 
     result = get_provider().ask(
         [ChatMessage(role="user", content="\n".join(parts))],
         model=settings.AGENT_MANAGER_MODEL,
         system=PLAN_SYSTEM,
-        max_tokens=4096,
+        #  16384, không phải 4096: Gemini tính token suy nghĩ vào trần đầu ra (đo thật 6-7 nghìn), từ khi đề bài
+        #  mang theo sổ quyết định (ai-CR-015) lượt thử thật đã bị cắt giữa chuỗi JSON.
+        max_tokens=16384,
         temperature=0.3,
         thinking=True,
     )
     data = parse_json(result.text)
     files = [str(f) for f in data.get("plan_files") or [] if str(f).strip()]
     questions = [str(q) for q in data.get("questions") or [] if str(q).strip()]
+    assumptions = [str(a).strip() for a in data.get("assumptions") or [] if str(a).strip()]
     return {
         "plan": str(data.get("plan") or ""),
         "plan_files": files,
@@ -205,9 +241,137 @@ def run_plan(title: str, summary: str, docs: list[dict]) -> tuple[dict, ChatResu
         #  Để model một mình quyết cờ này thì nó gần như luôn trả false.
         "needs_clarification": bool(data.get("needs_clarification")) or not files,
         "questions": questions,
+        "assumptions": assumptions,
         "related_docs": [
             {"path": d["path"], "score": d["score"]}
             for d in docs
             if d["path"] in set(data.get("related_docs") or [])
         ],
     }, result
+
+
+# ---------------------------------------------------------------------------
+# Trạm PHÂN LOẠI Ý ĐỊNH — tin chữ thường là HỎI hay GIAO VIỆC (ai-CR-003)
+
+# ---------------------------------------------------------------------------
+# Nháp một mục cho sổ quyết định (ai-CR-015)
+# ---------------------------------------------------------------------------
+RULE_SYSTEM = """\
+Bạn giúp một người quản lý ghi lại những QUYẾT ĐỊNH QUEN THUỘC của anh ấy, để lần sau bot
+lập trình gặp tình huống tương tự thì tự làm, khỏi hỏi lại.
+
+Bạn nhận: tên đầu việc, câu bot đã hỏi, và câu người quản lý trả lời. Việc của bạn là xem
+câu trả lời đó có phải một LUẬT DÙNG LẠI ĐƯỢC không, và nếu có thì viết nó thành một mục.
+
+Luật:
+1. `generalizable` = false khi câu trả lời chỉ đúng cho riêng việc này (một con số cụ thể,
+   một tên phiếu, một lần ngoại lệ), hoặc khi nó trùng ý một mục đã có trong danh sách
+   được cung cấp. Nghi ngờ thì false.
+2. `generalizable` = false khi câu trả lời dính tiền, công nợ, thanh toán, phân quyền, cấu
+   trúc cơ sở dữ liệu, prod, nhánh main, hay gộp mã — loại đó lần nào cũng phải hỏi.
+3. `situation` tả TÌNH HUỐNG chung (không nêu tên việc này), `action` tả bot làm gì,
+   `not_when` tả ranh giới: khi nào KHÔNG được áp luật này. Mỗi ý một câu tiếng Việt trọn
+   vẹn, dưới 300 ký tự. `title` dưới 70 ký tự.
+4. KHÔNG thêm điều người quản lý không nói. Chép ý của anh ấy, đừng suy rộng.
+
+CHỈ trả JSON, không thêm chữ nào ngoài JSON:
+{"generalizable": true, "title": "...", "situation": "...", "action": "...", "not_when": "..."}
+"""
+
+
+def run_rule_draft(title: str, questions: list[str], answer: str,
+                   known: list[str]) -> tuple[dict, ChatResult]:
+    """Nháp một mục sổ từ một lượt hỏi-đáp. Không dùng lại được thì `generalizable` = False."""
+    parts = [f"ĐẦU VIỆC: {title}", "", "BOT ĐÃ HỎI:"]
+    parts += [f"- {q}" for q in questions] or ["- (bot mời nói rõ thêm về kế hoạch)"]
+    parts += ["", "NGƯỜI QUẢN LÝ TRẢ LỜI:", answer]
+    if known:
+        parts += ["", "CÁC MỤC ĐÃ CÓ TRONG SỔ (đừng đề xuất trùng):"] + [f"- {k}" for k in known]
+    result = get_provider().ask(
+        [ChatMessage(role="user", content="\n".join(parts))],
+        model=settings.AGENT_MANAGER_MODEL,
+        system=RULE_SYSTEM,
+        max_tokens=1024,
+        temperature=0.2,
+    )
+    data = parse_json(result.text)
+    entry = {k: " ".join(str(data.get(k) or "").split()) for k in
+             ("title", "situation", "action", "not_when")}
+    ok = bool(data.get("generalizable")) and all(entry[k] for k in ("title", "situation", "action"))
+    return {"generalizable": ok, **entry}, result
+
+
+# ---------------------------------------------------------------------------
+INTENT_ASK = "hoi"
+INTENT_TASK = "viec"
+INTENT_UNSURE = "mo_ho"
+
+INTENT_SYSTEM = """\
+Bạn phân loại MỘT tin nhắn của người quản lý gửi cho bot của hệ thống ERP nội bộ.
+Bot có hai tay:
+  - TRỢ LÝ AI: tra cứu VÀ làm nghiệp vụ ngay trên hệ thống bằng công cụ có sẵn — xem
+    số liệu, tình trạng chứng từ, tạo đơn nghỉ phép, lập báo cáo, duyệt, gửi thông báo.
+  - SỔ VIỆC SỬA PHẦN MỀM: ghi lại để lập trình viên sửa mã nguồn.
+
+Chỉ có ba kết quả:
+
+- "hoi": giao cho TRỢ LÝ AI. Gồm cả ba dạng: người ta MUỐN BIẾT một điều có sẵn
+  (số liệu, tình trạng một chứng từ, ai giữ việc, cách dùng, nội dung tài liệu);
+  người ta muốn LÀM NGAY một việc nghiệp vụ trên hệ thống (tạo / lập / gửi / duyệt
+  một chứng từ, xuất một báo cáo); hoặc người ta đang TRẢ LỜI câu bot vừa hỏi, nói
+  tiếp câu chuyện đang dở.
+- "viec": nhờ SỬA PHẦN MỀM — thêm/bớt/sửa tính năng, báo một chỗ chạy sai, đổi giao
+  diện, đổi cách tính, xin một màn hình mới, nhờ làm tài liệu.
+- "mo_ho": đọc xong vẫn không chắc, hoặc tin quá ngắn/cụt để biết người ta muốn gì.
+
+Vài ca dễ nhầm:
+- "3 đơn mua hàng gần nhất" -> hoi (đòi số liệu).
+- "tạo cho anh đơn nghỉ phép thứ 6 tuần này" -> hoi (nhờ làm nghiệp vụ, Trợ lý AI có
+  công cụ làm được; KHÔNG phải sửa phần mềm).
+- Bot vừa hỏi "nghỉ ngày nào, lý do gì?" và người ta nhắn "thứ 6, đi du lịch" -> hoi
+  (đang trả lời bot).
+- "màn đơn mua hàng không lọc được theo ngày" -> viec (báo chỗ chạy sai).
+- "sao đơn PO00362 chưa duyệt" -> hoi (hỏi tình trạng một chứng từ cụ thể).
+- "cho thêm cột ngày giao vào bảng đơn hàng" -> viec.
+- "xem lại giúp anh" -> mo_ho (không biết xem cái gì).
+
+Nếu có MẠCH TRƯỚC ĐÓ thì phải đọc nó trước khi phán: một tin ngắn cụt đứng ngay sau
+câu hỏi của bot thường là câu nối tiếp (-> hoi), không phải mo_ho.
+
+Nghi ngờ thì chọn "mo_ho". Đoán bừa tốn hơn hỏi lại một câu: đoán thành "viec" thì
+người ta chờ một câu trả lời không bao giờ tới, đoán thành "hoi" thì việc cần làm
+biến mất khỏi sổ.
+
+CHỈ trả JSON, không thêm chữ nào ngoài JSON:
+{"intent": "hoi", "reason": "lý do ngắn bằng tiếng Việt"}
+"""
+
+
+def run_intent(text: str, *, context: str = "") -> tuple[dict, ChatResult]:
+    """Đọc một tin và nói nó là việc cho Trợ lý AI hay một đầu việc sửa mã.
+
+    Một lượt gọi RẺ (vài trăm token) đứng trước mỗi tin chữ thường, để đại ca khỏi
+    phải nhớ gõ tiền tố `/hoi`. Model trả kiểu lạ thì hạ xuống "mo_ho" — nhánh mập
+    mờ là nhánh hỏi lại, tức chỗ an toàn nhất để rơi vào.
+
+    `context` = vài lượt hỏi-đáp ngay trước đó (ai-CR-007). Không có nó, model chỉ thấy
+    một câu trơ trọi: *"cho anh nghỉ thứ 6, lý do đi du lịch"* đọc rời thì giống một
+    lời nhờ, đọc sau câu *"anh muốn nghỉ ngày nào?"* của bot thì rõ là câu trả lời.
+    """
+    if context:
+        content = f"MẠCH TRƯỚC ĐÓ:\n{context}\n\nTin nhắn mới:\n{text}"
+    else:
+        content = f"Tin nhắn:\n{text}"
+    result = get_provider().ask(
+        [ChatMessage(role="user", content=content)],
+        model=settings.AGENT_MANAGER_MODEL,
+        system=INTENT_SYSTEM,
+        max_tokens=256,
+        temperature=0.0,
+    )
+    data = parse_json(result.text)
+    intent = str(data.get("intent") or "").strip().lower()
+    if intent not in (INTENT_ASK, INTENT_TASK, INTENT_UNSURE):
+        log.warning("agent_hub: phân loại trả ý định lạ %r, coi như mập mờ", intent)
+        intent = INTENT_UNSURE
+    return {"intent": intent, "reason": str(data.get("reason") or "")[:200]}, result

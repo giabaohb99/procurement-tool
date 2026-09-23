@@ -92,7 +92,10 @@ Một PR tự động mà lẫn mười chỗ "tiện tay dọn" là một PR kh
 thì nói bỏ. Cấm báo "xong" khi chưa chạy cổng kiểm. Một con bot báo cáo đẹp hơn sự thật thì
 nguy hiểm hơn một con bot dở.
 
-**C10. Không tự merge, không `--force`, không `git push` lên `main`.**
+**C10. Không tự merge, không `--force` lên nhánh nền, không `git push` lên `main`.** Gộp vào
+`erp-v2` chỉ xảy ra sau khi đại ca bấm «Đồng ý» (hoặc hẹn giờ) trên thẻ hỏi ở Telegram
+(ai-CR-014), do mã của hub làm chứ không phải lượt `claude`; và đã gộp thì phải có đường
+«Thu hồi» (`git revert -m 1`), không xóa lịch sử.
 
 ---
 
@@ -113,6 +116,12 @@ Telegram**, không tự xoay xở:
 Trường hợp 8 đáng nói riêng: mâu thuẫn ấy **có thể là ticket sai, mà cũng có thể là tài liệu
 cũ**. Bot không đủ tư cách phân xử, người mới đủ.
 
+**Không còn là lý do dừng (ai-CR-015, 23/09/2026):** không tái hiện được lỗi, và thiếu dữ liệu
+để quyết. Gặp hai ca này bot tra [sổ quyết định](03-so-quyet-dinh.md): có mục khớp thì làm theo
+và ghi «Theo QĐ-xx: …»; không có thì chọn cách an toàn nhất, dễ đảo lại, và ghi «Em giả định: …»
+trong tổng kết. Ngoại lệ: việc rủi ro cao (tiền, công nợ, phân quyền, cấu trúc DB, prod, `main`,
+gộp mã) vẫn dừng và hỏi như cũ — ở việc đó sổ không được nạp.
+
 ---
 
 ## §E. Danh sách cấm cứng
@@ -132,6 +141,10 @@ docker-compose.production.yml
 mọi thứ ngoài git worktree của task đang làm
 ```
 
+**Cấm ghi, được đọc:** `CLAUDE.md`, thư mục `.claude/`, bộ quy tắc này, và sổ quyết định
+`doc/agent-hub/03-so-quyet-dinh.md` (ai-CR-015). Sổ chỉ thêm mục qua nút «Ghi vào sổ» đại ca
+bấm trên Telegram; bot sửa mã không được tự viết luật cho mình.
+
 ### Cấm chạy
 
 ```
@@ -142,6 +155,11 @@ git push --force · git push ... main · git merge
 curl/wget tới địa chỉ ngoài danh sách cho phép
 mọi lệnh xóa ngoài worktree
 ```
+
+Danh sách này áp cho **tiến trình `claude`** (lượt sửa mã, lượt hỏi thêm). Bước gộp + deploy
+dev của ai-CR-014 (`git merge` · `git push` lên `erp-v2` · `ssh` lên VPS · `docker compose up`
+trên VPS) là **mã của hub trong `agent-runner`**, chạy sau nút «Đồng ý» của đại ca, ngoài
+lượt `claude`; khóa SSH và khóa GitHub không bao giờ vào môi trường của `claude`.
 
 ### Biên container
 
