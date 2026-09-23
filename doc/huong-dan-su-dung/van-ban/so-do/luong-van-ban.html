@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Sơ đồ luồng văn bản</title>
+<!--
+  Sơ đồ «Một văn bản đi qua những bước nào» — chụp #canvas thành hinh/05-luong-van-ban.png
+  (khung 1420×590, tỉ lệ điểm ảnh 2).
+-->
+<link rel="stylesheet" href="so-do-chung.css">
+<style>#canvas { width: 1420px; height: 590px; }</style>
+</head>
+<body>
+<div id="canvas">
+  <div class="lane" style="top:0;height:180px"><div class="lane-label" style="--c:var(--blue)">Người soạn<small>tạo, soạn, gửi</small></div></div>
+  <div class="lane" style="top:180px;height:190px"><div class="lane-label" style="--c:var(--amber)">Người duyệt<small>đọc và quyết định</small></div></div>
+  <div class="lane last" style="top:370px;height:220px"><div class="lane-label" style="--c:var(--green)">Hệ thống<small>tự làm khi ban hành</small></div></div>
+
+  <div class="box" id="b1" style="left:190px;top:40px;width:200px;--c:var(--blue)">
+    <span class="num">1</span><h4>Tạo văn bản</h4>
+    <p>Điền thông tin chính, phạm vi, thông tin bổ sung</p>
+    <span class="chip">Nháp</span>
+  </div>
+  <div class="box" id="b2" style="left:450px;top:40px;width:200px;--c:var(--blue)">
+    <span class="num">2</span><h4>Soạn nội dung</h4>
+    <p>Gõ trên trang A4 hoặc nhập tệp Word/PDF — tự lưu</p>
+    <span class="chip">Nháp</span>
+  </div>
+  <div class="box" id="b3" style="left:710px;top:40px;width:210px;--c:var(--blue)">
+    <span class="num">3</span><h4>Gửi duyệt</h4>
+    <p>Văn bản khóa lại, không ai sửa được</p>
+    <span class="chip">Đang duyệt</span>
+  </div>
+
+  <div class="box" id="b4" style="left:710px;top:225px;width:210px;--c:var(--amber)">
+    <span class="num">4</span><h4>Đọc và quyết định</h4>
+    <p>Một bước, hoặc lần lượt qua nhiều người theo quy trình</p>
+  </div>
+  <div class="box" id="rj" style="left:1010px;top:212px;width:230px;--c:var(--red)">
+    <h4>Đã từ chối</h4>
+    <p>Dừng hẳn, không sửa được nữa. Muốn làm lại thì bấm <b>Sao chép</b> để có bản nháp mới.</p>
+    <span class="chip red">Đã từ chối</span>
+  </div>
+
+  <div class="box" id="b5" style="left:690px;top:400px;width:250px;--c:var(--green)">
+    <span class="num">5</span><h4>Ban hành</h4>
+    <ul>
+      <li>Cấp số hiệu, vào sổ</li>
+      <li>Khóa nội dung phiên bản</li>
+      <li>Báo cho người phải làm theo</li>
+      <li>Tạo bản riêng cho công ty con (nếu có)</li>
+    </ul>
+  </div>
+  <div class="box" id="b6" style="left:1010px;top:418px;width:190px;--c:var(--green)">
+    <span class="num">6</span><h4>Có hiệu lực</h4>
+    <p>Hiệu lực ở ngày sau thì là <b>Đã duyệt</b>, tới ngày tự chuyển</p>
+    <span class="chip green">Có hiệu lực</span>
+  </div>
+  <div class="box" id="b7" style="left:1240px;top:418px;width:165px;--c:var(--violet)">
+    <span class="num">7</span><h4>Về sau</h4>
+    <ul>
+      <li>Sửa thông tin</li>
+      <li>Mở phiên bản mới</li>
+      <li>Bãi bỏ</li>
+      <li>Tạo bản trích</li>
+    </ul>
+  </div>
+  <div class="box dashed" id="wait" style="left:190px;top:410px;width:400px;--c:var(--gray)">
+    <h4>Riêng loại văn bản «chờ người soạn ban hành»</h4>
+    <p>Người duyệt ký xong, văn bản dừng ở <b>Chờ ban hành</b>. Người soạn / người chịu trách nhiệm tự bấm <b>Ban hành</b> và chọn địa chỉ gửi thông báo.</p>
+    <span class="chip gray">Chờ ban hành</span>
+  </div>
+
+  <svg class="arrows"></svg>
+</div>
+<script src="so-do-chung.js"></script>
+<script>
+  const { anchor, arrow, hArrow, vArrow, GAP } = SODO;
+  hArrow('b1', 'b2', 'blue');
+  hArrow('b2', 'b3', 'blue');
+  vArrow('b3', 'b4', 'blue', 'Gửi duyệt');
+  // Trả lại: từ cạnh trái khối 4 vòng lên đáy khối 2
+  const r0 = anchor('b4', 'l'), r2 = anchor('b2', 'b');
+  arrow([r0, [r2[0], r0[1]], [r2[0], r2[1] + GAP]], 'amber', 'Trả lại → sửa, gửi lại');
+  hArrow('b4', 'rj', 'red', 'Từ chối');
+  vArrow('b4', 'b5', 'green', 'Duyệt');
+  hArrow('b5', 'b6', 'green');
+  hArrow('b6', 'b7', 'violet');
+  hArrow('wait', 'b5', 'gray', null, { dashed: true });
+</script>
+</body>
+</html>
