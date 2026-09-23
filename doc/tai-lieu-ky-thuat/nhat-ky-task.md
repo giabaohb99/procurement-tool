@@ -3486,6 +3486,23 @@ và `celery-beat`, chú thích đầu tệp ghi luôn lý do cấm đặt lại 
 `procurement-tool/docker-compose.override.yml` (bản vá tạm ở máy làm việc, không commit).
 Commit: `0c4a0850` trên nhánh `agent-hub-bac-1` (23/09/2026, chưa push).
 
+## ai-CR-029 | Lệnh gộp của Đậu Đậu chỉ gộp, lên dev phải nói ra
+- status: xong
+- date: 2026-09-23
+- pic: NSU209
+
+Đại ca nhắn «gộp AI-0007» thì bot gộp vào erp-v2 và deploy dev luôn, trong khi đại ca không hề bảo lên
+dev. Lỗi nằm ở thiết kế cũ gắn cứng hai bước làm một, và câu mời gộp cũng không nói rõ sẽ lên dev. Nay
+«gộp» chỉ gộp vào nhánh nền rồi báo dev chưa deploy; muốn cả hai thì nhắn «gộp và deploy dev»; bản đã gộp
+thì nhắn «deploy dev» để lên dev sau, lúc đó nhánh nền có thêm bản của người khác cũng được miễn còn chứa
+bản gộp này. Hẹn giờ giữ đúng ý gộp hay deploy. Thu hồi một bản chưa từng lên dev thì chỉ gỡ khỏi nhánh
+nền, không deploy lại. Mọi câu mời và nhắc lệnh đều nói rõ là gộp hay deploy. AI-0007 đã lỡ lên dev và
+đang chạy bình thường nên em để nguyên. Cả tệp bài kiểm 152/152 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/{coder,service,manager}.py` (`merge_and_deploy`, `send_merge_card`,
+`_require_ancestor`, `revert_and_deploy`, `_run_task_command`, `_dispatch_deploy`, `_DEPLOY_WORDS`) ·
+`test/backend/test_agent_hub.py` · `change-log-ai.md`.
+
 ## ai-CR-028 | Đậu Đậu hiểu ý thao tác theo ngữ cảnh, đại ca chỉ cần nói «đồng ý»
 - status: xong
 - date: 2026-09-23

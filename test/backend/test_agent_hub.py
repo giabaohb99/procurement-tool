@@ -3341,7 +3341,7 @@ def test_nhan_chu_gop_viec_vua_sua_thi_gop_ngay(db, bot, monkeypatch):
     _compact(monkeypatch)
     _capture_send(monkeypatch, service)
     merged: list[str] = []
-    monkeypatch.setattr(service, "_dispatch_deploy", lambda db, chat, cb, task: merged.append(task.code))
+    monkeypatch.setattr(service, "_dispatch_deploy", lambda db, chat, cb, task, deploy=True: merged.append(task.code))
     monkeypatch.setattr(service.manager, "run_intent", lambda *a, **kw: pytest.fail("lệnh không đi phân loại"))
     task = _task_with_session(db, service, coder)
     service.handle_message(db, _msg("tự merge code từ commit sửa mới này qua erp"))
@@ -3373,7 +3373,7 @@ def test_cau_hoi_ve_viec_chi_tra_loi_tinh_trang_khong_lam_gi(db, bot, monkeypatc
     service, _, _ = bot
     _compact(monkeypatch)
     sent = _capture_send(monkeypatch, service)
-    monkeypatch.setattr(service, "_dispatch_deploy", lambda *a: pytest.fail("câu hỏi không được gộp"))
+    monkeypatch.setattr(service, "_dispatch_deploy", lambda *a, **kw: pytest.fail("câu hỏi không được gộp"))
     task = _task_with_session(db, service, coder)
     service.handle_message(db, _msg("cái fix này đang trên nhánh nào, có merge sang erp-v2 được không"))
     text = sent[-1][0]
@@ -3388,7 +3388,7 @@ def test_yeu_cau_moi_co_chu_bo_hay_gop_khong_bi_hieu_nham_la_lenh(db, bot, monke
     _compact(monkeypatch)
     _capture_send(monkeypatch, service)
     _fake_intent(monkeypatch, service, "viec")
-    monkeypatch.setattr(service, "_dispatch_deploy", lambda *a: pytest.fail("không được gộp"))
+    monkeypatch.setattr(service, "_dispatch_deploy", lambda *a, **kw: pytest.fail("không được gộp"))
     task = _task_with_session(db, service, coder)
     for msg in ("bỏ nút tạo mới trên màn công nợ", "gộp hai cột ngày giao và ngày nhận", "bỏ ô từ đến"):
         service.handle_message(db, _msg(msg))
@@ -3403,7 +3403,7 @@ def test_nhieu_viec_thi_hoi_lai_viec_nao(db, bot, monkeypatch):
     service, _, _ = bot
     _compact(monkeypatch)
     sent = _capture_send(monkeypatch, service)
-    monkeypatch.setattr(service, "_dispatch_deploy", lambda *a: pytest.fail("chưa rõ việc nào"))
+    monkeypatch.setattr(service, "_dispatch_deploy", lambda *a, **kw: pytest.fail("chưa rõ việc nào"))
     a = _task_with_session(db, service, coder)
     b = _task_with_session(db, service, coder)
     service.handle_message(db, _msg("gộp đi"))
@@ -3476,7 +3476,7 @@ def test_dong_y_sau_de_nghi_gop_thi_gop_luon(db, bot, monkeypatch):
     _compact(monkeypatch)
     _capture_send(monkeypatch, service)
     merged: list[str] = []
-    monkeypatch.setattr(service, "_dispatch_deploy", lambda db, chat, cb, task: merged.append(task.code))
+    monkeypatch.setattr(service, "_dispatch_deploy", lambda db, chat, cb, task, deploy=True: merged.append(task.code))
     task = _task_with_session(db, service, coder)
     service.reply(db, "12345", f"Gộp được: nhắn «gộp {task.code}».", task_id=task.id)
     seen: list[dict] = []
@@ -3496,7 +3496,7 @@ def test_chua_chac_thi_hoi_lai_roi_dung_moi_lam(db, bot, monkeypatch):
     _compact(monkeypatch)
     sent = _capture_send(monkeypatch, service)
     merged: list[str] = []
-    monkeypatch.setattr(service, "_dispatch_deploy", lambda db, chat, cb, task: merged.append(task.code))
+    monkeypatch.setattr(service, "_dispatch_deploy", lambda db, chat, cb, task, deploy=True: merged.append(task.code))
     task = _task_with_session(db, service, coder)
     _fake_act(monkeypatch, service, action="merge", task=task.code, confident=False)
     service.handle_message(db, _msg("đẩy cái đó lên luôn đi em"))
@@ -3519,7 +3519,7 @@ def test_khong_thi_khong_lam(db, bot, monkeypatch):
     service, _, _ = bot
     _compact(monkeypatch)
     sent = _capture_send(monkeypatch, service)
-    monkeypatch.setattr(service, "_dispatch_deploy", lambda *a: pytest.fail("đại ca đã nói không"))
+    monkeypatch.setattr(service, "_dispatch_deploy", lambda *a, **kw: pytest.fail("đại ca đã nói không"))
     task = _task_with_session(db, service, coder)
     _fake_act(monkeypatch, service, action="merge", task=task.code, confident=False)
     service.handle_message(db, _msg("cho nó lên dev nhé"))
@@ -3574,3 +3574,81 @@ def test_run_intent_doc_thao_tac_va_ha_nhan_la_ve_mo_ho(monkeypatch):
     assert "VIỆC ĐANG MỞ" in seen[0] and "Tin nhắn mới:\nđồng ý" in seen[0]
     data, _ = manager.run_intent("xóa nhánh đi")
     assert data["intent"] == "mo_ho"
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-029: «gộp» chỉ gộp vào nhánh nền, lên dev phải nói ra
+# ---------------------------------------------------------------------------
+def test_lenh_gop_chi_gop_con_deploy_phai_noi_ra(db, bot, monkeypatch):
+    from app.modules.agent_hub import coder
+
+    service, _, _ = bot
+    _compact(monkeypatch)
+    _capture_send(monkeypatch, service)
+    calls: list[tuple] = []
+    monkeypatch.setattr(service, "_dispatch_deploy",
+                        lambda db, chat, cb, task, deploy=True: calls.append((task.code, deploy)))
+    a = _task_with_session(db, service, coder)
+    service.handle_message(db, _msg(f"gộp {a.code}"))
+    service.handle_message(db, _msg(f"gộp và deploy dev {a.code}"))
+    service.handle_message(db, _msg(f"gộp {a.code} rồi đẩy lên dev luôn"))
+    assert calls == [(a.code, False), (a.code, True), (a.code, True)]
+
+
+def test_chi_gop_thi_khong_ssh_va_viec_cho_deploy(db, bot, monkeypatch):
+    from app.modules.agent_hub import coder
+
+    service, _, _ = bot
+    _compact(monkeypatch)
+    _deploy_on(monkeypatch)
+    sent = _capture_send(monkeypatch, service)
+    git_calls, scripts = _fake_merge_stack(monkeypatch, coder)
+    task = _task_with_session(db, service, coder)
+    run = service._new_deploy_run(db, task, STAGE_DEPLOY, "ngay", deploy=False)
+    out = coder.merge_and_deploy(db, task, run)
+    assert out["deployed"] is False and scripts == []
+    assert any(c[1] == "merge" for c in git_calls) and any(c[1] == "push" for c in git_calls)
+    assert task.status == service.ST_PROD and task.deployed_dev_at is None
+    assert "Dev CHƯA deploy" in sent[-1][0] and f"«deploy dev {task.code}»" in sent[-1][0]
+    #  «gộp» lần nữa không gộp lại, chỉ nhắc cách lên dev.
+    monkeypatch.setattr(coder, "dispatch_deploy", lambda *a: pytest.fail("đã gộp rồi"))
+    service.handle_message(db, _msg(f"gộp {task.code}"))
+    assert "dev chưa lên" in sent[-1][0]
+    #  «deploy dev» (không cần mã: chỉ một việc đang chờ lên dev) -> lượt deploy, bỏ qua bước gộp.
+    dispatched: list[int] = []
+    monkeypatch.setattr(coder, "dispatch_deploy", lambda tid, rid: dispatched.append(rid))
+    service.handle_message(db, _msg("deploy dev đi"))
+    run2 = _deploy_runs(db, task)[-1]
+    assert dispatched == [run2.id] and run2.artifact["deploy"] is True
+    before = len(git_calls)
+    assert coder.merge_and_deploy(db, task, run2)["status"] == "ok"
+    assert not any(c[1] == "merge" for c in git_calls[before:]) and len(scripts) == 1
+    assert task.deployed_dev_at is not None
+
+
+def test_deploy_dev_khi_chua_gop_thi_noi_can_gop_truoc(db, bot, monkeypatch):
+    from app.modules.agent_hub import coder
+
+    service, _, _ = bot
+    _compact(monkeypatch)
+    sent = _capture_send(monkeypatch, service)
+    monkeypatch.setattr(service, "_dispatch_deploy", lambda *a, **kw: pytest.fail("chưa gộp"))
+    task = _task_with_session(db, service, coder)
+    service.handle_message(db, _msg(f"deploy dev {task.code}"))
+    assert "chưa gộp" in sent[-1][0] and f"«gộp và deploy dev {task.code}»" in sent[-1][0]
+
+
+def test_thu_hoi_ban_chi_gop_thi_khong_deploy_lai(db, bot, monkeypatch):
+    from app.modules.agent_hub import coder
+
+    service, _, _ = bot
+    _compact(monkeypatch)
+    _deploy_on(monkeypatch)
+    sent = _capture_send(monkeypatch, service)
+    _git_calls, scripts = _fake_merge_stack(monkeypatch, coder)
+    task = _task_with_session(db, service, coder)
+    coder.merge_and_deploy(db, task, service._new_deploy_run(db, task, STAGE_DEPLOY, "ngay", deploy=False))
+    rrun = service._new_deploy_run(db, task, STAGE_REVERT, "ngay")
+    assert coder.revert_and_deploy(db, task, rrun)["status"] == "ok"
+    assert scripts == [] and "không deploy lại" in sent[-1][0]
+    assert task.status == ST_NEEDS_INPUT

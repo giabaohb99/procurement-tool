@@ -1415,8 +1415,8 @@ def send_compact_review_card(db: Session, task: AgentTask, *, gate: dict, escala
         if gate.get("status") == "fail":
             lines += [f"Nhắn «sửa cho xanh {code}» để em sửa cho qua cổng kiểm, «chi tiết {code}» để xem."]
         else:
-            lines += [f"Nhắn «gộp {code}» để gộp vào <code>{esc(settings.AGENT_BASE_BRANCH)}</code> + "
-                      f"deploy dev · «chi tiết {code}» để xem kỹ."]
+            lines += [f"Nhắn «gộp {code}» để gộp vào <code>{esc(settings.AGENT_BASE_BRANCH)}</code> (chưa lên "
+                      f"dev) · «gộp và deploy dev {code}» để làm cả hai · «chi tiết {code}» để xem kỹ."]
     service.reply(db, settings.AGENT_TELEGRAM_CHAT_ID, "\n".join(lines), task_id=task.id)
 
 
@@ -1748,7 +1748,7 @@ def _fail_deploy(db: Session, task: AgentTask, run: AgentRun, err: str, *, pushe
                 f"(bản gộp <code>{esc(str(art.get('merge_sha') or '')[:10])}</code>) nhưng deploy dev "
                 f"HỎNG: {esc(err[:700])}\n\nBấm «Deploy dev lại» sau khi sửa nguyên nhân, hoặc «Thu hồi» "
                 "để bot revert bản gộp và deploy lại bản trước."
-                + cmd_hint(f"Nhắn «gộp {esc(task.code)}» để deploy dev lại, «thu hồi {esc(task.code)}» "
+                + cmd_hint(f"Nhắn «deploy dev {esc(task.code)}» để deploy lại, «thu hồi {esc(task.code)}» "
                            "để revert."))
         buttons = [("Deploy dev lại", f"mgok:{task.id}"), ("Thu hồi khỏi erp-v2 + dev", f"rv:{task.id}")]
     else:
@@ -1765,7 +1765,10 @@ def _fail_deploy(db: Session, task: AgentTask, run: AgentRun, err: str, *, pushe
 
 
 def merge_and_deploy(db: Session, task: AgentTask, run: AgentRun) -> dict:
-    """Một lượt: gộp (nếu chưa) -> đẩy -> ssh deploy -> health -> thẻ. Mọi lỗi thành thẻ + trạm đúng.
+    """Một lượt: gộp (nếu chưa) -> đẩy -> [ssh deploy -> health] -> thẻ. Mọi lỗi thành thẻ + trạm đúng.
+
+    Cờ `deploy` trong dòng sổ (ai-CR-029): đại ca nhắn «gộp» là CHỈ gộp vào nhánh nền, không lên dev;
+    «deploy dev» / «gộp và deploy dev» mới SSH. Thiếu cờ (nút bấm cũ ghi «Gộp + deploy dev») = cả hai.
 
     Bước gộp + đẩy chỉ chạy khi việc CHƯA có bản gộp sống (`merged_sha_for`): «Deploy dev lại» sau
     một lượt deploy hỏng thì đi thẳng tới ssh. `run.artifact["merged"]` được ghi và commit NGAY sau
@@ -1774,28 +1777,44 @@ def merge_and_deploy(db: Session, task: AgentTask, run: AgentRun) -> dict:
     from . import service
 
     art = dict(run.artifact) if isinstance(run.artifact, dict) else {}
+    deploy = art.get("deploy", True)
     task.status = ST_DEPLOYING
     db.commit()
     sha = merged_sha_for(db, task)
     pushed = bool(sha)
+    merged_now = False
     try:
         if not pushed:
             sha = merge_into_base(task)
             art.update(merged=True, merge_sha=sha)
             run.artifact = art
             db.commit()
-            pushed = True
-        wt = str(Path(settings.AGENT_WORKTREE_ROOT) / "merge")
-        try:
-            paths = changed_paths_of_head(wt)
-        except CoderError:
+            pushed = merged_now = True
+        if not deploy:
+            task.status = ST_PROD
+            task.deployed_dev_at = None
+            _close_run(run, status=RUN_OK, artifact={**art, "merged": True, "merge_sha": sha})
+            db.commit()
+            send_merge_card(db, task, sha=sha)
+            return {"status": "ok", "merge_sha": sha, "deployed": False}
+        if merged_now:
+            wt = str(Path(settings.AGENT_WORKTREE_ROOT) / "merge")
+            try:
+                paths = changed_paths_of_head(wt)
+            except CoderError:
+                paths = [f["path"] for f in _code_artifact(db, task).get("files") or []]
+        else:
+            #  Gộp từ lượt trước, nay mới deploy: HEAD của worktree gộp không còn là bản gộp này.
             paths = [f["path"] for f in _code_artifact(db, task).get("files") or []]
         services = deploy_services_for(paths)
         out = run_ssh(deploy_script(services))
         head = _parse_head(out)
         if head and not sha.startswith(head) and not head.startswith(sha):
-            raise CoderError(f"VPS đang ở {head[:10]}, không phải bản vừa gộp {sha[:10]} — "
-                             "nhánh nền có bản đẩy khác chen vào?")
+            if merged_now:
+                raise CoderError(f"VPS đang ở {head[:10]}, không phải bản vừa gộp {sha[:10]} — "
+                                 "nhánh nền có bản đẩy khác chen vào?")
+            #  Deploy sau: nhánh nền được phép đi tiếp, miễn còn chứa bản gộp của việc này.
+            _require_ancestor(sha, head)
         health = wait_dev_health()
     except (CoderError, subprocess.TimeoutExpired, OSError) as e:
         err = str(e) if not isinstance(e, subprocess.TimeoutExpired) else \
@@ -1811,6 +1830,29 @@ def merge_and_deploy(db: Session, task: AgentTask, run: AgentRun) -> dict:
     db.commit()
     send_deploy_card(db, task, sha=sha, services=services, health=health, reverted=False)
     return {"status": "ok", "merge_sha": sha, "services": services, "health": health}
+
+
+def _require_ancestor(sha: str, head: str) -> None:
+    wt = _merge_worktree()
+    try:
+        _git(wt, "merge-base", "--is-ancestor", sha, head, timeout=60)
+    except CoderError:
+        raise CoderError(f"VPS đang ở {head[:10]} mà bản này không chứa bản gộp {sha[:10]} "
+                         "(ai đó đã revert/reset nhánh nền?)") from None
+
+
+def send_merge_card(db: Session, task: AgentTask, *, sha: str) -> None:
+    """Thẻ «chỉ gộp, chưa lên dev» (ai-CR-029)."""
+    from . import service
+
+    esc = telegram.esc
+    code = esc(task.code)
+    service.reply(db, settings.AGENT_TELEGRAM_CHAT_ID, "\n".join([
+        f"<b>{code}</b> · {esc(task.title)}",
+        f"Đã gộp vào <code>{esc(settings.AGENT_BASE_BRANCH)}</code> (bản gộp <code>{esc(sha[:10])}</code>). "
+        "Dev CHƯA deploy.",
+        f"Muốn lên dev thì nhắn «deploy dev {code}»; gộp nhầm thì «thu hồi {code}».",
+    ]), task_id=task.id)
 
 
 def _code_artifact(db: Session, task: AgentTask) -> dict:
@@ -1847,9 +1889,13 @@ def revert_and_deploy(db: Session, task: AgentTask, run: AgentRun) -> dict:
         revert_sha = _git(wt, "rev-parse", "HEAD", timeout=60).strip()
         _push_base_branch(wt)
         pushed = True
-        services = deploy_services_for(changed_paths_of_head(wt))
-        out = run_ssh(deploy_script(services))
-        health = wait_dev_health()
+        #  Dev chưa từng lên bản này (chỉ gộp, ai-CR-029) thì thu hồi cũng chỉ ở nhánh nền.
+        if task.deployed_dev_at:
+            services = deploy_services_for(changed_paths_of_head(wt))
+            out = run_ssh(deploy_script(services))
+            health = wait_dev_health()
+        else:
+            services, out, health = [], "", -2
     except (CoderError, subprocess.TimeoutExpired, OSError) as e:
         err = str(e) if not isinstance(e, subprocess.TimeoutExpired) else \
             f"deploy quá {DEPLOY_TIMEOUT_SEC // 60} phút chưa xong"
@@ -1884,7 +1930,13 @@ def send_deploy_card(db: Session, task: AgentTask, *, sha: str, services: list[s
         health_line = (f"Health dev: <b>CHƯA XANH</b> (mã {health or 'không nối được'} sau "
                        f"{HEALTH_ATTEMPTS * HEALTH_DELAY_SEC // 60} phút) — xem log trên VPS")
     svc = ", ".join(f"<code>{esc(s)}</code>" for s in services) or "không có (chỉ doc/test)"
-    if reverted:
+    if reverted and health == -2:
+        head = [f"<b>{esc(task.code)}</b> · {esc(task.title)}",
+                f"Đã THU HỒI khỏi <code>{base}</code> bằng bản revert <code>{esc(sha[:10])}</code>. "
+                "Dev chưa từng lên bản này nên không deploy lại.", "",
+                "Việc về «Đang hỏi lại»: nhắn cần sửa gì rồi /gom để bot làm lại từ đầu."]
+        buttons = [("Hỏi thêm về bản vá", f"ask:{task.id}"), ("Bỏ việc này", f"no:{task.id}")]
+    elif reverted:
         head = [f"<b>{esc(task.code)}</b> · {esc(task.title)}",
                 f"Đã THU HỒI khỏi <code>{base}</code> bằng bản revert <code>{esc(sha[:10])}</code> "
                 "và deploy lại dev bản trước.",

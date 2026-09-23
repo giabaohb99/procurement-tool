@@ -360,12 +360,14 @@ Có bốn kết quả:
   diện, đổi cách tính, xin một màn hình mới, nhờ làm tài liệu.
 - "thao_tac": người ta muốn làm gì đó với MỘT VIỆC có trong danh sách VIỆC ĐANG MỞ bên dưới —
   kể cả chỉ nói «đồng ý», «ok», «làm đi», «thôi» để đáp lại đề nghị trong TIN BOT VỪA NHẮN. Khi
-  đó điền thêm `action` (một trong: duyet · sua_ke_hoach · gop · thu_hoi · xong · bo · lam_tiep ·
+  đó điền thêm `action` (một trong: duyet · sua_ke_hoach · gop · deploy_dev · thu_hoi · xong · bo · lam_tiep ·
   sua_cho_xanh · chi_tiet · mo_pr · tinh_trang · ghi_so · khong_ghi_so), `task` (mã việc, vd
   "AI-0007"), `when` (giờ hẹn nếu có, vd "20h", "45 phút nữa"), `detail` (điều cần đổi khi
   sua_ke_hoach), `confident` (true/false).
   `confident` = true CHỈ khi rõ cả việc nào lẫn làm gì: người ta nói rõ, hoặc vừa «đồng ý» đúng
   đề nghị bot vừa đưa về đúng việc đó. Với gop · thu_hoi · bo mà còn chút nghi ngờ thì false.
+  gop = gộp vào nhánh nền (có nhắc lên dev thì vẫn là gop, hệ thống tự đọc chữ «deploy/lên dev»);
+  deploy_dev = chỉ đưa bản ĐÃ gộp lên dev.
   Hỏi về một việc («xong chưa», «nhánh nào», «merge được không») là tinh_trang, không phải gop.
   Một yêu cầu sửa phần mềm MỚI (dù có chữ «gộp», «bỏ») là "viec", không phải thao_tac.
 - "mo_ho": đọc xong vẫn không chắc, hoặc tin quá ngắn/cụt để biết người ta muốn gì.
@@ -398,7 +400,8 @@ hoặc với thao tác:
 INTENT_ACT = "thao_tac"
 #  Nhãn thao tác của model -> tên thao tác nội bộ của `service._run_task_command` (ai-CR-028).
 ACTIONS = {
-    "duyet": "approve", "sua_ke_hoach": "replan", "gop": "merge", "thu_hoi": "revert", "xong": "done",
+    "duyet": "approve", "sua_ke_hoach": "replan", "gop": "merge", "deploy_dev": "deploy", "thu_hoi": "revert",
+    "xong": "done",
     "bo": "cancel", "lam_tiep": "continue", "sua_cho_xanh": "fixgate", "chi_tiet": "detail",
     "mo_pr": "pr", "tinh_trang": "status", "ghi_so": "rule_yes", "khong_ghi_so": "rule_no",
 }

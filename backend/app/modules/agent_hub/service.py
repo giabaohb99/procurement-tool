@@ -321,7 +321,9 @@ def _active_stage(db: Session, task: AgentTask) -> tuple[str, datetime | None]:
             ("chờ runner rảnh để sửa mã", task.updated_at)
     if task.status == ST_DEPLOYING:
         run = running(STAGE_DEPLOY) or running(STAGE_REVERT)
-        return "gộp vào nhánh nền và deploy dev", (run.started_at if run is not None else task.updated_at)
+        art = run.artifact if run is not None and isinstance(run.artifact, dict) else {}
+        label = "gộp vào nhánh nền" if art.get("deploy") is False else "gộp vào nhánh nền và deploy dev"
+        return label, (run.started_at if run is not None else task.updated_at)
     if task.status == ST_TRIAGE:
         #  Lượt lập kế hoạch chỉ commit dòng sổ khi xong nên từ ngoài không thấy nó: dựa vào mốc
         #  việc vào trạm này (updated_at), và chỉ trong 15 phút — lâu hơn là kẹt, không phải đang chạy.
@@ -387,7 +389,9 @@ _TASK_DEICTIC = re.compile(
 #  Lệnh TRƠN (không mã việc, không cụm chỉ vào việc): chỉ gồm động từ + vài chữ đệm. «gộp hai cột
 #  ngày» không khớp -> không phải lệnh, đi đường cũ thành việc mới.
 _BARE = {
-    "merge": r"^(tự\s+)?(gộp|merge)(\s+(đi|luôn|nhé|nha|code|vào|qua|lên|erp[-\s]?v2|dev|nhánh|nền|giúp|anh|em))*[.! ]*$",
+    "merge": r"^(tự\s+)?(gộp|merge)(\s+(đi|luôn|nhé|nha|code|vào|qua|lên|erp[-\s]?v2|dev|nhánh|nền|giúp|anh|em"
+             r"|và|rồi|deploy|triển khai|đẩy))*[.! ]*$",
+    "deploy": r"^(deploy|triển khai|đẩy lên dev|lên dev)(\s+(dev|đi|luôn|nhé|nha|lại|giúp|anh|em|lên))*[.! ]*$",
     "approve": r"^(ok[, ]+)?duyệt(\s+(đi|luôn|nhé|nha|kế hoạch))*[.! ]*$",
     "done": r"^(xong|đóng)(\s+(rồi|việc|nhé|đi|nha))*[.! ]*$",
     "cancel": r"^(bỏ|hủy)(\s+(việc|đi|luôn))+[.! ]*$",
@@ -406,6 +410,7 @@ _COMMANDS = (   # (tên, mẫu) — thứ tự là thứ tự ưu tiên
     ("continue", r"(?<!\w)làm tiếp(?!\w)"),
     ("revert", r"(?<!\w)(thu hồi|revert)(?!\w)"),
     ("merge", r"(?<!\w)(gộp|merge)(?!\w)"),
+    ("deploy", r"(?<!\w)(deploy|triển khai|lên dev)(?!\w)"),
     ("approve", r"^(ok[, ]+)?duyệt(?!\w)"),
     ("replan", r"^sửa( lại)?\s*[:：]"),
     ("pr", r"(?<!\w)(mở pr|link pr)(?!\w)"),
@@ -414,7 +419,7 @@ _COMMANDS = (   # (tên, mẫu) — thứ tự là thứ tự ưu tiên
     ("cancel", r"^(bỏ|hủy)\s+(việc|đi|luôn|hẹn)(?!\w)|^(bỏ|hủy)\s+ai[-\s]?\d"),
 )
 _OPEN_FOR = {   # thao tác -> trạng thái việc hợp lệ khi đoán việc (không nêu mã)
-    "merge": (ST_REVIEW, ST_PROD), "revert": (ST_PROD,), "approve": (ST_PLAN,),
+    "merge": (ST_REVIEW, ST_PROD), "deploy": (ST_PROD,), "revert": (ST_PROD,), "approve": (ST_PLAN,),
     "replan": (ST_PLAN, ST_NEEDS_INPUT), "continue": (ST_NEEDS_INPUT,), "fixgate": (ST_REVIEW,),
     "done": (ST_REVIEW, ST_PROD), "pr": (ST_REVIEW,), "cancel": None, "detail": None, "status": None,
 }
@@ -436,6 +441,8 @@ def _candidates(db: Session, action: str) -> list[AgentTask]:
     rows = list(db.scalars(q.order_by(AgentTask.updated_at.desc()).limit(10)))
     if action == "merge":
         rows = [t for t in rows if not (t.status == ST_PROD and t.deployed_dev_at)]
+    if action == "deploy":
+        rows = [t for t in rows if not t.deployed_dev_at and coder.merged_sha_for(db, t)]
     if action == "revert":
         rows = [t for t in rows if coder.merged_sha_for(db, t)]
     if action == "fixgate":
@@ -490,6 +497,16 @@ def route_task_command(db: Session, chat_id: str, row: AgentMessage, text: str) 
     return True
 
 
+_DEPLOY_WORDS = re.compile(r"(?<!\w)(deploy|triển khai|lên dev|đẩy dev)(?!\w)")
+
+
+def _deploy_what(deploy: bool, merged: bool) -> str:
+    base = f"<code>{telegram.esc(settings.AGENT_BASE_BRANCH)}</code>"
+    if not deploy:
+        return f"gộp vào {base} (không deploy dev)"
+    return "deploy dev" if merged else f"gộp vào {base} + deploy dev"
+
+
 def _run_task_command(db: Session, chat_id: str, row: AgentMessage, task: AgentTask, action: str,
                       text: str) -> None:
     code = telegram.esc(task.code)
@@ -499,19 +516,33 @@ def _run_task_command(db: Session, chat_id: str, row: AgentMessage, task: AgentT
         show_task(db, chat_id, task.code)
     elif task.status in CLOSED_STATUSES:
         reply(db, chat_id, f"<b>{code}</b> đã đóng rồi. Xem lại: «chi tiết {code}».", task_id=task.id)
-    elif action == "merge":
+    elif action in ("merge", "deploy"):
         #  Đại ca GÕ lệnh gộp = đồng ý gộp (luật ai-CR-014: muốn gộp phải hỏi, anh đồng ý mới làm).
+        #  «gộp» CHỈ gộp vào nhánh nền; lên dev phải nói ra (ai-CR-029).
+        deploy = action == "deploy" or bool(_DEPLOY_WORDS.search(text.lower()))
+        merged = bool(coder.merged_sha_for(db, task))
+        if action == "deploy" and not merged:
+            reply(db, chat_id, f"<b>{code}</b> chưa gộp vào <code>{telegram.esc(settings.AGENT_BASE_BRANCH)}"
+                  f"</code> nên chưa lên dev được. Nhắn «gộp và deploy dev {code}» để làm cả hai.", task_id=task.id)
+            db.commit()
+            return
+        if merged and not deploy:
+            reply(db, chat_id, f"<b>{code}</b> đã gộp vào <code>{telegram.esc(settings.AGENT_BASE_BRANCH)}</code> "
+                  + ("và đã lên dev rồi." if task.deployed_dev_at else f"rồi, dev chưa lên. Muốn lên dev thì nhắn "
+                     f"«deploy dev {code}»."), task_id=task.id)
+            db.commit()
+            return
+        what = _deploy_what(deploy, merged)
         when = parse_schedule_time(text, now_local()) if _SCHEDULE_WORDS.search(text.lower()) else None
         if when is not None and (blocked := _deploy_blocker(db, task)):
             reply(db, chat_id, f"<b>{code}</b>: {telegram.esc(blocked)}", task_id=task.id)
         elif when is not None and when > now_local():
-            _new_deploy_run(db, task, STAGE_DEPLOY, "hen_gio",
+            _new_deploy_run(db, task, STAGE_DEPLOY, "hen_gio", deploy=deploy,
                             scheduled_for=to_utc(when).isoformat(timespec="minutes"), approved_by=chat_id)
-            reply(db, chat_id, f"Đã hẹn <b>{when:%H:%M %d/%m}</b>: gộp <b>{code}</b> vào "
-                  f"<code>{telegram.esc(settings.AGENT_BASE_BRANCH)}</code> + deploy dev. Đổi ý thì nhắn "
+            reply(db, chat_id, f"Đã hẹn <b>{when:%H:%M %d/%m}</b>: {what} <b>{code}</b>. Đổi ý thì nhắn "
                   f"«hủy hẹn {code}».", task_id=task.id)
         else:
-            _dispatch_deploy(db, chat_id, "", task)
+            _dispatch_deploy(db, chat_id, "", task, deploy=deploy)
     elif action == "revert":
         _dispatch_revert(db, chat_id, "", task)
     elif action == "approve":
@@ -560,9 +591,10 @@ def task_status_line(db: Session, task: AgentTask) -> str:
     nxt = {
         ST_PLAN: f"Nhắn «duyệt» để em sửa mã hoặc «sửa: …».",
         ST_REVIEW: (f"Nhắn «sửa cho xanh {code}»." if _red_gate(db, task)
-                    else f"Gộp được: nhắn «gộp {code}» (thêm «lúc 20h» để hẹn giờ)."),
+                    else f"Gộp được: nhắn «gộp {code}» (chỉ gộp, chưa lên dev) hoặc «gộp và deploy dev "
+                         f"{code}»; thêm «lúc 20h» để hẹn giờ."),
         ST_PROD: (f"Nhắn «xong {code}» nếu ổn, «thu hồi {code}» nếu không." if task.deployed_dev_at
-                  else f"Nhắn «gộp {code}» để deploy dev lại."),
+                  else f"Dev chưa lên: nhắn «deploy dev {code}», hoặc «thu hồi {code}» nếu gộp nhầm."),
         ST_NEEDS_INPUT: (f"Nhắn «làm tiếp {code}»." if coder.resumable_session(db, task)
                          else "Em đang chờ đại ca trả lời câu hỏi ở thẻ kế hoạch."),
     }.get(task.status, "")
@@ -623,13 +655,14 @@ _YES = re.compile(r"^(đúng|đúng rồi|ừ|ừm|ờ|ok|oke|okay|được|đ�
 _NO = re.compile(r"^(không|ko|khong|sai|thôi|đừng|chưa)(\s+(phải|đúng|làm|đâu|rồi|nhé|nha|em|đi))*[.! ]*$")
 #  Nhãn nói lại cho đại ca nghe khi hỏi xác nhận.
 _ACTION_LABELS = {
-    "approve": "duyệt kế hoạch", "replan": "lập lại kế hoạch", "merge": "gộp + deploy dev",
+    "approve": "duyệt kế hoạch", "replan": "lập lại kế hoạch", "merge": "gộp vào nhánh nền",
+    "deploy": "deploy dev",
     "revert": "thu hồi khỏi nhánh nền", "done": "đóng việc", "cancel": "bỏ việc", "continue": "làm tiếp",
     "fixgate": "sửa cho cổng kiểm xanh", "detail": "xem chi tiết", "pr": "mở PR",
     "status": "báo tình trạng", "rule_yes": "ghi vào sổ quyết định", "rule_no": "không ghi sổ",
 }
 #  Thao tác đổi mã/nhánh: model nói chắc vẫn phải khớp đúng bước của việc mới được làm ngay.
-_RISKY_ACTIONS = ("merge", "revert", "cancel")
+_RISKY_ACTIONS = ("merge", "deploy", "revert", "cancel")
 
 
 def _task_context(db: Session, chat_id: str, before_id: int) -> str:
@@ -681,8 +714,10 @@ def _act_by_intent(db: Session, chat_id: str, row: AgentMessage, text: str, data
         states = _OPEN_FOR.get(action)
         sure = task in _candidates(db, action) if states else task.status not in CLOSED_STATUSES
     cmd_text = text
-    if action == "merge" and data.get("when"):
-        cmd_text = f"gộp {data['when']}"
+    if action in ("merge", "deploy") and data.get("when"):
+        #  Giữ chữ «deploy/lên dev» của câu gốc: nó quyết định có lên dev hay chỉ gộp (ai-CR-029).
+        cmd_text = f"gộp {data['when']}" + (" deploy dev" if action == "deploy" or _DEPLOY_WORDS.search(text.lower())
+                                             else "")
     row.action = ACT_COMMAND
     row.task_id = task.id
     if not sure:
@@ -993,14 +1028,16 @@ def _confirm_deploy(db: Session, chat_id: str, cb_id: str, task: AgentTask) -> N
     ])
 
 
-def _dispatch_deploy(db: Session, chat_id: str, cb_id: str, task: AgentTask) -> None:
-    """Nút «Đồng ý»: ghi dòng sổ rồi giao runner. Đây là lần DUY NHẤT lệnh gộp được phát."""
+def _dispatch_deploy(db: Session, chat_id: str, cb_id: str, task: AgentTask, *, deploy: bool = True) -> None:
+    """Nút «Đồng ý» / lệnh chữ: ghi dòng sổ rồi giao runner. Đây là lần DUY NHẤT lệnh gộp được phát.
+    `deploy=False` = chỉ gộp vào nhánh nền (ai-CR-029); nút bấm cũ ghi «Gộp + deploy dev» nên mặc định True."""
     code = telegram.esc(task.code)
     if blocked := _deploy_blocker(db, task):
         telegram.answer_callback(cb_id, "Chưa gộp được, xem lý do")
         reply(db, chat_id, f"<b>{code}</b>: {telegram.esc(blocked)}", task_id=task.id)
         return
-    run = _new_deploy_run(db, task, STAGE_DEPLOY, "ngay", approved_by=chat_id)
+    merged = bool(coder.merged_sha_for(db, task))
+    run = _new_deploy_run(db, task, STAGE_DEPLOY, "ngay", approved_by=chat_id, deploy=deploy)
     try:
         coder.dispatch_deploy(task.id, run.id)
     except Exception as e:  # noqa: BLE001 — broker chết thì đóng lượt, nút bấm lại được
@@ -1010,9 +1047,10 @@ def _dispatch_deploy(db: Session, chat_id: str, cb_id: str, task: AgentTask) -> 
         reply(db, chat_id, f"<b>{code}</b>: không giao được cho runner: {telegram.esc(str(e)[:300])}",
               task_id=task.id, buttons=[("Gộp erp-v2 + deploy dev", f"mg:{task.id}")])
         return
-    telegram.answer_callback(cb_id, "Đang gộp + deploy dev…")
-    reply(db, chat_id, f"<b>{code}</b>: đang gộp vào <code>{telegram.esc(settings.AGENT_BASE_BRANCH)}"
-          "</code> và deploy dev, thường 5-12 phút. Xong em gửi thẻ.", task_id=task.id)
+    telegram.answer_callback(cb_id, "Đang chạy…")
+    what = _deploy_what(deploy, merged)
+    eta = "thường 5-12 phút" if deploy else "khoảng 1 phút"
+    reply(db, chat_id, f"<b>{code}</b>: đang {what}, {eta}. Xong em báo.", task_id=task.id)
 
 
 def _invite_deploy_time(db: Session, chat_id: str, cb_id: str, task: AgentTask) -> None:
@@ -1160,9 +1198,10 @@ def dispatch_due_deploys(db: Session, now: datetime | None = None) -> int:
         run.artifact = {**art, "phase": "dispatched", "dispatched_at": now.isoformat(timespec="minutes")}
         db.commit()
         coder.dispatch_deploy(task.id, run.id)
+        what = _deploy_what(art.get("deploy", True), bool(coder.merged_sha_for(db, task)))
         reply(db, settings.AGENT_TELEGRAM_CHAT_ID,
-              f"Tới giờ hẹn {fmt_local(when, '%H:%M')}: em bắt đầu gộp <b>{telegram.esc(task.code)}</b> vào "
-              f"<code>{telegram.esc(settings.AGENT_BASE_BRANCH)}</code> + deploy dev.", task_id=task.id)
+              f"Tới giờ hẹn {fmt_local(when, '%H:%M')}: em bắt đầu {what} <b>{telegram.esc(task.code)}</b>.",
+              task_id=task.id)
         count += 1
     return count
 
