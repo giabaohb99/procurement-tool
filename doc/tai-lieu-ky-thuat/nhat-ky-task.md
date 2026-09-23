@@ -3484,6 +3484,7 @@ giống hệt lệnh đã ghi cho stack gốc.
 Mã nguồn: `docker-compose.agent.yml` (service `agent-api`, `depends_on` ghi đè ở `celery-worker`
 và `celery-beat`, chú thích đầu tệp ghi luôn lý do cấm đặt lại tên cũ) ·
 `procurement-tool/docker-compose.override.yml` (bản vá tạm ở máy làm việc, không commit).
+Commit: `0c4a0850` trên nhánh `agent-hub-bac-1` (23/09/2026, chưa push).
 
 ## ai-CR-019 | Runner tự chạy typecheck, lint và vitest cho phần frontend-v2 vừa sửa
 - status: xong
@@ -3508,6 +3509,7 @@ việc còn nợ của sổ thay đổi mảng AI, kèm phương án và bốn c
 Mã nguồn: `backend/app/modules/agent_hub/coder.py` (`run_fe_gate`, `ensure_fe_deps`,
 `link_fe_deps`, `fe_vitest_targets`, `fe_gate_line`) · `test/backend/test_agent_hub.py` ·
 `doc/agent-hub/01-thiet-ke-ky-thuat.md` · `change-log-ai.md`.
+Commit: `0c4a0850` trên nhánh `agent-hub-bac-1` (23/09/2026, chưa push).
 
 ## ai-CR-018 | Đậu Đậu so nhánh main khi rà soát và đọc tài liệu chưa commit ở máy
 - status: xong
@@ -3530,6 +3532,7 @@ Mã nguồn: `backend/app/modules/agent_hub/{coder,memory}.py` (`fetch_base`, `l
 `build_scan_brief`, `rel_path`) · `backend/app/core/config.py` (`AGENT_MAIN_BRANCH`,
 `AGENT_LOCAL_DOCS_DIR`) · `docker-compose.agent.yml` · `test/backend/test_agent_hub.py` ·
 `doc/agent-hub/01-thiet-ke-ky-thuat.md` · `change-log-ai.md`.
+Commit: `0c4a0850` trên nhánh `agent-hub-bac-1` (23/09/2026, chưa push).
 
 ## ai-CR-017 | Đậu Đậu rà soát mã thật trước khi lập kế hoạch cho mọi việc
 - status: xong
@@ -3559,6 +3562,7 @@ Mã nguồn: `backend/app/modules/agent_hub/{coder,service,tasks,manager,constan
 (`fetch_base`, `scan_task`, `parse_scan`, `start_scan`, `resolve_plan_files`, `ST_SCANNING`,
 `STAGE_SCAN`) · `backend/app/core/celery_app.py` · `test/backend/test_agent_hub.py` ·
 `doc/agent-hub/01-thiet-ke-ky-thuat.md` · `change-log-ai.md`.
+Commit: `0c4a0850` trên nhánh `agent-hub-bac-1` (23/09/2026, chưa push).
 
 ## ai-CR-016 | Bot tự xưng Đậu Đậu và tự nhặt lại việc bị kẹt khi lập kế hoạch
 - status: xong
@@ -3578,6 +3582,7 @@ của bot hai phút để làm xong lượt đang dở trước khi tắt. Ba b�
 Mã nguồn: `backend/app/modules/agent_hub/{constants,service,tasks,manager,coder}.py`
 (`BOT_NAME`, `BOT_PERSONA`, `resume_stuck_plans`) · `docker-compose.agent.yml` · `test/backend/test_agent_hub.py` ·
 `change-log-ai.md`.
+Commit: `0c4a0850` trên nhánh `agent-hub-bac-1` (23/09/2026, chưa push).
 
 ## ai-CR-015 | Sổ quyết định của đại ca để bot tra trước khi hỏi, bớt hỏi xác nhận
 - status: xong
@@ -3606,6 +3611,7 @@ Mã nguồn: `backend/app/modules/agent_hub/{playbook,manager,service,coder,cons
 `backend/app/core/config.py` (`AGENT_PLAYBOOK_PATH`) · `docker-compose.agent.yml` · `test/backend/test_agent_hub.py` ·
 `doc/agent-hub/03-so-quyet-dinh.md` · `doc/agent-hub/01-thiet-ke-ky-thuat.md` §6/§7/§9 ·
 `doc/agent-hub/02-bo-quy-tac-bot.md` §D · `doc/agent-hub/README.md` · `change-log-ai.md`.
+Commit: `0c4a0850` trên nhánh `agent-hub-bac-1` (23/09/2026, chưa push).
 
 ## ai-CR-014 | Bot gộp vào erp-v2 và deploy thử lên dev VPS chỉ sau khi đại ca đồng ý trên Telegram
 - status: xong
@@ -3641,6 +3647,7 @@ Mã nguồn: `backend/app/modules/agent_hub/{constants,coder,service,tasks}.py` 
 · `docker-compose.agent.yml` · `.env.example` · `test/backend/test_agent_hub.py` ·
 `doc/agent-hub/01-thiet-ke-ky-thuat.md` §7/§9/§10/§11 · `doc/agent-hub/02-bo-quy-tac-bot.md` C10 + §E ·
 `change-log-ai.md`.
+Commit: `0c4a0850` trên nhánh `agent-hub-bac-1` (23/09/2026, chưa push).
 
 ## ai-CR-013 | Hỏi thêm về bản vá trên Telegram bằng đúng phiên Claude Code đã sửa việc
 - status: xong
@@ -3672,6 +3679,7 @@ Mã nguồn: `agent_hub/constants.py` (`STAGE_ASK`, `ACT_WAIT_PATCH_Q`, `ACT_PAT
 `_invite_patch_question`) · `tasks.py` (`agent.ask_task`) · `core/celery_app.py` (`task_routes`) ·
 `test/backend/test_agent_hub.py` · `doc/agent-hub/01-thiet-ke-ky-thuat.md` §7/§10/§11 ·
 `change-log-ai.md`.
+Commit: `0c4a0850` trên nhánh `agent-hub-bac-1` (23/09/2026, chưa push).
 
 ## ai-CR-012 | Bậc 2 giai đoạn 2a: runner đẩy nhánh bot lên GitHub và mở yêu cầu gộp vào erp-v2
 - status: xong
@@ -3711,6 +3719,7 @@ Mã nguồn: `agent_hub/coder.py` (`github_token`, `push_branch`, `github_reques
 (`AGENT_PR_ENABLED`, `AGENT_GITHUB_REPO`, `AGENT_GITHUB_API_URL`) · `.env.example` ·
 `test/backend/test_agent_hub.py` · `doc/agent-hub/01-thiet-ke-ky-thuat.md` §7/§9/§10/§11 ·
 `change-log-ai.md`.
+Commit: `0c4a0850` trên nhánh `agent-hub-bac-1` (23/09/2026, chưa push).
 
 ## ai-CR-011 | Bậc 2 giai đoạn 1: bấm Duyệt trên Telegram là bot sửa mã thật bằng Claude Code trong container riêng
 - status: xong
@@ -3797,3 +3806,5 @@ Mã nguồn: `backend/app/modules/agent_hub/coder.py` (mới) · `service.py` (`
 `docker/Dockerfile.runner` (mới) · `docker-compose.agent.yml` (service `agent-runner`, volume
 `agent_worktrees`) · `.env.example` · `doc/agent-hub/01-thiet-ke-ky-thuat.md` §7/§9/§10/§11 ·
 `doc/tai-lieu-ky-thuat/change-log-ai.md` · `test/backend/test_agent_hub.py`.
+Commit: `0c4a0850` trên nhánh `agent-hub-bac-1` (23/09/2026, chưa push).
+
