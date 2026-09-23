@@ -6035,3 +6035,40 @@ Mã nguồn: `backend/app/core/config.py` · `backend/app/core/app_settings.py` 
 
 Đã deploy dev ngày 23/09/2026 và bật công tắc ngay sau đó, vì mặc định của nó là tắt.
 Commit: `a6b594ba` (khối chi phí) · `8b0c018d` + `fd1758d8` (công tắc) · `0c7638ad` gộp nhánh.
+
+## bao-CR-469 | Chốt quyết toán chi phí bằng tick chọn và nút chốt tất cả, bỏ nút chốt từng dòng
+- status: xong
+- date: 2026-09-23
+- pic: NSU209
+
+Đại ca xem bản vừa deploy rồi đổi ý về cách chốt: muốn một nút chốt tổng kiểu chốt hết, hoặc
+tick chọn để chốt một lần vài dòng, và bỏ hẳn nút chốt nằm trên từng dòng.
+
+Thẻ Chi phí thu mua nay có ô tick ở đầu mỗi dòng chưa chốt, cùng ô tick mọi dòng chưa chốt và
+hai nút trên đầu thẻ là quyết toán những dòng đã tick và quyết toán tất cả, cả hai đều ghi rõ số
+dòng ngay trên nút. Nút quyết toán dòng này trong menu ba chấm của từng dòng đã bỏ, vì một thao
+tác sinh công nợ thật thì phải có chỗ nhìn thấy số dòng trước khi bấm chứ không nấp trong menu
+của một dòng; nút mở lại dòng vẫn ở chỗ cũ bởi mở lại vốn là việc của từng dòng.
+
+Hai nút cố ý tách riêng chứ không gộp thành một nút đổi nghĩa theo việc người dùng có tick hay
+không, vì quên tick rồi bấm là chốt cả bảng, mà chốt là sinh nợ. Ô tick thì dùng chung với việc
+lập yêu cầu thanh toán thay vì thêm một cột thứ hai, do hai tập không bao giờ giẫm nhau: dòng
+chưa chốt thì chưa thành công nợ, còn dòng đã thành công nợ thì đã chốt rồi.
+
+Bên trong, hệ thống có thêm một đường nhận cả danh sách dòng cần chốt; danh sách rỗng nghĩa là
+chốt hết các dòng chưa quyết toán của đơn. Dòng nào đã chốt rồi thì bỏ qua chứ không báo lỗi,
+bởi người dùng tick cả bảng rồi bấm thì việc của hệ thống là làm nốt phần còn lại chứ không bắt
+họ đi bỏ tick từng dòng. Công nợ được đồng bộ một lần ở cuối và cả lượt chỉ ghi một dòng dấu
+vết, kể tên tối đa năm khoản rồi ghi và bao nhiêu khoản nữa, vì chốt hai chục dòng mà đẻ hai
+chục dòng nhật ký thì sổ đọc không ra việc gì đã xảy ra. Đường chốt một dòng cũ giữ nguyên cho
+bản đang chạy thật, ruột đi chung để hai đường không trôi ra khác nhau.
+
+Kiểm trước khi giao: hai tệp kiểm của khối chi phí hai mươi chín bài xanh, trong đó có hai bài
+mới cho chốt nhiều dòng và chốt hết; bản ERP kiểm kiểu không lỗi, kiểm nếp mã không lỗi và còn
+đúng số cảnh báo cũ, bốn trăm chín mươi lăm bài của phân hệ Thu mua xanh.
+
+Mã nguồn: `backend/app/modules/purchase_order/service.py` ·
+`backend/app/modules/purchase_order/schema.py` ·
+`backend/app/modules/purchase_order/controller.py` ·
+`frontend-v2/src/modules/procurement/api/purchase-order-api.ts` ·
+`frontend-v2/src/modules/procurement/components/purchase-order-import-costs-card.tsx`.

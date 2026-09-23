@@ -51,7 +51,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/ui/dropdown-menu'
 import { Input } from '@/shared/ui/input'
@@ -333,8 +332,17 @@ export function PurchaseOrderImportCostsCard({
   const [reopenDialogOpen, setReopenDialogOpen] = useState(false)
   const [reopenReason, setReopenReason] = useState('')
   const [pendingLineAction, setPendingLineAction] = useState<
-    { type: 'finalize' | 'reopen'; costId: number } | null
+    { type: 'reopen'; costId: number } | null
   >(null)
+  /**
+   * bao-CR-469 — tick chọn dòng để quyết toán. Dùng CHUNG cột tick với việc lập YCTT được vì
+   * hai tập không bao giờ giẫm nhau: dòng chưa chốt thì chưa thành công nợ, dòng đã thành
+   * công nợ thì đã chốt rồi. `null` = chưa mở hộp xác nhận; `ids` rỗng = chốt hết.
+   */
+  const [selectedCostIds, setSelectedCostIds] = useState<Set<number>>(() => new Set())
+  const [pendingFinalize, setPendingFinalize] = useState<{ ids: number[]; count: number } | null>(
+    null,
+  )
   const [lineReopenReason, setLineReopenReason] = useState('')
   const advancePending = useRef(false)
 
@@ -353,9 +361,12 @@ export function PurchaseOrderImportCostsCard({
       purchaseOrderApi.reopenCostStage(order.id, target, reason),
     onSuccess: invalidateOrder,
   })
-  const finalizeLineMutation = useMutation({
-    mutationFn: (costId: number) => purchaseOrderApi.finalizeCostLine(order.id, costId),
-    onSuccess: invalidateOrder,
+  const finalizeLinesMutation = useMutation({
+    mutationFn: (costIds: number[]) => purchaseOrderApi.finalizeCostLines(order.id, costIds),
+    onSuccess: () => {
+      setSelectedCostIds(new Set())
+      invalidateOrder()
+    },
   })
   const reopenLineMutation = useMutation({
     mutationFn: ({ costId, reason }: { costId: number; reason: string }) =>
@@ -432,7 +443,34 @@ export function PurchaseOrderImportCostsCard({
     [selectablePayableIds, selectedPayableIds],
   )
 
-  const columns = useMemo(() => (payReady ? [TICK_COLUMN, ...BASE_COLUMNS] : BASE_COLUMNS), [payReady])
+  /**
+   * bao-CR-469 — dòng quyết toán được: đơn đã duyệt, dòng đã lưu (có id) và chưa chốt.
+   * `can('purchase_order','write')` chứ không theo `editable`: đơn đã duyệt thì bảng chi phí
+   * khóa sửa nhưng vẫn phải chốt được, đó chính là lúc hóa đơn về.
+   */
+  const canFinalize = approved && can('purchase_order', 'write')
+  const finalizableIds = useMemo(
+    () =>
+      canFinalize
+        ? costs
+            .filter(
+              (cost) =>
+                cost.id !== undefined &&
+                Math.max(orderStage, cost.line_stage ?? 0) < COST_STAGE_FINAL,
+            )
+            .map((cost) => cost.id ?? 0)
+        : [],
+    [costs, canFinalize, orderStage],
+  )
+  const selectedFinalizable = useMemo(
+    () => finalizableIds.filter((id) => selectedCostIds.has(id)),
+    [finalizableIds, selectedCostIds],
+  )
+
+  const columns = useMemo(
+    () => (payReady || finalizableIds.length > 0 ? [TICK_COLUMN, ...BASE_COLUMNS] : BASE_COLUMNS),
+    [payReady, finalizableIds.length],
+  )
 
   // ---- Số tổng: lấy của backend, đơn đang gõ dở thì tính tại chỗ để nhìn ngay ----
   const goodsBase = useMemo(() => {
@@ -549,6 +587,15 @@ export function PurchaseOrderImportCostsCard({
     setSelectedPayableIds(checked ? new Set(selectablePayableIds) : new Set())
   }
 
+  function toggleFinalizeSelected(costId: number, checked: boolean) {
+    setSelectedCostIds((current) => {
+      const next = new Set(current)
+      if (checked) next.add(costId)
+      else next.delete(costId)
+      return next
+    })
+  }
+
   function goCreatePaymentRequest(payableIds: number[]) {
     if (payableIds.length === 0) return
     navigate(`${appRoutes.finance.paymentRequestNew}?payables=${payableIds.join(',')}`)
@@ -572,9 +619,21 @@ export function PurchaseOrderImportCostsCard({
 
     switch (key) {
       case 'tick': {
+        // bao-CR-469: một cột tick, hai việc — dòng CHƯA chốt thì tick để quyết toán, dòng đã
+        // thành công nợ thì tick để lập YCTT. Hai tập không giẫm nhau nên không cần hai cột.
+        const costId = cost.id
+        if (costId !== undefined && finalizableIds.includes(costId)) {
+          return (
+            <Checkbox
+              aria-label={`Chọn khoản ${index + 1} để quyết toán`}
+              checked={selectedCostIds.has(costId)}
+              onCheckedChange={(checked) => toggleFinalizeSelected(costId, checked === true)}
+            />
+          )
+        }
         const reason = paymentBlockReason(cost, approved)
         // Khách 09/09/2026: ô không có gì thì để TRỐNG, đừng vẽ dấu gạch.
-        if (reason !== null || !cost.payable_id) return null
+        if (!payReady || reason !== null || !cost.payable_id) return null
         const payableId = cost.payable_id
         return (
           <Checkbox
@@ -815,18 +874,16 @@ export function PurchaseOrderImportCostsCard({
         )
       case 'action': {
         const lineStage = cost.line_stage ?? 0
-        // bao-CR-467: chốt TỪNG DÒNG là thao tác chính, dùng được ngay từ Dự toán — trước
-        // đây nó bắt phải chốt Tạm tính cả đơn trước, nên khoản nào có hóa đơn về sớm cũng
-        // phải chờ cả bảng. Điều kiện còn lại: đơn đã duyệt và dòng chưa quyết toán.
-        // Dùng giai đoạn HIỆU LỰC chứ không riêng `line_stage`: đơn đã Quyết toán thì mọi
-        // dòng đã chốt sẵn, bày nút chốt nữa là bấm vào chỉ để ăn lỗi.
-        const canFinalizeLine = approved && !isLineLocked(cost) && cost.id !== undefined
+        // bao-CR-469: nút «Quyết toán dòng này» ở đây đã BỎ — chốt nay đi bằng ô tick đầu
+        // dòng cộng hai nút trên đầu thẻ (chốt các dòng đã tick · chốt tất cả). Một thao tác
+        // sinh công nợ thật thì nên có chỗ nhìn thấy số dòng trước khi bấm, chứ không nấp
+        // trong menu ba chấm của từng dòng. Mở lại thì vẫn theo DÒNG, giữ nguyên chỗ này.
         const canReopenLine =
           approved &&
           lineStage >= COST_STAGE_FINAL &&
           can('purchase_order', 'approve') &&
           cost.id !== undefined
-        const hasLineStageAction = canFinalizeLine || canReopenLine
+        const hasLineStageAction = canReopenLine
         return (
           <div className="flex items-center justify-center gap-0.5">
             <Button
@@ -860,31 +917,18 @@ export function PurchaseOrderImportCostsCard({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  {canFinalizeLine && (
+                  {canReopenLine && (
                     <DropdownMenuItem
                       onClick={() => {
-                        if (cost.id) setPendingLineAction({ type: 'finalize', costId: cost.id })
+                        if (cost.id) {
+                          setPendingLineAction({ type: 'reopen', costId: cost.id })
+                          setLineReopenReason('')
+                        }
                       }}
                     >
-                      <Lock className="size-4" />
-                      Quyết toán dòng này
+                      <RotateCcw className="size-4" />
+                      Mở lại dòng
                     </DropdownMenuItem>
-                  )}
-                  {canReopenLine && (
-                    <>
-                      {canFinalizeLine && <DropdownMenuSeparator />}
-                      <DropdownMenuItem
-                        onClick={() => {
-                          if (cost.id) {
-                            setPendingLineAction({ type: 'reopen', costId: cost.id })
-                            setLineReopenReason('')
-                          }
-                        }}
-                      >
-                        <RotateCcw className="size-4" />
-                        Mở lại dòng
-                      </DropdownMenuItem>
-                    </>
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -966,6 +1010,54 @@ export function PurchaseOrderImportCostsCard({
                 <RotateCcw className="size-4" />
                 Mở lại
               </Button>
+            )}
+            {/* bao-CR-469: chốt theo DÒNG — tick vài dòng rồi chốt, hoặc chốt hết một nút.
+                Hai nút tách riêng và luôn nói rõ số dòng: chốt là sinh công nợ thật, không để
+                một nút đổi nghĩa theo việc người dùng có tick hay không. */}
+            {finalizableIds.length > 0 && (
+              <>
+                <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Checkbox
+                    checked={
+                      selectedFinalizable.length === 0
+                        ? false
+                        : selectedFinalizable.length === finalizableIds.length
+                          ? true
+                          : 'indeterminate'
+                    }
+                    onCheckedChange={(checked) =>
+                      setSelectedCostIds(checked === true ? new Set(finalizableIds) : new Set())
+                    }
+                  />
+                  Tick mọi dòng chưa chốt
+                </label>
+                {selectedFinalizable.length > 0 && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={finalizeLinesMutation.isPending}
+                    onClick={() =>
+                      setPendingFinalize({
+                        ids: selectedFinalizable,
+                        count: selectedFinalizable.length,
+                      })
+                    }
+                  >
+                    <Lock className="size-4" />
+                    Quyết toán {selectedFinalizable.length} dòng đã tick
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={finalizeLinesMutation.isPending}
+                  onClick={() => setPendingFinalize({ ids: [], count: finalizableIds.length })}
+                >
+                  <Lock className="size-4" />
+                  Quyết toán tất cả ({finalizableIds.length} dòng)
+                </Button>
+              </>
             )}
             {payReady && selectablePayableIds.length > 0 && (
               <>
@@ -1457,27 +1549,33 @@ export function PurchaseOrderImportCostsCard({
       </Dialog>
 
       {/* bao-CR-453 — quyết toán / mở lại từng dòng */}
-      {pendingLineAction?.type === 'finalize' && (
+      {/* bao-CR-469 — xác nhận quyết toán theo LƯỢT: nói rõ bao nhiêu dòng sắp thành nợ. */}
+      {pendingFinalize !== null && (
         <AlertDialog
           open
-          onOpenChange={(open) => { if (!open) setPendingLineAction(null) }}
+          onOpenChange={(open) => { if (!open) setPendingFinalize(null) }}
         >
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Quyết toán dòng chi phí?</AlertDialogTitle>
+              <AlertDialogTitle>
+                Quyết toán {pendingFinalize.count} dòng chi phí?
+              </AlertDialogTitle>
               <AlertDialogDescription>
-                Khoản nợ sẽ được sinh ra theo số Quyết toán của dòng này, và dòng khóa lại —
-                muốn sửa thì mở lại dòng trước. Dòng đã chi tiền thì không mở lại được nữa.
+                {pendingFinalize.ids.length === 0
+                  ? 'Chốt HẾT các dòng chưa quyết toán của đơn này. '
+                  : 'Chốt các dòng đang tick. '}
+                Mỗi dòng có nhà cung cấp sẽ sinh ra một khoản nợ theo số Quyết toán, và dòng
+                khóa lại — muốn sửa thì mở lại dòng trước. Dòng đã chi tiền thì không mở lại
+                được nữa.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setPendingLineAction(null)}>Huỷ</AlertDialogCancel>
+              <AlertDialogCancel onClick={() => setPendingFinalize(null)}>Huỷ</AlertDialogCancel>
               <AlertDialogAction
-                disabled={finalizeLineMutation.isPending}
+                disabled={finalizeLinesMutation.isPending}
                 onClick={() => {
-                  const costId = pendingLineAction.costId
-                  finalizeLineMutation.mutate(costId, {
-                    onSettled: () => setPendingLineAction(null),
+                  finalizeLinesMutation.mutate(pendingFinalize.ids, {
+                    onSettled: () => setPendingFinalize(null),
                   })
                 }}
               >

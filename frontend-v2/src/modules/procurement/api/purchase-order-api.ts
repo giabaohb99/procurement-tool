@@ -201,11 +201,12 @@ export const purchaseOrderApi = {
     apiPost<PurchaseOrderDetail>(`${BASE_URL}/${id}/cost-stage/reopen`, { target, reason }),
 
   /**
-   * bao-CR-453 — Quyết toán một dòng chi phí riêng lẻ (đặt `line_stage = 3`).
-   * Dùng khi đơn chưa quyết toán tổng nhưng dòng này đã biết số cuối.
+   * bao-CR-469 — Quyết toán NHIỀU dòng chi phí một lượt (tick chọn hoặc chốt hết).
+   * `costIds` rỗng = chốt hết các dòng chưa quyết toán của đơn. Dòng đã quyết toán rồi
+   * thì backend bỏ qua, không báo lỗi.
    */
-  finalizeCostLine: (id: number, costId: number) =>
-    apiPost<PurchaseOrderDetail>(`${BASE_URL}/${id}/costs/${costId}/finalize`, {}),
+  finalizeCostLines: (id: number, costIds: number[]) =>
+    apiPost<PurchaseOrderDetail>(`${BASE_URL}/${id}/cost-lines/finalize`, { cost_ids: costIds }),
 
   /**
    * bao-CR-453 — Mở lại một dòng đã quyết toán riêng lẻ (đặt `line_stage` về theo đơn).

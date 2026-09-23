@@ -665,20 +665,61 @@ def _get_cost_row(db: Session, po: PurchaseOrder, cost_id: int) -> POCost:
 
 
 def finalize_cost_line(db: Session, po: PurchaseOrder, cost_id: int, user_id: int) -> POCost:
-    """Quyết toán RIÊNG một dòng khi hóa đơn của khoản đó về trước các khoản khác."""
+    """Quyết toán RIÊNG một dòng khi hóa đơn của khoản đó về trước các khoản khác.
+
+    Giữ nguyên cửa một-dòng cho bản giao diện đang chạy thật; ruột đi chung với cửa nhiều
+    dòng của bao-CR-469 để hai đường không trôi ra khác nhau.
+    """
     row = _get_cost_row(db, po, cost_id)
     if is_final_cost(row, po):
         raise HTTPException(400, "Dòng chi phí này đã ở Quyết toán")
-    _fill_stage_from_previous(row, CostStage.FINAL, po)
-    row.line_stage = int(CostStage.FINAL)
-    compute_cost_bases(row)
-    row.updated_by = user_id
+    return finalize_cost_lines(db, po, [cost_id], user_id)[0]
+
+
+# Câu dấu vết chỉ kể tên tối đa chừng này khoản rồi ghi "và n khoản nữa" — cột `message`
+# của nhật ký có hạn, mà chốt cả bảng hai chục dòng là chuyện thường.
+COST_FINAL_NAMES_IN_LOG = 5
+
+
+def finalize_cost_lines(db: Session, po: PurchaseOrder, cost_ids: list[int] | None,
+                        user_id: int) -> list[POCost]:
+    """bao-CR-469 — Quyết toán NHIỀU dòng chi phí một lượt.
+
+    `cost_ids` rỗng/None = chốt HẾT các dòng chưa quyết toán của đơn. Dòng đã quyết toán rồi
+    thì bỏ qua chứ không báo lỗi: người dùng tick cả bảng rồi bấm, việc của hệ thống là làm
+    nốt phần còn lại chứ không bắt họ đi bỏ tick từng dòng đã xong.
+
+    Đồng bộ công nợ MỘT lần ở cuối và ghi MỘT dòng dấu vết cho cả lượt — chốt hai chục dòng
+    mà đẻ hai chục dòng nhật ký thì sổ đọc không ra việc gì đã xảy ra.
+    """
+    rows = import_costs_of(db, po.id)
+    if cost_ids:
+        want = {int(cid) for cid in cost_ids}
+        chosen = [r for r in rows if r.id in want]
+        missing = want - {r.id for r in chosen}
+        if missing:
+            raise HTTPException(404, "Không tìm thấy dòng chi phí trên đơn này")
+    else:
+        chosen = rows
+    todo = [r for r in chosen if not is_final_cost(r, po)]
+    if not todo:
+        raise HTTPException(400, "Không còn dòng chi phí nào để quyết toán")
+    for row in todo:
+        _fill_stage_from_previous(row, CostStage.FINAL, po)
+        row.line_stage = int(CostStage.FINAL)
+        compute_cost_bases(row)
+        row.updated_by = user_id
     db.flush()
-    record(db, user_id, "purchase_order", po.id, "cost_line_final",
-           f"Quyết toán riêng dòng chi phí «{_cost_label(row)}»", doc_code=po.code or "")
+    types = cost_type_map(db)
+    names = [f"«{_cost_label(r, types)}»" for r in todo[:COST_FINAL_NAMES_IN_LOG]]
+    them = len(todo) - len(names)
+    note = f"Quyết toán {len(todo)} dòng chi phí: {', '.join(names)}"
+    if them > 0:
+        note += f" và {them} khoản nữa"
+    record(db, user_id, "purchase_order", po.id, "cost_line_final", note, doc_code=po.code or "")
     sync_import_cost_payables(db, po, user_id)
     db.commit()
-    return row
+    return todo
 
 
 def reopen_cost_line(db: Session, po: PurchaseOrder, cost_id: int, reason: str, user_id: int) -> POCost:

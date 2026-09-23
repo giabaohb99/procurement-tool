@@ -181,6 +181,40 @@ def test_quyet_toan_rieng_dong_sinh_no_rieng_dong_do(db, seed):
     assert _cost_payables(db, po) == []
 
 
+def test_chot_nhieu_dong_mot_luot_va_chot_het(db, seed):
+    # bao-CR-469: tick vài dòng rồi chốt một lượt, hoặc bỏ trống danh sách để chốt hết.
+    po = _make_po(db, seed)
+    _save_costs(db, po, [_cost_in(), _cost_in(description="Phí cảng", estimate_amount=200_000),
+                         _cost_in(description="Khai thuê", estimate_amount=300_000)])
+    rows = _rows(db, po)
+
+    da_chot = service.finalize_cost_lines(db, po, [rows[0].id, rows[1].id], user_id=1)
+    assert len(da_chot) == 2
+    assert [p.ref_id for p in _cost_payables(db, po)] == sorted([rows[0].id, rows[1].id])
+    assert service.stage_of(po.cost_stage) == CostStage.ESTIMATE      # đơn vẫn ở Dự toán
+
+    # Tick lại cả bảng: dòng đã chốt bị bỏ qua chứ không báo lỗi, chỉ dòng còn lại được chốt.
+    con_lai = service.finalize_cost_lines(db, po, [r.id for r in rows], user_id=1)
+    assert [r.id for r in con_lai] == [rows[2].id]
+    assert len(_cost_payables(db, po)) == 3
+
+    with pytest.raises(HTTPException) as e:
+        service.finalize_cost_lines(db, po, [], user_id=1)
+    assert e.value.status_code == 400 and "Không còn dòng" in e.value.detail
+
+
+def test_chot_het_khi_khong_tick_dong_nao(db, seed):
+    po = _make_po(db, seed, code="PO-CP-453-B")
+    _save_costs(db, po, [_cost_in(), _cost_in(description="Phí cảng", estimate_amount=200_000)])
+    da_chot = service.finalize_cost_lines(db, po, [], user_id=1)      # rỗng = chốt hết
+    assert len(da_chot) == 2
+    assert all(r.line_stage == int(CostStage.FINAL) for r in _rows(db, po))
+
+    with pytest.raises(HTTPException) as e:                           # id lạ thì chặn hẳn
+        service.finalize_cost_lines(db, po, [999_999], user_id=1)
+    assert e.value.status_code == 404
+
+
 def test_chot_dong_roi_thi_khoa_ca_sua_lan_xoa(db, seed):
     # bao-CR-467: chốt là sinh công nợ, nên từ đó dòng đóng lại. Màn hình gửi lại CẢ bảng mỗi
     # lần lưu nên payload trùng khít phải đi qua êm — chỉ thay đổi THẬT mới bị chặn.

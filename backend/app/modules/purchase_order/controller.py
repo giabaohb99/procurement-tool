@@ -21,8 +21,8 @@ from .model import (ALLOCATION_METHOD_LABELS, AllocationMethod, COST_STAGE_LABEL
                     COST_STAGE_PREFIX, CostStage, DEFAULT_CURRENCY, ORDER_TYPE_LABELS, OrderType,
                     POItem, PODelivery, PurchaseOrder)
 from app.modules.payable.model import Payable
-from .schema import (CostStageAdvanceIn, CostStageReopenIn, DocumentStatusIn, ItemProgressIn,
-                     POCreate, POUpdate, RejectIn)
+from .schema import (CostLinesFinalizeIn, CostStageAdvanceIn, CostStageReopenIn, DocumentStatusIn,
+                     ItemProgressIn, POCreate, POUpdate, RejectIn)
 
 router = APIRouter(prefix="/api/purchase-orders", tags=["purchase_order"])
 
@@ -839,6 +839,22 @@ def finalize_cost_line(pid: int, cost_id: int, db: Session = Depends(get_db),
     _require_editable_costs(po)
     service.finalize_cost_line(db, po, cost_id, user.id)
     return success(_out(db, service.get_po(db, pid)), "Đã quyết toán dòng chi phí")
+
+
+@router.post("/{pid}/cost-lines/finalize")
+def finalize_cost_lines(pid: int, data: CostLinesFinalizeIn, db: Session = Depends(get_db),
+                        user=Depends(require("purchase_order", "write"))):
+    """bao-CR-469 — Quyết toán NHIỀU dòng chi phí một lượt (tick chọn, hoặc chốt hết).
+
+    Đường riêng `cost-lines` chứ không nối thêm vào `/costs/...` để không đứng cạnh đường có
+    tham số id — «finalize» rơi vào chỗ chờ một con số thì lỗi trả về nói chuyện kiểu dữ liệu,
+    không ai đoán ra là gọi nhầm đường.
+    """
+    po = _in_scope(db, pid, user, "write")
+    _require_editable_costs(po)
+    rows = service.finalize_cost_lines(db, po, data.cost_ids, user.id)
+    return success(_out(db, service.get_po(db, pid)),
+                   f"Đã quyết toán {len(rows)} dòng chi phí")
 
 
 @router.post("/{pid}/costs/{cost_id}/reopen")
