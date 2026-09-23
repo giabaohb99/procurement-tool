@@ -1039,8 +1039,11 @@ ORDER_FIELD_LABELS = {
 # mềm MISA) — mọi ô còn lại là nội dung đã được duyệt.
 # bao-CR-319: tờ khai hải quan cũng nằm ở đây — tờ khai chỉ có SAU khi hàng thông quan,
 # mà lúc đó đơn đã duyệt từ lâu. Khóa lại thì không đơn nhập khẩu nào ghi được số tờ khai.
+# bao-CR-471: cờ Đơn gấp cũng nằm ở đây. Nó là cờ VẬN HÀNH (ưu tiên xử lý), không phải nội
+# dung thương mại đã duyệt; khóa nó thì một phép tính lại ở giao diện làm hỏng cả lượt lưu
+# của một ô không liên quan (khách gặp 23/09 khi sửa "Ngày giao chứng từ cho KT").
 ORDER_FIELDS_EDITABLE_AFTER_APPROVAL = {"document_status", "misa_code",
-                            "customs_decl_no", "customs_decl_date"}
+                            "customs_decl_no", "customs_decl_date", "is_urgent"}
 
 _EDIT_HINT = "Bấm 'Hủy duyệt' để đưa đơn về Nháp, chỉnh rồi gửi duyệt lại."
 
