@@ -38,6 +38,13 @@ vi.mock('@/modules/hr/hooks/use-companies', () => ({
   useCompanies: () => ({ data: { total: 1, items: [{ id: 7, name: 'Công ty Dego Cần Thơ' }] } }),
 }))
 
+// ai-CR-017: ô "Nhà cung cấp" mới bù ra thanh lọc ngoài cần danh mục NCC.
+vi.mock('@/modules/production/hooks/use-suppliers', () => ({
+  useSuppliers: () => ({
+    data: { total: 1, items: [{ code: 'NCC-1', name: 'Nhà cung cấp 1' }] },
+  }),
+}))
+
 let canCreatePayment = true
 let canExportPayable = true
 vi.mock('@/core/authorization/use-permission', () => ({
@@ -112,6 +119,19 @@ function rowCheckboxes() {
 
 function submitButton() {
   return screen.getByRole('button', { name: /Tạo đề nghị thanh toán/ })
+}
+
+/**
+ * Nút **Bộ lọc** của khổ RỘNG (popover gộp khoảng tiền + bộ lọc điều kiện).
+ *
+ * ⚠️ Trang dựng HAI nút cùng tên: một của tờ trượt khổ hẹp (`QuickFilterSheet`,
+ * mang `md:hidden`) và một của popover khổ rộng (mang `max-md:hidden`). jsdom
+ * không áp CSS nên cả hai cùng nằm trong cây — bản khổ rộng dựng SAU trong
+ * JSX nên là nút cuối. Cùng khuôn `survey-report-page.test.tsx`.
+ */
+async function desktopFilterTrigger() {
+  const triggers = await screen.findAllByRole('button', { name: 'Bộ lọc' })
+  return triggers[triggers.length - 1]
 }
 
 beforeEach(() => {
@@ -415,10 +435,64 @@ describe('PayableListPage — khoảng tiền', () => {
     })
   })
 
-  it('bày cặp ô tiền trên thanh công cụ', () => {
+  it('ai-CR-017: không còn bày cặp ô tiền thẳng trên thanh công cụ — phải mở nút Bộ lọc trước', () => {
+    // Đúng yêu cầu AI-0007: khoảng tiền dời vào popover "Bộ lọc", không còn
+    // hiện sẵn ngoài thanh công cụ nữa (Radix Popover không mount nội dung khi
+    // đang đóng).
     build()
+
+    expect(screen.queryByLabelText('Lọc tổng nợ từ')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Lọc tổng nợ đến')).not.toBeInTheDocument()
+  })
+
+  it('bày cặp ô tiền bên trong popover "Bộ lọc" sau khi mở', async () => {
+    const user = userEvent.setup()
+    build()
+
+    await user.click(await desktopFilterTrigger())
 
     expect(screen.getAllByLabelText('Lọc tổng nợ từ').length).toBeGreaterThan(0)
     expect(screen.getAllByLabelText('Lọc tổng nợ đến').length).toBeGreaterThan(0)
   })
+})
+
+/** ai-CR-017: đồng bộ v1 — Nhà cung cấp / Số hóa đơn / Loại nợ ra thanh lọc ngoài. */
+describe('PayableListPage — ba ô lọc bù từ Bộ lọc điều kiện (ai-CR-017)', () => {
+  function lastCall() {
+    return listCalls[listCalls.length - 1]
+  }
+
+  it('sends supplier_code when a supplier is picked from the outer quick filter', async () => {
+    const user = userEvent.setup()
+    build()
+
+    await user.click(screen.getByRole('combobox', { name: 'Lọc theo nhà cung cấp' }))
+    await user.click(screen.getByRole('option', { name: 'Nhà cung cấp 1 (NCC-1)' }))
+
+    expect(lastCall().supplier_code).toBe('NCC-1')
+  })
+
+  it('sends invoice_no only after the debounce settles, and drops it when cleared', async () => {
+    const user = userEvent.setup()
+    build()
+
+    await user.type(screen.getByLabelText('Lọc theo số hóa đơn'), 'HD-9')
+    expect(lastCall().invoice_no).toBeUndefined()
+
+    await vi.waitFor(() => expect(lastCall().invoice_no).toBe('HD-9'), { timeout: 1000 })
+
+    await user.clear(screen.getByLabelText('Lọc theo số hóa đơn'))
+    await vi.waitFor(() => expect(lastCall().invoice_no).toBeUndefined(), { timeout: 1000 })
+  })
+
+  it('sends source_type when Loại nợ is picked', async () => {
+    const user = userEvent.setup()
+    build()
+
+    await user.click(screen.getByRole('combobox', { name: 'Lọc theo loại nợ' }))
+    await user.click(screen.getByRole('option', { name: 'Vận chuyển' }))
+
+    expect(lastCall().source_type).toBe('shipping')
+  })
+
 })
