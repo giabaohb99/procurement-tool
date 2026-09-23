@@ -886,6 +886,11 @@ def submit_pr(pid: int, background_tasks: BackgroundTasks, db: Session = Depends
         raise HTTPException(403, "Không có quyền gửi duyệt phiếu này")
     if pr.status not in ("draft", "rejected"):
         raise HTTPException(400, "Chỉ gửi duyệt được phiếu ở trạng thái Nháp hoặc Bị trả lại")
+    # bao-CR-466: gửi duyệt phải có Phòng ban + Trưởng bộ phận. Hàm này tự CHỮA trước
+    # (ô rỗng thì tra lại từ hồ sơ nhân sự / danh mục phòng ban — tài khoản có thể vừa
+    # được gắn phòng sau khi phiếu ra đời) rồi mới CHẶN. Đặt trước `set_status` để phiếu
+    # thiếu dữ liệu không bao giờ chạm được trạng thái `submitted`.
+    service.ensure_submit_ready(db, pr, user.id)
     # CR-082: chốt cờ Đơn gấp trước khi gửi duyệt — phiếu cũ (tạo trước luật này) hoặc phiếu
     # sửa dòng bằng đường khác vẫn được đánh dấu đúng, và thông báo duyệt đi kèm mức ưu tiên thật.
     service.apply_auto_urgent(db, pr, user.id)

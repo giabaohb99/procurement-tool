@@ -6072,3 +6072,90 @@ Mã nguồn: `backend/app/modules/purchase_order/service.py` ·
 `backend/app/modules/purchase_order/controller.py` ·
 `frontend-v2/src/modules/procurement/api/purchase-order-api.ts` ·
 `frontend-v2/src/modules/procurement/components/purchase-order-import-costs-card.tsx`.
+
+## bao-CR-466 | Chặn gửi duyệt yêu cầu mua hàng khi thiếu phòng ban hoặc trưởng bộ phận
+- status: xong
+- date: 2026-09-23
+Đại ca chốt luật: muốn gửi duyệt thì phiếu phải có phòng ban và có người đứng
+tên duyệt, thiếu một trong hai thì báo lỗi ngay chứ không cho gửi. Việc này nối
+tiếp bản vá hôm nay: bản vá kia làm cho chuyện rơi vào rỗng phòng ban gần như
+không thể xảy ra, còn việc này chặn nếu nó vẫn xảy ra.
+
+VÌ SAO PHẢI CHẶN:
+- Phòng ban là cột quyết định ai nhìn thấy phiếu, và chuông lẫn thư báo cũng đi
+  theo đúng cột đó. Phiếu thiếu phòng ban gửi đi là nằm chết, người lập nhận câu
+  báo thành công rồi ngồi chờ một người sẽ không bao giờ thấy phiếu.
+
+LÀM THEO HAI NHỊP, ĐÚNG THỨ TỰ CHỮA TRƯỚC CHẶN SAU:
+- Chữa: ô nào rỗng thì tra lại từ đầu. Phòng ban lùi về hồ sơ nhân sự, trưởng bộ
+  phận tra lại theo phòng vừa chốt.
+- Chặn: chữa xong mà vẫn rỗng mới báo lỗi.
+- Thứ tự này mới là phần quan trọng nhất. Ca hay gặp nhất là phiếu lập lúc tài
+  khoản chưa gắn phòng, quản trị gắn phòng sau, mà phiếu vẫn giữ ô rỗng từ lúc
+  ra đời. Chặn mà không chữa thì người lập bị khóa cứng trong một phiếu họ không
+  sửa được, vì ô phòng ban là ô chỉ xem.
+- Phần đã chữa được thì ghi xuống trước khi báo lỗi, để lần bấm sau không phải dò
+  lại từ đầu và người đi sửa dữ liệu nhìn vào phiếu thấy đúng trạng thái hiện thời.
+- Ba câu lỗi tách ba trường hợp và câu nào cũng nói việc cần làm chứ không chỉ
+  nêu triệu chứng: chưa có phòng ban, tên phòng không khớp danh mục, phòng chưa
+  gán trưởng bộ phận.
+
+ĐIỀU CỐ Ý KHÔNG LÀM:
+- Chốt này chỉ gác cửa gửi duyệt, không đụng tới luật duyệt. Người đứng tên trưởng
+  bộ phận vẫn thuần túy là tên in trên phiếu; ai có quyền duyệt và phiếu nằm trong
+  phạm vi của họ thì vẫn bấm duyệt được như cũ.
+
+ĐO TRÊN DỮ LIỆU THẬT TRƯỚC KHI CHẶN:
+- Toàn bộ mười bảy phòng đang hoạt động đều đã gán trưởng, không phòng nào có
+  trưởng đã nghỉ việc.
+- Trong một trăm năm mươi phiếu từng đi qua gửi duyệt chỉ có hai phiếu thiếu
+  trưởng bộ phận, cả hai từ đầu tháng tám trước khi có nhịp tự điền.
+- Trong mười bốn phiếu đang ở trạng thái nháp hoặc bị trả lại, đúng hai phiếu
+  chạm chốt này, và đó chính là hai phiếu hỏng đã ghi nhận ở việc trước. Cả hai
+  đều có hồ sơ nhân sự đã gắn phòng nên nhịp chữa sẽ tự vá chúng, không chặn.
+
+ĐÃ KIỂM:
+- Bài kiểm mới sáu bài xanh, canh cả nhịp chữa lẫn nhịp chặn và canh cả việc phần
+  đã chữa phải được ghi xuống dù lượt gọi báo lỗi.
+- Một trăm sáu mươi chín bài của nhóm phạm vi thu mua và đường chạy xuyên suốt
+  xanh sau khi vá hạ tầng test dùng chung.
+- Đo nền trên bản sạch chưa có mã mới: sáu trăm năm mươi sáu xanh, sáu đỏ; chạy
+  lại với mã mới ra đúng con số đó, nghĩa là không gây thêm lỗi nào.
+
+Mã nguồn: backend/app/modules/purchase_request/service.py ·
+backend/app/modules/purchase_request/controller.py · test/backend/scope_factory.py
+
+## bao-CR-471 | Sửa ngày chứng từ trên đơn mua hàng đã duyệt bị chặn vì cờ Đơn gấp tự tính lại
+- status: xong
+- date: 2026-09-23
+- pic: NSU209
+
+Đại ca sửa ô Ngày giao chứng từ cho kế toán của một dòng trên đơn mua hàng PO000052 đã duyệt,
+bấm Lưu thì nhận lỗi đơn đã duyệt không sửa được Đơn gấp, trong khi không hề đụng tới ô đó. Đại
+ca yêu cầu bỏ chốt chặn này, nghi hàm tính đơn gấp chạy sai trên đơn đã duyệt, và đẩy lên bản
+chạy thật ngay.
+
+Gốc nằm ở giao diện. Mỗi lần sửa bất kỳ ô nào của một dòng, màn chi tiết đơn tự tính lại cờ Đơn
+gấp theo ngày yêu cầu có hàng và số ngày quy định của phân loại, kể cả khi đơn đã duyệt. Tính ra
+khác cờ đang lưu thì lượt lưu mang theo một thay đổi Đơn gấp mà người dùng không hề bấm, và chốt
+khóa sau duyệt chặn luôn cả lượt lưu.
+
+Em vá hai lớp. Giao diện thôi tự tính lại cờ gấp khi đơn đã duyệt, vì lúc đó cờ gấp là nội dung
+đã duyệt; đây là chỗ sửa gốc. Và theo lệnh đại ca, phía máy chủ thôi khóa cờ Đơn gấp sau duyệt,
+vì nó là cờ vận hành chứ không phải nội dung thương mại. Làm cả hai chứ không chỉ bỏ chặn, bởi
+bỏ chặn một mình thì mỗi lần sửa ngày chứng từ, cờ gấp bị tính lại và ghi đè âm thầm, rồi lan
+sang yêu cầu mua hàng và các đơn cùng phiếu qua đường đồng bộ hai chiều. Dữ liệu cũ không hỏng,
+vì chính cái chốt vừa bỏ đã chặn không cho giá trị tính lại lọt xuống cơ sở dữ liệu.
+
+Việc được làm trên một cây tạm sạch dựng từ nhánh chạy thật, vì cây nhánh chạy thật trên máy đang
+có việc dở của phiên khác. Kiểm trên nền nhánh đó: bốn mươi bảy bài xanh gồm bài mới tái hiện
+đúng lỗi khách gặp, bản đang chạy thật giữ nguyên đúng bốn lỗi kiểm kiểu cũ.
+
+Mã nguồn: `frontend/src/pages/PurchaseOrderDetail.tsx` ·
+`backend/app/modules/purchase_order/service.py` ·
+`test/backend/test_po_lock_after_approve_cr108.py`.
+
+Đã lên bản chạy thật ngày 23/09/2026, đi chung một đợt với bao-CR-466 vì cả hai cùng nằm trên nhánh chạy thật; không có migration. Dựng lại máy chủ ứng dụng, hai tiến trình chạy nền và giao diện đang chạy thật.
+Commit: `34601877` (bao-CR-471) · `e5a957ec` (bao-CR-466).
+
+Cùng ngày em gộp nhánh chạy thật sang nhánh giao diện mới và rà màn đơn mua hàng của bản ERP: bản đó không dính lỗi này, vì nó không có hàm nào tự tính lại cờ gấp; ô Đơn gấp chỉ đổi khi người dùng tự bấm và bị khóa hẳn khi đơn đã duyệt, nên lượt lưu luôn mang đúng giá trị đã tải về. Chốt gửi duyệt của bao-CR-466 nằm ở phía máy chủ nên bản ERP ăn theo luôn.

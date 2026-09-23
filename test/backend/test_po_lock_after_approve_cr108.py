@@ -68,6 +68,17 @@ def test_da_duyet_van_cap_nhat_duoc_ho_so_chung_tu(db):
     block_edit_approved_order(db, po, POUpdate(document_status="full", items=[_dong(it)]))
 
 
+def test_da_duyet_doi_co_don_gap_khong_chan_ca_luot_luu(db):
+    """bao-CR-471 — khách gặp 23/09/2026 trên PO000052: sửa "Ngày giao chứng từ cho KT" của
+    một dòng rồi bấm Lưu thì ăn lỗi "Đơn đã duyệt — không sửa được 'Đơn gấp'". Giao diện tự
+    tính lại cờ gấp mỗi lần sửa dòng; ra khác cờ đang lưu là cả lượt lưu bị chặn vì một ô
+    người dùng không hề bấm. Cờ gấp là cờ vận hành — sau duyệt vẫn đổi được."""
+    po, it = _don(db)
+    block_edit_approved_order(db, po, POUpdate(
+        is_urgent=not bool(po.is_urgent),
+        items=[_dong(it, document_delivery_date="2026-08-25")]))
+
+
 def test_da_duyet_van_sua_duoc_ma_don_misa(db):
     """Kế toán đối chiếu số MISA sau khi đơn đã duyệt — mã đơn MISA phải sửa được sau duyệt."""
     po, it = _don(db)
