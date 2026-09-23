@@ -34,7 +34,9 @@ from app.core.config import settings
 from . import coder, manager, memory, playbook, telegram
 from .timeutil import fmt_local, now_local, to_utc
 from .constants import (
+    ACT_ACK,
     ACT_ANSWER,
+    ACT_HEARTBEAT,
     ACT_ASKED,
     ACT_COMMAND,
     ACT_DEPLOY_TIME,
@@ -55,6 +57,7 @@ from .constants import (
     DIR_IN,
     DIR_OUT,
     MERGED_BY_BOT,
+    NOISE_ACTIONS,
     RISK_HIGH,
     RISK_LABELS,
     RUN_ERROR,
@@ -246,9 +249,112 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
         answer_question(db, chat_id, text, before_id=row.id)
     elif data["intent"] == manager.INTENT_UNSURE:
         _ask_intent_choice(db, chat_id, row)
-    #  GIAO VIỆC: để `action` rỗng, tin nằm lại INBOX và vòng gom lo tiếp. Cố ý KHÔNG
-    #  trả lời "đã nhận": gõ ba câu liền là ba tiếng chuông vô nghĩa, trong khi thẻ
-    #  task vài phút nữa mới là thứ đáng đọc.
+    #  GIAO VIỆC: để `action` rỗng, tin nằm lại INBOX và vòng gom lo tiếp.
+    #  ai-CR-021: đại ca muốn biết ngay là bot đã nhận — nhắn MỘT câu báo nhận cho cả chùm tin
+    #  liên tiếp (không phải mỗi câu một tiếng chuông, lý do bản cũ im lặng hẳn).
+    else:
+        ack_task_message(db, chat_id, row)
+
+
+# ---------------------------------------------------------------------------
+# Báo nhận + báo đang chạy (ai-CR-021)
+# ---------------------------------------------------------------------------
+HEARTBEAT_AFTER = timedelta(seconds=90)     # im quá chừng này thì nhắn «em vẫn đang làm»
+HEARTBEAT_STOP = timedelta(minutes=60)      # quá chừng này thì thôi sửa tin (việc kẹt thì /xem)
+_TRIAGE_ACTIVE = timedelta(minutes=15)      # việc ở TRIAGE lâu hơn = kẹt, vòng nhặt việc kẹt lo
+
+
+def ack_task_message(db: Session, chat_id: str, row: AgentMessage) -> None:
+    """Một câu «em nhận rồi» cho tin vừa được xếp là việc. Cả chùm tin liên tiếp chỉ một câu:
+    đã báo nhận trong khoảng gom mà vẫn còn tin chờ gom thì thôi."""
+    window = timedelta(seconds=settings.AGENT_TRIAGE_DELAY_SEC + 120)
+    last_ack = db.scalar(
+        select(AgentMessage).where(AgentMessage.chat_id == chat_id, AgentMessage.id < row.id,
+                                   AgentMessage.action == ACT_ACK)
+        .order_by(AgentMessage.id.desc()).limit(1)
+    )
+    if last_ack is not None and row.created_at and last_ack.created_at and \
+            row.created_at - last_ack.created_at <= window:
+        #  Còn tin nào khác đang chờ gom (tin đầu của chùm nằm TRƯỚC câu báo nhận) = cùng chùm.
+        pending = db.scalar(select(func.count(AgentMessage.id)).where(
+            AgentMessage.chat_id == chat_id, AgentMessage.direction == DIR_IN,
+            AgentMessage.task_id == 0, AgentMessage.action == "",
+            AgentMessage.id < row.id)) or 0
+        if pending:
+            return
+    seconds = settings.AGENT_TRIAGE_DELAY_SEC
+    reply(db, chat_id,
+          f"Em nhận tin rồi, anh chờ em xíu. Em gom tin trong khoảng {seconds} giây (anh nhắn thêm "
+          "thì em gom chung), rồi đọc mã, kiểm tra và phản hồi.", action=ACT_ACK)
+
+
+def _active_stage(db: Session, task: AgentTask) -> tuple[str, datetime | None]:
+    """(việc đang làm, mốc bắt đầu) của một việc đang chạy; ("", None) nếu không chạy gì."""
+    def running(stage: int) -> AgentRun | None:
+        return db.scalar(select(AgentRun).where(AgentRun.task_id == task.id, AgentRun.stage == stage,
+                                                AgentRun.status == RUN_RUNNING)
+                         .order_by(AgentRun.id.desc()).limit(1))
+
+    if task.status == ST_SCANNING:
+        run = running(STAGE_SCAN)
+        if run is not None:
+            return f"đọc mã trên <code>{telegram.esc(settings.AGENT_BASE_BRANCH)}</code> để rà soát", run.started_at
+        return "chờ runner rảnh để rà soát (runner đang làm việc khác)", task.updated_at
+    if task.status == ST_CODE:
+        run = running(ST_CODE)
+        return ("sửa mã và chạy cổng kiểm", run.started_at) if run is not None else \
+            ("chờ runner rảnh để sửa mã", task.updated_at)
+    if task.status == ST_DEPLOYING:
+        run = running(STAGE_DEPLOY) or running(STAGE_REVERT)
+        return "gộp vào nhánh nền và deploy dev", (run.started_at if run is not None else task.updated_at)
+    if task.status == ST_TRIAGE:
+        #  Lượt lập kế hoạch chỉ commit dòng sổ khi xong nên từ ngoài không thấy nó: dựa vào mốc
+        #  việc vào trạm này (updated_at), và chỉ trong 15 phút — lâu hơn là kẹt, không phải đang chạy.
+        return "lập kế hoạch sửa", task.updated_at
+    return "", None
+
+
+def _heartbeat_text(task: AgentTask, doing: str, minutes: int) -> str:
+    return (f"<b>{telegram.esc(task.code)}</b>: em vẫn đang {doing}, đã {max(minutes, 1)} phút, "
+            "anh đợi em xíu. Xong em nhắn ngay.")
+
+
+def heartbeat(db: Session, now: datetime | None = None) -> int:
+    """Vòng beat mỗi phút: việc đang chạy mà quá 90 giây chưa có tin nào thì nhắn «em vẫn đang
+    làm»; đã nhắn rồi thì SỬA chính tin đó cho đúng số phút (không kêu chuông lần nữa).
+    Trả số tin đã gửi hoặc sửa."""
+    now = now or datetime.now()
+    chat_id = settings.AGENT_TELEGRAM_CHAT_ID
+    tasks = db.scalars(select(AgentTask).where(
+        AgentTask.status.in_((ST_SCANNING, ST_CODE, ST_DEPLOYING, ST_TRIAGE)))).all()
+    touched = 0
+    for task in tasks:
+        doing, start = _active_stage(db, task)
+        if not doing or start is None:
+            continue
+        elapsed = now - start
+        if elapsed > HEARTBEAT_STOP or (task.status == ST_TRIAGE and elapsed > _TRIAGE_ACTIVE):
+            continue
+        minutes = int(elapsed.total_seconds() // 60)
+        hb = db.scalar(select(AgentMessage).where(
+            AgentMessage.task_id == task.id, AgentMessage.action == ACT_HEARTBEAT,
+            AgentMessage.created_at >= start).order_by(AgentMessage.id.desc()).limit(1))
+        text = _heartbeat_text(task, doing, minutes)
+        if hb is not None:
+            if hb.body != text and telegram.edit_text(chat_id, hb.tg_message_id, text):
+                hb.body = text
+                db.commit()
+                touched += 1
+            continue
+        last_out = db.scalar(select(func.max(AgentMessage.created_at)).where(
+            AgentMessage.task_id == task.id, AgentMessage.direction == DIR_OUT))
+        quiet_since = max(start, last_out) if last_out else start
+        if now - quiet_since < HEARTBEAT_AFTER:
+            continue
+        reply(db, chat_id, text, task_id=task.id, action=ACT_HEARTBEAT)
+        db.commit()
+        touched += 1
+    return touched
 
 
 def _ask_intent_choice(db: Session, chat_id: str, row: AgentMessage) -> None:
@@ -311,7 +417,8 @@ def _patch_question_target(db: Session, chat_id: str, row: AgentMessage) -> int:
     """Tin này có đang nằm trong mạch hỏi về bản vá không. Trả id việc, hoặc 0."""
     last = db.scalar(
         select(AgentMessage)
-        .where(AgentMessage.chat_id == chat_id, AgentMessage.id < row.id)
+        .where(AgentMessage.chat_id == chat_id, AgentMessage.id < row.id,
+               AgentMessage.action.not_in(NOISE_ACTIONS))
         .order_by(AgentMessage.id.desc())
         .limit(1)
     )
@@ -562,7 +669,8 @@ def _deploy_time_target(db: Session, chat_id: str, row: AgentMessage) -> int:
     """Tin này có phải giờ hẹn trả lời lời mời «Hẹn giờ» không. Trả id việc, hoặc 0."""
     last = db.scalar(
         select(AgentMessage)
-        .where(AgentMessage.chat_id == chat_id, AgentMessage.id < row.id)
+        .where(AgentMessage.chat_id == chat_id, AgentMessage.id < row.id,
+               AgentMessage.action.not_in(NOISE_ACTIONS))
         .order_by(AgentMessage.id.desc())
         .limit(1)
     )
@@ -762,8 +870,10 @@ def propose_rule(db: Session, chat_id: str, task: AgentTask, asked: list[str], a
     esc = telegram.esc
     topic = playbook.protected_topic("\n".join([task.title or "", *asked, answer]))
     if int(task.risk_level or 0) >= RISK_HIGH or topic:
-        reply(db, chat_id, f"Câu này dính {esc(topic or 'việc rủi ro cao')} nên lần sau gặp em vẫn "
-              "hỏi, không đề xuất ghi vào sổ quyết định.", task_id=task.id)
+        #  Im lặng (ai-CR-021): việc công nợ thì câu trả lời nào cũng rơi vào đây, nhắn mỗi lần một
+        #  câu «dính tiền nên em vẫn hỏi» chỉ làm khung chat dài thêm.
+        log.info("agent_hub: %s chạm chủ đề luôn hỏi (%s), không đề xuất ghi sổ", task.code,
+                 topic or "rủi ro cao")
         return
     run = start_run(db, task.id, STAGE_RULE)
     try:
@@ -1035,7 +1145,8 @@ def _resolve_intent(db: Session, chat_id: str, cb_id: str, action: str, msg_id: 
     else:
         row.action = ""
         telegram.answer_callback(cb_id, "Đã xếp vào hàng chờ gom")
-        reply(db, chat_id, "Rồi, em ghi vào sổ chờ. Lát nữa gom xong em gửi thẻ việc.")
+        reply(db, chat_id, "Rồi, em nhận việc này, anh chờ em xíu. Gom xong em đọc mã, kiểm tra và "
+              "phản hồi.", action=ACT_ACK)
 
 
 #  Mạch hội thoại đưa cho Trợ lý AI: tối đa bấy nhiêu lượt hỏi-đáp, chỉ lấy tin trong
@@ -1416,9 +1527,12 @@ def plan_task(db: Session, task: AgentTask) -> None:
     except Exception as e:  # noqa: BLE001
         finish_run(db, run, error=str(e))
         db.commit()
+        #  Kèm nút lập lại: không có nó thì việc vừa nhận câu trả lời nằm ở «Đang hỏi lại» mà không
+        #  còn câu hỏi, không nút, không lối ra (AI-0007, 23/09/2026).
         reply(db, settings.AGENT_TELEGRAM_CHAT_ID,
               f"Lập kế hoạch cho <b>{telegram.esc(task.code)}</b> lỗi: "
-              f"{telegram.esc(str(e)[:300])}", task_id=task.id)
+              f"{telegram.esc(str(e)[:300])}", task_id=task.id,
+              buttons=[("Lập lại kế hoạch", f"plan:{task.id}"), ("Bỏ việc này", f"no:{task.id}")])
         return
     finish_run(db, run, result=result)
 
@@ -1430,16 +1544,28 @@ def plan_task(db: Session, task: AgentTask) -> None:
     task.risk_level = data["risk_level"]
     needs = data["needs_clarification"]
     assumptions = data.get("assumptions") or []
+    open_scan_qs = _scan_questions(db, task)
     if assumptions and (strict or task.risk_level >= RISK_HIGH):
         #  Model tự giả định trên một việc rủi ro cao (kể cả khi chính lượt này mới nâng mức):
         #  luật 3 nói việc đó luôn hỏi, nên mọi giả định thành câu hỏi. Thi hành ở mã, không nhờ lời nhắc.
-        task.questions = list(task.questions or []) + [
-            f"Em định làm thế này, đại ca xác nhận giúp: {a}" for a in assumptions]
+        #  ai-CR-021: gọn lại — «Chưa làm: … chờ đại ca quyết: Q» chỉ giữ Q, câu trùng bỏ bớt.
+        task.questions = merge_questions(
+            list(task.questions or []) + [assumption_question(a) for a in assumptions] + open_scan_qs)
         needs = True
-    elif assumptions:
-        #  Ghi vào chính bản kế hoạch: thẻ duyệt hiện ra, và runner đọc lại y nguyên trong đề bài.
-        task.plan = (task.plan or "").rstrip() + "\n\n**Em tự quyết, không hỏi lại:**\n" + \
-            "\n".join(f"- {a}" for a in assumptions)
+    else:
+        if assumptions:
+            #  Ghi vào chính bản kế hoạch: thẻ duyệt hiện ra, và runner đọc lại y nguyên trong đề bài.
+            task.plan = (task.plan or "").rstrip() + "\n\n**Em tự quyết, không hỏi lại:**\n" + \
+                "\n".join(f"- {a}" for a in assumptions)
+        #  Câu rà soát nêu mà kế hoạch không nhắc tới: tự thêm, để thẻ này là chỗ duy nhất hỏi và
+        #  không câu nào bị rơi (đoạn phân tích không liệt kê câu hỏi nữa).
+        seen = _norm_q((task.plan or "") + " " + " ".join(task.questions or []))
+        missing = [q for q in open_scan_qs if _norm_q(q) not in seen]
+        if missing and needs:
+            task.questions = merge_questions(list(task.questions or []) + missing)
+        elif missing:
+            task.plan = (task.plan or "").rstrip() + "\n\n**Còn chờ đại ca quyết:**\n" + \
+                "\n".join(f"- {q}" for q in missing)
     #  `plan_files` rỗng = bot không viết nổi phạm vi cụ thể = CẤM đi tiếp (luật B2).
     #  Đây là chỗ thi hành luật đó, không phải câu nhắc gửi cho model.
     task.status = ST_NEEDS_INPUT if needs else ST_PLAN
@@ -1477,6 +1603,41 @@ def start_scan(db: Session, task: AgentTask) -> None:
           f"Em đang đọc mã trên <code>{telegram.esc(settings.AGENT_BASE_BRANCH)}</code> để rà soát "
           "trước, xong em nhắn đại ca phân tích rồi gửi kế hoạch (thường 2-5 phút; runner đang "
           "sửa việc khác thì lâu hơn).", task_id=task.id)
+
+
+_PENDING_Q = re.compile(r"(?is)^\s*chưa làm:.*?chờ đại ca quyết:\s*(.+)$")
+
+
+def _norm_q(text: str) -> str:
+    return " ".join(re.sub(r"[^\w\s]", " ", (text or "").lower()).split())
+
+
+def assumption_question(assumption: str) -> str:
+    """Giả định -> câu hỏi NGẮN cho việc rủi ro cao (ai-CR-021)."""
+    m = _PENDING_Q.match(assumption or "")
+    if m:
+        return m.group(1).strip()
+    text = re.sub(r"(?i)^\s*em giả định:\s*", "", (assumption or "").strip()).rstrip(" .")
+    return f"{text} — đại ca đồng ý không?"
+
+
+def merge_questions(questions: list[str]) -> list[str]:
+    """Bỏ câu trùng (so sau khi bỏ dấu câu, hoặc câu này nằm trọn trong câu kia)."""
+    out: list[str] = []
+    for q in (str(x).strip() for x in questions):
+        if not q:
+            continue
+        n = _norm_q(q)
+        if any(n == _norm_q(o) or n in _norm_q(o) or _norm_q(o) in n for o in out):
+            continue
+        out.append(q)
+    return out
+
+
+def _scan_questions(db: Session, task: AgentTask) -> list[str]:
+    run = coder.latest_scan_run(db, task)
+    art = run.artifact if run is not None and isinstance(run.artifact, dict) else {}
+    return [str(q) for q in (art.get("info") or {}).get("questions") or [] if str(q).strip()]
 
 
 def _scan_files(db: Session, task: AgentTask) -> list[str]:

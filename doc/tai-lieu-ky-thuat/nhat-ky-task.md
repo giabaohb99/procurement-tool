@@ -3486,6 +3486,29 @@ và `celery-beat`, chú thích đầu tệp ghi luôn lý do cấm đặt lại 
 `procurement-tool/docker-compose.override.yml` (bản vá tạm ở máy làm việc, không commit).
 Commit: `0c4a0850` trên nhánh `agent-hub-bac-1` (23/09/2026, chưa push).
 
+## ai-CR-021 | Đậu Đậu báo đã nhận tin, báo việc đang chạy, và hỏi gọn ở một chỗ
+- status: xong
+- date: 2026-09-23
+- pic: NSU209
+
+Đại ca muốn gửi việc xong thì có tin nhắn lại ngay, và việc chạy lâu thì cứ khoảng một phút rưỡi có
+một tin cho biết việc vẫn đang chạy. Nay tin nào được xếp là việc cần làm thì Đậu Đậu nhắn ngay câu
+đã nhận, cả chùm tin liên tiếp chỉ một câu. Việc đang rà soát, lập kế hoạch, sửa mã hay gộp lên dev
+mà im quá chín mươi giây thì bot nhắn em vẫn đang làm, rồi sửa lại chính tin đó để cập nhật số phút
+thay vì gửi tin mới, cho khỏi kêu chuông liên tục. Hai loại tin này không làm đứt mạch hẹn giờ gộp
+hay hỏi thêm về bản vá. Khi đại ca chạy thử việc AI-0007 (màn Công nợ và Yêu cầu thanh toán) thì lộ
+ba chỗ và em đã sửa: bot hỏi hai lần, ở đoạn phân tích rồi lại ở thẻ kế hoạch với lời dẫn dài, nay
+chỉ hỏi ở thẻ kế hoạch, câu ngắn và không trùng; lượt lập lại kế hoạch sau khi đại ca trả lời bị cắt
+cụt vì phần suy nghĩ của Gemini ăn hết trần, nay phần suy nghĩ có trần riêng và cụt thì tự thử lại;
+và khi lập kế hoạch hỏng thì việc kẹt không có lối ra, nay câu báo lỗi kèm nút lập lại. Em cũng bỏ
+câu báo dính tiền lặp lại mỗi lần. AI-0007 đã được gỡ kẹt và có thẻ kế hoạch chờ đại ca duyệt. Cả
+tệp bài kiểm 121/121 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/{service,coder,manager,tasks,telegram,constants}.py`
+(`ack_task_message`, `heartbeat`, `edit_text`, `assumption_question`, `merge_questions`,
+`AgentGeminiProvider._gen_config`) · `backend/app/core/celery_app.py` · `test/backend/test_agent_hub.py` ·
+`change-log-ai.md`.
+
 ## ai-CR-020 | Lệnh /xem xem lại lịch sử một việc kể cả việc đã bỏ, và giờ bot nói theo giờ Việt Nam
 - status: xong
 - date: 2026-09-23

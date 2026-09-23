@@ -278,6 +278,21 @@ def answer_callback(callback_id: str, text: str = "") -> None:
         pass
 
 
+def edit_text(chat_id: str, message_id: int, text: str) -> bool:
+    """Sửa chữ của một tin đã gửi (ai-CR-021: tin báo đang chạy cập nhật số phút mà không kêu
+    chuông lần nữa). Trả False nếu hỏng — kể cả lỗi «message is not modified», không sao."""
+    if not message_id:
+        return False
+    try:
+        _call("editMessageText", {
+            "chat_id": chat_id, "message_id": message_id, "text": _clip(text),
+            "parse_mode": "HTML", "disable_web_page_preview": True,
+        })
+        return True
+    except TelegramError:
+        return False
+
+
 def clear_buttons(chat_id: str, message_id: int) -> None:
     """Gỡ hàng nút khỏi một tin đã gửi, sau khi đại ca bấm xong.
 

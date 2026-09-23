@@ -34,6 +34,23 @@ class AgentGeminiProvider(GeminiProvider):
     def _api_key(self) -> str:
         return settings.AGENT_GEMINI_API_KEY
 
+    def _gen_config(self, model: str, max_tokens: int, temperature: float, thinking: bool) -> dict:
+        """Có suy nghĩ thì CHẶN TRẦN phần suy nghĩ và cộng nó vào trần đầu ra (ai-CR-021).
+
+        Gemini tính token suy nghĩ vào `maxOutputTokens`. Không chặn thì có lượt nghĩ ~14 nghìn
+        token, chạm trần 16384 và cắt cụt JSON giữa chuỗi (AI-0007, 23/09/2026). Chỉnh ở lớp RIÊNG
+        của bot, không đụng provider dùng chung với Trợ lý AI trên web.
+        """
+        cfg = super()._gen_config(model, max_tokens, temperature, thinking)
+        if thinking:
+            cfg["thinkingConfig"] = {"thinkingBudget": THINKING_BUDGET}
+            cfg["maxOutputTokens"] = max_tokens + THINKING_BUDGET
+        return cfg
+
+
+#  Trần phần suy nghĩ của bot quản lý. Đo 23/09: lượt lập kế hoạch nghĩ 6-14 nghìn token.
+THINKING_BUDGET = 8192
+
 
 def get_provider() -> AgentGeminiProvider:
     return AgentGeminiProvider()
@@ -222,13 +239,22 @@ def run_plan(title: str, summary: str, docs: list[dict], *, playbook: str = "",
         [ChatMessage(role="user", content="\n".join(parts))],
         model=settings.AGENT_MANAGER_MODEL,
         system=PLAN_SYSTEM,
-        #  16384, không phải 4096: Gemini tính token suy nghĩ vào trần đầu ra (đo thật 6-7 nghìn), từ khi đề bài
-        #  mang theo sổ quyết định (ai-CR-015) lượt thử thật đã bị cắt giữa chuỗi JSON.
-        max_tokens=16384,
+        #  Trần cho PHẦN CHỮ; phần suy nghĩ có trần riêng THINKING_BUDGET cộng thêm (ai-CR-021).
+        max_tokens=8192,
         temperature=0.3,
         thinking=True,
     )
-    data = parse_json(result.text)
+    try:
+        data = parse_json(result.text)
+    except ProviderError as e:
+        #  Vẫn cụt (hoặc model trả rác): thử lại MỘT lần, tắt suy nghĩ để cả trần dành cho chữ.
+        log.warning("agent_hub: kế hoạch không ra JSON (%s), thử lại không suy nghĩ", str(e)[:120])
+        result = get_provider().ask(
+            [ChatMessage(role="user", content="\n".join(parts))],
+            model=settings.AGENT_MANAGER_MODEL, system=PLAN_SYSTEM,
+            max_tokens=8192, temperature=0.3, thinking=False,
+        )
+        data = parse_json(result.text)
     files = [str(f) for f in data.get("plan_files") or [] if str(f).strip()]
     questions = [str(q) for q in data.get("questions") or [] if str(q).strip()]
     assumptions = [str(a).strip() for a in data.get("assumptions") or [] if str(a).strip()]

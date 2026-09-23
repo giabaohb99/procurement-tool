@@ -1818,9 +1818,8 @@ def scan_task(db: Session, task: AgentTask) -> dict:
     task.status = ST_TRIAGE
     db.commit()
     shown = message if len(message) <= SCAN_MESSAGE_MAX else message[:SCAN_MESSAGE_MAX] + "…"
-    #  Câu cần đại ca quyết nằm trong JSON (máy đọc); phải hiện ra, không thì chỉ bước kế hoạch thấy.
-    if info.get("questions"):
-        shown += "\n\n**Cần đại ca quyết:**\n" + "\n".join(f"- {q}" for q in info["questions"])
+    #  Câu cần đại ca quyết KHÔNG liệt kê ở đây nữa (ai-CR-021, đại ca thấy hỏi hai lần quá dài):
+    #  thẻ kế hoạch ngay sau là chỗ DUY NHẤT hỏi — `service.plan_task` bảo đảm câu nào cũng lên đó.
     service.reply(db, chat_id,
                   f"**{task.code}** · em đã đọc mã trên `{settings.AGENT_BASE_BRANCH}` "
                   f"(`{head[:8]}`):\n\n{shown}\n\nKế hoạch sửa em gửi ngay sau đây.",

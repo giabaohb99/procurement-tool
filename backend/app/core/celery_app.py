@@ -152,6 +152,12 @@ if settings.AGENT_HUB_ENABLED:
             "schedule": crontab(minute="*"),
             "options": {"expires": 50},
         },
+        #  ai-CR-021: việc chạy lâu mà im quá 90 giây thì nhắn «em vẫn đang làm», rồi cập nhật phút.
+        "agent-heartbeat": {
+            "task": "agent.heartbeat",
+            "schedule": crontab(minute="*"),
+            "options": {"expires": 50},
+        },
     })
     #  Vòng kéo tin CHỈ vào lịch khi không có tiến trình `agent-poller` riêng (ai-CR-008):
     #  poller giữ kết nối chờ tin, còn vòng này hỏi-rồi-về mỗi 10 giây. Hai bên cùng đọc

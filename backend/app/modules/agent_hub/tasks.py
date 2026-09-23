@@ -339,3 +339,19 @@ def scan_task(task_id: int) -> dict:
         return {"status": "error", "reason": str(e)[:500]}
     finally:
         db.close()
+
+
+@celery_app.task(name="agent.heartbeat")
+def heartbeat_task() -> dict:
+    """Vòng beat mỗi phút (ai-CR-021): nhắn / cập nhật tin «em vẫn đang làm» cho việc chạy lâu."""
+    if (off := _off()) is not None:
+        return off
+    db = SessionLocal()
+    try:
+        return {"status": "success", "touched": service.heartbeat(db)}
+    except Exception as e:  # noqa: BLE001 — tin báo hỏng không được làm chết vòng beat
+        db.rollback()
+        log.exception("agent_hub: vòng báo đang chạy hỏng")
+        return {"status": "error", "reason": str(e)[:300]}
+    finally:
+        db.close()

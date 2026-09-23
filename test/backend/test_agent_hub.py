@@ -151,7 +151,10 @@ def test_giao_viec_van_nam_lai_inbox(db, bot, monkeypatch):
     service.handle_message(db, _msg("cho thêm cột ngày giao vào bảng đơn hàng"))
 
     assert asked == []
-    assert db.query(service.AgentMessage).one().action == ""
+    assert db.query(service.AgentMessage).filter_by(direction=service.DIR_IN).one().action == ""
+    #  ai-CR-021: kèm một câu báo nhận (dấu riêng, không phải lượt hội thoại).
+    assert db.query(service.AgentMessage).filter_by(direction=service.DIR_OUT).one().action == \
+        service.ACT_ACK
 
 
 def test_map_mo_thi_hoi_lai_chu_khong_doan(db, bot, monkeypatch):
@@ -2029,8 +2032,7 @@ def test_viec_rui_ro_cao_khong_nap_so_va_moi_gia_dinh_thanh_cau_hoi(db, bot, mon
     service.plan_task(db, task)
     assert seen[0]["strict"] is True and seen[0]["playbook"] == ""
     assert task.status == _ST_NI and "Em tự quyết" not in task.plan
-    assert task.questions == ["Em định làm thế này, đại ca xác nhận giúp: "
-                              "Em giả định: làm tròn tiền xuống hàng đồng."]
+    assert task.questions == ["làm tròn tiền xuống hàng đồng — đại ca đồng ý không?"]
     #  Việc vào ở mức vừa nhưng chính lượt lập kế hoạch nâng lên cao: giả định vẫn thành câu hỏi.
     task2 = _task_with_plan(db, service, [], status=service.ST_TRIAGE, risk_level=2)
     service.plan_task(db, task2)
@@ -2105,7 +2107,8 @@ def test_bam_khong_thi_khong_ghi_va_cau_dinh_tien_thi_khong_de_xuat(db, bot, mon
     task2 = _task_hoi_lai(db, service)
     service.send_plan_card(db, task2)
     service.handle_message(db, _msg("công nợ để âm cũng được"))
-    assert "dính công nợ nên lần sau gặp em vẫn hỏi" in sent[-1][0]
+    #  ai-CR-021: im lặng, không nhắn «dính tiền nên em vẫn hỏi» mỗi lần nữa.
+    assert not any("lần sau gặp em vẫn hỏi" in s for s, _b in sent)
     #  Model nói không dùng lại được: im lặng, không thẻ.
     _fake_rule(monkeypatch, service, generalizable=False)
     task3 = _task_hoi_lai(db, service)
@@ -2451,9 +2454,12 @@ def test_ra_soat_cat_cau_dan_va_hien_cau_can_dai_ca_quyet(db, bot, monkeypatch, 
     task = _task_with_plan(db, service, [], status=ST_SCANNING)
     coder.scan_task(db, task)
     analysis = next(t for t, _b in sent if "em đã đọc mã" in t)
-    assert "Giờ trả lời" not in analysis and "Cần đại ca quyết:" in analysis
-    assert "Có chặn gửi duyệt không?" in analysis
+    assert "Giờ trả lời" not in analysis
+    #  ai-CR-021: câu hỏi KHÔNG liệt kê ở đoạn phân tích nữa — thẻ kế hoạch là chỗ duy nhất hỏi,
+    #  và câu kế hoạch quên nhắc thì tự thêm vào đó.
+    assert "Có chặn gửi duyệt không?" not in analysis
     assert "đại ca CHƯA trả lời: Có chặn gửi duyệt không?" in seen[0]["review"]
+    assert "**Còn chờ đại ca quyết:**\n- Có chặn gửi duyệt không?" in task.plan
 
 
 def test_the_ke_hoach_doi_markdown_sang_html(db, bot, monkeypatch):
@@ -2751,3 +2757,154 @@ def test_lenh_xem_ke_ca_viec_da_bo(db, bot, monkeypatch):
     assert "Cú pháp" in sent[-1][0]
     assert [service._task_code(a) for a in ("AI-0006", "ai-6", "AI6", "6", "ai 06", "abc")] == \
         ["AI-0006"] * 5 + [""]
+
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-021: báo nhận ngay + báo đang chạy khi im quá 90 giây
+# ---------------------------------------------------------------------------
+def test_tin_giao_viec_duoc_bao_nhan_mot_lan_cho_ca_chum(db, bot, monkeypatch):
+    from app.modules.agent_hub.model import AgentMessage
+
+    service, _, _ = bot
+    sent = _capture_send(monkeypatch, service)
+    _fake_intent(monkeypatch, service, "viec")
+    service.handle_message(db, _msg("màn công nợ lọc sai"))
+    first = db.query(AgentMessage).filter_by(direction=service.DIR_IN).order_by(AgentMessage.id.desc()).first()
+    assert first.action == "" and first.task_id == 0          # vẫn nằm INBOX cho vòng gom
+    assert "Em nhận tin rồi, anh chờ em xíu" in sent[-1][0]
+    acks = db.query(AgentMessage).filter_by(action=service.ACT_ACK).count()
+    assert acks == 1
+    #  Câu thứ hai trong cùng chùm (tin trước còn chờ gom): không kêu chuông thêm.
+    n = len(sent)
+    service.handle_message(db, _msg("cả màn yêu cầu thanh toán nữa"))
+    assert len(sent) == n and db.query(AgentMessage).filter_by(action=service.ACT_ACK).count() == 1
+
+
+def test_bao_dang_chay_sau_90_giay_roi_sua_chinh_tin_do(db, bot, monkeypatch):
+    from datetime import timedelta as _td
+
+    from app.modules.agent_hub.model import AgentMessage, AgentRun
+
+    service, _, _ = bot
+    sent = _capture_send(monkeypatch, service)
+    edits: list[tuple] = []
+    monkeypatch.setattr(service.telegram, "edit_text", lambda c, mid, text: edits.append((mid, text)) or True)
+    task = _task_with_plan(db, service, [], status=ST_SCANNING)
+    t0 = datetime(2026, 9, 23, 3, 0)
+    db.add(AgentRun(task_id=task.id, stage=STAGE_SCAN, provider="claude_code", model="c",
+                    status=service.RUN_RUNNING, started_at=t0))
+    nhan = service.log_message(db, service.DIR_OUT, "12345", 50, "Đậu Đậu nhận việc", task_id=task.id)
+    nhan.created_at = t0
+    db.commit()
+
+    assert service.heartbeat(db, t0 + _td(seconds=60)) == 0 and not sent
+    assert service.heartbeat(db, t0 + _td(seconds=100)) == 1
+    assert "em vẫn đang đọc mã" in sent[-1][0] and "đã 1 phút" in sent[-1][0]
+    hb = db.query(AgentMessage).filter_by(action=service.ACT_HEARTBEAT).one()
+    hb.created_at = t0 + _td(seconds=100)
+    db.commit()
+    #  Phút sau: SỬA tin cũ, không gửi tin mới; cùng phút thì không sửa lại.
+    assert service.heartbeat(db, t0 + _td(seconds=200)) == 1
+    assert len(sent) == 1 and "đã 3 phút" in edits[-1][1]
+    assert service.heartbeat(db, t0 + _td(seconds=230)) == 0 and len(edits) == 1
+    #  Quá 60 phút thì thôi; việc xong (sang PLAN) thì thôi.
+    assert service.heartbeat(db, t0 + _td(minutes=70)) == 0
+    task.status = service.ST_PLAN
+    db.commit()
+    assert service.heartbeat(db, t0 + _td(seconds=320)) == 0
+
+
+def test_bao_dang_chay_khi_con_cho_runner(db, bot, monkeypatch):
+    from datetime import timedelta as _td
+
+    service, _, _ = bot
+    sent = _capture_send(monkeypatch, service)
+    task = _task_with_plan(db, service, [], status=ST_SCANNING)
+    assert service.heartbeat(db, task.updated_at + _td(minutes=2)) == 1
+    assert "chờ runner rảnh" in sent[-1][0]
+
+
+def test_tin_bao_khong_lam_dut_mach_hen_gio(db, bot, monkeypatch):
+    """Tin báo đang chạy của VIỆC KHÁC chen giữa lời mời hẹn giờ và câu trả lời: vẫn hẹn được."""
+    from app.modules.agent_hub import coder
+
+    service, _, _ = bot
+    _deploy_on(monkeypatch)
+    sent = _capture_send(monkeypatch, service)
+    task = _task_with_session(db, service, coder)
+    other = _task_with_plan(db, service, [], status=ST_SCANNING)
+    service.handle_callback(db, _callback(f"mgat:{task.id}"))
+    service.reply(db, "12345", "AI-x: em vẫn đang đọc mã", task_id=other.id, action=service.ACT_HEARTBEAT)
+    db.commit()
+    service.handle_message(db, _msg("45 phút nữa"))
+    assert len(_deploy_runs(db, task)) == 1 and "Đã hẹn" in sent[-1][0]
+
+
+
+def test_viec_rui_ro_cao_chi_hoi_mot_lan_moi_cau(db, bot, monkeypatch, tmp_path):
+    """Ca AI-0007 (23/09): đoạn phân tích hỏi 2 câu, thẻ kế hoạch hỏi lại 3 câu bọc lời dẫn dài."""
+    from app.modules.agent_hub.model import AgentRun
+
+    service, _, _ = bot
+    _so_tam(monkeypatch, tmp_path)
+    _fake_plan(monkeypatch, service, risk_level=3, assumptions=[
+        "Theo QĐ-09: đổi giá trị ô lọc thì về trang 1.",
+        "Chưa làm: bỏ ô Số tiền — chờ đại ca quyết: Ô Số tiền bỏ hẳn, không dời đi đâu?",
+    ])
+    task = _task_with_plan(db, service, [], status=service.ST_TRIAGE, risk_level=2)
+    db.add(AgentRun(task_id=task.id, stage=STAGE_SCAN, provider="claude_code", model="c",
+                    status=service.RUN_OK, started_at=datetime.now(),
+                    artifact={"message": "**Kết luận:** lệch hai ô.", "info": {"questions": [
+                        "Ô Số tiền bỏ hẳn, không dời đi đâu?", "Hai ô Loại nợ giữ ở thanh nhanh hay dời?"]}}))
+    db.commit()
+    service.plan_task(db, task)
+    assert task.status == _ST_NI
+    assert task.questions == [
+        "Theo QĐ-09: đổi giá trị ô lọc thì về trang 1 — đại ca đồng ý không?",
+        "Ô Số tiền bỏ hẳn, không dời đi đâu?",
+        "Hai ô Loại nợ giữ ở thanh nhanh hay dời?",
+    ]
+    assert not any("xác nhận giúp" in q or "Chưa làm" in q for q in task.questions)
+
+
+
+def test_tran_suy_nghi_cua_bot_va_thu_lai_khi_json_cut(monkeypatch):
+    """AI-0007 (23/09): Gemini nghĩ ~14 nghìn token, chạm trần, JSON bị cắt giữa chuỗi."""
+    from app.modules.agent_hub import manager
+
+    p = manager.AgentGeminiProvider()
+    cfg = p._gen_config("gemini-flash-latest", 8192, 0.3, True)
+    assert cfg["thinkingConfig"] == {"thinkingBudget": manager.THINKING_BUDGET}
+    assert cfg["maxOutputTokens"] == 8192 + manager.THINKING_BUDGET
+    assert p._gen_config("gemini-flash-latest", 4096, 0.2, False)["maxOutputTokens"] == 4096
+
+    calls: list[bool] = []
+    good = '{"plan": "1. Sửa", "plan_files": ["backend/app/x.py"], "test_plan": "", "risk_level": 2}'
+
+    class Fake:
+        def ask(self, messages, *, model, system, max_tokens, temperature, thinking=False):
+            from dataclasses import replace
+
+            calls.append(thinking)
+            return replace(_ket_qua_model(), text='{"plan": "1. Màn Công nợ (cụt' if thinking else good)
+
+    monkeypatch.setattr(manager, "get_provider", lambda: Fake())
+    data, _ = manager.run_plan("t", "s", [])
+    assert calls == [True, False] and data["plan_files"] == ["backend/app/x.py"]
+
+
+def test_lap_ke_hoach_hong_thi_co_nut_lap_lai_khong_ket(db, bot, monkeypatch):
+    service, _, _ = bot
+    sent = _capture_send(monkeypatch, service)
+    monkeypatch.setattr(service.memory, "recall", lambda text: [])
+
+    def boom(*a, **kw):
+        raise service.manager.ProviderError("Model không trả JSON: cụt")
+
+    monkeypatch.setattr(service.manager, "run_plan", boom)
+    task = _task_hoi_lai(db, service, questions=[])
+    service.plan_task(db, task)
+    text, buttons = sent[-1]
+    assert "Lập kế hoạch cho" in text and "lỗi" in text
+    assert [b[1] for b in buttons] == [f"plan:{task.id}", f"no:{task.id}"]
