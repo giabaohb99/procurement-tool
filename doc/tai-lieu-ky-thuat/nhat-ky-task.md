@@ -3486,6 +3486,26 @@ và `celery-beat`, chú thích đầu tệp ghi luôn lý do cấm đặt lại 
 `procurement-tool/docker-compose.override.yml` (bản vá tạm ở máy làm việc, không commit).
 Commit: `0c4a0850` trên nhánh `agent-hub-bac-1` (23/09/2026, chưa push).
 
+## ai-CR-022 | Đậu Đậu nói gọn và bớt tiền Gemini
+- status: xong
+- date: 2026-09-23
+- pic: NSU209
+
+Đại ca thấy bot trả lời dài và tài khoản Gemini đã tốn gần hai mươi nghìn đồng. Em đo trước khi sửa:
+các lượt trò chuyện và lập kế hoạch của bot cộng lại chỉ khoảng ba nghìn đồng, khoản lớn là hai lần
+em nạp lại toàn bộ kho tài liệu, mỗi lần gửi khoảng ba triệu rưỡi ký tự qua dịch vụ nhúng của Gemini
+dù hầu hết tài liệu không đổi. Cột chi phí trong sổ của bot còn toàn số không vì bảng giá thiếu tên
+thật của model. Em sửa: nạp kho chỉ nhúng lại tệp có thay đổi, lần chạy thật giữ nguyên bốn mươi lăm
+trên bốn mươi tám tệp; lập kế hoạch khi đã có kết quả rà soát thì không bật chế độ suy nghĩ, một lượt
+từ khoảng mười ba nghìn token xuống bốn trăm hai mươi; kế hoạch tối đa năm bước mỗi bước một câu,
+đoạn rà soát tối đa mười hai dòng, thẻ bỏ mục tài liệu đã tra và câu giải thích rủi ro cố định; vá
+lỗi câu hỏi đã được trả lời vẫn bị hỏi lại; và bổ sung bảng giá. Thẻ kế hoạch AI-0007 đã gửi lại bản
+gọn. Phần rà soát và sửa mã chạy bằng gói Claude, không tốn tiền Gemini. Cả tệp bài kiểm 125/125 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/{memory,manager,service,coder,constants}.py`
+(`_unchanged`, `_retag`, `AgentGeminiProvider._gen_config`, `THINKING_BUDGET`) ·
+`test/backend/test_agent_hub.py` · `change-log-ai.md`.
+
 ## ai-CR-021 | Đậu Đậu báo đã nhận tin, báo việc đang chạy, và hỏi gọn ở một chỗ
 - status: xong
 - date: 2026-09-23

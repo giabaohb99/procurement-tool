@@ -184,6 +184,7 @@ def reindex() -> dict:
         buffer.clear()
         return n
 
+    reused = 0
     for path in collect_files():
         rel = rel_path(path, root)
         if path.stat().st_size > MAX_FILE_BYTES:
@@ -195,6 +196,12 @@ def reindex() -> dict:
         if not chunks:
             continue
         indexed += 1
+        #  ai-CR-022: tệp không đổi thì GIỮ vector cũ, chỉ đóng dấu lượt mới. Nạp đè cả kho mỗi lần
+        #  là ~1,2 triệu token nhúng (~5 nghìn đồng) cho vài dòng sửa — khoản tốn nhất của bot.
+        if _unchanged(store, rel, chunks):
+            _retag(store, rel, run_id)
+            reused += 1
+            continue
         for i, chunk in enumerate(chunks):
             buffer.append((str(uuid.uuid5(_NS, f"{rel}:{i}")), chunk, rel, i))
             if len(buffer) >= UPSERT_BATCH:
@@ -203,8 +210,32 @@ def reindex() -> dict:
     total_chunks += flush()
     #  Tới được đây nghĩa là đã nạp trọn, giờ mới được phép dọn.
     drop_stale(store, run_id)
-    log.info("agent_hub: nạp %d tệp, %d đoạn vào %s", indexed, total_chunks, COLLECTION)
-    return {"files": indexed, "chunks": total_chunks, "skipped": skipped}
+    log.info("agent_hub: nạp %d tệp (%d giữ nguyên), nhúng %d đoạn vào %s", indexed, reused,
+             total_chunks, COLLECTION)
+    return {"files": indexed, "reused": reused, "chunks": total_chunks, "skipped": skipped}
+
+
+def _path_filter(rel: str):
+    from qdrant_client.http import models as qm
+
+    return qm.Filter(must=[qm.FieldCondition(key="path", match=qm.MatchValue(value=rel))])
+
+
+def _unchanged(store: VectorStore, rel: str, chunks: list[str]) -> bool:
+    """Các đoạn đang nằm trong kho của tệp này có y hệt các đoạn vừa cắt không. So bằng chữ,
+    không cần cột băm — nên cả kho nạp từ trước ai-CR-022 cũng dùng lại được, khỏi nhúng lại."""
+    points, _ = store.client.scroll(
+        collection_name=COLLECTION, scroll_filter=_path_filter(rel),
+        limit=len(chunks) + 50, with_payload=["chunk_index", "text"], with_vectors=False,
+    )
+    stored = {int((p.payload or {}).get("chunk_index", -1)): (p.payload or {}).get("text") for p in points}
+    return len(stored) == len(chunks) and all(stored.get(i) == c for i, c in enumerate(chunks))
+
+
+def _retag(store: VectorStore, rel: str, run_id: int) -> None:
+    """Đóng dấu lượt mới cho các đoạn giữ nguyên, để `drop_stale()` không xóa nhầm chúng."""
+    store.client.set_payload(collection_name=COLLECTION, payload={"run": run_id},
+                             points=_path_filter(rel), wait=True)
 
 
 #  Điểm cosine dưới ngưỡng coi như không liên quan. Thà trả rỗng — bot quản lý viện

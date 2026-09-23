@@ -2878,6 +2878,8 @@ def test_tran_suy_nghi_cua_bot_va_thu_lai_khi_json_cut(monkeypatch):
     assert cfg["thinkingConfig"] == {"thinkingBudget": manager.THINKING_BUDGET}
     assert cfg["maxOutputTokens"] == 8192 + manager.THINKING_BUDGET
     assert p._gen_config("gemini-flash-latest", 4096, 0.2, False)["maxOutputTokens"] == 4096
+    #  ai-CR-022: tắt hẳn, kể cả với bí danh mà lớp dùng chung không dám gửi 0.
+    assert p._gen_config("gemini-flash-latest", 4096, 0.2, False)["thinkingConfig"] == {"thinkingBudget": 0}
 
     calls: list[bool] = []
     good = '{"plan": "1. Sửa", "plan_files": ["backend/app/x.py"], "test_plan": "", "risk_level": 2}'
@@ -2908,3 +2910,117 @@ def test_lap_ke_hoach_hong_thi_co_nut_lap_lai_khong_ket(db, bot, monkeypatch):
     text, buttons = sent[-1]
     assert "Lập kế hoạch cho" in text and "lỗi" in text
     assert [b[1] for b in buttons] == [f"plan:{task.id}", f"no:{task.id}"]
+
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-022: bot nói gọn, bớt tiền Gemini
+# ---------------------------------------------------------------------------
+def test_bang_gia_biet_ten_that_cua_model_va_ke_hoach_co_ra_soat_thi_khong_suy_nghi(monkeypatch):
+    from dataclasses import replace
+
+    from app.modules.agent_hub import manager
+    from app.modules.agent_hub.constants import estimate_cost_usd
+
+    #  Google trả tên thật gemini-3.8-flash cho bí danh flash-latest; thiếu nó cột chi phí toàn 0.
+    assert estimate_cost_usd("gemini-3.8-flash", 1_000_000, 1_000_000) == 2.8
+    calls: list[bool] = []
+    good = '{"plan": "1. Sửa", "plan_files": ["backend/app/x.py"], "test_plan": "", "risk_level": 2}'
+
+    class Fake:
+        def ask(self, messages, *, model, system, max_tokens, temperature, thinking=False):
+            calls.append(thinking)
+            return replace(_ket_qua_model(), text=good)
+
+    monkeypatch.setattr(manager, "get_provider", lambda: Fake())
+    manager.run_plan("t", "s", [], review="**Kết luận:** lỗi ở x.py")
+    manager.run_plan("t", "s", [])
+    assert calls == [False, True]
+    assert manager.THINKING_BUDGET == 4096
+
+
+def test_the_ke_hoach_gon_khong_liet_ke_tai_lieu(db, bot, monkeypatch):
+    service, _, _ = bot
+    sent = _capture_send(monkeypatch, service)
+    task = _task_with_plan(db, service, ["backend/app/x.py"], risk_level=RISK_HIGH)
+    task.related_docs = [{"path": "doc/tai-lieu-ky-thuat/change-log.md", "score": 0.7}] * 4
+    service.send_plan_card(db, task)
+    text = sent[-1][0]
+    assert "Tài liệu đã tra" not in text and "change-log.md" not in text
+    assert f"Rủi ro: <b>{service.RISK_LABELS[RISK_HIGH]}</b>" in text
+    assert "Đụng tiền, phân quyền" not in text
+
+
+def test_cau_ra_soat_da_tra_loi_thi_khong_hoi_lai(db, bot, monkeypatch, tmp_path):
+    """AI-0007: đại ca đáp «oke theo ý của em», thẻ kế hoạch mới vẫn «Còn chờ đại ca quyết» hai câu cũ."""
+    from app.modules.agent_hub import coder
+    from app.modules.agent_hub.model import AgentRun
+
+    service, _, _ = bot
+    _so_tam(monkeypatch, tmp_path)
+    _capture_send(monkeypatch, service)
+    seen: list[dict] = []
+    _fake_plan(monkeypatch, service, seen=seen)
+    _fake_rule(monkeypatch, service, generalizable=False)
+    task = _task_hoi_lai(db, service, questions=["Ô Số tiền bỏ hẳn không?"])
+    db.add(AgentRun(task_id=task.id, stage=STAGE_SCAN, provider="claude_code", model="c",
+                    status=service.RUN_OK, started_at=datetime.now(),
+                    artifact={"message": "**Kết luận:** lệch.", "info": {"questions": ["Ô Số tiền bỏ hẳn không?"]}}))
+    db.commit()
+    service.send_plan_card(db, task)
+    service.handle_message(db, _msg("oke theo ý của em nhé"))
+    assert task.status == service.ST_PLAN and task.questions == []
+    assert "Còn chờ đại ca quyết" not in (task.plan or "")
+    assert "CHƯA trả lời" not in seen[0]["review"]
+    assert "CHƯA trả lời" not in coder.scan_message_for(task)
+
+
+def test_nap_kho_tai_lieu_chi_nhung_tep_co_doi(monkeypatch, tmp_path):
+    """Nạp đè cả kho là ~1,2 triệu token nhúng mỗi lần cho vài dòng sửa — khoản tốn nhất của bot."""
+    from types import SimpleNamespace
+
+    from app.modules.agent_hub import memory
+
+    root = tmp_path / "app"
+    (root / "doc").mkdir(parents=True)
+    same, changed = root / "doc" / "a.md", root / "doc" / "b.md"
+    same.write_text("Nội dung A không đổi.", encoding="utf-8")
+    changed.write_text("Nội dung B mới sửa.", encoding="utf-8")
+    stored = {"doc/a.md": memory.chunk_text("Nội dung A không đổi."),
+              "doc/b.md": memory.chunk_text("Nội dung B cũ.")}
+    retagged: list[str] = []
+    embedded: list[str] = []
+
+    class Client:
+        def scroll(self, collection_name, scroll_filter, limit, with_payload, with_vectors):
+            rel = scroll_filter.must[0].match.value
+            return [SimpleNamespace(payload={"chunk_index": i, "text": t})
+                    for i, t in enumerate(stored.get(rel, []))], None
+
+        def set_payload(self, collection_name, payload, points, wait):
+            retagged.append(points.must[0].match.value)
+
+        def delete(self, **kw):
+            pass
+
+    class Store:
+        client = Client()
+
+        def ensure_collection(self):
+            pass
+
+        def upsert(self, points):
+            embedded.extend(p["payload"]["path"] for p in points)
+
+    class Embedder:
+        def embed(self, texts, is_query=False):
+            return [[0.0] for _ in texts]
+
+    monkeypatch.setattr(memory, "is_configured", lambda: True)
+    monkeypatch.setattr(memory, "_get_store", lambda: Store())
+    monkeypatch.setattr(memory, "_get_embedder", lambda: Embedder())
+    monkeypatch.setattr(memory, "find_doc_root", lambda: root)
+    monkeypatch.setattr(memory, "collect_files", lambda: [same, changed])
+    out = memory.reindex()
+    assert retagged == ["doc/a.md"] and set(embedded) == {"doc/b.md"}
+    assert out["files"] == 2 and out["reused"] == 1

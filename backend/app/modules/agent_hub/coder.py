@@ -1686,7 +1686,8 @@ def build_scan_brief(task: AgentTask, docs: list[dict], head: str, main_head: st
         "## Định dạng trả lời (bắt buộc)",
         "Phần 1 là tin nhắn gửi đại ca trên Telegram: tiếng Việt, như một đồng nghiệp báo cáo sau "
         "khi đã đọc mã; dòng ĐẦU TIÊN bắt đầu bằng `**Kết luận:**` (không câu dẫn kiểu «giờ trả "
-        "lời»); tối đa khoảng 25 dòng; Markdown đơn giản (chữ đậm, gạch đầu dòng, `mã`), KHÔNG "
+        "lời»); TỐI ĐA 12 dòng — chỉ kết luận, dẫn chứng chính và hướng sửa, bỏ phần kể lể; "
+        "Markdown đơn giản (chữ đậm, gạch đầu dòng, `mã`), KHÔNG "
         "bảng, KHÔNG tiêu đề `#`. Câu cần đại ca quyết thì đưa vào `questions` của khối JSON.",
         "Phần 2, ở CUỐI CÙNG, đúng MỘT khối ```json gồm: "
         '{"already_fixed": "chỗ nào đã sửa rồi, hoặc rỗng", "root_cause": "một câu", '
@@ -1760,7 +1761,7 @@ def scan_message_for(task: AgentTask) -> str:
         extra.append("Đã sửa sẵn: " + str(info["already_fixed"]))
     if info.get("root_cause"):
         extra.append("Nguyên nhân nghi ngờ: " + str(info["root_cause"]))
-    if info.get("questions"):
+    if info.get("questions") and not art.get("answered"):
         extra.append("Câu nghiệp vụ rà soát nêu, đại ca CHƯA trả lời: "
                      + " | ".join(str(q) for q in info["questions"]))
     return "\n".join([str(art["message"]), *extra])

@@ -45,11 +45,17 @@ class AgentGeminiProvider(GeminiProvider):
         if thinking:
             cfg["thinkingConfig"] = {"thinkingBudget": THINKING_BUDGET}
             cfg["maxOutputTokens"] = max_tokens + THINKING_BUDGET
+        else:
+            #  Tắt HẲN (ai-CR-022). Lớp dùng chung chỉ gửi 0 cho model nó biết chắc nhận 0, nên với
+            #  bí danh flash-latest nó bỏ trống và model vẫn tự nghĩ ~2,5 nghìn token mỗi lượt. Đo
+            #  23/09: model của bot nhận `thinkingBudget: 0`.
+            cfg["thinkingConfig"] = {"thinkingBudget": 0}
         return cfg
 
 
-#  Trần phần suy nghĩ của bot quản lý. Đo 23/09: lượt lập kế hoạch nghĩ 6-14 nghìn token.
-THINKING_BUDGET = 8192
+#  Trần phần suy nghĩ của bot quản lý. Đo 23/09: lượt lập kế hoạch nghĩ 6-14 nghìn token, và token
+#  suy nghĩ tính giá như đầu ra — phần tốn nhất của một lượt. Hạ về 4096 (ai-CR-022).
+THINKING_BUDGET = 4096
 
 
 def get_provider() -> AgentGeminiProvider:
@@ -191,13 +197,15 @@ Luật:
      việc khác hẳn nhau. Hỏi thì hỏi GỌN, mỗi câu một ý, tối đa 3 câu.
    - KHÔNG hỏi người quản lý đường dẫn tệp, tên hàm hay cấu trúc mã: anh ấy không trả lời
      được, đó là việc của bạn. Chỉ hỏi về NGHIỆP VỤ (màn nào, kết quả mong muốn là gì).
-3. `plan` là các bước sửa, tiếng Việt, đánh số. Nói VÌ SAO làm vậy, không chỉ nói làm gì.
-4. `test_plan` nói rõ kiểm cái gì, gồm ít nhất một bài canh chiều ngược lại
-   ("cái đáng lẽ không được xảy ra thì không xảy ra").
+3. `plan` là các bước sửa, tiếng Việt, đánh số, TỐI ĐA 5 bước, mỗi bước MỘT câu ngắn (dưới 30
+   chữ). Không mở đầu bằng đoạn nói về rủi ro, không nhắc lại yêu cầu, không giải thích dài —
+   người đọc là quản lý, đọc trên điện thoại.
+4. `test_plan` TỐI ĐA 3 gạch đầu dòng, mỗi dòng một câu, gồm ít nhất một bài canh chiều ngược
+   lại ("cái đáng lẽ không được xảy ra thì không xảy ra").
 5. `related_docs` chỉ được trích từ những đoạn tài liệu ĐƯỢC CUNG CẤP bên dưới, ghi
    đúng đường dẫn tệp của chúng. CẤM bịa mã CR hay tên tệp không có trong đó.
 6. `risk_level`: 3 nếu đụng tiền, phân quyền, cấu trúc cơ sở dữ liệu, hay nhánh `main`;
-   khi đó `plan` phải nói RÕ rủi ro nằm ở đâu, không được chỉ dán nhãn.
+   khi đó thêm vào `plan` MỘT câu nói rủi ro nằm ở đâu.
 
 CHỈ trả JSON, không thêm chữ nào ngoài JSON:
 {"plan": "...", "plan_files": ["..."], "test_plan": "...", "risk_level": 2,
@@ -240,9 +248,11 @@ def run_plan(title: str, summary: str, docs: list[dict], *, playbook: str = "",
         model=settings.AGENT_MANAGER_MODEL,
         system=PLAN_SYSTEM,
         #  Trần cho PHẦN CHỮ; phần suy nghĩ có trần riêng THINKING_BUDGET cộng thêm (ai-CR-021).
-        max_tokens=8192,
+        max_tokens=4096,
         temperature=0.3,
-        thinking=True,
+        #  Đã có kết quả rà soát thì Claude đã suy luận trên mã thật rồi; lượt này chỉ xếp lại thành
+        #  kế hoạch — tắt suy nghĩ, khỏi trả tiền nghĩ lại lần hai (ai-CR-022).
+        thinking=not review,
     )
     try:
         data = parse_json(result.text)
@@ -252,7 +262,7 @@ def run_plan(title: str, summary: str, docs: list[dict], *, playbook: str = "",
         result = get_provider().ask(
             [ChatMessage(role="user", content="\n".join(parts))],
             model=settings.AGENT_MANAGER_MODEL, system=PLAN_SYSTEM,
-            max_tokens=8192, temperature=0.3, thinking=False,
+            max_tokens=4096, temperature=0.3, thinking=False,
         )
         data = parse_json(result.text)
     files = [str(f) for f in data.get("plan_files") or [] if str(f).strip()]

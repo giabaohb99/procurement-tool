@@ -841,6 +841,11 @@ def _answer_plan(db: Session, chat_id: str, row: AgentMessage, text: str, task_i
     asked = [str(q) for q in (task.questions or []) if str(q).strip()] or [_FIX_QUESTION]
     db.add(AgentTaskItem(task_id=task.id, source=SRC_TELEGRAM, ref_id=row.id,
                          merged_by=MERGED_BY_BOT))
+    #  Câu rà soát nêu coi như đã trả lời: lập lại kế hoạch không được hỏi lại chúng (AI-0007 bị
+    #  hỏi lại đúng hai câu đại ca vừa đáp «oke theo ý của em» — ai-CR-022).
+    scan = coder.latest_scan_run(db, task)
+    if scan is not None and isinstance(scan.artifact, dict):
+        scan.artifact = {**scan.artifact, "answered": True}
     task.summary = (task.summary or "").rstrip() + (
         f"\n\n--- Bổ sung {now_local():%d/%m %H:%M} ---\n"
         + "\n".join(f"Bot hỏi: {q}" for q in asked)
@@ -1637,6 +1642,8 @@ def merge_questions(questions: list[str]) -> list[str]:
 def _scan_questions(db: Session, task: AgentTask) -> list[str]:
     run = coder.latest_scan_run(db, task)
     art = run.artifact if run is not None and isinstance(run.artifact, dict) else {}
+    if art.get("answered"):
+        return []
     return [str(q) for q in (art.get("info") or {}).get("questions") or [] if str(q).strip()]
 
 
@@ -1751,13 +1758,11 @@ def send_plan_card(db: Session, task: AgentTask) -> None:
     lines += [_card_md(task.plan), ""]
     lines += ["<b>Tệp sẽ đụng:</b>"] + [f"• <code>{telegram.esc(f)}</code>" for f in task.plan_files]
     if task.test_plan:
-        lines += ["", "<b>Kiểm thử:</b>", _card_md(task.test_plan)]
-    if task.related_docs:
-        lines += ["", "<b>Tài liệu đã tra:</b>"]
-        lines += [f"• <code>{telegram.esc(d['path'])}</code>" for d in task.related_docs]
+        lines += ["", "<b>Kiểm thử:</b>", _card_md(task.test_plan[:500])]
+    #  ai-CR-022: bỏ mục «Tài liệu đã tra» (AI-0007 lặp change-log.md bốn lần) và câu giải thích
+    #  rủi ro cố định — thẻ dài mà không giúp bấm Duyệt hay không. Danh sách tài liệu vẫn nằm
+    #  trong sổ và trong đề bài của runner.
     lines += ["", f"Rủi ro: <b>{RISK_LABELS.get(task.risk_level, '?')}</b>"]
-    if task.risk_level == RISK_HIGH:
-        lines += ["Đụng tiền, phân quyền, cấu trúc DB hoặc nhánh main — đọc kỹ trước khi duyệt."]
     #  Thẻ kế hoạch nay là thẻ DUY NHẤT của một việc, nên phải nói rõ nó gom từ mấy tin,
     #  không thì đại ca tưởng bot bỏ sót mấy tin kia.
     n_items = db.scalar(

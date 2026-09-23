@@ -163,14 +163,14 @@ ACT_WAIT_DEPLOY_TIME = "cho_hen_gio"
 #  đẻ thành VIỆC MỚI, việc cũ treo ở «Đang hỏi lại». Nay tin kế sau dấu chờ gắn thẳng vào việc.
 ACT_WAIT_PLAN_ANSWER = "cho_tra_loi_kh"   # Tin bot: thẻ kế hoạch đang hỏi lại / mời nói rõ thêm
 ACT_PLAN_ANSWER = "tra_loi_kh"            # Tin đại ca: câu trả lời, đã gắn vào việc + lập lại kế hoạch
-ACT_DEPLOY_TIME = "hen_gio"
+ACT_DEPLOY_TIME = "hen_gio"       # Tin đại ca: giờ hẹn gộp + deploy, đã ghi vào sổ lượt chạy
 #  ai-CR-021: tin bot báo đã nhận việc, và tin báo việc đang chạy (bot sửa lại chính tin đó để
 #  cập nhật số phút). Hai loại này KHÔNG phải một lượt hội thoại: các mạch nối tin «ngay trước»
 #  (hẹn giờ gộp, hỏi thêm bản vá) phải bỏ qua chúng, không thì một tin báo của việc khác chen
 #  vào là đứt mạch.
 ACT_ACK = "da_nhan"
 ACT_HEARTBEAT = "dang_chay"
-NOISE_ACTIONS = (ACT_ACK, ACT_HEARTBEAT)       # Tin đại ca: giờ hẹn gộp + deploy, đã ghi vào sổ lượt chạy
+NOISE_ACTIONS = (ACT_ACK, ACT_HEARTBEAT)
 
 # ---------------------------------------------------------------------------
 # Đơn giá model, USD / 1 triệu token
@@ -182,6 +182,10 @@ NOISE_ACTIONS = (ACT_ACK, ACT_HEARTBEAT)       # Tin đại ca: giờ hẹn gộ
 #  thà ghi 0 rõ ràng còn hơn đoán một con số rồi có người tin.
 MODEL_PRICES_USD = {
     "gemini-flash-latest": (0.30, 2.50),
+    #  `gemini-flash-latest` là bí danh; Google trả về tên thật của bản nó trỏ tới (23/09/2026:
+    #  gemini-3.8-flash) nên phải khai cả tên đó, không thì cột chi phí của bot toàn 0 (ai-CR-022).
+    #  Giá ước theo đúng bí danh — trang thanh toán của Google mới là số thật.
+    "gemini-3.8-flash": (0.30, 2.50),
     "gemini-2.5-flash": (0.30, 2.50),
     "gemini-flash-lite-latest": (0.10, 0.40),
     "gemini-2.5-flash-lite": (0.10, 0.40),
