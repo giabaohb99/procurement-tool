@@ -5932,3 +5932,36 @@ VIỆC TAY CỦA ĐẠI CA:
 
 Mã nguồn: frontend-v2/src/core/auth/ · docker/Dockerfile.erp.prod ·
 docker-compose.production.yml
+
+## bao-CR-465-v2 | Đưa bản vá phòng ban sang nhánh giao diện mới
+- status: xong
+- date: 2026-09-23
+Gộp nhánh bản chạy thật sang nhánh giao diện mới để bản vá phòng ban của yêu
+cầu mua hàng có mặt ở cả hai nơi. Gộp cả nhánh chứ không bê lẻ, vì nhánh bản
+chạy thật còn hai việc khác chưa sang.
+
+CÁCH LÀM:
+- Cây làm việc của nhánh giao diện mới đang bẩn vì một phiên khác còn việc dở,
+  nên gộp ở một cây làm việc tạm cắt từ bản trên máy chủ, không đụng vào đó.
+
+BA CHỖ PHẢI GỠ TAY:
+- Tệp dịch vụ cấu hình hệ thống: nhánh bản chạy thật mang bản lưu cấu hình mới
+  hơn, gom chênh lệch trước khi ghi và không đẻ dòng nhật ký khi không đổi gì.
+  Lấy nguyên bản đó nhưng GIỮ LẠI cờ che giá trị ở nhánh khóa bí mật — cờ này
+  chỉ có ở nhánh giao diện mới, rơi mất thì bản mã của khóa bí mật bị chép
+  nguyên vào bảng nhật ký trước sau, tức bí mật nằm thêm một chỗ chẳng để làm gì.
+- Hai sổ tài liệu: đụng đúng chỗ ai cũng chèn dòng đầu, giữ cả hai bên.
+
+ĐÃ KIỂM:
+- Backend 122 bài xanh, gồm bài kiểm phòng ban mới, bài kiểm nhật ký cấu hình,
+  bài kiểm phòng ban theo mã, phạm vi thu mua và đường chạy xuyên suốt.
+- Giao diện mới không đổi tệp nào nhưng vẫn chạy lại kiểm kiểu và soát mã, đều
+  0 lỗi.
+
+GHI NHẬN THÊM:
+- Giao diện mới KHÔNG dính lỗi tranh chấp thời gian như bản cũ, nhưng nó cũng
+  chỉ gửi TÊN phòng ban chứ không gửi mã. Nghĩa là nó vẫn dựa vào việc backend
+  tra ngược tên ra mã, và vẫn rỗng phòng ban nếu hồ sơ trong phiên đăng nhập
+  rỗng. Chốt an toàn vừa gộp sang che được ca đó.
+
+Commit: 23e3e750
