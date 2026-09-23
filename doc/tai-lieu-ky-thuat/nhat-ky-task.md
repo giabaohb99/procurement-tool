@@ -3486,6 +3486,25 @@ và `celery-beat`, chú thích đầu tệp ghi luôn lý do cấm đặt lại 
 `procurement-tool/docker-compose.override.yml` (bản vá tạm ở máy làm việc, không commit).
 Commit: `0c4a0850` trên nhánh `agent-hub-bac-1` (23/09/2026, chưa push).
 
+## ai-CR-020 | Lệnh /xem xem lại lịch sử một việc kể cả việc đã bỏ, và giờ bot nói theo giờ Việt Nam
+- status: xong
+- date: 2026-09-23
+- pic: NSU209
+
+Đại ca bấm bỏ việc AI-0006 rồi hỏi có chỗ nào ghi lại lịch sử của nó không. Sổ của bot có ghi đủ,
+nhưng không có chỗ xem: lệnh liệt kê việc chỉ hiện việc đang mở và nút bỏ chỉ hiện một thông báo
+thoáng qua. Nay có lệnh /xem kèm mã việc, xem được cả việc đã đóng: trạng thái, giờ tạo và giờ đóng,
+ghi chú, nhánh và bản gộp nếu có, bảng các bước đã chạy với giờ, kết quả và thời gian, rồi yêu cầu,
+đoạn rà soát mã và kế hoạch cuối. Telegram không có bảng thật nên bảng dựng bằng chữ đều khổ, giữ
+hẹp cho vừa màn hình điện thoại. Bấm bỏ việc giờ có một dòng xác nhận trong khung chat. Khi làm em
+tìm ra một lỗi có sẵn: máy chạy bot và cơ sở dữ liệu đều theo giờ quốc tế, chậm bảy tiếng, nên hẹn
+giờ gộp «14:30» thực ra chạy lúc 21:30, các mốc giờ bot in ra lệch bảy tiếng, và trần năm việc mỗi
+ngày tính lại lúc bảy giờ sáng. Em đổi mọi chỗ bot đọc và in giờ sang giờ Việt Nam. Chạy thật lệnh
+xem cho AI-0006 gửi lên Telegram được. Cả tệp bài kiểm 114/114 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/{service,coder,timeutil}.py` (`show_task`, `_runs_table`,
+`_task_code`, `now_local`, `to_utc`, `fmt_local`) · `test/backend/test_agent_hub.py` · `change-log-ai.md`.
+
 ## ai-CR-019 | Runner tự chạy typecheck, lint và vitest cho phần frontend-v2 vừa sửa
 - status: xong
 - date: 2026-09-23

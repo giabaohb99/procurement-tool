@@ -32,6 +32,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 
 from . import coder, manager, memory, playbook, telegram
+from .timeutil import fmt_local, now_local, to_utc
 from .constants import (
     ACT_ANSWER,
     ACT_ASKED,
@@ -165,6 +166,8 @@ def _run_command(db: Session, chat_id: str, text: str) -> None:
         answer_question(db, chat_id, text[4:].strip())
     elif lower.startswith("/ds"):
         send_task_list(db, chat_id)
+    elif lower.startswith("/xem"):
+        show_task(db, chat_id, text[4:].strip())
     elif lower.startswith("/gom"):
         n = triage_inbox(db, force=True)
         if not n:
@@ -175,7 +178,7 @@ def _run_command(db: Session, chat_id: str, text: str) -> None:
               "Cứ nhắn bình thường, em tự hiểu: <b>hỏi</b> hay <b>nhờ làm việc gì</b> "
               "trên hệ thống thì em làm ngay, <b>nhờ sửa phần mềm</b> thì em ghi thành việc.\n"
               "Đường tắt nếu muốn chắc: <b>/hoi</b> ép trả lời · <b>/ds</b> việc đang mở · "
-              "<b>/gom</b> gom ngay.")
+              "<b>/xem AI-0006</b> lịch sử một việc, kể cả việc đã đóng · <b>/gom</b> gom ngay.")
 
 
 #  Bot vừa hỏi lại mà đại ca nhắn tiếp trong khoảng này thì tin đó LÀ CÂU TRẢ LỜI, không
@@ -430,7 +433,7 @@ def _deploy_blocker(db: Session, task: AgentTask, *, for_revert: bool = False) -
         phase = _run_phase(run)
         if phase == "hen_gio":
             when = _scheduled_for(run)
-            return (f"Đã có lịch hẹn lúc {when:%H:%M %d/%m}. " if when else "Đã có lịch hẹn. ") + \
+            return (f"Đã có lịch hẹn lúc {fmt_local(when)}. " if when else "Đã có lịch hẹn. ") + \
                 "Bấm «Hủy hẹn» trước nếu muốn đổi."
         if run.started_at and datetime.now() - run.started_at > _DEAD_RUN_AFTER:
             coder._close_run(run, status=RUN_ERROR, error="mất dấu: runner không đóng lượt này")
@@ -583,7 +586,8 @@ def _schedule_deploy(db: Session, chat_id: str, row: AgentMessage, text: str, ta
     if blocked := _deploy_blocker(db, task):
         reply(db, chat_id, f"<b>{code}</b>: {telegram.esc(blocked)}", task_id=task.id)
         return
-    when = parse_schedule_time(text, datetime.now())
+    #  Đại ca nhắn giờ VIỆT NAM; sổ và vòng beat chạy giờ UTC của container (ai-CR-020).
+    when = parse_schedule_time(text, now_local())
     if when is None:
         reply(db, chat_id,
               f"Em chưa hiểu giờ «{telegram.esc(text[:60])}». Nhắn lại dạng <code>14:30</code> · "
@@ -591,7 +595,7 @@ def _schedule_deploy(db: Session, chat_id: str, row: AgentMessage, text: str, ta
               "<code>8h sáng mai</code>.", task_id=task.id, action=ACT_WAIT_DEPLOY_TIME)
         return
     _new_deploy_run(db, task, STAGE_DEPLOY, "hen_gio",
-                    scheduled_for=when.isoformat(timespec="minutes"), approved_by=chat_id)
+                    scheduled_for=to_utc(when).isoformat(timespec="minutes"), approved_by=chat_id)
     reply(db, chat_id,
           f"Đã hẹn <b>{when:%H:%M %d/%m}</b>: gộp <b>{code}</b> vào "
           f"<code>{telegram.esc(settings.AGENT_BASE_BRANCH)}</code> + deploy dev. Tới giờ em tự "
@@ -665,7 +669,7 @@ def dispatch_due_deploys(db: Session, now: datetime | None = None) -> int:
         db.commit()
         coder.dispatch_deploy(task.id, run.id)
         reply(db, settings.AGENT_TELEGRAM_CHAT_ID,
-              f"Tới giờ hẹn {when:%H:%M}: em bắt đầu gộp <b>{telegram.esc(task.code)}</b> vào "
+              f"Tới giờ hẹn {fmt_local(when, '%H:%M')}: em bắt đầu gộp <b>{telegram.esc(task.code)}</b> vào "
               f"<code>{telegram.esc(settings.AGENT_BASE_BRANCH)}</code> + deploy dev.", task_id=task.id)
         count += 1
     return count
@@ -730,7 +734,7 @@ def _answer_plan(db: Session, chat_id: str, row: AgentMessage, text: str, task_i
     db.add(AgentTaskItem(task_id=task.id, source=SRC_TELEGRAM, ref_id=row.id,
                          merged_by=MERGED_BY_BOT))
     task.summary = (task.summary or "").rstrip() + (
-        f"\n\n--- Bổ sung {datetime.now():%d/%m %H:%M} ---\n"
+        f"\n\n--- Bổ sung {now_local():%d/%m %H:%M} ---\n"
         + "\n".join(f"Bot hỏi: {q}" for q in asked)
         + f"\nĐại ca trả lời: {text}")
     task.questions = []
@@ -800,7 +804,7 @@ def _resolve_rule(db: Session, chat_id: str, cb_id: str, action: str, task: Agen
         db.commit()
         telegram.answer_callback(cb_id, "Được, lần sau em vẫn hỏi")
         return
-    source = f"đại ca bấm «Ghi vào sổ» trên Telegram {datetime.now():%d/%m/%Y}, từ việc {task.code}"
+    source = f"đại ca bấm «Ghi vào sổ» trên Telegram {now_local():%d/%m/%Y}, từ việc {task.code}"
     try:
         qd_id = playbook.append_entry(art.get("entry") or {}, source=source)
     except playbook.PlaybookError as e:
@@ -912,6 +916,9 @@ def handle_callback(db: Session, cb: dict) -> None:
         task.closed_at = datetime.now()
         task.note = "Đại ca bỏ từ Telegram"
         telegram.answer_callback(cb_id, "Đã bỏ")
+        #  Chỉ có toast thì khung chat không còn dấu vết gì (đại ca hỏi 23/09 về AI-0006).
+        reply(db, chat_id, f"Đã bỏ <b>{telegram.esc(task.code)}</b> · {telegram.esc(task.title)}. "
+              f"Lịch sử vẫn còn trong sổ: /xem {telegram.esc(task.code)}", task_id=task.id)
     elif action == "pr":
         _dispatch_publish(db, chat_id, cb_id, task)
     elif action == "mgok":
@@ -1382,7 +1389,8 @@ def _quota_left(db: Session) -> int:
     Trần này canh CHI PHÍ lẫn sự tỉnh táo: một vòng gom hỏng có thể đẻ ra hàng chục
     task, mỗi task một lượt gọi model và một tiếng chuông.
     """
-    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    #  «Hôm nay» theo giờ Việt Nam: tính theo UTC thì trần reset lúc 7 giờ sáng (ai-CR-020).
+    today = to_utc(now_local().replace(hour=0, minute=0, second=0, microsecond=0))
     used = db.scalar(select(func.count(AgentTask.id)).where(AgentTask.created_at >= today)) or 0
     return max(0, settings.AGENT_DAILY_TASK_CAP - used)
 
@@ -1599,6 +1607,92 @@ def send_plan_card(db: Session, task: AgentTask) -> None:
     reply(db, settings.AGENT_TELEGRAM_CHAT_ID, "\n".join(lines), task_id=task.id,
           buttons=[("Duyệt", f"ok:{task.id}"), ("Sửa lại", f"fix:{task.id}"),
                    ("Bỏ việc này", f"no:{task.id}")])
+
+
+#  Nhãn bước cho bảng lịch sử của /xem (ai-CR-020). Ngắn cho vừa màn hình điện thoại.
+_STAGE_SHORT = {
+    STAGE_TRIAGE: "Gom", STAGE_PLAN: "Kế hoạch", ST_CODE: "Sửa mã", STAGE_INTENT: "Phân loại",
+    STAGE_DEPLOY: "Gộp+dev", STAGE_REVERT: "Thu hồi", STAGE_RULE: "Nháp sổ", STAGE_SCAN: "Rà soát",
+}
+_RUN_SHORT = {RUN_RUNNING: "đang", RUN_OK: "xong", RUN_ERROR: "lỗi"}
+XEM_BUDGET = 3700   # chừa chỗ dưới telegram.MAX_TEXT
+_CODE_ARG = re.compile(r"(?i)^(?:ai)?[-\s]*0*(\d{1,6})$")
+
+
+def _task_code(arg: str) -> str:
+    """`AI-0006` · `ai-6` · `AI6` · `6` -> `AI-0006`; không đọc được thì rỗng."""
+    m = _CODE_ARG.match((arg or "").strip())
+    return f"AI-{int(m.group(1)):04d}" if m else ""
+
+
+def _dur(ms: int | None) -> str:
+    sec = int((ms or 0) // 1000)
+    return f"{sec}s" if sec < 60 else f"{sec // 60}p{sec % 60:02d}"
+
+
+def _runs_table(runs: list[AgentRun]) -> str:
+    """Bảng chữ đều khổ trong <pre>: Telegram không có thẻ bảng, đây là cách duy nhất để cột thẳng
+    hàng. Giữ dưới ~32 ký tự một dòng cho khỏi xuống dòng trên điện thoại."""
+    rows = [f"{'Giờ':<6}{'Bước':<10}{'KQ':<6}Lâu"]
+    for r in runs:
+        rows.append(f"{fmt_local(r.started_at, '%H:%M'):<6}{_STAGE_SHORT.get(r.stage, str(r.stage)):<10}"
+                    f"{_RUN_SHORT.get(r.status, '?'):<6}{_dur(r.duration_ms)}")
+    return "<pre>" + telegram.esc("\n".join(rows)) + "</pre>"
+
+
+def show_task(db: Session, chat_id: str, arg: str) -> None:
+    """/xem <mã>: toàn bộ lịch sử một việc, KỂ CẢ việc đã đóng (/ds chỉ liệt kê việc đang mở)."""
+    esc = telegram.esc
+    code = _task_code(arg)
+    if not code:
+        reply(db, chat_id, "Cú pháp: <b>/xem AI-0006</b> (hoặc <b>/xem 6</b>). Việc đang mở thì gõ <b>/ds</b>.")
+        return
+    task = db.scalar(select(AgentTask).where(AgentTask.code == code))
+    if task is None:
+        reply(db, chat_id, f"Không có việc <b>{esc(code)}</b> trong sổ.")
+        return
+    runs = list(db.scalars(select(AgentRun).where(AgentRun.task_id == task.id).order_by(AgentRun.id)))
+    msgs = list(db.scalars(select(AgentMessage).where(AgentMessage.task_id == task.id)
+                           .order_by(AgentMessage.id)))
+    head = [f"<b>{esc(task.code)}</b> · {esc(task.title)}",
+            f"Trạng thái: <b>{esc(TASK_STATUS_LABELS.get(task.status, '?'))}</b> · rủi ro "
+            f"{esc(RISK_LABELS.get(task.risk_level, '?'))}",
+            f"Tạo {fmt_local(task.created_at)}" + (f" · đóng {fmt_local(task.closed_at)}" if task.closed_at else "")]
+    if task.note:
+        head.append(f"Ghi chú: {esc(task.note[:300])}")
+    links = []
+    if task.branch_name:
+        links.append(f"nhánh <code>{esc(task.branch_name)}</code>")
+    if task.pr_url:
+        links.append(f'<a href="{esc(task.pr_url)}">PR</a>')
+    if merged := coder.merged_sha_for(db, task):
+        links.append(f"đã gộp <code>{esc(merged[:10])}</code>")
+    if task.deployed_dev_at:
+        links.append(f"lên dev {fmt_local(task.deployed_dev_at)}")
+    if links:
+        head.append(" · ".join(links))
+    n_in = sum(1 for m in msgs if m.direction == DIR_IN)
+    head.append(f"Tin nhắn: {len(msgs)} ({n_in} của đại ca, {len(msgs) - n_in} của bot)")
+    parts = ["\n".join(head)]
+    if runs:
+        parts.append("<b>Các bước đã chạy</b>\n" + _runs_table(runs))
+    #  Phần chữ dài chia nhau chỗ còn lại, theo thứ tự đáng đọc: yêu cầu -> rà soát -> kế hoạch.
+    scan = coder.latest_scan_run(db, task)
+    scan_text = (scan.artifact or {}).get("message", "") if scan is not None else ""
+    blocks = [("Yêu cầu", task.summary or "", False), ("Rà soát mã", scan_text, True),
+              ("Kế hoạch cuối", task.plan or "", True)]
+    used = sum(len(p) for p in parts) + 40
+    for title, body, is_md in blocks:
+        if not body.strip():
+            continue
+        room = min(900, XEM_BUDGET - used - 60)
+        if room < 150:
+            break
+        clipped = body.strip() if len(body.strip()) <= room else body.strip()[:room].rstrip() + "…"
+        rendered = _card_md(clipped, limit=room + 400) if is_md else esc(clipped)
+        parts.append(f"<b>{title}</b>\n{rendered}")
+        used += len(parts[-1]) + 2
+    reply(db, chat_id, "\n\n".join(parts), task_id=task.id)
 
 
 def send_task_list(db: Session, chat_id: str) -> None:

@@ -54,6 +54,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 
 from . import memory, playbook, telegram
+from .timeutil import now_local
 from .constants import (
     ACT_PATCH_ANSWER,
     RISK_HIGH,
@@ -1560,7 +1561,7 @@ def revert_and_deploy(db: Session, task: AgentTask, run: AgentRun) -> dict:
     task.status = ST_NEEDS_INPUT
     task.deployed_dev_at = None
     task.note = (f"Đã thu hồi bản gộp {sha[:10]} khỏi {settings.AGENT_BASE_BRANCH} "
-                 f"({datetime.now():%d/%m %H:%M}). Muốn làm lại thì nhắn sửa gì rồi /gom.")
+                 f"({now_local():%d/%m %H:%M}). Muốn làm lại thì nhắn sửa gì rồi /gom.")
     _close_run(run, status=RUN_OK, artifact={
         "merge_sha": sha, "revert_sha": revert_sha, "services": services, "health": health,
         "ssh_tail": out[-1500:],

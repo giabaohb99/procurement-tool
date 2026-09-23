@@ -1631,7 +1631,8 @@ def test_huy_hen_dong_luot_va_cho_bam_lai(db, bot, monkeypatch):
     _deploy_on(monkeypatch)
     sent = _capture_send(monkeypatch, service)
     task = _task_with_session(db, service, coder)
-    service._new_deploy_run(db, task, STAGE_DEPLOY, "hen_gio", scheduled_for="2026-09-22T20:00")
+    #  Sổ giữ giờ UTC (13:00), thẻ nói giờ Việt Nam (20:00) — ai-CR-020.
+    service._new_deploy_run(db, task, STAGE_DEPLOY, "hen_gio", scheduled_for="2026-09-22T13:00")
     #  Có lịch rồi thì bấm «Gộp» chỉ nhắc lịch + nút hủy, không mở thẻ hỏi mới.
     service.handle_callback(db, _callback(f"mg:{task.id}"))
     assert "lịch hẹn lúc 20:00" in sent[-1][0] and ("Hủy hẹn", f"mgno:{task.id}") in sent[-1][1]
@@ -2663,3 +2664,90 @@ def test_run_gate_gop_backend_va_frontend_va_the_hien_dong_rieng(db, bot, monkey
     gate = coder.run_gate("/wt", ["frontend-v2/src/a.ts"])
     assert gate["status"] == "none"
     assert coder.fe_gate_line(gate, html=True) == "Frontend v2: <b>CHƯA kiểm được</b> (npm 500)"
+
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-020: /xem lịch sử một việc + dòng xác nhận khi bỏ + giờ Việt Nam
+# ---------------------------------------------------------------------------
+def test_gio_viet_nam_cho_nhung_gi_bot_noi():
+    from app.modules.agent_hub import timeutil
+
+    utc = datetime(2026, 9, 23, 3, 10)
+    assert timeutil.fmt_local(utc) == "10:10 23/09"
+    assert timeutil.fmt_local(datetime(2026, 9, 22, 20, 30), "%H:%M %d/%m") == "03:30 23/09"
+    assert timeutil.to_utc(datetime(2026, 9, 23, 14, 30)) == datetime(2026, 9, 23, 7, 30)
+    assert timeutil.fmt_local(None) == ""
+
+
+def test_hen_14h30_la_gio_viet_nam_khong_phai_utc(db, bot, monkeypatch):
+    """Lỗi có sẵn từ ai-CR-014: container chạy UTC nên «14:30» thành 21:30 giờ Việt Nam."""
+    from app.modules.agent_hub import coder
+
+    service, _, _ = bot
+    _deploy_on(monkeypatch)
+    sent = _capture_send(monkeypatch, service)
+    monkeypatch.setattr(service, "now_local", lambda: datetime(2026, 9, 23, 10, 0))
+    task = _task_with_session(db, service, coder)
+    service.handle_callback(db, _callback(f"mgat:{task.id}"))
+    service.handle_message(db, _msg("14:30"))
+    run = _deploy_runs(db, task)[0]
+    assert run.artifact["scheduled_for"] == "2026-09-23T07:30"
+    assert "Đã hẹn <b>14:30 23/09</b>" in sent[-1][0]
+    service.handle_callback(db, _callback(f"mg:{task.id}"))
+    assert "lịch hẹn lúc 14:30 23/09" in sent[-1][0]
+    #  Vòng beat so bằng giờ UTC của container: 07:29 UTC chưa tới, 07:31 tới.
+    assert service.dispatch_due_deploys(db, datetime(2026, 9, 23, 7, 29)) == 0
+    assert service.dispatch_due_deploys(db, datetime(2026, 9, 23, 7, 31)) == 1
+    assert "Tới giờ hẹn 14:30" in sent[-1][0]
+
+
+def test_tran_viec_moi_ngay_tinh_theo_ngay_viet_nam(db, bot, monkeypatch):
+    from app.modules.agent_hub.model import AgentTask
+
+    service, _, _ = bot
+    monkeypatch.setattr(settings, "AGENT_DAILY_TASK_CAP", 5)
+    #  06:00 sáng 23/09 giờ Việt Nam = 23:00 ngày 22/09 UTC.
+    monkeypatch.setattr(service, "now_local", lambda: datetime(2026, 9, 23, 6, 0))
+    for code, created in (("AI-0901", datetime(2026, 9, 22, 17, 30)),    # 00:30 23/09 VN: hôm nay
+                          ("AI-0902", datetime(2026, 9, 22, 16, 30))):   # 23:30 22/09 VN: hôm qua
+        db.add(AgentTask(code=code, title="x", summary="", status=service.ST_PLAN, created_at=created))
+    db.commit()
+    assert service._quota_left(db) == 4
+
+
+def test_lenh_xem_ke_ca_viec_da_bo(db, bot, monkeypatch):
+    from app.modules.agent_hub.model import AgentRun
+
+    service, _, _ = bot
+    sent = _capture_send(monkeypatch, service)
+    task = _task_with_plan(db, service, ["backend/app/x.py"])
+    task.plan = "1. Sửa `backend/app/x.py` cho **đúng**."
+    db.add_all([
+        AgentRun(task_id=task.id, stage=service.STAGE_PLAN, provider="agent_gemini", model="g",
+                 status=service.RUN_OK, started_at=datetime(2026, 9, 23, 3, 14), duration_ms=25000),
+        AgentRun(task_id=task.id, stage=STAGE_SCAN, provider="claude_code", model="c",
+                 status=service.RUN_OK, started_at=datetime(2026, 9, 23, 3, 32), duration_ms=376000,
+                 artifact={"message": "**Kết luận:** giao diện chỉ gửi tên phòng ban.", "info": {}}),
+    ])
+    db.commit()
+    #  Bấm Bỏ: có dòng xác nhận trong khung chat, chỉ luôn cách xem lại.
+    service.handle_callback(db, _callback(f"no:{task.id}"))
+    assert task.status == service.ST_CANCELLED
+    assert f"Đã bỏ <b>{task.code}</b>" in sent[-1][0] and f"/xem {task.code}" in sent[-1][0]
+
+    num = int(task.code.split("-")[1])
+    service._run_command(db, "12345", f"/xem ai-{num}")
+    text = sent[-1][0]
+    assert text.startswith(f"<b>{task.code}</b>") and "Trạng thái: <b>Đã bỏ</b>" in text
+    assert "Ghi chú: Đại ca bỏ từ Telegram" in text
+    assert "<pre>" in text and "10:14 Kế hoạch  xong  25s" in text and "10:32 Rà soát   xong  6p16" in text
+    assert "<b>Rà soát mã</b>\n<b>Kết luận:</b>" in text
+    assert "<b>Kế hoạch cuối</b>" in text and "<code>backend/app/x.py</code>" in text
+    assert "`" not in text and "**" not in text
+    service._run_command(db, "12345", "/xem AI-9999")
+    assert "Không có việc <b>AI-9999</b>" in sent[-1][0]
+    service._run_command(db, "12345", "/xem")
+    assert "Cú pháp" in sent[-1][0]
+    assert [service._task_code(a) for a in ("AI-0006", "ai-6", "AI6", "6", "ai 06", "abc")] == \
+        ["AI-0006"] * 5 + [""]
