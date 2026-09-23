@@ -8,7 +8,6 @@ import { AuditTimeline } from '@/shared/audit/audit-timeline'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
 import { PageContainer } from '@/shared/ui/page-container'
-import { BookingApprovalPanel } from '../components/booking-approval-panel'
 import { BookingDetailBody } from '../components/booking-detail-body'
 import { BookingDetailHeader } from '../components/booking-detail-header'
 import { BookingForm } from '../components/booking-form'
@@ -76,6 +75,9 @@ export function VehicleBookingDetailPage() {
           onBack={() => navigate(appRoutes.vehicleBooking.requests)}
           actions={
             <>
+              {/*  Duyệt · Yêu cầu chỉnh sửa · Từ chối cho CẢ HAI đường duyệt (một
+                  bước cũ / luồng nhiều bước) — cùng một bộ nút, xem chú thích đầu
+                  `booking-workflow-actions.tsx`. */}
               <BookingWorkflowActions booking={data} layout="menu" onDispatch={() => setDispatchOpen(true)} />
               {/*  Không có nút "Sửa": phiếu sửa được đã mở thẳng vào biểu mẫu ở trên.
                   `outline` cho KHỚP nút `⋯` ngay bên trái — hai nút này cùng cấp
@@ -119,17 +121,18 @@ export function VehicleBookingDetailPage() {
             <DocumentComments entity="vehicle_booking" entityId={data.id} />
           </div>
           <div className="flex flex-col gap-5">
-            {/*  Tiến trình xử lý đứng ĐẦU cột phụ: ba khung ở cột này đều trả lời
-                "phiếu đang ở đâu, đã đi qua tay ai" — đọc từ trạng thái hiện thời
-                (Tiến trình) xuống việc phải làm (Luồng duyệt) rồi tới dấu vết. Để
-                nó ở cột chính thì nó cắt đôi mạch *chuyến đi này là gì*
-                (lộ trình → hàng hóa → người yêu cầu). */}
+            {/*  Tiến trình xử lý đứng ĐẦU cột phụ: nó trả lời "phiếu đang ở đâu, đã
+                đi qua tay ai". Để nó ở cột chính thì nó cắt đôi mạch *chuyến đi
+                này là gì* (lộ trình → hàng hóa → người yêu cầu).
+                ⚠️ ĐÃ BỎ khung «Luồng duyệt nhiều bước» (đại ca chốt 23/09/2026):
+                nó nói lại đúng điều Tiến trình đã nói (chờ duyệt / ai duyệt / lúc
+                nào / lý do từ chối), còn chặng đang chờ ai thì dải tiêu đề đã ghi
+                ("Đang ở chặng 1/1 · …"), nút ký thì đã lên đầu trang.
+                Cái giá đã biết: dấu vết TỪNG CHẶNG (ai ký chặng 1, lời bình của họ)
+                không còn màn nào của đặt xe bày ra — Tiến trình chỉ giữ người ký
+                CUỐI. Cần lại thì gắn `ApprovalTrailCard` (dùng chung ở
+                `modules/approval`) chứ đừng dựng lại cả khung cũ. */}
             <BookingProgressCard booking={data} />
-            {/* Luồng duyệt nhiều bước — hiện khi phiếu ĐÃ TỪNG vào bộ máy, kể cả
-                phiên đã duyệt xong: thẻ này còn mang Lịch sử phê duyệt. Gác bằng
-                `approval_running` là sai — luồng "Duyệt tự động bởi HOD" chỉ 1 bước
-                nên đóng ngay, dấu vết không bao giờ kịp hiện (19/09/2026). */}
-            {data.approval_instance_id != null && <BookingApprovalPanel bookingId={data.id} />}
             {/*  Ghi chú (21/09/2026 — dời từ cuối thân phiếu sang đây). Đó là lời
                 NGƯỜI LẬP dặn thêm, mà người đọc nó là người sắp quyết định
                 duyệt / điều phối / nhận chuyến — tức cùng cột với Tiến trình và

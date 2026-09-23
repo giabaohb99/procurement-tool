@@ -3,6 +3,7 @@ import type { LucideIcon } from 'lucide-react'
 import { useState } from 'react'
 
 import { usePermission } from '@/core/authorization/use-permission'
+import { useApprovalAction } from '@/modules/approval/hooks/use-approvals'
 import { Button } from '@/shared/ui/button'
 import {
   DropdownMenu,
@@ -21,6 +22,7 @@ import {
   useRejectBooking,
   useReturnBooking,
 } from '../hooks/use-vehicle-bookings'
+import { useMyBookingApprovalTask } from '../hooks/use-my-booking-approval-task'
 import { BOOKING_STATUS, DRIVER_STATUS, type VehicleBooking } from '../types/vehicle-booking'
 import { BookingCompleteDialog } from './booking-complete-dialog'
 import { BookingReasonDialog } from './booking-reason-dialog'
@@ -73,9 +75,24 @@ interface WorkflowAction {
 }
 
 /**
- * Phiếu đang chạy luồng duyệt NHIỀU BƯỚC thì 3 nút duyệt một bước phải ẩn — duyệt
- * ở màn "Việc của tôi". Đọc từ `booking.approval_running` (backend set ở API chi tiết);
- * backend cũng chặn thật bằng `block_legacy_path`, đây chỉ là ẩn cho gọn.
+ * HAI ĐƯỜNG DUYỆT, MỘT BỘ NÚT (đại ca chốt 23/09/2026).
+ *
+ * Phiếu duyệt theo hai đường tùy cờ `ApprovalSwitch` lúc gửi: đường MỘT BƯỚC cũ
+ * (API `/approve · /return · /reject` của đặt xe) hoặc luồng NHIỀU BƯỚC của bộ
+ * máy chung. Bật/tắt cờ thì người duyệt phải thấy Y HỆT nhau: ✓ Duyệt tô đặc,
+ * «Yêu cầu chỉnh sửa» · «Từ chối» trong `⋯`, cùng hộp lý do. Chỉ lúc GỬI mới rẽ:
+ * phiếu đang chạy luồng → hành động của bộ máy trên phiên; không → API cũ.
+ *
+ * Trước đó luồng nhiều bước có nút riêng «Xử lý duyệt» mở hộp thoại của bộ máy,
+ * đặt cạnh phiếu đường cũ là hai dải nút khác hẳn cho cùng một việc.
+ *
+ * Hai điều KHÁC nhau có chủ ý giữa hai đường:
+ * · ai thấy nút — đường cũ gác bằng quyền `vehicle_booking.approve`; đường luồng
+ *   gác bằng LƯỢT KÝ (trưởng phòng được giao chặng 1 không cần quyền đó). Backend
+ *   chặn thật ở cả hai: `block_legacy_path` khóa API cũ khi phiếu đang chạy luồng,
+ *   bộ máy từ chối người không có việc treo trên phiên.
+ * · «Trả lại» của bộ máy không truyền `to_step` → về NGƯỜI NỘP, phiếu sang
+ *   «Yêu cầu chỉnh sửa» — đúng nghĩa của nút cũ, không phải lùi một chặng.
  */
 
 /** Loại dialog lý do đang mở (mỗi loại một hành động khác nhau). */
@@ -92,7 +109,7 @@ type ReasonKind =
  *
  * - Người duyệt (quyền `approve`), phiếu Chờ duyệt → Duyệt · Yêu cầu chỉnh sửa · Từ chối.
  * - Điều phối (quyền `write`), phiếu Đã duyệt → Điều phối; tài xế từ chối → Điều phối lại.
- * - Tài xế ĐƯỢC PHÂN (hoặc người có quyền `write` thao tác thay), phiếu Điều phối →
+ * - CHỈ tài xế ĐƯỢC PHÂN (tự lái: chính người yêu cầu), phiếu Điều phối →
  *   Chấp nhận / Từ chối chuyến / Bắt đầu / Hoàn tất theo bước của tài xế.
  *
  * Backend mới là chốt chặn thật (`require` + đúng tài xế được phân); ở đây chỉ ẩn/hiện.
@@ -107,7 +124,6 @@ export function BookingWorkflowActions({
   const { can } = usePermission()
   const driverOnly = scope === 'driver'
   const canApprove = can('vehicle_booking', 'approve') && !driverOnly
-  const canWrite = can('vehicle_booking', 'write')
   //  Điều phối viên = có quyền `approve` (tài xế chỉ có `write` phạm vi `assigned`).
   //  Các nút ĐIỀU PHỐI (Điều phối / Điều phối lại / trả / từ chối yêu cầu) chỉ cho
   //  điều phối viên — nếu gác bằng `write` thì tài xế cũng thấy (họ có write assigned).
@@ -127,9 +143,17 @@ export function BookingWorkflowActions({
   const driverComplete = useDriverCompleteBooking()
 
   const id = booking.id
+  //  Lượt ký của tôi trong luồng nhiều bước. Chỉ HỎI khi phiếu đang chạy luồng
+  //  và không ở màn chỉ-tài-xế — xem `useMyBookingApprovalTask`.
+  //  ⚠️ `Boolean(...)` là bắt buộc: `approval_running` là ô TÙY CHỌN (danh sách
+  //  có thể không gửi), mà `undefined` truyền vào tham số có mặc định `= true`
+  //  thì JS hiểu là "không truyền" → BẬT — mỗi thẻ «Chuyến của tôi» lại đi hỏi.
+  const flowTask = useMyBookingApprovalTask(id, Boolean(booking.approval_running) && !driverOnly)
+  const flowAction = useApprovalAction(flowTask?.instance_id ?? 0, 'vehicle_booking')
   //  Tiêu đề hộp thoại lấy MỤC ĐÍCH chuyến (lùi về mã phiếu nếu trống) thay cho mã.
   const subject = booking.purpose || booking.code
   const busy =
+    flowAction.isPending ||
     approve.isPending ||
     returnEdit.isPending ||
     reject.isPending ||
@@ -144,9 +168,29 @@ export function BookingWorkflowActions({
   const isPending = booking.status === BOOKING_STATUS.pending
   const isApproved = booking.status === BOOKING_STATUS.approved
   const isDispatched = booking.status === BOOKING_STATUS.dispatched
-  const showApprove = canApprove && isPending && !booking.approval_running
-  // Tài xế được phân, hoặc người có quyền write thao tác thay khi cần.
-  const driverStage = isDispatched && (booking.is_assigned_driver || canWrite)
+  //  Hai đường, một bộ nút — xem chú thích ở đầu tệp.
+  const showApprove = Boolean(flowTask) || (canApprove && isPending && !booking.approval_running)
+  //  Ba hành động của người duyệt: rẽ nhánh ĐÚNG MỘT CHỖ này, lúc gửi đi.
+  const decide = {
+    approve: () =>
+      flowTask ? flowAction.mutate({ kind: 'approve', text: '' }) : approve.mutate({ id }),
+    returnEdit: (reason: string) =>
+      flowTask
+        ? flowAction.mutate({ kind: 'return', text: reason }, { onSuccess: () => setReasonKind(null) })
+        : returnEdit.mutate({ id, reason }, { onSuccess: () => setReasonKind(null) }),
+    reject: (reason: string) =>
+      flowTask
+        ? flowAction.mutate({ kind: 'reject', text: reason }, { onSuccess: () => setReasonKind(null) })
+        : reject.mutate({ id, reason }, { onSuccess: () => setReasonKind(null) }),
+  }
+  //  CHỈ tài xế được phân (chuyến tự lái: chính người yêu cầu) — đại ca chốt
+  //  23/09/2026. Bản trước mở thêm cho ai có quyền `write` để "thao tác thay",
+  //  nhưng backend (`_ensure_can_drive`) chặn người ĐÃ LÀ tài xế mà không được
+  //  phân chuyến này — nên một tài xế có `write` mở chuyến của đồng nghiệp thấy
+  //  nút «Chấp nhận», bấm vào ăn 403 "Bạn không phải tài xế được phân…".
+  //  Cái giá: admin/điều phối không còn nút thao tác thay trên giao diện nữa
+  //  (backend vẫn cho) — tài xế báo qua điện thoại thì phải tự vào bấm.
+  const driverStage = isDispatched && booking.is_assigned_driver
   const dstatus = booking.driver_status
 
   //  --- Danh sách hành động, XẾP THEO THỨ TỰ ƯU TIÊN ---
@@ -157,7 +201,7 @@ export function BookingWorkflowActions({
 
   if (showApprove) {
     actions.push({ key: 'approve', label: 'Duyệt', icon: Check, kind: 'forward',
-                   run: () => approve.mutate({ id }) })
+                   run: decide.approve })
   }
   if (canDispatch && isApproved) {
     actions.push({ key: 'dispatch', label: 'Điều phối', icon: Route, kind: 'forward',
@@ -267,10 +311,8 @@ export function BookingWorkflowActions({
           label="Lý do cần chỉnh sửa"
           placeholder="Thiếu thời gian về, sai điểm đến…"
           confirmLabel="Trả lại chỉnh sửa"
-          pending={returnEdit.isPending}
-          onConfirm={(reason) =>
-            returnEdit.mutate({ id, reason }, { onSuccess: () => setReasonKind(null) })
-          }
+          pending={returnEdit.isPending || flowAction.isPending}
+          onConfirm={decide.returnEdit}
           onClose={() => setReasonKind(null)}
         />
       )}
@@ -282,8 +324,8 @@ export function BookingWorkflowActions({
           placeholder="Không thuộc mục đích công tác…"
           confirmLabel="Từ chối yêu cầu"
           destructive
-          pending={reject.isPending}
-          onConfirm={(reason) => reject.mutate({ id, reason }, { onSuccess: () => setReasonKind(null) })}
+          pending={reject.isPending || flowAction.isPending}
+          onConfirm={decide.reject}
           onClose={() => setReasonKind(null)}
         />
       )}

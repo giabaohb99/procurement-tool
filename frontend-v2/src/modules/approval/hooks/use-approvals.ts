@@ -8,10 +8,16 @@ import type { ApprovalFlow, ApprovalNode, ApprovalSwitch, Delegation } from '../
 
 /** Bộ máy phê duyệt dùng chung (nhóm I). */
 
-export function useMyTasks(entity?: string) {
+/**
+ * `enabled = false` cho những chỗ dựng hook trên MỌI dòng/thẻ nhưng chỉ vài dòng
+ * thật sự cần hỏi (vd cụm nút của phiếu đặt xe, dựng trên từng thẻ «Chuyến của
+ * tôi» mà chỉ phiếu đang chạy luồng duyệt mới cần biết lượt ký).
+ */
+export function useMyTasks(entity?: string, enabled = true) {
   return useQuery({
     queryKey: queryKeys.approval.myTasks(entity ?? ''),
     queryFn: () => approvalApi.myTasks(entity),
+    enabled,
     //  Màn được mở nhiều nhất của cả hệ. Người khác duyệt xong thì việc biến
     //  khỏi hộp của mình — hỏi lại khi quay về tab là đủ, không cần nhịp đều.
     refetchOnWindowFocus: true,
@@ -227,6 +233,9 @@ const HO_QUERY_CUA_CHUNG_TU: Record<string, readonly string[]> = {
   //  họ `hr`, vì một phiếu xuất hiện ở danh sách, ở chi tiết và ở lịch.
   leave_request: queryKeys.hr.all,
   room_booking: queryKeys.hr.all,
+  //  Thiếu tới 23/09/2026: ký xong phiếu đặt xe, trang chi tiết vẫn «Chờ duyệt»
+  //  và nút Duyệt vẫn còn đó cho tới lần F5 — bấm lần nữa là nhận lỗi.
+  vehicle_booking: queryKeys.vehicleBooking.all,
 }
 
 /**
