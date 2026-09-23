@@ -114,7 +114,7 @@ def reindex_docs_task() -> dict:
 #  pytest và commit sau đó còn chỗ; chạm trần này là worker giết cả tiến trình.
 @celery_app.task(name="agent.code_task", time_limit=settings.AGENT_RUN_TIMEOUT_SEC + 900,
                  acks_late=False)
-def code_task(task_id: int, resume: bool = False) -> dict:
+def code_task(task_id: int, resume: bool = False, fix_gate: bool = False) -> dict:
     """Bậc 2: sửa mã cho một việc đã duyệt. Chạy TRONG `agent-runner`.
 
     `acks_late=False` cố ý: việc này không được chạy lại tự động khi worker chết giữa
@@ -131,7 +131,7 @@ def code_task(task_id: int, resume: bool = False) -> dict:
         if task is None or task.status != ST_CODE:
             return {"status": "skipped",
                     "reason": f"việc {task_id} không ở trạm CODE (đã bỏ hoặc bị giao trùng)"}
-        result = coder.run_code_task(db, task, resume=resume)
+        result = coder.run_code_task(db, task, resume=resume, fix_gate=fix_gate)
         db.commit()
         return {"status": "success", **result}
     except Exception as e:  # noqa: BLE001 — mọi lỗi đều phải thành FAILED + một câu Telegram

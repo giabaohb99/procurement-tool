@@ -3486,6 +3486,23 @@ và `celery-beat`, chú thích đầu tệp ghi luôn lý do cấm đặt lại 
 `procurement-tool/docker-compose.override.yml` (bản vá tạm ở máy làm việc, không commit).
 Commit: `0c4a0850` trên nhánh `agent-hub-bac-1` (23/09/2026, chưa push).
 
+## ai-CR-026 | Bot tự chạy được vitest và có nút sửa cho xanh khi cổng kiểm đỏ
+- status: xong
+- date: 2026-09-23
+- pic: NSU209
+
+Lượt làm tiếp của AI-0007 ra cổng kiểm giao diện đỏ ở hai bài kiểm do chính bot viết. Nguyên nhân gốc
+là em khai quyền chạy vitest sai mẫu nên Claude bị chặn cả hai lần tự kiểm, không thấy chỗ sai. Nay
+quyền được khai cho từng thư mục phân hệ có thật, bot chạy được vitest đúng thư mục nhưng vẫn không
+chạy được cả bộ ba nghìn hai trăm bài. Thẻ kết quả khi cổng đỏ có thêm nút sửa cho xanh: bot nối đúng
+phiên vừa sửa, nhận nguyên văn phần đỏ, sửa rồi chạy lại cổng kiểm và commit lại trọn bản vá. Chạy thật
+cho AI-0007 mất chín phút rưỡi, cổng kiểm kiểu dữ liệu, quy tắc mã và vitest phân hệ Tài chính đều
+xanh. Cả tệp bài kiểm 134/134 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/{coder,service,tasks}.py` (`allowed_tools`,
+`build_fix_gate_brief`, `run_claude_fix`, `dispatch_fix_gate`) · `test/backend/test_agent_hub.py` ·
+`change-log-ai.md`.
+
 ## ai-CR-025 | Nút bấm trên Telegram bị xử trên dữ liệu cũ nên bot im lặng
 - status: xong
 - date: 2026-09-23

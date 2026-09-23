@@ -112,8 +112,23 @@ ALLOWED_TOOLS = ",".join([
     "Bash(git diff:*)", "Bash(git status:*)", "Bash(git log:*)",
     #  ai-CR-019: tự kiểm frontend-v2. `run test -- src/` ép có đường dẫn — không quét cả ~3200 bài.
     "Bash(npm --prefix frontend-v2 run typecheck:*)",
-    "Bash(npm --prefix frontend-v2 run test -- src/:*)",
+    #  Lệnh vitest KHÔNG khai ở đây: Claude Code so mẫu theo NGUYÊN TỪ nên `… -- src/:*` không khớp
+    #  `… -- src/modules/finance` — AI-0007 bị chặn cả hai lần chạy (ai-CR-026). Khai theo từng thư
+    #  mục có thật trong worktree ở `allowed_tools()`.
 ])
+
+
+def allowed_tools(worktree: str) -> str:
+    """ALLOWED_TOOLS + một mẫu vitest cho MỖI thư mục phân hệ / khu dùng chung có thật (ai-CR-026).
+    Chỉ cho chạy vitest theo đúng một thư mục — không có mẫu nào chạy được cả bộ ~3200 bài."""
+    src = Path(worktree) / FE_DIR / "src"
+    extra = []
+    for root in ("modules", "shared", "core"):
+        base = src / root
+        if base.is_dir():
+            extra += [f"Bash(npm --prefix {FE_DIR} run test -- src/{root}/{d.name}:*)"
+                      for d in sorted(base.iterdir()) if d.is_dir()]
+    return ",".join([ALLOWED_TOOLS, *extra]) if extra else ALLOWED_TOOLS
 
 DRIFT_RATIO = 0.30          # luật C1: quá 30% tệp ngoài kế hoạch là dừng
 GIT_TIMEOUT = 900           # clone lần đầu kho vài trăm MB
@@ -434,11 +449,51 @@ def run_claude_continue(worktree: str, *, session_id: str, timeout: int) -> dict
         settings.AGENT_CODER_CMD, "-p",
         "--output-format", "json",
         "--permission-mode", "acceptEdits",
-        "--allowedTools", ALLOWED_TOOLS,
+        "--allowedTools", allowed_tools(worktree),
         "--resume", session_id,
         "--max-turns", str(CONTINUE_MAX_TURNS),
     ]
     return _run_cli(cmd, _CONTINUE_BRIEF, worktree, timeout)
+
+
+#  Vòng «Sửa cho xanh» (ai-CR-026): lỗi cổng kiểm đưa thẳng vào đúng phiên đã sửa.
+FIX_GATE_MAX_TURNS = 40
+
+
+def build_fix_gate_brief(gate: dict) -> str:
+    parts = []
+    if gate.get("backend", gate.get("status")) == "fail":
+        parts.append(gate.get("output") or "")
+    fe = gate.get("frontend") or {}
+    if fe.get("status") == "fail":
+        parts.append(fe.get("output") or "")
+    failed = "\n\n".join(p for p in parts if p)[-6000:]
+    return "\n".join([
+        "Cổng kiểm của runner báo ĐỎ cho bản vá bạn vừa làm trong phiên này. Nguyên văn phần đỏ:",
+        "```", failed or "(không có đuôi log)", "```",
+        "Sửa cho XANH: nếu bài kiểm viết sai với hành vi đã duyệt thì sửa bài kiểm, nếu mã sai thì sửa "
+        "mã — không xóa bài kiểm cho qua, không đổi phạm vi việc. Chạy lại đúng lệnh kiểm của phần đỏ "
+        "(vitest theo thư mục: `npm --prefix frontend-v2 run test -- src/modules/<phân hệ>`), rồi in "
+        "đúng mục TỔNG KẾT bốn phần như luật ở đề bài đầu.",
+    ])
+
+
+def run_claude_fix(worktree: str, brief: str, *, session_id: str, timeout: int) -> dict:
+    cmd = [
+        settings.AGENT_CODER_CMD, "-p",
+        "--output-format", "json",
+        "--permission-mode", "acceptEdits",
+        "--allowedTools", allowed_tools(worktree),
+        "--resume", session_id,
+        "--max-turns", str(FIX_GATE_MAX_TURNS),
+    ]
+    return _run_cli(cmd, brief, worktree, timeout)
+
+
+def dispatch_fix_gate(task_id: int) -> None:
+    from app.core.celery_app import celery_app
+
+    celery_app.send_task("agent.code_task", args=[task_id], kwargs={"fix_gate": True}, queue="agent_code")
 
 
 _CONTINUE_BRIEF = (
@@ -456,7 +511,7 @@ def run_claude(worktree: str, brief: str, *, session_id: str, timeout: int,
         settings.AGENT_CODER_CMD, "-p",
         "--output-format", "json",
         "--permission-mode", "acceptEdits",
-        "--allowedTools", ALLOWED_TOOLS,
+        "--allowedTools", allowed_tools(worktree),
         "--resume" if resume else "--session-id", session_id,
         "--max-turns", str(settings.AGENT_CODER_MAX_TURNS),
     ]
@@ -1158,7 +1213,7 @@ def _stop_at_max_turns(db: Session, task: AgentTask, run: AgentRun, worktree: st
     return {"task": task.code, "status": task.status, "files": len(numstat), "escalation": "max_turns"}
 
 
-def run_code_task(db: Session, task: AgentTask, *, resume: bool = False) -> dict:
+def run_code_task(db: Session, task: AgentTask, *, resume: bool = False, fix_gate: bool = False) -> dict:
     """Chạy trọn một lượt sửa mã cho `task` (đang ở ST_CODE). Tự ghi sổ, tự nhắn Telegram.
 
     `resume=True` (ai-CR-023): nối phiên đã hết lượt, trên đúng worktree đang dở, không cắt lại.
@@ -1170,6 +1225,17 @@ def run_code_task(db: Session, task: AgentTask, *, resume: bool = False) -> dict
     previous = resumable_session(db, task) if resume else ""
     if resume and not previous:
         raise CoderError("không còn phiên hết lượt nào để làm tiếp")
+    fix_brief = ""
+    if fix_gate:
+        #  «Sửa cho xanh» (ai-CR-026): nối phiên của lượt sửa vừa xong, đưa kèm lỗi cổng kiểm.
+        last = latest_code_run(db, task)
+        art = (last.artifact if last is not None and isinstance(last.artifact, dict) else {}) or {}
+        previous = str(art.get("session_id") or "")
+        if not previous or (art.get("gate") or {}).get("status") != "fail":
+            raise CoderError("không có lượt sửa mã nào đang đỏ để sửa cho xanh")
+        if merged_sha_for(db, task):
+            raise CoderError("bản vá đã gộp vào nhánh nền — sửa tiếp phải làm việc mới")
+        fix_brief = build_fix_gate_brief(art["gate"])
     #  ai-CR-024: nối phiên rà soát (Claude đã đọc mã) thay vì mở phiên mới đọc lại từ đầu.
     scan_sid = "" if previous else scan_session_to_reuse(db, task)
     run = _start_run(db, task.id)
@@ -1187,6 +1253,12 @@ def run_code_task(db: Session, task: AgentTask, *, resume: bool = False) -> dict
         branch = task.branch_name or branch_name_for(task)
         task.branch_name = branch[:120]
         db.commit()
+        if fix_gate:
+            #  Gỡ commit cũ của bot, GIỮ thay đổi đã stage: vòng này commit lại trọn bản vá một lần,
+            #  nhánh bot vẫn đúng một commit và tệp .diff vẫn là cả bản vá.
+            subject = _git(worktree, "log", "-1", "--format=%s", timeout=60).strip()
+            if subject.startswith(f"{task.code}:"):
+                _git(worktree, "reset", "--soft", "HEAD~1", timeout=60)
     else:
         worktree, branch = prepare_worktree(task)
         task.branch_name = branch[:120]
@@ -1195,7 +1267,10 @@ def run_code_task(db: Session, task: AgentTask, *, resume: bool = False) -> dict
     fe_note = link_fe_deps(worktree)
 
     try:
-        if previous:
+        if fix_gate:
+            data = run_claude_fix(worktree, fix_brief, session_id=session_id,
+                                  timeout=settings.AGENT_RUN_TIMEOUT_SEC)
+        elif previous:
             data = run_claude_continue(worktree, session_id=session_id,
                                        timeout=settings.AGENT_RUN_TIMEOUT_SEC)
         else:
@@ -1339,6 +1414,9 @@ def send_review_card(db: Session, task: AgentTask, run: AgentRun, *, files: list
             rendered = esc(clipped)
         body = ["", "<b>Bot tổng kết:</b>", rendered]
     buttons: list[tuple[str, str]] = []
+    if not escalation and gate.get("status") == "fail":
+        #  ai-CR-026: cổng đỏ thì lối đầu tiên là để bot tự sửa cho xanh trong đúng phiên đó.
+        buttons.append(("Sửa cho xanh", f"fixg:{task.id}"))
     if not escalation:
         #  Đại ca chốt 23/09: đường MẶC ĐỊNH là bot gộp theo lệnh (nút này chỉ mở thẻ hỏi, gộp
         #  thật cần bấm đồng ý ở thẻ đó); link PR chỉ gửi khi đại ca muốn tự bấm merge trên GitHub.

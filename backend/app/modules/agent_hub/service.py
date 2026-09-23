@@ -1039,6 +1039,21 @@ def handle_callback(db: Session, cb: dict) -> None:
         #  Chỉ có toast thì khung chat không còn dấu vết gì (đại ca hỏi 23/09 về AI-0006).
         reply(db, chat_id, f"Đã bỏ <b>{telegram.esc(task.code)}</b> · {telegram.esc(task.title)}. "
               f"Lịch sử vẫn còn trong sổ: /xem {telegram.esc(task.code)}", task_id=task.id)
+    elif action == "fixg":
+        #  «Sửa cho xanh» (ai-CR-026): cổng kiểm đỏ -> bot sửa tiếp đúng phiên, chạy lại cổng.
+        last = coder.latest_code_run(db, task)
+        art = (last.artifact if last is not None and isinstance(last.artifact, dict) else {}) or {}
+        if task.status != ST_REVIEW or (art.get("gate") or {}).get("status") != "fail" \
+                or coder.merged_sha_for(db, task):
+            telegram.answer_callback(cb_id, "Việc này không còn ở trạng thái cổng kiểm đỏ")
+        else:
+            task.status = ST_CODE
+            db.commit()
+            coder.dispatch_fix_gate(task.id)
+            telegram.answer_callback(cb_id, "Em sửa cho xanh")
+            reply(db, chat_id, f"Em sửa <b>{telegram.esc(task.code)}</b> cho xanh trong đúng phiên cũ "
+                  f"(tối đa {coder.FIX_GATE_MAX_TURNS} lượt), xong chạy lại cổng kiểm và gửi thẻ.",
+                  task_id=task.id)
     elif action == "cont":
         #  «Làm tiếp» sau khi hết lượt (ai-CR-023): nối đúng phiên, đúng worktree đang dở.
         if task.status != ST_NEEDS_INPUT or not coder.resumable_session(db, task):

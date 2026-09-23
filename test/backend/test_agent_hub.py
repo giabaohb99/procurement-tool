@@ -107,7 +107,7 @@ def bot(monkeypatch):
     from app.modules.agent_hub import coder as _coder
 
     monkeypatch.setattr(settings, "AGENT_CODER_ENABLED", False)
-    for name in ("dispatch", "dispatch_scan", "dispatch_publish", "dispatch_question", "dispatch_continue",
+    for name in ("dispatch", "dispatch_scan", "dispatch_publish", "dispatch_question", "dispatch_continue", "dispatch_fix_gate",
                  "dispatch_deploy", "dispatch_revert"):
         monkeypatch.setattr(_coder, name, lambda *a, **kw: None)
     sent: list[str] = []
@@ -3195,3 +3195,94 @@ def test_keo_tin_dong_giao_dich_truoc_khi_cho_telegram(db, bot, monkeypatch):
     assert db.in_transaction()
     service.poll_once(db, timeout=25)
     assert open_while_waiting == [False]
+
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-026: quyền chạy vitest theo từng thư mục + nút «Sửa cho xanh»
+# ---------------------------------------------------------------------------
+def test_quyen_vitest_khai_theo_tung_thu_muc_co_that(tmp_path):
+    """AI-0007: mẫu `… -- src/:*` không khớp `… -- src/modules/finance` (so theo nguyên từ)."""
+    from app.modules.agent_hub import coder
+
+    for d in ("modules/finance", "modules/procurement", "shared/data-table", "core/api"):
+        (tmp_path / "frontend-v2" / "src" / d).mkdir(parents=True)
+    tools = coder.allowed_tools(str(tmp_path)).split(",")
+    assert "Bash(npm --prefix frontend-v2 run test -- src/modules/finance:*)" in tools
+    assert "Bash(npm --prefix frontend-v2 run test -- src/shared/data-table:*)" in tools
+    assert "Bash(npm --prefix frontend-v2 run test -- src/core/api:*)" in tools
+    #  Không có mẫu nào chạy được cả bộ bài.
+    assert not any(x.endswith("run test:*)") or x.endswith("run test --:*)") or "src/:*" in x for x in tools)
+    assert coder.allowed_tools(str(tmp_path / "khong-co")) == coder.ALLOWED_TOOLS
+
+
+def _red_review_task(db, service, coder):
+    from app.modules.agent_hub.model import AgentRun
+
+    task = _task_with_plan(db, service, ["frontend-v2/src/modules/finance/a.tsx"], status=service.ST_REVIEW,
+                           branch_name="bot/x")
+    gate = {"status": "fail", "backend": "none", "tests": [], "output": "",
+            "frontend": {"status": "fail", "steps": [{"name": "vitest src/modules/finance", "ok": False}],
+                         "output": "[vitest src/modules/finance] getByRole combobox «Mọi hình thức» không thấy"}}
+    db.add(AgentRun(task_id=task.id, stage=coder.STAGE_CODE, provider="claude_code", model="m",
+                    status=service.RUN_OK, started_at=datetime.now(),
+                    artifact={"session_id": "code-1", "files": [], "gate": gate}))
+    db.commit()
+    return task, gate
+
+
+def test_cong_do_thi_the_co_nut_sua_cho_xanh_va_nut_giao_runner(db, bot, monkeypatch):
+    from app.modules.agent_hub import coder
+
+    service, _, _ = bot
+    sent = _capture_send(monkeypatch, service)
+    task, gate = _red_review_task(db, service, coder)
+    run = coder.latest_code_run(db, task)
+    coder.send_review_card(db, task, run, files=[], gate=gate, escalation="", report="", data={})
+    assert sent[-1][1][0] == ("Sửa cho xanh", f"fixg:{task.id}")
+    dispatched: list[int] = []
+    monkeypatch.setattr(coder, "dispatch_fix_gate", lambda tid: dispatched.append(tid))
+    service.handle_callback(db, _callback(f"fixg:{task.id}"))
+    assert task.status == service.ST_CODE and dispatched == [task.id]
+    #  Cổng xanh: nút không có trên thẻ, bấm cũng không giao gì.
+    task.status = service.ST_REVIEW
+    run.artifact = {**run.artifact, "gate": {"status": "pass", "tests": [], "output": ""}}
+    db.commit()
+    coder.send_review_card(db, task, run, files=[], gate=run.artifact["gate"], escalation="", report="", data={})
+    assert not any(b[1].startswith("fixg:") for b in sent[-1][1])
+    service.handle_callback(db, _callback(f"fixg:{task.id}"))
+    assert dispatched == [task.id]
+
+
+def test_sua_cho_xanh_noi_phien_go_commit_cu_va_commit_lai(db, bot, monkeypatch, tmp_path):
+    from app.modules.agent_hub import coder
+
+    service, _, _ = bot
+    _capture_send(monkeypatch, service)
+    monkeypatch.setattr(settings, "AGENT_WORKTREE_ROOT", str(tmp_path))
+    calls = _fake_runner(monkeypatch, coder, touched=["frontend-v2/src/modules/finance/a.test.tsx"])
+    base_git = coder._git
+    holder: dict = {}
+
+    def git_with_log(cwd, *args, **kw):
+        if args[:2] == ("log", "-1"):
+            calls.append(["git", *args])
+            return f"{holder['code']}: Sửa lỗi lọc nghỉ phép\n"
+        return base_git(cwd, *args, **kw)
+
+    monkeypatch.setattr(coder, "_git", git_with_log)
+    monkeypatch.setattr(coder, "run_claude", lambda *a, **kw: pytest.fail("phải nối phiên, không mở mới"))
+    seen: list[tuple] = []
+    monkeypatch.setattr(coder, "run_claude_fix", lambda wt, brief, *, session_id, timeout: seen.append(
+        (session_id, brief)) or {"result": "## TỔNG KẾT\n1. sửa bài kiểm"})
+    task, _gate = _red_review_task(db, service, coder)
+    holder["code"] = task.code
+    task.status = service.ST_CODE
+    db.commit()
+    (tmp_path / task.code).mkdir()
+    coder.run_code_task(db, task, fix_gate=True)
+    sid, brief = seen[0]
+    assert sid == "code-1" and "combobox «Mọi hình thức» không thấy" in brief and "Sửa cho XANH" in brief
+    assert ["git", "reset", "--soft", "HEAD~1"] in calls
+    assert any(c[:2] == ["git", "-c"] and "commit" in c for c in calls)
+    assert task.status == service.ST_REVIEW
