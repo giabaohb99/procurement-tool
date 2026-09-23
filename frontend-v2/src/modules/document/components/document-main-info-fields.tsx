@@ -37,6 +37,12 @@ interface DocumentMainInfoFieldsProps {
   form: UseFormReturn<DocumentRecordFormValues>
   /** Văn bản đã có số hiệu: khóa ô loại và pháp nhân — đổi là hỏng số đã ban hành. */
   isNumbered: boolean
+  /**
+   * Số hiệu ĐÃ CẤP của văn bản đang sửa. Có số rồi thì bày đúng số đó, không hỏi
+   * số xem trước nữa — số xem trước là số của văn bản KẾ TIẾP, đặt vào đây là
+   * văn bản đang hiệu lực mang số QC-001 mà ô Số hiệu lại ghi QC-002.
+   */
+  issuedNumber?: string
   /** Bỏ chính văn bản đang sửa ra khỏi khối gợi ý "đã có văn bản cùng loại". */
   excludeId?: number
   /** Chỉ trang tạo mới truyền hai props này để hiện ô chọn nội dung mẫu. */
@@ -65,6 +71,7 @@ function Required() {
 export function DocumentMainInfoFields({
   form,
   isNumbered,
+  issuedNumber,
   excludeId,
   templateId,
   onTemplateChange,
@@ -86,7 +93,7 @@ export function DocumentMainInfoFields({
     company_id: companyId,
     department_id: departmentId,
     book_id: bookId,
-  })
+  }, !issuedNumber)
 
   //  Mọi ô chọn ở đây đều là `SearchSelect` (có ô gõ tìm) chứ không phải
   //  `Select` — khách yêu cầu 25/08/2026. Lý do đo được: loại văn bản 33 dòng,
@@ -292,7 +299,11 @@ export function DocumentMainInfoFields({
       />
 
       {/* Dòng xem trước số hiệu đứng ngay dưới các ô quyết định ra nó. */}
-      <DocumentNumberPreview preview={preview} isFetching={loadingNumber} />
+      <DocumentNumberPreview
+        preview={preview}
+        isFetching={loadingNumber}
+        issuedNumber={issuedNumber}
+      />
 
       {/* B05 — hiện luôn văn bản cùng loại cùng phòng đang hiệu lực. Đây là thứ
           còn lại chống đẻ trùng quy trình sau khi bước xin phép bị cắt. */}

@@ -13,12 +13,19 @@ interface CompanyAvatarGroupProps {
   companies: CompanyAvatarItem[]
   maxVisible?: number
   showNameWhenSingle?: boolean
+  /**
+   * Hiện đuôi "(n công ty)" sau dải ảnh. Tắt ở chỗ đã BÀY TÊN công ty ngay cạnh
+   * (bảng Phân công văn thư): ở đó số lượng đọc được từ chính danh sách tên, nên
+   * đuôi này chỉ chen vào giữa ảnh và chữ.
+   */
+  showCount?: boolean
 }
 
 export function CompanyAvatarGroup({
   companies,
   maxVisible = 4,
   showNameWhenSingle = true,
+  showCount = true,
 }: CompanyAvatarGroupProps) {
   if (!companies || companies.length === 0) {
     return <span className="text-muted-foreground">—</span>
@@ -122,6 +129,7 @@ export function CompanyAvatarGroup({
           )}
         </AvatarGroup>
 
+        {showCount && (
         <Tooltip disableHoverableContent>
           <TooltipTrigger asChild>
             <span className="cursor-pointer text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground hover:underline underline-offset-2">
@@ -146,6 +154,7 @@ export function CompanyAvatarGroup({
             </ul>
           </TooltipContent>
         </Tooltip>
+        )}
       </div>
     </TooltipProvider>
   )

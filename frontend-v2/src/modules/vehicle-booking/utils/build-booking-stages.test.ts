@@ -110,6 +110,42 @@ describe('buildBookingStages', () => {
     expect(titles.some((t) => t.startsWith('Chờ') || t.startsWith('Chưa'))).toBe(false)
   })
 
+  it('phiếu đã hủy luôn có dòng LÝ DO, kể cả khi không ai ghi', () => {
+    //  Ẩn dòng khi rỗng thì người đọc không phân biệt được "không ai ghi lý do"
+    //  với "màn hình không bày lý do" — và đi hỏi vòng quanh một câu mà hệ
+    //  thống biết chắc là không có. Phiếu nạp từ tệp Excel hệ cũ rơi đúng ca này.
+    const withReason = stageOf(
+      makeBooking({ status: BOOKING_STATUS.cancelled, cancel_reason: 'Khách hoãn lịch' }),
+      'cancel',
+    )
+    expect(withReason?.facts).toEqual([{ label: 'Lý do', value: 'Khách hoãn lịch' }])
+
+    const without = stageOf(makeBooking({ status: BOOKING_STATUS.cancelled }), 'cancel')
+    expect(without?.facts).toEqual([{ label: 'Lý do', value: 'Không ghi lý do' }])
+  })
+
+  it('lý do chỉ toàn khoảng trắng cũng tính là KHÔNG ghi', () => {
+    const stage = stageOf(
+      makeBooking({ status: BOOKING_STATUS.cancelled, cancel_reason: '   ' }),
+      'cancel',
+    )
+    expect(stage?.facts).toEqual([{ label: 'Lý do', value: 'Không ghi lý do' }])
+  })
+
+  it('phiếu bị từ chối cũng bày lý do, phiếu TRẢ VỀ thì không', () => {
+    //  Trả về ghi nhật ký bằng mã `update` — trùng mã với mọi lần sửa phiếu, nên
+    //  backend cố ý không tách lý do cho nó (`service._REASON_STATUSES`). Bày
+    //  một dòng "Không ghi lý do" ở đó là hứa một thứ sẽ không bao giờ có.
+    const rejected = stageOf(
+      makeBooking({ status: BOOKING_STATUS.rejected, cancel_reason: 'Sai mục đích' }),
+      'approve',
+    )
+    expect(rejected?.facts).toEqual([{ label: 'Lý do', value: 'Sai mục đích' }])
+
+    const returned = stageOf(makeBooking({ status: BOOKING_STATUS.returned }), 'approve')
+    expect(returned?.facts).toEqual([])
+  })
+
   it('hủy SAU khi đã duyệt vẫn giữ lại chặng đã xảy ra', () => {
     expect(
       titlesOf(makeBooking({ status: BOOKING_STATUS.cancelled, approved_at: '2026-09-02T09:00' })),

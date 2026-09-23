@@ -1,5 +1,5 @@
 import { ArrowLeft, Building2, Briefcase, Hash, ShieldCheck, Stamp } from 'lucide-react'
-import { useEffect, useRef, type ReactNode } from 'react'
+import { type ReactNode } from 'react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Button } from '@/shared/ui/button'
@@ -31,10 +31,12 @@ function initialsOf(name: string): string {
  *
  * Tích hợp STICKY SCROLL ở đỉnh trang:
  * - Ghim cố định khi cuộn xuống dưới, kèm hiệu ứng nền canvas mờ (`backdrop-blur-md`).
- * - Tự đo chiều cao thực tế bằng ResizeObserver và gán biến CSS `--clerk-header-h`
- *   lên thẻ cha, giúp cột bên phải neo dính chính xác ngay bên dưới.
  * - Hàng 1: Nút Back + Avatar/Tên văn thư + Cụm nút thao tác nghiệp vụ (Lưu, Xóa).
  * - Hàng 2: Dải thông tin tóm tắt (Mã nhân viên, Phòng ban, Chức vụ, Trạng thái, Văn thư tổng/đơn vị, Nhóm công ty).
+ *
+ * Phép đo chiều cao (`ResizeObserver` ghi biến CSS `--clerk-header-h`) đã GỠ ngày
+ * 22/09/2026: nó chỉ có đúng một người dùng là cột phải lúc còn ghim, mà cột phải
+ * nay cuộn theo trang. Đo mãi mà không ai đọc thì chỉ tổ chạy mỗi lần đổi khổ màn.
  */
 export function SealClerkDetailHeader({
   employeeName,
@@ -49,24 +51,8 @@ export function SealClerkDetailHeader({
   onBack,
   actions,
 }: SealClerkDetailHeaderProps) {
-  const ref = useRef<HTMLElement>(null)
-
-  useEffect(() => {
-    const el = ref.current
-    const host = el?.parentElement
-    if (!el || !host) return
-
-    const observer = new ResizeObserver(() => {
-      host.style.setProperty('--clerk-header-h', `${el.offsetHeight}px`)
-    })
-    observer.observe(el)
-
-    return () => observer.disconnect()
-  }, [])
-
   return (
     <header
-      ref={ref}
       className="static top-0 z-20 -mx-4 -mt-4 mb-5 flex flex-col gap-3.5 border-b border-border/50 bg-canvas/95 px-4 pt-4 pb-3.5 backdrop-blur-md lg:sticky lg:-mx-6 lg:-mt-6 lg:px-6 lg:pt-6"
     >
       {/* Hàng 1: Nút Quay lại + Avatar & Tên văn thư + Cụm nút thao tác */}

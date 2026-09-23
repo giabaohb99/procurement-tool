@@ -262,6 +262,15 @@ class VehicleBookingResponse(VehicleBookingBase):
     #  trạng thái chứ không thay nó (xem `seal_request/schema.py`). Rỗng = phiếu
     #  chưa vào bộ máy duyệt.
     approval_summary: str = ""
+    #  LÝ DO đóng phiếu — chỉ có nghĩa với phiếu *Đã hủy* / *Bị từ chối*.
+    #
+    #  ⚠️ KHÔNG phải cột của `tab_vehicle_booking`: lý do vốn được ghi vào
+    #  NHẬT KÝ THAO TÁC (`_with_reason` ở controller, và bản đồng bộ app cũ chép
+    #  `approval.history[].comment` sang cùng khuôn câu đó). Đây là câu lý do rút
+    #  ra từ dòng nhật ký gần nhất — xem `service.close_reasons`. Rỗng = phiếu
+    #  đóng mà không ai ghi lý do, hoặc phiếu nạp từ tệp Excel hệ cũ (đợt nạp một
+    #  lần đó không có cột lý do nên không có gì để chép).
+    cancel_reason: str = ""
     created_at: str | None = None
 
     @field_validator("created_at", mode="before")

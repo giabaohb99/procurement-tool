@@ -1,12 +1,15 @@
+import type { TimelineState } from '@/shared/ui/timeline-item'
 import { formatMoney } from '@/shared/utils/format-money'
 import { BOOKING_STATUS, type VehicleBooking } from '../types/vehicle-booking'
 import { formatStamp } from './booking-time-format'
 
 /**
- * Trạng thái một chặng xử lý:
- * · `done` — đã xảy ra · `pending` — chưa tới lượt · `stopped` — phiếu dừng ở đây.
+ * Trạng thái một chặng xử lý — cùng bộ với điểm đánh dấu dùng chung
+ * (`shared/ui/timeline-item.tsx`): `done` · `pending` · `stopped`. Khai lại thành
+ * tên riêng ở đây cho đọc xuôi, nhưng KHÔNG chép giá trị: lệch một chữ là
+ * `TimelineMarker` vẽ nhầm vòng tròn mà `tsc` không kêu.
  */
-export type StageState = 'done' | 'pending' | 'stopped'
+export type StageState = TimelineState
 
 /** Một mẩu thông tin phụ của chặng ("Xe · 51A-12345"). Giá trị rỗng bị loại. */
 export interface StageFact {
@@ -70,7 +73,10 @@ export function buildBookingStages(booking: VehicleBooking): BookingStage[] {
       state: 'stopped',
       time: formatStamp(booking.approved_at),
       actor: booking.approver_name,
-      facts: [],
+      //  Phiếu TRẢ VỀ không lấy lý do: backend ghi nhật ký trả về bằng mã
+      //  `update`, trùng mã với mọi lần sửa phiếu, nên không tách ra được câu
+      //  nào chắc chắn là câu trả phiếu (xem `service._REASON_STATUSES`).
+      facts: rejected ? [closeReasonFact(booking)] : [],
     })
     return stages
   }
@@ -130,11 +136,31 @@ export function buildBookingStages(booking: VehicleBooking): BookingStage[] {
   if (cancelled) {
     return [
       ...stages.filter((stage) => stage.state !== 'pending'),
-      { key: 'cancel', title: 'Đã hủy phiếu', state: 'stopped', time: '', actor: '', facts: [] },
+      {
+        key: 'cancel',
+        title: 'Đã hủy phiếu',
+        state: 'stopped',
+        time: '',
+        actor: '',
+        facts: [closeReasonFact(booking)],
+      },
     ]
   }
 
   return stages
+}
+
+/**
+ * Dòng LÝ DO của chặng dừng (đã hủy · bị từ chối) — LUÔN dựng, kể cả khi không
+ * có lý do.
+ *
+ * ⚠️ Ẩn dòng khi rỗng là bỏ mất thông tin: người đọc không phân biệt được
+ * *"phiếu bị hủy mà không ai ghi lý do"* với *"màn hình này không bày lý do"*,
+ * nên họ đi hỏi vòng quanh một câu mà hệ thống biết chắc là không có. Phiếu nạp
+ * từ tệp Excel hệ cũ rơi đúng vào ca này — đợt nạp đó không có cột lý do.
+ */
+function closeReasonFact(booking: VehicleBooking): StageFact {
+  return { label: 'Lý do', value: booking.cancel_reason?.trim() || 'Không ghi lý do' }
 }
 
 function keepFilled(facts: StageFact[]): StageFact[] {

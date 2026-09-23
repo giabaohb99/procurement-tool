@@ -1,5 +1,5 @@
 import { ArrowLeft, Calendar, Files, User } from 'lucide-react'
-import { useEffect, useRef, type ReactNode } from 'react'
+import { type ReactNode } from 'react'
 
 import { ApprovalStageNote } from '@/modules/approval/components/approval-stage-note'
 import { Button } from '@/shared/ui/button'
@@ -19,32 +19,18 @@ interface SealDetailHeaderProps {
  *
  * Tích hợp STICKY SCROLL ở đỉnh trang:
  * - Ghim cố định khi cuộn xuống dưới, kèm hiệu ứng nền canvas mờ (`backdrop-blur-md`).
- * - Tự đo chiều cao thực tế bằng ResizeObserver và gán biến CSS `--seal-header-h`
- *   lên thẻ cha, giúp cột bên phải neo dính chính xác ngay bên dưới.
  * - Hàng 1: Nút Back + Tiêu đề văn bản + Dải nút thao tác nghiệp vụ.
  * - Hàng 2: Dải thông tin tóm tắt (Mã phiếu, Trạng thái, Số bản, Người tạo, Công ty đóng dấu, Ngày tạo).
+ *
+ * Phép đo chiều cao (`ResizeObserver` ghi biến CSS `--seal-header-h`) đã GỠ ngày
+ * 22/09/2026: nó chỉ có đúng một người dùng là cột phải lúc còn ghim, mà cột phải
+ * nay cuộn theo trang. Đo mãi mà không ai đọc thì chỉ tổ chạy mỗi lần đổi khổ màn.
  */
 export function SealDetailHeader({ request, onBack, actions }: SealDetailHeaderProps) {
-  const ref = useRef<HTMLElement>(null)
-
-  useEffect(() => {
-    const el = ref.current
-    const host = el?.parentElement
-    if (!el || !host) return
-
-    const observer = new ResizeObserver(() => {
-      host.style.setProperty('--seal-header-h', `${el.offsetHeight}px`)
-    })
-    observer.observe(el)
-
-    return () => observer.disconnect()
-  }, [])
-
   const displayTitle = request.title?.trim() || request.purpose?.trim() || `Yêu cầu đóng dấu ${request.code}`
 
   return (
     <header
-      ref={ref}
       className="static top-0 z-20 -mx-4 -mt-4 mb-5 flex flex-col gap-3.5 border-b border-border/50 bg-canvas/95 px-4 pt-4 pb-3.5 backdrop-blur-md lg:sticky lg:-mx-6 lg:-mt-6 lg:px-6 lg:pt-6"
     >
       {/* Hàng 1: Nút Quay lại + Tiêu đề + Cụm nút thao tác */}

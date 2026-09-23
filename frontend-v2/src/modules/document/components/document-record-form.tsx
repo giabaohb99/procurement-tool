@@ -14,12 +14,14 @@ interface DocumentRecordFormProps {
   form: UseFormReturn<DocumentRecordFormValues>
   /** Đã cấp số: khóa ô loại văn bản và pháp nhân ban hành. */
   isNumbered: boolean
+  /** Số hiệu đã cấp — bày thẳng ở ô Số hiệu thay cho số xem trước. */
+  issuedNumber?: string
   /** Văn bản đang sửa — bỏ chính nó ra khỏi khối gợi ý văn bản trùng. */
   documentId?: number
   /** Loại là Giấy nghỉ phép: mở thêm thẻ tám ô riêng, lưu vào `metadata`. */
   isLeaveForm?: boolean
   /**
-   * Khóa BỘ TRƯỜNG CHUNG (đang trình duyệt). Chỉ khóa hai thẻ trường ở trên —
+   * Khóa BỘ TRƯỜNG CHUNG (đang trình duyệt, hoặc người xem không có quyền ghi). Chỉ khóa hai thẻ trường ở trên —
    * phạm vi áp dụng và chia quyền đọc nằm trong `children` và vẫn sửa được:
    * chúng không phải nội dung mà người duyệt đang đọc.
    */
@@ -40,6 +42,7 @@ export function DocumentRecordForm({
   formId,
   form,
   isNumbered,
+  issuedNumber,
   documentId,
   isLeaveForm = false,
   readOnly = false,
@@ -56,6 +59,7 @@ export function DocumentRecordForm({
             <DocumentMainInfoFields
               form={form}
               isNumbered={isNumbered}
+              issuedNumber={issuedNumber}
               excludeId={documentId}
             />
           </FormCard>

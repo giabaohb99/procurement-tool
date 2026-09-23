@@ -232,6 +232,15 @@ export interface VehicleBooking {
   /** Câu một dòng «Đang ở chặng 2/3 · Duyệt của Giám đốc» — dòng phụ cạnh badge
    *  trạng thái, backend dựng sẵn. Rỗng = phiếu chưa vào bộ máy duyệt. */
   approval_summary?: string
+  /**
+   * LÝ DO đóng phiếu — chỉ có với phiếu *Đã hủy* / *Bị từ chối*.
+   *
+   * ⚠️ Không phải cột của phiếu: backend rút câu này ra từ NHẬT KÝ THAO TÁC
+   * (`service.close_reasons`). Rỗng có nghĩa thật — «đóng mà không ai ghi lý do»
+   * hoặc phiếu nạp từ tệp Excel hệ cũ (đợt nạp đó không có cột lý do) — nên chỗ
+   * hiển thị phải nói thẳng «Không ghi lý do», đừng ẩn dòng đi.
+   */
+  cancel_reason?: string
   created_at: string | null
 }
 

@@ -125,3 +125,58 @@ export function changeValueText(value: string, isMasked: boolean): string {
   if (!raw) return '(trống)'
   return raw
 }
+
+/**
+ * Tông màu của ĐỘNG TỪ HTTP — cho huy hiệu `GET` · `POST` · `PATCH` · `DELETE`.
+ *
+ * Xếp theo MỨC ĐỘ ĐỘNG VÀO DỮ LIỆU, không theo bảng chữ cái: `GET` chỉ đọc nên
+ * trung tính (và nó chiếm đa số dòng — tô màu thì cả màn rực lên, mất hẳn tác
+ * dụng nhấn), `POST` tạo mới, `PUT`/`PATCH` sửa, `DELETE` xóa. Người trực quét
+ * màn này để tìm *lượt nào đã đụng vào dữ liệu*, nên đó là thứ màu phải trả lời.
+ */
+export function httpMethodTone(method: string): StatusTone {
+  switch ((method || '').toUpperCase()) {
+    case 'POST':
+      return 'done'
+    case 'PUT':
+    case 'PATCH':
+      return 'pending'
+    case 'DELETE':
+      return 'danger'
+    default:
+      return 'neutral'
+  }
+}
+
+/**
+ * Thân yêu cầu / thân trả về → chữ để in trong khối `<pre>`.
+ *
+ * ⚠️ **Hai ô này KHÔNG phải chuỗi.** Dưới CSDL chúng là cột **JSON**
+ * (`tab_request_log.request_body` · `response_body`, `Mapped[dict | None]`) và
+ * backend gán thẳng `row.request_body` vào phản hồi, không qua schema Pydantic
+ * nào — nên tới nơi chúng là **object**. Bản trước khai `string` rồi gọi
+ * `(text ?? '').trim()`: lượt `GET` không có thân nên `null` lọt qua, còn lượt
+ * `POST`/`PATCH` nào có thân cũng ném *"(intermediate value).trim is not a
+ * function"* — và vì ném lúc render nên **cả trang** rơi vào màn báo lỗi chứ
+ * không riêng tab «Request» (lỗi thật, bắt được 22/09/2026 ở
+ * `PATCH /api/dossiers/applicable/36/progress`).
+ *
+ * Nhận `unknown` là cố ý: đây là dữ liệu NGOÀI luồng gõ kiểu (backend không có
+ * schema, kiểu TS chỉ là lời khẳng định), nên nơi duy nhất biết chắc hình thù
+ * của nó là lúc chạy.
+ */
+export function logBodyText(value: unknown): string {
+  if (value === null || value === undefined) return ''
+  //  Chuỗi thì giữ nguyên (traceback, thân dạng text/plain) — `JSON.stringify`
+  //  một chuỗi sẽ bọc thêm dấu nháy và escape xuống dòng thành `\n`, tức là
+  //  traceback mười dòng in ra thành một dòng dài không đọc nổi.
+  if (typeof value === 'string') return value.trim()
+  try {
+    //  Thụt hai khoảng: thân yêu cầu vốn là JSON, in một dòng thì phải kéo ngang.
+    return JSON.stringify(value, null, 2)
+  } catch {
+    //  Vòng tham chiếu (`JSON.stringify` ném `TypeError`) — hiếm, nhưng ở màn
+    //  truy sự cố thì thà ra chữ xấu còn hơn làm hỏng cả trang một lần nữa.
+    return String(value)
+  }
+}

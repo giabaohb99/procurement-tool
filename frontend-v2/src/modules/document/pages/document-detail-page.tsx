@@ -745,9 +745,16 @@ export function DocumentDetailPage() {
             formId={FORM_ID}
             form={form}
             isNumbered={isNumbered}
+            issuedNumber={isNumbered ? record?.display_code : undefined}
             documentId={documentId}
             isLeaveForm={isLeaveForm}
-            readOnly={viLocaleKey || readonlyFromLink}
+            //  Khóa theo QUYỀN GHI trên đúng văn bản này (`permissions.write` —
+            //  người tạo qua phạm vi `own`, hoặc người được phân quyền), không
+            //  riêng lúc đang duyệt. Trước đây chỉ ẩn nút Lưu: người chỉ có
+            //  quyền đọc vẫn gõ được vào mọi ô, sửa xong mới thấy không lưu nổi.
+            //  Văn bản ĐÃ CÓ HIỆU LỰC vẫn sửa được thông tin — backend chỉ khóa
+            //  lúc đang duyệt / chờ ban hành / bị từ chối.
+            readOnly={!canWrite || viLocaleKey}
             onSubmit={handleSubmitForm}
           >
             <DocumentAttachmentList

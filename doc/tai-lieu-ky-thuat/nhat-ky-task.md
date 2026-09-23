@@ -5582,3 +5582,386 @@ Mã nguồn (kho app cũ, không phải kho này): `my-firebase-api/package.json
 `my-firebase-api/package-lock.json`, `my-firebase-api/vitest.config.mts`. Không đụng mã nghiệp vụ.
 Commit: `my-firebase-api` nhánh dev 9b069d1.
 Tham chiếu: bao-CR-457 và bao-CR-456 là hai đợt phải báo "chưa chạy được bài kiểm".
+
+## duoc-CR-440 | Dọn lại giao diện hai màn danh mục Quản lý xe và Quản lý tài xế
+- status: xong
+- date: 2026-09-22
+Đại ca mở màn Quản lý xe rồi nói thẳng là nhìn xấu, chữ chỗ đậm chỗ nhạt. Đọc kỹ thì
+đúng: trên một hàng có tới ba kiểu chữ khác nhau mà không kiểu nào nói lên điều gì —
+biển số in đậm, mẫu xe chữ thường, loại xe chữ thường nhưng kèm biểu tượng — nên mắt
+không biết bám vào đâu để nhận ra một chiếc xe. Tệ hơn, ba chiếc xe thuê ngoài bỏ
+trống ô mẫu xe, thành ra ba dòng đầu bảng có một cột trắng trơn nối nhau.
+
+Em gộp hai cột biển số và mẫu xe thành MỘT ô nhận diện: biển số nằm trên, mẫu xe nằm
+dưới bằng chữ nhỏ mờ, bên trái là ô biểu tượng theo loại xe. Mỗi hàng nay chỉ còn một
+điểm nhấn duy nhất. Xe thuê ngoài không có mẫu xe thì dòng dưới lấp bằng tên đơn vị
+cho thuê, thứ trước giờ chưa từng lên bảng dù dữ liệu vẫn có.
+
+Trong lúc sửa thì lòi ra một lỗi nội dung, không phải lỗi hình thức. Cột sức chứa của
+xe mang hai nghĩa trong cùng một con số: số chỗ ngồi với xe chở người, số tấn với xe
+tải. Bản cũ nhét đơn vị vào tiêu đề cột ("Tải (người/tấn)") rồi in con số trần, mà
+tiêu đề đó lại bị cắt cụt vì cột chỉ rộng 130 điểm — nhìn vào chỉ thấy "2,4" đứng cạnh
+"7" và không có cách nào biết cái nào là tấn. Nay đơn vị đi kèm từng ô. Khi ghép đơn vị
+mới phát hiện phép đoán loại xe đang sai với XE BÁN TẢI: nó có chữ "tải" nên bốn chiếc
+Hilux và BT50 khai sức chứa 5 (là 5 CHỖ ngồi) bị đọc thành "5 tấn". Đã loại xe bán tải
+ra khỏi nhóm chở hàng và viết bài kiểm ghim đúng trường hợp này.
+
+Màn Quản lý tài xế sửa theo đúng lối đó cho hai màn anh em không lệch nhau: tên tài xế
+kèm ảnh đại diện chữ cái, giấy phép lái xe xuống dòng dưới. Trước đó hạng và số giấy
+phép chiếm hai cột riêng, mà 13 trên 15 tài xế bỏ trống số giấy phép — tức một cột rộng
+150 điểm gần như trắng.
+
+Cả hai màn được thêm: một câu mô tả dưới tiêu đề, hai ô lọc nhanh theo trạng thái và
+theo nguồn đặt sẵn ngoài bảng (trước phải mở tờ Bộ lọc mới hỏi được hai câu hỏi thường
+ngày nhất), cột đơn vị cho thuê / đơn vị cung cấp mặc định ẩn, và thẻ riêng cho khổ
+điện thoại thay cho bảng sáu cột phải cuộn ngang. Thẻ điện thoại chỉ đeo huy hiệu khi
+tình trạng KHÁC "sẵn sàng", vì cả 13 xe lẫn 15 tài xế hiện đều sẵn sàng và mười mấy
+huy hiệu giống hệt nhau thì thứ cần nhặt ra lại chìm nghỉm.
+
+Hai điều phải nói rõ cho người sau. Thứ nhất, khóa nhớ bố cục bảng của cả hai màn đã
+đổi sang đuôi ".v2" vì bộ cột đổi hẳn, mà bảng nhớ thứ tự cột trong bộ nhớ trình duyệt
+và bản nhớ luôn thắng — không đổi khóa thì ai từng đụng menu Cột sẽ thấy cột mới rơi
+xuống cuối. Thứ hai, em KHÔNG thêm ô lọc theo mẫu xe / số giấy phép / đơn vị cho thuê
+dù bảng có bày chúng: backend chỉ nhận bốn tên lọc cho mỗi danh mục và tên ngoài danh
+sách đó bị bỏ qua trong im lặng, tức người dùng đặt điều kiện, bấm Áp dụng, rồi nhận
+lại nguyên danh sách cũ mà không có lỗi nào để lần. Muốn lọc được thì phải mở danh
+sách bên backend trước.
+
+Kiểm tra: typecheck 0 lỗi, lint 0 lỗi và không thêm cảnh báo nào (vẫn đúng 31 cảnh báo
+cũ), 85 bài kiểm của phân hệ đặt xe xanh (thêm 10 bài mới cho phép đoán loại xe và
+cách ghép đơn vị sức chứa). Đã bấm tay trên trình duyệt cả hai màn ở khổ 1280 điểm và
+khổ điện thoại 390 điểm, chụp màn hình đối chiếu trước sau. Chưa deploy, mới nằm ở máy em.
+Mã nguồn: `frontend-v2/src/modules/vehicle-booking/config/vehicle-crud.tsx` và
+`config/driver-crud.tsx` (bộ cột mới, ô lọc nhanh, thẻ khổ điện thoại, đổi khóa nhớ bố cục);
+`components/vehicle-identity-cell.tsx` và `components/driver-identity-cell.tsx` (mới — ô nhận diện hai dòng);
+`utils/is-cargo-vehicle.ts` (mới — phép đoán xe chở hàng, loại trừ xe bán tải, dùng chung
+cho cả biểu tượng lẫn đơn vị sức chứa);
+`utils/format-vehicle-capacity.ts` (mới — ghép đơn vị "chỗ" hay "tấn" vào từng ô);
+`components/vehicle-type-icon.tsx` (dùng lại phép đoán chung thay vì tự bắt chữ "tải").
+
+### duoc-CR-440-chi-tiet-xe | Dọn lại trang chi tiết / sửa một chiếc xe
+- status: xong
+Đại ca mở tiếp trang sửa xe và bảo làm lại luôn. Lỗi nặng nhất không phải cái đẹp: mở
+trang ra thì đầu trang chỉ ghi "Chỉnh sửa thông tin xe", KHÔNG có chỗ nào nói đang sửa
+chiếc nào — phải đọc xuống tận ô thứ tư mới thấy biển số. Nay đầu trang là biển số, kèm
+một dòng tóm tắt (mẫu xe · loại xe · sức chứa) và hai huy hiệu nguồn với tình trạng.
+Dòng tóm tắt đọc theo giá trị ĐANG GÕ chứ không phải giá trị đã lưu, nên sửa loại xe là
+thấy đơn vị sức chứa đổi theo ngay, khỏi phải bấm Lưu để thử.
+
+Thứ hai là thứ tự các khối bị ngược: trang mở đầu bằng bốn nút chọn nguồn rồi ba ô giấy
+tờ của BÊN CHO THUÊ, tức người mở trang phải đi hết phần của nhà cung cấp mới tới biển số
+của chính chiếc xe mình đang sửa. Nay chia hai khối có tiêu đề, "Thông tin xe" đứng trước,
+"Nguồn xe" đứng sau.
+
+Thứ ba, khi sửa thì nguồn và loại nhà cung cấp đã chốt, nhưng trang vẫn dựng bốn cái nút
+mờ rồi viết hai dòng "Không đổi được…" gần giống hệt nhau bên dưới. Nút mờ vẫn trông như
+bấm được nên người ta bấm trước đọc sau. Nay hai giá trị đó hiện bằng chữ trong ô khóa —
+vẫn bôi đen và chép ra được, thứ nút mờ không cho — kèm đúng một câu giải thích.
+
+Kèm theo: ô "Tải (người/tấn)" đổi thành "Sức chứa (chỗ)" hoặc "Sức chứa (tấn)" tùy loại
+xe vừa gõ, thêm chú thích cho những ô mà nhãn nói chưa đủ, và trang Thêm xe được chặn bề
+ngang vì nó không có cột phải để bó lại — trước đó trên màn rộng mỗi ô nhập kéo dài gần
+500 điểm, gõ một biển số mười ký tự vào một ô dài bằng nửa màn hình.
+
+Dọn trùng lặp: hai hàm dựng ô nhập và dựng nút chọn vốn được chép y hệt trong cả biểu mẫu
+Xe lẫn biểu mẫu Tài xế, nay tách ra dùng chung. Biểu mẫu Tài xế CHƯA chuyển sang bản dùng
+chung (vẫn giữ bản chép của nó) — để lần sau dọn trang tài xế thì làm luôn một thể.
+Kiểm tra: typecheck 0 lỗi, lint 0 lỗi và không thêm cảnh báo, 85 bài kiểm của phân hệ
+xanh. Đã bấm tay ba trang trên trình duyệt: xe thuê ngoài (id 13), xe nội bộ (id 8) và
+trang Thêm xe — bấm thử cả nút đổi nguồn sang Thuê ngoài để chắc khối nhà cung cấp hiện
+đúng. Chưa deploy.
+Mã nguồn: `frontend-v2/src/modules/vehicle-booking/components/vehicle-form.tsx`
+(đầu trang nhận diện, chia khối, chặn bề ngang trang thêm mới);
+`components/vehicle-source-section.tsx` (mới — khối nguồn xe, bản khóa khi sửa);
+`components/catalog-form-field.tsx` và `components/catalog-mode-button.tsx`
+(mới — hai mảnh dùng chung tách từ bản chép trong hai biểu mẫu).
+
+### duoc-CR-440-chi-tiet-tai-xe | Dọn lại trang chi tiết / sửa một tài xế và gom mã dùng chung
+- status: xong
+Làm nốt trang sửa tài xế theo đúng khuôn vừa làm cho trang xe: đầu trang nay là TÊN TÀI
+XẾ kèm dòng tóm tắt (số điện thoại — hạng và số bằng lái) và hai huy hiệu nguồn với tình
+trạng, thay cho dòng chữ "Chỉnh sửa thông tin tài xế" vốn không nói đang sửa ai. Biểu mẫu
+chia ba khối có tiêu đề: Thông tin tài xế · Giấy phép lái xe · Nguồn tài xế. Nguồn và loại
+nhà cung cấp khi sửa hiện bằng chữ trong ô khóa chứ không phải bốn nút mờ.
+
+Một điểm khác trang xe: thứ tự khối ĐỔI theo việc đang tạo hay đang sửa. Lúc tạo, khối
+Nguồn đứng đầu vì nó quyết định cả phần còn lại — chọn nội bộ thì đi tìm tài khoản nhân
+sự, chọn thuê ngoài thì gõ tay tên và số điện thoại; hỏi sau là bắt người ta khai lại từ
+đầu. Lúc sửa thì nguồn đã chốt nên nó lùi xuống cuối, nhường chỗ đầu trang cho thứ sửa
+được.
+
+Ba ô tự điền theo hồ sơ nhân sự (họ tên, số điện thoại, email) trước đây là ô nhập nền
+xám: trông y như ô đang chờ gõ nhưng gõ không vào, nên người dùng bấm mấy lần rồi mới đi
+tìm chỗ sửa. Nay dùng ô khóa theo đúng mẫu chung của dự án, kèm một câu nói rõ giá trị
+lấy từ hồ sơ nhân sự và muốn đổi thì đổi ở đó. Lúc chưa chọn ai thì trong ô là câu nhắc
+màu nhạt chứ không phải chữ đậm — chữ đậm đọc ra như thể họ tên người này đúng là "Tự
+điền khi chọn tài khoản".
+
+Phần dọn mã: khối chọn nguồn của hai biểu mẫu nay là MỘT thành phần dùng chung (trước là
+hai bản chép đã bắt đầu trôi khác nhau từng chữ), và biểu mẫu tài xế chuyển hẳn sang hai
+mảnh dùng chung đã tách ở việc trước, bỏ bản chép riêng. Khối tìm tài khoản nhân sự tách
+thành tệp riêng vì nó tự giữ trạng thái tìm kiếm — biểu mẫu chỉ cần biết cuối cùng chọn
+ai. Nhờ vậy biểu mẫu tài xế từ 474 dòng xuống còn 367 dòng. Tiện thể bỏ luôn một chỗ khai
+trùng: ba ô tên · điện thoại · email trước đây được viết hai lần, một lần cho nhánh doanh
+nghiệp và một lần cho nhánh cá nhân.
+Kiểm tra: typecheck 0 lỗi, lint 0 lỗi và không thêm cảnh báo, 85 bài kiểm của phân hệ
+xanh. Đã bấm tay bốn trang: tài xế nội bộ (id 15), tài xế thuê ngoài (id 13), trang Thêm
+tài xế — gõ số điện thoại thật để tìm, bấm chọn một nhân sự và xem ba ô tự điền có đúng
+không, rồi đổi sang Thuê ngoài xem khối nhà cung cấp có hiện đủ. Chưa deploy.
+Mã nguồn: `frontend-v2/src/modules/vehicle-booking/components/driver-form.tsx`
+(đầu trang nhận diện, chia ba khối, đổi thứ tự khối theo tạo hay sửa);
+`components/driver-account-picker.tsx` (mới — tách khối tìm tài khoản nhân sự);
+`components/catalog-source-section.tsx` (đổi tên từ bản riêng của xe, nay dùng chung
+cho cả hai biểu mẫu).
+
+### duoc-CR-440-ra-lai-ma | Rà lại mã của cả ba việc trên trước khi commit
+- status: xong
+Đại ca bảo đọc lại toàn bộ thay đổi xem có lỗi lô-gic, có phạm nếp chung hay có chỗ nào
+chép lặp không. Rà ra ba việc phải sửa thêm.
+
+Một là **bấm đúp nút Lưu**. Cả hai biểu mẫu chỉ chặn bằng cách làm mờ nút theo trạng thái
+đang gửi, mà trạng thái đó là state của React nên chỉ bật ở lượt vẽ lại SAU — hai cú bấm
+liền tay nằm trong cùng một nhịp thì lọt cả hai. Dự án đã có sẵn chốt một-lượt cho đúng
+bệnh này nên chỉ việc gọi. Đáng lo nhất là danh mục Tài xế: nó KHÔNG có cột duy nhất nào
+dưới cơ sở dữ liệu, nên hai cú bấm lúc tạo mới đẻ ra hai tài xế giống hệt nhau mà không
+gì chặn lại; danh mục Xe thì ràng buộc biển số đỡ hộ lúc tạo, nhưng lúc sửa vẫn đi lọt
+hai lệnh và nhật ký thao tác ghi hai dòng cho một lần lưu.
+
+Hai là **một khai báo chết**. Cả hai danh mục đều khai bộ huy hiệu cho trang chi tiết,
+nhưng khóa đó chỉ có một chỗ đọc là trang chi tiết dựng sẵn của khung CRUD — mà Xe và Tài
+xế đều dùng trang biểu mẫu riêng, không đi qua khung đó. Tức là một bộ huy hiệu không màn
+nào vẽ, và người sau sửa nó xong sẽ đi tìm mãi không thấy đổi ở đâu. Đã bỏ và ghi lý do
+tại chỗ.
+
+Ba là **chép lặp còn sót**. Ô nhận diện của hai bảng danh sách và khối tiêu đề của hai
+trang sửa vốn là hai cặp giống nhau từng dòng; nay mỗi cặp gom về một thành phần dùng
+chung. Hai bảng đứng cạnh nhau trong cùng một menu nên chữ phải đậm bằng nhau, dòng phụ
+phải nhỏ bằng nhau — để hai bản chép là chắc chắn sẽ lệch sau vài lần sửa.
+Kiểm tra sau khi sửa: typecheck 0 lỗi, lint 0 lỗi, 85 bài kiểm của phân hệ xanh, và mở
+lại bốn màn trên trình duyệt để chắc phần gom mã không làm vỡ giao diện.
+Mã nguồn: `components/catalog-identity-cell.tsx` và `components/catalog-record-title.tsx`
+(mới — hai mảnh gom từ bản chép); `components/vehicle-form.tsx`,
+`components/driver-form.tsx` (gọi chốt một-lượt khi bấm Lưu);
+`config/vehicle-crud.tsx`, `config/driver-crud.tsx` (bỏ khai báo huy hiệu chết).
+
+### duoc-CR-440-the-chuyen-xe | Thẻ chuyến ở màn Chuyến của tôi: nút bị xén, địa chỉ bị cắt mất tên quận
+- status: xong
+Đại ca chụp một thẻ chuyến gửi sang bảo làm lại. Soi ra hai lỗi thật, không phải chuyện
+thẩm mỹ.
+
+Một là **nút bị xén ngay trong viền thẻ**. Lưới ba cột chừa cho mỗi thẻ 285 điểm bề ngang
+bấm được, mà hai nút cỡ thường — «Chấp nhận» và «Từ chối chuyến» — cần 286 điểm, nên nút
+thứ hai mất đuôi chữ. Đã cho cụm nút dùng cỡ nhỏ và chia đều bề ngang: hai nút thì mỗi
+nút một nửa hàng, một nút đứng lẻ («Bắt đầu», «Hoàn thành») thì giãn hết hàng thành một
+vệt bấm rộng, dễ trúng hơn hẳn trên điện thoại.
+
+Hai là **địa chỉ bị cắt cụt đúng phần cần đọc**. Mỗi điểm dừng trước đây gói đúng một
+dòng, mà địa chỉ ở đây có dạng «Tên chỗ — số nhà, phường, quận, thành phố» nên phần rụng
+đi luôn là quận và thành phố: tài xế đọc «45 Đường số 8, P.Linh Trung, TP.Thủ Đức, TP.Hồ
+Chí ...» rồi vẫn phải mở phiếu ra mới biết đi hướng nào. Nay mỗi điểm được xuống dòng thứ
+hai. Kéo theo phải sửa cách vẽ trục lộ trình: chấm neo theo DÒNG ĐẦU của mỗi điểm chứ
+không neo theo tâm khối chữ (điểm một dòng đứng cạnh điểm hai dòng mà neo giữa thì hai
+chấm lệch nhau, trục gãy thành hai dấu rời), còn nét nối chạy từ dưới chấm tới hết ô nên
+tự dài ra theo đoạn chữ bên cạnh.
+
+Tiện thể: hàng xe và hàng hàng hóa tụt xuống đáy phần nội dung. Thẻ trong lưới luôn cao
+bằng thẻ dài nhất hàng nên thẻ ngắn thừa ra một khoảng trắng; để khoảng đó nằm giữa lộ
+trình và dòng xe thì thẻ vẫn đọc ra ba tầng, để nó nằm ngay trên dải nút thì thẻ trông
+như bị hụt một khúc.
+Kiểm tra: typecheck 0 lỗi, lint 0 lỗi, 85 bài kiểm của phân hệ xanh. Đã soi lại trên
+trình duyệt ở khổ 1280 điểm (lưới ba cột, chỗ lỗi xén nút xuất hiện) và khổ điện thoại
+390 điểm. Chưa deploy.
+Mã nguồn: `frontend-v2/src/modules/vehicle-booking/components/my-trip-card.tsx`
+(vẽ lại trục lộ trình, cho địa chỉ hai dòng, dải nút chia đều);
+`components/booking-workflow-actions.tsx` (thêm cỡ nút nhỏ cho chỗ hẹp).
+
+## duoc-CR-441 | Phiếu đặt xe đã hủy / bị từ chối phải NÓI RA lý do, ở cả thẻ tiến trình lẫn thẻ hover trên lịch
+- status: xong
+- date: 2026-09-22
+Đại ca mở một phiếu đã hủy rồi chỉ vào khối *Tiến trình xử lý*: nó chỉ ghi đúng ba chữ
+"Đã hủy phiếu", không nói vì sao, cũng không nói ai hủy lúc nào. Cùng chỗ đó ở màn *Lịch
+đặt xe*, rê chuột vào một chuyến đã hủy cũng chỉ thấy gạch ngang cái tên. Người xem biết
+chuyến chết mà không biết lý do, và câu trả lời thì nằm sau hai ba lần bấm.
+
+Chỗ khó không nằm ở giao diện mà ở chỗ **lý do không có cột riêng** trong bảng phiếu đặt
+xe. Nó được ghi vào NHẬT KÝ THAO TÁC dưới dạng một câu: đường controller ghép
+"Từ chối yêu cầu — Lý do: …", còn bộ máy duyệt nhiều bước ghi thẳng câu lý do không kèm
+tiền tố, và bản đồng bộ app cũ chép lời bình của từng bước duyệt sang đúng khuôn câu thứ
+nhất. Em chọn ĐỌC từ nhật ký thay vì thêm cột mới: thêm cột là thêm chỗ thứ ba cho cùng
+một sự thật, phải chạy migration, và vẫn phải đi vá lại toàn bộ phiếu cũ. Hàm đọc gom cả
+lô trong MỘT truy vấn vì màn lịch tháng có thể có vài trăm phiếu một lượt, và nó nhận ra
+cả hai khuôn câu.
+
+Hai chỗ cố ý làm khác điều dễ đoán. Thứ nhất, **phiếu Trả về chỉnh sửa KHÔNG lấy lý do**:
+dòng nhật ký của nó mang mã `update`, trùng mã với mọi lần sửa phiếu bình thường, nên lấy
+dòng mới nhất là vớ phải lần sửa gần nhất chứ không phải câu trả phiếu — thà không bày còn
+hơn bày sai. Thứ hai, **dòng lý do LUÔN dựng, kể cả khi rỗng**, và khi rỗng thì ghi thẳng
+"Không ghi lý do": ẩn dòng đi thì người đọc không phân biệt được *"không ai ghi lý do"* với
+*"màn hình này không bày lý do"*, rồi đi hỏi vòng quanh một câu mà hệ thống biết chắc là
+không có.
+
+⚠️ **Dữ liệu đang có trên máy local sẽ hiện "Không ghi lý do" hết.** 26 phiếu đã hủy dưới
+DB local đều đến từ đợt nạp tệp Excel hệ cũ ngày 15/09, mà hai tệp đó không có cột lý do
+nên không có gì để chép; chúng cũng không có dòng nhật ký nào. Phiếu đi qua bản đồng bộ app
+cũ (trên dev/prod) thì có, vì bản đó chép lời bình của bước duyệt. Đã dựng thử một dòng
+nhật ký đúng khuôn để soi giao diện rồi xóa đi, không để lại dữ liệu giả trong DB.
+Kiểm tra: 9 bài kiểm mới cho hàm đọc lý do (đủ hai khuôn câu, phiếu nhiều dòng đóng, câu
+mặc định của bộ máy duyệt, phiếu không có nhật ký, gọi theo lô, danh sách rỗng) — 110 bài
+kiểm đặt xe phía backend xanh; 3 bài kiểm mới phía giao diện cho hàm dựng chặng — 88 bài
+của phân hệ xanh; typecheck 0 lỗi, lint 0 lỗi. Đã soi tay cả hai màn trên trình duyệt.
+Chưa deploy.
+Mã nguồn: `backend/app/modules/vehicle_booking/service.py` (hàm `close_reasons` đọc lý do
+theo lô + tách câu, nối vào cả hai hàm dựng dữ liệu trả về);
+`schema.py` (thêm ô `cancel_reason`); `controller.py` (dùng chung dấu ngăn câu lý do thay
+vì gõ lại); `test/backend/test_dat_xe_ly_do_huy.py` (mới);
+`frontend-v2/src/modules/vehicle-booking/utils/build-booking-stages.ts` (dòng lý do cho
+chặng dừng); `components/booking-calendar-chip.tsx` (dòng lý do trong thẻ hover);
+`types/vehicle-booking.ts`.
+
+## duoc-CR-459 | Hộp "+N chuyến nữa" của lịch đặt xe bị nhìn xuyên qua, và thẻ hover trong hộp chui xuống dưới
+- status: xong
+- date: 2026-09-22
+Đại ca mở màn *Lịch đặt xe* ở khám Tháng, bấm vào "+2 chuyến nữa" và gửi ảnh: hộp liệt kê
+các chuyến trong ngày bị chồng chữ, chữ của lưới phía sau hiện xuyên qua thân hộp. Soi
+trên trình duyệt thì ra **hai lỗi chồng nhau**, chứ không phải một.
+
+Lỗi thứ nhất: **nền hộp trong suốt**. FullCalendar khai nền hộp bằng biến
+`--fc-page-bg-color`, mà bảng biến của lịch để biến đó `transparent` — cố ý, để lưới ngồi
+thẳng trên mặt thẻ chứ không tự tô nền riêng. Không ai ngờ cùng biến đó còn là nền của
+hộp nổi. Đo được nền hộp là `rgba(0,0,0,0)`, nên chip và chữ "+N chuyến nữa" của lưới bên
+dưới xuyên thẳng lên. Không sửa bằng cách đổi biến chung — làm vậy là lưới tự tô nền lại
+và hỏng chỗ khác; chỉ ghi đè riêng phần hộp.
+
+Lỗi thứ hai, kín hơn: **rê chuột vào một chuyến TRONG hộp thì thẻ chi tiết hiện ra ở phía
+sau hộp**. FullCalendar đặt hộp ở tầng 9999, còn thẻ hover do thư viện giao diện dựng ra
+ngoài cây và nằm ở tầng 50 — tầng thấp hơn nên bị che. Kiểm bằng cách hỏi trình duyệt
+"phần tử nào đang nằm trên cùng tại tâm thẻ hover", nó trả về một chip nằm trong hộp, tức
+thẻ bị che thật. Hạ hộp về tầng 40: vẫn nằm trên lưới (lưới không khai tầng nào), và nằm
+dưới mọi lớp nổi của bộ giao diện (thẻ hover, hộp chọn, hộp thoại đều tầng 50) — đúng thứ
+tự phải có.
+
+Dọn thêm mấy chỗ cùng hộp đó: bo góc và đổ bóng cho ra một lớp nổi (trước là góc vuông,
+bóng mờ 2 điểm); đầu hộp bỏ dải xám, thay bằng một kẻ mảnh, chữ tiêu đề từ 16 về 13 điểm
+cho bằng mọi tiêu đề phụ khác; nút đóng từ một dấu mờ không có vùng bấm thành ô 24 điểm
+có nền khi trỏ vào. Đáng kể nhất là **thân hộp nay có trần chiều cao và cuộn được** — trước
+không có trần, nên một ngày 20 chuyến là hộp cao hơn cửa sổ và mấy chuyến cuối nằm ngoài
+màn hình, không cách nào với tới.
+
+⚠️ Mọi dòng ghi đè ở đây bắt buộc có dấu `!`: FullCalendar bản 6 tự nhồi CSS của nó vào
+đầu trang LÚC CHẠY, tức sau Tailwind, nên cùng độ ưu tiên thì nó thắng vì đứng sau. Đây là
+cái bẫy đã ghi sẵn trong chính tệp này từ mấy đợt trước, ai đụng vào lịch cũng nên đọc.
+Kiểm tra: typecheck 0 lỗi, lint 0 lỗi (31 cảnh báo cũ, không đến từ tệp này), 88 bài kiểm
+của phân hệ đặt xe xanh. Đã soi tay trên trình duyệt ở khổ 1280 điểm: mở hộp của ngày
+09/09 (5 chuyến), đo lại nền hộp ra màu đặc và tầng ra 40, rê chuột vào chip trong hộp
+thấy thẻ chi tiết nổi lên trên. Chưa deploy.
+Mã nguồn: `frontend-v2/src/modules/vehicle-booking/utils/calendar-theme.ts`
+(thêm khối luật cho hộp "+N chuyến nữa": nền, tầng, bo góc, đầu hộp, nút đóng, trần chiều
+cao thân hộp).
+Bản A mẫu mục F điền giá chốt; bản B tick theo NCC ra 1 file N trang. Phải
+gác N-17 (supplier:read) trước khi bật bản B. Chưa bắt đầu.
+
+## bao-CR-465 | YCMH lập mới bị mất ô Phòng ban và ô Trưởng bộ phận
+- status: xong
+- date: 2026-09-23
+Vá lỗi trên bản đang chạy thật: yêu cầu mua hàng lập mới thỉnh thoảng ra đời
+với ô Phòng ban trống, kéo theo ô Trưởng bộ phận cũng trống. Phiếu vẫn gửi
+duyệt được nhưng không trưởng phòng nào nhìn thấy nó, và không ai nhận được
+thư báo — người lập tưởng đã gửi xong rồi ngồi chờ. Đại ca phát hiện ở phiếu
+PYC22092604 và đã vá tay dưới cơ sở dữ liệu trước khi báo.
+
+NGUYÊN NHÂN:
+- Không phải lỗi dữ liệu. Rà cả 166 phiếu trên bản chạy thật thì có 3 phiếu
+  mang phòng ban rỗng (132 · 135 · 164), và hai trong số đó do cùng một tài
+  khoản lập, cùng hồ sơ nhân sự, cách nhau 89 giây, một phiếu đủ một phiếu
+  rỗng. Đó là dấu hiệu của tranh chấp thời gian chứ không phải dữ liệu sai.
+- Màn hình cũ nạp danh sách nhân sự và danh sách phòng ban song song, nhưng
+  khối tự điền chỉ chờ danh sách nhân sự trả lời. Khi danh sách nhân sự về
+  trước, chỗ tra tên phòng không tìm thấy gì và trả về chuỗi rỗng; danh sách
+  phòng ban về sau cũng không làm khối đó chạy lại. Ô Phòng ban lại là ô chỉ
+  xem nên người lập không sửa tay được.
+- Hậu quả nặng vì phạm vi dữ liệu của trưởng phòng lọc theo đúng cột phòng
+  ban của phiếu: phòng ban rỗng nghĩa là phiếu nằm ngoài tầm nhìn mọi người.
+
+ĐÃ LÀM — hai lớp:
+- Lớp giao diện cũ: chỗ tra tên phòng có thêm đường lùi đọc thẳng từ hồ sơ
+  nhân sự, không còn phụ thuộc vào danh sách phòng ban nạp song song.
+- Lớp backend: thêm một chốt an toàn chạy ngay trước bước neo phòng ban lúc
+  tạo phiếu — phiếu rỗng thì lùi về phòng của nhân sự đứng tên yêu cầu, không
+  suy ra được thì lùi tiếp về hồ sơ của tài khoản đang lập. Đặt ở backend để
+  che cho mọi đường vào chứ không riêng một màn hình. Hai luật cố ý giữ: suy
+  không ra thì để rỗng chứ không đoán bừa một phòng, và phiếu đã chọn phòng
+  rồi thì giữ nguyên.
+- Giao diện mới không dính lỗi này, nó lấy phòng ban thẳng từ phiên đăng nhập.
+
+CÒN LẠI:
+- Hai phiếu 132 và 135 vẫn mang phòng ban rỗng dưới cơ sở dữ liệu, bản vá
+  không tự chữa phiếu cũ. Chờ đại ca quyết cách xử lý.
+
+Mã nguồn: frontend/src/pages/PurchaseRequestDetail.tsx ·
+backend/app/modules/purchase_request/service.py ·
+test/backend/test_pyc_phong_ban_lui_cr465.py
+
+## bao-CR-406-prod | Đưa đăng nhập Google của ERP v2 lên bản chạy thật
+- status: xong
+- date: 2026-09-23
+Màn đăng nhập của giao diện mới trên bản chạy thật chưa có cửa Google, trong
+khi bản dev đã có từ 15/09. Đại ca yêu cầu đưa lên và dặn lấy khóa của dev.
+
+ĐÃ RÀ TRƯỚC KHI LÀM:
+- Khóa không phải chép: cấu hình bản chạy thật ĐÃ có sẵn cả hai khóa Google,
+  và giá trị trùng khít với bản dev (so bằng mã băm, không đọc giá trị ra).
+- Backend bản chạy thật cũng đã có sẵn đường đăng nhập Google từ lâu. Thứ duy
+  nhất thiếu là phần giao diện mới.
+- Nhánh dev đang đi trước nhánh chạy thật 219 mốc. Gộp cả nhánh là bê nguyên
+  bản dev lên bản chạy thật, nên chỉ bê riêng một mốc bằng cherry-pick.
+
+ĐÃ LÀM:
+- Bê riêng mốc đăng nhập Google sang nhánh chạy thật. Đụng độ duy nhất ở sổ
+  thay đổi, giữ cả hai dòng. Mười bốn tệp, chỉ giao diện mới và phần nối biến
+  qua tệp dựng ảnh; không đụng backend, không migration, không đổi khóa quyền.
+- Cổng kiểm chạy lại trên nền nhánh chạy thật: kiểm kiểu cả cây 0 lỗi, soát mã
+  cả cây 0 lỗi (các tệp vừa bê sang sạch cả cảnh báo), bài kiểm khu đăng nhập
+  22 bài xanh.
+- Dựng lại dịch vụ giao diện mới trên bản chạy thật. Biến khóa Google nạp lúc
+  DỰNG ảnh nên bắt buộc dựng lại chứ khởi động lại không ăn.
+
+VIỆC TAY CỦA ĐẠI CA:
+- Phải thêm địa chỉ của giao diện mới vào danh sách nguồn được phép trong bảng
+  quản trị Google, nếu không nút bấm vào sẽ bị Google từ chối. Em không đụng
+  vào tài khoản Google của công ty.
+
+Mã nguồn: frontend-v2/src/core/auth/ · docker/Dockerfile.erp.prod ·
+docker-compose.production.yml
+
+## bao-CR-465-v2 | Đưa bản vá phòng ban sang nhánh giao diện mới
+- status: xong
+- date: 2026-09-23
+Gộp nhánh bản chạy thật sang nhánh giao diện mới để bản vá phòng ban của yêu
+cầu mua hàng có mặt ở cả hai nơi. Gộp cả nhánh chứ không bê lẻ, vì nhánh bản
+chạy thật còn hai việc khác chưa sang.
+
+CÁCH LÀM:
+- Cây làm việc của nhánh giao diện mới đang bẩn vì một phiên khác còn việc dở,
+  nên gộp ở một cây làm việc tạm cắt từ bản trên máy chủ, không đụng vào đó.
+
+BA CHỖ PHẢI GỠ TAY:
+- Tệp dịch vụ cấu hình hệ thống: nhánh bản chạy thật mang bản lưu cấu hình mới
+  hơn, gom chênh lệch trước khi ghi và không đẻ dòng nhật ký khi không đổi gì.
+  Lấy nguyên bản đó nhưng GIỮ LẠI cờ che giá trị ở nhánh khóa bí mật — cờ này
+  chỉ có ở nhánh giao diện mới, rơi mất thì bản mã của khóa bí mật bị chép
+  nguyên vào bảng nhật ký trước sau, tức bí mật nằm thêm một chỗ chẳng để làm gì.
+- Hai sổ tài liệu: đụng đúng chỗ ai cũng chèn dòng đầu, giữ cả hai bên.
+
+ĐÃ KIỂM:
+- Backend 122 bài xanh, gồm bài kiểm phòng ban mới, bài kiểm nhật ký cấu hình,
+  bài kiểm phòng ban theo mã, phạm vi thu mua và đường chạy xuyên suốt.
+- Giao diện mới không đổi tệp nào nhưng vẫn chạy lại kiểm kiểu và soát mã, đều
+  0 lỗi.
+
+GHI NHẬN THÊM:
+- Giao diện mới KHÔNG dính lỗi tranh chấp thời gian như bản cũ, nhưng nó cũng
+  chỉ gửi TÊN phòng ban chứ không gửi mã. Nghĩa là nó vẫn dựa vào việc backend
+  tra ngược tên ra mã, và vẫn rỗng phòng ban nếu hồ sơ trong phiên đăng nhập
+  rỗng. Chốt an toàn vừa gộp sang che được ca đó.
+
+Commit: 23e3e750
