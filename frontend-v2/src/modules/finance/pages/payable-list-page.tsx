@@ -1,4 +1,4 @@
-import { Download, FilePlus2, Scale } from 'lucide-react'
+import { Download, FilePlus2, Scale, SlidersHorizontal } from 'lucide-react'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -6,8 +6,9 @@ import { downloadFile } from '@/core/api/download-file'
 import { usePermission } from '@/core/authorization/use-permission'
 import { appConfig } from '@/core/config/app-config'
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
+import { useSuppliers } from '@/modules/production/hooks/use-suppliers'
 import {
-  ConditionalFilter,
+  ConditionalFilterBody,
   FilterProvider,
   useFilterContext,
   useFilterQuery,
@@ -22,13 +23,16 @@ import { useUrlRangeParam } from '@/shared/hooks/use-url-range-param'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import type { ListParams } from '@/shared/types/api'
 import { AdvancedFilterSection } from '@/shared/ui/advanced-filter-section'
+import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { Checkbox } from '@/shared/ui/checkbox'
 import { DateRangePicker } from '@/shared/ui/date-range-picker'
+import { Input } from '@/shared/ui/input'
 import { NumberInput } from '@/shared/ui/number-input'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
+import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
 import { QuickFilterField, QuickFilterSheet } from '@/shared/ui/quick-filter-sheet'
 import { SearchField } from '@/shared/ui/search-field'
 import {
@@ -111,7 +115,10 @@ const FILTER_CONFIG = {
   // nâng cao xong mất luôn ô đó.
   preserveParams: [
     'company_id',
+    'supplier_code',
     'status',
+    'invoice_no',
+    'source_type',
     'aging',
     'year',
     'date_field',
@@ -146,7 +153,14 @@ function PayableListContent() {
   const { can } = usePermission()
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [companyId, setCompanyId] = useUrlParamState('company_id', ALL)
+  const [supplierCode, setSupplierCode] = useUrlParamState('supplier_code', ALL)
   const [status, setStatus] = useUrlParamState('status', ALL)
+  const {
+    value: invoiceNo,
+    setValue: setInvoiceNo,
+    debouncedValue: debouncedInvoiceNo,
+  } = useUrlSearchParam('invoice_no')
+  const [sourceType, setSourceType] = useUrlParamState('source_type', ALL)
   const [aging, setAging] = useUrlParamState('aging', ALL)
   const [year, setYear] = useUrlParamState('year', String(THIS_YEAR))
   const [dateField, setDateField] = useUrlParamState('date_field', DEFAULT_DATE_FIELD)
@@ -168,6 +182,7 @@ function PayableListContent() {
   const [offsetTarget, setOffsetTarget] = useState<Payable | null>(null)
 
   const { data: companies } = useCompanies({ page_size: 500, is_active: true })
+  const { data: suppliers } = useSuppliers({ page_size: 500, is_active: true })
   const { queryParams, queryKey } = useFilterQuery()
 
   //  Bộ lọc nâng cao: ở khổ rộng mở bằng nút riêng + popover, ở khổ hẹp nhúng
@@ -185,7 +200,10 @@ function PayableListContent() {
     queryKey,
     debouncedValue,
     companyId,
+    supplierCode,
     status,
+    debouncedInvoiceNo,
+    sourceType,
     aging,
     year,
     dateField,
@@ -211,7 +229,10 @@ function PayableListContent() {
   const filterParams: ListParams = { ...queryParams, year: hasDateRange ? ALL : year }
   if (debouncedValue) filterParams.po_code = debouncedValue
   if (companyId !== ALL) filterParams.company_id = Number(companyId)
+  if (supplierCode !== ALL) filterParams.supplier_code = supplierCode
   if (status !== ALL) filterParams.status = status
+  if (debouncedInvoiceNo) filterParams.invoice_no = debouncedInvoiceNo
+  if (sourceType !== ALL) filterParams.source_type = sourceType
   if (aging !== ALL) filterParams.aging = aging
   //  Lọc theo giá trị SỐ chứ không theo chuỗi rỗng: `amount_from=0` (đường dẫn ai
   //  đó lưu, hoặc gõ tay) vẽ ra ô TRỐNG — `formatNumberVn(0)` trả chuỗi rỗng — mà
@@ -555,6 +576,25 @@ function PayableListContent() {
     </Select>
   )
 
+  //  ai-CR-017: v1 luôn hiện Nhà cung cấp / Số hóa đơn / Loại nợ thẳng trên
+  //  thanh lọc ngoài (`FilterPanel` không còn ẩn/gộp gì) — v2 trước đây nhốt cả
+  //  ba trong "Bộ lọc điều kiện", bù ra đây cho khớp.
+  const supplierSelect = (
+    <Select value={supplierCode} onValueChange={setSupplierCode}>
+      <SelectTrigger className="w-48 max-md:w-full" aria-label="Lọc theo nhà cung cấp">
+        <SelectValue placeholder="Nhà cung cấp" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={ALL}>Tất cả nhà cung cấp</SelectItem>
+        {(suppliers?.items ?? []).map((supplier) => (
+          <SelectItem key={supplier.code} value={supplier.code}>
+            {supplier.name} ({supplier.code})
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+
   const statusSelect = (
     <Select value={status} onValueChange={setStatus}>
       <SelectTrigger className="w-48 max-md:w-full" aria-label="Lọc theo trạng thái">
@@ -565,6 +605,32 @@ function PayableListContent() {
         {PAYABLE_STATUS_OPTIONS.map((option) => (
           <SelectItem key={option.value} value={option.value}>
             {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+
+  const invoiceNoInput = (
+    <Input
+      className="w-40 max-md:w-full"
+      placeholder="Số hóa đơn…"
+      value={invoiceNo}
+      onChange={(e) => setInvoiceNo(e.target.value)}
+      aria-label="Lọc theo số hóa đơn"
+    />
+  )
+
+  const sourceTypeSelect = (
+    <Select value={sourceType} onValueChange={setSourceType}>
+      <SelectTrigger className="w-40 max-md:w-full" aria-label="Lọc theo loại nợ">
+        <SelectValue placeholder="Loại nợ" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={ALL}>Mọi loại nợ</SelectItem>
+        {Object.entries(PAYABLE_SOURCE_LABELS).map(([value, label]) => (
+          <SelectItem key={value} value={value}>
+            {label}
           </SelectItem>
         ))}
       </SelectContent>
@@ -669,18 +735,32 @@ function PayableListContent() {
     </Select>
   )
 
-  //  Huy hiệu trên nút «Bộ lọc» của khổ hẹp phải đếm CẢ HAI tầng — ô lọc nhanh
-  //  và điều kiện nâng cao — vì cả hai nay nằm sau đúng một nút đó. Đếm thiếu
-  //  một tầng thì người dùng thấy nút không dấu gì mà danh sách vẫn đang bị
-  //  lọc, rồi đi tìm lỗi ở dữ liệu.
+  //  Số tiền không còn đi qua `PAYABLE_FILTER_FIELDS` (backend không nhận
+  //  `total__gte`/`total__lte`, `amount_from`/`amount_to` là hai tham số riêng
+  //  của `payable/controller._filtered`) — đếm tay bằng cờ riêng, KHÔNG qua
+  //  `filter.activeCount` của bộ lọc điều kiện.
+  const amountActive = Boolean(amountFrom || amountTo)
+
+  //  Huy hiệu trên nút «Bộ lọc» của khổ hẹp phải đếm CẢ BA tầng — ô lọc nhanh,
+  //  khoảng tiền và điều kiện nâng cao — vì cả ba nay nằm sau đúng một nút đó.
+  //  Đếm thiếu một tầng thì người dùng thấy nút không dấu gì mà danh sách vẫn
+  //  đang bị lọc, rồi đi tìm lỗi ở dữ liệu.
   const quickFilterCount =
     (companyId !== ALL ? 1 : 0) +
+    (supplierCode !== ALL ? 1 : 0) +
     (status !== ALL ? 1 : 0) +
+    (debouncedInvoiceNo ? 1 : 0) +
+    (sourceType !== ALL ? 1 : 0) +
     (aging !== ALL ? 1 : 0) +
     (hasDateRange ? 1 : 0) +
     (year !== String(THIS_YEAR) ? 1 : 0) +
-    (amountFrom || amountTo ? 1 : 0) +
+    (amountActive ? 1 : 0) +
     filter.activeCount
+
+  //  Huy hiệu riêng của nút «Bộ lọc điều kiện» ở khổ rộng — chỉ đếm những gì
+  //  NẰM TRONG popover đó (khoảng tiền + các dòng điều kiện), không cộng dồn
+  //  các ô lọc nhanh đã đứng thẳng ngoài thanh công cụ.
+  const advancedFilterCount = (amountActive ? 1 : 0) + filter.activeCount
 
   return (
     //  ⚠️ `fill` chỉ bật từ `md`: ở khổ hẹp bảng đổi sang danh sách THẺ dài, mà
@@ -863,7 +943,10 @@ function PayableListContent() {
                 activeCount={quickFilterCount}
                 onClearAll={() => {
                   setCompanyId(ALL)
+                  setSupplierCode(ALL)
                   setStatus(ALL)
+                  setInvoiceNo('')
+                  setSourceType(ALL)
                   setAging(ALL)
                   setDateField(DEFAULT_DATE_FIELD)
                   setDateRange('', '')
@@ -879,31 +962,69 @@ function PayableListContent() {
                 onApply={filter.apply}
               >
                 <QuickFilterField label="Công ty">{companySelect}</QuickFilterField>
+                <QuickFilterField label="Nhà cung cấp">{supplierSelect}</QuickFilterField>
                 <QuickFilterField label="Trạng thái">{statusSelect}</QuickFilterField>
+                <QuickFilterField label="Số hóa đơn">{invoiceNoInput}</QuickFilterField>
+                <QuickFilterField label="Loại nợ">{sourceTypeSelect}</QuickFilterField>
                 <QuickFilterField label="Tuổi nợ">{agingSelect}</QuickFilterField>
                 <QuickFilterField label="Mốc ngày">{dateFieldSelect}</QuickFilterField>
                 <QuickFilterField label="Khoảng ngày">{dateRangeInput}</QuickFilterField>
                 <QuickFilterField label="Năm">{yearSelect}</QuickFilterField>
-                <QuickFilterField label="Tổng nợ (từ → đến)">{amountRangeInput}</QuickFilterField>
                 <AdvancedFilterSection />
+                {/*  Số tiền dời khỏi thanh lọc ngoài (yêu cầu gốc AI-0007) —
+                     xếp NGAY SAU "Lọc nâng cao" để đọc thành một khối, cùng chỗ
+                     bản khổ rộng đặt nó (xem popover bên dưới). */}
+                <QuickFilterField label="Tổng nợ (từ → đến)">{amountRangeInput}</QuickFilterField>
               </QuickFilterSheet>
 
               {/*  ⚠️ `md:contents`, KHÔNG `md:flex`. Thanh công cụ của
-                   `DataTable` vốn là một hàng `flex-wrap gap-3`; bọc bảy ô vào
+                   `DataTable` vốn là một hàng `flex-wrap gap-3`; bọc nhiều ô vào
                    một `div` thì cả cụm thành MỘT phần tử flex và xuống hàng
                    nguyên khối — đo ở 1440px ra **bốn hàng** thay vì hai, với
                    nhóm nút *Tải lại · Cột* bị đẩy hẳn xuống một hàng trống.
-                   `display: contents` gỡ lớp bọc khỏi bố cục nên bảy ô trở lại
+                   `display: contents` gỡ lớp bọc khỏi bố cục nên các ô trở lại
                    làm con trực tiếp và tự xuống hàng theo chỗ còn trống. */}
               <div className="max-md:hidden md:contents">
                 {companySelect}
+                {supplierSelect}
                 {statusSelect}
+                {invoiceNoInput}
+                {sourceTypeSelect}
                 {agingSelect}
                 {dateFieldSelect}
                 {dateRangeInput}
                 {yearSelect}
-                {amountRangeInput}
-                <ConditionalFilter />
+                {/*  ai-CR-017: khoảng tiền không đi qua `PAYABLE_FILTER_FIELDS`
+                     được (backend không nhận `total__gte`/`total__lte` —
+                     `amount_from`/`amount_to` là hai tham số riêng của
+                     `payable/controller._filtered`, ngoài whitelist
+                     `operator_filterable`). Dựng POPOVER TAY thay vì
+                     `<ConditionalFilter />` chuẩn để nhét được cặp ô đó vào
+                     CÙNG một khung với "Bộ lọc điều kiện", đúng ý đại ca
+                     ("phần nào không có trên v1 thì dời vào bộ lọc điều
+                     kiện") mà không phải sửa backend. */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" aria-label="Bộ lọc">
+                      <SlidersHorizontal className="size-4" />
+                      <span>Bộ lọc</span>
+                      {advancedFilterCount > 0 && (
+                        <Badge variant="secondary" className="ml-1 rounded-full px-1.5">
+                          {advancedFilterCount}
+                        </Badge>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="start" className="w-[min(46rem,95vw)] p-3">
+                    <div className="space-y-1.5 border-b pb-3">
+                      <span className="text-xs font-medium text-muted-foreground">
+                        Tổng nợ (từ → đến)
+                      </span>
+                      {amountRangeInput}
+                    </div>
+                    <ConditionalFilterBody className="max-h-[24rem] overflow-y-auto pt-3 pr-1" />
+                  </PopoverContent>
+                </Popover>
               </div>
             </>
           }

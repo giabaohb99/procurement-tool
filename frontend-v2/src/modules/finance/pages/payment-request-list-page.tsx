@@ -1,4 +1,4 @@
-import { Plus, Search } from 'lucide-react'
+import { Plus, Search, SlidersHorizontal } from 'lucide-react'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
@@ -13,11 +13,13 @@ import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import { useUrlSort } from '@/shared/hooks/use-url-sort'
 import type { ListParams } from '@/shared/types/api'
+import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
+import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
 import { QuickFilterField, QuickFilterSheet } from '@/shared/ui/quick-filter-sheet'
 import {
   Select,
@@ -59,6 +61,14 @@ export function PaymentRequestListPage() {
     setValue: setMisaKeyword,
     debouncedValue: debouncedMisa,
   } = useUrlSearchParam('misa_code')
+  // ai-CR-017: v1 có ô "Mã PO" ngay thanh lọc ngoài (`cruds.tsx` mục
+  // `payment-requests`); v2 thiếu hẳn dù backend đã đọc sẵn (`controller.list_`
+  // lọc LIKE qua dòng phiếu -> mã PO, xem `po_code` trong `payment_request/controller.py`).
+  const {
+    value: poCodeKeyword,
+    setValue: setPoCodeKeyword,
+    debouncedValue: debouncedPoCode,
+  } = useUrlSearchParam('po_code')
   const [companyId, setCompanyId] = useUrlParamState('company_id', ALL)
   const [status, setStatus] = useUrlParamState('status', ALL)
   const [source, setSource] = useUrlParamState('source_type', ALL)
@@ -74,6 +84,7 @@ export function PaymentRequestListPage() {
   const [page, setPage] = usePageResetOnFilterChange([
     debouncedValue,
     debouncedMisa,
+    debouncedPoCode,
     companyId,
     status,
     source,
@@ -85,6 +96,7 @@ export function PaymentRequestListPage() {
   const filterParams: ListParams = {}
   if (debouncedValue) filterParams.code = debouncedValue
   if (debouncedMisa) filterParams.misa_code = debouncedMisa
+  if (debouncedPoCode) filterParams.po_code = debouncedPoCode
   if (companyId !== ALL) filterParams.company_id = Number(companyId)
   if (status !== ALL) filterParams.status = status
   if (source !== ALL) filterParams.source_type = source
@@ -198,6 +210,18 @@ export function PaymentRequestListPage() {
     />
   )
 
+  //  ai-CR-017: v1 bày ô "Mã PO" ngay thanh lọc ngoài, khớp bản v1 (`cruds.tsx`
+  //  mục `payment-requests`, khóa `filters`).
+  const poCodeInput = (
+    <Input
+      className="w-40 max-md:w-full"
+      placeholder="Mã PO…"
+      value={poCodeKeyword}
+      onChange={(e) => setPoCodeKeyword(e.target.value)}
+      aria-label="Lọc theo mã ĐMH"
+    />
+  )
+
   const companySelect = (
     <Select value={companyId} onValueChange={setCompanyId}>
       <SelectTrigger className="w-48 max-md:w-full">
@@ -230,9 +254,15 @@ export function PaymentRequestListPage() {
     </Select>
   )
 
+  //  ai-CR-017: `role="combobox"` KHÔNG lấy tên từ nội dung con theo đặc tả
+  //  ARIA — thiếu `aria-label` thì trình đọc màn hình (và `getByRole` trong bài
+  //  kiểm) đọc ra một ô CHỌN không tên, dù mắt thường vẫn thấy chữ "Mọi loại
+  //  nợ" / "Mọi hình thức" bên trong. Hai ô này trước đây đứng trần trên thanh
+  //  công cụ (không nhãn cột đi kèm ở khổ rộng) nên lỗ hổng vốn đã có; nay dời
+  //  vào popover thì bù luôn.
   const sourceSelect = (
     <Select value={source} onValueChange={setSource}>
-      <SelectTrigger className="w-40 max-md:w-full">
+      <SelectTrigger className="w-40 max-md:w-full" aria-label="Lọc theo loại nợ">
         <SelectValue placeholder="Loại nợ" />
       </SelectTrigger>
       <SelectContent>
@@ -248,7 +278,7 @@ export function PaymentRequestListPage() {
 
   const methodSelect = (
     <Select value={method} onValueChange={setMethod}>
-      <SelectTrigger className="w-40 max-md:w-full">
+      <SelectTrigger className="w-40 max-md:w-full" aria-label="Lọc theo hình thức thanh toán">
         <SelectValue placeholder="Hình thức TT" />
       </SelectTrigger>
       <SelectContent>
@@ -347,6 +377,7 @@ export function PaymentRequestListPage() {
                    hai bản ô lọc cùng lúc trong cây DOM. */}
               <QuickFilterSheet
                 activeCount={
+                  (debouncedPoCode ? 1 : 0) +
                   (debouncedMisa ? 1 : 0) +
                   (companyId !== ALL ? 1 : 0) +
                   (status !== ALL ? 1 : 0) +
@@ -354,6 +385,7 @@ export function PaymentRequestListPage() {
                   (method !== ALL ? 1 : 0)
                 }
                 onClearAll={() => {
+                  setPoCodeKeyword('')
                   setMisaKeyword('')
                   setCompanyId(ALL)
                   setStatus(ALL)
@@ -361,19 +393,62 @@ export function PaymentRequestListPage() {
                   setMethod(ALL)
                 }}
               >
+                <QuickFilterField label="Mã PO">{poCodeInput}</QuickFilterField>
                 <QuickFilterField label="Mã MISA">{misaInput}</QuickFilterField>
                 <QuickFilterField label="Công ty">{companySelect}</QuickFilterField>
                 <QuickFilterField label="Trạng thái">{statusSelect}</QuickFilterField>
-                <QuickFilterField label="Loại nợ">{sourceSelect}</QuickFilterField>
-                <QuickFilterField label="Hình thức thanh toán">{methodSelect}</QuickFilterField>
+                {/*  ai-CR-017: v1 chỉ bày Loại nợ / Hình thức TT trong "Bộ lọc
+                     điều kiện" (`PAYABLE_COND_FILTERS`-kiểu, xem
+                     `condFilters` của mục `payment-requests` trong
+                     `frontend/src/config/cruds.tsx`) — gom hai ô này vào một
+                     khối riêng, cùng chỗ bản khổ rộng đặt chúng (popover bên
+                     dưới), để đọc thành "nâng cao" chứ không lẫn với bốn ô lọc
+                     nhanh phía trên. */}
+                <div className="space-y-2 border-t pt-4">
+                  <span className="text-xs font-medium text-muted-foreground">Lọc nâng cao</span>
+                  <div className="flex flex-col gap-3">
+                    <QuickFilterField label="Loại nợ">{sourceSelect}</QuickFilterField>
+                    <QuickFilterField label="Hình thức thanh toán">{methodSelect}</QuickFilterField>
+                  </div>
+                </div>
               </QuickFilterSheet>
 
               <div className="hidden items-center gap-3 md:flex md:flex-wrap">
+                {poCodeInput}
                 {misaInput}
                 {companySelect}
                 {statusSelect}
-                {sourceSelect}
-                {methodSelect}
+                {/*  ai-CR-017: Loại nợ / Hình thức TT dời khỏi thanh lọc ngoài —
+                     v1 chỉ có chúng trong "Bộ lọc điều kiện", không phải thanh
+                     nhanh (xem ghi chú ở khối tờ trượt phía trên). Dựng
+                     popover tay vì màn này chưa từng có `FilterProvider` /
+                     `ConditionalFilter` — chỉ hai ô CHỌN đơn giản, đứng riêng
+                     không đáng dựng cả bộ máy điều kiện AND/AND-OR. */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" aria-label="Bộ lọc">
+                      <SlidersHorizontal className="size-4" />
+                      <span>Bộ lọc</span>
+                      {(source !== ALL ? 1 : 0) + (method !== ALL ? 1 : 0) > 0 && (
+                        <Badge variant="secondary" className="ml-1 rounded-full px-1.5">
+                          {(source !== ALL ? 1 : 0) + (method !== ALL ? 1 : 0)}
+                        </Badge>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="start" className="w-72 space-y-3 p-3">
+                    <div className="space-y-1.5">
+                      <span className="text-xs font-medium text-muted-foreground">Loại nợ</span>
+                      {sourceSelect}
+                    </div>
+                    <div className="space-y-1.5">
+                      <span className="text-xs font-medium text-muted-foreground">
+                        Hình thức thanh toán
+                      </span>
+                      {methodSelect}
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
             </>
           }
