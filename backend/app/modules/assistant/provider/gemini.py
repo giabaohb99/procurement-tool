@@ -7,6 +7,9 @@ Tắt "suy nghĩ" để tiết kiệm cho câu tra cứu đơn giản, NHƯNG ch
 `thinkingConfig.thinkingBudget = 0`; dòng 3.x TỪ CHỐI giá trị 0 (trả 400). Với 3.x thì bỏ
 qua cờ này — flash-lite 3.x vốn gần như không suy nghĩ nên chi phí đã thấp.
 """
+import re
+import time
+
 import requests
 
 from app.core.config import settings
@@ -22,6 +25,25 @@ from .base import (
 
 BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 TIMEOUT = 60
+#  Gemini trả 429 kèm `retryDelay` (vd "7s"). Thử lại ĐÚNG MỘT lần và chỉ khi Google bảo
+#  chờ không quá chừng này giây — đợi lâu hơn thì người dùng đã bỏ đi, thà báo lỗi ngay.
+#  Hạn mức theo phút của gói miễn phí thường bảo chờ 20-50 giây, tức KHÔNG thử lại; lớp này
+#  chỉ đỡ ca hai lượt gọi sát nhau (bot Telegram: phân loại ý định rồi Trợ lý AI).
+RETRY_429_MAX_WAIT = 10
+_RETRY_DELAY = re.compile(r"(\d+(?:\.\d+)?)s")
+
+
+def _retry_after_seconds(resp) -> float | None:
+    """Số giây Gemini bảo chờ trong thân lỗi 429, không đọc được thì None."""
+    try:
+        details = resp.json().get("error", {}).get("details", [])
+    except ValueError:
+        return None
+    for d in details:
+        m = _RETRY_DELAY.fullmatch(str(d.get("retryDelay", "")))
+        if m:
+            return float(m.group(1))
+    return None
 
 
 def _accepts_budget_zero(model: str) -> bool:
@@ -56,13 +78,22 @@ class GeminiProvider(Provider):
             "x-goog-api-key": self._api_key(),
         }
         url = BASE_URL.format(model=model)
-        try:
-            resp = requests.post(url, json=payload, headers=headers, timeout=TIMEOUT)
-        except requests.RequestException as e:
-            raise ProviderError(f"Lỗi gọi Gemini: {e}") from e
+        resp = self._send(url, payload, headers)
+        if resp.status_code == 429:
+            wait = _retry_after_seconds(resp)
+            if wait is not None and wait <= RETRY_429_MAX_WAIT:
+                time.sleep(wait)
+                resp = self._send(url, payload, headers)
         if resp.status_code != 200:
             raise ProviderError(f"Gemini trả lỗi {resp.status_code}: {resp.text[:500]}")
         return resp.json()
+
+    @staticmethod
+    def _send(url: str, payload: dict, headers: dict):
+        try:
+            return requests.post(url, json=payload, headers=headers, timeout=TIMEOUT)
+        except requests.RequestException as e:
+            raise ProviderError(f"Lỗi gọi Gemini: {e}") from e
 
     @staticmethod
     def _parts_of(content) -> list[dict]:
