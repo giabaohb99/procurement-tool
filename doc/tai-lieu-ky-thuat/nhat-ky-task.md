@@ -580,3 +580,6 @@ có việc dở của phiên khác. Kiểm trên nền nhánh đó: bốn mươi
 Mã nguồn: `frontend/src/pages/PurchaseOrderDetail.tsx` ·
 `backend/app/modules/purchase_order/service.py` ·
 `test/backend/test_po_lock_after_approve_cr108.py`.
+
+Đã lên bản chạy thật ngày 23/09/2026, đi chung một đợt với bao-CR-466 vì cả hai cùng nằm trên nhánh chạy thật; không có migration. Dựng lại máy chủ ứng dụng, hai tiến trình chạy nền và giao diện đang chạy thật.
+Commit: `34601877` (bao-CR-471) · `e5a957ec` (bao-CR-466).
