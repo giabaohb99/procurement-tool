@@ -101,7 +101,7 @@ def test_moi_tool_deu_phai_duoc_phan_loai(db, monkeypatch):
     """
     monkeypatch.setattr(settings, "AI_RAG_ENABLED", True)
     thuc_te = {d.name for d in T.tool_defs()}
-    assert len(thuc_te) == 36, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
+    assert len(thuc_te) == 37, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
     da_khai = set(TOOL_GHI) | set(TOOL_CHUNG_TU) | set(TOOL_DANH_MUC) | set(TOOL_KHONG_PHAM_VI)
 
     thieu = sorted(thuc_te - da_khai)

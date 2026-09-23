@@ -158,6 +158,11 @@ TOOL_GHI = {
     "propose_document_update": ("purchase_request", "write",
                                 {"entity": "purchase_request", "code": "YCMH-BAT-KY",
                                  "changes": {"purpose": "Đổi mục đích"}}),
+    #  bao-CR-435 — chỉ đề xuất, nhưng dẫn tới gán vai trò + phạm vi khi bấm Xác nhận.
+    #  Nửa ĐỌC (hồ sơ nhân sự, tài khoản đích) đã lọc bằng apply_scope('employee') +
+    #  get_scoped('user', 'write'), canh ở test_assistant_account_setup_tool.
+    "propose_account_setup": ("user", "write", {"employee": "NV-BAT-KY",
+                                                "role_codes": ["employee"]}),
 }
 
 #  Cách nhận diện "tool có mùi ghi" từ TÊN. Cố ý thô: thà bắt nhầm một tool đọc rồi khai

@@ -6072,3 +6072,28 @@ Mã nguồn: `backend/app/modules/purchase_order/service.py` ·
 `backend/app/modules/purchase_order/controller.py` ·
 `frontend-v2/src/modules/procurement/api/purchase-order-api.ts` ·
 `frontend-v2/src/modules/procurement/components/purchase-order-import-costs-card.tsx`.
+
+## kiem-bat-bien-pham-vi-2309 | Vá bốn bài kiểm bất biến phạm vi đang đỏ trên erp-v2 (nợ trước bao-CR-470)
+- status: xong
+- date: 2026-09-23
+Bốn bài kiểm đỏ vì thiếu khai báo, không phải vì mã có lỗ. Soi mã từng chỗ
+rồi mới khai.
+
+ĐÃ SỬA (chỉ tệp test):
+- `propose_account_setup` (bao-CR-435) xếp vào TOOL_GHI, không vào ba bảng đọc.
+  Tool mang tiền tố `propose_` và đòi `user.write`; bài mùi ghi ở
+  test_assistant_chi_co_quyen_xem cũng đang đỏ vì nó. Nửa đọc đã lọc bằng
+  apply_scope('employee') + get_scoped('user', 'write'). Có thêm ca "chỉ có
+  user.read thì denied".
+- `purchase_cost_type` (bao-CR-453) vào BB3_PUBLIC_CO_LY_DO: bảng
+  tab_po_cost_type không có cột pháp nhân hay phòng ban, mã duy nhất toàn hệ.
+- `employee/position_controller.py` vào BB4: dựng bằng make_crud_router, lọc
+  phạm vi nằm trong core/crud.py; job_position PUBLIC.
+- `legacy_datxe/controller.py` vào BB4: webhook máy gọi máy, gác bằng chữ ký
+  HMAC, không có phiên người dùng để lọc.
+
+Kiểm: test_assistant_pham_vi_doc + test_pham_vi_luat_bat_bien +
+test_assistant_chi_co_quyen_xem — 61 xanh. Chưa commit.
+
+Mã nguồn: test/backend/test_assistant_chi_co_quyen_xem.py ·
+test/backend/test_pham_vi_luat_bat_bien.py

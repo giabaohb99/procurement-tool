@@ -151,6 +151,10 @@ BB3_PUBLIC_CO_LY_DO = {
                 "(`legacy_id`), lúc nó hỏng thì phía ERP thường CHƯA có bản ghi nào "
                 "để xét công ty/phòng ban; lọc ở đây là giấu đúng dòng lỗi nặng nhất. "
                 "Khóa chỉ cấp cho quản trị hệ thống",
+    "purchase_cost_type": "danh mục loại chi phí thu mua dùng chung (bao-CR-453) — bảng "
+                          "`tab_po_cost_type` không có cột pháp nhân hay phòng ban, mã là "
+                          "duy nhất toàn hệ vì cột `tab_po_cost.cost_type` của MỌI đơn trỏ "
+                          "vào; ai SỬA gác bằng purchase_cost_type.write",
 }
 
 
@@ -224,6 +228,13 @@ BB4_CONTROLLER_MIEN_TRU = {
     "meeting_room/inbox_controller.py": "cùng lý do leave/inbox — cụm 06",
     # -- danh mục PUBLIC: cổng là QUYỀN, không phải phạm vi --
     "catalog/controller.py": "unit/item_group/brand — PUBLIC",
+    "employee/position_controller.py": "job_position — PUBLIC; dựng bằng `make_crud_router` nên "
+                                       "apply_scope/get_scoped nằm trong core/crud.py, grep tệp "
+                                       "này không thấy. Chốt xóa đếm TOÀN công ty có chủ ý",
+    # -- cửa máy gọi máy, không có người đăng nhập để lọc theo --
+    "legacy_datxe/controller.py": "webhook app đặt xe cũ — không phiên, không vai trò; gác bằng "
+                                  "chữ ký HMAC `verify_signature` (SYNC_SHARED_SECRET) + ghim "
+                                  "nguồn SOURCE_DATXE, sai chữ ký thì 401 không ghi gì",
     "product/controller.py": "product — PUBLIC (D-025)",
     "supplier/controller.py": "supplier — PUBLIC, giấu NCC bằng quyền supplier.read",
     "category_assignee/controller.py": "category_assignee — PUBLIC",
