@@ -28,6 +28,15 @@ FIELDS = [
              "tự phân bổ nhân sự (phiếu sang \"Đã điều phối\"). "
              "TẮT: quay về luồng cũ — trưởng bộ phận duyệt là phân bổ nhân sự ngay, bỏ hẳn bước thứ 2. "
              "Đổi lúc nào cũng được, có hiệu lực ngay, không ảnh hưởng phiếu đã xử lý xong."},
+    {"key": "pr_options_enabled", "group": "workflow", "type": "bool",
+     "label": "Yêu cầu mua hàng: bật cụm phương án (báo giá) trên phiếu",
+     "hint": "BẬT: nhân sự thu mua có màn \"Xử lý phương án\" để gắn tối đa 5 phương án cho "
+             "mỗi dòng mình phụ trách, và người yêu cầu chọn một phương án ngay trên chi tiết "
+             "phiếu; từ phương án đã chọn gom thẳng ra đơn mua hàng. "
+             "TẮT: hai chỗ đó biến mất khỏi giao diện và mọi thao tác gắn/sửa/chốt phương án bị "
+             "từ chối — phiếu chạy theo luồng cũ, lập đơn mua hàng bằng tay. "
+             "Phương án ĐÃ LƯU không mất: tắt rồi bật lại là thấy nguyên. Nhưng tắt giữa chừng "
+             "thì phiếu đang dở không chốt tiếp được, nên tắt lúc không ai đang xử lý."},
     {"key": "ai_enabled", "group": "ai", "type": "bool", "label": "Bật trợ lý AI",
      "hint": "TẮT thì mọi đường /api/assistant trả 403 và ô chat biến mất khỏi giao diện. "
              "Bật mà chưa dán key nào thì trợ lý vẫn báo chưa cấu hình."},

@@ -5965,3 +5965,70 @@ GHI NHẬN THÊM:
   rỗng. Chốt an toàn vừa gộp sang che được ca đó.
 
 Commit: 23e3e750
+
+## bao-CR-467 | Bảng chi phí thu mua gõ tự do ba cột, chốt theo từng dòng, chốt xong là khóa
+- status: xong
+- date: 2026-09-23
+- pic: NSU209
+
+Đại ca chốt cách vận hành mới cho bảng Chi phí thu mua: cho người dùng nhập tiền trên cả ba cột
+như bảng tính, chốt theo từng dòng, và khi chốt đã sinh công nợ thì không cho sửa nữa.
+
+Trước thay đổi này, mỗi dòng chỉ gõ được ô của giai đoạn mà cả đơn đang đứng, hai ô còn lại là
+chữ. Nay cả ba cột Dự toán, Tạm tính và Quyết toán đều gõ được bất kể đơn đang ở đâu. Gõ sẵn số
+Quyết toán không sinh công nợ, vì nợ chỉ hiện ra khi bấm chốt — nhờ vậy thu mua điền trước theo
+báo giá rồi chốt sau khi hóa đơn về. Nút chốt một dòng cũng dùng được ngay từ Dự toán; trước đó
+nó bắt phải chốt Tạm tính cả đơn trước, nên khoản nào có hóa đơn về sớm vẫn phải chờ cả bảng.
+
+Chốt xong thì dòng đóng lại. Không sửa được ô nào, kể cả nhà cung cấp, số hóa đơn hay ghi chú,
+vì mọi ô đó đều đi thẳng vào khoản nợ; và cũng không xóa được, bởi khóa sửa mà quên khóa xóa thì
+chỉ tốn một cú bấm để đi vòng là xóa dòng rồi gõ lại một dòng mới y hệt. Muốn sửa thì mở lại
+dòng, hoặc mở lại cả đơn rồi sửa. Vì màn hình gửi lại cả bảng chi phí mỗi lần bấm Lưu nên chốt
+khóa chỉ chặn khi có thay đổi thật; gửi lên đúng nguyên giá trị cũ thì đi qua êm, không thì sửa
+một dòng chi phí khác là kẹt cả đơn. Hai câu xác nhận trước khi chốt nay nói rõ cả hai hệ quả,
+là sinh nợ và khóa dòng.
+
+Kiểm trước khi giao: bốn tệp kiểm của khối chi phí sáu mươi ba bài xanh, trong đó có hai bài mới
+cho luật khóa và ba bài cũ phải sửa lại vì chúng vốn canh luật cũ. Bản đang chạy thật giữ nguyên
+đúng bốn lỗi kiểm kiểu cũ; bản ERP kiểm kiểu không lỗi và bốn trăm chín mươi lăm bài của phân hệ
+Thu mua xanh.
+
+Mã nguồn: `backend/app/modules/purchase_order/service.py` ·
+`frontend/src/pages/PurchaseOrderDetail.tsx` ·
+`frontend-v2/src/modules/procurement/components/purchase-order-import-costs-card.tsx`.
+
+## bao-CR-468 | Công tắc bật tắt cụm phương án của Yêu cầu mua hàng ở màn Cấu hình hệ thống
+- status: xong
+- date: 2026-09-23
+- pic: NSU209
+
+Đại ca cần một công tắc để bật hoặc tắt cụm phương án báo giá trên Yêu cầu mua hàng, bật tắt
+ngay ở màn Cấu hình hệ thống chứ không phải sửa tệp cấu hình rồi dựng lại dịch vụ.
+
+Công tắc gom đúng hai thứ đại ca nêu, là màn Xử lý phương án của nhân sự thu mua và thẻ chọn
+phương án trên chi tiết phiếu, kèm theo nút gom đơn mua hàng từ phương án đã chọn, vì ba chỗ đó
+đi liền một mạch nên tách ra thì bật nửa vời. Mặc định là tắt, bởi đây là luồng làm việc mới và
+một hệ đang chạy không nên tự có thêm một quy trình chỉ sau một lần deploy.
+
+Tắt là chặn thật chứ không phải ẩn nút. Mọi đường ghi của cụm, gồm gắn, sửa, chốt phương án,
+chốt hoàn thành xử lý, chốt xong lựa chọn và gom đơn, đều đi qua một chốt chung nên chỉ cần cắm
+công tắc vào đó. Ngoài ra đường tự sinh phương án 0 chạy kèm lúc đọc phiếu cũng phải nằm im, nếu
+không thì tắt rồi hệ thống vẫn lặng lẽ đẻ dữ liệu phương án mỗi lần có người mở một phiếu. Chiều
+đọc thì luôn mở, nên phương án đã chốt trên phiếu cũ vẫn xem được, tắt rồi bật lại là thấy
+nguyên.
+
+Giao diện biết công tắc qua một cờ gửi kèm chi tiết phiếu, cố ý không dựng đường API mới, vì
+người dùng thường không có quyền đọc cấu hình, mà cả hai chỗ phải ẩn đều đã cầm sẵn dữ liệu của
+phiếu. Ai mở thẳng đường dẫn cũ của màn Xử lý phương án trong lúc đang tắt thì thấy một câu giải
+thích, thay vì thấy bàn làm việc mà bấm gì cũng bị từ chối.
+
+Kiểm trước khi giao: thêm một tệp kiểm riêng cho công tắc với sáu bài, và hai bộ kiểm nghiệp vụ
+cũ của cụm được thêm một chốt bật sẵn vì mặc định nay là tắt; cả ba tệp cộng lại sáu mươi lăm
+bài xanh. Bản ERP kiểm kiểu không lỗi, kiểm nếp mã không lỗi và còn đúng số cảnh báo cũ.
+
+Mã nguồn: `backend/app/core/config.py` · `backend/app/core/app_settings.py` ·
+`backend/app/modules/setting/service.py` ·
+`backend/app/modules/purchase_request/option_service.py` ·
+`backend/app/modules/purchase_request/controller.py` ·
+`frontend-v2/src/modules/procurement/pages/purchase-request-detail-page.tsx` ·
+`frontend-v2/src/modules/procurement/pages/purchase-request-process-page.tsx`.
