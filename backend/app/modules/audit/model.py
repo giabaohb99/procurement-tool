@@ -24,7 +24,9 @@ class AuditLog(Base, AuditMixin):
 
     entity: Mapped[str] = mapped_column(String(50), index=True)
     entity_id: Mapped[int] = mapped_column(BigInteger, index=True)
-    action: Mapped[str] = mapped_column(String(20))  # create | update | delete
+    #  50 chứ không phải 20 (bao-CR-463): Trợ lý AI ghi `tool:<tên tool>` và tên tool
+    #  dài nhất đang là 27 ký tự — 20 làm mọi dòng audit tool tên dài rơi trong im lặng.
+    action: Mapped[str] = mapped_column(String(50))  # create | update | delete | tool:<tên>
     message: Mapped[str] = mapped_column(Text, default="")
 
     # -- ngữ cảnh: MÁY điền (middleware / ContextVar) -----------------------
