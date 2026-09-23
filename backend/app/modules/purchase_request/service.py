@@ -136,6 +136,41 @@ def find_dept_head_id(db: Session, department_name: str = "", department_id: int
     return int(dep.manager_id or 0) if dep else 0
 
 
+def fill_department_from_employee(db: Session, pr: PurchaseRequest, user_id: int) -> None:
+    """Phiếu chưa có phòng ban thì lùi về phòng trong HỒ SƠ NHÂN SỰ — bao-CR-465.
+
+    Chốt an toàn cuối cùng, cố ý đặt ở backend chứ không chỉ vá màn hình: phòng ban là
+    thứ quyết định ai nhìn thấy phiếu (phạm vi `dept` của `core/scoping.py` lọc theo cột
+    `department_id`), nên phiếu rỗng phòng ban là phiếu KHÔNG AI DUYỆT ĐƯỢC và không ai
+    nhận được thư — một lỗi câm, người lập không hề biết. Giao diện cũ từng để lọt đúng
+    ca đó vì tra tên phòng trong một danh sách nạp song song; vá ở đây thì mọi đường vào
+    (giao diện cũ, giao diện mới, gọi thẳng API) đều được che, không riêng một màn hình.
+
+    Nguồn ưu tiên là nhân sự ĐỨNG TÊN yêu cầu, không phải người bấm nút: hành chính lập hộ
+    cho phòng khác thì phòng của phiếu phải là phòng người được lập hộ. Không suy ra được
+    thì để nguyên rỗng — đoán bừa một phòng còn tệ hơn để trống, vì phiếu sẽ rơi vào tầm
+    mắt của một trưởng phòng không liên quan.
+
+    Không đụng tới phiếu ĐÃ có phòng ban: người lập chọn tay thì tiếng nói của họ là cuối.
+    """
+    from app.modules.employee.model import Employee
+    from app.modules.user.model import User
+
+    if int(getattr(pr, "department_id", 0) or 0) or (pr.department or "").strip():
+        return
+    emp = None
+    if int(getattr(pr, "requester_id", 0) or 0):
+        emp = db.get(Employee, pr.requester_id)
+    if not emp and user_id:
+        user = db.get(User, user_id)
+        if user and user.employee_id:
+            emp = db.get(Employee, user.employee_id)
+    if not emp or not emp.department_id:
+        return
+    pr.department_id = emp.department_id
+    pr.department = emp.department_name or ""
+
+
 def _find_dept(db: Session, department_name: str = "", department_id: int = 0):
     """Phòng ban theo id (ưu tiên) hoặc theo tên (đường lùi cho phiếu chưa điền lùi được id)."""
     from app.modules.department.model import Department
@@ -1009,6 +1044,9 @@ def create_pr(db: Session, data: PRCreate, user_id: int, can_write_pur: bool = F
                     "contact": data.suggested_supplier_contact},
             "pur": _empty_cluster(), "from_survey": False}
     apply_supplier_info(pr, build_clusters(prev, data, can_write_pur, from_survey=False))
+    # bao-CR-465: phiếu lên mà không có phòng ban thì lùi về phòng của nhân sự đứng tên —
+    # chạy TRƯỚC `sync_department_ref` để bước sau neo id và chụp lại tên như phiếu bình thường.
+    fill_department_from_employee(db, pr, user_id)
     # CR-086: neo phòng ban bằng id ngay từ lúc lập phiếu (FE cũ chỉ gửi tên → tra ra id).
     sync_department_ref(db, pr)
     # Tự điền Trưởng bộ phận theo phòng ban của người yêu cầu (nếu phòng có trưởng)

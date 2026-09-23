@@ -5857,3 +5857,78 @@ thấy thẻ chi tiết nổi lên trên. Chưa deploy.
 Mã nguồn: `frontend-v2/src/modules/vehicle-booking/utils/calendar-theme.ts`
 (thêm khối luật cho hộp "+N chuyến nữa": nền, tầng, bo góc, đầu hộp, nút đóng, trần chiều
 cao thân hộp).
+Bản A mẫu mục F điền giá chốt; bản B tick theo NCC ra 1 file N trang. Phải
+gác N-17 (supplier:read) trước khi bật bản B. Chưa bắt đầu.
+
+## bao-CR-465 | YCMH lập mới bị mất ô Phòng ban và ô Trưởng bộ phận
+- status: xong
+- date: 2026-09-23
+Vá lỗi trên bản đang chạy thật: yêu cầu mua hàng lập mới thỉnh thoảng ra đời
+với ô Phòng ban trống, kéo theo ô Trưởng bộ phận cũng trống. Phiếu vẫn gửi
+duyệt được nhưng không trưởng phòng nào nhìn thấy nó, và không ai nhận được
+thư báo — người lập tưởng đã gửi xong rồi ngồi chờ. Đại ca phát hiện ở phiếu
+PYC22092604 và đã vá tay dưới cơ sở dữ liệu trước khi báo.
+
+NGUYÊN NHÂN:
+- Không phải lỗi dữ liệu. Rà cả 166 phiếu trên bản chạy thật thì có 3 phiếu
+  mang phòng ban rỗng (132 · 135 · 164), và hai trong số đó do cùng một tài
+  khoản lập, cùng hồ sơ nhân sự, cách nhau 89 giây, một phiếu đủ một phiếu
+  rỗng. Đó là dấu hiệu của tranh chấp thời gian chứ không phải dữ liệu sai.
+- Màn hình cũ nạp danh sách nhân sự và danh sách phòng ban song song, nhưng
+  khối tự điền chỉ chờ danh sách nhân sự trả lời. Khi danh sách nhân sự về
+  trước, chỗ tra tên phòng không tìm thấy gì và trả về chuỗi rỗng; danh sách
+  phòng ban về sau cũng không làm khối đó chạy lại. Ô Phòng ban lại là ô chỉ
+  xem nên người lập không sửa tay được.
+- Hậu quả nặng vì phạm vi dữ liệu của trưởng phòng lọc theo đúng cột phòng
+  ban của phiếu: phòng ban rỗng nghĩa là phiếu nằm ngoài tầm nhìn mọi người.
+
+ĐÃ LÀM — hai lớp:
+- Lớp giao diện cũ: chỗ tra tên phòng có thêm đường lùi đọc thẳng từ hồ sơ
+  nhân sự, không còn phụ thuộc vào danh sách phòng ban nạp song song.
+- Lớp backend: thêm một chốt an toàn chạy ngay trước bước neo phòng ban lúc
+  tạo phiếu — phiếu rỗng thì lùi về phòng của nhân sự đứng tên yêu cầu, không
+  suy ra được thì lùi tiếp về hồ sơ của tài khoản đang lập. Đặt ở backend để
+  che cho mọi đường vào chứ không riêng một màn hình. Hai luật cố ý giữ: suy
+  không ra thì để rỗng chứ không đoán bừa một phòng, và phiếu đã chọn phòng
+  rồi thì giữ nguyên.
+- Giao diện mới không dính lỗi này, nó lấy phòng ban thẳng từ phiên đăng nhập.
+
+CÒN LẠI:
+- Hai phiếu 132 và 135 vẫn mang phòng ban rỗng dưới cơ sở dữ liệu, bản vá
+  không tự chữa phiếu cũ. Chờ đại ca quyết cách xử lý.
+
+Mã nguồn: frontend/src/pages/PurchaseRequestDetail.tsx ·
+backend/app/modules/purchase_request/service.py ·
+test/backend/test_pyc_phong_ban_lui_cr465.py
+
+## bao-CR-406-prod | Đưa đăng nhập Google của ERP v2 lên bản chạy thật
+- status: xong
+- date: 2026-09-23
+Màn đăng nhập của giao diện mới trên bản chạy thật chưa có cửa Google, trong
+khi bản dev đã có từ 15/09. Đại ca yêu cầu đưa lên và dặn lấy khóa của dev.
+
+ĐÃ RÀ TRƯỚC KHI LÀM:
+- Khóa không phải chép: cấu hình bản chạy thật ĐÃ có sẵn cả hai khóa Google,
+  và giá trị trùng khít với bản dev (so bằng mã băm, không đọc giá trị ra).
+- Backend bản chạy thật cũng đã có sẵn đường đăng nhập Google từ lâu. Thứ duy
+  nhất thiếu là phần giao diện mới.
+- Nhánh dev đang đi trước nhánh chạy thật 219 mốc. Gộp cả nhánh là bê nguyên
+  bản dev lên bản chạy thật, nên chỉ bê riêng một mốc bằng cherry-pick.
+
+ĐÃ LÀM:
+- Bê riêng mốc đăng nhập Google sang nhánh chạy thật. Đụng độ duy nhất ở sổ
+  thay đổi, giữ cả hai dòng. Mười bốn tệp, chỉ giao diện mới và phần nối biến
+  qua tệp dựng ảnh; không đụng backend, không migration, không đổi khóa quyền.
+- Cổng kiểm chạy lại trên nền nhánh chạy thật: kiểm kiểu cả cây 0 lỗi, soát mã
+  cả cây 0 lỗi (các tệp vừa bê sang sạch cả cảnh báo), bài kiểm khu đăng nhập
+  22 bài xanh.
+- Dựng lại dịch vụ giao diện mới trên bản chạy thật. Biến khóa Google nạp lúc
+  DỰNG ảnh nên bắt buộc dựng lại chứ khởi động lại không ăn.
+
+VIỆC TAY CỦA ĐẠI CA:
+- Phải thêm địa chỉ của giao diện mới vào danh sách nguồn được phép trong bảng
+  quản trị Google, nếu không nút bấm vào sẽ bị Google từ chối. Em không đụng
+  vào tài khoản Google của công ty.
+
+Mã nguồn: frontend-v2/src/core/auth/ · docker/Dockerfile.erp.prod ·
+docker-compose.production.yml

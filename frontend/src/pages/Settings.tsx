@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
+import { fmtDateTime } from '../utils/datetime'
 
 type Field = { key: string; group: string; label: string; type: string; value: any; hint?: string }
 type Secret = { key: string; group: string; label: string; configured: boolean }
+type LogRow = { id: number; message: string; by: string; at: string }
 
 const GROUP_TITLE: Record<string, string> = {
   workflow: 'Quy trình duyệt', email: 'Email (SMTP)', storage: 'Lưu trữ (R2 / S3)',
@@ -19,10 +21,31 @@ export default function Settings() {
   const [testTo, setTestTo] = useState('')
   const [busy, setBusy] = useState('')
 
+  const [logs, setLogs] = useState<LogRow[]>([])
+  const [logErr, setLogErr] = useState('')
+
   async function load() {
     const r = await api.get('/api/settings'); setFields(r.data.data.fields); setSecrets(r.data.data.secrets)
   }
-  useEffect(() => { load() }, [])
+
+  /**
+   * Nhật ký của chính màn này. Đi bằng đường chung `/api/audit-logs` lọc
+   * `entity=setting` — không truyền `page` thì backend trả về MẢNG đơn.
+   *
+   * Lỗi phải hiện thành lời: `client.ts` nuốt lỗi của request GET, nên bảng
+   * rỗng vì 403 trông y hệt bảng rỗng vì chưa ai đổi gì.
+   */
+  async function loadLogs() {
+    setLogErr('')
+    try {
+      const r = await api.get('/api/audit-logs', { params: { entity: 'setting', limit: 30 } })
+      setLogs(Array.isArray(r.data.data) ? r.data.data : [])
+    } catch (ex: any) {
+      setLogErr(ex?.response?.data?.error?.message || 'Không đọc được nhật ký thay đổi')
+    }
+  }
+
+  useEffect(() => { load(); loadLogs() }, [])
 
   const setVal = (key: string, v: any) => setFields((s) => s.map((f) => f.key === key ? { ...f, value: v } : f))
 
@@ -34,6 +57,7 @@ export default function Settings() {
     try {
       const r = await api.put('/api/settings', { values })
       setFields(r.data.data.fields); setSecrets(r.data.data.secrets); setSecretVals({}); setMsg('Đã lưu cấu hình')
+      loadLogs()
     } catch (ex: any) { setErr(ex?.response?.data?.error?.message || 'Lỗi khi lưu') }
   }
 
@@ -134,6 +158,53 @@ export default function Settings() {
           <button className="btn" onClick={save}><i className="ti ti-device-floppy" />Lưu cấu hình</button>
         </div>
       )}
+
+      {/* Nhật ký thay đổi — ai đổi ô nào, từ giá trị gì sang giá trị gì */}
+      <div className="card" style={{ padding: 18, marginTop: 18 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+          <h3 className="sec-title" style={{ margin: 0 }}>Lịch sử thay đổi</h3>
+          <button className="btn ghost" onClick={loadLogs}><i className="ti ti-refresh" />Tải lại</button>
+        </div>
+        <div style={{ fontSize: 12.5, color: 'var(--muted)', marginBottom: 10 }}>
+          30 lần cập nhật gần nhất. Giá trị của khóa bí mật <b>không</b> được ghi vào nhật ký — chỉ ghi nhận là đã đặt lại.
+        </div>
+        {logErr && <div className="err">{logErr}</div>}
+        {!logErr && (
+          <table>
+            <thead>
+              <tr>
+                <th style={{ width: 170 }}>Thời gian</th>
+                <th style={{ width: 200 }}>Người thực hiện</th>
+                <th>Nội dung</th>
+              </tr>
+            </thead>
+            <tbody>
+              {logs.map((l) => {
+                //  Dòng đầu là câu tóm tắt, phần còn lại là chi tiết từng ô.
+                //  Bản ghi cũ (trước bao-CR-461) chỉ có đúng dòng tóm tắt.
+                const [title, ...detail] = String(l.message || '').split('\n')
+                return (
+                  <tr key={l.id}>
+                    <td style={{ whiteSpace: 'nowrap' }}>{fmtDateTime(l.at)}</td>
+                    <td>{l.by}</td>
+                    <td>
+                      <div>{title}</div>
+                      {detail.length > 0 && (
+                        <div style={{ fontSize: 12.5, color: 'var(--muted)', whiteSpace: 'pre-line', marginTop: 3 }}>
+                          {detail.join('\n')}
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
+              {logs.length === 0 && (
+                <tr><td colSpan={3} style={{ color: 'var(--muted)' }}>Chưa có lần cập nhật nào được ghi nhận.</td></tr>
+              )}
+            </tbody>
+          </table>
+        )}
+      </div>
     </div>
   )
 }
