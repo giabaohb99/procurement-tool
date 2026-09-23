@@ -40,6 +40,8 @@ describe('bảng trường → tab', () => {
     ['tax_code', 'general'],
     ['hire_date', 'general'],
     ['manager_id', 'general'],
+    //  Email công việc = email đăng nhập — dời từ tab Liên hệ sang tab Chung (23/09/2026).
+    ['email', 'general'],
     ['bank_account_no', 'contact'],
     ['permanent_address', 'contact'],
     ['phone', 'contact'],

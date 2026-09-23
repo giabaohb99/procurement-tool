@@ -6343,3 +6343,21 @@ Mã nguồn: `frontend/src/pages/PurchaseOrderDetail.tsx` ·
 Commit: `34601877` (bao-CR-471) · `e5a957ec` (bao-CR-466).
 
 Cùng ngày em gộp nhánh chạy thật sang nhánh giao diện mới và rà màn đơn mua hàng của bản ERP: bản đó không dính lỗi này, vì nó không có hàm nào tự tính lại cờ gấp; ô Đơn gấp chỉ đổi khi người dùng tự bấm và bị khóa hẳn khi đơn đã duyệt, nên lượt lưu luôn mang đúng giá trị đã tải về. Chốt gửi duyệt của bao-CR-466 nằm ở phía máy chủ nên bản ERP ăn theo luôn.
+
+## bao-CR-472 | Dời ô email công việc sang tab Chung của hồ sơ nhân sự
+- status: xong
+- date: 2026-09-23
+Đại ca muốn sửa email công việc cùng chỗ với thông tin chính vì nó dính tới đăng nhập.
+Trên giao diện mới, ô «Email công việc» chuyển từ tab Liên hệ và Ngân hàng sang tab Chung,
+đặt cuối mục Công việc cạnh Trạng thái hồ sơ.
+
+Sửa luôn câu mô tả sai dưới ô: câu cũ nói đổi email không làm đổi tài khoản, nhưng thật ra
+đăng nhập Google tra thẳng email nhân sự, còn đăng nhập mật khẩu thì hệ thống đẩy email
+mới sang tài khoản khi lưu. Câu mới nói đúng điều đó. Giao diện cũ vốn đã để email ở tab
+Thông tin nên không đổi. Chưa commit.
+
+Kiểm: kiểm kiểu 0 lỗi, kiểm nếp mã 0 lỗi, 520 bài kiểm phân hệ Nhân sự xanh, thêm bài
+kiểm khóa vị trí tab của ô email.
+
+Mã nguồn: frontend-v2/src/modules/hr/components/employee-tab-general.tsx ·
+employee-tab-contact.tsx · utils/profile-field-tab.ts

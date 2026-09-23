@@ -206,7 +206,7 @@ export function EmployeeTabGeneral({
             name="personal_email"
             label="Email cá nhân"
             type="email"
-            description="Email riêng, khác với email công việc ở tab Liên hệ."
+            description="Email riêng, khác với email công việc (email đăng nhập) ở mục Công việc."
             disabled={disabled}
           />
         </FormSection>
@@ -405,6 +405,21 @@ export function EmployeeTabGeneral({
                 <FormMessage />
               </FormItem>
             )}
+          />
+
+          {/*  EMAIL CÔNG VIỆC = EMAIL ĐĂNG NHẬP — dời từ tab «Liên hệ & Ngân hàng» sang đây
+               (đại ca chốt 23/09/2026) vì sửa ô này là sửa cách người đó đăng nhập:
+               - Đăng nhập Google tra THẲNG email nhân sự (`auth/service.google_login`).
+               - Đăng nhập mật khẩu tra `User.email`; lưu hồ sơ mà ô này đổi thì
+                 `_sync_user_email_from_employee` đẩy email mới sang tài khoản gắn với
+                 người này (chặn 400 nếu tài khoản khác đang dùng email đó).
+               Câu mô tả cũ «đổi ở đây không tự đổi tài khoản đã cấp» là SAI với backend. */}
+          <EmployeeTextField
+            name="email"
+            label="Email công việc"
+            type="email"
+            description="Cũng là email đăng nhập (cả đăng nhập Google). Đổi ở đây thì email đăng nhập của tài khoản gắn với người này đổi theo."
+            disabled={disabled}
           />
         </FormSection>
       </Card>

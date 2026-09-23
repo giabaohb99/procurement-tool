@@ -38,6 +38,7 @@ const FIELD_TAB: Record<string, ProfileTabKey> = {
   marital_status: 'general',
   children_count: 'general',
   personal_email: 'general',
+  email: 'general',   // email công việc = email đăng nhập, dời từ tab Liên hệ (23/09/2026)
   tax_code: 'general',
   education_level: 'general',
   major: 'general',
@@ -54,7 +55,6 @@ const FIELD_TAB: Record<string, ProfileTabKey> = {
   resign_date: 'general',
 
   // Tab «Liên hệ & Ngân hàng» — nhóm 3 + nhóm 4
-  email: 'contact',
   phone: 'contact',
   permanent_address: 'contact',
   current_address: 'contact',

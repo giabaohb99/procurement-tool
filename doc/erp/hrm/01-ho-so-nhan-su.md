@@ -164,7 +164,7 @@ Hai bảng đều là chi tiết của hồ sơ (không có màn danh sách riê
 |---|---|---|
 | C1 | Danh sách nhân sự (đã có, mở rộng) | Thêm cột/lọc: hình thức nhân viên, cấp bậc, người quản lý trực tiếp. Giữ lọc theo pháp nhân, phòng ban, trạng thái |
 | C2 | **Form tạo nhanh ~10 trường** | Chỉ hỏi: mã, họ tên, pháp nhân, phòng ban, chức vụ, ngày vào làm, giới tính, ngày sinh, SĐT, email. Học đúng bài "hộp tạo nhanh 12 trường" của HrOnline — bắt điền đủ 30+ trường ngay từ đầu thì không ai nhập |
-| C3 | Màn chi tiết xếp tab | Tab **Chung** (nhóm 1+2) / **Liên hệ & Ngân hàng** (nhóm 3+4, kèm bảng người báo tin) / **Giấy tờ & BHXH** (nhóm 5, upload 2 ảnh CCCD, kèm bảng hộ gia đình) / **Quỹ phép** (link sang phân hệ Nghỉ phép sẵn có) / **Tài khoản** (mục 6). Sau này thêm tab Hợp đồng lao động, Lịch sử điều chuyển |
+| C3 | Màn chi tiết xếp tab | Tab **Chung** (nhóm 1+2) / **Liên hệ & Ngân hàng** (nhóm 3+4, kèm bảng người báo tin) / **Giấy tờ & BHXH** (nhóm 5, upload 2 ảnh CCCD, kèm bảng hộ gia đình) / **Quỹ phép** (link sang phân hệ Nghỉ phép sẵn có) / **Tài khoản** (mục 6). Sau này thêm tab Hợp đồng lao động, Lịch sử điều chuyển. *(bao-CR-472, 23/09/2026: ô **Email công việc** dời từ tab Liên hệ & Ngân hàng sang tab **Chung**, cuối mục Công việc — nó là email đăng nhập, xem U4)* |
 | C4 | Upload ảnh CCCD | 2 tệp ảnh, đi theo cơ chế upload tệp sẵn có, đường dẫn lưu vào 2 cột |
 | C5 | In "Phiếu thông tin nhân viên" | Xuất bản in theo đúng khuôn BM00../QT01/NS từ dữ liệu đã nhập — thay thế việc điền giấy; dùng cơ chế bản in sẵn có |
 | C6 | Nhân viên tự khai | Giai đoạn 2 (không làm ngay): nhân viên đăng nhập tự điền phần thông tin cá nhân của chính mình, nhân sự duyệt lại. Nền tảng scope `self` của hệ phân quyền đã đỡ được |
