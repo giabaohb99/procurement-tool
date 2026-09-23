@@ -53,6 +53,18 @@ def _save_costs(db, po, costs):
     db.flush()
 
 
+REOPEN_REASON = "Hóa đơn hãng tàu về sai số, cần sửa lại"
+
+
+def _edit_finalized(db, po, costs):
+    """bao-CR-467: dòng đã quyết toán là dòng KHÓA — muốn sửa thì mở lại giai đoạn, sửa, rồi
+    chốt lại. Nợ chưa chi bị gỡ lúc mở lại và dựng lại lúc chốt, nên mỗi dòng vẫn đúng MỘT
+    khoản nợ."""
+    service.reopen_cost_stage(db, po, int(CostStage.PROVISIONAL), REOPEN_REASON, user_id=1)
+    _save_costs(db, po, costs)
+    service.advance_cost_stage(db, po, int(CostStage.FINAL), user_id=1)
+
+
 def _cost_payables(db, po):
     return (db.query(Payable).filter(Payable.po_id == po.id, Payable.ref_type == SRC)
             .order_by(Payable.ref_id).all())
@@ -114,18 +126,21 @@ def test_khai_them_sua_va_xoa_dong_sau_duyet_no_chay_theo(db, seed):
     (pay,) = _cost_payables(db, po)
     row_id = service.import_costs_of(db, po.id)[0].id
 
-    # Sửa số tiền → cùng khoản nợ (idempotent), tổng đổi theo
-    _save_costs(db, po, [_cost_in(id=row_id, final_amount=2_000_000, vat=0)])
+    assert pay.ref_id == row_id
+
+    # Sửa số tiền → vẫn đúng MỘT khoản nợ của dòng đó, tổng đổi theo
+    _edit_finalized(db, po, [_cost_in(id=row_id, final_amount=2_000_000, vat=0)])
     (pay2,) = _cost_payables(db, po)
-    assert pay2.id == pay.id and float(pay2.total) == 2_000_000.0
+    assert pay2.ref_id == row_id and float(pay2.total) == 2_000_000.0
 
     # Bỏ NCC → không còn biết trả cho ai → gỡ nợ (chưa chi)
-    _save_costs(db, po, [_cost_in(id=row_id, supplier_code="", supplier_name="")])
+    _edit_finalized(db, po, [_cost_in(id=row_id, supplier_code="", supplier_name="")])
     assert _cost_payables(db, po) == []
 
-    # Chọn lại NCC → nợ quay lại; xóa dòng → nợ mất
-    _save_costs(db, po, [_cost_in(id=row_id)])
+    # Chọn lại NCC → nợ quay lại; mở lại rồi xóa dòng → nợ mất
+    _edit_finalized(db, po, [_cost_in(id=row_id)])
     assert len(_cost_payables(db, po)) == 1
+    service.reopen_cost_stage(db, po, int(CostStage.PROVISIONAL), REOPEN_REASON, user_id=1)
     _save_costs(db, po, [])
     assert _cost_payables(db, po) == []
     assert service.import_costs_of(db, po.id) == []
@@ -139,10 +154,17 @@ def test_dong_da_chi_thi_khong_xoa_duoc(db, seed):
     pay.paid_amount = 300_000
     db.flush()
 
+    # bao-CR-467 chặn sớm hơn một nhịp: dòng đã quyết toán thì không xóa, chưa cần hỏi tới
+    # tiền đã chi. Chốt cũ vẫn còn nguyên và vẫn là lớp chặn cuối — gọi thẳng nó để canh.
     with pytest.raises(HTTPException) as e:
         _save_costs(db, po, [])
-    assert e.value.status_code == 400 and "đã chi" in e.value.detail
+    assert e.value.status_code == 400 and "không xóa được" in e.value.detail
     assert len(service.import_costs_of(db, po.id)) == 1
+
+    row = service.import_costs_of(db, po.id)[0]
+    with pytest.raises(HTTPException) as e:
+        service.block_delete_paid_import_cost(db, row)
+    assert e.value.status_code == 400 and "đã chi" in e.value.detail
 
 
 def test_huy_don_go_no_chua_chi_giu_no_da_chi(db, seed):

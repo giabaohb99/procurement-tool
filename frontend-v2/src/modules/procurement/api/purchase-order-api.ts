@@ -186,17 +186,19 @@ export const purchaseOrderApi = {
 
   /**
    * bao-CR-453 — Chốt giai đoạn chi phí: Dự toán → Tạm tính hoặc Tạm tính → Quyết toán.
-   * Yêu cầu `purchase_order.write`.
+   * Yêu cầu `purchase_order.write`. `target` là BẮT BUỘC và cố ý chỉ đi MỘT bậc: gửi đúng
+   * bậc kế tiếp thì bấm hai lần liền tay lần sau ăn lỗi "đang ở giai đoạn ..." thay vì nhảy
+   * thẳng lên Quyết toán và sinh công nợ.
    */
-  advanceCostStage: (id: number) =>
-    apiPost<PurchaseOrderDetail>(`${BASE_URL}/${id}/cost-stage/advance`, {}),
+  advanceCostStage: (id: number, target: number) =>
+    apiPost<PurchaseOrderDetail>(`${BASE_URL}/${id}/cost-stage/advance`, { target }),
 
   /**
    * bao-CR-453 — Mở lại giai đoạn chi phí (Tạm tính → Dự toán hoặc Quyết toán → Tạm tính).
-   * Yêu cầu `purchase_order.approve` + bắt buộc có lý do.
+   * Yêu cầu `purchase_order.approve` + bắt buộc có lý do; `target` là bậc muốn lùi về.
    */
-  reopenCostStage: (id: number, reason: string) =>
-    apiPost<PurchaseOrderDetail>(`${BASE_URL}/${id}/cost-stage/reopen`, { reason }),
+  reopenCostStage: (id: number, target: number, reason: string) =>
+    apiPost<PurchaseOrderDetail>(`${BASE_URL}/${id}/cost-stage/reopen`, { target, reason }),
 
   /**
    * bao-CR-453 — Quyết toán một dòng chi phí riêng lẻ (đặt `line_stage = 3`).

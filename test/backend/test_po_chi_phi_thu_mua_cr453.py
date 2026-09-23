@@ -4,6 +4,9 @@ loại chi phí. Thiết kế: `doc/erp/nhap-khau/02-chi-phi-thu-mua.md`.
 Luật phải giữ:
 1. Đơn mới ở Dự toán. Chốt lên giai đoạn trên thì cột trống được CHÉP số từ giai đoạn dưới,
    số đã gõ riêng thì giữ; không chốt xuống bằng cửa này.
+1b. (bao-CR-467) Bảng gõ tự do như Excel: cả ba cột đều ghi được bất kể đơn ở giai đoạn nào,
+   và gõ sẵn số Quyết toán KHÔNG sinh công nợ. Chốt xong thì dòng KHÓA — không sửa, không
+   xóa, phải mở lại trước; payload trùng khít giá trị cũ vẫn đi qua êm.
 2. Mở lại (lùi) phải có lý do từ 10 ký tự; dòng ĐÃ CHI giữ Quyết toán riêng dòng, nợ chưa chi
    của các dòng còn lại bị gỡ.
 3. Chỉ dòng ở QUYẾT TOÁN (theo đơn hoặc riêng dòng) và loại chi phí có «sinh công nợ» mới
@@ -93,24 +96,29 @@ def test_don_moi_o_du_toan_va_chot_len_chep_so_xuong_giai_doan_tren(db, seed):
     assert out["cost_stage_label"] == "Quyết toán"
 
 
-def test_so_da_go_rieng_cho_giai_doan_tren_thi_giu_nguyen(db, seed):
+def test_go_duoc_ca_ba_cot_bat_ke_don_dang_o_giai_doan_nao(db, seed):
+    # bao-CR-467: bảng gõ tự do như Excel. Số Tạm tính / Quyết toán gõ TRƯỚC khi chốt vẫn được
+    # lưu, và gõ sẵn số Quyết toán KHÔNG phải là chốt — chưa chốt thì chưa nợ ai cả.
     po = _make_po(db, seed)
-    # Màn lưu đơn chỉ ghi được số tới giai đoạn HIỆU LỰC: gửi số Tạm tính khi đơn còn Dự toán
-    # thì bị bỏ qua, không phải lỗi.
-    _save_costs(db, po, [_cost_in(provisional_amount=1_200_000)])
+    _save_costs(db, po, [_cost_in(provisional_amount=1_200_000, final_amount=1_300_000)])
     row = _rows(db, po)[0]
-    assert row.provisional_amount is None
-
-    service.advance_cost_stage(db, po, int(CostStage.PROVISIONAL), user_id=1)
-    _save_costs(db, po, [_cost_in(id=row.id, estimate_amount=999, provisional_amount=1_200_000)])
-    row = _rows(db, po)[0]
-    assert float(row.estimate_amount) == 1_000_000            # cột đã chốt là lịch sử, không ghi đè
     assert float(row.provisional_amount) == 1_200_000
+    assert float(row.final_amount) == 1_300_000
+    assert _cost_payables(db, po) == []
+    assert float(service.effective_base_of(row, po)) == 1_000_000     # vẫn đọc số Dự toán
+
+    # Chưa chốt thì sửa lại cột nào cũng được, kể cả cột của giai đoạn thấp hơn.
+    service.advance_cost_stage(db, po, int(CostStage.PROVISIONAL), user_id=1)
+    _save_costs(db, po, [_cost_in(id=row.id, estimate_amount=999, provisional_amount=1_200_000,
+                                  final_amount=1_300_000)])
+    row = _rows(db, po)[0]
+    assert float(row.estimate_amount) == 999
+    assert float(row.provisional_amount) == 1_200_000                 # chốt không đè số đã gõ
     assert float(service.effective_base_of(row, po)) == 1_200_000
 
     service.advance_cost_stage(db, po, int(CostStage.FINAL), user_id=1)
     row = _rows(db, po)[0]
-    assert float(row.final_amount) == 1_200_000               # chép từ Tạm tính, không từ Dự toán
+    assert float(row.final_amount) == 1_300_000                       # số đã gõ, không phải số chép
 
 
 def test_khong_chot_xuong_hoac_dung_giai_doan_bang_cua_chot_len(db, seed):
@@ -171,6 +179,45 @@ def test_quyet_toan_rieng_dong_sinh_no_rieng_dong_do(db, seed):
     service.reopen_cost_line(db, po, first.id, REASON, user_id=1)
     assert service.stage_of(first.line_stage) == CostStage.ESTIMATE
     assert _cost_payables(db, po) == []
+
+
+def test_chot_dong_roi_thi_khoa_ca_sua_lan_xoa(db, seed):
+    # bao-CR-467: chốt là sinh công nợ, nên từ đó dòng đóng lại. Màn hình gửi lại CẢ bảng mỗi
+    # lần lưu nên payload trùng khít phải đi qua êm — chỉ thay đổi THẬT mới bị chặn.
+    po = _make_po(db, seed)
+    _save_costs(db, po, [_cost_in()])
+    row = _rows(db, po)[0]
+    service.finalize_cost_line(db, po, row.id, user_id=1)
+    assert len(_cost_payables(db, po)) == 1
+
+    _save_costs(db, po, [_cost_in(id=row.id, final_amount=1_000_000)])
+    assert float(_rows(db, po)[0].final_amount) == 1_000_000
+
+    for doi in (dict(final_amount=1_500_000), dict(final_amount=1_000_000, supplier_code="KHAC"),
+                dict(final_amount=1_000_000, vat=10), dict(final_amount=1_000_000, note="ghi thêm")):
+        with pytest.raises(HTTPException) as e:
+            _save_costs(db, po, [_cost_in(id=row.id, **doi)])
+        assert e.value.status_code == 400 and "không sửa được" in e.value.detail
+
+    with pytest.raises(HTTPException) as e:          # bỏ dòng khỏi payload = xóa
+        _save_costs(db, po, [])
+    assert e.value.status_code == 400 and "không xóa được" in e.value.detail
+
+    service.reopen_cost_line(db, po, row.id, REASON, user_id=1)
+    _save_costs(db, po, [_cost_in(id=row.id, final_amount=1_500_000)])
+    assert float(_rows(db, po)[0].final_amount) == 1_500_000
+
+
+def test_don_da_quyet_toan_thi_moi_dong_deu_khoa(db, seed):
+    # Khóa theo giai đoạn HIỆU LỰC: dòng không có `line_stage` riêng nhưng cả đơn đã Quyết
+    # toán thì cũng đóng — nếu không, chốt cả đơn xong vẫn sửa được từng dòng như thường.
+    po = _make_po(db, seed)
+    _save_costs(db, po, [_cost_in()])
+    row = _rows(db, po)[0]
+    service.advance_cost_stage(db, po, int(CostStage.FINAL), user_id=1)
+    with pytest.raises(HTTPException) as e:
+        _save_costs(db, po, [_cost_in(id=row.id, final_amount=2_000_000)])
+    assert e.value.status_code == 400 and "không sửa được" in e.value.detail
 
 
 def test_mo_lai_dong_dang_theo_don_hoac_da_chi_thi_chan(db, seed):
@@ -246,9 +293,10 @@ def test_bao_cao_doc_theo_giai_doan_va_so_lech(db, seed):
     # Xem riêng cột Quyết toán khi chưa có số → 0, không mượn số Dự toán
     assert ilc.compute(db, po_ids=[po.id], stage=int(CostStage.FINAL))["orders"][0]["cost_total"] == 0.0
 
-    service.advance_cost_stage(db, po, int(CostStage.FINAL), user_id=1)
+    # bao-CR-467: gõ số Quyết toán TRƯỚC rồi mới chốt — chốt xong là dòng khóa, hết sửa.
     row = _rows(db, po)[0]
     _save_costs(db, po, [_cost_in(id=row.id, final_amount=1_300_000)])
+    service.advance_cost_stage(db, po, int(CostStage.FINAL), user_id=1)
     done = ilc.compute(db, po_ids=[po.id])
     assert done["orders"][0]["cost_total"] == 1_300_000.0
     assert done["orders"][0]["variance"] == 300_000.0

@@ -341,12 +341,16 @@ export function PurchaseOrderImportCostsCard({
   const invalidateOrder = () =>
     void queryClient.invalidateQueries({ queryKey: queryKeys.procurement.purchaseOrder(order.id) })
 
+  // `target` là bậc muốn tới/muốn lùi về, BẮT BUỘC gửi lên và cố ý chỉ đi một bậc:
+  // bấm hai lần liền tay thì lần sau ăn lỗi "đang ở giai đoạn ..." chứ không nhảy
+  // thẳng lên Quyết toán và sinh công nợ.
   const advanceStageMutation = useMutation({
-    mutationFn: () => purchaseOrderApi.advanceCostStage(order.id),
+    mutationFn: (target: number) => purchaseOrderApi.advanceCostStage(order.id, target),
     onSuccess: invalidateOrder,
   })
   const reopenStageMutation = useMutation({
-    mutationFn: (reason: string) => purchaseOrderApi.reopenCostStage(order.id, reason),
+    mutationFn: ({ target, reason }: { target: number; reason: string }) =>
+      purchaseOrderApi.reopenCostStage(order.id, target, reason),
     onSuccess: invalidateOrder,
   })
   const finalizeLineMutation = useMutation({
@@ -519,6 +523,19 @@ export function PurchaseOrderImportCostsCard({
     return (cost.paid_amount ?? 0) > 0.01
   }
 
+  /**
+   * bao-CR-467: dòng đã ở Quyết toán — theo đơn hoặc riêng dòng — là dòng ĐÃ SINH CÔNG NỢ.
+   * Chốt xong là khóa cả dòng: không ô nào sửa được, không xóa được, muốn sửa phải mở lại.
+   * Backend chặn y hệt; đây là lớp nói trước để người dùng không gõ xong mới ăn lỗi lúc Lưu.
+   */
+  function isLineLocked(cost: PurchaseOrderImportCost): boolean {
+    return Math.max(orderStage, cost.line_stage ?? 0) >= COST_STAGE_FINAL
+  }
+
+  function isRowEditable(cost: PurchaseOrderImportCost): boolean {
+    return editable && !isLineLocked(cost)
+  }
+
   function toggleSelected(payableId: number, checked: boolean) {
     setSelectedPayableIds((current) => {
       const next = new Set(current)
@@ -570,7 +587,7 @@ export function PurchaseOrderImportCostsCard({
       case 'no':
         return <span className="text-muted-foreground">{index + 1}</span>
       case 'cost_type':
-        return editable ? (
+        return isRowEditable(cost) ? (
           <Select
             value={String(cost.cost_type)}
             onValueChange={(value) =>
@@ -595,7 +612,7 @@ export function PurchaseOrderImportCostsCard({
           <span className="font-medium">{cost.cost_type_label || importCostTypeLabel(cost.cost_type)}</span>
         )
       case 'description':
-        return editable ? (
+        return isRowEditable(cost) ? (
           <Textarea
             className="min-h-9 py-1.5"
             value={cost.description}
@@ -607,7 +624,7 @@ export function PurchaseOrderImportCostsCard({
           cost.description || null
         )
       case 'allocation_method':
-        return editable ? (
+        return isRowEditable(cost) ? (
           <Select
             value={String(cost.allocation_method)}
             onValueChange={(value) => changeAllocationMethod(index, Number(value))}
@@ -629,7 +646,7 @@ export function PurchaseOrderImportCostsCard({
       case 'allocation_target':
         return renderAllocationTarget(cost, index)
       case 'supplier':
-        return editable ? (
+        return isRowEditable(cost) ? (
           <SearchSelect
             value={cost.supplier_code || ''}
             onChange={(value) => changeSupplier(index, value === SUPPLIER_EMPTY ? '' : value)}
@@ -647,7 +664,7 @@ export function PurchaseOrderImportCostsCard({
           </span>
         ) : null
       case 'currency':
-        return editable ? (
+        return isRowEditable(cost) ? (
           <Select value={currency} onValueChange={(value) => changeCurrency(index, value)}>
             <SelectTrigger className="w-full" aria-label="Tiền tệ">
               <SelectValue />
@@ -664,7 +681,7 @@ export function PurchaseOrderImportCostsCard({
           currency
         )
       case 'vat':
-        return editable ? (
+        return isRowEditable(cost) ? (
           <NumberInput
             className="px-2 text-right"
             aria-label="VAT %"
@@ -678,9 +695,10 @@ export function PurchaseOrderImportCostsCard({
         )
       case 'base_amount':
         return <span className="font-semibold tabular-nums">{formatMoney(base)} đ</span>
-      // bao-CR-453 — ba ô số theo giai đoạn. Chỉ ô của giai đoạn đơn đang đứng mới
-      // gõ được, và gõ vào đó là gõ số NGUYÊN TỆ trước thuế; hai ô kia bày số đã
-      // quy đổi VNĐ (gồm VAT) để đối chiếu. Khoản đã chi một phần thì khóa luôn.
+      // bao-CR-467 — ba ô số theo giai đoạn, gõ tự do như Excel: CẢ BA đều gõ được bất
+      // kể đơn đang ở giai đoạn nào, và gõ vào đó là gõ số NGUYÊN TỆ trước thuế. Gõ sẵn
+      // số Quyết toán không sinh công nợ — nợ chỉ hiện khi CHỐT. Dòng đã chốt (hoặc đã
+      // chi một phần) thì khóa, ô khóa bày số đã quy đổi VNĐ (gồm VAT) để đối chiếu.
       case 'estimate_base':
       case 'provisional_base':
       case 'final_base': {
@@ -691,7 +709,7 @@ export function PurchaseOrderImportCostsCard({
               ? COST_STAGE_PROVISIONAL
               : COST_STAGE_ESTIMATE
         const active = orderStage === stage
-        if (editable && active && !amountLocked(cost)) {
+        if (isRowEditable(cost) && !amountLocked(cost)) {
           return (
             <NumberInput
               className="px-2 text-right"
@@ -753,7 +771,7 @@ export function PurchaseOrderImportCostsCard({
         )
       }
       case 'invoice_no':
-        return editable ? (
+        return isRowEditable(cost) ? (
           <Input
             value={cost.invoice_no}
             aria-label="Số hóa đơn"
@@ -763,7 +781,7 @@ export function PurchaseOrderImportCostsCard({
           cost.invoice_no || null
         )
       case 'invoice_date':
-        return editable ? (
+        return isRowEditable(cost) ? (
           //  `size="sm"` như mọi bảng dòng khác: cỡ mặc định là `h-9 px-4`, cần
           //  tới ~189px mới đủ chỗ cho `dd/mm/yyyy` — rộng hơn sàn một cột ngày.
           <DatePicker
@@ -775,7 +793,7 @@ export function PurchaseOrderImportCostsCard({
           formatDate(cost.invoice_date) || null
         )
       case 'payment_due_date':
-        return editable ? (
+        return isRowEditable(cost) ? (
           <DatePicker
             size="sm"
             value={cost.payment_due_date || ''}
@@ -785,7 +803,7 @@ export function PurchaseOrderImportCostsCard({
           formatDate(cost.payment_due_date) || null
         )
       case 'note':
-        return editable ? (
+        return isRowEditable(cost) ? (
           <Textarea
             className="min-h-9 py-1.5"
             value={cost.note}
@@ -797,12 +815,12 @@ export function PurchaseOrderImportCostsCard({
         )
       case 'action': {
         const lineStage = cost.line_stage ?? 0
-        const canFinalizeLine =
-          approved &&
-          order.cost_stage !== undefined &&
-          order.cost_stage >= COST_STAGE_PROVISIONAL &&
-          lineStage < COST_STAGE_FINAL &&
-          cost.id !== undefined
+        // bao-CR-467: chốt TỪNG DÒNG là thao tác chính, dùng được ngay từ Dự toán — trước
+        // đây nó bắt phải chốt Tạm tính cả đơn trước, nên khoản nào có hóa đơn về sớm cũng
+        // phải chờ cả bảng. Điều kiện còn lại: đơn đã duyệt và dòng chưa quyết toán.
+        // Dùng giai đoạn HIỆU LỰC chứ không riêng `line_stage`: đơn đã Quyết toán thì mọi
+        // dòng đã chốt sẵn, bày nút chốt nữa là bấm vào chỉ để ăn lỗi.
+        const canFinalizeLine = approved && !isLineLocked(cost) && cost.id !== undefined
         const canReopenLine =
           approved &&
           lineStage >= COST_STAGE_FINAL &&
@@ -821,7 +839,7 @@ export function PurchaseOrderImportCostsCard({
             >
               <Pencil />
             </Button>
-            {editable && !hasPayable && (
+            {isRowEditable(cost) && !hasPayable && (
               <Button
                 type="button"
                 variant="ghost"
@@ -1386,7 +1404,7 @@ export function PurchaseOrderImportCostsCard({
               onClick={() => {
                 if (advancePending.current) return
                 advancePending.current = true
-                advanceStageMutation.mutate(undefined, {
+                advanceStageMutation.mutate(orderStage + 1, {
                   onSettled: () => {
                     advancePending.current = false
                     setAdvanceDialogOpen(false)
@@ -1424,7 +1442,7 @@ export function PurchaseOrderImportCostsCard({
               type="button"
               disabled={!reopenReason.trim() || reopenStageMutation.isPending}
               onClick={() => {
-                reopenStageMutation.mutate(reopenReason.trim(), {
+                reopenStageMutation.mutate({ target: orderStage - 1, reason: reopenReason.trim() }, {
                   onSuccess: () => {
                     setReopenDialogOpen(false)
                     setReopenReason('')
@@ -1448,7 +1466,8 @@ export function PurchaseOrderImportCostsCard({
             <AlertDialogHeader>
               <AlertDialogTitle>Quyết toán dòng chi phí?</AlertDialogTitle>
               <AlertDialogDescription>
-                Dòng sẽ được đánh dấu đã quyết toán. Vẫn mở lại được nếu cần.
+                Khoản nợ sẽ được sinh ra theo số Quyết toán của dòng này, và dòng khóa lại —
+                muốn sửa thì mở lại dòng trước. Dòng đã chi tiền thì không mở lại được nữa.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

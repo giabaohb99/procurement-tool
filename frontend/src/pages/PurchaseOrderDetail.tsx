@@ -446,6 +446,13 @@ export default function PurchaseOrderDetail() {
   // Giai đoạn hiện tại của đơn (1/2/3), label từ backend
   const costStage: number = Number(po.cost_stage || COST_STAGE_ESTIMATE)
   const costStageLabel: string = po.cost_stage_label || COST_STAGE_LABELS[costStage] || ''
+  // bao-CR-467: dòng đã ở Quyết toán (theo đơn hoặc riêng dòng) là dòng ĐÃ SINH CÔNG NỢ —
+  // khóa hẳn, muốn sửa thì mở lại. Backend chặn y hệt, đây chỉ là lớp nói trước cho người dùng.
+  const costLineLocked = (c: any): boolean =>
+    Math.max(costStage, Number(c?.line_stage || 0)) >= COST_STAGE_FINAL
+  // Cả DÒNG khóa theo đó: ba cột số gõ tự do như Excel, nhưng chốt xong thì không còn ô nào
+  // sửa được — kể cả NCC, số hóa đơn hay ghi chú, vì mọi ô đó đều đi thẳng vào khoản nợ.
+  const costRowEditable = (c: any): boolean => costEditable && !costLineLocked(c)
   // Gom theo loại chi phí và theo NCC — hai câu hỏi thường gặp nhất khi soát một lô hàng
   const groupCosts = (key: (c: any) => string) => {
     const m = new Map<string, { label: string, total: number, count: number }>()
@@ -807,10 +814,13 @@ export default function PurchaseOrderDetail() {
   }
 
   // bao-CR-453 GĐ2: tiến giai đoạn chi phí (Dự toán → Tạm tính → Quyết toán)
+  // `target` là BẮT BUỘC và cố ý chỉ đi MỘT bậc: gửi đúng bậc kế tiếp thì bấm hai lần liền tay
+  // lần sau ăn lỗi 400 "đang ở giai đoạn ..." thay vì nhảy thẳng lên Quyết toán và sinh công nợ.
   async function advanceCostStage() {
-    const nextLabel = costStage === COST_STAGE_ESTIMATE ? 'Tạm tính' : 'Quyết toán'
+    const target = costStage + 1
+    const nextLabel = COST_STAGE_LABELS[target] || ''
     if (!await askConfirm({ message: `Chốt sang giai đoạn ${nextLabel}? Các số đã nhập ở giai đoạn này sẽ được ghi nhận.`, confirmText: `Chốt ${nextLabel}`, danger: false })) return
-    try { await api.post(`${API}/${id}/cost-stage/advance`); loadAll() }
+    try { await api.post(`${API}/${id}/cost-stage/advance`, { target }); loadAll() }
     catch { /* interceptor đã toast lỗi */ }
   }
 
@@ -819,17 +829,23 @@ export default function PurchaseOrderDetail() {
     const reason = costReopenReason.trim()
     if (reason.length < 10) { toast.error('Lý do mở lại phải ít nhất 10 ký tự'); return }
     try {
+      // Mở lại cả giai đoạn thì phải nói rõ lùi về bậc nào; mở lại một DÒNG thì chỉ cần lý do.
       const url = costReopenTarget === 'stage'
         ? `${API}/${id}/cost-stage/reopen`
         : `${API}/${id}/costs/${costReopenTarget}/reopen`
-      await api.post(url, { reason })
+      const body = costReopenTarget === 'stage' ? { target: costStage - 1, reason } : { reason }
+      await api.post(url, body)
       setCostReopenTarget(null); setCostReopenReason(''); loadAll()
     } catch { /* interceptor đã toast lỗi */ }
   }
 
   // bao-CR-453 GĐ3: quyết toán từng dòng chi phí (cần quyền purchase_order.write)
   async function finalizeLineCost(costId: number) {
-    if (!await askConfirm({ message: 'Quyết toán dòng chi phí này? Số quyết toán sẽ được ghi nhận.', confirmText: 'Quyết toán', danger: false })) return
+    // bao-CR-467: chốt dòng là sinh công nợ THẬT và khóa dòng — nói rõ cả hai trước khi bấm.
+    if (!await askConfirm({
+      message: 'Quyết toán dòng chi phí này? Khoản nợ sẽ được sinh ra theo số Quyết toán, và dòng này khóa lại — muốn sửa phải mở lại dòng.',
+      confirmText: 'Quyết toán dòng', danger: false,
+    })) return
     try { await api.post(`${API}/${id}/costs/${costId}/finalize`); loadAll() }
     catch { /* interceptor đã toast lỗi */ }
   }
@@ -1500,7 +1516,7 @@ export default function PurchaseOrderDetail() {
                         )}
                         <td>{i + 1}</td>
                         <td>
-                          <select className="cell-input" value={String(Number(c.cost_type) || 99)} disabled={!costEditable}
+                          <select className="cell-input" value={String(Number(c.cost_type) || 99)} disabled={!costRowEditable(c)}
                             title={COST_TYPE_LABEL(c.cost_type)}
                             onChange={(e) => {
                               const v = Number(e.target.value) || 99
@@ -1511,10 +1527,10 @@ export default function PurchaseOrderDetail() {
                           </select>
                         </td>
                         {/* Diễn giải xuống dòng + cao theo nội dung (như Tên hàng) để đọc đủ, không cắt cụt */}
-                        <td><TextAreaAuto className="cell-input cell-textarea" style={{ width: '100%' }} value={c.description || ''} disabled={!costEditable}
+                        <td><TextAreaAuto className="cell-input cell-textarea" style={{ width: '100%' }} value={c.description || ''} disabled={!costRowEditable(c)}
                           placeholder="VD: Cước biển Thượng Hải – Cát Lái" onChange={(v) => setCost(i, { description: v })} /></td>
                         <td>
-                          <select className="cell-input" value={String(Number(c.allocation_method) || ALLOC_BY_VALUE)} disabled={!costEditable}
+                          <select className="cell-input" value={String(Number(c.allocation_method) || ALLOC_BY_VALUE)} disabled={!costRowEditable(c)}
                             onChange={(e) => switchAllocationMethod(i, c, Number(e.target.value) || ALLOC_BY_VALUE)}>
                             {ALLOCATION_OPTS.map(([v, label]) => <option key={v} value={String(v)}>{label}</option>)}
                           </select>
@@ -1529,7 +1545,7 @@ export default function PurchaseOrderDetail() {
                                     : 'Gõ số ở bảng Chi phí theo dòng hàng'}
                                 </span>
                           ) : Number(c.allocation_method) === ALLOC_BY_PRODUCT ? (
-                            <select className="cell-input" value={c.allocation_target || ''} disabled={!costEditable}
+                            <select className="cell-input" value={c.allocation_target || ''} disabled={!costRowEditable(c)}
                               onChange={(e) => setCost(i, { allocation_target: e.target.value })}>
                               <option value="">— chọn mã hàng —</option>
                               {items.filter((it: any) => (it.product_code || '').trim())
@@ -1538,7 +1554,7 @@ export default function PurchaseOrderDetail() {
                           ) : <span style={{ color: 'var(--muted)' }}>—</span>}
                         </td>
                         <td>
-                          <SearchSelect variant="table" wrap value={c.supplier_code || ''} disabled={!costEditable} placeholder="Chọn/tìm NCC…"
+                          <SearchSelect variant="table" wrap value={c.supplier_code || ''} disabled={!costRowEditable(c)} placeholder="Chọn/tìm NCC…"
                             options={suppliers.map((s) => ({ value: s.code, label: `${s.code} — ${s.name}` }))}
                             onChange={(v) => {
                               const s = suppliers.find((x) => x.code === v)
@@ -1546,28 +1562,29 @@ export default function PurchaseOrderDetail() {
                             }} />
                         </td>
                         <td>
-                          <select className="cell-input" value={costCurrency(c)} disabled={!costEditable}
+                          <select className="cell-input" value={costCurrency(c)} disabled={!costRowEditable(c)}
                             onChange={(e) => setCost(i, { currency: e.target.value })}>
                             {Array.from(new Set([...CURRENCY_OPTS, costCurrency(c)])).map((cur) => <option key={cur} value={cur}>{cur}</option>)}
                           </select>
                         </td>
-                        <td><NumberInput className="cell-input" value={c.vat ?? 0} max={VAT_MAX} maxDecimals={VAT_DECIMALS} disabled={!costEditable}
+                        <td><NumberInput className="cell-input" value={c.vat ?? 0} max={VAT_MAX} maxDecimals={VAT_DECIMALS} disabled={!costRowEditable(c)}
                           onChange={(v: any) => setCost(i, { vat: v })} /></td>
-                        {/* bao-CR-453 GĐ2: ba cột số theo giai đoạn, chỉ ô giai đoạn hiệu lực được sửa */}
+                        {/* bao-CR-467: cả ba cột đều gõ được như Excel; dòng đã quyết toán thì khóa,
+                            ô khóa bày số quy đổi VNĐ (đã gồm VAT) để đối chiếu với công nợ */}
                         <td style={{ textAlign: 'right', background: '#f0fdf4' }}>
-                          {costStage === COST_STAGE_ESTIMATE && costEditable
+                          {costRowEditable(c)
                             ? <CurrencyInput value={c.estimate_amount ?? 0} disabled={false} onChange={(v: number) => setCost(i, { estimate_amount: v })} />
-                            : <span style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtVND(c.estimate_base ?? (Number(c.estimate_amount || 0) * (1 + (Number(c.vat) || 0) / 100)))}</span>}
+                            : <span style={{ fontVariantNumeric: 'tabular-nums' }} title={costLineLocked(c) ? 'Dòng đã quyết toán — mở lại dòng mới sửa được' : undefined}>{fmtVND(c.estimate_base ?? (Number(c.estimate_amount || 0) * (1 + (Number(c.vat) || 0) / 100)))}</span>}
                         </td>
                         <td style={{ textAlign: 'right', background: '#eff6ff' }}>
-                          {costStage === COST_STAGE_PROVISIONAL && costEditable
+                          {costRowEditable(c)
                             ? <CurrencyInput value={c.provisional_amount ?? 0} disabled={false} onChange={(v: number) => setCost(i, { provisional_amount: v })} />
-                            : <span style={{ fontVariantNumeric: 'tabular-nums', color: c.provisional_base || c.provisional_amount ? undefined : 'var(--muted)' }}>{c.provisional_base || c.provisional_amount ? fmtVND(c.provisional_base ?? (Number(c.provisional_amount || 0) * (1 + (Number(c.vat) || 0) / 100))) : '—'}</span>}
+                            : <span style={{ fontVariantNumeric: 'tabular-nums', color: c.provisional_base || c.provisional_amount ? undefined : 'var(--muted)' }} title={costLineLocked(c) ? 'Dòng đã quyết toán — mở lại dòng mới sửa được' : undefined}>{c.provisional_base || c.provisional_amount ? fmtVND(c.provisional_base ?? (Number(c.provisional_amount || 0) * (1 + (Number(c.vat) || 0) / 100))) : '—'}</span>}
                         </td>
                         <td style={{ textAlign: 'right', background: '#fff8e6' }}>
-                          {costStage === COST_STAGE_FINAL && costEditable
+                          {costRowEditable(c)
                             ? <CurrencyInput value={c.final_amount ?? 0} disabled={false} onChange={(v: number) => setCost(i, { final_amount: v })} />
-                            : <span style={{ fontVariantNumeric: 'tabular-nums', color: c.final_base || c.final_amount ? undefined : 'var(--muted)' }}>{c.final_base || c.final_amount ? fmtVND(c.final_base ?? (Number(c.final_amount || 0) * (1 + (Number(c.vat) || 0) / 100))) : '—'}</span>}
+                            : <span style={{ fontVariantNumeric: 'tabular-nums', color: c.final_base || c.final_amount ? undefined : 'var(--muted)' }} title={costLineLocked(c) ? 'Dòng đã quyết toán — mở lại dòng mới sửa được' : undefined}>{c.final_base || c.final_amount ? fmtVND(c.final_base ?? (Number(c.final_amount || 0) * (1 + (Number(c.vat) || 0) / 100))) : '—'}</span>}
                         </td>
                         <td style={{ textAlign: 'right', color: (Number(c.variance_base) || 0) < 0 ? 'var(--green)' : (Number(c.variance_base) || 0) > 0 ? 'var(--red)' : 'var(--muted)' }}>
                           {c.variance_base != null ? fmtVND(c.variance_base) : '—'}
@@ -1577,10 +1594,10 @@ export default function PurchaseOrderDetail() {
                         <td style={{ textAlign: 'right', fontWeight: 600, color: Number(c.payable_id) > 0 && (Number(c.remaining) || 0) > 0.01 ? 'var(--red)' : 'var(--muted)' }}>
                           {Number(c.payable_id) > 0 ? fmtVND(c.remaining) : fmtVND(effectiveBase(c))}
                         </td>
-                        <td><input className="cell-input" value={c.invoice_no || ''} disabled={!costEditable} onChange={(e) => setCost(i, { invoice_no: e.target.value })} /></td>
-                        <td><DateInput className="cell-input" style={{ width: 110 }} value={c.invoice_date || ''} disabled={!costEditable} onChange={(v) => setCost(i, { invoice_date: v })} /></td>
-                        <td><DateInput className="cell-input" style={{ width: 110 }} value={c.payment_due_date || ''} disabled={!costEditable} onChange={(v) => setCost(i, { payment_due_date: v })} /></td>
-                        <td><TextAreaAuto className="cell-input cell-textarea" style={{ width: '100%' }} value={c.note || ''} disabled={!costEditable} onChange={(v) => setCost(i, { note: v })} /></td>
+                        <td><input className="cell-input" value={c.invoice_no || ''} disabled={!costRowEditable(c)} onChange={(e) => setCost(i, { invoice_no: e.target.value })} /></td>
+                        <td><DateInput className="cell-input" style={{ width: 110 }} value={c.invoice_date || ''} disabled={!costRowEditable(c)} onChange={(v) => setCost(i, { invoice_date: v })} /></td>
+                        <td><DateInput className="cell-input" style={{ width: 110 }} value={c.payment_due_date || ''} disabled={!costRowEditable(c)} onChange={(v) => setCost(i, { payment_due_date: v })} /></td>
+                        <td><TextAreaAuto className="cell-input cell-textarea" style={{ width: '100%' }} value={c.note || ''} disabled={!costRowEditable(c)} onChange={(v) => setCost(i, { note: v })} /></td>
                         <td style={{ textAlign: 'center' }}>
                           <div style={{ display: 'inline-flex', gap: 6 }}>
                             {/* Cây bút mở popup xem/sửa đủ ô của một khoản — bảng rộng 2.400px khó soát từng dòng */}
@@ -1599,7 +1616,7 @@ export default function PurchaseOrderDetail() {
                                 <i className="ti ti-lock-open" style={{ fontSize: 16, color: '#d97706' }} />
                               </button>
                             )}
-                            {costEditable && (
+                            {costRowEditable(c) && (
                               <button className="icon-btn" title="Xóa dòng chi phí"
                                 onClick={async () => { if (await askConfirm({ message: 'Xóa dòng chi phí này?' })) delCost(i) }}>
                                 <i className="ti ti-trash" style={{ fontSize: 16, color: 'var(--red)' }} />
@@ -1836,7 +1853,7 @@ export default function PurchaseOrderDetail() {
                                               <td>Nhập tay</td>
                                               <td style={{ textAlign: 'right' }}>{base > 0 && val > 0 ? `${(val / base * 100).toFixed(2)}%` : '-'}</td>
                                               <td style={{ textAlign: 'right' }}>
-                                                <input type="number" min={0} step={1} className="cell-input" disabled={!costEditable} placeholder="0"
+                                                <input type="number" min={0} step={1} className="cell-input" disabled={!costRowEditable(c)} placeholder="0"
                                                   style={{ textAlign: 'right', width: 140, fontWeight: 600 }}
                                                   value={raw === undefined || raw === null ? '' : String(raw)}
                                                   onClick={(e) => e.stopPropagation()}
@@ -2225,7 +2242,7 @@ export default function PurchaseOrderDetail() {
       {editingCostIdx !== null && importCosts[editingCostIdx] && (() => {
         const ci = editingCostIdx
         const c = importCosts[ci]
-        const de = !costEditable
+        const de = !costRowEditable(c)
         const hasPayable = Number(c.payable_id) > 0
         return (
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,.45)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12 }} onClick={() => setEditingCostIdx(null)}>

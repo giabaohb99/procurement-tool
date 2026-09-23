@@ -904,6 +904,41 @@ def allocate_import_costs(items: list[dict], costs: list[dict], stage=None) -> d
             "landed_total": round(goods_total + cost_total, 2), "warnings": warnings}
 
 
+# bao-CR-467: những cột của một dòng chi phí mà người dùng gõ được trên bảng. Dùng để biết
+# payload có SỬA gì thật không — màn hình gửi lại CẢ bảng mỗi lần bấm Lưu, nên dòng đã khóa
+# vẫn đi kèm nguyên giá trị cũ; chặn theo "có mặt trong payload" thì không ai lưu nổi đơn nữa.
+_COST_TEXT_FIELDS = ("description", "supplier_code", "supplier_name", "currency",
+                     "allocation_target", "invoice_no", "invoice_date", "payment_due_date", "note")
+_COST_NUMBER_FIELDS = ("cost_type", "vat", "allocation_method")
+
+
+def is_cost_row_changed(row: POCost, data: dict, stage_fields: dict, manual: dict) -> bool:
+    """Payload có sửa gì so với dòng đang lưu không (so chữ sau khi cắt khoảng trắng, so số
+    bằng float vì cột tiền là Decimal còn giao diện gửi số thường).
+
+    Tỷ giá đứng ngoài phép so: giao diện để trống là `0` rồi backend tự suy, nên so nó thì
+    dòng nào cũng thành "đã sửa". Số tiền mới là thứ phải canh.
+    """
+    for field in _COST_TEXT_FIELDS:
+        if field in data and (data.get(field) or "").strip() != (getattr(row, field, "") or "").strip():
+            return True
+    for field in _COST_NUMBER_FIELDS:
+        if field in data and float(data.get(field) or 0) != float(getattr(row, field, 0) or 0):
+            return True
+    for stage, prefix in COST_STAGE_PREFIX.items():
+        old = cost_amount_of(row, stage)
+        new = stage_fields.get(f"{prefix}_amount")
+        if (old is None) != (new is None):
+            return True
+        if old is not None and new is not None and round(float(old), 2) != round(float(new), 2):
+            return True
+    old_manual = parse_manual_allocation(row.manual_allocation)
+    if ({k: round(float(v), 2) for k, v in manual.items()}
+            != {k: round(float(v), 2) for k, v in old_manual.items()}):
+        return True
+    return False
+
+
 def _save_import_costs(db: Session, po: PurchaseOrder, costs, user_id: int):
     """Upsert bảng chi phí theo id, xóa dòng không còn trong payload.
 
@@ -945,14 +980,24 @@ def _save_import_costs(db: Session, po: PurchaseOrder, costs, user_id: int):
         if int(data.get("allocation_method") or 0) == int(AllocationMethod.BY_PRODUCT) \
                 and not (data.get("allocation_target") or "").strip():
             data["allocation_method"] = int(AllocationMethod.BY_VALUE)
-        # bao-CR-453: màn lưu đơn chỉ ghi được số của giai đoạn HIỆU LỰC của dòng; cột của giai
-        # đoạn đã chốt (thấp hơn) là lịch sử, gửi lên cũng bỏ qua — không báo lỗi để một dòng
-        # hàng sửa ghi chú không bị kẹt vì payload cũ. Dòng MỚI thì mọi giai đoạn tới hiệu lực
-        # đều ghi được (chưa có gì để khóa).
+        # bao-CR-467: bảng chi phí gõ tự do như Excel — CẢ BA cột Dự toán / Tạm tính / Quyết
+        # toán đều ghi được bất kể đơn đang ở giai đoạn nào. Gõ sẵn số Quyết toán KHÔNG sinh
+        # công nợ: nợ chỉ hiện ra khi dòng (hoặc cả đơn) được CHỐT sang Quyết toán.
+        # (Luật cũ bao-CR-453 chỉ mở đúng cột của giai đoạn hiệu lực — đã bỏ.)
         stage_fields: dict[str, object] = {}
         for stage, prefix in COST_STAGE_PREFIX.items():
             stage_fields[f"{prefix}_amount"] = data.pop(f"{prefix}_amount", None)
             stage_fields[f"{prefix}_rate"] = data.pop(f"{prefix}_rate", None)
+        # bao-CR-467: chốt rồi là khóa. Dòng đã ở Quyết toán hiệu lực đã lên công nợ, sửa nó
+        # là lệch sổ — muốn sửa thì mở lại dòng (hoặc mở lại cả đơn) trước. Payload trùng khít
+        # giá trị cũ thì đi tiếp im lặng, vì màn hình gửi lại cả bảng mỗi lần lưu.
+        if row is not None and is_final_cost(row, po):
+            if is_cost_row_changed(row, data, stage_fields, manual):
+                raise HTTPException(
+                    400, f"Dòng chi phí «{_cost_label(row, types)}» đã quyết toán, không sửa được. "
+                         f"Mở lại dòng đó rồi hãy sửa.")
+            keep.add(row.id)
+            continue
         if row is not None:
             for k, v in data.items():
                 setattr(row, k, v)
@@ -960,11 +1005,7 @@ def _save_import_costs(db: Session, po: PurchaseOrder, costs, user_id: int):
         else:
             row = POCost(po_id=po.id, created_by=user_id, updated_by=user_id, **data)
             db.add(row)
-        top = effective_stage_of(row, po)
         for stage, prefix in COST_STAGE_PREFIX.items():
-            writable = stage == top or (cid is None and stage < top)
-            if not writable:
-                continue
             amount = stage_fields.get(f"{prefix}_amount")
             rate = float(stage_fields.get(f"{prefix}_rate") or 0)
             if not rate:
@@ -994,6 +1035,12 @@ def _save_import_costs(db: Session, po: PurchaseOrder, costs, user_id: int):
 
     for old_id, row in existing.items():
         if old_id not in keep:
+            # bao-CR-467: khóa sau khi chốt phải khóa cả đường XÓA, không thì "không sửa được"
+            # chỉ tốn một cú bấm để đi vòng — xóa dòng rồi gõ lại một dòng mới y hệt.
+            if is_final_cost(row, po):
+                raise HTTPException(
+                    400, f"Dòng chi phí «{_cost_label(row, types)}» đã quyết toán, không xóa được. "
+                         f"Mở lại dòng đó rồi hãy xóa.")
             block_delete_paid_import_cost(db, row)
             db.delete(row)
     db.flush()
