@@ -126,6 +126,19 @@ class CoderError(RuntimeError):
     """Lỗi mà runner không tự xử được: thiếu khóa, CLI trả lỗi, git hỏng."""
 
 
+class MaxTurnsError(CoderError):
+    """`claude -p` hết `--max-turns` khi đang làm dở (ai-CR-023). KHÔNG phải thất bại: phần đã sửa
+    còn nguyên trong worktree và phiên còn nguyên — nút «Làm tiếp» nối đúng phiên đó."""
+
+    def __init__(self, message: str, data: dict):
+        super().__init__(message)
+        self.data = data
+
+
+#  Số lượt cho một lần «Làm tiếp» (ai-CR-023).
+CONTINUE_MAX_TURNS = 60
+
+
 # ---------------------------------------------------------------------------
 # Chốt TRƯỚC khi giao (chạy trong poller, lúc đại ca bấm Duyệt)
 # ---------------------------------------------------------------------------
@@ -370,6 +383,11 @@ def build_brief(task: AgentTask, docs: list[dict]) -> str:
             "quyền — thì dừng và hỏi.")
     lines += [_RULES_BRIEF.format(max_files=settings.AGENT_MAX_FILES_TOUCHED, hard_extra=hard_extra,
                                   soft_rule=soft_rule)]
+    #  ai-CR-023: AI-0007 tiêu 61/80 lượt vào đọc thư viện dùng chung và màn khác rồi hết lượt.
+    lines += ["", "## Ngân sách lượt",
+              f"Bạn có tối đa {settings.AGENT_CODER_MAX_TURNS} lượt công cụ. Kết quả rà soát ở trên đã chỉ "
+              "tệp và nguyên nhân: đọc thẳng các tệp đó (đọc cả tệp một lần, đừng đọc từng đoạn), KHÔNG rà "
+              "thư viện dùng chung hay màn khác trừ khi thật cần. Sửa xong mới chạy kiểm."]
     return "\n".join(lines)
 
 
@@ -388,6 +406,8 @@ def parse_cli_json(stdout: str) -> dict:
         data = json.loads(stdout[start:end + 1])
     except json.JSONDecodeError as e:
         raise CoderError(f"JSON của claude hỏng: {e}") from e
+    if data.get("subtype") == "error_max_turns":
+        raise MaxTurnsError(f"claude hết {data.get('num_turns') or '?'} lượt khi đang làm dở", data)
     if data.get("is_error") or str(data.get("subtype", "")).startswith("error"):
         status = data.get("api_error_status")
         hint = " (401: khóa CLAUDE_CODE_OAUTH_TOKEN hết hạn hoặc sai — chạy lại `claude setup-token`)" \
@@ -395,6 +415,26 @@ def parse_cli_json(stdout: str) -> dict:
         raise CoderError(f"claude báo lỗi [{data.get('subtype')}]: "
                          f"{str(data.get('result', ''))[:600]}{hint}")
     return data
+
+
+def run_claude_continue(worktree: str, *, session_id: str, timeout: int) -> dict:
+    """«Làm tiếp» (ai-CR-023): nối ĐÚNG phiên đã hết lượt, cùng quyền sửa, thêm CONTINUE_MAX_TURNS lượt."""
+    cmd = [
+        settings.AGENT_CODER_CMD, "-p",
+        "--output-format", "json",
+        "--permission-mode", "acceptEdits",
+        "--allowedTools", ALLOWED_TOOLS,
+        "--resume", session_id,
+        "--max-turns", str(CONTINUE_MAX_TURNS),
+    ]
+    return _run_cli(cmd, _CONTINUE_BRIEF, worktree, timeout)
+
+
+_CONTINUE_BRIEF = (
+    "Lượt trước hết lượt khi bạn đang sửa dở. Mọi thay đổi đã làm vẫn nằm trong worktree (xem bằng "
+    "`git status` / `git diff`). Làm NỐT phần còn thiếu của kế hoạch đã duyệt, đừng đọc lại những gì đã "
+    "đọc, chạy kiểm phần vừa sửa, rồi in đúng mục TỔNG KẾT bốn phần như luật ở đề bài đầu."
+)
 
 
 def run_claude(worktree: str, brief: str, *, session_id: str, timeout: int) -> dict:
@@ -1043,29 +1083,84 @@ def _parse_numstat(raw: str) -> dict[str, tuple[int, int]]:
     return stats
 
 
-def run_code_task(db: Session, task: AgentTask) -> dict:
+def resumable_session(db: Session, task: AgentTask) -> str:
+    """Phiên của lượt sửa mã gần nhất đã HẾT LƯỢT (còn nối được), hoặc rỗng."""
+    run = (db.query(AgentRun).filter(AgentRun.task_id == task.id, AgentRun.stage == STAGE_CODE)
+           .order_by(AgentRun.id.desc()).first())
+    art = run.artifact if run is not None and isinstance(run.artifact, dict) else {}
+    return str(art.get("session_id") or "") if art.get("stopped") == "max_turns" else ""
+
+
+def dispatch_continue(task_id: int) -> None:
+    from app.core.celery_app import celery_app
+
+    celery_app.send_task("agent.code_task", args=[task_id], kwargs={"resume": True}, queue="agent_code")
+
+
+def _stop_at_max_turns(db: Session, task: AgentTask, run: AgentRun, worktree: str, session_id: str,
+                       err: MaxTurnsError) -> dict:
+    """Hết lượt: giữ phần đã sửa + phiên, việc về «Đang hỏi lại», thẻ có nút «Làm tiếp» (ai-CR-023)."""
+    from . import service
+
+    _close_run(run, status=RUN_ERROR, error=str(err), data=err.data,
+               artifact={"session_id": session_id, "stopped": "max_turns"})
+    _git(worktree, "add", "-A", timeout=120)
+    numstat = _parse_numstat(_git(worktree, "diff", "--cached", "--numstat", timeout=120))
+    _git(worktree, "reset", "-q", timeout=120)
+    added = sum(a for a, _d in numstat.values())
+    deleted = sum(d for _a, d in numstat.values())
+    task.status = ST_NEEDS_INPUT
+    task.note = f"Hết lượt khi đang sửa dở ({len(numstat)} tệp đã sửa); bấm «Làm tiếp» để nối phiên."
+    db.commit()
+    esc = telegram.esc
+    service.reply(db, settings.AGENT_TELEGRAM_CHAT_ID,
+                  f"<b>{esc(task.code)}</b>: em hết lượt khi đang sửa dở — đã sửa {len(numstat)} tệp "
+                  f"(+{added}/−{deleted} dòng), chưa xong hẳn. Phần đã sửa vẫn giữ nguyên. Bấm «Làm tiếp» "
+                  f"để em nối đúng phiên cũ (thêm tối đa {CONTINUE_MAX_TURNS} lượt).",
+                  task_id=task.id, buttons=[("Làm tiếp", f"cont:{task.id}"), ("Bỏ việc này", f"no:{task.id}")])
+    return {"task": task.code, "status": task.status, "files": len(numstat), "escalation": "max_turns"}
+
+
+def run_code_task(db: Session, task: AgentTask, *, resume: bool = False) -> dict:
     """Chạy trọn một lượt sửa mã cho `task` (đang ở ST_CODE). Tự ghi sổ, tự nhắn Telegram.
 
+    `resume=True` (ai-CR-023): nối phiên đã hết lượt, trên đúng worktree đang dở, không cắt lại.
     Ném lỗi ra ngoài chỉ khi không tự xử được — `tasks.code_task` bắt và đóng FAILED.
     """
     from . import service  # import muộn: service import coder ở đầu tệp
 
     chat_id = settings.AGENT_TELEGRAM_CHAT_ID
+    previous = resumable_session(db, task) if resume else ""
+    if resume and not previous:
+        raise CoderError("không còn phiên hết lượt nào để làm tiếp")
     run = _start_run(db, task.id)
+    session_id = previous or str(uuid.uuid4())
+    #  Ghi phiên NGAY, trước lượt claude: hỏng hay hết lượt giữa chừng vẫn biết phiên nào để nối.
+    run.artifact = {"session_id": session_id, "resumed": bool(previous)}
     db.commit()
 
-    worktree, branch = prepare_worktree(task)
-    task.branch_name = branch[:120]
-    db.commit()
+    if previous:
+        worktree = str(Path(settings.AGENT_WORKTREE_ROOT) / task.code)
+        if not Path(worktree).exists():
+            raise CoderError(f"worktree {worktree} không còn — bấm Sửa để bot làm lại từ đầu")
+        branch = task.branch_name or branch_name_for(task)
+    else:
+        worktree, branch = prepare_worktree(task)
+        task.branch_name = branch[:120]
+        db.commit()
     #  ai-CR-019: thư viện frontend-v2 có sẵn TRƯỚC lượt claude, để nó tự chạy typecheck/vitest.
     fe_note = link_fe_deps(worktree)
 
-    docs = memory.recall(f"{task.title}\n{task.summary}")
-    brief = build_brief(task, docs)
-    session_id = str(uuid.uuid4())
     try:
-        data = run_claude(worktree, brief, session_id=session_id,
-                          timeout=settings.AGENT_RUN_TIMEOUT_SEC)
+        if previous:
+            data = run_claude_continue(worktree, session_id=session_id,
+                                       timeout=settings.AGENT_RUN_TIMEOUT_SEC)
+        else:
+            docs = memory.recall(f"{task.title}\n{task.summary}")
+            data = run_claude(worktree, build_brief(task, docs), session_id=session_id,
+                              timeout=settings.AGENT_RUN_TIMEOUT_SEC)
+    except MaxTurnsError as e:
+        return _stop_at_max_turns(db, task, run, worktree, session_id, e)
     except subprocess.TimeoutExpired:
         _close_run(run, status=RUN_ERROR,
                    error=f"claude chạy quá {settings.AGENT_RUN_TIMEOUT_SEC}s, đã giết")

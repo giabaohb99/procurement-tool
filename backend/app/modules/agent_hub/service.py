@@ -1034,6 +1034,17 @@ def handle_callback(db: Session, cb: dict) -> None:
         #  Chỉ có toast thì khung chat không còn dấu vết gì (đại ca hỏi 23/09 về AI-0006).
         reply(db, chat_id, f"Đã bỏ <b>{telegram.esc(task.code)}</b> · {telegram.esc(task.title)}. "
               f"Lịch sử vẫn còn trong sổ: /xem {telegram.esc(task.code)}", task_id=task.id)
+    elif action == "cont":
+        #  «Làm tiếp» sau khi hết lượt (ai-CR-023): nối đúng phiên, đúng worktree đang dở.
+        if task.status != ST_NEEDS_INPUT or not coder.resumable_session(db, task):
+            telegram.answer_callback(cb_id, "Việc này không còn phiên dở để làm tiếp")
+        else:
+            task.status = ST_CODE
+            db.commit()
+            coder.dispatch_continue(task.id)
+            telegram.answer_callback(cb_id, "Em làm tiếp")
+            reply(db, chat_id, f"Em làm tiếp <b>{telegram.esc(task.code)}</b> đúng phiên cũ (thêm tối đa "
+                  f"{coder.CONTINUE_MAX_TURNS} lượt). Xong em gửi thẻ kết quả.", task_id=task.id)
     elif action == "pr":
         _dispatch_publish(db, chat_id, cb_id, task)
     elif action == "mgok":

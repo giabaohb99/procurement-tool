@@ -228,7 +228,8 @@ class Settings(BaseSettings):
     AGENT_CODER_ENABLED: bool = False
     AGENT_CODER_CMD: str = "claude"
     # Số lượt tối đa một phiên `claude -p` được đi (mỗi lượt = một lần gọi model + tool).
-    AGENT_CODER_MAX_TURNS: int = 80
+    # 80 -> 120 (ai-CR-023): AI-0007 hết 80 lượt khi mới sửa xong một nửa hai màn giao diện.
+    AGENT_CODER_MAX_TURNS: int = 120
     # Thư mục chứa worktree của từng task TRONG container runner (volume `agent_worktrees`).
     AGENT_WORKTREE_ROOT: str = "/worktrees"
     # Kho git nguồn, mount CHỈ ĐỌC vào runner; runner clone một bản `base` rồi cắt worktree

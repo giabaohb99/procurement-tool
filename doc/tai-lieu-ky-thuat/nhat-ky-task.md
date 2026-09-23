@@ -3486,6 +3486,25 @@ và `celery-beat`, chú thích đầu tệp ghi luôn lý do cấm đặt lại 
 `procurement-tool/docker-compose.override.yml` (bản vá tạm ở máy làm việc, không commit).
 Commit: `0c4a0850` trên nhánh `agent-hub-bac-1` (23/09/2026, chưa push).
 
+## ai-CR-023 | Bot hết lượt khi đang sửa dở thì giữ phần đã làm và có nút làm tiếp
+- status: xong
+- date: 2026-09-23
+- pic: NSU209
+
+Lượt sửa mã AI-0007 báo lỗi hết lượt sau khoảng mười hai phút. Đây là trần tám mươi lượt thao tác
+do chính bot đặt để chặn chạy vòng, không phải gói Claude hết hạn mức. Claude đã tiêu phần lớn số
+lượt vào việc đọc thư viện dùng chung và các màn khác, mới sửa xong một nửa (bốn tệp), rồi bị đóng
+thất bại và mất luôn mã phiên nên không nối tiếp được. Nay khi hết lượt, bot giữ nguyên phần đã sửa,
+không commit, đưa việc về trạng thái đang hỏi lại và gửi thẻ cho biết đã sửa bao nhiêu tệp, kèm nút
+làm tiếp. Bấm làm tiếp thì bot nối đúng phiên cũ trên đúng thư mục đang dở, thêm sáu mươi lượt, xong
+thì chạy cổng kiểm, commit và gửi thẻ kết quả như bình thường. Trần mặc định nâng từ tám mươi lên
+một trăm hai mươi, và đề bài dặn đọc thẳng các tệp mà bước rà soát đã chỉ ra. Việc AI-0007 đã được
+gắn lại đúng phiên và có thẻ làm tiếp chờ đại ca bấm. Cả tệp bài kiểm 127/127 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/{coder,service,tasks}.py` (`MaxTurnsError`,
+`run_claude_continue`, `resumable_session`, `dispatch_continue`, `_stop_at_max_turns`) ·
+`backend/app/core/config.py` (`AGENT_CODER_MAX_TURNS`) · `test/backend/test_agent_hub.py` · `change-log-ai.md`.
+
 ## ai-CR-022 | Đậu Đậu nói gọn và bớt tiền Gemini
 - status: xong
 - date: 2026-09-23

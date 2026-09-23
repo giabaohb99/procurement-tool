@@ -107,7 +107,7 @@ def bot(monkeypatch):
     from app.modules.agent_hub import coder as _coder
 
     monkeypatch.setattr(settings, "AGENT_CODER_ENABLED", False)
-    for name in ("dispatch", "dispatch_scan", "dispatch_publish", "dispatch_question",
+    for name in ("dispatch", "dispatch_scan", "dispatch_publish", "dispatch_question", "dispatch_continue",
                  "dispatch_deploy", "dispatch_revert"):
         monkeypatch.setattr(_coder, name, lambda *a, **kw: None)
     sent: list[str] = []
@@ -998,7 +998,7 @@ def test_code_task_bo_qua_viec_khong_o_tram_code_va_dong_failed_khi_hong(db, bot
     task.status = service.ST_CODE
     db.commit()
 
-    def boom(d, t):
+    def boom(d, t, **kw):
         raise coder.CoderError("CLAUDE_CODE_OAUTH_TOKEN chưa khai")
 
     monkeypatch.setattr(coder, "run_code_task", boom)
@@ -3024,3 +3024,68 @@ def test_nap_kho_tai_lieu_chi_nhung_tep_co_doi(monkeypatch, tmp_path):
     out = memory.reindex()
     assert retagged == ["doc/a.md"] and set(embedded) == {"doc/b.md"}
     assert out["files"] == 2 and out["reused"] == 1
+
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-023: hết lượt thì giữ phần dở + nút «Làm tiếp» nối đúng phiên
+# ---------------------------------------------------------------------------
+def test_het_luot_khong_con_la_that_bai_ma_co_nut_lam_tiep(db, bot, monkeypatch):
+    """AI-0007 (23/09): hết 80 lượt khi mới sửa xong nửa việc, bot đóng «Thất bại», bỏ phần đã làm."""
+    from app.modules.agent_hub import coder
+    from app.modules.agent_hub.model import AgentRun
+
+    service, _, _ = bot
+    sent = _capture_send(monkeypatch, service)
+    with pytest.raises(coder.MaxTurnsError):
+        coder.parse_cli_json('{"subtype": "error_max_turns", "is_error": true, "num_turns": 81}')
+    calls = _fake_runner(monkeypatch, coder, touched=["frontend-v2/src/a.tsx", "frontend-v2/src/b.tsx"])
+
+    def out_of_turns(wt, brief, *, session_id, timeout):
+        assert "## Ngân sách lượt" in brief
+        raise coder.MaxTurnsError("claude hết 81 lượt khi đang làm dở", {"num_turns": 81})
+
+    monkeypatch.setattr(coder, "run_claude", out_of_turns)
+    task = _task_with_plan(db, service, ["frontend-v2/src/a.tsx"], status=service.ST_CODE)
+    out = coder.run_code_task(db, task)
+    assert out["escalation"] == "max_turns" and task.status == _ST_NI
+    run = db.query(AgentRun).filter_by(task_id=task.id, stage=coder.STAGE_CODE).one()
+    assert run.status == service.RUN_ERROR and run.artifact["stopped"] == "max_turns"
+    assert run.artifact["session_id"] and coder.resumable_session(db, task) == run.artifact["session_id"]
+    assert ["git", "reset", "-q"] in calls           # không commit phần dở
+    text, buttons = sent[-1]
+    assert "đã sửa 2 tệp (+6/−2 dòng)" in text
+    assert [b[1] for b in buttons] == [f"cont:{task.id}", f"no:{task.id}"]
+
+
+def test_lam_tiep_noi_dung_phien_tren_dung_worktree(db, bot, monkeypatch, tmp_path):
+    from app.modules.agent_hub import coder
+    from app.modules.agent_hub.model import AgentRun
+
+    service, _, _ = bot
+    sent = _capture_send(monkeypatch, service)
+    monkeypatch.setattr(settings, "AGENT_WORKTREE_ROOT", str(tmp_path))
+    _fake_runner(monkeypatch, coder, touched=["frontend-v2/src/a.tsx"])
+    monkeypatch.setattr(coder, "prepare_worktree", lambda task: pytest.fail("làm tiếp không được cắt lại worktree"))
+    monkeypatch.setattr(coder, "run_claude", lambda *a, **kw: pytest.fail("làm tiếp phải nối phiên cũ"))
+    resumed: list[str] = []
+    monkeypatch.setattr(coder, "run_claude_continue", lambda wt, *, session_id, timeout: resumed.append(
+        (wt, session_id)) or {"result": "## TỔNG KẾT\n1. xong", "num_turns": 20})
+    task = _task_with_plan(db, service, ["frontend-v2/src/a.tsx"], status=_ST_NI, branch_name="bot/x")
+    (tmp_path / task.code).mkdir()
+    db.add(AgentRun(task_id=task.id, stage=coder.STAGE_CODE, provider="claude_code", model="m",
+                    status=service.RUN_ERROR, started_at=datetime.now(),
+                    artifact={"session_id": "sid-1", "stopped": "max_turns"}))
+    db.commit()
+    dispatched: list[int] = []
+    monkeypatch.setattr(coder, "dispatch_continue", lambda tid: dispatched.append(tid))
+    service.handle_callback(db, _callback(f"cont:{task.id}"))
+    assert task.status == service.ST_CODE and dispatched == [task.id]
+    assert "Em làm tiếp" in sent[-1][0]
+
+    coder.run_code_task(db, task, resume=True)
+    assert resumed == [(str(tmp_path / task.code), "sid-1")]
+    assert task.status == service.ST_REVIEW
+    #  Không còn phiên dở: nút «Làm tiếp» không giao gì.
+    service.handle_callback(db, _callback(f"cont:{task.id}"))
+    assert dispatched == [task.id]
