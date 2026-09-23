@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Trình duyệt nhiều bước</title>
+<!--
+  Sơ đồ QT-02 Trình duyệt theo quy trình nhiều chặng — chụp #canvas thành
+  hinh/nv-03-trinh-duyet-nhieu-buoc.png (khung 1420×730, tỉ lệ điểm ảnh 2).
+-->
+<link rel="stylesheet" href="so-do-chung.css">
+<style>
+  #canvas { width: 1420px; height: 730px; }
+  .rules { position: absolute; left: 24px; right: 24px; top: 612px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .rule { border: 1.5px dashed var(--line); border-radius: 12px; padding: 10px 12px; font-size: 12.5px; color: var(--muted); line-height: 1.45; }
+  .rule b { display: block; color: var(--ink); font-size: 13px; margin-bottom: 2px; }
+</style>
+</head>
+<body>
+<div id="canvas">
+  <div class="lane" style="top:0;height:160px"><div class="lane-label" style="--c:var(--blue)">Người soạn</div></div>
+  <div class="lane" style="top:160px;height:220px"><div class="lane-label" style="--c:var(--green)">Hệ thống<small>tự chạy</small></div></div>
+  <div class="lane last" style="top:380px;height:220px"><div class="lane-label" style="--c:var(--amber)">Người duyệt<small>của từng chặng</small></div></div>
+
+  <div class="box" id="p1" style="left:190px;top:36px;width:200px;--c:var(--blue)">
+    <span class="num">1</span><h4>Gửi duyệt</h4>
+    <p>Văn bản khóa lại, chuyển <b>Đang duyệt</b></p>
+  </div>
+
+  <div class="box" id="s1" style="left:190px;top:200px;width:200px;--c:var(--green)">
+    <span class="num">2</span><h4>Chọn quy trình duyệt</h4>
+    <p>Theo loại, công ty, phòng, mức mật, độ khẩn… Quy trình được <b>chụp lại</b> tại lúc gửi</p>
+  </div>
+  <div class="box" id="s2" style="left:445px;top:200px;width:210px;--c:var(--green)">
+    <span class="num">3</span><h4>Tìm người duyệt của chặng</h4>
+    <p>Ví dụ: trưởng bộ phận của phòng chủ trì; hoặc người được chỉ định</p>
+  </div>
+  <div class="box" id="s4" style="left:710px;top:200px;width:215px;--c:var(--red)">
+    <h4>Không tìm được người</h4>
+    <p>Chuyển cho <b>người dự phòng</b>, hoặc dừng phiếu và <b>báo quản trị</b> (phiếu kẹt)</p>
+  </div>
+  <div class="box" id="s5" style="left:980px;top:200px;width:180px;--c:var(--green)">
+    <span class="num">6</span><h4>Còn chặng sau?</h4>
+    <p>Có → quay lại bước 3 cho chặng tiếp theo</p>
+  </div>
+  <div class="box" id="s6" style="left:1210px;top:200px;width:190px;--c:var(--green)">
+    <span class="num">7</span><h4>Hết chặng</h4>
+    <p>Sang <b>Ban hành</b> (QT-03), hoặc <b>Chờ ban hành</b></p>
+  </div>
+
+  <div class="box" id="a1" style="left:445px;top:420px;width:210px;--c:var(--amber)">
+    <span class="num">4</span><h4>Nhận việc</h4>
+    <p>Chuông + email; mục <b>Chờ tôi duyệt</b>. Người được ủy quyền cũng nhận</p>
+  </div>
+  <div class="box" id="a2" style="left:710px;top:420px;width:215px;--c:var(--amber)">
+    <span class="num">5</span><h4>Đọc và quyết định</h4>
+    <p>Duyệt · Trả lại · Từ chối · Ghi ý kiến (không đổi trạng thái)</p>
+  </div>
+  <div class="box" id="r1" style="left:980px;top:420px;width:180px;--c:var(--amber)">
+    <h4>Trả về</h4>
+    <p>Người soạn sửa, rồi <b>gửi duyệt lại từ đầu</b>. Bắt buộc ghi lý do</p>
+  </div>
+  <div class="box" id="r2" style="left:1210px;top:420px;width:190px;--c:var(--red)">
+    <h4>Đã từ chối</h4>
+    <p>Dừng hẳn. Bắt buộc ghi lý do. Làm lại bằng <b>Sao chép</b></p>
+  </div>
+
+  <div class="rules">
+    <div class="rule"><b>Trùng người thì tự qua</b>Người duyệt chặng này đã duyệt ở chặng trước → chặng tự qua, không bắt ký hai lần.</div>
+    <div class="rule"><b>Ủy quyền</b>Người được ủy quyền nhận việc và bấm thay; lịch sử ghi rõ bấm thay ai.</div>
+    <div class="rule"><b>Đổi người duyệt giữa chừng</b>Sửa người duyệt trong quy trình → phiếu đang chờ ở chặng đó chuyển sang người mới ngay.</div>
+    <div class="rule"><b>Hạn xử lý</b>Mỗi chặng có thể đặt hạn; quá hạn thì số việc trên menu chuyển đỏ.</div>
+  </div>
+
+  <svg class="arrows"></svg>
+</div>
+<script src="so-do-chung.js"></script>
+<script>
+  const { anchor, arrow, hArrow, vArrow, GAP } = SODO;
+  vArrow('p1', 's1', 'blue');
+  hArrow('s1', 's2', 'green', 'chặng 1', { at: 0.4 });
+  hArrow('s2', 's4', 'red', 'không có');
+  vArrow('s2', 'a1', 'green', 'tìm được');
+  hArrow('a1', 'a2', 'amber');
+  // Duyệt → lên kiểm còn chặng
+  const d0 = anchor('a2', 't', 50), d1 = anchor('s5', 'b');
+  arrow([d0, [d0[0], 360], [d1[0], 360], [d1[0], d1[1] + GAP]], 'green', 'Duyệt');
+  // Còn chặng → quay lại tìm người
+  const l0 = anchor('s5', 't'), l1 = anchor('s2', 't');
+  arrow([l0, [l0[0], 180], [l1[0], 180], [l1[0], l1[1] - GAP]], 'green', 'còn — chặng tiếp theo');
+  hArrow('s5', 's6', 'green', 'hết');
+  hArrow('a2', 'r1', 'amber', 'Trả lại');
+  // Từ chối đi vòng dưới đáy
+  const r0 = anchor('a2', 'b'), r1 = anchor('r2', 'b');
+  arrow([r0, [r0[0], 588], [r1[0], 588], [r1[0], r1[1] + GAP]], 'red', 'Từ chối');
+</script>
+</body>
+</html>

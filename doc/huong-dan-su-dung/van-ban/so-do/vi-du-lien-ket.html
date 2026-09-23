@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Ví dụ liên kết văn bản</title>
+<!--
+  Ví dụ một bộ văn bản liên kết với nhau — chụp #canvas thành hinh/18-vi-du-lien-ket.png
+  (khung 1420×470, tỉ lệ điểm ảnh 2). Mũi tên đi từ văn bản KHAI liên kết tới văn bản ĐƯỢC TRỎ TỚI.
+-->
+<link rel="stylesheet" href="so-do-chung.css">
+<style>
+  #canvas { width: 1420px; height: 470px; }
+  .code { font-size: 11.5px; font-weight: 700; color: var(--muted); }
+</style>
+</head>
+<body>
+<div id="canvas">
+  <div class="box" id="qd" style="left:24px;top:180px;width:230px;--c:var(--blue)">
+    <h4>Quyết định ban hành quy chế</h4>
+    <div class="code">15/2026/QĐ-DEGO</div>
+    <span class="chip green">Có hiệu lực</span>
+  </div>
+  <div class="box" id="qc" style="left:370px;top:180px;width:250px;--c:var(--blue)">
+    <h4>Quy chế quản lý văn bản — bản 2026</h4>
+    <div class="code">DEGO-QC-012</div>
+    <span class="chip green">Có hiệu lực</span>
+  </div>
+  <div class="box" id="old" style="left:370px;top:24px;width:250px;--c:var(--gray)">
+    <h4>Quy chế quản lý văn bản — bản 2024</h4>
+    <div class="code">DEGO-QC-003</div>
+    <span class="chip gray">Đã thay thế</span>
+  </div>
+  <div class="box" id="qt" style="left:740px;top:180px;width:250px;--c:var(--blue)">
+    <h4>Quy trình trình ký văn bản</h4>
+    <div class="code">DEGO-QT-020</div>
+    <span class="chip green">Có hiệu lực</span>
+  </div>
+  <div class="box" id="hd" style="left:1110px;top:90px;width:290px;--c:var(--blue)">
+    <h4>Hướng dẫn soạn công văn</h4>
+    <div class="code">DEGO-HDCV-031</div>
+  </div>
+  <div class="box" id="bm" style="left:1110px;top:270px;width:290px;--c:var(--blue)">
+    <h4>Biểu mẫu phiếu trình ký</h4>
+    <div class="code">DEGO-BM-044</div>
+  </div>
+  <div class="box" id="tb" style="left:740px;top:350px;width:250px;--c:var(--violet)">
+    <h4>Thông báo phổ biến quy trình</h4>
+    <p>Trích một phần quy trình gửi nhà máy</p>
+  </div>
+
+  <svg class="arrows"></svg>
+</div>
+<script src="so-do-chung.js"></script>
+<script>
+  const { anchor, arrow, hArrow, vArrow, GAP } = SODO;
+  // Quy chế kèm theo quyết định ban hành nó (mũi tên từ quy chế → quyết định)
+  const a0 = anchor('qc', 'l'), a1 = anchor('qd', 'r');
+  arrow([a0, [a1[0] + GAP, a1[1]]], 'blue', 'Kèm theo');
+  vArrow('qc', 'old', 'gray', 'Thay thế');
+  const b0 = anchor('qt', 'l'), b1 = anchor('qc', 'r');
+  arrow([b0, [b1[0] + GAP, b1[1]]], 'green', 'Căn cứ theo');
+  const c0 = anchor('hd', 'l'), c1 = anchor('qt', 'r', -25);
+  arrow([c0, [1050, c0[1]], [1050, c1[1]], [c1[0] + GAP, c1[1]]], 'amber', 'Hướng dẫn');
+  const d0 = anchor('bm', 'l'), d1 = anchor('qt', 'r', 25);
+  arrow([d0, [1050, d0[1]], [1050, d1[1]], [d1[0] + GAP, d1[1]]], 'amber', 'Thuộc về');
+  vArrow('tb', 'qt', 'violet', 'Trích từ');
+</script>
+</body>
+</html>

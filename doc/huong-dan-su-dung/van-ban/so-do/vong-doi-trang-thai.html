@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Vòng đời trạng thái văn bản</title>
+<!--
+  Sơ đồ trạng thái của một văn bản — chụp #canvas thành hinh/nv-02-vong-doi-trang-thai.png
+  (khung 1420×640, tỉ lệ điểm ảnh 2).
+  Bố cục: MỘT hàng chính chạy thẳng Nháp → Đang duyệt → Có hiệu lực → kết thúc.
+  Hai đường vòng tách riêng: «Đã duyệt» (chờ tới ngày) đi phía trên, «Chờ ban hành» đi phía dưới.
+  Không mũi tên nào cắt nhau.
+-->
+<link rel="stylesheet" href="so-do-chung.css">
+<style>
+  #canvas { width: 1420px; height: 640px; }
+  .box h4 { font-size: 16.5px; margin-bottom: 4px; }
+  .box p { font-size: 13.5px; }
+  .chip { font-size: 12.5px; }
+  .tag { font-size: 13px; }
+  .main { box-shadow: 0 6px 18px rgba(15, 23, 42, .12); border-width: 2.5px; }
+</style>
+</head>
+<body>
+<div id="canvas">
+  <!-- Hàng chính -->
+  <div class="box main" id="nhap" style="left:24px;top:214px;width:200px;--c:var(--blue)">
+    <h4>Nháp</h4><p>Đang soạn, sửa thoải mái. Xóa được khi chưa có số hiệu</p>
+    <span class="chip">Sửa được</span>
+  </div>
+  <div class="box main" id="dd" style="left:354px;top:214px;width:210px;--c:var(--amber)">
+    <h4>Đang duyệt</h4><p>Chờ người duyệt. Nội dung và thông tin bị khóa</p>
+    <span class="chip amber">Khóa</span>
+  </div>
+  <div class="box main" id="chl" style="left:950px;top:214px;width:220px;--c:var(--green)">
+    <h4>Có hiệu lực</h4><p>Đang áp dụng. Sửa thông tin được; sửa nội dung thì mở phiên bản mới</p>
+    <span class="chip green">Đang áp dụng</span>
+  </div>
+
+  <!-- Đường vòng phía trên: hiệu lực ngày sau -->
+  <div class="box" id="da" style="left:650px;top:24px;width:220px;--c:var(--green)">
+    <h4>Đã duyệt</h4><p>Đã ban hành, có số hiệu, <b>chờ tới ngày hiệu lực</b></p>
+  </div>
+  <!-- Đường vòng phía dưới: loại chờ người soạn ban hành -->
+  <div class="box dashed" id="cbh" style="left:650px;top:420px;width:220px;--c:var(--gray)">
+    <h4>Chờ ban hành</h4><p>Chỉ loại «chờ người soạn ban hành»: đã ký đủ, chờ người soạn tự bấm</p>
+    <span class="chip gray">Khóa</span>
+  </div>
+
+  <!-- Dưới Đang duyệt: hai kết quả không duyệt -->
+  <div class="box" id="tv" style="left:354px;top:470px;width:210px;--c:var(--amber)">
+    <h4>Trả về</h4><p>Người soạn sửa rồi gửi lại</p>
+    <span class="chip">Sửa được</span>
+  </div>
+  <div class="box" id="tc" style="left:24px;top:470px;width:200px;--c:var(--red)">
+    <h4>Đã từ chối</h4><p>Dừng hẳn. Làm lại bằng <b>Sao chép</b></p>
+    <span class="chip red">Khóa hẳn</span>
+  </div>
+
+  <!-- Cột kết thúc -->
+  <div class="title" style="left:1240px;top:92px">Hết hiệu lực — chỉ xem</div>
+  <div class="box" id="tt" style="left:1240px;top:124px;width:165px;--c:var(--gray)">
+    <h4>Đã thay thế</h4><p>Có văn bản mới thay thế</p>
+  </div>
+  <div class="box" id="hhl" style="left:1240px;top:252px;width:165px;--c:var(--gray)">
+    <h4>Hết hiệu lực</h4><p>Quá ngày hết hạn</p>
+  </div>
+  <div class="box" id="bb" style="left:1240px;top:372px;width:165px;--c:var(--red)">
+    <h4>Bãi bỏ</h4><p>Bị thu hồi. Số hiệu vẫn giữ trong sổ</p>
+  </div>
+
+  <svg class="arrows"></svg>
+</div>
+<script src="so-do-chung.js"></script>
+<script>
+  const { anchor, arrow, GAP } = SODO;
+  // Nháp ⇄ Đang duyệt: hai đường song song
+  const g0 = anchor('nhap', 'r', -22), g1 = anchor('dd', 'l', -22);
+  arrow([g0, [g1[0] - GAP, g0[1]]], 'blue', 'Gửi duyệt');
+  const w0 = anchor('dd', 'l', 26), w1 = anchor('nhap', 'r', 26);
+  arrow([w0, [w1[0] + GAP, w0[1]]], 'gray', 'Rút phiếu', { dashed: true });
+
+  // Đang duyệt → Có hiệu lực: đường thẳng chính
+  const m0 = anchor('dd', 'r'), m1 = anchor('chl', 'l');
+  arrow([[m0[0], m1[1]], [m1[0] - GAP, m1[1]]], 'green', 'Duyệt · hiệu lực ngay hôm nay');
+
+  // Vòng trên: Đang duyệt → Đã duyệt → Có hiệu lực
+  const u0 = anchor('dd', 't'), u1 = anchor('da', 'l');
+  arrow([u0, [u0[0], u1[1]], [u1[0] - GAP, u1[1]]], 'green', 'Duyệt · hiệu lực ngày sau', { at: 0.55 });
+  const u2 = anchor('da', 'r'), u3 = anchor('chl', 't');
+  arrow([u2, [u3[0], u2[1]], [u3[0], u3[1] - GAP]], 'green', 'tới ngày', { at: 0.5 });
+
+  // Vòng dưới (nét đứt): Đang duyệt → Chờ ban hành → Có hiệu lực
+  const d0 = anchor('dd', 'r', 40), d1 = anchor('cbh', 'l');
+  arrow([d0, [610, d0[1]], [610, d1[1]], [d1[0] - GAP, d1[1]]], 'gray', 'Duyệt xong', { dashed: true, at: 0.5 });
+  const d2 = anchor('cbh', 'r'), d3 = anchor('chl', 'b');
+  arrow([d2, [d3[0], d2[1]], [d3[0], d3[1] + GAP]], 'gray', 'người soạn bấm Ban hành', { dashed: true, at: 0.4 });
+
+  // Đang duyệt ⇅ Trả về: hai đường song song
+  const t0 = anchor('dd', 'b', -30), t1 = anchor('tv', 't', -30);
+  arrow([t0, [t1[0], t1[1] - GAP]], 'amber', 'Trả lại');
+  const s0 = anchor('tv', 't', 30), s1 = anchor('dd', 'b', 30);
+  arrow([s0, [s1[0], s1[1] + GAP]], 'blue', 'Gửi lại');
+
+  // Đang duyệt → Đã từ chối
+  const r0 = anchor('dd', 'b', -85), r1 = anchor('tc', 't');
+  arrow([r0, [r0[0], 400], [r1[0], 400], [r1[0], r1[1] - GAP]], 'red', 'Từ chối');
+
+  // Có hiệu lực → kết thúc: trục chung ở x = 1205
+  [['tt', 'gray'], ['hhl', 'gray'], ['bb', 'gray']].forEach(([id, color]) => {
+    const a = anchor('chl', 'r'), b = anchor(id, 'l');
+    arrow([a, [1205, a[1]], [1205, b[1]], [b[0] - GAP, b[1]]], color);
+  });
+</script>
+</body>
+</html>

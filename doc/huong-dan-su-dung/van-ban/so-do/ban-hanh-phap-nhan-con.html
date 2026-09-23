@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Sơ đồ ban hành cho công ty con</title>
+<!--
+  Sơ đồ «Ban hành cho các công ty con» — chụp #canvas thành hinh/15-luong-ban-hanh-phap-nhan-con.png
+  (khung 1420×780, tỉ lệ điểm ảnh 2).
+-->
+<link rel="stylesheet" href="so-do-chung.css">
+<style>#canvas { width: 1420px; height: 780px; }</style>
+</head>
+<body>
+<div id="canvas">
+  <div class="lane" style="top:0;height:200px"><div class="lane-label" style="--c:var(--blue)">Công ty mẹ<small>nơi ban hành văn bản gốc</small></div></div>
+  <div class="lane" style="top:200px;height:180px"><div class="lane-label" style="--c:var(--green)">Hệ thống<small>tự làm khi ban hành</small></div></div>
+  <div class="lane" style="top:380px;height:200px"><div class="lane-label" style="--c:var(--violet)">Công ty con<small>ví dụ: AGRIPLANT</small></div></div>
+  <div class="lane last" style="top:580px;height:200px"><div class="lane-label" style="--c:var(--amber)">Về sau<small>khi văn bản gốc thay đổi</small></div></div>
+
+  <!-- Công ty mẹ -->
+  <div class="box" id="m1" style="left:190px;top:30px;width:230px;--c:var(--blue)">
+    <span class="num">1</span><h4>Khai phạm vi áp dụng</h4>
+    <p><b>Bao gồm · Pháp nhân</b>: chọn công ty mẹ <b>và</b> các công ty con</p>
+    <span class="chip">Nháp</span>
+  </div>
+  <div class="box" id="m2" style="left:470px;top:30px;width:250px;--c:var(--blue)">
+    <span class="num">2</span><h4>Duyệt và ban hành</h4>
+    <p>Hộp ban hành báo trước: «1 pháp nhân sẽ nhận bản riêng»</p>
+    <span class="chip green">Có hiệu lực</span><span class="chip gray">01/2026/TB-DEGO</span>
+  </div>
+  <div class="box" id="m3" style="left:1120px;top:30px;width:285px;--c:var(--blue)">
+    <span class="num">8</span><h4>Theo dõi các bản riêng</h4>
+    <p>Danh sách: bấm <b>mũi tên bung</b> ở dòng gốc. Mục <b>Quan hệ → Cây tài liệu</b>: tình trạng từng công ty</p>
+    <span class="chip gray">Đã gửi</span><span class="chip violet">Đang soạn</span><span class="chip amber">Đang duyệt</span><span class="chip green">Đã ban hành</span>
+  </div>
+
+  <!-- Hệ thống -->
+  <div class="box" id="s1" style="left:470px;top:250px;width:250px;--c:var(--green)">
+    <span class="num">3</span><h4>Tạo bản riêng</h4>
+    <p>Mỗi công ty con một bản nháp: chép nội dung, tệp, phạm vi; gắn liên kết về văn bản gốc</p>
+  </div>
+  <div class="box" id="s2" style="left:780px;top:250px;width:250px;--c:var(--green)">
+    <span class="num">4</span><h4>Gửi thông báo</h4>
+    <p>Văn thư công ty con nhận chuông <b>«Bản nháp cần xử lý»</b> và <b>«Văn bản mới»</b></p>
+  </div>
+
+  <!-- Công ty con -->
+  <div class="box" id="c1" style="left:780px;top:420px;width:250px;--c:var(--violet)">
+    <span class="num">5</span><h4>Mở bản riêng, đối chiếu</h4>
+    <p>Bấm <b>Xem bản gốc</b>, chỉnh nội dung cho đúng công ty mình</p>
+    <span class="chip violet">Nháp</span>
+  </div>
+  <div class="box" id="c2" style="left:1080px;top:420px;width:150px;--c:var(--violet)">
+    <span class="num">6</span><h4>Gửi duyệt</h4>
+    <p>Theo quy trình của công ty con</p>
+  </div>
+  <div class="box" id="c3" style="left:1265px;top:420px;width:140px;--c:var(--violet)">
+    <span class="num">7</span><h4>Ban hành</h4>
+    <p>Số hiệu <b>riêng</b> của công ty con</p>
+  </div>
+
+  <!-- Về sau -->
+  <div class="box" id="e1" style="left:190px;top:615px;width:280px;--c:var(--amber)">
+    <h4>Văn bản gốc thay đổi</h4>
+    <ul>
+      <li>Mở <b>phiên bản mới</b></li>
+      <li>Hoặc bị <b>bãi bỏ</b></li>
+    </ul>
+  </div>
+  <div class="box" id="e2" style="left:560px;top:615px;width:320px;--c:var(--amber)">
+    <h4>Hệ thống đánh dấu</h4>
+    <p>Mọi bản riêng được gắn nhãn <b>cần rà lại</b>; người phụ trách ở công ty con được báo</p>
+    <span class="chip amber">Cần rà lại</span>
+  </div>
+  <div class="box" id="e3" style="left:970px;top:615px;width:330px;--c:var(--amber)">
+    <h4>Công ty con rà lại</h4>
+    <p><b>Phải sửa theo bản gốc</b> (mở phiên bản mới) hoặc <b>Giữ nguyên</b> — hệ thống không tự sửa nội dung</p>
+  </div>
+
+  <svg class="arrows"></svg>
+</div>
+<script src="so-do-chung.js"></script>
+<script>
+  const { anchor, arrow, hArrow, vArrow, GAP } = SODO;
+  hArrow('m1', 'm2', 'blue');
+  vArrow('m2', 's1', 'green', 'Ban hành');
+  hArrow('s1', 's2', 'green');
+  vArrow('s2', 'c1', 'violet');
+  hArrow('c1', 'c2', 'violet');
+  hArrow('c2', 'c3', 'violet');
+  // Tình trạng bản riêng đi ngược lên cột theo dõi của công ty mẹ
+  const u0 = anchor('c3', 't'), u1 = anchor('m3', 'b');
+  arrow([[u1[0] + 60, u0[1]], [u1[0] + 60, u1[1] + GAP]], 'gray', 'cập nhật tình trạng', { dashed: true });
+  hArrow('e1', 'e2', 'amber');
+  hArrow('e2', 'e3', 'amber');
+</script>
+</body>
+</html>

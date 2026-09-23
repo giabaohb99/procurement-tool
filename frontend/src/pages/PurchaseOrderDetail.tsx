@@ -344,6 +344,11 @@ export default function PurchaseOrderDetail() {
   // Tự tính lại cờ Đơn gấp khi dữ liệu nguồn (ngày đặt / dòng hàng) đổi. KHÔNG chạy lúc mở đơn (loadAll không qua đây) → giữ đè tay.
   const recalcUrgent = (next: any) => {
     if (Object.keys(groupMap).length === 0) return next   // chưa nạp danh mục → chưa tính
+    // bao-CR-471: đơn đã duyệt thì cờ Đơn gấp là nội dung ĐÃ DUYỆT — không tự tính lại.
+    // Trước đây sửa bất kỳ ô nào của một dòng (kể cả "Ngày giao chứng từ cho KT") cũng chạy
+    // lại phép tính này; ra khác cờ đang lưu là lượt lưu mang theo một thay đổi Đơn gấp mà
+    // người dùng không hề bấm, và backend chặn cả lượt lưu với câu "không sửa được Đơn gấp".
+    if (!headerEditable) return next
     const u = computeUrgent(next.items || [], next.order_date, groupMap)
     return u === !!next.is_urgent ? next : { ...next, is_urgent: u }
   }
