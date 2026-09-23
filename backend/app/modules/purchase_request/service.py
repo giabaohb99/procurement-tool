@@ -136,6 +136,69 @@ def find_dept_head_id(db: Session, department_name: str = "", department_id: int
     return int(dep.manager_id or 0) if dep else 0
 
 
+def ensure_submit_ready(db: Session, pr: PurchaseRequest, user_id: int) -> None:
+    """Rà lại Phòng ban + Trưởng bộ phận NGAY TRƯỚC khi gửi duyệt — bao-CR-466.
+
+    Luật nghiệp vụ đại ca chốt 23/09/2026: **gửi duyệt được thì phải có phòng ban và có
+    người duyệt**. Thiếu một trong hai thì phiếu gửi đi cũng nằm chết — phạm vi `dept`
+    lọc theo `department_id` nên phiếu rỗng phòng ban không lọt vào tầm mắt trưởng phòng
+    nào, và chuông lẫn thư đều định tuyến theo cùng cột đó. Trước CR này không chỗ nào
+    chặn: người lập bấm Gửi duyệt, nhận câu "Đã gửi duyệt", rồi chờ một người sẽ không
+    bao giờ thấy phiếu.
+
+    HAI NHỊP, ĐÚNG THỨ TỰ — chữa trước, chặn sau:
+
+    1. **Chữa.** Ô rỗng thì tra lại từ đầu: phòng ban lùi về hồ sơ nhân sự, trưởng bộ
+       phận tra lại theo phòng. Đây là nhịp quan trọng nhất của CR, vì ca thường gặp
+       nhất là phiếu lập lúc tài khoản CHƯA gắn phòng, quản trị gắn phòng sau, mà phiếu
+       thì vẫn giữ ô rỗng từ lúc ra đời. Chặn mà không chữa thì người lập bị khóa cứng
+       trong một phiếu họ không sửa được (ô Phòng ban là ô chỉ xem).
+    2. **Chặn.** Chữa xong vẫn rỗng mới báo lỗi, và câu lỗi phải chỉ ra việc cần làm —
+       "thiếu phòng ban" là triệu chứng, thứ người đọc cần là "đi gắn phòng cho tài
+       khoản rồi bấm lại".
+
+    Phần đã chữa được thì GHI XUỐNG trước khi ném lỗi: chữa được phòng ban nhưng phòng
+    chưa có trưởng thì lần bấm sau không phải dò lại từ đầu, và người đi sửa dữ liệu
+    nhìn vào phiếu thấy đúng trạng thái hiện thời.
+
+    ⚠️ Chốt này CHỈ gác cửa GỬI DUYỆT, không đụng tới luật DUYỆT. `head_of_dept_id` vẫn
+    thuần túy là người đứng tên trên bản in (CR-071): ai có quyền `approve` và phiếu nằm
+    trong phạm vi của họ thì vẫn bấm Duyệt được, kể cả khi không phải người đứng tên đó.
+    Đừng biến điều kiện ở đây thành điều kiện duyệt.
+
+    Đo trên dữ liệu thật trước khi chặn (23/09/2026): 17/17 phòng đang hoạt động đều đã
+    gán trưởng và không phòng nào có trưởng đã nghỉ; trong 150 phiếu từng đi qua gửi
+    duyệt chỉ 2 phiếu thiếu trưởng bộ phận, cả hai từ 03/08 trước khi có nhịp tự điền.
+    Nghĩa là luật này không khóa ai đang làm việc bình thường.
+    """
+    # Nhịp 1 — chữa phòng ban. `fill_department_from_employee` tự bỏ qua phiếu đã có phòng.
+    fill_department_from_employee(db, pr, user_id)
+    sync_department_ref(db, pr)
+    # Nhịp 2 — chữa trưởng bộ phận theo phòng vừa chốt (phòng có thể VỪA được gán trưởng).
+    if not pr.head_of_dept_id:
+        pr.head_of_dept_id = find_dept_head_id(db, pr.department, pr.department_id)
+    sync_head_of_dept_name(db, pr)
+    db.commit()
+
+    if not pr.department_id:
+        if (pr.department or "").strip():
+            raise HTTPException(400,
+                                f"Không gửi duyệt được: phòng ban «{pr.department}» trên phiếu "
+                                "không khớp phòng ban nào đang có trong hệ thống (có thể phòng "
+                                "đã đổi tên hoặc đã ngừng hoạt động). Nhờ quản trị kiểm tra lại "
+                                "danh mục Phòng ban.")
+        raise HTTPException(400,
+                            "Không gửi duyệt được: phiếu chưa có Phòng ban. Phòng ban quyết định "
+                            "ai nhìn thấy và duyệt phiếu, nên phiếu thiếu ô này gửi đi cũng không "
+                            "ai duyệt được. Nhờ quản trị gắn phòng ban cho hồ sơ nhân sự của "
+                            "người yêu cầu, rồi bấm Gửi duyệt lại — hệ thống sẽ tự điền.")
+    if not pr.head_of_dept_id:
+        raise HTTPException(400,
+                            f"Không gửi duyệt được: phòng «{pr.department}» chưa gán Trưởng bộ "
+                            "phận nên phiếu không có người đứng tên duyệt. Nhờ quản trị gán "
+                            "Trưởng bộ phận trong danh mục Phòng ban, rồi bấm Gửi duyệt lại.")
+
+
 def fill_department_from_employee(db: Session, pr: PurchaseRequest, user_id: int) -> None:
     """Phiếu chưa có phòng ban thì lùi về phòng trong HỒ SƠ NHÂN SỰ — bao-CR-465.
 

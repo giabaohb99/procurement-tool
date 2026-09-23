@@ -297,5 +297,16 @@ def build_world(db) -> World:
         world._actors[key] = Actor(world, key, user, emp)
         perm_cache_clear(user.id)
 
+    # bao-CR-466: mỗi phòng phải có Trưởng bộ phận, vì gửi duyệt YCMH nay đòi đủ cả
+    # phòng ban lẫn người đứng tên duyệt. Thế giới mẫu này dựng ra để kiểm PHẠM VI —
+    # phòng thiếu trưởng làm bài kiểm phạm vi đỏ vì một lý do chẳng liên quan gì tới
+    # phạm vi. Trên hệ thật 17/17 phòng đều đã gán trưởng, nên đây mới là bản mô phỏng
+    # đúng thực tế. Lấy người ĐẦU TIÊN của phòng; phòng không có ai thì bỏ qua.
+    for dept_id in world.dept.values():
+        head = next((world.emp[k] for k, _co, d_key, _acc in EMPLOYEE_SPECS
+                     if d_key and world.dept[d_key] == dept_id), 0)
+        if head:
+            db.get(Department, dept_id).manager_id = head
+
     db.commit()
     return world

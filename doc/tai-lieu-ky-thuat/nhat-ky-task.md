@@ -498,3 +498,55 @@ VIỆC TAY CỦA ĐẠI CA:
 
 Mã nguồn: frontend-v2/src/core/auth/ · docker/Dockerfile.erp.prod ·
 docker-compose.production.yml
+
+## bao-CR-466 | Chặn gửi duyệt yêu cầu mua hàng khi thiếu phòng ban hoặc trưởng bộ phận
+- status: xong
+- date: 2026-09-23
+Đại ca chốt luật: muốn gửi duyệt thì phiếu phải có phòng ban và có người đứng
+tên duyệt, thiếu một trong hai thì báo lỗi ngay chứ không cho gửi. Việc này nối
+tiếp bản vá hôm nay: bản vá kia làm cho chuyện rơi vào rỗng phòng ban gần như
+không thể xảy ra, còn việc này chặn nếu nó vẫn xảy ra.
+
+VÌ SAO PHẢI CHẶN:
+- Phòng ban là cột quyết định ai nhìn thấy phiếu, và chuông lẫn thư báo cũng đi
+  theo đúng cột đó. Phiếu thiếu phòng ban gửi đi là nằm chết, người lập nhận câu
+  báo thành công rồi ngồi chờ một người sẽ không bao giờ thấy phiếu.
+
+LÀM THEO HAI NHỊP, ĐÚNG THỨ TỰ CHỮA TRƯỚC CHẶN SAU:
+- Chữa: ô nào rỗng thì tra lại từ đầu. Phòng ban lùi về hồ sơ nhân sự, trưởng bộ
+  phận tra lại theo phòng vừa chốt.
+- Chặn: chữa xong mà vẫn rỗng mới báo lỗi.
+- Thứ tự này mới là phần quan trọng nhất. Ca hay gặp nhất là phiếu lập lúc tài
+  khoản chưa gắn phòng, quản trị gắn phòng sau, mà phiếu vẫn giữ ô rỗng từ lúc
+  ra đời. Chặn mà không chữa thì người lập bị khóa cứng trong một phiếu họ không
+  sửa được, vì ô phòng ban là ô chỉ xem.
+- Phần đã chữa được thì ghi xuống trước khi báo lỗi, để lần bấm sau không phải dò
+  lại từ đầu và người đi sửa dữ liệu nhìn vào phiếu thấy đúng trạng thái hiện thời.
+- Ba câu lỗi tách ba trường hợp và câu nào cũng nói việc cần làm chứ không chỉ
+  nêu triệu chứng: chưa có phòng ban, tên phòng không khớp danh mục, phòng chưa
+  gán trưởng bộ phận.
+
+ĐIỀU CỐ Ý KHÔNG LÀM:
+- Chốt này chỉ gác cửa gửi duyệt, không đụng tới luật duyệt. Người đứng tên trưởng
+  bộ phận vẫn thuần túy là tên in trên phiếu; ai có quyền duyệt và phiếu nằm trong
+  phạm vi của họ thì vẫn bấm duyệt được như cũ.
+
+ĐO TRÊN DỮ LIỆU THẬT TRƯỚC KHI CHẶN:
+- Toàn bộ mười bảy phòng đang hoạt động đều đã gán trưởng, không phòng nào có
+  trưởng đã nghỉ việc.
+- Trong một trăm năm mươi phiếu từng đi qua gửi duyệt chỉ có hai phiếu thiếu
+  trưởng bộ phận, cả hai từ đầu tháng tám trước khi có nhịp tự điền.
+- Trong mười bốn phiếu đang ở trạng thái nháp hoặc bị trả lại, đúng hai phiếu
+  chạm chốt này, và đó chính là hai phiếu hỏng đã ghi nhận ở việc trước. Cả hai
+  đều có hồ sơ nhân sự đã gắn phòng nên nhịp chữa sẽ tự vá chúng, không chặn.
+
+ĐÃ KIỂM:
+- Bài kiểm mới sáu bài xanh, canh cả nhịp chữa lẫn nhịp chặn và canh cả việc phần
+  đã chữa phải được ghi xuống dù lượt gọi báo lỗi.
+- Một trăm sáu mươi chín bài của nhóm phạm vi thu mua và đường chạy xuyên suốt
+  xanh sau khi vá hạ tầng test dùng chung.
+- Đo nền trên bản sạch chưa có mã mới: sáu trăm năm mươi sáu xanh, sáu đỏ; chạy
+  lại với mã mới ra đúng con số đó, nghĩa là không gây thêm lỗi nào.
+
+Mã nguồn: backend/app/modules/purchase_request/service.py ·
+backend/app/modules/purchase_request/controller.py · test/backend/scope_factory.py
