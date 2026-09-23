@@ -12,7 +12,7 @@ Hai bản dùng **chung một bộ API và chung một bố cục**. Khác nhau 
 | Mã | Màn | Đợt | Bản cũ | Bản mới |
 |---|---|---|---|---|
 | M1 | **Trang tra cứu giá hải quan** — thẻ *Danh sách* + thẻ *Biểu đồ* (biểu đồ chỉ hiện khi đã lọc) | 1 | `/customs-prices` | `/procurement/customs-prices` |
-| M2 | Chi tiết một **dòng hàng** — đủ 32 trường | 1 | Hộp thoại | Ngăn kéo bên phải |
+| M2 | Chi tiết một **dòng hàng** — đủ 32 trường | 1 | Hộp thoại | Popup (đổi từ ngăn kéo, 23/09) |
 | M3 | Nạp dữ liệu — 3 bước: chọn tệp · xem trước · áp dụng | 1 | Hộp thoại | Hộp thoại |
 | M4 | Lịch sử nạp + hoàn tác | 1 | **Hộp thoại mở từ nút trên M1** (bản cũ không có màn Quản lý Import) | **Dùng lại `/system/imports`** sẵn có, lọc theo phân hệ |
 | M5 | Thẻ *Nhà nhập khẩu* trong M1 | 2 | Có | Có |
@@ -181,7 +181,7 @@ Gõ *ATRAZINE* vào 5 tệp mẫu ra **92 dòng**: KGM 60 · LTR 30 · TNE 2. Ri
 | Ô lọc | `components/FilterBar.tsx` sẵn có | Thanh lọc + ô chọn sẵn có; chọn nhiều giá trị dùng `useUrlMultiParam` (CR-423) |
 | Biểu đồ | **SVG tự vẽ** theo khuôn `LineChart` / `BarChart` trong `pages/Reports.tsx`. Viết thành phần **riêng trong trang mới** — không sửa `Reports.tsx`, **không thêm thư viện** vào bản cũ | `recharts` có sẵn: một khung ghép vùng (dải thấp–cao) + đường (bình quân) + cột (lượng) |
 | Bảng 32 cột | Bảng thường + `components/TableToolbar.tsx` (nút **Cột**, ẩn/hiện) | `DataTable`, bố cục cột nhớ theo người dùng |
-| Chi tiết dòng (M2) | Hộp thoại | Ngăn kéo bên phải |
+| Chi tiết dòng (M2) | Hộp thoại | **Popup giữa màn** (đại ca chốt 23/09/2026 — bản đầu là ngăn kéo bên phải), chân popup có hai nút lọc nhanh cùng doanh nghiệp / cùng đối tác |
 | Lịch sử nạp (M4) | Hộp thoại — **bản cũ không có màn Quản lý Import** | Liên kết sang `/system/imports` |
 | Định dạng giá | `fmtPrice` (giữ 4 số lẻ) + chữ **"USD/kg"** viết riêng. ⚠️ **Không dùng `fmtVND`** — hàm đó làm tròn về đồng, cắt mất phần lẻ của giá USD | Hàm định dạng số sẵn có, 4 số lẻ |
 | Trạng thái lọc | Giữ trong trang | **Nằm trên đường dẫn** — gửi link cho người khác là họ thấy đúng kết quả đang xem |

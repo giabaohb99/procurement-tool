@@ -1,19 +1,20 @@
 // bao-CR-470 — chi tiết MỘT DÒNG HÀNG (không phải một tờ khai: tệp GTT02 không có số tờ
-// khai, xem doc/erp/hai-quan/02-thiet-ke-ky-thuat.md §2.2). Ngăn kéo bên phải, đủ 32 cột
-// của tệp gốc xếp thành 6 nhóm. Giá trị là chữ thường — bôi đen và chép được, không dùng
-// ô nhập bị khóa. Chân ngăn có hai lối đổ ngược bộ lọc vào màn: cùng doanh nghiệp / cùng
+// khai, xem doc/erp/hai-quan/02-thiet-ke-ky-thuat.md §2.2). POPUP giữa màn (đại ca chốt
+// 23/09/2026 — bản đầu là ngăn kéo bên phải), đủ 32 cột của tệp gốc xếp thành 6 nhóm. Giá trị là chữ thường — bôi đen và chép được, không dùng
+// ô nhập bị khóa. Chân popup có hai lối đổ ngược bộ lọc vào màn: cùng doanh nghiệp / cùng
 // đối tác.
 import { Building2, CalendarSync, Handshake } from 'lucide-react'
 
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/shared/ui/sheet'
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/shared/ui/dialog'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { TONE_CLASS } from '@/shared/ui/status-tone'
 import { formatDate } from '@/shared/utils/format-date'
@@ -118,27 +119,29 @@ const GROUPS: { title: string; fields: DetailField[] }[] = [
   },
 ]
 
-interface CustomsLineDetailSheetProps {
+interface CustomsLineDetailDialogProps {
   lineId: number | null
   onClose: () => void
   onFilterImporter: (id: number, name: string) => void
   onFilterPartner: (id: number, name: string) => void
 }
 
-export function CustomsLineDetailSheet({
+export function CustomsLineDetailDialog({
   lineId,
   onClose,
   onFilterImporter,
   onFilterPartner,
-}: CustomsLineDetailSheetProps) {
+}: CustomsLineDetailDialogProps) {
   const { data, isLoading, isError } = useCustomsLine(lineId)
 
   return (
-    <Sheet open={lineId !== null} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="right" className="flex w-full flex-col gap-0 sm:max-w-3xl">
-        <SheetHeader className="border-b pr-12">
-          <SheetTitle>Chi tiết dòng hàng</SheetTitle>
-          <SheetDescription>
+    <Dialog open={lineId !== null} onOpenChange={(open) => !open && onClose()}>
+      {/*  Không đặt max-h / overflow lên DialogContent: overlay của Dialog đã là khung cuộn,
+       *  lồng thêm khung thứ hai là con lăn chuột chết (xem ghi chú trong shared/ui/dialog.tsx). */}
+      <DialogContent className="gap-0 p-0 sm:max-w-5xl">
+        <DialogHeader className="border-b p-5 pr-12">
+          <DialogTitle>Chi tiết dòng hàng</DialogTitle>
+          <DialogDescription>
             Một dòng hàng trong tệp GTT02 — một tờ khai có thể gồm nhiều dòng; tệp không có số tờ
             khai.
             {data && (
@@ -147,7 +150,7 @@ export function CustomsLineDetailSheet({
                 Lô nạp #{data.batch_id}, dòng {data.source_row} của tệp gốc.
               </>
             )}
-          </SheetDescription>
+          </DialogDescription>
           {data?.date_fixed && (
             <p className="flex flex-wrap items-center gap-2 text-sm">
               <Badge className={cn(TONE_CLASS.pending)}>
@@ -159,9 +162,9 @@ export function CustomsLineDetailSheet({
               </span>
             </p>
           )}
-        </SheetHeader>
+        </DialogHeader>
 
-        <div className="min-h-0 flex-1 overflow-y-auto p-4">
+        <div className="p-5">
           {isLoading && (
             <div className="space-y-3">
               <Skeleton className="h-24 w-full" />
@@ -195,7 +198,7 @@ export function CustomsLineDetailSheet({
         </div>
 
         {data && (data.importer_id || data.partner_id) ? (
-          <div className="flex flex-wrap items-center justify-end gap-2 border-t p-4">
+          <DialogFooter className="flex-wrap border-t p-4 sm:justify-end">
             {data.importer_id ? (
               <Button
                 type="button"
@@ -216,9 +219,9 @@ export function CustomsLineDetailSheet({
                 Các lần nhập khác của đối tác này
               </Button>
             ) : null}
-          </div>
+          </DialogFooter>
         ) : null}
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   )
 }

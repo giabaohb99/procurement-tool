@@ -52,6 +52,9 @@ class CustomsLine(Base):
     __table_args__ = (
         Index("ix_customs_line_hs_date", "hs_code", "reg_date"),
         Index("ix_customs_line_importer_date", "importer_id", "reg_date"),
+        #  Nút «Các lần nhập khác của đối tác này» lọc theo partner_id — thiếu chỉ mục này
+        #  là quét cả bảng qua mọi phân vùng rồi mới sắp xếp (đo 1,8 giây trên dev, 23/09).
+        Index("ix_customs_line_partner_date", "partner_id", "reg_date"),
     )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)

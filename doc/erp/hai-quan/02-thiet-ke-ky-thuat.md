@@ -390,6 +390,15 @@ Gắn **lúc nạp** (một lần cho cả lô, có bộ nhớ đệm theo tên 
 
 Đo trên 18.243 dòng: **51%** nhận ra hoạt chất (trước nguồn 2 là 41%), **93%** tách được hàm lượng.
 
+### 10.1b Chỉ mục thêm sau khi đo trên dev
+
+Migration riêng `d7a3f9c2b481` (sau `c4d8e2a6f470`, vì bản kia đã chạy trên dev): chỉ mục
+`ix_customs_line_partner_date (partner_id, reg_date)`. Nút *Các lần nhập khác của đối tác
+này* lọc theo `partner_id`; thiếu chỉ mục thì MySQL quét cả bảng qua mọi phân vùng rồi mới
+sắp xếp — đo **1,8 giây** trên dev ngày 23/09/2026, có chỉ mục còn **4 ms**. Cùng lúc, đếm
+tổng của danh sách đổi sang `COUNT(id)` thẳng thay vì `Query.count()` (hàm này bọc cả câu
+SELECT mọi cột thành bảng con).
+
 ### 10.2 Bốn bảng danh mục
 
 | Bảng | Số dòng nạp | Khóa / chỉ mục | Ghi chú |

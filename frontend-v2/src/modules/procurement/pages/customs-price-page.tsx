@@ -52,7 +52,7 @@ import { CustomsHistoryDialog } from '../components/customs/customs-history-dial
 import { CustomsImportDialog } from '../components/customs/customs-import-dialog'
 import { CustomsImportersTab } from '../components/customs/customs-importers-tab'
 import { CustomsLegalTab } from '../components/customs/customs-legal-tab'
-import { CustomsLineDetailSheet } from '../components/customs/customs-line-detail-sheet'
+import { CustomsLineDetailDialog } from '../components/customs/customs-line-detail-dialog'
 import { CustomsPriceChart } from '../components/customs/customs-price-chart'
 import { CUSTOMS_LINE_COLUMNS } from '../config/customs-line-columns'
 import {
@@ -397,7 +397,7 @@ export function CustomsPricePage() {
         </TabsContent>
       </Tabs>
 
-      <CustomsLineDetailSheet
+      <CustomsLineDetailDialog
         lineId={detailId}
         onClose={() => setDetailId(null)}
         onFilterImporter={filterByImporter}

@@ -116,7 +116,8 @@ def serialize_lines(db: Session, lines: list[CustomsLine]) -> list[dict]:
 
 def list_lines(db: Session, f: dict, offset: int, limit: int) -> tuple[int, list[dict]]:
     q = apply_line_filters(db.query(CustomsLine), f)
-    total = q.count()
+    #  Đếm thẳng COUNT(id) — `Query.count()` bọc cả câu SELECT mọi cột thành bảng con.
+    total = apply_line_filters(db.query(func.count(CustomsLine.id)), f).scalar() or 0
     rows = q.order_by(CustomsLine.reg_date.desc(), CustomsLine.id.desc()).offset(offset).limit(limit).all()
     return total, serialize_lines(db, rows)
 
