@@ -745,3 +745,25 @@ không thứ nào trong ba thứ đó giúp trả lời nhanh hơn.
 
 **Không còn gì chặn bậc 1.** Việc tiếp theo là đại ca duyệt bản thiết kế này, rồi bắt tay
 `ai-CR-002`.
+
+---
+
+## 13. Hướng mở rộng đã chốt 24/09/2026 — «trợ lý mở»
+
+Bậc 1–2 ở trên giữ nguyên. Từ 24/09/2026 đại ca chốt thêm ba hướng, ghi chi tiết và lộ trình theo
+phase ở [`04-danh-sach-tinh-nang.md`](./04-danh-sach-tinh-nang.md) (nhóm M, K, P):
+
+1. **Mỗi người tự chọn ứng dụng AI và tự gắn khóa** (Claude, ChatGPT, Gemini, Cursor…); hệ thống chỉ
+   cung cấp công cụ qua một **cổng MCP trên backend ERP**, dùng CHUNG bộ tool với Trợ lý web và
+   Telegram. Đại ca chấp nhận rủi ro dữ liệu ERP đi sang nhà cung cấp AI do từng người chọn. Làm trên
+   **web trước**, rồi mở rộng Telegram và Zalo dùng chung lõi. Mỗi người tự nối Google (Drive, Lịch)
+   của mình bằng OAuth riêng, khóa lưu mã hóa.
+2. **Ai được ra lệnh sửa mã** không cấu hình trên web, không build, không khởi động lại: đại ca
+   **nhắn cho bot** («cho anh Được quyền gộp dev»), bot hỏi lại rồi ghi sổ (`tab_agent_grant`), mỗi lần
+   cấp/gỡ đều báo lại và tra lại được. Chỉ chat của đại ca (`AGENT_TELEGRAM_CHAT_ID` khai cứng trong
+   `.env`) cấp được. Ba cấp: báo lỗi (ai cũng được) · duyệt kế hoạch · gộp dev. **Prod không cấp cho ai.**
+   Người ra lệnh KHÔNG cần SSH hay quyền GitHub — khóa nằm ở bot và bị giới hạn (§11: khóa riêng của
+   bot thay khóa của đại ca, `main` bảo vệ bằng PR).
+3. **Bot lên ERP dev** (phase 2): gộp phần bot vào `erp-v2` để phiếu bot tạo là phiếu thật và link bấm
+   được trên điện thoại. Chừng nào chưa lên, bot chạy trên máy đại ca với DB riêng `dego-agent`.
+

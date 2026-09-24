@@ -3186,7 +3186,10 @@ rồi mở rộng ra Telegram và Zalo. Em ghi thành tám mục vào danh sách
 liệu đại ca đã chấp nhận. Phần ai được ra lệnh cho bot sửa mã thì không đưa lên giao diện web: em đề xuất một
 tệp cấu hình trong kho mã liệt kê người và cấp được phép, đổi bằng commit để git lưu vết, cùng khóa GitHub và
 khóa SSH riêng của bot bị giới hạn đúng việc, thay cho khóa của đại ca. Ghi thành bốn mục. Danh sách tính năng
-nay có bốn mươi ba mục.
+nay có bốn mươi ba mục. Cùng ngày đại ca chốt cách cấp quyền sửa mã: nhắn cho bot trên Telegram, bot hỏi lại rồi
+ghi sổ, không lên web, không phải build hay khởi động lại. Em sắp lại danh sách thành tám phase, từ khóa quyền sửa
+mã, đưa bot lên dev, trợ lý theo từng người trên web, cổng MCP, Google của từng người, nhiều kênh, tới biên bản
+họp, và thêm mục hướng mở rộng vào thiết kế kỹ thuật.
 
 Mã nguồn: `doc/agent-hub/04-danh-sach-tinh-nang.md` · `change-log-ai.md`.
 

@@ -75,10 +75,13 @@ lõi. Cổng MCP phải nằm trong backend ERP có tên miền thật (dev rồ
 Tách hai câu hỏi: **ai được RA LỆNH** cho bot (danh sách người) và **bot được LÀM gì** (khóa của riêng bot).
 Người ra lệnh không cần SSH hay quyền GitHub riêng — họ chỉ nhắn bot; khóa nằm ở bot và bị giới hạn.
 Lập trình viên tự sửa tay thì dùng quyền GitHub của chính họ, quản lý trên GitHub, không qua ERP.
+**Đại ca chốt 24/09/2026 (cách 3):** cấu hình quyền KHÔNG ở web, KHÔNG phải build hay khởi động lại — đại ca
+nhắn cho bot, bot ghi sổ. Ba nơi đã cân: tệp trên máy chạy bot (không lịch sử) · biến `.env` (phải khởi động
+lại) · **nhắn Telegram + sổ của bot (chọn: có lịch sử, gốc quyền vẫn là chat đại ca như hiện nay)**.
 
 | Mã | Tính năng | Cỡ | Ghi chú |
 |---|---|---|---|
-| K-01 | Tệp cấu hình quyền trong kho mã (`config/agent-access.yml`): mỗi người = tài khoản ERP + chat Telegram + cấp (`duyet_ke_hoach` · `gop_dev`); đổi bằng commit/PR nên git lưu vết ai thêm ai lúc nào; bot đọc lại mỗi lượt | S | Báo lỗi thì ai cũng được (M-05); lên prod không cấp cho ai, làm tay |
+| K-01 | Cấp quyền sửa mã bằng CÂU NHẮN của đại ca trên Telegram («cho anh Được quyền gộp dev», bot hỏi lại rồi «đúng»), lưu sổ của bot (`tab_agent_grant`): tài khoản ERP + chat Telegram + cấp (`duyet_ke_hoach` · `gop_dev`); mỗi lần cấp/gỡ đều ghi sổ và báo lại; hỏi «ai đang được sửa mã» là bot liệt kê | S | **Cách 3, đại ca chốt 24/09/2026.** Chỉ chat đại ca (khai cứng `AGENT_TELEGRAM_CHAT_ID` trong `.env`) mới cấp được và chat đó không gỡ được qua chat. Không lên web, không build, không khởi động lại. Dự phòng: tệp trên máy chạy bot, bot đọc mỗi lượt. Báo lỗi thì ai cũng được (M-05); prod không cấp cho ai |
 | K-02 | Khóa của RIÊNG bot thay khóa của đại ca: GitHub App / deploy key chỉ đẩy `bot/*` + `erp-v2`; SSH lên VPS bằng khóa riêng bị khóa cứng đúng lệnh deploy dev (`command=` trong `authorized_keys`) | M | Hiện bot đang mượn khóa SSH của đại ca |
 | K-03 | Bảo vệ nhánh trên GitHub: `main` bắt buộc PR + duyệt; bot không có quyền đẩy `main` | S | Đại ca bật trên GitHub, không phải mã |
 | K-04 | Lệnh nhạy cảm (duyệt kế hoạch, gộp, deploy, thu hồi) kiểm cấp theo K-01; người không đủ cấp nhắn thì bot từ chối và báo đại ca | S | Hiện chỉ một chat đại ca |
@@ -109,16 +112,25 @@ Lập trình viên tự sửa tay thì dùng quyền GitHub của chính họ, q
 | R-03 | Tìm tài liệu nội bộ: kho tài liệu đã nạp + thư mục Drive | M | **Xong phần kho tài liệu** ai-CR-044 (`/tailieu`); phần Drive chờ N-03 |
 | R-04 | Xuất báo cáo nghiên cứu ra Word lên Drive | S | **Xong phần Word gửi qua Telegram** ai-CR-044 (`/word`); lên Drive chờ N-03 |
 
-## Thứ tự đề xuất
+## Lộ trình theo phase (sắp lại 24/09/2026 theo hướng «trợ lý mở»)
 
-| Đợt | Gồm | Vì sao |
-|---|---|---|
-| 1 | A-01 · A-02 · T-01 | Rẻ; T-01 quyết định cả cụm biên bản có đáng làm không |
-| 2 | N-01 · N-02 · N-05 · T-07 · T-10 | Dựng nền nhiều bot; nhắc việc bằng câu nói dùng ngay được |
-| 3 | N-03 · T-08 · T-09 · T-11 | Nối Google: lịch và bản tin sáng |
-| 4 | T-02 … T-06 · T-12 | Biên bản họp trọn vẹn (chỉ khi T-01 đạt) |
-| 5 | N-04 · R-01 … R-04 | Bot Nghiên cứu |
-| 6 | A-03 · A-04 · A-05 · A-06 · A-07 · A-08 | Phần còn lại của Đậu Đậu; A-07 cuối cùng |
+Cỡ là ước THÔ theo ngày công của một người, đo lại sau mỗi phase (A-01 đã có số đo từng bước).
+
+| Phase | Tên | Gồm | Cần đại ca quyết / cung cấp | Cỡ ước |
+|---|---|---|---|---|
+| **0** | Đang chạy | Đậu Đậu trên máy đại ca: nhận việc, rà, sửa, kiểm, gộp, deploy dev; đăng nhập bằng mã; tạo + gửi duyệt phiếu từ chat; nghiên cứu; chi phí | — | xong |
+| **1** | Khóa quyền sửa mã | K-01 cấp quyền bằng câu nhắn (cách 3) · K-04 kiểm cấp trước lệnh nhạy cảm · K-03 bảo vệ nhánh `main` · K-02 khóa riêng của bot | K-03: đại ca bật trên GitHub; K-02: tạo khóa deploy riêng cho bot | 3–4 ngày |
+| **2** | Bot lên ERP dev | Gộp phần bot vào `erp-v2`, chạy trên server dev (phiếu bot tạo là phiếu thật, link bấm được trên điện thoại, người khác dùng Telegram được) · bật phiếu hỗ trợ làm nguồn việc (A-06) | Cho bot tạo phiếu thật trên dev; tài khoản ERP của bot; khóa Telegram/Gemini trên server | 3–5 ngày |
+| **3** | Trợ lý theo từng người trên web | M-07 AI + khóa do từng người chọn · M-02 khóa kết nối cá nhân · P-02 trần chi phí theo người · P-01 đẩy thông báo ERP sang Telegram cá nhân · T-10 nhắc việc bằng câu nói · T-07 tin thoại | P-01: đẩy toàn bộ chuông hay chỉ «chờ bạn duyệt / việc giao cho bạn» | 2 tuần |
+| **4** | Cổng MCP | M-01 cổng MCP dùng chung bộ tool · M-03 tool đọc · M-04 tool tạo/gửi duyệt có xác nhận · M-05 báo lỗi → Đậu Đậu | Thử với 1–2 người trước; chạy dev rồi prod | 2 tuần |
+| **5** | Kết nối Google của từng người | M-06 Drive + Lịch riêng từng người → T-08 bản tin sáng, T-09 nhắc trước họp, T-11 tạo lịch bằng câu nói, R-03/R-04 phần Drive | Cá nhân hay Workspace công ty (Q2); đăng ký ứng dụng Google của công ty | 2 tuần |
+| **6** | Nhiều kênh, nhiều bot | M-08 kênh Zalo OA · N-01 nhiều bot một nền · N-04 chi phí theo bot · N-05 cách ly khóa | Tạo bot/OA và đặt tên (Q6) | 1–2 tuần |
+| **7** | Thư ký biên bản họp | T-01 thử một tệp họp thật (M0) → T-02 … T-06, T-12 | Cho ai dùng (Q1), một tệp ghi âm thật (Q5); chỉ làm tiếp khi M0 đạt | 3 tuần |
+| sau | Để sau | A-08 xem thử qua tunnel (AN-007, 4 câu chờ) | — | — |
+
+Phase 1 và 2 là nền cho mọi phase sau: 1 để mở cho nhiều người mà không lo ai đụng mã, 2 để bot
+làm việc trên dữ liệu thật. Phase 3 → 6 mở dần theo hướng đại ca chốt: web trước, MCP, Google từng
+người, rồi Zalo. Phase 7 độc lập, làm khi có tệp thử.
 
 **Năng lực:** đội làm được khoảng 24 ngày công mỗi tháng và phần lõi ERP còn thiếu 156 ngày
 công (số của `meeting-recap/doc/04`). Các trợ lý này là việc cộng thêm, giành giờ với ERP.
