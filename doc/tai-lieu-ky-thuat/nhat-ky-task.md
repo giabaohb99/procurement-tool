@@ -3155,6 +3155,22 @@ Mã nguồn: `frontend-v2/src/modules/approval-seal/components/seal-clerk-detail
 Commit: `5fbce75a` trên nhánh `erp-v2`.
 
 
+## ai-CR-046 | Nhờ bot tạo đơn, phiếu ngay trong Telegram
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Đại ca nhờ bot tạo đơn nghỉ phép thì bot chỉ soạn nháp rồi bảo lên web mở form. Nguyên nhân là các công cụ
+tạo của Trợ lý chỉ trả bản nháp để web mở form điền sẵn, mà Telegram không mở được form. Nay bot gửi bản tóm
+tắt, đại ca nhắn tạo là bot tạo thật đúng như bấm Lưu trên web: kiểm lại quyền của chính tài khoản đang
+dùng, tự điền người lập, phòng, pháp nhân và ngày từ hồ sơ nhân sự, và làm nốt phần web tự làm như ghi nhật
+ký đơn nghỉ hay báo nhóm hỗ trợ khi có phiếu mới. Áp cho đơn nghỉ phép, phiếu hỗ trợ, yêu cầu báo giá và yêu
+cầu mua hàng, tất cả tạo ở trạng thái nháp. Nhắn thôi là bỏ; nhắn tạo lần nữa không tạo trùng; tài khoản chat
+đổi giữa chừng thì không tạo. Riêng đề nghị thanh toán vì dính tiền nên bot không tạo mà gửi link mở form web
+đã điền sẵn. Cả tệp bài kiểm của bot 194/194 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/draft_create.py` (`create`, `summarize`, `payment_link`) · `service.py` (`_offer_draft`, `_draft_by_text`) · `constants.py` (`BOT_DRAFT_FACTS`) · `test/backend/test_agent_hub.py` · `change-log-ai.md`.
+
 ## ai-CR-045 | Nhắn bình thường với Đậu Đậu, không cần gõ lệnh
 - status: xong
 - date: 2026-09-24

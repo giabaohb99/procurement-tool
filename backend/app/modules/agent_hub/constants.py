@@ -196,7 +196,13 @@ ACT_ACK = "da_nhan"
 ACT_HEARTBEAT = "dang_chay"
 #  Ảnh và câu báo nhận ảnh cũng là «nhiễu» với các mạch hỏi-đáp: gửi kèm ảnh giữa lúc bot đang chờ
 #  giờ hẹn / câu trả lời kế hoạch không được làm đứt mạch đó (ai-CR-035).
-NOISE_ACTIONS = (ACT_ACK, ACT_HEARTBEAT, ACT_PHOTO_WAIT, ACT_PHOTO_USED, ACT_PHOTO_ACK)
+#  ai-CR-046: bản nháp chứng từ chờ «tạo». Dòng sổ ẩn (không gửi Telegram), `body` = JSON
+#  {tool, kind, user_id, draft}; dùng xong đổi sang `da_tao` / `bo_tao`.
+ACT_DRAFT_WAIT = "cho_tao"
+ACT_DRAFT_DONE = "da_tao"
+ACT_DRAFT_DROPPED = "bo_tao"
+NOISE_ACTIONS = (ACT_ACK, ACT_HEARTBEAT, ACT_PHOTO_WAIT, ACT_PHOTO_USED, ACT_PHOTO_ACK,
+                 ACT_DRAFT_WAIT, ACT_DRAFT_DONE, ACT_DRAFT_DROPPED)
 
 # ---------------------------------------------------------------------------
 # Đơn giá model, USD / 1 triệu token
@@ -255,6 +261,13 @@ BOT_PERSONA = (
 )
 #  ai-CR-040: bot từng BỊA cách đổi tài khoản («quét mã QR», «token phiên») khi đại ca hỏi. Đây là cơ chế
 #  thật (ai-CR-038), nói rõ để model không phải đoán.
+#  ai-CR-046: trên Telegram không có nút mở form — bot tự gửi bản tóm tắt và chờ «tạo».
+BOT_DRAFT_FACTS = (
+    "Trên Telegram KHÔNG có nút mở form. Khi đã soạn nháp chứng từ bằng công cụ, đừng bảo người dùng bấm "
+    "nút hay mở form trên web; chỉ nói ngắn là đã soạn xong, bot gửi bản tóm tắt ngay bên dưới và họ nhắn "
+    "«tạo» để tạo thật (phiếu ở trạng thái Nháp), «thôi» để bỏ. Có cảnh báo (quỹ phép không đủ, trùng "
+    "ngày…) thì vẫn nói rõ cảnh báo đó."
+)
 BOT_LOGIN_FACTS = (
     "Chỉ dùng đoạn này khi người dùng hỏi CÁCH đăng nhập / đổi tài khoản (ai-CR-042). "
     "Cách đăng nhập tài khoản ERP trong Telegram (chỉ có đúng cách này, không có quét QR, không hỏi mật "

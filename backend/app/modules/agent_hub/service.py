@@ -34,7 +34,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.modules.assistant.provider.base import ChatResult
 
-from . import chat_link, coder, manager, memory, playbook, research, telegram
+from . import chat_link, coder, draft_create, manager, memory, playbook, research, telegram
 from .timeutil import fmt_local, now_local, to_utc
 from .constants import (
     ACT_ACK,
@@ -58,6 +58,10 @@ from .constants import (
     ACT_WAIT_DEPLOY_TIME,
     ACT_WAIT_PATCH_Q,
     ACT_WAIT_PLAN_ANSWER,
+    ACT_DRAFT_DONE,
+    ACT_DRAFT_DROPPED,
+    ACT_DRAFT_WAIT,
+    BOT_DRAFT_FACTS,
     BOT_LOGIN_FACTS,
     BOT_NAME,
     BOT_PERSONA,
@@ -596,7 +600,7 @@ def _route_linked_text(db: Session, chat_id: str, row: AgentMessage, text: str) 
     dự án KHÔNG mở cho họ, hạ về tìm web); mọi ý định khác → Trợ lý ERP dưới quyền của chính họ. Họ
     không giao được việc sửa mã và không thao tác được việc của bot, nên «viec» / «thao_tac» cũng về Trợ lý.
     """
-    if _word_by_text(db, chat_id, row, text):
+    if _draft_by_text(db, chat_id, row, text) or _word_by_text(db, chat_id, row, text):
         return
     run = start_run(db, 0, STAGE_INTENT)
     try:
@@ -697,7 +701,8 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
         return
     #  Lệnh gõ bằng chữ trên một việc (ai-CR-027): «gộp AI-0007», «duyệt», «xong»… Đi TRƯỚC mạch trả
     #  lời kế hoạch: đang bị hỏi lại mà nhắn «bỏ việc này» là bỏ, không phải câu trả lời.
-    if (_choice_by_text(db, chat_id, row, text) or _confirm_by_text(db, chat_id, row, text)
+    if (_draft_by_text(db, chat_id, row, text)
+            or _choice_by_text(db, chat_id, row, text) or _confirm_by_text(db, chat_id, row, text)
             or _word_by_text(db, chat_id, row, text)
             or _cost_by_text(db, chat_id, row, text) or route_task_command(db, chat_id, row, text)):
         return
@@ -2198,7 +2203,8 @@ def answer_question(db: Session, chat_id: str, question: str, *, before_id: int 
         #  `system` của người gọi chỉ CHÈN THÊM vào cuối, không đè định nghĩa và rào an toàn của
         #  Trợ lý AI; nên web vẫn là «Trợ lý AI», chỉ kênh Telegram mới là Đậu Đậu (ai-CR-016).
         result = assistant_service.ask(question, db=db, user=user, history=history,
-                                       system=f"{BOT_PERSONA} {BOT_LOGIN_FACTS} {_account_fact(db, chat_id, user)}")
+                                       system=f"{BOT_PERSONA} {BOT_DRAFT_FACTS} {BOT_LOGIN_FACTS} "
+                                              f"{_account_fact(db, chat_id, user)}")
     except Exception as e:  # noqa: BLE001 - lỗi nhà cung cấp phải thành câu trả lời
         log.exception("agent_hub: Trợ lý AI hỏng")
         reply(db, chat_id, f"{BOT_NAME} chưa trả lời được: {telegram.esc(str(e)[:300])}")
@@ -2256,10 +2262,84 @@ def deliver_tool_results(db: Session, chat_id: str, user, tool_calls: list) -> N
         if isinstance(call.get("proposal"), dict):
             _send_proposal_card(db, chat_id, call["proposal"])
         if isinstance(call.get("draft"), dict):
-            reply(db, chat_id,
-                  "Trợ lý đã soạn nháp phiếu, nhưng form soạn nháp chỉ mở được trên web. "
-                  f"Đại ca mở Trợ lý AI ở <a href=\"{telegram.esc(telegram.absolute_url('/assistant'))}\">"
-                  "ERP</a> và hỏi lại câu này để nhận nút mở form.")
+            _offer_draft(db, chat_id, user, call)
+
+
+# ---------------------------------------------------------------------------
+# Bản nháp chứng từ -> tạo thật khi người dùng nhắn «tạo» (ai-CR-046)
+# ---------------------------------------------------------------------------
+DRAFT_WINDOW = timedelta(minutes=15)
+_CREATE_YES = re.compile(r"^(tạo|lưu|ok|oke|okay|đồng ý|đúng|ừ|được|làm đi|chuẩn)(\s+(đi|luôn|nhé|nha|em|giúp|"
+                         r"anh|giùm|rồi|lại|đơn|phiếu|đó|này))*[.! ]*$")
+
+
+def _offer_draft(db: Session, chat_id: str, user, call: dict) -> None:
+    """Tool vừa soạn nháp: tóm tắt + chờ «tạo». Đề nghị thanh toán thì gửi link form web điền sẵn."""
+    esc = telegram.esc
+    kind = draft_create.kind_of(str(call.get("name") or ""))
+    draft = call["draft"]
+    if not kind:
+        reply(db, chat_id, "Trợ lý đã soạn nháp một loại phiếu mà bot chưa tạo được từ chat; đại ca tạo trên web giúp em.")
+        return
+    if kind == "payment":
+        link = telegram.absolute_url(draft_create.payment_link(draft))
+        reply(db, chat_id, "Đề nghị thanh toán dính tiền nên em không tạo từ chat. Em đã điền sẵn form, đại ca mở "
+              f'<a href="{esc(link)}">ở đây</a>, xem lại rồi bấm Lưu.')
+        return
+    lines = [f"<b>Bản nháp {esc(draft_create.LABELS[kind])}</b>"]
+    lines += [esc(x) for x in draft_create.summarize(kind, draft)]
+    lines += ["", "Nhắn «tạo» để em tạo thật (ở trạng thái Nháp, như bấm Lưu trên web), «thôi» để bỏ."]
+    reply(db, chat_id, "\n".join(lines))
+    log_message(db, DIR_OUT, chat_id, 0, json.dumps({"tool": call.get("name"), "kind": kind,
+                                                     "user_id": getattr(user, "id", 0), "draft": draft},
+                                                    ensure_ascii=False, default=str),
+                action=ACT_DRAFT_WAIT)
+    db.commit()
+
+
+def _draft_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
+    """«tạo» / «thôi» cho bản nháp đang chờ của chat này (trong DRAFT_WINDOW)."""
+    low = text.strip().lower()
+    yes, no = bool(_CREATE_YES.match(low)), bool(_NO.match(low))
+    if not (yes or no):
+        return False
+    pending = db.scalar(select(AgentMessage).where(
+        AgentMessage.chat_id == chat_id, AgentMessage.action == ACT_DRAFT_WAIT, AgentMessage.id < row.id)
+        .order_by(AgentMessage.id.desc()).limit(1))
+    if pending is None or (row.created_at and pending.created_at
+                           and row.created_at - pending.created_at > DRAFT_WINDOW):
+        return False
+    row.action = ACT_COMMAND
+    try:
+        info = json.loads(pending.body or "{}")
+    except ValueError:
+        info = {}
+    kind, label = info.get("kind", ""), draft_create.LABELS.get(info.get("kind", ""), "phiếu")
+    if no:
+        pending.action = ACT_DRAFT_DROPPED
+        db.commit()
+        reply(db, chat_id, f"Dạ, em không tạo {label}.")
+        return True
+    user = _assistant_user(db, chat_id)
+    if user is None or user.id != int(info.get("user_id") or 0):
+        pending.action = ACT_DRAFT_DROPPED
+        db.commit()
+        reply(db, chat_id, "Tài khoản của chat này đã đổi so với lúc soạn nháp, em không tạo. Đại ca nhờ soạn lại giúp em.")
+        return True
+    #  Chốt dấu TRƯỚC khi ghi phiếu: service có thể rollback, và dấu chưa chốt thì «tạo» lần hai tạo lần hai.
+    pending.action = ACT_DRAFT_DONE
+    db.commit()
+    try:
+        code, oid = draft_create.create(db, user, kind, info.get("draft") or {})
+    except draft_create.DraftError as e:
+        pending.action = ACT_DRAFT_DROPPED
+        db.commit()
+        reply(db, chat_id, f"Chưa tạo được {label}: {telegram.esc(str(e)[:400])}")
+        return True
+    link = telegram.absolute_url(draft_create.DETAIL_PATHS[kind].format(id=oid))
+    reply(db, chat_id, f"Đã tạo {label} <b>{telegram.esc(code)}</b> (Nháp). "
+          f'Xem / gửi duyệt: <a href="{telegram.esc(link)}">mở phiếu</a>.')
+    return True
 
 
 def _send_report_file(db: Session, chat_id: str, user, meta: dict) -> None:

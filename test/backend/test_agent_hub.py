@@ -4500,3 +4500,121 @@ def test_nguoi_lien_ket_nhan_binh_thuong_cung_duoc_tra_cuu(db, bot, monkeypatch)
     service.handle_message(db, _other_msg("thêm cột ngày vào màn công nợ"))
     assert asked == ["thêm cột ngày vào màn công nợ"]
     assert not db.query(service.AgentTask).count()                                      # không đẻ việc sửa mã
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-046: bản nháp của Trợ lý -> nhắn «tạo» là tạo thật
+# ---------------------------------------------------------------------------
+_LEAVE_DRAFT = {"kind": "leave_request", "lines": [{"leave_type_id": 1, "leave_type": "Phép năm", "days": 0.5}],
+                "from_date": "2026-09-25", "to_date": "2026-09-25", "from_session": 3, "to_session": 3,
+                "from_time": "", "to_time": "", "reason": "Đi khám bệnh", "contact_phone": ""}
+
+
+def _draft_setup(db, monkeypatch, service):
+    from types import SimpleNamespace
+
+    me = SimpleNamespace(id=7)
+    monkeypatch.setattr(service, "_assistant_user", lambda db, chat_id="": me)
+    created: list[tuple] = []
+    monkeypatch.setattr(service.draft_create, "create",
+                        lambda db, user, kind, draft: created.append((user.id, kind, draft["reason"])) or ("NP0042", 42))
+    return me, created
+
+
+def test_nhan_tao_thi_tao_that_dung_mot_lan(db, bot, monkeypatch):
+    service, sent, asked = bot
+    me, created = _draft_setup(db, monkeypatch, service)
+    service.deliver_tool_results(db, "12345", me, [{"name": "draft_leave_request", "draft": dict(_LEAVE_DRAFT)}])
+    assert "Bản nháp đơn nghỉ phép" in sent[-1] and "buổi chiều" in sent[-1] and "Nhắn «tạo»" in sent[-1]
+    service.handle_message(db, _msg("tạo đi em"))
+    assert created == [(7, "leave", "Đi khám bệnh")]
+    assert "Đã tạo đơn nghỉ phép <b>NP0042</b>" in sent[-1] and "/hr/leave-requests/42" in sent[-1]
+    _fake_intent(monkeypatch, service, "hoi")
+    service.handle_message(db, _msg("tạo"))                        # không còn bản nháp chờ: không tạo lần hai
+    assert len(created) == 1
+
+
+def test_nhan_thoi_thi_bo_va_doi_tai_khoan_thi_khong_tao(db, bot, monkeypatch):
+    from types import SimpleNamespace
+
+    service, sent, _ = bot
+    me, created = _draft_setup(db, monkeypatch, service)
+    service.deliver_tool_results(db, "12345", me, [{"name": "draft_leave_request", "draft": dict(_LEAVE_DRAFT)}])
+    service.handle_message(db, _msg("thôi"))
+    assert "không tạo đơn nghỉ phép" in sent[-1] and created == []
+    service.deliver_tool_results(db, "12345", me, [{"name": "draft_leave_request", "draft": dict(_LEAVE_DRAFT)}])
+    monkeypatch.setattr(service, "_assistant_user", lambda db, chat_id="": SimpleNamespace(id=99))
+    service.handle_message(db, _msg("tạo"))
+    assert "đã đổi so với lúc soạn nháp" in sent[-1] and created == []
+
+
+def test_de_nghi_thanh_toan_chi_gui_link_form_dien_san(db, bot, monkeypatch):
+    service, sent, _ = bot
+    me, created = _draft_setup(db, monkeypatch, service)
+    service.deliver_tool_results(db, "12345", me, [{"name": "draft_payment_request", "draft": {
+        "kind": "payment_request", "payable_ids": [5, 9], "offsets": {"9": 150000}}}])
+    assert "dính tiền" in sent[-1] and "/finance/payment-requests/new?payables=5,9&amp;offsets=9:150000" in sent[-1]
+    assert created == []
+
+
+def test_tao_that_kiem_quyen_va_du_lieu(db, monkeypatch):
+    from app.modules.agent_hub import draft_create
+    from app.modules.ticket.model import Ticket
+    from app.modules.user.model import User
+
+    u = User(email="lan@dego.vn", employee_id=0, password_hash="x", is_active=True)
+    db.add(u)
+    db.commit()
+    with pytest.raises(draft_create.DraftError, match="không có quyền"):   # tài khoản chưa có vai trò nào
+        draft_create.create(db, u, "leave", dict(_LEAVE_DRAFT))
+    monkeypatch.setattr(draft_create, "_check_permission", lambda db, user, kind: None)
+    with pytest.raises(draft_create.DraftError, match="chưa có số lượng"):
+        draft_create.create(db, u, "purchase", {"lines": [{"product_name": "Thép", "qty": 0}]})
+    with pytest.raises(draft_create.DraftError, match="chưa gắn hồ sơ nhân sự"):
+        draft_create.create(db, u, "survey", {"lines": [{"requirement_detail": "Thép"}]})
+    notified: list[str] = []
+    monkeypatch.setattr("app.modules.ticket.controller._notify", lambda db, users, title, *a, **kw: notified.append(title))
+    code, tid = draft_create.create(db, u, "ticket", {"subject": "Không in được phiếu", "body": "lỗi máy in",
+                                                       "priority": "high"})
+    t = db.get(Ticket, tid)
+    assert t.subject == "Không in được phiếu" and t.created_by == u.id and notified == [f"{code} — Phiếu hỗ trợ mới"]
+    assert draft_create.payment_link({"payable_ids": [3], "offsets": {}}) == "/finance/payment-requests/new?payables=3"
+
+
+def test_ban_nhap_dung_dau_vao_service_that_va_tu_dien_dau_phieu(db, monkeypatch):
+    from types import SimpleNamespace
+
+    from app.modules.agent_hub import draft_create
+    from app.modules.department.model import Department
+    from app.modules.employee.model import Employee
+    from app.modules.user.model import User
+
+    dept = Department(code="MH", name="Mua hàng")
+    db.add(dept)
+    db.flush()
+    emp = Employee(code="NV01", full_name="Lê Lan", department_id=dept.id, company_id=3, position="Chuyên viên")
+    db.add(emp)
+    db.flush()
+    u = User(email="lan@dego.vn", employee_id=emp.id, password_hash="x", is_active=True)
+    db.add(u)
+    db.commit()
+    monkeypatch.setattr(draft_create, "_check_permission", lambda db, user, kind: None)
+    seen: dict = {}
+    monkeypatch.setattr("app.modules.leave.request_service.create",
+                        lambda db, data, user: seen.update(leave=data) or SimpleNamespace(id=1, code="NP1"))
+    monkeypatch.setattr("app.core.audit.record", lambda *a, **kw: None)
+    monkeypatch.setattr("app.modules.purchase_request.service.create_pr",
+                        lambda db, data, uid, can: seen.update(pr=data) or SimpleNamespace(id=2, code="PYC1"))
+    monkeypatch.setattr("app.modules.survey_request.service.create_sr",
+                        lambda db, data, uid, user, prof: seen.update(sr=data) or SimpleNamespace(id=3, code="YCBG1"))
+    assert draft_create.create(db, u, "leave", dict(_LEAVE_DRAFT)) == ("NP1", 1)
+    leave = seen["leave"]
+    assert str(leave.from_date) == "2026-09-25" and leave.from_session == 3 and leave.from_time is None
+    assert leave.lines[0].leave_type_id == 1 and leave.lines[0].days == 0.5 and leave.reason == "Đi khám bệnh"
+    draft_create.create(db, u, "purchase", {"purpose": "Bảo trì", "need_date": "2026-10-01",
+                                             "lines": [{"product_name": "Thép", "qty": 2, "unit": "tấn", "bogus": 1}]})
+    pr = seen["pr"]
+    assert (pr.requester, pr.requester_id, pr.department_id, pr.company_id) == ("Lê Lan", emp.id, dept.id, 3)
+    assert pr.requester_position == "Chuyên viên" and pr.items[0].product_name == "Thép" and pr.request_date
+    draft_create.create(db, u, "survey", {"company_id": 5, "lines": [{"requirement_detail": "Thép", "request_qty": 1}]})
+    assert seen["sr"].company_id == 5 and seen["sr"].department == "Mua hàng"
