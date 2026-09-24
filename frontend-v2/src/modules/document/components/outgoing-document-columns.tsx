@@ -1,4 +1,4 @@
-import { ChevronRight, CornerDownRight, ShieldCheck } from 'lucide-react'
+import { ChevronRight, CornerDownRight, Folder, ShieldCheck } from 'lucide-react'
 import { useCallback, useMemo } from 'react'
 
 import type { DataTableColumn } from '@/shared/data-table'
@@ -14,6 +14,29 @@ import {
   SECURITY_LEVEL_KIND_URGENCY,
 } from '../types/security-level'
 import type { DocumentRecord } from '../types/document-record'
+
+/**
+ * Chữ ô «Số hiệu» — chưa duyệt thì chưa có số, nói rõ thay vì để ô trống.
+ *
+ * Tách ra vì duoc-CR-474 dùng lại đúng dòng chữ này ở bảng «Văn bản trong sổ»
+ * (`book-documents-tab.tsx`) — hai bảng khác nhau nhưng cùng một câu, chép tay
+ * lần hai là chỗ dễ trôi chữ đầu tiên khi có ai sửa một bên rồi quên bên kia.
+ */
+export function docCodeText(row: Pick<DocumentRecord, 'display_code'>) {
+  return row.display_code || <span className="text-muted-foreground">Chưa cấp số</span>
+}
+
+/**
+ * Badge TRẠNG THÁI HIỆU LỰC — dùng chung cho MỌI bảng liệt kê văn bản (đi ·
+ * trong sổ…). Cùng lý do tách như `docCodeText`: `effectiveLabel` tính badge
+ * nào/màu gì, hai bảng phải đọc ra cùng một kết luận cho cùng một văn bản.
+ */
+export function effectiveStatusBadge(
+  row: Pick<DocumentRecord, 'status' | 'effective_date' | 'expire_date'>,
+) {
+  const label = effectiveLabel(row)
+  return <Badge variant={label.variant}>{label.text}</Badge>
+}
 
 interface OutgoingColumnsOptions {
   /** Dòng đang bung để xem bản riêng — `null` là chưa bung dòng nào. */
@@ -111,8 +134,7 @@ export function useOutgoingDocumentColumns({
                   isPrivateCopy ? 'text-muted-foreground' : 'font-medium text-navy',
                 )}
               >
-                {/* Chưa duyệt thì chưa có số — nói rõ chứ đừng để ô trống. */}
-                {row.display_code || <span className="text-muted-foreground">Chưa cấp số</span>}
+                {docCodeText(row)}
               </span>
             </div>
           )
@@ -157,6 +179,38 @@ export function useOutgoingDocumentColumns({
         cell: (row) => row.book_name,
       },
       {
+        //  THƯ MỤC (phase 06, duoc-CR-476) — `primary_folder_path` là đường
+        //  dẫn ĐẦY ĐỦ của thư mục chính, đã lọc theo quyền XEM thư mục của
+        //  người đang đọc (rỗng nếu thư mục chính không còn thấy được).
+        //  `folders.length - 1` là số thư mục PHỤ còn lại — đếm trên chính
+        //  mảng đã lọc quyền, không lộ số thư mục người này không thấy.
+        key: 'folder',
+        header: 'Thư mục',
+        width: 220,
+        //  Ẩn mặc định cùng lối «Sổ» — cột tổ chức, không phải thứ đọc hằng
+        //  ngày, nhưng vẫn khai đủ để bật lên khi cần lọc/soát.
+        defaultHidden: true,
+        cell: (row) => {
+          const folders = row.folders ?? []
+          const primaryLabel = row.primary_folder_path || folders[0]?.name
+          if (!primaryLabel) return <span className="text-muted-foreground">—</span>
+          const extra = folders.length > 1 ? folders.length - 1 : 0
+          return (
+            <div className="flex min-w-0 items-center gap-1.5">
+              <Folder className="size-3.5 shrink-0 text-muted-foreground" />
+              <span className="truncate" title={primaryLabel}>
+                {primaryLabel}
+              </span>
+              {extra > 0 && (
+                <Badge variant="outline" className="shrink-0 font-normal">
+                  +{extra}
+                </Badge>
+              )}
+            </div>
+          )
+        },
+      },
+      {
         key: 'version_no',
         header: 'Bản',
         width: 90,
@@ -175,24 +229,21 @@ export function useOutgoingDocumentColumns({
         header: 'Trạng thái',
         width: 190,
         // Nhãn TÍNH RA lúc hiển thị (hết hạn theo ngày), không phải trạng thái thô.
-        cell: (row) => {
-          const label = effectiveLabel(row)
-          //  «Chờ bạn duyệt» đứng CẠNH trạng thái chứ không thay thế nó: văn bản
-          //  vẫn đang ở «Đang duyệt», thứ thêm vào là *lượt của ai*. Đây là dấu
-          //  để người duyệt nhặt ra dòng của mình giữa một bảng dài mà không
-          //  phải mở từng cái.
-          return (
-            <div className="flex items-center gap-1.5">
-              <Badge variant={label.variant}>{label.text}</Badge>
-              {awaitingMyApproval.has(row.id) && (
-                <Badge className="gap-1 bg-primary text-primary-foreground">
-                  <ShieldCheck className="size-3" />
-                  Chờ bạn duyệt
-                </Badge>
-              )}
-            </div>
-          )
-        },
+        //  «Chờ bạn duyệt» đứng CẠNH trạng thái chứ không thay thế nó: văn bản
+        //  vẫn đang ở «Đang duyệt», thứ thêm vào là *lượt của ai*. Đây là dấu
+        //  để người duyệt nhặt ra dòng của mình giữa một bảng dài mà không
+        //  phải mở từng cái.
+        cell: (row) => (
+          <div className="flex items-center gap-1.5">
+            {effectiveStatusBadge(row)}
+            {awaitingMyApproval.has(row.id) && (
+              <Badge className="gap-1 bg-primary text-primary-foreground">
+                <ShieldCheck className="size-3" />
+                Chờ bạn duyệt
+              </Badge>
+            )}
+          </div>
+        ),
       },
       {
         key: 'effective_date',

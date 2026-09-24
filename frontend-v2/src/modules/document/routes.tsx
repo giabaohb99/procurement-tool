@@ -2,6 +2,7 @@ import {
   BookMarked,
   FileText,
   Files,
+  FolderTree,
   Hash,
   LayoutDashboard,
   Link2,
@@ -88,6 +89,22 @@ export const documentModule: ErpModule = {
       icon: BookMarked,
       group: 'Nghiệp vụ',
     },
+    {
+      //  QUẢN LÝ CÂY THƯ MỤC (phase 05, duoc-CR-476). Gác `doc_folder.read` —
+      //  mục menu KHÔNG được bỏ trống `entity` như ba mục "Văn bản"/"Chờ tôi
+      //  duyệt"/"Sổ văn bản" phía trên: những mục đó có lý do cụ thể (backend
+      //  mở cửa cho người không có vai trò nào ở phân hệ này). Thư mục thì
+      //  không — route thiếu mục menu gác nghĩa là ai đăng nhập cũng vào được
+      //  (điều hướng gác mặc định MỞ, không phải mặc định ĐÓNG), và
+      //  `doc_folder` không nằm trong nhóm PUBLIC ở trục HÀNH ĐỘNG (chỉ trục
+      //  PHẠM VI DỮ LIỆU của nó là PUBLIC — lọc theo hàng đi qua ACL riêng của
+      //  từng thư mục, không qua `apply_scope`).
+      label: 'Thư mục văn bản',
+      path: appRoutes.document.folders,
+      icon: FolderTree,
+      entity: 'doc_folder',
+      group: 'Nghiệp vụ',
+    },
     // Các danh mục nền gom vào MỘT mục menu: chúng chỉ được đụng tới lúc khai
     // báo ban đầu, để mỗi cái một dòng thì menu dài hơn cả phần việc hằng ngày.
     {
@@ -166,6 +183,12 @@ export const documentModule: ErpModule = {
       path: appRoutes.document.books,
       lazy: async () => ({
         Component: (await import('./pages/document-book-page')).DocumentBookPage,
+      }),
+    },
+    {
+      path: appRoutes.document.folders,
+      lazy: async () => ({
+        Component: (await import('./pages/document-folder-page')).DocumentFolderPage,
       }),
     },
     {

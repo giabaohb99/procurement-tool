@@ -26,6 +26,11 @@ interface DocumentBookCardProps {
  *
  * ⚠️ **Không nút nào trong thẻ**: `DataTableMobileCards` bọc cả thẻ trong một
  * `<button>`, lồng nút vào trong nút là HTML sai.
+ *
+ * ⚠️ Bấm thẻ này nhảy THẲNG vào tab «Văn bản trong sổ», không phải tab «Thông
+ * tin sổ» (duoc-CR-474, 23/09/2026) — đích bấm khai ở `detailPath` của
+ * `document-book-page.tsx`, thẻ không tự giữ đường dẫn riêng vì cả dòng bảng
+ * (desktop) lẫn thẻ (khổ hẹp) đi qua đúng MỘT hàm `onRowClick`.
  */
 export function DocumentBookCard({ book, year }: DocumentBookCardProps) {
   return (

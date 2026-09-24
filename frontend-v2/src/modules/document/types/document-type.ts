@@ -83,6 +83,12 @@ export interface DocumentType {
   retention_months: number
   /** Luồng duyệt mặc định — bộ máy duyệt chưa làm, luôn là 0. */
   default_flow_id: number
+  /**
+   * Thư mục MẶC ĐỊNH khi tạo văn bản loại này (phase 06, duoc-CR-476).
+   * `0` = chưa khai → văn bản không chọn thư mục nào sẽ vào thư mục MANG TÊN
+   * PHÁP NHÂN của nó (xem `helpers/default-folder-hint.ts`).
+   */
+  default_folder_id: number
 
   sort_order: number
   is_active: boolean

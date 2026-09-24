@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 
+import { usePermission } from '@/core/authorization/use-permission'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent } from '@/shared/ui/card'
 import { Checkbox } from '@/shared/ui/checkbox'
@@ -23,6 +24,7 @@ import {
 } from '@/shared/ui/select'
 import { Textarea } from '@/shared/ui/textarea'
 import { cn } from '@/shared/utils/cn'
+import { FolderPicker } from './folder-picker'
 import {
   documentTypeSchema,
   type DocumentTypeFormValues,
@@ -65,6 +67,8 @@ const EMPTY_FORM: DocumentTypeFormValues = {
   is_active: true,
   //  Mặc định TỰ ban hành: loại mới khai ra phải hành xử như mọi loại đang chạy.
   auto_issue_after_approval: true,
+  //  0 = chưa khai — văn bản không chọn thư mục nào tự vào thư mục pháp nhân.
+  default_folder_id: 0,
   ...EMPTY_DOCUMENT_TYPE_FLAGS,
 }
 
@@ -78,6 +82,7 @@ export function DocumentTypeForm({
     resolver: zodResolver(documentTypeSchema),
     defaultValues: documentType ? { ...EMPTY_FORM, ...documentType } : EMPTY_FORM,
   })
+  const { can } = usePermission()
 
   const idScheme = form.watch('id_scheme')
   const code = form.watch('code')
@@ -384,6 +389,41 @@ export function DocumentTypeForm({
                 )}
               />
             </div>
+
+            {/*  Thư mục mặc định (phase 06, duoc-CR-476) — MỘT thư mục, không lọc
+                 theo pháp nhân ở đây: một loại văn bản dùng chung cho nhiều pháp
+                 nhân, nên thư mục khai chỉ áp khi khớp đúng pháp nhân của văn
+                 bản (xem `folder_link_service.resolve_default`); khớp sai pháp
+                 nhân thì văn bản tự rơi về thư mục mang tên pháp nhân của nó.
+
+                 ⚠️ Ẩn CẢ Ô khi thiếu `doc_folder.read` (H4, rà soát 23/09/2026):
+                 `FolderPicker` tự ẩn rồi, nhưng để trơ lại nhãn + mô tả không
+                 kèm ô nào thì người dùng đọc mà không biết vì sao. */}
+            {can('doc_folder', 'read') && (
+              <FormField
+                control={form.control}
+                name="default_folder_id"
+                render={({ field }) => (
+                  <FormItem className="border-t pt-4">
+                    <FormLabel>Thư mục mặc định</FormLabel>
+                    <FormControl>
+                      <FolderPicker
+                        multiple={false}
+                        folderIds={field.value ? [field.value] : []}
+                        primaryFolderId={field.value || null}
+                        onChange={(ids) => field.onChange(ids[0] ?? 0)}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Văn bản loại này không tự chọn thư mục sẽ vào đây. Để trống, hoặc thư
+                      mục khai không đúng pháp nhân của văn bản, thì vào thư mục mang tên
+                      pháp nhân của nó.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <FormField
               control={form.control}
