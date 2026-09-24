@@ -301,6 +301,28 @@ export const queryKeys = {
     prerequisites: (docTypeId: number) => ['document', 'prerequisites', docTypeId] as const,
     numberPreview: (params: Record<string, unknown>) =>
       ['document', 'number-preview', params] as const,
+    /** Thẻ «Người duyệt dự kiến» ở màn tạo/chi tiết nháp (phase 01, duoc-CR-473). */
+    approvalPreview: (params: Record<string, unknown>) =>
+      ['document', 'approval-preview', params] as const,
+    /** Tab «Tệp» (phase 09) — tệp của MỌI phiên bản, khác `attachments/*` của PR. */
+    files: (documentId: number) => ['document', 'records', documentId, 'files'] as const,
+    /**
+     * Tìm TOÀN VĂN (phase 07, duoc-CR-477) — khác `records` (LIKE 6 cột
+     * siêu dữ liệu): đọc cả nội dung soạn thảo + chữ trong tệp đính kèm, gọi
+     * `/api/documents/search`. Tách khóa riêng, không dùng chung `records`,
+     * để bật/tắt công tắc «Tìm cả nội dung» không đọc nhầm cache của nhau.
+     */
+    search: (params?: Record<string, unknown>) => ['document', 'search', params ?? {}] as const,
+
+    //  ── Cây thư mục (phase 03/04, duoc-CR-475) ────────────────────────────
+    /** Tiền tố MỌI biến thể `include_archived` của cây — invalidate cả cụm sau khi sửa/xóa/chuyển. */
+    folderTreeAll: ['document', 'folders', 'tree'] as const,
+    folderTree: (includeArchived: boolean) =>
+      ['document', 'folders', 'tree', includeArchived] as const,
+    folderSearch: (q: string) => ['document', 'folders', 'search', q] as const,
+    folderDetail: (id: number) => ['document', 'folders', 'detail', id] as const,
+    /** ACL TRỰC TIẾP của một thư mục — tách khỏi `folderDetail` vì khác API (`/access`). */
+    folderAccess: (folderId: number) => ['document', 'folders', 'detail', folderId, 'access'] as const,
   },
   /**
    * Bộ máy phê duyệt dùng chung — KHÔNG thuộc phân hệ nào. Cùng bộ khóa này
