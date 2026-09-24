@@ -4793,3 +4793,159 @@ def test_thong_tin_phieu_ho_tro_doc_tu_ban_ghi(db):
     assert draft_create.created_details(db, "ticket", t.id) == [
         "Mã: HT-0099 · Trạng thái: Mới", "Chủ đề: Máy in hỏng", "Ưu tiên: high"]
     assert draft_create.created_details(db, "leave", 999999) == []
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-051: ai được ra lệnh sửa mã — cấp bằng câu nhắn (K-01 cách 3) + kiểm cấp (K-04)
+# ---------------------------------------------------------------------------
+def _send_to(monkeypatch, service):
+    """Ghi (chat_id, text) — bài này cần biết tin đi về chat NÀO."""
+    sent: list[tuple[str, str]] = []
+    monkeypatch.setattr(service.telegram, "send", lambda text, **kw: sent.append((str(kw.get("chat_id")), text)) or 1)
+    return sent
+
+
+def _staff(db, full_name="Trần Văn Được", code="DEGO0009", email="duoc@dego.vn"):
+    from app.modules.employee.model import Employee
+    from app.modules.user.model import User
+
+    emp = Employee(code=code, full_name=full_name, department_id=0)
+    db.add(emp)
+    db.flush()
+    u = User(email=email, employee_id=emp.id, password_hash="x", is_active=True)
+    db.add(u)
+    db.commit()
+    return u
+
+
+def test_cu_phap_cau_cap_go_liet_ke_quyen():
+    from app.modules.agent_hub import grants
+
+    assert grants.parse("cho anh Được quyền gộp dev") == {"op": "grant", "name": "được", "level": grants.LEVEL_MERGE}
+    assert grants.parse("cấp cho Trần Gia Bảo quyền duyệt kế hoạch nhé") == {"op": "grant", "name": "trần gia bảo",
+                                                                            "level": grants.LEVEL_PLAN}
+    assert grants.parse("cấp quyền gộp cho chị Lan đi") == {"op": "grant", "name": "lan", "level": grants.LEVEL_MERGE}
+    assert grants.parse("gỡ quyền của anh Được") == {"op": "revoke", "name": "được"}
+    assert grants.parse("thu hồi quyền sửa mã Bảo nhé") == {"op": "revoke", "name": "bảo"}
+    assert grants.parse("ai đang được sửa mã") == {"op": "list"}
+    assert grants.parse("danh sách quyền sửa mã") == {"op": "list"}
+    #  Không phải câu cấp quyền: lệnh trên việc, câu hỏi thường, «anh» trơn không có tên.
+    assert grants.parse("gộp AI-0007") is None and grants.parse("thu hồi AI-0007") is None
+    assert grants.parse("cho anh xem chi tiết AI-0007") is None
+    assert grants.parse("cho anh quyền gộp") is None
+    assert grants.fold("Trần Văn Được") == "tran van duoc"
+    assert grants.required_level("merge") == grants.LEVEL_MERGE and grants.required_level("status") == grants.LEVEL_PLAN
+    assert grants.required_level("lenh_la") == grants.LEVEL_ADMIN
+
+
+def test_dai_ca_cap_quyen_co_hoi_lai_roi_ghi_so_va_liet_ke(db, bot, monkeypatch):
+    from app.modules.agent_hub import grants
+    from app.modules.agent_hub.model import AgentMessage
+
+    service, sent, asked = bot
+    monkeypatch.setattr(service.manager, "run_intent", lambda *a, **kw: pytest.fail("câu cấp quyền không đi phân loại"))
+    duoc = _staff(db)
+    service.handle_message(db, _msg("cho anh Được quyền gộp dev"))
+    assert "Cấp cho <b>Trần Văn Được (DEGO0009)</b> cấp <b>gộp dev</b>" in sent[-1] and "CHƯA đăng nhập bot" in sent[-1]
+    assert grants.level_for(db, duoc.id) == grants.LEVEL_NONE                      # chưa «đúng» thì chưa ghi
+    service.handle_message(db, _msg("đúng"))
+    assert "Đã cấp cho <b>Trần Văn Được (DEGO0009)</b> cấp <b>gộp dev</b>" in sent[-1]
+    assert grants.level_for(db, duoc.id) == grants.LEVEL_MERGE
+    _fake_intent(monkeypatch, service, "hoi")
+    service.handle_message(db, _msg("đúng"))                                        # «đúng» lần hai: chuyện thường, không cấp lại
+    assert db.query(AgentMessage).filter_by(action=service.ACT_GRANT_DONE).count() == 1 and asked == ["đúng"]
+    monkeypatch.setattr(service.manager, "run_intent", lambda *a, **kw: pytest.fail("câu cấp quyền không đi phân loại"))
+    service.handle_message(db, _msg("ai đang được sửa mã"))
+    assert "Trần Văn Được (DEGO0009)" in sent[-1] and "cấp <b>gộp dev</b>" in sent[-1] and "chưa đăng nhập bot" in sent[-1]
+    #  Đổi cấp: dòng cũ đóng, dòng mới mở; trùng cấp thì nói luôn, không hỏi.
+    service.handle_message(db, _msg("cho anh Được quyền duyệt kế hoạch"))
+    service.handle_message(db, _msg("ừ"))
+    assert grants.level_for(db, duoc.id) == grants.LEVEL_PLAN and len(grants.list_active(db)) == 1
+    service.handle_message(db, _msg("cho anh Được quyền duyệt"))
+    assert "đã ở cấp <b>duyệt kế hoạch</b> rồi" in sent[-1]
+    #  «thôi» là không làm; tên không có thì hỏi lại chứ không đoán.
+    service.handle_message(db, _msg("gỡ quyền của anh Được"))
+    service.handle_message(db, _msg("thôi"))
+    assert "không đổi quyền gì" in sent[-1] and grants.level_for(db, duoc.id) == grants.LEVEL_PLAN
+    service.handle_message(db, _msg("cho anh Tèo quyền gộp dev"))
+    assert "không tìm thấy tài khoản ERP nào tên «tèo»" in sent[-1]
+    service.handle_message(db, _msg("gỡ quyền của Được"))
+    service.handle_message(db, _msg("đúng"))
+    assert "Đã gỡ quyền sửa mã của <b>Trần Văn Được (DEGO0009)</b>" in sent[-1]
+    assert grants.level_for(db, duoc.id) == grants.LEVEL_NONE and asked == ["đúng"]
+
+
+def test_nhieu_nguoi_trung_ten_thi_hoi_ro_va_nguoi_lien_ket_khong_cap_duoc(db, bot, monkeypatch):
+    from app.modules.agent_hub import chat_link, grants
+
+    service, sent, asked = bot
+    _fake_intent(monkeypatch, service, "hoi")
+    _staff(db, "Nguyễn Bảo Anh", "DEGO0010", "baoanh@dego.vn")
+    _staff(db, "Trần Gia Bảo", "DEGO0011", "bao@dego.vn")
+    service.handle_message(db, _msg("cho Bảo Anh quyền gộp dev"))
+    assert "Cấp cho <b>Nguyễn Bảo Anh (DEGO0010)</b>" in sent[-1]                  # khớp trọn tên: không hỏi lại
+    service.handle_message(db, _msg("thôi"))
+    _staff(db, "Lê Gia Bảo", "DEGO0012", "giabao@dego.vn")
+    service.handle_message(db, _msg("cho Gia Bảo quyền gộp dev"))
+    assert "Có 2 người khớp «gia bảo»" in sent[-1]
+    service.handle_message(db, _msg("cho Trần Gia Bảo quyền gộp dev"))
+    assert "Cấp cho <b>Trần Gia Bảo (DEGO0011)</b>" in sent[-1]
+    #  Người đã liên kết (không phải đại ca) nhắn câu cấp quyền → chỉ là câu hỏi cho Trợ lý.
+    lan = _erp_user(db)
+    code, _ = chat_link.issue_code(db, lan.id)
+    service.handle_message(db, _other_msg(f"/dangnhap {code}"))
+    service.handle_message(db, _other_msg("cho Trần Gia Bảo quyền gộp dev"))
+    assert asked[-1] == "cho Trần Gia Bảo quyền gộp dev" and not grants.list_active(db)
+
+
+def test_nguoi_cap_duyet_ke_hoach_bi_chan_gop_va_dai_ca_duoc_bao(db, bot, monkeypatch):
+    from app.modules.agent_hub import chat_link, coder, grants
+    from app.modules.agent_hub.model import AgentMessage
+
+    service, _, asked = bot
+    sent = _send_to(monkeypatch, service)
+    merged: list[str] = []
+    monkeypatch.setattr(service, "_dispatch_deploy", lambda db, chat, cb, task, deploy=True: merged.append(task.code))
+    duoc = _staff(db)
+    grants.grant(db, duoc.id, grants.LEVEL_PLAN, by_chat="12345")
+    code, _ = chat_link.issue_code(db, duoc.id)
+    service.handle_message(db, _other_msg(f"/dangnhap {code}"))
+    task = _task_with_session(db, service, coder)
+    service.handle_message(db, _other_msg(f"gộp {task.code}"))
+    assert merged == []
+    assert sent[-2][0] == "777" and "cần cấp <b>gộp dev</b>" in sent[-2][1] and "cấp <b>duyệt kế hoạch</b>" in sent[-2][1]
+    assert sent[-1][0] == "12345" and "Trần Văn Được (DEGO0009)" in sent[-1][1] and "cho Trần Văn Được quyền gộp dev" in sent[-1][1]
+    row = db.query(AgentMessage).filter_by(direction=service.DIR_IN, chat_id="777").order_by(AgentMessage.id.desc()).first()
+    assert row.action == service.ACT_DENIED and row.task_id == task.id
+    #  Đủ cấp cho lệnh hỏi tình trạng thì trả lời tại chỗ, không báo đại ca.
+    service.handle_message(db, _other_msg(f"{task.code} xong chưa"))
+    assert sent[-1][0] == "777" and task.code in sent[-1][1]
+    #  Không nêu mã việc thì là câu chuyện với Trợ lý, không phải lệnh — kể cả «xong rồi».
+    _fake_intent(monkeypatch, service, "hoi")
+    service.handle_message(db, _other_msg("xong rồi"))
+    assert asked[-1] == "xong rồi" and task.status == service.ST_REVIEW
+
+
+def test_nguoi_cap_gop_dev_gop_duoc_va_dai_ca_nhan_mot_dong_bao(db, bot, monkeypatch):
+    from app.modules.agent_hub import chat_link, coder, grants
+
+    service, _, _ = bot
+    sent = _send_to(monkeypatch, service)
+    merged: list[tuple[str, str]] = []
+    monkeypatch.setattr(service, "_dispatch_deploy",
+                        lambda db, chat, cb, task, deploy=True: merged.append((chat, task.code)))
+    duoc = _staff(db)
+    grants.grant(db, duoc.id, grants.LEVEL_MERGE, by_chat="12345")
+    code, _ = chat_link.issue_code(db, duoc.id)
+    service.handle_message(db, _other_msg(f"/dangnhap {code}"))
+    task = _task_with_session(db, service, coder)
+    service.handle_message(db, _other_msg(f"gộp {task.code} đi"))
+    assert merged == [("777", task.code)]
+    assert sent[-1][0] == "12345" and "Trần Văn Được (DEGO0009)" in sent[-1][1] and "gộp vào nhánh nền" in sent[-1][1]
+    #  Gỡ quyền xong thì cùng câu đó về Trợ lý (không còn là lệnh).
+    grants.revoke(db, duoc.id)
+    _fake_intent(monkeypatch, service, "hoi")
+    service.handle_message(db, _other_msg(f"gộp {task.code} đi"))
+    assert merged == [("777", task.code)]
+    #  Chat đại ca không cần dòng sổ nào, và không tự gỡ được: sổ trống vẫn đủ cấp.
+    assert service._grant_level(db, "12345") == grants.LEVEL_ADMIN and service._grant_level(db, "777") == grants.LEVEL_NONE

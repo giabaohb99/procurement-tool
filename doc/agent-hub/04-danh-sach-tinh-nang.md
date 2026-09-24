@@ -81,10 +81,10 @@ lại) · **nhắn Telegram + sổ của bot (chọn: có lịch sử, gốc quy
 
 | Mã | Tính năng | Cỡ | Ghi chú |
 |---|---|---|---|
-| K-01 | Cấp quyền sửa mã bằng CÂU NHẮN của đại ca trên Telegram («cho anh Được quyền gộp dev», bot hỏi lại rồi «đúng»), lưu sổ của bot (`tab_agent_grant`): tài khoản ERP + chat Telegram + cấp (`duyet_ke_hoach` · `gop_dev`); mỗi lần cấp/gỡ đều ghi sổ và báo lại; hỏi «ai đang được sửa mã» là bot liệt kê | S | **Cách 3, đại ca chốt 24/09/2026.** Chỉ chat đại ca (khai cứng `AGENT_TELEGRAM_CHAT_ID` trong `.env`) mới cấp được và chat đó không gỡ được qua chat. Không lên web, không build, không khởi động lại. Dự phòng: tệp trên máy chạy bot, bot đọc mỗi lượt. Báo lỗi thì ai cũng được (M-05); prod không cấp cho ai |
+| K-01 | **XONG 24/09/2026 (ai-CR-051).** Cấp quyền sửa mã bằng CÂU NHẮN của đại ca trên Telegram («cho anh Được quyền gộp dev», bot hỏi lại rồi «đúng»), lưu sổ của bot (`tab_agent_grant`): tài khoản ERP + chat Telegram + cấp (`duyet_ke_hoach` · `gop_dev`); mỗi lần cấp/gỡ đều ghi sổ và báo lại; hỏi «ai đang được sửa mã» là bot liệt kê | S | **Cách 3, đại ca chốt 24/09/2026.** Chỉ chat đại ca (khai cứng `AGENT_TELEGRAM_CHAT_ID` trong `.env`) mới cấp được và chat đó không gỡ được qua chat. Không lên web, không build, không khởi động lại. Dự phòng: tệp trên máy chạy bot, bot đọc mỗi lượt. Báo lỗi thì ai cũng được (M-05); prod không cấp cho ai |
 | K-02 | Khóa của RIÊNG bot thay khóa của đại ca: GitHub App / deploy key chỉ đẩy `bot/*` + `erp-v2`; SSH lên VPS bằng khóa riêng bị khóa cứng đúng lệnh deploy dev (`command=` trong `authorized_keys`) | M | Hiện bot đang mượn khóa SSH của đại ca |
 | K-03 | Bảo vệ nhánh trên GitHub: `main` bắt buộc PR + duyệt; bot không có quyền đẩy `main` | S | Đại ca bật trên GitHub, không phải mã |
-| K-04 | Lệnh nhạy cảm (duyệt kế hoạch, gộp, deploy, thu hồi) kiểm cấp theo K-01; người không đủ cấp nhắn thì bot từ chối và báo đại ca | S | Hiện chỉ một chat đại ca |
+| K-04 | **XONG 24/09/2026 (ai-CR-051)** — người có cấp phải NÊU MÃ VIỆC, câu «xong rồi» trơn không đóng việc. Lệnh nhạy cảm (duyệt kế hoạch, gộp, deploy, thu hồi) kiểm cấp theo K-01; người không đủ cấp nhắn thì bot từ chối và báo đại ca | S | Hiện chỉ một chat đại ca |
 
 ## Nhóm T — Thư ký (biên bản họp, lịch, nhắc việc)
 
@@ -119,7 +119,7 @@ Cỡ là ước THÔ theo ngày công của một người, đo lại sau mỗi 
 | Phase | Tên | Gồm | Cần đại ca quyết / cung cấp | Cỡ ước |
 |---|---|---|---|---|
 | **0** | Đang chạy | Đậu Đậu trên máy đại ca: nhận việc, rà, sửa, kiểm, gộp, deploy dev; đăng nhập bằng mã; tạo + gửi duyệt phiếu từ chat; nghiên cứu; chi phí | — | xong |
-| **1** | Khóa quyền sửa mã | K-01 cấp quyền bằng câu nhắn (cách 3) · K-04 kiểm cấp trước lệnh nhạy cảm · K-03 bảo vệ nhánh `main` · K-02 khóa riêng của bot | K-03: đại ca bật trên GitHub; K-02: tạo khóa deploy riêng cho bot | 3–4 ngày |
+| **1** | Khóa quyền sửa mã | K-01 cấp quyền bằng câu nhắn (cách 3) **xong** · K-04 kiểm cấp trước lệnh nhạy cảm **xong** · K-03 bảo vệ nhánh `main` · K-02 khóa riêng của bot | K-03: đại ca bật trên GitHub; K-02: tạo khóa deploy riêng cho bot | 3–4 ngày |
 | **2** | Bot lên ERP dev | Gộp phần bot vào `erp-v2`, chạy trên server dev (phiếu bot tạo là phiếu thật, link bấm được trên điện thoại, người khác dùng Telegram được) · bật phiếu hỗ trợ làm nguồn việc (A-06) | Cho bot tạo phiếu thật trên dev; tài khoản ERP của bot; khóa Telegram/Gemini trên server | 3–5 ngày |
 | **3** | Trợ lý theo từng người trên web | M-07 AI + khóa do từng người chọn · M-02 khóa kết nối cá nhân · P-02 trần chi phí theo người · P-01 đẩy thông báo ERP sang Telegram cá nhân · T-10 nhắc việc bằng câu nói · T-07 tin thoại | P-01: đẩy toàn bộ chuông hay chỉ «chờ bạn duyệt / việc giao cho bạn» | 2 tuần |
 | **4** | Cổng MCP | M-01 cổng MCP dùng chung bộ tool · M-03 tool đọc · M-04 tool tạo/gửi duyệt có xác nhận · M-05 báo lỗi → Đậu Đậu | Thử với 1–2 người trước; chạy dev rồi prod | 2 tuần |

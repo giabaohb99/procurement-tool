@@ -34,7 +34,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.modules.assistant.provider.base import ChatResult
 
-from . import chat_link, coder, draft_create, manager, memory, playbook, research, telegram
+from . import chat_link, coder, draft_create, grants, manager, memory, playbook, research, telegram
 from .timeutil import fmt_local, now_local, to_utc
 from .constants import (
     ACT_ACK,
@@ -59,8 +59,12 @@ from .constants import (
     ACT_WAIT_PATCH_Q,
     ACT_WAIT_PLAN_ANSWER,
     ACT_DRAFT_DONE,
+    ACT_DENIED,
     ACT_DRAFT_DROPPED,
     ACT_DRAFT_WAIT,
+    ACT_GRANT_DONE,
+    ACT_GRANT_DROPPED,
+    ACT_GRANT_WAIT,
     BOT_DRAFT_FACTS,
     BOT_LOGIN_FACTS,
     BOT_NAME,
@@ -589,6 +593,11 @@ def _handle_other_chat(db: Session, msg: dict, chat_id: str, text: str) -> bool:
     if low.startswith("/hoi"):
         answer_question(db, chat_id, text[4:].strip(), before_id=row.id)
         return True
+    #  ai-CR-051 (K-04): người được đại ca cấp quyền ra lệnh trên việc bằng chữ như đại ca, nhưng PHẢI
+    #  nêu mã việc («gộp AI-0007», «AI-0007 xong chưa»): họ trò chuyện với Trợ lý nhiều, một câu «xong
+    #  rồi» trơn không được phép đóng việc nào. Đủ cấp hay không do `_grant_allows` xét.
+    if grants.level_for(db, link.user_id) and _CODE_IN_TEXT.search(low) and route_task_command(db, chat_id, row, text):
+        return True
     _route_linked_text(db, chat_id, row, text)
     return True
 
@@ -701,7 +710,7 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
         return
     #  Lệnh gõ bằng chữ trên một việc (ai-CR-027): «gộp AI-0007», «duyệt», «xong»… Đi TRƯỚC mạch trả
     #  lời kế hoạch: đang bị hỏi lại mà nhắn «bỏ việc này» là bỏ, không phải câu trả lời.
-    if (_draft_by_text(db, chat_id, row, text)
+    if (_grant_by_text(db, chat_id, row, text) or _draft_by_text(db, chat_id, row, text)
             or _choice_by_text(db, chat_id, row, text) or _confirm_by_text(db, chat_id, row, text)
             or _word_by_text(db, chat_id, row, text)
             or _cost_by_text(db, chat_id, row, text) or route_task_command(db, chat_id, row, text)):
@@ -967,7 +976,11 @@ def route_task_command(db: Session, chat_id: str, row: AgentMessage, text: str) 
     row.action = ACT_COMMAND
     row.task_id = task.id
     db.commit()
+    #  K-04 (ai-CR-051): chat khác đại ca phải đủ cấp mới được chạm vào việc.
+    if not _grant_allows(db, chat_id, row, task, action, text):
+        return True
     _run_task_command(db, chat_id, row, task, action, text)
+    _notify_admin_action(db, chat_id, task, action, text)
     return True
 
 
@@ -1247,6 +1260,167 @@ def _confirm_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) ->
                        .order_by(AgentMessage.id.desc()).limit(1))
     _run_intent_action(db, chat_id, row, task, action, origin.body if origin else "", "")
     return True
+
+
+# ---------------------------------------------------------------------------
+# Ai được ra lệnh sửa mã (ai-CR-051, K-01 «cách 3» + K-04)
+# ---------------------------------------------------------------------------
+GRANT_WINDOW = timedelta(minutes=15)
+
+
+def _grant_level(db: Session, chat_id: str) -> int:
+    """Cấp của chat này: chat đại ca = tối đa; chat khác = cấp của tài khoản ERP đã liên kết."""
+    if telegram.is_allowed_chat(chat_id):
+        return grants.LEVEL_ADMIN
+    link = chat_link.get_active_link(db, chat_id)
+    return grants.level_for(db, link.user_id) if link is not None else grants.LEVEL_NONE
+
+
+def _grant_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
+    """Chat đại ca: «cho anh Được quyền gộp dev» → hỏi lại → «đúng» ghi sổ; «gỡ quyền …»; «ai đang được
+    sửa mã». Chỉ chat đại ca cấp được — chat khác nhắn câu này thì đi đường thường (Trợ lý trả lời)."""
+    if not telegram.is_allowed_chat(chat_id):
+        return False
+    low = text.strip().lower()
+    pending = db.scalar(select(AgentMessage).where(
+        AgentMessage.chat_id == chat_id, AgentMessage.action == ACT_GRANT_WAIT, AgentMessage.id < row.id)
+        .order_by(AgentMessage.id.desc()).limit(1))
+    live = pending is not None and not (row.created_at and pending.created_at
+                                        and row.created_at - pending.created_at > GRANT_WINDOW)
+    if live and (_YES.match(low) or _NO.match(low)):
+        return _grant_confirm(db, chat_id, row, pending, yes=bool(_YES.match(low)))
+    parsed = grants.parse(text)
+    if parsed is None:
+        return False
+    row.action = ACT_COMMAND
+    if pending is not None and pending.action == ACT_GRANT_WAIT:
+        pending.action = ACT_GRANT_DROPPED      # câu mới thay câu hỏi cũ chưa trả lời
+    if parsed["op"] == "list":
+        reply(db, chat_id, _grant_listing(db))
+        db.commit()
+        return True
+    users = grants.find_users(db, parsed["name"])
+    esc = telegram.esc
+    if not users:
+        reply(db, chat_id, f"Em không tìm thấy tài khoản ERP nào tên «{esc(parsed['name'])}». Đại ca nhắn họ tên "
+              "đầy đủ hoặc tên đăng nhập giúp em.")
+        db.commit()
+        return True
+    if len(users) > 1:
+        names = " · ".join(esc(describe_user(db, u)[0]) for u in users[:5])
+        reply(db, chat_id, f"Có {len(users)} người khớp «{esc(parsed['name'])}»: {names}. Đại ca nhắn rõ tên hơn giúp em.")
+        db.commit()
+        return True
+    user = users[0]
+    label, _detail = describe_user(db, user)
+    if parsed["op"] == "revoke":
+        if not grants.active_grant(db, user.id):
+            reply(db, chat_id, f"<b>{esc(label)}</b> hiện không có quyền sửa mã nào để gỡ.")
+            db.commit()
+            return True
+        question = f"Gỡ quyền sửa mã của <b>{esc(label)}</b>? Nhắn «đúng» để gỡ, «thôi» để giữ."
+        info = {"op": "revoke", "user_id": user.id}
+    else:
+        level = parsed["level"]
+        current = grants.level_for(db, user.id)
+        if current == level:
+            reply(db, chat_id, f"<b>{esc(label)}</b> đã ở cấp <b>{grants.LEVEL_LABELS[level]}</b> rồi.")
+            db.commit()
+            return True
+        note = "" if grants.is_linked(db, user.id) else (" Người này CHƯA đăng nhập bot; cấp trước được, có "
+                                                          "hiệu lực khi họ nhắn /dangnhap.")
+        question = (f"Cấp cho <b>{esc(label)}</b> cấp <b>{grants.LEVEL_LABELS[level]}</b> "
+                    f"({esc(grants.LEVEL_SCOPE[level])})?{esc(note)} Nhắn «đúng» để cấp, «thôi» để bỏ.")
+        info = {"op": "grant", "user_id": user.id, "level": level}
+    reply(db, chat_id, question)
+    log_message(db, DIR_OUT, chat_id, 0, json.dumps(info), action=ACT_GRANT_WAIT)
+    db.commit()
+    return True
+
+
+def _grant_confirm(db: Session, chat_id: str, row: AgentMessage, pending: AgentMessage, *, yes: bool) -> bool:
+    from app.modules.user.model import User
+
+    row.action = ACT_COMMAND
+    try:
+        info = json.loads(pending.body or "{}")
+    except ValueError:
+        info = {}
+    user = db.get(User, int(info.get("user_id") or 0))
+    if not yes or user is None:
+        pending.action = ACT_GRANT_DROPPED
+        db.commit()
+        reply(db, chat_id, "Dạ, em không đổi quyền gì.")
+        return True
+    pending.action = ACT_GRANT_DONE
+    db.commit()
+    label, _detail = describe_user(db, user)
+    esc = telegram.esc
+    if info.get("op") == "revoke":
+        grants.revoke(db, user.id)
+        reply(db, chat_id, f"Đã gỡ quyền sửa mã của <b>{esc(label)}</b>. Từ giờ người này chỉ hỏi Trợ lý được.")
+        log.info("agent_hub: gỡ quyền sửa mã user=%s bởi chat %s", user.id, chat_id)
+        return True
+    level = int(info.get("level") or grants.LEVEL_PLAN)
+    grants.grant(db, user.id, level, by_chat=chat_id)
+    reply(db, chat_id, f"Đã cấp cho <b>{esc(label)}</b> cấp <b>{grants.LEVEL_LABELS.get(level, '?')}</b>. Ghi sổ "
+          f"{fmt_local(datetime.now())}. Hỏi «ai đang được sửa mã» để xem lại; «gỡ quyền của {esc(label.split(' (')[0])}» để gỡ.")
+    log.info("agent_hub: cấp quyền sửa mã user=%s cấp %s bởi chat %s", user.id, level, chat_id)
+    return True
+
+
+def _grant_listing(db: Session) -> str:
+    from app.modules.user.model import User
+
+    rows = grants.list_active(db)
+    if not rows:
+        return "Chưa cấp quyền sửa mã cho ai ngoài chat của đại ca."
+    esc = telegram.esc
+    lines = ["<b>Đang được ra lệnh sửa mã qua bot:</b>"]
+    for g in rows:
+        label, _detail = describe_user(db, db.get(User, g.user_id))
+        linked = "" if grants.is_linked(db, g.user_id) else " · chưa đăng nhập bot"
+        lines.append(f"• {esc(label or f'tài khoản #{g.user_id}')} — cấp <b>{grants.LEVEL_LABELS.get(int(g.level), '?')}</b>"
+                     f", từ {fmt_local(g.created_at)}{linked}")
+    lines.append("Chat của đại ca luôn đủ mọi cấp. Prod không cấp cho ai.")
+    return "\n".join(lines)
+
+
+def _grant_allows(db: Session, chat_id: str, row: AgentMessage, task: AgentTask, action: str, text: str) -> bool:
+    """K-04: lệnh trên việc từ chat KHÔNG phải đại ca phải đủ cấp; thiếu thì từ chối và báo đại ca."""
+    level = _grant_level(db, chat_id)
+    need = grants.required_level(action)
+    if level >= need:
+        return True
+    from app.modules.user.model import User
+
+    link = chat_link.get_active_link(db, chat_id)
+    label = describe_user(db, db.get(User, link.user_id))[0] if link is not None else f"chat {chat_link.mask_chat(chat_id)}"
+    esc = telegram.esc
+    row.action = ACT_DENIED
+    have = grants.LEVEL_LABELS.get(level, "chưa có quyền")
+    reply(db, chat_id, f"Lệnh «{esc(_ACTION_LABELS.get(action, action))}» cần cấp <b>{grants.LEVEL_LABELS.get(need, 'đại ca')}"
+          f"</b>; anh/chị đang ở cấp <b>{have}</b>. Em đã báo đại ca.", task_id=task.id)
+    reply(db, settings.AGENT_TELEGRAM_CHAT_ID,
+          f"<b>{esc(label)}</b> vừa nhắn «{esc(text[:80])}» trên <b>{esc(task.code)}</b> nhưng chỉ ở cấp {have}. "
+          f"Muốn cho thì nhắn «cho {esc(label.split(' (')[0])} quyền {grants.LEVEL_LABELS.get(need, 'gộp dev')}».",
+          task_id=task.id)
+    db.commit()
+    return False
+
+
+def _notify_admin_action(db: Session, chat_id: str, task: AgentTask, action: str, text: str) -> None:
+    """Người khác vừa ra lệnh đổi trạng thái việc: một dòng về chat đại ca (sổ đã có tin gốc)."""
+    if telegram.is_allowed_chat(chat_id) or action not in grants.NOTIFY_ACTIONS:
+        return
+    from app.modules.user.model import User
+
+    link = chat_link.get_active_link(db, chat_id)
+    label = describe_user(db, db.get(User, link.user_id))[0] if link is not None else f"chat {chat_link.mask_chat(chat_id)}"
+    esc = telegram.esc
+    reply(db, settings.AGENT_TELEGRAM_CHAT_ID,
+          f"<b>{esc(label)}</b> vừa nhắn «{esc(text[:80])}» → {esc(_ACTION_LABELS.get(action, action))} "
+          f"<b>{esc(task.code)}</b>.", task_id=task.id)
 
 
 def _ask_intent_choice(db: Session, chat_id: str, row: AgentMessage) -> None:

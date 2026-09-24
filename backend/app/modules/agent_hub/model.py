@@ -202,3 +202,23 @@ class AgentChatLink(Base, AuditMixin):
     linked_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
     expires_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+
+
+class AgentGrant(Base, AuditMixin):
+    """Ai được ra lệnh SỬA MÃ qua bot, ở cấp nào (ai-CR-051, K-01 «cách 3»).
+
+    Cấp bằng CÂU NHẮN của đại ca trên Telegram, không lên web, không build, không khởi động lại.
+    Gắn với TÀI KHOẢN ERP (`user_id`), không gắn với chat: người đó đăng nhập bot bằng chat nào cũng
+    mang theo cấp của mình. Gỡ = đóng dấu `revoked_at`, dòng cũ giữ lại làm sổ.
+    Cấp: 1 = duyệt kế hoạch (duyệt, sửa kế hoạch, làm tiếp, hỏi tình trạng), 2 = gộp dev (thêm gộp,
+    deploy dev, thu hồi). Prod không cấp cho ai; chat của đại ca không cần dòng nào.
+    """
+
+    __tablename__ = "tab_agent_grant"
+
+    user_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
+    level: Mapped[int] = mapped_column(SmallInteger, default=0)
+    #  Chat đã cấp (chỉ có thể là chat đại ca) — để sổ trả lời «ai cấp, lúc nào».
+    granted_by_chat: Mapped[str] = mapped_column(String(50), default="")
+    note: Mapped[str] = mapped_column(String(255), default="")
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)

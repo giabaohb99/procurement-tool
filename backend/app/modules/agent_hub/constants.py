@@ -201,8 +201,15 @@ ACT_HEARTBEAT = "dang_chay"
 ACT_DRAFT_WAIT = "cho_tao"
 ACT_DRAFT_DONE = "da_tao"
 ACT_DRAFT_DROPPED = "bo_tao"
+#  ai-CR-051: thẻ hỏi lại «cấp cho X cấp Y?» của đại ca; `body` = JSON {op, user_id, level}.
+ACT_GRANT_WAIT = "cho_cap_quyen"
+ACT_GRANT_DONE = "da_cap_quyen"
+ACT_GRANT_DROPPED = "bo_cap_quyen"
+#  Tin người khác (không phải đại ca) ra lệnh trên việc mà không đủ cấp — sổ để đại ca tra lại.
+ACT_DENIED = "tu_choi"
 NOISE_ACTIONS = (ACT_ACK, ACT_HEARTBEAT, ACT_PHOTO_WAIT, ACT_PHOTO_USED, ACT_PHOTO_ACK,
-                 ACT_DRAFT_WAIT, ACT_DRAFT_DONE, ACT_DRAFT_DROPPED)
+                 ACT_DRAFT_WAIT, ACT_DRAFT_DONE, ACT_DRAFT_DROPPED,
+                 ACT_GRANT_WAIT, ACT_GRANT_DONE, ACT_GRANT_DROPPED)
 
 # ---------------------------------------------------------------------------
 # Đơn giá model, USD / 1 triệu token

@@ -7728,3 +7728,31 @@ Mã nguồn: backend/app/modules/customs/service.py (market_overview, assess_cur
 assistant/tools/customs_tool.py · assistant/tools/__init__.py · assistant/service.py ·
 scripts/seed_help_customs_prices.py · test/backend/test_tool_hai_quan_cr481.py ·
 doc/erp/hai-quan/01 · 02 · 03
+
+## ai-CR-051 | Cấp quyền sửa mã bằng câu nhắn của đại ca và kiểm cấp trước mọi lệnh trên việc
+- status: xong
+- date: 2026-09-24
+Đại ca chốt làm lần lượt, phase 1 trước. Phase 1 là khóa quyền sửa mã theo cách ba đã chốt:
+không có màn web, không sửa tệp cấu hình, không build hay khởi động lại, đại ca chỉ nhắn cho bot.
+
+Đã làm hai phần. Một, bảng sổ quyền của bot và cách cấp: đại ca nhắn «cho anh Được quyền gộp
+dev» hoặc «cấp quyền duyệt kế hoạch cho Bảo», bot tìm tài khoản ERP theo họ tên, mã nhân viên,
+tên đăng nhập hoặc tên Telegram, so không dấu, trùng nhiều người thì hỏi rõ, rồi hỏi lại một
+câu và chỉ ghi sổ khi đại ca nhắn «đúng». Gỡ cũng bằng câu nhắn. Hỏi «ai đang được sửa mã» là
+bot liệt kê. Quyền gắn với tài khoản ERP chứ không gắn với chat, nên người đó đăng nhập bot bằng
+máy nào cũng mang theo cấp của mình; cấp trước khi họ đăng nhập cũng được. Có hai cấp: duyệt kế
+hoạch và gộp dev; prod không cấp cho ai; chat của đại ca không cần dòng nào trong sổ.
+
+Hai, kiểm cấp: người đã đăng nhập bot mà có cấp thì ra lệnh trên việc bằng chữ như đại ca,
+nhưng bắt buộc nêu mã việc, vì họ trò chuyện với trợ lý nhiều và một câu «xong rồi» trơn không
+được phép đóng việc nào. Thiếu cấp thì bot từ chối ngay tại chỗ và báo đại ca một dòng kèm sẵn
+câu cấp quyền. Đủ cấp mà lệnh đổi trạng thái việc thì đại ca cũng nhận một dòng báo.
+
+Hai mục còn lại của phase 1 là việc của đại ca trên GitHub và máy chủ: bảo vệ nhánh main và tạo
+khóa riêng cho bot. Chưa commit, chưa lên dev.
+
+Kiểm: năm bài mới, cả tệp test bot 209 bài xanh; migration đã chạy ở cơ sở dữ liệu bot local.
+
+Mã nguồn: backend/app/modules/agent_hub/grants.py · service.py · constants.py · model.py ·
+backend/migrations/versions/b3e7d1a9c5f2_agent_hub_quyen_sua_ma.py · test/backend/test_agent_hub.py ·
+doc/agent-hub/04-danh-sach-tinh-nang.md · doc/tai-lieu-ky-thuat/change-log-ai.md
