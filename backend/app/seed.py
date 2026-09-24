@@ -179,7 +179,7 @@ _CATALOG_READ = {e: (["read"], "all") for e in
 # "Cụm danh mục" — Admin thu mua được toàn quyền thêm/sửa/xóa
 _CATALOG_CRUD = {e: (["read", "create", "write", "delete"], "all") for e in
                  ["supplier", "product", "warehouse", "unit", "item_group",
-                  "brand", "company", "category_assignee"]}
+                  "brand", "company", "category_assignee", "purchase_cost_type"]}
 
 # CR-117 — HỢP ĐỒNG KHÔNG phải danh mục dùng chung như ĐVT hay Kho: mỗi hợp đồng đứng tên
 # MỘT pháp nhân (`company_id`), nên phạm vi mặc định là 'company' chứ không phải 'all'.
@@ -323,6 +323,10 @@ STD_ROLES = {
         "survey_request": (["read", "write", "export"], "proc"),
         "ticket": (["read", "create", "write"], "own"),
         "survey": (["read", "create", "write"], "all"),
+        # bao-CR-453 — danh mục Loại chi phí thu mua: đọc + thêm + sửa, KHÔNG xóa. Phải có
+        # quyền ghi thì mục menu mới hiện (mục này gác bằng `manage`, chỉ `read` là menu ẩn);
+        # xóa để lại cho quản lý vì dòng đã dùng trong đơn thì xóa là mất nhãn chi phí cũ.
+        "purchase_cost_type": (["read", "create", "write"], "all"),
         "purchase_order": (["read", "create", "write", "delete", "print", "export"], "assigned"),   # chỉ đơn mình tạo/NSPT là mình; xóa được đơn NHÁP của mình
         "inventory": (["read"], "company"),
         "payable": (["read"], "company"),
@@ -340,6 +344,8 @@ STD_ROLES = {
         "purchase_request": (_ALL_ACTIONS, "dept_proc"),
         "survey_request": (_ALL_ACTIONS, "dept_proc"),
         "purchase_order": (_ALL_ACTIONS, "dept_proc"),
+        # bao-CR-453 — như `pur_staff`: đọc + thêm + sửa danh mục Loại chi phí thu mua, không xóa.
+        "purchase_cost_type": (["read", "create", "write"], "all"),
         "ticket": (["read", "create", "write"], "own"),
         "survey": (["read", "create", "write", "approve"], "all"),
         "inventory": (["read"], "company"),
