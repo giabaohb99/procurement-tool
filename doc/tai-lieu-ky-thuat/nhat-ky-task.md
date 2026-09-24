@@ -3155,6 +3155,19 @@ Mã nguồn: `frontend-v2/src/modules/approval-seal/components/seal-clerk-detail
 Commit: `5fbce75a` trên nhánh `erp-v2`.
 
 
+## ai-CR-041 | Bài kiểm của bot không bao giờ gọi mạng thật
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Đại ca lo bài kiểm tốn token. Em cài một lưới chặn cho tệp bài kiểm của bot để đo: không có lượt nào gọi
+Gemini, nên bài kiểm không tốn tiền API; nhưng mỗi lần chạy có khoảng một trăm hai mươi lăm lượt gọi thật
+sang Telegram bằng token thật, vì vài hàm gửi tin chưa được giả lập. Nay lưới chặn nằm luôn trong tệp:
+Telegram được trả lời giả tại chỗ, còn bài nào lỡ gọi Gemini, GitHub hay bất kỳ dịch vụ ngoài nào thì bài
+đó đỏ ngay. Chạy cả tệp từ khoảng tám mươi giây còn hai mươi mốt giây. Cả tệp 177/177 xanh.
+
+Mã nguồn: `test/backend/test_agent_hub.py` (`_chan_mang_that`) · `change-log-ai.md`.
+
 ## ai-CR-040 | Đậu Đậu nói đúng cách đăng nhập tài khoản trong Telegram
 - status: xong
 - date: 2026-09-24

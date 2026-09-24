@@ -95,6 +95,43 @@ def _msg(text: str) -> dict:
     return {"chat": {"id": "12345"}, "message_id": 7, "text": text}
 
 
+#  Máy chủ trong stack local — gọi tới đây không tốn tiền, không lộ dữ liệu.
+_LOCAL_HOSTS = {"localhost", "127.0.0.1", "qdrant", "db", "redis", "api", "agent-api"}
+
+
+@pytest.fixture(autouse=True)
+def _chan_mang_that(monkeypatch):
+    """Không bài kiểm nào được gọi mạng thật (Gemini, Telegram, GitHub) — ai-CR-041.
+
+    Bài kiểm chạy TRONG container bot, nơi `.env` có khóa Gemini trả phí thật. Trước đây bài nào gửi
+    tin chữ mà quên giả lập trạm đọc ý định / lập kế hoạch / kho tài liệu là gọi Gemini thật: mỗi lần
+    chạy cả tệp đốt tiền thật (đại ca thấy tốn token 24/09/2026). Nay gọi mạng thật là bài đó ĐỎ.
+    """
+    import requests
+    from urllib.parse import urlparse
+
+    real = requests.Session.request
+    leaked: list[str] = []
+
+    def guard(self, method, url, *args, **kwargs):
+        host = urlparse(str(url)).hostname or ""
+        if host in _LOCAL_HOSTS:
+            return real(self, method, url, *args, **kwargs)
+        if host == "api.telegram.org":
+            #  Telegram miễn phí nhưng vẫn là gọi thật bằng token thật (đo 24/09: 125 lượt mỗi lần chạy
+            #  tệp, chậm gần 3 lần). Trả «ok» tại chỗ; bài nào cần xem tin gửi đi thì đã tự giả `send`.
+            fake = requests.models.Response()
+            fake.status_code = 200
+            fake._content = b'{"ok": true, "result": {"message_id": 1}}'
+            return fake
+        leaked.append(f"{method} {host}")
+        raise requests.ConnectionError(f"bài kiểm không được gọi mạng thật: {host}")
+
+    monkeypatch.setattr(requests.Session, "request", guard)
+    yield
+    assert not leaked, f"bài kiểm lỡ gọi mạng thật (tốn tiền Gemini/Telegram): {leaked}"
+
+
 @pytest.fixture
 def bot(monkeypatch):
     """Cắm bot vào chỗ trống: chặn mọi lượt gọi mạng, ghi lại thứ bot định gửi."""
