@@ -4528,7 +4528,7 @@ def test_nhan_tao_thi_tao_that_dung_mot_lan(db, bot, monkeypatch):
     assert "Bản nháp đơn nghỉ phép" in sent[-1] and "buổi chiều" in sent[-1] and "Nhắn «tạo»" in sent[-1]
     service.handle_message(db, _msg("tạo đi em"))
     assert created == [(7, "leave", "Đi khám bệnh")]
-    assert "Đã tạo đơn nghỉ phép <b>NP0042</b>" in sent[-1] and "/hr/leave-requests/42" in sent[-1]
+    assert "<b>Đã tạo đơn nghỉ phép.</b>" in sent[-1] and "/hr/leave-requests/42" in sent[-1]
     _fake_intent(monkeypatch, service, "hoi")
     service.handle_message(db, _msg("tạo"))                        # không còn bản nháp chờ: không tạo lần hai
     assert len(created) == 1
@@ -4643,7 +4643,7 @@ def test_tao_va_gui_duyet_mot_cau(db, bot, monkeypatch):
     assert "«tạo và gửi duyệt»" in sent[-1]
     service.handle_message(db, _msg("tạo và gửi duyệt"))
     assert len(created) == 1 and submitted == [("leave", 42)]
-    assert "Đã tạo và gửi duyệt đơn nghỉ phép <b>NP0042</b>" in sent[-1]
+    assert "<b>Đã tạo và gửi duyệt đơn nghỉ phép.</b>" in sent[-1]
 
 
 def test_tao_truoc_roi_gui_duyet_luon_chi_mot_lan(db, bot, monkeypatch):
@@ -4680,7 +4680,7 @@ def test_gui_duyet_hong_sau_khi_tao_van_bao_ro_da_tao(db, bot, monkeypatch):
     _submit_setup(monkeypatch, service, fail="Quỹ phép năm không đủ")
     service.deliver_tool_results(db, "12345", me, [{"name": "draft_leave_request", "draft": dict(_LEAVE_DRAFT)}])
     service.handle_message(db, _msg("tạo rồi gửi duyệt đi"))
-    assert "Đã tạo đơn nghỉ phép <b>NP0042</b> (Nháp) nhưng chưa gửi duyệt được: Quỹ phép năm không đủ" in sent[-1]
+    assert "Đã tạo đơn nghỉ phép NP0042 (Nháp) nhưng chưa gửi duyệt được: Quỹ phép năm không đủ" in sent[-1]
 
 
 def test_submit_goi_dung_ham_web_va_chay_tac_vu_nen(db, monkeypatch):
@@ -4757,3 +4757,39 @@ def test_cau_nho_soan_lai_khong_bi_hieu_la_xac_nhan(db, bot, monkeypatch):
     assert created == [] and asked == ["tạo đơn nghỉ khác vào thứ 6", "sửa lý do thành đi khám mắt"]
     service.handle_message(db, _msg("oke tạo đơn nháp đi"))
     assert len(created) == 1
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-049: tạo xong trả thông tin phiếu + link đúng giao diện; hỏi chi tiết không soạn lại
+# ---------------------------------------------------------------------------
+def test_tao_xong_tra_thong_tin_doc_tu_db_va_link(db, bot, monkeypatch):
+    from app.modules.agent_hub import draft_create
+
+    service, sent, asked = bot
+    me, created = _draft_setup(db, monkeypatch, service)
+    monkeypatch.setattr(draft_create, "created_details",
+                        lambda db, kind, oid: [f"Mã: NP0042 · Trạng thái: Nháp", "Lý do: Đi khám bệnh"])
+    monkeypatch.setattr(settings, "AGENT_ERP_URL", "http://localhost:8084")
+    service.deliver_tool_results(db, "12345", me, [{"name": "draft_leave_request", "draft": dict(_LEAVE_DRAFT)}])
+    service.handle_message(db, _msg("oke tạo đi"))
+    assert "Mã: NP0042 · Trạng thái: Nháp" in sent[-1]
+    #  Địa chỉ nội bộ: Telegram không cho bấm, in nguyên để chép.
+    assert "<code>http://localhost:8084/hr/leave-requests/42</code>" in sent[-1]
+    #  Hỏi chi tiết ngay sau khi tạo: trả phiếu vừa tạo, không đi Trợ lý (không soạn nháp lại).
+    service.handle_message(db, _msg("cho chi tiết phiếu đi"))
+    assert "Đơn nghỉ phép vừa tạo:" in sent[-1] and asked == [] and len(created) == 1
+    #  Tên miền thật thì là link bấm được.
+    monkeypatch.setattr(settings, "AGENT_ERP_URL", "https://deverp.degoholding.vn")
+    assert service._doc_link_html("leave", 42) == '<a href="https://deverp.degoholding.vn/hr/leave-requests/42">Mở phiếu</a>'
+
+
+def test_thong_tin_phieu_ho_tro_doc_tu_ban_ghi(db):
+    from app.modules.agent_hub import draft_create
+    from app.modules.ticket.model import Ticket
+
+    t = Ticket(code="HT-0099", subject="Máy in hỏng", status="open", priority="high")
+    db.add(t)
+    db.commit()
+    assert draft_create.created_details(db, "ticket", t.id) == [
+        "Mã: HT-0099 · Trạng thái: Mới", "Chủ đề: Máy in hỏng", "Ưu tiên: high"]
+    assert draft_create.created_details(db, "leave", 999999) == []

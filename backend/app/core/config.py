@@ -289,6 +289,9 @@ class Settings(BaseSettings):
     AGENT_TELEGRAM_BOT_USERNAME: str = ""
     # ai-CR-043: tỷ giá TẠM để báo chi phí bot kèm tiền Việt. Chỉ để đọc cho dễ, không phải số kế toán.
     AGENT_USD_VND: int = 26000
+    # ai-CR-049: gốc giao diện ERP chứa phiếu bot tạo (link «Mở phiếu»). Trống = FRONTEND_URL. Stack bot
+    # local tạo phiếu vào DB riêng nên phải trỏ giao diện của stack đó (agent-erp, cổng 8084).
+    AGENT_ERP_URL: str = ""
     AGENT_TICKET_DEPARTMENTS: str = ""
     AGENT_FILE_MAX_MB: int = 20
     # ai-CR-018: `doc/` trên máy đại ca (gồm phần CHƯA commit) mount chỉ đọc vào runner. Rỗng =

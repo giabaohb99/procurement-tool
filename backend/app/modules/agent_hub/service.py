@@ -2339,7 +2339,7 @@ def _draft_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> b
     yes = want_submit or bool(_CREATE_YES.match(low)) or (live and _loose_confirm(low))
     no = bool(_NO.match(low))
     if not (yes or no):
-        return False
+        return (not live) and _detail_recent(db, chat_id, row, low)
     if not live:
         #  Không còn nháp chờ: «gửi duyệt luôn» ngay sau một lần «tạo» thì gửi duyệt phiếu vừa tạo.
         return want_submit and _submit_recent(db, chat_id, row)
@@ -2380,31 +2380,52 @@ def _draft_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> b
     #  Nhớ phiếu vừa tạo trên chính dòng sổ nháp, để «gửi duyệt luôn» nhắn sau vẫn biết phiếu nào.
     pending.body = json.dumps({**info, "created": {"id": oid, "code": code}}, ensure_ascii=False, default=str)
     db.commit()
-    link = telegram.absolute_url(draft_create.DETAIL_PATHS[kind].format(id=oid))
     if want_submit and kind in draft_create.SUBMITTABLE:
-        _submit_and_report(db, chat_id, user, kind, oid, code, link, pending)
+        _submit_and_report(db, chat_id, user, kind, oid, code, pending)
         return True
-    tail = " Nhắn «gửi duyệt» để gửi duyệt luôn." if kind in draft_create.SUBMITTABLE else ""
-    reply(db, chat_id, f"Đã tạo {label} <b>{telegram.esc(code)}</b> (Nháp). "
-          f'<a href="{telegram.esc(link)}">Mở phiếu</a>.{tail}')
+    tail = "Nhắn «gửi duyệt» để gửi duyệt luôn." if kind in draft_create.SUBMITTABLE else ""
+    _reply_created(db, chat_id, kind, oid, f"Đã tạo {label}.", tail)
     return True
 
 
-def _submit_and_report(db: Session, chat_id: str, user, kind: str, oid: int, code: str, link: str,
+def _doc_link_html(kind: str, oid: int) -> str:
+    """Link mở phiếu. Gốc là AGENT_ERP_URL (hoặc FRONTEND_URL). Địa chỉ nội bộ (localhost, không tên miền)
+    Telegram không cho bấm — in nguyên đường dẫn để chép sang trình duyệt trên máy chạy bot."""
+    from urllib.parse import urlparse
+
+    base = (settings.AGENT_ERP_URL or settings.FRONTEND_URL or "").rstrip("/")
+    url = base + draft_create.DETAIL_PATHS[kind].format(id=oid)
+    host = urlparse(url).hostname or ""
+    if host and "." in host and not host.startswith("127."):
+        return f'<a href="{telegram.esc(url)}">Mở phiếu</a>'
+    return f"Mở trên máy chạy bot: <code>{telegram.esc(url)}</code>"
+
+
+def _reply_created(db: Session, chat_id: str, kind: str, oid: int, head: str, tail: str = "") -> None:
+    """Báo phiếu vừa tạo / gửi duyệt KÈM thông tin đọc lại từ DB + link (ai-CR-049). Ghi dấu câu trả lời
+    để lượt hỏi sau Trợ lý biết phiếu ĐÃ tạo — không thì «cho chi tiết phiếu» lại bị soạn nháp lần nữa."""
+    lines = [f"<b>{telegram.esc(head)}</b>"]
+    lines += [telegram.esc(x) for x in draft_create.created_details(db, kind, oid)]
+    lines.append(_doc_link_html(kind, oid))
+    if tail:
+        lines.append(telegram.esc(tail))
+    reply(db, chat_id, "\n".join(lines), action=ACT_ANSWER)
+
+
+def _submit_and_report(db: Session, chat_id: str, user, kind: str, oid: int, code: str,
                        pending: AgentMessage) -> None:
     label = draft_create.LABELS[kind]
     try:
         draft_create.submit(db, user, kind, oid)
     except draft_create.DraftError as e:
-        reply(db, chat_id, f"Đã tạo {label} <b>{telegram.esc(code)}</b> (Nháp) nhưng chưa gửi duyệt được: "
-              f'{telegram.esc(str(e)[:400])} <a href="{telegram.esc(link)}">Mở phiếu</a>.')
+        _reply_created(db, chat_id, kind, oid, f"Đã tạo {label} {code} (Nháp) nhưng chưa gửi duyệt được: "
+                       f"{str(e)[:400]}")
         return
     info = json.loads(pending.body or "{}")
     info["submitted"] = True
     pending.body = json.dumps(info, ensure_ascii=False, default=str)
     db.commit()
-    reply(db, chat_id, f"Đã tạo và gửi duyệt {label} <b>{telegram.esc(code)}</b>. "
-          f'<a href="{telegram.esc(link)}">Mở phiếu</a>.')
+    _reply_created(db, chat_id, kind, oid, f"Đã tạo và gửi duyệt {label}.")
 
 
 def _submit_recent(db: Session, chat_id: str, row: AgentMessage) -> bool:
@@ -2431,8 +2452,32 @@ def _submit_recent(db: Session, chat_id: str, row: AgentMessage) -> bool:
         db.commit()
         reply(db, chat_id, f"Chưa gửi duyệt được: {telegram.esc(missing)} Đại ca bổ sung trên phiếu rồi gửi duyệt.")
         return True
-    link = telegram.absolute_url(draft_create.DETAIL_PATHS[kind].format(id=created["id"]))
-    _submit_and_report(db, chat_id, user, kind, int(created["id"]), str(created.get("code", "")), link, done)
+    _submit_and_report(db, chat_id, user, kind, int(created["id"]), str(created.get("code", "")), done)
+    return True
+
+
+#  ai-CR-049: vừa tạo xong mà hỏi «chi tiết / thông tin / link» thì trả phiếu vừa tạo, không đi Trợ lý.
+_DETAIL_Q = re.compile(r"(?<!\w)(chi tiết|thông tin|link|xem|mở)(?!\w)")
+
+
+def _detail_recent(db: Session, chat_id: str, row: AgentMessage, low: str) -> bool:
+    if len(low.split()) > 8 or re.search(r"\d", low) or not _DETAIL_Q.search(low):
+        return False
+    done = db.scalar(select(AgentMessage).where(
+        AgentMessage.chat_id == chat_id, AgentMessage.action == ACT_DRAFT_DONE, AgentMessage.id < row.id)
+        .order_by(AgentMessage.id.desc()).limit(1))
+    if done is None or (row.created_at and done.created_at and row.created_at - done.created_at > DRAFT_WINDOW):
+        return False
+    try:
+        info = json.loads(done.body or "{}")
+    except ValueError:
+        return False
+    created, kind = info.get("created") or {}, info.get("kind", "")
+    if not created or kind not in draft_create.DETAIL_PATHS:
+        return False
+    row.action = ACT_COMMAND
+    db.commit()
+    _reply_created(db, chat_id, kind, int(created["id"]), f"{draft_create.LABELS[kind].capitalize()} vừa tạo:")
     return True
 
 

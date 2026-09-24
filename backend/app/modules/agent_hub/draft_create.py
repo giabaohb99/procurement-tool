@@ -297,3 +297,64 @@ def submit(db: Session, user, kind: str, obj_id: int) -> None:
         except Exception:  # noqa: BLE001 — email / thông báo đẩy hỏng không làm hỏng phiếu đã gửi duyệt
             import logging
             logging.getLogger("app.agent_hub").exception("agent_hub: tác vụ nền sau gửi duyệt hỏng")
+
+
+# ---------------------------------------------------------------------------
+# Thông tin phiếu vừa tạo (ai-CR-049) — đọc lại từ CHÍNH bản ghi, không từ bản nháp
+# ---------------------------------------------------------------------------
+_DOC_STATUS = {"draft": "Nháp", "submitted": "Chờ duyệt", "approved": "Đã duyệt", "rejected": "Bị trả lại",
+               "processing": "Đang xử lý", "survey_done": "Đã khảo sát", "cancelled": "Đã hủy"}
+_TICKET_STATUS = {"open": "Mới", "in_progress": "Đang xử lý", "answered": "Đã trả lời", "closed": "Đã đóng"}
+
+
+def _vn_num(value: float) -> str:
+    """0.5 -> «0,5»: số lẻ viết theo kiểu Việt."""
+    return f"{value:g}".replace(".", ",")
+
+
+def created_details(db: Session, kind: str, oid: int) -> list[str]:
+    """Các dòng thông tin của phiếu vừa tạo / vừa gửi duyệt, đọc từ DB (trạng thái thật sau gửi duyệt)."""
+    if kind == "leave":
+        from app.modules.leave.constants import LEAVE_REQUEST_STATUS_LABELS, LEAVE_SESSION_LABELS
+        from app.modules.leave.request_model import LeaveRequest, LeaveRequestLine
+        from app.modules.leave.request_serializer import names_of, type_names
+
+        obj = db.get(LeaveRequest, oid)
+        if obj is None:
+            return []
+        types = type_names(db)
+        lines = db.query(LeaveRequestLine).filter(LeaveRequestLine.request_id == oid).all()
+        span = obj.from_date.strftime("%d/%m/%Y")
+        if obj.to_date != obj.from_date:
+            span += f" → {obj.to_date.strftime('%d/%m/%Y')}"
+        sessions = LEAVE_SESSION_LABELS.get(obj.from_session, "")
+        if obj.to_session != obj.from_session:
+            sessions += f" → {LEAVE_SESSION_LABELS.get(obj.to_session, '')}"
+        return [f"Mã: {obj.code} · Trạng thái: {LEAVE_REQUEST_STATUS_LABELS.get(obj.status, '?')}",
+                f"Người nghỉ: {names_of(db, {obj.employee_id}).get(obj.employee_id, '')}",
+                f"Ngày nghỉ: {span} ({sessions.lower()}) · {_vn_num(obj.total_days)} ngày",
+                "Loại: " + (", ".join(f"{types.get(ln.leave_type_id, '?')} {_vn_num(ln.days)} ngày" for ln in lines) or "?"),
+                f"Lý do: {obj.reason or '(trống)'}"]
+    if kind in ("purchase", "survey"):
+        if kind == "purchase":
+            from app.modules.purchase_request.model import PurchaseRequest as Model
+        else:
+            from app.modules.survey_request.model import SurveyRequest as Model
+        obj = db.get(Model, oid)
+        if obj is None:
+            return []
+        out = [f"Mã: {obj.code} · Trạng thái: {_DOC_STATUS.get(obj.status, obj.status)}",
+               f"Người yêu cầu: {obj.requester} · Phòng: {obj.department or '(trống)'}",
+               f"Mục đích: {obj.purpose or '(trống)'}"]
+        if kind == "purchase" and getattr(obj, "need_date", ""):
+            out.append(f"Ngày cần hàng: {obj.need_date}")
+        return out
+    if kind == "ticket":
+        from app.modules.ticket.model import Ticket
+
+        t = db.get(Ticket, oid)
+        if t is None:
+            return []
+        return [f"Mã: {t.code} · Trạng thái: {_TICKET_STATUS.get(t.status, t.status)}",
+                f"Chủ đề: {t.subject}", f"Ưu tiên: {t.priority}"]
+    return []

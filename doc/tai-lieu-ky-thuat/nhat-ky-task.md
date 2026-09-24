@@ -3155,6 +3155,21 @@ Mã nguồn: `frontend-v2/src/modules/approval-seal/components/seal-clerk-detail
 Commit: `5fbce75a` trên nhánh `erp-v2`.
 
 
+## ai-CR-049 | Tạo phiếu xong bot trả đủ thông tin và link mở phiếu
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Đại ca tạo đơn nghỉ qua bot thì bot chỉ báo mã, link không bấm được, và hỏi chi tiết phiếu thì bot lại soạn
+nháp thêm lần nữa. Link trỏ nhầm sang giao diện ERP thường trong khi phiếu nằm ở cơ sở dữ liệu riêng của bot,
+và Telegram không cho bấm địa chỉ nội bộ. Nay link trỏ đúng giao diện của bot; địa chỉ nội bộ thì bot in
+nguyên đường dẫn để chép, khi chạy trên tên miền thật thì là link bấm được. Tạo hoặc gửi duyệt xong, bot trả
+luôn thông tin đọc lại từ phiếu thật: mã, trạng thái, người nghỉ, ngày và buổi nghỉ, số ngày, loại nghỉ, lý do.
+Hỏi chi tiết, thông tin hay link ngay sau khi tạo thì bot trả phiếu vừa tạo chứ không soạn lại. Cả tệp bài kiểm
+của bot 204/204 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/draft_create.py` (`created_details`) · `service.py` (`_reply_created`, `_doc_link_html`, `_detail_recent`) · `backend/app/core/config.py` (`AGENT_ERP_URL`) · `test/backend/test_agent_hub.py` · `change-log-ai.md`.
+
 ## ai-CR-048 | Bản nháp chứng từ chỉ hiện một lần và nói đúng cách tạo
 - status: xong
 - date: 2026-09-24
