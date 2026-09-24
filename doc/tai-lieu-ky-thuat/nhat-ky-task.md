@@ -6400,6 +6400,52 @@ Mã nguồn: `frontend-v2/src/shared/data-table/types.ts` ·
 `frontend-v2/src/shared/data-table/lines-table.test.tsx` ·
 `frontend-v2/src/modules/procurement/components/purchase-order-import-costs-card.tsx`.
 
+## bao-CR-474 | Ô trưởng bộ phận của yêu cầu mua hàng: tạo mới cũng chọn được và luôn hiện một người
+- status: xong
+- date: 2026-09-24
+Đại ca thấy phiếu nhân bản chọn được trưởng bộ phận còn phiếu tạo mới thì không, và hỏi
+nếu chọn được thì thông báo đi đâu.
+
+Rà ra: giao diện mới tra danh sách người chọn được theo mã phiếu, mà phiếu mới chưa có
+mã nên không có danh sách; phiếu nhân bản đã lưu nháp nên có. Giao diện cũ tra theo phòng
+ban nên không bị. Nay giao diện mới tra theo phòng ban như bản cũ.
+
+Ô luôn hiện một người: chưa chọn thì hiện trưởng phòng mặc định của phòng — đúng người hệ
+thống tự điền khi lưu. Phòng chưa gán trưởng thì ô nói rõ và mời chọn, không tự đoán.
+
+Thông báo gửi duyệt trước đây chỉ đi tới trưởng phòng gán cứng và người có vai trò trưởng
+phòng của phòng đó; người được chọn nếu khác mặc định thì không nhận gì. Nay người được
+chọn cũng nhận chuông. Luồng này không gửi email, chỉ chuông và thông báo đẩy. Chưa commit.
+
+Kiểm: 17 bài kiểm máy chủ xanh (5 bài mới), giao diện mới kiểm kiểu 0 lỗi, kiểm nếp mã 0
+lỗi, 545 bài kiểm phân hệ Thu mua xanh (4 bài mới).
+
+Mã nguồn: backend/app/modules/notification/service.py · purchase_request/controller.py ·
+frontend-v2/src/modules/procurement (purchase-request-info-card, use-purchase-request,
+purchase-request-api, utils/dept-head-display) · test/backend/test_tbp_nhan_chuong_cr474.py
+
+## bao-CR-475 | Ô chọn ở giao diện mới sổ ngay dưới ô, ô danh mục dài gõ để tìm
+- status: xong
+- date: 2026-09-24
+Đại ca chụp lỗi ô «Nhân sự YC»: danh sách dài bung kín cả màn hình, và muốn các ô chọn
+trên màn yêu cầu và đơn mua hàng gõ chữ để tìm rồi chọn.
+
+Ô chọn dùng chung nay sổ ngay dưới ô, cao tối đa khoảng mười dòng rồi cuộn trong khung,
+áp cho mọi màn của giao diện mới. Trên màn yêu cầu mua hàng, yêu cầu báo giá và đơn mua
+hàng, các ô lấy từ danh mục dài (công ty, nhân sự, phòng ban, trưởng bộ phận, nhà cung
+cấp, nhân sự thu mua, kho, phân loại, đơn vị tính, đơn vị vận chuyển, mã hàng chỉ định)
+đổi sang ô gõ để tìm ngay trên ô; ô danh sách ngắn cố định giữ nguyên. Vá thêm lỗi của ô
+tìm dùng chung: bấm lại vào ô đang mở làm danh sách đóng và chữ gõ bị nối vào nhãn cũ.
+
+Chưa đổi: ô lọc ở các màn danh sách và báo cáo (đã hết bung màn hình nhưng chưa gõ tìm).
+Chưa commit.
+
+Kiểm: kiểm kiểu 0 lỗi, kiểm nếp mã 0 lỗi, 782 bài kiểm phân hệ Thu mua và lớp giao diện
+dùng chung xanh.
+
+Mã nguồn: frontend-v2/src/shared/ui/select.tsx · search-select.tsx ·
+modules/procurement/components (mười thẻ và bảng của ba loại phiếu)
+
 ## bao-CR-476 | Bấm quyết toán chi phí thì lưu bảng đang gõ trước rồi mới chốt
 - status: xong
 - date: 2026-09-24
@@ -6490,3 +6536,68 @@ luật đã có mười bài kiểm canh sẵn ở bên ERP.
 
 Mã nguồn: `frontend/src/utils/customs-regulation.ts` ·
 `frontend/src/components/customs/CustomsTabs.tsx` · `frontend/src/pages/CustomsPrices.tsx`.
+
+## bao-CR-478 | Quyết toán chi phí thu mua bằng tick chọn, tự chép số từ giai đoạn trước
+- status: xong
+- date: 2026-09-24
+Đại ca muốn màn đơn mua hàng bản cũ bỏ dải ba giai đoạn và nút chốt tạm tính, thay bằng tick
+chọn dòng để quyết toán, có luật chép số và nút chép hàng loạt.
+
+Khi quyết toán, dòng chỉ có Dự toán thì số được chép sang cả Tạm tính lẫn Quyết toán; dòng có
+Tạm tính thì chép sang Quyết toán; dòng đã gõ Quyết toán thì giữ nguyên. Dòng chưa có Dự toán
+không được quyết toán: lượt chốt bỏ qua dòng đó và báo rõ số dòng bị bỏ qua. Vá thêm một bẫy:
+bản cũ lưu ô trống thành số 0 nên luật chép số trước đây không bao giờ chạy với dữ liệu bản cũ.
+
+Màn bản cũ: bỏ dải giai đoạn và nút chốt theo giai đoạn; cột tick dùng chung cho quyết toán và
+lập yêu cầu thanh toán; thêm nút quyết toán dòng đã tick, quyết toán tất cả, và hai nút chép
+Dự toán sang Tạm tính, Tạm tính sang Quyết toán (chỉ điền ô còn trống). Theo đại ca, giao
+diện mới làm y như vậy: ô tick của dòng chưa có Dự toán khóa lại kèm lời giải thích, thêm hai
+nút chép số hàng loạt; ô tick hết chuyển từ thanh nút xuống tiêu đề cột Chọn như bản cũ.
+Chưa commit.
+
+Kiểm: 29 bài kiểm máy chủ xanh (9 bài mới), bản cũ kiểm kiểu giữ 4 lỗi nền, giao diện mới kiểm
+kiểu và kiểm nếp mã 0 lỗi, 569 bài phân hệ Thu mua xanh (7 bài mới cho phần chép số).
+
+Mã nguồn: backend/app/modules/purchase_order/service.py · controller.py ·
+frontend/src/pages/PurchaseOrderDetail.tsx · frontend-v2 purchase-order-import-costs-card.tsx ·
+test/backend/test_quyet_toan_chep_so_cr478.py
+
+## bao-CR-479 | Rà soát trước khi đưa toàn bộ bản dev lên prod
+- status: xong
+- date: 2026-09-24
+Đại ca hỏi nếu đưa mọi cập nhật hiện tại lên prod thì có vướng gì không, kiểm kỹ và có vấn đề
+thì ngừa luôn. Em diễn tập nâng cấp trên bản sao dữ liệu prod, rà quyền, tệp đính kèm, tác vụ
+nền, rồi chạy đủ bộ kiểm máy chủ: 5141 bài xanh, 21 bài đỏ, phân loại từng bài.
+
+Tìm ra một lỗi thật do gộp nhánh: màn Cấu hình hệ thống mất bước chặn giá trị hỏng, gõ nhầm
+chữ vào ô trần câu hỏi trợ lý AI thì lưu được và trần thành không giới hạn. Đã vá: mọi ô được
+kiểm trước khi ghi, một ô hỏng thì cả lượt lưu dừng. Vá thêm ba mã hành động chưa có nhãn tiếng
+Việt (chuyển phòng xử lý, trả phiếu về thu mua, xếp chạy lại đồng bộ) nên nhật ký hiện chữ Anh.
+
+Các bài đỏ còn lại là bài kiểm chưa theo luật mới đã chốt (không phải lỗi mã) nên sửa bài
+kiểm. Hai sổ canh bảo mật được rà từng dòng: ba công cụ trợ lý AI mới và mười sáu lần tra bản
+ghi thẳng theo id trong đường API, đều có chốt phạm vi, không có lỗ đọc chéo. Chưa commit.
+
+Kiểm: bài liên quan xanh; giao diện mới chạy đủ 3776 bài xanh, kiểm kiểu và kiểm nếp mã 0 lỗi;
+bản cũ kiểm kiểu giữ 4 lỗi nền.
+
+Mã nguồn: backend/app/modules/setting/service.py · backend/app/core/action_catalog.py ·
+10 tệp test/backend
+
+## bao-CR-462 | Thẻ lịch sử thay đổi ở màn Cấu hình hệ thống của bản ERP
+- status: xong
+- date: 2026-09-24
+Bê phần nhật ký cấu hình của bản cũ sang bản ERP: màn Cấu hình hệ thống có thêm thẻ «Lịch sử
+thay đổi», mỗi lần lưu hiện một dòng ghi ai đổi, lúc nào, từng ô từ giá trị gì sang giá trị
+gì. Ô bật tắt nói Bật hoặc Tắt, ô chọn nói bằng tên người dùng thấy, khóa bí mật chỉ ghi là
+đã đặt giá trị mới, không bao giờ lộ giá trị.
+
+Làm xong ở máy từ 22/09 nhưng chưa commit. Lúc gom commit ngày 24/09 bài kiểm của việc này
+báo ô chọn đang ghi mã trần thay vì tên: lần gộp bản vá từ nhánh prod sang đã làm rơi đoạn
+đó, nên bổ sung lại.
+
+Kiểm: 57 bài kiểm khu cấu hình xanh; giao diện mới kiểm kiểu và kiểm nếp mã 0 lỗi, bài kiểm
+phân hệ Hệ thống xanh.
+
+Mã nguồn: frontend-v2 setting-page.tsx · setting-history-panel.tsx · setting-log-format.ts ·
+backend/app/modules/setting/service.py · test/backend/test_nhat_ky_cau_hinh_cr462.py
