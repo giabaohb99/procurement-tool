@@ -17,7 +17,13 @@ import { cn } from '@/shared/utils/cn'
 
 import { useCustomsRegulationLookup, useCustomsTariff } from '../../hooks/use-customs'
 import type { CustomsFilters, CustomsRegulationHit, CustomsTariffRow } from '../../types/customs'
-import { isValidHsLookup, isValidRegulationLookup } from '../../utils/customs'
+import {
+  formatBannedLabel,
+  formatThresholdKg,
+  isValidHsLookup,
+  isValidRegulationLookup,
+  sortRegulationsBySeverity,
+} from '../../utils/customs'
 
 interface CustomsLegalTabProps {
   filters: CustomsFilters
@@ -152,11 +158,19 @@ export function CustomsLegalTab({ filters, alerts }: CustomsLegalTabProps) {
   )
 }
 
-/** Tông huy hiệu theo danh sách: cấm = đỏ, có ngưỡng khối lượng = hổ phách, còn lại = xanh. */
+/**
+ * bao-CR-477 — tông huy hiệu theo MỨC NGHIÊM TRỌNG (xem `regulationSeverity`): cấm và tiền chất
+ * vũ khí hóa học = đỏ · có ngưỡng khối lượng = cam · phải công bố theo lô (thủ tục, không phải
+ * giới hạn) = xanh · chỉ có tên trong danh mục = xám. Trước đây mọi thứ ngoài «cấm» và «ngưỡng»
+ * đều xanh, nên tiền chất vũ khí hóa học trông nhẹ ngang một thủ tục công bố.
+ */
+const THRESHOLD_TONE = 'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300'
+
 function regulationTone(listCode: number): string {
-  if (listCode === 10) return TONE_CLASS.danger
-  if (listCode === 4) return TONE_CLASS.pending
-  return TONE_CLASS.progress
+  if (listCode === 10 || listCode === 3) return TONE_CLASS.danger
+  if (listCode === 4) return THRESHOLD_TONE
+  if (listCode === 11) return TONE_CLASS.progress
+  return TONE_CLASS.neutral
 }
 
 interface RegulationTableProps {
@@ -196,6 +210,30 @@ function RegulationTable({ items, isLoading, emptyMessage }: RegulationTableProp
         ),
       },
       { key: 'cas_no', header: 'Số CAS', width: 120, hideable: false, cell: (r) => r.cas_no },
+      //  bao-CR-477 — con số quan trọng nhất của dòng đứng thành CỘT RIÊNG, chữ to đậm; trước
+      //  đây nó nằm lẫn giữa một câu chữ thường ở cột «Lưu ý», đọc lướt là trôi mất.
+      {
+        key: 'limit',
+        header: 'Ngưỡng / Mức cấm',
+        width: 150,
+        hideable: false,
+        cell: (r) => {
+          if (r.list_code === 10) {
+            return (
+              <Badge className={cn('font-bold', TONE_CLASS.danger)}>
+                {formatBannedLabel(r.banned_year)}
+              </Badge>
+            )
+          }
+          const threshold = formatThresholdKg(r.threshold_kg)
+          if (!threshold) return null
+          return (
+            <span className="text-base font-bold tabular-nums text-orange-700 dark:text-orange-300">
+              {threshold}
+            </span>
+          )
+        },
+      },
       {
         key: 'obligation',
         header: 'Lưu ý',
@@ -208,10 +246,14 @@ function RegulationTable({ items, isLoading, emptyMessage }: RegulationTableProp
     [],
   )
 
+  //  bao-CR-477 — dòng nặng nhất lên đầu: tra «Ethylene glycol» ra bốn danh sách thì thứ cần
+  //  thấy trước là dòng có nghĩa vụ, không phải dòng đứng đầu theo mã danh sách.
+  const sortedItems = useMemo(() => (items ? sortRegulationsBySeverity(items) : items), [items])
+
   return (
     <DataTable
       columns={columns}
-      rows={items}
+      rows={sortedItems}
       getRowId={(r) => r.id}
       isLoading={isLoading}
       emptyMessage={emptyMessage ?? 'Không có mục nào.'}

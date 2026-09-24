@@ -65,8 +65,11 @@ import {
 import type { CustomsFilters, CustomsOptionItem } from '../types/customs'
 import {
   buildCustomsParams,
+  formatBannedLabel,
+  formatThresholdKg,
   hasChartFilter,
   resolveLinesEmptyMessage,
+  sortRegulationsBySeverity,
 } from '../utils/customs'
 
 const TABS = [
@@ -148,7 +151,9 @@ export function CustomsPricePage() {
   const lines = useCustomsLines({ ...filterParams, page, page_size: pageSize }, tab === 'list')
   //  Cảnh báo pháp lý chỉ so khi từ khóa từ 3 ký tự — khớp `match_alerts` của backend.
   const alerts = useCustomsAlerts(filterParams, filters.q.trim().length >= 3)
-  const alertItems = alerts.data ?? []
+  //  bao-CR-477 — xếp nặng nhất lên đầu: dải cảnh báo chỉ bày 5 mục, nên thứ tự quyết định
+  //  cái gì được nhìn thấy — hoạt chất cấm không được phép nằm ở mục thứ sáu bị cắt.
+  const alertItems = useMemo(() => sortRegulationsBySeverity(alerts.data ?? []), [alerts.data])
 
   const chartReady = hasChartFilter(filters)
   const filtersActive = FILTER_PARAMS.some((name) => Boolean(searchParams.get(name)))
@@ -308,7 +313,16 @@ export function CustomsPricePage() {
             {alertItems.slice(0, 5).map((alert) => (
               <li key={alert.id}>
                 {alert.name}
-                {alert.cas_no ? ` (CAS ${alert.cas_no})` : ''} — {alert.obligation}
+                {alert.cas_no ? ` (CAS ${alert.cas_no})` : ''} —{' '}
+                {alert.list_code === 10 && (
+                  <b className="font-bold">{formatBannedLabel(alert.banned_year)}. </b>
+                )}
+                {alert.list_code !== 10 && formatThresholdKg(alert.threshold_kg) && (
+                  <b className="font-bold">
+                    Ngưỡng {formatThresholdKg(alert.threshold_kg)}.{' '}
+                  </b>
+                )}
+                {alert.obligation}
               </li>
             ))}
           </ul>

@@ -6434,3 +6434,38 @@ Mã nguồn: `backend/app/modules/purchase_order/schema.py` ·
 `frontend-v2/src/modules/procurement/api/purchase-order-api.ts` ·
 `frontend-v2/src/modules/procurement/utils/purchase-order-draft.ts` ·
 `frontend-v2/src/modules/procurement/components/purchase-order-import-costs-card.tsx`.
+
+## bao-CR-477 | Hiện rõ ngưỡng khối lượng và mức cấm ở màn tra pháp lý hải quan
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Đại ca thấy ở thẻ Pháp lý và thuế của màn tra cứu giá hải quan, con số ngưỡng khối lượng hiện
+mờ nhạt quá, nằm lẫn giữa một câu chữ thường ở cột lưu ý cuối bảng; nhãn màu vàng chỉ cho biết
+hóa chất đó có ngưỡng chứ không nói ngưỡng bao nhiêu. Đại ca đồng ý với cách hiển thị em đề xuất.
+
+Bảng tra nay có một cột riêng cho ngưỡng hoặc mức cấm, đứng ngay sau số CAS, chữ to đậm. Hóa
+chất có ngưỡng hiện số màu cam; ngưỡng dưới một ki lô gam được giữ nguyên số lẻ, vì làm tròn
+thành không ki lô gam là nói ngược hẳn với luật. Hoạt chất bị cấm hiện nhãn đỏ ghi năm cấm.
+Nhãn danh sách được tô theo mức nghiêm trọng: hoạt chất cấm và tiền chất vũ khí hóa học màu đỏ,
+danh sách có ngưỡng màu cam, danh sách phải công bố theo lô màu xanh, danh sách chỉ có tên màu
+xám; trước đây tiền chất vũ khí hóa học mang cùng màu xanh với một thủ tục công bố. Kết quả được
+xếp dòng nặng nhất lên đầu, cùng danh sách thì ngưỡng thấp lên trước.
+
+Thay đổi áp cho cả ô tra hóa chất lẫn dải cảnh báo trên màn tra giá. Dải cảnh báo chỉ bày năm
+mục nên thứ tự quyết định cái gì được thấy, và nay các dòng có ngưỡng hoặc bị cấm được bôi đậm
+con số. Máy chủ vốn đã trả sẵn con số ngưỡng và năm cấm nên việc này chỉ đụng giao diện.
+
+Cùng đợt, đại ca hỏi dữ liệu có khung phạt pháp lý không. Em rà xong: không có. Bảng danh mục
+không có cột nào về phạt, còn phần mềm gốc chỉ có một câu viết cứng cho hoạt chất cấm, dẫn tên
+nghị định xử phạt trong lĩnh vực trồng trọt, không có mức tiền. Em không tự điền mức phạt theo
+trí nhớ vì văn bản mới và sai ở chỗ này là hệ quả thật.
+
+Kiểm trước khi giao: bản ERP kiểm kiểu không lỗi, kiểm nếp mã không lỗi và còn đúng số cảnh báo
+cũ, năm trăm năm mươi mốt bài của phân hệ Thu mua xanh, trong đó mười bài mới canh cách ghi
+ngưỡng, nhãn cấm và thứ tự nghiêm trọng.
+
+Mã nguồn: `frontend-v2/src/modules/procurement/utils/customs.ts` ·
+`frontend-v2/src/modules/procurement/utils/customs.test.ts` ·
+`frontend-v2/src/modules/procurement/components/customs/customs-legal-tab.tsx` ·
+`frontend-v2/src/modules/procurement/pages/customs-price-page.tsx`.

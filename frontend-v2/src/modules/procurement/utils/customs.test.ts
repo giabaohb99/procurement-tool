@@ -16,8 +16,12 @@ import {
   cleanCompareTerms,
   CUSTOMS_NEED_FILTER_MESSAGE,
   EMPTY_CUSTOMS_FILTERS,
+  formatBannedLabel,
   formatBatchStatus,
   formatCompactQuantity,
+  formatThresholdKg,
+  regulationSeverity,
+  sortRegulationsBySeverity,
   formatCustomsUnit,
   formatCustomsUnitChip,
   formatRegulationListLabel,
@@ -372,5 +376,83 @@ describe('formatCompactQuantity', () => {
   it('returns an empty label for non-finite input', () => {
     expect(formatCompactQuantity(Number.NaN)).toBe('')
     expect(formatCompactQuantity(Number.POSITIVE_INFINITY)).toBe('')
+  })
+})
+
+// bao-CR-477 — ngưỡng khối lượng và mức nghiêm trọng của danh mục hóa chất theo văn bản.
+describe('formatThresholdKg', () => {
+  it('keeps sub-kilogram thresholds instead of rounding them to zero', () => {
+    // Methyl isocyanate có ngưỡng 0,15 kg: làm tròn thành «0 kg» là nói ngược hẳn với luật.
+    expect(formatThresholdKg(0.15)).toBe('0,15 kg')
+    expect(formatThresholdKg(0.75)).toBe('0,75 kg')
+  })
+
+  it('groups thousands the Vietnamese way', () => {
+    expect(formatThresholdKg(1000)).toBe('1.000 kg')
+    expect(formatThresholdKg(5000)).toBe('5.000 kg')
+  })
+
+  it('returns an empty string when there is no usable threshold', () => {
+    expect(formatThresholdKg(null)).toBe('')
+    expect(formatThresholdKg(undefined)).toBe('')
+    expect(formatThresholdKg(Number.NaN)).toBe('')
+    expect(formatThresholdKg(-1)).toBe('')
+  })
+
+  it('still shows a zero threshold, which is a real value and not "no threshold"', () => {
+    expect(formatThresholdKg(0)).toBe('0 kg')
+  })
+})
+
+describe('formatBannedLabel', () => {
+  it('names the year when the source gives one, and says only CẤM otherwise', () => {
+    expect(formatBannedLabel(2026)).toBe('CẤM từ 2026')
+    expect(formatBannedLabel(null)).toBe('CẤM')
+    expect(formatBannedLabel(undefined)).toBe('CẤM')
+  })
+})
+
+describe('sortRegulationsBySeverity', () => {
+  const row = (list_code: number, name: string, threshold_kg: number | null = null) => ({
+    list_code,
+    name,
+    threshold_kg,
+  })
+
+  it('puts banned substances first and plain catalogue entries last', () => {
+    const sorted = sortRegulationsBySeverity([
+      row(1, 'Phụ lục I'),
+      row(11, 'Công bố theo lô'),
+      row(4, 'Có ngưỡng', 100),
+      row(3, 'Tiền chất'),
+      row(10, 'Hoạt chất cấm'),
+    ])
+    expect(sorted.map((r) => r.list_code)).toEqual([10, 3, 4, 11, 1])
+  })
+
+  it('ranks the lower threshold first inside the same list', () => {
+    const sorted = sortRegulationsBySeverity([
+      row(4, 'Methanol', 1000),
+      row(4, 'Methyl isocyanate', 0.15),
+      row(4, 'Chlorine', 25),
+    ])
+    expect(sorted.map((r) => r.name)).toEqual(['Methyl isocyanate', 'Chlorine', 'Methanol'])
+  })
+
+  it('keeps unknown list codes visible, at the end', () => {
+    const sorted = sortRegulationsBySeverity([row(99, 'Mã lạ'), row(2, 'Phụ lục II')])
+    expect(sorted.map((r) => r.list_code)).toEqual([2, 99])
+    expect(regulationSeverity(99)).toBeGreaterThan(regulationSeverity(2))
+  })
+
+  it('returns a new array and leaves the query data untouched', () => {
+    const input = [row(1, 'B'), row(10, 'A')]
+    const sorted = sortRegulationsBySeverity(input)
+    expect(sorted).not.toBe(input)
+    expect(input.map((r) => r.list_code)).toEqual([1, 10])
+  })
+
+  it('handles an empty list', () => {
+    expect(sortRegulationsBySeverity([])).toEqual([])
   })
 })

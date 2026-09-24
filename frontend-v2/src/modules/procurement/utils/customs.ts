@@ -55,6 +55,53 @@ export const REGULATION_LIST_OPTIONS = [
   { value: 11, label: 'TT 01/2026 · Phải công bố theo lô' },
 ] as const
 
+/**
+ * bao-CR-477 — độ NGHIÊM TRỌNG của từng danh sách, số nhỏ = nặng hơn. Dùng để xếp kết quả
+ * tra (dòng nặng nhất lên đầu) và chọn màu nhãn. Thứ tự: hoạt chất CẤM · tiền chất vũ khí hóa
+ * học (PL III) · có NGƯỠNG khối lượng (PL IV) · phải công bố theo lô · có trong danh mục
+ * (PL I, II). Mã lạ xếp cuối nhưng vẫn hiện — đừng giấu thứ mình chưa hiểu.
+ */
+const REGULATION_SEVERITY: Record<number, number> = { 10: 0, 3: 1, 4: 2, 11: 3, 1: 4, 2: 4 }
+
+export function regulationSeverity(listCode: number): number {
+  return REGULATION_SEVERITY[listCode] ?? 9
+}
+
+/** Tối thiểu cần để xếp — cả kết quả tra lẫn cảnh báo đều có đủ ba ô này. */
+interface RegulationSortable {
+  list_code: number
+  threshold_kg: number | null
+  name: string
+}
+
+/**
+ * Xếp nặng nhất lên đầu; cùng danh sách thì NGƯỠNG THẤP lên trước (0,15 kg nguy hiểm hơn
+ * 1.000 kg), rồi tới tên. Trả mảng MỚI — không đảo thứ tự dữ liệu của truy vấn.
+ */
+export function sortRegulationsBySeverity<T extends RegulationSortable>(items: readonly T[]): T[] {
+  return [...items].sort(
+    (a, b) =>
+      regulationSeverity(a.list_code) - regulationSeverity(b.list_code) ||
+      (a.threshold_kg ?? Number.POSITIVE_INFINITY) - (b.threshold_kg ?? Number.POSITIVE_INFINITY) ||
+      a.name.localeCompare(b.name, 'vi'),
+  )
+}
+
+/**
+ * Ngưỡng khối lượng → chữ: «100 kg», «1.000 kg», «0,15 kg». Giữ tới 3 chữ số lẻ vì có ngưỡng
+ * dưới 1 kg (Methyl isocyanate 0,15 kg) — làm tròn về số nguyên là in ra «0 kg», tức nói điều
+ * ngược hẳn với luật. Rỗng / âm / không phải số thì trả chuỗi rỗng.
+ */
+export function formatThresholdKg(value: number | null | undefined): string {
+  if (value === null || value === undefined || !Number.isFinite(value) || value < 0) return ''
+  return `${value.toLocaleString('vi-VN', { maximumFractionDigits: 3 })} kg`
+}
+
+/** Nhãn cột «Ngưỡng / Mức cấm»: hoạt chất cấm → «CẤM từ 2026» (không rõ năm → «CẤM»). */
+export function formatBannedLabel(bannedYear: number | null | undefined): string {
+  return bannedYear ? `CẤM từ ${bannedYear}` : 'CẤM'
+}
+
 /** Mã danh sách → nhãn. Mã lạ thì hiện nguyên mã, đừng giấu. */
 export function formatRegulationListLabel(code: number | string | null | undefined): string {
   if (code === null || code === undefined || code === '') return ''
