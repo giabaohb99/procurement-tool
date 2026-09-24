@@ -2635,7 +2635,7 @@ def test_thu_vien_cai_mot_lan_moi_lockfile_va_gan_lien_ket(monkeypatch, tmp_path
         coder.ensure_fe_deps(str(other))
     assert len(list((tmp_path / ".deps").glob("fe-v2-*"))) == coder.FE_DEPS_KEEP
     #  Cài hỏng: lượt sửa mã vẫn chạy, chỉ trả lý do.
-    monkeypatch.setattr(coder, "ensure_fe_deps", lambda wt: (_ for _ in ()).throw(coder.CoderError("npm 500")))
+    monkeypatch.setattr(coder, "ensure_fe_deps", lambda wt, fe_dir=None: (_ for _ in ()).throw(coder.CoderError("npm 500")))
     wt2 = tmp_path / "wt2"
     (wt2 / "frontend-v2").mkdir(parents=True)
     (wt2 / "frontend-v2" / "package.json").write_text("{}", encoding="utf-8")
@@ -3739,3 +3739,44 @@ def test_don_nhanh_xoa_worktree_nhanh_runner_va_github(db, bot, monkeypatch, tmp
     task.branch_name = "erp-v2"
     calls.clear()
     assert coder.cleanup_task_branch(db, task)["status"] == "skip" and calls == []
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-034: cổng kiểm frontend/ bản cũ
+# ---------------------------------------------------------------------------
+def _fake_tsc(monkeypatch, coder, tmp_path, output: str):
+    (tmp_path / "frontend" / "node_modules").mkdir(parents=True)
+    monkeypatch.setattr(coder, "link_fe_deps", lambda wt, fe_dir=coder.FE_DIR: "")
+    monkeypatch.setattr(coder, "_fe_env", lambda wt: {})
+    monkeypatch.setattr(coder, "_drop_privileges_kwargs", lambda: {})
+
+    class Proc:
+        returncode = 2
+        stdout = output
+        stderr = ""
+
+    monkeypatch.setattr(coder.subprocess, "run", lambda *a, **kw: Proc())
+
+
+def test_cong_v1_chi_do_khi_loi_nam_trong_tep_vua_sua(monkeypatch, tmp_path):
+    from app.modules.agent_hub import coder
+
+    old = "src/pages/Old.tsx(3,5): error TS2322: Type 'x' is not assignable.\n"
+    _fake_tsc(monkeypatch, coder, tmp_path, old + "src/pages/Mine.tsx(10,2): error TS2304: Cannot find name 'y'.\n")
+    gate = coder.run_fe_v1_gate(str(tmp_path), ["frontend/src/pages/Mine.tsx", "backend/app/x.py"])
+    assert gate["status"] == "fail" and "Mine.tsx(10,2)" in gate["output"] and "Old.tsx" not in gate["output"]
+    assert gate["other"] == 1
+    assert "Frontend v1: <b>ĐỎ</b>" in coder.fe_v1_gate_line({"frontend_v1": gate}, html=True)
+
+
+def test_cong_v1_loi_cu_o_tep_khac_khong_chan(monkeypatch, tmp_path):
+    from app.modules.agent_hub import coder
+
+    _fake_tsc(monkeypatch, coder, tmp_path, "src/pages/Old.tsx(3,5): error TS2322: Type 'x'.\n")
+    gate = coder.run_fe_v1_gate(str(tmp_path), ["frontend/src/pages/Mine.tsx"])
+    assert gate["status"] == "pass" and gate["other"] == 1
+    line = coder.fe_v1_gate_line({"frontend_v1": gate}, html=False)
+    assert "**XANH**" in line and "1 lỗi kiểu ở tệp khác, có thể là lỗi cũ" in line
+    assert "giao diện v1 XANH" in coder._gate_brief({"frontend_v1": gate})
+    #  Không đụng bản cũ thì cổng không chạy.
+    assert coder.run_fe_v1_gate(str(tmp_path), ["frontend-v2/src/a.ts"])["status"] == "none"

@@ -3155,6 +3155,15 @@ Mã nguồn: `frontend-v2/src/modules/approval-seal/components/seal-clerk-detail
 Commit: `5fbce75a` trên nhánh `erp-v2`.
 
 
+## ai-CR-034 | Cổng kiểm cho giao diện bản cũ khi Đậu Đậu sửa frontend
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Trước đây bot chỉ kiểm được giao diện v2, việc sửa giao diện bản cũ đi qua mà không được kiểm, trong khi nếp làm là sửa bản cũ trước rồi mới bê sang v2. Nay khi bot đụng tệp của bản cũ, runner chạy kiểm tra kiểu cho cả bản cũ và chỉ báo đỏ khi lỗi nằm trong chính tệp bot vừa sửa; lỗi sẵn có ở tệp khác chỉ được đếm và ghi là có thể là lỗi cũ, không chặn. Thư viện của bản cũ cài một lần rồi dùng lại, và bot tự chạy được lệnh kiểm này trong lúc sửa. Nút sửa cho xanh cũng nhận luôn phần đỏ của bản cũ. Cả tệp bài kiểm 158/158 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/coder.py` (`run_fe_v1_gate`, `fe_v1_gate_line`, `v1_files`, `ensure_fe_deps`, `link_fe_deps`, `run_gate`, `_gate_brief`) · `test/backend/test_agent_hub.py` · `change-log-ai.md`.
+
 ## ai-CR-033 | Đậu Đậu tự dọn nhánh bot khi việc đóng
 - status: xong
 - date: 2026-09-24

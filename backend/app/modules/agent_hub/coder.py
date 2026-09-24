@@ -113,6 +113,8 @@ ALLOWED_TOOLS = ",".join([
     "Bash(git diff:*)", "Bash(git status:*)", "Bash(git log:*)",
     #  ai-CR-019: tự kiểm frontend-v2. `run test -- src/` ép có đường dẫn — không quét cả ~3200 bài.
     "Bash(npm --prefix frontend-v2 run typecheck:*)",
+    #  ai-CR-034: tự kiểm `frontend/` (bản cũ) — chỉ có typescript, không có lint/vitest.
+    "Bash(npm --prefix frontend exec -- tsc --noEmit -p frontend:*)",
     #  Lệnh vitest KHÔNG khai ở đây: Claude Code so mẫu theo NGUYÊN TỪ nên `… -- src/:*` không khớp
     #  `… -- src/modules/finance` — AI-0007 bị chặn cả hai lần chạy (ai-CR-026). Khai theo từng thư
     #  mục có thật trong worktree ở `allowed_tools()`.
@@ -333,7 +335,8 @@ C6. Chỉ chạy bài kiểm của phần vừa sửa: `python -m pytest test/ba
 Lệnh nào bị báo "requires approval" là ngoài danh sách cho phép, thử lại cũng vậy, đừng lặp. \
 Sửa `frontend-v2/` thì tự kiểm bằng ĐÚNG hai lệnh: `npm --prefix frontend-v2 run typecheck` và \
 `npm --prefix frontend-v2 run test -- src/modules/<phân hệ vừa sửa>` (luôn kèm đường dẫn, KHÔNG chạy \
-cả bộ). `frontend/` (bản cũ) không có thư viện ở đây — không kiểm được, ghi rõ là chưa chạy.
+cả bộ). Sửa `frontend/` (bản cũ) thì kiểm kiểu bằng `npm --prefix frontend exec -- tsc --noEmit -p frontend`; \
+bản cũ có sẵn vài lỗi kiểu ở tệp khác, chỉ cần tệp bạn sửa không có lỗi.
 C7. Theo đúng phong cách mã quanh chỗ sửa; đọc CLAUDE.md và backend/.claude/rules/ trước khi viết. \
 Tên hàm/biến/hằng tiếng Anh, chuỗi và chú thích tiếng Việt, không emoji.
 C8. Không dọn dẹp, không đổi tên, không định dạng lại thứ không liên quan tới việc này.
@@ -467,9 +470,10 @@ def build_fix_gate_brief(gate: dict) -> str:
     parts = []
     if gate.get("backend", gate.get("status")) == "fail":
         parts.append(gate.get("output") or "")
-    fe = gate.get("frontend") or {}
-    if fe.get("status") == "fail":
-        parts.append(fe.get("output") or "")
+    for key in ("frontend", "frontend_v1"):
+        fe = gate.get(key) or {}
+        if fe.get("status") == "fail":
+            parts.append(fe.get("output") or "")
     failed = "\n\n".join(p for p in parts if p)[-6000:]
     return "\n".join([
         "Cổng kiểm của runner báo ĐỎ cho bản vá bạn vừa làm trong phiên này. Nguyên văn phần đỏ:",
@@ -586,13 +590,15 @@ def run_gate(worktree: str, touched: list[str], *, fe_note: str = "") -> dict:
     """
     backend = _run_backend_gate(worktree, touched)
     frontend = run_fe_gate(worktree, touched, note=fe_note)
-    states = {backend["status"], frontend["status"]}
+    v1 = run_fe_v1_gate(worktree, touched)
+    states = {backend["status"], frontend["status"], v1["status"]}
     status = "fail" if "fail" in states else ("pass" if "pass" in states else "none")
     output = backend["output"]
-    if frontend["status"] == "fail":
-        output = (output + "\n\n" if output else "") + frontend["output"]
+    for part in (frontend, v1):
+        if part["status"] == "fail":
+            output = (output + "\n\n" if output else "") + part["output"]
     return {"status": status, "tests": backend["tests"], "output": output[-GATE_TAIL:],
-            "backend": backend["status"], "frontend": frontend}
+            "backend": backend["status"], "frontend": frontend, "frontend_v1": v1}
 
 
 def _run_backend_gate(worktree: str, touched: list[str]) -> dict:
@@ -650,16 +656,18 @@ def _chown_runner(path: Path) -> None:
         shutil.chown(path, user=kwargs["user"], group=kwargs["group"])
 
 
-def ensure_fe_deps(worktree: str) -> Path:
+def ensure_fe_deps(worktree: str, fe_dir: str = FE_DIR) -> Path:
     """Thư mục `node_modules` đã cài cho lockfile của worktree này. Cài MỘT lần cho mỗi phiên bản
-    `package-lock.json` (theo mã băm), các việc sau dùng lại. Ném CoderError nếu cài hỏng."""
-    lock = Path(worktree) / FE_DIR / "package-lock.json"
-    pkg = Path(worktree) / FE_DIR / "package.json"
+    `package-lock.json` (theo mã băm), các việc sau dùng lại. Ném CoderError nếu cài hỏng.
+    `fe_dir` = `frontend-v2` (mặc định) hoặc `frontend` (bản cũ, ai-CR-034) — mỗi bên một bộ riêng."""
+    lock = Path(worktree) / fe_dir / "package-lock.json"
+    pkg = Path(worktree) / fe_dir / "package.json"
     if not lock.is_file() or not pkg.is_file():
-        raise CoderError("worktree không có frontend-v2/package-lock.json")
+        raise CoderError(f"worktree không có {fe_dir}/package-lock.json")
     digest = hashlib.sha256(lock.read_bytes()).hexdigest()[:16]
     root = _fe_deps_root()
-    target = root / f"fe-v2-{digest}"
+    tag = _deps_tag(fe_dir)
+    target = root / f"{tag}-{digest}"
     marker = target / "node_modules" / ".agent-hub-ok"
     if marker.exists():
         return target / "node_modules"
@@ -677,31 +685,35 @@ def ensure_fe_deps(worktree: str) -> Path:
             **_drop_privileges_kwargs(),
         )
     except subprocess.TimeoutExpired:
-        raise CoderError(f"cài thư viện frontend-v2 quá {FE_INSTALL_TIMEOUT // 60} phút") from None
+        raise CoderError(f"cài thư viện {fe_dir} quá {FE_INSTALL_TIMEOUT // 60} phút") from None
     if proc.returncode != 0:
-        raise CoderError("cài thư viện frontend-v2 hỏng: " + (proc.stderr or proc.stdout).strip()[-600:])
+        raise CoderError(f"cài thư viện {fe_dir} hỏng: " + (proc.stderr or proc.stdout).strip()[-600:])
     marker.write_text(digest, encoding="utf-8")
-    _prune_fe_deps(keep=target)
+    _prune_fe_deps(keep=target, tag=tag)
     return target / "node_modules"
 
 
-def _prune_fe_deps(*, keep: Path) -> None:
+def _deps_tag(fe_dir: str) -> str:
+    return "fe-v2" if fe_dir == FE_DIR else "fe-v1"
+
+
+def _prune_fe_deps(*, keep: Path, tag: str = "fe-v2") -> None:
     """Xóa bộ thư viện cũ, mỗi bộ vài trăm MB. Giữ bộ vừa cài + mới nhất còn lại."""
-    sets = sorted((p for p in _fe_deps_root().glob("fe-v2-*") if p.is_dir() and p != keep),
+    sets = sorted((p for p in _fe_deps_root().glob(f"{tag}-*") if p.is_dir() and p != keep),
                   key=lambda p: p.stat().st_mtime, reverse=True)
     for old in sets[max(FE_DEPS_KEEP - 1, 0):]:
         shutil.rmtree(old, ignore_errors=True)
 
 
-def link_fe_deps(worktree: str) -> str:
-    """Gắn `frontend-v2/node_modules` của worktree vào bộ thư viện dùng chung. Trả lý do nếu
+def link_fe_deps(worktree: str, fe_dir: str = FE_DIR) -> str:
+    """Gắn `<fe_dir>/node_modules` của worktree vào bộ thư viện dùng chung. Trả lý do nếu
     KHÔNG gắn được (rỗng = ổn). Không bao giờ ném lỗi: thiếu thư viện chỉ làm cổng frontend
     báo «chưa kiểm được», không được làm hỏng cả lượt sửa mã."""
-    if not (Path(worktree) / FE_DIR / "package.json").is_file():
-        return "worktree không có frontend-v2"
+    if not (Path(worktree) / fe_dir / "package.json").is_file():
+        return f"worktree không có {fe_dir}"
     try:
-        modules = ensure_fe_deps(worktree)
-        link = Path(worktree) / FE_DIR / "node_modules"
+        modules = ensure_fe_deps(worktree, fe_dir)
+        link = Path(worktree) / fe_dir / "node_modules"
         if not link.exists() and not link.is_symlink():
             os.symlink(modules, link, target_is_directory=True)
         #  `.gitignore` của frontend-v2 đã có `node_modules` (khớp cả liên kết), nhưng khóa thêm
@@ -710,14 +722,14 @@ def link_fe_deps(worktree: str) -> str:
         if not exclude.is_absolute():
             exclude = Path(worktree) / exclude
         exclude.parent.mkdir(parents=True, exist_ok=True)
-        line = f"/{FE_DIR}/node_modules"
+        line = f"/{fe_dir}/node_modules"
         current = exclude.read_text(encoding="utf-8") if exclude.exists() else ""
         if line not in current.splitlines():
             with exclude.open("a", encoding="utf-8") as fh:
                 fh.write(("" if current.endswith("\n") or not current else "\n") + line + "\n")
         return ""
     except (CoderError, OSError) as e:
-        log.warning("agent_hub.coder: không gắn được thư viện frontend-v2: %s", e)
+        log.warning("agent_hub.coder: không gắn được thư viện %s: %s", fe_dir, e)
         return str(e)[:400]
 
 
@@ -778,6 +790,53 @@ def run_fe_gate(worktree: str, touched: list[str], *, note: str = "") -> dict:
             "output": "\n\n".join(outputs)[-GATE_TAIL:]}
 
 
+# ---------------------------------------------------------------------------
+# Cổng kiểm `frontend/` bản cũ (ai-CR-034)
+# ---------------------------------------------------------------------------
+#  Bản cũ chỉ có typescript (không eslint, không vitest) và sẵn vài lỗi kiểu cũ. Câu Q4 để trống nên
+#  em chọn: chạy tsc cả cây, CHỈ đỏ khi có lỗi nằm trong tệp bot vừa sửa; lỗi ở tệp khác ghi số đếm
+#  («có thể là lỗi cũ») chứ không chặn.
+V1_DIR = "frontend"
+_TSC_ERROR = re.compile(r"^(?P<file>[^\s(][^(]*)\((?P<line>\d+),(?P<col>\d+)\): error TS\d+", re.MULTILINE)
+
+
+def v1_files(paths: list[str]) -> list[str]:
+    return [f for f in paths if f.startswith(V1_DIR + "/")]
+
+
+def run_fe_v1_gate(worktree: str, touched: list[str]) -> dict:
+    """tsc --noEmit trên `frontend/`, đỏ khi lỗi nằm trong tệp vừa đụng. Trả {status, steps, output, other}."""
+    files = v1_files(touched)
+    if not files:
+        return {"status": "none", "steps": [], "output": ""}
+    note = link_fe_deps(worktree, V1_DIR)
+    fe_dir = Path(worktree) / V1_DIR
+    if note or not (fe_dir / "node_modules").exists():
+        return {"status": "skip", "steps": [], "output": note or "chưa có thư viện frontend/"}
+    try:
+        proc = subprocess.run(["node_modules/.bin/tsc", "--noEmit"], cwd=str(fe_dir), env=_fe_env(worktree),
+                              capture_output=True, text=True, timeout=FE_TYPECHECK_TIMEOUT,
+                              **_drop_privileges_kwargs())
+        out = (proc.stdout + "\n" + proc.stderr).strip()
+    except subprocess.TimeoutExpired:
+        return {"status": "fail", "steps": [{"name": "typecheck", "ok": False}],
+                "output": f"typecheck frontend/ quá {FE_TYPECHECK_TIMEOUT // 60} phút, đã giết"}
+    mine = {f[len(V1_DIR) + 1:] for f in files}
+    lines = out.splitlines()
+    own, other = [], 0
+    for ln in lines:
+        m = _TSC_ERROR.match(ln)
+        if not m:
+            continue
+        if m.group("file").replace("\\", "/") in mine:
+            own.append(ln)
+        else:
+            other += 1
+    ok = not own
+    return {"status": "pass" if ok else "fail", "steps": [{"name": "typecheck tệp vừa sửa", "ok": ok}],
+            "output": "[typecheck frontend/]\n" + "\n".join(own)[-1500:] if own else "", "other": other}
+
+
 def fe_gate_line(gate: dict, *, html: bool) -> str:
     """Một dòng mô tả cổng frontend cho thẻ kết quả / thân PR. Rỗng nếu không đụng frontend-v2."""
     fe = gate.get("frontend") or {}
@@ -792,6 +851,22 @@ def fe_gate_line(gate: dict, *, html: bool) -> str:
         bad = " · ".join(s["name"] for s in fe.get("steps") or [] if not s["ok"])
         return f"Frontend v2: {b('ĐỎ')} ở {bad}"
     return f"Frontend v2: {b('CHƯA kiểm được')} ({fe.get('output', '')[:200]})"
+
+
+def fe_v1_gate_line(gate: dict, *, html: bool) -> str:
+    """Dòng cổng `frontend/` bản cũ (ai-CR-034). Rỗng nếu không đụng bản cũ."""
+    v1 = gate.get("frontend_v1") or {}
+    status = v1.get("status")
+    if status in (None, "none"):
+        return ""
+    b = (lambda t: f"<b>{t}</b>") if html else (lambda t: f"**{t}**")
+    other = int(v1.get("other") or 0)
+    tail = f"; {other} lỗi kiểu ở tệp khác, có thể là lỗi cũ" if other else ""
+    if status == "pass":
+        return f"Frontend v1: {b('XANH')} (typecheck tệp vừa sửa{tail})"
+    if status == "fail":
+        return f"Frontend v1: {b('ĐỎ')} ở typecheck tệp vừa sửa{tail}"
+    return f"Frontend v1: {b('CHƯA kiểm được')} ({v1.get('output', '')[:200]})"
 
 
 # ---------------------------------------------------------------------------
@@ -881,8 +956,10 @@ def build_pr_body(task: AgentTask, *, files: list[dict], gate: dict, report: str
         lines += [fe_line]
         if (gate.get("frontend") or {}).get("status") == "fail":
             lines += ["```", gate["frontend"]["output"][-1500:], "```"]
-    if any(f["path"].startswith("frontend/") for f in files):
-        lines += ["Có tệp `frontend/` (bản cũ): bản này chưa có cổng kiểm trong runner."]
+    if v1_line := fe_v1_gate_line(gate, html=False):
+        lines += [v1_line]
+        if (gate.get("frontend_v1") or {}).get("status") == "fail":
+            lines += ["```", gate["frontend_v1"]["output"][-1500:], "```"]
     lines += [""]
     if report:
         lines += ["## Bot tổng kết", report[:20000], ""]
@@ -1269,6 +1346,8 @@ def run_code_task(db: Session, task: AgentTask, *, resume: bool = False, fix_gat
         db.commit()
     #  ai-CR-019: thư viện frontend-v2 có sẵn TRƯỚC lượt claude, để nó tự chạy typecheck/vitest.
     fe_note = link_fe_deps(worktree)
+    if v1_files(list(task.plan_files or [])):
+        link_fe_deps(worktree, V1_DIR)     # ai-CR-034: kế hoạch đụng bản cũ thì cho nó tự kiểm được
 
     try:
         if fix_gate:
@@ -1436,6 +1515,13 @@ def _gate_brief(gate: dict) -> str:
         parts.append("giao diện v2 ĐỎ ở " + " · ".join(s["name"] for s in fe.get("steps") or [] if not s["ok"]))
     elif fe.get("status") == "skip":
         parts.append("giao diện v2 CHƯA kiểm được")
+    v1 = gate.get("frontend_v1") or {}
+    if v1.get("status") == "pass":
+        parts.append("giao diện v1 XANH (typecheck tệp vừa sửa)")
+    elif v1.get("status") == "fail":
+        parts.append("giao diện v1 ĐỎ ở typecheck tệp vừa sửa")
+    elif v1.get("status") == "skip":
+        parts.append("giao diện v1 CHƯA kiểm được")
     return "; ".join(parts) or "không có bài kiểm nào bị đụng"
 
 
@@ -1512,8 +1598,10 @@ def send_review_card(db: Session, task: AgentTask, run: AgentRun, *, files: list
         head += [fe_line]
         if (gate.get("frontend") or {}).get("status") == "fail":
             head += [f"<pre>{esc(gate['frontend']['output'][-700:])}</pre>"]
-    if any(f["path"].startswith("frontend/") for f in files):
-        head += ["Có tệp <code>frontend/</code> (bản cũ): bản này chưa có cổng kiểm trong runner."]
+    if v1_line := fe_v1_gate_line(gate, html=True):
+        head += [v1_line]
+        if (gate.get("frontend_v1") or {}).get("status") == "fail":
+            head += [f"<pre>{esc(gate['frontend_v1']['output'][-700:])}</pre>"]
     if timing := timing_line(db, task):
         head += [esc(timing)]
     tail = ["", "Bấm «Hỏi thêm» rồi nhắn câu hỏi: em đưa cho đúng phiên đã sửa việc này trả lời."]
