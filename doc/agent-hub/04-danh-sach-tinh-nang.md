@@ -5,7 +5,7 @@
 bot sửa mã xem `01-thiet-ke-ky-thuat.md`; thiết kế biên bản họp gốc (28-29/08, chưa có mã) ở
 `meeting-recap/doc/` trên máy.
 
-**Tổng: 29 tính năng** — A 8 · N 5 · T 12 · R 4. **Đã xong 8** (24/09/2026): A-01 … A-07 + N-02 (ai-CR-032 … 038); A-08 vẫn chờ 4 câu của AN-007. Cỡ: **S** = một ngày trở xuống · **M** = hai
+**Tổng: 29 tính năng** — A 8 · N 5 · T 12 · R 4. **Đã xong 12** (24/09/2026): A-01 … A-07 + N-02 (ai-CR-032 … 038) + R-01 … R-04 (ai-CR-044, phần Drive chờ N-03); A-08 vẫn chờ 4 câu của AN-007. Cỡ: **S** = một ngày trở xuống · **M** = hai
 đến ba ngày · **L** = từ bốn ngày. Cỡ là ước thô, đo lại sau từng việc (A-01).
 
 ## Nguyên tắc chia bot
@@ -66,10 +66,10 @@ một token Telegram riêng.
 
 | Mã | Tính năng | Cỡ | Ghi chú |
 |---|---|---|---|
-| R-01 | Research một chủ đề: Gemini tìm Google, trả bản tóm tắt kèm nguồn | S | Cần N-05 |
-| R-02 | Kiểm chứng một nhận định: đúng · sai · chưa đủ căn cứ, kèm nguồn | S | |
-| R-03 | Tìm tài liệu nội bộ: kho tài liệu đã nạp + thư mục Drive | M | Cần N-03 |
-| R-04 | Xuất báo cáo nghiên cứu ra Word lên Drive | S | Dùng lại T-06 |
+| R-01 | Research một chủ đề: Gemini tìm Google, trả bản tóm tắt kèm nguồn | S | **Xong** ai-CR-044 (`/tim`); lượt tìm không có công cụ tác động nên chưa cần N-05 |
+| R-02 | Kiểm chứng một nhận định: đúng · sai · chưa đủ căn cứ, kèm nguồn | S | **Xong** ai-CR-044 (`/kiemchung`) |
+| R-03 | Tìm tài liệu nội bộ: kho tài liệu đã nạp + thư mục Drive | M | **Xong phần kho tài liệu** ai-CR-044 (`/tailieu`); phần Drive chờ N-03 |
+| R-04 | Xuất báo cáo nghiên cứu ra Word lên Drive | S | **Xong phần Word gửi qua Telegram** ai-CR-044 (`/word`); lên Drive chờ N-03 |
 
 ## Thứ tự đề xuất
 

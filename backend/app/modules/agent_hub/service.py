@@ -32,8 +32,9 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.modules.assistant.provider.base import ChatResult
 
-from . import chat_link, coder, manager, memory, playbook, telegram
+from . import chat_link, coder, manager, memory, playbook, research, telegram
 from .timeutil import fmt_local, now_local, to_utc
 from .constants import (
     ACT_ACK,
@@ -88,6 +89,7 @@ from .constants import (
     STAGE_PLAN,
     STAGE_REVERT,
     STAGE_RULE,
+    STAGE_RESEARCH,
     STAGE_SCAN,
     STAGE_TRIAGE,
     TASK_STATUS_LABELS,
@@ -308,6 +310,147 @@ def _login_by_code(db: Session, msg: dict, chat_id: str, code: str, *, log_row: 
           "Đăng xuất: <code>/dangxuat</code>.")
 
 
+# ---------------------------------------------------------------------------
+# Hỏi chi phí bằng chữ (ai-CR-043) — màn «Việc của bot» đã ẩn (ai-CR-039), đại ca hỏi bot thay
+# ---------------------------------------------------------------------------
+#  Chỉ bắt câu nói về tiền CỦA BOT: «chi phí» đứng một mình là từ nghiệp vụ ERP (chi phí thu mua).
+_COST_Q = re.compile(
+    r"(?<!\w)(chi phí|tốn|hết)(?!\w).{0,30}(?<!\w)(bot|token|gemini|claude|đậu đậu|ai[-\s]?\d+)(?!\w)"
+    r"|(?<!\w)(bot|đậu đậu|ai[-\s]?\d+)(?!\w).{0,20}(?<!\w)(tốn|chi phí|hết bao nhiêu)(?!\w)")
+
+
+# ---------------------------------------------------------------------------
+# Nghiên cứu (ai-CR-044): tìm web · kiểm chứng · tài liệu nội bộ · xuất Word
+# ---------------------------------------------------------------------------
+_RESEARCH_CMDS = (("/kiemchung", research.MODE_VERIFY), ("/tailieu", research.MODE_DOCS),
+                  ("/tim", research.MODE_WEB))
+ACT_RESEARCH = "nghien_cuu"
+
+
+def _research_command(db: Session, chat_id: str, text: str, *, allow_docs: bool) -> bool:
+    """Các lệnh nghiên cứu. Trả True nếu tin là một lệnh trong số đó (đã xử)."""
+    low = text.strip().lower()
+    if re.match(r"^/word(?:@\w+)?\s*$", low):
+        export_research_word(db, chat_id)
+        return True
+    for cmd, mode in _RESEARCH_CMDS:
+        if re.match(rf"^{cmd}(?:@\w+)?(\s|$)", low):
+            if mode == research.MODE_DOCS and not allow_docs:
+                reply(db, chat_id, "Lệnh này chỉ dành cho quản trị.")
+                return True
+            question = re.sub(rf"^{cmd}(?:@\w+)?", "", text.strip(), flags=re.IGNORECASE).strip()
+            run_research(db, chat_id, question, mode)
+            return True
+    return False
+
+
+def run_research(db: Session, chat_id: str, question: str, mode: str) -> None:
+    """Một lượt nghiên cứu: gọi `research.run`, ghi sổ chi phí, nhắn kết quả + nguồn."""
+    if not question:
+        reply(db, chat_id, "Nhắn kèm câu cần tra, ví dụ <code>/tim thuế nhập khẩu thép 2026</code> · "
+              "<code>/kiemchung hóa đơn điện tử phải xuất trong ngày</code>.")
+        return
+    telegram.send_chat_action(chat_id)
+    run = start_run(db, 0, STAGE_RESEARCH)
+    db.commit()
+    try:
+        text, sources, result = research.run(question, mode)
+    except Exception as e:  # noqa: BLE001 — lỗi nhà cung cấp phải thành câu trả lời
+        log.exception("agent_hub: nghiên cứu hỏng")
+        finish_run(db, run, error=str(e))
+        db.commit()
+        reply(db, chat_id, f"{BOT_NAME} chưa tra được: {telegram.esc(str(e)[:300])}")
+        return
+    if result is not None:
+        finish_run(db, run, result=result)
+    else:
+        finish_run(db, run, result=ChatResult(text=text, provider="agent_gemini", model=run.model,
+                                              input_tokens=0, output_tokens=0))
+    run.artifact = {"chat_id": chat_id, "mode": mode, "question": question[:500], "text": text[:8000],
+                    "sources": sources}
+    db.commit()
+    reply(db, chat_id, (text or "(không có câu trả lời)") + research.sources_markdown(sources)
+          + "\n\n_Nhắn /word để nhận bản Word._", markdown=True, action=ACT_RESEARCH)
+
+
+def export_research_word(db: Session, chat_id: str) -> None:
+    """«/word»: bản Word của lượt nghiên cứu GẦN NHẤT của chính chat này (R-04)."""
+    runs = db.scalars(select(AgentRun).where(AgentRun.stage == STAGE_RESEARCH, AgentRun.status == RUN_OK)
+                      .order_by(AgentRun.id.desc()).limit(50)).all()
+    art = next((r.artifact for r in runs if isinstance(r.artifact, dict) and r.artifact.get("chat_id") == chat_id), None)
+    if not art:
+        reply(db, chat_id, "Chat này chưa có lượt tìm hiểu nào để xuất Word. Nhắn <code>/tim …</code> trước.")
+        return
+    data = research.build_docx(art.get("mode", research.MODE_WEB), art.get("question", ""),
+                               art.get("text", ""), art.get("sources") or [])
+    try:
+        mid = telegram.send_document(chat_id, "nghien-cuu.docx", data, caption=telegram.esc(art.get("question", "")[:200]),
+                                     content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+    except telegram.TelegramError as e:
+        reply(db, chat_id, f"Gửi tệp Word hỏng: {telegram.esc(str(e)[:200])}")
+        return
+    log_message(db, DIR_OUT, chat_id, mid, "nghien-cuu.docx", action=ACT_FILE)
+    db.commit()
+
+
+def _cost_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
+    low = text.strip().lower()
+    if len(low.split()) > 25 or not _COST_Q.search(low):
+        return False
+    code_m = _CODE_IN_TEXT.search(low)
+    task = db.scalar(select(AgentTask).where(AgentTask.code == f"AI-{int(code_m.group(1)):04d}")) if code_m else None
+    row.action = ACT_COMMAND
+    db.commit()
+    reply(db, chat_id, cost_report(db, task=task))
+    return True
+
+
+def _money(usd: float) -> str:
+    vnd = round(usd * settings.AGENT_USD_VND / 1000) * 1000
+    return f"${usd:.2f} (≈ {vnd:,.0f} đ)".replace(",", ".")
+
+
+def cost_report(db: Session, *, task: AgentTask | None = None, now: datetime | None = None) -> str:
+    """Báo chi phí ƯỚC của bot: một việc, hoặc hôm nay / 7 ngày / 30 ngày + ba việc tốn nhất.
+
+    Tách hai loại tiền: Gemini là tiền THẬT trả theo lượt; Claude Code chạy gói thuê bao nên số của nó
+    chỉ là ước để so, không phát sinh thêm.
+    """
+    esc = telegram.esc
+    now = now or datetime.now()
+    rate_note = f"Tỷ giá tạm {settings.AGENT_USD_VND:,} đ/USD.".replace(",", ".")
+    if task is not None:
+        runs = db.scalars(select(AgentRun).where(AgentRun.task_id == task.id)).all()
+        gem = sum(float(r.cost_usd or 0) for r in runs if r.provider != coder.PROVIDER)
+        cc = sum(float(r.cost_usd or 0) for r in runs if r.provider == coder.PROVIDER)
+        return (f"<b>{esc(task.code)}</b> · {esc(task.title)}\n"
+                f"Gemini (tiền thật): {_money(gem)}\n"
+                f"Claude Code (gói thuê bao, ước để so): {_money(cc)}\n{rate_note}")
+    today = to_utc(now_local().replace(hour=0, minute=0, second=0, microsecond=0))
+    since30 = now - timedelta(days=30)
+    runs = db.scalars(select(AgentRun).where(AgentRun.started_at >= since30)).all()
+
+    def total(since, *, gemini: bool) -> float:
+        return sum(float(r.cost_usd or 0) for r in runs
+                   if r.started_at and r.started_at >= since and (r.provider != coder.PROVIDER) == gemini)
+
+    lines = ["<b>Chi phí ước của bot</b>"]
+    for label, since in (("Hôm nay", today), ("7 ngày", now - timedelta(days=7)), ("30 ngày", since30)):
+        lines.append(f"{label}: Gemini {_money(total(since, gemini=True))} · Claude Code ước "
+                     f"{_money(total(since, gemini=False))}")
+    per_task: dict[int, float] = {}
+    for r in runs:
+        if r.task_id:
+            per_task[r.task_id] = per_task.get(r.task_id, 0.0) + float(r.cost_usd or 0)
+    top = sorted(per_task.items(), key=lambda x: -x[1])[:3]
+    if top:
+        tasks = {t.id: t for t in db.scalars(select(AgentTask).where(AgentTask.id.in_([t for t, _c in top])))}
+        lines.append("Tốn nhất 30 ngày: " + " · ".join(
+            f"<b>{esc(tasks[t].code)}</b> {_money(c)}" for t, c in top if t in tasks))
+    lines.append("Gemini là tiền thật; Claude Code chạy gói thuê bao nên không trả thêm. " + rate_note)
+    return "\n".join(lines)
+
+
 def describe_user(db: Session, user) -> tuple[str, str]:
     """(nhãn, chi tiết) của một tài khoản ERP cho người đọc: «Họ tên (MÃ NV)», «Phòng … · Email …».
 
@@ -405,6 +548,12 @@ def _handle_other_chat(db: Session, msg: dict, chat_id: str, text: str) -> bool:
         row.action = ACT_COMMAND
         show_account(db, chat_id)
         return True
+    if low.startswith("/"):
+        row.action = ACT_COMMAND
+        db.commit()
+        #  Người đã liên kết dùng được tìm web + kiểm chứng + Word; tài liệu KỸ THUẬT dự án thì không.
+        if _research_command(db, chat_id, text, allow_docs=False):
+            return True
     if low.startswith("/") and not low.startswith("/hoi"):
         row.action = ACT_COMMAND
         reply(db, chat_id, f"Em là <b>{BOT_NAME}</b>. Cứ nhắn câu hỏi về dữ liệu ERP, em trả lời theo quyền "
@@ -425,6 +574,12 @@ def _run_command(db: Session, chat_id: str, text: str) -> None:
         _logout(db, chat_id)
     elif lower.startswith("/taikhoan"):
         show_account(db, chat_id)
+    elif _research_command(db, chat_id, text, allow_docs=True):
+        pass
+    elif lower.startswith("/chiphi"):
+        code_m = _CODE_IN_TEXT.search(lower)
+        task = db.scalar(select(AgentTask).where(AgentTask.code == f"AI-{int(code_m.group(1)):04d}")) if code_m else None
+        reply(db, chat_id, cost_report(db, task=task))
     elif lower.startswith("/hoi"):
         answer_question(db, chat_id, text[4:].strip())
     elif lower.startswith("/ds"):
@@ -442,6 +597,9 @@ def _run_command(db: Session, chat_id: str, text: str) -> None:
               "trên hệ thống thì em làm ngay, <b>nhờ sửa phần mềm</b> thì em ghi thành việc.\n"
               "Đường tắt nếu muốn chắc: <b>/hoi</b> ép trả lời · <b>/ds</b> việc đang mở · "
               "<b>/xem AI-0006</b> lịch sử một việc, kể cả việc đã đóng · <b>/gom</b> gom ngay.\n"
+              "<b>/chiphi</b> chi phí bot (kèm mã việc để xem một việc).\n"
+              "Nghiên cứu: <b>/tim</b> tìm hiểu trên mạng · <b>/kiemchung</b> xét một nhận định · "
+              "<b>/tailieu</b> hỏi tài liệu dự án · <b>/word</b> xuất bản Word lượt vừa tra.\n"
               "Tài khoản ERP: <b>/taikhoan</b> xem đang dùng tài khoản nào · <b>/dangnhap &lt;mã&gt;</b> "
               "đổi tài khoản (lấy mã ở Trang cá nhân → Telegram) · <b>/dangxuat</b>.")
 
@@ -489,7 +647,7 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
     #  Lệnh gõ bằng chữ trên một việc (ai-CR-027): «gộp AI-0007», «duyệt», «xong»… Đi TRƯỚC mạch trả
     #  lời kế hoạch: đang bị hỏi lại mà nhắn «bỏ việc này» là bỏ, không phải câu trả lời.
     if (_choice_by_text(db, chat_id, row, text) or _confirm_by_text(db, chat_id, row, text)
-            or route_task_command(db, chat_id, row, text)):
+            or _cost_by_text(db, chat_id, row, text) or route_task_command(db, chat_id, row, text)):
         return
     #  Trạm kế hoạch vừa hỏi lại (ai-CR-015): tin kế là câu trả lời CỦA VIỆC ĐÓ, không phải việc mới.
     if task_id := _plan_answer_target(db, chat_id, row):
@@ -519,6 +677,10 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
         _ask_intent_choice(db, chat_id, row)
     elif data["intent"] == manager.INTENT_ACT:
         _act_by_intent(db, chat_id, row, text, data)
+    elif data["intent"] == manager.INTENT_RESEARCH:
+        row.action = ACT_COMMAND
+        db.commit()
+        run_research(db, chat_id, data.get("query") or text, data.get("kind") or research.MODE_WEB)
     #  GIAO VIỆC: để `action` rỗng, tin nằm lại INBOX và vòng gom lo tiếp.
     #  ai-CR-021: đại ca muốn biết ngay là bot đã nhận — nhắn MỘT câu báo nhận cho cả chùm tin
     #  liên tiếp (không phải mỗi câu một tiếng chuông, lý do bản cũ im lặng hẳn).
@@ -2746,6 +2908,9 @@ def show_task(db: Session, chat_id: str, arg: str) -> None:
     head.append(f"Tin nhắn: {len(msgs)} ({n_in} của đại ca, {len(msgs) - n_in} của bot)")
     if timing := coder.timing_line(db, task):
         head.append(esc(timing))
+    gem = sum(float(r.cost_usd or 0) for r in runs if r.provider != coder.PROVIDER)
+    if gem or runs:
+        head.append(f"Chi phí Gemini (tiền thật): {_money(gem)} · chi tiết: /chiphi {esc(task.code)}")
     parts = ["\n".join(head)]
     if runs:
         parts.append("<b>Các bước đã chạy</b>\n" + _runs_table(runs))

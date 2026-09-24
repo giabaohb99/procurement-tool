@@ -4287,3 +4287,165 @@ def test_he_thong_dan_tro_ly_tra_thong_tin_tai_khoan_chu_khong_giang_cach_dang_n
     fact = service._account_fact(db, "12345", u)
     assert "lan@dego.vn" in fact and "KHÔNG giảng lại cách đăng nhập" in fact
     assert service.BOT_LOGIN_FACTS.startswith("Chỉ dùng đoạn này khi người dùng hỏi CÁCH")
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-043: hỏi chi phí bằng chữ, tên bot tự lấy
+# ---------------------------------------------------------------------------
+def _cost_runs(db, service, coder, task):
+    from app.modules.agent_hub.model import AgentRun
+
+    now = datetime.now()
+    db.add(AgentRun(task_id=task.id, stage=coder.STAGE_PLAN, provider="agent_gemini", model="m",
+                    status=coder.RUN_OK, started_at=now, cost_usd=0.02))
+    db.add(AgentRun(task_id=task.id, stage=coder.STAGE_CODE, provider=coder.PROVIDER, model="m",
+                    status=coder.RUN_OK, started_at=now, cost_usd=3.0))
+    db.add(AgentRun(task_id=0, stage=20, provider="agent_gemini", model="m", status=coder.RUN_OK,
+                    started_at=now, cost_usd=0.01))
+    db.commit()
+
+
+def test_hoi_chi_phi_bang_chu_tach_tien_that_va_goi_thue_bao(db, bot, monkeypatch):
+    from app.modules.agent_hub import coder
+
+    service, sent, _ = bot
+    monkeypatch.setattr(settings, "AGENT_USD_VND", 26000)
+    monkeypatch.setattr(service.manager, "run_intent", lambda *a, **kw: pytest.fail("câu hỏi chi phí không đi phân loại"))
+    task = _task_with_plan(db, service, ["backend/app/x.py"])
+    _cost_runs(db, service, coder, task)
+    service.handle_message(db, _msg(f"{task.code} tốn bao nhiêu vậy em"))
+    assert "Gemini (tiền thật): $0.02 (≈ 1.000 đ)" in sent[-1]
+    assert "Claude Code (gói thuê bao, ước để so): $3.00 (≈ 78.000 đ)" in sent[-1]
+    service.handle_message(db, _msg("tháng này bot tốn bao nhiêu"))
+    assert "30 ngày: Gemini $0.03" in sent[-1] and task.code in sent[-1]
+    service.handle_message(db, _msg("/chiphi"))
+    assert "Chi phí ước của bot" in sent[-1]
+
+
+def test_chu_chi_phi_cua_nghiep_vu_erp_khong_bi_bat_nham(db, bot, monkeypatch):
+    service, sent, _ = bot
+    _fake_intent(monkeypatch, service, "viec")
+    service.handle_message(db, _msg("sửa màn chi phí thu mua cho hiện cột tỷ giá"))
+    assert not any("Chi phí ước của bot" in s for s in sent)
+
+
+def test_ten_bot_tu_lay_qua_getme_mot_lan(monkeypatch):
+    from app.modules.agent_hub import telegram
+
+    monkeypatch.setattr(settings, "AGENT_TELEGRAM_BOT_USERNAME", "")
+    monkeypatch.setattr(telegram, "_BOT_USERNAME", {})
+    calls: list[str] = []
+    monkeypatch.setattr(telegram, "_call", lambda method, payload, **kw: calls.append(method) or {"username": "daudau_bot"})
+    assert telegram.get_bot_username() == "daudau_bot" and telegram.get_bot_username() == "daudau_bot"
+    assert calls == ["getMe"]
+    monkeypatch.setattr(settings, "AGENT_TELEGRAM_BOT_USERNAME", "@khac_bot")
+    assert telegram.get_bot_username() == "khac_bot"
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-044: Nghiên cứu — tìm web, kiểm chứng, tài liệu nội bộ, xuất Word
+# ---------------------------------------------------------------------------
+def _fake_gemini_search(monkeypatch, research, *, text="**Kết luận: ĐÚNG**\n- Nghị định 70 quy định rõ.", seen=None):
+    class Fake:
+        name = "agent_gemini"
+
+        def _gen_config(self, model, max_tokens, temperature, thinking):
+            return {"maxOutputTokens": max_tokens}
+
+        def _post(self, model, payload):
+            if seen is not None:
+                seen.append(payload)
+            return {"modelVersion": "gemini-flash-latest",
+                    "usageMetadata": {"promptTokenCount": 100, "candidatesTokenCount": 50},
+                    "candidates": [{"content": {"parts": [{"text": text}]},
+                                    "groundingMetadata": {"groundingChunks": [
+                                        {"web": {"uri": "https://g.co/r/1", "title": "thuvienphapluat.vn"}},
+                                        {"web": {"uri": "https://g.co/r/2", "title": "thuvienphapluat.vn"}},
+                                        {"web": {"uri": "https://g.co/r/3", "title": "gdt.gov.vn"}}]}}]}
+
+    monkeypatch.setattr(research.manager, "get_provider", lambda: Fake())
+
+
+def test_kiem_chung_goi_google_search_tra_ket_luan_va_nguon(db, bot, monkeypatch):
+    from app.modules.agent_hub import research
+    from app.modules.agent_hub.model import AgentRun
+
+    service, sent, _ = bot
+    seen: list[dict] = []
+    _fake_gemini_search(monkeypatch, research, seen=seen)
+    service.handle_message(db, _msg("/kiemchung hóa đơn điện tử phải xuất trong ngày"))
+    payload = seen[0]
+    assert payload["tools"] == [{"google_search": {}}]
+    assert "Kết luận: ĐÚNG" in payload["systemInstruction"]["parts"][0]["text"]
+    assert payload["contents"][0]["parts"][0]["text"] == "hóa đơn điện tử phải xuất trong ngày"
+    assert "<b>Kết luận: ĐÚNG</b>" in sent[-1] and 'href="https://g.co/r/3"' in sent[-1]
+    assert sent[-1].count("thuvienphapluat.vn") == 1                   # nguồn trùng tên chỉ hiện một lần
+    run = db.query(AgentRun).filter_by(stage=service.STAGE_RESEARCH).one()
+    assert run.input_tokens == 100 and run.artifact["chat_id"] == "12345" and run.artifact["mode"] == "kiem_chung"
+
+
+def test_cau_tu_nhien_duoc_phan_loai_tra_cuu_thi_di_nghien_cuu(db, bot, monkeypatch):
+    from app.modules.agent_hub import research
+    from app.modules.assistant.provider.base import ChatResult
+
+    service, sent, asked = bot
+    ket_qua = ChatResult(text="", provider="agent_gemini", model="x", input_tokens=0, output_tokens=0)
+    monkeypatch.setattr(service.manager, "run_intent", lambda text, **kw: (
+        {"intent": "tra_cuu", "kind": "web", "query": "thuế nhập khẩu thép 2026", "reason": ""}, ket_qua))
+    seen: list[dict] = []
+    _fake_gemini_search(monkeypatch, research, text="Thuế suất MFN 0-15%.", seen=seen)
+    service.handle_message(db, _msg("tìm hiểu giúp anh thuế nhập khẩu thép năm nay"))
+    assert seen[0]["contents"][0]["parts"][0]["text"] == "thuế nhập khẩu thép 2026" and asked == []
+    assert "Thuế suất MFN" in sent[-1]
+
+
+def test_word_xuat_lan_tra_gan_nhat_cua_chinh_chat_do(db, bot, monkeypatch):
+    import io as _io
+
+    from docx import Document
+
+    from app.modules.agent_hub import research
+
+    service, sent, _ = bot
+    _fake_gemini_search(monkeypatch, research, text="- Ý một\n- Ý hai")
+    docs: list[tuple] = []
+    monkeypatch.setattr(service.telegram, "send_document",
+                        lambda chat_id, name, data, **kw: docs.append((chat_id, name, data)) or 9)
+    service.handle_message(db, _msg("/word"))
+    assert "chưa có lượt tìm hiểu nào" in sent[-1] and docs == []
+    service.handle_message(db, _msg("/tim giá thép tháng 9"))
+    service.handle_message(db, _msg("/word"))
+    chat_id, name, data = docs[-1]
+    body = "\n".join(p.text for p in Document(_io.BytesIO(data)).paragraphs)
+    assert chat_id == "12345" and name.endswith(".docx")
+    assert "Tìm hiểu: giá thép tháng 9" in body and "Ý hai" in body and "gdt.gov.vn — https://g.co/r/3" in body
+
+
+def test_tai_lieu_noi_bo_chi_tra_loi_tu_doan_tra_duoc_va_nguoi_lien_ket_khong_dung_duoc(db, bot, monkeypatch):
+    from app.modules.agent_hub import chat_link, research
+    from app.modules.assistant.provider.base import ChatResult
+
+    service, sent, _ = bot
+    monkeypatch.setattr(research.memory, "recall", lambda q, limit=6: [])
+    service.handle_message(db, _msg("/tailieu cổng kiểm v1 chạy thế nào"))
+    assert "không tìm thấy đoạn tài liệu" in sent[-1]
+    asked: list[str] = []
+
+    class Fake:
+        def ask(self, messages, **kw):
+            asked.append(messages[0].content)
+            return ChatResult(text="Chỉ chặn lỗi trong tệp vừa sửa.", provider="agent_gemini", model="m",
+                              input_tokens=10, output_tokens=5)
+
+    monkeypatch.setattr(research.memory, "recall", lambda q, limit=6: [
+        {"path": "doc/agent-hub/01-thiet-ke-ky-thuat.md", "title": "", "text": "cổng v1 ...", "score": 0.9}])
+    monkeypatch.setattr(research.manager, "get_provider", lambda: Fake())
+    service.handle_message(db, _msg("/tailieu cổng kiểm v1 chạy thế nào"))
+    assert "Chỉ chặn lỗi trong tệp vừa sửa." in sent[-1] and "01-thiet-ke-ky-thuat.md" in sent[-1]
+    assert "TÀI LIỆU NỘI BỘ" in asked[0]
+    #  Người đã liên kết: tài liệu kỹ thuật dự án không mở cho họ.
+    lan = _erp_user(db)
+    code, _ = chat_link.issue_code(db, lan.id)
+    service.handle_message(db, _other_msg(f"/dangnhap {code}"))
+    service.handle_message(db, _other_msg("/tailieu cấu trúc bảng công nợ"))
+    assert "chỉ dành cho quản trị" in sent[-1]

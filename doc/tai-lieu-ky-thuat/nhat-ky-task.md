@@ -3155,6 +3155,36 @@ Mã nguồn: `frontend-v2/src/modules/approval-seal/components/seal-clerk-detail
 Commit: `5fbce75a` trên nhánh `erp-v2`.
 
 
+## ai-CR-044 | Đậu Đậu tra cứu trên mạng, kiểm chứng thông tin và xuất Word
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Đại ca muốn có trợ lý nghiên cứu. Nay nhắn lệnh tìm kèm chủ đề thì bot tìm trên Google và trả bản tóm tắt
+kèm danh sách nguồn bấm được; nhắn lệnh kiểm chứng kèm một nhận định thì bot trả kết luận đúng, sai hoặc
+chưa đủ căn cứ kèm lý do và nguồn; nhắn lệnh tài liệu thì bot trả lời từ tài liệu kỹ thuật của dự án và chỉ
+rõ tệp; nhắn lệnh word thì nhận bản Word của lần tra gần nhất. Câu nói tự nhiên như tìm hiểu giúp anh cũng
+được bot hiểu và chuyển sang tra cứu, còn câu hỏi về dữ liệu trong ERP vẫn đi Trợ lý như cũ. Lượt tìm trên
+mạng không có công cụ nào tác động được hệ thống, nên nội dung trang lạ chỉ được hiện ra chứ không làm gì
+được. Chạy thử thật một lần kiểm chứng ra bốn nguồn, tiền token khoảng bảy phần trăm xu. Người đã đăng nhập
+bằng mã cũng dùng được tìm, kiểm chứng và xuất Word; tài liệu kỹ thuật chỉ dành cho quản trị.
+
+Mã nguồn: `backend/app/modules/agent_hub/research.py` (`search_web`, `answer_from_docs`, `build_docx`) · `service.py` (`run_research`, `export_research_word`, `_research_command`) · `manager.py` (ý định `tra_cuu`) · `test/backend/test_agent_hub.py` · `change-log-ai.md`.
+
+## ai-CR-043 | Hỏi bot chi phí bằng chữ và link đăng nhập một chạm
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Màn xem việc của bot đã ẩn nên đại ca cần hỏi bot về chi phí. Nay nhắn lệnh chi phí hoặc hỏi tự nhiên kiểu
+việc này tốn bao nhiêu, tháng này bot tốn bao nhiêu, bot trả số hôm nay, bảy ngày, ba mươi ngày và ba việc tốn
+nhất, tách rõ tiền Gemini là tiền thật với phần Claude Code chạy gói thuê bao chỉ ước để so, kèm quy ra tiền
+Việt theo tỷ giá tạm. Chữ chi phí của nghiệp vụ ERP như chi phí thu mua không bị hiểu nhầm. Lệnh xem chi tiết
+một việc có thêm dòng chi phí. Tên bot nay tự lấy từ Telegram nên nút mở bot để đăng nhập ở trang cá nhân chạy
+được mà không phải khai thêm.
+
+Mã nguồn: `backend/app/modules/agent_hub/service.py` (`cost_report`, `_cost_by_text`) · `telegram.py` (`get_bot_username`) · `controller.py` · `backend/app/core/config.py` (`AGENT_USD_VND`) · `test/backend/test_agent_hub.py` · `change-log-ai.md`.
+
 ## ai-CR-042 | Bot cho xem đúng thông tin tài khoản đang đăng nhập
 - status: xong
 - date: 2026-09-24

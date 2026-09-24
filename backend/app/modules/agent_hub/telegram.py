@@ -85,6 +85,21 @@ def _call(method: str, payload: dict, *, timeout: int = 30, files: dict | None =
 
 
 FILE_URL = "https://api.telegram.org/file/bot{token}/{path}"
+_BOT_USERNAME: dict[str, str] = {}
+
+
+def get_bot_username() -> str:
+    """Tên bot (không @): lấy từ `.env`, trống thì hỏi Telegram `getMe` một lần rồi nhớ (ai-CR-043).
+    Hỏng thì trả rỗng — trang cá nhân chỉ mất nút mở thẳng bot, không hỏng gì khác."""
+    name = (settings.AGENT_TELEGRAM_BOT_USERNAME or "").strip().lstrip("@")
+    if name:
+        return name
+    if "name" not in _BOT_USERNAME:
+        try:
+            _BOT_USERNAME["name"] = str(_call("getMe", {}).get("username") or "")
+        except TelegramError:
+            return ""
+    return _BOT_USERNAME["name"]
 
 
 def download_file(file_id: str, *, max_bytes: int) -> tuple[bytes, str]:

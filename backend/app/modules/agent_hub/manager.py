@@ -349,7 +349,7 @@ Bot có hai tay:
     số liệu, tình trạng chứng từ, tạo đơn nghỉ phép, lập báo cáo, duyệt, gửi thông báo.
   - SỔ VIỆC SỬA PHẦN MỀM: ghi lại để lập trình viên sửa mã nguồn.
 
-Có bốn kết quả:
+Có năm kết quả:
 
 - "hoi": giao cho TRỢ LÝ AI. Gồm cả ba dạng: người ta MUỐN BIẾT một điều có sẵn
   (số liệu, tình trạng một chứng từ, ai giữ việc, cách dùng, nội dung tài liệu);
@@ -370,9 +370,18 @@ Có bốn kết quả:
   deploy_dev = chỉ đưa bản ĐÃ gộp lên dev.
   Hỏi về một việc («xong chưa», «nhánh nào», «merge được không») là tinh_trang, không phải gop.
   Một yêu cầu sửa phần mềm MỚI (dù có chữ «gộp», «bỏ») là "viec", không phải thao_tac.
+- "tra_cuu": cần TÌM THÔNG TIN NGOÀI dữ liệu ERP — kiến thức chung, luật, quy định, giá thị trường,
+  công nghệ, tin tức, một công ty/sản phẩm bên ngoài — hoặc KIỂM CHỨNG một nhận định có đúng không,
+  hoặc hỏi TÀI LIỆU KỸ THUẬT của chính dự án phần mềm. Điền `kind`: web (tìm hiểu trên Internet) ·
+  kiem_chung (xét một nhận định đúng/sai) · tai_lieu (tài liệu kỹ thuật dự án), và `query` (câu cần
+  tra, viết lại cho rõ nếu cần). Câu hỏi về DỮ LIỆU trong ERP (đơn, NCC, công nợ, nhân sự, phiếu) là
+  "hoi", KHÔNG phải tra_cuu.
 - "mo_ho": đọc xong vẫn không chắc, hoặc tin quá ngắn/cụt để biết người ta muốn gì.
 
 Vài ca dễ nhầm:
+- "tìm hiểu giúp anh thuế nhập khẩu thép năm nay" -> tra_cuu, kind web.
+- "có đúng là hóa đơn điện tử phải xuất trong ngày không" -> tra_cuu, kind kiem_chung.
+- "giá thép nhà cung cấp Hòa Phát báo tháng này trong hệ thống" -> hoi (dữ liệu ERP).
 - "3 đơn mua hàng gần nhất" -> hoi (đòi số liệu).
 - "tạo cho anh đơn nghỉ phép thứ 6 tuần này" -> hoi (nhờ làm nghiệp vụ, Trợ lý AI có
   công cụ làm được; KHÔNG phải sửa phần mềm).
@@ -395,7 +404,11 @@ CHỈ trả JSON, không thêm chữ nào ngoài JSON:
 hoặc với thao tác:
 {"intent": "thao_tac", "action": "gop", "task": "AI-0007", "when": "", "detail": "",
  "confident": true, "reason": "..."}
+hoặc với tra cứu:
+{"intent": "tra_cuu", "kind": "web", "query": "...", "reason": "..."}
 """
+INTENT_RESEARCH = "tra_cuu"
+RESEARCH_KINDS = ("web", "kiem_chung", "tai_lieu")
 
 INTENT_ACT = "thao_tac"
 #  Nhãn thao tác của model -> tên thao tác nội bộ của `service._run_task_command` (ai-CR-028).
@@ -435,7 +448,7 @@ def run_intent(text: str, *, context: str = "", tasks: str = "") -> tuple[dict, 
     )
     data = parse_json(result.text)
     intent = str(data.get("intent") or "").strip().lower()
-    if intent not in (INTENT_ASK, INTENT_TASK, INTENT_UNSURE, INTENT_ACT):
+    if intent not in (INTENT_ASK, INTENT_TASK, INTENT_UNSURE, INTENT_ACT, INTENT_RESEARCH):
         log.warning("agent_hub: phân loại trả ý định lạ %r, coi như mập mờ", intent)
         intent = INTENT_UNSURE
     out = {"intent": intent, "reason": str(data.get("reason") or "")[:200]}
@@ -448,4 +461,8 @@ def run_intent(text: str, *, context: str = "", tasks: str = "") -> tuple[dict, 
             out.update(action=action, task=str(data.get("task") or "").strip().upper(),
                        when=str(data.get("when") or "").strip(), detail=str(data.get("detail") or "").strip(),
                        confident=bool(data.get("confident")))
+    if intent == INTENT_RESEARCH:
+        kind = str(data.get("kind") or "").strip().lower()
+        out.update(kind=kind if kind in RESEARCH_KINDS else "web",
+                   query=str(data.get("query") or "").strip() or text)
     return out, result

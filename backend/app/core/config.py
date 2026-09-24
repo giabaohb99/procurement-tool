@@ -287,6 +287,8 @@ class Settings(BaseSettings):
     AGENT_LINK_CODE_MINUTES: int = 10
     # Tên bot (không có @) để trang cá nhân dựng link mở thẳng bot; trống thì chỉ hướng dẫn chữ.
     AGENT_TELEGRAM_BOT_USERNAME: str = ""
+    # ai-CR-043: tỷ giá TẠM để báo chi phí bot kèm tiền Việt. Chỉ để đọc cho dễ, không phải số kế toán.
+    AGENT_USD_VND: int = 26000
     AGENT_TICKET_DEPARTMENTS: str = ""
     AGENT_FILE_MAX_MB: int = 20
     # ai-CR-018: `doc/` trên máy đại ca (gồm phần CHƯA commit) mount chỉ đọc vào runner. Rỗng =

@@ -17,7 +17,7 @@ from app.core.base_controller import pagination
 from app.core.database import get_db
 from app.core.response import success
 
-from . import chat_link, coder
+from . import chat_link, coder, telegram
 from .constants import (
     DIRECTION_LABELS,
     RISK_LABELS,
@@ -148,7 +148,7 @@ def _serialize_link(link) -> dict:
 
 @router.get("/links")
 def list_my_links(user=Depends(get_current_user), db: Session = Depends(get_db)):
-    bot = (settings.AGENT_TELEGRAM_BOT_USERNAME or "").strip().lstrip("@")
+    bot = telegram.get_bot_username()
     return success({"enabled": bool(settings.AGENT_LINK_ENABLED), "bot_username": bot,
                     "items": [_serialize_link(x) for x in chat_link.list_user_links(db, user.id)]})
 
@@ -159,7 +159,7 @@ def create_link_code(user=Depends(get_current_user), db: Session = Depends(get_d
     if not settings.AGENT_LINK_ENABLED:
         raise HTTPException(400, "Liên kết Telegram đang tắt")
     code, expires = chat_link.issue_code(db, user.id)
-    bot = (settings.AGENT_TELEGRAM_BOT_USERNAME or "").strip().lstrip("@")
+    bot = telegram.get_bot_username()
     return success({"code": code, "expires_at": _iso(expires),
                     "deep_link": f"https://t.me/{bot}?start={code}" if bot else ""})
 

@@ -134,6 +134,9 @@ STAGE_RULE = 24
 #  Rà soát mã trước kế hoạch (ai-CR-017): một lượt `claude -p` chỉ đọc. artifact giữ `message`
 #  (đoạn phân tích đã nhắn đại ca), `info` (JSON: files, root_cause, already_fixed…), `head`.
 STAGE_SCAN = 25
+#  Nghiên cứu (ai-CR-044): một lượt tìm web / kiểm chứng / hỏi tài liệu nội bộ. artifact giữ `chat_id`,
+#  `mode`, `question`, `text`, `sources` — để «/word» xuất lại đúng bản của chat đó.
+STAGE_RESEARCH = 26
 #  Nhãn bước cho màn Việc của bot (ai-CR-036).
 STAGE_LABELS = {
     STAGE_TRIAGE: "Gom việc",
@@ -145,6 +148,7 @@ STAGE_LABELS = {
     STAGE_REVERT: "Thu hồi",
     STAGE_RULE: "Đề xuất ghi sổ",
     STAGE_SCAN: "Rà soát mã",
+    STAGE_RESEARCH: "Nghiên cứu",
 }
 
 # ---------------------------------------------------------------------------
