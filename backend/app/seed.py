@@ -245,7 +245,10 @@ _SYS_ENTITIES = {"user", "role", "setting", "backup", "help_article", "mailbox",
                  #  bộ hồ sơ pháp lý của mọi pháp nhân, kèm bản scan đính kèm.
                  #  Ai cần thì gán thêm vai trò `dossier_admin`.
                  "dossier",
-                 "audit", "change_log"}
+                 "audit", "change_log",
+                 #  Việc của bot Agent Hub (ai-CR-036): sổ việc + chi phí model của
+                 #  bot sửa mã — việc của quản trị hệ thống.
+                 "agent_task"}
 _PUR_MANAGER_PERMS = {e: (_ALL_ACTIONS, "all") for e in ENTITIES if e not in _SYS_ENTITIES}
 
 STD_ROLES = {

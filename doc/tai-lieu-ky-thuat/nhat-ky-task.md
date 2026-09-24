@@ -3155,6 +3155,15 @@ Mã nguồn: `frontend-v2/src/modules/approval-seal/components/seal-clerk-detail
 Commit: `5fbce75a` trên nhánh `erp-v2`.
 
 
+## ai-CR-036 | Màn xem việc của bot Telegram trong ERP v2
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Trước đây muốn xem bot đã nhận việc gì và tốn bao nhiêu thì phải mở Adminer hoặc nhắn lệnh chi tiết trên Telegram. Nay trong phân hệ Quản trị của ERP v2 có màn Việc của bot Telegram: ba thẻ số cho việc đang mở, chi phí model và số lượt gọi trong ba mươi ngày, cùng bảng việc lọc được theo trạng thái và chữ. Bấm vào một việc thì thấy yêu cầu, phần rà soát mã, kế hoạch, các bước đã chạy với thời gian, token và chi phí, và toàn bộ hội thoại Telegram của việc đó. Màn chỉ để xem, mọi thao tác vẫn nhắn qua Telegram. Quyền xem là khóa riêng dành cho quản trị hệ thống. Để đại ca mở được màn này, stack của bot có thêm một giao diện riêng ở cổng 8084, chỉ bật khi cần. Kiểm tra kiểu, quy tắc mã và bài kiểm phân hệ Quản trị đều xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/controller.py` (`list_tasks`, `get_task`, `stats`) · `backend/app/core/{permissions,scoping}.py` · `backend/app/seed.py` · `frontend-v2/src/modules/system/pages/agent-task-{list,detail}-page.tsx` · `docker-compose.agent.yml` (`agent-erp`) · `change-log-ai.md`.
+
 ## ai-CR-035 | Đậu Đậu nhận ảnh chụp lỗi gửi kèm yêu cầu sửa
 - status: xong
 - date: 2026-09-24

@@ -176,6 +176,28 @@ services:
       - default
       - procstack
 
+  # Giao diện ERP v2 của CHÍNH worktree này, gọi `agent-api` (ai-CR-036): nơi xem màn «Việc của
+  # bot Telegram» + liên kết Telegram, và nơi chạy cổng kiểm frontend-v2 cho mã của nhánh bot.
+  # Profile riêng vì tốn ~2 GB RAM: bật khi cần —
+  #   docker compose --profile giao-dien up -d agent-erp      ->  http://localhost:8084
+  agent-erp:
+    profiles: [giao-dien]
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.erp
+    mem_limit: 3g
+    cpus: 2
+    environment:
+      NODE_OPTIONS: "--max-old-space-size=2048"
+      VITE_API_PROXY_TARGET: http://agent-api:8000
+    volumes:
+      - ./frontend-v2:/app
+      - /app/node_modules
+    ports:
+      - "8084:5174"
+    depends_on:
+      - agent-api
+
 volumes:
   # Worktree của từng task + bản clone `base`. Sống qua các lần dựng lại container để không
   # phải clone lại kho (lớn) mỗi lần; xóa bằng `docker volume rm agenthub_agent_worktrees`.

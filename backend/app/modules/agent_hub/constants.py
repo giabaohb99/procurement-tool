@@ -134,6 +134,18 @@ STAGE_RULE = 24
 #  Rà soát mã trước kế hoạch (ai-CR-017): một lượt `claude -p` chỉ đọc. artifact giữ `message`
 #  (đoạn phân tích đã nhắn đại ca), `info` (JSON: files, root_cause, already_fixed…), `head`.
 STAGE_SCAN = 25
+#  Nhãn bước cho màn Việc của bot (ai-CR-036).
+STAGE_LABELS = {
+    STAGE_TRIAGE: "Gom việc",
+    STAGE_PLAN: "Lập kế hoạch",
+    STAGE_CODE: "Sửa mã",
+    STAGE_INTENT: "Đọc ý định",
+    STAGE_ASK: "Hỏi thêm về bản vá",
+    STAGE_DEPLOY: "Gộp / deploy dev",
+    STAGE_REVERT: "Thu hồi",
+    STAGE_RULE: "Đề xuất ghi sổ",
+    STAGE_SCAN: "Rà soát mã",
+}
 
 # ---------------------------------------------------------------------------
 # Dấu đã xử của một tin nhắn ĐẾN (`tab_agent_message.action`)

@@ -280,6 +280,8 @@ SCOPE_FIELDS = {
     #  ở đây nghĩa là đúng những dòng lỗi nặng nhất thì không ai nhìn thấy.
     #  Chốt là ở cửa: khóa `sync_log` chỉ cấp cho quản trị hệ thống.
     "sync_log":         PUBLIC,
+    #  ai-CR-036: việc của bot không thuộc người, phòng hay pháp nhân nào — gác bằng khóa quyền.
+    "agent_task":       PUBLIC,
 }
 
 

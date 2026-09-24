@@ -1,5 +1,6 @@
 import {
   AtSign,
+  Bot,
   Database,
   FileDown,
   FileUp,
@@ -109,6 +110,13 @@ export const systemModule: ErpModule = {
       manage: true,
     },
     {
+      //  ai-CR-036: việc của bot Telegram Đậu Đậu — chỉ đọc, thao tác vẫn nhắn qua Telegram.
+      label: 'Việc của bot Telegram',
+      path: appRoutes.system.agentTasks,
+      icon: Bot,
+      entity: 'agent_task',
+    },
+    {
       //  duoc-CR-396: dời từ phân hệ Nhân sự sang đây. Khai ai được làm gì là
       //  việc QUẢN TRỊ HỆ THỐNG — màn này gác cả 55 khóa quyền của mọi phân hệ
       //  chứ không riêng hồ sơ nhân viên, nên nó đứng cạnh *Cấu hình hệ thống*
@@ -192,6 +200,18 @@ export const systemModule: ErpModule = {
       path: appRoutes.system.sessions,
       lazy: async () => ({
         Component: (await import('./pages/login-session-list-page')).LoginSessionListPage,
+      }),
+    },
+    {
+      path: appRoutes.system.agentTasks,
+      lazy: async () => ({
+        Component: (await import('./pages/agent-task-list-page')).AgentTaskListPage,
+      }),
+    },
+    {
+      path: appRoutes.system.agentTask(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/agent-task-detail-page')).AgentTaskDetailPage,
       }),
     },
     {

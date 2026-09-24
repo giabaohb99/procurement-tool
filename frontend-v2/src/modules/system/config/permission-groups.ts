@@ -74,7 +74,9 @@ export const PERMISSION_GROUPS: PermissionGroupDef[] = [
     entities: ['setting', 'backup', 'mailbox', 'import',
       //  Nhật ký & phiên đăng nhập (CR-312). `login_session` trước nay rơi vào
       //  nhóm «Khác» — cùng một mối quan tâm với hai khóa nhật ký, xếp chung.
-      'login_session', 'audit', 'change_log'],
+      'login_session', 'audit', 'change_log',
+      //  Việc của bot Agent Hub (ai-CR-036).
+      'agent_task'],
   },
 ]
 

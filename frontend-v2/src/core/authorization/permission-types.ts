@@ -149,6 +149,9 @@ export const ENTITIES = [
   //  mọi nguồn (app đặt xe, POS365, đơn hàng...). `write` KHÔNG phải sửa dòng sổ
   //  — sổ không sửa được — mà là nút «Chạy lại», tức gọi ngược sang hệ ngoài.
   'sync_log',
+  //  Việc của bot Agent Hub (ai-CR-036) — màn `/system/agent-tasks`, chỉ đọc: danh sách việc
+  //  Đậu Đậu đã nhận, từng bước đã chạy, chi phí model. Thao tác trên việc vẫn đi qua Telegram.
+  'agent_task',
 ] as const
 
 export type PermissionEntity = (typeof ENTITIES)[number]

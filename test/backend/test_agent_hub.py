@@ -2499,6 +2499,8 @@ def test_de_bai_ra_soat_so_main_va_mo_thu_muc_tai_lieu_o_may(db, bot, monkeypatc
     assert f"{local}/tai-lieu-ky-thuat/change-log-bao.md" in brief and "CHƯA COMMIT" in brief
     seen: list[list] = []
     monkeypatch.setattr(coder, "_run_cli", lambda cmd, stdin, wt, timeout: seen.append(cmd) or {})
+    #  Tách khỏi thư mục ảnh (ai-CR-035): trong container thật /agent-files có sẵn nên lệnh mở thêm nó.
+    monkeypatch.setattr(settings, "AGENT_FILES_DIR", "")
     coder.run_claude_scan("/wt", "x", session_id="s", timeout=1)
     assert seen[-1][-2:] == ["--add-dir", str(local)]
     #  Không có main hay không mount thư mục: đề bài không nhắc, lệnh không mở thêm thư mục.
@@ -3876,3 +3878,76 @@ def test_claude_duoc_mo_thu_muc_anh(monkeypatch, tmp_path):
     assert coder._with_files_dir(["claude", "-p"])[-2:] == ["--add-dir", str(tmp_path)]
     monkeypatch.setattr(settings, "AGENT_FILES_DIR", str(tmp_path / "khong-co"))
     assert coder._with_files_dir(["claude", "-p"]) == ["claude", "-p"]
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-036: màn Việc của bot trong ERP v2 (API chỉ đọc)
+# ---------------------------------------------------------------------------
+def _json(resp) -> dict:
+    import json as _j
+    return _j.loads(resp.body)["data"]
+
+
+def _pg(page=1, size=20):
+    return {"page": page, "page_size": size, "offset": (page - 1) * size, "limit": size}
+
+
+def test_api_danh_sach_viec_co_chi_phi_va_loc(db, bot):
+    from app.modules.agent_hub import coder, controller
+    from app.modules.agent_hub.model import AgentRun
+
+    service, _, _ = bot
+    a = _task_with_session(db, service, coder)
+    b = _task_with_plan(db, service, ["backend/app/y.py"])
+    b.title = "Sửa màn công nợ"
+    for cost in (0.01, 0.02):
+        db.add(AgentRun(task_id=a.id, stage=coder.STAGE_PLAN, provider="agent_gemini", model="m",
+                        status=coder.RUN_OK, started_at=datetime.now(), duration_ms=1000, cost_usd=cost))
+    db.commit()
+    data = _json(controller.list_tasks(status=0, q="", user=None, db=db, pg=_pg()))
+    assert data["total"] == 2 and data["items"][0]["code"] == b.code          # mới nhất trước
+    row_a = next(i for i in data["items"] if i["code"] == a.code)
+    assert row_a["cost_usd"] == 0.03 and row_a["runs"] == 3 and row_a["status_label"] == "Chờ đại ca xem"
+    assert _json(controller.list_tasks(status=0, q="công nợ", user=None, db=db, pg=_pg()))["total"] == 1
+    assert _json(controller.list_tasks(status=service.ST_PLAN, q="", user=None, db=db, pg=_pg()))["total"] == 1
+
+
+def test_api_chi_tiet_viec_va_404(db, bot):
+    from fastapi import HTTPException
+
+    from app.modules.agent_hub import coder, controller
+
+    service, _, _ = bot
+    task = _task_with_session(db, service, coder)
+    service.reply(db, "12345", "Em nhận việc", task_id=task.id)
+    db.commit()
+    data = _json(controller.get_task(task.id, user=None, db=db))
+    assert data["code"] == task.code and data["plan"] == "Sửa điều kiện lọc"
+    assert data["run_list"][0]["stage_label"] == "Sửa mã" and data["messages"][0]["body"] == "Em nhận việc"
+    with pytest.raises(HTTPException):
+        controller.get_task(999999, user=None, db=db)
+
+
+def test_api_thong_ke_chi_phi_theo_ngay_va_buoc(db, bot):
+    from app.modules.agent_hub import coder, controller
+    from app.modules.agent_hub.model import AgentRun
+
+    service, _, _ = bot
+    task = _task_with_plan(db, service, ["backend/app/x.py"])
+    db.add(AgentRun(task_id=task.id, stage=coder.STAGE_SCAN, provider="claude_code", model="m",
+                    status=coder.RUN_OK, started_at=datetime.now(), cost_usd=0.5))
+    db.add(AgentRun(task_id=0, stage=coder.STAGE_INTENT if hasattr(coder, "STAGE_INTENT") else 20,
+                    provider="agent_gemini", model="m", status=coder.RUN_OK, started_at=datetime.now(),
+                    cost_usd=0.001))
+    db.commit()
+    data = _json(controller.stats(days=30, user=None, db=db))
+    assert data["total_cost_usd"] == 0.501 and data["run_count"] == 2
+    assert data["cost_by_stage"][0]["label"] == "Rà soát mã"
+
+
+def test_khoa_quyen_agent_task_khong_lot_vao_quan_ly_thu_mua():
+    from app.core.permissions import ENTITIES
+    from app.core.scoping import SCOPE_FIELDS
+    from app.seed import _SYS_ENTITIES
+
+    assert "agent_task" in ENTITIES and "agent_task" in SCOPE_FIELDS and "agent_task" in _SYS_ENTITIES

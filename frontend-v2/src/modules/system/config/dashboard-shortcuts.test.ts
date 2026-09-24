@@ -62,10 +62,10 @@ describe('SYSTEM_DASHBOARD_SHORTCUTS', () => {
     expect(lech).toEqual([])
   })
 
-  it('đủ mười lối tắt — không để thẻ nào bị bỏ quên sau mỗi lần thêm màn', () => {
+  it('đủ mười một lối tắt — không để thẻ nào bị bỏ quên sau mỗi lần thêm màn', () => {
     //  Không phải con số thiêng: nó chốt rằng bốn màn bổ sung 14/09/2026 còn đó
     //  (ba màn sót + Mẫu email thông báo tách ra ở duoc-CR-397), cộng *Nhật ký
-    //  hệ thống* thêm ở bao-CR-407.
-    expect(SYSTEM_DASHBOARD_SHORTCUTS).toHaveLength(10)
+    //  hệ thống* thêm ở bao-CR-407, cộng *Việc của bot Telegram* ở ai-CR-036.
+    expect(SYSTEM_DASHBOARD_SHORTCUTS).toHaveLength(11)
   })
 })

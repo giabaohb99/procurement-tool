@@ -162,9 +162,13 @@ def test_du_55_entity():
     ⚠️ Khai **CỘT THẬT** ở `SCOPE_FIELDS` (`company_id` · `department_id` ·
     `created_by` · `owner_employee_id`), KHÔNG PUBLIC — hồ sơ thuộc về một pháp
     nhân, một phòng và một người. Bốn chiều kiểm ở `test_ho_so_pham_vi.py`.
+
+    65 → 66 ngày 24/09/2026: việc của bot Agent Hub (`agent_task`, ai-CR-036) — màn
+    `/system/agent-tasks` chỉ đọc. PUBLIC vì việc của bot không thuộc người hay phòng nào;
+    gác bằng khóa quyền, và nằm trong `_SYS_ENTITIES` nên Quản lý thu mua không tự có.
     """
-    assert len(ENTITIES) == 65
-    assert len(SCOPE_FIELDS) == 65
+    assert len(ENTITIES) == 66
+    assert len(SCOPE_FIELDS) == 66
 
 
 # ── 2. Không dựng nổi điều kiện thì chặn ────────────────────────────────────────

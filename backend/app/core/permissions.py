@@ -129,6 +129,10 @@ ENTITIES = [
     # ⚠️ Nhật ký đồng bộ RIÊNG của POS365 (`/api/coffee/sync/runs`) vẫn đi bằng
     # `pos_order.read` như cũ dù nay đọc chung một bảng.
     "sync_log",
+    # Việc của bot Agent Hub (ai-CR-036) — màn `/system/agent-tasks`: danh sách việc Đậu Đậu
+    # đã nhận, lịch sử từng bước, chi phí model. Chỉ ĐỌC: mọi thao tác trên việc vẫn đi qua
+    # Telegram. Quản trị hệ thống, không phải thu mua (nằm trong `_SYS_ENTITIES` của seed).
+    "agent_task",
 ]
 
 ACTIONS = ["read", "create", "write", "delete", "approve", "cancel", "print", "export"]
@@ -204,6 +208,7 @@ ENTITY_LABELS = {
     "audit": "Nhật ký hệ thống (tra toàn hệ)",
     "change_log": "Nhật ký hệ thống › Giá trị trước/sau",
     "sync_log": "Sổ đồng bộ với hệ ngoài",
+    "agent_task": "Trợ lý Telegram › Việc của bot",
 }
 
 ACTION_LABELS = {
