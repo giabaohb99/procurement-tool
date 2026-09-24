@@ -66,9 +66,11 @@ from .constants import (
     NOISE_ACTIONS,
     RISK_HIGH,
     RISK_LABELS,
+    RISK_MEDIUM,
     RUN_ERROR,
     RUN_OK,
     RUN_RUNNING,
+    SRC_ERP_TICKET,
     SRC_TELEGRAM,
     ST_CANCELLED,
     ST_CODE,
@@ -1587,6 +1589,7 @@ def cancel_task(db: Session, chat_id: str, cb_id: str, task: AgentTask) -> None:
     #  Chỉ có toast thì khung chat không còn dấu vết gì (đại ca hỏi 23/09 về AI-0006).
     reply(db, chat_id, f"Đã bỏ <b>{telegram.esc(task.code)}</b> · {telegram.esc(task.title)}. "
           f"Lịch sử vẫn còn trong sổ: /xem {telegram.esc(task.code)}", task_id=task.id)
+    report_to_tickets(db, task, done=False)
     _schedule_cleanup(db, task)
 
 
@@ -1651,6 +1654,7 @@ def close_done(db: Session, chat_id: str, cb_id: str, task: AgentTask) -> None:
     reply(db, chat_id, f"<b>{telegram.esc(task.code)}</b>: đã đóng. Bản gộp ở trên "
           f"<code>{telegram.esc(settings.AGENT_BASE_BRANCH)}</code>, lên prod là đợt riêng.",
           task_id=task.id)
+    report_to_tickets(db, task, done=True)
     _schedule_cleanup(db, task)
 
 
@@ -2096,6 +2100,135 @@ def _create_task(db: Session, group: dict, by_id: dict) -> AgentTask:
         #  ai-CR-035: trạm kế hoạch (Gemini) chỉ đọc chữ; ghi lại để nó biết rà soát đã có ảnh.
         task.summary = (task.summary or "").rstrip() + f"\n\n(Kèm {photos} ảnh chụp màn hình, bước rà soát mã đã xem ảnh.)"
     return task
+
+
+# ---------------------------------------------------------------------------
+# Phiếu hỗ trợ ERP làm nguồn việc (ai-CR-037, AN-005)
+# ---------------------------------------------------------------------------
+#  Một phiếu = một việc, KHÔNG qua trạm gom (phiếu đã là một yêu cầu trọn vẹn do người dùng viết).
+#  Con trỏ `erp_ticket_since` = id phiếu lớn nhất lúc bật tính năng: cửa theo nhãn bộ phận chỉ nhận
+#  phiếu MỚI hơn nó (bật lên không kéo cả lịch sử phiếu cũ vào hàng việc); cửa giao cho tài khoản
+#  bot thì nhận cả phiếu cũ vì đó là người chủ động giao.
+TICKET_CURSOR = "erp_ticket_since"
+TICKET_BATCH = 5
+_TICKET_OPEN = ("open", "in_progress")
+
+
+def _named_cursor(db: Session, name: str) -> AgentCursor | None:
+    return db.scalar(select(AgentCursor).where(AgentCursor.name == name))
+
+
+def _ticket_bot_user(db: Session):
+    from app.modules.user.model import User
+
+    email = (settings.AGENT_TICKET_ASSIGNEE or "").strip()
+    return db.scalar(select(User).where(User.email == email)) if email else None
+
+
+def _ticket_departments() -> set[str]:
+    return {d.strip().casefold() for d in (settings.AGENT_TICKET_DEPARTMENTS or "").split(",") if d.strip()}
+
+
+def pull_tickets(db: Session) -> int:
+    """Phiếu hỗ trợ đủ điều kiện mà chưa thành việc -> việc mới, đi thẳng bước rà soát. Trả số việc."""
+    from app.modules.ticket.model import Ticket
+
+    bot_user = _ticket_bot_user(db)
+    departments = _ticket_departments()
+    if bot_user is None and not departments:
+        return 0
+    cursor = _named_cursor(db, TICKET_CURSOR)
+    if cursor is None:
+        #  Lần đầu bật: mốc = phiếu mới nhất hiện có, phiếu cũ không tự tràn vào theo nhãn bộ phận.
+        cursor = AgentCursor(name=TICKET_CURSOR, value=int(db.scalar(select(func.max(Ticket.id))) or 0))
+        db.add(cursor)
+        db.commit()
+    linked = select(AgentTaskItem.ref_id).where(AgentTaskItem.source == SRC_ERP_TICKET)
+    rows = list(db.scalars(select(Ticket).where(Ticket.status.in_(_TICKET_OPEN), Ticket.id.not_in(linked))
+                           .order_by(Ticket.id).limit(200)))
+    picked = [t for t in rows
+              if (bot_user is not None and t.assignee_id == bot_user.id)
+              or (t.id > cursor.value and (t.department or "").strip().casefold() in departments)]
+    created = 0
+    for ticket in picked[:TICKET_BATCH]:
+        if _quota_left(db) <= 0:
+            log.warning("agent_hub: chạm trần việc/ngày, phiếu %s chờ lượt sau", ticket.code)
+            break
+        task = _task_from_ticket(db, ticket, bot_user)
+        created += 1
+        reply(db, settings.AGENT_TELEGRAM_CHAT_ID,
+              f"Phiếu hỗ trợ <b>{telegram.esc(ticket.code)}</b> thành việc <b>{telegram.esc(task.code)}</b>: "
+              f"{telegram.esc(ticket.subject[:120])}", task_id=task.id)
+        db.commit()
+        start_scan(db, task)
+        db.commit()
+    return created
+
+
+def _task_from_ticket(db: Session, ticket, bot_user) -> AgentTask:
+    from app.modules.employee.model import Employee
+    from app.modules.ticket.model import TicketMessage
+
+    first = db.scalar(select(TicketMessage).where(TicketMessage.ticket_id == ticket.id,
+                                                  TicketMessage.is_staff.is_(False))
+                      .order_by(TicketMessage.id).limit(1))
+    requester = db.get(Employee, ticket.requester_id) if ticket.requester_id else None
+    who = (requester.full_name if requester is not None else "") or "người dùng"
+    lines = [f"Phiếu hỗ trợ {ticket.code} của {who} (bộ phận: {ticket.department or 'không ghi'}, "
+             f"ưu tiên: {ticket.priority}).", "", ticket.subject or ""]
+    if first is not None and (first.body or "").strip():
+        lines += ["", first.body.strip()]
+    if ticket.origin_url:
+        lines += ["", f"Trang người gửi đang đứng lúc tạo phiếu: {ticket.origin_url}"]
+    task = AgentTask(code=next_code(db), title=(ticket.subject or ticket.code)[:255], source=SRC_ERP_TICKET,
+                     status=ST_TRIAGE, summary="\n".join(lines), risk_level=RISK_MEDIUM)
+    db.add(task)
+    db.flush()
+    db.add(AgentTaskItem(task_id=task.id, source=SRC_ERP_TICKET, ref_id=ticket.id, merged_by=MERGED_BY_BOT))
+    _ticket_note(db, ticket, bot_user,
+                 f"Phiếu đã chuyển cho bot sửa mã {BOT_NAME} (mã việc {task.code}). Kết quả sẽ báo lại ở đây.",
+                 status="in_progress")
+    db.commit()
+    return task
+
+
+def _ticket_note(db: Session, ticket, bot_user, body: str, *, status: str) -> None:
+    """Một dòng trả lời của nhóm hỗ trợ trên phiếu + đặt trạng thái (không qua service để khỏi tự
+    đổi trạng thái sang «Đã trả lời» lúc bot mới NHẬN việc)."""
+    from app.modules.ticket.model import TicketMessage
+
+    uid = bot_user.id if bot_user is not None else 0
+    db.add(TicketMessage(ticket_id=ticket.id, body=body, is_staff=True, created_by=uid, updated_by=uid))
+    ticket.status = status
+    ticket.closed_at = None
+    ticket.updated_by = uid
+
+
+def _tickets_of(db: Session, task: AgentTask) -> list:
+    from app.modules.ticket.model import Ticket
+
+    ids = db.scalars(select(AgentTaskItem.ref_id).where(AgentTaskItem.task_id == task.id,
+                                                        AgentTaskItem.source == SRC_ERP_TICKET)).all()
+    return list(db.scalars(select(Ticket).where(Ticket.id.in_(ids)))) if ids else []
+
+
+def report_to_tickets(db: Session, task: AgentTask, *, done: bool) -> None:
+    """Việc đóng -> báo lại trên phiếu gốc. Xong: «Đã trả lời». Bỏ: trả phiếu về hàng chờ người."""
+    tickets = _tickets_of(db, task)
+    if not tickets:
+        return
+    bot_user = _ticket_bot_user(db)
+    for t in tickets:
+        if done:
+            _ticket_note(db, t, bot_user, f"{BOT_NAME} đã sửa xong việc {task.code}, bản sửa đã lên môi trường "
+                         "thử (dev). Anh/chị kiểm tra lại giúp, còn lỗi thì trả lời ngay trên phiếu này.",
+                         status="answered")
+        else:
+            _ticket_note(db, t, bot_user, f"Bot không xử lý việc {task.code}; nhóm hỗ trợ sẽ xử lý phiếu này.",
+                         status="open")
+            if bot_user is not None and t.assignee_id == bot_user.id:
+                t.assignee_id = 0
+    db.commit()
 
 
 def _quota_left(db: Session) -> int:

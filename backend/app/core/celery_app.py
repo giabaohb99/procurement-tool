@@ -159,6 +159,12 @@ if settings.AGENT_HUB_ENABLED:
             "schedule": crontab(minute="*"),
             "options": {"expires": 50},
         },
+        #  ai-CR-037: phiếu hỗ trợ ERP giao cho bot / mang nhãn bộ phận đã khai -> việc của bot.
+        "agent-pull-tickets": {
+            "task": "agent.pull_tickets",
+            "schedule": crontab(minute="*"),
+            "options": {"expires": 50},
+        },
     })
     #  Vòng kéo tin CHỈ vào lịch khi không có tiến trình `agent-poller` riêng (ai-CR-008):
     #  poller giữ kết nối chờ tin, còn vòng này hỏi-rồi-về mỗi 10 giây. Hai bên cùng đọc

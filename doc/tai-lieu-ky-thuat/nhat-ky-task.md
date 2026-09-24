@@ -3155,6 +3155,15 @@ Mã nguồn: `frontend-v2/src/modules/approval-seal/components/seal-clerk-detail
 Commit: `5fbce75a` trên nhánh `erp-v2`.
 
 
+## ai-CR-037 | Đậu Đậu nhận việc từ phiếu hỗ trợ trong ERP
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Trước đây bot chỉ nhận việc qua tin nhắn Telegram của đại ca. Nay phiếu hỗ trợ trong ERP cũng thành việc của bot theo hai cách: nhóm hỗ trợ giao phiếu cho tài khoản ERP của bot, hoặc phiếu mới mang nhãn bộ phận đã khai sẵn. Mỗi phiếu thành một việc riêng với đủ tiêu đề, nội dung, người gửi và trang họ đang đứng, bot nhắn đại ca rồi vào bước rà soát như việc thường. Trên phiếu có dòng trả lời báo đã chuyển cho bot kèm mã việc. Khi việc xong, phiếu chuyển sang đã trả lời kèm lời báo bản sửa đã lên môi trường thử; khi bỏ việc, phiếu trả về hàng chờ của nhóm hỗ trợ. Lúc mới bật, bot không kéo các phiếu cũ vào theo nhãn bộ phận. Hai cửa đều tắt cho tới khi khai trong tệp môi trường. Cả tệp bài kiểm 170/170 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/service.py` (`pull_tickets`, `_task_from_ticket`, `_ticket_note`, `report_to_tickets`) · `tasks.py` (`pull_tickets_task`) · `backend/app/core/config.py` (`AGENT_TICKET_ASSIGNEE`, `AGENT_TICKET_DEPARTMENTS`) · `celery_app.py` · `test/backend/test_agent_hub.py` · `change-log-ai.md`.
+
 ## ai-CR-036 | Màn xem việc của bot Telegram trong ERP v2
 - status: xong
 - date: 2026-09-24

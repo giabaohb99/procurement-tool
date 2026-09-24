@@ -3951,3 +3951,95 @@ def test_khoa_quyen_agent_task_khong_lot_vao_quan_ly_thu_mua():
     from app.seed import _SYS_ENTITIES
 
     assert "agent_task" in ENTITIES and "agent_task" in SCOPE_FIELDS and "agent_task" in _SYS_ENTITIES
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-037: phiếu hỗ trợ ERP làm nguồn việc
+# ---------------------------------------------------------------------------
+def _ticket(db, code: str, *, subject="Màn công nợ lệch tổng", department="", assignee_id=0, status="open",
+            body="Tổng cuối trang không khớp cột"):
+    from app.modules.ticket.model import Ticket, TicketMessage
+
+    t = Ticket(code=code, subject=subject, department=department, priority="high", status=status,
+               assignee_id=assignee_id, origin_url="/finance/payables")
+    db.add(t)
+    db.flush()
+    db.add(TicketMessage(ticket_id=t.id, body=body, is_staff=False))
+    db.commit()
+    return t
+
+
+def _ticket_setup(db, monkeypatch, service, *, departments=""):
+    from app.modules.user.model import User
+
+    bot_user = User(email="dau-dau@bot.local", employee_id=0, password_hash="x", is_active=True)
+    db.add(bot_user)
+    db.commit()
+    monkeypatch.setattr(settings, "AGENT_TICKET_ASSIGNEE", "dau-dau@bot.local")
+    monkeypatch.setattr(settings, "AGENT_TICKET_DEPARTMENTS", departments)
+    scanned: list[str] = []
+    monkeypatch.setattr(service, "start_scan", lambda db, task: scanned.append(task.code))
+    return bot_user, scanned
+
+
+def test_phieu_giao_cho_bot_thanh_viec_va_bao_lai_tren_phieu(db, bot, monkeypatch):
+    from app.modules.ticket.model import TicketMessage
+
+    service, _, _ = bot
+    _compact(monkeypatch)
+    sent = _capture_send(monkeypatch, service)
+    bot_user, scanned = _ticket_setup(db, monkeypatch, service)
+    old = _ticket(db, "HT-0001", assignee_id=bot_user.id)        # phiếu CŨ nhưng giao cho bot: vẫn nhận
+    other = _ticket(db, "HT-0002", subject="Quên mật khẩu")        # không giao, không nhãn: không nhận
+    assert service.pull_tickets(db) == 1
+    task = db.query(service.AgentTask).filter_by(source=service.SRC_ERP_TICKET).one()
+    assert scanned == [task.code] and task.title == "Màn công nợ lệch tổng"
+    assert "Phiếu hỗ trợ HT-0001" in task.summary and "Tổng cuối trang không khớp cột" in task.summary
+    assert "/finance/payables" in task.summary
+    assert "HT-0001" in sent[-1][0] and task.code in sent[-1][0]
+    note = db.query(TicketMessage).filter_by(ticket_id=old.id, is_staff=True).one()
+    assert task.code in note.body and old.status == "in_progress" and other.status == "open"
+    #  Chạy lại không tạo trùng.
+    assert service.pull_tickets(db) == 0
+    #  Đóng «xong» -> phiếu «Đã trả lời» + dòng báo.
+    task.status = service.ST_PROD
+    db.commit()
+    service.handle_message(db, _msg(f"xong {task.code}"))
+    assert old.status == "answered"
+    assert "đã sửa xong" in db.query(TicketMessage).filter_by(ticket_id=old.id).order_by(TicketMessage.id.desc()).first().body
+
+
+def test_phieu_theo_nhan_bo_phan_chi_nhan_phieu_moi_va_bo_viec_tra_phieu_ve(db, bot, monkeypatch):
+    service, _, _ = bot
+    _compact(monkeypatch)
+    _capture_send(monkeypatch, service)
+    bot_user, _scanned = _ticket_setup(db, monkeypatch, service, departments="Phần mềm, IT")
+    _ticket(db, "HT-0010", department="IT")          # có trước lúc bật: không kéo lịch sử
+    assert service.pull_tickets(db) == 0                  # lần đầu: đặt mốc
+    new = _ticket(db, "HT-0011", department=" phần mềm ")
+    _ticket(db, "HT-0012", department="Kế toán")
+    closed = _ticket(db, "HT-0013", department="IT", status="closed")
+    assert service.pull_tickets(db) == 1
+    task = db.query(service.AgentTask).filter_by(source=service.SRC_ERP_TICKET).one()
+    assert "HT-0011" in task.summary and closed.status == "closed"
+    service.handle_message(db, _msg(f"bỏ {task.code}"))
+    assert new.status == "open"
+
+
+def test_khong_khai_cua_nao_thi_khong_doc_phieu(db, bot, monkeypatch):
+    service, _, _ = bot
+    monkeypatch.setattr(settings, "AGENT_TICKET_ASSIGNEE", "")
+    monkeypatch.setattr(settings, "AGENT_TICKET_DEPARTMENTS", "")
+    _ticket(db, "HT-0020", department="IT")
+    assert service.pull_tickets(db) == 0
+    assert db.query(service.AgentCursor).filter_by(name=service.TICKET_CURSOR).first() is None
+
+
+def test_phieu_cham_tran_viec_ngay_thi_cho_luot_sau(db, bot, monkeypatch):
+    service, _, _ = bot
+    _compact(monkeypatch)
+    _capture_send(monkeypatch, service)
+    bot_user, _ = _ticket_setup(db, monkeypatch, service)
+    monkeypatch.setattr(settings, "AGENT_DAILY_TASK_CAP", 0)
+    t = _ticket(db, "HT-0030", assignee_id=bot_user.id)
+    assert service.pull_tickets(db) == 0 and t.status == "open"

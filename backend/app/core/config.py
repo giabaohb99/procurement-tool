@@ -274,6 +274,13 @@ class Settings(BaseSettings):
     # ai-CR-035: ảnh chụp lỗi đại ca gửi kèm. Poller ghi vào volume `agent_files`, runner đọc
     # (chỉ đọc) và mở cho Claude Code bằng --add-dir. Trần 20 MB là trần tải về của Bot API.
     AGENT_FILES_DIR: str = "/agent-files"
+    # ai-CR-037: phiếu hỗ trợ ERP làm nguồn việc. Hai cửa, cửa nào trống là tắt cửa đó:
+    #  - AGENT_TICKET_ASSIGNEE = email tài khoản ERP của bot: nhóm hỗ trợ GIAO phiếu cho tài khoản
+    #    này là bot nhận (cửa chính — có người chủ động chọn);
+    #  - AGENT_TICKET_DEPARTMENTS = danh sách nhãn «Bộ phận / Nhóm», cách nhau dấu phẩy: phiếu MỚI
+    #    mang nhãn đó tự vào hàng việc của bot.
+    AGENT_TICKET_ASSIGNEE: str = ""
+    AGENT_TICKET_DEPARTMENTS: str = ""
     AGENT_FILE_MAX_MB: int = 20
     # ai-CR-018: `doc/` trên máy đại ca (gồm phần CHƯA commit) mount chỉ đọc vào runner. Rỗng =
     # không có; compose của stack bot đặt `/local-docs` cho agent-runner.
