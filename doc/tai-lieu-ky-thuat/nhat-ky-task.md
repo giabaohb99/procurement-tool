@@ -3155,6 +3155,15 @@ Mã nguồn: `frontend-v2/src/modules/approval-seal/components/seal-clerk-detail
 Commit: `5fbce75a` trên nhánh `erp-v2`.
 
 
+## ai-CR-032 | Thẻ kết quả của Đậu Đậu ghi thời gian từng bước
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Đại ca thấy việc AI-0007 mất khoảng ba mươi phút mà không biết chậm ở đâu. Nay thẻ kết quả, thẻ deploy và lệnh xem chi tiết có thêm một dòng thời gian: tổng thời gian từ lúc bot nhận việc, thời gian bot thật sự chạy ở từng bước rà soát, lập kế hoạch, sửa mã, gộp và deploy, và phần còn lại là thời gian nằm chờ đại ca duyệt hoặc chờ runner rảnh. Số lấy từ sổ lượt chạy sẵn có, không thêm bảng. Cả tệp bài kiểm 154/154 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/coder.py` (`timing_line`, `fmt_minutes`) · `service.py` (`show_task`) · `test/backend/test_agent_hub.py` · `change-log-ai.md`.
+
 ## ai-CR-002 | Dựng bậc 1 của Agent Hub: bot Telegram gom việc, viết bản đề xuất và tra kho tài liệu
 - status: dang-lam
 - date: 2026-09-18
@@ -3485,6 +3494,19 @@ Mã nguồn: `docker-compose.agent.yml` (service `agent-api`, `depends_on` ghi �
 và `celery-beat`, chú thích đầu tệp ghi luôn lý do cấm đặt lại tên cũ) ·
 `procurement-tool/docker-compose.override.yml` (bản vá tạm ở máy làm việc, không commit).
 Commit: `0c4a0850` trên nhánh `agent-hub-bac-1` (23/09/2026, chưa push).
+
+## ai-CR-031 | Danh sách tính năng còn phải làm cho Đậu Đậu và các trợ lý mới
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Đại ca muốn thêm trợ lý ngoài bot sửa mã: biến ghi âm cuộc họp thành biên bản theo mẫu, một thư ký hiểu lịch và
+nhắc việc, và một bot nghiên cứu, tìm tài liệu, kiểm chứng nội dung, mỗi bot một chức năng. Em gom thành một danh
+sách hai mươi chín tính năng chia bốn nhóm: phần còn lại của bot sửa mã, nền chung cho nhiều bot, thư ký, nghiên
+cứu. Danh sách có nguyên tắc chia bot theo quyền để bot đọc web không bao giờ giữ khóa nào, sáu đợt làm theo thứ tự
+và sáu câu chờ đại ca trả lời. Em cũng rà máy: công cụ biên bản họp mới có thiết kế từ cuối tháng tám, chưa có mã.
+
+Mã nguồn: `doc/agent-hub/04-danh-sach-tinh-nang.md` · `doc/agent-hub/README.md` · `change-log-ai.md`.
 
 ## ai-CR-030 | Chốt stack bot để lệnh dựng trơn không dựng nhầm bộ ERP thứ hai
 - status: xong

@@ -68,6 +68,7 @@ from .constants import (
     STAGE_ASK,
     STAGE_CODE,
     STAGE_DEPLOY,
+    STAGE_PLAN,
     STAGE_REVERT,
     STAGE_SCAN,
     ST_TRIAGE,
@@ -1359,6 +1360,49 @@ def run_code_task(db: Session, task: AgentTask, *, resume: bool = False, fix_gat
     return {"task": task.code, "status": task.status, "files": len(files), "escalation": escalation}
 
 
+# ---------------------------------------------------------------------------
+# Đo thời gian một việc (ai-CR-032)
+# ---------------------------------------------------------------------------
+#  Đại ca thấy AI-0007 mất ~33 phút mà không biết chậm ở đâu. Sổ lượt chạy đã có giờ bắt đầu/kết
+#  thúc từng bước; dòng này cộng lại: bot chạy bao lâu ở từng bước, và phần còn lại là thời gian
+#  nằm chờ (đại ca duyệt, runner bận việc khác, chờ hẹn giờ).
+_TIMING_GROUPS = ((STAGE_SCAN, "rà soát"), (STAGE_PLAN, "kế hoạch"), (STAGE_CODE, "sửa mã"),
+                  (STAGE_DEPLOY, "gộp/deploy"), (STAGE_REVERT, "thu hồi"), (STAGE_ASK, "hỏi thêm"))
+
+
+def fmt_minutes(ms: int) -> str:
+    """Số phút dạng Việt: «45 giây» · «6,6 phút» · «33 phút»."""
+    sec = max(int(ms // 1000), 0)
+    if sec < 60:
+        return f"{sec} giây"
+    minutes = sec / 60
+    return (f"{minutes:.1f}".replace(".", ",") if minutes < 10 else f"{round(minutes)}") + " phút"
+
+
+def timing_line(db: Session, task: AgentTask, *, now: datetime | None = None) -> str:
+    """«Thời gian: 33 phút từ lúc nhận việc; bot chạy 24 phút (rà soát 6,6 · …); chờ 9 phút.»"""
+    runs = (db.query(AgentRun).filter(AgentRun.task_id == task.id).order_by(AgentRun.id).all())
+    now = now or datetime.now()
+    per: dict[int, int] = {}
+    for r in runs:
+        ms = int(r.duration_ms or 0)
+        if not ms and r.status == RUN_RUNNING and r.started_at:
+            ms = int((now - r.started_at).total_seconds() * 1000)
+        per[r.stage] = per.get(r.stage, 0) + max(ms, 0)
+    parts = [f"{label} {fmt_minutes(per[stage])}" for stage, label in _TIMING_GROUPS if per.get(stage)]
+    if not parts or task.created_at is None:
+        return ""
+    bot_ms = sum(per.get(stage, 0) for stage, _l in _TIMING_GROUPS)
+    end = task.closed_at or now
+    total_ms = max(int((end - task.created_at).total_seconds() * 1000), bot_ms)
+    wait_ms = total_ms - bot_ms
+    line = (f"Thời gian: {fmt_minutes(total_ms)} từ lúc nhận việc; bot chạy {fmt_minutes(bot_ms)} "
+            f"({' · '.join(parts)})")
+    if wait_ms >= 60_000:
+        line += f"; chờ duyệt/hàng đợi {fmt_minutes(wait_ms)}"
+    return line + "."
+
+
 def cmd_hint(text: str) -> str:
     """Dòng gợi ý lệnh gõ bằng chữ, chỉ khi ở chế độ gọn (ai-CR-027; thẻ cũ đã có nút)."""
     return f"\n{text}" if settings.AGENT_TG_COMPACT else ""
@@ -1410,6 +1454,8 @@ def send_compact_review_card(db: Session, task: AgentTask, *, gate: dict, escala
         if summary := report_summary(report):
             lines += [service._card_md(summary, limit=900)]
         lines += [f"Đã kiểm: {esc(_gate_brief(gate))}."]
+        if timing := timing_line(db, task):
+            lines += [esc(timing)]
         if pr.get("status") == "ok" and pr.get("url"):
             lines += [f"PR: {esc(pr['url'])}"]
         if gate.get("status") == "fail":
@@ -1468,6 +1514,8 @@ def send_review_card(db: Session, task: AgentTask, run: AgentRun, *, files: list
             head += [f"<pre>{esc(gate['frontend']['output'][-700:])}</pre>"]
     if any(f["path"].startswith("frontend/") for f in files):
         head += ["Có tệp <code>frontend/</code> (bản cũ): bản này chưa có cổng kiểm trong runner."]
+    if timing := timing_line(db, task):
+        head += [esc(timing)]
     tail = ["", "Bấm «Hỏi thêm» rồi nhắn câu hỏi: em đưa cho đúng phiên đã sửa việc này trả lời."]
     room = CARD_BUDGET - len("\n".join(head)) - len("\n".join(tail)) - 40
     body = []
@@ -1948,6 +1996,8 @@ def send_deploy_card(db: Session, task: AgentTask, *, sha: str, services: list[s
         head = [f"<b>{esc(task.code)}</b> · {esc(task.title)}",
                 f"Đã gộp vào <code>{base}</code> (bản gộp <code>{esc(sha[:10])}</code>) và deploy dev.",
                 f"Build lại: {svc}", health_line]
+        if timing := timing_line(db, task):
+            head += [esc(timing)]
         if ui:
             head += [f"Thử ở: {esc(ui)}"]
         if settings.AGENT_TG_COMPACT:

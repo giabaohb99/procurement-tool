@@ -3652,3 +3652,36 @@ def test_thu_hoi_ban_chi_gop_thi_khong_deploy_lai(db, bot, monkeypatch):
     assert coder.revert_and_deploy(db, task, rrun)["status"] == "ok"
     assert scripts == [] and "không deploy lại" in sent[-1][0]
     assert task.status == ST_NEEDS_INPUT
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-032: đo thời gian một việc
+# ---------------------------------------------------------------------------
+def test_dong_thoi_gian_cong_tung_buoc_va_phan_cho(db, bot):
+    from datetime import timedelta
+
+    from app.modules.agent_hub import coder
+    from app.modules.agent_hub.model import AgentRun
+
+    service, _, _ = bot
+    task = _task_with_plan(db, service, ["backend/app/x.py"])
+    start = datetime(2026, 9, 24, 8, 0)
+    task.created_at = start
+    for stage, sec in ((coder.STAGE_SCAN, 396), (coder.STAGE_PLAN, 72), (coder.STAGE_CODE, 720),
+                       (coder.STAGE_CODE, 282)):
+        db.add(AgentRun(task_id=task.id, stage=stage, provider="p", model="m", status=coder.RUN_OK,
+                        started_at=start, duration_ms=sec * 1000))
+    db.commit()
+    line = coder.timing_line(db, task, now=start + timedelta(minutes=33))
+    assert line.startswith("Thời gian: 33 phút từ lúc nhận việc; bot chạy 24 phút")
+    assert "rà soát 6,6 phút" in line and "kế hoạch 1,2 phút" in line and "sửa mã 17 phút" in line
+    assert "chờ duyệt/hàng đợi 8,5 phút" in line
+    assert coder.fmt_minutes(45_000) == "45 giây"
+
+
+def test_viec_chua_chay_buoc_nao_thi_khong_co_dong_thoi_gian(db, bot):
+    from app.modules.agent_hub import coder
+
+    service, _, _ = bot
+    task = _task_with_plan(db, service, ["backend/app/x.py"])
+    assert coder.timing_line(db, task) == ""

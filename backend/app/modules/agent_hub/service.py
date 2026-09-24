@@ -2326,6 +2326,8 @@ def show_task(db: Session, chat_id: str, arg: str) -> None:
         head.append(" · ".join(links))
     n_in = sum(1 for m in msgs if m.direction == DIR_IN)
     head.append(f"Tin nhắn: {len(msgs)} ({n_in} của đại ca, {len(msgs) - n_in} của bot)")
+    if timing := coder.timing_line(db, task):
+        head.append(esc(timing))
     parts = ["\n".join(head)]
     if runs:
         parts.append("<b>Các bước đã chạy</b>\n" + _runs_table(runs))
