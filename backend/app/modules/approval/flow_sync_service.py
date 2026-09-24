@@ -84,7 +84,8 @@ def _rebuild_tasks(db: Session, instance: ApprovalInstance, node: ApprovalNode,
 
     approvers = approver_resolver.resolve(db, node, subject,
                                             instance.started_by_employee_id)
-    approvers = instance_service._exclude_submitter(instance, node, approvers)
+    approvers = instance_service.exclude_submitter_ids(
+        node.approver_kind, instance.started_by_employee_id, approvers)
     #  KHÔNG chạy lại `_tach_nguoi_trung` ở đây: nó ghi thêm việc "tự qua" và
     #  thêm dấu vết, mà bước này vốn đã được xét trùng người lúc mở chặng. Chạy
     #  lại là nhân đôi dòng nhật ký cho cùng một sự việc.

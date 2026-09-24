@@ -167,3 +167,32 @@ def test_manual_number_requires_rule_permission_and_keeps_audit_sequence(db):
     db.commit()
     with pytest.raises(HTTPException, match="không cho phép"):
         update_issue_number(db, doc, "01B/2026/TB", actor=8)
+
+
+def test_sua_so_hieu_thu_cong_len_lai_chi_muc_tim_kiem(db, monkeypatch):
+    """H2 (rà soát 23/09/2026): sửa số hiệu thủ công phải `queue_reindex` —
+    thiếu thì tìm theo số hiệu MỚI ra 0 kết quả cho tới khi ai chạy script tay."""
+    from app.core.config import settings as core_settings
+    from app.core.text_fold import fold
+    from app.modules.document.search_model import DocumentSearch
+
+    monkeypatch.setattr(core_settings, "DOCUMENT_SEARCH_INDEX_SYNC", True)
+
+    company, department, doc_type, book = _catalog(db)
+    rule = create_rule(
+        db, DocumentNumberingRuleCreate(direction=2, pattern="{STT}/{Nam}/{LoaiVB}",
+                                        allow_manual=True, book_mode=1),
+        actor=7)
+    doc = Document(
+        origin=1, doc_type_id=doc_type.id, company_id=company.id, department_id=department.id,
+        book_id=book.id, owner_employee_id=1, title="Văn bản đổi số hiệu",
+        issue_number="09/2026/TB", seq_no=1, issue_year=2026, numbering_rule_id=rule.id,
+    )
+    db.add(doc)
+    db.commit()
+
+    update_issue_number(db, doc, "99/2026/TB-DACBIET", actor=8)
+
+    row = db.get(DocumentSearch, doc.id)
+    assert row is not None
+    assert fold("99/2026/TB-DACBIET") in row.meta_text

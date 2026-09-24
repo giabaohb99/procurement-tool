@@ -37,6 +37,14 @@ FIELDS = [
              "từ chối — phiếu chạy theo luồng cũ, lập đơn mua hàng bằng tay. "
              "Phương án ĐÃ LƯU không mất: tắt rồi bật lại là thấy nguyên. Nhưng tắt giữa chừng "
              "thì phiếu đang dở không chốt tiếp được, nên tắt lúc không ai đang xử lý."},
+    {"key": "doc_attachment_view_window_enabled", "group": "document", "type": "bool",
+     "label": "Văn bản: bật hạn xem tệp đính kèm",
+     "hint": "TẮT (mặc định — tạm chốt 23/09/2026): mọi tệp đính kèm văn bản xem/tải được "
+             "bình thường dù đã quá ngày «Xem tệp đính kèm tới ngày» đã khai — cho xem thoải "
+             "mái trong lúc dồn dữ liệu cũ vào hệ. "
+             "BẬT: quay lại luật cũ — quá ngày đó thì không ai mở hay tải tệp được nữa, kể cả "
+             "bằng đường dẫn cũ. Ngày đã khai trên từng văn bản KHÔNG mất khi tắt, bật lại là "
+             "có hiệu lực ngay, không cần deploy."},
     {"key": "ai_enabled", "group": "ai", "type": "bool", "label": "Bật trợ lý AI",
      "hint": "TẮT thì mọi đường /api/assistant trả 403 và ô chat biến mất khỏi giao diện. "
              "Bật mà chưa dán key nào thì trợ lý vẫn báo chưa cấu hình."},

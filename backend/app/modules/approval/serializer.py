@@ -63,7 +63,7 @@ def node_out(db: Session, node: ApprovalNode) -> dict:
         "approver_kind": node.approver_kind,
         "approver_kind_label": APPROVER_KIND_LABELS.get(node.approver_kind, ""),
         "approver_ref": node.approver_ref,
-        "approver_names": _approver_names(db, node),
+        "approver_names": approver_names(db, node),
         "multi_mode": node.multi_mode,
         "multi_mode_label": MULTI_MODE_LABELS.get(node.multi_mode, ""),
         "quorum_percent": node.quorum_percent,
@@ -79,12 +79,18 @@ def node_out(db: Session, node: ApprovalNode) -> dict:
     }
 
 
-def _approver_names(db: Session, node: ApprovalNode) -> str:
+def approver_names(db: Session, node) -> str:
     """Tên hiện trên thẻ bước. Rỗng = cách chọn này chỉ tính được lúc chạy.
 
     Hai cách chọn dựng được tên ngay lúc khai luồng, và cả hai đều nên dựng:
     thẻ bước ghi mỗi «Người cụ thể» thì người khai phải mở bảng thuộc tính ra
     mới biết mình vừa cử ai.
+
+    `node`: `ApprovalNode` (màn Luồng duyệt) HOẶC `SimpleNamespace` dựng từ bản
+    chụp (`flow_service.steps`/`step_of_stage`, dùng ở `preview_service`) — cả
+    hai hình dạng đều có đủ `approver_ref`/`approver_kind`, đây là hai cột duy
+    nhất hàm này đọc, nên KHÔNG gọi `serializer.node_out` (nó đụng `flow_id`,
+    cột không nằm trong bản chụp).
     """
     from .flow_model import APPROVER_DEPT_HEAD_OF, APPROVER_EMPLOYEE
 
