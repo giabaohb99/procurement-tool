@@ -577,6 +577,17 @@ AGENT_VPS_SSH_KEY_FILE=            # ĐƯỜNG DẪN khóa riêng trên máy đ�
 # AGENT_VPS_DEV_COMPOSE_ARGS=--env-file .env.dev -f docker-compose.dev.yml
 # AGENT_DEV_HEALTH_URL=https://devthumua.degoholding.vn/api/health
 # AGENT_DEV_UI_URL=https://deverp.degoholding.vn
+# ---- ảnh chụp lỗi (ai-CR-035) — volume agent_files, runner chỉ đọc
+# AGENT_FILES_DIR=/agent-files
+# AGENT_FILE_MAX_MB=20
+# ---- phiếu hỗ trợ ERP làm nguồn việc (ai-CR-037) — trống là tắt cửa đó
+# AGENT_TICKET_ASSIGNEE=<email tài khoản ERP của bot>     # nhóm hỗ trợ giao phiếu cho tài khoản này
+# AGENT_TICKET_DEPARTMENTS=Phần mềm,IT                    # nhãn «Bộ phận / Nhóm», chỉ phiếu MỚI
+# ---- đăng nhập ERP trong Telegram (ai-CR-038)
+# AGENT_LINK_ENABLED=true
+# AGENT_LINK_DAYS=30
+# AGENT_LINK_CODE_MINUTES=10
+# AGENT_TELEGRAM_BOT_USERNAME=<tên bot, không @>          # để trang cá nhân dựng link mở thẳng bot
 # ---- sổ quyết định (ai-CR-015) — compose mount ./doc/agent-hub vào /agent-docs
 # AGENT_PLAYBOOK_PATH=/agent-docs/03-so-quyet-dinh.md   # không có tệp thì bot chạy như trước
 ```

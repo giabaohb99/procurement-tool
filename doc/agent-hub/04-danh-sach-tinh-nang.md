@@ -5,7 +5,7 @@
 bot sửa mã xem `01-thiet-ke-ky-thuat.md`; thiết kế biên bản họp gốc (28-29/08, chưa có mã) ở
 `meeting-recap/doc/` trên máy.
 
-**Tổng: 29 tính năng** — A 8 · N 5 · T 12 · R 4. Cỡ: **S** = một ngày trở xuống · **M** = hai
+**Tổng: 29 tính năng** — A 8 · N 5 · T 12 · R 4. **Đã xong 8** (24/09/2026): A-01 … A-07 + N-02 (ai-CR-032 … 038); A-08 vẫn chờ 4 câu của AN-007. Cỡ: **S** = một ngày trở xuống · **M** = hai
 đến ba ngày · **L** = từ bốn ngày. Cỡ là ước thô, đo lại sau từng việc (A-01).
 
 ## Nguyên tắc chia bot
@@ -26,13 +26,13 @@ một token Telegram riêng.
 
 | Mã | Tính năng | Cỡ | Ghi chú |
 |---|---|---|---|
-| A-01 | Đo thời gian: thẻ kết quả ghi tổng thời gian và thời gian từng bước | S | Sổ đã có giờ bắt đầu/kết thúc từng bước |
-| A-02 | Dọn nhánh `bot/*` sau khi gộp | S | Chờ Q3 |
-| A-03 | Cổng kiểm cho `frontend/` (bản v1) | S | Chờ Q4. Hiện bot chỉ kiểm được v2 |
-| A-04 | Nhận ảnh chụp lỗi gửi kèm yêu cầu sửa, đưa cho bước rà soát và sửa mã | S | Cần N-02 |
-| A-05 | Màn quản lý việc của bot trong ERP v2: danh sách, lịch sử, chi phí (AN-006) | M | Nên có trước A-06 |
-| A-06 | Phiếu hỗ trợ trong ERP làm nguồn việc, không chỉ Telegram (AN-005) | M | |
-| A-07 | Mỗi người tự đăng nhập tài khoản ERP trong Telegram (ai-CR-004) | M | Đại ca dặn để cuối |
+| A-01 | Đo thời gian: thẻ kết quả ghi tổng thời gian và thời gian từng bước | S | **Xong** ai-CR-032 |
+| A-02 | Dọn nhánh `bot/*` sau khi gộp | S | **Xong** ai-CR-033 — Q3 em chọn: dọn lúc việc ĐÓNG («xong»/«bỏ») |
+| A-03 | Cổng kiểm cho `frontend/` (bản v1) | S | **Xong** ai-CR-034 — Q4 em chọn: chỉ chặn lỗi kiểu trong tệp bot vừa sửa |
+| A-04 | Nhận ảnh chụp lỗi gửi kèm yêu cầu sửa, đưa cho bước rà soát và sửa mã | S | **Xong** ai-CR-035 |
+| A-05 | Màn quản lý việc của bot trong ERP v2: danh sách, lịch sử, chi phí (AN-006) | M | **Xong** ai-CR-036 — `/system/agent-tasks`, khóa `agent_task` |
+| A-06 | Phiếu hỗ trợ trong ERP làm nguồn việc, không chỉ Telegram (AN-005) | M | **Xong** ai-CR-037 — giao cho tài khoản bot hoặc nhãn bộ phận |
+| A-07 | Mỗi người tự đăng nhập tài khoản ERP trong Telegram (ai-CR-004) | M | **Xong** ai-CR-038 — mã một lần ở tab Telegram của `/me` |
 | A-08 | Xem thử bản sửa trên máy local qua Cloudflare tunnel (AN-007) | L | Còn 4 câu chờ đại ca |
 
 ## Nhóm N — Nền chung cho nhiều bot
@@ -40,7 +40,7 @@ một token Telegram riêng.
 | Mã | Tính năng | Cỡ | Ghi chú |
 |---|---|---|---|
 | N-01 | Nhiều bot một nền: mỗi bot một token, sổ ghi rõ tin nào của bot nào | M | |
-| N-02 | Tải tệp từ Telegram: ảnh, tin thoại, tệp nhỏ (trần 20 MB của Telegram) | S | Hiện bot bỏ qua mọi thứ không phải chữ |
+| N-02 | Tải tệp từ Telegram: ảnh, tin thoại, tệp nhỏ (trần 20 MB của Telegram) | S | **Xong phần ảnh** ai-CR-035; tin thoại để T-07 |
 | N-03 | Kết nối tài khoản Google một lần (Drive + Calendar), khóa lưu mã hóa | M | Chờ Q2 |
 | N-04 | Chi phí theo từng bot, từng ngày, có trần ngày | S | |
 | N-05 | Cách ly quyền: mỗi bot chỉ thấy khóa của nó | M | Bắt buộc trước khi bật bot Nghiên cứu |
@@ -91,7 +91,7 @@ công (số của `meeting-recap/doc/04`). Các trợ lý này là việc cộng
 |---|---|---|
 | Q1 | Biên bản họp làm cho đại ca dùng, hay cho CEO như yêu cầu gốc (bản gốc: chạy trên máy riêng của CEO, chỉ CEO thao tác) | T-01 … T-06 |
 | Q2 | Nối tài khoản Google nào: cá nhân hay Google Workspace công ty | N-03 |
-| Q3 | Nhánh `bot/*` xóa lúc gộp hay lúc «xong» | A-02 |
-| Q4 | Cổng kiểm v1: chỉ chặn lỗi typecheck MỚI (ngoài 4 lỗi cũ) hay chỉ eslint tệp bot sửa | A-03 |
+| Q3 | ~~Nhánh `bot/*` xóa lúc gộp hay lúc «xong»~~ — em chọn lúc việc đóng (ai-CR-033), đại ca đổi thì báo | — |
+| Q4 | ~~Cổng kiểm v1~~ — em chọn chặn lỗi kiểu trong tệp bot sửa (ai-CR-034; `frontend/` không có eslint) | — |
 | Q5 | Một tệp ghi âm họp thật để thử (đặt vào thư mục trên máy, không gửi qua chat) | T-01 |
 | Q6 | Tên cho bot Thư ký và bot Nghiên cứu | N-01 |
