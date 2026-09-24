@@ -6622,7 +6622,15 @@ Chạy thử với dữ liệu thật thì thấy tháng 09/2026 của atrazine 
 «giá đang giảm», nên xu hướng và thước đo chỉ tính trên tháng đủ dữ liệu, tháng mới nhất ít
 dòng thì kèm tháng đủ dữ liệu gần nhất làm mốc. Bài hướng dẫn mục «Hỏi trợ lý AI» đã viết lại
 và chạy lại ở local. Số CR ban đầu 480 trùng việc «Phòng xử lý» của phiên khác nên đổi sang
-481. Chưa commit, chưa deploy.
+481.
+
+Đã commit a13e9c60, đẩy lên erp-v2 và deploy dev (dựng lại api, celery-worker, celery-beat);
+kiểm trên dev: trợ lý có 41 tool, số atrazine khớp local. Bài hướng dẫn chưa có trên dev
+(seed hải quan chưa từng chạy ở dev). Cùng ngày gộp erp-v2 vào nhánh bot agent-hub-bac-1
+để bot Telegram có bốn tool: 12 tệp đụng độ giữ cả hai phía, thêm migration gộp hai head,
+nâng DB riêng của bot (dego-agent) — bốn migration đã có sẵn đối tượng nên đánh dấu, ba cái
+còn lại chạy thật. Đã báo phiên bot khởi động lại stack và cấp quyền customs_price cho tài
+khoản bot; nhánh bot chưa push.
 
 Kiểm: 63 bài backend xanh (16 bài mới, bài đếm số tool trợ lý nâng 39 lên 41).
 
