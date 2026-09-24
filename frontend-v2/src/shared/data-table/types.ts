@@ -99,6 +99,13 @@ export interface LinesTableColumn {
   compactHidden?: boolean
   /** `true` = cho phép chữ dài tự xuống dòng thay vì cắt bằng dấu ba chấm "…". */
   wrap?: boolean
+  /**
+   * Màu tô SẴN cho cột (mã trong `COLUMN_COLORS` hoặc hex), dùng khi màu của cột
+   * mang NGHĨA chứ không chỉ để dò — vd ba cột tiền Dự toán / Tạm tính / Quyết toán.
+   * Màu người dùng tự chọn trong menu «Cột» vẫn THẮNG; bỏ màu tự chọn thì cột quay
+   * về màu này chứ không về trắng, vì trắng là mất đúng cái nghĩa ấy.
+   */
+  defaultColor?: string
 }
 
 export interface DataTablePagination {

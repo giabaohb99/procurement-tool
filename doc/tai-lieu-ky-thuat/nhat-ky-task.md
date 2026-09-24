@@ -6364,3 +6364,38 @@ kiểm khóa vị trí tab của ô email.
 
 Mã nguồn: frontend-v2/src/modules/hr/components/employee-tab-general.tsx ·
 employee-tab-contact.tsx · utils/profile-field-tab.ts
+
+## bao-CR-473 | Thẻ chi phí thu mua: ba màu cho ba cột tiền, ẩn nút chốt giai đoạn, mở khóa tỷ giá
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Đại ca yêu cầu tạm bỏ nút chốt tạm tính của cả đơn, cho ba cột tiền ba màu khác nhau để thấy
+độ quan trọng của từng cột, bỏ dải bước ba giai đoạn ở đầu thẻ, và hỏi vì sao tỷ giá không sửa
+được trong khi tỷ giá đổi liên tục.
+
+Ba cột tiền nay mang ba màu tăng dần theo độ quan trọng như đèn giao thông: Dự toán màu xanh là
+số tham khảo, Tạm tính màu vàng là số đang thương lượng, Quyết toán màu đỏ là số thật, chốt là
+thành công nợ. Em dùng lại cơ chế tô màu cột sẵn có của bảng dòng bằng một thuộc tính mới cho
+phép khai màu mặc định, nên màu phủ cả tiêu đề lẫn thân bảng và chạy đúng ở chế độ tối; màu
+người dùng tự chọn vẫn được ưu tiên, còn các bảng khác không khai thì không đổi gì.
+
+Nút chốt giai đoạn của cả đơn được ẩn bằng một hằng bật tắt, giữ nguyên đường API và hộp xác
+nhận để lúc cần bày lại chỉ phải đổi một chữ. Dải bước ba giai đoạn ở đầu thẻ đã bỏ, vì từ khi
+chốt đi theo từng dòng thì một dải bước cho cả đơn không còn nói đúng điều gì.
+
+Chuyện tỷ giá là một lỗi sót của đợt trước. Ô tỷ giá chỉ nằm trong hộp chi tiết khoản, và hộp
+đó vẫn giữ luật cũ là chỉ khối của giai đoạn đơn đang đứng mới gõ được; nút chốt giai đoạn đã
+ẩn nên tỷ giá tạm tính và quyết toán thành ra không bao giờ sửa được. Nay cả ba khối trong hộp
+đều gõ được, mỗi khối mang đúng màu cột của nó, và hộp nhận khóa theo từng dòng thay vì theo cả
+bảng, để dòng đã chốt không còn gõ được rồi mới báo lỗi lúc lưu.
+
+Kiểm trước khi giao: bản ERP kiểm kiểu không lỗi, kiểm nếp mã không lỗi và còn đúng số cảnh báo
+cũ, sáu trăm bốn mươi ba bài của phân hệ Thu mua và bảng dùng chung xanh, trong đó có bốn bài
+mới canh luật màu mặc định. Tỷ giá ở đầu đơn vẫn khóa sau khi duyệt vì nó quy đổi cả tiền hàng
+lẫn công nợ hàng; việc mở nó chờ đại ca quyết.
+
+Mã nguồn: `frontend-v2/src/shared/data-table/types.ts` ·
+`frontend-v2/src/shared/data-table/lines-table.tsx` ·
+`frontend-v2/src/shared/data-table/lines-table.test.tsx` ·
+`frontend-v2/src/modules/procurement/components/purchase-order-import-costs-card.tsx`.

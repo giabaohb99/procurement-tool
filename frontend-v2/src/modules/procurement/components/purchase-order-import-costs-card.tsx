@@ -222,12 +222,14 @@ const BASE_COLUMNS: LinesTableColumn[] = [
   { key: 'supplier', header: 'Nhà cung cấp', width: 230, minWidth: 150, wrap: true },
   { key: 'currency', header: 'Tiền tệ', width: 95, minWidth: 80, align: 'center' },
   { key: 'vat', header: 'VAT%', width: 80, minWidth: 60, align: 'right' },
-  // bao-CR-453 — ba cột số theo giai đoạn thay cho cặp «Tỷ giá / Số tiền» cũ. Ô của
-  // giai đoạn đơn đang đứng thì gõ được (nguyên tệ, trước thuế), hai ô còn lại bày
-  // số đã quy đổi VNĐ. Tỷ giá riêng từng giai đoạn nằm trong popup chi tiết khoản.
-  { key: 'estimate_base', header: 'Dự toán', width: 145, minWidth: 100, align: 'right' },
-  { key: 'provisional_base', header: 'Tạm tính', width: 145, minWidth: 100, align: 'right' },
-  { key: 'final_base', header: 'Quyết toán', width: 150, minWidth: 100, align: 'right' },
+  // bao-CR-453 — ba cột số theo giai đoạn thay cho cặp «Tỷ giá / Số tiền» cũ; từ
+  // bao-CR-467 cả ba đều gõ được. Tỷ giá riêng từng giai đoạn nằm trong popup chi tiết.
+  // bao-CR-473 — ba màu tăng dần theo ĐỘ QUAN TRỌNG của con số, như đèn giao thông:
+  // xanh = số tham khảo lúc lập kế hoạch · vàng = số đang thương lượng · đỏ = số thật,
+  // chốt xong là thành công nợ phải trả. Màu mang nghĩa nên khai sẵn (`defaultColor`).
+  { key: 'estimate_base', header: 'Dự toán', width: 145, minWidth: 100, align: 'right', defaultColor: 'blue' },
+  { key: 'provisional_base', header: 'Tạm tính', width: 145, minWidth: 100, align: 'right', defaultColor: 'amber' },
+  { key: 'final_base', header: 'Quyết toán', width: 150, minWidth: 100, align: 'right', defaultColor: 'red' },
   { key: 'variance_base', header: 'Lệch (VNĐ)', width: 130, minWidth: 90, align: 'right' },
   { key: 'base_amount', header: 'Quy đổi (VNĐ)', width: 145, minWidth: 100, align: 'right' },
   { key: 'paid_amount', header: 'Đã chi', width: 120, minWidth: 90, align: 'right' },
@@ -254,6 +256,30 @@ const BASE_COLUMNS: LinesTableColumn[] = [
   { key: 'note', header: 'Ghi chú', width: 150, minWidth: 100, wrap: true, compactHidden: true },
   { key: 'action', header: 'Hành động', width: 90, minWidth: 80, hideable: false, align: 'center' },
 ]
+
+/**
+ * bao-CR-473 — nút «Chốt tạm tính / Chốt quyết toán» cấp ĐƠN tạm ẩn theo lệnh đại ca: từ
+ * bao-CR-469 việc chốt đi bằng tick chọn + «Quyết toán tất cả», nút cấp đơn trùng vai và làm
+ * người dùng lúng túng không biết bấm cái nào. Đường API và hộp xác nhận vẫn giữ nguyên —
+ * cần bày lại thì đổi hằng này thành `true`, không phải dựng lại gì.
+ */
+const STAGE_ADVANCE_ENABLED = false
+
+/**
+ * bao-CR-473 — ba khối giai đoạn trong popup «Chi tiết khoản» mang CÙNG ba màu với ba cột
+ * trên bảng (`defaultColor` xanh · vàng · đỏ), để mắt người dùng nối được ô trên bảng với
+ * khối trong popup. Viết bằng lớp Tailwind có bản tối, không mã hex, cho chế độ tối khỏi vỡ.
+ */
+const STAGE_BLOCK_TONE: Record<number, string> = {
+  [COST_STAGE_ESTIMATE]: 'border-blue-300 bg-blue-50/60 dark:border-blue-800 dark:bg-blue-950/30',
+  [COST_STAGE_PROVISIONAL]: 'border-amber-300 bg-amber-50/60 dark:border-amber-800 dark:bg-amber-950/30',
+  [COST_STAGE_FINAL]: 'border-red-300 bg-red-50/60 dark:border-red-800 dark:bg-red-950/30',
+}
+const STAGE_LABEL_TONE: Record<number, string> = {
+  [COST_STAGE_ESTIMATE]: 'text-blue-700 dark:text-blue-300',
+  [COST_STAGE_PROVISIONAL]: 'text-amber-700 dark:text-amber-300',
+  [COST_STAGE_FINAL]: 'text-red-700 dark:text-red-300',
+}
 
 const TICK_COLUMN: LinesTableColumn = {
   key: 'tick',
@@ -986,8 +1012,9 @@ export function PurchaseOrderImportCostsCard({
             Chi phí thu mua
           </CardTitle>
           <div className="flex flex-wrap items-center justify-end gap-2">
-            {/* bao-CR-453 — nút chốt / mở lại giai đoạn */}
-            {approved && order.cost_stage !== undefined && order.cost_stage < COST_STAGE_FINAL && (
+            {/* bao-CR-453 — nút chốt / mở lại giai đoạn. Nút CHỐT tạm ẩn (bao-CR-473), xem
+                `STAGE_ADVANCE_ENABLED`; nút Mở lại vẫn giữ cho đơn đã chốt giai đoạn từ trước. */}
+            {STAGE_ADVANCE_ENABLED && approved && order.cost_stage !== undefined && order.cost_stage < COST_STAGE_FINAL && (
               <Button
                 type="button"
                 variant="outline"
@@ -1093,10 +1120,6 @@ export function PurchaseOrderImportCostsCard({
           </div>
         </CardHeader>
         <CardContent className="space-y-4 px-4">
-          {/* bao-CR-453 — dải giai đoạn chi phí */}
-          {order.cost_stage !== undefined && (
-            <CostStageStrip stage={order.cost_stage} label={order.cost_stage_label} />
-          )}
           <p className="rounded-md border border-info/30 bg-info/8 px-3 py-2 text-sm text-muted-foreground">
             VAT ở dòng hàng của đơn nhập khẩu luôn bằng 0 — thuế GTGT hàng nhập nộp ngân sách nhà
             nước theo tờ khai, khai thành một dòng ở bảng này. Chi phí vẫn thêm/sửa được sau khi
@@ -1458,13 +1481,14 @@ export function PurchaseOrderImportCostsCard({
         <CostDetailDialog
           cost={detailCost}
           index={detailIndex}
-          editable={editable}
+          // bao-CR-473: khóa theo DÒNG như trên bảng (bao-CR-467) — trước đây popup nhận cờ
+          // của cả bảng, nên dòng đã chốt vẫn gõ được trong popup rồi ăn lỗi lúc Lưu.
+          editable={isRowEditable(detailCost)}
           isNew={isNew}
           payReady={payReady}
           supplierOptions={supplierSelectOptions}
           productCodes={productCodes}
           costTypes={costTypes}
-          orderStage={orderStage}
           onPatch={(patch) => updateCost(detailIndex, patch)}
           onReplace={(next) => replaceCost(detailIndex, next)}
           onChangeAllocationMethod={(method) => changeAllocationMethod(detailIndex, method)}
@@ -1876,7 +1900,6 @@ function CostDetailDialog({
   supplierOptions,
   productCodes,
   costTypes,
-  orderStage,
   onPatch,
   onReplace,
   onChangeAllocationMethod,
@@ -1892,8 +1915,6 @@ function CostDetailDialog({
   supplierOptions: { value: string; label: string }[]
   productCodes: string[]
   costTypes: PoCostType[]
-  /** Giai đoạn đơn đang đứng — chỉ khối số của giai đoạn này gõ được. */
-  orderStage: number
   onPatch: (patch: Partial<PurchaseOrderImportCost>) => void
   onReplace: (next: PurchaseOrderImportCost) => void
   onChangeAllocationMethod: (method: number) => void
@@ -2026,32 +2047,25 @@ function CostDetailDialog({
             <Field label="Quy đổi (VNĐ, đã gồm VAT)">
               <ReadOnlyValue className="font-semibold tabular-nums">{formatMoney(base)} đ</ReadOnlyValue>
             </Field>
-            {/* bao-CR-453 — ba khối số theo giai đoạn. Chỉ khối của giai đoạn đơn
-                đang đứng mới gõ được; hai khối kia là số đã chốt, để đối chiếu. */}
+            {/* bao-CR-453 — ba khối số theo giai đoạn, mỗi khối có số tiền + TỶ GIÁ riêng.
+                bao-CR-473: cả ba khối đều gõ được như ba cột trên bảng (bao-CR-467) — trước
+                đây chỉ khối của giai đoạn đơn đang đứng mới mở, mà nút chốt giai đoạn đã ẩn
+                nên tỷ giá Tạm tính / Quyết toán thành ra KHÔNG BAO GIỜ sửa được, trong khi
+                tỷ giá đổi từng ngày. Dòng đã chốt thì `editable` về false ở chỗ gọi. */}
             <div className="sm:col-span-2 lg:col-span-3">
               <Label className="text-muted-foreground">
                 Số tiền theo giai đoạn (trước thuế, {currency})
               </Label>
               <div className="mt-1.5 grid gap-3 sm:grid-cols-3">
                 {COST_STAGES.map((stage) => {
-                  const active = orderStage === stage
-                  const stageEditable = editable && active && !amountLocked
+                  const stageEditable = editable && !amountLocked
                   return (
                     <div
                       key={stage}
-                      className={cn(
-                        'space-y-2 rounded-md border p-3',
-                        active ? 'border-primary/50 bg-primary/5' : 'bg-muted/30',
-                      )}
+                      className={cn('space-y-2 rounded-md border p-3', STAGE_BLOCK_TONE[stage])}
                     >
-                      <div
-                        className={cn(
-                          'text-xs font-semibold',
-                          active ? 'text-primary' : 'text-muted-foreground',
-                        )}
-                      >
+                      <div className={cn('text-xs font-semibold', STAGE_LABEL_TONE[stage])}>
                         {COST_STAGE_LABELS[stage]}
-                        {active ? ' (hiện tại)' : ''}
                       </div>
                       <div className="space-y-1">
                         <div className="text-[11px] text-muted-foreground">Số tiền (trước thuế)</div>
@@ -2235,54 +2249,9 @@ function CostDetailDialog({
   )
 }
 
-// ---------------------------------------------------------------------------
-// bao-CR-453 — dải giai đoạn chi phí
-// ---------------------------------------------------------------------------
-
-const STAGE_STEPS = [
-  { stage: COST_STAGE_ESTIMATE, label: 'Dự toán' },
-  { stage: COST_STAGE_PROVISIONAL, label: 'Tạm tính' },
-  { stage: COST_STAGE_FINAL, label: 'Quyết toán' },
-]
-
-function CostStageStrip({ stage, label }: { stage: number; label?: string }) {
-  const currentLabel = label ?? COST_STAGE_LABELS[stage] ?? `Giai đoạn ${stage}`
-  return (
-    <div className="flex items-center gap-2">
-      {STAGE_STEPS.map((step, index) => {
-        const done = stage > step.stage
-        const active = stage === step.stage
-        return (
-          <Fragment key={step.stage}>
-            {index > 0 && (
-              <div className={cn('h-px w-6 shrink-0', done ? 'bg-primary' : 'bg-border')} />
-            )}
-            <div
-              className={cn(
-                'flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium',
-                active && 'bg-primary text-primary-foreground',
-                done && 'bg-primary/20 text-primary',
-                !active && !done && 'bg-muted text-muted-foreground',
-              )}
-              title={active ? `Đang ở giai đoạn: ${currentLabel}` : step.label}
-            >
-              <span
-                className={cn(
-                  'flex size-4 shrink-0 items-center justify-center rounded-full text-[10px]',
-                  active && 'bg-primary-foreground/20',
-                  done && 'bg-primary/30',
-                )}
-              >
-                {done ? '✓' : step.stage}
-              </span>
-              {step.label}
-            </div>
-          </Fragment>
-        )
-      })}
-    </div>
-  )
-}
+// bao-CR-473: dải bước «Dự toán — Tạm tính — Quyết toán» ở đầu thẻ đã BỎ theo lệnh đại ca.
+// Từ bao-CR-467 cả ba cột gõ tự do và chốt đi theo từng dòng, nên một dải bước cho CẢ ĐƠN
+// không còn nói đúng điều gì: đơn đứng yên ở Dự toán trong khi các dòng đã quyết toán.
 
 /** Câu "Nhập tay" trong popup: đã nhập bao nhiêu so với tiền khoản. */
 function manualDialogStatus(cost: PurchaseOrderImportCost): string {
