@@ -6469,3 +6469,24 @@ Mã nguồn: `frontend-v2/src/modules/procurement/utils/customs.ts` ·
 `frontend-v2/src/modules/procurement/utils/customs.test.ts` ·
 `frontend-v2/src/modules/procurement/components/customs/customs-legal-tab.tsx` ·
 `frontend-v2/src/modules/procurement/pages/customs-price-page.tsx`.
+
+## bao-CR-477-v1 | Đưa cách hiện ngưỡng hóa chất sang bản giao diện cũ cho hai bên cân bằng
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Sau khi thẻ pháp lý của bản ERP đã hiện rõ ngưỡng khối lượng và mức cấm, đại ca bảo làm luôn ở
+bản giao diện cũ để hai bên cân bằng, lên bản chạy thật không bị lệch nhau ở phần thu mua.
+
+Bản cũ nay có đúng những gì bản ERP có: một cột riêng cho ngưỡng hoặc mức cấm với con số to đậm
+màu cam, nhãn đỏ ghi năm cấm cho hoạt chất bị cấm, nhãn danh sách tô theo mức nghiêm trọng, và
+kết quả xếp dòng nặng nhất lên đầu cho cả ô tra hóa chất lẫn dải cảnh báo trên màn tra giá; dải
+cảnh báo còn được bôi đậm con số. Các luật được chép thành một tệp riêng giống hệt bên ERP, có
+ghi chú sửa bên này thì phải sửa cả bên kia. Màu nhãn dùng lại đúng các kiểu nhãn có sẵn của bản
+cũ nên không thêm dòng giao diện nào.
+
+Kiểm trước khi giao: bản cũ giữ nguyên đúng bốn lỗi kiểm kiểu cũ, không phát sinh lỗi mới; phần
+luật đã có mười bài kiểm canh sẵn ở bên ERP.
+
+Mã nguồn: `frontend/src/utils/customs-regulation.ts` ·
+`frontend/src/components/customs/CustomsTabs.tsx` · `frontend/src/pages/CustomsPrices.tsx`.

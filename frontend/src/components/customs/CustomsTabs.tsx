@@ -6,6 +6,9 @@ import { api } from '../../api/client'
 import {
   CustomsFilters, fmtDate, fmtQty, fmtTick, fmtUsd, niceScale, PERIODS, toParams, unitChip, unitLabel, useWidth,
 } from './customs-shared'
+import {
+  formatBannedLabel, formatThresholdKg, regulationBadgeClass, sortRegulationsBySeverity,
+} from '../../utils/customs-regulation'
 
 const UnitChips = ({ units, unit, onPick }: { units: any[]; unit: string; onPick: (u: string) => void }) => (
   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', marginBottom: 10, fontSize: 13 }}>
@@ -335,18 +338,28 @@ export function CustomsLegal({ filters, alerts }: { filters: CustomsFilters; ale
   )
 }
 
+// bao-CR-477 (bản cũ) — con số ngưỡng / mức cấm đứng thành CỘT RIÊNG chữ to đậm, nhãn tô theo
+// mức nghiêm trọng, dòng nặng nhất lên đầu. Cùng luật với bản ERP (`utils/customs-regulation.ts`).
 function RegTable({ items }: { items: any[] }) {
+  const rows = sortRegulationsBySeverity(items)
   return (
     <div className="table-scroll"><table>
-      <thead><tr><th>Danh mục</th><th>Tên</th><th>Số CAS</th><th>Lưu ý</th></tr></thead>
+      <thead><tr><th>Danh mục</th><th>Tên</th><th>Số CAS</th><th>Ngưỡng / Mức cấm</th><th>Lưu ý</th></tr></thead>
       <tbody>
-        {items.map((r) => (
+        {rows.map((r) => (
           <tr key={r.id}>
             <td style={{ whiteSpace: 'nowrap' }}>
-              <span className={`badge ${r.list_code === 10 ? 'err' : r.list_code === 4 ? 'warn' : 'info'}`}>{r.list_label}</span>
+              <span className={`badge ${regulationBadgeClass(r.list_code)}`}>{r.list_label}</span>
             </td>
             <td>{r.name}{r.name_vi && r.name_vi !== r.name ? <div style={{ fontSize: 12, color: 'var(--muted)' }}>{r.name_vi}</div> : null}</td>
             <td>{r.cas_no || '—'}</td>
+            <td style={{ whiteSpace: 'nowrap' }}>
+              {r.list_code === 10
+                ? <span className="badge err" style={{ fontWeight: 700 }}>{formatBannedLabel(r.banned_year)}</span>
+                : formatThresholdKg(r.threshold_kg)
+                  ? <span style={{ fontSize: 15, fontWeight: 700, color: '#c2410c', fontVariantNumeric: 'tabular-nums' }}>{formatThresholdKg(r.threshold_kg)}</span>
+                  : null}
+            </td>
             <td style={{ fontSize: 13 }}>{r.obligation}</td>
           </tr>
         ))}

@@ -24,6 +24,7 @@ import {
   CustomsFilters, EMPTY_FILTERS, fmtDate, fmtQty, fmtUsd, hasChartFilter, NEED_FILTER_MSG, toParams,
 } from '../components/customs/customs-shared'
 import { TableColumn, useTableColumns } from '../hooks/useTableColumns'
+import { formatBannedLabel, formatThresholdKg, sortRegulationsBySeverity } from '../utils/customs-regulation'
 
 const TABS = [
   { key: 'list', label: 'Danh sách', icon: 'ti-list' },
@@ -234,7 +235,15 @@ export default function CustomsPrices() {
           padding: '8px 12px', fontSize: 13, marginBottom: 10 }}>
           <i className="ti ti-alert-triangle" /> <b>Lưu ý pháp lý cho «{filters.q}»:</b>
           <ul style={{ margin: '4px 0 0', paddingLeft: 20 }}>
-            {alerts.slice(0, 5).map((a) => <li key={a.id}>{a.name}{a.cas_no ? ` (CAS ${a.cas_no})` : ''} — {a.obligation}</li>)}
+            {/* bao-CR-477 (bản cũ): dải chỉ bày 5 mục nên xếp nặng nhất lên đầu, và bôi đậm con số */}
+            {sortRegulationsBySeverity(alerts).slice(0, 5).map((a) => (
+              <li key={a.id}>
+                {a.name}{a.cas_no ? ` (CAS ${a.cas_no})` : ''} —{' '}
+                {a.list_code === 10 && <b>{formatBannedLabel(a.banned_year)}. </b>}
+                {a.list_code !== 10 && formatThresholdKg(a.threshold_kg) && <b>Ngưỡng {formatThresholdKg(a.threshold_kg)}. </b>}
+                {a.obligation}
+              </li>
+            ))}
           </ul>
           {alerts.length > 5 && <div style={{ marginTop: 4 }}>… và {alerts.length - 5} mục khác — xem thẻ Pháp lý & thuế.</div>}
         </div>
