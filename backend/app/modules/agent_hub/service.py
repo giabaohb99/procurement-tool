@@ -2211,9 +2211,18 @@ def answer_question(db: Session, chat_id: str, question: str, *, before_id: int 
         return
     #  Trợ lý AI trả Markdown (web render bằng react-markdown). Gửi qua bộ đổi sang HTML
     #  Telegram, còn sổ giữ nguyên Markdown để lượt sau đưa lại cho model đúng như web.
-    reply(db, chat_id, result.get("text") or "(không có câu trả lời)",
-          markdown=True, action=ACT_ANSWER)
-    deliver_tool_results(db, chat_id, user, result.get("tool_calls") or [])
+    tool_calls = result.get("tool_calls") or []
+    has_draft = any(isinstance(c, dict) and isinstance(c.get("draft"), dict)
+                    and draft_create.kind_of(str(c.get("name") or "")) for c in tool_calls)
+    if has_draft:
+        #  ai-CR-048: tool soạn nháp dặn model «mời người dùng bấm nút mở form» (đúng cho web), nên câu chữ
+        #  của Trợ lý nói ngược thẻ tóm tắt của bot. Chỉ GHI SỔ câu đó (giữ mạch hội thoại), không gửi.
+        log_message(db, DIR_OUT, chat_id, 0, result.get("text") or "", action=ACT_ANSWER)
+        db.commit()
+    else:
+        reply(db, chat_id, result.get("text") or "(không có câu trả lời)",
+              markdown=True, action=ACT_ANSWER)
+    deliver_tool_results(db, chat_id, user, tool_calls)
 
 
 _NO_ASSISTANT_USER = (
@@ -2276,6 +2285,16 @@ _CREATE_YES = re.compile(r"^(tạo|lưu|ok|oke|okay|đồng ý|đúng|ừ|đư�
                          r"anh|giùm|rồi|lại|đơn|phiếu|đó|này))*[.! ]*$")
 
 
+_LOOSE_YES = re.compile(r"(?<!\w)(tạo|lưu|ok|oke|okay|đồng ý|được|làm đi|link|gửi|nháp|xác nhận)(?!\w)")
+_LOOSE_BLOCK = re.compile(r"\d|(?<!\w)(khác|thêm|sửa|đổi|thành|không|thôi|đừng|hủy|bỏ|chưa)(?!\w)")
+
+
+def _loose_confirm(low: str) -> bool:
+    """ai-CR-048: đang có nháp chờ thì «oke tạo đơn nháp đi», «gửi cho anh cái link» cũng là xác nhận.
+    Câu dài, có số, hoặc có ý đổi («khác», «sửa», «thêm»…) thì KHÔNG — đó là nhờ soạn lại."""
+    return len(low.split()) <= 8 and bool(_LOOSE_YES.search(low)) and not _LOOSE_BLOCK.search(low)
+
+
 def _offer_draft(db: Session, chat_id: str, user, call: dict) -> None:
     """Tool vừa soạn nháp: tóm tắt + chờ «tạo». Đề nghị thanh toán thì gửi link form web điền sẵn."""
     esc = telegram.esc
@@ -2289,7 +2308,12 @@ def _offer_draft(db: Session, chat_id: str, user, call: dict) -> None:
         reply(db, chat_id, "Đề nghị thanh toán dính tiền nên em không tạo từ chat. Em đã điền sẵn form, đại ca mở "
               f'<a href="{esc(link)}">ở đây</a>, xem lại rồi bấm Lưu.')
         return
-    lines = [f"<b>Bản nháp {esc(draft_create.LABELS[kind])}</b>"]
+    replaced = 0
+    for old in db.scalars(select(AgentMessage).where(AgentMessage.chat_id == chat_id,
+                                                     AgentMessage.action == ACT_DRAFT_WAIT)):
+        old.action = ACT_DRAFT_DROPPED
+        replaced += 1
+    lines = [f"<b>Bản nháp {esc(draft_create.LABELS[kind])}</b>" + (" (thay bản nháp trước)" if replaced else "")]
     lines += [esc(x) for x in draft_create.summarize(kind, draft)]
     if kind in draft_create.SUBMITTABLE:
         lines += ["", "Nhắn «tạo» để lưu Nháp, «tạo và gửi duyệt» để gửi duyệt luôn, «thôi» để bỏ."]
@@ -2306,15 +2330,17 @@ def _offer_draft(db: Session, chat_id: str, user, call: dict) -> None:
 def _draft_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
     """«tạo» / «thôi» cho bản nháp đang chờ của chat này (trong DRAFT_WINDOW)."""
     low = text.strip().lower()
-    want_submit = bool(_CREATE_SUBMIT.match(low))
-    yes, no = want_submit or bool(_CREATE_YES.match(low)), bool(_NO.match(low))
-    if not (yes or no):
-        return False
     pending = db.scalar(select(AgentMessage).where(
         AgentMessage.chat_id == chat_id, AgentMessage.action == ACT_DRAFT_WAIT, AgentMessage.id < row.id)
         .order_by(AgentMessage.id.desc()).limit(1))
-    if pending is None or (row.created_at and pending.created_at
-                           and row.created_at - pending.created_at > DRAFT_WINDOW):
+    live = pending is not None and not (row.created_at and pending.created_at
+                                        and row.created_at - pending.created_at > DRAFT_WINDOW)
+    want_submit = bool(_CREATE_SUBMIT.match(low)) or (live and _loose_confirm(low) and "gửi duyệt" in low)
+    yes = want_submit or bool(_CREATE_YES.match(low)) or (live and _loose_confirm(low))
+    no = bool(_NO.match(low))
+    if not (yes or no):
+        return False
+    if not live:
         #  Không còn nháp chờ: «gửi duyệt luôn» ngay sau một lần «tạo» thì gửi duyệt phiếu vừa tạo.
         return want_submit and _submit_recent(db, chat_id, row)
     row.action = ACT_COMMAND

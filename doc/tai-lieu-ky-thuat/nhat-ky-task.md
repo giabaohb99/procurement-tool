@@ -3155,6 +3155,20 @@ Mã nguồn: `frontend-v2/src/modules/approval-seal/components/seal-clerk-detail
 Commit: `5fbce75a` trên nhánh `erp-v2`.
 
 
+## ai-CR-048 | Bản nháp chứng từ chỉ hiện một lần và nói đúng cách tạo
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Đại ca thử tạo đơn nghỉ thì Trợ lý vẫn bảo bấm nút mở form, bản nháp hiện hai ba lần, và lý do bị viết không
+dấu. Nguyên nhân là công cụ soạn nháp dặn Trợ lý mời người dùng bấm nút như trên web. Nay khi có bản nháp, bot
+không gửi câu chữ đó nữa mà chỉ gửi một thẻ tóm tắt; soạn lại thì thẻ mới thay thẻ cũ; và khi đang có nháp chờ,
+các câu ngắn như oke tạo đơn nháp đi hay gửi cho anh cái link đều được hiểu là đồng ý tạo, còn câu có ý sửa
+hay đổi vẫn chuyển cho Trợ lý soạn lại. Trợ lý cũng được dặn điền chữ tiếng Việt có dấu khi soạn nháp. Cả tệp
+bài kiểm của bot 202/202 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/service.py` (`answer_question`, `_offer_draft`, `_loose_confirm`, `_draft_by_text`) · `constants.py` (`BOT_DRAFT_FACTS`) · `test/backend/test_agent_hub.py` · `change-log-ai.md`.
+
 ## ai-CR-047 | Tạo và gửi duyệt trong một câu nhắn Telegram
 - status: xong
 - date: 2026-09-24

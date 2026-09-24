@@ -4704,3 +4704,56 @@ def test_submit_goi_dung_ham_web_va_chay_tac_vu_nen(db, monkeypatch):
     assert draft_create.missing_for_submit("survey", {"purpose": "x", "lines": [{"item_group": ""}]}) == "Dòng 1 còn thiếu: Phân loại."
     with pytest.raises(draft_create.DraftError, match="không có bước gửi duyệt"):
         draft_create.submit(db, u, "ticket", 1)
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-048: bản nháp chỉ một thẻ, không lời «bấm nút», xác nhận nói tự nhiên
+# ---------------------------------------------------------------------------
+def test_co_ban_nhap_thi_khong_gui_cau_bam_nut_cua_tro_ly(db, monkeypatch):
+    from app.modules.agent_hub import service
+    from app.modules.agent_hub.model import AgentMessage
+    from app.modules.assistant import service as assistant_service
+    from app.modules.user.model import User
+
+    sent: list[str] = []
+    monkeypatch.setattr(service.telegram, "send", lambda text, **kw: sent.append(text) or 1)
+    monkeypatch.setattr(settings, "AGENT_ASSISTANT_USER", "BOT01")
+    monkeypatch.setattr(settings, "AGENT_TELEGRAM_CHAT_ID", "12345")
+    db.add(User(email="BOT01", employee_id=0, password_hash="x", is_active=True))
+    db.commit()
+    seen: dict = {}
+
+    def fake_ask(message, *, db, user, history=None, system="", **kw):
+        seen["system"] = system
+        return {"text": "Đại ca bấm nút «Tạo đơn nghỉ phép» để mở form nhé!",
+                "tool_calls": [{"name": "draft_leave_request", "draft": dict(_LEAVE_DRAFT)}]}
+
+    monkeypatch.setattr(assistant_service, "ask", fake_ask)
+    service.answer_question(db, "12345", "tạo đơn nghỉ chiều mai")
+    assert len(sent) == 1 and "Bản nháp đơn nghỉ phép" in sent[0] and "bấm nút" not in sent[0]
+    #  Câu của Trợ lý vẫn vào sổ để giữ mạch hội thoại, chỉ không gửi đi.
+    assert db.query(AgentMessage).filter_by(action=service.ACT_ANSWER, tg_message_id=0).count() == 1
+    assert "CÓ DẤU" in seen["system"]
+
+
+def test_soan_lai_thi_thay_ban_cu_va_xac_nhan_noi_tu_nhien(db, bot, monkeypatch):
+    service, sent, asked = bot
+    me, created = _draft_setup(db, monkeypatch, service)
+    service.deliver_tool_results(db, "12345", me, [{"name": "draft_leave_request", "draft": dict(_LEAVE_DRAFT)}])
+    second = dict(_LEAVE_DRAFT, reason="Đi khám mắt")
+    service.deliver_tool_results(db, "12345", me, [{"name": "draft_leave_request", "draft": second}])
+    assert "(thay bản nháp trước)" in sent[-1]
+    service.handle_message(db, _msg("gửi cho anh cái link luôn nhé"))
+    assert created == [(7, "leave", "Đi khám mắt")] and "/hr/leave-requests/42" in sent[-1]
+
+
+def test_cau_nho_soan_lai_khong_bi_hieu_la_xac_nhan(db, bot, monkeypatch):
+    service, sent, asked = bot
+    me, created = _draft_setup(db, monkeypatch, service)
+    _fake_intent(monkeypatch, service, "hoi")
+    service.deliver_tool_results(db, "12345", me, [{"name": "draft_leave_request", "draft": dict(_LEAVE_DRAFT)}])
+    for msg in ("tạo đơn nghỉ khác vào thứ 6", "sửa lý do thành đi khám mắt"):
+        service.handle_message(db, _msg(msg))
+    assert created == [] and asked == ["tạo đơn nghỉ khác vào thứ 6", "sửa lý do thành đi khám mắt"]
+    service.handle_message(db, _msg("oke tạo đơn nháp đi"))
+    assert len(created) == 1
