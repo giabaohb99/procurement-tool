@@ -14,6 +14,7 @@ import { useFolderDocumentsQuery } from './use-folder-documents-query'
 import { useFolderDropActions } from './use-folder-drop-actions'
 import { useFolderShareTarget } from './use-folder-share-target'
 import { useTreeSelectedDocument } from './use-tree-selected-document'
+import { canBulkSelectFolder } from '../types/document-folder'
 import type { DocumentRecord } from '../types/document-record'
 
 interface UseFolderDocumentsTableStateArgs {
@@ -57,7 +58,7 @@ export function useFolderDocumentsTableState({
   )
 
   const selection = useFolderContentSelection({
-    folderKeys: children.map((child) => folderItemKey('folder', child.id)),
+    folderKeys: children.filter(canBulkSelectFolder).map((child) => folderItemKey('folder', child.id)),
     documentKeys: q.rows.map((row) => folderItemKey('document', row.id)),
     resetSignal: [q.filterSignature, q.page],
   })

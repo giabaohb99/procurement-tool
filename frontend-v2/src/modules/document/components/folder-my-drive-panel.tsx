@@ -14,6 +14,7 @@ import { useFolderDetailsItem } from '../hooks/use-folder-details-item'
 import { useFolderDropActions } from '../hooks/use-folder-drop-actions'
 import { useDocFolderTree } from '../hooks/use-document-folders'
 import { useFolderShareTarget } from '../hooks/use-folder-share-target'
+import { canBulkSelectFolder } from '../types/document-folder'
 import type { DocFolderTreeNode } from '../types/document-folder'
 import { FolderChildCards } from './folder-child-cards'
 import { FolderDetailsPanel } from './folder-details-panel'
@@ -69,7 +70,7 @@ export function FolderMyDrivePanel({ onSelectFolder }: FolderMyDrivePanelProps) 
   const { handleDropOnFolder } = useFolderDropActions(0, '')
 
   const selection = useFolderContentSelection({
-    folderKeys: roots.map((root) => folderItemKey('folder', root.id)),
+    folderKeys: roots.filter(canBulkSelectFolder).map((root) => folderItemKey('folder', root.id)),
     documentKeys: [],
     resetSignal: roots.length,
   })

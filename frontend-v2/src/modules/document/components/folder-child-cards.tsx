@@ -18,7 +18,7 @@ import { folderItemKey } from '../helpers/folder-item-id'
 import { useDocFolderTree } from '../hooks/use-document-folders'
 import { useFolderRowActions } from '../hooks/use-folder-row-actions'
 import type { SelectionModifierKeys } from '../hooks/use-item-selection'
-import { FOLDER_KIND } from '../types/document-folder'
+import { canBulkSelectFolder, FOLDER_KIND } from '../types/document-folder'
 import type { DocFolderTreeNode } from '../types/document-folder'
 
 interface FolderChildCardsProps {
@@ -79,6 +79,7 @@ export function FolderChildCards({
         {children.map((child) => {
           const key = folderItemKey('folder', child.id)
           const selected = isSelected(key)
+          const showCheckbox = selectable && canBulkSelectFolder(child)
           const countId = `folder-card-count-${child.id}`
           return (
             <FolderItemContextMenu
@@ -96,7 +97,7 @@ export function FolderChildCards({
               onRemove={() => void rowActions.requestDelete(child)}
               removeDisabledReason={folderDeleteDisabledReason(child)}
             >
-              {selectable && (
+              {showCheckbox && (
                 <FolderItemSelectCheckbox
                   checked={selected}
                   onToggle={() => onItemClick(child.id, { ctrlKey: true })}
@@ -151,7 +152,7 @@ export function FolderChildCards({
                   }
                 }}
                 className={cn(
-                  selectable ? 'pl-9' : 'pl-2.5',
+                  showCheckbox ? 'pl-9' : 'pl-2.5',
                   'flex w-full min-w-0 items-center gap-3 rounded-xl border bg-card py-2.5 pr-9 text-left shadow-xs transition-colors hover:border-primary/40 hover:bg-accent/40',
                   selected && 'border-primary bg-accent ring-1 ring-primary hover:bg-accent',
                   dragOverId === child.id && 'border-primary bg-accent ring-1 ring-primary',

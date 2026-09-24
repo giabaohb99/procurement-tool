@@ -15,7 +15,7 @@ import {
 import { dispatchFolderItemClick, readModifierKeys } from '../helpers/folder-item-click'
 import { folderItemDomId } from '../helpers/folder-item-id'
 import type { SelectionModifierKeys } from '../hooks/use-item-selection'
-import { FOLDER_KIND } from '../types/document-folder'
+import { canBulkSelectFolder, FOLDER_KIND } from '../types/document-folder'
 import type { DocFolderTreeNode } from '../types/document-folder'
 import type { DocumentRecord } from '../types/document-record'
 import { FolderItemContextMenu } from './folder-item-context-menu'
@@ -161,13 +161,17 @@ export function FolderListRow({
           dropHighlighted && 'bg-emerald-50 ring-2 ring-emerald-400 ring-inset',
         )}
       >
-        {selectable && (
-          <FolderItemSelectCheckbox
-            checked={selected}
-            onToggle={() => onClick({ ctrlKey: true })}
-            label={`Chọn ${rowLabel}`}
-          />
-        )}
+        {selectable &&
+          (!isFolder || canBulkSelectFolder(item.folder) ? (
+            <FolderItemSelectCheckbox
+              checked={selected}
+              onToggle={() => onClick({ ctrlKey: true })}
+              label={`Chọn ${rowLabel}`}
+            />
+          ) : (
+            //  Giữ ô trống để cột Tên không lệch so với các dòng có ô tick.
+            <span aria-hidden />
+          ))}
 
         <NameCell item={item} isFullText={isFullText} />
 

@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { FOLDER_ACCESS_LEVEL, folderAccessLevelLabel } from './document-folder'
+import {
+  canBulkSelectFolder,
+  FOLDER_ACCESS_LEVEL,
+  FOLDER_KIND,
+  folderAccessLevelLabel,
+} from './document-folder'
 
 describe('folderAccessLevelLabel', () => {
   it('maps each of the four known levels to its Vietnamese label', () => {
@@ -27,5 +32,14 @@ describe('folderAccessLevelLabel', () => {
     expect(folderAccessLevelLabel(4)).toBe('')
     expect(folderAccessLevelLabel(99)).toBe('')
     expect(folderAccessLevelLabel(1.5)).toBe('')
+  })
+})
+
+describe('canBulkSelectFolder', () => {
+  //  Lead chốt 24/09/2026: thẻ thư mục pháp nhân dưới «Công ty» không có ô tick.
+  it('excludes the fixed frame of the tree — company roots and the «Công ty» group', () => {
+    expect(canBulkSelectFolder({ kind: FOLDER_KIND.company })).toBe(false)
+    expect(canBulkSelectFolder({ kind: FOLDER_KIND.companyGroup })).toBe(false)
+    expect(canBulkSelectFolder({ kind: FOLDER_KIND.normal })).toBe(true)
   })
 })

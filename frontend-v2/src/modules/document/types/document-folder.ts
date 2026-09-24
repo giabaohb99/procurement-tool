@@ -24,6 +24,15 @@ export const FOLDER_KIND = {
   companyGroup: 3,
 } as const
 
+/**
+ * Thư mục tick chọn được để thao tác HÀNG LOẠT (chuyển · xóa) hay không. Thư
+ * mục pháp nhân và nhóm «Công ty» là khung cố định của cây — không chuyển,
+ * không xóa theo lô được — nên KHÔNG có ô tick (lead chốt 24/09/2026).
+ */
+export function canBulkSelectFolder(folder: { kind: number }): boolean {
+  return folder.kind !== FOLDER_KIND.company && folder.kind !== FOLDER_KIND.companyGroup
+}
+
 export const FOLDER_KIND_LABELS: Record<number, string> = {
   1: 'Thư mục pháp nhân',
   2: 'Thư mục',
