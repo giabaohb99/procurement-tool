@@ -280,6 +280,13 @@ class Settings(BaseSettings):
     #  - AGENT_TICKET_DEPARTMENTS = danh sách nhãn «Bộ phận / Nhóm», cách nhau dấu phẩy: phiếu MỚI
     #    mang nhãn đó tự vào hàng việc của bot.
     AGENT_TICKET_ASSIGNEE: str = ""
+    # ai-CR-038: mỗi người tự đăng nhập ERP trong Telegram bằng mã một lần lấy ở trang cá nhân.
+    # Người đã liên kết chỉ hỏi được Trợ lý AI dưới quyền của chính họ.
+    AGENT_LINK_ENABLED: bool = True
+    AGENT_LINK_DAYS: int = 30
+    AGENT_LINK_CODE_MINUTES: int = 10
+    # Tên bot (không có @) để trang cá nhân dựng link mở thẳng bot; trống thì chỉ hướng dẫn chữ.
+    AGENT_TELEGRAM_BOT_USERNAME: str = ""
     AGENT_TICKET_DEPARTMENTS: str = ""
     AGENT_FILE_MAX_MB: int = 20
     # ai-CR-018: `doc/` trên máy đại ca (gồm phần CHƯA commit) mount chỉ đọc vào runner. Rỗng =

@@ -3155,6 +3155,15 @@ Mã nguồn: `frontend-v2/src/modules/approval-seal/components/seal-clerk-detail
 Commit: `5fbce75a` trên nhánh `erp-v2`.
 
 
+## ai-CR-038 | Mỗi người tự đăng nhập tài khoản ERP ngay trong Telegram
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Trước đây Trợ lý trên Telegram chỉ chạy dưới một tài khoản ERP khai cứng và chỉ chat của đại ca dùng được. Nay mỗi người vào trang cá nhân trên ERP, mở tab Telegram, lấy một mã sáu số dùng một lần rồi nhắn lệnh đăng nhập kèm mã cho bot trong chat riêng; có khai tên bot thì bấm một link là xong. Từ đó chat của họ hỏi được Trợ lý đúng theo quyền của chính tài khoản họ, trong ba mươi ngày, đăng xuất hoặc đổi tài khoản bằng một lệnh, hoặc gỡ ngay trên trang cá nhân. Bot không bao giờ hỏi mật khẩu trong khung chat, không lưu mã, chặn chat đoán sai mã quá năm lần một giờ và không cho nhóm chat đăng nhập. Người đã đăng nhập chỉ hỏi Trợ lý được, còn nhận việc sửa mã, gộp, deploy vẫn chỉ chat của đại ca làm được. Cả tệp bài kiểm của bot 175/175 xanh, kiểm tra kiểu và bài kiểm giao diện đều xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/chat_link.py` (`issue_code`, `redeem_code`, `get_active_link`, `revoke_chat`) · `service.py` (`_handle_other_chat`, `_login_by_code`, `_logout`, `_assistant_user`) · `controller.py` (`list_my_links`, `create_link_code`, `remove_link`) · `model.py` (`AgentChatLink`) · migration `5c8e2a7d9f14` · `frontend-v2/src/app/components/profile/profile-telegram-tab.tsx` · `change-log-ai.md`.
+
 ## ai-CR-037 | Đậu Đậu nhận việc từ phiếu hỗ trợ trong ERP
 - status: xong
 - date: 2026-09-24

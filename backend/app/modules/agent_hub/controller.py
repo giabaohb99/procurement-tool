@@ -11,12 +11,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
-from app.core.auth import require
+from app.core.auth import get_current_user, require
+from app.core.config import settings
 from app.core.base_controller import pagination
 from app.core.database import get_db
 from app.core.response import success
 
-from . import coder
+from . import chat_link, coder
 from .constants import (
     DIRECTION_LABELS,
     RISK_LABELS,
@@ -134,6 +135,42 @@ def get_task(task_id: int, user=Depends(require(ENTITY, "read")), db: Session = 
         } for m in msgs],
     })
     return success(data)
+
+
+# ---------------------------------------------------------------------------
+# Liên kết Telegram của CHÍNH MÌNH (ai-CR-038) — chỉ đòi đăng nhập, không cần khóa `agent_task`:
+# ai cũng tự nối được Telegram của mình, như tự đá thiết bị lạ ở «Thiết bị của tôi».
+# ---------------------------------------------------------------------------
+def _serialize_link(link) -> dict:
+    return {"id": link.id, "chat": chat_link.mask_chat(link.chat_id), "tg_name": link.tg_name,
+            "linked_at": _iso(link.linked_at), "expires_at": _iso(link.expires_at)}
+
+
+@router.get("/links")
+def list_my_links(user=Depends(get_current_user), db: Session = Depends(get_db)):
+    bot = (settings.AGENT_TELEGRAM_BOT_USERNAME or "").strip().lstrip("@")
+    return success({"enabled": bool(settings.AGENT_LINK_ENABLED), "bot_username": bot,
+                    "items": [_serialize_link(x) for x in chat_link.list_user_links(db, user.id)]})
+
+
+@router.post("/links/code")
+def create_link_code(user=Depends(get_current_user), db: Session = Depends(get_db)):
+    """Mã 6 số dùng một lần để nhắn `/dangnhap <mã>` cho bot. Mã cũ chưa dùng bị hủy."""
+    if not settings.AGENT_LINK_ENABLED:
+        raise HTTPException(400, "Liên kết Telegram đang tắt")
+    code, expires = chat_link.issue_code(db, user.id)
+    bot = (settings.AGENT_TELEGRAM_BOT_USERNAME or "").strip().lstrip("@")
+    return success({"code": code, "expires_at": _iso(expires),
+                    "deep_link": f"https://t.me/{bot}?start={code}" if bot else ""})
+
+
+@router.delete("/links/{link_id}")
+def remove_link(link_id: int, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    link = next((x for x in chat_link.list_user_links(db, user.id) if x.id == link_id), None)
+    if link is None:
+        raise HTTPException(404, "Không tìm thấy liên kết")
+    chat_link.revoke_chat(db, link.chat_id)
+    return success(None, "Đã gỡ liên kết Telegram")
 
 
 @router.get("/stats")

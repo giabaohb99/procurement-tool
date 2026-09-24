@@ -394,6 +394,8 @@ export const queryKeys = {
     agentTasks: (params?: Record<string, unknown>) => ['system', 'agent-tasks', params ?? {}] as const,
     agentTask: (id: number) => ['system', 'agent-tasks', 'detail', id] as const,
     agentStats: (days: number) => ['system', 'agent-tasks', 'stats', days] as const,
+    /** Liên kết Telegram của chính mình (ai-CR-038). */
+    telegramLinks: () => ['system', 'telegram-links'] as const,
     /** Lịch sử đăng nhập N ngày của MỘT tài khoản (phiên + lần thất bại). */
     loginHistory: (userId: number, days: number) =>
       ['system', 'login-sessions', 'history', userId, days] as const,

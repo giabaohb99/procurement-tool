@@ -1,4 +1,4 @@
-import { apiGet } from '@/core/api'
+import { apiDelete, apiGet, apiPost } from '@/core/api'
 import type { ListParams } from '@/shared/types/api'
 
 /**
@@ -101,8 +101,36 @@ export interface AgentTaskListParams extends ListParams {
 /** Khớp `DIR_IN` ở `agent_hub/constants.py`. */
 export const AGENT_DIR_IN = 2
 
+/** Một liên kết Telegram còn hiệu lực của chính mình (ai-CR-038). `chat` đã che còn 4 số cuối. */
+export interface TelegramLink {
+  id: number
+  chat: string
+  tg_name: string
+  linked_at: string | null
+  expires_at: string | null
+}
+
+export interface TelegramLinksResult {
+  enabled: boolean
+  /** Tên bot không có `@`; rỗng thì không dựng được link mở thẳng bot. */
+  bot_username: string
+  items: TelegramLink[]
+}
+
+export interface TelegramLinkCode {
+  code: string
+  expires_at: string | null
+  /** `https://t.me/<bot>?start=<mã>` — bấm là Telegram tự gửi `/start <mã>`. Rỗng nếu chưa khai tên bot. */
+  deep_link: string
+}
+
 export const agentHubApi = {
   list: (params: AgentTaskListParams) => apiGet<AgentTaskListResult>('/api/agent-hub/tasks', { params }),
   detail: (id: number) => apiGet<AgentTaskDetail>(`/api/agent-hub/tasks/${id}`),
   stats: (days: number) => apiGet<AgentStats>('/api/agent-hub/stats', { params: { days } }),
+
+  /** Ba cửa liên kết Telegram của CHÍNH MÌNH — chỉ đòi đăng nhập, không cần khóa `agent_task`. */
+  myLinks: () => apiGet<TelegramLinksResult>('/api/agent-hub/links'),
+  createLinkCode: () => apiPost<TelegramLinkCode>('/api/agent-hub/links/code', {}),
+  removeLink: (id: number) => apiDelete<null>(`/api/agent-hub/links/${id}`),
 }

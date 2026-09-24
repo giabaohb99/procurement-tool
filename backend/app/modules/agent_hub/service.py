@@ -33,7 +33,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 
-from . import coder, manager, memory, playbook, telegram
+from . import chat_link, coder, manager, memory, playbook, telegram
 from .timeutil import fmt_local, now_local, to_utc
 from .constants import (
     ACT_ACK,
@@ -153,12 +153,16 @@ def handle_message(db: Session, msg: dict) -> None:
     if not text and not photo_id:
         return
     if not telegram.is_allowed_chat(chat_id):
-        #  Không trả lời gì cả. Trả lời "bạn không có quyền" là xác nhận cho người lạ
-        #  rằng bot này sống và có chủ.
-        log.warning("agent_hub: bỏ tin từ chat lạ %s", chat_id)
+        #  ai-CR-038: chat khác chỉ có hai đường — đăng nhập bằng mã, hoặc đã liên kết thì hỏi Trợ lý.
+        if not _handle_other_chat(db, msg, chat_id, text):
+            #  Không trả lời gì cả. Trả lời "bạn không có quyền" là xác nhận cho người lạ
+            #  rằng bot này sống và có chủ.
+            log.warning("agent_hub: bỏ tin từ chat lạ %s", chat_id)
         return
 
-    row = log_message(db, DIR_IN, chat_id, int(msg.get("message_id") or 0), text or "(ảnh)")
+    #  ai-CR-038: sổ không giữ mã đăng nhập một lần, kể cả khi đã dùng.
+    logged = "/dangnhap ******" if _LOGIN_CMD.match(text) else (text or "(ảnh)")
+    row = log_message(db, DIR_IN, chat_id, int(msg.get("message_id") or 0), logged)
     if photo_id:
         saved = _save_photo(chat_id, msg, photo_id)
         if saved is None:
@@ -268,10 +272,99 @@ def _adopt_pending_photos(db: Session, chat_id: str, row: AgentMessage) -> None:
     db.commit()
 
 
+# ---------------------------------------------------------------------------
+# Đăng nhập ERP trong Telegram (ai-CR-038)
+# ---------------------------------------------------------------------------
+_LOGIN_CMD = re.compile(r"^/(dangnhap|start)(?:@\w+)?\s+(\d{6})\s*$", re.IGNORECASE)
+_LOGOUT_CMD = re.compile(r"^/(dangxuat|doitaikhoan)(?:@\w+)?\b", re.IGNORECASE)
+_LINK_HELP = ("Lấy mã ở <b>Trang cá nhân → Telegram</b> trên ERP rồi nhắn <code>/dangnhap &lt;mã&gt;</code>. "
+              "Đổi tài khoản: <code>/dangxuat</code> rồi đăng nhập lại bằng mã mới.")
+
+
+def _get_tg_name(msg: dict) -> str:
+    who = msg.get("from") or {}
+    name = " ".join(p for p in (who.get("first_name"), who.get("last_name")) if p)
+    return name or (f"@{who['username']}" if who.get("username") else "")
+
+
+def _login_by_code(db: Session, msg: dict, chat_id: str, code: str, *, log_row: bool = True) -> None:
+    """Đổi mã lấy liên kết. Sổ ghi lệnh đã che mã. Sai thì đếm để chặn dò mã."""
+    ok = chat_link.redeem_code(db, chat_id, code, _get_tg_name(msg)) if settings.AGENT_LINK_ENABLED else None
+    if log_row:
+        log_message(db, DIR_IN, chat_id, int(msg.get("message_id") or 0), "/dangnhap ******",
+                    action=ACT_COMMAND if ok else chat_link.ACT_LOGIN_FAIL)
+    db.commit()
+    if ok is None:
+        reply(db, chat_id, "Mã không đúng hoặc đã hết hạn. " + _LINK_HELP)
+        return
+    from app.modules.user.model import User
+
+    user = db.get(User, ok.user_id)
+    name = telegram.esc(getattr(user, "email", "") or f"#{ok.user_id}")
+    reply(db, chat_id, f"Đã đăng nhập tài khoản ERP <b>{name}</b> cho chat này "
+          f"(hết hạn sau {settings.AGENT_LINK_DAYS} ngày). Cứ nhắn câu hỏi, em trả lời đúng quyền của tài khoản đó. "
+          "Đăng xuất: <code>/dangxuat</code>.")
+
+
+def _logout(db: Session, chat_id: str) -> None:
+    n = chat_link.revoke_chat(db, chat_id)
+    reply(db, chat_id, ("Đã đăng xuất tài khoản ERP khỏi chat này. " if n else "Chat này chưa đăng nhập. ")
+          + _LINK_HELP)
+
+
+def _handle_other_chat(db: Session, msg: dict, chat_id: str, text: str) -> bool:
+    """Chat KHÔNG phải của đại ca. Trả True nếu đã xử (đăng nhập / người đã liên kết), False = lờ đi.
+
+    Người đã liên kết chỉ có một việc: hỏi Trợ lý AI. Tin của họ không bao giờ vào hàng việc sửa mã.
+    """
+    if not settings.AGENT_LINK_ENABLED or not chat_id:
+        return False
+    m = _LOGIN_CMD.match(text or "")
+    if m:
+        if str((msg.get("chat") or {}).get("type") or "private") != "private":
+            return False                     # nhóm chat: không liên kết, kẻo cả nhóm dùng quyền một người
+        if chat_link.has_too_many_failures(db, chat_id):
+            return True                      # đang bị chặn dò mã: im lặng
+        _login_by_code(db, msg, chat_id, m.group(2))
+        return True
+    link = chat_link.get_active_link(db, chat_id)
+    if link is None:
+        old = chat_link.get_expired_link(db, chat_id)
+        if old is None:
+            return False
+        chat_link.revoke_chat(db, chat_id)
+        reply(db, chat_id, "Phiên đăng nhập ERP của chat này đã hết hạn. " + _LINK_HELP)
+        return True
+    row = log_message(db, DIR_IN, chat_id, int(msg.get("message_id") or 0), text or "(ảnh)",
+                      action=ACT_ASKED)
+    db.commit()
+    telegram.send_chat_action(chat_id)
+    low = (text or "").strip().lower()
+    if _LOGOUT_CMD.match(low):
+        row.action = ACT_COMMAND
+        _logout(db, chat_id)
+        return True
+    if not text:
+        reply(db, chat_id, "Em chỉ đọc được chữ. Đại ca nhắn câu hỏi bằng chữ giúp em.")
+        return True
+    if low.startswith("/") and not low.startswith("/hoi"):
+        row.action = ACT_COMMAND
+        reply(db, chat_id, f"Em là <b>{BOT_NAME}</b>. Cứ nhắn câu hỏi về dữ liệu ERP, em trả lời theo quyền "
+              "tài khoản của anh/chị. <code>/dangxuat</code> để đăng xuất.")
+        return True
+    answer_question(db, chat_id, text[4:].strip() if low.startswith("/hoi") else text, before_id=row.id)
+    return True
+
+
 def _run_command(db: Session, chat_id: str, text: str) -> None:
     """Các lệnh `/` — nay chỉ là ĐƯỜNG TẮT cho ai quen gõ, không còn bắt buộc."""
     lower = text.lower()
-    if lower.startswith("/hoi"):
+    if m := _LOGIN_CMD.match(text):
+        #  Chat của đại ca cũng liên kết được: /hoi khi đó chạy dưới tài khoản của chính đại ca.
+        _login_by_code(db, {"chat": {"id": chat_id}}, chat_id, m.group(2), log_row=False)
+    elif _LOGOUT_CMD.match(lower):
+        _logout(db, chat_id)
+    elif lower.startswith("/hoi"):
         answer_question(db, chat_id, text[4:].strip())
     elif lower.startswith("/ds"):
         send_task_list(db, chat_id)
@@ -1811,9 +1904,10 @@ def answer_question(db: Session, chat_id: str, question: str, *, before_id: int 
 
     from app.modules.assistant import service as assistant_service
 
-    user = _assistant_user(db)
+    user = _assistant_user(db, chat_id)
     if user is None:
-        reply(db, chat_id, _NO_ASSISTANT_USER)
+        reply(db, chat_id, _NO_ASSISTANT_USER if telegram.is_allowed_chat(chat_id) else
+              "Tài khoản ERP của chat này không còn hoạt động. " + _LINK_HELP)
         return
 
     history = _recent_turns(db, chat_id, before_id)
@@ -1845,10 +1939,22 @@ _NO_ASSISTANT_USER = (
 )
 
 
-def _assistant_user(db: Session):
-    """Tài khoản ERP mà bot mượn để chạy Trợ lý AI (`QĐ-AI-10`). None = chưa khai / đã khóa."""
+def _assistant_user(db: Session, chat_id: str = ""):
+    """Tài khoản ERP chạy Trợ lý AI cho chat này. None = không có / đã khóa.
+
+    ai-CR-038: chat đã liên kết (`/dangnhap`) chạy dưới CHÍNH tài khoản đã liên kết. Chat của đại ca
+    chưa liên kết thì lùi về tài khoản khai cứng `AGENT_ASSISTANT_USER` (`QĐ-AI-10`); chat khác
+    không bao giờ được lùi về tài khoản đó.
+    """
     from app.modules.user.model import User
 
+    if chat_id:
+        link = chat_link.get_active_link(db, chat_id)
+        if link is not None:
+            linked = db.get(User, link.user_id)
+            return linked if linked is not None and linked.is_active else None
+        if not telegram.is_allowed_chat(chat_id):
+            return None
     email = (settings.AGENT_ASSISTANT_USER or "").strip()
     user = db.scalar(select(User).where(User.email == email)) if email else None
     if user is None or not user.is_active:
@@ -1983,7 +2089,7 @@ def _resolve_proposal(db: Session, chat_id: str, cb_id: str, action: str, msg_id
         reply(db, chat_id, f"Rồi, không sửa <b>{code}</b>. Phiếu giữ nguyên.")
         return
 
-    user = _assistant_user(db)
+    user = _assistant_user(db, chat_id)
     if user is None:
         telegram.answer_callback(cb_id, "Chưa khai tài khoản")
         reply(db, chat_id, _NO_ASSISTANT_USER)

@@ -349,6 +349,7 @@ def test_tra_loi_gui_html_nhung_so_giu_markdown(db, monkeypatch):
     sent: list[str] = []
     monkeypatch.setattr(service.telegram, "send", lambda text, **kw: sent.append(text) or 1)
     monkeypatch.setattr(settings, "AGENT_ASSISTANT_USER", "BOT01")
+    monkeypatch.setattr(settings, "AGENT_TELEGRAM_CHAT_ID", "12345")   # ai-CR-038: chỉ chat đại ca lùi về tài khoản chung
     db.add(User(email="BOT01", employee_id=0, password_hash="x", is_active=True))
     db.commit()
     seen: dict = {}
@@ -501,6 +502,7 @@ def _bot_user(db, monkeypatch):
     from app.modules.user.model import User
 
     monkeypatch.setattr(settings, "AGENT_ASSISTANT_USER", "BOT01")
+    monkeypatch.setattr(settings, "AGENT_TELEGRAM_CHAT_ID", "12345")   # ai-CR-038: chỉ chat đại ca lùi về tài khoản chung
     u = User(email="BOT01", employee_id=0, password_hash="x", is_active=True)
     db.add(u)
     db.commit()
@@ -2186,7 +2188,7 @@ def test_tro_ly_tren_telegram_nhan_persona_dau_dau(db, monkeypatch):
     sent: list[str] = []
     monkeypatch.setattr(service.telegram, "send", lambda text, **kw: sent.append(text) or 1)
     monkeypatch.setattr(service.telegram, "send_chat_action", lambda *a, **kw: None)
-    monkeypatch.setattr(service, "_assistant_user", lambda db: object())
+    monkeypatch.setattr(service, "_assistant_user", lambda db, chat_id="": object())
     seen: dict = {}
 
     def fake_ask(question, **kw):
@@ -4043,3 +4045,127 @@ def test_phieu_cham_tran_viec_ngay_thi_cho_luot_sau(db, bot, monkeypatch):
     monkeypatch.setattr(settings, "AGENT_DAILY_TASK_CAP", 0)
     t = _ticket(db, "HT-0030", assignee_id=bot_user.id)
     assert service.pull_tickets(db) == 0 and t.status == "open"
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-038: mỗi người tự đăng nhập ERP trong Telegram
+# ---------------------------------------------------------------------------
+def _other_msg(text: str, chat="777", ctype="private") -> dict:
+    return {"chat": {"id": chat, "type": ctype}, "message_id": 5, "text": text,
+            "from": {"first_name": "Lan", "last_name": "Nguyễn"}}
+
+
+def _erp_user(db, email="lan@dego.vn", active=True):
+    from app.modules.user.model import User
+
+    u = User(email=email, employee_id=0, password_hash="x", is_active=active)
+    db.add(u)
+    db.commit()
+    return u
+
+
+def test_dang_nhap_bang_ma_roi_hoi_duoi_quyen_cua_minh(db, bot, monkeypatch):
+    from app.modules.agent_hub import chat_link
+    from app.modules.agent_hub.model import AgentMessage
+
+    service, sent, asked = bot
+    lan = _erp_user(db)
+    seen_users: list[str] = []
+    monkeypatch.setattr(service, "answer_question",
+                        lambda db, chat_id, q, before_id=0: seen_users.append(
+                            (chat_id, q, service._assistant_user(db, chat_id).email)))
+    code, _exp = chat_link.issue_code(db, lan.id)
+    service.handle_message(db, _other_msg(f"/dangnhap {code}"))
+    assert "Đã đăng nhập tài khoản ERP <b>lan@dego.vn</b>" in sent[-1]
+    #  Sổ không giữ mã.
+    assert not db.query(AgentMessage).filter(AgentMessage.body.like(f"%{code}%")).count()
+    #  Mã dùng một lần.
+    assert chat_link.redeem_code(db, "888", code) is None
+    service.handle_message(db, _other_msg("tháng này công nợ còn bao nhiêu"))
+    assert seen_users == [("777", "tháng này công nợ còn bao nhiêu", "lan@dego.vn")]
+    #  Tin của người đã liên kết KHÔNG vào hàng việc sửa mã.
+    assert not db.query(AgentMessage).filter_by(chat_id="777", direction=service.DIR_IN, action="").count()
+    service.handle_message(db, _other_msg("/dangxuat"))
+    assert "Đã đăng xuất" in sent[-1]
+    n = len(sent)
+    service.handle_message(db, _other_msg("còn hỏi được không"))
+    assert len(sent) == n                               # đã đăng xuất: lờ đi như người lạ
+
+
+def test_nguoi_la_ma_sai_va_nhom_chat_khong_lien_ket_duoc(db, bot):
+    from app.modules.agent_hub import chat_link
+
+    service, sent, _ = bot
+    lan = _erp_user(db)
+    code, _ = chat_link.issue_code(db, lan.id)
+    service.handle_message(db, _other_msg("xin chào"))               # người lạ: im lặng
+    assert sent == []
+    service.handle_message(db, _other_msg(f"/dangnhap {code}", chat="-100", ctype="group"))
+    assert sent == [] and chat_link.get_active_link(db, "-100") is None
+    for _ in range(chat_link.MAX_FAILURES_PER_HOUR):
+        service.handle_message(db, _other_msg("/dangnhap 000000"))
+    assert "Mã không đúng" in sent[-1]
+    n = len(sent)
+    service.handle_message(db, _other_msg(f"/dangnhap {code}"))      # đang bị chặn dò mã: im lặng
+    assert len(sent) == n and chat_link.get_active_link(db, "777") is None
+
+
+def test_ma_het_han_va_lien_ket_het_han(db, bot):
+    from datetime import timedelta
+
+    from app.modules.agent_hub import chat_link
+
+    service, sent, _ = bot
+    lan = _erp_user(db)
+    code, exp = chat_link.issue_code(db, lan.id)
+    assert chat_link.redeem_code(db, "777", code, now=exp + timedelta(seconds=1)) is None
+    code, _ = chat_link.issue_code(db, lan.id)
+    link = chat_link.redeem_code(db, "777", code)
+    link.expires_at = datetime.now() - timedelta(minutes=1)
+    db.commit()
+    service.handle_message(db, _other_msg("hỏi tiếp"))
+    assert "đã hết hạn" in sent[-1]
+    n = len(sent)
+    service.handle_message(db, _other_msg("hỏi nữa"))                # báo MỘT lần rồi lờ đi
+    assert len(sent) == n
+
+
+def test_chat_dai_ca_lien_ket_thi_hoi_duoi_tai_khoan_that_con_khong_thi_tai_khoan_khai_cung(db, bot, monkeypatch):
+    from app.modules.agent_hub import chat_link
+
+    service, _, _ = bot
+    shared = _erp_user(db, "bot@dego.vn")
+    lan = _erp_user(db)
+    monkeypatch.setattr(settings, "AGENT_ASSISTANT_USER", "bot@dego.vn")
+    assert service._assistant_user(db, "12345").id == shared.id
+    assert service._assistant_user(db, "777") is None                # chat lạ không lùi về tài khoản chung
+    code, _ = chat_link.issue_code(db, lan.id)
+    service.handle_message(db, _msg(f"/dangnhap {code}"))
+    assert service._assistant_user(db, "12345").id == lan.id
+    lan.is_active = False
+    db.commit()
+    assert service._assistant_user(db, "12345") is None               # tài khoản khóa: không chạy
+
+
+def test_api_lay_ma_va_go_lien_ket_cua_chinh_minh(db, bot):
+    from types import SimpleNamespace
+
+    from fastapi import HTTPException
+
+    from app.modules.agent_hub import chat_link, controller
+
+    service, _, _ = bot
+    lan = _erp_user(db)
+    other = _erp_user(db, "khac@dego.vn")
+    me = SimpleNamespace(id=lan.id)
+    data = _json(controller.create_link_code(user=me, db=db))
+    assert len(data["code"]) == 6 and data["code"].isdigit()
+    second = _json(controller.create_link_code(user=me, db=db))["code"]
+    assert chat_link.redeem_code(db, "777", data["code"]) is None     # mã cũ bị hủy khi lấy mã mới
+    chat_link.redeem_code(db, "777", second, "Lan")
+    items = _json(controller.list_my_links(user=me, db=db))["items"]
+    assert len(items) == 1 and items[0]["chat"] == "777" and items[0]["tg_name"] == "Lan"
+    with pytest.raises(HTTPException):                                 # không gỡ được liên kết của người khác
+        controller.remove_link(items[0]["id"], user=SimpleNamespace(id=other.id), db=db)
+    controller.remove_link(items[0]["id"], user=me, db=db)
+    assert chat_link.get_active_link(db, "777") is None

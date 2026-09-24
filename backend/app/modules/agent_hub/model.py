@@ -180,3 +180,25 @@ class AgentCursor(Base, AuditMixin):
 
     name: Mapped[str] = mapped_column(String(50), unique=True, index=True)
     value: Mapped[int] = mapped_column(BigInteger, default=0)
+
+
+class AgentChatLink(Base, AuditMixin):
+    """Liên kết một chat Telegram với một tài khoản ERP (ai-CR-038).
+
+    Một dòng đi qua ba mốc: người dùng LẤY MÃ ở trang cá nhân ERP (`code_hash` + `code_expires_at`,
+    `chat_id` rỗng) -> nhắn `/dangnhap <mã>` cho bot (`chat_id` + `linked_at` + `expires_at`, xóa mã)
+    -> hết hạn hoặc `/dangxuat` / gỡ ở web (`revoked_at`). Không bao giờ hỏi mật khẩu trong chat:
+    Telegram giữ lịch sử vĩnh viễn. Mã chỉ lưu dạng băm.
+    """
+
+    __tablename__ = "tab_agent_chat_link"
+
+    user_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
+    chat_id: Mapped[str] = mapped_column(String(50), default="", index=True)
+    #  Tên hiển thị Telegram lúc liên kết — để trang cá nhân nói «đang nối với ‹tên›».
+    tg_name: Mapped[str] = mapped_column(String(255), default="")
+    code_hash: Mapped[str] = mapped_column(String(64), default="", index=True)
+    code_expires_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+    linked_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime, default=None, nullable=True)
