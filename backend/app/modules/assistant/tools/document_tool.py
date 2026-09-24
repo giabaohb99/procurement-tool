@@ -21,9 +21,8 @@ from html import unescape
 
 from sqlalchemy import and_, or_
 
-from app.modules.approval import approver_resolver, flow_service, serializer
-from app.modules.approval.flow_model import (APPROVER_FIELD, APPROVER_LEVEL_UP,
-                                             APPROVER_ROLE)
+from app.modules.approval import flow_service, serializer
+from app.modules.approval.preview_service import describe_step
 from app.modules.doc_catalog.model import DocType
 from app.modules.document.model import STATUS_LABELS, Document
 from app.modules.document import access_service, scope_service
@@ -95,49 +94,9 @@ def _my_context(db, user) -> tuple[dict, int | None]:
     return subject, (emp.id if emp else None)
 
 
-def _employee_names(db, employee_ids: list[int]) -> list[str]:
-    if not employee_ids:
-        return []
-    by_id = {row.id: row.full_name for row in
-               db.query(Employee).filter(Employee.id.in_(employee_ids)).all()}
-    return [by_id[i] for i in employee_ids if i in by_id]
-
-
-def _describe_step(db, node, subject: dict, submitter_id: int | None) -> dict:
-    """Một bước duyệt, hai tầng thông tin: quy tắc khai + tên người giải ra cho người hỏi."""
-    data = serializer.node_out(db, node)
-
-    rule = data["approver_kind_label"]
-    ref = (node.approver_ref or "").strip()
-    if data["approver_names"]:
-        rule += f": {data['approver_names']}"
-    elif node.approver_kind == APPROVER_ROLE and ref:
-        from app.modules.role.model import Role
-        codes = [part.strip() for part in ref.split(",") if part.strip()]
-        role_names = [row.name for row in db.query(Role).filter(Role.code.in_(codes)).all()]
-        rule += ": " + ", ".join(role_names or codes)
-    elif node.approver_kind == APPROVER_LEVEL_UP and ref:
-        rule += f" ({ref} cấp)"
-    elif node.approver_kind == APPROVER_FIELD and ref:
-        rule += f" (ô '{ref}' trên phiếu)"
-
-    step = {
-        "seq": node.seq,
-        "name": node.name or data["node_kind_label"],
-        "node_kind": data["node_kind_label"],
-        "approver_rule": rule,
-        #  Tên NGƯỜI THẬT nếu chính người hỏi nộp phiếu này. Rỗng = chưa tính được
-        #  (thiếu trưởng bộ phận, vai trò chưa gán ai...) — nói thẳng, đừng bịa.
-        "approvers_for_me": _employee_names(
-            db, approver_resolver.resolve(db, node, subject, submitter_id)),
-    }
-    if node.branch_key:
-        step["branch"] = node.branch_key
-    if (node.condition or "").strip():
-        step["condition"] = node.condition
-    if data["multi_mode_label"] and node.multi_mode != 1:
-        step["multi_mode"] = data["multi_mode_label"]
-    return step
+#  `describe_step` (bước duyệt: quy tắc khai + tên người giải ra cho người hỏi)
+#  chuyển sang `approval/preview_service.py` 23/09/2026 — dùng CHUNG với màn xem
+#  trước «Người duyệt dự kiến» ở màn tạo văn bản, đừng chép lại ở đây.
 
 
 #  Khi bộ máy luồng nhiều bước chưa chạy (cờ tắt, hoặc bật mà chưa khai luồng) thì văn bản
@@ -187,7 +146,7 @@ def _document_flow(ctx: ToolContext, query: str) -> dict:
              else f"Chưa khai luồng phê duyệt nào áp cho «{kind.name}». ") + _ONE_STEP_APPROVAL_NOTE))
         return result
 
-    steps = [_describe_step(db, node, subject, submitter_id)
+    steps = [describe_step(db, node, subject, submitter_id)
              for node in flow_service.nodes_of(db, flow.id)]
     result.update(
         status="flow", total=len(steps),
@@ -227,7 +186,7 @@ def _entity_flow(ctx: ToolContext, entity: str) -> dict:
         "company_name": (serializer.flow_out(db, flow)["company_name"] or "Dùng chung"),
         "priority": flow.priority,
         "condition": flow.condition or "",
-        "steps": [_describe_step(db, node, subject, submitter_id)
+        "steps": [describe_step(db, node, subject, submitter_id)
                   for node in flow_service.nodes_of(db, flow.id)],
     } for flow in flows]
     return result
