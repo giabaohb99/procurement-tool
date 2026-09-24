@@ -159,6 +159,9 @@ class AgentMessage(Base, AuditMixin):
     body: Mapped[str] = mapped_column(Text, default="")
     #  Nút đã bấm, vd "plan" / "approve" / "cancel". Rỗng = tin nhắn chữ thường.
     action: Mapped[str] = mapped_column(String(50), default="")
+    #  ai-CR-035: tệp đính kèm đã lưu, [{"path": "/agent-files/…", "kind": "photo", "group": "…"}].
+    #  `group` = media_group_id của Telegram (album nhiều ảnh), để ghép các ảnh cùng album vào một tin.
+    files: Mapped[list | None] = mapped_column(JSON, default=list, nullable=True)
 
     __table_args__ = (
         #  Vòng gom hỏi "tin ĐẾN nào chưa thuộc task nào, cũ hơn N giây" mỗi phút.

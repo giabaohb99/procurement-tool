@@ -271,6 +271,10 @@ class Settings(BaseSettings):
     # ai-CR-027: đại ca 23/09 — thẻ gọn (logic đã sửa, đã kiểm gì, đánh giá), KHÔNG nút dưới tin nhắn,
     # ra lệnh bằng chữ («gộp AI-0007», «duyệt», «xong»…), không gửi kèm tệp .diff. false = như cũ.
     AGENT_TG_COMPACT: bool = True
+    # ai-CR-035: ảnh chụp lỗi đại ca gửi kèm. Poller ghi vào volume `agent_files`, runner đọc
+    # (chỉ đọc) và mở cho Claude Code bằng --add-dir. Trần 20 MB là trần tải về của Bot API.
+    AGENT_FILES_DIR: str = "/agent-files"
+    AGENT_FILE_MAX_MB: int = 20
     # ai-CR-018: `doc/` trên máy đại ca (gồm phần CHƯA commit) mount chỉ đọc vào runner. Rỗng =
     # không có; compose của stack bot đặt `/local-docs` cho agent-runner.
     AGENT_LOCAL_DOCS_DIR: str = ""

@@ -84,6 +84,32 @@ def _call(method: str, payload: dict, *, timeout: int = 30, files: dict | None =
     return data.get("result") or {}
 
 
+FILE_URL = "https://api.telegram.org/file/bot{token}/{path}"
+
+
+def download_file(file_id: str, *, max_bytes: int) -> tuple[bytes, str]:
+    """Tải một tệp người dùng gửi (ai-CR-035). Trả (nội dung, đường dẫn phía Telegram).
+
+    Lỗi KHÔNG được mang URL tải: URL chứa token của bot."""
+    info = _call("getFile", {"file_id": file_id})
+    size = int(info.get("file_size") or 0)
+    if size and size > max_bytes:
+        raise TelegramError(f"tệp {size // (1024 * 1024)} MB, quá trần {max_bytes // (1024 * 1024)} MB")
+    path = str(info.get("file_path") or "")
+    if not path:
+        raise TelegramError("Telegram không trả đường dẫn tệp")
+    try:
+        resp = requests.get(FILE_URL.format(token=settings.AGENT_TELEGRAM_BOT_TOKEN, path=path),
+                            timeout=DOCUMENT_TIMEOUT)
+    except requests.RequestException as e:
+        raise TelegramError(f"tải tệp hỏng: {type(e).__name__}") from None
+    if resp.status_code != 200:
+        raise TelegramError(f"tải tệp trả {resp.status_code}")
+    if len(resp.content) > max_bytes:
+        raise TelegramError("tệp quá trần")
+    return resp.content, path
+
+
 def esc(text: str) -> str:
     """Thoát ký tự cho parse_mode=HTML.
 

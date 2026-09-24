@@ -172,9 +172,15 @@ ACT_DEPLOY_TIME = "hen_gio"       # Tin đại ca: giờ hẹn gộp + deploy, �
 #  cập nhật số phút). Hai loại này KHÔNG phải một lượt hội thoại: các mạch nối tin «ngay trước»
 #  (hẹn giờ gộp, hỏi thêm bản vá) phải bỏ qua chúng, không thì một tin báo của việc khác chen
 #  vào là đứt mạch.
+#  ai-CR-035: ảnh gửi không kèm chữ nằm chờ câu mô tả; ảnh đã ghép vào một tin khác; câu báo nhận ảnh.
+ACT_PHOTO_WAIT = "cho_chu_anh"
+ACT_PHOTO_USED = "anh_da_ghep"
+ACT_PHOTO_ACK = "da_nhan_anh"
 ACT_ACK = "da_nhan"
 ACT_HEARTBEAT = "dang_chay"
-NOISE_ACTIONS = (ACT_ACK, ACT_HEARTBEAT)
+#  Ảnh và câu báo nhận ảnh cũng là «nhiễu» với các mạch hỏi-đáp: gửi kèm ảnh giữa lúc bot đang chờ
+#  giờ hẹn / câu trả lời kế hoạch không được làm đứt mạch đó (ai-CR-035).
+NOISE_ACTIONS = (ACT_ACK, ACT_HEARTBEAT, ACT_PHOTO_WAIT, ACT_PHOTO_USED, ACT_PHOTO_ACK)
 
 # ---------------------------------------------------------------------------
 # Đơn giá model, USD / 1 triệu token

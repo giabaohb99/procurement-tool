@@ -3155,6 +3155,15 @@ Mã nguồn: `frontend-v2/src/modules/approval-seal/components/seal-clerk-detail
 Commit: `5fbce75a` trên nhánh `erp-v2`.
 
 
+## ai-CR-035 | Đậu Đậu nhận ảnh chụp lỗi gửi kèm yêu cầu sửa
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Trước đây bot bỏ qua mọi thứ không phải chữ, nên ảnh chụp màn hình lỗi đại ca gửi đều mất. Nay bot tải ảnh về và lưu vào một ổ riêng của bot. Ảnh có kèm chú thích được coi là một yêu cầu có ảnh. Ảnh gửi không kèm chữ thì bot báo đã nhận và chờ câu mô tả trong mười phút rồi ghép vào, nhiều ảnh cùng một album được gom chung. Khi yêu cầu thành việc, bước rà soát mã và bước sửa mã được đưa danh sách ảnh và dặn mở từng ảnh ra xem trước khi kết luận; runner chỉ được đọc ảnh, không sửa được. Cần thêm một cột vào bảng tin nhắn của bot và đã chạy migration trên cơ sở dữ liệu riêng của bot. Ảnh chưa có hạn tự xóa, tin thoại để cho cụm Thư ký. Cả tệp bài kiểm 162/162 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/service.py` (`handle_message`, `_photo_file_id`, `_save_photo`, `_hold_photo`, `_adopt_pending_photos`, `_create_task`) · `coder.py` (`task_images`, `image_block`, `_with_files_dir`) · `telegram.py` (`download_file`) · `model.py` (`AgentMessage.files`) · migration `9a1f3c5e7b20` · `docker-compose.agent.yml` (volume `agent_files`) · `test/backend/test_agent_hub.py` · `change-log-ai.md`.
+
 ## ai-CR-034 | Cổng kiểm cho giao diện bản cũ khi Đậu Đậu sửa frontend
 - status: xong
 - date: 2026-09-24

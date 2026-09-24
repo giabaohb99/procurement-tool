@@ -58,6 +58,8 @@ services:
       - ./frontend-v2/src:/app/fe-src:ro # CHỈ-ĐỌC, cho bài kiểm đồng bộ giao diện v2
       # Sổ quyết định của đại ca (ai-CR-015): GHI được, vì nút «Ghi vào sổ» nối mục vào tệp.
       - ./doc/agent-hub:/agent-docs
+      # Ảnh chụp đại ca gửi kèm (ai-CR-035).
+      - agent_files:/agent-files
     ports:
       - "8010:8000"
     networks:
@@ -72,6 +74,7 @@ services:
     # này. Compose ghép volume theo đích nên hai dòng dưới ĐÈ hai dòng cùng đích ở tệp gốc.
     volumes:
       - ./doc/agent-hub:/agent-docs:ro
+      - agent_files:/agent-files          # ai-CR-035: vòng kéo tin dự phòng cũng lưu ảnh
       - ../procurement-tool/doc:/app/doc:ro
       - ../procurement-tool/CLAUDE.md:/app/CLAUDE.md:ro
     # Một lượt PLAN (Gemini nghĩ) mất 30-90 giây; 10 giây mặc định thì restart là giết giữa chừng
@@ -105,6 +108,8 @@ services:
       - ./backend:/app # sửa mã Python xong phải `restart agent-poller`, giống worker
       # Sổ quyết định (ai-CR-015): poller xử nút «Ghi vào sổ» nên mount GHI được.
       - ./doc/agent-hub:/agent-docs
+      # Ảnh chụp đại ca gửi kèm (ai-CR-035): poller tải về và ghi ở đây.
+      - agent_files:/agent-files
     command: python -m app.modules.agent_hub.poller
     # Bị `docker stop` thì poller xong lượt đang kéo mới dừng; một lượt giữ kết nối tối
     # đa 25 giây nên cho nó 30 giây thay vì 10 giây mặc định.
@@ -147,6 +152,8 @@ services:
       - ../procurement-tool/.git:/src-repo:ro
       - agent_worktrees:/worktrees
       - ./doc/agent-hub:/agent-docs:ro # sổ quyết định cho đề bài của `claude` (ai-CR-015)
+      # Ảnh chụp đại ca gửi kèm (ai-CR-035), CHỈ ĐỌC; `claude` mở bằng --add-dir.
+      - agent_files:/agent-files:ro
       # `doc/` trên máy đại ca, CHỈ ĐỌC, cho lượt rà soát đọc cả change-log/nhật ký chưa commit
       # (ai-CR-018). Rà 23/09: không có .env, khóa hay bản sao DB trong đó; có vài tệp Excel nghiệp vụ.
       - ../procurement-tool/doc:/local-docs:ro
@@ -173,6 +180,8 @@ volumes:
   # Worktree của từng task + bản clone `base`. Sống qua các lần dựng lại container để không
   # phải clone lại kho (lớn) mỗi lần; xóa bằng `docker volume rm agenthub_agent_worktrees`.
   agent_worktrees:
+  # Ảnh / tệp đại ca gửi qua Telegram (ai-CR-035). Chưa có hạn xóa tự động.
+  agent_files:
 
 networks:
   procstack:

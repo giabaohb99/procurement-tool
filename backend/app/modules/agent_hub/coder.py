@@ -73,7 +73,7 @@ from .constants import (
     STAGE_SCAN,
     ST_TRIAGE,
 )
-from .model import AgentRun, AgentTask
+from .model import AgentMessage, AgentRun, AgentTask
 
 log = logging.getLogger("app.agent_hub.coder")
 
@@ -361,7 +361,40 @@ Dòng CUỐI CÙNG mở đầu đúng chữ `TÓM TẮT:` rồi 1-3 câu cho đ�
 """
 
 
-def build_brief(task: AgentTask, docs: list[dict], *, from_scan: bool = False) -> str:
+# ---------------------------------------------------------------------------
+# Ảnh chụp đại ca gửi kèm (ai-CR-035)
+# ---------------------------------------------------------------------------
+def task_images(db: Session, task: AgentTask) -> list[str]:
+    """Đường dẫn ảnh (còn trên đĩa) của mọi tin đã gắn vào việc này."""
+    rows = (db.query(AgentMessage).filter(AgentMessage.task_id == task.id).order_by(AgentMessage.id).all())
+    paths: list[str] = []
+    for r in rows:
+        for f in r.files or []:
+            p = str((f or {}).get("path") or "")
+            if p and p not in paths and Path(p).is_file():
+                paths.append(p)
+    return paths
+
+
+def image_block(images: list[str]) -> list[str]:
+    if not images:
+        return []
+    return ["## Ảnh chụp đại ca gửi kèm",
+            "Mở TỪNG ảnh bằng công cụ Read trước khi kết luận — ảnh cho thấy màn hình và lỗi thật, "
+            "chữ mô tả có thể thiếu:",
+            *[f"- `{p}`" for p in images], ""]
+
+
+def _with_files_dir(cmd: list[str]) -> list[str]:
+    """Mở thư mục ảnh cho Read của Claude Code (nằm ngoài worktree nên phải khai thêm)."""
+    files_dir = settings.AGENT_FILES_DIR
+    if files_dir and Path(files_dir).is_dir():
+        cmd += ["--add-dir", files_dir]
+    return cmd
+
+
+def build_brief(task: AgentTask, docs: list[dict], *, from_scan: bool = False,
+                images: list[str] | None = None) -> str:
     """Đề bài sửa mã. `from_scan=True` (ai-CR-024): đề bài đi TIẾP trong phiên rà soát — bỏ trích
     đoạn tài liệu và đoạn rà soát (đã nằm trong phiên), dặn dùng lại những gì đã đọc."""
     lines = [
@@ -371,6 +404,7 @@ def build_brief(task: AgentTask, docs: list[dict], *, from_scan: bool = False) -
         f"`{settings.AGENT_BASE_BRANCH}` của kho procurement-tool (ERP nội bộ DEGO). "
         "Làm đúng kế hoạch đã được duyệt dưới đây, rồi in tổng kết.", "",
     ]
+    lines += image_block(images or [])
     if from_scan:
         lines += [
             "## Tiếp theo lượt rà soát",
@@ -459,7 +493,7 @@ def run_claude_continue(worktree: str, *, session_id: str, timeout: int) -> dict
         "--resume", session_id,
         "--max-turns", str(CONTINUE_MAX_TURNS),
     ]
-    return _run_cli(cmd, _CONTINUE_BRIEF, worktree, timeout)
+    return _run_cli(_with_files_dir(cmd), _CONTINUE_BRIEF, worktree, timeout)
 
 
 #  Vòng «Sửa cho xanh» (ai-CR-026): lỗi cổng kiểm đưa thẳng vào đúng phiên đã sửa.
@@ -494,7 +528,7 @@ def run_claude_fix(worktree: str, brief: str, *, session_id: str, timeout: int) 
         "--resume", session_id,
         "--max-turns", str(FIX_GATE_MAX_TURNS),
     ]
-    return _run_cli(cmd, brief, worktree, timeout)
+    return _run_cli(_with_files_dir(cmd), brief, worktree, timeout)
 
 
 def dispatch_fix_gate(task_id: int) -> None:
@@ -522,7 +556,7 @@ def run_claude(worktree: str, brief: str, *, session_id: str, timeout: int,
         "--resume" if resume else "--session-id", session_id,
         "--max-turns", str(settings.AGENT_CODER_MAX_TURNS),
     ]
-    return _run_cli(cmd, brief, worktree, timeout)
+    return _run_cli(_with_files_dir(cmd), brief, worktree, timeout)
 
 
 def _run_cli(cmd: list[str], stdin: str, worktree: str, timeout: int) -> dict:
@@ -1113,7 +1147,7 @@ def run_claude_resume(worktree: str, question: str, *, session_id: str, timeout:
         "--resume", session_id,
         "--max-turns", str(ASK_MAX_TURNS),
     ]
-    return _run_cli(cmd, question, worktree, timeout)
+    return _run_cli(_with_files_dir(cmd), question, worktree, timeout)
 
 
 def latest_code_run(db: Session, task: AgentTask) -> AgentRun | None:
@@ -1358,8 +1392,9 @@ def run_code_task(db: Session, task: AgentTask, *, resume: bool = False, fix_gat
                                        timeout=settings.AGENT_RUN_TIMEOUT_SEC)
         else:
             docs = memory.recall(f"{task.title}\n{task.summary}")
+            images = task_images(db, task)
             try:
-                data = run_claude(worktree, build_brief(task, docs, from_scan=bool(scan_sid)),
+                data = run_claude(worktree, build_brief(task, docs, from_scan=bool(scan_sid), images=images),
                                   session_id=session_id, timeout=settings.AGENT_RUN_TIMEOUT_SEC,
                                   resume=bool(scan_sid))
             except CoderError as e:
@@ -1370,7 +1405,7 @@ def run_code_task(db: Session, task: AgentTask, *, resume: bool = False, fix_gat
                 session_id = str(uuid.uuid4())
                 run.artifact = {"session_id": session_id, "resumed": False, "from_scan": False}
                 db.commit()
-                data = run_claude(worktree, build_brief(task, docs), session_id=session_id,
+                data = run_claude(worktree, build_brief(task, docs, images=images), session_id=session_id,
                                   timeout=settings.AGENT_RUN_TIMEOUT_SEC)
     except MaxTurnsError as e:
         return _stop_at_max_turns(db, task, run, worktree, session_id, e)
@@ -2183,7 +2218,8 @@ def local_docs_dir() -> str:
     return path if path and Path(path).is_dir() else ""
 
 
-def build_scan_brief(task: AgentTask, docs: list[dict], head: str, main_head: str = "") -> str:
+def build_scan_brief(task: AgentTask, docs: list[dict], head: str, main_head: str = "",
+                     images: list[str] | None = None) -> str:
     lines = [
         f"# Rà soát việc {task.code}: {task.title}", "",
         "Bạn là Đậu Đậu, trợ lý lập trình của DEGO (tự xưng «em», gọi người đọc là «đại ca»). Bạn "
@@ -2192,6 +2228,7 @@ def build_scan_brief(task: AgentTask, docs: list[dict], head: str, main_head: st
         "Lượt này CHỈ ĐỌC: không sửa tệp, không chạy bài kiểm. Mục đích là hiểu đúng việc trước "
         "khi lập kế hoạch sửa.", "",
         "## Yêu cầu của đại ca", task.summary or task.title, "",
+        *image_block(images or []),
         "## Việc cần làm",
         "1. Đọc phần liên quan của CLAUDE.md, rồi tìm đúng màn hình / API / tệp dính tới yêu cầu "
         "trong MÃ THẬT (đừng tin tài liệu hơn mã).",
@@ -2252,7 +2289,7 @@ def run_claude_scan(worktree: str, brief: str, *, session_id: str, timeout: int)
     if local := local_docs_dir():
         #  Read của Claude Code chỉ với tới thư mục làm việc; thư mục tài liệu ở máy phải mở thêm.
         cmd += ["--add-dir", local]
-    return _run_cli(cmd, brief, worktree, timeout)
+    return _run_cli(_with_files_dir(cmd), brief, worktree, timeout)
 
 
 def parse_scan(text: str) -> tuple[str, dict]:
@@ -2341,7 +2378,7 @@ def scan_task(db: Session, task: AgentTask) -> dict:
             main_head = ""
         docs = memory.recall(f"{task.title}\n{task.summary}")
         telegram.send_chat_action(chat_id)
-        data = run_claude_scan(wt, build_scan_brief(task, docs, head, main_head),
+        data = run_claude_scan(wt, build_scan_brief(task, docs, head, main_head, images=task_images(db, task)),
                                session_id=session_id, timeout=SCAN_TIMEOUT_SEC)
         message, info = parse_scan(str(data.get("result") or ""))
         if not message:

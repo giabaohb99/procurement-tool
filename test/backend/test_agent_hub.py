@@ -3780,3 +3780,99 @@ def test_cong_v1_loi_cu_o_tep_khac_khong_chan(monkeypatch, tmp_path):
     assert "giao diện v1 XANH" in coder._gate_brief({"frontend_v1": gate})
     #  Không đụng bản cũ thì cổng không chạy.
     assert coder.run_fe_v1_gate(str(tmp_path), ["frontend-v2/src/a.ts"])["status"] == "none"
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-035: ảnh chụp lỗi gửi kèm
+# ---------------------------------------------------------------------------
+def _photo(mid: int, *, caption: str = "", group: str = "") -> dict:
+    msg = {"chat": {"id": "12345"}, "message_id": mid,
+           "photo": [{"file_id": f"small{mid}"}, {"file_id": f"big{mid}"}]}
+    if caption:
+        msg["caption"] = caption
+    if group:
+        msg["media_group_id"] = group
+    return msg
+
+
+def _fake_download(monkeypatch, service, tmp_path, *, fail: bool = False):
+    monkeypatch.setattr(settings, "AGENT_FILES_DIR", str(tmp_path))
+    got: list[str] = []
+
+    def fake(file_id, *, max_bytes):
+        if fail:
+            raise service.telegram.TelegramError("mạng hỏng")
+        got.append(file_id)
+        return b"\x89PNG fake", "photos/file_1.png"
+
+    monkeypatch.setattr(service.telegram, "download_file", fake)
+    return got
+
+
+def _last_in(db, service):
+    from app.modules.agent_hub.model import AgentMessage
+    return db.query(AgentMessage).filter_by(direction=service.DIR_IN).order_by(AgentMessage.id.desc()).first()
+
+
+def test_anh_kem_chu_thich_la_mot_yeu_cau_co_anh(db, bot, monkeypatch, tmp_path):
+    service, _, _ = bot
+    _compact(monkeypatch)
+    _capture_send(monkeypatch, service)
+    got = _fake_download(monkeypatch, service, tmp_path)
+    _fake_intent(monkeypatch, service, "viec")
+    service.handle_message(db, _photo(21, caption="màn công nợ lệch tổng như ảnh"))
+    row = _last_in(db, service)
+    assert got == ["big21"] and row.body == "màn công nợ lệch tổng như ảnh" and row.action == ""
+    path = row.files[0]["path"]
+    assert path.endswith("12345_21.png") and open(path, "rb").read().startswith(b"\x89PNG")
+
+
+def test_anh_khong_chu_cho_mo_ta_roi_ghep_vao_viec(db, bot, monkeypatch, tmp_path):
+    from app.modules.agent_hub import coder
+    from app.modules.assistant.provider.base import ChatResult
+
+    service, _, _ = bot
+    _compact(monkeypatch)
+    sent = _capture_send(monkeypatch, service)
+    _fake_download(monkeypatch, service, tmp_path)
+    service.handle_message(db, _photo(31, group="alb"))
+    assert _last_in(db, service).action == service.ACT_PHOTO_WAIT and "nhắn thêm mô tả" in sent[-1][0]
+    n = len(sent)
+    service.handle_message(db, _photo(32, group="alb"))          # cùng album: ghép, không báo lại
+    assert len(sent) == n and _last_in(db, service).action == service.ACT_PHOTO_USED
+    _fake_intent(monkeypatch, service, "viec")
+    service.handle_message(db, _msg("nút lưu ở màn này bị mờ"))
+    row = _last_in(db, service)
+    assert [f["path"].rsplit("_", 1)[-1] for f in row.files] == ["31.png", "32.png"]
+    #  Gom thành việc: mô tả ghi số ảnh, đề bài runner liệt kê ảnh.
+    ket_qua = ChatResult(text="", provider="agent_gemini", model="x", input_tokens=0, output_tokens=0)
+    monkeypatch.setattr(service.manager, "run_triage", lambda msgs: (
+        {"groups": [{"title": "Nút lưu bị mờ", "summary": "Nút lưu mờ", "risk_level": 1,
+                     "message_ids": [row.id]}]}, ket_qua))
+    monkeypatch.setattr(service, "start_scan", lambda db, task: None)
+    assert service.triage_inbox(db, force=True) == 1
+    task = db.get(service.AgentTask, row.task_id)
+    assert "(Kèm 2 ảnh chụp màn hình" in task.summary
+    images = coder.task_images(db, task)
+    assert len(images) == 2
+    brief = coder.build_brief(task, [], images=images)
+    assert "## Ảnh chụp đại ca gửi kèm" in brief and images[0] in brief
+
+
+def test_anh_tai_hong_thi_bao_gui_lai(db, bot, monkeypatch, tmp_path):
+    service, _, _ = bot
+    _compact(monkeypatch)
+    sent = _capture_send(monkeypatch, service)
+    _fake_download(monkeypatch, service, tmp_path, fail=True)
+    service.handle_message(db, _photo(41))
+    assert "không tải được ảnh" in sent[-1][0]
+    assert _last_in(db, service).action == service.ACT_PHOTO_USED     # không nằm chờ, không vào hàng việc
+
+
+def test_claude_duoc_mo_thu_muc_anh(monkeypatch, tmp_path):
+    from app.modules.agent_hub import coder
+
+    monkeypatch.setattr(settings, "AGENT_FILES_DIR", str(tmp_path))
+    assert coder._with_files_dir(["claude", "-p"])[-2:] == ["--add-dir", str(tmp_path)]
+    monkeypatch.setattr(settings, "AGENT_FILES_DIR", str(tmp_path / "khong-co"))
+    assert coder._with_files_dir(["claude", "-p"]) == ["claude", "-p"]

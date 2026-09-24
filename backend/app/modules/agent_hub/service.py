@@ -26,6 +26,7 @@ import json
 import logging
 import re
 from datetime import datetime, timedelta
+from pathlib import Path
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -50,6 +51,9 @@ from .constants import (
     ACT_PROPOSAL_DROPPED,
     ACT_WAIT_CHOICE,
     ACT_WAIT_CONFIRM,
+    ACT_PHOTO_ACK,
+    ACT_PHOTO_USED,
+    ACT_PHOTO_WAIT,
     ACT_WAIT_DEPLOY_TIME,
     ACT_WAIT_PATCH_Q,
     ACT_WAIT_PLAN_ANSWER,
@@ -141,8 +145,10 @@ def poll_once(db: Session, *, timeout: int = telegram.POLL_TIMEOUT) -> int:
 
 def handle_message(db: Session, msg: dict) -> None:
     chat_id = str((msg.get("chat") or {}).get("id") or "")
-    text = (msg.get("text") or "").strip()
-    if not text:
+    #  ai-CR-035: ảnh gửi kèm chú thích thì chú thích là nội dung tin.
+    text = (msg.get("text") or msg.get("caption") or "").strip()
+    photo_id = _photo_file_id(msg)
+    if not text and not photo_id:
         return
     if not telegram.is_allowed_chat(chat_id):
         #  Không trả lời gì cả. Trả lời "bạn không có quyền" là xác nhận cho người lạ
@@ -150,7 +156,20 @@ def handle_message(db: Session, msg: dict) -> None:
         log.warning("agent_hub: bỏ tin từ chat lạ %s", chat_id)
         return
 
-    row = log_message(db, DIR_IN, chat_id, int(msg.get("message_id") or 0), text)
+    row = log_message(db, DIR_IN, chat_id, int(msg.get("message_id") or 0), text or "(ảnh)")
+    if photo_id:
+        saved = _save_photo(chat_id, msg, photo_id)
+        if saved is None:
+            reply(db, chat_id, "Em không tải được ảnh này, đại ca gửi lại giúp em.", action=ACT_PHOTO_ACK)
+            row.action = ACT_PHOTO_USED
+            db.commit()
+            return
+        row.files = [saved]
+        if not text:
+            db.commit()
+            _hold_photo(db, chat_id, row, saved)
+            db.commit()
+            return
     #  Chốt con trỏ + tin vào TRƯỚC khi gọi model. Mọi thứ phía dưới (phân loại ý định,
     #  Trợ lý AI, tool) đều có thể rollback session giữa chừng — bao-CR-463 là một ca
     #  như thế: một tin bị trả lời BỐN lần vì con trỏ trôi theo rollback của sổ audit.
@@ -166,7 +185,85 @@ def handle_message(db: Session, msg: dict) -> None:
         _run_command(db, chat_id, text)
         return
 
+    _adopt_pending_photos(db, chat_id, row)
     _route_plain_text(db, chat_id, row, text)
+
+
+# ---------------------------------------------------------------------------
+# Ảnh chụp lỗi gửi kèm (ai-CR-035)
+# ---------------------------------------------------------------------------
+#  Album: các ảnh cùng `media_group_id` tới gần như cùng lúc, chú thích chỉ nằm ở MỘT ảnh. Ảnh
+#  không chú thích thì chờ câu mô tả trong FOLLOW_UP_WINDOW rồi ghép vào câu đó.
+ALBUM_WINDOW = timedelta(minutes=2)
+
+
+def _photo_file_id(msg: dict) -> str:
+    """file_id của ảnh lớn nhất; hoặc tệp ảnh gửi dạng tài liệu (giữ nguyên chất lượng)."""
+    sizes = msg.get("photo") or []
+    if sizes:
+        return str(sizes[-1].get("file_id") or "")
+    doc = msg.get("document") or {}
+    if str(doc.get("mime_type") or "").startswith("image/"):
+        return str(doc.get("file_id") or "")
+    return ""
+
+
+def _save_photo(chat_id: str, msg: dict, file_id: str) -> dict | None:
+    try:
+        data, remote = telegram.download_file(file_id, max_bytes=settings.AGENT_FILE_MAX_MB * 1024 * 1024)
+    except telegram.TelegramError as e:
+        log.warning("agent_hub: tải ảnh hỏng: %s", e)
+        return None
+    ext = (remote.rsplit(".", 1)[-1] if "." in remote else "jpg").lower()[:5]
+    if ext not in ("jpg", "jpeg", "png", "webp", "gif"):
+        ext = "jpg"
+    folder = Path(settings.AGENT_FILES_DIR) / "tg" / now_local().strftime("%Y%m")
+    try:
+        folder.mkdir(parents=True, exist_ok=True)
+        path = folder / f"{chat_id}_{int(msg.get('message_id') or 0)}.{ext}"
+        path.write_bytes(data)
+    except OSError as e:
+        log.warning("agent_hub: ghi ảnh hỏng: %s", e)
+        return None
+    return {"path": str(path), "kind": "photo", "group": str(msg.get("media_group_id") or "")}
+
+
+def _hold_photo(db: Session, chat_id: str, row: AgentMessage, saved: dict) -> None:
+    """Ảnh không chữ: ghép vào tin cùng album nếu có; không thì chờ câu mô tả (báo nhận một lần)."""
+    group = saved.get("group") or ""
+    if group:
+        since = (row.created_at or datetime.now()) - ALBUM_WINDOW
+        recent = db.scalars(select(AgentMessage).where(
+            AgentMessage.chat_id == chat_id, AgentMessage.direction == DIR_IN, AgentMessage.id < row.id,
+            AgentMessage.created_at >= since).order_by(AgentMessage.id.desc()).limit(20)).all()
+        for other in recent:
+            if any((f or {}).get("group") == group for f in (other.files or [])):
+                other.files = list(other.files or []) + [saved]
+                row.files = []
+                row.action = ACT_PHOTO_USED
+                row.task_id = other.task_id
+                return
+    row.action = ACT_PHOTO_WAIT
+    minutes = int(FOLLOW_UP_WINDOW.total_seconds() // 60)
+    reply(db, chat_id, f"Em nhận ảnh rồi. Đại ca nhắn thêm mô tả lỗi (trong {minutes} phút), em ghép ảnh "
+          "vào yêu cầu đó.", action=ACT_PHOTO_ACK)
+
+
+def _adopt_pending_photos(db: Session, chat_id: str, row: AgentMessage) -> None:
+    """Tin chữ vừa tới nhận luôn các ảnh đang chờ mô tả của cùng chat."""
+    since = (row.created_at or datetime.now()) - FOLLOW_UP_WINDOW
+    waiting = db.scalars(select(AgentMessage).where(
+        AgentMessage.chat_id == chat_id, AgentMessage.id < row.id, AgentMessage.action == ACT_PHOTO_WAIT,
+        AgentMessage.created_at >= since).order_by(AgentMessage.id)).all()
+    if not waiting:
+        return
+    files = list(row.files or [])
+    for w in waiting:
+        files += list(w.files or [])
+        w.files = []
+        w.action = ACT_PHOTO_USED
+    row.files = files
+    db.commit()
 
 
 def _run_command(db: Session, chat_id: str, text: str) -> None:
@@ -1246,7 +1343,8 @@ def _plan_answer_target(db: Session, chat_id: str, row: AgentMessage) -> int:
     between = db.scalar(
         select(func.count(AgentMessage.id))
         .where(AgentMessage.chat_id == chat_id, AgentMessage.direction == DIR_IN,
-               AgentMessage.id > wait.id, AgentMessage.id < row.id)
+               AgentMessage.id > wait.id, AgentMessage.id < row.id,
+               AgentMessage.action.not_in(NOISE_ACTIONS))
     ) or 0
     if between:
         return 0
@@ -1986,12 +2084,17 @@ def _create_task(db: Session, group: dict, by_id: dict) -> AgentTask:
     )
     db.add(task)
     db.flush()
+    photos = 0
     for mid in group["message_ids"]:
         db.add(AgentTaskItem(task_id=task.id, source=SRC_TELEGRAM, ref_id=mid,
                              merged_by=MERGED_BY_BOT))
         #  Gắn tin vào task = rút nó khỏi INBOX. Quên bước này thì lượt gom sau lại
         #  nhặt đúng mấy tin đó và đẻ ra task trùng.
         by_id[mid].task_id = task.id
+        photos += len(by_id[mid].files or [])
+    if photos:
+        #  ai-CR-035: trạm kế hoạch (Gemini) chỉ đọc chữ; ghi lại để nó biết rà soát đã có ảnh.
+        task.summary = (task.summary or "").rstrip() + f"\n\n(Kèm {photos} ảnh chụp màn hình, bước rà soát mã đã xem ảnh.)"
     return task
 
 
