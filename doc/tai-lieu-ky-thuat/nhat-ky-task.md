@@ -6652,6 +6652,11 @@ Mã nguồn: backend/app/core/scoping.py · purchase_request/service.py · contr
 survey_request · purchase_order/controller.py · frontend-v2 handling-dept-display.ts ·
 frontend PurchaseRequestDetail.tsx · SurveyRequestDetail.tsx · PurchaseOrderDetail.tsx ·
 test/backend/test_phong_xu_ly_cr480.py
+Commit: c4cda9b2, gộp origin/erp-v2 ở 10780db5 (một head alembic 0ddb3327bc42).
+Deploy: dev 24/09, dựng lại api, celery-worker, celery-beat, erp, web. Sau deploy chạy script
+chuyển phiếu cũ của phòng tự mua: phòng 5, đổi 1 yêu cầu mua hàng, 2 yêu cầu báo giá
+(YCBG24092601 và YCBG24092602 — phiếu thứ hai lập sau lúc kiểm, cùng người lập, cùng trường
+hợp), 1 đơn mua hàng; rồi dựng lại bốn bộ đơn mẫu để TM01 về «Thu mua chung».
 
 ## bao-CR-481 | Trợ lý AI tra thêm thị trường, pháp lý và trả lời «có nên mua lúc này» theo giá hải quan
 - status: xong
