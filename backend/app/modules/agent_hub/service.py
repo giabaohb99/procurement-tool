@@ -2269,6 +2269,9 @@ def deliver_tool_results(db: Session, chat_id: str, user, tool_calls: list) -> N
 # Bản nháp chứng từ -> tạo thật khi người dùng nhắn «tạo» (ai-CR-046)
 # ---------------------------------------------------------------------------
 DRAFT_WINDOW = timedelta(minutes=15)
+#  ai-CR-047: một câu vừa tạo vừa gửi duyệt — «tạo và gửi duyệt», «gửi duyệt luôn», «tạo rồi gửi duyệt đi».
+_CREATE_SUBMIT = re.compile(r"^((tạo|lưu)\s+(và|rồi|xong)\s+)?gửi duyệt(\s+(luôn|đi|nhé|nha|em|giúp|anh|giùm|lên|"
+                            r"đơn|phiếu|này|đó))*[.! ]*$")
 _CREATE_YES = re.compile(r"^(tạo|lưu|ok|oke|okay|đồng ý|đúng|ừ|được|làm đi|chuẩn)(\s+(đi|luôn|nhé|nha|em|giúp|"
                          r"anh|giùm|rồi|lại|đơn|phiếu|đó|này))*[.! ]*$")
 
@@ -2288,7 +2291,10 @@ def _offer_draft(db: Session, chat_id: str, user, call: dict) -> None:
         return
     lines = [f"<b>Bản nháp {esc(draft_create.LABELS[kind])}</b>"]
     lines += [esc(x) for x in draft_create.summarize(kind, draft)]
-    lines += ["", "Nhắn «tạo» để em tạo thật (ở trạng thái Nháp, như bấm Lưu trên web), «thôi» để bỏ."]
+    if kind in draft_create.SUBMITTABLE:
+        lines += ["", "Nhắn «tạo» để lưu Nháp, «tạo và gửi duyệt» để gửi duyệt luôn, «thôi» để bỏ."]
+    else:
+        lines += ["", "Nhắn «tạo» để em gửi phiếu cho nhóm hỗ trợ, «thôi» để bỏ."]
     reply(db, chat_id, "\n".join(lines))
     log_message(db, DIR_OUT, chat_id, 0, json.dumps({"tool": call.get("name"), "kind": kind,
                                                      "user_id": getattr(user, "id", 0), "draft": draft},
@@ -2300,7 +2306,8 @@ def _offer_draft(db: Session, chat_id: str, user, call: dict) -> None:
 def _draft_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
     """«tạo» / «thôi» cho bản nháp đang chờ của chat này (trong DRAFT_WINDOW)."""
     low = text.strip().lower()
-    yes, no = bool(_CREATE_YES.match(low)), bool(_NO.match(low))
+    want_submit = bool(_CREATE_SUBMIT.match(low))
+    yes, no = want_submit or bool(_CREATE_YES.match(low)), bool(_NO.match(low))
     if not (yes or no):
         return False
     pending = db.scalar(select(AgentMessage).where(
@@ -2308,7 +2315,8 @@ def _draft_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> b
         .order_by(AgentMessage.id.desc()).limit(1))
     if pending is None or (row.created_at and pending.created_at
                            and row.created_at - pending.created_at > DRAFT_WINDOW):
-        return False
+        #  Không còn nháp chờ: «gửi duyệt luôn» ngay sau một lần «tạo» thì gửi duyệt phiếu vừa tạo.
+        return want_submit and _submit_recent(db, chat_id, row)
     row.action = ACT_COMMAND
     try:
         info = json.loads(pending.body or "{}")
@@ -2326,6 +2334,13 @@ def _draft_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> b
         db.commit()
         reply(db, chat_id, "Tài khoản của chat này đã đổi so với lúc soạn nháp, em không tạo. Đại ca nhờ soạn lại giúp em.")
         return True
+    if want_submit and kind in draft_create.SUBMITTABLE:
+        #  Luật bắt buộc lúc gửi duyệt (web chỉ kiểm ở giao diện): thiếu thì CHƯA tạo gì, nháp vẫn chờ.
+        if missing := draft_create.missing_for_submit(kind, info.get("draft") or {}):
+            db.commit()
+            reply(db, chat_id, f"Chưa gửi duyệt được: {telegram.esc(missing)} Em chưa tạo gì — đại ca bổ sung "
+                  "rồi nhờ soạn lại, hoặc nhắn «tạo» để lưu Nháp trước.")
+            return True
     #  Chốt dấu TRƯỚC khi ghi phiếu: service có thể rollback, và dấu chưa chốt thì «tạo» lần hai tạo lần hai.
     pending.action = ACT_DRAFT_DONE
     db.commit()
@@ -2336,9 +2351,62 @@ def _draft_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> b
         db.commit()
         reply(db, chat_id, f"Chưa tạo được {label}: {telegram.esc(str(e)[:400])}")
         return True
+    #  Nhớ phiếu vừa tạo trên chính dòng sổ nháp, để «gửi duyệt luôn» nhắn sau vẫn biết phiếu nào.
+    pending.body = json.dumps({**info, "created": {"id": oid, "code": code}}, ensure_ascii=False, default=str)
+    db.commit()
     link = telegram.absolute_url(draft_create.DETAIL_PATHS[kind].format(id=oid))
+    if want_submit and kind in draft_create.SUBMITTABLE:
+        _submit_and_report(db, chat_id, user, kind, oid, code, link, pending)
+        return True
+    tail = " Nhắn «gửi duyệt» để gửi duyệt luôn." if kind in draft_create.SUBMITTABLE else ""
     reply(db, chat_id, f"Đã tạo {label} <b>{telegram.esc(code)}</b> (Nháp). "
-          f'Xem / gửi duyệt: <a href="{telegram.esc(link)}">mở phiếu</a>.')
+          f'<a href="{telegram.esc(link)}">Mở phiếu</a>.{tail}')
+    return True
+
+
+def _submit_and_report(db: Session, chat_id: str, user, kind: str, oid: int, code: str, link: str,
+                       pending: AgentMessage) -> None:
+    label = draft_create.LABELS[kind]
+    try:
+        draft_create.submit(db, user, kind, oid)
+    except draft_create.DraftError as e:
+        reply(db, chat_id, f"Đã tạo {label} <b>{telegram.esc(code)}</b> (Nháp) nhưng chưa gửi duyệt được: "
+              f'{telegram.esc(str(e)[:400])} <a href="{telegram.esc(link)}">Mở phiếu</a>.')
+        return
+    info = json.loads(pending.body or "{}")
+    info["submitted"] = True
+    pending.body = json.dumps(info, ensure_ascii=False, default=str)
+    db.commit()
+    reply(db, chat_id, f"Đã tạo và gửi duyệt {label} <b>{telegram.esc(code)}</b>. "
+          f'<a href="{telegram.esc(link)}">Mở phiếu</a>.')
+
+
+def _submit_recent(db: Session, chat_id: str, row: AgentMessage) -> bool:
+    """«gửi duyệt (luôn)» trong DRAFT_WINDOW sau khi vừa «tạo»: gửi duyệt đúng phiếu đó, một lần."""
+    done = db.scalar(select(AgentMessage).where(
+        AgentMessage.chat_id == chat_id, AgentMessage.action == ACT_DRAFT_DONE, AgentMessage.id < row.id)
+        .order_by(AgentMessage.id.desc()).limit(1))
+    if done is None or (row.created_at and done.created_at and row.created_at - done.created_at > DRAFT_WINDOW):
+        return False
+    try:
+        info = json.loads(done.body or "{}")
+    except ValueError:
+        return False
+    created, kind = info.get("created") or {}, info.get("kind", "")
+    if not created or kind not in draft_create.SUBMITTABLE or info.get("submitted"):
+        return False
+    row.action = ACT_COMMAND
+    user = _assistant_user(db, chat_id)
+    if user is None or user.id != int(info.get("user_id") or 0):
+        db.commit()
+        reply(db, chat_id, "Tài khoản của chat này đã đổi so với lúc tạo phiếu, em không gửi duyệt.")
+        return True
+    if missing := draft_create.missing_for_submit(kind, info.get("draft") or {}):
+        db.commit()
+        reply(db, chat_id, f"Chưa gửi duyệt được: {telegram.esc(missing)} Đại ca bổ sung trên phiếu rồi gửi duyệt.")
+        return True
+    link = telegram.absolute_url(draft_create.DETAIL_PATHS[kind].format(id=created["id"]))
+    _submit_and_report(db, chat_id, user, kind, int(created["id"]), str(created.get("code", "")), link, done)
     return True
 
 

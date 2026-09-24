@@ -4618,3 +4618,89 @@ def test_ban_nhap_dung_dau_vao_service_that_va_tu_dien_dau_phieu(db, monkeypatch
     assert pr.requester_position == "Chuyên viên" and pr.items[0].product_name == "Thép" and pr.request_date
     draft_create.create(db, u, "survey", {"company_id": 5, "lines": [{"requirement_detail": "Thép", "request_qty": 1}]})
     assert seen["sr"].company_id == 5 and seen["sr"].department == "Mua hàng"
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-047: «tạo và gửi duyệt» một câu
+# ---------------------------------------------------------------------------
+def _submit_setup(monkeypatch, service, *, fail: str = ""):
+    submitted: list[tuple] = []
+
+    def fake_submit(db, user, kind, oid):
+        if fail:
+            raise service.draft_create.DraftError(fail)
+        submitted.append((kind, oid))
+
+    monkeypatch.setattr(service.draft_create, "submit", fake_submit)
+    return submitted
+
+
+def test_tao_va_gui_duyet_mot_cau(db, bot, monkeypatch):
+    service, sent, _ = bot
+    me, created = _draft_setup(db, monkeypatch, service)
+    submitted = _submit_setup(monkeypatch, service)
+    service.deliver_tool_results(db, "12345", me, [{"name": "draft_leave_request", "draft": dict(_LEAVE_DRAFT)}])
+    assert "«tạo và gửi duyệt»" in sent[-1]
+    service.handle_message(db, _msg("tạo và gửi duyệt"))
+    assert len(created) == 1 and submitted == [("leave", 42)]
+    assert "Đã tạo và gửi duyệt đơn nghỉ phép <b>NP0042</b>" in sent[-1]
+
+
+def test_tao_truoc_roi_gui_duyet_luon_chi_mot_lan(db, bot, monkeypatch):
+    service, sent, _ = bot
+    me, created = _draft_setup(db, monkeypatch, service)
+    submitted = _submit_setup(monkeypatch, service)
+    service.deliver_tool_results(db, "12345", me, [{"name": "draft_leave_request", "draft": dict(_LEAVE_DRAFT)}])
+    service.handle_message(db, _msg("tạo"))
+    assert "Nhắn «gửi duyệt»" in sent[-1] and submitted == []
+    service.handle_message(db, _msg("gửi duyệt luôn"))
+    assert submitted == [("leave", 42)]
+    _fake_intent(monkeypatch, service, "hoi")
+    service.handle_message(db, _msg("gửi duyệt"))
+    assert submitted == [("leave", 42)]                               # đã gửi rồi: không gửi lần hai
+
+
+def test_thieu_truong_bat_buoc_khi_gui_duyet_thi_chua_tao_gi(db, bot, monkeypatch):
+    service, sent, _ = bot
+    me, created = _draft_setup(db, monkeypatch, service)
+    monkeypatch.setattr(service.draft_create, "create",
+                        lambda db, user, kind, draft: created.append(kind) or ("PYC1", 5))
+    submitted = _submit_setup(monkeypatch, service)
+    draft = {"purpose": "Bảo trì", "lines": [{"product_name": "Thép", "qty": 2}]}
+    service.deliver_tool_results(db, "12345", me, [{"name": "draft_purchase_request", "draft": draft}])
+    service.handle_message(db, _msg("tạo và gửi duyệt"))
+    assert "Sản phẩm «Thép» còn thiếu: Kho nhận, Ngày cần hàng." in sent[-1] and created == [] and submitted == []
+    service.handle_message(db, _msg("tạo"))                        # nháp vẫn chờ: lưu Nháp được
+    assert created == ["purchase"]
+
+
+def test_gui_duyet_hong_sau_khi_tao_van_bao_ro_da_tao(db, bot, monkeypatch):
+    service, sent, _ = bot
+    me, created = _draft_setup(db, monkeypatch, service)
+    _submit_setup(monkeypatch, service, fail="Quỹ phép năm không đủ")
+    service.deliver_tool_results(db, "12345", me, [{"name": "draft_leave_request", "draft": dict(_LEAVE_DRAFT)}])
+    service.handle_message(db, _msg("tạo rồi gửi duyệt đi"))
+    assert "Đã tạo đơn nghỉ phép <b>NP0042</b> (Nháp) nhưng chưa gửi duyệt được: Quỹ phép năm không đủ" in sent[-1]
+
+
+def test_submit_goi_dung_ham_web_va_chay_tac_vu_nen(db, monkeypatch):
+    from app.modules.agent_hub import draft_create
+    from app.modules.user.model import User
+
+    u = User(email="lan@dego.vn", employee_id=0, password_hash="x", is_active=True)
+    db.add(u)
+    db.commit()
+    with pytest.raises(draft_create.DraftError, match="không có quyền gửi duyệt"):
+        draft_create.submit(db, u, "leave", 1)
+    monkeypatch.setattr("app.core.auth.user_has_permission", lambda db, user, entity, action: True)
+    ran: list[str] = []
+
+    def fake_submit(sid, background_tasks, db, user):
+        background_tasks.add_task(lambda: ran.append(f"mail {sid}"))
+
+    monkeypatch.setattr("app.modules.survey_request.controller.submit_", fake_submit)
+    draft_create.submit(db, u, "survey", 8)
+    assert ran == ["mail 8"]
+    assert draft_create.missing_for_submit("survey", {"purpose": "x", "lines": [{"item_group": ""}]}) == "Dòng 1 còn thiếu: Phân loại."
+    with pytest.raises(draft_create.DraftError, match="không có bước gửi duyệt"):
+        draft_create.submit(db, u, "ticket", 1)

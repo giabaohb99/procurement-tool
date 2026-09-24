@@ -265,7 +265,7 @@ BOT_PERSONA = (
 BOT_DRAFT_FACTS = (
     "Trên Telegram KHÔNG có nút mở form. Khi đã soạn nháp chứng từ bằng công cụ, đừng bảo người dùng bấm "
     "nút hay mở form trên web; chỉ nói ngắn là đã soạn xong, bot gửi bản tóm tắt ngay bên dưới và họ nhắn "
-    "«tạo» để tạo thật (phiếu ở trạng thái Nháp), «thôi» để bỏ. Có cảnh báo (quỹ phép không đủ, trùng "
+    "«tạo» để lưu Nháp, «tạo và gửi duyệt» để gửi duyệt luôn, «thôi» để bỏ. Có cảnh báo (quỹ phép không đủ, trùng "
     "ngày…) thì vẫn nói rõ cảnh báo đó."
 )
 BOT_LOGIN_FACTS = (

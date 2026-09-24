@@ -10,7 +10,8 @@ người dùng nhắn «tạo» là bot tạo đúng như nút Lưu của web:
   - gọi đúng hàm service mà đường API của web gọi, và làm nốt phần đường API tự làm (nhật ký thao
     tác cho đơn nghỉ, báo nhóm hỗ trợ cho phiếu hỗ trợ).
 
-Phiếu tạo ra ở trạng thái NHÁP như bấm Lưu trên web; gửi duyệt là bước riêng.
+Phiếu tạo ra ở trạng thái NHÁP như bấm Lưu trên web; nhắn «tạo và gửi duyệt» thì gửi duyệt luôn
+(ai-CR-047, `submit` ở cuối tệp).
 ⚠️ Đề nghị thanh toán KHÔNG tạo từ chat: dính tiền, một bản nháp có thể tách thành nhiều phiếu theo
 NCC + pháp nhân, và phần kiểm phạm vi công nợ nằm ở đường API. Bot gửi link mở form web điền sẵn.
 """
@@ -228,3 +229,71 @@ def _create_purchase(db: Session, user, draft: dict) -> tuple[str, int]:
                     need_date=str(draft.get("need_date") or ""), items=items)
     pr = pr_service.create_pr(db, data, user.id, user_has_permission(db, user, "supplier", "write"))
     return pr.code, pr.id
+
+
+# ---------------------------------------------------------------------------
+# Gửi duyệt ngay sau khi tạo — «tạo và gửi duyệt» (ai-CR-047)
+# ---------------------------------------------------------------------------
+#  Phiếu hỗ trợ không có bước duyệt (tạo là tới nhóm hỗ trợ) nên không nằm đây.
+SUBMITTABLE = ("leave", "survey", "purchase")
+#  Quyền mà đường API gửi duyệt của web đòi (`require(...)` ở controller).
+_SUBMIT_ACTION = {"leave": "write", "survey": "read", "purchase": "read"}
+
+
+def missing_for_submit(kind: str, draft: dict) -> str:
+    """Luật «bắt buộc khi GỬI DUYỆT» mà web chỉ kiểm ở giao diện (`procurement/utils/required-fields.ts`):
+    backend `submit_pr` / `submit_` không chặn gì, nên bot phải tự kiểm — không thì chat là cửa lách luật.
+    Trả câu báo lỗi đầu tiên, rỗng nếu gửi được. Đơn nghỉ phép thì backend tự kiểm (quỹ phép, trùng ngày)."""
+    if kind == "purchase":
+        lines = [ln for ln in draft.get("lines") or [] if str(ln.get("product_name") or "").strip()]
+        codes = [str(ln.get("product_code") or "").strip() for ln in lines if str(ln.get("product_code") or "").strip()]
+        dup = sorted({c for c in codes if codes.count(c) > 1})
+        if dup:
+            return f"Mã hàng bị trùng: {', '.join(dup)}."
+        for ln in lines:
+            missing = [label for label, ok in (("Số lượng mua", float(ln.get("qty") or 0) > 0),
+                                               ("Kho nhận", bool(str(ln.get("warehouse") or "").strip())),
+                                               ("Ngày cần hàng", bool(str(ln.get("required_date") or "").strip())))
+                       if not ok]
+            if missing:
+                return f"Sản phẩm «{ln.get('product_name')}» còn thiếu: {', '.join(missing)}."
+    if kind == "survey":
+        if not str(draft.get("purpose") or "").strip():
+            return "Còn thiếu Mục đích khảo sát."
+        for i, ln in enumerate(draft.get("lines") or [], 1):
+            if not str(ln.get("item_group") or "").strip():
+                return f"Dòng {i} còn thiếu: Phân loại."
+    return ""
+
+
+def submit(db: Session, user, kind: str, obj_id: int) -> None:
+    """Gửi duyệt bằng ĐÚNG hàm của đường API web (trình bộ máy duyệt, giữ chỗ quỹ phép, chốt cờ đơn gấp,
+    báo trưởng bộ phận…), chạy luôn các tác vụ nền nó xếp (email, đẩy thông báo). Ném DraftError."""
+    from fastapi import BackgroundTasks, HTTPException
+
+    from app.core.auth import user_has_permission
+
+    if kind not in SUBMITTABLE:
+        raise DraftError(f"{LABELS.get(kind, kind).capitalize()} không có bước gửi duyệt.")
+    if not user_has_permission(db, user, ENTITIES[kind], _SUBMIT_ACTION[kind]):
+        raise DraftError(f"Tài khoản này không có quyền gửi duyệt {LABELS[kind]}.")
+    tasks = BackgroundTasks()
+    try:
+        if kind == "leave":
+            from app.modules.leave import request_controller
+            request_controller.submit_request(obj_id, db=db, user=user)
+        elif kind == "survey":
+            from app.modules.survey_request import controller as sr_controller
+            sr_controller.submit_(obj_id, tasks, db=db, user=user)
+        else:
+            from app.modules.purchase_request import controller as pr_controller
+            pr_controller.submit_pr(obj_id, tasks, db=db, user=user)
+    except HTTPException as e:
+        db.rollback()
+        raise DraftError(str(e.detail)) from None
+    for task in tasks.tasks:
+        try:
+            task.func(*task.args, **task.kwargs)
+        except Exception:  # noqa: BLE001 — email / thông báo đẩy hỏng không làm hỏng phiếu đã gửi duyệt
+            import logging
+            logging.getLogger("app.agent_hub").exception("agent_hub: tác vụ nền sau gửi duyệt hỏng")

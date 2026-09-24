@@ -3155,6 +3155,21 @@ Mã nguồn: `frontend-v2/src/modules/approval-seal/components/seal-clerk-detail
 Commit: `5fbce75a` trên nhánh `erp-v2`.
 
 
+## ai-CR-047 | Tạo và gửi duyệt trong một câu nhắn Telegram
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Đại ca muốn nhờ bot tạo phiếu xong thì gửi duyệt luôn trong một câu. Nay sau bản tóm tắt, nhắn tạo và gửi
+duyệt là bot tạo rồi gửi duyệt ngay, áp cho đơn nghỉ phép, yêu cầu báo giá và yêu cầu mua hàng; nhắn tạo trước
+rồi gửi duyệt luôn cũng được, và chỉ gửi đúng một lần. Bot gửi duyệt bằng đúng đường của web nên vẫn kiểm quỹ
+phép, trình luồng duyệt, báo trưởng bộ phận và gửi email như bấm trên web. Các ô bắt buộc lúc gửi duyệt mà web
+chỉ kiểm ở giao diện, như kho nhận và ngày cần hàng của yêu cầu mua hàng hay phân loại của yêu cầu báo giá, bot
+cũng tự kiểm, thiếu thì chưa tạo gì và nói rõ thiếu ô nào. Gửi duyệt hỏng sau khi đã tạo thì bot báo phiếu đang
+ở nháp kèm lý do. Cả tệp bài kiểm của bot 199/199 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/draft_create.py` (`submit`, `missing_for_submit`) · `service.py` (`_draft_by_text`, `_submit_and_report`, `_submit_recent`) · `test/backend/test_agent_hub.py` · `change-log-ai.md`.
+
 ## ai-CR-046 | Nhờ bot tạo đơn, phiếu ngay trong Telegram
 - status: xong
 - date: 2026-09-24
