@@ -110,7 +110,7 @@ def bot(monkeypatch):
     #  Bài cũ viết cho thẻ có nút; chế độ gọn (ai-CR-027) bật riêng trong bài mới.
     monkeypatch.setattr(settings, "AGENT_TG_COMPACT", False)
     for name in ("dispatch", "dispatch_scan", "dispatch_publish", "dispatch_question", "dispatch_continue", "dispatch_fix_gate",
-                 "dispatch_deploy", "dispatch_revert"):
+                 "dispatch_deploy", "dispatch_revert", "dispatch_cleanup"):
         monkeypatch.setattr(_coder, name, lambda *a, **kw: None)
     sent: list[str] = []
     asked: list[str] = []
@@ -3685,3 +3685,57 @@ def test_viec_chua_chay_buoc_nao_thi_khong_co_dong_thoi_gian(db, bot):
     service, _, _ = bot
     task = _task_with_plan(db, service, ["backend/app/x.py"])
     assert coder.timing_line(db, task) == ""
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-033: dọn nhánh bot khi việc đóng
+# ---------------------------------------------------------------------------
+def test_xong_hoac_bo_thi_giao_runner_don_nhanh(db, bot, monkeypatch):
+    from app.modules.agent_hub import coder
+
+    service, _, _ = bot
+    _compact(monkeypatch)
+    _capture_send(monkeypatch, service)
+    monkeypatch.setattr(settings, "AGENT_CODER_ENABLED", True)
+    cleaned: list[int] = []
+    monkeypatch.setattr(coder, "dispatch_cleanup", lambda tid: cleaned.append(tid))
+    done = _task_with_session(db, service, coder)
+    service.handle_message(db, _msg(f"xong {done.code}"))
+    dropped = _task_with_session(db, service, coder)
+    service.handle_message(db, _msg(f"bỏ {dropped.code}"))
+    assert cleaned == [done.id, dropped.id]
+    #  Việc không có nhánh bot (chưa sửa mã) thì không giao gì.
+    plan = _task_with_plan(db, service, ["backend/app/x.py"])
+    service.handle_message(db, _msg(f"bỏ {plan.code}"))
+    assert cleaned == [done.id, dropped.id]
+
+
+def test_don_nhanh_xoa_worktree_nhanh_runner_va_github(db, bot, monkeypatch, tmp_path):
+    from app.modules.agent_hub import coder
+
+    service, _, _ = bot
+    monkeypatch.setattr(settings, "AGENT_WORKTREE_ROOT", str(tmp_path))
+    (tmp_path / "base" / ".git").mkdir(parents=True)
+    task = _task_with_session(db, service, coder)
+    task.branch_name = "bot/ai-0001-x"
+    (tmp_path / task.code).mkdir()
+    db.commit()
+    calls: list[tuple] = []
+
+    def fake_git(cwd, *args, timeout=0, extra_env=None):
+        calls.append(args)
+        if args[0] == "push":
+            raise coder.CoderError("error: unable to delete 'x': remote ref does not exist")
+        return ""
+
+    monkeypatch.setattr(coder, "_git", fake_git)
+    monkeypatch.setenv("AGENT_GITHUB_TOKEN", "ghp_test")
+    out = coder.cleanup_task_branch(db, task)
+    assert ("branch", "-D", "bot/ai-0001-x") in calls
+    assert any(c[0] == "push" and "--delete" in c and "refs/heads/bot/ai-0001-x" in c for c in calls)
+    assert out["removed"] == ["worktree", "nhánh trong runner"]      # GitHub không có ref: bỏ qua êm
+    assert "Đã dọn nhánh bot/ai-0001-x" in task.note
+    #  Nhánh không phải của bot thì không đụng.
+    task.branch_name = "erp-v2"
+    calls.clear()
+    assert coder.cleanup_task_branch(db, task)["status"] == "skip" and calls == []

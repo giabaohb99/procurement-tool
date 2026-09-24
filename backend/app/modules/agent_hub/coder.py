@@ -2025,6 +2025,56 @@ def dispatch_revert(task_id: int, run_id: int) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Dọn nhánh sau khi việc đóng (ai-CR-033)
+# ---------------------------------------------------------------------------
+#  Đại ca để trống câu «xóa lúc gộp hay lúc xong»; em chọn lúc việc ĐÓNG («xong» hoặc «bỏ»): sau
+#  gộp vẫn còn «thu hồi» và «hỏi thêm về bản vá» cần worktree + phiên. Bản gộp trên nhánh nền giữ
+#  nguyên lịch sử nên xóa nhánh bot không mất gì. Chỉ đụng nhánh bắt đầu bằng `bot/`.
+def dispatch_cleanup(task_id: int) -> None:
+    from app.core.celery_app import celery_app
+
+    celery_app.send_task("agent.cleanup_task", args=[task_id], queue="agent_code")
+
+
+def cleanup_task_branch(db: Session, task: AgentTask) -> dict:
+    """Gỡ worktree, xóa nhánh `bot/*` trong runner và trên GitHub. Không bao giờ ném lỗi nghiệp vụ."""
+    branch = task.branch_name or ""
+    if not branch.startswith("bot/"):
+        return {"status": "skip", "reason": "việc không có nhánh bot"}
+    root = Path(settings.AGENT_WORKTREE_ROOT)
+    base = root / "base"
+    wt = root / task.code
+    done: list[str] = []
+    if wt.exists():
+        try:
+            _git(str(base), "worktree", "remove", "--force", str(wt), timeout=120)
+        except CoderError:
+            shutil.rmtree(wt, ignore_errors=True)
+        done.append("worktree")
+    if (base / "HEAD").exists() or (base / ".git").exists():
+        try:
+            _git(str(base), "worktree", "prune", timeout=120)
+            _git(str(base), "branch", "-D", branch, timeout=60)
+            done.append("nhánh trong runner")
+        except CoderError as e:
+            log.info("agent_hub.coder: không xóa được nhánh %s trong runner: %s", branch, e)
+        if github_token():
+            try:
+                _git(str(base), "push", _repo_url(), "--delete", f"refs/heads/{branch}", timeout=120,
+                     extra_env=_push_env())
+                done.append("nhánh trên GitHub")
+            except CoderError as e:
+                #  Nhánh chưa từng đẩy lên (không mở PR) thì GitHub báo không có ref — bình thường.
+                if "remote ref does not exist" not in str(e):
+                    log.warning("agent_hub.coder: xóa nhánh %s trên GitHub hỏng: %s", branch, e)
+    if done:
+        task.note = ((task.note + "\n") if task.note else "") + \
+            f"Đã dọn nhánh {branch} ({', '.join(done)}) {now_local():%d/%m %H:%M}."
+        db.commit()
+    return {"status": "ok", "removed": done}
+
+
+# ---------------------------------------------------------------------------
 # Rà soát mã thật trước khi lập kế hoạch (ai-CR-017)
 # ---------------------------------------------------------------------------
 #  Đại ca 23/09/2026: "mọi việc đều rà soát". Ca AI-0006 là lý do: bước lập kế hoạch chỉ đọc tài

@@ -1489,6 +1489,18 @@ def cancel_task(db: Session, chat_id: str, cb_id: str, task: AgentTask) -> None:
     #  Chỉ có toast thì khung chat không còn dấu vết gì (đại ca hỏi 23/09 về AI-0006).
     reply(db, chat_id, f"Đã bỏ <b>{telegram.esc(task.code)}</b> · {telegram.esc(task.title)}. "
           f"Lịch sử vẫn còn trong sổ: /xem {telegram.esc(task.code)}", task_id=task.id)
+    _schedule_cleanup(db, task)
+
+
+def _schedule_cleanup(db: Session, task: AgentTask) -> None:
+    """Việc vừa đóng: giao runner dọn worktree + nhánh `bot/*` (ai-CR-033). Hỏng thì thôi."""
+    if not settings.AGENT_CODER_ENABLED or not (task.branch_name or "").startswith("bot/"):
+        return
+    db.commit()
+    try:
+        coder.dispatch_cleanup(task.id)
+    except Exception:  # noqa: BLE001 — broker chết thì nhánh còn đó, không hỏng việc
+        log.exception("agent_hub: giao dọn nhánh hỏng")
 
 
 def _red_gate(db: Session, task: AgentTask) -> bool:
@@ -1541,6 +1553,7 @@ def close_done(db: Session, chat_id: str, cb_id: str, task: AgentTask) -> None:
     reply(db, chat_id, f"<b>{telegram.esc(task.code)}</b>: đã đóng. Bản gộp ở trên "
           f"<code>{telegram.esc(settings.AGENT_BASE_BRANCH)}</code>, lên prod là đợt riêng.",
           task_id=task.id)
+    _schedule_cleanup(db, task)
 
 
 def _dispatch_publish(db: Session, chat_id: str, cb_id: str, task: AgentTask) -> None:

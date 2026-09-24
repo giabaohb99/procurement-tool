@@ -284,6 +284,26 @@ def revert_task(task_id: int, run_id: int) -> dict:
                              fn=coder.revert_and_deploy)
 
 
+@celery_app.task(name="agent.cleanup_task", time_limit=600, acks_late=False)
+def cleanup_task(task_id: int) -> dict:
+    """Dọn worktree + nhánh `bot/*` của việc đã đóng (ai-CR-033). Chạy trong runner, xếp sau lượt
+    đang chạy (`-c 1`) nên không bao giờ gỡ worktree giữa lúc Claude đang sửa."""
+    if (off := _off()) is not None:
+        return off
+    db = SessionLocal()
+    try:
+        task = db.get(AgentTask, task_id)
+        if task is None or task.status not in CLOSED_STATUSES:
+            return {"status": "skipped", "reason": f"việc {task_id} chưa đóng"}
+        return {"task": task.code, **coder.cleanup_task_branch(db, task)}
+    except Exception as e:  # noqa: BLE001 — dọn hỏng không ảnh hưởng việc đã đóng
+        db.rollback()
+        log.exception("agent_hub: dọn nhánh hỏng")
+        return {"status": "error", "reason": str(e)[:300]}
+    finally:
+        db.close()
+
+
 @celery_app.task(name="agent.deploy_due")
 def deploy_due_task() -> dict:
     """Vòng beat mỗi phút (hàng đợi thường, KHÔNG phải runner): lịch hẹn tới giờ -> giao runner."""

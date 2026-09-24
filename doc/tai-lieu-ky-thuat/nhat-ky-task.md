@@ -3155,6 +3155,15 @@ Mã nguồn: `frontend-v2/src/modules/approval-seal/components/seal-clerk-detail
 Commit: `5fbce75a` trên nhánh `erp-v2`.
 
 
+## ai-CR-033 | Đậu Đậu tự dọn nhánh bot khi việc đóng
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Nhánh bot và worktree của mỗi việc trước đây nằm lại mãi. Nay khi đại ca nhắn xong hoặc bỏ một việc, bot giao runner gỡ worktree, xóa nhánh trong runner và xóa nhánh trên GitHub nếu đã từng đẩy lên. Em chọn dọn lúc việc đóng chứ không lúc gộp, vì sau khi gộp đại ca vẫn còn cần thu hồi hoặc hỏi thêm về bản vá. Bản gộp trên nhánh nền giữ nguyên lịch sử nên xóa nhánh bot không mất gì, và bot chỉ đụng các nhánh bắt đầu bằng bot. Cả tệp bài kiểm 156/156 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/coder.py` (`cleanup_task_branch`, `dispatch_cleanup`) · `service.py` (`_schedule_cleanup`) · `tasks.py` (`cleanup_task`) · `backend/app/core/celery_app.py` · `test/backend/test_agent_hub.py` · `change-log-ai.md`.
+
 ## ai-CR-032 | Thẻ kết quả của Đậu Đậu ghi thời gian từng bước
 - status: xong
 - date: 2026-09-24

@@ -86,6 +86,7 @@ celery_app.conf.update(
         "agent.scan_task": {"queue": "agent_code"},      # ai-CR-017: rà soát mã trước kế hoạch
         "agent.deploy_task": {"queue": "agent_code"},    # ai-CR-014: gộp erp-v2 + deploy dev
         "agent.revert_task": {"queue": "agent_code"},    # ai-CR-014: thu hồi bản gộp
+        "agent.cleanup_task": {"queue": "agent_code"},   # ai-CR-033: dọn nhánh bot khi việc đóng
     },
 
     # Lịch beat — giờ Hà Nội (enable_utc=False). Sao lưu CSDL: xem _backup_schedule.
