@@ -265,6 +265,10 @@ def _import_cost_summary(rows: list[dict], goods_base: float, shipping_total: fl
 def _out(db: Session, po: PurchaseOrder) -> dict:
     d = {c: getattr(po, c) for c in HEADER}
     d["vat_rate"] = float(po.vat_rate or 0)
+    # bao-CR-480: màn ĐMH từ nay hiện «Phòng xử lý» — trước chỉ có id trần, hai bản giao diện
+    # đều không bày, nên mở một đơn nhà máy mua hộ phòng khác không có gì báo ai đang mua.
+    from app.modules.purchase_request.service import handler_dept_name_of
+    d["handler_dept_name"] = handler_dept_name_of(db, po.handler_dept_id)
     # `document_status` là MÃ (B-06) — trước đây nó là chữ tiếng Việt VIẾT THƯỜNG nên mỗi màn
     # lại tự viết hoa một kiểu ("Đã có chứng từ" ở ô lọc, "đã có thông tin chứng từ" ở bảng).
     d["document_status_label"] = PO_DOCUMENT_STATUS.label_of(po.document_status)

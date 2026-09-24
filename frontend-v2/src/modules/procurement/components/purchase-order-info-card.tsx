@@ -36,6 +36,7 @@ import {
 } from '../types/purchase-order-detail'
 import { DEFAULT_PRINT_TERMS } from '../utils/purchase-order-print-terms'
 import { switchOrderType } from '../utils/purchase-order-import-cost'
+import { handlingDeptLabel } from '../utils/handling-dept-display'
 
 /** Tỷ giá nhập tới 6 số lẻ (1 JPY = 0,0065 USD kiểu vậy) — 3 số mặc định là mất. */
 const EXCHANGE_RATE_MAX_DECIMALS = 6
@@ -266,6 +267,15 @@ export function PurchaseOrderInfoCard({
             <ReadOnlyValue>{data.nspt || '—'}</ReadOnlyValue>
           )}
         </div>
+
+        {/*
+          bao-CR-480 — «Phòng xử lý» chép từ YCMH nguồn, chỉ xem: đơn do nhà máy mua hay do
+          thu mua chung mua phải thấy ngay trên đầu đơn. Muốn đổi thì đổi ở YCMH (nút
+          «Chuyển phòng xử lý»), đơn con đi theo.
+        */}
+        <ReadOnlyField label="Phòng xử lý">
+          {handlingDeptLabel(data.handler_dept_id, data.handler_dept_name)}
+        </ReadOnlyField>
 
         <div className="space-y-1.5">
           <Label>Hình thức thanh toán NCC</Label>

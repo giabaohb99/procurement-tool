@@ -234,6 +234,123 @@ def fill_department_from_employee(db: Session, pr: PurchaseRequest, user_id: int
     pr.department = emp.department_name or ""
 
 
+def list_self_purchasing_dept_ids(db: Session) -> set[int]:
+    """Các phòng TỰ MUA HÀNG — bao-CR-480.
+
+    Một phòng là phòng tự mua khi có người đang hoạt động giữ vai trò thu mua bậc
+    `dept_proc` trên yêu cầu mua hàng (vai trò «Quản lý thu mua phòng» của bao-CR-414).
+    Suy từ phân quyền thay vì thêm một ô cấu hình: chính phân quyền là thứ đã quyết
+    "phòng này có bộ máy mua riêng" — lập một bộ tài khoản cho nhà máy là nhà máy tự
+    mua, gỡ hết là thôi, không có chỗ thứ hai để hai bên lệch nhau.
+    """
+    from app.modules.employee.model import Employee
+    from app.modules.role.model import Permission
+    from app.modules.user.model import User, UserRole
+
+    rows = (db.query(Employee.department_id)
+            .join(User, User.employee_id == Employee.id)
+            .join(UserRole, UserRole.user_id == User.id)
+            .join(Permission, Permission.role_id == UserRole.role_id)
+            .filter(Permission.entity == ENTITY, Permission.scope == "dept_proc",
+                    User.is_active == True, Employee.department_id != 0)  # noqa: E712
+            .distinct().all())
+    return {int(r[0]) for r in rows}
+
+
+def default_handler_dept_id(db: Session, department_id: int) -> int:
+    """Phòng xử lý mặc định lúc LẬP phiếu — bao-CR-480.
+
+    Người của phòng tự mua hàng lập phiếu thì phòng xử lý là chính phòng họ; ai khác thì
+    `0` = thu mua chung. Chỉ áp lúc tạo mới: sau đó người lập đổi sang «Thu mua chung»
+    (giá trị 0) là lựa chọn có chủ ý, cửa cập nhật không được tra đè.
+
+    Vì sao phải mặc định: từ CR này bộ thu mua chung loại trừ theo PHÒNG XỬ LÝ, nên phiếu
+    nhà máy mà quên chọn phòng xử lý là phiếu rơi vào tầm mắt thu mua chung — đúng thứ
+    nhà máy muốn tránh (bao-CR-414: nhà máy tự mua vì sợ lộ công thức).
+    """
+    dept_id = int(department_id or 0)
+    if not dept_id:
+        return 0
+    return dept_id if dept_id in list_self_purchasing_dept_ids(db) else 0
+
+
+def backfill_handling_dept(db: Session, dept_ids: set[int] | None = None,
+                           dry_run: bool = False) -> dict[str, int]:
+    """Chuyển đổi phiếu CŨ của phòng tự mua hàng sang luật bao-CR-480 — chạy lại được.
+
+    Trước CR-480, phiếu của nhà máy «không nhờ ai» (`handler_dept_id = 0`) ngầm hiểu là
+    nhà máy tự lo. Từ CR-480, `0` nghĩa là THU MUA CHUNG xử lý — nên phiếu cũ của phòng tự
+    mua nếu để nguyên sẽ (1) hiện «Thu mua chung» sai sự thật và (2) lọt vào tầm mắt bộ thu
+    mua chung, đúng thứ nhà máy muốn tránh. Hàm này gán lại phòng xử lý = phòng lập cho
+    YCMH · YCBG · ĐMH có `handler_dept_id = 0` mà phòng lập là phòng tự mua; phiếu rỗng
+    phòng ban thì tra hồ sơ nhân sự của người yêu cầu (ĐMH thì theo YCMH nguồn).
+
+    ⚠️ Phải chạy MỖI KHI một phòng vừa được cấp bộ máy mua riêng (vai trò «Quản lý thu mua
+    phòng») — xem bài HDSD «Lập bộ tài khoản phòng tự mua hàng». Không tự chạy lúc khởi động:
+    phiếu nhà máy đã chủ động chọn «Thu mua chung» sau CR này cũng mang `0`, chạy tự động
+    là lật ngược lựa chọn đó mỗi lần deploy. Trả `{bảng: số dòng đã đổi}`.
+    """
+    from app.modules.employee.model import Employee
+    from app.modules.purchase_order.model import PurchaseOrder
+    from app.modules.survey_request.model import SurveyRequest
+
+    targets = set(dept_ids) if dept_ids is not None else list_self_purchasing_dept_ids(db)
+    counts = {"purchase_request": 0, "survey_request": 0, "purchase_order": 0}
+    if not targets:
+        return counts
+
+    def _dept_of_requester(requester_id: int) -> tuple[int, str]:
+        emp = db.get(Employee, int(requester_id or 0)) if requester_id else None
+        if not emp or not emp.department_id:
+            return 0, ""
+        return int(emp.department_id), emp.department_name or ""
+
+    for model, key in ((PurchaseRequest, "purchase_request"), (SurveyRequest, "survey_request")):
+        for row in db.query(model).filter(model.handler_dept_id == 0).all():
+            dept_id = int(row.department_id or 0)
+            if not dept_id:
+                dept_id, dept_name = _dept_of_requester(getattr(row, "requester_id", 0))
+                if dept_id in targets and not dry_run:
+                    row.department_id, row.department = dept_id, dept_name
+            if dept_id not in targets:
+                continue
+            counts[key] += 1
+            if not dry_run:
+                row.handler_dept_id = dept_id
+    for po in db.query(PurchaseOrder).filter(PurchaseOrder.handler_dept_id == 0).all():
+        dept_id = int(po.department_id or 0)
+        if not dept_id and (po.pr_code or "").strip():
+            src = db.query(PurchaseRequest).filter(PurchaseRequest.code == po.pr_code).first()
+            dept_id = int(src.handler_dept_id or src.department_id or 0) if src else 0
+        if dept_id not in targets:
+            continue
+        counts["purchase_order"] += 1
+        if not dry_run:
+            po.handler_dept_id = dept_id
+    if not dry_run:
+        db.commit()
+    return counts
+
+
+def handler_dept_name_of(db: Session, handler_dept_id: int) -> str:
+    """Tên phòng xử lý để HIỂN THỊ; `0` (thu mua chung) trả rỗng, màn hình tự ghi nhãn."""
+    dep = _find_dept(db, "", int(handler_dept_id or 0)) if handler_dept_id else None
+    return dep.name if dep else ""
+
+
+def resolve_employee_department(db: Session, requester_id: int) -> tuple[int, str]:
+    """`(id, tên)` phòng trong HỒ SƠ NHÂN SỰ của người yêu cầu — bao-CR-480.
+
+    Chỉ để hiển thị phiếu cũ còn rỗng ô Phòng ban (lập trước bao-CR-465); ghi xuống phiếu
+    vẫn là việc của `fill_department_from_employee` lúc lưu / gửi duyệt.
+    """
+    from app.modules.employee.model import Employee
+    emp = db.get(Employee, int(requester_id or 0)) if requester_id else None
+    if not emp or not emp.department_id:
+        return 0, ""
+    return int(emp.department_id), emp.department_name or ""
+
+
 def _find_dept(db: Session, department_name: str = "", department_id: int = 0):
     """Phòng ban theo id (ưu tiên) hoặc theo tên (đường lùi cho phiếu chưa điền lùi được id)."""
     from app.modules.department.model import Department
@@ -1112,6 +1229,9 @@ def create_pr(db: Session, data: PRCreate, user_id: int, can_write_pur: bool = F
     fill_department_from_employee(db, pr, user_id)
     # CR-086: neo phòng ban bằng id ngay từ lúc lập phiếu (FE cũ chỉ gửi tên → tra ra id).
     sync_department_ref(db, pr)
+    # bao-CR-480: phòng tự mua hàng lập phiếu thì phòng xử lý là chính phòng đó.
+    if not pr.handler_dept_id:
+        pr.handler_dept_id = default_handler_dept_id(db, pr.department_id)
     # Tự điền Trưởng bộ phận theo phòng ban của người yêu cầu (nếu phòng có trưởng)
     if not pr.head_of_dept_id and (pr.department_id or pr.department):
         pr.head_of_dept_id = find_dept_head_id(db, pr.department, pr.department_id)

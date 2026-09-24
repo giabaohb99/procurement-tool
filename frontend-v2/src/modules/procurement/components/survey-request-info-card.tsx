@@ -13,6 +13,12 @@ import { cn } from '@/shared/utils/cn'
 import { formatDateTime } from '@/shared/utils/format-date'
 import { useDeptHeadLookup } from '../hooks/use-survey-request'
 import type { SurveyRequestDetail } from '../types/survey-request-detail'
+import {
+  HANDLING_DEPT_HINT,
+  SHARED_PURCHASING_LABEL,
+  handlingDeptLabel,
+  handlingDeptOptions,
+} from '../utils/handling-dept-display'
 
 interface SurveyRequestInfoCardProps {
   data: SurveyRequestDetail
@@ -112,13 +118,9 @@ export function SurveyRequestInfoCard({
     void fillDeptHead(department.id, department.name)
   }
 
-  // bao-CR-414: ô "Nhờ phòng xử lý" — chỉ bày phòng đang hoạt động, nhưng phòng đã tắt mà
-  // phiếu cũ còn trỏ tới thì giữ lại để không mất nhãn khi mở phiếu (cùng luật với YCMH).
-  const handlerDepartments = departments.filter(
-    (department) => department.is_active || department.id === data.handler_dept_id,
-  )
-  const handlerDepartmentName =
-    departments.find((department) => department.id === data.handler_dept_id)?.name ?? ''
+  // bao-CR-480: ô «Phòng xử lý» — cùng nhãn / mục chọn với YCMH, luật ở util dùng chung.
+  const handlingDeptOptionList = handlingDeptOptions(departments, data.handler_dept_id)
+  const handlingDeptText = handlingDeptLabel(data.handler_dept_id, data.handler_dept_name, departments)
 
   //  Ô chọn có ô gõ tìm không nhận `aria-invalid` — tô đỏ viền ô gõ bên trong thay cho
   //  `aria-invalid:border-destructive` của SelectTrigger cũ (QA 29/08).
@@ -250,34 +252,26 @@ export function SurveyRequestInfoCard({
         </div>
 
         {/*
-          bao-CR-414 — phòng tự mua hàng vẫn có thể NHỜ thu mua chung (hoặc ngược lại) xử lý
-          một phiếu. Chọn phòng ở đây thì quản lý thu mua của phòng đó thấy + điều phối được
-          phiếu; phòng lập phiếu vẫn thấy như cũ. «Không nhờ» là một MỤC CHỌN ĐƯỢC mang
-          giá trị `0`, đúng với cách backend lưu (cùng luật với YCMH).
+          bao-CR-414 / bao-CR-480 — «Phòng xử lý»: phòng nào sẽ đi mua cho phiếu này, cùng
+          luật với YCMH (`0` = Thu mua chung, là một MỤC CHỌN ĐƯỢC).
         */}
         <div className="space-y-1.5">
-          <Label htmlFor="sr-handler-dept">Nhờ phòng xử lý</Label>
-          {editing && handlerDepartments.length ? (
-            <SearchSelect
-              id="sr-handler-dept"
-              searchInTrigger
-              value={String(data.handler_dept_id || 0)}
-              placeholder="Không nhờ — thu mua chung xử lý"
-              searchPlaceholder="Gõ để tìm phòng ban…"
-              options={[
-                { value: '0', label: 'Không nhờ — thu mua chung xử lý' },
-                ...handlerDepartments.map((department) => ({
-                  value: String(department.id),
-                  label: department.name,
-                })),
-              ]}
-              onChange={(value) => onChange({ handler_dept_id: Number(value) || 0 })}
-            />
+          <Label htmlFor="sr-handler-dept">Phòng xử lý</Label>
+          {editing && departments.length ? (
+            <>
+              <SearchSelect
+                id="sr-handler-dept"
+                searchInTrigger
+                value={String(data.handler_dept_id || 0)}
+                placeholder={SHARED_PURCHASING_LABEL}
+                searchPlaceholder="Gõ để tìm phòng ban…"
+                options={handlingDeptOptionList}
+                onChange={(value) => onChange({ handler_dept_id: Number(value) || 0 })}
+              />
+              <p className="text-xs text-muted-foreground">{HANDLING_DEPT_HINT}</p>
+            </>
           ) : (
-            <ReadOnlyValue>
-              {handlerDepartmentName ||
-                (data.handler_dept_id ? `Phòng #${data.handler_dept_id}` : 'Không nhờ')}
-            </ReadOnlyValue>
+            <ReadOnlyValue>{handlingDeptText}</ReadOnlyValue>
           )}
         </div>
 

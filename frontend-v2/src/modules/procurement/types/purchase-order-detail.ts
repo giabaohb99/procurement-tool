@@ -116,6 +116,10 @@ export interface PurchaseOrderDetail {
   supplier_code: string
   supplier_name: string
   department: string
+  /** bao-CR-414: PHÒNG XỬ LÝ đơn (0 = thu mua chung), chép từ YCMH nguồn. */
+  handler_dept_id?: number
+  /** bao-CR-480: tên phòng xử lý do backend trả kèm (rỗng = thu mua chung). */
+  handler_dept_name?: string
   /** Nhân sự thu mua phụ trách. */
   nspt: string
   order_date: string

@@ -174,7 +174,7 @@ export function PurchaseRequestDetailPage() {
   const { data: relatedOrdersData } = useRelatedPurchaseOrders(isNew ? '' : serverData?.code || '')
   const { data: companiesData } = useCompanies({ page_size: 500, is_active: true })
   const { data: employeesData } = useEmployees({ page_size: 1000, is_active: true })
-  // bao-CR-414: danh mục phòng ban cho ô «Nhờ phòng xử lý». Mọi vai trò seed đều đọc được
+  // bao-CR-414: danh mục phòng ban cho ô «Phòng xử lý» (bao-CR-480 đổi tên). Mọi vai trò seed đều đọc được
   // `department`, nhưng vẫn gác bằng quyền để người bị cắt quyền không ăn 403 lúc mở phiếu.
   const { data: departmentsData } = useDepartments(
     { page_size: 500 },

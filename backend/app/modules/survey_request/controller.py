@@ -85,6 +85,12 @@ def _out(db: Session, s: SurveyRequest, user=None, profile=None) -> dict:
         from app.modules.purchase_request.service import find_dept_head, find_dept_head_id
         base["head_of_dept"] = find_dept_head(db, s.department, s.department_id)
         base["head_of_dept_id"] = find_dept_head_id(db, s.department, s.department_id)   # CR-087
+    # bao-CR-480: tên phòng xử lý đi kèm phiếu (cùng luật với YCMH); phòng ban có id mà thiếu
+    # tên thì tra danh mục để hiển thị, không ghi đè.
+    from app.modules.purchase_request.service import handler_dept_name_of
+    base["handler_dept_name"] = handler_dept_name_of(db, s.handler_dept_id)
+    if not (base.get("department") or "").strip() and base.get("department_id"):
+        base["department"] = handler_dept_name_of(db, base["department_id"])
     lines = service.lines_of(db, s.id)
     order = getattr(s, "_ordered_line_ids", None)   # sau create/update: giữ đúng thứ tự dòng đã gửi
     if order:

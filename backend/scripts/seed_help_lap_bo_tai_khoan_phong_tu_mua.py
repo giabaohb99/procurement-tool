@@ -165,13 +165,19 @@ CONTENT = f"""<h2>I. Giới thiệu</h2>
 <table><thead><tr><th>Tài khoản</th><th>Phải thấy</th><th>Không được thấy</th></tr></thead><tbody>
 <tr><td>Người lập phiếu của phòng</td><td>lập được Yêu cầu mua hàng; danh sách chỉ có phiếu mình lập</td><td>nhà cung cấp, đơn mua hàng</td></tr>
 <tr><td>Trưởng phòng</td><td>phiếu <strong>Đã gửi duyệt</strong> của phòng mình, nút <em>Duyệt</em></td><td>phiếu phòng khác</td></tr>
-<tr><td>Quản lý thu mua của phòng</td><td>phiếu <strong>Đã duyệt</strong> trở đi của phòng mình <strong>đứng tên bất kỳ pháp nhân nào</strong>; nút <em>Điều phối</em>; phiếu phòng khác có ô <em>Nhờ phòng xử lý</em> = phòng mình</td><td>phiếu đã duyệt của phòng khác; danh sách trống khi chưa có phiếu nào của phòng được duyệt</td></tr>
+<tr><td>Quản lý thu mua của phòng</td><td>phiếu <strong>Đã duyệt</strong> trở đi của phòng mình <strong>đứng tên bất kỳ pháp nhân nào</strong>; nút <em>Điều phối</em>; phiếu phòng khác có ô <em>Phòng xử lý</em> = phòng mình</td><td>phiếu đã duyệt của phòng khác; danh sách trống khi chưa có phiếu nào của phòng được duyệt</td></tr>
 <tr><td>Nhân viên thu mua của phòng</td><td>dòng đã được gán cho mình</td><td>dòng gán người khác</td></tr>
-<tr><td>Quản lý thu mua (chung)</td><td>mọi phiếu đã duyệt của mọi phòng, <strong>mọi pháp nhân</strong>, <strong>trừ</strong> phòng tự mua; phiếu phòng tự mua <strong>nhờ</strong> Thu mua chung</td><td>phiếu thường của phòng tự mua (kể cả gõ thẳng id lên đường dẫn: phải ra <em>Không tìm thấy</em>)</td></tr>
+<tr><td>Quản lý thu mua (chung)</td><td>mọi phiếu đã duyệt mà <strong>Thu mua chung đang mua</strong>, <strong>mọi pháp nhân</strong> — kể cả phiếu phòng tự mua xin nhưng chọn <em>Phòng xử lý</em> = Thu mua chung</td><td>phiếu phòng tự mua <strong>đang tự mua</strong> (ô <em>Phòng xử lý</em> = phòng đó), kể cả phiếu phòng khác nhờ phòng tự mua đi mua (gõ thẳng id lên đường dẫn: phải ra <em>Không tìm thấy</em>)</td></tr>
 <tr><td>Admin thu mua</td><td>như Quản lý thu mua, không có nút duyệt</td><td>như Quản lý thu mua</td></tr>
 <tr><td>Nhân viên thu mua chung</td><td>dòng được gán</td><td>phiếu chưa gán</td></tr>
 </tbody></table>
-<p>💡 <strong>Đường chạy thử ngắn nhất:</strong> người lập phiếu của phòng lập một phiếu, trưởng phòng duyệt, quản lý thu mua của phòng thấy và điều phối, quản lý thu mua chung <strong>không</strong> thấy phiếu đó. Rồi lập phiếu thứ hai chọn <em>Nhờ phòng xử lý</em> = phòng Thu mua chung, trưởng phòng duyệt: lúc này quản lý thu mua chung thấy, quản lý thu mua của phòng vẫn thấy.</p>
+<p>💡 <strong>Đường chạy thử ngắn nhất:</strong> người lập phiếu của phòng lập một phiếu — ô <em>Phòng xử lý</em> tự hiện tên phòng mình — trưởng phòng duyệt, quản lý thu mua của phòng thấy và điều phối, quản lý thu mua chung <strong>không</strong> thấy phiếu đó. Rồi lập phiếu thứ hai đổi <em>Phòng xử lý</em> thành <em>Thu mua chung</em>, trưởng phòng duyệt: lúc này quản lý thu mua chung thấy, quản lý thu mua của phòng vẫn thấy.</p>
+
+<h3>Phiếu lập TRƯỚC khi phòng có bộ máy mua riêng</h3>
+<p>Ô <em>Phòng xử lý</em> chỉ tự điền cho phiếu lập <strong>sau</strong> khi phòng đã có người giữ vai trò <em>Quản lý thu mua phòng</em>. Phiếu cũ của phòng đang mang <em>Thu mua chung</em>, nên Thu mua chung sẽ thấy chúng. Ngay sau khi làm xong Bộ A, nhờ quản trị hệ thống chạy một lần lệnh chuyển đổi (chạy lại vô hại, có chế độ xem thử trước):</p>
+<pre>docker compose exec -T api python scripts/backfill_handling_dept.py --dry-run
+docker compose exec -T api python scripts/backfill_handling_dept.py</pre>
+<p>Lệnh này gán <em>Phòng xử lý</em> = chính phòng đó cho mọi Yêu cầu mua hàng, Yêu cầu báo giá và Đơn mua hàng cũ của phòng còn để <em>Thu mua chung</em>. Phiếu nào phòng thật sự muốn Thu mua chung mua thì mở lại và đổi ô đó sau.</p>
 
 <h2>VIII. Bẫy hay gặp</h2>
 <ul>
@@ -179,9 +185,9 @@ CONTENT = f"""<h2>I. Giới thiệu</h2>
 <li><strong>Không thấy nút Phạm vi</strong>: chưa bấm <em>Lưu vai trò</em>.</li>
 <li><strong>Đổi quyền xong vẫn thấy như cũ</strong>: người đó chưa đăng xuất, hoặc chưa qua một phút.</li>
 <li><strong>Sửa hồ sơ hoặc quyền của chính mình bị khóa</strong>: cố ý, nhờ quản trị khác.</li>
-<li><strong>Hai phòng trùng tên ở hai công ty</strong>: ô loại trừ khớp theo <strong>tên</strong>, sẽ trừ cả hai. Đặt tên phòng khác nhau trước.</li>
+<li><strong>Hai phòng trùng tên ở hai công ty</strong>: từ bao-CR-480 ô loại trừ trên YCMH / YCBG / ĐMH khớp theo <strong>phòng xử lý</strong> (mã phòng, không phải tên) nên không còn trừ nhầm; riêng Công nợ và các màn khác vẫn khớp theo phòng ban của dòng. Đặt tên phòng khác nhau cho dễ đọc.</li>
 <li><strong>Không thấy phiếu đứng tên pháp nhân khác</strong>: có người đã khai <em>Chỉ trong công ty</em> trong hộp Phạm vi của vai trò đó. Xóa ô đó. Pháp nhân trong hồ sơ nhân sự <strong>không</strong> phải nguyên nhân.</li>
-<li><strong>Nhờ nhầm sang phòng không có ai giữ vai trò thu mua</strong>: phiếu chỉ còn phòng lập thấy. Sửa lại ô <em>Nhờ phòng xử lý</em> khi phiếu còn Nháp / Bị trả lại, hoặc dùng nút <em>Trả về phòng lập</em> trên phiếu đã duyệt.</li>
+<li><strong>Nhờ nhầm sang phòng không có ai giữ vai trò thu mua</strong>: phiếu chỉ còn phòng lập thấy. Sửa lại ô <em>Phòng xử lý</em> khi phiếu còn Nháp / Bị trả lại, hoặc dùng nút <em>Trả về phòng lập</em> trên phiếu đã duyệt.</li>
 <li><strong>Chuyển đi giữa chừng</strong>: nút <em>Chuyển phòng xử lý</em> / <em>Trả về phòng lập</em> trên chi tiết Yêu cầu mua hàng và Yêu cầu báo giá chỉ hiện cho quản lý thu mua của phòng đang giữ phiếu (hoặc quản lý thu mua toàn hệ), và chỉ khi <strong>chưa dòng nào lên đơn mua hàng</strong>. Chuyển là chuyển <strong>cả phiếu</strong>, người phụ trách ở mọi dòng bị gỡ để phòng nhận phân công lại; <strong>không chuyển một phần dòng</strong>. Mua được nửa phiếu rồi mới muốn nhờ thì tách các dòng chưa mua sang một phiếu mới.</li>
 </ul>
 

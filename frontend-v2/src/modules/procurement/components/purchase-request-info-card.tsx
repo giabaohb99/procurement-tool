@@ -20,6 +20,12 @@ import type {
   PurchaseRequestDetail,
 } from '../types/purchase-request-detail'
 import { resolveShownDeptHead } from '../utils/dept-head-display'
+import {
+  HANDLING_DEPT_HINT,
+  SHARED_PURCHASING_LABEL,
+  handlingDeptLabel,
+  handlingDeptOptions,
+} from '../utils/handling-dept-display'
 
 interface InfoCardProps {
   data: PurchaseRequestDetail
@@ -67,13 +73,9 @@ export function PurchaseRequestInfoCard({
     editing,
     defaultDeptHead,
   )
-  // bao-CR-414: chỉ bày phòng đang hoạt động, nhưng phòng đã tắt mà phiếu cũ còn trỏ tới
-  // thì giữ lại để không mất nhãn khi mở phiếu.
-  const handlerDepartments = departments.filter(
-    (department) => department.is_active || department.id === data.handler_dept_id,
-  )
-  const handlerDepartmentName =
-    departments.find((department) => department.id === data.handler_dept_id)?.name ?? ''
+  // bao-CR-480: một ô «Phòng xử lý» cho cả ba chứng từ — luật nhãn/mục chọn ở util dùng chung.
+  const handlingDeptOptionList = handlingDeptOptions(departments, data.handler_dept_id)
+  const handlingDeptText = handlingDeptLabel(data.handler_dept_id, data.handler_dept_name, departments)
   // bao-CR-318: đường về YCBG nguồn — chỉ thành link khi người xem đọc được YCBG,
   // không thì hiện mã dạng chữ (bấm vào chỉ ăn 403).
   const surveyRequestLinkable = Boolean(data.survey_request_id) && can('survey_request', 'read')
@@ -213,34 +215,29 @@ export function PurchaseRequestInfoCard({
         </Field>
 
         {/*
-          bao-CR-414 — phòng tự mua hàng vẫn có thể NHỜ thu mua chung (hoặc ngược lại) xử lý
-          một phiếu. Chọn phòng ở đây thì quản lý thu mua của phòng đó thấy + điều phối được
-          phiếu; phòng lập phiếu vẫn thấy như cũ. «Không nhờ» là một MỤC CHỌN ĐƯỢC mang
-          giá trị `0`, đúng với cách backend lưu — để trong danh sách chứ không giấu sau nút
-          xóa, người dùng mới thấy đó là một lựa chọn.
+          bao-CR-414 / bao-CR-480 — «Phòng xử lý»: phòng nào sẽ đi mua cho phiếu này. `0` là
+          Thu mua chung; nhà máy tự mua thì backend tự điền phòng nhà máy lúc lập phiếu.
+          Chọn phòng thì quản lý thu mua của phòng đó thấy + điều phối được phiếu, còn bộ
+          thu mua chung «trừ nhà máy» thì KHÔNG thấy (loại trừ so đúng ô này). Mục «Thu mua
+          chung» là MỘT MỤC CHỌN ĐƯỢC mang giá trị `0`, đúng cách backend lưu.
         */}
         <div className="space-y-1.5">
-          <Label htmlFor="pr-handler-dept">Nhờ phòng xử lý</Label>
-          {editing && handlerDepartments.length ? (
-            <SearchSelect
-              id="pr-handler-dept"
-              searchInTrigger
-              value={String(data.handler_dept_id || 0)}
-              placeholder="Không nhờ — thu mua chung xử lý"
-              searchPlaceholder="Gõ để tìm phòng ban…"
-              options={[
-                { value: '0', label: 'Không nhờ — thu mua chung xử lý' },
-                ...handlerDepartments.map((department) => ({
-                  value: String(department.id),
-                  label: department.name,
-                })),
-              ]}
-              onChange={(value) => onChange({ handler_dept_id: Number(value) || 0 })}
-            />
+          <Label htmlFor="pr-handler-dept">Phòng xử lý</Label>
+          {editing && departments.length ? (
+            <>
+              <SearchSelect
+                id="pr-handler-dept"
+                searchInTrigger
+                value={String(data.handler_dept_id || 0)}
+                placeholder={SHARED_PURCHASING_LABEL}
+                searchPlaceholder="Gõ để tìm phòng ban…"
+                options={handlingDeptOptionList}
+                onChange={(value) => onChange({ handler_dept_id: Number(value) || 0 })}
+              />
+              <p className="text-xs text-muted-foreground">{HANDLING_DEPT_HINT}</p>
+            </>
           ) : (
-            <ReadOnlyValue>
-              {handlerDepartmentName || (data.handler_dept_id ? `Phòng #${data.handler_dept_id}` : 'Không nhờ')}
-            </ReadOnlyValue>
+            <ReadOnlyValue>{handlingDeptText}</ReadOnlyValue>
           )}
         </div>
 

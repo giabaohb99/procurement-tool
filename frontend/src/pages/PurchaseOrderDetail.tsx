@@ -1215,6 +1215,11 @@ export default function PurchaseOrderDetail() {
                   onChange={(v) => setH('nspt', v)} disabled={!headerEditable || !canPickNspt}
                   placeholder={canPickNspt ? 'Chọn nhân sự phụ trách' : ''} />
               </div>
+              {/* bao-CR-480: «Phòng xử lý» chép từ YCMH nguồn, chỉ xem — đơn do nhà máy mua hay do
+                  thu mua chung mua phải thấy ngay trên đầu đơn; muốn đổi thì đổi ở YCMH. */}
+              <div className="form-row"><label>Phòng xử lý</label>
+                <input value={po.handler_dept_name || (po.handler_dept_id ? `Phòng #${po.handler_dept_id}` : 'Thu mua chung')} disabled />
+              </div>
               <div className="form-row"><label>Hình thức thanh toán NCC</label><SearchSelect value={po.payment_terms || ''} options={PAYMENT_TERMS_OPTIONS} disabled={!headerEditable} placeholder="Chọn hình thức thanh toán…" onChange={(v) => setH('payment_terms', v)} /></div>
               {/* bao-CR-321 — điều khoản in (mục 2 + mục 5 bản in). Tự chép từ NCC khi chọn, sửa riêng
                   từng đơn lúc còn nháp; khóa sau duyệt như hình thức thanh toán. Trống = mặc định cũ. */}

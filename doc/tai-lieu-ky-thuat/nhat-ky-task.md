@@ -6602,6 +6602,57 @@ phân hệ Hệ thống xanh.
 Mã nguồn: frontend-v2 setting-page.tsx · setting-history-panel.tsx · setting-log-format.ts ·
 backend/app/modules/setting/service.py · test/backend/test_nhat_ky_cau_hinh_cr462.py
 
+## du-lieu-mau-don-hang-dev | Dựng bộ đơn mẫu trên dev để thử chia nhà máy và chi phí thu mua
+- status: xong
+- date: 2026-09-24
+Đại ca cần vài đơn mẫu trên dev để xem màn đơn hàng có đủ thông tin cho việc chia nhà máy và
+phần chi phí thu mua mới không. Dev trước đó chưa có đơn nào gắn phòng xử lý nhà máy và chưa có
+dòng chi phí thu mua nào. Em dựng bốn bộ yêu cầu mua hàng kèm đơn mua hàng, mã bắt đầu bằng
+DEMO: nhà máy tự mua, phòng khác nhờ nhà máy mua, nhà máy xin nhưng thu mua chung mua hàng
+nhập khẩu, và thu mua mua cho phòng mình đã quyết toán hết chi phí. Quyết toán gọi đúng hàm
+nghiệp vụ nên công nợ và phần chép số sinh ra như khi người dùng bấm.
+
+Kiểm phạm vi bằng tám tài khoản thử nhà máy và thu mua, lộ ra ba chỗ chờ đại ca quyết: quản lý
+thu mua trừ nhà máy không thấy đơn nhà máy xin mà nhân viên của mình đang mua; nhân viên thu mua
+chung thấy công nợ của đơn nhà máy tự mua; màn đơn mua hàng và màn công nợ chưa hiện phòng xử lý.
+
+Deploy: chỉ ghi dữ liệu vào cơ sở dữ liệu dev, không đổi mã. Script chạy lại được, để ở máy.
+
+## bao-CR-480 | Một ô Phòng xử lý cho cả ba chứng từ thu mua, lọc theo ô đó, nhà máy được tự điền
+- status: xong
+- date: 2026-09-24
+Sau khi xem bộ đơn mẫu trên dev, đại ca chốt: bộ thu mua chung trừ nhà máy phải lọc theo
+phòng xử lý; ô «Nhờ phòng xử lý» với chữ «Không nhờ» khó hiểu; màn đơn mua hàng chưa hiện
+phòng xử lý; và ô Bộ phận YC bị trống ở phiếu cũ.
+
+Đã đổi luật loại trừ phòng ban trên yêu cầu mua hàng, yêu cầu báo giá và đơn mua hàng: so
+cột phòng xử lý thay vì phòng lập. Nhờ vậy quản lý thu mua chung thấy đơn nhân viên mình
+đang mua cho nhà máy, và không thấy đơn nhà máy mua hộ phòng khác. Bản chạy thật hiện không
+có dòng loại trừ nào nên đổi luật không ảnh hưởng ai đang dùng.
+
+Phòng có bộ máy mua riêng (có người giữ bậc quản lý thu mua phòng) được coi là phòng tự mua:
+người phòng đó lập phiếu mà không chọn thì hệ thống tự điền phòng của họ, đổi sang thu mua
+chung sau đó là lựa chọn có chủ ý.
+
+Giao diện hai bản: ô đổi tên thành «Phòng xử lý», mục mặc định in «Thu mua chung», có câu
+gợi ý; đơn mua hàng có thêm ô chỉ xem Phòng xử lý; API trả kèm tên phòng nên không còn cảnh
+hiện «Phòng #5». Phiếu cũ rỗng phòng ban thì màn hình hiện theo hồ sơ nhân sự, lưu hoặc gửi
+duyệt mới ghi vào phiếu.
+
+Đại ca soi lại phiếu mẫu NM03 và chỉ ra chỗ hụt: phiếu cũ của nhà máy lập theo luật cũ đang
+mang giá trị «thu mua chung» nên hiện sai và lọt ra ngoài. Em thêm lệnh chuyển đổi phiếu cũ
+(có xem thử trước, chạy lại vô hại) gán phòng xử lý bằng chính phòng lập cho ba loại chứng từ
+của phòng tự mua, đã chạy ở máy; bài hướng dẫn lập bộ tài khoản phòng tự mua ghi thêm bước
+này và đổi cách gọi. Ô Bộ phận YC có mã phòng mà thiếu tên cũng hiện được tên. Chưa commit.
+
+Kiểm: 72 bài phạm vi liên quan xanh (15 bài mới, sửa 4 bài cũ theo luật mới); giao diện mới
+kiểm kiểu 0 lỗi, kiểm nếp mã 0 lỗi, 123 bài thành phần xanh; bản cũ kiểm kiểu giữ 4 lỗi nền.
+
+Mã nguồn: backend/app/core/scoping.py · purchase_request/service.py · controller.py ·
+survey_request · purchase_order/controller.py · frontend-v2 handling-dept-display.ts ·
+frontend PurchaseRequestDetail.tsx · SurveyRequestDetail.tsx · PurchaseOrderDetail.tsx ·
+test/backend/test_phong_xu_ly_cr480.py
+
 ## bao-CR-481 | Trợ lý AI tra thêm thị trường, pháp lý và trả lời «có nên mua lúc này» theo giá hải quan
 - status: xong
 - date: 2026-09-24
@@ -6622,7 +6673,15 @@ Chạy thử với dữ liệu thật thì thấy tháng 09/2026 của atrazine 
 «giá đang giảm», nên xu hướng và thước đo chỉ tính trên tháng đủ dữ liệu, tháng mới nhất ít
 dòng thì kèm tháng đủ dữ liệu gần nhất làm mốc. Bài hướng dẫn mục «Hỏi trợ lý AI» đã viết lại
 và chạy lại ở local. Số CR ban đầu 480 trùng việc «Phòng xử lý» của phiên khác nên đổi sang
-481. Chưa commit, chưa deploy.
+481.
+
+Đã commit a13e9c60, đẩy lên erp-v2 và deploy dev (dựng lại api, celery-worker, celery-beat);
+kiểm trên dev: trợ lý có 41 tool, số atrazine khớp local. Bài hướng dẫn chưa có trên dev
+(seed hải quan chưa từng chạy ở dev). Cùng ngày gộp erp-v2 vào nhánh bot agent-hub-bac-1
+để bot Telegram có bốn tool: 12 tệp đụng độ giữ cả hai phía, thêm migration gộp hai head,
+nâng DB riêng của bot (dego-agent) — bốn migration đã có sẵn đối tượng nên đánh dấu, ba cái
+còn lại chạy thật. Đã báo phiên bot khởi động lại stack và cấp quyền customs_price cho tài
+khoản bot; nhánh bot chưa push.
 
 Kiểm: 63 bài backend xanh (16 bài mới, bài đếm số tool trợ lý nâng 39 lên 41).
 
