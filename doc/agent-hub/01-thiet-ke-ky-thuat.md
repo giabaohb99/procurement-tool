@@ -766,4 +766,17 @@ phase ở [`04-danh-sach-tinh-nang.md`](./04-danh-sach-tinh-nang.md) (nhóm M, K
    bot thay khóa của đại ca, `main` bảo vệ bằng PR).
 3. **Bot lên ERP dev** (phase 2): gộp phần bot vào `erp-v2` để phiếu bot tạo là phiếu thật và link bấm
    được trên điện thoại. Chừng nào chưa lên, bot chạy trên máy đại ca với DB riêng `dego-agent`.
+4. **Một Đậu Đậu trên dev, máy sửa mã tách rời** (chốt 24/09/2026 sau ai-CR-051, chi tiết nhóm D của
+   `04`): không có bot local và bot dev riêng, vì một token Telegram chỉ cho một tiến trình kéo tin. Bot
+   trên dev là trợ lý cá nhân của mọi người đã `/dangnhap`; tài khoản đại ca là trường hợp đặc biệt
+   (`AGENT_TELEGRAM_CHAT_ID`) mới có mảng mã nguồn. Phần chạy Claude Code tách thành **runner** đặt trên
+   máy đại ca và máy nào đại ca đăng ký («thêm máy của anh Được», sổ `tab_agent_runner`), nối lên dev
+   qua đường hầm SSH bằng khóa riêng của máy, kéo việc về, ghi kết quả bằng tài khoản MySQL chỉ đụng
+   bảng của bot. Việc dính máy đã bắt đầu nó; máy tắt thì việc chờ và bot nói chờ máy nào. Việc mới thì
+   máy rảnh nhận trước, chỉ định được bằng câu nhắn; deploy dev chỉ máy đại ca và máy được bật cờ.
+5. **Ba loại khóa Gemini, không chung**: khóa cá nhân (Telegram / Zalo của từng người, kể cả lượt gom việc
+   và lập kế hoạch của đại ca; dán ở Trang cá nhân → «Khóa AI», lưu mã hóa, không dán qua chat) · khóa
+   công ty trên dev chỉ cho Trợ lý web · không còn khóa của bot. Không lùi về khóa công ty: chưa gắn khóa
+   thì bot không trả lời câu hỏi AI, các việc không cần Gemini vẫn dùng được. `AGENT_ASSISTANT_USER` để
+   trống trên dev (§9: biến nguy hiểm nhất, nay bỏ khỏi dev).
 

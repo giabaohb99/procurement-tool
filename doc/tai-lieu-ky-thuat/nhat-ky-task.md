@@ -7756,3 +7756,27 @@ Kiểm: năm bài mới, cả tệp test bot 209 bài xanh; migration đã chạ
 Mã nguồn: backend/app/modules/agent_hub/grants.py · service.py · constants.py · model.py ·
 backend/migrations/versions/b3e7d1a9c5f2_agent_hub_quyen_sua_ma.py · test/backend/test_agent_hub.py ·
 doc/agent-hub/04-danh-sach-tinh-nang.md · doc/tai-lieu-ky-thuat/change-log-ai.md
+
+## ai-CR-052 | Tổng hợp tài liệu kiến trúc phase 2: một bot trên dev, khóa cá nhân, máy sửa mã tách rời
+- status: xong
+- date: 2026-09-24
+Sau khi phase 1 xong phần mã, đại ca chốt cách đưa bot lên dev qua bốn lượt trao đổi, và bảo
+tổng hợp hết vào tài liệu. Việc này chỉ là tài liệu, chưa có mã.
+
+Những điều đã chốt. Một, chỉ có một Đậu Đậu chạy trên server dev, không tách bot local và bot
+dev, vì một token Telegram chỉ cho một tiến trình kéo tin. Hai, ai cũng tự đăng nhập bằng mã, kể
+cả đại ca, không còn tài khoản dùng chung. Ba, mỗi người dán khóa Gemini của mình ở trang cá
+nhân trên web, một khóa dùng cho cả Telegram lẫn Zalo; khóa công ty trên dev chỉ cho trợ lý
+web; không lùi về khóa công ty, người chưa gắn khóa thì bot không trả lời câu hỏi AI nhưng vẫn
+đăng nhập, xem và ra lệnh trên việc được. Bốn, tài khoản đại ca là trường hợp đặc biệt trong
+cấu hình dev, mới có mảng mã nguồn; tới bước sửa mã thì bot gọi xuống máy sửa mã. Năm, máy sửa
+mã tách rời: máy đại ca là máy số một, thêm máy khác bằng câu nhắn, mỗi máy có mã máy và khóa
+riêng, nối lên dev qua đường hầm SSH, việc dính máy đã bắt đầu nó, máy rảnh nhận việc mới,
+deploy dev chỉ máy được bật cờ. Sáu, làm lần lượt, không chạy song song nhiều phase.
+
+Ghi thành nhóm D bảy mục trong danh sách tính năng, cập nhật dòng phase 2 và phase 3, thêm
+điểm bốn và năm vào mục 13 của thiết kế kỹ thuật. Thứ tự làm phase 2: khóa cá nhân và bỏ tài
+khoản chung trước, rồi sổ máy và runner tách rời, rồi stack bot trên dev. Ước lại khoảng hai tuần.
+
+Mã nguồn: doc/agent-hub/04-danh-sach-tinh-nang.md · doc/agent-hub/01-thiet-ke-ky-thuat.md ·
+doc/tai-lieu-ky-thuat/change-log-ai.md
