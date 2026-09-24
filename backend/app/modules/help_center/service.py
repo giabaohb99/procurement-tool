@@ -1,12 +1,12 @@
 import json
 import re
-import unicodedata
 
 from fastapi import HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
+from app.core.text_fold import fold as _fold
 from app.modules.assistant.rag.hooks import on_source_deleted, on_source_saved
 
 from .model import HelpArticle, HelpArticleSlide
@@ -202,17 +202,9 @@ def _strip_html(html: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
-def _fold_char(ch: str) -> str:
-    """Bỏ dấu 1 ký tự, giữ ĐÚNG 1 ký tự để chỉ số vẫn ánh xạ được về chuỗi gốc."""
-    if ch in "đĐ":
-        return "d"
-    base = "".join(c for c in unicodedata.normalize("NFD", ch) if not unicodedata.combining(c))
-    return (base or ch).lower()
-
-
-def _fold(text: str) -> str:
-    """Chuẩn hóa không dấu + chữ thường (khớp cách so sánh của MySQL utf8mb4_general_ci)."""
-    return "".join(_fold_char(c) for c in text)
+#  `_fold` (gập dấu + hạ chữ thường) chuyển sang `app/core/text_fold.py`
+#  (phase 07 tìm kiếm toàn văn văn bản, duoc-CR-477) — nhập lại ở đầu tệp,
+#  giữ tên `_fold` để không phải sửa các lời gọi `_fold(...)` bên dưới.
 
 
 def _snippet(content: str, kw: str) -> tuple[str, int, int]:

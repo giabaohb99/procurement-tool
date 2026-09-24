@@ -54,6 +54,12 @@ interface DetailPageShellProps {
    */
   secondaryActions?: ReactNode
   /**
+   * `true` = nhóm phụ LUÔN gom vào nút `⋯`, cả trên màn rộng — trang có quá
+   * nhiều lệnh phụ bày thẳng ra thì hàng nút dài tràn (trang chi tiết văn bản,
+   * phản hồi 24/09/2026). Mặc định `false`: màn rộng bày thẳng như cũ.
+   */
+  collapseSecondaryActions?: boolean
+  /**
    * Nhật ký của kho tạm phía trình duyệt. Chỉ còn các màn CHƯA nối API dùng —
    * màn đã có backend thì truyền `audit` để đọc `tab_audit_log` thật.
    */
@@ -99,6 +105,7 @@ export function DetailPageShell({
   actions,
   actionsClassName,
   secondaryActions,
+  collapseSecondaryActions = false,
   history,
   audit,
   showHistory = true,
@@ -213,7 +220,7 @@ export function DetailPageShell({
                  thoại và truy vấn riêng (menu *Tệp*, *Chữ ký*, *Sao chép*), bản
                  ẩn vẫn gắn kết và vẫn gọi API, chỉ là không ai thấy. */}
             {secondaryActions &&
-              (isMobile ? (
+              (isMobile || collapseSecondaryActions ? (
                 <HeaderActionsPopover>
                   {secondaryActions}
                   {!isCreating && onDelete && (

@@ -64,6 +64,9 @@ export const ENTITIES = [
   'document_book',
   'document',
   'security_level',
+  //  Cây thư mục văn bản (phase 04, duoc-CR-475). PUBLIC ở scoping backend —
+  //  quyền theo dòng nằm ở `tab_doc_folder_access` riêng, không phải cột lọc.
+  'doc_folder',
   //  Phân hệ Duyệt dấu. Chưa có màn nào ở v2 gọi `can('seal_request', …)`, nhưng
   //  danh sách này là BẢN SAO của `ENTITIES` backend chứ không phải "những khóa
   //  v2 đang dùng" — thiếu một khóa thì `can()` không gõ nổi tên nó (union type),

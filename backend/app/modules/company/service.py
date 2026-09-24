@@ -59,6 +59,12 @@ def create_company(db: Session, data: CompanyCreate, user_id: int) -> Company:
     db.commit()
     db.refresh(obj)
     record(db, user_id, ENTITY, obj.id, "create")
+
+    #  Thư mục gốc của phân hệ Văn thư KHÔNG còn tạo ngay ở đây (rà soát
+    #  24/09/2026, duoc-CR-475): gốc chỉ là chỗ chứa mặc định, sinh LAZY đúng
+    #  lúc văn bản đầu tiên của pháp nhân này cần nó (xem
+    #  `doc_catalog/folder_link_service._company_root_id`) — tạo trước ở đây
+    #  làm gốc "tự mọc lại" theo cách khác với việc bị xóa tay.
     return obj
 
 

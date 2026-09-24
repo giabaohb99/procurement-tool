@@ -10,6 +10,8 @@ from datetime import date
 
 from pydantic import BaseModel, Field
 
+from app.modules.doc_catalog.folder_schema import MAX_BULK_IDS
+
 from .model import STATUS_DRAFT
 from .version_model import (CHANGE_MAJOR, MARGIN_LEFT_MAX_MM,
                             MARGIN_LEFT_MIN_MM, MARGIN_RIGHT_MAX_MM,
@@ -80,6 +82,16 @@ class DocumentCreate(DocumentBase):
 
     #  Nội dung của phiên bản 1.0. Để trống rồi gõ sau ở màn soạn thảo cũng được.
     content_html: str = ""
+    #  1 «Tạo và soạn thảo» · 2 «Tạo, không soạn thảo» — `model.CONTENT_MODE_*`.
+    content_mode: int = Field(default=1, ge=1, le=2)
+
+    #  THƯ MỤC LƯU (phase 03 cây thư mục). Bỏ trống → vào thư mục mặc định của
+    #  loại nếu có (`DocType.default_folder_id`), không thì vào thư mục pháp
+    #  nhân — xem `doc_catalog/folder_link_service.resolve_default`.
+    folder_ids: list[int] | None = Field(default=None, max_length=MAX_BULK_IDS)
+    #  Thư mục CHÍNH trong `folder_ids` (hiện ở cột/breadcrumb). Không nằm
+    #  trong `folder_ids` thì lấy phần tử đầu tiên.
+    primary_folder_id: int | None = None
 
 
 class DocumentUpdate(BaseModel):
@@ -98,6 +110,10 @@ class DocumentUpdate(BaseModel):
     keywords: str | None = Field(default=None, max_length=500)
     #  Dải thật kiểm ở service — xem ghi chú ở `DocumentCreate`.
     secrecy_level: int | None = Field(default=None, ge=1, le=99)
+    #  Cách tạo — màn tạo văn bản sinh bản nháp ở bước 1 (lúc đó CHƯA biết người
+    #  dùng sẽ bấm «Tạo và soạn thảo» hay «Tạo, không soạn thảo»), nút cuối là
+    #  lượt SỬA bản nháp đó, nên trường này phải nhận được ở đây nữa.
+    content_mode: int | None = Field(default=None, ge=1, le=2)
     urgency: int | None = Field(default=None, ge=1, le=99)
     effective_date: date | None = None
     expire_date: date | None = None
@@ -112,6 +128,12 @@ class DocumentUpdate(BaseModel):
     #  loại, khóa lạ bị loại bỏ chứ không lưu, và loại chưa khai hình dạng thì
     #  không lưu gì cả. Nhận bừa là sáu tháng nữa không ai biết trong đó có gì.
     metadata: dict | None = None
+
+    #  THƯ MỤC LƯU — gửi lại đây khi sửa văn bản mà cũng muốn đổi thư mục cùng
+    #  lượt. Không gửi (giữ `None`) = KHÔNG đụng tới thư mục hiện tại; muốn CHỈ
+    #  đổi thư mục thì gọi thẳng `PUT /api/documents/{id}/folders`.
+    folder_ids: list[int] | None = Field(default=None, max_length=MAX_BULK_IDS)
+    primary_folder_id: int | None = None
 
 
 class ManualIssueNumberUpdate(BaseModel):
@@ -152,6 +174,10 @@ class DocumentOut(DocumentBase):
     version_count: int = 0
     attachment_count: int = 0
     created_at: str = ""
+    #  Thư mục (phase 03 cây thư mục) — dựng ở `folder_link_bulk_service`, MỘT
+    #  truy vấn cho cả trang, không N+1 theo từng văn bản.
+    folders: list[dict] = []
+    primary_folder_path: str = ""
 
     model_config = {"from_attributes": True}
 

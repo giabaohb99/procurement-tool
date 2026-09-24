@@ -42,6 +42,8 @@ function doc(overrides: Partial<DocumentRecord> = {}): DocumentRecord {
     effective_date: null,
     expire_date: null,
     attachment_view_until: null,
+    attachment_view_window_enabled: true,
+    has_content: true,
     book_id: null,
     book_name: '',
     book_seq_no: null,
@@ -54,6 +56,7 @@ function doc(overrides: Partial<DocumentRecord> = {}): DocumentRecord {
     needs_review: false,
     needs_review_note: '',
     apply_mode: 1,
+    content_mode: 1,
     created_at: '2026-09-01T08:00:00',
     ...overrides,
   }

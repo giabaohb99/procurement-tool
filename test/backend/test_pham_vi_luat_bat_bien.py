@@ -115,6 +115,9 @@ BB3_PUBLIC_CO_LY_DO = {
     "doc_template": "cùng lý do CR-157",
     "doc_numbering_rule": "cùng lý do CR-157",
     "doc_link_rule": "cùng lý do CR-157",
+    "doc_folder": ("cây thư mục kế thừa pháp nhân qua CÂY, không qua một cột lọc "
+                   "một-tầng — lọc nhánh + ACL từng thư mục nằm ở "
+                   "folder_tree_service._visible_folder_ids (phase 03/04, duoc-CR-475)"),
     "security_level": "thang mức mật dùng chung",
     "employee_sensitive": ("cổng require() thuần cho nhóm trường CCCD/ngân hàng/địa chỉ — "
                            "hồ sơ NÀO thì khóa `employee` đã lọc, khóa này chỉ trả lời "
@@ -209,6 +212,26 @@ BB4_CONTROLLER_MIEN_TRU = {
     "document/signature_controller.py": "cùng `ensure_can` — cụm 05",
     "document/template_controller.py": "cùng `ensure_can` — cụm 05",
     "document/dashboard_controller.py": "số tổng, đi qua `ensure_can` — cụm 04 + 05",
+    "document/files_controller.py": ("gác qua CHÍNH văn bản — nhập lại `doc_reader`/`_load` từ "
+                                    "`document/controller.py` (cùng `ensure_can`); tệp tách riêng "
+                                    "để controller.py dưới 200 dòng, phase 09 duoc-CR-478"),
+    "document/search_controller.py": ("gác require('document','read') rồi TÁI DÙNG "
+                                      "`document.controller._list_query` qua `search_service.search` "
+                                      "— cùng đúng `visible_condition` + lọc thư mục mà "
+                                      "document/controller.py dùng cho danh sách, không viết lại "
+                                      "luật lọc lần hai — phase 07, duoc-CR-477"),
+    "doc_catalog/folder_controller.py": ("gác 2 lớp: require('doc_folder', …) + "
+                                        "`folder_access_service.ensure_level` (VIEW/CONTRIBUTE/"
+                                        "MANAGE theo từng route, tính trên ĐÚNG thư mục qua cây + "
+                                        "ACL) — phase 04, duoc-CR-475"),
+    "doc_catalog/folder_access_controller.py": ("cùng 2 lớp với folder_controller.py — "
+                                                "`ensure_level(..., MANAGE)` trên thư mục trước khi "
+                                                "cấp/thu quyền — phase 04, duoc-CR-475"),
+    "doc_catalog/folder_document_link_controller.py": ("gác `access_service.ensure_can` (sửa "
+                                                        "văn bản) RỒI `folder_access_service."
+                                                        "ensure_level(CONTRIBUTE)` trên từng thư "
+                                                        "mục người dùng chọn — phase 04, "
+                                                        "duoc-CR-475"),
     "approval/instance_controller.py": "gác bằng `entity_hooks.can_read` — cụm 07 A",
     "approval/delegation_controller.py": "gác bằng `has_global_scope` — cụm 07 A9",
     "work/controller.py": "work_task PUBLIC + NGHĨA VỤ tự lọc `visible_list_ids` — cụm 07 D1",

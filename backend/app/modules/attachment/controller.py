@@ -123,6 +123,25 @@ def _block_version_in_approval(db: Session, entity: str, entity_id: int):
         block_while_approving(version)
 
 
+def _reindex_document_search(db: Session, entity: str, entity_id: int) -> None:
+    """Chỉ mục TÌM KIẾM TOÀN VĂN của văn bản (phase 07, duoc-CR-477) — gọi
+    SAU commit khi tệp đính kèm của một PHIÊN BẢN VĂN BẢN (`entity =
+    "document_version"`) vừa thêm/xóa: "chữ trong tệp đính kèm" là một phần
+    của cái được tìm.
+
+    Entity khác `document_version` → không làm gì (attachment của YCMH/ĐMH/...
+    không nằm trong phạm vi tìm kiếm này).
+    """
+    if entity != "document_version":
+        return
+    from app.modules.document.attachment_window import document_of_attachment
+    from app.modules.document.search_index_service import queue_reindex
+
+    doc = document_of_attachment(db, entity, entity_id)
+    if doc is not None:
+        queue_reindex(db, doc.id)
+
+
 def _check_comment(db: Session, user, comment_id: int, mode: str):
     """Quyền với đính kèm của MỘT bình luận (CR-033).
 
@@ -279,6 +298,7 @@ def upload(
                       created_by=user.id, updated_by=user.id)
         db.add(lk); db.commit(); db.refresh(lk)
         out.append(_link_out(lk, sf))
+    _reindex_document_search(db, entity, entity_id)
     return success(out, "Đã tải lên", 201)
 
 
@@ -331,6 +351,7 @@ def register_files(data: RegisterIn, db: Session = Depends(get_db), user=Depends
                       created_by=user.id, updated_by=user.id)
         db.add(lk); db.commit(); db.refresh(lk)
         out.append(_link_out(lk, f))
+    _reindex_document_search(db, data.entity, data.entity_id)
     return success(out, "Đã gắn file", 201)
 
 
@@ -657,7 +678,9 @@ def remove(link_id: int, db: Session = Depends(get_db), user=Depends(get_current
         _check(db, user, lk.entity, "manage", lk.entity_id)
         _block_version_in_approval(db, lk.entity, lk.entity_id)
     fid = lk.file_id
+    entity, entity_id = lk.entity, lk.entity_id
     db.delete(lk); db.flush()
     _delete_file_if_orphan(db, fid)      # còn dùng chỗ khác thì giữ file
     db.commit()
+    _reindex_document_search(db, entity, entity_id)
     return success(None, "Đã xóa")

@@ -37,6 +37,14 @@ const STORAGE_LOCATION_LIST_ID = 'document-storage-locations'
 
 interface DocumentExtraInfoFieldsProps {
   form: UseFormReturn<DocumentRecordFormValues>
+  /**
+   * Công tắc TẠM TẮT hạn xem tệp (phase 09, duoc-CR-478, mặc định TẮT) — TẮT
+   * thì ẩn hẳn ô «Xem tệp đính kèm tới ngày» thay vì để nó lên đó hứa suông
+   * (backend không xét hạn nào cả khi công tắc tắt). Không truyền = coi như
+   * BẬT (màn TẠO bước 1 chưa kịp biết giá trị thật thì cứ hiện, xem
+   * `document-create-page.tsx`).
+   */
+  attachmentViewWindowEnabled?: boolean
 }
 
 /**
@@ -48,7 +56,10 @@ interface DocumentExtraInfoFieldsProps {
  * **Mức mật và độ khẩn là hai thang ĐỘC LẬP**: một thông báo hỏa tốc vẫn có thể
  * công khai. Đặt cạnh nhau nhưng không bao giờ gộp.
  */
-export function DocumentExtraInfoFields({ form }: DocumentExtraInfoFieldsProps) {
+export function DocumentExtraInfoFields({
+  form,
+  attachmentViewWindowEnabled = true,
+}: DocumentExtraInfoFieldsProps) {
   const confidentialLevels = useSecurityLevelOptions(SECURITY_LEVEL_KIND_CONFIDENTIAL)
   const urgencyLevels = useSecurityLevelOptions(SECURITY_LEVEL_KIND_URGENCY)
   const { data: employees } = useEmployees({ page_size: 1000, is_active: true })
@@ -279,25 +290,31 @@ export function DocumentExtraInfoFields({ form }: DocumentExtraInfoFieldsProps) 
 
       {/*  HẠN XEM TỆP — khác hẳn «Hết hiệu lực» ở trên, nên đứng ngay cạnh nó để
            người khai nhìn thấy cả hai mà phân biệt: văn bản hết hiệu lực thì vẫn
-           phải tra lại được, còn cái này khóa chính TỆP đính kèm. */}
-      <FormField
-        control={form.control}
-        name="attachment_view_until"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Xem tệp đính kèm tới ngày</FormLabel>
-            <FormControl>
-              <DatePicker value={field.value} onChange={field.onChange} />
-            </FormControl>
-            <FormDescription>
-              Quá ngày này thì <strong>không ai mở hay tải được tệp đính kèm</strong> của văn
-              bản nữa (kể cả bằng đường dẫn cũ). Hết ngày đã chọn vẫn còn xem được. Trống =
-              không đặt hạn.
-            </FormDescription>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+           phải tra lại được, còn cái này khóa chính TỆP đính kèm.
+
+           ⚠️ ẨN HẲN khi công tắc tắt (phase 09, duoc-CR-478, mặc định TẮT) —
+           không chỉ khóa ô: hiện lên mà backend không xét hạn nào là hứa một
+           điều không giữ được, người khai tưởng mình vừa khóa được tệp. */}
+      {attachmentViewWindowEnabled && (
+        <FormField
+          control={form.control}
+          name="attachment_view_until"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Xem tệp đính kèm tới ngày</FormLabel>
+              <FormControl>
+                <DatePicker value={field.value} onChange={field.onChange} />
+              </FormControl>
+              <FormDescription>
+                Quá ngày này thì <strong>không ai mở hay tải được tệp đính kèm</strong> của văn
+                bản nữa (kể cả bằng đường dẫn cũ). Hết ngày đã chọn vẫn còn xem được. Trống =
+                không đặt hạn.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      )}
 
       <FormField
         control={form.control}

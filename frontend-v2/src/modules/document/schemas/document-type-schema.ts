@@ -45,6 +45,10 @@ export const documentTypeSchema = z.object({
   auto_issue_after_approval: z.boolean(),
   is_confidential_type: z.boolean(),
 
+  //  Thư mục mặc định (phase 06, duoc-CR-476) — `0` = chưa khai, để trống trên
+  //  ô chọn (`FolderPicker` chế độ MỘT). Không âm: id thư mục thật luôn > 0.
+  default_folder_id: z.coerce.number().int('Nhập số nguyên').min(0, 'Không âm'),
+
   is_active: z.boolean(),
 })
 

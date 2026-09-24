@@ -128,6 +128,13 @@ export interface DataTableProps<T> {
 
   onRowClick?: (row: T) => void
   /**
+   * Bấm ĐÚP vào một hàng — cộng thêm, không đổi hành vi mặc định của
+   * `onRowClick` (vẫn chạy trên MỌI cú bấm, kể cả cú đầu của một lượt bấm
+   * đúp). Dùng cho màn cần tách "chọn" (bấm thường) khỏi "mở" (bấm đúp) kiểu
+   * Google Drive — xem `folder-documents-table.tsx`, nơi dùng đầu tiên.
+   */
+  onRowDoubleClick?: (row: T, event: React.MouseEvent) => void
+  /**
    * Class thêm cho MỘT HÀNG, tính theo dữ liệu của chính hàng đó.
    *
    * Dành cho bảng có hàng KHÔNG ĐỒNG HẠNG — hàng gom nhóm và hàng con của nó
@@ -254,6 +261,7 @@ export function DataTable<T>({
   emptyMessage = 'Không có dữ liệu.',
   errorMessage = 'Không tải được danh sách. Kiểm tra kết nối hoặc quyền truy cập.',
   onRowClick,
+  onRowDoubleClick,
   rowClassName,
   onRowHover,
   onRefresh,
@@ -649,6 +657,7 @@ export function DataTable<T>({
                   key={getRowId(row)}
                   className={cn(ROW_BG, onRowClick && 'cursor-pointer', rowClassName?.(row))}
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
+                  onDoubleClick={onRowDoubleClick ? (event) => onRowDoubleClick(row, event) : undefined}
                   onMouseEnter={onRowHover ? () => onRowHover(row) : undefined}
                 >
                   {visibleColumns.map((column) => {

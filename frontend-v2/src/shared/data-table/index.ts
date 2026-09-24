@@ -18,4 +18,5 @@
 export { DataTable, type DataTableProps } from './data-table'
 export { PAGE_SIZE_OPTIONS } from './data-table-pagination'
 export { FilterResetButton, type FilterResetButtonProps } from './filter-reset-button'
+export { createSelectionColumn, type SelectionColumnOptions } from './selection-column'
 export type { DataTableColumn, DataTablePagination } from './types'

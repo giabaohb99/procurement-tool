@@ -207,7 +207,14 @@ export function DocumentBookPage() {
         searchFields={(row) => [row.code, row.name, row.company_name]}
         searchPlaceholder="Tìm theo mã sổ, tên sổ hoặc pháp nhân…"
         searchPlaceholderShort="Tìm mã sổ, tên sổ…"
-        detailPath={appRoutes.document.bookDetail}
+        //  ⚠️ Nhảy THẲNG vào tab «Văn bản trong sổ» (duoc-CR-474, 23/09/2026) — không
+        //  còn tab «Thông tin sổ» mặc định. Lý do bấm một dòng/một thẻ ở màn này
+        //  gần như luôn là để xem SỔ ĐANG CÓ GÌ, không phải để sửa cấu hình sổ;
+        //  tab kia vẫn cách đúng một cú bấm. `detailPath` là MỘT hàm dùng chung
+        //  cho cả dòng bảng (desktop) lẫn thẻ (khổ hẹp, xem `DocumentBookCard`)
+        //  — `CatalogTable`/`DataTable` không tách được hai đích khác nhau cho
+        //  hai khổ màn, nên cả hai cùng đổi theo.
+        detailPath={(id) => appRoutes.document.bookDetail(id, 'documents')}
         filterRows={filterRows}
         //  Khổ hẹp: THẺ thay bảng — xem `DocumentBookCard`.
         mobileCard={(row) => <DocumentBookCard book={row} year={year} />}

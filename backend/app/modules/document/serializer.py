@@ -33,7 +33,17 @@ def _lookup(db: Session, model, ids, *fields) -> dict[int, tuple]:
     return {row[0]: tuple(row[1:]) for row in rows}
 
 
-def serialize_many(db: Session, docs: list[Document]) -> list[dict]:
+def serialize_many(db: Session, docs: list[Document], user=None) -> list[dict]:
+    """`user` TÙY CHỌN (phase 04, duoc-CR-475): truyền vào thì trường `folders`
+    lọc bớt thư mục người XEM không thấy (§"Bảo mật" của `plan.md` — tên thư
+    mục riêng tư không được rò qua breadcrumb của văn bản).
+
+    ⚠️ Bỏ trống → ĐÓNG (không trả thư mục nào), KHÔNG PHẢI mở hết như bản đầu
+    phase 04 — vá 23/09/2026 (gap #2 để lại từ phase 04): nơi gọi quên truyền
+    `user` (từng bắt được ở `dashboard_service.py`/`scope_controller.py`) là
+    lỗi của NƠI GỌI, không được để lỗi đó lộ tên thư mục riêng tư ra ngoài.
+    Không có `user` thì không có gì để tính "thấy được gì" — thà rỗng còn hơn
+    lộ."""
     if not docs:
         return []
 
@@ -53,6 +63,22 @@ def serialize_many(db: Session, docs: list[Document]) -> list[dict]:
         "allow_manual",
     )
 
+    #  Thư mục (phase 03 cây thư mục) — MỘT truy vấn cho cả trang, không N+1.
+    from app.modules.doc_catalog import folder_link_bulk_service
+
+    doc_ids = [d.id for d in docs]
+    #  `user=None` → RỖNG, không gọi `folders_for_documents(user=None)` (hàm đó
+    #  tự hiểu `user=None` là "bỏ lọc, trả hết" — đúng cho những nơi TRUYỀN
+    #  THẲNG `user=None` có chủ ý, không phải cho việc QUÊN truyền ở tầng này).
+    folder_map = (
+        folder_link_bulk_service.folders_for_documents(db, doc_ids, user=user)
+        if user is not None else {}
+    )
+    #  `user=None` → hàm tự ĐÓNG (rỗng) — xem docstring của
+    #  `primary_folder_path_for_documents` (vá 23/09/2026, cùng đợt).
+    primary_paths = folder_link_bulk_service.primary_folder_path_for_documents(
+        db, doc_ids, user=user)
+
     version_ids = [d.current_version_id for d in docs if d.current_version_id]
     versions = {
         v.id: v for v in
@@ -69,6 +95,11 @@ def serialize_many(db: Session, docs: list[Document]) -> list[dict]:
         .filter(FileLink.entity == ATTACH_ENTITY, FileLink.entity_id.in_(version_ids))
         .group_by(FileLink.entity_id).all()
     ) if version_ids else {}
+
+    #  Công tắc hạn xem tệp (phase 09, duoc-CR-478) — MỘT lần tra cho cả trang,
+    #  giá trị giống nhau cho mọi dòng nên không tra lại trong vòng lặp bên dưới.
+    from app.core import app_settings
+    attach_window_on = bool(app_settings.get("doc_attachment_view_window_enabled"))
 
     def name(table: dict, key, index: int = 0) -> str:
         row = table.get(key)
@@ -96,12 +127,25 @@ def serialize_many(db: Session, docs: list[Document]) -> list[dict]:
                 numbering_rules.get(doc.numbering_rule_id, (False,))[0]
                 and doc.issue_number
             ),
+            "folders": folder_map.get(doc.id, []),
+            "primary_folder_path": primary_paths.get(doc.id, ""),
+            #  Tab mặc định (phase 09) suy từ đây: bản đang dùng KHÔNG có nội
+            #  dung soạn thảo mà CÓ tệp → mở thẳng tab Tệp. Không thêm cột nào —
+            #  đọc thẳng `content_html` đã nạp sẵn ở trên (`versions`), không
+            #  phải truy vấn thêm. Văn bản chưa có phiên bản nào (lý thuyết, id
+            #  hỏng) thì coi như không có nội dung.
+            "has_content": bool((version.content_html or "").strip()) if version else False,
+            #  Công tắc TẠM TẮT hạn xem tệp (duoc-CR-478) — giao diện dùng để ẩn
+            #  ô «Xem tệp đính kèm tới ngày» khi tắt. Gắn theo TỪNG văn bản (dù
+            #  giá trị toàn hệ giống nhau) để màn TẠO đọc được flag này ngay từ
+            #  phản hồi của bước lưu nháp đầu tiên, không phải gọi thêm API nào.
+            "attachment_view_window_enabled": attach_window_on,
         })
     return out
 
 
-def serialize(db: Session, doc: Document) -> dict:
-    return serialize_many(db, [doc])[0]
+def serialize(db: Session, doc: Document, user=None) -> dict:
+    return serialize_many(db, [doc], user=user)[0]
 
 
 def base_fields(doc: Document) -> dict:
@@ -142,6 +186,9 @@ def base_fields(doc: Document) -> dict:
         "source_document_id": doc.source_document_id,
         #  F13 — cơ chế áp dụng, hộp thoại ban hành chọn sẵn theo giá trị này.
         "apply_mode": doc.apply_mode,
+        #  Cách tạo (24/09/2026) — tab «Văn bản» là trình SOẠN THẢO (1) hay trình
+        #  XEM TỆP (2). Xem `model.CONTENT_MODE_LABELS`.
+        "content_mode": doc.content_mode,
         #  Băng "cần rà lại" trên trang chi tiết đọc thẳng hai cột này (E11 a/b).
         "needs_review": doc.needs_review,
         "needs_review_note": doc.needs_review_note,

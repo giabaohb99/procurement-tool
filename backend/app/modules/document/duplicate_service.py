@@ -55,6 +55,7 @@ def duplicate(db: Session, source: Document, actor: int) -> Document:
         legacy_code=source.legacy_code,
         storage_location=source.storage_location,
         apply_mode=source.apply_mode,
+        content_mode=source.content_mode,
         legal_issuer=source.legal_issuer,
         legal_url=source.legal_url,
         recipient_summary=source.recipient_summary,
@@ -101,6 +102,20 @@ def duplicate(db: Session, source: Document, actor: int) -> Document:
 
     db.commit()
     db.refresh(copied)
+
+    #  Thư mục lưu + chỉ mục TÌM KIẾM TOÀN VĂN (H1, rà soát 23/09/2026) — trước
+    #  đây bản sao không gắn thư mục nào (mồ côi, không hiện trên cây) và
+    #  không lên chỉ mục (không tìm được) cho tới khi ai chạy script tay.
+    #  Rơi về thư mục MẶC ĐỊNH của loại/pháp nhân (cùng luật `resolve_default`)
+    #  chứ không chép nguyên thư mục của bản gốc — bản sao là dữ liệu thử độc
+    #  lập, không phải bản trích/clone đi theo cây thư mục của nguồn.
+    from app.modules.doc_catalog import folder_link_service
+
+    folder_link_service.ensure_not_orphan(db, copied, actor)
+
+    from . import search_index_service
+
+    search_index_service.queue_reindex(db, copied.id)
     return copied
 
 

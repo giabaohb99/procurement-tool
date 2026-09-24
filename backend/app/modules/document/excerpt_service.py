@@ -85,6 +85,16 @@ def create_excerpt(db: Session, source: Document, title: str, content_html: str,
     ))
     db.commit()
     db.refresh(excerpt)
+
+    #  Thư mục lưu + chỉ mục TÌM KIẾM TOÀN VĂN (H1, rà soát 23/09/2026) — bản
+    #  trích trước đây không gắn thư mục nào (mồ côi) và không lên chỉ mục.
+    from app.modules.doc_catalog import folder_link_service
+
+    folder_link_service.ensure_not_orphan(db, excerpt, actor)
+
+    from . import search_index_service
+
+    search_index_service.queue_reindex(db, excerpt.id)
     return excerpt
 
 

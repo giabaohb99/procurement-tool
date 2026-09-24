@@ -14,8 +14,9 @@ import {
   useFilterQuery,
 } from '@/shared/conditional-filter'
 import { appRoutes } from '@/shared/constants/app-routes'
-import { DataTable } from '@/shared/data-table'
+import { createSelectionColumn, DataTable } from '@/shared/data-table'
 import { usePageResetOnFilterChange } from '@/shared/hooks/use-page-reset-on-filter-change'
+import { useRowSelection } from '@/shared/hooks/use-row-selection'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import { LIST_TOOLBAR_STICKY } from '@/modules/hr/utils/list-sticky'
@@ -26,12 +27,20 @@ import { Card } from '@/shared/ui/card'
 import { QuickFilterField, QuickFilterSheet } from '@/shared/ui/quick-filter-sheet'
 import { SearchField } from '@/shared/ui/search-field'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
+import { Switch } from '@/shared/ui/switch'
+import type { DataTableColumn } from '@/shared/data-table'
 import { DocumentCard } from './document-card'
+import { FOLDER_FILTER_ALL } from './document-folder-filter-select'
+import { FolderBulkActions } from './folder-bulk-actions'
+import { FolderFilterControl } from './folder-filter-control'
+import { SearchSnippet } from './search-snippet'
 import { DOCUMENT_LIST_FILTER_FIELDS } from '../config/document-list-filter-fields'
 import { useActiveDocumentTypes } from '../hooks/use-document-types'
+import { MIN_QUERY_LENGTH, useDocumentSearch } from '../hooks/use-document-search'
 import { useDocuments } from '../hooks/use-documents'
 import { useMyDocumentTasks } from '../hooks/use-my-document-approvals'
 import { STATUS_LABELS, type DocumentRecord } from '../types/document-record'
+import type { DocumentSearchResult } from '../types/document-search'
 import { usePrefetchDocument } from '../hooks/use-prefetch-document'
 import { useOutgoingDocumentColumns } from './outgoing-document-columns'
 
@@ -40,10 +49,11 @@ const ALL = 'all'
 const FILTER_CONFIG = {
   fields: DOCUMENT_LIST_FILTER_FIELDS,
   allowConjunctionToggle: true,
-  //  Ba ô trên thanh công cụ cộng với tab đang mở. Thiếu tên nào ở đây là bấm
-  //  "Áp dụng" ở bộ lọc nâng cao xong mất luôn ô đó (riêng `tab` thì màn hình
-  //  nhảy về tab kia).
-  preserveParams: ['q', 'type', 'status', 'tab'],
+  //  Bốn ô trên thanh công cụ cộng với tab đang mở, cộng công tắc tìm toàn văn
+  //  (phase 07) và ô lọc thư mục (phase 06, duoc-CR-476). Thiếu tên nào ở đây
+  //  là bấm "Áp dụng" ở bộ lọc nâng cao xong mất luôn ô đó (riêng `tab` thì
+  //  màn hình nhảy về tab kia).
+  preserveParams: ['q', 'type', 'status', 'tab', 'full_text', 'folder_id', 'folder_sub'],
 }
 
 export function OutgoingDocumentsTab() {
@@ -75,11 +85,35 @@ function OutgoingDocumentsContent() {
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [typeId, setTypeId] = useUrlParamState('type', ALL)
   const [status, setStatus] = useUrlParamState('status', ALL)
+  //  Công tắc «Tìm cả nội dung» (phase 07, duoc-CR-477) — TẮT thì giữ nguyên
+  //  hành vi cũ (LIKE 6 cột siêu dữ liệu qua `useDocuments`); BẬT thì chuyển
+  //  sang `/api/documents/search` (đọc thêm nội dung soạn thảo + chữ trong
+  //  tệp đính kèm), đọc/ghi URL để chia sẻ được đường dẫn kết quả tìm.
+  const [fullTextParam, setFullTextParam] = useUrlParamState('full_text', 'false')
+  const isFullText = fullTextParam === 'true'
+  //  Ô lọc «Thư mục» (phase 06, duoc-CR-476) — `-1` (`FOLDER_FILTER_ALL`) =
+  //  chưa lọc, KHÔNG dùng `0` làm mốc "tất cả" (CR-322: id thật của một dòng
+  //  luôn là giá trị thật, không được trưng dụng làm sentinel).
+  const [folderIdParam, setFolderIdParam] = useUrlParamState('folder_id', String(FOLDER_FILTER_ALL))
+  const folderId = Number(folderIdParam)
+  const [folderSubParam, setFolderSubParam] = useUrlParamState('folder_sub', 'true')
+  const includeSubfolders = folderSubParam !== 'false'
   //  Bung MỘT dòng tại một thời điểm: các bản riêng phải hỏi máy chủ, mà hook
   //  không gọi được trong vòng lặp. Mở dòng khác thì dòng đang mở tự đóng —
   //  cũng đúng thói quen dùng: người ta soi từng bản gốc một.
   const [expandedRow, setExpandedRow] = useState<number | null>(null)
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
+  //  Tick chọn nhiều dòng cho thao tác hàng loạt «Thêm vào thư mục…» — dùng
+  //  chung `useRowSelection`/`createSelectionColumn` với bảng văn bản của
+  //  trang thư mục (`folder-documents-table.tsx`, phase 05). Destructure
+  //  thẳng (không giữ nguyên đối tượng `selection`) để `react-hooks/exhaustive-deps`
+  //  theo dõi được TỪNG hàm riêng trong mảng phụ thuộc của `useMemo` cột.
+  const {
+    selectedIds: selectedDocIds,
+    toggleRow: toggleDocRow,
+    toggleAllOnPage: toggleAllDocsOnPage,
+    clear: clearDocSelection,
+  } = useRowSelection()
 
   const documentTypes = useActiveDocumentTypes()
   //  Văn bản nào trong bảng đang chờ CHÍNH người đang xem duyệt — để đánh dấu
@@ -97,22 +131,53 @@ function OutgoingDocumentsContent() {
   const filter = useFilterContext()
   //  Đổi bất kỳ điều kiện nào cũng phải về trang 1 — đang ở trang 5 mà lọc còn
   //  ba dòng thì màn hình trống trơn, người dùng tưởng không có kết quả.
-  const [page, setPage] = usePageResetOnFilterChange([queryKey, debouncedValue, typeId, status])
+  const [page, setPage] = usePageResetOnFilterChange([
+    queryKey,
+    debouncedValue,
+    typeId,
+    status,
+    isFullText,
+    folderId,
+    includeSubfolders,
+  ])
 
-  //  Điều kiện lọc gom một chỗ: bảng và nút Xuất Excel phải nhìn cùng một bộ,
-  //  nếu không thì file tải về khác hẳn thứ đang hiện trên màn hình.
-  const filterParams = {
+  //  Điều kiện lọc gom một chỗ (KHÔNG kèm `q`): bảng thường lẫn tìm toàn văn
+  //  đều dùng chung bộ này, mỗi bên tự thêm câu tìm theo cách của mình — bảng
+  //  và nút Xuất Excel cũng phải nhìn cùng một bộ, nếu không thì file tải về
+  //  khác hẳn thứ đang hiện trên màn hình.
+  //
+  //  `folder_id`/`include_subfolders` KHÔNG đi qua `DOCUMENT_LIST_FILTER_FIELDS`
+  //  (`ConditionalFilter`) — engine đó luôn gắn hậu tố toán tử vào tên param
+  //  (`folder_id__eq=`), trong khi backend `_list_query` đọc thẳng hai tên này
+  //  từ query string GỐC, ngoài whitelist `FILTERABLE` (xem
+  //  `api/document-api.ts:DocumentListParams`). Vì vậy đây là MỘT Ô RIÊNG,
+  //  cùng lối `typeSelect`/`statusSelect`.
+  const baseFilterParams = {
     ...queryParams,
-    q: debouncedValue.trim() || undefined,
     doc_type_id: typeId === ALL ? undefined : Number(typeId),
     status: status === ALL ? undefined : Number(status),
+    folder_id: folderId === FOLDER_FILTER_ALL ? undefined : folderId,
+    include_subfolders: folderId === FOLDER_FILTER_ALL ? undefined : includeSubfolders,
   }
+  const filterParams = { ...baseFilterParams, q: debouncedValue.trim() || undefined }
 
-  const { data, isLoading, isError } = useDocuments({
-    ...filterParams,
-    page,
-    page_size: pageSize,
-  })
+  //  Gọi CẢ HAI hook mọi lượt render (luật hook cố định) — `enabled` quyết
+  //  định hook nào THẬT SỰ bắn request. TẮT «Tìm cả nội dung»: `useDocuments`
+  //  chạy như cũ, `useDocumentSearch` đứng yên (thiếu `q` hợp lệ). BẬT: ngược
+  //  lại — xem `use-documents.ts`/`use-document-search.ts`.
+  const { data, isLoading, isError } = useDocuments(
+    { ...filterParams, page, page_size: pageSize },
+    { enabled: !isFullText },
+  )
+  const {
+    data: searchData,
+    isLoading: searchLoading,
+    isError: searchError,
+  } = useDocumentSearch(keyword, { ...baseFilterParams, page, page_size: pageSize }, isFullText)
+
+  const activeData = isFullText ? searchData : data
+  const activeLoading = isFullText ? searchLoading : isLoading
+  const activeError = isFullText ? searchError : isError
 
   const [exporting, setExporting] = useState(false)
 
@@ -147,23 +212,62 @@ function OutgoingDocumentsContent() {
   })
 
   const rows = useMemo(() => {
-    const items = data?.items ?? []
+    const items = activeData?.items ?? []
     if (!expandedRow) return items
     const clones = (privateCopies?.items ?? []).filter((row) => row.source_document_id === expandedRow)
 
     return items.flatMap((row) => (row.id === expandedRow ? [row, ...clones] : [row]))
-  }, [data?.items, privateCopies?.items, expandedRow])
+  }, [activeData?.items, privateCopies?.items, expandedRow])
 
   //  Bọc `useCallback` vì hook cột nhận nó vào mảng phụ thuộc của `useMemo`:
   //  hàm mới mỗi lần render là bộ cột dựng lại mỗi lần render.
   const handleExpandRow = useCallback((id: number | null) => setExpandedRow(id), [])
 
-  const columns = useOutgoingDocumentColumns({
+  const baseColumns = useOutgoingDocumentColumns({
     expandedRow,
     setExpandedRow: handleExpandRow,
     awaitingMyApproval,
     canCreate,
   })
+
+  //  BẬT «Tìm cả nội dung»: chèn đoạn trích + nhãn nơi trúng NGAY DƯỚI ô «Tên
+  //  văn bản» — hậu xử lý mảng cột thay vì sửa `outgoing-document-columns.tsx`
+  //  (bộ cột dùng chung cho cả hai chế độ). Cùng nhịp này chèn LUÔN cột «Chọn»
+  //  ở đầu bảng (phase 06, duoc-CR-476) — dùng chung `createSelectionColumn`
+  //  với `folder-document-columns.tsx`. Tick chọn tính trên đúng các dòng
+  //  ĐANG HIỆN của trang này, không phải "chọn tất cả" phía server (xem
+  //  `use-row-selection.ts`).
+  const columns = useMemo<DataTableColumn<DocumentRecord>[]>(() => {
+    const withSnippet = isFullText
+      ? baseColumns.map((column) => {
+          if (column.key !== 'title') return column
+          const baseCell = column.cell
+          return {
+            ...column,
+            cell: (row: DocumentRecord) => (
+              <div className="min-w-0">
+                <div className="truncate">{baseCell(row)}</div>
+                <SearchSnippet hit={(row as DocumentSearchResult).search} />
+              </div>
+            ),
+          }
+        })
+      : baseColumns
+
+    const idsOnPage = rows.map((row) => row.id)
+    const allOnPageSelected = idsOnPage.length > 0 && idsOnPage.every((id) => selectedDocIds.has(id))
+    const someOnPageSelected = idsOnPage.some((id) => selectedDocIds.has(id))
+    const selectionColumn = createSelectionColumn<DocumentRecord>({
+      getRowId: (row) => row.id,
+      getRowLabel: (row) => `văn bản ${row.title}`,
+      selectedIds: selectedDocIds,
+      onToggleRow: toggleDocRow,
+      onToggleAllOnPage: () => toggleAllDocsOnPage(idsOnPage),
+      allOnPageSelected,
+      someOnPageSelected,
+    })
+    return [selectionColumn, ...withSnippet]
+  }, [baseColumns, isFullText, rows, selectedDocIds, toggleDocRow, toggleAllDocsOnPage])
 
   //  ⚠️ Hai ô chọn dựng MỘT LẦN rồi dùng cho cả hai khổ (hàng ngang ở màn rộng ·
   //  tờ trượt ở màn hẹp). Chép hai bản là hai khổ màn lọc ra hai kết quả khác
@@ -214,6 +318,40 @@ function OutgoingDocumentsContent() {
     </Select>
   )
 
+  //  Công tắc «Tìm cả nội dung» (phase 07) — cùng khuôn `typeSelect`/
+  //  `statusSelect`: dựng MỘT LẦN, dùng lại cho cả hàng ngang (desktop) lẫn
+  //  tờ trượt (khổ hẹp).
+  const fullTextSwitch = (
+    <label className="flex shrink-0 items-center gap-2 text-sm text-muted-foreground">
+      <Switch
+        checked={isFullText}
+        onCheckedChange={(checked) => {
+          setFullTextParam(checked ? 'true' : 'false')
+          setPage(1)
+        }}
+        aria-label="Tìm cả nội dung soạn thảo và tệp đính kèm"
+      />
+      Tìm cả nội dung
+    </label>
+  )
+
+  //  Ô lọc «Thư mục» + «Gồm thư mục con» (phase 06) — cùng khuôn hai ô trên,
+  //  JSX thật nằm ở `folder-filter-control.tsx` để không phình thêm tệp này.
+  const folderFilterControl = (
+    <FolderFilterControl
+      folderId={folderId}
+      onFolderIdChange={(id) => {
+        setFolderIdParam(String(id))
+        setPage(1)
+      }}
+      includeSubfolders={includeSubfolders}
+      onIncludeSubfoldersChange={(value) => {
+        setFolderSubParam(value ? 'true' : 'false')
+        setPage(1)
+      }}
+    />
+  )
+
   return (
     //  ⚠️ `p-3` ở khổ hẹp là BẮT BUỘC, không phải chuyện thẩm mỹ: lề âm của dải
     //  thanh công cụ ghim (`-mx-3 -mt-3` trong `LIST_TOOLBAR_STICKY`) tính theo
@@ -223,9 +361,23 @@ function OutgoingDocumentsContent() {
     //  `min-w-0`: `TabsContent` là hộp flex, mà ô flex mặc định `min-width:auto`
     //  nên thẻ không co xuống dưới bề rộng tự nhiên của bảng bên trong (~1934px).
     //  Thiếu nó thì CẢ TRANG trượt ngang ở khổ hẹp.
-    <Card className="flex min-h-0 w-full min-w-0 flex-1 flex-col p-3 md:p-4">
-      <DataTable
-        columns={columns}
+    //  Bọc THÊM một tầng ngoài `Card` thay vì nhét thanh hàng loạt VÀO TRONG
+    //  nó: `Card` có `-mx-3 -mt-3` kéo thanh công cụ của `DataTable` lên SÁT
+    //  mép trên ở khổ hẹp (`LIST_TOOLBAR_STICKY`, tính đúng theo đúng `p-3`
+    //  của `Card`) — chèn một khối vào TRƯỚC `DataTable` bên trong `Card` sẽ
+    //  làm thanh công cụ ghim đè lên đúng khối đó. Tầng bọc này nhận lại
+    //  `flex-1`/`min-h-0` mà `Card` đang giữ, `Card` bên trong chỉ còn lo phần
+    //  của chính nó.
+    <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-3">
+      {/*  Thanh thao tác hàng loạt «Thêm vào thư mục…» (phase 06) — tự ẩn khi
+           chưa tick dòng nào và chưa có kết quả để báo (`FolderBulkActions`
+           tự `return null`). Không truyền `currentFolder`: màn này không có
+           khái niệm "thư mục đang xem" như trang Quản lý cây thư mục, nên chỉ
+           còn đúng một hành động khả dụng. */}
+      <FolderBulkActions selectedIds={Array.from(selectedDocIds)} onClearSelection={clearDocSelection} />
+      <Card className="flex min-h-0 w-full min-w-0 flex-1 flex-col p-3 md:p-4">
+        <DataTable
+          columns={columns}
         rows={rows}
         getRowId={(row: DocumentRecord) => row.id}
         storageKey="document.records"
@@ -239,16 +391,26 @@ function OutgoingDocumentsContent() {
         //  `ml-auto` mặc định xé nó thành hai mẩu cách nhau 162px. Dồn liền một
         //  cụm — xem `DataTableProps.toolbarActionsClassName`.
         toolbarActionsClassName="max-md:ml-0"
-        isLoading={isLoading}
-        isError={isError}
+        isLoading={activeLoading}
+        isError={activeError}
         onRowClick={(row) => navigate(appRoutes.document.documentDetail(row.id))}
         //  Rê chuột là nạp trước dữ liệu chi tiết — xem `usePrefetchDocument`.
         onRowHover={(row) => prefetchDocument(row.id)}
-        emptyMessage="Chưa có văn bản nào khớp điều kiện đang lọc."
+        //  Chế độ tìm toàn văn cần câu rỗng RIÊNG cho hai ca — gõ chưa đủ 2 ký
+        //  tự (chưa bắn API, không phải "không có kết quả") và tìm rồi nhưng
+        //  không trúng gì — trộn chung một câu là người gõ một chữ đọc ra
+        //  "không tìm thấy" và tưởng chức năng hỏng.
+        emptyMessage={
+          isFullText
+            ? keyword.trim().length < MIN_QUERY_LENGTH
+              ? `Gõ ít nhất ${MIN_QUERY_LENGTH} ký tự để tìm.`
+              : 'Không tìm thấy văn bản nào khớp câu tìm.'
+            : 'Chưa có văn bản nào khớp điều kiện đang lọc.'
+        }
         pagination={{
           page,
           pageSize,
-          total: data?.total ?? 0,
+          total: activeData?.total ?? 0,
           onPageChange: setPage,
           onPageSizeChange: setPageSize,
           unitLabel: 'văn bản',
@@ -300,11 +462,18 @@ function OutgoingDocumentsContent() {
             <QuickFilterSheet
               iconOnly
               activeCount={
-                (typeId !== ALL ? 1 : 0) + (status !== ALL ? 1 : 0) + filter.activeCount
+                (typeId !== ALL ? 1 : 0) +
+                (status !== ALL ? 1 : 0) +
+                (isFullText ? 1 : 0) +
+                (folderId !== FOLDER_FILTER_ALL ? 1 : 0) +
+                filter.activeCount
               }
               onClearAll={() => {
                 setTypeId(ALL)
                 setStatus(ALL)
+                setFullTextParam('false')
+                setFolderIdParam(String(FOLDER_FILTER_ALL))
+                setFolderSubParam('true')
                 setPage(1)
                 filter.reset()
               }}
@@ -312,6 +481,8 @@ function OutgoingDocumentsContent() {
             >
               <QuickFilterField label="Loại văn bản">{typeSelect}</QuickFilterField>
               <QuickFilterField label="Trạng thái">{statusSelect}</QuickFilterField>
+              <QuickFilterField label="Tìm kiếm">{fullTextSwitch}</QuickFilterField>
+              <QuickFilterField label="Thư mục">{folderFilterControl}</QuickFilterField>
               <AdvancedFilterSection />
             </QuickFilterSheet>
 
@@ -328,6 +499,8 @@ function OutgoingDocumentsContent() {
             <div className="hidden md:contents">
               {typeSelect}
               {statusSelect}
+              {fullTextSwitch}
+              {folderFilterControl}
               <ConditionalFilter />
             </div>
 
@@ -366,6 +539,7 @@ function OutgoingDocumentsContent() {
           </>
         }
       />
-    </Card>
+      </Card>
+    </div>
   )
 }

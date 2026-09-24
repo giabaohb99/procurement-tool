@@ -22,12 +22,23 @@ from app.modules.doc_catalog.link_rule_controller import router as link_rule_rou
 from app.modules.doc_catalog.controller import (doc_type_router,
                                                external_party_router,
                                                security_level_router)
+from app.modules.doc_catalog.folder_controller import router as doc_folder_router
+from app.modules.doc_catalog.folder_document_link_controller import (
+    document_folder_router)
+from app.modules.doc_catalog.folder_access_controller import router as doc_folder_access_router
 from app.modules.document.controller import router as document_router
+#  Phase 07 tìm kiếm toàn văn (duoc-CR-477) — `GET /api/documents/search`.
+#  ⚠️ PHẢI đăng ký (`include_router`, xem bên dưới) TRƯỚC `document_router`:
+#  router đó có route `/{document_id}`, khai sau thì FastAPI đọc "search"
+#  thành một `document_id`.
+from app.modules.document.search_controller import router as document_search_router
+from app.modules.document.approval_preview_controller import router as document_approval_preview_router
 from app.modules.document.link_controller import router as document_link_router
 from app.modules.document.scope_controller import router as document_scope_router
 from app.modules.document.signature_controller import router as document_signature_router
 from app.modules.document.clone_controller import router as document_clone_router
 from app.modules.document.dashboard_controller import router as document_dashboard_router
+from app.modules.document.files_controller import router as document_files_router
 from app.modules.document.template_controller import router as document_template_router
 from app.modules.catalog.controller import (brand_router, item_group_router,
                                             unit_router, warehouse_router)
@@ -216,6 +227,9 @@ app.include_router(brand_router)
 app.include_router(doc_type_router)
 app.include_router(external_party_router)
 app.include_router(security_level_router)
+app.include_router(doc_folder_router)
+app.include_router(doc_folder_access_router)
+app.include_router(document_folder_router)
 app.include_router(document_book_router)
 app.include_router(numbering_rule_router)
 app.include_router(issue_code_router)
@@ -229,11 +243,18 @@ app.include_router(document_template_router)
 #
 #  Quy tắc: router nào có đường dẫn TĨNH dưới `/api/documents/...` thì phải
 #  đăng ký TRƯỚC `document_router`. Xem `test_thu_tu_route_van_ban.py`.
+app.include_router(document_approval_preview_router)
 app.include_router(document_link_router)
 app.include_router(document_scope_router)
 app.include_router(document_signature_router)
 app.include_router(document_clone_router)
 app.include_router(document_dashboard_router)
+#  `/{document_id}/attachments` — path ĐỘNG có thêm một đoạn sau id nên KHÔNG
+#  đụng luật thứ tự ở trên (route của `document_router` chỉ khớp đúng MỘT đoạn
+#  sau `/api/documents/`), nhưng vẫn xếp cùng chỗ với các router phụ trợ khác
+#  cho dễ tìm.
+app.include_router(document_files_router)
+app.include_router(document_search_router)   # TRƯỚC document_router — xem ghi chú ở import
 app.include_router(document_router)
 app.include_router(survey_router)
 app.include_router(survey_report_router)

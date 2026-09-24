@@ -18,6 +18,12 @@ ENTITIES = [
     #  bản — ba việc do ba người khác nhau làm mà không tách được (CR-157).
     "doc_type", "doc_template", "doc_numbering_rule", "doc_link_rule",
     "external_party", "document_book", "document", "security_level",
+    #  Cây thư mục văn bản (phase 03, duoc-CR-475). Phạm vi dữ liệu THẬT (theo
+    #  pháp nhân + ACL thư mục) chưa xong ở phase này — nằm ở
+    #  `doc_catalog/folder_tree_service._visible_folder_ids`, sẽ thay bằng
+    #  `folder_access_service` ở phase 04. Khóa này CHỈ gác "có được đụng vào
+    #  màn Quản lý cây thư mục không", cùng vai trò với các khóa Văn thư khác.
+    "doc_folder",
     # Phân hệ Duyệt dấu
     "seal_request", "seal_type",
     # Phân hệ Đặt xe
@@ -189,6 +195,7 @@ ENTITY_LABELS = {
     "security_level": "Văn thư › Thiết lập › Mức mật / Độ khẩn",
     "document_book": "Văn thư › Sổ văn bản",
     "document": "Văn thư › Văn bản",
+    "doc_folder": "Văn thư › Cây thư mục",
     "seal_request": "Yêu cầu duyệt dấu",
     "seal_type": "Loại con dấu",
     "vehicle_booking": "Yêu cầu đặt xe",

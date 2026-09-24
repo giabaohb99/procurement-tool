@@ -26,6 +26,8 @@ interface DocumentRecordFormProps {
    * chúng không phải nội dung mà người duyệt đang đọc.
    */
   readOnly?: boolean
+  /** Công tắc TẠM TẮT hạn xem tệp (phase 09) — xem `document-extra-info-fields.tsx`. */
+  attachmentViewWindowEnabled?: boolean
   onSubmit: (values: DocumentRecordFormValues) => void
   children?: ReactNode
 }
@@ -46,6 +48,7 @@ export function DocumentRecordForm({
   documentId,
   isLeaveForm = false,
   readOnly = false,
+  attachmentViewWindowEnabled = true,
   onSubmit,
   children,
 }: DocumentRecordFormProps) {
@@ -78,7 +81,10 @@ export function DocumentRecordForm({
           {/* Cùng thứ tự và cùng biểu tượng với hai bước của trang tạo mới — đảo
               đi thì người dùng phải dò lại xem ô mình vừa khai nằm ở đâu. */}
           <FormCard title="Thông tin bổ sung" icon={Layers} iconClassName="text-emerald-600">
-            <DocumentExtraInfoFields form={form} />
+            <DocumentExtraInfoFields
+              form={form}
+              attachmentViewWindowEnabled={attachmentViewWindowEnabled}
+            />
           </FormCard>
         </fieldset>
 

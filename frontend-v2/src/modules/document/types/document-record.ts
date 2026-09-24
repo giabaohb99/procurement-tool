@@ -14,6 +14,8 @@
  * hai người bấm cùng lúc mà client tự đánh số là ra hai văn bản trùng số.
  */
 
+import type { DocumentFolderRef } from './document-folder'
+
 /** Vòng đời văn bản (`van-thu` J01). Số, không phải chuỗi — khớp `tab_document.status`. */
 export const DOCUMENT_STATUS = {
   draft: 1,
@@ -138,6 +140,17 @@ export const APPLY_MODE = {
   clone: 2,
 } as const
 
+/**
+ * CÁCH TẠO văn bản (24/09/2026) — khớp `model.CONTENT_MODE_*` ở backend. Quyết
+ * định tab «Văn bản» ở màn chi tiết là trình SOẠN THẢO hay trình XEM TỆP.
+ */
+export const DOCUMENT_CONTENT_MODE = {
+  /** «Tạo và soạn thảo». */
+  compose: 1,
+  /** «Tạo, không soạn thảo» — văn bản chỉ gồm tệp có sẵn. */
+  files: 2,
+} as const
+
 export interface DocumentRecord {
   id: number
   /** 1 nội bộ · 2 văn bản pháp luật ngoài · 3 văn bản đến. Màn hình chỉ thấy 1. */
@@ -200,6 +213,13 @@ export interface DocumentRecord {
   expire_date: string | null
   /** Hạn XEM TỆP ĐÍNH KÈM — quá ngày này thì tệp không mở/tải được nữa. */
   attachment_view_until: string | null
+  /**
+   * Công tắc TẠM TẮT hạn xem tệp (phase 09, duoc-CR-478) — mặc định TẮT.
+   * TẮT thì giao diện ẩn ô «Xem tệp đính kèm tới ngày»: hiện ô lên mà backend
+   * không xét hạn nào cả là hứa suông. Đọc thẳng từ bản ghi (không cần
+   * `setting.read`) vì giá trị giống nhau cho mọi văn bản.
+   */
+  attachment_view_window_enabled: boolean
 
   /**
    * SỔ VĂN BẢN chứa văn bản này (có thể trống).
@@ -221,6 +241,13 @@ export interface DocumentRecord {
   version_count: number
   attachment_count: number
   /**
+   * Bản ĐANG DÙNG có nội dung soạn thảo hay không — suy từ `content_html` đã
+   * trim ở backend. KHÔNG dùng để chọn trình soạn thảo / trình xem tệp nữa
+   * (24/09/2026) — việc đó đọc `content_mode`, vì văn bản soạn thảo vừa tạo
+   * chưa gõ chữ nào cũng rỗng nội dung.
+   */
+  has_content: boolean
+  /**
    * CẦN RÀ LẠI — bật khi văn bản CHA đổi: lên phiên bản mới hoặc bị bãi bỏ (E11).
    * Hệ thống chỉ đánh dấu, không tự sửa nội dung con.
    */
@@ -228,6 +255,8 @@ export interface DocumentRecord {
   needs_review_note: string
   /** Cơ chế áp dụng — xem `APPLY_MODE`. */
   apply_mode: number
+  /** Cách tạo — xem `DOCUMENT_CONTENT_MODE`. */
+  content_mode: number
   created_at: string
   /** Bản gốc mà dòng này là BẢN RIÊNG của nó; rỗng = văn bản đứng một mình. */
   source_document_id?: number | null
@@ -236,6 +265,25 @@ export interface DocumentRecord {
    * bảng dựa vào nó để quyết định có bày mũi tên bung hay không.
    */
   clone_count?: number
+
+  /**
+   * Thư mục đang gắn văn bản này (phase 03/04, duoc-CR-475) — đã lọc theo
+   * quyền XEM thư mục của người đang đọc: văn bản nằm ở 3 thư mục mà người
+   * xem chỉ thấy 1 thì mảng chỉ có 1 phần tử, không lộ 2 thư mục riêng tư kia.
+   *
+   * Optional dù backend LUÔN trả (`DocumentOut.folders: list[dict] = []`) —
+   * đánh dấu bắt buộc phá typecheck của các fixture test dựng `DocumentRecord`
+   * thủ công ở nơi khác (ngoài phạm vi sở hữu của nhiệm vụ này). Nơi đọc field
+   * này luôn viết `doc.folders ?? []`, không giả định nó tồn tại.
+   */
+  folders?: DocumentFolderRef[]
+  /**
+   * `"CÔNG TY... / Hợp đồng / 2026"` — đường dẫn thư mục CHÍNH, rỗng nếu thư
+   * mục chính không còn thấy được (rơi về thư mục phụ đầu tiên còn thấy được,
+   * hết cả thì rỗng — xem `folder_link_bulk_service.primary_folder_path_for_documents`).
+   * Optional cùng lý do với `folders` ở trên.
+   */
+  primary_folder_path?: string
 }
 
 export interface DocumentVersion {

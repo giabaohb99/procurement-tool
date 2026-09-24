@@ -1,7 +1,9 @@
 import type { AxiosRequestConfig } from 'axios'
 
 import { apiDelete, apiGet, apiPatch, apiPost } from '@/core/api'
+import type { AttachmentFile } from '@/modules/procurement/api/purchase-request-support-api'
 import type { ListParams, PaginatedResult } from '@/shared/types/api'
+import type { ApprovalPreviewInput, ApprovalPreviewResult } from '../types/approval-preview'
 import type { DocumentAccess, DocumentAccessInput } from '../types/document-access'
 import type { DocPrerequisite } from '../types/document-link-rule'
 import type {
@@ -36,6 +38,15 @@ export interface DocumentListParams extends ListParams {
   secrecy_level?: number
   effective_from?: string
   effective_to?: string
+  /**
+   * Lọc theo THƯ MỤC (phase 03/04, duoc-CR-475) — KHÔNG nằm trong whitelist
+   * `FILTERABLE` của backend, đọc trực tiếp từ `request.query_params` ở
+   * `document/controller.py::_list_query`. Thư mục không thấy được (thiếu
+   * quyền Xem) → danh sách RỖNG, không phải 403.
+   */
+  folder_id?: number
+  /** Gộp cả nhánh con của `folder_id`. Bỏ qua nếu không kèm `folder_id`. */
+  include_subfolders?: boolean
 }
 
 /** Bộ trường chung C01 — đúng những gì người soạn khai được. */
@@ -56,6 +67,32 @@ export interface DocumentInput {
   expire_date: string | null
   legacy_code: string
   storage_location: string
+  /**
+   * THƯ MỤC LƯU (phase 03/04, duoc-CR-475). Ở TẠO: bỏ trống → tự vào thư mục
+   * mặc định của loại rồi mới tới thư mục pháp nhân. Ở SỬA: bỏ trống (`null`
+   * hoặc không gửi) → KHÔNG đụng thư mục hiện tại — muốn CHỈ đổi thư mục thì
+   * gọi `documentFolderApi.setDocumentFolders` (`PUT .../folders`) thay vì đi
+   * qua đây.
+   */
+  folder_ids?: number[] | null
+  /** Thư mục CHÍNH trong `folder_ids`. Không nằm trong đó thì backend lấy phần tử đầu. */
+  primary_folder_id?: number | null
+  /** Cách tạo — `DOCUMENT_CONTENT_MODE`. Chốt ở nút cuối màn tạo (lượt sửa bản nháp). */
+  content_mode?: number
+}
+
+/**
+ * Một tệp đính kèm trong tab «Tệp» (phase 09) — `AttachmentFile` gốc kèm ba ô
+ * để dựng CÂY THEO PHIÊN BẢN mà không phải gọi API riêng cho từng bản.
+ */
+export interface DocumentVersionFile extends AttachmentFile {
+  version_id: number
+  /** `2.0` — chuỗi hiển thị, giống `DocumentVersion.version_no`. */
+  version_no: string
+  is_current_version: boolean
+  /** Tên người tải — rỗng nếu người đó không còn hồ sơ nhân sự (chỉ còn email). */
+  created_by_name: string
+  created_at: string
 }
 
 export interface VersionInput {
@@ -157,6 +194,21 @@ export const documentApi = {
     department_id?: number | null
     book_id?: number | null
   }) => apiGet<NumberPreview>(`${DOCUMENT_URL}/number-preview`, { params }),
+
+  /**
+   * Xem trước «Người duyệt dự kiến» — chỉ đọc, không mở phiên duyệt nào
+   * (phase 01, duoc-CR-473). Người duyệt thực tế chốt lúc gửi duyệt thật.
+   */
+  previewApproval: (payload: ApprovalPreviewInput) =>
+    apiPost<ApprovalPreviewResult>(`${DOCUMENT_URL}/approval-preview`, payload),
+
+  /**
+   * Tệp đính kèm của MỌI phiên bản — tab «Tệp» (phase 09). Khác
+   * `purchaseRequestSupportApi.listAttachments('document_version', versionId)`
+   * (chỉ một phiên bản): đường này gộp cả văn bản trong một lần gọi.
+   */
+  listAllAttachments: (documentId: number) =>
+    apiGet<DocumentVersionFile[]>(`${DOCUMENT_URL}/${documentId}/attachments`),
 }
 
 export const documentVersionApi = {

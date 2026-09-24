@@ -154,7 +154,7 @@ def open_stage(db: Session, instance: ApprovalInstance, subject: dict, seq: int)
         return
 
     approvers = approver_resolver.resolve(db, node, subject, instance.started_by_employee_id)
-    approvers = _exclude_submitter(instance, node, approvers)
+    approvers = exclude_submitter_ids(node.approver_kind, instance.started_by_employee_id, approvers)
     approvers, any_skipped = _split_duplicate_approvers(db, instance, node, approvers)
 
     if not approvers:
@@ -187,8 +187,13 @@ def open_stage(db: Session, instance: ApprovalInstance, subject: dict, seq: int)
     task_notification.notify_new_tasks(db, instance, new_tasks)
 
 
-def _exclude_submitter(instance: ApprovalInstance, node, ids: list[int]) -> list[int]:
+def exclude_submitter_ids(approver_kind: int | None, submitter_employee_id: int | None,
+                            ids: list[int]) -> list[int]:
     """I08 — người nộp không duyệt phiếu của chính mình.
+
+    HÀM THUẦN — tách ra 23/09/2026 để `preview_service.preview_flow` (xem trước
+    luồng ở màn tạo văn bản) áp ĐÚNG luật này, không chép lại: lệch một chữ là
+    màn xem trước nói một đằng, lúc gửi duyệt thật ra một nẻo.
 
     Bỏ họ khỏi danh sách chứ không chặn cả bước: bước còn người khác thì vẫn
     chạy bình thường. Bỏ hết thì rơi vào `_handle_no_approver`.
@@ -209,16 +214,36 @@ def _exclude_submitter(instance: ApprovalInstance, node, ids: list[int]) -> list
       bị bỏ qua ở đường khác), chặng 2 không khai dự phòng nên phiếu **kẹt**:
       dòng thời gian vẫn ghi «đang chờ phản hồi» trong khi KHÔNG AI có nút duyệt.
 
-    Hai chặng cùng một người thì `_split_duplicate_approvers` (I06) mới là chỗ
+    Hai chặng cùng một người thì `split_duplicate_approvers` (I06) mới là chỗ
     quyết định — bật *bỏ qua khi trùng người* thì chặng sau tự qua, tắt thì họ
     ký thật lần nữa. Đó là lựa chọn của người khai luồng, không phải của bộ máy.
     """
-    submitter = instance.started_by_employee_id
-    if not submitter:
+    if not submitter_employee_id:
         return ids
-    if getattr(node, "approver_kind", None) == APPROVER_EMPLOYEE:
+    if approver_kind == APPROVER_EMPLOYEE:
         return ids
-    return [employee_id for employee_id in ids if employee_id != submitter]
+    return [employee_id for employee_id in ids if employee_id != submitter_employee_id]
+
+
+def split_duplicate_approvers(ids: list[int], skip_duplicate: int,
+                                already_approved: set[int]) -> tuple[list[int], list[int]]:
+    """I06 — tách `ids` thành (còn cần duyệt, đã trùng người chặng trước).
+
+    HÀM THUẦN, không đọc/ghi gì — tách ra 23/09/2026 khỏi `_split_duplicate_approvers`
+    đúng vì lý do đó: phần NÀY (ai bị coi là trùng) là luật dùng chung với màn
+    xem trước; phần GHI (mở việc «tự qua» + dấu vết) chỉ có nghĩa với một phiên
+    duyệt THẬT đang chạy, nên vẫn ở lại `_split_duplicate_approvers`.
+
+    `already_approved`: người gọi tự tính — phiên đang chạy hỏi CSDL
+    (`_previously_approved`), còn xem trước (`preview_service`) suy ra bằng giả
+    định lạc quan "ai được giao việc ở chặng trước rồi cũng sẽ duyệt".
+    """
+    if skip_duplicate == SKIP_NONE or not ids:
+        return ids, []
+    remaining, duplicate = [], []
+    for employee_id in ids:
+        (duplicate if employee_id in already_approved else remaining).append(employee_id)
+    return remaining, duplicate
 
 
 def _split_duplicate_approvers(db: Session, instance: ApprovalInstance, node,
@@ -230,30 +255,24 @@ def _split_duplicate_approvers(db: Session, instance: ApprovalInstance, node,
     với *bước này tự qua vì trùng người*. Gộp làm một là bản in nói dối rằng có
     thêm một người đã xem xét.
     """
-    if node.skip_duplicate == SKIP_NONE or not ids:
-        return ids, False
-
     already_approved = _previously_approved(db, instance, node)
-    remaining, skipped = [], False
+    remaining, duplicate = split_duplicate_approvers(ids, node.skip_duplicate, already_approved)
 
-    for employee_id in ids:
-        if employee_id in already_approved:
-            db.add(ApprovalTask(
-                instance_id=instance.id, node_seq=node.seq, node_name=node.name or "",
-                order_no=0, assignee_employee_id=employee_id,
-                status=TASK_SKIPPED_DUPLICATE, decided_at=datetime.now(),
-                created_by=instance.updated_by or 0, updated_by=instance.updated_by or 0,
-            ))
-            record_audit(db, instance, ACTION_SKIP_DUPLICATE, instance.updated_by or 0,
-                        node_seq=node.seq, node_name=node.name or "",
-                        actor_employee_id=employee_id,
-                        comment="Người này đã duyệt ở bước trước nên bước này tự qua")
-            skipped = True
-        else:
-            remaining.append(employee_id)
+    for employee_id in duplicate:
+        db.add(ApprovalTask(
+            instance_id=instance.id, node_seq=node.seq, node_name=node.name or "",
+            order_no=0, assignee_employee_id=employee_id,
+            status=TASK_SKIPPED_DUPLICATE, decided_at=datetime.now(),
+            created_by=instance.updated_by or 0, updated_by=instance.updated_by or 0,
+        ))
+        record_audit(db, instance, ACTION_SKIP_DUPLICATE, instance.updated_by or 0,
+                    node_seq=node.seq, node_name=node.name or "",
+                    actor_employee_id=employee_id,
+                    comment="Người này đã duyệt ở bước trước nên bước này tự qua")
 
-    db.flush()
-    return remaining, skipped
+    if duplicate:
+        db.flush()
+    return remaining, bool(duplicate)
 
 
 def _previously_approved(db: Session, instance: ApprovalInstance, node) -> set[int]:

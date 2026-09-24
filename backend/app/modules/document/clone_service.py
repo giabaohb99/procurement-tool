@@ -117,6 +117,7 @@ def create_clones(db: Session, source: Document, company_ids: list[int],
             urgency=source.urgency,
             status=STATUS_DRAFT,
             apply_mode=APPLY_MODE_CLONE,
+            content_mode=source.content_mode,
             source_document_id=source.id,
             #  Bám theo PHIÊN BẢN nào của gốc — cột làm nên toàn bộ giá trị của
             #  việc theo dõi clone: so với `current_version_id` của gốc là biết
@@ -153,6 +154,14 @@ def create_clones(db: Session, source: Document, company_ids: list[int],
         _copy_attachments(db, origin_version.id, version.id, actor)
         _copy_scopes(db, source.id, clone.id, company_id, actor)
 
+        #  Thư mục (phase 03 cây thư mục): bản clone vào thẳng THƯ MỤC PHÁP
+        #  NHÂN của pháp nhân nhận — nó chưa có dòng nối nào nên
+        #  `ensure_not_orphan` đúng là hàm cần gọi, không phải `resolve_default`
+        #  (bản clone không đi qua `DocType.default_folder_id`, luôn là gốc).
+        from app.modules.doc_catalog import folder_link_service
+
+        folder_link_service.ensure_not_orphan(db, clone, actor)
+
         #  Điều kiện 1 — liên kết ngược, `is_system` nên không màn hình nào,
         #  không hàm nào xóa được. Xóa được thì vài tháng sau có bản clone mồ
         #  côi, không truy về gốc.
@@ -173,6 +182,13 @@ def create_clones(db: Session, source: Document, company_ids: list[int],
     db.commit()
     for clone in result:
         db.refresh(clone)
+
+    #  Chỉ mục TÌM KIẾM TOÀN VĂN (H1, rà soát 23/09/2026) — bản clone có thư
+    #  mục (`ensure_not_orphan` ở trên) nhưng trước đây KHÔNG lên chỉ mục.
+    from . import search_index_service
+
+    for clone in result:
+        search_index_service.queue_reindex(db, clone.id)
     return result
 
 

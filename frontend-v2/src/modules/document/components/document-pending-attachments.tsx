@@ -37,7 +37,7 @@ export function DocumentPendingAttachments({ files, onChange }: DocumentPendingA
 
         <p className="text-xs text-muted-foreground">
           Tệp được tải lên ngay sau khi văn bản được tạo. Muốn thêm hay gỡ về sau thì mở
-          tab <strong>Soạn thảo</strong> của văn bản.
+          tab <strong>Thông tin</strong> của văn bản.
         </p>
 
         {files.length > 0 && (

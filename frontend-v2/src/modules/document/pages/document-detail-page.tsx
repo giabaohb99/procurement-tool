@@ -41,7 +41,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/ui/dropdown-menu'
+import { confirm } from '@/shared/ui/confirm-dialog'
 import { ReasonConfirmDialog } from '@/shared/ui/reason-confirm-dialog'
+import { cn } from '@/shared/utils/cn'
 import { mmToPx, RichTextEditor, type RichTextEditorHandle } from '@/shared/ui/rich-text-editor'
 import { SignatureMenu } from '@/shared/ui/rich-text-editor/signature-menu'
 import { ScrollableTabsList } from '@/shared/ui/scrollable-tabs-list'
@@ -50,13 +52,20 @@ import { Tabs, TabsContent, TabsTrigger } from '@/shared/ui/tabs'
 import { DetailPageShell } from '../components/detail-page-shell'
 import { DocumentAmendedBanner } from '../components/document-amended-banner'
 import { DocumentApprovalBanner } from '../components/document-approval-banner'
+import { DocumentApproverPreviewCard } from '../components/document-approver-preview-card'
 import { DocumentPendingIssueNotice } from '../components/document-pending-issue-notice'
 import { DocumentApprovalTab } from '../components/document-approval-tab'
 import { DocumentAccessCard } from '../components/document-access-card'
+import { DocumentFoldersCard } from '../components/document-folders-card'
 import { DocumentScopeCard } from '../components/document-scope-card'
 import { DocumentSignatureCard } from '../components/document-signature-card'
 import { DocumentAttachmentList } from '../components/document-attachment-list'
 import { DocumentAutosaveStatus } from '../components/document-autosave-status'
+import { AttachmentViewerPane } from '../components/attachment-viewer-pane'
+import { DocumentAttachmentSidebar } from '../components/document-attachment-sidebar'
+import { canPreviewInline } from '../helpers/inline-viewable'
+import { useDocumentFiles } from '../hooks/use-document-files'
+import { DocumentFilesTab } from '../components/document-files-tab'
 import { DocumentCopyAction } from '../components/document-copy-action'
 import { DocumentRecordForm } from '../components/document-record-form'
 import { DocumentVersionBanner } from '../components/document-version-banner'
@@ -75,6 +84,7 @@ import { documentToForm, emptyDocumentForm, formToPayload } from '../helpers/doc
 import { effectiveLabel } from '../helpers/document-status'
 import { fillPageMarkers } from '../helpers/page-marker'
 import { useDocumentPermissions } from '../hooks/use-document-access'
+import { useDocumentApprovalPreview } from '../hooks/use-document-approval-preview'
 import { useDocumentAutosave } from '../hooks/use-document-autosave'
 import { useDocumentPageMargins } from '../hooks/use-document-page-margins'
 import {
@@ -89,13 +99,19 @@ import {
   useDocument,
   useDocumentWorkflow,
   useSaveDocument,
+  useSetDocumentContentMode,
   useUpdateDocumentIssueNumber,
 } from '../hooks/use-documents'
 import {
   documentRecordSchema,
   type DocumentRecordFormValues,
 } from '../schemas/document-record-schema'
-import { DOCUMENT_STATUS, EDITABLE_STATUSES, VERSION_STATUS } from '../types/document-record'
+import {
+  DOCUMENT_CONTENT_MODE,
+  DOCUMENT_STATUS,
+  EDITABLE_STATUSES,
+  VERSION_STATUS,
+} from '../types/document-record'
 
 const FORM_ID = 'document-record-form'
 
@@ -195,6 +211,34 @@ export function DocumentDetailPage() {
     navigate(appRoutes.document.documentsTab('outgoing'), { replace: true })
   }, [unreadableItem, navigate])
 
+  //  Tab «Tệp» đã BỎ (24/09/2026) — tệp nay xem ngay trong tab «Văn bản» của
+  //  văn bản tạo bằng «Tạo, không soạn thảo». Đường dẫn cũ `?tab=files` (đã
+  //  gửi qua thư/đánh dấu trang) rơi về tab «Văn bản», không ra tab trống.
+  const activeTab = tab === 'files' ? 'compose' : tab
+  //  Văn bản CHỈ GỒM TỆP: tab «Văn bản» là trình XEM TỆP thay cho trình soạn
+  //  thảo, và mọi nút của trình soạn thảo ẩn đi.
+  const isFilesOnly = record?.content_mode === DOCUMENT_CONTENT_MODE.files
+  const isEditorTab = activeTab === 'compose' && !isFilesOnly
+  //  Văn bản chỉ gồm tệp muốn soạn thêm nội dung → đổi hẳn sang soạn thảo
+  //  (24/09/2026). Tệp vẫn giữ, chuyển sang cột bên phải trình soạn thảo.
+  const setContentMode = useSetDocumentContentMode(documentId)
+  const { data: documentFiles } = useDocumentFiles(documentId)
+  const hasFiles = (documentFiles?.length ?? 0) > 0
+  //  Tệp đang xem NGAY TRONG khung soạn thảo (24/09/2026 — không mở hộp thoại).
+  //  Trên URL để dán link mở đúng tệp; rỗng = đang ở trình soạn thảo.
+  const [fileParam, setFileParam] = useUrlParamState('file', '')
+  const viewingFile = documentFiles?.find((file) => file.id === Number(fileParam)) ?? null
+  async function switchToCompose() {
+    const ok = await confirm({
+      title: 'Chuyển sang soạn thảo?',
+      message:
+        'Tab «Văn bản» sẽ mở trình soạn thảo để gõ nội dung. Tệp đính kèm vẫn giữ nguyên, nằm ở cột bên phải — bấm vào là xem được.',
+      confirmLabel: 'Chuyển sang soạn thảo',
+      tone: 'default',
+    })
+    if (ok) setContentMode.mutate(DOCUMENT_CONTENT_MODE.compose)
+  }
+
   const { can } = usePermission()
   //  Ký là hành vi PHÊ DUYỆT, không phải sửa nội dung — gác bằng `approve` đúng
   //  như backend làm.
@@ -264,8 +308,7 @@ export function DocumentDetailPage() {
   //  dung đều bám cờ này, mà cả mục đích của trạng thái đó là sửa rồi gửi lại.
   //  Tách ra thành nhánh riêng là văn bản bị trả nằm chết, không nút nào bấm được.
   const isDraft = openVersion
-    ? openVersion.status === VERSION_STATUS.draft ||
-      openVersion.status === VERSION_STATUS.returned
+    ? openVersion.status === VERSION_STATUS.draft || openVersion.status === VERSION_STATUS.returned
     : EDITABLE_STATUSES.includes(record?.status ?? 0)
   //  CHỜ BAN HÀNH (26/08/2026) — ký đủ rồi, chờ chính người soạn thảo bấm.
   //
@@ -305,12 +348,30 @@ export function DocumentDetailPage() {
   //  `service.chan_sua_khi_dang_duyet`) — khóa ở đây để người dùng không gõ cả
   //  đoạn rồi mới nhận 409, và để tự động lưu không bắn lỗi theo từng nhịp gõ.
   const viLocaleKey = isSubmitted || rejected
+  //  Cột tệp chỉ hiện khi văn bản CÓ tệp — không có ô tải lên ở đó (đại ca chốt).
+  const showFileColumn = hasFiles
+
+  //  Thẻ «Người duyệt dự kiến» (phase 01, duoc-CR-473) — nằm TRONG tab Phê
+  //  duyệt, chỉ khi CÒN NHÁP và chưa có phiên duyệt; gửi duyệt xong thì tab
+  //  đọc phiên thật (`DocumentApprovalTab`) thay vì dự đoán. Gọi hook vô
+  //  điều kiện — nó tự khóa (`enabled`) khi chưa có `doc_type_id`/`company_id`.
+  const approvalPreview = useDocumentApprovalPreview({
+    doc_type_id: record?.doc_type_id ?? 0,
+    company_id: record?.company_id ?? 0,
+    department_id: record?.department_id ?? 0,
+    secrecy_level: record?.secrecy_level ?? 0,
+    urgency: record?.urgency ?? 0,
+    owner_employee_id: record?.owner_employee_id ?? 0,
+    drafter_employee_id: record?.drafter_employee_id ?? 0,
+    signer_employee_id: record?.signer_employee_id ?? 0,
+    source_document_id: record?.source_document_id ?? 0,
+  })
 
   return (
     // `Tabs` bọc CẢ khung trang để hàng tab nằm cạnh tiêu đề — trang soạn thảo
     // cần từng dòng chiều cao, để tab thành một hàng riêng là đẩy tờ giấy xuống
     // thêm một nấc nữa.
-    <Tabs value={tab} onValueChange={setTab}>
+    <Tabs value={activeTab} onValueChange={setTab}>
       <DetailPageShell
         title={record?.title ?? ''}
         description={
@@ -348,7 +409,7 @@ export function DocumentDetailPage() {
               {/*  Chỉ nói "tự lưu" với người THẬT SỰ sửa được. Người duyệt nay
                    mở được văn bản để đọc — nói với họ là trang đang tự lưu thì
                    họ tưởng mình vừa động vào bài của người khác. */}
-              {tab === 'compose' && !isLocked && canWrite && !viLocaleKey && (
+              {isEditorTab && !isLocked && canWrite && !viLocaleKey && (
                 <>
                   <span aria-hidden>·</span>
                   <DocumentAutosaveStatus
@@ -420,12 +481,12 @@ export function DocumentDetailPage() {
                  ngay dưới tiêu đề chứ không kẹt giữa nút Xóa và mấy nút lệnh
                  (thứ tự khai trong mã, vốn hợp lý ở màn rộng vì cụm căn phải). */}
             <ScrollableTabsList
-              value={tab}
+              value={activeTab}
               className="max-md:order-first max-md:min-w-0 max-md:grow max-md:basis-full"
             >
               <TabsTrigger value="compose" className={TAB_TRIGGER_UNDERLINE}>
                 <FileText className="size-4" />
-                Soạn thảo
+                Văn bản
               </TabsTrigger>
               <TabsTrigger value="info" className={TAB_TRIGGER_UNDERLINE}>
                 <Info className="size-4" />
@@ -450,7 +511,7 @@ export function DocumentDetailPage() {
                  (nền xanh) là việc mà người mở trang đang định làm, giấu nó sau
                  `⋯` là bắt thêm một chạm cho đúng thao tác thường xuyên nhất.
                  Mấy nút viền đi vào `secondaryActions` bên dưới. */}
-            {tab === 'compose' && canWrite && !isLocked && !viLocaleKey && (
+            {isEditorTab && canWrite && !isLocked && !viLocaleKey && (
               <Button type="button" onClick={autosave.saveNow} disabled={autosave.saving}>
                 {autosave.saving ? (
                   <Loader2 className="size-4 animate-spin" />
@@ -459,6 +520,35 @@ export function DocumentDetailPage() {
                 )}
                 Lưu nội dung
               </Button>
+            )}
+
+            {/*  Nút QUY TRÌNH đứng ngoài cùng nút chính (24/09/2026) — mọi lệnh
+                 phụ khác đã gom vào `⋯` (`collapseSecondaryActions`), còn mấy
+                 nút này là bước kế tiếp của văn bản, giấu đi là mất việc. */}
+            {/* Luồng duyệt MỘT BƯỚC tạm thời — P3 thay bằng bộ máy chung. */}
+            {isDraft && canWrite && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => workflow.submit.mutate()}
+                disabled={workflow.submit.isPending}
+              >
+                <Send className="size-4" />
+                Gửi duyệt
+              </Button>
+            )}
+            {isSubmitted && !isMultiStepApproval && (
+              <PermissionGate entity="document" action="approve">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setReasonFor('reject')}
+                  disabled={workflow.reject.isPending}
+                >
+                  <Undo2 className="size-4" />
+                  Trả lại
+                </Button>
+              </PermissionGate>
             )}
 
             {tab === 'info' && canWrite && !viLocaleKey && (
@@ -499,82 +589,98 @@ export function DocumentDetailPage() {
         }
         //  Lệnh PHỤ — khổ hẹp gom vào nút `⋯`, màn rộng bày thẳng ra hàng như cũ.
         //  Nút XÓA do `DetailPageShell` tự thêm vào cuối nhóm này.
+        collapseSecondaryActions
         secondaryActions={
           <>
             {/*  MỘT MENU cho cả nhóm lệnh tệp thay vì bốn nút rời.
                  Trang này có tới tám lệnh; xếp hết ra ngoài thì cụm nút đẩy
                  rộng cả trang và sinh thanh cuộn ngang — đã gặp thật. Ở ngoài
                  chỉ giữ lệnh dùng theo nhịp soạn (Nhập tệp, Lưu, Gửi duyệt). */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button type="button" variant="outline">
-                  <FileText className="size-4" />
-                  Tệp
-                  <ChevronDown className="size-4 opacity-60" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem
-                  //  Lề vừa kéo còn đang ghi thì chưa mở bản in: tab in đọc
-                  //  thẳng bản ghi, mở sớm là in ra lề cũ.
-                  disabled={pageMargins.dangLuu}
-                  onSelect={() =>
-                    window.open(
-                      `${appRoutes.document.documentPrint(documentId)}${versionId ? `?version=${versionId}` : ''}`,
-                      '_blank',
-                      'noopener',
-                    )
-                  }
-                >
-                  <Printer className="size-4" />
-                  In / Xuất PDF
-                </DropdownMenuItem>
-
-                {/* Xuất .docx để người nhận sửa tiếp bằng Word — khác bản in PDF
-                    là bản chốt để ký. Tải qua `downloadFile` vì cần token. */}
-                <DropdownMenuItem
-                  onSelect={() =>
-                    void downloadFile(
-                      `/api/documents/${documentId}/export/docx${versionId ? `?version_id=${versionId}` : ''}`,
-                      `${record?.display_code || 'van-ban'}.docx`,
-                    ).catch(() => toast.error('Không xuất được tệp Word'))
-                  }
-                >
-                  <FileDown className="size-4" />
-                  Xuất Word
-                </DropdownMenuItem>
-
-                {tab === 'compose' && canWrite && !isLocked && !viLocaleKey && (
-                  <DropdownMenuItem onSelect={() => setPageFrameOpen(true)}>
-                    <PanelTop className="size-4" />
-                    Đầu/chân trang
+            {/*  Văn bản CHỈ GỒM TỆP không có nội dung soạn thảo để in/xuất — ẩn cả
+                 menu (chữ «Tệp» ở đây lại dễ đọc nhầm thành tệp đính kèm). */}
+            {isFilesOnly && canWrite && !isLocked && !viLocaleKey && (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={setContentMode.isPending}
+                onClick={() => void switchToCompose()}
+              >
+                <Pencil className="size-4" />
+                Chuyển sang soạn thảo
+              </Button>
+            )}
+            {!isFilesOnly && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button type="button" variant="outline">
+                    <FileText className="size-4" />
+                    Tệp
+                    <ChevronDown className="size-4 opacity-60" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem
+                    //  Lề vừa kéo còn đang ghi thì chưa mở bản in: tab in đọc
+                    //  thẳng bản ghi, mở sớm là in ra lề cũ.
+                    disabled={pageMargins.dangLuu}
+                    onSelect={() =>
+                      window.open(
+                        `${appRoutes.document.documentPrint(documentId)}${versionId ? `?version=${versionId}` : ''}`,
+                        '_blank',
+                        'noopener',
+                      )
+                    }
+                  >
+                    <Printer className="size-4" />
+                    In / Xuất PDF
                   </DropdownMenuItem>
-                )}
 
-                {/*  C19 — chỉ trích được từ văn bản ĐÃ BAN HÀNH: trích từ một
+                  {/* Xuất .docx để người nhận sửa tiếp bằng Word — khác bản in PDF
+                    là bản chốt để ký. Tải qua `downloadFile` vì cần token. */}
+                  <DropdownMenuItem
+                    onSelect={() =>
+                      void downloadFile(
+                        `/api/documents/${documentId}/export/docx${versionId ? `?version_id=${versionId}` : ''}`,
+                        `${record?.display_code || 'van-ban'}.docx`,
+                      ).catch(() => toast.error('Không xuất được tệp Word'))
+                    }
+                  >
+                    <FileDown className="size-4" />
+                    Xuất Word
+                  </DropdownMenuItem>
+
+                  {isEditorTab && canWrite && !isLocked && !viLocaleKey && (
+                    <DropdownMenuItem onSelect={() => setPageFrameOpen(true)}>
+                      <PanelTop className="size-4" />
+                      Đầu/chân trang
+                    </DropdownMenuItem>
+                  )}
+
+                  {/*  C19 — chỉ trích được từ văn bản ĐÃ BAN HÀNH: trích từ một
                      bản nháp là chia ra ngoài thứ chưa ai duyệt.
                      Kèm `canCreate`: bản trích là một VĂN BẢN MỚI, backend đòi
                      `document: create` (`link_controller.create_excerpt`). Người
                      chỉ có quyền đọc mà thấy mục này thì gõ xong cả nội dung
                      trích mới nhận 403 — mất công vô ích. */}
-                {isIssued && canCreate && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onSelect={() => setExcerptOpen(true)}>
-                      <Scissors className="size-4" />
-                      Tạo bản trích
-                    </DropdownMenuItem>
-                  </>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  {isIssued && canCreate && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onSelect={() => setExcerptOpen(true)}>
+                        <Scissors className="size-4" />
+                        Tạo bản trích
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
 
             {/*  Nhập tệp (Word/PDF/Markdown/HTML) CÓ ở đây, không chỉ ở màn dựng
                  mẫu: phần lớn văn bản đã được soạn sẵn ngoài Word rồi mới đưa
                  vào hệ. Chèn tại con trỏ nên vẫn ghép được vào bản đang gõ dở.
                  Điều kiện hiện nút bám đúng điều kiện SỬA ĐƯỢC (bản chưa khóa +
                  có quyền ghi) — như nút Lưu nội dung bên cạnh. */}
-            {tab === 'compose' && canWrite && !isLocked && !viLocaleKey && (
+            {isEditorTab && canWrite && !isLocked && !viLocaleKey && (
               <>
                 {/*  Chữ ký của CHÍNH người đang đăng nhập — không có đường chọn
                      chữ ký người khác, xem `signature-menu`. Cùng điều kiện hiện
@@ -605,19 +711,6 @@ export function DocumentDetailPage() {
 
             <DocumentCopyAction documentId={documentId} canCreate={canCreate} />
 
-            {/* Luồng duyệt MỘT BƯỚC tạm thời — P3 thay bằng bộ máy chung. */}
-            {isDraft && canWrite && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => workflow.submit.mutate()}
-                disabled={workflow.submit.isPending}
-              >
-                <Send className="size-4" />
-                Gửi duyệt
-              </Button>
-            )}
-
             {/* Văn bản ĐÃ ban hành không xóa được (số đã vào sổ) — lối gỡ bỏ
                 duy nhất là bãi bỏ, giữ nguyên dòng và số. */}
             {isIssued && (
@@ -630,20 +723,6 @@ export function DocumentDetailPage() {
                 >
                   <Ban className="size-4" />
                   Bãi bỏ
-                </Button>
-              </PermissionGate>
-            )}
-
-            {isSubmitted && !isMultiStepApproval && (
-              <PermissionGate entity="document" action="approve">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setReasonFor('reject')}
-                  disabled={workflow.reject.isPending}
-                >
-                  <Undo2 className="size-4" />
-                  Trả lại
                 </Button>
               </PermissionGate>
             )}
@@ -669,10 +748,7 @@ export function DocumentDetailPage() {
         {/*  Cũng NGOÀI mọi tab, và vì cùng lý do: «Chờ ban hành» là lúc dễ tưởng
              hệ đứng nhất — ký đủ rồi mà văn bản vẫn chưa có số hiệu. */}
         {isPendingIssue && (
-          <DocumentPendingIssueNotice
-            isDrafter={isDrafter}
-            drafterName={record?.drafter_name}
-          />
+          <DocumentPendingIssueNotice isDrafter={isDrafter} drafterName={record?.drafter_name} />
         )}
 
         <TabsContent value="compose" className="mt-0">
@@ -703,34 +779,81 @@ export function DocumentDetailPage() {
             />
           )}
 
+          {/*  Văn bản CHỈ GỒM TỆP: xem tệp ngay tại đây, danh sách tệp bên phải
+               (thay cho tab «Tệp» cũ, 24/09/2026). */}
+          {isFilesOnly && (
+            <DocumentFilesTab
+              documentId={documentId}
+              currentVersionId={record?.current_version_id ?? null}
+              documentCode={record?.display_code}
+              canWrite={canWrite}
+            />
+          )}
+
           {/* `key` theo phiên bản: đổi sang bản khác thì dựng lại trình soạn
               thảo để nó nạp đúng nội dung mới. */}
-          {version && (
-            <RichTextEditor
-              key={version.id}
-              ref={editorRef}
-              showOutline
-              editable={canWrite && !isLocked && !viLocaleKey}
-              defaultContent={version.content_html ?? ''}
-              onChange={autosave.handleChange}
-              //  Lề đi theo PHIÊN BẢN: kéo thước xong là ghi xuống bản ghi, mở
-              //  lại đúng như lúc đóng — và bản in dùng lại đúng bộ số này.
-              defaultMargins={{
-                left: mmToPx(version.margin_left_mm),
-                right: mmToPx(version.margin_right_mm),
-              }}
-              onMarginsChange={pageMargins.luu}
-              //  Đánh số mục tự động: cờ của chính phiên bản này, bấm là ghi ngay.
-              autoNumber={version.auto_heading_number}
-              onAutoNumberChange={(bat) => saveAutoNumber.mutate(bat)}
-              onEditorReady={setComposeEditor}
-              pageFrame={{
-                headerLeft: drawPageFrame(version.header_left),
-                headerRight: drawPageFrame(version.header_right),
-                footerLeft: drawPageFrame(version.footer_left),
-                footerRight: drawPageFrame(version.footer_right),
-              }}
-            />
+          {version && !isFilesOnly && (
+            //  Cột tệp bên phải khi văn bản có tệp. Bấm tệp → khung chính đổi sang xem tệp; trình soạn
+            //  thảo chỉ ẨN chứ không gỡ, gõ dở mà sang xem tệp không mất chữ.
+            <div
+              className={cn(
+                showFileColumn && 'grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start',
+              )}
+            >
+              <div className="min-w-0">
+                {viewingFile &&
+                  (canPreviewInline(viewingFile.content_type, viewingFile.filename) ? (
+                    <AttachmentViewerPane
+                      key={viewingFile.id}
+                      linkId={viewingFile.id}
+                      filename={viewingFile.filename}
+                      contentType={viewingFile.content_type}
+                      documentCode={record?.display_code}
+                      watermark={false}
+                      fill
+                    />
+                  ) : (
+                    <p className="rounded-md border border-dashed p-8 text-center text-sm text-muted-foreground">
+                      Tệp «{viewingFile.filename}» không xem được ngay trong trang — tải về từ tab
+                      Thông tin để mở.
+                    </p>
+                  ))}
+                <div className={cn(viewingFile && 'hidden')}>
+                  <RichTextEditor
+                    key={version.id}
+                    ref={editorRef}
+                    showOutline
+                    editable={canWrite && !isLocked && !viLocaleKey}
+                    defaultContent={version.content_html ?? ''}
+                    onChange={autosave.handleChange}
+                    //  Lề đi theo PHIÊN BẢN: kéo thước xong là ghi xuống bản ghi, mở
+                    //  lại đúng như lúc đóng — và bản in dùng lại đúng bộ số này.
+                    defaultMargins={{
+                      left: mmToPx(version.margin_left_mm),
+                      right: mmToPx(version.margin_right_mm),
+                    }}
+                    onMarginsChange={pageMargins.luu}
+                    //  Đánh số mục tự động: cờ của chính phiên bản này, bấm là ghi ngay.
+                    autoNumber={version.auto_heading_number}
+                    onAutoNumberChange={(bat) => saveAutoNumber.mutate(bat)}
+                    onEditorReady={setComposeEditor}
+                    pageFrame={{
+                      headerLeft: drawPageFrame(version.header_left),
+                      headerRight: drawPageFrame(version.header_right),
+                      footerLeft: drawPageFrame(version.footer_left),
+                      footerRight: drawPageFrame(version.footer_right),
+                    }}
+                  />
+                </div>
+              </div>
+              {showFileColumn && (
+                <DocumentAttachmentSidebar
+                  files={documentFiles ?? []}
+                  selectedFileId={viewingFile?.id ?? null}
+                  onSelect={(file) => setFileParam(file ? String(file.id) : '')}
+                />
+              )}
+            </div>
           )}
         </TabsContent>
 
@@ -755,6 +878,7 @@ export function DocumentDetailPage() {
             //  Văn bản ĐÃ CÓ HIỆU LỰC vẫn sửa được thông tin — backend chỉ khóa
             //  lúc đang duyệt / chờ ban hành / bị từ chối.
             readOnly={!canWrite || viLocaleKey}
+            attachmentViewWindowEnabled={record?.attachment_view_window_enabled ?? true}
             onSubmit={handleSubmitForm}
           >
             <DocumentAttachmentList
@@ -772,6 +896,15 @@ export function DocumentDetailPage() {
               versionId={versionId}
               isLocked={isLocked}
               canApprove={canApprove}
+            />
+            {/*  THƯ MỤC (phase 06, duoc-CR-476) — đứng NGOÀI khóa `readOnly` của
+                 form chính, đúng luật "đổi thư mục không khóa theo trạng thái
+                 văn bản": văn bản đã ban hành vẫn sắp xếp lại thư mục được. */}
+            <DocumentFoldersCard
+              documentId={documentId}
+              companyId={record?.company_id ?? 0}
+              folders={record?.folders ?? []}
+              canWrite={canWrite}
             />
             {/*  Chỉ còn PHẠM VI ở đây. Thẻ «Bản clone ở pháp nhân con» đã bỏ:
                  nơi nhận bản riêng nay SUY từ chính khối phạm vi này, nên nó
@@ -802,7 +935,18 @@ export function DocumentDetailPage() {
         </TabsContent>
 
         <TabsContent value="approval" className="mt-0">
-          <DocumentApprovalTab instance={approval} documentId={documentId} />
+          {/*  Còn NHÁP, chưa có phiên duyệt → tab này hiện NGƯỜI DUYỆT DỰ KIẾN
+               (chốt 24/09/2026: bỏ thẻ dự kiến nằm chắn đầu trang, tab Phê
+               duyệt đã là chỗ của nó). Gửi duyệt xong thì đọc phiên thật. */}
+          {isDraft && !approval ? (
+            <DocumentApproverPreviewCard
+              preview={approvalPreview.data}
+              isLoading={approvalPreview.isLoading}
+              className="max-w-xl"
+            />
+          ) : (
+            <DocumentApprovalTab instance={approval} documentId={documentId} />
+          )}
         </TabsContent>
 
         <TabsContent value="links" className="mt-0">

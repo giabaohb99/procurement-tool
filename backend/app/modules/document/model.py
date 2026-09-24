@@ -108,6 +108,19 @@ APPLY_MODE_LABELS = {
     APPLY_MODE_CLONE: "Clone thành bản nháp riêng cho từng pháp nhân con",
 }
 
+#  CÁCH TẠO văn bản (24/09/2026) — nút bấm lúc tạo: «Tạo và soạn thảo» (1) hay
+#  «Tạo, không soạn thảo» (2, văn bản chỉ gồm tệp có sẵn). Quyết định tab
+#  «Văn bản» ở màn chi tiết là TRÌNH SOẠN THẢO hay TRÌNH XEM TỆP. Lưu thành cột
+#  chứ không đoán từ "nội dung rỗng + có tệp": văn bản soạn thảo vừa tạo, chưa
+#  gõ chữ nào mà đã đính tệp, sẽ bị đoán nhầm thành văn bản không soạn thảo.
+CONTENT_MODE_COMPOSE = 1
+CONTENT_MODE_FILES = 2
+
+CONTENT_MODE_LABELS = {
+    CONTENT_MODE_COMPOSE: "Soạn thảo",
+    CONTENT_MODE_FILES: "Chỉ gồm tệp đính kèm",
+}
+
 #  Trạng thái coi là "còn sống" — dùng cho gợi ý văn bản trùng (B05) và cho
 #  danh sách chọn văn bản cha ở P2-T19.
 ALIVE_STATUSES = (STATUS_APPROVED, STATUS_EFFECTIVE)
@@ -240,6 +253,10 @@ class Document(Base, AuditMixin):
     clone_source_version_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     #  Cơ chế áp dụng, chọn LÚC BAN HÀNH (F13). Xem `APPLY_MODE_LABELS`.
     apply_mode: Mapped[int] = mapped_column(SmallInteger, default=1)
+    #  Cách tạo — xem `CONTENT_MODE_LABELS`. Chốt ở nút cuối của màn tạo (lượt
+    #  SỬA bản nháp đã sinh ở bước 1, xem `DocumentUpdate.content_mode`).
+    content_mode: Mapped[int] = mapped_column(SmallInteger, default=CONTENT_MODE_COMPOSE,
+                                              server_default="1")
     #  HỘP THƯ đã dùng để gửi thông báo ban hành (26/08/2026) — người soạn chọn
     #  ngay trong hộp thoại Ban hành. Rỗng = gửi bằng địa chỉ hệ thống như cũ.
     #  Giữ lại trên văn bản chứ không chỉ trên nhật ký thư: đây là câu trả lời
@@ -275,6 +292,14 @@ class Document(Base, AuditMixin):
     book_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     book_seq_no: Mapped[int | None] = mapped_column(Integer, nullable=True)
     book_year: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
+
+    #  ── Thư mục (phase 03 cây thư mục) ───────────────────────────────────────
+    #  KHÔNG có cột `folder_id` ở đây — một văn bản nằm ở NHIỀU thư mục, quan hệ
+    #  ghi trong bảng nối `tab_document_folder_link`
+    #  (`doc_catalog/folder_link_model.py`), một dòng mang `is_primary=1` là thư
+    #  mục chính. Đọc/ghi qua `doc_catalog/folder_link_service.py`, không tự
+    #  JOIN thẳng — luật "một văn bản luôn có ≥ 1 thư mục" chỉ đứng vững khi mọi
+    #  đường ghi đi qua đúng một cửa đó.
 
     # ── Thông tin RIÊNG CỦA TỪNG LOẠI văn bản ────────────────────────────────
     #  Đơn nghỉ phép cần: người nghỉ, loại nghỉ, từ/đến ngày kèm buổi, số ngày,
