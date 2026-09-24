@@ -107,23 +107,109 @@ def assign_book_number(db: Session, doc: Document) -> None:
     doc.book_year = year
 
 
+# ── Thư mục — cửa ĐÓNG GÓP khi tạo/sửa văn bản (duoc-CR-475, vá 23/09/2026) ───
+def _ensure_folder_contribute(db: Session, folder_ids, user) -> None:
+    """Đòi mức ĐÓNG GÓP (`FolderAccessLevel.CONTRIBUTE`) trên MỌI id trong
+    `folder_ids` — cùng cửa `folder_link_bulk_service.move_documents` đã có cho
+    gắn hàng loạt / `PUT /api/documents/{id}/folders`, nay áp thêm ở đường
+    tạo/sửa văn bản (`POST`/`PATCH /api/documents`) để không lách được bằng
+    cách gửi `folder_ids` thẳng trong hai request đó — lỗ này phase 04 đã ghi
+    lại là "Việc còn treo" #1, chưa vá (`reports/fullstack-developer-260923-1626-
+    phase-04-phan-quyen-thu-muc.md`).
+
+    `user=None` → BỎ QUA: đường tạo văn bản TỰ ĐỘNG (vd đơn nghỉ phép ở
+    `leave/approval_bridge.py`) chỉ có `actor: int`, không có người dùng thật
+    để tính quyền, và cũng không gửi `folder_ids` — luôn rơi về thư mục mặc
+    định, không có gì để kiểm.
+
+    Thư mục không tồn tại HAY người này KHÔNG THẤY đều ra cùng một câu 404
+    chung — không dò được "thư mục có tồn tại không" bằng cách thử id, đúng
+    luật `folder_access_service.ensure_level` và đúng cách
+    `folder_link_bulk_service.move_documents/bulk_unlink` đã làm (kiểm tồn tại
+    trước, kiểm mức sau, cùng một câu).
+    """
+    ids = list(dict.fromkeys(fid for fid in (folder_ids or []) if fid))
+    if not ids or user is None:
+        return
+
+    from app.core.auth import get_perm_profile
+    from app.modules.doc_catalog import folder_access_service
+    from app.modules.doc_catalog.folder_constants import FolderAccessLevel
+    from app.modules.doc_catalog.folder_model import DocFolder
+
+    #  M1 (rà soát 23/09/2026): `effective_levels` tính MỘT LẦN cho cả danh
+    #  sách — trước đây `ensure_level` (gọi trong vòng lặp) tự tính lại TOÀN
+    #  BỘ (2 truy vấn: mọi thư mục + mọi dòng ACL) ở MỖI id, N id là N×2 truy
+    #  vấn thay vì 2. `folders_by_id` cũng nạp MỘT LƯỢT bằng `IN`, không phải
+    #  `db.get` từng dòng.
+    profile = get_perm_profile(db, user)
+    levels = folder_access_service.effective_levels(db, user, profile)
+    folders_by_id = {f.id: f for f in db.query(DocFolder).filter(DocFolder.id.in_(ids)).all()}
+    for fid in ids:
+        folder = folders_by_id.get(fid)
+        if not folder:
+            raise HTTPException(404, "Không tìm thấy thư mục")
+        folder_access_service.ensure_level(
+            db, user, folder, int(FolderAccessLevel.CONTRIBUTE), profile, levels=levels)
+
+
+def _existing_folder_ids(db: Session, document_id: int) -> set[int]:
+    from app.modules.doc_catalog.folder_link_model import DocumentFolderLink
+
+    return {
+        row[0] for row in
+        db.query(DocumentFolderLink.folder_id)
+        .filter(DocumentFolderLink.document_id == document_id).all()
+    }
+
+
 # ── Tạo / sửa / xóa ──────────────────────────────────────────────────────────
-def create_document(db: Session, data: DocumentCreate, actor: int) -> Document:
+def create_document(db: Session, data: DocumentCreate, actor: int, *, user=None) -> Document:
     """Tạo văn bản + phiên bản 1.0 trong CÙNG một transaction.
 
     Cùng transaction là bắt buộc chứ không phải cho gọn: nếu cấp số xong mà ghi
     bản ghi hỏng thì số đó biến mất khỏi sổ, không ai giải thích được lỗ hổng.
+
+    `user` TÙY CHỌN — có thì kiểm cửa ĐÓNG GÓP trên MỌI thư mục trong
+    `data.folder_ids` TRƯỚC khi ghi bất cứ gì (xem `_ensure_folder_contribute`).
+    Kiểm sớm, trước `db.add(doc)`: chặn sau khi đã ghi văn bản thì để lại một
+    bản ghi mồ côi (tạo xong nhưng không gắn được thư mục nào).
+
+    ⚠️ H3 (rà soát 23/09/2026): thư mục còn được kiểm THÊM một lớp — tồn tại ·
+    đúng pháp nhân · đang dùng (`folder_link_service.validate_folder_for_company`)
+    — CŨNG trước `db.add(doc)`, và việc GHI liên kết thư mục (cuối hàm) dùng
+    `stage_folders` (chỉ `flush`) rồi `commit` đúng MỘT LẦN ở cuối cùng với văn
+    bản + phiên bản. Trước đây văn bản (và số hiệu) COMMIT trước, `set_folders`
+    mới kiểm SAU — thư mục khác pháp nhân / ngừng dùng thì văn bản đã tạo
+    xong nhưng API trả 400.
     """
     doc_type = doc_type_or_400(db, data.doc_type_id)
     #  Dải hợp lệ là DANH MỤC, không phải một hằng số trong mã — xem
     #  `doc_catalog/security_level_service.ensure_valid`.
     ensure_valid(db, KIND_CONFIDENTIAL, data.secrecy_level)
     ensure_valid(db, KIND_URGENCY, data.urgency)
+    _ensure_folder_contribute(db, data.folder_ids, user)
+
+    from app.modules.doc_catalog import folder_link_service
+
+    _requested_folder_ids = list(dict.fromkeys(fid for fid in (data.folder_ids or []) if fid))
+    if _requested_folder_ids:
+        for fid in _requested_folder_ids:
+            folder_link_service.validate_folder_for_company(db, fid, data.company_id)
+    else:
+        #  Không chọn thư mục nào → sẽ rơi về mặc định lúc `stage_folders`;
+        #  kiểm TRƯỚC ở đây để gốc pháp nhân thiếu (dữ liệu hỏng) cũng chặn
+        #  trước khi ghi văn bản. `company_id=0` trả `None`, không raise.
+        folder_link_service.resolve_default_for(db, data.doc_type_id, data.company_id)
 
     #  ⚠️ `metadata` PHẢI tách khỏi payload. Thuộc tính Python của cột đó tên là
     #  `meta` (SQLAlchemy giữ riêng tên `metadata` cho `Base.metadata`), nên để
     #  nguyên trong payload là `Document(metadata=...)` nổ ngay.
-    payload = data.model_dump(exclude={"content_html", "secrecy_level", "metadata"})
+    #  `folder_ids`/`primary_folder_id` cũng không phải cột của `Document` —
+    #  chúng đi vào bảng nối `tab_document_folder_link` qua `folder_link_service`
+    #  bên dưới, sau khi văn bản đã có `id`.
+    payload = data.model_dump(exclude={"content_html", "secrecy_level", "metadata",
+                                       "folder_ids", "primary_folder_id"})
     doc = Document(
         **payload,
         #  Người nghỉ mặc định là NGƯỜI CHỊU TRÁCH NHIỆM của văn bản — với đơn
@@ -157,8 +243,23 @@ def create_document(db: Session, data: DocumentCreate, actor: int) -> Document:
     db.flush()
 
     doc.current_version_id = version.id
+
+    #  Thư mục lưu (phase 03 cây thư mục) — bỏ trống thì tự về thư mục mặc
+    #  định của loại rồi tới thư mục pháp nhân, xem `folder_link_service.resolve_default`.
+    #  `stage_folders` (KHÔNG commit riêng) + MỘT `db.commit()` duy nhất bên
+    #  dưới cho cả văn bản + phiên bản + liên kết thư mục — lỗi bất cứ đâu
+    #  cũng rollback sạch (H3).
+    folder_link_service.stage_folders(db, doc, data.folder_ids, data.primary_folder_id, actor,
+                                      user=user)
+
     db.commit()
     db.refresh(doc)
+
+    #  Chỉ mục TÌM KIẾM TOÀN VĂN (phase 07, duoc-CR-477) — xếp hàng SAU khi mọi
+    #  thứ đã commit (kể cả thư mục), best-effort, không chặn việc tạo văn bản.
+    from . import search_index_service
+    search_index_service.queue_reindex(db, doc.id)
+
     return doc
 
 
@@ -193,11 +294,24 @@ def block_edit_while_approving(doc: Document) -> None:
                                  "Muốn làm lại thì bấm «Sao chép» để có bản nháp mới.")
 
 
-def update_document(db: Session, doc: Document, data: DocumentUpdate, actor: int) -> Document:
-    """Sửa bộ trường chung. Không đụng nội dung (ở phiên bản) và không đụng số hiệu."""
+def update_document(db: Session, doc: Document, data: DocumentUpdate, actor: int,
+                    *, user=None) -> Document:
+    """Sửa bộ trường chung. Không đụng nội dung (ở phiên bản) và không đụng số hiệu.
+
+    `user` TÙY CHỌN — có thì kiểm cửa ĐÓNG GÓP, nhưng CHỈ trên thư mục MỚI
+    THÊM (`folder_ids` gửi lên trừ đi thư mục văn bản ĐÃ CÓ từ trước). Thư mục
+    cũ vẫn lưu lại được dù người dùng vừa MẤT quyền Đóng góp ở đó — không được
+    để cửa mới này chặn những sửa đổi khác không liên quan tới thư mục đó
+    (`plan.md` phase 04, "Việc còn treo" #1).
+    """
     block_edit_while_approving(doc)
 
     values = data.model_dump(exclude_unset=True)
+    #  Không phải cột của `Document` — xử lý riêng ở cuối hàm, SAU khi các cột
+    #  thật đã ghi xong (đổi `company_id` phải xong trước khi tính thư mục).
+    folder_ids = values.pop("folder_ids", None)
+    primary_folder_id = values.pop("primary_folder_id", None)
+    old_company_id = doc.company_id
     numbered = bool(doc.doc_code or doc.issue_number)
 
     #  Đổi loại / pháp nhân sau khi đã cấp số là đổi luôn tiền tố của số đã phát
@@ -239,6 +353,27 @@ def update_document(db: Session, doc: Document, data: DocumentUpdate, actor: int
     doc.updated_by = actor
     db.commit()
     db.refresh(doc)
+
+    #  Thư mục (phase 03 cây thư mục) — hai việc ĐỘC LẬP nhau:
+    #    1. Đổi pháp nhân mà văn bản chỉ đang ở thư mục pháp nhân CŨ thì tự
+    #       chuyển sang thư mục pháp nhân MỚI (không đụng thư mục thường tự chọn).
+    #    2. Form gửi kèm `folder_ids` thì áp lại toàn bộ danh sách thư mục —
+    #       chạy SAU (1) để không bị (1) ghi đè.
+    from app.modules.doc_catalog import folder_link_service
+
+    if "company_id" in values and doc.company_id != old_company_id:
+        folder_link_service.on_company_change(db, doc, old_company_id, actor)
+    if folder_ids is not None:
+        new_ids = [fid for fid in folder_ids if fid and fid not in _existing_folder_ids(db, doc.id)]
+        _ensure_folder_contribute(db, new_ids, user)
+        folder_link_service.set_folders(db, doc, folder_ids, primary_folder_id, actor, user=user)
+        db.refresh(doc)
+
+    #  Chỉ mục TÌM KIẾM TOÀN VĂN (phase 07, duoc-CR-477) — số/tiêu đề/tóm
+    #  tắt/từ khóa/loại/người ký đều có thể vừa đổi ở `values` bên trên.
+    from . import search_index_service
+    search_index_service.queue_reindex(db, doc.id)
+
     return doc
 
 
@@ -276,6 +411,13 @@ def update_issue_number(
     doc.updated_by = actor
     db.commit()
     db.refresh(doc)
+
+    #  Chỉ mục TÌM KIẾM TOÀN VĂN (H2, rà soát 23/09/2026) — số hiệu vừa đổi
+    #  đi vào `meta_text`; thiếu dòng này thì tìm theo số MỚI ra 0 kết quả cho
+    #  tới khi ai chạy script reindex tay.
+    from . import search_index_service
+    search_index_service.queue_reindex(db, doc.id)
+
     return doc, previous
 
 
@@ -313,6 +455,13 @@ def delete_document(db: Session, doc: Document):
             DocumentLink.target_document_id == doc.id)
     ).delete(synchronize_session=False)
 
+    #  Dọn LIÊN KẾT THƯ MỤC — cùng lý do dọn `DocumentLink` ở trên: không FK nên
+    #  không ai dọn hộ, để lại là dòng nối mồ côi trỏ vào một văn bản không còn.
+    from app.modules.doc_catalog.folder_link_model import DocumentFolderLink
+
+    db.query(DocumentFolderLink).filter(DocumentFolderLink.document_id == doc.id).delete(
+        synchronize_session=False)
+
     version_ids = [
         row[0] for row in
         db.query(DocumentVersion.id).filter(DocumentVersion.document_id == doc.id).all()
@@ -323,8 +472,17 @@ def delete_document(db: Session, doc: Document):
                                       synchronize_session=False)
     db.query(DocumentVersion).filter(DocumentVersion.document_id == doc.id).delete(
         synchronize_session=False)
+    document_id = doc.id
     db.delete(doc)
     db.commit()
+
+    #  Chỉ mục TÌM KIẾM TOÀN VĂN (phase 07, duoc-CR-477) — văn bản không còn,
+    #  `queue_reindex`/`reindex` tự nhận ra và XÓA dòng chỉ mục tương ứng
+    #  (không phải dựng lại). `document_id` phải lấy TRƯỚC vào biến riêng ở
+    #  trên: sau `db.delete(doc)` + `db.commit()`, đọc `doc.id` là chạm vào một
+    #  object ORM đã bị xóa khỏi session.
+    from . import search_index_service
+    search_index_service.queue_reindex(db, document_id)
 
 
 def discard_own_draft(db: Session, doc: Document, actor: int) -> None:
@@ -580,6 +738,13 @@ def approve(db: Session, doc: Document, actor: int,
     db.commit()
     db.refresh(doc)
 
+    #  Chỉ mục TÌM KIẾM TOÀN VĂN (H2, rà soát 23/09/2026) — ban hành có thể vừa
+    #  cấp SỐ HIỆU (`meta_text`) và đổi `current_version_id` (`body_text`); bỏ
+    #  sót thì văn bản vừa ban hành tìm theo số hiệu mới KHÔNG ra, hoặc snippet
+    #  còn trỏ nội dung bản cũ.
+    from . import search_index_service
+    search_index_service.queue_reindex(db, doc.id)
+
     #  Ban hành xuống thì mỗi pháp nhân trong phạm vi có ngay một bản nháp
     #  (20/08/2026). Chạy SAU commit và tự nuốt lỗi — bản gốc đã ban hành xong
     #  và đúng, không được để việc clone kéo đổ nó.
@@ -818,6 +983,10 @@ def activate_due_versions(db: Session, document_id: int | None = None) -> int:
     #  Văn bản bị bãi bỏ theo quan hệ trong cả lượt quét này — gom lại, báo một
     #  lần sau commit (xem `bao_bai_bo_theo_quan_he`).
     revoked_docs: list[tuple[Document, Document]] = []
+    #  Id văn bản vừa đổi `current_version_id` — lập lại chỉ mục SAU commit
+    #  (H2, rà soát 23/09/2026): `body_text` phải đổi theo bản MỚI có hiệu
+    #  lực, không phải bản lúc trước còn nháp.
+    changed_ids: list[int] = []
     for doc, version in q.all():
         #  Văn bản đã trỏ đúng bản này rồi thì chỉ còn thiếu việc đổi trạng thái —
         #  trường hợp bản ĐẦU TIÊN duyệt trước ngày hiệu lực (`current_version_id`
@@ -826,6 +995,7 @@ def activate_due_versions(db: Session, document_id: int | None = None) -> int:
             if doc.status == STATUS_APPROVED:
                 switch_current(db, doc, version, None)
                 revoked_docs += [(old, doc) for old in _apply_effective_side_effects(db, doc)]
+                changed_ids.append(doc.id)
                 changed += 1
             continue
         current = db.get(DocumentVersion, doc.current_version_id) if doc.current_version_id else None
@@ -835,10 +1005,16 @@ def activate_due_versions(db: Session, document_id: int | None = None) -> int:
             continue
         switch_current(db, doc, version, current)
         revoked_docs += [(old, doc) for old in _apply_effective_side_effects(db, doc)]
+        changed_ids.append(doc.id)
         changed += 1
 
     if changed:
         db.commit()
+
+    if changed_ids:
+        from . import search_index_service
+        for document_id in changed_ids:
+            search_index_service.queue_reindex(db, document_id)
 
     #  Actor 0 = hệ thống: tới ngày hiệu lực thì chính hệ đẩy văn bản cũ sang
     #  bãi bỏ, không phải ai bấm.

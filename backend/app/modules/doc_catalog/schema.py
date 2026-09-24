@@ -39,6 +39,8 @@ class DocTypeCreate(BaseModel):
     review_cycle_months: int = 0
     retention_months: int = 0
     default_flow_id: int = 0
+    #  Thư mục mặc định của loại (phase 03 cây thư mục). `0` = chưa khai.
+    default_folder_id: int = 0
     sort_order: int = 0
     is_active: bool = True
 
@@ -71,6 +73,7 @@ class DocTypeUpdate(BaseModel):
     review_cycle_months: int | None = None
     retention_months: int | None = None
     default_flow_id: int | None = None
+    default_folder_id: int | None = None
     sort_order: int | None = None
     is_active: bool | None = None
 

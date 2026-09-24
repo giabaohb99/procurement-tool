@@ -38,9 +38,20 @@ def document_of_attachment(db: Session, entity: str, entity_id: int) -> Document
 def view_window_expired(doc: Document | None, today: date | None = None) -> bool:
     """Văn bản này đã quá hạn cho xem tệp chưa.
 
+    ⚠️ **MỘT CHỖ CHẶN DUY NHẤT** cho công tắc tạm tắt (duoc-CR-478, 23/09/2026):
+    `doc_attachment_view_window_enabled` mặc định TẮT — công tắc tắt thì hàm
+    này LUÔN trả `False`, bất kể ngày đã khai là gì. Không rải `if` công tắc ra
+    những nơi khác gọi hàm này (`block_if_expired`, và bất cứ chỗ nào sau này
+    tự hỏi "tệp còn xem được không") — chúng tự động theo về khi đọc đúng một
+    hàm này. Ngày đã khai (`attachment_view_until`) KHÔNG bị xóa, chỉ tạm
+    không xét tới; bật công tắc lại là có hiệu lực ngay, không cần deploy.
+
     So bằng `>` chứ không `>=`: đặt hạn 24/08 nghĩa là **hết ngày 24/08 vẫn
     xem được**, đúng cách người Việt đọc "xem tới ngày 24/08".
     """
+    from app.core import app_settings
+    if not app_settings.get("doc_attachment_view_window_enabled"):
+        return False
     if doc is None or doc.attachment_view_until is None:
         return False
     return (today or date.today()) > doc.attachment_view_until

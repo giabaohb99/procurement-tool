@@ -72,6 +72,15 @@ SCOPE_FIELDS = {
     # — hai thứ khác nhau, người tạo hộ vẫn phải thấy phiếu mình vừa nhập.
     "document":         {"company": "company_id", "dept_id": "department_id",
                          "owner": "created_by"},
+    #  Cây thư mục (phase 03, duoc-CR-475) — PUBLIC ở ĐÂY là cố ý và TẠM THỜI.
+    #  `apply_scope`/`get_scoped` không được gọi trên `DocFolder` ở tầng
+    #  `folder_controller.py` (nó không có cột `company_id` filter kiểu
+    #  một-cột thông thường — mọi thư mục con kế thừa pháp nhân từ thư mục gốc
+    #  qua CÂY, không phải qua một điều kiện SQL đơn). Lọc "thấy nhánh pháp
+    #  nhân nào" + ACL từng thư mục nằm ở
+    #  `doc_catalog/folder_tree_service._visible_folder_ids` — phase 04 sẽ thay
+    #  thân hàm đó, KHÔNG sửa dòng PUBLIC này.
+    "doc_folder":       PUBLIC,
 
     # ------------------------------------------------------------------ B-07
     # Từ đây xuống là 27 entity trước kia KHÔNG có mặt trong bảng này. Vắng mặt

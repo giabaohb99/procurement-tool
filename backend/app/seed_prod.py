@@ -89,6 +89,12 @@ def run():
         if n_phase1:
             print(f"Nạp/cập nhật {n_phase1} dòng dữ liệu Phase 1 Văn thư.")
 
+        # Thư mục PHÁP NHÂN (phase 03 cây thư mục, duoc-CR-475) KHÔNG còn tự
+        # sinh ở seed (rà soát 24/09/2026): gốc bị xóa tay không được tự mọc
+        # lại trên môi trường thật mỗi lần deploy — nay sinh LAZY đúng lúc một
+        # văn bản cần nó, xem
+        # `doc_catalog/folder_root_service.get_or_create_company_root`.
+
         n_cost_types = seed_cost_types(db)   # bao-CR-453 — chỉ thêm mã còn thiếu
         if n_cost_types:
             print(f"Nạp {n_cost_types} loại chi phí thu mua còn thiếu vào danh mục.")

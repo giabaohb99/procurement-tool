@@ -169,9 +169,17 @@ def test_du_55_entity():
     đơn là việc hằng ngày của thu mua, còn thêm bớt LOẠI chi phí là đổi cột của
     báo cáo giá vốn cho cả công ty. PUBLIC ở `SCOPE_FIELDS`: một loại chi phí là
     một loại chi phí với mọi pháp nhân, không có chủ để lọc.
+
+    66 → 67 ngày 23/09/2026 (duoc-CR-475): `doc_folder` — Cây thư mục văn bản
+    (`tab_doc_folder`, phase 03). PUBLIC ở `SCOPE_FIELDS` vì bảng không có một
+    cột `company_id` đơn giản để `apply_scope` lọc — mỗi thư mục con kế thừa
+    pháp nhân từ thư mục gốc qua CÂY (`path`), và "thấy nhánh nào" + ACL từng
+    thư mục là việc của `folder_tree_service._visible_folder_ids` (phase 04
+    thay thân hàm đó), không phải của khuôn một-cột ở đây. Khóa này chỉ gác
+    "có được đụng vào màn Quản lý cây thư mục không".
     """
-    assert len(ENTITIES) == 68
-    assert len(SCOPE_FIELDS) == 68
+    assert len(ENTITIES) == 69
+    assert len(SCOPE_FIELDS) == 69
 
 
 # ── 2. Không dựng nổi điều kiện thì chặn ────────────────────────────────────────

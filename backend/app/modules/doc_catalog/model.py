@@ -102,6 +102,13 @@ class DocType(Base, AuditMixin):
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
+    #  THƯ MỤC MẶC ĐỊNH (phase 03 cây thư mục, `folder_link_service.resolve_default`).
+    #  `0` = chưa khai. Văn bản lưu mà không tự chọn thư mục thì vào đây NẾU nó
+    #  còn đang dùng + đúng pháp nhân của văn bản; không thì rơi về thư mục
+    #  pháp nhân. Không FK — cùng quy ước với các cột tham chiếu khác của bảng
+    #  này (`default_flow_id`).
+    default_folder_id: Mapped[int] = mapped_column(BigInteger, default=0)
+
 
 class ExternalParty(Base, AuditMixin):
     """ĐƠN VỊ GỬI NHẬN BÊN NGOÀI — nơi gửi của văn bản đến, nơi nhận của văn bản đi.

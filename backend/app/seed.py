@@ -248,7 +248,15 @@ _SYS_ENTITIES = {"user", "role", "setting", "backup", "help_article", "mailbox",
                  #  bộ hồ sơ pháp lý của mọi pháp nhân, kèm bản scan đính kèm.
                  #  Ai cần thì gán thêm vai trò `dossier_admin`.
                  "dossier",
-                 "audit", "change_log"}
+                 "audit", "change_log",
+                 #  Thư mục văn bản (rà soát 23/09/2026, code-reviewer C2):
+                 #  `doc_folder.write` scope "all" nghĩa là QUẢN LÝ (bỏ qua cả
+                 #  ACL cấm — bước 4 của `folder_access_service.effective_levels`)
+                 #  trên MỌI thư mục của MỌI pháp nhân. Lọt vào _PUR_MANAGER_PERMS
+                 #  là Quản lý thu mua tự nhiên có quyền đó ngoài ý muốn, giống
+                 #  hệt bài học `employee_sensitive`. Vai trò cần quản trị thư mục
+                 #  khai tay bên dưới với scope "company", không "all".
+                 "doc_folder"}
 _PUR_MANAGER_PERMS = {e: (_ALL_ACTIONS, "all") for e in ENTITIES if e not in _SYS_ENTITIES}
 
 STD_ROLES = {
@@ -419,6 +427,10 @@ STD_ROLES = {
         "company": (["read"], "all"),
         "department": (["read"], "all"),
         "employee": (["read"], "all"),
+        #  Cây thư mục (phase 03, duoc-CR-475) — chỉ xem, không tạo/sửa/xóa
+        #  thư mục. Vòng `setdefault` phía dưới cũng cấp dòng này, khai tay ở
+        #  đây để đọc rõ ràng ngay tại vai trò.
+        "doc_folder": (["read"], "all"),
     }},
     "vanban_sua": {"name": "Văn bản — soạn & sửa (không xóa, không duyệt)", "perms": {
         #  Cố ý KHÔNG có `delete`, `approve`, `cancel`: soạn được, sửa được, gửi
@@ -436,6 +448,17 @@ STD_ROLES = {
         "company": (["read"], "all"),
         "department": (["read"], "all"),
         "employee": (["read"], "all"),
+        #  Cây thư mục (phase 03, duoc-CR-475) — người soạn/sửa văn bản LÀ
+        #  người tổ chức cây thư mục của phòng mình: tạo, đổi tên, chuyển, xóa
+        #  thư mục thường. Không cấp cho `vanban_xem` (chỉ xem).
+        #  ⚠️ Scope "company" (SỬA 23/09/2026, code-reviewer C2) — KHÔNG "all":
+        #  `write` trên `doc_folder` không chỉ là CRUD thư mục, nó còn tự động
+        #  cấp mức QUẢN LÝ (bỏ qua ACL cấm) trên mọi thư mục mà quyền này "với
+        #  tới" (`folder_access_service.company_reach` + bước 4). Scope "all"
+        #  từng cho người soạn văn bản của Cty A quản trị luôn thư mục riêng
+        #  tư của Cty B — vượt cả phạm vi đọc văn bản ("company") của chính
+        #  vai trò này.
+        "doc_folder": (["read", "create", "write", "delete"], "company"),
     }},
     # ── Ba vai trò cho phân hệ ĐẶT XE (03/09/2026) ───────────────────────────
     #
@@ -646,6 +669,17 @@ STD_ROLES["coffee_counter"] = {"name": "Điểm cà phê — Quầy (tra cứu)"
 #  `job_position.read`, một lỗ có sẵn từ duoc-CR-320; chưa sửa ở đợt này.)
 for _role_info in STD_ROLES.values():
     _role_info["perms"].setdefault("dossier_type", (["read"], "all"))
+
+
+#  ── Cây thư mục văn bản (phase 03, duoc-CR-475) ─────────────────────────────
+#  Cùng lý lẽ + cùng vị trí (SAU mọi dòng khai vai trò, kể cả `hr_leave` ·
+#  `coffee_admin` · `coffee_counter` gán rời phía trên) với danh mục Loại hồ sơ
+#  ngay trên: MỌI vai trò phải ĐỌC được cây thư mục — phục vụ tìm kiếm/duyệt
+#  văn bản là việc của toàn công ty, không riêng phòng Văn thư. `vanban_xem`/
+#  `vanban_sua` đã khai tay ở trên (giữ nguyên vì có trong `perms` sẵn);
+#  `setdefault` không đè. Tạo/sửa/xóa thư mục vẫn chỉ `vanban_sua`.
+for _role_info in STD_ROLES.values():
+    _role_info["perms"].setdefault("doc_folder", (["read"], "all"))
 
 
 #  ── Mô tả một câu cho từng vai trò chuẩn (bao-CR-428) ─────────────────────
@@ -1459,6 +1493,12 @@ def run():
         n_phase1 = seed_document_phase1(db)
         if n_phase1:
             print(f"Nạp/cập nhật {n_phase1} dòng dữ liệu Phase 1 Văn thư.")
+
+        # Thư mục PHÁP NHÂN (phase 03 cây thư mục, duoc-CR-475) KHÔNG còn tự
+        # sinh ở seed (rà soát 24/09/2026): gốc bị xóa tay không được tự mọc
+        # lại — nay sinh LAZY đúng lúc một văn bản cần nó, xem
+        # `doc_catalog/folder_root_service.get_or_create_company_root`.
+        # `ensure_company_roots` vẫn còn cho script vận hành gọi tay.
 
         # Danh mục phụ phân hệ Văn thư (đơn vị gửi nhận, sổ mẫu)
         n_doc = seed_doc_catalog(db, company.id if company else 0)

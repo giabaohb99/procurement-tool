@@ -53,6 +53,9 @@ from app.modules.doc_catalog import book_model as _doc_book  # noqa: F401
 from app.modules.doc_catalog import security_level_model as _security_level  # noqa: F401
 from app.modules.doc_catalog import numbering_rule_model as _numbering_rule  # noqa: F401
 from app.modules.doc_catalog import link_rule_model as _doc_type_link_rule  # noqa: F401
+from app.modules.doc_catalog import folder_model as _doc_folder  # noqa: F401
+from app.modules.doc_catalog import folder_link_model as _doc_folder_link  # noqa: F401
+from app.modules.doc_catalog import folder_access_model as _doc_folder_access  # noqa: F401
 from app.modules.document import model as _document  # noqa: F401
 from app.modules.document import version_model as _document_version  # noqa: F401
 from app.modules.document import request_model as _document_request  # noqa: F401
@@ -64,6 +67,7 @@ from app.modules.document import link_model as _document_link  # noqa: F401
 from app.modules.document import scope_model as _document_scope  # noqa: F401
 from app.modules.document import signature_model as _document_signature  # noqa: F401
 from app.modules.document import clone_plan_model as _document_clone_plan  # noqa: F401
+from app.modules.document import search_model as _document_search  # noqa: F401
 from app.modules.approval import flow_model as _approval_flow  # noqa: F401
 from app.modules.approval import instance_model as _approval_instance  # noqa: F401
 from app.modules.approval import delegation_model as _approval_delegation  # noqa: F401
