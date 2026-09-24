@@ -54,11 +54,13 @@ celery_app.conf.update(
         "app.modules.notification.tasks", # Dọn thông báo cũ (mỗi ngày)
         "app.modules.audit.tasks",        # Đóng gói nhật ký ra R2 (hằng tháng, không xóa DB)
         "app.modules.request_log.tasks",  # Dọn dòng GET quá 90 ngày (mỗi ngày, sau khi đã có gói R2)
+        "app.modules.system_log.tasks",   # Cảnh báo bất thường (15 phút) + dọn 4 bảng nhật ký quá 16 tháng (bao-CR-448)
         "app.modules.attachment.tasks",   # Dọn tệp đính kèm mồ côi quá 7 ngày (mỗi ngày)
         "app.modules.assistant.rag.tasks",  # Nạp chỉ mục vector loại B (HDSD + FAQ) khi có hook / bấm nút
         "app.modules.coffee_point.tasks",   # Điểm cà phê × POS365 — kéo đơn / reset kỳ / đối chiếu
         "app.modules.legacy_datxe.tasks",   # App đặt xe / duyệt dấu cũ — lưới an toàn + chạy lại
         "app.modules.agent_hub.tasks",      # Agent Hub — kéo tin Telegram, gom việc, nạp kho tài liệu
+        "app.modules.sync_log.tasks",       # Chuông 08:00 cho dòng sổ đồng bộ lỗi quá 24h (bao-CR-449)
         # "app.tasks.alerts",           # Phase 2 — cảnh báo theo lịch
         # "app.tasks.report_tasks",     # Phase 3 — refresh báo cáo
     ],
@@ -109,6 +111,18 @@ celery_app.conf.update(
             "task": "request_log.cleanup",
             "schedule": crontab(hour=3, minute=40),  # 03:40 VN, mỗi ngày
         },
+        #  Dọn BỐN bảng nhật ký quá 16 tháng, theo tháng, chỉ tháng đã có gói R2
+        #  (bao-CR-448). Đặt sau request_log.cleanup 03:40 cùng lý do ở trên.
+        "cleanup-expired-logs": {
+            "task": "system_log.cleanup_expired",
+            "schedule": crontab(hour=3, minute=50),  # 03:50 VN, mỗi ngày
+        },
+        #  Bốn dấu hiệu bất thường (IP lạ, đổi thiết bị giữa phiên, xóa hàng loạt,
+        #  dồn dập 403) — quét cửa sổ 30 phút mỗi 15 phút, báo chuông quản trị.
+        "detect-log-anomalies": {
+            "task": "system_log.detect_anomalies",
+            "schedule": crontab(minute="*/15"),
+        },
         #  Tệp tải lên mà không bao giờ được gắn vào phiếu nào (người dùng bỏ dở form)
         #  — trước bao-CR-408 chúng nằm lại vĩnh viễn trên storage. Xem attachment/tasks.py.
         "purge-orphan-attachments": {
@@ -132,6 +146,21 @@ celery_app.conf.update(
         "datxe-retry-pending": {
             "task": "datxe.retry_pending",
             "schedule": crontab(minute="3,13,23,33,43,53"),
+        },
+        #  Lưới đỡ của lưới đỡ: MỖI ĐÊM MỘT LẦN, đọc cả nhánh phiếu, bỏ con trỏ
+        #  và dựng lại cả dữ liệu suy ra của phiếu không đổi nội dung. Nặng —
+        #  ĐỪNG hạ xuống nhịp phút; hai vòng trên đã lo phần thường ngày.
+        "datxe-full-sweep": {
+            "task": "datxe.full_sweep",
+            "schedule": crontab(hour=2, minute=15),  # 02:15 VN, mỗi ngày
+        },
+        #  Chuông sáng cho dòng sổ đồng bộ hỏng quá 24 giờ mà ba vòng trên không
+        #  tự vá được (bao-CR-449). Dùng CHUNG cho mọi hệ nguồn của quyển sổ,
+        #  không riêng app đặt xe. 08:00 vì xử một dòng lỗi là việc tay: bắn lúc
+        #  người ta vừa tới bàn thì chuông còn được đọc.
+        "alert-stale-sync-failures": {
+            "task": "sync_log.alert_stale_failures",
+            "schedule": crontab(hour=8, minute=0),  # 08:00 VN, mỗi ngày
         },
     },
 )

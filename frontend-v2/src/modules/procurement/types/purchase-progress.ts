@@ -26,8 +26,14 @@ export interface PurchaseProgressRow {
   unit: string
   qty_request: number
   qty_order: number
+  /** Đơn giá ghi theo ĐỒNG TIỀN của dòng, KHÔNG quy đổi (số in trên hóa đơn NCC). */
   price: number
   vat: number
+  /** Mã đồng tiền của dòng hàng (`VND`, `CNY`…). */
+  currency: string
+  /** Tỷ giá quy đổi sang đồng. Backend đã chuẩn hóa: dòng cũ chưa khai đọc thành 1. */
+  exchange_rate: number
+  /** Thành tiền theo số đã đặt — số ĐÃ QUY ĐỔI về đồng (bao-CR-437). */
   order_amount: number
   /** Tiến độ dòng — MÃ, xem `PO_PROGRESS_STATUS` trong `shared/constants/statuses`. */
   progress_status: string

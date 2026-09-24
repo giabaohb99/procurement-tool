@@ -1,0 +1,107 @@
+import type { Role } from '@/modules/hr/types/role'
+import { PERMISSION_GROUPS } from '../config/permission-groups'
+
+/**
+ * Suy ra "vai trò này thuộc phân hệ nào" từ những ô ĐÃ TICK trong ma trận.
+ *
+ * Cột trái màn Phân quyền chỉ có tên + mã, người đọc phải mở từng vai trò ra
+ * mới biết nó lo việc gì (đại ca 19/09/2026: "đọc cũng hơi khó hiểu"). Chip
+ * phân hệ trả lời câu đó ngay ở danh sách, và không cần ai khai thêm gì: nguồn
+ * là `Role.granted` do `GET /api/roles` trả kèm (bao-CR-428).
+ *
+ * ⚠️ Vì sao phải LOẠI NỀN trước khi đếm: seed cấp cho MỌI vai trò vài ô giống
+ * nhau (xem `read` danh mục chức vụ, loại nghỉ, ngày lễ; `work_task` đủ tám
+ * hành động; đơn nghỉ phép của mình...). Đếm thô thì vai trò nào cũng ra
+ * "Nhân sự · Nghỉ phép · Dự án" và chip không còn phân biệt được ai với ai.
+ * Ô nào gần như vai trò nào cũng có thì không nói lên vai trò đó là gì — bỏ
+ * khỏi phép đếm, chỉ còn phần RIÊNG của từng vai trò.
+ */
+
+/** Tỷ lệ vai trò cùng có một ô để coi ô đó là NỀN (không kể vào chip). */
+export const BASELINE_RATIO = 0.75
+/**
+ * Cần ít nhất chừng này vai trò mới tính nền: hệ mới có 2-3 vai trò thì "75%"
+ * là 2 vai trò, và hai vai trò tình cờ cùng đọc Đơn mua hàng không phải là nền.
+ */
+export const BASELINE_MIN_ROLES = 4
+
+/** Nhãn nhóm cho entity không khai trong `PERMISSION_GROUPS` — khớp cây ma trận. */
+const OTHER_TITLE = 'Khác'
+
+const groupTitleByEntity: Map<string, string> = new Map(
+  PERMISSION_GROUPS.flatMap((group) => group.entities.map((entity) => [entity, group.title])),
+)
+const groupOrder: Map<string, number> = new Map(
+  PERMISSION_GROUPS.map((group, index) => [group.title, index]),
+)
+
+function cellKey(entity: string, action: string): string {
+  return `${entity} ${action}`
+}
+
+/** Mọi ô đã tick của một vai trò, dạng `"<entity> <action>"` (cách nhau một dấu cách). */
+function grantedCells(role: Role): string[] {
+  const granted = role.granted ?? {}
+  return Object.entries(granted).flatMap(([entity, actions]) =>
+    (actions ?? []).map((action) => cellKey(entity, action)),
+  )
+}
+
+/**
+ * Tập ô NỀN: ô có mặt ở ít nhất `BASELINE_RATIO` số vai trò (và hệ có từ
+ * `BASELINE_MIN_ROLES` vai trò trở lên). Dưới ngưỡng thì trả tập rỗng — không
+ * loại gì cả.
+ */
+export function findBaselineCells(roles: Role[]): Set<string> {
+  if (roles.length < BASELINE_MIN_ROLES) return new Set()
+  const count = new Map<string, number>()
+  for (const role of roles) {
+    //  `Set` để một vai trò ghi trùng entity (không thể, nhưng rẻ) không đếm đôi.
+    for (const cell of new Set(grantedCells(role))) {
+      count.set(cell, (count.get(cell) ?? 0) + 1)
+    }
+  }
+  const threshold = Math.ceil(roles.length * BASELINE_RATIO)
+  return new Set([...count.entries()].filter(([, n]) => n >= threshold).map(([cell]) => cell))
+}
+
+/** Gom số ô theo tên phân hệ, xếp nhiều ô trước; hòa thì theo thứ tự khai nhóm. */
+function rankModules(cells: string[]): string[] {
+  const perGroup = new Map<string, number>()
+  for (const cell of cells) {
+    const entity = cell.slice(0, cell.indexOf(' '))
+    const title = groupTitleByEntity.get(entity) ?? OTHER_TITLE
+    perGroup.set(title, (perGroup.get(title) ?? 0) + 1)
+  }
+  const last = PERMISSION_GROUPS.length
+  return [...perGroup.entries()]
+    .sort(
+      (a, b) =>
+        b[1] - a[1] || (groupOrder.get(a[0]) ?? last) - (groupOrder.get(b[0]) ?? last),
+    )
+    .map(([title]) => title)
+}
+
+/**
+ * Tên phân hệ của từng vai trò, khóa theo `role.id`, phân hệ nhiều ô nhất đứng đầu.
+ *
+ * - Vai trò không tick ô nào (hoặc API cũ chưa trả `granted`) → mảng RỖNG; nơi
+ *   gọi tự in "Chưa cấp quyền".
+ * - Vai trò chỉ có ĐÚNG những ô nền (vd `employee` mặc định) thì sau khi loại
+ *   nền không còn gì — lúc đó quay về đếm THÔ chứ không in "Chưa cấp quyền",
+ *   vì câu đó sai: vai trò vẫn có quyền, chỉ là quyền ai cũng có.
+ */
+export function summarizeRoleModules(roles: Role[]): Map<number, string[]> {
+  const baseline = findBaselineCells(roles)
+  const result = new Map<number, string[]>()
+  for (const role of roles) {
+    const all = grantedCells(role)
+    if (all.length === 0) {
+      result.set(role.id, [])
+      continue
+    }
+    const distinctive = all.filter((cell) => !baseline.has(cell))
+    result.set(role.id, rankModules(distinctive.length > 0 ? distinctive : all))
+  }
+  return result
+}

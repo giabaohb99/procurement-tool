@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Tác động dây chuyền và rà soát</title>
+<!--
+  Sơ đồ QT-06 + QT-07 — chụp #canvas thành hinh/nv-04-tac-dong-day-chuyen.png
+  (khung 1420×620, tỉ lệ điểm ảnh 2).
+  Nửa trên: văn bản MỚI có hiệu lực làm gì với văn bản CŨ nó trỏ tới.
+  Nửa dưới: văn bản CHA thay đổi làm gì với văn bản CON trỏ tới nó.
+-->
+<link rel="stylesheet" href="so-do-chung.css">
+<style>#canvas { width: 1420px; height: 620px; }</style>
+</head>
+<body>
+<div id="canvas">
+  <div class="title" style="left:24px;top:10px">QT-06 · Văn bản mới có hiệu lực → xử lý văn bản cũ mà nó trỏ tới</div>
+
+  <div class="box" id="nw" style="left:24px;top:70px;width:250px;--c:var(--green)">
+    <h4>Văn bản mới <b>có hiệu lực</b></h4>
+    <p>Ngày hiệu lực là hôm nay; nếu ở tương lai thì <b>chờ tới đúng ngày</b> mới xử lý</p>
+    <span class="chip green">Có hiệu lực</span>
+  </div>
+  <div class="box" id="o1" style="left:420px;top:44px;width:320px;--c:var(--gray)">
+    <h4>Quan hệ «Thay thế»</h4>
+    <p>Văn bản cũ → <b>Đã thay thế</b></p>
+  </div>
+  <div class="box" id="o2" style="left:420px;top:134px;width:320px;--c:var(--red)">
+    <h4>Quan hệ «Bãi bỏ»</h4>
+    <p>Văn bản cũ → <b>Bãi bỏ</b>; người xem thu hẹp</p>
+  </div>
+  <div class="box" id="o3" style="left:800px;top:44px;width:320px;--c:var(--amber)">
+    <h4>Quan hệ «Sửa đổi» / «Bổ sung»</h4>
+    <p>Văn bản cũ <b>vẫn hiệu lực</b>, gắn cảnh báo «Đã bị sửa đổi bởi…» ở mọi mục</p>
+  </div>
+  <div class="box dashed" id="o4" style="left:800px;top:150px;width:320px;--c:var(--gray)">
+    <h4>Quan hệ khác</h4>
+    <p>Hướng dẫn, Kèm theo, Thuộc về, Căn cứ theo, Tham chiếu: <b>không đổi</b> văn bản cũ</p>
+  </div>
+
+  <div class="title" style="left:24px;top:300px">QT-07 · Văn bản cha thay đổi → văn bản con trỏ tới nó (làm theo cấu hình quy tắc liên kết)</div>
+
+  <div class="box" id="p1" style="left:24px;top:360px;width:250px;--c:var(--blue)">
+    <h4>Văn bản cha <b>lên phiên bản mới</b></h4>
+    <p>Bản gốc của các bản riêng / bản trích cũng tính là cha</p>
+  </div>
+  <div class="box" id="p2" style="left:24px;top:490px;width:250px;--c:var(--red)">
+    <h4>Văn bản cha <b>bị bãi bỏ</b></h4>
+    <p>Bãi bỏ bằng tay, hoặc bị văn bản khác bãi bỏ</p>
+  </div>
+  <div class="box" id="c1" style="left:420px;top:360px;width:300px;--c:var(--amber)">
+    <h4>Đánh dấu con <b>cần rà lại</b></h4>
+    <p>Hoặc «hỏi người ban hành rồi ghi nhật ký», hoặc «không làm gì» — tùy quy tắc</p>
+    <span class="chip amber">Cần rà lại</span>
+  </div>
+  <div class="box" id="c2" style="left:420px;top:490px;width:300px;--c:var(--gray)">
+    <h4>Con <b>hết hiệu lực theo cha</b></h4>
+    <p>Hoặc chỉ đánh dấu cần rà lại / không làm gì — tùy quy tắc. Bản trích luôn hết hiệu lực theo</p>
+  </div>
+  <div class="box" id="rv" style="left:790px;top:360px;width:300px;--c:var(--amber)">
+    <h4>Người phụ trách văn bản con rà lại</h4>
+    <p>Mở bản gốc đối chiếu, ghi <b>kết luận rà</b></p>
+  </div>
+  <div class="box" id="k1" style="left:1150px;top:330px;width:250px;--c:var(--blue)">
+    <h4>Phải sửa theo bản gốc</h4>
+    <p>Gỡ dấu + mở <b>phiên bản mới</b> → trình duyệt lại</p>
+  </div>
+  <div class="box" id="k2" style="left:1150px;top:440px;width:250px;--c:var(--green)">
+    <h4>Giữ nguyên</h4>
+    <p>Chỉ gỡ dấu, ghi nhật ký</p>
+  </div>
+  <div class="box dashed" id="note" style="left:790px;top:500px;width:300px;--c:var(--gray)">
+    <h4>Hệ thống không tự sửa nội dung</h4>
+    <p>Chỉ đánh dấu và liệt kê; con người quyết định sửa hay không</p>
+  </div>
+
+  <svg class="arrows"></svg>
+</div>
+<script src="so-do-chung.js"></script>
+<script>
+  const { anchor, arrow, hArrow, GAP } = SODO;
+  // Trục dọc chung ở x=350 (cột trái) và x=770 (cột phải, đi qua khe giữa hai cột)
+  const s0 = anchor('nw', 'r');
+  ['o1', 'o2'].forEach((id) => {
+    const t = anchor(id, 'l');
+    arrow([s0, [350, s0[1]], [350, t[1]], [t[0] - GAP, t[1]]], 'gray');
+  });
+  ['o3', 'o4'].forEach((id) => {
+    const t = anchor(id, 'l');
+    arrow([s0, [350, s0[1]], [350, 252], [770, 252], [770, t[1]], [t[0] - GAP, t[1]]], 'gray');
+  });
+  hArrow('p1', 'c1', 'amber');
+  hArrow('p2', 'c2', 'red');
+  hArrow('c1', 'rv', 'amber');
+  const a = anchor('rv', 'r'), b1 = anchor('k1', 'l'), b2 = anchor('k2', 'l');
+  arrow([a, [1120, a[1]], [1120, b1[1]], [b1[0] - GAP, b1[1]]], 'blue');
+  arrow([a, [1120, a[1]], [1120, b2[1]], [b2[0] - GAP, b2[1]]], 'green');
+</script>
+</body>
+</html>

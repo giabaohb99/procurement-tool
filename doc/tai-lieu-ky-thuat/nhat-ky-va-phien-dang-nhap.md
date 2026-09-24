@@ -1028,6 +1028,51 @@ thành **gói lưu trữ riêng**, để riêng:
 `DROP PARTITION` là thao tác không hoàn tác được, nên thứ tự **gói xong mới xóa** là luật cứng,
 và task xóa phải chạy **sau** task đóng gói ít nhất một ngày.
 
+**Đã làm ở đợt 1 — `bao-CR-448` (21/09/2026), KHÁC bản vẽ ở hai chỗ.** Bảng chưa phân vùng, nên
+việc dọn (`system_log.cleanup_expired`, 03:50 hằng đêm, `modules/system_log/retention.py`) xóa
+bằng `DELETE` **theo từng tháng của từng bảng**, lô 2.000 dòng, trần 500 lô một đêm — và mốc 16
+tháng làm tròn về **đầu tháng** để đơn vị xóa trùng đơn vị gói. Trước khi xóa tháng nào của bảng
+nào, nó hỏi R2 tệp `.sha256` của đúng tháng đó (`storage.key_exists`); thiếu thì bỏ qua tháng đó,
+ghi cảnh báo, giữ nguyên. Chưa nối R2 thì việc tự tắt (`status: skipped`). Phiên đăng nhập xét
+theo lúc **đóng** (`revoked_at`, hoặc `expires_at` với phiên không ai đăng xuất) nhưng gom tháng
+theo lúc **mở**, vì gói R2 gom theo `created_at`. Kèm theo, `ARCHIVE_TABLES` của việc đóng gói
+nay **đủ bốn bảng** — bản đầu chỉ gói `audit` + `request`.
+
+**Đợt 2 — `bao-CR-454` (21/09/2026) — XONG, và khác bản vẽ ở ba chỗ.**
+
+Migration `f2c5b9d71a48` chia bốn bảng theo `YEAR(created_at)`, từ năm cũ nhất đang có dữ liệu
+tới **năm sau năm nay**, đuôi luôn là `pmax VALUES LESS THAN MAXVALUE`. Helper DDL ở
+`modules/system_log/partition.py`; việc dọn 03:50 nay chạy **ba nhịp**: tạo trước phân vùng năm
+tới (`maintain_partitions`) · bỏ nguyên phân vùng năm đã quá hạn (`drop_expired_partitions`) ·
+rồi mới xóa theo dòng phần tháng còn lại. Hai đường **sống cạnh nhau chứ không thay nhau**: mốc
+16 tháng luôn rơi vào GIỮA một năm, nên năm nằm trọn bên ngoài thì bỏ phân vùng, còn mấy tháng
+đầu của năm bị mốc cắt đôi thì vẫn phải `DELETE`. Bản sao lưu hằng đêm nay dump **hai lượt**
+(`backup/service.py`): lượt 1 `--ignore-table` bốn bảng, lượt 2 `--no-data` đúng bốn bảng đó.
+
+Ba chỗ khác bản vẽ, đều là chỗ bản vẽ nói hụt chứ không phải làm tắt:
+
+1. **Không đòi đủ 12 gói tháng.** `audit.archive` cố ý không đẩy gì lên khi tháng đó rỗng
+   (`status: empty`), nên đòi đủ 12 gói theo đúng câu chữ là một năm có một tháng nghỉ thành
+   một năm **không bao giờ** bỏ được phân vùng. Luật thật: một tháng coi như đạt khi **đã có gói
+   HOẶC hiện không còn dòng nào** dưới DB (`find_missing_archive_months`) — đúng luật mà đường
+   `DELETE` vẫn đang dùng.
+2. **Thêm chốt thứ ba: không còn dòng nào của năm đó chưa quá hạn** (`count_unexpired_in_year`).
+   Ba bảng xét theo `created_at` thì con số này luôn bằng 0; nó tồn tại vì bảng thứ tư —
+   `tab_login_session` gom theo lúc MỞ nhưng hết hạn theo lúc ĐÓNG. Hàm đếm bằng **hiệu của hai
+   phép đếm**, không bằng `NOT (điều kiện hết hạn)`: điều kiện của phiên so trên hai cột cho
+   phép NULL, mà `NOT NULL` trong SQL vẫn ra NULL nên dòng đó rơi khỏi cả hai vế và hàm báo 0
+   cho đúng cái dòng nó sinh ra để bắt.
+3. **Danh sách bốn bảng ở `backup/service.py` được SUY RA** từ `ARCHIVE_TABLES` chứ không chép
+   tay — chép tay thì đúng câu chữ của mục này nhưng dựng lên đúng thứ câu sau của nó cảnh báo.
+
+Phải đổi khóa trước khi chia được: MySQL đòi mọi khóa DUY NHẤT chứa đủ cột trong biểu thức chia,
+nên khóa chính cả bốn bảng thành `(id, created_at)`, còn `tab_request_log.request_id` và
+`tab_login_session.token_id` thành hai cột với cột định danh đứng trước (chỉ mục vẫn dùng được
+cho mọi câu tra theo một cột, không đổi dòng mã nào). **Bỏ và thêm lại khóa chính phải nằm trong
+CÙNG một câu `ALTER`** — `id` là AUTO_INCREMENT, tách ra là lỗi 1075 và migration chết giữa
+chừng. Model vẫn khai khóa chính **một cột** để `create_all` của pytest dựng được bảng trên
+SQLite; mọi thay đổi cấu trúc chỉ nằm trong migration, sau chốt `dialect.name != "mysql"`.
+
 ---
 
 ## 10. Chia đợt
@@ -1042,7 +1087,8 @@ và task xóa phải chạy **sau** task đóng gói ít nhất một ngày.
 | **P4** | **`bao-CR-402` (14/09/2026, XONG mã + test ở local `erp-v2`, chưa commit)** — `tab_change_log` (migration `d5f7a9c1b3e2`) + lớp sự kiện ORM `core/change_tracker.py` + che cột dùng chung `logging_policy` + chốt gộp nhập liệu; **ba chỗ khác bản vẽ ở §4.3.1**; khóa quyền `change_log` **hoãn sang P5** (P4 chỉ ghi, chưa ai đọc) | **Trước/sau** — đóng **BM-005**. Lỗ dấu-vết-ma **BM-013** đóng ở lớp này (chỉ ghi thứ đã commit), `core/audit.py` cố ý không đụng, lý do đo đạc ở §4.3.1 và trong docstring `record()` | P1 |
 | **P5** | Màn `/system/logs` (§8.2–8.4): danh sách gộp theo `request_id`, ngăn 4 tab, theo dõi trực tiếp, biểu đồ; `/api/audit-logs` trả thêm `request_id` để *Xem chi tiết* từ dòng thời gian phiếu | **Gom một chỗ, debug trên giao diện** | P2, P4 (tab *Thay đổi* ẩn khi chưa có P4 — màn vẫn dùng được ngay sau P1) |
 | **P1b** | **`bao-CR-346` (10/09/2026)** — đảo luật lọc thành *ghi hết GET* (§4.1), che vết lỗi SQL, `device_hash` + `referer`, `record(...)` cho `role/` + `user/`, và **kéo hai việc của P6 lên**: đóng gói R2 hằng tháng (§4.1.2) + dọn dòng GET 90 ngày (§4.1.1) | **Ai ĐỌC cái gì** — thứ P1 hoàn toàn không có. Và nhật ký có bản sao thứ hai ngoài máy | P1 |
-| **P6** | Phân vùng theo năm + dọn 16 tháng (§9) + **QĐ-C: tách bốn bảng nhật ký khỏi sao lưu hằng đêm bằng dump hai lượt** (§9) + cảnh báo: đăng nhập IP lạ, phiên đổi IP giữa chừng, xóa hàng loạt trong một `request_id`, nhiều 403 liên tiếp. *(Phần đóng gói R2 hằng tháng đã làm ở P1b.)* | Nhật ký giữ được lâu hơn sao lưu mà DB không phình | P3, P4 |
+| **P6 đợt 1** | **`bao-CR-448` (21/09/2026)** — dọn bốn bảng quá 16 tháng theo tháng, chỉ tháng đã có gói R2 (§9) + gói R2 đủ bốn bảng + **cảnh báo bất thường lên chuông quản trị** (`system_log.detect_anomalies`, mỗi 15 phút, `modules/system_log/anomaly.py`): đăng nhập từ IP lạ (chưa thấy ở người đó trong 30 ngày), **đổi thiết bị** giữa phiên (hai `device_hash` trong một `session_id`), xóa từ 20 dòng trong một `request_id`, từ 10 lượt 403 trong 30 phút. Người nhận = ai đọc được màn Phiên đăng nhập phạm vi toàn hệ, lùi về vai trò `admin`. Mỗi sự kiện báo một lần, đánh dấu bằng dòng audit `anomaly_alert` (`doc_code` = khóa). **Cố ý KHÔNG báo chuông khi phiên chỉ đổi IP** — đổi wifi sang 4G là chuyện mỗi ngày, đã có `refresh_ip_changed` + cờ `ip_changed` trên màn phiên | Người quản trị biết ngay khi có dấu hiệu lạ, và DB không phình quá 16 tháng | P3, P4 |
+| **P6 đợt 2** | **`bao-CR-454` (21/09/2026)** — migration `f2c5b9d71a48` chia bốn bảng theo `YEAR(created_at)` (khóa chính nới thành `(id, created_at)`, hai khóa duy nhất phụ nới theo), helper `modules/system_log/partition.py`, việc dọn 03:50 thành ba nhịp *tạo trước phân vùng năm tới → bỏ phân vùng năm quá hạn → xóa theo dòng phần còn lại*, và **QĐ-C: sao lưu hằng đêm dump hai lượt** (`--ignore-table` cho dữ liệu, `--no-data` giữ cấu trúc). Ba chỗ khác bản vẽ, xem §9 | Xóa năm cũ tức thì, sao lưu đêm nhẹ đi | P6 đợt 1 |
 
 **P1 là phần đáng làm nhất so với công bỏ ra**: một middleware trả lời được 4 trong 6 câu hỏi ở §1
 (endpoint, input/output, từ đâu, bị chặn) mà không đụng 273 lời gọi, không đụng ORM.

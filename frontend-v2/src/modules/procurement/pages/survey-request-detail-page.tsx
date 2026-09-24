@@ -30,6 +30,7 @@ import { useDepartments } from '@/modules/hr/hooks/use-departments'
 import { useEmployees } from '@/modules/hr/hooks/use-employees'
 import { AuditTimeline } from '@/shared/audit'
 import { appRoutes } from '@/shared/constants/app-routes'
+import { DOSSIER_UI_ENABLED } from '@/shared/constants/feature-flags'
 import { queryKeys } from '@/shared/constants/query-keys'
 import { useHasChanged } from '@/shared/hooks/use-has-changed'
 import { DetailPageHeader, ResponsiveLabel } from '@/shared/ui/detail-page-header'
@@ -63,6 +64,7 @@ import { purchaseRequestSupportApi } from '../api/purchase-request-support-api'
 import { surveyRequestApi } from '../api/survey-request-api'
 import { StatusBadge } from '../components/document-status-badge'
 import { DocumentComments } from '../components/document-comments'
+import { DossierChecklistCard } from '../components/survey-report/dossier-checklist-card'
 import { SurveyReportCard } from '../components/survey-report/survey-report-card'
 import { SurveyRequestInfoCard } from '../components/survey-request-info-card'
 import { SurveyRequestLineDialog } from '../components/survey-request-line-dialog'
@@ -783,6 +785,21 @@ export function SurveyRequestDetailPage() {
         {showReportBlock && (
           <SurveyReportCard surveyRequestId={surveyRequestId} canEdit={canEditReport} />
         )}
+
+        {/* THẺ THỬ «Hồ sơ cần hoàn thành» — dựng SONG SONG với khối Báo cáo
+            thực hiện ngay trên, để so xem phân hệ Hồ sơ có thay được nó không
+            (21/09/2026). Chỉ xem, không tick được; chân thẻ ghi rõ còn thiếu gì.
+
+            ⚠️ Ở TRANG NÀY nó thay luôn chỗ của `RequiredDossiersCard` — hai thẻ
+            đọc CÙNG một API (`/api/dossiers/applicable`), nên bày cả hai là một
+            danh sách hồ sơ hiện hai lần dưới hai cái tên khác nhau. Thẻ này là
+            bản đầy đủ hơn (gom theo giai đoạn + cột tiến trình). Ba trang chứng
+            từ còn lại vẫn dùng `RequiredDossiersCard` như cũ.
+
+            Thẻ tự ẩn khi thiếu quyền / đang nạp / không có hồ sơ nào khớp.
+            Cờ ngoài là công tắc TẠM ẨN cả phân hệ Hồ sơ (21/09/2026) — xem
+            `DOSSIER_UI_ENABLED`. */}
+        {DOSSIER_UI_ENABLED && <DossierChecklistCard surveyRequestId={surveyRequestId} />}
 
         {!isNew && (
           <>

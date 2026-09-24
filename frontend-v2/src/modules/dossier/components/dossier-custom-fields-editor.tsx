@@ -4,6 +4,7 @@ import { useController, type Control } from 'react-hook-form'
 
 import type { CrudRecord } from '@/shared/crud'
 import { Button } from '@/shared/ui/button'
+import { CollapsibleSection } from '@/shared/ui/collapsible-section'
 import { MAX_DOSSIER_FIELDS, type DossierFieldDef } from '../types/dossier-field'
 import {
   emptyCustomRow,
@@ -81,52 +82,64 @@ export function DossierCustomFieldsEditor({
   const clashOf = (row: DossierCustomRow, index: number) => problemOf(row, index, rows)
 
   return (
-    <section className="@container rounded-lg border bg-card">
-      <header className="border-b bg-muted/30 px-3 py-2.5 sm:px-4">
-        <h3 className="text-sm font-semibold">Trường riêng của hồ sơ này</h3>
-        <p className="mt-0.5 text-xs text-muted-foreground">
+    <CollapsibleSection
+      title="Trường riêng của hồ sơ này"
+      description={
+        <>
           Ô chỉ tờ hồ sơ này cần, không đụng tới khuôn của loại. Nhu cầu nào lặp lại ở
           nhiều hồ sơ thì nên khai ở màn <strong>Loại hồ sơ</strong> để cả công ty dùng chung.
-        </p>
-      </header>
-
-      <div className="space-y-2 px-3 py-3 sm:px-4">
-        {rows.length > 0 && (
-          //  Tiêu đề cột CHỈ ở khổ rộng; khổ hẹp mỗi ô tự mang nhãn của nó
-          //  (xem `DossierCustomFieldRow`), vì bốn cột không xếp ngang nổi
-          //  trên 390px.
-          <div className="hidden gap-2 px-2.5 text-xs font-medium text-muted-foreground @2xl:grid @2xl:grid-cols-[minmax(0,1fr)_130px_92px_minmax(0,1.3fr)_auto]">
-            <span>Tên trường</span>
-            <span>Kiểu</span>
-            <span className="text-center">Bắt buộc</span>
-            <span>Giá trị</span>
-            <span className="w-9" />
-          </div>
-        )}
-
+        </>
+      }
+      summary={rows.length === 0 ? 'chưa có trường nào' : `${rows.length} trường`}
+      storageKey="dossier.custom-fields"
+      //  ⚠️ Có ô sai thì ÉP MỞ. Câu báo lỗi nằm trong khối đang gập thì người
+      //  dùng bấm Lưu và không thấy gì xảy ra — react-hook-form chặn submit
+      //  trong im lặng tuyệt đối (bẫy thứ nhất của duoc-CR-317).
+      forceOpen={Boolean(fieldState.error)}
+    >
+      <div className="px-3 py-3 sm:px-4">
         {rows.length === 0 ? (
           <p className="rounded-lg border border-dashed px-3 py-5 text-center text-sm text-muted-foreground">
             Chưa có trường riêng nào. Hồ sơ này chỉ dùng các ô của loại.
           </p>
         ) : (
-          rows.map((row, index) => (
-            //  ⚠️ Khóa theo VỊ TRÍ, không theo `row.key`: mã đổi theo từng phím
-            //  gõ ở ô «Tên trường» (nó tự gợi ý mã), nên lấy mã làm khóa là React
-            //  hủy và dựng lại ô nhập sau mỗi ký tự — con trỏ nhảy về đầu ô.
-            <DossierCustomFieldRow
-              key={index}
-              row={row}
-              index={index}
-              clashWith={clashOf(row, index)}
-              disabled={disabled}
-              onChange={(next) => setRows(rows.map((r, i) => (i === index ? next : r)))}
-              onRemove={() => setRows(rows.filter((_, i) => i !== index))}
-            />
-          ))
+          //  Khổ rộng: các hàng dính liền nhau như một bảng, phân định bằng
+          //  đường kẻ của chính từng hàng. Khổ hẹp: mỗi hàng là một thẻ rời,
+          //  nên phải có khoảng hở giữa chúng.
+          <div className="space-y-2 @2xl:space-y-0">
+            {/*  Tiêu đề cột CHỈ ở khổ rộng; khổ hẹp mỗi ô tự mang nhãn của nó
+                 (xem `DossierCustomFieldRow`), vì bốn cột không xếp ngang nổi
+                 trên 390px.
+                 ⚠️ Bề rộng cột ở đây phải KHỚP TỪNG SỐ với lưới của
+                 `DossierCustomFieldRow` — lệch một con số là tiêu đề trỏ nhầm
+                 cột, mà không có gì đỏ lên để báo. */}
+            <div className="hidden gap-2 border-b border-border/60 pb-1.5 text-xs font-medium text-muted-foreground @2xl:grid @2xl:grid-cols-[minmax(0,1fr)_184px_84px_minmax(0,1fr)_36px]">
+              <span>Tên trường</span>
+              <span>Kiểu</span>
+              <span className="text-center">Bắt buộc</span>
+              <span>Giá trị</span>
+              <span />
+            </div>
+
+            {rows.map((row, index) => (
+              //  ⚠️ Khóa theo VỊ TRÍ, không theo `row.key`: mã đổi theo từng phím
+              //  gõ ở ô «Tên trường» (nó tự gợi ý mã), nên lấy mã làm khóa là React
+              //  hủy và dựng lại ô nhập sau mỗi ký tự — con trỏ nhảy về đầu ô.
+              <DossierCustomFieldRow
+                key={index}
+                row={row}
+                index={index}
+                clashWith={clashOf(row, index)}
+                disabled={disabled}
+                onChange={(next) => setRows(rows.map((r, i) => (i === index ? next : r)))}
+                onRemove={() => setRows(rows.filter((_, i) => i !== index))}
+              />
+            ))}
+          </div>
         )}
 
         {!disabled && (
-          <div className="flex flex-wrap items-center gap-3 pt-1">
+          <div className="flex flex-wrap items-center gap-3 pt-3">
             <Button
               type="button"
               variant="outline"
@@ -153,6 +166,6 @@ export function DossierCustomFieldsEditor({
           </div>
         )}
       </div>
-    </section>
+    </CollapsibleSection>
   )
 }

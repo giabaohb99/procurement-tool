@@ -108,6 +108,9 @@ export const queryKeys = {
 
     /** Số liệu trang Tổng quan Thu mua (`/api/dashboard/overview`). */
     dashboard: () => ['procurement', 'dashboard'] as const,
+    /** bao-CR-453 — danh mục loại chi phí thu mua (`/api/po-cost-types`). */
+    poCostTypes: (params?: Record<string, unknown>) =>
+      ['procurement', 'po-cost-types', params ?? {}] as const,
   },
   production: {
     all: ['production'] as const,
@@ -153,10 +156,6 @@ export const queryKeys = {
     /** Danh mục Chức vụ (duoc-CR-320) — nguồn ô chọn «Vị trí / Chức vụ». */
     jobPositions: (params?: Record<string, unknown>) =>
       ['hr', 'job-positions', params ?? {}] as const,
-    //  Đếm ngược người giữ từng chức vụ (duoc-CR-322). MỘT khóa cho cả bảng —
-    //  mỗi ô trong cột «Đang giữ» gọi cùng hook này, react-query gộp lại thành
-    //  một lời gọi. Khóa theo từng dòng là 13 request cho 13 dòng.
-    jobPositionStats: () => ['hr', 'job-positions', 'stats'] as const,
     company: (id: number) => ['hr', 'companies', id] as const,
     roles: (params?: Record<string, unknown>) => ['hr', 'roles', params ?? {}] as const,
     /** Danh sách entity/action/scope để dựng ma trận — gần như bất biến. */
@@ -374,8 +373,16 @@ export const queryKeys = {
     all: ['system'] as const,
     /** Cấu hình chạy nóng (email, lưu trữ, công tắc quy trình) — một khóa duy nhất. */
     settings: () => ['system', 'settings'] as const,
+    /** Đối chiếu DB với kho vector của Trợ lý AI (bao-CR-451) — bài nào chưa vào chỉ mục. */
+    ragIndexStatus: () => ['system', 'rag-index-status'] as const,
     backups: (params?: Record<string, unknown>) => ['system', 'backups', params ?? {}] as const,
     auditLogs: (params?: Record<string, unknown>) => ['system', 'audit-logs', params ?? {}] as const,
+    /**
+     * Nhật ký của chính màn *Cấu hình hệ thống* (bao-CR-462) — đọc `entity=setting`
+     * dạng mảng đơn. Nằm CÙNG nhánh `audit-logs` để lưu cấu hình xong chỉ cần bỏ
+     * hiệu lực một nhánh là cả thẻ lịch sử lẫn màn nhật ký toàn hệ cùng nạp lại.
+     */
+    settingHistory: () => ['system', 'audit-logs', 'setting-history'] as const,
     /**
      * Nhật ký hệ thống gộp theo `request_id` (bao-CR-407) — KHÁC `auditLogs`:
      * khóa kia đọc `tab_audit_log`, khóa này đọc `tab_request_log` làm xương sống.
@@ -399,6 +406,15 @@ export const queryKeys = {
     /** Lịch sử đăng nhập N ngày của MỘT tài khoản (phiên + lần thất bại). */
     loginHistory: (userId: number, days: number) =>
       ['system', 'login-sessions', 'history', userId, days] as const,
+    /** Sổ đồng bộ với hệ ngoài — `tab_sync_log` (bao-CR-449). */
+    syncLogs: (params?: Record<string, unknown>) =>
+      ['system', 'sync-logs', params ?? {}] as const,
+    /** Thẻ đếm theo trạng thái — CÙNG nhánh với danh sách để bấm Chạy lại là cả hai cùng nạp lại. */
+    syncLogStats: (params?: Record<string, unknown>) =>
+      ['system', 'sync-logs', 'stats', params ?? {}] as const,
+    /** Bộ chọn cho các ô lọc (nguồn / đối tượng / cờ cảnh báo) — backend là nguồn sự thật. */
+    syncLogMeta: () => ['system', 'sync-logs', 'meta'] as const,
+    syncLogDetail: (id: number) => ['system', 'sync-logs', 'detail', id] as const,
     /** Hộp thư gửi danh nghĩa địa chỉ khác (26/08/2026). */
     mailboxes: () => ['system', 'mailboxes'] as const,
     /** Mẫu email thông báo theo bước (Đặt xe) — sửa được trong Cấu hình. */
@@ -551,6 +567,24 @@ export const queryKeys = {
   sealClerk: {
     all: ['seal-clerk'] as const,
     list: (params?: Record<string, unknown>) => ['seal-clerk', 'list', params ?? {}] as const,
+  },
+  /** Phân hệ Hồ sơ — kho giấy tờ công ty. */
+  dossier: {
+    all: ['dossier'] as const,
+    /**
+     * Hồ sơ phải kèm theo MỘT chứng từ (`/api/dossiers/applicable`).
+     *
+     * Khóa mang cả loại lẫn id chứng từ: cùng một số `id` tồn tại ở cả bốn loại
+     * chứng từ, bỏ `docKind` ra khỏi khóa là ĐMH 363 đọc phải kết quả đã nhớ
+     * của YCMH 363.
+     */
+    applicable: (docKind: string, docId: number) =>
+      ['dossier', 'applicable', docKind, docId] as const,
+    /** MỘT tờ hồ sơ đầy đủ (`/api/dossiers/{id}`) — hộp sửa nhanh cần các ô mà
+     *  danh sách `applicable` không trả về (ngày cấp, người phụ trách, nơi lưu). */
+    detail: (id: number) => ['dossier', 'detail', id] as const,
+    /** Danh sách gọn để chọn HỒ SƠ TIÊN QUYẾT trong biểu mẫu hồ sơ. */
+    candidates: () => ['dossier', 'candidates'] as const,
   },
   /** Phân hệ Điểm cà phê × POS365 (doc/erp/diem-ca-phe/). */
   coffee: {

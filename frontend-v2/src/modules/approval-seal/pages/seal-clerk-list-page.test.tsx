@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -95,5 +96,38 @@ describe('SealClerkListPage', () => {
     expect(screen.getByText('Võ Thanh Huyền')).toBeInTheDocument()
     expect(screen.getByText('Mã: NSU003')).toBeInTheDocument()
     expect(screen.getByText('Văn thư tổng')).toBeInTheDocument()
+  })
+
+  //  Bài kiểm này nhắc lại một LỖI ĐÃ XẢY RA (22/09/2026), đừng xóa: bản cũ
+  //  phân trang phía máy chủ nhưng đếm và lọc trên `data.items` = trang đang
+  //  xem, mà API không biết lọc theo `is_head`. Quá một trang là bấm thẻ "Đa
+  //  pháp nhân 2" ra bảng rỗng vì hai người đó nằm ở trang sau.
+  it('lọc bảng theo thẻ đếm đang chọn, đếm trên toàn bộ danh sách', async () => {
+    const user = userEvent.setup()
+    renderPage()
+
+    const card = screen.getByRole('button', { name: /Đa pháp nhân/ })
+    expect(within(card).getByText('1')).toBeInTheDocument()
+    expect(card).toHaveAttribute('aria-pressed', 'false')
+
+    await user.click(card)
+
+    expect(card).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByText('Thái Thị Thu Hiền')).toBeInTheDocument()
+    expect(screen.queryByText('Võ Thanh Huyền')).not.toBeInTheDocument()
+
+    // Bấm lại đúng thẻ đang chọn = bỏ lọc, cả hai người hiện lại.
+    await user.click(card)
+    expect(screen.getByText('Võ Thanh Huyền')).toBeInTheDocument()
+  })
+
+  it('phân biệt bảng rỗng vì bộ lọc với bảng rỗng vì chưa có dữ liệu', async () => {
+    const user = userEvent.setup()
+    renderPage()
+
+    // Không ai đang nghỉ phép trong dữ liệu mẫu → lọc ra rỗng.
+    await user.click(screen.getByRole('button', { name: /Nghỉ phép/ }))
+
+    expect(screen.getByText('Không có văn thư nào khớp bộ lọc đang chọn.')).toBeInTheDocument()
   })
 })

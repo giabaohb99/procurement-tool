@@ -74,6 +74,34 @@ class VectorStore:
             ])),
         )
 
+    def source_refs(self) -> set[tuple[str, int]]:
+        """Liệt kê (nguồn, id) ĐANG nằm trong kho — để so với danh sách dưới DB mà biết thiếu gì.
+
+        Quét payload theo trang, KHÔNG kéo vector về (`with_vectors=False`): một bài ra chục
+        đoạn, mỗi đoạn 768 số — kéo hết về chỉ để đọc hai trường payload là phí băng thông vô
+        ích. Collection chưa dựng thì trả rỗng chứ không nổ: lần đầu bật RAG là đúng cảnh đó.
+        """
+        if not self.client.collection_exists(COLLECTION):
+            return set()
+        refs: set[tuple[str, int]] = set()
+        offset = None
+        while True:
+            points, offset = self.client.scroll(
+                collection_name=COLLECTION,
+                limit=256,
+                offset=offset,
+                with_payload=["source", "source_id"],
+                with_vectors=False,
+            )
+            for p in points:
+                payload = p.payload or {}
+                source, source_id = payload.get("source"), payload.get("source_id")
+                if source and isinstance(source_id, int):
+                    refs.add((source, source_id))
+            if offset is None:
+                break
+        return refs
+
     def search(self, vector: list[float], limit: int, *, only_active: bool = True) -> list[dict]:
         """Trả list payload kèm `score`, sắp theo độ gần giảm dần."""
         from qdrant_client.http import models as qm

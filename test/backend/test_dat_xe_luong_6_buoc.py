@@ -30,6 +30,17 @@ from app.modules.vehicle_booking.service import (
 )
 
 
+def _approver(uid: int = 900):
+    """NGƯỜI DUYỆT — phải khác người lập phiếu.
+
+    Từ 21/09/2026 `service._block_self_approval` chặn người lập tự ký phiếu của
+    mình ở cả đường duyệt một bước (trừ người có phạm vi «tất cả»). Mấy bài dưới
+    đây trước đó dùng CHUNG một actor cho cả lập lẫn duyệt cho gọn — gọn nhưng
+    dựng sai cảnh thật, và chính chỗ đó che mất lỗ suốt thời gian qua.
+    """
+    return SimpleNamespace(id=uid)
+
+
 def _actor(db):
     emp = Employee(code='NV900', full_name='Người Tạo', email='c@dego.vn',
                    department_id=7, company_id=3)
@@ -61,7 +72,7 @@ def test_full_six_step_happy_path(db):
     assert b.status == m.BK_PENDING
 
     # 2) Duyệt
-    approve_booking(db, b, actor)
+    approve_booking(db, b, _approver())
     assert b.status == m.BK_APPROVED
 
     # 3) Điều phối (gán xe + tài xế)
@@ -98,14 +109,14 @@ def test_reject_branch_locks(db):
     assert b.status == m.BK_REJECTED
     # Đã từ chối thì không duyệt lại được.
     with pytest.raises(HTTPException):
-        approve_booking(db, b, actor)
+        approve_booking(db, b, _approver())
 
 
 def test_driver_reject_returns_to_dispatch(db):
     actor = _actor(db)
     v, d = _fleet(db)
     b = create_booking(db, _payload(), actor, submit=True)
-    approve_booking(db, b, actor)
+    approve_booking(db, b, _approver())
     dispatch_booking(db, b, DispatchIn(assigned_vehicle_id=v.id, assigned_driver_id=d.id), actor)
     driver_reject(db, b, ReasonIn(reason='Kẹt chuyến khác'), actor)
     assert b.driver_status == m.DRV_REJECTED

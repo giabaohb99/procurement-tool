@@ -10,6 +10,7 @@ from app.core.export_xlsx import Col
 from app.core.status_codes import (PO_DELIVERY_STATUS, PO_DOCUMENT_STATUS,
                                    PO_ITEM_LINE_STATUS, PO_PROGRESS_STATUS)
 from app.modules.purchase_order.model import PODelivery, POItem, PurchaseOrder
+from app.modules.purchase_order.service import normalize_rate
 
 # Bốn cột của B-06 lưu MÃ tiếng Anh. File Excel là để NGƯỜI đọc nên phải dịch ngược ngay trước
 # khi ghi. `row_values` cố ý KHÔNG dịch sẵn: cùng hàm đó nuôi luôn API danh sách, mà giao diện
@@ -65,6 +66,11 @@ COLS = [
     Col("vat", "VAT%", "int", 8),
     # bao-CR-307: giá một đơn vị ĐÃ gồm VAT — kế toán đối chiếu giá chẵn trên hóa đơn
     Col("price_after_vat", "Đơn giá (Sau VAT)", "price", 15),
+    # bao-CR-437: hai cột này là LỜI GIẢI THÍCH cho mọi cột "Thành tiền" bên phải. Đơn giá ghi
+    # theo đồng tiền của dòng, còn thành tiền đã quy đổi về đồng — thiếu tỷ giá thì người đọc
+    # nhân tay ra một số khác hẳn và không có cách nào biết vì sao.
+    Col("currency", "Đồng tiền", width=10),
+    Col("exchange_rate", "Tỷ giá", "price", 12),
     Col("order_amount", "Thành tiền ĐH", "money", 16),
     Col("progress_status", "Tiến độ", width=18),
     Col("delivery_no", "Lần giao", "int", 9),
@@ -109,6 +115,12 @@ PROGRESS_RENAME = {
     "delivery_invoice_date": Col("delivery_invoice_date", "Ngày HĐ", "date", 13),
 }
 
+#  Cột LUÔN có mặt trong tệp xuất, kể cả khi người dùng không bày nó trên bảng (bao-CR-437).
+#  Bảng trên màn hình đã có cột đồng tiền / tỷ giá từ bao-CR-439, nhưng hai cột đó ẩn/hiện được
+#  như mọi cột khác — ai tắt đi thì `cols` gửi lên không còn chúng, và tệp ra toàn cột tiền đã
+#  quy đổi mà không kèm căn cứ quy đổi. `pick_columns` tự khử trùng nên ép luôn là an toàn.
+ALWAYS_COLS = ("currency", "exchange_rate")
+
 SHEET_TITLE = "Tien do mua hang"
 FILE_NAME = "tien-do-mua-hang"
 
@@ -129,10 +141,17 @@ def row_values(po: PurchaseOrder, it: POItem, dl: PODelivery | None, show_suppli
     qty_order = float(it.qty_order or 0)
     price = float(it.price or 0)
     vat = float(it.vat or 0)
-    # Thành tiền ĐƠN HÀNG (col AB): SL đặt × đơn giá × (1+VAT%) — ổn định, không phụ thuộc đã nhận hay chưa
-    order_amount = round(qty_order * price * (1 + vat / 100), 2)
-    # Thành tiền theo SL thực NHẬN của lần giao (gồm VAT) — dùng đối chiếu công nợ đã chốt
-    amount = round(qty_recv * price * (1 + vat / 100), 2)
+    # bao-CR-437 — HAI cột "Thành tiền" dưới đây đã QUY ĐỔI về đồng, cột "Đơn giá" thì KHÔNG
+    # (giá nguyên tệ là số in trên hóa đơn của nhà cung cấp, đổi đi là hết đối chiếu được).
+    # Trước bản vá này cả hai nhân thiếu tỷ giá: một dòng 5.000 × 4,85 CNY hiện **42.850** dưới
+    # nhãn "đ" trên màn Tiến độ, trong khi khoản công nợ sinh từ đúng dòng đó ghi **155.117.000 đ**
+    # — mà chú thích ngay dưới đây vẫn nói "dùng đối chiếu công nợ". Bảng Tiến độ xếp chung đơn
+    # ngoại tệ với đơn trong nước nên không quy đổi thì cột tiền không cộng lại được.
+    rate = normalize_rate(getattr(it, "exchange_rate", 0))
+    # Thành tiền ĐƠN HÀNG: SL đặt × đơn giá × (1+VAT%) × tỷ giá — ổn định, không phụ thuộc đã nhận hay chưa
+    order_amount = round(qty_order * price * (1 + vat / 100) * rate, 2)
+    # Thành tiền theo SL thực NHẬN của lần giao (gồm VAT, đã quy đổi) — dùng đối chiếu công nợ đã chốt
+    amount = round(qty_recv * price * (1 + vat / 100) * rate, 2)
     r = {
         # ----- Đơn mua hàng -----
         "po_id": po.id, "po_code": po.code, "misa_code": po.misa_code,
@@ -149,8 +168,9 @@ def row_values(po: PurchaseOrder, it: POItem, dl: PODelivery | None, show_suppli
         "supplier_ready": bool(it.supplier_ready),
         "unit": it.unit, "qty_request": float(it.qty_request or 0),
         "qty_order": qty_order, "price": price, "vat": vat,
+        "currency": it.currency or "", "exchange_rate": rate,
         # bao-CR-307: đơn giá sau VAT làm tròn 2 số lẻ — 166.666,67 × 1,08 phải ra 180.000
-        # chứ không phải 180.000,0036
+        # chứ không phải 180.000,0036. NGUYÊN TỆ, cùng họ với cột "Đơn giá".
         "price_after_vat": round(price * (1 + vat / 100), 2),
         "order_amount": order_amount,
         "line_status": it.line_status,

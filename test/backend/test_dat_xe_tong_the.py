@@ -60,6 +60,17 @@ def _payload(*, delivery: bool, self_drive: bool):
     return VehicleBookingCreate(**data)
 
 
+def _approver(uid: int = 900):
+    """NGƯỜI DUYỆT — phải khác người lập phiếu.
+
+    Từ 21/09/2026 `service._block_self_approval` chặn người lập tự ký phiếu của
+    mình ở cả đường duyệt một bước (trừ người có phạm vi «tất cả»). Mấy bài dưới
+    đây trước đó dùng CHUNG một actor cho cả lập lẫn duyệt cho gọn — gọn nhưng
+    dựng sai cảnh thật, và chính chỗ đó che mất lỗ suốt thời gian qua.
+    """
+    return SimpleNamespace(id=uid)
+
+
 def _actor(db, *, uid=101):
     emp = Employee(code="NV900", full_name="Người Tạo", email="c@dego.vn",
                    department_id=7, company_id=3)
@@ -84,7 +95,7 @@ def test_full_flow_all_four_variants(db, delivery, self_drive):
     assert b.status == m.BK_PENDING
     assert b.is_self_drive is self_drive
 
-    approve_booking(db, b, actor)
+    approve_booking(db, b, _approver())
     assert b.status == m.BK_APPROVED
 
     dispatch = DispatchIn(assigned_vehicle_id=veh.id,

@@ -149,6 +149,11 @@ export const ENTITIES = [
   //  mọi nguồn (app đặt xe, POS365, đơn hàng...). `write` KHÔNG phải sửa dòng sổ
   //  — sổ không sửa được — mà là nút «Chạy lại», tức gọi ngược sang hệ ngoài.
   'sync_log',
+  'purchase_cost_type',
+  // bao-CR-470 — Tra cứu giá hải quan (khớp ENTITIES của backend, canh bởi
+  // test_dong_bo_giao_dien_v2.py).
+  'customs_price',
+  'customs_regulation',
   //  Việc của bot Agent Hub (ai-CR-036) — màn `/system/agent-tasks`, chỉ đọc: danh sách việc
   //  Đậu Đậu đã nhận, từng bước đã chạy, chi phí model. Thao tác trên việc vẫn đi qua Telegram.
   'agent_task',

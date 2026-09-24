@@ -3,7 +3,8 @@
 export const SOURCE_TYPE_LABELS: Record<string, string> = {
   goods: 'Hàng hóa',
   shipping: 'Vận chuyển',
-  import_cost: 'Chi phí nhập khẩu',
+  // tên lịch sử: source_type = 'import_cost' giữ nguyên trong DB và API
+  import_cost: 'Chi phí thu mua',
 }
 
 export const SOURCE_TYPE_OPTIONS = Object.entries(SOURCE_TYPE_LABELS).map(([value, label]) => ({ value, label }))

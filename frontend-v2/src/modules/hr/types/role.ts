@@ -6,6 +6,18 @@ export interface Role {
   description: string
   /** Thứ tự hiện do người quản trị kéo thả. Vai trò chưa xếp thì là 0. */
   sort_order: number
+  /**
+   * Số tài khoản đang giữ vai trò — chỉ có ở `GET /api/roles` (bao-CR-428),
+   * các đường trả một vai trò (tạo, sửa) không kèm.
+   */
+  user_count?: number
+  /**
+   * Ô đã tick của vai trò, khóa theo entity, giá trị là danh sách hành động
+   * (`{ purchase_order: ['read', 'create'] }`). Cùng nguồn với `user_count`.
+   * Chỉ dùng để in chip phân hệ ở cột trái; ma trận thật vẫn đọc từ
+   * `/api/roles/{id}/permissions`.
+   */
+  granted?: Record<string, string[]>
 }
 
 /** Một cặp key/label do backend trả ở `/api/roles/meta`. */

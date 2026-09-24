@@ -14,7 +14,14 @@ import {
   type DossierStatus,
 } from '../types/dossier'
 import type { DossierType } from '../types/dossier-type'
+import { DossierApplyRulesEditor } from '../components/dossier-apply-rules-editor'
+import { DossierDependsEditor } from '../components/dossier-depends-editor'
 import { DossierCustomFieldsEditor } from '../components/dossier-custom-fields-editor'
+import {
+  APPLY_RULES_FIELD,
+  fromApplyRules,
+  type DossierApplyRules,
+} from '../types/dossier-apply-rules'
 import { fromCustomRows, type DossierCustomRow } from '../types/dossier-custom-row'
 import {
   CUSTOM_ROWS_FIELD,
@@ -229,6 +236,12 @@ export function buildDossierCrudConfig(types: DossierType[]): CrudConfig<Dossier
             defsOfType={(id) => fieldsOfType(types, id)}
           />
         ),
+        renderApplyRules: ({ control, name, disabled }) => (
+          <DossierApplyRulesEditor control={control} name={name} disabled={disabled} />
+        ),
+        renderDepends: ({ control, name, disabled }) => (
+          <DossierDependsEditor control={control} name={name} disabled={disabled} />
+        ),
       }),
     //  Chỉnh `extra_fields` lần cuối — hai việc NGƯỢC nhau, và thiếu việc nào
     //  cũng hỏng theo một kiểu riêng:
@@ -262,13 +275,22 @@ export function buildDossierCrudConfig(types: DossierType[]): CrudConfig<Dossier
         payload[CUSTOM_ROWS_FIELD] as DossierCustomRow[] | undefined,
       )
 
+      //  ④ **TÁCH điều kiện áp dụng** — cùng khuôn ③: một ô trên biểu mẫu
+      //  («áp cho đơn mua hàng, khi có SP-001»), hai cột dưới DB. Phép tách ở
+      //  `fromApplyRules`, kèm luật dọn điều kiện treo khi bỏ chọn hết màn.
+      const applyRules = fromApplyRules(
+        payload[APPLY_RULES_FIELD] as DossierApplyRules | undefined,
+      )
+
       //  Ô giữ các hàng chỉ sống trên biểu mẫu — gửi lên là backend trả 422
       //  «Extra inputs are not permitted».
       const rest = { ...payload }
       delete rest[CUSTOM_ROWS_FIELD]
+      delete rest[APPLY_RULES_FIELD]
 
       return {
         ...rest,
+        ...applyRules,
         custom_fields: defs,
         extra_fields: {
           ...(item?.extra_fields ?? {}),

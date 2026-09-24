@@ -114,6 +114,13 @@ const NAV_GROUPS: NavGroup[] = [
         icon: "ti-truck-delivery",
         anyEntity: ["purchase_order", "purchase_request"],
       },
+      {
+        // bao-CR-470 — giá nhập khẩu thị trường từ tờ khai hải quan (GTT02)
+        to: "/customs-prices",
+        label: "Tra cứu giá hải quan",
+        icon: "ti-world-search",
+        entity: "customs_price",
+      },
     ],
   },
   {
@@ -193,10 +200,25 @@ const NAV_GROUPS: NavGroup[] = [
         manage: true,
       },
       {
+        // bao-CR-470 — danh mục pháp lý dùng cho thẻ «Pháp lý & thuế» của Tra cứu giá hải quan
+        to: "/customs-regulations",
+        label: "Hóa chất theo văn bản",
+        icon: "ti-flask",
+        entity: "customs_regulation",
+        manage: true,
+      },
+      {
         to: "/item-groups",
         label: "Phân loại",
         icon: "ti-category",
         entity: "item_group",
+        manage: true,
+      },
+      {
+        to: "/po-cost-types",
+        label: "Loại chi phí thu mua",
+        icon: "ti-receipt-2",
+        entity: "purchase_cost_type",
         manage: true,
       },
       {

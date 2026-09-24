@@ -1,4 +1,4 @@
-"""Hai vòng chạy nền của app đặt xe cũ. Lịch beat khai ở `core/celery_app.py`.
+"""Ba vòng chạy nền của app đặt xe cũ. Lịch beat khai ở `core/celery_app.py`.
 
 1. `datxe.pull_updated` — LƯỚI AN TOÀN (§11). Đường chính là cái móc bên app cũ
    gọi thẳng vào `/api/sync/datxe/events`; vòng này chỉ vá lúc cái móc trượt
@@ -15,10 +15,19 @@ Cả hai đều bọc trong một dòng LƯỢT CHẠY (`grain = RUN`) của quy
 các dòng phiếu bên trong gắn `run_id` về dòng đó — mở nhật ký đồng bộ là thấy
 "lượt 10h05 kéo 12 phiếu, ghi 9, bỏ 2, hỏng 1" rồi bấm xuống từng phiếu.
 
+3. `datxe.full_sweep` — LƯỚI ĐỠ CỦA LƯỚI ĐỠ, mỗi đêm một lần: đọc cả nhánh, bỏ
+   con trỏ, xử lại cả phiếu không đổi nội dung. Hai vòng trên đều tin vào con
+   trỏ và vào mã băm; vòng này không tin cái nào cả, nên nó vá được đúng những
+   chỗ hai cái kia bỏ sót (xem `full_sweep_task`).
+
 CON TRỎ LÀ MỐC BAO GỒM, không phải mốc loại trừ: lượt sau bắt đầu ĐÚNG tại
 `updatedAt` lớn nhất lượt trước, nên phiếu ở ranh giới được nhìn lại lần nữa.
 Cộng thêm một mili-giây thì hai phiếu sửa cùng một mili-giây sẽ mất một; còn
 nhìn lại thì `is_unchanged` chặn ngay, không tốn dòng sổ nào.
+
+VÀ CON TRỎ CHỈ TIẾN THEO `updatedAt` THẬT (`cursor_value`). Phiếu chưa có dấu
+thời gian vẫn xử được nhờ mốc lùi `createdAt`, nhưng KHÔNG được phép đẩy con trỏ
+— một phiếu lạc mốc từng kéo con trỏ vượt lên cả năm và bịt mắt vòng quét.
 """
 import json
 import logging
@@ -56,6 +65,7 @@ LOGGER = logging.getLogger(__name__)
 
 JOB_PULL = "pull_updated"
 JOB_RETRY = "retry_pending"
+JOB_FULL = "full_sweep"
 
 #: Nhánh chứa phiếu bên app cũ, và ô mốc thời gian dùng làm con trỏ.
 NODE_REQUESTS = "requests"
@@ -101,22 +111,40 @@ def check_ready() -> None:
         raise LegacySyncOff("Chưa khai LEGACY_FIREBASE_DB_URL / LEGACY_FIREBASE_SECRET")
 
 
-def pull_updated(db, *, run_id: int = 0, user_id: int = 0, start_at: int | None = None, fetch=None) -> dict:
+def pull_updated(db, *, run_id: int = 0, user_id: int = 0, start_at: int | None = None,
+                 fetch=None, full: bool = False, force: bool = False) -> dict:
     """Kéo phiếu có `updatedAt` mới hơn con trỏ. Trả bộ đếm cho dòng lượt chạy.
+
+    `full=True` bỏ con trỏ và đọc CẢ nhánh — đó là vòng quét toàn bộ chạy mỗi
+    đêm, xem `full_sweep`. `force=True` xử lại cả phiếu không đổi nội dung.
 
     `fetch` thay được để bài kiểm khỏi đi hỏi Firebase thật.
     """
     check_ready()
-    if start_at is None:
+    if full:
+        start_at_val, cursor_from = 0, ""
+    elif start_at is None:
         start_at_val, cursor_from = read_cursor(db)
     else:
         start_at_val, cursor_from = start_at, str(start_at)
     fetch = fetch or firebase.query_node
-    nodes = fetch(NODE_REQUESTS, order_by=CURSOR_FIELD, start_at=start_at_val,
-                  limit=MAX_RECORDS_PER_RUN) or {}
-    if not nodes:
-        all_nodes = firebase.read_node(NODE_REQUESTS) or {}
-        nodes = {k: v for k, v in all_nodes.items() if _updated_at(v) >= start_at_val}
+
+    if full:
+        nodes = firebase.read_node(NODE_REQUESTS) or {}
+    else:
+        nodes = fetch(NODE_REQUESTS, order_by=CURSOR_FIELD, start_at=start_at_val,
+                      limit=MAX_RECORDS_PER_RUN)
+        if nodes is None:
+            #  Truy vấn theo chỉ mục HỎNG (thường là Rules thiếu `.indexOn`, hoặc
+            #  mạng chập). Đọc cả nhánh cho lượt này để phiếu vẫn về được, nhưng
+            #  phải kêu lên: im lặng ở đây là im lặng suốt nhiều tháng.
+            LOGGER.warning("Truy vấn theo chỉ mục %r hỏng — đọc cả nhánh %r cho lượt này",
+                           CURSOR_FIELD, NODE_REQUESTS)
+            all_nodes = firebase.read_node(NODE_REQUESTS) or {}
+            nodes = {k: v for k, v in all_nodes.items() if _updated_at(v) >= start_at_val}
+        #  Truy vấn chạy được mà không khớp gì thì nghỉ, ĐỪNG tải cả nhánh. Trước
+        #  đây hai ca đó cùng trả rỗng nên lượt nào cũng kéo về cả nghìn phiếu,
+        #  mỗi ba phút, chỉ để bỏ qua từng cái một.
 
     #  Xếp theo `updatedAt` tăng dần rồi mới xử: con trỏ phải tiến theo đúng thứ
     #  tự thời gian, không theo thứ tự khóa Firebase trả về.
@@ -133,7 +161,7 @@ def pull_updated(db, *, run_id: int = 0, user_id: int = 0, start_at: int | None 
         if not isinstance(node, dict):
             stats["unknown_type"] += 1
             continue
-        up_ms = _updated_at(node)
+        up_ms = cursor_value(node)
         entity = entity_of(node)
         if entity not in MODEL:
             #  Nhánh `requests` bên app cũ còn loại phiếu khác (vd đặt phòng
@@ -147,7 +175,7 @@ def pull_updated(db, *, run_id: int = 0, user_id: int = 0, start_at: int | None 
 
         entry = run_one(db, legacy_id=legacy_id, node=node, entity=entity,
                         run_id=run_id, people=people, catalog=catalog,
-                        seal_type_id=seal_type_id, user_id=user_id)
+                        seal_type_id=seal_type_id, user_id=user_id, force=force)
         _count(stats, entry)
         if up_ms > 0:
             cursor_to = max(cursor_to, up_ms)
@@ -159,9 +187,26 @@ def pull_updated(db, *, run_id: int = 0, user_id: int = 0, start_at: int | None 
     return stats
 
 
+def cursor_value(node) -> int:
+    """Mốc ĐỂ TIẾN CON TRỎ. Chỉ nhận `updatedAt` thật, không lùi về `createdAt`.
+
+    Khác `_updated_at` ở đúng chỗ đó, và sự khác nhau này là một lỗi đã xảy ra
+    thật: một phiếu thử tạo ngày 29/08/2026 không hề có `updatedAt`, mốc lùi lấy
+    `createdAt` của nó, con trỏ nhảy lên tháng 8/2026 — rồi 480 phiếu thật (đều
+    của năm 2025, đều chưa có `updatedAt`) nằm dưới con trỏ và biến mất khỏi mọi
+    lượt quét. 127 phiếu chưa kịp về ERP kẹt lại ngoài đó, im lặng, không một
+    dòng sổ lỗi nào.
+
+    Mốc lùi vẫn đúng cho việc XẾP THỨ TỰ và cho việc LỌC ở đường đọc cả nhánh —
+    nó chỉ không được phép quyết định ranh giới của lượt sau.
+    """
+    val = (node or {}).get(CURSOR_FIELD)
+    return _to_ms(val) if val else 0
+
+
 def run_one(db, *, legacy_id: str, node: dict, entity: str, run_id: int,
             people: PeopleResolver, catalog: LegacyCatalog, seal_type_id: int,
-            user_id: int) -> SyncLog | None:
+            user_id: int, force: bool = False) -> SyncLog | None:
     """Một phiếu trong lượt quét. Nuốt lỗi CỦA LƯỢT, không nuốt lỗi của phiếu.
 
     `apply_legacy_record` tự đóng dòng sổ *lỗi* cho phiếu hỏng; thứ cần chặn ở
@@ -171,7 +216,8 @@ def run_one(db, *, legacy_id: str, node: dict, entity: str, run_id: int,
     try:
         return apply_legacy_record(db, node=node, legacy_id=legacy_id, entity=entity,
                                    run_id=run_id, people=people, catalog=catalog,
-                                   seal_type_id=seal_type_id, user_id=user_id)
+                                   seal_type_id=seal_type_id, user_id=user_id,
+                                   force=force)
     except ValueError as exc:
         LOGGER.warning("Bỏ phiếu %r của app cũ: %s", legacy_id, exc)
         return None
@@ -229,8 +275,15 @@ def retry_pending(db, *, run_id: int = 0, user_id: int = 0) -> dict:
 
 
 def _updated_at(node) -> int:
+    """Mốc ĐỂ XẾP THỨ TỰ và ĐỂ LỌC, có lùi về `createdAt`. Không dùng cho con
+    trỏ — chỗ đó là `cursor_value`."""
+    val = (node or {}).get(CURSOR_FIELD) or (node or {}).get("createdAt") or 0
+    return _to_ms(val)
+
+
+def _to_ms(val) -> int:
+    """Mốc thời gian app cũ -> mili-giây. App cũ ghi cả số lẫn chuỗi ISO."""
     try:
-        val = (node or {}).get(CURSOR_FIELD) or (node or {}).get("createdAt") or 0
         if isinstance(val, (int, float)):
             return int(val)
         if isinstance(val, str):
@@ -316,4 +369,26 @@ def pull_updated_task(actor_id: int = 0) -> dict:
 def retry_pending_task(actor_id: int = 0) -> dict:
     return run_logged(JOB_RETRY,
                       lambda db, run_id: retry_pending(db, run_id=run_id, user_id=actor_id),
+                      actor_id)
+
+
+@celery_app.task(name="datxe.full_sweep")
+def full_sweep_task(actor_id: int = 0) -> dict:
+    """Quét TOÀN BỘ nhánh phiếu, bỏ con trỏ, xử lại cả phiếu không đổi nội dung.
+
+    Đây là lưới đỡ của lưới đỡ, chạy MỘT LẦN MỖI ĐÊM, và nó có mặt vì hai ca đã
+    xảy ra thật ngày 18/09/2026:
+
+    - phiếu tụt xuống dưới con trỏ thì vòng quét ba phút không bao giờ nhìn lại
+      nữa (127 phiếu kẹt kiểu này);
+    - phiếu về ERP TRƯỚC khi một bộ dựng ra đời thì phép so mã băm chặn nó lại
+      vĩnh viễn, nên dữ liệu suy ra không bao giờ được dựng (353 phiếu mất luồng
+      duyệt kiểu này).
+
+    Vòng này dùng `job` riêng nên con trỏ của `pull_updated` không bị nó xê dịch.
+    Nặng (đọc cả nhánh, xử lại từng phiếu) nên ĐỪNG hạ nhịp xuống vài phút.
+    """
+    return run_logged(JOB_FULL,
+                      lambda db, run_id: pull_updated(db, run_id=run_id, user_id=actor_id,
+                                                      full=True, force=True),
                       actor_id)

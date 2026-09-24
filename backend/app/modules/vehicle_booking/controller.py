@@ -34,9 +34,15 @@ router = APIRouter(prefix="/api/vehicle-bookings", tags=["vehicle-booking"])
 
 
 def _with_reason(action: str, reason: str) -> str:
-    """Ghép hành động + lý do cho nhật ký, vd 'Từ chối chuyến đi — Lý do: Trùng lịch'."""
+    """Ghép hành động + lý do cho nhật ký, vd 'Từ chối chuyến đi — Lý do: Trùng lịch'.
+
+    ⚠️ Dấu ngăn lấy từ `service.REASON_SEP` chứ không gõ lại: `service.close_reasons`
+    TÁCH câu này ra để trả về cho màn hình (thẻ Tiến trình xử lý, thẻ hover trên
+    lịch). Gõ lại một bản ở đây thì sửa một bên là bên kia lặng lẽ không tách
+    được nữa — giao diện hiện "Không ghi lý do" cho một phiếu có ghi lý do.
+    """
     reason = (reason or "").strip()
-    return f"{action} — Lý do: {reason}" if reason else action
+    return f"{action}{service.REASON_SEP}{reason}" if reason else action
 
 
 #  Nhãn tiếng Việt của các trường người dùng SỬA — để nhật ký ghi CỤ THỂ đã đổi gì
@@ -171,6 +177,14 @@ def get_booking(bid: int, db: Session = Depends(get_db),
                 user=Depends(require("vehicle_booking", "read"))):
     obj = get_scoped(db, VehicleBooking, "vehicle_booking", bid,
                      user, get_perm_profile(db, user))
+    #  ⚠️ Người ĐANG PHẢI KÝ phiếu này đọc được nó, dù nó ngoài phạm vi dữ liệu
+    #  của họ. Chặng 2 của luồng duyệt gần như luôn là người phòng khác (Hành
+    #  chính · Nhân sự · Ban giám đốc), mà nút Duyệt của Đặt xe nằm TRONG trang
+    #  chi tiết phiếu (không còn màn «Việc của tôi» từ 21/08/2026) — 404 ở đây là
+    #  phiếu kẹt vĩnh viễn, không chỗ nào đỏ lên. Chỉ nới cửa ĐỌC và chỉ lúc việc
+    #  còn treo; xem `approval_bridge.booking_for_approver`.
+    if obj is None:
+        obj = approval_bridge.booking_for_approver(db, bid, user)
     if obj is None or obj.is_deleted:
         raise HTTPException(404, "Không tìm thấy yêu cầu đặt xe")
     return success(service.serialize_booking(db, obj, viewer=user))
@@ -248,6 +262,12 @@ def dispatch_return_booking(bid: int, data: ReasonIn, background_tasks: Backgrou
                             user=Depends(require("vehicle_booking", "write"))):
     """Điều phối viên YÊU CẦU CHỈNH SỬA phiếu ĐANG Đã điều phối → trả về người tạo (gỡ điều phối)."""
     obj = _scoped_or_404(db, bid, user, "write")
+    #  ⚠️ Cửa này chạy ĐÚNG hàm service mà nút «Yêu cầu chỉnh sửa» của người duyệt
+    #  chạy, và `_RETURNABLE` nhận cả *Chờ duyệt* — nên thiếu chốt ở đây là người
+    #  có `write` trả phiếu về ngay lúc luồng đang ở chặng 1, phiên duyệt thì vẫn
+    #  mở và việc vẫn treo trong hộp người duyệt. Ba nút kia đã khóa từ đầu, hai
+    #  cửa này bị quên tới 21/09/2026.
+    approval_bridge.block_legacy_path(db, obj)
     obj = service.return_booking(db, obj, data, user, background_tasks)
     audit_record(db, user.id, "vehicle_booking", obj.id, "update",
                  _with_reason("Yêu cầu chỉnh sửa (điều phối)", data.reason))
@@ -260,6 +280,9 @@ def dispatch_reject_booking(bid: int, data: ReasonIn, background_tasks: Backgrou
                             user=Depends(require("vehicle_booking", "write"))):
     """Điều phối viên TỪ CHỐI phiếu ĐANG Đã điều phối → khóa phiếu (gỡ điều phối)."""
     obj = _scoped_or_404(db, bid, user, "write")
+    #  Cùng lỗ với `/dispatch/return` ngay trên, hậu quả nặng hơn: phiếu bị KHÓA
+    #  trong khi phiên duyệt vẫn chạy, rồi người duyệt ký tiếp là nó SỐNG LẠI.
+    approval_bridge.block_legacy_path(db, obj)
     obj = service.reject_booking(db, obj, data, user, background_tasks)
     audit_record(db, user.id, "vehicle_booking", obj.id, "cancel",
                  _with_reason("Từ chối yêu cầu (điều phối)", data.reason))
@@ -369,6 +392,16 @@ def delete_booking(bid: int, db: Session = Depends(get_db),
                      user, get_perm_profile(db, user), "delete")
     if obj is None or obj.is_deleted:
         raise HTTPException(404, "Không tìm thấy yêu cầu đặt xe")
+    #  ⚠️ DỌN PHIẾU DUYỆT TRƯỚC, trong cùng giao dịch (cùng luật với
+    #  `document.delete_document`). Không dọn thì việc duyệt nằm lại trỏ vào một
+    #  phiếu không ai mở được nữa: `my_tasks` chỉ lọc phiên ĐÃ ĐÓNG nên việc vẫn
+    #  hiện, bấm vào thì 404 — mà bấm **Duyệt** thì đường duyệt cố ý không kiểm
+    #  quyền đọc, nên bộ máy đặt lại trạng thái cho một phiếu đã xóa.
+    #  Dấu vết duyệt không mất theo: `approval_bridge._write_log` đã chép mọi kết
+    #  cục của luồng vào NHẬT KÝ THAO TÁC của chính phiếu.
+    from app.modules.approval import instance_service
+
+    instance_service.delete_by_entity(db, "vehicle_booking", obj.id)
     obj.is_deleted = True
     obj.updated_by = user.id
     db.commit()

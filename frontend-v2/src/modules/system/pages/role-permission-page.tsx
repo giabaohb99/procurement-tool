@@ -35,7 +35,11 @@ import type { RolePermissionRow } from '@/modules/hr/types/role'
  */
 export function RolePermissionPage() {
   const [tab, setTab] = useUrlParamState('tab', 'roles')
-  const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null)
+  //  Vai trò đang mở ghi lên URL (`?role=7`) để hộp thoại Phạm vi ở màn tài khoản
+  //  trỏ thẳng tới ma trận của ĐÚNG vai trò đó. Không có nó thì câu "sửa bậc ở
+  //  màn Ma trận quyền" biến thành bài tập tự tìm trong danh sách vai trò.
+  const [roleParam, setRoleParam] = useUrlParamState('role', '')
+  const selectedRoleId = Number(roleParam) || null
   const [matrix, setMatrix] = useState<Record<string, RolePermissionRow>>({})
 
   const { can } = usePermission()
@@ -75,7 +79,7 @@ export function RolePermissionPage() {
   async function handleDelete() {
     if (!selectedRoleId) return
     await deleteRole.mutateAsync(selectedRoleId)
-    setSelectedRoleId(null)
+    setRoleParam('')
     setMatrix({})
   }
 
@@ -95,14 +99,16 @@ export function RolePermissionPage() {
         </TabsList>
 
         <TabsContent value="roles">
-          <div className="grid gap-4 lg:grid-cols-[260px_1fr]">
+          {/*  Cột trái 320px (trước là 260px): dòng vai trò nay in cả mô tả +
+               chip phân hệ, và tên KHÔNG cắt "..." nữa (bao-CR-428). */}
+          <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
             {rolesLoading ? (
               <Skeleton className="h-96 w-full" />
             ) : (
               <RoleSidePanel
                 roles={roles ?? []}
                 selectedId={selectedRoleId}
-                onSelect={setSelectedRoleId}
+                onSelect={(roleId) => setRoleParam(String(roleId))}
               />
             )}
 
@@ -129,6 +135,9 @@ export function RolePermissionPage() {
                       canWrite={can('role', 'write')}
                       pending={updateRole.isPending}
                       onRename={(roleId, name) => updateRole.mutate({ roleId, name })}
+                      onDescribe={(roleId, description) =>
+                        updateRole.mutate({ roleId, description })
+                      }
                     />
 
                     <div className="flex items-center gap-2">
@@ -176,6 +185,9 @@ export function RolePermissionPage() {
                     <Skeleton className="h-96 w-full" />
                   ) : (
                     <RolePermissionMatrix
+                      //  Dựng lại theo vai trò để tập mở/gập ban đầu tính từ ma
+                      //  trận của ĐÚNG vai trò đó (xem `collapseGroupsWithoutTicks`).
+                      key={selectedRoleId}
                       meta={meta}
                       rows={matrix}
                       onChange={setMatrix}

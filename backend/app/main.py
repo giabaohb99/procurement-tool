@@ -36,6 +36,7 @@ from app.modules.inventory.controller import router as inventory_router
 from app.modules.payable.controller import router as payable_router
 from app.modules.payment_request.controller import router as payment_request_router
 from app.modules.purchase_order.controller import router as po_router
+from app.modules.purchase_order.cost_type import router as po_cost_type_router
 from app.modules.purchase_progress.controller import router as purchase_progress_router
 from app.modules.survey_progress.controller import router as survey_progress_router
 from app.modules.report.controller import router as report_router
@@ -49,6 +50,7 @@ from app.modules.employee.controller import router as employee_router
 from app.modules.employee.position_controller import router as job_position_router
 from app.modules.dossier.type_controller import router as dossier_type_router
 from app.modules.dossier.controller import router as dossier_router
+from app.modules.dossier.applicability_controller import router as dossier_applicable_router
 from app.modules.vehicle_booking.controller import router as vehicle_booking_router
 from app.modules.vehicle_booking.catalog_controller import (
     dispatch_router, driver_router, vehicle_router)
@@ -77,6 +79,8 @@ from app.modules.category_assignee.controller import router as category_assignee
 from app.modules.survey_request.controller import router as survey_request_router
 from app.modules.survey_request.report_controller import report_router as survey_request_report_router
 from app.modules.import_tool.controller import router as import_tool_router
+from app.modules.customs.controller import regulation_router as customs_regulation_router
+from app.modules.customs.controller import router as customs_router
 from app.modules.export_log.controller import router as export_log_router
 from app.modules.backup.controller import router as backup_router
 from app.modules.help_center.controller import router as help_center_router
@@ -191,6 +195,10 @@ app.include_router(department_router)
 app.include_router(employee_router)
 app.include_router(job_position_router)
 app.include_router(dossier_type_router)
+#  ⚠️ PHẢI nạp TRƯỚC `dossier_router`: bộ sinh CRUD đăng ký `/api/dossiers/{id}`
+#  với `id: int`, mà FastAPI khớp tuyến theo thứ tự nạp — nạp sau thì
+#  `/api/dossiers/applicable` rơi vào tuyến `{id}` và trả 422.
+app.include_router(dossier_applicable_router)
 app.include_router(dossier_router)
 app.include_router(supplier_router)
 app.include_router(product_router)
@@ -231,6 +239,7 @@ app.include_router(document_router)
 app.include_router(survey_router)
 app.include_router(survey_report_router)
 app.include_router(po_router)
+app.include_router(po_cost_type_router)
 app.include_router(purchase_progress_router)
 app.include_router(survey_progress_router)
 app.include_router(purchase_history_router)
@@ -252,6 +261,8 @@ app.include_router(category_assignee_router)
 app.include_router(survey_request_router)
 app.include_router(survey_request_report_router)
 app.include_router(import_tool_router)
+app.include_router(customs_router)
+app.include_router(customs_regulation_router)
 app.include_router(export_log_router)
 app.include_router(backup_router)
 app.include_router(help_center_router)

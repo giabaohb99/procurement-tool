@@ -24,6 +24,17 @@ from app.modules.vehicle_booking.service import (
 )
 
 
+def _approver(uid: int = 900):
+    """NGƯỜI DUYỆT — phải khác người lập phiếu.
+
+    Từ 21/09/2026 `service._block_self_approval` chặn người lập tự ký phiếu của
+    mình ở cả đường duyệt một bước (trừ người có phạm vi «tất cả»). Mấy bài dưới
+    đây trước đó dùng CHUNG một actor cho cả lập lẫn duyệt cho gọn — gọn nhưng
+    dựng sai cảnh thật, và chính chỗ đó che mất lỗ suốt thời gian qua.
+    """
+    return SimpleNamespace(id=uid)
+
+
 def _actor(db, *, uid=101):
     emp = Employee(code='NV900', full_name='Người Tự Lái', email='self@dego.vn',
                    department_id=7, company_id=3)
@@ -55,7 +66,7 @@ def test_dispatch_needs_only_vehicle(db):
     db.add(veh)
     db.flush()
     b = create_booking(db, _payload(), actor, submit=True)
-    approve_booking(db, b, actor)
+    approve_booking(db, b, _approver())
     # Điều phối chỉ gán XE (assigned_driver_id để trống).
     dispatch_booking(db, b, DispatchIn(assigned_vehicle_id=veh.id), actor)
     assert b.status == m.BK_DISPATCHED
@@ -74,7 +85,7 @@ def test_requester_drives_full_flow(db):
     db.add(veh)
     db.flush()
     b = create_booking(db, _payload(), actor, submit=True)
-    approve_booking(db, b, actor)
+    approve_booking(db, b, _approver())
     dispatch_booking(db, b, DispatchIn(assigned_vehicle_id=veh.id), actor)
 
     driver_accept(db, b, actor)
@@ -93,7 +104,7 @@ def test_non_requester_driver_cannot_drive_self_trip(db):
     db.add_all([veh, drv])
     db.flush()
     b = create_booking(db, _payload(), actor, submit=True)
-    approve_booking(db, b, actor)
+    approve_booking(db, b, _approver())
     dispatch_booking(db, b, DispatchIn(assigned_vehicle_id=veh.id), actor)
     # Một tài xế KHÁC (có hồ sơ) không được thao tác chuyến tự lái của người khác.
     with pytest.raises(HTTPException):
@@ -109,17 +120,17 @@ def test_self_drive_conflict_only_on_vehicle(db):
     db.add_all([v1, v2])
     db.flush()
     b1 = create_booking(db, _payload(start_time='2026-09-10T08:00', end_time='2026-09-10T10:00'), actor, submit=True)
-    approve_booking(db, b1, actor)
+    approve_booking(db, b1, _approver())
     dispatch_booking(db, b1, DispatchIn(assigned_vehicle_id=v1.id), actor)
 
     # Xe KHÁC, giờ chồng → KHÔNG trùng (dù cùng driver_id 0).
     b2 = create_booking(db, _payload(start_time='2026-09-10T09:00', end_time='2026-09-10T11:00'), actor, submit=True)
-    approve_booking(db, b2, actor)
+    approve_booking(db, b2, _approver())
     assert dispatch_booking(db, b2, DispatchIn(assigned_vehicle_id=v2.id), actor).status == m.BK_DISPATCHED
 
     # Cùng XE, giờ chồng → trùng.
     b3 = create_booking(db, _payload(start_time='2026-09-10T09:30', end_time='2026-09-10T11:30'), actor, submit=True)
-    approve_booking(db, b3, actor)
+    approve_booking(db, b3, _approver())
     with pytest.raises(HTTPException):
         dispatch_booking(db, b3, DispatchIn(assigned_vehicle_id=v1.id), actor)
 
@@ -130,7 +141,7 @@ def test_my_trips_includes_self_drive(db):
     db.add(veh)
     db.flush()
     b = create_booking(db, _payload(), actor, submit=True)
-    approve_booking(db, b, actor)
+    approve_booking(db, b, _approver())
     dispatch_booking(db, b, DispatchIn(assigned_vehicle_id=veh.id), actor)
 
     mine = filter_my_trips(db.query(m.VehicleBooking), db, actor).all()

@@ -98,6 +98,17 @@ const EMPLOYEE_STATUS = EMPLOYEE_STATUSES
 
 const DEPT_ACTIVE = [{ value: 'true', label: 'Hoạt động' }, { value: 'false', label: 'Đã ẩn' }]
 
+// bao-CR-470 — mã danh sách pháp lý, khớp RegulationList của backend (customs/constants.py).
+const REGULATION_LISTS = [
+  { value: '1', label: 'NĐ 24/2026 · Phụ lục I' },
+  { value: '2', label: 'NĐ 24/2026 · Phụ lục II' },
+  { value: '3', label: 'NĐ 24/2026 · Phụ lục III (tiền chất)' },
+  { value: '4', label: 'NĐ 24/2026 · Phụ lục IV (ngưỡng khối lượng)' },
+  { value: '10', label: 'TT 75/2025 · Hoạt chất cấm' },
+  { value: '11', label: 'TT 01/2026 · Phải công bố theo lô' },
+]
+const regulationListLabel = (v: any) => REGULATION_LISTS.find((o) => o.value === String(v))?.label || String(v ?? '')
+
 const ACTIVE_OPTIONS = [
   { value: 'true', label: 'Đang dùng / Hiện' },
   { value: 'false', label: 'Ngừng / Ẩn' },
@@ -858,5 +869,111 @@ export const cruds: Record<string, CrudConfig> = {
         { value: 'cancelled', label: 'Đã từ chối' }]),
     ],
     fields: [],
+  },
+
+  // bao-CR-453 GĐ3 — Danh mục Loại chi phí thu mua. Backend: /api/po-cost-types, entity purchase_cost_type.
+  // `code` (SMALLINT): tự cấp, chỉ xem sau khi tạo.
+  // `group_kind`: 1 Thuế nộp ngân sách · 2 Dịch vụ.
+  // `creates_payable`: true = sinh công nợ ở Quyết toán (mặc định bật).
+  'po-cost-types': {
+    slug: 'po-cost-types', entity: 'purchase_cost_type', title: 'Loại chi phí thu mua',
+    apiPath: '/api/po-cost-types',
+    columns: [
+      { key: 'code', label: 'Mã số', render: (r) => r.code ?? '—' },
+      { key: 'name', label: 'Tên loại chi phí' },
+      { key: 'group_kind', label: 'Nhóm', render: (r) => r.group_kind === 1 ? 'Thuế nộp ngân sách' : 'Dịch vụ' },
+      { key: 'creates_payable', label: 'Sinh công nợ', render: (r) => badge(r.creates_payable, 'Có', 'Không') },
+      { key: 'default_supplier_code', label: 'NCC mặc định', render: (r) => r.default_supplier_code || '—' },
+      { key: 'default_vat', label: 'VAT % mặc định', render: (r) => r.default_vat != null ? `${r.default_vat}%` : '—' },
+      { key: 'is_active', label: 'Trạng thái', render: (r) => badge(r.is_active) },
+      UPDATED_AT_COL,
+    ],
+    filters: [
+      { key: 'name', label: 'Tên' },
+      { key: 'group_kind', label: 'Nhóm', type: 'select', options: [
+        { value: '1', label: 'Thuế nộp ngân sách' }, { value: '2', label: 'Dịch vụ' }] },
+      { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS },
+    ],
+    detailChips: (row) => [
+      { icon: 'ti-hash', text: String(row.code ?? ''), cls: 'code' },
+      { icon: row.is_active ? 'ti-circle-check' : 'ti-circle-x', text: row.is_active ? 'Đang dùng' : 'Ngừng dùng' },
+    ],
+    fields: [
+      { key: 'code', label: 'Mã số', readonlyOnEdit: true, group: 'Định danh',
+        hint: 'Tự cấp khi tạo, không đổi được. 15 mã seed sẵn (1–14, 99). Mã mới từ 15 trở lên.' },
+      { key: 'name', label: 'Tên loại chi phí', group: 'Định danh' },
+      { key: 'group_kind', label: 'Nhóm', type: 'select', group: 'Định danh',
+        options: [{ value: '1', label: 'Thuế nộp ngân sách' }, { value: '2', label: 'Dịch vụ' }],
+        hint: 'Nhóm Thuế: NCC mặc định thường là Ngân sách nhà nước (NSNN).' },
+      { key: 'creates_payable', label: 'Sinh công nợ', type: 'checkbox', group: 'Quy tắc',
+        default: true,
+        hint: 'Bật = khi chốt Quyết toán hệ thống tự tạo khoản công nợ. Tắt cho khoản đã trả ngoài hệ thống.' },
+      { key: 'default_supplier_code', label: 'NCC mặc định', group: 'Giá trị mặc định',
+        hint: 'Tự điền khi chọn loại này trên bảng chi phí (không ghi đè ô đã điền).' },
+      { key: 'default_allocation_method', label: 'Cách phân bổ mặc định', type: 'select',
+        group: 'Giá trị mặc định',
+        options: [
+          { value: '1', label: 'Theo giá trị' }, { value: '2', label: 'Theo khối lượng' },
+          { value: '3', label: 'Theo số lượng' }, { value: '4', label: 'Chỉ định một mã hàng' },
+          { value: '5', label: 'Nhập tay' },
+        ],
+        default: '1',
+      },
+      { key: 'default_vat', label: 'VAT % mặc định', type: 'number', group: 'Giá trị mặc định',
+        hint: 'Tự điền khi chọn loại (không ghi đè ô đã điền). 0 = không VAT mặc định.' },
+      { key: 'sort_order', label: 'Thứ tự hiển thị', type: 'number', group: 'Tổ chức' },
+      { key: 'is_active', label: 'Trạng thái', type: 'select', group: 'Tổ chức',
+        options: ACTIVE_OPTIONS, colorMap: { 'true': '#16a34a', 'false': '#dc2626' },
+        hint: 'Ngừng dùng sẽ ẩn khỏi ô chọn loại chi phí; dòng đang dùng vẫn hiện tên kèm "(đã tắt)".' },
+    ],
+  },
+  // bao-CR-470 — danh mục hóa chất theo văn bản, nguồn của thẻ «Pháp lý & thuế» màn Tra cứu giá
+  // hải quan. Nạp sẵn bằng scripts/load_customs_catalogs.py; màn này để sửa / thêm khi văn bản đổi.
+  // `list_code` là SỐ (RegulationList ở backend/app/modules/customs/constants.py).
+  'customs-regulations': {
+    slug: 'customs-regulations', entity: 'customs_regulation', title: 'Danh mục hóa chất theo văn bản',
+    apiPath: '/api/customs-regulations', importExport: true,
+    columns: [
+      { key: 'list_code', label: 'Danh sách', render: (r) => regulationListLabel(r.list_code) },
+      { key: 'name', label: 'Tên' }, { key: 'name_vi', label: 'Tên tiếng Việt' },
+      { key: 'cas_no', label: 'Số CAS' }, { key: 'category', label: 'Phân loại' },
+      { key: 'threshold_kg', label: 'Ngưỡng (kg)', render: (r) => (r.threshold_kg == null ? '' : fmtVND(r.threshold_kg)) },
+      { key: 'banned_year', label: 'Năm cấm', render: (r) => r.banned_year || '' },
+      { key: 'is_active', label: 'Trạng thái', render: (r) => badge(r.is_active) },
+      UPDATED_AT_COL,
+    ],
+    filters: [
+      { key: 'list_code', label: 'Danh sách', type: 'select', options: REGULATION_LISTS },
+      { key: 'name', label: 'Tên' }, { key: 'cas_no', label: 'Số CAS' },
+      { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS },
+    ],
+    condFilters: [
+      condSelect('list_code', 'Danh sách', REGULATION_LISTS, ['eq']),
+      condText('name', 'Tên'), condText('name_vi', 'Tên tiếng Việt'), condText('cas_no', 'Số CAS'),
+      condText('category', 'Phân loại'),
+      condSelect('is_active', 'Trạng thái', ACTIVE_OPTIONS, ['eq']),
+    ],
+    detailChips: (row) => [
+      { icon: 'ti-book', text: regulationListLabel(row.list_code) },
+      ...(row.cas_no ? [{ icon: 'ti-hash', text: `CAS ${row.cas_no}`, cls: 'code' }] : []),
+      { icon: row.is_active ? 'ti-circle-check' : 'ti-circle-x', text: row.is_active ? 'Đang dùng' : 'Ngừng' },
+    ],
+    fields: [
+      { key: 'list_code', label: 'Danh sách', type: 'select', options: REGULATION_LISTS, group: 'Định danh',
+        hint: 'Văn bản và phụ lục chứa hóa chất này. Cảnh báo trên màn tra cứu chỉ lấy từ ba danh sách: hoạt chất cấm, NĐ 24 PL4 (có ngưỡng) và danh sách phải công bố.' },
+      { key: 'name', label: 'Tên (theo văn bản)', group: 'Định danh', fullWidth: true },
+      { key: 'name_vi', label: 'Tên tiếng Việt', group: 'Định danh', fullWidth: true },
+      { key: 'cas_no', label: 'Số CAS', group: 'Định danh',
+        hint: 'Tra cứu theo công thức (H2SO4…) đổi ra số CAS rồi so đúng ô này.' },
+      { key: 'category', label: 'Phân loại', group: 'Định danh' },
+      { key: 'threshold_kg', label: 'Ngưỡng khối lượng (kg)', type: 'number', group: 'Ràng buộc',
+        hint: 'Chỉ NĐ 24/2026 Phụ lục IV có ngưỡng. Để trống nếu văn bản không nêu.' },
+      { key: 'banned_year', label: 'Năm bắt đầu cấm', type: 'number', group: 'Ràng buộc', zeroAsBlank: true },
+      { key: 'legal_basis', label: 'Căn cứ', group: 'Ràng buộc', fullWidth: true },
+      { key: 'note', label: 'Ghi chú', type: 'textarea', group: 'Khác', fullWidth: true },
+      { key: 'is_active', label: 'Trạng thái', type: 'select', options: ACTIVE_OPTIONS, group: 'Khác',
+        colorMap: { 'true': '#16a34a', 'false': '#dc2626' },
+        hint: 'Ngừng dùng thì không còn hiện trong tra cứu và cảnh báo.' },
+    ],
   },
 }

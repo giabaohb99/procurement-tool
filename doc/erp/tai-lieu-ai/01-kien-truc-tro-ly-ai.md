@@ -91,6 +91,7 @@ Lưu vào tab_assistant_conversation / tab_assistant_message (kèm token đã d�
 | **Đính kèm** | Ảnh JPG/PNG/WebP ≤ 5MB, PDF ≤ 10MB; tải trước, gắn sau. Nhận dạng bằng **magic bytes**, không tin `content-type` của client | `POST /api/assistant/uploads` |
 | **Soạn nháp phiếu** | YCBG · YCMH · đơn nghỉ phép · YCTT — trả **bản nháp**, người dùng tự rà rồi tự tạo | tool `draft_*` |
 | **Sửa phiếu có xác nhận** | Trợ lý đề xuất, **người bấm nút** mới ghi (§6.4) | `POST /api/assistant/confirm-update` |
+| **Lập bộ tài khoản thu mua có xác nhận** | Gán vai trò CÓ SẴN + ô loại trừ phòng ban theo hướng dẫn 20; cùng khuôn đề xuất → người bấm. Không tạo tài khoản / mật khẩu (bao-CR-435) | `POST /api/assistant/confirm-account-setup` |
 | **Xuất báo cáo** | Sinh tệp DOCX/Excel, **chỉ chủ tệp tải được** | tool `export_*` + `GET /files/{id}/download` |
 | **Hạn mức của tôi** | "Còn N câu hôm nay" | `GET /api/assistant/usage/mine` |
 | **Soi chi phí** | Token + số câu theo ngày / theo người | `GET /api/assistant/usage` |
@@ -293,12 +294,16 @@ ngoài allowlist, và mọi tool ghi tự đòi đúng khóa **trước khi làm
 | `draft_purchase_request` · `draft_survey_request` · `draft_leave_request` | `<entity>.create` | `draft_tool.py` |
 | `draft_payment_request` | `payment_request.create` | `payable_tool.py` |
 | `ticket_create` | `ticket.create` | `ticket_tool.py` |
+| `propose_account_setup` (bao-CR-435) | `user.write` + `role.read` + `employee.read`, rồi L1/L2 chống tự nâng quyền | `account_setup_tool.py` `_run_propose` |
+| `confirm_account_setup` (nút Xác nhận) | như trên — **kiểm lại từ đầu**, kể cả L2 theo quyền hiện tại của vai trò | `account_setup_tool.py` `confirm_account_setup` |
 
 ⚠️ **KHÔNG tool nào ghi dữ liệu nghiệp vụ** — kể cả `ticket_create`, tên nghe như tạo
 phiếu nhưng nó chỉ trả bản nháp để giao diện mở form điền sẵn. Rà cả lớp `tools/`: chỗ
 duy nhất `db.commit()` là `export_tool` ghi một dòng `StoredFile` cho tệp người dùng vừa
-xuất. **Đường ghi duy nhất của cả phân hệ là endpoint `/api/assistant/confirm-update`,
-và nó chỉ chạy khi NGƯỜI bấm nút Xác nhận.** Model không có nút nào để bấm.
+xuất. **Cả phân hệ chỉ có HAI đường ghi, đều là endpoint, đều chỉ chạy khi NGƯỜI bấm nút
+Xác nhận:** `/api/assistant/confirm-update` (sửa đầu phiếu) và
+`/api/assistant/confirm-account-setup` (gán vai trò có sẵn + phạm vi, bao-CR-435). Model
+không có nút nào để bấm.
 
 **XÓA: chặn bằng cách KHÔNG CÓ tool nào xóa** — chắc hơn gác quyền. Lý do: xóa không lùi
 được, mà lời gõ cho model thì luôn mơ hồ (*"bỏ cái phiếu kia đi"* là hủy, là xóa dòng, hay

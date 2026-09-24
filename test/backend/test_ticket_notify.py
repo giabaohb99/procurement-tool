@@ -52,8 +52,11 @@ def test_file_gan_dung_tin_nhan(db):
     """File đính kèm trong ô trả lời phải nằm đúng bong bóng tin nhắn đó."""
     from app.modules.attachment.model import StoredFile
     t = _phieu(db)
-    f1 = StoredFile(filename="anh-loi.png", file_key="k1", url="u1", content_type="image/png", size=10)
-    f2 = StoredFile(filename="log.txt", file_key="k2", url="u2", content_type="text/plain", size=20)
+    #  bao-CR-408 (BM-025): chỉ gắn được tệp do CHÍNH người trả lời tải lên.
+    f1 = StoredFile(filename="anh-loi.png", file_key="k1", url="u1", content_type="image/png", size=10,
+                    created_by=10)
+    f2 = StoredFile(filename="log.txt", file_key="k2", url="u2", content_type="text/plain", size=20,
+                    created_by=7)
     db.add_all([f1, f2]); db.commit()
 
     m1 = service.add_message(db, t.id, "Gửi anh ảnh lỗi", user_id=10, is_staff=False,
@@ -70,7 +73,8 @@ def test_tra_loi_chi_co_file_khong_can_noi_dung(db):
     """Kiểu nhắn tin: gửi mỗi ảnh, không gõ chữ vẫn hợp lệ."""
     from app.modules.attachment.model import StoredFile
     t = _phieu(db)
-    f = StoredFile(filename="man-hinh.png", file_key="k", url="u", content_type="image/png", size=10)
+    f = StoredFile(filename="man-hinh.png", file_key="k", url="u", content_type="image/png", size=10,
+                   created_by=10)
     db.add(f); db.commit()
     m = service.add_message(db, t.id, "", user_id=10, is_staff=False, file_ids=[f.id])
     assert m.body == ""

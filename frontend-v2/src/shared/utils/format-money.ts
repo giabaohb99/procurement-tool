@@ -47,6 +47,28 @@ export function formatMoneyWithCurrency(
   return `${formatUnitPrice(value)} ${code}`
 }
 
+/**
+ * ĐƠN GIÁ kèm mã tiền, nhưng CHỈ khi khác VND (bao-CR-439).
+ *
+ * Khác `formatMoneyWithCurrency` ở hai điểm, cả hai đều cố ý: giữ số lẻ (đơn giá
+ * ngoại tệ thường là 4,85 chứ không phải số tròn) và KHÔNG gắn "đ" cho đồng nội tệ
+ * — cột đơn giá trên bảng vốn không có đuôi, gắn vào thì cả cột dài thêm chỉ để
+ * nhắc một điều ai cũng biết.
+ *
+ * Dùng ở những bảng gộp chung đơn nội tệ lẫn ngoại tệ: ở đó ô đơn giá là NGUYÊN TỆ
+ * trong khi ô thành tiền ngay bên cạnh đã QUY ĐỔI về đồng, nên mã tiền là thứ duy
+ * nhất nói cho người đọc biết vì sao nhân tay không ra.
+ */
+export function formatUnitPriceWithCurrency(
+  value: number | string | null | undefined,
+  currency?: string | null,
+): string {
+  const price = formatUnitPrice(value)
+  const code = (currency || '').trim().toUpperCase()
+  if (!price || !code || code === 'VND') return price
+  return `${price} ${code}`
+}
+
 /** Số lượng — tối đa 3 chữ số thập phân. */
 export function formatQuantity(value: number | string | null | undefined): string {
   const num = toNumber(value)

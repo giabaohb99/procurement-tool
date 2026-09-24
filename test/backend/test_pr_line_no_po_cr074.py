@@ -131,13 +131,15 @@ def test_dong_dmh_bi_huy_van_ra_huy_don(db):
 
 # --- Trạng thái PHIẾU giữ nguyên luật cũ -------------------------------------------
 
-def test_moi_lap_don_nhap_thi_phieu_van_o_da_dieu_phoi(db):
-    """Nhãn dòng đổi nhưng phiếu KHÔNG được nhảy sang "Đang xử lý" — chưa đặt hàng thật."""
+def test_moi_lap_don_nhap_thi_phieu_sang_dang_xu_ly(db):
+    """bao-CR-292 (ticket 22) đổi luật theo khách: NSTM đã tạo ĐMH (kể cả đơn Nháp)
+    là phiếu rời 'dispatched' sang 'processing' «Đang xử lý» — trước đây phải có
+    dòng ĐÃ ĐẶT HÀNG mới đổi."""
     pr, _ = _pr(db)
     _po(db, status="draft", progress=PROG_NOT_ORDERED)
     sync_from_purchase_orders(db, "PYC1")
     db.refresh(pr)
-    assert pr.status == "dispatched"
+    assert pr.status == "processing"
 
 
 def test_bam_dat_hang_roi_thi_phieu_sang_dang_xu_ly(db):

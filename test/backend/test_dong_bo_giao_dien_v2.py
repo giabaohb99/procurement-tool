@@ -151,10 +151,16 @@ _MANAGE_ACTIONS = ("create", "write", "delete")
 #  · `backup`    — backend có `read` (danh sách, tải về), `create` (chạy ngay),
 #    `delete` (xóa bản lưu). Không có `write`: đã có bản dump rồi thì không sửa
 #    được gì bên trong nó.
+#  · `coffee_member` (bao-CR-455) — phân hệ Dego Coffee không có MỘT `@router.delete`
+#    nào, và đó là cố ý: thành viên nghỉ thì chuyển `status` sang `LEFT`, việc
+#    này gọi `mark_member_left` thu hồi số dư về 0 kèm một dòng sổ điểm. Xóa
+#    cứng sẽ phá đúng quyển sổ ấy, nên `delete` ở đây không phải "chưa làm" mà
+#    là KHÔNG có nghĩa.
 _LECH_DA_BIET = {
     ("setting", "create"),
     ("setting", "delete"),
     ("backup", "write"),
+    ("coffee_member", "delete"),
 }
 
 
@@ -163,6 +169,14 @@ def _quet_muc_manage(src: Path) -> list[tuple[str, str, str]]:
     ket_qua: list[tuple[str, str, str]] = []
     for path in sorted(src.glob("modules/*/routes.tsx")):
         text = path.read_text(encoding="utf-8")
+        #  Bỏ chú thích TRƯỚC khi cắt khối (bao-CR-455). Chỗ này dò bằng chuỗi
+        #  con, nên một chú thích chỉ NHẮC TỚI cờ — ví dụ dòng giải thích vì sao
+        #  mục này đã bỏ `manage` — cũng bị tính là khai cờ, và mục đó thành
+        #  hành động ma vĩnh viễn không cách nào gỡ. Cùng lý do (và cùng cách)
+        #  với `_parse_ts_list` bên trên. Ở các tệp `routes.tsx` không có chuỗi
+        #  nào chứa `//`, nên cắt kiểu này không ăn nhầm vào mã.
+        text = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
+        text = re.sub(r"//[^\n]*", "", text)
         #  Mục menu là một object phẳng trong mảng `nav` — cắt theo cặp ngoặc
         #  KHÔNG lồng nhau là đủ và không cần dựng bộ phân tích cú pháp TS.
         for khoi in re.findall(r"\{[^{}]*\}", text, re.S):

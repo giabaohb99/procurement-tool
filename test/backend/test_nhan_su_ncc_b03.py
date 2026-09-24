@@ -126,7 +126,9 @@ def _ncc(**kw) -> Supplier:
     """Cùng lý do như `_nhan_su`."""
     return Supplier(tax_code="", address="", supplier_type="goods", contact_person="",
                     phone="", payment_terms="", bank_account="", bank_name="",
-                    bank_account_name="", vat=0.08, is_active=True, **kw)
+                    bank_account_name="", vat=0.08, is_active=True,
+                    #  Ba cột điều khoản in theo NCC (bao-CR-321) — cùng lý do như trên.
+                    inspection_days=0, return_days=0, invoice_deadline="", **kw)
 
 
 def test_gui_kem_nhan_de_giao_dien_khong_phai_khai_lai_bang_nhan():

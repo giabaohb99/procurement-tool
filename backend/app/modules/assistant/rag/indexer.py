@@ -98,6 +98,43 @@ def all_source_refs(db: Session) -> list[tuple[str, int]]:
     return refs
 
 
+def missing_source_refs(db: Session) -> list[tuple[str, int]]:
+    """Danh sách (nguồn, id) CÓ dưới DB mà CHƯA có đoạn nào trong kho vector.
+
+    Vì sao cần: hook nạp chỉ mục bắn từ *service* Trung tâm HDSD, còn script seed ghi thẳng
+    ORM — bài do seed dựng ra không bao giờ vào kho (bao-CR-450 phát hiện 32/87 bài hụt).
+    Nạp bù chỉ chỗ thiếu rẻ hơn dựng lại toàn bộ rất nhiều: nhúng là lời gọi mạng có trần
+    request/phút, dựng lại cả kho chỉ để thêm hai bài là cách chắc chắn nhất để ăn 429.
+
+    Lưu ý. Bài có thân RỖNG cắt ra 0 đoạn nên không bao giờ nằm trong kho, tức là lần nạp bù
+    nào cũng thấy nó "thiếu". Vô hại: `_points_for` thấy 0 đoạn là về ngay, không gọi nhúng.
+    """
+    indexed = get_store().source_refs()
+    return [ref for ref in all_source_refs(db) if ref not in indexed]
+
+
+def index_status(db: Session) -> dict:
+    """Đối chiếu DB với kho vector, trả số liệu cho màn Cấu hình hệ thống.
+
+    `orphans` = đoạn còn trong kho mà bản ghi dưới DB đã bị xóa. Đếm ra để người quản biết,
+    nhưng KHÔNG tự dọn ở đây — dọn là việc xóa dữ liệu, phải có người bấm.
+    """
+    all_refs = all_source_refs(db)
+    indexed = get_store().source_refs()
+    in_db = set(all_refs)
+    missing = [ref for ref in all_refs if ref not in indexed]
+    return {
+        "help_total": sum(1 for s, _ in all_refs if s == SRC_HELP),
+        "faq_total": sum(1 for s, _ in all_refs if s == SRC_FAQ),
+        "help_indexed": sum(1 for s, i in all_refs if s == SRC_HELP and (s, i) in indexed),
+        "faq_indexed": sum(1 for s, i in all_refs if s == SRC_FAQ and (s, i) in indexed),
+        "missing": len(missing),
+        "missing_help": sum(1 for s, _ in missing if s == SRC_HELP),
+        "missing_faq": sum(1 for s, _ in missing if s == SRC_FAQ),
+        "orphans": sum(1 for ref in indexed if ref not in in_db),
+    }
+
+
 def rebuild_all(db: Session) -> dict:
     """Dựng lại toàn bộ chỉ mục từ đầu — dùng khi mới bật RAG hoặc đổi model nhúng.
 

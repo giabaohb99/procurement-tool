@@ -76,7 +76,17 @@ export function PurchaseRequestProcessPage() {
         Ngày lập: <b>{formatDate(data.request_date) || '—'}</b>
       </p>
 
-      {isDispatched(data.status) ? (
+      {/* bao-CR-468: công tắc tắt thì lối vào đã bị ẩn ở chi tiết phiếu, nhưng đường dẫn cũ
+          trong lịch sử trình duyệt / thư báo vẫn mở tới đây — nói rõ thay vì bày bàn làm việc
+          mà bấm gì cũng bị backend từ chối. */}
+      {!data.options_enabled ? (
+        <Card className="py-4">
+          <CardContent className="px-4 text-sm text-muted-foreground">
+            Cụm phương án của Yêu cầu mua hàng đang <b>TẮT</b>. Quản trị bật lại ở màn Cấu hình
+            hệ thống thì màn này mới dùng được.
+          </CardContent>
+        </Card>
+      ) : isDispatched(data.status) ? (
         <>
           {!isPrOptionStageOpen(data.status) && (
             <Card className="mb-4 py-4">

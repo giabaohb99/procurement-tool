@@ -10,6 +10,7 @@ import {
   formatHourLabel,
   httpStatusHint,
   httpStatusTone,
+  logBodyText,
   spansMultipleDays,
   tableLabel,
 } from './system-log-format'
@@ -167,5 +168,46 @@ describe('changeValueText', () => {
 
   it('never leaks the raw value of a masked field', () => {
     expect(changeValueText('0912345678', true)).toBe('(đã che)')
+  })
+})
+
+describe('logBodyText', () => {
+  it('accepts an OBJECT — the request body is a JSON column, not a string', () => {
+    //  Lý do bài kiểm này không được xóa: bản trước khai `string` rồi gọi
+    //  `(text ?? '').trim()`, nên mọi lượt POST/PATCH có thân đều ném
+    //  "(intermediate value).trim is not a function" NGAY LÚC RENDER và cả trang
+    //  Nhật ký rơi vào màn báo lỗi (gặp thật 22/09/2026 ở
+    //  PATCH /api/dossiers/applicable/36/progress).
+    expect(logBodyText({ progress: 1 })).toBe('{\n  "progress": 1\n}')
+  })
+
+  it('keeps a string as-is, unquoted — a ten-line traceback must stay ten lines', () => {
+    expect(logBodyText('Traceback:\n  line 1')).toBe('Traceback:\n  line 1')
+    expect(logBodyText('  có khoảng trắng thừa  ')).toBe('có khoảng trắng thừa')
+  })
+
+  it('treats null, undefined and whitespace-only alike: empty stays empty', () => {
+    //  Khối `<pre>` gác bằng chính giá trị này để chọn giữa nội dung và câu
+    //  "Không có nội dung." — trả về "null"/"undefined" là vẽ chữ đó lên màn.
+    expect(logBodyText(null)).toBe('')
+    expect(logBodyText(undefined)).toBe('')
+    expect(logBodyText('   ')).toBe('')
+  })
+
+  it('still prints empty object/array — "sent {}" differs from "no body at all"', () => {
+    expect(logBodyText({})).toBe('{}')
+    expect(logBodyText([])).toBe('[]')
+  })
+
+  it('does not mistake 0 and false for empty', () => {
+    expect(logBodyText(0)).toBe('0')
+    expect(logBodyText(false)).toBe('false')
+  })
+
+  it('falls back to ugly text on a circular reference instead of throwing', () => {
+    const loop: Record<string, unknown> = { a: 1 }
+    loop.self = loop
+    expect(() => logBodyText(loop)).not.toThrow()
+    expect(logBodyText(loop)).toBe('[object Object]')
   })
 })

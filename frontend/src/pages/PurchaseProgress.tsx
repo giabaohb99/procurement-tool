@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import SearchSelect from '../components/SearchSelect'
+import MultiCheckSelect from '../components/MultiCheckSelect'
 import DateRangePicker from '../components/DateRangePicker'
 import FilterPanel, { FilterItem } from '../components/FilterPanel'
 import {
@@ -26,6 +27,13 @@ import TableScroll from '../components/TableScroll'
 const fmt = (n: any) => Number(n || 0).toLocaleString('vi-VN')
 // ĐƠN GIÁ hiện đủ 4 số lẻ — mặc định toLocaleString chỉ cho 3, cắt mất chữ số cuối
 const fmtPrice = (n: any) => Number(n || 0).toLocaleString('vi-VN', { maximumFractionDigits: 4 })
+// bao-CR-439 — ĐƠN GIÁ giữ NGUYÊN TỆ (số in trên hóa đơn NCC) còn THÀNH TIỀN ngay bên phải là
+// số ĐÃ QUY ĐỔI về đồng. Hai ô cạnh nhau, khác loại tiền, mà không ô nào nói ra thì người đọc
+// nhân tay và ra một con số thứ ba. Dán mã tiền vào đơn giá khi dòng không phải VND.
+const fmtPriceCur = (n: any, currency?: string) => {
+  const cur = String(currency || '').trim().toUpperCase()
+  return cur && cur !== 'VND' ? `${fmtPrice(n)} ${cur}` : fmtPrice(n)
+}
 const NOWRAP = { whiteSpace: 'nowrap' as const, overflow: 'hidden', textOverflow: 'ellipsis' }
 const MUTED = { color: 'var(--muted)' } as const
 const R = { textAlign: 'right' as const }
@@ -55,6 +63,11 @@ const EMPTY_FILTERS = {
   company_id: '', department_id: '', status: '', q: '', recv_state: '',
   order_date_from: '', order_date_to: '',
 }
+// bao-CR-423: ô Công ty + Trạng thái tiến độ chọn được NHIỀU. Trong bộ lọc (và trên URL) vẫn
+// giữ MỘT chuỗi nối bằng dấu phẩy ("1,3") để `useUrlFilters` + "Xóa lọc" chạy y như cũ; backend
+// đọc được cả dạng đó. Hai hàm này đổi qua lại giữa chuỗi và mảng cho ô chọn.
+const splitMulti = (s: string) => (s ? String(s).split(',').filter(Boolean) : [])
+const joinMulti = (arr: string[]) => arr.join(',')
 const pgBadge = (s: string) =>
   <span className="badge" style={{ background: (PG_COLOR[s] || '#94a3b8') + '22', color: PG_COLOR[s] || '#64748b', whiteSpace: 'nowrap' }}>{poProgressStatusLabel(s) || '—'}</span>
 
@@ -116,8 +129,17 @@ const COLS: Col[] = [
   { key: 'unit', label: 'ĐVT', w: 56, sort: 'unit', cell: (r) => r.unit },
   { key: 'qty_request', hide: true, label: 'SL YC', w: 76, sort: 'qty_request', td: R, cell: (r) => fmt(r.qty_request) },
   { key: 'qty_order', label: 'SL đặt', w: 76, sort: 'qty_order', td: R, cell: (r) => fmt(r.qty_order) },
-  { key: 'price', label: 'Đơn giá', w: 96, sort: 'price', td: R, cell: (r) => fmtPrice(r.price) },
+  { key: 'price', label: 'Đơn giá', w: 110, sort: 'price', td: R, cell: (r) => fmtPriceCur(r.price, r.currency) },
   { key: 'vat', hide: true, label: 'VAT%', w: 60, sort: 'vat', td: R, cell: (r) => r.vat || 0 },
+  // bao-CR-439: hai cột CĂN CỨ QUY ĐỔI cho mọi cột "Thành tiền" bên phải — xếp ngay trước cột
+  // tiền đầu tiên, đọc liền một mạch "đơn giá nguyên tệ × tỷ giá -> thành tiền đồng".
+  // KHÔNG đánh `hide` (cùng lý do hai cột hóa đơn của bao-CR-409): cột bày ra theo yêu cầu thì
+  // phải thấy ngay, mà localStorage của bảng này chỉ lưu danh sách cột ĐANG ẨN nên key mới
+  // không nằm trong đó — người đã từng chỉnh menu "Cột" cũng thấy đủ hai cột.
+  { key: 'currency', label: 'Đồng tiền', w: 84, sort: 'currency', cell: (r) => r.currency || '' },
+  // Tỷ giá lưu 6 số lẻ, `fmtPrice` cắt còn 4 là đủ đọc. Ô này KHÔNG bao giờ trống: backend đã
+  // cho qua `normalize_rate`, dòng cũ chưa có tỷ giá đọc thành 1 — đúng bằng số nó đang nhân.
+  { key: 'exchange_rate', label: 'Tỷ giá', w: 96, sort: 'exchange_rate', td: R, cell: (r) => fmtPrice(r.exchange_rate) },
   { key: 'order_amount', label: 'Thành tiền ĐH', w: 128, td: { ...R, fontWeight: 600 }, cell: (r) => fmtVND(r.order_amount) },
   { key: 'progress_status', label: 'Tiến độ', w: 176, sort: 'progress_status', cell: (r) => pgBadge(r.progress_status) },
   { key: 'delivery_no', hide: true, label: 'Lần giao', w: 72, sort: 'delivery_no', td: R, cell: (r) => r.delivery_no ?? '—' },
@@ -277,9 +299,9 @@ export default function PurchaseProgress() {
       <FilterPanel onClear={() => setF({ ...EMPTY_FILTERS })} canClear={Object.values(f).some((v) => v)}
                    extra={<ConditionalFilterButton />}>
         <FilterItem label="Công ty">
-          <SearchSelect value={f.company_id} placeholder="Tất cả"
+          <MultiCheckSelect value={splitMulti(f.company_id)} placeholder="Tất cả"
             options={companies.map((c) => ({ value: String(c.id), label: c.name }))}
-            onChange={(v) => setFilter('company_id', v)} />
+            onChange={(v) => setFilter('company_id', joinMulti(v))} />
         </FilterItem>
         <FilterItem label="Bộ phận">
           <SearchSelect value={f.department_id} placeholder="Tất cả"
@@ -287,9 +309,9 @@ export default function PurchaseProgress() {
             onChange={(v) => setFilter('department_id', v)} />
         </FilterItem>
         <FilterItem label="Trạng thái tiến độ">
-          <SearchSelect value={f.status} placeholder="Tất cả"
+          <MultiCheckSelect value={splitMulti(f.status)} placeholder="Tất cả"
             options={PO_PROGRESS_STATUSES}
-            onChange={(v) => setFilter('status', v)} />
+            onChange={(v) => setFilter('status', joinMulti(v))} />
         </FilterItem>
         <FilterItem label="Tình trạng nhận" width={200}>
           <select value={f.recv_state} onChange={(e) => setFilter('recv_state', e.target.value)}>

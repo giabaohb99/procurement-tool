@@ -1,4 +1,7 @@
-import type { PurchaseOrderPayload } from '../api/purchase-order-api'
+import type {
+  PurchaseOrderImportCostPayload,
+  PurchaseOrderPayload,
+} from '../api/purchase-order-api'
 import type {
   PurchaseRequestDetail,
   PurchaseRequestItem,
@@ -75,6 +78,41 @@ export function createEmptyPurchaseOrder(
 }
 
 /** Lọc bỏ các cột do backend tính; chỉ gửi đúng phần người dùng nhập. */
+/**
+ * Bảng chi phí trên màn hình → dữ liệu gửi lên. bao-CR-453: gửi ba giai đoạn thay cho
+ * `amount`/`exchange_rate` cũ.
+ *
+ * bao-CR-476: tách riêng để thẻ chi phí gửi kèm ĐÚNG bản này lúc bấm «Quyết toán» (lưu trước
+ * rồi mới chốt). Hai chỗ tự viết hai bản là sớm muộn lệch nhau một ô, và ô lệch đó sẽ bị
+ * lưu đè bằng giá trị rỗng ngay trước khi thành công nợ.
+ */
+export function toImportCostPayloads(
+  costs: PurchaseOrderImportCost[],
+): PurchaseOrderImportCostPayload[] {
+  return costs.map((cost) => ({
+    id: cost.id,
+    cost_type: Number(cost.cost_type) || 99,
+    description: cost.description,
+    supplier_code: cost.supplier_code,
+    supplier_name: cost.supplier_name,
+    currency: cost.currency,
+    estimate_amount: cost.estimate_amount ?? null,
+    estimate_rate: Number(cost.estimate_rate) || 0,
+    provisional_amount: cost.provisional_amount ?? null,
+    provisional_rate: Number(cost.provisional_rate) || 0,
+    final_amount: cost.final_amount ?? null,
+    final_rate: Number(cost.final_rate) || 0,
+    vat: Number(cost.vat) || 0,
+    allocation_method: Number(cost.allocation_method) || ALLOCATION_BY_VALUE,
+    allocation_target: cost.allocation_target,
+    manual_allocation: cost.manual_allocation ?? {},
+    invoice_no: cost.invoice_no,
+    invoice_date: cost.invoice_date,
+    payment_due_date: cost.payment_due_date,
+    note: cost.note,
+  }))
+}
+
 export function toPurchaseOrderPayload(data: PurchaseOrderDetail): PurchaseOrderPayload {
   return {
     misa_code: data.misa_code,
@@ -98,24 +136,7 @@ export function toPurchaseOrderPayload(data: PurchaseOrderDetail): PurchaseOrder
     customs_decl_date: data.customs_decl_date ?? '',
     is_urgent: data.is_urgent,
     note: data.note,
-    import_costs: (data.import_costs ?? []).map((cost) => ({
-      id: cost.id,
-      cost_type: Number(cost.cost_type) || 99,
-      description: cost.description,
-      supplier_code: cost.supplier_code,
-      supplier_name: cost.supplier_name,
-      currency: cost.currency,
-      exchange_rate: Number(cost.exchange_rate) || 0,
-      amount: Number(cost.amount) || 0,
-      vat: Number(cost.vat) || 0,
-      allocation_method: Number(cost.allocation_method) || ALLOCATION_BY_VALUE,
-      allocation_target: cost.allocation_target,
-      manual_allocation: cost.manual_allocation ?? {},
-      invoice_no: cost.invoice_no,
-      invoice_date: cost.invoice_date,
-      payment_due_date: cost.payment_due_date,
-      note: cost.note,
-    })),
+    import_costs: toImportCostPayloads(data.import_costs ?? []),
     items: data.items
       .filter((item) => item.product_name.trim() || item.product_code.trim())
       .map((item) => ({
@@ -149,7 +170,10 @@ export function toPurchaseOrderPayload(data: PurchaseOrderDetail): PurchaseOrder
   }
 }
 
-/** Khoản chi phí lô hàng trống — dòng mới trong thẻ "Chi phí lô hàng nhập khẩu". */
+/**
+ * Khoản chi phí thu mua trống — dòng mới trong thẻ "Chi phí thu mua".
+ * bao-CR-453: dùng ba giai đoạn thay cho `amount`/`exchange_rate` cũ.
+ */
 export function createEmptyImportCost(): PurchaseOrderImportCost {
   return {
     cost_type: 1,
@@ -157,8 +181,12 @@ export function createEmptyImportCost(): PurchaseOrderImportCost {
     supplier_code: '',
     supplier_name: '',
     currency: '',
-    exchange_rate: 0,
-    amount: 0,
+    estimate_amount: null,
+    estimate_rate: 0,
+    provisional_amount: null,
+    provisional_rate: 0,
+    final_amount: null,
+    final_rate: 0,
     vat: 0,
     allocation_method: ALLOCATION_BY_VALUE,
     allocation_target: '',

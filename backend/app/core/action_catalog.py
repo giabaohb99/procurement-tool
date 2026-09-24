@@ -97,6 +97,14 @@ _EDIT = (
     ActionCode("expected_date", "Đổi ngày dự kiến", ACTION_GROUP_EDIT),
     ActionCode("pr_created", "Sinh yêu cầu mua hàng", ACTION_GROUP_EDIT),
     ActionCode("reply", "Phản hồi", ACTION_GROUP_EDIT),
+    # bao-CR-453 — chi phí thu mua ba giai đoạn
+    ActionCode("cost_stage_prov", "Chốt tạm tính chi phí thu mua", ACTION_GROUP_EDIT),
+    ActionCode("cost_line_final", "Quyết toán riêng một dòng chi phí", ACTION_GROUP_EDIT),
+    # bao-CR-414 — chuyển phiếu sang phòng khác xử lý / trả về thu mua
+    ActionCode("transfer_dept", "Chuyển phòng xử lý", ACTION_GROUP_EDIT),
+    ActionCode("return_dept", "Trả phiếu về thu mua", ACTION_GROUP_EDIT),
+    # Sổ đồng bộ app cũ — xếp một dòng lỗi chạy lại
+    ActionCode("retry", "Xếp chạy lại đồng bộ", ACTION_GROUP_EDIT),
 )
 
 #  ---------------------------------------------------------------------
@@ -199,6 +207,10 @@ _APPROVAL = (
     #  bằng chính trạng thái mới. Nhãn nói rõ "hủy duyệt" chứ không nói "nháp":
     #  người đọc nhật ký cần biết đơn vừa TỤT khỏi trạng thái đã duyệt.
     ActionCode("draft", "Hủy duyệt, đưa về Nháp", ACTION_GROUP_APPROVE),
+    # bao-CR-453 — chi phí thu mua ba giai đoạn
+    ActionCode("cost_stage_final", "Chốt quyết toán chi phí thu mua", ACTION_GROUP_APPROVE),
+    ActionCode("cost_stage_reopen", "Mở lại giai đoạn chi phí thu mua", ACTION_GROUP_APPROVE),
+    ActionCode("cost_line_reopen", "Mở lại một dòng chi phí đã quyết toán", ACTION_GROUP_APPROVE),
 )
 
 #  =====================================================================
@@ -232,6 +244,12 @@ _AUTH = (
     #  BỊ cắt, `created_by=` người bấm — nên tra lịch sử một người là ra đủ.
     ActionCode("session_revoked", "Đá phiên khỏi thiết bị", ACTION_GROUP_AUTH),
     ActionCode("logout_all", "Đăng xuất mọi thiết bị", ACTION_GROUP_AUTH),
+    #  bao-CR-448 / CR-312 P6 — việc nền `system_log.detect_anomalies` ghi mã
+    #  này với `created_by = 0` khi đã báo chuông cho quản trị về một dấu hiệu
+    #  bất thường (đăng nhập IP lạ · đổi thiết bị giữa phiên · xóa hàng loạt ·
+    #  dồn dập 403). `entity_id` = id NGƯỜI bị nhắc tới (0 khi chưa đăng nhập),
+    #  `doc_code` = khóa chống báo trùng — cùng cách `file_alert` ở nhóm XEM.
+    ActionCode("anomaly_alert", "Cảnh báo bất thường", ACTION_GROUP_AUTH),
 )
 
 #  =====================================================================

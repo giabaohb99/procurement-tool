@@ -200,11 +200,11 @@ def test_out_tra_phan_bo_tinh_tu_du_lieu_da_luu(db, seed):
     ], user_id=1)
     service._save_import_costs(db, po, [POImportCostIn(
         cost_type=int(ImportCostType.OCEAN_FREIGHT), description="Cước biển", supplier_code="HANGTAU",
-        supplier_name="Hãng tàu", currency="VND", amount=1_000_000, vat=0)], user_id=1)
+        supplier_name="Hãng tàu", currency="VND", estimate_amount=1_000_000, vat=0)], user_id=1)
     db.flush()
 
     out = _out(db, po)
-    alloc = out["import_cost_allocation"]
+    alloc = out["import_cost_allocation"]["effective"]
     assert [line["cost_base"] for line in alloc["lines"]] == [250_000.0, 750_000.0]
     assert alloc["cost_total"] == out["import_cost_summary"]["cost_total"] == 1_000_000.0
     assert alloc["goods_base_total"] == out["import_cost_summary"]["goods_base_total"] == 400 * RATE

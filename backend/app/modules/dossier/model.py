@@ -88,6 +88,41 @@ class Dossier(Base, AuditMixin):
     #  «So QD» · «SQD» thành ba trường khác nhau và không lọc ra được gì.
     custom_fields: Mapped[list | None] = mapped_column(JSON, nullable=True)
 
+    #  ---- ĐIỀU KIỆN ÁP DỤNG: «giấy này phải kèm theo chứng từ nào» ----
+    #  Luật khớp và hai ca rỗng nằm ở `applicability.py` — đọc đó trước khi động
+    #  vào hai cột này.
+    #
+    #  ⚠️ **`NULL` / rỗng ở `apply_doc_kinds` = KHÔNG BAO GIỜ hiện ra ở đâu**, và
+    #  đó phải là mặc định: mọi hồ sơ lập trước 21/09/2026 đều mang `NULL`, đổi
+    #  nghĩa rỗng thành «áp cho tất cả» là một sáng hôm sau cả công ty mở đơn
+    #  mua hàng nào cũng thấy một thẻ hồ sơ không ai gắn.
+    apply_doc_kinds: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    #  Rỗng mà `apply_doc_kinds` CÓ thì nghĩa ngược lại: áp cho MỌI phiếu loại
+    #  đó. Hai ca rỗng hai nghĩa khác nhau là chuyện dễ nhầm — giao diện phải
+    #  nói thành câu, xem ghi chú ở `applicability.py`.
+    apply_conditions: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    #  TIÊN QUYẾT — `id` những tờ hồ sơ phải hoàn thành TRƯỚC tờ này.
+    #
+    #  ⚠️ **Thuộc về TỜ GIẤY, không thuộc về từng phiếu** (đại ca chốt
+    #  21/09/2026). Trình tự giấy tờ của công ty là một: đơn mua hàng chỉ phát
+    #  hành sau khi hợp đồng ký xong, ở mọi thương vụ. Khai ở đây thì khai MỘT
+    #  lần cho cả kho, thay vì mỗi tờ phiếu khai lại từ đầu.
+    #
+    #  ⚠️ Nhưng **«xong» thì vẫn theo từng phiếu** (`tab_dossier_progress`), nên
+    #  chuyện một tờ có đang KHÓA hay không vẫn là câu hỏi của riêng từng phiếu:
+    #  ràng buộc dùng chung, trạng thái riêng. Xem `_with_lock` ở
+    #  `applicability_controller.py`.
+    depends: Mapped[list | None] = mapped_column(JSON, nullable=True)
+
+    @property
+    def depend_list(self) -> list[int]:
+        """`depends` đọc an toàn — cột `NULL` với mọi hồ sơ lập trước 21/09/2026.
+
+        Cùng lối với `apply_doc_kind_list`: trả `None` ra API thì mọi chỗ dùng
+        phải tự `or []`, và chỗ quên thì nổ đúng lúc ai đó mở một hồ sơ cũ.
+        """
+        return list(self.depends or [])
+
     #  Giá trị của BỘ TRƯỜNG TÙY BIẾN, khóa lấy từ `field_schema` của loại
     #  **và** từ `custom_fields` ngay trên.
     #  `NULL` đọc ra `{}` (xem `extra_fields_map`) — hồ sơ lập trước khi loại có
@@ -133,6 +168,16 @@ class Dossier(Base, AuditMixin):
         chỗ dùng phải tự `?? []`, và chỗ quên thì nổ đúng lúc ai đó mở một hồ sơ cũ.
         """
         return self.custom_fields if isinstance(self.custom_fields, list) else []
+
+    @property
+    def apply_doc_kind_list(self) -> list:
+        """`apply_doc_kinds` luôn đọc ra danh sách — cùng lý lẽ `custom_field_defs`."""
+        return self.apply_doc_kinds if isinstance(self.apply_doc_kinds, list) else []
+
+    @property
+    def apply_condition_list(self) -> list:
+        """`apply_conditions` luôn đọc ra danh sách."""
+        return self.apply_conditions if isinstance(self.apply_conditions, list) else []
 
     @property
     def owner_name(self) -> str:

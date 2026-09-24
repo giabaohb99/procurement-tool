@@ -1,5 +1,6 @@
 """Lưu file đính kèm lên Cloudflare R2 (S3-compatible)."""
 import boto3
+from botocore.exceptions import ClientError
 
 from app.core.config import settings
 
@@ -85,6 +86,26 @@ def upload_fileobj(fileobj, key: str, content_type: str = "") -> str:
     with open(local_path, "wb") as f:
         shutil.copyfileobj(fileobj, f)
     return f"/api/uploads/{key}"
+
+
+def key_exists(key: str) -> bool:
+    """Trên R2 có sẵn đối tượng này chưa — hỏi bằng `head_object`, không tải về.
+
+    Chưa nối R2 thì trả `False` thẳng, KHÔNG nhìn xuống `uploads/`: nơi gọi duy
+    nhất hôm nay là việc dọn nhật ký (bao-CR-448), và với nó «bản sao ở máy
+    này» không phải bản sao — xem `is_remote_storage_ready`.
+    """
+    s3 = _client()
+    if not s3:
+        return False
+    try:
+        s3.head_object(Bucket=_eff("r2_bucket"), Key=key)
+        return True
+    except ClientError as exc:
+        code = str(exc.response.get("Error", {}).get("Code", ""))
+        if code in ("404", "NoSuchKey", "NotFound"):
+            return False
+        raise
 
 
 def download_bytes(key: str) -> bytes:

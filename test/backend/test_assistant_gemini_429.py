@@ -28,7 +28,8 @@ def _429(delay: str | None):
 
 @pytest.fixture
 def khoa(monkeypatch):
-    monkeypatch.setattr(gemini.settings, "GEMINI_API_KEY", "x")
+    #  Khóa nay đọc từ cấu hình hệ thống (bao-CR-428/429) qua `_api_key` — cài thẳng ở đó.
+    monkeypatch.setattr(gemini.GeminiProvider, "_api_key", lambda self: "x")
     ngu: list[float] = []
     monkeypatch.setattr(gemini.time, "sleep", ngu.append)
     return ngu

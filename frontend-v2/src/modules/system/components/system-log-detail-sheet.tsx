@@ -12,7 +12,13 @@ import { cn } from '@/shared/utils/cn'
 
 import type { SystemLogAuditEntry, SystemLogSessionInfo } from '../api/system-log-api'
 import { useSystemLogDetail } from '../hooks/use-system-logs'
-import { formatDuration, httpStatusHint, httpStatusTone } from '../utils/system-log-format'
+import {
+  formatDuration,
+  httpMethodTone,
+  httpStatusHint,
+  httpStatusTone,
+} from '../utils/system-log-format'
+import { LogCodeBlock } from './log-code-block'
 import { SystemLogChangeTable } from './system-log-change-table'
 
 interface SystemLogDetailSheetProps {
@@ -36,20 +42,53 @@ export function SystemLogDetailSheet({ requestId, onClose }: SystemLogDetailShee
   return (
     <Sheet open={Boolean(requestId)} onOpenChange={(open) => !open && onClose()}>
       <SheetContent side="right" className="flex w-full flex-col gap-0 sm:max-w-3xl">
-        <SheetHeader className="border-b">
-          <SheetTitle className="flex flex-wrap items-center gap-2">
+        {/*  Tiêu đề = danh thiếp của lượt gọi: ĐỘNG TỪ có màu · đường dẫn · kết quả ·
+            mất bao lâu. Bản trước để động từ là chữ mono xám lẫn vào đường dẫn, và
+            mã trạng thái nằm tận trong tab «Tổng quan» — tức là thứ đầu tiên người
+            trực muốn biết (*lượt này hỏng hay chạy được?*) lại phải bấm thêm một
+            lần mới thấy. */}
+        <SheetHeader className="gap-2 border-b bg-muted/30">
+          {/*  `pr-9` chừa chỗ cho nút ✕ của ngăn — nó nằm tuyệt đối ở góc phải trên,
+              không chiếm chỗ trong luồng, nên huy hiệu mã trạng thái đẩy bằng
+              `ml-auto` sẽ CHUI XUỐNG DƯỚI nó (đo trên trình duyệt: chồng đúng 1/3
+              huy hiệu). */}
+          <SheetTitle className="flex min-w-0 flex-wrap items-center gap-2 pr-9">
             {data ? (
               <>
-                <span className="font-mono text-sm">{data.request.method}</span>
-                <span className="min-w-0 break-all text-sm font-normal">{data.request.path}</span>
+                <Badge
+                  className={cn(
+                    'font-mono text-[11px] tracking-wide',
+                    TONE_CLASS[httpMethodTone(data.request.method)],
+                  )}
+                >
+                  {data.request.method}
+                </Badge>
+                <span className="min-w-0 break-all font-mono text-sm font-normal">
+                  {data.request.path}
+                </span>
+                <Badge className={cn('ml-auto', TONE_CLASS[httpStatusTone(data.request.http_status)])}>
+                  {data.request.http_status || '—'}
+                </Badge>
               </>
             ) : (
               'Chi tiết lượt gọi'
             )}
           </SheetTitle>
-          <SheetDescription className="flex flex-wrap items-center gap-2">
-            <span className="font-mono text-xs">{requestId}</span>
+          <SheetDescription className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            {/*  Mã lượt gọi là chuỗi 36 ký tự không ai đọc được — cho vào khung nền mờ
+                để mắt biết đó là "mã để chép", đừng bắt nó tranh chỗ với chữ thường. */}
+            <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] text-foreground/70">
+              {requestId}
+            </span>
             {requestId && <CopyButton value={requestId} label="mã lượt gọi" />}
+            {data && (
+              <>
+                <span className="text-xs">{formatDateTime(data.request.at)}</span>
+                <span className="text-xs tabular-nums">
+                  {formatDuration(data.request.duration_ms)}
+                </span>
+              </>
+            )}
           </SheetDescription>
         </SheetHeader>
 
@@ -128,9 +167,9 @@ export function SystemLogDetailSheet({ requestId, onClose }: SystemLogDetailShee
 
                 {data.can_read_changes ? (
                   <div className="space-y-3">
-                    <CodeBlock title="Thân yêu cầu" text={data.request.request_body} />
-                    <CodeBlock title="Thân trả về" text={data.request.response_body} />
-                    <CodeBlock
+                    <LogCodeBlock title="Thân yêu cầu" text={data.request.request_body} />
+                    <LogCodeBlock title="Thân trả về" text={data.request.response_body} />
+                    <LogCodeBlock
                       title="Chi tiết lỗi"
                       text={data.request.error_detail}
                       tone="danger"
@@ -174,11 +213,19 @@ interface InfoRowProps {
   mono?: boolean
 }
 
+/**
+ * Một ô «nhãn — giá trị».
+ *
+ * Có KHUNG NỀN chứ không phải hai dòng chữ trần (đổi 22/09/2026): tám ô xếp lưới
+ * hai cột, ô nào cũng chữ xám nhỏ trên chữ thường dưới, thì mắt không có mốc nào
+ * để bám — đặc biệt khi một ô mang URL dài ba dòng còn ô bên cạnh chỉ có dấu
+ * gạch, hai cột lệch nhau và người đọc không biết dòng nào thuộc nhãn nào.
+ */
 function InfoRow({ label, value, mono = false }: InfoRowProps) {
   return (
-    <div className="min-w-0">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <div className={cn('mt-0.5 break-words text-sm', mono && 'font-mono text-xs')}>{value}</div>
+    <div className="min-w-0 rounded-md border bg-muted/20 px-3 py-2">
+      <p className="text-[11px] text-muted-foreground">{label}</p>
+      <div className={cn('mt-1 break-words text-sm', mono && 'font-mono text-xs')}>{value}</div>
     </div>
   )
 }
@@ -282,41 +329,3 @@ function SessionPanel({ session }: { session: SystemLogSessionInfo | null }) {
   )
 }
 
-interface CodeBlockProps {
-  title: string
-  text?: string
-  tone?: 'default' | 'danger'
-}
-
-/**
- * Khối JSON / traceback.
- *
- * `undefined` nghĩa là backend đã lược (không có quyền) — nhưng nhánh đó đã được
- * chặn ở tầng trên, nên ở đây rỗng chỉ còn nghĩa *lượt gọi vốn không có phần
- * này* (GET không có thân, lượt chạy trót lọt không có traceback). Vẫn nói rõ
- * thay vì vẽ một khung trống.
- */
-function CodeBlock({ title, text, tone = 'default' }: CodeBlockProps) {
-  const body = (text ?? '').trim()
-
-  return (
-    <div className="overflow-hidden rounded-lg border">
-      <div className="flex items-center justify-between gap-2 border-b bg-muted/50 px-3 py-1.5">
-        <span className="text-xs font-medium">{title}</span>
-        {body && <CopyButton value={body} label={title.toLowerCase()} />}
-      </div>
-      {body ? (
-        <pre
-          className={cn(
-            'max-h-72 overflow-auto p-3 text-xs whitespace-pre-wrap break-all',
-            tone === 'danger' && 'text-destructive',
-          )}
-        >
-          {body}
-        </pre>
-      ) : (
-        <p className="p-3 text-xs italic text-muted-foreground">Không có nội dung.</p>
-      )}
-    </div>
-  )
-}

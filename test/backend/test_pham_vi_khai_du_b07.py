@@ -163,12 +163,19 @@ def test_du_55_entity():
     `created_by` · `owner_employee_id`), KHÔNG PUBLIC — hồ sơ thuộc về một pháp
     nhân, một phòng và một người. Bốn chiều kiểm ở `test_ho_so_pham_vi.py`.
 
-    65 → 66 ngày 24/09/2026: việc của bot Agent Hub (`agent_task`, ai-CR-036) — màn
+    65 → 66 ngày 22/09/2026 (bao-CR-453): `purchase_cost_type` — Danh mục Loại chi
+    phí thu mua (`tab_po_cost_type`), thay bộ mã cứng `ImportCostType`. Khóa riêng
+    theo luật «một khóa = một màn hình» (`/api/po-cost-types`): khai chi phí trên
+    đơn là việc hằng ngày của thu mua, còn thêm bớt LOẠI chi phí là đổi cột của
+    báo cáo giá vốn cho cả công ty. PUBLIC ở `SCOPE_FIELDS`: một loại chi phí là
+    một loại chi phí với mọi pháp nhân, không có chủ để lọc.
+
+    68 → 69 ngày 24/09/2026: việc của bot Agent Hub (`agent_task`, ai-CR-036) — màn
     `/system/agent-tasks` chỉ đọc. PUBLIC vì việc của bot không thuộc người hay phòng nào;
     gác bằng khóa quyền, và nằm trong `_SYS_ENTITIES` nên Quản lý thu mua không tự có.
     """
-    assert len(ENTITIES) == 66
-    assert len(SCOPE_FIELDS) == 66
+    assert len(ENTITIES) == 69
+    assert len(SCOPE_FIELDS) == 69
 
 
 # ── 2. Không dựng nổi điều kiện thì chặn ────────────────────────────────────────

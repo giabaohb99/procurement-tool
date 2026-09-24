@@ -17,6 +17,7 @@ import {
   DialogTitle,
 } from '@/shared/ui/dialog'
 import { Input } from '@/shared/ui/input'
+import { SearchSelect } from '@/shared/ui/search-select'
 import {
   Select,
   SelectContent,
@@ -39,6 +40,7 @@ import {
   usePurchaseRequestUnits,
   usePurchaseRequestWarehouses,
 } from '../hooks/use-purchase-request-support'
+import { resolveCatalogSelection } from '../utils/catalog-selection'
 import {
   VAT_OPTIONS,
   type PurchaseRequestItem,
@@ -47,9 +49,6 @@ import { ProgressStatusBadge } from './document-status-badge'
 import { PurchaseHistoryDialog } from './purchase-history-dialog'
 import { PurchaseRequestLineCard } from './purchase-request-line-card'
 import { PurchaseRequestProductPicker } from './purchase-request-product-picker'
-
-/** Mã giả cho mục "bỏ chọn NSTM" — xem chú thích ở ô chọn NSTM. */
-const UNASSIGNED = '__unassigned__'
 
 const TABLE_STORAGE_KEY = 'purchase-request-items'
 
@@ -522,30 +521,27 @@ export function PurchaseRequestItemsTable({
 
       case 'assignee':
         return canAssign ? (
-          <Select
-            value={item.assignee || undefined}
-            onValueChange={(value) => {
-              const assignee = value === UNASSIGNED ? '' : value
+          //  «Bỏ chọn» cũ nay là nút xóa của ô (trả về `''`), chỉ hiện khi đang có người.
+          <SearchSelect
+            searchInTrigger
+            clearable
+            wrap
+            size="sm"
+            value={item.assignee || ''}
+            placeholder="Chọn NSTM"
+            searchPlaceholder="Gõ để tìm NSTM…"
+            options={purchasers.map((purchaser) => ({
+              value: purchaser.code,
+              label: purchaser.name,
+            }))}
+            onChange={(assignee) => {
+              //  Chọn lại đúng người đang gán thì thôi — Radix Select cũ không bắn sự kiện,
+              //  mà `onAssigneeChange` là một lần gọi API phân công.
+              if (assignee === (item.assignee || '')) return
               patch(index, { assignee })
               onAssigneeChange?.(item, assignee)
             }}
-          >
-            <SelectTrigger className="h-8 w-full">
-              <SelectValue placeholder="Chọn NSTM" />
-            </SelectTrigger>
-            <SelectContent>
-              {item.assignee && (
-                <SelectItem value={UNASSIGNED} className="text-muted-foreground">
-                  — Bỏ chọn —
-                </SelectItem>
-              )}
-              {purchasers.map((purchaser) => (
-                <SelectItem key={purchaser.code} value={purchaser.code}>
-                  {purchaser.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          />
         ) : (
           <span className="block break-words whitespace-normal leading-snug">
             {purchasers.find((purchaser) => purchaser.code === item.assignee)?.name ||
@@ -718,8 +714,6 @@ export function PurchaseRequestItemsTable({
   )
 }
 
-const EMPTY_CATALOG_VALUE = '__empty__'
-
 function CatalogSelect({
   value,
   placeholder,
@@ -731,22 +725,23 @@ function CatalogSelect({
   options: { value: string; label: string }[]
   onChange: (value: string) => void
 }) {
+  const resolved = resolveCatalogSelection(value, options)
+  //  Mục «-- Kho --» / «-- ĐVT --» cũ (chọn để bỏ trống) nay là nút xóa của ô, cũng trả `''`.
   return (
-    <Select
-      value={value || EMPTY_CATALOG_VALUE}
-      onValueChange={(next) => onChange(next === EMPTY_CATALOG_VALUE ? '' : next)}
-    >
-      <SelectTrigger size="sm" className="w-full">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent position="popper" align="start">
-        <SelectItem value={EMPTY_CATALOG_VALUE}>{placeholder}</SelectItem>
-        {options.map((option) => (
-          <SelectItem key={option.value} value={option.value}>
-            {option.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <SearchSelect
+      searchInTrigger
+      clearable
+      wrap
+      size="sm"
+      value={resolved.selected}
+      placeholder={placeholder}
+      searchPlaceholder="Gõ để tìm…"
+      options={resolved.options}
+      onChange={(next) => {
+        //  Chọn lại đúng mục đang chọn thì thôi — Radix Select cũ không bắn sự kiện.
+        if (next === resolved.selected) return
+        onChange(next)
+      }}
+    />
   )
 }

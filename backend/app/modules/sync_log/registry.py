@@ -15,7 +15,7 @@ dòng `grain = RECORD`, hai vòng chạy nền của nó ghi dòng `grain = RUN`
 """
 from dataclasses import dataclass, field
 
-from app.core.config import settings
+from app.core import app_settings
 
 from .constants import COMMON_WARNINGS
 
@@ -24,20 +24,24 @@ from .constants import COMMON_WARNINGS
 class SyncSource:
     """Khai báo một hệ nguồn.
 
-    `enabled_setting` / `secret_setting` / `base_url_setting` là TÊN thuộc tính
-    trong `core/config.py`, không phải giá trị — đọc lúc chạy để đổi `.env` là
-    có hiệu lực ngay, và để khóa bí mật không bị chụp lại lúc nạp module.
+    `enabled_setting` / `secret_setting` / `base_url_setting` là TÊN khóa cấu
+    hình, không phải giá trị — đọc lúc chạy, nên sửa trên màn Cấu hình hệ thống
+    là có hiệu lực ngay và khóa bí mật không bị chụp lại lúc nạp module.
+
+    Đường đọc là `app_settings.get(...)`: bảng cấu hình trước, `.env` sau. Khóa
+    chưa khai trong `REGISTRY` vẫn chạy được vì `get()` rơi về đúng biến môi
+    trường viết hoa cùng tên — tiện cho nguồn cố ý giữ cờ ở `.env`.
     """
 
     code: str                      # tối đa 20 ký tự, khớp cột `source`
     label: str                     # nhãn tiếng Việt cho màn hình
-    enabled_setting: str = ""      # tên cờ bật (bool) trong settings
-    # Cờ của nguồn là CẦU DAO NGẮT (vd `POS365_HARD_OFF`) chứ không phải cờ bật:
+    enabled_setting: str = ""      # tên khóa cờ bật (bool)
+    # Cờ của nguồn là CẦU DAO NGẮT (vd `pos365_hard_off`) chứ không phải cờ bật:
     # bật cầu dao = tắt đồng bộ. Khai riêng thay vì đổi tên biến môi trường đang
     # chạy thật ở prod.
     enabled_inverted: bool = False
-    secret_setting: str = ""       # tên biến giữ khóa ký chung (nguồn nào ký HMAC)
-    base_url_setting: str = ""     # tên biến giữ địa chỉ gốc của hệ ngoài
+    secret_setting: str = ""       # tên khóa giữ mã ký chung (nguồn nào ký HMAC)
+    base_url_setting: str = ""     # tên khóa giữ địa chỉ gốc của hệ ngoài
     entities: dict[str, str] = field(default_factory=dict)        # mã -> nhãn
     jobs: dict[str, str] = field(default_factory=dict)            # công việc chạy nền
     extra_warnings: dict[str, str] = field(default_factory=dict)  # cờ riêng
@@ -45,18 +49,18 @@ class SyncSource:
     def is_enabled(self) -> bool:
         if not self.enabled_setting:
             return True
-        flag = bool(getattr(settings, self.enabled_setting, False))
+        flag = bool(app_settings.get(self.enabled_setting))
         return (not flag) if self.enabled_inverted else flag
 
     def secret(self) -> str:
         if not self.secret_setting:
             return ""
-        return (getattr(settings, self.secret_setting, "") or "").strip()
+        return (app_settings.get(self.secret_setting) or "").strip()
 
     def base_url(self) -> str:
         if not self.base_url_setting:
             return ""
-        return (getattr(settings, self.base_url_setting, "") or "").strip().rstrip("/")
+        return (app_settings.get(self.base_url_setting) or "").strip().rstrip("/")
 
     def is_ready(self) -> bool:
         """Đủ điều kiện gọi qua lại: đã bật VÀ đã có khóa ký."""
@@ -145,9 +149,9 @@ register_source(
     SyncSource(
         code=SOURCE_DATXE,
         label="App đặt xe & duyệt dấu (cũ)",
-        enabled_setting="SYNC_DATXE_ENABLED",
-        secret_setting="SYNC_SHARED_SECRET",
-        base_url_setting="SYNC_LEGACY_API_BASE",
+        enabled_setting="sync_datxe_enabled",
+        secret_setting="sync_shared_secret",
+        base_url_setting="sync_legacy_api_base",
         entities={
             "vehicle_booking": "Phiếu đặt xe",
             "seal_request": "Phiếu duyệt dấu",
@@ -158,6 +162,7 @@ register_source(
         jobs={
             "pull_updated": "Kéo phiếu đã sửa",
             "retry_pending": "Chạy lại phiếu lỗi",
+            "full_sweep": "Quét toàn bộ, dựng lại dữ liệu phản chiếu",
         },
         extra_warnings={
             "no_plate": "Xe không có biển số, đã đặt mã tạm",
@@ -187,9 +192,13 @@ register_source(
     SyncSource(
         code=SOURCE_POS365,
         label="POS365 (Điểm cà phê)",
+        #  Cầu dao này CỐ Ý viết hoa: nó ở lại `.env` vì `celery_app.py` đọc nó
+        #  lúc dựng lịch chạy nền, tức hạ cầu dao trên màn hình thì các vòng chạy
+        #  nền vẫn quay tới khi ai đó dựng lại `celery-beat`. `app_settings.get`
+        #  rơi thẳng về biến môi trường cùng tên nên đường đọc vẫn một mối.
         enabled_setting="POS365_HARD_OFF",
         enabled_inverted=True,
-        base_url_setting="POS365_BASE_URL",
+        base_url_setting="pos365_base_url",
         entities={"pos_order": "Đơn hàng POS"},
         jobs={
             "pull_orders": "Kéo đơn hàng",

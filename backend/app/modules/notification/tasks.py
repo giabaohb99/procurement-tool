@@ -6,6 +6,7 @@ Xóa cả đã đọc lẫn chưa đọc (quá hạn thì không còn ý nghĩa 
 from datetime import datetime, timedelta
 
 import app.core.all_models  # noqa: F401 — đăng ký toàn bộ mapper
+from app.core import app_settings
 from app.core.celery_app import celery_app
 from app.core.config import settings
 from app.core.database import SessionLocal
@@ -39,7 +40,12 @@ def send_email_task(
 @celery_app.task(name="notification.cleanup")
 def cleanup_notifications_task(days: int | None = None) -> dict:
     """Xóa thông báo cũ hơn `days` ngày (mặc định lấy từ config). Trả số dòng đã xóa."""
-    keep_days = days if days is not None else settings.NOTIFICATION_KEEP_DAYS
+    #  Số ngày giữ nay sửa được trên màn Cấu hình hệ thống, nên phải có sàn: một
+    #  ô rỗng hay số 0 đi thẳng vào đây nghĩa là mốc cắt bằng ĐÚNG lúc này, tức
+    #  xóa sạch mọi thông báo của cả hệ trong một lượt chạy nền không ai thấy.
+    keep_days = days if days is not None else int(app_settings.get("notification_keep_days") or 0)
+    if keep_days <= 0:
+        keep_days = settings.NOTIFICATION_KEEP_DAYS or 30
     cutoff = datetime.now() - timedelta(days=keep_days)
     db = SessionLocal()
     try:

@@ -175,3 +175,104 @@ describe('MultiPicker — dải chip khi chọn nhiều', () => {
     expect(onChange).toHaveBeenCalledWith([])
   })
 })
+
+describe('MultiPicker — khung tóm tắt cho ô lọc', () => {
+  function renderSummary(value: number[], onChange = vi.fn()) {
+    render(
+      <MultiPicker
+        value={value}
+        onChange={onChange}
+        options={OPTIONS}
+        placeholder="Tất cả công ty"
+        summaryInTrigger
+        clearInTrigger
+      />,
+    )
+    return onChange
+  }
+
+  it('names the first pick and counts the rest instead of saying "Đã chọn N"', () => {
+    //  bao-CR-423: ô lọc trên thanh công cụ cao đúng một hàng và đứng cạnh bốn
+    //  ô khác — "Đã chọn 2" bắt người dùng mở ra mới biết đang lọc cái gì.
+    renderSummary([1, 2])
+
+    expect(
+      screen.getByRole('button', { name: /CÔNG TY TNHH DEGO HOLDING \+1/ }),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Đã chọn/ })).not.toBeInTheDocument()
+  })
+
+  it('shows the plain label with no counter when exactly one is picked', () => {
+    renderSummary([2])
+
+    expect(screen.getByRole('button', { name: /CÔNG TY TNHH N2SBIO VIỆT NAM/ })).toBeInTheDocument()
+    expect(screen.queryByText(/\+/)).not.toBeInTheDocument()
+  })
+
+  it('falls back to the placeholder when nothing is picked', () => {
+    renderSummary([])
+
+    expect(screen.getByRole('button', { name: /Tất cả công ty/ })).toBeInTheDocument()
+  })
+
+  it('drops the chip strip so the toolbar row stays one line tall', () => {
+    renderSummary([1, 2, 3])
+
+    //  Chip có nút X riêng tên «Bỏ <nhãn>» — không còn cái nào nghĩa là dải chip
+    //  đã tắt hẳn; thứ duy nhất còn lại là dấu X «Bỏ hết» ngay trong khung.
+    expect(screen.queryByRole('button', { name: /^Bỏ CÔNG TY/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Bỏ NHÀ PHÂN PHỐI/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Bỏ hết' })).toBeInTheDocument()
+  })
+})
+
+describe('MultiPicker · hideSelectAll', () => {
+  async function openWithoutSelectAll(value: number[] = []) {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    render(
+      <MultiPicker
+        value={value}
+        onChange={onChange}
+        options={OPTIONS}
+        placeholder="Chọn pháp nhân…"
+        hideSelectAll
+      />,
+    )
+    await user.click(
+      screen.getByRole('button', {
+        name: value.length ? new RegExp(`Đã chọn ${value.length}`) : /Chọn pháp nhân/,
+      }),
+    )
+    return { user, onChange }
+  }
+
+  //  Có chỗ «chọn hết» là thao tác gần như luôn SAI — vd ô Hồ sơ tiên quyết:
+  //  chọn mọi tờ trong kho làm tiên quyết cho một tờ thì tờ đó khóa gần như
+  //  vĩnh viễn. Mà nút lại nằm đúng chỗ dễ bấm nhầm nhất, ngay trên mục đầu.
+  it('giấu hàng chọn tất cả ở cả hai chiều bật/tắt', async () => {
+    await openWithoutSelectAll()
+    expect(screen.queryByRole('button', { name: /Chọn tất cả/ })).not.toBeInTheDocument()
+  })
+
+  it('tick hết rồi vẫn không mọc ra nút bỏ chọn tất cả', async () => {
+    await openWithoutSelectAll([1, 2, 3])
+    expect(screen.queryByRole('button', { name: /Bỏ chọn tất cả/ })).not.toBeInTheDocument()
+  })
+
+  //  Giấu một hàng KHÔNG được làm hỏng phần còn lại của ô chọn.
+  it('vẫn chọn được từng mục như thường', async () => {
+    const { user, onChange } = await openWithoutSelectAll()
+    //  Mục trong danh sách là `<button>`, không phải `role="option"` — ô chọn
+    //  này tự dựng chứ không đi qua Command của shadcn.
+    await user.click(screen.getByRole('button', { name: /N2SBIO VIỆT NAM/ }))
+    expect(onChange).toHaveBeenCalledWith([2])
+  })
+
+  it('vẫn tìm được', async () => {
+    const { user } = await openWithoutSelectAll()
+    await user.type(screen.getByPlaceholderText('Tìm…'), 'dr xanh')
+    expect(screen.getByRole('button', { name: /DR XANH/ })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /DEGO HOLDING/ })).not.toBeInTheDocument()
+  })
+})

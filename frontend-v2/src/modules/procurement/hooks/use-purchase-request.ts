@@ -39,16 +39,31 @@ export function useOrderProgress(id: number) {
 
 /**
  * CR-071 — ứng viên đứng tên TBP trên phiếu, đổ vào ô "Trưởng bộ phận".
- * Phiếu chưa lưu (`id <= 0`) chưa có gì để soi phạm vi nên không gọi; lúc đó
- * backend tự điền TBP theo phòng ban, lưu xong mới đổi người được.
- * (Giao diện cũ dùng bản tra theo TÊN PHÒNG — `/meta/dept-head-candidates` — nên
- * màn tạo mới bên đó chọn được ngay; v2 sẽ chuyển sang dùng chung sau.)
+ *
+ * bao-CR-474: tra theo PHÒNG BAN đang chọn trên form, giống hệt bản cũ. Bản đầu của
+ * v2 tra theo id phiếu nên màn TẠO MỚI (id = 0) không có danh sách → ô về dạng chữ,
+ * còn phiếu NHÂN BẢN (đã lưu nháp, có id) lại chọn được — hai màn một phiếu mà hai
+ * hành vi. Tra theo phòng còn đúng hơn khi đang sửa: đổi người yêu cầu sang phòng
+ * khác thì danh sách đi theo phòng mới ngay, không đợi lưu.
  */
-export function useDeptHeadCandidates(id: number, enabled = true) {
+export function useDeptHeadCandidates(department: string, companyId: number, enabled = true) {
   return useQuery({
-    queryKey: queryKeys.procurement.purchaseRequestDeptHeads(id),
-    queryFn: () => purchaseRequestApi.getDeptHeadCandidates(id),
-    enabled: id > 0 && enabled,
+    queryKey: [...queryKeys.procurement.purchaseRequestDeptHeads(0), 'by-department', department, companyId],
+    queryFn: () => purchaseRequestApi.getDeptHeadCandidatesByDepartment(department, companyId),
+    enabled: enabled && !!department,
+  })
+}
+
+/**
+ * bao-CR-474 — trưởng phòng MẶC ĐỊNH của phòng đang chọn, để ô TBP LUÔN hiện một người
+ * khi người lập chưa chọn (`head_of_dept_id = 0`). Đó cũng là người backend tự điền lúc
+ * lưu / gửi duyệt, nên màn hình và dữ liệu lưu xuống không lệch nhau.
+ */
+export function useDefaultDeptHead(department: string, departmentId: number, enabled = true) {
+  return useQuery({
+    queryKey: [...queryKeys.procurement.purchaseRequestDeptHeads(0), 'default', department, departmentId],
+    queryFn: () => purchaseRequestApi.getDeptHead(department, departmentId),
+    enabled: enabled && (!!department || departmentId > 0),
   })
 }
 

@@ -72,6 +72,35 @@ export const BOOKING_STATUS_BADGE: Record<number, BadgeTone> = {
   [BOOKING_STATUS.returned]: 'warn', // Yêu cầu chỉnh sửa (bị trả lại)
 }
 
+/**
+ * Màu lát bánh "Theo trạng thái" trên trang Tổng quan — khai THEO MÃ trạng thái,
+ * không đánh theo thứ hạng trong mảng dữ liệu.
+ *
+ * ⚠️ Bản trước dùng một mảng NĂM màu đánh theo vị trí (`STATUS_COLORS[i % 5]`)
+ * sau khi đã lọc bỏ trạng thái rỗng. Bộ mã có TÁM trạng thái nên hai trạng thái
+ * cuối tô lại màu của hai trạng thái đầu; và vì đánh theo thứ hạng nên kỳ nào
+ * không phát sinh phiếu Nháp là toàn bộ màu dịch một bậc — người đã quen "xanh
+ * lá là xong" đọc sai cả biểu đồ. Cùng lỗi đã vá ở Duyệt dấu (duoc-CR-428).
+ *
+ * Màu lấy đúng tinh thần tông huy hiệu ở `BOOKING_STATUS_BADGE`. Nháp và Đã hủy
+ * cùng tông xám ở huy hiệu nhưng phải KHÁC nhau trên bánh (hai lát cạnh nhau),
+ * nên một xám nhạt một xám đậm.
+ */
+export const BOOKING_STATUS_CHART_COLOR: Record<number, string> = {
+  [BOOKING_STATUS.draft]: 'var(--chart-neutral)',
+  [BOOKING_STATUS.pending]: 'var(--warning)',
+  [BOOKING_STATUS.approved]: 'var(--info)',
+  //  VÀNG chứ không phải xanh dương: `--info` (Đã duyệt) và `--chart-1` chỉ
+  //  cách nhau một bậc lam, mà hai trạng thái này là hai lát LỚN nhất của bánh
+  //  và luôn xuất hiện cùng nhau — đặt cạnh nhau thì chú giải ra hai chấm xanh
+  //  gần như y hệt, đúng thứ vừa đi vá.
+  [BOOKING_STATUS.dispatched]: 'var(--chart-4)',
+  [BOOKING_STATUS.completed]: 'var(--success)',
+  [BOOKING_STATUS.rejected]: 'var(--destructive)',
+  [BOOKING_STATUS.cancelled]: 'var(--muted-foreground)',
+  [BOOKING_STATUS.returned]: 'var(--chart-2)',
+}
+
 // --- Trạng thái tài xế ----------------------------------------------------
 export const DRIVER_STATUS = {
   none: 0,
@@ -196,6 +225,22 @@ export interface VehicleBooking {
   is_assigned_driver: boolean
   /** True khi phiếu đang chạy trong luồng duyệt nhiều bước — ẩn 3 nút duyệt cũ. */
   approval_running?: boolean
+  /** ID phiên duyệt gần nhất, KỂ CẢ phiên đã xong — `null` nếu phiếu chưa vào bộ máy.
+   *  Gác thẻ Lịch sử phê duyệt bằng ô này, không bằng `approval_running`. Chỉ có ở
+   *  phản hồi CHI TIẾT. */
+  approval_instance_id?: number | null
+  /** Câu một dòng «Đang ở chặng 2/3 · Duyệt của Giám đốc» — dòng phụ cạnh badge
+   *  trạng thái, backend dựng sẵn. Rỗng = phiếu chưa vào bộ máy duyệt. */
+  approval_summary?: string
+  /**
+   * LÝ DO đóng phiếu — chỉ có với phiếu *Đã hủy* / *Bị từ chối*.
+   *
+   * ⚠️ Không phải cột của phiếu: backend rút câu này ra từ NHẬT KÝ THAO TÁC
+   * (`service.close_reasons`). Rỗng có nghĩa thật — «đóng mà không ai ghi lý do»
+   * hoặc phiếu nạp từ tệp Excel hệ cũ (đợt nạp đó không có cột lý do) — nên chỗ
+   * hiển thị phải nói thẳng «Không ghi lý do», đừng ẩn dòng đi.
+   */
+  cancel_reason?: string
   created_at: string | null
 }
 

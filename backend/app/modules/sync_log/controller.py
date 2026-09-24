@@ -10,6 +10,7 @@ Cố ý KHÔNG có cửa xóa. Luật §3.2: không bao giờ xóa dòng lỗi; 
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import func, literal
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
@@ -25,6 +26,7 @@ from .constants import (
     GRAIN_LABELS,
     RETRYABLE_STATUSES,
     STATUS_LABELS,
+    WARNING_SEPARATOR,
     SyncStatus,
 )
 from .model import SyncLog
@@ -44,7 +46,7 @@ DAYS_MAX = 365
 def _apply_filters(query, *, source: str, grain: int, job: str, run_id: int,
                    entity: str, direction: int, status: int,
                    legacy_id: str, local_id: int, only_warning: bool,
-                   days: int, keyword: str):
+                   warning: str, days: int, keyword: str):
     if source:
         query = query.filter(SyncLog.source == source)
     if grain:
@@ -68,6 +70,19 @@ def _apply_filters(query, *, source: str, grain: int, job: str, run_id: int,
         #  Dòng THÀNH CÔNG vẫn có thể mang cờ — đây là đường lọc ra mọi bản ghi
         #  có dữ liệu bịa, đừng nhầm với lọc theo trạng thái lỗi.
         query = query.filter(SyncLog.warnings != "")
+    if warning:
+        #  Cột `warnings` là chuỗi nhiều cờ ngăn bằng dấu phẩy. Bọc CẢ cột lẫn
+        #  cờ cần tìm vào dấu ngăn rồi mới so, không thì một cờ khớp nhầm vào
+        #  khúc con của cờ khác ("no_plate" nằm trong một cờ tên dài hơn là lọc
+        #  ra cả đám không liên quan).
+        #
+        #  Dùng `.concat()` chứ KHÔNG `func.concat()`: `.concat()` là toán tử của
+        #  SQLAlchemy, ra `concat()` trên MySQL và `||` trên SQLite. `func.concat`
+        #  ghi thẳng tên hàm MySQL xuống câu lệnh, nên bài kiểm chạy SQLite ném
+        #  "no such function" — nghĩa là đường lọc này KHÔNG bài nào canh được.
+        wrapped = literal(WARNING_SEPARATOR).concat(SyncLog.warnings).concat(WARNING_SEPARATOR)
+        query = query.filter(
+            wrapped.like(f"%{WARNING_SEPARATOR}{warning}{WARNING_SEPARATOR}%"))
     if days:
         query = query.filter(SyncLog.created_at >= datetime.now() - timedelta(days=days))
     if keyword:
@@ -140,19 +155,29 @@ def list_sync_logs(
     legacy_id: str = Query(""),
     local_id: int = Query(0, ge=0),
     only_warning: bool = Query(False),
+    warning: str = Query("", max_length=50),
     days: int = Query(30, ge=0, le=DAYS_MAX),
     q: str = Query("", max_length=200),
     user=Depends(require(ENTITY, "read")),
     db: Session = Depends(get_db),
     pg: dict = Depends(pagination),
 ):
-    """Danh sách dòng sổ, mới nhất trước. Không trả `payload` (xem `schema.py`)."""
+    """Danh sách dòng sổ, mới nhất trước. Không trả `payload` (xem `schema.py`).
+
+    `warning` lọc theo MỘT cờ cụ thể (vd `no_employee` = chưa gắn được người),
+    khác `only_warning` là "có cờ nào cũng được". Cờ lạ thì trả 400 chứ không
+    lặng lẽ bỏ qua: lọc bị bỏ im lặng nghĩa là người dùng đọc một bảng rộng hơn
+    họ tưởng mà không có dấu hiệu nào báo.
+    """
+    warning = warning.strip()
+    if warning and warning not in warning_labels():
+        raise HTTPException(400, f"Cờ cảnh báo '{warning}' không có trong danh sách")
     profile = get_perm_profile(db, user)
     query = _apply_filters(
         db.query(SyncLog), source=source, grain=grain, job=job.strip(),
         run_id=run_id, entity=entity, direction=direction,
         status=status, legacy_id=legacy_id.strip(), local_id=local_id,
-        only_warning=only_warning, days=days, keyword=q.strip())
+        only_warning=only_warning, warning=warning, days=days, keyword=q.strip())
     query = apply_scope(query, SyncLog, ENTITY, user, profile)
     total = query.count()
     rows = (query.order_by(SyncLog.id.desc())

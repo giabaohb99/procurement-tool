@@ -254,6 +254,23 @@ class VehicleBookingResponse(VehicleBookingBase):
     # True khi phiếu đang chạy trong LUỒNG DUYỆT NHIỀU BƯỚC — frontend ẩn 3 nút
     # duyệt một bước, hiện banner "xử lý ở Việc của tôi" (chỉ set ở API chi tiết).
     approval_running: bool = False
+    # ID phiên duyệt MỚI NHẤT, kể cả phiên đã kết thúc (chỉ set ở API chi tiết).
+    # Frontend gác thẻ Lịch sử phê duyệt bằng ô này chứ không bằng `approval_running`
+    # — luồng 1 bước xong ngay, gác bằng cờ "đang chạy" là dấu vết không bao giờ hiện.
+    approval_instance_id: int | None = None
+    #  Câu một dòng «Đang ở chặng 2/3 · Duyệt của Giám đốc» — đứng CẠNH badge
+    #  trạng thái chứ không thay nó (xem `seal_request/schema.py`). Rỗng = phiếu
+    #  chưa vào bộ máy duyệt.
+    approval_summary: str = ""
+    #  LÝ DO đóng phiếu — chỉ có nghĩa với phiếu *Đã hủy* / *Bị từ chối*.
+    #
+    #  ⚠️ KHÔNG phải cột của `tab_vehicle_booking`: lý do vốn được ghi vào
+    #  NHẬT KÝ THAO TÁC (`_with_reason` ở controller, và bản đồng bộ app cũ chép
+    #  `approval.history[].comment` sang cùng khuôn câu đó). Đây là câu lý do rút
+    #  ra từ dòng nhật ký gần nhất — xem `service.close_reasons`. Rỗng = phiếu
+    #  đóng mà không ai ghi lý do, hoặc phiếu nạp từ tệp Excel hệ cũ (đợt nạp một
+    #  lần đó không có cột lý do nên không có gì để chép).
+    cancel_reason: str = ""
     created_at: str | None = None
 
     @field_validator("created_at", mode="before")

@@ -20,6 +20,7 @@ from app.core.crud import make_crud_router
 
 from .model import Dossier
 from .schema import DossierCreate, DossierResponse, DossierUpdate
+from .depends_service import check_depends
 from .service import apply_extra_fields, sync_type_label
 
 
@@ -36,6 +37,9 @@ def _before_create(db, data: DossierCreate) -> None:
     apply_extra_fields(db, values)
     data.dossier_type_name = values["dossier_type_name"]
     data.extra_fields = values["extra_fields"]
+    #  `0` = chưa có id (đang tạo) → chỉ kiểm mấy tờ được trỏ tới là có thật;
+    #  chưa tồn tại thì chưa thể nằm trong vòng nào.
+    data.depends = check_depends(db, 0, data.depends)
 
 
 def _before_update(db, obj: Dossier, values: dict) -> None:
@@ -46,6 +50,11 @@ def _before_update(db, obj: Dossier, values: dict) -> None:
     """
     sync_type_label(db, values, obj)
     apply_extra_fields(db, values, obj)
+    #  ⚠️ Chỉ kiểm khi ô này ĐƯỢC GỬI. `values` là `exclude_unset`, nên `"depends"
+    #  in values` phân biệt được «xóa hết tiên quyết» (`[]`) với «đừng đụng vào»
+    #  (không có khóa) — hai thứ mà `if values.get("depends")` gộp làm một.
+    if "depends" in values:
+        values["depends"] = check_depends(db, obj.id, values["depends"] or [])
 
 
 router = make_crud_router(

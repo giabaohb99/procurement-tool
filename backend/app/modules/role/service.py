@@ -135,6 +135,37 @@ def get_permissions(db: Session, rid: int):
     return db.query(Permission).filter(Permission.role_id == rid).all()
 
 
+def summarize_roles(db: Session, role_ids: list[int]) -> dict[int, dict]:
+    """Số người đang giữ + các ô đã tick của TỪNG vai trò, cho danh sách vai trò (bao-CR-428).
+
+    Trả `{role_id: {"user_count": n, "granted": {entity: [hành động]}}}`. Gom bằng
+    HAI truy vấn cho cả danh sách, không đếm trong vòng lặp: cột trái màn Phân
+    quyền cần cả hai thứ cho ~26 vai trò để in số người và chip phân hệ, gọi
+    riêng từng vai trò là 26 lượt `/permissions` mỗi lần mở tab.
+    Không tick ô nào thì `granted` là `{}` (chỉ giữ entity có ít nhất một hành động).
+    """
+    from app.modules.user.model import UserRole
+
+    if not role_ids:
+        return {}
+    summary = {rid: {"user_count": 0, "granted": {}} for rid in role_ids}
+    counts = (
+        db.query(UserRole.role_id, func.count(UserRole.id))
+        .filter(UserRole.role_id.in_(role_ids))
+        .group_by(UserRole.role_id)
+        .all()
+    )
+    for rid, n in counts:
+        if rid in summary:
+            summary[rid]["user_count"] = int(n)
+    perms = db.query(Permission).filter(Permission.role_id.in_(role_ids)).all()
+    for p in perms:
+        actions = [a for a in ACTIONS if getattr(p, f"can_{a}", False)]
+        if actions and p.role_id in summary:
+            summary[p.role_id]["granted"][p.entity] = actions
+    return summary
+
+
 #  ⚠️ CHỖ NÀY TỪNG KHÔNG CÓ MỘT DÒNG NHẬT KÝ NÀO (bao-CR-346).
 #  `PUT /api/roles/{rid}/permissions` viết lại TOÀN BỘ ma trận quyền của một vai
 #  trò — thao tác nguy hiểm nhất hệ thống, hơn cả xóa phiếu — mà cả phân hệ

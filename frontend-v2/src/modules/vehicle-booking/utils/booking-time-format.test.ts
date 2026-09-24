@@ -1,6 +1,34 @@
 import { describe, expect, it } from 'vitest'
 
-import { dayMonthOf, formatBookingRange, timeOf } from './booking-time-format'
+import { dayMonthOf, formatBookingRange, formatStamp, timeOf } from './booking-time-format'
+
+describe('formatStamp', () => {
+  it('turns an ISO-to-minute stamp into dd/mm/yyyy hh:mm', () => {
+    expect(formatStamp('2026-09-10T05:00')).toBe('10/09/2026 05:00')
+  })
+
+  //  `created_at` của backend dùng dấu CÁCH thay chữ T — cùng một hàm phải nuốt
+  //  được cả hai, nếu không thì mỗi màn lại nhớ một luật.
+  it('accepts the space-separated shape that created_at uses', () => {
+    expect(formatStamp('2026-09-10 05:00:31')).toBe('10/09/2026 05:00')
+  })
+
+  it('keeps just the date when there is no clock part', () => {
+    expect(formatStamp('2026-09-10')).toBe('10/09/2026')
+  })
+
+  it('returns empty for every flavour of missing value', () => {
+    expect(formatStamp('')).toBe('')
+    expect(formatStamp(null)).toBe('')
+    expect(formatStamp(undefined)).toBe('')
+  })
+
+  //  Dữ liệu bẩn thì trả NGUYÊN chuỗi chứ không ra "undefined/undefined/" —
+  //  người dùng đọc được chuỗi gốc còn đoán ra nguồn sai, đọc "NaN" thì không.
+  it('hands back the raw string when it is not a date at all', () => {
+    expect(formatStamp('hôm qua')).toBe('hôm qua')
+  })
+})
 
 describe('timeOf', () => {
   it('cuts the HH:mm out of an ISO-to-minute stamp', () => {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { DOSSIER_UI_ENABLED } from '@/shared/constants/feature-flags'
 import {
   allModules,
   customModuleRoutes,
@@ -16,6 +17,18 @@ describe('module-registry', () => {
   it('id của phân hệ là duy nhất', () => {
     const ids = allModules.map((m) => m.id)
     expect(new Set(ids).size).toBe(ids.length)
+  })
+
+  it('phân hệ Hồ sơ có mặt hay không là do đúng CỜ quyết định', () => {
+    //  Bài này bám theo cờ chứ không chốt cứng "phải ẩn", nên bật lại
+    //  `DOSSIER_UI_ENABLED` là nó tự xanh — thứ nó canh là **hai vế phải đi cùng
+    //  nhau**: có thẻ thì phải có route, và ngược lại. Lệch một vế thì hoặc là
+    //  thẻ bấm vào ra trang trắng, hoặc là phân hệ đã giấu nhưng gõ thẳng URL
+    //  vẫn vào được — cả hai đều im lặng.
+    expect(allModules.some((m) => m.id === 'dossier')).toBe(DOSSIER_UI_ENABLED)
+    expect(
+      moduleRoutes.some((route) => String(route.path ?? '').startsWith('/dossier')),
+    ).toBe(DOSSIER_UI_ENABLED)
   })
 
   it('đường dẫn gốc của phân hệ là duy nhất', () => {

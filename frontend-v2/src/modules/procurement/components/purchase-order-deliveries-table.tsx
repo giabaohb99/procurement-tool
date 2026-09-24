@@ -10,6 +10,7 @@ import { Button } from '@/shared/ui/button'
 import { DatePicker } from '@/shared/ui/date-picker'
 import { Input } from '@/shared/ui/input'
 import { NumberInput, PRICE_MAX_DECIMALS } from '@/shared/ui/number-input'
+import { SearchSelect } from '@/shared/ui/search-select'
 import {
   Select,
   SelectContent,
@@ -296,45 +297,48 @@ export function PurchaseOrderDeliveriesTable({
 
       case 'warehouse':
         return editable ? (
-          <Select
-            value={delivery.warehouse_code || undefined}
-            onValueChange={(value) => patch(index, { warehouse_code: value })}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Chọn kho" />
-            </SelectTrigger>
-            <SelectContent>
-              {(warehouses?.items ?? []).map((warehouse) => (
-                <SelectItem key={warehouse.id} value={warehouse.code}>
-                  {warehouse.code} — {warehouse.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <SearchSelect
+            searchInTrigger
+            wrap
+            value={delivery.warehouse_code || ''}
+            placeholder="Chọn kho"
+            searchPlaceholder="Tìm theo mã hoặc tên kho…"
+            options={(warehouses?.items ?? []).map((warehouse) => ({
+              value: warehouse.code,
+              label: `${warehouse.code} — ${warehouse.name}`,
+            }))}
+            onChange={(value) => {
+              //  Chọn lại đúng mục đang chọn thì thôi — Radix Select cũ không bắn sự kiện.
+              if (value === (delivery.warehouse_code || '')) return
+              patch(index, { warehouse_code: value })
+            }}
+          />
         ) : (
           delivery.warehouse_code || ''
         )
 
       case 'carrier':
         return editable ? (
-          <Select
-            value={
-              delivery.carrier_code || (delivery.carrier_name ? SELF_CARRIER : undefined)
-            }
-            onValueChange={(value) => pickCarrier(index, value)}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Chọn đơn vị VC" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={SELF_CARRIER}>NCC tự vận chuyển</SelectItem>
-              {selectableCarriers.map((carrier) => (
-                <SelectItem key={carrier.id} value={carrier.code}>
-                  {carrier.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <SearchSelect
+            searchInTrigger
+            wrap
+            value={delivery.carrier_code || (delivery.carrier_name ? SELF_CARRIER : '')}
+            placeholder="Chọn đơn vị VC"
+            searchPlaceholder="Gõ để tìm đơn vị VC…"
+            options={[
+              { value: SELF_CARRIER, label: 'NCC tự vận chuyển' },
+              ...selectableCarriers.map((carrier) => ({
+                value: carrier.code,
+                label: carrier.name,
+              })),
+            ]}
+            onChange={(value) => {
+              //  Chọn lại đúng mục đang chọn thì thôi — Radix Select cũ không bắn sự kiện.
+              if (value === (delivery.carrier_code || (delivery.carrier_name ? SELF_CARRIER : '')))
+                return
+              pickCarrier(index, value)
+            }}
+          />
         ) : (
           delivery.carrier_name || ''
         )
@@ -403,17 +407,10 @@ export function PurchaseOrderDeliveriesTable({
           <Input
             value={delivery.invoice_no || ''}
             placeholder="Số HĐ đợt này"
-            onChange={(event) => {
-              const value = event.target.value
-              patch(index, {
-                invoice_no: value,
-                // Có số hóa đơn mà chưa có ngày thì lấy hôm nay — kế toán gần
-                // như luôn nhập hai ô này cùng lúc.
-                ...(value && !delivery.invoice_date
-                  ? { invoice_date: new Date().toISOString().slice(0, 10) }
-                  : {}),
-              })
-            }}
+            // bao-CR-367 (port v2): KHÔNG tự điền ngày hôm nay khi gõ số hóa đơn.
+            // Ngày hóa đơn là ngày trên tờ hóa đơn của NCC, không phải ngày nhập;
+            // tự điền là ngày sai chảy tiếp sang YCTT (delivery_invoice_date).
+            onChange={(event) => patch(index, { invoice_no: event.target.value })}
           />
         ) : (
           delivery.invoice_no || ''

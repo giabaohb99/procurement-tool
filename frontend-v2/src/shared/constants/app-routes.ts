@@ -98,6 +98,14 @@ export const appRoutes = {
     /** Phân công phụ trách NSTM theo phân loại. */
     categoryAssignees: '/procurement/category-assignees',
     categoryAssigneeNew: '/procurement/category-assignees/new',
+    /** bao-CR-453 — danh mục loại chi phí thu mua. */
+    poCostTypes: '/procurement/po-cost-types',
+    poCostTypeDetail: (id: number | string) => `/procurement/po-cost-types/${id}`,
+    /** bao-CR-470 — Tra cứu giá hải quan (năm thẻ trên một màn). */
+    customsPrices: '/procurement/customs-prices',
+    /** bao-CR-470 — danh mục hóa chất theo văn bản (nguồn cảnh báo pháp lý). */
+    customsRegulations: '/procurement/customs-regulations',
+    customsRegulationDetail: (id: number | string) => `/procurement/customs-regulations/${id}`,
   },
   /**
    * Bộ máy phê duyệt dùng chung — không nằm trong phân hệ nào vì «Việc của tôi»
@@ -311,6 +319,18 @@ export const appRoutes = {
       `/system/logs?request_id=${encodeURIComponent(requestId)}`,
     /** Phiên đăng nhập đang mở toàn hệ — đá phiên / bắt đăng nhập lại (bao-CR-395). */
     sessions: '/system/sessions',
+    /**
+     * Sổ đồng bộ với hệ ngoài — một dòng = một bản ghi hoặc một lượt chạy đi qua
+     * `tab_sync_log` (bao-CR-449, P4 của đồng bộ app đặt xe cũ).
+     *
+     * ⚠️ Không cùng họ với `system.logs`: màn kia ghi những gì NGƯỜI TA bấm bên
+     * trong ERP, màn này ghi những gì HỆ NGOÀI đẩy sang hoặc ERP đẩy đi. Một
+     * phiếu đặt xe hỏng lúc nhận về không để lại dòng nào ở màn kia.
+     *
+     * Nhận `?status=` / `?warning=` để mở sẵn một ô lọc — chuông 08:00 đi vào
+     * bằng đường này.
+     */
+    syncLogs: '/system/sync-logs',
     /** Việc của bot Telegram Đậu Đậu (ai-CR-036) — chỉ đọc, thao tác vẫn qua Telegram. */
     agentTasks: '/system/agent-tasks',
     agentTask: (id: number | string) => `/system/agent-tasks/${id}`,

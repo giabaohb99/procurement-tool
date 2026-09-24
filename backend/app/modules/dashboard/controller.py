@@ -144,6 +144,7 @@ def overview(db: Session = Depends(get_db), user=Depends(get_current_user)):
     from app.core.scoping import apply_scope
     from app.modules.purchase_request.model import PurchaseRequest, PurchaseRequestItem
     from app.modules.purchase_order.model import PurchaseOrder, POItem, PODelivery
+    from app.modules.purchase_order.service import normalize_rate
     from app.modules.payable.model import Payable
     from app.modules.payable.service import ST_PAID
     from app.modules.contract.model import Contract
@@ -164,7 +165,7 @@ def overview(db: Session = Depends(get_db), user=Depends(get_current_user)):
     def item_amt(it):
         # bao-CR-319: các khối chi tiêu cộng gộp mọi đơn nên đọc bản ĐÃ QUY ĐỔI (`base_amount`).
         # Dòng cũ chưa có số quy đổi thì lùi về `amount` × tỷ giá — đơn VNĐ tỷ giá 1, số không đổi.
-        rate = float(getattr(it, "exchange_rate", 0) or 0) or 1.0
+        rate = normalize_rate(getattr(it, "exchange_rate", 0))
         base = float(getattr(it, "base_amount", 0) or 0)
         if base > 0:
             return base
@@ -252,7 +253,13 @@ def overview(db: Session = Depends(get_db), user=Depends(get_current_user)):
             it = items.get(d.po_item_id)
             rd = d.received_date or ""
             if it and rd[:4] == target_year and len(rd) >= 7:
-                mc[rd[5:7]] += float(d.received_qty or 0) * float(it.price or 0) * (1 + float(it.vat or 0) / 100)
+                # bao-CR-437: cột của biểu đồ này là TỔNG của mọi đơn trong tháng, nên phải
+                # quy đổi giống hệt `item_amt` ngay trên. Trước đây thiếu đúng một thừa số
+                # tỷ giá, và mọi khối chi tiêu khác của Trang chủ thì có — tháng nào có đơn
+                # ngoại tệ là cột thấp hẳn xuống mà không ai đọc ra được vì sao.
+                mc[rd[5:7]] += (float(d.received_qty or 0) * float(it.price or 0)
+                                * (1 + float(it.vat or 0) / 100)
+                                * normalize_rate(getattr(it, "exchange_rate", 0)))
         cost_12m = [{"label": f"T{int(m)}", "value": round(mc[m], 0)} for m in sorted(mc)]
 
         ST = [("draft", "Nháp"), ("submitted", "Chờ duyệt"), ("approved", "Đã duyệt"),

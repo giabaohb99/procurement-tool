@@ -17,6 +17,10 @@ from app.core.base_model import Base, AuditMixin
 class ImportModule(IntEnum):
     SURVEY = 1
     PURCHASE_ORDER = 2
+    # Tờ khai hải quan GTT02 — phân hệ Tra cứu giá hải quan (bao-CR-470). Tệp là .xls
+    # đời cũ nên KHÔNG đi đường openpyxl; tác vụ nền chuyển thẳng byte thô cho
+    # `app.modules.customs.importer`. Gác bằng khóa `customs_price`, không bằng `import`.
+    CUSTOMS_DECLARATION = 3
     # Danh mục nền (Đ-13d) — chừa 3..9 cho nghiệp vụ, 10+ cho danh mục.
     COMPANY = 10
     DEPARTMENT = 11

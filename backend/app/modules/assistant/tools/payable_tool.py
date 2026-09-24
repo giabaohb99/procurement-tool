@@ -14,7 +14,7 @@ from sqlalchemy import case, func, or_
 
 from app.core.scoping import apply_scope
 from app.modules.payable.model import Payable
-from app.modules.payable.service import (ST_PAID, get_invoice_date, invoice_date_expr,
+from app.modules.payable.service import (ST_PAID, invoice_date_expr, invoice_date_map,
                                          join_invoice_date, status_label)
 
 from .base import ToolContext, ToolSpec, denied
@@ -101,7 +101,10 @@ def _scoped_payables(ctx: ToolContext, args: dict, scoped: bool = True):
     return q, company_hit, None
 
 
-def _payable_out(db, p: Payable) -> dict:
+def _payable_out(p: Payable, invoice_date: str = "") -> dict:
+    #  `invoice_date` do người gọi gom sẵn cho cả danh sách bằng `invoice_date_map`
+    #  (bao-CR-436) — ngày này phải dò dọc chuỗi chứng từ nên hỏi theo từng khoản là
+    #  mỗi dòng thêm hai lượt vào cơ sở dữ liệu.
     return {
         "payable_id": p.id,
         "supplier_code": p.supplier_code,
@@ -110,8 +113,8 @@ def _payable_out(db, p: Payable) -> dict:
         "po_code": p.po_code,
         "invoice_no": p.invoice_no,
         # Ba mốc ngày khác nhau, đừng gộp: ngày hóa đơn (chứng từ NCC) · ngày phát sinh
-        # (nhận hàng) · hạn trả. Ngày hóa đơn dò theo chuỗi chứng từ nên phải hỏi service.
-        "invoice_date": get_invoice_date(db, p),
+        # (nhận hàng) · hạn trả.
+        "invoice_date": invoice_date,
         "incur_date": p.incur_date,
         "due_date": p.due_date,
         "total": float(p.total or 0),
@@ -246,12 +249,13 @@ def _run_lookup(ctx: ToolContext, args: dict) -> dict:
     limit = args.get("limit")
     limit = max(1, min(int(limit), MAX_ROWS)) if isinstance(limit, (int, float)) else 20
     rows = q.order_by(Payable.due_date.asc(), Payable.id.desc()).limit(limit).all()
+    inv_dates = invoice_date_map(ctx.db, rows)
 
     out = {
         "total": int(total[0]),
         "summary": {"total": float(total[1]), "paid": float(total[2]),
                     "remaining": float(total[3]), "overdue": float(total[4])},
-        "items": [_payable_out(ctx.db, p) for p in rows],
+        "items": [_payable_out(p, inv_dates.get(p.id, "")) for p in rows],
     }
     if total[0] > limit:
         out["note"] = (f"Chỉ liệt kê {limit}/{total[0]} khoản tới hạn sớm nhất — summary vẫn "

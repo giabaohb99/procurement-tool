@@ -15,7 +15,12 @@ import { RequiredMark } from '@/shared/ui/required-mark'
 import { Textarea } from '@/shared/ui/textarea'
 
 interface SealReasonDialogProps {
+  /** Câu việc, NGẮN và cố định: "Từ chối yêu cầu đóng dấu". */
   title: string
+  /** Phiếu đang bị thao tác — mã + trích yếu/mục đích. Dựng riêng, không nhét vào tiêu đề. */
+  subject: string
+  /** Mã phiếu, đứng trước `subject` cho dễ đối chiếu. Rỗng thì bỏ. */
+  code?: string
   description: string
   /** Nhãn ô nhập lý do. */
   label: string
@@ -37,6 +42,8 @@ interface SealReasonDialogProps {
  */
 export function SealReasonDialog({
   title,
+  subject,
+  code,
   description,
   label,
   placeholder,
@@ -78,15 +85,37 @@ export function SealReasonDialog({
         onPointerDownOutside={(e) => e.preventDefault()}
         className="sm:max-w-md"
       >
-        <DialogHeader className="flex-row items-start justify-between text-left">
-          <div>
+        {/*  ⚠️ Tiêu đề là CÂU VIỆC ngắn, tên phiếu xuống khối riêng bên dưới (đổi
+            22/09/2026). Bản trước nhét mục đích vào giữa hai dấu nháy ngay trong
+            tiêu đề: mục đích của phiếu đóng dấu thường là cả một câu ("Đóng dấu
+            Báo cáo tài chính và báo cáo kiểm toán nộp Cục Thuế và Sở Kế hoạch Đầu
+            tư"), nên tiêu đề ăn ba dòng chữ đậm, đẩy ô nhập lý do xuống gần mép
+            dưới, và việc PHẢI LÀM — "Từ chối" — chìm ở đầu dòng một. */}
+        <DialogHeader className="flex-row items-start justify-between gap-2 space-y-0 text-left">
+          <div className="min-w-0">
             <DialogTitle>{title}</DialogTitle>
             <DialogDescription>{description}</DialogDescription>
           </div>
-          <Button type="button" variant="ghost" size="icon" onClick={attemptClose} aria-label="Đóng">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="-mt-1 shrink-0"
+            onClick={attemptClose}
+            aria-label="Đóng"
+          >
             <X className="size-4" />
           </Button>
         </DialogHeader>
+
+        {/*  Khối nhận diện phiếu: cắt còn 2 dòng — người bấm Từ chối vừa đọc phiếu
+            xong, đây chỉ là chỗ xác nhận "đúng phiếu này", không phải chỗ đọc lại. */}
+        <div className="rounded-md border bg-muted/40 px-3 py-2">
+          {code && <p className="font-mono text-xs font-semibold text-primary">{code}</p>}
+          <p className="line-clamp-2 text-sm text-foreground" title={subject}>
+            {subject}
+          </p>
+        </div>
 
         <div className="flex flex-col gap-1.5 py-2">
           <Label htmlFor="seal-reason">

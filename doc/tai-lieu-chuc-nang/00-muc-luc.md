@@ -83,6 +83,7 @@ Mỗi dòng ghi trạng thái tài liệu và link tới file `.md` tương ứn
 | 31 | **Đặt phòng họp** (lịch phòng · phiếu đặt · danh mục phòng) | `/hr/room-calendar` | [18-dat-phong-hop.md](18-dat-phong-hop.md) — đã có tài liệu |
 | 32 | **Đặt xe nội bộ** (yêu cầu đặt xe 2 loại · điều phối xe/tài xế · luồng duyệt theo vai trò · danh mục Xe & Tài xế nội bộ/thuê ngoài) | `/vehicle-booking` | [16-dat-xe.md](16-dat-xe.md) — đã có tài liệu |
 | 33 | **Duyệt dấu** (yêu cầu đóng dấu · upload chứng từ chữ ký sống · TBP duyệt · Văn thư đóng dấu/hoàn thành · thông báo NSYC/Văn thư/Giám đốc · danh mục Loại con dấu) | `/approval-seal` | [17-duyet-dau.md](17-duyet-dau.md) — **kế hoạch** (backend đang là stub), xem `doc/duyet-dau/` |
+| 34 | **HDSD lập bộ tài khoản phòng tự mua hàng** (thao tác từng bước: hồ sơ nhân sự · tài khoản đăng nhập · gán vai trò · ô Loại trừ phòng ban · Phân công phụ trách theo phòng; hai bộ mẫu Nhà máy / Thu mua trừ nhà máy) | Nhân sự › Nhân sự · Quản trị › Phân quyền tài khoản · Thu mua › Cấu hình › Phân công phụ trách | [20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md](20-hdsd-lap-bo-tai-khoan-phong-tu-mua-hang.md) — đã có tài liệu (bao-CR-414) |
 
 ## Nhóm: Ứng dụng tách riêng (tên miền riêng)
 

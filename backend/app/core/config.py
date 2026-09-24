@@ -90,6 +90,13 @@ class Settings(BaseSettings):
     # `pr_dispatch_enabled`, lưu DB, đổi có hiệu lực ngay, không cần deploy).
     PR_DISPATCH_ENABLED: bool = True
 
+    # --- Cụm PHƯƠNG ÁN (báo giá) trên YCMH — bao-CR-310, công tắc bao-CR-468 ---
+    # Gồm hai thứ đi liền nhau: màn XỬ LÝ PHƯƠNG ÁN của NSTM và thẻ CHỌN PHƯƠNG ÁN trên chi
+    # tiết YCMH. Mặc định TẮT — đây là luồng làm việc mới, hệ đang chạy phải được bật có chủ
+    # đích chứ không phải tự có thêm một quy trình sau một lần deploy. Công tắc thật nằm ở màn
+    # "Cấu hình hệ thống" (key `pr_options_enabled`, lưu DB, đổi có hiệu lực ngay).
+    PR_OPTIONS_ENABLED: bool = False
+
     # --- Cảnh báo mở/tải tệp đính kèm văn bản (xem `document/file_access_log.py`) ---
     #  Bao nhiêu lượt mở/tải của CÙNG một người trong cửa sổ thì coi là bất
     #  thường. **0 = tắt hẳn phần cảnh báo**, vẫn ghi nhật ký như thường.

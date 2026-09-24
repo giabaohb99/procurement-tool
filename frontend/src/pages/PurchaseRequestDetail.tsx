@@ -438,8 +438,16 @@ export default function PurchaseRequestDetail() {
   const handleRequesterChange = (empName: string, isAutoFill = false) => {
     const emp = employees.find(e => e.full_name === empName)
     if (!emp) { setPr((s: any) => ({ ...s, requester: empName, requester_id: 0 })); return }
+    // bao-CR-465: TÊN PHÒNG phải có đường lùi về chính hồ sơ nhân sự. `departments` và
+    // `employees` được nạp SONG SONG (xem useEffect nạp danh mục), mà khối tự điền chỉ chờ
+    // cờ `empLoaded` và KHÔNG khai `departments` trong mảng phụ thuộc — nên khi danh sách
+    // nhân sự về trước, `find` ở đây trả `undefined` và ô Phòng ban ra rỗng VĨNH VIỄN:
+    // danh sách phòng ban về sau cũng không kích hoạt tính lại, mà ô đó lại `disabled` nên
+    // người lập không sửa tay được. Phiếu rỗng phòng ban thì `department_id = 0`, không
+    // trưởng phòng nào thấy nó trong phạm vi `dept` → không ai duyệt được, không ai nhận thư.
+    // Trên prod đã dính 3 phiếu kiểu này (132 · 135 · 164), cùng tài khoản cách nhau 89 giây.
     const dept = departments.find(d => d.id === emp.department_id)
-    const deptName = dept ? dept.name : ''
+    const deptName = dept ? dept.name : (emp.department_name || '')
     const keepDept = isAutoFill && pr.department ? pr.department : ''
     setPr((s: any) => ({
       ...s,

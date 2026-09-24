@@ -406,11 +406,39 @@ def _now() -> str:
 
 # --- Người duyệt (quyền `approve`) ---
 
+def _block_self_approval(db: Session, booking: VehicleBooking, user) -> None:
+    """I08 cho ĐƯỜNG DUYỆT MỘT BƯỚC — người lập phiếu không tự ký phiếu của mình.
+
+    Bộ máy nhiều bước có luật này từ đầu (`instance_service._exclude_submitter`),
+    còn đường một bước thì chỉ hỏi «phiếu có đang Chờ duyệt không» — mà đây mới
+    là đường ĐANG CHẠY THẬT, vì cờ bộ máy mặc định tắt. Ai kiêm một vai có
+    `vehicle_booking.approve` tự duyệt phiếu xe của chính mình, nhật ký đọc xuôi
+    tới mức không ai soi (đo được 21/09/2026).
+
+    ⚠️ **Miễn cho phạm vi `all`** (đại ca chốt 21/09/2026): điều phối viên và
+    quản lý điều phối là người chốt xe cho cả công ty, phiếu của chính họ cũng
+    chỉ có họ duyệt — chặn cứng là khóa luôn việc thường ngày của đúng hai vai
+    trò vận hành phân hệ này. Người dùng thường (phạm vi `own`/`dept`) thì không.
+    """
+    from app.core.auth import get_perm_profile
+    from app.core.scoping import has_global_scope
+
+    uid = getattr(user, "id", 0)
+    if uid not in (booking.created_by, booking.requester_id):
+        return
+    if has_global_scope(get_perm_profile(db, user), "vehicle_booking", "approve"):
+        return
+    raise HTTPException(
+        403, "Bạn là người lập phiếu này nên không tự duyệt được — "
+             "chuyển cho người duyệt của bộ phận.")
+
+
 def approve_booking(db: Session, booking: VehicleBooking, user,
                     background_tasks=None) -> VehicleBooking:
     """Người duyệt CHẤP NHẬN phiếu Chờ duyệt → Đã duyệt (chờ điều phối)."""
     if booking.status != BK_PENDING:
         raise HTTPException(400, "Chỉ duyệt được phiếu đang Chờ duyệt")
+    _block_self_approval(db, booking, user)
     booking.status = BK_APPROVED
     booking.approved_by = getattr(user, "id", 0)   # NGƯỜI bấm Duyệt (có thể khác người được chọn)
     booking.approved_at = datetime.now().isoformat(timespec="seconds")
@@ -632,10 +660,103 @@ def serialize_booking(db: Session, obj: VehicleBooking, viewer=None) -> dict:
     #  chưa có thì lùi về người được CHỌN duyệt (first_approver_id).
     out.approver_name = _emp_name_of_user(db, obj.approved_by or obj.first_approver_id)
     out.dispatched_by_name = _emp_name_of_user(db, obj.dispatched_by or 0)
-    #  Có phiên duyệt nhiều bước đang chạy? → frontend ẩn nút duyệt một bước.
-    from .approval_bridge import running_instance
-    out.approval_running = running_instance(db, obj.id) is not None
+    #  Phiên duyệt nhiều bước gần nhất. Còn mở → frontend ẩn nút duyệt một bước;
+    #  đã đóng → frontend vẫn cần ID để vẽ thẻ Lịch sử phê duyệt. Một câu truy vấn
+    #  trả cả hai: bộ máy chỉ mở phiên mới khi không còn phiên nào mở, nên phiên
+    #  còn mở (nếu có) luôn là phiên mới nhất.
+    from app.modules.approval.instance_model import INSTANCE_OPEN_STATUSES
+
+    from .approval_bridge import latest_instance
+    instance = latest_instance(db, obj.id)
+    out.approval_instance_id = instance.id if instance else None
+    out.approval_running = instance is not None and instance.status in INSTANCE_OPEN_STATUSES
+    out.approval_summary = _approval_summaries(db, [obj.id]).get(obj.id, "")
+    out.cancel_reason = close_reasons(db, [obj]).get(obj.id, "")
     return out.model_dump()
+
+
+#  Dấu ngăn giữa TÊN HÀNH ĐỘNG và CÂU LÝ DO trong một dòng nhật ký, vd
+#  "Từ chối yêu cầu — Lý do: Khách hoãn lịch". Khai ở đây vì cả hai đầu dùng nó:
+#  `controller._with_reason` ghép vào, `close_reasons` tách ra. Hai bản chép là
+#  sửa một bên xong bên kia lặng lẽ không tách được nữa.
+REASON_SEP = " — Lý do: "
+
+#  Mã hành động của dòng nhật ký ĐÓNG phiếu. `withdraw` là "Rút yêu cầu" —
+#  người nộp tự hủy bên app cũ; `cancel` là từ chối / quản trị hủy.
+_CLOSE_LOG_ACTIONS = ("cancel", "withdraw")
+
+#  Trạng thái mà câu lý do mới có nghĩa. Phiếu *Trả về chỉnh sửa* cố ý KHÔNG nằm
+#  đây: dòng nhật ký của nó mang mã `update`, trùng mã với mọi lần sửa phiếu
+#  bình thường, nên lấy dòng mới nhất là vớ phải lần sửa gần nhất chứ không phải
+#  câu trả phiếu.
+_REASON_STATUSES = (BK_CANCELLED, BK_REJECTED)
+
+
+def close_reasons(db: Session, objs: list[VehicleBooking]) -> dict[int, str]:
+    """Câu LÝ DO đóng phiếu của từng phiếu đã hủy / bị từ chối. Khóa = id phiếu.
+
+    ⚠️ Lý do KHÔNG có cột riêng trên `tab_vehicle_booking` — nó nằm trong nhật ký
+    thao tác, do `controller._with_reason` ghép vào câu. Bản đồng bộ app cũ chép
+    `approval.history[].comment` sang đúng khuôn câu đó
+    (`scripts/legacy_sync/import_audit_log.py`), nên một chỗ đọc là đủ cho cả
+    phiếu ERP lẫn phiếu app cũ.
+
+    MỘT truy vấn cho cả lô — hàm này bị gọi từ `serialize_bookings`, tức từ màn
+    lịch có thể có vài trăm phiếu một lượt.
+    """
+    ids = [o.id for o in objs if o.status in _REASON_STATUSES]
+    if not ids:
+        return {}
+
+    from app.modules.audit.model import AuditLog
+
+    rows = (
+        db.query(AuditLog.entity_id, AuditLog.message)
+        .filter(
+            AuditLog.entity == "vehicle_booking",
+            AuditLog.entity_id.in_(ids),
+            AuditLog.action.in_(_CLOSE_LOG_ACTIONS),
+        )
+        .order_by(AuditLog.id)
+        .all()
+    )
+    #  Duyệt theo id tăng dần rồi GHI ĐÈ: phiếu có nhiều dòng đóng (bị từ chối,
+    #  mở lại, rồi hủy) thì dòng cuối cùng là câu đang đúng.
+    out: dict[int, str] = {}
+    for entity_id, message in rows:
+        text = _reason_in_log(message)
+        if text:
+            out[entity_id] = text
+    return out
+
+
+#  Câu MẶC ĐỊNH mà bộ máy duyệt tự điền khi người ký không gõ lý do
+#  (`approval_bridge._reason`). Đưa nguyên câu đó lên màn hình thành "Lý do: Bị
+#  từ chối" là nói lại đúng cái nhãn trạng thái bên trên nó — thà để trống để
+#  giao diện nói thẳng "Không ghi lý do".
+_PLACEHOLDER_REASONS = {"bị từ chối", "bị trả về", "người nộp tự rút"}
+
+
+def _reason_in_log(message: str) -> str:
+    """Rút CÂU LÝ DO ra khỏi một dòng nhật ký đóng phiếu.
+
+    ⚠️ Hai đường ghi nhật ký cho ra HAI khuôn câu khác nhau, phải đọc được cả hai:
+    đường controller (và bản đồng bộ app cũ) ghép "Từ chối yêu cầu — Lý do: …",
+    còn đường bộ máy duyệt nhiều bước (`approval_bridge._write_log`) ghi THẲNG
+    câu lý do, không có tiền tố. Chỉ tách theo dấu ngăn là mất sạch lý do của
+    phiếu đi qua luồng nhiều bước.
+    """
+    _, sep, tail = (message or "").partition(REASON_SEP)
+    text = (tail if sep else (message or "")).strip()
+    return "" if text.lower() in _PLACEHOLDER_REASONS else text
+
+
+def _approval_summaries(db: Session, booking_ids: list[int]) -> dict[int, str]:
+    """Câu tóm tắt luồng duyệt của từng phiếu. Khóa = id phiếu, thiếu = chưa có luồng."""
+    from app.modules.approval import steps_service
+
+    from .approval_bridge import ENTITY
+    return steps_service.summaries_of_entities(db, ENTITY, booking_ids)
 
 
 def serialize_bookings(db: Session, objs: list[VehicleBooking]) -> list[dict]:
@@ -650,10 +771,14 @@ def serialize_bookings(db: Session, objs: list[VehicleBooking]) -> list[dict]:
         {d.id: d for d in db.query(Driver).filter(Driver.id.in_(drv_ids)).all()}
         if drv_ids else {}
     )
+    summaries = _approval_summaries(db, [o.id for o in objs])
+    reasons = close_reasons(db, objs)
     result = []
     for o in objs:
         out = VehicleBookingResponse.model_validate(o)
         out.status_label = _display_status_label(o)  # nhãn có tính bước tài xế
+        out.approval_summary = summaries.get(o.id, "")
+        out.cancel_reason = reasons.get(o.id, "")
         out.assigned_vehicle_label = _vehicle_label(veh_map.get(o.assigned_vehicle_id))
         driver = drv_map.get(o.assigned_driver_id)
         if driver:

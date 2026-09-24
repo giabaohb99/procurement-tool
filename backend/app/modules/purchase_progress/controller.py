@@ -22,7 +22,7 @@ from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user, get_perm_profile, user_has_permission
-from app.core.base_controller import pagination
+from app.core.base_controller import pagination, read_multi_param
 from app.core.database import get_db
 from app.core.filter_operators import apply_operator_filters_map
 from app.core.ref_filter import apply_ref_filters
@@ -88,6 +88,9 @@ def _sort_map():
         "expected_date": POItem.expected_date,
         "qty_request": POItem.qty_request, "qty_order": POItem.qty_order,
         "price": POItem.price, "vat": POItem.vat, "progress_status": POItem.progress_status,
+        # bao-CR-439: hai cột căn cứ quy đổi nay có mặt trên bảng, nên phải sắp xếp và lọc điều
+        # kiện được như mọi cột khác — "lọc ra dòng khác VND" là câu hỏi đầu tiên của kế toán.
+        "currency": POItem.currency, "exchange_rate": POItem.exchange_rate,
         # bao-CR-409 (ticket prod 51): ngày giao chứng từ cho kế toán — dữ liệu vốn đã trả về
         # trong hàng nhưng không nằm ở đây nên không sắp xếp cũng không lọc điều kiện được
         "document_delivery_date": POItem.document_delivery_date,
@@ -163,9 +166,13 @@ def _build_query(request: Request, db: Session, user, prof: dict, po_scope: bool
          .outerjoin(PODelivery, PODelivery.po_item_id == POItem.id))
 
     # ----- Filter -----
-    company_id = (request.query_params.get("company_id") or "").strip()
-    if company_id.isdigit():
-        q = q.filter(PurchaseOrder.company_id == int(company_id))
+    # bao-CR-423: ô Công ty và ô Trạng thái tiến độ CHỌN ĐƯỢC NHIỀU giá trị. Nhận cả
+    # `company_id=1,2` lẫn `company_id=1&company_id=2`; một giá trị thì lọc `==` như cũ.
+    company_ids = [int(v) for v in read_multi_param(request, "company_id") if v.isdigit()]
+    if len(company_ids) == 1:
+        q = q.filter(PurchaseOrder.company_id == company_ids[0])
+    elif company_ids:
+        q = q.filter(PurchaseOrder.company_id.in_(company_ids))
     # CR-088: ô Bộ phận lọc theo ID (`department_id=`), kèm nhánh lùi cho ĐMH chưa điền lùi được id.
     # Vẫn nhận `department=<tên>` cho giao diện cũ và các đường dẫn đã lưu sẵn.
     q = apply_ref_filters(q, PurchaseOrder, request, db)
@@ -175,9 +182,11 @@ def _build_query(request: Request, db: Session, user, prof: dict, po_scope: bool
     month = (request.query_params.get("month") or "").strip()   # YYYY-MM theo ngày đặt hàng
     if month:
         q = q.filter(PurchaseOrder.order_date.like(f"{month}%"))
-    status = (request.query_params.get("status") or "").strip()  # theo tiến độ dòng
-    if status:
-        q = q.filter(POItem.progress_status == status)
+    statuses = read_multi_param(request, "status")  # theo tiến độ dòng, chọn được nhiều
+    if len(statuses) == 1:
+        q = q.filter(POItem.progress_status == statuses[0])
+    elif statuses:
+        q = q.filter(POItem.progress_status.in_(statuses))
     # Khoảng NGÀY ĐẶT HÀNG (chuỗi YYYY-MM-DD so sánh vẫn đúng thứ tự)
     od_from = (request.query_params.get("order_date_from") or "").strip()
     od_to = (request.query_params.get("order_date_to") or "").strip()
@@ -297,5 +306,5 @@ def export_xlsx(request: Request, cols: str = "", db: Session = Depends(get_db),
         r["stt"] = i
         r["company"] = company_name.get(po.company_id, "")
         rows.append(ex.translate_codes(r))   # B-06: cột trạng thái lưu MÃ, file xuất hiện chữ
-    columns = pick_columns(ex.columns_for(show_supplier), cols)
+    columns = pick_columns(ex.columns_for(show_supplier), cols, ex.ALWAYS_COLS)
     return xlsx_response(ex.FILE_NAME, columns, rows, ex.SHEET_TITLE)

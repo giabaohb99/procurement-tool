@@ -4,7 +4,10 @@ import {
   ClipboardCheck,
   ClipboardList,
   FileText,
+  FlaskConical,
+  Landmark,
   LayoutDashboard,
+  PackagePlus,
   ReceiptText,
   ShoppingCart,
   TextSearch,
@@ -98,6 +101,14 @@ export const procurementModule: ErpModule = {
       entity: 'purchase_request',
       group: 'Mua hàng',
     },
+    // bao-CR-470 — Tra cứu giá hải quan, khóa riêng `customs_price`
+    {
+      label: 'Tra cứu giá hải quan',
+      path: appRoutes.procurement.customsPrices,
+      icon: Landmark,
+      entity: 'customs_price',
+      group: 'Mua hàng',
+    },
     {
       label: 'Phiếu khảo sát',
       path: appRoutes.procurement.surveys,
@@ -138,6 +149,25 @@ export const procurementModule: ErpModule = {
       path: appRoutes.procurement.categoryAssignees,
       icon: UserCheck,
       entity: 'category_assignee',
+      manage: true,
+      group: 'Cấu hình',
+    },
+    // bao-CR-453 — danh mục loại chi phí thu mua
+    {
+      label: 'Loại chi phí thu mua',
+      path: appRoutes.procurement.poCostTypes,
+      icon: PackagePlus,
+      entity: 'purchase_cost_type',
+      manage: true,
+      group: 'Cấu hình',
+    },
+    // bao-CR-470 — danh mục hóa chất theo văn bản (nguồn cảnh báo pháp lý của
+    // màn Tra cứu giá hải quan). Màn đó cũng có nút «Danh mục hóa chất» dẫn sang.
+    {
+      label: 'Danh mục hóa chất',
+      path: appRoutes.procurement.customsRegulations,
+      icon: FlaskConical,
+      entity: 'customs_regulation',
       manage: true,
       group: 'Cấu hình',
     },
@@ -290,6 +320,40 @@ export const procurementModule: ErpModule = {
       path: appRoutes.procurement.categoryAssigneeNew,
       lazy: async () => ({
         Component: (await import('./pages/category-assignee-form-page')).CategoryAssigneeFormPage,
+      }),
+    },
+    // bao-CR-453 — danh mục loại chi phí thu mua
+    {
+      path: appRoutes.procurement.poCostTypes,
+      lazy: async () => ({
+        Component: (await import('./pages/po-cost-type-list-page')).PoCostTypeListPage,
+      }),
+    },
+    {
+      path: appRoutes.procurement.poCostTypeDetail(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/po-cost-type-detail-page')).PoCostTypeDetailPage,
+      }),
+    },
+    // bao-CR-470 — Tra cứu giá hải quan + danh mục hóa chất theo văn bản
+    {
+      path: appRoutes.procurement.customsPrices,
+      lazy: async () => ({
+        Component: (await import('./pages/customs-price-page')).CustomsPricePage,
+      }),
+    },
+    {
+      path: appRoutes.procurement.customsRegulations,
+      lazy: async () => ({
+        Component: (await import('./pages/customs-regulation-list-page'))
+          .CustomsRegulationListPage,
+      }),
+    },
+    {
+      path: appRoutes.procurement.customsRegulationDetail(':id'),
+      lazy: async () => ({
+        Component: (await import('./pages/customs-regulation-detail-page'))
+          .CustomsRegulationDetailPage,
       }),
     },
   ],

@@ -81,6 +81,12 @@ export function UserAccountTable({ roles }: { roles: Role[] }) {
     (id: number) => roles.find((role) => role.id === id)?.name ?? String(id),
     [roles],
   )
+  //  Rê chuột lên huy hiệu là đọc được vai trò đó lo việc gì, khỏi sang tab
+  //  Vai trò tra (bao-CR-428). Chưa có mô tả thì để trống, không in tên lặp lại.
+  const roleDescription = useCallback(
+    (id: number) => roles.find((role) => role.id === id)?.description || undefined,
+    [roles],
+  )
 
   const columns = useMemo<DataTableColumn<UserAccount>[]>(
     () => [
@@ -155,7 +161,7 @@ export function UserAccountTable({ roles }: { roles: Role[] }) {
           ) : (
             <div className="flex flex-wrap gap-1">
               {account.role_ids.slice(0, 3).map((id) => (
-                <Badge key={id} variant="outline">
+                <Badge key={id} variant="outline" title={roleDescription(id)}>
                   {roleName(id)}
                 </Badge>
               ))}
@@ -232,7 +238,7 @@ export function UserAccountTable({ roles }: { roles: Role[] }) {
         ),
       },
     ],
-    [roleName, navigate, setActive, deleteAccount],
+    [roleName, roleDescription, navigate, setActive, deleteAccount],
   )
 
   return (

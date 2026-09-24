@@ -54,3 +54,39 @@ EXPIRY_STATE_LABELS = {
 #  hơn thì không kịp làm gì, mà sớm hơn nhiều thì cả danh sách vàng khè quanh
 #  năm và không ai nhìn nữa.
 EXPIRY_WARN_DAYS = 30
+
+# --------------------------------------------------------------------------
+# TIẾN ĐỘ hồ sơ THEO TỪNG CHỨNG TỪ — `tab_dossier_progress`
+# --------------------------------------------------------------------------
+#  ⚠️ **Đừng lẫn với `DOSSIER_*` ở trên.** Hai cột nói hai chuyện khác hẳn:
+#    · `tab_dossier.status`  = tờ giấy ĐÃ CÓ trong kho công ty chưa (nháp/đang
+#      lưu/lưu trữ) — một giá trị cho cả công ty.
+#    · `tab_dossier_progress.status` = việc làm tờ giấy đó CHO MỘT PHIẾU cụ thể
+#      tới đâu rồi — mỗi phiếu một giá trị.
+#  Tờ «Giấy đăng ký kinh doanh của NCC» đang lưu trong kho (`DOSSIER_ACTIVE`)
+#  vẫn có thể «Chưa bắt đầu» ở một phiếu mới lập, vì chưa ai đi lấy bản sao kèm
+#  vào phiếu đó. Gộp hai thang là mất đúng thông tin người dùng cần.
+#
+#  Bốn mức chép của `survey_request/report_constants.py` để thẻ «Hồ sơ cần hoàn
+#  thành» nói cùng một ngôn ngữ với khối «Báo cáo thực hiện». Cố ý KHÔNG import
+#  từ đó: phân hệ Hồ sơ không được phụ thuộc vào phân hệ Thu mua — thẻ này chạy
+#  ở cả bốn loại chứng từ, trong đó có hai loại không thuộc Thu mua.
+DP_IDLE = 0     # Chưa bắt đầu
+DP_DOING = 1    # Đang làm
+DP_REVIEW = 2   # Chờ duyệt
+DP_DONE = 3     # Hoàn thành
+
+DP_STATUS_VALUES = (DP_IDLE, DP_DOING, DP_REVIEW, DP_DONE)
+
+DP_STATUS_LABELS = {
+    DP_IDLE: "Chưa bắt đầu",
+    DP_DOING: "Đang làm",
+    DP_REVIEW: "Chờ duyệt",
+    DP_DONE: "Hoàn thành",
+}
+
+#  Trần số hồ sơ tiên quyết của MỘT tờ hồ sơ. Cùng con số với khối «Báo cáo thực
+#  hiện» (`report_constants.MAX_DEPENDS`) — không phải vì hai bên dùng chung mã,
+#  mà vì cùng một cỡ dữ liệu: một tờ giấy chờ quá ba bốn tờ khác đã là dấu hiệu
+#  khai sai, 30 chỉ để chặn ca dán nhầm cả danh sách.
+MAX_DOSSIER_DEPENDS = 30

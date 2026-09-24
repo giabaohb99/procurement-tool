@@ -332,6 +332,10 @@ def _out(db: Session, pr, user=None) -> dict:
     # CR-034: nút duyệt lần 2 (điều phối) — quyền tính ở server (phạm vi grant không có ở map
     # quyền phía FE). Công tắc tắt thì không ai thấy nút, vì phiếu không dừng ở 'approved' nữa.
     d["dispatch_enabled"] = service.dispatch_enabled()
+    # bao-CR-468: công tắc cụm phương án. Đi kèm phiếu chứ không phải một đường API riêng —
+    # người dùng thường KHÔNG có quyền `setting.read`, mà hai chỗ phải ẩn (nút Xử lý phương án,
+    # thẻ Chọn phương án) đều đã cầm sẵn dữ liệu phiếu này.
+    d["options_enabled"] = option_service.options_enabled()
     d["can_dispatch"] = bool(user is not None and pr.status == "approved" and d["dispatch_enabled"]
                              and _can_dispatch(get_perm_profile(db, user)))
     # bao-CR-414 GĐ5: nút "Chuyển phòng xử lý" / "Trả về phòng lập" — chỉ quản lý thu mua của
@@ -579,9 +583,14 @@ def _see_all_items(profile: dict, pr, user) -> bool:
 
 
 @router.get("/meta/dept-head")
-def dept_head(department: str = "", db: Session = Depends(get_db), user=Depends(require("purchase_request", "read"))):
-    """Trưởng bộ phận của 1 phòng ban — cho người yêu cầu (không được xem DS nhân sự) tự điền TBP."""
-    return success({"head_of_dept": service.find_dept_head(db, department)})
+def dept_head(department: str = "", department_id: int = 0, db: Session = Depends(get_db),
+              user=Depends(require("purchase_request", "read"))):
+    """Trưởng bộ phận của 1 phòng ban — cho người yêu cầu (không được xem DS nhân sự) tự điền TBP.
+
+    bao-CR-474: trả kèm `head_of_dept_id` để màn tạo mới v2 điền sẵn cả NGƯỜI lẫn tên (ô chọn
+    cần id để hiện đúng người), và nhận `department_id` (CR-086: neo bằng id, tên chỉ để lùi)."""
+    return success({"head_of_dept": service.find_dept_head(db, department, department_id),
+                    "head_of_dept_id": service.find_dept_head_id(db, department, department_id)})
 
 
 @router.get("/meta/dept-head-candidates")
@@ -882,6 +891,11 @@ def submit_pr(pid: int, background_tasks: BackgroundTasks, db: Session = Depends
         raise HTTPException(403, "Không có quyền gửi duyệt phiếu này")
     if pr.status not in ("draft", "rejected"):
         raise HTTPException(400, "Chỉ gửi duyệt được phiếu ở trạng thái Nháp hoặc Bị trả lại")
+    # bao-CR-466: gửi duyệt phải có Phòng ban + Trưởng bộ phận. Hàm này tự CHỮA trước
+    # (ô rỗng thì tra lại từ hồ sơ nhân sự / danh mục phòng ban — tài khoản có thể vừa
+    # được gắn phòng sau khi phiếu ra đời) rồi mới CHẶN. Đặt trước `set_status` để phiếu
+    # thiếu dữ liệu không bao giờ chạm được trạng thái `submitted`.
+    service.ensure_submit_ready(db, pr, user.id)
     # CR-082: chốt cờ Đơn gấp trước khi gửi duyệt — phiếu cũ (tạo trước luật này) hoặc phiếu
     # sửa dòng bằng đường khác vẫn được đánh dấu đúng, và thông báo duyệt đi kèm mức ưu tiên thật.
     service.apply_auto_urgent(db, pr, user.id)
@@ -897,6 +911,9 @@ def submit_pr(pid: int, background_tasks: BackgroundTasks, db: Session = Depends
         link=f"/purchase-requests/{pr.id}",
         department=pr.department or "",
         department_id=pr.department_id or 0,
+        # bao-CR-474: người được chọn ở ô TBP cũng nhận chuông báo duyệt (ngoài trưởng phòng
+        # gán cứng + vai trò dept_head của phòng). Người trong danh sách chọn đều duyệt được.
+        extra_employee_ids=[pr.head_of_dept_id] if pr.head_of_dept_id else None,
     )
     return success(_out(db, pr, user), "Đã gửi duyệt")
 

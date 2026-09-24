@@ -12,7 +12,7 @@ import time
 
 import requests
 
-from app.core.config import settings
+from app.core import app_settings
 
 from .base import (
     ChatMessage,
@@ -23,6 +23,9 @@ from .base import (
     ToolExecutor,
 )
 
+NO_KEY_MSG = (
+    "Chưa cấu hình Gemini API Key — vào Quản trị > Cấu hình hệ thống, thẻ Trợ lý AI để dán key."
+)
 BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 TIMEOUT = 60
 #  Gemini trả 429 kèm `retryDelay` (vd "7s"). Thử lại ĐÚNG MỘT lần và chỉ khi Google bảo
@@ -78,14 +81,19 @@ def _accepts_budget_zero(model: str) -> bool:
 
 class GeminiProvider(Provider):
     name = "gemini"
-    default_model = settings.AI_GEMINI_MODEL or "gemini-flash-latest"
     supports_tools = True
+
+    @property
+    def default_model(self) -> str:
+        #  Property chứ không phải thuộc tính lớp — xem lời giải ở `claude.py`.
+        return app_settings.get("ai_gemini_model") or "gemini-flash-latest"
 
     def _api_key(self) -> str:
         """Khóa dùng cho lượt gọi này. Tách thành hàm để lớp con đổi được nguồn khóa —
         Agent Hub chạy khóa RIÊNG (`AGENT_GEMINI_API_KEY`) chứ không tiêu chung hạn mức
-        với Trợ lý AI, xem `agent_hub/manager.py`."""
-        return settings.GEMINI_API_KEY
+        với Trợ lý AI, xem `agent_hub/manager.py`. Trợ lý AI đọc khóa từ cấu hình hệ thống
+        (`tab_setting`, bao-CR-428/429)."""
+        return app_settings.get("gemini_api_key")
 
     def is_configured(self) -> bool:
         return bool(self._api_key())
@@ -190,7 +198,7 @@ class GeminiProvider(Provider):
         # cache_system: Gemini 2.5+ tự cache ngầm phần prefix lặp lại (gồm systemInstruction),
         # không cần đánh dấu như Claude, nên ở đây bỏ qua cờ này.
         if not self.is_configured():
-            raise ProviderError("Chưa cấu hình GEMINI_API_KEY")
+            raise ProviderError(NO_KEY_MSG)
         used_model = model or self.default_model
         payload: dict = {
             "contents": self._contents(messages),
@@ -221,7 +229,7 @@ class GeminiProvider(Provider):
         max_iters: int = 6,
     ) -> ChatResult:
         if not self.is_configured():
-            raise ProviderError("Chưa cấu hình GEMINI_API_KEY")
+            raise ProviderError(NO_KEY_MSG)
         used_model = model or self.default_model
         contents = self._contents(messages)
         tool_decl = [{"functionDeclarations": [

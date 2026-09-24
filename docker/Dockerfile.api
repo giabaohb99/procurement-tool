@@ -3,6 +3,13 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
+# Thư mục làm việc phải nằm trên đường tìm module. Celery CHỈ đặt thư mục hiện
+# hành lên `sys.path` trong lúc nạp `-A app.core.celery_app` rồi gỡ ra ngay, nên
+# `import` ở đầu tệp thì chạy được mà `import` nằm TRONG hàm lại hỏng — đúng kiểu
+# `from scripts.legacy_sync...` của đồng bộ app đặt xe. Đặt ở đây để local, dev và
+# prod cùng một hành vi (dev vốn đã khai y hệt trong docker-compose.dev.yml).
+ENV PYTHONPATH=/app
+
 # Client MySQL/MariaDB (mysqldump) và bộ đọc Word .doc đời cũ.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends default-mysql-client antiword \

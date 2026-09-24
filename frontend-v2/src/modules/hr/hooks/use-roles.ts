@@ -16,21 +16,26 @@ export function useRoles() {
 /**
  * Entity / action / scope để dựng ma trận. Gần như bất biến trong một phiên
  * làm việc nên để `staleTime` dài, tránh gọi lại mỗi lần đổi tab.
+ *
+ * `enabled`: backend chặn `role.read`. Hộp thoại Phạm vi mượn meta này chỉ để
+ * đọc NHÃN của bậc, nên thiếu quyền thì phải tự tắt — 403 trên GET không bật
+ * toast, người dùng chỉ thấy một khung trống không lời giải thích.
  */
-export function usePermissionMeta() {
+export function usePermissionMeta(options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: queryKeys.hr.permissionMeta(),
     queryFn: () => roleApi.meta(),
     staleTime: 30 * 60 * 1000,
+    enabled: options.enabled ?? true,
   })
 }
 
-/** Ma trận quyền hiện tại của một vai trò. */
-export function useRolePermissions(roleId: number) {
+/** Ma trận quyền hiện tại của một vai trò. Xem ghi chú `enabled` ở `usePermissionMeta`. */
+export function useRolePermissions(roleId: number, options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: queryKeys.hr.rolePermissions(roleId),
     queryFn: () => roleApi.getPermissions(roleId),
-    enabled: roleId > 0,
+    enabled: roleId > 0 && (options.enabled ?? true),
   })
 }
 
@@ -52,10 +57,17 @@ export function useUpdateRole() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ roleId, name }: { roleId: number; name: string }) =>
-      roleApi.update(roleId, { name }),
+    mutationFn: ({
+      roleId,
+      name,
+      description,
+    }: {
+      roleId: number
+      name?: string
+      description?: string
+    }) => roleApi.update(roleId, { name, description }),
     onSuccess: () => {
-      toast.success('Đã đổi tên vai trò')
+      toast.success('Đã cập nhật vai trò')
       void queryClient.invalidateQueries({ queryKey: queryKeys.hr.roles() })
     },
   })

@@ -7,16 +7,15 @@ Luật phải giữ:
    tổng kg, cột TỔNG tính lại giá/kg chứ không cộng dồn.
 4. Tab THEO DÒNG HÀNG: chi phí của lô chia hết về các dòng (không rơi rớt đồng nào), chia
    bằng đúng `allocate_import_costs` của ĐMH, và có giá vốn mỗi đơn vị.
-5. `cost_status` còn trong DB nhưng giao diện đã bỏ hẳn ô Dự kiến (đại ca chốt 10/09/2026) —
-   giữ vài test cho tấm lưới an toàn: dòng dự kiến sót lại không được lọt vào công nợ, dòng
-   cũ không khai trạng thái vẫn đọc thành Thực tế.
+5. bao-CR-453 thay `cost_status` bằng ba giai đoạn: số DỰ TOÁN vẫn lên báo cáo (giai đoạn
+   hiệu lực) nhưng KHÔNG thành công nợ; chốt Quyết toán thì nợ hiện ra.
 """
 from app.modules.payable.model import Payable
 from app.modules.report import import_landed_cost as ilc
 from app.modules.purchase_order import service
 from app.modules.purchase_order.controller import _out
-from app.modules.purchase_order.model import (IMPORT_COST_TYPE_LABELS, ImportCostStatus,
-                                              ImportCostType, OrderType, POImportCost, POItem,
+from app.modules.purchase_order.model import (IMPORT_COST_TYPE_LABELS, CostStage,
+                                              ImportCostType, OrderType, POItem,
                                               PurchaseOrder)
 from app.modules.purchase_order.schema import POImportCostIn, POItemIn
 
@@ -57,7 +56,7 @@ TWO_LINES = [("SP01", 4.0, 100.0, 50.0), ("SP02", 6.0, 100.0, 150.0)]
 def _cost_in(**kw):
     base = dict(cost_type=int(ImportCostType.OCEAN_FREIGHT), description="Cước biển",
                 supplier_code="HANGTAU", supplier_name="Hãng tàu ABC",
-                currency="VND", amount=1_000_000, vat=0)
+                currency="VND", estimate_amount=1_000_000, vat=0)
     base.update(kw)
     return POImportCostIn(**base)
 
@@ -76,9 +75,9 @@ def _cost_payables(db, po):
 def test_ma_chi_phi_moi_dung_duoc_va_dung_ten(db, seed):
     po = _make_po(db, seed, status="approved")
     _save_costs(db, po, [
-        _cost_in(cost_type=int(ImportCostType.IMPORT_SERVICE), amount=100_000),
-        _cost_in(cost_type=int(ImportCostType.CONTAINER_DAMAGE), amount=200_000),
-        _cost_in(cost_type=int(ImportCostType.LATE_INTEREST), amount=300_000),
+        _cost_in(cost_type=int(ImportCostType.IMPORT_SERVICE), estimate_amount=100_000),
+        _cost_in(cost_type=int(ImportCostType.CONTAINER_DAMAGE), estimate_amount=200_000),
+        _cost_in(cost_type=int(ImportCostType.LATE_INTEREST), estimate_amount=300_000),
     ])
     rows = _out(db, po)["import_costs"]
     assert [r["cost_type"] for r in rows] == [12, 13, 14]
@@ -98,8 +97,8 @@ def test_moi_ma_chi_phi_deu_co_ten_hien_thi():
 def test_chi_bay_loai_chi_phi_co_phat_sinh(db, seed):
     po = _make_po(db, seed, status="approved")
     _save_costs(db, po, [
-        _cost_in(cost_type=int(ImportCostType.OCEAN_FREIGHT), amount=1_500_000),
-        _cost_in(cost_type=int(ImportCostType.IMPORT_VAT), amount=500_000),
+        _cost_in(cost_type=int(ImportCostType.OCEAN_FREIGHT), estimate_amount=1_500_000),
+        _cost_in(cost_type=int(ImportCostType.IMPORT_VAT), estimate_amount=500_000),
     ])
     cost_types = ilc.compute(db, po_ids=[po.id])["cost_types"]
     # Đúng hai loại, xếp theo thứ tự DANH MỤC chứ không theo thứ tự gõ vào
@@ -121,8 +120,8 @@ def test_bao_cao_theo_lo_du_chi_tieu_va_dung_tong(db, seed):
     po = _make_po(db, seed, qty=4, price=100, weight=50, status="approved",
                   etd_date="2026-09-12", note="Lô thử")
     _save_costs(db, po, [
-        _cost_in(cost_type=int(ImportCostType.IMPORT_VAT), amount=500_000),
-        _cost_in(cost_type=int(ImportCostType.OCEAN_FREIGHT), amount=1_500_000),
+        _cost_in(cost_type=int(ImportCostType.IMPORT_VAT), estimate_amount=500_000),
+        _cost_in(cost_type=int(ImportCostType.OCEAN_FREIGHT), estimate_amount=1_500_000),
     ])
     o = ilc.compute(db, po_ids=[po.id])["orders"][0]
     assert o["etd_date"] == "2026-09-12"              # "Ngày hàng rời cảng (ETD)"
@@ -150,8 +149,8 @@ def test_gia_tren_kg_bang_0_khi_chua_khai_can_nang(db, seed):
 def test_cot_tong_tinh_lai_gia_tren_kg(db, seed):
     a = _make_po(db, seed, code="PO-NK-A", qty=4, price=100, weight=50, status="approved")
     b = _make_po(db, seed, code="PO-NK-B", qty=2, price=100, weight=150, status="approved")
-    _save_costs(db, a, [_cost_in(amount=1_000_000)])
-    _save_costs(db, b, [_cost_in(amount=2_000_000)])
+    _save_costs(db, a, [_cost_in(estimate_amount=1_000_000)])
+    _save_costs(db, b, [_cost_in(estimate_amount=2_000_000)])
     t = ilc.compute(db, po_ids=[a.id, b.id])["totals"]
     assert t["order_count"] == 2 and t["weight_total"] == 200.0
     goods = (400.0 + 200.0) * RATE
@@ -167,7 +166,7 @@ def test_cot_tong_bo_trong_tien_nguyen_te_khi_nhieu_dong_tien(db, seed):
     một số không thuộc đồng tiền nào, nên cột TỔNG phải bỏ trống ô nguyên tệ."""
     a = _make_po(db, seed, code="PO-NK-USD", status="approved", currency="USD")
     b = _make_po(db, seed, code="PO-NK-JPY", status="approved", currency="JPY")
-    _save_costs(db, a, [_cost_in(amount=1_000_000)])
+    _save_costs(db, a, [_cost_in(estimate_amount=1_000_000)])
     data = ilc.compute(db, po_ids=[a.id, b.id])
     assert [o["currency"] for o in data["orders"]] == ["USD", "JPY"]
     t = data["totals"]
@@ -221,8 +220,8 @@ def test_theo_dong_hang_chia_het_chi_phi_ve_cac_dong(db, seed):
     po = _make_po(db, seed, status="approved",
                   items=[_item(*x) for x in TWO_LINES])
     _save_costs(db, po, [
-        _cost_in(cost_type=int(ImportCostType.OCEAN_FREIGHT), amount=1_000_000),
-        _cost_in(cost_type=int(ImportCostType.IMPORT_VAT), amount=500_000),
+        _cost_in(cost_type=int(ImportCostType.OCEAN_FREIGHT), estimate_amount=1_000_000),
+        _cost_in(cost_type=int(ImportCostType.IMPORT_VAT), estimate_amount=500_000),
     ])
     data = ilc.compute(db, po_ids=[po.id])
     lines = data["items"]
@@ -241,7 +240,7 @@ def test_theo_dong_hang_chia_theo_gia_tri(db, seed):
     """Cách mặc định là chia theo giá trị: dòng 400$ / dòng 600$ ăn 40% / 60% chi phí."""
     po = _make_po(db, seed, status="approved",
                   items=[_item(*x) for x in TWO_LINES])
-    _save_costs(db, po, [_cost_in(amount=1_000_000)])
+    _save_costs(db, po, [_cost_in(estimate_amount=1_000_000)])
     lines = ilc.compute(db, po_ids=[po.id])["items"]
     assert lines[0]["cost_base"] == 400_000.0
     assert lines[1]["cost_base"] == 600_000.0
@@ -251,7 +250,7 @@ def test_dong_tong_theo_dong_hang_khong_co_gia_von_don_vi(db, seed):
     """Mỗi dòng một đơn vị tính khác nhau — cộng lại rồi chia ra là con số vô nghĩa."""
     po = _make_po(db, seed, status="approved",
                   items=[_item(*x) for x in TWO_LINES])
-    _save_costs(db, po, [_cost_in(amount=1_000_000)])
+    _save_costs(db, po, [_cost_in(estimate_amount=1_000_000)])
     data = ilc.compute(db, po_ids=[po.id])
     t = data["item_totals"]
     assert "price_per_unit" not in t
@@ -264,29 +263,21 @@ def test_dong_tong_theo_dong_hang_khong_co_gia_von_don_vi(db, seed):
 def test_canh_bao_chia_chi_phi_co_ghi_ma_don(db, seed):
     """Chia theo khối lượng mà chưa khai kg thì phải nói rõ đơn nào, không im lặng đổi cách."""
     po = _make_po(db, seed, code="PO-NK-W", qty=4, price=100, weight=0, status="approved")
-    _save_costs(db, po, [_cost_in(amount=1_000_000, allocation_method=2)])
+    _save_costs(db, po, [_cost_in(estimate_amount=1_000_000, allocation_method=2)])
     warnings = ilc.compute(db, po_ids=[po.id])["warnings"]
     assert warnings and all(w.startswith("PO-NK-W:") for w in warnings)
 
 
-# ── 5. Tấm lưới an toàn của `cost_status` ────────────────────────────────────────
-def test_dong_du_kien_sot_lai_khong_lot_vao_cong_no(db, seed):
-    po = _make_po(db, seed, status="approved")
-    _save_costs(db, po, [_cost_in(cost_status=int(ImportCostStatus.ESTIMATED))])
-    service.sync_import_cost_payables(db, po, user_id=1)
-    assert _cost_payables(db, po) == []
-    assert _out(db, po)["import_cost_summary"]["cost_total"] == 0.0
-
-
-def test_dong_cu_khong_khai_trang_thai_van_la_thuc_te(db, seed):
-    """Dữ liệu trước CR-347: `cost_status` để trống / 0 phải đọc thành Thực tế."""
+# ── 5. Số dự toán lên báo cáo nhưng chưa thành nợ (bao-CR-453) ───────────────────
+def test_so_du_toan_len_bao_cao_nhung_khong_lot_vao_cong_no(db, seed):
     po = _make_po(db, seed, status="approved")
     _save_costs(db, po, [_cost_in()])
-    row = db.query(POImportCost).filter(POImportCost.po_id == po.id).one()
-    row.cost_status = 0
-    db.flush()
-    assert service.is_actual_cost(row) is True
     service.sync_import_cost_payables(db, po, user_id=1)
+    assert _cost_payables(db, po) == []
+    assert _out(db, po)["import_cost_summary"]["cost_total"] == 1_000_000.0
+    assert ilc.compute(db, po_ids=[po.id])["orders"][0]["cost_total"] == 1_000_000.0
+
+    service.advance_cost_stage(db, po, int(CostStage.FINAL), user_id=1)
     assert len(_cost_payables(db, po)) == 1
 
 
@@ -305,7 +296,7 @@ def _values(ws):
 def test_excel_co_hai_sheet_hai_cach_doc(db, seed):
     po = _make_po(db, seed, status="approved",
                   items=[_item(*x) for x in TWO_LINES])
-    _save_costs(db, po, [_cost_in(amount=1_000_000)])
+    _save_costs(db, po, [_cost_in(estimate_amount=1_000_000)])
     wb = _workbook(ilc.compute(db, po_ids=[po.id]))
     assert wb.sheetnames == ["GIA VON THEO LO", "THEO DONG HANG"]
 
@@ -332,8 +323,8 @@ def test_excel_dong_tong_theo_dong_hang_khong_lech_cot(db, seed):
     """Dòng TỔNG phải nằm đúng cột với thân bảng, kể cả khi số loại chi phí đổi."""
     po = _make_po(db, seed, status="approved")
     _save_costs(db, po, [
-        _cost_in(cost_type=int(ImportCostType.OCEAN_FREIGHT), amount=1_000_000),
-        _cost_in(cost_type=int(ImportCostType.IMPORT_VAT), amount=500_000),
+        _cost_in(cost_type=int(ImportCostType.OCEAN_FREIGHT), estimate_amount=1_000_000),
+        _cost_in(cost_type=int(ImportCostType.IMPORT_VAT), estimate_amount=500_000),
     ])
     ws = _workbook(ilc.compute(db, po_ids=[po.id]))["THEO DONG HANG"]
     rows = _values(ws)

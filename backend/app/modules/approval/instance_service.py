@@ -35,6 +35,23 @@ def running_instance(db: Session, entity: str, entity_id: int) -> ApprovalInstan
     )
 
 
+def latest_instance(db: Session, entity: str, entity_id: int) -> ApprovalInstance | None:
+    """Phiên duyệt MỚI NHẤT của chứng từ, kể cả phiên đã kết thúc.
+
+    Khác `running_instance` ở đúng một chỗ: không lọc theo trạng thái. Trang chi
+    tiết cần câu hỏi "phiếu này ĐÃ TỪNG vào bộ máy chưa", không phải "có đang
+    chạy không" — hỏi nhầm câu thì thẻ Lịch sử phê duyệt biến mất ngay lúc luồng
+    duyệt xong, và luồng một bước thì không bao giờ kịp hiện (19/09/2026).
+    """
+    return (
+        db.query(ApprovalInstance)
+        .filter(ApprovalInstance.entity == entity,
+                ApprovalInstance.entity_id == entity_id)
+        .order_by(ApprovalInstance.id.desc())
+        .first()
+    )
+
+
 def tasks_of_instance(db: Session, instance_id: int) -> list[ApprovalTask]:
     return (
         db.query(ApprovalTask)

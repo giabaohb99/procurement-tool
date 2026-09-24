@@ -179,7 +179,7 @@ _CATALOG_READ = {e: (["read"], "all") for e in
 # "Cụm danh mục" — Admin thu mua được toàn quyền thêm/sửa/xóa
 _CATALOG_CRUD = {e: (["read", "create", "write", "delete"], "all") for e in
                  ["supplier", "product", "warehouse", "unit", "item_group",
-                  "brand", "company", "category_assignee"]}
+                  "brand", "company", "category_assignee", "purchase_cost_type"]}
 
 # CR-117 — HỢP ĐỒNG KHÔNG phải danh mục dùng chung như ĐVT hay Kho: mỗi hợp đồng đứng tên
 # MỘT pháp nhân (`company_id`), nên phạm vi mặc định là 'company' chứ không phải 'all'.
@@ -211,6 +211,9 @@ _ALL_ACTIONS = ["read", "create", "write", "delete", "approve", "cancel", "print
 #  Quản lý thu mua tự cộng điểm cho mình được (`coffee_ledger.write` mở điều chỉnh
 #  tay) — đúng cái mà PS12 bắt tách quyền.
 _SYS_ENTITIES = {"user", "role", "setting", "backup", "help_article", "mailbox",
+                 #  bao-CR-470: KHÔNG tự cấp cho Quản lý thu mua — `write` là quyền nạp
+                 #  và thay dữ liệu hải quan, `delete` là hoàn tác cả lô. Đại ca tick tay.
+                 "customs_price", "customs_regulation",
                  "forum_post", "forum_board",
                  "leave_request", "leave_balance", "leave_type", "holiday",
                  #  ⚠️ Nhóm trường nhạy cảm của hồ sơ nhân sự (08/09/2026). Phải
@@ -323,6 +326,10 @@ STD_ROLES = {
         "survey_request": (["read", "write", "export"], "proc"),
         "ticket": (["read", "create", "write"], "own"),
         "survey": (["read", "create", "write"], "all"),
+        # bao-CR-453 — danh mục Loại chi phí thu mua: đọc + thêm + sửa, KHÔNG xóa. Phải có
+        # quyền ghi thì mục menu mới hiện (mục này gác bằng `manage`, chỉ `read` là menu ẩn);
+        # xóa để lại cho quản lý vì dòng đã dùng trong đơn thì xóa là mất nhãn chi phí cũ.
+        "purchase_cost_type": (["read", "create", "write"], "all"),
         "purchase_order": (["read", "create", "write", "delete", "print", "export"], "assigned"),   # chỉ đơn mình tạo/NSPT là mình; xóa được đơn NHÁP của mình
         "inventory": (["read"], "company"),
         "payable": (["read"], "company"),
@@ -340,6 +347,8 @@ STD_ROLES = {
         "purchase_request": (_ALL_ACTIONS, "dept_proc"),
         "survey_request": (_ALL_ACTIONS, "dept_proc"),
         "purchase_order": (_ALL_ACTIONS, "dept_proc"),
+        # bao-CR-453 — như `pur_staff`: đọc + thêm + sửa danh mục Loại chi phí thu mua, không xóa.
+        "purchase_cost_type": (["read", "create", "write"], "all"),
         "ticket": (["read", "create", "write"], "own"),
         "survey": (["read", "create", "write", "approve"], "all"),
         "inventory": (["read"], "company"),
@@ -642,6 +651,58 @@ for _role_info in STD_ROLES.values():
     _role_info["perms"].setdefault("dossier_type", (["read"], "all"))
 
 
+#  ── Mô tả một câu cho từng vai trò chuẩn (bao-CR-428) ─────────────────────
+#  Hiện dưới tên vai trò ở màn Phân quyền và là câu trợ lý AI trả lời khi ai
+#  hỏi "vai trò X là gì". Cố ý NGẮN — một câu, nói việc chứ không liệt kê khóa.
+#  Seed CHỈ điền khi cột `description` đang trống (D-018): người quản trị sửa
+#  câu này trên màn hình thì lần deploy sau vẫn giữ nguyên.
+#
+#  Luật đại ca chốt 19/09/2026: MỘT vai trò = MỘT chức năng; một người giữ
+#  nhiều vai trò. Thêm vai trò mới thì thêm một dòng ở đây, đừng nhét thêm
+#  việc vào vai trò có sẵn.
+ROLE_DESCRIPTIONS = {
+    "admin": "Quản trị toàn hệ thống: phân quyền, cấu hình, mọi phân hệ.",
+    "employee": "Nhân viên thường: lập yêu cầu mua hàng và yêu cầu báo giá của mình.",
+    "hr_profile": "Giữ hồ sơ nhân viên, kể cả trường nhạy cảm (CCCD, ngân hàng).",
+    "dept_head": "Trưởng phòng: duyệt yêu cầu mua hàng và xem báo cáo của phòng mình.",
+    "company_head": "Lãnh đạo công ty: xem yêu cầu mua hàng toàn công ty và dùng trợ lý AI.",
+    "pur_staff": "Nhân viên thu mua: xử lý yêu cầu được giao, khảo sát giá, lập đơn hàng.",
+    "pur_manager": "Quản lý thu mua: toàn quyền nghiệp vụ thu mua, không quản trị hệ thống.",
+    "pur_dept_manager": "Quản lý thu mua của một phòng tự mua hàng, chỉ thấy phiếu của phòng mình.",
+    "pur_admin": "Admin thu mua: quản danh mục, xem mọi chứng từ thu mua nhưng không duyệt.",
+    "help_admin": "Soạn và sửa bài trong Trung tâm hướng dẫn sử dụng.",
+    "support": "Tiếp nhận và xử lý phiếu hỗ trợ của người dùng.",
+    "forum_admin": "Quản trị Diễn đàn nội bộ: chuyên mục, ẩn hoặc xóa bài vi phạm.",
+    "vanban_xem": "Chỉ xem văn bản của công ty mình, không sửa, không in.",
+    "vanban_sua": "Soạn, sửa và gửi duyệt văn bản; không xóa, không tự duyệt.",
+    "booking_dispatcher": "Điều phối xe: duyệt phiếu đặt xe, phân xe và tài xế.",
+    "booking_manager": "Quản lý đội xe: điều phối và quản danh mục xe, tài xế.",
+    "booking_driver": "Tài xế: xem và cập nhật chuyến xe được phân cho mình.",
+    "booking_requester": "Người đặt xe: tạo và theo dõi phiếu đặt xe của mình.",
+    "seal_clerk": "Văn thư: đóng dấu và hoàn thành phiếu duyệt dấu của công ty mình.",
+    "seal_approver": "Trưởng bộ phận: duyệt phiếu xin đóng dấu của phòng mình.",
+    "seal_admin": "Quản danh mục con dấu và xem mọi phiếu duyệt dấu.",
+    "seal_director": "Giám đốc: nhận thông báo và xem phiếu đóng dấu đã duyệt của công ty mình.",
+    "dossier_admin": "Quản danh mục loại hồ sơ và kho hồ sơ công ty.",
+    "hr_leave": "Quản lý nghỉ phép: loại nghỉ, ngày lễ, quỹ phép và đơn nghỉ của mọi người.",
+    "coffee_admin": "Quản trị Điểm cà phê: chính sách, thành viên, chốt cấp phát kỳ.",
+    "coffee_counter": "Quầy cà phê: chỉ tra cứu số dư của thành viên.",
+}
+
+
+def fill_role_description(db, role, code):
+    """Điền mô tả mặc định cho vai trò ĐANG TRỐNG mô tả. Không ghi đè câu đã sửa tay."""
+    if getattr(role, "description", None):
+        return False
+    text = ROLE_DESCRIPTIONS.get(code)
+    if not text:
+        return False
+    role.description = text
+    db.add(role)
+    db.commit()
+    return True
+
+
 def seed_standard_roles(db):
     """Tạo các vai trò chuẩn + ma trận quyền. Không tạo user; gán cho nhân sự ở màn Phân quyền.
 
@@ -658,6 +719,8 @@ def seed_standard_roles(db):
             db.add(role)
             db.commit()
             db.refresh(role)
+        # bao-CR-428: mô tả chỉ điền khi trống — chạy cho cả vai trò cũ, KHÔNG qua cổng FORCE_SYNC.
+        fill_role_description(db, role, code)
         if not is_new and not FORCE_SYNC:
             continue   # vai trò đã có trên DB -> KHÔNG đụng vào quyền đã chỉnh tay
         existing = {p.entity for p in db.query(Permission).filter(Permission.role_id == role.id).all()}
@@ -852,6 +915,7 @@ def ensure_admin_role(db):
         db.add(admin_role)
         db.commit()
         db.refresh(admin_role)
+    fill_role_description(db, admin_role, "admin")
 
     for _ar in db.query(Role).filter(Role.code.in_(["admin", "ADMINISTRATOR"])).all():
         existing = {p.entity for p in db.query(Permission).filter(Permission.role_id == _ar.id).all()}
@@ -925,6 +989,29 @@ def force_resync_roles(db):
                                     Permission.entity == "supplier").delete(synchronize_session=False)
         db.commit()
     print("SEED_FORCE_SYNC=true: đã ghi đè ma trận quyền các vai trò chuẩn theo app/seed.py.")
+
+
+def seed_cost_types(db) -> int:
+    """bao-CR-453: nạp 15 loại chi phí thu mua gốc vào `tab_po_cost_type` — CHỈ THÊM mã còn thiếu.
+
+    Không ghi đè tên / nhóm / NCC mặc định người dùng đã sửa trên màn danh mục (D-018). Chạy
+    được ở cả local, dev lẫn prod; migration đã seed sẵn nên trên DB đã nâng cấp hàm này
+    thường không thêm gì. Trả về số dòng vừa thêm.
+    """
+    from app.modules.purchase_order.model import DEFAULT_COST_TYPES, POCostType
+
+    existing = {int(code) for (code,) in db.query(POCostType.code).all()}
+    added = 0
+    for code, name, group_kind, creates_payable, default_supplier_code, sort_order in DEFAULT_COST_TYPES:
+        if code in existing:
+            continue
+        db.add(POCostType(code=code, name=name, group_kind=group_kind, creates_payable=creates_payable,
+                          default_supplier_code=default_supplier_code, sort_order=sort_order,
+                          is_active=True))
+        added += 1
+    if added:
+        db.commit()
+    return added
 
 
 # ---- Phân hệ VĂN THƯ · danh mục nền ----
@@ -1210,6 +1297,7 @@ def run():
         # Vai trò chuẩn (Nhân sự / Trưởng phòng / Quản lý cty / NV thu mua / QL thu mua / Admin thu mua)
         seed_standard_roles(db)
         force_resync_roles(db)
+        seed_cost_types(db)   # bao-CR-453 — danh mục Loại chi phí thu mua, chỉ thêm mã thiếu
 
         # Deduplication tracking sets (using upper case for case-insensitivity)
         seen_companies = {c[0].upper() for c in db.query(Company.code).all()}

@@ -931,10 +931,19 @@ thứ tư — không có chuông nào cho hai lần đổi tay — đã đóng n
 - **N-19 — tệp Excel xuất danh sách yêu cầu mua hàng chưa có cột nào của phương án.** Bảng
   xuất hiện có 8 cột đầu phiếu + 17 cột dòng hàng, không cột nào nói phương án nào được chọn,
   nhà cung cấp nào, giá bao nhiêu. Người làm báo cáo vì thế vẫn phải mở từng phiếu.
-- **N-20 — chưa có bài hướng dẫn sử dụng nào cho luồng phương án.** Đã tra kho hướng dẫn đang
-  chạy: 12 bài về mua hàng, bài mới nhất sửa ngày 28/08/2026, không bài nào nhắc tới phương án.
-  Người dùng mới nhận phiếu sẽ không biết chọn phương án xong thì còn phải làm gì nữa không, và
-  nút *Chốt hoàn thành xử lý* của thu mua khác nút chọn phương án của họ chỗ nào.
+- **N-20 — ĐÃ ĐÓNG 21/09/2026 (bao-CR-450)**: trước đó không có bài hướng dẫn sử dụng nào cho
+  luồng phương án — kho hướng dẫn đang chạy có 12 bài về mua hàng, bài mới nhất sửa ngày
+  28/08/2026, không bài nào nhắc tới phương án; người dùng mới nhận phiếu không biết chọn
+  phương án xong thì còn phải làm gì nữa không, và nút *Chốt hoàn thành xử lý* của thu mua khác
+  nút chọn phương án của họ chỗ nào. Nay có **hai** bài, dựng bằng
+  `backend/scripts/seed_help_xu_ly_phuong_an.py`, mỗi bài vào một nhóm có sẵn:
+  - *Xử lý phương án trên yêu cầu mua hàng* (nhóm **Dành cho Nhân viên Mua hàng**) — đủ đường
+    đi: gắn hai nguồn · phương án 0 · chốt hoàn thành xử lý và nghĩa của *chốt rỗng* · khe nới
+    H.10.4 · *Áp 1 NCC cho nhiều dòng* · *Mở lại cho NSTM xử lý* · một nút *Tạo đơn* với ba
+    nhánh và hai lời hộp xác nhận · hai bản in · thẻ *Chứng từ liên quan*.
+  - *Chọn phương án trên yêu cầu mua hàng* (nhóm **Dành cho Người yêu cầu**) — bản ngắn, cố ý
+    **không nhắc tên NCC** để khớp H.3.8, và nói rõ *không làm gì = mua theo yêu cầu gốc*,
+    *bỏ chọn hết = khoan mua dòng này*, cùng việc **không có chuông** báo tới lượt họ (H.11).
 
 - **N-17 — ĐÃ ĐÓNG 15/09/2026 (P4)**: quyền `print` của `purchase_request` backend không kiểm
   ở đâu cả — ai mở được chi tiết phiếu (`read`) là in được. Cách đóng gồm hai lớp:

@@ -1,5 +1,5 @@
 import { appRoutes } from '@/shared/constants/app-routes'
-import type { ChatReply, UpdateProposal } from '../types/assistant'
+import type { AssistantProposal, ChatReply } from '../types/assistant'
 
 /** Loại phiếu trợ lý soạn nháp được — khớp bộ tool `draft_*` + `ticket_create` của backend. */
 export type DraftTarget = 'survey' | 'purchase' | 'leave' | 'payment' | 'ticket'
@@ -89,20 +89,24 @@ export function pickDraftOffer(reply: ChatReply): DraftOffer | null {
   }
 }
 
-/** Đề xuất sửa phiếu (CR-218) — cũng chỉ sống trong lượt trả lời hiện tại. */
+/** Đề xuất có xác nhận (sửa phiếu CR-218 · lập bộ tài khoản bao-CR-435) — chỉ sống trong
+ *  lượt trả lời hiện tại. Thẻ nào dựng thì rẽ theo `proposal.kind`. */
 export interface UpdateOffer {
   conversationId: number
-  proposal: UpdateProposal
+  proposal: AssistantProposal
 }
 
+/** Bộ tool tầng GHI có xác nhận — tool nào cũng trả khối `proposal` có `kind` + `confirm_token`. */
+const PROPOSAL_TOOLS = new Set(['propose_document_update', 'propose_account_setup'])
+
 /**
- * Lấy đề xuất sửa phiếu từ lượt trả lời — chỉ tool `propose_document_update` có khối
+ * Lấy đề xuất có xác nhận từ lượt trả lời — chỉ các tool trong `PROPOSAL_TOOLS` có khối
  * `proposal`. Lượt không đề xuất gì trả null để gỡ thẻ xác nhận của lượt trước
  * (token cũ vẫn tự hết hạn ở backend, nhưng thẻ hiện dai sẽ gây bấm nhầm).
  */
 export function pickUpdateOffer(reply: ChatReply): UpdateOffer | null {
   const call = (reply.tool_calls ?? [])
-    .filter((c) => c.name === 'propose_document_update' && c.proposal != null)
+    .filter((c) => PROPOSAL_TOOLS.has(c.name) && c.proposal != null)
     .at(-1)
   if (!call?.proposal) return null
   return { conversationId: reply.conversation_id, proposal: call.proposal }

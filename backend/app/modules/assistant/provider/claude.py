@@ -7,7 +7,7 @@ import json
 
 import requests
 
-from app.core.config import settings
+from app.core import app_settings
 
 from .base import (
     ChatMessage,
@@ -18,6 +18,9 @@ from .base import (
     ToolExecutor,
 )
 
+NO_KEY_MSG = (
+    "Chưa cấu hình Claude API Key — vào Quản trị > Cấu hình hệ thống, thẻ Trợ lý AI để dán key."
+)
 API_URL = "https://api.anthropic.com/v1/messages"
 API_VERSION = "2023-06-01"
 TIMEOUT = 60
@@ -44,11 +47,18 @@ def _wire_content(content):
 
 class ClaudeProvider(Provider):
     name = "claude"
-    default_model = settings.AI_CLAUDE_MODEL or "claude-sonnet-5"
     supports_tools = True
 
+    @property
+    def default_model(self) -> str:
+        #  PHẢI là property. Bản cũ là thuộc tính lớp nên nó chốt giá trị ngay
+        #  lúc import — mà nay nguồn là bảng cấu hình, tức đọc lúc import là
+        #  chạm DB trước khi ứng dụng kịp dựng xong, và người dùng đổi model
+        #  trên màn hình cũng không ăn thua cho tới lần khởi động lại.
+        return app_settings.get("ai_claude_model") or "claude-sonnet-5"
+
     def is_configured(self) -> bool:
-        return bool(settings.ANTHROPIC_API_KEY)
+        return bool(app_settings.get("anthropic_api_key"))
 
     def ask(
         self,
@@ -62,7 +72,7 @@ class ClaudeProvider(Provider):
         cache_system: bool = False,
     ) -> ChatResult:
         if not self.is_configured():
-            raise ProviderError("Chưa cấu hình ANTHROPIC_API_KEY")
+            raise ProviderError(NO_KEY_MSG)
 
         used_model = model or self.default_model
         payload: dict = {
@@ -87,7 +97,7 @@ class ClaudeProvider(Provider):
         # Phase 1 chưa bật để giữ chi phí thấp và tránh khác biệt định dạng giữa các model.
 
         headers = {
-            "x-api-key": settings.ANTHROPIC_API_KEY,
+            "x-api-key": app_settings.get("anthropic_api_key"),
             "anthropic-version": API_VERSION,
             "content-type": "application/json",
         }
@@ -119,7 +129,7 @@ class ClaudeProvider(Provider):
     @staticmethod
     def _headers() -> dict:
         return {
-            "x-api-key": settings.ANTHROPIC_API_KEY,
+            "x-api-key": app_settings.get("anthropic_api_key"),
             "anthropic-version": API_VERSION,
             "content-type": "application/json",
         }
@@ -157,7 +167,7 @@ class ClaudeProvider(Provider):
         max_iters: int = 6,
     ) -> ChatResult:
         if not self.is_configured():
-            raise ProviderError("Chưa cấu hình ANTHROPIC_API_KEY")
+            raise ProviderError(NO_KEY_MSG)
         used_model = model or self.default_model
         msgs: list[dict] = [{"role": m.role, "content": _wire_content(m.content)} for m in messages]
         tool_decl = [

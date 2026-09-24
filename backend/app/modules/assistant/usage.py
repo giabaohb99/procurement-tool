@@ -14,7 +14,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import Integer, cast, func, select
 from sqlalchemy.orm import Session
 
-from app.core.config import settings
+from app.core import app_settings
 from app.modules.employee.model import Employee
 from app.modules.user.model import User
 
@@ -46,7 +46,7 @@ def count_today(db: Session, user_id: int) -> int:
 
 def check_daily_limit(db: Session, user) -> None:
     """Ném QuotaExceeded nếu user đã chạm trần ngày. Limit <= 0 = không giới hạn."""
-    limit = settings.AI_DAILY_MSG_LIMIT
+    limit = app_settings.get("ai_daily_msg_limit")
     if limit <= 0:
         return
     used = count_today(db, user.id)
@@ -59,7 +59,7 @@ def check_daily_limit(db: Session, user) -> None:
 
 def my_quota(db: Session, user) -> dict:
     """Hạn mức của CHÍNH người hỏi hôm nay — để giao diện hiện 'còn bao nhiêu câu'."""
-    limit = settings.AI_DAILY_MSG_LIMIT
+    limit = app_settings.get("ai_daily_msg_limit")
     used = count_today(db, user.id)
     return {
         "limit": limit,                       # 0 = không giới hạn
@@ -148,7 +148,7 @@ def summary(db: Session, days: int = 30) -> dict:
     return {
         "days": days,
         "since": since.date().isoformat(),
-        "daily_limit": settings.AI_DAILY_MSG_LIMIT,
+        "daily_limit": app_settings.get("ai_daily_msg_limit"),
         "by_day": by_day,
         "by_user": by_user,
         "totals": totals,

@@ -449,27 +449,30 @@ thì chỉ `hr_profile`. Chi tiết: `doc/erp/hrm/01-ho-so-nhan-su.md` §7.7.
   thừa. Ô chọn chức vụ vì thế **phải khai `sort_by=name`** — mặc định của
   `make_crud_router` là `id desc`, tức danh sách tự đổi chỗ mỗi lần có ai thêm
   một dòng.
-- ⚠️ **Đếm ngược người giữ đi qua `/api/job-positions/stats`, KHÔNG qua
-  serializer** (duoc-CR-322): serializer chạy cho từng dòng nên đếm ở đó là
-  N+1. Hai luật ngược nhau, cố ý — **số bày cho người xem thì lọc theo phạm vi**
-  (`apply_scope` trên `employee`), **chốt chặn xóa thì đếm toàn công ty** vì đó
-  là toàn vẹn dữ liệu; câu chặn nói rõ «trên toàn công ty» để hai số lệch nhau
-  không đọc thành lỗi. Thiếu `employee.read` thì backend **không ném 403**, nó
-  trả rỗng — giao diện phải tự tắt cột, không thì mọi dòng hiện 0 và người đọc
-  tin là chưa ai giữ chức vụ nào.
-- ⚠️ **`Employee.avatar` và `User.avatar` là `@property`, không phải cột** — đưa
-  vào `with_entities` là `ArgumentError` lúc chạy. Ảnh thật ở `tab_file`, nối
-  qua `tab_user.avatar_file_id`, ưu tiên `thumb_url or url`.
+- ⚠️ **Hai cột đếm ngược («Đang giữ» · «Phòng ban đang giữ») và đường API
+  `/api/job-positions/stats` ĐÃ BỎ** (duoc-CR-426, 19/09/2026) — cùng hai hàm
+  `count_holders_by_department` / `list_holder_faces`. Đừng dựng lại theo
+  serializer: đếm trong serializer là N+1, chạy cả ở những chỗ chỉ cần tên chức
+  vụ. Còn muốn biết ai đang giữ thì mở tab **«Người đang giữ»** ở trang chi tiết
+  (đọc thẳng `/api/employees?position_id=`, phân trang thật). Chốt chặn xóa vẫn
+  dùng `count_employees` và vẫn **đếm toàn công ty** (không lọc phạm vi) vì đó là
+  toàn vẹn dữ liệu — câu chặn nói rõ «trên toàn công ty».
+- ⚠️ **Cột nhận diện trên bảng là `id`, không phải `code`** (cùng CR): mã
+  `cv-truong-phong-…` dài bằng cả tên, luôn cụt đuôi trong ô bảng, và chỉ là khóa
+  cho tệp CSV nhập/xuất. Mã vẫn nằm trong biểu mẫu và vẫn lọc được ở bộ lọc nâng
+  cao — đừng tưởng nó đã bỏ.
+- ⚠️ Ô lọc phòng ban của tab «Người đang giữ» nay đọc **danh mục phòng ban**
+  (`useDepartments`, tự tắt khi thiếu `department.read`), nên nó liệt kê MỌI
+  phòng chứ không riêng phòng đang có người giữ, và không còn kèm số người. Mục
+  **«(Chưa gắn phòng ban)»** phải tự thêm bằng tay: `department_id = 0` là bộ lọc
+  thật nhưng danh mục không có dòng nào mang id 0.
 - Nút _Thêm chức vụ_ mở **trang riêng** `/hr/job-positions/new`
   (`CrudConfig.createRoute`) chứ không phải hộp thoại — khuôn có sẵn, dùng chung
   với Loại nghỉ · Phòng họp · Ngày lễ · Xe · Tài xế. Lý do không phải form dài
   (4 ô) mà là mỗi ô kéo theo một hệ quả phải đọc TRƯỚC khi gõ, hộp thoại thì
   buộc cắt ngắn cho vừa khung.
-- ⚠️ **Hai cột ảnh xếp chồng nói HAI thứ khác nhau**: «Đang giữ» là ảnh của
-  NGƯỜI, «Phòng ban đang giữ» là ảnh của PHÒNG BAN (vòng tròn chữ viết tắt tên
-  phòng). Bản đầu cột sau xếp gương mặt nhân viên theo phòng và **lặp lại đúng
-  nhóm mặt của cột trước trên cùng một dòng** — hai cột nói cùng một điều. Chữ
-  viết tắt: tên NGƯỜI lấy hai từ **cuối**, tên PHÒNG lấy hai từ **đầu** (họ Việt
+- ⚠️ **Chữ viết tắt trong vòng tròn ảnh**: tên NGƯỜI lấy hai từ **cuối**
+  (`nameInitials`), tên PHÒNG BAN lấy hai từ **đầu** (`departmentInitials`) (họ Việt
   đứng trước nên phần phân biệt ở cuối; tên phòng đọc xuôi nên ở đầu — lấy hai
   từ cuối thì «Công nghệ thông tin» ra «TT», trùng «Truyền thông»). Cả hai hàm ở
   `shared/utils/name-initials.ts`.

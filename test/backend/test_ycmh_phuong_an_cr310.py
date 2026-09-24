@@ -38,6 +38,14 @@ def _data(resp):
     return json.loads(resp.body)["data"]
 
 
+@pytest.fixture(autouse=True)
+def bat_cum_phuong_an(monkeypatch):
+    """bao-CR-468: cả cụm phương án nằm sau một công tắc và mặc định TẮT. Bộ kiểm này kiểm
+    nghiệp vụ BÊN TRONG cụm nên bật sẵn; bản thân công tắc có bộ kiểm riêng
+    (`test_cong_tac_phuong_an_cr468.py`)."""
+    monkeypatch.setattr(OS, "options_enabled", lambda: True)
+
+
 def _complete(db, pr, user, empty_ids=None):
     """NSTM "Chốt hoàn thành xử lý" phần của mình (đợt 3b) — người yêu cầu chỉ chọn
     được sau bước này, nên mọi test chốt phương án đều phải đi qua đây trước."""

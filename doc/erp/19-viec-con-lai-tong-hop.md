@@ -44,7 +44,8 @@ commit `b5787ccc` nằm trên `origin/main`). Dòng change-log-bao còn ghi "pro
 | **P3b** | Ba chỗ hiện phiên (Quản trị · Trang cá nhân · tab Nhân sự) + khóa quyền `login_session` + endpoint đọc/đá — **XONG: commit `00b740b5` + deploy DEV 14/09 (bao-CR-395)**, chỉ `frontend-v2`, 5 chỗ khác bản vẽ ở §8.5.1 | Prod chờ gộp `erp-v2` → `main` |
 | **P4** | `tab_change_log` + sự kiện ORM + che cột nhạy cảm + chốt gộp nhập liệu — **trước/sau từng trường**, nặng nhất | **XONG mã + test local 14/09 (bao-CR-402)** — chờ commit + deploy |
 | **P5** | Màn `/system/logs`: gộp theo `request_id`, 4 tab, theo dõi trực tiếp, biểu đồ; `/api/audit-logs` trả thêm `request_id` | P2, P4 (tab *Thay đổi* ẩn khi chưa có P4) |
-| **P6** | Phân vùng theo năm + dọn 16 tháng + tách 4 bảng nhật ký khỏi sao lưu đêm (dump hai lượt) + cảnh báo IP lạ / đổi IP giữa phiên / xóa hàng loạt / nhiều 403 | P3, P4 |
+| **P6 đợt 1** | Dọn 16 tháng theo tháng (chỉ tháng đã có gói R2) + gói R2 đủ 4 bảng + cảnh báo IP lạ / đổi thiết bị giữa phiên / xóa hàng loạt / nhiều 403 lên chuông quản trị — **XONG — bao-CR-448, commit `eaff20a5` + deploy DEV 21/09/2026**, prod chưa | P3, P4 |
+| **P6 đợt 2** | Phân vùng theo năm + `DROP PARTITION` + tách 4 bảng nhật ký khỏi sao lưu đêm (dump hai lượt) — **XONG — bao-CR-454, migration `f2c5b9d71a48`, 21/09/2026**, prod chưa | P6 đợt 1 |
 
 ## 3. HRM (đồng nghiệp làm — chỉ theo dõi)
 
@@ -101,6 +102,40 @@ Hai khối khác nhau, đừng lẫn:
   đại ca chốt 14/09: **PENDING**, chưa xếp lịch. Điều kiện "tạm dừng chờ commit của đồng nghiệp"
   trong tài liệu đã hết hiệu lực từ 12/09 (bản chờ đó chính là khối Báo cáo thực hiện ở trên).
   Khi mở lại: chạy checklist mục 14 để rà danh sách theo mã thật rồi mới code.
+- **Giá ba giai đoạn + Chi phí thu mua — bàn 21/09/2026, `bao-CR-453`, bảy điểm chốt
+  22/09/2026, thiết kế `doc/erp/nhap-khau/02-chi-phi-thu-mua.md`, ĐÃ CODE ĐỦ GĐ1..GĐ5 cùng ngày
+  (một commit, lên dev; prod chưa). Phần còn lại của khối này = giá HÀNG ba giai đoạn (tách CR sau).** Đại ca nêu: đơn nhập khẩu hiện nhập giá một lần là xong, nhưng thực tế qua ba bước
+  (kế hoạch mua hàng → giá tạm tính → giá cuối) và **công nợ thật chỉ sinh ở giá cuối**; ngoài ra
+  một đơn còn nhiều khoản chi khác (vận chuyển, kho bãi, khoản người dùng tự khai), muốn tách thành
+  chức năng riêng, chỉ ảnh hưởng giá vốn sản phẩm chứ không đổi giá đơn hàng. Đánh giá sơ bộ:
+  - **Tên gợi ý: «Chi phí thu mua»** (entity `purchase_cost`), ba cột **Dự toán / Tạm tính /
+    Quyết toán** — tránh chữ "giá trị khác" vì không nói được nó là chi phí.
+  - **Đặt ở ĐMH, không ở YCMH.** YCMH chỉ giữ giá đề xuất (= kế hoạch, `PurchaseRequestItem.price`
+    sẵn có). Giá hàng ba giai đoạn = cột giai đoạn SMALLINT + IntEnum trên ĐMH (chỉ đơn nhập khẩu),
+    giá tạm tính + tỷ giá tạm trên dòng ĐMH, thao tác «Chốt giá» khóa giá cuối.
+  - **Nền có sẵn để nới:** `POImportCost` (15 loại chi phí, trạng thái Dự kiến/Thực tế của
+    bao-CR-347, tiền tệ + tỷ giá, cách phân bổ 5 kiểu, NCC dịch vụ, hóa đơn) — nới thành bảng cho
+    mọi đơn + danh mục loại chi phí người dùng tự khai (mỗi loại: cách phân bổ mặc định, có sinh
+    công nợ không, NCC dịch vụ) + thêm cột giai đoạn; phí vận chuyển đang nhập riêng thì gom về.
+    Công nợ vẫn qua `pay_service.upsert()` khóa (source_type, ref_type, ref_id) nên chuyển giai
+    đoạn là cập nhật, không sinh dòng đôi. Lịch sử ba cột lấy từ `tab_change_log` (bao-CR-402).
+    Báo cáo chênh lệch dựng trên `report/import_landed_cost.py`.
+  - **ĐÃ CHỐT 22/09/2026 (điểm 1):** tên **«Chi phí thu mua»** (khớp TK 1562 Thông tư 200), ba
+    nhãn cột **Dự toán / Tạm tính / Quyết toán**, bố cục màn hình theo bản phác: khối nằm trong chi
+    tiết ĐMH cho MỌI loại đơn; **một dòng ba số** thay cho cờ Dự kiến/Thực tế của bao-CR-347 (dữ
+    liệu cũ đổ vào cột Quyết toán); đơn có giai đoạn hiện hành, cột hiện hành tô nền và gõ được,
+    cột đã qua khóa; nút «Chốt tạm tính» / «Chốt quyết toán» theo đơn, ô trống thì chép số cột
+    trước sang; khoản có hóa đơn sớm được quyết toán riêng dòng; bốn ô tổng + cột Lệch; khối «Chi
+    phí theo dòng hàng» thêm nút xem theo giai đoạn; báo cáo giá vốn có sẵn nhận thêm ba cột.
+  - **ĐÃ CHỐT 22/09/2026 (điểm 2-7, theo đúng phương án đề xuất):** (2) nới `POImportCost` tại chỗ,
+    đổi tên bảng thành `tab_po_cost`, phí vận chuyển giữ nguyên trên lần giao, chỉ hiện thêm như dòng
+    chỉ xem; (3) 15 mã sẵn có thành dòng seed của danh mục `tab_po_cost_type`, quản trị thêm bớt, mọi
+    loại sinh công nợ trừ loại đánh dấu «không sinh»; (4) công nợ chỉ sinh ở Quyết toán; (5)
+    `purchase_order.write` chốt, mở lại cần `purchase_order.approve` + lý do; (6) giá hàng ba giai
+    đoạn tách CR sau; (7) mỗi giai đoạn một tỷ giá. **Thiết kế đầy đủ** (11 mục: chức năng A-F, mô
+    hình dữ liệu, API, audit, phân quyền, test, 5 đợt) ở `doc/erp/nhap-khau/02-chi-phi-thu-mua.md`.
+    **Đã làm 22/09/2026:** GĐ1 backend + migration `05a62d38a47a` → GĐ2/GĐ3 v1 → GĐ4 port v2 →
+    GĐ5 tài liệu + HDSD (`seed_help_chi_phi_thu_mua.py`), một commit lên dev.
 
 ## 6. Giao diện v2
 
@@ -209,14 +244,15 @@ không chạy — hợp đồng có giá và điều khoản, cùng loại rò v
 - **Duyệt dấu** (`doc/duyet-dau/TIEN-DO.md`): Pha 5 `SealApprovalPanel` + E2E; 3 quyết định A/B/C chờ khách.
 - **Đặt xe** (`doc/dat-xe-duyet-dau/TIEN-DO.md`): E2E 6 bước; cùng 3 quyết định A/B/C.
 - **TASKS.md cũ**: Google OAuth · đơn vị quy đổi · duyệt PO theo ngưỡng · Phase 5 (mẫu in, audit UI, sao lưu).
-- **Menu `manage: true` mở bằng hành động backend KHÔNG gác** (thấy 16/09/2026, ĐANG ĐỎ):
-  `test_dong_bo_giao_dien_v2.py::test_muc_menu_manage_khong_mo_bang_hanh_dong_ma` báo ba cặp —
-  `coffee_member.delete`, `login_session.create`, `login_session.write`. Nghĩa là cấp ba hành
-  động đó cho ai thì người đó **thấy mục menu rồi vào trong ăn 403 im lặng**, vì không endpoint
-  nào gác đúng cặp ấy. Chữa một trong hai đường: bỏ `manage: true` ở mục menu (đổi sang
-  `action:` đúng hành động backend thật sự gác), hoặc thêm cặp vào `_LECH_DA_BIET` của tệp test
-  **kèm lý do**. Lỗi CÓ SẴN, không do sổ đồng bộ — **ai làm tới Điểm cà phê / phiên đăng nhập
-  thì dọn luôn**.
+- ~~**Menu `manage: true` mở bằng hành động backend KHÔNG gác**~~ (thấy 16/09/2026) — **XONG
+  22/09/2026, bao-CR-455.** Ba cặp bị báo đã xử hết, hai gốc hai cách: `login_session.create` +
+  `login_session.write` → **bỏ `manage: true`**, mục rơi về cổng `read` (backend chỉ gác
+  `read` + `delete`; phiên do hệ tự mở, không ai tạo tay và không có gì để sửa) — tiện vá luôn
+  lỗi ngược: người chỉ có `login_session.read` trước đó KHÔNG thấy mục nào. `coffee_member.delete`
+  → **ghi vào `_LECH_DA_BIET`**: phân hệ Dego Coffee cố ý không có `@router.delete` nào, thành
+  viên nghỉ thì chuyển `status` sang `LEFT` để `mark_member_left` thu hồi số dư kèm dòng sổ điểm.
+  Kèm theo, bộ quét của bài kiểm nay **bỏ chú thích trước khi cắt khối** — trước đó một chú thích
+  chỉ *nhắc tới* cờ cũng bị tính là khai cờ.
 - **Nợ kỹ thuật**: N-008 báo cáo mua hàng gom theo TÊN phòng ban · N-015 `tab_contract` còn 2 cột
   chữ tiếng Việt · phân quyền hợp đồng trên prod chưa đổi (6 vai trò còn `contract = all`) ·
   «Tên trên hóa đơn» ĐMH backend chưa ghi lúc lưu.

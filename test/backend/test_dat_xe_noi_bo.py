@@ -68,8 +68,9 @@ def test_stops_are_serialized_and_trimmed_in_order(db):
     # Ô rỗng bị loại; thứ tự giữ nguyên; mỗi điểm là dict có địa điểm + liên hệ.
     stored = json.loads(b.stops)
     assert [s["location"] for s in stored] == ["Kho Q4", "Bãi Q1"]
-    # Chuỗi (bản cũ) được bọc {location, contact_name rỗng, contact_phone rỗng}.
-    assert stored[0] == {"location": "Kho Q4", "contact_name": "", "contact_phone": ""}
+    # Chuỗi (bản cũ) được bọc {location, contact_name rỗng, contact_phone rỗng, notes rỗng}.
+    assert stored[0] == {"location": "Kho Q4", "contact_name": "", "contact_phone": "",
+                         "notes": ""}
     # Response tách chuỗi JSON trở lại thành list StopItem.
     out = VehicleBookingResponse.model_validate(b)
     assert [s.location for s in out.stops] == ["Kho Q4", "Bãi Q1"]
@@ -84,7 +85,8 @@ def test_stops_keep_contact_name_and_phone(db):
     b = create_booking(db, payload, actor, submit=False)
     stored = json.loads(b.stops)
     assert len(stored) == 1
-    assert stored[0] == {"location": "Kho Q4", "contact_name": "Anh Ba", "contact_phone": "0909"}
+    assert stored[0] == {"location": "Kho Q4", "contact_name": "Anh Ba", "contact_phone": "0909",
+                         "notes": ""}
     out = VehicleBookingResponse.model_validate(b)
     assert out.stops[0].contact_name == "Anh Ba"
     assert out.stops[0].contact_phone == "0909"

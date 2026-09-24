@@ -5,7 +5,7 @@ import { assistantModule } from '@/modules/assistant/routes'
 import { customerModule } from '@/modules/customer/routes'
 import { degoCoffeeModule } from '@/modules/dego-coffee/routes'
 import { documentModule } from '@/modules/document/routes'
-// import { dossierModule } from '@/modules/dossier/routes'
+import { dossierModule } from '@/modules/dossier/routes'
 import { financeModule } from '@/modules/finance/routes'
 import { forumModule } from '@/modules/forum/routes'
 import { helpCenterModule } from '@/modules/help/routes'
@@ -19,6 +19,7 @@ import { supportModule } from '@/modules/support/routes'
 import { systemModule } from '@/modules/system/routes'
 import { vehicleBookingModule } from '@/modules/vehicle-booking/routes'
 import { workModule } from '@/modules/work/routes'
+import { DOSSIER_UI_ENABLED } from '@/shared/constants/feature-flags'
 import type { ErpModule } from './module-definition'
 
 /**
@@ -39,7 +40,11 @@ export const allModules: ErpModule[] = [
   financeModule,
   workModule,
   documentModule,
-  // dossierModule: Tạm thời ẩn hoàn toàn khỏi danh sách phân hệ trong phiên bản này theo yêu cầu
+  //  HỒ SƠ tạm ẩn — không đăng ký thì không có thẻ, không có mục thanh bên, và
+  //  `/dossier/...` ra 404. Cố ý KHÔNG dùng `enabled: false`: cách đó vẫn dựng
+  //  một thẻ «Sắp có» mờ trên màn chọn phân hệ, tức vẫn khoe ra thứ đang muốn
+  //  giấu. Xem `DOSSIER_UI_ENABLED`.
+  ...(DOSSIER_UI_ENABLED ? [dossierModule] : []),
   approvalModule,
   approvalSealModule,
   vehicleBookingModule,

@@ -16,7 +16,7 @@ from app.modules.payment_request import service as pr_service
 from app.modules.payment_request.schema import LineIn, PRequestCreate
 from app.modules.purchase_order import service
 from app.modules.purchase_order.controller import _out
-from app.modules.purchase_order.model import ImportCostType, OrderType, PurchaseOrder
+from app.modules.purchase_order.model import CostStage, ImportCostType, OrderType, PurchaseOrder
 from app.modules.purchase_order.schema import POImportCostIn, POItemIn
 
 RATE = 25_000.0
@@ -25,6 +25,8 @@ SRC = service.IMPORT_COST_SOURCE
 
 def _make_po(db, seed, code="PO-NK-P5", **kw):
     kw.setdefault("status", "draft")
+    # bao-CR-453: chỉ số QUYẾT TOÁN mới sinh nợ — dựng đơn ở giai đoạn đó để giữ nguyên luật P5.
+    kw.setdefault("cost_stage", int(CostStage.FINAL))
     po = PurchaseOrder(code=code, company_id=seed.company_id, supplier_code="NX",
                        supplier_name=seed.sup_name, order_date="2026-09-08",
                        order_type=int(OrderType.IMPORT), currency="USD", exchange_rate=RATE, **kw)
@@ -41,7 +43,7 @@ def _make_po(db, seed, code="PO-NK-P5", **kw):
 def _cost_in(**kw):
     base = dict(cost_type=int(ImportCostType.OCEAN_FREIGHT), description="Cước biển",
                 supplier_code="HANGTAU", supplier_name="Hãng tàu ABC",
-                currency="VND", amount=1_000_000, vat=8)
+                currency="VND", final_amount=1_000_000, vat=8)
     base.update(kw)
     return POImportCostIn(**base)
 
@@ -49,6 +51,18 @@ def _cost_in(**kw):
 def _save_costs(db, po, costs):
     service._save_import_costs(db, po, costs, user_id=1)
     db.flush()
+
+
+REOPEN_REASON = "Hóa đơn hãng tàu về sai số, cần sửa lại"
+
+
+def _edit_finalized(db, po, costs):
+    """bao-CR-467: dòng đã quyết toán là dòng KHÓA — muốn sửa thì mở lại giai đoạn, sửa, rồi
+    chốt lại. Nợ chưa chi bị gỡ lúc mở lại và dựng lại lúc chốt, nên mỗi dòng vẫn đúng MỘT
+    khoản nợ."""
+    service.reopen_cost_stage(db, po, int(CostStage.PROVISIONAL), REOPEN_REASON, user_id=1)
+    _save_costs(db, po, costs)
+    service.advance_cost_stage(db, po, int(CostStage.FINAL), user_id=1)
 
 
 def _cost_payables(db, po):
@@ -75,7 +89,7 @@ def test_duyet_don_moi_dong_chi_phi_thanh_mot_khoan_no(db, seed):
     _save_costs(db, po, [
         _cost_in(payment_due_date="2026-10-15", invoice_no="HD-001", invoice_date="2026-09-10"),
         _cost_in(cost_type=int(ImportCostType.IMPORT_DUTY), description="Thuế NK",
-                 supplier_code="NSNN", supplier_name="Ngân sách nhà nước", amount=500_000, vat=0),
+                 supplier_code="NSNN", supplier_name="Ngân sách nhà nước", final_amount=500_000, vat=0),
     ])
     service.set_status(db, po.id, "approved", user_id=1)
 
@@ -112,18 +126,21 @@ def test_khai_them_sua_va_xoa_dong_sau_duyet_no_chay_theo(db, seed):
     (pay,) = _cost_payables(db, po)
     row_id = service.import_costs_of(db, po.id)[0].id
 
-    # Sửa số tiền → cùng khoản nợ (idempotent), tổng đổi theo
-    _save_costs(db, po, [_cost_in(id=row_id, amount=2_000_000, vat=0)])
+    assert pay.ref_id == row_id
+
+    # Sửa số tiền → vẫn đúng MỘT khoản nợ của dòng đó, tổng đổi theo
+    _edit_finalized(db, po, [_cost_in(id=row_id, final_amount=2_000_000, vat=0)])
     (pay2,) = _cost_payables(db, po)
-    assert pay2.id == pay.id and float(pay2.total) == 2_000_000.0
+    assert pay2.ref_id == row_id and float(pay2.total) == 2_000_000.0
 
     # Bỏ NCC → không còn biết trả cho ai → gỡ nợ (chưa chi)
-    _save_costs(db, po, [_cost_in(id=row_id, supplier_code="", supplier_name="")])
+    _edit_finalized(db, po, [_cost_in(id=row_id, supplier_code="", supplier_name="")])
     assert _cost_payables(db, po) == []
 
-    # Chọn lại NCC → nợ quay lại; xóa dòng → nợ mất
-    _save_costs(db, po, [_cost_in(id=row_id)])
+    # Chọn lại NCC → nợ quay lại; mở lại rồi xóa dòng → nợ mất
+    _edit_finalized(db, po, [_cost_in(id=row_id)])
     assert len(_cost_payables(db, po)) == 1
+    service.reopen_cost_stage(db, po, int(CostStage.PROVISIONAL), REOPEN_REASON, user_id=1)
     _save_costs(db, po, [])
     assert _cost_payables(db, po) == []
     assert service.import_costs_of(db, po.id) == []
@@ -137,16 +154,23 @@ def test_dong_da_chi_thi_khong_xoa_duoc(db, seed):
     pay.paid_amount = 300_000
     db.flush()
 
+    # bao-CR-467 chặn sớm hơn một nhịp: dòng đã quyết toán thì không xóa, chưa cần hỏi tới
+    # tiền đã chi. Chốt cũ vẫn còn nguyên và vẫn là lớp chặn cuối — gọi thẳng nó để canh.
     with pytest.raises(HTTPException) as e:
         _save_costs(db, po, [])
-    assert e.value.status_code == 400 and "đã chi" in e.value.detail
+    assert e.value.status_code == 400 and "không xóa được" in e.value.detail
     assert len(service.import_costs_of(db, po.id)) == 1
+
+    row = service.import_costs_of(db, po.id)[0]
+    with pytest.raises(HTTPException) as e:
+        service.block_delete_paid_import_cost(db, row)
+    assert e.value.status_code == 400 and "đã chi" in e.value.detail
 
 
 def test_huy_don_go_no_chua_chi_giu_no_da_chi(db, seed):
     po = _make_po(db, seed)
     service.set_status(db, po.id, "approved", user_id=1)
-    _save_costs(db, po, [_cost_in(), _cost_in(description="Phí cảng", amount=200_000, vat=0)])
+    _save_costs(db, po, [_cost_in(), _cost_in(description="Phí cảng", final_amount=200_000, vat=0)])
     unpaid, paid = _cost_payables(db, po)
     paid.paid_amount = 200_000
     db.flush()
@@ -163,7 +187,7 @@ def test_don_nk_con_chi_phi_chua_tra_thi_khong_hoan_thanh_duoc(db, seed):
     _save_costs(db, po, [
         _cost_in(description="Cước biển chặng 1"),
         _cost_in(cost_type=int(ImportCostType.IMPORT_DUTY), description="",
-                 supplier_code="NSNN", supplier_name="Ngân sách nhà nước", amount=500_000, vat=0),
+                 supplier_code="NSNN", supplier_name="Ngân sách nhà nước", final_amount=500_000, vat=0),
     ])
     freight, duty = _cost_payables(db, po)
     freight.paid_amount = 1_080_000
@@ -206,6 +230,8 @@ def test_don_trong_nuoc_va_don_khong_co_chi_phi_khong_bi_chan(db, seed):
     service.set_status(db, po_tn.id, "approved", user_id=1)
     _save_costs(db, po_tn, [_cost_in()])
     service.block_complete_unpaid_import_costs(db, po_tn)   # đơn trong nước giữ luật cũ
+    # bao-CR-453: đơn trong nước cũng khai được chi phí và cũng sinh nợ, chỉ chốt Hoàn thành là khác
+    assert len(_cost_payables(db, po_tn)) == 1
 
 
 # ── Tạo Yêu cầu thanh toán từ nợ chi phí ────────────────────────────────────────
@@ -214,9 +240,9 @@ def test_tao_yctt_tach_moi_ncc_mot_phieu_va_chi_tien_tru_dung_khoan(db, seed):
     service.set_status(db, po.id, "approved", user_id=1)
     _save_costs(db, po, [
         _cost_in(invoice_no="HD-001"),
-        _cost_in(description="Phí cảng", amount=200_000, vat=0),                     # chưa có số HĐ
+        _cost_in(description="Phí cảng", final_amount=200_000, vat=0),                     # chưa có số HĐ
         _cost_in(cost_type=int(ImportCostType.IMPORT_DUTY), description="Thuế NK",
-                 supplier_code="NSNN", supplier_name="Ngân sách nhà nước", amount=500_000, vat=0),
+                 supplier_code="NSNN", supplier_name="Ngân sách nhà nước", final_amount=500_000, vat=0),
     ])
     freight, port, duty = _cost_payables(db, po)
 

@@ -167,6 +167,26 @@ describe('SearchSelect', () => {
     expect(onChange).toHaveBeenCalledWith('28')
   })
 
+  it('kiểu searchInTrigger: bấm LẦN HAI vào ô đang mở không đóng danh sách, gõ không bị nối vào nhãn cũ', async () => {
+    //  bao-CR-475: Radix coi cú bấm vào chính ô gõ (nằm NGOÀI khung danh sách) là «bấm
+    //  ra ngoài» → đóng danh sách, ô hiện lại nhãn đã chọn, gõ tiếp thành «Hợp đồng · HDb»
+    //  và không còn mục nào khớp. Người dùng thường bấm lại vào ô để đặt con trỏ — đúng
+    //  thao tác đại ca yêu cầu («nhập text rồi chọn trên đó»).
+    const nguoi = userEvent.setup()
+    const onChange = vi.fn()
+    render(
+      <SearchSelect value="5" onChange={onChange} options={DOC_TYPES} searchInTrigger placeholder="Chọn loại" />,
+    )
+    const combobox = screen.getByRole('combobox')
+    await nguoi.click(combobox)
+    await nguoi.click(combobox)
+    expect(combobox).toHaveAttribute('aria-expanded', 'true')
+    await nguoi.type(combobox, 'nghi')
+    expect(combobox).toHaveValue('nghi')
+    await nguoi.click(screen.getByText('Giấy nghỉ phép · GNP'))
+    expect(onChange).toHaveBeenCalledWith('28')
+  })
+
   it('lọc còn ít hơn mức cắt thì KHÔNG hiện câu «còn … mục»', async () => {
     const nhieu = Array.from({ length: 75 }, (_, i) => ({
       value: String(i),

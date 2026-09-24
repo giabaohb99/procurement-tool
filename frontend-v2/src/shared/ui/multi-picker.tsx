@@ -56,6 +56,24 @@ interface MultiPickerProps<Id extends MultiPickerId = MultiPickerId> {
    * chọn N". Dùng khi nơi gọi tự bày danh sách đã chọn theo cách riêng (vd thẻ công ty).
    */
   hideChips?: boolean
+  /**
+   * Khung chọn nói TÊN mục đầu kèm đuôi «+n», và bỏ hẳn dải chip (bao-CR-423).
+   *
+   * Dành cho ô lọc trên thanh công cụ: ở đó ô cao đúng một hàng và đứng cạnh bốn
+   * năm ô khác, nên chip bên dưới đẩy cả bảng xuống còn "Đã chọn 1" thì kém hẳn
+   * ô chọn một giá trị nó vừa thay thế — người dùng phải mở ra mới biết đang lọc
+   * cái gì. Tên đầy đủ của mọi mục nằm ở thuộc tính `title` để rê chuột xem được.
+   */
+  summaryInTrigger?: boolean
+  /**
+   * Bỏ hàng «Chọn tất cả» trên đầu danh sách.
+   *
+   * ⚠️ Dùng khi «chọn hết» là một thao tác gần như luôn SAI, không phải khi
+   * danh sách dài. Ví dụ ô *Hồ sơ tiên quyết*: chọn mọi tờ trong kho làm tiên
+   * quyết cho một tờ thì tờ đó khóa gần như vĩnh viễn, mà nút lại nằm đúng chỗ
+   * dễ bấm nhầm nhất — ngay trên mục đầu tiên.
+   */
+  hideSelectAll?: boolean
 }
 
 /** Số dòng tối đa trong danh sách thả xuống — dài hơn thì bắt gõ tìm. */
@@ -99,6 +117,8 @@ export function MultiPicker<Id extends MultiPickerId = MultiPickerId>({
   clearInTrigger = false,
   chipsInTrigger = false,
   hideChips = false,
+  summaryInTrigger = false,
+  hideSelectAll = false,
 }: MultiPickerProps<Id>) {
   const [open, setOpen] = useState(false)
   const [keyword, setKeyword] = useState('')
@@ -125,6 +145,12 @@ export function MultiPicker<Id extends MultiPickerId = MultiPickerId>({
 
   const exceedsCollapseLimit = selected.length > MAX_CHIPS
   const visibleChips = xemHetChip ? selected : selected.slice(0, MAX_CHIPS)
+
+  //  Tên mọi mục đã chọn — vừa là câu tóm tắt trong khung, vừa là `title` để rê
+  //  chuột đọc đủ khi danh sách dài hơn bề ngang ô.
+  const selectedLabels = selected.map((item) => item.label)
+  const summaryText =
+    selected.length > 1 ? `${selectedLabels[0]} +${selected.length - 1}` : (selectedLabels[0] ?? '')
 
   /** Đã tick hết phần đang lọc chưa — quyết định nút là "Chọn" hay "Bỏ chọn". */
   const allPicked = filtered.length > 0 && filtered.every((item) => value.includes(item.id))
@@ -181,9 +207,17 @@ export function MultiPicker<Id extends MultiPickerId = MultiPickerId>({
                 </Badge>
               ))
             ) : (
-              /*  Có chọn rồi thì nút nói SỐ LƯỢNG, không lặp lại câu mời chọn. */
-              <span className="flex-1 truncate self-center text-left">
-                {selected.length > 0 ? `Đã chọn ${selected.length}` : placeholder}
+              /*  Có chọn rồi thì nút nói SỐ LƯỢNG, không lặp lại câu mời chọn —
+                  trừ khi nơi gọi xin câu tóm tắt có TÊN (`summaryInTrigger`). */
+              <span
+                className="flex-1 truncate self-center text-left"
+                title={summaryInTrigger && selected.length > 0 ? selectedLabels.join(', ') : undefined}
+              >
+                {selected.length === 0
+                  ? placeholder
+                  : summaryInTrigger
+                    ? summaryText
+                    : `Đã chọn ${selected.length}`}
               </span>
             )}
             {/*  Dấu X BỎ HẾT nằm ngay trong khung chọn (khi bật `clearInTrigger`).
@@ -214,7 +248,7 @@ export function MultiPicker<Id extends MultiPickerId = MultiPickerId>({
               onChange={(event) => setKeyword(event.target.value)}
             />
           </div>
-          {filtered.length > 0 && (
+          {filtered.length > 0 && !hideSelectAll && (
             <div className="flex items-center justify-between gap-2 border-b px-2 py-1.5">
               <button
                 type="button"
@@ -274,7 +308,7 @@ export function MultiPicker<Id extends MultiPickerId = MultiPickerId>({
 
       {/*  Dải chip dưới ô — bỏ khi hiện chip trong khung (`chipsInTrigger`) hoặc khi
            nơi gọi tự bày danh sách đã chọn (`hideChips`). */}
-      {!chipsInTrigger && !hideChips && selected.length > 0 && (
+      {!chipsInTrigger && !hideChips && !summaryInTrigger && selected.length > 0 && (
         <div className="space-y-1.5">
           {/*  Dải chip. Khi bung thì đóng khung + cho cuộn, không để nó đẩy phần
                dưới của form đi (xem `CAO_TOI_DA_KHI_BUNG`). */}

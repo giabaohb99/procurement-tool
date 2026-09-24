@@ -239,6 +239,19 @@ export function BookingDateTimePicker({
               onMonthChange={setViewMonth}
               disabled={minDate ? { before: minDate } : undefined}
               onSelect={(d) => d && pickDate(toDateInputValue(d))}
+              //  Lịch GIÃN HẾT bề ngang hộp. Hàng Giờ bên dưới (hai ô chọn + nút
+              //  "Hôm nay") rộng hơn lưới 7 ô × 32px, nên nó mới là thứ quyết định
+              //  bề rộng hộp. Để mặc định thì khối tháng co về 224px và dính mép
+              //  trái, trong khi hai mũi tên ‹ › bám theo mép HỘP — tên tháng lệch
+              //  khỏi hai mũi tên, bên phải hở một mảng trắng (lỗi 23/09/2026).
+              //  Khai ở đây chứ không sửa `shared/ui/calendar`: 5 màn khác dùng chung
+              //  lịch đó trong hộp vừa khít lưới, không có hàng nào rộng hơn.
+              classNames={{
+                month: 'flex flex-1 flex-col gap-4',
+                weekday: 'flex-1 text-[0.75rem] font-normal text-muted-foreground',
+                //  Ô giãn, NÚT vẫn 32px căn giữa ô — vòng chọn giữ nguyên dáng.
+                day: 'flex flex-1 justify-center p-0 text-center text-sm',
+              }}
             />
             <div className="flex items-center gap-2 border-t p-3">
               <span className="text-sm font-medium text-muted-foreground">Giờ</span>
@@ -304,7 +317,10 @@ function SegBox({
       }}
       className={cn(
         'min-w-0 bg-transparent text-center tabular-nums outline-none placeholder:text-muted-foreground',
-        len === 4 ? 'w-9' : 'w-6',
+        //  Ô năm `w-11` (44px), KHÔNG `w-9`: bề rộng phải đủ cho chữ GỢI Ý chứ không
+        //  chỉ cho số — "NNNN" cần 41px (N rộng hơn chữ số), ở 36px nó bị xén còn
+        //  "NNN" cụt (đo 23/09/2026). Ô hai số giữ `w-6`: "NN"/"GG" cần 21px.
+        len === 4 ? 'w-11' : 'w-6',
       )}
     />
   )
@@ -323,7 +339,10 @@ function TimeSelect({
 }) {
   return (
     <Select value={value || undefined} onValueChange={onChange}>
-      <SelectTrigger className="h-8 w-[64px]" aria-label={placeholder}>
+      {/*  76px, KHÔNG 64: `SelectTrigger` của shadcn đã ăn sẵn `px-3` hai bên + khe
+           `gap-2` + mũi tên 16px = 48px. Ở 64px vùng chữ chỉ còn 14px, trong khi
+           hai chữ số cần ~20px — "08" bị mũi tên xén thành "0" (đo lại 23/09/2026). */}
+      <SelectTrigger className="h-8 w-[76px] tabular-nums" aria-label={placeholder}>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent className="max-h-60">

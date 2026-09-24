@@ -28,8 +28,11 @@ import { usePermission } from '@/core/authorization/use-permission'
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
 import { useDepartments } from '@/modules/hr/hooks/use-departments'
 import { useEmployees } from '@/modules/hr/hooks/use-employees'
+import { RequiredDossiersCard } from '@/modules/dossier/components/required-dossiers-card'
+import { DOC_KINDS } from '@/modules/dossier/types/dossier-applicability'
 import { AuditTimeline } from '@/shared/audit'
 import { appRoutes } from '@/shared/constants/app-routes'
+import { DOSSIER_UI_ENABLED } from '@/shared/constants/feature-flags'
 import { queryKeys } from '@/shared/constants/query-keys'
 import {
   AlertDialog,
@@ -78,6 +81,7 @@ import { TransferDeptDialog, type TransferDeptMode } from '../components/transfe
 import {
   useAssignPurchaser,
   useDeletePurchaseRequest,
+  useDefaultDeptHead,
   useDeptHeadCandidates,
   useOrderProgress,
   usePurchaseRequest,
@@ -197,7 +201,16 @@ export function PurchaseRequestDetailPage() {
     isNew ? applyPurchaseAssistantDraft(createEmptyPurchaseRequest(user), assistantDraft) : null,
   )
   // CR-071 — chỉ hỏi backend khi đang SỬA: ô TBP lúc chỉ đọc là chữ, không cần danh sách.
-  const { data: deptHeadData } = useDeptHeadCandidates(purchaseRequestId, editing)
+  // bao-CR-474: tra theo PHÒNG BAN trên form (tạo mới cũng chọn được) + trưởng phòng mặc
+  // định để ô luôn hiện một người khi chưa ai được chọn.
+  const formDepartment = (draft ?? serverData)?.department ?? ''
+  const formDepartmentId = (draft ?? serverData)?.department_id ?? 0
+  const { data: deptHeadData } = useDeptHeadCandidates(
+    formDepartment,
+    (draft ?? serverData)?.company_id ?? 0,
+    editing,
+  )
+  const { data: defaultDeptHead } = useDefaultDeptHead(formDepartment, formDepartmentId, editing)
   const [reasonFor, setReasonFor] = useState<ReasonAction | null>(null)
   const [reason, setReason] = useState('')
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
@@ -336,6 +349,7 @@ export function PurchaseRequestDetailPage() {
   // Hết dòng gom được thì ẨN mục này thay vì để bấm ra lỗi 400 "Không còn dòng
   // nào tạo được đơn" — khách từng tưởng lỗi trong khi đơn đã tạo rồi (15/09).
   const canGenerateFromOptions =
+    !!data.options_enabled &&
     isPrOptionStageOpen(data.status) &&
     can('purchase_order', 'create') &&
     hasDoneLine &&
@@ -760,7 +774,8 @@ export function PurchaseRequestDetailPage() {
           vào được để XEM lại phương án đã chốt. Đợt 3b: màn đó là bàn
           làm việc của NSTM nên đòi thêm quyền ghi — người yêu cầu
           thường xem/chọn phương án ngay tại thẻ Phương án bên dưới. */}
-      {!isNew && isDispatched(data.status) && can('purchase_request', 'write') && (
+      {/* bao-CR-468: công tắc tắt thì cả nút này lẫn thẻ Chọn phương án bên dưới biến mất. */}
+      {!isNew && data.options_enabled && isDispatched(data.status) && can('purchase_request', 'write') && (
         <Button variant="outline" asChild>
           <Link to={appRoutes.procurement.purchaseRequestProcess(data.id)}>
             <ListChecks />
@@ -906,6 +921,7 @@ export function PurchaseRequestDetailPage() {
             employees={employeesData?.items}
             departments={departmentsData?.items}
             deptHeadCandidates={deptHeadData?.items}
+            defaultDeptHead={defaultDeptHead}
             urgentEditable={!closed && !editing && can('purchase_request', 'write')}
             onUrgentChange={(value) => void setUrgent.mutateAsync(value)}
             onChange={patch}
@@ -961,7 +977,9 @@ export function PurchaseRequestDetailPage() {
 
           {/* bao-CR-310 đợt 3b: dòng nào NSTM đã "chốt hoàn thành xử lý" thì hiện
               ở đây cho người yêu cầu chọn phương án; thẻ tự ẩn khi chưa có dòng nào. */}
-          {!isNew && !editing && <PurchaseRequestChooseCard purchaseRequest={data} />}
+          {!isNew && !editing && data.options_enabled && (
+            <PurchaseRequestChooseCard purchaseRequest={data} />
+          )}
 
           {/* bao-CR-422: hai chiều liên kết của phiếu — YCBG nào đẻ ra nó, nó đẻ ra
               ĐMH nào. Thẻ đứng yên một chỗ kể cả khi chưa có gì để bày, vì "chưa có
@@ -973,6 +991,16 @@ export function PurchaseRequestDetailPage() {
             entityId={purchaseRequestId}
             canManage={canManageAttachments}
           />
+
+          {/* Thẻ tự ẩn khi thiếu quyền / đang nạp / không có hồ sơ nào khớp
+              điều kiện áp dụng. Cờ ngoài là công tắc TẠM ẨN cả phân hệ Hồ sơ
+              (21/09/2026) — xem `DOSSIER_UI_ENABLED`. */}
+          {DOSSIER_UI_ENABLED && (
+            <RequiredDossiersCard
+              docKind={DOC_KINDS.PURCHASE_REQUEST}
+              docId={purchaseRequestId || undefined}
+            />
+          )}
 
           {!isNew && (
             <>

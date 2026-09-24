@@ -4,7 +4,7 @@ Phase 0: hai adapter Claude + Gemini (gọi REST bằng `requests`). App KHÔNG 
 SDK/nhà nào; luôn qua `get_provider()`. Sau này thêm nhà mới (vd model mở tự nhúng docker)
 chỉ là thêm một adapter đăng ký vào `_REGISTRY`.
 """
-from app.core.config import settings
+from app.core import app_settings
 
 from .base import (
     ChatMessage,
@@ -32,13 +32,13 @@ def get_provider(name: str | None = None) -> Provider:
             raise ProviderError(f"Không có nhà cung cấp '{name}'")
         return p
     # Không chỉ định: dùng mặc định nếu đã cấu hình, không thì nhà đầu tiên có key.
-    default = _REGISTRY.get(settings.AI_DEFAULT_PROVIDER)
+    default = _REGISTRY.get(app_settings.get("ai_default_provider"))
     if default and default.is_configured():
         return default
     for p in _REGISTRY.values():
         if p.is_configured():
             return p
-    raise ProviderError("Chưa cấu hình API key cho nhà cung cấp AI nào (.env)")
+    raise ProviderError("Chưa cấu hình API key cho nhà cung cấp AI nào — vào Quản trị > Cấu hình hệ thống, thẻ Trợ lý AI.")
 
 
 def configured_providers() -> list[dict]:

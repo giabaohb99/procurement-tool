@@ -24,19 +24,83 @@ REGISTRY = {
     "r2_bucket": ("str", "R2_BUCKET"),
     "r2_public_url": ("str", "R2_PUBLIC_URL"),
     "pr_dispatch_enabled": ("bool", "PR_DISPATCH_ENABLED"),
+    "pr_options_enabled": ("bool", "PR_OPTIONS_ENABLED"),
     #  Cảnh báo mở/tải tệp đính kèm văn bản — sửa được ngay trên màn Cấu hình
     #  hệ thống, không cần deploy (đúng thứ cần khi đang có nghi vấn rò tài liệu).
     "doc_file_alert_threshold": ("int", "DOC_FILE_ALERT_THRESHOLD"),
     "doc_file_alert_window_min": ("int", "DOC_FILE_ALERT_WINDOW_MIN"),
     "doc_file_alert_recipients": ("str", "DOC_FILE_ALERT_RECIPIENTS"),
+    #  Cụm Trợ lý AI (bao-CR-429). Khóa API là thứ NGƯỜI DÙNG tự đăng ký lấy về
+    #  rồi tự dán vào — bắt họ mở SSH sửa .env là chặn đúng người đáng ra tự làm
+    #  được. Model và trần câu hỏi cũng đổi luôn được vì chúng chỉ là lựa chọn
+    #  chi phí, sai thì sửa lại, không hỏng dữ liệu.
+    "ai_enabled": ("bool", "AI_ENABLED"),
+    "ai_default_provider": ("str", "AI_DEFAULT_PROVIDER"),
+    "ai_claude_model": ("str", "AI_CLAUDE_MODEL"),
+    "ai_gemini_model": ("str", "AI_GEMINI_MODEL"),
+    "ai_daily_msg_limit": ("int", "AI_DAILY_MSG_LIMIT"),
+    "ai_lookup_model": ("str", "AI_LOOKUP_MODEL"),
+    #  Cụm đồng bộ app đặt xe / duyệt dấu CŨ (bao-CR-429 nhịp 3). Đây đúng là chỗ
+    #  cần sửa nóng nhất: khi đường máy-gọi-máy giữa hai hệ trục trặc thì thứ phải
+    #  làm ngay là TẮT nó, mà tắt bằng `.env` nghĩa là sửa tệp rồi dựng lại dịch vụ.
+    "sync_datxe_enabled": ("bool", "SYNC_DATXE_ENABLED"),
+    "sync_legacy_api_base": ("str", "SYNC_LEGACY_API_BASE"),
+    "sync_datxe_auto_create": ("bool", "SYNC_DATXE_AUTO_CREATE"),
+    "legacy_firebase_db_url": ("str", "LEGACY_FIREBASE_DB_URL"),
+    #  Cụm POS365 (Điểm cà phê).
+    "pos365_base_url": ("str", "POS365_BASE_URL"),
+    "pos365_username": ("str", "POS365_USERNAME"),
+    "pos365_payment_account_id": ("int", "POS365_PAYMENT_ACCOUNT_ID"),
+    #  Email của luồng duyệt — ba ô này vốn chỉ bật ở môi trường thử, tức đúng
+    #  loại phải bật tắt liên tục mà không ai muốn deploy vì nó.
+    "email_workflow_enabled": ("bool", "EMAIL_WORKFLOW_ENABLED"),
+    "email_test_manager": ("str", "EMAIL_TEST_MANAGER"),
+    "email_test_staff": ("str", "EMAIL_TEST_STAFF"),
+    #  Thông số chung.
+    "frontend_url": ("str", "FRONTEND_URL"),
+    "notification_keep_days": ("int", "NOTIFICATION_KEEP_DAYS"),
+    "backup_keep": ("int", "BACKUP_KEEP"),
 }
+
+#  BỐN khóa AI CỐ Ý ở lại `.env`, đừng dời theo cho đủ bộ:
+#  `AI_EMBED_MODEL` + `AI_EMBED_DIM` — đổi là MỌI vector đã nhúng thành vô nghĩa
+#  và phải dựng lại cả kho; một ô nhập trên màn hình không nói được cái giá đó.
+#  `QDRANT_URL` + `AI_RAG_ENABLED` — gắn với việc container `qdrant` có chạy hay
+#  không, tức chuyện của người dựng máy chứ không phải lựa chọn nghiệp vụ.
 
 # key bí mật → thuộc tính fallback .env — NHẬP được nhưng không hiển thị lại
 SECRETS = {
     "smtp_password": "SMTP_PASSWORD",
     "r2_access_key_id": "R2_ACCESS_KEY_ID",
     "r2_secret_access_key": "R2_SECRET_ACCESS_KEY",
+    "anthropic_api_key": "ANTHROPIC_API_KEY",
+    "gemini_api_key": "GEMINI_API_KEY",
+    "sync_shared_secret": "SYNC_SHARED_SECRET",
+    "legacy_firebase_secret": "LEGACY_FIREBASE_SECRET",
+    "pos365_password": "POS365_PASSWORD",
 }
+
+#  Những khóa CỐ Ý ở lại `.env`, chia theo lý do (bao-CR-429 nhịp 3):
+#
+#  1. Dời xuống đây là NÓI DỐI, vì giá trị bị chụp lại lúc nạp module.
+#     `BACKUP_ONCE_DAILY`, `SYNC_DATXE_PULL_MINUTES`, `POS365_PULL_MINUTES` và
+#     `POS365_HARD_OFF` được đọc trong lúc dựng `beat_schedule` ở `celery_app.py`,
+#     tức người dùng bấm Lưu xong màn hình báo thành công mà lịch chạy vẫn y
+#     nguyên cho tới khi ai đó dựng lại `celery-beat`. Một ô không có tác dụng
+#     còn tệ hơn không có ô nào.
+#  2. Sai một lần là hỏng không cứu được: `STORAGE_PREFIX` (gõ nhầm thì tệp môi
+#     trường thử ghi đè lên thư mục thật), `EMAIL_HARD_OFF` (cầu dao chặn thư ở
+#     môi trường thử — để cùng chỗ với thứ nó chặn là mất ý nghĩa cầu dao),
+#     `LEGACY_R2_*` (chỉ đọc kho tệp app cũ, đã cố ý không đi qua bảng này).
+#  3. Không phải lựa chọn nghiệp vụ mà là chuyện dựng máy: `DB_*`, `JWT_SECRET`,
+#     hạn thẻ ra vào, `CORS_ORIGINS`, `TRUSTED_PROXY_CIDRS`, `LOGIN_RATE_LIMIT`,
+#     `ADMIN_*`, `SEED_*`, `DEV_MODE`, `REDIS_URL`.
+#  4. `GOOGLE_CLIENT_ID` có BẢN SAO ở phía màn hình; sửa một bên là hai bên lệch
+#     nhau và đăng nhập Google chết, nên phải sửa cả hai cùng lúc lúc deploy.
+#  5. `SYNC_DEFAULT_COMPANY_ID` và `SYNC_NOTIFY_ON_IMPORT` KHÔNG có chỗ nào đọc —
+#     bày lên màn hình là hứa một nút không nối vào đâu cả. Đáng chú ý:
+#     `SYNC_NOTIFY_ON_IMPORT` tự mô tả là chặn bão thông báo lúc nạp hàng loạt,
+#     nhưng cái chặn đó chưa từng được viết.
 
 _cache: dict = {}
 _exp = 0.0

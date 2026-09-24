@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import SearchSelect from '../components/SearchSelect'
+import MultiCheckSelect from '../components/MultiCheckSelect'
 import DateRangePicker from '../components/DateRangePicker'
 import FilterPanel, { FilterItem } from '../components/FilterPanel'
 import {
@@ -60,6 +61,10 @@ const EMPTY_FILTERS = {
   company_id: '', department_id: '', q: '', state: '', late: '',
   received_date_from: '', received_date_to: '',
 }
+// bao-CR-423: ô Công ty + Tiến độ dòng chọn được NHIỀU (song song màn Tiến độ mua hàng). Bộ
+// lọc/URL vẫn giữ MỘT chuỗi nối bằng dấu phẩy; nhãn tiến độ không có dấu phẩy nên tách được.
+const splitMulti = (s: string) => (s ? String(s).split(',').filter(Boolean) : [])
+const joinMulti = (arr: string[]) => arr.join(',')
 
 const pgBadge = (s: string) =>
   <span className="badge" style={{ background: (PG_COLOR[s] || '#94a3b8') + '22', color: PG_COLOR[s] || '#64748b', whiteSpace: 'nowrap' }}>{s || '—'}</span>
@@ -276,9 +281,9 @@ export default function SurveyProgress() {
       <FilterPanel onClear={() => setF({ ...EMPTY_FILTERS })} canClear={Object.values(f).some((v) => v)}
                    extra={<ConditionalFilterButton />}>
         <FilterItem label="Công ty">
-          <SearchSelect value={f.company_id} placeholder="Tất cả"
+          <MultiCheckSelect value={splitMulti(f.company_id)} placeholder="Tất cả"
             options={companies.map((c) => ({ value: String(c.id), label: c.name }))}
-            onChange={(v) => setFilter('company_id', v)} />
+            onChange={(v) => setFilter('company_id', joinMulti(v))} />
         </FilterItem>
         <FilterItem label="Bộ phận">
           <SearchSelect value={f.department_id} placeholder="Tất cả"
@@ -286,9 +291,9 @@ export default function SurveyProgress() {
             onChange={(v) => setFilter('department_id', v)} />
         </FilterItem>
         <FilterItem label="Tiến độ dòng">
-          <SearchSelect value={f.state} placeholder="Tất cả"
+          <MultiCheckSelect value={splitMulti(f.state)} placeholder="Tất cả"
             options={states.map((s) => ({ value: s, label: s }))}
-            onChange={(v) => setFilter('state', v)} />
+            onChange={(v) => setFilter('state', joinMulti(v))} />
         </FilterItem>
         <FilterItem label="Trễ hạn" width={170}>
           <select value={f.late} onChange={(e) => setFilter('late', e.target.value)}>

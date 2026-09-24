@@ -106,6 +106,10 @@ BB3_PUBLIC_CO_LY_DO = {
     "brand": "danh mục thương hiệu dùng chung",
     "supplier": "danh mục NCC dùng chung — giấu NCC thì tắt bằng QUYỀN supplier.read",
     "product": "danh mục SP/vật tư dùng chung, hạt dữ liệu của cả hệ (D-025)",
+    "customs_price": "dữ liệu thị trường BÊN NGOÀI (tờ khai hải quan GTT02, bao-CR-470), "
+                     "không thuộc pháp nhân/phòng ban nào — giấu thì tắt bằng QUYỀN customs_price.read",
+    "customs_regulation": "danh mục hóa chất theo văn bản pháp lý (NĐ 24/2026, TT 75/2025, TT 01/2026), "
+                          "dữ liệu pháp lý chung — sửa gác bằng customs_regulation.write",
     "category_assignee": "bảng phân công NSTM theo phân loại, không thuộc pháp nhân nào",
     "doc_type": "danh mục nền Văn thư, tách khóa là để phân quyền theo MÀN HÌNH (CR-157)",
     "doc_template": "cùng lý do CR-157",
@@ -151,6 +155,10 @@ BB3_PUBLIC_CO_LY_DO = {
                 "(`legacy_id`), lúc nó hỏng thì phía ERP thường CHƯA có bản ghi nào "
                 "để xét công ty/phòng ban; lọc ở đây là giấu đúng dòng lỗi nặng nhất. "
                 "Khóa chỉ cấp cho quản trị hệ thống",
+    "purchase_cost_type": "danh mục loại chi phí thu mua dùng chung (bao-CR-453) — bảng "
+                          "`tab_po_cost_type` không có cột pháp nhân hay phòng ban, mã là "
+                          "duy nhất toàn hệ vì cột `tab_po_cost.cost_type` của MỌI đơn trỏ "
+                          "vào; ai SỬA gác bằng purchase_cost_type.write",
 }
 
 
@@ -190,6 +198,8 @@ def test_bb3_khong_entity_nao_vua_public_vua_co_cot():
 BB4_CONTROLLER_MIEN_TRU = {
     # -- gác bằng hàm tự viết trong thân hàm, grep không thấy --
     "import_tool/controller.py": "gác bằng `_guard` → user_has_permission(..., 'import')",
+    "customs/controller.py": "customs_price là entity PUBLIC (dữ liệu thị trường bên ngoài, "
+                             "bao-CR-470) — cổng là require('customs_price', …) từng route",
     "export_log/controller.py": "gác bằng `_guard_view` (can_view_any hoặc setting.read)",
     "comment/controller.py": "gác bằng `service.resolve_doc` — làm CẢ require lẫn apply_scope",
     "document/controller.py": "gác bằng `access_service.ensure_can` (2 tầng) — cụm 05 B",
@@ -224,6 +234,13 @@ BB4_CONTROLLER_MIEN_TRU = {
     "meeting_room/inbox_controller.py": "cùng lý do leave/inbox — cụm 06",
     # -- danh mục PUBLIC: cổng là QUYỀN, không phải phạm vi --
     "catalog/controller.py": "unit/item_group/brand — PUBLIC",
+    "employee/position_controller.py": "job_position — PUBLIC; dựng bằng `make_crud_router` nên "
+                                       "apply_scope/get_scoped nằm trong core/crud.py, grep tệp "
+                                       "này không thấy. Chốt xóa đếm TOÀN công ty có chủ ý",
+    # -- cửa máy gọi máy, không có người đăng nhập để lọc theo --
+    "legacy_datxe/controller.py": "webhook app đặt xe cũ — không phiên, không vai trò; gác bằng "
+                                  "chữ ký HMAC `verify_signature` (SYNC_SHARED_SECRET) + ghim "
+                                  "nguồn SOURCE_DATXE, sai chữ ký thì 401 không ghi gì",
     "product/controller.py": "product — PUBLIC (D-025)",
     "supplier/controller.py": "supplier — PUBLIC, giấu NCC bằng quyền supplier.read",
     "category_assignee/controller.py": "category_assignee — PUBLIC",

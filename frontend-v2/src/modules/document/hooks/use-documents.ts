@@ -127,11 +127,11 @@ export function useNumberPreview(params: {
   company_id: number
   department_id?: number | null
   book_id?: number | null
-}) {
+}, enabled = true) {
   return useQuery({
     queryKey: queryKeys.document.numberPreview(params),
     queryFn: () => documentApi.numberPreview(params),
-    enabled: params.doc_type_id > 0 && params.company_id > 0,
+    enabled: enabled && params.doc_type_id > 0 && params.company_id > 0,
     //  Bốn ô nhập đều đổi khóa truy vấn này. Không giữ kết quả cũ thì mỗi lần
     //  chọn, dòng số hiệu nháy về câu "Chọn loại và pháp nhân để xem số" rồi
     //  mới có số — và câu chú thích bên dưới đổi độ dài theo, kéo cả lưới xô

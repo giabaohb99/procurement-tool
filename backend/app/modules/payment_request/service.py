@@ -16,7 +16,7 @@ from .schema import PRequestCreate, PRequestUpdate
 FILTERABLE = ["code", "supplier_code", "status", "source_type", "request_date", "payment_method"]
 ENTITY = "payment_request"
 
-# Loại công nợ một phiếu gom: hàng · vận chuyển · chi phí lô hàng nhập khẩu (bao-CR-319 P5).
+# Loại công nợ một phiếu gom: hàng · vận chuyển · chi phí thu mua (bao-CR-319 P5).
 # Mỗi phiếu chỉ MỘT loại × MỘT nhà cung cấp — `create_requests` tự tách theo cặp đó.
 SOURCE_TYPES = ("goods", "shipping", "import_cost")
 

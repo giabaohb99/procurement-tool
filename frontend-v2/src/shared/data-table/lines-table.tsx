@@ -134,6 +134,17 @@ export function LinesTable<T>({
     resetLayout,
   } = useTableLayout(layoutColumns, storageKey)
 
+  //  Màu hiệu lực của từng cột = màu người dùng tự chọn, không có thì màu khai SẴN
+  //  (`defaultColor`). Tính một lần rồi dùng cho cả menu «Cột», tiêu đề lẫn thân bảng,
+  //  để ô màu trong menu nói đúng màu đang thấy trên bảng.
+  const columnColors = useMemo(() => {
+    const merged: Record<string, string> = {}
+    for (const column of columns) {
+      if (column.defaultColor) merged[column.key] = column.defaultColor
+    }
+    return { ...merged, ...layout.columnColors }
+  }, [columns, layout.columnColors])
+
   const { drag, startDrag } = useColumnDrag(moveColumn)
   const tableRef = useRef<HTMLTableElement>(null)
 
@@ -242,7 +253,7 @@ export function LinesTable<T>({
             columns={orderedColumns}
             hiddenColumns={layout.hiddenColumns}
             pinnedColumns={layout.pinnedColumns}
-            columnColors={layout.columnColors}
+            columnColors={columnColors}
             onToggle={toggleColumn}
             onTogglePin={togglePin}
             onAutoFitAll={autoFitAll}
@@ -317,7 +328,7 @@ export function LinesTable<T>({
                     alignClass(column.align),
                     pinClass(column.key),
                   )}
-                  colorStyle={columnColorStyle(layout.columnColors[column.key], 'head')}
+                  colorStyle={columnColorStyle(columnColors[column.key], 'head')}
                   pinnedOffset={pinnedOffsets[column.key]}
                   dragging={drag?.fromKey === column.key}
                   onResize={(next) => setColumnWidth(column.key, next)}
@@ -352,7 +363,7 @@ export function LinesTable<T>({
                       left: pinnedOffsets[column.key],
                       // Màu cột đặt SAU nền hàng: ô đã tô giữ nguyên màu kể cả
                       // khi rê chuột, đúng ý "đánh dấu cột".
-                      ...columnColorStyle(layout.columnColors[column.key], 'cell'),
+                      ...columnColorStyle(columnColors[column.key], 'cell'),
                     }}
                     className={cn(
                       BODY_CELL,

@@ -2,6 +2,7 @@ import { Trash2 } from 'lucide-react'
 
 import { Button } from '@/shared/ui/button'
 import { DatePicker } from '@/shared/ui/date-picker'
+import { HelpHint } from '@/shared/ui/help-hint'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import {
@@ -89,8 +90,23 @@ export function DossierCustomFieldRow({
   return (
     <div
       className={cn(
-        'grid gap-2 rounded-lg border bg-card p-2.5 @2xl:grid-cols-[minmax(0,1fr)_130px_92px_minmax(0,1.3fr)_auto] @2xl:items-end',
-        clashWith && 'border-destructive/50',
+        'grid gap-2 rounded-lg border bg-card p-2.5',
+        //  ⚠️ Cột «Kiểu» 184px chứ không phải 130px: nhãn dài nhất của bộ kiểu
+        //  là «Chọn từ danh sách». Ở 130px nó cụt thành «Chọn từ dan…», mà hai
+        //  kiểu *Chọn từ danh sách* / *Chọn từ danh mục* chỉ khác nhau ở đúng
+        //  chữ cuối — cụt đuôi là hai kiểu khác hẳn nhau trông y hệt nhau.
+        '@2xl:grid-cols-[minmax(0,1fr)_184px_84px_minmax(0,1fr)_36px] @2xl:items-start @2xl:gap-x-2 @2xl:gap-y-1.5',
+        //  Khổ rộng thì đây là HÀNG CỦA BẢNG, không phải thẻ lồng trong thẻ:
+        //  thẻ biểu mẫu → khối «Trường riêng» → thẻ từng hàng là ba lớp viền
+        //  trắng lồng nhau, mắt phải đếm khung thay vì đọc nội dung. Khổ hẹp
+        //  giữ viền thẻ, vì ở đó các ô xếp dọc nên cần thứ phân định hàng nào
+        //  thuộc hàng nào.
+        //  ⚠️ `px-0` ở khổ rộng, KHÔNG phải một con số nhỏ cho đẹp. Lề của khối
+        //  («Trường riêng…», câu mô tả, nút *Thêm trường*) đã là lề của phần
+        //  thân; hàng mà thêm lề riêng thì cột đầu tụt vào **6px** so với ba
+        //  thứ kia. Lệch ít tới mức không ai đọc ra là lỗi — chỉ thấy cấn mắt.
+        '@2xl:rounded-none @2xl:border-x-0 @2xl:border-t-0 @2xl:border-b @2xl:border-border/60 @2xl:bg-transparent @2xl:px-0 @2xl:py-2',
+        clashWith && 'border-destructive/50 @2xl:bg-destructive/5',
       )}
     >
       <div className="space-y-1">
@@ -152,7 +168,10 @@ export function DossierCustomFieldRow({
         type="button"
         variant="ghost"
         size="icon"
-        className="size-9 shrink-0 justify-self-end text-destructive"
+        //  ⚠️ XÁM, chỉ đỏ lúc rê chuột. Để đỏ sẵn thì trên một hàng toàn ô nhập
+        //  trung tính, thứ hút mắt nhất lại đúng là việc ít dùng nhất và phá
+        //  nhất — nhân với hai chục hàng thì bảng đọc như một danh sách cảnh báo.
+        className="size-9 shrink-0 justify-self-end text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
         aria-label={`Xóa trường ${row.label || index + 1}`}
         disabled={disabled}
         onClick={onRemove}
@@ -160,14 +179,23 @@ export function DossierCustomFieldRow({
         <Trash2 className="size-4" />
       </Button>
 
-      {/*  DÒNG PHỤ chỉ của ô CHỌN — khai các mục bấm được.
-           ⚠️ Nằm dưới cả hàng chứ không chen vào một cột: bốn cột trên đã chật,
-           mà danh sách mục thì dài hơn mọi ô còn lại cộng lại. Ẩn hẳn với kiểu
-           khác thay vì làm mờ — ô mờ vẫn chiếm chỗ và vẫn bắt người đọc dừng
-           lại xem nó là gì. */}
+      {/*  DÒNG PHỤ chỉ của hai kiểu «chọn» — khai nguồn của các mục bấm được.
+           ⚠️ Nằm dưới hàng chứ không chen vào một cột: bốn cột trên đã chật, mà
+           danh sách mục thì dài hơn mọi ô còn lại cộng lại. Nhưng thụt vào từ
+           cột «Kiểu» (`col-start-2`) — nó là phần ĐUÔI của ô Kiểu vừa chọn, để
+           tràn hết bề ngang thì nhìn như một hàng thứ hai ngang vai hàng chính.
+
+           ⚠️ **MỘT dòng, không phải ba.** Trước đây mỗi dòng phụ là nhãn trên ·
+           ô giữa · câu giải thích dưới, nên một hàng kiểu *Chọn* cao gấp bốn
+           hàng thường — khai năm trường là màn hình thành một bức tường chữ.
+           Nhãn kéo vào đứng cùng dòng, câu giải thích rút vào nút «?» (`HelpHint`):
+           câu đó chỉ cần lúc phân vân, mà nó thì lặp lại y nguyên ở MỌI hàng.
+
+           Ẩn hẳn với kiểu khác thay vì làm mờ — ô mờ vẫn chiếm chỗ và vẫn bắt
+           người đọc dừng lại xem nó là gì. */}
       {row.type === 'reference' && (
-        <div className="space-y-1 @2xl:col-span-5">
-          <Label htmlFor={`cf-src-${index}`} className="text-xs">
+        <div className="flex items-center gap-2 @2xl:col-span-3 @2xl:col-start-2">
+          <Label htmlFor={`cf-src-${index}`} className="shrink-0 text-xs text-muted-foreground">
             Danh mục
           </Label>
           <Select
@@ -175,7 +203,7 @@ export function DossierCustomFieldRow({
             disabled={disabled}
             onValueChange={(v) => set({ source: v, value: '' })}
           >
-            <SelectTrigger id={`cf-src-${index}`} className="w-full">
+            <SelectTrigger id={`cf-src-${index}`} className="h-8 w-full min-w-0 flex-1">
               <SelectValue placeholder="Chọn danh mục lấy dữ liệu" />
             </SelectTrigger>
             <SelectContent>
@@ -186,27 +214,29 @@ export function DossierCustomFieldRow({
               ))}
             </SelectContent>
           </Select>
-          <p className="text-xs text-muted-foreground">
+          <HelpHint>
             Hồ sơ lưu mã của mục đã chọn, nên đổi tên trong danh mục là mọi hồ sơ đổi theo.
-          </p>
+          </HelpHint>
         </div>
       )}
 
       {row.type === 'select' && (
-        <div className="space-y-1 @2xl:col-span-5">
-          <Label htmlFor={`cf-opts-${index}`} className="text-xs">
+        <div className="flex items-center gap-2 @2xl:col-span-3 @2xl:col-start-2">
+          <Label htmlFor={`cf-opts-${index}`} className="shrink-0 text-xs text-muted-foreground">
             Các mục chọn
           </Label>
           <Input
             id={`cf-opts-${index}`}
+            className="h-8 min-w-0 flex-1"
             value={row.options.join(', ')}
             placeholder="Đường biển, Đường hàng không, Đường bộ"
             disabled={disabled}
             onChange={(e) => handleOptions(e.target.value)}
           />
-          <p className="text-xs text-muted-foreground">
-            Ngăn cách bằng dấu phẩy. Tối đa {MAX_DOSSIER_FIELD_OPTIONS} mục.
-          </p>
+          {/*  `HelpHint` nhận CHUỖI, không nhận JSX — ghép bằng template literal. */}
+          <HelpHint>
+            {`Ngăn cách bằng dấu phẩy. Tối đa ${MAX_DOSSIER_FIELD_OPTIONS} mục.`}
+          </HelpHint>
         </div>
       )}
 
@@ -270,8 +300,8 @@ function CustomValueInput({
     //  khoảng trắng, người dùng tưởng hỏng. Nói thẳng việc phải làm trước.
     if (row.options.length === 0) {
       return (
-        <div className="flex h-9 items-center text-xs text-muted-foreground">
-          Khai «Các mục chọn» bên dưới trước
+        <div className="flex h-9 items-center text-xs text-balance text-muted-foreground">
+          Khai các mục ở dòng dưới trước
         </div>
       )
     }

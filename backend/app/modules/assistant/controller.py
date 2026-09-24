@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFil
 from sqlalchemy.orm import Session
 
 from app.core.auth import require
+from app.core import app_settings
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.response import success
@@ -25,7 +26,7 @@ router = APIRouter(prefix="/api/assistant", tags=["assistant"])
 
 
 def _guard():
-    if not settings.AI_ENABLED:
+    if not app_settings.get("ai_enabled"):
         raise HTTPException(status_code=403, detail="Trợ lý AI chưa được bật (AI_ENABLED)")
 
 
@@ -35,7 +36,7 @@ def list_providers(user=Depends(require("assistant", "read"))):
     _guard()
     return success({
         "providers": configured_providers(),
-        "default_provider": settings.AI_DEFAULT_PROVIDER,
+        "default_provider": app_settings.get("ai_default_provider"),
     })
 
 
@@ -80,6 +81,26 @@ def confirm_document_update(body: ConfirmUpdateIn,
     result = confirm_update(db, user, body.token)
     fields = ", ".join(result["updated_fields"])
     return success(result, message=f"Đã sửa phiếu {result['code']}: {fields}")
+
+
+@router.post("/confirm-account-setup")
+def confirm_account_setup_proposal(body: ConfirmUpdateIn,
+                                   user=Depends(require("assistant", "read")),
+                                   db: Session = Depends(get_db)):
+    """Bước 2 của tool `propose_account_setup` (bao-CR-435): NGƯỜI DÙNG bấm 'Xác nhận' trên
+    thẻ đề xuất lập bộ tài khoản thu mua.
+
+    Backend kiểm lại tại thời điểm bấm (token + đúng chủ + `user.write`/`role.read`/
+    `employee.read` + phạm vi tài khoản + L1/L2 chống tự nâng quyền) rồi ghi qua đúng hai
+    service của màn Phân quyền — xem `tools/account_setup_tool.confirm_account_setup`.
+    Cùng lý do với `/confirm-update`: gác `assistant.read`, quyền GHI thật kiểm bên trong.
+    """
+    _guard()
+    from .tools.account_setup_tool import confirm_account_setup
+
+    result = confirm_account_setup(db, user, body.token)
+    what = ", ".join(result["updated"]) if result["updated"] else "không có gì đổi"
+    return success(result, message=f"Bộ tài khoản {result['target_label']}: {what}")
 
 
 @router.post("/uploads")
@@ -209,23 +230,58 @@ def download_report_file(file_id: int, user=Depends(require("assistant", "read")
                              f"attachment; filename*=UTF-8''{quote(f.filename)}"})
 
 
-@router.post("/rag/reindex")
-def rag_reindex(user=Depends(require("help_article", "write"))):
-    """Dựng lại toàn bộ chỉ mục vector loại B (HDSD + FAQ) — đường A, chạy NỀN.
+@router.get("/rag/index-status")
+def rag_index_status(user=Depends(require("help_article", "write")),
+                     db: Session = Depends(get_db)):
+    """Đối chiếu số bài HDSD + FAQ dưới DB với số nguồn đang có trong kho vector.
 
-    Gác bằng quyền GHI TÀI LIỆU (`help_article.write`) chứ không phải `assistant` — người quản
-    nội dung HDSD mới là người cần bấm nạp lại. Dùng khi mới bật RAG, đổi model nhúng, hoặc nghi
-    chỉ mục lệch với dữ liệu.
+    Có màn hình mới biết mà bấm: trước đó không chỗ nào nói kho đang thiếu bài, nên 32 bài do
+    script seed dựng ra nằm ngoài kho suốt nhiều tháng mà không ai thấy (bao-CR-450).
 
-    Chỉ XẾP HÀNG cho celery-worker rồi trả ngay (không chờ nhúng xong) — nạp toàn bộ có thể gọi
-    Gemini nhiều lần, đồng bộ sẽ treo request / timeout. Kết quả xem ở log worker.
+    RAG tắt thì trả `enabled: false` chứ KHÔNG ném 400 — đây là đường ĐỌC của một thẻ luôn hiện
+    trên màn Cấu hình; ném lỗi thì người mở tab *Trợ lý AI* ăn toast đỏ dù chẳng làm gì sai.
     """
     _guard()
     if not settings.AI_RAG_ENABLED:
-        raise HTTPException(status_code=400, detail="Tìm kiếm vector chưa được bật (AI_RAG_ENABLED)")
-    from .rag.tasks import rebuild_all_task
+        return success({"enabled": False})
+    from .rag import indexer
     try:
-        async_result = rebuild_all_task.delay()
+        stats = indexer.index_status(db)
+    except Exception as e:  # noqa: BLE001 - Qdrant sập là lỗi hạ tầng, nói thẳng cho người xem
+        raise HTTPException(status_code=502, detail=f"Không đọc được kho vector: {e}") from e
+    return success({"enabled": True, **stats})
+
+
+@router.post("/rag/reindex")
+def rag_reindex(mode: str = "all", user=Depends(require("help_article", "write"))):
+    """Nạp chỉ mục vector loại B (HDSD + FAQ) — đường A, chạy NỀN.
+
+    Hai chế độ:
+      - `mode=missing` — **nạp bù**: chỉ những bài/câu chưa có đoạn nào trong kho. Đây là
+        đường dùng hằng ngày, nhất là sau khi chạy script seed bài HDSD (seed ghi thẳng ORM
+        nên không bắn hook nạp chỉ mục — xem bao-CR-450/451).
+      - `mode=all` — dựng lại TOÀN BỘ. Chỉ dùng khi đổi model nhúng hoặc nghi kho lệch nội
+        dung: nó nhúng lại cả trăm nguồn, tốn quota và dễ dính 429.
+    Mặc định để `all` cho khỏi đổi nghĩa lời gọi cũ (bản giao diện đang chạy gọi không kèm
+    tham số); màn Cấu hình nay luôn gửi mode rõ ràng.
+
+    Gác bằng quyền GHI TÀI LIỆU (`help_article.write`) chứ không phải `assistant` — người quản
+    nội dung HDSD mới là người cần bấm nạp lại.
+
+    Chỉ XẾP HÀNG cho celery-worker rồi trả ngay (không chờ nhúng xong) — nạp cả mẻ gọi Gemini
+    nhiều lần, đồng bộ sẽ treo request / timeout. Kết quả xem ở log worker.
+    """
+    _guard()
+    if mode not in ("all", "missing"):
+        raise HTTPException(status_code=400, detail="mode chỉ nhận 'all' hoặc 'missing'")
+    if not settings.AI_RAG_ENABLED:
+        raise HTTPException(status_code=400, detail="Tìm kiếm vector chưa được bật (AI_RAG_ENABLED)")
+    from .rag.tasks import rebuild_all_task, reindex_missing_task
+    task = reindex_missing_task if mode == "missing" else rebuild_all_task
+    try:
+        async_result = task.delay()
     except Exception as e:  # noqa: BLE001 - lỗi broker báo về cho người bấm, không để 500 trơ
         raise HTTPException(status_code=502, detail=f"Xếp hàng nạp lại chỉ mục thất bại: {e}") from e
-    return success({"task_id": async_result.id}, message="Đã xếp hàng nạp lại chỉ mục tài liệu")
+    message = ("Đã xếp hàng nạp bù các tài liệu còn thiếu" if mode == "missing"
+               else "Đã xếp hàng nạp lại chỉ mục tài liệu")
+    return success({"task_id": async_result.id, "mode": mode}, message=message)

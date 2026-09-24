@@ -20,18 +20,33 @@ vi.mock('../hooks/use-purchase-documents', () => ({
   },
 }))
 
-//  Nút Xuất Excel dựng chuỗi truy vấn RIÊNG, không dùng lại `params` của bảng —
-//  nên phải bắt luôn đường dẫn nó gọi.
-const downloads: string[] = []
+//  Nút Xuất Excel nhận bộ lọc qua ĐỐI SỐ THỨ BA của `downloadFile`, nên phải bắt
+//  cả ba: trước bao-CR-447 nó tự dựng chuỗi truy vấn riêng và bỏ quên bộ lọc điều
+//  kiện, xuất ra một tập khác cái đang xem.
+const downloads: { url: string; params?: ListParams }[] = []
 vi.mock('@/core/api/download-file', () => ({
-  downloadFile: (url: string) => {
-    downloads.push(url)
+  downloadFile: (url: string, _filename: string, params?: ListParams) => {
+    downloads.push({ url, params })
     return Promise.resolve()
   },
 }))
 
 vi.mock('@/core/authorization/use-permission', () => ({
   usePermission: () => ({ can: () => true, canAccess: () => true }),
+}))
+
+//  Ô Công ty đọc danh mục pháp nhân của phân hệ Nhân sự — chặn luôn để test không
+//  chạm mạng.
+vi.mock('@/modules/hr/hooks/use-companies', () => ({
+  useCompanies: () => ({
+    data: {
+      total: 2,
+      items: [
+        { id: 7, name: 'Công ty Dego Cần Thơ' },
+        { id: 9, name: 'Công ty Dego Hà Nội' },
+      ],
+    },
+  }),
 }))
 
 const rows: SurveyProgressItem[] = [
@@ -146,6 +161,20 @@ describe('SurveyProgressPage — khoảng ngày', () => {
     })
   })
 
+  it('joins several picked progress labels into one comma-joined param', () => {
+    //  bao-CR-423: chọn nhiều nhãn trong cùng ô Tiến độ dòng = HOẶC. Nhãn không
+    //  chứa dấu phẩy nên backend tách lại đúng.
+    build('/procurement/survey-progress?state=Đã trả kết quả,Trễ hạn')
+
+    expect(lastCall().state).toBe('Đã trả kết quả,Trễ hạn')
+  })
+
+  it('sends no state param when nothing is picked', () => {
+    build('/procurement/survey-progress?state=')
+
+    expect(lastCall().state).toBeUndefined()
+  })
+
   it('exports the SAME range the table is showing', async () => {
     const user = userEvent.setup()
     build('/procurement/survey-progress?date_field=result&date_from=2026-09-01&date_to=2026-09-30')
@@ -153,9 +182,11 @@ describe('SurveyProgressPage — khoảng ngày', () => {
     await user.click(screen.getByRole('button', { name: /Xuất Excel/ }))
 
     // Xuất ra một tập khác cái đang xem là lỗi ngầm — không ai đối chiếu nổi.
-    expect(downloads[0]).toContain('result_date_from=2026-09-01')
-    expect(downloads[0]).toContain('result_date_to=2026-09-30')
-    expect(downloads[0]).not.toContain('received_date_from')
+    expect(downloads[0].params).toMatchObject({
+      result_date_from: '2026-09-01',
+      result_date_to: '2026-09-30',
+    })
+    expect(downloads[0].params?.received_date_from).toBeUndefined()
   })
 
   it('shows both controls on the toolbar', () => {
@@ -163,6 +194,79 @@ describe('SurveyProgressPage — khoảng ngày', () => {
 
     expect(screen.getByText('Theo ngày tiếp nhận')).toBeInTheDocument()
     expect(screen.getByText('Từ ngày – tới ngày')).toBeInTheDocument()
+  })
+})
+
+/**
+ * bao-CR-447 — ô CÔNG TY.
+ *
+ * Màn này từng không lọc được theo pháp nhân bằng đường nào cả: thanh công cụ
+ * không có ô, còn ô Công ty trong *Bộ lọc điều kiện* gửi `company_id__is=` xuống
+ * một whitelist cố tình KHÔNG có `company_id` (`_cond_map` gỡ nó ra) nên bị bỏ
+ * LẶNG — chọn công ty, bấm Áp dụng, bảng vẫn nguyên cả tập.
+ */
+describe('SurveyProgressPage — ô Công ty', () => {
+  it('bày ô Công ty trên thanh công cụ', () => {
+    build()
+
+    //  Hai bản: thanh công cụ khổ rộng + tờ lọc nhanh khổ hẹp.
+    expect(screen.getAllByLabelText('Lọc theo công ty').length).toBeGreaterThan(0)
+  })
+
+  it('sends company_id as a comma-joined list — nhiều pháp nhân là HOẶC', () => {
+    build('/procurement/survey-progress?company_id=7,9')
+
+    expect(lastCall().company_id).toBe('7,9')
+  })
+
+  it('sends company_id even for a single pick', () => {
+    build('/procurement/survey-progress?company_id=7')
+
+    expect(lastCall().company_id).toBe('7')
+  })
+
+  it('sends no company_id when nothing is picked', () => {
+    //  Gửi `company_id=""` xuống là backend so `== ""` rồi trả bảng rỗng.
+    build('/procurement/survey-progress?company_id=')
+
+    expect(lastCall().company_id).toBeUndefined()
+  })
+
+  it('exports the SAME companies the table is showing', async () => {
+    const user = userEvent.setup()
+    build('/procurement/survey-progress?company_id=7,9')
+
+    await user.click(screen.getByRole('button', { name: /Xuất Excel/ }))
+
+    expect(downloads[0].params).toMatchObject({ company_id: '7,9' })
+  })
+})
+
+describe('SurveyProgressPage — Xuất Excel bám bộ lọc điều kiện', () => {
+  it('carries the conditional filter into the export', async () => {
+    //  Lỗi cũ: nút xuất tự dựng query string từ mấy ô lọc nhanh và BỎ QUÊN
+    //  `queryParams` của bộ lọc điều kiện — đang lọc "Mục đích chứa …" mà bấm
+    //  xuất thì ra cả bảng, người nhận tệp không có cách nào biết.
+    const user = userEvent.setup()
+    build('/procurement/survey-progress?purpose__contains=thùng carton')
+
+    expect(lastCall().purpose__contains).toBe('thùng carton')
+
+    await user.click(screen.getByRole('button', { name: /Xuất Excel/ }))
+
+    expect(downloads[0].params).toMatchObject({ purpose__contains: 'thùng carton' })
+  })
+
+  it('never sends the paging params down the export', async () => {
+    //  Tệp xuất phải là CẢ tập đang lọc, không phải trang đang xem.
+    const user = userEvent.setup()
+    build('/procurement/survey-progress?late=1')
+
+    await user.click(screen.getByRole('button', { name: /Xuất Excel/ }))
+
+    expect(downloads[0].params).toMatchObject({ late: '1' })
+    expect(downloads[0].params?.page).toBeUndefined()
+    expect(downloads[0].params?.page_size).toBeUndefined()
   })
 })
 

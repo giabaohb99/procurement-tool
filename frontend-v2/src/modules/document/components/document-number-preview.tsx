@@ -8,6 +8,8 @@ interface DocumentNumberPreviewProps {
   preview?: NumberPreview
   /** Đang nạp số mới trong khi vẫn bày số cũ — làm mờ để không ai đọc nhầm. */
   isFetching?: boolean
+  /** Số đã cấp — có thì bày số này thay cho số xem trước. */
+  issuedNumber?: string
 }
 
 /**
@@ -19,7 +21,11 @@ interface DocumentNumberPreviewProps {
  * chú thích bên dưới nói thẳng điều đó thay vì để người dùng tưởng số đã là của
  * mình.
  */
-export function DocumentNumberPreview({ preview, isFetching }: DocumentNumberPreviewProps) {
+export function DocumentNumberPreview({
+  preview,
+  isFetching,
+  issuedNumber,
+}: DocumentNumberPreviewProps) {
   return (
     <FormItem>
       <FormLabel>Số hiệu</FormLabel>
@@ -34,13 +40,15 @@ export function DocumentNumberPreview({ preview, isFetching }: DocumentNumberPre
       >
         <Hash className="size-4 shrink-0 text-muted-foreground" />
         <span className="truncate font-medium tabular-nums">
-          {preview?.preview || 'Chọn loại và pháp nhân để xem số'}
+          {issuedNumber || preview?.preview || 'Chọn loại và pháp nhân để xem số'}
         </span>
       </div>
       {/*  Hai câu chú thích dài gần bằng nhau và khối giữ chiều cao tối thiểu
            hai dòng: đổi câu giữa chừng mà lưới không xô. */}
       <FormDescription className="min-h-10">
-        {preview?.number_when === 1
+        {issuedNumber
+          ? 'Số đã cấp cho văn bản này — không đổi khi sửa thông tin.'
+          : preview?.number_when === 1
           ? 'Số cấp ngay khi lưu bản nháp.'
           : 'Số thật được cấp lúc văn bản được duyệt — con số trên chỉ là xem trước.'}
       </FormDescription>

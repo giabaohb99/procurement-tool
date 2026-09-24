@@ -1,4 +1,4 @@
-"""Cụm 02 — sáu cấp phạm vi × 53 entity, và bốn nhánh viết tay của `_role_scope_cond`.
+"""Cụm 02 — bảy cấp phạm vi × mọi entity, và bốn nhánh viết tay của `_role_scope_cond`.
 
 `test_pham_vi_khai_du_b07.py` kiểm **khai đủ**: mọi entity có mặt trong
 `SCOPE_FIELDS`. Tệp này kiểm **ăn đúng**: với mỗi (entity, cấp bậc) thì
@@ -11,7 +11,8 @@ Vì sao phải kiểm tên cột chứ không chỉ kiểm "có điều kiện":
 vẫn xanh — trong khi phạm vi đã lọc sai hoàn toàn.
 
 Bốn phần:
-  A  ma trận sinh tự động (53 × 6) — thêm entity mới là TỰ CÓ ca kiểm
+  A  ma trận sinh tự động (entity × 7 cấp, đọc từ `ENTITIES` × `SCOPES`) — thêm entity
+     mới hay cấp mới là TỰ CÓ ca kiểm (bậc `dept_proc` thêm ở bao-CR-414, gương ở bao-CR-440)
   B  bốn nhánh `assigned`/`proc` viết tay + nhánh rơi về `own`   (B1–B14)
   C  hai entity khai CẢ `owner` LẪN `self`                       (C1–C5)
   D  kiêm nhiệm phòng ban — CR-167                                (D1–D3)
@@ -83,6 +84,32 @@ def expect_outcome(entity: str, scope: str, profile: dict, model):
             #  (`scoping.py:287, 309, 326, 338`). Phần còn lại kiểm ở nhóm B.
             return COND, ("created_by",), False
         scope = "own"       # `scoping.py:342` — rơi về "của mình", KHÔNG báo gì
+
+    if scope == "dept_proc":
+        #  bao-CR-414 — bậc thứ bảy, gương của `_role_scope_cond` (`scoping.py:437-529`).
+        #  Bốn nhánh viết tay (ba chứng từ thu mua + đặt xe, từ bao-CR-446) được AND thêm
+        #  "phiếu thuộc phòng mình" (`_narrow_to_dept`); entity còn lại lấy THẲNG
+        #  `_dept_match` (không AND pháp nhân, không rơi về `own`).
+        #  Không dựng nổi điều kiện phòng (chưa gắn phòng, hoặc entity không có chiều phòng)
+        #  thì `_chan` — có log, khác nhánh `dept` câm ở `scoping.py:373`.
+        #  Gương lại `_dept_match` (`scoping.py:286-306`): cột nào lọt vào SQL tùy hồ sơ.
+        dept_ids = profile.get("dept_ids") or []
+        dept_names = [x for x in (profile.get("dept_names") or []) if x] \
+            or ([profile["dept_name"]] if profile.get("dept_name") else [])
+        dept_cols = []
+        if f.get("dept_id") and dept_ids:
+            dept_cols.append(f["dept_id"])
+        if f.get("dept_name") and dept_names:
+            dept_cols.append(f["dept_name"])
+        if f.get("handler_dept") and dept_ids:
+            dept_cols.append(f["handler_dept"])
+        #  Đặt xe từng `return` TRƯỚC `_narrow_to_dept` nên `dept_proc` == `assigned`;
+        #  bao-CR-446 đưa nó qua cùng cửa với ba chứng từ thu mua — không còn nhánh riêng.
+        if not dept_cols:
+            return BLOCK, (), True           # `_chan` — `scoping.py:446` / `:522`
+        if entity in HANDWRITTEN_ASSIGNED:
+            return COND, ("created_by", *dept_cols), False
+        return COND, tuple(dept_cols), False
 
     if scope == "own":
         if f.get("owner"):
@@ -166,12 +193,12 @@ def rename_employee(world, key: str, full_name: str) -> None:
     perm_cache_clear()      # `emp_name` nằm trong hồ sơ quyền đã cache 60 giây
 
 
-# ── A. Ma trận 53 entity × 6 cấp bậc ───────────────────────────────────────────
+# ── A. Ma trận entity × 7 cấp bậc ──────────────────────────────────────────────
 
 @pytest.mark.parametrize("entity", sorted(ENTITIES))
 @pytest.mark.parametrize("scope", SCOPES)
 def test_ma_tran_moi_entity_nhan_du_sau_cap_pham_vi(db, world, caplog, entity, scope):
-    """318 cặp (entity × cấp bậc) — thêm entity mới là TỰ CÓ ca kiểm, không ai phải nhớ.
+    """Mọi cặp (entity × cấp bậc) — thêm entity mới là TỰ CÓ ca kiểm, không ai phải nhớ.
 
     Chạy trên hai hồ sơ đối lập: `a1` khai đủ pháp nhân + phòng ban, `khongcty`
     chưa gắn gì. Cặp này mới lộ được nhánh chặn: hồ sơ đủ thì nhánh
@@ -342,32 +369,41 @@ def make_purchase_requests(world) -> dict[str, int]:
     return {k: v.id for k, v in rows.items()}
 
 
-def test_b1_thu_mua_khong_nhat_duoc_phieu_da_duyet_cua_phap_nhan_khac(db, world):
-    """B1 — `proc` AND thêm pháp nhân của người xem (`_proc_status_cond`, `:231-243`).
+def test_b1_thu_mua_gan_phap_nhan_van_nhat_duoc_phieu_da_duyet_cua_phap_nhan_khac(db, world):
+    """B1 — bao-CR-434 ĐẢO P1-1: `proc` KHÔNG còn AND pháp nhân của người xem.
 
-    Trước P1-1 nhánh «nhặt việc» không kèm pháp nhân, nên bật đa pháp nhân là
-    thu mua công ty con nhặt được phiếu đã duyệt của MỌI công ty.
-
-    ⚠️ Lọc pháp nhân CHỈ nằm trong nhánh trạng thái. Bốn nhánh còn lại của cùng
-    `or_()` (phiếu mình tạo · mình yêu cầu · `assignee_id` · dòng gán mã mình)
-    không kèm pháp nhân — nên `A_giao_dong` vẫn lọt qua nhánh dòng, và đó là
-    đúng: việc đã giao đích danh thì không phải việc của trục pháp nhân.
+    P1-1 (CR-164) từng siết nhánh «nhặt việc» theo `company_id` trên hồ sơ. Đại ca
+    chốt 21/09/2026: pháp nhân trên hồ sơ chỉ là chuyện pháp lý, một phòng có thể
+    mua cho nhiều pháp nhân — nên a3 (hồ sơ pháp nhân A) phải nhặt được cả
+    `B_duyet`. Muốn nhốt vào một pháp nhân thì khai tay ở «Chỉ trong công ty»
+    (xem B1b). Phiếu nháp (`A_nhap`, `B_nhap`) vẫn không lọt: trạng thái là tiêu
+    chí duy nhất của nhánh này.
     """
     from app.modules.purchase_request.model import PurchaseRequest
 
     pr = make_purchase_requests(world)
     a3 = world.grant("a3", "purchase_request", scope="proc")   # nhân sự pháp nhân A
+    assert a3.sees(PurchaseRequest) == {pr["A_duyet"], pr["B_duyet"], pr["A_giao_dong"]}
+    assert a3.can_get(PurchaseRequest, pr["B_duyet"]) is True
+
+
+def test_b1b_chi_trong_cong_ty_moi_la_cach_nhot_thu_mua_vao_mot_phap_nhan(db, world):
+    """B1b — cách DUY NHẤT thu hẹp theo pháp nhân sau CR-434: ô «Chỉ trong công ty»
+    (`_explicit_cond`, chiều `company`, include). Khai tay thì AND vào mọi nhánh của
+    grant, kể cả nhánh «dòng gán mã mình» — `A_giao_dong` thuộc A nên vẫn còn.
+    """
+    from app.modules.purchase_request.model import PurchaseRequest
+
+    pr = make_purchase_requests(world)
+    a3 = world.grant("a3", "purchase_request", scope="proc", inc_company=["A"])
     assert a3.sees(PurchaseRequest) == {pr["A_duyet"], pr["A_giao_dong"]}
     assert a3.can_get(PurchaseRequest, pr["B_duyet"]) is False
 
 
 def test_b2_thu_mua_chua_gan_phap_nhan_van_nhat_duoc_het(db, world):
-    """B2 — ghim hành vi CỐ Ý: `company_id = 0` thì `proc` KHÔNG thu hẹp.
-
-    `_proc_status_cond` chỉ AND pháp nhân khi người xem đã gắn `company_id`
-    (`scoping.py:241`). Dữ liệu prod hiện còn nhiều nhân sự chưa gắn, siết luôn
-    là Thu mua đứng hình. Gắn `company_id` xong thì tự lọc — lúc đó bài này phải
-    đổi, và đó là đúng chỗ cần đổi.
+    """B2 — `company_id = 0` thì `proc` nhặt hết; sau CR-434 đây không còn là ngoại
+    lệ mà là hành vi chung (B1 với hồ sơ đã gắn pháp nhân cho cùng kết quả).
+    Giữ bài để canh riêng đường «chưa gắn nhân sự / chưa gắn pháp nhân».
     """
     from app.modules.purchase_request.model import PurchaseRequest
 
@@ -607,6 +643,74 @@ def test_b11_phieu_chua_phan_tai_xe_thi_khong_lot(db, world):
     assert a1.sees(VehicleBooking) == {xe["da_phan"]}
     assert a1.can_get(VehicleBooking, xe["chua_phan"]) is False
     assert a1.can_get(VehicleBooking, xe["phan_khac"]) is False
+
+
+def make_vehicle_bookings_by_dept(world, driver_id: int) -> dict[str, int]:
+    """Bốn phiếu đặt xe cho bậc `dept_proc`: phân cho tài xế × phòng mình/phòng khác,
+    cùng phòng nhưng chưa phân, và phiếu mình tạo ở phòng khác."""
+    from app.modules.vehicle_booking.model import VehicleBooking
+
+    db = world.db
+    rows = {
+        "phan_cung_phong": VehicleBooking(code="XE-P-KT", company_id=world.co["A"],
+                                          department_id=world.dept["A.kt"],
+                                          created_by=world.user_id("b1"),
+                                          assigned_driver_id=driver_id),
+        "phan_khac_phong": VehicleBooking(code="XE-P-MUA", company_id=world.co["A"],
+                                          department_id=world.dept["A.mua"],
+                                          created_by=world.user_id("b1"),
+                                          assigned_driver_id=driver_id),
+        "cung_phong_chua_phan": VehicleBooking(code="XE-KT-CHUA", company_id=world.co["A"],
+                                               department_id=world.dept["A.kt"],
+                                               created_by=world.user_id("b1"),
+                                               assigned_driver_id=None),
+        "minh_tao_khac_phong": VehicleBooking(code="XE-TOI-MUA", company_id=world.co["A"],
+                                              department_id=world.dept["A.mua"],
+                                              created_by=world.user_id("a1"),
+                                              assigned_driver_id=None),
+    }
+    db.add_all(rows.values())
+    db.flush()
+    return {k: v.id for k, v in rows.items()}
+
+
+def test_b11b_dept_proc_dat_xe_khoanh_them_phong_minh(db, world):
+    """B11b — bao-CR-446: `dept_proc` trên đặt xe = nhánh `assigned` AND «phiếu thuộc phòng mình».
+
+    Trước CR này nhánh đặt xe `return` trước `_narrow_to_dept` nên `dept_proc` mở
+    y hệt `assigned`: phiếu phân cho mình ở phòng khác, phiếu mình tạo ở phòng khác
+    đều lọt. Nay chỉ còn phiếu vừa «của mình / phân cho mình» vừa thuộc phòng mình.
+    Phiếu cùng phòng nhưng chưa phân vẫn không lọt — AND phòng là thu hẹp, không nới.
+    """
+    from app.modules.vehicle_booking.model import Driver, VehicleBooking
+
+    tai_xe = Driver(name="Tài xế a1", user_id=world.user_id("a1"))
+    db.add(tai_xe)
+    db.flush()
+    xe = make_vehicle_bookings_by_dept(world, tai_xe.id)
+
+    a1 = world.grant("a1", "vehicle_booking", scope="dept_proc")
+    assert a1.sees(VehicleBooking) == {xe["phan_cung_phong"]}
+    assert a1.can_get(VehicleBooking, xe["phan_khac_phong"]) is False
+    assert a1.can_get(VehicleBooking, xe["cung_phong_chua_phan"]) is False
+    assert a1.can_get(VehicleBooking, xe["minh_tao_khac_phong"]) is False
+
+
+def test_b11c_dept_proc_dat_xe_chan_nguoi_chua_gan_phong(db, world, caplog):
+    """B11c — bao-CR-446: người chưa gắn phòng đặt bậc `dept_proc` trên đặt xe thì CHẶN có log,
+    kể cả khi phiếu đã phân cho chính họ — cùng luật với ba chứng từ thu mua (`_chan`)."""
+    from app.modules.vehicle_booking.model import Driver, VehicleBooking
+
+    tai_xe = Driver(name="Tài xế không phòng", user_id=world.user_id("khongphong"))
+    db.add(tai_xe)
+    db.flush()
+    xe = make_vehicle_bookings_by_dept(world, tai_xe.id)
+
+    with caplog.at_level(logging.WARNING, logger="app.scoping"):
+        kp = world.grant("khongphong", "vehicle_booking", scope="dept_proc")
+        assert kp.sees(VehicleBooking) == set()
+        assert kp.can_get(VehicleBooking, xe["phan_cung_phong"]) is False
+    assert any("chua gan phong ban" in r.getMessage() for r in caplog.records)
 
 
 # ── B12–B14. Entity KHÔNG có nhánh riêng → rơi về `own` ────────────────────────

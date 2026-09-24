@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Sơ đồ quyền trên một văn bản</title>
+<!--
+  Sơ đồ «Ai được mở / sửa một văn bản» — chụp #canvas thành hinh/31-ba-lop-quyen.png
+  (khung 1420×640, tỉ lệ điểm ảnh 2).
+  Phần trên: vai trò (làm gì) và phạm vi (của ai). Phần dưới: thứ tự hệ thống xét quyền.
+-->
+<link rel="stylesheet" href="so-do-chung.css">
+<style>
+  #canvas { width: 1420px; height: 640px; }
+  .panel { position: absolute; border: 1.5px solid var(--line); border-radius: 16px; padding: 18px 20px; background: #fff; }
+  .panel h3 { margin: 0 0 4px; font-size: 16px; }
+  .panel > p { margin: 0 0 12px; font-size: 13px; color: var(--muted); }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  .act { padding: 6px 12px; border-radius: 10px; background: var(--blue-bg); color: #0369a1; font-size: 13px; font-weight: 700; }
+  .act small { display: block; font-weight: 500; font-size: 11px; color: #0c4a6e; }
+  /* Phạm vi lồng nhau: Của mình ⊂ Phòng ban ⊂ Công ty ⊂ Tất cả */
+  .nest { position: relative; height: 120px; }
+  .ring { position: absolute; border-radius: 14px; border: 2px solid var(--violet); background: rgba(124, 58, 237, .05); }
+  .ring span { position: absolute; left: 10px; top: 4px; font-size: 12.5px; font-weight: 700; color: var(--violet); }
+  .q { --c: var(--blue); }
+  .q h4 { font-size: 14px; }
+  .yes { --c: var(--green); }
+  .no { --c: var(--red); }
+</style>
+</head>
+<body>
+<div id="canvas">
+  <div class="title" style="left:24px;top:14px">Hai thứ quyết định quyền của một người</div>
+
+  <div class="panel" style="left:24px;top:40px;width:640px;height:190px">
+    <h3>Vai trò — được <u>làm gì</u></h3>
+    <p>Tick ở màn Phân quyền, theo từng dòng chức năng (ví dụ «Văn thư › Văn bản»)</p>
+    <div class="actions">
+      <div class="act">Xem<small>mở, đọc</small></div>
+      <div class="act">Tạo<small>tạo, sao chép, bản trích</small></div>
+      <div class="act">Sửa<small>sửa, gửi duyệt, phiên bản mới</small></div>
+      <div class="act">Xóa<small>xóa bản nháp</small></div>
+      <div class="act">Duyệt<small>duyệt, trả lại, ký</small></div>
+      <div class="act">Hủy<small>bãi bỏ</small></div>
+      <div class="act">In<small>in văn bản</small></div>
+      <div class="act">Xuất<small>tải Excel</small></div>
+    </div>
+  </div>
+
+  <div class="panel" style="left:690px;top:40px;width:706px;height:190px">
+    <h3>Phạm vi — văn bản <u>của ai</u></h3>
+    <p>Mặc định theo vai trò; có thể thu hẹp hoặc mở thêm riêng cho từng người</p>
+    <div class="nest">
+      <div class="ring" style="left:0;top:0;width:660px;height:120px"><span>Tất cả</span></div>
+      <div class="ring" style="left:110px;top:24px;width:540px;height:88px"><span>Công ty</span></div>
+      <div class="ring" style="left:220px;top:48px;width:420px;height:56px"><span>Phòng ban</span></div>
+      <div class="ring" style="left:330px;top:72px;width:300px;height:28px"><span>Của mình — văn bản do chính mình tạo</span></div>
+    </div>
+  </div>
+
+  <div class="title" style="left:24px;top:252px">Hệ thống xét lần lượt từ trái sang phải — gặp «Có» là dừng</div>
+
+  <div class="box q" id="q1" style="left:24px;top:286px;width:220px;--c:var(--red)">
+    <span class="num">1</span><h4>Có dòng «Không cho phép» chặn đích danh người này?</h4>
+    <p>Khai ở khối Quyền truy cập của văn bản</p>
+  </div>
+  <div class="box q" id="q2" style="left:314px;top:286px;width:220px">
+    <span class="num">2</span><h4>Có dòng «Cho phép» mở đích danh cho người này?</h4>
+    <p>Khai ở khối Quyền truy cập của văn bản</p>
+  </div>
+  <div class="box q" id="q3" style="left:604px;top:286px;width:220px">
+    <span class="num">3</span><h4>Là thành viên của sổ chứa văn bản?</h4>
+    <p>Người quản lý sổ: xem và sửa. Người xem sổ: chỉ xem</p>
+  </div>
+  <div class="box q" id="q4" style="left:894px;top:286px;width:220px">
+    <span class="num">4</span><h4>Vai trò có quyền đó <b>và</b> văn bản nằm trong phạm vi?</h4>
+    <p>Ví dụ: có cột Sửa, phạm vi Công ty, văn bản thuộc công ty mình</p>
+  </div>
+  <div class="box no" id="n4" style="left:1184px;top:301px;width:212px">
+    <h4>Không</h4>
+    <p>Người này không thấy văn bản (danh sách không hiện, mở đường dẫn cũng không vào được)</p>
+  </div>
+
+  <div class="box no" id="r1" style="left:24px;top:496px;width:220px">
+    <h4>Bị chặn</h4>
+    <p>Thắng mọi quyền khác — kể cả người tạo và quản trị</p>
+  </div>
+  <div class="box yes" id="r2" style="left:314px;top:496px;width:220px">
+    <h4>Được</h4>
+    <p>Làm đúng những việc đã tick (Xem / Sửa / Xóa), tới ngày hết hạn nếu có</p>
+  </div>
+  <div class="box yes" id="r3" style="left:604px;top:496px;width:220px">
+    <h4>Được</h4>
+    <p>Theo vai trò trong sổ</p>
+  </div>
+  <div class="box yes" id="r4" style="left:894px;top:496px;width:220px">
+    <h4>Được</h4>
+    <p>Làm đúng những cột quyền của vai trò</p>
+  </div>
+  <div class="box dashed" id="ex" style="left:1184px;top:476px;width:212px;--c:var(--gray)">
+    <h4>Luôn được xem</h4>
+    <ul>
+      <li>Người <b>đang duyệt</b> văn bản</li>
+      <li>Người trong <b>phạm vi áp dụng</b> — thấy ở mục <i>Văn bản đến</i></li>
+    </ul>
+  </div>
+
+  <svg class="arrows"></svg>
+</div>
+<script src="so-do-chung.js"></script>
+<script>
+  const { hArrow, vArrow } = SODO;
+  hArrow('q1', 'q2', 'gray', 'Không');
+  hArrow('q2', 'q3', 'gray', 'Không');
+  hArrow('q3', 'q4', 'gray', 'Không');
+  hArrow('q4', 'n4', 'red', 'Không');
+  vArrow('q1', 'r1', 'red', 'Có');
+  vArrow('q2', 'r2', 'green', 'Có');
+  vArrow('q3', 'r3', 'green', 'Có');
+  vArrow('q4', 'r4', 'green', 'Có');
+</script>
+</body>
+</html>

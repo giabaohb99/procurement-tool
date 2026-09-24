@@ -1,10 +1,11 @@
 # Danh sách API / tool cho bot (loại A - dữ liệu có cấu trúc)
 
-Phiên bản: 12/09/2026 (bản đầu 25/08/2026). Trạng thái: **ĐÃ CODE 36 tool** (T1-T34 + T35 +
-T45) — mã nguồn ở `backend/app/modules/assistant/tools/`. T1-T34 đang chạy dev và prod; **T35
-`my_leave_summary` và T45 `employee_lookup` mới xong local 12/09 (bao-CR-386), chưa deploy**.
-**Còn nợ 12 tool** (T36-T44, T46-T48) cho các phân hệ mọc sau 28/08 — xem mục *Đợt 3* gần
-cuối tài liệu.
+Phiên bản: 21/09/2026 (bản đầu 25/08/2026). Trạng thái: **ĐÃ CODE 37 tool** (T1-T34 + T35 +
+T45 + T49) — mã nguồn ở `backend/app/modules/assistant/tools/`. T1-T34 đang chạy dev và prod; **T35
+`my_leave_summary` và T45 `employee_lookup` mới xong local 12/09 (bao-CR-386), chưa deploy**;
+**T49 `propose_account_setup` (bao-CR-435, 21/09) mới xong local, chưa commit** — xem Nhóm 19.
+**Còn nợ 15 tool** (T36-T44, T46-T48, T50-T52) cho các phân hệ mọc sau 28/08 — xem mục *Đợt 3*
+gần cuối tài liệu và **Nhóm 20** (luồng phương án của Yêu cầu mua hàng, đề xuất 21/09/2026).
 Liên quan: kiến trúc ở `01-kien-truc-tro-ly-ai.md`; bảo mật và vận hành thực tế ở
 `04-bao-mat-va-van-hanh.md`.
 
@@ -346,6 +347,9 @@ chi tiết, con người tự bấm Duyệt ở đó.
 - Quyền: `entity` + `read`, lấy phiếu qua `apply_scope` (mã đúng nhưng ngoài phạm vi =
   "không tìm thấy", không lộ tồn tại); thiếu `supplier.read` thì ẩn NCC kèm ghi chú
   (kể cả `suggested_supplier` của YCMH); YCMH đã xóa mềm coi như không tồn tại.
+- **ĐỀ XUẤT 21/09/2026 — mở rộng, chưa code:** thêm tham số `include_options` cho nhánh
+  `purchase_request` để trả khối phương án của luồng bao-CR-310. Xem **Nhóm 20** (ở đó nói rõ
+  vì sao mở rộng T27 chứ không đẻ tool mới).
 
 ### T28. pending_procurement_approvals - Phiếu thu mua chờ chính người hỏi duyệt
 - Mục đích: "tôi cần duyệt bao nhiêu phiếu khảo sát", "có đơn nào chờ tôi duyệt không".
@@ -438,7 +442,9 @@ duyệt, T20-T22 soạn nháp, T23-T24 + T30 tiện ích (xuất Word / tra HDSD
 T25-T26 công nợ + YCTT, T27-T29 trợ lý cho quản lý và người trình phiếu (recap chứng từ +
 phiếu chờ duyệt + phiếu của tôi), T31-T34 đợt CR-218 (sửa phiếu có xác nhận + đọc YCTT +
 phiếu hỗ trợ), và hai tool đầu tiên của Đợt 3 — **T35** quỹ phép + đơn nghỉ của chính mình,
-**T45** danh bạ nhân sự (bao-CR-386, 12/09/2026).
+**T45** danh bạ nhân sự (bao-CR-386, 12/09/2026). Ngày 21/09/2026 thêm **T49**
+`propose_account_setup` (bao-CR-435) — tool GHI có xác nhận thứ hai, và là ngoại lệ hẹp duy
+nhất của luật "không mở Quản trị" (xem Nhóm 19), nâng bộ lên **37 cái**.
 
 ---
 
@@ -731,6 +737,127 @@ tool liền mạch. Việc backend mới duy nhất: mở rộng search sang **n
 
 ---
 
+## Nhóm 19 - Quản trị: lập bộ tài khoản thu mua (`account_setup_tool.py`, bao-CR-435, 21/09/2026)
+
+Ngoại lệ HẸP của luật "Quản trị cố ý không mở" ở mục dưới. Lý do mở: hướng dẫn 20 (bộ tài
+khoản phòng tự mua hàng) có bốn bước bấm tay, hai bước sau (gán vai trò + khai ô loại trừ
+phòng ban) lặp lại y hệt cho từng người và dễ quên ô «Chỉ trong công ty». Tool chỉ làm đúng
+hai bước đó, theo khuôn **đề xuất rồi xác nhận** của T31/T32 — model không có nút để bấm.
+
+### T49. propose_account_setup - Đề xuất lập / chỉnh bộ tài khoản thu mua
+- Mục đích: "lập bộ tài khoản thu mua cho Nguyễn Văn A", "gán A làm nhân viên thu mua và
+  loại trừ Dego Organic", "kiểm xem tài khoản B đã đúng bộ chưa".
+- Tham số: `employee` (mã NV / họ tên / email đăng nhập), `role_codes` (chỉ 6 mã trong bộ
+  mẫu: `employee` · `dept_head` · `pur_staff` · `pur_manager` · `pur_dept_manager` ·
+  `pur_admin`), `replace_roles` (mặc định false = chỉ THÊM), `exclude_departments` (tên phòng
+  cần loại trừ khỏi phạm vi các vai trò thu mua), `remove_company_include` (mặc định false).
+- Việc tool làm TRƯỚC khi đề xuất: tìm nhân sự (mã đúng → email đúng → tên gần đúng, quá 6
+  ứng viên thì hỏi lại), kiểm đã có tài khoản chưa, đọc vai trò và phạm vi đang có, rồi so
+  từng dòng.
+- Đầu ra: `proposal` gồm hồ sơ tóm tắt, danh sách dòng vai trò / phạm vi với kết cục
+  «thêm» · «bỏ» · «không đổi», cảnh báo (tài khoản đang khóa, còn dòng «Chỉ trong công ty»
+  trên vai trò thu mua — bao-CR-434), số dòng đổi và `confirm_token` 15 phút. Mọi dòng
+  «không đổi» thì thẻ không có nút Xác nhận. Chạy lại lần hai là mọi dòng «không đổi».
+- KHÔNG làm: tạo tài khoản đăng nhập, đặt / đổi mật khẩu, tạo vai trò mới, tick quyền trong
+  vai trò. Nhân sự chưa có tài khoản → chặn kèm đường dẫn màn Người dùng để lập tay.
+- Quyền: `user.write` + `role.read` + `employee.read`, cộng `apply_scope(User, write)` (ngoài
+  phạm vi = "không tìm thấy"), chặn tự sửa chính mình (L1) và chặn gán vai trò mang quyền
+  người hỏi không có (L2, `block_role_escalation`). Ghi thật ở endpoint
+  `POST /api/assistant/confirm-account-setup`, kiểm lại toàn bộ từ đầu — xem `04` §5.
+- Giai đoạn 2 (chưa làm): tool tạo vai trò theo yêu cầu khách — cần hỏi xác nhận nhiều bước
+  hơn, để riêng.
+
+---
+
+## Nhóm 20 - Xử lý phương án trên Yêu cầu mua hàng (`pr_option_tool.py`, CHƯA CODE, đề xuất 21/09/2026)
+
+**Thuộc phần nào:** phân hệ **Thu mua** → chứng từ **Yêu cầu mua hàng (YCMH)** → màn *Xử lý
+phương án* (`/procurement/purchase-requests/:id/process`) và cụm chọn phương án trên màn chi
+tiết YCMH. Tài liệu nghiệp vụ gốc: `doc/tai-lieu-chuc-nang/03-yeu-cau-mua-hang.md` mục **H**
+(bao-CR-310 và các đợt nối bao-CR-419 · 420 · 421 · 422). Hướng dẫn sử dụng cho người dùng:
+hai bài của bao-CR-450 (*Xử lý phương án trên yêu cầu mua hàng* cho NSTM · *Chọn phương án
+trên yêu cầu mua hàng* cho người yêu cầu).
+
+**Đừng lẫn với phương án của YCKS.** T27 đã có câu "riêng YCKS chỉ ĐẾM số phương án mỗi dòng"
+— đó là **phương án khảo sát** (bảng option của Phiếu khảo sát, mỗi dòng nhiều báo giá NCC).
+Nhóm 20 nói về **phương án trên dòng YCMH** (tối đa 5 phương án gắn vào một dòng hàng, cộng
+«phương án 0 — Yêu cầu gốc» nằm ngoài trần), là bảng khác, luồng khác, người chọn khác.
+
+**Vì sao đề xuất:** hôm nay trợ lý **mù hoàn toàn** cả chặng này — T27 trả đầu phiếu + dòng
+hàng và **không có một trường nào** của phương án, nên hỏi "phiếu này chọn phương án nào rồi"
+model sẽ trả lời chắc nịch bằng dữ liệu dòng hàng, tức là sai mà nghe rất thật. Thêm vào đó
+chuông của chặng phương án đang **TẮT** (`OPTION_BELLS_ENABLED = False`, bao-CR-419) và màn
+danh sách cố ý **không** có cột/bộ lọc cho chặng này (N-18 đã bỏ), nên không có đường nào
+khác để người dùng biết "phiếu nào đang chờ tôi".
+
+**Thứ tự nên làm** (rẻ → đắt, giá trị cao → thấp):
+
+**0. Không phải tool — bật lại `search_docs` (T24) trên dev.** Hai bài hướng dẫn bao-CR-450 đã
+có sẵn; chỉ cần RAG sống là model trả lời được phần lớn câu hỏi "chặng này hoạt động thế nào"
+mà không cần viết dòng mã tool nào. Bật thì phải chạy `rebuild_all` để hai bài vào kho.
+
+**1. Mở rộng T27 `procurement_doc_read` bằng tham số `include_options`** (KHÔNG đẻ tool mới).
+- Lý do không đẻ tool mới: danh sách đã 37 tool đang chạy; mỗi tool thêm vào làm model chọn
+  tool kém đi, mà câu hỏi phương án luôn đi kèm câu hỏi chứng từ ("phiếu X tới đâu, chọn gì
+  rồi") — gộp vào một lượt gọi là đúng nếp T27 "một tool generic cho cả ba loại".
+- Tham số: `include_options` (mặc định **false** để câu trả lời cũ không phình ra), chỉ có
+  nghĩa với `entity = purchase_request`.
+- Đầu ra thêm cho mỗi dòng: số phương án đang gắn, phương án **đang được chọn** (nhãn, nguồn
+  khảo sát / nhập tay / yêu cầu gốc, đơn giá + ĐVT báo giá, khoảng SL áp giá), cờ «dòng chưa
+  có phương án nào ngoài phương án 0», cờ «chốt rỗng», và ở đầu phiếu: chặng đang mở hay
+  đã *Chốt hoàn thành xử lý* (`options_chosen_at` / `options_chosen_by`).
+- Quyền: y như T27 hiện thời, **cộng** luật che NCC của H.3.8 — thiếu `supplier.read` thì tên
+  và mã NCC trong phương án trả chuỗi rỗng kèm ghi chú, y hệt backend đang làm cho giao diện.
+  Giá thì vẫn cho xem (người yêu cầu vốn thấy giá trên thẻ phương án).
+
+**2. T50. `pr_option_stage_status` - Phiếu đang chờ CHÍNH NGƯỜI HỎI ở chặng phương án** [CHƯA CODE]
+- Mục đích: "có phiếu nào đang chờ tôi chọn phương án không", "dòng nào của tôi chưa gắn
+  phương án". Đây là tool **giá trị nhất** của nhóm vì nó bù đúng hai lỗ hổng cố ý ở trên
+  (chuông tắt + danh sách không có cột) mà **không phải bật lại chuông, không phải sửa màn
+  danh sách** — hai thứ đại ca đã chốt là không làm.
+- Tham số: `role_view` (`requester` = chờ tôi chọn · `handler` = dòng tôi phải gắn phương án ·
+  bỏ trống = cả hai, gom theo nhánh) + `limit` (mặc định 10, trần 30).
+- Phạm vi: chỉ phiếu trong `PR_OPTION_STAGE_OPEN` (`dispatched` · `processing` · `purchasing` ·
+  `purchased`). Nhánh `requester` = phiếu người hỏi đứng tên người yêu cầu **hoặc** có
+  `purchase_request.approve`, còn dòng chưa chốt lựa chọn. Nhánh `handler` = dòng có `assignee`
+  là chính họ (đúng hàng rào dòng của H.3) mà chưa gắn phương án nào ngoài phương án 0.
+- Đầu ra: mỗi phiếu kèm mã, người yêu cầu, số dòng còn chờ / tổng số dòng, `url` mở thẳng màn
+  *Xử lý phương án*, và `reminder` "trợ lý không chọn hộ".
+- Quyền: `purchase_request.read` + `apply_scope`, ép lọc chính chủ theo luật 3 của Đợt 3.
+
+**3. T51. `propose_choose_pr_option` - Đề xuất chọn phương án cho một dòng** [CHƯA CODE, tầng GHI có xác nhận]
+- Khuôn **đề xuất rồi xác nhận** của T31/T49: tool không ghi gì, trả `proposal` + `confirm_token`
+  15 phút; ghi thật ở endpoint `confirm-*`, kiểm lại toàn bộ từ đầu.
+- Tham số: `code` hoặc `id` của YCMH + `line_id` + `option_public_id` (số hiệu phương án người
+  dùng nhìn thấy trên thẻ, không phải khóa nội bộ).
+- **Bắt buộc in ra thẻ so sánh** trước khi có nút Xác nhận: đơn giá cũ → mới, **lệch ĐVT báo
+  giá so với ĐVT của dòng**, và **khoảng SL áp giá** mà số lượng của dòng rơi ra ngoài. Ba thứ
+  này là chỗ người thật hay chọn nhầm nhất; trợ lý mà giấu đi thì tệ hơn là không có tool.
+- Nhắc thêm vào thẻ: chọn phương án có mã VTBB sẽ **tự điền mã hàng** cho dòng đang trống
+  (H.3.9), và nếu phiếu đã *Chốt hoàn thành xử lý* thì chặn kèm đường dẫn nút *Mở lại cho
+  NSTM xử lý*.
+- Quyền: `purchase_request.write` (hoặc `approve` theo đúng cửa của màn chọn) + `apply_scope`;
+  chỉ trong `PR_OPTION_STAGE_OPEN`.
+
+**4. T52. `propose_apply_supplier_to_lines` - Đề xuất áp 1 NCC cho nhiều dòng** [CHƯA CODE, tầng GHI có xác nhận]
+- Bản trợ lý của nút *Áp 1 NCC cho nhiều dòng* (H.10.5): chỉ chạm dòng mà phương án đang chọn
+  **chưa có NCC** (phương án 0 hoặc nhập tay), chỉ dòng người hỏi phụ trách, và **không bao giờ**
+  đổi NCC của phương án lấy từ kho khảo sát.
+- Tham số: `code`/`id` + `supplier` (mã hoặc tên NCC) + `line_ids` (bỏ trống = mọi dòng đủ điều
+  kiện, nhưng thẻ phải **liệt kê đủ từng dòng** sẽ bị chạm, không để "áp cho tất cả" mù).
+- Quyền: `purchase_request.write` + **`supplier.read`** (không thấy NCC thì không được gán NCC)
+  + `apply_scope`.
+
+**KHÔNG nên mở (chốt luôn để người sau khỏi hỏi lại):**
+- **Tạo đơn mua hàng từ phương án** (`generate-orders`). Một lượt bấm đẻ ra nhiều ĐMH nháp gom
+  theo NCC, hỏng thì phải dọn tay từng đơn — để con người bấm trên màn, trợ lý chỉ đưa link.
+- **Gắn / sửa / xóa phương án.** Phương án mang bản chụp giá và nguồn; model tự điền là mở
+  đường cho số liệu bịa đi thẳng vào chứng từ mua hàng.
+- **Bấm *Chốt hoàn thành xử lý*.** Đây là mốc chuyển quyền từ thu mua sang người yêu cầu — một
+  nút đổi chủ chặng thì phải do người bấm.
+
+---
+
 ## Chưa xếp lịch, chưa cấp số
 
 - **Điểm cà phê** (`coffee_point`) - chờ POS365 chạy thật rồi mới biết câu hỏi nào đáng hỏi.
@@ -739,7 +866,9 @@ tool liền mạch. Việc backend mới duy nhất: mở rộng search sang **n
 - **Thông báo / cảnh báo** (`notification`, `alert`, `push`) - trùng việc với chuông trên
   giao diện.
 - **Quản trị** (`role`, `user`, `audit`, `login_session`, `backup`) - **cố ý không mở**.
-  Trợ lý không được là một đường vòng vào phân quyền.
+  Trợ lý không được là một đường vòng vào phân quyền. Ngoại lệ hẹp duy nhất: **T49** (Nhóm
+  19, 21/09/2026) gán vai trò CÓ SẴN + ô loại trừ phòng ban, cùng cửa kiểm với màn Phân
+  quyền và chỉ ghi khi người bấm Xác nhận — không tạo tài khoản, không tạo vai trò.
 
 ---
 

@@ -20,6 +20,7 @@ from app.modules.company import service as company_service
 from app.modules.company.model import Company
 from app.modules.department import service as dept_service
 from app.modules.department.model import Department, DepartmentCompany
+from app.modules.employee.model import Employee
 
 
 class _Req:
@@ -278,3 +279,67 @@ def test_hai_cot_moi_van_nam_trong_whitelist_bo_loc_dieu_kien(db, seed):
 
     total, items = dept_service.list_departments(db, None, PG, request=_Req(kind__eq="2"))
     assert [d.code for d in items] == ["P-KD"] and total == 1
+
+
+# ── Phòng ban: danh sách phải NẠP GỘP trưởng bộ phận ─────────────────────────────
+#
+#  `DepartmentOut.manager_name` đọc qua quan hệ `Department.manager`, nên thiếu
+#  `selectinload` là mỗi dòng một truy vấn thêm — đúng lúc ô chọn phòng ban ở tab
+#  «Người đang giữ» (màn Chức vụ) hỏi 200 dòng một lượt.
+
+def _count_queries_reading_manager_name(db, line_count: int) -> tuple[int, list]:
+    """Số câu SQL phát ra khi lấy `line_count` dòng RỒI đọc `manager_name` từng dòng.
+
+    ⚠️ `expunge_all`, KHÔNG phải `expire_all`: `expire_all` để nguyên đối tượng
+    trong identity map nên `dept.manager` vẫn lấy được từ bộ nhớ mà không cần
+    truy vấn — bài kiểm sẽ XANH cả khi đã gỡ `selectinload`, tức là một bài kiểm
+    rỗng. Đẩy hết ra khỏi phiên thì quan hệ buộc phải đi hỏi CSDL.
+    """
+    from sqlalchemy import event
+
+    from app.modules.department.schema import DepartmentOut
+
+    count = {"n": 0}
+
+    def _tally(conn, cursor, statement, params, context, executemany):
+        count["n"] += 1
+
+    db.expunge_all()
+    event.listen(db.get_bind(), "before_cursor_execute", _tally)
+    try:
+        _, items = dept_service.list_departments(db, None, {"offset": 0, "limit": line_count})
+        names = [DepartmentOut.model_validate(row).manager_name for row in items]
+    finally:
+        event.remove(db.get_bind(), "before_cursor_execute", _tally)
+    return count["n"], names
+
+
+def test_department_list_eager_loads_manager(db, seed):
+    """Chốt hiệu năng, không chốt hiển thị.
+
+    ⚠️ Đo bằng TÍNH CHẤT, không bằng một con số ma: chạy hai lượt với số dòng
+    khác hẳn nhau rồi đòi số truy vấn **y hệt**. Ngưỡng kiểu `<= 6` thì vừa dễ đỏ
+    oan khi thêm một quan hệ chính đáng, vừa lọt N+1 ở trang nhỏ.
+
+    ⚠️ Mỗi phòng một TRƯỞNG BỘ PHẬN KHÁC NHAU. Bản đầu của bài kiểm này dùng
+    chung một người cho cả tám phòng và nó XANH cả khi đã gỡ `selectinload`:
+    lượt nạp lười đầu tiên đưa người đó vào identity map, bảy dòng sau lấy lại
+    từ bộ nhớ nên không phát ra câu SQL nào. N+1 chỉ lộ khi các dòng trỏ vào
+    những bản ghi khác nhau — mà đó mới đúng là dữ liệu thật.
+    """
+    for i in range(8):
+        manager = Employee(code=f"NS-TP-{i}", full_name=f"Trưởng Phòng {i}")
+        db.add(manager)
+        db.commit()
+        _department_id(db, f"P-NHIEU-{i}", company_id=seed.company_id,
+                       manager_id=manager.id)
+
+    few, names_few = _count_queries_reading_manager_name(db, 2)
+    many, names_many = _count_queries_reading_manager_name(db, 8)
+
+    assert many == few, (
+        f"{few} câu cho 2 dòng nhưng {many} câu cho 8 dòng — `manager_name` đang "
+        "đi hỏi CSDL theo từng dòng. Xem `selectinload` ở `list_departments`.")
+    #  Vẫn phải ra ĐÚNG tên: một bài kiểm hiệu năng mà gỡ mất dữ liệu thì vô nghĩa.
+    assert all(names_many), "nạp gộp xong mà tên trưởng bộ phận rỗng"
+    assert names_few == names_many[: len(names_few)]

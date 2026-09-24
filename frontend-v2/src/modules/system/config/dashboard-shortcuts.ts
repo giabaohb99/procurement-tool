@@ -6,6 +6,7 @@ import {
   History,
   MailCheck,
   MonitorSmartphone,
+  RefreshCcwDot,
   ScrollText,
   ShieldCheck,
   SlidersHorizontal,
@@ -104,12 +105,23 @@ export const SYSTEM_DASHBOARD_SHORTCUTS: SystemShortcut[] = [
     entities: ['audit', 'setting'],
   },
   {
+    //  bao-CR-455: bỏ cờ quản lý, đi theo mục menu bên `routes.tsx` — backend
+    //  chỉ gác `read` và `delete` trên khóa này. Xem chú thích dài ở đó.
     label: 'Phiên đăng nhập',
     description: 'Phiên đang mở toàn hệ — đá phiên hoặc bắt đăng nhập lại.',
     path: appRoutes.system.sessions,
     icon: MonitorSmartphone,
     entity: 'login_session',
-    manage: true,
+  },
+  {
+    //  bao-CR-449: KHÔNG `manage` — quyền `read` đủ để tra sổ, `sync_log.write`
+    //  chỉ mở thêm nút *Chạy lại* bên trong. Khai `manage` ở đây là giấu thẻ
+    //  khỏi đúng nhóm người hay phải đi tra "phiếu bên app cũ sang được chưa".
+    label: 'Sổ đồng bộ',
+    description: 'Từng lượt đồng bộ với app đặt xe cũ và từng bản ghi đi qua — kèm nguyên văn lỗi.',
+    path: appRoutes.system.syncLogs,
+    icon: RefreshCcwDot,
+    entity: 'sync_log',
   },
   {
     //  duoc-CR-396: màn này nay THUỘC phân hệ Quản trị, không còn là lối tắt

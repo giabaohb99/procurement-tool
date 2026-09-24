@@ -40,6 +40,8 @@ import app.core.all_models  # noqa: F401 — đăng ký toàn bộ mapper
 from app.core.celery_app import celery_app
 from app.core.database import SessionLocal
 from app.core.storage import env_prefix, is_remote_storage_ready, upload_fileobj
+from app.modules.change_log.model import ChangeLog
+from app.modules.login_session.model import LoginSession
 from app.modules.request_log.model import RequestLog
 
 from .model import AuditLog
@@ -51,7 +53,17 @@ log = logging.getLogger("app.audit.archive")
 #  và con số đó còn tăng. `.all()` nạp trọn vào RAM của container Celery.
 ARCHIVE_CHUNK = 2000
 
-ARCHIVE_TABLES = (("audit", AuditLog), ("request", RequestLog))
+#  ⚠️ ĐỦ BỐN BẢNG (bao-CR-448). Bản đầu chỉ gói `audit` + `request`, trong khi
+#  QĐ-C loại CẢ BỐN bảng nhật ký khỏi sao lưu đêm và việc dọn 16 tháng
+#  (`system_log.cleanup_expired`) chỉ xóa tháng nào đã có gói. Thiếu hai bảng
+#  ở đây thì hoặc `tab_change_log` / `tab_login_session` không bao giờ được
+#  dọn, hoặc bị dọn mà không có bản sao — cả hai đều sai.
+#  Xếp theo `created_at` cho cả bốn. Với phiên đăng nhập nghĩa là dòng được
+#  gói ở tháng MỞ phiên, và nếu lúc gói phiên còn sống thì bản gói mang
+#  `revoked_at = NULL` — chấp nhận: phiên sống tối đa 7 ngày, và câu cần trả
+#  lời khi tra lại là «ai đăng nhập từ đâu lúc nào», không phải «đóng lúc nào».
+ARCHIVE_TABLES = (("audit", AuditLog), ("request", RequestLog),
+                  ("change", ChangeLog), ("session", LoginSession))
 
 
 def _month_bounds(ref: datetime) -> tuple[datetime, datetime, str]:

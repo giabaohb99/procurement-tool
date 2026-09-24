@@ -51,13 +51,8 @@ export function EmployeeTabContact({
       <div className="grid gap-5 lg:grid-cols-2">
         <Card className="gap-4 p-5">
           <FormSection title="Liên hệ">
-            <EmployeeTextField
-              name="email"
-              label="Email công việc"
-              type="email"
-              description="Cũng dùng làm tên đăng nhập. Đổi ở đây không tự đổi tài khoản đã cấp."
-              disabled={!canWrite}
-            />
+            {/*  «Email công việc» đã dời sang tab Chung (đại ca chốt 23/09/2026) —
+                 nó là email ĐĂNG NHẬP, đứng cạnh Trạng thái hồ sơ, xem ghi chú ở đó. */}
             <EmployeeTextField
               name="phone"
               label="Số điện thoại"

@@ -18,6 +18,17 @@ from app.modules.vehicle_booking.service import (
 )
 
 
+def _approver(uid: int = 900):
+    """NGƯỜI DUYỆT — phải khác người lập phiếu.
+
+    Từ 21/09/2026 `service._block_self_approval` chặn người lập tự ký phiếu của
+    mình ở cả đường duyệt một bước (trừ người có phạm vi «tất cả»). Mấy bài dưới
+    đây trước đó dùng CHUNG một actor cho cả lập lẫn duyệt cho gọn — gọn nhưng
+    dựng sai cảnh thật, và chính chỗ đó che mất lỗ suốt thời gian qua.
+    """
+    return SimpleNamespace(id=uid)
+
+
 def _actor(db):
     emp = Employee(code='NV901', full_name='Điều Phối', email='dp@dego.vn',
                    department_id=7, company_id=3)
@@ -36,7 +47,7 @@ def _dispatched(db):
                                 end_location='Q1', start_time='2026-12-10T08:00',
                                 end_time='2026-12-10T12:00', passenger_count=2)
     b = create_booking(db, data, actor, submit=True)
-    approve_booking(db, b, actor)
+    approve_booking(db, b, _approver())
     dispatch_booking(db, b, DispatchIn(assigned_vehicle_id=v.id, assigned_driver_id=d.id), actor)
     assert (b.status, b.driver_status) == (m.BK_DISPATCHED, m.DRV_WAITING)
     return b, actor
@@ -64,13 +75,13 @@ def test_return_and_reject_at_da_duyet(db):
                                 end_location='Q3', start_time='2026-12-20T08:00',
                                 end_time='2026-12-20T10:00', passenger_count=1)
     b = create_booking(db, data, actor, submit=True)
-    approve_booking(db, b, actor)
+    approve_booking(db, b, _approver())
     assert b.status == m.BK_APPROVED
     return_booking(db, b, ReasonIn(reason='Đổi điểm đến'), actor)
     assert b.status == m.BK_RETURNED
 
     b2 = create_booking(db, data, actor, submit=True)
-    approve_booking(db, b2, actor)
+    approve_booking(db, b2, _approver())
     reject_booking(db, b2, ReasonIn(reason='Hết xe'), actor)
     assert b2.status == m.BK_REJECTED
 

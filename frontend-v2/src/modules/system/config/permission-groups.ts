@@ -59,11 +59,26 @@ export const PERMISSION_GROUPS: PermissionGroupDef[] = [
   { id: 'approval', title: 'Phê duyệt', entities: ['approval_flow'] },
   { id: 'approval-seal', title: 'Duyệt dấu', entities: ['seal_request', 'seal_type'] },
   { id: 'work', title: 'Dự án / Công việc', entities: ['work_task'] },
-  { id: 'forum', title: 'Diễn đàn', entities: ['forum_post'] },
+  { id: 'forum', title: 'Diễn đàn', entities: ['forum_post', 'forum_board'] },
   {
     id: 'hr',
     title: 'Nhân sự',
-    entities: ['company', 'department', 'employee', 'user', 'role'],
+    //  `employee_sensitive` (15 trường che) và `job_position` (danh mục chức vụ)
+    //  từng rơi vào «Khác» — chúng là khóa của phân hệ Nhân sự (bao-CR-428).
+    entities: ['company', 'department', 'employee', 'employee_sensitive',
+      'job_position', 'user', 'role'],
+  },
+  {
+    id: 'leave',
+    title: 'Nghỉ phép',
+    entities: ['leave_request', 'leave_balance', 'leave_type', 'holiday'],
+  },
+  { id: 'dossier', title: 'Hồ sơ', entities: ['dossier', 'dossier_type'] },
+  { id: 'room-booking', title: 'Đặt phòng họp', entities: ['room_booking', 'meeting_room'] },
+  {
+    id: 'coffee',
+    title: 'Điểm cà phê',
+    entities: ['coffee_policy', 'coffee_member', 'coffee_ledger', 'pos_order'],
   },
   { id: 'report', title: 'Báo cáo', entities: ['report'] },
   { id: 'support', title: 'Hỗ trợ & Trợ giúp', entities: ['ticket', 'help_article'] },
@@ -74,7 +89,8 @@ export const PERMISSION_GROUPS: PermissionGroupDef[] = [
     entities: ['setting', 'backup', 'mailbox', 'import',
       //  Nhật ký & phiên đăng nhập (CR-312). `login_session` trước nay rơi vào
       //  nhóm «Khác» — cùng một mối quan tâm với hai khóa nhật ký, xếp chung.
-      'login_session', 'audit', 'change_log',
+      //  `sync_log` là sổ đồng bộ với hệ ngoài, cùng họ nhật ký.
+      'login_session', 'audit', 'change_log', 'sync_log',
       //  Việc của bot Agent Hub (ai-CR-036).
       'agent_task'],
   },

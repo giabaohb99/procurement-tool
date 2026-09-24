@@ -83,7 +83,7 @@ Kế hoạch cũ chia mười giai đoạn, tổng **73–104 ngày công**. Sau
 | GĐ | Nội dung cũ | Tình trạng hôm nay |
 |---|---|---|
 | **P0** | Chốt quyết định | **Xong** (Q1–Q8, 18/08) |
-| **P1** | Vá lỗ hổng phạm vi | **XONG 24/08.** P1-1 bậc `proc` AND thêm pháp nhân (CR-164 — chỉ siết khi người xem có `company_id > 0`, nên prod không đổi hành vi); P1-2 khớp phòng ban theo **ID** (CR-086); P1-3 test rò rỉ đã có (`test_proc_loc_cong_ty_p1.py`, `test_pham_vi_khai_du_b07.py`) |
+| **P1** | Vá lỗ hổng phạm vi | **XONG 24/08.** P1-1 bậc `proc` AND thêm pháp nhân (CR-164 — chỉ siết khi người xem có `company_id > 0`, nên prod không đổi hành vi); P1-2 khớp phòng ban theo **ID** (CR-086); P1-3 test rò rỉ đã có (`test_proc_loc_cong_ty_p1.py`, `test_pham_vi_khai_du_b07.py`). **Đính chính 21/09/2026 — P1-1 ĐÃ ĐẢO (bao-CR-434):** nhánh «nhặt việc» của `proc`/`dept_proc` **không** AND pháp nhân hồ sơ nữa. Pháp nhân trên hồ sơ nhân sự chỉ là chuyện pháp lý; một phòng (nhà máy Dego Organic) mua cho nhiều pháp nhân, nên tự thu hẹp là cắt mất đúng phiếu họ phải xử lý. Thu hẹp theo pháp nhân chỉ còn qua ô «Chỉ trong công ty» (`_explicit_cond`). Không dựng ánh xạ phòng ban ↔ nhiều công ty. Bài kiểm đổi thành `test_proc_khong_loc_theo_phap_nhan_cr434.py` |
 | **P2** | Nền pháp nhân: cây công ty, pháp nhân đang làm việc, bậc phạm vi theo pháp nhân | **BỎ** — mục 5.1 thay bằng trục phòng ban |
 | **P3** | Port Công nợ · YCTT · Tồn kho · Báo cáo mua hàng sang v2 | **Xong**, hai phân hệ Tài chính và Kho đã bật |
 | **P4** | Lớp CRUD khai báo + các danh mục | **Đang có, làm theo nhu cầu.** P4-3 khai phạm vi: **hợp đồng xong** (CR-117) nhưng chưa đủ chiều phòng (5.1.8 C); còn **nhận hàng** và **lịch sử mua hàng** → gộp vào nhóm "đợt sau" ở 5.1.3 |

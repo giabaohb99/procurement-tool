@@ -14,6 +14,7 @@ import { Label } from '@/shared/ui/label'
 import { NumberInput } from '@/shared/ui/number-input'
 import { ReadOnlyValue } from '@/shared/ui/read-only-value'
 import { RequiredMark } from '@/shared/ui/required-mark'
+import { SearchSelect } from '@/shared/ui/search-select'
 import {
   Select,
   SelectContent,
@@ -157,37 +158,41 @@ export function PurchaseOrderInfoCard({
         </div>
 
         <div className="space-y-1.5">
-          <Label>
+          <Label htmlFor="po-company">
             Công ty nhận hóa đơn
             <RequiredMark />
           </Label>
           {editable && companies.length ? (
-            <Select
-              value={data.company_id ? String(data.company_id) : undefined}
-              onValueChange={(value) => onChange({ company_id: Number(value) })}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Chọn công ty" />
-              </SelectTrigger>
-              <SelectContent>
-                {/*
-                  Đơn cũ có thể trỏ tới công ty đã bị xóa khỏi danh mục. Không
-                  chèn dòng giữ chỗ thì ô hiện TRỐNG TRƠN — người dùng tưởng
-                  chưa chọn và sửa nhầm dữ liệu lịch sử.
-                */}
-                {data.company_id > 0 &&
-                  !companies.some((company) => company.id === data.company_id) && (
-                    <SelectItem value={String(data.company_id)}>
-                      #{data.company_id} — không còn trong danh mục
-                    </SelectItem>
-                  )}
-                {companies.map((company) => (
-                  <SelectItem key={company.id} value={String(company.id)}>
-                    {company.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchSelect
+              id="po-company"
+              searchInTrigger
+              value={data.company_id ? String(data.company_id) : ''}
+              placeholder="Chọn công ty"
+              searchPlaceholder="Gõ để tìm công ty…"
+              options={[
+                //  Đơn cũ có thể trỏ tới công ty đã bị xóa khỏi danh mục. Không chèn
+                //  dòng giữ chỗ thì ô chỉ hiện con số id trơ trọi — người dùng không hiểu
+                //  và sửa nhầm dữ liệu lịch sử.
+                ...(data.company_id > 0 &&
+                !companies.some((company) => company.id === data.company_id)
+                  ? [
+                      {
+                        value: String(data.company_id),
+                        label: `#${data.company_id} — không còn trong danh mục`,
+                      },
+                    ]
+                  : []),
+                ...companies.map((company) => ({
+                  value: String(company.id),
+                  label: company.name,
+                })),
+              ]}
+              onChange={(value) => {
+                //  Chọn lại đúng mục đang chọn thì thôi — Radix Select cũ không bắn sự kiện.
+                if (value === String(data.company_id)) return
+                onChange({ company_id: Number(value) })
+              }}
+            />
           ) : (
             <ReadOnlyValue>
               {companies.find((company) => company.id === data.company_id)?.name ||
@@ -197,26 +202,28 @@ export function PurchaseOrderInfoCard({
         </div>
 
         <div className="space-y-1.5">
-          <Label>
+          <Label htmlFor="po-supplier">
             Nhà cung cấp bán hàng
             <RequiredMark />
           </Label>
           {editable && suppliers.length ? (
-            <Select
-              value={data.supplier_code || undefined}
-              onValueChange={pickSupplier}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Chọn nhà cung cấp" />
-              </SelectTrigger>
-              <SelectContent>
-                {suppliers.map((supplier) => (
-                  <SelectItem key={supplier.id} value={supplier.code}>
-                    {supplier.code} — {supplier.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchSelect
+              id="po-supplier"
+              searchInTrigger
+              value={data.supplier_code || ''}
+              placeholder="Chọn nhà cung cấp"
+              searchPlaceholder="Tìm theo mã hoặc tên NCC…"
+              options={suppliers.map((supplier) => ({
+                value: supplier.code,
+                label: `${supplier.code} — ${supplier.name}`,
+              }))}
+              onChange={(code) => {
+                //  Chọn lại đúng NCC đang chọn thì thôi: Radix Select cũ không bắn sự kiện,
+                //  còn chạy tiếp là VAT / hình thức thanh toán / điều khoản in bị kéo đè lại.
+                if (code === (data.supplier_code || '')) return
+                pickSupplier(code)
+              }}
+            />
           ) : (
             <ReadOnlyValue>
               {data.supplier_name || data.supplier_code || 'Chưa chọn nhà cung cấp'}
@@ -237,23 +244,24 @@ export function PurchaseOrderInfoCard({
         </div>
 
         <div className="space-y-1.5">
-          <Label>NSPT phụ trách</Label>
+          <Label htmlFor="po-nspt">NSPT phụ trách</Label>
           {editable && canPickNspt && employees.length ? (
-            <Select
-              value={data.nspt || undefined}
-              onValueChange={(value) => onChange({ nspt: value })}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Chọn nhân sự phụ trách" />
-              </SelectTrigger>
-              <SelectContent>
-                {employees.map((employee) => (
-                  <SelectItem key={employee.id} value={employee.full_name}>
-                    {employee.full_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchSelect
+              id="po-nspt"
+              searchInTrigger
+              value={data.nspt || ''}
+              placeholder="Chọn nhân sự phụ trách"
+              searchPlaceholder="Gõ để tìm nhân sự…"
+              //  Ô lưu TÊN chứ không lưu id, nên hai người trùng tên là một lựa chọn —
+              //  gộp lại cho khỏi hai dòng giống hệt nhau (và trùng khóa React).
+              options={Array.from(new Set(employees.map((employee) => employee.full_name))).map(
+                (name) => ({ value: name, label: name }),
+              )}
+              onChange={(value) => {
+                if (value === (data.nspt || '')) return
+                onChange({ nspt: value })
+              }}
+            />
           ) : (
             <ReadOnlyValue>{data.nspt || '—'}</ReadOnlyValue>
           )}

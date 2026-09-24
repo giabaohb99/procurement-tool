@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Bản đồ quy trình văn bản</title>
+<!--
+  Bản đồ 9 quy trình của phân hệ Văn bản — chụp #canvas thành hinh/nv-01-ban-do-quy-trinh.png
+  (khung 1420×500, tỉ lệ điểm ảnh 2).
+  Quy trình ở hàng dưới đặt thẳng dưới quy trình sinh ra nó để mũi tên đi thẳng.
+-->
+<link rel="stylesheet" href="so-do-chung.css">
+<style>
+  #canvas { width: 1420px; height: 500px; }
+  .code { display: inline-block; font-size: 11px; font-weight: 700; color: #fff; background: var(--c); border-radius: 6px; padding: 1px 7px; margin-bottom: 6px; }
+  .band { position: absolute; left: 0; right: 0; border-top: 1px dashed var(--line); }
+</style>
+</head>
+<body>
+<div id="canvas">
+  <div class="title" style="left:24px;top:12px">Luồng chính — từ soạn tới có hiệu lực</div>
+  <div class="band" style="top:288px"></div>
+  <div class="title" style="left:24px;top:300px">Sau khi ban hành</div>
+
+  <div class="box" id="q1" style="left:24px;top:48px;width:200px;--c:var(--blue)">
+    <span class="code">QT-01</span><h4>Soạn thảo</h4>
+    <p>Tạo văn bản, khai phạm vi, quyền, liên kết; soạn nội dung</p>
+  </div>
+  <div class="box" id="q2" style="left:304px;top:48px;width:200px;--c:var(--amber)">
+    <span class="code">QT-02</span><h4>Trình duyệt</h4>
+    <p>Một bước, hoặc lần lượt qua các chặng của quy trình duyệt</p>
+  </div>
+  <div class="box" id="q3" style="left:584px;top:48px;width:200px;--c:var(--green)">
+    <span class="code">QT-03</span><h4>Ban hành</h4>
+    <p>Cấp số, vào sổ, khóa nội dung, báo người phải làm theo</p>
+  </div>
+  <div class="box" id="q6" style="left:864px;top:48px;width:200px;--c:var(--green)">
+    <span class="code">QT-06</span><h4>Tác động dây chuyền</h4>
+    <p>Văn bản cũ bị thay thế / bãi bỏ / gắn cảnh báo sửa đổi</p>
+  </div>
+  <div class="box" id="q4" style="left:1144px;top:48px;width:252px;--c:var(--violet)">
+    <span class="code">QT-04</span><h4>Phân phối cho công ty con</h4>
+    <p>Khi phạm vi có công ty con: mỗi nơi nhận bản riêng, tự duyệt, tự ban hành với số hiệu riêng</p>
+  </div>
+
+  <div class="box" id="q5" style="left:24px;top:338px;width:200px;--c:var(--blue)">
+    <span class="code">QT-05</span><h4>Sửa đổi văn bản</h4>
+    <p>Sửa thông tin ngay; sửa nội dung bằng phiên bản mới</p>
+  </div>
+  <div class="box" id="q9" style="left:304px;top:338px;width:200px;--c:var(--gray)">
+    <span class="code">QT-09</span><h4>Trích và sao chép</h4>
+    <p>Tách một phần cho người không được đọc bản đầy đủ; nhân bản làm văn bản mới</p>
+  </div>
+  <div class="box" id="q8" style="left:584px;top:338px;width:200px;--c:var(--red)">
+    <span class="code">QT-08</span><h4>Bãi bỏ</h4>
+    <p>Thu hồi văn bản; số hiệu giữ trong sổ, người xem thu hẹp</p>
+  </div>
+  <div class="box" id="q7" style="left:864px;top:338px;width:200px;--c:var(--amber)">
+    <span class="code">QT-07</span><h4>Rà soát</h4>
+    <p>Văn bản con, bản riêng, bản trích cần rà lại khi văn bản gốc thay đổi</p>
+  </div>
+  <div class="box dashed" id="cfg" style="left:1144px;top:338px;width:252px;--c:var(--gray)">
+    <h4>Thiết lập nền</h4>
+    <p>Loại văn bản, sổ, quy tắc đánh số, quy tắc liên kết, quy trình duyệt, phân quyền</p>
+  </div>
+
+  <svg class="arrows"></svg>
+</div>
+<script src="so-do-chung.js"></script>
+<script>
+  const { anchor, arrow, hArrow, vArrow, GAP } = SODO;
+  hArrow('q1', 'q2', 'blue');
+  hArrow('q2', 'q3', 'amber', 'Duyệt');
+  hArrow('q3', 'q6', 'green');
+  hArrow('q6', 'q4', 'violet');
+  // Trả lại: từ đáy QT-02 vòng về đáy QT-01
+  const t0 = anchor('q2', 'b', -40), t1 = anchor('q1', 'b', 40);
+  arrow([t0, [t0[0], 225], [t1[0], 225], [t1[0], t1[1] + GAP]], 'amber', 'Trả lại');
+  // Phiên bản mới: từ QT-05 đi lên trình duyệt lại
+  const s0 = anchor('q5', 't', 70), s1 = anchor('q2', 'b', 60);
+  arrow([s0, [s0[0], 262], [s1[0], 262], [s1[0], s1[1] + GAP]], 'blue', 'phiên bản mới');
+  vArrow('q3', 'q8', 'red', 'khi cần thu hồi');
+  vArrow('q6', 'q7', 'amber', 'văn bản con cần rà lại');
+</script>
+</body>
+</html>

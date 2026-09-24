@@ -14,6 +14,7 @@ import time
 
 import requests
 
+from app.core import app_settings
 from app.core.config import settings
 
 log = logging.getLogger("app.coffee_point.pos365")
@@ -49,9 +50,15 @@ class Pos365Client:
 
     def __init__(self, base_url: str | None = None, username: str | None = None,
                  password: str | None = None, session: requests.Session | None = None):
-        self.base_url = (base_url if base_url is not None else settings.POS365_BASE_URL).rstrip("/")
-        self.username = username if username is not None else settings.POS365_USERNAME
-        self.password = password if password is not None else settings.POS365_PASSWORD
+        #  Ba ô này đọc qua bảng cấu hình (màn hình trước, `.env` sau) và đọc
+        #  LÚC DỰNG phiên chứ không lúc nạp module — đổi mật khẩu POS365 xong là
+        #  phiên kế tiếp dùng ngay, không phải dựng lại dịch vụ.
+        self.base_url = (base_url if base_url is not None
+                         else app_settings.get("pos365_base_url") or "").rstrip("/")
+        self.username = (username if username is not None
+                         else app_settings.get("pos365_username") or "")
+        self.password = (password if password is not None
+                         else app_settings.get("pos365_password") or "")
         self.http = session or requests.Session()
         self.session_id: str = ""
         self.user_id: int = 0

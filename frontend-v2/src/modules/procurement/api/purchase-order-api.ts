@@ -41,7 +41,10 @@ export interface PurchaseOrderItemPayload
   deliveries: PurchaseOrderDelivery[]
 }
 
-/** Khoản chi phí lô hàng gửi lên — bỏ các cột backend tính (`base_amount`, công nợ...). */
+/**
+ * Khoản chi phí gửi lên — bao-CR-453: bỏ `amount`/`exchange_rate` cũ, thay bằng
+ * ba giai đoạn. Backend vẫn chấp nhận `amount` cho đơn cũ nhưng frontend không gửi.
+ */
 export type PurchaseOrderImportCostPayload = Pick<
   PurchaseOrderImportCost,
   | 'id'
@@ -50,8 +53,12 @@ export type PurchaseOrderImportCostPayload = Pick<
   | 'supplier_code'
   | 'supplier_name'
   | 'currency'
-  | 'exchange_rate'
-  | 'amount'
+  | 'estimate_amount'
+  | 'estimate_rate'
+  | 'provisional_amount'
+  | 'provisional_rate'
+  | 'final_amount'
+  | 'final_rate'
   | 'vat'
   | 'allocation_method'
   | 'allocation_target'
@@ -176,6 +183,47 @@ export const purchaseOrderApi = {
     apiPost<PurchaseOrderDetail>(`${BASE_URL}/${id}/return`, { reason }),
   cancel: (id: number, reason: string) =>
     apiPost<PurchaseOrderDetail>(`${BASE_URL}/${id}/cancel`, { reason }),
+
+  /**
+   * bao-CR-453 — Chốt giai đoạn chi phí: Dự toán → Tạm tính hoặc Tạm tính → Quyết toán.
+   * Yêu cầu `purchase_order.write`. `target` là BẮT BUỘC và cố ý chỉ đi MỘT bậc: gửi đúng
+   * bậc kế tiếp thì bấm hai lần liền tay lần sau ăn lỗi "đang ở giai đoạn ..." thay vì nhảy
+   * thẳng lên Quyết toán và sinh công nợ.
+   */
+  advanceCostStage: (id: number, target: number) =>
+    apiPost<PurchaseOrderDetail>(`${BASE_URL}/${id}/cost-stage/advance`, { target }),
+
+  /**
+   * bao-CR-453 — Mở lại giai đoạn chi phí (Tạm tính → Dự toán hoặc Quyết toán → Tạm tính).
+   * Yêu cầu `purchase_order.approve` + bắt buộc có lý do; `target` là bậc muốn lùi về.
+   */
+  reopenCostStage: (id: number, target: number, reason: string) =>
+    apiPost<PurchaseOrderDetail>(`${BASE_URL}/${id}/cost-stage/reopen`, { target, reason }),
+
+  /**
+   * bao-CR-469 — Quyết toán NHIỀU dòng chi phí một lượt (tick chọn hoặc chốt hết).
+   * `costIds` rỗng = chốt hết các dòng chưa quyết toán của đơn. Dòng đã quyết toán rồi
+   * thì backend bỏ qua, không báo lỗi.
+   *
+   * bao-CR-476: `importCosts` = bảng chi phí ĐANG GÕ trên màn hình; backend lưu nó trước rồi
+   * mới chốt, để chốt đúng số người dùng đang thấy chứ không phải số đã lưu từ trước.
+   */
+  finalizeCostLines: (
+    id: number,
+    costIds: number[],
+    importCosts?: PurchaseOrderImportCostPayload[],
+  ) =>
+    apiPost<PurchaseOrderDetail>(`${BASE_URL}/${id}/cost-lines/finalize`, {
+      cost_ids: costIds,
+      ...(importCosts ? { import_costs: importCosts } : {}),
+    }),
+
+  /**
+   * bao-CR-453 — Mở lại một dòng đã quyết toán riêng lẻ (đặt `line_stage` về theo đơn).
+   * Yêu cầu `purchase_order.approve` + lý do.
+   */
+  reopenCostLine: (id: number, costId: number, reason: string) =>
+    apiPost<PurchaseOrderDetail>(`${BASE_URL}/${id}/costs/${costId}/reopen`, { reason }),
 
   /** Tình trạng hồ sơ chứng từ — cập nhật được cả khi đơn đã hoàn thành. */
   setDocumentStatus: (id: number, documentStatus: string) =>

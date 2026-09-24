@@ -16,6 +16,7 @@ from .model import ImportBatch, ImportMode, ImportModule, ImportStatus
 _MODULE_LABEL = {
     ImportModule.SURVEY: "Khảo sát",
     ImportModule.PURCHASE_ORDER: "Đơn mua hàng",
+    ImportModule.CUSTOMS_DECLARATION: "Dữ liệu hải quan",
     ImportModule.COMPANY: "Công ty",
     ImportModule.DEPARTMENT: "Phòng ban",
     ImportModule.EMPLOYEE: "Nhân sự",
@@ -48,6 +49,16 @@ def run_import(batch_id: int) -> dict:
         sf = db.get(StoredFile, batch.file_id)
         if not sf:
             raise RuntimeError("Không tìm thấy file đã lưu")
+        # bao-CR-470: tệp GTT02 là .xls đời cũ, openpyxl không đọc được — rẽ nhánh
+        # TRƯỚC khi dựng workbook, đưa thẳng byte thô cho bộ đọc riêng của hải quan.
+        if batch.module == ImportModule.CUSTOMS_DECLARATION:
+            from app.modules.customs import importer as customs_importer
+            customs_importer.run(db, batch, download_bytes(sf.file_key),
+                                 apply=(batch.mode == ImportMode.APPLY))
+            db.refresh(batch)
+            _notify(db, batch, ok=True)
+            return {"status": "done", "created": batch.created_count, "error": batch.error_count}
+
         wb = _load_workbook(sf)
 
         # Khảo sát + ĐMH nay đi MẪU CHUẨN (doc_import), không còn Misa (CR-176).
@@ -151,5 +162,7 @@ def _notify(db, batch, ok: bool) -> None:
         title = f"Import {label} lỗi"
         body = "Xem chi tiết log để xử lý"
     db.add(Notification(user_id=batch.created_by, title=title, body=body,
-                        link=f"/import-batches/{batch.id}", created_by=batch.created_by))
+                        link=("/customs-prices" if batch.module == ImportModule.CUSTOMS_DECLARATION
+                              else f"/import-batches/{batch.id}"),
+                        created_by=batch.created_by))
     db.commit()

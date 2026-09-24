@@ -18,7 +18,15 @@ interface HrOverviewStatsProps {
  * được ở biểu đồ "Cơ cấu trạng thái".
  */
 export function HrOverviewStats({ overview, leave }: HrOverviewStatsProps) {
-  const { stats, gaps } = overview
+  const { stats, gaps, canReadEmployees } = overview
+
+  //  Ba ô đọc hồ sơ nhân sự. Thiếu `employee.read` thì truy vấn không chạy
+  //  (`enabled` ở `useHrOverview`) nên mọi con số về 0 — mà 0 ở đây KHÔNG phải
+  //  "không có ai", nó là "không được xem". Không nói ra thì người dùng đọc
+  //  «Hồ sơ cần bổ sung 0 — Đã khai đủ» và tin rằng hồ sơ công ty đã khai đủ,
+  //  trong khi các thẻ ngay bên dưới đã báo đúng là họ không có quyền xem.
+  //  Cùng lối xử lý với hai ô nghỉ phép: vẫn dựng thẻ, chỉ đổi dòng chú thích.
+  const noPermHint = 'Không có quyền xem'
 
   return (
     // 2 → 3 → 5 cột, HAI CỘT ngay từ điện thoại: năm ô xếp một cột là hơn một
@@ -30,7 +38,7 @@ export function HrOverviewStats({ overview, leave }: HrOverviewStatsProps) {
         icon={Users}
         label="Đang làm việc"
         value={stats.active}
-        hint={overview.orgHint}
+        hint={canReadEmployees ? overview.orgHint : noPermHint}
         loading={overview.isLoading}
       />
 
@@ -38,7 +46,7 @@ export function HrOverviewStats({ overview, leave }: HrOverviewStatsProps) {
         icon={UserPlus}
         label={`Mới vào ${NEW_HIRE_DAYS} ngày`}
         value={stats.newHires}
-        hint="Tính theo ngày vào làm"
+        hint={canReadEmployees ? 'Tính theo ngày vào làm' : noPermHint}
         loading={overview.isLoading}
       />
 
@@ -81,8 +89,8 @@ export function HrOverviewStats({ overview, leave }: HrOverviewStatsProps) {
         icon={TriangleAlert}
         label="Hồ sơ cần bổ sung"
         value={gaps.total}
-        hint={gaps.total ? 'Thiếu ô bắt buộc' : 'Đã khai đủ'}
-        tone={gaps.total ? 'warning' : undefined}
+        hint={!canReadEmployees ? noPermHint : gaps.total ? 'Thiếu ô bắt buộc' : 'Đã khai đủ'}
+        tone={canReadEmployees && gaps.total ? 'warning' : undefined}
         loading={overview.isLoading}
       />
     </div>

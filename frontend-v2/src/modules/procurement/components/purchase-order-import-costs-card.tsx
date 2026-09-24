@@ -2,13 +2,21 @@ import {
   AlertTriangle,
   ChevronDown,
   ChevronRight,
+  Copy,
+  Lock,
+  MoreHorizontal,
   Pencil,
   Plus,
   Receipt,
+  RotateCcw,
   Trash2,
 } from 'lucide-react'
-import { Fragment, useMemo, useState } from 'react'
+import { Fragment, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
+
+import { queryKeys } from '@/shared/constants/query-keys'
 
 import { usePermission } from '@/core/authorization/use-permission'
 import type { Supplier } from '@/modules/production/types/supplier'
@@ -16,6 +24,16 @@ import { appRoutes } from '@/shared/constants/app-routes'
 import { DATE_CONTROL_MIN_WIDTH } from '@/shared/data-table/line-column-width'
 import { LinesTable } from '@/shared/data-table/lines-table'
 import type { LinesTableColumn } from '@/shared/data-table/types'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/shared/ui/alert-dialog'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
@@ -31,6 +49,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/shared/ui/dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/shared/ui/dropdown-menu'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { NumberInput, PRICE_MAX_DECIMALS } from '@/shared/ui/number-input'
@@ -54,9 +78,11 @@ import {
   ALLOCATION_BY_PRODUCT,
   ALLOCATION_MANUAL,
   ALLOCATION_METHOD_OPTIONS,
+  COST_STAGE_ESTIMATE,
+  COST_STAGE_FINAL,
+  COST_STAGE_PROVISIONAL,
   CURRENCY_OPTIONS,
   DEFAULT_CURRENCY,
-  IMPORT_COST_TYPE_OPTIONS,
   MANUAL_ALLOCATION_TOLERANCE,
   PO_IMPORT_COST_PAYABLE_STATUSES,
   STATE_BUDGET_SUPPLIER_CODE,
@@ -64,15 +90,22 @@ import {
   importCostTypeLabel,
   type ImportCostAllocationLine,
   type ImportCostAllocationShare,
+  type PoCostType,
   type PurchaseOrderDetail,
   type PurchaseOrderImportCost,
 } from '../types/purchase-order-detail'
-import { createEmptyImportCost } from '../utils/purchase-order-draft'
+import { purchaseOrderApi } from '../api/purchase-order-api'
+import { usePoCostTypes } from '../hooks/use-po-cost-types'
+import { createEmptyImportCost, toImportCostPayloads } from '../utils/purchase-order-draft'
+import { copyCostStageAmounts, type CostCopySource, type CostCopyTarget } from '../utils/cost-stage-copy'
 import {
   applyCostType,
+  buildCostTypeOptions,
   costBaseAmount,
   displayCostBaseAmount,
   displayLineBaseAmount,
+  findCostType,
+  getAllocationForStage,
   groupCostsBySupplier,
   groupCostsByType,
   isManualAllocation,
@@ -95,13 +128,74 @@ import {
  * được CHỤP LẠI ngay lần đầu người dùng đụng vào bảng, nên bỏ `compactHidden`
  * không thôi thì chỉ người chưa từng mở bảng này mới thấy cột đó — phải đổi khóa.
  * Cái giá là bố cục đã chỉnh tay của riêng bảng này về mặc định một lần.
+ *
+ * `-v5` (bao-CR-453): bỏ hẳn hai cột «Tỷ giá» và «Số tiền», thay bằng ba cột
+ * giai đoạn Dự toán / Tạm tính / Quyết toán. Bố cục cũ còn nhớ hai cột đã chết
+ * nên phải đổi khóa, nếu không bảng hiện hai ô trống vĩnh viễn.
  */
-const TABLE_STORAGE_KEY = 'purchase-order-import-costs-v3'
+const TABLE_STORAGE_KEY = 'purchase-order-import-costs-v5'
+
+/** Nhãn giai đoạn chi phí. */
+const COST_STAGE_LABELS: Record<number, string> = {
+  [COST_STAGE_ESTIMATE]: 'Dự toán',
+  [COST_STAGE_PROVISIONAL]: 'Tạm tính',
+  [COST_STAGE_FINAL]: 'Quyết toán',
+}
+
+/**
+ * bao-CR-453 — ba giai đoạn của một khoản chi phí.
+ *
+ * Mỗi giai đoạn có bộ ba cột riêng (`*_amount` nguyên tệ · `*_rate` tỷ giá ·
+ * `*_base` quy đổi VNĐ do backend tính). Sáu hàm dưới là chỗ DUY NHẤT dịch số
+ * giai đoạn thành tên cột — viết `cost[key]` với khóa ghép chuỗi thì TypeScript
+ * mất kiểu và `onPatch` nhận về `Record<string, number>` không khớp `Partial<>`.
+ */
+const COST_STAGES = [COST_STAGE_ESTIMATE, COST_STAGE_PROVISIONAL, COST_STAGE_FINAL]
+
+function stageAmountOf(cost: PurchaseOrderImportCost, stage: number): number {
+  if (stage >= COST_STAGE_FINAL) return Number(cost.final_amount) || 0
+  if (stage >= COST_STAGE_PROVISIONAL) return Number(cost.provisional_amount) || 0
+  return Number(cost.estimate_amount) || 0
+}
+
+function stageRateOf(cost: PurchaseOrderImportCost, stage: number): number {
+  if (stage >= COST_STAGE_FINAL) return Number(cost.final_rate) || 0
+  if (stage >= COST_STAGE_PROVISIONAL) return Number(cost.provisional_rate) || 0
+  return Number(cost.estimate_rate) || 0
+}
+
+/** Quy đổi VNĐ của giai đoạn: ưu tiên số backend, chưa có thì tính tại chỗ. */
+function stageBaseOf(cost: PurchaseOrderImportCost, stage: number): number {
+  const stored =
+    stage >= COST_STAGE_FINAL
+      ? cost.final_base
+      : stage >= COST_STAGE_PROVISIONAL
+        ? cost.provisional_base
+        : cost.estimate_base
+  const value = Number(stored)
+  if (value > 0) return value
+  return costBaseAmount({ ...cost, line_stage: stage }, stage)
+}
+
+/** Giai đoạn đó đã có người nhập số chưa — dùng để phân biệt "0 đ" với "chưa nhập". */
+function hasStageValue(cost: PurchaseOrderImportCost, stage: number): boolean {
+  return stageAmountOf(cost, stage) !== 0 || stageBaseOf(cost, stage) !== 0
+}
+
+function patchStageAmount(stage: number, value: number): Partial<PurchaseOrderImportCost> {
+  if (stage >= COST_STAGE_FINAL) return { final_amount: value }
+  if (stage >= COST_STAGE_PROVISIONAL) return { provisional_amount: value }
+  return { estimate_amount: value }
+}
+
+function patchStageRate(stage: number, value: number): Partial<PurchaseOrderImportCost> {
+  if (stage >= COST_STAGE_FINAL) return { final_rate: value }
+  if (stage >= COST_STAGE_PROVISIONAL) return { provisional_rate: value }
+  return { estimate_rate: value }
+}
 
 /** Giá trị ô chọn NCC khi khoản chưa gắn NCC nào (Radix Select không nhận chuỗi rỗng). */
 const SUPPLIER_EMPTY = '__none__'
-/** Giá trị ô "Mã hàng chỉ định" khi chưa chọn mã nào. */
-const TARGET_EMPTY = '__none__'
 
 const DESCRIPTION_PLACEHOLDER = 'VD: Cước biển Thượng Hải – Cát Lái'
 const DIALOG_DESCRIPTION_PLACEHOLDER = 'VD: Cước biển Thượng Hải – Cát Lái, 1x20DC'
@@ -128,9 +222,16 @@ const BASE_COLUMNS: LinesTableColumn[] = [
   { key: 'description', header: 'Diễn giải', width: 300, minWidth: 160, wrap: true },
   { key: 'supplier', header: 'Nhà cung cấp', width: 230, minWidth: 150, wrap: true },
   { key: 'currency', header: 'Tiền tệ', width: 95, minWidth: 80, align: 'center' },
-  { key: 'exchange_rate', header: 'Tỷ giá', width: 110, minWidth: 80, align: 'right' },
-  { key: 'amount', header: 'Số tiền (trước thuế)', width: 145, minWidth: 100, align: 'right' },
   { key: 'vat', header: 'VAT%', width: 80, minWidth: 60, align: 'right' },
+  // bao-CR-453 — ba cột số theo giai đoạn thay cho cặp «Tỷ giá / Số tiền» cũ; từ
+  // bao-CR-467 cả ba đều gõ được. Tỷ giá riêng từng giai đoạn nằm trong popup chi tiết.
+  // bao-CR-473 — ba màu tăng dần theo ĐỘ QUAN TRỌNG của con số, như đèn giao thông:
+  // xanh = số tham khảo lúc lập kế hoạch · vàng = số đang thương lượng · đỏ = số thật,
+  // chốt xong là thành công nợ phải trả. Màu mang nghĩa nên khai sẵn (`defaultColor`).
+  { key: 'estimate_base', header: 'Dự toán', width: 145, minWidth: 100, align: 'right', defaultColor: 'blue' },
+  { key: 'provisional_base', header: 'Tạm tính', width: 145, minWidth: 100, align: 'right', defaultColor: 'amber' },
+  { key: 'final_base', header: 'Quyết toán', width: 150, minWidth: 100, align: 'right', defaultColor: 'red' },
+  { key: 'variance_base', header: 'Lệch (VNĐ)', width: 130, minWidth: 90, align: 'right' },
   { key: 'base_amount', header: 'Quy đổi (VNĐ)', width: 145, minWidth: 100, align: 'right' },
   { key: 'paid_amount', header: 'Đã chi', width: 120, minWidth: 90, align: 'right' },
   { key: 'remaining', header: 'Còn lại', width: 120, minWidth: 90, align: 'right' },
@@ -156,6 +257,30 @@ const BASE_COLUMNS: LinesTableColumn[] = [
   { key: 'note', header: 'Ghi chú', width: 150, minWidth: 100, wrap: true, compactHidden: true },
   { key: 'action', header: 'Hành động', width: 90, minWidth: 80, hideable: false, align: 'center' },
 ]
+
+/**
+ * bao-CR-473 — nút «Chốt tạm tính / Chốt quyết toán» cấp ĐƠN tạm ẩn theo lệnh đại ca: từ
+ * bao-CR-469 việc chốt đi bằng tick chọn + «Quyết toán tất cả», nút cấp đơn trùng vai và làm
+ * người dùng lúng túng không biết bấm cái nào. Đường API và hộp xác nhận vẫn giữ nguyên —
+ * cần bày lại thì đổi hằng này thành `true`, không phải dựng lại gì.
+ */
+const STAGE_ADVANCE_ENABLED = false
+
+/**
+ * bao-CR-473 — ba khối giai đoạn trong popup «Chi tiết khoản» mang CÙNG ba màu với ba cột
+ * trên bảng (`defaultColor` xanh · vàng · đỏ), để mắt người dùng nối được ô trên bảng với
+ * khối trong popup. Viết bằng lớp Tailwind có bản tối, không mã hex, cho chế độ tối khỏi vỡ.
+ */
+const STAGE_BLOCK_TONE: Record<number, string> = {
+  [COST_STAGE_ESTIMATE]: 'border-blue-300 bg-blue-50/60 dark:border-blue-800 dark:bg-blue-950/30',
+  [COST_STAGE_PROVISIONAL]: 'border-amber-300 bg-amber-50/60 dark:border-amber-800 dark:bg-amber-950/30',
+  [COST_STAGE_FINAL]: 'border-red-300 bg-red-50/60 dark:border-red-800 dark:bg-red-950/30',
+}
+const STAGE_LABEL_TONE: Record<number, string> = {
+  [COST_STAGE_ESTIMATE]: 'text-blue-700 dark:text-blue-300',
+  [COST_STAGE_PROVISIONAL]: 'text-amber-700 dark:text-amber-300',
+  [COST_STAGE_FINAL]: 'text-red-700 dark:text-red-300',
+}
 
 const TICK_COLUMN: LinesTableColumn = {
   key: 'tick',
@@ -220,9 +345,64 @@ export function PurchaseOrderImportCostsCard({
   const rawCosts = order.import_costs
   const costs = useMemo(() => rawCosts ?? [], [rawCosts])
 
+  // bao-CR-453 — danh mục loại chi phí; chưa nạp được thì ô chọn rơi về bộ mã cứng cũ.
+  const costTypesQuery = usePoCostTypes()
+  const costTypes = useMemo(() => costTypesQuery.data?.items ?? [], [costTypesQuery.data])
+
+  const queryClient = useQueryClient()
   const [selectedPayableIds, setSelectedPayableIds] = useState<Set<number>>(() => new Set())
   const [detailIndex, setDetailIndex] = useState<number | null>(null)
   const [openLineIds, setOpenLineIds] = useState<Set<number>>(() => new Set())
+
+  // bao-CR-453 — hộp thoại Chốt / Mở lại giai đoạn
+  const [advanceDialogOpen, setAdvanceDialogOpen] = useState(false)
+  const [reopenDialogOpen, setReopenDialogOpen] = useState(false)
+  const [reopenReason, setReopenReason] = useState('')
+  const [pendingLineAction, setPendingLineAction] = useState<
+    { type: 'reopen'; costId: number } | null
+  >(null)
+  /**
+   * bao-CR-469 — tick chọn dòng để quyết toán. Dùng CHUNG cột tick với việc lập YCTT được vì
+   * hai tập không bao giờ giẫm nhau: dòng chưa chốt thì chưa thành công nợ, dòng đã thành
+   * công nợ thì đã chốt rồi. `null` = chưa mở hộp xác nhận; `ids` rỗng = chốt hết.
+   */
+  const [selectedCostIds, setSelectedCostIds] = useState<Set<number>>(() => new Set())
+  const [pendingFinalize, setPendingFinalize] = useState<
+    { ids: number[]; count: number; all: boolean } | null
+  >(null)
+  const [lineReopenReason, setLineReopenReason] = useState('')
+  const advancePending = useRef(false)
+
+  const invalidateOrder = () =>
+    void queryClient.invalidateQueries({ queryKey: queryKeys.procurement.purchaseOrder(order.id) })
+
+  // `target` là bậc muốn tới/muốn lùi về, BẮT BUỘC gửi lên và cố ý chỉ đi một bậc:
+  // bấm hai lần liền tay thì lần sau ăn lỗi "đang ở giai đoạn ..." chứ không nhảy
+  // thẳng lên Quyết toán và sinh công nợ.
+  const advanceStageMutation = useMutation({
+    mutationFn: (target: number) => purchaseOrderApi.advanceCostStage(order.id, target),
+    onSuccess: invalidateOrder,
+  })
+  const reopenStageMutation = useMutation({
+    mutationFn: ({ target, reason }: { target: number; reason: string }) =>
+      purchaseOrderApi.reopenCostStage(order.id, target, reason),
+    onSuccess: invalidateOrder,
+  })
+  // bao-CR-476: gửi kèm bảng ĐANG GÕ để backend lưu trước rồi mới chốt — không thì gõ số
+  // Quyết toán rồi bấm chốt ngay là chốt theo số cũ và sinh công nợ sai số.
+  const finalizeLinesMutation = useMutation({
+    mutationFn: (costIds: number[]) =>
+      purchaseOrderApi.finalizeCostLines(order.id, costIds, toImportCostPayloads(costs)),
+    onSuccess: () => {
+      setSelectedCostIds(new Set())
+      invalidateOrder()
+    },
+  })
+  const reopenLineMutation = useMutation({
+    mutationFn: ({ costId, reason }: { costId: number; reason: string }) =>
+      purchaseOrderApi.reopenCostLine(order.id, costId, reason),
+    onSuccess: invalidateOrder,
+  })
 
   const approved = PO_IMPORT_COST_PAYABLE_STATUSES.includes(order.status)
   /** Đơn đã duyệt và người này lập được YCTT — bật cột tick + bảng thanh toán theo NCC. */
@@ -263,7 +443,21 @@ export function PurchaseOrderImportCostsCard({
   )
 
   const summary = order.import_cost_summary
-  const allocation = order.import_cost_allocation
+  /** Giai đoạn đơn đang đứng — quyết định ô số nào trong ba ô giai đoạn gõ được. */
+  const orderStage = Number(order.cost_stage) || COST_STAGE_ESTIMATE
+
+  /**
+   * bao-CR-453 — `import_cost_allocation` nay là DICT theo giai đoạn
+   * (`{1, 2, 3, effective}`), không còn là một bản phân bổ duy nhất. Người xem
+   * cần thấy số của giai đoạn HIỆU LỰC, nên lấy khóa `effective` trước; bản cũ
+   * chưa có khóa đó thì lùi về giai đoạn của đơn.
+   */
+  const allocation = useMemo(
+    () =>
+      getAllocationForStage(order.import_cost_allocation, 'effective') ??
+      getAllocationForStage(order.import_cost_allocation, orderStage),
+    [order.import_cost_allocation, orderStage],
+  )
   const allocationLines = useMemo(() => allocation?.lines ?? [], [allocation])
 
   /** Khoản tick được: đã thành công nợ, còn phải chi. */
@@ -279,7 +473,32 @@ export function PurchaseOrderImportCostsCard({
     [selectablePayableIds, selectedPayableIds],
   )
 
-  const columns = useMemo(() => (payReady ? [TICK_COLUMN, ...BASE_COLUMNS] : BASE_COLUMNS), [payReady])
+  /**
+   * bao-CR-469 — dòng quyết toán được: đơn đã duyệt, dòng đã lưu (có id) và chưa chốt.
+   * `can('purchase_order','write')` chứ không theo `editable`: đơn đã duyệt thì bảng chi phí
+   * khóa sửa nhưng vẫn phải chốt được, đó chính là lúc hóa đơn về.
+   */
+  const canFinalize = approved && can('purchase_order', 'write')
+  /** Dòng đã lưu và CHƯA quyết toán — ứng viên của cột tick quyết toán. */
+  const isOpenCost = (cost: PurchaseOrderImportCost) =>
+    canFinalize &&
+    cost.id !== undefined &&
+    Math.max(orderStage, cost.line_stage ?? 0) < COST_STAGE_FINAL
+  // bao-CR-478: dòng chưa có Dự toán thì KHÔNG quyết toán được (backend bỏ qua dòng đó) —
+  // ô tick của nó khóa kèm lời giải thích, và không lọt vào «Quyết toán tất cả».
+  const finalizableIds = useMemo(
+    () =>
+      costs
+        .filter((cost) => isOpenCost(cost) && Number(cost.estimate_amount) > 0)
+        .map((cost) => cost.id ?? 0),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- isOpenCost chỉ đọc ba giá trị dưới
+    [costs, canFinalize, orderStage],
+  )
+  const selectedFinalizable = useMemo(
+    () => finalizableIds.filter((id) => selectedCostIds.has(id)),
+    [finalizableIds, selectedCostIds],
+  )
+
 
   // ---- Số tổng: lấy của backend, đơn đang gõ dở thì tính tại chỗ để nhìn ngay ----
   const goodsBase = useMemo(() => {
@@ -345,8 +564,19 @@ export function PurchaseOrderImportCostsCard({
     }
   }
 
+  /**
+   * Đổi tiền tệ của khoản. Từ bao-CR-453 tỷ giá tách riêng cho từng giai đoạn nên
+   * phải đặt lại CẢ BA: về VNĐ thì tỷ giá 1, sang ngoại tệ thì 0 để người nhập
+   * buộc phải gõ tỷ giá thật (0 làm số quy đổi bằng 0, nhìn là biết còn thiếu).
+   */
   function changeCurrency(index: number, currency: string) {
-    updateCost(index, { currency, exchange_rate: currency === DEFAULT_CURRENCY ? 1 : 0 })
+    const rate = currency === DEFAULT_CURRENCY ? 1 : 0
+    updateCost(index, {
+      currency,
+      estimate_rate: rate,
+      provisional_rate: rate,
+      final_rate: rate,
+    })
   }
 
   function changeSupplier(index: number, code: string) {
@@ -357,6 +587,30 @@ export function PurchaseOrderImportCostsCard({
   /** Khoản đã thành công nợ và đã chi một phần thì khóa số tiền — sửa là lệch sổ. */
   function amountLocked(cost: PurchaseOrderImportCost): boolean {
     return (cost.paid_amount ?? 0) > 0.01
+  }
+
+  /**
+   * bao-CR-467: dòng đã ở Quyết toán — theo đơn hoặc riêng dòng — là dòng ĐÃ SINH CÔNG NỢ.
+   * Chốt xong là khóa cả dòng: không ô nào sửa được, không xóa được, muốn sửa phải mở lại.
+   * Backend chặn y hệt; đây là lớp nói trước để người dùng không gõ xong mới ăn lỗi lúc Lưu.
+   */
+  function isLineLocked(cost: PurchaseOrderImportCost): boolean {
+    return Math.max(orderStage, cost.line_stage ?? 0) >= COST_STAGE_FINAL
+  }
+
+  function isRowEditable(cost: PurchaseOrderImportCost): boolean {
+    return editable && !isLineLocked(cost)
+  }
+
+  /** bao-CR-478 — chép số hàng loạt giữa hai cột (chỉ ô trống, chỉ dòng đã tick nếu có tick). */
+  function copyStage(from: CostCopySource, to: CostCopyTarget) {
+    const result = copyCostStageAmounts(costs, from, to, isRowEditable, selectedCostIds)
+    if (!result.copied) {
+      toast.info('Không có dòng nào cần chép — ô đích đã có số hoặc ô nguồn còn trống')
+      return
+    }
+    onChange(result.costs)
+    toast.success(`Đã chép ${result.copied} dòng — bấm Lưu để ghi lại`)
   }
 
   function toggleSelected(payableId: number, checked: boolean) {
@@ -370,6 +624,15 @@ export function PurchaseOrderImportCostsCard({
 
   function toggleSelectAll(checked: boolean) {
     setSelectedPayableIds(checked ? new Set(selectablePayableIds) : new Set())
+  }
+
+  function toggleFinalizeSelected(costId: number, checked: boolean) {
+    setSelectedCostIds((current) => {
+      const next = new Set(current)
+      if (checked) next.add(costId)
+      else next.delete(costId)
+      return next
+    })
   }
 
   function goCreatePaymentRequest(payableIds: number[]) {
@@ -390,15 +653,35 @@ export function PurchaseOrderImportCostsCard({
 
   function renderCell(key: string, cost: PurchaseOrderImportCost, index: number) {
     const currency = (cost.currency || DEFAULT_CURRENCY).toUpperCase()
-    const isVnd = currency === DEFAULT_CURRENCY
     const hasPayable = Boolean(cost.payable_id)
     const base = displayCostBaseAmount(cost)
 
     switch (key) {
       case 'tick': {
+        // bao-CR-469: một cột tick, hai việc — dòng CHƯA chốt thì tick để quyết toán, dòng đã
+        // thành công nợ thì tick để lập YCTT. Hai tập không giẫm nhau nên không cần hai cột.
+        const costId = cost.id
+        if (costId !== undefined && isOpenCost(cost) && !finalizableIds.includes(costId)) {
+          return (
+            <Checkbox
+              disabled
+              aria-label={`Khoản ${index + 1} chưa có Dự toán — chưa quyết toán được`}
+              title="Chưa có Dự toán — nhập Dự toán rồi mới quyết toán được"
+            />
+          )
+        }
+        if (costId !== undefined && finalizableIds.includes(costId)) {
+          return (
+            <Checkbox
+              aria-label={`Chọn khoản ${index + 1} để quyết toán`}
+              checked={selectedCostIds.has(costId)}
+              onCheckedChange={(checked) => toggleFinalizeSelected(costId, checked === true)}
+            />
+          )
+        }
         const reason = paymentBlockReason(cost, approved)
         // Khách 09/09/2026: ô không có gì thì để TRỐNG, đừng vẽ dấu gạch.
-        if (reason !== null || !cost.payable_id) return null
+        if (!payReady || reason !== null || !cost.payable_id) return null
         const payableId = cost.payable_id
         return (
           <Checkbox
@@ -411,16 +694,21 @@ export function PurchaseOrderImportCostsCard({
       case 'no':
         return <span className="text-muted-foreground">{index + 1}</span>
       case 'cost_type':
-        return editable ? (
+        return isRowEditable(cost) ? (
           <Select
             value={String(cost.cost_type)}
-            onValueChange={(value) => replaceCost(index, applyCostType(cost, Number(value)))}
+            onValueChange={(value) =>
+              replaceCost(
+                index,
+                applyCostType(cost, Number(value), findCostType(costTypes, Number(value))),
+              )
+            }
           >
             <SelectTrigger className={WRAPPING_SELECT_TRIGGER} aria-label="Loại chi phí">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {IMPORT_COST_TYPE_OPTIONS.map((option) => (
+              {buildCostTypeOptions(costTypes, cost.cost_type, cost.cost_type_label).map((option) => (
                 <SelectItem key={option.value} value={String(option.value)}>
                   {option.label}
                 </SelectItem>
@@ -431,7 +719,7 @@ export function PurchaseOrderImportCostsCard({
           <span className="font-medium">{cost.cost_type_label || importCostTypeLabel(cost.cost_type)}</span>
         )
       case 'description':
-        return editable ? (
+        return isRowEditable(cost) ? (
           <Textarea
             className="min-h-9 py-1.5"
             value={cost.description}
@@ -443,7 +731,7 @@ export function PurchaseOrderImportCostsCard({
           cost.description || null
         )
       case 'allocation_method':
-        return editable ? (
+        return isRowEditable(cost) ? (
           <Select
             value={String(cost.allocation_method)}
             onValueChange={(value) => changeAllocationMethod(index, Number(value))}
@@ -465,7 +753,7 @@ export function PurchaseOrderImportCostsCard({
       case 'allocation_target':
         return renderAllocationTarget(cost, index)
       case 'supplier':
-        return editable ? (
+        return isRowEditable(cost) ? (
           <SearchSelect
             value={cost.supplier_code || ''}
             onChange={(value) => changeSupplier(index, value === SUPPLIER_EMPTY ? '' : value)}
@@ -483,7 +771,7 @@ export function PurchaseOrderImportCostsCard({
           </span>
         ) : null
       case 'currency':
-        return editable ? (
+        return isRowEditable(cost) ? (
           <Select value={currency} onValueChange={(value) => changeCurrency(index, value)}>
             <SelectTrigger className="w-full" aria-label="Tiền tệ">
               <SelectValue />
@@ -499,38 +787,8 @@ export function PurchaseOrderImportCostsCard({
         ) : (
           currency
         )
-      case 'exchange_rate':
-        if (isVnd) return null
-        return editable ? (
-          <NumberInput
-            className="px-2 text-right"
-            aria-label="Tỷ giá"
-            value={cost.exchange_rate}
-            maxDecimals={6}
-            onChange={(value) => updateCost(index, { exchange_rate: value })}
-          />
-        ) : (
-          <span className="tabular-nums">{formatUnitPrice(cost.exchange_rate)}</span>
-        )
-      case 'amount':
-        return editable && !amountLocked(cost) ? (
-          <NumberInput
-            className="px-2 text-right"
-            aria-label="Số tiền trước thuế"
-            value={cost.amount}
-            maxDecimals={PRICE_MAX_DECIMALS}
-            onChange={(value) => updateCost(index, { amount: value })}
-          />
-        ) : (
-          <span
-            className="tabular-nums"
-            title={amountLocked(cost) ? 'Khoản đã chi một phần — không sửa số tiền' : undefined}
-          >
-            {formatUnitPrice(cost.amount)}
-          </span>
-        )
       case 'vat':
-        return editable ? (
+        return isRowEditable(cost) ? (
           <NumberInput
             className="px-2 text-right"
             aria-label="VAT %"
@@ -544,6 +802,64 @@ export function PurchaseOrderImportCostsCard({
         )
       case 'base_amount':
         return <span className="font-semibold tabular-nums">{formatMoney(base)} đ</span>
+      // bao-CR-467 — ba ô số theo giai đoạn, gõ tự do như Excel: CẢ BA đều gõ được bất
+      // kể đơn đang ở giai đoạn nào, và gõ vào đó là gõ số NGUYÊN TỆ trước thuế. Gõ sẵn
+      // số Quyết toán không sinh công nợ — nợ chỉ hiện khi CHỐT. Dòng đã chốt (hoặc đã
+      // chi một phần) thì khóa, ô khóa bày số đã quy đổi VNĐ (gồm VAT) để đối chiếu.
+      case 'estimate_base':
+      case 'provisional_base':
+      case 'final_base': {
+        const stage =
+          key === 'final_base'
+            ? COST_STAGE_FINAL
+            : key === 'provisional_base'
+              ? COST_STAGE_PROVISIONAL
+              : COST_STAGE_ESTIMATE
+        const active = orderStage === stage
+        if (isRowEditable(cost) && !amountLocked(cost)) {
+          return (
+            <NumberInput
+              className="px-2 text-right"
+              aria-label={`${COST_STAGE_LABELS[stage]} — số tiền trước thuế (${currency})`}
+              value={stageAmountOf(cost, stage)}
+              maxDecimals={PRICE_MAX_DECIMALS}
+              onChange={(value) => updateCost(index, patchStageAmount(stage, value))}
+            />
+          )
+        }
+        if (!hasStageValue(cost, stage)) {
+          return <span className="text-muted-foreground">—</span>
+        }
+        const isFinalStage = stage === COST_STAGE_FINAL
+        return (
+          <span
+            className={cn(
+              'tabular-nums',
+              active && 'font-semibold',
+              isFinalStage && (cost.line_stage ?? 0) >= COST_STAGE_FINAL && 'text-teal-600 dark:text-teal-400',
+            )}
+            title={
+              amountLocked(cost) && active ? 'Khoản đã chi một phần — không sửa số tiền' : undefined
+            }
+          >
+            {formatMoney(stageBaseOf(cost, stage))} đ
+          </span>
+        )
+      }
+      case 'variance_base': {
+        const v = cost.variance_base
+        if (v === undefined || v === null) return null
+        return (
+          <span
+            className={cn(
+              'tabular-nums',
+              Math.abs(v) < 1 ? 'text-muted-foreground' : v > 0 ? 'text-destructive' : 'text-success',
+            )}
+          >
+            {v > 0 ? '+' : ''}{formatMoney(v)} đ
+          </span>
+        )
+      }
       case 'paid_amount':
         return hasPayable ? (
           <span className="font-medium text-success tabular-nums">{formatMoney(cost.paid_amount ?? 0)} đ</span>
@@ -562,7 +878,7 @@ export function PurchaseOrderImportCostsCard({
         )
       }
       case 'invoice_no':
-        return editable ? (
+        return isRowEditable(cost) ? (
           <Input
             value={cost.invoice_no}
             aria-label="Số hóa đơn"
@@ -572,7 +888,7 @@ export function PurchaseOrderImportCostsCard({
           cost.invoice_no || null
         )
       case 'invoice_date':
-        return editable ? (
+        return isRowEditable(cost) ? (
           //  `size="sm"` như mọi bảng dòng khác: cỡ mặc định là `h-9 px-4`, cần
           //  tới ~189px mới đủ chỗ cho `dd/mm/yyyy` — rộng hơn sàn một cột ngày.
           <DatePicker
@@ -584,7 +900,7 @@ export function PurchaseOrderImportCostsCard({
           formatDate(cost.invoice_date) || null
         )
       case 'payment_due_date':
-        return editable ? (
+        return isRowEditable(cost) ? (
           <DatePicker
             size="sm"
             value={cost.payment_due_date || ''}
@@ -594,7 +910,7 @@ export function PurchaseOrderImportCostsCard({
           formatDate(cost.payment_due_date) || null
         )
       case 'note':
-        return editable ? (
+        return isRowEditable(cost) ? (
           <Textarea
             className="min-h-9 py-1.5"
             value={cost.note}
@@ -604,7 +920,18 @@ export function PurchaseOrderImportCostsCard({
         ) : (
           cost.note || null
         )
-      case 'action':
+      case 'action': {
+        const lineStage = cost.line_stage ?? 0
+        // bao-CR-469: nút «Quyết toán dòng này» ở đây đã BỎ — chốt nay đi bằng ô tick đầu
+        // dòng cộng hai nút trên đầu thẻ (chốt các dòng đã tick · chốt tất cả). Một thao tác
+        // sinh công nợ thật thì nên có chỗ nhìn thấy số dòng trước khi bấm, chứ không nấp
+        // trong menu ba chấm của từng dòng. Mở lại thì vẫn theo DÒNG, giữ nguyên chỗ này.
+        const canReopenLine =
+          approved &&
+          lineStage >= COST_STAGE_FINAL &&
+          can('purchase_order', 'approve') &&
+          cost.id !== undefined
+        const hasLineStageAction = canReopenLine
         return (
           <div className="flex items-center justify-center gap-0.5">
             <Button
@@ -617,7 +944,7 @@ export function PurchaseOrderImportCostsCard({
             >
               <Pencil />
             </Button>
-            {editable && !hasPayable && (
+            {isRowEditable(cost) && !hasPayable && (
               <Button
                 type="button"
                 variant="ghost"
@@ -630,8 +957,33 @@ export function PurchaseOrderImportCostsCard({
                 <Trash2 />
               </Button>
             )}
+            {hasLineStageAction && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button type="button" variant="ghost" size="icon-sm" aria-label="Thao tác giai đoạn">
+                    <MoreHorizontal />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {canReopenLine && (
+                    <DropdownMenuItem
+                      onClick={() => {
+                        if (cost.id) {
+                          setPendingLineAction({ type: 'reopen', costId: cost.id })
+                          setLineReopenReason('')
+                        }
+                      }}
+                    >
+                      <RotateCcw className="size-4" />
+                      Mở lại dòng
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         )
+      }
       default:
         return null
     }
@@ -648,24 +1000,21 @@ export function PurchaseOrderImportCostsCard({
     if (Number(cost.allocation_method) === ALLOCATION_BY_PRODUCT) {
       if (!editable) return cost.allocation_target || null
       return (
-        <Select
-          value={cost.allocation_target || TARGET_EMPTY}
-          onValueChange={(value) =>
-            updateCost(index, { allocation_target: value === TARGET_EMPTY ? '' : value })
-          }
-        >
-          <SelectTrigger className={WRAPPING_SELECT_TRIGGER} aria-label="Mã hàng chỉ định">
-            <SelectValue placeholder="Chọn mã hàng" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={TARGET_EMPTY}>Chưa chọn mã hàng</SelectItem>
-            {productCodes.map((code) => (
-              <SelectItem key={code} value={code}>
-                {code}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        //  Mục «Chưa chọn mã hàng» cũ nay là nút xóa của ô, cũng trả `''`.
+        <SearchSelect
+          searchInTrigger
+          clearable
+          wrap
+          value={cost.allocation_target || ''}
+          placeholder="Chọn mã hàng"
+          searchPlaceholder="Gõ để tìm mã hàng…"
+          options={productCodes.map((code) => ({ value: code, label: code }))}
+          onChange={(value) => {
+            //  Chọn lại đúng mã đang chọn thì thôi — Radix Select cũ không bắn sự kiện.
+            if (value === (cost.allocation_target || '')) return
+            updateCost(index, { allocation_target: value })
+          }}
+        />
       )
     }
     return null
@@ -673,30 +1022,129 @@ export function PurchaseOrderImportCostsCard({
 
   const detailCost = detailIndex !== null ? costs[detailIndex] : undefined
 
+  // bao-CR-478: ô «tick hết» nằm NGAY ở tiêu đề cột «Chọn» (như bản cũ), không đứng lẻ trên
+  // thanh nút. Một ô cho cả hai việc: tick mọi dòng quyết toán được + mọi dòng còn phải chi.
+  const tickableCount = finalizableIds.length + (payReady ? selectablePayableIds.length : 0)
+  const tickedCount = selectedFinalizable.length + (payReady ? effectiveSelected.length : 0)
+  const tickHeader = (
+    <Checkbox
+      aria-label="Tick mọi dòng quyết toán được và mọi dòng còn phải chi"
+      title="Tick mọi dòng quyết toán được / còn phải chi"
+      disabled={tickableCount === 0}
+      checked={tickedCount === 0 ? false : tickedCount === tickableCount ? true : 'indeterminate'}
+      onCheckedChange={(checked) => {
+        const on = checked === true
+        setSelectedCostIds(on ? new Set(finalizableIds) : new Set())
+        if (payReady) toggleSelectAll(on)
+      }}
+    />
+  )
+  const columns: LinesTableColumn[] =
+    payReady || finalizableIds.length > 0
+      ? [{ ...TICK_COLUMN, headerContent: tickHeader }, ...BASE_COLUMNS]
+      : BASE_COLUMNS
+
   return (
     <>
       <Card className="gap-4 py-4">
         <CardHeader className="min-h-9 flex flex-row items-center justify-between gap-3 border-b px-4 pb-3!">
           <CardTitle className="flex items-center gap-2 text-base text-navy dark:text-foreground">
             <Receipt className="size-4" />
-            Chi phí lô hàng nhập khẩu
+            Chi phí thu mua
           </CardTitle>
           <div className="flex flex-wrap items-center justify-end gap-2">
+            {/* bao-CR-453 — nút chốt / mở lại giai đoạn. Nút CHỐT tạm ẩn (bao-CR-473), xem
+                `STAGE_ADVANCE_ENABLED`; nút Mở lại vẫn giữ cho đơn đã chốt giai đoạn từ trước. */}
+            {STAGE_ADVANCE_ENABLED && approved && order.cost_stage !== undefined && order.cost_stage < COST_STAGE_FINAL && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={advanceStageMutation.isPending}
+                onClick={() => setAdvanceDialogOpen(true)}
+              >
+                <Lock className="size-4" />
+                {order.cost_stage === COST_STAGE_ESTIMATE ? 'Chốt tạm tính' : 'Chốt quyết toán'}
+              </Button>
+            )}
+            {approved && (order.cost_stage ?? 0) > COST_STAGE_ESTIMATE && can('purchase_order', 'approve') && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={reopenStageMutation.isPending}
+                onClick={() => setReopenDialogOpen(true)}
+              >
+                <RotateCcw className="size-4" />
+                Mở lại
+              </Button>
+            )}
+            {/* bao-CR-478: chép số hàng loạt — bấm một cái thay vì gõ lại từng dòng. */}
+            {editable && costs.some(isRowEditable) && (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  title="Chép số Dự toán sang ô Tạm tính còn trống (dòng đã tick, hoặc mọi dòng nếu chưa tick)"
+                  onClick={() => copyStage('estimate', 'provisional')}
+                >
+                  <Copy className="size-4" />
+                  Dự toán → Tạm tính
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  title="Chép số Tạm tính sang ô Quyết toán còn trống (dòng đã tick, hoặc mọi dòng nếu chưa tick)"
+                  onClick={() => copyStage('provisional', 'final')}
+                >
+                  <Copy className="size-4" />
+                  Tạm tính → Quyết toán
+                </Button>
+              </>
+            )}
+            {/* bao-CR-469: chốt theo DÒNG — tick vài dòng rồi chốt, hoặc chốt hết một nút.
+                Hai nút tách riêng và luôn nói rõ số dòng: chốt là sinh công nợ thật, không để
+                một nút đổi nghĩa theo việc người dùng có tick hay không. */}
+            {finalizableIds.length > 0 && (
+              <>
+                {selectedFinalizable.length > 0 && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={finalizeLinesMutation.isPending}
+                    onClick={() =>
+                      setPendingFinalize({
+                        ids: selectedFinalizable,
+                        count: selectedFinalizable.length,
+                        all: false,
+                      })
+                    }
+                  >
+                    <Lock className="size-4" />
+                    Quyết toán {selectedFinalizable.length} dòng đã tick
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={finalizeLinesMutation.isPending}
+                  // bao-CR-476: gửi ĐÚNG danh sách đã đếm trên nút chứ không gửi rỗng («chốt hết»
+                  // phía backend): lượt lưu kèm theo có thể đẻ thêm dòng mới, và dòng đó không được
+                  // chốt lén khi người dùng chỉ thấy con số m trên nút.
+                  onClick={() =>
+                    setPendingFinalize({ ids: finalizableIds, count: finalizableIds.length, all: true })
+                  }
+                >
+                  <Lock className="size-4" />
+                  Quyết toán tất cả ({finalizableIds.length} dòng)
+                </Button>
+              </>
+            )}
             {payReady && selectablePayableIds.length > 0 && (
               <>
-                <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Checkbox
-                    checked={
-                      effectiveSelected.length === 0
-                        ? false
-                        : effectiveSelected.length === selectablePayableIds.length
-                          ? true
-                          : 'indeterminate'
-                    }
-                    onCheckedChange={(checked) => toggleSelectAll(checked === true)}
-                  />
-                  Tick mọi dòng còn phải chi
-                </label>
                 <Button
                   type="button"
                   size="sm"
@@ -737,7 +1185,7 @@ export function PurchaseOrderImportCostsCard({
           <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(190px,1fr))]">
             <StatCard label="Tiền hàng (quy đổi)" value={goodsBase} tone="navy" />
             <StatCard
-              label="Tổng chi phí nhập khẩu"
+              label="Tổng chi phí thu mua"
               value={costTotal}
               tone="amber"
               hint={`${percentOf(costTotal, goodsBase).toFixed(1)}% tiền hàng`}
@@ -760,6 +1208,36 @@ export function PurchaseOrderImportCostsCard({
             )}
             <StatCard label="Tổng giá trị lô hàng" value={landedTotal} tone="teal" />
           </div>
+
+          {/* bao-CR-453 — bốn ô tổng theo giai đoạn từ import_cost_summary */}
+          {summary &&
+            (summary.estimate_total !== undefined ||
+              summary.provisional_total !== undefined ||
+              summary.final_total !== undefined) && (
+              <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(170px,1fr))]">
+                {summary.estimate_total !== undefined && (
+                  <StatCard label="Dự toán" value={summary.estimate_total} tone="navy" />
+                )}
+                {summary.provisional_total !== undefined && (
+                  <StatCard label="Tạm tính" value={summary.provisional_total} tone="amber" />
+                )}
+                {summary.final_total !== undefined && (
+                  <StatCard label="Quyết toán" value={summary.final_total} tone="teal" />
+                )}
+                {summary.variance_total !== undefined && summary.variance_total !== null && (
+                  <StatCard
+                    label="Lệch (QT - TT)"
+                    value={summary.variance_total}
+                    tone={Math.abs(summary.variance_total) < 1 ? 'success' : 'destructive'}
+                    hint={
+                      summary.variance_pct !== undefined && summary.variance_pct !== null
+                        ? `${summary.variance_pct.toFixed(1)}% tạm tính`
+                        : undefined
+                    }
+                  />
+                )}
+              </div>
+            )}
 
           {/*
             Hai cụm tổng đứng CẠNH nhau trên màn rộng: bảng thanh toán theo NCC bên
@@ -1047,11 +1525,14 @@ export function PurchaseOrderImportCostsCard({
         <CostDetailDialog
           cost={detailCost}
           index={detailIndex}
-          editable={editable}
+          // bao-CR-473: khóa theo DÒNG như trên bảng (bao-CR-467) — trước đây popup nhận cờ
+          // của cả bảng, nên dòng đã chốt vẫn gõ được trong popup rồi ăn lỗi lúc Lưu.
+          editable={isRowEditable(detailCost)}
           isNew={isNew}
           payReady={payReady}
           supplierOptions={supplierSelectOptions}
           productCodes={productCodes}
+          costTypes={costTypes}
           onPatch={(patch) => updateCost(detailIndex, patch)}
           onReplace={(next) => replaceCost(detailIndex, next)}
           onChangeAllocationMethod={(method) => changeAllocationMethod(detailIndex, method)}
@@ -1059,6 +1540,164 @@ export function PurchaseOrderImportCostsCard({
           onChangeSupplier={(code) => changeSupplier(detailIndex, code)}
           onClose={() => setDetailIndex(null)}
         />
+      )}
+
+      {/* bao-CR-453 — xác nhận chốt giai đoạn */}
+      <AlertDialog open={advanceDialogOpen} onOpenChange={setAdvanceDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {order.cost_stage === COST_STAGE_ESTIMATE
+                ? 'Chốt tạm tính chi phí?'
+                : 'Chốt quyết toán chi phí?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {order.cost_stage === COST_STAGE_ESTIMATE
+                ? 'Sau khi chốt, giai đoạn Tạm tính được khoá lại. Vẫn mở lại được nếu cần.'
+                : 'Sau khi chốt Quyết toán, chi phí được coi là chính thức. Vẫn mở lại được nếu cần.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Huỷ</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={advanceStageMutation.isPending}
+              onClick={() => {
+                if (advancePending.current) return
+                advancePending.current = true
+                advanceStageMutation.mutate(orderStage + 1, {
+                  onSettled: () => {
+                    advancePending.current = false
+                    setAdvanceDialogOpen(false)
+                  },
+                })
+              }}
+            >
+              Xác nhận chốt
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* bao-CR-453 — mở lại giai đoạn (cần lý do) */}
+      <Dialog open={reopenDialogOpen} onOpenChange={setReopenDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Mở lại giai đoạn chi phí</DialogTitle>
+            <DialogDescription>Cho biết lý do mở lại để ghi vào nhật ký thao tác.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="reopen-reason">Lý do</Label>
+            <Textarea
+              id="reopen-reason"
+              value={reopenReason}
+              placeholder="Ví dụ: Phát hiện sai số tờ khai thuế, cần điều chỉnh"
+              onChange={(e) => setReopenReason(e.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="outline">Huỷ</Button>
+            </DialogClose>
+            <Button
+              type="button"
+              disabled={!reopenReason.trim() || reopenStageMutation.isPending}
+              onClick={() => {
+                reopenStageMutation.mutate({ target: orderStage - 1, reason: reopenReason.trim() }, {
+                  onSuccess: () => {
+                    setReopenDialogOpen(false)
+                    setReopenReason('')
+                  },
+                })
+              }}
+            >
+              Mở lại
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* bao-CR-453 — quyết toán / mở lại từng dòng */}
+      {/* bao-CR-469 — xác nhận quyết toán theo LƯỢT: nói rõ bao nhiêu dòng sắp thành nợ. */}
+      {pendingFinalize !== null && (
+        <AlertDialog
+          open
+          onOpenChange={(open) => { if (!open) setPendingFinalize(null) }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                Quyết toán {pendingFinalize.count} dòng chi phí?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {pendingFinalize.all
+                  ? 'Chốt HẾT các dòng chưa quyết toán của đơn này. '
+                  : 'Chốt các dòng đang tick. '}
+                Số đang gõ trên bảng được lưu luôn trước khi chốt, không cần bấm Lưu. 
+                Mỗi dòng có nhà cung cấp sẽ sinh ra một khoản nợ theo số Quyết toán, và dòng
+                khóa lại — muốn sửa thì mở lại dòng trước. Dòng đã chi tiền thì không mở lại
+                được nữa.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setPendingFinalize(null)}>Huỷ</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={finalizeLinesMutation.isPending}
+                onClick={() => {
+                  finalizeLinesMutation.mutate(pendingFinalize.ids, {
+                    onSettled: () => setPendingFinalize(null),
+                  })
+                }}
+              >
+                Xác nhận
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+      {pendingLineAction?.type === 'reopen' && (
+        <Dialog
+          open
+          onOpenChange={(open) => { if (!open) setPendingLineAction(null) }}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Mở lại dòng chi phí đã quyết toán</DialogTitle>
+              <DialogDescription>Cho biết lý do mở lại.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2">
+              <Label htmlFor="line-reopen-reason">Lý do</Label>
+              <Textarea
+                id="line-reopen-reason"
+                value={lineReopenReason}
+                placeholder="Ví dụ: Số liệu quyết toán không chính xác"
+                onChange={(e) => setLineReopenReason(e.target.value)}
+              />
+            </div>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button type="button" variant="outline">Huỷ</Button>
+              </DialogClose>
+              <Button
+                type="button"
+                disabled={!lineReopenReason.trim() || reopenLineMutation.isPending}
+                onClick={() => {
+                  const costId = pendingLineAction.costId
+                  reopenLineMutation.mutate(
+                    { costId, reason: lineReopenReason.trim() },
+                    {
+                      onSuccess: () => {
+                        setPendingLineAction(null)
+                        setLineReopenReason('')
+                      },
+                    },
+                  )
+                }}
+              >
+                Mở lại
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )}
     </>
   )
@@ -1305,6 +1944,7 @@ function CostDetailDialog({
   payReady,
   supplierOptions,
   productCodes,
+  costTypes,
   onPatch,
   onReplace,
   onChangeAllocationMethod,
@@ -1319,6 +1959,7 @@ function CostDetailDialog({
   payReady: boolean
   supplierOptions: { value: string; label: string }[]
   productCodes: string[]
+  costTypes: PoCostType[]
   onPatch: (patch: Partial<PurchaseOrderImportCost>) => void
   onReplace: (next: PurchaseOrderImportCost) => void
   onChangeAllocationMethod: (method: number) => void
@@ -1369,13 +2010,17 @@ function CostDetailDialog({
               {editable ? (
                 <Select
                   value={String(cost.cost_type)}
-                  onValueChange={(value) => onReplace(applyCostType(cost, Number(value)))}
+                  onValueChange={(value) =>
+                    onReplace(
+                      applyCostType(cost, Number(value), findCostType(costTypes, Number(value))),
+                    )
+                  }
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {IMPORT_COST_TYPE_OPTIONS.map((option) => (
+                    {buildCostTypeOptions(costTypes, cost.cost_type, cost.cost_type_label).map((option) => (
                       <SelectItem key={option.value} value={String(option.value)}>
                         {option.label}
                       </SelectItem>
@@ -1431,32 +2076,6 @@ function CostDetailDialog({
                 <ReadOnlyValue>{currency}</ReadOnlyValue>
               )}
             </Field>
-            <Field label="Tỷ giá">
-              {editable && !isVnd ? (
-                <NumberInput
-                  className="text-right"
-                  value={cost.exchange_rate}
-                  maxDecimals={6}
-                  onChange={(value) => onPatch({ exchange_rate: value })}
-                />
-              ) : (
-                <ReadOnlyValue className="tabular-nums">
-                  {isVnd ? '1' : formatUnitPrice(cost.exchange_rate)}
-                </ReadOnlyValue>
-              )}
-            </Field>
-            <Field label={`Số tiền (trước thuế, ${currency})`}>
-              {editable && !amountLocked ? (
-                <NumberInput
-                  className="text-right"
-                  value={cost.amount}
-                  maxDecimals={PRICE_MAX_DECIMALS}
-                  onChange={(value) => onPatch({ amount: value })}
-                />
-              ) : (
-                <ReadOnlyValue className="tabular-nums">{formatUnitPrice(cost.amount)}</ReadOnlyValue>
-              )}
-            </Field>
             <Field label="VAT %">
               {editable ? (
                 <NumberInput
@@ -1473,6 +2092,81 @@ function CostDetailDialog({
             <Field label="Quy đổi (VNĐ, đã gồm VAT)">
               <ReadOnlyValue className="font-semibold tabular-nums">{formatMoney(base)} đ</ReadOnlyValue>
             </Field>
+            {/* bao-CR-453 — ba khối số theo giai đoạn, mỗi khối có số tiền + TỶ GIÁ riêng.
+                bao-CR-473: cả ba khối đều gõ được như ba cột trên bảng (bao-CR-467) — trước
+                đây chỉ khối của giai đoạn đơn đang đứng mới mở, mà nút chốt giai đoạn đã ẩn
+                nên tỷ giá Tạm tính / Quyết toán thành ra KHÔNG BAO GIỜ sửa được, trong khi
+                tỷ giá đổi từng ngày. Dòng đã chốt thì `editable` về false ở chỗ gọi. */}
+            <div className="sm:col-span-2 lg:col-span-3">
+              <Label className="text-muted-foreground">
+                Số tiền theo giai đoạn (trước thuế, {currency})
+              </Label>
+              <div className="mt-1.5 grid gap-3 sm:grid-cols-3">
+                {COST_STAGES.map((stage) => {
+                  const stageEditable = editable && !amountLocked
+                  return (
+                    <div
+                      key={stage}
+                      className={cn('space-y-2 rounded-md border p-3', STAGE_BLOCK_TONE[stage])}
+                    >
+                      <div className={cn('text-xs font-semibold', STAGE_LABEL_TONE[stage])}>
+                        {COST_STAGE_LABELS[stage]}
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-[11px] text-muted-foreground">Số tiền (trước thuế)</div>
+                        {stageEditable ? (
+                          <NumberInput
+                            className="text-right"
+                            aria-label={`${COST_STAGE_LABELS[stage]} — số tiền trước thuế`}
+                            value={stageAmountOf(cost, stage)}
+                            maxDecimals={PRICE_MAX_DECIMALS}
+                            onChange={(value) => onPatch(patchStageAmount(stage, value))}
+                          />
+                        ) : (
+                          <ReadOnlyValue className="tabular-nums">
+                            {formatUnitPrice(stageAmountOf(cost, stage))}
+                          </ReadOnlyValue>
+                        )}
+                      </div>
+                      {!isVnd && (
+                        <div className="space-y-1">
+                          <div className="text-[11px] text-muted-foreground">Tỷ giá</div>
+                          {stageEditable ? (
+                            <NumberInput
+                              className="text-right"
+                              aria-label={`${COST_STAGE_LABELS[stage]} — tỷ giá`}
+                              value={stageRateOf(cost, stage)}
+                              maxDecimals={6}
+                              onChange={(value) => onPatch(patchStageRate(stage, value))}
+                            />
+                          ) : (
+                            <ReadOnlyValue className="tabular-nums">
+                              {formatUnitPrice(stageRateOf(cost, stage))}
+                            </ReadOnlyValue>
+                          )}
+                        </div>
+                      )}
+                      <div className="text-xs text-muted-foreground">
+                        Quy đổi:{' '}
+                        <span className="font-semibold text-foreground tabular-nums">
+                          {formatMoney(stageBaseOf(cost, stage))} đ
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+            {cost.variance_base !== undefined && cost.variance_base !== null && (
+              <Field label="Lệch so với Dự toán">
+                <ReadOnlyValue className="tabular-nums">
+                  {formatMoney(cost.variance_base)} đ
+                  {cost.variance_pct !== undefined && cost.variance_pct !== null
+                    ? ` (${cost.variance_pct.toFixed(1)}%)`
+                    : ''}
+                </ReadOnlyValue>
+              </Field>
+            )}
             <Field label="Cách phân bổ">
               {editable ? (
                 <Select
@@ -1499,24 +2193,19 @@ function CostDetailDialog({
             {Number(cost.allocation_method) === ALLOCATION_BY_PRODUCT && (
               <Field label="Mã hàng chỉ định">
                 {editable ? (
-                  <Select
-                    value={cost.allocation_target || TARGET_EMPTY}
-                    onValueChange={(value) =>
-                      onPatch({ allocation_target: value === TARGET_EMPTY ? '' : value })
-                    }
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="— chọn mã hàng —" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={TARGET_EMPTY}>— chọn mã hàng —</SelectItem>
-                      {productCodes.map((code) => (
-                        <SelectItem key={code} value={code}>
-                          {code}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  //  Mục «— chọn mã hàng —» cũ (chọn để bỏ trống) nay là nút xóa của ô.
+                  <SearchSelect
+                    searchInTrigger
+                    clearable
+                    value={cost.allocation_target || ''}
+                    placeholder="— chọn mã hàng —"
+                    searchPlaceholder="Gõ để tìm mã hàng…"
+                    options={productCodes.map((code) => ({ value: code, label: code }))}
+                    onChange={(value) => {
+                      if (value === (cost.allocation_target || '')) return
+                      onPatch({ allocation_target: value })
+                    }}
+                  />
                 ) : (
                   <ReadOnlyValue>{cost.allocation_target || '—'}</ReadOnlyValue>
                 )}
@@ -1599,6 +2288,10 @@ function CostDetailDialog({
     </Dialog>
   )
 }
+
+// bao-CR-473: dải bước «Dự toán — Tạm tính — Quyết toán» ở đầu thẻ đã BỎ theo lệnh đại ca.
+// Từ bao-CR-467 cả ba cột gõ tự do và chốt đi theo từng dòng, nên một dải bước cho CẢ ĐƠN
+// không còn nói đúng điều gì: đơn đứng yên ở Dự toán trong khi các dòng đã quyết toán.
 
 /** Câu "Nhập tay" trong popup: đã nhập bao nhiêu so với tiền khoản. */
 function manualDialogStatus(cost: PurchaseOrderImportCost): string {

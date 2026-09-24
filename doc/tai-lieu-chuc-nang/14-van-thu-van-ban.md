@@ -28,7 +28,7 @@ Khác mọi phân hệ còn lại trong tài liệu này ở một điểm: **ph
 | `/document/link-rules` · `/:id` | Quy tắc quan hệ | Loại nào được nối với loại nào |
 | `/document/settings?tab=types` | Loại văn bản | Danh mục loại |
 | `/document/settings?tab=templates` | Thư viện văn bản mẫu | Khung trắng để bắt đầu soạn |
-| `/document/settings?tab=security-levels` | Mức mật / độ khẩn | **Chỉ đọc** — thang cố định trong mã |
+| `/document/settings?tab=security-levels` | Mức mật / độ khẩn | Thêm được bậc mới; bậc đã tạo khóa thang và con số, chỉ sửa tên/mô tả/trạng thái |
 | `/document/settings?tab=partners` | Đơn vị gửi nhận | Đối tác, cơ quan nhà nước, khách hàng… |
 | `/system/mailboxes` | **Hộp thư gửi** | Ngoài phân hệ (Quản trị). Địa chỉ đứng tên gửi thông báo ban hành — xem §14.3 |
 
@@ -471,7 +471,7 @@ Ca nghiệp vụ: nhân sự hành chính đăng nhập bằng tài khoản củ
 |---|---|
 | **Loại văn bản** | Mã, tên, nhóm, kiểu định danh, thời điểm cấp số, mức mật mặc định, chu kỳ rà soát, các cờ quy tắc áp dụng (kể cả **«Chờ người soạn ban hành»**, §14.2), và **quy tắc quan hệ** của loại |
 | **Thư viện văn bản mẫu** | Khung trắng theo từng loại; mọi chỗ phải điền để dấu chấm lửng, **không gán sẵn tên người hay số hiệu** |
-| **Mức mật / độ khẩn** | Chỉ đọc — thang cố định: Công khai · Nội bộ · Mật · Tuyệt mật; thường · khẩn · hỏa tốc |
+| **Mức mật / độ khẩn** | Seed: Công khai · Nội bộ · Mật · Tuyệt mật; thường · khẩn · hỏa tốc. Thêm được bậc mới; bậc đã tạo chỉ sửa tên/mô tả/trạng thái |
 | **Đơn vị gửi nhận** | Cơ quan nhà nước · đối tác · khách hàng · đơn vị nội bộ · khác |
 
 Mã loại văn bản và mã dùng cho số hiệu của pháp nhân/phòng ban bị **khóa sau khi đã cấp số** — đổi chúng là đổi luôn tiền tố của số đã phát ra ngoài.

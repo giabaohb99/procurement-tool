@@ -88,7 +88,7 @@ VPS hiện chạy **2 môi trường trên cùng một máy**, mỗi môi trư�
 | Môi trường | Thư mục | Nhánh | Lệnh compose |
 |---|---|---|---|
 | **prod** | `~/procurement-tool` | `main` | `docker compose -f docker-compose.production.yml …` |
-| **dev (UAT)** | `~/procurement-tool-dev` | `bao` | `docker compose -p procurement-dev --env-file .env.dev -f docker-compose.dev.yml …` |
+| **dev (UAT)** | `~/procurement-tool-dev` | `erp-v2` | `docker compose -f docker-compose.dev.yml …` |
 
 ```bash
 cd ~/procurement-tool
@@ -102,6 +102,7 @@ Ba cái dễ sai, sai là mất buổi:
 
 - **KHÔNG `git pull`** trên VPS — có file sinh ra lúc chạy sẽ kẹt merge; luôn `fetch` + `reset --hard` về đúng nhánh.
 - **Prod bắt buộc `-f docker-compose.production.yml`.** Thiếu cờ này là compose lấy file mặc định (bản dev) → web chạy vite dev server, nginx trả **502**.
+- **Dev: KHÔNG thêm `-p`.** Bộ dev đang chạy mang tên project mặc định `procurement-tool-dev` (lấy theo tên thư mục). Truyền `-p procurement-dev` thì compose không nhận ra bộ đang chạy mà **dựng thêm một bộ song song**: hai `api`, hai `celery-worker`, và nguy nhất là **hai `celery-beat` cùng bắn lịch** — vòng quét đồng bộ chạy đôi, sao lưu chạy đôi. Bộ mới không chiếm cổng nên `up` vẫn báo thành công, nhìn log cũng không thấy gì lạ; chỉ `docker ps` mới lộ. Dính rồi thì gỡ bằng đúng `-p` đã lỡ dùng: `docker compose -p procurement-dev -f docker-compose.dev.yml down`. Tên project thật của một container: `docker inspect <tên> --format '{{index .Config.Labels "com.docker.compose.project"}}'`.
 - **Sao lưu DB trước khi có migration** (từ 2026-08-11 CSDL là **MySQL 8.4**, container `procurement-mysql`, định nghĩa ở `~/procurement-db/` — **ngoài repo**, cố ý tách để deploy app không bao giờ đụng tới CSDL):
   ```bash
   docker exec procurement-mysql mysqldump -uroot -p"$DB_ROOT_PASSWORD"       --single-transaction --routines procurement | gzip > ~/proc_backups/prod_truoc_<ma CR>_$(date +%Y%m%d).sql.gz

@@ -5,6 +5,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { downloadFile } from '@/core/api'
 import { usePermission } from '@/core/authorization/use-permission'
 import { appConfig } from '@/core/config/app-config'
+import { ApprovalStageNote } from '@/modules/approval/components/approval-stage-note'
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
 import { ConditionalFilter, FilterProvider, useFilterQuery } from '@/shared/conditional-filter'
 import { appRoutes } from '@/shared/constants/app-routes'
@@ -234,8 +235,14 @@ function VehicleBookingListContent() {
       {
         key: 'status',
         header: 'Trạng thái',
-        cell: (r) => <BookingStatusBadge status={r.status} driverStatus={r.driver_status} />,
-        width: 130,
+        cell: (r) => (
+          <div className="flex min-w-0 flex-col items-start gap-1">
+            <BookingStatusBadge status={r.status} driverStatus={r.driver_status} />
+            {/* Phiếu đồng bộ từ app cũ có thể đã ký vài chặng mà badge vẫn là Chờ duyệt. */}
+            <ApprovalStageNote summary={r.approval_summary} className="max-w-full" />
+          </div>
+        ),
+        width: 190,
         sortable: true,
       },
       {

@@ -139,10 +139,36 @@ def _now() -> str:
 
 
 def get_company_ids(db: Session, req_id: int) -> list[int]:
-    """Danh sách công ty của phiếu (theo thứ tự thêm)."""
+    """Danh sách công ty của phiếu (theo thứ tự thêm).
+
+    ⚠️ **Cho MỘT phiếu thôi.** Cần cả một trang thì gọi `get_company_ids_map` —
+    đặt hàm này vào vòng lặp là mỗi dòng danh sách một lượt vào cơ sở dữ liệu.
+    """
     return [c for (c,) in db.query(SealRequestCompany.company_id)
             .filter(SealRequestCompany.seal_request_id == req_id)
             .order_by(SealRequestCompany.id).all()]
+
+
+def get_company_ids_map(db: Session, req_ids: list[int]) -> dict[int, list[int]]:
+    """Danh sách công ty của NHIỀU phiếu, MỘT lượt truy vấn. Khóa = id phiếu.
+
+    Phiếu không có công ty nào thì vẫn có khóa, giá trị rỗng — chỗ gọi khỏi phải
+    phân biệt "chưa gắn công ty" với "quên hỏi".
+
+    Sắp theo `id` của chính bảng nối để GIỮ THỨ TỰ THÊM, y như bản một phiếu: thứ
+    tự đó đi thẳng ra bản in và ra ô công ty trên màn hình, nên đổi nó là đổi thứ
+    người dùng nhìn thấy.
+    """
+    ids = [i for i in dict.fromkeys(req_ids) if i]
+    if not ids:
+        return {}
+    result: dict[int, list[int]] = {i: [] for i in ids}
+    rows = (db.query(SealRequestCompany.seal_request_id, SealRequestCompany.company_id)
+            .filter(SealRequestCompany.seal_request_id.in_(ids))
+            .order_by(SealRequestCompany.id).all())
+    for req_id, company_id in rows:
+        result[req_id].append(company_id)
+    return result
 
 
 def is_assigned_clerk(db: Session, user, req: SealRequest) -> bool:
@@ -409,15 +435,31 @@ def serialize_seal_request(db: Session, req: SealRequest) -> dict:
     #  Văn thư đã đóng dấu (khối "Thông tin phê duyệt") — tên từ tài khoản completed_by.
     clerk = _emp_of_user(db, req.completed_by)
     out.completed_by_name = (clerk.full_name if clerk else "") or ""
-    #  Có phiên duyệt nhiều bước đang chạy? → FE ẩn nút duyệt cổng-1 trực tiếp.
-    from .approval_bridge import running_instance
-    out.approval_running = running_instance(db, req.id) is not None
+    #  Phiên duyệt nhiều bước gần nhất. Còn mở → FE ẩn nút duyệt cổng-1 trực tiếp;
+    #  đã đóng → FE vẫn cần ID để vẽ thẻ Lịch sử phê duyệt. Một câu truy vấn trả
+    #  cả hai: bộ máy chỉ mở phiên mới khi không còn phiên nào mở, nên phiên còn
+    #  mở (nếu có) luôn là phiên mới nhất.
+    from app.modules.approval.instance_model import INSTANCE_OPEN_STATUSES
+
+    from .approval_bridge import latest_instance
+    instance = latest_instance(db, req.id)
+    out.approval_instance_id = instance.id if instance else None
+    out.approval_running = instance is not None and instance.status in INSTANCE_OPEN_STATUSES
+    out.approval_summary = _approval_summaries(db, [req.id]).get(req.id, "")
     return out.model_dump()
+
+
+def _approval_summaries(db: Session, req_ids: list[int]) -> dict[int, str]:
+    """Câu tóm tắt luồng duyệt của từng phiếu. Khóa = id phiếu, thiếu = chưa có luồng."""
+    from app.modules.approval import steps_service
+
+    from .approval_bridge import ENTITY
+    return steps_service.summaries_of_entities(db, ENTITY, req_ids)
 
 
 def serialize_seal_requests(db: Session, reqs: list[SealRequest]) -> list[dict]:
     """Danh sách phiếu → list dict, nối công ty theo LÔ (tránh N+1)."""
-    ids_map = {r.id: get_company_ids(db, r.id) for r in reqs}
+    ids_map = get_company_ids_map(db, [r.id for r in reqs])
     all_cids = {c for cids in ids_map.values() for c in cids}
     company_map = ({c.id: c for c in db.query(Company).filter(Company.id.in_(all_cids)).all()}
                    if all_cids else {})
@@ -425,6 +467,7 @@ def serialize_seal_requests(db: Session, reqs: list[SealRequest]) -> list[dict]:
     if all_cids:
         from app.modules.company.service import get_company_logo_map
         logo_map = get_company_logo_map(db, list(all_cids))
+    summaries = _approval_summaries(db, [r.id for r in reqs])
     result = []
     for r in reqs:
         out = SealRequestResponse.model_validate(r)
@@ -432,5 +475,6 @@ def serialize_seal_requests(db: Session, reqs: list[SealRequest]) -> list[dict]:
         cids = ids_map.get(r.id, [])
         out.company_ids = cids
         out.companies = _company_refs(db, cids, logo_map=logo_map, company_map=company_map)
+        out.approval_summary = summaries.get(r.id, "")
         result.append(out.model_dump())
     return result

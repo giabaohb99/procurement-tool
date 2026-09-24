@@ -329,21 +329,19 @@ export function PurchaseOrderItemsTable({
 
       case 'unit':
         return cellEditable && !received ? (
-          <Select
-            value={item.unit || undefined}
-            onValueChange={(value) => patch(index, { unit: value })}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="—" />
-            </SelectTrigger>
-            <SelectContent>
-              {(units?.items ?? []).map((unit) => (
-                <SelectItem key={unit.id} value={unit.name}>
-                  {unit.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <SearchSelect
+            searchInTrigger
+            wrap
+            value={item.unit || ''}
+            placeholder="—"
+            searchPlaceholder="Tìm đơn vị tính…"
+            options={(units?.items ?? []).map((unit) => ({ value: unit.name, label: unit.name }))}
+            onChange={(value) => {
+              //  Chọn lại đúng mục đang chọn thì thôi — Radix Select cũ không bắn sự kiện.
+              if (value === (item.unit || '')) return
+              patch(index, { unit: value })
+            }}
+          />
         ) : (
           item.unit || '—'
         )

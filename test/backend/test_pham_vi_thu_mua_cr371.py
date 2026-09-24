@@ -1,4 +1,4 @@
-"""bao-CR-371 — phạm vi "Thu mua (được giao + đã duyệt)" phải theo phiếu tới HẾT vòng đời.
+"""bao-CR-371 — phạm vi `proc` («Được giao + đã duyệt», nhãn đổi ở bao-CR-428) phải theo phiếu tới HẾT vòng đời.
 
 Lỗi gặp trên prod: tài khoản Admin thu mua đặt phạm vi `proc` ở Yêu cầu mua hàng, mở phiếu
 PYC08092605 (trạng thái `purchased`) thì nhận "Không tìm thấy phiếu ... hoặc bạn không có

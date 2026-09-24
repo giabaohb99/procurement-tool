@@ -10,6 +10,7 @@ import { downloadFile } from '@/core/api/download-file'
 import { httpClient } from '@/core/api/http-client'
 import { useCompanies } from '@/modules/hr/hooks/use-companies'
 import { useDepartments } from '@/modules/hr/hooks/use-departments'
+import { useEmployees } from '@/modules/hr/hooks/use-employees'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { DataTable, type DataTableColumn } from '@/shared/data-table'
 import {
@@ -44,6 +45,7 @@ import { StatusBadge } from '../components/document-status-badge'
 import { SurveyRequestCard } from '../components/survey-request-card'
 import { SURVEY_REQUEST_FILTER_FIELDS } from '../config/procurement-filter-fields'
 import { useSurveyRequests } from '../hooks/use-purchase-documents'
+import { usePurchaseRequestItemGroups } from '../hooks/use-purchase-request-support'
 import {
   SR_STATUS_LABELS,
   statusOptions,
@@ -55,7 +57,17 @@ const ALL = 'all'
 const FILTER_CONFIG = {
   fields: SURVEY_REQUEST_FILTER_FIELDS,
   allowConjunctionToggle: true,
-  preserveParams: ['company_id', 'department_id', 'status', 'request_date_from', 'request_date_to', 'sort_by', 'sort_dir'],
+  preserveParams: [
+    'company_id',
+    'department_id',
+    'status',
+    'item_group',
+    'assignee',
+    'request_date_from',
+    'request_date_to',
+    'sort_by',
+    'sort_dir',
+  ],
 }
 
 export function SurveyRequestListPage() {
@@ -77,6 +89,15 @@ function SurveyRequestListContent() {
   const [companyId, setCompanyId] = useUrlParamState('company_id', ALL)
   const [departmentId, setDepartmentId] = useUrlParamState('department_id', ALL)
   const [status, setStatus] = useUrlParamState('status', ALL)
+  //  Hai ô lọc chạy trên BẢNG DÒNG chứ không trên đầu phiếu, nên chúng không nằm
+  //  trong `FILTERABLE` của backend và không đưa xuống "Bộ lọc điều kiện" được —
+  //  phải đứng ngoài đây (`survey_request/controller.py`).
+  //
+  //  ⚠️ `assignee` gửi **MÃ** nhân sự, `item_group` gửi **TÊN** phân loại: dòng
+  //  phiếu chép chữ xuống chứ không giữ khóa. Gửi id thì backend so khớp không
+  //  trúng gì cả và danh sách rỗng trong im lặng.
+  const [itemGroup, setItemGroup] = useUrlParamState('item_group', ALL)
+  const [assignee, setAssignee] = useUrlParamState('assignee', ALL)
   const [reqDateFrom, setReqDateFrom] = useUrlParamState('request_date_from', '')
   const [reqDateTo, setReqDateTo] = useUrlParamState('request_date_to', '')
   const [pageSize, setPageSize] = useState<number>(appConfig.defaultPageSize)
@@ -86,6 +107,13 @@ function SurveyRequestListContent() {
 
   const { data: companies } = useCompanies({ page_size: 500, is_active: true })
   const { data: departments } = useDepartments({ page_size: 500, is_active: true })
+  //  Hai danh mục MƯỢN của phân hệ khác — tắt hẳn khi thiếu quyền, kẻo cứ mở màn
+  //  là ăn một toast 403 cho thứ chỉ là nguồn của ô lọc.
+  const { data: itemGroups } = usePurchaseRequestItemGroups(can('item_group', 'read'))
+  const { data: employees } = useEmployees(
+    { page_size: 500, is_active: true },
+    { enabled: can('employee', 'read') },
+  )
   const { queryParams, queryKey } = useFilterQuery()
 
   //  Bộ lọc nâng cao: khổ rộng mở bằng nút riêng + popover, khổ hẹp nhúng thẳng
@@ -103,6 +131,8 @@ function SurveyRequestListContent() {
     companyId,
     departmentId,
     status,
+    itemGroup,
+    assignee,
     reqDateFrom,
     reqDateTo,
     sortBy,
@@ -114,6 +144,8 @@ function SurveyRequestListContent() {
   if (companyId !== ALL) params.company_id = Number(companyId)
   if (departmentId !== ALL) params.department_id = Number(departmentId)
   if (status !== ALL) params.status = status
+  if (itemGroup !== ALL) params.item_group = itemGroup
+  if (assignee !== ALL) params.assignee = assignee
   if (reqDateFrom) params.request_date_from = reqDateFrom
   if (reqDateTo) params.request_date_to = reqDateTo
   if (sortBy) {
@@ -150,6 +182,8 @@ function SurveyRequestListContent() {
       companyId !== ALL,
       departmentId !== ALL,
       status !== ALL,
+      itemGroup !== ALL,
+      assignee !== ALL,
       Boolean(reqDateFrom || reqDateTo),
     ].filter(Boolean).length + filter.activeCount
 
@@ -157,6 +191,8 @@ function SurveyRequestListContent() {
     setCompanyId(ALL)
     setDepartmentId(ALL)
     setStatus(ALL)
+    setItemGroup(ALL)
+    setAssignee(ALL)
     setReqDateFrom('')
     setReqDateTo('')
     filter.reset()
@@ -285,6 +321,42 @@ function SurveyRequestListContent() {
     </Select>
   )
 
+  const itemGroupSelect = (
+    <Select value={itemGroup} onValueChange={setItemGroup}>
+      <SelectTrigger className="h-9 w-full text-xs md:w-40" aria-label="Lọc theo phân loại">
+        <SelectValue placeholder="Phân loại" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={ALL}>Tất cả phân loại</SelectItem>
+        {(itemGroups?.items ?? []).map((group) => (
+          <SelectItem key={group.id} value={group.name}>
+            {group.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+
+  const assigneeSelect = (
+    <Select value={assignee} onValueChange={setAssignee}>
+      <SelectTrigger className="h-9 w-full text-xs md:w-40" aria-label="Lọc theo NSTM phụ trách">
+        <SelectValue placeholder="NSTM phụ trách" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={ALL}>Tất cả NSTM</SelectItem>
+        {(employees?.items ?? [])
+          //  Nhân sự chưa có mã thì không lọc được — bỏ khỏi danh sách chứ đừng
+          //  để một dòng bấm vào là bảng rỗng.
+          .filter((employee) => Boolean(employee.code))
+          .map((employee) => (
+            <SelectItem key={employee.id} value={employee.code}>
+              {employee.full_name} ({employee.code})
+            </SelectItem>
+          ))}
+      </SelectContent>
+    </Select>
+  )
+
   const dateRangeInput = (
     <DateRangePicker
       from={reqDateFrom}
@@ -403,6 +475,8 @@ function SurveyRequestListContent() {
                 {companySelect}
                 {departmentSelect}
                 {statusSelect}
+                {itemGroupSelect}
+                {assigneeSelect}
                 {dateRangeInput}
                 <ConditionalFilter />
               </div>
@@ -420,6 +494,8 @@ function SurveyRequestListContent() {
                 <QuickFilterField label="Công ty">{companySelect}</QuickFilterField>
                 <QuickFilterField label="Bộ phận yêu cầu">{departmentSelect}</QuickFilterField>
                 <QuickFilterField label="Trạng thái">{statusSelect}</QuickFilterField>
+                <QuickFilterField label="Phân loại">{itemGroupSelect}</QuickFilterField>
+                <QuickFilterField label="NSTM phụ trách">{assigneeSelect}</QuickFilterField>
                 <QuickFilterField label="Ngày tạo">{dateRangeInput}</QuickFilterField>
                 <AdvancedFilterSection />
               </QuickFilterSheet>

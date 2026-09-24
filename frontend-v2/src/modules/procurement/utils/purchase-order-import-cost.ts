@@ -3,12 +3,15 @@ import {
   ALLOCATION_MANUAL,
   DEFAULT_CURRENCY,
   IMPORT_COST_TAX_TYPES,
+  IMPORT_COST_TYPE_OPTIONS,
   MANUAL_ALLOCATION_TOLERANCE,
   ORDER_TYPE_DOMESTIC,
   ORDER_TYPE_IMPORT,
   STATE_BUDGET_SUPPLIER_CODE,
   STATE_BUDGET_SUPPLIER_NAME,
   importCostTypeLabel,
+  type ImportCostAllocation,
+  type PoCostType,
   type PurchaseOrderDetail,
   type PurchaseOrderImportCost,
   type PurchaseOrderItem,
@@ -40,6 +43,76 @@ export function resolveLineCurrency(
   return { currency, exchangeRate: effectiveExchangeRate(currency, exchangeRate) }
 }
 
+/**
+ * bao-CR-364 (port v2) — nhãn tiền tệ của một bảng TỔNG phải lấy từ các DÒNG, không lấy
+ * từ đầu phiếu. Từ bao-CR-319 mỗi dòng mang tiền tệ + tỷ giá riêng, đầu phiếu chỉ là mặc
+ * định cho dòng để trống. Đầu phiếu `VND` mà dòng `USD` là chuyện bình thường (PO00122 prod:
+ * 6.500 USD × 26.500 = 172.250.000 đ) — dán nhãn theo đầu phiếu ra ngay "6.500 VND".
+ *
+ * `mixed = true` khi các dòng KHÔNG cùng một loại tiền: cộng ngang các dòng là vô nghĩa
+ * (USD cộng VND), nơi gọi phải chuyển sang bày bản quy đổi VNĐ thay vì dán đại một nhãn.
+ * Dòng để trống tiền tệ thì theo `fallback` (tiền tệ đầu phiếu).
+ */
+export function resolveTotalsCurrency(
+  lineCurrencies: (string | null | undefined)[],
+  fallback: string,
+): { currency: string; mixed: boolean } {
+  const base = (fallback || DEFAULT_CURRENCY).trim().toUpperCase() || DEFAULT_CURRENCY
+  const found: string[] = []
+  for (const raw of lineCurrencies) {
+    const code = String(raw ?? '').trim().toUpperCase() || base
+    if (!found.includes(code)) found.push(code)
+  }
+  return { currency: found.length === 1 ? found[0] : base, mixed: found.length > 1 }
+}
+
+/** Ba dòng tổng cuối bảng dòng hàng ĐMH + tiền tệ để dán nhãn (bao-CR-364). */
+export interface OrderTotals {
+  subtotal: number
+  vat: number
+  total: number
+  /** Tiền tệ của ba con số trên. Đơn trộn nhiều loại tiền thì luôn là VND (đã quy đổi). */
+  currency: string
+  /** Các dòng KHÔNG cùng một loại tiền — ba dòng tổng đang là bản quy đổi VNĐ. */
+  mixed: boolean
+}
+
+/**
+ * Tổng tiền theo SL ĐẶT của đơn, tính tại chỗ để thấy ngay khi gõ. Dòng cùng một loại tiền
+ * thì cộng thẳng nguyên tệ; trộn nhiều loại tiền thì mỗi dòng nhân tỷ giá của chính nó rồi
+ * mới cộng (bản quy đổi VNĐ), vì cộng ngang USD với VND ra một con số vô nghĩa.
+ */
+export function summarizeOrderTotals(
+  order: Pick<PurchaseOrderDetail, 'currency' | 'exchange_rate' | 'items'>,
+): OrderTotals {
+  const items = order.items ?? []
+  const { currency, mixed } = resolveTotalsCurrency(
+    items.map((item) => item.currency),
+    order.currency,
+  )
+  let subtotal = 0
+  let total = 0
+  for (const item of items) {
+    const gross = (Number(item.qty_order) || 0) * (Number(item.price) || 0)
+    const withVat = gross * (1 + (Number(item.vat) || 0) / 100)
+    if (mixed) {
+      const { exchangeRate } = resolveLineCurrency(item, order)
+      subtotal += gross * exchangeRate
+      total += displayLineBaseAmount(item, order)
+    } else {
+      subtotal += gross
+      total += withVat
+    }
+  }
+  return {
+    subtotal,
+    vat: total - subtotal,
+    total,
+    currency: mixed ? DEFAULT_CURRENCY : currency,
+    mixed,
+  }
+}
+
 /** Thành tiền quy đổi VNĐ của dòng theo SL ĐẶT (gồm VAT dòng). */
 export function lineBaseAmount(
   item: Pick<PurchaseOrderItem, 'qty_order' | 'price' | 'vat' | 'currency' | 'exchange_rate'>,
@@ -50,16 +123,47 @@ export function lineBaseAmount(
   return gross * (1 + (Number(item.vat) || 0) / 100) * exchangeRate
 }
 
-/** Tiền KHOẢN chi phí: gồm VAT, quy đổi VNĐ theo tỷ giá của chính khoản. */
+/**
+ * Tiền KHOẢN chi phí theo giai đoạn chỉ định: gồm VAT, quy đổi VNĐ.
+ *
+ * Dùng để tính nhanh trên màn trước khi Lưu; sau khi lưu server trả về `base_amount`
+ * / `effective_base` chính xác hơn qua `displayCostBaseAmount`.
+ *
+ * `stage` mặc định 1 (Dự toán) nếu không rõ. Thường truyền `order.cost_stage`.
+ */
 export function costBaseAmount(
-  cost: Pick<PurchaseOrderImportCost, 'amount' | 'vat' | 'currency' | 'exchange_rate'>,
+  cost: Pick<
+    PurchaseOrderImportCost,
+    | 'estimate_amount'
+    | 'estimate_rate'
+    | 'provisional_amount'
+    | 'provisional_rate'
+    | 'final_amount'
+    | 'final_rate'
+    | 'line_stage'
+    | 'vat'
+    | 'currency'
+  >,
+  orderStage = 1,
 ): number {
-  const rate = effectiveExchangeRate(cost.currency, cost.exchange_rate)
-  return (Number(cost.amount) || 0) * (1 + (Number(cost.vat) || 0) / 100) * rate
+  const effectiveStage = Math.max(orderStage, Number(cost.line_stage) || 1)
+  let amount: number | null | undefined
+  let rate: number
+  if (effectiveStage >= 3) {
+    amount = cost.final_amount
+    rate = cost.final_rate ?? 1
+  } else if (effectiveStage >= 2) {
+    amount = cost.provisional_amount
+    rate = cost.provisional_rate ?? 1
+  } else {
+    amount = cost.estimate_amount
+    rate = cost.estimate_rate ?? 1
+  }
+  return (Number(amount) || 0) * (1 + (Number(cost.vat) || 0) / 100) * effectiveExchangeRate(cost.currency, rate)
 }
 
-export function sumCostBase(costs: PurchaseOrderImportCost[]): number {
-  return costs.reduce((sum, cost) => sum + costBaseAmount(cost), 0)
+export function sumCostBase(costs: PurchaseOrderImportCost[], orderStage = 1): number {
+  return costs.reduce((sum, cost) => sum + costBaseAmount(cost, orderStage), 0)
 }
 
 /**
@@ -78,9 +182,10 @@ export function displayLineBaseAmount(
   return stored > 0 ? stored : lineBaseAmount(item, order)
 }
 
-export function displayCostBaseAmount(cost: PurchaseOrderImportCost): number {
-  const stored = Number(cost.base_amount)
-  return stored > 0 ? stored : costBaseAmount(cost)
+export function displayCostBaseAmount(cost: PurchaseOrderImportCost, orderStage = 1): number {
+  // `base_amount` / `effective_base` là alias backend tính; ưu tiên dùng khi có.
+  const stored = Number(cost.base_amount ?? cost.effective_base)
+  return stored > 0 ? stored : costBaseAmount(cost, orderStage)
 }
 
 /** Dòng ngoại tệ mà cả dòng lẫn đơn đều chưa có tỷ giá — màn hình phải nói rõ thay vì "0 đ". */
@@ -101,17 +206,17 @@ export interface CostTypeGroup {
 }
 
 /** Gom khoản theo loại, xếp tiền giảm dần — tính ngay trên nháp, không chờ Lưu. */
-export function groupCostsByType(costs: PurchaseOrderImportCost[]): CostTypeGroup[] {
+export function groupCostsByType(costs: PurchaseOrderImportCost[], orderStage = 1): CostTypeGroup[] {
   const groups = new Map<number, CostTypeGroup>()
   for (const cost of costs) {
     const key = Number(cost.cost_type) || 99
     const current = groups.get(key) ?? {
       cost_type: key,
-      label: cost.cost_type_label || importCostTypeLabel(key),
+      label: cost.cost_type_label || cost.cost_type_name || importCostTypeLabel(key),
       base_amount: 0,
       count: 0,
     }
-    current.base_amount += displayCostBaseAmount(cost)
+    current.base_amount += displayCostBaseAmount(cost, orderStage)
     current.count += 1
     groups.set(key, current)
   }
@@ -126,7 +231,7 @@ export interface CostSupplierGroup {
   count: number
 }
 
-export function groupCostsBySupplier(costs: PurchaseOrderImportCost[]): CostSupplierGroup[] {
+export function groupCostsBySupplier(costs: PurchaseOrderImportCost[], orderStage = 1): CostSupplierGroup[] {
   const groups = new Map<string, CostSupplierGroup>()
   for (const cost of costs) {
     const key = cost.supplier_code || ''
@@ -136,7 +241,7 @@ export function groupCostsBySupplier(costs: PurchaseOrderImportCost[]): CostSupp
       base_amount: 0,
       count: 0,
     }
-    current.base_amount += displayCostBaseAmount(cost)
+    current.base_amount += displayCostBaseAmount(cost, orderStage)
     current.count += 1
     groups.set(key, current)
   }
@@ -158,7 +263,10 @@ export function paymentBlockReason(
   orderApproved: boolean,
 ): string | null {
   if (!cost.id) return 'Chưa thành công nợ (dòng mới chưa Lưu)'
-  if (!cost.supplier_code || !(Number(cost.amount) > 0)) {
+  // Sau bao-CR-453: số tiền hiệu lực nằm trong `base_amount` / `effective_base`.
+  // Dòng chưa quyết toán thì không sinh công nợ.
+  const effectiveBase = Number(cost.base_amount ?? cost.effective_base)
+  if (!cost.supplier_code || !(effectiveBase > 0)) {
     return 'Chưa thành công nợ (chưa chọn NCC hoặc số tiền 0)'
   }
   if (!orderApproved) return 'Chưa thành công nợ (đơn chưa duyệt)'
@@ -192,16 +300,50 @@ export function isTaxCostType(costType: number): boolean {
 }
 
 /**
- * Đổi loại chi phí. Thuế / phí nộp nhà nước tự điền NCC "Ngân sách nhà nước" khi ô NCC
- * còn trống; đổi ngược từ thuế sang loại thường thì xóa NSNN đi kẻo cước tàu lại ghi
- * nợ cho nhà nước.
+ * Danh sách loại chi phí cho ô chọn trên thẻ chi phí.
+ *
+ * Ưu tiên danh mục lấy từ `/api/po-cost-types`; danh mục chưa nạp (hoặc người
+ * dùng thiếu quyền đọc) thì rơi về bộ mã cứng cũ. Loại đang gắn trên dòng mà đã
+ * bị tắt trong danh mục vẫn phải còn trong danh sách, kèm chữ «(đã tắt)» — nếu
+ * không thì mở đơn cũ ra là ô chọn nhảy sang loại khác.
+ */
+export function buildCostTypeOptions(
+  catalog: PoCostType[],
+  currentCode: number,
+  currentLabel = '',
+): { value: number; label: string }[] {
+  if (catalog.length === 0) return IMPORT_COST_TYPE_OPTIONS.map((o) => ({ ...o }))
+  const sorted = [...catalog].sort(
+    (a, b) => a.sort_order - b.sort_order || a.code - b.code,
+  )
+  const options = sorted.map((type) => ({ value: Number(type.code), label: type.name }))
+  if (currentCode && !options.some((o) => o.value === Number(currentCode))) {
+    const name = currentLabel || importCostTypeLabel(currentCode)
+    options.push({ value: Number(currentCode), label: `${name} (đã tắt)` })
+  }
+  return options
+}
+
+/** Tìm một dòng danh mục theo mã loại chi phí. */
+export function findCostType(catalog: PoCostType[], code: number): PoCostType | undefined {
+  return catalog.find((type) => Number(type.code) === Number(code))
+}
+
+/**
+ * Đổi loại chi phí.
+ * - Thuế / phí nộp nhà nước tự điền NCC "Ngân sách nhà nước" khi ô NCC còn trống.
+ * - Đổi ngược từ thuế sang loại thường thì xóa NSNN đi kẻo cước tàu ghi nợ nhà nước.
+ * - Nếu có `costTypeRecord` từ danh mục: tự điền NCC/phân bổ/VAT mặc định khi ô đang trống
+ *   (E06 — không ghi đè ô đã gõ).
  */
 export function applyCostType(
   cost: PurchaseOrderImportCost,
   costType: number,
+  costTypeRecord?: PoCostType,
 ): PurchaseOrderImportCost {
   const next = { ...cost, cost_type: Number(costType) }
   const isStateBudget = cost.supplier_code === STATE_BUDGET_SUPPLIER_CODE
+
   if (isTaxCostType(next.cost_type)) {
     if (!cost.supplier_code || isStateBudget) {
       next.supplier_code = STATE_BUDGET_SUPPLIER_CODE
@@ -211,6 +353,23 @@ export function applyCostType(
     next.supplier_code = ''
     next.supplier_name = ''
   }
+
+  // E06 — tự điền từ danh mục khi ô đang trống
+  if (costTypeRecord) {
+    if (!next.supplier_code && costTypeRecord.default_supplier_code) {
+      next.supplier_code = costTypeRecord.default_supplier_code
+    }
+    if (
+      (!next.allocation_method || next.allocation_method === ALLOCATION_BY_VALUE) &&
+      costTypeRecord.default_allocation_method
+    ) {
+      next.allocation_method = costTypeRecord.default_allocation_method
+    }
+    if (!next.vat && costTypeRecord.default_vat) {
+      next.vat = costTypeRecord.default_vat
+    }
+  }
+
   return next
 }
 
@@ -229,8 +388,8 @@ export function manualAllocationTotal(
 }
 
 /** Lệch giữa tiền khoản (quy đổi) và tổng nhập tay; 0 = khớp trong dung sai. */
-export function manualAllocationGap(cost: PurchaseOrderImportCost): number {
-  const gap = costBaseAmount(cost) - manualAllocationTotal(cost)
+export function manualAllocationGap(cost: PurchaseOrderImportCost, orderStage = 1): number {
+  const gap = displayCostBaseAmount(cost, orderStage) - manualAllocationTotal(cost)
   return Math.abs(gap) <= MANUAL_ALLOCATION_TOLERANCE ? 0 : gap
 }
 
@@ -280,3 +439,33 @@ export function switchOrderType(
 
 /** Cách chia mặc định khi thêm khoản mới. */
 export const DEFAULT_ALLOCATION_METHOD = ALLOCATION_BY_VALUE
+
+/**
+ * bao-CR-453 — lấy dữ liệu phân bổ cho một giai đoạn từ dict nhiều giai đoạn.
+ *
+ * Mặc định dùng giai đoạn hiện hành của đơn (`String(costStage)`); "effective" là
+ * giai đoạn hiệu lực dùng cho bản in.
+ */
+export function getAllocationForStage(
+  allocationByStage: Record<string, ImportCostAllocation> | null | undefined,
+  stageKey: string | number,
+): ImportCostAllocation | undefined {
+  if (!allocationByStage) return undefined
+  const key = String(stageKey)
+  return allocationByStage[key]
+}
+
+/**
+ * bao-CR-453 — các khóa giai đoạn có số liệu (có ít nhất một dòng chia).
+ * Dùng để tắt nút giai đoạn trên khối "Chi phí theo dòng hàng" khi không có số.
+ */
+export function availableAllocationStages(
+  allocationByStage: Record<string, ImportCostAllocation> | null | undefined,
+): Set<string> {
+  if (!allocationByStage) return new Set()
+  return new Set(
+    Object.entries(allocationByStage)
+      .filter(([, data]) => (data?.lines?.length ?? 0) > 0)
+      .map(([key]) => key),
+  )
+}

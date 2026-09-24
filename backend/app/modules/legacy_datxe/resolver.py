@@ -40,7 +40,7 @@ import re
 
 from sqlalchemy import select
 
-from app.core.config import settings
+from app.core import app_settings
 from app.modules.company.model import Company
 from app.modules.department.model import Department
 from app.modules.vehicle_booking.model import Driver, Vehicle
@@ -130,9 +130,10 @@ class LegacyCatalog:
     def __init__(self, db, *, allow_create: bool | None = None, fetch_node=None,
                  actor_id: int = 0):
         self.db = db
-        #  Nấc 3 mặc định TẮT. Bật bằng `.env`, và bật rồi thì mỗi hàng đẻ ra
-        #  đều mang cờ `auto_created` trên sổ để còn soát lại.
-        self.allow_create = (settings.SYNC_DATXE_AUTO_CREATE
+        #  Nấc 3 mặc định TẮT. Bật trên màn Cấu hình hệ thống (hoặc `.env`), và
+        #  bật rồi thì mỗi hàng đẻ ra đều mang cờ `auto_created` trên sổ để còn
+        #  soát lại.
+        self.allow_create = (bool(app_settings.get("sync_datxe_auto_create"))
                              if allow_create is None else allow_create)
         self.fetch_node = fetch_node if fetch_node is not None else read_node
         self.actor_id = actor_id

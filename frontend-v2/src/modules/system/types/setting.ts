@@ -1,8 +1,14 @@
 /** Nhóm cấu hình do backend gán cho từng trường (`service.py` phía backend). */
-export type SettingGroup = 'workflow' | 'email' | 'storage'
+export type SettingGroup = 'workflow' | 'email' | 'storage' | 'ai' | 'sync' | 'pos365' | 'system'
 
-/** Kiểu ô nhập — quyết định trang vẽ công tắc, ô số hay ô chữ. */
-export type SettingType = 'bool' | 'int' | 'str'
+/** Kiểu ô nhập — quyết định trang vẽ công tắc, ô số, ô chọn hay ô chữ. */
+export type SettingType = 'bool' | 'int' | 'str' | 'select'
+
+/** Một lựa chọn của ô `select`. Backend khai kèm trường, frontend không tự đoán. */
+export interface SettingOption {
+  value: string
+  label: string
+}
 
 /**
  * Một trường cấu hình THƯỜNG: đọc được, sửa được, hiển thị lại được.
@@ -18,6 +24,13 @@ export interface SettingField {
   value: unknown
   /** Diễn giải dài cho công tắc đổi quy trình — hiện ngay dưới ô. */
   hint?: string
+  /** Chỉ có ở `type: 'select'`. */
+  options?: SettingOption[]
+  /**
+   * Đường dẫn TỚI CHỖ LẤY giá trị này (trang cấp khóa API, trang danh sách
+   * model). Mở tab mới, không phải trang trong hệ thống.
+   */
+  doc_url?: string
 }
 
 /**
@@ -32,6 +45,9 @@ export interface SettingSecret {
   group: SettingGroup
   label: string
   configured: boolean
+  hint?: string
+  /** Trang đăng ký lấy khóa — thứ người dùng cần nhất khi lần đầu vào ô này. */
+  doc_url?: string
 }
 
 export interface SettingPayload {
@@ -43,4 +59,26 @@ export interface SettingPayload {
 export interface SettingTestResult {
   ok: boolean
   message: string
+}
+
+/** Hai đường nạp chỉ mục tài liệu: bù phần thiếu, hoặc dựng lại toàn bộ. */
+export type RagReindexMode = 'missing' | 'all'
+
+/**
+ * Số liệu đối chiếu DB với kho vector của Trợ lý AI.
+ *
+ * `enabled: false` nghĩa là `AI_RAG_ENABLED` đang tắt — lúc đó backend KHÔNG gửi các
+ * con số, nên mọi trường đếm đều là tùy chọn, đừng đọc thẳng mà không hỏi `enabled`.
+ * `orphans` = đoạn còn trong kho mà bản ghi dưới DB đã bị xóa.
+ */
+export interface RagIndexStatus {
+  enabled: boolean
+  help_total?: number
+  faq_total?: number
+  help_indexed?: number
+  faq_indexed?: number
+  missing?: number
+  missing_help?: number
+  missing_faq?: number
+  orphans?: number
 }

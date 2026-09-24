@@ -95,6 +95,44 @@ export const CALENDAR_GRID_CLASSES = cn(
   //  Chữ trong chip do chip tự lo màu — chặn màu link mặc định của FC.
   '[&_.fc_a]:!text-inherit',
 
+  //  --- Hộp "+N chuyến nữa" (popover khám Tháng) ---
+  //  NỀN ĐẶC là bắt buộc, không phải trang trí: FC khai
+  //  `.fc-theme-standard .fc-popover { background: var(--fc-page-bg-color) }`, mà
+  //  biến đó ở `FC_THEME_VARS` để `transparent` (cố ý — lưới ngồi thẳng trên mặt
+  //  Card). Hệ quả: hộp này TRONG SUỐT, chip và chữ "+N chuyến nữa" của lưới phía
+  //  sau xuyên qua, chữ chồng chữ. Không sửa bằng cách đổi biến chung — biến đó
+  //  còn là nền của cả lưới; ghi đè đúng một mình hộp popover.
+  //
+  //  Mọi dòng phải có `!`: FC v6 nhồi CSS vào <head> LÚC CHẠY, tức sau Tailwind,
+  //  nên cùng độ ưu tiên thì FC thắng vì đứng sau.
+  '[&_.fc-popover]:!bg-popover [&_.fc-popover]:!text-popover-foreground',
+  '[&_.fc-popover]:!border-border [&_.fc-popover]:!rounded-lg',
+  '[&_.fc-popover]:!overflow-hidden [&_.fc-popover]:!shadow-lg',
+  //  z-index 40, KHÔNG để nguyên 9999 của FC: chip trong hộp có thẻ hover
+  //  (HoverCard), mà Radix cắm thẻ đó ra `document.body` với `z-50` — 50 < 9999
+  //  nên thẻ chi tiết chui XUỐNG DƯỚI hộp, người dùng trỏ vào chuyến mà không
+  //  thấy gì. 40 vừa đủ nằm trên lưới (lưới không khai z-index) và nằm dưới mọi
+  //  lớp nổi của shadcn (hover card · popover · dialog đều z-50), đúng thứ tự.
+  '[&_.fc-popover]:!z-40',
+  //  Đầu hộp: nền theo mặt hộp (FC mặc định tô `--fc-neutral-bg-color` thành một
+  //  dải xám), ngăn cách bằng một kẻ mảnh. Chữ về 13px như mọi tiêu đề phụ khác.
+  '[&_.fc-popover-header]:!bg-transparent [&_.fc-popover-header]:!border-b',
+  '[&_.fc-popover-header]:!px-3 [&_.fc-popover-header]:!py-2',
+  '[&_.fc-popover-title]:!m-0 [&_.fc-popover-title]:!text-[13px]',
+  '[&_.fc-popover-title]:!font-semibold',
+  //  Nút đóng: FC để một glyph mờ 65% không có vùng bấm — nới thành ô 24px có
+  //  nền khi trỏ vào, đủ khổ chạm trên màn cảm ứng.
+  '[&_.fc-popover-close]:!grid [&_.fc-popover-close]:!size-6',
+  '[&_.fc-popover-close]:!place-items-center [&_.fc-popover-close]:!rounded-md',
+  '[&_.fc-popover-close]:!opacity-100 [&_.fc-popover-close]:!text-muted-foreground',
+  '[&_.fc-popover-close]:hover:!bg-muted [&_.fc-popover-close]:hover:!text-foreground',
+  //  Thân hộp: TRẦN CHIỀU CAO + cuộn. Thiếu trần thì ngày 20 chuyến ra hộp cao
+  //  hơn cửa sổ và mấy chuyến cuối nằm ngoài màn, không cách nào với tới.
+  '[&_.fc-popover-body]:!p-2 [&_.fc-popover-body]:!min-w-[260px]',
+  '[&_.fc-popover-body]:!max-h-[min(340px,60vh)] [&_.fc-popover-body]:!overflow-y-auto',
+  //  Chip trong hộp bám lề của thân hộp, bỏ 3px thụt vốn dành cho ô ngày.
+  '[&_.fc-popover_.fc-daygrid-event-harness]:!mx-0',
+
   //  ================= Khám NGÀY · TUẦN (timeGrid) =================
   //  --- Đường kẻ dưới hàng tiêu đề, và luật "mỗi ranh giới đúng MỘT kẻ" ---
   //

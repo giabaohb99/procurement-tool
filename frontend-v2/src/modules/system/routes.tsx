@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   MailCheck,
   MonitorSmartphone,
+  RefreshCcwDot,
   ScrollText,
   Settings,
   ShieldCheck,
@@ -102,11 +103,28 @@ export const systemModule: ErpModule = {
     {
       // bao-CR-395: khóa riêng `login_session` — Quản lý thu mua KHÔNG tự có
       // (nằm trong `_SYS_ENTITIES`), vai trò cũ trên hệ đang chạy phải được tick.
+      //
+      // bao-CR-455: bỏ `manage: true`, để mục rơi về cổng mặc định `read`.
+      // Backend chỉ gác `read` (danh sách, lịch sử) và `delete` (thu hồi phiên);
+      // `create`/`write` là HÀNH ĐỘNG MA — phiên do hệ tự mở lúc đăng nhập,
+      // không ai tạo tay và trong một phiên không có gì để sửa. Giữ `manage`
+      // thì ai được tick nhầm hai ô đó sẽ thấy menu rồi vào trong ăn 403 im
+      // lặng, mà người chỉ có `read` — đúng hình dung "được xem, không được
+      // đá" — lại KHÔNG thấy mục nào.
       label: 'Phiên đăng nhập',
       path: appRoutes.system.sessions,
       icon: MonitorSmartphone,
       entity: 'login_session',
-      manage: true,
+    },
+    {
+      //  bao-CR-449 (P4 của đồng bộ app đặt xe cũ). Không `manage`: quyền `read`
+      //  là đủ để mở màn, `sync_log.write` chỉ mở thêm nút *Chạy lại* trong ngăn
+      //  chi tiết. Ai chỉ đi tra "phiếu này sang được chưa" thì không cần quyền
+      //  gọi ngược sang hệ ngoài.
+      label: 'Sổ đồng bộ',
+      path: appRoutes.system.syncLogs,
+      icon: RefreshCcwDot,
+      entity: 'sync_log',
     },
     //  ai-CR-039: mục «Việc của bot Telegram» (ai-CR-036) TẠM ẨN theo ý đại ca 24/09 — muốn xem gì
     //  thì hỏi thẳng bot trên Telegram. Route + trang bên dưới giữ nguyên; bật lại = thêm lại mục
@@ -196,6 +214,12 @@ export const systemModule: ErpModule = {
       path: appRoutes.system.sessions,
       lazy: async () => ({
         Component: (await import('./pages/login-session-list-page')).LoginSessionListPage,
+      }),
+    },
+    {
+      path: appRoutes.system.syncLogs,
+      lazy: async () => ({
+        Component: (await import('./pages/sync-log-list-page')).SyncLogListPage,
       }),
     },
     {

@@ -164,7 +164,7 @@ Hai bảng đều là chi tiết của hồ sơ (không có màn danh sách riê
 |---|---|---|
 | C1 | Danh sách nhân sự (đã có, mở rộng) | Thêm cột/lọc: hình thức nhân viên, cấp bậc, người quản lý trực tiếp. Giữ lọc theo pháp nhân, phòng ban, trạng thái |
 | C2 | **Form tạo nhanh ~10 trường** | Chỉ hỏi: mã, họ tên, pháp nhân, phòng ban, chức vụ, ngày vào làm, giới tính, ngày sinh, SĐT, email. Học đúng bài "hộp tạo nhanh 12 trường" của HrOnline — bắt điền đủ 30+ trường ngay từ đầu thì không ai nhập |
-| C3 | Màn chi tiết xếp tab | Tab **Chung** (nhóm 1+2) / **Liên hệ & Ngân hàng** (nhóm 3+4, kèm bảng người báo tin) / **Giấy tờ & BHXH** (nhóm 5, upload 2 ảnh CCCD, kèm bảng hộ gia đình) / **Quỹ phép** (link sang phân hệ Nghỉ phép sẵn có) / **Tài khoản** (mục 6). Sau này thêm tab Hợp đồng lao động, Lịch sử điều chuyển |
+| C3 | Màn chi tiết xếp tab | Tab **Chung** (nhóm 1+2) / **Liên hệ & Ngân hàng** (nhóm 3+4, kèm bảng người báo tin) / **Giấy tờ & BHXH** (nhóm 5, upload 2 ảnh CCCD, kèm bảng hộ gia đình) / **Quỹ phép** (link sang phân hệ Nghỉ phép sẵn có) / **Tài khoản** (mục 6). Sau này thêm tab Hợp đồng lao động, Lịch sử điều chuyển. *(bao-CR-472, 23/09/2026: ô **Email công việc** dời từ tab Liên hệ & Ngân hàng sang tab **Chung**, cuối mục Công việc — nó là email đăng nhập, xem U4)* |
 | C4 | Upload ảnh CCCD | 2 tệp ảnh, đi theo cơ chế upload tệp sẵn có, đường dẫn lưu vào 2 cột |
 | C5 | In "Phiếu thông tin nhân viên" | Xuất bản in theo đúng khuôn BM00../QT01/NS từ dữ liệu đã nhập — thay thế việc điền giấy; dùng cơ chế bản in sẵn có |
 | C6 | Nhân viên tự khai | Giai đoạn 2 (không làm ngay): nhân viên đăng nhập tự điền phần thông tin cá nhân của chính mình, nhân sự duyệt lại. Nền tảng scope `self` của hệ phân quyền đã đỡ được |
@@ -418,6 +418,18 @@ Test: `test_danh_muc_chuc_vu.py` (**20 ca**) + sửa số đếm entity ở `tes
 - **Tên đứng trước Mã** trong form: tên là thứ người khai đang nghĩ tới, mã thì bỏ trống được vì hệ thống tự sinh. Bắt gõ mã trước là chặn người ta ngay ở ô lẽ ra được phép bỏ qua.
 
 **Đếm ngược người giữ + cụm ảnh xếp chồng** (duoc-CR-322, 08/09/2026). Câu hỏi thật của người quản lý danh mục trước khi sửa hay dẹp một chức vụ là *ai đang mang chức danh này* — không có nó thì việc duy nhất làm được là bấm Xóa rồi đọc câu từ chối.
+
+> ⚠️ **ĐÍNH CHÍNH 19/09/2026 (duoc-CR-426) — phần dưới đây là LỊCH SỬ, không còn chạy.**
+> Khách yêu cầu bỏ hai cột «Đang giữ» và «Phòng ban đang giữ» khỏi bảng danh mục.
+> Đã gỡ luôn `GET /api/job-positions/stats` cùng hai hàm `count_holders_by_department`
+> và `list_holder_faces` — giữ một đường API không màn nào đọc thì lần sau có người
+> sửa nhầm cũng không ai biết. **Còn nguyên:** tab «Người đang giữ» ở trang chi tiết
+> (nguồn duy nhất trả lời *ai đang mang chức danh này*), chốt chặn xóa, và luật
+> «chốt xóa đếm toàn công ty». Ô lọc phòng ban của tab đó nay đọc **danh mục phòng
+> ban** nên liệt kê mọi phòng và không kèm số người; mục «(Chưa gắn phòng ban)» phải
+> tự thêm tay vì danh mục không có dòng nào mang `id = 0`. Cột nhận diện trên bảng
+> đổi từ `code` sang `id` (mã vẫn ở trong biểu mẫu và ở bộ lọc nâng cao). Đọc tiếp
+> phần dưới chỉ để hiểu **vì sao** từng làm vậy, đừng lấy làm đặc tả.
 
 `GET /api/job-positions/stats` trả `{position_id, total, departments[{id, name, count}], holders}`. Hai truy vấn cho **cả bảng**: một `GROUP BY (position_id, department_id)` để đếm, một `outerjoin` sang `tab_user` + `tab_file` để lấy vài gương mặt.
 

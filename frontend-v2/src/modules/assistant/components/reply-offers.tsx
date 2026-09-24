@@ -5,6 +5,7 @@ import { downloadFile } from '@/core/api'
 import { Button } from '@/shared/ui/button'
 import type { DraftOffer, DraftTarget, FileOffer, UpdateOffer } from '../utils/reply-offers'
 import { draftNavigation } from '../utils/reply-offers'
+import { AccountSetupProposalCard } from './account-setup-proposal-card'
 import { UpdateProposalCard } from './update-proposal-card'
 
 const DRAFT_LABELS: Record<DraftTarget, string> = {
@@ -53,12 +54,20 @@ export function ReplyOffers({
 
   return (
     <>
-      {showUpdate ? (
-        <UpdateProposalCard
-          //  key theo token: lượt sau đề xuất khác thì thẻ dựng lại từ đầu, không giữ
-          //  trạng thái "đã sửa" của đề xuất cũ.
+      {/* key theo token: lượt sau đề xuất khác thì thẻ dựng lại từ đầu, không giữ
+          trạng thái "đã sửa" của đề xuất cũ. */}
+      {showUpdate && update.proposal.kind === 'account_setup_proposal' ? (
+        <AccountSetupProposalCard
           key={update.proposal.confirm_token}
-          offer={update}
+          proposal={update.proposal}
+          onDismiss={() => onDismissUpdate?.()}
+          onNavigate={onNavigate}
+        />
+      ) : null}
+      {showUpdate && update.proposal.kind === 'update_proposal' ? (
+        <UpdateProposalCard
+          key={update.proposal.confirm_token}
+          proposal={update.proposal}
           onDismiss={() => onDismissUpdate?.()}
           onNavigate={onNavigate}
         />

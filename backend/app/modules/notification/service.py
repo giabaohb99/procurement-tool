@@ -6,7 +6,7 @@ from email.utils import formataddr
 from datetime import datetime
 from sqlalchemy.orm import Session
 
-from app.core.config import settings
+from app.core import app_settings
 from app.modules.user.model import User, UserRole
 from app.modules.role.model import Role, Permission
 from .model import Notification, EmailLog
@@ -17,7 +17,7 @@ def _abs_link(link: str) -> str:
     """Chuyển link tương đối (vd '/purchase-requests/83') thành URL tuyệt đối theo FRONTEND_URL
     để nút trong email bấm được. Link đã là http(s) thì giữ nguyên (vd link reset mật khẩu)."""
     link = (link or "").strip()
-    base = (getattr(settings, "FRONTEND_URL", "") or "").rstrip("/")
+    base = (app_settings.get("frontend_url") or "").rstrip("/")
     if not link:
         return base
     if link.startswith("http://") or link.startswith("https://"):
@@ -87,7 +87,6 @@ def send_smtp_email(db_session_factory, log_id: int, to_email: str, subject: str
 
         # Tắt gửi email (cấu hình ở trang Cấu hình hệ thống / .env EMAIL_ENABLED).
         # force=True bỏ qua công tắc này (email thiết yếu, người dùng chủ động yêu cầu).
-        from app.core import app_settings
         if not force and not app_settings.get("email_enabled"):
             log.status = "disabled"
             log.error = "Email đang tắt (EMAIL_ENABLED=false)"
@@ -278,8 +277,8 @@ def _role_codes_of(db: Session, user_id: int) -> set[str]:
 def _test_route_email(db: Session, user: User) -> str:
     """Địa chỉ hộp thư test theo NHÓM VAI TRÒ của người nhận (khi EMAIL_TEST_MANAGER/STAFF được đặt).
     Có vai trò quản lý / Trưởng bộ phận → hộp quản lý; ngược lại → hộp nhân viên. Trống cấu hình → email thật của user."""
-    mgr = (settings.EMAIL_TEST_MANAGER or "").strip()
-    stf = (settings.EMAIL_TEST_STAFF or "").strip()
+    mgr = (app_settings.get("email_test_manager") or "").strip()
+    stf = (app_settings.get("email_test_staff") or "").strip()
     if not mgr and not stf:
         return user.email or ""
     codes = _role_codes_of(db, user.id)
@@ -313,7 +312,7 @@ def _send_workflow_emails(db: Session, background_tasks, recipients: list, subje
                           reason: str, approve_note: str, is_urgent: bool, link: str):
     """Gửi EMAIL cho từng người nhận của luồng duyệt — CHỈ khi EMAIL_WORKFLOW_ENABLED (dev/UAT).
     Định tuyến về hộp thư test theo vai trò; dùng template HTML_LAYOUT. Gửi nền, không chặn luồng."""
-    if not getattr(settings, "EMAIL_WORKFLOW_ENABLED", False):
+    if not app_settings.get("email_workflow_enabled"):
         return
     from app.core.database import SessionLocal
     import re
@@ -372,6 +371,7 @@ def trigger_notification(
     department: str = "",
     department_id: int = 0,              # CR-086: phòng ban của phiếu, neo bằng id
     recipient_ids: list | None = None,   # chỉ định thẳng người nhận (vd phân bổ NSTM)
+    extra_employee_ids: list | None = None,  # bao-CR-474: CỘNG THÊM người nhận theo id NHÂN SỰ
 ):
     """
     Creates an in-app notification and sends an email notification asynchronously.
@@ -498,6 +498,14 @@ def trigger_notification(
     else:
         recipients = [creator] if creator else []
 
+    # bao-CR-474 — cộng thêm người nhận theo id NHÂN SỰ (vd người được chọn ở ô «Trưởng bộ
+    # phận» của YCMH). Trước đây chọn TBP khác trưởng phòng mặc định thì người được chọn KHÔNG
+    # nhận chuông: báo duyệt chỉ đi theo phòng ban (manager_id + vai trò dept_head).
+    extra_ids = [int(x) for x in (extra_employee_ids or []) if x]
+    if extra_ids:
+        recipients = list(recipients) + db.query(User).filter(
+            User.employee_id.in_(extra_ids), User.is_active == True).all()   # noqa: E712
+
     # Khử trùng lặp người nhận
     seen_ids = set()
     recipients = [r for r in recipients if r and not (r.id in seen_ids or seen_ids.add(r.id))]
@@ -542,7 +550,7 @@ def send_account_creation_email(db: Session, user_id: int, background_tasks, ful
     from .email_templates import ACCOUNT_CREATION_TEMPLATE
     
     subject = "Thông Báo Cấp Tài Khoản Hệ Thống Dego ERP"
-    login_url = settings.FRONTEND_URL if hasattr(settings, 'FRONTEND_URL') else "http://localhost:5173"
+    login_url = app_settings.get("frontend_url") or "http://localhost:5173"
     
     email_log = EmailLog(
         event="account_creation",

@@ -1,7 +1,6 @@
 from pydantic import BaseModel, Field
 
-from .model import (AllocationMethod, DEFAULT_CURRENCY, ImportCostStatus, ImportCostType,
-                    OrderType)
+from .model import AllocationMethod, DEFAULT_CURRENCY, ImportCostType, OrderType
 
 
 class DeliveryIn(BaseModel):
@@ -60,24 +59,28 @@ class POItemIn(BaseModel):
 
 
 class POImportCostIn(BaseModel):
-    """Một khoản chi phí của lô hàng nhập khẩu (bao-CR-319 P3).
+    """Một khoản CHI PHÍ THU MUA của đơn (bao-CR-319 P3, ba giai đoạn bao-CR-453).
 
-    `cost_type` để mở rộng bằng cách thêm mã vào `ImportCostType`, nên KHÔNG chặn cứng
-    khoảng số ở đây; giá trị lạ bị `_save_import_costs` đẩy về "Chi phí khác".
+    `cost_type` là mã trong danh mục `tab_po_cost_type`; `_save_import_costs` kiểm tồn tại
+    và còn dùng. Ba cặp `<giai đoạn>_amount / _rate`: số TRƯỚC thuế theo đồng tiền của dòng
+    + tỷ giá riêng của giai đoạn đó; `None` = giai đoạn chưa có số (khác 0 đồng). Màn lưu
+    đơn chỉ ghi được giai đoạn HIỆU LỰC của dòng, cột đã chốt gửi lên bị bỏ qua.
+    Giai đoạn riêng dòng (`line_stage`) KHÔNG nhận qua đây — đi cửa `/costs/{id}/finalize`.
     """
 
     id: int | None = None
     cost_type: int = int(ImportCostType.OTHER)
-    # bao-CR-347 — 1 dự kiến / 2 thực tế. Mặc định THỰC TẾ để mọi nơi gọi cũ (nhập CSV,
-    # test, phiếu chép lại) giữ nguyên hành vi sinh công nợ.
-    cost_status: int = Field(int(ImportCostStatus.ACTUAL), ge=1, le=2)
     description: str = ""
     supplier_code: str = ""
     supplier_name: str = ""
     # Để TRỐNG là cố ý, giống dòng hàng: backend chép loại tiền / tỷ giá từ đơn xuống.
     currency: str = ""
-    exchange_rate: float = Field(0, ge=0)
-    amount: float = Field(0, ge=0)             # tiền TRƯỚC thuế, theo đồng tiền của dòng chi phí
+    estimate_amount: float | None = Field(None, ge=0)
+    estimate_rate: float = Field(0, ge=0)
+    provisional_amount: float | None = Field(None, ge=0)
+    provisional_rate: float = Field(0, ge=0)
+    final_amount: float | None = Field(None, ge=0)
+    final_rate: float = Field(0, ge=0)
     vat: float = Field(0, ge=0, lt=100)
     allocation_method: int = Field(int(AllocationMethod.BY_VALUE), ge=1, le=5)
     allocation_target: str = ""                # mã hàng — chỉ dùng khi chia theo chỉ định
@@ -156,6 +159,34 @@ class POUpdate(BaseModel):
 
 class RejectIn(BaseModel):
     reason: str = ""
+
+
+class CostStageAdvanceIn(BaseModel):
+    """Chốt Tạm tính (2) / Quyết toán (3) chi phí thu mua (bao-CR-453). Gửi kèm `import_costs`
+    thì lưu bảng chi phí TRƯỚC rồi mới chốt — một nút bấm, không phải Lưu rồi Chốt."""
+    target: int = Field(..., ge=2, le=3)
+    import_costs: list[POImportCostIn] | None = None
+
+
+class CostStageReopenIn(BaseModel):
+    """Mở lại về Dự toán (1) / Tạm tính (2); lý do bắt buộc, tối thiểu 10 ký tự (kiểm ở service)."""
+    target: int = Field(..., ge=1, le=2)
+    reason: str = ""
+
+
+class CostLinesFinalizeIn(BaseModel):
+    """bao-CR-469 — Quyết toán nhiều dòng chi phí một lượt.
+
+    Danh sách RỖNG là một lựa chọn có nghĩa chứ không phải thiếu dữ liệu: rỗng = chốt HẾT các
+    dòng chưa quyết toán của đơn (nút «Chốt tất cả»). Trần 200 để một lời gọi hỏng không quét
+    cả bảng chi phí của mọi đơn — một đơn không có tới bằng ấy khoản.
+    """
+    cost_ids: list[int] = Field(default_factory=list, max_length=200)
+    # bao-CR-476: bảng chi phí ĐANG GÕ trên màn hình, gửi kèm để lưu TRƯỚC rồi mới chốt — cùng
+    # khuôn `CostStageAdvanceIn.import_costs`. Thiếu nó thì đường chốt đọc số ĐÃ LƯU: người dùng
+    # gõ số Quyết toán rồi bấm chốt ngay là chốt theo số cũ, sinh công nợ sai số, còn số vừa gõ
+    # bị lượt tải lại đè mất. `None` = không đụng bảng chi phí (giữ hành vi cũ).
+    import_costs: list[POImportCostIn] | None = None
 
 
 class ItemProgressIn(BaseModel):

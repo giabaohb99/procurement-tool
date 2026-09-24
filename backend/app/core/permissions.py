@@ -129,6 +129,15 @@ ENTITIES = [
     # ⚠️ Nhật ký đồng bộ RIÊNG của POS365 (`/api/coffee/sync/runs`) vẫn đi bằng
     # `pos_order.read` như cũ dù nay đọc chung một bảng.
     "sync_log",
+    "purchase_cost_type",   # bao-CR-453 — danh mục Loại chi phí thu mua
+    # Tra cứu giá hải quan (bao-CR-470, doc/erp/hai-quan). MỘT khóa cho cả màn tra cứu:
+    # read = xem danh sách + biểu đồ · write = nạp tệp GTT02 · delete = hoàn tác lô.
+    # Không vai trò nào tự có — đại ca tick tay trên màn Phân quyền (xem `_SYS_ENTITIES`).
+    "customs_price",
+    # Danh mục hóa chất theo văn bản của phân hệ hải quan (bao-CR-470, HQ6): NĐ 24/2026
+    # PL I–IV (có ngưỡng kg), hoạt chất cấm TT 75/2025, hóa chất phải công bố TT 01/2026.
+    # Khóa RIÊNG vì là màn riêng và `write` = sửa ngưỡng pháp lý (một khóa = một màn, CR-157).
+    "customs_regulation",
     # Việc của bot Agent Hub (ai-CR-036) — màn `/system/agent-tasks`: danh sách việc Đậu Đậu
     # đã nhận, lịch sử từng bước, chi phí model. Chỉ ĐỌC: mọi thao tác trên việc vẫn đi qua
     # Telegram. Quản trị hệ thống, không phải thu mua (nằm trong `_SYS_ENTITIES` của seed).
@@ -208,6 +217,9 @@ ENTITY_LABELS = {
     "audit": "Nhật ký hệ thống (tra toàn hệ)",
     "change_log": "Nhật ký hệ thống › Giá trị trước/sau",
     "sync_log": "Sổ đồng bộ với hệ ngoài",
+    "customs_price": "Tra cứu giá hải quan",
+    "customs_regulation": "Danh mục hóa chất theo văn bản (hải quan)",
+    "purchase_cost_type": "Danh mục Loại chi phí thu mua",
     "agent_task": "Trợ lý Telegram › Việc của bot",
 }
 
@@ -223,8 +235,10 @@ ACTION_LABELS = {
 # của người xem. Dùng cho người quản lý thu mua của một phòng tự mua (nhà máy).
 SCOPES = ["own", "assigned", "proc", "dept_proc", "dept", "company", "all"]
 SCOPE_LABELS = {
-    "own": "Của mình", "assigned": "Được giao", "proc": "Thu mua (được giao + đã duyệt)",
-    "dept_proc": "Thu mua trong phòng mình",
+    #  bao-CR-428: nhãn hai bậc `proc`/`dept_proc` viết TỔNG QUÁT (không gắn chữ "Thu mua"),
+    #  vì cùng một bậc cấp được cho bất kỳ khóa nào có trạng thái duyệt.
+    "own": "Của mình", "assigned": "Được giao", "proc": "Được giao + đã duyệt",
+    "dept_proc": "Được giao + đã duyệt trong phòng",
     "dept": "Phòng ban", "company": "Công ty", "all": "Tất cả",
 }
 SCOPE_RANK = {"own": 0, "assigned": 1, "proc": 1, "dept_proc": 1, "dept": 2, "company": 3, "all": 4}

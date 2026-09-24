@@ -2,6 +2,7 @@ import {
   CloudCheck,
   GitBranch,
   HardDrive,
+  History,
   Info,
   KeyRound,
   Loader2,
@@ -9,7 +10,9 @@ import {
   RefreshCw,
   Save,
   Send,
+  SlidersHorizontal,
   Sparkles,
+  Store,
 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -20,7 +23,6 @@ import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { ErrorState } from '@/shared/ui/error-state'
-import { FormCard } from '@/shared/ui/form-card'
 import { Input } from '@/shared/ui/input'
 import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
@@ -31,21 +33,28 @@ import { Tabs, TabsContent, TabsTrigger } from '@/shared/ui/tabs'
 
 import { settingApi } from '../api/setting-api'
 import { EmailExclusionPanel } from '../components/email-exclusion-panel'
+import { RagIndexPanel } from '../components/rag-index-panel'
 import { SettingFieldRow } from '../components/setting-field-row'
+import { SettingHistoryPanel } from '../components/setting-history-panel'
 import { SettingSecretRow } from '../components/setting-secret-row'
 import { useSaveSettings, useSettings } from '../hooks/use-settings'
 import type { SettingField, SettingGroup, SettingSecret } from '../types/setting'
 import { buildSettingValues } from '../utils/build-setting-values'
 
 /**
- * Bốn TAB của trang Cấu hình. Ba tab đầu bám đúng `SettingGroup` backend trả về;
- * tab *Trợ lý AI* không có ô nhập nào, chỉ một nút chạy việc nền.
+ * Các TAB của trang Cấu hình, mỗi tab bám đúng một `SettingGroup` backend trả về.
  *
  * ⚠️ **Tách tab ngày 14/09/2026** (duoc-CR-397). Trước đó sáu khối xếp dọc một
  * mạch, cuộn hơn ba màn hình: đổi một ô SMTP phải lăn qua cả khối lưu trữ và
  * bảng mẫu email. Khối *Mẫu email thông báo* đã ra TRANG RIÊNG
  * (`/system/email-templates`) chứ không thành tab — nó là nội dung soạn thảo,
  * không phải thông số, và tự lưu lấy chứ không dùng nút *Lưu cấu hình* chung.
+ *
+ * ⚠️ Ba tab cuối thêm ở bao-CR-429: đây là các thông số trước kia chỉ sửa được
+ * bằng cách vào máy chủ sửa tệp môi trường rồi dựng lại dịch vụ. Hai hệ ngoài
+ * tách thành HAI tab chứ không gộp một tab «Đồng bộ» — mỗi hệ có cầu dao và mã
+ * đăng nhập riêng, xếp chung một thẻ thì lúc cần tắt gấp một hệ rất dễ tắt nhầm
+ * hệ kia.
  */
 const TABS: {
   value: string
@@ -80,7 +89,42 @@ const TABS: {
     value: 'assistant',
     label: 'Trợ lý AI',
     icon: Sparkles,
-    description: 'Chỉ mục tìm kiếm tài liệu HDSD + FAQ dùng cho Trợ lý AI.',
+    group: 'ai',
+    description:
+      'Khóa API nhà cung cấp model, model dùng cho từng loại câu hỏi và trần chi phí mỗi ngày.',
+  },
+  {
+    value: 'sync',
+    label: 'App đặt xe (cũ)',
+    icon: RefreshCw,
+    group: 'sync',
+    description:
+      'Đường nối hai chiều với app đặt xe & duyệt dấu cũ: cầu dao bật tắt, địa chỉ, mã ký chung.',
+  },
+  {
+    value: 'pos365',
+    label: 'POS365 (Điểm cà phê)',
+    icon: Store,
+    group: 'pos365',
+    description: 'Cửa hàng POS365 mà hệ thống kéo đơn về: địa chỉ, tài khoản và mã thanh toán.',
+  },
+  {
+    value: 'system',
+    label: 'Chung',
+    icon: SlidersHorizontal,
+    group: 'system',
+    description: 'Địa chỉ giao diện dùng trong email, số ngày giữ thông báo và số bản sao lưu.',
+  },
+  {
+    //  Tab CUỐI, và là tab duy nhất không có ô nhập nào (bao-CR-462): ai đổi ô
+    //  nào, từ giá trị gì sang giá trị gì. Để thành tab riêng chứ không đắp thêm
+    //  một thẻ dưới chân mỗi tab — treo dưới chân thì nó nằm sau hàng chục ô
+    //  nhập, phải cuộn qua cả trang mới thấy, mà người đi tra "ai vừa tắt gửi
+    //  email" thì không quan tâm ô nào cả.
+    value: 'history',
+    label: 'Lịch sử thay đổi',
+    icon: History,
+    description: 'Nhật ký các lần sửa cấu hình: ai sửa, lúc nào, ô nào đổi từ đâu sang đâu.',
   },
 ]
 
@@ -112,7 +156,6 @@ export function SettingPage() {
   const [secretInputs, setSecretInputs] = useState<Record<string, string>>({})
   const [testTo, setTestTo] = useState('')
   const [testing, setTesting] = useState<'' | 'email' | 'storage'>('')
-  const [reindexing, setReindexing] = useState(false)
   const [tab, setTab] = useUrlParamState('tab', TABS[0].value)
 
   const draft: SettingField[] = (data?.fields ?? []).map((field) =>
@@ -153,19 +196,6 @@ export function SettingPage() {
     }
   }
 
-  async function runReindex() {
-    setReindexing(true)
-    try {
-      await settingApi.reindexDocs()
-      // Chạy nền: chỉ báo ĐÃ XẾP HÀNG, không hứa hẹn xong ngay.
-      toast.success('Đã xếp hàng nạp lại chỉ mục tài liệu — worker sẽ chạy nền ít phút')
-    } catch {
-      // http client đã hiện toast lỗi (kể cả 400 khi RAG chưa bật).
-    } finally {
-      setReindexing(false)
-    }
-  }
-
   if (isError && !data) {
     return (
       <PageContainer>
@@ -184,14 +214,16 @@ export function SettingPage() {
 
   //  Tab đang xem ghi lên URL (`?tab=`) nên gửi link cho người khác vẫn ra đúng
   //  chỗ, và quay lại từ trang con không rơi về tab đầu.
-  //  Tab *Trợ lý AI* chỉ hiện với người nạp lại chỉ mục được — nó không có ô
-  //  nhập nào, bày ra cho người không bấm được là một tab rỗng.
-  const visibleTabs = TABS.filter((item) => item.value !== 'assistant' || canReindex)
+  //  ⚠️ Tab *Trợ lý AI* TỪNG bị ẩn với người không có `help_article.write`, vì
+  //  hồi đó nó chỉ có mỗi nút nạp lại chỉ mục. Từ bao-CR-429 nó chứa khóa API và
+  //  trần chi phí, tức là việc của người quản trị cấu hình — ẩn nó đi thì người
+  //  đúng vai lại không thấy. Nút nạp chỉ mục vẫn gác riêng theo quyền cũ.
+  const visibleTabs = TABS
   const current = visibleTabs.find((item) => item.value === tab) ?? visibleTabs[0]
 
   //  Số ô đã sửa mà CHƯA lưu. Bắt buộc phải bày ra từ khi chia tab: sửa ở tab
   //  Email rồi chuyển sang tab Lưu trữ thì thay đổi kia biến mất khỏi tầm mắt,
-  //  mà nút Lưu lại là nút CHUNG cho cả bốn tab — không có con số này thì người
+  //  mà nút Lưu lại là nút CHUNG cho mọi tab — không có con số này thì người
   //  dùng hoặc quên bấm Lưu, hoặc bấm Lưu mà không biết mình đang lưu những gì.
   const dirtyCount = Object.keys(edited).length + Object.keys(secretInputs).length
 
@@ -279,28 +311,9 @@ export function SettingPage() {
                    liền mạch ngay dưới phần khai máy chủ gửi. */}
               {item.value === 'email' && <EmailExclusionPanel canWrite={canWrite} />}
 
-              {item.value === 'assistant' && (
-                <FormCard title="Trợ lý AI" icon={Sparkles} iconClassName="text-muted-foreground">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button
-                      variant="outline"
-                      disabled={reindexing}
-                      onClick={() => void runReindex()}
-                    >
-                      {reindexing ? (
-                        <Loader2 className="size-4 animate-spin" />
-                      ) : (
-                        <RefreshCw className="size-4" />
-                      )}
-                      Nạp lại chỉ mục tài liệu
-                    </Button>
-                    <span className="text-xs text-muted-foreground">
-                      Dựng lại kho tìm kiếm HDSD + FAQ cho Trợ lý AI. Chạy nền, có thể mất vài
-                      phút. Dùng khi mới bật tìm kiếm tài liệu hoặc nghi chỉ mục lệch.
-                    </span>
-                  </div>
-                </FormCard>
-              )}
+              {item.value === 'assistant' && canReindex && <RagIndexPanel />}
+
+              {item.value === 'history' && <SettingHistoryPanel />}
             </TabsContent>
           ))}
         </Tabs>
@@ -326,8 +339,8 @@ interface SettingGroupCardProps {
 /**
  * Một NHÓM ô cấu hình: ô thường + ô bí mật + nút thử kết nối của nhóm đó.
  *
- * Tách khỏi `SettingPage` khi chia tab (duoc-CR-397) — thân trang có bốn tab, để
- * nguyên khối này ở giữa thì đọc không ra đâu là khung tab đâu là ruột nhóm.
+ * Tách khỏi `SettingPage` khi chia tab (duoc-CR-397) — thân trang có nhiều tab,
+ * để nguyên khối này ở giữa thì đọc không ra đâu là khung tab đâu là ruột nhóm.
  */
 function SettingGroupCard({
   group,
