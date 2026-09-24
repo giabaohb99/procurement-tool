@@ -204,9 +204,19 @@ export const purchaseOrderApi = {
    * bao-CR-469 — Quyết toán NHIỀU dòng chi phí một lượt (tick chọn hoặc chốt hết).
    * `costIds` rỗng = chốt hết các dòng chưa quyết toán của đơn. Dòng đã quyết toán rồi
    * thì backend bỏ qua, không báo lỗi.
+   *
+   * bao-CR-476: `importCosts` = bảng chi phí ĐANG GÕ trên màn hình; backend lưu nó trước rồi
+   * mới chốt, để chốt đúng số người dùng đang thấy chứ không phải số đã lưu từ trước.
    */
-  finalizeCostLines: (id: number, costIds: number[]) =>
-    apiPost<PurchaseOrderDetail>(`${BASE_URL}/${id}/cost-lines/finalize`, { cost_ids: costIds }),
+  finalizeCostLines: (
+    id: number,
+    costIds: number[],
+    importCosts?: PurchaseOrderImportCostPayload[],
+  ) =>
+    apiPost<PurchaseOrderDetail>(`${BASE_URL}/${id}/cost-lines/finalize`, {
+      cost_ids: costIds,
+      ...(importCosts ? { import_costs: importCosts } : {}),
+    }),
 
   /**
    * bao-CR-453 — Mở lại một dòng đã quyết toán riêng lẻ (đặt `line_stage` về theo đơn).

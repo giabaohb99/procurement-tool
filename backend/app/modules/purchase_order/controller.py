@@ -852,6 +852,10 @@ def finalize_cost_lines(pid: int, data: CostLinesFinalizeIn, db: Session = Depen
     """
     po = _in_scope(db, pid, user, "write")
     _require_editable_costs(po)
+    # bao-CR-476: có bảng đang gõ thì lưu trước rồi mới chốt, để chốt đúng số người dùng thấy.
+    if data.import_costs is not None:
+        service.update_po(db, pid, POUpdate(import_costs=data.import_costs), user.id)
+        po = service.get_po(db, pid)
     rows = service.finalize_cost_lines(db, po, data.cost_ids, user.id)
     return success(_out(db, service.get_po(db, pid)),
                    f"Đã quyết toán {len(rows)} dòng chi phí")

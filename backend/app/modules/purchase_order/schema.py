@@ -182,6 +182,11 @@ class CostLinesFinalizeIn(BaseModel):
     cả bảng chi phí của mọi đơn — một đơn không có tới bằng ấy khoản.
     """
     cost_ids: list[int] = Field(default_factory=list, max_length=200)
+    # bao-CR-476: bảng chi phí ĐANG GÕ trên màn hình, gửi kèm để lưu TRƯỚC rồi mới chốt — cùng
+    # khuôn `CostStageAdvanceIn.import_costs`. Thiếu nó thì đường chốt đọc số ĐÃ LƯU: người dùng
+    # gõ số Quyết toán rồi bấm chốt ngay là chốt theo số cũ, sinh công nợ sai số, còn số vừa gõ
+    # bị lượt tải lại đè mất. `None` = không đụng bảng chi phí (giữ hành vi cũ).
+    import_costs: list[POImportCostIn] | None = None
 
 
 class ItemProgressIn(BaseModel):

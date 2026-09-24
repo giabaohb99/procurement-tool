@@ -6399,3 +6399,38 @@ Mã nguồn: `frontend-v2/src/shared/data-table/types.ts` ·
 `frontend-v2/src/shared/data-table/lines-table.tsx` ·
 `frontend-v2/src/shared/data-table/lines-table.test.tsx` ·
 `frontend-v2/src/modules/procurement/components/purchase-order-import-costs-card.tsx`.
+
+## bao-CR-476 | Bấm quyết toán chi phí thì lưu bảng đang gõ trước rồi mới chốt
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Việc em kiến nghị sau đợt ba màu, đại ca bảo làm tiếp. Trên thẻ Chi phí thu mua, đường quyết
+toán đọc số đã lưu trong hệ thống, nên người dùng gõ số quyết toán rồi bấm chốt ngay mà chưa
+bấm Lưu thì hệ thống chốt theo số cũ và sinh công nợ sai số, còn số vừa gõ bị lượt tải lại đè
+mất, không có câu báo nào. Đó lại là đường người dùng bấm nhiều nhất từ khi chốt đi bằng tick
+chọn.
+
+Đại ca chưa chọn giữa tự lưu rồi chốt và chặn bắt bấm Lưu trước, nên em chọn tự lưu rồi chốt
+trong cùng một lượt gọi, đúng khuôn sẵn có của đường chốt giai đoạn. Đường chốt nhiều dòng nay
+nhận thêm bảng chi phí đang gõ, lưu nó trước rồi mới chốt; không gửi kèm bảng thì mọi thứ chạy
+như cũ. Phép đổi bảng chi phí sang dữ liệu gửi đi được tách thành một hàm riêng để nút Lưu và
+nút Quyết toán dùng chung đúng một bản, vì hai bản chép tay sớm muộn sẽ lệch nhau một ô và ô
+lệch đó bị lưu đè bằng giá trị rỗng ngay trước khi thành công nợ.
+
+Kèm theo, nút quyết toán tất cả nay gửi đúng danh sách các dòng đã đếm trên nút thay vì nhờ máy
+chủ chốt hết, vì lượt lưu kèm theo có thể đẻ thêm dòng mới và dòng đó không được chốt lén khi
+người dùng chỉ thấy con số trên nút. Hộp xác nhận nói thêm rằng số đang gõ được lưu luôn trước
+khi chốt.
+
+Việc làm trên một cây tạm riêng vì cây nhánh giao diện mới trên máy đang có việc dở của phiên
+khác, cùng sửa thẻ chi phí nhưng ở vùng khác. Bản đang chạy thật không sửa vì đã đóng băng.
+Kiểm trước khi giao: hai tệp kiểm chi phí ba mươi mốt bài xanh, trong đó hai bài mới canh việc
+chốt đúng số vừa gõ và việc không gửi bảng thì giữ hành vi cũ; bản ERP kiểm kiểu không lỗi, kiểm
+nếp mã không lỗi và còn đúng số cảnh báo cũ, năm trăm bốn mươi mốt bài của phân hệ Thu mua xanh.
+
+Mã nguồn: `backend/app/modules/purchase_order/schema.py` ·
+`backend/app/modules/purchase_order/controller.py` ·
+`frontend-v2/src/modules/procurement/api/purchase-order-api.ts` ·
+`frontend-v2/src/modules/procurement/utils/purchase-order-draft.ts` ·
+`frontend-v2/src/modules/procurement/components/purchase-order-import-costs-card.tsx`.

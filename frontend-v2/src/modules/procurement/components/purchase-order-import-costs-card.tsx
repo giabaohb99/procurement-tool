@@ -94,7 +94,7 @@ import {
 } from '../types/purchase-order-detail'
 import { purchaseOrderApi } from '../api/purchase-order-api'
 import { usePoCostTypes } from '../hooks/use-po-cost-types'
-import { createEmptyImportCost } from '../utils/purchase-order-draft'
+import { createEmptyImportCost, toImportCostPayloads } from '../utils/purchase-order-draft'
 import {
   applyCostType,
   buildCostTypeOptions,
@@ -366,9 +366,9 @@ export function PurchaseOrderImportCostsCard({
    * công nợ thì đã chốt rồi. `null` = chưa mở hộp xác nhận; `ids` rỗng = chốt hết.
    */
   const [selectedCostIds, setSelectedCostIds] = useState<Set<number>>(() => new Set())
-  const [pendingFinalize, setPendingFinalize] = useState<{ ids: number[]; count: number } | null>(
-    null,
-  )
+  const [pendingFinalize, setPendingFinalize] = useState<
+    { ids: number[]; count: number; all: boolean } | null
+  >(null)
   const [lineReopenReason, setLineReopenReason] = useState('')
   const advancePending = useRef(false)
 
@@ -387,8 +387,11 @@ export function PurchaseOrderImportCostsCard({
       purchaseOrderApi.reopenCostStage(order.id, target, reason),
     onSuccess: invalidateOrder,
   })
+  // bao-CR-476: gửi kèm bảng ĐANG GÕ để backend lưu trước rồi mới chốt — không thì gõ số
+  // Quyết toán rồi bấm chốt ngay là chốt theo số cũ và sinh công nợ sai số.
   const finalizeLinesMutation = useMutation({
-    mutationFn: (costIds: number[]) => purchaseOrderApi.finalizeCostLines(order.id, costIds),
+    mutationFn: (costIds: number[]) =>
+      purchaseOrderApi.finalizeCostLines(order.id, costIds, toImportCostPayloads(costs)),
     onSuccess: () => {
       setSelectedCostIds(new Set())
       invalidateOrder()
@@ -1067,6 +1070,7 @@ export function PurchaseOrderImportCostsCard({
                       setPendingFinalize({
                         ids: selectedFinalizable,
                         count: selectedFinalizable.length,
+                        all: false,
                       })
                     }
                   >
@@ -1079,7 +1083,12 @@ export function PurchaseOrderImportCostsCard({
                   variant="outline"
                   size="sm"
                   disabled={finalizeLinesMutation.isPending}
-                  onClick={() => setPendingFinalize({ ids: [], count: finalizableIds.length })}
+                  // bao-CR-476: gửi ĐÚNG danh sách đã đếm trên nút chứ không gửi rỗng («chốt hết»
+                  // phía backend): lượt lưu kèm theo có thể đẻ thêm dòng mới, và dòng đó không được
+                  // chốt lén khi người dùng chỉ thấy con số m trên nút.
+                  onClick={() =>
+                    setPendingFinalize({ ids: finalizableIds, count: finalizableIds.length, all: true })
+                  }
                 >
                   <Lock className="size-4" />
                   Quyết toán tất cả ({finalizableIds.length} dòng)
@@ -1585,9 +1594,10 @@ export function PurchaseOrderImportCostsCard({
                 Quyết toán {pendingFinalize.count} dòng chi phí?
               </AlertDialogTitle>
               <AlertDialogDescription>
-                {pendingFinalize.ids.length === 0
+                {pendingFinalize.all
                   ? 'Chốt HẾT các dòng chưa quyết toán của đơn này. '
                   : 'Chốt các dòng đang tick. '}
+                Số đang gõ trên bảng được lưu luôn trước khi chốt, không cần bấm Lưu. 
                 Mỗi dòng có nhà cung cấp sẽ sinh ra một khoản nợ theo số Quyết toán, và dòng
                 khóa lại — muốn sửa thì mở lại dòng trước. Dòng đã chi tiền thì không mở lại
                 được nữa.

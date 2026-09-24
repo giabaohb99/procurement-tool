@@ -215,6 +215,44 @@ def test_chot_het_khi_khong_tick_dong_nao(db, seed):
     assert e.value.status_code == 404
 
 
+def test_chot_kem_bang_dang_go_thi_chot_dung_so_vua_go(db, seed, cap_quyen):
+    # bao-CR-476: người dùng gõ số Quyết toán rồi bấm «Quyết toán» ngay, chưa bấm Lưu. Trước
+    # đây đường chốt đọc số ĐÃ LƯU nên chốt theo số cũ — sinh công nợ sai số, còn số vừa gõ bị
+    # lượt tải lại đè mất. Nay màn hình gửi kèm bảng đang gõ: lưu trước, chốt sau.
+    from app.modules.purchase_order import controller as ctl
+    from app.modules.purchase_order.schema import CostLinesFinalizeIn
+    from app.modules.user.model import User
+
+    po = _make_po(db, seed, code="PO-CP-476")
+    _save_costs(db, po, [_cost_in()])                         # đã lưu: chỉ có Dự toán 1.000.000
+    row = _rows(db, po)[0]
+    cap_quyen(seed.u_nstm_id, "purchase_order", scope="all", read=True, write=True)
+    user = db.get(User, seed.u_nstm_id)
+
+    dang_go = [_cost_in(id=row.id, final_amount=1_750_000)]  # số trên màn hình, CHƯA lưu
+    ctl.finalize_cost_lines(po.id, CostLinesFinalizeIn(cost_ids=[row.id], import_costs=dang_go),
+                            db=db, user=user)
+    row = _rows(db, po)[0]
+    assert float(row.final_amount) == 1_750_000
+    (pay,) = _cost_payables(db, po)
+    assert float(pay.total) == 1_750_000                      # công nợ theo đúng số vừa gõ
+
+
+def test_chot_khong_kem_bang_thi_giu_hanh_vi_cu(db, seed, cap_quyen):
+    # Không gửi `import_costs` thì đường chốt không đụng bảng chi phí — màn hình cũ vẫn chạy.
+    from app.modules.purchase_order import controller as ctl
+    from app.modules.purchase_order.schema import CostLinesFinalizeIn
+    from app.modules.user.model import User
+
+    po = _make_po(db, seed, code="PO-CP-476-B")
+    _save_costs(db, po, [_cost_in(), _cost_in(description="Phí cảng", estimate_amount=200_000)])
+    cap_quyen(seed.u_nstm_id, "purchase_order", scope="all", read=True, write=True)
+    user = db.get(User, seed.u_nstm_id)
+    ctl.finalize_cost_lines(po.id, CostLinesFinalizeIn(cost_ids=[]), db=db, user=user)
+    assert len(_rows(db, po)) == 2                            # không lỡ tay xóa dòng nào
+    assert len(_cost_payables(db, po)) == 2
+
+
 def test_chot_dong_roi_thi_khoa_ca_sua_lan_xoa(db, seed):
     # bao-CR-467: chốt là sinh công nợ, nên từ đó dòng đóng lại. Màn hình gửi lại CẢ bảng mỗi
     # lần lưu nên payload trùng khít phải đi qua êm — chỉ thay đổi THẬT mới bị chặn.
