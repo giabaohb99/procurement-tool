@@ -1,6 +1,5 @@
 import {
   AtSign,
-  Bot,
   Database,
   FileDown,
   FileUp,
@@ -111,14 +110,6 @@ export const SYSTEM_DASHBOARD_SHORTCUTS: SystemShortcut[] = [
     icon: MonitorSmartphone,
     entity: 'login_session',
     manage: true,
-  },
-  {
-    //  ai-CR-036: màn chỉ đọc — thao tác trên việc vẫn nhắn qua Telegram.
-    label: 'Việc của bot Telegram',
-    description: 'Việc Đậu Đậu đã nhận, từng bước đã chạy và chi phí model.',
-    path: appRoutes.system.agentTasks,
-    icon: Bot,
-    entity: 'agent_task',
   },
   {
     //  duoc-CR-396: màn này nay THUỘC phân hệ Quản trị, không còn là lối tắt

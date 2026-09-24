@@ -3155,6 +3155,18 @@ Mã nguồn: `frontend-v2/src/modules/approval-seal/components/seal-clerk-detail
 Commit: `5fbce75a` trên nhánh `erp-v2`.
 
 
+## ai-CR-039 | Ẩn màn xem việc của bot Telegram trong ERP v2
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Đại ca không cần màn xem việc của bot trong phân hệ Quản trị nữa, muốn biết gì thì hỏi thẳng bot trên
+Telegram. Em gỡ mục menu và lối tắt ở trang tổng quan Quản trị. Trang, đường dẫn, API và khóa quyền vẫn
+giữ nguyên để khi cần chỉ thêm lại hai mục là bật lại được. Tab Telegram ở trang cá nhân vẫn giữ. Kiểm
+tra kiểu, quy tắc mã và bài kiểm phân hệ Quản trị đều xanh.
+
+Mã nguồn: `frontend-v2/src/modules/system/routes.tsx` · `config/dashboard-shortcuts.ts` (+ bài kiểm) · `change-log-ai.md`.
+
 ## ai-CR-038 | Mỗi người tự đăng nhập tài khoản ERP ngay trong Telegram
 - status: xong
 - date: 2026-09-24
