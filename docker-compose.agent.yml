@@ -25,6 +25,22 @@
 # celery-beat + celery-worker, không cần khai ở .env. Hai bên cùng đọc một con trỏ là
 # xử trùng một tin.
 services:
+  # Chốt chống dựng nhầm (24/09/2026): chín service của tệp gốc dưới đây là của stack
+  # procurement-tool, stack này KHÔNG BAO GIỜ dựng chúng. Gắn một profile không ai bật để lệnh
+  # `docker compose up -d` trơn chỉ dựng phần của bot. Kèm hai dòng COMPOSE_PROJECT_NAME +
+  # COMPOSE_FILE trong .env của worktree, `up` trơn ở thư mục này tự thành đúng stack `agenthub`.
+  # Sự cố: một lần `up` trơn thiếu `-p agenthub` dựng nguyên bộ ERP thứ hai tên
+  # `procurement-agent-hub`, MySQL của nó giành cổng 3306 với stack thật và dừng ở lỗi
+  # «port is already allocated».
+  db: {profiles: [stack-goc]}
+  adminer: {profiles: [stack-goc]}
+  api: {profiles: [stack-goc]}
+  web: {profiles: [stack-goc]}
+  help: {profiles: [stack-goc]}
+  erp: {profiles: [stack-goc]}
+  redis: {profiles: [stack-goc]}
+  qdrant: {profiles: [stack-goc]}
+  redisinsight: {profiles: [stack-goc]}
   # Bản sao của service `api` trong tệp gốc, chỉ khác TÊN (xem chú thích đầu tệp) và
   # cổng. Sửa `api` ở tệp gốc thì nhớ soi lại khối này — Compose không kế thừa được
   # giữa hai tên service khác nhau.

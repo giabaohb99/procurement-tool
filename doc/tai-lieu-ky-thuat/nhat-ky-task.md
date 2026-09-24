@@ -3486,6 +3486,20 @@ và `celery-beat`, chú thích đầu tệp ghi luôn lý do cấm đặt lại 
 `procurement-tool/docker-compose.override.yml` (bản vá tạm ở máy làm việc, không commit).
 Commit: `0c4a0850` trên nhánh `agent-hub-bac-1` (23/09/2026, chưa push).
 
+## ai-CR-030 | Chốt stack bot để lệnh dựng trơn không dựng nhầm bộ ERP thứ hai
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Sáng 24/09 đại ca gặp lỗi cổng 3306 đã bị chiếm khi dựng container. Các container của bot đã mất, rồi một lần
+dựng trơn trong thư mục của bot, thiếu tên stack và tệp cấu hình riêng, đã dựng nguyên một bộ ERP thứ hai có cả
+MySQL riêng, giành cổng với bộ ERP thật đang chạy. Em gỡ bộ dựng nhầm (giữ dữ liệu), chặn chín service của bộ ERP
+gốc không bao giờ được dựng ở stack bot, và khai tên stack cùng tệp cấu hình ngay trong tệp môi trường của thư mục
+đó, nên từ nay lệnh dựng trơn ở đây tự thành đúng stack bot. Bot đã chạy lại đủ năm service, ERP thật không bị đụng.
+
+Mã nguồn: `docker-compose.agent.yml` (profile `stack-goc`) · `.env` của worktree (`COMPOSE_PROJECT_NAME`,
+`COMPOSE_FILE`, không commit).
+
 ## ai-CR-029 | Lệnh gộp của Đậu Đậu chỉ gộp, lên dev phải nói ra
 - status: xong
 - date: 2026-09-23
