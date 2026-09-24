@@ -262,13 +262,16 @@ def test_chot_dong_roi_thi_khoa_ca_sua_lan_xoa(db, seed):
     service.finalize_cost_line(db, po, row.id, user_id=1)
     assert len(_cost_payables(db, po)) == 1
 
-    _save_costs(db, po, [_cost_in(id=row.id, final_amount=1_000_000)])
+    # bao-CR-478: quyết toán chép Dự toán sang CẢ Tạm tính lẫn Quyết toán, nên bảng màn hình
+    # gửi lại sau khi tải lại mang cả hai cột đó.
+    da_chot = dict(provisional_amount=1_000_000, final_amount=1_000_000)
+    _save_costs(db, po, [_cost_in(id=row.id, **da_chot)])
     assert float(_rows(db, po)[0].final_amount) == 1_000_000
 
-    for doi in (dict(final_amount=1_500_000), dict(final_amount=1_000_000, supplier_code="KHAC"),
-                dict(final_amount=1_000_000, vat=10), dict(final_amount=1_000_000, note="ghi thêm")):
+    for doi in (dict(final_amount=1_500_000), dict(supplier_code="KHAC"),
+                dict(vat=10), dict(note="ghi thêm")):
         with pytest.raises(HTTPException) as e:
-            _save_costs(db, po, [_cost_in(id=row.id, **doi)])
+            _save_costs(db, po, [_cost_in(id=row.id, **{**da_chot, **doi})])
         assert e.value.status_code == 400 and "không sửa được" in e.value.detail
 
     with pytest.raises(HTTPException) as e:          # bỏ dòng khỏi payload = xóa

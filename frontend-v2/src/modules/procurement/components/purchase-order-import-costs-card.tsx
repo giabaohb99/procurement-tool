@@ -2,6 +2,7 @@ import {
   AlertTriangle,
   ChevronDown,
   ChevronRight,
+  Copy,
   Lock,
   MoreHorizontal,
   Pencil,
@@ -13,6 +14,7 @@ import {
 import { Fragment, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 
 import { queryKeys } from '@/shared/constants/query-keys'
 
@@ -95,6 +97,7 @@ import {
 import { purchaseOrderApi } from '../api/purchase-order-api'
 import { usePoCostTypes } from '../hooks/use-po-cost-types'
 import { createEmptyImportCost, toImportCostPayloads } from '../utils/purchase-order-draft'
+import { copyCostStageAmounts, type CostCopySource, type CostCopyTarget } from '../utils/cost-stage-copy'
 import {
   applyCostType,
   buildCostTypeOptions,
@@ -193,8 +196,6 @@ function patchStageRate(stage: number, value: number): Partial<PurchaseOrderImpo
 
 /** Giá trị ô chọn NCC khi khoản chưa gắn NCC nào (Radix Select không nhận chuỗi rỗng). */
 const SUPPLIER_EMPTY = '__none__'
-/** Giá trị ô "Mã hàng chỉ định" khi chưa chọn mã nào. */
-const TARGET_EMPTY = '__none__'
 
 const DESCRIPTION_PLACEHOLDER = 'VD: Cước biển Thượng Hải – Cát Lái'
 const DIALOG_DESCRIPTION_PLACEHOLDER = 'VD: Cước biển Thượng Hải – Cát Lái, 1x20DC'
@@ -478,17 +479,19 @@ export function PurchaseOrderImportCostsCard({
    * khóa sửa nhưng vẫn phải chốt được, đó chính là lúc hóa đơn về.
    */
   const canFinalize = approved && can('purchase_order', 'write')
+  /** Dòng đã lưu và CHƯA quyết toán — ứng viên của cột tick quyết toán. */
+  const isOpenCost = (cost: PurchaseOrderImportCost) =>
+    canFinalize &&
+    cost.id !== undefined &&
+    Math.max(orderStage, cost.line_stage ?? 0) < COST_STAGE_FINAL
+  // bao-CR-478: dòng chưa có Dự toán thì KHÔNG quyết toán được (backend bỏ qua dòng đó) —
+  // ô tick của nó khóa kèm lời giải thích, và không lọt vào «Quyết toán tất cả».
   const finalizableIds = useMemo(
     () =>
-      canFinalize
-        ? costs
-            .filter(
-              (cost) =>
-                cost.id !== undefined &&
-                Math.max(orderStage, cost.line_stage ?? 0) < COST_STAGE_FINAL,
-            )
-            .map((cost) => cost.id ?? 0)
-        : [],
+      costs
+        .filter((cost) => isOpenCost(cost) && Number(cost.estimate_amount) > 0)
+        .map((cost) => cost.id ?? 0),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- isOpenCost chỉ đọc ba giá trị dưới
     [costs, canFinalize, orderStage],
   )
   const selectedFinalizable = useMemo(
@@ -496,10 +499,6 @@ export function PurchaseOrderImportCostsCard({
     [finalizableIds, selectedCostIds],
   )
 
-  const columns = useMemo(
-    () => (payReady || finalizableIds.length > 0 ? [TICK_COLUMN, ...BASE_COLUMNS] : BASE_COLUMNS),
-    [payReady, finalizableIds.length],
-  )
 
   // ---- Số tổng: lấy của backend, đơn đang gõ dở thì tính tại chỗ để nhìn ngay ----
   const goodsBase = useMemo(() => {
@@ -603,6 +602,17 @@ export function PurchaseOrderImportCostsCard({
     return editable && !isLineLocked(cost)
   }
 
+  /** bao-CR-478 — chép số hàng loạt giữa hai cột (chỉ ô trống, chỉ dòng đã tick nếu có tick). */
+  function copyStage(from: CostCopySource, to: CostCopyTarget) {
+    const result = copyCostStageAmounts(costs, from, to, isRowEditable, selectedCostIds)
+    if (!result.copied) {
+      toast.info('Không có dòng nào cần chép — ô đích đã có số hoặc ô nguồn còn trống')
+      return
+    }
+    onChange(result.costs)
+    toast.success(`Đã chép ${result.copied} dòng — bấm Lưu để ghi lại`)
+  }
+
   function toggleSelected(payableId: number, checked: boolean) {
     setSelectedPayableIds((current) => {
       const next = new Set(current)
@@ -651,6 +661,15 @@ export function PurchaseOrderImportCostsCard({
         // bao-CR-469: một cột tick, hai việc — dòng CHƯA chốt thì tick để quyết toán, dòng đã
         // thành công nợ thì tick để lập YCTT. Hai tập không giẫm nhau nên không cần hai cột.
         const costId = cost.id
+        if (costId !== undefined && isOpenCost(cost) && !finalizableIds.includes(costId)) {
+          return (
+            <Checkbox
+              disabled
+              aria-label={`Khoản ${index + 1} chưa có Dự toán — chưa quyết toán được`}
+              title="Chưa có Dự toán — nhập Dự toán rồi mới quyết toán được"
+            />
+          )
+        }
         if (costId !== undefined && finalizableIds.includes(costId)) {
           return (
             <Checkbox
@@ -981,30 +1000,49 @@ export function PurchaseOrderImportCostsCard({
     if (Number(cost.allocation_method) === ALLOCATION_BY_PRODUCT) {
       if (!editable) return cost.allocation_target || null
       return (
-        <Select
-          value={cost.allocation_target || TARGET_EMPTY}
-          onValueChange={(value) =>
-            updateCost(index, { allocation_target: value === TARGET_EMPTY ? '' : value })
-          }
-        >
-          <SelectTrigger className={WRAPPING_SELECT_TRIGGER} aria-label="Mã hàng chỉ định">
-            <SelectValue placeholder="Chọn mã hàng" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={TARGET_EMPTY}>Chưa chọn mã hàng</SelectItem>
-            {productCodes.map((code) => (
-              <SelectItem key={code} value={code}>
-                {code}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        //  Mục «Chưa chọn mã hàng» cũ nay là nút xóa của ô, cũng trả `''`.
+        <SearchSelect
+          searchInTrigger
+          clearable
+          wrap
+          value={cost.allocation_target || ''}
+          placeholder="Chọn mã hàng"
+          searchPlaceholder="Gõ để tìm mã hàng…"
+          options={productCodes.map((code) => ({ value: code, label: code }))}
+          onChange={(value) => {
+            //  Chọn lại đúng mã đang chọn thì thôi — Radix Select cũ không bắn sự kiện.
+            if (value === (cost.allocation_target || '')) return
+            updateCost(index, { allocation_target: value })
+          }}
+        />
       )
     }
     return null
   }
 
   const detailCost = detailIndex !== null ? costs[detailIndex] : undefined
+
+  // bao-CR-478: ô «tick hết» nằm NGAY ở tiêu đề cột «Chọn» (như bản cũ), không đứng lẻ trên
+  // thanh nút. Một ô cho cả hai việc: tick mọi dòng quyết toán được + mọi dòng còn phải chi.
+  const tickableCount = finalizableIds.length + (payReady ? selectablePayableIds.length : 0)
+  const tickedCount = selectedFinalizable.length + (payReady ? effectiveSelected.length : 0)
+  const tickHeader = (
+    <Checkbox
+      aria-label="Tick mọi dòng quyết toán được và mọi dòng còn phải chi"
+      title="Tick mọi dòng quyết toán được / còn phải chi"
+      disabled={tickableCount === 0}
+      checked={tickedCount === 0 ? false : tickedCount === tickableCount ? true : 'indeterminate'}
+      onCheckedChange={(checked) => {
+        const on = checked === true
+        setSelectedCostIds(on ? new Set(finalizableIds) : new Set())
+        if (payReady) toggleSelectAll(on)
+      }}
+    />
+  )
+  const columns: LinesTableColumn[] =
+    payReady || finalizableIds.length > 0
+      ? [{ ...TICK_COLUMN, headerContent: tickHeader }, ...BASE_COLUMNS]
+      : BASE_COLUMNS
 
   return (
     <>
@@ -1041,26 +1079,36 @@ export function PurchaseOrderImportCostsCard({
                 Mở lại
               </Button>
             )}
+            {/* bao-CR-478: chép số hàng loạt — bấm một cái thay vì gõ lại từng dòng. */}
+            {editable && costs.some(isRowEditable) && (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  title="Chép số Dự toán sang ô Tạm tính còn trống (dòng đã tick, hoặc mọi dòng nếu chưa tick)"
+                  onClick={() => copyStage('estimate', 'provisional')}
+                >
+                  <Copy className="size-4" />
+                  Dự toán → Tạm tính
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  title="Chép số Tạm tính sang ô Quyết toán còn trống (dòng đã tick, hoặc mọi dòng nếu chưa tick)"
+                  onClick={() => copyStage('provisional', 'final')}
+                >
+                  <Copy className="size-4" />
+                  Tạm tính → Quyết toán
+                </Button>
+              </>
+            )}
             {/* bao-CR-469: chốt theo DÒNG — tick vài dòng rồi chốt, hoặc chốt hết một nút.
                 Hai nút tách riêng và luôn nói rõ số dòng: chốt là sinh công nợ thật, không để
                 một nút đổi nghĩa theo việc người dùng có tick hay không. */}
             {finalizableIds.length > 0 && (
               <>
-                <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Checkbox
-                    checked={
-                      selectedFinalizable.length === 0
-                        ? false
-                        : selectedFinalizable.length === finalizableIds.length
-                          ? true
-                          : 'indeterminate'
-                    }
-                    onCheckedChange={(checked) =>
-                      setSelectedCostIds(checked === true ? new Set(finalizableIds) : new Set())
-                    }
-                  />
-                  Tick mọi dòng chưa chốt
-                </label>
                 {selectedFinalizable.length > 0 && (
                   <Button
                     type="button"
@@ -1097,19 +1145,6 @@ export function PurchaseOrderImportCostsCard({
             )}
             {payReady && selectablePayableIds.length > 0 && (
               <>
-                <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Checkbox
-                    checked={
-                      effectiveSelected.length === 0
-                        ? false
-                        : effectiveSelected.length === selectablePayableIds.length
-                          ? true
-                          : 'indeterminate'
-                    }
-                    onCheckedChange={(checked) => toggleSelectAll(checked === true)}
-                  />
-                  Tick mọi dòng còn phải chi
-                </label>
                 <Button
                   type="button"
                   size="sm"
@@ -2158,24 +2193,19 @@ function CostDetailDialog({
             {Number(cost.allocation_method) === ALLOCATION_BY_PRODUCT && (
               <Field label="Mã hàng chỉ định">
                 {editable ? (
-                  <Select
-                    value={cost.allocation_target || TARGET_EMPTY}
-                    onValueChange={(value) =>
-                      onPatch({ allocation_target: value === TARGET_EMPTY ? '' : value })
-                    }
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="— chọn mã hàng —" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={TARGET_EMPTY}>— chọn mã hàng —</SelectItem>
-                      {productCodes.map((code) => (
-                        <SelectItem key={code} value={code}>
-                          {code}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  //  Mục «— chọn mã hàng —» cũ (chọn để bỏ trống) nay là nút xóa của ô.
+                  <SearchSelect
+                    searchInTrigger
+                    clearable
+                    value={cost.allocation_target || ''}
+                    placeholder="— chọn mã hàng —"
+                    searchPlaceholder="Gõ để tìm mã hàng…"
+                    options={productCodes.map((code) => ({ value: code, label: code }))}
+                    onChange={(value) => {
+                      if (value === (cost.allocation_target || '')) return
+                      onPatch({ allocation_target: value })
+                    }}
+                  />
                 ) : (
                   <ReadOnlyValue>{cost.allocation_target || '—'}</ReadOnlyValue>
                 )}

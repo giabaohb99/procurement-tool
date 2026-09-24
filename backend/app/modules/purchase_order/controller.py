@@ -857,8 +857,11 @@ def finalize_cost_lines(pid: int, data: CostLinesFinalizeIn, db: Session = Depen
         service.update_po(db, pid, POUpdate(import_costs=data.import_costs), user.id)
         po = service.get_po(db, pid)
     rows = service.finalize_cost_lines(db, po, data.cost_ids, user.id)
+    # bao-CR-478 — dòng chưa có Dự toán bị bỏ qua: nói ra, đừng để người dùng tưởng đã chốt hết.
+    skipped = service.count_costs_missing_estimate(db, po, data.cost_ids)
+    note = f" — bỏ qua {skipped} dòng chưa có Dự toán" if skipped else ""
     return success(_out(db, service.get_po(db, pid)),
-                   f"Đã quyết toán {len(rows)} dòng chi phí")
+                   f"Đã quyết toán {len(rows)} dòng chi phí{note}")
 
 
 @router.post("/{pid}/costs/{cost_id}/reopen")

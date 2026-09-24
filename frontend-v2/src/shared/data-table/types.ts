@@ -75,6 +75,12 @@ export interface LinesTableColumn {
   key: string
   /** Kết thúc bằng `" *"` = cột bắt buộc nhập — xem `DataTableColumn.header`. */
   header: string
+  /**
+   * Thay NHÃN tiêu đề bằng một thành phần (ô tick «chọn hết»…) — cùng nghĩa với
+   * `DataTableColumn.headerContent`; bảng đã chặn kéo cột / sắp xếp quanh chỗ này.
+   * `header` vẫn phải khai vì còn là nhãn lúc kéo cột và tên trong menu «Cột».
+   */
+  headerContent?: ReactNode
   /** Độ rộng ban đầu (px). */
   width?: number
   /** Chặn dưới khi kéo giãn. Mặc định 64px. */

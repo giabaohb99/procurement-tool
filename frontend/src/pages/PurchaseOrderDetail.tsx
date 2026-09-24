@@ -229,6 +229,8 @@ export default function PurchaseOrderDetail() {
   const [paySel, setPaySel] = useState<number[]>([])           // id khoản nợ được chọn
   const [payTab, setPayTab] = useState<PayTab>('goods')
   const [costSel, setCostSel] = useState<number[]>([])         // bao-CR-319 P5: id khoản nợ chi phí được tick ở bảng chi phí
+  // bao-CR-478: id DÒNG chi phí được tick để quyết toán (dòng chưa quyết toán — chưa có khoản nợ)
+  const [costFinalSel, setCostFinalSel] = useState<number[]>([])
   // bao-CR-453 GĐ2: danh mục loại chi phí thu mua từ API (fallback về IMPORT_COST_TYPE_OPTS)
   const [costTypes, setCostTypes] = useState<any[]>([])
   // null = đóng, 'stage' = mở lại giai đoạn, number = costId mở lại dòng chi phí
@@ -434,6 +436,24 @@ export default function PurchaseOrderDetail() {
     setPo((s: any) => ({ ...s, import_costs: (s.import_costs || []).map((c: any, idx: number) => idx === i ? { ...c, ...patch } : c) }))
   const addCost = () => setPo((s: any) => ({ ...s, import_costs: [...(s.import_costs || []), { ...emptyImportCost }] }))
   const delCost = (i: number) => setPo((s: any) => ({ ...s, import_costs: (s.import_costs || []).filter((_: any, idx: number) => idx !== i) }))
+  // bao-CR-478: payload bảng chi phí dùng CHUNG cho nút Lưu và nút Quyết toán — quyết toán gửi kèm
+  // bảng đang gõ (bao-CR-476) để chốt đúng số người dùng đang thấy, không phải số đã lưu lần trước.
+  const toCostPayload = (list: any[]) => list.map((c: any) => ({
+    id: c.id, cost_type: Number(c.cost_type) || 99,
+    description: c.description || '',
+    supplier_code: c.supplier_code || '', supplier_name: c.supplier_name || '',
+    currency: c.currency || '',
+    estimate_amount: Number(c.estimate_amount) || 0, estimate_rate: Number(c.estimate_rate) || 0,
+    provisional_amount: Number(c.provisional_amount) || 0, provisional_rate: Number(c.provisional_rate) || 0,
+    final_amount: Number(c.final_amount) || 0, final_rate: Number(c.final_rate) || 0,
+    vat: Number(c.vat) || 0,
+    allocation_method: Number(c.allocation_method) || ALLOC_BY_VALUE,
+    allocation_target: c.allocation_target || '',
+    manual_allocation: isManualCost(c) ? (c.manual_allocation || {}) : {},
+    invoice_no: c.invoice_no || '',
+    invoice_date: c.invoice_date || '', payment_due_date: c.payment_due_date || '',
+    note: c.note || '',
+  }))
   const costCurrency = (c: any) => (c?.currency || '').trim() || poCurrency
   // bao-CR-453 GĐ2: giá trị quy đổi VNĐ hiệu lực = effective_base từ backend (đã gồm VAT).
   // Fallback về 0 khi là dòng mới chưa Lưu. Base cũ (`base_amount`) backend giữ làm alias nên
@@ -562,6 +582,21 @@ export default function PurchaseOrderDetail() {
   const costPayableIds = importCosts.filter(costPayable).map((c: any) => Number(c.payable_id))
   const toggleCostSel = (payableId: number, on: boolean) =>
     setCostSel((s) => on ? Array.from(new Set([...s, payableId])) : s.filter((x) => x !== payableId))
+
+  // ---- bao-CR-478: quyết toán bằng TICK CHỌN (bỏ dải giai đoạn + nút «Chốt Tạm tính») ----
+  // Cùng một cột tick với YCTT: dòng CHƯA quyết toán thì tick để quyết toán, dòng đã thành công
+  // nợ thì tick để lập YCTT — hai tập không giẫm nhau (giống v2 bao-CR-469).
+  const canFinalizeCosts = !isNew && costEditable && can('purchase_order', 'write')
+  const costHasEstimate = (c: any) => Number(c.estimate_amount) > 0
+  const costFinalizable = (c: any) => canFinalizeCosts && Number(c.id) > 0 && !costLineLocked(c)
+  const costFinalizableIds = importCosts
+    .filter((c: any) => costFinalizable(c) && costHasEstimate(c)).map((c: any) => Number(c.id))
+  const showCostTick = costPayReady || canFinalizeCosts
+  const toggleCostFinal = (costId: number, on: boolean) =>
+    setCostFinalSel((s) => on ? Array.from(new Set([...s, costId])) : s.filter((x) => x !== costId))
+  const allTickIds = { pay: costPayableIds, fin: costFinalizableIds }
+  const allTicked = (allTickIds.pay.length + allTickIds.fin.length) > 0
+    && allTickIds.pay.every((id) => costSel.includes(id)) && allTickIds.fin.every((id) => costFinalSel.includes(id))
   // Đưa id khoản nợ sang màn lập phiếu; backend tự tách mỗi NCC một phiếu (create_requests)
   const goCreatePayment = (payableIds: number[]) => {
     if (payableIds.length === 0) { toast.error('Chưa chọn khoản chi phí nào còn phải chi'); return }
@@ -758,22 +793,7 @@ export default function PurchaseOrderDetail() {
       inspection_days: Number(po.inspection_days) || 0, return_days: Number(po.return_days) || 0,
       invoice_deadline: (po.invoice_deadline || '').trim(),
       // bao-CR-453 GĐ2: payload chi phí dùng ba cột số theo giai đoạn; bỏ cost_status/exchange_rate/amount cũ.
-      import_costs: importCosts.map((c: any) => ({
-        id: c.id, cost_type: Number(c.cost_type) || 99,
-        description: c.description || '',
-        supplier_code: c.supplier_code || '', supplier_name: c.supplier_name || '',
-        currency: c.currency || '',
-        estimate_amount: Number(c.estimate_amount) || 0, estimate_rate: Number(c.estimate_rate) || 0,
-        provisional_amount: Number(c.provisional_amount) || 0, provisional_rate: Number(c.provisional_rate) || 0,
-        final_amount: Number(c.final_amount) || 0, final_rate: Number(c.final_rate) || 0,
-        vat: Number(c.vat) || 0,
-        allocation_method: Number(c.allocation_method) || ALLOC_BY_VALUE,
-        allocation_target: c.allocation_target || '',
-        manual_allocation: isManualCost(c) ? (c.manual_allocation || {}) : {},
-        invoice_no: c.invoice_no || '',
-        invoice_date: c.invoice_date || '', payment_due_date: c.payment_due_date || '',
-        note: c.note || '',
-      })),
+      import_costs: toCostPayload(importCosts),
       items: sentItems.map((it: any) => ({
         id: it.id, product_code: it.product_code, product_name: it.product_name, invoice_name: it.invoice_name,
         item_group: it.item_group, spec: it.spec, fg_code: it.fg_code, fg_name: it.fg_name, invoice_no: it.invoice_no,
@@ -818,16 +838,6 @@ export default function PurchaseOrderDetail() {
     catch { /* interceptor đã toast lỗi */ }
   }
 
-  // bao-CR-453 GĐ2: tiến giai đoạn chi phí (Dự toán → Tạm tính → Quyết toán)
-  // `target` là BẮT BUỘC và cố ý chỉ đi MỘT bậc: gửi đúng bậc kế tiếp thì bấm hai lần liền tay
-  // lần sau ăn lỗi 400 "đang ở giai đoạn ..." thay vì nhảy thẳng lên Quyết toán và sinh công nợ.
-  async function advanceCostStage() {
-    const target = costStage + 1
-    const nextLabel = COST_STAGE_LABELS[target] || ''
-    if (!await askConfirm({ message: `Chốt sang giai đoạn ${nextLabel}? Các số đã nhập ở giai đoạn này sẽ được ghi nhận.`, confirmText: `Chốt ${nextLabel}`, danger: false })) return
-    try { await api.post(`${API}/${id}/cost-stage/advance`, { target }); loadAll() }
-    catch { /* interceptor đã toast lỗi */ }
-  }
 
   // bao-CR-453 GĐ2/GĐ3: mở lại giai đoạn hoặc từng dòng chi phí (cần quyền purchase_order.approve)
   async function doReopen() {
@@ -844,15 +854,40 @@ export default function PurchaseOrderDetail() {
     } catch { /* interceptor đã toast lỗi */ }
   }
 
-  // bao-CR-453 GĐ3: quyết toán từng dòng chi phí (cần quyền purchase_order.write)
-  async function finalizeLineCost(costId: number) {
-    // bao-CR-467: chốt dòng là sinh công nợ THẬT và khóa dòng — nói rõ cả hai trước khi bấm.
+  // bao-CR-478: quyết toán các dòng đã tick (hoặc tất cả dòng đủ điều kiện). Backend chép số
+  // còn trống: chỉ có Dự toán → chép sang CẢ Tạm tính lẫn Quyết toán; có Tạm tính → chép sang
+  // Quyết toán; dòng chưa có Dự toán bị bỏ qua (câu báo nói ra số dòng bỏ qua).
+  const finalizingRef = useRef(false)
+  async function finalizeCosts(costIds: number[]) {
+    if (!costIds.length || finalizingRef.current) return
+    // bao-CR-467: chốt là sinh công nợ THẬT và khóa dòng — nói rõ cả hai trước khi bấm.
     if (!await askConfirm({
-      message: 'Quyết toán dòng chi phí này? Khoản nợ sẽ được sinh ra theo số Quyết toán, và dòng này khóa lại — muốn sửa phải mở lại dòng.',
-      confirmText: 'Quyết toán dòng', danger: false,
+      message: `Quyết toán ${costIds.length} dòng chi phí? Ô còn trống được chép từ giai đoạn trước (Dự toán → Tạm tính → Quyết toán). Khoản nợ sinh theo số Quyết toán và các dòng này khóa lại — muốn sửa phải mở lại dòng.`,
+      confirmText: `Quyết toán ${costIds.length} dòng`, danger: false,
     })) return
-    try { await api.post(`${API}/${id}/costs/${costId}/finalize`); loadAll() }
-    catch { /* interceptor đã toast lỗi */ }
+    finalizingRef.current = true
+    try {
+      const r = await api.post(`${API}/${id}/cost-lines/finalize`, { cost_ids: costIds, import_costs: toCostPayload(importCosts) })
+      toast.success(r.data?.message || 'Đã quyết toán')
+      setCostFinalSel([])
+      loadAll()
+    } catch { /* interceptor đã toast lỗi */ } finally { finalizingRef.current = false }
+  }
+
+  // bao-CR-478: chép số hàng loạt giữa hai cột — chỉ điền Ô CÒN TRỐNG (không đè số đã gõ), chỉ ở
+  // dòng còn sửa được; có tick thì chỉ các dòng đã tick. Chép xong vẫn phải bấm Lưu.
+  function copyCostStage(from: 'estimate' | 'provisional', to: 'provisional' | 'final') {
+    const picked = new Set(costFinalSel)
+    let n = 0
+    const next = importCosts.map((c: any) => {
+      if (!costRowEditable(c) || (picked.size && !picked.has(Number(c.id)))) return c
+      if (Number(c[`${to}_amount`]) > 0 || !(Number(c[`${from}_amount`]) > 0)) return c
+      n += 1
+      return { ...c, [`${to}_amount`]: c[`${from}_amount`], [`${to}_rate`]: c[`${from}_rate`] }
+    })
+    if (!n) { toast.info('Không có dòng nào cần chép — ô đích đã có số hoặc ô nguồn còn trống'); return }
+    setPo((s: any) => ({ ...s, import_costs: next }))
+    toast.success(`Đã chép ${n} dòng — bấm Lưu để ghi lại`)
   }
 
   // Tạo yêu cầu thanh toán từ ĐMH: lấy các khoản nợ HÀNG chưa trả đủ của đơn → chọn hóa đơn → tạo YCTT
@@ -1420,10 +1455,27 @@ export default function PurchaseOrderDetail() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 10 }}>
                 <h3 className="sec-title" style={{ margin: 0, border: 'none', padding: 0 }}>Chi phí thu mua</h3>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {/* bao-CR-453 GĐ2: nút tiến/mở lại giai đoạn chi phí */}
-                  {!isNew && costStage < COST_STAGE_FINAL && can('purchase_order', 'write') && (
-                    <button className="btn ghost" style={{ height: 32, fontSize: 13, color: '#0891b2', borderColor: '#a5f3fc' }} onClick={advanceCostStage}>
-                      <i className="ti ti-circle-arrow-right" />Chốt {costStage === COST_STAGE_ESTIMATE ? 'Tạm tính' : 'Quyết toán'}
+                  {/* bao-CR-478: bỏ nút «Chốt Tạm tính / Quyết toán» theo giai đoạn — quyết toán bằng tick chọn */}
+                  {costEditable && importCosts.some((c: any) => costRowEditable(c)) && (
+                    <>
+                      <button className="btn ghost" style={{ height: 32, fontSize: 13 }} onClick={() => copyCostStage('estimate', 'provisional')}
+                        title="Chép số Dự toán sang ô Tạm tính còn trống (dòng đã tick, hoặc mọi dòng nếu chưa tick)">
+                        <i className="ti ti-copy" />Dự toán → Tạm tính
+                      </button>
+                      <button className="btn ghost" style={{ height: 32, fontSize: 13 }} onClick={() => copyCostStage('provisional', 'final')}
+                        title="Chép số Tạm tính sang ô Quyết toán còn trống (dòng đã tick, hoặc mọi dòng nếu chưa tick)">
+                        <i className="ti ti-copy" />Tạm tính → Quyết toán
+                      </button>
+                    </>
+                  )}
+                  {canFinalizeCosts && costFinalSel.length > 0 && (
+                    <button className="btn" style={{ height: 32, fontSize: 13 }} onClick={() => finalizeCosts(costFinalSel)}>
+                      <i className="ti ti-circle-check" />Quyết toán {costFinalSel.length} dòng đã tick
+                    </button>
+                  )}
+                  {canFinalizeCosts && costFinalizableIds.length > 0 && (
+                    <button className="btn ghost" style={{ height: 32, fontSize: 13, color: '#15803d', borderColor: '#86efac' }} onClick={() => finalizeCosts(costFinalizableIds)}>
+                      <i className="ti ti-checks" />Quyết toán tất cả ({costFinalizableIds.length} dòng)
                     </button>
                   )}
                   {!isNew && costStage > COST_STAGE_ESTIMATE && can('purchase_order', 'approve') && (
@@ -1442,28 +1494,11 @@ export default function PurchaseOrderDetail() {
                   )}
                 </div>
               </div>
-              {/* bao-CR-453 GĐ2: dải giai đoạn 3 bước */}
-              {!isNew && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 14, background: '#f8fafc', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 14px', flexWrap: 'wrap' }}>
-                  {([COST_STAGE_ESTIMATE, COST_STAGE_PROVISIONAL, COST_STAGE_FINAL] as number[]).map((s, idx) => {
-                    const active = costStage === s
-                    const done = costStage > s
-                    return (
-                      <Fragment key={s}>
-                        {idx > 0 && <i className="ti ti-chevron-right" style={{ fontSize: 13, color: 'var(--muted)', margin: '0 2px' }} />}
-                        <span style={{
-                          padding: '3px 12px', borderRadius: 20, fontSize: 12.5, fontWeight: active ? 700 : 500,
-                          background: done ? '#dcfce7' : active ? '#0891b2' : '#f1f5f9',
-                          color: done ? '#15803d' : active ? '#fff' : 'var(--muted)',
-                          border: `1px solid ${done ? '#86efac' : active ? '#0891b2' : 'var(--border)'}`,
-                        }}>
-                          {done && <i className="ti ti-circle-check" style={{ marginRight: 4 }} />}
-                          {COST_STAGE_LABELS[s]}
-                          {active && <span style={{ fontWeight: 400, fontSize: 11.5 }}> (hiện tại)</span>}
-                        </span>
-                      </Fragment>
-                    )
-                  })}
+              {/* bao-CR-478: bỏ dải «Dự toán › Tạm tính › Quyết toán» — ba cột gõ tự do, quyết toán bằng tick */}
+              {canFinalizeCosts && importCosts.length > 0 && (
+                <div style={{ marginBottom: 10, fontSize: 12.5, color: 'var(--muted)' }}>
+                  <i className="ti ti-info-circle" /> Tick dòng rồi bấm <b>Quyết toán</b>: ô còn trống được chép từ giai đoạn trước
+                  (chỉ có Dự toán thì chép sang cả Tạm tính lẫn Quyết toán). Dòng chưa có Dự toán không quyết toán được.
                 </div>
               )}
               {isImport && (
@@ -1476,15 +1511,19 @@ export default function PurchaseOrderDetail() {
               )}
               <div className="items-scroll">
                 {/* bao-CR-453 GĐ2: bảng chi phí ba giai đoạn — cột Dự toán/Tạm tính/Quyết toán/Lệch thay Tỷ giá/Số tiền/Quy đổi */}
-                <table className="items-table" style={{ minWidth: costPayReady ? 2700 : 2660 }}>
+                <table className="items-table" style={{ minWidth: showCostTick ? 2700 : 2660 }}>
                   <thead>
                     <tr>
-                      {/* P5: cột tick chỉ có khi đơn đã duyệt (mới có công nợ để trả) */}
-                      {costPayReady && (
+                      {/* P5 + bao-CR-478: một cột tick cho hai việc — quyết toán (dòng chưa chốt) và lập YCTT (dòng đã thành nợ) */}
+                      {showCostTick && (
                         <th style={{ width: 36, textAlign: 'center' }}>
-                          <input type="checkbox" title="Tick mọi dòng còn phải chi" disabled={costPayableIds.length === 0}
-                            checked={costPayableIds.length > 0 && costPayableIds.every((id) => costSel.includes(id))}
-                            onChange={(e) => setCostSel(e.target.checked ? costPayableIds : [])} />
+                          <input type="checkbox" title="Tick mọi dòng quyết toán được / còn phải chi"
+                            disabled={costPayableIds.length + costFinalizableIds.length === 0}
+                            checked={allTicked}
+                            onChange={(e) => {
+                              setCostSel(e.target.checked ? costPayableIds : [])
+                              setCostFinalSel(e.target.checked ? costFinalizableIds : [])
+                            }} />
                         </th>
                       )}
                       <th style={{ width: 36 }}>#</th>
@@ -1512,9 +1551,14 @@ export default function PurchaseOrderDetail() {
                   <tbody>
                     {importCosts.map((c: any, i: number) => (
                       <tr key={i}>
-                        {costPayReady && (
+                        {showCostTick && (
                           <td style={{ textAlign: 'center' }}>
-                            {costPayable(c)
+                            {costFinalizable(c)
+                              ? <input type="checkbox" disabled={!costHasEstimate(c)}
+                                  title={costHasEstimate(c) ? 'Tick để quyết toán dòng này' : 'Chưa có Dự toán — nhập Dự toán rồi mới quyết toán được'}
+                                  checked={costFinalSel.includes(Number(c.id))}
+                                  onChange={(e) => toggleCostFinal(Number(c.id), e.target.checked)} />
+                              : costPayable(c)
                               ? <input type="checkbox" checked={costSel.includes(Number(c.payable_id))} onChange={(e) => toggleCostSel(Number(c.payable_id), e.target.checked)} />
                               : <span title={Number(c.payable_id) > 0 ? 'Đã chi đủ' : 'Chưa thành công nợ (dòng mới chưa Lưu, chưa chọn NCC hoặc số tiền 0)'} style={{ color: 'var(--muted)' }}>—</span>}
                           </td>
@@ -1609,12 +1653,6 @@ export default function PurchaseOrderDetail() {
                             <button className="icon-btn" title="Chi tiết khoản chi phí" onClick={() => setEditingCostIdx(i)}>
                               <i className="ti ti-edit" style={{ fontSize: 16, color: 'var(--teal)' }} />
                             </button>
-                            {/* bao-CR-453 GĐ3: nút quyết toán dòng — hiện khi có id, chưa quyết toán, đơn chưa ở GĐ Quyết toán */}
-                            {!isNew && c.id && costStage < COST_STAGE_FINAL && Number(c.line_stage || 0) !== COST_STAGE_FINAL && can('purchase_order', 'write') && (
-                              <button className="icon-btn" title="Quyết toán dòng này" onClick={() => finalizeLineCost(Number(c.id))}>
-                                <i className="ti ti-circle-check" style={{ fontSize: 16, color: '#15803d' }} />
-                              </button>
-                            )}
                             {/* bao-CR-453 GĐ3: nút mở lại dòng đã quyết toán — hiện khi dòng đã QT, đơn chưa ở GĐ QT */}
                             {Number(c.line_stage || 0) === COST_STAGE_FINAL && costStage < COST_STAGE_FINAL && can('purchase_order', 'approve') && (
                               <button className="icon-btn" title="Mở lại dòng" onClick={() => { setCostReopenReason(''); setCostReopenTarget(Number(c.id)) }}>
@@ -1631,7 +1669,7 @@ export default function PurchaseOrderDetail() {
                         </td>
                       </tr>
                     ))}
-                    {importCosts.length === 0 && <tr><td colSpan={costPayReady ? 21 : 20} style={{ textAlign: 'center', color: '#999', padding: 14 }}>Chưa khai chi phí nào — bấm "Thêm chi phí" để bắt đầu</td></tr>}
+                    {importCosts.length === 0 && <tr><td colSpan={showCostTick ? 21 : 20} style={{ textAlign: 'center', color: '#999', padding: 14 }}>Chưa khai chi phí nào — bấm "Thêm chi phí" để bắt đầu</td></tr>}
                   </tbody>
                 </table>
               </div>

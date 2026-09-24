@@ -558,12 +558,16 @@ COST_STAGE_ADVANCE_ACTIONS = {CostStage.PROVISIONAL: "cost_stage_prov", CostStag
 
 def _fill_stage_from_previous(row, target: CostStage, po) -> bool:
     """Giai đoạn `target` của dòng chưa có số thì CHÉP số + tỷ giá của giai đoạn đã điền cao nhất
-    bên dưới sang (Dự toán → Tạm tính → Quyết toán). Trả True nếu có chép."""
-    if cost_amount_of(row, target) is not None:
+    bên dưới sang (Dự toán → Tạm tính → Quyết toán). Trả True nếu có chép.
+
+    bao-CR-478: số 0 cũng tính là «chưa có số» — bản cũ (v1) gửi ô bỏ trống thành 0
+    (`Number(x) || 0`), nên chỉ xét `None` thì luật chép không bao giờ chạy với dữ liệu nhập
+    từ v1. Cùng luật với `has_estimate`."""
+    if cost_amount_of(row, target):
         return False
     source = None
     for stage in sorted(CostStage, key=int, reverse=True):
-        if stage < target and cost_amount_of(row, stage) is not None:
+        if stage < target and cost_amount_of(row, stage):
             source = stage
             break
     if source is None:
@@ -681,6 +685,19 @@ def finalize_cost_line(db: Session, po: PurchaseOrder, cost_id: int, user_id: in
 COST_FINAL_NAMES_IN_LOG = 5
 
 
+def has_estimate(row) -> bool:
+    """bao-CR-478 — dòng đã có số Dự toán (khác rỗng, khác 0) — điều kiện để được quyết toán."""
+    return bool(cost_amount_of(row, CostStage.ESTIMATE))
+
+
+def count_costs_missing_estimate(db: Session, po: PurchaseOrder, cost_ids: list[int] | None = None) -> int:
+    """Trong các dòng được yêu cầu chốt (rỗng = cả đơn), bao nhiêu dòng CHƯA quyết toán vì thiếu
+    Dự toán — `finalize_cost_lines` bỏ qua chúng, controller nói ra cho người dùng biết."""
+    want = {int(cid) for cid in cost_ids} if cost_ids else None
+    return sum(1 for r in import_costs_of(db, po.id)
+               if (want is None or r.id in want) and not is_final_cost(r, po) and not has_estimate(r))
+
+
 def finalize_cost_lines(db: Session, po: PurchaseOrder, cost_ids: list[int] | None,
                         user_id: int) -> list[POCost]:
     """bao-CR-469 — Quyết toán NHIỀU dòng chi phí một lượt.
@@ -702,9 +719,25 @@ def finalize_cost_lines(db: Session, po: PurchaseOrder, cost_ids: list[int] | No
     else:
         chosen = rows
     todo = [r for r in chosen if not is_final_cost(r, po)]
+    # bao-CR-478 — dòng KHÔNG có Dự toán thì không được quyết toán (đại ca chốt 24/09/2026).
+    # BỎ QUA dòng đó và chốt phần còn lại, KHÔNG ném lỗi cả lượt: nút «Quyết toán tất cả» của v2
+    # gửi đích danh mọi id chưa chốt, ném 400 thì chỉ một dòng trống Dự toán là cả nút chết.
+    # Controller nói ra số dòng bị bỏ qua; chỉ khi không còn dòng nào chốt được mới báo lỗi.
+    no_estimate = [r for r in todo if not has_estimate(r)]
+    todo = [r for r in todo if has_estimate(r)]
     if not todo:
+        if no_estimate:
+            types = cost_type_map(db)
+            names = ", ".join(f"«{_cost_label(r, types)}»" for r in no_estimate[:COST_FINAL_NAMES_IN_LOG])
+            raise HTTPException(400, f"Dòng chưa có Dự toán thì không quyết toán được: {names}. "
+                                     f"Nhập số Dự toán trước rồi mới chốt.")
         raise HTTPException(400, "Không còn dòng chi phí nào để quyết toán")
     for row in todo:
+        # bao-CR-478 — chưa có Tạm tính LẪN Quyết toán thì chép Dự toán sang CẢ HAI cột; đã có
+        # Tạm tính thì Quyết toán chép từ Tạm tính (`_fill_stage_from_previous` lấy giai đoạn đã
+        # điền cao nhất bên dưới). Không bịa Tạm tính khi Quyết toán đã có số thật.
+        if not cost_amount_of(row, CostStage.FINAL):
+            _fill_stage_from_previous(row, CostStage.PROVISIONAL, po)
         _fill_stage_from_previous(row, CostStage.FINAL, po)
         row.line_stage = int(CostStage.FINAL)
         compute_cost_bases(row)
