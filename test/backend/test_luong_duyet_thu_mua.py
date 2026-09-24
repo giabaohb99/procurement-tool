@@ -87,8 +87,11 @@ def cho_phep_duyet_ycmh(monkeypatch):
 
 
 def _ycmh(db, seed, status="draft", code="PYC-N01-01"):
+    #  bao-CR-466: gửi duyệt đòi phiếu có Trưởng bộ phận — phòng mẫu chưa gán trưởng
+    #  nên điền sẵn ở đây, để bộ này vẫn chỉ kiểm LUẬT TRẠNG THÁI.
     pr = PurchaseRequest(code=code, company_id=seed.company_id, requester="Người YC",
                          requester_id=seed.emp_req_id, department="Phòng Test",
+                         head_of_dept_id=seed.emp_req_id,
                          status=status, created_by=seed.u_req_id, updated_by=seed.u_req_id)
     db.add(pr)
     db.flush()

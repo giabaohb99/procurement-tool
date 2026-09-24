@@ -100,6 +100,11 @@ _EDIT = (
     # bao-CR-453 — chi phí thu mua ba giai đoạn
     ActionCode("cost_stage_prov", "Chốt tạm tính chi phí thu mua", ACTION_GROUP_EDIT),
     ActionCode("cost_line_final", "Quyết toán riêng một dòng chi phí", ACTION_GROUP_EDIT),
+    # bao-CR-414 — chuyển phiếu sang phòng khác xử lý / trả về thu mua
+    ActionCode("transfer_dept", "Chuyển phòng xử lý", ACTION_GROUP_EDIT),
+    ActionCode("return_dept", "Trả phiếu về thu mua", ACTION_GROUP_EDIT),
+    # Sổ đồng bộ app cũ — xếp một dòng lỗi chạy lại
+    ActionCode("retry", "Xếp chạy lại đồng bộ", ACTION_GROUP_EDIT),
 )
 
 #  ---------------------------------------------------------------------

@@ -287,6 +287,12 @@ def _write_audit(db: Session, user_id: int, changes: list[tuple[str, str]]):
 
 
 def save(db: Session, values: dict, user_id: int) -> dict:
+    #  Kiểm + quy đổi MỌI ô trước khi đụng tới DB: một ô hỏng thì cả lần lưu
+    #  dừng lại, không có chuyện lưu được nửa chừng. Bước này của bao-CR-429 từng
+    #  rơi mất khi gộp bao-CR-461 từ `main` sang — `_normalize` còn đó nhưng không
+    #  ai gọi, nên "50 câu" lọt xuống bảng và `_cast` đọc ra 0 = không giới hạn.
+    values = {key: (_normalize(_FIELD_KEYS[key], val) if key in _FIELD_KEYS else val)
+              for key, val in (values or {}).items()}
     #  Gom chênh lệch TRƯỚC khi ghi — ghi xong thì giá trị cũ không còn ở đâu nữa.
     #  Không đổi gì thì KHÔNG đẻ dòng nhật ký: bấm Lưu hai lần vẫn chỉ một dấu vết.
     changes = _collect_changes(values)

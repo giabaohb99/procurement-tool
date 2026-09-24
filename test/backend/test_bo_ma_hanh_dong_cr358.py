@@ -82,6 +82,13 @@ DYNAMIC_ACTION_SITES: dict[str, tuple[str, ...]] = {
     "modules/purchase_request/option_service.py::choose_option": (
         "option_choose", "option_unchoose"),
     "modules/purchase_request/service.py::set_status": ("submitted", "approved", "rejected"),
+    #  bao-CR-414: về 0 là trả về thu mua, khác 0 là chuyển sang phòng khác.
+    "modules/purchase_request/service.py::transfer_handler_dept": ("transfer_dept", "return_dept"),
+    "modules/survey_request/service.py::transfer_handler_dept": ("transfer_dept", "return_dept"),
+    #  bao-CR-453: chốt lên giai đoạn nào thì ghi mã của giai đoạn đó.
+    "modules/purchase_order/service.py::advance_cost_stage": ("cost_stage_prov", "cost_stage_final"),
+    #  bao-CR-448: việc nền báo bất thường, `action` là hằng của module.
+    "modules/system_log/anomaly.py::raise_alert": ("anomaly_alert",),
     "modules/seal_request/approval_bridge.py::_write_log": ("approve", "cancel", "update"),
     "modules/survey/service.py::set_status": (
         "submitted", "approved", "rejected", "cancelled"),

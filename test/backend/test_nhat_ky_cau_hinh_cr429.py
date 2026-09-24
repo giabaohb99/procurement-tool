@@ -143,12 +143,12 @@ def test_dong_audit_ke_ten_o_da_doi(db, ctx):
     assert "Endpoint" in dong.message
 
 
-def test_khong_o_nao_doi_thi_noi_thang(db, ctx):
-    """Bấm Lưu mà không sửa gì cũng để lại dấu, nhưng nói rõ là không đổi gì."""
+def test_khong_o_nao_doi_thi_khong_de_dong_nhat_ky(db, ctx):
+    """bao-CR-461 đổi luật: bấm Lưu mà không sửa gì thì KHÔNG ghi dòng nào —
+    màn hình gửi lại mọi ô mỗi lần lưu, ghi cả lần không đổi thì sổ hết đọc được."""
     service.save(db, {}, user_id=7)
 
-    dong = db.query(AuditLog).filter(AuditLog.entity == "setting").all()[-1]
-    assert "không ô nào đổi" in dong.message
+    assert db.query(AuditLog).filter(AuditLog.entity == "setting").count() == 0
 
 
 # ---------------------------------------------------------------------------

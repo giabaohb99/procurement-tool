@@ -12,7 +12,7 @@ controller. Ba kiểu dưới đây có chung một đặc điểm khó chịu: 
 ────────────────────────────────────────────────────────────────────────────────
 A. BẢNG PHÂN LOẠI 67 LẦN GỌI `db.get(` TRONG TỆP CONTROLLER
 ────────────────────────────────────────────────────────────────────────────────
-`DB_GET_TRONG_CONTROLLER` dưới đây phân loại **đủ 67 lần**, không dòng nào còn
+`DB_GET_TRONG_CONTROLLER` dưới đây phân loại **đủ 88 lần**, không dòng nào còn
 nhãn "chưa rà". Bài kiểm A1 đối chiếu bảng này với mã nguồn THẬT, nên thêm một
 lần `db.get` vào bất kỳ controller nào cũng làm đỏ và buộc người thêm phải phân
 loại nó.
@@ -185,20 +185,25 @@ DB_GET_TRONG_CONTROLLER: dict[str, list[tuple[str, str]]] = {
     ],
     # ── Đăng nhập ────────────────────────────────────────────────────────────
     "auth/controller.py": [
-        (OK_KHONG_CAN, "L63 `Employee` của CHÍNH MÌNH (`/me`)"),
-        (OK_KHONG_CAN, "L170 `LoginSession` lúc đăng xuất — id lấy từ NGỮ CẢNH lượt gọi "
+        (OK_KHONG_CAN, "L68 `Employee` của CHÍNH MÌNH (`/me`)"),
+        (OK_KHONG_CAN, "L183 `LoginSession` lúc đăng xuất — id lấy từ NGỮ CẢNH lượt gọi "
                        "(`ctx.session_id`, do chính cửa chặn điền), không nhận từ người dùng"),
-        (OK_KHONG_CAN, "L191 `User` từ refresh token — chính chủ"),
-        (OK_KHONG_CAN, "L320 `Employee` trong quên-mật-khẩu, tra theo email đã nhập"),
-        (OK_KHONG_CAN, "L344 `User` từ reset token — chính chủ"),
+        (OK_KHONG_CAN, "L204 `User` từ refresh token — chính chủ"),
+        (OK_KHONG_CAN, "L258 `Employee` của CHÍNH MÌNH lúc tự đổi mật khẩu — lấy mã nhân "
+                       "sự để cấm đặt mật khẩu trùng mã (bao-CR-405)"),
+        (OK_KHONG_CAN, "L350 `Employee` trong quên-mật-khẩu, tra theo email đã nhập"),
+        (OK_KHONG_CAN, "L374 `User` từ reset token — chính chủ"),
+        (OK_KHONG_CAN, "L382 `Employee` của chủ reset token — lấy mã nhân sự cho luật "
+                       "mật khẩu (bao-CR-405), kiểm SAU khi vé đã hợp lệ"),
     ],
     "backup/controller.py": [
         (OK_KHONG_CAN, "L47 `DbBackup` — `backup` khai PUBLIC, quyền HÀNH ĐỘNG toàn hệ"),
     ],
     "category_assignee/controller.py": [
-        (OK_KHONG_CAN, "L21 `ItemGroup` — PUBLIC, tra tên hiển thị"),
-        (OK_KHONG_CAN, "L22 `Employee` — tra tên NSTM chính"),
-        (OK_KHONG_CAN, "L23 `Employee` — tra tên NSTM dự phòng"),
+        (OK_KHONG_CAN, "L22 `ItemGroup` — PUBLIC, tra tên hiển thị"),
+        (OK_KHONG_CAN, "L23 `Employee` — tra tên NSTM chính"),
+        (OK_KHONG_CAN, "L24 `Employee` — tra tên NSTM dự phòng"),
+        (OK_KHONG_CAN, "L25 `Department` — tra tên phòng xử lý (bao-CR-414), danh mục PUBLIC"),
     ],
     "seal_clerk/controller.py": [
         (OK_KHONG_CAN, "L~ `Employee` — tra tên/mã văn thư để hiển thị; danh mục CẤU HÌNH, "
@@ -248,9 +253,12 @@ DB_GET_TRONG_CONTROLLER: dict[str, list[tuple[str, str]]] = {
     ],
     # ── Nhân sự ──────────────────────────────────────────────────────────────
     "employee/controller.py": [
-        (OK_DA_KIEM, "L192 `POST /employees/{eid}/set-password` — L184 "
+        (OK_KHONG_CAN, "L71 `GET /employees/me` — id lấy từ `user.employee_id` của CHÍNH "
+                       "người đang đăng nhập, không nhận từ URL; trường nhạy cảm vẫn qua "
+                       "`sensitive.mask`"),
+        (OK_DA_KIEM, "L242 `POST /employees/{eid}/set-password` — "
                      "`_block_set_password_out_of_scope` → `get_scoped(..., \"write\")` "
-                     "(L171-173). ĐÃ VÁ 05/09/2026 (commit 4c1ecaa); trước đó cửa này "
+                     "chạy trước. ĐÃ VÁ 05/09/2026 (commit 4c1ecaa); trước đó cửa này "
                      "chỉ có `require(\"employee\", \"write\")` nên `employee.write` "
                      "phạm vi *own* đặt được mật khẩu tài khoản quản trị. Ca A2/A3 canh "
                      "không tái phát."),
@@ -284,12 +292,18 @@ DB_GET_TRONG_CONTROLLER: dict[str, list[tuple[str, str]]] = {
     ],
     "leave/request_controller.py": [
         (OK_KHONG_CAN, "L5 — dòng DOCSTRING nhắc tên `db.get()`, không phải một lời gọi"),
-        (OK_DA_KIEM, "L103 `_readable_by_approver` — L101 `approval_bridge."
+        (OK_DA_KIEM, "L122 `_readable_by_approver` — ngay trên là `approval_bridge."
                      "can_read_request` (nới đúng lúc có việc TASK_PENDING)"),
-        (OK_KHONG_CAN, "L262 `LeaveType` — PUBLIC, dùng để ước tính số ngày"),
-        (OK_KHONG_CAN, "L274 — dòng DOCSTRING của `_ensure_balance_in_scope` kể lại "
+        (OK_KHONG_CAN, "L154 `Employee` người đã duyệt — chỉ lấy tên, tờ đơn đã qua "
+                       "`_get_or_404`"),
+        (OK_KHONG_CAN, "L166 `Employee` người nghỉ của chính tờ đơn đã qua `_get_or_404` — "
+                       "chức vụ + số điện thoại liên hệ"),
+        (OK_KHONG_CAN, "L172 `Department` — tên phòng, danh mục PUBLIC"),
+        (OK_KHONG_CAN, "L175 `Company` — tên pháp nhân, danh mục PUBLIC"),
+        (OK_KHONG_CAN, "L316 `LeaveType` — PUBLIC, dùng để ước tính số ngày"),
+        (OK_KHONG_CAN, "L341 — dòng DOCSTRING của `_ensure_balance_in_scope` kể lại "
                        "rằng `resolve_leave_taker` là `db.get(Employee, ...)` trần; "
-                       "chốt thật là `get_scoped(..., \"leave_balance\")` ở L292 "
+                       "chốt thật là `get_scoped(..., \"leave_balance\")` ngay dưới "
                        "(vá 05/09/2026, ca A6d cụm 06)"),
     ],
     # ── Phòng họp ────────────────────────────────────────────────────────────
@@ -311,7 +325,12 @@ DB_GET_TRONG_CONTROLLER: dict[str, list[tuple[str, str]]] = {
                        "`service.get_po` (= D3 cụm 03)"),
     ],
     "purchase_request/controller.py": [
-        (OK_KHONG_CAN, "L828 `db.get(Survey)` — tra tên/thông tin phiếu khảo sát cho ô chọn "
+        (OK_KHONG_CAN, "L191 `User` — `_purchasing_head`: id người điều phối lấy từ chính "
+                       "phiếu đã qua cổng phạm vi, chỉ để in tên trưởng phòng thu mua"),
+        (OK_KHONG_CAN, "L192 `Employee` — hồ sơ của người điều phối đó, cùng lý do L191"),
+        (OK_KHONG_CAN, "L193 `Department` — phòng của người điều phối, danh mục PUBLIC"),
+        (OK_KHONG_CAN, "L194 `Employee` — trưởng phòng đó, lấy tên + chữ ký in lên phiếu"),
+        (OK_KHONG_CAN, "L1063 `db.get(Survey)` — tra tên/thông tin phiếu khảo sát cho ô chọn "
                        "kho khảo sát; phạm vi đã hỏi ở `_open_line(..., \"write\")` trên PR nền, "
                        "khảo sát là dữ liệu tham chiếu (cùng khuôn survey_request L539)."),
     ],
@@ -327,6 +346,20 @@ DB_GET_TRONG_CONTROLLER: dict[str, list[tuple[str, str]]] = {
     ],
     "ticket/controller.py": [
         (OK_KHONG_CAN, "L44 `User` — tra tên hiển thị người tạo/xử lý"),
+    ],
+    # ── Phiên đăng nhập (bao-CR-394/395) + Báo cáo thực hiện YCBG (bao-CR-388) ──
+    "login_session/controller.py": [
+        (OK_DA_KIEM, "L134 `User` của `logout-all` — ngay sau đó `_assert_user_in_scope` "
+                     "soi phạm vi `delete` trên dòng phiên của người đó; ngoài phạm vi "
+                     "cũng trả 404 nên không dò được tài khoản nào có thật"),
+        (OK_DA_KIEM, "L157 `User` của `/history` — cùng chốt `_assert_user_in_scope`, "
+                     "action `read`"),
+    ],
+    "survey_request/report_controller.py": [
+        (OK_KHONG_CAN, "L81 `SurveyReportItem` — chỉ lấy tên nút cho câu lịch sử; "
+                       "`_writable_sr` đã gác phiếu và `apply_template` đã chạy "
+                       "`_check_refs` (nút phải thuộc đúng phiếu) TRƯỚC dòng này"),
+        (OK_KHONG_CAN, "L83 `SurveyReportPhase` — tên giai đoạn, cùng lý do L81"),
     ],
     # ── Tài khoản ────────────────────────────────────────────────────────────
     "user/controller.py": [
@@ -368,7 +401,7 @@ def test_a1_bang_65_lan_db_get_trong_controller_da_phan_loai_du():
     controller** — thêm là đỏ, và người thêm phải viết ra một trong ba nhãn kèm
     lý do đọc được.
 
-    Số hôm nay: **67** lần trên 27 tệp / 26 module (ba trong số đó là dòng
+    Số hôm nay: **88** lần trên 29 tệp / 28 module (ba trong số đó là dòng
     docstring, đã ghi rõ trong bảng). Đợt vá phạm vi 05/09/2026 làm con số nhích
     từ 64 lên 65 (07/09/2026): `leave/catalog_controller.py` tra loại nghỉ ĐÍCH
     của «quy đổi số dư cuối năm» — danh mục PUBLIC nên không cần lọc phạm vi.
@@ -402,7 +435,15 @@ def test_a1_bang_65_lan_db_get_trong_controller_da_phan_loai_du():
     #    `coffee_member` + `get_scoped`, hồ sơ chỉ để hiển thị.
     #  · `seal_clerk/controller.py` (Phân công văn thư) +2 — tra tên NV + tên công
     #    ty để hiển thị; danh mục cấu hình, không cần lọc phạm vi.
-    assert sum(that.values()) == 72, f"tổng phải là 72, đang là {sum(that.values())}"
+    #  72 → 88 khi rà trước đợt lên prod 24/09/2026 — 16 lần gọi mới, đều là tra
+    #  phụ SAU chốt phạm vi hoặc dữ liệu của chính người gọi (từng dòng ghi ở bảng):
+    #  · `login_session/controller.py` +2 (bao-CR-394/395) — `_assert_user_in_scope`;
+    #  · `survey_request/report_controller.py` +2 (bao-CR-388) — tên nút / giai đoạn;
+    #  · `auth/controller.py` +2 (bao-CR-405) — mã nhân sự cho luật mật khẩu;
+    #  · `purchase_request/controller.py` +4 — tên + chữ ký trưởng phòng thu mua;
+    #  · `leave/request_controller.py` +4 — tên người duyệt / phòng / pháp nhân;
+    #  · `employee/controller.py` +1 (`/employees/me`) · `category_assignee` +1.
+    assert sum(that.values()) == 88, f"tổng phải là 88, đang là {sum(that.values())}"
 
 
 def test_a1b_moi_dong_deu_co_nhan_hop_le_va_ly_do_that():

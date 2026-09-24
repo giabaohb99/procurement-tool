@@ -762,7 +762,11 @@ def test_c1_cong_no_danh_sach_va_o_tong_cung_bo_theo_phap_nhan(world, two_compan
     assert rows["total"] == 1
 
     tong = unwrap(summary(request=make_request(year=YEAR), db=world.db, user=a1.user))
-    assert tong == {"total": 1000.0, "paid": 0.0, "remaining": 1000.0, "overdue": 0.0}
+    #  bao-CR-414 GĐ4: bốn khóa gốc là "PHẦN CỦA TÔI" (gác phạm vi, phải khớp danh
+    #  sách); `all` là tổng nợ NCC CỐ Ý không gác phạm vi, `partial` báo hai bộ lệch.
+    mine = {k: tong[k] for k in ("total", "paid", "remaining", "overdue")}
+    assert mine == {"total": 1000.0, "paid": 0.0, "remaining": 1000.0, "overdue": 0.0}
+    assert tong["partial"] is True
 
 
 def test_c2_go_thang_id_khoan_no_ngoai_pham_vi_vao_URL_khong_ra(world, two_company_data):

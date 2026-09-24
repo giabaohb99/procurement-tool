@@ -679,7 +679,10 @@ def test_c1_nhat_ky_he_thong_khong_con_cho_nguoi_khong_grant_doc_het(db, world):
     from app.core.audit import record
     from app.modules.audit.controller import list_logs
 
-    assert "audit" not in ENTITIES, "đã thêm khóa `audit` → cập nhật bài kiểm này"
+    #  bao-CR-407 thêm khóa `audit` vào ENTITIES (khai PUBLIC): nó chỉ là khóa
+    #  cấp cho LỐI DUYỆT TOÀN HỆ, cùng vai với `setting` — `_guard` nhận một trong
+    #  hai. Vế dưới vẫn đúng: người không grant nào thì không đọc được gì.
+    assert "audit" in ENTITIES
 
     record(db, world.actor("b1").user.id, "leave_request", 77, "approve",
            "Duyệt phiếu NP-B-001 của Nhân sự b1")
@@ -1243,6 +1246,10 @@ E2_CUA_GAC_CUA_TUNG_TOOL = {
     "top_suppliers_by_purchase": "ctx.can(supplier) — bảng lịch sử giá, số gộp",
     "purchase_report": "ctx.can(product) (+supplier) — bảng lịch sử giá, số gộp",
     "analytics_query": "ctx.can(product); chiều `supplier` đòi thêm ctx.can(supplier)",
+    # (a-ter) dữ liệu THỊ TRƯỜNG ngoài công ty (tờ khai hải quan, bao-CR-470) — không
+    #  có chủ sở hữu nên khai PUBLIC; cổng duy nhất là khóa đọc của màn Tra cứu giá.
+    "customs_price_stats": "ctx.can(customs_price, read) — dữ liệu hải quan, PUBLIC",
+    "customs_buy_timing": "ctx.can(customs_price, read) — dữ liệu hải quan, PUBLIC",
     # (b) dữ liệu của CHÍNH người hỏi — lọc bằng employee_id/user_id, không phải phạm vi
     "my_approval_tasks": "task_service.my_tasks(employee_id) — hộp việc của chính mình",
     "my_requests_status": "lọc theo started_by_employee_id — phiếu chính mình trình",
@@ -1256,6 +1263,9 @@ E2_CUA_GAC_CUA_TUNG_TOOL = {
     "draft_survey_request": "ctx.can(survey_request, create) — chỉ soạn nháp",
     "draft_purchase_request": "ctx.can(purchase_request, create) — chỉ soạn nháp",
     "draft_leave_request": "ctx.can(leave_request, create) — chỉ soạn nháp",
+    "propose_account_setup": "ctx.can(user/role…) + apply_scope(Employee) + get_scoped "
+                             "tài khoản đích + chặn tự nâng quyền — chỉ đề xuất, bước "
+                             "confirm mới ghi (bao-CR-435)",
     # (d) không tra thêm dữ liệu nào
     "export_report_file": "dựng tệp từ kết quả tool khác (đã qua apply_scope)",
     "export_excel_file": "cùng lý do export_report_file",

@@ -33,7 +33,8 @@ def test_cot_dung_ngay_sau_vat_o_ca_hai_file():
     progress_keys = [c.key for c in pex.columns_for(show_supplier=True)]
     i = progress_keys.index("vat")
     assert progress_keys[i + 1] == "price_after_vat"
-    assert progress_keys[i + 2] == "order_amount"
+    #  bao-CR-439 chèn hai cột Đồng tiền + Tỷ giá giữa đơn giá sau VAT và Thành tiền ĐH.
+    assert progress_keys[i + 2:i + 5] == ["currency", "exchange_rate", "order_amount"]
 
     dmh_keys = [c.key for c in po_ex.line_columns(show_supplier=True)]
     j = dmh_keys.index("vat")
