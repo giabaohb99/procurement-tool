@@ -347,8 +347,8 @@ def _research_command(db: Session, chat_id: str, text: str, *, allow_docs: bool)
 def run_research(db: Session, chat_id: str, question: str, mode: str) -> None:
     """Một lượt nghiên cứu: gọi `research.run`, ghi sổ chi phí, nhắn kết quả + nguồn."""
     if not question:
-        reply(db, chat_id, "Nhắn kèm câu cần tra, ví dụ <code>/tim thuế nhập khẩu thép 2026</code> · "
-              "<code>/kiemchung hóa đơn điện tử phải xuất trong ngày</code>.")
+        reply(db, chat_id, "Đại ca nhắn luôn điều cần tra, ví dụ «tìm hiểu giúp anh thuế nhập khẩu thép "
+              "2026» hoặc «có đúng là hóa đơn điện tử phải xuất trong ngày không».")
         return
     telegram.send_chat_action(chat_id)
     run = start_run(db, 0, STAGE_RESEARCH)
@@ -370,7 +370,28 @@ def run_research(db: Session, chat_id: str, question: str, mode: str) -> None:
                     "sources": sources}
     db.commit()
     reply(db, chat_id, (text or "(không có câu trả lời)") + research.sources_markdown(sources)
-          + "\n\n_Nhắn /word để nhận bản Word._", markdown=True, action=ACT_RESEARCH)
+          + "\n\n_Muốn bản Word thì nhắn «xuất Word»._", markdown=True, action=ACT_RESEARCH)
+
+
+#  «xuất word giúp anh», «gửi bản word», «cho file word» — chỉ khi chat này VỪA tra xong (trong
+#  RESEARCH_WORD_WINDOW) và câu ngắn: «xuất word báo cáo công nợ tháng 9» là việc của Trợ lý ERP.
+_WORD_Q = re.compile(r"(?<!\w)word(?!\w)")
+RESEARCH_WORD_WINDOW = timedelta(minutes=30)
+
+
+def _word_by_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> bool:
+    low = text.strip().lower()
+    if len(low.split()) > 8 or not _WORD_Q.search(low):
+        return False
+    runs = db.scalars(select(AgentRun).where(AgentRun.stage == STAGE_RESEARCH, AgentRun.status == RUN_OK,
+                                             AgentRun.started_at >= datetime.now() - RESEARCH_WORD_WINDOW)
+                      .order_by(AgentRun.id.desc()).limit(20)).all()
+    if not any(isinstance(r.artifact, dict) and r.artifact.get("chat_id") == chat_id for r in runs):
+        return False
+    row.action = ACT_COMMAND
+    db.commit()
+    export_research_word(db, chat_id)
+    return True
 
 
 def export_research_word(db: Session, chat_id: str) -> None:
@@ -379,7 +400,8 @@ def export_research_word(db: Session, chat_id: str) -> None:
                       .order_by(AgentRun.id.desc()).limit(50)).all()
     art = next((r.artifact for r in runs if isinstance(r.artifact, dict) and r.artifact.get("chat_id") == chat_id), None)
     if not art:
-        reply(db, chat_id, "Chat này chưa có lượt tìm hiểu nào để xuất Word. Nhắn <code>/tim …</code> trước.")
+        reply(db, chat_id, "Chat này chưa có lần tìm hiểu nào để xuất Word. Đại ca nhắn điều cần tìm trước, "
+              "ví dụ «tìm hiểu giúp anh …».")
         return
     data = research.build_docx(art.get("mode", research.MODE_WEB), art.get("question", ""),
                                art.get("text", ""), art.get("sources") or [])
@@ -556,12 +578,43 @@ def _handle_other_chat(db: Session, msg: dict, chat_id: str, text: str) -> bool:
             return True
     if low.startswith("/") and not low.startswith("/hoi"):
         row.action = ACT_COMMAND
-        reply(db, chat_id, f"Em là <b>{BOT_NAME}</b>. Cứ nhắn câu hỏi về dữ liệu ERP, em trả lời theo quyền "
-              "tài khoản của anh/chị. <code>/taikhoan</code> xem tài khoản đang dùng, "
-              "<code>/dangxuat</code> để đăng xuất.")
+        reply(db, chat_id, f"Em là <b>{BOT_NAME}</b>. Anh/chị cứ nhắn bình thường: hỏi số liệu ERP (em trả lời "
+              "theo quyền tài khoản của anh/chị), nhờ tìm hiểu một chủ đề trên mạng, hỏi một thông tin có đúng "
+              "không, hay «xuất Word» bản vừa tìm. Đăng xuất: <code>/dangxuat</code>.")
         return True
-    answer_question(db, chat_id, text[4:].strip() if low.startswith("/hoi") else text, before_id=row.id)
+    if low.startswith("/hoi"):
+        answer_question(db, chat_id, text[4:].strip(), before_id=row.id)
+        return True
+    _route_linked_text(db, chat_id, row, text)
     return True
+
+
+def _route_linked_text(db: Session, chat_id: str, row: AgentMessage, text: str) -> None:
+    """Tin chữ thường của người đã liên kết (ai-CR-045): hiểu bằng chữ, không bắt gõ lệnh.
+
+    «Xuất Word» sau một lần tra → gửi Word; ý định `tra_cuu` → tìm web / kiểm chứng (tài liệu kỹ thuật
+    dự án KHÔNG mở cho họ, hạ về tìm web); mọi ý định khác → Trợ lý ERP dưới quyền của chính họ. Họ
+    không giao được việc sửa mã và không thao tác được việc của bot, nên «viec» / «thao_tac» cũng về Trợ lý.
+    """
+    if _word_by_text(db, chat_id, row, text):
+        return
+    run = start_run(db, 0, STAGE_INTENT)
+    try:
+        data, result = manager.run_intent(text, context=_intent_context(db, chat_id, row.id))
+    except Exception as e:  # noqa: BLE001 — phân loại hỏng thì cứ để Trợ lý trả lời
+        finish_run(db, run, error=str(e))
+        db.commit()
+        log.warning("agent_hub: phân loại tin người liên kết hỏng, chuyển Trợ lý")
+        answer_question(db, chat_id, text, before_id=row.id)
+        return
+    finish_run(db, run, result=result)
+    db.commit()
+    if data["intent"] == manager.INTENT_RESEARCH:
+        kind = data.get("kind") or research.MODE_WEB
+        run_research(db, chat_id, data.get("query") or text,
+                     research.MODE_WEB if kind == research.MODE_DOCS else kind)
+        return
+    answer_question(db, chat_id, text, before_id=row.id)
 
 
 def _run_command(db: Session, chat_id: str, text: str) -> None:
@@ -592,16 +645,14 @@ def _run_command(db: Session, chat_id: str, text: str) -> None:
             reply(db, chat_id, "Không có tin nào đang chờ gom.")
     else:
         reply(db, chat_id,
-              f"Em là <b>{BOT_NAME}</b>. "
-              "Cứ nhắn bình thường, em tự hiểu: <b>hỏi</b> hay <b>nhờ làm việc gì</b> "
-              "trên hệ thống thì em làm ngay, <b>nhờ sửa phần mềm</b> thì em ghi thành việc.\n"
-              "Đường tắt nếu muốn chắc: <b>/hoi</b> ép trả lời · <b>/ds</b> việc đang mở · "
-              "<b>/xem AI-0006</b> lịch sử một việc, kể cả việc đã đóng · <b>/gom</b> gom ngay.\n"
-              "<b>/chiphi</b> chi phí bot (kèm mã việc để xem một việc).\n"
-              "Nghiên cứu: <b>/tim</b> tìm hiểu trên mạng · <b>/kiemchung</b> xét một nhận định · "
-              "<b>/tailieu</b> hỏi tài liệu dự án · <b>/word</b> xuất bản Word lượt vừa tra.\n"
-              "Tài khoản ERP: <b>/taikhoan</b> xem đang dùng tài khoản nào · <b>/dangnhap &lt;mã&gt;</b> "
-              "đổi tài khoản (lấy mã ở Trang cá nhân → Telegram) · <b>/dangxuat</b>.")
+              f"Em là <b>{BOT_NAME}</b>. Đại ca cứ nhắn bình thường, em tự hiểu, ví dụ:\n"
+              "• «3 đơn mua hàng gần nhất» — em tra số liệu ERP\n"
+              "• «màn công nợ lọc sai ngày» — em ghi thành việc sửa phần mềm\n"
+              "• «tìm hiểu giúp anh thuế nhập khẩu thép» · «có đúng là … không» — em tìm trên mạng, kèm nguồn\n"
+              "• «xuất Word giúp anh» — bản Word của lần tìm vừa rồi\n"
+              "• «AI-0007 xong chưa» · «tháng này bot tốn bao nhiêu» · «tài khoản anh đang dùng là gì»\n"
+              "Lệnh gõ tắt vẫn dùng được nếu muốn chắc (/ds · /xem · /chiphi · /tim · /word · /taikhoan), "
+              "trừ đăng nhập phải nhắn <b>/dangnhap &lt;mã&gt;</b> (lấy mã ở Trang cá nhân → Telegram).")
 
 
 #  Bot vừa hỏi lại mà đại ca nhắn tiếp trong khoảng này thì tin đó LÀ CÂU TRẢ LỜI, không
@@ -647,6 +698,7 @@ def _route_plain_text(db: Session, chat_id: str, row: AgentMessage, text: str) -
     #  Lệnh gõ bằng chữ trên một việc (ai-CR-027): «gộp AI-0007», «duyệt», «xong»… Đi TRƯỚC mạch trả
     #  lời kế hoạch: đang bị hỏi lại mà nhắn «bỏ việc này» là bỏ, không phải câu trả lời.
     if (_choice_by_text(db, chat_id, row, text) or _confirm_by_text(db, chat_id, row, text)
+            or _word_by_text(db, chat_id, row, text)
             or _cost_by_text(db, chat_id, row, text) or route_task_command(db, chat_id, row, text)):
         return
     #  Trạm kế hoạch vừa hỏi lại (ai-CR-015): tin kế là câu trả lời CỦA VIỆC ĐÓ, không phải việc mới.

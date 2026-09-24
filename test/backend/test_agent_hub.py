@@ -4106,6 +4106,7 @@ def test_dang_nhap_bang_ma_roi_hoi_duoi_quyen_cua_minh(db, bot, monkeypatch):
     from app.modules.agent_hub.model import AgentMessage
 
     service, sent, asked = bot
+    _fake_intent(monkeypatch, service, "hoi")      # ai-CR-045: tin người liên kết cũng đi đọc ý định
     lan = _erp_user(db)
     seen_users: list[str] = []
     monkeypatch.setattr(service, "answer_question",
@@ -4412,7 +4413,7 @@ def test_word_xuat_lan_tra_gan_nhat_cua_chinh_chat_do(db, bot, monkeypatch):
     monkeypatch.setattr(service.telegram, "send_document",
                         lambda chat_id, name, data, **kw: docs.append((chat_id, name, data)) or 9)
     service.handle_message(db, _msg("/word"))
-    assert "chưa có lượt tìm hiểu nào" in sent[-1] and docs == []
+    assert "chưa có lần tìm hiểu nào" in sent[-1] and docs == []
     service.handle_message(db, _msg("/tim giá thép tháng 9"))
     service.handle_message(db, _msg("/word"))
     chat_id, name, data = docs[-1]
@@ -4449,3 +4450,53 @@ def test_tai_lieu_noi_bo_chi_tra_loi_tu_doan_tra_duoc_va_nguoi_lien_ket_khong_du
     service.handle_message(db, _other_msg(f"/dangnhap {code}"))
     service.handle_message(db, _other_msg("/tailieu cấu trúc bảng công nợ"))
     assert "chỉ dành cho quản trị" in sent[-1]
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-045: nhắn bình thường, không cần gõ lệnh
+# ---------------------------------------------------------------------------
+def test_xuat_word_bang_chu_sau_khi_vua_tra(db, bot, monkeypatch):
+    from app.modules.agent_hub import research
+
+    service, sent, _ = bot
+    _fake_gemini_search(monkeypatch, research, text="- Ý một")
+    docs: list[str] = []
+    monkeypatch.setattr(service.telegram, "send_document", lambda chat_id, name, data, **kw: docs.append(name) or 9)
+    monkeypatch.setattr(service.manager, "run_intent", lambda *a, **kw: pytest.fail("xuất Word không đi phân loại"))
+    service.handle_message(db, _msg("/tim giá thép tháng 9"))
+    assert "nhắn «xuất Word»" in sent[-1]
+    service.handle_message(db, _msg("xuất word giúp anh"))
+    assert docs == ["nghien-cuu.docx"]
+
+
+def test_cau_co_chu_word_cua_nghiep_vu_erp_khong_bi_bat_nham(db, bot, monkeypatch):
+    service, _, asked = bot
+    docs: list[str] = []
+    monkeypatch.setattr(service.telegram, "send_document", lambda *a, **kw: docs.append("x") or 9)
+    _fake_intent(monkeypatch, service, "hoi")
+    service.handle_message(db, _msg("xuất word giúp anh"))                         # chưa tra gì: không bắt
+    service.handle_message(db, _msg("xuất word báo cáo công nợ nhà cung cấp tháng 9 theo từng pháp nhân"))
+    assert docs == [] and len(asked) == 2
+
+
+def test_nguoi_lien_ket_nhan_binh_thuong_cung_duoc_tra_cuu(db, bot, monkeypatch):
+    from app.modules.agent_hub import chat_link, research
+    from app.modules.assistant.provider.base import ChatResult
+
+    service, sent, asked = bot
+    lan = _erp_user(db)
+    code, _ = chat_link.issue_code(db, lan.id)
+    service.handle_message(db, _other_msg(f"/dangnhap {code}"))
+    ket_qua = ChatResult(text="", provider="agent_gemini", model="x", input_tokens=0, output_tokens=0)
+    intents = iter([
+        ({"intent": "tra_cuu", "kind": "tai_lieu", "query": "quy trình duyệt"}, ket_qua),   # tài liệu kỹ thuật -> hạ về web
+        ({"intent": "viec", "reason": ""}, ket_qua),                                           # không giao việc được -> Trợ lý
+    ])
+    monkeypatch.setattr(service.manager, "run_intent", lambda *a, **kw: next(intents))
+    seen: list[dict] = []
+    _fake_gemini_search(monkeypatch, research, text="Tóm tắt.", seen=seen)
+    service.handle_message(db, _other_msg("tìm hiểu giúp em quy trình duyệt"))
+    assert seen and seen[0]["tools"] == [{"google_search": {}}] and "Tóm tắt." in sent[-1]
+    service.handle_message(db, _other_msg("thêm cột ngày vào màn công nợ"))
+    assert asked == ["thêm cột ngày vào màn công nợ"]
+    assert not db.query(service.AgentTask).count()                                      # không đẻ việc sửa mã

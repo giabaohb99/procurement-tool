@@ -3155,6 +3155,20 @@ Mã nguồn: `frontend-v2/src/modules/approval-seal/components/seal-clerk-detail
 Commit: `5fbce75a` trên nhánh `erp-v2`.
 
 
+## ai-CR-045 | Nhắn bình thường với Đậu Đậu, không cần gõ lệnh
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Đại ca không thích gõ lệnh có dấu gạch chéo. Chat của đại ca vốn đã hiểu câu tự nhiên, nay bịt nốt ba chỗ
+còn bắt gõ lệnh: nhắn xuất Word ngay sau khi vừa tìm hiểu thì bot gửi bản Word luôn, còn câu dài về báo cáo
+nghiệp vụ vẫn chuyển cho Trợ lý ERP; người khác đã đăng nhập bằng mã nhắn tìm hiểu hay hỏi đúng sai một
+thông tin cũng được bot tự hiểu và tra trên mạng, các câu còn lại đi Trợ lý ERP theo quyền của họ; và mọi câu
+hướng dẫn của bot nay nói bằng ví dụ câu thường, lệnh chỉ còn là đường tắt. Riêng đăng nhập vẫn phải nhắn
+lệnh kèm mã vì mã cần gõ đúng. Cả tệp bài kiểm của bot 189/189 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/service.py` (`_word_by_text`, `_route_linked_text`, `_run_command`) · `test/backend/test_agent_hub.py` · `change-log-ai.md`.
+
 ## ai-CR-044 | Đậu Đậu tra cứu trên mạng, kiểm chứng thông tin và xuất Word
 - status: xong
 - date: 2026-09-24
