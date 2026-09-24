@@ -3175,6 +3175,21 @@ Mã nguồn: `frontend-v2/src/modules/approval-seal/components/seal-clerk-detail
 Commit: `5fbce75a` trên nhánh `erp-v2`.
 
 
+## ai-CR-050 | Ghi kế hoạch trợ lý mở qua MCP và quyền ra lệnh sửa mã
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Đại ca chốt hướng mở trợ lý: mỗi người tự chọn ứng dụng AI và tự gắn khóa của mình, hệ thống chỉ cung cấp
+công cụ qua một cổng MCP trên backend ERP, mỗi người tự nối Google Drive và Lịch của họ, làm trên web trước
+rồi mở rộng ra Telegram và Zalo. Em ghi thành tám mục vào danh sách tính năng, kèm quyết định và rủi ro dữ
+liệu đại ca đã chấp nhận. Phần ai được ra lệnh cho bot sửa mã thì không đưa lên giao diện web: em đề xuất một
+tệp cấu hình trong kho mã liệt kê người và cấp được phép, đổi bằng commit để git lưu vết, cùng khóa GitHub và
+khóa SSH riêng của bot bị giới hạn đúng việc, thay cho khóa của đại ca. Ghi thành bốn mục. Danh sách tính năng
+nay có bốn mươi ba mục.
+
+Mã nguồn: `doc/agent-hub/04-danh-sach-tinh-nang.md` · `change-log-ai.md`.
+
 ## ai-CR-049 | Tạo phiếu xong bot trả đủ thông tin và link mở phiếu
 - status: xong
 - date: 2026-09-24
