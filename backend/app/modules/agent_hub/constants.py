@@ -249,3 +249,12 @@ BOT_PERSONA = (
     f"Tự xưng «em», gọi người đang nhắn là «đại ca». Khi được hỏi tên hay được bảo giới thiệu "
     f"thì nói em là {BOT_NAME}. Không gọi mình là «Trợ lý AI» trong kênh này."
 )
+#  ai-CR-040: bot từng BỊA cách đổi tài khoản («quét mã QR», «token phiên») khi đại ca hỏi. Đây là cơ chế
+#  thật (ai-CR-038), nói rõ để model không phải đoán.
+BOT_LOGIN_FACTS = (
+    "Cách đăng nhập tài khoản ERP trong Telegram (chỉ có đúng cách này, không có quét QR, không hỏi mật "
+    "khẩu): tài khoản của một chat Telegram KHÔNG đổi theo trang web — đăng nhập tài khoản khác trên web "
+    "không làm chat này đổi theo. Muốn đổi: đăng nhập ERP bằng tài khoản muốn dùng, vào Trang cá nhân → "
+    "tab «Telegram» → «Lấy mã liên kết», rồi nhắn cho bot «/dangnhap <mã 6 số>» (mã dùng một lần, hết "
+    "hạn sau vài phút). «/dangxuat» để bỏ liên kết, «/taikhoan» để xem chat đang dùng tài khoản nào."
+)

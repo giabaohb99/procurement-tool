@@ -4169,3 +4169,40 @@ def test_api_lay_ma_va_go_lien_ket_cua_chinh_minh(db, bot):
         controller.remove_link(items[0]["id"], user=SimpleNamespace(id=other.id), db=db)
     controller.remove_link(items[0]["id"], user=me, db=db)
     assert chat_link.get_active_link(db, "777") is None
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-040: bot nói đúng cách đăng nhập, không bịa
+# ---------------------------------------------------------------------------
+def test_lenh_taikhoan_noi_dung_tai_khoan_dang_dung(db, bot, monkeypatch):
+    from app.modules.agent_hub import chat_link
+
+    service, sent, _ = bot
+    _erp_user(db, "bot@dego.vn")
+    lan = _erp_user(db)
+    monkeypatch.setattr(settings, "AGENT_ASSISTANT_USER", "bot@dego.vn")
+    service.handle_message(db, _msg("/taikhoan"))
+    assert "CHƯA đăng nhập bằng mã" in sent[-1] and "bot@dego.vn" in sent[-1]
+    assert "KHÔNG làm chat này đổi theo" in sent[-1] and "/dangnhap" in sent[-1]
+    code, _ = chat_link.issue_code(db, lan.id)
+    service.handle_message(db, _msg(f"/dangnhap {code}"))
+    service.handle_message(db, _msg("/taikhoan"))
+    assert "đang dùng tài khoản ERP <b>lan@dego.vn</b>" in sent[-1]
+
+
+def test_tro_ly_duoc_dan_dung_co_che_dang_nhap_va_tai_khoan_hien_tai(db, monkeypatch):
+    from app.modules.agent_hub import service
+    from app.modules.assistant import service as assistant_service
+    from app.modules.user.model import User
+
+    monkeypatch.setattr(service.telegram, "send", lambda text, **kw: 1)
+    monkeypatch.setattr(settings, "AGENT_ASSISTANT_USER", "BOT01")
+    monkeypatch.setattr(settings, "AGENT_TELEGRAM_CHAT_ID", "12345")
+    db.add(User(email="BOT01", employee_id=0, password_hash="x", is_active=True))
+    db.commit()
+    seen: dict = {}
+    monkeypatch.setattr(assistant_service, "ask",
+                        lambda message, *, db, user, history=None, system="", **kw: seen.update(system=system) or {"text": "ok"})
+    service.answer_question(db, "12345", "anh mới đổi tài khoản rồi mà")
+    assert "Trang cá nhân → tab «Telegram»" in seen["system"] and "không có quét QR" in seen["system"]
+    assert "CHƯA liên kết" in seen["system"] and "BOT01" in seen["system"]

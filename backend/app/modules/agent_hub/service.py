@@ -57,6 +57,7 @@ from .constants import (
     ACT_WAIT_DEPLOY_TIME,
     ACT_WAIT_PATCH_Q,
     ACT_WAIT_PLAN_ANSWER,
+    BOT_LOGIN_FACTS,
     BOT_NAME,
     BOT_PERSONA,
     CLOSED_STATUSES,
@@ -306,6 +307,33 @@ def _login_by_code(db: Session, msg: dict, chat_id: str, code: str, *, log_row: 
           "Đăng xuất: <code>/dangxuat</code>.")
 
 
+def _account_fact(db: Session, chat_id: str, user) -> str:
+    """Câu cho model biết chat này đang chạy dưới tài khoản nào và vì sao (ai-CR-040)."""
+    link = chat_link.get_active_link(db, chat_id)
+    who = getattr(user, "email", "") or f"#{getattr(user, 'id', 0)}"
+    if link is not None:
+        return f"Chat này đang dùng tài khoản ERP {who}, đã liên kết bằng /dangnhap."
+    return (f"Chat này CHƯA liên kết (/dangnhap) nên đang dùng tài khoản chung khai sẵn cho bot: {who}.")
+
+
+def show_account(db: Session, chat_id: str) -> None:
+    """«/taikhoan»: chat này hỏi Trợ lý dưới tài khoản nào, và cách đổi (ai-CR-040)."""
+    from app.modules.user.model import User
+
+    link = chat_link.get_active_link(db, chat_id)
+    if link is not None:
+        user = db.get(User, link.user_id)
+        who = telegram.esc(getattr(user, "email", "") or f"#{link.user_id}")
+        text = (f"Chat này đang dùng tài khoản ERP <b>{who}</b> (đăng nhập bằng mã lúc "
+                f"{fmt_local(link.linked_at)}, hết hạn {fmt_local(link.expires_at)}).")
+    else:
+        user = _assistant_user(db, chat_id)
+        who = telegram.esc(getattr(user, "email", "") or "")
+        text = (f"Chat này CHƯA đăng nhập bằng mã nên đang dùng tài khoản chung của bot <b>{who}</b>."
+                if user is not None else "Chat này chưa đăng nhập tài khoản ERP nào.")
+    reply(db, chat_id, text + "\nĐăng nhập tài khoản trên web KHÔNG làm chat này đổi theo. " + _LINK_HELP)
+
+
 def _logout(db: Session, chat_id: str) -> None:
     n = chat_link.revoke_chat(db, chat_id)
     reply(db, chat_id, ("Đã đăng xuất tài khoản ERP khỏi chat này. " if n else "Chat này chưa đăng nhập. ")
@@ -347,10 +375,15 @@ def _handle_other_chat(db: Session, msg: dict, chat_id: str, text: str) -> bool:
     if not text:
         reply(db, chat_id, "Em chỉ đọc được chữ. Đại ca nhắn câu hỏi bằng chữ giúp em.")
         return True
+    if low.startswith("/taikhoan"):
+        row.action = ACT_COMMAND
+        show_account(db, chat_id)
+        return True
     if low.startswith("/") and not low.startswith("/hoi"):
         row.action = ACT_COMMAND
         reply(db, chat_id, f"Em là <b>{BOT_NAME}</b>. Cứ nhắn câu hỏi về dữ liệu ERP, em trả lời theo quyền "
-              "tài khoản của anh/chị. <code>/dangxuat</code> để đăng xuất.")
+              "tài khoản của anh/chị. <code>/taikhoan</code> xem tài khoản đang dùng, "
+              "<code>/dangxuat</code> để đăng xuất.")
         return True
     answer_question(db, chat_id, text[4:].strip() if low.startswith("/hoi") else text, before_id=row.id)
     return True
@@ -364,6 +397,8 @@ def _run_command(db: Session, chat_id: str, text: str) -> None:
         _login_by_code(db, {"chat": {"id": chat_id}}, chat_id, m.group(2), log_row=False)
     elif _LOGOUT_CMD.match(lower):
         _logout(db, chat_id)
+    elif lower.startswith("/taikhoan"):
+        show_account(db, chat_id)
     elif lower.startswith("/hoi"):
         answer_question(db, chat_id, text[4:].strip())
     elif lower.startswith("/ds"):
@@ -380,7 +415,9 @@ def _run_command(db: Session, chat_id: str, text: str) -> None:
               "Cứ nhắn bình thường, em tự hiểu: <b>hỏi</b> hay <b>nhờ làm việc gì</b> "
               "trên hệ thống thì em làm ngay, <b>nhờ sửa phần mềm</b> thì em ghi thành việc.\n"
               "Đường tắt nếu muốn chắc: <b>/hoi</b> ép trả lời · <b>/ds</b> việc đang mở · "
-              "<b>/xem AI-0006</b> lịch sử một việc, kể cả việc đã đóng · <b>/gom</b> gom ngay.")
+              "<b>/xem AI-0006</b> lịch sử một việc, kể cả việc đã đóng · <b>/gom</b> gom ngay.\n"
+              "Tài khoản ERP: <b>/taikhoan</b> xem đang dùng tài khoản nào · <b>/dangnhap &lt;mã&gt;</b> "
+              "đổi tài khoản (lấy mã ở Trang cá nhân → Telegram) · <b>/dangxuat</b>.")
 
 
 #  Bot vừa hỏi lại mà đại ca nhắn tiếp trong khoảng này thì tin đó LÀ CÂU TRẢ LỜI, không
@@ -1921,7 +1958,7 @@ def answer_question(db: Session, chat_id: str, question: str, *, before_id: int 
         #  `system` của người gọi chỉ CHÈN THÊM vào cuối, không đè định nghĩa và rào an toàn của
         #  Trợ lý AI; nên web vẫn là «Trợ lý AI», chỉ kênh Telegram mới là Đậu Đậu (ai-CR-016).
         result = assistant_service.ask(question, db=db, user=user, history=history,
-                                       system=BOT_PERSONA)
+                                       system=f"{BOT_PERSONA} {BOT_LOGIN_FACTS} {_account_fact(db, chat_id, user)}")
     except Exception as e:  # noqa: BLE001 - lỗi nhà cung cấp phải thành câu trả lời
         log.exception("agent_hub: Trợ lý AI hỏng")
         reply(db, chat_id, f"{BOT_NAME} chưa trả lời được: {telegram.esc(str(e)[:300])}")

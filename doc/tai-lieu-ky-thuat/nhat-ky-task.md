@@ -3155,6 +3155,20 @@ Mã nguồn: `frontend-v2/src/modules/approval-seal/components/seal-clerk-detail
 Commit: `5fbce75a` trên nhánh `erp-v2`.
 
 
+## ai-CR-040 | Đậu Đậu nói đúng cách đăng nhập tài khoản trong Telegram
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Đại ca đăng nhập tài khoản khác trên web rồi hỏi bot, bot trả lời bịa ra chuyện quét mã QR và phiên kết
+nối. Nguyên nhân là Trợ lý không biết cơ chế đăng nhập mới nên tự đoán. Nay mỗi lần hỏi, Trợ lý được dặn
+đúng cơ chế: tài khoản của chat Telegram không đổi theo trang web, muốn đổi thì lấy mã ở tab Telegram của
+trang cá nhân rồi nhắn lệnh đăng nhập kèm mã, không có quét mã và không bao giờ hỏi mật khẩu; kèm luôn chat
+đang dùng tài khoản nào. Thêm lệnh xem tài khoản để trả lời chắc chắn không qua model, và câu trợ giúp liệt
+kê ba lệnh tài khoản. Cả tệp bài kiểm của bot 177/177 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/service.py` (`show_account`, `_account_fact`, `answer_question`) · `constants.py` (`BOT_LOGIN_FACTS`) · `test/backend/test_agent_hub.py` · `change-log-ai.md`.
+
 ## ai-CR-039 | Ẩn màn xem việc của bot Telegram trong ERP v2
 - status: xong
 - date: 2026-09-24
