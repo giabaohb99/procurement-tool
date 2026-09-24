@@ -91,7 +91,14 @@ CONTENT = """<h2>I. Màn này dùng để làm gì</h2>
 </ul>
 
 <h2>IX. Hỏi trợ lý AI</h2>
-<p>Trợ lý AI (cả trên web lẫn bot Telegram) đọc được cùng dữ liệu này nếu người hỏi có quyền xem. Có thể hỏi: <em>«Giá atrazine nhập về theo tháng bao nhiêu?»</em>, <em>«Nên mua mancozeb vào tháng nào?»</em>. Trợ lý luôn nói kèm <strong>độ tin cậy</strong> và số dòng dữ liệu, chỉ gợi ý tháng có đủ dữ liệu, và nhắc cảnh báo pháp lý nếu có. Câu trả lời để tham khảo, không thay cho quyết định mua.</p>
+<p>Trợ lý AI (cả trên web lẫn bot Telegram) đọc được cùng dữ liệu này nếu người hỏi có quyền xem. Các kiểu câu hỏi:</p>
+<ul>
+<li><strong>Giá theo kỳ, so sánh:</strong> <em>«Giá atrazine nhập về theo tháng bao nhiêu?»</em>, <em>«So giá atrazine với mesotrione»</em> — so tối đa 5 mặt hàng, cùng một đơn vị tính.</li>
+<li><strong>Thời điểm mua:</strong> <em>«Nên mua mancozeb vào tháng nào?»</em>, <em>«Có nên mua atrazine lúc này không?»</em> — trợ lý nói giá tháng gần nhất đang thấp, trung bình hay cao so với các tháng khác, xu hướng mấy tháng gần đây, và dữ liệu mới tới ngày nào. Tháng gần nhất quá ít lô thì trợ lý nói rõ và lấy tháng đủ dữ liệu gần nhất làm mốc.</li>
+<li><strong>Thị trường:</strong> <em>«Ai đang nhập atrazine nhiều nhất?»</em>, <em>«Mua atrazine của ai, từ nước nào?»</em>, <em>«Lô atrazine gần nhất giá bao nhiêu?»</em></li>
+<li><strong>Pháp lý và thuế:</strong> <em>«H2SO4 có phải khai báo không?»</em>, <em>«Carbosulfan có bị cấm không?»</em>, <em>«Thuế nhập mã 38089199 bao nhiêu?»</em> — trợ lý chỉ nói đúng danh mục đã nạp, không nêu mức phạt (dữ liệu không có), và không có trong danh mục thì KHÔNG có nghĩa là được phép.</li>
+</ul>
+<p>Trợ lý luôn nói kèm <strong>độ tin cậy</strong> và số dòng dữ liệu, chỉ gợi ý tháng có đủ dữ liệu, và nhắc cảnh báo pháp lý nếu có. Trợ lý chỉ biết <strong>giá nhập khẩu của thị trường</strong> — không biết tồn kho, nhu cầu sản xuất, hạn dùng hay dòng tiền của công ty — nên câu trả lời để tham khảo, không thay cho quyết định mua.</p>
 
 <h2>X. Câu hỏi thường gặp</h2>
 <p><strong>Thẻ Biểu đồ chỉ hiện một câu nhắc, không có hình?</strong> Chưa nhập từ khóa hoặc mã HS. Biểu đồ của toàn bộ dữ liệu là trộn hàng nghìn mặt hàng nên không vẽ.</p>

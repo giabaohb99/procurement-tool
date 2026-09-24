@@ -6601,3 +6601,32 @@ phân hệ Hệ thống xanh.
 
 Mã nguồn: frontend-v2 setting-page.tsx · setting-history-panel.tsx · setting-log-format.ts ·
 backend/app/modules/setting/service.py · test/backend/test_nhat_ky_cau_hinh_cr462.py
+
+## bao-CR-481 | Trợ lý AI tra thêm thị trường, pháp lý và trả lời «có nên mua lúc này» theo giá hải quan
+- status: xong
+- date: 2026-09-24
+Đại ca muốn trợ lý (cả web lẫn bot Telegram) làm được hết ba việc em đề xuất trên dữ liệu tờ
+khai hải quan, và hỏi thêm liệu trợ lý có tư vấn được câu «có nên mua atrazine lúc này không».
+
+Đã làm bốn phần. Một, tool giá theo kỳ nay so được hai tới năm mặt hàng trên cùng một đơn vị
+tính. Hai, tool thị trường mới: doanh nghiệp nào nhập nhiều nhất, mua của đối tác nào, hàng từ
+nước nào, năm lô gần nhất giá bao nhiêu, chỉ tính trong một đơn vị để không cộng kg với lít.
+Ba, tool pháp lý mới: tra hóa chất theo tên, số CAS hoặc công thức trong các danh mục đã nạp,
+xếp mục nặng nhất lên đầu, và tra thuế theo mã HS; luôn nhắc dữ liệu không có mức phạt và
+không thấy trong danh mục thì không được kết luận là được phép. Bốn, tool thời điểm mua trả
+thêm phần đánh giá hiện tại: giá tháng gần nhất đang thấp, trung bình hay cao so với các
+tháng đủ dữ liệu, xu hướng ba tháng, dữ liệu mới tới ngày nào; trợ lý phải nói rõ nó chỉ biết
+giá thị trường, không biết tồn kho, nhu cầu, hạn dùng, dòng tiền của công ty.
+
+Chạy thử với dữ liệu thật thì thấy tháng 09/2026 của atrazine chỉ có một dòng mà suýt thành
+«giá đang giảm», nên xu hướng và thước đo chỉ tính trên tháng đủ dữ liệu, tháng mới nhất ít
+dòng thì kèm tháng đủ dữ liệu gần nhất làm mốc. Bài hướng dẫn mục «Hỏi trợ lý AI» đã viết lại
+và chạy lại ở local. Số CR ban đầu 480 trùng việc «Phòng xử lý» của phiên khác nên đổi sang
+481. Chưa commit, chưa deploy.
+
+Kiểm: 63 bài backend xanh (16 bài mới, bài đếm số tool trợ lý nâng 39 lên 41).
+
+Mã nguồn: backend/app/modules/customs/service.py (market_overview, assess_current_price) ·
+assistant/tools/customs_tool.py · assistant/tools/__init__.py · assistant/service.py ·
+scripts/seed_help_customs_prices.py · test/backend/test_tool_hai_quan_cr481.py ·
+doc/erp/hai-quan/01 · 02 · 03

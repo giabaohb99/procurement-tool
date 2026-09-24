@@ -333,6 +333,116 @@ def rank_importers(db: Session, f: dict, unit: str = "", limit: int = 20) -> dic
                        "last_date": a["last"].isoformat() if a["last"] else None} for k, a in top]}
 
 
+# ── Thị trường: đối tác nước ngoài · nước xuất xứ · lô gần nhất (bao-CR-481) ──
+def market_overview(db: Session, f: dict, unit: str = "", limit: int = 10, recent: int = 5) -> dict:
+    """Cho trợ lý AI trả lời «ai nhập / mua của ai / từ nước nào / lô gần nhất giá bao nhiêu».
+
+    Cùng bộ lọc với màn tra cứu (`apply_line_filters`) và cùng MỘT đơn vị tính (mặc định
+    đơn vị nhiều dòng nhất) — gom kg với lít là ra thị phần vô nghĩa. Giá = giá điều chỉnh
+    nếu có, không thì giá khai báo (như biểu đồ).
+    """
+    if not has_chart_filter(f):
+        raise HTTPException(400, NEED_FILTER_MSG)
+    importers = rank_importers(db, f, unit, limit=limit)
+    chosen = importers["unit"]
+    rows = apply_line_filters(
+        db.query(CustomsLine.partner_id, CustomsLine.origin_country, CustomsLine.unit_code,
+                 CustomsLine.quantity, CustomsLine.price_usd, CustomsLine.adj_price_usd), f).all()
+    by_partner = defaultdict(lambda: {"count": 0, "qty": 0.0, "value": 0.0})
+    by_origin = defaultdict(lambda: {"count": 0, "qty": 0.0, "value": 0.0})
+    for r in rows:
+        if r.unit_code != chosen:
+            continue
+        p, qty = _price(r, "adjusted"), float(r.quantity or 0)
+        for bucket in (by_partner[r.partner_id], by_origin[(r.origin_country or "").strip() or "(không ghi)"]):
+            bucket["count"] += 1
+            if p is not None and qty > 0:
+                bucket["qty"] += qty
+                bucket["value"] += float(p) * qty
+    total_qty = sum(b["qty"] for b in by_origin.values()) or 0
+
+    def _rank(agg: dict) -> list[tuple]:
+        return sorted(agg.items(), key=lambda kv: (-kv[1]["qty"], -kv[1]["count"]))[:limit]
+
+    def _stats(b: dict) -> dict:
+        return {"count": b["count"], "qty": round(b["qty"], 4),
+                "share": round(b["qty"] / total_qty, 4) if total_qty else None,
+                "wavg": round(b["value"] / b["qty"], 4) if b["qty"] else None}
+
+    top_partners = _rank(by_partner)
+    names = {p.id: p.name for p in db.query(CustomsParty).filter(
+        CustomsParty.id.in_([k for k, _ in top_partners if k]))}
+    unit_f = {**f, "unit": chosen} if chosen else f
+    _, latest = list_lines(db, unit_f, 0, recent)
+    return {
+        "unit": chosen, "units": importers["units"],
+        "importers": importers["items"], "total_importers": importers["total_importers"],
+        "partners": [{"name": names.get(k, "") or "(không ghi đối tác)", **_stats(b)} for k, b in top_partners],
+        "origins": [{"country": k, **_stats(b)} for k, b in _rank(by_origin)],
+        "recent_lines": [{"date": x["reg_date"], "product_name": x["product_name"], "quantity": x["quantity"],
+                          "unit": x["unit_code"], "price_usd": x["effective_price_usd"],
+                          "origin": x["origin_country"], "partner": x["partner_name"],
+                          "importer": x["importer_name"], "incoterm": x["incoterm"]} for x in latest],
+    }
+
+
+# ── Đánh giá THỜI ĐIỂM HIỆN TẠI cho câu «có nên mua lúc này» (bao-CR-481) ───
+#  Dữ liệu cũ hơn chừng này ngày so với hôm nay thì phải nói ra — giá «hiện tại» khi đó
+#  thật ra là giá của mấy tháng trước.
+STALE_DATA_DAYS = 45
+
+
+def assess_current_price(stats: dict, today: date | None = None) -> dict:
+    """Đặt giá THÁNG GẦN NHẤT có dữ liệu cạnh cả năm: rẻ / trung bình / đắt, xu hướng 3 tháng.
+
+    Chỉ nói điều số liệu nói được: mức giá NHẬP KHẨU của thị trường so với chính nó. Không
+    biết tồn kho, nhu cầu, hạn dùng, dòng tiền của công ty — trợ lý phải nói rõ điều đó.
+    Tháng gần nhất ít dòng (< MIN_LINES_FOR_BEST) thì vẫn trả nhưng gắn cờ `reliable=False`,
+    kèm `reference_month` = tháng ĐỦ dữ liệu gần nhất để trợ lý có mốc đáng tin mà nói.
+    Xu hướng cũng chỉ tính trên tháng đủ dữ liệu — một lô lẻ không được lật cả câu chuyện
+    (dữ liệu thật 24/09: ATRAZINE 09/2026 chỉ 1 dòng mà suýt thành «đang giảm»).
+    """
+    today = today or date.today()
+    months = [s for s in stats.get("series", []) if s.get("wavg") is not None]
+    if not months:
+        return {"available": False, "reason": "Không có tháng nào có giá để đánh giá."}
+    latest = months[-1]
+    base = [s for s in months if s["count"] >= MIN_LINES_FOR_BEST] or months
+    solid_sorted = sorted(s["wavg"] for s in base)
+    q1, q3 = _quantile(solid_sorted, 0.25), _quantile(solid_sorted, 0.75)
+
+    def _level(price: float) -> str:
+        return "thấp" if price <= q1 else "cao" if price >= q3 else "trung bình"
+
+    price = latest["wavg"]
+    level = _level(price)
+    rank_pct = round(100 * sum(1 for v in solid_sorted if v < price) / len(solid_sorted))
+    recent = [s["wavg"] for s in base[-3:]]
+    if len(recent) >= 2 and recent[-1] > recent[0] * 1.03:
+        trend = "đang tăng"
+    elif len(recent) >= 2 and recent[-1] < recent[0] * 0.97:
+        trend = "đang giảm"
+    else:
+        trend = "đi ngang" if len(recent) >= 2 else "chưa đủ tháng để nói xu hướng"
+    date_to = (stats.get("coverage") or {}).get("date_to")
+    age_days = (today - date.fromisoformat(date_to)).days if date_to else None
+    reliable = latest["count"] >= MIN_LINES_FOR_BEST
+    ref = base[-1]
+    return {
+        "available": True,
+        "latest_month": latest["label"], "latest_wavg": price, "latest_count": latest["count"],
+        "reliable": reliable,
+        "reference_month": None if reliable or ref is latest else {
+            "label": ref["label"], "wavg": ref["wavg"], "count": ref["count"], "price_level": _level(ref["wavg"])},
+        #  % số tháng (đủ dữ liệu) có giá THẤP HƠN tháng gần nhất: 0 = đang rẻ nhất năm.
+        "pct_months_cheaper": rank_pct, "price_level": level,
+        "monthly_q1": q1, "monthly_median": _quantile(solid_sorted, 0.5), "monthly_q3": q3,
+        "trend_3_months": trend,             # chỉ trên tháng ĐỦ dữ liệu
+        "data_age_days": age_days,
+        "stale": age_days is not None and age_days > STALE_DATA_DAYS,
+    }
+
+
 # ── Độ phủ dữ liệu, ô lọc, đối tượng ────────────────────────────────────────
 def get_coverage(db: Session) -> dict:
     """Dải tháng đã phủ đầu trang — chặn lỗi quên nạp một tệp (04 §2)."""

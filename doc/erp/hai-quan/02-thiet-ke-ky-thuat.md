@@ -424,3 +424,10 @@ Vẫn không có gì tính sẵn (§3.6). `service.compute_stats` / `compare_ter
 ### 10.4 Trợ lý AI
 
 `assistant/tools/customs_tool.py`: `customs_price_stats` và `customs_buy_timing`, gọi **đúng** `customs/service.py` của màn hình nên hai bên không bao giờ ra hai con số khác nhau. Độ tin cậy chấm theo số năm + số dòng (`thấp` khi dưới 2 năm), kèm câu `caveat` bắt buộc nhắc lại. Bot Telegram dùng chung bộ tool nên có luôn.
+
+**bao-CR-481** thêm hai tool và mở rộng hai tool cũ (tổng tool trợ lý 39 → 41):
+
+- `customs_price_stats` + `compare_keywords` → `service.compare_terms` (bắt buộc có `keyword`; mã HS chỉ là bộ lọc chung).
+- `customs_market` → `service.market_overview`: `rank_importers` + gom đối tác (`partner_id`) và nước xuất xứ trong ĐÚNG một đơn vị, cộng 5 dòng mới nhất từ `list_lines`. Tool bỏ `importer_id` nội bộ khỏi kết quả.
+- `customs_legal_check` → `lookup_regulations` (xếp cấm · PL III · PL IV · TT 01 · PL I · PL II) + `lookup_tariff`; luôn kèm câu nhắc «không có mức phạt».
+- `customs_buy_timing` + `now` = `service.assess_current_price(stats, today)`: tứ phân vị + xu hướng chỉ trên tháng có ≥ `MIN_LINES_FOR_BEST` dòng (không tháng nào đủ thì dùng tất cả nhưng `reliable=False`); tháng gần nhất ít dòng → `reference_month`; `STALE_DATA_DAYS = 45`. Lý do chỉ dùng tháng đủ dữ liệu: dữ liệu thật 24/09 ATRAZINE 09/2026 chỉ có 1 dòng, tính cả vào thì ra «đang giảm» từ đúng một lô.

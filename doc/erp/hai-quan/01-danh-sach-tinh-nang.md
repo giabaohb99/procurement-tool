@@ -12,7 +12,7 @@
 | N — nền + nạp | N-01…N-08 đủ. 5 tệp mẫu đã nạp: **18.243 dòng**, 7.651 dòng vá ngày, 3.503 đối tượng (nhà nhập khẩu + đối tác) | Q2, Q6 vẫn mở |
 | T — tra cứu | T-01…T-06 đủ, cả bản cũ lẫn bản mới | — |
 | B — biểu đồ | B-01…B-05 đủ | Q4 (dữ liệu các năm trước) vẫn mở — B-03 vẫn phải cảnh báo "một năm" |
-| A — trợ lý AI | A-01…A-03: hai tool `customs_price_stats` + `customs_buy_timing` (ToolSpec, gác `customs_price.read`) | A-04: bài «Tra cứu giá hải quan» dưới nhóm *Dành cho Nhân viên Mua hàng*, dựng bằng `scripts/seed_help_customs_prices.py` — **mới chạy ở local**, CẤM tự chạy ở prod |
+| A — trợ lý AI | A-01…A-03: hai tool `customs_price_stats` + `customs_buy_timing` (ToolSpec, gác `customs_price.read`); **A-05…A-08 (bao-CR-481):** so sánh, `customs_market`, `customs_legal_check`, đánh giá «có nên mua lúc này» | A-04: bài «Tra cứu giá hải quan» dưới nhóm *Dành cho Nhân viên Mua hàng*, dựng bằng `scripts/seed_help_customs_prices.py` — **mới chạy ở local**, CẤM tự chạy ở prod |
 | P — pháp lý | P-01 (dạng danh mục có sẵn ngưỡng — xem đính chính ở §7), P-03, P-04, cảnh báo theo từ khóa đang tra | **P-02 (so tồn kho với ngưỡng) chưa làm** — cần cầu nối vật tư ↔ hoạt chất, đại ca để sau |
 
 Nhận ra hoạt chất: **9.223 / 18.243 dòng (51%)**, hàm lượng / dạng **93%**. Phần không nhận ra phần lớn là hóa chất khử trùng / tẩy rửa, không có hoạt chất BVTV để nối.
@@ -88,6 +88,10 @@ Tổng: **24 tính năng**, trong đó **13 thuộc đợt đầu**.
 | A-02 | Tool phân tích thời điểm mua | Trả lời *"nên mua vào lúc nào thì giá thấp nhất"*: trả về giá theo tháng + biên độ + số lần nhập, **để model lập luận trên số, không để model tự bịa số** | 2 | [ ] |
 | A-03 | ⚠️ Trợ lý phải nói ra độ tin cậy | Cùng lẽ với B-03: chỉ có một năm dữ liệu thì câu trả lời **bắt buộc kèm cảnh báo**. Một câu khẳng định chắc nịch dựa trên 3 lần nhập là thứ nguy hiểm nhất của cả tính năng này — người đọc sẽ đặt hàng thật theo nó | 2 | [ ] |
 | A-04 | Bài hướng dẫn sử dụng | Một bài trong Trung tâm HDSD, theo nếp các bài tool trợ lý đã có | 2 | [~] |
+| A-05 | So sánh qua trợ lý | `customs_price_stats` nhận thêm `compare_keywords` (1–4 mặt hàng) → so trên CÙNG một đơn vị với mặt hàng chính (bao-CR-481) | 2 | [x] |
+| A-06 | Tool thị trường `customs_market` | Ai nhập (gộp theo MST, thị phần), mua của đối tác nào, từ nước nào, 5 lô gần nhất — chỉ trong một đơn vị tính (bao-CR-481) | 2 | [x] |
+| A-07 | Tool pháp lý `customs_legal_check` | Tra danh mục hóa chất theo tên / CAS / công thức (nặng nhất lên đầu) + biểu thuế theo mã HS. **Không có mức phạt trong dữ liệu — trợ lý cấm tự nêu**; không thấy trong danh mục thì không được kết luận là được phép (bao-CR-481) | 2 | [x] |
+| A-08 | ⚠️ «Có nên mua lúc này không» | `customs_buy_timing` trả thêm phần `now`: giá tháng gần nhất thấp / trung bình / cao so với tứ phân vị các tháng ĐỦ dữ liệu, xu hướng 3 tháng (chỉ tháng đủ dữ liệu), dữ liệu cũ quá 45 ngày thì gắn cờ; tháng gần nhất ít lô thì kèm `reference_month`. Trợ lý kết luận dạng «dữ liệu giá nghiêng về …» và **bắt buộc** nói không biết tồn kho / nhu cầu / hạn dùng / dòng tiền (bao-CR-481) | 2 | [x] |
 
 ## 7. Nhóm P — Pháp lý và ngưỡng theo nghị định (đợt cuối)
 

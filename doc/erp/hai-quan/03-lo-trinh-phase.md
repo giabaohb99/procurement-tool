@@ -110,7 +110,7 @@ HQ0 chốt câu hỏi ──► HQ1 nền dữ liệu + nạp ──► HQ2 bả
 
 ## HQ5 — Trợ lý AI (≈ 2 ngày) — làm được ngay sau HQ3
 
-**Trạng thái: A-01…A-03 XONG MÃ 23/09/2026 (local)** — tool `customs_price_stats` + `customs_buy_timing` (`assistant/tools/customs_tool.py`), độ tin cậy chấm theo số năm + số dòng, `recommended_month` chỉ xét tháng đủ `MIN_LINES_FOR_BEST = 5` dòng. **A-04:** bài HDSD dựng bằng `scripts/seed_help_customs_prices.py`, mới chạy ở local.
+**Trạng thái: A-01…A-03 XONG MÃ 23/09/2026 (local)** — tool `customs_price_stats` + `customs_buy_timing` (`assistant/tools/customs_tool.py`), độ tin cậy chấm theo số năm + số dòng, `recommended_month` chỉ xét tháng đủ `MIN_LINES_FOR_BEST = 5` dòng. **A-04:** bài HDSD dựng bằng `scripts/seed_help_customs_prices.py`, mới chạy ở local. **A-05…A-08 (bao-CR-481) XONG MÃ 24/09/2026 (local):** so sánh qua trợ lý, `customs_market`, `customs_legal_check`, và phần `now` cho câu «có nên mua lúc này» — bài HDSD mục IX đã viết lại, chưa chạy lại seed.
 
 **Phạm vi:** A-01 … A-04.
 - Tool tra giá theo kỳ + tool phân tích thời điểm mua, **đi qua khóa `customs_price`** như mọi tool khác.

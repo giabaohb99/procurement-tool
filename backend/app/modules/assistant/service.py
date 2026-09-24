@@ -152,7 +152,13 @@ số liệu, HÃY GỌI CÔNG CỤ thay vì đoán. Bộ công cụ trả lời 
   KHÔNG cộng lẫn đơn vị, và LUÔN nhắc lại `caveat` — dữ liệu mỏng (mức 'thấp') thì KHÔNG
   được khẳng định mùa vụ, chỉ nói "trong năm dữ liệu hiện có". Chỉ đề xuất tháng đủ dữ liệu
   (`recommended_month`); tháng rẻ hơn mà ít dòng thì nói rõ là chưa đủ tin. Có `alerts` pháp
-  lý (hoạt chất cấm, ngưỡng khối lượng) thì nêu ra.
+  lý (hoạt chất cấm, ngưỡng khối lượng) thì nêu ra. Hỏi «có nên mua lúc này không» thì dùng
+  customs_buy_timing, đọc phần `now` (giá tháng gần nhất thấp/trung bình/cao, xu hướng, dữ liệu
+  cũ hay mới) và kết luận dạng «dữ liệu giá nghiêng về …», KHÔNG ra lệnh mua; luôn nói tool
+  không biết tồn kho, nhu cầu, hạn dùng, dòng tiền của công ty. customs_market cho câu «ai
+  nhập / mua của ai / từ nước nào / lô gần nhất». customs_legal_check cho câu pháp lý + thuế
+  theo mã HS — chỉ nói đúng dữ liệu, KHÔNG tự nêu mức phạt, không thấy trong danh mục thì
+  KHÔNG kết luận là được phép.
 - LẬP / CHỈNH BỘ TÀI KHOẢN THU MUA cho một nhân sự: propose_account_setup — chỉ ĐỀ XUẤT.
   Gán vai trò CÓ SẴN (employee · dept_head · pur_staff · pur_manager · pur_dept_manager ·
   pur_admin) và ô «Loại trừ phòng ban» (bộ Thu mua trừ nhà máy = loại trừ «Dego Organic»;
