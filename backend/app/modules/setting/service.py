@@ -244,6 +244,11 @@ def _format_value(field: dict, raw: str) -> str:
     """Chuỗi thô → câu cho NGƯỜI đọc. Ô trống phải nói thành lời, đừng để khoảng trắng."""
     if field.get("type") == "bool":
         return "Bật" if raw == "true" else "Tắt"
+    if field.get("type") == "select":
+        #  bao-CR-462: nói bằng nhãn người dùng thấy trên màn hình, không bằng mã.
+        label = next((o["label"] for o in field.get("options", []) if o["value"] == raw), "")
+        if label:
+            return label
     return raw if raw.strip() else "(trống)"
 
 

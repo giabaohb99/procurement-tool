@@ -378,6 +378,12 @@ export const queryKeys = {
     backups: (params?: Record<string, unknown>) => ['system', 'backups', params ?? {}] as const,
     auditLogs: (params?: Record<string, unknown>) => ['system', 'audit-logs', params ?? {}] as const,
     /**
+     * Nhật ký của chính màn *Cấu hình hệ thống* (bao-CR-462) — đọc `entity=setting`
+     * dạng mảng đơn. Nằm CÙNG nhánh `audit-logs` để lưu cấu hình xong chỉ cần bỏ
+     * hiệu lực một nhánh là cả thẻ lịch sử lẫn màn nhật ký toàn hệ cùng nạp lại.
+     */
+    settingHistory: () => ['system', 'audit-logs', 'setting-history'] as const,
+    /**
      * Nhật ký hệ thống gộp theo `request_id` (bao-CR-407) — KHÁC `auditLogs`:
      * khóa kia đọc `tab_audit_log`, khóa này đọc `tab_request_log` làm xương sống.
      */

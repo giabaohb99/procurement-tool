@@ -2,6 +2,7 @@ import {
   CloudCheck,
   GitBranch,
   HardDrive,
+  History,
   Info,
   KeyRound,
   Loader2,
@@ -34,6 +35,7 @@ import { settingApi } from '../api/setting-api'
 import { EmailExclusionPanel } from '../components/email-exclusion-panel'
 import { RagIndexPanel } from '../components/rag-index-panel'
 import { SettingFieldRow } from '../components/setting-field-row'
+import { SettingHistoryPanel } from '../components/setting-history-panel'
 import { SettingSecretRow } from '../components/setting-secret-row'
 import { useSaveSettings, useSettings } from '../hooks/use-settings'
 import type { SettingField, SettingGroup, SettingSecret } from '../types/setting'
@@ -112,6 +114,17 @@ const TABS: {
     icon: SlidersHorizontal,
     group: 'system',
     description: 'Địa chỉ giao diện dùng trong email, số ngày giữ thông báo và số bản sao lưu.',
+  },
+  {
+    //  Tab CUỐI, và là tab duy nhất không có ô nhập nào (bao-CR-462): ai đổi ô
+    //  nào, từ giá trị gì sang giá trị gì. Để thành tab riêng chứ không đắp thêm
+    //  một thẻ dưới chân mỗi tab — treo dưới chân thì nó nằm sau hàng chục ô
+    //  nhập, phải cuộn qua cả trang mới thấy, mà người đi tra "ai vừa tắt gửi
+    //  email" thì không quan tâm ô nào cả.
+    value: 'history',
+    label: 'Lịch sử thay đổi',
+    icon: History,
+    description: 'Nhật ký các lần sửa cấu hình: ai sửa, lúc nào, ô nào đổi từ đâu sang đâu.',
   },
 ]
 
@@ -299,6 +312,8 @@ export function SettingPage() {
               {item.value === 'email' && <EmailExclusionPanel canWrite={canWrite} />}
 
               {item.value === 'assistant' && canReindex && <RagIndexPanel />}
+
+              {item.value === 'history' && <SettingHistoryPanel />}
             </TabsContent>
           ))}
         </Tabs>
