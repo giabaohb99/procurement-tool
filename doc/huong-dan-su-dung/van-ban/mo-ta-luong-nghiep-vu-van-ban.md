@@ -58,6 +58,16 @@
 
 21. [Phân quyền trong luồng](#21-phân-quyền-trong-luồng)
 
+**PHẦN VII. TỔ CHỨC VÀ TRA CỨU VĂN BẢN**
+
+22. [Người duyệt dự kiến](#22-người-duyệt-dự-kiến)
+23. [Văn bản trong sổ](#23-văn-bản-trong-sổ)
+24. [Thư mục văn bản](#24-thư-mục-văn-bản)
+25. [Quyền trên thư mục](#25-quyền-trên-thư-mục)
+26. [Màn «Thư mục văn bản»](#26-màn-thư-mục-văn-bản)
+27. [Tìm toàn văn](#27-tìm-toàn-văn)
+28. [Văn bản chỉ gồm tệp, tab «Tệp» và hạn xem tệp](#28-văn-bản-chỉ-gồm-tệp-tab-tệp-và-hạn-xem-tệp)
+
 ---
 
 ## PHẦN I. TỔNG QUAN
@@ -214,6 +224,10 @@ trong suốt lúc phiên bản mới được soạn và duyệt — không có 
   chỉ **chặn ở lúc gửi duyệt**.
 - Loại cấp số «khi tạo bản nháp» → văn bản nhận số ngay ở bước 1; bỏ dở vẫn chiếm số.
 - Loại «Giấy nghỉ phép» có thêm thông tin nghỉ (người nghỉ, loại nghỉ, từ ngày – đến ngày, lý do).
+
+Trong lúc khai, thẻ **«Người duyệt dự kiến»** cho biết trước văn bản sẽ qua ai (§22). Ô **«Lưu
+vào thư mục»** chọn nơi xếp văn bản (§24). Văn bản chỉ gồm tệp có sẵn thì dùng nút **«Tạo, không
+soạn thảo»** (§28).
 
 **Quy tắc áp dụng**: QĐ-01, QĐ-02, QĐ-10, QĐ-11.
 
@@ -408,6 +422,10 @@ Kết quả:
 | **QĐ-20** | Hệ thống **không tự sửa nội dung** văn bản con — chỉ đánh dấu để con người quyết |
 | **QĐ-21** | Bản trích luôn: mức mật ≤ bản gốc; gốc bản mới → cần rà lại; gốc bãi bỏ → hết hiệu lực |
 | **QĐ-22** | Dòng quyền «Không cho phép» thắng mọi quyền khác, kể cả người tạo và quản trị |
+| **QĐ-23** | Mỗi văn bản có pháp nhân luôn nằm trong ít nhất một thư mục; gỡ thư mục cuối cùng thì về thư mục pháp nhân. Văn bản chưa gắn pháp nhân không vào thư mục nào |
+| **QĐ-24** | Quyền thư mục chỉ quyết định **thấy thư mục và xếp văn bản**, không cho đọc văn bản bên trong |
+| **QĐ-25** | Quyền thư mục kế thừa xuống nhánh con; dòng *Cấm* thắng mọi dòng *Cho* |
+| **QĐ-26** | Chỉ xóa được thư mục không còn thư mục con và không còn văn bản nào trên toàn hệ thống |
 
 ---
 
@@ -433,6 +451,7 @@ Kết quả:
 - Có thể cho phép **văn thư sửa số tay** (bắt ghi lý do, không trùng số trong cùng công ty, năm).
 - **Sổ văn bản** có bộ đếm riêng theo năm, người quản lý (sửa được) và người xem sổ (chỉ xem).
 - Quy tắc và sổ **đã cấp số** thì khóa mẫu số và số bắt đầu, không xóa được.
+- Chi tiết sổ có tab **«Văn bản trong sổ»** liệt kê văn bản đã vào sổ (§23).
 
 ### 19. Quy tắc liên kết
 
@@ -477,3 +496,171 @@ Quyết định**; *Biểu mẫu* phải **thuộc về** ít nhất 1 Quy trìn
 
 Mỗi quyền còn đi kèm **phạm vi**: văn bản của mình, của phòng, của công ty hay tất cả. Muốn
 «chỉ người tạo được sửa văn bản của mình» thì đặt phạm vi quyền Sửa là *Của mình*.
+
+---
+
+## PHẦN VII. TỔ CHỨC VÀ TRA CỨU VĂN BẢN
+
+*Bổ sung 23/09/2026.*
+
+### 22. Người duyệt dự kiến
+
+Ngay trên màn **tạo văn bản** (và ở chi tiết văn bản khi còn *Nháp* hoặc bị *Trả lại*) có thẻ
+**«Người duyệt dự kiến»**: trước khi bấm *Gửi duyệt*, người soạn đã biết văn bản sẽ qua những
+chặng nào và ai duyệt từng chặng.
+
+- Thẻ tự cập nhật khi người soạn đổi loại văn bản, pháp nhân, phòng, mức mật, độ khẩn, người ký…
+  Chưa chọn loại văn bản và pháp nhân thì thẻ chỉ nhắc chọn hai ô đó.
+- Loại văn bản không cần duyệt → thẻ nói rõ *«Loại văn bản này KHÔNG cần phê duyệt»*.
+- Không có quy trình nhiều bước nào khớp (hoặc bộ máy nhiều bước đang tắt) → thẻ nói văn bản sẽ
+  **duyệt một bước** bởi người có quyền Duyệt.
+- Có quy trình → liệt kê từng chặng và người duyệt. Chặng lấy người theo một ô người soạn chưa
+  điền, chặng tự qua vì trùng người đã duyệt ở chặng trước, và chặng **không tìm được ai** (văn
+  bản sẽ dừng, xem QĐ-07) đều có câu riêng. Người nhận bản sao (CC) hiện tách riêng.
+- Đây là **dự kiến**: người duyệt thật được chốt đúng lúc gửi duyệt (QĐ-06). Thẻ chỉ xem, không
+  giữ chỗ và không gửi gì cho ai.
+
+### 23. Văn bản trong sổ
+
+Chi tiết một **sổ văn bản** có hai tab: *Thông tin sổ* và **«Văn bản trong sổ»**. Tab văn bản liệt
+kê các văn bản đã vào sổ, số trong sổ **mới nhất lên đầu**, lọc được theo năm của sổ và tìm theo
+tên; bấm một dòng là mở chi tiết văn bản.
+
+- Bấm một sổ ở danh sách sổ, hoặc bấm con số «Đã cấp trong năm» trên thẻ bộ đếm, là vào thẳng
+  tab văn bản.
+- Tab chỉ hiện với người **có quyền Xem văn bản**, và chỉ liệt kê văn bản người đó được đọc (mức
+  mật, quyền riêng trên từng văn bản vẫn áp như ở màn Văn bản). Thành viên sổ không có quyền Xem
+  văn bản thì vẫn chỉ thấy thông tin sổ.
+- Ghi chú: bảng này từng được gỡ ngày 25/08/2026; nay dựng lại theo yêu cầu 23/09/2026.
+
+### 24. Thư mục văn bản
+
+Thư mục là cách **xếp văn bản để tìm lại**, không đổi luồng duyệt hay ban hành.
+
+| Nguyên tắc | Nội dung |
+|---|---|
+| **Một cây chung** | Cả tập đoàn dùng chung một cây. Tầng gốc là **mỗi pháp nhân một thư mục**, hệ thống tự tạo, hiện bằng **tên ngắn** của pháp nhân (chưa khai tên ngắn thì hiện tên đầy đủ). Thư mục gốc không đổi tên, không chuyển, không xóa được |
+| **Thấy nhánh nào** | Người được phân quyền xem văn bản ở pháp nhân nào thì thấy nhánh của pháp nhân đó, trừ khi thư mục bị khóa riêng (§25) |
+| **Độ sâu** | Tối đa 6 cấp, tính cả thư mục gốc. Thư mục không chuyển được sang nhánh của pháp nhân khác |
+| **Nhiều thư mục** | Một văn bản nằm được ở **nhiều thư mục**, trong đó **một thư mục chính** — đường dẫn của thư mục chính là đường dẫn hiện ở danh sách văn bản |
+| **Thư mục mặc định** | Tạo văn bản mà không chọn thư mục: văn bản vào **thư mục mặc định của loại văn bản** (nếu loại có khai, thư mục đó đang dùng và cùng pháp nhân); không có thì vào **thư mục pháp nhân** của văn bản |
+| **Không có văn bản «mồ côi»** | Gỡ thư mục cuối cùng của một văn bản → văn bản tự quay về thư mục pháp nhân |
+| **Đổi pháp nhân** | Văn bản chỉ đang nằm ở thư mục pháp nhân cũ → tự chuyển sang thư mục pháp nhân mới. Văn bản đã được xếp vào thư mục khác thì giữ nguyên |
+| **Văn bản chưa gắn pháp nhân** | Không có thư mục gốc nào để vào, nên **không gắn thư mục nào** (cố ý). Văn bản vẫn tìm được ở màn Văn bản như bình thường |
+| **Ngừng dùng** | Thư mục ngừng dùng kéo theo cả nhánh con; khôi phục chỉ bật lại đúng thư mục đó |
+| **Xóa** | Chỉ xóa được thư mục **không còn thư mục con và không còn văn bản nào** — đếm trên toàn hệ thống, kể cả văn bản người xóa không nhìn thấy. Còn văn bản thì chọn *Ngừng dùng* |
+
+Khi **tạo văn bản** có ô **«Lưu vào thư mục»** (chọn một hoặc nhiều, đánh dấu một thư mục chính;
+chỉ liệt kê thư mục mình có mức Đóng góp trở lên, đúng pháp nhân của văn bản). Tạo văn bản từ trong
+một thư mục thì ô này điền sẵn thư mục đó. Ở chi tiết văn bản có thẻ **thư mục** để sửa lại. Màn
+**Văn bản** có cột *Thư mục* và bộ lọc *Thư mục* kèm công tắc *Gồm thư mục con*.
+
+### 25. Quyền trên thư mục
+
+**Ba mức**, mức sau gồm mức trước:
+
+| Mức | Được làm |
+|---|---|
+| **Xem** | Thấy thư mục trên cây |
+| **Đóng góp** | Thêm/gỡ văn bản vào thư mục, tạo thư mục con |
+| **Quản lý** | Đổi tên, chuyển, ngừng dùng, xóa, chia sẻ (cấp và thu hồi quyền) |
+
+- **Quyền chung** của một thư mục là mức mà *mọi người thấy được pháp nhân đó* nhận. Thư mục
+  pháp nhân mặc định **Đóng góp**; thư mục mới tạo chưa khai thì **kế thừa** từ thư mục cha gần
+  nhất có khai. Đặt quyền chung là **Riêng tư** để khóa một nhánh.
+- **Chia sẻ riêng**: cấp cho một người, một phòng ban, một pháp nhân hoặc một vai trò, có thể kèm
+  thời hạn từ – đến và lý do. Chia sẻ riêng mở được thư mục cho cả người ở pháp nhân khác.
+- **Kế thừa**: quyền đặt ở thư mục cha áp xuống toàn bộ nhánh con.
+- **Cấm thắng cho**: một dòng *Cấm* ở thư mục hoặc ở bất kỳ thư mục cha nào làm thư mục đó biến mất
+  với người bị cấm, dù họ có quyền chung hay được chia sẻ ở chỗ khác.
+- Ngoại lệ duy nhất: người được giao **quản trị thư mục** (quyền Sửa trên «Cây thư mục» ở màn
+  Phân quyền) luôn có mức Quản lý trên các pháp nhân thuộc phạm vi của vai trò đó — dòng Cấm không
+  chặn họ.
+
+⚠️ **Quyền thư mục KHÔNG mở quyền đọc văn bản.** Thấy một thư mục không có nghĩa là đọc được mọi
+văn bản trong đó: mỗi văn bản vẫn theo quyền Xem văn bản, mức mật và quyền riêng của chính nó
+(QĐ-22). Muốn một người đọc được văn bản trong thư mục thì phải cấp quyền văn bản, không phải
+quyền thư mục.
+
+**«Thấy một phần».** Thư mục có 5 văn bản mà một người chỉ đọc được 2 thì **mọi chỗ** đều chỉ nói
+về 2 văn bản đó: số đếm trên cây, bảng nội dung, kết quả tìm, tab Tệp. Chọn nhiều để chuyển mà có
+văn bản không đủ quyền thì kết quả báo *«đã chuyển n · bị từ chối m»*, không nói lý do chi tiết.
+Văn bản đang nằm trong một thư mục mình không thấy thì khi mình sửa thư mục của văn bản, liên kết
+tới thư mục đó **được giữ nguyên**, không bị xóa mất.
+
+### 26. Màn «Thư mục văn bản»
+
+Mục menu **«Thư mục văn bản»** trong phân hệ Văn bản, dành cho người có quyền xem cây thư mục.
+
+**Khung trái — cây kiểu VS Code**
+
+- Hàng gọn, có đường gióng theo cấp; ô lọc tên ngay trên cây (giữ nguyên thư mục cha của kết quả).
+- Tạo thư mục mới bằng một dòng nhập ngay dưới thư mục cha; đổi tên ngay tại chỗ (phím **F2**).
+- Kéo thả một thư mục vào thư mục khác để đổi cha, hoặc thả vào khe giữa hai thư mục để đổi thứ tự.
+- Khung kéo giãn được bề ngang và nhớ bề rộng; trên điện thoại cây mở dạng ngăn trượt.
+
+**Khung phải — nội dung kiểu Google Drive**
+
+- Hai khối: **Thư mục con** rồi **Văn bản**; chuyển được giữa **Lưới** và **Danh sách**.
+- **Chọn:** bấm = chọn một · **Ctrl/⌘ + bấm** = thêm/bớt · **Shift + bấm** = chọn một dải ·
+  **Ctrl/⌘ + A** = chọn hết · **Esc** = bỏ chọn. Bấm đúp để mở.
+- Có mục đang chọn thì thanh trên đổi thành **thanh thao tác**: *Thêm vào thư mục…* · *Chuyển tới…*
+  · *Gỡ khỏi thư mục này*.
+- **Menu chuột phải** trên từng mục: *Mở · Đổi tên · Chuyển tới… · Chia sẻ… · Xem chi tiết · Xóa* —
+  chỉ hiện những việc mình đủ quyền làm.
+- **Kéo thả** văn bản hoặc thư mục từ khung phải sang một thư mục (trên cây hoặc trong khung phải):
+  văn bản được **thêm** vào thư mục đích; giữ **Alt/Option** khi thả để **chuyển** (gỡ khỏi thư mục
+  đang đứng).
+- **Khung chi tiết** cho biết đường dẫn, số văn bản, mức quyền của mình, và các thư mục đang chứa
+  văn bản.
+
+**Hộp «Chia sẻ»** (thay cho việc cấp quyền từng người):
+
+- Một ô chọn **nhiều đối tượng một lần**, trộn được Người · Phòng ban · Pháp nhân · Vai trò.
+- Chọn mức (Xem / Đóng góp / Quản lý) và *Cho* hay *Cấm*, bấm **«Cấp quyền»** — áp cho cả danh
+  sách trong một lần (tối đa 200 đối tượng). Đối tượng đã có quyền thì được cập nhật mức, không tạo
+  trùng.
+- Danh sách **«Người có quyền»**: đổi mức ngay tại dòng, gỡ quyền; dòng **kế thừa** từ thư mục cha
+  chỉ xem, không sửa tại đây.
+- Ô **«Quyền chung»** đặt mức cho mọi người trong pháp nhân (§25).
+- Người chưa đủ mức Quản lý mở hộp này chỉ xem được, không mời thêm hay đổi quyền.
+
+### 27. Tìm toàn văn
+
+Ở màn **Văn bản** và trong **một thư mục**, bật công tắc **«Tìm cả nội dung»** để tìm không chỉ
+trong tên và số hiệu mà cả trong **nội dung soạn thảo** và **chữ bên trong tệp đính kèm**.
+
+| Cách gõ | Kết quả |
+|---|---|
+| `quy che van ban` | Không phân biệt hoa/thường và **có dấu hay không dấu** — khớp «Quy chế văn bản». Văn bản phải có **đủ** các từ |
+| `"hợp đồng lao động"` | Cụm trong ngoặc kép khớp **liền mạch, đúng thứ tự** |
+| `nghỉ lễ -tết` | Từ có dấu trừ **đứng đầu** bị **loại trừ**. Dấu gạch nằm giữa chữ (như số hiệu «08/2026/TB-NS») vẫn là chữ thường |
+
+- Gõ ít hơn 2 ký tự thì chưa tìm. Trong thư mục, tìm được cả các thư mục con nếu bật *Gồm thư mục con*.
+- Trúng ở tiêu đề / số hiệu xếp trên, rồi tới nội dung, cuối cùng là tệp. Mỗi kết quả có **đoạn
+  trích** tô đậm chỗ trúng.
+- Tệp đọc được chữ: Word (.docx), Excel (.xlsx), PDF có lớp chữ, .txt, .csv; tệp quá 20MB không đọc.
+- **Không nhận dạng chữ (OCR)**: PDF chụp/scan không có lớp chữ thì chỉ tìm được theo thông tin văn
+  bản, không tìm được theo nội dung tệp.
+- Kết quả vẫn **chỉ gồm văn bản mình được đọc**, như danh sách thường.
+- Văn bản vừa sửa có thể cần vài giây mới tìm được theo nội dung mới.
+
+### 28. Văn bản chỉ gồm tệp, tab «Tệp» và hạn xem tệp
+
+**«Tạo, không soạn thảo».** Ở bước cuối màn tạo có hai nút: *Tạo và soạn thảo* (như trước) và
+**«Tạo, không soạn thảo»** — cho văn bản chỉ gồm tệp có sẵn (bản scan, văn bản đến, hợp đồng đã ký).
+Nhánh này không dùng mẫu nội dung. Chưa đính kèm tệp nào thì hệ thống hỏi lại trước khi tạo. Tạo
+xong, hệ thống mở thẳng tab «Tệp».
+
+**Tab «Tệp»** ở chi tiết văn bản gom tệp của **mọi phiên bản**:
+
+- Chưa có tệp → trạng thái trống, kèm nút tải lên nếu có quyền sửa.
+- **1 tệp** → mở xem luôn.
+- **Nhiều tệp** → danh sách; bấm một tệp để xem, bên phải có **cây tệp theo phiên bản** để chuyển
+  sang tệp khác. Nút *Quay lại* của trình duyệt luôn về danh sách.
+- Văn bản không có nội dung soạn thảo nhưng có tệp thì mở ra là vào thẳng tab «Tệp».
+
+**Hạn xem tệp — đang TẠM TẮT.** Ô «Xem tệp đính kèm tới ngày» vẫn khai được trên từng văn bản,
+nhưng từ 23/09/2026 hạn này **không chặn ai** để mọi người xem thoải mái trong lúc đưa dữ liệu cũ
+vào hệ thống. Quản trị bật lại ở **Cấu hình hệ thống → tab «Văn bản»** (mặc định tắt); ngày đã khai
+không mất, bật lên là có hiệu lực ngay, không cần cập nhật phần mềm.

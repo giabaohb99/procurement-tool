@@ -6630,3 +6630,153 @@ Mã nguồn: backend/app/modules/customs/service.py (market_overview, assess_cur
 assistant/tools/customs_tool.py · assistant/tools/__init__.py · assistant/service.py ·
 scripts/seed_help_customs_prices.py · test/backend/test_tool_hai_quan_cr481.py ·
 doc/erp/hai-quan/01 · 02 · 03
+
+## duoc-CR-473 | Màn tạo văn bản cho biết trước ai sẽ duyệt
+- status: dang-lam
+- date: 2026-09-23
+Đại ca muốn người soạn văn bản biết văn bản của mình sẽ qua tay những ai trước khi bấm gửi
+duyệt. Em đã thêm thẻ «Người duyệt dự kiến» ở màn tạo văn bản và ở chi tiết văn bản khi văn
+bản còn nháp hoặc bị trả lại. Thẻ liệt kê từng chặng duyệt và tên người duyệt, nói rõ khi
+loại văn bản không cần duyệt, khi văn bản chỉ duyệt một bước, khi một chặng còn chờ người
+soạn điền ô chọn người, khi một chặng tự qua vì trùng người đã duyệt, và khi một chặng không
+tìm được ai. Thẻ tự tính lại khi người soạn đổi loại văn bản, pháp nhân, phòng, mức mật hay
+người ký, và luôn ghi rõ đây chỉ là dự kiến, người duyệt thật chốt lúc gửi.
+
+Để con số dự kiến khớp đúng người được giao việc thật, em tách hai bước lọc người duyệt của
+bộ máy duyệt ra thành hàm dùng chung cho cả lúc xem trước lẫn lúc gửi thật. Trợ lý AI dùng
+lại cùng phần mô tả chặng, nên nó hết nói nhầm là phiếu của chính mình cần mình ký.
+
+Kiểm tra: bài kiểm xem trước người duyệt xanh, trong đó có bài so kết quả xem trước với người
+được giao việc thật ở cả hai chặng; bài kiểm của thẻ trên giao diện xanh. Không có migration.
+Chưa commit, chưa deploy.
+Mã nguồn: `backend/app/modules/approval/preview_service.py` ·
+`backend/app/modules/document/approval_preview_controller.py` ·
+`backend/app/modules/approval/instance_service.py` ·
+`frontend-v2/src/modules/document/components/document-approver-preview-card.tsx`.
+
+## duoc-CR-474 | Sổ văn bản có lại bảng văn bản trong sổ
+- status: dang-lam
+- date: 2026-09-23
+Đại ca muốn bấm vào một sổ văn bản là thấy danh sách văn bản trong sổ, rồi bấm vào từng văn
+bản để xem chi tiết. Bảng này từng bị gỡ ngày 25/08/2026 theo CR-175; nay dựng lại theo yêu
+cầu mới. Chi tiết sổ có thêm tab «Văn bản trong sổ»: văn bản có số vào sổ mới nhất nằm trên
+cùng, lọc được theo năm, tìm được theo tên. Bấm vào thẻ sổ ở danh sách sổ hoặc vào con số
+«Đã cấp trong năm» là vào thẳng tab này.
+
+Tab chỉ hiện với người có quyền xem văn bản và chỉ liệt kê văn bản người đó được đọc, đúng
+chốt của đại ca là không mở danh sách văn bản cho thành viên sổ thiếu quyền. Phía máy chủ,
+danh sách văn bản nhận thêm tham số sắp xếp theo một danh sách cột cho phép và bộ lọc theo
+năm của sổ.
+
+Kiểm tra: bài kiểm sắp xếp và lọc năm xanh, kể cả ca gửi tên cột lạ hay chuỗi tiêm SQL; bài
+kiểm của tab trên giao diện xanh. Cột ngày trong bảng tạm dùng ngày hiệu lực vì máy chủ chưa
+trả ngày ban hành. Không có migration. Chưa commit, chưa deploy.
+Mã nguồn: `backend/app/modules/document/controller.py` ·
+`frontend-v2/src/modules/document/components/book-documents-tab.tsx` ·
+`frontend-v2/src/modules/document/pages/document-book-detail-page.tsx`.
+
+## duoc-CR-475 | Nền máy chủ cho cây thư mục văn bản và quyền trên thư mục
+- status: dang-lam
+- date: 2026-09-23
+Để xếp văn bản vào thư mục và tìm lại theo thư mục, em dựng phần nền phía máy chủ: một cây
+thư mục chung cho cả tập đoàn, mỗi pháp nhân một thư mục gốc do hệ thống tự tạo, một văn bản
+nằm được ở nhiều thư mục với một thư mục chính. Văn bản không chọn thư mục thì vào thư mục
+mặc định của loại văn bản, không có thì vào thư mục pháp nhân; gỡ thư mục cuối cùng thì văn
+bản quay về thư mục pháp nhân. Văn bản chưa gắn pháp nhân thì cố ý không vào thư mục nào.
+Migration nạp sẵn thư mục pháp nhân cho các văn bản đang có.
+
+Quyền trên thư mục có ba mức Xem, Đóng góp và Quản lý, cấp được cho người, phòng ban, pháp
+nhân hoặc vai trò, kế thừa xuống thư mục con, và dòng cấm luôn thắng dòng cho. Quyền thư mục
+không cho đọc văn bản: số đếm, danh sách và đường dẫn thư mục của văn bản đều chỉ tính phần
+người xem được đọc. Sau đợt rà soát mã cùng ngày, em vá thêm: lưu thư mục của văn bản không
+còn xóa mất liên kết tới thư mục người sửa không nhìn thấy, gắn thư mục được kiểm trước khi
+ghi văn bản, quyền quản trị thư mục trong dữ liệu mẫu hạ về phạm vi công ty và không còn tự
+rơi vào vai trò Quản lý thu mua, và chặn trường hợp một pháp nhân có hai thư mục gốc.
+
+Khi deploy: trên hệ đang chạy, các vai trò cũ không tự có khóa quyền thư mục mới, phải tick ở
+màn Phân quyền hoặc bật đồng bộ lại dữ liệu mẫu một lần; nên đếm trước số văn bản chưa gắn
+pháp nhân trên dev và prod. Kiểm tra: sáu tệp bài kiểm thư mục và bài canh đủ khóa quyền đều
+xanh theo báo cáo từng đợt. Chưa commit, chưa deploy.
+Mã nguồn: `backend/app/modules/doc_catalog/folder_link_service.py` ·
+`backend/app/modules/doc_catalog/folder_access_service.py` ·
+`backend/app/modules/doc_catalog/folder_controller.py` · `backend/app/core/subject_match.py` ·
+khóa quyền `doc_folder` · migration `e4a1c9d572b6`, `1c035ad17323` và `32b55e9888f6`.
+
+## duoc-CR-476 | Màn Thư mục văn bản kiểu Google Drive, cây kiểu VS Code, chọn thư mục khi tạo văn bản
+- status: dang-lam
+- date: 2026-09-23
+Đại ca muốn có trang quản lý cây thư mục văn bản làm kỹ để phục vụ tìm kiếm, lúc tạo văn
+bản thì chọn được thư mục lưu, và tối cùng ngày chốt thêm là giao diện phải giống Google
+Drive, cây giống VS Code, phân quyền thì chọn được nhiều người một lần. Em đã dựng trang
+«Thư mục văn bản» trong phân hệ Văn bản: bên trái là cây thư mục, mỗi pháp nhân một gốc
+hiện bằng tên ngắn, lọc tên ngay trên cây, tạo và đổi tên thư mục ngay trong dòng, kéo thả
+để đổi thư mục cha hoặc đổi thứ tự. Bên phải là nội dung của thư mục đang chọn, xem dạng
+lưới hoặc danh sách, chọn nhiều bằng Ctrl và Shift như trên máy tính, bấm chuột phải để
+mở menu thao tác, kéo văn bản thả sang thư mục khác.
+
+Phân quyền thư mục nay mở bằng hộp «Chia sẻ»: gõ tìm và chọn một lúc nhiều người, phòng
+ban, pháp nhân hoặc vai trò, chọn mức Xem, Đóng góp hay Quản lý rồi cấp một lần cho cả
+danh sách (tối đa 200 đối tượng), thay vì cấp từng người như bản đầu. Ở màn tạo văn bản có
+thêm ô «Lưu vào thư mục», loại văn bản khai được thư mục mặc định, chi tiết văn bản có thẻ
+thư mục, và màn danh sách Văn bản có thêm cột, bộ lọc theo thư mục cùng thao tác chọn
+nhiều dòng để thêm vào thư mục.
+
+Kiểm tra: kiểm kiểu 0 lỗi, kiểm nếp mã 0 lỗi và không thêm cảnh báo mới, các bài kiểm của
+phân hệ Văn bản cùng khu cây, bảng và chọn dòng dùng chung đều xanh theo báo cáo từng đợt.
+Chưa bấm tay đủ các kịch bản trên trình duyệt. Mã còn nằm trên máy em, chưa commit, chưa
+deploy. Phần nền phía máy chủ (bảng thư mục và quyền thư mục) ghi ở mục duoc-CR-475.
+Mã nguồn: `frontend-v2/src/modules/document/pages/document-folder-page.tsx` ·
+`frontend-v2/src/modules/document/components/folder-share-dialog.tsx` ·
+`frontend-v2/src/modules/document/components/folder-picker.tsx` ·
+`frontend-v2/src/shared/tree/` ·
+`backend/app/modules/doc_catalog/folder_access_bulk_service.py`.
+
+## duoc-CR-477 | Tìm toàn văn văn bản: tìm cả trong nội dung soạn thảo và tệp đính kèm
+- status: dang-lam
+- date: 2026-09-23
+Trước đây ô tìm của màn Văn bản chỉ dò trên vài cột như tên và số hiệu. Em đã làm thêm
+công tắc «Tìm cả nội dung»: bật lên thì hệ thống tìm cả trong phần soạn thảo và chữ bên
+trong tệp đính kèm (Word, Excel, PDF có lớp chữ, tệp chữ thường), không phân biệt hoa
+thường hay có dấu, hỗ trợ tìm cụm trong ngoặc kép và loại trừ bằng dấu trừ đứng đầu từ.
+Mỗi kết quả kèm một đoạn trích có tô đậm chỗ trúng. PDF dạng ảnh scan thì không đọc được
+chữ, đợt này chưa làm nhận dạng chữ (OCR).
+
+Lúc kiểm tay trên MySQL thật em phát hiện tìm chữ «văn bản» ra rỗng: MySQL mặc định bỏ
+một số từ tiếng Anh ngắn khỏi chỉ mục, và nhiều âm tiết tiếng Việt như «văn», «bản»,
+«toàn», «là» trùng đúng các từ đó. Em sửa bằng cách tắt việc bỏ từ này ngay lúc migration
+dựng lại chỉ mục, cách này chạy được cả trên prod mà không cần quyền quản trị máy chủ cơ
+sở dữ liệu. Vì chỉ mục có thể bị dựng lại âm thầm khi khôi phục bản sao lưu, em thêm vào
+script dựng chỉ mục hai lựa chọn: một để kiểm chỉ mục còn đúng không, một để vá lại.
+
+Kiểm tra: các bài kiểm tìm toàn văn, gập dấu và bài canh từ dừng đều xanh; nhánh MySQL
+thật đã kiểm tay trên máy em. Chưa đo tốc độ ở quy mô khoảng năm mươi nghìn văn bản vì máy
+em chỉ có năm văn bản. Khi deploy phải dựng lại image `api` vì có thêm thư viện đọc PDF,
+rồi chạy script dựng chỉ mục cho văn bản đang có. Chưa commit, chưa deploy.
+Mã nguồn: `backend/app/modules/document/search_service.py` ·
+`backend/app/modules/document/search_index_service.py` ·
+`backend/app/core/text_fold.py` · `backend/scripts/reindex_documents.py` ·
+`frontend-v2/src/modules/document/components/search-snippet.tsx` · migration
+`747c71718181` và `83679db84fd1`.
+
+## duoc-CR-478 | Nút «Tạo, không soạn thảo», tab Tệp của văn bản, và công tắc tạm tắt hạn xem tệp
+- status: dang-lam
+- date: 2026-09-23
+Nhiều văn bản chỉ là tệp có sẵn như bản scan, văn bản đến hay hợp đồng đã ký, không cần
+soạn gì. Em thêm nút «Tạo, không soạn thảo» ở màn tạo văn bản: tạo xong hệ thống mở thẳng
+tab «Tệp» mới của văn bản. Tab này có một tệp thì hiện luôn tệp đó, có nhiều tệp thì hiện
+danh sách, bấm vào một tệp là xem kèm cây tệp theo từng phiên bản ở bên phải. Văn bản
+không có nội dung soạn thảo mà có tệp thì mở ra là vào thẳng tab «Tệp».
+
+Đại ca chốt tạm cho xem tệp thoải mái trong lúc dồn dữ liệu cũ vào hệ thống, nên em thêm
+một công tắc ở màn Cấu hình hệ thống, tab «Văn bản», mặc định tắt. Khi tắt, ngày hạn xem
+tệp đã khai trên từng văn bản vẫn được giữ nguyên nhưng không chặn ai; bật lại là có hiệu
+lực ngay, không cần deploy. Em cũng vá lỗi bấm đúp nút tạo ra hai văn bản.
+
+Kiểm tra: bài kiểm tab Tệp theo phiên bản và bài kiểm hạn xem tệp đều xanh, bài kiểm bấm
+đúp ở màn tạo bắt đúng lỗi cũ khi thử quay lại mã trước. Không có migration. Chưa commit,
+chưa deploy.
+Mã nguồn: `frontend-v2/src/modules/document/pages/document-create-page.tsx` ·
+`frontend-v2/src/modules/document/components/document-files-tab.tsx` ·
+`backend/app/modules/document/files_controller.py` ·
+`backend/app/modules/document/attachment_window.py` · khóa cấu hình
+`doc_attachment_view_window_enabled`.
