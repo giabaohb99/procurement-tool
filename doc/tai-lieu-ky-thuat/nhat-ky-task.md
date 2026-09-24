@@ -3155,6 +3155,19 @@ Mã nguồn: `frontend-v2/src/modules/approval-seal/components/seal-clerk-detail
 Commit: `5fbce75a` trên nhánh `erp-v2`.
 
 
+## ai-CR-042 | Bot cho xem đúng thông tin tài khoản đang đăng nhập
+- status: xong
+- date: 2026-09-24
+- pic: NSU209
+
+Đại ca đăng nhập được bằng mã nhưng lệnh xem tài khoản chỉ hiện số hiệu «#238» vì tài khoản đó không có
+email, và khi hỏi thông tin tài khoản thì bot lại giảng cách đăng nhập. Nay bot hiện họ tên, mã nhân viên,
+phòng ban và tên đăng nhập của tài khoản ở câu báo đăng nhập thành công, ở lệnh xem tài khoản và trong lời
+dặn cho Trợ lý. Trợ lý được dặn: hỏi thông tin tài khoản thì trả bằng chính thông tin đó, chỉ nói cách đăng
+nhập khi được hỏi cách đổi tài khoản. Cả tệp bài kiểm của bot 179/179 xanh.
+
+Mã nguồn: `backend/app/modules/agent_hub/service.py` (`describe_user`, `_account_fact`, `show_account`) · `constants.py` (`BOT_LOGIN_FACTS`) · `test/backend/test_agent_hub.py` · `change-log-ai.md`.
+
 ## ai-CR-041 | Bài kiểm của bot không bao giờ gọi mạng thật
 - status: xong
 - date: 2026-09-24

@@ -252,6 +252,7 @@ BOT_PERSONA = (
 #  ai-CR-040: bot từng BỊA cách đổi tài khoản («quét mã QR», «token phiên») khi đại ca hỏi. Đây là cơ chế
 #  thật (ai-CR-038), nói rõ để model không phải đoán.
 BOT_LOGIN_FACTS = (
+    "Chỉ dùng đoạn này khi người dùng hỏi CÁCH đăng nhập / đổi tài khoản (ai-CR-042). "
     "Cách đăng nhập tài khoản ERP trong Telegram (chỉ có đúng cách này, không có quét QR, không hỏi mật "
     "khẩu): tài khoản của một chat Telegram KHÔNG đổi theo trang web — đăng nhập tài khoản khác trên web "
     "không làm chat này đổi theo. Muốn đổi: đăng nhập ERP bằng tài khoản muốn dùng, vào Trang cá nhân → "

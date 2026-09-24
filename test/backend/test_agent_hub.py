@@ -4242,4 +4242,48 @@ def test_tro_ly_duoc_dan_dung_co_che_dang_nhap_va_tai_khoan_hien_tai(db, monkeyp
                         lambda message, *, db, user, history=None, system="", **kw: seen.update(system=system) or {"text": "ok"})
     service.answer_question(db, "12345", "anh mới đổi tài khoản rồi mà")
     assert "Trang cá nhân → tab «Telegram»" in seen["system"] and "không có quét QR" in seen["system"]
-    assert "CHƯA liên kết" in seen["system"] and "BOT01" in seen["system"]
+    assert "CHƯA đăng nhập bằng mã" in seen["system"] and "BOT01" in seen["system"]
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-042: thông tin tài khoản đọc được (họ tên, mã NV, phòng), không chỉ «#238»
+# ---------------------------------------------------------------------------
+def test_taikhoan_hien_ho_ten_ma_nhan_vien_va_phong(db, bot):
+    from app.modules.agent_hub import chat_link
+    from app.modules.department.model import Department
+    from app.modules.employee.model import Employee
+    from app.modules.user.model import User
+
+    service, sent, _ = bot
+    dept = Department(code="IT", name="Lập trình & IT nội bộ")
+    db.add(dept)
+    db.flush()
+    emp = Employee(code="DEGO0002", full_name="Trần Gia Bảo", department_id=dept.id)
+    db.add(emp)
+    db.flush()
+    u = User(email="", employee_id=emp.id, password_hash="x", is_active=True)       # không có email
+    db.add(u)
+    db.commit()
+    code, _ = chat_link.issue_code(db, u.id)
+    service.handle_message(db, _msg(f"/dangnhap {code}"))
+    assert "<b>Trần Gia Bảo (DEGO0002)</b>" in sent[-1] and "phòng Lập trình &amp; IT nội bộ" in sent[-1]
+    service.handle_message(db, _msg("/taikhoan"))
+    assert "<b>Trần Gia Bảo (DEGO0002)</b>" in sent[-1] and "#" not in sent[-1].split("Đăng nhập tài khoản")[0]
+    #  Tài khoản trơn (không hồ sơ, không email) vẫn ra chữ đọc được.
+    bare = User(email="", employee_id=0, password_hash="x", is_active=True)
+    db.add(bare)
+    db.commit()
+    assert service.describe_user(db, bare) == (f"tài khoản #{bare.id}", "")
+
+
+def test_he_thong_dan_tro_ly_tra_thong_tin_tai_khoan_chu_khong_giang_cach_dang_nhap(db, monkeypatch):
+    from app.modules.agent_hub import service
+    from app.modules.user.model import User
+
+    monkeypatch.setattr(settings, "AGENT_TELEGRAM_CHAT_ID", "12345")
+    u = User(email="lan@dego.vn", employee_id=0, password_hash="x", is_active=True)
+    db.add(u)
+    db.commit()
+    fact = service._account_fact(db, "12345", u)
+    assert "lan@dego.vn" in fact and "KHÔNG giảng lại cách đăng nhập" in fact
+    assert service.BOT_LOGIN_FACTS.startswith("Chỉ dùng đoạn này khi người dùng hỏi CÁCH")

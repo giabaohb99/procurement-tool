@@ -301,19 +301,44 @@ def _login_by_code(db: Session, msg: dict, chat_id: str, code: str, *, log_row: 
     from app.modules.user.model import User
 
     user = db.get(User, ok.user_id)
-    name = telegram.esc(getattr(user, "email", "") or f"#{ok.user_id}")
-    reply(db, chat_id, f"Đã đăng nhập tài khoản ERP <b>{name}</b> cho chat này "
-          f"(hết hạn sau {settings.AGENT_LINK_DAYS} ngày). Cứ nhắn câu hỏi, em trả lời đúng quyền của tài khoản đó. "
+    name, detail = describe_user(db, user)
+    reply(db, chat_id, f"Đã đăng nhập tài khoản ERP <b>{telegram.esc(name)}</b> cho chat này"
+          + (f" ({telegram.esc(detail)})" if detail else "")
+          + f". Hết hạn sau {settings.AGENT_LINK_DAYS} ngày. Cứ nhắn câu hỏi, em trả lời đúng quyền của tài khoản đó. "
           "Đăng xuất: <code>/dangxuat</code>.")
 
 
+def describe_user(db: Session, user) -> tuple[str, str]:
+    """(nhãn, chi tiết) của một tài khoản ERP cho người đọc: «Họ tên (MÃ NV)», «Phòng … · Email …».
+
+    ai-CR-042: bản đầu chỉ in email, tài khoản không có email thì ra «#238» — đại ca không biết là ai.
+    """
+    from app.modules.department.model import Department
+    from app.modules.employee.model import Employee
+
+    if user is None:
+        return "", ""
+    emp = db.get(Employee, user.employee_id) if getattr(user, "employee_id", 0) else None
+    login = (getattr(user, "email", "") or "").strip()
+    if emp is not None:
+        label = f"{emp.full_name} ({emp.code})" if emp.code else emp.full_name
+        dept = db.get(Department, emp.department_id) if emp.department_id else None
+        parts = [f"phòng {dept.name}" if dept is not None else "",
+                 f"tên đăng nhập {login}" if login else ""]
+        return label, " · ".join(p for p in parts if p)
+    return (login or f"tài khoản #{getattr(user, 'id', 0)}"), ""
+
+
 def _account_fact(db: Session, chat_id: str, user) -> str:
-    """Câu cho model biết chat này đang chạy dưới tài khoản nào và vì sao (ai-CR-040)."""
+    """Câu cho model biết chat này đang chạy dưới tài khoản nào và vì sao (ai-CR-040, ai-CR-042)."""
     link = chat_link.get_active_link(db, chat_id)
-    who = getattr(user, "email", "") or f"#{getattr(user, 'id', 0)}"
-    if link is not None:
-        return f"Chat này đang dùng tài khoản ERP {who}, đã liên kết bằng /dangnhap."
-    return (f"Chat này CHƯA liên kết (/dangnhap) nên đang dùng tài khoản chung khai sẵn cho bot: {who}.")
+    name, detail = describe_user(db, user)
+    who = name + (f" ({detail})" if detail else "")
+    how = ("đã đăng nhập bằng /dangnhap" if link is not None
+           else "CHƯA đăng nhập bằng mã nên đang dùng tài khoản chung khai sẵn cho bot")
+    return (f"Chat này đang dùng tài khoản ERP: {who}, {how}. Khi người dùng hỏi thông tin tài khoản / "
+            "thông tin cá nhân của họ thì trả lời bằng chính thông tin tài khoản này (tra thêm bằng tool nếu "
+            "cần), KHÔNG giảng lại cách đăng nhập — chỉ nói cách đăng nhập khi họ hỏi cách đổi tài khoản.")
 
 
 def show_account(db: Session, chat_id: str) -> None:
@@ -322,14 +347,15 @@ def show_account(db: Session, chat_id: str) -> None:
 
     link = chat_link.get_active_link(db, chat_id)
     if link is not None:
-        user = db.get(User, link.user_id)
-        who = telegram.esc(getattr(user, "email", "") or f"#{link.user_id}")
-        text = (f"Chat này đang dùng tài khoản ERP <b>{who}</b> (đăng nhập bằng mã lúc "
-                f"{fmt_local(link.linked_at)}, hết hạn {fmt_local(link.expires_at)}).")
+        name, detail = describe_user(db, db.get(User, link.user_id))
+        text = (f"Chat này đang dùng tài khoản ERP <b>{telegram.esc(name)}</b>"
+                + (f" ({telegram.esc(detail)})" if detail else "")
+                + f". Đăng nhập bằng mã lúc {fmt_local(link.linked_at)}, hết hạn {fmt_local(link.expires_at)}.")
     else:
         user = _assistant_user(db, chat_id)
-        who = telegram.esc(getattr(user, "email", "") or "")
-        text = (f"Chat này CHƯA đăng nhập bằng mã nên đang dùng tài khoản chung của bot <b>{who}</b>."
+        name, detail = describe_user(db, user)
+        text = (f"Chat này CHƯA đăng nhập bằng mã nên đang dùng tài khoản chung của bot "
+                f"<b>{telegram.esc(name)}</b>" + (f" ({telegram.esc(detail)})" if detail else "") + "."
                 if user is not None else "Chat này chưa đăng nhập tài khoản ERP nào.")
     reply(db, chat_id, text + "\nĐăng nhập tài khoản trên web KHÔNG làm chat này đổi theo. " + _LINK_HELP)
 
