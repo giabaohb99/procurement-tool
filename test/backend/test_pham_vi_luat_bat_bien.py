@@ -215,11 +215,6 @@ BB4_CONTROLLER_MIEN_TRU = {
     "document/files_controller.py": ("gác qua CHÍNH văn bản — nhập lại `doc_reader`/`_load` từ "
                                     "`document/controller.py` (cùng `ensure_can`); tệp tách riêng "
                                     "để controller.py dưới 200 dòng, phase 09 duoc-CR-478"),
-    "document/approval_preview_controller.py": ("chỉ TÍNH TOÁN từ dữ liệu người dùng NHẬP trong "
-                                                "body (văn bản CHƯA tồn tại lúc xem trước) — không "
-                                                "có bản ghi nào thuộc entity document để lọc theo "
-                                                "dòng; cổng require('document','create') là đủ, "
-                                                "phase 01 duoc-CR-473"),
     "document/search_controller.py": ("gác require('document','read') rồi TÁI DÙNG "
                                       "`document.controller._list_query` qua `search_service.search` "
                                       "— cùng đúng `visible_condition` + lọc thư mục mà "
