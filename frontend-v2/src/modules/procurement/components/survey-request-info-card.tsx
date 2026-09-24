@@ -7,14 +7,9 @@ import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { ReadOnlyValue } from '@/shared/ui/read-only-value'
 import { RequiredMark } from '@/shared/ui/required-mark'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/ui/select'
+import { SearchSelect } from '@/shared/ui/search-select'
 import { Textarea } from '@/shared/ui/textarea'
+import { cn } from '@/shared/utils/cn'
 import { formatDateTime } from '@/shared/utils/format-date'
 import { useDeptHeadLookup } from '../hooks/use-survey-request'
 import type { SurveyRequestDetail } from '../types/survey-request-detail'
@@ -63,7 +58,7 @@ export function SurveyRequestInfoCard({
 
   /**
    * Danh sách TBP chọn được = trưởng đã gán ở màn Phòng ban. Một người trưởng
-   * NHIỀU phòng chỉ hiện một dòng (Radix Select không nhận value trùng), gom
+   * NHIỀU phòng chỉ hiện một dòng (ô chọn không nhận value trùng), gom
    * tên các phòng vào cùng nhãn cho dễ nhận.
    */
   const deptHeads = (() => {
@@ -125,6 +120,10 @@ export function SurveyRequestInfoCard({
   const handlerDepartmentName =
     departments.find((department) => department.id === data.handler_dept_id)?.name ?? ''
 
+  //  Ô chọn có ô gõ tìm không nhận `aria-invalid` — tô đỏ viền ô gõ bên trong thay cho
+  //  `aria-invalid:border-destructive` của SelectTrigger cũ (QA 29/08).
+  const invalidClass = (key: string) => cn(invalid?.has(key) && '[&_input]:border-destructive')
+
   return (
     <Card className="gap-4 py-4">
       {/* Cùng khuôn với các thẻ khác của phân hệ — `pb-3!` là bắt buộc vì
@@ -149,26 +148,28 @@ export function SurveyRequestInfoCard({
         </div>
 
         <div className="space-y-1.5">
-          <Label>
+          <Label htmlFor="sr-company">
             Công ty nhận hóa đơn
             <RequiredMark />
           </Label>
           {editing && companies.length ? (
-            <Select
-              value={data.company_id ? String(data.company_id) : undefined}
-              onValueChange={(value) => onChange({ company_id: Number(value) })}
-            >
-              <SelectTrigger className="w-full" aria-invalid={invalid?.has('company_id') || undefined}>
-                <SelectValue placeholder="Chọn công ty" />
-              </SelectTrigger>
-              <SelectContent>
-                {companies.map((company) => (
-                  <SelectItem key={company.id} value={String(company.id)}>
-                    {company.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchSelect
+              id="sr-company"
+              searchInTrigger
+              className={invalidClass('company_id')}
+              value={data.company_id ? String(data.company_id) : ''}
+              placeholder="Chọn công ty"
+              searchPlaceholder="Gõ để tìm công ty…"
+              options={companies.map((company) => ({
+                value: String(company.id),
+                label: company.name,
+              }))}
+              onChange={(value) => {
+                //  Chọn lại đúng mục đang chọn thì thôi — Radix Select cũ không bắn sự kiện.
+                if (value === String(data.company_id)) return
+                onChange({ company_id: Number(value) })
+              }}
+            />
           ) : (
             <ReadOnlyValue>
               {companies.find((company) => company.id === data.company_id)?.name ||
@@ -178,26 +179,29 @@ export function SurveyRequestInfoCard({
         </div>
 
         <div className="space-y-1.5">
-          <Label>
+          <Label htmlFor="sr-requester">
             Người yêu cầu
             <RequiredMark />
           </Label>
           {editing && !lockRequester && employees.length ? (
-            <Select
-              value={data.requester_id ? String(data.requester_id) : undefined}
-              onValueChange={(value) => pickEmployee(Number(value))}
-            >
-              <SelectTrigger className="w-full" aria-invalid={invalid?.has('requester') || undefined}>
-                <SelectValue placeholder="Chọn người yêu cầu" />
-              </SelectTrigger>
-              <SelectContent>
-                {employees.map((employee) => (
-                  <SelectItem key={employee.id} value={String(employee.id)}>
-                    {employee.code} - {employee.full_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchSelect
+              id="sr-requester"
+              searchInTrigger
+              className={invalidClass('requester')}
+              value={data.requester_id ? String(data.requester_id) : ''}
+              placeholder="Chọn người yêu cầu"
+              searchPlaceholder="Tìm theo mã hoặc tên nhân sự…"
+              options={employees.map((employee) => ({
+                value: String(employee.id),
+                label: `${employee.code} - ${employee.full_name}`,
+              }))}
+              onChange={(value) => {
+                //  Chọn lại đúng người đang chọn thì thôi: Radix Select cũ không bắn sự kiện,
+                //  còn chạy tiếp là tra lại TBP và đè mất người đã chọn tay.
+                if (value === String(data.requester_id)) return
+                pickEmployee(Number(value))
+              }}
+            />
           ) : (
             <ReadOnlyValue>{data.requester || 'Chưa chọn người yêu cầu'}</ReadOnlyValue>
           )}
@@ -217,28 +221,29 @@ export function SurveyRequestInfoCard({
         </div>
 
         <div className="space-y-1.5">
-          <Label>
+          <Label htmlFor="sr-department">
             Bộ phận YC
             <RequiredMark />
           </Label>
           {editing && departments.length ? (
-            <Select
-              value={data.department_id ? String(data.department_id) : undefined}
-              onValueChange={(value) => pickDepartment(Number(value))}
-            >
-              {/* Phiếu cũ có tên phòng nhưng chưa có id (dữ liệu trước CR-086)
-                  thì ô rỗng — mượn tên đang lưu làm gợi ý để người lập chọn lại. */}
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={data.department || 'Chọn bộ phận'} />
-              </SelectTrigger>
-              <SelectContent>
-                {departments.map((department) => (
-                  <SelectItem key={department.id} value={String(department.id)}>
-                    {department.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            //  Phiếu cũ có tên phòng nhưng chưa có id (dữ liệu trước CR-086)
+            //  thì ô rỗng — mượn tên đang lưu làm gợi ý để người lập chọn lại.
+            <SearchSelect
+              id="sr-department"
+              searchInTrigger
+              value={data.department_id ? String(data.department_id) : ''}
+              placeholder={data.department || 'Chọn bộ phận'}
+              searchPlaceholder="Gõ để tìm bộ phận…"
+              options={departments.map((department) => ({
+                value: String(department.id),
+                label: department.name,
+              }))}
+              onChange={(value) => {
+                //  Chọn lại đúng phòng đang chọn thì thôi — tránh tra lại TBP vô cớ.
+                if (value === String(data.department_id)) return
+                pickDepartment(Number(value))
+              }}
+            />
           ) : (
             <ReadOnlyValue>{data.department || '—'}</ReadOnlyValue>
           )}
@@ -247,28 +252,27 @@ export function SurveyRequestInfoCard({
         {/*
           bao-CR-414 — phòng tự mua hàng vẫn có thể NHỜ thu mua chung (hoặc ngược lại) xử lý
           một phiếu. Chọn phòng ở đây thì quản lý thu mua của phòng đó thấy + điều phối được
-          phiếu; phòng lập phiếu vẫn thấy như cũ. Radix Select không nhận giá trị rỗng nên
-          «không nhờ» đi bằng mục `0`, đúng với cách backend lưu.
+          phiếu; phòng lập phiếu vẫn thấy như cũ. «Không nhờ» là một MỤC CHỌN ĐƯỢC mang
+          giá trị `0`, đúng với cách backend lưu (cùng luật với YCMH).
         */}
         <div className="space-y-1.5">
-          <Label>Nhờ phòng xử lý</Label>
+          <Label htmlFor="sr-handler-dept">Nhờ phòng xử lý</Label>
           {editing && handlerDepartments.length ? (
-            <Select
+            <SearchSelect
+              id="sr-handler-dept"
+              searchInTrigger
               value={String(data.handler_dept_id || 0)}
-              onValueChange={(value) => onChange({ handler_dept_id: Number(value) || 0 })}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Không nhờ — thu mua chung xử lý" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="0">Không nhờ — thu mua chung xử lý</SelectItem>
-                {handlerDepartments.map((department) => (
-                  <SelectItem key={department.id} value={String(department.id)}>
-                    {department.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              placeholder="Không nhờ — thu mua chung xử lý"
+              searchPlaceholder="Gõ để tìm phòng ban…"
+              options={[
+                { value: '0', label: 'Không nhờ — thu mua chung xử lý' },
+                ...handlerDepartments.map((department) => ({
+                  value: String(department.id),
+                  label: department.name,
+                })),
+              ]}
+              onChange={(value) => onChange({ handler_dept_id: Number(value) || 0 })}
+            />
           ) : (
             <ReadOnlyValue>
               {handlerDepartmentName ||
@@ -281,34 +285,34 @@ export function SurveyRequestInfoCard({
             ĐƯỢC chọn TBP phòng ban khác duyệt hộ (QA 29/08) — danh sách lấy từ
             người đã gán ở màn Phòng ban, không nhập tay tên lạ được. */}
         <div className="space-y-1.5">
-          <Label className={editing ? undefined : 'text-muted-foreground'}>Trưởng bộ phận</Label>
+          <Label htmlFor="sr-dept-head" className={editing ? undefined : 'text-muted-foreground'}>
+            Trưởng bộ phận
+          </Label>
           {editing && deptHeads.length ? (
-            <Select
+            //  TBP đang lưu không nằm trong danh sách thì để ô rỗng, tên nằm ở placeholder —
+            //  đưa id vào `value` thì ô hiện nguyên văn con số id.
+            <SearchSelect
+              id="sr-dept-head"
+              searchInTrigger
               value={
                 deptHeads.some((head) => head.id === data.head_of_dept_id)
                   ? String(data.head_of_dept_id)
-                  : undefined
+                  : ''
               }
-              onValueChange={(value) => {
+              placeholder={
+                deptHeadLookup.isPending ? 'Đang tra…' : data.head_of_dept || 'Chọn Trưởng bộ phận'
+              }
+              searchPlaceholder="Gõ để tìm Trưởng bộ phận…"
+              options={deptHeads.map((head) => ({
+                value: String(head.id),
+                label: `${head.name} — ${head.departments.join(', ')}`,
+              }))}
+              onChange={(value) => {
+                if (value === String(data.head_of_dept_id)) return
                 const head = deptHeads.find((option) => option.id === Number(value))
                 if (head) onChange({ head_of_dept_id: head.id, head_of_dept: head.name })
               }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue
-                  placeholder={
-                    deptHeadLookup.isPending ? 'Đang tra…' : data.head_of_dept || 'Chọn Trưởng bộ phận'
-                  }
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {deptHeads.map((head) => (
-                  <SelectItem key={head.id} value={String(head.id)}>
-                    {head.name} — {head.departments.join(', ')}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            />
           ) : (
             <ReadOnlyValue>
               {deptHeadLookup.isPending ? 'Đang tra…' : data.head_of_dept || '—'}

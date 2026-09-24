@@ -356,18 +356,18 @@ export function PurchaseOrderLineDialog({
               <RequiredMark />
             </Label>
             {fieldEditable && !received ? (
-              <Select value={item.unit || undefined} onValueChange={(value) => patch({ unit: value })}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Chọn ĐVT" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(units?.items ?? []).map((unit) => (
-                    <SelectItem key={unit.id} value={unit.name}>
-                      {unit.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchSelect
+                searchInTrigger
+                value={item.unit || ''}
+                placeholder="Chọn ĐVT"
+                searchPlaceholder="Tìm đơn vị tính…"
+                options={(units?.items ?? []).map((unit) => ({ value: unit.name, label: unit.name }))}
+                onChange={(value) => {
+                  //  Chọn lại đúng mục đang chọn thì thôi — Radix Select cũ không bắn sự kiện.
+                  if (value === (item.unit || '')) return
+                  patch({ unit: value })
+                }}
+              />
             ) : (
               <ReadOnlyValue>{item.unit}</ReadOnlyValue>
             )}
@@ -379,21 +379,20 @@ export function PurchaseOrderLineDialog({
               <RequiredMark />
             </Label>
             {lateEditable ? (
-              <Select
-                value={item.warehouse_code || undefined}
-                onValueChange={(value) => patch({ warehouse_code: value })}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Chọn kho" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(warehouses?.items ?? []).map((warehouse) => (
-                    <SelectItem key={warehouse.id} value={warehouse.code}>
-                      {warehouse.code} — {warehouse.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchSelect
+                searchInTrigger
+                value={item.warehouse_code || ''}
+                placeholder="Chọn kho"
+                searchPlaceholder="Tìm theo mã hoặc tên kho…"
+                options={(warehouses?.items ?? []).map((warehouse) => ({
+                  value: warehouse.code,
+                  label: `${warehouse.code} — ${warehouse.name}`,
+                }))}
+                onChange={(value) => {
+                  if (value === (item.warehouse_code || '')) return
+                  patch({ warehouse_code: value })
+                }}
+              />
             ) : (
               <ReadOnlyValue>{warehouseLabel(item.warehouse_code)}</ReadOnlyValue>
             )}

@@ -81,6 +81,7 @@ import { TransferDeptDialog, type TransferDeptMode } from '../components/transfe
 import {
   useAssignPurchaser,
   useDeletePurchaseRequest,
+  useDefaultDeptHead,
   useDeptHeadCandidates,
   useOrderProgress,
   usePurchaseRequest,
@@ -200,7 +201,16 @@ export function PurchaseRequestDetailPage() {
     isNew ? applyPurchaseAssistantDraft(createEmptyPurchaseRequest(user), assistantDraft) : null,
   )
   // CR-071 — chỉ hỏi backend khi đang SỬA: ô TBP lúc chỉ đọc là chữ, không cần danh sách.
-  const { data: deptHeadData } = useDeptHeadCandidates(purchaseRequestId, editing)
+  // bao-CR-474: tra theo PHÒNG BAN trên form (tạo mới cũng chọn được) + trưởng phòng mặc
+  // định để ô luôn hiện một người khi chưa ai được chọn.
+  const formDepartment = (draft ?? serverData)?.department ?? ''
+  const formDepartmentId = (draft ?? serverData)?.department_id ?? 0
+  const { data: deptHeadData } = useDeptHeadCandidates(
+    formDepartment,
+    (draft ?? serverData)?.company_id ?? 0,
+    editing,
+  )
+  const { data: defaultDeptHead } = useDefaultDeptHead(formDepartment, formDepartmentId, editing)
   const [reasonFor, setReasonFor] = useState<ReasonAction | null>(null)
   const [reason, setReason] = useState('')
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
@@ -911,6 +921,7 @@ export function PurchaseRequestDetailPage() {
             employees={employeesData?.items}
             departments={departmentsData?.items}
             deptHeadCandidates={deptHeadData?.items}
+            defaultDeptHead={defaultDeptHead}
             urgentEditable={!closed && !editing && can('purchase_request', 'write')}
             onUrgentChange={(value) => void setUrgent.mutateAsync(value)}
             onChange={patch}

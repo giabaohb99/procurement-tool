@@ -111,10 +111,22 @@ export const purchaseRequestApi = {
   setUrgent: (id: number, isUrgent: boolean) =>
     apiPatch<PurchaseRequestDetail>(`${BASE_URL}/${id}/urgent`, { is_urgent: isUrgent }),
 
-  /** Trưởng bộ phận hiện tại của một phòng — người yêu cầu không xem được DS nhân sự. */
-  getDeptHead: (department: string) =>
-    apiGet<{ head_of_dept: string }>(`${BASE_URL}/meta/dept-head`, {
-      params: { department },
+  /**
+   * Trưởng bộ phận MẶC ĐỊNH của một phòng (`Department.manager_id`) — người yêu cầu không
+   * xem được DS nhân sự. bao-CR-474: trả kèm id để ô chọn hiện đúng NGƯỜI.
+   */
+  getDeptHead: (department: string, departmentId = 0) =>
+    apiGet<{ head_of_dept: string; head_of_dept_id: number }>(`${BASE_URL}/meta/dept-head`, {
+      params: { department, department_id: departmentId },
+    }),
+
+  /**
+   * bao-CR-474 — ứng viên TBP tra theo PHÒNG BAN đang chọn trên form (giống bản cũ), để
+   * màn TẠO MỚI (chưa có id phiếu) cũng chọn được. Cùng luật phạm vi với bản tra theo id.
+   */
+  getDeptHeadCandidatesByDepartment: (department: string, companyId: number) =>
+    apiGet<{ items: DeptHeadCandidate[] }>(`${BASE_URL}/meta/dept-head-candidates`, {
+      params: { department, company_id: companyId },
     }),
 
   /**

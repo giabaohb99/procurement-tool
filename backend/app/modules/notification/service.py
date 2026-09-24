@@ -371,6 +371,7 @@ def trigger_notification(
     department: str = "",
     department_id: int = 0,              # CR-086: phòng ban của phiếu, neo bằng id
     recipient_ids: list | None = None,   # chỉ định thẳng người nhận (vd phân bổ NSTM)
+    extra_employee_ids: list | None = None,  # bao-CR-474: CỘNG THÊM người nhận theo id NHÂN SỰ
 ):
     """
     Creates an in-app notification and sends an email notification asynchronously.
@@ -496,6 +497,14 @@ def trigger_notification(
         recipients = ([creator] if creator else []) + get_users_by_role_codes(db, ["pur_admin"])
     else:
         recipients = [creator] if creator else []
+
+    # bao-CR-474 — cộng thêm người nhận theo id NHÂN SỰ (vd người được chọn ở ô «Trưởng bộ
+    # phận» của YCMH). Trước đây chọn TBP khác trưởng phòng mặc định thì người được chọn KHÔNG
+    # nhận chuông: báo duyệt chỉ đi theo phòng ban (manager_id + vai trò dept_head).
+    extra_ids = [int(x) for x in (extra_employee_ids or []) if x]
+    if extra_ids:
+        recipients = list(recipients) + db.query(User).filter(
+            User.employee_id.in_(extra_ids), User.is_active == True).all()   # noqa: E712
 
     # Khử trùng lặp người nhận
     seen_ids = set()

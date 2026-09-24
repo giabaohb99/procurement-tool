@@ -99,6 +99,7 @@ export function SearchSelect({
     onSearchChange?.(next)
   }
   const inputRef = useRef<HTMLInputElement>(null)
+  const anchorRef = useRef<HTMLDivElement>(null)
 
   const selectedLabel = useMemo(
     () => options.find((option) => option.value === value)?.label ?? value,
@@ -164,7 +165,7 @@ export function SearchSelect({
         }}
       >
         <PopoverAnchor asChild>
-          <div className={cn('relative w-full', className)}>
+          <div ref={anchorRef} className={cn('relative w-full', className)}>
             <input
               ref={inputRef}
               id={id}
@@ -216,6 +217,13 @@ export function SearchSelect({
           align="start"
           //  Giữ con trỏ Ở LẠI ô gõ, đừng để Radix nhảy focus vào danh sách (gõ tiếp được).
           onOpenAutoFocus={(event) => event.preventDefault()}
+          //  bao-CR-475 — bấm vào CHÍNH Ô GÕ (nằm ngoài khung danh sách) thì Radix coi là
+          //  «bấm ra ngoài» và đóng danh sách: ô hiện lại nhãn đã chọn, gõ tiếp bị nối vào
+          //  nhãn cũ («Hợp đồng · HDb») nên không còn mục nào khớp. Bấm lại vào ô để đặt con
+          //  trỏ là thao tác rất thường — cú bấm trong ô neo không được tính là ra ngoài.
+          onInteractOutside={(event) => {
+            if (anchorRef.current?.contains(event.target as Node)) event.preventDefault()
+          }}
           className="w-(--radix-popover-trigger-width) min-w-64 p-0"
         >
           {optionList}

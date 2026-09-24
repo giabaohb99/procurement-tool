@@ -9,13 +9,7 @@ import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { ReadOnlyValue } from '@/shared/ui/read-only-value'
 import { RequiredMark } from '@/shared/ui/required-mark'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/ui/select'
+import { SearchSelect } from '@/shared/ui/search-select'
 import { Textarea } from '@/shared/ui/textarea'
 import { formatDate, formatDateTime } from '@/shared/utils/format-date'
 import type { Company } from '@/modules/hr/types/company'
@@ -25,6 +19,7 @@ import type {
   DeptHeadCandidate,
   PurchaseRequestDetail,
 } from '../types/purchase-request-detail'
+import { resolveShownDeptHead } from '../utils/dept-head-display'
 
 interface InfoCardProps {
   data: PurchaseRequestDetail
@@ -38,6 +33,8 @@ interface InfoCardProps {
   departments?: Department[]
   /** CR-071 — ứng viên đứng tên TBP trên phiếu; rỗng thì ô về dạng chữ như cũ. */
   deptHeadCandidates?: DeptHeadCandidate[]
+  /** bao-CR-474 — trưởng phòng mặc định của phòng, hiện khi phiếu chưa chọn TBP. */
+  defaultDeptHead?: { head_of_dept: string; head_of_dept_id: number }
   onChange: (changes: Partial<PurchaseRequestDetail>) => void
 }
 
@@ -60,9 +57,16 @@ export function PurchaseRequestInfoCard({
   employees = [],
   departments = [],
   deptHeadCandidates = [],
+  defaultDeptHead,
   onChange,
 }: InfoCardProps) {
   const { can } = usePermission()
+  // bao-CR-474 — ô TBP LUÔN hiện một người, xem `resolveShownDeptHead`.
+  const { head_of_dept_id: shownHeadId, head_of_dept: shownHeadName } = resolveShownDeptHead(
+    data,
+    editing,
+    defaultDeptHead,
+  )
   // bao-CR-414: chỉ bày phòng đang hoạt động, nhưng phòng đã tắt mà phiếu cũ còn trỏ tới
   // thì giữ lại để không mất nhãn khi mở phiếu.
   const handlerDepartments = departments.filter(
@@ -128,43 +132,53 @@ export function PurchaseRequestInfoCard({
         </div>
 
         <div className="space-y-1.5">
-          <Label>
+          <Label htmlFor="pr-company">
             Công ty nhận hóa đơn
             <RequiredMark />
           </Label>
           {editing && companies.length ? (
-            <Select
-              value={data.company_id ? String(data.company_id) : undefined}
-              onValueChange={(value) => {
+            <SearchSelect
+              id="pr-company"
+              searchInTrigger
+              value={data.company_id ? String(data.company_id) : ''}
+              placeholder="Chọn công ty"
+              searchPlaceholder="Gõ để tìm công ty…"
+              options={companies.map((company) => ({
+                value: String(company.id),
+                label: company.name,
+              }))}
+              onChange={(value) => {
+                //  Chọn lại đúng mục đang chọn thì thôi — Radix Select cũ không bắn sự kiện.
+                if (value === String(data.company_id)) return
                 const company = companies.find((option) => option.id === Number(value))
                 onChange({ company_id: Number(value), company_name: company?.name ?? '' })
               }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Chọn công ty" />
-              </SelectTrigger>
-              <SelectContent>
-                {companies.map((company) => (
-                  <SelectItem key={company.id} value={String(company.id)}>
-                    {company.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            />
           ) : (
             <ReadOnlyValue>{data.company_name || 'Chưa chọn công ty'}</ReadOnlyValue>
           )}
         </div>
 
         <div className="space-y-1.5">
-          <Label>
+          <Label htmlFor="pr-requester">
             Nhân sự YC
             <RequiredMark />
           </Label>
           {editing && employees.length ? (
-            <Select
-              value={data.requester_id ? String(data.requester_id) : undefined}
-              onValueChange={(value) => {
+            <SearchSelect
+              id="pr-requester"
+              searchInTrigger
+              value={data.requester_id ? String(data.requester_id) : ''}
+              placeholder="Chọn nhân sự yêu cầu"
+              searchPlaceholder="Tìm theo mã hoặc tên nhân sự…"
+              options={employees.map((employee) => ({
+                value: String(employee.id),
+                label: `${employee.code} - ${employee.full_name}`,
+              }))}
+              onChange={(value) => {
+                //  Chọn lại đúng người đang chọn thì thôi: Radix Select cũ không bắn sự kiện,
+                //  còn chạy tiếp là ô TBP bị đè về trưởng phòng mặc định.
+                if (value === String(data.requester_id)) return
                 const employee = employees.find((option) => option.id === Number(value))
                 if (!employee) return
                 const nextDepartment = employee.department_name || ''
@@ -183,18 +197,7 @@ export function PurchaseRequestInfoCard({
                     data.company_name,
                 })
               }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Chọn nhân sự yêu cầu" />
-              </SelectTrigger>
-              <SelectContent>
-                {employees.map((employee) => (
-                  <SelectItem key={employee.id} value={String(employee.id)}>
-                    {employee.code} - {employee.full_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            />
           ) : editing ? (
             <Input
               value={data.requester}
@@ -212,28 +215,28 @@ export function PurchaseRequestInfoCard({
         {/*
           bao-CR-414 — phòng tự mua hàng vẫn có thể NHỜ thu mua chung (hoặc ngược lại) xử lý
           một phiếu. Chọn phòng ở đây thì quản lý thu mua của phòng đó thấy + điều phối được
-          phiếu; phòng lập phiếu vẫn thấy như cũ. Radix Select không nhận giá trị rỗng nên
-          «không nhờ» đi bằng mục `0`, đúng với cách backend lưu.
+          phiếu; phòng lập phiếu vẫn thấy như cũ. «Không nhờ» là một MỤC CHỌN ĐƯỢC mang
+          giá trị `0`, đúng với cách backend lưu — để trong danh sách chứ không giấu sau nút
+          xóa, người dùng mới thấy đó là một lựa chọn.
         */}
         <div className="space-y-1.5">
-          <Label>Nhờ phòng xử lý</Label>
+          <Label htmlFor="pr-handler-dept">Nhờ phòng xử lý</Label>
           {editing && handlerDepartments.length ? (
-            <Select
+            <SearchSelect
+              id="pr-handler-dept"
+              searchInTrigger
               value={String(data.handler_dept_id || 0)}
-              onValueChange={(value) => onChange({ handler_dept_id: Number(value) || 0 })}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Không nhờ — thu mua chung xử lý" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="0">Không nhờ — thu mua chung xử lý</SelectItem>
-                {handlerDepartments.map((department) => (
-                  <SelectItem key={department.id} value={String(department.id)}>
-                    {department.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              placeholder="Không nhờ — thu mua chung xử lý"
+              searchPlaceholder="Gõ để tìm phòng ban…"
+              options={[
+                { value: '0', label: 'Không nhờ — thu mua chung xử lý' },
+                ...handlerDepartments.map((department) => ({
+                  value: String(department.id),
+                  label: department.name,
+                })),
+              ]}
+              onChange={(value) => onChange({ handler_dept_id: Number(value) || 0 })}
+            />
           ) : (
             <ReadOnlyValue>
               {handlerDepartmentName || (data.handler_dept_id ? `Phòng #${data.handler_dept_id}` : 'Không nhờ')}
@@ -262,34 +265,50 @@ export function PurchaseRequestInfoCard({
           rỗng thì để dạng chữ như cũ.
         */}
         <div className="space-y-1.5">
-          <Label className={editing && deptHeadCandidates.length ? '' : 'text-muted-foreground'}>
+          <Label
+            htmlFor="pr-dept-head"
+            className={editing && deptHeadCandidates.length ? '' : 'text-muted-foreground'}
+          >
             Trưởng bộ phận (TBP) / Người liên hệ
           </Label>
           {editing && deptHeadCandidates.length ? (
-            <Select
-              value={data.head_of_dept_id ? String(data.head_of_dept_id) : undefined}
-              onValueChange={(value) => {
+            //  Người đang hiện KHÔNG nằm trong danh sách ứng viên thì để ô rỗng và bày tên đó ở
+            //  placeholder (chữ mờ) — y như bản Radix cũ. Đưa id vào `value` thì SearchSelect
+            //  hiện nguyên văn con số id, vì nó không tìm thấy nhãn trong `options`.
+            //  Phòng chưa gán trưởng ở danh mục Phòng ban thì không có «mặc định» nào để
+            //  hiện — nói rõ lý do và mời chọn, KHÔNG tự đoán một người: đoán mà không lưu
+            //  xuống thì lúc gửi duyệt vẫn bị chặn «thiếu Trưởng bộ phận» (CR-466).
+            <SearchSelect
+              id="pr-dept-head"
+              searchInTrigger
+              value={
+                deptHeadCandidates.some((candidate) => candidate.employee_id === shownHeadId)
+                  ? String(shownHeadId)
+                  : ''
+              }
+              placeholder={shownHeadName || 'Phòng chưa gán trưởng — chọn người đứng tên'}
+              searchPlaceholder="Gõ để tìm người đứng tên…"
+              options={deptHeadCandidates.map((candidate) => ({
+                value: String(candidate.employee_id),
+                label: candidate.position
+                  ? `${candidate.name} - ${candidate.position}`
+                  : candidate.name,
+              }))}
+              onChange={(value) => {
+                //  Chọn lại đúng người đang hiện thì thôi — kể cả khi người đó chỉ là TBP
+                //  MẶC ĐỊNH chưa lưu: ghi xuống lúc này là tự lưu thay người dùng.
+                if (value === String(shownHeadId)) return
                 const candidate = deptHeadCandidates.find(
                   (option) => option.employee_id === Number(value),
                 )
                 if (!candidate) return
                 onChange({ head_of_dept_id: candidate.employee_id, head_of_dept: candidate.name })
               }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={data.head_of_dept || 'Chọn Trưởng bộ phận'} />
-              </SelectTrigger>
-              <SelectContent>
-                {deptHeadCandidates.map((candidate) => (
-                  <SelectItem key={candidate.employee_id} value={String(candidate.employee_id)}>
-                    {candidate.name}
-                    {candidate.position ? ` - ${candidate.position}` : ''}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            />
           ) : (
-            <ReadOnlyValue>{data.head_of_dept || '—'}</ReadOnlyValue>
+            <ReadOnlyValue>
+              {shownHeadName || (editing ? 'Phòng chưa gán Trưởng bộ phận ở màn Phòng ban' : '—')}
+            </ReadOnlyValue>
           )}
         </div>
 

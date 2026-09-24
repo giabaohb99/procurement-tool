@@ -583,9 +583,14 @@ def _see_all_items(profile: dict, pr, user) -> bool:
 
 
 @router.get("/meta/dept-head")
-def dept_head(department: str = "", db: Session = Depends(get_db), user=Depends(require("purchase_request", "read"))):
-    """Trưởng bộ phận của 1 phòng ban — cho người yêu cầu (không được xem DS nhân sự) tự điền TBP."""
-    return success({"head_of_dept": service.find_dept_head(db, department)})
+def dept_head(department: str = "", department_id: int = 0, db: Session = Depends(get_db),
+              user=Depends(require("purchase_request", "read"))):
+    """Trưởng bộ phận của 1 phòng ban — cho người yêu cầu (không được xem DS nhân sự) tự điền TBP.
+
+    bao-CR-474: trả kèm `head_of_dept_id` để màn tạo mới v2 điền sẵn cả NGƯỜI lẫn tên (ô chọn
+    cần id để hiện đúng người), và nhận `department_id` (CR-086: neo bằng id, tên chỉ để lùi)."""
+    return success({"head_of_dept": service.find_dept_head(db, department, department_id),
+                    "head_of_dept_id": service.find_dept_head_id(db, department, department_id)})
 
 
 @router.get("/meta/dept-head-candidates")
@@ -906,6 +911,9 @@ def submit_pr(pid: int, background_tasks: BackgroundTasks, db: Session = Depends
         link=f"/purchase-requests/{pr.id}",
         department=pr.department or "",
         department_id=pr.department_id or 0,
+        # bao-CR-474: người được chọn ở ô TBP cũng nhận chuông báo duyệt (ngoài trưởng phòng
+        # gán cứng + vai trò dept_head của phòng). Người trong danh sách chọn đều duyệt được.
+        extra_employee_ids=[pr.head_of_dept_id] if pr.head_of_dept_id else None,
     )
     return success(_out(db, pr, user), "Đã gửi duyệt")
 
