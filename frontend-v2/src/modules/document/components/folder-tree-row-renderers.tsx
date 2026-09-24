@@ -17,6 +17,8 @@ interface BuildRowRenderersOptions {
   actions: ReturnType<typeof useFolderTreeActions>
   keyword: string
   beginCreate: (node: DocFolderTreeNode) => void
+  /** Vai trò có `doc_folder.create` — thiếu thì ẩn nút "+" thêm thư mục con. */
+  canCreateFolder: boolean
   onSelectFolder: (id: number) => void
   onOpenAccessTab: (id: number) => void
   /** Dòng LÁ chèn thêm (văn bản/trống/đang tải/xem thêm) — `undefined` với dòng thư mục thật. Xem `insert-folder-document-leaves.ts`. */
@@ -25,9 +27,14 @@ interface BuildRowRenderersOptions {
   rowsById: ReadonlyMap<number, DocFolderTreeNode>
 }
 
-/** Đủ quyền ĐÓNG GÓP trở lên — ngưỡng dùng cho nút "+" thêm con VÀ nút "Thư mục mới" ở tiêu đề. */
-export function canManageNode(node: DocFolderTreeNode): boolean {
-  return node.my_level >= FOLDER_ACCESS_LEVEL.contribute
+/**
+ * Tạo được thư mục con trong `node` — ngưỡng dùng cho nút "+" thêm con VÀ nút
+ * "Thư mục mới". Cần CẢ HAI lớp như backend (`require('doc_folder','create')`
+ * rồi `ensure_level(CONTRIBUTE)`): mức Đóng góp giờ có thể đến từ quyền GHI
+ * văn bản (`role_level_cap`), mà người đó chưa chắc được tạo thư mục.
+ */
+export function canManageNode(node: DocFolderTreeNode, canCreateFolder: boolean): boolean {
+  return canCreateFolder && node.my_level >= FOLDER_ACCESS_LEVEL.contribute
 }
 
 /**
@@ -40,6 +47,7 @@ export function buildFolderTreeRowRenderers({
   actions,
   keyword,
   beginCreate,
+  canCreateFolder,
   onSelectFolder,
   onOpenAccessTab,
   leaves,
@@ -90,7 +98,7 @@ export function buildFolderTreeRowRenderers({
     },
 
     renderHoverActions: (node: TreeNode<DocFolderTreeNode>) =>
-      node.data && canManageNode(node.data) ? (
+      node.data && canManageNode(node.data, canCreateFolder) ? (
         <button
           type="button"
           aria-label={`Thêm thư mục con vào ${node.data.name}`}

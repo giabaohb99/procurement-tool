@@ -9,6 +9,7 @@ import {
   Trash2,
 } from 'lucide-react'
 
+import { usePermission } from '@/core/authorization/use-permission'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,7 +44,11 @@ export function FolderTreeActionsMenu({ data, onAction }: FolderTreeActionsMenuP
   function runInlineEdit(action: 'add-child' | 'rename') {
     pendingInlineEditRef.current = action
   }
+  const { can } = usePermission()
   const canContribute = data.my_level >= FOLDER_ACCESS_LEVEL.contribute
+  //  Mức Đóng góp có thể đến từ quyền GHI văn bản (`role_level_cap` ở backend)
+  //  — tạo thư mục con thì vai trò còn phải có `doc_folder.create`.
+  const canAddChild = can('doc_folder', 'create')
   const canManage = data.my_level >= FOLDER_ACCESS_LEVEL.manage
   const isArchived = data.status === FOLDER_STATUS.archived
   //  «Xóa» LUÔN hiện (phản hồi lead 24/09/2026) — người chỉ thấy thư mục pháp
@@ -82,10 +87,12 @@ export function FolderTreeActionsMenu({ data, onAction }: FolderTreeActionsMenuP
           onAction(pending)
         }}
       >
-        <DropdownMenuItem onSelect={() => runInlineEdit('add-child')}>
-          <FolderPlus className="size-4" />
-          Thêm thư mục con
-        </DropdownMenuItem>
+        {canAddChild && (
+          <DropdownMenuItem onSelect={() => runInlineEdit('add-child')}>
+            <FolderPlus className="size-4" />
+            Thêm thư mục con
+          </DropdownMenuItem>
+        )}
 
         {canManage && (
           <>

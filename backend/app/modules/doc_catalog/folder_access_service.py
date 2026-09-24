@@ -127,6 +127,28 @@ def _acl_rows(db: Session, profile: dict) -> tuple[dict[int, int], set[int]]:
     return allow_by_folder, deny_folders
 
 
+def role_level_cap(profile: dict) -> int:
+    """Mức CAO NHẤT mà VAI TRÒ cho phép dùng tới — trần của mọi mức thư mục.
+
+    Thư mục pháp nhân mặc định «Đóng góp» cho cả pháp nhân, nên người chỉ có
+    quyền ĐỌC vẫn nhận `my_level = 2` — giao diện vẽ «Quyền: Đóng góp», nút
+    «+ Mới», «Thêm thư mục con»… để rồi bấm vào ăn 403 vì `require(...)` của
+    từng đường ghi chặn ở vai trò (lỗi lead bắt khi test UI 24/09/2026). Trần ở
+    ĐÂY để `my_level` nói đúng điều người đó làm được, và mọi chỗ ở giao diện
+    đang đọc `my_level` tự đúng theo, không phải vá từng nút.
+
+    Không có quyền GHI nào (`doc_folder.create/write`, `document.create/write`)
+    → tối đa Xem. Có ít nhất một thì KHÔNG trần — mức Quản lý do ACL cấp (vd
+    người tạo thư mục riêng) giữ nguyên như cũ.
+    """
+    union = profile.get("perms_union") or {}
+    for entity in (ENTITY_FOLDER_ADMIN, ENTITY_DOCUMENT):
+        perms = union.get(entity) or {}
+        if perms.get("create") or perms.get("write"):
+            return int(FolderAccessLevel.MANAGE)
+    return int(FolderAccessLevel.VIEW)
+
+
 def effective_levels(db: Session, user, profile: dict | None = None) -> dict[int, int]:
     """`{folder_id: mức hiệu lực}` — CHỈ những thư mục người này THẤY được
     (mức ≥ `VIEW`). Đây là hàm DUY NHẤT tính luật ở đầu tệp; mọi nơi khác gọi
@@ -140,6 +162,7 @@ def effective_levels(db: Session, user, profile: dict | None = None) -> dict[int
     doc_reach = company_reach(profile, ENTITY_DOCUMENT, "read")
     admin_reach = company_reach(profile, ENTITY_FOLDER_ADMIN, "write")
     allow_by_folder, deny_folders = _acl_rows(db, profile)
+    cap = role_level_cap(profile)
 
     result: dict[int, int] = {}
     for f in folders:
@@ -160,7 +183,9 @@ def effective_levels(db: Session, user, profile: dict | None = None) -> dict[int
             level = int(FolderAccessLevel.MANAGE)   # quản trị KHÔNG bị cấm chặn
 
         if level is not None and level >= int(FolderAccessLevel.VIEW):
-            result[f.id] = level
+            #  Trần theo vai trò CHỈ hạ mức, không bao giờ làm mất quyền THẤY
+            #  (`cap` luôn ≥ Xem) — xem `role_level_cap`.
+            result[f.id] = min(level, cap)
 
     #  Thư mục NHÓM «Công ty» là LỐI VÀO của thư mục pháp nhân — ai thấy ít
     #  nhất MỘT thư mục pháp nhân thì phải thấy nó, không thì thư mục của họ

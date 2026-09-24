@@ -16,6 +16,8 @@ interface FolderTreeNewMenuProps {
   folderId: number | null
   /** Tạo được thư mục ở chỗ đang đứng — trong thư mục: đủ mức trên `folderId`; ở gốc: có `doc_folder.create`. */
   canCreateFolder: boolean
+  /** Vai trò có `document.create` — thiếu thì ẩn hai mục «Văn bản …». */
+  canCreateDocument: boolean
   onCreateFolder: () => void
 }
 
@@ -35,14 +37,21 @@ interface FolderTreeNewMenuProps {
 export function FolderTreeNewMenu({
   folderId,
   canCreateFolder,
+  canCreateDocument,
   onCreateFolder,
 }: FolderTreeNewMenuProps) {
   const navigate = useNavigate()
   const pendingCreateRef = useRef(false)
+  //  Tạo văn bản cần một thư mục đích (không tạo ở gốc).
+  const canCreateDocumentHere = canCreateDocument && folderId != null
 
   function goCreateDocument() {
     if (folderId != null) navigate(`${appRoutes.document.documentNew}?folder_id=${folderId}`)
   }
+
+  //  Người CHỈ XEM không thấy nút nào để bấm (lỗi lead bắt khi test UI
+  //  24/09/2026: nút «+ Mới» hiện cho cả người không tạo được gì).
+  if (!canCreateFolder && !canCreateDocumentHere) return null
 
   return (
     <DropdownMenu>
@@ -50,7 +59,6 @@ export function FolderTreeNewMenu({
         <Button
           type="button"
           variant="outline"
-          disabled={folderId == null && !canCreateFolder}
           className="w-full justify-start gap-2"
         >
           <Plus className="size-4" />
@@ -72,23 +80,28 @@ export function FolderTreeNewMenu({
           onCreateFolder()
         }}
       >
-        <DropdownMenuItem
-          disabled={!canCreateFolder}
-          onSelect={() => {
-            pendingCreateRef.current = true
-          }}
-        >
-          <FolderPlus className="size-4" />
-          Thư mục mới
-        </DropdownMenuItem>
-        <DropdownMenuItem disabled={folderId == null} onSelect={goCreateDocument}>
-          <FilePlus className="size-4" />
-          Văn bản mới tại đây
-        </DropdownMenuItem>
-        <DropdownMenuItem disabled={folderId == null} onSelect={goCreateDocument}>
-          <FileUp className="size-4" />
-          Văn bản từ tệp có sẵn
-        </DropdownMenuItem>
+        {canCreateFolder && (
+          <DropdownMenuItem
+            onSelect={() => {
+              pendingCreateRef.current = true
+            }}
+          >
+            <FolderPlus className="size-4" />
+            Thư mục mới
+          </DropdownMenuItem>
+        )}
+        {canCreateDocumentHere && (
+          <>
+            <DropdownMenuItem onSelect={goCreateDocument}>
+              <FilePlus className="size-4" />
+              Văn bản mới tại đây
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={goCreateDocument}>
+              <FileUp className="size-4" />
+              Văn bản từ tệp có sẵn
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   )

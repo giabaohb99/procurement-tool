@@ -28,6 +28,9 @@ def roots(db, world):
 
 
 def _create_root(db, world, key="a1", name="Hồ sơ dự án"):
+    #  Ngoài đời chỉ ai có `doc_folder.create` mới tạo được thư mục — thiếu dòng
+    #  này thì trần theo vai trò (`role_level_cap`) hạ người tạo về mức Xem.
+    world.grant(key, "doc_folder", scope="company", actions=("read", "create"))
     a = world.actor(key)
     return folder_free_root_service.create_free_root_folder(
         db, FolderCreate(parent_id=0, name=name), a.user.id, a.employee.id)

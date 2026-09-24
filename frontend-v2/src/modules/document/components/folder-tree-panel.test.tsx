@@ -28,6 +28,15 @@ vi.mock('react-router-dom', async (importOriginal) => {
   return { ...actual, useNavigate: () => navigate }
 })
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), warning: vi.fn(), error: vi.fn() } }))
+//  Vai trò mặc định ĐỦ quyền tạo thư mục/văn bản — bài nào cần người chỉ xem
+//  thì đặt `canCreateFolder = false` (trần theo vai trò, test UI 24/09/2026).
+let canCreateFolder = true
+vi.mock('@/core/authorization/use-permission', () => ({
+  usePermission: () => ({
+    can: (entity: string, action: string) =>
+      entity === 'doc_folder' && action === 'create' ? canCreateFolder : true,
+  }),
+}))
 //  Không có văn bản nào để nạp trong PHẦN LỚN bài kiểm ở đây (không đụng tới lá
 //  văn bản) — mặc định trả Map rỗng, khỏi cần dựng `QueryClientProvider` thật
 //  cho một `useQueries` không ai kiểm. `vi.fn()` (không phải arrow trần) để
@@ -104,6 +113,7 @@ let updateMutate: ReturnType<typeof vi.fn>
 let linkMutate: ReturnType<typeof vi.fn>
 
 beforeEach(() => {
+  canCreateFolder = true
   navigate.mockReset()
   localStorage.clear()
   //  Mở sẵn CÔNG TY(1) và Hợp đồng(2) — mô phỏng người dùng đã bấm vào tới đó ở
@@ -265,7 +275,10 @@ describe('FolderTreePanel — dòng tạm «thư mục mới» (không mở hộ
     expect(createMutate).not.toHaveBeenCalled()
   })
 
-  it('chưa chọn thư mục nào thì nút "Thư mục mới" bị khóa', () => {
+  //  Ở GỐC tạo được thư mục tự do (mở 24/09/2026) — chỉ khóa khi vai trò
+  //  thiếu `doc_folder.create`.
+  it('chưa chọn thư mục nào và thiếu doc_folder.create thì nút "Thư mục mới" bị khóa', () => {
+    canCreateFolder = false
     renderPanel(null)
     expect(screen.getByRole('button', { name: 'Thư mục mới' })).toBeDisabled()
   })
@@ -276,6 +289,16 @@ describe('FolderTreePanel — dòng tạm «thư mục mới» (không mở hộ
     await user.click(screen.getByRole('button', { name: 'Thêm thư mục con vào Hợp đồng' }))
     await user.type(screen.getByLabelText('Tên thư mục mới'), 'Con mới{Enter}')
     expect(createMutate).toHaveBeenCalledWith({ parent_id: 2, name: 'Con mới' }, expect.anything())
+  })
+
+  //  Test UI 24/09/2026: mức Đóng góp của thư mục pháp nhân có thể đến từ quyền
+  //  GHI văn bản — người đó KHÔNG tạo được thư mục, nên không được thấy nút "+".
+  it('hides the "+" add-subfolder button when the role lacks doc_folder.create', () => {
+    canCreateFolder = false
+    renderPanel(null)
+    expect(
+      screen.queryByRole('button', { name: 'Thêm thư mục con vào Hợp đồng' }),
+    ).not.toBeInTheDocument()
   })
 })
 

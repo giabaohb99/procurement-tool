@@ -86,7 +86,7 @@ def _create(db, world, doc_type, *, folder_ids, title="Văn bản"):
 
 # ── Gap #1 — cửa ĐÓNG GÓP khi TẠO văn bản ────────────────────────────────────
 def test_tao_van_ban_vao_thu_muc_chi_xem_bi_chan(db, world, roots, doc_type):
-    world.grant("a1", "document", scope="company", actions=("read",))
+    world.grant("a1", "document", scope="company", actions=("read", "create", "write"))
     root = roots[world.co["A"]]
     folder = folder_service.create_folder(db, FolderCreate(parent_id=root.id, name="Chỉ xem"), 0)
     folder_service.update_folder(db, folder, FolderUpdate(default_access=PRIVATE), 0)
@@ -101,7 +101,7 @@ def test_tao_van_ban_vao_thu_muc_chi_xem_bi_chan(db, world, roots, doc_type):
 
 
 def test_tao_van_ban_vao_thu_muc_du_dong_gop_thi_thanh_cong(db, world, roots, doc_type):
-    world.grant("a1", "document", scope="company", actions=("read",))
+    world.grant("a1", "document", scope="company", actions=("read", "create", "write"))
     root = roots[world.co["A"]]   # mức nền CONTRIBUTE mặc định của gốc pháp nhân
     doc = _create(db, world, doc_type, folder_ids=[root.id], title="Vào được")
     assert _linked_folder_ids(db, doc.id) == {root.id}
@@ -122,7 +122,7 @@ def test_kiem_dong_gop_nhieu_thu_muc_chi_tinh_effective_levels_mot_lan(
     tính lại TOÀN BỘ ở MỖI id — N id là N lần gọi thay vì 1."""
     from app.modules.doc_catalog import folder_access_service
 
-    world.grant("a1", "document", scope="company", actions=("read",))
+    world.grant("a1", "document", scope="company", actions=("read", "create", "write"))
     root = roots[world.co["A"]]
     folders = [
         folder_service.create_folder(db, FolderCreate(parent_id=root.id, name=f"F{i}"), 0)
@@ -166,7 +166,7 @@ def test_thu_muc_khong_ton_tai_va_khong_thay_ra_cung_mot_cau_404(db, world, root
 
 # ── Gap #1 — cửa ĐÓNG GÓP khi SỬA văn bản (chỉ thư mục MỚI THÊM) ─────────────
 def test_sua_them_thu_muc_moi_thieu_dong_gop_bi_chan(db, world, roots, doc_type):
-    world.grant("a1", "document", scope="company", actions=("read",))
+    world.grant("a1", "document", scope="company", actions=("read", "create", "write"))
     root = roots[world.co["A"]]
     doc = _create(db, world, doc_type, folder_ids=[root.id], title="Gốc")
 
@@ -190,7 +190,7 @@ def test_sua_van_ban_giu_nguyen_thu_muc_da_mat_dong_gop_van_luu_duoc(db, world, 
     đó (hạ còn Xem). Gửi lại ĐÚNG thư mục cũ (không thêm thư mục nào mới) thì
     vẫn lưu được — cửa mới chỉ chặn thư mục MỚI THÊM, không chặn sửa đổi khác
     không liên quan tới thư mục đó."""
-    world.grant("a1", "document", scope="company", actions=("read",))
+    world.grant("a1", "document", scope="company", actions=("read", "create", "write"))
     root = roots[world.co["A"]]
     folder = folder_service.create_folder(db, FolderCreate(parent_id=root.id, name="Rồi mất quyền"), 0)
     folder_service.update_folder(db, folder, FolderUpdate(default_access=PRIVATE), 0)
@@ -216,7 +216,7 @@ def test_sua_khong_dung_toi_folder_ids_khong_bi_kiem(db, world, roots, doc_type)
     """Không gửi `folder_ids` trong `PATCH` (giữ `None`) = không đụng thư mục —
     luôn lưu được các trường khác dù người dùng không còn quyền gì trên thư mục
     văn bản đang nằm (kể cả mất VIEW hoàn toàn)."""
-    world.grant("a1", "document", scope="company", actions=("read",))
+    world.grant("a1", "document", scope="company", actions=("read", "create", "write"))
     root = roots[world.co["A"]]
     folder = folder_service.create_folder(db, FolderCreate(parent_id=root.id, name="Khóa hẳn"), 0)
     grant_row = _grant_folder(db, folder, subject_kind=SUBJECT_EMPLOYEE,
@@ -239,7 +239,7 @@ def test_thay_mot_phan_luu_link_an_con_nguyen(db, world, roots, doc_type):
     """Văn bản nằm ở HAI thư mục: A (a1 thấy, Đóng góp) + B (a1 KHÔNG thấy —
     riêng tư, không ACL). a1 mở «Sửa thư mục», chỉ thấy A, gửi lại
     `folder_ids=[A]` → B phải CÒN NGUYÊN, không bị xóa âm thầm (C1)."""
-    world.grant("a1", "document", scope="company", actions=("read",))
+    world.grant("a1", "document", scope="company", actions=("read", "create", "write"))
     root = roots[world.co["A"]]
     folder_a = folder_service.create_folder(db, FolderCreate(parent_id=root.id, name="A thấy"), 0)
     _grant_folder(db, folder_a, subject_kind=SUBJECT_EMPLOYEE, subject_id=world.emp["a1"],
@@ -264,7 +264,7 @@ def test_go_thu_muc_thay_nhung_thieu_dong_gop_bi_chan_403(db, world, roots, doc_
     """Văn bản nằm ở HAI thư mục a1 đều THẤY: A (chỉ Xem) + B (Đóng góp). a1 gửi
     lại CHỈ B (ngầm định gỡ A) → phải chặn 403 vì thiếu Đóng góp ở A, không được
     âm thầm cho gỡ (C1)."""
-    world.grant("a1", "document", scope="company", actions=("read",))
+    world.grant("a1", "document", scope="company", actions=("read", "create", "write"))
     root = roots[world.co["A"]]
     folder_a = folder_service.create_folder(db, FolderCreate(parent_id=root.id, name="A chỉ xem"), 0)
     folder_service.update_folder(db, folder_a, FolderUpdate(default_access=PRIVATE), 0)
@@ -296,7 +296,7 @@ def test_thu_muc_chinh_dang_an_giu_nguyen_lam_chinh(db, world, roots, doc_type):
     """Thư mục CHÍNH đang ẨN với a1 (B) — gửi lại chỉ A (thấy, không khai
     `primary_id`) thì B vẫn giữ vai trò CHÍNH, không bị A soán mất chỉ vì A là
     thư mục duy nhất a1 gửi lên (C1, luật "chính giữ nguyên khi ẩn")."""
-    world.grant("a1", "document", scope="company", actions=("read",))
+    world.grant("a1", "document", scope="company", actions=("read", "create", "write"))
     root = roots[world.co["A"]]
     folder_a = folder_service.create_folder(db, FolderCreate(parent_id=root.id, name="A phụ"), 0)
     _grant_folder(db, folder_a, subject_kind=SUBJECT_EMPLOYEE, subject_id=world.emp["a1"],
@@ -322,7 +322,7 @@ def test_thu_muc_chinh_dang_an_giu_nguyen_lam_chinh(db, world, roots, doc_type):
 
 # ── Gap #2 — dashboard/scope không truyền `user` xuống serializer ───────────
 def test_tong_quan_khong_lo_ten_thu_muc_rieng_tu(db, world, roots):
-    world.grant("a1", "document", scope="company", actions=("read",))
+    world.grant("a1", "document", scope="company", actions=("read", "create", "write"))
     root = roots[world.co["A"]]
     private_folder = folder_service.create_folder(
         db, FolderCreate(parent_id=root.id, name="Bí mật tổng quan"), 0)
@@ -344,7 +344,7 @@ def test_tong_quan_khong_lo_ten_thu_muc_rieng_tu(db, world, roots):
 
 
 def test_ap_dung_cho_toi_khong_lo_ten_thu_muc_rieng_tu(db, world, roots):
-    world.grant("a1", "document", scope="company", actions=("read",))
+    world.grant("a1", "document", scope="company", actions=("read", "create", "write"))
     root = roots[world.co["A"]]
     private_folder = folder_service.create_folder(
         db, FolderCreate(parent_id=root.id, name="Bí mật phạm vi"), 0)
@@ -408,7 +408,7 @@ def test_duong_dan_thu_muc_chinh_khong_thay_roi_ve_thu_muc_phu_con_thay(db, worl
     thư mục chính riêng tư."""
     from app.modules.doc_catalog import folder_link_bulk_service
 
-    world.grant("a1", "document", scope="company", actions=("read",))
+    world.grant("a1", "document", scope="company", actions=("read", "create", "write"))
     root = roots[world.co["A"]]   # mặc định CONTRIBUTE → a1 thấy được
     private_folder = folder_service.create_folder(
         db, FolderCreate(parent_id=root.id, name="Chính nhưng riêng tư"), 0)

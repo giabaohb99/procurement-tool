@@ -153,6 +153,9 @@ def test_acl_cho_dich_danh_mo_duoc_nhanh_du_khong_voi_toi_phap_nhan(db, world, r
     folder = folder_service.create_folder(db, FolderCreate(parent_id=root.id, name="Chia riêng"), 0)
     _grant_folder(db, folder, subject_kind=SUBJECT_EMPLOYEE, subject_id=world.emp["a1"],
                  level=CONTRIBUTE)
+    #  `doc_folder` không mở pháp nhân nào (chỉ `document.read` mới «với tới»),
+    #  nhưng là quyền GHI — không có nó thì trần vai trò hạ dòng ACL về Xem.
+    world.grant("a1", "doc_folder", scope="own", actions=("read", "create"))
 
     levels = _levels(db, "a1", world)
     assert folder.id not in levels.keys() - {folder.id}   # gốc KHÔNG thấy
@@ -445,7 +448,7 @@ def test_default_access_gia_tri_khong_hop_le_bi_chan(db, world, roots):
 def test_effective_access_chi_tra_cho_nguoi_muc_quan_ly(db, world, roots):
     from app.modules.doc_catalog import folder_access_view_service
 
-    world.grant("a1", "document", scope="company", actions=("read",))   # → CONTRIBUTE ở gốc
+    world.grant("a1", "document", scope="company", actions=("read", "create"))   # → CONTRIBUTE ở gốc
     root = roots[world.co["A"]]
     a1 = world.actor("a1")
 
@@ -465,7 +468,7 @@ def test_effective_access_chi_tra_cho_nguoi_muc_quan_ly(db, world, roots):
 # ── `my_level` trên `/tree` và `/search` (phase 06, duoc-CR-476 — ô chọn thư
 #    mục lúc tạo văn bản chỉ liệt kê mức ≥ Đóng góp, lọc ngay ở backend) ─────
 def test_tree_tra_my_level_dung_bang_effective_levels(db, world, roots):
-    world.grant("a1", "document", scope="company", actions=("read",))   # → CONTRIBUTE ở gốc
+    world.grant("a1", "document", scope="company", actions=("read", "create"))   # → CONTRIBUTE ở gốc
     root = roots[world.co["A"]]
     folder = folder_service.create_folder(db, FolderCreate(parent_id=root.id, name="Chỉ xem"), 0)
     folder_service.update_folder(db, folder, FolderUpdate(default_access=PRIVATE), 0)
@@ -480,7 +483,7 @@ def test_tree_tra_my_level_dung_bang_effective_levels(db, world, roots):
 
 
 def test_search_folders_tra_my_level(db, world, roots):
-    world.grant("a1", "document", scope="company", actions=("read",))   # → CONTRIBUTE ở gốc
+    world.grant("a1", "document", scope="company", actions=("read", "create"))   # → CONTRIBUTE ở gốc
     root = roots[world.co["A"]]
     folder_service.create_folder(db, FolderCreate(parent_id=root.id, name="Hợp đồng thuê"), 0)
     a1 = world.actor("a1")
@@ -491,3 +494,33 @@ def test_search_folders_tra_my_level(db, world, roots):
     #  Không có ACL riêng nào ghi đè — thư mục con thừa hưởng đúng mức nền
     #  CONTRIBUTE của gốc pháp nhân.
     assert results[0]["my_level"] == CONTRIBUTE
+
+
+# ── Trần theo vai trò (lỗi test UI 24/09/2026) ──────────────────────────────
+def test_chi_quyen_doc_thi_toi_da_xem_du_thu_muc_mac_dinh_dong_gop(db, world, roots):
+    """Gốc pháp nhân mặc định «Đóng góp» cho cả pháp nhân. Người CHỈ ĐỌC từng
+    nhận `my_level = 2` → giao diện vẽ «Quyền: Đóng góp» + nút «+ Mới» rồi bấm
+    vào ăn 403. Phải hạ về Xem — nhưng vẫn THẤY thư mục."""
+    world.grant("a1", "document", scope="company", actions=("read",))
+    world.grant("a1", "doc_folder", scope="company", actions=("read",))
+    root = roots[world.co["A"]]
+    assert _levels(db, "a1", world)[root.id] == VIEW
+
+
+def test_co_quyen_ghi_van_ban_thi_giu_muc_dong_gop(db, world, roots):
+    world.grant("a1", "document", scope="company", actions=("read", "create"))
+    root = roots[world.co["A"]]
+    assert _levels(db, "a1", world)[root.id] == CONTRIBUTE
+
+
+def test_tran_vai_tro_khong_nang_muc_rieng_tu_len_xem(db, world, roots):
+    """Trần chỉ HẠ, không bao giờ mở thêm: thư mục khóa riêng tư vẫn vô hình
+    với người có đủ quyền ghi."""
+    from app.modules.doc_catalog.folder_constants import FolderAccessLevel
+
+    world.grant("a1", "document", scope="company", actions=("read", "create", "write"))
+    root = roots[world.co["A"]]
+    locked = folder_service.create_folder(db, FolderCreate(parent_id=root.id, name="Khóa"), 0)
+    locked.default_access = int(FolderAccessLevel.PRIVATE)
+    db.commit()
+    assert locked.id not in _levels(db, "a1", world)

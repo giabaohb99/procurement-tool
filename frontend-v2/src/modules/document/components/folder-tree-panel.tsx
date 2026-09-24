@@ -114,7 +114,7 @@ export function FolderTreePanel({
   const atRoot = selectedFolderId == null
   const canCreateHere = atRoot
     ? can('doc_folder', 'create')
-    : Boolean(selectedNode && canManageNode(selectedNode))
+    : Boolean(selectedNode && canManageNode(selectedNode, can('doc_folder', 'create')))
   const createHere = () =>
     atRoot ? beginCreateAtRoot() : selectedNode && beginCreate(selectedNode)
   const { visibleTree, leaves, matchedIds, rowsById, effectiveSelectedId } = useFolderTreeNodes({
@@ -162,6 +162,7 @@ export function FolderTreePanel({
         <FolderTreeNewMenu
           folderId={selectedFolderId}
           canCreateFolder={canCreateHere}
+          canCreateDocument={can('document', 'create')}
           onCreateFolder={createHere}
         />
       </div>
@@ -234,6 +235,7 @@ export function FolderTreePanel({
               actions,
               keyword: search.keyword,
               beginCreate,
+              canCreateFolder: can('doc_folder', 'create'),
               onSelectFolder,
               onOpenAccessTab,
               leaves,
