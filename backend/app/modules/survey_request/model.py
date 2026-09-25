@@ -32,6 +32,9 @@ class SurveyRequest(Base, AuditMixin):
     # có từ CR-071). Ô TÊN bên dưới là BẢN CHỤP để in (sẽ xóa — N-008).
     head_of_dept_id: Mapped[int] = mapped_column(BigInteger, default=0)
     head_of_dept: Mapped[str] = mapped_column(String(255), default="")       # BẢN CHỤP tên
+    # bao-CR-490: NHÂN SỰ thực bấm Duyệt ở chặng trưởng phòng («Trưởng phòng phê duyệt»). 0 = chưa
+    # duyệt / phiếu trước CR-490 (bản in lùi về nhật ký thao tác). Xem `core/print_signers.py`.
+    approver_employee_id: Mapped[int] = mapped_column(BigInteger, default=0)
     purpose: Mapped[str] = mapped_column(String(255), default="")
     request_date: Mapped[str] = mapped_column(String(10), default="")
     status: Mapped[str] = mapped_column(String(30), default="draft", index=True)  # draft|submitted|approved|rejected|processing|survey_done

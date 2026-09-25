@@ -44,6 +44,9 @@ class PurchaseRequest(Base, AuditMixin):
     # bằng id nhân sự chứ không bằng tên. Ô này CHỈ để lưu + in, KHÔNG khóa quyền duyệt của ai.
     # Cột `head_of_dept` ở trên GIỮ LẠI làm bản chụp tên lúc lập phiếu (phiếu cũ không có id).
     head_of_dept_id: Mapped[int] = mapped_column(BigInteger, default=0)    # id NHÂN SỰ (tab_employee)
+    # bao-CR-490: NHÂN SỰ thực bấm Duyệt ở chặng trưởng phòng («Trưởng phòng phê duyệt»). 0 = chưa
+    # duyệt / phiếu trước CR-490 (bản in lùi về nhật ký thao tác). Xem `core/print_signers.py`.
+    approver_employee_id: Mapped[int] = mapped_column(BigInteger, default=0)
     purpose: Mapped[str] = mapped_column(String(255), default="")          # mục đích mua hàng
     # bao-CR-316: HAI mốc ngày, hai cột, mỗi cột một nghĩa duy nhất. Trước CR này chỉ có
     # `request_date` và `dispatch_pr` ghi đè nó lúc điều phối (bao-CR-293), nên cùng một cột

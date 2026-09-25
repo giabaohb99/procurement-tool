@@ -176,6 +176,9 @@ class PurchaseOrder(Base, AuditMixin):
     # Chép từ YCMH khi lập đơn từ phiếu; chép theo khi nhân bản đơn.
     handler_dept_id: Mapped[int] = mapped_column(BigInteger, default=0, index=True)
     department: Mapped[str] = mapped_column(String(255), default="", index=True)  # BẢN CHỤP tên (sẽ xóa — N-008)
+    # bao-CR-490: NHÂN SỰ thực bấm Duyệt ở chặng trưởng phòng («Trưởng phòng phê duyệt»). 0 = chưa
+    # duyệt / phiếu trước CR-490 (bản in lùi về nhật ký thao tác). Xem `core/print_signers.py`.
+    approver_employee_id: Mapped[int] = mapped_column(BigInteger, default=0)
     # CR-087: NSPT phụ trách neo bằng ID nhân sự. `full_name` KHÔNG duy nhất — khớp bằng tên
     # là cho người trùng tên thấy đơn của nhau (prod đang có 1 cặp). Cột `nspt` hạ xuống làm
     # BẢN CHỤP TÊN để in/xuất Excel (sẽ xóa — N-008).

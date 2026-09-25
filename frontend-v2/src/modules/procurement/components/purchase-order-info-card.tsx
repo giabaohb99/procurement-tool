@@ -268,6 +268,14 @@ export function PurchaseOrderInfoCard({
           )}
         </div>
 
+        {/* bao-CR-490: ai THỰC bấm Duyệt ở chặng trưởng phòng — chỉ xem, hệ thống ghi lúc duyệt. */}
+        {!!data.approver_employee_name && (
+          <div className="space-y-1.5">
+            <Label className="text-muted-foreground">Trưởng phòng phê duyệt</Label>
+            <ReadOnlyValue>{data.approver_employee_name}</ReadOnlyValue>
+          </div>
+        )}
+
         {/*
           bao-CR-480 — «Phòng xử lý» chép từ YCMH nguồn, chỉ xem: đơn do nhà máy mua hay do
           thu mua chung mua phải thấy ngay trên đầu đơn. Muốn đổi thì đổi ở YCMH (nút

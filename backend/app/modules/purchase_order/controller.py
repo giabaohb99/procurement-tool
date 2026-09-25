@@ -269,6 +269,9 @@ def _out(db: Session, po: PurchaseOrder) -> dict:
     # đều không bày, nên mở một đơn nhà máy mua hộ phòng khác không có gì báo ai đang mua.
     from app.modules.purchase_request.service import handler_dept_name_of
     d["handler_dept_name"] = handler_dept_name_of(db, po.handler_dept_id)
+    # bao-CR-490: trưởng phòng phê duyệt (người thực bấm Duyệt) + trưởng phòng theo hồ sơ.
+    from app.core.print_signers import approver_fields
+    d.update(approver_fields(db, po))
     # `document_status` là MÃ (B-06) — trước đây nó là chữ tiếng Việt VIẾT THƯỜNG nên mỗi màn
     # lại tự viết hoa một kiểu ("Đã có chứng từ" ở ô lọc, "đã có thông tin chứng từ" ở bảng).
     d["document_status_label"] = PO_DOCUMENT_STATUS.label_of(po.document_status)
@@ -534,6 +537,14 @@ def resolve_print_signers(db: Session, po: PurchaseOrder) -> dict:
     if row and row[0]:
         out["approver_name"] = resolve_actor(db, row[0])
         out["approver_signature"] = resolve_signature(db, row[0])
+    # bao-CR-490: có cột «Trưởng phòng phê duyệt» thì tra theo NHÂN SỰ (khớp đúng tên in) thay
+    # cho nhật ký; kèm trưởng phòng theo hồ sơ để bản in nội bộ chọn ô ký.
+    from app.core.print_signers import department_head_block, person_block
+    stored = person_block(db, int(po.approver_employee_id or 0))
+    if stored["name"]:
+        out["approver_name"], out["approver_signature"] = stored["name"], stored["signature"]
+    head = department_head_block(db, int(po.department_id or 0))
+    out["dept_head_name"], out["dept_head_signature"] = head["name"], head["signature"]
     return out
 
 
@@ -696,6 +707,10 @@ def approve_po(pid: int, background_tasks: BackgroundTasks, db: Session = Depend
     _in_scope(db, pid, user, "approve")
     _require_awaiting_approval(db, pid, "duyệt")
     po = service.set_status(db, pid, "approved", user.id)
+    # bao-CR-490: ghi nhân sự vừa duyệt vào «Trưởng phòng phê duyệt».
+    from app.core.print_signers import stamp_approver
+    stamp_approver(db, po, user.id)
+    db.commit()
     trigger_notification(db=db, event="po_approved", doc_type="purchase_order", doc_code=po.code,
                          creator_id=po.created_by or user.id, background_tasks=background_tasks,
                          link=f"/purchase-orders/{po.id}")
@@ -714,6 +729,8 @@ def unapprove_po(pid: int, data: RejectIn, db: Session = Depends(get_db),
     if not (data.reason or "").strip():
         raise HTTPException(400, "Vui lòng nhập lý do hủy duyệt")
     po = service.unapprove_po(db, pid, user.id, data.reason.strip())
+    po.approver_employee_id = 0      # bao-CR-490: đơn về Nháp thì chưa ai duyệt nữa
+    db.commit()
     return success(_out(db, po), "Đã hủy duyệt — đơn về Nháp")
 
 
