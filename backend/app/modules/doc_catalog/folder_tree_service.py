@@ -136,8 +136,23 @@ def _document_counts(db: Session, user, folders: list[DocFolder]) -> tuple[dict[
     return direct, branch
 
 
+def _creator_names(db: Session, user_ids: set[int]) -> dict[int, str]:
+    """Tên người tạo thư mục — MỘT truy vấn cho cả cây, không truy vấn trong vòng lặp."""
+    from app.modules.employee.model import Employee
+    from app.modules.user.model import User
+
+    ids = {uid for uid in user_ids if uid}
+    if not ids:
+        return {}
+    rows = (db.query(User.id, Employee.full_name)
+            .outerjoin(Employee, Employee.id == User.employee_id)
+            .filter(User.id.in_(ids)).all())
+    return {uid: name or "" for uid, name in rows}
+
+
 def _node(f: DocFolder, company_names: dict[int, str], company_short_names: dict[int, str],
-          direct: dict[int, int], branch: dict[int, int], levels: dict[int, int]) -> dict:
+          direct: dict[int, int], branch: dict[int, int], levels: dict[int, int],
+          creators: dict[int, str] | None = None) -> dict:
     return {
         "id": f.id,
         "company_id": f.company_id,
@@ -159,6 +174,10 @@ def _node(f: DocFolder, company_names: dict[int, str], company_short_names: dict
         #  Mức hiệu lực của NGƯỜI GỌI trên đúng nút này (`0` không xảy ra ở
         #  đây — không thấy thì `_filter_visible` đã loại khỏi `folders`).
         "my_level": levels.get(f.id, 0),
+        #  Cột «Người tạo» / «Ngày tạo» của dòng thư mục trong danh sách (25/09/2026).
+        #  `created_by = 0` = hệ thống tự dựng (thư mục pháp nhân, nhóm «Công ty»).
+        "created_at": f.created_at,
+        "created_by_name": (creators or {}).get(f.created_by or 0, "") if f.created_by else "Hệ thống",
     }
 
 
@@ -174,7 +193,9 @@ def tree(db: Session, user, *, include_archived: bool = False) -> list[dict]:
     company_names = _company_names(db, company_ids)
     company_short_names = _company_short_names(db, company_ids)
     direct, branch = _document_counts(db, user, folders)
-    return [_node(f, company_names, company_short_names, direct, branch, levels) for f in folders]
+    creators = _creator_names(db, {f.created_by for f in folders})
+    return [_node(f, company_names, company_short_names, direct, branch, levels, creators)
+            for f in folders]
 
 
 def breadcrumb_map(db: Session, folder_ids: set[int]) -> dict[int, list[dict]]:
@@ -227,7 +248,8 @@ def get_detail(db: Session, folder: DocFolder, user) -> dict:
     #  giá trị qua `my_level()` (bảo toàn hành vi cũ, kể cả `0` khi tới đây
     #  bằng đường nội bộ khác `get_folder_or_404` + `ensure_level`), nên tạm
     #  truyền dict rỗng ở đây là an toàn — không có ai đọc giá trị tạm này.
-    node = _node(folder, company_names, company_short_names, direct, branch, {})
+    node = _node(folder, company_names, company_short_names, direct, branch, {},
+                 _creator_names(db, {folder.created_by}))
     node["description"] = folder.description
     node["breadcrumb"] = crumbs.get(folder.id, [])
     #  Hộp «Chia sẻ» kiểu Drive cần đọc ĐÚNG mức mặc định đang khai để hiện sẵn

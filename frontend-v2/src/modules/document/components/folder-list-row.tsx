@@ -1,10 +1,8 @@
 import { Share2 } from 'lucide-react'
 
-import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
 import { IconTooltip } from '@/shared/ui/icon-tooltip'
 import { cn } from '@/shared/utils/cn'
 import { formatDate } from '@/shared/utils/format-date'
-import { nameInitials } from '@/shared/utils/name-initials'
 import { folderDeleteDisabledReason } from '../helpers/folder-delete-disabled-reason'
 import {
   hasFolderDragPayload,
@@ -20,7 +18,7 @@ import type { DocFolderTreeNode } from '../types/document-folder'
 import type { DocumentRecord } from '../types/document-record'
 import { FolderItemContextMenu } from './folder-item-context-menu'
 import { FolderItemSelectCheckbox } from './folder-item-select-checkbox'
-import { Cell, NameCell } from './folder-list-row-cells'
+import { Cell, FolderStatusCell, NameCell, PersonCell } from './folder-list-row-cells'
 import { effectiveStatusBadge } from './outgoing-document-columns'
 
 /**
@@ -175,35 +173,30 @@ export function FolderListRow({
 
         <NameCell item={item} isFullText={isFullText} />
 
-        {isFolder ? (
-          <Cell dash className={FOLDER_LIST_OWNER_COLUMN} />
-        ) : (
-          <span
-            className={cn(
-              FOLDER_LIST_OWNER_COLUMN,
-              'min-w-0 items-center gap-1.5 text-muted-foreground',
-            )}
-          >
-            <Avatar size="sm" className="shrink-0">
-              <AvatarFallback className="text-[10px]">
-                {nameInitials(item.document.drafter_name || item.document.owner_name || '?')}
-              </AvatarFallback>
-            </Avatar>
-            <span className="truncate">
-              {item.document.drafter_name || item.document.owner_name || '—'}
-            </span>
-          </span>
-        )}
+        {/*  Thư mục cũng có người tạo / ngày tạo / trạng thái (25/09/2026 —
+             trước đây ba cột này để «—» cho mọi dòng thư mục). */}
+        <PersonCell
+          className={FOLDER_LIST_OWNER_COLUMN}
+          name={
+            isFolder
+              ? (item.folder.created_by_name ?? '')
+              : item.document.drafter_name || item.document.owner_name || ''
+          }
+        />
 
-        {isFolder ? (
-          <Cell dash />
-        ) : (
+        {(isFolder ? item.folder.created_at : item.document.created_at) ? (
           <span className="truncate text-muted-foreground">
-            {formatDate(item.document.created_at)}
+            {formatDate(isFolder ? item.folder.created_at : item.document.created_at)}
           </span>
+        ) : (
+          <Cell dash />
         )}
 
-        {isFolder ? <Cell dash /> : <span>{effectiveStatusBadge(item.document)}</span>}
+        {isFolder ? (
+          <FolderStatusCell status={item.folder.status} label={item.folder.status_label} />
+        ) : (
+          <span>{effectiveStatusBadge(item.document)}</span>
+        )}
 
         {/*  Văn bản chỉ có nút này khi được chia quyền (`onManagePermissions`
              chỉ truyền khi có `write`); thư mục thì luôn có, hộp tự chuyển chỉ-đọc. */}

@@ -174,10 +174,26 @@ describe('FolderListView — thư mục TRƯỚC, văn bản SAU (đặc tả B,
     expect(rows.map((row) => row.getAttribute('aria-label'))).toEqual(rowNames)
   })
 
-  it('dòng thư mục hiện «—» ở các cột chỉ có nghĩa với văn bản', () => {
+  //  25/09/2026: dòng thư mục từng để «—» cả ba cột — nay có người tạo, ngày tạo, trạng thái.
+  it('folder row shows who created it, when, and whether it is still in use', () => {
+    render(
+      <Harness
+        children={[
+          { ...FOLDER, created_by_name: 'Dego Admin', created_at: '2026-09-24T08:00:00' },
+        ]}
+        documents={[]}
+      />,
+    )
+    const row = screen.getByRole('button', { name: 'Phụ lục' })
+    expect(within(row).getByText('Dego Admin')).toBeInTheDocument()
+    expect(within(row).getByText('24/09/2026')).toBeInTheDocument()
+    expect(within(row).getByText('Đang dùng')).toBeInTheDocument()
+  })
+
+  it('folder row falls back to «—» when the API sends no creator or date (older payloads)', () => {
     render(<Harness children={[FOLDER]} documents={[]} />)
     const row = screen.getByRole('button', { name: 'Phụ lục' })
-    expect(within(row).getAllByText('—').length).toBeGreaterThanOrEqual(2)
+    expect(within(row).getAllByText('—').length).toBe(2)
   })
 })
 

@@ -133,6 +133,10 @@ export interface DocFolderTreeNode {
    * trên chính trường này thay vì đoán lại ở client.
    */
   my_level: number
+  /** Ngày tạo thư mục — cột «Ngày tạo» của danh sách (25/09/2026). Tùy chọn vì test dựng tay có thể bỏ. */
+  created_at?: string
+  /** Tên người tạo; «Hệ thống» với thư mục tự dựng (pháp nhân, nhóm «Công ty»). */
+  created_by_name?: string
 }
 
 export interface FolderBreadcrumbItem {

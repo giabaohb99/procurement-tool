@@ -734,3 +734,17 @@ def test_search_folders_gap_dau(db, world, roots):
     actor = world.actor("a1")
     results = folder_tree_service.search_folders(db, actor.user, "hop dong")
     assert any("Hợp đồng" in r["name"] for r in results)
+
+
+def test_tree_tra_nguoi_tao_va_ngay_tao_cho_cot_danh_sach(db, world, roots):
+    #  25/09/2026: dòng thư mục trong danh sách để trống «Người soạn»/«Ngày tạo».
+    actor = world.grant("a1", "document")
+    root = roots[world.co["A"]]
+    mine = folder_service.create_folder(db, FolderCreate(parent_id=root.id, name="Của a1"), actor.user.id)
+    system = folder_service.create_folder(db, FolderCreate(parent_id=root.id, name="Hệ dựng"), 0)
+    nodes = {n["id"]: n for n in folder_tree_service.tree(db, actor.user)}
+
+    assert nodes[mine.id]["created_by_name"] == actor.employee.full_name
+    assert nodes[mine.id]["created_at"] is not None
+    #  `created_by = 0` là thư mục hệ thống tự dựng — nói rõ, không để trống.
+    assert nodes[system.id]["created_by_name"] == "Hệ thống"
