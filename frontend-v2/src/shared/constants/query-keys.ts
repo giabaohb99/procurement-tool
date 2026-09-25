@@ -534,8 +534,18 @@ export const queryKeys = {
     projects: (includeArchived: boolean) =>
       ['work', 'lists', includeArchived, 'people'] as const,
     list: (id: number) => ['work', 'lists', id] as const,
+    /**
+     * GỐC của mọi biến thể bảng — dùng để invalidate / quét đệm. Từ bao-CR-483
+     * bảng có hai biến thể (`boardMode`), nên đọc/ghi lạc quan phải đi qua
+     * `getQueriesData` / `setQueriesData` với khóa này, KHÔNG `getQueryData`.
+     */
     board: (listId: number) => ['work', 'lists', listId, 'board'] as const,
+    /** Một biến thể bảng: `light` (40 việc/cột, không mô tả) hay `full` (trọn bộ). */
+    boardMode: (listId: number, mode: 'light' | 'full') =>
+      ['work', 'lists', listId, 'board', mode] as const,
     members: (listId: number) => ['work', 'lists', listId, 'members'] as const,
+    /** Thành viên của một NHÓM dự án (bao-CR-482) — đổi khi mời / gỡ / đổi vai trò. */
+    groupMembers: (groupId: number) => ['work', 'groups', groupId, 'members'] as const,
     sections: (listId: number) => ['work', 'lists', listId, 'sections'] as const,
     labelFields: (listId: number) => ['work', 'lists', listId, 'label-fields'] as const,
     /**

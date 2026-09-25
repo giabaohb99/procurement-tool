@@ -1,4 +1,4 @@
-import { Archive, Plus } from 'lucide-react'
+import { Archive, FolderKanban, Plus, Settings2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -7,13 +7,15 @@ import { Button } from '@/shared/ui/button'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { cn } from '@/shared/utils/cn'
 import { formatDate } from '@/shared/utils/format-date'
+import { GroupManageDialog } from '../components/group-manage-dialog'
 import { ProjectCard } from '../components/project-card'
 import { MemberAvatar, MemberStack, ProgressCell } from '../components/project-cells'
 import { WorkCreateDialog } from '../components/work-create-dialog'
 import { WorkSidebarPeekButton } from '../components/work-sidebar-peek-button'
-import { useWorkProjects } from '../hooks/use-work-lists'
-import type { WorkList } from '../types/work'
+import { useWorkProjects, useWorkSidebar } from '../hooks/use-work-lists'
+import type { WorkGroup, WorkList } from '../types/work'
 import { dotClass } from '../utils/work-colors'
+import { NO_GROUP_LABEL, flattenGroups, groupNameOf } from '../utils/work-groups'
 
 /**
  * Bảng liệt kê MỌI dự án — màn giữa của phân hệ, mở bằng mục «Dự án» ở thanh
@@ -31,7 +33,21 @@ export function ProjectListPage() {
   const navigate = useNavigate()
   const [showArchived, setShowArchived] = useState(false)
   const [creating, setCreating] = useState(false)
+  //  bao-CR-482: nhóm đang mở hộp Quản lý nhóm từ cụm nhóm phía trên bảng.
+  const [manageGroup, setManageGroup] = useState<WorkGroup | null>(null)
   const { data, isLoading, isError } = useWorkProjects(showArchived)
+  //  Cây nhóm — cùng truy vấn với cây bên trái nên không tốn thêm lượt gọi khi cây đang mở.
+  const { data: sidebar } = useWorkSidebar(showArchived)
+  const groups = useMemo(() => flattenGroups(sidebar), [sidebar])
+
+  //  Bảng xếp theo NHÓM trước (đúng thứ tự cây), dự án ngoài nhóm đứng cuối —
+  //  trước CR-482 bảng phẳng, nhìn không ra dự án nào thuộc «DX» dù cây bên trái có.
+  const rows = useMemo(() => {
+    if (!data) return data
+    const order = new Map(groups.map((g, i) => [g.id, i]))
+    const rank = (row: WorkList) => (row.group_id ? (order.get(row.group_id) ?? 9_999) : 10_000)
+    return data.slice().sort((a, b) => rank(a) - rank(b) || a.sort_order - b.sort_order || a.id - b.id)
+  }, [data, groups])
 
   const columns = useMemo<DataTableColumn<WorkList>[]>(
     () => [
@@ -52,6 +68,19 @@ export function ProjectListPage() {
             )}
           </span>
         ),
+      },
+      {
+        key: 'group',
+        header: 'Nhóm',
+        width: 140,
+        cell: (row) => {
+          const name = groupNameOf(groups, row.group_id)
+          return name ? (
+            <span className="truncate">{name}</span>
+          ) : (
+            <span className="truncate text-muted-foreground">{NO_GROUP_LABEL}</span>
+          )
+        },
       },
       {
         key: 'description',
@@ -96,7 +125,7 @@ export function ProjectListPage() {
         cell: (row) => formatDate(row.created_at),
       },
     ],
-    [],
+    [groups],
   )
 
   return (
@@ -125,10 +154,44 @@ export function ProjectListPage() {
         </Button>
       </header>
 
+      {/*  bao-CR-482: cụm NHÓM ngay trên bảng. Nhóm không phải một dòng của bảng
+           (một dòng = một dự án), nhưng phải thấy được ở đây — trước đó «DX» chỉ
+           có trong cây bên trái, ai ẩn cây là không biết nhóm tồn tại, càng không
+           có chỗ nào để đổi tên hay phân quyền cho cả nhóm. */}
+      {groups.length > 0 && (
+        <section aria-label="Nhóm dự án" className="flex flex-wrap gap-2">
+          {groups.map((group) => (
+            <div
+              key={group.id}
+              className="flex items-center gap-2 rounded-lg border bg-muted/30 py-1.5 pl-3 pr-1.5 text-sm"
+              style={{ marginLeft: group.depth * 16 }}
+            >
+              <FolderKanban className="size-4 shrink-0 text-muted-foreground" />
+              <span className="font-medium">{group.name}</span>
+              <span className="text-xs text-muted-foreground">{group.listCount} dự án</span>
+              {group.is_archived === 1 && (
+                <span className="rounded bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground">
+                  Đã lưu trữ
+                </span>
+              )}
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                title={`Quản lý nhóm ${group.name}`}
+                aria-label={`Quản lý nhóm ${group.name}`}
+                onClick={() => setManageGroup(group)}
+              >
+                <Settings2 className="size-4" />
+              </Button>
+            </div>
+          ))}
+        </section>
+      )}
+
       <DataTable
         fillHeight
         columns={columns}
-        rows={data}
+        rows={rows}
         getRowId={(row) => row.id}
         isLoading={isLoading}
         isError={isError}
@@ -159,6 +222,11 @@ export function ProjectListPage() {
         mode={creating ? 'list' : null}
         parentGroupId={null}
         onClose={() => setCreating(false)}
+      />
+      <GroupManageDialog
+        open={manageGroup !== null}
+        group={manageGroup}
+        onClose={() => setManageGroup(null)}
       />
     </div>
   )

@@ -162,6 +162,45 @@ def status_label(v: str) -> str:
     return PAYABLE_STATUS.label_of(v) or (v or "")
 
 
+def debt_dept_of(po) -> int:
+    """Phòng mà khoản nợ của một đơn hàng TÍNH CHO — bao-CR-484 (đại ca chốt 25/09/2026).
+
+    = ô «Phòng xử lý» của đơn (`handler_dept_id`); `0` = thu mua chung. KHÔNG lùi về phòng
+    lập đơn như luật CR-414 GĐ4: từ CR-480, `0` đã mang nghĩa «Thu mua chung xử lý», nên nợ
+    của đơn nhà máy xin mà thu mua chung mua hộ là nợ của thu mua chung, không phải của nhà
+    máy — họ không trả, không cấn trừ, không nên thấy nó ở bậc phòng. Đừng dùng
+    `category_assignee.handling_dept_of` ở đây: hàm đó vẫn lùi về phòng lập để tra bộ phân
+    công người phụ trách, một việc khác.
+    """
+    return int(getattr(po, "handler_dept_id", 0) or 0)
+
+
+def resync_departments_from_orders(db: Session, dry_run: bool = False) -> int:
+    """Gán lại phòng của MỌI khoản nợ có đơn theo `debt_dept_of` — bao-CR-484, chạy lại vô hại.
+
+    Nợ sinh trước CR-484 mang phòng lập đơn khi đơn không có phòng xử lý; nợ chỉ được tính
+    lại lúc lưu đơn nên đơn cũ không tự sửa. Chạy một lần sau deploy (qua
+    `scripts/backfill_handling_dept.py`). Yêu cầu thanh toán đã lập thì KHÔNG đụng: đó là
+    chứng từ đã đi duyệt, phòng trên nó là phòng lúc lập. Trả số dòng đổi.
+    """
+    from app.modules.purchase_order.model import PurchaseOrder
+
+    rows = (db.query(Payable, PurchaseOrder.handler_dept_id)
+            .join(PurchaseOrder, PurchaseOrder.id == Payable.po_id)
+            .filter(Payable.po_id > 0).all())
+    changed = 0
+    for p, handler in rows:
+        want = int(handler or 0)
+        if int(p.department_id or 0) == want:
+            continue
+        changed += 1
+        if not dry_run:
+            p.department_id = want
+    if changed and not dry_run:
+        db.commit()
+    return changed
+
+
 def upsert(db: Session, *, source_type: str, ref_id: int, company_id: int, supplier_code: str,
            supplier_name: str, po_id: int, po_code: str, invoice_no: str, incur_date: str,
            amount: float, vat: float, due_days: int, user_id: int,
@@ -172,8 +211,9 @@ def upsert(db: Session, *, source_type: str, ref_id: int, company_id: int, suppl
     `ref_type = "import_cost"` (bao-CR-319 P5): `ref_id` là id dòng chi phí thu mua (`tab_po_cost`).
     `due_date` có giá trị thì dùng thẳng (dòng chi phí có ô *Hạn thanh toán* riêng),
     rỗng thì tính từ ngày phát sinh + số ngày công nợ của NCC như trước.
-    `department_id` (bao-CR-414 GĐ4): phòng đang xử lý đơn — người gọi tính sẵn bằng
-    `handling_dept_of(po)`; cập nhật lại mỗi lần lưu đơn để đổi phòng xử lý là nợ đi theo.
+    `department_id` (bao-CR-414 GĐ4, luật đổi ở bao-CR-484): phòng xử lý đơn — người gọi
+    tính sẵn bằng `debt_dept_of(po)` (0 = thu mua chung); cập nhật lại mỗi lần lưu đơn để
+    đổi phòng xử lý là nợ đi theo.
     """
     p = db.query(Payable).filter(
         Payable.source_type == source_type, Payable.ref_type == ref_type, Payable.ref_id == ref_id

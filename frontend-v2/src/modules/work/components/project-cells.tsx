@@ -2,6 +2,7 @@ import { Progress } from '@/shared/ui/progress'
 import { cn } from '@/shared/utils/cn'
 import type { WorkMember } from '../types/work'
 import { nameInitials } from '../utils/name-initials'
+import { PersonAvatar } from './person-avatar'
 
 /**
  * Ba mẩu hiển thị dùng chung giữa BẢNG dự án (`project-list-page.tsx`) và THẺ
@@ -12,18 +13,16 @@ import { nameInitials } from '../utils/name-initials'
  * xoay ngang cái điện thoại là thấy cả hai trong vòng một giây.
  */
 
-/** Vòng tròn chữ tắt. Luật đặt chữ tắt ở `utils/name-initials.ts`, dùng chung
- *  với hộp Quản lý dự án — chép ra hai bản là hai màn hiện khác nhau cho cùng
- *  một người. */
+/** Ảnh đại diện, lùi về vòng tròn chữ tắt khi chưa có ảnh (bao-CR-482). Luật đặt
+ *  chữ tắt ở `utils/name-initials.ts`, dùng chung với hộp Quản lý dự án — chép ra
+ *  hai bản là hai màn hiện khác nhau cho cùng một người. */
 export function MemberAvatar({ member }: { member: WorkMember }) {
-  const initials = nameInitials(member.employee_name)
   return (
-    <span
-      title={member.employee_name || `Nhân sự #${member.employee_id}`}
-      className="grid size-6 shrink-0 place-items-center rounded-full border bg-accent text-[10px] font-medium text-accent-foreground"
-    >
-      {initials}
-    </span>
+    <PersonAvatar
+      name={member.employee_name || `Nhân sự #${member.employee_id}`}
+      avatar={member.avatar}
+      initials={nameInitials(member.employee_name)}
+    />
   )
 }
 

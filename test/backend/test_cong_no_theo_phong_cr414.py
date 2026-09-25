@@ -1,8 +1,9 @@
 """bao-CR-414 GĐ4 — CÔNG NỢ theo phòng: cột ẩn `department_id` trên khoản nợ + phiếu YCTT.
 
 Luật đã chốt:
-  · Khoản nợ sinh ra mang phòng ĐANG XỬ LÝ đơn (`handling_dept_of(po)`): phòng được nhờ nếu có,
-    không thì phòng lập đơn. Nợ cũ giữ 0, KHÔNG backfill.
+  · Khoản nợ sinh ra mang phòng ĐANG XỬ LÝ đơn. Bản GĐ4 lùi về phòng lập khi không có phòng
+    được nhờ; bao-CR-484 (25/09/2026) đổi: = ô «Phòng xử lý», 0 = thu mua chung, KHÔNG lùi —
+    xem `payable.service.debt_dept_of` + `test_cong_no_theo_phong_xu_ly_cr484.py`.
   · Bậc `dept_proc` / loại trừ phòng bắt được nợ của phòng nhờ khai `dept_id` ở SCOPE_FIELDS.
   · Thẻ tổng hợp trả HAI bộ số: bốn khóa gốc = "Phần của tôi", `all` = "Tổng nợ NCC", `partial`.
   · YCTT: nợ của HAI phòng khác nhau không đi chung một phiếu; nợ cũ (0) đi với phòng nào cũng
@@ -124,12 +125,15 @@ def test_payable_upsert_stores_department_of_the_order(db, seed, two_departments
     db.add(po)
     db.flush()
     assert handling_dept_of(po) == factory_id      # phòng được nhờ thắng phòng lập đơn
+    #  bao-CR-484: nợ tính cho PHÒNG XỬ LÝ — cùng kết quả khi có phòng được nhờ; khác nhau
+    #  khi không có (xem test_cong_no_theo_phong_xu_ly_cr484.py).
+    assert pay_service.debt_dept_of(po) == factory_id
 
     p = pay_service.upsert(db, source_type="goods", ref_id=77, company_id=seed.company_id,
                            supplier_code="NCCA", supplier_name="NCC Anpha", po_id=po.id,
                            po_code=po.code, invoice_no="", incur_date="2026-08-05", amount=100,
                            vat=8, due_days=30, user_id=seed.u_nstm_id,
-                           department_id=handling_dept_of(po))
+                           department_id=pay_service.debt_dept_of(po))
     assert p.department_id == factory_id
 
     # Đổi phòng xử lý rồi lưu lại đơn -> khoản nợ đi theo (upsert cùng ref).

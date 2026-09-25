@@ -17,6 +17,7 @@ import type { WorkLabelField, WorkSection, WorkTask } from '../types/work'
 import { dotClass } from '../utils/work-colors'
 import { columnDroppableId, columnSortableId, taskDraggableId } from '../utils/kanban-drop'
 import type { CardFields } from '../types/view-options'
+import { LoadMoreTasks } from './load-more-tasks'
 import { TaskCard } from './task-card'
 
 interface KanbanColumnProps {
@@ -29,6 +30,10 @@ interface KanbanColumnProps {
   dragDisabled?: boolean
   /** Thẻ phải tàng hình vì đã được kéo sang cột khác; `null` = không có. */
   hideGhostTaskId?: number | null
+  /** Số việc của cột CHƯA tải (bao-CR-483); 0 = đã đủ. */
+  remaining?: number
+  loadingMore?: boolean
+  onLoadMore?: () => void
   onOpenTask: (taskId: number) => void
   /** Tick xong việc ngay trên thẻ, khỏi phải mở panel chi tiết. */
   onToggleDone: (taskId: number, done: boolean) => void
@@ -52,6 +57,9 @@ export function KanbanColumn({
   canManage,
   dragDisabled,
   hideGhostTaskId = null,
+  remaining = 0,
+  loadingMore = false,
+  onLoadMore,
   onOpenTask,
   onToggleDone,
   onCreateTask,
@@ -113,7 +121,9 @@ export function KanbanColumn({
       >
         <span className={cn('size-2 rounded-full', dotClass(section.color))} />
         <span className="flex-1 truncate text-sm font-semibold">{section.name}</span>
-        <span className="text-xs text-muted-foreground">{tasks.length}</span>
+        {/*  Số đếm là TỔNG của cột, kể cả phần chưa tải (bao-CR-483) — hiện 40
+             trong khi cột có 160 thì người dùng tưởng mất việc. */}
+        <span className="text-xs text-muted-foreground">{tasks.length + remaining}</span>
         {canManage && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -155,6 +165,10 @@ export function KanbanColumn({
             />
           ))}
         </SortableContext>
+
+        {onLoadMore && (
+          <LoadMoreTasks remaining={remaining} loading={loadingMore} onLoadMore={onLoadMore} />
+        )}
 
         {canEdit &&
           (adding ? (

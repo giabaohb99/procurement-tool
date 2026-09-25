@@ -41,12 +41,14 @@ def list_out(lst: WorkList, my_role: int | None = None, task_count: int = 0,
     }
 
 
-def member_out(m, name: str = "", code: str = "") -> dict:
-    """Dòng thành viên của nhóm hoặc list — hai bảng cùng khuôn nên dùng chung."""
+def member_out(m, name: str = "", code: str = "", avatar: str = "") -> dict:
+    """Dòng thành viên của nhóm hoặc list — hai bảng cùng khuôn nên dùng chung.
+
+    `avatar` (bao-CR-482): URL ảnh đại diện, rỗng thì màn hình vẽ chữ tắt."""
     return {
         "id": m.id, "employee_id": m.employee_id, "role": int(m.role),
         "department_id": m.department_id,
-        "employee_name": name, "employee_code": code,
+        "employee_name": name, "employee_code": code, "avatar": avatar,
     }
 
 
@@ -100,16 +102,23 @@ def task_link_out(link: WorkTaskLink) -> dict:
 
 def task_out(t: WorkTask, *, assignees: list[dict],
              labels: list[dict], subtask_done: int = 0, subtask_total: int = 0,
-             comment_count: int = 0) -> dict:
+             comment_count: int = 0, light: bool = False) -> dict:
     """Một task cho cả kanban lẫn danh sách.
 
     `subtask_done/total` là tiến độ "n/m" trên thẻ (C-02) — chỉ đếm việc con,
     và chỉ task CHA mới có. Việc con không bao giờ tự đứng thành thẻ (C-05).
+
+    `light` (bao-CR-483): BỎ `description` — đo trên dev 24/09/2026 mô tả chiếm
+    88% dung lượng bảng (358/406 KB cho 177 việc) mà thẻ không vẽ nó; panel chi
+    tiết lấy riêng qua `GET /tasks/{id}`. Giữ khóa `description` rỗng để kiểu
+    dữ liệu phía giao diện không đổi, kèm `has_description` cho thẻ đánh dấu.
     """
     return {
         "id": t.id, "list_id": t.list_id, "section_id": t.section_id,
         "parent_id": t.parent_id,
-        "title": t.title, "description": t.description,
+        "title": t.title,
+        "description": "" if light else t.description,
+        "has_description": bool((t.description or "").strip()),
         "status": int(t.status),
         #  Việc thường hay CỘT MỐC (B-14) — Gantt vẽ mốc thành hình thoi.
         "kind": int(t.kind or 1),

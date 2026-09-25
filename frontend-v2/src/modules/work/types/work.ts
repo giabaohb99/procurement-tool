@@ -108,6 +108,8 @@ export interface WorkMember {
   department_id: number | null
   employee_name: string
   employee_code: string
+  /** bao-CR-482: URL ảnh đại diện (thumbnail); rỗng thì vẽ chữ tắt. */
+  avatar?: string
 }
 
 export interface WorkSection {
@@ -192,6 +194,8 @@ export interface WorkAssignee {
   kind: number
   employee_name: string
   employee_code: string
+  /** bao-CR-482: URL ảnh đại diện (thumbnail); rỗng thì vẽ chữ tắt. */
+  avatar?: string
 }
 
 export interface WorkTask {
@@ -217,8 +221,27 @@ export interface WorkTask {
   subtask_done: number
   subtask_total: number
   comment_count: number
+  /**
+   * bao-CR-483: bảng ở chế độ nhẹ KHÔNG gửi `description` (rỗng) — cờ này cho
+   * thẻ biết việc có mô tả thật hay không mà không phải tải cả đoạn văn.
+   */
+  has_description?: boolean
   /** Chỉ có ở `GET /tasks/{id}` — panel chi tiết (D-03). */
   subtasks?: WorkTask[]
+}
+
+/** Phần chưa tải của một cột ở chế độ nhẹ — bao-CR-483. */
+export interface WorkSectionRemaining {
+  count: number
+  /** Việc đầu tiên CHƯA tải — mốc neo cho cú thả «xuống cuối cột». */
+  next_task_id: number | null
+}
+
+/** Trang kế của một cột: `GET /lists/{id}/sections/{sid}/tasks` — bao-CR-483. */
+export interface WorkSectionPage {
+  tasks: WorkTask[]
+  remaining: number
+  next_task_id: number | null
 }
 
 /**
@@ -245,4 +268,11 @@ export interface WorkBoard {
    * mũi tên trong cùng một nhịp. Bảng và Danh sách không đọc tới.
    */
   links: WorkTaskLink[]
+  /**
+   * bao-CR-483: chỉ có khi gọi `per_section > 0`. Khóa là `section_id`
+   * (`0` = «Chưa phân cột»); cột đã tải hết thì KHÔNG có khóa.
+   */
+  remaining?: Record<number, WorkSectionRemaining>
+  /** `true` = payload không có `description` của việc (chế độ nhẹ). */
+  light?: boolean
 }

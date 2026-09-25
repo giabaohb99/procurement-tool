@@ -1,10 +1,28 @@
 import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from '@/core/api'
-import type { WorkBoard, WorkTask, WorkTaskLink } from '../types/work'
+import type { WorkBoard, WorkSectionPage, WorkTask, WorkTaskLink } from '../types/work'
 
 /** Công việc và việc con. Xem `work-api.ts` về lý do prefix `/api/work`. */
 export const workTaskApi = {
-  /** Cột + task cha + mọi thứ vẽ trên thẻ, MỘT lượt gọi (D-01). */
-  board: (listId: number) => apiGet<WorkBoard>(`/api/work/lists/${listId}/board`),
+  /**
+   * Cột + task cha + mọi thứ vẽ trên thẻ, MỘT lượt gọi (D-01).
+   *
+   * bao-CR-483: `perSection > 0` = chế độ nhẹ — mỗi cột tối đa chừng ấy việc,
+   * phần dư kể ở `remaining` và tải tiếp bằng {@link workTaskApi.sectionTasks};
+   * `light` bỏ phần mô tả. Không truyền gì = trọn bộ như cũ.
+   */
+  board: (listId: number, opts: { perSection?: number; light?: boolean } = {}) =>
+    apiGet<WorkBoard>(`/api/work/lists/${listId}/board`, {
+      params: {
+        per_section: opts.perSection || undefined,
+        light: opts.light ? true : undefined,
+      },
+    }),
+
+  /** Trang kế của một cột (bao-CR-483). `sectionId = 0` = «Chưa phân cột». */
+  sectionTasks: (listId: number, sectionId: number, offset: number, limit: number) =>
+    apiGet<WorkSectionPage>(`/api/work/lists/${listId}/sections/${sectionId}/tasks`, {
+      params: { offset, limit, light: true },
+    }),
 
   get: (taskId: number) => apiGet<WorkTask>(`/api/work/tasks/${taskId}`),
 

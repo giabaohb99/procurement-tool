@@ -77,6 +77,7 @@ function renderTree(onNavigate?: () => void) {
       <WorkSidebarTree
         onCreateList={vi.fn()}
         onCreateGroup={vi.fn()}
+        onManageGroup={vi.fn()}
         onToggleCollapse={vi.fn()}
         onNavigate={onNavigate}
       />

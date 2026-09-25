@@ -69,6 +69,14 @@ interface KanbanBoardProps {
   onAddSection: () => void
   onRenameSection: (section: WorkSection) => void
   onDeleteSection: (section: WorkSection) => void
+  /**
+   * bao-CR-483: số việc CHƯA tải của từng cột (khóa `section_id`). Không truyền
+   * = bảng đã đủ (chế độ đầy đủ), cột không có đuôi «Tải thêm».
+   */
+  remaining?: Record<number, number>
+  /** Cột đang tải trang kế; `null` = không cột nào. */
+  loadingSectionId?: number | null
+  onLoadMore?: (sectionId: number) => void
 }
 
 /**
@@ -97,6 +105,9 @@ export function KanbanBoard({
   onAddSection,
   onRenameSection,
   onDeleteSection,
+  remaining,
+  loadingSectionId = null,
+  onLoadMore,
 }: KanbanBoardProps) {
   const [dragged, setDragged] = useState<WorkTask | null>(null)
   //  Cột đang được kéo đổi thứ tự — tách hẳn khỏi `dragged` (thẻ) vì hai loại
@@ -322,6 +333,9 @@ export function KanbanBoard({
             canManage={canManage}
             dragDisabled={!canEdit}
             hideGhostTaskId={hiddenGhostTaskId}
+            remaining={remaining?.[section.id] ?? 0}
+            loadingMore={loadingSectionId === section.id}
+            onLoadMore={onLoadMore ? () => onLoadMore(section.id) : undefined}
             onOpenTask={onOpenTask}
             onToggleDone={onToggleDone}
             onCreateTask={onCreateTask}
