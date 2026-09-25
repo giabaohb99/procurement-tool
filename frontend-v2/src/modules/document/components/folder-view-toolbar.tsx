@@ -69,7 +69,6 @@ export function FolderViewToolbar({
         <FolderQuickDocumentButton
           folderId={folder.id}
           folderCompanyId={folder.company_id}
-          folderName={displayName}
         />
         <Button type="button" variant="outline" size="sm" onClick={onShare}>
           <Share2 className="size-4" />

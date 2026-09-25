@@ -13,7 +13,7 @@ const { mutateAsyncMock, sendMock, toastError, fieldPreset } = vi.hoisted(() => 
   sendMock: vi.fn(async () => undefined),
   toastError: vi.fn(),
   //  Tên người dùng đã gõ sẵn trước khi chọn tệp — `''` = chưa gõ gì.
-  fieldPreset: { title: '' },
+  fieldPreset: { title: '', folderId: 0 },
 }))
 
 vi.mock('sonner', () => ({ toast: { error: toastError, success: vi.fn() } }))
@@ -35,10 +35,18 @@ vi.mock('./document-approver-preview-line', () => ({ DocumentApproverPreviewLine
 //  THIẾU (loại văn bản); pháp nhân/phòng/người chịu trách nhiệm phải tự lên
 //  từ thư mục + hồ sơ người đăng nhập, đó chính là thứ cần kiểm.
 vi.mock('./folder-quick-document-fields', () => ({
-  FolderQuickDocumentFields: ({ form }: { form: UseFormReturn<DocumentRecordFormValues> }) => {
+  FolderQuickDocumentFields: ({
+    form,
+    onFolderIdChange,
+  }: {
+    form: UseFormReturn<DocumentRecordFormValues>
+    onFolderIdChange: (id: number) => void
+  }) => {
     useEffect(() => {
       form.setValue('doc_type_id', 4)
       if (fieldPreset.title) form.setValue('title', fieldPreset.title)
+      //  Mô phỏng người dùng đổi ô «Lưu vào thư mục» sang thư mục khác.
+      if (fieldPreset.folderId) onFolderIdChange(fieldPreset.folderId)
       // eslint-disable-next-line react-hooks/exhaustive-deps -- chỉ điền một lần lúc mount
     }, [])
     return null
@@ -54,7 +62,6 @@ function renderDialog(folderCompanyId = 2) {
         onOpenChange={onOpenChange}
         folderId={23}
         folderCompanyId={folderCompanyId}
-        folderName="Thu Mua"
       />
     </MemoryRouter>,
   )
@@ -80,6 +87,7 @@ describe('FolderQuickDocumentDialog', () => {
     sendMock.mockClear()
     toastError.mockClear()
     fieldPreset.title = ''
+    fieldPreset.folderId = 0
   })
 
   it('refuses to create without any file — a no-compose document with no file is an empty shell', async () => {
@@ -119,6 +127,18 @@ describe('FolderQuickDocumentDialog', () => {
     expect([documentId, versionId, access]).toEqual([101, 501, []])
     expect(files.map((file) => file.name)).toEqual(['Hop-dong-ABC.signed.pdf', 'Phu-luc.xlsx'])
     await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false))
+  })
+
+  it('saves into the folder picked in «Lưu vào thư mục», not the folder being viewed', async () => {
+    fieldPreset.folderId = 31
+    renderDialog()
+    pickFiles('a.pdf')
+    submit()
+    await waitFor(() => expect(mutateAsyncMock).toHaveBeenCalledTimes(1))
+    expect(mutateAsyncMock.mock.calls[0][0].values).toMatchObject({
+      folder_ids: [31],
+      primary_folder_id: 31,
+    })
   })
 
   it('does not overwrite a title the user already typed', async () => {

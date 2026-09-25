@@ -15,9 +15,8 @@ import { FolderQuickDocumentDialog } from './folder-quick-document-dialog'
 interface FolderTreeNewMenuProps {
   /** Thư mục ĐANG CHỌN ở khung phải — `null` = đang ở GỐC: chỉ «Thư mục mới» (thư mục tự do) còn dùng được, hai mục văn bản cần một thư mục đích. */
   folderId: number | null
-  /** Pháp nhân + tên của thư mục đang chọn — hộp «Tạo nhanh từ tệp» mở sẵn pháp nhân này. */
+  /** Pháp nhân của thư mục đang chọn — hộp «Tạo nhanh từ tệp» mở sẵn pháp nhân này. */
   folderCompanyId?: number
-  folderName?: string
   /** Tạo được thư mục ở chỗ đang đứng — trong thư mục: đủ mức trên `folderId`; ở gốc: có `doc_folder.create`. */
   canCreateFolder: boolean
   /** Vai trò có `document.create` — thiếu thì ẩn hai mục «Văn bản …». */
@@ -41,7 +40,6 @@ interface FolderTreeNewMenuProps {
 export function FolderTreeNewMenu({
   folderId,
   folderCompanyId = 0,
-  folderName,
   canCreateFolder,
   canCreateDocument,
   onCreateFolder,
@@ -129,7 +127,6 @@ export function FolderTreeNewMenu({
           onOpenChange={setQuickOpen}
           folderId={folderId}
           folderCompanyId={folderCompanyId}
-          folderName={folderName}
         />
       )}
     </DropdownMenu>

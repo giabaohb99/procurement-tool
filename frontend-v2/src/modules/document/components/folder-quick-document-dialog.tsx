@@ -39,7 +39,6 @@ interface FolderQuickDocumentDialogProps {
   folderId: number
   /** Pháp nhân của thư mục — `0` = thư mục tự do, rơi về pháp nhân của người đang đăng nhập. */
   folderCompanyId: number
-  folderName?: string
 }
 
 /** Tên tệp bỏ đuôi — `Hop-dong-ABC.signed.pdf` → `Hop-dong-ABC.signed`. */
@@ -64,13 +63,14 @@ export function FolderQuickDocumentDialog({
   onOpenChange,
   folderId,
   folderCompanyId,
-  folderName,
 }: FolderQuickDocumentDialogProps) {
   const { user } = useAuth()
   const navigate = useNavigate()
   const save = useSaveDocument()
   const [files, setFiles] = useState<File[]>([])
   const [access, setAccess] = useState<PendingAccess[]>([])
+  //  Thư mục sẽ lưu — mặc định thư mục đang xem, người dùng đổi được ngay trong hộp.
+  const [targetFolderId, setTargetFolderId] = useState(folderId)
   //  Chặn BẤM ĐÚP (bẫy thứ tư CR-317): `disabled={isPending}` chỉ đúng từ lượt
   //  render sau, nên chốt bằng ref đổi ngay trong tick.
   const creatingRef = useRef(false)
@@ -128,8 +128,8 @@ export function FolderQuickDocumentDialog({
       const record = await save.mutateAsync({
         values: {
           ...formToPayload(values),
-          folder_ids: [folderId],
-          primary_folder_id: folderId,
+          folder_ids: [targetFolderId],
+          primary_folder_id: targetFolderId,
           content_mode: DOCUMENT_CONTENT_MODE.files,
           content_html: '',
         },
@@ -153,9 +153,7 @@ export function FolderQuickDocumentDialog({
           <div className="space-y-1.5">
             <DialogTitle>Tạo nhanh từ tệp</DialogTitle>
             <DialogDescription>
-              Văn bản không soạn thảo, lưu vào thư mục{' '}
-              <span className="font-medium text-foreground">{folderName ?? `#${folderId}`}</span>.
-              Các thông tin khác khai sau ở tab Thông tin.
+              Văn bản không soạn thảo. Các thông tin khác khai sau ở tab Thông tin.
             </DialogDescription>
           </div>
           {/*  «Mở rộng» = sang trang tạo đầy đủ 3 bước, giữ thư mục đích. Thứ
@@ -167,7 +165,7 @@ export function FolderQuickDocumentDialog({
             size="sm"
             className="shrink-0"
             disabled={creating}
-            onClick={() => navigate(`${appRoutes.document.documentNew}?folder_id=${folderId}`)}
+            onClick={() => navigate(`${appRoutes.document.documentNew}?folder_id=${targetFolderId}`)}
           >
             <Maximize2 className="size-4" />
             Mở rộng
@@ -181,7 +179,11 @@ export function FolderQuickDocumentDialog({
             className="-mx-6 min-h-0 flex-1 space-y-4 overflow-y-auto px-6"
           >
             <DocumentPendingAttachments bare files={files} onChange={handleFilesChange} />
-            <FolderQuickDocumentFields form={form} />
+            <FolderQuickDocumentFields
+              form={form}
+              folderId={targetFolderId}
+              onFolderIdChange={setTargetFolderId}
+            />
             {/*  Người duyệt dự kiến (yêu cầu 25/09/2026) — ngay dưới Thông tin chính,
                  TRÊN Quyền truy cập: nó đọc từ các ô vừa chọn ngay phía trên. */}
             <DocumentApproverPreviewLine

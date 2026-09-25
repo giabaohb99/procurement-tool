@@ -29,6 +29,8 @@ interface FolderPickerProps {
   docTypeDefaultFolderId?: number | null
   disabled?: boolean
   placeholder?: string
+  /** Không vẽ dải chip dưới ô — chế độ MỘT đã hiện tên trên nút, chip chỉ lặp lại (hộp tạo nhanh). */
+  hideChips?: boolean
   className?: string
 }
 
@@ -57,6 +59,7 @@ export function FolderPicker({
   docTypeDefaultFolderId,
   disabled,
   placeholder = 'Chọn thư mục…',
+  hideChips = false,
   className,
 }: FolderPickerProps) {
   const [open, setOpen] = useState(false)
@@ -82,7 +85,14 @@ export function FolderPicker({
     for (const folder of allFolders) {
       if (folder.kind === FOLDER_KIND.company) expansion.expand(folder.id)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `expansion.expand` ổn định (useCallback không phụ thuộc)
+    //  Mở sẵn đường tới thư mục ĐANG CHỌN (hộp tạo nhanh chọn sẵn thư mục đang
+    //  xem — cây gập ở gốc thì mở ra không thấy nó đâu). `path` dạng `/21/14/`.
+    const byId = new Map(allFolders.map((f) => [f.id, f]))
+    for (const id of folderIds) {
+      const ancestors = (byId.get(id)?.path ?? '').split('/').filter(Boolean).map(Number)
+      for (const ancestor of ancestors) if (ancestor !== id) expansion.expand(ancestor)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `expansion.expand` ổn định; chỉ chạy lại khi cây nạp xong, không theo từng lần chọn
   }, [allFolders])
 
   //  KHÔNG còn lọc theo pháp nhân của văn bản (bỏ 24/09/2026 — gắn văn bản vào
@@ -187,7 +197,7 @@ export function FolderPicker({
         </PopoverContent>
       </Popover>
 
-      {chipItems.length > 0 && (
+      {!hideChips && chipItems.length > 0 && (
         <FolderChipList
           items={chipItems}
           primaryId={multiple ? primaryFolderId : null}

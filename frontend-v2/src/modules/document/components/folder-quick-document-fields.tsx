@@ -7,12 +7,17 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shar
 import { Input } from '@/shared/ui/input'
 import { RequiredMark } from '@/shared/ui/required-mark'
 import { SearchSelect } from '@/shared/ui/search-select'
+import { Label } from '@/shared/ui/label'
 import { cn } from '@/shared/utils/cn'
 import { useActiveDocumentTypes } from '../hooks/use-document-types'
 import type { DocumentRecordFormValues } from '../schemas/document-record-schema'
+import { FolderPicker } from './folder-picker'
 
 interface FolderQuickDocumentFieldsProps {
   form: UseFormReturn<DocumentRecordFormValues>
+  /** Thư mục sẽ lưu — mặc định là thư mục đang xem, đổi được. */
+  folderId: number
+  onFolderIdChange: (id: number) => void
 }
 
 type SelectFieldName = 'doc_type_id' | 'company_id' | 'department_id' | 'owner_employee_id'
@@ -29,7 +34,11 @@ const MESSAGE = 'sm:col-start-2'
  * văn bản mẫu, sổ, thư mục, số hiệu xem trước, gợi ý văn bản trùng — đúng thứ
  * hộp tạo nhanh muốn bỏ. Ô nào còn thiếu thì khai sau ở tab Thông tin.
  */
-export function FolderQuickDocumentFields({ form }: FolderQuickDocumentFieldsProps) {
+export function FolderQuickDocumentFields({
+  form,
+  folderId,
+  onFolderIdChange,
+}: FolderQuickDocumentFieldsProps) {
   const documentTypes = useActiveDocumentTypes()
   const { data: companies } = useCompanies({ page_size: 200, is_active: true })
   const { data: departments } = useDepartments({ page_size: 500 })
@@ -120,6 +129,23 @@ export function FolderQuickDocumentFields({ form }: FolderQuickDocumentFieldsPro
           'Người phụ trách',
           'Chọn người chịu trách nhiệm nội dung',
         )}
+        {/*  «Lưu vào thư mục» (yêu cầu 25/09/2026) — bày ra cho thấy văn bản sẽ
+             nằm đâu, chọn sẵn thư mục đang xem. Không phải ô của form: thư mục
+             gửi riêng qua `folder_ids`/`primary_folder_id` lúc tạo. Chế độ MỘT
+             nên không bao giờ rỗng — chọn thư mục khác là THAY. */}
+        <div className={cn('grid lg:col-span-2', ROW)}>
+          <Label className="gap-0">
+            Lưu vào thư mục
+            <RequiredMark hint="Bắt buộc" />
+          </Label>
+          <FolderPicker
+            folderIds={[folderId]}
+            primaryFolderId={folderId}
+            onChange={(ids) => ids[0] && onFolderIdChange(ids[0])}
+            multiple={false}
+            hideChips
+          />
+        </div>
       </div>
     </div>
   )

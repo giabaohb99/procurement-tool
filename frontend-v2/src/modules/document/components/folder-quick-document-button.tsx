@@ -8,7 +8,6 @@ import { FolderQuickDocumentDialog } from './folder-quick-document-dialog'
 interface FolderQuickDocumentButtonProps {
   folderId: number
   folderCompanyId: number
-  folderName?: string
 }
 
 /**
@@ -19,7 +18,6 @@ interface FolderQuickDocumentButtonProps {
 export function FolderQuickDocumentButton({
   folderId,
   folderCompanyId,
-  folderName,
 }: FolderQuickDocumentButtonProps) {
   const { can } = usePermission()
   const [open, setOpen] = useState(false)
@@ -38,7 +36,6 @@ export function FolderQuickDocumentButton({
           onOpenChange={setOpen}
           folderId={folderId}
           folderCompanyId={folderCompanyId}
-          folderName={folderName}
         />
       )}
     </>
