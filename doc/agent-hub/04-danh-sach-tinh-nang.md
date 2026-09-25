@@ -50,7 +50,7 @@ một token Telegram riêng.
 | Mã | Tính năng | Cỡ | Ghi chú |
 |---|---|---|---|
 | P-01 | **XONG 25/09/2026 (ai-CR-059).** Đẩy thông báo ERP (chuông) sang Telegram của từng người đã đăng nhập: phiếu chờ họ duyệt, việc giao cho họ | M | Mặc định «việc của tôi», mỗi liên kết tự đổi (tắt / tất cả) bằng câu nhắn hoặc ở Trang cá nhân |
-| P-02 | **XONG 25/09/2026 (ai-CR-062).** | Trần lượt hỏi / chi phí theo từng người mỗi ngày | S | Để một người không dùng hết hạn mức Gemini của cả công ty |
+| P-02 | **XONG 25/09/2026 (ai-CR-062).** Trần lượt hỏi / chi phí theo từng người mỗi ngày | S | Để một người không dùng hết hạn mức Gemini của cả công ty |
 
 ## Nhóm M — Trợ lý mở: MCP, AI tự chọn, nhiều kênh (thêm 24/09/2026)
 
@@ -130,10 +130,10 @@ Thứ tự làm phase 2: **(a)** D-01 + D-02 (xong 25/09) → **(b)** D-03 + D-0
 | T-04 | Gỡ băng từng tệp, nối theo thứ tự thời gian | M | |
 | T-05 | Mẫu biên bản là dữ liệu (chính thức · gạch đầu dòng · danh sách việc · đầy đủ theo giờ), chọn mẫu bằng chữ | M | Thêm mẫu không phải sửa mã |
 | T-06 | Xuất Word theo mẫu DEGO lên Drive, gửi bản tóm tắt ngay trong chat kèm link | M | |
-| T-07 | **XONG 25/09/2026 (ai-CR-061).** | Tin thoại ngắn thành lời nhắc hoặc việc | S | Cần N-02 |
+| T-07 | **XONG 25/09/2026 (ai-CR-061).** Tin thoại ngắn thành lời nhắc hoặc việc | S | Cần N-02 |
 | T-08 | Bản tin 8h sáng: lịch hôm nay, việc đến hạn, phiếu chờ đại ca duyệt | M | Cần N-03 |
 | T-09 | Nhắc trước mỗi cuộc họp 15 phút | S | Cần N-03 |
-| T-10 | **XONG 25/09/2026 (ai-CR-060).** | «Nhắc anh 3h gọi nhà cung cấp X»: tạo lời nhắc bằng câu nói | S | Dùng bộ hẹn giờ và phần hiểu giờ sẵn có |
+| T-10 | **XONG 25/09/2026 (ai-CR-060).** «Nhắc anh 3h gọi nhà cung cấp X»: tạo lời nhắc bằng câu nói | S | Dùng bộ hẹn giờ và phần hiểu giờ sẵn có |
 | T-11 | Tạo lịch Google Calendar bằng câu nói, hỏi lại trước khi tạo | S | Cần N-03 |
 | T-12 | Việc rút ra từ biên bản thành lời nhắc và việc trong phân hệ Công việc của ERP | M | Chỗ hai cụm cộng lại đáng giá nhất |
 
