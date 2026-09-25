@@ -33,6 +33,7 @@ from app.modules.document.controller import router as document_router
 #  thành một `document_id`.
 from app.modules.document.search_controller import router as document_search_router
 from app.modules.document.approval_preview_controller import router as document_approval_preview_router
+from app.modules.document.legacy_pending_approval import router as document_legacy_pending_router
 from app.modules.document.link_controller import router as document_link_router
 from app.modules.document.scope_controller import router as document_scope_router
 from app.modules.document.signature_controller import router as document_signature_router
@@ -245,6 +246,7 @@ app.include_router(document_template_router)
 #  Quy tắc: router nào có đường dẫn TĨNH dưới `/api/documents/...` thì phải
 #  đăng ký TRƯỚC `document_router`. Xem `test_thu_tu_route_van_ban.py`.
 app.include_router(document_approval_preview_router)
+app.include_router(document_legacy_pending_router)
 app.include_router(document_link_router)
 app.include_router(document_scope_router)
 app.include_router(document_signature_router)

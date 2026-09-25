@@ -27,7 +27,6 @@ import { Card } from '@/shared/ui/card'
 import { QuickFilterField, QuickFilterSheet } from '@/shared/ui/quick-filter-sheet'
 import { SearchField } from '@/shared/ui/search-field'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
-import { Switch } from '@/shared/ui/switch'
 import type { DataTableColumn } from '@/shared/data-table'
 import { DocumentCard } from './document-card'
 import { FOLDER_FILTER_ALL } from './document-folder-filter-select'
@@ -36,7 +35,7 @@ import { FolderFilterControl } from './folder-filter-control'
 import { SearchSnippet } from './search-snippet'
 import { DOCUMENT_LIST_FILTER_FIELDS } from '../config/document-list-filter-fields'
 import { useActiveDocumentTypes } from '../hooks/use-document-types'
-import { MIN_QUERY_LENGTH, useDocumentSearch } from '../hooks/use-document-search'
+import { isFullTextQuery, useDocumentSearch } from '../hooks/use-document-search'
 import { useDocuments } from '../hooks/use-documents'
 import { useMyDocumentTasks } from '../hooks/use-my-document-approvals'
 import { STATUS_LABELS, type DocumentRecord } from '../types/document-record'
@@ -53,7 +52,7 @@ const FILTER_CONFIG = {
   //  (phase 07) và ô lọc thư mục (phase 06, duoc-CR-476). Thiếu tên nào ở đây
   //  là bấm "Áp dụng" ở bộ lọc nâng cao xong mất luôn ô đó (riêng `tab` thì
   //  màn hình nhảy về tab kia).
-  preserveParams: ['q', 'type', 'status', 'tab', 'full_text', 'folder_id', 'folder_sub'],
+  preserveParams: ['q', 'type', 'status', 'tab', 'folder_id', 'folder_sub'],
 }
 
 export function OutgoingDocumentsTab() {
@@ -85,12 +84,10 @@ function OutgoingDocumentsContent() {
   const { value: keyword, setValue: setKeyword, debouncedValue } = useUrlSearchParam()
   const [typeId, setTypeId] = useUrlParamState('type', ALL)
   const [status, setStatus] = useUrlParamState('status', ALL)
-  //  Công tắc «Tìm cả nội dung» (phase 07, duoc-CR-477) — TẮT thì giữ nguyên
-  //  hành vi cũ (LIKE 6 cột siêu dữ liệu qua `useDocuments`); BẬT thì chuyển
-  //  sang `/api/documents/search` (đọc thêm nội dung soạn thảo + chữ trong
-  //  tệp đính kèm), đọc/ghi URL để chia sẻ được đường dẫn kết quả tìm.
-  const [fullTextParam, setFullTextParam] = useUrlParamState('full_text', 'false')
-  const isFullText = fullTextParam === 'true'
+  //  Tìm TOÀN VĂN tự bật khi câu tìm đủ dài (25/09/2026 — bỏ công tắc «Tìm cả
+  //  nội dung»): `/api/documents/search` đọc cả tiêu đề/số hiệu, nội dung soạn
+  //  thảo, chữ trong tệp. Ô trống / 1 ký tự thì về danh sách thường (`useDocuments`).
+  const isFullText = isFullTextQuery(debouncedValue)
   //  Ô lọc «Thư mục» (phase 06, duoc-CR-476) — `-1` (`FOLDER_FILTER_ALL`) =
   //  chưa lọc, KHÔNG dùng `0` làm mốc "tất cả" (CR-322: id thật của một dòng
   //  luôn là giá trị thật, không được trưng dụng làm sentinel).
@@ -136,7 +133,6 @@ function OutgoingDocumentsContent() {
     debouncedValue,
     typeId,
     status,
-    isFullText,
     folderId,
     includeSubfolders,
   ])
@@ -162,9 +158,8 @@ function OutgoingDocumentsContent() {
   const filterParams = { ...baseFilterParams, q: debouncedValue.trim() || undefined }
 
   //  Gọi CẢ HAI hook mọi lượt render (luật hook cố định) — `enabled` quyết
-  //  định hook nào THẬT SỰ bắn request. TẮT «Tìm cả nội dung»: `useDocuments`
-  //  chạy như cũ, `useDocumentSearch` đứng yên (thiếu `q` hợp lệ). BẬT: ngược
-  //  lại — xem `use-documents.ts`/`use-document-search.ts`.
+  //  định hook nào THẬT SỰ bắn request: câu tìm ngắn/rỗng → `useDocuments`,
+  //  đủ dài → `useDocumentSearch` (xem `isFullTextQuery`).
   const { data, isLoading, isError } = useDocuments(
     { ...filterParams, page, page_size: pageSize },
     { enabled: !isFullText },
@@ -176,7 +171,10 @@ function OutgoingDocumentsContent() {
   } = useDocumentSearch(keyword, { ...baseFilterParams, page, page_size: pageSize }, isFullText)
 
   const activeData = isFullText ? searchData : data
-  const activeLoading = isFullText ? searchLoading : isLoading
+  //  Hook tìm toàn văn tự hoãn thêm 400ms sau nhịp 350ms của ô tìm — trong
+  //  khe đó nó chưa bật nên `isLoading` là false mà cũng chưa có dữ liệu. Coi
+  //  khe đó là ĐANG TẢI, không thì bảng nháy «không tìm thấy» mỗi lần gõ.
+  const activeLoading = isFullText ? searchLoading || (!searchData && !searchError) : isLoading
   const activeError = isFullText ? searchError : isError
 
   const [exporting, setExporting] = useState(false)
@@ -282,7 +280,7 @@ function OutgoingDocumentsContent() {
         setPage(1)
       }}
     >
-      <SelectTrigger className="w-full md:w-48" aria-label="Lọc theo loại văn bản">
+      <SelectTrigger className="w-full md:w-44" aria-label="Lọc theo loại văn bản">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
@@ -316,23 +314,6 @@ function OutgoingDocumentsContent() {
         ))}
       </SelectContent>
     </Select>
-  )
-
-  //  Công tắc «Tìm cả nội dung» (phase 07) — cùng khuôn `typeSelect`/
-  //  `statusSelect`: dựng MỘT LẦN, dùng lại cho cả hàng ngang (desktop) lẫn
-  //  tờ trượt (khổ hẹp).
-  const fullTextSwitch = (
-    <label className="flex shrink-0 items-center gap-2 text-sm text-muted-foreground">
-      <Switch
-        checked={isFullText}
-        onCheckedChange={(checked) => {
-          setFullTextParam(checked ? 'true' : 'false')
-          setPage(1)
-        }}
-        aria-label="Tìm cả nội dung soạn thảo và tệp đính kèm"
-      />
-      Tìm cả nội dung
-    </label>
   )
 
   //  Ô lọc «Thư mục» + «Gồm thư mục con» (phase 06) — cùng khuôn hai ô trên,
@@ -396,15 +377,11 @@ function OutgoingDocumentsContent() {
         onRowClick={(row) => navigate(appRoutes.document.documentDetail(row.id))}
         //  Rê chuột là nạp trước dữ liệu chi tiết — xem `usePrefetchDocument`.
         onRowHover={(row) => prefetchDocument(row.id)}
-        //  Chế độ tìm toàn văn cần câu rỗng RIÊNG cho hai ca — gõ chưa đủ 2 ký
-        //  tự (chưa bắn API, không phải "không có kết quả") và tìm rồi nhưng
-        //  không trúng gì — trộn chung một câu là người gõ một chữ đọc ra
-        //  "không tìm thấy" và tưởng chức năng hỏng.
+        //  Tìm rồi không trúng thì nói rõ đã tìm ở những đâu — người dùng khỏi
+        //  đoán "có tìm trong tệp không".
         emptyMessage={
           isFullText
-            ? keyword.trim().length < MIN_QUERY_LENGTH
-              ? `Gõ ít nhất ${MIN_QUERY_LENGTH} ký tự để tìm.`
-              : 'Không tìm thấy văn bản nào khớp câu tìm.'
+            ? 'Không tìm thấy văn bản nào khớp câu tìm — trong tên, số hiệu, nội dung lẫn tệp đính kèm.'
             : 'Chưa có văn bản nào khớp điều kiện đang lọc.'
         }
         pagination={{
@@ -464,14 +441,12 @@ function OutgoingDocumentsContent() {
               activeCount={
                 (typeId !== ALL ? 1 : 0) +
                 (status !== ALL ? 1 : 0) +
-                (isFullText ? 1 : 0) +
                 (folderId !== FOLDER_FILTER_ALL ? 1 : 0) +
                 filter.activeCount
               }
               onClearAll={() => {
                 setTypeId(ALL)
                 setStatus(ALL)
-                setFullTextParam('false')
                 setFolderIdParam(String(FOLDER_FILTER_ALL))
                 setFolderSubParam('true')
                 setPage(1)
@@ -481,7 +456,6 @@ function OutgoingDocumentsContent() {
             >
               <QuickFilterField label="Loại văn bản">{typeSelect}</QuickFilterField>
               <QuickFilterField label="Trạng thái">{statusSelect}</QuickFilterField>
-              <QuickFilterField label="Tìm kiếm">{fullTextSwitch}</QuickFilterField>
               <QuickFilterField label="Thư mục">{folderFilterControl}</QuickFilterField>
               <AdvancedFilterSection />
             </QuickFilterSheet>
@@ -496,11 +470,12 @@ function OutgoingDocumentsContent() {
                  mà ở 390px tấm `95vw` bung ra che gần hết màn và vẫn không đủ
                  ngang cho một hàng điều kiện — khổ hẹp đi bằng `AdvancedFilterSection`
                  trong tờ trượt ở trên. */}
+            {/*  Thứ tự (sắp lại 25/09/2026): nơi chứa (thư mục) → loại →
+                 trạng thái → bộ lọc nâng cao. */}
             <div className="hidden md:contents">
+              {folderFilterControl}
               {typeSelect}
               {statusSelect}
-              {fullTextSwitch}
-              {folderFilterControl}
               <ConditionalFilter />
             </div>
 

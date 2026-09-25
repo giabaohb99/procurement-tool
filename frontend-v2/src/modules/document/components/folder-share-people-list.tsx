@@ -1,25 +1,15 @@
-import { Briefcase, Building2, Shield, User } from 'lucide-react'
-
-import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
 import { Badge } from '@/shared/ui/badge'
 import { confirm } from '@/shared/ui/confirm-dialog'
 import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { cn } from '@/shared/utils/cn'
 import { formatDate } from '@/shared/utils/format-date'
-import { nameInitials } from '@/shared/utils/name-initials'
 import { useRevokeFolderAccess, useUpdateFolderAccessLevel } from '../hooks/use-document-folder-access'
-import { EFFECT, SUBJECT_KIND } from '../types/document-access'
+import { EFFECT } from '../types/document-access'
 import { FOLDER_ACCESS_LEVEL_LABELS, type FolderAccessEntry } from '../types/document-folder'
+import { AccessSubjectAvatar } from './access-subject-avatar'
 
 const REVOKE_REASON = 'Thu hồi từ hộp Chia sẻ'
 const REMOVE_VALUE = 'remove'
-
-const SUBJECT_ICONS: Record<number, typeof User> = {
-  [SUBJECT_KIND.employee]: User,
-  [SUBJECT_KIND.department]: Briefcase,
-  [SUBJECT_KIND.company]: Building2,
-  [SUBJECT_KIND.role]: Shield,
-}
 
 interface FolderSharePeopleListProps {
   folderId: number
@@ -80,7 +70,7 @@ export function FolderSharePeopleList({ folderId, rows, canManage, onNavigateToF
         const subjectName = row.subject_name || '(đã xóa)'
         return (
           <li key={row.id} className={cn('flex items-center gap-3 px-3 py-2', !row.is_active && 'opacity-55')}>
-            <AccessSubjectAvatar row={row} />
+            <AccessSubjectAvatar subjectKind={row.subject_kind} subjectName={row.subject_name} />
 
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
@@ -147,28 +137,5 @@ export function FolderSharePeopleList({ folderId, rows, canManage, onNavigateToF
         )
       })}
     </ul>
-  )
-}
-
-/**
- * Ảnh đại diện của một dòng quyền — NGƯỜI hiện chữ viết tắt tên thật
- * (`nameInitials`, kiểu Drive), ba loại còn lại (phòng ban/pháp nhân/vai trò)
- * vẫn dùng icon vì không có "tên người" để viết tắt theo đúng nghĩa.
- */
-function AccessSubjectAvatar({ row }: { row: FolderAccessEntry }) {
-  if (row.subject_kind === SUBJECT_KIND.employee) {
-    return (
-      <Avatar size="sm" className="shrink-0">
-        <AvatarFallback>{nameInitials(row.subject_name || '?')}</AvatarFallback>
-      </Avatar>
-    )
-  }
-  const Icon = SUBJECT_ICONS[row.subject_kind] ?? User
-  return (
-    <Avatar size="sm" className="shrink-0">
-      <AvatarFallback>
-        <Icon className="size-3.5" />
-      </AvatarFallback>
-    </Avatar>
   )
 }

@@ -20,7 +20,7 @@ dấu/cụm/loại trừ hai lần bằng hai phương ngữ SQL khác nhau.
 import re
 from dataclasses import dataclass, field
 
-from sqlalchemy import and_, or_, text
+from sqlalchemy import and_, or_, select, text
 from sqlalchemy.orm import Session
 
 from app.core.text_fold import fold
@@ -138,7 +138,12 @@ def _scope_subquery(base_query):
     trần gói tin MySQL. `ColumnOperators.in_()` nhận thẳng một `Query` (SQLAlchemy
     tự dựng thành subquery), MySQL/SQLite chạy nó phía server — y hệt `EXISTS`
     viết dạng `IN`."""
-    return base_query.with_entities(Document.id).limit(SCOPE_LIMIT)
+    #  ⚠️ Bọc thêm MỘT TẦNG bảng dẫn xuất: MySQL từ chối `IN (SELECT … LIMIT n)`
+    #  (lỗi 1235 «doesn't yet support 'LIMIT & IN/ALL/ANY/SOME subquery'»), nhưng
+    #  nhận `IN (SELECT id FROM (SELECT … LIMIT n) AS t)`. Bắt 25/09/2026 — pytest
+    #  chạy SQLite (nhận cả hai dạng) nên không bao giờ thấy.
+    limited = base_query.with_entities(Document.id.label("id")).limit(SCOPE_LIMIT).subquery()
+    return select(limited.c.id)
 
 
 def _candidate_rows(db: Session, scope_query, parsed: ParsedQuery) -> tuple[list[DocumentSearch], bool]:
@@ -157,13 +162,16 @@ def _candidate_rows(db: Session, scope_query, parsed: ParsedQuery) -> tuple[list
 
     if dialect == "mysql":
         expr = _mysql_boolean_expr(parsed)
-        match_expr = text(
-            "MATCH(meta_text, body_text, file_text) AGAINST (:doc_search_expr IN BOOLEAN MODE)"
-        ).bindparams(doc_search_expr=expr)
+        match_sql = "MATCH(meta_text, body_text, file_text) AGAINST (:doc_search_expr IN BOOLEAN MODE)"
         #  Sắp theo ĐỘ KHỚP trước khi cắt trần (M2) — không sắp thì
         #  `CANDIDATE_LIMIT` cắt theo thứ tự bất kỳ của MySQL, có thể bỏ sót
         #  đúng những ứng viên khớp NHẤT trước khi Python kịp xếp hạng lại.
-        query = query.filter(match_expr).order_by(match_expr.desc())
+        #  ⚠️ `text()` KHÔNG có `.desc()` — gọi thế là AttributeError, cả đường
+        #  tìm trả 500 (bắt 25/09/2026 khi bật tìm toàn văn mặc định; pytest chạy
+        #  SQLite nên không bao giờ đi qua nhánh này). Viết `DESC` thẳng vào SQL.
+        query = (query
+                 .filter(text(match_sql).bindparams(doc_search_expr=expr))
+                 .order_by(text(f"{match_sql} DESC").bindparams(doc_search_expr=expr)))
     else:
         conds = []
         for term in parsed.include:

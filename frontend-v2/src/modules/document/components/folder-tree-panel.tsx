@@ -161,6 +161,8 @@ export function FolderTreePanel({
       <div className="p-2 pb-0">
         <FolderTreeNewMenu
           folderId={selectedFolderId}
+          folderCompanyId={selectedNode?.company_id}
+          folderName={selectedNode ? (selectedNode.display_name ?? selectedNode.name) : undefined}
           canCreateFolder={canCreateHere}
           canCreateDocument={can('document', 'create')}
           onCreateFolder={createHere}

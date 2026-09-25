@@ -8168,6 +8168,87 @@ Kiểm: 20 bài công nợ theo phòng xanh (3 bài mới), 67 bài chi phí và
 Mã nguồn: backend/app/modules/payable/service.py · purchase_order/service.py ·
 backend/scripts/backfill_handling_dept.py · test/backend/test_cong_no_theo_phong_xu_ly_cr484.py
 
+## duoc-CR-479 | Văn bản: tạo nhanh từ tệp, chia sẻ ngay ở thư mục, duyệt một bước vào «Chờ tôi duyệt», tìm luôn cả nội dung
+- status: xong
+- date: 2026-09-25
+Đợt chỉnh phân hệ Văn bản theo góp ý của đại ca trong ngày 25/09/2026, làm và bấm thử
+bằng trình duyệt trên máy em. Trong lúc bấm thử lòi ra ba lỗi có sẵn ở phần tìm toàn văn,
+em vá luôn. Đã push lên nhánh `erp-v2`, chưa deploy dev.
+Khi deploy phải khởi động lại celery-worker rồi chạy một lần script dựng lại chỉ mục tìm
+kiếm, không thì những văn bản chưa có chỉ mục sẽ không tìm ra được.
+Kiểm tra: 701 bài kiểm giao diện của phân hệ Văn bản xanh, 56 bài kiểm máy chủ của phần
+văn bản xanh, typecheck sạch, lint không lỗi. Không có migration.
+Commit: 6a5ba7de · 98ccab67 · 6e5b0775 (nhánh `erp-v2`).
+Deploy: sau khi lên dev chạy `docker compose restart celery-worker` rồi
+`docker compose exec -T api python scripts/reindex_documents.py`.
+
+### duoc-CR-479-1 | Nút «Tải tệp lên» ở trang Thư mục: tạo văn bản không soạn thảo trong một hộp
+- status: xong
+Người dùng hay có sẵn tệp scan hoặc hợp đồng đã ký, đi hết trang tạo ba bước thì mất công.
+Em thêm nút «Tải tệp lên» trên thanh công cụ của trang Thư mục (và mục «Tạo nhanh từ tệp»
+trong nút «Mới»). Hộp này chỉ hỏi tệp, năm ô bắt buộc, người duyệt dự kiến và phân quyền;
+bấm tạo là văn bản nằm luôn trong thư mục đang xem. Tên văn bản tự lấy theo tên tệp đầu
+tiên, vùng thả tệp ghi rõ các đuôi nhận được và giới hạn 50 MB mỗi tệp. Nút «Mở rộng»
+chuyển sang trang tạo đầy đủ. Em cũng đổi nhãn «Phân quyền nâng cao» thành «Cho phép /
+chặn người cụ thể» cho dễ hiểu.
+Mã nguồn: `folder-quick-document-dialog.tsx` · `folder-quick-document-fields.tsx` ·
+`folder-quick-document-button.tsx` · `helpers/document-file-policy.ts`.
+
+### duoc-CR-479-2 | Văn bản chỉ gồm tệp gửi duyệt được
+- status: xong
+Bấm thử thì văn bản tạo không soạn thảo bị chặn gửi duyệt với câu «Nội dung văn bản còn
+trống», dù đã có tệp. Máy chủ nay kiểm văn bản loại này có ít nhất một tệp đính kèm thay
+vì kiểm nội dung soạn thảo. Thêm 4 bài kiểm.
+Mã nguồn: `backend/app/modules/document/service.py` (`_ensure_submittable_content`).
+
+### duoc-CR-479-3 | «Chờ tôi duyệt» hiện cả văn bản duyệt một bước, tab mặc định «Cần duyệt»
+- status: xong
+Văn bản không khớp luồng duyệt nào thì đi đường duyệt một bước kiểu cũ, không sinh việc
+cho bộ máy duyệt, nên người có quyền duyệt không bao giờ thấy nó ở màn «Chờ tôi duyệt».
+Em thêm hai đường API riêng: một liệt kê văn bản đang chờ duyệt một bước mà người đó đọc
+được, một liệt kê những lần người đó đã duyệt hoặc trả lại theo nhật ký. Số đếm ở menu và
+ở nút «Cần duyệt» cộng cả hai loại. Màn mở sẵn tab «Cần duyệt», câu khi bảng trống nói
+đúng theo tab đang xem. Đã bấm thử cả luồng một bước lẫn luồng hai chặng bằng tài khoản
+người duyệt. Thêm 10 bài kiểm máy chủ.
+Mã nguồn: `backend/app/modules/document/legacy_pending_approval.py` ·
+`approval-inbox-table.tsx` · `approval-inbox-row.ts`.
+
+### duoc-CR-479-4 | Chia sẻ văn bản ngay ở trang Thư mục, «Xem chi tiết» vào thẳng văn bản
+- status: xong
+Menu ⋯ và menu chuột phải của văn bản có thêm «Chia sẻ…», mở hộp giống hộp chia sẻ của
+thư mục: ô mời người trên cùng, danh sách người được cho phép hoặc bị chặn, sửa và hủy
+từng dòng, nút «Sao chép liên kết». «Xem chi tiết» của văn bản nay mở thẳng trang văn bản
+(trước đó chỉ bật khung thông tin bên phải, tưởng hỏng), bỏ mục «Mở» vì trùng việc. Ô tìm
+người khi chia quyền tìm được theo mã nhân sự, gõ không dấu cũng ra. Sửa luôn viền đáy
+bị đôi ở bảng thư mục.
+Mã nguồn: `document-share-dialog.tsx` · `document-share-access-list.tsx` ·
+`hooks/use-document-access-editor.ts` · `helpers/folder-item-menu-actions.ts`.
+
+### duoc-CR-479-5 | Tìm luôn cả nội dung, bỏ công tắc; vá ba lỗi tìm toàn văn
+- status: xong
+Đại ca chốt tìm là tìm cả tên lẫn nội dung, nên em bỏ công tắc «Tìm cả nội dung»: gõ từ
+2 ký tự là tìm trong tên, số hiệu, nội dung soạn thảo và chữ trong tệp; ô trống thì hiện
+danh sách thường. Khi bật mặc định thì lộ ra ba lỗi có sẵn: câu sắp xếp theo độ khớp viết
+sai nên tìm trả lỗi 500; MySQL từ chối truy vấn con có giới hạn số dòng nên vẫn 500;
+celery-worker ở máy em khởi động trước khi có tác vụ lập chỉ mục nên 6 văn bản mới nhất
+chưa từng được lập chỉ mục. Bộ bài kiểm máy chủ chạy SQLite nên không bắt được hai lỗi
+đầu. Em cũng sắp lại thanh lọc màn Văn bản: «Gồm thư mục con» dời vào trong ô chọn thư
+mục, các ô lọc cùng bề rộng.
+Mã nguồn: `backend/app/modules/document/search_service.py` ·
+`hooks/use-document-search.ts` (`isFullTextQuery`) · `outgoing-documents-tab.tsx`.
+
+### duoc-CR-479-6 | Điền đủ hồ sơ nhân sự và quyền văn bản trên máy em
+- status: xong
+Nhân viên bấm tạo văn bản bị báo thiếu thông tin vì 238/272 nhân sự chưa có pháp nhân,
+20 người chưa có phòng ban, 258/276 tài khoản thiếu quyền xem cây thư mục. Em viết script
+chỉ dùng cho máy local: pháp nhân suy theo tên phòng (phòng mang tên công ty con thì về
+công ty đó, phòng dùng chung về DEGO Holding), điền phòng cho văn thư và quản trị, chọn
+trưởng phòng rồi gán quản lý trực tiếp, điền giới tính, ngày sinh, ngày vào làm, số điện
+thoại, cấp bậc mẫu. Quyền: cấp xem cây thư mục cho 28 vai trò còn thiếu, gán vai trò nền
+«Nhân sự» cho 59 tài khoản. Không đụng email và trường nhạy cảm. Đo lại còn 0 người thiếu
+pháp nhân, phòng ban hay quyền văn bản; bấm thử bằng một nhân viên thường tạo văn bản
+thành công. Chưa chạy trên dev hay prod.
+Mã nguồn: `backend/scripts/fill_local_employee_profiles.py`.
 ## ai-CR-057 | Đường tắt cho việc nhỏ và gửi lại bản chữ trơn khi Telegram chê HTML
 - status: xong
 - date: 2026-09-25

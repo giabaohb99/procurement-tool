@@ -5,7 +5,7 @@ import { useFilterQuery } from '@/shared/conditional-filter'
 import { useUrlParamState } from '@/shared/hooks/use-url-param-state'
 import { useUrlSearchParam } from '@/shared/hooks/use-url-search-param'
 import { sortDocumentRows, type DocumentSortField, type SortDirection } from '../helpers/sort-document-rows'
-import { useDocumentSearch } from './use-document-search'
+import { isFullTextQuery, useDocumentSearch } from './use-document-search'
 import { useDocuments } from './use-documents'
 
 const ALL = 'all'
@@ -32,8 +32,8 @@ export function useFolderDocumentsQuery(folderId: number, sortField: DocumentSor
   const [typeId, setTypeId] = useState(ALL)
   const [status, setStatus] = useState(ALL)
   const [year, setYear] = useState(ALL)
-  const [fullTextRaw, setFullTextRaw] = useUrlParamState('full_text', 'false')
-  const isFullText = fullTextRaw === 'true'
+  //  Tìm toàn văn tự bật khi câu tìm đủ dài — cùng luật màn Văn bản (25/09/2026).
+  const isFullText = isFullTextQuery(debouncedValue)
   //  «Bộ lọc nâng cao» (đặc tả A, phản hồi 24/09/2026) — cùng `DOCUMENT_LIST_FILTER_FIELDS`
   //  với danh sách Văn bản chung (`outgoing-documents-tab.tsx`), bọc `FilterProvider`
   //  ở `folder-documents-table.tsx`. `useFilterQuery` tự trả `{}` khi KHÔNG có
@@ -45,7 +45,7 @@ export function useFolderDocumentsQuery(folderId: number, sortField: DocumentSor
   } = useFilterQuery()
 
   const filterSignature = JSON.stringify([
-    folderId, includeSubfolders, debouncedValue, typeId, status, year, isFullText, advancedFilterKey,
+    folderId, includeSubfolders, debouncedValue, typeId, status, year, advancedFilterKey,
   ])
   useEffect(() => {
     setPage('1')
@@ -78,7 +78,8 @@ export function useFolderDocumentsQuery(folderId: number, sortField: DocumentSor
   } = useDocumentSearch(keyword, sharedParams, isFullText)
 
   const activeData = isFullText ? searchData : data
-  const activeLoading = isFullText ? searchLoading : isLoading
+  //  Khe hoãn 400ms của hook tìm toàn văn = đang tải (xem `outgoing-documents-tab.tsx`).
+  const activeLoading = isFullText ? searchLoading || (!searchData && !searchError) : isLoading
   const activeError = isFullText ? searchError : isError
 
   const rows = useMemo(
@@ -106,7 +107,7 @@ export function useFolderDocumentsQuery(folderId: number, sortField: DocumentSor
     typeId, setTypeId,
     status, setStatus,
     year, setYear,
-    isFullText, setIsFullText: (v: boolean) => setFullTextRaw(v ? 'true' : 'false'),
+    isFullText,
     page, setPage: (next: number) => setPage(String(next)),
     pageSize, setPageSize,
     rows,

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 import { EFFECT, SUBJECT_KIND, type DocumentAccessDraft } from '../types/document-access'
@@ -11,8 +11,9 @@ vi.mock('@/modules/hr/hooks/use-employees', () => ({
   useEmployees: () => ({
     data: {
       items: [
-        { id: 97, full_name: 'Lý Phó Phòng' },
-        { id: 5, full_name: 'Tôi Đang Đăng Nhập' },
+        { id: 97, full_name: 'Lý Phó Phòng', code: 'NSU097' },
+        { id: 5, full_name: 'Tôi Đang Đăng Nhập', code: 'NSU005' },
+        { id: 226, full_name: 'Dương Hải Yến', code: 'NSU204' },
       ],
     },
   }),
@@ -91,5 +92,38 @@ describe('DocumentAccessDialog', () => {
     )
 
     expect(screen.queryByText(/khỏi danh sách/)).not.toBeInTheDocument()
+  })
+
+  //  Lỗi bắt khi test UI 25/09/2026: ô tìm người chỉ so theo TÊN, gõ mã nhân
+  //  viên «NSU204» ra «Không có người nào khớp».
+  describe('tìm người trong ô chọn', () => {
+    function openPickerAndType(text: string) {
+      render(<DocumentAccessDialog open onOpenChange={vi.fn()} onSubmit={vi.fn()} />)
+      fireEvent.click(screen.getByRole('button', { name: 'Chưa chọn' }))
+      fireEvent.change(screen.getByPlaceholderText('Tìm người theo tên hoặc mã…'), {
+        target: { value: text },
+      })
+    }
+
+    it('finds a person by employee code', () => {
+      openPickerAndType('NSU204')
+      expect(screen.getByRole('button', { name: /Dương Hải Yến/ })).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /Lý Phó Phòng/ })).not.toBeInTheDocument()
+    })
+
+    it('matches the code case-insensitively and by a partial code', () => {
+      openPickerAndType('nsu20')
+      expect(screen.getByRole('button', { name: /Dương Hải Yến/ })).toBeInTheDocument()
+    })
+
+    it('matches a name typed without Vietnamese accents', () => {
+      openPickerAndType('duong hai yen')
+      expect(screen.getByRole('button', { name: /Dương Hải Yến/ })).toBeInTheDocument()
+    })
+
+    it('says nothing matches instead of showing everyone for a nonsense keyword', () => {
+      openPickerAndType('zzz-khong-ai')
+      expect(screen.getByText('Không có người nào khớp.')).toBeInTheDocument()
+    })
   })
 })

@@ -106,6 +106,8 @@ function Harness(props: {
   documents: DocumentRecord[]
   onOpenFolder?: (id: number) => void
   onOpenDocument?: (document: DocumentRecord) => void
+  onShareDocument?: (document: DocumentRecord) => void
+  canWrite?: boolean
 }) {
   const selection = useItemSelection([
     ...props.children.map((c) => folderItemKey('folder', c.id)),
@@ -128,8 +130,9 @@ function Harness(props: {
       onViewDocumentDetails={vi.fn()}
       onDropOnFolder={vi.fn()}
       onMoveDocumentTo={vi.fn()}
+      onShareDocument={props.onShareDocument ?? vi.fn()}
       onRemoveDocument={vi.fn()}
-      canWrite
+      canWrite={props.canWrite ?? true}
       canDelete
     />
   )
@@ -290,12 +293,48 @@ describe('FolderListView — chọn kiểu Drive + menu chuột phải', () => {
   //  — kiểm qua nút «⋯» LUÔN THẤY (`showMenuButton`), cùng danh sách mục với
   //  chuột phải (`buildFolderItemMenuActions`, xem `folder-item-context-menu.tsx`).
   //  Mỗi bài chỉ dựng ĐÚNG MỘT dòng nên "Thêm tùy chọn" không trùng tên.
-  it('nút «⋯» của một dòng văn bản có mục «Mở»/«Xem chi tiết»', async () => {
+  it('nút «⋯» của một dòng văn bản có «Xem chi tiết», không còn «Mở» trùng việc', async () => {
     const user = userEvent.setup()
     render(<Harness children={[]} documents={[DOC_A]} />)
     await user.click(screen.getByRole('button', { name: 'Thêm tùy chọn' }))
-    expect(await screen.findByRole('menuitem', { name: 'Mở' })).toBeInTheDocument()
-    expect(screen.getByRole('menuitem', { name: 'Xem chi tiết' })).toBeInTheDocument()
+    expect(await screen.findByRole('menuitem', { name: 'Xem chi tiết' })).toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Mở' })).not.toBeInTheDocument()
+  })
+
+  //  Yêu cầu 25/09/2026: «Chia sẻ…» của văn bản mở hộp quyền truy cập ngay tại thư mục.
+  it('document row «⋯» → «Chia sẻ…» hands that exact document to the share handler', async () => {
+    const user = userEvent.setup()
+    const onShareDocument = vi.fn()
+    render(<Harness children={[]} documents={[DOC_A]} onShareDocument={onShareDocument} />)
+    await user.click(screen.getByRole('button', { name: 'Thêm tùy chọn' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Chia sẻ…' }))
+    expect(onShareDocument).toHaveBeenCalledWith(DOC_A)
+  })
+
+  it('document row hover share button opens share without opening the document', async () => {
+    const user = userEvent.setup()
+    const onShareDocument = vi.fn()
+    const onOpenDocument = vi.fn()
+    render(
+      <Harness
+        children={[]}
+        documents={[DOC_A]}
+        onShareDocument={onShareDocument}
+        onOpenDocument={onOpenDocument}
+      />,
+    )
+    await user.click(screen.getByRole('button', { name: 'Chia sẻ Thông báo A' }))
+    expect(onShareDocument).toHaveBeenCalledWith(DOC_A)
+    expect(onOpenDocument).not.toHaveBeenCalled()
+  })
+
+  it('without document write there is no share entry at all — neither menu item nor row button', async () => {
+    const user = userEvent.setup()
+    render(<Harness children={[]} documents={[DOC_A]} canWrite={false} />)
+    expect(screen.queryByRole('button', { name: 'Chia sẻ Thông báo A' })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Thêm tùy chọn' }))
+    await screen.findByRole('menuitem', { name: 'Xem chi tiết' })
+    expect(screen.queryByRole('menuitem', { name: 'Chia sẻ…' })).not.toBeInTheDocument()
   })
 
   it('nút «⋯» của một dòng thư mục QUẢN LÝ có đủ Đổi tên/Chuyển tới/Chia sẻ/Xóa', async () => {

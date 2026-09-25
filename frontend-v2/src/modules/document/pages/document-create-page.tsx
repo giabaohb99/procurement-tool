@@ -17,7 +17,6 @@ import { toast } from 'sonner'
 
 import { extractErrorMessage } from '@/core/api'
 import { useAuth } from '@/core/auth/use-auth'
-import { purchaseRequestSupportApi } from '@/modules/procurement/api/purchase-request-support-api'
 import { appRoutes } from '@/shared/constants/app-routes'
 import { Button } from '@/shared/ui/button'
 import { confirm } from '@/shared/ui/confirm-dialog'
@@ -28,7 +27,6 @@ import { PageContainer } from '@/shared/ui/page-container'
 import { PageHeader } from '@/shared/ui/page-header'
 import { documentCloneApi } from '../api/document-clone-api'
 import { documentScopeApi } from '../api/document-scope-api'
-import { documentAccessApi } from '../api/document-api'
 import { DocumentAccessFields, type PendingAccess } from '../components/document-access-fields'
 import { DocumentApproverPreviewLine } from '../components/document-approver-preview-line'
 import { DocumentClonePlanFields } from '../components/document-clone-plan-fields'
@@ -40,6 +38,7 @@ import { DocumentPrerequisiteDialog } from '../components/document-prerequisite-
 import { DocumentScopeFields, type PendingScope } from '../components/document-scope-fields'
 import { cloneTargetsFromScopes } from '../helpers/clone-targets-from-scopes'
 import { emptyDocumentForm, formToPayload } from '../helpers/document-form-defaults'
+import { sendPendingAccessAndFiles } from '../helpers/send-pending-access-and-files'
 import { LEAVE_FIELDS } from '../helpers/suggested-day-count'
 import { useDocumentApprovalPreview } from '../hooks/use-document-approval-preview'
 import { useDocumentBooks } from '../hooks/use-document-books'
@@ -261,7 +260,7 @@ export function DocumentCreatePage() {
   }
 
   /**
-   * Gửi ba thứ xếp hàng chờ — quyền, phạm vi, kế hoạch clone — ngay sau khi văn
+   * Gửi mọi thứ xếp hàng chờ — phạm vi, kế hoạch clone, quyền, tệp — ngay sau khi văn
    * bản có id.
    *
    * Tuần tự để dòng nào hỏng thì báo đúng dòng đó. Hỏng cũng **vẫn vào trang
@@ -270,20 +269,6 @@ export function DocumentCreatePage() {
    * nói rõ phải mở tab nào.
    */
   async function sendQueued(documentId: number, versionId: number | null) {
-    const permissionFailed: string[] = []
-    for (const row of pendingAccess) {
-      try {
-        await documentAccessApi.grant(documentId, row.values)
-      } catch {
-        permissionFailed.push(row.subjectLabel || 'một đối tượng')
-      }
-    }
-    if (permissionFailed.length > 0) {
-      toast.error(
-        `Chưa chia được quyền cho ${permissionFailed.join(', ')} — mở tab Thông tin để khai lại.`,
-      )
-    }
-
     const scopeFailed: string[] = []
     for (const row of pendingScopes) {
       try {
@@ -309,22 +294,8 @@ export function DocumentCreatePage() {
       }
     }
 
-    //  Tệp gửi MỘT LƯỢT chứ không từng tệp một: API nhận nhiều tệp trong một
-    //  lần gọi, và người dùng chỉ cần biết "đính kèm được hay không".
-    if (pendingFiles.length > 0 && versionId) {
-      try {
-        await purchaseRequestSupportApi.uploadAttachments(
-          'document_version',
-          versionId,
-          pendingFiles,
-        )
-        toast.success(`Đã đính kèm ${pendingFiles.length} tệp`)
-      } catch (error) {
-        //  Nói nguyên câu của backend: gần như luôn là "tệp quá lớn" hoặc "đuôi
-        //  tệp không cho phép" — người dùng cần biết tệp nào phải đổi.
-        toast.error(`Chưa tải được tệp đính kèm — ${extractErrorMessage(error)}`)
-      }
-    }
+    //  Quyền + tệp — cùng đường với hộp «Tạo nhanh từ tệp» ở trang Thư mục.
+    await sendPendingAccessAndFiles(documentId, versionId, pendingAccess, pendingFiles)
   }
 
   //  Ý ĐỊNH của lần bấm — cả hai nút cuối đều `type="submit"` (không đổi

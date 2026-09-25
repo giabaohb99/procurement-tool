@@ -39,6 +39,8 @@ interface FolderListViewProps {
   onViewDocumentDetails: (document: DocumentRecord) => void
   onDropOnFolder: (targetFolderId: number, payload: FolderDragPayload, keepInSource: boolean) => void
   onMoveDocumentTo: (document: DocumentRecord) => void
+  /** «Chia sẻ…» của một dòng VĂN BẢN — mở hộp quyền truy cập của văn bản đó. Bỏ trống ở gốc «Thư mục của bạn» (không có dòng văn bản). */
+  onShareDocument?: (document: DocumentRecord) => void
   onRemoveDocument: (document: DocumentRecord) => void
   canWrite: boolean
   canDelete: boolean
@@ -74,6 +76,7 @@ export function FolderListView({
   onViewDocumentDetails,
   onDropOnFolder,
   onMoveDocumentTo,
+  onShareDocument,
   onRemoveDocument,
   canWrite,
   canDelete,
@@ -129,7 +132,10 @@ export function FolderListView({
         <span aria-hidden />
       </div>
 
-      <div>
+      {/* `divide-y` ở khung chứa chứ không `border-b` + `last:border-b-0` trên dòng: mỗi
+          dòng nằm trong vỏ `div.relative` của menu chuột phải nên `last:` không bao giờ
+          trúng, dòng cuối ra hai nét viền chồng lên viền khung. */}
+      <div className="divide-y">
         {children.map((folder) => (
           <FolderListRow
             selectable={selectable}
@@ -173,6 +179,9 @@ export function FolderListView({
             onOpen={() => onOpenDocument(document)}
             onViewDetails={() => onViewDocumentDetails(document)}
             onMoveTo={canWrite ? () => onMoveDocumentTo(document) : undefined}
+            onManagePermissions={
+              canWrite && onShareDocument ? () => onShareDocument(document) : undefined
+            }
             onRemove={canDelete ? () => void onRemoveDocument(document) : undefined}
             canWriteDocument={canWrite}
             canDeleteDocument={canDelete}

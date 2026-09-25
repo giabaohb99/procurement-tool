@@ -23,6 +23,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
 import { RadioGroup, RadioGroupItem } from '@/shared/ui/radio-group'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { cn } from '@/shared/utils/cn'
+import { matchesVietnamese } from '@/shared/utils/vn-text'
 import { blockedSelfIds } from '../helpers/blocked-self-ids'
 import { SubjectChips } from './access-subject-chips'
 import {
@@ -162,7 +163,11 @@ function AccessForm({ pending, existing, initial, onCancel, onSubmit }: AccessFo
       case SUBJECT_KIND.role:
         return (roles ?? []).map((item) => ({ id: item.id, label: item.name }))
       default:
-        return (employees?.items ?? []).map((item) => ({ id: item.id, label: item.full_name }))
+        return (employees?.items ?? []).map((item) => ({
+          id: item.id,
+          label: item.full_name,
+          hint: item.code || undefined,
+        }))
     }
   }, [subjectKind, employees, departments, companies, roles])
 
@@ -414,6 +419,12 @@ function AccessForm({ pending, existing, initial, onCancel, onSubmit }: AccessFo
 interface SubjectOption {
   id: number
   label: string
+  /**
+   * Chữ phụ mờ bên cạnh tên — hiện chỉ có MÃ NHÂN VIÊN. Tìm được theo nó
+   * (25/09/2026: gõ «NSU204» ra «Không có người nào khớp» — người dùng tra
+   * theo mã, và công ty có người trùng họ tên).
+   */
+  hint?: string
 }
 
 interface SubjectMultiSelectProps {
@@ -452,9 +463,8 @@ function SubjectMultiSelect({
   const [keyword, setKeyword] = useState('')
 
   const matches = useMemo(() => {
-    const needle = keyword.trim().toLowerCase()
-    if (!needle) return options
-    return options.filter((option) => option.label.toLowerCase().includes(needle))
+    //  Bỏ dấu khi so, giống mọi `SearchSelect`: gõ "duong hai yen" vẫn ra.
+    return options.filter((option) => matchesVietnamese([option.label, option.hint], keyword))
   }, [options, keyword])
 
   const selected = options.filter((option) => value.includes(option.id))
@@ -494,7 +504,11 @@ function SubjectMultiSelect({
             autoFocus
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
-            placeholder={`Tìm ${kindLabel}…`}
+            placeholder={
+              options.some((option) => option.hint)
+                ? `Tìm ${kindLabel} theo tên hoặc mã…`
+                : `Tìm ${kindLabel}…`
+            }
             className="border-0 pl-8 shadow-none focus-visible:ring-0"
           />
         </div>
@@ -522,6 +536,11 @@ function SubjectMultiSelect({
                   >
                     <Checkbox checked={checked} className="pointer-events-none" />
                     <span className="truncate">{option.label}</span>
+                    {option.hint && (
+                      <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+                        {option.hint}
+                      </span>
+                    )}
                   </button>
                 </li>
               )

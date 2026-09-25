@@ -1,4 +1,5 @@
 import type { MyDecision, MyTask } from '@/modules/approval/types/approval'
+import type { LegacyDecision, LegacyPendingDocument } from '../types/legacy-pending-approval'
 
 /**
  * Bốn tập con của hộp duyệt — `overdue` là tập con của `pending`.
@@ -17,6 +18,22 @@ export const INBOX_SCOPE = {
 export type InboxScope = (typeof INBOX_SCOPE)[keyof typeof INBOX_SCOPE]
 
 /**
+ * Câu cho bảng RỖNG — nói theo TAB đang đứng, chỉ nhắc «điều kiện đang lọc»
+ * khi người dùng thật sự đang gõ tìm / đặt bộ lọc.
+ *
+ * Từ 25/09/2026 màn mở sẵn ở «Cần duyệt». Câu cũ chỉ phân biệt «có dòng nào
+ * không», nên tab mặc định trống mà còn việc đã duyệt thì màn báo «không khớp
+ * điều kiện đang lọc» — người dùng chưa lọc gì, đọc ra như lọc nhầm; trong khi
+ * đó là tin tốt: hết việc.
+ */
+export function describeInboxEmpty(scope: string, isFiltering: boolean): string {
+  if (isFiltering) return 'Không có văn bản nào khớp điều kiện đang lọc.'
+  if (scope === INBOX_SCOPE.overdue) return 'Không có văn bản nào quá hạn duyệt.'
+  if (scope === INBOX_SCOPE.done) return 'Bạn chưa duyệt văn bản nào trong khoảng thời gian này.'
+  return 'Không có văn bản nào đang chờ bạn duyệt.'
+}
+
+/**
  * MỘT DÒNG của hộp duyệt văn bản — gộp chung hai nguồn khác hẳn nhau:
  * việc đang chờ tôi bấm (`MyTask`) và quyết định tôi đã bấm (`MyDecision`).
  *
@@ -26,7 +43,7 @@ export type InboxScope = (typeof INBOX_SCOPE)[keyof typeof INBOX_SCOPE]
  * không có thì rỗng, và cột tự vẽ dấu "—".
  */
 export interface InboxRow {
-  /** `pending-<id>` / `done-<id>` — id của hai bảng gốc trùng số nhau được. */
+  /** `pending-<id>` / `done-<id>` / `legacy-<id văn bản>` — id của các bảng gốc trùng số nhau được. */
   id: string
   kind: 'pending' | 'done'
   entityId: number
@@ -55,7 +72,12 @@ export interface InboxRow {
  * Một văn bản có thể ra HAI dòng: tôi đã ký bước 1 và nay lại tới lượt tôi ở
  * bước 4. Đó là hai việc thật, không gộp — id khác nhau nên bảng vẫn đúng.
  */
-export function buildInboxRows(tasks: MyTask[], decisions: MyDecision[]): InboxRow[] {
+export function buildInboxRows(
+  tasks: MyTask[],
+  decisions: MyDecision[],
+  legacy: LegacyPendingDocument[] = [],
+  legacyDone: LegacyDecision[] = [],
+): InboxRow[] {
   const pendingRows: InboxRow[] = tasks.map((row) => ({
     id: `pending-${row.id}`,
     kind: 'pending',
@@ -92,5 +114,51 @@ export function buildInboxRows(tasks: MyTask[], decisions: MyDecision[]): InboxR
     onBehalfOfName: row.on_behalf_of_name,
   }))
 
-  return [...pendingRows, ...doneRows]
+  //  DUYỆT MỘT BƯỚC (25/09/2026) — văn bản không khớp luồng nào nên không có
+  //  việc trong bộ máy duyệt; vẫn là việc CHỜ TÔI, nên xếp chung nhóm chờ. Không
+  //  có hạn, không có bước — ô bước ghi thẳng tên đường duyệt cho người đọc hiểu
+  //  vì sao dòng này không có hạn xử lý.
+  const legacyRows: InboxRow[] = legacy.map((row) => ({
+    id: `legacy-${row.document_id}`,
+    kind: 'pending',
+    entityId: row.document_id,
+    code: row.code,
+    title: row.title,
+    nodeName: 'Duyệt một bước',
+    startedByName: row.submitted_by_name,
+    dueAt: null,
+    isOverdue: false,
+    decidedAt: null,
+    action: null,
+    actionLabel: '',
+    instanceStatusLabel: '',
+    comment: '',
+    onBehalfOfName: '',
+  }))
+
+  //  ĐÃ DUYỆT theo đường một bước — đọc từ nhật ký văn bản. Xếp CHUNG nhóm đã
+  //  làm rồi sắp lại theo thời điểm bấm, không để thành một cụm riêng cuối bảng:
+  //  người dùng đọc «tuần này tôi ký gì» theo thời gian, không theo đường duyệt.
+  const legacyDoneRows: InboxRow[] = legacyDone.map((row) => ({
+    id: `legacy-done-${row.id}`,
+    kind: 'done',
+    entityId: row.document_id,
+    code: row.code,
+    title: row.title,
+    nodeName: 'Duyệt một bước',
+    startedByName: '',
+    dueAt: null,
+    isOverdue: false,
+    decidedAt: row.decided_at,
+    action: row.action,
+    actionLabel: row.action_label,
+    instanceStatusLabel: row.status_label,
+    comment: row.comment,
+    onBehalfOfName: '',
+  }))
+  const allDone = [...doneRows, ...legacyDoneRows].sort((a, b) =>
+    (b.decidedAt ?? '').localeCompare(a.decidedAt ?? ''),
+  )
+
+  return [...pendingRows, ...legacyRows, ...allDone]
 }

@@ -156,7 +156,7 @@ export function FolderListRow({
         }}
         className={cn(
           selectable ? FOLDER_LIST_GRID_TEMPLATE : FOLDER_LIST_GRID_TEMPLATE_NO_SELECT,
-          'h-12 cursor-pointer border-b px-3 text-sm last:border-b-0 hover:bg-accent/60',
+          'h-12 cursor-pointer px-3 text-sm hover:bg-accent/60',
           selected && 'bg-accent',
           dropHighlighted && 'bg-emerald-50 ring-2 ring-emerald-400 ring-inset',
         )}
@@ -205,7 +205,9 @@ export function FolderListRow({
 
         {isFolder ? <Cell dash /> : <span>{effectiveStatusBadge(item.document)}</span>}
 
-        {isFolder && (
+        {/*  Văn bản chỉ có nút này khi được chia quyền (`onManagePermissions`
+             chỉ truyền khi có `write`); thư mục thì luôn có, hộp tự chuyển chỉ-đọc. */}
+        {(isFolder || onManagePermissions) && (
           <IconTooltip label="Chia sẻ">
             <button
               type="button"

@@ -5,6 +5,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { FolderDocumentsTable } from './folder-documents-table'
+import type * as DocumentSearchModule from '../hooks/use-document-search'
 import { useDocumentSearch } from '../hooks/use-document-search'
 import {
   useDocFolder,
@@ -17,9 +18,11 @@ import { useDocuments } from '../hooks/use-documents'
 import { FOLDER_ACCESS_LEVEL, type DocFolderDetail } from '../types/document-folder'
 
 vi.mock('../hooks/use-documents', () => ({ useDocuments: vi.fn(), useDeleteDocument: vi.fn(() => ({ mutate: vi.fn() })) }))
-vi.mock('../hooks/use-document-search', () => ({
+//  Giữ HÀM THẬT (`isFullTextQuery`, `MIN_QUERY_LENGTH`) — luật chọn đường tìm
+//  phải là luật thật, chỉ giả hook gọi mạng.
+vi.mock('../hooks/use-document-search', async (importOriginal) => ({
+  ...(await importOriginal<typeof DocumentSearchModule>()),
   useDocumentSearch: vi.fn(),
-  MIN_QUERY_LENGTH: 2,
 }))
 vi.mock('../hooks/use-document-types', () => ({ useActiveDocumentTypes: vi.fn(() => []) }))
 vi.mock('../hooks/use-document-folders', () => ({
