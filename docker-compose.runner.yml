@@ -4,8 +4,10 @@
 # một ĐƯỜNG HẦM SSH, kéo vé từ hàng đợi `agent_code.<tên máy>` về làm, ghi kết quả ngược lên.
 #
 #   cp .env.runner.example .env.runner   # rồi điền theo doc/agent-hub/05-may-sua-ma.md
-#   docker compose -p agentrunner -f docker-compose.runner.yml up -d --build
-#   docker compose -p agentrunner -f docker-compose.runner.yml logs -f agent-runner
+#   (`--env-file .env.runner` BẮT BUỘC: compose lấy đường dẫn khóa AGENT_*_SSH_KEY_FILE từ đó để mount;
+#    thiếu là mount tệp giữ chỗ và đường hầm báo «Permission denied». Cổng SSH của VPS cũng phải điền đúng.)
+#   docker compose --env-file .env.runner -p agentrunner -f docker-compose.runner.yml up -d --build
+#   docker compose --env-file .env.runner -p agentrunner -f docker-compose.runner.yml logs -f
 #
 # Hai container, CHUNG một không gian mạng (network_mode: service:tunnel): `tunnel` mở ssh -L để
 # 127.0.0.1:3306 và 127.0.0.1:6379 trong đó chính là MySQL và Redis của dev; `agent-runner` vì thế

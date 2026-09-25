@@ -1,4 +1,4 @@
-import { Building2, Copy, Lock, ShieldAlert } from 'lucide-react'
+import { Building2, Copy, Folder, Lock, ShieldAlert } from 'lucide-react'
 import { toast } from 'sonner'
 
 import {
@@ -74,7 +74,14 @@ export function FolderShareDialog({ folderId, open, onOpenChange, onNavigateToFo
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[85dvh] flex-col overflow-hidden sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Chia sẻ «{displayName}»</DialogTitle>
+          <DialogTitle>Chia sẻ thư mục</DialogTitle>
+          {/*  Tên thư mục một dòng riêng, cùng khuôn hộp Chia sẻ của văn bản. */}
+          <p className="flex min-w-0 items-center gap-1.5 pr-6 text-sm font-medium">
+            <Folder className="size-4 shrink-0 text-muted-foreground" />
+            <span className="truncate" title={displayName}>
+              {displayName}
+            </span>
+          </p>
           <DialogDescription>
             {canManage
               ? 'Chọn người, phòng ban, pháp nhân hoặc vai trò rồi cấp CÙNG một mức quyền cho cả danh sách trong một lượt.'

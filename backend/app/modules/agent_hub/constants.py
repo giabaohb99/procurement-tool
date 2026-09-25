@@ -265,7 +265,9 @@ def estimate_cost_usd(model: str, input_tokens: int, output_tokens: int) -> floa
 #  Chỉ là cách bot TỰ XƯNG trong câu chữ. Tên hiển thị của tài khoản Telegram đổi ở BotFather
 #  (`/setname`), không nằm trong mã. Trợ lý AI trên web KHÔNG đổi tên: persona chỉ chèn thêm
 #  vào lời nhắc khi câu hỏi đi từ Telegram (`service.answer_question`).
-BOT_NAME = "Đậu Đậu"
+from app.core.config import settings as _settings  # noqa: E402 — chỉ để lấy tên bot
+
+BOT_NAME = _settings.AGENT_BOT_NAME or "Đậu Đậu"
 BOT_PERSONA = (
     f"Trong kênh Telegram này bạn tên là {BOT_NAME}, trợ lý của DEGO Holding trên Telegram. "
     f"Tự xưng «em», gọi người đang nhắn là «đại ca». Khi được hỏi tên hay được bảo giới thiệu "

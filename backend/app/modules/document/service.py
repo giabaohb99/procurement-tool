@@ -25,7 +25,7 @@ from app.modules.doc_catalog.security_level_service import (ensure_valid,
                                                             value_of_code)
 
 from . import numbering
-from .model import (ALIVE_STATUSES, APPLY_MODE_LABELS, EDITABLE_STATUSES,
+from .model import (ALIVE_STATUSES, APPLY_MODE_LABELS, CONTENT_MODE_FILES, EDITABLE_STATUSES,
                     STATUS_APPROVED, STATUS_DRAFT, STATUS_EFFECTIVE,
                     STATUS_PENDING_ISSUE, STATUS_REJECTED, STATUS_RETURNED,
                     STATUS_REVOKED, STATUS_SUBMITTED, Document)
@@ -509,6 +509,27 @@ def discard_own_draft(db: Session, doc: Document, actor: int) -> None:
     delete_document(db, doc)
 
 
+def _ensure_submittable_content(db: Session, doc: Document, version) -> None:
+    """Chặn gửi duyệt khi văn bản CHƯA CÓ GÌ để duyệt.
+
+    Văn bản «Tạo, không soạn thảo» (`CONTENT_MODE_FILES`) cố ý để `content_html`
+    rỗng — tệp đính kèm CHÍNH LÀ nội dung (bản scan, hợp đồng đã ký). Trước
+    25/09/2026 chốt này chỉ hỏi `content_html` nên MỌI văn bản chỉ gồm tệp đều
+    kẹt ở «Nội dung văn bản còn trống», không gửi duyệt được bằng đường nào.
+    Với loại đó phải hỏi TỆP của đúng phiên bản đang trình.
+    """
+    if doc.content_mode == CONTENT_MODE_FILES:
+        has_file = (db.query(FileLink.id)
+                    .filter(FileLink.entity == ATTACH_ENTITY, FileLink.entity_id == version.id)
+                    .first())
+        if not has_file:
+            raise HTTPException(400, "Văn bản chỉ gồm tệp nhưng chưa đính kèm tệp nào, "
+                                     "chưa gửi duyệt được")
+        return
+    if not (version.content_html or "").strip():
+        raise HTTPException(400, "Nội dung văn bản còn trống, chưa gửi duyệt được")
+
+
 # ── Luồng duyệt một bước (TẠM — P3 thay) ─────────────────────────────────────
 def submit(db: Session, doc: Document, actor: int) -> Document:
     """Trình bản đang mở đi duyệt. Nhận cả bản **bị trả về** — đó là cả mục đích
@@ -525,8 +546,7 @@ def submit(db: Session, doc: Document, actor: int) -> Document:
         raise HTTPException(400, "Văn bản không có bản nháp nào để gửi duyệt")
     if version.status == VERSION_SUBMITTED:
         raise HTTPException(400, "Bản này đang chờ duyệt")
-    if not (version.content_html or "").strip():
-        raise HTTPException(400, "Nội dung văn bản còn trống, chưa gửi duyệt được")
+    _ensure_submittable_content(db, doc, version)
     #  Từ phiên bản thứ hai trở đi phải nói rõ sửa gì (C05, C13).
     if (version.major, version.minor) != (1, 0) and not version.change_summary.strip():
         raise HTTPException(400, "Phiên bản từ bản thứ hai phải khai tóm tắt nội dung sửa")

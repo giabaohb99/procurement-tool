@@ -272,13 +272,13 @@ Ngoài ra còn *Người nghỉ*, *Người bàn giao công việc*, *Số liên
 3. Chọn đối tượng — chọn được nhiều nơi một lượt, mỗi nơi thành một dòng.
 4. **Gồm cả đơn vị con** — áp luôn cho các công ty con, kể cả công ty mở sau này.
 5. **Thêm dòng phạm vi** — ghi dòng vừa chọn vào danh sách.
-6. **Phân quyền nâng cao** — chỉ dùng khi cần mở cho người ngoài hoặc chặn một người cụ thể.
+6. **Cho phép / chặn người cụ thể** — chỉ dùng khi cần mở cho người ngoài hoặc chặn một người cụ thể.
 7. **Tiếp tục** — sang bước 3.
 
 Khai phạm vi có **công ty khác** công ty ban hành thì khi ban hành, mỗi công ty đó nhận một
 **bản riêng** — xem [mục 15](#15-ban-hành-cho-các-công-ty-con-pháp-nhân-con).
 
-Bấm **Phân quyền nâng cao → Thêm quyền** mở hộp:
+Bấm **Cho phép / chặn người cụ thể → Thêm quyền** mở hộp:
 
 <p align="center"><img src="hinh/12-hop-chia-quyen.png" width="640" alt="Hộp chia quyền truy cập"></p>
 

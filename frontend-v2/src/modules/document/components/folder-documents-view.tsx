@@ -1,8 +1,9 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 
 import { DataTablePagination } from '@/shared/data-table/data-table-pagination'
 import { FolderDocumentsFilterToolbar } from './folder-documents-filter-toolbar'
 import { FolderEmptyState } from './folder-empty-state'
+import { DocumentShareDialog } from './document-share-dialog'
 import { FolderGridView } from './folder-grid-view'
 import { FolderListView } from './folder-list-view'
 import { FolderSortButton } from './folder-sort-button'
@@ -14,7 +15,6 @@ import {
   type SortDirection,
 } from '../helpers/sort-document-rows'
 import type { useFolderContentSelection } from '../hooks/use-folder-content-selection'
-import { MIN_QUERY_LENGTH } from '../hooks/use-document-search'
 import type { useFolderDocumentsQuery } from '../hooks/use-folder-documents-query'
 import type { DocFolderTreeNode } from '../types/document-folder'
 import type { DocumentRecord } from '../types/document-record'
@@ -85,6 +85,8 @@ export function FolderDocumentsView({
   onViewFolderDetails,
   onDropOnFolder,
 }: FolderDocumentsViewProps) {
+  //  Văn bản đang mở hộp «Chia sẻ» (menu ⋮ / chuột phải / nút chia sẻ trên dòng).
+  const [shareDocument, setShareDocument] = useState<DocumentRecord | null>(null)
   const filterToolbar = (
     <FolderDocumentsFilterToolbar
       keyword={q.keyword}
@@ -98,8 +100,6 @@ export function FolderDocumentsView({
       onYearChange={q.setYear}
       includeSubfolders={q.includeSubfolders}
       onIncludeSubfoldersChange={q.setIncludeSubfolders}
-      isFullText={q.isFullText}
-      onFullTextChange={q.setIsFullText}
     />
   )
 
@@ -114,11 +114,10 @@ export function FolderDocumentsView({
   //  khác nhau, đè chung một thông báo là sai (chốt dọn gọn lead 24/09/2026
   //  tối, hạng mục §2): lọc ra 0 kết quả thì vẫn còn chữ trong ô tìm, "Tạo thư
   //  mục" không giải quyết gì cả.
-  const isFiltering = q.filtersActive || (q.isFullText && q.keyword.trim().length > 0)
-  const filteredEmptyMessage =
-    q.isFullText && q.keyword.trim().length < MIN_QUERY_LENGTH
-      ? `Gõ ít nhất ${MIN_QUERY_LENGTH} ký tự để tìm.`
-      : 'Không có văn bản nào khớp điều kiện đang lọc.'
+  const isFiltering = q.filtersActive || q.keyword.trim().length > 0
+  const filteredEmptyMessage = q.isFullText
+    ? 'Không tìm thấy văn bản nào khớp câu tìm — trong tên, số hiệu, nội dung lẫn tệp đính kèm.'
+    : 'Không có văn bản nào khớp điều kiện đang lọc.'
 
   return (
     <div className="space-y-1.5">
@@ -168,6 +167,7 @@ export function FolderDocumentsView({
               onOpen={onOpenDocument}
               onViewDetails={onViewDetails}
               onMoveTo={(document) => selection.selectOnly(folderItemKey('document', document.id))}
+              onShare={setShareDocument}
               onRemove={(document) => void onRemoveDocument(document)}
               canWrite={canWrite}
               canDelete={canDelete}
@@ -193,6 +193,7 @@ export function FolderDocumentsView({
           onMoveDocumentTo={(document) =>
             selection.selectOnly(folderItemKey('document', document.id))
           }
+          onShareDocument={setShareDocument}
           onRemoveDocument={onRemoveDocument}
           canWrite={canWrite}
           canDelete={canDelete}
@@ -203,6 +204,14 @@ export function FolderDocumentsView({
         <p className="py-8 text-center text-sm text-muted-foreground">{filteredEmptyMessage}</p>
       )}
       {!q.isLoading && isEmpty && !isFiltering && <FolderEmptyState />}
+
+      {shareDocument && (
+        <DocumentShareDialog
+          document={shareDocument}
+          open
+          onOpenChange={(open) => !open && setShareDocument(null)}
+        />
+      )}
 
       <DataTablePagination
         page={q.page}

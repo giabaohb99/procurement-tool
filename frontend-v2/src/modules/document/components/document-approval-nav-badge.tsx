@@ -1,4 +1,5 @@
 import { cn } from '@/shared/utils/cn'
+import { useLegacyPendingDocuments } from '../hooks/use-legacy-pending-documents'
 import { useMyDocumentTasks } from '../hooks/use-my-document-approvals'
 
 /**
@@ -13,7 +14,11 @@ import { useMyDocumentTasks } from '../hooks/use-my-document-approvals'
  */
 export function DocumentApprovalNavBadge() {
   const { items } = useMyDocumentTasks()
-  if (items.length === 0) return null
+  //  Văn bản duyệt MỘT BƯỚC cũng là việc chờ tôi — đếm chung, không thì huy hiệu
+  //  báo 0 trong khi màn «Chờ tôi duyệt» có dòng.
+  const { items: legacy } = useLegacyPendingDocuments()
+  const count = items.length + legacy.length
+  if (count === 0) return null
 
   const overdue = items.some((row) => row.is_overdue)
 
@@ -27,9 +32,9 @@ export function DocumentApprovalNavBadge() {
         overdue ? 'bg-destructive text-white' : 'bg-primary text-primary-foreground',
       )}
       //  Đọc màn hình chỉ nghe "3" thì không biết 3 cái gì.
-      aria-label={`${items.length} văn bản đang chờ bạn duyệt`}
+      aria-label={`${count} văn bản đang chờ bạn duyệt`}
     >
-      {items.length > 99 ? '99+' : items.length}
+      {count > 99 ? '99+' : count}
     </span>
   )
 }

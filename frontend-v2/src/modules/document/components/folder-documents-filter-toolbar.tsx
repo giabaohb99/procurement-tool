@@ -26,9 +26,6 @@ interface FolderDocumentsFilterToolbarProps {
   onYearChange: (value: string) => void
   includeSubfolders: boolean
   onIncludeSubfoldersChange: (value: boolean) => void
-  /** «Tìm cả nội dung» (phase 07) — cùng công tắc với màn Văn bản, tự kèm `folder_id`/`include_subfolders`. */
-  isFullText: boolean
-  onFullTextChange: (value: boolean) => void
 }
 
 /** Chip nhỏ có nút gỡ — cùng khuôn `Badge` + `X` của `folder-chip-list.tsx`, tách một bản riêng vì đây là chip LỌC (không phải chip thư mục). */
@@ -51,7 +48,7 @@ function RemovableFilterChip({ label, onRemove }: { label: string; onRemove: () 
 /**
  * HÀNG 2 GỌN kiểu Drive (đặc tả A + đợt dọn gọn, phản hồi 24/09/2026 tối) — ô
  * tìm + ĐÚNG MỘT nút «Bộ lọc» (huy hiệu đếm số điều kiện đang bật) mở popover
- * chứa Loại/Trạng thái/Năm/hai công tắc/«Bộ lọc nâng cao» — không còn dãy
+ * chứa Loại/Trạng thái/Năm/«Gồm thư mục con»/«Bộ lọc nâng cao» (công tắc «Tìm cả nội dung» bỏ 25/09/2026 — gõ đủ 2 ký tự là tự tìm cả nội dung) — không còn dãy
  * Select/Switch LUÔN HIỆN trên thanh công cụ (khách chê "show ra hết thì
  * xấu"). Điều kiện đang bật hiện thành CHIP gỡ được ngay dưới ô tìm, CHỈ khi
  * có gì đang lọc — hàng chip biến mất hoàn toàn lúc mọi thứ về mặc định.
@@ -72,11 +69,9 @@ export function FolderDocumentsFilterToolbar({
   onYearChange,
   includeSubfolders,
   onIncludeSubfoldersChange,
-  isFullText,
-  onFullTextChange,
 }: FolderDocumentsFilterToolbarProps) {
   //  Đếm CẢ điều kiện nâng cao (`ConditionalFilter`, chạy trong `FilterProvider`
-  //  của `folder-documents-table.tsx`) lẫn ba ô lọc nhanh + hai công tắc, cho
+  //  của `folder-documents-table.tsx`) lẫn ba ô lọc nhanh + công tắc thư mục con, cho
   //  huy hiệu trên nút «Bộ lọc» phản ánh ĐỦ mọi thứ đang lọc chứ không riêng
   //  một tầng. «Gồm thư mục con» đếm khi BẬT (mặc định TẮT từ 24/09/2026).
   const { activeCount: advancedCount } = useFilterQuery()
@@ -84,8 +79,7 @@ export function FolderDocumentsFilterToolbar({
     (typeId !== ALL ? 1 : 0) +
     (status !== ALL ? 1 : 0) +
     (year !== ALL ? 1 : 0) +
-    (includeSubfolders ? 1 : 0) +
-    (isFullText ? 1 : 0)
+    (includeSubfolders ? 1 : 0)
   const totalCount = advancedCount + quickCount
   const typeLabel = documentTypes.find((type) => String(type.id) === typeId)?.name
   const statusLabel = STATUS_LABELS[Number(status)]
@@ -176,13 +170,6 @@ export function FolderDocumentsFilterToolbar({
               />
             </div>
 
-            <div className="flex items-center justify-between">
-              <Label htmlFor="folder-filter-fulltext" className="font-normal">
-                Tìm cả nội dung
-              </Label>
-              <Switch id="folder-filter-fulltext" checked={isFullText} onCheckedChange={onFullTextChange} />
-            </div>
-
             <div className="border-t pt-2">
               <ConditionalFilter variant="ghost" className="w-full justify-start px-0" />
             </div>
@@ -204,9 +191,6 @@ export function FolderDocumentsFilterToolbar({
               label="Gồm thư mục con"
               onRemove={() => onIncludeSubfoldersChange(false)}
             />
-          )}
-          {isFullText && (
-            <RemovableFilterChip label="Tìm cả nội dung" onRemove={() => onFullTextChange(false)} />
           )}
         </div>
       )}

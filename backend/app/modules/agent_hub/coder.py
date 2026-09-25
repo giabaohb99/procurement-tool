@@ -56,6 +56,7 @@ from app.core.config import settings
 from . import memory, playbook, telegram
 from .timeutil import now_local
 from .constants import (
+    BOT_NAME,
     ACT_PATCH_ANSWER,
     RISK_HIGH,
     RUN_ERROR,
@@ -413,7 +414,7 @@ def build_brief(task: AgentTask, docs: list[dict], *, from_scan: bool = False,
     đoạn tài liệu và đoạn rà soát (đã nằm trong phiên), dặn dùng lại những gì đã đọc."""
     lines = [
         f"# Việc {task.code}: {task.title}", "",
-        "Bạn là Đậu Đậu, bot sửa mã của Agent Hub (tự xưng «em», gọi người đọc tổng kết là «đại ca»), "
+        f"Bạn là {BOT_NAME}, bot sửa mã của Agent Hub (tự xưng «em», gọi người đọc tổng kết là «đại ca»), "
         "đang đứng trong một worktree sạch cắt từ nhánh "
         f"`{settings.AGENT_BASE_BRANCH}` của kho procurement-tool (ERP nội bộ DEGO). "
         "Làm đúng kế hoạch đã được duyệt dưới đây, rồi in tổng kết.", "",
@@ -2236,7 +2237,7 @@ def build_scan_brief(task: AgentTask, docs: list[dict], head: str, main_head: st
                      images: list[str] | None = None) -> str:
     lines = [
         f"# Rà soát việc {task.code}: {task.title}", "",
-        "Bạn là Đậu Đậu, trợ lý lập trình của DEGO (tự xưng «em», gọi người đọc là «đại ca»). Bạn "
+        f"Bạn là {BOT_NAME}, trợ lý lập trình của DEGO (tự xưng «em», gọi người đọc là «đại ca»). Bạn "
         f"đang đứng trong một worktree cắt từ nhánh `{settings.AGENT_BASE_BRANCH}` MỚI NHẤT trên "
         f"GitHub (commit `{head[:10]}`) của kho procurement-tool (ERP nội bộ).",
         "Lượt này CHỈ ĐỌC: không sửa tệp, không chạy bài kiểm. Mục đích là hiểu đúng việc trước "

@@ -21,7 +21,7 @@ const DEBOUNCE_MS = 400
  * Không gọi API khi chưa có `doc_type_id`/`company_id` — hai ô luôn phải chọn
  * trước khi có gì để xem trước (khớp `Field(gt=0)` phía backend).
  */
-export function useDocumentApprovalPreview(input: ApprovalPreviewInput) {
+export function useDocumentApprovalPreview(input: ApprovalPreviewInput, active = true) {
   const debounced = useDebouncedValue(input, DEBOUNCE_MS)
 
   const watchedKey = {
@@ -33,7 +33,11 @@ export function useDocumentApprovalPreview(input: ApprovalPreviewInput) {
     signer_employee_id: debounced.signer_employee_id ?? 0,
     source_document_id: debounced.source_document_id ?? 0,
   }
-  const enabled = watchedKey.doc_type_id > 0 && watchedKey.company_id > 0
+  //  `active = false`: nơi gọi chưa cần tới kết quả (màn chi tiết khi văn bản
+  //  đã gửi duyệt — tab đọc phiên thật). Gọi thừa không chỉ tốn một vòng mạng:
+  //  người DUYỆT có phạm vi hẹp hơn người soạn ăn 400 theo chốt M3 cho một thứ
+  //  màn hình không hề vẽ (lỗi bắt khi test UI 25/09/2026).
+  const enabled = active && watchedKey.doc_type_id > 0 && watchedKey.company_id > 0
 
   return useQuery<ApprovalPreviewResult>({
     queryKey: queryKeys.document.approvalPreview(watchedKey),

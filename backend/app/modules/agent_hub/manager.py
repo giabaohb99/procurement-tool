@@ -18,6 +18,8 @@ from app.core.config import settings
 from app.modules.assistant.provider.base import ChatMessage, ChatResult, ProviderError
 from app.modules.assistant.provider.gemini import GeminiProvider
 
+from .constants import BOT_NAME
+
 log = logging.getLogger("app.agent_hub.manager")
 
 
@@ -55,10 +57,11 @@ class AgentGeminiProvider(GeminiProvider):
         if thinking:
             cfg["thinkingConfig"] = {"thinkingBudget": THINKING_BUDGET}
             cfg["maxOutputTokens"] = max_tokens + THINKING_BUDGET
-        else:
+        elif not model.startswith("gemini-3"):
             #  Tắt HẲN (ai-CR-022). Lớp dùng chung chỉ gửi 0 cho model nó biết chắc nhận 0, nên với
             #  bí danh flash-latest nó bỏ trống và model vẫn tự nghĩ ~2,5 nghìn token mỗi lượt. Đo
-            #  23/09: model của bot nhận `thinkingBudget: 0`.
+            #  23/09: model của bot nhận `thinkingBudget: 0`. Dòng Gemini 3 thì TRẢ 400 với 0
+            #  (ai-CR-056, dev đặt `gemini-3.5-flash-lite` cho Trợ lý) — với nó để trống như lớp chung.
             cfg["thinkingConfig"] = {"thinkingBudget": 0}
         return cfg
 
@@ -193,7 +196,7 @@ def _risk(value) -> int:
 # Trạm PLAN — đề xuất cách sửa
 # ---------------------------------------------------------------------------
 PLAN_SYSTEM = """\
-Bạn là Đậu Đậu, trợ lý quản lý kỹ thuật của một hệ thống ERP nội bộ. Bạn nhận MỘT đầu việc kèm
+Bạn là __BOT_NAME__, trợ lý quản lý kỹ thuật của một hệ thống ERP nội bộ. Bạn nhận MỘT đầu việc kèm
 vài đoạn tài liệu của chính dự án, và phải viết BẢN ĐỀ XUẤT CÁCH SỬA cho lập trình viên.
 
 Luật:
@@ -256,7 +259,7 @@ def run_plan(title: str, summary: str, docs: list[dict], *, playbook: str = "",
         parts += ["", "KHÔNG tra được tài liệu liên quan. Đừng viện dẫn tệp nào cả."]
     if review:
         #  ai-CR-017: Claude Code đã đọc mã thật trên nhánh nền mới nhất. Tài liệu thì có thể cũ.
-        parts += ["", "KẾT QUẢ RÀ SOÁT MÃ THẬT (Đậu Đậu vừa đọc mã trên nhánh nền mới nhất; khác "
+        parts += ["", "KẾT QUẢ RÀ SOÁT MÃ THẬT (" + BOT_NAME + " vừa đọc mã trên nhánh nền mới nhất; khác "
                       "tài liệu thì tin cái này):", review]
     if strict:
         parts += ["", _PLAN_STRICT_NOTE]
@@ -266,7 +269,7 @@ def run_plan(title: str, summary: str, docs: list[dict], *, playbook: str = "",
     result = get_provider().ask(
         [ChatMessage(role="user", content="\n".join(parts))],
         model=settings.AGENT_MANAGER_MODEL,
-        system=PLAN_SYSTEM,
+        system=PLAN_SYSTEM.replace("__BOT_NAME__", BOT_NAME),
         #  Trần cho PHẦN CHỮ; phần suy nghĩ có trần riêng THINKING_BUDGET cộng thêm (ai-CR-021).
         max_tokens=4096,
         temperature=0.3,
@@ -281,7 +284,7 @@ def run_plan(title: str, summary: str, docs: list[dict], *, playbook: str = "",
         log.warning("agent_hub: kế hoạch không ra JSON (%s), thử lại không suy nghĩ", str(e)[:120])
         result = get_provider().ask(
             [ChatMessage(role="user", content="\n".join(parts))],
-            model=settings.AGENT_MANAGER_MODEL, system=PLAN_SYSTEM,
+            model=settings.AGENT_MANAGER_MODEL, system=PLAN_SYSTEM.replace("__BOT_NAME__", BOT_NAME),
             max_tokens=4096, temperature=0.3, thinking=False,
         )
         data = parse_json(result.text)

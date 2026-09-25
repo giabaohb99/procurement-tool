@@ -74,9 +74,10 @@ export function useFolderDocumentsTableState({
     setDetailsOpen(true)
   }
 
+  //  «Xem chi tiết» của văn bản = vào trang chi tiết (đại ca chốt 25/09/2026),
+  //  không phải bật khung thông tin bên phải như với thư mục.
   function viewDocumentDetails(document: DocumentRecord) {
-    selection.selectOnly(folderItemKey('document', document.id))
-    setDetailsOpen(true)
+    openDocument(document)
   }
 
   useTreeSelectedDocument({

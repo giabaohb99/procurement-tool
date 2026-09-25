@@ -98,7 +98,8 @@ beforeEach(() => {
 describe('FolderShareDialog', () => {
   it('hiện tên thư mục ở tiêu đề và câu nhắc «quyền thư mục không cho đọc văn bản»', () => {
     render(<FolderShareDialog folderId={5} open onOpenChange={vi.fn()} />)
-    expect(screen.getByText('Chia sẻ «Hợp đồng»')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Chia sẻ thư mục' })).toBeInTheDocument()
+    expect(screen.getByTitle('Hợp đồng')).toHaveTextContent('Hợp đồng')
     expect(screen.getByText(/Quyền thư mục không cho đọc văn bản/)).toBeInTheDocument()
   })
 
@@ -229,7 +230,8 @@ describe('FolderShareDialog — chống nổ khi dữ liệu lệch hợp đồn
 
     render(<FolderShareDialog folderId={5} open onOpenChange={vi.fn()} />)
 
-    expect(screen.getByText('Chia sẻ «Hợp đồng»')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Chia sẻ thư mục' })).toBeInTheDocument()
+    expect(screen.getByTitle('Hợp đồng')).toHaveTextContent('Hợp đồng')
     expect(screen.getByText('Chưa khai dòng quyền nào trên nhánh này.')).toBeInTheDocument()
   })
 
@@ -256,6 +258,7 @@ describe('FolderShareDialog — chống nổ khi dữ liệu lệch hợp đồn
     } as unknown as ReturnType<typeof useDocFolder>)
 
     expect(() => render(<FolderShareDialog folderId={5} open onOpenChange={vi.fn()} />)).not.toThrow()
-    expect(screen.getByText('Chia sẻ «Hợp đồng»')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Chia sẻ thư mục' })).toBeInTheDocument()
+    expect(screen.getByTitle('Hợp đồng')).toHaveTextContent('Hợp đồng')
   })
 })

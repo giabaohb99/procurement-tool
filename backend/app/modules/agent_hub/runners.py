@@ -191,7 +191,9 @@ def describe(db: Session, runner: AgentRunner) -> str:
 _TAIL = r"(\s+(nhé|nha|đi|luôn|giúp em|giúp anh))*[.!]*"
 _ADD = re.compile(rf"^(thêm|đăng ký|dang ky|đăng kí)\s+máy(\s+sửa mã)?(\s+(của|cho))?\s+(?P<name>.+?){_TAIL}$")
 _REMOVE = re.compile(rf"^(tắt|gỡ|bỏ|xóa|thu hồi)\s+máy(\s+sửa mã)?(\s+của)?\s+(?P<name>.+?){_TAIL}$")
-_LIST = re.compile(r"^(máy nào (đang )?(bật|sống|chạy|online)|(danh sách|ds|xem)\s+máy(\s+sửa mã)?|các máy( sửa mã)?)")
+#  «máy nào đang bật» · gõ thiếu «máy nào đang bậ» · «danh sách máy» · «các máy sửa mã»: cứ hỏi «máy nào …» là liệt kê.
+_LIST = re.compile(r"^(máy nào\b|(những\s+)?máy(\s+sửa mã)?\s+(đang\s+)?(bật|sống|chạy|online)"
+                   r"|(danh sách|ds|xem|liệt kê)\s+máy(\s+sửa mã)?|các máy( sửa mã)?)")
 _ASSIGN = re.compile(rf"^(?P<code>ai[-\s]?\d+)\s+(cho|giao|để)\s+máy(\s+(của|cho))?\s+(?P<name>.+?)\s+làm{_TAIL}$"
                      rf"|^(cho|giao)\s+(?P<code2>ai[-\s]?\d+)\s+cho\s+máy(\s+của)?\s+(?P<name2>.+?){_TAIL}$")
 _DEPLOY_ON = re.compile(rf"^(cho|mở)\s+máy(\s+của)?\s+(?P<name>.+?)\s+(được\s+)?deploy(\s+dev)?{_TAIL}$")

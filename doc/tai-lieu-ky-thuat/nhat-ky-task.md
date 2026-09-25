@@ -8099,6 +8099,13 @@ khi tên đã có tiền tố. Còn ba việc dính bí mật và nhánh dùng c
 cho làm, giao đại ca chạy tay theo tài liệu số 05 mục 0: đẩy nhánh bot thành erp-v2, tạo tài khoản
 MySQL cho máy sửa mã, nhắn bot đăng ký máy và điền ba dòng còn trống trong tệp cấu hình runner.
 
+Tối cùng ngày đại ca làm xong ba việc đó (mã máy và khóa dev đưa qua tệp, em đưa vào cấu hình rồi
+xóa tệp). Bật máy sửa mã gặp hai trục trặc: cổng SSH trong tệp mẫu là 22 nên chưa được thay bằng
+cổng thật, và compose lấy đường dẫn khóa đường hầm từ tệp .env của thư mục chứ không từ
+.env.runner nên mount nhầm tệp giữ chỗ; sửa bằng cách chạy compose kèm --env-file .env.runner
+(đã ghi vào tài liệu). Kết quả: đường hầm nối lên dev, runner sẵn sàng nghe hàng đợi riêng, sổ
+máy trên dev thấy may-dai-ca đang bật, cờ deploy bật. Còn chạy thử một việc sửa mã đầu-cuối.
+
 Mã nguồn: docker-compose.dev.yml · backend/migrations/versions/e6b1d4f8a2c7_gop_head_bot_va_erp_v2_2509.py ·
 backend/app/seed.py · test/backend/test_pham_vi_khai_du_b07.py · .env.runner.example ·
 doc/agent-hub/05-may-sua-ma.md
@@ -8167,6 +8174,88 @@ Kiểm: 20 bài công nợ theo phòng xanh (3 bài mới), 67 bài chi phí và
 Mã nguồn: backend/app/modules/payable/service.py · purchase_order/service.py ·
 backend/scripts/backfill_handling_dept.py · test/backend/test_cong_no_theo_phong_xu_ly_cr484.py
 
+## duoc-CR-479 | Văn bản: tạo nhanh từ tệp, chia sẻ ngay ở thư mục, duyệt một bước vào «Chờ tôi duyệt», tìm luôn cả nội dung
+- status: xong
+- date: 2026-09-25
+Đợt chỉnh phân hệ Văn bản theo góp ý của đại ca trong ngày 25/09/2026, làm và bấm thử
+bằng trình duyệt trên máy em. Trong lúc bấm thử lòi ra ba lỗi có sẵn ở phần tìm toàn văn,
+em vá luôn. Đã push lên nhánh `erp-v2`, chưa deploy dev.
+Khi deploy phải khởi động lại celery-worker rồi chạy một lần script dựng lại chỉ mục tìm
+kiếm, không thì những văn bản chưa có chỉ mục sẽ không tìm ra được.
+Kiểm tra: 701 bài kiểm giao diện của phân hệ Văn bản xanh, 56 bài kiểm máy chủ của phần
+văn bản xanh, typecheck sạch, lint không lỗi. Không có migration.
+Commit: 6a5ba7de · 98ccab67 · 6e5b0775 (nhánh `erp-v2`).
+Deploy: sau khi lên dev chạy `docker compose restart celery-worker` rồi
+`docker compose exec -T api python scripts/reindex_documents.py`.
+
+### duoc-CR-479-1 | Nút «Tải tệp lên» ở trang Thư mục: tạo văn bản không soạn thảo trong một hộp
+- status: xong
+Người dùng hay có sẵn tệp scan hoặc hợp đồng đã ký, đi hết trang tạo ba bước thì mất công.
+Em thêm nút «Tải tệp lên» trên thanh công cụ của trang Thư mục (và mục «Tạo nhanh từ tệp»
+trong nút «Mới»). Hộp này chỉ hỏi tệp, năm ô bắt buộc, người duyệt dự kiến và phân quyền;
+bấm tạo là văn bản nằm luôn trong thư mục đang xem. Tên văn bản tự lấy theo tên tệp đầu
+tiên, vùng thả tệp ghi rõ các đuôi nhận được và giới hạn 50 MB mỗi tệp. Nút «Mở rộng»
+chuyển sang trang tạo đầy đủ. Em cũng đổi nhãn «Phân quyền nâng cao» thành «Cho phép /
+chặn người cụ thể» cho dễ hiểu.
+Mã nguồn: `folder-quick-document-dialog.tsx` · `folder-quick-document-fields.tsx` ·
+`folder-quick-document-button.tsx` · `helpers/document-file-policy.ts`.
+
+### duoc-CR-479-2 | Văn bản chỉ gồm tệp gửi duyệt được
+- status: xong
+Bấm thử thì văn bản tạo không soạn thảo bị chặn gửi duyệt với câu «Nội dung văn bản còn
+trống», dù đã có tệp. Máy chủ nay kiểm văn bản loại này có ít nhất một tệp đính kèm thay
+vì kiểm nội dung soạn thảo. Thêm 4 bài kiểm.
+Mã nguồn: `backend/app/modules/document/service.py` (`_ensure_submittable_content`).
+
+### duoc-CR-479-3 | «Chờ tôi duyệt» hiện cả văn bản duyệt một bước, tab mặc định «Cần duyệt»
+- status: xong
+Văn bản không khớp luồng duyệt nào thì đi đường duyệt một bước kiểu cũ, không sinh việc
+cho bộ máy duyệt, nên người có quyền duyệt không bao giờ thấy nó ở màn «Chờ tôi duyệt».
+Em thêm hai đường API riêng: một liệt kê văn bản đang chờ duyệt một bước mà người đó đọc
+được, một liệt kê những lần người đó đã duyệt hoặc trả lại theo nhật ký. Số đếm ở menu và
+ở nút «Cần duyệt» cộng cả hai loại. Màn mở sẵn tab «Cần duyệt», câu khi bảng trống nói
+đúng theo tab đang xem. Đã bấm thử cả luồng một bước lẫn luồng hai chặng bằng tài khoản
+người duyệt. Thêm 10 bài kiểm máy chủ.
+Mã nguồn: `backend/app/modules/document/legacy_pending_approval.py` ·
+`approval-inbox-table.tsx` · `approval-inbox-row.ts`.
+
+### duoc-CR-479-4 | Chia sẻ văn bản ngay ở trang Thư mục, «Xem chi tiết» vào thẳng văn bản
+- status: xong
+Menu ⋯ và menu chuột phải của văn bản có thêm «Chia sẻ…», mở hộp giống hộp chia sẻ của
+thư mục: ô mời người trên cùng, danh sách người được cho phép hoặc bị chặn, sửa và hủy
+từng dòng, nút «Sao chép liên kết». «Xem chi tiết» của văn bản nay mở thẳng trang văn bản
+(trước đó chỉ bật khung thông tin bên phải, tưởng hỏng), bỏ mục «Mở» vì trùng việc. Ô tìm
+người khi chia quyền tìm được theo mã nhân sự, gõ không dấu cũng ra. Sửa luôn viền đáy
+bị đôi ở bảng thư mục.
+Mã nguồn: `document-share-dialog.tsx` · `document-share-access-list.tsx` ·
+`hooks/use-document-access-editor.ts` · `helpers/folder-item-menu-actions.ts`.
+
+### duoc-CR-479-5 | Tìm luôn cả nội dung, bỏ công tắc; vá ba lỗi tìm toàn văn
+- status: xong
+Đại ca chốt tìm là tìm cả tên lẫn nội dung, nên em bỏ công tắc «Tìm cả nội dung»: gõ từ
+2 ký tự là tìm trong tên, số hiệu, nội dung soạn thảo và chữ trong tệp; ô trống thì hiện
+danh sách thường. Khi bật mặc định thì lộ ra ba lỗi có sẵn: câu sắp xếp theo độ khớp viết
+sai nên tìm trả lỗi 500; MySQL từ chối truy vấn con có giới hạn số dòng nên vẫn 500;
+celery-worker ở máy em khởi động trước khi có tác vụ lập chỉ mục nên 6 văn bản mới nhất
+chưa từng được lập chỉ mục. Bộ bài kiểm máy chủ chạy SQLite nên không bắt được hai lỗi
+đầu. Em cũng sắp lại thanh lọc màn Văn bản: «Gồm thư mục con» dời vào trong ô chọn thư
+mục, các ô lọc cùng bề rộng.
+Mã nguồn: `backend/app/modules/document/search_service.py` ·
+`hooks/use-document-search.ts` (`isFullTextQuery`) · `outgoing-documents-tab.tsx`.
+
+### duoc-CR-479-6 | Điền đủ hồ sơ nhân sự và quyền văn bản trên máy em
+- status: xong
+Nhân viên bấm tạo văn bản bị báo thiếu thông tin vì 238/272 nhân sự chưa có pháp nhân,
+20 người chưa có phòng ban, 258/276 tài khoản thiếu quyền xem cây thư mục. Em viết script
+chỉ dùng cho máy local: pháp nhân suy theo tên phòng (phòng mang tên công ty con thì về
+công ty đó, phòng dùng chung về DEGO Holding), điền phòng cho văn thư và quản trị, chọn
+trưởng phòng rồi gán quản lý trực tiếp, điền giới tính, ngày sinh, ngày vào làm, số điện
+thoại, cấp bậc mẫu. Quyền: cấp xem cây thư mục cho 28 vai trò còn thiếu, gán vai trò nền
+«Nhân sự» cho 59 tài khoản. Không đụng email và trường nhạy cảm. Đo lại còn 0 người thiếu
+pháp nhân, phòng ban hay quyền văn bản; bấm thử bằng một nhân viên thường tạo văn bản
+thành công. Chưa chạy trên dev hay prod.
+Mã nguồn: `backend/scripts/fill_local_employee_profiles.py`.
+
 ## bao-CR-485..490 | Gom bảy góp ý màn YCBG/YCMH thành năm cụm, chia hai phiên
 - status: dang-lam
 - date: 2026-09-25
@@ -8180,41 +8269,6 @@ dùng chung, đúng như hiện tại. Hai câu chờ đại ca: ngữ nghĩa n�
 trường trưởng phòng phê duyệt.
 
 Mã nguồn: doc/tai-lieu-ky-thuat/change-log-bao.md · doc/erp/19-viec-con-lai-tong-hop.md
-
-## bao-CR-491 | Màn Phân quyền tài khoản mất dấu tick vai trò khi vào lại trang
-- status: xong
-- date: 2026-09-25
-- pic: NSU209
-Đại ca dùng thật rồi báo: mở màn phân quyền của một tài khoản thì thấy tick đủ vai trò,
-quay ra trang trước rồi vào lại thì mọi dấu tick biến mất, phải tải lại cả trang mới hiện
-ra. Em dựng lại được ngay bằng một bài kiểm, và hóa ra đây không chỉ là chuyện nhìn sai.
-
-Gốc rễ nằm ở cách màn hình giữ danh sách vai trò. Nó chép danh sách từ máy chủ vào bộ nhớ
-riêng của màn hình, rồi chỉ chép lại khi dữ liệu đổi so với lượt vẽ trước. Lần vào thứ hai,
-lớp đệm dữ liệu đã có sẵn bản cũ nên trả về ngay ở lượt vẽ đầu tiên; mà ở lượt vẽ đầu tiên
-thì phép so sánh kia luôn nói là không có gì đổi, vì nó lấy chính giá trị hiện tại làm mốc.
-Không có nhịp nào để chép, nên bộ nhớ riêng nằm nguyên ở trạng thái rỗng. Lần vào đầu tiên
-không lộ ra vì lúc ấy dữ liệu chưa về, và chính cú chuyển từ chưa có sang có mới là nhịp
-chép. Tải lại trang thì lớp đệm mất sạch nên lại đi đúng đường cũ, đó là lý do tải lại
-thấy đúng.
-
-Chỗ nguy là bước tiếp theo của người dùng. Thấy trang trống, họ tick lại vài vai trò rồi
-bấm lưu, mà đường lưu nhận cả danh sách chứ không nhận phần chênh, nên những vai trò cũ
-không được tick lại sẽ bị xóa mất. Tức là một lỗi hiển thị dẫn thẳng tới mất phân quyền.
-
-Em không vá bằng cách thêm một nhịp chép nữa, vì như vậy là dựa vào việc lượt vẽ nào là
-lượt đặc biệt. Em đổi hẳn cách giữ: bộ nhớ riêng của màn hình nay chỉ chứa bản nháp của
-người dùng, chưa đụng vào thì để trống và màn hình đọc thẳng bản của máy chủ. Nhờ vậy mọi
-lượt vẽ đều giống nhau. Chốt cũ vẫn còn nguyên: một lượt nạp lại rơi vào giữa lúc đang tick
-dở thì không đè lên thứ đang tick, vì hễ có nháp là nháp thắng.
-
-Nghiệm thu: ba cổng kiểm đều xanh, và bài kiểm mới em đã thử ngược trên mã cũ để chắc chắn
-nó đỏ đúng một bài, không phải bài kiểm trang trí. Bản đang chạy thật của giao diện cũ
-không dính lỗi này, vì bên đó mỗi lần mở màn là gọi lại máy chủ chứ không có lớp đệm.
-
-Mã nguồn: `frontend-v2/src/modules/system/pages/user-permission-detail-page.tsx` và bài kiểm
-đi kèm cùng thư mục. Tham chiếu: CR-156 (chốt không đè bản đang tick dở) và CR-158 (khóa
-trang của chính mình). Chưa deploy.
 
 ## bao-CR-485 | Công tắc điều phối tắt thì sổ thao tác chỉ một dòng Duyệt của trưởng phòng
 - status: xong
@@ -8313,52 +8367,6 @@ chuột và tiêu đề hộp thoại vẫn nói rõ là trả cả phiếu về
 
 Mã nguồn: frontend-v2 purchase-request-detail-page.tsx · survey-request-detail-page.tsx ·
 frontend PurchaseRequestDetail.tsx · SurveyRequestDetail.tsx
-
-## bao-CR-492 | Rà cả họ lỗi mất dấu tick khi vào lại trang và vá tám màn còn lại
-- status: xong
-- date: 2026-09-25
-- pic: NSU209
-Vá xong màn phân quyền tài khoản, đại ca bảo rà luôn xem còn chỗ nào cùng kiểu thì sửa hết.
-Em đặt ra một tiêu chí máy móc để rà chứ không đi theo cảm giác: một chỗ dính khi nó lấy dữ
-liệu tải về đổ vào bộ nhớ riêng của màn hình, mà bộ nhớ đó khởi tạo bằng giá trị rỗng, và
-nhịp đổ lại gác bằng phép so sánh với lượt vẽ trước. Lượt vẽ đầu tiên phép so sánh ấy luôn
-nói là không có gì đổi, nên hễ lớp đệm đã có sẵn dữ liệu thì màn hình mở ra trắng.
-
-Rà hết sáu mươi sáu chỗ gọi phép so sánh đó thì có chín chỗ dính, kể cả chỗ đã vá hôm nay.
-Số còn lại an toàn vì rơi vào ba nhóm: mốc so sánh là trạng thái đóng mở của hộp thoại nên
-luôn có một cú chuyển, hoặc bộ nhớ đã khởi tạo từ chính giá trị truyền vào, hoặc bộ nhớ đã
-khởi tạo bằng cách đọc thẳng nguồn dữ liệu. Bốn màn chi tiết lớn của thu mua thoát được là
-nhờ cách thứ ba, và em lấy luôn cách đó làm khuôn vá cho những chỗ hỏng.
-
-Năm chỗ dẫn tới mất dữ liệu thật. Nặng nhất là ma trận quyền của vai trò: vai trò đang mở
-nằm ngay trên địa chỉ trang, nên mở lại bằng đúng đường dẫn đó là dính chắc chứ không phải
-thỉnh thoảng. Ma trận hiện ra trắng, bấm lưu là gửi lên một danh sách rỗng, mà đường lưu bên
-máy chủ xóa hết rồi ghi lại, tức mất sạch quyền của vai trò đó và kéo theo mọi tài khoản
-đang giữ nó. Bốn chỗ còn lại cùng kiểu nhưng hẹp hơn: đơn nghỉ phép và phiếu đặt phòng họp
-mở ra form trắng, phiếu yêu cầu thanh toán mở ra không còn dòng nào, thẻ kiêm nhiệm của hồ
-sơ nhân sự không tick phòng nào. Cả bốn đều có nút lưu ngay cạnh.
-
-Ba chỗ nhẹ hơn nhưng vẫn phải vá. Hai khối bình luận mất nút xem thêm bình luận cũ, nên
-người đọc tưởng bài chỉ có mấy dòng cuối. Hai nhịp bù của phiếu mới thì đáng nói hơn: phiếu
-khảo sát không chép mục đích sang nội dung chính, còn yêu cầu báo giá không bù mã phòng ban
-nên phiếu lại neo phòng bằng tên, đúng thứ mà một đợt trước đã sinh ra để tránh. Hai nhịp
-này hỏng đúng trong trường hợp hay gặp nhất, vì người dùng vào từ màn danh sách nên danh mục
-đã nằm sẵn trong lớp đệm.
-
-Em có cân nhắc sửa một chỗ duy nhất ở hàm so sánh dùng chung, cho nó báo có thay đổi ngay ở
-lượt vẽ đầu. Làm vậy là hết cả họ trong một dòng, nhưng nó đổi hành vi của cả sáu mươi sáu
-chỗ, mà nhiều chỗ dùng hàm đó để xóa trắng chứ không phải để đổ dữ liệu. Chỗ đặt lại số
-trang chẳng hạn, nếu chạy ngay lúc mở màn thì mở một đường dẫn có sẵn số trang là bị kéo về
-trang một. Đổi một lỗi lấy một lỗi, nên em không làm.
-
-Hai bài kiểm mới cho hai chỗ nặng nhất, và cả hai em đều thử ngược trên mã cũ để chắc chắn
-chúng đỏ chứ không phải bài kiểm trang trí. Chúng khẳng định theo hậu quả thật, tức là bấm
-lưu rồi xem gói gửi lên có còn nguyên quyền cũ không, chứ không khẳng định theo vẻ ngoài của
-màn hình. Ba cổng kiểm đều xanh.
-
-Mã nguồn: chín tệp trong `frontend-v2`, gồm màn ma trận quyền, hai màn chi tiết của nhân sự,
-màn chi tiết yêu cầu thanh toán, thẻ kiêm nhiệm, hai khối bình luận và hai màn thu mua.
-Tham chiếu: bao-CR-491 là chỗ đầu tiên của họ lỗi này. Chưa deploy.
 
 ## bao-CR-490 | Trường trưởng phòng phê duyệt trên ba chứng từ và nút chọn người ký trên bản in nội bộ
 - status: xong

@@ -4,6 +4,7 @@ import { Button } from '@/shared/ui/button'
 import { IconTooltip } from '@/shared/ui/icon-tooltip'
 import { folderAccessLevelLabel } from '../types/document-folder'
 import type { DocFolderDetail } from '../types/document-folder'
+import { FolderQuickDocumentButton } from './folder-quick-document-button'
 import { FolderNodeIcon } from './folder-tree-item'
 import { FolderViewModeControls } from './folder-view-mode-controls'
 
@@ -65,6 +66,11 @@ export function FolderViewToolbar({
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
+        <FolderQuickDocumentButton
+          folderId={folder.id}
+          folderCompanyId={folder.company_id}
+          folderName={displayName}
+        />
         <Button type="button" variant="outline" size="sm" onClick={onShare}>
           <Share2 className="size-4" />
           <span className="hidden sm:inline">Chia sẻ</span>
