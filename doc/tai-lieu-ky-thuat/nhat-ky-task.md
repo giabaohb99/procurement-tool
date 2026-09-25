@@ -8192,3 +8192,19 @@ Kiểm: ba bài mới, cả tệp test bot 224 bài xanh; migration đã chạy 
 Mã nguồn: backend/app/modules/agent_hub/service.py · manager.py · telegram.py · tasks.py · coder.py ·
 constants.py · model.py · backend/app/core/config.py · backend/migrations/versions/f7c2e9a1b5d4_* ·
 test/backend/test_agent_hub.py
+
+## ai-CR-058 | Model Claude Code theo làn: việc nhỏ opus-5, việc đầy đủ opus-5-5
+- status: xong
+- date: 2026-09-25
+Đại ca hỏi bot sửa mã đang dùng model nào; trước nay Claude Code chạy mặc định của gói, không chỉ
+định. Đại ca chọn đặt model theo làn: việc nhỏ dùng opus-5, việc khó dùng opus-5-5.
+
+Đã thêm hai biến cấu hình cho máy sửa mã, mọi lượt gọi Claude Code (rà soát, sửa, làm tiếp, sửa cho
+xanh, hỏi về bản vá) nhận thêm tham số model theo làn của việc đang chạy; để trống thì như cũ. Đã
+thử ba tên model trên máy đại ca đều được nhận. Tiện thể sửa cờ deploy trong tệp cấu hình runner
+bị giữ giá trị mẫu, nguyên nhân lệnh «gộp và deploy dev» bị bỏ lần hai.
+
+Kiểm: một bài mới, cả tệp test bot 225 bài xanh. Máy đại ca đã dựng lại với cấu hình mới.
+
+Mã nguồn: backend/app/core/config.py · backend/app/modules/agent_hub/coder.py · .env.runner.example ·
+test/backend/test_agent_hub.py

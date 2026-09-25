@@ -5393,3 +5393,20 @@ def test_telegram_che_html_thi_gui_lai_ban_chu_tron(monkeypatch):
     monkeypatch.setattr(telegram, "_call", lambda m, p, **kw: (_ for _ in ()).throw(telegram.TelegramError("chat not found")))
     with pytest.raises(telegram.TelegramError):
         telegram.send_payload({"chat_id": "1", "text": "x", "parse_mode": "HTML"})
+
+
+def test_model_claude_code_theo_lan(monkeypatch):
+    """ai-CR-058: --model theo làn; biến trống thì không thêm cờ (mặc định của gói)."""
+    from app.modules.agent_hub import coder
+
+    monkeypatch.setattr(settings, "AGENT_CODER_MODEL", "")
+    monkeypatch.setattr(settings, "AGENT_CODER_MODEL_QUICK", "")
+    assert coder.model_args() == []
+    monkeypatch.setattr(settings, "AGENT_CODER_MODEL", "claude-opus-5-5")
+    monkeypatch.setattr(settings, "AGENT_CODER_MODEL_QUICK", "claude-opus-5")
+    assert coder.model_args() == ["--model", "claude-opus-5-5"]           # ngoài lượt sửa: làn đầy đủ
+    token = coder._LANE.set(coder.LANE_QUICK)
+    try:
+        assert coder.model_args() == ["--model", "claude-opus-5"]
+    finally:
+        coder._LANE.reset(token)

@@ -252,6 +252,10 @@ class Settings(BaseSettings):
     # Cầu dao riêng của bậc 2. TẮT thì bấm Duyệt chỉ ghi sổ như bậc 1, không giao việc đi đâu.
     AGENT_CODER_ENABLED: bool = False
     AGENT_CODER_CMD: str = "claude"
+    # ai-CR-058: model cho Claude Code theo LÀN (trống = mặc định của gói đăng nhập). Làn đầy đủ (rà soát,
+    # sửa, hỏi bản vá) và làn tắt (việc nhỏ, ai-CR-057). Đại ca chọn 25/09: đầy đủ opus-5-5, việc nhỏ opus-5.
+    AGENT_CODER_MODEL: str = ""
+    AGENT_CODER_MODEL_QUICK: str = ""
     # Số lượt tối đa một phiên `claude -p` được đi (mỗi lượt = một lần gọi model + tool).
     # 80 -> 120 (ai-CR-023): AI-0007 hết 80 lượt khi mới sửa xong một nửa hai màn giao diện.
     AGENT_CODER_MAX_TURNS: int = 120
