@@ -62,3 +62,31 @@ export function useRemoveMcpKey() {
     },
   })
 }
+
+/** Google cá nhân — Lịch + Drive (ai-CR-064). */
+export function useGoogleLink() {
+  return useQuery({
+    queryKey: queryKeys.system.googleLink(),
+    queryFn: () => agentHubApi.myGoogle(),
+  })
+}
+
+export function useGoogleAuthorize() {
+  return useMutation({
+    mutationFn: () => agentHubApi.googleAuthorizeUrl(),
+    onSuccess: (data) => {
+      window.location.assign(data.url)
+    },
+  })
+}
+
+export function useDisconnectGoogle() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => agentHubApi.disconnectGoogle(),
+    onSuccess: () => {
+      toast.success('Đã gỡ kết nối Google.')
+      void queryClient.invalidateQueries({ queryKey: queryKeys.system.googleLink() })
+    },
+  })
+}

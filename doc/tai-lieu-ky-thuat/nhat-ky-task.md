@@ -8512,3 +8512,28 @@ Mã nguồn: backend/app/modules/agent_hub/mcp.py · mcp_keys.py · controller.p
 backend/app/modules/employee/service.py · backend/migrations/versions/c9d4a2e6f1b8_* ·
 frontend-v2/src/app/components/profile/profile-ai-key-tab.tsx · modules/system/hooks/use-ai-key.ts ·
 modules/system/api/agent-hub-api.ts · doc/agent-hub/06-cong-mcp.md
+
+## ai-CR-064 | Nối Google cá nhân: Lịch, Drive, bản tin sáng, nhắc trước họp
+- status: xong
+- date: 2026-09-25
+Phase 5. Đại ca chốt dùng Google cá nhân của từng người.
+
+Đã làm. Một, nối Google bằng OAuth: bấm «Nối Google» ở Trang cá nhân, qua màn đồng ý của Google, ERP giữ
+token làm mới mã hóa; tự làm mới token truy cập; Google thu hồi thì đóng dòng và nói rõ; gỡ là thu hồi
+phía Google. Hai, bốn công cụ mới dùng chung cho trợ lý web, bot và cổng MCP, chạy bằng token của chính
+người hỏi: xem lịch, tạo sự kiện bằng câu nói, tìm và đọc tệp trên Drive. Ba, bản tin sáng lúc bảy giờ
+rưỡi với lịch hôm nay và việc chờ duyệt, và nhắc trước cuộc họp mười lăm phút, gửi qua Telegram cho người
+đã nối cả hai và không tắt chuông; mỗi sự kiện nhắc đúng một lần; không tốn lượt model. Bốn, nghỉ việc
+đóng luôn kết nối Google.
+
+Việc tay của đại ca: trên Google Cloud Console thêm địa chỉ gọi về của dev vào OAuth client đang dùng cho
+đăng nhập, để ứng dụng ở trạng thái đang dùng thật (không phải thử nghiệm, vì thử nghiệm thì token chết
+sau bảy ngày), và đưa client secret vào tệp môi trường dev.
+
+Kiểm: bốn bài backend mới (272 xanh cùng bài phạm vi), một bài giao diện mới, typecheck và lint không lỗi.
+
+Mã nguồn: backend/app/modules/agent_hub/google_link.py · briefs.py · controller.py · tasks.py · constants.py ·
+model.py · backend/app/modules/assistant/tools/google_tool.py · tools/__init__.py · backend/app/core/config.py ·
+celery_app.py · backend/app/modules/employee/service.py · backend/migrations/versions/d2f7b4a9c6e1_* ·
+frontend-v2/src/app/components/profile/profile-ai-key-tab.tsx · modules/system/hooks/use-ai-key.ts ·
+modules/system/api/agent-hub-api.ts · test/backend/test_assistant_pham_vi_doc.py

@@ -207,6 +207,17 @@ if settings.AGENT_HUB_ENABLED:
             "schedule": crontab(minute="*"),
             "options": {"expires": 50},
         },
+        #  ai-CR-064: bản tin sáng 07:30 giờ VN (= 00:30 UTC) và nhắc trước họp mỗi 5 phút.
+        "agent-morning-brief": {
+            "task": "agent.morning_brief",
+            "schedule": crontab(minute="30", hour="0"),
+            "options": {"expires": 1800},
+        },
+        "agent-meeting-reminders": {
+            "task": "agent.meeting_reminders",
+            "schedule": crontab(minute="*/5"),
+            "options": {"expires": 240},
+        },
     })
     #  Vòng kéo tin CHỈ vào lịch khi không có tiến trình `agent-poller` riêng (ai-CR-008):
     #  poller giữ kết nối chờ tin, còn vòng này hỏi-rồi-về mỗi 10 giây. Hai bên cùng đọc

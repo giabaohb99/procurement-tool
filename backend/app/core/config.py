@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = "https://thumuatool.degoholding.vn"
     
     GOOGLE_CLIENT_ID: str = ""
+    # ai-CR-064 (M-06): bí mật của cùng OAuth client, để nối Google cá nhân (Lịch + Drive) từng người.
+    # Ứng dụng phải ở trạng thái «In production» trên Google Cloud Console (Testing thì token chết sau 7 ngày).
+    GOOGLE_CLIENT_SECRET: str = ""
 
     R2_ENDPOINT: str = ""
     R2_PUBLIC_URL: str = ""

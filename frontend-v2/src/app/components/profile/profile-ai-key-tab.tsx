@@ -1,7 +1,17 @@
-import { KeyRound, Plug, Trash2 } from 'lucide-react'
+import { CalendarDays, KeyRound, Plug, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
-import { useAiKey, useCreateMcpKey, useMcpKeys, useRemoveAiKey, useRemoveMcpKey, useSetAiKey } from '@/modules/system/hooks/use-ai-key'
+import {
+  useAiKey,
+  useCreateMcpKey,
+  useDisconnectGoogle,
+  useGoogleAuthorize,
+  useGoogleLink,
+  useMcpKeys,
+  useRemoveAiKey,
+  useRemoveMcpKey,
+  useSetAiKey,
+} from '@/modules/system/hooks/use-ai-key'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader } from '@/shared/ui/card'
 import { confirm } from '@/shared/ui/confirm-dialog'
@@ -43,6 +53,7 @@ export function ProfileAiKeyTab() {
 
   return (
     <div className="space-y-4">
+      <GoogleCard />
       <McpKeysCard />
       <Card>
         <CardHeader>
@@ -180,6 +191,64 @@ function McpKeysCard() {
         )}
         {!isLoading && (data?.items.length ?? 0) === 0 && <p className="text-muted-foreground">Chưa có khóa MCP nào.</p>}
         <p className="text-xs text-muted-foreground">Đường kết nối: <code>{endpoint}</code>. Hướng dẫn: Trung tâm HDSD → «Kết nối MCP».</p>
+      </CardContent>
+    </Card>
+  )
+}
+
+
+/**
+ * Google CÁ NHÂN (ai-CR-064, M-06): nối một lần qua màn đồng ý của Google; ERP giữ token mã hóa. Bot / Trợ lý / MCP
+ * đọc lịch và Drive của CHÍNH bạn (tool my_calendar_events, create_calendar_event, drive_search, drive_read),
+ * bản tin sáng 7h30 và nhắc trước họp 15 phút về Telegram.
+ */
+function GoogleCard() {
+  const { data, isLoading } = useGoogleLink()
+  const authorize = useGoogleAuthorize()
+  const disconnect = useDisconnectGoogle()
+
+  async function handleDisconnect() {
+    const ok = await confirm({
+      title: 'Gỡ kết nối Google',
+      message: 'Bot sẽ không đọc được lịch và Drive của bạn nữa; nối lại bất cứ lúc nào.',
+      confirmLabel: 'Gỡ kết nối',
+    })
+    if (ok) disconnect.mutate()
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <SectionHeading>Google của bạn: Lịch và Drive</SectionHeading>
+      </CardHeader>
+      <CardContent className="space-y-3 text-sm">
+        <p className="text-muted-foreground">
+          Nối tài khoản Google cá nhân để hỏi bot «hôm nay tôi họp gì», «đặt lịch họp NCC X 14h mai», «tìm trên Drive hợp đồng ABC»,
+          nhận bản tin sáng 7h30 và nhắc trước họp 15 phút qua Telegram. Bot chỉ thấy lịch và tệp của chính bạn.
+        </p>
+        {isLoading && <Skeleton className="h-10 w-full" />}
+        {!isLoading && data && !data.configured && (
+          <p className="rounded-md border border-dashed p-3 text-muted-foreground">Hệ thống chưa cấu hình kết nối Google (quản trị khai GOOGLE_CLIENT_SECRET).</p>
+        )}
+        {!isLoading && data?.configured && data.linked && (
+          <div className="flex flex-wrap items-center gap-3 rounded-md border p-3">
+            <span className="min-w-0 flex-1">
+              Đang nối <span className="font-medium">{data.email || 'Google'}</span>
+              {data.linked_at && <span className="text-muted-foreground"> · từ {formatDateTime(data.linked_at)}</span>}
+            </span>
+            <Button type="button" variant="ghost" size="sm" onClick={() => void handleDisconnect()} disabled={disconnect.isPending}>
+              <Trash2 className="mr-1 size-4" /> Gỡ kết nối
+            </Button>
+          </div>
+        )}
+        {!isLoading && data?.configured && !data.linked && (
+          <Button type="button" size="sm" onClick={() => authorize.mutate()} disabled={authorize.isPending}>
+            <CalendarDays className="mr-1.5 size-4" /> Nối Google
+          </Button>
+        )}
+        <p className="text-xs text-muted-foreground">
+          Google có thể hiện màn «ứng dụng chưa được xác minh»: bấm Nâng cao → Tiếp tục. Đây là ứng dụng nội bộ của công ty.
+        </p>
       </CardContent>
     </Card>
   )

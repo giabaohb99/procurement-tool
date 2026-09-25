@@ -456,6 +456,42 @@ def pull_tickets_task() -> dict:
         db.close()
 
 
+@celery_app.task(name="agent.morning_brief")
+def morning_brief_task() -> dict:
+    """ai-CR-064 (T-08): 7h30 sáng, mỗi người đã nối Telegram + Google nhận lịch hôm nay + việc chờ duyệt."""
+    if (off := _off()) is not None:
+        return off
+    from . import briefs
+
+    db = SessionLocal()
+    try:
+        return {"status": "success", "sent": briefs.send_morning_briefs(db)}
+    except Exception as e:  # noqa: BLE001
+        db.rollback()
+        log.exception("agent_hub: bản tin sáng hỏng")
+        return {"status": "error", "reason": str(e)[:300]}
+    finally:
+        db.close()
+
+
+@celery_app.task(name="agent.meeting_reminders")
+def meeting_reminders_task() -> dict:
+    """ai-CR-064 (T-09): mỗi 5 phút, nhắc trước cuộc họp Google Calendar 15 phút cho người đã nối."""
+    if (off := _off()) is not None:
+        return off
+    from . import briefs
+
+    db = SessionLocal()
+    try:
+        return {"status": "success", "sent": briefs.send_meeting_reminders(db)}
+    except Exception as e:  # noqa: BLE001
+        db.rollback()
+        log.exception("agent_hub: nhắc họp hỏng")
+        return {"status": "error", "reason": str(e)[:300]}
+    finally:
+        db.close()
+
+
 @celery_app.task(name="agent.fire_reminders")
 def fire_reminders_task() -> dict:
     """ai-CR-060 (T-10): lời nhắc tới giờ -> nhắn lại đúng chat, mỗi phút."""

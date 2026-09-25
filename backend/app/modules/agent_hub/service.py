@@ -42,6 +42,8 @@ from .constants import (
     ACT_HEARTBEAT,
     ACT_ASKED,
     ACT_BELL,
+    ACT_BRIEF,
+    ACT_MEETING,
     ACT_REMIND_WAIT,
     ACT_REMINDER,
     ACT_VOICE,

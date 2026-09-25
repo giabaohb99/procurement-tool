@@ -93,6 +93,12 @@ TOOL_KHONG_PHAM_VI = {
                     "KÍN vào cùng bộ sưu tập là rò ngay — xem `01-…md` §6.5"),
     "export_report_file": "xuất từ dữ liệu ĐÃ lọc ở lượt trước; tệp gác bằng quyền SỞ HỮU",
     "export_excel_file": "như trên",
+    #  ai-CR-064: dữ liệu KHÔNG nằm trong ERP — lịch và Drive Google của CHÍNH người hỏi, đọc bằng token
+    #  của người đó (tab_agent_google_link); không có bản ghi ERP nào để lọc phạm vi.
+    "my_calendar_events": "lịch Google của chính người hỏi, bằng token của họ",
+    "create_calendar_event": "tạo sự kiện trên lịch Google của chính người hỏi",
+    "drive_search": "tìm trên Drive của chính người hỏi, bằng token của họ",
+    "drive_read": "đọc một tệp Drive của chính người hỏi",
 }
 
 
@@ -108,7 +114,7 @@ def test_moi_tool_deu_phai_duoc_phan_loai(db, monkeypatch):
     """
     monkeypatch.setattr(settings, "AI_RAG_ENABLED", True)
     thuc_te = {d.name for d in T.tool_defs()}
-    assert len(thuc_te) == 41, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
+    assert len(thuc_te) == 45, f"số tool đổi ({len(thuc_te)}) — cập nhật tài liệu 02 và 04 kèm theo"
     da_khai = set(TOOL_GHI) | set(TOOL_CHUNG_TU) | set(TOOL_DANH_MUC) | set(TOOL_KHONG_PHAM_VI)
 
     thieu = sorted(thuc_te - da_khai)

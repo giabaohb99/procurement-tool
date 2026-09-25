@@ -5682,3 +5682,172 @@ def test_api_khoa_mcp_tu_phuc_vu(db, bot):
         controller.remove_my_mcp_key(made["id"], user=SimpleNamespace(id=other.id), db=db)
     controller.remove_my_mcp_key(made["id"], user=me, db=db)
     assert _json(controller.list_my_mcp_keys(user=me, db=db))["items"] == []
+
+
+# ---------------------------------------------------------------------------
+# ai-CR-064: Google cá nhân — nối (M-06), tool Lịch/Drive (T-11, R-03), bản tin sáng (T-08), nhắc họp (T-09)
+# ---------------------------------------------------------------------------
+class _Resp:
+    def __init__(self, status: int, data=None, text: str = ""):
+        self.status_code, self._data, self.text, self.content = status, data, text, b"x"
+
+    def json(self):
+        return self._data
+
+
+def _google_env(monkeypatch):
+    monkeypatch.setattr(settings, "GOOGLE_CLIENT_ID", "cid.apps.googleusercontent.com")
+    monkeypatch.setattr(settings, "GOOGLE_CLIENT_SECRET", "csecret")
+    monkeypatch.setattr(settings, "AGENT_ERP_URL", "https://deverp.test")
+
+
+def _link_google(db, monkeypatch, user, *, expired=False):
+    """Nối sẵn một người: đổi mã giả → token giả (requests giả)."""
+    from datetime import datetime as _dt, timedelta as _td
+
+    from app.modules.agent_hub import google_link as gl
+
+    calls: list[dict] = []
+    monkeypatch.setattr(gl.requests, "post", lambda url, **kw: calls.append({"url": url, **kw}) or _Resp(
+        200, {"access_token": "acc-1", "refresh_token": "ref-1", "expires_in": 3600, "scope": "x"}))
+    monkeypatch.setattr(gl.requests, "get", lambda url, **kw: _Resp(200, {"email": "lan@gmail.com"}))
+    row = gl.exchange_code(db, user.id, "code-1")
+    if expired:
+        row.access_expires_at = _dt.now() - _td(minutes=1)
+        db.commit()
+    return row, calls
+
+
+def test_noi_google_state_ky_doi_ma_lam_moi_token_va_go(db, monkeypatch):
+    from datetime import datetime as _dt, timedelta as _td
+
+    from app.core import app_settings
+    from app.modules.agent_hub import google_link as gl
+
+    _google_env(monkeypatch)
+    lan = _erp_user(db)
+    url = gl.authorize_url(lan.id)
+    assert "accounts.google.com" in url and "access_type=offline" in url and "prompt=consent" in url
+    assert "redirect_uri=https%3A%2F%2Fdeverp.test%2Fapi%2Fagent-hub%2Fgoogle%2Fcallback" in url
+    from urllib.parse import unquote
+
+    state = unquote(url.split("state=")[1])
+    assert gl.parse_state(state) == lan.id and gl.parse_state(state + "x") == 0 and gl.parse_state("1:1:a:b") == 0
+    row, calls = _link_google(db, monkeypatch, lan)
+    assert row.email == "lan@gmail.com" and "ref-1" not in row.refresh_token_enc and app_settings._decrypt(row.refresh_token_enc) == "ref-1"
+    assert calls[0]["data"]["grant_type"] == "authorization_code" and gl.describe(db, lan.id)["linked"] is True
+    #  Token còn hạn → không gọi Google; hết hạn → làm mới bằng refresh token.
+    assert gl.access_token(db, row) == "acc-1" and len(calls) == 1
+    row.access_expires_at = _dt.now() - _td(minutes=1)
+    monkeypatch.setattr(gl.requests, "post", lambda url, **kw: calls.append({"url": url, **kw}) or _Resp(200, {"access_token": "acc-2", "expires_in": 3600}))
+    assert gl.access_token(db, row) == "acc-2" and calls[-1]["data"]["grant_type"] == "refresh_token"
+    #  Google thu hồi (invalid_grant) → dòng đóng, lỗi đọc được.
+    row.access_expires_at = _dt.now() - _td(minutes=1)
+    monkeypatch.setattr(gl.requests, "post", lambda url, **kw: _Resp(400, {}, "invalid_grant"))
+    with pytest.raises(gl.GoogleError):
+        gl.access_token(db, row)
+    assert gl.get_link(db, lan.id) is None
+    #  Nối lại rồi gỡ: gọi revoke phía Google + đóng dòng.
+    row2, _ = _link_google(db, monkeypatch, lan)
+    seen: list[str] = []
+    monkeypatch.setattr(gl.requests, "post", lambda url, **kw: seen.append(url) or _Resp(200, {}))
+    gl.revoke(db, row2)
+    assert seen == [gl.REVOKE_URL] and gl.describe(db, lan.id)["linked"] is False
+
+
+def test_tool_lich_va_drive_chay_bang_token_cua_chinh_nguoi_hoi(db, monkeypatch):
+    from app.modules.agent_hub import google_link as gl
+    from app.modules.assistant.tools import run_tool
+
+    _google_env(monkeypatch)
+    lan = _erp_user(db)
+    other = _erp_user(db, "khac@dego.vn")
+    assert "chưa nối Google" in run_tool(db, lan, "my_calendar_events", {})["error"]
+    _link_google(db, monkeypatch, lan)
+    seen: list[dict] = []
+
+    def fake_request(method, url, **kw):
+        seen.append({"method": method, "url": url, **kw})
+        if "calendar" in url and method == "GET":
+            return _Resp(200, {"items": [{"id": "ev1", "summary": "Họp NCC X", "start": {"dateTime": "2026-09-26T14:00:00+07:00"},
+                                           "end": {"dateTime": "2026-09-26T15:00:00+07:00"}, "location": "P.301"}]})
+        if "calendar" in url and method == "POST":
+            return _Resp(200, {"id": "ev2", "summary": kw["json"]["summary"], "start": kw["json"]["start"], "end": kw["json"]["end"], "htmlLink": "https://cal/ev2"})
+        if url.endswith("/files"):
+            return _Resp(200, {"files": [{"id": "f1", "name": "Hop dong ABC.docx", "mimeType": "application/vnd.google-apps.document", "webViewLink": "https://drive/f1"}]})
+        return _Resp(200, {"id": "f1", "name": "Hop dong ABC", "mimeType": "application/vnd.google-apps.document", "webViewLink": "https://drive/f1"})
+
+    monkeypatch.setattr(gl.requests, "request", fake_request)
+    monkeypatch.setattr(gl.requests, "get", lambda url, **kw: _Resp(200, None, "Nội dung hợp đồng ABC"))
+    out = run_tool(db, lan, "my_calendar_events", {"date_from": "2026-09-26"})
+    assert out["count"] == 1 and out["items"][0]["title"] == "Họp NCC X" and seen[-1]["headers"]["Authorization"] == "Bearer acc-1"
+    assert seen[-1]["params"]["timeMin"] == "2026-09-25T17:00:00Z"                     # 0h VN = 17h UTC hôm trước
+    out = run_tool(db, lan, "create_calendar_event", {"title": "Họp NCC Y", "start": "2026-09-27T09:00:00", "attendees": ["a@b.vn"]})
+    assert out["ok"] and out["event"]["id"] == "ev2" and seen[-1]["json"]["end"]["dateTime"] == "2026-09-27T10:00:00"
+    out = run_tool(db, lan, "drive_search", {"q": "hợp đồng ABC"})
+    assert out["count"] == 1 and "fullText contains" in seen[-1]["params"]["q"]
+    out = run_tool(db, lan, "drive_read", {"file_id": "f1"})
+    assert out["text"] == "Nội dung hợp đồng ABC" and out["name"] == "Hop dong ABC"
+    #  Người khác chưa nối → không dùng ké token của Lan.
+    assert "chưa nối Google" in run_tool(db, other, "drive_search", {"q": "x"})["error"]
+
+
+def test_ban_tin_sang_va_nhac_truoc_hop_chi_gui_nguoi_da_noi_ca_hai(db, bot, monkeypatch):
+    from datetime import datetime as _dt, timedelta as _td
+
+    from app.modules.agent_hub import briefs, chat_link, google_link as gl
+    from app.modules.agent_hub.model import AgentMessage
+    from app.modules.assistant import tools as tool_registry
+    from app.modules.assistant.tools import google_tool
+
+    service, _, _ = bot
+    sent = _send_to(monkeypatch, service)
+    _google_env(monkeypatch)
+    lan = _erp_user(db)
+    _link_google(db, monkeypatch, lan)
+    assert briefs.send_morning_briefs(db) == 0                                        # chưa nối Telegram
+    code, _ = chat_link.issue_code(db, lan.id)
+    service.handle_message(db, _other_msg(f"/dangnhap {code}"))
+    sent.clear()
+    now = _dt.utcnow().replace(second=0, microsecond=0)
+    soon = (now + _td(minutes=12) + _td(hours=7)).isoformat() + "+07:00"                 # bắt đầu sau 12 phút (giờ VN)
+    later = (now + _td(minutes=40) + _td(hours=7)).isoformat() + "+07:00"
+    monkeypatch.setattr(google_tool, "list_events", lambda db_, link, *a, **kw: [
+        {"id": "e1", "title": "Họp giao ban", "start": soon, "end": soon, "all_day": False, "location": "P.301", "meet": "", "url": ""},
+        {"id": "e2", "title": "Họp NCC", "start": later, "end": later, "all_day": False, "location": "", "meet": "", "url": ""}])
+    monkeypatch.setattr(tool_registry, "run_tool", lambda db_, user, name, args: {"total": 2, "items": [{"doc_code": "PR0012", "title": "Mua giấy A4"}, {"doc_code": "NP0003", "title": "Nghỉ phép"}]})
+    assert briefs.send_morning_briefs(db) == 1
+    assert sent[-1][0] == "777" and "Lịch hôm nay (2)" in sent[-1][1] and "Họp giao ban" in sent[-1][1] and "PR0012" in sent[-1][1]
+    #  Nhắc họp: chỉ sự kiện bắt đầu trong 5–15 phút tới, mỗi sự kiện một lần.
+    assert briefs.send_meeting_reminders(db, now=now) == 1
+    assert "Sắp họp" in sent[-1][1] and "Họp giao ban" in sent[-1][1] and "[e1]" in sent[-1][1]
+    assert briefs.send_meeting_reminders(db, now=now) == 0
+    assert db.query(AgentMessage).filter_by(action=service.ACT_MEETING).count() == 1
+    #  Tắt chuông → không nhận bản tin.
+    service.handle_message(db, _other_msg("tắt chuông"))
+    assert briefs.send_morning_briefs(db) == 0
+    _ = gl
+
+
+def test_api_google_noi_go_va_callback(db, bot, monkeypatch):
+    from types import SimpleNamespace
+
+    from app.modules.agent_hub import controller, google_link as gl
+
+    _google_env(monkeypatch)
+    lan = _erp_user(db)
+    me = SimpleNamespace(id=lan.id)
+    assert _json(controller.my_google(user=me, db=db)) == {"configured": True, "linked": False, "email": "", "linked_at": None}
+    url = _json(controller.google_authorize(user=me, db=db))["url"]
+    from urllib.parse import unquote
+
+    state = unquote(url.split("state=")[1])
+    monkeypatch.setattr(gl.requests, "post", lambda u, **kw: _Resp(200, {"access_token": "a", "refresh_token": "r", "expires_in": 3600}))
+    monkeypatch.setattr(gl.requests, "get", lambda u, **kw: _Resp(200, {"email": "lan@gmail.com"}))
+    resp = controller.google_callback(code="c", state=state, db=db)
+    assert resp.status_code == 302 and resp.headers["location"].endswith("/me?tab=ai-key&google=xong")
+    assert _json(controller.my_google(user=me, db=db))["email"] == "lan@gmail.com"
+    bad = controller.google_callback(code="c", state="gia", db=db)
+    assert bad.headers["location"].endswith("google=loi")
+    monkeypatch.setattr(gl.requests, "post", lambda u, **kw: _Resp(200, {}))
+    assert _json(controller.google_disconnect(user=me, db=db))["linked"] is False

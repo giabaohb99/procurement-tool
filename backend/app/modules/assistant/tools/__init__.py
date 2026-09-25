@@ -22,6 +22,7 @@ from .draft_tool import (DRAFT_LEAVE_REQUEST_SPEC, DRAFT_PURCHASE_REQUEST_SPEC,
                          DRAFT_SURVEY_REQUEST_SPEC)
 from .employee_tool import EMPLOYEE_LOOKUP_SPEC
 from .export_tool import EXPORT_EXCEL_FILE_SPEC, EXPORT_REPORT_FILE_SPEC
+from .google_tool import GOOGLE_SPECS
 from .leave_tool import MY_LEAVE_SUMMARY_SPEC
 from .payable_tool import (DRAFT_PAYMENT_REQUEST_SPEC, PAYABLE_LOOKUP_SPEC,
                            PAYMENT_REQUEST_READ_SPEC)
@@ -61,7 +62,8 @@ def _active_specs() -> list:
                            PROPOSE_DOCUMENT_UPDATE_SPEC,
                            PROPOSE_ACCOUNT_SETUP_SPEC,
                            CUSTOMS_PRICE_STATS_SPEC, CUSTOMS_BUY_TIMING_SPEC,
-                           CUSTOMS_MARKET_SPEC, CUSTOMS_LEGAL_CHECK_SPEC]
+                           CUSTOMS_MARKET_SPEC, CUSTOMS_LEGAL_CHECK_SPEC,
+                           *GOOGLE_SPECS]   # ai-CR-064: Lịch + Drive Google cá nhân
     if settings.AI_RAG_ENABLED:
         specs.append(SEARCH_DOCS_SPEC)
     return specs
